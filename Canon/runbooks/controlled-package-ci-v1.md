@@ -122,3 +122,9 @@ pozostają osobnymi dowodami. Brak deploymentów, SQL/ról, uprawnień dostawcó
 sekretów i nowych zasobów. Przed aktywacją można zamknąć draft; po osobno
 zaakceptowanym merge wycofanie polega na zwykłym przeglądanym revercie tej
 jednej klasy, z zachowaniem historii i aktualnych wymagań proof.
+
+## Zamknięty przegląd Source Hub G1 — PR878
+
+Właściciel jawnie zatwierdził tę osobną poprawkę CI i dalszą aktywację w odpowiedzi „Zatwierdzam poprawkę CI i dalszą aktywację”, po przeglądzie dokładnego14-blobowego zestawu PR878. Authority wynika z kontrolowanego przyjęcia bootstrapu na main. Dopuszcza wyłącznie PR878, jego dokładną gałąź i kompletny zestaw14 zamrożonych blobów/statusów kandydata aef76dd768aa52b0fe0f17349cb1c972d6c67eae. Techniczna aktualizacja podstawy może zachować te same14blobów; bieżący HEAD i expected_sha nadal muszą się zgadzać. Zmiana blobu/statusu, brak/dodatkowa ścieżka, rename/delete/copy lub inny PR/branch są odrzucane.
+
+Wszystkie ścieżki to Governance Source Layer / ALIGNED / ARCHITECTURE. Nie powstaje ogólne dopuszczenie Canon, runtime, apps/packages lub workflow. Nie zmieniają się poświadczenia, reguły Environment/main-only, prywatne pakiety/piny ani instalacja bez lifecycle i wykonanie bez credentiali. Stosuje się istniejący osobny bootstrap sg2/ wyłącznie jako namespace transportowy, z profilem ARCHITECTURE, jego routingiem i PMOS. Najpierw wymagany jest exact-SHA dowód starego trusted-main kontrolera dla bootstrapu i kontrolowany merge; dopiero potem nowy main waliduje PR878. Nowy digest unieważnia stare proof. Rollback: zwykły revert wyłącznie tej zamkniętej klasy, bez produktu/bazy/sekretu.
