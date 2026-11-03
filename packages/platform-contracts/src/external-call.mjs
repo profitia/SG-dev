@@ -7,6 +7,7 @@ import {readPresentationJson} from './embedded-read-channel.mjs'
 import {NATIVE_EXTERNAL_TRANSPORT,nativeExternalTransportSchemaUrl,captureNativeTransport,assertNativeDescriptor,
  nativeRequestRule,validateNativeRequestBody,readNativeProviderResponse,nativeResponseDigest,responseFromNativeResult} from './native-external-transport.mjs'
 import {publicUrl,publicWebHop} from './public-web-transport.mjs'
+import {captureModelExecution,assertModelDescriptor,assertModelRequest} from './model-execution.mjs'
 export {NATIVE_EXTERNAL_TRANSPORT,nativeExternalTransportSchemaUrl}
 export const publicWebTransportSchemaUrl=new URL('../migrations/access/018-public-web-transport.sql',import.meta.url).href
 
@@ -51,6 +52,11 @@ export function createExternalCallHost(options){
    &&hex.test(publicConfig.schemaDigest??'')&&(publicConfig.syntheticOrigin===undefined||typeof publicConfig.syntheticOrigin==='string')):Object.hasOwn(options??{},'publicWebTransport'))throw TypeError('Explicit public network policy required')
   const publicBinding=publicWeb?freeze(structuredClone(publicConfig)):null
   const native=Object.hasOwn(options??{},'nativeTransport')?captureNativeTransport(options.nativeTransport,b.transport,publicWeb):null
+  const model=Object.hasOwn(options??{},'modelExecution')?captureModelExecution(options.modelExecution):null
+  const countModelInputTokens=options?.countModelInputTokens
+  if(model&&typeof countModelInputTokens!=='function'||!model&&countModelInputTokens!==undefined)throw TypeError('Dedicated verified local tokenizer required')
+  if(model&&(!native||publicWeb||native.credentialMode!=='SERVER_HEADERS'||b.origin!=='https://api.openai.com'
+    ||b.transport!=='HTTPS'||JSON.stringify(b.pathRules)!==JSON.stringify([{method:'POST',path:'/v1/responses'}])))throw TypeError('Dedicated model source required')
   if(!exact(b,'configurationVersion,origin,pathRules,role,schemaDigest,transport')||!['role','configurationVersion','schemaDigest'].every(k=>typeof b[k]==='string')||(!publicWeb&&typeof b.origin!=='string')
     ||!/^[a-z][a-z0-9_]*$/.test(b.role)||!safeText(b.configurationVersion)||!hex.test(b.schemaDigest)||!validPaths(b.pathRules)
     ||!['HTTPS','LOCAL_SYNTHETIC_HTTP','PUBLIC_WEB'].includes(b.transport)||publicWeb&&(!native||b.origin!==null||operationPayloadDigest(b.pathRules)!==operationPayloadDigest([{method:'GET',path:'/'}]))||!safeText(sourceId)||!safeText(resourceId)
@@ -66,7 +72,7 @@ export function createExternalCallHost(options){
   if(source.sourceId!==sourceId||source.payloadSchema!=='external-call-control-v1'
     ||b.transport==='LOCAL_SYNTHETIC_HTTP'&&source.environment!=='development')throw TypeError('Accepted external control source required')
   const descriptor=async()=>{
-    const startedMs=now();let result;try{result=await independentQuery(`SELECT current_database() AS database_name,current_user AS role,session_user AS login,${publicWeb?'profitia_public_web':native?'profitia_external_native':'profitia_external_call'}.descriptor($1,$2) AS descriptor,(extract(epoch from clock_timestamp())*1000)::double precision AS descriptor_observed_ms`,[sourceId,resourceId])}catch{throw new ExternalCallUnavailable('NOT_SENT')}
+    const startedMs=now();let result;try{result=await independentQuery(`SELECT current_database() AS database_name,current_user AS role,session_user AS login,${model?'profitia_model_execution':publicWeb?'profitia_public_web':native?'profitia_external_native':'profitia_external_call'}.descriptor($1,$2) AS descriptor,(extract(epoch from clock_timestamp())*1000)::double precision AS descriptor_observed_ms`,[sourceId,resourceId])}catch{throw new ExternalCallUnavailable('NOT_SENT')}
     const receivedMs=now(),row=result?.rows?.length===1?result.rows[0]:null,d=boundedDatabaseLease(row?.descriptor,row?.descriptor_observed_ms,startedMs,receivedMs)
     const quotaValid=d?.quotaMode==='UNMETERED'
       ?d.capacity===null&&!!source.unmeteredSchemaDigest&&d.unmeteredSchemaDigest===source.unmeteredSchemaDigest
@@ -81,10 +87,11 @@ export function createExternalCallHost(options){
       ||!Number.isSafeInteger(d.admittedCount)||d.admittedCount<0||!/^[1-9][0-9]*$/.test(d.policyVersion??'')
       ||!Number.isSafeInteger(d.maximumRequestBytes)||d.maximumRequestBytes<1||d.maximumRequestBytes>1048576
       ||!Number.isSafeInteger(d.maximumResponseBytes)||d.maximumResponseBytes<1||d.maximumResponseBytes>8388608
-      ||!Number.isSafeInteger(d.timeoutMs)||d.timeoutMs<100||d.timeoutMs>120000
+      ||!Number.isSafeInteger(d.timeoutMs)||d.timeoutMs<100||d.timeoutMs>(model?model.timeoutMs:120000)
       ||!(Date.parse(d.expiresAt)>now())||Date.parse(d.expiresAt)>now()+30000
       ||b.transport==='LOCAL_SYNTHETIC_HTTP'&&d.sourceRef!=='SYNTHETIC_ONLY')throw new ExternalCallUnavailable('NOT_SENT')
     if(native){try{assertNativeDescriptor(native,d);if(!(Date.parse(d.nativeExpiresAt)>now()))throw Error()}catch{throw new ExternalCallUnavailable('NOT_SENT')}}
+    if(model){try{assertModelDescriptor(model,d);if(!(Date.parse(d.modelExpiresAt)>now()))throw Error()}catch{throw new ExternalCallUnavailable('NOT_SENT')}}
     if(publicWeb&&(d.publicWebSchemaVersion!=='1.0.0'||d.publicWebSchemaDigest!==publicBinding.schemaDigest
       ||!/^[1-9][0-9]*$/.test(d.publicWebPolicyVersion??'')||d.publicWebMaximumRedirects!==4
       ||d.publicWebSyntheticOrigin!==(publicBinding.syntheticOrigin??null)||!(Date.parse(d.publicWebExpiresAt)>now())
@@ -99,6 +106,7 @@ export function createExternalCallHost(options){
     &&(!native||['nativeSchemaDigest','nativePolicyVersion','nativeCompletionMode','nativeCredentialMode','nativeMaximumResponseBytes','nativeExpiresAt'].every(k=>a[k]===b[k])
       &&operationPayloadDigest(a.nativePathRules)===operationPayloadDigest(b.nativePathRules)&&operationPayloadDigest(a.nativeRedirectOrigins)===operationPayloadDigest(b.nativeRedirectOrigins))
     &&(!publicWeb||['publicWebSchemaDigest','publicWebPolicyVersion','publicWebMaximumRedirects','publicWebSyntheticOrigin','publicWebSourceRef','publicWebExpiresAt'].every(k=>a[k]===b[k]))
+    &&(!model||['modelSchemaDigest','modelPolicyVersion','modelProfileId','model','modelMaximumInputTokens','modelMaximumOutputTokens','modelMaximumBodyBytes','modelReservationMicroUsd','modelMaximumAttempts','modelExpiresAt'].every(k=>a[k]===b[k]))
   const control=(action,callId,status,httpStatus,responseDigest,requestDigest,intentKey)=>diagnosticAsync('SOURCE_'+action,async()=>{
     const intentDigest=hmac(intentKey,JSON.stringify({scope:'intent-v1',applicationId:source.applicationId,environment:source.environment,sourceId,resourceId}))
     // Exactly eight sorted keys: identical to the existing root canonical JSON.
@@ -107,7 +115,7 @@ export function createExternalCallHost(options){
     const phasePort=makePort(async(content,transaction,context)=>{
       if(operationPayloadDigest(content)!==operationPayloadDigest(payload))throw new ExternalCallUnavailable()
       const envelope=JSON.stringify({content:payload,sourceId})
-      const r=await query(transaction,'SELECT profitia_external_call.apply_control($1::uuid,$2::uuid,$3) AS control',
+      const r=await query(transaction,`SELECT ${model?'profitia_model_execution':'profitia_external_call'}.apply_control($1::uuid,$2::uuid,$3) AS control`,
         [context.platformReservation.effectId,context.decisionId,envelope])
       const value=r?.rows?.length===1?r.rows[0].control:null
       if(!value||value.fresh!==true||!uuid.test(value.callId??''))throw new ExternalCallUnavailable()
@@ -145,6 +153,10 @@ export function createExternalCallHost(options){
         ||Buffer.byteLength(request.url)+Buffer.byteLength(request.body??'')>d.maximumRequestBytes)throw Error()
       if(native)nativeContentType=await validateNativeRequestBody(request,nativeRequestRule(native,url,request.method),d.maximumRequestBytes)
       else if(request.body!==null)await readPresentationJson(new Response(request.body,{headers:{'content-type':'application/json'}}),d.maximumRequestBytes)
+      if(model){assertModelRequest(model,request.body)
+        const tokens=await countModelInputTokens(request.body)
+        if(!Number.isSafeInteger(tokens)||tokens<1||tokens>model.maximumInputTokens)throw Error('Model input token budget unavailable')
+      }
       request=Object.freeze({...request})
     }catch{throw new ExternalCallUnavailable('NOT_SENT')}
     const requestDigest=hmac(intentKey,JSON.stringify({body:request.body,method:request.method,url:request.url}))
@@ -160,7 +172,7 @@ export function createExternalCallHost(options){
     // An explicit native policy authorizes bounded completion of an admitted
     // upstream attempt, with CURRENT checks immediately before send and at
     // settlement. Its deadline is not a renewed HUMAN/private SQL lease.
-    const abort=new AbortController(),deadline=Math.min(now()+d.timeoutMs,Date.parse(native?d.nativeExpiresAt:d.expiresAt),publicWeb?Date.parse(d.publicWebExpiresAt):Infinity);let timer,listener,sent=false,result,rejectedHttpStatus=null,settledStatus='NOT_SENT'
+    const abort=new AbortController(),deadline=Math.min(now()+d.timeoutMs,Date.parse(native?d.nativeExpiresAt:d.expiresAt),publicWeb?Date.parse(d.publicWebExpiresAt):Infinity,model?Date.parse(d.modelExpiresAt):Infinity);let timer,listener,sent=false,result,rejectedHttpStatus=null,settledStatus='NOT_SENT'
     const assertActive=()=>{if(abort.signal.aborted||now()>=deadline)throw new ExternalCallUnavailable(sent?'UNVERIFIED':'NOT_SENT')}
     try{
       result=await Promise.race([
@@ -176,6 +188,9 @@ export function createExternalCallHost(options){
               ||typeof value!=='string'||Buffer.byteLength(value)>8192||/[\r\n]/.test(value))throw new ExternalCallUnavailable('NOT_SENT')
             headers.set(key,value)
           }
+          if(model&&([...headers.keys()].some(k=>!['authorization','accept','content-type','x-client-request-id'].includes(k))
+            ||!headers.get('authorization')?.startsWith('Bearer ')
+            ||! /^[\x21-\x7e]{1,512}$/.test(headers.get('x-client-request-id')??'')))throw new ExternalCallUnavailable('NOT_SENT')
           if(native){if(!headers.has('accept'))headers.set('accept','*/*');if(nativeContentType)headers.set('content-type',nativeContentType);else headers.delete('content-type')}
           else{headers.set('accept','application/json');if(request.body!==null)headers.set('content-type','application/json')}
           if(!same(d,await diagnosticAsync('SOURCE_BEFORE_SEND',()=>descriptor())))throw new ExternalCallUnavailable('NOT_SENT');assertActive()
@@ -183,7 +198,7 @@ export function createExternalCallHost(options){
           const response=publicWeb?await publicWebHop(request.url,{signal:abort.signal,maxBytes:native.maximumResponseBytes},publicBinding.syntheticOrigin):await diagnosticAsync('SOURCE_HTTP',()=>fetch(request.url,{method:request.method,body:request.body,headers,signal:abort.signal,redirect:'manual',credentials:'omit',cache:'no-store',referrerPolicy:'no-referrer'}))
           if(abort.signal.aborted||response.redirected||response.url!==request.url||response.status<200||response.status>599||!native&&response.status>=300&&response.status<400){try{await response.body?.cancel()}catch{};throw new ExternalCallUnavailable()}
           if(native){
-            try{return await diagnosticAsync('SOURCE_BODY',()=>readNativeProviderResponse(response,{config:native,requestUrl:request.url,assertActive,signal:abort.signal,publicWeb}))}
+            try{return await diagnosticAsync('SOURCE_BODY',()=>readNativeProviderResponse(response,{config:native,requestUrl:request.url,assertActive,signal:abort.signal,publicWeb,modelRequestId:model!==null}))}
             catch(error){
               // A provider response rejected by the bounded native decoder is
               // distinct from a denied descriptor, abort or failed settlement.
@@ -233,6 +248,9 @@ export async function externalCallSchemaDigest(){const fs=await import('node:fs'
 export async function nativeExternalTransportSchemaDigest(){const fs=await import('node:fs');return hash(fs.readFileSync(new URL(nativeExternalTransportSchemaUrl)))}
 export async function publicWebTransportSchemaDigest(){const fs=await import('node:fs');return hash(fs.readFileSync(new URL(publicWebTransportSchemaUrl)))}
 export async function externalCallSourceDigest(){const fs=await import('node:fs');return createHash('sha256').update(fs.readFileSync(new URL('./external-call.mjs',import.meta.url)))
+  .update(fs.readFileSync(new URL('./model-execution.mjs',import.meta.url))).update(fs.readFileSync(new URL('./model-execution.d.mts',import.meta.url)))
+  .update(fs.readFileSync(new URL('./../migrations/access/028-model-execution.sql',import.meta.url)))
+  .update(fs.readFileSync(new URL('./../migrations/access/029-model-execution-long-report.sql',import.meta.url)))
   .update(fs.readFileSync(new URL('./external-call.d.mts',import.meta.url))).update(await externalCallSchemaDigest())
   .update(fs.readFileSync(new URL('./native-external-transport.mjs',import.meta.url))).update(fs.readFileSync(new URL('./native-external-transport.d.mts',import.meta.url)))
   .update(await nativeExternalTransportSchemaDigest())
