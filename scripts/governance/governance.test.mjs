@@ -5,6 +5,7 @@ import os from 'node:os'
 import path from 'node:path'
 import test from 'node:test'
 import { fileURLToPath } from 'node:url'
+import './platform-source-hub-foundation.test.mjs'
 
 import { validateGovernanceManifest } from './validate-governance-manifest.mjs'
 import { compareProviderSnapshot, loadEnvironmentTopology, resolveEnvironmentProfile, validateEnvironmentTopology } from './environment-profile.mjs'
