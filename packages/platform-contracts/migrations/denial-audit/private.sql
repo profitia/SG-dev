@@ -61,7 +61,10 @@ BEGIN
  IF jsonb_array_length(result_rows)>100 THEN RAISE EXCEPTION 'D1_OVERFLOW' USING ERRCODE='54000';END IF;
  RAISE LOG 'SG2_D1_READ invocation=% store=private phase=OUTCOME case=% rows=%',invocation,p_case,jsonb_array_length(result_rows);
  RETURN jsonb_build_object('caseId',p_case,'store','private','rows',result_rows,'invocationRef',invocation::text);
-EXCEPTION WHEN OTHERS THEN
+EXCEPTION WHEN program_limit_exceeded THEN
+ RAISE LOG 'SG2_D1_READ invocation=% store=private phase=REJECTED reason=OVERFLOW',invocation;
+ RAISE EXCEPTION 'D1_OVERFLOW' USING ERRCODE='54000';
+WHEN OTHERS THEN
  RAISE LOG 'SG2_D1_READ invocation=% store=private phase=REJECTED',invocation;
  RAISE EXCEPTION 'D1_READ_UNAVAILABLE' USING ERRCODE='42501';
 END $reader$;

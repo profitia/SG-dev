@@ -109,7 +109,7 @@ test('D1 actual independent PostgreSQL stores, ordinary roles, fixed SQL project
    })
    await t.test(`${s.store}:101rows fails closed, existing events unchanged by reads`,async()=>{
     for(let i=0;i<100;i++)await s.insert(CASES[0]);const before=(await s.owner.query(`SELECT count(*)::int AS n FROM ${s.base}.security_events`)).rows[0].n
-    await assert.rejects(s.reader.query(`SELECT profitia_sg2_d1_${s.store}.read_case('H1')`),e=>e.code==='42501');assert.equal((await s.owner.query(`SELECT count(*)::int AS n FROM ${s.base}.security_events`)).rows[0].n,before)
+    await assert.rejects(s.reader.query(`SELECT profitia_sg2_d1_${s.store}.read_case('H1')`),e=>e.code==='54000'&&e.message==='D1_OVERFLOW');assert.equal((await s.owner.query(`SELECT count(*)::int AS n FROM ${s.base}.security_events`)).rows[0].n,before)
    })
    await t.test(`${s.store}: revoke/NOLOGIN retains history and eliminates access`,async()=>{
     await s.owner.query('RESET ROLE');await s.operator.query(load(prefix+'expire.sql'));await assert.rejects(query(),e=>e.code==='42501')

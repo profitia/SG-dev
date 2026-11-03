@@ -68,10 +68,11 @@ export function createFiveCaseReader(config) {
    const completion=await audit.complete(Object.freeze({...intent,authorizationRef:ack.authorizationRef,invocations:Object.freeze(invocations),rowCount:rows.length,outputSha256,correlationEvidence:'WINDOW_ONLY'}))
    if(!exact(completion,['durable','outputSha256'])||completion.durable!==true||completion.outputSha256!==outputSha256)fail('D1_AUDIT_UNAVAILABLE')
    return output
-  }catch{
+  }catch(error){
    // Never expose upstream exceptions, rows, partial results, SQL or credentials.
-   try{await audit.failure(Object.freeze({...intent,authorizationRef:ack.authorizationRef,invocations:Object.freeze(invocations),status:'AUDIT_UNAVAILABLE'}))}catch{}
-   fail('D1_READ_UNAVAILABLE')
+   const overflow=error?.message==='D1_OVERFLOW'||error?.code==='54000'
+   try{await audit.failure(Object.freeze({...intent,authorizationRef:ack.authorizationRef,invocations:Object.freeze(invocations),status:overflow?'OVERFLOW':'AUDIT_UNAVAILABLE'}))}catch{}
+   fail(overflow?'D1_OVERFLOW':'D1_READ_UNAVAILABLE')
   }
  }
  return Object.freeze({contractId:CONTRACT_ID,read})

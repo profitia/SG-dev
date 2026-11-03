@@ -22,7 +22,7 @@ test('D1 all five cases, both stores, half-open fixed windows, minimal output an
 })
 test('D1 exactly100 aggregate rows accepted;101+ across databases/cases rejected before release',async()=>{
  assert.equal((await fixture({count:10}).reader().read()).rows.length,100)
- const f=fixture({count:11});await assert.rejects(f.reader().read(),/D1_READ_UNAVAILABLE/);assert.equal(f.completed(),undefined);assert(f.failed())
+ const f=fixture({count:11});await assert.rejects(f.reader().read(),/D1_OVERFLOW/);assert.equal(f.completed(),undefined);assert(f.failed())
 })
 test('D1 empty history means NOT_RECORDED, never cause/checkpoint reconstructed',async()=>{
  const out=await fixture({count:0}).reader().read();assert(out.results.every(v=>v.status==='NOT_RECORDED'));assert.equal(out.rows.length,0)
