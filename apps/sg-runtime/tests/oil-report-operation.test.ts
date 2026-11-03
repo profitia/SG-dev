@@ -30,4 +30,7 @@ test('raw processing preserves original synthetic output; incomplete, refused or
  }
  const altered=structuredClone(response);altered.output[0].content[0].text='{"invented":999}'
  const rejected=await reviewOilRawApiResponse(JSON.stringify(altered),bundle,null,trace);assert.equal(rejected.status,'OUTPUT_REJECTED');assert.equal(rejected.report,null)
+ const long=structuredClone(response);long.output[0].content[0].text=JSON.stringify(Object.fromEntries(['statistical','calendar','economy','procurement'].map(k=>[k,[{text:'Ostrożna analiza. '.repeat(70),evidenceRefs:['D0']}]])))
+ const overflow=await reviewOilRawApiResponse(JSON.stringify(long),bundle,null,trace)
+ assert.equal(overflow.status,'OUTPUT_REJECTED');assert('validationFailure'in overflow);assert.equal(overflow.validationFailure.code,'REPORT_CHARACTER_LIMIT_EXCEEDED');assert(Number(overflow.validationFailure.actualCharacters)>4000)
 })

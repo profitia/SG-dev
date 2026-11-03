@@ -19,7 +19,7 @@ export function validateOilNarrative(raw:unknown,bundle:OilEvidenceBundle):OilNa
 }
 export function validateOilRenderedBody(body:string){
  const count=countOilReportCharacters(body)
- if(count>4000)throw Error('REPORT_CHARACTER_LIMIT_EXCEEDED')
+ if(count>4000)throw Object.assign(Error('REPORT_CHARACTER_LIMIT_EXCEEDED'),{actualCharacters:count,maximumCharacters:4000})
  for(const h of ['1. Analiza statystyczna','2. Kalendarium rynkowe','3. Realna gospodarka','4. Procurement Insights'])if(!body.includes(h))throw Error('REPORT_HEADING_MISSING')
  return {characterCount:count,publicationStatus:'HUMAN_REVIEW_REQUIRED' as const}
 }

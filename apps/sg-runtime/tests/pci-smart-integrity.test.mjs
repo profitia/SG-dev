@@ -5,7 +5,7 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import {execFileSync} from 'node:child_process'
-import {assertPciSmartIntegrity,assertOilComposerPreparationContinuation,digest as digestForTest} from './pci-smart-integrity.mjs'
+import {assertPciSmartIntegrity,assertXrayAppShellPresentation,assertOilComposerPreparationContinuation,digest as digestForTest} from './pci-smart-integrity.mjs'
 const receipt=()=>JSON.parse(fs.readFileSync(new URL('../operation-integration.json',import.meta.url)))
 const current=file=>fs.readFileSync(new URL('../../../'+file,import.meta.url)),historical=(sha,file)=>execFileSync('git',['show',sha+':'+file])
 function candidateSourcePaths(root){
@@ -210,6 +210,11 @@ import './oil-report-profile.test.ts'
 import './oil-report-renderer.test.ts'
 import './oil-report-source.test.ts'
 import './oil-report-validation.test.ts'
+test('specialized X-Ray preview verifies the closed Oil overlay before immutable AppShell history',()=>{
+ assertXrayAppShellPresentation(receipt(),current,historical)
+ const r=receipt();delete r.oilComposerPreparationCompatibility.sourceDigests[r.oilComposerPreparationCompatibility.changedSourcePaths[0]]
+ assert.throws(()=>assertXrayAppShellPresentation(r,current,historical))
+})
 test('Oil preparation closes exact sources, preserves prior receipts and rejects missing or foreign scope',()=>{
  const r=receipt(),a=r.oilComposerPreparationCompatibility;assert(a)
  assertPciSmartIntegrity(r,current,historical)

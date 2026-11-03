@@ -86,6 +86,11 @@ export async function reviewOilRawApiResponse(rawBody:string,bundle:OilEvidenceB
    const narrative=JSON.parse(texts[0].text) as OilNarrative
    const report=await trace('validation',async()=>renderOilReport(narrative,bundle))
    return trace('review',async()=>({status:'COMPLETED' as const,raw,report,...metadata,humanReviewRequired:true,sourceCallProvenance:'MUST_BE_PROVIDED_BY_ADMITTED_SOURCE' as const}))
-  }catch{return {status:'OUTPUT_REJECTED' as const,raw,report:null,...metadata,humanReviewRequired:true}}
+  }catch(error){
+   const codes=['REPORT_CHARACTER_LIMIT_EXCEEDED','REPORT_CLAIM_UNGROUNDED','REPORT_MARKET_REFERENCE_REQUIRED','REPORT_CERTAINTY_EXAGGERATED','REPORT_SECTIONS_INVALID','REPORT_STATEMENTS_INVALID','REPORT_STRUCTURED_OUTPUT_MISSING','REPORT_HEADING_MISSING']
+   const code=error instanceof Error&&codes.includes(error.message)?error.message:'REPORT_STRUCTURED_OUTPUT_INVALID'
+   const actual=error&&typeof error==='object'&&'actualCharacters'in error&&Number.isSafeInteger(error.actualCharacters)?Number(error.actualCharacters):null
+   return {status:'OUTPUT_REJECTED' as const,raw,report:null,...metadata,validationFailure:{code,actualCharacters:actual,maximumCharacters:4000},humanReviewRequired:true}
+  }
  })
 }
