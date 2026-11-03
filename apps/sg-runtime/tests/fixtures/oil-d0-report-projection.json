@@ -1,0 +1,92 @@
+{
+  "fixtureKind": "SYNTHETIC_ONLY_NOT_THE_LICENSED_D0",
+  "schemaVersion": "ReportEvidenceBundle/Oil/1",
+  "asOf": "2026-11-02T12:00:00Z",
+  "fingerprint": "SYNTHETIC_TEST_BUNDLE",
+  "forecast": {
+    "schemaVersion": "OilD0ReportProjection/1",
+    "inputSha256": "SYNTHETIC_NOT_AN_IMMUTABLE_D0_FINGERPRINT",
+    "contentFingerprint": "SYNTHETIC",
+    "status": "EXPERIMENTAL_7D/PARTIAL_READY",
+    "origin": "2026-10-30",
+    "target": "2026-11-06",
+    "comparisonCount": 320,
+    "series": [
+      {
+        "id": "cl_c1_cl",
+        "name": "WTI",
+        "actual": 10,
+        "observationDate": "2026-10-30",
+        "models": [
+          {
+            "id": "naive",
+            "point": 10,
+            "smape": 20,
+            "historicalAverageVerificationPercent": 80,
+            "directionalAccuracyPercent": 0,
+            "delta": 0,
+            "deltaPercent": 0,
+            "lastMatured": {
+              "origin": "2026-10-23",
+              "target": "2026-10-30",
+              "predicted": 10,
+              "actual": 10
+            },
+            "sampleSize": 40,
+            "intervals": "NOT_AVAILABLE"
+          }
+        ],
+        "previousWeekValue": 10,
+        "weekChange": 0,
+        "weekChangePercent": 0
+      },
+      {
+        "id": "b_c1_cl",
+        "name": "Brent",
+        "actual": 20,
+        "observationDate": "2026-10-30",
+        "models": [
+          {
+            "id": "naive",
+            "point": 20,
+            "smape": 30,
+            "historicalAverageVerificationPercent": 70,
+            "directionalAccuracyPercent": 0,
+            "delta": 0,
+            "deltaPercent": 0,
+            "lastMatured": {
+              "origin": "2026-10-23",
+              "target": "2026-10-30",
+              "predicted": 20,
+              "actual": 20
+            },
+            "sampleSize": 40,
+            "intervals": "NOT_AVAILABLE"
+          }
+        ],
+        "previousWeekValue": 20,
+        "weekChange": 0,
+        "weekChangePercent": 0
+      }
+    ],
+    "limitations": [
+      "INTERVALS_NOT_AVAILABLE",
+      "ROLLOVER_UNVERIFIED"
+    ]
+  },
+  "market": [],
+  "category": {
+    "name": "asfalt drogowy",
+    "region": "UNSPECIFIED",
+    "exposure": "UNSPECIFIED",
+    "userUrls": []
+  },
+  "evidenceIds": [
+    "D0",
+    "cl_c1_cl",
+    "b_c1_cl"
+  ],
+  "warnings": [
+    "SYNTHETIC_TEST_INPUT_ONLY"
+  ]
+}

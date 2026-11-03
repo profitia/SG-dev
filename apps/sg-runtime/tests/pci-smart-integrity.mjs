@@ -64,6 +64,79 @@ const XRAY_STYLE_FILES=["apps/sg-runtime/components/benchmark-finder/visual/magi
 
 const SENTRY_OBSERVABILITY_FILES=["apps/sg-runtime/app/global-error.tsx","apps/sg-runtime/instrumentation.ts","apps/sg-runtime/lib/observability/config.ts","apps/sg-runtime/lib/observability/sanitize.ts","apps/sg-runtime/lib/observability/server.ts","apps/sg-runtime/next.config.mjs","apps/sg-runtime/package-lock.json","apps/sg-runtime/package.json","apps/sg-runtime/sentry.client.config.ts","apps/sg-runtime/sentry.edge.config.ts","apps/sg-runtime/sentry.server.config.ts","apps/sg-runtime/tests/adp-appshell-consumer.test.tsx","apps/sg-runtime/tests/category-operation.test.ts","apps/sg-runtime/tests/diagnostic-telemetry-adoption.test.mjs","apps/sg-runtime/tests/identity-runtime.test.ts","apps/sg-runtime/tests/integrated-buyer-journey-package.test.mjs","apps/sg-runtime/tests/native-sql-roundtrips.test.mjs","apps/sg-runtime/tests/operation-context.test.mjs","apps/sg-runtime/tests/pci-smart-integrity.mjs","apps/sg-runtime/tests/pci-smart-integrity.test.mjs","apps/sg-runtime/tests/porr-demo-middleware.test.ts","apps/sg-runtime/tests/self-service-account.test.ts","apps/sg-runtime/tests/sentry-observability.test.ts","apps/sg-runtime/tests/xray-fresh-performance-adoption.test.mjs","apps/sg-runtime/tests/xray-gateway.test.ts"]
 const PRODUCT_ANALYTICS_FILES=["apps/sg-runtime/.env.example","apps/sg-runtime/app/[locale]/layout.tsx","apps/sg-runtime/components/analytics/product-analytics-provider.tsx","apps/sg-runtime/components/appshell/adp-module-host.tsx","apps/sg-runtime/components/appshell/appshell-dashboard.tsx","apps/sg-runtime/components/appshell/xray-module-host.tsx","apps/sg-runtime/components/auth/session-boundary.tsx","apps/sg-runtime/components/benchmark-finder/benchmark-finder-client.tsx","apps/sg-runtime/components/price-change-index/price-change-index-layer.tsx","apps/sg-runtime/docs/product-analytics.md","apps/sg-runtime/lib/product-analytics/adapter.ts","apps/sg-runtime/lib/product-analytics/config.ts","apps/sg-runtime/lib/product-analytics/contract.ts","apps/sg-runtime/package-lock.json","apps/sg-runtime/package.json","apps/sg-runtime/tests/adp-appshell-consumer.test.tsx","apps/sg-runtime/tests/appshell-product-boundary.test.ts","apps/sg-runtime/tests/category-operation.test.ts","apps/sg-runtime/tests/diagnostic-telemetry-adoption.test.mjs","apps/sg-runtime/tests/identity-runtime.test.ts","apps/sg-runtime/tests/integrated-buyer-journey-package.test.mjs","apps/sg-runtime/tests/native-sql-roundtrips.test.mjs","apps/sg-runtime/tests/operation-context.test.mjs","apps/sg-runtime/tests/pci-smart-integrity.mjs","apps/sg-runtime/tests/pci-smart-integrity.test.mjs","apps/sg-runtime/tests/porr-demo-middleware.test.ts","apps/sg-runtime/tests/product-analytics-ui.test.tsx","apps/sg-runtime/tests/product-analytics.test.ts","apps/sg-runtime/tests/self-service-account.test.ts","apps/sg-runtime/tests/xray-fresh-performance-adoption.test.mjs","apps/sg-runtime/tests/xray-gateway.test.ts"]
+// Closed preparation receiver. Prior acceptance is read from immutable main,
+// never renewed by replacing any existing receipt or widening a directory.
+const OIL_COMPOSER_FILES=[
+ "apps/sg-runtime/lib/forecast/oil-d0-report-projection.ts",
+ "apps/sg-runtime/lib/insights/oil-report-contract.ts",
+ "apps/sg-runtime/lib/insights/oil-report-cost.ts",
+ "apps/sg-runtime/lib/insights/oil-report-evidence.ts",
+ "apps/sg-runtime/lib/insights/oil-report-observability.ts",
+ "apps/sg-runtime/lib/insights/oil-report-operation.ts",
+ "apps/sg-runtime/lib/insights/oil-report-profile.ts",
+ "apps/sg-runtime/lib/insights/oil-report-renderer.ts",
+ "apps/sg-runtime/lib/insights/oil-report-source.ts",
+ "apps/sg-runtime/lib/insights/oil-report-validation.ts",
+ "apps/sg-runtime/scripts/oil-report-prepare.ts",
+ "apps/sg-runtime/tests/adp-appshell-consumer.test.tsx",
+ "apps/sg-runtime/tests/category-operation.test.ts",
+ "apps/sg-runtime/tests/diagnostic-telemetry-adoption.test.mjs",
+ "apps/sg-runtime/tests/fixtures/oil-d0-report-projection.json",
+ "apps/sg-runtime/tests/identity-runtime.test.ts",
+ "apps/sg-runtime/tests/integrated-buyer-journey-package.test.mjs",
+ "apps/sg-runtime/tests/native-sql-roundtrips.test.mjs",
+ "apps/sg-runtime/tests/oil-d0-report-projection.test.ts",
+ "apps/sg-runtime/tests/oil-report-cost.test.ts",
+ "apps/sg-runtime/tests/oil-report-evidence.test.ts",
+ "apps/sg-runtime/tests/oil-report-observability.test.ts",
+ "apps/sg-runtime/tests/oil-report-operation.test.ts",
+ "apps/sg-runtime/tests/oil-report-profile.test.ts",
+ "apps/sg-runtime/tests/oil-report-renderer.test.ts",
+ "apps/sg-runtime/tests/oil-report-source.test.ts",
+ "apps/sg-runtime/tests/oil-report-validation.test.ts",
+ "apps/sg-runtime/tests/operation-context.test.mjs",
+ "apps/sg-runtime/tests/pci-smart-integrity.mjs",
+ "apps/sg-runtime/tests/pci-smart-integrity.test.mjs",
+ "apps/sg-runtime/tests/porr-demo-middleware.test.ts",
+ "apps/sg-runtime/tests/self-service-account.test.ts",
+ "apps/sg-runtime/tests/xray-fresh-performance-adoption.test.mjs",
+ "apps/sg-runtime/tests/xray-gateway.test.ts"
+]
+const OIL_COMPOSER_TESTS=["oil-d0-report-projection.test.ts", "oil-report-cost.test.ts", "oil-report-evidence.test.ts", "oil-report-observability.test.ts", "oil-report-operation.test.ts", "oil-report-profile.test.ts", "oil-report-renderer.test.ts", "oil-report-source.test.ts", "oil-report-validation.test.ts"]
+const OIL_COMPOSER_FLAGS=["globalModelChanged", "forecastMathChanged", "finderRuntimeChanged", "authorizationChanged", "schemaInstalled", "liveGrantsChanged", "producerAdoptionClaimed", "ciWorkflowChanged", "deploymentPerformed", "paidProviderCalls", "reportPublished"]
+export function assertOilComposerPreparationContinuation(receipt,current,historical){
+ const a=receipt.oilComposerPreparationCompatibility,file='apps/sg-runtime/operation-integration.json'
+ assert(a,'Oil Composer preparation receipt required')
+ assert.deepEqual(Object.keys(a).sort(),['taskId','scope','previousReceiptSourceSha','previousReceiptSha256','changedSourcePaths','sourceDigests','applicationSourceDigests','addedBoundaryFiles','testEntryExtended','preparationOnly',...OIL_COMPOSER_FLAGS].sort())
+ assert.equal(a.taskId,'SG2-OIL-COMPOSER-CI-CONTINUITY-20261102')
+ assert.equal(a.scope,'CLOSED_SOURCE_PREPARATION_AND_CANONICAL_CI_ONLY')
+ assert.equal(a.previousReceiptSourceSha,'1d245820f93337a35049b416cb375c1ab5a60183')
+ assert.equal(a.previousReceiptSha256,'fd845d8211f7daea3203dc9e570ca5d7e8d90ff6adc99b212f6d1ee5e44b9c3d')
+ const bytes=historical(a.previousReceiptSourceSha,file),prior=JSON.parse(bytes)
+ assert.equal(digest(bytes),a.previousReceiptSha256)
+ const {oilComposerPreparationCompatibility,...preserved}=receipt
+ assert.deepEqual(preserved,prior,'every prior accepted receipt and original hash remains immutable')
+ assert.deepEqual(a.changedSourcePaths,OIL_COMPOSER_FILES)
+ assert.deepEqual(Object.keys(a.sourceDigests).sort(),OIL_COMPOSER_FILES)
+ assert.deepEqual(a.applicationSourceDigests,Object.fromEntries(Object.entries(a.sourceDigests).map(([path,hash])=>[path.slice(16),hash])))
+ assert.deepEqual(a.addedBoundaryFiles,['apps/sg-runtime/lib/forecast/oil-d0-report-projection.ts'])
+ for(const[path,hash]of Object.entries(a.sourceDigests)){
+  assert.match(hash,/^[a-f0-9]{64}$/)
+  assert.equal(digest(current(path)),hash,'exact Oil preparation source '+path)
+ }
+ assert.equal(a.testEntryExtended,true);assert.equal(a.preparationOnly,true)
+ for(const flag of OIL_COMPOSER_FLAGS)assert.equal(a[flag],false,flag)
+ for(const path of ['apps/sg-runtime/package.json','apps/sg-runtime/package-lock.json'])
+  assert.deepEqual(current(path),historical(a.previousReceiptSourceSha,path),'global host manifest remains unchanged '+path)
+ const entry=current('apps/sg-runtime/tests/pci-smart-integrity.test.mjs').toString()
+ for(const test of OIL_COMPOSER_TESTS){
+  const line="import './"+test+"'"
+  assert.equal(entry.split('\n').filter(v=>v===line).length,1,'normal CI imports '+test+' exactly once')
+ }
+ assert.match(entry,/^import ['"]\.\/xray-style-isolation\.test\.ts['"]\s*;?$/m)
+ return {prior,previousBytes:path=>path===file?bytes:Object.hasOwn(a.sourceDigests,path)?historical(a.previousReceiptSourceSha,path):current(path)}
+}
+
 export function assertProductAnalyticsContinuation(receipt,current,historical){
  const a=receipt.productAnalyticsCompatibility
  assert.equal(a.taskId,'SG2-POSTHOG-20261102')
@@ -196,6 +269,7 @@ export function assertXrayStyleIsolationContinuation(receipt,current,historical)
  return {prior,previousBytes:file=>Object.hasOwn(a.sourceDigests,file)?historical(a.previousReceiptSourceSha,file):current(file)}
 }
 export function assertPciInputCorrective(receipt,current,historical){
+ if(receipt.oilComposerPreparationCompatibility){const n=assertOilComposerPreparationContinuation(receipt,current,historical);return assertPciInputCorrective(n.prior,n.previousBytes,historical)}
  if(receipt.appShellFourCardCascade){const n=assertAppShellFourCardCascade(receipt,current,historical);return assertPciInputCorrective(n.prior,n.previousBytes,historical)}
  if(receipt.xrayAppShellPresentation){const n=assertXrayAppShellPresentation(receipt,current,historical);return assertPciInputCorrective(n.prior,n.previousBytes,historical)}
  if(receipt.productAnalyticsMainCompatibility){const n=assertProductAnalyticsMainContinuation(receipt,current,historical);return assertPciInputCorrective(n.prior,n.previousBytes,historical)}
@@ -222,6 +296,7 @@ export function assertPciInputCorrective(receipt,current,historical){
  return {prior,previousBytes:file=>Object.hasOwn(a.sourceDigests,file)?historical(a.previousReceiptSourceSha,file):current(file)}
 }
 export function assertPciSmartIntegrity(receipt,current,historical){
+ if(receipt.oilComposerPreparationCompatibility){const n=assertOilComposerPreparationContinuation(receipt,current,historical);return assertPciSmartIntegrity(n.prior,n.previousBytes,historical)}
  if(receipt.appShellFourCardCascade){const n=assertAppShellFourCardCascade(receipt,current,historical);return assertPciSmartIntegrity(n.prior,n.previousBytes,historical)}
  if(receipt.xrayAppShellPresentation){const n=assertXrayAppShellPresentation(receipt,current,historical);return assertPciSmartIntegrity(n.prior,n.previousBytes,historical)}
  if(receipt.pciSmartInputCorrective){const n=assertPciInputCorrective(receipt,current,historical);return assertPciSmartIntegrity(n.prior,n.previousBytes,historical)}

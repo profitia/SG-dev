@@ -5,7 +5,7 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import {execFileSync} from 'node:child_process'
-import {assertPciSmartIntegrity,digest as digestForTest} from './pci-smart-integrity.mjs'
+import {assertPciSmartIntegrity,assertOilComposerPreparationContinuation,digest as digestForTest} from './pci-smart-integrity.mjs'
 const receipt=()=>JSON.parse(fs.readFileSync(new URL('../operation-integration.json',import.meta.url)))
 const current=file=>fs.readFileSync(new URL('../../../'+file,import.meta.url)),historical=(sha,file)=>execFileSync('git',['show',sha+':'+file])
 function candidateSourcePaths(root){
@@ -31,7 +31,7 @@ test('every changed SG2 source in the candidate or resulting main has an exact a
  // Prisma lifecycle output is independently generated, never an authored source change.
  // A published receipt retains its original source set after merge. Current
  // bytes are strictly verified above; an accepted main has no new amendments.
- assertSourceCoverage(candidateSourcePaths(new URL('../../../',import.meta.url)),{...a.sourceDigests,...r.xrayAppShellPresentation?.sourceDigests,...r.appShellFourCardCascade?.sourceDigests,...r.xrayStyleIsolationContinuation?.sourceDigests,...r.sentryObservabilityCompatibility?.sourceDigests,...r.marketHistoryIngestionCompatibility?.sourceDigests,...r.pciSmartInputCorrective?.sourceDigests,...r.pciSmartResultingMainScopeCompatibility?.sourceDigests,...Object.fromEntries(Object.entries(r.fullUiParityAdoption?.applicationSourceDigests??{}).map(([f,d])=>['apps/sg-runtime/'+f,d])),...r.productAnalyticsMainCompatibility?.sourceDigests,...r.appShellFourCardCascade?.sourceDigests})
+ assertSourceCoverage(candidateSourcePaths(new URL('../../../',import.meta.url)),{...a.sourceDigests,...r.xrayAppShellPresentation?.sourceDigests,...r.appShellFourCardCascade?.sourceDigests,...r.oilComposerPreparationCompatibility?.sourceDigests,...r.xrayStyleIsolationContinuation?.sourceDigests,...r.sentryObservabilityCompatibility?.sourceDigests,...r.marketHistoryIngestionCompatibility?.sourceDigests,...r.pciSmartInputCorrective?.sourceDigests,...r.pciSmartResultingMainScopeCompatibility?.sourceDigests,...Object.fromEntries(Object.entries(r.fullUiParityAdoption?.applicationSourceDigests??{}).map(([f,d])=>['apps/sg-runtime/'+f,d])),...r.productAnalyticsMainCompatibility?.sourceDigests,...r.appShellFourCardCascade?.sourceDigests,...r.oilComposerPreparationCompatibility?.sourceDigests})
 })
 test('scope coverage retains accepted parallel files but rejects any unbound candidate amendment',()=>{
  const root=fs.mkdtempSync(path.join(os.tmpdir(),'sg2-pci-source-scope-'))
@@ -199,4 +199,47 @@ test('four-card desk continuation rejects changed current bytes, omitted scope a
  const r=receipt(),a=r.appShellFourCardCascade;assert(a);assertPciSmartIntegrity(r,current,historical)
  for(const file of a.changedSourcePaths)assert.throws(()=>assertPciSmartIntegrity(r,p=>p===file?Buffer.concat([current(p),Buffer.from('tamper')]):current(p),historical),file)
  for(const mutate of [r=>r.appShellFourCardCascade.changedSourcePaths.pop(),r=>delete r.appShellFourCardCascade.sourceDigests[a.changedSourcePaths[0]],r=>r.appShellFourCardCascade.sourceDigests['apps/sg-runtime/unapproved.ts']='0'.repeat(64),r=>r.appShellFourCardCascade.previousReceiptSha256='0'.repeat(64),r=>r.appShellFourCardCascade.design.revision='unapproved',r=>r.appShellFourCardCascade.authorizationChanged=true,r=>r.xrayAppShellPresentation.standaloneDefaultsUnchanged=false,r=>r.unapprovedReceipt={}]){const x=structuredClone(r);mutate(x);assert.throws(()=>assertPciSmartIntegrity(x,current,historical))}
+})
+
+import './oil-d0-report-projection.test.ts'
+import './oil-report-cost.test.ts'
+import './oil-report-evidence.test.ts'
+import './oil-report-observability.test.ts'
+import './oil-report-operation.test.ts'
+import './oil-report-profile.test.ts'
+import './oil-report-renderer.test.ts'
+import './oil-report-source.test.ts'
+import './oil-report-validation.test.ts'
+test('Oil preparation closes exact sources, preserves prior receipts and rejects missing or foreign scope',()=>{
+ const r=receipt(),a=r.oilComposerPreparationCompatibility;assert(a)
+ assertPciSmartIntegrity(r,current,historical)
+ for(const file of a.changedSourcePaths)
+  assert.throws(()=>assertPciSmartIntegrity(r,f=>f===file?Buffer.concat([current(f),Buffer.from('tamper')]):current(f),historical),file)
+ for(const mutate of [
+  r=>delete r.oilComposerPreparationCompatibility.sourceDigests[r.oilComposerPreparationCompatibility.changedSourcePaths[0]],
+  r=>r.oilComposerPreparationCompatibility.sourceDigests[r.oilComposerPreparationCompatibility.changedSourcePaths[0]]='0'.repeat(64),
+  r=>r.oilComposerPreparationCompatibility.sourceDigests['apps/sg-runtime/unapproved.ts']='0'.repeat(64),
+  r=>r.oilComposerPreparationCompatibility.changedSourcePaths.pop(),
+  r=>r.oilComposerPreparationCompatibility.changedSourcePaths.push('apps/sg-runtime/lib/forecast/unapproved.ts'),
+  r=>r.oilComposerPreparationCompatibility.addedBoundaryFiles.push('apps/sg-runtime/lib/forecast/unapproved.ts'),
+  r=>r.oilComposerPreparationCompatibility.previousReceiptSourceSha='0'.repeat(40),
+  r=>r.oilComposerPreparationCompatibility.previousReceiptSha256='0'.repeat(64),
+  r=>r.oilComposerPreparationCompatibility.preparationOnly=false,
+  r=>r.oilComposerPreparationCompatibility.producerAdoptionClaimed=true,
+  r=>r.oilComposerPreparationCompatibility.authorizationChanged=true,
+  r=>r.oilComposerPreparationCompatibility.unapprovedField=true,
+  r=>r.productAnalyticsMainCompatibility.sharedBaselineSourceSha='0'.repeat(40),
+  r=>r.marketHistoryIngestionCompatibility.authorizationChanged=false,
+  r=>r.unapprovedReceipt={}
+ ]){const x=structuredClone(r);mutate(x);assert.throws(()=>assertPciSmartIntegrity(x,current,historical))}
+ assert.throws(()=>assertPciSmartIntegrity(r,current,(sha,file)=>Buffer.concat([historical(sha,file),Buffer.from(' ')])))
+})
+test('all Oil regression imports remain mandatory even with matching replacement digests',()=>{
+ const file='apps/sg-runtime/tests/pci-smart-integrity.test.mjs'
+ for(const name of ["oil-d0-report-projection.test.ts", "oil-report-cost.test.ts", "oil-report-evidence.test.ts", "oil-report-observability.test.ts", "oil-report-operation.test.ts", "oil-report-profile.test.ts", "oil-report-renderer.test.ts", "oil-report-source.test.ts", "oil-report-validation.test.ts"]){
+  const x=receipt(),bytes=Buffer.from(current(file).toString().replace("import './"+name+"'",'// removed Oil regression'))
+  x.oilComposerPreparationCompatibility.sourceDigests[file]=digestForTest(bytes)
+  x.oilComposerPreparationCompatibility.applicationSourceDigests[file.slice(16)]=digestForTest(bytes)
+  assert.throws(()=>assertOilComposerPreparationContinuation(x,f=>f===file?bytes:current(f),historical),name)
+ }
 })
