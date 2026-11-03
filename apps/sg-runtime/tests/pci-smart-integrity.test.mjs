@@ -227,3 +227,8 @@ test('SDK1.33 compatibility accepts current bytes and rejects metadata, scope an
  for(const file of Object.keys(a.consumerSourceDigests))assert.throws(()=>assertPciSmartIntegrity(r,f=>f===file?Buffer.concat([current(f),Buffer.from('tamper')]):current(f),historical),file)
  for(const mutate of [r=>r.sourceHubApiPathCompatibility.apiPathOptedIn=true,r=>r.sourceHubApiPathCompatibility.previousReceiptSha256='0'.repeat(64),r=>r.sourceHubApiPathCompatibility.consumerSourceDigests['apps/sg-runtime/unapproved.ts']='0'.repeat(64)]){const x=structuredClone(r);mutate(x);assert.throws(()=>assertPciSmartIntegrity(x,current,historical))}
 })
+
+test('paired SDK adoption rejects tampering with the current SRM continuation before exposing history',()=>{
+ const r=receipt(),file='apps/srm/scripts/native-execution-adoption.test.mjs'
+ assert.throws(()=>assertPciSmartIntegrity(r,f=>f===file?Buffer.concat([current(f),Buffer.from('tamper')]):current(f),historical))
+})

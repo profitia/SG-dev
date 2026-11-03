@@ -1,3 +1,4 @@
+import {assertSourceHubApiPathCompatibility as assertPeerApiPathCompatibility} from '../../srm/scripts/source-hub-sdk-compatibility.mjs'
 /** Additive continuation: exact current bytes AND immutable prior evidence, never digest replacement. */
 import assert from 'node:assert/strict'
 import {createHash} from 'node:crypto'
@@ -333,7 +334,7 @@ export function assertPciSmartIntegrity(receipt,current,historical){
 }
 
 // Test-only additive compatibility; never imported by a product runtime.
-export function assertSourceHubApiPathCompatibility(receipt,current,historical){
+export function assertSourceHubApiPathCompatibility(receipt,current,historical,{validatePeer=true}={}){
  const a=receipt.sourceHubApiPathCompatibility,file='apps/sg-runtime/operation-integration.json'
  assert.equal(a.taskId,'SG2-SOURCE-HUB-API-PATH-COMPATIBILITY-20261103')
  assert.equal(a.platformVersion,'1.33.0');assert.equal(a.apiPathContractVersion,'1.0.0')
@@ -350,5 +351,9 @@ export function assertSourceHubApiPathCompatibility(receipt,current,historical){
  assert.deepEqual(a.applicationSourceDigests,Object.fromEntries(Object.entries(a.consumerSourceDigests).map(([p,h])=>[posix.relative('apps/sg-runtime',p),h])))
  for(const flag of ['apiPathOptedIn','sql028Installed','businessLogicChanged','uiChanged','authorizationChanged','sourceBindingsChanged','providerCallsPerformed','deploymentPerformed'])assert.equal(a[flag],false,flag)
  const mapped=new Set([...Object.keys(a.consumerSourceDigests),...Object.keys(a.sourceDigests).map(p=>'packages/platform-contracts/'+p),...Object.keys(a.producerMetadataDigests)])
- return {prior,previousBytes:p=>p===file||mapped.has(p)?historical(a.previousReceiptSourceSha,p):current(p)}
+ // Validate both current closures before either shared SDK is viewed through its predecessor.
+ const peerFile='apps/srm/operation-integration.json'
+ const peerReceipt=validatePeer?JSON.parse(current(peerFile)):null
+ const peerView=peerReceipt?.sourceHubApiPathCompatibility?assertPeerApiPathCompatibility(peerReceipt,current,historical,{validatePeer:false}):null
+ return {prior,previousBytes:p=>p===file||mapped.has(p)?historical(a.previousReceiptSourceSha,p):peerView?.previousBytes(p)??current(p)}
 }
