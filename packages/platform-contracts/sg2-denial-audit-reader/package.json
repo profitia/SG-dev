@@ -1,0 +1,13 @@
+{
+  "name": "@profitia/sg2-denial-audit-reader",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Five-case Development-only technical denial projection; source candidate, not installed",
+  "exports": {
+    ".": "./src/reader.mjs"
+  },
+  "scripts": {
+    "build": "node --check src/reader.mjs"
+  }
+}
