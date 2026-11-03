@@ -27,6 +27,13 @@ const fields = {
 } as const
 export type AnalyticsEvent = keyof typeof fields
 export type AnalyticsProperties = Record<string, unknown> & { module: AnalyticsModule }
+/** Stage one excludes the Finder's complete event surface, including generic
+ * events accidentally labelled as another module. Definitions remain intact. */
+export function isProductAnalyticsEventEnabled(event: string, properties: Record<string, unknown>): boolean {
+  return properties.module !== 'benchmark_finder' && properties.view !== 'benchmark_finder'
+    && properties.entry_point !== 'benchmark_finder' && !event.startsWith('benchmark_')
+    && properties.operation !== 'benchmark_search' && properties.operation !== 'benchmark_selection'
+}
 const expectedModule = (event: string): AnalyticsModule | null => event.startsWith('pci_') ? 'price_change_index' : event.startsWith('benchmark_') ? 'benchmark_finder' : event.startsWith('adp_') ? 'adp' : event.startsWith('xray_') ? 'xray' : null
 
 export function validateBusinessEvent(event: string, properties: Record<string, unknown>, strict = true): Record<string, unknown> | null {
@@ -62,7 +69,8 @@ export function validateBusinessEvent(event: string, properties: Record<string, 
 export function filterSdkEvent<T extends { event: string; properties: Record<string, unknown> }>(data: T, permitted: boolean, projectToken: string): T | null {
   if (!permitted) return null
   const properties = validateBusinessEvent(data.event, data.properties, false)
-  if (!properties || !isRandomId(data.properties.distinct_id) || data.properties.token !== projectToken) return null
+  if (!properties || !isProductAnalyticsEventEnabled(data.event, properties)
+    || !isRandomId(data.properties.distinct_id) || data.properties.token !== projectToken) return null
   // SDK ingestion credential, not an account/session token; required by /i/v0/e.
   properties.token = projectToken
   for (const key of ['distinct_id','$device_id','$session_id','$window_id']) {

@@ -9,6 +9,18 @@ import {execFileSync} from 'node:child_process'
 import {assertPciSmartIntegrity,digest as digestForTest} from './pci-smart-integrity.mjs'
 const receipt=()=>JSON.parse(fs.readFileSync(new URL('../operation-integration.json',import.meta.url)))
 const current=file=>fs.readFileSync(new URL('../../../'+file,import.meta.url)),historical=(sha,file)=>execFileSync('git',['show',sha+':'+file])
+
+test('stage-one analytics receipt preserves all history and rejects Finder-exclusion or scope tampering',()=>{
+ const r=receipt(),a=r.productAnalyticsStageOneCompatibility;assert(a)
+ assertPciSmartIntegrity(r,current,historical)
+ for(const file of a.changedSourcePaths)assert.throws(()=>assertPciSmartIntegrity(r,f=>f===file?Buffer.concat([current(f),Buffer.from('tamper')]):current(f),historical),file)
+ for(const mutate of [r=>r.productAnalyticsStageOneCompatibility.finderExcluded=false,r=>r.productAnalyticsStageOneCompatibility.testConsentRequired=false,
+  r=>r.productAnalyticsStageOneCompatibility.sourceBindingsChanged=true,r=>r.productAnalyticsStageOneCompatibility.changedSourcePaths.pop(),
+  r=>r.productAnalyticsStageOneCompatibility.sourceDigests['apps/sg-runtime/unapproved.ts']='0'.repeat(64),
+  r=>r.productAnalyticsStageOneCompatibility.previousReceiptSha256='0'.repeat(64),r=>r.d1AuditReaderPreparation.producerSourceSha='0'.repeat(40)]){
+  const x=structuredClone(r);mutate(x);assert.throws(()=>assertPciSmartIntegrity(x,current,historical))
+ }
+})
 function candidateSourcePaths(root){
  // The receipt's historical baseline remains immutable. Scope coverage uses the
  // actual PR merge-base, so already accepted parallel work is not attributed to PCI.
@@ -32,7 +44,7 @@ test('every changed SG2 source in the candidate or resulting main has an exact a
  // Prisma lifecycle output is independently generated, never an authored source change.
  // A published receipt retains its original source set after merge. Current
  // bytes are strictly verified above; an accepted main has no new amendments.
- assertSourceCoverage(candidateSourcePaths(new URL('../../../',import.meta.url)),{...a.sourceDigests,...r.xrayAppShellPresentation?.sourceDigests,...r.appShellFourCardCascade?.sourceDigests,...r.d1AuditReaderPreparation?.sourceDigests,...r.xrayStyleIsolationContinuation?.sourceDigests,...r.sentryObservabilityCompatibility?.sourceDigests,...r.marketHistoryIngestionCompatibility?.sourceDigests,...r.pciSmartInputCorrective?.sourceDigests,...r.pciSmartResultingMainScopeCompatibility?.sourceDigests,...Object.fromEntries(Object.entries(r.fullUiParityAdoption?.applicationSourceDigests??{}).map(([f,d])=>['apps/sg-runtime/'+f,d])),...r.productAnalyticsMainCompatibility?.sourceDigests,...r.appShellFourCardCascade?.sourceDigests,...r.d1AuditReaderPreparation?.sourceDigests})
+ assertSourceCoverage(candidateSourcePaths(new URL('../../../',import.meta.url)),{...a.sourceDigests,...r.xrayAppShellPresentation?.sourceDigests,...r.appShellFourCardCascade?.sourceDigests,...r.d1AuditReaderPreparation?.sourceDigests,...r.productAnalyticsStageOneCompatibility?.sourceDigests,...r.xrayStyleIsolationContinuation?.sourceDigests,...r.sentryObservabilityCompatibility?.sourceDigests,...r.marketHistoryIngestionCompatibility?.sourceDigests,...r.pciSmartInputCorrective?.sourceDigests,...r.pciSmartResultingMainScopeCompatibility?.sourceDigests,...Object.fromEntries(Object.entries(r.fullUiParityAdoption?.applicationSourceDigests??{}).map(([f,d])=>['apps/sg-runtime/'+f,d])),...r.productAnalyticsMainCompatibility?.sourceDigests,...r.appShellFourCardCascade?.sourceDigests,...r.d1AuditReaderPreparation?.sourceDigests,...r.productAnalyticsStageOneCompatibility?.sourceDigests})
 })
 test('scope coverage retains accepted parallel files but rejects any unbound candidate amendment',()=>{
  const root=fs.mkdtempSync(path.join(os.tmpdir(),'sg2-pci-source-scope-'))

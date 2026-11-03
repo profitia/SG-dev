@@ -14,6 +14,7 @@ async function loadHost(entry:string){
     alias:{'@':app},loader:{'.css':'empty'},external:['react','react/jsx-runtime'],plugins:[{name:'bounded-ui-fixtures',setup(b){
       b.onResolve({filter:/product-analytics\/adapter$/},()=>({path:'analytics',namespace:'fixture'}))
       b.onResolve({filter:/^posthog-js\/dist\/module.no-external$/},()=>({path:'sdk',namespace:'fixture'}))
+      b.onResolve({filter:/^next\/navigation$/},()=>({path:'navigation',namespace:'fixture'}))
       b.onResolve({filter:/session-boundary$/},()=>({path:'auth',namespace:'fixture'}))
       b.onResolve({filter:/^@profitia\/srm-adp-ui$/},()=>({path:'adp',namespace:'fixture'}))
       b.onResolve({filter:/^@profitia\/sg2-price-change-index-ui\/business$/},()=>({path:'pci',namespace:'fixture'}))
@@ -24,6 +25,7 @@ async function loadHost(entry:string){
       b.onLoad({filter:/.*/,namespace:'fixture'},args=>({loader:'jsx',contents:{
         analytics:'export const productAnalytics=globalThis.__productAnalytics;',
         sdk:'globalThis.__sdkImports++;export default {init:(...args)=>globalThis.__sdkInitializations.push(args),capture:(...args)=>globalThis.__sdkCaptures.push(args),reset(){}};',
+        navigation:'export const usePathname=()=>globalThis.window.location.pathname;',
         auth:'export const useSg2SessionCredential=()=>async()=>"fixture.valid.token";export const useSg2IdentityMode=()=>"clerk";',
         adp:'import React from "react";export const FIELD_DEFINITIONS=[];export const ADP_UI_CONTRACT_VERSION="1.0.0";export const AdpWorkspace=p=>{globalThis.__adpProps=p;return <div>ADP</div>};',
         pci:'import React from "react";export const PriceChangeIndex=p=>{globalThis.__pciController=p.controller;return <div>PCI</div>};',
@@ -59,12 +61,36 @@ test('actual provider never imports before consent; StrictMode initializes once 
     assert.equal(g.__sdkImports,1);assert.equal(g.__sdkInitializations.length,1)
     assert.equal(g.__productAnalytics.capture('app_opened',{module:'appshell',entry_point:'appshell'}),true)
     assert.equal(g.__sdkCaptures.length,1)
+    window.history.pushState({},'','/pl/dashboard/benchmark-finder')
+    assert.equal(g.__productAnalytics.capture('adp_view_opened',{module:'adp',view:'data'}),false,'all capture is off inside Finder even after SDK initialized elsewhere')
+    const beforeSend=g.__sdkInitializations[0][1].before_send
+    assert.equal(beforeSend({event:'app_opened',properties:{module:'appshell'}}),null,'final transport rechecks the current route')
+    window.history.pushState({},'','/pl/dashboard/adp')
+    assert.equal(g.__productAnalytics.capture('adp_view_opened',{module:'adp',view:'data'}),true,'other modules resume without another SDK initialization')
+    assert.equal(g.__sdkInitializations.length,1)
+    assert.equal(g.__sdkCaptures.length,2)
     window.sessionStorage.removeItem('sg2.product-analytics.explicit-test.v1')
     assert.equal(g.__productAnalytics.capture('app_opened',{module:'appshell'}),false)
     window.sessionStorage.setItem('sg2.product-analytics.explicit-test.v1','granted');await render(null)
     assert.equal(g.__productAnalytics.capture('app_opened',{module:'appshell'}),false)
-    assert.equal(g.__sdkCaptures.length,1)
+    assert.equal(g.__sdkCaptures.length,2)
     assert(window.document.body.textContent?.includes('Application remains available'))
+  }finally{await f.close()}
+})
+
+test('direct Finder entry with explicit consent does not import or initialize the SDK',async()=>{
+  const f=setup();try{
+    g.__sdkImports=0;g.__sdkInitializations=[];g.__sdkCaptures=[]
+    window.history.replaceState({},'','/en/dashboard/benchmark-finder')
+    window.sessionStorage.setItem('sg2.product-analytics.explicit-test.v1','granted')
+    const {ProductAnalyticsProvider}=await loadHost('components/analytics/product-analytics-provider.tsx')
+    const configuration={token:'phc_'+'A'.repeat(43),host:'https://eu.i.posthog.com'}
+    const render=()=>act(()=>f.root.render(<ProductAnalyticsProvider configuration={configuration}><div>Finder remains available</div></ProductAnalyticsProvider>))
+    await render();await tick()
+    assert.equal(g.__sdkImports,0);assert.equal(g.__sdkInitializations.length,0)
+    assert(window.document.body.textContent?.includes('Finder remains available'))
+    window.history.pushState({},'','/en/dashboard');await render();await tick()
+    assert.equal(g.__sdkImports,1);assert.equal(g.__sdkInitializations.length,1,'leaving an initial Finder route initializes the allowed surface')
   }finally{await f.close()}
 })
 
@@ -90,7 +116,7 @@ test('actual ADP host counts active views/sections once in StrictMode and forwar
   }finally{await f.close()}
 })
 
-test('actual PCI host ignores stale/cancelled PREPARE, separates refusal/error and confirms save response',async()=>{
+test('PCI callbacks retain semantics while their Finder-entry open signals are excluded in stage one',async()=>{
   const f=setup();try{
     let close=0,saveResolve:(v:Response)=>void=()=>{},prepareResolve:(v:Response)=>void=()=>{},responseMode='REFUSED'
     const preparation={recommendedCandidateId:null,candidates:[],limitations:[]}
@@ -103,7 +129,8 @@ test('actual PCI host ignores stale/cancelled PREPARE, separates refusal/error a
     const {PriceChangeIndexLayer}=await loadHost('components/price-change-index/price-change-index-layer.tsx')
     const seed={organizationId:'fixture-organization',businessBenchmarkId:'private-benchmark',displayName:'Private benchmark',providerSeries:{providerSeriesId:'private-series'},semanticProfile:{}}
     await act(()=>f.root.render(<StrictMode><PriceChangeIndexLayer seed={seed} locale="pl" onClose={()=>close++} onAccessLost={()=>{}}/></StrictMode>))
-    assert.equal(f.events.filter(e=>e.event==='pci_opened').length,1)
+    assert.equal(f.events.filter(e=>e.event==='pci_opened').length,0,'the existing PCI entry is explicitly attributed to the excluded Finder')
+    assert.equal(f.events.filter(e=>e.event==='module_opened').length,0)
     await act(()=>g.__pciController.onPickBenchmark(null))
     await act(()=>g.__pickerProps.onSelect({...seed,businessBenchmarkId:'private-second'}))
     await act(()=>{const c=g.__pciController;c.onNameChange('Private category');for(const component of c.components)c.onComponentChange(component.id,{name:'Private component',weightPercent:50});c.onPurchaseChange({amount:'123',currency:'PLN',unit:'t',taxBasis:'NET',deliveryBasis:'EXW',purchaseDate:'2026-10-01'});c.onStep(3)})
