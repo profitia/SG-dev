@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import { execFileSync } from 'node:child_process'
+import { createHash } from 'node:crypto'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
@@ -7,70 +8,95 @@ import test from 'node:test'
 import { fileURLToPath } from 'node:url'
 import { resolveProjectProfile } from './project-profile.mjs'
 import { resolveProjectRouting } from './routing-engine.mjs'
+import { validateGovernanceManifest } from './validate-governance-manifest.mjs'
+import { resolveEnvironmentProfile } from './environment-profile.mjs'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
-const prefix = 'Canon/proposals/'
+const approved = 'b40564130fe7b6ced4d7df233dd6749653846114'
 const read = p => fs.readFileSync(path.join(root, p), 'utf8')
-const json = p => JSON.parse(read(prefix + p))
-const g1 = json('platform-source-hub-g1-onboarding-v1.json')
-const env = json('platform-source-hub-environment-plan-v1.json')
-const families = json('platform-source-hub-contract-families-v1.json')
+const json = p => JSON.parse(read(p))
 const git = args => execFileSync('git', args, { cwd: root, encoding: 'utf8' }).trim()
+const priorText = p => execFileSync('git', ['show', approved + ':' + p], { cwd: root, encoding: 'utf8' })
+const prior = p => JSON.parse(priorText(p))
 const registryPath = 'Canon/registries/current-architecture-baseline-v1.json'
 const manifestPath = 'Canon/registries/governance-manifest-v2.json'
+const g1 = prior('Canon/proposals/platform-source-hub-g1-onboarding-v1.json')
+const env = json('Canon/registries/newsfeed-source-hub-environment-baseline-v1.json')
+const families = json('Canon/registries/platform-source-hub-contract-families-v1.json')
 const targets = ['apps/platform-source-hub/src/server.ts', 'packages/platform-source-hub-contracts/index.mjs', '.github/workflows/platform-source-hub-ci.yml']
 const resolve = (project, paths, repositoryRoot = root) => resolveProjectRouting({ profile: resolveProjectProfile(project, root), targets: paths, repositoryRoot })
+const decision = 'ARCH-SOURCE-HUB-G1-FINAL-ACTIVATION-20261103'
 
-// These assertions protect the Stage 1B proposal boundary. An authorized later
-// activation must deliberately replace them with tests of actual G1 provenance.
-test('Source Hub Stage 1B cannot activate routing or supersede accepted canons', () => {
-  assert.equal(g1.status, 'PROPOSED_NOT_ACTIVE')
-  assert.equal(g1.directionApproval, 'OWNER_APPROVED_2026-11-03')
-  assert.equal(g1.exactG1Approval, 'PENDING')
-  assert.equal(g1.documentAcceptance, 'PENDING')
-  for (const key of ['activeRegistryChanged', 'implementationAuthorized', 'resourceCreationByAgentAuthorized', 'deploymentAuthorized']) assert.equal(g1[key], false)
-  for (const p of [registryPath, manifestPath, 'Canon/registries/architecture-onboarding-v1.json', 'Canon/v1.0-newsfeed-business-and-architecture-canon.md', 'Canon/v1.1-repository-routing-and-module-ownership-canon.md']) {
-    assert.equal(git(['hash-object', p]), git(['rev-parse', g1.referenceMain + ':' + p]), p)
+// Source assertions do not replace actual-main acceptance and readback.
+test('Source Hub exact G1 appends approved rows and preserves all prior governance authority', () => {
+  const before = prior(registryPath), current = json(registryPath)
+  for (const row of before.surfaces) assert.deepEqual(current.surfaces.find(s => s.id === row.id), row)
+  const { surfaces: oldRows, ...oldMeta } = before
+  const { surfaces: newRows, ...newMeta } = current
+  assert.deepEqual(newMeta, oldMeta)
+  const rows = current.surfaces.filter(s => s.id.startsWith('SOURCE-HUB-BASE-'))
+  assert.equal(rows.length, 3)
+  for (let i = 0; i < rows.length; i++) {
+    const { classificationReferenceSha, onboardingAuthorization, ...actual } = rows[i]
+    assert.deepEqual(actual, g1.proposedSurfaces[i])
+    assert.equal(classificationReferenceSha, '785c9b5175e65840b4c5a9efb983e0db0972d3e1')
+    assert.match(onboardingAuthorization, /G1 GRANTED: explicit owner/)
+    assert.ok(onboardingAuthorization.includes(decision))
   }
-  for (const project of ['ARCHITECTURE', 'SG2', 'SRM']) assert.equal(resolve(project, targets).ok, false)
-  for (const p of ['apps/platform-source-hub', 'packages/platform-source-hub-contracts', '.github/workflows/platform-source-hub-ci.yml']) assert.equal(fs.existsSync(path.join(root, p)), false)
+  const onboarding = json('Canon/registries/architecture-onboarding-v1.json')
+  for (const row of prior('Canon/registries/architecture-onboarding-v1.json').plannedModules) assert.deepEqual(onboarding.plannedModules.find(s => s.capability === row.capability), row)
+  const admitted = onboarding.plannedModules.find(s => s.capability === 'Platform Source Hub')
+  assert.equal(admitted.approval.decision, 'G1 GRANTED')
+  assert.equal(admitted.approval.decisionId, decision)
+  assert.equal(admitted.approval.approvedCandidate, approved)
+  assert.equal(admitted.approval.sourceSha256, '376a283842d9935b3565c9211d1eaab0876b0662a42e7d6b3ef21d202f6fa9d2')
+  for (const key of ['implementationAuthorized', 'resourceCreationAuthorized', 'deploymentAuthorized']) assert.equal(admitted.approval[key], false)
+  const manifest = validateGovernanceManifest(root)
+  assert.equal(manifest.valid, true, manifest.errors.join('\n'))
+  for (const row of prior(manifestPath).documents) assert.deepEqual(json(manifestPath).documents.find(s => s.id === row.id), row)
+  for (const id of ['platform-source-hub-contract-families', 'newsfeed-source-hub-environment-baseline', 'platform-source-hub-business-and-architecture-canon', 'newsfeed-source-hub-responsibility-amendment']) {
+    const doc = manifest.activeDocuments.find(s => s.id === id)
+    assert.ok(doc)
+    for (const dependency of doc.dependsOn) assert.ok(manifest.activeDocuments.find(s => s.id === dependency).loadOrder < doc.loadOrder)
+  }
+  const p = 'Canon/v1.0-newsfeed-business-and-architecture-canon.md'
+  assert.equal(git(['hash-object', p]), git(['rev-parse', approved + ':' + p]))
 })
 
-test('proposed Source Hub routes simulate one owner and reject conflicts, siblings and consumer writes', t => {
-  const scratch = fs.mkdtempSync(path.join(os.tmpdir(), 'source-hub-proposal-fixture-'))
-  t.after(() => fs.rmSync(scratch, { recursive: true, force: true }))
-  const registry = JSON.parse(read(registryPath))
-  const existing = structuredClone(registry.surfaces)
-  const rows = g1.proposedSurfaces.map(s => ({ ...s, classificationReferenceSha: g1.referenceMain, onboardingAuthorization: 'TEST FIXTURE ONLY - no actual G1 authority' }))
-  assert.deepEqual(rows.map(s => s.pathPatterns), [['apps/platform-source-hub/**'], ['packages/platform-source-hub-contracts/**'], ['.github/workflows/platform-source-hub-ci.yml']])
-  for (const row of rows) {
-    assert.equal(row.currentOwner, 'Architecture Platform')
-    assert.deepEqual(row.allowedProjectKeys, ['ARCHITECTURE'])
-  }
-  registry.surfaces.push(...rows)
-  const destination = path.join(scratch, registryPath)
-  fs.mkdirSync(path.dirname(destination), { recursive: true })
-  const save = () => fs.writeFileSync(destination, JSON.stringify(registry))
-  save()
-  assert.deepEqual(registry.surfaces.slice(0, existing.length), existing)
-  const admitted = resolve('ARCHITECTURE', targets, scratch)
-  assert.equal(admitted.ok, true, admitted.error)
-  assert.deepEqual(admitted.results.map(s => s.matchedSurfaceId), rows.map(s => s.id))
-  assert.ok(admitted.results.every(s => s.highestSpecificityMatchCount === 1))
+test('actual Hub routing uniquely permits Architecture and denies consumers, siblings, traversal and conflicts', t => {
+  const actual = resolve('ARCHITECTURE', targets)
+  assert.equal(actual.ok, true, actual.error)
+  assert.deepEqual(actual.results.map(s => s.matchedSurfaceId), g1.proposedSurfaces.map(s => s.id))
+  assert.ok(actual.results.every(s => s.currentOwner === 'Architecture Platform' && s.highestSpecificityMatchCount === 1))
   for (const project of ['SG2', 'SRM']) {
-    const denied = resolve(project, targets, scratch)
+    const denied = resolve(project, targets)
     assert.equal(denied.ok, false)
     assert.ok(denied.results.every(s => s.projectBoundaryStatus === 'DENIED'))
   }
-  for (const target of ['apps/platform-source-hub-copy/x.mjs', 'packages/platform-source-hub-ui/x.mjs', '.github/workflows/platform-source-hub-deploy.yml', 'apps/platform-source-hub/../../srm/x.mjs']) assert.equal(resolve('ARCHITECTURE', [target], scratch).ok, false, target)
-  registry.surfaces.push({ ...rows[0], id: 'CONFLICT_FIXTURE', currentOwner: 'Other fixture owner' })
-  save()
+  for (const target of ['apps/platform-source-hub-copy/x.mjs', 'packages/platform-source-hub-ui/x.mjs', '.github/workflows/platform-source-hub-deploy.yml', 'apps/platform-source-hub/../../srm/x.mjs']) assert.equal(resolve('ARCHITECTURE', [target]).ok, false, target)
+  const scratch = fs.mkdtempSync(path.join(os.tmpdir(), 'source-hub-g1-conflict-'))
+  t.after(() => fs.rmSync(scratch, { recursive: true, force: true }))
+  const registry = json(registryPath)
+  registry.surfaces.push({ ...registry.surfaces.find(s => s.id === 'SOURCE-HUB-BASE-001'), id: 'CONFLICT_FIXTURE', currentOwner: 'Other fixture owner' })
+  fs.mkdirSync(path.dirname(path.join(scratch, registryPath)), { recursive: true })
+  fs.writeFileSync(path.join(scratch, registryPath), JSON.stringify(registry))
   const conflict = resolve('ARCHITECTURE', [targets[0]], scratch)
   assert.equal(conflict.ok, false)
   assert.equal(conflict.results[0].resolutionStatus, 'CONFLICT')
+  for (const p of ['apps/platform-source-hub', 'packages/platform-source-hub-contracts', '.github/workflows/platform-source-hub-ci.yml']) assert.equal(fs.existsSync(path.join(root, p)), false)
 })
 
-test('accepted NewsAPI candidate and all 23 exact file blobs remain unchanged', () => {
+test('accepted business sections, family payloads and all23 NewsAPI blobs remain unchanged', () => {
+  const segment = (s, start, end) => s.slice(s.indexOf(start), s.indexOf(end))
+  const normalizeLinks = s => s.replace(/\]\(([^)]+)\)/g, (whole, dest) => /^https:\/\//.test(dest) ? whole : '](' + path.posix.basename(dest) + ')')
+  assert.equal(normalizeLinks(segment(read('Canon/v1.0-platform-source-hub-business-and-architecture-canon.md'), '## 1.', '## 7.')), normalizeLinks(segment(priorText('Canon/proposals/v1.0-platform-source-hub-business-and-architecture-canon.md'), '## 1.', '## 7.')))
+  const normalizeAmendment = s => normalizeLinks(segment(s, '## Minimal clarification', '## Activation')).replace('The proposed [Platform Source Hub', 'The [Platform Source Hub')
+  assert.equal(normalizeAmendment(read('Canon/v1.1-newsfeed-source-hub-responsibility-amendment.md')), normalizeAmendment(priorText('Canon/proposals/v1.1-newsfeed-source-hub-responsibility-amendment.md')))
+  const { status, approval, authority, ...actualPayload } = families
+  const { status: oldStatus, ...approvedPayload } = prior('Canon/proposals/platform-source-hub-contract-families-v1.json')
+  assert.equal(status, 'ACTIVE')
+  assert.deepEqual(actualPayload, approvedPayload)
+  assert.equal(approval.sourceSha256, createHash('sha256').update(priorText('Canon/proposals/platform-source-hub-contract-families-v1.json')).digest('hex'))
   const accepted = '1a87951fbe5a513f15adce02fb169adf3bf70050'
   const scope = ['apps/newsfeed-runtime', 'packages/newsfeed-contracts', '.github/workflows/newsfeed-ci.yml']
   const before = git(['ls-tree', '-r', accepted, '--', ...scope]).split('\n')
@@ -82,95 +108,98 @@ test('accepted NewsAPI candidate and all 23 exact file blobs remain unchanged', 
   }
 })
 
-test('Source Hub contract families preserve vendor semantics instead of a universal payload', () => {
+test('active design catalogue keeps separate future contracts and existing NewsDiscovery0.1.0', () => {
   assert.equal(families.commonEnvelopeOnly, true)
   assert.equal(families.universalPayload, false)
   assert.deepEqual(families.families.map(f => f.id), ['news-discovery', 'economic-calendar', 'market-observations', 'indicators', 'external-forecasts'])
-  const byId = Object.fromEntries(families.families.map(f => [f.id, f]))
-  for (const [id, required] of Object.entries({
-    'news-discovery': ['publisherCountryOrUnknown', 'eventGeographyOrUnknown'],
-    'economic-calendar': ['actual', 'previous', 'revised', 'consensusForecast', 'vendorForecast', 'revisionRef'],
-    'market-observations': ['instrumentType', 'underlyingMappingRef', 'quoteBasis', 'contractExpiry', 'rolloverRef'],
-    indicators: ['frequency', 'vintage', 'revisionRef'],
-    'external-forecasts': ['vendorModel', 'origin', 'targetDate', 'horizon', 'vendorIntervalOrUnknown'],
-  })) for (const field of required) assert.ok(byId[id].payloadFields.includes(field), id + '/' + field)
   assert.equal(new Set(families.families.map(f => JSON.stringify(f.payloadFields))).size, 5)
-  for (const key of ['requestSupport', 'resultMetadataSupport', 'evidenceKind', 'limitations', 'entitlementRefOrUnknown']) assert.ok(families.capabilityDescriptor.required.includes(key))
-  assert.ok(families.capabilityDescriptor.evidenceKinds.includes('ENRICHMENT_REQUIRED'))
+  assert.ok(families.families.every(f => f.version === 'PROPOSED_1.0'))
   assert.equal(families.providerState.NewsAPI, 'EXISTING_NEWSFEED_CONNECTOR_NO_MIGRATION')
-  for (const provider of ['GDELT', 'TradingEconomics', 'Brave']) assert.equal(families.providerState[provider], 'FUTURE_NOT_IMPLEMENTED')
+  for (const p of ['GDELT', 'TradingEconomics', 'Brave']) assert.equal(families.providerState[p], 'FUTURE_NOT_IMPLEMENTED')
+  for (const f of ['requestSupport', 'resultMetadataSupport', 'evidenceKind', 'limitations', 'entitlementRefOrUnknown']) assert.ok(families.capabilityDescriptor.required.includes(f))
 })
 
-test('environment plan reuses owner Newsfeed and separates Production and continuity authority', () => {
+test('real four-project six-branch baseline cannot grant runtime or substitute old Development and PMOS', () => {
+  assert.equal(env.status, 'OBSERVED_INFRASTRUCTURE_ONLY')
   assert.equal(env.resourceCreationActor, 'HUMAN_OWNER_ONLY')
   assert.equal(env.agentResourceMutationsAllowed, false)
-  for (const key of ['resourcesCreatedByThisTask', 'schemasAppliedByThisTask', 'providerCallsByThisTask']) assert.equal(env[key], 0)
   assert.equal(env.deploymentByThisTask, false)
-  assert.equal(env.observedNewsfeed.projectId, 'shiny-bonus-85532609')
-  assert.equal(env.observedNewsfeed.sqlOrRolesInspected, false)
-  const dev = env.observedNewsfeed.branches.find(b => b.environmentLabel === 'development')
-  assert.equal(dev.branchId, 'br-solitary-star-b9i144lk')
-  assert.equal(dev.pooledHost, 'ep-restless-sea-b9ducsrh-pooler.c-7.eu-central-1.aws.neon.tech')
-  assert.equal(env.observedNewsfeed.branches.find(b => b.environmentLabel === 'production').runtimeProductionAccepted, false)
-  assert.equal(env.observedNewsfeed.allEndpoints.suspendMeaning, 'GLOBAL_DEFAULT_300_SECONDS')
-  const nonprod = env.targetNeonProjects.find(p => p.purpose === 'NEWSFEED_NONPRODUCTION')
-  assert.equal(nonprod.existingProjectId, env.observedNewsfeed.projectId)
-  assert.equal(nonprod.action, 'REUSE_EXISTING_DEVELOPMENT_AND_STAGING_NO_DUPLICATE')
-  assert.equal(new Set(env.targetNeonProjects.map(p => p.name)).size, 4)
-  const production = env.targetNeonProjects.filter(p => p.purpose.endsWith('_PRODUCTION'))
-  assert.equal(production.length, 2)
-  assert.ok(production.every(p => !p.existingProjectId && p.branches.length === 1 && p.branches[0] === 'production'))
-  assert.notEqual(env.architecturePmos.projectId, env.observedNewsfeed.projectId)
-  assert.equal(env.architecturePmos.productDatabaseAllowed, false)
   assert.equal(env.runtimeReadiness, 'NOT_VERIFIED')
-  const names = []
-  assert.deepEqual(env.environments.map(e => e.name), ['development', 'staging', 'production'])
+  const expected = {
+    'shiny-bonus-85532609': { development: ['br-wispy-bonus-b9ohunab', 'ep-mute-night-b9o332my'], staging: ['br-frosty-cell-b9hzdh6e', 'ep-wandering-term-b9v57pi9'] },
+    'twilight-wind-91374750': { production: ['br-noisy-pine-b9i0865t', 'ep-aged-sun-b9ooczkd'] },
+    'delicate-queen-44677134': { development: ['br-orange-salad-ba2llks7', 'ep-noisy-darkness-barhqoqw'], staging: ['br-snowy-breeze-bahrkgrr', 'ep-noisy-grass-baszxszx'] },
+    'crimson-band-46697896': { production: ['br-flat-resonance-b9dh28bf', 'ep-empty-water-b9yjwui8'] },
+  }
+  assert.deepEqual(env.neon.map(p => p.projectId).sort(), Object.keys(expected).sort())
+  for (const p of env.neon) {
+    assert.equal(p.region, 'aws-eu-central-1')
+    assert.equal(p.postgresVersion, 18)
+    assert.equal(p.historyRetentionSeconds, 86400)
+    assert.notEqual(p.projectId, env.architecturePmos.projectId)
+    assert.equal(p.branches.length, Object.keys(expected[p.projectId]).length)
+    for (const b of p.branches) {
+      const pair = expected[p.projectId][b.name]
+      assert.equal(b.id, pair[0])
+      assert.equal(b.protected, false)
+      assert.ok(b.databases.some(d => d.name === 'neondb'))
+      const endpoint = p.endpoints.find(e => e.branchId === b.id)
+      assert.equal(endpoint.id, pair[1])
+      assert.equal(endpoint.minCu, 0.25)
+      assert.equal(endpoint.maxCu, 8)
+      assert.equal(endpoint.suspendTimeoutSeconds, 0)
+    }
+  }
+  assert.doesNotMatch(JSON.stringify(env.neon), /ep-restless-sea-b9ducsrh|br-solitary-star-b9i144lk/)
+  assert.equal(env.architecturePmos.database, 'architecture_pmos')
+  assert.equal(env.architecturePmos.productDatabaseAllowed, false)
+  assert.equal(env.render.projectId, 'prj-dbl079ou01pc73eg0ffg')
+  assert.equal(env.render.connectorProjectEnvironmentMetadata, 'OWNER_CONFIRMATION_REQUIRED')
+  assert.equal(env.render.uiReadback, 'VERIFIED_READ_ONLY')
+  assert.equal(new Set(env.render.environments.map(e => e.id)).size, 3)
+  for (const e of env.render.environments) {
+    assert.equal(e.serviceCount, 0)
+    assert.equal(e.environmentGroupCount, 0)
+    assert.equal(e.blockCrossEnvironmentPrivateTraffic, false)
+    assert.equal(e.protected, false)
+  }
   for (const e of env.environments) {
     assert.equal(e.autoDeploy, false)
     assert.equal(e.previews, false)
-    assert.equal(e.blockCrossEnvironmentPrivateTraffic, true)
-    assert.equal(e.servicesCreateWhen, 'BACKEND_ACCEPTED_AND_SEPARATE_TASK_AUTHORIZED')
-    assert.deepEqual(e.services.map(s => s.type), ['web', 'web', 'cron'])
-    names.push(...e.services.map(s => s.name), ...e.rolesLater)
+    assert.equal(e.plannedSettingsOnly, true)
+    assert.equal(e.servicesStatus, 'NOT_CREATED')
   }
-  assert.equal(new Set(names).size, names.length)
-  assert.equal(env.secretHandling.ownerDatabaseUrlAllowedInRuntime, false)
-  assert.equal(env.secretHandling.sharedProductionCredentialsAllowed, false)
 })
 
-test('proposal and provisioning links resolve and guide agrees with exact resource plan', () => {
-  const docs = [
-    prefix + 'v1.0-platform-source-hub-business-and-architecture-canon.md',
-    prefix + 'v1.1-newsfeed-source-hub-responsibility-amendment.md',
-    'Canon/runbooks/newsfeed-source-hub-infrastructure-provisioning-v1.md',
-    'Canon/evidence/2026-11-03-platform-source-hub-stage1b-foundation.md',
-  ]
+test('canonical guide resolves links and names every actual binding without credentials', () => {
+  const docs = ['Canon/v1.0-platform-source-hub-business-and-architecture-canon.md', 'Canon/v1.1-newsfeed-source-hub-responsibility-amendment.md', 'Canon/runbooks/newsfeed-source-hub-infrastructure-provisioning-v1.md', 'Canon/evidence/2026-11-03-platform-source-hub-final-activation.md', 'Canon/evidence/2026-11-03-platform-source-hub-stage1b-foundation.md']
   for (const p of docs) {
-    const text = read(p)
-    for (const match of text.matchAll(/\[[^\]]+\]\(([^)]+)\)/g)) {
+    for (const match of read(p).matchAll(/\[[^\]]+\]\(([^)]+)\)/g)) {
       if (/^https:\/\//.test(match[1])) continue
       assert.ok(fs.existsSync(path.resolve(root, path.dirname(p), match[1].split('#')[0])), p + ': ' + match[1])
     }
-    assert.doesNotMatch(text, /postgres(?:ql)?:\/\/[^\s]*@|Bearer\s+[A-Za-z0-9_-]{20,}|sk-proj-[A-Za-z0-9_-]+/)
+    assert.doesNotMatch(read(p), /postgres(?:ql)?:\/\/[^\s]*@|Bearer\s+[A-Za-z0-9_-]{20,}|sk-proj-[A-Za-z0-9_-]+/)
   }
   const guide = read(docs[2])
-  for (const p of env.targetNeonProjects) assert.ok(guide.includes(p.name))
+  for (const p of env.neon) {
+    assert.ok(guide.includes(p.projectId))
+    for (const b of p.branches) assert.ok(guide.includes(b.id))
+    for (const e of p.endpoints) assert.ok(guide.includes(e.id) && guide.includes(e.pooledHost))
+  }
+  for (const e of env.render.environments) assert.ok(guide.includes(e.id))
   for (const e of env.environments) {
     for (const s of e.services) assert.ok(guide.includes(s.name))
     for (const role of e.rolesLater) assert.ok(guide.includes(role))
   }
-  for (const phrase of ['0.5c-512mb', '04:15 UTC', 'SOURCE_HUB_BASE_URL', 'TRADING_ECONOMICS_API_KEY', 'Auto-Deploy Off', '7.36', '84.53', 'DO POTWIERDZENIA']) assert.ok(guide.includes(phrase), phrase)
+  for (const phrase of ['OWNER_CONFIRMATION_REQUIRED', 'Protected wyłączone', '0.5c-512mb', '04:15 UTC', '7.36', '84.53']) assert.ok(guide.includes(phrase), phrase)
 })
 
-test('existing SG2 and SRM owner boundaries cannot be claimed by Source Hub profile', () => {
-  for (const [project, owner, p] of [
-    ['SG2', 'SG Runtime', 'apps/sg-runtime/app/page.tsx'],
-    ['SRM', 'SRM Runtime', 'apps/srm/src/modules/intelligence/x.ts'],
-    ['SRM', 'SRM Runtime', 'packages/srm-adp-ui/src/index.ts'],
-  ]) {
+test('new producer admission retains SG2 and SRM owners and reserved execution environments', () => {
+  for (const [project, owner, p] of [['SG2', 'SG Runtime', 'apps/sg-runtime/app/page.tsx'], ['SRM', 'SRM Runtime', 'apps/srm/src/modules/intelligence/x.ts'], ['SRM', 'SRM Runtime', 'packages/srm-adp-ui/src/index.ts']]) {
     const actual = resolve(project, [p])
     assert.equal(actual.ok, true, actual.error)
     assert.equal(actual.results[0].currentOwner, owner)
     assert.equal(resolve('ARCHITECTURE', [p]).ok, false)
   }
+  for (const targetEnvironment of ['staging', 'production']) assert.throws(() => resolveEnvironmentProfile({ profile: resolveProjectProfile('ARCHITECTURE', root), targetEnvironment, governanceRoot: root }), /not ACTIVE/)
 })

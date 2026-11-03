@@ -194,6 +194,77 @@
     {"id": "repository-routing-v1", "version": "1.0", "path": "Canon/v1.0-repository-routing-and-module-ownership-canon.md", "status": "SUPERSEDED", "loadOrder": null, "owner": "SG2 Architecture Governance", "dependsOn": [], "supersededBy": "repository-routing"},
     {"id": "srm-execution-adapter-v1", "version": "1.0", "path": "Canon/v1.0-srm-mandatory-task-wrapper.md", "status": "SUPERSEDED", "loadOrder": null, "owner": "SRM Runtime", "dependsOn": [], "supersededBy": "srm-execution-adapter"},
     {"id": "vsc-execution-canon", "version": "1.0", "path": "Canon/v1.0-vsc-mandatory-execution-canon.md", "status": "SUPERSEDED", "loadOrder": null, "owner": "SG2 Governance Source Layer", "dependsOn": [], "supersededBy": "agent-execution-canon"},
-    {"id": "srm-adp-presentation-mounting-amendment", "version": "1.1", "path": "Canon/v1.1-srm-adp-presentation-mounting-amendment.md", "status": "ACTIVE", "loadOrder": 390, "owner": "SRM Runtime", "appliesTo": ["SG2", "SRM", "ARCHITECTURE"], "dependsOn": ["platform-appshell-business-and-architecture-canon", "srm-architecture-component-placement", "repository-routing", "shared-development-contract-integration"]}
+    {"id": "srm-adp-presentation-mounting-amendment", "version": "1.1", "path": "Canon/v1.1-srm-adp-presentation-mounting-amendment.md", "status": "ACTIVE", "loadOrder": 390, "owner": "SRM Runtime", "appliesTo": ["SG2", "SRM", "ARCHITECTURE"], "dependsOn": ["platform-appshell-business-and-architecture-canon", "srm-architecture-component-placement", "repository-routing", "shared-development-contract-integration"]},
+    {
+      "id": "platform-source-hub-contract-families",
+      "version": "1.0",
+      "path": "Canon/registries/platform-source-hub-contract-families-v1.json",
+      "status": "ACTIVE",
+      "loadOrder": 452,
+      "owner": "Architecture Platform",
+      "appliesTo": [
+        "SG2",
+        "SRM",
+        "ARCHITECTURE"
+      ],
+      "dependsOn": [
+        "newsfeed-business-and-architecture-canon",
+        "shared-development-contract-integration"
+      ]
+    },
+    {
+      "id": "newsfeed-source-hub-environment-baseline",
+      "version": "1.0",
+      "path": "Canon/registries/newsfeed-source-hub-environment-baseline-v1.json",
+      "status": "ACTIVE",
+      "loadOrder": 454,
+      "owner": "Architecture Platform",
+      "appliesTo": [
+        "SG2",
+        "SRM",
+        "ARCHITECTURE"
+      ],
+      "dependsOn": [
+        "architecture-environment-topology",
+        "newsfeed-business-and-architecture-canon"
+      ]
+    },
+    {
+      "id": "platform-source-hub-business-and-architecture-canon",
+      "version": "1.0",
+      "path": "Canon/v1.0-platform-source-hub-business-and-architecture-canon.md",
+      "status": "ACTIVE",
+      "loadOrder": 460,
+      "owner": "Architecture Platform",
+      "appliesTo": [
+        "SG2",
+        "SRM",
+        "ARCHITECTURE"
+      ],
+      "dependsOn": [
+        "repository-routing",
+        "shared-development-contract-integration",
+        "newsfeed-business-and-architecture-canon",
+        "platform-source-hub-contract-families",
+        "newsfeed-source-hub-environment-baseline"
+      ]
+    },
+    {
+      "id": "newsfeed-source-hub-responsibility-amendment",
+      "version": "1.1",
+      "path": "Canon/v1.1-newsfeed-source-hub-responsibility-amendment.md",
+      "status": "ACTIVE",
+      "loadOrder": 470,
+      "owner": "Architecture Platform",
+      "appliesTo": [
+        "SG2",
+        "SRM",
+        "ARCHITECTURE"
+      ],
+      "dependsOn": [
+        "newsfeed-business-and-architecture-canon",
+        "platform-source-hub-business-and-architecture-canon"
+      ]
+    }
   ]
 }

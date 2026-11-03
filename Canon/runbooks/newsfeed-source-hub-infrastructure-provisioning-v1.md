@@ -1,53 +1,63 @@
 # Newsfeed & Source Hub — Infrastructure Provisioning Guide v1.0
 
-**Status: instrukcja planowanej konfiguracji; PROPOSED_NOT_ACTIVE.** Stan zweryfikowany 2026-11-03. Właściciel sam tworzy i konfiguruje wszystkie zasoby Neon/Render. Codex w Stage 1B wykonał tylko odczyt metadanych i przygotował dokumentację; nie wykonał SQL, migracji, deployu ani wywołania providera.
+**Status: canonical infrastructure instructions after controlled main acceptance; provisioned metadata is not runtime acceptance.** Aktualizacja: 2026-11-03. Właściciel sam tworzy i konfiguruje wszystkie zasoby Neon/Render we wszystkich środowiskach. Codex wykonał odczyt metadanych/panelu; nie wykonał SQL produktu, migracji, deployu ani wywołania dostawcy danych.
 
-## 1. Co już istnieje
+## 1. Istniejące projekty — nie twórz duplikatów
 
-[Projekt Neon Newsfeed](https://console.neon.tech/app/projects/shiny-bonus-85532609), ID `shiny-bonus-85532609`, AWS Frankfurt `aws-eu-central-1`, PostgreSQL **18**, organizacja na planie **Scale**:
+Właściciel przygotował cztery projekty Neon. Odczyt API potwierdził region **AWS Frankfurt / aws-eu-central-1** i **PostgreSQL18** w każdym:
 
-| Branch w panelu | Branch ID | Endpoint ID | Stan odczytany |
+| Capability | Przeznaczenie | Nazwa w panelu | Project ID |
 | --- | --- | --- | --- |
-| development | br-solitary-star-b9i144lk | ep-restless-sea-b9ducsrh | idle |
-| staging | br-frosty-cell-b9hzdh6e | ep-wandering-term-b9v57pi9 | idle |
-| production (root/default) | br-wispy-bonus-b9ohunab | ep-mute-night-b9o332my | idle |
+| Newsfeed | Development / Staging | Newsfeed Non-Prod | shiny-bonus-85532609 |
+| Newsfeed | Production | Newsfeed Production | twilight-wind-91374750 |
+| Platform Source Hub | Development / Staging | Source Hub Non-Prod | delicate-queen-44677134 |
+| Platform Source Hub | Production | Source Hub Production | crimson-band-46697896 |
 
-Podany adres Development jest zgodny z odczytem Neon:
-`ep-restless-sea-b9ducsrh-pooler.c-7.eu-central-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require`.
+Model jest zgodny z docelowym podziałem: cztery projekty, sześć logicznych środowisk aplikacyjnych. Osobne projekty Production rozdzielają cykl odzyskiwania, konfigurację i poświadczenia od nonprod; nadal mogą mieć wspólnych administratorów organizacji. Branche Dev/Staging współdzielą polityki i administrację projektu danej capability. Nazwy projektów są etykietami; powiązania identyfikuje ID.
 
-To metadane połączenia, bez roli i hasła. Nie jest to kompletne poświadczenie ani dowód zwykłej roli, poprawnego E1, pustej bazy, schematu czy gotowości aplikacji. Nie badano danych i ról SQL. Nazwy baz Staging/Production należy potwierdzić w panelu; plan używa `neondb`, bez automatycznego tworzenia kolejnej bazy.
+Render: istniejący [projekt Source Hub](https://dashboard.render.com/project/prj-dbl079ou01pc73eg0ffg), **prj-dbl079ou01pc73eg0ffg**, workspace **PROFITIA WORKSPACE / tea-d7lps8rbc2fs73cn80dg** wskazany przez właściciela. Nie twórz nowego projektu/workspace ani zastępczego projektu o nazwie z poprzedniej propozycji.
 
-Wszystkie trzy endpointy: 0.25–8 CU; `suspend_timeout_seconds=0`, czyli **globalny domyślny timeout 300 s**, a nie „zawsze włączony”. Odczyt potwierdził `idle`. Żaden branch nie miał ochrony. Historia projektu: **1 dzień**. Nie zmieniono tych ustawień. Znaczenie 0/-1 opisuje [Neon agent integration](https://neon.com/docs/guides/ai-agent-integration); zasady uśpienia i ustawień per endpoint: [Scale to Zero](https://neon.com/docs/guides/scale-to-zero-guide).
+Kanoniczne dane odczytu: [resource baseline](../registries/newsfeed-source-hub-environment-baseline-v1.json). To dokumentacja infrastruktury, nie Architecture execution topology ani runtime grant. PMOS pozostaje w **billowing-credit-07394675 / architecture_pmos**, rola **architecture_pmos_runtime**; żadna baza produktu go nie zastępuje.
 
-## 2. Docelowy podział — cztery projekty, trzy środowiska
+## 2. Aktualne branche, endpointy i bazy
 
-Rekomendacja: **oddzielne projekty Production dla obu capability; wspólne Dev/Staging tylko w granicach tej samej capability.** To cztery projekty łącznie, z czego jeden już istnieje. Pozwala zachować obecne Development/Staging i rozdziela dane/licencje Source Hub od prywatnych danych Newsfeed. Osobne projekty Production dają niezależny cykl historii/odzyskiwania, poświadczenia i mniejszy zasięg pomyłki administratora. Nie tworzą osobnych organizacji ani automatycznej izolacji administratorów.
+| Capability / środowisko | Branch ID | Endpoint ID | Baza |
+| --- | --- | --- | --- |
+| Newsfeed Development | br-wispy-bonus-b9ohunab | ep-mute-night-b9o332my | neondb |
+| Newsfeed Staging | br-frosty-cell-b9hzdh6e | ep-wandering-term-b9v57pi9 | neondb |
+| Newsfeed Production | br-noisy-pine-b9i0865t | ep-aged-sun-b9ooczkd | neondb |
+| Source Hub Development | br-orange-salad-ba2llks7 | ep-noisy-darkness-barhqoqw | neondb |
+| Source Hub Staging | br-snowy-breeze-bahrkgrr | ep-noisy-grass-baszxszx | neondb |
+| Source Hub Production | br-flat-resonance-b9dh28bf | ep-empty-water-b9yjwui8 | neondb |
 
-| Środowisko | Newsfeed — projekt / branch / baza | Source Hub — projekt / branch / baza |
-| --- | --- | --- |
-| Development | istniejący Newsfeed / development / neondb | nowy profitia-source-hub-nonprod / development / neondb |
-| Staging | istniejący Newsfeed / staging / neondb do potwierdzenia | profitia-source-hub-nonprod / staging / neondb |
-| Production | nowy profitia-newsfeed-production / production / neondb | nowy profitia-source-hub-production / production / neondb |
+Nazwy branchy to odpowiednio development, staging, production. Nonprod Staging jest dzieckiem Development tej samej capability. Production jest rootem odrębnego projektu. Baza neondb została potwierdzona przez API katalogu, bez wykonywania SQL i bez badania danych. Domyślny owner katalogowy neondb_owner nie jest przyjętą rolą runtime.
 
-Wspólny projekt Dev/Staging oznacza wspólną historię/limity/administrację projektu; branch nie jest osobnym kontem bezpieczeństwa. Role, hasła i binding środowiska muszą być oddzielne. Jeśli Staging wymaga niezależnych polityk projektu, późniejsza decyzja może rozdzielić go do osobnych projektów; nie jest to warunek przygotowania obecnego Dev.
+**Ważna korekta:** Newsfeed Development to teraz **br-wispy-bonus-b9ohunab / ep-mute-night-b9o332my**, a nie historyczne br-solitary-star-b9i144lk / ep-restless-sea-b9ducsrh. Dawny root nazwany production jest obecnie development. Poprzednich ID nie ma w bieżącym wykazie; nie twierdzimy bez dowodu, że dane zostały przeniesione lub usunięte. W nowej konfiguracji używaj wyłącznie aktualnego ID/hosta.
 
-Obecny root Newsfeed nazwany `production` zostaje **bez zmian i bez przypisania do uruchamianego Production**. Nie usuwać, nie resetować, nie kopiować ani nie zmieniać jego nazwy w ramach tej instrukcji. Nie potwierdzono jego zawartości. Produkcyjne dane prywatne nie mogą stać się rodzicem Dev/Staging. Istniejących branchy nie resetować z roota bez osobnej kontroli danych i odzyskiwania. Mechanizm kopiowania ról/hasła między gałęziami wymaga uwagi; ochrona rodzica zmienia zachowanie nowych haseł, lecz nie stanowi sanitizacji danych. [Neon protected branches](https://neon.com/docs/guides/protected-branches)
+| Capability / środowisko | Pooled hostname |
+| --- | --- |
+| Newsfeed Development | ep-mute-night-b9o332my-pooler.c-7.eu-central-1.aws.neon.tech |
+| Newsfeed Staging | ep-wandering-term-b9v57pi9-pooler.c-7.eu-central-1.aws.neon.tech |
+| Newsfeed Production | ep-aged-sun-b9ooczkd-pooler.c-7.eu-central-1.aws.neon.tech |
+| Source Hub Development | ep-noisy-darkness-barhqoqw-pooler.c-8.eu-central-1.aws.neon.tech |
+| Source Hub Staging | ep-noisy-grass-baszxszx-pooler.c-8.eu-central-1.aws.neon.tech |
+| Source Hub Production | ep-empty-water-b9yjwui8-pooler.c-7.eu-central-1.aws.neon.tech |
 
-PMOS Architecture pozostaje w `billowing-credit-07394675 / architecture_pmos`, zwykła rola `architecture_pmos_runtime`. Nie używać projektu Newsfeed ani Source Hub dla ciągłości PMOS/PHR.
+Nie ma tu hasła ani pełnego connection string z poświadczeniami. Host/ID/baza nie potwierdzają uprawnień roli, E1, schematu lub działania aplikacji.
 
-## 3. Teraz — ręczne przygotowanie Neon
+## 3. Neon — ustawienia odczytane i ręczne działania właściciela
 
-Wszystkie poniższe kliknięcia wykonuje właściciel. Nie ma potrzeby podawać Codexowi hasła administratora. Przed utworzeniem sprawdź listę projektów, aby nie powielić równolegle przygotowanych zasobów.
+Wszystkie sześć endpointów w chwili odczytu: **idle**, zakres **0.25–8 CU**, suspend_timeout_seconds **0** (globalna wartość domyślna **300s**, nie always-on). Wszystkie cztery projekty: historia **86400s / 1 dzień**, public connections nieblokowane, lista IP pusta. Żaden z sześciu branchy nie miał ochrony. To stan metadanych, nie test bezpieczeństwa ani dowód pustej bazy. [Neon timeout semantics](https://neon.com/docs/guides/ai-agent-integration), [Scale to Zero](https://neon.com/docs/guides/scale-to-zero-guide)
 
-1. Otwórz istniejący projekt **Newsfeed** i zachowaj branche Development/Staging. Potwierdź w panelu bazę i region oraz zapisz bezpieczne ID z tabeli. Nie twórz duplikatu projektu ani Development. Proponowany na start limit każdego nieprodukcyjnego compute: **0.25–1 CU**, Scale to Zero **włączone / 5 minut**. Obecne 8 CU jest odczytanym maksimum, nie rekomendacją budżetu. Zmiany limitów wykonujesz świadomie sam; Codex ich nie wykonał.
-2. Opcjonalnie utwórz **profitia-source-hub-nonprod**, AWS Frankfurt `aws-eu-central-1`, PG18, baza domyślna `neondb`. Root nazwij **seed**, pozostaw wyłącznie bez danych prywatnych; utwórz z niego **development** i **staging**. Nie klonuj Production. Ustaw każdy potrzebny compute 0.25–1 CU i uśpienie po 5 minutach.
-3. Jeśli chcesz przygotować Production już teraz, utwórz niezależnie **profitia-newsfeed-production** i **profitia-source-hub-production**, w obu AWS Frankfurt, PG18, root **production**, baza `neondb`. Zachowaj uśpienie po 5 minutach i limit 0.25–1 CU podczas przygotowania. Nie podłączaj aplikacji, harmonogramów ani testów odpytujących bazę. Po braku aktywności compute może spać; storage/historia nadal podlegają rozliczeniu.
-4. W Settings / Storage ustaw proponowaną historię odzyskiwania **1 dzień nonprod / 7 dni Production**; dostępne maksimum i koszty sprawdź w panelu organizacji. Obecny Newsfeed ma 1 dzień. Production oznacz jako **protected** przed danymi produkcyjnymi. Proponowana ochrona nie została zastosowana do istniejącego roota.
-5. Pozostaw zwykłe połączenia TLS. Docelową allowlistę IP Production ustal po uzyskaniu rzeczywistych adresów wyjściowych usług Render i kanału migracji/odzyskiwania; nie wpisuj wymyślonych IP i nie blokuj sobie odzyskiwania. Przed runtime zweryfikuj reguły dostępu; otwarty adres endpointu nie jest sam w sobie akceptacją bezpieczeństwa.
+Przed runtime właściciel ręcznie:
 
-Konsola: wybierz branch → **Postgres database / Computes / Edit** → zakres compute i Scale to Zero. Zmiana **Compute defaults** dotyczy nowych endpointów, nie aktualizuje istniejących. Po każdej ręcznej zmianie sprawdź każdy endpoint osobno. Wybór pięciu minut jest obsługiwany przez panel; niestandardowe progi mogą wymagać API i nie są potrzebne w tym etapie. [Neon konfiguracja uśpienia](https://neon.com/docs/guides/scale-to-zero-guide)
+1. Dla każdego potrzebnego endpointu rozważa na start **0.25–1 CU** i zachowuje **Scale to Zero / 5 minut**. Obserwowane maksimum8CU nie jest rekomendowanym budżetem. W Console wybierz branch → Postgres database / Computes / Edit. Zmiana Compute defaults nie aktualizuje istniejących endpointów; sprawdź każdy oddzielnie. Codex niczego tu nie ustawił.
+2. W obu projektach Production oznacza branch production jako **protected**, ustala historię (propozycja **7 dni**, dostępność i koszt do potwierdzenia w panelu). Aktualnie potwierdzono brak ochrony i tylko1dzień historii. [Protected branches](https://neon.com/docs/guides/protected-branches)
+3. Uzgadnia rzeczywistą allowlistę IP/kanał migracji i odzyskiwania po poznaniu adresów wyjściowych Render. Obecny brak allowlisty jest jawny; nie deklarujemy izolacji sieciowej Production. Nie wpisuj zgadywanych IP ani nie blokuj sobie odzyskiwania.
+4. Przy osobnym zaakceptowanym zadaniu schematu/dostępu tworzy właściwe role i uprawnienia; nie używa owner URL w aplikacji. Sekrety dopiero z przyjętym backendem, oddzielnie per capability i środowisko.
+5. Ustala backup, RPO/RTO i wykonuje odtworzenie przed Production, zgodnie z sekcją4. Nie resetuje nonprod z danych produkcyjnych; samo parent ID nie dowodzi sanitizacji prywatnych danych.
 
-Przy gotowości backendu dobierz ponownie limity na podstawie pomiaru. Ewentualne always-on Production (`-1`) wymaga jawnej decyzji koszt/SLO; nie ustawiaj go na potrzeby pustego środowiska.
+Teraz pozostaw aplikacje i harmonogramy nieuruchomione. Idle compute nie nalicza aktywnego compute do czasu obudzenia, lecz storage/historia/backup i plan konta nie muszą kosztować0. Testy/połączenia podtrzymujące aktywność mogą zmienić rachunek. Always-on(-1) wymaga osobnej decyzji SLO/koszt; nie jest potrzebny dla pustego środowiska.
 
 ## 4. Później — role, schemat i odzyskiwanie
 
@@ -65,18 +75,28 @@ Dla aplikacji użyj **pooled URL** z końcówką hosta `-pooler`, zwykłej roli 
 
 Retencja historii nie jest testem odzyskania ani kompletną polityką backupu. Przed Production: zaakceptuj RPO/RTO (propozycja **RPO ≤24h, RTO ≤4h, do pomiaru**), osobny backup/export z retencją i szyfrowaniem, odtworzenie w izolowanym projekcie bez zmiany działającego endpointu, weryfikację danych/RLS i ścieżkę powrotu. Snapshoty, historia, backup/export i przywrócony compute mogą kosztować. Osobny projekt nie oznacza osobnego regionu DR. Rzeczywisty recovery drill jest zależnością przyszłego wydania, nie dowodem Stage 1B.
 
-## 5. Teraz — puste środowiska Render
+## 5. Render — istniejące puste środowiska i ustawienia do wykonania
 
-W [Render Dashboard](https://dashboard.render.com) użyj istniejącego właściwego workspace Profitii; zapisz jego ID i plan. Nie twórz drugiego workspace tylko dla tego modułu. Sprawdź, czy ktoś już nie przygotował projektu o poniższej nazwie.
+W projekcie **Source Hub / prj-dbl079ou01pc73eg0ffg** panel udostępnił następujący odczyt:
 
-1. **New → Project**: `profitia-newsfeed-source-hub`, pierwsze środowisko **development**.
-2. Dodaj **staging** i **production**. Dla trzech środowisk w jednym projekcie wybierz istniejący lub nowy plan workspace **Pro**, jeżeli obecny plan nie udostępnia wymaganych funkcji. Aktualnie Hobby pozwala na dwa środowiska/projekt, Pro na więcej; nie zakładaj, że plan został już kupiony.
-3. W każdym środowisku włącz **Block cross-environment connections**. Production oznacz jako **Protected**. Oddzielne konfiguracje i grupy pozostają w swoim środowisku.
-4. **Zatrzymaj się na pustych środowiskach.** Nie twórz Web Service, Private Service, Cron Job, Worker, dysku, Redis/Key Value ani Render Postgres. Dane będą w Neon.
+| Środowisko | Environment ID | Usługi / grupy zmiennych | Ruch między środowiskami | Permissions |
+| --- | --- | --- | --- | --- |
+| Development | evm-dbl079ou01pc73eg0fgg | 0 / 0 | Allowed | Default |
+| Staging | evm-dbl07c0u01pc73eg0kh0 | 0 / 0 | Allowed | Default |
+| Production | evm-dbl07lvf3r2c7383en80 | 0 / 0 | Allowed | Default — Protected wyłączone |
 
-Puste środowisko jest obsługiwane przez Render i nie potrzebuje placeholdera aplikacji. Opłata planu workspace jest osobna od compute; istnienie innych usług w workspace ma znaczenie dla rachunku. Izolacja prywatnej sieci nie blokuje publicznych URL usług; ochrona środowiska nie zastępuje kontroli uprawnień aplikacji. [Render projects/environments](https://render.com/docs/projects), [cennik](https://render.com/pricing)
+**Granica dowodu:** connector MCP nie udostępnia metadanych projektów/środowisk; dla tego kanału pozostaje **OWNER_CONFIRMATION_REQUIRED** przed runtime binding. Oddzielnie odczytano dokładny wskazany przez właściciela projekt i widoczne Environment settings w panelu: UI_VERIFIED_READ_ONLY. Lista usług connectora nie zawiera usług w tych trzech environment ID. Nie przedstawiamy odczytu UI jako potwierdzenia API ani aktywacji środowiska aplikacji. Plan workspace i region nieistniejących usług nie są zweryfikowane.
 
-Obecny kod Newsfeed jest biblioteką/CLI, bez zaakceptowanego serwera subskrypcji. Nie ma zatwierdzonych build/start/health komend dla przyszłych usług Hub/Newsfeed. Dlatego ich tworzenie jest odłożone. Nie uruchamiaj obecnego `discover` jako serwera i nie twórz atrap usług z `echo`/sleep. `Auto-Deploy Off` kontroluje kolejne automatyczne wdrożenia; nie traktuj go jako gwarancji „utwórz usługę bez pierwszego wdrożenia”. [Render deploys](https://render.com/docs/deploys)
+Nie twórz ponownie projektu ani środowisk. Wszystkie pozostają puste. Właściciel przed runtime:
+
+1. W każdym środowisku włącza **Block cross-environment connections** (obecnie Allowed).
+2. Dla Production ustawia **Permissions / Protected** (obecnie Default).
+3. Potwierdza bieżący plan workspace i dostępność funkcji w panelu. Nie kupuj drugiego workspace ani nie doliczaj opłaty Pro drugi raz, jeśli jest już opłacona.
+4. Dopiero z zaakceptowanym backendem przygotowuje odrębne konfiguracje/sekrety i tworzy procesy z sekcji6. Teraz nie tworzy usług, crona, workera, dysku, Key Value ani Render Postgres na zapas.
+
+Izolacja prywatnej sieci nie blokuje publicznych URL Web Services i nie zastępuje M2M/E1. Protected nie jest aplikacyjną kontrolą dostępu. [Render projects/environments](https://render.com/docs/projects)
+
+Obecny Newsfeed jest biblioteką/CLI, bez zaakceptowanego backendu subskrypcji. Brak zatwierdzonych build/start/health komend dla przyszłych usług. Nie uruchamiaj discover jako serwera ani nie twórz atrap echo/sleep. Auto-Deploy Off kontroluje kolejne wdrożenia; nie gwarantuje utworzenia usługi bez pierwszego deployu. [Render deploys](https://render.com/docs/deploys)
 
 ## 6. Dopiero z backendem — minimalne usługi Render
 
@@ -124,7 +144,7 @@ W Render zapisuj sekrety bezpośrednio w ustawieniach konkretnej usługi lub gru
 
 ## 8. Koszty — aktualne podstawy i przykłady, nie oferta
 
-Ceny USD bez podatków, region Frankfurt, weryfikacja **2026-11-03**. Aktualny cennik/dostępność w panelu mają pierwszeństwo. Organizacja Neon jest na Scale; nie zakładaj zmiany planu. Neon nie nalicza osobnej opłaty za projekt ani miesięcznego minimum; rachunek zależy od użycia. Scale compute **0.222 USD/CU-h** (Launch **0.106**), storage **0.35 USD/GB-mies.**, historia **0.20 USD/GB-mies.** przechowywanej historii, snapshoty **0.09 USD/GB-mies.**. W Scale 25 branchy/projekt w limicie, ponad limit **1.50 USD/branch-mies.**; planowane gałęzie mieszczą się w limicie. Limity/sleep nie usuwają opłat za przechowywanie. [Neon pricing](https://neon.com/pricing)
+Ceny USD bez podatków, region Frankfurt, weryfikacja **2026-11-03**. Aktualny cennik/dostępność w panelu mają pierwszeństwo. Podstawa poprzedniego odczytu organizacji: Scale; aktualny plan i limity konta potwierdź w panelu. Nie zakładaj zmiany planu. Neon nie nalicza osobnej opłaty za projekt ani miesięcznego minimum; rachunek zależy od użycia. Scale compute **0.222 USD/CU-h** (Launch **0.106**), storage **0.35 USD/GB-mies.**, historia **0.20 USD/GB-mies.** przechowywanej historii, snapshoty **0.09 USD/GB-mies.**. W Scale 25 branchy/projekt w limicie, ponad limit **1.50 USD/branch-mies.**; planowane gałęzie mieszczą się w limicie. Limity/sleep nie usuwają opłat za przechowywanie. [Neon pricing](https://neon.com/pricing)
 
 Render: workspace **Pro 25 USD/mies. + compute**, Scale **499 USD/mies. + compute**, Hobby **0 + compute**; plan płaci się za workspace, nie za każdą usługę. Klasa Web/Private/Worker **0.5c-512mb 7 USD/mies.**, **1c-2g 25 USD/mies.**. Cron **0.5c-512mb 0.00016 USD/min**, rozliczany sekundowo, ale **minimum 1 USD/mies. na usługę cron**. Plan Pro wspiera wymagane trzy izolowane środowiska. [Render pricing](https://render.com/pricing), [cron billing](https://render.com/docs/cronjobs)
 
@@ -140,9 +160,9 @@ Jeśli workspace Pro jest już opłacony z innymi usługami, nie doliczaj 25 USD
 
 Do przykładów dolicz rzeczywiste: transfer, buildy, płatne monitoringi, snapshoty/backup, większą klasę compute, provider plans i licencje. Bieżący cennik Neon deklaruje 500GB egress/projekt paid, następnie 0.10 USD/GB; Render Pro 25GB, następnie 0.15 USD/GB. Sprawdź licznik i zakres rozliczenia w panelu przed budżetem. NewsAPI, Trading Economics, Brave i przyszłe GDELT nie zostały wycenione dla konta użytkownika; koszt/licencja pozostają **DO POTWIERDZENIA**, nie „darmowe”.
 
-## 9. Co przekazać po ręcznym przygotowaniu
+## 9. Co przekazać po ręcznej konfiguracji
 
-Bez sekretów, osobno dla każdego środowiska:
+ID projektów/branchy/endpointów i widocznych środowisk z sekcji1–5 są już zapisane; przekazuj ich zmiany oraz brakujące potwierdzenia konfiguracji. Bez sekretów, osobno dla każdego środowiska:
 - Neon: nazwa/ID projektu, branch i parent ID, endpoint ID, region/PG, nazwa bazy, pooled i direct hostname, zakres CU, ustawienia uśpienia, historia/protection/allowlist status. Nazwy ról i ich uprawnienia dopiero po osobnym zatwierdzeniu; bez hasła lub pełnego URL z poświadczeniem.
 - Render: workspace/project/environment ID i nazwy, potwierdzony plan, status izolacji/protection; teraz **usługi: NIE UTWORZONO**. Przy późniejszym backendzie: service/cron ID, typ/region/klasa, root/commands, auto-deploy Off, SHA/deploy ID, health URL, cron UTC/status i konfiguracja sieci.
 - Bezpieczny kanał sekretów: wyłącznie informacja „zapisano w danej usłudze/grupie” albo uzgodniona lokalna ścieżka poza repo — nigdy wartość. Pochodzenie i zakres licencji/provider entitlement bez klucza.
@@ -150,6 +170,6 @@ Bez sekretów, osobno dla każdego środowiska:
 
 ## 10. Warunki rozpoczęcia kolejnego etapu
 
-Wymagane: dokładne G1 i przyjęcie dokumentów, kontrolowane main acceptance, wersjonowane przyjęcie Hub/Newsfeed i każdego konsumenta, per-operation E1/Source i revocation, licencja/retencja/budżet, ręcznie przygotowane i zweryfikowane zasoby/role, backend z rzeczywistymi komendami/health, testy izolacji oraz recovery/rollback. Każdy runtime/deploy wymaga osobnego zadania. Staging/Production pozostają planem infrastruktury, bez aktywacji profilu ARCHITECTURE w tych środowiskach.
+Dokładne G1 i dokumenty mają zgodę właściciela wskazaną w dowodzie aktywacji; ich authority wynika dopiero z kontrolowanego main acceptance. Przed runtime nadal wymagane są: wersjonowane przyjęcie Hub/Newsfeed i każdego konsumenta, per-operation E1/Source i revocation, licencja/retencja/budżet, ręcznie przygotowane i zweryfikowane zasoby/role, backend z rzeczywistymi komendami/health, testy izolacji oraz recovery/rollback. Każdy runtime/deploy wymaga osobnego zadania. Staging/Production pozostają planem infrastruktury, bez aktywacji profilu ARCHITECTURE w tych środowiskach.
 
-Powiązania: [kanon Hub](../proposals/v1.0-platform-source-hub-business-and-architecture-canon.md), [amendment Newsfeed](../proposals/v1.1-newsfeed-source-hub-responsibility-amendment.md), [machine-readable environment plan](../proposals/platform-source-hub-environment-plan-v1.json), [Stage 1B evidence](../evidence/2026-11-03-platform-source-hub-stage1b-foundation.md).
+Powiązania: [kanon Hub](../v1.0-platform-source-hub-business-and-architecture-canon.md), [amendment Newsfeed](../v1.1-newsfeed-source-hub-responsibility-amendment.md), [machine-readable resource baseline](../registries/newsfeed-source-hub-environment-baseline-v1.json), [Stage 1B evidence](../evidence/2026-11-03-platform-source-hub-stage1b-foundation.md).

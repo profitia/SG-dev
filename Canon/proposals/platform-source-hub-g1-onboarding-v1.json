@@ -1,15 +1,15 @@
 {
   "schemaVersion": "1.0",
-  "status": "PROPOSED_NOT_ACTIVE",
+  "status": "OWNER_APPROVED_G1_GOVERNANCE_ONLY",
   "capability": "Platform Source Hub",
   "logicalOwner": "Architecture Platform",
   "repository": "profitia/SG-dev",
   "projectKey": "ARCHITECTURE",
   "targetEnvironment": "development",
   "directionApproval": "OWNER_APPROVED_2026-11-03",
-  "exactG1Approval": "PENDING",
-  "documentAcceptance": "PENDING",
-  "activeRegistryChanged": false,
+  "exactG1Approval": "G1 GRANTED",
+  "documentAcceptance": "OWNER_APPROVED_EXACT_CANDIDATE",
+  "activeRegistryChanged": true,
   "implementationAuthorized": false,
   "resourceCreationByAgentAuthorized": false,
   "deploymentAuthorized": false,
@@ -132,5 +132,10 @@
     "decisionDocument": "Canon/v1.0-platform-source-hub-business-and-architecture-canon.md",
     "evidenceDocument": "Canon/evidence/2026-11-03-platform-source-hub-stage1b-foundation.md"
   },
-  "activationFreshnessNote": "Load orders 460/470 and dependencies are a proposal against referenceMain, not reserved active slots. Recheck current main, parallel proposals and each dependency before activation; preserve active Newsfeed v1.0 and record actual approval provenance."
+  "activationFreshnessNote": "Load orders 460/470 and dependencies are a proposal against referenceMain, not reserved active slots. Recheck current main, parallel proposals and each dependency before activation; preserve active Newsfeed v1.0 and record actual approval provenance.",
+  "decisionId": "ARCH-SOURCE-HUB-G1-FINAL-ACTIVATION-20261103",
+  "decisionEvidence": "Canon/evidence/2026-11-03-platform-source-hub-final-activation.md",
+  "approvedCandidate": "b40564130fe7b6ced4d7df233dd6749653846114",
+  "effectiveOn": "CONTROLLED_MAIN_ACCEPTANCE",
+  "currentAuthority": "Canon/registries/current-architecture-baseline-v1.json and governance-manifest-v2.json; historical proposed rows below are not an executable registry."
 }
