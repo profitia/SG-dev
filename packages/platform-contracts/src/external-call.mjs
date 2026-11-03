@@ -87,7 +87,7 @@ export function createExternalCallHost(options){
       ||!Number.isSafeInteger(d.admittedCount)||d.admittedCount<0||!/^[1-9][0-9]*$/.test(d.policyVersion??'')
       ||!Number.isSafeInteger(d.maximumRequestBytes)||d.maximumRequestBytes<1||d.maximumRequestBytes>1048576
       ||!Number.isSafeInteger(d.maximumResponseBytes)||d.maximumResponseBytes<1||d.maximumResponseBytes>8388608
-      ||!Number.isSafeInteger(d.timeoutMs)||d.timeoutMs<100||d.timeoutMs>120000
+      ||!Number.isSafeInteger(d.timeoutMs)||d.timeoutMs<100||d.timeoutMs>(model?model.timeoutMs:120000)
       ||!(Date.parse(d.expiresAt)>now())||Date.parse(d.expiresAt)>now()+30000
       ||b.transport==='LOCAL_SYNTHETIC_HTTP'&&d.sourceRef!=='SYNTHETIC_ONLY')throw new ExternalCallUnavailable('NOT_SENT')
     if(native){try{assertNativeDescriptor(native,d);if(!(Date.parse(d.nativeExpiresAt)>now()))throw Error()}catch{throw new ExternalCallUnavailable('NOT_SENT')}}
@@ -250,6 +250,7 @@ export async function publicWebTransportSchemaDigest(){const fs=await import('no
 export async function externalCallSourceDigest(){const fs=await import('node:fs');return createHash('sha256').update(fs.readFileSync(new URL('./external-call.mjs',import.meta.url)))
   .update(fs.readFileSync(new URL('./model-execution.mjs',import.meta.url))).update(fs.readFileSync(new URL('./model-execution.d.mts',import.meta.url)))
   .update(fs.readFileSync(new URL('./../migrations/access/028-model-execution.sql',import.meta.url)))
+  .update(fs.readFileSync(new URL('./../migrations/access/029-model-execution-long-report.sql',import.meta.url)))
   .update(fs.readFileSync(new URL('./external-call.d.mts',import.meta.url))).update(await externalCallSchemaDigest())
   .update(fs.readFileSync(new URL('./native-external-transport.mjs',import.meta.url))).update(fs.readFileSync(new URL('./native-external-transport.d.mts',import.meta.url)))
   .update(await nativeExternalTransportSchemaDigest())

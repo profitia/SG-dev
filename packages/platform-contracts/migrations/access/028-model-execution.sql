@@ -21,9 +21,9 @@ CREATE TABLE profitia_model_execution.policies(
  profile_id text NOT NULL CHECK(profile_id~'^[A-Za-z0-9._:-]{1,128}$'),
  model text NOT NULL CHECK(model='gpt-6.1-sol'),
  maximum_input_tokens integer NOT NULL CHECK(maximum_input_tokens BETWEEN 1 AND 15000),
- maximum_output_tokens integer NOT NULL CHECK(maximum_output_tokens BETWEEN 1 AND 8000),
+ maximum_output_tokens integer NOT NULL CHECK(maximum_output_tokens BETWEEN 1 AND 32000),
  maximum_body_bytes integer NOT NULL CHECK(maximum_body_bytes BETWEEN 1 AND 65536),
- reservation_micro_usd bigint NOT NULL CHECK(reservation_micro_usd BETWEEN 1 AND 150000),
+ reservation_micro_usd bigint NOT NULL CHECK(reservation_micro_usd BETWEEN 1 AND 5000000),
  maximum_attempts integer NOT NULL CHECK(maximum_attempts=1),
  -- These are public approval references, not client booleans or credentials.
  verified_key_project_ref text NOT NULL CHECK(length(verified_key_project_ref) BETWEEN 1 AND 256),
@@ -38,7 +38,7 @@ CREATE TABLE profitia_model_execution.holds(
  call_id uuid PRIMARY KEY REFERENCES profitia_external_call.calls(call_id),
  policy_id uuid NOT NULL UNIQUE REFERENCES profitia_model_execution.policies(policy_id),
  policy_version bigint NOT NULL,
- reserved_micro_usd bigint NOT NULL CHECK(reserved_micro_usd BETWEEN 1 AND 150000),
+ reserved_micro_usd bigint NOT NULL CHECK(reserved_micro_usd BETWEEN 1 AND 5000000),
  status text NOT NULL CHECK(status IN('HELD','ATTEMPTED','UNVERIFIED','RESPONSE_USAGE_PENDING','RESPONSE_USAGE_RECORDED','NOT_SENT')),
  usage jsonb,estimated_cost_micro_usd bigint CHECK(estimated_cost_micro_usd>=0),
  request_id text CHECK(length(request_id) BETWEEN 1 AND 512 AND request_id~'^[A-Za-z0-9._:-]+$'),response_id text CHECK(length(response_id) BETWEEN 1 AND 512 AND response_id~'^[A-Za-z0-9._:-]+$'),
@@ -61,7 +61,7 @@ DECLARE d jsonb;p profitia_model_execution.policies%ROWTYPE;i profitia_model_exe
  d:=profitia_external_native.descriptor(p_source,p_resource);
  IF d IS NULL OR d->>'origin' IS DISTINCT FROM 'https://api.openai.com' OR d->>'transport' IS DISTINCT FROM 'HTTPS'
   OR d->'pathRules' IS DISTINCT FROM '[{"method":"POST","path":"/v1/responses"}]'::jsonb
-  OR (d->>'timeoutMs')::integer<>120000 THEN RETURN NULL;END IF;
+  OR (d->>'timeoutMs')::integer NOT IN(120000,600000) THEN RETURN NULL;END IF;
  SELECT * INTO i FROM profitia_model_execution.installation WHERE singleton;
  IF NOT FOUND OR (SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
   WHERE n.nspname='profitia_model_execution' AND c.relkind='r' AND c.relowner='profitia_ingestion_owner'::regrole AND c.relrowsecurity AND c.relforcerowsecurity)<>3 THEN RETURN NULL;END IF;

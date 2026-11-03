@@ -13,10 +13,10 @@ export function captureModelExecution(value){
   ||!/^[-a-zA-Z0-9._:]{1,128}$/.test(value.profileId??'')||value.model!=='gpt-6.1-sol'
   ||!/^[a-f0-9]{64}$/.test(value.schemaDigest??'')
   ||!Number.isSafeInteger(value.maximumInputTokens)||value.maximumInputTokens<1||value.maximumInputTokens>15000
-  ||!Number.isSafeInteger(value.maximumOutputTokens)||value.maximumOutputTokens<1||value.maximumOutputTokens>8000
+  ||!Number.isSafeInteger(value.maximumOutputTokens)||value.maximumOutputTokens<1||value.maximumOutputTokens>32000
   ||!Number.isSafeInteger(value.maximumBodyBytes)||value.maximumBodyBytes<1||value.maximumBodyBytes>65536
-  ||!Number.isSafeInteger(value.reservationMicroUsd)||value.reservationMicroUsd<1||value.reservationMicroUsd>150000
-  ||value.timeoutMs!==120000)invalid()
+  ||!Number.isSafeInteger(value.reservationMicroUsd)||value.reservationMicroUsd<1||value.reservationMicroUsd>5000000
+  ||![120000,600000].includes(value.timeoutMs))invalid()
  return Object.freeze({...value})
 }
 export function assertModelDescriptor(policy,descriptor){
@@ -35,7 +35,7 @@ export function assertModelRequest(policy,body){
  if(!v||Object.getPrototypeOf(v)!==Object.prototype
   ||Object.keys(v).sort().join(',')!=='input,max_output_tokens,model,reasoning,service_tier,store,text'
   ||v.model!==policy.model||v.store!==false||v.max_output_tokens!==policy.maximumOutputTokens||v.service_tier!=='default'
-  ||JSON.stringify(v.reasoning)!==JSON.stringify({effort:'medium'})
+  ||!['medium','high'].some(effort=>JSON.stringify(v.reasoning)===JSON.stringify({effort}))
   ||!Array.isArray(v.input)||!v.input.length||v.input.length>2
   ||v.input.some(m=>!m||Object.keys(m).sort().join(',')!=='content,role'||!['developer','user'].includes(m.role)||typeof m.content!=='string')
   ||!v.text||Object.keys(v.text).join(',')!=='format'||v.text.format?.type!=='json_schema'||v.text.format.strict!==true)invalid()
