@@ -31,7 +31,7 @@ test('every changed SG2 source in the candidate or resulting main has an exact a
  // Prisma lifecycle output is independently generated, never an authored source change.
  // A published receipt retains its original source set after merge. Current
  // bytes are strictly verified above; an accepted main has no new amendments.
- assertSourceCoverage(candidateSourcePaths(new URL('../../../',import.meta.url)),{...a.sourceDigests,...r.xrayAppShellPresentation?.sourceDigests,...r.xrayStyleIsolationContinuation?.sourceDigests,...r.sentryObservabilityCompatibility?.sourceDigests,...r.marketHistoryIngestionCompatibility?.sourceDigests,...r.pciSmartInputCorrective?.sourceDigests,...r.pciSmartResultingMainScopeCompatibility?.sourceDigests,...Object.fromEntries(Object.entries(r.fullUiParityAdoption?.applicationSourceDigests??{}).map(([f,d])=>['apps/sg-runtime/'+f,d])),...r.productAnalyticsMainCompatibility?.sourceDigests})
+ assertSourceCoverage(candidateSourcePaths(new URL('../../../',import.meta.url)),{...a.sourceDigests,...r.xrayAppShellPresentation?.sourceDigests,...r.appShellFourCardCascade?.sourceDigests,...r.xrayStyleIsolationContinuation?.sourceDigests,...r.sentryObservabilityCompatibility?.sourceDigests,...r.marketHistoryIngestionCompatibility?.sourceDigests,...r.pciSmartInputCorrective?.sourceDigests,...r.pciSmartResultingMainScopeCompatibility?.sourceDigests,...Object.fromEntries(Object.entries(r.fullUiParityAdoption?.applicationSourceDigests??{}).map(([f,d])=>['apps/sg-runtime/'+f,d])),...r.productAnalyticsMainCompatibility?.sourceDigests,...r.appShellFourCardCascade?.sourceDigests})
 })
 test('scope coverage retains accepted parallel files but rejects any unbound candidate amendment',()=>{
  const root=fs.mkdtempSync(path.join(os.tmpdir(),'sg2-pci-source-scope-'))
@@ -192,4 +192,11 @@ test('X-Ray host presentation rejects modified current sources and false standal
  const r=receipt(),a=r.xrayAppShellPresentation;assert(a);assertPciSmartIntegrity(r,current,historical);
  for(const f of a.changedSourcePaths)assert.throws(()=>assertPciSmartIntegrity(r,p=>p===f?Buffer.concat([current(p),Buffer.from('tamper')]):current(p),historical));
  for(const change of [x=>x.xrayAppShellPresentation.standaloneDefaultsUnchanged=false,x=>x.xrayAppShellPresentation.changedSourcePaths.pop(),x=>x.xrayAppShellPresentation.sourceDigests[a.changedSourcePaths[0]]='0'.repeat(64)]){const x=structuredClone(r);change(x);assert.throws(()=>assertPciSmartIntegrity(x,current,historical))}
+})
+
+
+test('four-card desk continuation rejects changed current bytes, omitted scope and rewritten accepted history',()=>{
+ const r=receipt(),a=r.appShellFourCardCascade;assert(a);assertPciSmartIntegrity(r,current,historical)
+ for(const file of a.changedSourcePaths)assert.throws(()=>assertPciSmartIntegrity(r,p=>p===file?Buffer.concat([current(p),Buffer.from('tamper')]):current(p),historical),file)
+ for(const mutate of [r=>r.appShellFourCardCascade.changedSourcePaths.pop(),r=>delete r.appShellFourCardCascade.sourceDigests[a.changedSourcePaths[0]],r=>r.appShellFourCardCascade.sourceDigests['apps/sg-runtime/unapproved.ts']='0'.repeat(64),r=>r.appShellFourCardCascade.previousReceiptSha256='0'.repeat(64),r=>r.appShellFourCardCascade.design.revision='unapproved',r=>r.appShellFourCardCascade.authorizationChanged=true,r=>r.xrayAppShellPresentation.standaloneDefaultsUnchanged=false,r=>r.unapprovedReceipt={}]){const x=structuredClone(r);mutate(x);assert.throws(()=>assertPciSmartIntegrity(x,current,historical))}
 })
