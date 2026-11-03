@@ -14,7 +14,7 @@ export function assertSourceHubApiPathCompatibility(receipt,current,historical,{
  assert.equal(hash(bytes),a.previousReceiptSha256)
  const {sourceHubApiPathCompatibility,...preserved}=receipt
  assert.deepEqual(preserved,prior,'every accepted product, analytics and historical receipt is immutable')
- assert.deepEqual(Object.keys(a.consumerSourceDigests).sort(),["apps/maps-runtime/package-lock.json", "apps/maps-runtime/platform-integration.json", "apps/maps-runtime/test/embed.test.mjs", "apps/srm/deployment/root-atomic-claim-targets.json", "apps/srm/package-lock.json", "apps/srm/scripts/diagnostic-telemetry-adoption.test.mjs", "apps/srm/scripts/native-execution-adoption.test.mjs", "apps/srm/scripts/operation-context.test.mjs", "apps/srm/scripts/request-quota-adoption.test.mjs", "apps/srm/scripts/source-hub-sdk-compatibility.mjs", "apps/srm/scripts/xray-performance-adoption.test.mjs", "apps/srm/src/server/full-ui-parity-adoption.test.ts", "apps/srm/src/server/root-atomic-claim-adoption.test.ts", "packages/maps-embed/package.json"])
+ assert.deepEqual(Object.keys(a.consumerSourceDigests).sort(),["apps/maps-runtime/package-lock.json", "apps/maps-runtime/platform-integration.json", "apps/maps-runtime/test/embed.test.mjs", "apps/srm/deployment/root-atomic-claim-targets.json", "apps/srm/package-lock.json", "apps/srm/scripts/diagnostic-telemetry-adoption.test.mjs", "apps/srm/scripts/native-execution-adoption.test.mjs", "apps/srm/scripts/operation-context.test.mjs", "apps/srm/scripts/private-host.integration.test.mjs", "apps/srm/scripts/request-quota-adoption.test.mjs", "apps/srm/scripts/rural-location-release.test.mjs", "apps/srm/scripts/source-hub-sdk-compatibility.mjs", "apps/srm/scripts/supplier-location-admission.integration.test.mjs", "apps/srm/scripts/xray-performance-adoption.test.mjs", "apps/srm/scripts/xray-style-acceptance.mjs", "apps/srm/src/server/full-ui-parity-adoption.test.ts", "apps/srm/src/server/root-atomic-claim-adoption.test.ts", "packages/maps-embed/package.json"])
  for(const [p,h]of Object.entries(a.consumerSourceDigests))assert.equal(hash(current(p)),h,'current consumer compatibility '+p)
  for(const [p,h]of Object.entries(a.sourceDigests))assert.equal(hash(current('packages/platform-contracts/'+p)),h,'current SDK '+p)
  for(const [p,h]of Object.entries(a.producerMetadataDigests))assert.equal(hash(current(p)),h,'current optional peer metadata '+p)
@@ -25,5 +25,7 @@ export function assertSourceHubApiPathCompatibility(receipt,current,historical,{
  const peerFile='apps/sg-runtime/operation-integration.json'
  const peerReceipt=validatePeer?JSON.parse(current(peerFile)):null
  const peerView=peerReceipt?.sourceHubApiPathCompatibility?assertPeerApiPathCompatibility(peerReceipt,current,historical,{validatePeer:false}):null
- return {prior,previousBytes:p=>p===file||mapped.has(p)?historical(a.previousReceiptSourceSha,p):peerView?.previousBytes(p)??current(p)}
+ const priorBytes=new Map([[file,bytes]])
+ const predecessor=p=>{if(!priorBytes.has(p))priorBytes.set(p,Buffer.from(historical(a.previousReceiptSourceSha,p)));return Buffer.from(priorBytes.get(p))}
+ return {prior,previousBytes:p=>p===file||mapped.has(p)?predecessor(p):peerView?.previousBytes(p)??current(p)}
 }
