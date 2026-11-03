@@ -3,6 +3,7 @@ import {OIL_REPORT_PROFILE as p,assertOilBodyBudget} from './oil-report-profile'
 import {OIL_NARRATIVE_FORMAT,OIL_REPORT_PROMPT} from './oil-report-contract'
 import type {OilEvidenceBundle} from './oil-report-evidence'
 import {assertOilEvidenceBundle} from './oil-report-evidence'
+import {oilNarrativeBudget} from './oil-report-renderer'
 import {createPlatformIngestionHost} from '@profitia/platform-contracts/platform-ingestion'
 import {createExternalCallHost,externalCallSourceDigest,externalCallEvidence,externalNativeResponse,ExternalCallUnavailable} from '@profitia/platform-contracts/external-call'
 import targets from '../../deployment/benchmark-discovery-targets.json'
@@ -11,7 +12,7 @@ export interface TokenBudgetReceipt {count:number;model:string;bodySha256:string
  * bound to the separately adopted, current E1+Source native host, never raw HTTP. */
 export function prepareOilResponsesCommand(bundle:OilEvidenceBundle){
  const body=JSON.stringify({model:p.model,store:false,reasoning:{effort:p.reasoningEffort},service_tier:p.serviceTier,max_output_tokens:p.maximumOutputTokens,
-  input:[{role:'developer',content:OIL_REPORT_PROMPT},{role:'user',content:JSON.stringify(bundle)}],text:{format:OIL_NARRATIVE_FORMAT}})
+  input:[{role:'developer',content:OIL_REPORT_PROMPT+' Limit łącznej narracji wraz ze spacjami: '+oilNarrativeBudget(bundle)+' znaków. Wykorzystaj miejsce na konkretne zależności gospodarcze i warunki decyzji.'},{role:'user',content:JSON.stringify(bundle)}],text:{format:OIL_NARRATIVE_FORMAT}})
  if(Buffer.byteLength(body)>p.maximumBodyBytes)throw Error('REPORT_BODY_TOO_LARGE')
  return Object.freeze({url:'https://api.openai.com/v1/responses',method:'POST' as const,body,bodySha256:createHash('sha256').update(body).digest('hex'),bodyBytes:Buffer.byteLength(body),model:p.model})
 }
@@ -24,7 +25,7 @@ export function oilReportSourceCandidate(){return Object.freeze({sourceId:'sg2.o
 export const OIL_B1=Object.freeze({operation:'oil.report.owner_evaluation',admissionSha256:'170f41c2d3b14ae87a8c97b2c7268eb8d2fab3817cc3fdae9050e73670c45f8e',
  sourceId:'sg2.oil-report.openai',resourceId:'sg2-oil-report:compose',role:'sg2_oil_composer_development_source_runtime',
  projectId:'proj_2K9cBEJw2V9ZRe1l9RsnBo9s',keyTrackingId:'key_OA4upa2U5wcNJYx3',
- producerExternalDigest:'40c2d7b8aa6120badd6d3291298241a8fa048fb6da915602ce726ca88f9bd54b',modelSqlDigest:'5d2574b15bb532fee04a8984dd6a81e4d2f99e8206310076bae3e5bbf73a7653'} as const)
+ producerExternalDigest:'6cca4e5ce040d216df288b39414fd3fac8993c12b0ad48900d6854396db1cb4a',modelSqlDigest:'1d4b6af7900b44f3d6a311bdcef85280d1b5c968ca67128e0e641e9adb8d253c'} as const)
 type Root<T>=Parameters<typeof createPlatformIngestionHost<T>>[0]
 type EvaluationOptions<T>={root:Omit<Root<T>,'source'|'validateSharedPayload'>;externalConfigurationVersion:string;artifactSha256:string;bundle:OilEvidenceBundle;
  /** Server-owned accepted counter implementation, never an integer/boolean from a caller. */
@@ -83,7 +84,7 @@ const approvedGoReceipts=new WeakMap<object,{source:OilEvaluationSource;sha256:s
 export interface OilEvaluationGo {
  schemaVersion:'OilB1FinalGo/1';decision:'GO_ONE_ATTEMPT';operation:typeof OIL_B1.operation;admissionSha256:typeof OIL_B1.admissionSha256;
  requestSha256:string;evidenceFingerprint:string;artifactSha256:string;asOf:string;expiresAt:string;intentKey:string;
- projectId:typeof OIL_B1.projectId;model:typeof p.model;reservationMicroUsd:150000;
+ projectId:typeof OIL_B1.projectId;model:typeof p.model;reservationMicroUsd:typeof p.reservationMicroUsd;
  ownerGoRef:string;controlledReleaseRef:string;activeKeyProjectProofRef:string;tokenCounterAcceptanceRef:string;previousLiabilityAcceptanceRef:string
 }
 /** A serialized decision is only an operator instruction, never E1 authority.
@@ -97,7 +98,7 @@ export function validateOilEvaluationGo(bytes:Uint8Array,expectedSha256:string,s
  if(!g||Object.keys(g).sort().join(',')!==keys||g.schemaVersion!=='OilB1FinalGo/1'||g.decision!=='GO_ONE_ATTEMPT'||g.operation!==OIL_B1.operation||g.admissionSha256!==OIL_B1.admissionSha256
   ||g.requestSha256!==source.command.bodySha256||g.evidenceFingerprint!==source.bundle.fingerprint||g.asOf!==source.bundle.asOf
   ||g.artifactSha256!==source.artifactSha256
-  ||g.projectId!==OIL_B1.projectId||g.model!==p.model||g.reservationMicroUsd!==150000
+  ||g.projectId!==OIL_B1.projectId||g.model!==p.model||g.reservationMicroUsd!==p.reservationMicroUsd
   ||!Number.isFinite(Date.parse(g.expiresAt))||Date.parse(g.expiresAt)<=now
   ||!['artifactSha256','intentKey'].every(k=>/^[a-f0-9]{64}$/.test(g[k as 'artifactSha256'|'intentKey']))
   ||!['ownerGoRef','controlledReleaseRef','activeKeyProjectProofRef','tokenCounterAcceptanceRef','previousLiabilityAcceptanceRef'].every(k=>typeof g[k as keyof OilEvaluationGo]==='string'&&/^[-A-Za-z0-9._:/]{1,256}$/.test(String(g[k as keyof OilEvaluationGo]))))throw Error('OIL_B1_FINAL_GO_NOT_VALID')

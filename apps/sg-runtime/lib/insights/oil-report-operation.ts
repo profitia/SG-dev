@@ -52,7 +52,7 @@ export async function executeOilOwnerEvaluation(source:OilEvaluationSource,goByt
    const u={inputTokens:usage.input_tokens,outputTokens:usage.output_tokens,cachedInputTokens:usage.input_tokens_details?.cached_tokens??0}
    if(Object.values(u).every(v=>Number.isSafeInteger(v)&&Number(v)>=0)){
     try{const receipt=await source.recordUsage(result.evidence.callId,u as {inputTokens:number;outputTokens:number;cachedInputTokens:number},requestId,review.responseId);save('SOURCE_USAGE_RECEIPT.json',JSON.stringify(receipt,null,2)+'\n')}
-    catch{save('SOURCE_USAGE_RECONCILIATION_REQUIRED.json',JSON.stringify({status:'RECONCILIATION_REQUIRED',retainedHoldMicroUsd:150000,reportedCostUSD:'UNKNOWN',retryAllowed:false})+'\n')}
+    catch{save('SOURCE_USAGE_RECONCILIATION_REQUIRED.json',JSON.stringify({status:'RECONCILIATION_REQUIRED',retainedHoldMicroUsd:OIL_REPORT_PROFILE.reservationMicroUsd,reportedCostUSD:'UNKNOWN',retryAllowed:false})+'\n')}
    }
   }
   if(review.report){

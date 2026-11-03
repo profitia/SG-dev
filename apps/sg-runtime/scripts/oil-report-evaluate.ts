@@ -11,11 +11,12 @@ import {makeOilEvidenceBundle,type OilMarketEvidence} from '../lib/insights/oil-
 import {OIL_B1,createOilEvaluationSource,prepareOilResponsesCommand,type OilEvaluationGo} from '../lib/insights/oil-report-source'
 import {executeOilOwnerEvaluation} from '../lib/insights/oil-report-operation'
 import {traceOilReport} from '../lib/insights/oil-report-observability'
+import {OIL_REPORT_PROFILE as profile} from '../lib/insights/oil-report-profile'
 import targets from '../deployment/benchmark-discovery-targets.json'
 
-export const B1_INPUT=Object.freeze({requestSha256:'c61df3c984351c1ff3edd1ab43a5de451d36be7814d9fce6e5e5295b1abb2695',
+export const B1_INPUT=Object.freeze({requestSha256:'465e6fafc46adc27191d13feb03c365829310a386515c97e88b7ec62c8ce14ca',
  d0Sha256:'ec11c696cdd4e9577c462fdadf45953aba57bb76d7281bf034363513dbde006b',
- lastCaseSha256:'251b521a3fa71441eab299e946f0fb7ab706027d85a23c234cade92830944da7',asOf:'2026-11-03T06:29:25Z',bodyBytes:16890})
+ lastCaseSha256:'251b521a3fa71441eab299e946f0fb7ab706027d85a23c234cade92830944da7',asOf:'2026-11-03T06:29:25Z',bodyBytes:17021})
 export const B1_COUNTER=Object.freeze({sourceId:'sg2.oil-report.openai-token-count',resourceId:'sg2-oil-report:token-count',
  role:'sg2_oil_counter_development_source_runtime',url:'https://api.openai.com/v1/responses/input_tokens',timeoutMs:20000})
 const sha=(value:string|Uint8Array)=>createHash('sha256').update(value).digest('hex')
@@ -72,8 +73,8 @@ export function checkCredential(c:Bindings['openai'],expectedSha256:string){
 export function prepareCounterCommand(request:string){
  if(sha(request)!==B1_INPUT.requestSha256||Buffer.byteLength(request)!==B1_INPUT.bodyBytes)fail('FROZEN_REQUEST_MISMATCH')
  const r=JSON.parse(request)
- if(r.model!=='gpt-6.1-sol'||r.store!==false||r.reasoning?.effort!=='medium'||r.text?.format?.strict!==true
-  ||r.max_output_tokens!==8000||r.service_tier!=='default'||Object.keys(r).sort().join(',')!=='input,max_output_tokens,model,reasoning,service_tier,store,text')fail('FROZEN_PROFILE_MISMATCH')
+ if(r.model!==profile.model||r.store!==false||r.reasoning?.effort!==profile.reasoningEffort||r.text?.format?.strict!==true
+  ||r.max_output_tokens!==profile.maximumOutputTokens||r.service_tier!=='default'||Object.keys(r).sort().join(',')!=='input,max_output_tokens,model,reasoning,service_tier,store,text')fail('FROZEN_PROFILE_MISMATCH')
  const body=JSON.stringify({model:r.model,input:r.input,reasoning:r.reasoning,text:r.text})
  return Object.freeze({url:B1_COUNTER.url,method:'POST' as const,body,bodySha256:sha(body)})
 }
@@ -105,7 +106,13 @@ function loadInput(r:OperatorRelease){
  return {request,bundle,artifactSha256:r.artifact.sha256}
 }
 function loadBindings(r:OperatorRelease){
- const b=JSON.parse(readBoundFile(r.privateBindings,32768).toString('utf8')) as Bindings
+ const carrier=JSON.parse(readBoundFile(r.privateBindings,32768).toString('utf8'))
+ if(carrier.schemaVersion!=='OilMemoryBindings/1'||carrier.secretCarrier!=='STDIN'
+  ||Object.keys(carrier).sort().join(',')!=='schemaVersion,secretCarrier')fail('PRIVATE_BINDINGS_INVALID')
+ // The approved credential and limited-role URLs arrive through an anonymous
+ // pipe. Neither command arguments nor a filesystem carrier contain secrets.
+ const bytes=fs.readFileSync(0);if(bytes.length>32768)fail('PRIVATE_BINDINGS_INVALID')
+ const b=JSON.parse(bytes.toString('utf8')) as Bindings;bytes.fill(0)
  if(b.schemaVersion!=='OilB1PrivateBindings/1')fail('PRIVATE_BINDINGS_INVALID')
  checkDatabaseUrl(b.modelDatabaseUrl,OIL_B1.role);checkDatabaseUrl(b.counterDatabaseUrl,B1_COUNTER.role);checkCredential(b.openai,r.credentialSha256)
  const dsn=new URL(b.sentryDsn)
@@ -165,7 +172,7 @@ export async function inspectReleasedSource(releaseFile:FileRef,outputDirectory:
  const r=readOperatorRelease(releaseFile),{artifactSha256}=loadInput(r),b=loadBindings(r),save=privateOutput(outputDirectory)
  const proof:Record<string,unknown>={schemaVersion:'OilB1SourceInspection/1',artifactSha256,providerRequests:0,credentialFingerprintMatched:true,bindings:[]}
  for(const [role,url,sourceId,resourceId,configurationVersion,deploymentId,timeout] of [
-  [OIL_B1.role,b.modelDatabaseUrl,OIL_B1.sourceId,OIL_B1.resourceId,r.modelConfigurationVersion,'oil-b1-'+artifactSha256,120000],
+  [OIL_B1.role,b.modelDatabaseUrl,OIL_B1.sourceId,OIL_B1.resourceId,r.modelConfigurationVersion,'oil-b1-'+artifactSha256,profile.sourceTimeoutMs],
   [B1_COUNTER.role,b.counterDatabaseUrl,B1_COUNTER.sourceId,B1_COUNTER.resourceId,r.counterConfigurationVersion,'oil-b1-count-'+artifactSha256,20000]] as const){
   const root=databaseRoot(url,role,deploymentId,r.rootConfigurationVersion)
   const result=await root.independentQuery('SELECT current_database() AS database_name,current_user AS role,profitia_ingestion.runtime_descriptor() AS root,profitia_ingestion.current_state($1,$2) IS NOT NULL AS allowed,profitia_external_native.descriptor($1,$2) AS native,to_regnamespace(\'profitia_model_execution\') IS NOT NULL AS model_schema',[sourceId,resourceId])
@@ -216,7 +223,7 @@ export async function runReleasedReport(releaseFile:FileRef,goFile:FileRef,outpu
  const goBytes=readBoundFile(goFile,16384),g=JSON.parse(goBytes.toString('utf8')) as OilEvaluationGo
  if(g.controlledReleaseRef!=='sha256:'+releaseFile.sha256||g.activeKeyProjectProofRef!==r.refs.credential||g.previousLiabilityAcceptanceRef!==r.refs.previousLiability
   ||g.tokenCounterAcceptanceRef!==r.refs.counter||!ref(g.ownerGoRef)||g.decision!=='GO_ONE_ATTEMPT'||g.operation!==OIL_B1.operation
-  ||g.requestSha256!==B1_INPUT.requestSha256||g.asOf!==B1_INPUT.asOf||g.model!=='gpt-6.1-sol'||g.reservationMicroUsd!==150000
+  ||g.requestSha256!==B1_INPUT.requestSha256||g.asOf!==B1_INPUT.asOf||g.model!=='gpt-6.1-sol'||g.reservationMicroUsd!==profile.reservationMicroUsd
   ||!digest(g.intentKey)||!Number.isFinite(Date.parse(g.expiresAt))||Date.parse(g.expiresAt)<=Date.now())fail('GO_RELEASE_BINDING_MISMATCH')
  const {request,bundle,artifactSha256}=loadInput(r)
  if(g.artifactSha256!==artifactSha256||!r.counterReceipt)fail('GO_ARTIFACT_MISMATCH')

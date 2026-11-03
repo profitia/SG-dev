@@ -74,7 +74,7 @@ test('GO is checked before credentials/database/provider access and cannot be re
 test('licensed frozen request binds counter to model, strict schema, reasoning and exact body; receipt cannot be caller fabricated or stale',{
  skip:!process.env.OIL_B1_REQUEST_READONLY_FILE},()=>{
  const request=fs.readFileSync(process.env.OIL_B1_REQUEST_READONLY_FILE!,'utf8'),c=prepareCounterCommand(request),v=JSON.parse(c.body),original=JSON.parse(request)
- assert.equal(hash(request),B1_INPUT.requestSha256);assert.equal(Buffer.byteLength(request),16890)
+ assert.equal(hash(request),B1_INPUT.requestSha256);assert.equal(Buffer.byteLength(request),B1_INPUT.bodyBytes)
  assert.deepEqual(v.input,original.input);assert.deepEqual(v.text,original.text);assert.deepEqual(v.reasoning,original.reasoning)
  assert.equal(v.model,'gpt-6.1-sol');assert.equal('max_output_tokens'in v,false);assert.equal('tools'in v,false)
  const now=Date.now(),receipt:CounterReceipt={schemaVersion:'OilB1TokenCount/1',count:100,model:'gpt-6.1-sol',bodySha256:hash(request),counterBodySha256:c.bodySha256,

@@ -6,11 +6,19 @@ const fmt=(v:number|null|undefined)=>v==null?'NOT_AVAILABLE':v.toFixed(2).replac
 const names={naive:'Naive',damped_holt:'Damped Holt',ets:'ETS',arima:'ARIMA'}
 const hash=(s:string)=>createHash('sha256').update(s).digest('hex')
 const escape=(s:string)=>s.replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;')
+/** Reserve the actual canonical tables/charts/calendar before budgeting prose. */
+export function oilNarrativeBudget(bundle:OilEvidenceBundle){
+ const text='Oczekiwanie na wynik.'
+ const marketRef=bundle.market.find(e=>e.verification==='INDEPENDENTLY_VERIFIED')?.id??'D0'
+ const probe=Object.fromEntries(['statistical','calendar','economy','procurement'].map(k=>[k,[{text,evidenceRefs:[['calendar','economy'].includes(k)?marketRef:'D0']}]])) as OilNarrative
+ const fixed=renderOilReport(probe,bundle).characterCount-4*Array.from(text).length
+ return Math.max(0,4000-fixed-40)
+}
 /** Categorical points, not an interpolated forecast trajectory. Every SVG text
  * node has an identical entry in the visible character serialization. */
 function chart(s:OilEvidenceBundle['forecast']['series'][number]){
  const points=[{label:'23.10',value:s.previousWeekValue},{label:'30.10',value:s.actual},...s.models.map(m=>({label:names[m.id]+' 06.11',value:m.point}))]
- const labels=[s.name+' — D7 06.11.2026','USD/bbl',...points.map(p=>p.label+' '+fmt(p.value)),'EXPERIMENTAL_7D / PARTIAL_READY; przedziały NOT_AVAILABLE']
+ const labels=[s.name+' — D7 06.11.2026','USD/bbl',...points.map(p=>p.label+' '+fmt(p.value)),'D7 eksperymentalne; bez przedziałów']
  const values=points.map(p=>p.value),lo=Math.min(...values),hi=Math.max(...values),span=hi-lo||1
  const text=(x:number,y:number,t:string)=>'<text x="'+x+'" y="'+y+'">'+escape(t)+'</text>'
  const rows=points.map((p,i)=>text(16,78+i*35,labels[i+2])+'<circle cx="'+(350+(p.value-lo)/span*190).toFixed(2)+'" cy="'+(73+i*35)+'" r="5" fill="'+(i<2?'#14243b':'#326ac1')+'"/>').join('')
@@ -25,7 +33,9 @@ export function renderOilReport(raw:OilNarrative,bundle:OilEvidenceBundle){
  const charts=f.series.map(chart)
  const rows=f.series.flatMap(s=>s.models.map(m=>[s.name,names[m.id],fmt(m.point),fmt(m.delta)+'/'+fmt(m.deltaPercent),fmt(m.smape),fmt(m.historicalAverageVerificationPercent),fmt(m.directionalAccuracyPercent),fmt(m.lastMatured.predicted)+'/'+fmt(m.lastMatured.actual),fmt(m.lastMatured.verificationPercent)].join(' | ')))
  const calendar=bundle.market.filter(e=>e.verification==='INDEPENDENTLY_VERIFIED'&&['COMPLETED','SCHEDULED','REVISED','CANCELLED'].includes(e.kind))
- const event=(e:typeof calendar[number])=>e.eventDate!.slice(0,16).replace('T',' ')+' UTC — '+e.publisher+': '+e.title
+ // Concise visible event names; full publication titles/URLs stay in lineage.
+ const eventNames:Record<string,string>={EIA_WPSR_1028:'zapasy i rafinerie',OPEC_1101:'decyzja OPEC+',FED_1028:'stopy Fed',BEA_GDP_Q3:'PKB USA',BLS_JOLTS_1103:'JOLTS',BLS_PRODUCTIVITY_1105:'wydajność i koszty',BLS_EMPLOYMENT_1106:'zatrudnienie i płace'}
+ const event=(e:typeof calendar[number])=>(e.kind==='SCHEDULED'?e.eventDate!.slice(0,16).replace('T',' ')+' UTC':e.eventDate!.slice(0,10))+' — '+e.publisher+': '+(eventNames[e.id]??e.title)
  const body=[
   '# Oil Market Outlook — Brent & WTI',
   'Asfalt drogowy | asOf '+bundle.asOf+' | pilot wewnętrzny',

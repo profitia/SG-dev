@@ -13,7 +13,7 @@ const b=JSON.parse(fs.readFileSync(new URL('./fixtures/oil-d0-report-projection.
 test('closed Responses preparation has exact model/schema/privacy and no tools, background or credential',()=>{
  const c=prepareOilResponsesCommand(b),v=JSON.parse(c.body)
  assert.equal(c.url,'https://api.openai.com/v1/responses');assert.equal(v.model,'gpt-6.1-sol');assert.equal(v.store,false)
- assert.equal(v.text.format.strict,true);assert.equal(v.max_output_tokens,8000);assert.equal(v.reasoning.effort,'medium')
+ assert.equal(v.text.format.strict,true);assert.equal(v.max_output_tokens,32000);assert.equal(v.reasoning.effort,'high')
  for(const k of ['tools','background','previous_response_id','api_key'])assert.equal(k in v,false)
  assert.equal(oilReportSourceCandidate().status,'PROPOSED_NOT_ADMITTED')
  assert.throws(()=>validateOilTokenReceipt(c,{verified:false,count:10,model:v.model,bodySha256:c.bodySha256}))
@@ -36,7 +36,7 @@ test('legacy SDK cannot ignore USD policy; isolated model SDK still needs origin
   const source=await createOilEvaluationSource(input)
   const data={schemaVersion:'OilB1FinalGo/1',decision:'GO_ONE_ATTEMPT',operation:OIL_B1.operation,admissionSha256:OIL_B1.admissionSha256,
    requestSha256:source.command.bodySha256,evidenceFingerprint:bundle.fingerprint,artifactSha256,asOf:bundle.asOf,expiresAt:new Date(Date.now()+60000).toISOString(),intentKey:'b'.repeat(64),
-   projectId:OIL_B1.projectId,model:'gpt-6.1-sol',reservationMicroUsd:150000,ownerGoRef:'SYNTHETIC_ONLY',controlledReleaseRef:'SYNTHETIC_ONLY',activeKeyProjectProofRef:'SYNTHETIC_ONLY',tokenCounterAcceptanceRef:'SYNTHETIC_ONLY',previousLiabilityAcceptanceRef:'SYNTHETIC_ONLY'} as OilEvaluationGo
+   projectId:OIL_B1.projectId,model:'gpt-6.1-sol',reservationMicroUsd:4900000,ownerGoRef:'SYNTHETIC_ONLY',controlledReleaseRef:'SYNTHETIC_ONLY',activeKeyProjectProofRef:'SYNTHETIC_ONLY',tokenCounterAcceptanceRef:'SYNTHETIC_ONLY',previousLiabilityAcceptanceRef:'SYNTHETIC_ONLY'} as OilEvaluationGo
   await assert.rejects(source.execute(data,AbortSignal.timeout(1000)));assert.equal(queries,0)
   const bytes=Buffer.from(JSON.stringify(data)),go=validateOilEvaluationGo(bytes,createHash('sha256').update(bytes).digest('hex'),source)
   await assert.rejects(source.execute(go,AbortSignal.timeout(1000)));assert.equal(queries,1)
