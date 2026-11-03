@@ -19,6 +19,7 @@ const acceptedConsumerPaths={
     "apps/sg-runtime/tests/pci-smart-integrity.mjs",
     "apps/sg-runtime/tests/pci-smart-integrity.test.mjs",
     "apps/sg-runtime/tests/porr-demo-middleware.test.ts",
+    "apps/sg-runtime/tests/private-host.integration.test.mjs",
     "apps/sg-runtime/tests/self-service-account.test.ts",
     "apps/sg-runtime/tests/xray-fresh-performance-adoption.test.mjs",
     "apps/sg-runtime/tests/xray-gateway.test.ts"
@@ -32,9 +33,13 @@ const acceptedConsumerPaths={
     "apps/srm/scripts/diagnostic-telemetry-adoption.test.mjs",
     "apps/srm/scripts/native-execution-adoption.test.mjs",
     "apps/srm/scripts/operation-context.test.mjs",
+    "apps/srm/scripts/private-host.integration.test.mjs",
     "apps/srm/scripts/request-quota-adoption.test.mjs",
+    "apps/srm/scripts/rural-location-release.test.mjs",
     "apps/srm/scripts/source-hub-sdk-compatibility.mjs",
+    "apps/srm/scripts/supplier-location-admission.integration.test.mjs",
     "apps/srm/scripts/xray-performance-adoption.test.mjs",
+    "apps/srm/scripts/xray-style-acceptance.mjs",
     "apps/srm/src/server/full-ui-parity-adoption.test.ts",
     "apps/srm/src/server/root-atomic-claim-adoption.test.ts",
     "packages/maps-embed/package.json"

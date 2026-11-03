@@ -1,6 +1,6 @@
 # Source Hub / Newsfeed Stage 2A — implementation candidate and acceptance requirements
 
-Owner Architecture Platform; task `ARCHITECTURE-SOURCE-HUB-NEWSFEED-STAGE2A-20261103`; Development, code/offline only. Stage1B authority `9bce78138e1396765ce67b9b1b29841efdb017f2`. The candidate was refreshed without conflicts onto `36b07672f572ff7c1c81117e3f3b01fa93ec1e65`, preserving the parallel SG2 analytics acceptance. PMOS registration, actual host task identity and all applicable preflights precede implementation. This source document does not substitute for exact PR/main CI or the final independently verified PMOS/PHR closeout.
+Owner Architecture Platform; task `ARCHITECTURE-SOURCE-HUB-NEWSFEED-STAGE2A-20261103`; Development, code/offline only. Stage1B authority `9bce78138e1396765ce67b9b1b29841efdb017f2`. The candidate was refreshed without conflicts onto `aa2fab29eae8dd0ba235b95c9ccab6fb2e052092`, preserving the parallel SG2 analytics and GeoIP privacy acceptance. PMOS registration, actual host task identity and all applicable preflights precede implementation. This source document does not substitute for exact PR/main CI or the final independently verified PMOS/PHR closeout.
 
 ## Authorised implementation and scope amendment
 
