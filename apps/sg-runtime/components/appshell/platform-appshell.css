@@ -133,3 +133,26 @@
 .appshell .as-xray-assistant-host{display:flex;min-height:32rem}
 .appshell .as-xray-assistant-host .srm-chat-slot{height:100%;min-height:32rem;flex:1}
 .appshell .srm-chat-screen-context{margin:0;padding:.5rem 1rem;color:var(--muted);font-size:.8125rem;overflow-wrap:anywhere}
+
+/* SRM-C106 / APP-01 / APP-MOT-01 / SRM-B68 — approved size-locked desk.
+   Card width is resolved against the workspace in both states. Module layouts
+   retain their own geometry; only the desk participates in this reflow. */
+.appshell:not(.as-module-active) .as-workspace{position:relative}
+.appshell:not(.as-module-active) .as-app-card{width:100%;min-width:0;align-self:start}
+@media(min-width:1101px){
+ .appshell:not(.as-module-active) .as-workspace{container-type:inline-size}
+ .appshell:not(.as-module-active) .as-applications{--as-card-locked-width:calc((var(--as-workspace-width,100cqw) - 4.625rem - 1rem) / 2)}
+ .appshell:not(.as-module-active) .as-app-stack{grid-template-columns:minmax(0,var(--as-card-locked-width))}
+ .appshell:not(.as-module-active) .as-workspace.is-chat-collapsed .as-applications{grid-column:1/-1;padding-right:4.625rem}
+ .appshell:not(.as-module-active) .as-workspace.is-chat-collapsed .as-app-stack{grid-template-columns:repeat(2,minmax(0,var(--as-card-locked-width)));gap:1rem;align-items:start}
+ .appshell:not(.as-module-active) .as-workspace.is-chat-collapsed .as-app-card:nth-child(1){grid-column:1;grid-row:1}
+ .appshell:not(.as-module-active) .as-workspace.is-chat-collapsed .as-app-card:nth-child(2){grid-column:1;grid-row:2}
+ .appshell:not(.as-module-active) .as-workspace.is-chat-collapsed .as-app-card:nth-child(3){grid-column:2;grid-row:1}
+ .appshell:not(.as-module-active) .as-workspace.is-chat-collapsed .as-app-card:nth-child(4){grid-column:2;grid-row:2}
+ .appshell:not(.as-module-active) .as-workspace.is-chat-collapsed .as-assistant{position:absolute;right:0;top:0;width:3.625rem;min-width:0;z-index:5}
+ .appshell:not(.as-module-active) .as-workspace.is-chat-collapsed .as-assistant .srm-chat-slot{width:3.625rem;min-height:9rem;height:9rem;overflow:clip}
+}
+@media(max-width:1100px){
+ .appshell:not(.as-module-active) .as-workspace.is-chat-collapsed .as-app-stack{grid-template-columns:minmax(0,1fr);align-items:start}
+ .appshell:not(.as-module-active) .as-workspace.is-chat-collapsed .as-assistant .srm-chat-slot{width:100%;min-height:9rem;height:9rem}
+}
