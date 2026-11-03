@@ -1,6 +1,6 @@
 # SG2 D1 consumer — installation held
 
-Exact producer source: `cb150a9e48f4f58db9f553191d434db5641dd995`. Consumer task SG2-FINDER-D1-AUDIT-READER-20261103. This is prepared file-level adoption, not accepted producer/consumer release or installation authority.
+Exact producer source: `671b26239511bb9c1fad3028dbe4ddd64e4858c3`. Consumer task SG2-FINDER-D1-AUDIT-READER-20261103. This is prepared file-level adoption, not accepted producer/consumer release or installation authority.
 
 | Approved source artifact | SHA256 |
 |---|---|

@@ -3,7 +3,7 @@
   "status": "SOURCE_PREPARATION_ONLY_PENDING_PRODUCER_APPROVAL_AND_INSTALLATION",
   "producerTask": "ARCHITECTURE-SG2-D1-AUDIT-READER-20261103",
   "consumerTask": "SG2-FINDER-D1-AUDIT-READER-20261103",
-  "producerSourceSha": "cb150a9e48f4f58db9f553191d434db5641dd995",
+  "producerSourceSha": "671b26239511bb9c1fad3028dbe4ddd64e4858c3",
   "modulePath": "packages/platform-contracts/src/sg2-denial-audit-reader.mjs",
   "sourceSha256": {
     "packages/platform-contracts/src/sg2-denial-audit-reader.mjs": "bb2c0b14a2c3de455808484db91c485f7371d82ac806c683db60a6780be23c9b",
