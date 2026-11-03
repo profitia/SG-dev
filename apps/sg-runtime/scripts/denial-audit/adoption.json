@@ -3,12 +3,12 @@
   "status": "SOURCE_PREPARATION_ONLY_PENDING_PRODUCER_APPROVAL_AND_INSTALLATION",
   "producerTask": "ARCHITECTURE-SG2-D1-AUDIT-READER-20261103",
   "consumerTask": "SG2-FINDER-D1-AUDIT-READER-20261103",
-  "producerSourceSha": "671b26239511bb9c1fad3028dbe4ddd64e4858c3",
+  "producerSourceSha": "64d600192c778b6dc13a3d62b4dd81fd3c008870",
   "modulePath": "packages/platform-contracts/src/sg2-denial-audit-reader.mjs",
   "sourceSha256": {
-    "packages/platform-contracts/src/sg2-denial-audit-reader.mjs": "bb2c0b14a2c3de455808484db91c485f7371d82ac806c683db60a6780be23c9b",
-    "packages/platform-contracts/migrations/denial-audit/private.sql": "011cd8a550f738a69fb6983f0ea4437c3a4f2a51374aa7d9048af04d2e7a47cc",
-    "packages/platform-contracts/migrations/denial-audit/source.sql": "7f1c21546abc8bfe47908f30b9cab836ada272948ce3ea2ddfdd0eea5475efa7",
+    "packages/platform-contracts/src/sg2-denial-audit-reader.mjs": "92625af7db8ada25e8226f4f31db5845bca2a93151b0232325f76d68fae88170",
+    "packages/platform-contracts/migrations/denial-audit/private.sql": "a964115f6bf51e4038ad7c63db7b1a741590e86672a66bdba2f9dfb7cc9ee3e1",
+    "packages/platform-contracts/migrations/denial-audit/source.sql": "4712a2cd706219a23eccd3fbf5804f6f8bff9c3c9f1cd9588f1407cb6b2099c8",
     "packages/platform-contracts/migrations/denial-audit/roles.sql": "09ace8f3621d31c4d411a375b1b31f2f6a48a9f53f86da3b5bb4e05b292f692b",
     "packages/platform-contracts/migrations/denial-audit/expire.sql": "8855e8fabaa95758799a54f366654be1e475d9e1f9270b477bcebe33d5ebdd2b"
   },

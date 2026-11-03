@@ -23,8 +23,9 @@ function queryAdapter(client,store) {
    const result=await client.query({text,values,query_timeout:7000})
    await client.query('COMMIT');opened=false
    return result
-  }catch{
+  }catch(error){
    if(opened)try{await client.query('ROLLBACK')}catch{}
+   if(error?.code==='54000'&&error?.message==='D1_OVERFLOW')throw new Error('D1_OVERFLOW')
    deny()
   }
  }
