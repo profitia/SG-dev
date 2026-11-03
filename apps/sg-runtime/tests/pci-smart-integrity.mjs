@@ -5,8 +5,34 @@ import {posix} from 'node:path'
 const relativeHostPath=file=>posix.relative('apps/sg-runtime',file)
 export const digest=bytes=>createHash('sha256').update(bytes).digest('hex')
 
+const D1_AUDIT_FILES=["apps/sg-runtime/scripts/denial-audit/INSTALLATION.md","apps/sg-runtime/scripts/denial-audit/adoption.json","apps/sg-runtime/scripts/denial-audit/d1-reader.mjs","apps/sg-runtime/scripts/denial-audit/d1-reader.test.mjs","apps/sg-runtime/tests/adp-appshell-consumer.test.tsx","apps/sg-runtime/tests/category-operation.test.ts","apps/sg-runtime/tests/diagnostic-telemetry-adoption.test.mjs","apps/sg-runtime/tests/identity-runtime.test.ts","apps/sg-runtime/tests/integrated-buyer-journey-package.test.mjs","apps/sg-runtime/tests/native-sql-roundtrips.test.mjs","apps/sg-runtime/tests/operation-context.test.mjs","apps/sg-runtime/tests/pci-smart-integrity.mjs","apps/sg-runtime/tests/pci-smart-integrity.test.mjs","apps/sg-runtime/tests/porr-demo-middleware.test.ts","apps/sg-runtime/tests/self-service-account.test.ts","apps/sg-runtime/tests/xray-fresh-performance-adoption.test.mjs","apps/sg-runtime/tests/xray-gateway.test.ts"]
+const D1_PRODUCER_FILES=['packages/platform-contracts/src/sg2-denial-audit-reader.mjs','packages/platform-contracts/migrations/denial-audit/private.sql','packages/platform-contracts/migrations/denial-audit/source.sql','packages/platform-contracts/migrations/denial-audit/roles.sql','packages/platform-contracts/migrations/denial-audit/expire.sql'].sort()
+export function assertD1AuditReaderPreparation(receipt,current,historical){
+ const a=receipt.d1AuditReaderPreparation,file='apps/sg-runtime/operation-integration.json'
+ assert.deepEqual(Object.keys(a).sort(),['taskId','scope','targetEnvironment','previousReceiptSourceSha','previousReceiptSha256','producerSourceSha','producerTaskId','producerPullRequest','producerSourceDigests','changedSourcePaths','sourceDigests','applicationSourceDigests','addedBoundaryFiles','installationApproved','liveReaderInstalled','historicalReadExecuted','runtimeImported','grantsChanged','authorityRevisionsChanged','providerCallsPerformed','deploymentPerformed','posthogActivated'].sort())
+ assert.equal(a.taskId,'SG2-FINDER-D1-AUDIT-READER-20261103');assert.equal(a.scope,'TECHNICAL_DENIAL_READER_SOURCE_PREPARATION_ONLY');assert.equal(a.targetEnvironment,'development')
+ assert.equal(a.previousReceiptSourceSha,'1d245820f93337a35049b416cb375c1ab5a60183')
+ const bytes=historical(a.previousReceiptSourceSha,file),prior=JSON.parse(bytes)
+ assert.equal(digest(bytes),a.previousReceiptSha256)
+ const {d1AuditReaderPreparation,...preserved}=receipt
+ assert.deepEqual(preserved,prior,'D1 preserves every prior accepted source receipt and hash')
+ assert.equal(digest(current(file)),digest(JSON.stringify(receipt,null,2)+'\n'),'exact D1 source receipt bytes')
+ assert.equal(a.producerSourceSha,'64d600192c778b6dc13a3d62b4dd81fd3c008870');assert.equal(a.producerTaskId,'ARCHITECTURE-SG2-D1-AUDIT-READER-20261103');assert.equal(a.producerPullRequest,874)
+ assert.deepEqual(Object.keys(a.producerSourceDigests).sort(),D1_PRODUCER_FILES)
+ for(const[file,hash]of Object.entries(a.producerSourceDigests)){assert.match(hash,/^[a-f0-9]{64}$/);assert.equal(digest(historical(a.producerSourceSha,file)),hash,'exact independent D1 producer '+file)}
+ assert.deepEqual(a.changedSourcePaths,D1_AUDIT_FILES);assert.deepEqual(Object.keys(a.sourceDigests).sort(),D1_AUDIT_FILES)
+ assert.deepEqual(a.applicationSourceDigests,Object.fromEntries(Object.entries(a.sourceDigests).map(([file,hash])=>[relativeHostPath(file),hash])))
+ assert.deepEqual(a.addedBoundaryFiles,D1_AUDIT_FILES.filter(f=>f.startsWith('apps/sg-runtime/scripts/denial-audit/')))
+ for(const[file,hash]of Object.entries(a.sourceDigests)){assert.match(hash,/^[a-f0-9]{64}$/);assert.equal(digest(current(file)),hash,'exact D1 consumer '+file)}
+ const adoption=JSON.parse(current('apps/sg-runtime/scripts/denial-audit/adoption.json'))
+ assert.equal(adoption.producerSourceSha,a.producerSourceSha);assert.deepEqual(adoption.sourceSha256,a.producerSourceDigests);assert.equal(adoption.installationApproved,false);assert.equal(adoption.runtimeImported,false)
+ for(const flag of ['installationApproved','liveReaderInstalled','historicalReadExecuted','runtimeImported','grantsChanged','authorityRevisionsChanged','providerCallsPerformed','deploymentPerformed','posthogActivated'])assert.equal(a[flag],false,flag)
+ return {prior,previousBytes:path=>path===file||Object.hasOwn(a.sourceDigests,path)?historical(a.previousReceiptSourceSha,path):current(path)}
+}
+
 const APPSHELL_FOUR_CARD_FILES=["apps/sg-runtime/components/appshell/appshell-card-motion.ts","apps/sg-runtime/components/appshell/assistant-widget.tsx","apps/sg-runtime/components/appshell/platform-appshell.css","apps/sg-runtime/components/appshell/platform-appshell.tsx","apps/sg-runtime/tests/adp-appshell-consumer.test.tsx","apps/sg-runtime/tests/adp-appshell-identity.test.tsx","apps/sg-runtime/tests/appshell-first-entry.test.tsx","apps/sg-runtime/tests/category-operation.test.ts","apps/sg-runtime/tests/diagnostic-telemetry-adoption.test.mjs","apps/sg-runtime/tests/identity-runtime.test.ts","apps/sg-runtime/tests/integrated-buyer-journey-package.test.mjs","apps/sg-runtime/tests/native-sql-roundtrips.test.mjs","apps/sg-runtime/tests/operation-context.test.mjs","apps/sg-runtime/tests/pci-smart-integrity.mjs","apps/sg-runtime/tests/pci-smart-integrity.test.mjs","apps/sg-runtime/tests/porr-demo-middleware.test.ts","apps/sg-runtime/tests/self-service-account.test.ts","apps/sg-runtime/tests/xray-fresh-performance-adoption.test.mjs","apps/sg-runtime/tests/xray-gateway.test.ts","apps/srm/scripts/native-execution-adoption.test.mjs","apps/srm/scripts/rural-location-release.test.mjs","apps/srm/scripts/xray-performance-adoption.test.mjs","apps/srm/scripts/xray-style-acceptance.mjs","apps/srm/scripts/xray-workflow-contract.test.ts","apps/srm/src/server/peer-read-boundary.test.ts","apps/srm/src/server/supplier-location-geocoding-runtime.test.ts"]
 export function assertAppShellFourCardCascade(receipt,current,historical){
+ if(receipt.d1AuditReaderPreparation){const n=assertD1AuditReaderPreparation(receipt,current,historical);return assertAppShellFourCardCascade(n.prior,n.previousBytes,historical)}
  const a=receipt.appShellFourCardCascade,file='apps/sg-runtime/operation-integration.json'
  assert.equal(a.taskId,'SG2-APPSHELL-FOUR-CARD-CASCADE-20261103')
  assert.equal(a.scope,'APPSHELL_DESK_PRESENTATION_ONLY');assert.equal(a.targetEnvironment,'development')

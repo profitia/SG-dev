@@ -1007,3 +1007,51 @@ test('Newsfeed G1 review uses complete API pagination and metadata race fencing 
  for(const after of [{...candidate,head:{...candidate.head,sha}},{...candidate,base:{...candidate.base,sha:other}},{...candidate,head:{...candidate.head,ref:'architecture/replaced'}}])await assert.rejects(resolveCandidateAdmission(context(),'872',other,apiFixture(candidate,files,after).request))
  await assert.rejects(resolveCandidateAdmission(context(),'872',other,apiFixture(candidate,files.slice(1)).request))
 })
+
+import {SOURCE_HUB_G1_GOVERNANCE_REVIEW} from './controlled-package-ci.mjs'
+
+const sourceHubG1ReviewFiles = () => Object.entries(SOURCE_HUB_G1_GOVERNANCE_REVIEW.blobs).map(([filename,sha])=>({filename,sha,status:SOURCE_HUB_G1_GOVERNANCE_REVIEW.statuses[filename]}))
+const sourceHubG1ReviewPr = () => ({...architecturePr(14),number:SOURCE_HUB_G1_GOVERNANCE_REVIEW.prNumber,head:{...architecturePr().head,ref:SOURCE_HUB_G1_GOVERNANCE_REVIEW.branch}})
+
+test('Source Hub G1 admission binds only the fourteen frozen blobs of PR878 and its exact branch',()=>{
+ assert(Object.isFrozen(SOURCE_HUB_G1_GOVERNANCE_REVIEW));assert(Object.isFrozen(SOURCE_HUB_G1_GOVERNANCE_REVIEW.blobs))
+ assert.equal(SOURCE_HUB_G1_GOVERNANCE_REVIEW.prNumber,878);assert.equal(SOURCE_HUB_G1_GOVERNANCE_REVIEW.sourceSha,'aef76dd768aa52b0fe0f17349cb1c972d6c67eae')
+ assert.equal(Object.keys(SOURCE_HUB_G1_GOVERNANCE_REVIEW.blobs).length,14)
+ assert(!Object.keys(SOURCE_HUB_G1_GOVERNANCE_REVIEW.blobs).some(n=>n.startsWith('apps/')||n.startsWith('packages/')||n.startsWith('.github/')))
+ const files=sourceHubG1ReviewFiles(),p=sourceHubG1ReviewPr()
+ assert.equal(selectCandidate(context(),p,other,{files}),other)
+ assert.equal(selectCandidate(context(),p,other,{files:[...files].reverse()}),other)
+ for(const delta of [{number:879},{number:undefined},{head:{...p.head,ref:'architecture/another-review'}},{head:{...p.head,sha}}])rejection(()=>selectCandidate(context(),{...p,...delta},other,{files}))
+ rejection(()=>selectCandidate(context(),p,sha,{files}))
+})
+
+test('Source Hub G1 review refuses changed blobs, missing/extra/duplicate files, deletion and rename',()=>{
+ const original=sourceHubG1ReviewFiles()
+ for(let i=0;i<original.length;i++){
+  const incomplete=original.filter((_,j)=>i!==j);rejection(()=>selectCandidate(context(),{...sourceHubG1ReviewPr(),changed_files:incomplete.length},other,{files:incomplete}))
+  for(const patch of [{sha:'d'.repeat(40)},{status:original[i].status==='added'?'modified':'added'},{status:'removed'},{status:'renamed',previous_filename:original[i].filename},{status:'copied'},{previous_filename:original[i].filename},{sha:'forged'}]){
+   const files=original.map((f,j)=>i===j?{...f,...patch}:f);rejection(()=>selectCandidate(context(),sourceHubG1ReviewPr(),other,{files}))
+  }
+  const files=original.map((f,j)=>i===j?original[(i+1)%original.length]:f);rejection(()=>selectCandidate(context(),sourceHubG1ReviewPr(),other,{files}))
+ }
+ for(const name of ['apps/sg-runtime/package.json','apps/newsfeed-runtime/src/server.ts','packages/platform-contracts/src/operation-context.mjs',WORKFLOW,'scripts/governance/controlled-package-ci.mjs','.npmrc','Canon/evidence/2026-10-27-extra.md']){
+  const files=[...original,producerFile(name)];rejection(()=>selectCandidate(context(),{...sourceHubG1ReviewPr(),changed_files:files.length},other,{files}))
+  const replaced=[...original];replaced[0]=producerFile(name);rejection(()=>selectCandidate(context(),sourceHubG1ReviewPr(),other,{files:replaced}))
+ }
+})
+
+test('Source Hub G1 review preserves trusted actor/repository/main and current owner routing fences',()=>{
+ const files=sourceHubG1ReviewFiles()
+ for(const edit of [p=>p.user.login='other',p=>p.head.repo.full_name='other/fork',p=>p.base.ref='staging',p=>p.state='closed']){const p=sourceHubG1ReviewPr();edit(p);rejection(()=>selectCandidate(context(),p,other,{files}))}
+ rejection(()=>selectCandidate({...context(),triggeringActor:'other'},sourceHubG1ReviewPr(),other,{files}))
+ rejection(()=>selectCandidate({...context(),ref:'refs/heads/architecture/untrusted'},sourceHubG1ReviewPr(),other,{files}))
+ const root=routingFixture(),file=path.join(root,'Canon/registries/current-architecture-baseline-v1.json'),original=fs.readFileSync(file,'utf8')
+ try{for(const patch of [{currentOwner:'Other owner'},{allowedProjectKeys:['SG2']},{baselineClassification:'LEGACY'}]){const registry=JSON.parse(original),surface=registry.surfaces.find(s=>s.pathPatterns.includes('Canon/**'));Object.assign(surface,patch);fs.writeFileSync(file,JSON.stringify(registry));rejection(()=>selectCandidate(context(),sourceHubG1ReviewPr(),other,{files,repositoryRoot:root}))}}finally{fs.rmSync(root,{recursive:true,force:true})}
+})
+
+test('Source Hub G1 review uses complete API pagination and metadata race fencing before fixed Git checks',async()=>{
+ const files=sourceHubG1ReviewFiles(),candidate=sourceHubG1ReviewPr(),result=await resolveCandidateAdmission(context(),'878',other,apiFixture(candidate,files).request)
+ assert.equal(result.sha,other);assert.deepEqual(result.admission.files,files)
+ for(const after of [{...candidate,head:{...candidate.head,sha}},{...candidate,base:{...candidate.base,sha:other}},{...candidate,head:{...candidate.head,ref:'architecture/replaced'}}])await assert.rejects(resolveCandidateAdmission(context(),'878',other,apiFixture(candidate,files,after).request))
+ await assert.rejects(resolveCandidateAdmission(context(),'878',other,apiFixture(candidate,files.slice(1)).request))
+})
