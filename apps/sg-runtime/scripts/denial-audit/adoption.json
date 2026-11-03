@@ -1,0 +1,30 @@
+{
+  "contractId": "sg2.dev.five-case-denial-read.v1",
+  "status": "SOURCE_PREPARATION_ONLY_PENDING_PRODUCER_APPROVAL_AND_INSTALLATION",
+  "producerTask": "ARCHITECTURE-SG2-D1-AUDIT-READER-20261103",
+  "consumerTask": "SG2-FINDER-D1-AUDIT-READER-20261103",
+  "producerSourceSha": "57f0524f0d9623983e0957ccd4fca3d4473f9a0d",
+  "modulePath": "packages/platform-contracts/src/sg2-denial-audit-reader.mjs",
+  "sourceSha256": {
+    "packages/platform-contracts/src/sg2-denial-audit-reader.mjs": "bb2c0b14a2c3de455808484db91c485f7371d82ac806c683db60a6780be23c9b",
+    "packages/platform-contracts/migrations/denial-audit/private.sql": "caf1abd94fb7d91866f40268ce59b9dd4cddd2313d8698fd2f6069ad21122133",
+    "packages/platform-contracts/migrations/denial-audit/source.sql": "7f1c8460cbf92ca4ad8e77d501fcf5ebdb4dc8c1206ef4e452f9c8b1ac638a4f",
+    "packages/platform-contracts/migrations/denial-audit/roles.sql": "c0115c3420eac594e59dc8f1d4259d0bcd37601e6666cf61e29a2fa9d5a8d7fc",
+    "packages/platform-contracts/migrations/denial-audit/expire.sql": "2fb9732f98e527b16869d8516f7bce06f001cec4c559970f559f5d53876479d1"
+  },
+  "runtimeImported": false,
+  "installationApproved": false,
+  "baseSdkVersionUnchanged": "1.32.3",
+  "authorityRevisionsChanged": false,
+  "roles": {
+    "private": "sg2_d1_private_denial_reader",
+    "source": "sg2_d1_source_denial_reader"
+  },
+  "approvalsRequired": [
+    "Private producer",
+    "Source producer",
+    "SG2 consumer",
+    "Named role administrators and controlled owners for exact SQL digests",
+    "Actual PMOS/native-log operator execution adapter and credentials expiry"
+  ]
+}
