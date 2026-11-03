@@ -6,7 +6,28 @@ const relativeHostPath=file=>posix.relative('apps/sg-runtime',file)
 export const digest=bytes=>createHash('sha256').update(bytes).digest('hex')
 
 const PRODUCT_ANALYTICS_STAGE_ONE_FILES=["apps/sg-runtime/components/analytics/product-analytics-provider.tsx","apps/sg-runtime/docs/product-analytics.md","apps/sg-runtime/lib/product-analytics/adapter.ts","apps/sg-runtime/lib/product-analytics/config.ts","apps/sg-runtime/lib/product-analytics/contract.ts","apps/sg-runtime/tests/adp-appshell-consumer.test.tsx","apps/sg-runtime/tests/category-operation.test.ts","apps/sg-runtime/tests/diagnostic-telemetry-adoption.test.mjs","apps/sg-runtime/tests/identity-runtime.test.ts","apps/sg-runtime/tests/integrated-buyer-journey-package.test.mjs","apps/sg-runtime/tests/native-sql-roundtrips.test.mjs","apps/sg-runtime/tests/operation-context.test.mjs","apps/sg-runtime/tests/pci-smart-integrity.mjs","apps/sg-runtime/tests/pci-smart-integrity.test.mjs","apps/sg-runtime/tests/porr-demo-middleware.test.ts","apps/sg-runtime/tests/product-analytics-ui.test.tsx","apps/sg-runtime/tests/product-analytics.test.ts","apps/sg-runtime/tests/self-service-account.test.ts","apps/sg-runtime/tests/xray-fresh-performance-adoption.test.mjs","apps/sg-runtime/tests/xray-gateway.test.ts"]
+export function assertProductAnalyticsStageOnePrivacyContinuation(receipt,current,historical){
+ const a=receipt.productAnalyticsStageOnePrivacyCompatibility,file='apps/sg-runtime/operation-integration.json'
+ assert.deepEqual(Object.keys(a).sort(),['taskId','scope','targetEnvironment','previousReceiptSourceSha','previousReceiptSha256','boundSourcePaths','sourceDigests','applicationSourceDigests','finderExcluded','testConsentRequired','geoipSuppression','businessRuntimeChanged','authorizationChanged','sourceBindingsChanged','forecastWorkersChanged','schemaChanged','existingSentryChanged','privatePinsChanged','ciPolicyChanged','eventDefinitionsChanged','posthogProjectSettingsChanged'].sort())
+ assert.equal(a.taskId,'SG2-POSTHOG-STAGE1-NO-FINDER-20261103')
+ assert.equal(a.scope,'DEVELOPMENT_EXISTING_ANALYTICS_WITHOUT_FINDER_GEOIP_SUPPRESSION')
+ assert.equal(a.targetEnvironment,'development')
+ assert.equal(a.previousReceiptSourceSha,'36b07672f572ff7c1c81117e3f3b01fa93ec1e65')
+ const bytes=historical(a.previousReceiptSourceSha,file),prior=JSON.parse(bytes)
+ assert.equal(digest(bytes),a.previousReceiptSha256)
+ const {productAnalyticsStageOnePrivacyCompatibility,...preserved}=receipt
+ assert.deepEqual(preserved,prior,'all accepted stage-one, D1 and earlier source receipts remain immutable')
+ assert.deepEqual(a.boundSourcePaths,PRODUCT_ANALYTICS_STAGE_ONE_FILES)
+ assert.deepEqual(Object.keys(a.sourceDigests).sort(),PRODUCT_ANALYTICS_STAGE_ONE_FILES)
+ assert.deepEqual(a.applicationSourceDigests,Object.fromEntries(Object.entries(a.sourceDigests).map(([f,h])=>[relativeHostPath(f),h])))
+ for(const[f,h]of Object.entries(a.sourceDigests)){assert.match(h,/^[a-f0-9]{64}$/);assert.equal(digest(current(f)),h,'exact GeoIP privacy continuation '+f)}
+ for(const flag of ['finderExcluded','testConsentRequired','geoipSuppression'])assert.equal(a[flag],true,flag)
+ for(const flag of ['businessRuntimeChanged','authorizationChanged','sourceBindingsChanged','forecastWorkersChanged','schemaChanged','existingSentryChanged','privatePinsChanged','ciPolicyChanged','eventDefinitionsChanged','posthogProjectSettingsChanged'])assert.equal(a[flag],false,flag)
+ return {prior,previousBytes:p=>p===file||Object.hasOwn(a.sourceDigests,p)?historical(a.previousReceiptSourceSha,p):current(p)}
+}
+
 export function assertProductAnalyticsStageOneContinuation(receipt,current,historical){
+ if(receipt.productAnalyticsStageOnePrivacyCompatibility){const n=assertProductAnalyticsStageOnePrivacyContinuation(receipt,current,historical);return assertProductAnalyticsStageOneContinuation(n.prior,n.previousBytes,historical)}
  const a=receipt.productAnalyticsStageOneCompatibility,file='apps/sg-runtime/operation-integration.json'
  assert.deepEqual(Object.keys(a).sort(),['taskId','scope','targetEnvironment','previousReceiptSourceSha','previousReceiptSha256','changedSourcePaths','sourceDigests','applicationSourceDigests','finderExcluded','testConsentRequired','businessRuntimeChanged','authorizationChanged','sourceBindingsChanged','forecastWorkersChanged','schemaChanged','existingTelemetryChanged','privatePinsChanged','ciPolicyChanged'].sort())
  assert.equal(a.taskId,'SG2-POSTHOG-STAGE1-NO-FINDER-20261103')

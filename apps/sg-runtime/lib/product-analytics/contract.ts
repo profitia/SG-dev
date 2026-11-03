@@ -82,6 +82,9 @@ export function filterSdkEvent<T extends { event: string; properties: Record<str
   }
   properties.$process_person_profile = false
   properties.$is_identified = false
+  // ip:false does not suppress ingestion-side enrichment. This policy flag is
+  // forced after filtering, so neither callers nor SDK enrichment can unset it.
+  properties.$geoip_disable = true
   // These are the transport envelope fields produced by pinned posthog-js 1.444.0.
   const envelope = data as T & { uuid?: unknown; timestamp?: unknown }
   return { event: data.event, properties, uuid: envelope.uuid, timestamp: envelope.timestamp } as unknown as T
