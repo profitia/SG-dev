@@ -112,5 +112,5 @@ test('Root claim adoption preserves every prior receipt and pins only the review
  assert.equal(pkg.dependencies['@profitia/platform-root-atomic-claim'],'file:../../packages/platform-contracts/root-atomic-claim')
  const dependencies={...pkg.dependencies};delete dependencies['@profitia/platform-root-atomic-claim']
  assert.deepEqual(dependencies,previousPackage.dependencies)
- assert.equal(JSON.parse(readFileSync(new URL('../../node_modules/@profitia/platform-contracts/package.json',import.meta.url),'utf8')).version,'1.32.3')
+ assert.equal(JSON.parse(readFileSync(new URL('../../node_modules/@profitia/platform-contracts/package.json',import.meta.url),'utf8')).version,complete.sourceHubApiPathCompatibility?.platformVersion??'1.32.3')
 })
