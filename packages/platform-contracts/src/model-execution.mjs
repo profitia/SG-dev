@@ -4,7 +4,8 @@ import {readFileSync} from 'node:fs'
 
 export const MODEL_EXECUTION_CONTRACT=Object.freeze({id:'profitia.model-execution',version:'1.0.0',currency:'USD'})
 export const modelExecutionSchemaUrl=new URL('../migrations/access/028-model-execution.sql',import.meta.url).href
-export function modelExecutionSchemaDigest(){return createHash('sha256').update(readFileSync(new URL(modelExecutionSchemaUrl))).digest('hex')}
+export function modelExecutionSchemaDigest(){return createHash('sha256').update(readFileSync(new URL(modelExecutionSchemaUrl)))
+ .update(readFileSync(new URL('../migrations/access/029-model-execution-long-report.sql',import.meta.url))).digest('hex')}
 const invalid=()=>{throw new TypeError('Explicit operation-scoped model policy required')}
 const keys='maximumBodyBytes,maximumInputTokens,maximumOutputTokens,model,profileId,reservationMicroUsd,schemaDigest,timeoutMs'
 export function captureModelExecution(value){
