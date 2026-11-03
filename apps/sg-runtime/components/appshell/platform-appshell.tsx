@@ -62,7 +62,7 @@ export function PlatformAppShell({ locale, salutation, assistantAvatar, organisa
   useLayoutEffect(()=>{
     const before=positions.current;positions.current=new Map()
     if(moduleActive){cancelCardAnimations(animations.current);return}
-    animateCardPositions(cardStack.current,before,assistantCollapsed,animations.current,reducedMotion.current)
+    animateCardPositions(cardStack.current,before,assistantCollapsed,animations.current,reducedMotion.current||window.innerWidth<=1100)
   },[assistantCollapsed,moduleActive])
   useLayoutEffect(()=>{
     const media=window.matchMedia?.('(prefers-reduced-motion: reduce)')
