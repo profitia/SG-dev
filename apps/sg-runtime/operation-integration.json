@@ -6881,12 +6881,18 @@
       "apiPathTransportSchemaDigest": "bd35367f22eccb34dc6c8f62b3a82bfc8947471142fc5daab45a32d67c07707c"
     },
     "sourceDigests": {
+      "README.md": "36e013b6f6692566004e152020d3d43b38a4567680b5dd0b53677edc519bc1e7",
+      "migrations/access/028-api-path-transport.sql": "bd35367f22eccb34dc6c8f62b3a82bfc8947471142fc5daab45a32d67c07707c",
       "package-lock.json": "2d899f76dc49f66ef8a82af4a1b5f0c72e657448e714149d5ad83d6450cf7d18",
       "package.json": "99df5886fbd7a66ae25c8b8f667547dafca0317bb3246805470d72e7cfe24049",
       "src/external-call.d.mts": "6b2e1dc0cc88e45b6acfcc294cf31c0cd1d65b490c7d6c17dee5b1b9ac4cccdc",
       "src/external-call.mjs": "ae2497b0588304f14be64f6daa1c1f12659f3b9fca8aadfb08177a798773e038",
       "src/native-external-transport.d.mts": "4ff08cbae96ccb3105220e4a72ab48b6505f6aaddac718d5147915ebe0be1337",
-      "src/native-external-transport.mjs": "03f570318ce15419a161a8e2691ceec9500a12c6b5b3d9839e6fbe2de8fa3b49"
+      "src/native-external-transport.mjs": "03f570318ce15419a161a8e2691ceec9500a12c6b5b3d9839e6fbe2de8fa3b49",
+      "test/api-path-transport.test.mjs": "fcd4b6238df33f6d41730646f5ee9f1678c7b08a416e8638adec6356584f598b",
+      "test/external-call.test.mjs": "0cdb75326b0b84a3518e2a102fd05334d2cafe1a011ebfc2606a62631aaa56c2",
+      "test/types/api-path.mts": "906812ce092ae80ca140c44165ce12b2f80fe435558d548fa1c3889dc5835797",
+      "test/types/native-external.mts": "2cb07a3295b6f0f335af81ee68a984b5a7cfddfbbacb876ef3df143f5086c1d4"
     },
     "optionalPackageDigests": {
       "currentFreshReportSourceDigest": "8dcf7fa658001e3204fb6e82a77520424299bd7e74062ccc9bb7693b19eb9883",
