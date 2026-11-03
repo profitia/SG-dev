@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {randomUUID} from 'node:crypto'
-import {CASES,createFiveCaseReader} from '../sg2-denial-audit-reader/src/reader.mjs'
+import {CASES,createFiveCaseReader} from '../src/sg2-denial-audit-reader.mjs'
 
 function fixture({count=1,change=v=>v,failStore,failBegin=false,failComplete=false,expiry=1800000}={}) {
  let clock=Date.parse('2026-11-03T08:00:00Z'),reads=0,completed,failed=false
