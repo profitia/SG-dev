@@ -79,3 +79,8 @@ The final required SG2 historical SDK suite also accepts current SDK bytes throu
 ### Preserve concurrent accepted SG2 monitoring
 
 The mandatory current-main preflight blocked the stale base after PR889. The final active review binds source `00d56c11e4f2b4d9d1ca4a120f237f0c158dd5b1`, base `62d21fc81cec846ff58d6f5b6fdac35c777314bc`, the same131 paths/statuses/modes/routes and115 unchanged original blobs. The16 exact test/adoption replacements preserve all current main monitoring product bytes and its complete receipt before adding the SourceHub layer. They remain within the existing task edit paths, with read-only peer metadata separate. The full original-map reconstruction negative test pins every unchanged blob plus the unchanged status/mode/owner maps. Exact-candidate controlled proof, all owner checks and resulting-main CI remain mandatory; no deployment or infrastructure scope is added.
+
+
+### Preserve accepted AppShell ownership
+
+After the GitHub incident delayed policy merge, independent Git readback identified PR891 at `a3e64a93801cb197af856bf2d282a6158b01c71d`. The active review now binds source `5dd883015b5b31b78739ec603f524c0621e29809` over that main: same131 paths/statuses/modes/actual-owner routes,115 unchanged original blobs and16 exact test/adoption versions. The entire accepted AppShell/monitoring receipt and product bytes remain unchanged beneath the SourceHub compatibility layer. The unchanged D1 historical checkout test and full exact-candidate tests/typecheck/build must pass in controlled CI; local partial-clone limitations grant no exception. All original credential/proof fences and resulting-main gates remain mandatory.

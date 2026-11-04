@@ -66,3 +66,33 @@ The active closed review now binds source `00d56c11e4f2b4d9d1ca4a120f237f0c158dd
 - `packages/platform-contracts/readonly-miss-report/test/readonly-miss-report.test.mjs`: `c477d38bcb9f1d067bfa10e4699fd0ec140c96b3` -> `57997df452954de5dd02af3d3911d8e4c94db379`.
 
 This supersedes earlier executable source pins. It adds no implementation, permission, credential or infrastructure scope. Original approvals, historical receipts and previous validation results remain immutable evidence; final refreshed-candidate and resulting-main checks must pass again.
+
+
+## Accepted AppShell continuation during GitHub incident
+
+The previous policy merge request received a timeout and then `Merge already in progress` during the confirmed GitHub Pull Requests/Git/Actions incident. It was not treated as accepted. Independent Git readback then identified the separate PR891 acceptance at main `a3e64a93801cb197af856bf2d282a6158b01c71d`, preserving its AppShell-owned assistant. All four registered profiles passed on clean current main before composition.
+
+The active review now binds source `5dd883015b5b31b78739ec603f524c0621e29809`, base `a3e64a93801cb197af856bf2d282a6158b01c71d`. It retains the same131 paths/statuses/modes/routes,115 original blobs and16 current test/adoption versions. The full new main receipt, AppShell owner checks, monitoring checks, immutable history cache and all product source bytes are preserved. The8 newly changed AppShell product/test paths outside this review are byte-identical to main. SourceHub remains the outer compatibility layer over that exact accepted predecessor; this adds no product behavior or permissions.
+
+Local targeted validation passed34 compatibility/AppShell cases. One unchanged D1 test could not create/remove its temporary historical Git checkout in this constrained partial clone; its complete unfiltered execution remains mandatory in trusted exact-candidate CI, together with full tests/typecheck/build. No local fixture failure is represented as a completed full CI gate. Earlier complete source1352-case and trusted-policy results remain historical evidence for their own SHAs.
+
+The16 closed replacements are:
+
+- `apps/architecture-lab/test/sdk-compatibility.test.mjs`: `1616eb2591d3e6ccd0c68e595f81fe8a16733e84` -> `9abc96b3b1ea16665ecdd749b51681b4d55eda63`.
+- `apps/sg-runtime/operation-integration.json`: `0e494a92f1c0bb151ade7866c2fbc7b0afd2753d` -> `bcbca8f741066fd604f9ac33ef8367a9cf23cc1b`.
+- `apps/sg-runtime/tests/adp-appshell-consumer.test.tsx`: `2bebee2a9a87d669a597463d0ae4afcccb171382` -> `ba624986942e3f458c07680417279e6a990c4dd8`.
+- `apps/sg-runtime/tests/category-operation.test.ts`: `249ad2982f8f61dabef235393699f4c52837ecd8` -> `d6c09a0192a96aedf3430a350dafcd05b7dc9353`.
+- `apps/sg-runtime/tests/diagnostic-telemetry-adoption.test.mjs`: `21953cf04a3c1fa0936b4c960757abadc821bbaf` -> `0e0357708f690ea46d1805497591d6b0efa75db4`.
+- `apps/sg-runtime/tests/identity-runtime.test.ts`: `04a365354295640963fb93e559c070ce1a2fdc51` -> `92f1b856a21319edf6512afec741d01a2d6074b2`.
+- `apps/sg-runtime/tests/integrated-buyer-journey-package.test.mjs`: `88f2fbd8d3aa4a7f9dd77bc5433559911019b231` -> `2e3ec9b21b2d3b59b4e3b6d43f01d8facc8471e8`.
+- `apps/sg-runtime/tests/native-sql-roundtrips.test.mjs`: `24916132ff4bef7c656a602443b8ccd189cebc4d` -> `018670cdc6adfc8d1c70a766c6849375ac0dd2d7`.
+- `apps/sg-runtime/tests/operation-context.test.mjs`: `4aacdbd1b70d777a9d6b8d94c10306337d1fb266` -> `7b5dc8f3587592c1d6c7853a92629e4b1ccdfc02`.
+- `apps/sg-runtime/tests/pci-smart-integrity.mjs`: `684a069d0b32c0fee69fc20ec887ab80edb88919` -> `caa55e4c16e6883411986d1328b3d5e06e8db887`.
+- `apps/sg-runtime/tests/pci-smart-integrity.test.mjs`: `a646a1df74b845f27da1b792daae6aad09129b55` -> `03a58a88cf4e879dd360032ab0d05419e8a87753`.
+- `apps/sg-runtime/tests/porr-demo-middleware.test.ts`: `271825c3cdbd1699b5335a84ca5646a69d2c3cff` -> `2a3356e8bad6cde2f644747fc02accc700971026`.
+- `apps/sg-runtime/tests/self-service-account.test.ts`: `9143c04a7f6f426f14e758c3174fbe4de075874c` -> `0533fb4f03f28abfac6e30137bfe4f9253c2d843`.
+- `apps/sg-runtime/tests/xray-fresh-performance-adoption.test.mjs`: `1f28a8bb6c7af42b0618fa5c71a83781a98eab16` -> `6cfded9a3e5234287a0bfdee2ab8dca80ccd5798`.
+- `apps/sg-runtime/tests/xray-gateway.test.ts`: `8339797a56609cde7e4944e95542df440b2ac0be` -> `dea420e197c65d17e5c0f0058a0a57babe23de4d`.
+- `packages/platform-contracts/readonly-miss-report/test/readonly-miss-report.test.mjs`: `c477d38bcb9f1d067bfa10e4699fd0ec140c96b3` -> `57997df452954de5dd02af3d3911d8e4c94db379`.
+
+This supersedes prior executable source pins while retaining the original complete-map reconstruction negative test and all status/mode/owner hashes. No workflow, private pin, credential boundary, environment, deployment or infrastructure change.
