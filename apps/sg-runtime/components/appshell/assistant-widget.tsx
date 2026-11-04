@@ -2,12 +2,12 @@
 
 import React,{useId,useRef,useState} from 'react'
 import {createPortal} from 'react-dom'
-export type AssistantScreenContext=Readonly<{supplier:Readonly<{name:string}>;view:Readonly<{radar:Readonly<{year:number|null}>}>}>
+import {createAssistantContent,type AssistantContent} from './assistant-content'
 import {SpendGuruLogo} from './appshell-brand'
 import {useAssistantWindow} from './use-assistant-window'
 
 type AvatarChoice='male'|'female'|null|undefined
-type Props={locale:'pl'|'en';salutation?:string|null;avatar:AvatarChoice;theme:'light'|'dark';screenContext?:AssistantScreenContext|null;onCollapsedChange?:(collapsed:boolean)=>void}
+type Props={locale:'pl'|'en';salutation?:string|null;avatar:AvatarChoice;theme:'light'|'dark';content?:AssistantContent;onCollapsedChange?:(collapsed:boolean)=>void}
 function Glyph({kind}:{kind:'collapse'|'expand'|'detach'|'attach'|'clock'|'more'|'send'}){
  return <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
   {kind==='collapse'&&<path d="m9 6 6 6-6 6"/>}{kind==='expand'&&<path d="m15 6-6 6 6 6"/>}
@@ -27,7 +27,7 @@ function Avatar({choice,en,ribbon=false}:{choice:AvatarChoice;en:boolean;ribbon?
 }
 
 /** One host-owned widget; a report context label does not invoke a model or grant data access. */
-export function AssistantWidget({locale,salutation,avatar,theme,screenContext,onCollapsedChange}:Props){
+export function AssistantWidget({locale,salutation,avatar,theme,content=createAssistantContent(locale,salutation),onCollapsedChange}:Props){
  const en=locale==='en',id=useId(),inputId=useId(),[collapsed,setCollapsed]=useState(false)
  const collapseTrigger=useRef<HTMLButtonElement>(null),expandTrigger=useRef<HTMLButtonElement>(null),detachTrigger=useRef<HTMLButtonElement>(null)
  const host=useAssistantWindow(()=>{setCollapsed(false);onCollapsedChange?.(false);requestAnimationFrame(()=>detachTrigger.current?.focus({preventScroll:true}))},en)
@@ -43,13 +43,13 @@ export function AssistantWidget({locale,salutation,avatar,theme,screenContext,on
     <button className="srm-chat-tool" type="button" disabled aria-label={en?'Change SpendGuru avatar':'Zmień awatar SpendGuru'} title={en?'Change avatar':'Zmień awatar'}><Glyph kind="more"/></button>
    </div>
   </header>
-  {screenContext&&<p className="srm-chat-screen-context" aria-label={en?"Assistant context":"Kontekst asystenta"}>X-Ray · {screenContext.supplier.name}{screenContext.view.radar.year?` · ${screenContext.view.radar.year}`:""}</p>}
+  {!host.target&&content.contextLabel&&<p className="srm-chat-screen-context" aria-label={en?"Assistant context":"Kontekst asystenta"}>{content.contextLabel}</p>}
   {host.error&&<p className="srm-chat-window-error" role="alert">{host.error}</p>}
   <div className="srm-chat-transcript" role="region" aria-label={en?'SpendGuru introduction':'Powitanie SpendGuru'} tabIndex={0}>
    <div className="srm-chat-welcome-live"><div className="srm-chat-incoming"><Avatar choice={avatar} en={en}/>
     <article className="srm-chat-message srm-chat-welcome-bubble" aria-label={en?'SpendGuru greeting':'Powitanie SpendGuru'}>
-     <p><strong>{greeting} {en?'I am your SpendGuru advisor. Soon I will support you in your daily work, category analysis and supplier collaboration.':'Jestem Twoim doradcą SpendGuru. Wkrótce będę Cię wspierać w codziennej pracy, analizie kategorii oraz we współpracy z dostawcami.'}</strong></p>
-     <p>{en?'Choose the application you would like to start with. Soon you will be able to talk to me.':'Tymczasem wybierz aplikację, od której chcesz zacząć, a już niedługo będzie można ze mną naprawdę porozmawiać.'}</p>
+     <p><strong>{content.welcomeLead}</strong></p>
+     <p>{content.welcomeDetail}</p>
     </article>
    </div></div>
   </div>
@@ -64,6 +64,6 @@ export function AssistantWidget({locale,salutation,avatar,theme,screenContext,on
    {host.target?<div className="srm-chat-detached-ribbon"><Avatar choice={avatar} en={en} ribbon/><span className="srm-chat-detached-caption">{en?'Assistant in a separate window':'Asystent w osobnym oknie'}</span><button type="button" className="srm-chat-attach-button" onClick={host.attach} aria-label={en?'Return assistant to workspace':'Przyłącz asystenta do biurka'}><Glyph kind="attach"/></button></div>:panel}
    {!host.target&&<button ref={expandTrigger} className="srm-chat-ribbon" type="button" onClick={expand} tabIndex={collapsed?0:-1} aria-hidden={!collapsed||undefined} aria-expanded={!collapsed} aria-controls={id} aria-label={en?'Show assistant':'Pokaż asystenta'} title={en?'Show assistant':'Pokaż asystenta'}><Avatar choice={avatar} en={en} ribbon/><Glyph kind="expand"/></button>}
   </div>
-  {host.target&&createPortal(<div className="appshell srm-ui srm-detached-shell" data-theme={theme} style={{colorScheme:theme}}><section className="srm-chat-slot is-window" aria-label={en?'SpendGuru assistant':'Asystent SpendGuru'}>{panel}</section></div>,host.target)}
+  {host.target&&createPortal(<div className="appshell srm-detached-shell" data-theme={theme} style={{colorScheme:theme}}><section className="srm-chat-slot is-window" aria-label={en?'SpendGuru assistant':'Asystent SpendGuru'}>{panel}</section></div>,host.target)}
  </>
 }
