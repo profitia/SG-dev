@@ -83,3 +83,12 @@ list locally. It does not trigger a full provider catalogue read. A missing
 dictionary and failed ordinary-role admission/query retain their existing
 fallback or fail-closed behavior; an unavailable read never becomes an empty
 success.
+
+## Metadata input pacing
+
+Region lookup waits for a 350 ms pause and sends only the latest input. Changing
+the input retires the old browser request; closing the selector, leaving the
+advanced surface or unmounting cancels pending work. A retired request cannot
+clear the replacement request's identity. The five prewarmed dictionaries use
+the same empty server-query cache key while their visible filtering stays local.
+No server budget, Source admission, retry, SEARCH criterion or startup gate changes.
