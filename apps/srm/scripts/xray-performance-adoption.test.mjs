@@ -1,3 +1,4 @@
+import {assertSourceHubApiPathCompatibility} from './source-hub-sdk-compatibility.mjs'
 import {assertAppShellFourCardCascade} from '../../sg-runtime/tests/pci-smart-integrity.mjs'
 import {assertStyleConsumerAcceptance,assertSentryHostContinuation,assertMarketHistoryHostContinuation,marketHistoryHostSourceView,assertProductAnalyticsHostContinuation,assertProductAnalyticsRootClaimContinuation,assertProductAnalyticsMainHostContinuation} from './xray-style-acceptance.mjs'
 import {readonlyMissReportSourceDigest,READONLY_MISS_REPORT_CONTRACT} from '@profitia/platform-readonly-miss-report'
@@ -21,6 +22,11 @@ const appShellReceipt=JSON.parse(actualAppShellSource('apps/sg-runtime/operation
 const acceptedAppShellSource=appShellReceipt.appShellFourCardCascade
  ?assertAppShellFourCardCascade(appShellReceipt,actualAppShellSource,(sha,file)=>execFileSync('git',['show',sha+':'+file])).previousBytes
  :actualAppShellSource
+const actualReceipt=JSON.parse(actualAppShellSource('apps/srm/operation-integration.json'))
+const apiPath=actualReceipt.sourceHubApiPathCompatibility
+if(apiPath)assertSourceHubApiPathCompatibility(actualReceipt,actualAppShellSource,(sha,file)=>execFileSync('git',['show',sha+':'+file]))
+// The host view validates both current API_PATH closures and the later AppShell
+// amendments before exposing the presentation predecessor used by these guards.
 const read=file=>acceptedAppShellSource(posix.normalize('apps/srm/'+file))
 const refinement=JSON.parse(read('operation-integration.json')).freshRuntimeRefinement
 const settled=JSON.parse(read('operation-integration.json')).settledExternalFailureRecovery
@@ -94,11 +100,11 @@ test('complete X-Ray architecture adopts the exact producer and consumer closure
  assert.equal(a.taskId,'SRM-XRAY-PERFORMANCE-RECOVERY-V2-IMPLEMENT-20261028');assert.equal(a.platformVersion,'1.30.0')
  assert.equal(a.producer.projectKey,'ARCHITECTURE');assert.equal(a.producer.pullRequest,772)
  assert.deepEqual(a.currentHumanReadContract,{id:CURRENT_HUMAN_READ_CONTRACT.id,version:'1.0.0'});assert.deepEqual(fresh.currentHumanReadContract,CURRENT_HUMAN_READ_CONTRACT)
- assert.equal(await currentHumanReadSourceDigest(),(postfetch?.sdkDigests.currentHumanReadSourceDigest??clock?.sdkDigests.currentHumanReadSourceDigest??fresh.sdkDigests.currentHumanReadSourceDigest))
+ assert.equal(await currentHumanReadSourceDigest(),(apiPath?.sdkDigests.currentHumanReadSourceDigest??postfetch?.sdkDigests.currentHumanReadSourceDigest??clock?.sdkDigests.currentHumanReadSourceDigest??fresh.sdkDigests.currentHumanReadSourceDigest))
  const root=new URL('../',import.meta.resolve('@profitia/platform-contracts/current-human-read'))
  for(const[file,digest]of Object.entries(a.sourceDigests)){
   assert.equal(hash(execFileSync('git',['show',a.producer.sourceSha+':packages/platform-contracts/'+file])),digest,'producer '+file)
-  if(file!=='package-lock.json')assert.equal(hash(fs.readFileSync(new URL(file,root))),receipt.xrayAppShellPresentation?.sourceDigests?.[file]??receipt.freshPostfetchRecovery?.sourceDigests[file]??receipt.freshPostfetchRecovery?.sourceDigests[file]??receipt.sourceLeaseClockRecovery?.sourceDigests[file]??receipt.settledExternalFailureRecovery?.sourceDigests[file]??fresh.sourceDigests[file]??xray.sourceDigests[file]??digest,'installed '+file)
+  if(file!=='package-lock.json')assert.equal(hash(fs.readFileSync(new URL(file,root))),apiPath?.sourceDigests[file]??receipt.xrayAppShellPresentation?.sourceDigests?.[file]??apiPath?.sourceDigests[file]??receipt.freshPostfetchRecovery?.sourceDigests[file]??apiPath?.sourceDigests[file]??receipt.freshPostfetchRecovery?.sourceDigests[file]??receipt.sourceLeaseClockRecovery?.sourceDigests[file]??receipt.settledExternalFailureRecovery?.sourceDigests[file]??fresh.sourceDigests[file]??xray.sourceDigests[file]??digest,'installed '+file)
  }
  assert(Object.keys(a.applicationSourceDigests).length>=30)
  for(const[file,digest]of Object.entries(a.consumerSourceDigests))assert.equal(hash(execFileSync('git',['show',xray.previousReceiptSourceSha+':'+posix.normalize('apps/srm/'+file)])),digest,'historical consumer '+file)
@@ -125,7 +131,7 @@ test('FRESH recovery explicitly accepts the peer reader and preserves all prior 
  for(const[k,v]of Object.entries(JSON.parse(before)))assert.deepEqual(receipt[k],v,k)
  assert.equal(a.producer.projectKey,'ARCHITECTURE');assert.equal(a.producer.pullRequest,784)
  assert.equal(a.platformVersion,'1.32.0');assert.deepEqual(a.currentHumanReadContract,CURRENT_HUMAN_READ_CONTRACT)
- assert.equal(await currentHumanReadSourceDigest(),(postfetch?.sdkDigests.currentHumanReadSourceDigest??clock?.sdkDigests.currentHumanReadSourceDigest??a.sdkDigests.currentHumanReadSourceDigest))
+ assert.equal(await currentHumanReadSourceDigest(),(apiPath?.sdkDigests.currentHumanReadSourceDigest??postfetch?.sdkDigests.currentHumanReadSourceDigest??clock?.sdkDigests.currentHumanReadSourceDigest??a.sdkDigests.currentHumanReadSourceDigest))
  for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(beforeRefinement(file)),digest,file)
  assert.equal(a.reusesAuthorizationDecisions,false);assert.equal(a.stagingOrProductionChanged,false)
  assert.equal(a.paidAcquisitionsPerformed,false);assert.equal(a.performanceThresholdsAchieved,false)
@@ -152,12 +158,12 @@ test('settled provider failure adoption pins its producer and never treats Sourc
  assert.equal(settled.producer.projectKey,'ARCHITECTURE');assert.equal(settled.producer.pullRequest,790)
  const sdk=await import('@profitia/platform-contracts/external-call')
  assert.deepEqual(settled.contract,sdk.EXTERNAL_CALL_FAILURE_OBSERVATION)
- assert.equal(await sdk.externalCallSourceDigest(),(postfetch?.sdkDigests.externalCallSourceDigest??clock?.sdkDigests.externalCallSourceDigest??settled.sdkDigests.externalCallSourceDigest))
+ assert.equal(await sdk.externalCallSourceDigest(),(apiPath?.sdkDigests.externalCallSourceDigest??postfetch?.sdkDigests.externalCallSourceDigest??clock?.sdkDigests.externalCallSourceDigest??settled.sdkDigests.externalCallSourceDigest))
  const root=new URL('../',import.meta.resolve('@profitia/platform-contracts/external-call'))
- assert.equal(JSON.parse(fs.readFileSync(new URL('package.json',root))).version,(postfetch??clock??settled).platformVersion)
+ assert.equal(JSON.parse(fs.readFileSync(new URL('package.json',root))).version,(apiPath??postfetch??clock??settled).platformVersion)
  for(const[file,digest]of Object.entries(settled.sourceDigests)){
   assert.equal(hash(execFileSync('git',['show',settled.producer.sourceSha+':packages/platform-contracts/'+file])),digest,'producer '+file)
-  if(!file.startsWith('test/')&&file!=='package-lock.json')assert.equal(hash(fs.readFileSync(new URL(file,root))),receipt.xrayAppShellPresentation?.sourceDigests?.[file]??postfetch?.sourceDigests[file]??clock?.sourceDigests[file]??digest,'installed '+file)
+  if(!file.startsWith('test/')&&file!=='package-lock.json')assert.equal(hash(fs.readFileSync(new URL(file,root))),apiPath?.sourceDigests[file]??receipt.xrayAppShellPresentation?.sourceDigests?.[file]??postfetch?.sourceDigests[file]??clock?.sourceDigests[file]??digest,'installed '+file)
  }
  for(const[file,digest]of Object.entries(settled.applicationSourceDigests))assert.equal(hash(beforeClock(file)),digest,file)
  for(const flag of ['redirectPolicyChanged','providerRetryAdded','sourceFailureBypassed','humanAuthorityChanged','sqlSchemaChanged','runtimeDeploymentClaimed','performanceThresholdsClaimed'])assert.equal(settled[flag],false,flag)
@@ -172,10 +178,10 @@ test('Source clock adoption preserves complete history and exact producer while 
  assert.equal(a.subtractsEntireQueryRoundTrip,true);assert.equal(a.currentSourceChecksPreserved,true)
  assert.equal(a.schemaOrPolicyChanges,false);assert.equal(a.peerWireContractChanged,false)
  const sdk=await import('@profitia/platform-contracts/external-call'),root=new URL('../',import.meta.resolve('@profitia/platform-contracts/external-call'))
- assert.equal(await sdk.externalCallSourceDigest(),postfetch?.sdkDigests.externalCallSourceDigest??a.sdkDigests.externalCallSourceDigest)
+ assert.equal(await sdk.externalCallSourceDigest(),apiPath?.sdkDigests.externalCallSourceDigest??postfetch?.sdkDigests.externalCallSourceDigest??a.sdkDigests.externalCallSourceDigest)
  for(const[file,digest]of Object.entries(a.sourceDigests)){
   assert.equal(hash(execFileSync('git',['show',a.producer.sourceSha+':packages/platform-contracts/'+file])),digest,'producer '+file)
-  if(file!=='package-lock.json')assert.equal(hash(fs.readFileSync(new URL(file,root))),receipt.xrayAppShellPresentation?.sourceDigests?.[file]??postfetch?.sourceDigests[file]??digest,'installed '+file)
+  if(file!=='package-lock.json')assert.equal(hash(fs.readFileSync(new URL(file,root))),apiPath?.sourceDigests[file]??receipt.xrayAppShellPresentation?.sourceDigests?.[file]??postfetch?.sourceDigests[file]??digest,'installed '+file)
  }
  for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(beforePostfetch(file)),digest,file)
 })
@@ -193,7 +199,7 @@ test('FRESH postfetch adoption preserves exact history, producer and current sec
  assert.equal(await currentHumanReadSourceDigest(),a.sdkDigests.currentHumanReadSourceDigest)
  for(const[file,digest]of Object.entries(a.sourceDigests)){
   assert.equal(hash(execFileSync('git',['show',a.producer.sourceSha+':packages/platform-contracts/'+file])),digest,'producer '+file)
-  if(file!=='package-lock.json')assert.equal(hash(fs.readFileSync(new URL(file,root))),receipt.xrayAppShellPresentation?.sourceDigests?.[file]??digest,'installed '+file)
+  if(file!=='package-lock.json')assert.equal(hash(fs.readFileSync(new URL(file,root))),apiPath?.sourceDigests[file]??receipt.xrayAppShellPresentation?.sourceDigests?.[file]??digest,'installed '+file)
  }
  for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(beforePreparedEvidence(file)),digest,file)
 })
@@ -394,6 +400,7 @@ export function assertPciInputIntegrity(receipt,readCurrent,readHistorical){
  return {prior,previousBytes:file=>Object.hasOwn(a.applicationSourceDigests,posix.relative('apps/srm',file))||Object.hasOwn(a.consumerSourceDigests,posix.relative('apps/srm',file))?readHistorical(a.previousReceiptSourceSha,file):readCurrent(file)}
 }
 export function assertCurrentPciIntegrity(receipt,readCurrent,readHistorical){
+ if(receipt.sourceHubApiPathCompatibility){const n=assertSourceHubApiPathCompatibility(receipt,readCurrent,readHistorical);return assertCurrentPciIntegrity(n.prior,n.previousBytes,readHistorical)}
  if(receipt.productAnalyticsMainHostCompatibility){const n=assertProductAnalyticsMainHostContinuation(receipt,readCurrent,readHistorical);return assertCurrentPciIntegrity(n.prior,n.previousBytes,readHistorical)}
  if(receipt.productAnalyticsRootClaimTestContinuation){const n=assertProductAnalyticsRootClaimContinuation(receipt,readCurrent,readHistorical);return assertCurrentPciIntegrity(n.prior,n.previousBytes,readHistorical)}
  if(receipt.productAnalyticsHostIntegrityContinuation){const n=assertProductAnalyticsHostContinuation(receipt,readCurrent,readHistorical);return assertCurrentPciIntegrity(n.prior,n.previousBytes,readHistorical)}
@@ -833,7 +840,7 @@ test('current FRESH composition requires exact accepted producer, consumer closu
  const receipt=JSON.parse(read('operation-integration.json')),a=receipt.freshCurrentBoundaryAdoption
  const current=acceptedAppShellSource,historical=(sha,file)=>execFileSync('git',['show',sha+':'+file])
  assertCurrentPciIntegrity(receipt,current,historical)
- assert.equal(await currentFreshReportSourceDigest(),a.optionalPackage.sourceDigest)
+ assert.equal(await currentFreshReportSourceDigest(),apiPath?.optionalPackageDigests.currentFreshReportSourceDigest??a.optionalPackage.sourceDigest)
  for(const mutate of [r=>r.freshCurrentBoundaryAdoption.producer.sourceGo=false,
   r=>r.freshCurrentBoundaryAdoption.noAuthorizationDecisionCache=false,
   r=>r.freshCurrentBoundaryAdoption.applicationSourceDigests['src/server/unapproved.ts']='0'.repeat(64),
@@ -878,12 +885,12 @@ test('finite Supplier input capture accepts only its exact source and preserves 
  assert.deepEqual(Object.keys(a.producerSourceDigests).sort(),['package.json','src/payload-capture.d.mts','src/payload-capture.mjs'])
  for(const[file,digest]of Object.entries(a.producerSourceDigests)){
   assert.equal(hash(historical(a.producer.sourceSha,'packages/platform-contracts/payload-capture/'+file)),digest,'producer '+file)
-  assert.equal(hash(fs.readFileSync(new URL(file,root))),receipt.xrayAppShellPresentation?.sourceDigests?.[file]??digest,'installed '+file)
+  assert.equal(hash(fs.readFileSync(new URL(file,root))),apiPath?.producerMetadataDigests['packages/platform-contracts/payload-capture/'+file]??digest,'installed '+file)
  }
  const {createRequire}=await import('node:module'),{realpathSync}=await import('node:fs')
  const own=createRequire(import.meta.url),peer=createRequire(new URL('package.json',root))
  assert.equal(realpathSync(own.resolve('@profitia/platform-contracts/operation-context')),realpathSync(peer.resolve('@profitia/platform-contracts/operation-context')))
- assert.equal(JSON.parse(fs.readFileSync(new URL('package.json',new URL('../',import.meta.resolve('@profitia/platform-contracts/operation-context'))))).version,'1.32.3')
+ assert.equal(JSON.parse(fs.readFileSync(new URL('package.json',new URL('../',import.meta.resolve('@profitia/platform-contracts/operation-context'))))).version,apiPath?.platformVersion??'1.32.3')
  for(const mutate of [r=>r.freshPayloadCaptureAdoption.producer.sourceGo=false,r=>r.freshPayloadCaptureAdoption.platformVersion='1.33.0',r=>r.freshPayloadCaptureAdoption.currentWorkChecksPreserved=false,r=>r.freshPayloadCaptureAdoption.applicationSourceDigests['src/server/unapproved.ts']='0'.repeat(64),r=>r.freshDocumentPolicyRecovery.fullNativeCheckPreserved=false,r=>r.unapprovedReceipt={}]){
   const changed=structuredClone(receipt);mutate(changed);assert.throws(()=>assertCurrentPciIntegrity(changed,current,historical))
  }
@@ -928,12 +935,12 @@ test('readonly MISS adoption rejects forged GO, source, query port and historica
  const current=acceptedAppShellSource,historical=(sha,file)=>execFileSync('git',['show',sha+':'+file])
  assertCurrentPciIntegrity(receipt,current,historical)
  assert.deepEqual(READONLY_MISS_REPORT_CONTRACT,{id:'profitia.readonly-miss-report',version:'1.0.0'})
- assert.equal(await readonlyMissReportSourceDigest(),a.optionalPackage.sourceDigest)
+ assert.equal(await readonlyMissReportSourceDigest(),apiPath?.optionalPackageDigests.readonlyMissReportSourceDigest??a.optionalPackage.sourceDigest)
  assert.equal(Object.isFrozen(READY_REPORT_PROBE_STATEMENTS),true)
  assert.equal(READY_REPORT_PROBE_STATEMENTS.length,2)
  assert(READY_REPORT_PROBE_STATEMENTS.every(s=>/^SELECT\s/.test(s)&&!s.includes(';')&&!s.includes('register_ready_report_read')))
  const packageRoot=new URL('../',import.meta.resolve('@profitia/platform-readonly-miss-report'))
- for(const[file,digest]of Object.entries(a.producerSourceDigests))assert.equal(hash(fs.readFileSync(new URL(file,packageRoot))),digest,'Installed producer '+file)
+ for(const[file,digest]of Object.entries(a.producerSourceDigests))assert.equal(hash(fs.readFileSync(new URL(file,packageRoot))),apiPath?.producerMetadataDigests['packages/platform-contracts/readonly-miss-report/'+file]??digest,'Installed producer '+file)
  const {createRequire}=await import('node:module'),{realpathSync}=await import('node:fs')
  const own=createRequire(import.meta.url),peer=createRequire(new URL('package.json',packageRoot))
  assert.equal(realpathSync(own.resolve('@profitia/platform-contracts/operation-context')),realpathSync(peer.resolve('@profitia/platform-contracts/operation-context')))

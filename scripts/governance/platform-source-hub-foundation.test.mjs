@@ -26,6 +26,7 @@ const families = json('Canon/registries/platform-source-hub-contract-families-v1
 const targets = ['apps/platform-source-hub/src/server.ts', 'packages/platform-source-hub-contracts/index.mjs', '.github/workflows/platform-source-hub-ci.yml']
 const resolve = (project, paths, repositoryRoot = root) => resolveProjectRouting({ profile: resolveProjectProfile(project, root), targets: paths, repositoryRoot })
 const decision = 'ARCH-SOURCE-HUB-G1-FINAL-ACTIVATION-20261103'
+const stage1b = '9bce78138e1396765ce67b9b1b29841efdb017f2'
 
 // Source assertions do not replace actual-main acceptance and readback.
 test('Source Hub exact G1 appends approved rows and preserves all prior governance authority', () => {
@@ -83,16 +84,18 @@ test('actual Hub routing uniquely permits Architecture and denies consumers, sib
   const conflict = resolve('ARCHITECTURE', [targets[0]], scratch)
   assert.equal(conflict.ok, false)
   assert.equal(conflict.results[0].resolutionStatus, 'CONFLICT')
-  for (const p of ['apps/platform-source-hub', 'packages/platform-source-hub-contracts', '.github/workflows/platform-source-hub-ci.yml']) assert.equal(fs.existsSync(path.join(root, p)), false)
+  // Stage1B admitted empty producer surfaces. Stage2A is the separately
+  // authorised implementation; preserve the historical absence at its SHA.
+  for (const p of ['apps/platform-source-hub', 'packages/platform-source-hub-contracts', '.github/workflows/platform-source-hub-ci.yml']) assert.equal(git(['ls-tree','-r',stage1b,'--',p]), '')
 })
 
-test('accepted business sections, family payloads and all23 NewsAPI blobs remain unchanged', () => {
+test('accepted Stage1B business sections, family payloads and historical23 NewsAPI blobs remain unchanged', () => {
   const segment = (s, start, end) => s.slice(s.indexOf(start), s.indexOf(end))
   const normalizeLinks = s => s.replace(/\]\(([^)]+)\)/g, (whole, dest) => /^https:\/\//.test(dest) ? whole : '](' + path.posix.basename(dest) + ')')
   assert.equal(normalizeLinks(segment(read('Canon/v1.0-platform-source-hub-business-and-architecture-canon.md'), '## 1.', '## 7.')), normalizeLinks(segment(priorText('Canon/proposals/v1.0-platform-source-hub-business-and-architecture-canon.md'), '## 1.', '## 7.')))
   const normalizeAmendment = s => normalizeLinks(segment(s, '## Minimal clarification', '## Activation')).replace('The proposed [Platform Source Hub', 'The [Platform Source Hub')
   assert.equal(normalizeAmendment(read('Canon/v1.1-newsfeed-source-hub-responsibility-amendment.md')), normalizeAmendment(priorText('Canon/proposals/v1.1-newsfeed-source-hub-responsibility-amendment.md')))
-  const { status, approval, authority, ...actualPayload } = families
+  const { status, approval, authority, stage2aSourceAdoption, ...actualPayload } = families
   const { status: oldStatus, ...approvedPayload } = prior('Canon/proposals/platform-source-hub-contract-families-v1.json')
   assert.equal(status, 'ACTIVE')
   assert.deepEqual(actualPayload, approvedPayload)
@@ -101,10 +104,18 @@ test('accepted business sections, family payloads and all23 NewsAPI blobs remain
   const scope = ['apps/newsfeed-runtime', 'packages/newsfeed-contracts', '.github/workflows/newsfeed-ci.yml']
   const before = git(['ls-tree', '-r', accepted, '--', ...scope]).split('\n')
   assert.equal(before.length, 23)
-  assert.equal(git(['ls-tree', '-r', 'HEAD', '--', ...scope]), before.join('\n'))
+  assert.equal(git(['ls-tree', '-r', stage1b, '--', ...scope]), before.join('\n'))
+  const extracted = new Set(['apps/newsfeed-runtime/package.json','apps/newsfeed-runtime/package-lock.json','apps/newsfeed-runtime/tsconfig.json','apps/newsfeed-runtime/README.md','apps/newsfeed-runtime/src/newsapi.mjs','apps/newsfeed-runtime/src/query.mjs','apps/newsfeed-runtime/src/capabilities.mjs','packages/newsfeed-contracts/package.json','packages/newsfeed-contracts/index.mjs','packages/newsfeed-contracts/index.d.ts','packages/newsfeed-contracts/README.md','.github/workflows/newsfeed-ci.yml'])
   for (const row of before) {
     const [metadata, p] = row.split('\t')
-    assert.equal(git(['hash-object', p]), metadata.split(' ')[2], p)
+    if(!extracted.has(p))assert.equal(git(['hash-object', p]), metadata.split(' ')[2], p)
+  }
+  for(const [legacy,producer]of [['newsapi','newsapi'],['query','newsapi-query'],['capabilities','newsapi-capabilities']]){
+    const oldPath='apps/newsfeed-runtime/src/'+legacy+'.mjs',newPath='apps/platform-source-hub/src/providers/'+producer+'.mjs'
+    assert.match(read(oldPath),new RegExp('^export \\* from .*'+producer+'\\.mjs','m'))
+    const original=execFileSync('git',['show',stage1b+':'+oldPath],{cwd:root,encoding:'utf8'})
+    const normalize=s=>s.replaceAll('../../../packages/newsfeed-contracts/','../../../../packages/platform-source-hub-contracts/').replaceAll('./capabilities.mjs','./newsapi-capabilities.mjs').replaceAll('./query.mjs','./newsapi-query.mjs')
+    assert.equal(read(newPath),normalize(original),newPath+' is the single preserved implementation')
   }
 })
 
@@ -202,4 +213,22 @@ test('new producer admission retains SG2 and SRM owners and reserved execution e
     assert.equal(resolve('ARCHITECTURE', [p]).ok, false)
   }
   for (const targetEnvironment of ['staging', 'production']) assert.throws(() => resolveEnvironmentProfile({ profile: resolveProjectProfile('ARCHITECTURE', root), targetEnvironment, governanceRoot: root }), /not ACTIVE/)
+})
+
+test('Stage2A adopts four separate versioned source families and the real Newsfeed consumer while live admission stays closed',()=>{
+ const a=families.stage2aSourceAdoption
+ assert.equal(a.taskId,'ARCHITECTURE-SOURCE-HUB-NEWSFEED-STAGE2A-20261103');assert.equal(a.pullRequest,885)
+ assert.equal(a.effectiveOn,'CONTROLLED_MAIN_ACCEPTANCE');assert.equal(a.apiVersion,'1.0.0')
+ assert.equal(a.package,json('packages/platform-source-hub-contracts/package.json').name)
+ assert.equal(a.apiVersion,json('packages/platform-source-hub-contracts/package.json').version)
+ assert.deepEqual(a.implementedFamilies,{'news-discovery':'1.0.0','economic-calendar':'1.0.0','indicators':'1.0.0','external-forecasts':'1.0.0'})
+ assert.deepEqual(a.futureFamilies,['market-observations']);assert.equal(a.legacyCompatibility,'NewsDiscovery 0.1.0')
+ assert.equal(a.consumer.contractPackage,json('packages/newsfeed-contracts/package.json').name)
+ assert.equal(a.consumer.apiVersion,json('packages/newsfeed-contracts/package.json').version)
+ assert.equal(a.consumer.adoptedFamily,'news-discovery')
+ assert.equal(a.runtimeAdmission,'NOT_ACTIVATED');assert.equal(a.infrastructureActivationAuthorized,false)
+ const evidence=json('apps/platform-source-hub/docs/live-evidence.json')
+ assert.equal(evidence.liveProviderCalls,0);assert.equal(evidence.providerResults.length,5)
+ assert(evidence.providerResults.every(x=>x.status==='IMPLEMENTED_OFFLINE_VERIFIED'))
+ assert(fs.existsSync(path.join(root,a.evidenceDocument)));assert(fs.existsSync(path.join(root,a.compatibilityAndRollback)))
 })
