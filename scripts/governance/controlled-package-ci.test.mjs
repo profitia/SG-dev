@@ -1097,8 +1097,8 @@ test('Maps peer transition needs exact source, a pinned admission and matching l
  }finally{fs.rmSync(temporary,{recursive:true,force:true})}
 })
 
-test('receiver metadata reconciliation preserves all128 other reviewed blobs and every status, mode and owner route',()=>{
- const corrected={"apps/sg-runtime/operation-integration.json": "0e494a92f1c0bb151ade7866c2fbc7b0afd2753d", "apps/sg-runtime/tests/pci-smart-integrity.mjs": "684a069d0b32c0fee69fc20ec887ab80edb88919", "apps/sg-runtime/tests/pci-smart-integrity.test.mjs": "a646a1df74b845f27da1b792daae6aad09129b55"}
+test('test-only reconciliation preserves all126 other reviewed blobs and every status, mode and owner route',()=>{
+ const corrected={"apps/architecture-lab/test/sdk-compatibility.test.mjs": "1616eb2591d3e6ccd0c68e595f81fe8a16733e84", "apps/sg-runtime/operation-integration.json": "0e494a92f1c0bb151ade7866c2fbc7b0afd2753d", "apps/sg-runtime/tests/pci-smart-integrity.mjs": "684a069d0b32c0fee69fc20ec887ab80edb88919", "apps/sg-runtime/tests/pci-smart-integrity.test.mjs": "a646a1df74b845f27da1b792daae6aad09129b55", "packages/platform-contracts/readonly-miss-report/test/readonly-miss-report.test.mjs": "c477d38bcb9f1d067bfa10e4699fd0ec140c96b3"}
  const stableHash=value=>createHash('sha256').update(JSON.stringify(Object.keys(value).sort().map(key=>[key,value[key]]))).digest('hex')
  assert.equal(Object.keys(SOURCE_HUB_STAGE2A_REVIEW.blobs).length,131)
  for(const [file,prior]of Object.entries(corrected))assert.notEqual(SOURCE_HUB_STAGE2A_REVIEW.blobs[file],prior,file)
