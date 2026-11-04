@@ -155,3 +155,25 @@ test('a shared label failure remains fatal to its provider scope and cannot publ
  }),error=>error===failure)
  assert.equal(reads,1)
 })
+
+
+test('an approved Region dictionary keeps a valid empty query local without provider fallback',async()=>{
+ const client=await import('../lib/benchmark/metadata-store');let queries=0,providers=0
+ const metadata={benchmarkMetadataValueRecord:{
+  count:async({where}:{where:{OR?:unknown}})=>{queries++;return where.OR?0:102647},
+  findMany:async({take}:{take:number})=>{assert.equal(take,40);return []},
+ }} as unknown as Awaited<ReturnType<BenchmarkProviderPorts['loadMetadataClient']>>
+ await runWithBenchmarkProviderScope(ports(async()=>{providers++;throw Error('Forbidden full-catalogue fallback')},async()=>metadata),async()=>{
+  const value=await client.getStoredBenchmarkMetadataValues('Region',[],{query:'zz-no-matching-region',limit:40})
+  assert.deepEqual(value,{items:[],totalCount:102647,filteredCount:0,query:'zz-no-matching-region',limited:false})
+ });assert.equal(queries,2);assert.equal(providers,0)
+})
+
+test('a refused dictionary query never becomes an empty success or a provider fallback',async()=>{
+ const client=await import('../lib/benchmark/metadata-store'),failure=Error('Ordinary dictionary query refused');let providers=0
+ const metadata={benchmarkMetadataValueRecord:{count:async()=>{throw failure}}} as unknown as Awaited<ReturnType<BenchmarkProviderPorts['loadMetadataClient']>>
+ await assert.rejects(runWithBenchmarkProviderScope(ports(async()=>{providers++;return response('forbidden')},async()=>metadata),async()=>{
+  try{await client.getStoredBenchmarkMetadataValues('Region',[],{query:'Pol',limit:40})}catch{/* Original caller cannot erase the refusal. */}
+  return {items:[]}
+ }),error=>error===failure);assert.equal(providers,0)
+})

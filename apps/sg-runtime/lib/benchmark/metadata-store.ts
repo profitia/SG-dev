@@ -236,10 +236,8 @@ export async function getStoredBenchmarkMetadataValues(
       return null
     }
 
-    if (query && filteredCount === 0) {
-      return null
-    }
-
+    // A valid empty query is still an answer from the approved dictionary.
+    // Falling through would fetch the provider's entire large value catalogue.
     const limit = getEffectiveLimit(metadataKey, options?.limit, filteredCount)
     const rows = await prisma.benchmarkMetadataValueRecord.findMany({
       where: filteredWhere,

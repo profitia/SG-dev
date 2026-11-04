@@ -77,3 +77,9 @@ A new self-grant can default to INHERIT TRUE. Explicitly keep INHERIT FALSE when
 enabling temporary SET, and independently verify effective SET and USAGE FALSE
 after restoration. Preserve the existing cloud-admin ADMIN delegation and any
 other owner's grants; an inert self-grant must have all three options FALSE.
+
+A valid no-match query in an available approved dictionary returns an empty
+list locally. It does not trigger a full provider catalogue read. A missing
+dictionary and failed ordinary-role admission/query retain their existing
+fallback or fail-closed behavior; an unavailable read never becomes an empty
+success.

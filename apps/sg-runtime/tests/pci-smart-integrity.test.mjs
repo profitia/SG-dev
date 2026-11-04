@@ -17,7 +17,7 @@ const historical=(sha,file)=>{const key=sha+':'+file;if(!historicalBlobs.has(key
 test('dictionary lookup continuation preserves SEARCH criteria and rejects scope or history tampering',()=>{
  const r=receipt(),f=r.finderMetadataDictionaryLookups;assert(f);assertPciSmartIntegrity(r,current,historical)
  for(const file of f.boundSourcePaths)assert.throws(()=>assertPciSmartIntegrity(r,p=>p===file?Buffer.concat([current(p),Buffer.from('tamper')]):current(p),historical),file)
- for(const mutate of [x=>x.finderMetadataDictionaryLookups.searchCriteriaPreserved=false,
+ for(const mutate of [x=>x.finderMetadataDictionaryLookups.searchCriteriaPreserved=false,x=>x.finderMetadataDictionaryLookups.emptyDictionaryMatchesStayLocal=false,
   x=>x.finderMetadataDictionaryLookups.authorizationChanged=true,x=>x.finderMetadataDictionaryLookups.providerBudgetsChanged=true,
   x=>x.finderMetadataDictionaryLookups.dictionaryScope='CASCADE',x=>x.finderMetadataDictionaryLookups.previousReceiptSha256='0'.repeat(64),
   x=>x.finderMetadataSingleFlight.cacheScope='GLOBAL']){const changed=structuredClone(r);mutate(changed);assert.throws(()=>assertPciSmartIntegrity(changed,current,historical))}
