@@ -1,4 +1,4 @@
-import {createPlatformIngestionHost,platformIngestionSchemaDigest} from '@profitia/platform-contracts/platform-ingestion';
+import {createPlatformIngestionHost,platformIngestionSchemaDigest,unmeteredSourceSchemaDigest} from '@profitia/platform-contracts/platform-ingestion';
 import {createExternalCallHost,externalCallSchemaDigest,nativeExternalTransportSchemaDigest,apiPathTransportSchemaDigest,externalCallEvidence,externalNativeResponse,ExternalCallUnavailable} from '@profitia/platform-contracts/external-call';
 import {SourceHubError} from '../../../packages/platform-source-hub-contracts/index.mjs';
 import {DiscoveryError} from './providers/newsapi.mjs';
@@ -19,7 +19,7 @@ export function sourceDefinition(provider,family,{includeMarketForecasts=false}=
 }
 export async function createAdmission(configuration,database){
  const sourceDigest=await platformIngestionSchemaDigest(),externalDigest=await externalCallSchemaDigest(),nativeDigest=await nativeExternalTransportSchemaDigest(),apiDigest=await apiPathTransportSchemaDigest();let inFlight=0;
- const binding={applicationId:configuration.applicationId,environment:configuration.environment,projectId:configuration.projectId,branchId:configuration.branchId,databaseName:configuration.databaseName,role:configuration.sourceRole,deploymentId:configuration.deploymentId,configurationVersion:configuration.configurationVersion,schemaDigest:sourceDigest};
+ const binding={applicationId:configuration.applicationId,environment:configuration.environment,projectId:configuration.projectId,branchId:configuration.branchId,databaseName:configuration.databaseName,role:configuration.sourceRole,deploymentId:configuration.deploymentId,configurationVersion:configuration.configurationVersion,schemaDigest:sourceDigest,unmeteredSchemaDigest:await unmeteredSourceSchemaDigest()};
  /** @type {import('@profitia/platform-contracts/operation-context').Application} */
  const application={appId:configuration.applicationId,profileId:'PLATFORM_INTERNAL',deploymentId:configuration.deploymentId,configurationVersion:configuration.configurationVersion,environment:configuration.environment,identityIssuer:'urn:profitia:database-service-runtime:v1',organisationId:null,features:['knowledge_ingestion'],operations:['knowledge.ingest']};
  async function assertCurrent(provider,family,licence){
