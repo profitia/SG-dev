@@ -57,3 +57,29 @@ Observability extends existing Render operational logs with bounded
 `FINDER_RELEASE_BINDINGS` events: `WAITING`, `READY` and `BLOCKED`, technical code,
 binding name, elapsed time and successful release SHA. No raw driver errors,
 credentials, user identifiers or business payloads are logged.
+
+## Metadata dictionaries and search criteria
+
+The Finder selectors explicitly request global value dictionaries from the
+existing authorized metadata views. Selected criteria remain on benchmark
+SEARCH commands; they are not sent as peer filters when listing dictionary
+values. This keeps Region text lookup bounded to the existing local query and
+40 visible values, including after choosing Daily or another criterion.
+
+The provider's [documented Web API client](https://github.com/macrobond/macrobond-data-api/blob/main/macrobond_data_api/web/web_types/metadata_methods.py)
+uses `list_attribute_values(attribute_name)` for the global dictionary. No new
+provider path, Source response limit, quota, permission or metadata schema is
+introduced. Existing server contracts and all actual SEARCH criteria remain
+unchanged.
+
+For controlled operator work, inspect **every grantor row** in `pg_auth_members`.
+A new self-grant can default to INHERIT TRUE. Explicitly keep INHERIT FALSE when
+enabling temporary SET, and independently verify effective SET and USAGE FALSE
+after restoration. Preserve the existing cloud-admin ADMIN delegation and any
+other owner's grants; an inert self-grant must have all three options FALSE.
+
+A valid no-match query in an available approved dictionary returns an empty
+list locally. It does not trigger a full provider catalogue read. A missing
+dictionary and failed ordinary-role admission/query retain their existing
+fallback or fail-closed behavior; an unavailable read never becomes an empty
+success.

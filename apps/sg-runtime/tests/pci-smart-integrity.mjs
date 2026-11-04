@@ -422,6 +422,27 @@ export function assertPciSmartIntegrity(receipt,current,historical){
 
 // Test-only additive compatibility; never imported by a product runtime.
 export function assertSourceHubApiPathCompatibility(receipt,current,historical,{validatePeer=true}={}){
+ if(receipt.finderMetadataDictionaryLookups){
+  const f=receipt.finderMetadataDictionaryLookups,file='apps/sg-runtime/operation-integration.json'
+  assert.equal(f.taskId,'SG2-FINDER-METADATA-DICTIONARY-LOOKUPS-20261104')
+  assert.equal(f.scope,'SG2_FINDER_GLOBAL_DICTIONARIES_WITH_PRESERVED_SEARCH_CRITERIA')
+  assert.equal(f.previousReceiptSourceSha,'f1e05878382382b036e2be15df039d0fe0e6c54a')
+  const bytes=historical(f.previousReceiptSourceSha,file),prior=JSON.parse(bytes)
+  assert.equal(digest(bytes),f.previousReceiptSha256)
+  const {finderMetadataDictionaryLookups,...preserved}=receipt
+  assert.deepEqual(preserved,prior,'all accepted Finder recovery and parallel receipts remain immutable')
+  assert.deepEqual(f.boundSourcePaths,FINDER_DICTIONARY_FILES)
+  assert.deepEqual(Object.keys(f.sourceDigests).sort(),FINDER_DICTIONARY_FILES)
+  assert.deepEqual(f.applicationSourceDigests,Object.fromEntries(Object.entries(f.sourceDigests).map(([p,h])=>[posix.relative('apps/sg-runtime',p),h])))
+  for(const [p,h]of Object.entries(f.sourceDigests))assert.equal(digest(current(p)),h,'current Finder dictionary lookup '+p)
+  assert.equal(f.dictionaryScope,'GLOBAL_VALUE_DICTIONARIES');assert.equal(f.searchCriteriaPreserved,true);assert.equal(f.emptyDictionaryMatchesStayLocal,true);assert.equal(f.emptyResultTaskId,'SG2-FINDER-METADATA-EMPTY-RESULT-20261104')
+  for(const flag of ['authorizationChanged','providerBudgetsChanged','providerRetryAdded','schemaChanged','producerChanged','privatePinsChanged','ciPolicyChanged','srmChanged','visualDesignChanged','otherEnvironmentsChanged'])assert.equal(f[flag],false,flag)
+  const client='apps/sg-runtime/components/benchmark-finder/benchmark-finder-client.tsx'
+  const segment=(v,a,b)=>{const t=Buffer.from(v).toString(),start=t.indexOf(a),end=t.indexOf(b,start);assert(start>=0&&end>start);return t.slice(start,end)}
+  for(const [a,b]of [['function buildSearchFilters(','function localizeMetadataDefinitions('],['  async function runSearch(','  async function runAdvancedSearch('],['  async function runAdvancedSearch(','  async function openPorrDemoPortfolioBenchmark(']])assert.equal(segment(current(client),a,b),segment(historical(f.previousReceiptSourceSha,client),a,b),'original search criteria, transport and result handling remain exact')
+  const previous=p=>p===file||Object.hasOwn(f.sourceDigests,p)?historical(f.previousReceiptSourceSha,p):current(p)
+  return assertSourceHubApiPathCompatibility(prior,previous,historical,{validatePeer})
+ }
  if(receipt.finderMetadataSingleFlight){
   const f=receipt.finderMetadataSingleFlight,file='apps/sg-runtime/operation-integration.json'
   assert.equal(f.taskId,'SG2-FINDER-METADATA-SINGLE-FLIGHT-20261104')
@@ -467,3 +488,5 @@ export function assertSourceHubApiPathCompatibility(receipt,current,historical,{
 }
 
 const FINDER_RECOVERY_FILES = ["apps/sg-runtime/docs/finder-development-release.md", "apps/sg-runtime/lib/benchmark/macrobond.ts", "apps/sg-runtime/scripts/verify-finder-development-bindings.mjs", "apps/sg-runtime/tests/adp-appshell-consumer.test.tsx", "apps/sg-runtime/tests/benchmark-provider-scope.test.ts", "apps/sg-runtime/tests/category-operation.test.ts", "apps/sg-runtime/tests/diagnostic-telemetry-adoption.test.mjs", "apps/sg-runtime/tests/finder-development-bindings.test.mjs", "apps/sg-runtime/tests/identity-runtime.test.ts", "apps/sg-runtime/tests/integrated-buyer-journey-package.test.mjs", "apps/sg-runtime/tests/native-sql-roundtrips.test.mjs", "apps/sg-runtime/tests/operation-context.test.mjs", "apps/sg-runtime/tests/pci-smart-integrity.mjs", "apps/sg-runtime/tests/pci-smart-integrity.test.mjs", "apps/sg-runtime/tests/porr-demo-middleware.test.ts", "apps/sg-runtime/tests/self-service-account.test.ts", "apps/sg-runtime/tests/xray-fresh-performance-adoption.test.mjs", "apps/sg-runtime/tests/xray-gateway.test.ts"]
+
+const FINDER_DICTIONARY_FILES = ["apps/sg-runtime/components/benchmark-finder/benchmark-finder-client.tsx", "apps/sg-runtime/components/benchmark-finder/metadata-prefetch.ts", "apps/sg-runtime/docs/finder-development-release.md", "apps/sg-runtime/lib/benchmark/metadata-store.ts", "apps/sg-runtime/tests/adp-appshell-consumer.test.tsx", "apps/sg-runtime/tests/benchmark-metadata-prefetch.test.ts", "apps/sg-runtime/tests/benchmark-provider-scope.test.ts", "apps/sg-runtime/tests/category-operation.test.ts", "apps/sg-runtime/tests/diagnostic-telemetry-adoption.test.mjs", "apps/sg-runtime/tests/identity-runtime.test.ts", "apps/sg-runtime/tests/integrated-buyer-journey-package.test.mjs", "apps/sg-runtime/tests/native-sql-roundtrips.test.mjs", "apps/sg-runtime/tests/operation-context.test.mjs", "apps/sg-runtime/tests/pci-smart-integrity.mjs", "apps/sg-runtime/tests/pci-smart-integrity.test.mjs", "apps/sg-runtime/tests/porr-demo-middleware.test.ts", "apps/sg-runtime/tests/self-service-account.test.ts", "apps/sg-runtime/tests/xray-fresh-performance-adoption.test.mjs", "apps/sg-runtime/tests/xray-gateway.test.ts"]

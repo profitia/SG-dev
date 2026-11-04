@@ -29,6 +29,7 @@ import {
   normalizeForecastWarmupExperiment,
 } from '@/lib/benchmark/analytics'
 import {
+  METADATA_DICTIONARY_FILTER_SIGNATURE,
   buildMetadataValueRequestKey,
   buildMetadataValuesRequestPath,
   countReadyMetadataPrewarmFacets,
@@ -571,10 +572,6 @@ function localizeMetadataDefinitions(definitions: BenchmarkMetadataDefinition[],
   }))
 }
 
-function buildFilterParam(filters: BenchmarkSearchFilter[]) {
-  return JSON.stringify(filters)
-}
-
 function filterMetadataItems(items: BenchmarkMetadataValue[], query: string) {
   const normalizedQuery = query.trim().toLowerCase()
   if (!normalizedQuery) {
@@ -1095,8 +1092,9 @@ export function BenchmarkFinderClient({
   async function loadMetadataValues(metadataKey: string, nextSearchQuery?: string, options?: { suppressGlobalError?: boolean }) {
     const remoteFiltering = shouldUseRemoteMetadataQuery(metadataKey)
     const normalizedQuery = (nextSearchQuery ?? metadataValueSearchByKey[metadataKey] ?? '').trim()
-    const filters = buildSearchFilters(selectedFilters).filter((filter) => filter.metadataKey !== metadataKey)
-    const filterSignature = buildFilterParam(filters)
+    // Keep dictionary reads on the approved bounded metadata view. Search
+    // commands below retain all selected benchmark criteria independently.
+    const filterSignature = METADATA_DICTIONARY_FILTER_SIGNATURE
     const current = metadataValuesByKey[metadataKey]
 
     if (remoteFiltering && normalizedQuery.length < REMOTE_METADATA_QUERY_MIN_LENGTH) {
@@ -1148,7 +1146,6 @@ export function BenchmarkFinderClient({
     try {
       const payload = await readJson<MetadataValuesResponse>(await discoveryFetch(buildMetadataValuesRequestPath({
         metadataKey,
-        filterSignature,
         remoteFiltering,
         query: normalizedQuery,
         limit: MAX_METADATA_VISIBLE_ITEMS,

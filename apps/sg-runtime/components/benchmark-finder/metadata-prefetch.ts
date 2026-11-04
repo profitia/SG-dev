@@ -13,6 +13,9 @@ type PrepareAdvancedMetadataParams = {
   prewarmMetadataValue: (metadataKey: string) => Promise<void>
 }
 
+// The selectors use value dictionaries; selected criteria belong to SEARCH.
+export const METADATA_DICTIONARY_FILTER_SIGNATURE = '[]'
+
 export const STANDARD_METADATA_PREWARM_KEYS = ['Source', 'Frequency', 'Currency', 'TitleUnit', 'Category'] as const
 export const REMOTE_METADATA_QUERY_KEYS = new Set(['Region'])
 
@@ -45,12 +48,11 @@ export function isDuplicateMetadataValueRequest(activeRequestKey: string | undef
 
 export function buildMetadataValuesRequestPath(params: {
   metadataKey: string
-  filterSignature: string
   remoteFiltering: boolean
   query: string
   limit: number
 }) {
-  const searchParams = new URLSearchParams({ filters: params.filterSignature })
+  const searchParams = new URLSearchParams({ filters: METADATA_DICTIONARY_FILTER_SIGNATURE })
   if (params.remoteFiltering) {
     searchParams.set('q', params.query)
     searchParams.set('limit', String(params.limit))

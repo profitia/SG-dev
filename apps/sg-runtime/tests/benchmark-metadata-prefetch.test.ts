@@ -3,6 +3,7 @@ import test from 'node:test'
 
 import type { BenchmarkMetadataDefinition } from '../lib/benchmark/contracts'
 import {
+  METADATA_DICTIONARY_FILTER_SIGNATURE,
   buildMetadataValueRequestKey,
   buildMetadataValuesRequestPath,
   countReadyMetadataPrewarmFacets,
@@ -92,18 +93,22 @@ test('prewarmed ready state is reused and failed prewarm state can retry lazily'
   assert.equal(isDuplicateMetadataValueRequest(undefined, requestKey), false)
 })
 
-test('client facet fetch path stays on SG Runtime API and preserves cross-facet filter signatures', () => {
-  const requestPath = buildMetadataValuesRequestPath({
-    metadataKey: 'Source',
-    filterSignature: '[{"metadataKey":"Currency","operator":"equals","values":["USD"]}]',
-    remoteFiltering: false,
-    query: '',
-    limit: 40,
-  })
-
-  assert.match(requestPath, /^\/api\/benchmark\/metadata\/Source\/values\?filters=/)
-  assert.ok(!requestPath.includes('macrobond'))
-  assert.ok(requestPath.includes(encodeURIComponent('[{"metadataKey":"Currency","operator":"equals","values":["USD"]}]')))
+test('selector dictionaries remain unfiltered after criteria selection and stay on the authorized SG Runtime API', () => {
+  const selectedCriteria = [{ metadataKey: 'Frequency', operator: 'equals', values: ['daily'] }]
+  const before = structuredClone(selectedCriteria)
+  for (const metadataKey of ['Source', 'Frequency', 'Currency', 'TitleUnit', 'Category', 'Region']) {
+    // An older caller cannot accidentally send peer criteria to the provider's
+    // full Region list. The dictionary builder has no criteria parameter.
+    const legacyCaller = { metadataKey, filterSignature: JSON.stringify(selectedCriteria),
+      remoteFiltering: metadataKey === 'Region', query: 'Pol', limit: 40 }
+    const url = new URL(buildMetadataValuesRequestPath(legacyCaller), 'https://example.invalid')
+    assert.equal(url.pathname, `/api/benchmark/metadata/${metadataKey}/values`)
+    assert.equal(url.searchParams.get('filters'), METADATA_DICTIONARY_FILTER_SIGNATURE)
+    assert.equal(url.searchParams.get('q'), metadataKey === 'Region' ? 'Pol' : null)
+    assert.equal(url.searchParams.get('limit'), metadataKey === 'Region' ? '40' : null)
+    assert.equal(url.origin, 'https://example.invalid')
+  }
+  assert.deepEqual(selectedCriteria, before, 'criteria remain available for the benchmark SEARCH command')
 })
 
 test('ready prewarmed facet count includes only standard ready states', () => {
