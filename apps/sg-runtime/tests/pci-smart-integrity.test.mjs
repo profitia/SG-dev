@@ -1,5 +1,6 @@
 import '../scripts/denial-audit/d1-reader.test.mjs'
 import './xray-style-isolation.test.ts'
+import './finder-development-bindings.test.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
@@ -12,6 +13,19 @@ const current=file=>fs.readFileSync(new URL('../../../'+file,import.meta.url))
 // Git blobs are immutable. Cache only historical reads; every current-file read remains fresh.
 const historicalBlobs=new Map()
 const historical=(sha,file)=>{const key=sha+':'+file;if(!historicalBlobs.has(key))historicalBlobs.set(key,execFileSync('git',['show',key]));return historicalBlobs.get(key)}
+
+test('Finder recovery binds current source and rejects stale receipts or expanded authority',()=>{
+ const r=receipt(),f=r.finderMetadataSingleFlight;assert(f)
+ assertPciSmartIntegrity(r,current,historical)
+ for(const file of f.boundSourcePaths)assert.throws(()=>assertPciSmartIntegrity(r,p=>p===file?Buffer.concat([current(p),Buffer.from('tamper')]):current(p),historical),file)
+ for(const mutate of [x=>x.finderMetadataSingleFlight.providerBudgetsChanged=true,
+  x=>x.finderMetadataSingleFlight.authorizationChanged=true,x=>x.finderMetadataSingleFlight.cacheScope='GLOBAL',
+  x=>x.finderMetadataSingleFlight.sourceDigests['apps/srm/unapproved.ts']='0'.repeat(64),
+  x=>x.finderMetadataSingleFlight.previousReceiptSha256='0'.repeat(64),
+  x=>x.sourceHubApiPathCompatibility.apiPathOptedIn=true]){
+   const changed=structuredClone(r);mutate(changed);assert.throws(()=>assertPciSmartIntegrity(changed,current,historical))
+ }
+})
 
 test('full application monitoring binds every source and rejects consent, Finder, privacy or scope weakening',()=>{
  const r=receipt(),a=r.productAnalyticsMonitoringCompatibility;assert(a)
