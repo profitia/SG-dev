@@ -22,6 +22,12 @@ export function analyticsSurface(pathname: string, search = ''): {module: Analyt
 }
 
 const finderContexts = '[data-appshell-module="benchmark-finder"],[data-testid="category-finder-modal"],[data-analytics-surface="finder"]'
+const pendingFinderEntries = new WeakMap<Document,string>()
+/** Close the transition gap before an asynchronous router/modal update is visible. */
+export function markFinderEntry(document: Document) {pendingFinderEntries.set(document,document.location.pathname)}
+export function resumeOrdinaryInteraction(document: Document) {
+  if(!document.location.pathname.split('/').includes('benchmark-finder') && !Array.from(document.querySelectorAll(finderContexts)).some(isAnalyticsElementVisible))pendingFinderEntries.delete(document)
+}
 export const excludedTargetSelector = '[data-analytics-exclude],.ph-no-capture,.ph-no-autocapture,[data-ph-no-autocapture]'
 export function isAnalyticsElementVisible(element: Element): boolean {
   if (!element.isConnected || element.closest('[hidden],[aria-hidden="true"],dialog:not([open])')) return false
@@ -32,7 +38,12 @@ export function isAnalyticsElementVisible(element: Element): boolean {
   return true
 }
 export function isFinderContext(document: Document): boolean {
-  return Array.from(document.querySelectorAll(finderContexts)).some(isAnalyticsElementVisible)
+  if(document.location.pathname.split('/').includes('benchmark-finder') || Array.from(document.querySelectorAll(finderContexts)).some(isAnalyticsElementVisible)) {
+    pendingFinderEntries.delete(document);return true
+  }
+  const pendingPath=pendingFinderEntries.get(document)
+  if(pendingPath!==undefined && pendingPath!==document.location.pathname)pendingFinderEntries.delete(document)
+  return pendingFinderEntries.has(document)
 }
 export function isFinderDestination(element: Element): boolean {
   const href = element.closest('a[href]')?.getAttribute('href')

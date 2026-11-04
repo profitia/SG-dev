@@ -1,5 +1,5 @@
 import {productAnalytics, type ProductAnalytics} from './adapter'
-import {analyticsSurface, excludedTargetSelector, isAnalyticsElementVisible, isFinderContext, isFinderDestination} from './surfaces'
+import {analyticsSurface, excludedTargetSelector, isAnalyticsElementVisible, isFinderContext, isFinderDestination,markFinderEntry,resumeOrdinaryInteraction} from './surfaces'
 import {CONTROL_IDS} from './contract'
 
 const interactive = 'button,a[href],input,select,textarea,summary,[role="button"],[role="tab"],[role="checkbox"],[role="switch"],[role="radio"],[role="option"],[role="slider"],[contenteditable="true"]'
@@ -48,7 +48,7 @@ export function startApplicationMonitoring(win: Window & typeof globalThis, perm
   let sessionEpoch=analytics.sessionEpoch()
   let alerted = new WeakSet<Element>(), edited = new WeakSet<Element>()
   const clock = () => win.performance.now()
-  const canCapture = () => !stopped && analytics.isReady() && permitted() && !isFinderContext(doc)
+  const canCapture = () => !stopped && !isFinderContext(doc) && analytics.isReady() && permitted()
   const forget = () => {
     if(currentKey)analytics.clearTransition('surface')
     currentKey='';forms.clear();edited=new WeakSet();alerted=new WeakSet();activeMs=0;interactions=0;analytics.discardAttempts()
@@ -89,7 +89,8 @@ export function startApplicationMonitoring(win: Window & typeof globalThis, perm
   const event = (incoming: Event) => {
     const raw = incoming.target
     if (!(raw instanceof win.Element)) return
-    if(raw.closest('[data-analytics-exclude="finder"]')||isFinderDestination(raw)){forget();return}
+    if(raw.closest('[data-analytics-exclude="finder"]')||isFinderDestination(raw)){markFinderEntry(doc);forget();return}
+    if(raw.closest(interactive)&&!raw.closest(excludedTargetSelector))resumeOrdinaryInteraction(doc)
     if (!sync()) return
     const element = incoming.type==='submit' ? raw.closest('form') : raw.closest(interactive) ?? raw.closest('canvas,svg')
     if (!element || !safeControl(element)) return

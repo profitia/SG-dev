@@ -168,3 +168,18 @@ test('existing request abort silently ends analytics observation, without invent
     assert.equal(f.analytics.begin('account','account_verify',controller.signal),null)
   }finally{f.close()}
 })
+
+test('Finder launch suspends capture during asynchronous transition and failed launch does not disable ordinary features',async()=>{
+  const f=fixture('/pl/dashboard','<button data-analytics-exclude="finder">Finder</button><button id="adp">ADP</button>')
+  try {
+    await settle();const before=f.events.length
+    f.fire('[data-analytics-exclude]');await settle()
+    assert.equal(f.analytics.capture('adp_view_opened',{module:'adp',view:'data'}),false,'last adapter gate closes before the route changes')
+    assert.equal(f.events.length,before,'no replacement AppShell arrival/performance event while waiting for Finder')
+    f.fire('#adp');assert.equal(f.events.at(-1).event,'ui_interaction','ordinary interaction can recover from a failed Finder transition')
+    f.fire('[data-analytics-exclude]');f.win.history.pushState({},'','/pl/dashboard/benchmark-finder');await settle()
+    const excluded=f.events.length;f.fire('#adp');assert.equal(f.events.length,excluded)
+    f.win.history.pushState({},'','/pl/dashboard');await settle();f.fire('#adp')
+    assert(f.events.length>excluded,'returning to the original route resumes even without a different destination path')
+  }finally{f.close()}
+})

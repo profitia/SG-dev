@@ -9,8 +9,8 @@ import { isAllowedAnalyticsBrowser, isProductAnalyticsPathEnabled, productAnalyt
 let initialization: Promise<void> | undefined
 let activeConfiguration: ProductAnalyticsConfiguration | null = null
 export function hasExplicitTestConsent(): boolean {
-  try { return isAllowedAnalyticsBrowser(window.location) && isProductAnalyticsPathEnabled(window.location.pathname)
-    && !isFinderContext(window.document) && window.sessionStorage.getItem(TEST_CONSENT_KEY) === 'granted' } catch { return false }
+  try { return isAllowedAnalyticsBrowser(window.location) && !isFinderContext(window.document)
+    && isProductAnalyticsPathEnabled(window.location.pathname) && window.sessionStorage.getItem(TEST_CONSENT_KEY) === 'granted' } catch { return false }
 }
 
 /** Next.js 14 client boundary. Server passes only validated public SDK config.
