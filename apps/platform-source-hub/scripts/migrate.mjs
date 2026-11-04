@@ -1,0 +1,52 @@
+import {readFile} from 'node:fs/promises';
+import {createHash} from 'node:crypto';
+import {pathToFileURL} from 'node:url';
+import pg from 'pg';
+import {ENVIRONMENTS} from '../src/config.mjs';
+const hash=source=>createHash('sha256').update(source).digest('hex');
+const identifier=value=>{if(!/^[a-z][a-z0-9_]{1,62}$/.test(value))throw Error('INVALID_ROLE');return '"'+value+'"';};
+const sourceSchema=new URL('../../../packages/platform-contracts/migrations/access/',import.meta.url);
+async function install(client,{file,schema,owner,binding}){
+ const sql=await readFile(new URL(file,sourceSchema),'utf8'),digest=hash(sql);
+ await client.query('SET LOCAL ROLE '+identifier(owner));
+ const exists=await client.query('SELECT to_regnamespace($1) IS NOT NULL AS present',[schema]);
+ if(exists.rows[0].present){const r=await client.query('SELECT * FROM '+schema+'.installation WHERE singleton');const x=r.rows[0];if(!x||x.schema_digest!==digest||binding&&(['environment','project_id','branch_id','database_name'].some(k=>x[k]!==binding[k])))throw Error('EXISTING_SCHEMA_MISMATCH');return;}
+ await client.query(sql);
+ if(schema==='profitia_access'||schema==='profitia_ingestion')await client.query('INSERT INTO '+schema+'.installation(schema_version,schema_digest,environment,project_id,branch_id,database_name) VALUES(\'1.0.0\',$1,$2,$3,$4,$5)',[digest,binding.environment,binding.project_id,binding.branch_id,binding.database_name]);
+ else if(schema==='profitia_external_call'){const base=hash(await readFile(new URL('008-platform-ingestion.sql',sourceSchema),'utf8'));await client.query('INSERT INTO profitia_external_call.installation(schema_version,schema_digest,source_schema_digest,environment,project_id,branch_id,database_name) VALUES(\'1.0.0\',$1,$2,$3,$4,$5,$6)',[digest,base,binding.environment,binding.project_id,binding.branch_id,binding.database_name]);}
+ else await client.query('INSERT INTO '+schema+'.installation(schema_version,schema_digest,source_ref) VALUES(\'1.0.0\',$1,\'source-hub-stage2a-owner-activation\')',[digest]);
+}
+// No identity bindings, memberships, product grants, provider admission or
+// capacity is manufactured here. Accepted owners provision those separately.
+export async function migrate(client,c){
+ if(c.environment!=='development')throw Error('ENVIRONMENT_NOT_ACTIVATED');
+ const role='source_hub_development_migrator',owner='source_hub_development_owner',runtime='source_hub_development_runtime',source='source_hub_development_source_runtime';
+ const identity=await client.query('SELECT current_user AS role,session_user AS login,current_database() AS database,rolsuper,rolbypassrls,rolinherit,rolcreaterole,rolcreatedb,rolreplication FROM pg_roles WHERE rolname=current_user');
+ const x=identity.rows[0];if(x?.role!==role||x.login!==role||x.database!==c.databaseName||x.rolsuper||x.rolbypassrls||x.rolinherit||x.rolcreaterole||x.rolcreatedb||x.rolreplication)throw Error('MIGRATOR_BINDING_MISMATCH');
+ const binding={environment:c.environment,project_id:c.projectId,branch_id:c.branchId,database_name:c.databaseName};
+ await client.query('BEGIN');try{
+  await client.query("SELECT pg_advisory_xact_lock(hashtextextended('source-hub-stage2a-migrations',0))");
+  for(const [file,schema,schemaOwner]of[['001-internal-access.sql','profitia_access','profitia_access_owner'],['008-platform-ingestion.sql','profitia_ingestion','profitia_ingestion_owner'],['009-external-call-admission.sql','profitia_external_call','profitia_ingestion_owner'],['012-native-external-transport.sql','profitia_external_native','profitia_ingestion_owner'],['028-api-path-transport.sql','profitia_external_api_path','profitia_ingestion_owner']])await install(client,{file,schema,owner:schemaOwner,binding:['profitia_external_native','profitia_external_api_path'].includes(schema)?null:binding});
+  await client.query('SET LOCAL ROLE profitia_access_owner');
+  await client.query('GRANT USAGE ON SCHEMA profitia_access TO '+runtime);
+  for(const signature of['runtime_descriptor()','identity_binding(text,text)','lock_access(uuid,uuid,text,text,text)','scope_allows(text,uuid,uuid)','append_audit(jsonb)'])await client.query('GRANT EXECUTE ON FUNCTION profitia_access.'+signature+' TO '+runtime);
+  await client.query('SET LOCAL ROLE profitia_ingestion_owner');
+  for(const schema of['profitia_ingestion','profitia_external_call','profitia_external_native'])await client.query('GRANT USAGE ON SCHEMA '+schema+' TO '+source);
+  for(const signature of['runtime_descriptor()','current_state(text,text)','lock_ingestion(text,text,text)','scope_allows(text,text)','reserve(text,text,text,text,uuid)','complete(uuid,uuid)','receipt(text,text,text,text)','append_audit(jsonb)'])await client.query('GRANT EXECUTE ON FUNCTION profitia_ingestion.'+signature+' TO '+source);
+  for(const signature of['descriptor(text,text)','apply_control(uuid,uuid,text)','read_status(uuid,text,text)'])await client.query('GRANT EXECUTE ON FUNCTION profitia_external_call.'+signature+' TO '+source);
+  await client.query('GRANT EXECUTE ON FUNCTION profitia_external_native.descriptor(text,text) TO '+source);
+  await client.query('SET LOCAL ROLE '+owner);
+  const sql=await readFile(new URL('../migrations/001-foundation.sql',import.meta.url),'utf8'),digest=hash(sql);
+  const exists=await client.query("SELECT to_regnamespace('source_hub') IS NOT NULL AS present");
+  if(exists.rows[0].present){const r=await client.query('SELECT * FROM source_hub.installation WHERE singleton'),i=r.rows[0];if(!i||i.schema_digest!==digest||i.application_id!==c.applicationId||Object.entries(binding).some(([k,v])=>i[k]!==v))throw Error('EXISTING_SCHEMA_MISMATCH');}
+  else{await client.query(sql.replaceAll('__OWNER_ROLE__',identifier(owner)).replaceAll('__RUNTIME_ROLE_LITERAL__',"'"+runtime+"'").replaceAll('__RUNTIME_ROLE__',identifier(runtime)));await client.query('INSERT INTO source_hub.installation(singleton,schema_version,schema_digest,environment,application_id,project_id,branch_id,database_name) VALUES(true,\'1.0.0\',$1,$2,$3,$4,$5,$6)',[digest,c.environment,c.applicationId,c.projectId,c.branchId,c.databaseName]);}
+  await client.query('COMMIT');return {schemaVersion:'1.0.0',schemaDigest:digest,status:'APPLIED_OR_VERIFIED'};
+ }catch(error){await client.query('ROLLBACK');throw error;}
+}
+async function main(){
+ const c=ENVIRONMENTS.development,u=new URL(process.env.SOURCE_HUB_MIGRATOR_DATABASE_URL??'');
+ if(process.env.SOURCE_HUB_ENVIRONMENT!=='development'||u.hostname!==c.host.replace('-pooler','')||decodeURIComponent(u.username)!=='source_hub_development_migrator'||u.pathname!=='/neondb'||!['require','verify-full'].includes(u.searchParams.get('sslmode')??'')||[...u.searchParams.keys()].some(k=>!['sslmode','channel_binding'].includes(k)))throw Error('MIGRATOR_CONFIGURATION_REFUSED');
+ u.searchParams.delete('sslmode');u.searchParams.delete('channel_binding');const client=new pg.Client({connectionString:u.href,ssl:{rejectUnauthorized:true},enableChannelBinding:true});await client.connect();
+ try{const result=await migrate(client,{...c,environment:'development',databaseName:'neondb'});process.stdout.write(JSON.stringify(result)+'\n');}finally{await client.end();}
+}
+if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href)main().catch(()=>{process.stderr.write('{"error":"MIGRATION_REFUSED_OR_FAILED"}\n');process.exitCode=1;});

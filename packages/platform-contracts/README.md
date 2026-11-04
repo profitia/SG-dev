@@ -656,3 +656,9 @@ Replays/retries still enter current user/E1 checks. Provider effects remain unde
 the existing application idempotency ledger: preserve the exact logical intent
 key, never retry uncertain delivery with a newly minted key. This contract
 neither adds an ALLOW cache nor promises rollback/cancellation of remote work.
+
+## Optional API_PATH transport — SDK1.33.0
+
+Explicit GET/NONE/HTTPS protocol for canonical encoded API names and bounded lists. Existing STORAGE_PATH and PUBLIC_PATH semantics are unchanged. A caller must supply `apiPathSchemaDigest`, adopt optional SQL028 and obtain an independently admitted immutable native policy. The existing Source/external host remains the sole network sender and owns counters/settlement. Missing protocol admission fails closed. No owner/runtime roles, provider grants, budgets, identities or infrastructure are activated by this source change. SQL001/008/009/012 retain their exact bytes. Consumer receipt/digest adoption is required before main acceptance.
+
+SQL028 deliberately targets the new disabled SQL001/008/009/012 Source Hub installation. It refuses an active Source installation or existing PUBLIC_WEB/GUS SOAP extensions, rather than overwriting their accepted validators/descriptors. It is not a migration for SG2/SRM databases. Those consumers only adopt the compatible SDK source and retain their existing SQL/policies.
