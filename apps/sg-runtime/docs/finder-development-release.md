@@ -92,3 +92,7 @@ advanced surface or unmounting cancels pending work. A retired request cannot
 clear the replacement request's identity. The five prewarmed dictionaries use
 the same empty server-query cache key while their visible filtering stays local.
 No server budget, Source admission, retry, SEARCH criterion or startup gate changes.
+
+The unchanged `test:operation-context` entry loads metadata-prefetch tests through
+its existing integrity suite. Standard controlled SG2 CI therefore checks input
+pacing and dictionary reuse; the suite also verifies this connection stays present.

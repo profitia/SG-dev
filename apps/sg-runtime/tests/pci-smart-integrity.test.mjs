@@ -1,6 +1,7 @@
 import '../scripts/denial-audit/d1-reader.test.mjs'
 import './xray-style-isolation.test.ts'
 import './finder-development-bindings.test.mjs'
+import './benchmark-metadata-prefetch.test.ts'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
@@ -15,7 +16,10 @@ const historicalBlobs=new Map()
 const historical=(sha,file)=>{const key=sha+':'+file;if(!historicalBlobs.has(key))historicalBlobs.set(key,execFileSync('git',['show',key]));return historicalBlobs.get(key)}
 
 test('metadata pacing continuation binds current input handling and rejects authority or history drift',()=>{
- const r=receipt(),f=r.finderMetadataRequestPacing;assert(f);assertPciSmartIntegrity(r,current,historical)
+ const r=receipt(),f=r.finderMetadataRequestPacing;assert(f)
+ assert.match(JSON.parse(current('apps/sg-runtime/package.json')).scripts['test:operation-context'],/tests\/pci-smart-integrity\.test\.mjs/)
+ assert.match(current('apps/sg-runtime/tests/pci-smart-integrity.test.mjs').toString(),/^import '\.\/benchmark-metadata-prefetch\.test\.ts'$/m)
+ assertPciSmartIntegrity(r,current,historical)
  for(const file of f.boundSourcePaths)assert.throws(()=>assertPciSmartIntegrity(r,p=>p===file?Buffer.concat([current(p),Buffer.from('tamper')]):current(p),historical),file)
  for(const mutate of [x=>x.finderMetadataRequestPacing.remoteQueryDelayMs=0,x=>x.finderMetadataRequestPacing.prewarmedQueriesReused=false,
   x=>x.finderMetadataRequestPacing.pendingQueriesCancelled=false,x=>x.finderMetadataRequestPacing.retiredRequestCleanupGuarded=false,
