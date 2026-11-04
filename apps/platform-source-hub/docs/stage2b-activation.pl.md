@@ -2,6 +2,8 @@
 
 Ten dokument opisuje przyszłe operacje właściciela. Stage 2A nie wykonuje żadnej z nich. Staging i Production pozostają nieaktywne. Kod startowy i migrator odmawiają ich uruchomienia. Nie kopiować danych ani poświadczeń Production do Development.
 
+> Aktualizacja wykonawcza 2026-11-04: [jedna lista brakujących czynności właściciela](development-owner-actions.pl.md) uwzględnia TE News, opcjonalne Markets, addytywną migrację002 i aktualny brak usług/ról. Historyczny Stage2A nie jest ponownie przyjmowany. Nowe upoważnienie do aktywacji pochodzi z osobnego zadania właściciela, nie z tego runbooka.
+
 ## 1. Wiążący zakres i identyfikatory
 
 Repozytorium `profitia/SG-dev`, branch `main`, **dokładny SHA przyjętego Stage 2A** z dowodu acceptance. Przed aktywacją zweryfikować wymagane CI tego SHA. Nie używać HEAD roboczego PR ani przypadkowo nowszego main. Osobna zgoda na Stage 2B jest wymagana; ten dokument jej nie udziela.
@@ -165,7 +167,7 @@ Staging/Production mają odrębne projekty/branche w kanonicznym environment bas
 
 ## 7. Potwierdzenie gotowości i rollback
 
-1. `/live` i `/health` obu usług potwierdzają proces; `/ready` sprawdza właściwe zwykłe loginy i instalacje. Hub dodatkowo wymaga skonfigurowania trzech kluczy oraz bieżących descriptorów pięciu Source API. Brak przyjęcia daje 503, nie atrapę gotowości.
+1. `/live` i `/health` obu usług potwierdzają proces; `/ready` sprawdza właściwe zwykłe loginy i instalacje. Hub dodatkowo wymaga skonfigurowania trzech kluczy oraz bieżących descriptorów sześciu Source API (w tym TE News) oraz przyjęty digest migracji002. Brak przyjęcia daje 503, nie atrapę gotowości.
 2. Bez bearer/M2M, z błędnym podpisem i cudzym subject/org musi wystąpić odmowa bez wywołania providera. Dwie rzeczywiste osoby/organizacje nie mogą czytać ani zmieniać swoich obserwacji. E1 revocation i wygasłe licencje muszą blokować odczyt/pobranie.
 3. Ważną sesją utworzyć `POST /v1/observations` z modelem z README, odczytać, zmienić wersjonowany PATCH, wstrzymać, wznowić i usunąć. Wybrać organizację nagłówkiem `x-profitia-organisation-id`; jest selektorem, nie grantem.
 4. Dopiero po dopuszczeniu małego, skończonego budżetu i zakresu licencji wykonać `POST /v1/observations/{id}/discover` z nowym `Idempotency-Key`. Ponowienie tego samego klucza ma zwrócić istniejący run bez nowej opłaconej próby. W historii sprawdzić liczbę wykryć, retencję i publication refs. Udokumentować wyniki rzeczywistych testów osobno od fixture.

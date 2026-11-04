@@ -7,14 +7,15 @@ export const SOURCE_CONTROL_VERSION='source-hub-api-control-v1';
 export const SOURCE_DEFINITIONS=Object.freeze({
  'newsapi:news-discovery':{origin:'https://newsapi.org',paths:['/v2/everything','/v2/top-headlines','/v2/top-headlines/sources']},
  'brave:news-discovery':{origin:'https://api.search.brave.com',paths:['/res/v1/web/search']},
+ 'trading-economics:news-discovery':{origin:'https://api.tradingeconomics.com',paths:['/news'],prefix:'/news/'},
  'trading-economics:economic-calendar':{origin:'https://api.tradingeconomics.com',paths:['/calendar'],prefix:'/calendar/'},
  'trading-economics:indicators':{origin:'https://api.tradingeconomics.com',paths:['/country'],prefix:'/country/'},
- 'trading-economics:external-forecasts':{origin:'https://api.tradingeconomics.com',paths:['/forecast'],prefix:'/forecast/'}
+ 'trading-economics:external-forecasts':{origin:'https://api.tradingeconomics.com',paths:['/forecast'],prefix:'/forecast/',marketPaths:['index','currency','crypto','commodity','bond'].map(c=>'/markets/forecasts/'+c)}
 });
-export function sourceDefinition(provider,family){
+export function sourceDefinition(provider,family,{includeMarketForecasts=false}={}){
  const d=SOURCE_DEFINITIONS[provider+':'+family];if(!d)throw new SourceHubError('UNSUPPORTED_FAMILY');
  return {...d,sourceId:'source-hub.'+provider+'.'+family,resourceId:'api.'+provider+'.'+family,
-  pathRules:d.paths.map(path=>({method:'GET',path})),nativePathRules:[...d.paths.map(path=>({method:'GET',path,requestFormat:'NONE'})),...(d.prefix?[{method:'GET',prefix:d.prefix,suffix:'',parameter:'API_PATH',requestFormat:'NONE'}]:[])]};
+  pathRules:d.paths.map(path=>({method:'GET',path})),nativePathRules:[...d.paths.map(path=>({method:'GET',path,requestFormat:'NONE'})),...(includeMarketForecasts&&'marketPaths' in d?d.marketPaths:[]).map(path=>({method:'GET',path,requestFormat:'NONE'})),...(d.prefix?[{method:'GET',prefix:d.prefix,suffix:'',parameter:'API_PATH',requestFormat:'NONE'}]:[])]};
 }
 export async function createAdmission(configuration,database){
  const sourceDigest=await platformIngestionSchemaDigest(),externalDigest=await externalCallSchemaDigest(),nativeDigest=await nativeExternalTransportSchemaDigest(),apiDigest=await apiPathTransportSchemaDigest();let inFlight=0;
@@ -22,7 +23,7 @@ export async function createAdmission(configuration,database){
  /** @type {import('@profitia/platform-contracts/operation-context').Application} */
  const application={appId:configuration.applicationId,profileId:'PLATFORM_INTERNAL',deploymentId:configuration.deploymentId,configurationVersion:configuration.configurationVersion,environment:configuration.environment,identityIssuer:'urn:profitia:database-service-runtime:v1',organisationId:null,features:['knowledge_ingestion'],operations:['knowledge.ingest']};
  async function assertCurrent(provider,family,licence){
-  const d=sourceDefinition(provider,family);
+  const d=sourceDefinition(provider,family,{includeMarketForecasts:licence.allow_market_forecasts===true});
   if(licence.source_id!==d.sourceId||licence.resource_id!==d.resourceId)throw new SourceHubError('SOURCE_BINDING_MISMATCH',503);
   const check=await database.query('SELECT profitia_external_native.descriptor($1,$2) AS descriptor',[d.sourceId,d.resourceId]).catch(()=>({rows:[]}));
   if(check.rows.length!==1||check.rows[0].descriptor?.policyId!==licence.source_policy_id)throw new SourceHubError('SOURCE_ADMISSION_REQUIRED',503);

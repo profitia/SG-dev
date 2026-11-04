@@ -1,10 +1,12 @@
 import {randomUUID,randomBytes,createHash} from 'node:crypto';
+import {readFileSync} from 'node:fs';
 import {operationPayloadDigest} from '@profitia/platform-contracts/operation-context';
 import {SourceHubError} from '../../../packages/platform-source-hub-contracts/index.mjs';
 const hash=value=>createHash('sha256').update(value).digest('hex');
 const scope=context=>[context.environment,context.applicationId,context.organisationId,context.subjectUserId];
 const where='environment=$1 AND application_id=$2 AND organisation_id=$3::uuid AND owner_user_id=$4::uuid';
 export function createRepository(configuration,database){
+ const extensionDigest=hash(readFileSync(new URL('../migrations/002-te-news.sql',import.meta.url)));
  async function licence(transaction,provider,family,consumer){
   const r=await transaction.query('SELECT * FROM source_hub.current_licence($1,$2,$3)',[provider,family,consumer]);
   if(r.rows.length!==1)throw new SourceHubError('LICENCE_ADMISSION_REQUIRED',403);return r.rows[0];
@@ -12,6 +14,7 @@ export function createRepository(configuration,database){
  async function begin(transaction,context,request,consumer,idempotencyKey){
   if(typeof idempotencyKey!=='string'||!/^[A-Za-z0-9][A-Za-z0-9._:-]{7,127}$/.test(idempotencyKey))throw new SourceHubError('IDEMPOTENCY_KEY_REQUIRED');
   const l=await licence(transaction,request.provider,request.family,consumer),s=scope(context),key=hash(idempotencyKey),digest=operationPayloadDigest(request);
+  if(request.provider==='trading-economics'&&request.family==='external-forecasts'&&request.criteria.forecastType==='markets'&&l.allow_market_forecasts!==true)throw new SourceHubError('LICENCE_ADMISSION_REQUIRED',403);
   // Serialize only this private intent. Different users/apps/organisations never share a key.
   await transaction.query('SELECT pg_advisory_xact_lock(hashtextextended($1,0))',[JSON.stringify([...s,consumer,key])]);
   const r=await transaction.query('SELECT * FROM source_hub.acquisitions WHERE '+where+' AND consumer_application_id=$5 AND idempotency_digest=$6 FOR UPDATE',[...s,consumer,key]);
@@ -43,6 +46,6 @@ export function createRepository(configuration,database){
   await transaction.query('UPDATE source_hub.acquisitions SET status=$6,error_code=$7,completed_at=clock_timestamp() WHERE '+where+' AND id=$5::uuid AND status=\'PENDING\'',[...s,acquisition.id,uncertain?'UNCERTAIN':'FAILED',error.code??'PROVIDER_UNAVAILABLE']);
   await transaction.query('INSERT INTO source_hub.provider_usage(acquisition_id,environment,application_id,organisation_id,owner_user_id,provider_id,family,upstream_attempts,outcome,receipt_ref) VALUES($5::uuid,$1,$2,$3::uuid,$4::uuid,$6,$7,$8,$9,$10) ON CONFLICT DO NOTHING',[...s,acquisition.id,request.provider,request.family,attempt?.upstreamAttempts??null,attempt?.certainty==='RESPONSE'?'RESPONSE':uncertain?'UNVERIFIED':'NOT_SENT',attempt?.value?.callId??null]);
  }
- async function ready(){try{await database.verifyLogin();const r=await database.query('SELECT schema_version,environment,application_id,project_id,branch_id,database_name FROM source_hub.installation WHERE singleton');const i=r.rows[0];return !!i&&i.schema_version==='1.0.0'&&i.environment===configuration.environment&&i.application_id===configuration.applicationId&&i.project_id===configuration.projectId&&i.branch_id===configuration.branchId&&i.database_name===configuration.databaseName;}catch{return false;}}
+ async function ready(){try{await database.verifyLogin();const r=await database.query('SELECT schema_version,environment,application_id,project_id,branch_id,database_name FROM source_hub.installation WHERE singleton');const i=r.rows[0],extension=await database.query('SELECT digest FROM source_hub.migrations WHERE version=$1',['002-te-news']);return !!i&&i.schema_version==='1.0.0'&&i.environment===configuration.environment&&i.application_id===configuration.applicationId&&i.project_id===configuration.projectId&&i.branch_id===configuration.branchId&&i.database_name===configuration.databaseName&&extension.rows.length===1&&extension.rows[0].digest===extensionDigest;}catch{return false;}}
  return Object.freeze({licence,begin,complete,failed,ready});
 }

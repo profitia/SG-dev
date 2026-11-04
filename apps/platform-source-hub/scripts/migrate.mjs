@@ -40,7 +40,20 @@ export async function migrate(client,c){
   const exists=await client.query("SELECT to_regnamespace('source_hub') IS NOT NULL AS present");
   if(exists.rows[0].present){const r=await client.query('SELECT * FROM source_hub.installation WHERE singleton'),i=r.rows[0];if(!i||i.schema_digest!==digest||i.application_id!==c.applicationId||Object.entries(binding).some(([k,v])=>i[k]!==v))throw Error('EXISTING_SCHEMA_MISMATCH');}
   else{await client.query(sql.replaceAll('__OWNER_ROLE__',identifier(owner)).replaceAll('__RUNTIME_ROLE_LITERAL__',"'"+runtime+"'").replaceAll('__RUNTIME_ROLE__',identifier(runtime)));await client.query('INSERT INTO source_hub.installation(singleton,schema_version,schema_digest,environment,application_id,project_id,branch_id,database_name) VALUES(true,\'1.0.0\',$1,$2,$3,$4,$5,$6)',[digest,c.environment,c.applicationId,c.projectId,c.branchId,c.databaseName]);}
-  await client.query('COMMIT');return {schemaVersion:'1.0.0',schemaDigest:digest,status:'APPLIED_OR_VERIFIED'};
+  const ledger=await client.query("SELECT to_regclass('source_hub.migrations') IS NOT NULL AS present");
+  if(!ledger.rows[0].present){
+   await client.query('CREATE TABLE source_hub.migrations(version text PRIMARY KEY,digest text NOT NULL CHECK(digest~\'^[a-f0-9]{64}$\'),applied_at timestamptz NOT NULL DEFAULT clock_timestamp())');
+   await client.query('ALTER TABLE source_hub.migrations ENABLE ROW LEVEL SECURITY');
+   await client.query('ALTER TABLE source_hub.migrations FORCE ROW LEVEL SECURITY');
+   await client.query('CREATE POLICY schema_owner ON source_hub.migrations TO '+identifier(owner)+' USING(true) WITH CHECK(true)');
+   await client.query('CREATE POLICY configuration_read ON source_hub.migrations FOR SELECT TO '+identifier(runtime)+' USING(true)');
+  }
+  await client.query('GRANT SELECT ON source_hub.migrations TO '+identifier(runtime));
+  const extension=await readFile(new URL('../migrations/002-te-news.sql',import.meta.url),'utf8'),extensionDigest=hash(extension);
+  const applied=await client.query('SELECT digest FROM source_hub.migrations WHERE version=$1',['002-te-news']);
+  if(applied.rows.length){if(applied.rows[0].digest!==extensionDigest)throw Error('EXISTING_MIGRATION_MISMATCH');}
+  else{await client.query(extension);await client.query('INSERT INTO source_hub.migrations(version,digest) VALUES($1,$2)',['002-te-news',extensionDigest]);}
+  await client.query('COMMIT');return {schemaVersion:'1.0.0',schemaDigest:digest,migrations:[{version:'002-te-news',digest:extensionDigest}],status:'APPLIED_OR_VERIFIED'};
  }catch(error){await client.query('ROLLBACK');throw error;}
 }
 async function main(){
