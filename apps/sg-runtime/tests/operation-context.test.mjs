@@ -165,7 +165,11 @@ test('Benchmark presentation renews the current receiver closure without rewriti
     for (const file of paths) {
       // The later source-compatibility task adds only its CI test command.
       // The presentation acceptance still pins its complete prior package.
-      const observed=['apps/sg-runtime/package.json','apps/sg-runtime/package-lock.json','apps/dashboard-preview/package-lock.json'].includes(file)
+      const dictionary=receipt.finderMetadataDictionaryLookups
+      if(dictionary?.sourceDigests[file])assert.equal(createHash('sha256').update(fs.readFileSync(new URL(file,repository))).digest('hex'),dictionary.sourceDigests[file],'exact current dictionary corrective '+file)
+      const observed=dictionary?.sourceDigests[file]
+        ?execFileSync('git',['show',dictionary.previousReceiptSourceSha+':'+file])
+        :['apps/sg-runtime/package.json','apps/sg-runtime/package-lock.json','apps/dashboard-preview/package-lock.json'].includes(file)
         ?execFileSync('git',['show',receipt.nativeSqlRoundtripAdoption.previousReceiptSourceSha+':'+file])
         :receipt.integratedBuyerJourneySourceCompatibility.changedApplicationFiles.includes(file.replace('apps/sg-runtime/',''))
         ?execFileSync('git',['show',receipt.integratedBuyerJourneySourceCompatibility.previousReceiptSourceSha+':'+file])
