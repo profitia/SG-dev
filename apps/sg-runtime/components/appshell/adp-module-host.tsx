@@ -15,6 +15,7 @@ type Props = {
 class MountBoundary extends React.Component<{locale: 'pl' | 'en'; onReturn: () => void; children: React.ReactNode}, {failed: boolean}> {
   state = {failed: false}
   static getDerivedStateFromError() {return {failed: true}}
+  componentDidCatch() {productAnalytics.capture('application_error',{module:'adp',error_kind:'render_failed'})}
   render() {
     if (!this.state.failed) return this.props.children
     return <section className="as-module-error" role="alert"><h1>{this.props.locale === 'en' ? 'Could not load the card' : 'Nie udało się wczytać karty'}</h1>

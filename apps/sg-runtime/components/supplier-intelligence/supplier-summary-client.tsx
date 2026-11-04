@@ -6,6 +6,7 @@ import type { FinancialPeriod, SupplierReportData } from '@profitia/srm-xray/con
 import { readSharedFinancialSummary } from '@profitia/srm-xray/shared-financial-summary'
 import { SupplierSummaryView, type SupplierSummaryDetail } from './supplier-summary-view'
 import styles from './supplier-summary.module.css'
+import {productAnalytics} from '@/lib/product-analytics/adapter'
 
 type Period = { from: string; to: string; scope: FinancialPeriod['scope'] }
 const periodKey = (period: Period) => JSON.stringify([period.from, period.to, period.scope])
@@ -28,6 +29,7 @@ export function SupplierSummaryClient({ locale }: { locale: 'pl' | 'en' }) {
     const selectedNip = nip, id = ++serial.current, controller = new AbortController()
     request.current = { id, controller }; setActiveNip(selectedNip); setLoading(true)
     let status = 0
+    const attempt=productAnalytics.begin('supplier_intelligence','supplier_summary_read')
     try {
       const bearer = await getToken()
       if (id !== serial.current || controller.signal.aborted) return
@@ -40,10 +42,12 @@ export function SupplierSummaryClient({ locale }: { locale: 'pl' | 'en' }) {
       const value = readSharedFinancialSummary(await response.json(), { nip: selectedNip, entityType: 'COMPANY' })
       if (id !== serial.current || controller.signal.aborted) return
       setReport(value)
+      productAnalytics.finish(attempt,value.financial.periods.length?'success':'empty')
       const first = value.financial.periods[0]
       setPeriod(first ? { from: first.from, to: first.to, scope: first.scope } : null)
     } catch {
       if (id !== serial.current || controller.signal.aborted) return
+      productAnalytics.finish(attempt,'error')
       setReport(null); setPeriod(null); setDetail(null)
       setError(status === 401 ? 'Sesja jest niedostępna. Zaloguj się ponownie.'
         : status === 403 ? 'Nie masz dostępu do tego raportu.' : 'Nie można teraz potwierdzić zapisanych danych. Spróbuj ponownie później.')
@@ -55,11 +59,11 @@ export function SupplierSummaryClient({ locale }: { locale: 'pl' | 'en' }) {
       <h1 className="text-2xl font-semibold text-slate-900">Supplier Intelligence</h1>
       <p className="mt-2 text-sm text-slate-600">Podsumowanie zapisanych danych finansowych dostawcy. Ten odczyt nie odświeża danych.</p>
     </div><a href={`/${locale}/benchmark-finder`}>{locale === 'en' ? 'Back to SpendGuru' : 'Wróć do SpendGuru'}</a></div>
-    <form onSubmit={load} className="mb-6 flex flex-wrap items-end gap-3">
+    <form onSubmit={load} data-analytics-id="supplier_summary_form" className="mb-6 flex flex-wrap items-end gap-3">
       <label className="grid gap-2 text-sm font-medium">NIP spółki
         <input name="nip" aria-label="NIP spółki" inputMode="numeric" autoComplete="off" pattern="[0-9]{10}" maxLength={10} required value={nip}
           onChange={event => { clear(); setNip(event.target.value) }} className="rounded-lg border border-slate-300 px-3 py-2" />
-      </label><button type="submit" disabled={loading} className="rounded-lg bg-slate-900 px-4 py-2 text-white disabled:opacity-50">{loading ? 'Odczyt danych…' : 'Pokaż podsumowanie'}</button>
+      </label><button type="submit" data-analytics-id="supplier_summary_read" disabled={loading} className="rounded-lg bg-slate-900 px-4 py-2 text-white disabled:opacity-50">{loading ? 'Odczyt danych…' : 'Pokaż podsumowanie'}</button>
     </form>
     {loading && <p role="status">Odczyt zapisanych danych…</p>}
     {error && <p role="alert" className="mb-5 text-red-700">{error}</p>}

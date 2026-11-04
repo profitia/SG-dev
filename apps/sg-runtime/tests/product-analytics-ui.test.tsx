@@ -38,7 +38,7 @@ async function loadHost(entry:string){
   const mod={exports:{} as any};new Function('require','module','exports',result.outputFiles[0].text)(require,mod,mod.exports);return mod.exports
 }
 function setup(){
-  const dom=new JSDOM('<html><body><div id="root"></div></body></html>',{url:'https://sg2-development-runtime.onrender.com/pl/dashboard'})
+  const dom=new JSDOM('<html><body><div id="root"></div></body></html>',{url:'https://sg2-development-runtime.onrender.com/pl/dashboard',pretendToBeVisual:true})
   g.window=dom.window;g.document=dom.window.document;g.navigator=dom.window.navigator;g.IS_REACT_ACT_ENVIRONMENT=true
   Object.defineProperty(dom.window.HTMLDialogElement.prototype,'showModal',{value:function(){this.open=true}})
   Object.defineProperty(dom.window.HTMLDialogElement.prototype,'close',{value:function(){this.open=false}})
@@ -59,8 +59,10 @@ test('actual provider never imports before consent; StrictMode initializes once 
     window.sessionStorage.setItem('sg2.product-analytics.explicit-test.v1','granted')
     await render({...configuration});await tick();await render({...configuration});await tick()
     assert.equal(g.__sdkImports,1);assert.equal(g.__sdkInitializations.length,1)
+    const initializedCaptures=g.__sdkCaptures.length
+    assert(g.__sdkCaptures.some((entry:any)=>entry[0]==='session_started'))
     assert.equal(g.__productAnalytics.capture('app_opened',{module:'appshell',entry_point:'appshell'}),true)
-    assert.equal(g.__sdkCaptures.length,1)
+    assert.equal(g.__sdkCaptures.length,initializedCaptures+1)
     window.history.pushState({},'','/pl/dashboard/benchmark-finder')
     assert.equal(g.__productAnalytics.capture('adp_view_opened',{module:'adp',view:'data'}),false,'all capture is off inside Finder even after SDK initialized elsewhere')
     const beforeSend=g.__sdkInitializations[0][1].before_send
@@ -68,12 +70,12 @@ test('actual provider never imports before consent; StrictMode initializes once 
     window.history.pushState({},'','/pl/dashboard/adp')
     assert.equal(g.__productAnalytics.capture('adp_view_opened',{module:'adp',view:'data'}),true,'other modules resume without another SDK initialization')
     assert.equal(g.__sdkInitializations.length,1)
-    assert.equal(g.__sdkCaptures.length,2)
+    assert.equal(g.__sdkCaptures.length,initializedCaptures+2)
     window.sessionStorage.removeItem('sg2.product-analytics.explicit-test.v1')
     assert.equal(g.__productAnalytics.capture('app_opened',{module:'appshell'}),false)
     window.sessionStorage.setItem('sg2.product-analytics.explicit-test.v1','granted');await render(null)
     assert.equal(g.__productAnalytics.capture('app_opened',{module:'appshell'}),false)
-    assert.equal(g.__sdkCaptures.length,2)
+    assert.equal(g.__sdkCaptures.length,initializedCaptures+2)
     assert(window.document.body.textContent?.includes('Application remains available'))
   }finally{await f.close()}
 })

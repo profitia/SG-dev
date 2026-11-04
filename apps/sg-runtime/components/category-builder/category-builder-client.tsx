@@ -1,6 +1,7 @@
 'use client'
 
 import {categoryDraftStatus} from '../../lib/category/draft'
+import {productAnalytics} from '@/lib/product-analytics/adapter'
 
 import Link from 'next/link'
 import { useEffect, useRef, useState, useTransition } from 'react'
@@ -290,7 +291,7 @@ export function CategoryBuilderClient({ locale }: CategoryBuilderClientProps) {
 
   async function loadCategories(selectFirst = false) {
     setLoadingError(null)
-    const payload = await readJson<{ items: CategorySummary[] }>(await fetch('/api/category', { cache: 'no-store' }))
+    const payload = await productAnalytics.observe('category_builder','category_list',fetch('/api/category', { cache: 'no-store' }).then(readJson<{ items: CategorySummary[] }>),value=>value.items.length?'success':'empty')
     setCategories(payload.items)
 
     if (selectFirst && payload.items[0]) {
@@ -300,7 +301,7 @@ export function CategoryBuilderClient({ locale }: CategoryBuilderClientProps) {
 
   async function openCategory(categoryId: string) {
     setLoadingError(null)
-    const payload = await readJson<CategoryRecord>(await fetch(`/api/category/${categoryId}`, { cache: 'no-store' }))
+    const payload = await productAnalytics.observe('category_builder','category_read',fetch(`/api/category/${categoryId}`, { cache: 'no-store' }).then(readJson<CategoryRecord>))
     setDraft(toDraftCategory(payload))
     setCategoryContext('')
     setSuggestions([])
@@ -448,7 +449,7 @@ export function CategoryBuilderClient({ locale }: CategoryBuilderClientProps) {
       const method = draft.id ? 'PATCH' : 'POST'
       const endpoint = draft.id ? `/api/category/${draft.id}` : '/api/category'
 
-      fetch(endpoint, {
+      productAnalytics.observe('category_builder','category_save',fetch(endpoint, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -460,7 +461,7 @@ export function CategoryBuilderClient({ locale }: CategoryBuilderClientProps) {
           })),
         }),
       })
-        .then(readJson<CategoryRecord>)
+        .then(readJson<CategoryRecord>))
         .then(async (payload) => {
           setDraft(toDraftCategory(payload))
           setNotice(payload.status === 'READY' ? t('builder.savedReady') : t('builder.savedDraft'))
@@ -484,6 +485,7 @@ export function CategoryBuilderClient({ locale }: CategoryBuilderClientProps) {
               type="button"
               className="rounded-2xl bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-700"
               onClick={startNewCategory}
+              data-analytics-id="category_new"
             >
               {t('actions.newCategory')}
             </button>
@@ -618,6 +620,7 @@ export function CategoryBuilderClient({ locale }: CategoryBuilderClientProps) {
                     onClick={openManualFinder}
                     disabled={!draft.name.trim()}
                     data-testid="category-add-component"
+                    data-analytics-exclude="finder"
                   >
                     {t('actions.addComponent')}
                   </button>
@@ -706,6 +709,7 @@ export function CategoryBuilderClient({ locale }: CategoryBuilderClientProps) {
                                 className="rounded-xl bg-slate-900 px-3 py-2 text-sm font-medium text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:bg-slate-400"
                                 disabled={!isSelected || alreadyAdded}
                                 onClick={() => openSuggestionFinder(suggestion)}
+                                data-analytics-exclude="finder"
                               >
                                 {t('suggestions.findBenchmark')}
                               </button>
@@ -780,6 +784,7 @@ export function CategoryBuilderClient({ locale }: CategoryBuilderClientProps) {
                             setNotice(null)
                             setSaveError(null)
                           }}
+                          data-analytics-exclude="finder"
                         >
                           {t('actions.changeBenchmark')}
                         </button>
