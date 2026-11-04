@@ -311,8 +311,8 @@ function isPinnedRootAtomicClaimReview(files) {
 export const SOURCE_HUB_STAGE2A_REVIEW=Object.freeze({
   "prNumber": 885,
   "branch": "architecture/source-hub-newsfeed-stage2a-20261103",
-  "reviewedCandidateSha": "f6ac8b08073c46d9bb8b4f109cb873b8c22ff893",
-  "reviewedBaseSha": "55005dbd2c3f357548dc79b49853ab0e9532f320",
+  "reviewedCandidateSha": "4036cb1d9c4ee0f3274cf2a150b4f4e28019f9ee",
+  "reviewedBaseSha": "776071fcd2a711292dafbfd08bce5ef04aca6596",
   "blobs": {
     ".github/workflows/newsfeed-ci.yml": "766413af2f8163f8c5e26ce8f45f4e5fa475a9a6",
     ".github/workflows/platform-source-hub-ci.yml": "2a8293318a56b6c5fbc6ccb4cabddba142af6d5d",
@@ -385,7 +385,7 @@ export const SOURCE_HUB_STAGE2A_REVIEW=Object.freeze({
     "apps/platform-source-hub/test/server.test.mjs": "5e19e55826e0f0879d01389b5e472bb7a5cf7155",
     "apps/platform-source-hub/test/types.ts": "d0882ce9b5708543c5bca6013cf29bf674fc4ed8",
     "apps/platform-source-hub/tsconfig.json": "9333853fd163f039bb2637f93bc8194841fbb3d6",
-    "apps/sg-runtime/operation-integration.json": "1401be68e5ede1583bd892c058a51b4e556fad45",
+    "apps/sg-runtime/operation-integration.json": "eda5aaaae7016b12c2151f8b0b875ef2d4661a14",
     "apps/sg-runtime/package-lock.json": "ef38c4a22f8ca1a0216020f1271fb1e75a726331",
     "apps/sg-runtime/tests/adp-appshell-consumer.test.tsx": "2bebee2a9a87d669a597463d0ae4afcccb171382",
     "apps/sg-runtime/tests/category-operation.test.ts": "249ad2982f8f61dabef235393699f4c52837ecd8",
@@ -399,7 +399,7 @@ export const SOURCE_HUB_STAGE2A_REVIEW=Object.freeze({
     "apps/sg-runtime/tests/porr-demo-middleware.test.ts": "271825c3cdbd1699b5335a84ca5646a69d2c3cff",
     "apps/sg-runtime/tests/private-host.integration.test.mjs": "61503a54c83fe29d1c725ab44e9c999f0cea3d00",
     "apps/sg-runtime/tests/self-service-account.test.ts": "9143c04a7f6f426f14e758c3174fbe4de075874c",
-    "apps/sg-runtime/tests/xray-fresh-performance-adoption.test.mjs": "1f28a8bb6c7af42b0618fa5c71a83781a98eab16",
+    "apps/sg-runtime/tests/xray-fresh-performance-adoption.test.mjs": "ac0db118f3d47974dfe4ac8dd179cc1ea0c8cda9",
     "apps/sg-runtime/tests/xray-gateway.test.ts": "8339797a56609cde7e4944e95542df440b2ac0be",
     "apps/srm/deployment/root-atomic-claim-targets.json": "0ab9f6b70f1d0fd43504ff75bc9177fbf111c29a",
     "apps/srm/operation-integration.json": "c3f3de037f439db815612bcda13295ede2e2cb66",
