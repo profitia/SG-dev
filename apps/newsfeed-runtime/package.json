@@ -1,15 +1,29 @@
 {
   "name": "@profitia/newsfeed-runtime",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
-  "engines": { "node": ">=22" },
-  "scripts": {
-    "test": "node --test test/*.test.mjs",
-    "typecheck": "tsc --noEmit",
-    "build": "tsc --noEmit && node --check src/cli.mjs && node --check scripts/live-probe.mjs",
-    "discover": "node src/cli.mjs",
-    "probe:live": "node scripts/live-probe.mjs"
+  "engines": {
+    "node": ">=24.15.0 <25"
   },
-  "devDependencies": { "@types/node": "22.15.3", "typescript": "5.8.3" }
+  "scripts": {
+    "test": "node --test --test-timeout=45000 test/*.test.mjs",
+    "typecheck": "tsc --noEmit",
+    "build": "tsc --noEmit && node --check src/main.mjs && node --check src/server.mjs && node --check scripts/migrate.mjs && node --check src/cli.mjs",
+    "discover": "node src/cli.mjs",
+    "probe:live": "node scripts/live-probe.mjs",
+    "start": "node src/main.mjs",
+    "db:migrate": "node scripts/migrate.mjs"
+  },
+  "devDependencies": {
+    "@types/node": "24.10.1",
+    "@types/pg": "8.15.5",
+    "typescript": "5.9.3"
+  },
+  "dependencies": {
+    "@clerk/backend": "3.25.0",
+    "@profitia/platform-contracts": "file:../../packages/platform-contracts",
+    "@profitia/platform-source-hub-contracts": "file:../../packages/platform-source-hub-contracts",
+    "pg": "8.23.1"
+  }
 }

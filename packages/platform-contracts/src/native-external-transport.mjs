@@ -22,7 +22,7 @@ export function validNativePathRules(rules,publicWeb=false){
   if(!record(r)||!['GET','POST'].includes(r.method)||!formats.includes(r.requestFormat)||r.method==='GET'&&r.requestFormat!=='NONE')return false
   if(exact(r,'method,path,requestFormat'))return pathPart(r.path)&&r.path.startsWith('/')
   return exact(r,'method,parameter,prefix,requestFormat,suffix')&&pathPart(r.prefix)&&r.prefix.startsWith('/')
-   &&pathPart(r.suffix)&&(parameters.includes(r.parameter)||publicWeb&&r.parameter==='PUBLIC_PATH'&&r.method==='GET'&&r.prefix==='/'&&r.suffix===''&&r.requestFormat==='NONE')
+   &&pathPart(r.suffix)&&(parameters.includes(r.parameter)||r.parameter==='API_PATH'&&r.method==='GET'&&r.requestFormat==='NONE'||publicWeb&&r.parameter==='PUBLIC_PATH'&&r.method==='GET'&&r.prefix==='/'&&r.suffix===''&&r.requestFormat==='NONE')
  })&&new Set(rules.map(r=>operationPayloadDigest(r))).size===rules.length
 }
 function origin(value,transport){
@@ -30,7 +30,9 @@ function origin(value,transport){
    &&(u.protocol==='https:'||transport==='LOCAL_SYNTHETIC_HTTP'&&u.protocol==='http:'&&u.hostname==='127.0.0.1'&&u.port)}catch{return false}
 }
 export function captureNativeTransport(value,transport,publicWeb=false){
- if(!exact(value,'completionMode,credentialMode,maximumResponseBytes,pathRules,redirectOrigins,schemaDigest')
+ const apiPath=Array.isArray(value?.pathRules)&&value.pathRules.some(r=>r.parameter==='API_PATH');
+ if(!exact(value,apiPath?'apiPathSchemaDigest,completionMode,credentialMode,maximumResponseBytes,pathRules,redirectOrigins,schemaDigest':'completionMode,credentialMode,maximumResponseBytes,pathRules,redirectOrigins,schemaDigest')
+   ||apiPath&&(!hex.test(value.apiPathSchemaDigest??'')||transport!=='HTTPS'||value.credentialMode!=='SERVER_HEADERS'||value.redirectOrigins?.length!==0)
    ||!hex.test(value.schemaDigest??'')||value.completionMode!==NATIVE_EXTERNAL_TRANSPORT.completionMode
    ||!['NONE','SERVER_HEADERS'].includes(value.credentialMode)||!validNativePathRules(value.pathRules,publicWeb)
    ||!Number.isInteger(value.maximumResponseBytes)||value.maximumResponseBytes<1||value.maximumResponseBytes>33554432
@@ -41,6 +43,7 @@ export function captureNativeTransport(value,transport,publicWeb=false){
  return freeze(structuredClone(value))
 }
 export function assertNativeDescriptor(config,descriptor){
+ if(config.apiPathSchemaDigest&&(descriptor?.apiPathSchemaVersion!=='1.0.0'||descriptor.apiPathSchemaDigest!==config.apiPathSchemaDigest))invalid()
  if(descriptor?.nativeSchemaVersion!=='1.0.0'||descriptor.nativeSchemaDigest!==config.schemaDigest
    ||!/^[1-9][0-9]*$/.test(descriptor.nativePolicyVersion??'')
    ||descriptor.nativeCompletionMode!==config.completionMode||descriptor.nativeCredentialMode!==config.credentialMode
@@ -51,6 +54,12 @@ export function assertNativeDescriptor(config,descriptor){
    ||!Number.isFinite(Date.parse(descriptor.nativeExpiresAt)))invalid()
 }
 function parameter(value,kind){
+ if(kind==='API_PATH'){
+  if(value.length<1||value.length>1024)return false
+  const segments=value.split('/');if(segments.length>16)return false
+  return segments.every(segment=>{const parts=segment.split(',');return parts.length<=10&&parts.every(part=>{try{const decoded=decodeURIComponent(part);return decoded.length>0&&decoded.length<=200&&/^[\p{L}\p{N} ._()+%&='-]+$/u.test(decoded)&&!decoded.includes('..')&&!/%[a-f0-9]{2}/i.test(decoded)&&encodeURIComponent(decoded)===part}catch{return false}})})
+ }
+
  if(kind==='PUBLIC_PATH')return value.length<=2047&&!/[\u0000-\u0020\u007f\\]/.test(value)
  if(kind==='HEX24')return /^[a-f0-9]{24}$/i.test(value)
  if(kind==='UUID')return uuid.test(value)

@@ -79,7 +79,7 @@ test('every changed SG2 source in the candidate or resulting main has an exact a
  // Prisma lifecycle output is independently generated, never an authored source change.
  // A published receipt retains its original source set after merge. Current
  // bytes are strictly verified above; an accepted main has no new amendments.
- assertSourceCoverage(candidateSourcePaths(new URL('../../../',import.meta.url)),{...a.sourceDigests,...r.xrayAppShellPresentation?.sourceDigests,...r.appShellFourCardCascade?.sourceDigests,...r.d1AuditReaderPreparation?.sourceDigests,...r.productAnalyticsStageOneCompatibility?.sourceDigests,...r.xrayStyleIsolationContinuation?.sourceDigests,...r.sentryObservabilityCompatibility?.sourceDigests,...r.marketHistoryIngestionCompatibility?.sourceDigests,...r.pciSmartInputCorrective?.sourceDigests,...r.pciSmartResultingMainScopeCompatibility?.sourceDigests,...Object.fromEntries(Object.entries(r.fullUiParityAdoption?.applicationSourceDigests??{}).map(([f,d])=>['apps/sg-runtime/'+f,d])),...r.productAnalyticsMainCompatibility?.sourceDigests,...r.appShellFourCardCascade?.sourceDigests,...r.d1AuditReaderPreparation?.sourceDigests,...r.productAnalyticsStageOneCompatibility?.sourceDigests,...r.productAnalyticsMonitoringCompatibility?.sourceDigests,...r.appShellAssistantOwnership?.sourceDigests})
+ assertSourceCoverage(candidateSourcePaths(new URL('../../../',import.meta.url)),{...a.sourceDigests,...r.xrayAppShellPresentation?.sourceDigests,...r.appShellFourCardCascade?.sourceDigests,...r.d1AuditReaderPreparation?.sourceDigests,...r.productAnalyticsStageOneCompatibility?.sourceDigests,...r.xrayStyleIsolationContinuation?.sourceDigests,...r.sentryObservabilityCompatibility?.sourceDigests,...r.marketHistoryIngestionCompatibility?.sourceDigests,...r.pciSmartInputCorrective?.sourceDigests,...r.pciSmartResultingMainScopeCompatibility?.sourceDigests,...Object.fromEntries(Object.entries(r.fullUiParityAdoption?.applicationSourceDigests??{}).map(([f,d])=>['apps/sg-runtime/'+f,d])),...r.productAnalyticsMainCompatibility?.sourceDigests,...r.appShellFourCardCascade?.sourceDigests,...r.d1AuditReaderPreparation?.sourceDigests,...r.productAnalyticsStageOneCompatibility?.sourceDigests,...r.productAnalyticsMonitoringCompatibility?.sourceDigests,...r.appShellAssistantOwnership?.sourceDigests,...r.sourceHubApiPathCompatibility?.consumerSourceDigests})
 })
 test('scope coverage retains accepted parallel files but rejects any unbound candidate amendment',()=>{
  const root=fs.mkdtempSync(path.join(os.tmpdir(),'sg2-pci-source-scope-'))
@@ -257,9 +257,13 @@ test('D1 source preparation binds every amendment and preserves immutable accept
  }
 })
 
-test('AppShell assistant continuation rejects every amended byte, omitted scope, rewritten history and changed standalone guarantee',()=>{
- const r=receipt(),a=r.appShellAssistantOwnership;assert(a);assertPciSmartIntegrity(r,current,historical)
- for(const file of a.changedSourcePaths)assert.throws(()=>assertPciSmartIntegrity(r,p=>p===file?Buffer.concat([current(p),Buffer.from('tamper')]):current(p),historical),file)
- for(const mutate of [r=>r.appShellAssistantOwnership.changedSourcePaths.pop(),r=>delete r.appShellAssistantOwnership.sourceDigests[a.changedSourcePaths[0]],r=>r.appShellAssistantOwnership.sourceDigests['apps/sg-runtime/unapproved.ts']='0'.repeat(64),r=>r.appShellAssistantOwnership.previousReceiptSha256='0'.repeat(64),r=>r.appShellAssistantOwnership.singleAppShellOwner=false,r=>r.appShellAssistantOwnership.standaloneRuntimeChanged=true,r=>r.appShellAssistantOwnership.contextEngineImplemented=true,r=>r.appShellAssistantOwnership.skinRedesigned=true,r=>r.appShellAssistantOwnership.extra=true,r=>r.productAnalyticsStageOnePrivacyCompatibility.finderExcluded=false,r=>r.appShellFourCardCascade.design.revision='rewritten']){const changed=structuredClone(r);mutate(changed);assert.throws(()=>assertPciSmartIntegrity(changed,current,historical))}
- for(const file of a.preservedPaths)assert.throws(()=>assertPciSmartIntegrity(r,p=>p===file?Buffer.concat([current(p),Buffer.from('tamper')]):current(p),historical),file)
+test('SDK1.33 compatibility accepts current bytes and rejects metadata, scope and predecessor tampering',()=>{
+ const r=receipt(),a=r.sourceHubApiPathCompatibility;assert(a);assertPciSmartIntegrity(r,current,historical)
+ for(const file of Object.keys(a.consumerSourceDigests))assert.throws(()=>assertPciSmartIntegrity(r,f=>f===file?Buffer.concat([current(f),Buffer.from('tamper')]):current(f),historical),file)
+ for(const mutate of [r=>r.sourceHubApiPathCompatibility.apiPathOptedIn=true,r=>r.sourceHubApiPathCompatibility.previousReceiptSha256='0'.repeat(64),r=>r.sourceHubApiPathCompatibility.consumerSourceDigests['apps/sg-runtime/unapproved.ts']='0'.repeat(64)]){const x=structuredClone(r);mutate(x);assert.throws(()=>assertPciSmartIntegrity(x,current,historical))}
+})
+
+test('paired SDK adoption rejects tampering with the current SRM continuation before exposing history',()=>{
+ const r=receipt(),file='apps/srm/scripts/native-execution-adoption.test.mjs'
+ assert.throws(()=>assertPciSmartIntegrity(r,f=>f===file?Buffer.concat([current(f),Buffer.from('tamper')]):current(f),historical))
 })
