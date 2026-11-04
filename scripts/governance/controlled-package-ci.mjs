@@ -33,7 +33,8 @@ const REVIEWED_MAPS_EMBED_PEERS = Object.freeze({
 })
 function reviewedMapsPeer(owner, version, section, name, spec) {
   return owner === '@profitia/maps-embed' && version === '0.1.2' && section === 'peerDependencies'
-    && Object.hasOwn(REVIEWED_MAPS_EMBED_PEERS, name) && spec === REVIEWED_MAPS_EMBED_PEERS[name]
+    && Object.hasOwn(REVIEWED_MAPS_EMBED_PEERS, name)
+    && (spec === REVIEWED_MAPS_EMBED_PEERS[name] || name === '@profitia/platform-contracts' && spec === REVIEWED_MAPS_EMBED_PEERS[name] + ' || 1.33.0')
 }
 const npmrc = '@profitia:registry=https://npm.pkg.github.com\n//npm.pkg.github.com/:_authToken=${NPM_TOKEN}\n'
 const shaPattern = /^[a-f0-9]{40}$/
@@ -306,6 +307,1086 @@ function isPinnedRootAtomicClaimReview(files) {
       && file?.sha === ROOT_ATOMIC_CLAIM_PRODUCER_REVIEW.blobs[file.filename] && file.status === 'added')
 }
 
+// Unapplied proposal: one complete candidate review, never a generic path grant.
+export const SOURCE_HUB_STAGE2A_REVIEW=Object.freeze({
+  "prNumber": 885,
+  "branch": "architecture/source-hub-newsfeed-stage2a-20261103",
+  "reviewedCandidateSha": "b3afbbb7dd0575b1f855084a55be76a1a0de0c65",
+  "reviewedBaseSha": "aa2fab29eae8dd0ba235b95c9ccab6fb2e052092",
+  "blobs": {
+    ".github/workflows/newsfeed-ci.yml": "766413af2f8163f8c5e26ce8f45f4e5fa475a9a6",
+    ".github/workflows/platform-source-hub-ci.yml": "2a8293318a56b6c5fbc6ccb4cabddba142af6d5d",
+    "Canon/evidence/2026-11-03-source-hub-newsfeed-stage2a.md": "e147de1efcb68ea0b42cca93b8098e1ba96f025d",
+    "Canon/registries/platform-source-hub-contract-families-v1.json": "be5ec7f4367e837b3b1a0a767a71ec4219e07e6c",
+    "Canon/runbooks/newsfeed-source-hub-infrastructure-provisioning-v1.md": "b363c26fae9ac0083e9664ca1cd484c8839148ef",
+    "apps/architecture-lab/sdk-1.33-compatibility.json": "68f9f7845bd5e36f72932da3eb5a7004f9ab235a",
+    "apps/architecture-lab/test/payload-capture-publication.test.mjs": "aec767eeb6bad5f05fafd3803ce7d02681cff164",
+    "apps/architecture-lab/test/sdk-compatibility.test.mjs": "1616eb2591d3e6ccd0c68e595f81fe8a16733e84",
+    "apps/dashboard-preview/package-lock.json": "b5be2a1baa59014d0feddc42c4b69a443dbe0149",
+    "apps/maps-runtime/package-lock.json": "f4644eb69f232c21d39ec2e507967729528fe49d",
+    "apps/maps-runtime/platform-integration.json": "3840b63cc06068ef442d00bc3cc90881ae38bc78",
+    "apps/maps-runtime/test/embed.test.mjs": "879ab097817e11026bf7419ac90925a6297d063b",
+    "apps/newsfeed-runtime/README.md": "bdc3142b4ed4f08e4930035547fb1e35ee5f3f13",
+    "apps/newsfeed-runtime/docs/stage2b-activation.pl.md": "6a36e69580e2a3d68f6ab1d2330a32f9c242f124",
+    "apps/newsfeed-runtime/examples/development.env.example": "8da45ddf8a7265d3dcee20184376f3ea823dc0e7",
+    "apps/newsfeed-runtime/migrations/001-foundation.sql": "e03be22e190eb6efb8c1d456967bb005c14d640c",
+    "apps/newsfeed-runtime/operation-integration.json": "41fe58f7586b2ad34012dd946d0dea5473062631",
+    "apps/newsfeed-runtime/package-lock.json": "268eb9c450b93f79397bf81c088785e4093e914c",
+    "apps/newsfeed-runtime/package.json": "22cd80275e4d85fc0e871bb651edba1e1f49b333",
+    "apps/newsfeed-runtime/scripts/migrate.mjs": "c67c38ac3f7ba7aa79f6199c087c95201a66528b",
+    "apps/newsfeed-runtime/src/auth.mjs": "8c5cd84eb9319dacfd7c1485df29b79ad45e9d1c",
+    "apps/newsfeed-runtime/src/capabilities.mjs": "3ae8ab7bdc4bf4c5e91d9c2a5f947072f6bc6d77",
+    "apps/newsfeed-runtime/src/config.mjs": "79451d255250bf210f0d810edbf2133682d94553",
+    "apps/newsfeed-runtime/src/database.mjs": "d48e6b1110ca1e974b346eb9fb7e3c014a3ae477",
+    "apps/newsfeed-runtime/src/main.mjs": "be28cbd8853034bb62d5f0c369057550a08bc53e",
+    "apps/newsfeed-runtime/src/newsapi.mjs": "c0edf046692d60ea9ad6c9ab5ede2fdc79e4339e",
+    "apps/newsfeed-runtime/src/query.mjs": "33ee4dbd9cf37c278345f69e341a172bc0c28fb9",
+    "apps/newsfeed-runtime/src/repository.mjs": "6d018bdec318ef64c48e19f29214c6390e64e5f5",
+    "apps/newsfeed-runtime/src/server.mjs": "22b1076e999eca14f7c08e0136c79a6e83dd9073",
+    "apps/newsfeed-runtime/src/source-hub-client.mjs": "f4f0ef805c636f75de2bcdb548773473d99f18c7",
+    "apps/newsfeed-runtime/test/end-to-end.test.mjs": "6613fafad5c3d4e218343f0a10cdafe716d58e6a",
+    "apps/newsfeed-runtime/test/fixtures.mjs": "5f887b3fe56f46140f2cde7ca4e7c80c077e9d11",
+    "apps/newsfeed-runtime/test/persistence.test.mjs": "fcbdedca84a4d1f241dec06e769fd7d186eb8b2b",
+    "apps/newsfeed-runtime/test/runtime-consumer.ts": "c165d458a8cdf1bfb1d76263553790d333e4f285",
+    "apps/newsfeed-runtime/test/runtime.test.mjs": "fc9b475f1a1aaaeca2c45c73c5f247045c447683",
+    "apps/newsfeed-runtime/tsconfig.json": "30d532250a1e2dd1676626fe0a698ef7847238f7",
+    "apps/platform-source-hub/README.md": "ed7d67978fce7041bbe452c22dc2916a54bed302",
+    "apps/platform-source-hub/docs/live-evidence.json": "b549043e839706f62d2006b37e67aebf640d1f13",
+    "apps/platform-source-hub/docs/provider-capabilities.pl.md": "65cf5b048f58c832bbaddb884088490ecde0e3b4",
+    "apps/platform-source-hub/docs/stage2b-activation.pl.md": "d460920957246e2242d1ed8ea29c73093061572f",
+    "apps/platform-source-hub/examples/development.env.example": "8c28cca7cf94f0b0fd3e436ad41c31b52fd56dd6",
+    "apps/platform-source-hub/migrations/001-foundation.sql": "f6fb870d6a9b952de279dd3213d6d9aeacbb88b8",
+    "apps/platform-source-hub/package-lock.json": "a97b9cfcd39c29241b52b31cf2af4d43e2e64d8e",
+    "apps/platform-source-hub/package.json": "9abc99e8edf07c0cd55ca943ba8534f30f83d937",
+    "apps/platform-source-hub/scripts/ci-routing.mjs": "28812a31fd43cd0c366d2a5972655bb913ed2c71",
+    "apps/platform-source-hub/scripts/live-probe.mjs": "4198fe9e5d44e4ff2296e1aa1119237ea6b965a9",
+    "apps/platform-source-hub/scripts/migrate.mjs": "d92270bb5bb1ad9dedb960c711887de1ae5d8e05",
+    "apps/platform-source-hub/src/admission.mjs": "e97aa54d1851907c4509d0d1411d629c3e77662d",
+    "apps/platform-source-hub/src/auth.mjs": "65d3c7d14edeb23100868231bd63e9e0f118802c",
+    "apps/platform-source-hub/src/capabilities.mjs": "bcfea058e9abb07b0c3fbe395a83faf8f1248c96",
+    "apps/platform-source-hub/src/config.mjs": "ca4eea140e0d5edae1da09d76d681153f6819c2b",
+    "apps/platform-source-hub/src/database.mjs": "d48e6b1110ca1e974b346eb9fb7e3c014a3ae477",
+    "apps/platform-source-hub/src/errors.mjs": "83fbbb1dc3e7059acde8958eeccc0b522e53107c",
+    "apps/platform-source-hub/src/main.mjs": "175ee9c8aca4808aa266167b3e672bfcf27702f6",
+    "apps/platform-source-hub/src/observability.mjs": "9028d97b12ae596a072318207eaf6648239200c3",
+    "apps/platform-source-hub/src/providers/brave.mjs": "b14fb2ed5b1f9a77f4fa25831ef1897c3b055a2b",
+    "apps/platform-source-hub/src/providers/newsapi-capabilities.mjs": "0869539ea3cf587933a7ed4f11a60c4cd3159c81",
+    "apps/platform-source-hub/src/providers/newsapi-query.mjs": "30853dece8fbbb01d0b7616c1bb67079b083842f",
+    "apps/platform-source-hub/src/providers/newsapi.mjs": "1f8c1fcf1c6874cd1d6253701b48ca20de756ba1",
+    "apps/platform-source-hub/src/providers/trading-economics.mjs": "b4066580b97a23dc846f954ec80667676ae4a78b",
+    "apps/platform-source-hub/src/repository.mjs": "0a9896a95f3a10da8cfa902532d8475d9f43e772",
+    "apps/platform-source-hub/src/server.mjs": "d4356371c66ae619e4ab322cb0f321be3a240a45",
+    "apps/platform-source-hub/src/transport.mjs": "2768cd31b67d4b05882d0fabecfffa14d8be69fa",
+    "apps/platform-source-hub/test/adapters.test.mjs": "9866d35cbf79faf17c96aed52b03fea1ae575bb9",
+    "apps/platform-source-hub/test/ci-routing.test.mjs": "b459dd80f090e1c9c8f518afc481d2c0aba6f6df",
+    "apps/platform-source-hub/test/contracts.test.mjs": "779d774a6d98e8991ff3634946d8e0ffb42b9ca6",
+    "apps/platform-source-hub/test/fixtures.mjs": "5fc29fe2e1973b24c026ea7af589adf8eb805151",
+    "apps/platform-source-hub/test/persistence.test.mjs": "b89da7fbd79e9e5316071173d57e37123c320406",
+    "apps/platform-source-hub/test/server.test.mjs": "5e19e55826e0f0879d01389b5e472bb7a5cf7155",
+    "apps/platform-source-hub/test/types.ts": "d0882ce9b5708543c5bca6013cf29bf674fc4ed8",
+    "apps/platform-source-hub/tsconfig.json": "9333853fd163f039bb2637f93bc8194841fbb3d6",
+    "apps/sg-runtime/operation-integration.json": "0e494a92f1c0bb151ade7866c2fbc7b0afd2753d",
+    "apps/sg-runtime/package-lock.json": "ef38c4a22f8ca1a0216020f1271fb1e75a726331",
+    "apps/sg-runtime/tests/adp-appshell-consumer.test.tsx": "2bebee2a9a87d669a597463d0ae4afcccb171382",
+    "apps/sg-runtime/tests/category-operation.test.ts": "249ad2982f8f61dabef235393699f4c52837ecd8",
+    "apps/sg-runtime/tests/diagnostic-telemetry-adoption.test.mjs": "21953cf04a3c1fa0936b4c960757abadc821bbaf",
+    "apps/sg-runtime/tests/identity-runtime.test.ts": "04a365354295640963fb93e559c070ce1a2fdc51",
+    "apps/sg-runtime/tests/integrated-buyer-journey-package.test.mjs": "88f2fbd8d3aa4a7f9dd77bc5433559911019b231",
+    "apps/sg-runtime/tests/native-sql-roundtrips.test.mjs": "24916132ff4bef7c656a602443b8ccd189cebc4d",
+    "apps/sg-runtime/tests/operation-context.test.mjs": "4aacdbd1b70d777a9d6b8d94c10306337d1fb266",
+    "apps/sg-runtime/tests/pci-smart-integrity.mjs": "684a069d0b32c0fee69fc20ec887ab80edb88919",
+    "apps/sg-runtime/tests/pci-smart-integrity.test.mjs": "a646a1df74b845f27da1b792daae6aad09129b55",
+    "apps/sg-runtime/tests/porr-demo-middleware.test.ts": "271825c3cdbd1699b5335a84ca5646a69d2c3cff",
+    "apps/sg-runtime/tests/private-host.integration.test.mjs": "61503a54c83fe29d1c725ab44e9c999f0cea3d00",
+    "apps/sg-runtime/tests/self-service-account.test.ts": "9143c04a7f6f426f14e758c3174fbe4de075874c",
+    "apps/sg-runtime/tests/xray-fresh-performance-adoption.test.mjs": "1f28a8bb6c7af42b0618fa5c71a83781a98eab16",
+    "apps/sg-runtime/tests/xray-gateway.test.ts": "8339797a56609cde7e4944e95542df440b2ac0be",
+    "apps/srm/deployment/root-atomic-claim-targets.json": "0ab9f6b70f1d0fd43504ff75bc9177fbf111c29a",
+    "apps/srm/operation-integration.json": "c3f3de037f439db815612bcda13295ede2e2cb66",
+    "apps/srm/package-lock.json": "9d0103822bebd64dcca09e88bb64cbff0a2502c8",
+    "apps/srm/scripts/diagnostic-telemetry-adoption.test.mjs": "4ef473e448e943fdc5ccba6f66efc539722d9104",
+    "apps/srm/scripts/native-execution-adoption.test.mjs": "d1126e98ad794b29985d681bafeea82ba4563770",
+    "apps/srm/scripts/operation-context.test.mjs": "afc1b4ebb9fcbf36647df6e0efe67e58c3e079fd",
+    "apps/srm/scripts/private-host.integration.test.mjs": "53ec887ed7ab34f0cd71719243436578affb5e3d",
+    "apps/srm/scripts/request-quota-adoption.test.mjs": "5eb915870bcb1695c9f012d012f8d5def77df625",
+    "apps/srm/scripts/source-hub-sdk-compatibility.mjs": "ea4a111814b397be4ba91582588aaa91d7cf1f6a",
+    "apps/srm/scripts/supplier-location-admission.integration.test.mjs": "6b7daa142d54ee596e0bbfdf45a0a8ce4742a0c5",
+    "apps/srm/scripts/xray-performance-adoption.test.mjs": "f18ea53ce3883ef3a018c4ed1abe5255a4df708e",
+    "apps/srm/scripts/xray-style-acceptance.mjs": "9cf986a312bd2d1c5a961ed0a254c08e8b8f90ce",
+    "apps/srm/src/server/full-ui-parity-adoption.test.ts": "f5fcc33727da18f2e7e92160556bf662554161c5",
+    "apps/srm/src/server/root-atomic-claim-adoption.test.ts": "b2a5ec5d02ac1796d9e77dcd30779ac92a764dac",
+    "packages/maps-embed/package.json": "f40c92fc32619c5a8dbb9e6fb65d94152e8d793d",
+    "packages/newsfeed-contracts/README.md": "6f1633d7b487f76c8c315479c80f596df2138e70",
+    "packages/newsfeed-contracts/index.d.ts": "e612677375b425c673ab2badbb82af51e34ea627",
+    "packages/newsfeed-contracts/index.mjs": "ff3e35aa77084b3eb8f26e495c7645f8643b0a0c",
+    "packages/newsfeed-contracts/package.json": "7413bc99d3c945754b49be1c656f4577b71e2ec4",
+    "packages/platform-contracts/README.md": "c90e0d862cdf584a5ea3eb1f252c683f478b93ec",
+    "packages/platform-contracts/current-fresh-report/package.json": "a96c7a4d97a590d5dd6f448ca7b658c8581bcb45",
+    "packages/platform-contracts/current-fresh-report/test/current-fresh-report.test.mjs": "baaa0e6b147baa3916ed9604d2927274365fa3a2",
+    "packages/platform-contracts/migrations/access/028-api-path-transport.sql": "aa6aa843974218928a687b27c3fecfa7aa4c3312",
+    "packages/platform-contracts/package-lock.json": "88e6c39e37f3b059b89a0bf4b4d4c572846287eb",
+    "packages/platform-contracts/package.json": "b5c59fa5a970df214d7f23d25edfeda405b23551",
+    "packages/platform-contracts/payload-capture/package.json": "cef5610c31e427c9b94749ca1ca495ed52547064",
+    "packages/platform-contracts/payload-capture/test/public-package.test.mjs": "520d3009e916c5ab4c097115010cab89d82f2d3d",
+    "packages/platform-contracts/readonly-miss-report/package.json": "bad56ae64fa0425a94e32aaffb934da345112a57",
+    "packages/platform-contracts/readonly-miss-report/test/readonly-miss-report.test.mjs": "c477d38bcb9f1d067bfa10e4699fd0ec140c96b3",
+    "packages/platform-contracts/root-atomic-claim/package.json": "4df0b4733084a92b9b722f4658da17ef9112dc43",
+    "packages/platform-contracts/root-atomic-claim/test/root-atomic-claim.test.mjs": "5145a2a4b9ffd5d01104fe4fbf190f5cab3ff204",
+    "packages/platform-contracts/src/external-call.d.mts": "33104d22446f73fcdcab8e41f5e8971a35b5afa5",
+    "packages/platform-contracts/src/external-call.mjs": "33d3a21797b1af55ec551732f5c4e5c22f12c6ad",
+    "packages/platform-contracts/src/native-external-transport.d.mts": "63f4a9eefb482ce7a952765bfa1f81059052ea9f",
+    "packages/platform-contracts/src/native-external-transport.mjs": "42dd984abc84a3fd3aa292fd3105d2d609d27b16",
+    "packages/platform-contracts/test/api-path-transport.test.mjs": "36bc608cbdfb405b412b55ed41ee7a78430e016b",
+    "packages/platform-contracts/test/external-call.test.mjs": "cef1c56ad3e4fbec6e2c7ba837acf72892a51e50",
+    "packages/platform-contracts/test/types/api-path.mts": "fdbac1ca23ae2bf114c810002e7506fbca21f53c",
+    "packages/platform-contracts/test/types/native-external.mts": "d3cc24cb67cc282c688a4107aafb22be5898bbce",
+    "packages/platform-source-hub-contracts/README.md": "b49745c69645157168739b00007279030d5a27f3",
+    "packages/platform-source-hub-contracts/index.d.ts": "996c9b73acabdeba83f34bd1f7b3a88648c9c134",
+    "packages/platform-source-hub-contracts/index.mjs": "4098de3a42cf1be2001fc8e4714958d4f896f0c6",
+    "packages/platform-source-hub-contracts/package.json": "d98b47b859c8b7cfc8f113a8d2b212acdbf10d90",
+    "scripts/governance/platform-source-hub-foundation.test.mjs": "8381b9d1b8b04886e5a0b1783884898c71b53139"
+  },
+  "statuses": {
+    ".github/workflows/newsfeed-ci.yml": "modified",
+    ".github/workflows/platform-source-hub-ci.yml": "added",
+    "Canon/evidence/2026-11-03-source-hub-newsfeed-stage2a.md": "added",
+    "Canon/registries/platform-source-hub-contract-families-v1.json": "modified",
+    "Canon/runbooks/newsfeed-source-hub-infrastructure-provisioning-v1.md": "modified",
+    "apps/architecture-lab/sdk-1.33-compatibility.json": "added",
+    "apps/architecture-lab/test/payload-capture-publication.test.mjs": "modified",
+    "apps/architecture-lab/test/sdk-compatibility.test.mjs": "added",
+    "apps/dashboard-preview/package-lock.json": "modified",
+    "apps/maps-runtime/package-lock.json": "modified",
+    "apps/maps-runtime/platform-integration.json": "modified",
+    "apps/maps-runtime/test/embed.test.mjs": "modified",
+    "apps/newsfeed-runtime/README.md": "modified",
+    "apps/newsfeed-runtime/docs/stage2b-activation.pl.md": "added",
+    "apps/newsfeed-runtime/examples/development.env.example": "added",
+    "apps/newsfeed-runtime/migrations/001-foundation.sql": "added",
+    "apps/newsfeed-runtime/operation-integration.json": "added",
+    "apps/newsfeed-runtime/package-lock.json": "modified",
+    "apps/newsfeed-runtime/package.json": "modified",
+    "apps/newsfeed-runtime/scripts/migrate.mjs": "added",
+    "apps/newsfeed-runtime/src/auth.mjs": "added",
+    "apps/newsfeed-runtime/src/capabilities.mjs": "modified",
+    "apps/newsfeed-runtime/src/config.mjs": "added",
+    "apps/newsfeed-runtime/src/database.mjs": "added",
+    "apps/newsfeed-runtime/src/main.mjs": "added",
+    "apps/newsfeed-runtime/src/newsapi.mjs": "modified",
+    "apps/newsfeed-runtime/src/query.mjs": "modified",
+    "apps/newsfeed-runtime/src/repository.mjs": "added",
+    "apps/newsfeed-runtime/src/server.mjs": "added",
+    "apps/newsfeed-runtime/src/source-hub-client.mjs": "added",
+    "apps/newsfeed-runtime/test/end-to-end.test.mjs": "added",
+    "apps/newsfeed-runtime/test/fixtures.mjs": "added",
+    "apps/newsfeed-runtime/test/persistence.test.mjs": "added",
+    "apps/newsfeed-runtime/test/runtime-consumer.ts": "added",
+    "apps/newsfeed-runtime/test/runtime.test.mjs": "added",
+    "apps/newsfeed-runtime/tsconfig.json": "modified",
+    "apps/platform-source-hub/README.md": "added",
+    "apps/platform-source-hub/docs/live-evidence.json": "added",
+    "apps/platform-source-hub/docs/provider-capabilities.pl.md": "added",
+    "apps/platform-source-hub/docs/stage2b-activation.pl.md": "added",
+    "apps/platform-source-hub/examples/development.env.example": "added",
+    "apps/platform-source-hub/migrations/001-foundation.sql": "added",
+    "apps/platform-source-hub/package-lock.json": "added",
+    "apps/platform-source-hub/package.json": "added",
+    "apps/platform-source-hub/scripts/ci-routing.mjs": "added",
+    "apps/platform-source-hub/scripts/live-probe.mjs": "added",
+    "apps/platform-source-hub/scripts/migrate.mjs": "added",
+    "apps/platform-source-hub/src/admission.mjs": "added",
+    "apps/platform-source-hub/src/auth.mjs": "added",
+    "apps/platform-source-hub/src/capabilities.mjs": "added",
+    "apps/platform-source-hub/src/config.mjs": "added",
+    "apps/platform-source-hub/src/database.mjs": "added",
+    "apps/platform-source-hub/src/errors.mjs": "added",
+    "apps/platform-source-hub/src/main.mjs": "added",
+    "apps/platform-source-hub/src/observability.mjs": "added",
+    "apps/platform-source-hub/src/providers/brave.mjs": "added",
+    "apps/platform-source-hub/src/providers/newsapi-capabilities.mjs": "added",
+    "apps/platform-source-hub/src/providers/newsapi-query.mjs": "added",
+    "apps/platform-source-hub/src/providers/newsapi.mjs": "added",
+    "apps/platform-source-hub/src/providers/trading-economics.mjs": "added",
+    "apps/platform-source-hub/src/repository.mjs": "added",
+    "apps/platform-source-hub/src/server.mjs": "added",
+    "apps/platform-source-hub/src/transport.mjs": "added",
+    "apps/platform-source-hub/test/adapters.test.mjs": "added",
+    "apps/platform-source-hub/test/ci-routing.test.mjs": "added",
+    "apps/platform-source-hub/test/contracts.test.mjs": "added",
+    "apps/platform-source-hub/test/fixtures.mjs": "added",
+    "apps/platform-source-hub/test/persistence.test.mjs": "added",
+    "apps/platform-source-hub/test/server.test.mjs": "added",
+    "apps/platform-source-hub/test/types.ts": "added",
+    "apps/platform-source-hub/tsconfig.json": "added",
+    "apps/sg-runtime/operation-integration.json": "modified",
+    "apps/sg-runtime/package-lock.json": "modified",
+    "apps/sg-runtime/tests/adp-appshell-consumer.test.tsx": "modified",
+    "apps/sg-runtime/tests/category-operation.test.ts": "modified",
+    "apps/sg-runtime/tests/diagnostic-telemetry-adoption.test.mjs": "modified",
+    "apps/sg-runtime/tests/identity-runtime.test.ts": "modified",
+    "apps/sg-runtime/tests/integrated-buyer-journey-package.test.mjs": "modified",
+    "apps/sg-runtime/tests/native-sql-roundtrips.test.mjs": "modified",
+    "apps/sg-runtime/tests/operation-context.test.mjs": "modified",
+    "apps/sg-runtime/tests/pci-smart-integrity.mjs": "modified",
+    "apps/sg-runtime/tests/pci-smart-integrity.test.mjs": "modified",
+    "apps/sg-runtime/tests/porr-demo-middleware.test.ts": "modified",
+    "apps/sg-runtime/tests/private-host.integration.test.mjs": "modified",
+    "apps/sg-runtime/tests/self-service-account.test.ts": "modified",
+    "apps/sg-runtime/tests/xray-fresh-performance-adoption.test.mjs": "modified",
+    "apps/sg-runtime/tests/xray-gateway.test.ts": "modified",
+    "apps/srm/deployment/root-atomic-claim-targets.json": "modified",
+    "apps/srm/operation-integration.json": "modified",
+    "apps/srm/package-lock.json": "modified",
+    "apps/srm/scripts/diagnostic-telemetry-adoption.test.mjs": "modified",
+    "apps/srm/scripts/native-execution-adoption.test.mjs": "modified",
+    "apps/srm/scripts/operation-context.test.mjs": "modified",
+    "apps/srm/scripts/private-host.integration.test.mjs": "modified",
+    "apps/srm/scripts/request-quota-adoption.test.mjs": "modified",
+    "apps/srm/scripts/source-hub-sdk-compatibility.mjs": "added",
+    "apps/srm/scripts/supplier-location-admission.integration.test.mjs": "modified",
+    "apps/srm/scripts/xray-performance-adoption.test.mjs": "modified",
+    "apps/srm/scripts/xray-style-acceptance.mjs": "modified",
+    "apps/srm/src/server/full-ui-parity-adoption.test.ts": "modified",
+    "apps/srm/src/server/root-atomic-claim-adoption.test.ts": "modified",
+    "packages/maps-embed/package.json": "modified",
+    "packages/newsfeed-contracts/README.md": "modified",
+    "packages/newsfeed-contracts/index.d.ts": "modified",
+    "packages/newsfeed-contracts/index.mjs": "modified",
+    "packages/newsfeed-contracts/package.json": "modified",
+    "packages/platform-contracts/README.md": "modified",
+    "packages/platform-contracts/current-fresh-report/package.json": "modified",
+    "packages/platform-contracts/current-fresh-report/test/current-fresh-report.test.mjs": "modified",
+    "packages/platform-contracts/migrations/access/028-api-path-transport.sql": "added",
+    "packages/platform-contracts/package-lock.json": "modified",
+    "packages/platform-contracts/package.json": "modified",
+    "packages/platform-contracts/payload-capture/package.json": "modified",
+    "packages/platform-contracts/payload-capture/test/public-package.test.mjs": "modified",
+    "packages/platform-contracts/readonly-miss-report/package.json": "modified",
+    "packages/platform-contracts/readonly-miss-report/test/readonly-miss-report.test.mjs": "modified",
+    "packages/platform-contracts/root-atomic-claim/package.json": "modified",
+    "packages/platform-contracts/root-atomic-claim/test/root-atomic-claim.test.mjs": "modified",
+    "packages/platform-contracts/src/external-call.d.mts": "modified",
+    "packages/platform-contracts/src/external-call.mjs": "modified",
+    "packages/platform-contracts/src/native-external-transport.d.mts": "modified",
+    "packages/platform-contracts/src/native-external-transport.mjs": "modified",
+    "packages/platform-contracts/test/api-path-transport.test.mjs": "added",
+    "packages/platform-contracts/test/external-call.test.mjs": "modified",
+    "packages/platform-contracts/test/types/api-path.mts": "added",
+    "packages/platform-contracts/test/types/native-external.mts": "modified",
+    "packages/platform-source-hub-contracts/README.md": "added",
+    "packages/platform-source-hub-contracts/index.d.ts": "added",
+    "packages/platform-source-hub-contracts/index.mjs": "added",
+    "packages/platform-source-hub-contracts/package.json": "added",
+    "scripts/governance/platform-source-hub-foundation.test.mjs": "modified"
+  },
+  "modes": {
+    ".github/workflows/newsfeed-ci.yml": "100644",
+    ".github/workflows/platform-source-hub-ci.yml": "100644",
+    "Canon/evidence/2026-11-03-source-hub-newsfeed-stage2a.md": "100644",
+    "Canon/registries/platform-source-hub-contract-families-v1.json": "100644",
+    "Canon/runbooks/newsfeed-source-hub-infrastructure-provisioning-v1.md": "100644",
+    "apps/architecture-lab/sdk-1.33-compatibility.json": "100644",
+    "apps/architecture-lab/test/payload-capture-publication.test.mjs": "100644",
+    "apps/architecture-lab/test/sdk-compatibility.test.mjs": "100644",
+    "apps/dashboard-preview/package-lock.json": "100644",
+    "apps/maps-runtime/package-lock.json": "100644",
+    "apps/maps-runtime/platform-integration.json": "100644",
+    "apps/maps-runtime/test/embed.test.mjs": "100644",
+    "apps/newsfeed-runtime/README.md": "100644",
+    "apps/newsfeed-runtime/docs/stage2b-activation.pl.md": "100644",
+    "apps/newsfeed-runtime/examples/development.env.example": "100644",
+    "apps/newsfeed-runtime/migrations/001-foundation.sql": "100644",
+    "apps/newsfeed-runtime/operation-integration.json": "100644",
+    "apps/newsfeed-runtime/package-lock.json": "100644",
+    "apps/newsfeed-runtime/package.json": "100644",
+    "apps/newsfeed-runtime/scripts/migrate.mjs": "100644",
+    "apps/newsfeed-runtime/src/auth.mjs": "100644",
+    "apps/newsfeed-runtime/src/capabilities.mjs": "100644",
+    "apps/newsfeed-runtime/src/config.mjs": "100644",
+    "apps/newsfeed-runtime/src/database.mjs": "100644",
+    "apps/newsfeed-runtime/src/main.mjs": "100644",
+    "apps/newsfeed-runtime/src/newsapi.mjs": "100644",
+    "apps/newsfeed-runtime/src/query.mjs": "100644",
+    "apps/newsfeed-runtime/src/repository.mjs": "100644",
+    "apps/newsfeed-runtime/src/server.mjs": "100644",
+    "apps/newsfeed-runtime/src/source-hub-client.mjs": "100644",
+    "apps/newsfeed-runtime/test/end-to-end.test.mjs": "100644",
+    "apps/newsfeed-runtime/test/fixtures.mjs": "100644",
+    "apps/newsfeed-runtime/test/persistence.test.mjs": "100644",
+    "apps/newsfeed-runtime/test/runtime-consumer.ts": "100644",
+    "apps/newsfeed-runtime/test/runtime.test.mjs": "100644",
+    "apps/newsfeed-runtime/tsconfig.json": "100644",
+    "apps/platform-source-hub/README.md": "100644",
+    "apps/platform-source-hub/docs/live-evidence.json": "100644",
+    "apps/platform-source-hub/docs/provider-capabilities.pl.md": "100644",
+    "apps/platform-source-hub/docs/stage2b-activation.pl.md": "100644",
+    "apps/platform-source-hub/examples/development.env.example": "100644",
+    "apps/platform-source-hub/migrations/001-foundation.sql": "100644",
+    "apps/platform-source-hub/package-lock.json": "100644",
+    "apps/platform-source-hub/package.json": "100644",
+    "apps/platform-source-hub/scripts/ci-routing.mjs": "100644",
+    "apps/platform-source-hub/scripts/live-probe.mjs": "100644",
+    "apps/platform-source-hub/scripts/migrate.mjs": "100644",
+    "apps/platform-source-hub/src/admission.mjs": "100644",
+    "apps/platform-source-hub/src/auth.mjs": "100644",
+    "apps/platform-source-hub/src/capabilities.mjs": "100644",
+    "apps/platform-source-hub/src/config.mjs": "100644",
+    "apps/platform-source-hub/src/database.mjs": "100644",
+    "apps/platform-source-hub/src/errors.mjs": "100644",
+    "apps/platform-source-hub/src/main.mjs": "100644",
+    "apps/platform-source-hub/src/observability.mjs": "100644",
+    "apps/platform-source-hub/src/providers/brave.mjs": "100644",
+    "apps/platform-source-hub/src/providers/newsapi-capabilities.mjs": "100644",
+    "apps/platform-source-hub/src/providers/newsapi-query.mjs": "100644",
+    "apps/platform-source-hub/src/providers/newsapi.mjs": "100644",
+    "apps/platform-source-hub/src/providers/trading-economics.mjs": "100644",
+    "apps/platform-source-hub/src/repository.mjs": "100644",
+    "apps/platform-source-hub/src/server.mjs": "100644",
+    "apps/platform-source-hub/src/transport.mjs": "100644",
+    "apps/platform-source-hub/test/adapters.test.mjs": "100644",
+    "apps/platform-source-hub/test/ci-routing.test.mjs": "100644",
+    "apps/platform-source-hub/test/contracts.test.mjs": "100644",
+    "apps/platform-source-hub/test/fixtures.mjs": "100644",
+    "apps/platform-source-hub/test/persistence.test.mjs": "100644",
+    "apps/platform-source-hub/test/server.test.mjs": "100644",
+    "apps/platform-source-hub/test/types.ts": "100644",
+    "apps/platform-source-hub/tsconfig.json": "100644",
+    "apps/sg-runtime/operation-integration.json": "100644",
+    "apps/sg-runtime/package-lock.json": "100644",
+    "apps/sg-runtime/tests/adp-appshell-consumer.test.tsx": "100644",
+    "apps/sg-runtime/tests/category-operation.test.ts": "100644",
+    "apps/sg-runtime/tests/diagnostic-telemetry-adoption.test.mjs": "100644",
+    "apps/sg-runtime/tests/identity-runtime.test.ts": "100644",
+    "apps/sg-runtime/tests/integrated-buyer-journey-package.test.mjs": "100644",
+    "apps/sg-runtime/tests/native-sql-roundtrips.test.mjs": "100644",
+    "apps/sg-runtime/tests/operation-context.test.mjs": "100644",
+    "apps/sg-runtime/tests/pci-smart-integrity.mjs": "100644",
+    "apps/sg-runtime/tests/pci-smart-integrity.test.mjs": "100644",
+    "apps/sg-runtime/tests/porr-demo-middleware.test.ts": "100644",
+    "apps/sg-runtime/tests/private-host.integration.test.mjs": "100644",
+    "apps/sg-runtime/tests/self-service-account.test.ts": "100644",
+    "apps/sg-runtime/tests/xray-fresh-performance-adoption.test.mjs": "100644",
+    "apps/sg-runtime/tests/xray-gateway.test.ts": "100644",
+    "apps/srm/deployment/root-atomic-claim-targets.json": "100644",
+    "apps/srm/operation-integration.json": "100644",
+    "apps/srm/package-lock.json": "100644",
+    "apps/srm/scripts/diagnostic-telemetry-adoption.test.mjs": "100644",
+    "apps/srm/scripts/native-execution-adoption.test.mjs": "100644",
+    "apps/srm/scripts/operation-context.test.mjs": "100644",
+    "apps/srm/scripts/private-host.integration.test.mjs": "100644",
+    "apps/srm/scripts/request-quota-adoption.test.mjs": "100644",
+    "apps/srm/scripts/source-hub-sdk-compatibility.mjs": "100644",
+    "apps/srm/scripts/supplier-location-admission.integration.test.mjs": "100644",
+    "apps/srm/scripts/xray-performance-adoption.test.mjs": "100644",
+    "apps/srm/scripts/xray-style-acceptance.mjs": "100644",
+    "apps/srm/src/server/full-ui-parity-adoption.test.ts": "100644",
+    "apps/srm/src/server/root-atomic-claim-adoption.test.ts": "100644",
+    "packages/maps-embed/package.json": "100644",
+    "packages/newsfeed-contracts/README.md": "100644",
+    "packages/newsfeed-contracts/index.d.ts": "100644",
+    "packages/newsfeed-contracts/index.mjs": "100644",
+    "packages/newsfeed-contracts/package.json": "100644",
+    "packages/platform-contracts/README.md": "100644",
+    "packages/platform-contracts/current-fresh-report/package.json": "100644",
+    "packages/platform-contracts/current-fresh-report/test/current-fresh-report.test.mjs": "100644",
+    "packages/platform-contracts/migrations/access/028-api-path-transport.sql": "100644",
+    "packages/platform-contracts/package-lock.json": "100644",
+    "packages/platform-contracts/package.json": "100644",
+    "packages/platform-contracts/payload-capture/package.json": "100644",
+    "packages/platform-contracts/payload-capture/test/public-package.test.mjs": "100644",
+    "packages/platform-contracts/readonly-miss-report/package.json": "100644",
+    "packages/platform-contracts/readonly-miss-report/test/readonly-miss-report.test.mjs": "100644",
+    "packages/platform-contracts/root-atomic-claim/package.json": "100644",
+    "packages/platform-contracts/root-atomic-claim/test/root-atomic-claim.test.mjs": "100644",
+    "packages/platform-contracts/src/external-call.d.mts": "100644",
+    "packages/platform-contracts/src/external-call.mjs": "100644",
+    "packages/platform-contracts/src/native-external-transport.d.mts": "100644",
+    "packages/platform-contracts/src/native-external-transport.mjs": "100644",
+    "packages/platform-contracts/test/api-path-transport.test.mjs": "100644",
+    "packages/platform-contracts/test/external-call.test.mjs": "100644",
+    "packages/platform-contracts/test/types/api-path.mts": "100644",
+    "packages/platform-contracts/test/types/native-external.mts": "100644",
+    "packages/platform-source-hub-contracts/README.md": "100644",
+    "packages/platform-source-hub-contracts/index.d.ts": "100644",
+    "packages/platform-source-hub-contracts/index.mjs": "100644",
+    "packages/platform-source-hub-contracts/package.json": "100644",
+    "scripts/governance/platform-source-hub-foundation.test.mjs": "100644"
+  },
+  "routes": {
+    ".github/workflows/newsfeed-ci.yml": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "NEWSFEED-BASE-003"
+    },
+    ".github/workflows/platform-source-hub-ci.yml": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-003"
+    },
+    "Canon/evidence/2026-11-03-source-hub-newsfeed-stage2a.md": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Governance Source Layer",
+      "surfaceId": "SG2-BASE-019"
+    },
+    "Canon/registries/platform-source-hub-contract-families-v1.json": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Governance Source Layer",
+      "surfaceId": "SG2-BASE-019"
+    },
+    "Canon/runbooks/newsfeed-source-hub-infrastructure-provisioning-v1.md": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Governance Source Layer",
+      "surfaceId": "SG2-BASE-019"
+    },
+    "apps/architecture-lab/sdk-1.33-compatibility.json": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-002"
+    },
+    "apps/architecture-lab/test/payload-capture-publication.test.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-002"
+    },
+    "apps/architecture-lab/test/sdk-compatibility.test.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-002"
+    },
+    "apps/dashboard-preview/package-lock.json": {
+      "projectKey": "SG2",
+      "owner": "Dashboard Preview",
+      "surfaceId": "SG2-BASE-003"
+    },
+    "apps/maps-runtime/package-lock.json": {
+      "projectKey": "SRM",
+      "owner": "Maps Capability",
+      "surfaceId": "MAPS-BASE-001"
+    },
+    "apps/maps-runtime/platform-integration.json": {
+      "projectKey": "SRM",
+      "owner": "Maps Capability",
+      "surfaceId": "MAPS-BASE-001"
+    },
+    "apps/maps-runtime/test/embed.test.mjs": {
+      "projectKey": "SRM",
+      "owner": "Maps Capability",
+      "surfaceId": "MAPS-BASE-001"
+    },
+    "apps/newsfeed-runtime/README.md": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "NEWSFEED-BASE-001"
+    },
+    "apps/newsfeed-runtime/docs/stage2b-activation.pl.md": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "NEWSFEED-BASE-001"
+    },
+    "apps/newsfeed-runtime/examples/development.env.example": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "NEWSFEED-BASE-001"
+    },
+    "apps/newsfeed-runtime/migrations/001-foundation.sql": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "NEWSFEED-BASE-001"
+    },
+    "apps/newsfeed-runtime/operation-integration.json": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "NEWSFEED-BASE-001"
+    },
+    "apps/newsfeed-runtime/package-lock.json": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "NEWSFEED-BASE-001"
+    },
+    "apps/newsfeed-runtime/package.json": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "NEWSFEED-BASE-001"
+    },
+    "apps/newsfeed-runtime/scripts/migrate.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "NEWSFEED-BASE-001"
+    },
+    "apps/newsfeed-runtime/src/auth.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "NEWSFEED-BASE-001"
+    },
+    "apps/newsfeed-runtime/src/capabilities.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "NEWSFEED-BASE-001"
+    },
+    "apps/newsfeed-runtime/src/config.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "NEWSFEED-BASE-001"
+    },
+    "apps/newsfeed-runtime/src/database.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "NEWSFEED-BASE-001"
+    },
+    "apps/newsfeed-runtime/src/main.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "NEWSFEED-BASE-001"
+    },
+    "apps/newsfeed-runtime/src/newsapi.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "NEWSFEED-BASE-001"
+    },
+    "apps/newsfeed-runtime/src/query.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "NEWSFEED-BASE-001"
+    },
+    "apps/newsfeed-runtime/src/repository.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "NEWSFEED-BASE-001"
+    },
+    "apps/newsfeed-runtime/src/server.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "NEWSFEED-BASE-001"
+    },
+    "apps/newsfeed-runtime/src/source-hub-client.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "NEWSFEED-BASE-001"
+    },
+    "apps/newsfeed-runtime/test/end-to-end.test.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "NEWSFEED-BASE-001"
+    },
+    "apps/newsfeed-runtime/test/fixtures.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "NEWSFEED-BASE-001"
+    },
+    "apps/newsfeed-runtime/test/persistence.test.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "NEWSFEED-BASE-001"
+    },
+    "apps/newsfeed-runtime/test/runtime-consumer.ts": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "NEWSFEED-BASE-001"
+    },
+    "apps/newsfeed-runtime/test/runtime.test.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "NEWSFEED-BASE-001"
+    },
+    "apps/newsfeed-runtime/tsconfig.json": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "NEWSFEED-BASE-001"
+    },
+    "apps/platform-source-hub/README.md": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-001"
+    },
+    "apps/platform-source-hub/docs/live-evidence.json": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-001"
+    },
+    "apps/platform-source-hub/docs/provider-capabilities.pl.md": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-001"
+    },
+    "apps/platform-source-hub/docs/stage2b-activation.pl.md": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-001"
+    },
+    "apps/platform-source-hub/examples/development.env.example": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-001"
+    },
+    "apps/platform-source-hub/migrations/001-foundation.sql": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-001"
+    },
+    "apps/platform-source-hub/package-lock.json": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-001"
+    },
+    "apps/platform-source-hub/package.json": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-001"
+    },
+    "apps/platform-source-hub/scripts/ci-routing.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-001"
+    },
+    "apps/platform-source-hub/scripts/live-probe.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-001"
+    },
+    "apps/platform-source-hub/scripts/migrate.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-001"
+    },
+    "apps/platform-source-hub/src/admission.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-001"
+    },
+    "apps/platform-source-hub/src/auth.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-001"
+    },
+    "apps/platform-source-hub/src/capabilities.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-001"
+    },
+    "apps/platform-source-hub/src/config.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-001"
+    },
+    "apps/platform-source-hub/src/database.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-001"
+    },
+    "apps/platform-source-hub/src/errors.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-001"
+    },
+    "apps/platform-source-hub/src/main.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-001"
+    },
+    "apps/platform-source-hub/src/observability.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-001"
+    },
+    "apps/platform-source-hub/src/providers/brave.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-001"
+    },
+    "apps/platform-source-hub/src/providers/newsapi-capabilities.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-001"
+    },
+    "apps/platform-source-hub/src/providers/newsapi-query.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-001"
+    },
+    "apps/platform-source-hub/src/providers/newsapi.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-001"
+    },
+    "apps/platform-source-hub/src/providers/trading-economics.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-001"
+    },
+    "apps/platform-source-hub/src/repository.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-001"
+    },
+    "apps/platform-source-hub/src/server.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-001"
+    },
+    "apps/platform-source-hub/src/transport.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-001"
+    },
+    "apps/platform-source-hub/test/adapters.test.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-001"
+    },
+    "apps/platform-source-hub/test/ci-routing.test.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-001"
+    },
+    "apps/platform-source-hub/test/contracts.test.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-001"
+    },
+    "apps/platform-source-hub/test/fixtures.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-001"
+    },
+    "apps/platform-source-hub/test/persistence.test.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-001"
+    },
+    "apps/platform-source-hub/test/server.test.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-001"
+    },
+    "apps/platform-source-hub/test/types.ts": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-001"
+    },
+    "apps/platform-source-hub/tsconfig.json": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-001"
+    },
+    "apps/sg-runtime/operation-integration.json": {
+      "projectKey": "SG2",
+      "owner": "SG Runtime",
+      "surfaceId": "SG2-BASE-001"
+    },
+    "apps/sg-runtime/package-lock.json": {
+      "projectKey": "SG2",
+      "owner": "SG Runtime",
+      "surfaceId": "SG2-BASE-001"
+    },
+    "apps/sg-runtime/tests/adp-appshell-consumer.test.tsx": {
+      "projectKey": "SG2",
+      "owner": "SG Runtime",
+      "surfaceId": "SG2-BASE-001"
+    },
+    "apps/sg-runtime/tests/category-operation.test.ts": {
+      "projectKey": "SG2",
+      "owner": "SG Runtime",
+      "surfaceId": "SG2-BASE-001"
+    },
+    "apps/sg-runtime/tests/diagnostic-telemetry-adoption.test.mjs": {
+      "projectKey": "SG2",
+      "owner": "SG Runtime",
+      "surfaceId": "SG2-BASE-001"
+    },
+    "apps/sg-runtime/tests/identity-runtime.test.ts": {
+      "projectKey": "SG2",
+      "owner": "SG Runtime",
+      "surfaceId": "SG2-BASE-001"
+    },
+    "apps/sg-runtime/tests/integrated-buyer-journey-package.test.mjs": {
+      "projectKey": "SG2",
+      "owner": "SG Runtime",
+      "surfaceId": "SG2-BASE-001"
+    },
+    "apps/sg-runtime/tests/native-sql-roundtrips.test.mjs": {
+      "projectKey": "SG2",
+      "owner": "SG Runtime",
+      "surfaceId": "SG2-BASE-001"
+    },
+    "apps/sg-runtime/tests/operation-context.test.mjs": {
+      "projectKey": "SG2",
+      "owner": "SG Runtime",
+      "surfaceId": "SG2-BASE-001"
+    },
+    "apps/sg-runtime/tests/pci-smart-integrity.mjs": {
+      "projectKey": "SG2",
+      "owner": "SG Runtime",
+      "surfaceId": "SG2-BASE-001"
+    },
+    "apps/sg-runtime/tests/pci-smart-integrity.test.mjs": {
+      "projectKey": "SG2",
+      "owner": "SG Runtime",
+      "surfaceId": "SG2-BASE-001"
+    },
+    "apps/sg-runtime/tests/porr-demo-middleware.test.ts": {
+      "projectKey": "SG2",
+      "owner": "SG Runtime",
+      "surfaceId": "SG2-BASE-001"
+    },
+    "apps/sg-runtime/tests/private-host.integration.test.mjs": {
+      "projectKey": "SG2",
+      "owner": "SG Runtime",
+      "surfaceId": "SG2-BASE-001"
+    },
+    "apps/sg-runtime/tests/self-service-account.test.ts": {
+      "projectKey": "SG2",
+      "owner": "SG Runtime",
+      "surfaceId": "SG2-BASE-001"
+    },
+    "apps/sg-runtime/tests/xray-fresh-performance-adoption.test.mjs": {
+      "projectKey": "SG2",
+      "owner": "SG Runtime",
+      "surfaceId": "SG2-BASE-001"
+    },
+    "apps/sg-runtime/tests/xray-gateway.test.ts": {
+      "projectKey": "SG2",
+      "owner": "SG Runtime",
+      "surfaceId": "SG2-BASE-001"
+    },
+    "apps/srm/deployment/root-atomic-claim-targets.json": {
+      "projectKey": "SRM",
+      "owner": "SRM Runtime",
+      "surfaceId": "SG2-BASE-016"
+    },
+    "apps/srm/operation-integration.json": {
+      "projectKey": "SRM",
+      "owner": "SRM Runtime",
+      "surfaceId": "SG2-BASE-016"
+    },
+    "apps/srm/package-lock.json": {
+      "projectKey": "SRM",
+      "owner": "SRM Runtime",
+      "surfaceId": "SG2-BASE-016"
+    },
+    "apps/srm/scripts/diagnostic-telemetry-adoption.test.mjs": {
+      "projectKey": "SRM",
+      "owner": "SRM Runtime",
+      "surfaceId": "SG2-BASE-016"
+    },
+    "apps/srm/scripts/native-execution-adoption.test.mjs": {
+      "projectKey": "SRM",
+      "owner": "SRM Runtime",
+      "surfaceId": "SG2-BASE-016"
+    },
+    "apps/srm/scripts/operation-context.test.mjs": {
+      "projectKey": "SRM",
+      "owner": "SRM Runtime",
+      "surfaceId": "SG2-BASE-016"
+    },
+    "apps/srm/scripts/private-host.integration.test.mjs": {
+      "projectKey": "SRM",
+      "owner": "SRM Runtime",
+      "surfaceId": "SG2-BASE-016"
+    },
+    "apps/srm/scripts/request-quota-adoption.test.mjs": {
+      "projectKey": "SRM",
+      "owner": "SRM Runtime",
+      "surfaceId": "SG2-BASE-016"
+    },
+    "apps/srm/scripts/source-hub-sdk-compatibility.mjs": {
+      "projectKey": "SRM",
+      "owner": "SRM Runtime",
+      "surfaceId": "SG2-BASE-016"
+    },
+    "apps/srm/scripts/supplier-location-admission.integration.test.mjs": {
+      "projectKey": "SRM",
+      "owner": "SRM Runtime",
+      "surfaceId": "SG2-BASE-016"
+    },
+    "apps/srm/scripts/xray-performance-adoption.test.mjs": {
+      "projectKey": "SRM",
+      "owner": "SRM Runtime",
+      "surfaceId": "SG2-BASE-016"
+    },
+    "apps/srm/scripts/xray-style-acceptance.mjs": {
+      "projectKey": "SRM",
+      "owner": "SRM Runtime",
+      "surfaceId": "SG2-BASE-016"
+    },
+    "apps/srm/src/server/full-ui-parity-adoption.test.ts": {
+      "projectKey": "SRM",
+      "owner": "SRM Runtime",
+      "surfaceId": "SG2-BASE-016"
+    },
+    "apps/srm/src/server/root-atomic-claim-adoption.test.ts": {
+      "projectKey": "SRM",
+      "owner": "SRM Runtime",
+      "surfaceId": "SG2-BASE-016"
+    },
+    "packages/maps-embed/package.json": {
+      "projectKey": "SRM",
+      "owner": "Maps Capability",
+      "surfaceId": "MAPS-BASE-003"
+    },
+    "packages/newsfeed-contracts/README.md": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "NEWSFEED-BASE-002"
+    },
+    "packages/newsfeed-contracts/index.d.ts": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "NEWSFEED-BASE-002"
+    },
+    "packages/newsfeed-contracts/index.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "NEWSFEED-BASE-002"
+    },
+    "packages/newsfeed-contracts/package.json": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "NEWSFEED-BASE-002"
+    },
+    "packages/platform-contracts/README.md": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    "packages/platform-contracts/current-fresh-report/package.json": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    "packages/platform-contracts/current-fresh-report/test/current-fresh-report.test.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    "packages/platform-contracts/migrations/access/028-api-path-transport.sql": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    "packages/platform-contracts/package-lock.json": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    "packages/platform-contracts/package.json": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    "packages/platform-contracts/payload-capture/package.json": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    "packages/platform-contracts/payload-capture/test/public-package.test.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    "packages/platform-contracts/readonly-miss-report/package.json": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    "packages/platform-contracts/readonly-miss-report/test/readonly-miss-report.test.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    "packages/platform-contracts/root-atomic-claim/package.json": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    "packages/platform-contracts/root-atomic-claim/test/root-atomic-claim.test.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    "packages/platform-contracts/src/external-call.d.mts": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    "packages/platform-contracts/src/external-call.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    "packages/platform-contracts/src/native-external-transport.d.mts": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    "packages/platform-contracts/src/native-external-transport.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    "packages/platform-contracts/test/api-path-transport.test.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    "packages/platform-contracts/test/external-call.test.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    "packages/platform-contracts/test/types/api-path.mts": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    "packages/platform-contracts/test/types/native-external.mts": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    "packages/platform-source-hub-contracts/README.md": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-002"
+    },
+    "packages/platform-source-hub-contracts/index.d.ts": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-002"
+    },
+    "packages/platform-source-hub-contracts/index.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-002"
+    },
+    "packages/platform-source-hub-contracts/package.json": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-002"
+    },
+    "scripts/governance/platform-source-hub-foundation.test.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Governance Source Layer",
+      "surfaceId": "SG2-BASE-020"
+    }
+  }
+})
+function isPinnedSourceHubStage2aReview(files){
+ return Array.isArray(files)&&files.length===Object.keys(SOURCE_HUB_STAGE2A_REVIEW.blobs).length
+  &&new Set(files.map(f=>f?.filename)).size===files.length
+  &&files.every(f=>Object.hasOwn(SOURCE_HUB_STAGE2A_REVIEW.blobs,f?.filename??'')
+   &&f.sha===SOURCE_HUB_STAGE2A_REVIEW.blobs[f.filename]&&f.status===SOURCE_HUB_STAGE2A_REVIEW.statuses[f.filename]&&!Object.hasOwn(f,'previous_filename'))
+}
+function assertSourceHubStage2aRoutes(files,repositoryRoot){
+ for(const file of files){
+  const expected=SOURCE_HUB_STAGE2A_REVIEW.routes[file.filename],profile=resolveProjectProfile(expected.projectKey,repositoryRoot)
+  const route=resolveProjectRouting({profile,targets:[file.filename],repositoryRoot})
+  if(!route.ok||route.results.length!==1)fail('SOURCE_HUB_STAGE2A_ROUTING_REJECTED')
+  const r=route.results[0]
+  if(r.resolutionStatus!=='RESOLVED'||r.highestSpecificityMatchCount!==1||r.baselineClassification!=='ALIGNED'
+   ||r.projectBoundaryStatus!=='ALLOWED'||r.currentOwner!==expected.owner||r.matchedSurfaceId!==expected.surfaceId)fail('SOURCE_HUB_STAGE2A_ROUTING_REJECTED')
+ }
+}
+
 function architecturePathAllowed(name) {
   if (typeof name !== 'string' || !/^[A-Za-z0-9._/-]+$/.test(name) || name.split('/').some(p => !p || p.startsWith('.'))) return false
   return /^packages\/platform-contracts\/(?:src\/[A-Za-z0-9_/-]+\.(?:mjs|d\.mts)|migrations\/[a-z0-9-]+\/[A-Za-z0-9._-]+\.sql|test\/[A-Za-z0-9._/-]+\.(?:mjs|mts|json)|package(?:-lock)?\.json|README\.md)$/.test(name)
@@ -315,6 +1396,7 @@ function architecturePathAllowed(name) {
 export function assertArchitectureFiles(pr, files, repositoryRoot = controlRoot()) {
   if (!Number.isInteger(pr.changed_files) || pr.changed_files < 1 || pr.changed_files > 300 || !shaPattern.test(pr.base?.sha ?? '')
     || !Array.isArray(files) || files.length !== pr.changed_files) fail('ARCHITECTURE_FILE_LIST_REQUIRED')
+  if(isPinnedSourceHubStage2aReview(files)){assertSourceHubStage2aRoutes(files,repositoryRoot);return}
   const krsReview = files.length === KRS_GOVERNANCE_REVIEW_FILES.length
     && files.every(file => KRS_GOVERNANCE_REVIEW_FILES.includes(file?.filename))
   const freshReportReview = isPinnedFreshReportReview(files)
@@ -349,6 +1431,7 @@ export function selectCandidate(context, pr, expectedSha, {files, repositoryRoot
   if (family === 'MAIN') return context.controlSha
   if (family === 'ARCHITECTURE') {
     assertArchitectureFiles(pr, files, repositoryRoot)
+    if(isPinnedSourceHubStage2aReview(files)&&(pr.number!==SOURCE_HUB_STAGE2A_REVIEW.prNumber||pr.head.ref!==SOURCE_HUB_STAGE2A_REVIEW.branch))fail('SOURCE_HUB_STAGE2A_REVIEW_IDENTITY_REJECTED')
     if (isPinnedAdpGovernanceReview(files)
       && (pr.number !== ADP_GOVERNANCE_REVIEW.prNumber || pr.head.ref !== ADP_GOVERNANCE_REVIEW.branch)) fail('ADP_GOVERNANCE_REVIEW_IDENTITY_REJECTED')
     if (isPinnedLimitsG1Review(files)
@@ -407,6 +1490,7 @@ export function assertArchitectureCheckout(root, sha, admission, repositoryRoot 
   for (const file of admission.files) {
     const entry = execFileSync('git', ['ls-tree', '-z', sha, '--', file.filename], {cwd: root, encoding: 'utf8'})
     if (file.status === 'removed') {if (entry !== '') fail('ARCHITECTURE_DIFF_MISMATCH'); continue}
+    if(isPinnedSourceHubStage2aReview(admission.files)&&entry!==SOURCE_HUB_STAGE2A_REVIEW.modes[file.filename]+' blob '+file.sha+'\t'+file.filename+'\0')fail('SOURCE_HUB_STAGE2A_FILE_MODE_REJECTED')
     if (!['100644', '100755'].some(mode => entry === `${mode} blob ${file.sha}\t${file.filename}\0`)) fail('ARCHITECTURE_CHECKOUT_REJECTED')
     const target = path.join(root, file.filename), stat = fs.lstatSync(target)
     if (!stat.isFile() || stat.isSymbolicLink() || stat.size > 1024 * 1024 || fs.realpathSync(target) !== target
@@ -486,7 +1570,7 @@ export function assertManifestPolicy(candidate, authority) {
   }
 }
 
-export function assertLocalPackageSources(root, candidateLock, authorityRoot = controlRoot()) {
+export function assertLocalPackageSources(root, candidateLock, authorityRoot = controlRoot(), {reviewedStage2a=false}={}) {
   const canonicalRoot = fs.realpathSync(root)
   const app = path.join(canonicalRoot, 'apps/sg-runtime')
   if (fs.realpathSync(app) !== app) fail('LOCAL_DEPENDENCY_REJECTED')
@@ -503,7 +1587,17 @@ export function assertLocalPackageSources(root, candidateLock, authorityRoot = c
     if (typeof manifest.version !== 'string' || manifest.version !== entry.version) fail('LOCAL_PACKAGE_VERSION_MISMATCH')
     const authorityFile = path.resolve(authorityRoot, 'apps/sg-runtime', LOCAL_PACKAGES[name], 'package.json')
     if (!fs.existsSync(authorityFile)) fail('LOCAL_PACKAGE_AUTHORITY_REQUIRED')
-    assertManifestPolicy(manifest, readJson(authorityFile))
+    let authority=readJson(authorityFile)
+    if(name==='@profitia/maps-embed'){
+      if(JSON.stringify(entry.peerDependencies??{})!==JSON.stringify(manifest.peerDependencies??{}))fail('LOCAL_PACKAGE_PEER_MISMATCH')
+      if(reviewedStage2a&&manifest.peerDependencies?.['@profitia/platform-contracts']===REVIEWED_MAPS_EMBED_PEERS['@profitia/platform-contracts']+' || 1.33.0'){
+        const bytes=fs.readFileSync(manifestPath),blob=createHash('sha1').update('blob '+bytes.length+'\0').update(bytes).digest('hex')
+        if(blob!==SOURCE_HUB_STAGE2A_REVIEW.blobs['packages/maps-embed/package.json']||authority.name!==manifest.name||authority.version!==manifest.version
+          ||authority.peerDependencies?.['@profitia/platform-contracts']!==REVIEWED_MAPS_EMBED_PEERS['@profitia/platform-contracts'])fail('SOURCE_HUB_STAGE2A_PEER_TRANSITION_REJECTED')
+        authority=structuredClone(authority);authority.peerDependencies['@profitia/platform-contracts']=manifest.peerDependencies['@profitia/platform-contracts']
+      }
+    }
+    assertManifestPolicy(manifest, authority)
   }
 }
 
@@ -595,7 +1689,7 @@ function checkCandidate() {
   const candidateLock = readJson(path.join(app, 'package-lock.json'))
   assertPackagePolicy(candidateLock, readJson(path.join(controlRoot(), 'apps/sg-runtime/package-lock.json')), fs.readFileSync(path.join(app, '.npmrc'), 'utf8'))
   assertManifestPolicy(readJson(path.join(app, 'package.json')), readJson(path.join(controlRoot(), 'apps/sg-runtime/package.json')))
-  assertLocalPackageSources(root, candidateLock)
+  assertLocalPackageSources(root, candidateLock, controlRoot(), {reviewedStage2a:state.admission?.kind==='ARCHITECTURE'&&isPinnedSourceHubStage2aReview(state.admission.files)})
   if (operationContractProvenanceDigest(root, state.receipt.contract) !== state.receipt.contract.sourceDigest || JSON.stringify(readJson(path.join(app, 'operation-integration.json'))) !== JSON.stringify(state.receipt)) fail('CONTRACT_PROVENANCE_MISMATCH')
   return {state, app}
 }
