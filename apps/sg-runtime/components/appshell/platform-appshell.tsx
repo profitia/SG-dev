@@ -1,9 +1,10 @@
 'use client'
 
 import React, { useCallback, useEffect, useState, useLayoutEffect, useRef } from 'react'
-import {createPortal} from 'react-dom'
 import { SpendGuruLogo, PorrLogo } from './appshell-brand'
-import {AssistantWidget,type AssistantScreenContext} from './assistant-widget'
+import {AssistantWidget} from './assistant-widget'
+import {createAssistantContent} from './assistant-content'
+import type {AssistantScreenContext} from './assistant-screen-context'
 import {animateCardPositions,cancelCardAnimations,captureCardPositions,type CardAnimations,type CardPositions} from './appshell-card-motion'
 import './platform-appshell.css'
 
@@ -17,7 +18,6 @@ type Props = {
   onLaunchXray?: () => void
   onLaunchAdp?: () => void
   onLaunchBenchmark?: () => void
-  assistantTarget?:HTMLElement|null
   assistantContext?:AssistantScreenContext|null
   moduleActive?: boolean
   moduleWorkspace?: (theme: 'light' | 'dark') => React.ReactNode
@@ -49,7 +49,7 @@ const englishApplications = [
 ]
 
 /** Presentation only. The host owns verified account data and sign-out. */
-export function PlatformAppShell({ locale, salutation, assistantAvatar, organisationBranding, onLogout, signingOut = false, onLaunchXray, onLaunchAdp, onLaunchBenchmark, moduleActive = false, moduleWorkspace, assistantTarget, assistantContext }: Props) {
+export function PlatformAppShell({ locale, salutation, assistantAvatar, organisationBranding, onLogout, signingOut = false, onLaunchXray, onLaunchAdp, onLaunchBenchmark, moduleActive = false, moduleWorkspace, assistantContext }: Props) {
   const cardStack=useRef<HTMLDivElement>(null), workspace=useRef<HTMLDivElement>(null)
   const positions=useRef<CardPositions>(new Map()), animations=useRef<CardAnimations>(new Map()), reducedMotion=useRef(false)
   const collapsedRef=useRef(false), [assistantCollapsed,setAssistantCollapsed]=useState(false)
@@ -78,10 +78,6 @@ export function PlatformAppShell({ locale, salutation, assistantAvatar, organisa
     window.addEventListener('resize',resize)
     return()=>{stop();window.removeEventListener('resize',resize);media?.removeEventListener?.('change',preference)}
   },[moduleActive])
-  const assistantHome=useRef<HTMLElement>(null);
-  const [assistantContainer,setAssistantContainer]=useState<HTMLDivElement|null>(null);
-  useEffect(()=>{const node=document.createElement('div');node.className='as-assistant-portal';setAssistantContainer(node);return()=>node.remove()},[]);
-  useLayoutEffect(()=>{const target=moduleActive&&assistantTarget?.isConnected?assistantTarget:assistantHome.current;if(assistantContainer&&target)target.appendChild(assistantContainer)},[assistantContainer,assistantTarget,moduleActive]);
   const [theme, setTheme] = useState<'light' | 'dark'>('light')
   const en = locale === 'en'
   useEffect(() => {
@@ -93,8 +89,8 @@ export function PlatformAppShell({ locale, salutation, assistantAvatar, organisa
   }
   const addressed = salutation ? `, ${salutation}` : ''
   const userGreeting = en ? `Good morning${addressed}.` : `Dzień dobry${addressed}.`
-  const assistant=<AssistantWidget locale={locale} salutation={salutation} avatar={assistantAvatar} theme={theme} screenContext={assistantContext} onCollapsedChange={handleCollapsedChange}/>;
-  return <div className={`appshell srm-ui${moduleActive ? ' as-module-active' : ''}`} data-theme={theme} style={{ colorScheme: theme }}>
+  const assistant=<AssistantWidget locale={locale} salutation={salutation} avatar={assistantAvatar} theme={theme} content={createAssistantContent(locale,salutation,assistantContext)} onCollapsedChange={handleCollapsedChange}/>;
+  return <div className={`appshell${moduleActive ? ' as-module-active' : ''}`} data-theme={theme} style={{ colorScheme: theme }}>
     <a className="as-skip" href="#appshell-main">{en ? 'Skip to applications' : 'Przejdź do aplikacji'}</a>
     <header className="as-header"><div className="as-header-inner">
       <div className="as-brand-group"><div className="as-logo"><SpendGuruLogo width={164} /></div></div>
@@ -110,7 +106,7 @@ export function PlatformAppShell({ locale, salutation, assistantAvatar, organisa
     </div></header>
     <main id="appshell-main" className="as-main" tabIndex={-1}>
       <div className="as-introduction" hidden={moduleActive}><div><h1>{userGreeting}<br className="as-mobile-break" /> {en ? 'Shall we begin?' : 'Zaczynamy?'}</h1><p>{en ? 'Everything you need in your daily work — in one place.' : 'Wszystko, czego potrzebujesz w codziennej pracy — w jednym miejscu.'}</p></div></div>
-      <div ref={workspace} className={'as-workspace'+(!moduleActive&&assistantCollapsed?' is-chat-collapsed':'')} data-canon-rule="APP-MOT-01" data-canon-motion="SRM-B68 MOT-01">
+      <div ref={workspace} className={'as-workspace'+(assistantCollapsed?' is-chat-collapsed':'')} data-canon-rule="APP-MOT-01" data-canon-motion="SRM-B68 MOT-01">
         <section key="applications" className="as-applications" hidden={moduleActive} aria-label={en ? 'SpendGuru applications' : 'Aplikacje SpendGuru'}><div className="as-app-stack" ref={cardStack}>
           {applications.map((entry,index) => {const app=en?{...entry,...englishApplications[index]}:entry;return <article className="as-app-card" key={app.key} data-analytics-exclude={app.key==='benchmark'?'finder':undefined} data-analytics-id={app.key==='adp'?'launch_adp':app.key==='xray'?'launch_xray':undefined} data-canon-id="SRM-C106" data-canon-rule="APP-01 FND-05">
             <div className="as-app-top"><div className="as-app-icon"><Icon kind={app.kind} size={28} /></div></div>
@@ -121,11 +117,10 @@ export function PlatformAppShell({ locale, salutation, assistantAvatar, organisa
           </article>})}
         </div></section>
         <section key="module" className="as-module-workspace" hidden={!moduleActive}>{moduleWorkspace?.(theme)}</section>
-        <section ref={assistantHome} key="assistant" className="as-assistant" hidden={!!(moduleActive&&assistantTarget)} aria-label={en ? 'Your assistant' : 'Twój asystent'}>
-          {!assistantContainer&&assistant}
+        <section key="assistant" className="as-assistant" aria-label={en ? 'Your assistant' : 'Twój asystent'}>
+          <div className="as-assistant-portal">{assistant}</div>
         </section>
       </div>
     </main>
-    {assistantContainer&&createPortal(assistant,assistantContainer)}
   </div>
 }
