@@ -1,5 +1,41 @@
 # SG2 Product Analytics — Development
 
+## Current extension — 2026-11-04
+
+Task `SG2-POSTHOG-FULL-MONITORING-NO-FINDER-20261104`. Owner authorizes Development **test activation only** using the unchanged explicit tab-consent mechanism below. No general-user rollout or new consent system is included. Existing PostHog project 329829 and SDK remain authoritative; SDK raw autocapture, replay, automatic pageviews and raw exception/performance enrichment stay OFF.
+
+### Practical coverage
+
+One delegated, privacy-safe collector observes existing and newly added controls in the same document, including embedded ADP and X-Ray React UI. Safe route descriptors cover sign-in/registration navigation, Account, AppShell, ADP (view/section/data area), X-Ray, Category Builder, Cost Scan and Supplier Intelligence. A future route gets generic `other` coverage until one source-owned descriptor is registered. Unavailable/coming-soon business modules are not enabled by analytics.
+
+- `session_started`, `surface_entered`: volatile consenting session and safe route arrival, including loading/unavailable screens. Route arrival does not prove authentication, module readiness or business success. Existing mounted-host `app_opened`, `module_opened` and `screen_viewed` signals retain their original semantics. No URL/query or identity is sent.
+- `ui_interaction`: click, select/change, first edit per field per screen and native validation failure. Code-owned control IDs are an explicit allowlist; all other controls use only a bounded tag/ordinal path. No DOM text, field content, option values, input lengths, labels, titles, CSS classes, arbitrary IDs, supplier/category IDs or hashes of those values.
+- `form_started`, `form_submitted`, `form_left_incomplete`: interaction, submit **intent**, and observed navigation away from an unsubmitted form. These do not assert server success or user intent. Ordinary paths/funnels provide additional drop-off evidence.
+- `operation_started/completed/failed/limited/left_incomplete`: authoritative existing Account verification, category list/read/save, Cost Scan and stored Supplier Intelligence summary responses. A Cost Scan PARTIAL result and an empty list/report remain limited, not full success. Saving a valid category draft is a successful save. No new business request is made. An existing request abort silently ends its analytics observation, without inventing a user decision. Navigation away records an unfinished observation, never claims backend cancellation.
+- Existing ADP local action types and the actual X-Ray report-mounted signal remain. Generic interactions also cover nested report/chart controls. Source callbacks for reliable X-Ray search-result/financial-view business outcomes remain unavailable; they are not inferred from clicks, transport or assistant payloads.
+- `ui_feedback_shown` records only visible alert presence, not message content or an inferred exception. `application_error` classifies trusted ADP/X-Ray rendering failures without messages/stacks. Backend traces remain in the existing sanitized Sentry integration. No speculative forwarding of globally asynchronous errors that may originate in Finder.
+- `screen_activity` gives visible foreground intervals and interaction counts. `performance_measured` provides observed long-task durations where supported and the delay to the next rendered frames after a safe screen transition. The latter is not a business-ready or complete Core Web Vitals measurement.
+
+Credential/OTP/file/hidden controls and explicit capture-opt-out subtrees are excluded. Authentication entry forms are not observed. Cross-origin iframes, closed shadow roots, downloads outside the document and inaccessible/gated report details cannot be inspected by this collector. A generic interaction is not proof of a completed business action. Returning-user identity, cross-reload retention and complete backend error attribution are not claimed; SDK random IDs remain memory-only.
+
+### Complete Finder exclusion
+
+The last SDK boundary rechecks consent, Development configuration, the Finder route segment and visible embedded Finder context on **every** capture. The AppShell Finder card, destination links and all Category Builder picker launch buttons are excluded before navigation. The visible Category Builder Finder modal suspends the entire collector and business adapter, including PCI and asynchronous callbacks; retained hidden Finder modules do not block other modules. Entering an excluded context silently discards analytics observations, forms and in-flight attempts. Returning resumes the ordinary surface without Finder provenance, timing, clicks, result data or fabricated abandonment events. It never alters Finder behavior or business requests.
+
+### Privacy and activation
+
+All event fields are validated against the central contract both before SDK capture and after SDK enrichment. The existing forced `$geoip_disable: true`, no-person-profile policy and removal of URLs, browser/geo fields and unknown data remain. There is no pre-consent queue, replay or additional server identity read. Consent withdrawal and configuration disable are checked synchronously; an already sent request cannot be recalled. Ordinary-user monitoring remains unauthorized and OFF without explicit existing test consent.
+
+Before an all-user release, the owner must separately approve: lawful purpose/basis and terminal-access requirements; the notice and applicable consent/withdrawal experience; PostHog processor/subprocessor and transfer terms; retention, deletion and access policy; any persistent pseudonymous identity; and product acceptance of the ordinary-user consent integration. This task implements none of those new mechanisms. EU ingestion location alone is not a complete legal assessment.
+
+### Acceptance and maintenance
+
+The existing normal CI entry imports the new monitoring suite, with real pinned SDK transport privacy checks, actual host tests, Finder route/modal/entry/return negatives, consent/kill-switch negatives and limited/failed/unfinished operation cases. Exact additive source bindings preserve every predecessor receipt and historical digest. Live acceptance additionally requires real consented UI actions and independent PostHog receipt/property inspection, absence of Finder traffic, disable/no-consent checks, business smoke and verified recovery. Source tests alone do not establish live coverage. Canonical execution evidence and actual live gaps belong to PMOS/PHR; no independent local task archive is produced.
+
+## Historical implementation and release records
+
+The sections below describe their explicitly dated predecessor tasks. Their old blocked/off statuses and 24/29 source definition counts are historical, not the current extension's acceptance or live-coverage claim.
+
 Task: `SG2-POSTHOG-20261102`. Repository authority: `profitia/SG-dev/main`.
 Owner: SG Runtime. Execution: local isolated task branch. Target: Development only.
 

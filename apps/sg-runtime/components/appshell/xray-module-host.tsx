@@ -18,6 +18,7 @@ function ObservedXRayReport(props:ComponentProps<typeof FullSupplierReport>){
 }
 class XRayBoundary extends Component<{locale:'pl'|'en';active:boolean;onReturn:()=>void;children:ReactNode},{failed:boolean}>{
  state={failed:false};static getDerivedStateFromError(){return {failed:true};}
+ componentDidCatch(){if(this.props.active)productAnalytics.capture('application_error',{module:'xray',error_kind:'render_failed'});}
  componentDidUpdate(previous:{locale:"pl"|"en";active:boolean}){if((previous.locale!==this.props.locale||previous.active&&!this.props.active)&&this.state.failed)this.setState({failed:false});}
  render(){return this.state.failed?<div role="alert"><p>{this.props.locale==='pl'?'Nie udało się wyświetlić X-Ray. Wróć do biurka i uruchom moduł ponownie.':'X-Ray could not be displayed. Return to Dashboard and reopen the module.'}</p><button type="button" className="as-secondary-button" onClick={this.props.onReturn}>{this.props.locale==='pl'?'Wróć do biurka':'Back to Dashboard'}</button></div>:this.props.children;}
 }

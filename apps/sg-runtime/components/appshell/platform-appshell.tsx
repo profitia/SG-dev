@@ -100,19 +100,19 @@ export function PlatformAppShell({ locale, salutation, assistantAvatar, organisa
       <div className="as-brand-group"><div className="as-logo"><SpendGuruLogo width={164} /></div></div>
       <div className="as-account-group">
         <div className="srm-theme-switch" role="group" aria-label={en ? 'Interface theme' : 'Motyw interfejsu'}>
-          {(['light', 'dark'] as const).map(value => <button key={value} type="button" aria-pressed={theme === value} onClick={() => changeTheme(value)} title={value === 'light' ? (en ? 'Light theme' : 'Jasny motyw') : (en ? 'Dark theme' : 'Ciemny motyw')}>
+          {(['light', 'dark'] as const).map(value => <button key={value} type="button" data-analytics-id={value==='light'?'theme_light':'theme_dark'} aria-pressed={theme === value} onClick={() => changeTheme(value)} title={value === 'light' ? (en ? 'Light theme' : 'Jasny motyw') : (en ? 'Dark theme' : 'Ciemny motyw')}>
             <Icon kind={value === 'light' ? 'sun' : 'moon'} size={16} /><span>{value === 'light' ? (en ? 'Light' : 'Jasny') : (en ? 'Dark' : 'Ciemny')}</span>
           </button>)}
         </div>
         {organisationBranding === 'porr' && <><span className="as-header-divider" /><div className="as-porr"><PorrLogo width="3rem" /></div></>}
-        <button className="as-secondary-button as-logout" type="button" onClick={onLogout} disabled={signingOut}>{en ? 'Sign out' : 'Wyloguj'}</button>
+        <button className="as-secondary-button as-logout" type="button" data-analytics-id="sign_out" onClick={onLogout} disabled={signingOut}>{en ? 'Sign out' : 'Wyloguj'}</button>
       </div>
     </div></header>
     <main id="appshell-main" className="as-main" tabIndex={-1}>
       <div className="as-introduction" hidden={moduleActive}><div><h1>{userGreeting}<br className="as-mobile-break" /> {en ? 'Shall we begin?' : 'Zaczynamy?'}</h1><p>{en ? 'Everything you need in your daily work — in one place.' : 'Wszystko, czego potrzebujesz w codziennej pracy — w jednym miejscu.'}</p></div></div>
       <div ref={workspace} className={'as-workspace'+(!moduleActive&&assistantCollapsed?' is-chat-collapsed':'')} data-canon-rule="APP-MOT-01" data-canon-motion="SRM-B68 MOT-01">
         <section key="applications" className="as-applications" hidden={moduleActive} aria-label={en ? 'SpendGuru applications' : 'Aplikacje SpendGuru'}><div className="as-app-stack" ref={cardStack}>
-          {applications.map((entry,index) => {const app=en?{...entry,...englishApplications[index]}:entry;return <article className="as-app-card" key={app.key} data-canon-id="SRM-C106" data-canon-rule="APP-01 FND-05">
+          {applications.map((entry,index) => {const app=en?{...entry,...englishApplications[index]}:entry;return <article className="as-app-card" key={app.key} data-analytics-exclude={app.key==='benchmark'?'finder':undefined} data-analytics-id={app.key==='adp'?'launch_adp':app.key==='xray'?'launch_xray':undefined} data-canon-id="SRM-C106" data-canon-rule="APP-01 FND-05">
             <div className="as-app-top"><div className="as-app-icon"><Icon kind={app.kind} size={28} /></div></div>
             <div className="as-app-copy"><p className="as-eyebrow">{app.category}</p><h3>{app.name}</h3><p>{app.description}</p></div>
             <div className="as-app-footer"><ul className="as-tags" aria-label={en ? 'Application scope' : 'Zakres aplikacji'}>{app.tags.map(tag => <li key={tag}>{tag}</li>)}</ul>

@@ -1,4 +1,5 @@
 import test from 'node:test'
+import './product-analytics-monitoring.test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import {randomUUID} from 'node:crypto'
@@ -123,9 +124,12 @@ test('pinned real browser SDK enriches then filters payloads, emits no automatic
   assert.equal(filtered[0].properties.token,token)
   assert.equal(filtered[0].properties.$geoip_disable,true)
   assert.equal(dom.window.document.cookie,'');assert.equal(dom.window.localStorage.length,0);assert.equal(dom.window.sessionStorage.length,0)
+  sdk.capture('ui_interaction',{module:'category_builder',view:'category_builder',control_id:'category-save-button',control_path:'body:1/main:1/button:1',interaction:'click',text:'private',value:'private'})
+  assert.equal(filtered.length,2);assert(filtered[1]);assert.equal(filtered[1].properties.control_id,'category-save-button')
+  assert.doesNotMatch(JSON.stringify(filtered[1]),/private|current_url|pathname|value|text/)
   sdk.capture('$exception',{message:'private'});assert.equal(filtered.at(-1),null)
   assert.equal(requests.filter(r=>/flags|decide|\/s\//.test(r.url)).length,0)
-  assert.equal(requests.length,1,'only the explicit accepted event may reach the mocked transport')
+  assert.equal(requests.length,2,'only the explicit accepted events may reach the mocked transport')
   const body=String(requests[0].body),encoded=new URLSearchParams(body).get('data')
   const serialized=encoded?(encoded.startsWith('{')?encoded:Buffer.from(encoded,'base64').toString('utf8')):body
   const sent=JSON.parse(serialized)
