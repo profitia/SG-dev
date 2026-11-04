@@ -40,7 +40,14 @@ test('accepted current FRESH 1.0 metadata and fingerprint remain unchanged besid
  assert.equal(metadata.name,'@profitia/platform-current-fresh-report');assert.equal(metadata.version,'1.0.0')
  for(const [name,digest] of Object.entries(accepted.producerSourceDigests)){
   const {createHash}=await import('node:crypto')
-  assert.equal(createHash('sha256').update(name==='package.json'?execFileSync('git',['show','36b07672f572ff7c1c81117e3f3b01fa93ec1e65:packages/platform-contracts/current-fresh-report/package.json']):fs.readFileSync(new URL('../../current-fresh-report/'+name,import.meta.url))).digest('hex'),digest)
+  const current=fs.readFileSync(new URL('../../current-fresh-report/'+name,import.meta.url))
+  let preserved=current
+  if(name==='package.json'){
+   const peer=JSON.parse(current).peerDependencies['@profitia/platform-contracts']
+   assert(['1.32.3','1.32.3 || 1.33.0'].includes(peer))
+   if(peer==='1.32.3 || 1.33.0')preserved=Buffer.from(current.toString().replace('"1.32.3 || 1.33.0"','"1.32.3"'))
+  }
+  assert.equal(createHash('sha256').update(preserved).digest('hex'),digest)
  }
 })
 test('the public package entry exposes the same implementation to ESM and CommonJS',()=>{
