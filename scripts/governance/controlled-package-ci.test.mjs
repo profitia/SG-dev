@@ -5,7 +5,7 @@ import os from 'node:os'
 import path from 'node:path'
 import {fileURLToPath} from 'node:url'
 import {spawnSync, execFileSync} from 'node:child_process'
-import {assertTrustedContext, assertEnvironment, selectCandidate, assertArchitectureFiles, resolveCandidateAdmission, assertArchitectureCheckout, CONTROL_POLICY_FILES, assertCredentialMetadata, assertReceipt, assertPackagePolicy, assertManifestPolicy, assertLocalPackageSources, assertProof, controlPolicyDigest, operationContractProvenanceDigest, REPOSITORY, WORKFLOW, PRIVATE_PACKAGES, LOCAL_PACKAGES, CONTROLLED_CANDIDATE_PREFIXES, KRS_GOVERNANCE_REVIEW_FILES, ADP_GOVERNANCE_REVIEW, LIMITS_G1_GOVERNANCE_REVIEW, FRESH_REPORT_PRODUCER_REVIEW, PAYLOAD_CAPTURE_PRODUCER_REVIEW, READONLY_MISS_REPORT_PRODUCER_REVIEW, FRESH_FIXTURE_TEARDOWN_REVIEW, ROOT_ATOMIC_CLAIM_PRODUCER_REVIEW} from './controlled-package-ci.mjs'
+import {SOURCE_HUB_STAGE2A_REVIEW, assertTrustedContext, assertEnvironment, selectCandidate, assertArchitectureFiles, resolveCandidateAdmission, assertArchitectureCheckout, CONTROL_POLICY_FILES, assertCredentialMetadata, assertReceipt, assertPackagePolicy, assertManifestPolicy, assertLocalPackageSources, assertProof, controlPolicyDigest, operationContractProvenanceDigest, REPOSITORY, WORKFLOW, PRIVATE_PACKAGES, LOCAL_PACKAGES, CONTROLLED_CANDIDATE_PREFIXES, KRS_GOVERNANCE_REVIEW_FILES, ADP_GOVERNANCE_REVIEW, LIMITS_G1_GOVERNANCE_REVIEW, FRESH_REPORT_PRODUCER_REVIEW, PAYLOAD_CAPTURE_PRODUCER_REVIEW, READONLY_MISS_REPORT_PRODUCER_REVIEW, FRESH_FIXTURE_TEARDOWN_REVIEW, ROOT_ATOMIC_CLAIM_PRODUCER_REVIEW} from './controlled-package-ci.mjs'
 
 const sha = 'a'.repeat(40), other = 'b'.repeat(40)
 const context = () => ({repository: REPOSITORY, ref: 'refs/heads/main', workflowRef: `${REPOSITORY}/${WORKFLOW}@refs/heads/main`, event: 'workflow_dispatch', actor: 'profitia', triggeringActor: 'profitia', controlSha: sha})
@@ -173,7 +173,7 @@ for (const name of Object.keys(LOCAL_PACKAGES)) test(`actual local source ${name
   const relative = LOCAL_PACKAGES[name]
   const local = path.resolve(candidateRoot, 'apps/sg-runtime', relative), authorityLocal = path.resolve(authorityRoot, 'apps/sg-runtime', relative)
   const manifest = {name, version: '0.2.0', peerDependencies: {react: '^18.3.1 || ^19.2.4'}}
-  const candidate = lock(); candidate.packages[`node_modules/${name}`] = {version: manifest.version, resolved: `file:${relative}`}
+  const candidate = lock(); candidate.packages[`node_modules/${name}`] = {version: manifest.version, resolved: `file:${relative}`, peerDependencies: structuredClone(manifest.peerDependencies)}
   try {
     fs.mkdirSync(path.join(candidateRoot, 'apps/sg-runtime'), {recursive: true})
     for (const dir of [local, authorityLocal]) {fs.mkdirSync(dir, {recursive: true}); fs.writeFileSync(path.join(dir, 'package.json'), JSON.stringify(manifest))}
@@ -1054,4 +1054,44 @@ test('Source Hub G1 review uses complete API pagination and metadata race fencin
  assert.equal(result.sha,other);assert.deepEqual(result.admission.files,files)
  for(const after of [{...candidate,head:{...candidate.head,sha}},{...candidate,base:{...candidate.base,sha:other}},{...candidate,head:{...candidate.head,ref:'architecture/replaced'}}])await assert.rejects(resolveCandidateAdmission(context(),'878',other,apiFixture(candidate,files,after).request))
  await assert.rejects(resolveCandidateAdmission(context(),'878',other,apiFixture(candidate,files.slice(1)).request))
+})
+
+const sourceHubStage2aFiles=()=>Object.entries(SOURCE_HUB_STAGE2A_REVIEW.blobs).map(([filename,sha])=>({filename,sha,status:SOURCE_HUB_STAGE2A_REVIEW.statuses[filename]}))
+const sourceHubStage2aPr=()=>({...pr(),number:885,changed_files:sourceHubStage2aFiles().length,base:{...pr().base,sha:SOURCE_HUB_STAGE2A_REVIEW.reviewedBaseSha},head:{...pr().head,sha:SOURCE_HUB_STAGE2A_REVIEW.reviewedCandidateSha,ref:SOURCE_HUB_STAGE2A_REVIEW.branch}})
+test('Stage2A closed review admits the exact mixed-owner source and retains PR identity fences',()=>{
+ const p=sourceHubStage2aPr(),files=sourceHubStage2aFiles()
+ assert.equal(selectCandidate(context(),p,p.head.sha,{files}),p.head.sha)
+ for(const mutate of [p=>p.number=886,p=>p.head.ref='architecture/other',p=>p.user.login='other',p=>p.head.repo.full_name='other/SG-dev']){
+  const q=structuredClone(p);mutate(q);rejection(()=>selectCandidate(context(),q,q.head.sha,{files}))
+ }
+})
+test('Stage2A closed review rejects changed, missing, additional, duplicate, renamed or differently classified blobs',()=>{
+ const p=sourceHubStage2aPr()
+ for(const mutate of [f=>f[0].sha='0'.repeat(40),f=>f.pop(),f=>f.push({...f[0],filename:'apps/sg-runtime/app/unreviewed.ts'}),f=>f.push({...f[0]}),f=>f[0].previous_filename='old',f=>f[0].status='removed']){
+  const files=sourceHubStage2aFiles();mutate(files);const q={...p,changed_files:files.length}
+  rejection(()=>selectCandidate(context(),q,q.head.sha,{files}))
+ }
+})
+test('Maps peer transition needs exact source, a pinned admission and matching lock metadata',()=>{
+ const temporary=fs.mkdtempSync(path.join(os.tmpdir(),'stage2a-peer-transition-')),candidateRoot=path.join(temporary,'candidate'),authorityRoot=path.join(temporary,'authority')
+ try{
+  const relative=LOCAL_PACKAGES['@profitia/maps-embed'],candidateApp=path.join(candidateRoot,'apps/sg-runtime'),authorityApp=path.join(authorityRoot,'apps/sg-runtime')
+  fs.mkdirSync(candidateApp,{recursive:true});fs.mkdirSync(authorityApp,{recursive:true})
+  const from=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../../packages/maps-embed/package.json'),original=fs.readFileSync(from,'utf8')
+  // Exercise the same frozen candidate before and after its separate main acceptance.
+  const installedRange=JSON.parse(original).peerDependencies['@profitia/platform-contracts']
+  const reviewedRange=installedRange.endsWith(' || 1.33.0')?installedRange:installedRange+' || 1.33.0'
+  const bytes=Buffer.from(original.replace(JSON.stringify(installedRange),JSON.stringify(reviewedRange))),manifest=JSON.parse(bytes)
+  const target=path.resolve(candidateApp,relative,'package.json'),trusted=path.resolve(authorityApp,relative,'package.json')
+  fs.mkdirSync(path.dirname(target),{recursive:true});fs.mkdirSync(path.dirname(trusted),{recursive:true});fs.writeFileSync(target,bytes)
+  const previous=structuredClone(manifest);previous.peerDependencies['@profitia/platform-contracts']=previous.peerDependencies['@profitia/platform-contracts'].replace(/ \|\| 1\.33\.0$/,'')
+  fs.writeFileSync(trusted,JSON.stringify(previous))
+  const candidate={packages:{'node_modules/@profitia/maps-embed':{version:manifest.version,resolved:'file:'+relative,peerDependencies:manifest.peerDependencies}}}
+  rejection(()=>assertLocalPackageSources(candidateRoot,candidate,authorityRoot))
+  assertLocalPackageSources(candidateRoot,candidate,authorityRoot,{reviewedStage2a:true})
+  assertLocalPackageSources(candidateRoot,candidate,candidateRoot)
+  const inconsistent=structuredClone(candidate);inconsistent.packages['node_modules/@profitia/maps-embed'].peerDependencies=previous.peerDependencies
+  rejection(()=>assertLocalPackageSources(candidateRoot,inconsistent,authorityRoot,{reviewedStage2a:true}))
+  fs.writeFileSync(target,JSON.stringify({...manifest,unreviewed:true}));rejection(()=>assertLocalPackageSources(candidateRoot,candidate,authorityRoot,{reviewedStage2a:true}))
+ }finally{fs.rmSync(temporary,{recursive:true,force:true})}
 })
