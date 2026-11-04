@@ -59,6 +59,7 @@ function newProviderState(){return {
  tokenFlight:null as Promise<string>|null,
  metadataDefinitionCache:null as CacheEntry<BenchmarkMetadataDefinition[]>|null,
  metadataValuesCache:new Map<string,CacheEntry<BenchmarkMetadataValue[]>>(),
+ metadataLabelFlights:new Map<string,Promise<BenchmarkMetadataValue[]>>(),
  semanticContextCache:new Map<string,CacheEntry<BenchmarkSemanticContext>>(),
  semanticEntityCache:new Map<string,CacheEntry<Record<string,unknown>|null>>(),
 }}
@@ -483,9 +484,18 @@ async function resolveMetadataDisplayLabel(metadataKey: string, value: string | 
     return value
   }
 
+  // All candidates in one search use the same unfiltered label dictionary.
+  // Share only its in-flight read inside the existing provider state; keep the
+  // existing cache limits, Source admission and request-isolation semantics.
+  const state = providerState()
+  let flight = state.metadataLabelFlights.get(metadataKey)
+  if (!flight) {
+    flight = getMacrobondMetadataValues(metadataKey, []).then((result) => result.items)
+    state.metadataLabelFlights.set(metadataKey, flight)
+  }
   try {
-    const result = await getMacrobondMetadataValues(metadataKey, [])
-    return result.items.find((item) => item.value === value)?.label ?? value
+    const items = await flight
+    return items.find((item) => item.value === value)?.label ?? value
   } catch (error) {
     if (error instanceof BenchmarkAppError) {
       logPerf('BENCHMARK_LABEL_ENRICHMENT_FALLBACK', {
@@ -496,6 +506,8 @@ async function resolveMetadataDisplayLabel(metadataKey: string, value: string | 
     }
 
     throw error
+  } finally {
+    if (state.metadataLabelFlights.get(metadataKey) === flight) state.metadataLabelFlights.delete(metadataKey)
   }
 }
 

@@ -1,5 +1,6 @@
 import '../scripts/denial-audit/d1-reader.test.mjs'
 import './xray-style-isolation.test.ts'
+import './finder-development-bindings.test.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
@@ -12,6 +13,19 @@ const current=file=>fs.readFileSync(new URL('../../../'+file,import.meta.url))
 // Git blobs are immutable. Cache only historical reads; every current-file read remains fresh.
 const historicalBlobs=new Map()
 const historical=(sha,file)=>{const key=sha+':'+file;if(!historicalBlobs.has(key))historicalBlobs.set(key,execFileSync('git',['show',key]));return historicalBlobs.get(key)}
+
+test('Finder recovery binds current source and rejects stale receipts or expanded authority',()=>{
+ const r=receipt(),f=r.finderMetadataSingleFlight;assert(f)
+ assertPciSmartIntegrity(r,current,historical)
+ for(const file of f.boundSourcePaths)assert.throws(()=>assertPciSmartIntegrity(r,p=>p===file?Buffer.concat([current(p),Buffer.from('tamper')]):current(p),historical),file)
+ for(const mutate of [x=>x.finderMetadataSingleFlight.providerBudgetsChanged=true,
+  x=>x.finderMetadataSingleFlight.authorizationChanged=true,x=>x.finderMetadataSingleFlight.cacheScope='GLOBAL',
+  x=>x.finderMetadataSingleFlight.sourceDigests['apps/srm/unapproved.ts']='0'.repeat(64),
+  x=>x.finderMetadataSingleFlight.previousReceiptSha256='0'.repeat(64),
+  x=>x.sourceHubApiPathCompatibility.apiPathOptedIn=true]){
+   const changed=structuredClone(r);mutate(changed);assert.throws(()=>assertPciSmartIntegrity(changed,current,historical))
+ }
+})
 
 test('full application monitoring binds every source and rejects consent, Finder, privacy or scope weakening',()=>{
  const r=receipt(),a=r.productAnalyticsMonitoringCompatibility;assert(a)
@@ -79,7 +93,7 @@ test('every changed SG2 source in the candidate or resulting main has an exact a
  // Prisma lifecycle output is independently generated, never an authored source change.
  // A published receipt retains its original source set after merge. Current
  // bytes are strictly verified above; an accepted main has no new amendments.
- assertSourceCoverage(candidateSourcePaths(new URL('../../../',import.meta.url)),{...a.sourceDigests,...r.xrayAppShellPresentation?.sourceDigests,...r.appShellFourCardCascade?.sourceDigests,...r.d1AuditReaderPreparation?.sourceDigests,...r.productAnalyticsStageOneCompatibility?.sourceDigests,...r.xrayStyleIsolationContinuation?.sourceDigests,...r.sentryObservabilityCompatibility?.sourceDigests,...r.marketHistoryIngestionCompatibility?.sourceDigests,...r.pciSmartInputCorrective?.sourceDigests,...r.pciSmartResultingMainScopeCompatibility?.sourceDigests,...Object.fromEntries(Object.entries(r.fullUiParityAdoption?.applicationSourceDigests??{}).map(([f,d])=>['apps/sg-runtime/'+f,d])),...r.productAnalyticsMainCompatibility?.sourceDigests,...r.appShellFourCardCascade?.sourceDigests,...r.d1AuditReaderPreparation?.sourceDigests,...r.productAnalyticsStageOneCompatibility?.sourceDigests,...r.productAnalyticsMonitoringCompatibility?.sourceDigests,...r.appShellAssistantOwnership?.sourceDigests,...r.sourceHubApiPathCompatibility?.consumerSourceDigests})
+ assertSourceCoverage(candidateSourcePaths(new URL('../../../',import.meta.url)),{...a.sourceDigests,...r.xrayAppShellPresentation?.sourceDigests,...r.appShellFourCardCascade?.sourceDigests,...r.d1AuditReaderPreparation?.sourceDigests,...r.productAnalyticsStageOneCompatibility?.sourceDigests,...r.xrayStyleIsolationContinuation?.sourceDigests,...r.sentryObservabilityCompatibility?.sourceDigests,...r.marketHistoryIngestionCompatibility?.sourceDigests,...r.pciSmartInputCorrective?.sourceDigests,...r.pciSmartResultingMainScopeCompatibility?.sourceDigests,...Object.fromEntries(Object.entries(r.fullUiParityAdoption?.applicationSourceDigests??{}).map(([f,d])=>['apps/sg-runtime/'+f,d])),...r.productAnalyticsMainCompatibility?.sourceDigests,...r.appShellFourCardCascade?.sourceDigests,...r.d1AuditReaderPreparation?.sourceDigests,...r.productAnalyticsStageOneCompatibility?.sourceDigests,...r.productAnalyticsMonitoringCompatibility?.sourceDigests,...r.appShellAssistantOwnership?.sourceDigests,...r.sourceHubApiPathCompatibility?.consumerSourceDigests,...r.finderMetadataSingleFlight?.sourceDigests})
 })
 test('scope coverage retains accepted parallel files but rejects any unbound candidate amendment',()=>{
  const root=fs.mkdtempSync(path.join(os.tmpdir(),'sg2-pci-source-scope-'))

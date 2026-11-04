@@ -422,6 +422,23 @@ export function assertPciSmartIntegrity(receipt,current,historical){
 
 // Test-only additive compatibility; never imported by a product runtime.
 export function assertSourceHubApiPathCompatibility(receipt,current,historical,{validatePeer=true}={}){
+ if(receipt.finderMetadataSingleFlight){
+  const f=receipt.finderMetadataSingleFlight,file='apps/sg-runtime/operation-integration.json'
+  assert.equal(f.taskId,'SG2-FINDER-METADATA-SINGLE-FLIGHT-20261104')
+  assert.equal(f.scope,'SG2_FINDER_LABEL_SINGLE_FLIGHT_AND_STARTUP_VERIFICATION')
+  const bytes=historical(f.previousReceiptSourceSha,file),prior=JSON.parse(bytes)
+  assert.equal(digest(bytes),f.previousReceiptSha256)
+  const {finderMetadataSingleFlight,...preserved}=receipt
+  assert.deepEqual(preserved,prior,'every previous receipt, including concurrent Source Hub and AppShell work, is immutable')
+  assert.deepEqual(f.boundSourcePaths,FINDER_RECOVERY_FILES)
+  assert.deepEqual(Object.keys(f.sourceDigests).sort(),FINDER_RECOVERY_FILES)
+  assert.deepEqual(f.applicationSourceDigests,Object.fromEntries(Object.entries(f.sourceDigests).map(([p,h])=>[posix.relative('apps/sg-runtime',p),h])))
+  for(const [p,h]of Object.entries(f.sourceDigests))assert.equal(digest(current(p)),h,'current Finder recovery '+p)
+  assert.equal(f.cacheScope,'EXISTING_PROVIDER_OPERATION_STATE_IN_FLIGHT_ONLY')
+  for(const flag of ['authorizationChanged','providerBudgetsChanged','providerRetryAdded','schemaChanged','producerChanged','privatePinsChanged','ciPolicyChanged','srmChanged','otherEnvironmentsChanged'])assert.equal(f[flag],false,flag)
+  const previous=p=>Object.hasOwn(f.sourceDigests,p)?historical(f.previousReceiptSourceSha,p):current(p)
+  return assertSourceHubApiPathCompatibility(prior,previous,historical,{validatePeer})
+ }
  const a=receipt.sourceHubApiPathCompatibility,file='apps/sg-runtime/operation-integration.json'
  assert.equal(a.taskId,'SG2-SOURCE-HUB-API-PATH-COMPATIBILITY-20261103')
  assert.equal(a.platformVersion,'1.33.0');assert.equal(a.apiPathContractVersion,'1.0.0')
@@ -448,3 +465,5 @@ export function assertSourceHubApiPathCompatibility(receipt,current,historical,{
  const predecessor=p=>{if(!priorBytes.has(p))priorBytes.set(p,Buffer.from(historical(a.previousReceiptSourceSha,p)));return Buffer.from(priorBytes.get(p))}
  return {prior,previousBytes:p=>p===file||mapped.has(p)?predecessor(p):peerView?.previousBytes(p)??current(p)}
 }
+
+const FINDER_RECOVERY_FILES = ["apps/sg-runtime/docs/finder-development-release.md", "apps/sg-runtime/lib/benchmark/macrobond.ts", "apps/sg-runtime/scripts/verify-finder-development-bindings.mjs", "apps/sg-runtime/tests/adp-appshell-consumer.test.tsx", "apps/sg-runtime/tests/benchmark-provider-scope.test.ts", "apps/sg-runtime/tests/category-operation.test.ts", "apps/sg-runtime/tests/diagnostic-telemetry-adoption.test.mjs", "apps/sg-runtime/tests/finder-development-bindings.test.mjs", "apps/sg-runtime/tests/identity-runtime.test.ts", "apps/sg-runtime/tests/integrated-buyer-journey-package.test.mjs", "apps/sg-runtime/tests/native-sql-roundtrips.test.mjs", "apps/sg-runtime/tests/operation-context.test.mjs", "apps/sg-runtime/tests/pci-smart-integrity.mjs", "apps/sg-runtime/tests/pci-smart-integrity.test.mjs", "apps/sg-runtime/tests/porr-demo-middleware.test.ts", "apps/sg-runtime/tests/self-service-account.test.ts", "apps/sg-runtime/tests/xray-fresh-performance-adoption.test.mjs", "apps/sg-runtime/tests/xray-gateway.test.ts"]
