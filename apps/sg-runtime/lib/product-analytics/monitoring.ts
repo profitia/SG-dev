@@ -50,7 +50,7 @@ export function startApplicationMonitoring(win: Window & typeof globalThis, perm
   const clock = () => win.performance.now()
   const canCapture = () => !stopped && analytics.isReady() && permitted() && !isFinderContext(doc)
   const forget = () => {
-    if(currentKey){analytics.clearTransition('screen');analytics.clearTransition('module')}
+    if(currentKey)analytics.clearTransition('surface')
     currentKey='';forms.clear();edited=new WeakSet();alerted=new WeakSet();activeMs=0;interactions=0;analytics.discardAttempts()
   }
   const summary = (reason:'navigation'|'page_hidden'|'interval') => {
@@ -73,11 +73,9 @@ export function startApplicationMonitoring(win: Window & typeof globalThis, perm
       }
       forms.clear(); edited=new WeakSet(); alerted=new WeakSet(); surface=next; currentKey=key; started=now; routeStarted=now
       analytics.once('monitoring-session','session_started',{module:'appshell'})
-      analytics.once('app','app_opened',{module:'appshell',entry_point:'appshell'})
-      if(surface.module==='appshell') analytics.clearTransition('module')
-      else analytics.transition('module',surface.module,'module_opened',{module:surface.module,entry_point:'direct'})
-      const screenKey=surface.module==='adp'?`adp:${surface.view}:${surface.section??'company'}:${surface.data_area??'adp'}`:surface.module
-      analytics.transition('screen',screenKey,'screen_viewed',surface)
+      // Route arrival does not prove authenticated AppShell/module readiness.
+      // Preserve the existing mounted-host app/module/screen signals unchanged.
+      analytics.capture('surface_entered',surface)
       const frameKey=key, frameStart=now
       if(frame!==undefined)win.cancelAnimationFrame(frame)
       frame=win.requestAnimationFrame(()=>{frame=win.requestAnimationFrame(()=>{

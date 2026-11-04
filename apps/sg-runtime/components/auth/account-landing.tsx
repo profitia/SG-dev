@@ -26,7 +26,7 @@ export function AccountLanding({ locale, completionUrl, presentation = 'account'
     setState(previous => presentation === 'workspace' && previous.key === key && previous.status === 'ready'
       && Date.parse(previous.expiresAt ?? '') > Date.now() ? previous : { key, status: 'loading' })
     if (isLoaded && isSignedIn && userId && sessionId) void (async () => {
-      const attempt=state.key===key&&state.status==='ready'?null:productAnalytics.begin('account','account_verify')
+      const attempt=state.key===key&&state.status==='ready'?null:productAnalytics.begin('account','account_verify',controller.signal)
       let denied = false
       try {
         const credential = await getToken({ skipCache: presentation === 'workspace' }); if (!credential) throw Error('SESSION_REQUIRED')

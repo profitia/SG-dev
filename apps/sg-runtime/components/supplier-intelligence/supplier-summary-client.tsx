@@ -29,7 +29,7 @@ export function SupplierSummaryClient({ locale }: { locale: 'pl' | 'en' }) {
     const selectedNip = nip, id = ++serial.current, controller = new AbortController()
     request.current = { id, controller }; setActiveNip(selectedNip); setLoading(true)
     let status = 0
-    const attempt=productAnalytics.begin('supplier_intelligence','supplier_summary_read')
+    const attempt=productAnalytics.begin('supplier_intelligence','supplier_summary_read',controller.signal)
     try {
       const bearer = await getToken()
       if (id !== serial.current || controller.signal.aborted) return

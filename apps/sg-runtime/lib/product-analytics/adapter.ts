@@ -1,6 +1,6 @@
 import { isProductAnalyticsEventEnabled, validateBusinessEvent, type AnalyticsEvent, type AnalyticsModule, type AnalyticsProperties } from './contract'
 
-type Attempt = { id: string; started: number; module: AnalyticsModule; operation: string; finished: boolean }
+type Attempt = { id: string; started: number; module: AnalyticsModule; operation: string; finished: boolean; detach?: () => void }
 type Sink = (event: AnalyticsEvent, properties: Record<string, unknown>) => void
 /** No queue, network, business data or identity service. All failures are isolated. */
 export class ProductAnalytics {
@@ -37,25 +37,30 @@ export class ProductAnalytics {
   }
   clearTransition(channel: string) { this.transitions.delete(channel) }
   reset() { this.epoch++; this.seen.clear(); this.transitions.clear(); this.discardAttempts(); try { this.resetClient() } catch { /* Isolated. */ } }
-  discardAttempts() { for(const attempt of this.attempts)attempt.finished=true;this.attempts.clear() }
+  cancel(attempt: Attempt | null) {if(!attempt)return;attempt.finished=true;attempt.detach?.();this.attempts.delete(attempt)}
+  discardAttempts() {for(const attempt of this.attempts)this.cancel(attempt)}
   leaveAttempts() {
     for(const attempt of this.attempts) {
       attempt.finished=true
+      attempt.detach?.()
       this.capture('operation_left_incomplete',{module:attempt.module,operation:attempt.operation,process_attempt_id:attempt.id,duration_ms:this.duration(attempt),status:'left_incomplete'})
     }
     this.attempts.clear()
   }
-  begin(module: AnalyticsModule, operation: string): Attempt | null {
+  begin(module: AnalyticsModule, operation: string, signal?: AbortSignal): Attempt | null {
     try {
-      if (!this.sink || !this.permitted()) return null
-      const attempt = { id: crypto.randomUUID(), started: performance.now(), module, operation, finished: false }
+      if (!this.sink || !this.permitted() || signal?.aborted) return null
+      const attempt: Attempt = { id: crypto.randomUUID(), started: performance.now(), module, operation, finished: false }
       if(!this.capture('operation_started', { module, operation, process_attempt_id: attempt.id }))return null
-      this.attempts.add(attempt);return attempt
+      this.attempts.add(attempt)
+      if(signal){const onAbort=()=>this.cancel(attempt);signal.addEventListener('abort',onAbort,{once:true});attempt.detach=()=>signal.removeEventListener('abort',onAbort)}
+      return attempt
     } catch { return null }
   }
   finish(attempt: Attempt | null, status: 'success' | 'error' | 'REFUSED' | 'CALCULATED' | 'PROXY_MARKET_ONLY' | 'partial' | 'empty') {
     if (!attempt || attempt.finished) return
     attempt.finished = true
+    attempt.detach?.()
     this.attempts.delete(attempt)
     // A proxy is a limited result, never a full calculation success.
     if (status === 'PROXY_MARKET_ONLY') return

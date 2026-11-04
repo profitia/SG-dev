@@ -87,7 +87,7 @@ test('Finder route transitions produce zero events and ordinary monitoring resum
     f.win.history.pushState({},'','/pl/dashboard/benchmark-finder');const count=f.events.length
     f.fire('button');await settle();assert.equal(f.events.length,count)
     f.win.history.pushState({},'','/pl/dashboard/adp?view=data&section=payments');f.fire('button')
-    assert(f.events.some(e=>e.event==='screen_viewed'&&e.properties.view==='data'&&e.properties.section==='payments'))
+    assert(f.events.some(e=>e.event==='surface_entered'&&e.properties.view==='data'&&e.properties.section==='payments'))
     assert.equal(f.events.at(-1).properties.module,'adp')
     assert.doesNotMatch(JSON.stringify(f.events),/benchmark_finder/)
   } finally {f.close()}
@@ -151,5 +151,20 @@ test('the existing identity reset starts a fresh volatile analytics session with
     assert.equal(f.events.filter(e=>e.event==='session_started').length,2)
     assert.equal(f.events.filter(e=>e.event==='form_started').length,2)
     assert.equal(f.events.filter(e=>e.event==='form_left_incomplete').length,0)
+  }finally{f.close()}
+})
+
+test('route arrival never substitutes for the existing authenticated mounted-host signals',()=>{
+  const f=fixture('/pl/dashboard/adp')
+  try {assert(f.events.some(e=>e.event==='surface_entered'));assert.equal(f.events.filter(e=>['app_opened','module_opened','screen_viewed','auth_session_established'].includes(e.event)).length,0)}finally{f.close()}
+})
+
+test('existing request abort silently ends analytics observation, without inventing failure or user abandonment',()=>{
+  const f=fixture('/pl/account')
+  try {
+    const controller=new AbortController(),attempt=f.analytics.begin('account','account_verify',controller.signal)
+    assert(attempt);controller.abort();f.analytics.finish(attempt,'success');f.analytics.leaveAttempts()
+    assert.equal(f.events.filter(e=>e.event.startsWith('operation_')&&e.event!=='operation_started').length,0)
+    assert.equal(f.analytics.begin('account','account_verify',controller.signal),null)
   }finally{f.close()}
 })

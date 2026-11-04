@@ -24,7 +24,7 @@ const fields = {
   app_opened: ['entry_point'], auth_session_established: [], module_opened: ['entry_point'], screen_viewed: ['view','step','section','data_area'],
   operation_started: ['operation','process_attempt_id'], operation_completed: ['operation','process_attempt_id','duration_ms','status'], operation_failed: ['operation','process_attempt_id','duration_ms','status'],
   operation_limited: ['operation','process_attempt_id','duration_ms','status'], operation_left_incomplete: ['operation','process_attempt_id','duration_ms','status'],
-  session_started: [], ui_interaction: [...controlFields,'interaction'], form_started: controlFields, form_submitted: controlFields, form_left_incomplete: controlFields,
+  session_started: [], surface_entered: surfaceFields, ui_interaction: [...controlFields,'interaction'], form_started: controlFields, form_submitted: controlFields, form_left_incomplete: controlFields,
   screen_activity: [...surfaceFields,'duration_ms','interaction_count','reason'], ui_feedback_shown: [...surfaceFields,'feedback'],
   performance_measured: [...surfaceFields,'metric','duration_ms'], application_error: ['error_kind'],
   benchmark_search_submitted: ['mode','process_attempt_id'], benchmark_results_displayed: ['mode','process_attempt_id','result_count','status'], benchmark_selected: ['process_attempt_id'],
