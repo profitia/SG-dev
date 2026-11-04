@@ -1,3 +1,4 @@
+import {createHash} from 'node:crypto'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
@@ -1094,4 +1095,15 @@ test('Maps peer transition needs exact source, a pinned admission and matching l
   rejection(()=>assertLocalPackageSources(candidateRoot,inconsistent,authorityRoot,{reviewedStage2a:true}))
   fs.writeFileSync(target,JSON.stringify({...manifest,unreviewed:true}));rejection(()=>assertLocalPackageSources(candidateRoot,candidate,authorityRoot,{reviewedStage2a:true}))
  }finally{fs.rmSync(temporary,{recursive:true,force:true})}
+})
+
+test('test-only reconciliation preserves all126 other reviewed blobs and every status, mode and owner route',()=>{
+ const corrected={"apps/architecture-lab/test/sdk-compatibility.test.mjs": "1616eb2591d3e6ccd0c68e595f81fe8a16733e84", "apps/sg-runtime/operation-integration.json": "0e494a92f1c0bb151ade7866c2fbc7b0afd2753d", "apps/sg-runtime/tests/pci-smart-integrity.mjs": "684a069d0b32c0fee69fc20ec887ab80edb88919", "apps/sg-runtime/tests/pci-smart-integrity.test.mjs": "a646a1df74b845f27da1b792daae6aad09129b55", "packages/platform-contracts/readonly-miss-report/test/readonly-miss-report.test.mjs": "c477d38bcb9f1d067bfa10e4699fd0ec140c96b3"}
+ const stableHash=value=>createHash('sha256').update(JSON.stringify(Object.keys(value).sort().map(key=>[key,value[key]]))).digest('hex')
+ assert.equal(Object.keys(SOURCE_HUB_STAGE2A_REVIEW.blobs).length,131)
+ for(const [file,prior]of Object.entries(corrected))assert.notEqual(SOURCE_HUB_STAGE2A_REVIEW.blobs[file],prior,file)
+ assert.equal(stableHash({...SOURCE_HUB_STAGE2A_REVIEW.blobs,...corrected}),"a23420b718a11a26a9bec8ed4e84700971cf36b48da8aac2a68a2a96378e7292")
+ assert.equal(stableHash(SOURCE_HUB_STAGE2A_REVIEW.statuses),"29cb126ce19de461cc827c6ff32a6178ec8be26cb2195f92b370ae55803d7336")
+ assert.equal(stableHash(SOURCE_HUB_STAGE2A_REVIEW.modes),"217ec78117be5de638851910a7554f455dd0d22411c69c11814bb5c6c404d7f0")
+ assert.equal(stableHash(SOURCE_HUB_STAGE2A_REVIEW.routes),"98a7cc0f331554c2c07b1e51ad3aff91bad8727bb45b6f5d812214241456bd5b")
 })
