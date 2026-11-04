@@ -23,6 +23,30 @@ export function shouldUseRemoteMetadataQuery(metadataKey: string) {
   return REMOTE_METADATA_QUERY_KEYS.has(metadataKey)
 }
 
+export function normalizeMetadataValueQuery(metadataKey: string, query: string) {
+  return shouldUseRemoteMetadataQuery(metadataKey) ? query.trim() : ''
+}
+
+export const METADATA_QUERY_DELAY_MS = 350
+
+export function createMetadataValueLoadQueue() {
+  let timer: ReturnType<typeof setTimeout> | undefined
+  const cancel = () => {
+    if (timer !== undefined) clearTimeout(timer)
+    timer = undefined
+  }
+  return {
+    cancel,
+    schedule(load: () => void) {
+      cancel()
+      timer = setTimeout(() => {
+        timer = undefined
+        load()
+      }, METADATA_QUERY_DELAY_MS)
+    },
+  }
+}
+
 export function getStandardMetadataPrewarmKeys(definitions: Pick<BenchmarkMetadataDefinition, 'key'>[]) {
   const availableKeys = new Set(definitions.map((definition) => definition.key))
   return STANDARD_METADATA_PREWARM_KEYS.filter((metadataKey) => availableKeys.has(metadataKey) && !shouldUseRemoteMetadataQuery(metadataKey))

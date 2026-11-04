@@ -30,6 +30,8 @@ import {
 } from '@/lib/benchmark/analytics'
 import {
   METADATA_DICTIONARY_FILTER_SIGNATURE,
+  createMetadataValueLoadQueue,
+  normalizeMetadataValueQuery,
   buildMetadataValueRequestKey,
   buildMetadataValuesRequestPath,
   countReadyMetadataPrewarmFacets,
@@ -1009,6 +1011,7 @@ export function BenchmarkFinderClient({
   const advancedOpenStartedAtRef = useRef<number | null>(null)
   const advancedOpenLoggedRef = useRef(false)
   const metadataAbortControllersRef = useRef<Record<string, AbortController>>({})
+  const [metadataValueLoadQueue] = useState(createMetadataValueLoadQueue)
   const searchAbortControllerRef = useRef<AbortController | null>(null)
   const previewAbortControllersRef = useRef<Record<string, AbortController>>({})
   const analyticsEligibilityAbortControllersRef = useRef<Record<string, AbortController>>({})
@@ -1091,7 +1094,7 @@ export function BenchmarkFinderClient({
 
   async function loadMetadataValues(metadataKey: string, nextSearchQuery?: string, options?: { suppressGlobalError?: boolean }) {
     const remoteFiltering = shouldUseRemoteMetadataQuery(metadataKey)
-    const normalizedQuery = (nextSearchQuery ?? metadataValueSearchByKey[metadataKey] ?? '').trim()
+    const normalizedQuery = normalizeMetadataValueQuery(metadataKey, nextSearchQuery ?? metadataValueSearchByKey[metadataKey] ?? '')
     // Keep dictionary reads on the approved bounded metadata view. Search
     // commands below retain all selected benchmark criteria independently.
     const filterSignature = METADATA_DICTIONARY_FILTER_SIGNATURE
@@ -1193,9 +1196,9 @@ export function BenchmarkFinderClient({
     } finally {
       if (metadataAbortControllersRef.current[metadataKey] === controller) {
         delete metadataAbortControllersRef.current[metadataKey]
-      }
-      if (metadataValueRequestKeysRef.current[metadataKey] === requestKey) {
-        delete metadataValueRequestKeysRef.current[metadataKey]
+        if (metadataValueRequestKeysRef.current[metadataKey] === requestKey) {
+          delete metadataValueRequestKeysRef.current[metadataKey]
+        }
       }
     }
   }
@@ -1230,9 +1233,22 @@ export function BenchmarkFinderClient({
   }
 
   function queueMetadataValueLoad(metadataKey: string, nextSearchQuery?: string) {
-    startSearchTransition(() => {
+    metadataValueLoadQueue.cancel()
+    const remote = shouldUseRemoteMetadataQuery(metadataKey)
+    if (remote) {
+      metadataAbortControllersRef.current[metadataKey]?.abort()
+      delete metadataAbortControllersRef.current[metadataKey]
+      delete metadataValueRequestKeysRef.current[metadataKey]
+    }
+    const load = () => startSearchTransition(() => {
       loadMetadataValues(metadataKey, nextSearchQuery).catch(() => undefined)
     })
+    const query = normalizeMetadataValueQuery(metadataKey, nextSearchQuery ?? metadataValueSearchByKey[metadataKey] ?? '')
+    if (remote && query.length >= REMOTE_METADATA_QUERY_MIN_LENGTH) {
+      metadataValueLoadQueue.schedule(load)
+    } else {
+      load()
+    }
   }
 
   function openSearchSurface(nextSurfaceMode: SearchSurfaceMode) {
@@ -1978,6 +1994,7 @@ export function BenchmarkFinderClient({
 
   useEffect(() => {
     return () => {
+      metadataValueLoadQueue.cancel()
       abortSearchRequest()
       abortPreviewRequest()
       abortAnalyticsEligibilityRequest()
@@ -1985,6 +2002,13 @@ export function BenchmarkFinderClient({
       Object.values(metadataAbortControllersRef.current).forEach((controller) => controller.abort())
     }
   }, [])
+
+  useEffect(() => {
+    if (!active || mode !== 'search' || searchSurfaceMode !== 'advanced'
+      || !openMetadataKey || !shouldUseRemoteMetadataQuery(openMetadataKey)) {
+      metadataValueLoadQueue.cancel()
+    }
+  }, [active, mode, searchSurfaceMode, openMetadataKey, metadataValueLoadQueue])
 
   useEffect(() => {
     if (!localeSnapshotHandledRef.current) {

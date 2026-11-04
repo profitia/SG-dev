@@ -4,6 +4,9 @@ import test from 'node:test'
 import type { BenchmarkMetadataDefinition } from '../lib/benchmark/contracts'
 import {
   METADATA_DICTIONARY_FILTER_SIGNATURE,
+  METADATA_QUERY_DELAY_MS,
+  createMetadataValueLoadQueue,
+  normalizeMetadataValueQuery,
   buildMetadataValueRequestKey,
   buildMetadataValuesRequestPath,
   countReadyMetadataPrewarmFacets,
@@ -27,6 +30,45 @@ function definition(key: string): BenchmarkMetadataDefinition {
     providerKey: key,
   }
 }
+
+test('typing in a prewarmed local dictionary reuses the same ready request state', () => {
+  for (const key of ['Source', 'Frequency', 'Currency', 'TitleUnit', 'Category']) {
+    for (const input of ['', 'D', 'Daily', 'Monthly']) {
+      const query = normalizeMetadataValueQuery(key, input)
+      assert.equal(query, '')
+      assert.equal(shouldReuseMetadataValueState({ status: 'ready', query: '', filterSignature: '[]' }, '[]', query), true)
+    }
+  }
+  assert.equal(normalizeMetadataValueQuery('Region', ' Poland '), 'Poland')
+})
+
+test('a typing burst dispatches only its final remote dictionary query after the pause', (t) => {
+  t.mock.timers.enable()
+  const queue = createMetadataValueLoadQueue(), requests: string[] = []
+  const input = 'zzzzfindernomatch20261104'
+  for (let length = 1; length <= input.length; length += 1) {
+    const query = input.slice(0, length)
+    queue.schedule(() => { requests.push(query) })
+  }
+  t.mock.timers.tick(METADATA_QUERY_DELAY_MS - 1)
+  assert.deepEqual(requests, [])
+  t.mock.timers.tick(1)
+  assert.deepEqual(requests, [input])
+  t.mock.timers.tick(METADATA_QUERY_DELAY_MS * 2)
+  assert.deepEqual(requests, [input], 'no retry or later duplicate is scheduled')
+})
+
+test('closing or leaving the metadata selector cancels the pending query and permits later input', (t) => {
+  t.mock.timers.enable()
+  const queue = createMetadataValueLoadQueue(), requests: string[] = []
+  queue.schedule(() => { requests.push('closed') })
+  queue.cancel()
+  t.mock.timers.tick(METADATA_QUERY_DELAY_MS)
+  assert.deepEqual(requests, [])
+  queue.schedule(() => { requests.push('reopened') })
+  t.mock.timers.tick(METADATA_QUERY_DELAY_MS)
+  assert.deepEqual(requests, ['reopened'])
+})
 
 test('background metadata preparation loads definitions before prewarming standard facets', async () => {
   const events: string[] = []
