@@ -24,3 +24,45 @@ This is a test/adoption binding reconciliation in the same registered tasks, not
 - `packages/platform-contracts/readonly-miss-report/test/readonly-miss-report.test.mjs`: `c477d38bcb9f1d067bfa10e4699fd0ec140c96b3` -> `57997df452954de5dd02af3d3911d8e4c94db379`.
 
 The original approval and historical source remain immutable evidence. Backend, SDK implementation, SG2/SRM business/UI/authorization code and all126 other reviewed files are unchanged. Main acceptance still requires every existing exact-SHA CI check and trusted-main proof. No deployment, provider call or infrastructure operation is included.
+
+
+## Final historical SDK acceptance closure
+
+The required exact-source controlled run on candidate a64dc894d0bedebf34acc3842c16d4c944575041 passed all1303 primary SG2 cases and then exposed three stale SDK comparisons in the final five-test acceptance suite. The final correction makes those current installed-byte checks prefer the existing SourceHub layer, while retaining every historical receipt, historical producer byte check and all negative integrity tests. Only that existing test and its current consumer/application digests change; all historical receipt fields remain identical. The five-test suite, observability, market-history tests, typecheck and production build pass locally. Full exact-candidate controlled and resulting-main validation remain mandatory gates.
+
+The final review supersedes the prior executable pin map with candidate `4036cb1d9c4ee0f3274cf2a150b4f4e28019f9ee`, base `776071fcd2a711292dafbfd08bce5ef04aca6596`. The same131 paths, statuses, modes and actual-owner routes remain fixed.125 original reviewed blobs are identical. The complete six-file test/adoption-only replacement set is:
+
+- `apps/architecture-lab/test/sdk-compatibility.test.mjs`: `1616eb2591d3e6ccd0c68e595f81fe8a16733e84` -> `9abc96b3b1ea16665ecdd749b51681b4d55eda63`.
+- `apps/sg-runtime/operation-integration.json`: `0e494a92f1c0bb151ade7866c2fbc7b0afd2753d` -> `eda5aaaae7016b12c2151f8b0b875ef2d4661a14`.
+- `apps/sg-runtime/tests/pci-smart-integrity.mjs`: `684a069d0b32c0fee69fc20ec887ab80edb88919` -> `4af643e4b2268438a93e1c65a21f5ee7ed2e5b06`.
+- `apps/sg-runtime/tests/pci-smart-integrity.test.mjs`: `a646a1df74b845f27da1b792daae6aad09129b55` -> `2cabc73a4dbd2eb4bc19d10aa1022a8d22389bb5`.
+- `apps/sg-runtime/tests/xray-fresh-performance-adoption.test.mjs`: `1f28a8bb6c7af42b0618fa5c71a83781a98eab16` -> `ac0db118f3d47974dfe4ac8dd179cc1ea0c8cda9`.
+- `packages/platform-contracts/readonly-miss-report/test/readonly-miss-report.test.mjs`: `c477d38bcb9f1d067bfa10e4699fd0ec140c96b3` -> `57997df452954de5dd02af3d3911d8e4c94db379`.
+
+This is the final test binding reconciliation in the existing registered tasks. It changes no product implementation, entitlement, credential boundary, infrastructure or deployment scope. The original approval and earlier evidence remain historical facts.
+
+
+## Preservation of accepted parallel main
+
+While the previous exact candidate was being validated, PR889 accepted the independent SG2 monitoring continuation at main `62d21fc81cec846ff58d6f5b6fdac35c777314bc`. The mandatory preflight blocked the stale policy base. All four existing task profiles were then verified on clean current main; the source was composed under the existing SG2 task, preserving both owner histories. Fourteen overlapping SG2 test/adoption files retain the entire new main receipt and monitoring checks, then layer current SourceHub compatibility over that exact predecessor. All16 parallel changed files outside the original source review remain byte-identical to main, including product code and analytics behavior. The34 integrity and historical acceptance tests pass locally.
+
+The active closed review now binds source `00d56c11e4f2b4d9d1ca4a120f237f0c158dd5b1`, base `62d21fc81cec846ff58d6f5b6fdac35c777314bc`, with the same131 paths/statuses/modes/actual-owner routes. 115 original blobs remain identical; the complete 16 test/adoption replacement set is:
+
+- `apps/architecture-lab/test/sdk-compatibility.test.mjs`: `1616eb2591d3e6ccd0c68e595f81fe8a16733e84` -> `9abc96b3b1ea16665ecdd749b51681b4d55eda63`.
+- `apps/sg-runtime/operation-integration.json`: `0e494a92f1c0bb151ade7866c2fbc7b0afd2753d` -> `4e5c8367eb0ce31d4e4d930340ecaad607f7e39c`.
+- `apps/sg-runtime/tests/adp-appshell-consumer.test.tsx`: `2bebee2a9a87d669a597463d0ae4afcccb171382` -> `b48eb7f049c287eae0ac7486b0be128a52a15477`.
+- `apps/sg-runtime/tests/category-operation.test.ts`: `249ad2982f8f61dabef235393699f4c52837ecd8` -> `ac58743ae1900c2c4373796c56cb2416fc8b600c`.
+- `apps/sg-runtime/tests/diagnostic-telemetry-adoption.test.mjs`: `21953cf04a3c1fa0936b4c960757abadc821bbaf` -> `c20134c624000ee25754293005200a383680f44f`.
+- `apps/sg-runtime/tests/identity-runtime.test.ts`: `04a365354295640963fb93e559c070ce1a2fdc51` -> `f5f831b48e8369af47ff113a129449086cfd2442`.
+- `apps/sg-runtime/tests/integrated-buyer-journey-package.test.mjs`: `88f2fbd8d3aa4a7f9dd77bc5433559911019b231` -> `d1e1646533fd08c3811b895babd2f479e2d85a25`.
+- `apps/sg-runtime/tests/native-sql-roundtrips.test.mjs`: `24916132ff4bef7c656a602443b8ccd189cebc4d` -> `9572630ad7a4729ac145f0b99016b9a391ac9979`.
+- `apps/sg-runtime/tests/operation-context.test.mjs`: `4aacdbd1b70d777a9d6b8d94c10306337d1fb266` -> `0bc6a087752f1883e565035b1ebc88fd51974c70`.
+- `apps/sg-runtime/tests/pci-smart-integrity.mjs`: `684a069d0b32c0fee69fc20ec887ab80edb88919` -> `5b1a3976e0aeb914b27ef2643e603540a6214f5d`.
+- `apps/sg-runtime/tests/pci-smart-integrity.test.mjs`: `a646a1df74b845f27da1b792daae6aad09129b55` -> `0e7de76b613ea3c461cccfe044cce987ff0f8fff`.
+- `apps/sg-runtime/tests/porr-demo-middleware.test.ts`: `271825c3cdbd1699b5335a84ca5646a69d2c3cff` -> `ce7ff030c99cb2ec6e255342e1a7e204fa0b3d2b`.
+- `apps/sg-runtime/tests/self-service-account.test.ts`: `9143c04a7f6f426f14e758c3174fbe4de075874c` -> `832c93259617087b713ab9831b6df19e737861a1`.
+- `apps/sg-runtime/tests/xray-fresh-performance-adoption.test.mjs`: `1f28a8bb6c7af42b0618fa5c71a83781a98eab16` -> `849084df6649b238d0aeb6c8f67701d15299f641`.
+- `apps/sg-runtime/tests/xray-gateway.test.ts`: `8339797a56609cde7e4944e95542df440b2ac0be` -> `9e1122f2e037001d21182c3829e77e11ee500f10`.
+- `packages/platform-contracts/readonly-miss-report/test/readonly-miss-report.test.mjs`: `c477d38bcb9f1d067bfa10e4699fd0ec140c96b3` -> `57997df452954de5dd02af3d3911d8e4c94db379`.
+
+This supersedes earlier executable source pins. It adds no implementation, permission, credential or infrastructure scope. Original approvals, historical receipts and previous validation results remain immutable evidence; final refreshed-candidate and resulting-main checks must pass again.
