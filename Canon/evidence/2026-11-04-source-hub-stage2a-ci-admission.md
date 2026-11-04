@@ -24,3 +24,19 @@ This is a test/adoption binding reconciliation in the same registered tasks, not
 - `packages/platform-contracts/readonly-miss-report/test/readonly-miss-report.test.mjs`: `c477d38bcb9f1d067bfa10e4699fd0ec140c96b3` -> `57997df452954de5dd02af3d3911d8e4c94db379`.
 
 The original approval and historical source remain immutable evidence. Backend, SDK implementation, SG2/SRM business/UI/authorization code and all126 other reviewed files are unchanged. Main acceptance still requires every existing exact-SHA CI check and trusted-main proof. No deployment, provider call or infrastructure operation is included.
+
+
+## Final historical SDK acceptance closure
+
+The required exact-source controlled run on candidate a64dc894d0bedebf34acc3842c16d4c944575041 passed all1303 primary SG2 cases and then exposed three stale SDK comparisons in the final five-test acceptance suite. The final correction makes those current installed-byte checks prefer the existing SourceHub layer, while retaining every historical receipt, historical producer byte check and all negative integrity tests. Only that existing test and its current consumer/application digests change; all historical receipt fields remain identical. The five-test suite, observability, market-history tests, typecheck and production build pass locally. Full exact-candidate controlled and resulting-main validation remain mandatory gates.
+
+The final review supersedes the prior executable pin map with candidate `4036cb1d9c4ee0f3274cf2a150b4f4e28019f9ee`, base `776071fcd2a711292dafbfd08bce5ef04aca6596`. The same131 paths, statuses, modes and actual-owner routes remain fixed.125 original reviewed blobs are identical. The complete six-file test/adoption-only replacement set is:
+
+- `apps/architecture-lab/test/sdk-compatibility.test.mjs`: `1616eb2591d3e6ccd0c68e595f81fe8a16733e84` -> `9abc96b3b1ea16665ecdd749b51681b4d55eda63`.
+- `apps/sg-runtime/operation-integration.json`: `0e494a92f1c0bb151ade7866c2fbc7b0afd2753d` -> `eda5aaaae7016b12c2151f8b0b875ef2d4661a14`.
+- `apps/sg-runtime/tests/pci-smart-integrity.mjs`: `684a069d0b32c0fee69fc20ec887ab80edb88919` -> `4af643e4b2268438a93e1c65a21f5ee7ed2e5b06`.
+- `apps/sg-runtime/tests/pci-smart-integrity.test.mjs`: `a646a1df74b845f27da1b792daae6aad09129b55` -> `2cabc73a4dbd2eb4bc19d10aa1022a8d22389bb5`.
+- `apps/sg-runtime/tests/xray-fresh-performance-adoption.test.mjs`: `1f28a8bb6c7af42b0618fa5c71a83781a98eab16` -> `ac0db118f3d47974dfe4ac8dd179cc1ea0c8cda9`.
+- `packages/platform-contracts/readonly-miss-report/test/readonly-miss-report.test.mjs`: `c477d38bcb9f1d067bfa10e4699fd0ec140c96b3` -> `57997df452954de5dd02af3d3911d8e4c94db379`.
+
+This is the final test binding reconciliation in the existing registered tasks. It changes no product implementation, entitlement, credential boundary, infrastructure or deployment scope. The original approval and earlier evidence remain historical facts.
