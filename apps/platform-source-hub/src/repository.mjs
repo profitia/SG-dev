@@ -1,0 +1,48 @@
+import {randomUUID,randomBytes,createHash} from 'node:crypto';
+import {operationPayloadDigest} from '@profitia/platform-contracts/operation-context';
+import {SourceHubError} from '../../../packages/platform-source-hub-contracts/index.mjs';
+const hash=value=>createHash('sha256').update(value).digest('hex');
+const scope=context=>[context.environment,context.applicationId,context.organisationId,context.subjectUserId];
+const where='environment=$1 AND application_id=$2 AND organisation_id=$3::uuid AND owner_user_id=$4::uuid';
+export function createRepository(configuration,database){
+ async function licence(transaction,provider,family,consumer){
+  const r=await transaction.query('SELECT * FROM source_hub.current_licence($1,$2,$3)',[provider,family,consumer]);
+  if(r.rows.length!==1)throw new SourceHubError('LICENCE_ADMISSION_REQUIRED',403);return r.rows[0];
+ }
+ async function begin(transaction,context,request,consumer,idempotencyKey){
+  if(typeof idempotencyKey!=='string'||!/^[A-Za-z0-9][A-Za-z0-9._:-]{7,127}$/.test(idempotencyKey))throw new SourceHubError('IDEMPOTENCY_KEY_REQUIRED');
+  const l=await licence(transaction,request.provider,request.family,consumer),s=scope(context),key=hash(idempotencyKey),digest=operationPayloadDigest(request);
+  // Serialize only this private intent. Different users/apps/organisations never share a key.
+  await transaction.query('SELECT pg_advisory_xact_lock(hashtextextended($1,0))',[JSON.stringify([...s,consumer,key])]);
+  const r=await transaction.query('SELECT * FROM source_hub.acquisitions WHERE '+where+' AND consumer_application_id=$5 AND idempotency_digest=$6 FOR UPDATE',[...s,consumer,key]);
+  if(r.rows.length){const a=r.rows[0];if(a.request_digest!==digest)throw new SourceHubError('IDEMPOTENCY_CONFLICT',409);
+   if(a.status==='PENDING')throw new SourceHubError('ACQUISITION_IN_PROGRESS',409);
+   if(a.status!=='SUCCEEDED')throw new SourceHubError(a.status==='UNCERTAIN'?'EXTERNAL_RESULT_UNVERIFIED':'PREVIOUS_ATTEMPT_FAILED',409);
+   if(a.licence_ref!==l.licence_ref||String(a.licence_version)!==String(l.version)||!a.result||!a.retention_until||new Date(a.retention_until).getTime()<=Date.now())throw new SourceHubError('RESULT_NOT_RETAINED',409);
+   const body=structuredClone(a.result);body.usage={...body.usage,upstreamAttempts:0,cacheHit:true};return {kind:'replay',body,licence:l};
+  }
+  const a={id:randomUUID(),intentKey:randomBytes(32).toString('hex')};
+  await transaction.query('INSERT INTO source_hub.acquisitions(id,environment,application_id,organisation_id,owner_user_id,actor_id,consumer_application_id,provider_id,family,idempotency_digest,request_digest,intent_key,status,licence_ref,licence_version) VALUES($5::uuid,$1,$2,$3::uuid,$4::uuid,$6::uuid,$7,$8,$9,$10,$11,$12,\'PENDING\',$13,$14)',[...s,a.id,context.actorId,consumer,request.provider,request.family,key,digest,a.intentKey,l.licence_ref,l.version]);
+  return {kind:'new',...a,licence:l};
+ }
+ async function complete(transaction,context,acquisition,request,consumer,body,evidence){
+  const l=await licence(transaction,request.provider,request.family,consumer);
+  if(l.licence_ref!==acquisition.licence.licence_ref||String(l.version)!==String(acquisition.licence.version)||l.source_policy_id!==acquisition.licence.source_policy_id)throw new SourceHubError('LICENCE_CHANGED',403);
+  const s=scope(context),until=l.retention_seconds>0?new Date(Math.min(Date.now()+l.retention_seconds*1000,new Date(l.expires_at).getTime())).toISOString():null;
+  const receipt=evidence?.callId??null;
+  body.provenance.licenceRef=l.licence_ref;body.usage.receiptRef=receipt;
+  for(const item of body.items){item.metadata.licenceRef=l.licence_ref;item.metadata.usageReceiptRef=receipt;item.metadata.retentionUntil=until;item.metadata.redistribution='PRIVATE_AUTHORISED_CONSUMER_ONLY';
+   if(until)await transaction.query('INSERT INTO source_hub.source_records(id,environment,application_id,organisation_id,owner_user_id,source_record_ref,provider_id,family,vendor_record_id,licence_ref,content_fingerprint,metadata,payload,retrieved_at,retention_until) VALUES($5::uuid,$1,$2,$3::uuid,$4::uuid,$6,$7,$8,$9,$10,$11,$12::jsonb,$13::jsonb,$14::timestamptz,$15::timestamptz) ON CONFLICT(environment,application_id,organisation_id,owner_user_id,licence_ref,source_record_ref) DO UPDATE SET metadata=excluded.metadata,payload=excluded.payload,retention_until=excluded.retention_until',[...s,randomUUID(),item.metadata.sourceRecordRef,request.provider,request.family,item.metadata.vendorRecordId,l.licence_ref,item.metadata.contentFingerprint,JSON.stringify(item.metadata),JSON.stringify(item.payload),item.metadata.retrievedAt,until]);
+  }
+  const r=await transaction.query('UPDATE source_hub.acquisitions SET status=\'SUCCEEDED\',result=$6::jsonb,completed_at=clock_timestamp(),retention_until=$7::timestamptz WHERE '+where+' AND id=$5::uuid AND status=\'PENDING\' RETURNING id',[...s,acquisition.id,until?JSON.stringify(body):null,until]);
+  if(r.rows.length!==1)throw new SourceHubError('ACQUISITION_CONFLICT',409);
+  await transaction.query('INSERT INTO source_hub.provider_usage(acquisition_id,environment,application_id,organisation_id,owner_user_id,provider_id,family,upstream_attempts,outcome,receipt_ref) VALUES($5::uuid,$1,$2,$3::uuid,$4::uuid,$6,$7,1,\'RESPONSE\',$8)',[...s,acquisition.id,request.provider,request.family,receipt]);return body;
+ }
+ async function failed(transaction,context,acquisition,request,error,attempt){
+  const s=scope(context),uncertain=!['NOT_SENT','RESPONSE'].includes(attempt?.certainty??'UNVERIFIED');
+  await transaction.query('UPDATE source_hub.acquisitions SET status=$6,error_code=$7,completed_at=clock_timestamp() WHERE '+where+' AND id=$5::uuid AND status=\'PENDING\'',[...s,acquisition.id,uncertain?'UNCERTAIN':'FAILED',error.code??'PROVIDER_UNAVAILABLE']);
+  await transaction.query('INSERT INTO source_hub.provider_usage(acquisition_id,environment,application_id,organisation_id,owner_user_id,provider_id,family,upstream_attempts,outcome,receipt_ref) VALUES($5::uuid,$1,$2,$3::uuid,$4::uuid,$6,$7,$8,$9,$10) ON CONFLICT DO NOTHING',[...s,acquisition.id,request.provider,request.family,attempt?.upstreamAttempts??null,attempt?.certainty==='RESPONSE'?'RESPONSE':uncertain?'UNVERIFIED':'NOT_SENT',attempt?.value?.callId??null]);
+ }
+ async function ready(){try{await database.verifyLogin();const r=await database.query('SELECT schema_version,environment,application_id,project_id,branch_id,database_name FROM source_hub.installation WHERE singleton');const i=r.rows[0];return !!i&&i.schema_version==='1.0.0'&&i.environment===configuration.environment&&i.application_id===configuration.applicationId&&i.project_id===configuration.projectId&&i.branch_id===configuration.branchId&&i.database_name===configuration.databaseName;}catch{return false;}}
+ return Object.freeze({licence,begin,complete,failed,ready});
+}

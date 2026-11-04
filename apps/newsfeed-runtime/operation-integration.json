@@ -1,0 +1,73 @@
+{
+  "schemaVersion": "1.0.0",
+  "status": "CANDIDATE_OFFLINE_VERIFIED_REQUIRES_CONTROLLED_MAIN_ACCEPTANCE",
+  "projectKey": "ARCHITECTURE",
+  "taskId": "ARCHITECTURE-SOURCE-HUB-NEWSFEED-STAGE2A-20261103",
+  "targetEnvironment": "development",
+  "authorityBaseSha": "36b07672f572ff7c1c81117e3f3b01fa93ec1e65",
+  "stage1bAuthoritySha": "9bce78138e1396765ce67b9b1b29841efdb017f2",
+  "consumerApplicationId": "profitia-newsfeed-api-development",
+  "producerApplicationId": "profitia-source-hub-development",
+  "contractVersions": {
+    "sourceHub": "1.0.0",
+    "newsfeedApi": "1.0.0",
+    "legacyNewsDiscovery": "0.1.0",
+    "platformSdk": "1.33.0",
+    "apiPath": "1.0.0",
+    "peerOperation": "1.0.0",
+    "privateOperationHost": "1.11.0"
+  },
+  "sdkDigests": {
+    "operationSourceDigest": "2a7a2cbed3daed98b977259decb6b01e565dc528ce97f563b5e100ef7b52d525",
+    "identitySourceDigest": "662f6c95138a0f8cd8f835c569084d669fbe85e34a762676584297ecd5f03606",
+    "accessStoreSourceDigest": "71e42f5e194f8b251c86a70c22bfbd7cb940cf66b8279159b08781f042ec9f47",
+    "accessSchemaDigest": "356463492c3304ca11fa533f6e99f1d41628a3ab830488142c6030fb9a920ff2",
+    "privateOperationHostSourceDigest": "63d2e2721f2a7bc2223e90f39192e4933f657a89f91be03c84db7db9958f7a08",
+    "peerOperationSourceDigest": "adf348cf4424f36d0c2b96acca56a4087e2bb02a4107708788e559c1fcf5d6a7",
+    "platformIngestionSchemaDigest": "14d46ec280e624d79930833b022a46866864557cecbf2e3b55b1a1143fb9d66b",
+    "externalCallSourceDigest": "1f09bbef5f0cf5016fc3208d8ae14a25f0a1e0aa9e5d01c802a77d92986be0d5",
+    "externalCallSchemaDigest": "69db4ec3787937b24922f7acfc267e5aae400ddc44e0799eff09fa7e6d87e206",
+    "nativeExternalTransportSchemaDigest": "6faff5f258b71cf2525d705c8fcf38c8aef9331c4e8f0bdd6f1af74e6cf76bde",
+    "apiPathTransportSchemaDigest": "bd35367f22eccb34dc6c8f62b3a82bfc8947471142fc5daab45a32d67c07707c"
+  },
+  "migrations": {
+    "sourceHub": {
+      "file": "apps/platform-source-hub/migrations/001-foundation.sql",
+      "sha256": "203b4a4f089dc4c57cd600efda7e1f99d7b5a0d965c76f5731ae685fbc0084de"
+    },
+    "newsfeed": {
+      "file": "apps/newsfeed-runtime/migrations/001-foundation.sql",
+      "sha256": "4af49536f1686ad6cbe097fd49e7e792f29818cced7939365c04e268d84db768"
+    }
+  },
+  "authorization": {
+    "identityProvider": "OFFICIAL_CLERK_SDK",
+    "root": "EXISTING_PRIVATE_OPERATION_HOST",
+    "operations": [
+      "personal.list.read",
+      "personal.list.write"
+    ],
+    "feature": "personal_workspace",
+    "dataClass": "USER_IN_ORGANISATION_PRIVATE",
+    "peerProofIsBusinessGrant": false,
+    "sourceEngine": "EXISTING_FINITE_SOURCE_EXTERNAL_NATIVE",
+    "sourceControlPrivatePayloads": false,
+    "realE1AndSourceActivation": "NOT_ACTIVATED"
+  },
+  "validation": {
+    "kind": "OFFLINE_SYNTHETIC_BOUNDARIES_REAL_HTTP_AND_POSTGRES",
+    "legacyNewsApiTestsPreserved": 31,
+    "mainEntrypointsStartedAsSeparateProcesses": true,
+    "productDatabaseMigrated": false,
+    "providerCallsPerformed": false,
+    "renderChanged": false,
+    "deploymentPerformed": false
+  },
+  "monitoring": {
+    "status": "EXTENDED",
+    "channel": "EXISTING_JSON_STDOUT_AND_HEALTH",
+    "sourceAudit": "EXISTING_CANONICAL_ROOT",
+    "sentryPosthogProvisioned": false
+  },
+  "ownerActivationGuide": "apps/platform-source-hub/docs/stage2b-activation.pl.md"
+}

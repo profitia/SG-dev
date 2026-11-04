@@ -1,0 +1,26 @@
+{
+  "schemaVersion": "1.0.0",
+  "stage": "2A",
+  "targetEnvironment": "development",
+  "date": "2026-11-03",
+  "evidenceKind": "REAL_HTTP_AND_ISOLATED_POSTGRES_WITH_SYNTHETIC_IDENTITY_PROVIDER_BOUNDARIES",
+  "liveProviderCalls": 0,
+  "credentialsLoadedFromOwnerFiles": false,
+  "productNeonChanges": false,
+  "renderChanges": false,
+  "deploymentPerformed": false,
+  "providerResults": [
+    {"provider": "newsapi", "family": "news-discovery", "status": "IMPLEMENTED_OFFLINE_VERIFIED"},
+    {"provider": "brave", "family": "news-discovery", "status": "IMPLEMENTED_OFFLINE_VERIFIED", "newsClusterEntitlement": "NOT_LIVE_VERIFIED"},
+    {"provider": "trading-economics", "family": "economic-calendar", "status": "IMPLEMENTED_OFFLINE_VERIFIED"},
+    {"provider": "trading-economics", "family": "indicators", "status": "IMPLEMENTED_OFFLINE_VERIFIED"},
+    {"provider": "trading-economics", "family": "external-forecasts", "status": "IMPLEMENTED_OFFLINE_VERIFIED"}
+  ],
+  "optional": [
+    {"provider": "trading-economics", "api": "news/markets", "status": "UNAVAILABLE_OR_NOT_ENTITLED", "implemented": false},
+    {"provider": "gdelt", "status": "NOT_IMPLEMENTED"},
+    {"family": "market-observations", "status": "NOT_IMPLEMENTED"}
+  ],
+  "runtimeAdmission": "NOT_ACTIVATED_REQUIRES_CURRENT_E1_SOURCE_LICENCE_AND_FINITE_BUDGET",
+  "ownerLicenceDeclaration": "BUSINESS_INPUT_PRESERVED_NOT_A_RUNTIME_GRANT"
+}
