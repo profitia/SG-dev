@@ -1,5 +1,6 @@
 const latestAcceptance=()=>JSON.parse(fs.readFileSync(new URL('../platform-integration.json',import.meta.url)));
-const clockAcceptance=()=>{const a=latestAcceptance();return a.currentIdentityParallelCompatibilityOnly?a.previousAcceptance:a}
+const identityAcceptance=()=>{const a=latestAcceptance();return a.sourceHubApiPathCompatibilityOnly?a.previousAcceptance:a}
+const clockAcceptance=()=>{const a=identityAcceptance();return a.currentIdentityParallelCompatibilityOnly?a.previousAcceptance:a}
 const settledAcceptance=()=>{const a=clockAcceptance();return a.sourceLeaseClockCompatibilityOnly?a.previousAcceptance:a}
 const humanReadAcceptance=()=>{const a=settledAcceptance();return a.settledExternalFailureCompatibilityOnly?a.previousAcceptance:a}
 const peerAcceptance=()=>{const a=humanReadAcceptance();return a.currentHumanReadCompatibilityOnly?a.previousAcceptance:a}
@@ -190,8 +191,16 @@ test('SDK1.32.2 compatibility changes only accepted peer bytes, without a Maps d
 
 
 test('SDK1.32.3 compatibility retains the Maps deployment and every prior receipt',()=>{
- const a=latestAcceptance(),bytes=execFileSync('git',['show',a.previousReceiptSourceSha+':apps/maps-runtime/platform-integration.json'])
+ const a=identityAcceptance(),bytes=execFileSync('git',['show',a.previousReceiptSourceSha+':apps/maps-runtime/platform-integration.json'])
  assert.equal(a.platformVersion,'1.32.3');assert.equal(a.previousReceiptSha256,createHash('sha256').update(bytes).digest('hex'));assert.deepEqual(a.previousAcceptance,JSON.parse(bytes))
  assert.deepEqual(a.allowedPeerVersions,[...a.previousAcceptance.allowedPeerVersions,'1.32.3'])
  assert.equal(a.currentIdentityParallelCompatibilityOnly,true);assert.equal(a.currentIdentityBehaviorAdopted,false);assert.equal(a.schemaOrPolicyChanged,false);assert.equal(a.runtimeDeploymentClaimed,false)
+})
+
+test('SDK1.33 Maps compatibility preserves all earlier receipts without opting into API_PATH',()=>{
+ const a=latestAcceptance(),bytes=execFileSync('git',['show',a.previousReceiptSourceSha+':apps/maps-runtime/platform-integration.json'])
+ assert.equal(a.platformVersion,'1.33.0');assert.equal(a.previousReceiptSha256,createHash('sha256').update(bytes).digest('hex'));assert.deepEqual(a.previousAcceptance,JSON.parse(bytes))
+ assert.deepEqual(a.allowedPeerVersions,[...a.previousAcceptance.allowedPeerVersions,'1.33.0']);assert.deepEqual(a.sourceDigests,a.previousAcceptance.sourceDigests)
+ assert.equal(a.sourceHubApiPathCompatibilityOnly,true)
+ for(const flag of ['apiPathOptedIn','sql028Installed','schemaOrPolicyChanged','runtimeDeploymentClaimed'])assert.equal(a[flag],false,flag)
 })

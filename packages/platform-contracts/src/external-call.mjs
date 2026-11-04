@@ -238,4 +238,8 @@ export async function externalCallSourceDigest(){const fs=await import('node:fs'
   .update(await nativeExternalTransportSchemaDigest())
   .update(fs.readFileSync(new URL('./public-web-transport.mjs',import.meta.url))).update(fs.readFileSync(new URL('./public-web-transport.d.mts',import.meta.url)))
   .update(await publicWebTransportSchemaDigest()).update(await diagnosticPhaseSourceDigest())
-  .update(fs.readFileSync(new URL('./database-lease.mjs',import.meta.url))).digest('hex')}
+  .update(fs.readFileSync(new URL('./database-lease.mjs',import.meta.url))).update(await apiPathTransportSchemaDigest()).digest('hex')}
+
+export const API_PATH_TRANSPORT=Object.freeze({id:'profitia.external-api-path',version:'1.0.0'})
+export const apiPathTransportSchemaUrl=new URL('../migrations/access/028-api-path-transport.sql',import.meta.url).href
+export async function apiPathTransportSchemaDigest(){const fs=await import('node:fs');return createHash('sha256').update(fs.readFileSync(new URL(apiPathTransportSchemaUrl))).digest('hex')}

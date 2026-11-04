@@ -1,0 +1,9 @@
+# Platform Source Hub contracts1.0.0
+
+Private, framework-neutral ESM package with public TypeScript declarations. `HubRequest` is a discriminated union of provider/family/operation criteria. `parseHubRequest` rejects version/provider/family/unknown-field mismatches. `assertHubResponse` validates the consumer wire envelope, separate family payloads, licensed provenance, current receipt linkage and bounded metadata. An HTTP200 or a raw provider object cannot satisfy this contract.
+
+Families: News Discovery, Economic Calendar, Market Observations, Indicators, External Forecasts. Market Observations remains a future contract with no endpoint. Calendar distinguishes Actual, consensus Forecast, TEForecast, Previous, Revised, DateSpan, UTC event time and update time. Indicators distinguish zero/missing, reference period, units and update time. External Forecasts preserve horizons/vintage and never become Forecast Core predictions. News/Web kinds and ambiguous publication/modified/indexing metadata remain separate.
+
+Every returned source record carries family/version/provider/API identity, vendor record ID if supplied, source reference/URL, retrieval/availability/asOf, licence, quality, fingerprint, retention and Source usage receipt. Unknown times are null. Only explicitly licensed private consumer distribution is implemented. Consumer context and user observations are not part of a global source payload.
+
+The preserved NewsDiscovery0.1.0 types and version constant are exported here and re-exported by `@profitia/newsfeed-contracts` for existing consumers. No Source Hub runtime code imports private Newsfeed logic. New consumers must explicitly adopt1.0.0 and their own E1/peer/Source/licence bindings; this package does not grant access.

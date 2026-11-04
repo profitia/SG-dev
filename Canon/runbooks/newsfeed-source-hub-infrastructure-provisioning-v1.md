@@ -173,3 +173,7 @@ ID projektów/branchy/endpointów i widocznych środowisk z sekcji1–5 są już
 Dokładne G1 i dokumenty mają zgodę właściciela wskazaną w dowodzie aktywacji; ich authority wynika dopiero z kontrolowanego main acceptance. Przed runtime nadal wymagane są: wersjonowane przyjęcie Hub/Newsfeed i każdego konsumenta, per-operation E1/Source i revocation, licencja/retencja/budżet, ręcznie przygotowane i zweryfikowane zasoby/role, backend z rzeczywistymi komendami/health, testy izolacji oraz recovery/rollback. Każdy runtime/deploy wymaga osobnego zadania. Staging/Production pozostają planem infrastruktury, bez aktywacji profilu ARCHITECTURE w tych środowiskach.
 
 Powiązania: [kanon Hub](../v1.0-platform-source-hub-business-and-architecture-canon.md), [amendment Newsfeed](../v1.1-newsfeed-source-hub-responsibility-amendment.md), [machine-readable resource baseline](../registries/newsfeed-source-hub-environment-baseline-v1.json), [Stage 1B evidence](../evidence/2026-11-03-platform-source-hub-stage1b-foundation.md).
+
+## Stage 2A / przyszła ręczna aktywacja Stage 2B
+
+Po przyjęciu implementacji obowiązuje [wykonywalny suplement Stage 2](../../apps/platform-source-hub/docs/stage2b-activation.pl.md): dwie usługi Web API, rzeczywiste build/start/migracje, oddzielne role i sekrety, jawne E1/Source/licencje oraz testy i rollback. Wcześniejsze katalogi planistyczne env/cron w tym dokumencie opisują Stage1B; suplement zawiera dokładne nazwy zmiennych zaimplementowanego kodu. Nie tworzyć jeszcze cron ani workerów. Stage2A nie wykonuje provisioningu ani deploymentu.

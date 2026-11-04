@@ -1,0 +1,50 @@
+{
+  "schemaVersion": "1.0",
+  "taskId": "ARCHITECTURE-SOURCE-HUB-NEWSFEED-STAGE2A-20261103",
+  "producerCandidateSha": "23bf0331070a0239d978e3ba071e1eef6583cc61",
+  "platformVersion": "1.33.0",
+  "previousSourceSha": "36b07672f572ff7c1c81117e3f3b01fa93ec1e65",
+  "scope": "OPTIONAL_PACKAGE_PEER_METADATA_ONLY",
+  "allowedSdkVersions": [
+    "1.32.3",
+    "1.33.0"
+  ],
+  "apiPathAdopted": false,
+  "schemaChanged": false,
+  "authorizationChanged": false,
+  "deploymentPerformed": false,
+  "packages": {
+    "payload-capture": {
+      "previousManifestSha256": "1fb87612b1dcfb4459d0728b27e63d05b4c53485fec173a3099bde442ff63a18",
+      "manifestSha256": "05e5a2e2b0d3e18e8f212077cba93f6e8a967332423ed7ce749539758aeb74bd",
+      "unchangedSourceDigests": {
+        "src/payload-capture.d.mts": "ac8c8399b33ee143a4191530fd7a236f04b6055c437b6a38bf69a888f86d2634",
+        "src/payload-capture.mjs": "7eabea213158e6193c481dcbe2721b98837cfd729ae1af3bac7d2396c950f08f"
+      }
+    },
+    "current-fresh-report": {
+      "previousManifestSha256": "3f91492278432df5cb2cbb4db44f29b8eefc38fa2ea0f4da3b4fe94b531ee026",
+      "manifestSha256": "af4ddff1e4b4fe1962f42fd770423dbbfae9fd7ae836e7f182e3b45a29753bef",
+      "unchangedSourceDigests": {
+        "src/current-fresh-report.d.mts": "2da701f79cb5aaf4447239255a96169b5394f6ddd62713c19b213a240fe39a38",
+        "src/current-fresh-report.mjs": "29c8a0fb5d048217afd25a3678c35ff03d0d5a663ba76b338a1e8117875176cb"
+      }
+    },
+    "readonly-miss-report": {
+      "previousManifestSha256": "c917ed0489930b0e93bde1969e240bddf6615f353d86bc3263742c5ab3b16752",
+      "manifestSha256": "b3f84f7a16bdd8c5858b562f4cb1e9557e4d4bd5b38d69705d9e58a5d61ff8dd",
+      "unchangedSourceDigests": {
+        "src/readonly-miss-report.d.mts": "84939e1327f7260523f39a7f82385f6285013f8013c0fd8b33675ce676418493",
+        "src/readonly-miss-report.mjs": "ed0337acb60b334faef60273d9913cf9c71c731fbc7ea6b2bf75f85f2e0d9b3d"
+      }
+    },
+    "root-atomic-claim": {
+      "previousManifestSha256": "26c294d644ddd64072168cccedc6c73ee546107936ea31f213047c8007457524",
+      "manifestSha256": "2655d7dd11b0245c664015bafb926b326b297d7b32a584f76cf9449de87849d1",
+      "unchangedSourceDigests": {
+        "src/root-atomic-claim.d.mts": "955b2d6076a8e5a34ac6add66920fb6d4ec27dfccd1e5308932ae9bfef1c2d75",
+        "src/root-atomic-claim.mjs": "fab1780877f66ba582be74bd3944649628624bfcc62754b0256275236d960398"
+      }
+    }
+  }
+}

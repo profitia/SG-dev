@@ -1,0 +1,9 @@
+{
+  "name": "@profitia/platform-source-hub-contracts",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=24.15.0 <25" },
+  "exports": { ".": { "types": "./index.d.ts", "import": "./index.mjs" } },
+  "scripts": { "build": "node --check index.mjs" }
+}

@@ -40,6 +40,7 @@ test('extension schema, declarations and source have explicit exact digests',asy
   .update(fs.readFileSync(new URL('../src/public-web-transport.mjs',import.meta.url))).update(fs.readFileSync(new URL('../src/public-web-transport.d.mts',import.meta.url)))
   .update(hash(fs.readFileSync(new URL('../migrations/access/018-public-web-transport.sql',import.meta.url))))
   .update(createHash('sha256').update(fs.readFileSync(new URL('../src/diagnostic-phase.mjs',import.meta.url))).update(fs.readFileSync(new URL('../src/diagnostic-phase.d.mts',import.meta.url))).digest('hex'))
-  .update(fs.readFileSync(new URL('../src/database-lease.mjs',import.meta.url))).digest('hex')
+  .update(fs.readFileSync(new URL('../src/database-lease.mjs',import.meta.url)))
+  .update(hash(fs.readFileSync(new URL('../migrations/access/028-api-path-transport.sql',import.meta.url)))).digest('hex')
  assert.equal(await externalCallSourceDigest(),expected)
 })
