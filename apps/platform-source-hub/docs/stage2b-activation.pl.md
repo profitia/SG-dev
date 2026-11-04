@@ -1,5 +1,7 @@
 # Stage 2B — ręczna aktywacja Development przez właściciela
 
+> Decyzja właściciela z 2026-11-04: sześć API Source Hub w Development ma korzystać z przyjętego trybu **UNMETERED**, bez wewnętrznego limitu liczby wywołań ani budżetu okresowego. Poprzedni budżet 3 prób / 24 h został wycofany. Poniższe wymagania skończonej pojemności dotyczą wyłącznie polityk METERED; dla UNMETERED obowiązuje sekcja 3a. Limity i odpowiedzi dostawców pozostają respektowane.
+
 Ten dokument opisuje przyszłe operacje właściciela. Stage 2A nie wykonuje żadnej z nich. Staging i Production pozostają nieaktywne. Kod startowy i migrator odmawiają ich uruchomienia. Nie kopiować danych ani poświadczeń Production do Development.
 
 > Aktualizacja wykonawcza 2026-11-04: [jedna lista brakujących czynności właściciela](development-owner-actions.pl.md) uwzględnia TE News, opcjonalne Markets, addytywną migrację002 i aktualny brak usług/ról. Historyczny Stage2A nie jest ponownie przyjmowany. Nowe upoważnienie do aktywacji pochodzi z osobnego zadania właściciela, nie z tego runbooka.
@@ -70,6 +72,22 @@ Wymagane sekrety procesu migratora: `SOURCE_HUB_MIGRATOR_DATABASE_URL` i `NEWSFE
 Hub instaluje kanoniczne SQL001 E1, SQL008 Source, SQL009 external call, SQL012 native transport, opcjonalny SQL028 API_PATH oraz własny `migrations/001-foundation.sql`. Newsfeed instaluje kanoniczny SQL001 E1 i własny `migrations/001-foundation.sql`. SQL001/008/009/012 zachowują bajty kanoniczne. Te komendy nie tworzą użytkowników, członkostw, produktów, licencji, grantów Source ani budżetów.
 
 Migracje Stage 2A są addytywne. Rollback aplikacji nie oznacza cofnięcia bazy. Nie wykonywać DROP schematów po rozpoczęciu korzystania. Przed pierwszą migracją wykonać zaakceptowany backup/snapshot właściciela; przed kolejną wersją zachować last known good i kompatybilność czytania.
+
+## 3a. Przyjęta opcja UNMETERED Source
+
+Opcjonalny kanoniczny SQL024 (`packages/platform-contracts/migrations/access/024-unmetered-public-sources.sql`) rozszerza te same rejestry Source i external-call. Nie tworzy osobnego licznika, grantów, konektorów ani uprawnień użytkowników. Hub przypina dokładny digest tej migracji przez istniejący SDK. Stary wariant METERED zachowuje kompatybilność.
+
+Po snapshotach i migracjach podstawowych właściciel Source musi wyłączyć aktualne techniczne bindingi w kontrolowanym oknie, bez trwających wywołań. SQL024 odmawia instalacji przy jakimkolwiek aktywnym bindingu. Migrator nie wyłącza ani nie przywraca ich automatycznie. Z chronioną zmienną migratora w środowisku lokalnym uruchomić:
+
+```sh
+SOURCE_HUB_ENVIRONMENT=development SOURCE_HUB_INSTALL_UNMETERED_SOURCE=true npm --prefix apps/platform-source-hub run db:migrate
+```
+
+`SOURCE_HUB_INSTALL_UNMETERED_SOURCE` jest jawną opcją lokalnego migratora (`true` / `false`, domyślnie `false`), nie sekretem ani zmienną Render. Powtórzenie sprawdza dokładny zainstalowany digest; odmienny digest oznacza STOP. Po weryfikacji przywrócić wyłącznie wcześniej przyjęte bindingi.
+
+Dla każdego z sześciu source/resource właściciel przyjmuje `quota_mode='UNMETERED'` zarówno w `profitia_ingestion.budgets`, jak i `profitia_external_call.policies`. `capacity`, `window_start`, `window_end` i `expires_at` tych polityk są wówczas **NULL**. Nie stosować dużej liczby zastępującej brak limitu, resetowania zużycia ani odnawiania okien. Liczniki transakcji i przyjętych prób nadal rosną; wynik niepewny pozostaje w audycie. Native transport wskazuje dokładny bieżący policy ID/version.
+
+Autoryzacja E1, jawne granty Source, aktualne licencje, odwołanie i terminy ważności samych dopuszczeń pozostają wymagane. To odrębne mechanizmy od kwoty wywołań. Retencja treści wynosi 0 sekund, Markets pozostają wyłączone. Timeouty, granice komunikatów, bezpieczne ścieżki i obsługa błędów providera pozostają zabezpieczeniami transportu. Brak ponowień płatnych wywołań. Ta instrukcja nie upoważnia do deploymentu ani zmian Render.
 
 ## 4. Przyjęcie E1 i dopuszczenie Source
 

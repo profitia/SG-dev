@@ -18,6 +18,16 @@ async function install(client,{file,schema,owner,binding}){
 }
 // No identity bindings, memberships, product grants, provider admission or
 // capacity is manufactured here. Accepted owners provision those separately.
+async function installUnmetered(client){
+ const sql=await readFile(new URL('024-unmetered-public-sources.sql',sourceSchema),'utf8'),digest=hash(sql);
+ await client.query('SET LOCAL ROLE profitia_ingestion_owner');
+ const {rows:[installed]}=await client.query("SELECT to_jsonb(i)->>'unmetered_schema_digest' AS digest FROM profitia_ingestion.installation i WHERE singleton");
+ if(installed?.digest){if(installed.digest!==digest)throw Error('EXISTING_UNMETERED_SCHEMA_MISMATCH');return digest;}
+ // SQL024 requires every Source binding to be disabled by its owner first.
+ // The migrator never revokes or restores a live binding on the owner's behalf.
+ await client.query("SELECT set_config('profitia.install.unmetered_digest',$1,true)",[digest]);
+ await client.query(sql);return digest;
+}
 export async function migrate(client,c){
  if(c.environment!=='development')throw Error('ENVIRONMENT_NOT_ACTIVATED');
  const role='source_hub_development_migrator',owner='source_hub_development_owner',runtime='source_hub_development_runtime',source='source_hub_development_source_runtime';
@@ -35,6 +45,7 @@ export async function migrate(client,c){
   for(const signature of['runtime_descriptor()','current_state(text,text)','lock_ingestion(text,text,text)','scope_allows(text,text)','reserve(text,text,text,text,uuid)','complete(uuid,uuid)','receipt(text,text,text,text)','append_audit(jsonb)'])await client.query('GRANT EXECUTE ON FUNCTION profitia_ingestion.'+signature+' TO '+source);
   for(const signature of['descriptor(text,text)','apply_control(uuid,uuid,text)','read_status(uuid,text,text)'])await client.query('GRANT EXECUTE ON FUNCTION profitia_external_call.'+signature+' TO '+source);
   await client.query('GRANT EXECUTE ON FUNCTION profitia_external_native.descriptor(text,text) TO '+source);
+  const unmeteredDigest=c.installUnmetered===true?await installUnmetered(client):null;
   await client.query('SET LOCAL ROLE '+owner);
   const sql=await readFile(new URL('../migrations/001-foundation.sql',import.meta.url),'utf8'),digest=hash(sql);
   const exists=await client.query("SELECT to_regnamespace('source_hub') IS NOT NULL AS present");
@@ -53,13 +64,14 @@ export async function migrate(client,c){
   const applied=await client.query('SELECT digest FROM source_hub.migrations WHERE version=$1',['002-te-news']);
   if(applied.rows.length){if(applied.rows[0].digest!==extensionDigest)throw Error('EXISTING_MIGRATION_MISMATCH');}
   else{await client.query(extension);await client.query('INSERT INTO source_hub.migrations(version,digest) VALUES($1,$2)',['002-te-news',extensionDigest]);}
-  await client.query('COMMIT');return {schemaVersion:'1.0.0',schemaDigest:digest,migrations:[{version:'002-te-news',digest:extensionDigest}],status:'APPLIED_OR_VERIFIED'};
+  await client.query('COMMIT');return {schemaVersion:'1.0.0',schemaDigest:digest,migrations:[{version:'002-te-news',digest:extensionDigest}],...(unmeteredDigest?{unmeteredSourceSchemaDigest:unmeteredDigest}:{}),status:'APPLIED_OR_VERIFIED'};
  }catch(error){await client.query('ROLLBACK');throw error;}
 }
 async function main(){
  const c=ENVIRONMENTS.development,u=new URL(process.env.SOURCE_HUB_MIGRATOR_DATABASE_URL??'');
+ const unmetered=process.env.SOURCE_HUB_INSTALL_UNMETERED_SOURCE;if(unmetered!==undefined&&!['true','false'].includes(unmetered))throw Error('UNMETERED_INSTALL_OPTION_REFUSED');
  if(process.env.SOURCE_HUB_ENVIRONMENT!=='development'||u.hostname!==c.host.replace('-pooler','')||decodeURIComponent(u.username)!=='source_hub_development_migrator'||u.pathname!=='/neondb'||!['require','verify-full'].includes(u.searchParams.get('sslmode')??'')||[...u.searchParams.keys()].some(k=>!['sslmode','channel_binding'].includes(k)))throw Error('MIGRATOR_CONFIGURATION_REFUSED');
  u.searchParams.delete('sslmode');u.searchParams.delete('channel_binding');const client=new pg.Client({connectionString:u.href,ssl:{rejectUnauthorized:true},enableChannelBinding:true});await client.connect();
- try{const result=await migrate(client,{...c,environment:'development',databaseName:'neondb'});process.stdout.write(JSON.stringify(result)+'\n');}finally{await client.end();}
+ try{const result=await migrate(client,{...c,environment:'development',databaseName:'neondb',installUnmetered:unmetered==='true'});process.stdout.write(JSON.stringify(result)+'\n');}finally{await client.end();}
 }
 if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href)main().catch(()=>{process.stderr.write('{"error":"MIGRATION_REFUSED_OR_FAILED"}\n');process.exitCode=1;});
