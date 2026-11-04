@@ -1,3 +1,38 @@
+# Newsfeed Runtime1.0.0 — executable backend
+
+Node24.15.0. The HTTP entrypoint is `src/main.mjs`, started with `npm --prefix apps/newsfeed-runtime start` from the whole repository. Build: `npm --prefix apps/newsfeed-runtime run build`; install: `npm --prefix apps/newsfeed-runtime ci --include=dev --install-links --ignore-scripts`.
+
+The API stores user-owned observations in its independent PostgreSQL schema, with ordinary runtime/migrator separation and forced RLS. Canonical Clerk/E1 supplies the actual user, actor, app and organisation. `x-profitia-organisation-id` selects an organisation to verify; body ownership IDs are rejected. A verified Source Hub peer channel never grants another user's data.
+
+| Route | Operation |
+|---|---|
+| GET /health, /live, /ready | process and actual private/E1 installation readiness |
+| POST /v1/observations | create own observation |
+| GET /v1/observations?limit=50&cursor=... | private cursor list |
+| GET /v1/observations/{id} | read own observation |
+| PATCH /v1/observations/{id} | update filters/name/status with expected `version` |
+| DELETE /v1/observations/{id} | delete own observation and its links/history; remove orphan publications |
+| POST /v1/observations/{id}/discover | one controlled manual acquisition through Hub; empty body, `Idempotency-Key` required |
+| GET /v1/observations/{id}/history | detection runs and unexpired retained publications |
+
+Example create body (JSON, with a valid bearer session):
+
+```json
+{"name":"Inwestycje infrastrukturalne","subjectKind":"topic","subject":"infrastruktura","request":{"contractVersion":"1.0.0","family":"news-discovery","provider":"newsapi","operation":"search","criteria":{"mode":"articles","terms":{"phrases":["infrastruktura"]},"order":"newest","pageSize":10}}}
+```
+
+Companies, products, investments, categories and topics are accepted; Supplier ID/SRM/SG views are not required. PATCH `{"version":1,"status":"PAUSED"}` pauses, a subsequent current-version ACTIVE update resumes. Stale updates and repeated/pending/uncertain provider intents are distinct conflicts. Manual discovery captures the current observation version, releases the private SQL transaction for provider I/O, then revalidates current E1 and the unchanged active observation before persistence/disclosure. No automatic retry follows an uncertain paid result.
+
+Contracts: Newsfeed API1.0.0 and Source Hub1.0.0. Legacy NewsDiscovery0.1.0 remains compatible. The sole NewsAPI implementation is now owned by Source Hub; the three old modules are thin re-exports. The older operator library/CLI notes below are historical compatibility instructions, not an alternative customer backend or permission path. New runtime provider keys exist only in Hub.
+
+[Complete owner activation, roles, env, migrations, Render and rollback](docs/stage2b-activation.pl.md). Stage2A performs no actual Neon/Render mutation or deployment. There is no scheduler, inbox, AI summary or cross-provider full deduplication; persisted runs/publication links/outbox schema provide future foundations. Notifications are not sent.
+
+Offline tests use genuine HTTP servers and an isolated loopback PostgreSQL with ordinary login roles and canonical E1/Source controls. Only test identity/provider boundaries are synthetic. The Node entrypoints are also started as separate processes with outbound networking prohibited. Tests are not live provider evidence. Monitoring extends redacted JSON/stdout and health, without provisioning Sentry/PostHog.
+
+---
+
+## Preserved operator-library notes (NewsDiscovery0.1.0)
+
 # Newsfeed NewsAPI Development connector
 
 Architecture Platform owns this first News Discovery provider and the independent
