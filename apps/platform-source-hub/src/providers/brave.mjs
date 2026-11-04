@@ -11,7 +11,7 @@ export function prepareBrave(criteria){
  if(included.some(d=>excluded.includes(d)))fail('INCOMPATIBLE_CRITERIA');
  if(included.length)q+=' ('+included.map(d=>'site:'+d).join(' OR ')+')';if(excluded.length)q+=' '+excluded.map(d=>'NOT site:'+d).join(' ');
  if(q.length>600||q.split(/\s+/).length>75)fail();
- const p=new URLSearchParams({q,result_filter:kind,text_decorations:'false'});
+ const p=new URLSearchParams({q,result_filter:kind,text_decorations:'false',operators:'true'});
  if(c.country!==undefined){const v=text(c.country).toUpperCase();if(!BRAVE_COUNTRIES.includes(v))fail('UNSUPPORTED_CRITERIA');p.set('country',v);}
  if(c.language!==undefined){if(!BRAVE_LANGUAGES.includes(c.language))fail('UNSUPPORTED_CRITERIA');p.set('search_lang',c.language);}
  if(c.uiLanguage!==undefined){const v=text(c.uiLanguage,10);if(!/^[a-z]{2}-[A-Z]{2}$/.test(v))fail();p.set('ui_lang',v);}
@@ -41,6 +41,8 @@ export function createBraveProvider({apiKey,fetchImpl,now=()=>new Date().toISOSt
     providerDateMetadata:{age:optionalText(row.age),pageAge:optionalText(row.page_age)},extraSnippets:Array.isArray(row.extra_snippets)?row.extra_snippets.map(optionalText):[]};
    return record('news-discovery','brave','res/v1/web/search',payload,{retrievedAt,sourceUrl});
   }).filter(item=>{const host=new URL(item.payload.url).hostname.toLowerCase();const matches=d=>host===d||host.endsWith('.'+d);return (!plan.included.length||plan.included.some(matches))&&!plan.excluded.some(matches);});
-  return result('news-discovery','brave',items,{retrievedAt,page:plan.offset===null?null:plan.offset+1,pageSize:plan.count,more:plan.kind==='web'&&typeof raw.query?.more_results_available==='boolean'?raw.query.more_results_available:null});
+  const answer=result('news-discovery','brave',items,{retrievedAt,page:plan.offset===null?null:plan.offset+1,pageSize:plan.count,more:plan.kind==='web'&&typeof raw.query?.more_results_available==='boolean'?raw.query.more_results_available:null});
+  answer.coverage={scope:'PROVIDER_RETURNED_SUBSET',completeness:'UNKNOWN',providerReturned:rows.length,matchedLocally:items.length,returned:items.length,nativeFilters:Object.keys(criteria).filter(k=>!['text','domains','excludedDomains'].includes(k)),localFilters:[...(plan.included.length?['domains']:[]),...(plan.excluded.length?['excludedDomains']:[])],operatorSemantics:'EXPERIMENTAL_UNVERIFIED',providerQueryAltered:typeof raw.query.altered==='string'&&typeof raw.query.original==='string'?raw.query.altered!==raw.query.original:null};
+  return answer;
  }});
 }

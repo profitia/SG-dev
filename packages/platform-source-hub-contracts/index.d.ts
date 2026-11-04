@@ -13,10 +13,13 @@ export interface BraveCriteria {
 export interface CalendarCriteria {countries?:string[];indicators?:string[];eventIds?:string[];tickers?:string[];from?:string;to?:string;importance?:1|2|3;eventText?:string;limit?:number;}
 export interface IndicatorCriteria {countries?:string[];indicators?:string[];tickers?:string[];limit?:number;}
 export interface ForecastCriteria extends IndicatorCriteria {horizons?:Array<'q1'|'q2'|'q3'|'q4'|'YearEnd'|'YearEnd2'|'YearEnd3'>;}
+export interface TradingEconomicsNewsCriteria {countries?:string[];indicators?:string[];tickers?:string[];newsType?:'markets'|'economy';from?:string;to?:string;text?:string;limit?:number;}
+export interface MarketForecastCriteria {forecastType:'markets';marketCategory:'index'|'currency'|'crypto'|'commodity'|'bond';symbols?:string[];limit?:number;}
 type Base<F extends ContractFamily,P extends ProviderId,O extends string,C>={contractVersion:'1.0.0';family:F;provider:P;operation:O;criteria:C};
 export type HubRequest=Base<'news-discovery','newsapi','search',DiscoveryQuery>|Base<'news-discovery','newsapi','publishers',PublisherQuery>
  |Base<'news-discovery','brave','search',BraveCriteria>|Base<'economic-calendar','trading-economics','search',CalendarCriteria>
- |Base<'indicators','trading-economics','search',IndicatorCriteria>|Base<'external-forecasts','trading-economics','search',ForecastCriteria>;
+ |Base<'indicators','trading-economics','search',IndicatorCriteria>|Base<'external-forecasts','trading-economics','search',ForecastCriteria|MarketForecastCriteria>
+ |Base<'news-discovery','trading-economics','search',TradingEconomicsNewsCriteria>;
 export interface CommonMetadata {
  contractFamily:ContractFamily;contractVersion:'1.0.0';providerId:ProviderId;apiFamily:string;endpointVersion:string;
  vendorRecordId:string|null;sourceRecordRef:string;sourceUrl:string|null;retrievedAt:string;availableAt:string|null;
@@ -24,7 +27,8 @@ export interface CommonMetadata {
 }
 export interface DiscoveryPayload {kind:'NEWS_ARTICLE'|'WEB_PAGE'|'PUBLISHER';title:string|null;description:string|null;url:string|null;
  publisher:{id:string|null;name:string|null}|null;publishedAt:string|null;modifiedAt:string|null;indexedAt:string|null;
- language:string|null;publisherCountry:string|null;eventGeography:null;providerDateMetadata:Record<string,unknown>;legacy?:unknown;}
+ language:string|null;publisherCountry:string|null;eventGeography:null;providerDateMetadata:Record<string,unknown>;legacy?:unknown;
+ commentary?:{country:string|null;category:string|null;symbol:string|null;importance:number|null;type:string|null};native?:Record<string,unknown>;}
 export interface CalendarPayload {eventId:string;eventAt:string|null;eventTimezone:string|null;country:string|null;indicator:string|null;event:string|null;
  actual:string|number|null;consensusForecast:string|number|null;vendorForecast:string|number|null;previous:string|number|null;revised:string|number|null;
  dateSpan:number|null;importance:number|null;lastUpdate:string|null;referencePeriod:string|null;unit:string|null;currency:string|null;
@@ -33,13 +37,17 @@ export interface IndicatorPayload {indicatorId:string;country:string|null;indica
  frequency:string|null;unit:string|null;lastUpdate:string|null;source:string|null;sourceUrl:string|null;native:Record<string,unknown>;}
 export interface ExternalForecastPayload {indicatorId:string;country:string|null;indicator:string|null;vendorModel:'Trading Economics';
  historical:{value:number|string|null;referencePeriod:string|null};points:ReadonlyArray<{horizon:string;value:number|string|null;targetDate:string|null}>;
- unit:string|null;frequency:string|null;lastUpdate:string|null;forecastCorePrediction:false;native:Record<string,unknown>;}
+ unit:string|null;frequency:string|null;lastUpdate:string|null;forecastCorePrediction:false;native:Record<string,unknown>;
+ forecastType?:'markets';symbol?:string;marketType?:string|null;instrumentMappingStatus?:'NOT_ADOPTED_BY_MARKET_DATA';}
+export interface SourceCoverage {scope:'PROVIDER_RETURNED_SUBSET';completeness:'UNKNOWN'|'INCOMPLETE';providerReturned:number;matchedLocally:number;returned:number;
+ nativeFilters:string[];localFilters:string[];operatorSemantics?:'EXPERIMENTAL_UNVERIFIED';providerQueryAltered?:boolean|null;}
 export type SourceRecord<T>={metadata:CommonMetadata;payload:T};
 export interface HubResponse<T=DiscoveryPayload|CalendarPayload|IndicatorPayload|ExternalForecastPayload> {
  contractVersion:'1.0.0';family:ContractFamily;provider:ProviderId;status:'ok'|'empty';items:Array<SourceRecord<T>>;
  page:{page:number|null;pageSize:number|null;more:boolean|null;total:number|null;truncated:boolean};
  provenance:{retrievedAt:string;licenceRef:string;qualityStatus:'PROVIDER_REPORTED'|'UNKNOWN'};
  usage:{receiptRef:string;upstreamAttempts:0|1;cacheHit:boolean};
+ coverage?:SourceCoverage;
 }
 export interface CapabilityFilter {name:string;support:'NATIVE'|'TEXT_OPERATOR'|'LOCAL_PROJECTION'|'UNSUPPORTED';evidence:'DOCUMENTED'|'OBSERVED'|'UNVERIFIED';semantics:string;}
 export interface ProviderCapability {id:ProviderId;family:ContractFamily;contractVersion:'1.0.0';implementation:ImplementationState;activation:'SOURCE_ADMISSION_AND_LICENCE_REQUIRED';filters:readonly CapabilityFilter[];legacy?:DiscoveryCapabilities;
