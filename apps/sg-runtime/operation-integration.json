@@ -6920,7 +6920,7 @@
       "apps/sg-runtime/tests/porr-demo-middleware.test.ts": "2e7a23bb388a91eb329ebb571815fb3dab55914eba61210bb38cd6f1e86c2f9c",
       "apps/sg-runtime/tests/private-host.integration.test.mjs": "d78873daeae49f1350d80f6f610e4272b58d859c5ecdcfcf603b675e0b85fff5",
       "apps/sg-runtime/tests/self-service-account.test.ts": "aae3477946b4d0d0b463cd69d155a970d796aefd1a5180b4611aae588aef5236",
-      "apps/sg-runtime/tests/xray-fresh-performance-adoption.test.mjs": "0a0932a18f63441f76a4faabe6ba1c698c9d5b59933654252666994172e493f4",
+      "apps/sg-runtime/tests/xray-fresh-performance-adoption.test.mjs": "947df6ef529536c75490bd632774c6a9031fa5d09133d56d319a6ad389b229f3",
       "apps/sg-runtime/tests/xray-gateway.test.ts": "3b93a1dc9ba2e24af0fe4880adc23d0ff396b2d21a99fdf4d2023fd467e56a86"
     },
     "applicationSourceDigests": {
@@ -6938,7 +6938,7 @@
       "tests/porr-demo-middleware.test.ts": "2e7a23bb388a91eb329ebb571815fb3dab55914eba61210bb38cd6f1e86c2f9c",
       "tests/private-host.integration.test.mjs": "d78873daeae49f1350d80f6f610e4272b58d859c5ecdcfcf603b675e0b85fff5",
       "tests/self-service-account.test.ts": "aae3477946b4d0d0b463cd69d155a970d796aefd1a5180b4611aae588aef5236",
-      "tests/xray-fresh-performance-adoption.test.mjs": "0a0932a18f63441f76a4faabe6ba1c698c9d5b59933654252666994172e493f4",
+      "tests/xray-fresh-performance-adoption.test.mjs": "947df6ef529536c75490bd632774c6a9031fa5d09133d56d319a6ad389b229f3",
       "tests/xray-gateway.test.ts": "3b93a1dc9ba2e24af0fe4880adc23d0ff396b2d21a99fdf4d2023fd467e56a86",
       "../maps-runtime/platform-integration.json": "6036b3f5c861cac38751339768c87e1ebff2292531a895ec46650d8c5d93de85",
       "../maps-runtime/test/embed.test.mjs": "f2109f012417dda1b72eb61b3e6f9ab77609adc32faa5e241aef63838373d87c",
