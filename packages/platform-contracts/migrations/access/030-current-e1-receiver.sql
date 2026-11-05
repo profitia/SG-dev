@@ -62,12 +62,13 @@ BEGIN
  PERFORM set_config('profitia.current_e1_proof',p_proof::text,true);
  RETURN p;
 END $fn$;
-CREATE FUNCTION profitia_e1_receiver.scope_allows(p_application text,p_org uuid,p_user uuid) RETURNS boolean
+CREATE FUNCTION profitia_e1_receiver.scope_allows(p_application text,p_org uuid,p_user uuid,p_write boolean DEFAULT false) RETURNS boolean
 LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,profitia_e1_receiver AS $fn$
 DECLARE p jsonb;
 BEGIN
  p:=profitia_e1_receiver.accept(nullif(current_setting('profitia.current_e1_proof',true),'')::jsonb);
- RETURN p_application=p->'request'->'binding'->>'applicationId' AND p_org=(p->'request'->>'organisationId')::uuid AND p_user=(p->'actor'->>'userId')::uuid;
+ RETURN p_application=p->'request'->'binding'->>'applicationId' AND p_org=(p->'request'->>'organisationId')::uuid AND p_user=(p->'actor'->>'userId')::uuid
+ AND (p_write IS FALSE OR p_write IS TRUE AND p->'request'->>'operation'='personal.list.write');
 EXCEPTION WHEN OTHERS THEN RETURN false;
 END $fn$;
 CREATE FUNCTION profitia_e1_receiver.append_audit(p_event jsonb) RETURNS void

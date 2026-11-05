@@ -16,7 +16,7 @@ export function createNodeServer(origin: string, handler: (request: Request) => 
         || question >= 0 && (!sdkEntry || raw.length - question > 8192 || /[\u0000-\u0020\u007f\\]/.test(raw))) throw Error('REQUEST_TARGET')
       const headers = new Headers(); for (let i=0;i<incoming.rawHeaders.length;i+=2) headers.append(incoming.rawHeaders[i]!, incoming.rawHeaders[i+1]!)
       const method = incoming.method ?? 'GET', chunks: Buffer[] = []; let total = 0
-      const bodyLimit = emailEnabled && raw === '/v1/webhooks/clerk-email' && method === 'POST' ? 131072 : 4096
+      const bodyLimit = emailEnabled && raw === '/v1/webhooks/clerk-email' && method === 'POST' ? 131072 : raw === '/v1/e1/authorize' && method === 'POST' ? 24576 : 4096
       for await (const chunk of incoming) { total += chunk.length; if (total > bodyLimit || abort.signal.aborted) throw Error('BODY_LIMIT'); chunks.push(chunk) }
       const bytes = Buffer.concat(chunks), request = new Request(origin + raw, { method, headers, signal: abort.signal, ...(!['GET','HEAD'].includes(method) ? { body: bytes } : {}) })
       const response = await Promise.race([handler(request), deadline]); outgoing.statusCode = response.status; response.headers.forEach((value,key) => outgoing.setHeader(key,value)); outgoing.end(Buffer.from(await response.arrayBuffer()))

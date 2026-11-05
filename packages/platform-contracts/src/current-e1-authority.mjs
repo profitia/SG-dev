@@ -106,7 +106,7 @@ export function createCurrentE1Authority({query,client,binding,now=Date.now}){
  const store=createAccessStore({binding,now})
  if(binding.applicationId!=='identity-runtime-development'||binding.environment!=='development')throw TypeError('Existing Development Identity owner required')
  return Object.freeze({
-  async ready(){try{await one(query,'SELECT profitia_e1_authority.receiver($1) AS receiver',['profitia-source-hub-development']);return true}catch{return false}},
+  async ready(){try{for(const app of ['profitia-source-hub-development','profitia-newsfeed-api-development'])if(!(await one(query,'SELECT profitia_e1_authority.receiver($1) AS receiver',[app])).receiver)return false;return true}catch{return false}},
   async authorize(request,input){
    if(!bearer(request)||!input||Object.getPrototypeOf(input)!==Object.prototype||Object.keys(input).sort().join(',')!=='applicationId,challenge,previous,requestOrigin')denied()
    const captured=freeze(clone(input)),row=await one(query,'SELECT profitia_e1_authority.receiver($1) AS receiver',[captured.applicationId]),d=row.receiver
