@@ -7,21 +7,32 @@ import type { AccountSurface } from './account-provisioning.js'
 import type { AssistantAvatarSurface } from './assistant-avatar.js'
 import type { AccountSalutationSurface } from './account-salutation.js'
 import { accountPage, accountBrowserScript } from './account-page.js'
+import type { CurrentE1Authority } from '@profitia/platform-current-e1-authority'
 const headers = { 'cache-control': 'private, no-store', 'referrer-policy': 'no-referrer', 'x-content-type-options': 'nosniff', vary: 'Cookie, Authorization, Origin', 'content-type': 'application/json' }
 function json(status: number, body: unknown) { return new Response(JSON.stringify(body), { status, headers }) }
-async function body(request: Request): Promise<unknown> {
-  const length = request.headers.get('content-length'); if (length && (!/^\d+$/.test(length) || Number(length) > 4096)) throw new BoundaryError(400, 'BODY_LIMIT')
+async function body(request: Request, maximum = 4096): Promise<unknown> {
+  const length = request.headers.get('content-length'); if (length && (!/^\d+$/.test(length) || Number(length) > maximum)) throw new BoundaryError(400, 'BODY_LIMIT')
   const reader = request.body?.getReader(); if (!reader) throw new BoundaryError(400, 'JSON_REQUIRED')
   const chunks: Uint8Array[] = []; let total = 0
-  try { for (;;) { const { done, value } = await reader.read(); if (done) break; total += value.byteLength; if (total > 4096) { await reader.cancel(); throw new BoundaryError(400, 'BODY_LIMIT') } chunks.push(value) } }
+  try { for (;;) { const { done, value } = await reader.read(); if (done) break; total += value.byteLength; if (total > maximum) { await reader.cancel(); throw new BoundaryError(400, 'BODY_LIMIT') } chunks.push(value) } }
   finally { reader.releaseLock() }
   try { return JSON.parse(Buffer.concat(chunks).toString('utf8')) } catch { throw new BoundaryError(400, 'INVALID_JSON') }
 }
 /** A missing SDK/authority is an explicit health-only application, never an operational login. */
-export function createHttpHandler(boundary: SessionBoundary | null, account: AccountSurface | null = null, avatar: AssistantAvatarSurface | null = null, email: EmailSurface | null = null, language: CommunicationLanguageSurface | null = null, registration: RegistrationSurface | null = null, embedded: ((request: Request) => Promise<Response | null>) | null = null, salutation: AccountSalutationSurface | null = null) {
+export function createHttpHandler(boundary: SessionBoundary | null, account: AccountSurface | null = null, avatar: AssistantAvatarSurface | null = null, email: EmailSurface | null = null, language: CommunicationLanguageSurface | null = null, registration: RegistrationSurface | null = null, embedded: ((request: Request) => Promise<Response | null>) | null = null, salutation: AccountSalutationSurface | null = null, currentE1: CurrentE1Authority | null = null) {
   return async (request: Request): Promise<Response> => {
     try {
       const url = new URL(request.url)
+      if (url.pathname.startsWith('/v1/e1/')) {
+        if (url.search || url.hash || !['/v1/e1/ready','/v1/e1/authorize'].includes(url.pathname)) return json(404,{error:'NOT_FOUND'})
+        if (!boundary || !currentE1) return json(503,{error:'E1_AUTHORITY_UNAVAILABLE'})
+        if (url.origin !== boundary.configuration.origin || url.username || url.password) return json(403,{error:'REQUEST_ORIGIN_REJECTED'})
+        if (request.method !== (url.pathname.endsWith('/ready')?'GET':'POST')) return json(405,{error:'METHOD_NOT_ALLOWED'})
+        if (url.pathname.endsWith('/ready')) {const ready=await currentE1.ready();return json(ready?200:503,{ready})}
+        if (request.headers.has('cookie') || request.headers.has('origin') || request.headers.get('content-type') !== 'application/json') return json(403,{error:'E1_REQUEST_REFUSED'})
+        try {return json(200,await currentE1.authorize(request,await body(request,24576)))}
+        catch (error) {return json((error as {reasonCode?:string}).reasonCode==='ACCESS_BASIS_INVALID'?403:503,{error:'E1_AUTHORITY_REFUSED'})}
+      }
       if (url.pathname === '/v1/account/salutation') {
         if (url.search || url.hash) return json(404, { error: 'NOT_FOUND' })
         if (request.method !== 'GET') return json(405, { error: 'METHOD_NOT_ALLOWED' })

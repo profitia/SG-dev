@@ -40,6 +40,8 @@ jobs:
         run: |
           npm --prefix apps/platform-source-hub ci --include=dev --install-links --ignore-scripts --no-audit --no-fund
           npm --prefix apps/newsfeed-runtime ci --include=dev --install-links --ignore-scripts --no-audit --no-fund
+          npm --prefix apps/architecture-lab ci --ignore-scripts --no-audit --no-fund
+          npm --prefix packages/platform-contracts/current-e1-authority ci --install-links --ignore-scripts --no-audit --no-fund
       - name: Test connector security, filter semantics and neutral consumer contract
         working-directory: apps/newsfeed-runtime
         run: npm test && npm run typecheck && npm run build
