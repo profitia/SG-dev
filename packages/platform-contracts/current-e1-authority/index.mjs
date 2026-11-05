@@ -1,12 +1,12 @@
 import {createHash,randomBytes} from 'node:crypto'
 import {readFileSync} from 'node:fs'
-import {createOperationExecutor,OperationDenied} from './operation-context.mjs'
-import {createAccessStore} from './access-store.mjs'
-import {createClerkIdentityAuthenticator} from './identity-provider.mjs'
+import {createOperationExecutor,OperationDenied} from '@profitia/platform-contracts/operation-context'
+import {createAccessStore} from '@profitia/platform-contracts/access-store'
+import {createClerkIdentityAuthenticator} from '@profitia/platform-contracts/identity-provider'
 
 export const CURRENT_E1_CONTRACT=Object.freeze({id:'profitia.current-e1-authority',version:'1.0.0'})
-export const currentE1AuthoritySchemaUrl=new URL('../migrations/access/029-current-e1-authority.sql',import.meta.url).href
-export const currentE1ReceiverSchemaUrl=new URL('../migrations/access/030-current-e1-receiver.sql',import.meta.url).href
+export const currentE1AuthoritySchemaUrl=new URL('./migrations/001-authority.sql',import.meta.url).href
+export const currentE1ReceiverSchemaUrl=new URL('./migrations/002-receiver.sql',import.meta.url).href
 export const currentE1SchemaDigest=side=>createHash('sha256').update(readFileSync(new URL(side==='authority'?currentE1AuthoritySchemaUrl:side==='receiver'?currentE1ReceiverSchemaUrl:invalidSide()))).digest('hex')
 function invalidSide(){throw TypeError('Explicit authority or receiver schema required')}
 const fail=()=>{throw new OperationDenied('POLICY_UNAVAILABLE')}
@@ -47,7 +47,7 @@ export function createCurrentE1OperationHost(options){
   // automatic retry, provider acquisition or credentials in error diagnostics.
   const url=new URL(request.url),authorization=request.headers.get('authorization')
   let response
-  try{response=await send(d.authorityOrigin+'/v1/e1/authorize',{method:'POST',redirect:'error',signal:AbortSignal.timeout(3000),headers:{authorization,'content-type':'application/json'},
+  try{response=await send(d.authorityOrigin+'/v1/e1/authorize',{method:'POST',redirect:'error',signal:AbortSignal.any([request.signal,AbortSignal.timeout(3000)]),headers:{authorization,'content-type':'application/json'},
    body:JSON.stringify({applicationId:application.appId,challenge,previous,requestOrigin:url.origin})})}catch{fail()}
   if(response.status===401||response.status===403)denied()
   if(response.status!==200)fail()
@@ -87,6 +87,7 @@ export function createCurrentE1OperationHost(options){
     // cached signed lease. Changed/revoked authority rolls back local effects.
     proof=await remote(d,request,challenge,proof)
     const final=(await one(query,'SELECT profitia_e1_receiver.accept($1::jsonb) AS proof',[JSON.stringify(proof)])).proof
+    if(request.signal.aborted)fail()
     if(closed||final?.fingerprint!==accepted.fingerprint||final?.actor?.proofRef!==actor.proofRef)denied()
     return result
    },{timeoutMs:15000,maxWaitMs:3000})}catch(error){
@@ -110,9 +111,10 @@ export function createCurrentE1Authority({query,client,binding,now=Date.now}){
   async authorize(request,input){
    if(!bearer(request)||!input||Object.getPrototypeOf(input)!==Object.prototype||Object.keys(input).sort().join(',')!=='applicationId,challenge,previous,requestOrigin')denied()
    const captured=freeze(clone(input)),row=await one(query,'SELECT profitia_e1_authority.receiver($1) AS receiver',[captured.applicationId]),d=row.receiver
-   if(!d||!d.authorizedParties?.includes(captured.requestOrigin)||!bindingMatches(captured.challenge?.binding,d.binding)||captured.challenge?.resourceId!==d.resourceId)denied()
+   if(!d||!d.authorizedParties?.includes(captured.requestOrigin)||!bindingMatches(captured.challenge?.binding,d.binding)||!(captured.challenge?.resourceId===d.resourceId||d.resourceId==='newsfeed-observations'&&/^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(captured.challenge?.resourceId??'')))denied()
    let identity=null
-   const authenticate=createClerkIdentityAuthenticator({client,application:{appId:captured.applicationId,environment:'development',issuer:d.issuer,authorizedParties:d.authorizedParties},now,
+   const authenticate=createClerkIdentityAuthenticator({client,application:{appId:captured.applicationId,environment:'development',issuer:d.issuer,authorizedParties:d.authorizedParties,
+    bearerPeerReads:d.authorizedParties.filter(sourceOrigin=>sourceOrigin!==captured.requestOrigin).map(sourceOrigin=>({sourceOrigin,targetOrigin:captured.requestOrigin,path:'/'}))},now,
     resolveBinding:async key=>{identity=freeze(clone(key));return store.resolveBinding(query,key)}})
    // A closed, receiving origin is all the SDK needs; original query/body and
    // user data are neither forwarded nor stored in the Identity service.

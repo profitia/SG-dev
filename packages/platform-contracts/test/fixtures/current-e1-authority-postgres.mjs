@@ -5,7 +5,7 @@ import path from 'node:path'
 import {spawnSync} from 'node:child_process'
 import {createHash,randomBytes,randomUUID} from 'node:crypto'
 import pg from '../../../../apps/architecture-lab/node_modules/pg/lib/index.js'
-import {createCurrentE1Authority} from '../../src/current-e1-authority.mjs'
+import {createCurrentE1Authority} from '../../current-e1-authority/index.mjs'
 const load=relative=>fs.readFileSync(new URL(relative,import.meta.url),'utf8')
 export const U='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',V='bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',A='11111111-1111-4111-8111-111111111111',B='22222222-2222-4222-8222-222222222222'
 export async function currentE1Fixture(){
@@ -39,7 +39,7 @@ export async function currentE1Fixture(){
    await c.query("INSERT INTO profitia_access.applications(application_id,status) VALUES($1,'ACTIVE')",[apps[i]])
    await c.query("INSERT INTO profitia_access.runtime_bindings(login_role,application_id,status) VALUES($1,$2,'ACTIVE')",[roles[i],apps[i]])
    await c.query('GRANT USAGE ON SCHEMA profitia_access TO '+roles[i]);await c.query('GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA profitia_access TO '+roles[i])
-   await c.query(load('../../migrations/access/'+(i===0?'029-current-e1-authority.sql':'030-current-e1-receiver.sql')))
+   await c.query(load('../../current-e1-authority/migrations/'+(i===0?'001-authority.sql':'002-receiver.sql')))
    await c.query('COMMIT');await c.query('RESET ROLE')
    const pool=new pg.Pool({...c.connectionParameters,user:roles[i],max:5});pools.push(pool)
   }
@@ -50,12 +50,12 @@ export async function currentE1Fixture(){
    for(const org of[A,B]){await c.query("INSERT INTO profitia_access.organisations(organisation_id,status) VALUES($1,'ACTIVE')",[org]);for(const user of[U,V])await c.query("INSERT INTO profitia_access.memberships(organisation_id,user_id,status,source_ref,expires_at) VALUES($1,$2,'ACTIVE','SYNTHETIC_ONLY',now()+interval '1 hour')",[org,user])}
    for(let i=1;i<3;i++){
     await c.query("INSERT INTO profitia_access.applications(application_id,status) VALUES($1,'ACTIVE')",[apps[i]])
-    for(const org of[A,B]){await c.query("INSERT INTO profitia_access.product_grants(application_id,organisation_id,product,features,status,source,source_ref,expires_at) VALUES($1,$2,'SPENDGURU',ARRAY['personal_workspace'],'ACTIVE','EXPLICIT_OFFER','SYNTHETIC_ONLY',now()+interval '1 hour')",[apps[i],org]);for(const user of[U,V])for(const op of['personal.list.read','personal.list.write'])await c.query("INSERT INTO profitia_access.permission_grants(grant_id,application_id,organisation_id,user_id,effect,operation,feature,resource_id) VALUES($1,$2,$3,$4,'ALLOW',$5,'personal_workspace',$6)",[randomUUID(),apps[i],org,user,op,i===1?'source-hub-private':'newsfeed-observations'])}
+    for(const org of[A,B]){await c.query("INSERT INTO profitia_access.product_grants(application_id,organisation_id,product,features,status,source,source_ref,expires_at) VALUES($1,$2,'SPENDGURU',ARRAY['personal_workspace'],'ACTIVE','EXPLICIT_OFFER','SYNTHETIC_ONLY',now()+interval '1 hour')",[apps[i],org]);for(const user of[U,V])for(const op of['personal.list.read','personal.list.write'])await c.query("INSERT INTO profitia_access.permission_grants(grant_id,application_id,organisation_id,user_id,effect,operation,feature,resource_id) VALUES($1,$2,$3,$4,'ALLOW',$5,'personal_workspace',$6)",[randomUUID(),apps[i],org,user,op,i===1?'source-hub-private':null])}
    }
   })
   for(let i=1;i<3;i++){
    const key=randomBytes(32),resource=i===1?'source-hub-private':'newsfeed-observations',keyId='fixture-key-'+i
-   await asOwner(0,c=>c.query("INSERT INTO profitia_e1_authority.receivers VALUES($1,$2::jsonb,$3,$4,$5,$6,$7,'ACTIVE','SYNTHETIC_ONLY',now()+interval '1 hour')",[apps[i],JSON.stringify(bindings[i]),issuer,[origin],resource,keyId,key]))
+   await asOwner(0,c=>c.query("INSERT INTO profitia_e1_authority.receivers VALUES($1,$2::jsonb,$3,$4,$5,$6,$7,'ACTIVE','SYNTHETIC_ONLY',now()+interval '1 hour')",[apps[i],JSON.stringify(bindings[i]),issuer,[origin,'https://spendguru.synthetic.test'],resource,keyId,key]))
    await asOwner(i,async c=>{await c.query("INSERT INTO profitia_e1_receiver.installation VALUES(true,$1,$2::jsonb,$3,$4,$5,$6,'ACTIVE','SYNTHETIC_ONLY',now()+interval '1 hour')",[roles[i],JSON.stringify(bindings[i]),authorityOrigin,resource,keyId,key]);await c.query('GRANT USAGE ON SCHEMA profitia_e1_receiver TO '+roles[i]+','+owners[i]);await c.query('GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA profitia_e1_receiver TO '+roles[i])})
    const schema=i===1?'source_hub':'newsfeed',appPath=i===1?'platform-source-hub':'newsfeed-runtime'
    await asOwner(i,async c=>{
@@ -65,8 +65,8 @@ export async function currentE1Fixture(){
     await c.query(load('../../../../apps/'+appPath+'/migrations/'+(i===1?'003':'002')+'-current-e1-authority.sql').replaceAll('__RUNTIME_ROLE__',roles[i]))
    },owners[i])
   }
-  const clerkState={sessionActive:true,banned:false,calls:[]}
-  const client={async authenticateRequest(request){clerkState.calls.push('sdk');const user=request.headers.get('authorization')==='Bearer SYNTHETIC_B'?V:U;return {status:'signed-in',isAuthenticated:true,toAuth:()=>({isAuthenticated:true,tokenType:'session_token',userId:'user_'+user,sessionId:'session_'+user,sessionClaims:{iss:issuer,sub:'user_'+user,sid:'session_'+user,azp:origin,exp:Math.floor(Date.now()/1000)+3600}})}},
+  const clerkState={sessionActive:true,banned:false,azp:origin,calls:[]}
+  const client={async authenticateRequest(request){clerkState.calls.push('sdk');const user=request.headers.get('authorization')==='Bearer SYNTHETIC_B'?V:U;return {status:'signed-in',isAuthenticated:true,toAuth:()=>({isAuthenticated:true,tokenType:'session_token',userId:'user_'+user,sessionId:'session_'+user,sessionClaims:{iss:issuer,sub:'user_'+user,sid:'session_'+user,azp:clerkState.azp,exp:Math.floor(Date.now()/1000)+3600}})}},
    sessions:{async getSession(id){clerkState.calls.push('session');return {id,userId:id.replace('session_','user_'),status:clerkState.sessionActive?'active':'revoked',actor:null,expireAt:Date.now()+3600000,abandonAt:Date.now()+3600000}}},users:{async getUser(id){clerkState.calls.push('user');return {id,banned:clerkState.banned,locked:false,deprovisioned:false}}}}
   const centralQuery=(s,v)=>pools[0].query(s,v),authority=createCurrentE1Authority({query:centralQuery,client,binding:bindings[0]})
   const transportState={offline:false,afterInitial:null,lastProof:null,calls:0}

@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import {createCurrentE1OperationHost,currentE1SchemaDigest} from '../src/current-e1-authority.mjs'
+import {createCurrentE1OperationHost,currentE1SchemaDigest} from '../current-e1-authority/index.mjs'
 import {currentE1Fixture,U,V,A,B} from './fixtures/current-e1-authority-postgres.mjs'
 
 test('SYNTHETIC_ONLY: current E1 across three isolated databases; no copied directory',async t=>{

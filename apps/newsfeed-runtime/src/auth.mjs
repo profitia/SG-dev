@@ -1,4 +1,4 @@
-import {createCurrentE1OperationHost} from '@profitia/platform-contracts/current-e1-authority';
+import {createCurrentE1OperationHost} from '@profitia/platform-current-e1-authority';
 import {createPrivateOperationHost} from '@profitia/platform-contracts/private-operation-host';
 import {createClerkIdentityAuthenticator} from '@profitia/platform-contracts/identity-provider';
 import {accessSchemaDigest} from '@profitia/platform-contracts/access-store';

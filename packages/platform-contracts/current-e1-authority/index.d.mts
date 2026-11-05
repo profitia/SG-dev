@@ -1,7 +1,7 @@
-import type {AccessQuery,AccessStoreBinding} from './access-store.mjs'
-import type {ClerkIdentityClient} from './identity-provider.mjs'
-import type {Application,OperationExecutor} from './operation-context.mjs'
-import type {createPrivateOperationHost} from './private-operation-host.mjs'
+import type {AccessQuery,AccessStoreBinding} from '@profitia/platform-contracts/access-store'
+import type {ClerkIdentityClient} from '@profitia/platform-contracts/identity-provider'
+import type {Application,OperationExecutor} from '@profitia/platform-contracts/operation-context'
+import type {createPrivateOperationHost} from '@profitia/platform-contracts/private-operation-host'
 export declare const CURRENT_E1_CONTRACT:Readonly<{id:'profitia.current-e1-authority';version:'1.0.0'}>
 export declare const currentE1AuthoritySchemaUrl:string
 export declare const currentE1ReceiverSchemaUrl:string

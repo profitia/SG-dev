@@ -7,7 +7,7 @@ import type { AccountSurface } from './account-provisioning.js'
 import type { AssistantAvatarSurface } from './assistant-avatar.js'
 import type { AccountSalutationSurface } from './account-salutation.js'
 import { accountPage, accountBrowserScript } from './account-page.js'
-import type { CurrentE1Authority } from '@profitia/platform-contracts/current-e1-authority'
+import type { CurrentE1Authority } from '@profitia/platform-current-e1-authority'
 const headers = { 'cache-control': 'private, no-store', 'referrer-policy': 'no-referrer', 'x-content-type-options': 'nosniff', vary: 'Cookie, Authorization, Origin', 'content-type': 'application/json' }
 function json(status: number, body: unknown) { return new Response(JSON.stringify(body), { status, headers }) }
 async function body(request: Request, maximum = 4096): Promise<unknown> {

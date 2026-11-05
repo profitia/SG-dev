@@ -35,7 +35,7 @@ LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,profitia_e1_receive
 DECLARE d jsonb; challenge jsonb;
 BEGIN
  d:=profitia_e1_receiver.descriptor();
- IF p_nonce!~'^[a-f0-9]{64}$' OR p_digest!~'^[a-f0-9]{64}$' OR p_org IS NULL OR p_operation NOT IN ('personal.list.read','personal.list.write') OR p_resource IS DISTINCT FROM d->>'resourceId' THEN RAISE EXCEPTION 'Challenge refused' USING ERRCODE='42501'; END IF;
+ IF p_nonce!~'^[a-f0-9]{64}$' OR p_digest!~'^[a-f0-9]{64}$' OR p_org IS NULL OR p_operation NOT IN ('personal.list.read','personal.list.write') OR (p_resource IS DISTINCT FROM d->>'resourceId' AND NOT (d->>'resourceId'='newsfeed-observations' AND coalesce(p_resource,'')~*'^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$')) THEN RAISE EXCEPTION 'Challenge refused' USING ERRCODE='42501'; END IF;
  challenge:=jsonb_build_object('binding',d->'binding','transactionId',txid_current()::text,'nonce',p_nonce,'organisationId',p_org,'operation',p_operation,'resourceId',p_resource,'requestDigest',p_digest);
  PERFORM set_config('profitia.current_e1_challenge',challenge::text,true);
  RETURN challenge;
@@ -57,7 +57,7 @@ BEGIN
  OR p->'actor'->>'audience' IS DISTINCT FROM r.binding->>'applicationId' OR p->'actor'->>'environment' IS DISTINCT FROM 'development'
  OR p->'actor'->>'kind' IS DISTINCT FROM 'HUMAN' OR p->'actor'->>'actorId' IS DISTINCT FROM p->'actor'->>'userId'
  OR p->'state'->'access'->>'actorId' IS DISTINCT FROM p->'actor'->>'userId' OR p->'state'->'access'->>'organisationId' IS DISTINCT FROM p->'request'->>'organisationId'
- OR p->'request'->>'resourceId' IS DISTINCT FROM r.resource_id
+ OR (p->'request'->>'resourceId' IS DISTINCT FROM r.resource_id AND NOT (r.resource_id='newsfeed-observations' AND coalesce(p->'request'->>'resourceId','')~*'^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$'))
  OR NOT coalesce(isfinite((p->>'expiresAt')::timestamptz) AND (p->>'expiresAt')::timestamptz>clock_timestamp() AND (p->>'expiresAt')::timestamptz<=clock_timestamp()+interval '15 seconds',false) THEN RAISE EXCEPTION 'Proof binding refused' USING ERRCODE='42501'; END IF;
  PERFORM set_config('profitia.current_e1_proof',p_proof::text,true);
  RETURN p;

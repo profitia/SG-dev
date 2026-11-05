@@ -47,7 +47,7 @@ BEGIN
  -- Closed, transaction-bound request; it never contains a claimed user ID.
  IF jsonb_typeof(p_request) IS DISTINCT FROM 'object' OR octet_length(p_request::text)>4096
  OR (SELECT array_agg(k ORDER BY k) FROM jsonb_object_keys(p_request) k) IS DISTINCT FROM ARRAY['binding','nonce','operation','organisationId','requestDigest','resourceId','transactionId']
- OR p_request->'binding' IS DISTINCT FROM r.binding OR p_request->>'resourceId' IS DISTINCT FROM r.resource_id
+ OR p_request->'binding' IS DISTINCT FROM r.binding OR (p_request->>'resourceId' IS DISTINCT FROM r.resource_id AND NOT (r.resource_id='newsfeed-observations' AND coalesce(p_request->>'resourceId','')~*'^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$'))
  OR coalesce(p_request->>'operation','') NOT IN ('personal.list.read','personal.list.write')
  OR coalesce(p_request->>'nonce','')!~'^[a-f0-9]{64}$' OR coalesce(p_request->>'requestDigest','')!~'^[a-f0-9]{64}$'
  OR coalesce(p_request->>'transactionId','')!~'^[0-9]{1,20}$'
