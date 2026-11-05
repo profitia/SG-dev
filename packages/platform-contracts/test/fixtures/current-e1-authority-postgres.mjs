@@ -21,13 +21,14 @@ export async function currentE1Fixture(){
  }
  root=new pg.Client(configuration);await root.connect()
  const names=['central','hub','newsfeed'].map(kind=>'current_e1_'+kind+'_'+randomUUID().replaceAll('-',''))
+ const fixturePassword='SYNTHETIC_ONLY_NOT_A_REAL_CREDENTIAL'
  const owners=['profitia_access_owner','source_hub_development_owner','newsfeed_development_owner']
  const roles=['identity_b1_runtime','source_hub_development_runtime','newsfeed_development_runtime']
  const databases=[],pools=[]
  const close=async()=>{for(const p of pools)await p.end();for(const c of databases)await c.end();for(const n of names)await root.query('DROP DATABASE IF EXISTS '+n+' WITH (FORCE)');await root.end();if(directory){spawnSync(path.join(bin,'pg_ctl'),['-D',directory+'/data','-m','immediate','-w','stop']);fs.rmSync(directory,{recursive:true,force:true})}}
  try{
-  await root.query("SELECT pg_advisory_lock(hashtextextended('current-e1-offline-role-setup',0))")
-  try{for(const role of [...owners,...roles]){if(!(await root.query('SELECT 1 FROM pg_roles WHERE rolname=$1',[role])).rowCount)await root.query('CREATE ROLE '+role+' '+(owners.includes(role)?'NOLOGIN':'LOGIN')+' NOINHERIT NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE NOREPLICATION')}}finally{await root.query("SELECT pg_advisory_unlock(hashtextextended('current-e1-offline-role-setup',0))")}
+  await root.query("SELECT pg_advisory_lock(hashtextextended('stage2a-test-role-setup',0))")
+  try{for(const role of [...owners,...roles]){if(!(await root.query('SELECT 1 FROM pg_roles WHERE rolname=$1',[role])).rowCount)await root.query('CREATE ROLE '+role+' '+(owners.includes(role)?'NOLOGIN':"LOGIN PASSWORD '"+fixturePassword+"'")+' NOINHERIT NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE NOREPLICATION')}}finally{await root.query("SELECT pg_advisory_unlock(hashtextextended('stage2a-test-role-setup',0))")}
   const access=load('../../migrations/access/001-internal-access.sql'),schemaDigest=createHash('sha256').update(access).digest('hex')
   const apps=['identity-runtime-development','profitia-source-hub-development','profitia-newsfeed-api-development']
   const bindings=apps.map((applicationId,i)=>({applicationId,environment:'development',projectId:'fixture-project-'+i,branchId:'fixture-branch-'+i,databaseName:names[i],role:roles[i],schemaDigest}))
@@ -41,7 +42,7 @@ export async function currentE1Fixture(){
    await c.query('GRANT USAGE ON SCHEMA profitia_access TO '+roles[i]);await c.query('GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA profitia_access TO '+roles[i])
    await c.query(load('../../current-e1-authority/migrations/'+(i===0?'001-authority.sql':'002-receiver.sql')))
    await c.query('COMMIT');await c.query('RESET ROLE')
-   const pool=new pg.Pool({...c.connectionParameters,user:roles[i],max:5});pools.push(pool)
+   const pool=new pg.Pool({...c.connectionParameters,user:roles[i],password:fixturePassword,max:5,connectionTimeoutMillis:3000,query_timeout:5000});pools.push(pool)
   }
   const issuer='https://synthetic.clerk.accounts.dev',origin='https://newsfeed.synthetic.test',authorityOrigin='https://identity.synthetic.test'
   const asOwner=async(i,action,owner='profitia_access_owner')=>{const c=databases[i];await c.query('BEGIN');try{await c.query('SET LOCAL ROLE '+owner);const r=await action(c);await c.query('COMMIT');return r}catch(error){await c.query('ROLLBACK');throw error}}
