@@ -12,6 +12,18 @@ import {createTelemetry,assertNoSecret} from './observability.mjs';
 /** @type {ReadonlyArray<{method:'POST',path:string,maximumRequestBytes:number,requireIdempotencyKey:boolean}>} */
 export const PEER_ROUTES=Object.freeze([{method:'POST',path:'/v1/acquire',maximumRequestBytes:16384,requireIdempotencyKey:true}]);
 export function peerConfiguration(c){return {environment:c.environment,callerApplicationId:c.callerApplicationId,receiverApplicationId:c.applicationId,sourceOrigin:c.callerOrigin,targetOrigin:c.publicOrigin,keyId:c.peerKeyId,key:c.secrets.peerKey,routes:PEER_ROUTES,internalOrigins:[]};}
+/** A separate server-configured caller still needs original Clerk identity,
+ * current central E1 and its own consumer licence on every acquisition. */
+export function createHubPeerVerifier(c){
+ const primary=createPeerOperationVerifier(peerConfiguration(c));
+ const p=c.additionalPeer;
+ const additional=p?createPeerOperationVerifier({...peerConfiguration(c),callerApplicationId:p.applicationId,sourceOrigin:p.sourceOrigin,keyId:p.keyId,key:c.secrets.additionalPeerKey}):null;
+ return async request=>{
+  if(await primary(request))return true;
+  if(!additional||!p||Date.parse(p.expiresAt)<=Date.now())return false;
+  return additional(request);
+ };
+}
 export function validateProviderRequest(request){
  if(request.provider==='newsapi')return request.operation==='search'?prepareSearch(request.criteria):preparePublishers(request.criteria);
  if(request.provider==='brave')return prepareBrave(request.criteria);
@@ -28,7 +40,7 @@ async function acquire(configuration,request,transport,signal){
 }
 /** @param {{configuration:any,authorizer:any,repository:any,admission:any,consumerAccess?:any,telemetry?:ReturnType<typeof createTelemetry>}} options */
 export function createApplication({configuration,authorizer,repository,admission,consumerAccess=null,telemetry=createTelemetry()}){
- const verify=configuration.legacyPeerEnabled===false?null:createPeerOperationVerifier(peerConfiguration(configuration));
+ const verify=configuration.legacyPeerEnabled===false?null:createHubPeerVerifier(configuration);
  async function dispatch(request,details){
   const u=new URL(request.url);
   if(request.method==='GET'&&['/health','/live','/ready'].includes(u.pathname)){
