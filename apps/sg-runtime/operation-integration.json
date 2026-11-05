@@ -7446,5 +7446,65 @@
     "srmChanged": false,
     "visualDesignChanged": false,
     "otherEnvironmentsChanged": false
+  },
+  "oilAsphaltV04Preparation": {
+    "taskId": "SG2-OIL-V04-CI-CONTINUITY-20261105",
+    "scope": "ISOLATED_REPORT_PREPARATION_EXACT_SOURCE_BINDING",
+    "targetEnvironment": "development",
+    "profileId": "oil-asphalt-v04-internal-20261105",
+    "previousReceiptSourceSha": "817c671e31606536a1536dd187165ac07145a0fc",
+    "previousReceiptSha256": "2e2a74dede9611354c1ae1bc2d6d050a5e0f9125ccf4201838a76f8cb126b7d4",
+    "boundSourcePaths": [
+      "apps/sg-runtime/docs/oil-asphalt-v04-pilot-v1.md",
+      "apps/sg-runtime/lib/insights/oil-asphalt-v04-composer.mjs",
+      "apps/sg-runtime/lib/insights/oil-asphalt-v04-contract.mjs",
+      "apps/sg-runtime/lib/insights/oil-asphalt-v04-research.mjs",
+      "apps/sg-runtime/lib/insights/oil-asphalt-v04-telemetry.mjs",
+      "apps/sg-runtime/scripts/oil-asphalt-v04-evaluate.mjs",
+      "apps/sg-runtime/scripts/render-oil-asphalt-v04.py",
+      "apps/sg-runtime/tests/oil-asphalt-v04.test.mjs",
+      "apps/sg-runtime/tests/pci-smart-integrity.mjs",
+      "apps/sg-runtime/tests/pci-smart-integrity.test.mjs"
+    ],
+    "sourceDigests": {
+      "apps/sg-runtime/docs/oil-asphalt-v04-pilot-v1.md": "af9ccd62ec454ffe127bd044e055af50778e5bc8e28c80ec926bd0bbbffb6447",
+      "apps/sg-runtime/lib/insights/oil-asphalt-v04-composer.mjs": "cde919db5506a30f9de1b8fa1b0262795d0f0a4786e3d04516203637f5597f17",
+      "apps/sg-runtime/lib/insights/oil-asphalt-v04-contract.mjs": "223a63afb91822c5e3f352c86193df18c364827913c41eae2cf3e3c38f0d5c26",
+      "apps/sg-runtime/lib/insights/oil-asphalt-v04-research.mjs": "1671cff601c35eea478bcfe833c5e9016c200fbe51834766c3f6557d584675c1",
+      "apps/sg-runtime/lib/insights/oil-asphalt-v04-telemetry.mjs": "e0da0d3cdb0404cc12ce9d6e2a851cbb2950682240abc7b5a1a8ba8cac737216",
+      "apps/sg-runtime/scripts/oil-asphalt-v04-evaluate.mjs": "f6a8c93035cc2bc3bf128c5e628ec17cc2cb49e633704eed7be5da785b99c629",
+      "apps/sg-runtime/scripts/render-oil-asphalt-v04.py": "5b98830165909b8075eae6623323a0ae74fa1db1890a4e4912f0058c82013bb5",
+      "apps/sg-runtime/tests/oil-asphalt-v04.test.mjs": "13c5479c3c773bb6b90085923a36cb1e66b9f1feb4e7d7783e822579fafd4f41",
+      "apps/sg-runtime/tests/pci-smart-integrity.mjs": "9a034a6015aa7aa016be10fca29055c1dfb41e8d6f1ce1e9fcbfb0cb46b6b1ae",
+      "apps/sg-runtime/tests/pci-smart-integrity.test.mjs": "82b617262d8fb33f668c9b622339bf82d6d189f429260572cad01d1cf32d44ee"
+    },
+    "applicationSourceDigests": {
+      "docs/oil-asphalt-v04-pilot-v1.md": "af9ccd62ec454ffe127bd044e055af50778e5bc8e28c80ec926bd0bbbffb6447",
+      "lib/insights/oil-asphalt-v04-composer.mjs": "cde919db5506a30f9de1b8fa1b0262795d0f0a4786e3d04516203637f5597f17",
+      "lib/insights/oil-asphalt-v04-contract.mjs": "223a63afb91822c5e3f352c86193df18c364827913c41eae2cf3e3c38f0d5c26",
+      "lib/insights/oil-asphalt-v04-research.mjs": "1671cff601c35eea478bcfe833c5e9016c200fbe51834766c3f6557d584675c1",
+      "lib/insights/oil-asphalt-v04-telemetry.mjs": "e0da0d3cdb0404cc12ce9d6e2a851cbb2950682240abc7b5a1a8ba8cac737216",
+      "scripts/oil-asphalt-v04-evaluate.mjs": "f6a8c93035cc2bc3bf128c5e628ec17cc2cb49e633704eed7be5da785b99c629",
+      "scripts/render-oil-asphalt-v04.py": "5b98830165909b8075eae6623323a0ae74fa1db1890a4e4912f0058c82013bb5",
+      "tests/oil-asphalt-v04.test.mjs": "13c5479c3c773bb6b90085923a36cb1e66b9f1feb4e7d7783e822579fafd4f41",
+      "tests/pci-smart-integrity.mjs": "9a034a6015aa7aa016be10fca29055c1dfb41e8d6f1ce1e9fcbfb0cb46b6b1ae",
+      "tests/pci-smart-integrity.test.mjs": "82b617262d8fb33f668c9b622339bf82d6d189f429260572cad01d1cf32d44ee"
+    },
+    "preservedPaths": [
+      "apps/sg-runtime/lib/benchmark/discovery-source.ts",
+      "apps/sg-runtime/lib/forecast/contracts.ts",
+      "apps/sg-runtime/lib/forecast/stored-current-read.ts",
+      "apps/sg-runtime/lib/market-data/stored-read.ts",
+      "apps/sg-runtime/lib/platform/private-runtime.ts"
+    ],
+    "isolatedOperatorOnly": true,
+    "paidGenerationRequiresOwnerGo": true,
+    "forecastMathematicsChanged": false,
+    "benchmarkFinderChanged": false,
+    "marketDataChanged": false,
+    "macrobondIngestionChanged": false,
+    "historicalB1Changed": false,
+    "globalSdkPublished": false,
+    "sg2ApplicationDeploymentPerformed": false
   }
 }
