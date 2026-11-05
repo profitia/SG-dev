@@ -5,7 +5,7 @@ export interface FirstPartySourceConfiguration {
  environment:'development';componentId:string;consumerApplicationId:string;receiverApplicationId:string;sourceOrigin:string;targetOrigin:string;keyId:string;privateKey:string|Buffer|KeyObject
 }
 export interface FirstPartySourceClaim {
- readonly payload:Readonly<{contract:string;environment:'development';componentId:string;consumerApplicationId:string;receiverApplicationId:string;sourceOrigin:string;targetOrigin:string;keyId:string;requestId:string;issuedAt:number;expiresAt:number;method:'POST';path:'/v1/acquire';bodyDigest:string;credentialDigest:string;idempotencyDigest:string}>
+ readonly payload:Readonly<{contract:string;environment:'development';componentId:string;consumerApplicationId:string;receiverApplicationId:string;sourceOrigin:string;targetOrigin:string;keyId:string;requestId:string;issuedAt:number;expiresAt:number;method:'POST';path:'/v1/acquire';bodyDigest:string;credentialDigest:string;idempotencyDigest:string;execution:SourceExecution;resourceId:string}>
  readonly raw:string;readonly signature:string
 }
 export declare function sourceAccessDigest(value:string|Uint8Array):string

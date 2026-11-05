@@ -93,6 +93,10 @@ BEGIN
  IF p_claim->>'contract' IS DISTINCT FROM 'profitia.first-party-source-access/1.0.0'
  OR p_claim->>'environment' IS DISTINCT FROM 'development' OR p_claim->>'consumerApplicationId' IS DISTINCT FROM k.application_id
  OR p_claim->>'receiverApplicationId' IS DISTINCT FROM r.application_id OR p_claim->>'sourceOrigin' IS DISTINCT FROM k.source_origin OR p_claim->>'targetOrigin' IS DISTINCT FROM sr.target_origin
+ OR p_request->>'kind' IS DISTINCT FROM p_claim->'execution'->>'kind'
+ OR p_request->>'organisationId' IS DISTINCT FROM p_claim->'execution'->>'organisationId'
+ OR p_request->>'grantId' IS DISTINCT FROM p_claim->'execution'->>'grantId'
+ OR p_request->>'resourceId' IS DISTINCT FROM p_claim->>'resourceId'
  OR p_request->'binding' IS DISTINCT FROM r.binding OR p_request->>'operation' IS DISTINCT FROM 'knowledge.read'
  OR coalesce(p_request->>'resourceId','')!~'^api\.[a-z-]+\.[a-z-]+$' OR coalesce(p_request->>'nonce','')!~'^[a-f0-9]{64}$'
  OR coalesce(p_request->>'transactionId','')!~'^[0-9]{1,20}$' OR coalesce(p_request->>'requestDigest','')!~'^[a-f0-9]{64}$'

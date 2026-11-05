@@ -20,6 +20,7 @@ BEGIN
  IF p_nonce!~'^[a-f0-9]{64}$' OR coalesce(p_proof_digest,'')!~'^[a-f0-9]{64}$' OR coalesce(p_claim->>'bodyDigest','')!~'^[a-f0-9]{64}$'
   OR coalesce(p_resource,'')!~'^api\.[a-z-]+\.[a-z-]+$' OR p_context->>'organisationId' IS NULL
   OR p_claim->>'receiverApplicationId' IS DISTINCT FROM d->'binding'->>'applicationId'
+  OR p_context IS DISTINCT FROM p_claim->'execution' OR p_resource IS DISTINCT FROM p_claim->>'resourceId'
   OR p_claim->>'environment' IS DISTINCT FROM 'development' OR kind NOT IN('HUMAN','SERVICE') OR kind IS NULL
   OR (SELECT array_agg(k ORDER BY k) FROM jsonb_object_keys(p_context) k) IS DISTINCT FROM (CASE WHEN kind='HUMAN' THEN ARRAY['kind','organisationId'] ELSE ARRAY['grantId','kind','organisationId'] END)
   OR kind='SERVICE' AND coalesce(p_context->>'grantId','')!~*'^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$' THEN RAISE EXCEPTION 'Source challenge refused' USING ERRCODE='42501'; END IF;

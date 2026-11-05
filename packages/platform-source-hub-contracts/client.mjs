@@ -4,6 +4,7 @@ import {parseHubRequest,assertHubResponse,SourceHubError} from './index.mjs'
 /** The same provider-independent client serves interactive modules and real
  * service jobs. Configuration is server-owned, never supplied by a browser. */
 export function createFirstPartySourceHubClient(configuration,{fetchImpl=fetch,...signerDependencies}={}){
+ configuration=Object.freeze({...configuration})
  const sign=createFirstPartySourceSigner(configuration,signerDependencies)
  return Object.freeze({async acquire({command,execution,idempotencyKey,request=null,signal=undefined}){
   const parsed=parseHubRequest(command)

@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import {SOURCE_HUB_CONTRACT_VERSION} from '../../packages/platform-source-hub-contracts/index.mjs'
 import { execFileSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import fs from 'node:fs'
@@ -220,7 +221,8 @@ test('Stage2A adopts four separate versioned source families and the real Newsfe
  assert.equal(a.taskId,'ARCHITECTURE-SOURCE-HUB-NEWSFEED-STAGE2A-20261103');assert.equal(a.pullRequest,885)
  assert.equal(a.effectiveOn,'CONTROLLED_MAIN_ACCEPTANCE');assert.equal(a.apiVersion,'1.0.0')
  assert.equal(a.package,json('packages/platform-source-hub-contracts/package.json').name)
- assert.equal(a.apiVersion,json('packages/platform-source-hub-contracts/package.json').version)
+ assert.equal(a.apiVersion,SOURCE_HUB_CONTRACT_VERSION)
+ assert.equal(json('packages/platform-source-hub-contracts/package.json').version,'1.1.0') // Additive transport client; payload contract stays1.0.0.
  assert.deepEqual(a.implementedFamilies,{'news-discovery':'1.0.0','economic-calendar':'1.0.0','indicators':'1.0.0','external-forecasts':'1.0.0'})
  assert.deepEqual(a.futureFamilies,['market-observations']);assert.equal(a.legacyCompatibility,'NewsDiscovery 0.1.0')
  assert.equal(a.consumer.contractPackage,json('packages/newsfeed-contracts/package.json').name)

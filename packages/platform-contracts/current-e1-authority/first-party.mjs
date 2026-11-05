@@ -6,7 +6,7 @@ import {createClerkIdentityAuthenticator} from '@profitia/platform-contracts/ide
 export const FIRST_PARTY_SOURCE_CONTRACT=Object.freeze({id:'profitia.first-party-source-access',version:'1.0.0'})
 export const FIRST_PARTY_SOURCE_HEADER='x-profitia-source-consumer'
 const tag=FIRST_PARTY_SOURCE_CONTRACT.id+'/'+FIRST_PARTY_SOURCE_CONTRACT.version
-const keys=['contract','environment','componentId','consumerApplicationId','receiverApplicationId','sourceOrigin','targetOrigin','keyId','requestId','issuedAt','expiresAt','method','path','bodyDigest','credentialDigest','idempotencyDigest']
+const keys=['contract','environment','componentId','consumerApplicationId','receiverApplicationId','sourceOrigin','targetOrigin','keyId','requestId','issuedAt','expiresAt','method','path','bodyDigest','credentialDigest','idempotencyDigest','execution','resourceId']
 const id=/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/
 const hash=/^[a-f0-9]{64}$/
 const uuid=/^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i
@@ -15,6 +15,7 @@ export const sourceAccessDigest=value=>createHash('sha256').update(value).digest
 function plain(v,allowed){return v&&Object.getPrototypeOf(v)===Object.prototype&&Object.keys(v).sort().join(',')===[...allowed].sort().join(',')}
 function origin(v){try{const u=new URL(v);return u.origin===v&&u.protocol==='https:'&&!u.username&&!u.password&&!u.hostname.includes('*')}catch{return false}}
 function sourceRef(v){return typeof v==='string'&&v.length<=256&&(origin(v)||/^urn:profitia:service:[a-zA-Z0-9:._-]+$/.test(v))}
+function validExecution(e){return plain(e,e?.kind==='HUMAN'?['kind','organisationId']:['kind','organisationId','grantId'])&&['HUMAN','SERVICE'].includes(e.kind)&&uuid.test(e.organisationId??'')&&(e.kind==='HUMAN'||uuid.test(e.grantId??''))}
 function decode(value){
  if(typeof value!=='string'||value.length>8192||!value.includes('.'))deny()
  const parts=value.split('.');if(parts.length!==2)deny()
@@ -27,6 +28,7 @@ function decode(value){
 /** A component's own asymmetric credential authenticates transport only.
  * No organisation, user, grant or provider permission follows from a key. */
 export function createFirstPartySourceSigner(c,{now=Date.now,newRequestId=randomUUID}={}){
+ c=Object.freeze({...c})
  if(c?.environment!=='development'||!id.test(c.componentId??'')||!id.test(c.consumerApplicationId??'')||!id.test(c.receiverApplicationId??'')
  ||!id.test(c.keyId??'')||!sourceRef(c.sourceOrigin)||!origin(c.targetOrigin))throw TypeError('Explicit Development first-party component binding required')
  const key=c.privateKey?.type==='private'?c.privateKey:createPrivateKey(c.privateKey);if(key.asymmetricKeyType!=='ed25519')throw TypeError('Per-component Ed25519 key required')
@@ -37,10 +39,13 @@ export function createFirstPartySourceSigner(c,{now=Date.now,newRequestId=random
    ||request.headers.get('content-type')!=='application/json'||request.headers.has(FIRST_PARTY_SOURCE_HEADER)||!idem||!/^[A-Za-z0-9][A-Za-z0-9._:-]{7,127}$/.test(idem)
    ||credential&&!/^Bearer [\x21-\x7e]{1,16384}$/.test(credential))deny()
   const body=Buffer.from(await request.clone().arrayBuffer());if(body.length>16384)deny()
+  let envelope;try{envelope=JSON.parse(body.toString('utf8'))}catch{deny()}
+  const execution=envelope?.context,resourceId='api.'+envelope?.request?.provider+'.'+envelope?.request?.family;
+  if(!validExecution(execution)||!/^api\.[a-z-]+\.[a-z-]+$/.test(resourceId))deny()
   const issuedAt=now(),requestId=newRequestId();if(!Number.isSafeInteger(issuedAt)||!uuid.test(requestId))deny()
   const payload={contract:tag,environment:c.environment,componentId:c.componentId,consumerApplicationId:c.consumerApplicationId,receiverApplicationId:c.receiverApplicationId,
    sourceOrigin:c.sourceOrigin,targetOrigin:c.targetOrigin,keyId:c.keyId,requestId,issuedAt,expiresAt:issuedAt+60000,method:'POST',path:'/v1/acquire',
-   bodyDigest:sourceAccessDigest(body),credentialDigest:sourceAccessDigest(credential),idempotencyDigest:sourceAccessDigest(idem)}
+   bodyDigest:sourceAccessDigest(body),credentialDigest:sourceAccessDigest(credential),idempotencyDigest:sourceAccessDigest(idem),execution,resourceId}
   const raw=Buffer.from(JSON.stringify(payload)),header=raw.toString('base64url')+'.'+sign(null,raw,key).toString('base64url')
   const headers=new Headers(request.headers);headers.set(FIRST_PARTY_SOURCE_HEADER,header)
   return new Request(request,{headers})
@@ -63,7 +68,7 @@ export function assertFirstPartySourceClaim(claim,{receiverApplicationId,targetO
  const p=claim?.payload
  if(!plain(p,keys)||p.contract!==tag||p.environment!=='development'||p.receiverApplicationId!==receiverApplicationId||p.targetOrigin!==targetOrigin
   ||!origin(targetOrigin)||!sourceRef(p.sourceOrigin)||!id.test(p.componentId??'')||!id.test(p.consumerApplicationId??'')||!id.test(p.keyId??'')||!uuid.test(p.requestId??'')
-  ||p.method!=='POST'||p.path!=='/v1/acquire'
+  ||p.method!=='POST'||p.path!=='/v1/acquire'||!validExecution(p.execution)||!/^api\.[a-z-]+\.[a-z-]+$/.test(p.resourceId??'')
   ||!Number.isSafeInteger(p.issuedAt)||!Number.isSafeInteger(p.expiresAt)||p.issuedAt>now()+3000||p.expiresAt<=now()||p.expiresAt-p.issuedAt!==60000
   ||!['bodyDigest','credentialDigest','idempotencyDigest'].every(k=>hash.test(p[k]??''))||JSON.stringify(p)!==claim.raw)deny()
  return p
