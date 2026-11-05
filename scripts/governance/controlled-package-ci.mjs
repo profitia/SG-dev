@@ -1370,6 +1370,285 @@ export const SOURCE_HUB_STAGE2A_REVIEW=Object.freeze({
     }
   }
 })
+// Proposed closed review; activation requires explicit owner acceptance.
+export const SOURCE_HUB_CURRENT_E1_REVIEW=Object.freeze({
+  "prNumber": 897,
+  "branch": "architecture/source-hub-e1-current-authority-20261105",
+  "reviewedCandidateSha": "1d1c33e557bbf134493f037a39e5ef3041dfe7b1",
+  "reviewedBaseSha": "b4b6eda9dbfbbd9f84895ff215879ab2b65025cf",
+  "blobs": {
+    ".github/workflows/identity-runtime-ci.yml": "62a4a27b0b38fecff78f25fc4985ebd8cb8ceccd",
+    ".github/workflows/newsfeed-ci.yml": "f2e99a70adc53054d1e22610934f6c4a92b1a961",
+    ".github/workflows/platform-contracts-ci.yml": "adedd8ee30d6435f6e87cc2db53bd52dcbe16e96",
+    ".github/workflows/platform-source-hub-ci.yml": "f82e434aaf89eedb31ff880b423257dbef0416fc",
+    "Canon/runbooks/source-hub-newsfeed-current-e1-development-v1.md": "a74847b0d372bc34c8a0934c5f68d2020e047c46",
+    "apps/identity-runtime/package-lock.json": "d4d225c60f81898435575a31957a73f292bbfeb5",
+    "apps/identity-runtime/package.json": "d1c1cad8adcdb954dd7a97e18061890549e5a704",
+    "apps/identity-runtime/src/current-e1-authority.ts": "4ef8933eaa1657a0434b6d56a9f8fec3c78ad2dd",
+    "apps/identity-runtime/src/http-handler.ts": "6e43c77de313edfc216c4c6dc9889d398cc139fa",
+    "apps/identity-runtime/src/main.ts": "aa6b22dcc7d314ef5080631d81db3ca9146c349f",
+    "apps/identity-runtime/src/node-server.ts": "dce43b7cfc39aba60979ba82246dd93c9c3cd968",
+    "apps/identity-runtime/test/current-e1-authority.test.mjs": "db4dbc28d4313b6be5480cbf4264fbad6e104ee2",
+    "apps/newsfeed-runtime/migrations/002-current-e1-authority.sql": "470ccde47678a9d52d4a159911514441541e6d24",
+    "apps/newsfeed-runtime/package-lock.json": "20f8df26a6bddd633d1914d641a9dd0c00335234",
+    "apps/newsfeed-runtime/package.json": "6cad399c902f0f7eb8069f9df5012e19787e0802",
+    "apps/newsfeed-runtime/src/auth.mjs": "184500508319b2b48af7eff65fe370fd1ce643f2",
+    "apps/newsfeed-runtime/src/main.mjs": "5385e96f1977738b786ac5bbd199ab30ca26ec1c",
+    "apps/platform-source-hub/migrations/003-current-e1-authority.sql": "662177cd3589b7ab6cc0d7bb0cbd0ecb13339de3",
+    "apps/platform-source-hub/package-lock.json": "b3ad3efb27d6df5a64a0e42601795e95d1bc47d5",
+    "apps/platform-source-hub/package.json": "dae235716077f803e9667d79dde419ea0564a595",
+    "apps/platform-source-hub/src/auth.mjs": "36f9ed0a06bab10c0ff9668c3117a103dc6e4d64",
+    "apps/platform-source-hub/src/main.mjs": "32c1689751bfe03ba482af283e832f1b54f85b40",
+    "apps/platform-source-hub/test/current-e1-authority.test.mjs": "c4fb9f7b9b9e46467d767e26d231cfb5b18d9523",
+    "packages/platform-contracts/current-e1-authority/index.d.mts": "96d5aba7f3000a3b6b2eecd6a3362cc79392b0bd",
+    "packages/platform-contracts/current-e1-authority/index.mjs": "5dfd6e257fc1b9f705e789190363693d0159e374",
+    "packages/platform-contracts/current-e1-authority/migrations/001-authority.sql": "939629ad95feb33dfcd50fdcfca1b96eeef83481",
+    "packages/platform-contracts/current-e1-authority/migrations/002-receiver.sql": "7fae7faf5878af1ce092592d58aefec469333edd",
+    "packages/platform-contracts/current-e1-authority/package-lock.json": "64d39c20027464e647203ad6ae9d4f840b954ee5",
+    "packages/platform-contracts/current-e1-authority/package.json": "5253bea26a931b2045694d696fc6ccdaae73d280",
+    "packages/platform-contracts/test/current-e1-authority.test.mjs": "874bee12d21142ad8b6af2ece4e12362ed78c59e",
+    "packages/platform-contracts/test/fixtures/current-e1-authority-postgres.mjs": "52e42cdba115bb3300b24022cbe81edbb9ca15dc"
+  },
+  "statuses": {
+    ".github/workflows/identity-runtime-ci.yml": "modified",
+    ".github/workflows/newsfeed-ci.yml": "modified",
+    ".github/workflows/platform-contracts-ci.yml": "modified",
+    ".github/workflows/platform-source-hub-ci.yml": "modified",
+    "Canon/runbooks/source-hub-newsfeed-current-e1-development-v1.md": "added",
+    "apps/identity-runtime/package-lock.json": "modified",
+    "apps/identity-runtime/package.json": "modified",
+    "apps/identity-runtime/src/current-e1-authority.ts": "added",
+    "apps/identity-runtime/src/http-handler.ts": "modified",
+    "apps/identity-runtime/src/main.ts": "modified",
+    "apps/identity-runtime/src/node-server.ts": "modified",
+    "apps/identity-runtime/test/current-e1-authority.test.mjs": "added",
+    "apps/newsfeed-runtime/migrations/002-current-e1-authority.sql": "added",
+    "apps/newsfeed-runtime/package-lock.json": "modified",
+    "apps/newsfeed-runtime/package.json": "modified",
+    "apps/newsfeed-runtime/src/auth.mjs": "modified",
+    "apps/newsfeed-runtime/src/main.mjs": "modified",
+    "apps/platform-source-hub/migrations/003-current-e1-authority.sql": "added",
+    "apps/platform-source-hub/package-lock.json": "modified",
+    "apps/platform-source-hub/package.json": "modified",
+    "apps/platform-source-hub/src/auth.mjs": "modified",
+    "apps/platform-source-hub/src/main.mjs": "modified",
+    "apps/platform-source-hub/test/current-e1-authority.test.mjs": "added",
+    "packages/platform-contracts/current-e1-authority/index.d.mts": "added",
+    "packages/platform-contracts/current-e1-authority/index.mjs": "added",
+    "packages/platform-contracts/current-e1-authority/migrations/001-authority.sql": "added",
+    "packages/platform-contracts/current-e1-authority/migrations/002-receiver.sql": "added",
+    "packages/platform-contracts/current-e1-authority/package-lock.json": "added",
+    "packages/platform-contracts/current-e1-authority/package.json": "added",
+    "packages/platform-contracts/test/current-e1-authority.test.mjs": "added",
+    "packages/platform-contracts/test/fixtures/current-e1-authority-postgres.mjs": "added"
+  },
+  "modes": {
+    ".github/workflows/identity-runtime-ci.yml": "100644",
+    ".github/workflows/newsfeed-ci.yml": "100644",
+    ".github/workflows/platform-contracts-ci.yml": "100644",
+    ".github/workflows/platform-source-hub-ci.yml": "100644",
+    "Canon/runbooks/source-hub-newsfeed-current-e1-development-v1.md": "100644",
+    "apps/identity-runtime/package-lock.json": "100644",
+    "apps/identity-runtime/package.json": "100644",
+    "apps/identity-runtime/src/current-e1-authority.ts": "100644",
+    "apps/identity-runtime/src/http-handler.ts": "100644",
+    "apps/identity-runtime/src/main.ts": "100644",
+    "apps/identity-runtime/src/node-server.ts": "100644",
+    "apps/identity-runtime/test/current-e1-authority.test.mjs": "100644",
+    "apps/newsfeed-runtime/migrations/002-current-e1-authority.sql": "100644",
+    "apps/newsfeed-runtime/package-lock.json": "100644",
+    "apps/newsfeed-runtime/package.json": "100644",
+    "apps/newsfeed-runtime/src/auth.mjs": "100644",
+    "apps/newsfeed-runtime/src/main.mjs": "100644",
+    "apps/platform-source-hub/migrations/003-current-e1-authority.sql": "100644",
+    "apps/platform-source-hub/package-lock.json": "100644",
+    "apps/platform-source-hub/package.json": "100644",
+    "apps/platform-source-hub/src/auth.mjs": "100644",
+    "apps/platform-source-hub/src/main.mjs": "100644",
+    "apps/platform-source-hub/test/current-e1-authority.test.mjs": "100644",
+    "packages/platform-contracts/current-e1-authority/index.d.mts": "100644",
+    "packages/platform-contracts/current-e1-authority/index.mjs": "100644",
+    "packages/platform-contracts/current-e1-authority/migrations/001-authority.sql": "100644",
+    "packages/platform-contracts/current-e1-authority/migrations/002-receiver.sql": "100644",
+    "packages/platform-contracts/current-e1-authority/package-lock.json": "100644",
+    "packages/platform-contracts/current-e1-authority/package.json": "100644",
+    "packages/platform-contracts/test/current-e1-authority.test.mjs": "100644",
+    "packages/platform-contracts/test/fixtures/current-e1-authority-postgres.mjs": "100644"
+  },
+  "routes": {
+    ".github/workflows/identity-runtime-ci.yml": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "IDENTITY-BASE-002"
+    },
+    ".github/workflows/newsfeed-ci.yml": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "NEWSFEED-BASE-003"
+    },
+    ".github/workflows/platform-contracts-ci.yml": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Governance Source Layer",
+      "surfaceId": "ARCH-BASE-004"
+    },
+    ".github/workflows/platform-source-hub-ci.yml": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-003"
+    },
+    "Canon/runbooks/source-hub-newsfeed-current-e1-development-v1.md": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Governance Source Layer",
+      "surfaceId": "SG2-BASE-019"
+    },
+    "apps/identity-runtime/package-lock.json": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "IDENTITY-BASE-001"
+    },
+    "apps/identity-runtime/package.json": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "IDENTITY-BASE-001"
+    },
+    "apps/identity-runtime/src/current-e1-authority.ts": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "IDENTITY-BASE-001"
+    },
+    "apps/identity-runtime/src/http-handler.ts": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "IDENTITY-BASE-001"
+    },
+    "apps/identity-runtime/src/main.ts": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "IDENTITY-BASE-001"
+    },
+    "apps/identity-runtime/src/node-server.ts": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "IDENTITY-BASE-001"
+    },
+    "apps/identity-runtime/test/current-e1-authority.test.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "IDENTITY-BASE-001"
+    },
+    "apps/newsfeed-runtime/migrations/002-current-e1-authority.sql": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "NEWSFEED-BASE-001"
+    },
+    "apps/newsfeed-runtime/package-lock.json": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "NEWSFEED-BASE-001"
+    },
+    "apps/newsfeed-runtime/package.json": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "NEWSFEED-BASE-001"
+    },
+    "apps/newsfeed-runtime/src/auth.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "NEWSFEED-BASE-001"
+    },
+    "apps/newsfeed-runtime/src/main.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "NEWSFEED-BASE-001"
+    },
+    "apps/platform-source-hub/migrations/003-current-e1-authority.sql": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-001"
+    },
+    "apps/platform-source-hub/package-lock.json": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-001"
+    },
+    "apps/platform-source-hub/package.json": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-001"
+    },
+    "apps/platform-source-hub/src/auth.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-001"
+    },
+    "apps/platform-source-hub/src/main.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-001"
+    },
+    "apps/platform-source-hub/test/current-e1-authority.test.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-001"
+    },
+    "packages/platform-contracts/current-e1-authority/index.d.mts": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    "packages/platform-contracts/current-e1-authority/index.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    "packages/platform-contracts/current-e1-authority/migrations/001-authority.sql": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    "packages/platform-contracts/current-e1-authority/migrations/002-receiver.sql": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    "packages/platform-contracts/current-e1-authority/package-lock.json": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    "packages/platform-contracts/current-e1-authority/package.json": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    "packages/platform-contracts/test/current-e1-authority.test.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    "packages/platform-contracts/test/fixtures/current-e1-authority-postgres.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    }
+  }
+});
+function isPinnedCurrentE1Review(files){
+ const r=SOURCE_HUB_CURRENT_E1_REVIEW;
+ return Array.isArray(files)&&files.length===Object.keys(r.blobs).length&&new Set(files.map(f=>f?.filename)).size===files.length
+  &&files.every(f=>Object.hasOwn(r.blobs,f?.filename??'')&&f.sha===r.blobs[f.filename]&&f.status===r.statuses[f.filename]&&!Object.hasOwn(f,'previous_filename'));
+}
+function assertCurrentE1Routes(files,repositoryRoot){
+ for(const f of files){const e=SOURCE_HUB_CURRENT_E1_REVIEW.routes[f.filename],profile=resolveProjectProfile(e.projectKey,repositoryRoot),route=resolveProjectRouting({profile,targets:[f.filename],repositoryRoot});
+  if(!route.ok||route.results.length!==1)fail('CURRENT_E1_ROUTING_REJECTED');const r=route.results[0];
+  if(r.resolutionStatus!=='RESOLVED'||r.highestSpecificityMatchCount!==1||r.baselineClassification!=='ALIGNED'||r.projectBoundaryStatus!=='ALLOWED'||r.currentOwner!==e.owner||r.matchedSurfaceId!==e.surfaceId)fail('CURRENT_E1_ROUTING_REJECTED');
+ }
+}
+export function assertCurrentE1ReviewEntry(file,entry){
+ const r=SOURCE_HUB_CURRENT_E1_REVIEW;
+ if(!Object.hasOwn(r.blobs,file?.filename??'')||file.sha!==r.blobs[file.filename]||entry!==r.modes[file.filename]+' blob '+file.sha+'\t'+file.filename+'\0')fail('CURRENT_E1_FILE_MODE_REJECTED');
+}
+
 function isPinnedSourceHubStage2aReview(files){
  return Array.isArray(files)&&files.length===Object.keys(SOURCE_HUB_STAGE2A_REVIEW.blobs).length
   &&new Set(files.map(f=>f?.filename)).size===files.length
@@ -1396,6 +1675,7 @@ function architecturePathAllowed(name) {
 export function assertArchitectureFiles(pr, files, repositoryRoot = controlRoot()) {
   if (!Number.isInteger(pr.changed_files) || pr.changed_files < 1 || pr.changed_files > 300 || !shaPattern.test(pr.base?.sha ?? '')
     || !Array.isArray(files) || files.length !== pr.changed_files) fail('ARCHITECTURE_FILE_LIST_REQUIRED')
+  if(isPinnedCurrentE1Review(files)){assertCurrentE1Routes(files,repositoryRoot);return}
   if(isPinnedSourceHubStage2aReview(files)){assertSourceHubStage2aRoutes(files,repositoryRoot);return}
   const krsReview = files.length === KRS_GOVERNANCE_REVIEW_FILES.length
     && files.every(file => KRS_GOVERNANCE_REVIEW_FILES.includes(file?.filename))
@@ -1431,6 +1711,7 @@ export function selectCandidate(context, pr, expectedSha, {files, repositoryRoot
   if (family === 'MAIN') return context.controlSha
   if (family === 'ARCHITECTURE') {
     assertArchitectureFiles(pr, files, repositoryRoot)
+    if(isPinnedCurrentE1Review(files)&&(pr.number!==SOURCE_HUB_CURRENT_E1_REVIEW.prNumber||pr.head.ref!==SOURCE_HUB_CURRENT_E1_REVIEW.branch))fail('CURRENT_E1_REVIEW_IDENTITY_REJECTED')
     if(isPinnedSourceHubStage2aReview(files)&&(pr.number!==SOURCE_HUB_STAGE2A_REVIEW.prNumber||pr.head.ref!==SOURCE_HUB_STAGE2A_REVIEW.branch))fail('SOURCE_HUB_STAGE2A_REVIEW_IDENTITY_REJECTED')
     if (isPinnedAdpGovernanceReview(files)
       && (pr.number !== ADP_GOVERNANCE_REVIEW.prNumber || pr.head.ref !== ADP_GOVERNANCE_REVIEW.branch)) fail('ADP_GOVERNANCE_REVIEW_IDENTITY_REJECTED')
@@ -1490,6 +1771,7 @@ export function assertArchitectureCheckout(root, sha, admission, repositoryRoot 
   for (const file of admission.files) {
     const entry = execFileSync('git', ['ls-tree', '-z', sha, '--', file.filename], {cwd: root, encoding: 'utf8'})
     if (file.status === 'removed') {if (entry !== '') fail('ARCHITECTURE_DIFF_MISMATCH'); continue}
+    if(isPinnedCurrentE1Review(admission.files))assertCurrentE1ReviewEntry(file,entry)
     if(isPinnedSourceHubStage2aReview(admission.files)&&entry!==SOURCE_HUB_STAGE2A_REVIEW.modes[file.filename]+' blob '+file.sha+'\t'+file.filename+'\0')fail('SOURCE_HUB_STAGE2A_FILE_MODE_REJECTED')
     if (!['100644', '100755'].some(mode => entry === `${mode} blob ${file.sha}\t${file.filename}\0`)) fail('ARCHITECTURE_CHECKOUT_REJECTED')
     const target = path.join(root, file.filename), stat = fs.lstatSync(target)
