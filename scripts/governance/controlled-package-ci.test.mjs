@@ -6,7 +6,7 @@ import os from 'node:os'
 import path from 'node:path'
 import {fileURLToPath} from 'node:url'
 import {spawnSync, execFileSync} from 'node:child_process'
-import {SOURCE_HUB_STAGE2A_REVIEW, assertTrustedContext, assertEnvironment, selectCandidate, assertArchitectureFiles, resolveCandidateAdmission, assertArchitectureCheckout, CONTROL_POLICY_FILES, assertCredentialMetadata, assertReceipt, assertPackagePolicy, assertManifestPolicy, assertLocalPackageSources, assertProof, controlPolicyDigest, operationContractProvenanceDigest, REPOSITORY, WORKFLOW, PRIVATE_PACKAGES, LOCAL_PACKAGES, CONTROLLED_CANDIDATE_PREFIXES, KRS_GOVERNANCE_REVIEW_FILES, ADP_GOVERNANCE_REVIEW, LIMITS_G1_GOVERNANCE_REVIEW, FRESH_REPORT_PRODUCER_REVIEW, PAYLOAD_CAPTURE_PRODUCER_REVIEW, READONLY_MISS_REPORT_PRODUCER_REVIEW, FRESH_FIXTURE_TEARDOWN_REVIEW, ROOT_ATOMIC_CLAIM_PRODUCER_REVIEW} from './controlled-package-ci.mjs'
+import {SOURCE_HUB_CURRENT_E1_REVIEW,assertCurrentE1ReviewEntry,SOURCE_HUB_STAGE2A_REVIEW, assertTrustedContext, assertEnvironment, selectCandidate, assertArchitectureFiles, resolveCandidateAdmission, assertArchitectureCheckout, CONTROL_POLICY_FILES, assertCredentialMetadata, assertReceipt, assertPackagePolicy, assertManifestPolicy, assertLocalPackageSources, assertProof, controlPolicyDigest, operationContractProvenanceDigest, REPOSITORY, WORKFLOW, PRIVATE_PACKAGES, LOCAL_PACKAGES, CONTROLLED_CANDIDATE_PREFIXES, KRS_GOVERNANCE_REVIEW_FILES, ADP_GOVERNANCE_REVIEW, LIMITS_G1_GOVERNANCE_REVIEW, FRESH_REPORT_PRODUCER_REVIEW, PAYLOAD_CAPTURE_PRODUCER_REVIEW, READONLY_MISS_REPORT_PRODUCER_REVIEW, FRESH_FIXTURE_TEARDOWN_REVIEW, ROOT_ATOMIC_CLAIM_PRODUCER_REVIEW} from './controlled-package-ci.mjs'
 
 const sha = 'a'.repeat(40), other = 'b'.repeat(40)
 const context = () => ({repository: REPOSITORY, ref: 'refs/heads/main', workflowRef: `${REPOSITORY}/${WORKFLOW}@refs/heads/main`, event: 'workflow_dispatch', actor: 'profitia', triggeringActor: 'profitia', controlSha: sha})
@@ -1107,3 +1107,17 @@ test('test-only reconciliation preserves all115 other reviewed blobs and every s
  assert.equal(stableHash(SOURCE_HUB_STAGE2A_REVIEW.modes),"217ec78117be5de638851910a7554f455dd0d22411c69c11814bb5c6c404d7f0")
  assert.equal(stableHash(SOURCE_HUB_STAGE2A_REVIEW.routes),"98a7cc0f331554c2c07b1e51ad3aff91bad8727bb45b6f5d812214241456bd5b")
 })
+
+const currentE1Files=()=>Object.entries(SOURCE_HUB_CURRENT_E1_REVIEW.blobs).map(([filename,sha])=>({filename,sha,status:SOURCE_HUB_CURRENT_E1_REVIEW.statuses[filename]}));
+const currentE1Pr=()=>({...pr(),number:897,changed_files:31,base:{...pr().base,sha:SOURCE_HUB_CURRENT_E1_REVIEW.reviewedBaseSha},head:{...pr().head,sha:SOURCE_HUB_CURRENT_E1_REVIEW.reviewedCandidateSha,ref:SOURCE_HUB_CURRENT_E1_REVIEW.branch}});
+test('current E1 review admits only the exact 31 owner-routed file versions of PR897',()=>{
+ const p=currentE1Pr(),files=currentE1Files();assert.equal(files.length,31);assertArchitectureFiles(p,files);assert.equal(selectCandidate(context(),p,p.head.sha,{files}),p.head.sha);
+ for(const edit of[fs=>fs.pop(),fs=>fs.push({...fs[0],filename:'apps/identity-runtime/src/unreviewed.ts'}),fs=>fs[0].sha=sha,fs=>fs[0].status='removed',fs=>fs[0].previous_filename='renamed',fs=>fs[0].filename='packages/platform-contracts/current-e1-authority/unreviewed.mjs',fs=>fs[1]={...fs[0]}]){const changed=structuredClone(files);edit(changed);rejection(()=>assertArchitectureFiles({...p,changed_files:changed.length},changed));}
+});
+test('current E1 review retains exact PR, branch, owner, repository and candidate SHA fences',()=>{
+ for(const edit of[p=>p.number=898,p=>p.head.ref='architecture/unreviewed-e1',p=>p.head.repo.full_name='profitia/fork',p=>p.user.login='other-owner',p=>p.base.ref='staging',p=>p.head.sha=sha]){const p=currentE1Pr();edit(p);rejection(()=>selectCandidate(context(),p,SOURCE_HUB_CURRENT_E1_REVIEW.reviewedCandidateSha,{files:currentE1Files()}));}
+ const refreshed=currentE1Pr();refreshed.head.sha=other;assert.equal(selectCandidate(context(),refreshed,other,{files:currentE1Files()}),other,'Main refresh may retain only identical reviewed file bytes');
+});
+test('current E1 review denies executable and symlink modes and altered tree entries',()=>{
+ for(const file of currentE1Files()){const entry='100644 blob '+file.sha+'\t'+file.filename+'\0';assertCurrentE1ReviewEntry(file,entry);for(const bad of[entry.replace('100644','100755'),entry.replace('100644','120000'),entry.replace(file.sha,sha),entry.replace(file.filename,file.filename+'.extra'),''])rejection(()=>assertCurrentE1ReviewEntry(file,bad));}
+});

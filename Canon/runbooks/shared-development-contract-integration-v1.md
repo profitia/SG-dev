@@ -84,3 +84,10 @@ The mandatory current-main preflight blocked the stale base after PR889. The fin
 ### Preserve accepted AppShell ownership
 
 After the GitHub incident delayed policy merge, independent Git readback identified PR891 at `a3e64a93801cb197af856bf2d282a6158b01c71d`. The active review now binds source `5dd883015b5b31b78739ec603f524c0621e29809` over that main: same131 paths/statuses/modes/actual-owner routes,115 unchanged original blobs and16 exact test/adoption versions. The entire accepted AppShell/monitoring receipt and product bytes remain unchanged beneath the SourceHub compatibility layer. The unchanged D1 historical checkout test and full exact-candidate tests/typecheck/build must pass in controlled CI; local partial-clone limitations grant no exception. All original credential/proof fences and resulting-main gates remain mandatory.
+
+
+## Current central E1 — proposed closed CI review (2026-11-05)
+
+Proposed only, awaiting explicit owner acceptance. The new review is restricted to PR897, branch `architecture/source-hub-e1-current-authority-20261105`, reviewed candidate `1d1c33e557bbf134493f037a39e5ef3041dfe7b1` and its31 exact path/blob/status/mode/actual-owner bindings. It permits a main refresh only with identical reviewed file versions. No generic optional package, application or workflow admission is added. The canonical SDK1.33.0, SG2/SRM product bytes, grants and receipts remain unchanged. The separate policy proposal changes only the controller, its existing tests, this runbook and the dated evidence.
+
+After explicit acceptance and controlled main admission of this policy, dispatch the existing trusted-main integration for the current exact PR head; require every public producer/backend/Identity/consumer gate, controlled SG2 tests/typecheck/build and resulting-main CI. Do not merge the feature, mutate E1 databases or release a runtime based on a partial proof. Credential scope, immutable package versions, main-only environment and token-removal fences remain mandatory. This proposal authorizes no provider calls, deployment or infrastructure configuration.
