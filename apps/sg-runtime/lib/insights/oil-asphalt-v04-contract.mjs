@@ -56,6 +56,12 @@ export function createEvidenceBundle({asOf,timeZone,windowMode,forecast,evidence
   requireThat(['FACT','INTERPRETATION','FORECAST','HYPOTHESIS'].includes(e.claimType),'CLAIM_CLASS_REQUIRED');
   requireThat(['FULL_PUBLICATION','PUBLISHED_SUMMARY','SNIPPET','STRUCTURED_DATA'].includes(e.materialDepth),'MATERIAL_DEPTH_REQUIRED');
   requireThat(typeof e.derivedSummary==='string'&&e.derivedSummary.length<=1500,'DERIVED_SUMMARY_REQUIRED');
+  if(e.facts){
+   const keys=new Set(['actual','consensusForecast','vendorForecast','previous','revised','releaseStatus','dateSpan','importance','unit','currency','country','indicator','value','referencePeriod','lastUpdate','vendorModel','forecastCorePrediction','points']);
+   requireThat(Object.keys(e.facts).every(k=>keys.has(k)),'RAW_FACTS_FORBIDDEN');
+   for(const [k,v] of Object.entries(e.facts))if(k!=='points')requireThat(v===null||['string','number','boolean'].includes(typeof v),'NESTED_RAW_FACTS_FORBIDDEN');
+   if(e.facts.points)requireThat(Array.isArray(e.facts.points)&&e.facts.points.length<=7&&e.facts.points.every(p=>Object.keys(p).every(k=>['horizon','value','targetDate'].includes(k))&&Object.values(p).every(v=>v===null||['string','number'].includes(typeof v))),'INVALID_VENDOR_FORECAST_POINTS');
+  }
   if(e.eventAt&&instant(e.eventAt)>instant(asOf))requireThat(e.facts?.actual==null,'FUTURE_ACTUAL_FORBIDDEN');
  }
  const body={schemaVersion:'ReportEvidenceBundle/OilAsphalt/0.4',profileId:V04_PROFILE.id,canonSha256:V04_PROFILE.canonSha256,asOf,windows,category:'Asfalt drogowy',region:'UNSPECIFIED',exposure:'UNSPECIFIED',priceFormula:'UNSPECIFIED',admissionRef,forecast,evidence,coverage,providerPayloadRetentionSeconds:0};

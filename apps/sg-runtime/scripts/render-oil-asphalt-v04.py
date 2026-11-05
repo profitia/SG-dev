@@ -19,18 +19,32 @@ def number(v):
 def compose(bundle,narrative):
     if set(narrative)!=set(KEYS): raise ValueError('EIGHT_SECTIONS_REQUIRED')
     refs={e['id'] for e in bundle['evidence']}|{'FORECAST'}
+    by_id={e['id']:e for e in bundle['evidence']}
+    def cite(ref):
+        if ref=='FORECAST': return 'Forecast Core'
+        e=by_id[ref];date=(e.get('publishedAt') or e.get('retrievedAt') or '')[:10]
+        return (e.get('publisher') or e['provider'])+'; '+('publ. ' if e.get('publishedAt') else 'odczyt ')+date+'; '+ref
     bodies=[]
     for k in KEYS:
         rows=[]
         for s in narrative[k]:
             if not s['refs'] or any(r not in refs for r in s['refs']): raise ValueError('CITATION_NOT_IN_BUNDLE')
             if any(c.isdigit() for c in s['text']): raise ValueError('MODEL_NUMERICAL_CLAIM')
-            rows.append(s['text']+' ['+', '.join(s['refs'])+']')
+            rows.append(s['text']+' ['+'; '.join(cite(r) for r in s['refs'])+']')
         bodies.append(rows)
-    price_rows=[['Futures / USD/bbl','Poprzednia obserwacja','Ostatnia obserwacja']]
+    price_rows=[['Futures / USD/bbl','Obserwacja i data','Zmiana 7D*','Punkty modeli D7**']]
     for s in bundle['forecast']['series']:
-        price_rows.append([s['label'],number(s['previous'])+' / '+str(s['previousDate']),number(s['last'])+' / '+s['observationDate']])
-    warn='Forecast: EXPERIMENTAL_7D / PARTIAL_READY. Cel '+', '.join(sorted({m['target'] for s in bundle['forecast']['series'] for m in s['models']}))+'. D7 od obserwacji, nie od daty raportu. Brak zatwierdzonych przedziałów, rollover i certyfikacji point-in-time. Pełne wyniki i sprawdzalność w aneksie.'
+        previous=s.get('previous');gap=None if not s.get('previousDate') else __import__('datetime').date.fromisoformat(s['observationDate'])-__import__('datetime').date.fromisoformat(s['previousDate'])
+        delta='N/D' if previous is None or not gap or gap.days!=7 else number(s['last']-previous)+' / '+(number((s['last']/previous-1)*100)+'%' if previous else 'N/D')
+        points=[m['point'] for m in s['models']]
+        price_rows.append([s['label'],number(s['last'])+' / '+s['observationDate'],delta,number(min(points))+' – '+number(max(points))])
+    warn='* Zmiana od rzeczywistej obserwacji sprzed siedmiu dni. ** Min–max punktów modeli, nie przedział ufności. Forecast: EXPERIMENTAL_7D / PARTIAL_READY. Cel '+', '.join(sorted({m['target'] for s in bundle['forecast']['series'] for m in s['models']}))+'. D7 od obserwacji, nie od daty raportu. Brak zatwierdzonych przedziałów, rollover i certyfikacji point-in-time. Pełne wyniki i sprawdzalność w aneksie.'
+    macro=[]
+    for e in bundle['evidence']:
+        f=e.get('facts') or {}
+        if e['family']=='economic-calendar' and f.get('actual') is not None and e.get('eventAt') and e['eventAt']<=bundle['asOf']:
+            macro.append(e.get('title','')+' / '+e['eventAt'][:10]+': Actual '+number(f.get('actual'))+'; konsensus '+number(f.get('consensusForecast'))+'; TE '+number(f.get('vendorForecast'))+'; poprzednio '+number(f.get('previous'))+'; rewizja '+number(f.get('revised'))+' '+(f.get('unit') or '')+' ['+e['id']+']')
+    macro=macro[:3]
     calendar=[]
     for e in bundle['evidence']:
         if e['family']=='economic-calendar' and e.get('eventAt') and e['eventAt']>bundle['asOf']:
@@ -46,8 +60,9 @@ def compose(bundle,narrative):
         if i in (0,4): md+=['','## '+('Strona 1 — Market Review & Price Drivers' if i==0 else 'Strona 2 — Forward Outlook & Procurement Implications')]
         md+=['','### '+str(i+1)+'. '+TITLES[i],*rows]
         if i==1: md+=['',' | '.join(price_rows[0]),'--- | --- | ---',*[' | '.join(r) for r in price_rows[1:]],warn]
+        if i==3: md+=macro
         if i==5: md+=calendar
-    return headline,lead,window,bodies,price_rows,warn,calendar,'\n\n'.join(md)+'\n'
+    return headline,lead,window,bodies,price_rows,warn,calendar,macro,'\n\n'.join(md)+'\n'
 
 def render(bundle,narrative,out,font_path,synthetic=False):
     out.mkdir(parents=True,exist_ok=True)
@@ -55,7 +70,7 @@ def render(bundle,narrative,out,font_path,synthetic=False):
     for name in ['OIL_ASPHALT_V04_REPORT.pdf','OIL_ASPHALT_V04_REPORT.md','OIL_ASPHALT_V04_FORECAST_SOURCES_ANNEX.md','RENDER_VALIDATION.json']:
         if (out/name).exists(): raise ValueError('IMMUTABLE_OUTPUT_EXISTS')
     pdfmetrics.registerFont(TTFont('OilSans',font_path))
-    h,lead,window,bodies,prices,warn,calendar,md=compose(bundle,narrative)
+    h,lead,window,bodies,prices,warn,calendar,macro,md=compose(bundle,narrative)
     title=('SYNTHETIC ONLY — '+h) if synthetic else h
     width=A4[0]-80; height=A4[1]-80
     selected=None
@@ -72,9 +87,10 @@ def render(bundle,narrative,out,font_path,synthetic=False):
                 content.append(Paragraph(escape(str(i+1)+'. '+TITLES[i]),heading))
                 content.extend(Paragraph(escape(p),normal) for p in bodies[i])
                 if i==1:
-                    table=Table([[Paragraph(escape(v),small) for v in r] for r in prices],colWidths=[width*.23,width*.385,width*.385])
+                    table=Table([[Paragraph(escape(v),small) for v in r] for r in prices],colWidths=[width*.19,width*.30,width*.23,width*.28])
                     table.setStyle(TableStyle([('VALIGN',(0,0),(-1,-1),'TOP'),('BACKGROUND',(0,0),(-1,0),colors.HexColor('#e9f0f4')),('BOTTOMPADDING',(0,0),(-1,-1),3),('TOPPADDING',(0,0),(-1,-1),3)]))
                     content.extend([table,Spacer(1,5),Paragraph(escape(warn),small)])
+                if i==3: content.extend(Paragraph(escape(x),small) for x in macro)
                 if i==5: content.extend(Paragraph(escape(x),small) for x in calendar)
             used=sum(f.wrap(width,height)[1]+f.getSpaceBefore()+f.getSpaceAfter() for f in content)
             pages.append(content)
@@ -90,7 +106,7 @@ def render(bundle,narrative,out,font_path,synthetic=False):
     (out/'OIL_ASPHALT_V04_REPORT.md').write_text(md)
     annex=['# Aneks — Forecast i źródła','Kontekst: '+bundle['asOf'],warn]
     for s in bundle['forecast']['series']:
-        annex +=['## '+s['label']+' / '+s['seriesId'],'Jednostka: '+s['unit']+'; provider: '+s['provider'],'Model | origin | target | punkt | n | MAE | sMAPE | RMSE | sprawdzalność ostatniego przypadku','--- | --- | --- | --- | --- | --- | --- | --- | ---']
+        annex +=['## '+s['label']+' / '+s['seriesId'],'Jednostka: '+s['unit']+'; provider: '+s['provider']+'; poprzednia obserwacja '+str(s.get('previousDate'))+' = '+number(s.get('previous')),'Model | origin | target | punkt | n | MAE | sMAPE | RMSE | sprawdzalność ostatniego przypadku','--- | --- | --- | --- | --- | --- | --- | --- | ---']
         for m in s['models']:
             v=m['verification'];last=v.get('lastCase') or {}
             annex.append(' | '.join([m['name'],m['origin'],m['target'],number(m['point']),str(v.get('sampleSize')),number(v.get('mae')),number(v.get('smape')),number(v.get('rmse')),number(last.get('verificationPercent'))]))
