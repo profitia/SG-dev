@@ -1,3 +1,4 @@
+import {FIRST_PARTY_SOURCE_HEADER} from '@profitia/platform-current-e1-authority/first-party';
 import {createServer} from 'node:http';
 import {createPeerOperationVerifier,peerOperationAttribution} from '@profitia/platform-contracts/peer-operation';
 import {parseHubRequest,assertHubResponse,closed,SourceHubError} from '../../../packages/platform-source-hub-contracts/index.mjs';
@@ -25,39 +26,42 @@ async function acquire(configuration,request,transport,signal){
  if(request.provider==='brave')return createBraveProvider({apiKey:configuration.secrets.brave,fetchImpl:transport.fetchImpl}).search(request.criteria,{signal});
  return createTradingEconomicsProvider({apiKey:configuration.secrets.tradingEconomics,fetchImpl:transport.fetchImpl}).search(request.family,request.criteria,{signal});
 }
-export function createApplication({configuration,authorizer,repository,admission,telemetry=createTelemetry()}){
- const verify=createPeerOperationVerifier(peerConfiguration(configuration));
+/** @param {{configuration:any,authorizer:any,repository:any,admission:any,consumerAccess?:any,telemetry?:ReturnType<typeof createTelemetry>}} options */
+export function createApplication({configuration,authorizer,repository,admission,consumerAccess=null,telemetry=createTelemetry()}){
+ const verify=configuration.legacyPeerEnabled===false?null:createPeerOperationVerifier(peerConfiguration(configuration));
  async function dispatch(request,details){
   const u=new URL(request.url);
   if(request.method==='GET'&&['/health','/live','/ready'].includes(u.pathname)){
-   const ready=u.pathname!=='/ready'||await repository.ready()&&await authorizer.ready()&&await admission.ready();return new Response(JSON.stringify({service:'platform-source-hub',status:ready?'ok':'not_ready'}),{status:ready?200:503});
+   const ready=u.pathname!=='/ready'||(consumerAccess?await consumerAccess.ready():await repository.ready()&&await authorizer.ready())&&await admission.ready();return new Response(JSON.stringify({service:'platform-source-hub',status:ready?'ok':'not_ready'}),{status:ready?200:503});
   }
   if(request.method==='GET'&&u.pathname==='/v1/capabilities')return Response.json(getCatalogue());
   if(request.method!=='POST'||u.pathname!=='/v1/acquire'||u.search)throw new SourceHubError('NOT_FOUND',404);
-  if(!await verify(request))throw new SourceHubError('PEER_AUTHENTICATION_REQUIRED',401);
+  const universal=request.headers.has(FIRST_PARTY_SOURCE_HEADER);
+  if(universal&&!consumerAccess||!universal&&(!verify||!await verify(request)))throw new SourceHubError('PEER_AUTHENTICATION_REQUIRED',401);
   const envelope=await request.clone().json().catch(()=>{throw new SourceHubError('INVALID_JSON');});
-  if(!closed(envelope,['context','request'])||!closed(envelope.context,['organisationId','expectedUserId']))throw new SourceHubError('INVALID_REQUEST');
+  if(!closed(envelope,['context','request'])||!universal&&!closed(envelope.context,['organisationId','expectedUserId']))throw new SourceHubError('INVALID_REQUEST');
   const command=parseHubRequest(envelope.request);validateProviderRequest(command);
   details.provider=command.provider;details.family=command.family;
-  const peer=peerOperationAttribution(request);if(!peer)throw new SourceHubError('PEER_AUTHENTICATION_REQUIRED',401);
-  const args={request,organisationId:envelope.context.organisationId,resourceId:'source-hub-private',write:true};
-  const authorized=action=>authorizer.execute(args,(context,transaction)=>{
+  const peer=universal?null:peerOperationAttribution(request);if(!universal&&!peer)throw new SourceHubError('PEER_AUTHENTICATION_REQUIRED',401);
+  const selected=universal?consumerAccess.repository:repository;
+  let consumer;
+  const authorized=action=>universal?consumerAccess.execute({request,execution:envelope.context,resourceId:'api.'+command.provider+'.'+command.family},(c,t,verified)=>{consumer=verified;return action(c,t);}):authorizer.execute({request,organisationId:envelope.context.organisationId,resourceId:'source-hub-private',write:true},(context,transaction)=>{
    if(context.subjectUserId!==envelope.context.expectedUserId||context.organisationId!==envelope.context.organisationId)throw new SourceHubError('VERIFIED_CONTEXT_MISMATCH',403);
-   return action(context,transaction);
+   if(!peer)throw new SourceHubError('PEER_AUTHENTICATION_REQUIRED',401);consumer=peer.callerApplicationId;return action(context,transaction);
   });
-  const started=await authorized((c,t)=>repository.begin(t,c,command,peer.callerApplicationId,request.headers.get('idempotency-key')));
+  const started=await authorized((c,t)=>selected.begin(t,c,command,consumer,request.headers.get('idempotency-key')));
   if(started.kind==='replay'){await admission.assertCurrent(command.provider,command.family,started.licence);assertHubResponse(started.body,command);assertNoSecret(started.body,configuration.secrets);details.count=started.body.items.length;details.cacheHit=true;details.upstreamAttempts=0;return Response.json(started.body);}
   let transport;
   try{
    transport=await admission.transportFor(command.provider,command.family,started.licence,started.intentKey);
    const body=await acquire(configuration,command,transport,request.signal);assertNoSecret(body,configuration.secrets);
-   const completed=await authorized(async(c,t)=>{const answer=await repository.complete(t,c,started,command,peer.callerApplicationId,body,transport.receipt.value);assertHubResponse(answer,command);assertNoSecret(answer,configuration.secrets);return answer;});
+   const completed=await authorized(async(c,t)=>{const answer=await selected.complete(t,c,started,command,consumer,body,transport.receipt.value);assertHubResponse(answer,command);assertNoSecret(answer,configuration.secrets);return answer;});
    details.count=completed.items.length;details.cacheHit=false;details.upstreamAttempts=completed.usage.upstreamAttempts;
    return Response.json(completed);
   }catch(error){
    // Fresh E1 also gates this write. Revocation may leave a pending record for
    // owner reconciliation; never impersonate an owner to force a FAILED row.
-   await authorized((c,t)=>repository.failed(t,c,started,command,safeError(error),transport?.receipt??{certainty:'NOT_SENT',upstreamAttempts:0,value:null})).catch(()=>{});throw error;
+   await authorized((c,t)=>selected.failed(t,c,started,command,safeError(error),transport?.receipt??{certainty:'NOT_SENT',upstreamAttempts:0,value:null},consumer)).catch(()=>{});throw error;
   }
  }
  return Object.freeze({async handle(request){const requestId=telemetry.requestId(),start=performance.now(),details={};let response,outcome='OK';
