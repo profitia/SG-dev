@@ -9,3 +9,5 @@ The review covers an optional current-E1 producer/receiver contract and its back
 Required after owner approval: policy PR CI and controlled main admission; fresh feature base; exact-candidate public CI plus trusted-main SG2 controlled proof; controlled feature merge; resulting-main CI; separately authorized E1 installation under verified recovery. No deployment, paid provider query, Render write, new cloud resource/role or Staging/Production operation is authorized by this CI review.
 
 Local validation:143/143 controller and path-coverage tests PASS, including all existing controls and three new closed-review negative groups. All31 candidate owner routes PASS. No live mutation performed by this proposal. Explicit owner approval is still pending.
+
+Owner acceptance in the same execution chat: "Zatwierdzam poprawkę CI i dalszą realizację" (2026-11-05). This accepts the finished four-file PR898 proposal and its closed PR897/31-file review; activation still requires all applicable CI and trusted-main gates. No deployment, Render change or Source policy mutation is authorized.
