@@ -10,3 +10,9 @@ declare const c:HubResponse<CalendarPayload>,f:HubResponse<ExternalForecastPaylo
 const distinct:Array<string|number|null>=[c.items[0].payload.actual,c.items[0].payload.consensusForecast,c.items[0].payload.vendorForecast];
 const external:false=f.items[0].payload.forecastCorePrediction;
 void calendar;void invalid;void key;void distinct;void external;void commentary;void market;
+import {createFirstPartySourceHubClient} from '@profitia/platform-source-hub-contracts/client';
+import type {SourceExecution} from '@profitia/platform-current-e1-authority/first-party';
+const service:SourceExecution={kind:'SERVICE',organisationId:'synthetic-org',grantId:'synthetic-grant'};
+// @ts-expect-error SERVICE uses a canonical grant, never a made-up human owner.
+const fakeHuman:SourceExecution={kind:'SERVICE',organisationId:'synthetic-org',userId:'forged'};
+void service;void fakeHuman;void createFirstPartySourceHubClient;

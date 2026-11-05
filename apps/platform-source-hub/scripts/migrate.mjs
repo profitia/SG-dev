@@ -60,18 +60,23 @@ export async function migrate(client,c){
    await client.query('CREATE POLICY configuration_read ON source_hub.migrations FOR SELECT TO '+identifier(runtime)+' USING(true)');
   }
   await client.query('GRANT SELECT ON source_hub.migrations TO '+identifier(runtime));
-  const extension=await readFile(new URL('../migrations/002-te-news.sql',import.meta.url),'utf8'),extensionDigest=hash(extension);
-  const applied=await client.query('SELECT digest FROM source_hub.migrations WHERE version=$1',['002-te-news']);
-  if(applied.rows.length){if(applied.rows[0].digest!==extensionDigest)throw Error('EXISTING_MIGRATION_MISMATCH');}
-  else{await client.query(extension);await client.query('INSERT INTO source_hub.migrations(version,digest) VALUES($1,$2)',['002-te-news',extensionDigest]);}
-  await client.query('COMMIT');return {schemaVersion:'1.0.0',schemaDigest:digest,migrations:[{version:'002-te-news',digest:extensionDigest}],...(unmeteredDigest?{unmeteredSourceSchemaDigest:unmeteredDigest}:{}),status:'APPLIED_OR_VERIFIED'};
+  const migrations=[];
+  for(const version of ['002-te-news',...(c.installFirstParty===true?['004-universal-consumers']:[])]){
+   const extension=await readFile(new URL('../migrations/'+version+'.sql',import.meta.url),'utf8'),extensionDigest=hash(extension);
+   const applied=await client.query('SELECT digest FROM source_hub.migrations WHERE version=$1',[version]);
+   if(applied.rows.length){if(applied.rows[0].digest!==extensionDigest)throw Error('EXISTING_MIGRATION_MISMATCH');}
+   else{await client.query(extension);await client.query('INSERT INTO source_hub.migrations(version,digest) VALUES($1,$2)',[version,extensionDigest]);}
+   migrations.push({version,digest:extensionDigest});
+  }
+  await client.query('COMMIT');return {schemaVersion:'1.0.0',schemaDigest:digest,migrations,...(unmeteredDigest?{unmeteredSourceSchemaDigest:unmeteredDigest}:{}),status:'APPLIED_OR_VERIFIED'};
  }catch(error){await client.query('ROLLBACK');throw error;}
 }
 async function main(){
  const c=ENVIRONMENTS.development,u=new URL(process.env.SOURCE_HUB_MIGRATOR_DATABASE_URL??'');
+ const firstParty=process.env.SOURCE_HUB_INSTALL_FIRST_PARTY;if(firstParty!==undefined&&!['true','false'].includes(firstParty))throw Error('FIRST_PARTY_INSTALL_OPTION_REFUSED');
  const unmetered=process.env.SOURCE_HUB_INSTALL_UNMETERED_SOURCE;if(unmetered!==undefined&&!['true','false'].includes(unmetered))throw Error('UNMETERED_INSTALL_OPTION_REFUSED');
  if(process.env.SOURCE_HUB_ENVIRONMENT!=='development'||u.hostname!==c.host.replace('-pooler','')||decodeURIComponent(u.username)!=='source_hub_development_migrator'||u.pathname!=='/neondb'||!['require','verify-full'].includes(u.searchParams.get('sslmode')??'')||[...u.searchParams.keys()].some(k=>!['sslmode','channel_binding'].includes(k)))throw Error('MIGRATOR_CONFIGURATION_REFUSED');
  u.searchParams.delete('sslmode');u.searchParams.delete('channel_binding');const client=new pg.Client({connectionString:u.href,ssl:{rejectUnauthorized:true},enableChannelBinding:true});await client.connect();
- try{const result=await migrate(client,{...c,environment:'development',databaseName:'neondb',installUnmetered:unmetered==='true'});process.stdout.write(JSON.stringify(result)+'\n');}finally{await client.end();}
+ try{const result=await migrate(client,{...c,environment:'development',databaseName:'neondb',installUnmetered:unmetered==='true',installFirstParty:firstParty==='true'});process.stdout.write(JSON.stringify(result)+'\n');}finally{await client.end();}
 }
 if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href)main().catch(()=>{process.stderr.write('{"error":"MIGRATION_REFUSED_OR_FAILED"}\n');process.exitCode=1;});

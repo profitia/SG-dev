@@ -1,9 +1,10 @@
 {
   "name": "@profitia/platform-source-hub-contracts",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
   "type": "module",
   "engines": { "node": ">=24.15.0 <25" },
-  "exports": { ".": { "types": "./index.d.ts", "import": "./index.mjs" } },
+  "exports": { ".": { "types": "./index.d.ts", "import": "./index.mjs" }, "./client": { "types": "./client.d.mts", "import": "./client.mjs" } },
+  "peerDependencies": { "@profitia/platform-current-e1-authority": "1.1.0" },
   "scripts": { "build": "node --check index.mjs" }
 }
