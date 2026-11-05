@@ -20,6 +20,7 @@ test('SYNTHETIC_ONLY: current E1 across three isolated databases; no copied dire
   ['account',"UPDATE profitia_access.accounts SET status='DISABLED' WHERE user_id=$1",[U],"UPDATE profitia_access.accounts SET status='ACTIVE' WHERE user_id=$1"],
   ['organisation',"UPDATE profitia_access.organisations SET status='SUSPENDED' WHERE organisation_id=$1",[A],"UPDATE profitia_access.organisations SET status='ACTIVE' WHERE organisation_id=$1"],
   ['external identity',"UPDATE profitia_access.external_identities SET status='REVOKED' WHERE user_id=$1",[U],"UPDATE profitia_access.external_identities SET status='ACTIVE' WHERE user_id=$1"],
+  ['canonical SPENDGURU product',"UPDATE profitia_access.product_grants SET status='REVOKED' WHERE application_id=$1 AND organisation_id=$2",['spendguru',A],"UPDATE profitia_access.product_grants SET status='ACTIVE' WHERE application_id=$1 AND organisation_id=$2"],
   ['product',"UPDATE profitia_access.product_grants SET status='REVOKED' WHERE application_id=$1 AND organisation_id=$2",[f.apps[2],A],"UPDATE profitia_access.product_grants SET status='ACTIVE' WHERE application_id=$1 AND organisation_id=$2"],
  ])await t.test('central '+label+' revocation stops the next request and an already admitted local transaction',async()=>{
   let effects=0
@@ -58,6 +59,7 @@ test('SYNTHETIC_ONLY: current E1 across three isolated databases; no copied dire
  await t.test('unrelated SG2/SRM authority changes do not alter the receiver authority fingerprint',async()=>{
   f.transportState.afterInitial=()=>f.asOwner(0,c=>c.query("INSERT INTO profitia_access.applications(application_id,status) VALUES('synthetic-unrelated-app','ACTIVE')"));try{assert.equal((await execute()).value.owner,U)}finally{f.transportState.afterInitial=null}
  })
+ await t.test('the approved receiving application accepts a current session from the exact SpendGuru frontend',async()=>{f.clerkState.azp='https://spendguru.synthetic.test';try{assert.equal((await execute()).value.owner,U)}finally{f.clerkState.azp=f.origin}})
  await t.test('unsupported operations/resources, absent bearer and client user claims never grant access',async()=>{
   for(const patch of[{operation:'supplier.report.refresh'},{resourceId:'another-resource'},{organisationId:V},{request:new Request(f.origin+'/')}])await assert.rejects(execute(2,patch))
   await assert.rejects(f.authority.authorize(f.request(),{applicationId:f.apps[2],challenge:{},previous:null,requestOrigin:f.origin,userId:U}))

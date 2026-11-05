@@ -38,7 +38,7 @@ CREATE FUNCTION profitia_e1_authority.issue(p_application text,p_identity jsonb,
 LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,profitia_e1_authority,profitia_access AS $fn$
 DECLARE config jsonb; r profitia_e1_authority.receivers%ROWTYPE; e profitia_access.external_identities%ROWTYPE;
  u profitia_access.accounts%ROWTYPE; m profitia_access.memberships%ROWTYPE; o profitia_access.organisations%ROWTYPE;
- pg profitia_access.product_grants%ROWTYPE; permissions jsonb; denies jsonb; fingerprint text;
+ pg profitia_access.product_grants%ROWTYPE; parent_product profitia_access.product_grants%ROWTYPE; permissions jsonb; denies jsonb; fingerprint text;
  expiry timestamptz; actor jsonb; state jsonb; payload jsonb; raw text; previous jsonb;
 BEGIN
  config:=profitia_e1_authority.receiver(p_application);
@@ -67,14 +67,18 @@ BEGIN
  IF NOT FOUND OR EXISTS(SELECT 1 FROM profitia_access.applications WHERE application_id=p_application AND fixed_organisation_id IS NOT NULL AND fixed_organisation_id<>o.organisation_id) THEN RETURN NULL; END IF;
  SELECT * INTO pg FROM profitia_access.product_grants WHERE application_id=p_application AND organisation_id=o.organisation_id AND product='SPENDGURU' AND status='ACTIVE' AND 'personal_workspace'=ANY(features) AND expires_at>clock_timestamp();
  IF NOT FOUND THEN RETURN NULL; END IF;
+ -- The consumer offer never survives withdrawal of its canonical SPENDGURU
+ -- entitlement. This is a current central dependency, never a copied product.
+ SELECT * INTO parent_product FROM profitia_access.product_grants WHERE application_id='spendguru' AND organisation_id=o.organisation_id AND product='SPENDGURU' AND status='ACTIVE' AND expires_at>clock_timestamp();
+ IF NOT FOUND THEN RETURN NULL; END IF;
  SELECT coalesce(jsonb_agg(jsonb_build_object('operation',operation,'feature',feature,'resourceId',resource_id) ORDER BY grant_id) FILTER(WHERE effect='ALLOW'),'[]'::jsonb),
  coalesce(jsonb_agg(jsonb_build_object('operation',operation,'feature',feature,'resourceId',resource_id) ORDER BY grant_id) FILTER(WHERE effect='DENY'),'[]'::jsonb)
  INTO permissions,denies FROM profitia_access.permission_grants
  WHERE application_id=p_application AND organisation_id=o.organisation_id AND user_id=u.user_id;
  IF NOT EXISTS(SELECT 1 FROM jsonb_array_elements(permissions) p WHERE p->>'operation'=p_request->>'operation' AND p->>'feature'='personal_workspace' AND (p->>'resourceId' IS NULL OR p->>'resourceId'=r.resource_id))
  OR EXISTS(SELECT 1 FROM jsonb_array_elements(denies) p WHERE p->>'operation'=p_request->>'operation' AND p->>'feature'='personal_workspace' AND (p->>'resourceId' IS NULL OR p->>'resourceId'=r.resource_id)) THEN RETURN NULL; END IF;
- fingerprint:=encode(public.digest(convert_to(jsonb_build_object('account',to_jsonb(u),'identity',to_jsonb(e),'organisation',to_jsonb(o),'membership',to_jsonb(m),'product',to_jsonb(pg),'permissions',permissions,'denies',denies,'receiver',config,'receiverExpiry',r.expires_at)::text,'UTF8'),'sha256'),'hex');
- expiry:=least(e.expires_at,m.expires_at,pg.expires_at,r.expires_at,(p_actor->>'expiresAt')::timestamptz,clock_timestamp()+interval '15 seconds');
+ fingerprint:=encode(public.digest(convert_to(jsonb_build_object('account',to_jsonb(u),'identity',to_jsonb(e),'organisation',to_jsonb(o),'membership',to_jsonb(m),'product',to_jsonb(pg),'parentProduct',to_jsonb(parent_product),'permissions',permissions,'denies',denies,'receiver',config,'receiverExpiry',r.expires_at)::text,'UTF8'),'sha256'),'hex');
+ expiry:=least(e.expires_at,m.expires_at,pg.expires_at,parent_product.expires_at,r.expires_at,(p_actor->>'expiresAt')::timestamptz,clock_timestamp()+interval '15 seconds');
  IF p_previous IS NOT NULL THEN
   raw:=p_previous->>'payload';
   IF raw IS NULL OR octet_length(raw)>16384 OR p_previous->>'signature' IS DISTINCT FROM encode(public.hmac(convert_to(raw,'UTF8'),r.proof_key,'sha256'),'hex') THEN RETURN NULL; END IF;

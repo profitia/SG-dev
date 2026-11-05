@@ -10,7 +10,7 @@ const load=relative=>fs.readFileSync(new URL(relative,import.meta.url),'utf8')
 export const U='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',V='bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',A='11111111-1111-4111-8111-111111111111',B='22222222-2222-4222-8222-222222222222'
 export async function currentE1Fixture(){
  let directory,root,bin,configuration
- const configured=process.env.OPERATION_FIXTURE_OWNER_URL
+ const configured=process.env.OPERATION_FIXTURE_OWNER_URL??process.env.SOURCE_HUB_TEST_ADMIN_URL
  if(configured){const u=new URL(configured);if(!['localhost','127.0.0.1','[::1]'].includes(u.hostname)||!['postgres:','postgresql:'].includes(u.protocol))throw Error('LOOPBACK_FIXTURE_ONLY');configuration={connectionString:u.href}}
  else{
   bin=process.env.B1_PG_BIN??'/opt/homebrew/opt/postgresql@16/bin';directory=fs.mkdtempSync(path.join(os.tmpdir(),'current-e1-offline-'))
@@ -46,8 +46,10 @@ export async function currentE1Fixture(){
   const issuer='https://synthetic.clerk.accounts.dev',origin='https://newsfeed.synthetic.test',authorityOrigin='https://identity.synthetic.test'
   const asOwner=async(i,action,owner='profitia_access_owner')=>{const c=databases[i];await c.query('BEGIN');try{await c.query('SET LOCAL ROLE '+owner);const r=await action(c);await c.query('COMMIT');return r}catch(error){await c.query('ROLLBACK');throw error}}
   await asOwner(0,async c=>{
+   await c.query("INSERT INTO profitia_access.applications(application_id,status) VALUES('spendguru','ACTIVE')")
    for(const user of[U,V]){await c.query("INSERT INTO profitia_access.accounts(user_id,status) VALUES($1,'ACTIVE')",[user]);await c.query("INSERT INTO profitia_access.external_identities(binding_id,issuer,subject,user_id,status,source_ref,expires_at) VALUES($1,$2,$3,$4,'ACTIVE','SYNTHETIC_ONLY',now()+interval '1 hour')",[randomUUID(),issuer,'user_'+user,user])}
    for(const org of[A,B]){await c.query("INSERT INTO profitia_access.organisations(organisation_id,status) VALUES($1,'ACTIVE')",[org]);for(const user of[U,V])await c.query("INSERT INTO profitia_access.memberships(organisation_id,user_id,status,source_ref,expires_at) VALUES($1,$2,'ACTIVE','SYNTHETIC_ONLY',now()+interval '1 hour')",[org,user])}
+   for(const org of[A,B])await c.query("INSERT INTO profitia_access.product_grants(application_id,organisation_id,product,features,status,source,source_ref,expires_at) VALUES('spendguru',$1,'SPENDGURU',ARRAY['benchmark'],'ACTIVE','EXPLICIT_OFFER','SYNTHETIC_ONLY',now()+interval '1 hour')",[org])
    for(let i=1;i<3;i++){
     await c.query("INSERT INTO profitia_access.applications(application_id,status) VALUES($1,'ACTIVE')",[apps[i]])
     for(const org of[A,B]){await c.query("INSERT INTO profitia_access.product_grants(application_id,organisation_id,product,features,status,source,source_ref,expires_at) VALUES($1,$2,'SPENDGURU',ARRAY['personal_workspace'],'ACTIVE','EXPLICIT_OFFER','SYNTHETIC_ONLY',now()+interval '1 hour')",[apps[i],org]);for(const user of[U,V])for(const op of['personal.list.read','personal.list.write'])await c.query("INSERT INTO profitia_access.permission_grants(grant_id,application_id,organisation_id,user_id,effect,operation,feature,resource_id) VALUES($1,$2,$3,$4,'ALLOW',$5,'personal_workspace',$6)",[randomUUID(),apps[i],org,user,op,i===1?'source-hub-private':null])}
