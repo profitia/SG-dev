@@ -1633,6 +1633,349 @@ export const SOURCE_HUB_CURRENT_E1_REVIEW=Object.freeze({
     }
   }
 });
+// DRAFT closed admission; active only after separate owner approval and controlled main acceptance.
+export const SOURCE_HUB_UNIVERSAL_FIRST_PARTY_REVIEW=Object.freeze({
+  "prNumber": 904,
+  "branch": "architecture/source-hub-universal-consumers-20261105",
+  "reviewedCandidateSha": "20cd23cec09657562b39bed8904cc1bb9981e08f",
+  "reviewedBaseSha": "817c671e31606536a1536dd187165ac07145a0fc",
+  "blobs": {
+    "Canon/evidence/2026-11-05-source-hub-universal-first-party-access.md": "e87c6881214364461a8b20e0e7e7492dfe4318b4",
+    "Canon/registries/governance-manifest-v2.json": "a5418bbd30b823cd8af266eca6b47e0e6911f04a",
+    "Canon/runbooks/source-hub-first-party-development-v1.md": "d82cb8ee9d06316bfde733eb42193a9e75c0c290",
+    "Canon/v1.1-platform-source-hub-universal-first-party-consumer-access.md": "04ef8f04c9fae22b82ffa1c2ea523f1e53d3ab98",
+    "apps/identity-runtime/package-lock.json": "f855e265d8d28ab2157295650ec56801f197fb99",
+    "apps/identity-runtime/src/http-handler.ts": "0c9d577edbb8e9dfc2087e894e30557af9fd96dc",
+    "apps/identity-runtime/src/node-server.ts": "66a6684dc35650225de7552d6019cb8055a17c9d",
+    "apps/identity-runtime/test/first-party-source.test.mjs": "46ce4e967fa40fa1af9ed73bd7f8a1c03bc7da4c",
+    "apps/newsfeed-runtime/package-lock.json": "fe7ecc01586d0bdd84649a36639266c08807955a",
+    "apps/platform-source-hub/README.md": "cef52e20c782107b71d94b712f3805ebae48983c",
+    "apps/platform-source-hub/docs/first-party-consumers.pl.md": "99080644ef09d834aa3eefa051ef744a313e489a",
+    "apps/platform-source-hub/examples/development.env.example": "50b99814ede98dbcec78d54baa6c9b2b92e1983b",
+    "apps/platform-source-hub/migrations/004-universal-consumers.sql": "1314dcdca549d1cafdb58e62f49cd21fa6818a87",
+    "apps/platform-source-hub/package-lock.json": "062bf99657ba46ef79136458db705384dff59712",
+    "apps/platform-source-hub/scripts/migrate.mjs": "e055fef46fb1862ee1c423856d4c2ff51079fddd",
+    "apps/platform-source-hub/src/config.mjs": "4e8d3f27d3e8c3feecbe9fa8dec63b0a6dfc8758",
+    "apps/platform-source-hub/src/consumer-access.mjs": "e66475426872f1caf10bcef786a7fe23a505afb0",
+    "apps/platform-source-hub/src/main.mjs": "d11e5b0b7297edce2198ff45809c82ef477daede",
+    "apps/platform-source-hub/src/repository.mjs": "b57f2196658d9fa52b7b9030c0aadd755657d9bc",
+    "apps/platform-source-hub/src/server.mjs": "ee340cc6a9aefe311446b4965f4f84139960550d",
+    "apps/platform-source-hub/test/contracts.test.mjs": "de0b39ebd06893d239e057e4d29e13c1f59a79d0",
+    "apps/platform-source-hub/test/first-party-consumers.test.mjs": "dfd1ef26af433944420ce52746419c917f825e64",
+    "apps/platform-source-hub/test/first-party-fixtures.mjs": "d64edb0ef25f52319da03e14aef1bf058228f0ad",
+    "apps/platform-source-hub/test/types.ts": "a9d9f1c821354334d61ccc609b55657dc9cffe7f",
+    "packages/platform-contracts/current-e1-authority/first-party.d.mts": "2dc44e5a91df90b07a0fbf938fa4b5564c4e6b2f",
+    "packages/platform-contracts/current-e1-authority/first-party.mjs": "d25879b372da5ec93103e6c4db5a71f6e819922e",
+    "packages/platform-contracts/current-e1-authority/index.d.mts": "6bb7bad78ceb8a281ac5e901939f7b2b1e13ad6b",
+    "packages/platform-contracts/current-e1-authority/index.mjs": "7a2ded45c6a94a930735617f61ebf7f46bb13702",
+    "packages/platform-contracts/current-e1-authority/migrations/003-first-party-authority.sql": "2fe9411c299a301e383d6d282b153ba68db16a89",
+    "packages/platform-contracts/current-e1-authority/migrations/004-first-party-receiver.sql": "617dffc411bbed4f295259f20337873a0e932ac6",
+    "packages/platform-contracts/current-e1-authority/package-lock.json": "24ef23d126043ef6ca8fee761285bc98cb952331",
+    "packages/platform-contracts/current-e1-authority/package.json": "479331a99565c87c7cbb719abd80ba510291ef56",
+    "packages/platform-contracts/test/first-party-source-access.test.mjs": "ffa9c8edb9a7ef4a506a95b6dfb602b4768cf447",
+    "packages/platform-contracts/test/fixtures/first-party-source-postgres.mjs": "3b1b3c1ba6e5c24db99b8622057a972eb3a91b39",
+    "packages/platform-source-hub-contracts/README.md": "3c99f0cf2fde001935d2713401681ee2dd8b4ec2",
+    "packages/platform-source-hub-contracts/client.d.mts": "a59c403e42df2553e744932562eeff998affc018",
+    "packages/platform-source-hub-contracts/client.mjs": "aac33d8c53bc313d79e7a256b0233a36408311b7",
+    "packages/platform-source-hub-contracts/package.json": "851c3a131a82033e2bf9b987d79db03d062569b9",
+    "scripts/governance/platform-source-hub-foundation.test.mjs": "2f21ec823028cec332748376770d9b80f715222c"
+  },
+  "statuses": {
+    "Canon/evidence/2026-11-05-source-hub-universal-first-party-access.md": "added",
+    "Canon/registries/governance-manifest-v2.json": "modified",
+    "Canon/runbooks/source-hub-first-party-development-v1.md": "added",
+    "Canon/v1.1-platform-source-hub-universal-first-party-consumer-access.md": "added",
+    "apps/identity-runtime/package-lock.json": "modified",
+    "apps/identity-runtime/src/http-handler.ts": "modified",
+    "apps/identity-runtime/src/node-server.ts": "modified",
+    "apps/identity-runtime/test/first-party-source.test.mjs": "added",
+    "apps/newsfeed-runtime/package-lock.json": "modified",
+    "apps/platform-source-hub/README.md": "modified",
+    "apps/platform-source-hub/docs/first-party-consumers.pl.md": "added",
+    "apps/platform-source-hub/examples/development.env.example": "modified",
+    "apps/platform-source-hub/migrations/004-universal-consumers.sql": "added",
+    "apps/platform-source-hub/package-lock.json": "modified",
+    "apps/platform-source-hub/scripts/migrate.mjs": "modified",
+    "apps/platform-source-hub/src/config.mjs": "modified",
+    "apps/platform-source-hub/src/consumer-access.mjs": "added",
+    "apps/platform-source-hub/src/main.mjs": "modified",
+    "apps/platform-source-hub/src/repository.mjs": "modified",
+    "apps/platform-source-hub/src/server.mjs": "modified",
+    "apps/platform-source-hub/test/contracts.test.mjs": "modified",
+    "apps/platform-source-hub/test/first-party-consumers.test.mjs": "added",
+    "apps/platform-source-hub/test/first-party-fixtures.mjs": "added",
+    "apps/platform-source-hub/test/types.ts": "modified",
+    "packages/platform-contracts/current-e1-authority/first-party.d.mts": "added",
+    "packages/platform-contracts/current-e1-authority/first-party.mjs": "added",
+    "packages/platform-contracts/current-e1-authority/index.d.mts": "modified",
+    "packages/platform-contracts/current-e1-authority/index.mjs": "modified",
+    "packages/platform-contracts/current-e1-authority/migrations/003-first-party-authority.sql": "added",
+    "packages/platform-contracts/current-e1-authority/migrations/004-first-party-receiver.sql": "added",
+    "packages/platform-contracts/current-e1-authority/package-lock.json": "modified",
+    "packages/platform-contracts/current-e1-authority/package.json": "modified",
+    "packages/platform-contracts/test/first-party-source-access.test.mjs": "added",
+    "packages/platform-contracts/test/fixtures/first-party-source-postgres.mjs": "added",
+    "packages/platform-source-hub-contracts/README.md": "modified",
+    "packages/platform-source-hub-contracts/client.d.mts": "added",
+    "packages/platform-source-hub-contracts/client.mjs": "added",
+    "packages/platform-source-hub-contracts/package.json": "modified",
+    "scripts/governance/platform-source-hub-foundation.test.mjs": "modified"
+  },
+  "modes": {
+    "Canon/evidence/2026-11-05-source-hub-universal-first-party-access.md": "100644",
+    "Canon/registries/governance-manifest-v2.json": "100644",
+    "Canon/runbooks/source-hub-first-party-development-v1.md": "100644",
+    "Canon/v1.1-platform-source-hub-universal-first-party-consumer-access.md": "100644",
+    "apps/identity-runtime/package-lock.json": "100644",
+    "apps/identity-runtime/src/http-handler.ts": "100644",
+    "apps/identity-runtime/src/node-server.ts": "100644",
+    "apps/identity-runtime/test/first-party-source.test.mjs": "100644",
+    "apps/newsfeed-runtime/package-lock.json": "100644",
+    "apps/platform-source-hub/README.md": "100644",
+    "apps/platform-source-hub/docs/first-party-consumers.pl.md": "100644",
+    "apps/platform-source-hub/examples/development.env.example": "100644",
+    "apps/platform-source-hub/migrations/004-universal-consumers.sql": "100644",
+    "apps/platform-source-hub/package-lock.json": "100644",
+    "apps/platform-source-hub/scripts/migrate.mjs": "100644",
+    "apps/platform-source-hub/src/config.mjs": "100644",
+    "apps/platform-source-hub/src/consumer-access.mjs": "100644",
+    "apps/platform-source-hub/src/main.mjs": "100644",
+    "apps/platform-source-hub/src/repository.mjs": "100644",
+    "apps/platform-source-hub/src/server.mjs": "100644",
+    "apps/platform-source-hub/test/contracts.test.mjs": "100644",
+    "apps/platform-source-hub/test/first-party-consumers.test.mjs": "100644",
+    "apps/platform-source-hub/test/first-party-fixtures.mjs": "100644",
+    "apps/platform-source-hub/test/types.ts": "100644",
+    "packages/platform-contracts/current-e1-authority/first-party.d.mts": "100644",
+    "packages/platform-contracts/current-e1-authority/first-party.mjs": "100644",
+    "packages/platform-contracts/current-e1-authority/index.d.mts": "100644",
+    "packages/platform-contracts/current-e1-authority/index.mjs": "100644",
+    "packages/platform-contracts/current-e1-authority/migrations/003-first-party-authority.sql": "100644",
+    "packages/platform-contracts/current-e1-authority/migrations/004-first-party-receiver.sql": "100644",
+    "packages/platform-contracts/current-e1-authority/package-lock.json": "100644",
+    "packages/platform-contracts/current-e1-authority/package.json": "100644",
+    "packages/platform-contracts/test/first-party-source-access.test.mjs": "100644",
+    "packages/platform-contracts/test/fixtures/first-party-source-postgres.mjs": "100644",
+    "packages/platform-source-hub-contracts/README.md": "100644",
+    "packages/platform-source-hub-contracts/client.d.mts": "100644",
+    "packages/platform-source-hub-contracts/client.mjs": "100644",
+    "packages/platform-source-hub-contracts/package.json": "100644",
+    "scripts/governance/platform-source-hub-foundation.test.mjs": "100644"
+  },
+  "routes": {
+    "Canon/evidence/2026-11-05-source-hub-universal-first-party-access.md": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Governance Source Layer",
+      "surfaceId": "SG2-BASE-019"
+    },
+    "Canon/registries/governance-manifest-v2.json": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Governance Source Layer",
+      "surfaceId": "SG2-BASE-019"
+    },
+    "Canon/runbooks/source-hub-first-party-development-v1.md": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Governance Source Layer",
+      "surfaceId": "SG2-BASE-019"
+    },
+    "Canon/v1.1-platform-source-hub-universal-first-party-consumer-access.md": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Governance Source Layer",
+      "surfaceId": "SG2-BASE-019"
+    },
+    "apps/identity-runtime/package-lock.json": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "IDENTITY-BASE-001"
+    },
+    "apps/identity-runtime/src/http-handler.ts": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "IDENTITY-BASE-001"
+    },
+    "apps/identity-runtime/src/node-server.ts": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "IDENTITY-BASE-001"
+    },
+    "apps/identity-runtime/test/first-party-source.test.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "IDENTITY-BASE-001"
+    },
+    "apps/newsfeed-runtime/package-lock.json": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "NEWSFEED-BASE-001"
+    },
+    "apps/platform-source-hub/README.md": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-001"
+    },
+    "apps/platform-source-hub/docs/first-party-consumers.pl.md": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-001"
+    },
+    "apps/platform-source-hub/examples/development.env.example": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-001"
+    },
+    "apps/platform-source-hub/migrations/004-universal-consumers.sql": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-001"
+    },
+    "apps/platform-source-hub/package-lock.json": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-001"
+    },
+    "apps/platform-source-hub/scripts/migrate.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-001"
+    },
+    "apps/platform-source-hub/src/config.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-001"
+    },
+    "apps/platform-source-hub/src/consumer-access.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-001"
+    },
+    "apps/platform-source-hub/src/main.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-001"
+    },
+    "apps/platform-source-hub/src/repository.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-001"
+    },
+    "apps/platform-source-hub/src/server.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-001"
+    },
+    "apps/platform-source-hub/test/contracts.test.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-001"
+    },
+    "apps/platform-source-hub/test/first-party-consumers.test.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-001"
+    },
+    "apps/platform-source-hub/test/first-party-fixtures.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-001"
+    },
+    "apps/platform-source-hub/test/types.ts": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-001"
+    },
+    "packages/platform-contracts/current-e1-authority/first-party.d.mts": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    "packages/platform-contracts/current-e1-authority/first-party.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    "packages/platform-contracts/current-e1-authority/index.d.mts": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    "packages/platform-contracts/current-e1-authority/index.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    "packages/platform-contracts/current-e1-authority/migrations/003-first-party-authority.sql": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    "packages/platform-contracts/current-e1-authority/migrations/004-first-party-receiver.sql": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    "packages/platform-contracts/current-e1-authority/package-lock.json": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    "packages/platform-contracts/current-e1-authority/package.json": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    "packages/platform-contracts/test/first-party-source-access.test.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    "packages/platform-contracts/test/fixtures/first-party-source-postgres.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    "packages/platform-source-hub-contracts/README.md": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-002"
+    },
+    "packages/platform-source-hub-contracts/client.d.mts": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-002"
+    },
+    "packages/platform-source-hub-contracts/client.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-002"
+    },
+    "packages/platform-source-hub-contracts/package.json": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-002"
+    },
+    "scripts/governance/platform-source-hub-foundation.test.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Governance Source Layer",
+      "surfaceId": "SG2-BASE-020"
+    }
+  }
+});
+function isPinnedUniversalFirstPartyReview(files){
+ const r=SOURCE_HUB_UNIVERSAL_FIRST_PARTY_REVIEW;
+ return Array.isArray(files)&&files.length===Object.keys(r.blobs).length&&new Set(files.map(f=>f?.filename)).size===files.length
+  &&files.every(f=>Object.hasOwn(r.blobs,f?.filename??'')&&f.sha===r.blobs[f.filename]&&f.status===r.statuses[f.filename]&&!Object.hasOwn(f,'previous_filename'));
+}
+function assertUniversalFirstPartyRoutes(files,repositoryRoot){
+ for(const f of files){const e=SOURCE_HUB_UNIVERSAL_FIRST_PARTY_REVIEW.routes[f.filename],profile=resolveProjectProfile(e.projectKey,repositoryRoot),route=resolveProjectRouting({profile,targets:[f.filename],repositoryRoot});
+  if(!route.ok||route.results.length!==1)fail('UNIVERSAL_FIRST_PARTY_ROUTING_REJECTED');const r=route.results[0];
+  if(r.resolutionStatus!=='RESOLVED'||r.highestSpecificityMatchCount!==1||r.baselineClassification!=='ALIGNED'||r.projectBoundaryStatus!=='ALLOWED'||r.currentOwner!==e.owner||r.matchedSurfaceId!==e.surfaceId)fail('UNIVERSAL_FIRST_PARTY_ROUTING_REJECTED');
+ }
+}
+export function assertUniversalFirstPartyReviewEntry(file,entry){
+ const r=SOURCE_HUB_UNIVERSAL_FIRST_PARTY_REVIEW;
+ if(!Object.hasOwn(r.blobs,file?.filename??'')||file.sha!==r.blobs[file.filename]||entry!==r.modes[file.filename]+' blob '+file.sha+'\t'+file.filename+'\0')fail('UNIVERSAL_FIRST_PARTY_FILE_MODE_REJECTED');
+}
+
 function isPinnedCurrentE1Review(files){
  const r=SOURCE_HUB_CURRENT_E1_REVIEW;
  return Array.isArray(files)&&files.length===Object.keys(r.blobs).length&&new Set(files.map(f=>f?.filename)).size===files.length
@@ -1675,6 +2018,7 @@ function architecturePathAllowed(name) {
 export function assertArchitectureFiles(pr, files, repositoryRoot = controlRoot()) {
   if (!Number.isInteger(pr.changed_files) || pr.changed_files < 1 || pr.changed_files > 300 || !shaPattern.test(pr.base?.sha ?? '')
     || !Array.isArray(files) || files.length !== pr.changed_files) fail('ARCHITECTURE_FILE_LIST_REQUIRED')
+  if(isPinnedUniversalFirstPartyReview(files)){assertUniversalFirstPartyRoutes(files,repositoryRoot);return}
   if(isPinnedCurrentE1Review(files)){assertCurrentE1Routes(files,repositoryRoot);return}
   if(isPinnedSourceHubStage2aReview(files)){assertSourceHubStage2aRoutes(files,repositoryRoot);return}
   const krsReview = files.length === KRS_GOVERNANCE_REVIEW_FILES.length
@@ -1711,6 +2055,7 @@ export function selectCandidate(context, pr, expectedSha, {files, repositoryRoot
   if (family === 'MAIN') return context.controlSha
   if (family === 'ARCHITECTURE') {
     assertArchitectureFiles(pr, files, repositoryRoot)
+    if(isPinnedUniversalFirstPartyReview(files)&&(pr.number!==SOURCE_HUB_UNIVERSAL_FIRST_PARTY_REVIEW.prNumber||pr.head.ref!==SOURCE_HUB_UNIVERSAL_FIRST_PARTY_REVIEW.branch))fail('UNIVERSAL_FIRST_PARTY_REVIEW_IDENTITY_REJECTED')
     if(isPinnedCurrentE1Review(files)&&(pr.number!==SOURCE_HUB_CURRENT_E1_REVIEW.prNumber||pr.head.ref!==SOURCE_HUB_CURRENT_E1_REVIEW.branch))fail('CURRENT_E1_REVIEW_IDENTITY_REJECTED')
     if(isPinnedSourceHubStage2aReview(files)&&(pr.number!==SOURCE_HUB_STAGE2A_REVIEW.prNumber||pr.head.ref!==SOURCE_HUB_STAGE2A_REVIEW.branch))fail('SOURCE_HUB_STAGE2A_REVIEW_IDENTITY_REJECTED')
     if (isPinnedAdpGovernanceReview(files)
@@ -1771,6 +2116,7 @@ export function assertArchitectureCheckout(root, sha, admission, repositoryRoot 
   for (const file of admission.files) {
     const entry = execFileSync('git', ['ls-tree', '-z', sha, '--', file.filename], {cwd: root, encoding: 'utf8'})
     if (file.status === 'removed') {if (entry !== '') fail('ARCHITECTURE_DIFF_MISMATCH'); continue}
+    if(isPinnedUniversalFirstPartyReview(admission.files))assertUniversalFirstPartyReviewEntry(file,entry)
     if(isPinnedCurrentE1Review(admission.files))assertCurrentE1ReviewEntry(file,entry)
     if(isPinnedSourceHubStage2aReview(admission.files)&&entry!==SOURCE_HUB_STAGE2A_REVIEW.modes[file.filename]+' blob '+file.sha+'\t'+file.filename+'\0')fail('SOURCE_HUB_STAGE2A_FILE_MODE_REJECTED')
     if (!['100644', '100755'].some(mode => entry === `${mode} blob ${file.sha}\t${file.filename}\0`)) fail('ARCHITECTURE_CHECKOUT_REJECTED')
