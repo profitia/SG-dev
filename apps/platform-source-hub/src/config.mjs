@@ -19,10 +19,21 @@ export function readConfiguration(env=process.env){
  const peerKey=value('SOURCE_HUB_PEER_KEY_B64');const peerBytes=Buffer.from(peerKey,'base64');if(peerBytes.length<32||peerBytes.length>128||peerBytes.toString('base64')!==peerKey)bad('SOURCE_HUB_PEER_KEY_B64');
  const parties=value('PROFITIA_AUTHORIZED_PARTIES').split(',');for(const p of parties){try{if(new URL(p).origin!==p||!p.startsWith('https://'))bad('PROFITIA_AUTHORIZED_PARTIES');}catch{bad('PROFITIA_AUTHORIZED_PARTIES');}}
  const product=value('PROFITIA_REQUIRED_PRODUCT');if(!['SPENDGURU','SUPPLIER_INTELLIGENCE'].includes(product))bad('PROFITIA_REQUIRED_PRODUCT');
+ const extraNames=['SOURCE_HUB_ADDITIONAL_PEER_APPLICATION_ID','SOURCE_HUB_ADDITIONAL_PEER_ORIGIN','SOURCE_HUB_ADDITIONAL_PEER_KEY_ID','SOURCE_HUB_ADDITIONAL_PEER_KEY_B64','SOURCE_HUB_ADDITIONAL_PEER_EXPIRES_AT'];
+ let additionalPeer=null,additionalPeerKey=null,additionalPeerKeyB64=null;
+ if(extraNames.some(name=>env[name]!==undefined)){
+  const [appId,,keyId,,expiresAt]=extraNames.map(value),sourceOrigin=origin(extraNames[1]);
+  const raw=value(extraNames[3]),bytes=Buffer.from(raw,'base64');
+  if(![appId,keyId].every(v=>/^[a-z][a-z0-9-]{1,63}$/.test(v))||[target.applicationId,'profitia-newsfeed-api-development'].includes(appId)
+   ||sourceOrigin===publicOrigin||!parties.includes(sourceOrigin)||keyId===value('SOURCE_HUB_PEER_KEY_ID')
+   ||bytes.length<32||bytes.length>128||bytes.toString('base64')!==raw||bytes.equals(peerBytes)
+   ||!Number.isFinite(Date.parse(expiresAt))||Date.parse(expiresAt)<=Date.now()||Date.parse(expiresAt)>Date.now()+86400000)bad('ADDITIONAL_PEER');
+  additionalPeer=Object.freeze({applicationId:appId,sourceOrigin,keyId,expiresAt});additionalPeerKey=bytes;additionalPeerKeyB64=raw;
+ }
  const port=Number(env.PORT??10000);if(!Number.isInteger(port)||port<1||port>65535||[18012,18013,19099].includes(port))bad('PORT');
  const configuration={environment,...target,databaseName:'neondb',runtimeRole,sourceRole,publicOrigin,callerOrigin,port,host:'0.0.0.0',identityIssuer,authorizedParties:parties,requiredProduct:product,
-  callerApplicationId:'profitia-newsfeed-api-development',deploymentId:value('SOURCE_HUB_DEPLOYMENT_ID'),configurationVersion:value('SOURCE_HUB_CONFIGURATION_VERSION'),peerKeyId:value('SOURCE_HUB_PEER_KEY_ID')};
+  callerApplicationId:'profitia-newsfeed-api-development',deploymentId:value('SOURCE_HUB_DEPLOYMENT_ID'),configurationVersion:value('SOURCE_HUB_CONFIGURATION_VERSION'),peerKeyId:value('SOURCE_HUB_PEER_KEY_ID'),...(additionalPeer?{additionalPeer}:{})};
  Object.defineProperty(configuration,'secrets',{enumerable:false,value:Object.freeze({databaseUrl:privateUrl,sourceDatabaseUrl:sourceUrl,clerkSecretKey:secretKey,clerkPublishableKey:publishableKey,peerKey:peerBytes,
-  newsapi:env.SOURCE_HUB_DEVELOPMENT_NEWSAPI_API_KEY??null,brave:env.SOURCE_HUB_DEVELOPMENT_BRAVE_API_KEY??null,tradingEconomics:env.SOURCE_HUB_DEVELOPMENT_TRADING_ECONOMICS_API_KEY??null})});
- return Object.freeze(/** @type {typeof configuration & {secrets:{databaseUrl:string,sourceDatabaseUrl:string,clerkSecretKey:string,clerkPublishableKey:string,peerKey:Buffer,newsapi:string|null,brave:string|null,tradingEconomics:string|null}}} */(configuration));
+  newsapi:env.SOURCE_HUB_DEVELOPMENT_NEWSAPI_API_KEY??null,brave:env.SOURCE_HUB_DEVELOPMENT_BRAVE_API_KEY??null,tradingEconomics:env.SOURCE_HUB_DEVELOPMENT_TRADING_ECONOMICS_API_KEY??null,...(additionalPeer?{additionalPeerKey,additionalPeerKeyB64}:{})})});
+ return Object.freeze(/** @type {typeof configuration & {secrets:{databaseUrl:string,sourceDatabaseUrl:string,clerkSecretKey:string,clerkPublishableKey:string,peerKey:Buffer,newsapi:string|null,brave:string|null,tradingEconomics:string|null,additionalPeerKey?:Buffer,additionalPeerKeyB64?:string}}} */(configuration));
 }
