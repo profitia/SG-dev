@@ -1,3 +1,4 @@
+import {ECR_BACKEND_REVIEW,assertEcrBackendReviewEntry} from './controlled-package-ci.mjs'
 import {createHash} from 'node:crypto'
 import {ECR_G1_GOVERNANCE_REVIEW,assertEcrG1ReviewEntry} from './controlled-package-ci.mjs'
 import test from 'node:test'
@@ -1189,4 +1190,58 @@ test('ECR complete API metadata resolution rejects file truncation and concurren
  assert.equal(answer.sha,other);assert.deepEqual(answer.admission.files,files)
  await assert.rejects(resolveCandidateAdmission(context(),'906',other,apiFixture(p,files.slice(1)).request))
  for(const after of [{...p,head:{...p.head,sha}},{...p,base:{...p.base,sha:other}},{...p,head:{...p.head,ref:'architecture/changed'}}])await assert.rejects(resolveCandidateAdmission(context(),'906',other,apiFixture(p,files,after).request))
+})
+
+const ecrBackendFiles=()=>Object.entries(ECR_BACKEND_REVIEW.blobs).map(([filename,sha])=>({filename,sha,status:ECR_BACKEND_REVIEW.statuses[filename]}))
+const ecrBackendPr=()=>({...architecturePr(44),number:908,head:{...architecturePr().head,ref:ECR_BACKEND_REVIEW.branch}})
+
+test('ECR backend admission is one frozen forty-four-file review and preserves the exact PR/branch/current-head fence',()=>{
+ const r=ECR_BACKEND_REVIEW,files=ecrBackendFiles(),p=ecrBackendPr()
+ for(const part of [r,r.blobs,r.statuses,r.modes])assert(Object.isFrozen(part))
+ assert.equal(r.prNumber,908);assert.equal(r.reviewedCandidateSha,'253e20369fcd26f1985fc14188fd3e7f927a8faa')
+ assert.equal(files.length,44);assert(files.some(f=>f.filename==='apps/economic-calendar-runtime/src/main.mjs'));assert(files.some(f=>f.filename==='scripts/governance/platform-source-hub-foundation.test.mjs'))
+ assert.equal(selectCandidate(context(),p,other,{files}),other)
+ assert.equal(selectCandidate(context(),p,other,{files:[...files].reverse()}),other)
+ for(const change of [{number:909},{number:undefined},{head:{...p.head,ref:'architecture/ecr-other'}},{head:{...p.head,sha}}])rejection(()=>selectCandidate(context(),{...p,...change},other,{files}))
+ rejection(()=>selectCandidate(context(),p,sha,{files}))
+})
+
+test('ECR closed admission rejects every changed/missing/duplicate/status/rename/copy/deletion entry and any extra scope',()=>{
+ const original=ecrBackendFiles()
+ for(let i=0;i<original.length;i++){
+  const missing=original.filter((_,j)=>j!==i);rejection(()=>selectCandidate(context(),{...ecrBackendPr(),changed_files:missing.length},other,{files:missing}))
+  for(const patch of [{sha:'d'.repeat(40)},{sha:'invalid'},{status:original[i].status==='added'?'modified':'added'},{status:'removed'},{status:'renamed',previous_filename:original[i].filename},{status:'copied'},{previous_filename:original[i].filename}]){
+   const files=original.map((f,j)=>i===j?{...f,...patch}:f);rejection(()=>selectCandidate(context(),ecrBackendPr(),other,{files}))
+  }
+  const duplicate=original.map((f,j)=>j===i?original[(i+1)%original.length]:f);rejection(()=>selectCandidate(context(),ecrBackendPr(),other,{files:duplicate}))
+ }
+ for(const filename of ['apps/economic-calendar-runtime/src/main.mjs','packages/economic-calendar-contracts/index.mjs','.github/workflows/economic-calendar-ci.yml',WORKFLOW,'scripts/governance/controlled-package-ci.mjs','.npmrc','Canon/evidence/2026-11-06-extra.md']){
+  const files=[...original,producerFile(filename)];rejection(()=>selectCandidate(context(),{...ecrBackendPr(),changed_files:files.length},other,{files}))
+ }
+})
+
+test('ECR exact review admits only regular nonexecutable pinned files',()=>{
+ const r=ECR_BACKEND_REVIEW
+ for(const file of ecrBackendFiles()){
+  assert.equal(r.modes[file.filename],'100644')
+  assertEcrBackendReviewEntry(file,'100644 blob '+file.sha+'\t'+file.filename+'\0')
+  for(const mode of ['100755','120000','160000'])rejection(()=>assertEcrBackendReviewEntry(file,mode+' blob '+file.sha+'\t'+file.filename+'\0'))
+  rejection(()=>assertEcrBackendReviewEntry({...file,sha:other},'100644 blob '+file.sha+'\t'+file.filename+'\0'))
+ }
+})
+
+test('ECR review retains actual-owner routing and trusted account/repository/main/environment rules',()=>{
+ const files=ecrBackendFiles()
+ for(const edit of [p=>p.user.login='other',p=>p.head.repo.full_name='other/fork',p=>p.base.ref='production',p=>p.state='closed']){const p=ecrBackendPr();edit(p);rejection(()=>selectCandidate(context(),p,other,{files}))}
+ rejection(()=>selectCandidate({...context(),triggeringActor:'other'},ecrBackendPr(),other,{files}))
+ rejection(()=>selectCandidate({...context(),ref:'refs/heads/sg2/untrusted-control'},ecrBackendPr(),other,{files}))
+ const root=routingFixture(),file=path.join(root,'Canon/registries/current-architecture-baseline-v1.json'),original=fs.readFileSync(file,'utf8')
+ try{for(const patch of [{currentOwner:'Other owner'},{allowedProjectKeys:['SG2']},{baselineClassification:'LEGACY'}]){const registry=JSON.parse(original),surface=registry.surfaces.find(s=>s.id===ECR_BACKEND_REVIEW.routes['apps/economic-calendar-runtime/src/main.mjs'].surfaceId);Object.assign(surface,patch);fs.writeFileSync(file,JSON.stringify(registry));rejection(()=>selectCandidate(context(),ecrBackendPr(),other,{files,repositoryRoot:root}))}}finally{fs.rmSync(root,{recursive:true,force:true})}
+})
+
+test('ECR complete API metadata resolution rejects file truncation and concurrent head/base movement',async()=>{
+ const p=ecrBackendPr(),files=ecrBackendFiles(),answer=await resolveCandidateAdmission(context(),'908',other,apiFixture(p,files).request)
+ assert.equal(answer.sha,other);assert.deepEqual(answer.admission.files,files)
+ await assert.rejects(resolveCandidateAdmission(context(),'908',other,apiFixture(p,files.slice(1)).request))
+ for(const after of [{...p,head:{...p.head,sha}},{...p,base:{...p.base,sha:other}},{...p,head:{...p.head,ref:'architecture/changed'}}])await assert.rejects(resolveCandidateAdmission(context(),'908',other,apiFixture(p,files,after).request))
 })
