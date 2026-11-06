@@ -6,6 +6,7 @@ import path from 'node:path'
 import {execFileSync} from 'node:child_process'
 import {createHash} from 'node:crypto'
 import {fileURLToPath} from 'node:url'
+import {isDeepStrictEqual} from 'node:util'
 import {resolveProjectProfile} from './project-profile.mjs'
 import {resolveProjectRouting} from './routing-engine.mjs'
 import {validateGovernanceManifest} from './validate-governance-manifest.mjs'
@@ -22,6 +23,36 @@ const hash=s=>createHash('sha256').update(s).digest('hex')
 const proposal=JSON.parse(prior(approved,'Canon/proposals/economic-calendar-runtime-source-hub-g1-v1.json'))
 const targets=['apps/economic-calendar-runtime/src/main.mjs','packages/economic-calendar-contracts/index.mjs','.github/workflows/economic-calendar-ci.yml']
 const route=(project,paths,repositoryRoot=root)=>resolveProjectRouting({profile:resolveProjectProfile(project,root),targets:paths,repositoryRoot})
+
+// ECR preserves prior authority; later governed canon versions may retain it
+// through explicit immutable history rather than freezing the whole registry.
+function assertManifestHistoryPreserved(previous,current,currentText=read,previousText=p=>prior(baseline,p)){
+ for(const old of previous){
+  const next=current.find(d=>d.id===old.id)
+  assert(next,`Prior document ID missing: ${old.id}`)
+  if(isDeepStrictEqual(next,old))continue
+  assert.equal(old.status,'ACTIVE');assert.equal(next.status,'ACTIVE')
+  assert.notEqual(next.version,old.version);assert.notEqual(next.path,old.path)
+  for(const key of ['owner','appliesTo','dependsOn','loadOrder'])assert.deepEqual(next[key],old[key])
+  const historical=current.find(d=>d.path===old.path&&d.version===old.version&&d.status==='SUPERSEDED'&&d.supersededBy===old.id)
+  assert(historical,`Immutable superseded entry required: ${old.id}`)
+  const {supersededBy,...payload}=historical
+  assert.deepEqual({...payload,id:old.id,status:old.status,loadOrder:old.loadOrder},old)
+  assert.equal(currentText(old.path),previousText(old.path),`Historical bytes changed: ${old.path}`)
+ }
+}
+
+test('later canon succession preserves history, owner and dependencies without weakening ECR authority',()=>{
+ const old={id:'prior-canon',version:'1.0',path:'Canon/prior.md',status:'ACTIVE',loadOrder:100,owner:'Original owner',appliesTo:['ARCHITECTURE'],dependsOn:['earlier-canon']}
+ const next={...old,version:'2.0',path:'Canon/current.md'}
+ const historical={...old,id:'prior-canon-v1',status:'SUPERSEDED',loadOrder:null,supersededBy:old.id}
+ const unchanged=()=> 'exact historical bytes'
+ assertManifestHistoryPreserved([old],[next,historical],unchanged,unchanged)
+ assert.throws(()=>assertManifestHistoryPreserved([old],[next],unchanged,unchanged))
+ assert.throws(()=>assertManifestHistoryPreserved([old],[{...next,owner:'Other owner'},historical],unchanged,unchanged))
+ assert.throws(()=>assertManifestHistoryPreserved([old],[next,{...historical,dependsOn:[]}],unchanged,unchanged))
+ assert.throws(()=>assertManifestHistoryPreserved([old],[next,historical],()=> 'modified history',unchanged))
+})
 
 test('ECR exact owner-approved rows preserve prior authority and only admit Architecture',()=>{
  const before=JSON.parse(prior(baseline,registryPath)),current=json(registryPath)
@@ -81,7 +112,7 @@ test('accepted ECR vision and amendment business sections preserve exact approve
 
 test('ECR activation appends one ordered document and one onboarding record without administrative authority',()=>{
  const oldManifest=JSON.parse(prior(baseline,'Canon/registries/governance-manifest-v2.json')),manifest=json('Canon/registries/governance-manifest-v2.json')
- for(const old of oldManifest.documents)assert.deepEqual(manifest.documents.find(d=>d.id===old.id),old)
+ assertManifestHistoryPreserved(oldManifest.documents,manifest.documents)
  const validation=validateGovernanceManifest(root);assert.equal(validation.valid,true,validation.errors.join('; '))
  const doc=validation.activeDocuments.find(d=>d.path===activePath)
  assert.equal(doc.owner,'Architecture Platform');assert.equal(doc.version,'1.1')

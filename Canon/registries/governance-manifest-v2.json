@@ -1,6 +1,6 @@
 {
   "schemaVersion": "2.0",
-  "manifestVersion": "3.39.0",
+  "manifestVersion": "3.40.0",
   "owner": "Profitia Governance",
   "entrypoint": "AGENTS.md",
   "preflight": "scripts/governance/governance-preflight.mjs",
@@ -304,8 +304,8 @@
     },
     {
       "id": "procurement-oil-insight-report-canon",
-      "version": "0.4",
-      "path": "Canon/v0.4-procurement-oil-insight-report-canon.md",
+      "version": "0.5",
+      "path": "Canon/v0.5-procurement-oil-insight-report-canon.md",
       "status": "ACTIVE",
       "loadOrder": 480,
       "owner": "Procurement Insights / Product Owner",
@@ -318,7 +318,25 @@
         "shared-development-contract-integration",
         "platform-source-hub-business-and-architecture-canon"
       ]
+    },    {
+      "id": "procurement-oil-insight-report-canon-v0.4",
+      "version": "0.4",
+      "path": "Canon/v0.4-procurement-oil-insight-report-canon.md",
+      "status": "SUPERSEDED",
+      "loadOrder": null,
+      "owner": "Procurement Insights / Product Owner",
+      "appliesTo": [
+        "SG2",
+        "ARCHITECTURE"
+      ],
+      "dependsOn": [
+        "repository-routing",
+        "shared-development-contract-integration",
+        "platform-source-hub-business-and-architecture-canon"
+      ],
+      "supersededBy": "procurement-oil-insight-report-canon"
     },
+
     {
       "id": "economic-calendar-runtime-source-hub-and-preferences-amendment",
       "version": "1.1",
