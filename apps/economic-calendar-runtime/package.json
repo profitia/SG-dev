@@ -6,11 +6,12 @@
   "engines": {"node": ">=24.15.0 <25"},
   "scripts": {
     "start": "node src/main.mjs",
-    "test": "node --test --test-timeout=90000 test/*.test.mjs",
+    "test": "node --test --test-concurrency=1 --test-timeout=90000 test/*.test.mjs",
     "typecheck": "tsc --noEmit",
-    "build": "tsc --noEmit && node --check src/main.mjs && node --check scripts/migrate.mjs && node --check scripts/sync.mjs && node --check scripts/live-probe.mjs",
+    "build": "tsc --noEmit && node --check src/main.mjs && node --check scripts/migrate.mjs && node --check scripts/sync.mjs && node --check scripts/source-acquire.mjs && node --check scripts/live-probe.mjs",
     "db:migrate": "node scripts/migrate.mjs",
     "sync": "node scripts/sync.mjs",
+    "source:acquire": "node scripts/source-acquire.mjs",
     "probe:live": "node scripts/live-probe.mjs"
   },
   "dependencies": {

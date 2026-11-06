@@ -179,6 +179,40 @@ An explicit `npm run sync` acquires once; successful same-scope intent replay
 returns existing ECR evidence without another Hub/provider request. New
 acquisitions always use current SourceHub/E1 admission; no ALLOW is cached.
 
+### Reusable ECR SERVICE acquisition — no internal request package
+
+Both `sync` and `source:acquire` use `src/source-service.mjs` and the existing
+first-party SourceHub client. There is no ECR invocation counter or numeric
+request allowance. The six existing Hub policies remain UNMETERED; provider
+limits, current E1/service grants, source admission and audit remain authoritative.
+The Oil report's temporary `maximumHubRequests=12` executor is unrelated and
+must never be imported, renewed, reset or impersonated to execute ECR requests.
+
+`npm run source:acquire` performs one explicit Calendar acquisition with the same
+`ECR_SOURCE_*` and `ECR_SYNC_*` inputs as sync, plus `ECR_ENVIRONMENT=development`
+and actual accepted `ECR_EXECUTION_SHA`. It requires no product database and
+does not persist/export provider items. Output contains only counts, coverage
+and the actual SourceHub receipt. It has no automatic retry or loop. This permits
+authorized source verification independently of the later product-store rollout.
+It does not turn transient permission into durable-storage rights. Reuse the
+same idempotency key only for the same logical acquisition; a new key does not
+renew authority. E1 verifies the actual enrolled component, role, organisation
+and exact Calendar resource on every new acquisition.
+
+`operations/source-service-profile.json` and `operations/enroll-source-service.sql`
+are the exact **PROPOSED_NOT_GRANTED**, single-organisation, Calendar-only owner
+operation. They create no request quota or Source policy. The finite access
+expiry matches the existing receiver and licensed period (2026-12-04), rather
+than a package of calls. Identity owner approval is required before application,
+ordinary passwordless ECR role, component key, SERVICE binding and one read grant
+are created. Generate the component's own Ed25519 key only after that GO; keep
+its private half in an owner-approved secret store, never in Git/PHR. The existing
+maintainer must verify the physical endpoint, use a locked owner transaction,
+bind the final accepted checkout SHA and owner-decision digest, validate the key,
+run the exact SQL, read back all bindings, then restore original memberships.
+Existing records cause reconciliation, never an overwrite. Revoke only this new
+component/grant for rollback, preserving history and all other consumers.
+
 Before first migration/release, independently reconcile resource identities,
 ordinary/migrator privileges, actual accepted main and in-progress work. Preserve
 an owner-controlled database backup/snapshot. There is no fabricated first-release
