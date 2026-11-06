@@ -9,7 +9,7 @@ import {fileURLToPath} from 'node:url'
 // No private-package controller, workflow, environment or policy is changed.
 const sdk=fileURLToPath(new URL('../../../packages/platform-contracts/',import.meta.url))
 const alias=path.join(sdk,'payload-capture/node_modules/@profitia/platform-contracts')
-assert.equal(JSON.parse(fs.readFileSync(path.join(sdk,'package.json'))).version,'1.33.0')
+assert.equal(JSON.parse(fs.readFileSync(path.join(sdk,'package.json'))).version,'1.34.0')
 fs.mkdirSync(path.dirname(alias),{recursive:true})
 if(!fs.existsSync(alias))fs.symlinkSync(sdk,alias,'dir')
 assert.equal(fs.realpathSync(alias),fs.realpathSync(sdk),'One actual accepted SDK peer')

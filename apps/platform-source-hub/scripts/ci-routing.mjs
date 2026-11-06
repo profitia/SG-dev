@@ -59,6 +59,21 @@ export function validateConsumerGroups(groups,readReceipt){
   assert.equal(a.producer.pullRequest,885);assert.equal(a.platformVersion,'1.33.0')
   assert.deepEqual(Object.keys(a.consumerSourceDigests).sort(),acceptedConsumerPaths[projectKey],'Exact owner-approved acceptance paths required')
   const allowed=new Set([file,...acceptedConsumerPaths[projectKey]])
+  const market=receipt.sourceHubMarketSymbolCompatibility
+  if(market){
+   const paths=[...acceptedConsumerPaths[projectKey],...(projectKey==='SRM'?['apps/srm/scripts/source-hub-market-symbol-compatibility.test.mjs']:[])].sort()
+   assert.equal(market.schemaVersion,'1.0')
+   assert.equal(market.taskId,projectKey==='SG2'?'SG2-OIL-V05-SDK134-ADOPTION-20261106':'SRM-SOURCE-HUB-MARKET-SYMBOL-SDK-ADOPTION-20261106')
+   assert.equal(market.scope,'SDK_MARKET_SYMBOL_COMPATIBILITY_RECORDS_AND_TESTS_ONLY')
+   assert.equal(market.targetEnvironment,'development');assert.equal(market.platformVersion,'1.34.0');assert.equal(market.marketSymbolContractVersion,'1.0.0')
+   assert.equal(market.producer.projectKey,'ARCHITECTURE');assert.equal(market.producer.pullRequest,915)
+   assert.equal(market.producer.sourceSha,'ebf017cae09bf7bd9139af7917534b47ae0c4d4b')
+   assert.equal(market.previousReceiptSourceSha,'3d660eeaf8b6b7ef914a612b8383514f99e857d3');assert.match(market.previousReceiptSha256,/^[a-f0-9]{64}$/)
+   assert.deepEqual(Object.keys(market.consumerSourceDigests).sort(),paths,'Exact separately registered SDK1.34 paths required')
+   for(const value of Object.values(market.consumerSourceDigests))assert.match(value,/^[a-f0-9]{64}$/)
+   for(const flag of ['marketSymbolOptedIn','sql029Installed','businessLogicChanged','uiChanged','authorizationChanged','sourceBindingsChanged','providerCallsPerformed','deploymentPerformed'])assert.equal(market[flag],false,flag)
+   for(const p of paths)allowed.add(p)
+  }
   for(const target of targets)assert(allowed.has(target),'Consumer changes require an exact separately governed acceptance binding: '+target)
   for(const flag of ['apiPathOptedIn','sql028Installed','businessLogicChanged','uiChanged','authorizationChanged','sourceBindingsChanged','providerCallsPerformed','deploymentPerformed'])assert.equal(a[flag],false,flag)
  }

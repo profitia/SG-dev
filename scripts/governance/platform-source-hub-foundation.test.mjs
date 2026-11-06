@@ -243,13 +243,23 @@ test('SourceHub optional ECR storage metadata preserves accepted transport and p
  const old=JSON.parse(git(['show',accepted+':'+p])),current=json(p)
  assert.equal(old.version,'1.1.0')
  assert.equal(SOURCE_HUB_CONTRACT_VERSION,'1.0.0')
- assert.equal(json('packages/platform-contracts/package.json').version,'1.33.0')
- for(const path of ['packages/platform-contracts/package.json','packages/platform-source-hub-contracts/client.mjs'])
+ const sdkVersion=json('packages/platform-contracts/package.json').version
+ if(sdkVersion==='1.34.0'){
+  const adoption=json('apps/architecture-lab/sdk-1.34-compatibility.json')
+  assert.equal(adoption.producerCandidateSha,'ebf017cae09bf7bd9139af7917534b47ae0c4d4b')
+  assert.equal(Object.keys(adoption.producerFiles).length,27)
+  for(const [file,digest]of Object.entries(adoption.producerFiles))assert.equal(createHash('sha256').update(execFileSync('git',['show',adoption.producerCandidateSha+':'+file],{cwd:root})).digest('hex'),digest,'immutable original producer '+file)
+  for(const [file,digest]of Object.entries(adoption.integrationFiles))assert.equal(createHash('sha256').update(fs.readFileSync(path.join(root,file))).digest('hex'),digest,'current integrated producer '+file)
+ }else{
+  assert.equal(sdkVersion,'1.33.0')
+  assert.equal(git(['hash-object','packages/platform-contracts/package.json']),git(['rev-parse',accepted+':packages/platform-contracts/package.json']))
+ }
+ for(const path of ['packages/platform-source-hub-contracts/client.mjs'])
   assert.equal(git(['hash-object',path]),git(['rev-parse',accepted+':'+path]),path)
  if(current.version==='1.1.0'){
   assert.deepEqual(current,old)
  }else{
-  assert(['1.2.0','1.3.0'].includes(current.version))
+  assert.equal(current.version,sdkVersion==='1.34.0'?'1.4.0':'1.3.0')
   const {version:oldVersion,peerDependencies:oldPeers,...oldManifest}=old
   const {version,peerDependencies,...currentManifest}=current
   if(current.version==='1.2.0'){
@@ -264,7 +274,9 @@ test('SourceHub optional ECR storage metadata preserves accepted transport and p
    assert.deepEqual(currentScripts,{...oldScripts,build:'node --check index.mjs && node --check commodities-v1.mjs && node --check client.mjs'})
    const oldTypes=git(['show',accepted+':packages/platform-source-hub-contracts/index.d.ts'])
    const legacyTypes=read('packages/platform-source-hub-contracts/index.d.ts')
-   assert.equal(legacyTypes.match(/export type LegacyHubRequest=([\s\S]*?);/)[1],oldTypes.match(/export type HubRequest=([\s\S]*?);/)[1])
+   const marketBranch="\n |Base<'market-observations','trading-economics','search',MarketObservationCriteria>"
+   assert(legacyTypes.match(/export type LegacyHubRequest=([\s\S]*?);/)[1].endsWith(marketBranch))
+   assert.equal(legacyTypes.match(/export type LegacyHubRequest=([\s\S]*?);/)[1].replace(marketBranch,''),oldTypes.match(/export type HubRequest=([\s\S]*?);/)[1])
    const oldClient=git(['show',accepted+':packages/platform-source-hub-contracts/client.d.mts'])
    assert(read('packages/platform-source-hub-contracts/client.d.mts').replaceAll('LegacyHubRequest','HubRequest').includes(oldClient.match(/acquire\(input:[\s\S]*?\):Promise<HubResponse>/)[0]))
    assert.match(read('packages/platform-source-hub-contracts/client.d.mts'),/command:CommodityRequest[\s\S]*Promise<CommodityResponse>/)
@@ -273,6 +285,6 @@ test('SourceHub optional ECR storage metadata preserves accepted transport and p
    assert.deepEqual(proposal.families,['data-catalog','series-observations','positioning-observations','publication-calendar'])
   }
   assert.deepEqual(oldPeers,{'@profitia/platform-current-e1-authority':'1.1.0'})
-  assert.deepEqual(peerDependencies,{'@profitia/platform-current-e1-authority':'1.1.0 || 1.2.0'})
+  assert.deepEqual(peerDependencies,{'@profitia/platform-current-e1-authority':sdkVersion==='1.34.0'?'1.1.0 || 1.2.0 || 1.2.1':'1.1.0 || 1.2.0'})
  }
 })

@@ -4,7 +4,7 @@ export {COMMODITY_CONTRACT_VERSION,COMMODITY_PROVIDERS,COMMODITY_FAMILIES} from 
 export const SOURCE_HUB_CONTRACT_VERSION = '1.0.0';
 export const CONTRACT_FAMILIES = Object.freeze(['news-discovery','economic-calendar','indicators','external-forecasts','market-observations']);
 export const IMPLEMENTATION_STATES = Object.freeze(['IMPLEMENTED_AND_LIVE_VERIFIED','IMPLEMENTED_OFFLINE_VERIFIED','UNAVAILABLE_OR_NOT_ENTITLED','NOT_IMPLEMENTED']);
-const supported = Object.freeze({newsapi:['news-discovery'],brave:['news-discovery'],'trading-economics':['news-discovery','economic-calendar','indicators','external-forecasts']});
+const supported = Object.freeze({newsapi:['news-discovery'],brave:['news-discovery'],'trading-economics':['news-discovery','economic-calendar','indicators','external-forecasts','market-observations']});
 export class SourceHubError extends Error {
   /** @param {string} code @param {number} status @param {number|null} retryAfterSeconds */
   constructor(code, status=400, retryAfterSeconds=null) { super(code);this.name='SourceHubError';this.code=code;this.status=status;this.retryAfterSeconds=retryAfterSeconds; }
@@ -17,7 +17,7 @@ export function parseHubRequest(value) {
     ||!Object.hasOwn(supported,value.provider)||!supported[value.provider].includes(value.family)
     ||!['search','publishers'].includes(value.operation)||value.operation==='publishers'&&value.provider!=='newsapi'
     ||!closed(value.criteria,Object.keys(value.criteria??{}))) throw new SourceHubError('INVALID_CONTRACT');
-  const fields=value.provider==='newsapi'?(value.operation==='publishers'?['category','language','publisherCountry']:['mode','text','terms','fields','category','editionCountry','publisherIds','domains','excludedDomains','language','publishedAfter','publishedBefore','order','page','pageSize','eventLocation']):value.provider==='brave'?['text','resultType','country','language','uiLanguage','freshness','count','offset','safeSearch','spellcheck','extraSnippets','domains','excludedDomains']:value.family==='news-discovery'?['countries','indicators','tickers','limit','newsType','from','to','text']:value.family==='external-forecasts'&&value.criteria.forecastType==='markets'?['forecastType','symbols','marketCategory','limit']:['countries','indicators','tickers','limit',...(value.family==='economic-calendar'?['eventIds','from','to','importance','eventText']:value.family==='external-forecasts'?['horizons']:[])];
+  const fields=value.provider==='newsapi'?(value.operation==='publishers'?['category','language','publisherCountry']:['mode','text','terms','fields','category','editionCountry','publisherIds','domains','excludedDomains','language','publishedAfter','publishedBefore','order','page','pageSize','eventLocation']):value.provider==='brave'?['text','resultType','country','language','uiLanguage','freshness','count','offset','safeSearch','spellcheck','extraSnippets','domains','excludedDomains']:value.family==='market-observations'?['mode','symbols','instrumentUrls','from','to','limit']:value.family==='news-discovery'?['countries','indicators','tickers','limit','newsType','from','to','text']:value.family==='external-forecasts'&&value.criteria.forecastType==='markets'?['forecastType','symbols','marketCategory','limit']:['countries','indicators','tickers','limit',...(value.family==='economic-calendar'?['eventIds','from','to','importance','eventText']:value.family==='external-forecasts'?['horizons']:[])];
   if(!closed(value.criteria,fields))throw new SourceHubError('UNSUPPORTED_CRITERIA');
   return structuredClone(value);
 }
@@ -71,6 +71,12 @@ export function assertHubResponse(value, expected) {
    }else if(value.family==='external-forecasts'){
     if(p.forecastCorePrediction!==false||p.vendorModel!=='Trading Economics'||!Array.isArray(p.points)||p.points.length>7||!validTime(p.lastUpdate)
      ||!p.points.every(q=>typeof q.horizon==='string'&&(q.value===null||typeof q.value==='string'||typeof q.value==='number'&&Number.isFinite(q.value))&&(q.targetDate===null||typeof q.targetDate==='string'&&Number.isFinite(Date.parse(q.targetDate)))))reject();
+   }else if(value.family==='market-observations'){
+    if(!['SNAPSHOT','HISTORICAL'].includes(p.mode)||typeof p.vendorSymbol!=='string'||!p.vendorSymbol.length||!validTime(p.observationAt)||!validTime(p.lastUpdate)
+     ||!['DAY','INSTANT','UNKNOWN'].includes(p.temporalPrecision)||!['VENDOR_LAST','VENDOR_CLOSE','VENDOR_VALUE'].includes(p.quoteBasis)
+     ||p.mappingStatus!=='NOT_ADOPTED_BY_MARKET_DATA'||p.underlyingMappingRef!==null
+     ||!['instrumentType','marketType','unit','currency','contractExpiry','rolloverRef','session'].every(k=>validText(p[k]))
+     ||!(p.price===null||typeof p.price==='number'&&Number.isFinite(p.price)||typeof p.price==='string'&&p.price.length<=1000))reject();
    }else reject();
   }
   return value;

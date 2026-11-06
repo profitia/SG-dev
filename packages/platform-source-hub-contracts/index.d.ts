@@ -17,13 +17,16 @@ export interface CalendarCriteria {countries?:string[];indicators?:string[];even
 export interface IndicatorCriteria {countries?:string[];indicators?:string[];tickers?:string[];limit?:number;}
 export interface ForecastCriteria extends IndicatorCriteria {horizons?:Array<'q1'|'q2'|'q3'|'q4'|'YearEnd'|'YearEnd2'|'YearEnd3'>;}
 export interface TradingEconomicsNewsCriteria {countries?:string[];indicators?:string[];tickers?:string[];newsType?:'markets'|'economy';from?:string;to?:string;text?:string;limit?:number;}
+export type MarketObservationCriteria={mode:'snapshot';symbols?:string[];instrumentUrls?:string[];limit?:number}|{mode:'historical';symbols:string[];from:string;to:string;limit?:number};
+export interface MarketObservationPayload {mode:'SNAPSHOT'|'HISTORICAL';vendorSymbol:string;name:string|null;marketType:string|null;instrumentType:string|null;underlyingMappingRef:null;mappingStatus:'NOT_ADOPTED_BY_MARKET_DATA';observationAt:string|null;temporalPrecision:'DAY'|'INSTANT'|'UNKNOWN';price:number|string|null;quoteBasis:'VENDOR_LAST'|'VENDOR_CLOSE'|'VENDOR_VALUE';unit:string|null;currency:string|null;contractExpiry:string|null;rolloverRef:null;session:string|null;lastUpdate:string|null;sourceUrl:string|null;ohlc:{open:number|string|null;high:number|string|null;low:number|string|null;close:number|string|null};changes:Record<string,number|string|null>;native:Record<string,unknown>;}
 export interface MarketForecastCriteria {forecastType:'markets';marketCategory:'index'|'currency'|'crypto'|'commodity'|'bond';symbols?:string[];limit?:number;}
 type Base<F extends ContractFamily,P extends ProviderId,O extends string,C>={contractVersion:'1.0.0';family:F;provider:P;operation:O;criteria:C};
 export type HubRequest=LegacyHubRequest|CommodityRequest;
 export type LegacyHubRequest=Base<'news-discovery','newsapi','search',DiscoveryQuery>|Base<'news-discovery','newsapi','publishers',PublisherQuery>
  |Base<'news-discovery','brave','search',BraveCriteria>|Base<'economic-calendar','trading-economics','search',CalendarCriteria>
  |Base<'indicators','trading-economics','search',IndicatorCriteria>|Base<'external-forecasts','trading-economics','search',ForecastCriteria|MarketForecastCriteria>
- |Base<'news-discovery','trading-economics','search',TradingEconomicsNewsCriteria>;
+ |Base<'news-discovery','trading-economics','search',TradingEconomicsNewsCriteria>
+ |Base<'market-observations','trading-economics','search',MarketObservationCriteria>;
 export interface CommonMetadata {
  consumerStorage?:{mode:'DURABLE_OWNER_ENTITLEMENT';basisRef:string;licenceVersion:string};
  contractFamily:ContractFamily;contractVersion:'1.0.0';providerId:ProviderId;apiFamily:string;endpointVersion:string;

@@ -243,3 +243,8 @@ export async function externalCallSourceDigest(){const fs=await import('node:fs'
 export const API_PATH_TRANSPORT=Object.freeze({id:'profitia.external-api-path',version:'1.0.0'})
 export const apiPathTransportSchemaUrl=new URL('../migrations/access/028-api-path-transport.sql',import.meta.url).href
 export async function apiPathTransportSchemaDigest(){const fs=await import('node:fs');return createHash('sha256').update(fs.readFileSync(new URL(apiPathTransportSchemaUrl))).digest('hex')}
+
+// Separate opt-in market-symbol path contract; never extends API_PATH.
+export const MARKET_SYMBOL_TRANSPORT=Object.freeze({id:'profitia.external-market-symbol',version:'1.0.0'});
+export const marketSymbolTransportSchemaUrl=new URL('../migrations/access/029-market-symbol-transport.sql',import.meta.url).href;
+export async function marketSymbolTransportSchemaDigest(){const fs=await import('node:fs');return createHash('sha256').update(fs.readFileSync(new URL(marketSymbolTransportSchemaUrl))).digest('hex');}

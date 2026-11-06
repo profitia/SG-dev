@@ -27,7 +27,7 @@ test('optional independent contract, complete source fingerprint, unchanged acce
  assert.deepEqual(ROOT_ATOMIC_CLAIM_CONTRACT,{id:'profitia.root-atomic-claim',version:'1.0.0'})
  assert.equal(createRootAtomicClaimReportHost(fixture()).hostContract,ROOT_ATOMIC_CLAIM_CONTRACT)
  const metadata=JSON.parse(fs.readFileSync(new URL('../package.json',import.meta.url)))
- assert.deepEqual(metadata.peerDependencies,{'@profitia/platform-contracts':'1.32.3 || 1.33.0','@profitia/platform-readonly-miss-report':'1.0.0'})
+ assert.deepEqual(metadata.peerDependencies,{'@profitia/platform-contracts':'1.32.3 || 1.33.0 || 1.34.0','@profitia/platform-readonly-miss-report':'1.0.0'})
  const source=fs.readFileSync(new URL('./../src/root-atomic-claim.mjs',import.meta.url))
  const expected=createHash('sha256').update(source).update(fs.readFileSync(new URL('../src/root-atomic-claim.d.mts',import.meta.url)))
   .update(fs.readFileSync(new URL('../package.json',import.meta.url))).update(await rootAtomicClaimSchemaDigest())

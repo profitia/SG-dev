@@ -1,0 +1,113 @@
+{
+  "schemaVersion": "1.0",
+  "taskId": "ARCH-SOURCE-HUB-TE-MARKETS-ACTIVATION-20261106",
+  "previousReceiptSourceSha": "3d660eeaf8b6b7ef914a612b8383514f99e857d3",
+  "previousReceiptSha256": "3e3c8f43813d5c4888e206ac31433f60470eac4310abaa62bd32e1c901a0df3e",
+  "producerCandidateSha": "ebf017cae09bf7bd9139af7917534b47ae0c4d4b",
+  "platformVersion": "1.34.0",
+  "allowedSdkVersions": [
+    "1.32.3",
+    "1.33.0",
+    "1.34.0"
+  ],
+  "marketSymbolContractVersion": "1.0.0",
+  "scope": "VERSIONED_OPTIONAL_PACKAGE_PEER_METADATA_ONLY",
+  "marketSymbolAdopted": false,
+  "schemaChanged": false,
+  "authorizationChanged": false,
+  "deploymentPerformed": false,
+  "packages": {
+    "payload-capture": {
+      "previousManifestSha256": "05e5a2e2b0d3e18e8f212077cba93f6e8a967332423ed7ce749539758aeb74bd",
+      "manifestSha256": "d297bb6371f8ca79655c65ac08297e6631983a6bf3393a96fbb28a6619ba2f7d",
+      "unchangedSourceDigests": {
+        "src/payload-capture.d.mts": "ac8c8399b33ee143a4191530fd7a236f04b6055c437b6a38bf69a888f86d2634",
+        "src/payload-capture.mjs": "7eabea213158e6193c481dcbe2721b98837cfd729ae1af3bac7d2396c950f08f"
+      }
+    },
+    "current-fresh-report": {
+      "previousManifestSha256": "af4ddff1e4b4fe1962f42fd770423dbbfae9fd7ae836e7f182e3b45a29753bef",
+      "manifestSha256": "ad639b4293fd3298e5e6f36cb615497ba7d6c62e2267e91fd33ed4112790bc0b",
+      "unchangedSourceDigests": {
+        "src/current-fresh-report.d.mts": "2da701f79cb5aaf4447239255a96169b5394f6ddd62713c19b213a240fe39a38",
+        "src/current-fresh-report.mjs": "29c8a0fb5d048217afd25a3678c35ff03d0d5a663ba76b338a1e8117875176cb"
+      }
+    },
+    "readonly-miss-report": {
+      "previousManifestSha256": "b3f84f7a16bdd8c5858b562f4cb1e9557e4d4bd5b38d69705d9e58a5d61ff8dd",
+      "manifestSha256": "ddcb783631293cdda336f4937435b5add280a3a7570af4d1ab4e1a3d2f70df07",
+      "unchangedSourceDigests": {
+        "src/readonly-miss-report.d.mts": "84939e1327f7260523f39a7f82385f6285013f8013c0fd8b33675ce676418493",
+        "src/readonly-miss-report.mjs": "ed0337acb60b334faef60273d9913cf9c71c731fbc7ea6b2bf75f85f2e0d9b3d"
+      }
+    },
+    "root-atomic-claim": {
+      "previousManifestSha256": "2655d7dd11b0245c664015bafb926b326b297d7b32a584f76cf9449de87849d1",
+      "manifestSha256": "6197bf48d438e76c6a1b6863438855423673b2e3d320b620891411464297dfe4",
+      "unchangedSourceDigests": {
+        "src/root-atomic-claim.d.mts": "955b2d6076a8e5a34ac6add66920fb6d4ec27dfccd1e5308932ae9bfef1c2d75",
+        "src/root-atomic-claim.mjs": "fab1780877f66ba582be74bd3944649628624bfcc62754b0256275236d960398"
+      }
+    }
+  },
+  "producerFiles": {
+    "apps/economic-calendar-runtime/package-lock.json": "8e5ac58d99d2fa2c1ff4173416a018bb62595dce336f93ad1445026276aab169",
+    "apps/identity-runtime/package-lock.json": "af249f305148080a69b0f228395e0f5caffe042172e32a2a5662e7585261f3f2",
+    "apps/newsfeed-runtime/package-lock.json": "cd44614e5c622ed95485c2f46f1ffc1fed8f840386f67f221839efb2369859a6",
+    "apps/platform-source-hub/docs/te-market-observations.pl.md": "b0eaf7805d769b51486eab4ba4306f32cad864dede3650937ddadd42ca23b224",
+    "apps/platform-source-hub/migrations/006-market-observations.sql": "9733561ec57c74cbb841cdc74346d9f330b7a0e8ed37da88cf15ae31758bfdaf",
+    "apps/platform-source-hub/package-lock.json": "6c139867aab5ad374f910952462736e1be1918181207629cf8156d639346668d",
+    "apps/platform-source-hub/scripts/migrate.mjs": "99ad2653b98e3dc0d16235e78e7d058b1dff494c6bcce641266adbd46871acb1",
+    "apps/platform-source-hub/src/admission.mjs": "acfe7498110465c923a10e72646c82e8034cf0f2bfcca932f4a6912fbd592f02",
+    "apps/platform-source-hub/src/capabilities.mjs": "de66c035e196382256486dc7a64a53db268140d45e9cfc576c76ad0ffa6065a7",
+    "apps/platform-source-hub/src/providers/trading-economics.mjs": "a41adc69c03b1655eae3e18eea1ac9d21b0b52091795ab37f90e82f1417f32f4",
+    "apps/platform-source-hub/test/contracts.test.mjs": "4aa9673077af376b77b818e77ad812c74bb426ed3f0ab503b1076a4ca2fb0e26",
+    "apps/platform-source-hub/test/market-observations.test.mjs": "60453f9ccc36566da4f74ca7e0306bdce87975046c89d837c598c0a973eb5939",
+    "apps/platform-source-hub/test/types.ts": "f01d30f920c7a21bbc4bc8220c3e45bff2cc890c98d68e4ffb0cdedba3fe9b31",
+    "packages/platform-contracts/current-e1-authority/package-lock.json": "7a7a7466ed307f527a6e792e5248062d2c3d7087265507ef3968be07a5059ef2",
+    "packages/platform-contracts/current-e1-authority/package.json": "29c908f7b97710c3cd14c8884e4d60787c9723027e787915185698fd1f114ce6",
+    "packages/platform-contracts/migrations/access/029-market-symbol-transport.sql": "fee0f8738f7ccb8481ce2894b6e5a84792256d5230ef0ef1585fc34ac851d504",
+    "packages/platform-contracts/package-lock.json": "0b2244b9809e64df05fd46cadf9424ef25062c1161ec259b4f6ad6621365393e",
+    "packages/platform-contracts/package.json": "12d081cbd879415b745b2ece6d8264a199b6f35f918027d81f8489d0ae977858",
+    "packages/platform-contracts/src/external-call.d.mts": "8835f39b21a32a1b1ca87601a6b0711ea2006ab841ba64e8f9c4c55c436520a7",
+    "packages/platform-contracts/src/external-call.mjs": "8ccb727a5b0a8099e628d9f1b478d6fcc07e00f1eefdb67efae3aeb722dd401e",
+    "packages/platform-contracts/src/native-external-transport.d.mts": "165a7ea0703ec31b1af89ed8b980a215ddee2fb181dbbe1498a5bea77cbd44da",
+    "packages/platform-contracts/src/native-external-transport.mjs": "474c0beb2aeca4cd6e7297944dc9665bae5af5d72318ec257803aae77305aca7",
+    "packages/platform-contracts/test/market-symbol-transport.test.mjs": "79da6d1deebac09dd463da825b30d6eb5bb0d47a93237e206a8a10e9ceedda57",
+    "packages/platform-source-hub-contracts/README.md": "7c01dd499078edbaf4402fc444a2525fe2c530422511f6f605226f8f92020956",
+    "packages/platform-source-hub-contracts/index.d.ts": "6e7778431c55110e5e8966a97bfc518a301b13b2375cfd104809d7fea886dbcd",
+    "packages/platform-source-hub-contracts/index.mjs": "1a83419c65b9a1b1045e3b46a1c0027b7aa64156fd0487d477f77bcc13d8f2a5",
+    "packages/platform-source-hub-contracts/package.json": "1cca86acfc62f33a7f86592119857fe663da6cabc69770b71babc6505884a5b4"
+  },
+  "integrationBaseMain": "e07521e7417ed6ce5a995a4ff1c708f32a9731a5",
+  "sourceHubContractsVersion": "1.4.0",
+  "integrationFiles": {
+    "apps/economic-calendar-runtime/package-lock.json": "4837e1624bf8d131bd0c472203012425a386d8916db5e6524d15ddcb805cd266",
+    "apps/identity-runtime/package-lock.json": "af249f305148080a69b0f228395e0f5caffe042172e32a2a5662e7585261f3f2",
+    "apps/newsfeed-runtime/package-lock.json": "9dc7f9633df58a0a8fab91fd448183a252a4f59496ec57fcb47daa2c3e3b0189",
+    "apps/platform-source-hub/docs/te-market-observations.pl.md": "b0eaf7805d769b51486eab4ba4306f32cad864dede3650937ddadd42ca23b224",
+    "apps/platform-source-hub/migrations/006-market-observations.sql": "9733561ec57c74cbb841cdc74346d9f330b7a0e8ed37da88cf15ae31758bfdaf",
+    "apps/platform-source-hub/package-lock.json": "d6b087708988a5f8a04f5f066fe1d69599cb50078409898371c0ca8bf7da9efc",
+    "apps/platform-source-hub/scripts/migrate.mjs": "f4f5a83f1052d4da3232d9ba3546d3b6553e36a43d8f2f3cc59cad89311e2214",
+    "apps/platform-source-hub/src/admission.mjs": "b0ec771a5577157cbad6e76ad2b6bc6de5e96da98631c6d9fe6ecf9e7c6fa161",
+    "apps/platform-source-hub/src/capabilities.mjs": "648f2e5c85d954b1e9e28ebedb421e91b8e10235d28e28d79ee7c9da3a7dc76c",
+    "apps/platform-source-hub/src/providers/trading-economics.mjs": "a41adc69c03b1655eae3e18eea1ac9d21b0b52091795ab37f90e82f1417f32f4",
+    "apps/platform-source-hub/test/contracts.test.mjs": "4aa9673077af376b77b818e77ad812c74bb426ed3f0ab503b1076a4ca2fb0e26",
+    "apps/platform-source-hub/test/market-observations.test.mjs": "60453f9ccc36566da4f74ca7e0306bdce87975046c89d837c598c0a973eb5939",
+    "apps/platform-source-hub/test/types.ts": "f01d30f920c7a21bbc4bc8220c3e45bff2cc890c98d68e4ffb0cdedba3fe9b31",
+    "packages/platform-contracts/current-e1-authority/package-lock.json": "7a7a7466ed307f527a6e792e5248062d2c3d7087265507ef3968be07a5059ef2",
+    "packages/platform-contracts/current-e1-authority/package.json": "29c908f7b97710c3cd14c8884e4d60787c9723027e787915185698fd1f114ce6",
+    "packages/platform-contracts/migrations/access/029-market-symbol-transport.sql": "fee0f8738f7ccb8481ce2894b6e5a84792256d5230ef0ef1585fc34ac851d504",
+    "packages/platform-contracts/package-lock.json": "0b2244b9809e64df05fd46cadf9424ef25062c1161ec259b4f6ad6621365393e",
+    "packages/platform-contracts/package.json": "12d081cbd879415b745b2ece6d8264a199b6f35f918027d81f8489d0ae977858",
+    "packages/platform-contracts/src/external-call.d.mts": "8835f39b21a32a1b1ca87601a6b0711ea2006ab841ba64e8f9c4c55c436520a7",
+    "packages/platform-contracts/src/external-call.mjs": "8ccb727a5b0a8099e628d9f1b478d6fcc07e00f1eefdb67efae3aeb722dd401e",
+    "packages/platform-contracts/src/native-external-transport.d.mts": "165a7ea0703ec31b1af89ed8b980a215ddee2fb181dbbe1498a5bea77cbd44da",
+    "packages/platform-contracts/src/native-external-transport.mjs": "474c0beb2aeca4cd6e7297944dc9665bae5af5d72318ec257803aae77305aca7",
+    "packages/platform-contracts/test/market-symbol-transport.test.mjs": "79da6d1deebac09dd463da825b30d6eb5bb0d47a93237e206a8a10e9ceedda57",
+    "packages/platform-source-hub-contracts/README.md": "1b8a39b087d174f909e8aacdd691f01a4f690b6597abb801c2fc893b3ee5b0c7",
+    "packages/platform-source-hub-contracts/index.d.ts": "eb09306da4c5549f0a723ea8835920afbb382bcb9cad2d8da7fefcbfcefc8236",
+    "packages/platform-source-hub-contracts/index.mjs": "d694bd9563942ab6a2dd5a98fc1202fcd0df9d1441398fd6401db2fa72011f84",
+    "packages/platform-source-hub-contracts/package.json": "adfc4ea651714f311a97c60445dbcea9378ebdaa7fc99bfcf4e487725343f348"
+  }
+}
