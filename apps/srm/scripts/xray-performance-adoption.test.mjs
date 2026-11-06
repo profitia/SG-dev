@@ -29,7 +29,10 @@ const acceptedAppShellSource=appShellReceipt.appShellFourCardCascade
  ?assertAppShellFourCardCascade(appShellReceipt,actualAppShellSource,(sha,file)=>historicalBlob(sha+':'+file)).previousBytes
  :actualAppShellSource
 const actualReceipt=JSON.parse(actualAppShellSource('apps/srm/operation-integration.json'))
-const apiPath=actualReceipt.sourceHubMarketSymbolCompatibility??actualReceipt.sourceHubApiPathCompatibility
+const marketSdk=actualReceipt.sourceHubMarketSymbolCompatibility
+// SDK1.34 binds implementation/SQL bytes; unchanged SDK1.33 test artefacts
+// retain their already accepted fingerprints in the earlier additive receipt.
+const apiPath=marketSdk?{...marketSdk,sourceDigests:{...actualReceipt.sourceHubApiPathCompatibility.sourceDigests,...marketSdk.sourceDigests}}:actualReceipt.sourceHubApiPathCompatibility
 if(apiPath)assertSourceHubApiPathCompatibility(actualReceipt,actualAppShellSource,(sha,file)=>historicalBlob(sha+':'+file))
 // The host view validates both current API_PATH closures and the later AppShell
 // amendments before exposing the presentation predecessor used by these guards.
