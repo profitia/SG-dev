@@ -55,6 +55,7 @@ jobs:
       - name: Install pinned public and local dependencies without lifecycle scripts
         run: |
           npm --prefix apps/architecture-lab ci --ignore-scripts --no-audit --no-fund
+          npm --prefix packages/platform-contracts ci --ignore-scripts --no-audit --no-fund
           npm --prefix packages/platform-contracts/current-e1-authority ci --install-links --ignore-scripts --no-audit --no-fund
           npm --prefix apps/platform-source-hub ci --install-links --ignore-scripts --no-audit --no-fund
           npm --prefix apps/newsfeed-runtime ci --install-links --ignore-scripts --no-audit --no-fund
