@@ -7696,7 +7696,7 @@
       "apps/srm/scripts/xray-performance-adoption.test.mjs": "ce1fb21b3d45827e81106fa8cfdae8db8ee558a43da42d5bdeb1b841f16271e1",
       "apps/srm/scripts/xray-style-acceptance.mjs": "42b666a9b87d9e87e9ac14fce8d89f49d6dd456e0f1216a99e715e0f81e37a4e",
       "apps/srm/src/server/full-ui-parity-adoption.test.ts": "db147cfe2ab32a3b41c0a0a089b8b869e925320ac5908ccb7c5d5c173c0ad2b0",
-      "apps/srm/src/server/root-atomic-claim-adoption.test.ts": "c9bff469d3200cb9305f266c5fae8dfed47283ba4155c68f8bbabdde6144739a",
+      "apps/srm/src/server/root-atomic-claim-adoption.test.ts": "7ef29f7b3e162fed8df6e0a04cf6df7ab55c6314401bde0b0dbc4e8cc6643c2d",
       "packages/maps-embed/package.json": "70302b4212fe3ddf310fe5049af2d04cbae1784a12330e3b8de08d3da537fc5b"
     },
     "applicationSourceDigests": {
@@ -7733,7 +7733,7 @@
       "../srm/scripts/xray-performance-adoption.test.mjs": "ce1fb21b3d45827e81106fa8cfdae8db8ee558a43da42d5bdeb1b841f16271e1",
       "../srm/scripts/xray-style-acceptance.mjs": "42b666a9b87d9e87e9ac14fce8d89f49d6dd456e0f1216a99e715e0f81e37a4e",
       "../srm/src/server/full-ui-parity-adoption.test.ts": "db147cfe2ab32a3b41c0a0a089b8b869e925320ac5908ccb7c5d5c173c0ad2b0",
-      "../srm/src/server/root-atomic-claim-adoption.test.ts": "c9bff469d3200cb9305f266c5fae8dfed47283ba4155c68f8bbabdde6144739a",
+      "../srm/src/server/root-atomic-claim-adoption.test.ts": "7ef29f7b3e162fed8df6e0a04cf6df7ab55c6314401bde0b0dbc4e8cc6643c2d",
       "../../packages/maps-embed/package.json": "70302b4212fe3ddf310fe5049af2d04cbae1784a12330e3b8de08d3da537fc5b"
     },
     "marketSymbolOptedIn": false,
