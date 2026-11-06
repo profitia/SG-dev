@@ -1,4 +1,4 @@
-import {assertSourceHubApiPathCompatibility as assertPeerApiPathCompatibility} from '../../srm/scripts/source-hub-sdk-compatibility.mjs'
+import {assertSourceHubApiPathCompatibility as assertPeerApiPathCompatibility, assertSourceHubMarketSymbolCompatibility} from '../../srm/scripts/source-hub-sdk-compatibility.mjs'
 /** Additive continuation: exact current bytes AND immutable prior evidence, never digest replacement. */
 import assert from 'node:assert/strict'
 import {createHash} from 'node:crypto'
@@ -422,6 +422,7 @@ export function assertPciSmartIntegrity(receipt,current,historical){
 
 // Test-only additive compatibility; never imported by a product runtime.
 export function assertSourceHubApiPathCompatibility(receipt,current,historical,{validatePeer=true}={}){
+ if(receipt.sourceHubMarketSymbolCompatibility){const n=assertSourceHubMarketSymbolCompatibility(receipt,current,historical,{projectKey:'SG2',validatePeer});return assertSourceHubApiPathCompatibility(n.prior,n.previousBytes,historical,{validatePeer})}
  if(receipt.finderMetadataRequestPacing){
   const f=receipt.finderMetadataRequestPacing,file='apps/sg-runtime/operation-integration.json'
   assert.deepEqual(Object.keys(f).sort(),["taskId", "scope", "targetEnvironment", "previousReceiptSourceSha", "previousReceiptSha256", "boundSourcePaths", "sourceDigests", "applicationSourceDigests", "remoteQueryDelayMs", "prewarmedQueriesReused", "pendingQueriesCancelled", "retiredRequestCleanupGuarded", "searchCriteriaPreserved", "preservedSourcePaths", "authorizationChanged", "providerBudgetsChanged", "providerRetryAdded", "schemaChanged", "producerChanged", "privatePinsChanged", "ciPolicyChanged", "srmChanged", "visualDesignChanged", "otherEnvironmentsChanged"].sort())
