@@ -23,7 +23,7 @@ const acceptedAppShellSource=appShellReceipt.appShellFourCardCascade
  ?assertAppShellFourCardCascade(appShellReceipt,actualAppShellSource,(sha,file)=>execFileSync('git',['show',sha+':'+file])).previousBytes
  :actualAppShellSource
 const actualReceipt=JSON.parse(actualAppShellSource('apps/srm/operation-integration.json'))
-const apiPath=actualReceipt.sourceHubApiPathCompatibility
+const apiPath=actualReceipt.sourceHubMarketSymbolCompatibility??actualReceipt.sourceHubApiPathCompatibility
 if(apiPath)assertSourceHubApiPathCompatibility(actualReceipt,actualAppShellSource,(sha,file)=>execFileSync('git',['show',sha+':'+file]))
 // The host view validates both current API_PATH closures and the later AppShell
 // amendments before exposing the presentation predecessor used by these guards.
