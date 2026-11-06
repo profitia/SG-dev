@@ -222,7 +222,9 @@ test('Stage2A adopts four separate versioned source families and the real Newsfe
  assert.equal(a.effectiveOn,'CONTROLLED_MAIN_ACCEPTANCE');assert.equal(a.apiVersion,'1.0.0')
  assert.equal(a.package,json('packages/platform-source-hub-contracts/package.json').name)
  assert.equal(a.apiVersion,SOURCE_HUB_CONTRACT_VERSION)
- assert.equal(json('packages/platform-source-hub-contracts/package.json').version,'1.1.0') // Additive transport client; payload contract stays1.0.0.
+ // Stage2A is historical evidence. Later additive SDK releases must not rewrite
+ // its accepted version or be forced to reuse an already published version.
+ assert.equal(JSON.parse(git(['show','b837f93b47d15cd812242a2ab0df6e69c35b3656:packages/platform-source-hub-contracts/package.json'])).version,'1.1.0')
  assert.deepEqual(a.implementedFamilies,{'news-discovery':'1.0.0','economic-calendar':'1.0.0','indicators':'1.0.0','external-forecasts':'1.0.0'})
  assert.deepEqual(a.futureFamilies,['market-observations']);assert.equal(a.legacyCompatibility,'NewsDiscovery 0.1.0')
  assert.equal(a.consumer.contractPackage,json('packages/newsfeed-contracts/package.json').name)
@@ -233,4 +235,25 @@ test('Stage2A adopts four separate versioned source families and the real Newsfe
  assert.equal(evidence.liveProviderCalls,0);assert.equal(evidence.providerResults.length,5)
  assert(evidence.providerResults.every(x=>x.status==='IMPLEMENTED_OFFLINE_VERIFIED'))
  assert(fs.existsSync(path.join(root,a.evidenceDocument)));assert(fs.existsSync(path.join(root,a.compatibilityAndRollback)))
+})
+
+test('SourceHub optional ECR storage metadata preserves accepted transport and payload compatibility',()=>{
+ const accepted='b837f93b47d15cd812242a2ab0df6e69c35b3656'
+ const p='packages/platform-source-hub-contracts/package.json'
+ const old=JSON.parse(git(['show',accepted+':'+p])),current=json(p)
+ assert.equal(old.version,'1.1.0')
+ assert.equal(SOURCE_HUB_CONTRACT_VERSION,'1.0.0')
+ assert.equal(json('packages/platform-contracts/package.json').version,'1.33.0')
+ for(const path of ['packages/platform-contracts/package.json','packages/platform-source-hub-contracts/client.mjs','packages/platform-source-hub-contracts/client.d.mts'])
+  assert.equal(git(['hash-object',path]),git(['rev-parse',accepted+':'+path]),path)
+ if(current.version==='1.1.0'){
+  assert.deepEqual(current,old)
+ }else{
+  assert.equal(current.version,'1.2.0')
+  const {version:oldVersion,peerDependencies:oldPeers,...oldManifest}=old
+  const {version,peerDependencies,...currentManifest}=current
+  assert.deepEqual(currentManifest,oldManifest)
+  assert.deepEqual(oldPeers,{'@profitia/platform-current-e1-authority':'1.1.0'})
+  assert.deepEqual(peerDependencies,{'@profitia/platform-current-e1-authority':'1.1.0 || 1.2.0'})
+ }
 })
