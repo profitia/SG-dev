@@ -66,14 +66,15 @@ test('migration verifies idempotently and refuses digest/binding drift; installe
   const f = await fixture()
   try {
     const client = await f.e1.calendar.migratorPool.connect()
-    try {assert.equal((await migrate(client, f.configuration)).status, 'INSTALLED_OR_VERIFIED')} finally {client.release()}
+    // Await the migrator socket close before the fixture drops its database.
+    try {assert.equal((await migrate(client, f.configuration)).status, 'INSTALLED_OR_VERIFIED')} finally {await client.end(); client.release(true)}
     assert.equal(await f.repository.ready(), true)
     await f.e1.calendar.asOwner('economic_calendar_development_owner', q => q.query("UPDATE economic_calendar.installation SET status='DISABLED'"))
     assert.equal(await f.repository.ready(), false)
     assert.equal((await f.api('events')).status,503)
     await f.e1.calendar.asOwner('economic_calendar_development_owner', q => q.query('UPDATE economic_calendar.installation SET schema_digest=$1', ['0'.repeat(64)]))
     const connection = await f.e1.calendar.migratorPool.connect()
-    try {await assert.rejects(migrate(connection, f.configuration), /EXISTING_PRODUCT_SCHEMA_MISMATCH/)} finally {connection.release()}
+    try {await assert.rejects(migrate(connection, f.configuration), /EXISTING_PRODUCT_SCHEMA_MISMATCH/)} finally {await connection.end(); connection.release(true)}
   } finally {await f.close()}
 })
 test('SYNTHETIC_ONLY full SourceHub -> durable ECR -> current-authorized API with independent component/service identity and no upstream reads', async () => {
