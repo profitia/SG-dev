@@ -25,3 +25,5 @@ TRANSIENT_ONLY and changes no entitlement or quota. Durable consumers must
 reject missing rights; null cache TTL is never a durable-storage permission.
 The owner declaration governs licensed durable reuse without an invented
 history retention period. Existing consumers remain compatible.
+
+Proposed market-observations producer (Hub contracts1.3.0): snapshot commodity catalogue with local symbol/TE-URL selection, and dated per-symbol historical series. Shared wire remains1.0.0. Preserve vendor symbol, market classification separately from actual instrument type, time precision, quote basis, OHLC and unknown unit/currency. Canonical Market Data mapping is NOT_ADOPTED. Historical symbol transport is a separately pinned opt-in MARKET_SYMBOL proposal in SDK1.34, never a relaxation of API_PATH. See `apps/platform-source-hub/docs/te-market-observations.pl.md` for the ungranted licence, producer/consumer adoption, SQL, Source/E1 and rollout dependencies. Existing Market Forecasts remains independently licence-gated and OFF; no Calendar request is authorised by this extension.

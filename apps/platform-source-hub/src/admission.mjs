@@ -1,5 +1,5 @@
 import {createPlatformIngestionHost,platformIngestionSchemaDigest,unmeteredSourceSchemaDigest} from '@profitia/platform-contracts/platform-ingestion';
-import {createExternalCallHost,externalCallSchemaDigest,nativeExternalTransportSchemaDigest,apiPathTransportSchemaDigest,externalCallEvidence,externalNativeResponse,ExternalCallUnavailable} from '@profitia/platform-contracts/external-call';
+import {createExternalCallHost,externalCallSchemaDigest,nativeExternalTransportSchemaDigest,apiPathTransportSchemaDigest,marketSymbolTransportSchemaDigest,externalCallEvidence,externalNativeResponse,ExternalCallUnavailable} from '@profitia/platform-contracts/external-call';
 import {SourceHubError} from '../../../packages/platform-source-hub-contracts/index.mjs';
 import {DiscoveryError} from './providers/newsapi.mjs';
 import {credential} from './transport.mjs';
@@ -12,13 +12,16 @@ export const SOURCE_DEFINITIONS=Object.freeze({
  'trading-economics:indicators':{origin:'https://api.tradingeconomics.com',paths:['/country'],prefix:'/country/'},
  'trading-economics:external-forecasts':{origin:'https://api.tradingeconomics.com',paths:['/forecast'],prefix:'/forecast/',marketPaths:['index','currency','crypto','commodity','bond'].map(c=>'/markets/forecasts/'+c)}
 });
+const OPTIONAL_SOURCE_DEFINITIONS=Object.freeze({
+ 'trading-economics:market-observations':{origin:'https://api.tradingeconomics.com',paths:['/markets/commodities'],marketSymbolPrefixes:['/markets/historical/']}
+});
 export function sourceDefinition(provider,family,{includeMarketForecasts=false}={}){
- const d=SOURCE_DEFINITIONS[provider+':'+family];if(!d)throw new SourceHubError('UNSUPPORTED_FAMILY');
+ const d=SOURCE_DEFINITIONS[provider+':'+family]??OPTIONAL_SOURCE_DEFINITIONS[provider+':'+family];if(!d)throw new SourceHubError('UNSUPPORTED_FAMILY');
  return {...d,sourceId:'source-hub.'+provider+'.'+family,resourceId:'api.'+provider+'.'+family,
-  pathRules:d.paths.map(path=>({method:'GET',path})),nativePathRules:[...d.paths.map(path=>({method:'GET',path,requestFormat:'NONE'})),...(includeMarketForecasts&&'marketPaths' in d?d.marketPaths:[]).map(path=>({method:'GET',path,requestFormat:'NONE'})),...(d.prefix?[{method:'GET',prefix:d.prefix,suffix:'',parameter:'API_PATH',requestFormat:'NONE'}]:[])]};
+  pathRules:d.paths.map(path=>({method:'GET',path})),nativePathRules:[...d.paths.map(path=>({method:'GET',path,requestFormat:'NONE'})),...(includeMarketForecasts&&'marketPaths' in d?d.marketPaths:[]).map(path=>({method:'GET',path,requestFormat:'NONE'})),...(d.prefix?[{method:'GET',prefix:d.prefix,suffix:'',parameter:'API_PATH',requestFormat:'NONE'}]:[]),...('marketSymbolPrefixes' in d?d.marketSymbolPrefixes.map(prefix=>({method:'GET',prefix,suffix:'',parameter:'MARKET_SYMBOL',requestFormat:'NONE'})):[])]};
 }
 export async function createAdmission(configuration,database){
- const sourceDigest=await platformIngestionSchemaDigest(),externalDigest=await externalCallSchemaDigest(),nativeDigest=await nativeExternalTransportSchemaDigest(),apiDigest=await apiPathTransportSchemaDigest();let inFlight=0;
+ const sourceDigest=await platformIngestionSchemaDigest(),externalDigest=await externalCallSchemaDigest(),nativeDigest=await nativeExternalTransportSchemaDigest(),apiDigest=await apiPathTransportSchemaDigest(),marketDigest=await marketSymbolTransportSchemaDigest();let inFlight=0;
  const binding={applicationId:configuration.applicationId,environment:configuration.environment,projectId:configuration.projectId,branchId:configuration.branchId,databaseName:configuration.databaseName,role:configuration.sourceRole,deploymentId:configuration.deploymentId,configurationVersion:configuration.configurationVersion,schemaDigest:sourceDigest,unmeteredSchemaDigest:await unmeteredSourceSchemaDigest()};
  /** @type {import('@profitia/platform-contracts/operation-context').Application} */
  const application={appId:configuration.applicationId,profileId:'PLATFORM_INTERNAL',deploymentId:configuration.deploymentId,configurationVersion:configuration.configurationVersion,environment:configuration.environment,identityIssuer:'urn:profitia:database-service-runtime:v1',organisationId:null,features:['knowledge_ingestion'],operations:['knowledge.ingest']};
@@ -39,7 +42,7 @@ export async function createAdmission(configuration,database){
   /** @type {Record<string,string>} */
   const headers=provider==='newsapi'?{'X-Api-Key':key}:provider==='brave'?{'X-Subscription-Token':key}:{Authorization:key};
   /** @type {import('@profitia/platform-contracts/external-call').NativeExternalTransport & {credentialMode:'SERVER_HEADERS'}} */
-  const nativeTransport={schemaDigest:nativeDigest,...(d.prefix?{apiPathSchemaDigest:apiDigest}:{}),pathRules:d.nativePathRules,redirectOrigins:[],maximumResponseBytes:2*1024*1024,credentialMode:'SERVER_HEADERS',completionMode:'ADMITTED_ATTEMPT_CURRENT_SETTLEMENT'};
+  const nativeTransport={schemaDigest:nativeDigest,...(d.prefix?{apiPathSchemaDigest:apiDigest}:{}),...('marketSymbolPrefixes' in d?{marketSymbolSchemaDigest:marketDigest}:{}),pathRules:d.nativePathRules,redirectOrigins:[],maximumResponseBytes:2*1024*1024,credentialMode:'SERVER_HEADERS',completionMode:'ADMITTED_ATTEMPT_CURRENT_SETTLEMENT'};
   const host=createExternalCallHost({sourceHost,sourceId:d.sourceId,resourceId:d.resourceId,
    binding:{role:configuration.sourceRole,configurationVersion:configuration.configurationVersion,origin:d.origin,transport:'HTTPS',schemaDigest:externalDigest,pathRules:d.pathRules},
    nativeTransport,independentQuery:database.query,query:(transaction,sql,values)=>transaction.query(sql,values),

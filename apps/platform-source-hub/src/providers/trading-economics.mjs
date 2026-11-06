@@ -30,7 +30,27 @@ function marketForecastPlan(criteria){
  return {url:TE_ORIGIN+path+'?f=json',limit:integer(criteria.limit??100,1,1000),localIndicators:null,eventText:null,market:true,localSymbols:criteria.symbols===undefined?null:symbols(criteria.symbols),
   nativeFilters:['marketCategory'],localFilters:Object.keys(criteria).filter(k=>['limit','symbols'].includes(k))};
 }
+function marketObservationPlan(criteria){
+ fields(criteria,['mode','symbols','instrumentUrls','from','to','limit']);
+ if(!['snapshot','historical'].includes(criteria.mode))fail('MISSING_CRITERIA');
+ const p=new URLSearchParams({f:'json'}),selected=criteria.symbols===undefined?null:symbols(criteria.symbols).map(s=>s.toUpperCase());
+ if(selected&&new Set(selected).size!==selected.length)fail();
+ // Symbol transport is a separate optional protocol; API_PATH stays unchanged.
+ if(selected?.some(s=>!/^[A-Z0-9][A-Z0-9._-]{0,31}:[A-Z0-9][A-Z0-9._-]{0,15}$/.test(s)))fail();
+ let path='/markets/commodities',instrumentUrls=null;
+ if(criteria.mode==='historical'){
+  if(!selected||criteria.instrumentUrls!==undefined||criteria.from===undefined||criteria.to===undefined)fail('INCOMPATIBLE_CRITERIA');
+  dateRange(criteria,p);path='/markets/historical/'+selected.join(',');
+ }else{
+  if(criteria.from!==undefined||criteria.to!==undefined)fail('INCOMPATIBLE_CRITERIA');
+  if(criteria.instrumentUrls!==undefined)instrumentUrls=list(criteria.instrumentUrls,10).map(v=>{const u=new URL(v,'https://tradingeconomics.com');if(u.origin!=='https://tradingeconomics.com'||u.search||u.hash||!/^\/commodity\/[a-z0-9-]+$/.test(u.pathname))fail();return u.href;});
+ }
+ return {url:TE_ORIGIN+path+'?'+p,limit:integer(criteria.limit??100,1,1000),market:false,observationMode:criteria.mode,
+  localSymbols:criteria.mode==='snapshot'?selected:null,expectedSymbols:selected,instrumentUrls,
+  nativeFilters:criteria.mode==='historical'?['mode','symbols','from','to']:['mode'],localFilters:Object.keys(criteria).filter(k=>['limit','instrumentUrls',...(criteria.mode==='snapshot'?['symbols']:[])].includes(k))};
+}
 export function prepareTradingEconomics(family,criteria){
+ if(family==='market-observations')return marketObservationPlan(criteria);
  if(family==='news-discovery')return newsPlan(criteria);
  if(family==='external-forecasts'&&criteria?.forecastType==='markets')return marketForecastPlan(criteria);
  if(!['economic-calendar','indicators','external-forecasts'].includes(family))fail('UNSUPPORTED_FAMILY');
@@ -106,6 +126,27 @@ function news(raw,retrievedAt){
   native:pick(r,['id','title','date','description','country','category','symbol','url','importance','type','lastupdate'])};
  return record('news-discovery','trading-economics','news',payload,{retrievedAt,vendorRecordId:id,sourceUrl,asOf:publishedAt});
 }
+function marketDate(value){
+ if(value===null||value===undefined||value==='')return {value:null,precision:'UNKNOWN'};
+ if(typeof value!=='string')fail('INVALID_RESPONSE',502);
+ if(/^\d{4}-\d{2}-\d{2}$/.test(value)){try{return {value:day(value)+'T00:00:00.000Z',precision:'DAY'};}catch{fail('INVALID_RESPONSE',502);}}
+ const d=/^(\d{2})\/(\d{2})\/(\d{4})$/.exec(value);
+ if(d){const iso=d[3]+'-'+d[2]+'-'+d[1];try{return {value:day(iso)+'T00:00:00.000Z',precision:'DAY'};}catch{fail('INVALID_RESPONSE',502);}}
+ return {value:providerUtc(value),precision:'INSTANT'};
+}
+function marketObservation(raw,retrievedAt,mode){
+ const symbol=optionalText(raw.Symbol);if(!symbol||!/^[A-Za-z0-9][A-Za-z0-9._-]{0,31}:[A-Za-z0-9][A-Za-z0-9._-]{0,15}$/.test(symbol))fail('INVALID_RESPONSE',502);
+ const observation=marketDate(raw.Date),sourceUrl=teUrl(raw.URL),historical=mode==='historical';
+ const payload={mode:historical?'HISTORICAL':'SNAPSHOT',vendorSymbol:symbol.toUpperCase(),name:optionalText(raw.Name),marketType:optionalText(raw.Type),
+  instrumentType:optionalText(raw.InstrumentType),underlyingMappingRef:null,mappingStatus:'NOT_ADOPTED_BY_MARKET_DATA',observationAt:observation.value,temporalPrecision:observation.precision,
+  price:scalar(historical?(raw.Close===undefined?raw.Value:raw.Close):raw.Last),quoteBasis:historical?(raw.Close===undefined?'VENDOR_VALUE':'VENDOR_CLOSE'):'VENDOR_LAST',
+  unit:optionalText(raw.Unit??raw.unit),currency:optionalText(raw.Currency??raw.currency),contractExpiry:optionalText(raw.Expiration??raw.ExpiryDate),rolloverRef:null,
+  session:optionalText(raw.State??raw.state),lastUpdate:providerUtc(raw.LastUpdate),sourceUrl,
+  ohlc:{open:scalar(raw.Open),high:scalar(raw.High),low:scalar(raw.Low),close:scalar(raw.Close)},
+  changes:Object.fromEntries(['DailyChange','DailyPercentualChange','WeeklyChange','WeeklyPercentualChange','MonthlyChange','MonthlyPercentualChange','YearlyChange','YearlyPercentualChange','YTDChange','YTDPercentualChange'].map(k=>[k,scalar(raw[k])])),
+  native:pick(raw,['Symbol','Ticker','Name','Country','Date','Type','InstrumentType','Last','Value','Open','High','Low','Close','CloseDate','Unit','unit','Currency','currency','State','state','LastUpdate','URL','Expiration','ExpiryDate','WeeklyChange','WeeklyPercentualChange'])};
+ return record('market-observations','trading-economics',historical?'markets/historical':'markets/commodities',payload,{retrievedAt,vendorRecordId:symbol+':'+mode+':'+(observation.value??'UNKNOWN'),sourceUrl,asOf:payload.lastUpdate??observation.value});
+}
 function marketForecast(raw,retrievedAt){
  const symbol=optionalText(raw.Symbol);if(!symbol)fail('INVALID_RESPONSE',502);
  const payload={indicatorId:symbol,country:optionalText(raw.Country),indicator:null,forecastType:'markets',symbol,marketType:optionalText(raw.Type),vendorModel:'Trading Economics',
@@ -126,7 +167,11 @@ export function createTradingEconomicsProvider({apiKey,fetchImpl,now=()=>new Dat
   if(plan.eventText)filtered=filtered.filter(r=>String(r.Event??'').toLocaleLowerCase().includes(plan.eventText.toLocaleLowerCase()));
   if(plan.localText)filtered=filtered.filter(r=>[r.title??r.Title,r.description??r.Description].some(v=>typeof v==='string'&&v.toLocaleLowerCase().includes(plan.localText.toLocaleLowerCase())));
   if(plan.localSymbols)filtered=filtered.filter(r=>typeof r.Symbol==='string'&&plan.localSymbols.some(v=>v.toUpperCase()===r.Symbol.toUpperCase()));
-  const retrievedAt=now(),normalize=family==='news-discovery'?news:family==='economic-calendar'?calendar:family==='indicators'?indicator:plan.market?marketForecast:(r,t)=>forecast(r,t,plan.horizons);
+  if(plan.observationMode==='historical'){const u=new URL(plan.url),from=u.searchParams.get('d1'),to=u.searchParams.get('d2');if(from===null||to===null)fail('INVALID_RESPONSE',502);
+   if(rows.some(r=>{const d=marketDate(r.Date);return typeof r.Symbol!=='string'||!plan.expectedSymbols.includes(r.Symbol.toUpperCase())||!d.value||d.value.slice(0,10)<from||d.value.slice(0,10)>to;}))fail('INVALID_RESPONSE',502);
+  }
+  if(plan.instrumentUrls)filtered=filtered.filter(r=>plan.instrumentUrls.includes(teUrl(r.URL)));
+  const retrievedAt=now(),normalize=family==='market-observations'?(r,t)=>marketObservation(r,t,plan.observationMode):family==='news-discovery'?news:family==='economic-calendar'?calendar:family==='indicators'?indicator:plan.market?marketForecast:(r,t)=>forecast(r,t,plan.horizons);
   const items=filtered.slice(0,plan.limit).map(row=>normalize(row,retrievedAt));
   const answer=result(family,'trading-economics',items,{retrievedAt,page:1,pageSize:plan.limit,more:filtered.length>plan.limit?true:null,total:null,truncated:filtered.length>plan.limit});
   answer.coverage={scope:'PROVIDER_RETURNED_SUBSET',completeness:filtered.length>plan.limit?'INCOMPLETE':'UNKNOWN',providerReturned:rows.length,matchedLocally:filtered.length,returned:items.length,nativeFilters:plan.nativeFilters,localFilters:plan.localFilters};

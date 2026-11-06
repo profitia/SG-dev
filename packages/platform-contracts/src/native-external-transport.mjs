@@ -22,7 +22,7 @@ export function validNativePathRules(rules,publicWeb=false){
   if(!record(r)||!['GET','POST'].includes(r.method)||!formats.includes(r.requestFormat)||r.method==='GET'&&r.requestFormat!=='NONE')return false
   if(exact(r,'method,path,requestFormat'))return pathPart(r.path)&&r.path.startsWith('/')
   return exact(r,'method,parameter,prefix,requestFormat,suffix')&&pathPart(r.prefix)&&r.prefix.startsWith('/')
-   &&pathPart(r.suffix)&&(parameters.includes(r.parameter)||r.parameter==='API_PATH'&&r.method==='GET'&&r.requestFormat==='NONE'||publicWeb&&r.parameter==='PUBLIC_PATH'&&r.method==='GET'&&r.prefix==='/'&&r.suffix===''&&r.requestFormat==='NONE')
+   &&pathPart(r.suffix)&&(parameters.includes(r.parameter)||r.parameter==='API_PATH'&&r.method==='GET'&&r.requestFormat==='NONE'||r.parameter==='MARKET_SYMBOL'&&r.method==='GET'&&r.requestFormat==='NONE'&&['/markets/historical/','/markets/symbol/','/markets/forecasts/symbol/'].includes(r.prefix)&&r.suffix===''||publicWeb&&r.parameter==='PUBLIC_PATH'&&r.method==='GET'&&r.prefix==='/'&&r.suffix===''&&r.requestFormat==='NONE')
  })&&new Set(rules.map(r=>operationPayloadDigest(r))).size===rules.length
 }
 function origin(value,transport){
@@ -30,8 +30,10 @@ function origin(value,transport){
    &&(u.protocol==='https:'||transport==='LOCAL_SYNTHETIC_HTTP'&&u.protocol==='http:'&&u.hostname==='127.0.0.1'&&u.port)}catch{return false}
 }
 export function captureNativeTransport(value,transport,publicWeb=false){
- const apiPath=Array.isArray(value?.pathRules)&&value.pathRules.some(r=>r.parameter==='API_PATH');
- if(!exact(value,apiPath?'apiPathSchemaDigest,completionMode,credentialMode,maximumResponseBytes,pathRules,redirectOrigins,schemaDigest':'completionMode,credentialMode,maximumResponseBytes,pathRules,redirectOrigins,schemaDigest')
+ const apiPath=Array.isArray(value?.pathRules)&&value.pathRules.some(r=>r.parameter==='API_PATH'),marketSymbol=Array.isArray(value?.pathRules)&&value.pathRules.some(r=>r.parameter==='MARKET_SYMBOL');
+ const keys=['completionMode','credentialMode','maximumResponseBytes','pathRules','redirectOrigins','schemaDigest',...(apiPath?['apiPathSchemaDigest']:[]),...(marketSymbol?['marketSymbolSchemaDigest']:[])].sort().join(',');
+ if(!exact(value,keys)
+   ||marketSymbol&&(!hex.test(value.marketSymbolSchemaDigest??'')||transport!=='HTTPS'||value.credentialMode!=='SERVER_HEADERS'||value.redirectOrigins?.length!==0)
    ||apiPath&&(!hex.test(value.apiPathSchemaDigest??'')||transport!=='HTTPS'||value.credentialMode!=='SERVER_HEADERS'||value.redirectOrigins?.length!==0)
    ||!hex.test(value.schemaDigest??'')||value.completionMode!==NATIVE_EXTERNAL_TRANSPORT.completionMode
    ||!['NONE','SERVER_HEADERS'].includes(value.credentialMode)||!validNativePathRules(value.pathRules,publicWeb)
@@ -43,6 +45,7 @@ export function captureNativeTransport(value,transport,publicWeb=false){
  return freeze(structuredClone(value))
 }
 export function assertNativeDescriptor(config,descriptor){
+ if(config.marketSymbolSchemaDigest&&(descriptor?.marketSymbolSchemaVersion!=='1.0.0'||descriptor.marketSymbolSchemaDigest!==config.marketSymbolSchemaDigest))invalid()
  if(config.apiPathSchemaDigest&&(descriptor?.apiPathSchemaVersion!=='1.0.0'||descriptor.apiPathSchemaDigest!==config.apiPathSchemaDigest))invalid()
  if(descriptor?.nativeSchemaVersion!=='1.0.0'||descriptor.nativeSchemaDigest!==config.schemaDigest
    ||!/^[1-9][0-9]*$/.test(descriptor.nativePolicyVersion??'')
@@ -54,6 +57,10 @@ export function assertNativeDescriptor(config,descriptor){
    ||!Number.isFinite(Date.parse(descriptor.nativeExpiresAt)))invalid()
 }
 function parameter(value,kind){
+ if(kind==='MARKET_SYMBOL'){
+  if(value.length<1||value.length>509||value.includes('..'))return false;
+  const symbols=value.split(',');return symbols.length<=10&&new Set(symbols).size===symbols.length&&symbols.every(s=>/^[A-Z0-9][A-Z0-9._-]{0,31}:[A-Z0-9][A-Z0-9._-]{0,15}$/.test(s));
+ }
  if(kind==='API_PATH'){
   if(value.length<1||value.length>1024)return false
   const segments=value.split('/');if(segments.length>16)return false
