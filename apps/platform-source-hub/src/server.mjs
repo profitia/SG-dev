@@ -5,6 +5,9 @@ import {parseHubRequest,assertHubResponse,closed,SourceHubError} from '../../../
 import {createNewsApiProvider,prepareSearch,preparePublishers} from './providers/newsapi.mjs';
 import {createBraveProvider,prepareBrave} from './providers/brave.mjs';
 import {createTradingEconomicsProvider,prepareTradingEconomics} from './providers/trading-economics.mjs';
+import {createEiaProvider,prepareEia} from './providers/eia.mjs';
+import {createCftcProvider,prepareCftc} from './providers/cftc.mjs';
+import {createCommoditiesProvider,prepareCommodities} from './providers/commodities-sh.mjs';
 import {record,result} from './transport.mjs';
 import {getCatalogue} from './capabilities.mjs';
 import {safeError} from './errors.mjs';
@@ -25,11 +28,18 @@ export function createHubPeerVerifier(c){
  };
 }
 export function validateProviderRequest(request){
+ if(request.provider==='eia')return prepareEia(request);
+ if(request.provider==='cftc')return prepareCftc(request);
+ if(request.provider==='commodities-sh')return prepareCommodities(request);
  if(request.provider==='newsapi')return request.operation==='search'?prepareSearch(request.criteria):preparePublishers(request.criteria);
  if(request.provider==='brave')return prepareBrave(request.criteria);
  return prepareTradingEconomics(request.family,request.criteria);
 }
 async function acquire(configuration,request,transport,signal){
+ if(['eia','cftc','commodities-sh'].includes(request.provider)){
+  const create=request.provider==='eia'?createEiaProvider:request.provider==='cftc'?createCftcProvider:createCommoditiesProvider;
+  return create({fetchImpl:transport.fetchImpl}).acquire(request,{signal});
+ }
  if(request.provider==='newsapi'){
   const adapter=createNewsApiProvider({apiKey:configuration.secrets.newsapi,targetEnvironment:'development',fetchImpl:(url,options)=>transport.fetchImpl(url,{...options,signal:AbortSignal.any([options.signal,signal])})});
   const r=await (request.operation==='search'?adapter.search(request.criteria):adapter.listPublishers(request.criteria));
@@ -46,13 +56,14 @@ export function createApplication({configuration,authorizer,repository,admission
   if(request.method==='GET'&&['/health','/live','/ready'].includes(u.pathname)){
    const ready=u.pathname!=='/ready'||(consumerAccess?await consumerAccess.ready():await repository.ready()&&await authorizer.ready())&&await admission.ready();return new Response(JSON.stringify({service:'platform-source-hub',status:ready?'ok':'not_ready'}),{status:ready?200:503});
   }
-  if(request.method==='GET'&&u.pathname==='/v1/capabilities')return Response.json(getCatalogue());
+  if(request.method==='GET'&&u.pathname==='/v1/capabilities')return Response.json(getCatalogue(configuration));
   if(request.method!=='POST'||u.pathname!=='/v1/acquire'||u.search)throw new SourceHubError('NOT_FOUND',404);
   const universal=request.headers.has(FIRST_PARTY_SOURCE_HEADER);
   if(universal&&!consumerAccess||!universal&&(!verify||!await verify(request)))throw new SourceHubError('PEER_AUTHENTICATION_REQUIRED',401);
   const envelope=await request.clone().json().catch(()=>{throw new SourceHubError('INVALID_JSON');});
   if(!closed(envelope,['context','request'])||!universal&&!closed(envelope.context,['organisationId','expectedUserId']))throw new SourceHubError('INVALID_REQUEST');
   const command=parseHubRequest(envelope.request);validateProviderRequest(command);
+  if(['eia','cftc','commodities-sh'].includes(command.provider)&&!configuration.commodityProviders?.includes(command.provider))throw new SourceHubError('PROVIDER_NOT_ACTIVATED',503);
   details.provider=command.provider;details.family=command.family;
   const peer=universal?null:peerOperationAttribution(request);if(!universal&&!peer)throw new SourceHubError('PEER_AUTHENTICATION_REQUIRED',401);
   const selected=universal?consumerAccess.repository:repository;
