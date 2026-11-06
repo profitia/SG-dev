@@ -2069,6 +2069,390 @@ export function assertEcrG1ReviewEntry(file,entry){
  if(!Object.hasOwn(r.blobs,file?.filename??'')||file.sha!==r.blobs[file.filename]||entry!==r.modes[file.filename]+' blob '+file.sha+'\t'+file.filename+'\0')fail('ECR_G1_FILE_MODE_REJECTED');
 }
 
+// Proposed exact backend review; activation needs the separate trusted-CI decision.
+// No generic ECR, SourceHub, optional-package or workflow admission.
+export const ECR_BACKEND_REVIEW=Object.freeze({
+  "prNumber": 908,
+  "branch": "architecture/ecr-sourcehub-live-backend-20261106",
+  "reviewedCandidateSha": "253e20369fcd26f1985fc14188fd3e7f927a8faa",
+  "reviewedBaseSha": "b837f93b47d15cd812242a2ab0df6e69c35b3656",
+  "blobs": Object.freeze({
+    ".github/workflows/economic-calendar-ci.yml": "12eb6ae888b891fcb794ac537556f36678bbb828",
+    "apps/economic-calendar-runtime/README.md": "72ed33ccd3fa94f0907126d8c24da5f2edbd00d9",
+    "apps/economic-calendar-runtime/migrations/001-read-model-and-preferences.sql": "4d9690e08c47ac4ed58b273ed5c9f09ab6cb7105",
+    "apps/economic-calendar-runtime/package-lock.json": "a7527da73893091511fe30b0e0cedfacaf6dc7fb",
+    "apps/economic-calendar-runtime/package.json": "0eaf4e2a8a7e431a083bdd58c3873abfdc0cd7f2",
+    "apps/economic-calendar-runtime/scripts/live-probe.mjs": "b47e1e282523b2937ac1fa1f777de420bb36ee8a",
+    "apps/economic-calendar-runtime/scripts/migrate.mjs": "41ace4d3f2b983f543353140380426ecd4d79127",
+    "apps/economic-calendar-runtime/scripts/sync.mjs": "f1a8160cef52003fd90c32c864011e0db478f339",
+    "apps/economic-calendar-runtime/src/authorization.mjs": "97555300ace3caba31ed9c7d5adc8444e3ea3f30",
+    "apps/economic-calendar-runtime/src/config.mjs": "bc6db6c34b0fca6e08df9ca786cc44fcaa72cc59",
+    "apps/economic-calendar-runtime/src/database.mjs": "0f1b9a301115f0356edf21076dcd8156faab7c52",
+    "apps/economic-calendar-runtime/src/main.mjs": "3464c71a0c76cc0cbc0d686709978983377b221f",
+    "apps/economic-calendar-runtime/src/repository.mjs": "693649986edd11bf3840cc1a940b09f9a67c6285",
+    "apps/economic-calendar-runtime/src/server.mjs": "7a06460f1d31afa81ef79b5bb0b681bf3de1fb8c",
+    "apps/economic-calendar-runtime/src/synchronization.mjs": "d51df55cf0f3381d1c215ad0ac2e6973fdc9161a",
+    "apps/economic-calendar-runtime/test/api.test.mjs": "2366633c1e6c9fa9e48f63f82a2992d6215124fc",
+    "apps/economic-calendar-runtime/test/contracts.test.mjs": "05a46dcb3ea41626a366f0089cce5c64a44fa6e6",
+    "apps/economic-calendar-runtime/test/fixtures.mjs": "4f93e9f718b20f102d50b8bab99ace96588de58b",
+    "apps/economic-calendar-runtime/test/persistence.test.mjs": "7d510927db554f498a0dacc094eead0d69eb15f8",
+    "apps/economic-calendar-runtime/tsconfig.json": "42ba04cd71eb3fb517f178bd3750c98f1dbf4ff3",
+    "apps/identity-runtime/package-lock.json": "49dbc0545c1436e85314815225c60d55fafb52f8",
+    "apps/newsfeed-runtime/package-lock.json": "6cfbb8246d0f58bc02f12ea8cf147ba5b55ac67b",
+    "apps/platform-source-hub/migrations/005-calendar-storage-rights.sql": "facd971fa6dab54ccf1abfde63f8fe577b3fbef1",
+    "apps/platform-source-hub/package-lock.json": "07c19d47e5ac09def559a6e9623fcb94caf966ee",
+    "apps/platform-source-hub/scripts/migrate.mjs": "005025b14a07809b97189d8b5eda667a1df6483e",
+    "apps/platform-source-hub/src/repository.mjs": "73fea99afdc0354e8a74d6f8742cd022d0dcd460",
+    "apps/platform-source-hub/test/calendar-storage-rights.test.mjs": "b81b8f53506071666110bc5827c65860f7c12999",
+    "packages/economic-calendar-contracts/README.md": "23925c87b98618786affb733d919017a8886a69d",
+    "packages/economic-calendar-contracts/index.d.mts": "7c9b8fd8d609c32c6632b93b9946318c84e30bbb",
+    "packages/economic-calendar-contracts/index.mjs": "90cf9ef27606b0c7553404e74a3f09f83a2f61f0",
+    "packages/economic-calendar-contracts/package.json": "3c678a9df08fd947eb6adcf9618fd423bbfa5f91",
+    "packages/platform-contracts/current-e1-authority/index.d.mts": "ba7cb5805c35147bf35bb9329dc6e795a1e7d5f5",
+    "packages/platform-contracts/current-e1-authority/index.mjs": "7cd90689ab9784d4fd850d70b9b41254c367603c",
+    "packages/platform-contracts/current-e1-authority/migrations/005-calendar-authority.sql": "6bb3d8e4f933c865622c46ece9aa645f04c71a2f",
+    "packages/platform-contracts/current-e1-authority/migrations/006-calendar-receiver.sql": "f2da72a900788c6ff553593481fa8e8fd3e0ec3f",
+    "packages/platform-contracts/current-e1-authority/package-lock.json": "67fac0488840af61b5e468823800de3be977e014",
+    "packages/platform-contracts/current-e1-authority/package.json": "304041670c2bf73e00db8bf9503dc1f0f1e91657",
+    "packages/platform-contracts/test/calendar-current-e1.test.mjs": "6a6eae1433d61c9a115a1964e8b2d8e0e08265f6",
+    "packages/platform-contracts/test/fixtures/calendar-current-e1-postgres.mjs": "b572f81391c6e2e538cb4f2d5138447fe842ed28",
+    "packages/platform-source-hub-contracts/README.md": "3edc86b198596abd871d5b8e2b345bdf8ec53aa3",
+    "packages/platform-source-hub-contracts/index.d.ts": "a8ff3cc62fc8013c6c153529c4ecdc2a1650dfde",
+    "packages/platform-source-hub-contracts/index.mjs": "5e19c2d7d56ab4a2741d8b10df7c44e46d7a35a4",
+    "packages/platform-source-hub-contracts/package.json": "17dedd4bcf6911def103f9b282765898b37391cc",
+    "scripts/governance/platform-source-hub-foundation.test.mjs": "8517f71a2e1556b20da36ba5888824bb0ddb1605"
+  }),
+  "statuses": Object.freeze({
+    ".github/workflows/economic-calendar-ci.yml": "added",
+    "apps/economic-calendar-runtime/README.md": "added",
+    "apps/economic-calendar-runtime/migrations/001-read-model-and-preferences.sql": "added",
+    "apps/economic-calendar-runtime/package-lock.json": "added",
+    "apps/economic-calendar-runtime/package.json": "added",
+    "apps/economic-calendar-runtime/scripts/live-probe.mjs": "added",
+    "apps/economic-calendar-runtime/scripts/migrate.mjs": "added",
+    "apps/economic-calendar-runtime/scripts/sync.mjs": "added",
+    "apps/economic-calendar-runtime/src/authorization.mjs": "added",
+    "apps/economic-calendar-runtime/src/config.mjs": "added",
+    "apps/economic-calendar-runtime/src/database.mjs": "added",
+    "apps/economic-calendar-runtime/src/main.mjs": "added",
+    "apps/economic-calendar-runtime/src/repository.mjs": "added",
+    "apps/economic-calendar-runtime/src/server.mjs": "added",
+    "apps/economic-calendar-runtime/src/synchronization.mjs": "added",
+    "apps/economic-calendar-runtime/test/api.test.mjs": "added",
+    "apps/economic-calendar-runtime/test/contracts.test.mjs": "added",
+    "apps/economic-calendar-runtime/test/fixtures.mjs": "added",
+    "apps/economic-calendar-runtime/test/persistence.test.mjs": "added",
+    "apps/economic-calendar-runtime/tsconfig.json": "added",
+    "apps/identity-runtime/package-lock.json": "modified",
+    "apps/newsfeed-runtime/package-lock.json": "modified",
+    "apps/platform-source-hub/migrations/005-calendar-storage-rights.sql": "added",
+    "apps/platform-source-hub/package-lock.json": "modified",
+    "apps/platform-source-hub/scripts/migrate.mjs": "modified",
+    "apps/platform-source-hub/src/repository.mjs": "modified",
+    "apps/platform-source-hub/test/calendar-storage-rights.test.mjs": "added",
+    "packages/economic-calendar-contracts/README.md": "added",
+    "packages/economic-calendar-contracts/index.d.mts": "added",
+    "packages/economic-calendar-contracts/index.mjs": "added",
+    "packages/economic-calendar-contracts/package.json": "added",
+    "packages/platform-contracts/current-e1-authority/index.d.mts": "modified",
+    "packages/platform-contracts/current-e1-authority/index.mjs": "modified",
+    "packages/platform-contracts/current-e1-authority/migrations/005-calendar-authority.sql": "added",
+    "packages/platform-contracts/current-e1-authority/migrations/006-calendar-receiver.sql": "added",
+    "packages/platform-contracts/current-e1-authority/package-lock.json": "modified",
+    "packages/platform-contracts/current-e1-authority/package.json": "modified",
+    "packages/platform-contracts/test/calendar-current-e1.test.mjs": "added",
+    "packages/platform-contracts/test/fixtures/calendar-current-e1-postgres.mjs": "added",
+    "packages/platform-source-hub-contracts/README.md": "modified",
+    "packages/platform-source-hub-contracts/index.d.ts": "modified",
+    "packages/platform-source-hub-contracts/index.mjs": "modified",
+    "packages/platform-source-hub-contracts/package.json": "modified",
+    "scripts/governance/platform-source-hub-foundation.test.mjs": "modified"
+  }),
+  "modes": Object.freeze({
+    ".github/workflows/economic-calendar-ci.yml": "100644",
+    "apps/economic-calendar-runtime/README.md": "100644",
+    "apps/economic-calendar-runtime/migrations/001-read-model-and-preferences.sql": "100644",
+    "apps/economic-calendar-runtime/package-lock.json": "100644",
+    "apps/economic-calendar-runtime/package.json": "100644",
+    "apps/economic-calendar-runtime/scripts/live-probe.mjs": "100644",
+    "apps/economic-calendar-runtime/scripts/migrate.mjs": "100644",
+    "apps/economic-calendar-runtime/scripts/sync.mjs": "100644",
+    "apps/economic-calendar-runtime/src/authorization.mjs": "100644",
+    "apps/economic-calendar-runtime/src/config.mjs": "100644",
+    "apps/economic-calendar-runtime/src/database.mjs": "100644",
+    "apps/economic-calendar-runtime/src/main.mjs": "100644",
+    "apps/economic-calendar-runtime/src/repository.mjs": "100644",
+    "apps/economic-calendar-runtime/src/server.mjs": "100644",
+    "apps/economic-calendar-runtime/src/synchronization.mjs": "100644",
+    "apps/economic-calendar-runtime/test/api.test.mjs": "100644",
+    "apps/economic-calendar-runtime/test/contracts.test.mjs": "100644",
+    "apps/economic-calendar-runtime/test/fixtures.mjs": "100644",
+    "apps/economic-calendar-runtime/test/persistence.test.mjs": "100644",
+    "apps/economic-calendar-runtime/tsconfig.json": "100644",
+    "apps/identity-runtime/package-lock.json": "100644",
+    "apps/newsfeed-runtime/package-lock.json": "100644",
+    "apps/platform-source-hub/migrations/005-calendar-storage-rights.sql": "100644",
+    "apps/platform-source-hub/package-lock.json": "100644",
+    "apps/platform-source-hub/scripts/migrate.mjs": "100644",
+    "apps/platform-source-hub/src/repository.mjs": "100644",
+    "apps/platform-source-hub/test/calendar-storage-rights.test.mjs": "100644",
+    "packages/economic-calendar-contracts/README.md": "100644",
+    "packages/economic-calendar-contracts/index.d.mts": "100644",
+    "packages/economic-calendar-contracts/index.mjs": "100644",
+    "packages/economic-calendar-contracts/package.json": "100644",
+    "packages/platform-contracts/current-e1-authority/index.d.mts": "100644",
+    "packages/platform-contracts/current-e1-authority/index.mjs": "100644",
+    "packages/platform-contracts/current-e1-authority/migrations/005-calendar-authority.sql": "100644",
+    "packages/platform-contracts/current-e1-authority/migrations/006-calendar-receiver.sql": "100644",
+    "packages/platform-contracts/current-e1-authority/package-lock.json": "100644",
+    "packages/platform-contracts/current-e1-authority/package.json": "100644",
+    "packages/platform-contracts/test/calendar-current-e1.test.mjs": "100644",
+    "packages/platform-contracts/test/fixtures/calendar-current-e1-postgres.mjs": "100644",
+    "packages/platform-source-hub-contracts/README.md": "100644",
+    "packages/platform-source-hub-contracts/index.d.ts": "100644",
+    "packages/platform-source-hub-contracts/index.mjs": "100644",
+    "packages/platform-source-hub-contracts/package.json": "100644",
+    "scripts/governance/platform-source-hub-foundation.test.mjs": "100644"
+  }),
+  "routes": Object.freeze({
+    ".github/workflows/economic-calendar-ci.yml": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ECR-BASE-003"
+    },
+    "apps/economic-calendar-runtime/README.md": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ECR-BASE-001"
+    },
+    "apps/economic-calendar-runtime/migrations/001-read-model-and-preferences.sql": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ECR-BASE-001"
+    },
+    "apps/economic-calendar-runtime/package-lock.json": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ECR-BASE-001"
+    },
+    "apps/economic-calendar-runtime/package.json": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ECR-BASE-001"
+    },
+    "apps/economic-calendar-runtime/scripts/live-probe.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ECR-BASE-001"
+    },
+    "apps/economic-calendar-runtime/scripts/migrate.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ECR-BASE-001"
+    },
+    "apps/economic-calendar-runtime/scripts/sync.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ECR-BASE-001"
+    },
+    "apps/economic-calendar-runtime/src/authorization.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ECR-BASE-001"
+    },
+    "apps/economic-calendar-runtime/src/config.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ECR-BASE-001"
+    },
+    "apps/economic-calendar-runtime/src/database.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ECR-BASE-001"
+    },
+    "apps/economic-calendar-runtime/src/main.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ECR-BASE-001"
+    },
+    "apps/economic-calendar-runtime/src/repository.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ECR-BASE-001"
+    },
+    "apps/economic-calendar-runtime/src/server.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ECR-BASE-001"
+    },
+    "apps/economic-calendar-runtime/src/synchronization.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ECR-BASE-001"
+    },
+    "apps/economic-calendar-runtime/test/api.test.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ECR-BASE-001"
+    },
+    "apps/economic-calendar-runtime/test/contracts.test.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ECR-BASE-001"
+    },
+    "apps/economic-calendar-runtime/test/fixtures.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ECR-BASE-001"
+    },
+    "apps/economic-calendar-runtime/test/persistence.test.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ECR-BASE-001"
+    },
+    "apps/economic-calendar-runtime/tsconfig.json": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ECR-BASE-001"
+    },
+    "apps/identity-runtime/package-lock.json": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "IDENTITY-BASE-001"
+    },
+    "apps/newsfeed-runtime/package-lock.json": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "NEWSFEED-BASE-001"
+    },
+    "apps/platform-source-hub/migrations/005-calendar-storage-rights.sql": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-001"
+    },
+    "apps/platform-source-hub/package-lock.json": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-001"
+    },
+    "apps/platform-source-hub/scripts/migrate.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-001"
+    },
+    "apps/platform-source-hub/src/repository.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-001"
+    },
+    "apps/platform-source-hub/test/calendar-storage-rights.test.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-001"
+    },
+    "packages/economic-calendar-contracts/README.md": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ECR-BASE-002"
+    },
+    "packages/economic-calendar-contracts/index.d.mts": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ECR-BASE-002"
+    },
+    "packages/economic-calendar-contracts/index.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ECR-BASE-002"
+    },
+    "packages/economic-calendar-contracts/package.json": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ECR-BASE-002"
+    },
+    "packages/platform-contracts/current-e1-authority/index.d.mts": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    "packages/platform-contracts/current-e1-authority/index.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    "packages/platform-contracts/current-e1-authority/migrations/005-calendar-authority.sql": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    "packages/platform-contracts/current-e1-authority/migrations/006-calendar-receiver.sql": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    "packages/platform-contracts/current-e1-authority/package-lock.json": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    "packages/platform-contracts/current-e1-authority/package.json": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    "packages/platform-contracts/test/calendar-current-e1.test.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    "packages/platform-contracts/test/fixtures/calendar-current-e1-postgres.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    "packages/platform-source-hub-contracts/README.md": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-002"
+    },
+    "packages/platform-source-hub-contracts/index.d.ts": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-002"
+    },
+    "packages/platform-source-hub-contracts/index.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-002"
+    },
+    "packages/platform-source-hub-contracts/package.json": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-002"
+    },
+    "scripts/governance/platform-source-hub-foundation.test.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Governance Source Layer",
+      "surfaceId": "SG2-BASE-020"
+    }
+  })
+});
+function isPinnedEcrBackendReview(files){
+ const r=ECR_BACKEND_REVIEW;
+ return Array.isArray(files)&&files.length===Object.keys(r.blobs).length&&new Set(files.map(f=>f?.filename)).size===files.length
+  &&files.every(f=>Object.hasOwn(r.blobs,f?.filename??'')&&f.sha===r.blobs[f.filename]&&f.status===r.statuses[f.filename]&&!Object.hasOwn(f,'previous_filename'));
+}
+function assertEcrBackendRoutes(files,repositoryRoot){
+ for(const f of files){const e=ECR_BACKEND_REVIEW.routes[f.filename],profile=resolveProjectProfile(e.projectKey,repositoryRoot),route=resolveProjectRouting({profile,targets:[f.filename],repositoryRoot});
+  if(!route.ok||route.results.length!==1)fail('ECR_BACKEND_ROUTING_REJECTED');const r=route.results[0];
+  if(r.resolutionStatus!=='RESOLVED'||r.highestSpecificityMatchCount!==1||r.baselineClassification!=='ALIGNED'||r.projectBoundaryStatus!=='ALLOWED'||r.currentOwner!==e.owner||r.matchedSurfaceId!==e.surfaceId)fail('ECR_BACKEND_ROUTING_REJECTED');
+ }
+}
+export function assertEcrBackendReviewEntry(file,entry){
+ const r=ECR_BACKEND_REVIEW;
+ if(!Object.hasOwn(r.blobs,file?.filename??'')||file.sha!==r.blobs[file.filename]||entry!==r.modes[file.filename]+' blob '+file.sha+'\t'+file.filename+'\0')fail('ECR_BACKEND_FILE_MODE_REJECTED');
+}
+
 function architecturePathAllowed(name) {
   if (typeof name !== 'string' || !/^[A-Za-z0-9._/-]+$/.test(name) || name.split('/').some(p => !p || p.startsWith('.'))) return false
   return /^packages\/platform-contracts\/(?:src\/[A-Za-z0-9_/-]+\.(?:mjs|d\.mts)|migrations\/[a-z0-9-]+\/[A-Za-z0-9._-]+\.sql|test\/[A-Za-z0-9._/-]+\.(?:mjs|mts|json)|package(?:-lock)?\.json|README\.md)$/.test(name)
@@ -2078,6 +2462,7 @@ function architecturePathAllowed(name) {
 export function assertArchitectureFiles(pr, files, repositoryRoot = controlRoot()) {
   if (!Number.isInteger(pr.changed_files) || pr.changed_files < 1 || pr.changed_files > 300 || !shaPattern.test(pr.base?.sha ?? '')
     || !Array.isArray(files) || files.length !== pr.changed_files) fail('ARCHITECTURE_FILE_LIST_REQUIRED')
+  if(isPinnedEcrBackendReview(files)){assertEcrBackendRoutes(files,repositoryRoot);return}
   if(isPinnedUniversalFirstPartyReview(files)){assertUniversalFirstPartyRoutes(files,repositoryRoot);return}
   if(isPinnedCurrentE1Review(files)){assertCurrentE1Routes(files,repositoryRoot);return}
   if(isPinnedSourceHubStage2aReview(files)){assertSourceHubStage2aRoutes(files,repositoryRoot);return}
@@ -2115,6 +2500,7 @@ export function selectCandidate(context, pr, expectedSha, {files, repositoryRoot
   if (family === 'MAIN') return context.controlSha
   if (family === 'ARCHITECTURE') {
     assertArchitectureFiles(pr, files, repositoryRoot)
+    if(isPinnedEcrBackendReview(files)&&(pr.number!==ECR_BACKEND_REVIEW.prNumber||pr.head.ref!==ECR_BACKEND_REVIEW.branch))fail('ECR_BACKEND_REVIEW_IDENTITY_REJECTED')
     if(isPinnedEcrG1Review(files)&&(pr.number!==ECR_G1_GOVERNANCE_REVIEW.prNumber||pr.head.ref!==ECR_G1_GOVERNANCE_REVIEW.branch))fail('ECR_G1_REVIEW_IDENTITY_REJECTED')
     if(isPinnedUniversalFirstPartyReview(files)&&(pr.number!==SOURCE_HUB_UNIVERSAL_FIRST_PARTY_REVIEW.prNumber||pr.head.ref!==SOURCE_HUB_UNIVERSAL_FIRST_PARTY_REVIEW.branch))fail('UNIVERSAL_FIRST_PARTY_REVIEW_IDENTITY_REJECTED')
     if(isPinnedCurrentE1Review(files)&&(pr.number!==SOURCE_HUB_CURRENT_E1_REVIEW.prNumber||pr.head.ref!==SOURCE_HUB_CURRENT_E1_REVIEW.branch))fail('CURRENT_E1_REVIEW_IDENTITY_REJECTED')
@@ -2177,6 +2563,7 @@ export function assertArchitectureCheckout(root, sha, admission, repositoryRoot 
   for (const file of admission.files) {
     const entry = execFileSync('git', ['ls-tree', '-z', sha, '--', file.filename], {cwd: root, encoding: 'utf8'})
     if (file.status === 'removed') {if (entry !== '') fail('ARCHITECTURE_DIFF_MISMATCH'); continue}
+    if(isPinnedEcrBackendReview(admission.files))assertEcrBackendReviewEntry(file,entry)
     if(isPinnedEcrG1Review(admission.files))assertEcrG1ReviewEntry(file,entry)
     if(isPinnedUniversalFirstPartyReview(admission.files))assertUniversalFirstPartyReviewEntry(file,entry)
     if(isPinnedCurrentE1Review(admission.files))assertCurrentE1ReviewEntry(file,entry)
