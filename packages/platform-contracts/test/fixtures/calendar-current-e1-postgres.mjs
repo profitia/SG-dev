@@ -23,7 +23,7 @@ export async function calendarE1Fixture({base = null, closeBase = true} = {}) {
       await root.query('GRANT profitia_access_owner,' + ownerRole + ' TO ' + migratorRole)
     } finally {await root.query("SELECT pg_advisory_unlock(hashtextextended('calendar-fixture-roles',0))")}
     await root.query('CREATE DATABASE ' + name); created = true
-    admin = new pg.Client({...root.connectionParameters, database: name}); await admin.connect()
+    admin = new pg.Client({...root.connectionParameters, password: root.connectionParameters.password, database: name}); await admin.connect()
     await admin.query('CREATE EXTENSION pgcrypto')
     await admin.query('GRANT CREATE ON DATABASE ' + name + ' TO profitia_access_owner,' + ownerRole)
     const asOwner = async (role, action) => {
