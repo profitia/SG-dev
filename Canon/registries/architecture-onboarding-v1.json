@@ -301,6 +301,44 @@
       "deploymentAuthority": "NOT_AUTHORIZED_BY_G1",
       "productDatabaseMutationAuthority": "NOT_AUTHORIZED_BY_G1",
       "e1GrantExpansionAuthority": "NOT_AUTHORIZED_BY_G1"
+    },
+    {
+      "capability": "Economic Calendar Runtime",
+      "owner": "Architecture Platform",
+      "projectKey": "ARCHITECTURE",
+      "targetEnvironment": "development",
+      "pathPattern": "apps/economic-calendar-runtime/**",
+      "contractsPath": "packages/economic-calendar-contracts/**",
+      "ciPath": ".github/workflows/economic-calendar-ci.yml",
+      "approval": {
+        "decision": "G1 GRANTED",
+        "decisionId": "ARCH-ECR-SOURCEHUB-G1-20261106",
+        "sourceType": "EXPLICIT_OWNER_CHAT_INSTRUCTION",
+        "hostConversationId": "01a19bde-d925-7eb3-bb0d-718fe3bce137",
+        "date": "2026-11-06",
+        "reference": "Canon/evidence/2026-11-06-ecr-g1-governance-activation.md",
+        "approvedCandidate": "3a1b98b287c09844b8c9064c3ecae1830b4e3fc3",
+        "sourceSha256": "414fb7e92c450cea4ac00e28719a7fef407f18790b4ed6466b85f96fa2076911",
+        "registrationTaskId": "ARCHITECTURE-ECR-G1-ACTIVATION-20261106",
+        "governanceOnly": true,
+        "resourceCreationAuthorized": false,
+        "administrativeGrantsAuthorized": false
+      },
+      "status": "GOVERNANCE_ONLY_NO_IMPLEMENTATION",
+      "canonActivation": "ON_CONTROLLED_MAIN_ACCEPTANCE",
+      "continuityProjectKey": "ARCHITECTURE",
+      "firstConsumerProfile": "SG2",
+      "runtimeCreated": false,
+      "productStatus": "NOT_IMPLEMENTED",
+      "implementationAuthority": "CONTINUE_EXPLICIT_20261106_BUSINESS_TASK_AFTER_EFFECTIVE_G1_AND_OWN_GATES",
+      "resourceCreationAuthority": "HUMAN_OWNER_ONLY_SEPARATE_AUTHORITY",
+      "administrativeGrantAuthority": "NOT_AUTHORIZED_BY_G1",
+      "stagingProductionAuthority": "NONE",
+      "decisionDocument": "Canon/v1.1-economic-calendar-runtime-source-hub-and-preferences-amendment.md",
+      "frozenVisionPath": "Canon/v1.0-economic-calendar-runtime-business-and-architecture-canon.md",
+      "frozenVisionSha256": "124a405567648a75c1f5a3722f03419cefa22c49a6df492fa0a3fa601848c947",
+      "evidenceDocument": "Canon/evidence/2026-11-06-ecr-g1-governance-activation.md",
+      "publicContractVersioning": "INDEPENDENT_VERSIONED_NO_PRIVATE_APP_IMPORTS"
     }
   ]
 }

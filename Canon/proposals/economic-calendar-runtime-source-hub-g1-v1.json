@@ -1,0 +1,98 @@
+{
+  "schemaVersion": "1.0",
+  "status": "PROPOSED_G1_APPROVAL_PENDING",
+  "decisionId": "ARCH-ECR-SOURCEHUB-G1-20261106",
+  "capability": "Economic Calendar Runtime",
+  "logicalOwner": "Architecture Platform",
+  "repository": "profitia/SG-dev",
+  "projectKey": "ARCHITECTURE",
+  "workspace": "SG-dev Architecture",
+  "targetEnvironment": "development",
+  "referenceMain": "1cc5282c718ab1ce85fa9da4831592739c0ff899",
+  "taskId": "ARCHITECTURE-ECR-SOURCEHUB-BACKEND-20261106",
+  "hostConversationId": "01a19bde-d925-7eb3-bb0d-718fe3bce137",
+  "exactG1Approval": "NOT_GRANTED",
+  "activeRegistryChanged": false,
+  "originalVision": {
+    "pullRequest": 864,
+    "commit": "534288ee24b35c6be851e1292282d847c9cdf37e",
+    "path": "Canon/v1.0-economic-calendar-runtime-business-and-architecture-canon.md",
+    "sha256": "124a405567648a75c1f5a3722f03419cefa22c49a6df492fa0a3fa601848c947",
+    "status": "PROPOSED_BUSINESS_FREEZE / GOVERNANCE_APPROVAL_PENDING",
+    "frozenBusinessVisionChanged": false
+  },
+  "amendment": "Canon/proposals/v1.1-economic-calendar-runtime-source-hub-and-preferences-amendment.md",
+  "proposedSurfaces": [
+    {
+      "id": "ECR-BASE-001",
+      "capability": "Economic Calendar Runtime",
+      "name": "Economic Calendar Runtime backend",
+      "pathPatterns": ["apps/economic-calendar-runtime/**"],
+      "currentOwner": "Architecture Platform",
+      "currentResponsibility": "Provider-independent calendar synchronization through Source Hub, shared licensed event read model, observed revision history, authorized API and private canonical-user preferences; no provider transport, host UI or Identity authority.",
+      "baselineClassification": "ALIGNED",
+      "parentSurfaceId": null,
+      "cleanupReason": null,
+      "allowedProjectKeys": ["ARCHITECTURE"]
+    },
+    {
+      "id": "ECR-BASE-002",
+      "capability": "Economic Calendar Contracts",
+      "name": "Economic Calendar Runtime versioned API contracts",
+      "pathPatterns": ["packages/economic-calendar-contracts/**"],
+      "currentOwner": "Architecture Platform",
+      "currentResponsibility": "Provider-neutral event, coverage, revision, personal-preference and saved-filter contracts for authorized independent consumers; no private consumer imports or separate identity engine.",
+      "baselineClassification": "ALIGNED",
+      "parentSurfaceId": null,
+      "cleanupReason": null,
+      "allowedProjectKeys": ["ARCHITECTURE"]
+    },
+    {
+      "id": "ECR-BASE-003",
+      "capability": "Economic Calendar CI",
+      "name": "Economic Calendar Runtime offline validation CI",
+      "pathPatterns": [".github/workflows/economic-calendar-ci.yml"],
+      "currentOwner": "Architecture Platform",
+      "currentResponsibility": "Reserved exact-path event, preference, persistence, access and Source Hub consumer contract validation; no deployment credentials or paid provider tests in CI.",
+      "baselineClassification": "ALIGNED",
+      "parentSurfaceId": null,
+      "cleanupReason": null,
+      "allowedProjectKeys": ["ARCHITECTURE"]
+    }
+  ],
+  "existingProducerDependencies": {
+    "sourceHubOwner": "Architecture Platform",
+    "acquisitionImplementation": "apps/platform-source-hub",
+    "contractPackage": "@profitia/platform-source-hub-contracts",
+    "clientVersion": "1.1.0",
+    "payloadVersion": "1.0.0",
+    "family": "economic-calendar",
+    "separateTradingEconomicsAdapter": false,
+    "firstPartyProtocol": "profitia.first-party-source-access/1.0.0",
+    "technicalEnrollmentRequired": true,
+    "newPerConsumerBusinessExceptionRequired": false
+  },
+  "approvalRequested": {
+    "scope": "Accept ECR Architecture Platform ownership, these three exact source/contract/CI surfaces and the linked additive architecture amendment for Development. Preserve the original frozen business vision.",
+    "activation": "A separately evidenced governance change after explicit owner G1; fresh routing and required CI, then controlled main acceptance.",
+    "implementation": "After effective G1, continue the already authorized 2026-11-06 business task under its own gates; no replacement business prompt is required.",
+    "resourceCreationByAgentAuthorized": false,
+    "newAdministrativeGrantsAuthorized": false,
+    "stagingOrProductionAuthorized": false
+  },
+  "activationProcedure": [
+    "Owner explicitly approves the final reviewed candidate and G1 scope; retain the actual approval provenance, without treating the execution prompt or CI as implicit G1.",
+    "Refresh main and exact candidate, confirm no route collisions and preserve every existing owner, surface, global epoch and baseline reference.",
+    "Add only the three approved rows to current-architecture-baseline-v1.json with the actual pre-onboarding main and truthful onboardingAuthorization; add the matching architecture-onboarding entry.",
+    "Adopt the approved amendment under the existing ECR canon lineage and manifest dependencies in a separately gated activation change. Preserve the original frozen document bytes and historical approval state.",
+    "Run required governance/owner CI and live Architecture PMOS preflight, accept on authority main and independently verify the resulting authority before any ECR source edit.",
+    "Continue the same authorized Development business objective. Owner-provisioned resources, restricted roles, technical E1 enrollment, service grants, licence configuration and recoverable exact-SHA release retain their explicit authority boundaries."
+  ],
+  "runtimeBlockersObserved": [
+    "ECR source/contract/CI targets currently resolve NO_MATCH.",
+    "No approved ECR product storage, runtime deployment identity or service binding has been established.",
+    "Source Hub live release 817c671e31606536a1536dd187165ac07145a0fc predates the accepted universal first-party protocol; first_party_acquisitions is absent in the Development database.",
+    "Current TE Calendar licence metadata has retention_seconds=0, version=2 and two existing consumers. Durable ECR reuse requires controlled alignment to the owner's accepted business licence declaration, not another licence confirmation."
+  ],
+  "currentAuthority": "This proposal is not an executable registry or grant. Current main, active baseline, Source Admission and Identity/E1 remain authoritative."
+}
