@@ -7661,6 +7661,7 @@
     },
     "previousReceiptSha256": "2e2a74dede9611354c1ae1bc2d6d050a5e0f9125ccf4201838a76f8cb126b7d4",
     "consumerSourceDigests": {
+      "apps/dashboard-preview/package-lock.json": "d77f0ffdee8dc503651305cb29aa75861e4535c27a95ac66e8c6029edf4d46f1",
       "apps/sg-runtime/package-lock.json": "bf40aa5e4a67fc51690bf27fe55d5562200af4d65597581dae9385152da48eb5",
       "apps/sg-runtime/tests/adp-appshell-consumer.test.tsx": "0239ba95239e24911fea14bb873782b12cb706f5e634d658db2f25b9541f0488",
       "apps/sg-runtime/tests/category-operation.test.ts": "333094a026dbd27fe56362825d4c09c8bde947016e7c35c1616695c40ce7d690",
@@ -7690,7 +7691,7 @@
       "apps/srm/scripts/request-quota-adoption.test.mjs": "491382f65cf85dadef7a539fb173181bb93fa84866a9180345e01a830380579a",
       "apps/srm/scripts/rural-location-release.test.mjs": "58ea06b490266270899055ba4d83e1fdef2fb8fb337118d64cc93283657846d0",
       "apps/srm/scripts/source-hub-market-symbol-compatibility.test.mjs": "9145e02d2ff2b98b7a6907dac207b0c37f1b51b8aa18cc065679dc137a4417c1",
-      "apps/srm/scripts/source-hub-sdk-compatibility.mjs": "6fd86ccb6d6749192f1e3284223c692a711e972ce93e704565b83bdbe5c2782e",
+      "apps/srm/scripts/source-hub-sdk-compatibility.mjs": "dd134a38351dd032c2afe54324cfcb94433075020261dbe3e8c8ae83881d3803",
       "apps/srm/scripts/supplier-location-admission.integration.test.mjs": "095de122d8e7cfd343f3b27c5c913c95f6b2534d35df5a5f4bc87e810dfca8a5",
       "apps/srm/scripts/xray-performance-adoption.test.mjs": "e9baf0ee24cdad52d3a0483f9cc96b4b7a177b534a729f7cff1fe6e0ad5c50bb",
       "apps/srm/scripts/xray-style-acceptance.mjs": "42b666a9b87d9e87e9ac14fce8d89f49d6dd456e0f1216a99e715e0f81e37a4e",
@@ -7699,6 +7700,7 @@
       "packages/maps-embed/package.json": "70302b4212fe3ddf310fe5049af2d04cbae1784a12330e3b8de08d3da537fc5b"
     },
     "applicationSourceDigests": {
+      "../dashboard-preview/package-lock.json": "d77f0ffdee8dc503651305cb29aa75861e4535c27a95ac66e8c6029edf4d46f1",
       "package-lock.json": "bf40aa5e4a67fc51690bf27fe55d5562200af4d65597581dae9385152da48eb5",
       "tests/adp-appshell-consumer.test.tsx": "0239ba95239e24911fea14bb873782b12cb706f5e634d658db2f25b9541f0488",
       "tests/category-operation.test.ts": "333094a026dbd27fe56362825d4c09c8bde947016e7c35c1616695c40ce7d690",
@@ -7726,7 +7728,7 @@
       "../srm/scripts/request-quota-adoption.test.mjs": "491382f65cf85dadef7a539fb173181bb93fa84866a9180345e01a830380579a",
       "../srm/scripts/rural-location-release.test.mjs": "58ea06b490266270899055ba4d83e1fdef2fb8fb337118d64cc93283657846d0",
       "../srm/scripts/source-hub-market-symbol-compatibility.test.mjs": "9145e02d2ff2b98b7a6907dac207b0c37f1b51b8aa18cc065679dc137a4417c1",
-      "../srm/scripts/source-hub-sdk-compatibility.mjs": "6fd86ccb6d6749192f1e3284223c692a711e972ce93e704565b83bdbe5c2782e",
+      "../srm/scripts/source-hub-sdk-compatibility.mjs": "dd134a38351dd032c2afe54324cfcb94433075020261dbe3e8c8ae83881d3803",
       "../srm/scripts/supplier-location-admission.integration.test.mjs": "095de122d8e7cfd343f3b27c5c913c95f6b2534d35df5a5f4bc87e810dfca8a5",
       "../srm/scripts/xray-performance-adoption.test.mjs": "e9baf0ee24cdad52d3a0483f9cc96b4b7a177b534a729f7cff1fe6e0ad5c50bb",
       "../srm/scripts/xray-style-acceptance.mjs": "42b666a9b87d9e87e9ac14fce8d89f49d6dd456e0f1216a99e715e0f81e37a4e",
