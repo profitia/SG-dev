@@ -68,3 +68,28 @@ test('new providers use current SERVICE E1, native Source controls, exact famili
  assert.equal(calls.length,before)
  const after=await source.admin(0,'profitia_ingestion_owner',q=>q.query('SELECT policy_id,version,admitted_count::text AS admitted_count FROM profitia_external_call.policies WHERE policy_id=ANY($1::uuid[]) ORDER BY policy_id',[old.rows.map(r=>r.policy_id)]));assert.deepEqual(after.rows,old.rows)
 })
+
+test('Identity enrollment executes canonical SQL with the real profile and rejects the privateKeyPersistence mismatch before any write',async t=>{
+ const {firstPartyFixture}=await import('../../../packages/platform-contracts/test/fixtures/first-party-source-postgres.mjs')
+ const {generateKeyPairSync}=await import('node:crypto')
+ const f=await firstPartyFixture();t.after(()=>f.close())
+ const profile=JSON.parse(load('../operations/commodity-service-profile.json')),sql=load('../operations/enroll-commodity-service.sql')
+ // Disposable loopback fixture only. Match the canonical physical guard and
+ // existing receiver/organisation prerequisites; no live directory is touched.
+ await f.databases[0].query('CREATE ROLE '+profile.role+" LOGIN PASSWORD NULL NOINHERIT NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE NOREPLICATION VALID UNTIL '"+profile.expiresAt+"'")
+ await f.asOwner(0,async q=>{
+  await q.query("UPDATE profitia_access.installation SET project_id='spring-bread-28217539',branch_id='br-sparkling-term-b99l107x' WHERE singleton")
+  await q.query("UPDATE profitia_e1_authority.source_receivers SET target_origin=$2,expires_at=$3 WHERE application_id=$1",[profile.receiverApplicationId,profile.targetOrigin,profile.expiresAt])
+  await q.query("INSERT INTO profitia_access.organisations(organisation_id,status) VALUES($1,'ACTIVE')",[profile.organisationId])
+  await q.query("INSERT INTO profitia_access.product_grants(application_id,organisation_id,product,features,status,source,source_ref,expires_at) VALUES('spendguru',$1,'SPENDGURU',ARRAY['market'],'ACTIVE','EXPLICIT_OFFER','SYNTHETIC_ONLY',$2)",[profile.organisationId,profile.expiresAt])
+ })
+ const publicKey=generateKeyPairSync('ed25519').publicKey.export({type:'spki',format:'pem'}),approved={...profile,status:'ENROLLED',ownerDecisionRef:'owner-decision:sha256:'+'1'.repeat(64),deploymentId:'a'.repeat(40),publicKey,publicKeySha256:hash(publicKey)}
+ const enroll=p=>f.asOwner(0,async q=>{await q.query("SELECT set_config('source_hub.catalogue_service_spec',$1,true)",[JSON.stringify(p)]);await q.query(sql)})
+ await assert.rejects(enroll({...approved,privateKeyPersistence:'OWNER_APPROVED_SSourceHub catalogueET_STORE'}),/EXACT_APPROVED_SOURCEHUB_CATALOGUE_PROFILE_REQUIRED/)
+ const absent=await f.asOwner(0,q=>q.query('SELECT application_id FROM profitia_access.applications WHERE application_id=$1',[profile.applicationId]));assert.equal(absent.rowCount,0)
+ await enroll(approved)
+ const readback=await f.asOwner(0,async q=>({grants:(await q.query('SELECT grant_id,organisation_id,resource_id,operation,feature,expires_at FROM profitia_services.read_grants WHERE login_role=$1 ORDER BY resource_id',[profile.role])).rows,component:(await q.query('SELECT public_key,application_id,source_origin FROM profitia_e1_authority.source_components WHERE component_id=$1',[profile.componentId])).rows}))
+ assert.equal(readback.grants.length,6);assert.deepEqual(readback.grants.map(g=>g.resource_id),profile.grants.map(g=>g.resourceId).sort());assert(readback.grants.every(g=>g.organisation_id===profile.organisationId&&g.operation==='knowledge.read'&&g.feature==='market'&&g.expires_at.toISOString()===profile.expiresAt));assert.equal(hash(readback.component[0].public_key),approved.publicKeySha256)
+ await assert.rejects(enroll(approved),/IDENTITY_ALREADY_EXISTS_STOP_AND_RECONCILE/)
+ assert.equal((await f.asOwner(0,q=>q.query('SELECT grant_id FROM profitia_services.read_grants WHERE login_role=$1',[profile.role]))).rowCount,6)
+})

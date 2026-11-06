@@ -15,3 +15,12 @@ test('catalogue refuses payload retention without explicit metadata rights, pers
  await collectCatalogue({catalogue:c,profile,client,save:async()=>{},throttleMs:0});assert.equal(c.inventoryComplete,false);assert.equal(calls,3);assert(Object.values(c.requests).every(r=>r.state==='FAILED_OR_UNCERTAIN'))
  await collectCatalogue({catalogue:c,profile,client,save:async()=>{},throttleMs:0});assert.equal(calls,3);assert.equal(c.providers.eia.status,'ACCESS_RESTRICTED')
 })
+
+test('enrollment profile matches every immutable SQL field, including privateKeyPersistence',async()=>{
+ const {readFile}=await import('node:fs/promises')
+ const profile=JSON.parse(await readFile(new URL('../operations/commodity-service-profile.json',import.meta.url),'utf8'))
+ const sql=await readFile(new URL('../operations/enroll-commodity-service.sql',import.meta.url),'utf8')
+ const embedded=JSON.parse(sql.match(/expected jsonb := \$profile\$([\s\S]*?)\$profile\$::jsonb/)[1])
+ assert.equal(profile.privateKeyPersistence,'OWNER_APPROVED_SECRET_STORE')
+ assert.deepEqual(embedded,profile)
+})
