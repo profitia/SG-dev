@@ -34,7 +34,7 @@ const REVIEWED_MAPS_EMBED_PEERS = Object.freeze({
 function reviewedMapsPeer(owner, version, section, name, spec) {
   return owner === '@profitia/maps-embed' && version === '0.1.2' && section === 'peerDependencies'
     && Object.hasOwn(REVIEWED_MAPS_EMBED_PEERS, name)
-    && (spec === REVIEWED_MAPS_EMBED_PEERS[name] || name === '@profitia/platform-contracts' && spec === REVIEWED_MAPS_EMBED_PEERS[name] + ' || 1.33.0')
+    && (spec === REVIEWED_MAPS_EMBED_PEERS[name] || name === '@profitia/platform-contracts' && [REVIEWED_MAPS_EMBED_PEERS[name] + ' || 1.33.0',REVIEWED_MAPS_EMBED_PEERS[name] + ' || 1.33.0 || 1.34.0'].includes(spec))
 }
 const npmrc = '@profitia:registry=https://npm.pkg.github.com\n//npm.pkg.github.com/:_authToken=${NPM_TOKEN}\n'
 const shaPattern = /^[a-f0-9]{40}$/
@@ -2453,6 +2453,655 @@ export function assertEcrBackendReviewEntry(file,entry){
  if(!Object.hasOwn(r.blobs,file?.filename??'')||file.sha!==r.blobs[file.filename]||entry!==r.modes[file.filename]+' blob '+file.sha+'\t'+file.filename+'\0')fail('ECR_BACKEND_FILE_MODE_REJECTED');
 }
 
+// Proposed exact PR915 review. Owner approval and trusted-main acceptance
+// remain required before this class is active. No generic consumer admission.
+export const SOURCE_HUB_MARKET_SYMBOL_REVIEW=Object.freeze({
+  "prNumber": 915,
+  "branch": "architecture/source-hub-te-markets-20261106",
+  "reviewedCandidateSha": "0f7bcb9507468a3454846a5fa63eb2f59bb7efe9",
+  "reviewedBaseSha": "91144599409c3565f309ad9247b9fd2f7ed60422",
+  "ownerPacketSha256": "a84e18017e44af327d85f119235db0426c3b368148ea6f9201159d147b37291d",
+  "blobs": {
+    "apps/architecture-lab/sdk-1.34-compatibility.json": "49b8e909f1e2b55444be78f4df64f6ba77bdef13",
+    "apps/architecture-lab/test/payload-capture-publication.test.mjs": "5d7a33b406321345b9be2087a689f115578ac269",
+    "apps/architecture-lab/test/sdk-compatibility.test.mjs": "9ce1c127f1e5b93e83de96d55a212fbdb0d5a404",
+    "apps/dashboard-preview/package-lock.json": "ac4ce0d294e90b6f09098e96fdf0a42261d5f74e",
+    "apps/economic-calendar-runtime/package-lock.json": "6a56fa4ab6fcdb59106ff95e836978c2054c6589",
+    "apps/identity-runtime/package-lock.json": "ae072fbf79a1e394edbdf65251546b02f6b8d6fe",
+    "apps/maps-runtime/package-lock.json": "2b71f123fbcba197c19e0d7f0e0e6037f9a0884d",
+    "apps/maps-runtime/platform-integration.json": "6804bed810919a76b3add7e8dade4210d6e28a76",
+    "apps/maps-runtime/test/embed.test.mjs": "c811135dd1ddcab69f96c7f56f623adb83520b91",
+    "apps/newsfeed-runtime/operation-integration.json": "4c5e7be29c86b32b97cb3e86fea376782a770cc0",
+    "apps/newsfeed-runtime/package-lock.json": "928c68e2b196122b9eedfdf5b88e8542b0438c63",
+    "apps/newsfeed-runtime/test/runtime.test.mjs": "61f8e088279d2f2814c415a40f5754352f6eba1d",
+    "apps/platform-source-hub/docs/te-market-observations.pl.md": "3a960f8e9d83832be9d679b43362c3375b2df845",
+    "apps/platform-source-hub/migrations/006-market-observations.sql": "20846f08940e5ae11543dc1be7d731d6ff0da126",
+    "apps/platform-source-hub/package-lock.json": "7ca22b70d53643b9d04c1e07806b0f6ca1d85af4",
+    "apps/platform-source-hub/scripts/ci-routing.mjs": "350154eddbedc3993f9e93e4a596618a92354a3a",
+    "apps/platform-source-hub/scripts/migrate.mjs": "2c39af69187473e0db57c032ef906eb473e31def",
+    "apps/platform-source-hub/src/admission.mjs": "879cd2384380548512658791e88c6bb9aee4eb37",
+    "apps/platform-source-hub/src/capabilities.mjs": "0a7880b0130e67f8d9746d182d51058a803d4d46",
+    "apps/platform-source-hub/src/providers/trading-economics.mjs": "438725236ea62fe3c54bc1e664169ce9af1a9422",
+    "apps/platform-source-hub/test/ci-routing.test.mjs": "58ca917d83ddd202f4e80beee37ef9608b4ed1e4",
+    "apps/platform-source-hub/test/contracts.test.mjs": "2ce2f6c8ff50b8b2dfa6bc2cc5a5189e725db1e0",
+    "apps/platform-source-hub/test/market-observations.test.mjs": "f9db8106d1d3e55833015573dd7a668bab5cbd1f",
+    "apps/platform-source-hub/test/types.ts": "28f8789636779117033362ec87c473b0167b3f7d",
+    "apps/sg-runtime/operation-integration.json": "f4c5161a9dd7c142d29f5a6b3dd27b48487e1851",
+    "apps/sg-runtime/package-lock.json": "6a19915f9d99cfd38bd12c66e603c099212b574c",
+    "apps/sg-runtime/tests/adp-appshell-consumer.test.tsx": "4a900d47ea56f39ba3aacfc50fe53e1b2c4f5810",
+    "apps/sg-runtime/tests/category-operation.test.ts": "fe945f98850d32e1b357da2512a483cc758e035d",
+    "apps/sg-runtime/tests/diagnostic-telemetry-adoption.test.mjs": "9c50f41c83ca6e93c7e443ab7f413c2d2e4047f3",
+    "apps/sg-runtime/tests/identity-runtime.test.ts": "b7ba0ccc33976b02e6819d236411b8516bdf0c9b",
+    "apps/sg-runtime/tests/integrated-buyer-journey-package.test.mjs": "c0995266f30b8d8124e08830c79ac7ca2afd1a73",
+    "apps/sg-runtime/tests/native-sql-roundtrips.test.mjs": "59bda2c6d00b7fa7b5b5a51b89d4a9bbb098bc94",
+    "apps/sg-runtime/tests/operation-context.test.mjs": "10ca94bc15e525950c8b8a89a38576149e81e75f",
+    "apps/sg-runtime/tests/pci-smart-integrity.mjs": "871c45f3005e0dcd8c4ca753bfe96b35c99e845c",
+    "apps/sg-runtime/tests/pci-smart-integrity.test.mjs": "3d6b52129fdb014827a24e5cced7adac3dec7e6c",
+    "apps/sg-runtime/tests/porr-demo-middleware.test.ts": "96258d1bd47adec6db2cd3f4a2b64a96496bcf91",
+    "apps/sg-runtime/tests/private-host.integration.test.mjs": "87d97bb7fb6e11c1bae3ecfe3fbd82e17f33ce74",
+    "apps/sg-runtime/tests/self-service-account.test.ts": "f3812e1cb2e3dcd48bfcd503840493f51e76945e",
+    "apps/sg-runtime/tests/xray-fresh-performance-adoption.test.mjs": "2a77311736b608b3b0cafe0259001db7500ba828",
+    "apps/sg-runtime/tests/xray-gateway.test.ts": "97e894c10990ddddaaa8fa35acc6efabdb6899ab",
+    "apps/srm/deployment/root-atomic-claim-targets.json": "6b5c3724b04ec91ad0b392ef75de3ba826c7ec03",
+    "apps/srm/operation-integration.json": "55e020e3af567434aac9332143fbfb79dc94a426",
+    "apps/srm/package-lock.json": "57ef53ade93ff7f37b7742d2869ca8ffa0addda2",
+    "apps/srm/scripts/diagnostic-telemetry-adoption.test.mjs": "dde529baeec362194b19f0f7afa6ad8390587f41",
+    "apps/srm/scripts/native-execution-adoption.test.mjs": "9810d5b07a1b98e44122cd4e30a1db491e7c50a4",
+    "apps/srm/scripts/operation-context.test.mjs": "688bf34739c81514e88fe2891335e7b4861e218a",
+    "apps/srm/scripts/private-host.integration.test.mjs": "b7bdf90ce2e2c9d314b0a00db1d73718daf5a836",
+    "apps/srm/scripts/request-quota-adoption.test.mjs": "454f84531f58c0ff220b3668e5e14ec719d10087",
+    "apps/srm/scripts/source-hub-market-symbol-compatibility.test.mjs": "8faf1b92b9a56f69cf0686f4d5b37ff423710955",
+    "apps/srm/scripts/source-hub-sdk-compatibility.mjs": "adaddcc9e85886edfb7abeabcb2bf99038968e7e",
+    "apps/srm/scripts/supplier-location-admission.integration.test.mjs": "83122ea3496bd04e09e44635fca142e531b06214",
+    "apps/srm/scripts/xray-performance-adoption.test.mjs": "93023da5f916a2439a973d44f4c9220191929422",
+    "apps/srm/src/server/root-atomic-claim-adoption.test.ts": "7fbe72a0725d18755924f9a1a218ecd18e3c57ac",
+    "packages/maps-embed/package.json": "4730495899cd3b7ebd553ced93ac3216b48c7d76",
+    "packages/platform-contracts/current-e1-authority/package-lock.json": "c539a74d4247d1140bd6eb7719e8df44eddf8af0",
+    "packages/platform-contracts/current-e1-authority/package.json": "8aab0dc13807c0debb6fe6e7e5bef56911972e13",
+    "packages/platform-contracts/current-fresh-report/package.json": "c3511ea1f272bf0ef1220a3a68e31565d5c6fcbd",
+    "packages/platform-contracts/current-fresh-report/test/current-fresh-report.test.mjs": "6d080bf85afd46cc7242d68e6024c9a672d002d4",
+    "packages/platform-contracts/migrations/access/029-market-symbol-transport.sql": "3b18c9e84674391f090a9ae7838cece3ffc02498",
+    "packages/platform-contracts/package-lock.json": "90f46f3d3c73f57c1d8272896b53ba034aa3a868",
+    "packages/platform-contracts/package.json": "137ea0b58656979414dbfaf0238290c36a0be070",
+    "packages/platform-contracts/payload-capture/package.json": "53014dc1060c2d9c7606e3258cc92ab57715fb08",
+    "packages/platform-contracts/payload-capture/test/public-package.test.mjs": "043dce8ebfccae7d8319b4429544392418a7ab8d",
+    "packages/platform-contracts/readonly-miss-report/package.json": "25141d71f013c95ba3b039f13a96ab9cbe1d413a",
+    "packages/platform-contracts/readonly-miss-report/test/readonly-miss-report.test.mjs": "2f3ce248f3e029721b1b901dad580596c8ada319",
+    "packages/platform-contracts/root-atomic-claim/package.json": "df57dd6b97185a982c85738723df0cb85a1035ec",
+    "packages/platform-contracts/root-atomic-claim/test/root-atomic-claim.test.mjs": "0b0014d4e60aa07cc251d4a4cafc0c0cb58a4608",
+    "packages/platform-contracts/src/external-call.d.mts": "1e85f3563f2e5416f47558c9bcad978e14edc725",
+    "packages/platform-contracts/src/external-call.mjs": "b64a2408473b6a001f339692930d8f0e0a1c624c",
+    "packages/platform-contracts/src/native-external-transport.d.mts": "39103801728a705f5cb66fcb5ac4d446ce27c08e",
+    "packages/platform-contracts/src/native-external-transport.mjs": "9d8fef834c561e3bc38ecdf62f6b0b81fd298918",
+    "packages/platform-contracts/test/market-symbol-transport.test.mjs": "d76a760f75b89740d1439f5d61e63d8763ccdeea",
+    "packages/platform-source-hub-contracts/README.md": "342ddc876507b32c563194d7bb51d3a866bc7a2d",
+    "packages/platform-source-hub-contracts/index.d.ts": "c15abb797555a1c77bae59c1b3a99a39d0b2bb79",
+    "packages/platform-source-hub-contracts/index.mjs": "6c575f0ed0df69a40a7d9a9d6c3a8756bca3e7d4",
+    "packages/platform-source-hub-contracts/package.json": "ce912446ec91d60e7c950ee58f03c004b066fe21",
+    "scripts/governance/platform-source-hub-foundation.test.mjs": "a53c9901e5daeff4a058f8dbaa55ed79f041a902"
+  },
+  "statuses": {
+    "apps/architecture-lab/sdk-1.34-compatibility.json": "added",
+    "apps/architecture-lab/test/payload-capture-publication.test.mjs": "modified",
+    "apps/architecture-lab/test/sdk-compatibility.test.mjs": "modified",
+    "apps/dashboard-preview/package-lock.json": "modified",
+    "apps/economic-calendar-runtime/package-lock.json": "modified",
+    "apps/identity-runtime/package-lock.json": "modified",
+    "apps/maps-runtime/package-lock.json": "modified",
+    "apps/maps-runtime/platform-integration.json": "modified",
+    "apps/maps-runtime/test/embed.test.mjs": "modified",
+    "apps/newsfeed-runtime/operation-integration.json": "modified",
+    "apps/newsfeed-runtime/package-lock.json": "modified",
+    "apps/newsfeed-runtime/test/runtime.test.mjs": "modified",
+    "apps/platform-source-hub/docs/te-market-observations.pl.md": "added",
+    "apps/platform-source-hub/migrations/006-market-observations.sql": "added",
+    "apps/platform-source-hub/package-lock.json": "modified",
+    "apps/platform-source-hub/scripts/ci-routing.mjs": "modified",
+    "apps/platform-source-hub/scripts/migrate.mjs": "modified",
+    "apps/platform-source-hub/src/admission.mjs": "modified",
+    "apps/platform-source-hub/src/capabilities.mjs": "modified",
+    "apps/platform-source-hub/src/providers/trading-economics.mjs": "modified",
+    "apps/platform-source-hub/test/ci-routing.test.mjs": "modified",
+    "apps/platform-source-hub/test/contracts.test.mjs": "modified",
+    "apps/platform-source-hub/test/market-observations.test.mjs": "added",
+    "apps/platform-source-hub/test/types.ts": "modified",
+    "apps/sg-runtime/operation-integration.json": "modified",
+    "apps/sg-runtime/package-lock.json": "modified",
+    "apps/sg-runtime/tests/adp-appshell-consumer.test.tsx": "modified",
+    "apps/sg-runtime/tests/category-operation.test.ts": "modified",
+    "apps/sg-runtime/tests/diagnostic-telemetry-adoption.test.mjs": "modified",
+    "apps/sg-runtime/tests/identity-runtime.test.ts": "modified",
+    "apps/sg-runtime/tests/integrated-buyer-journey-package.test.mjs": "modified",
+    "apps/sg-runtime/tests/native-sql-roundtrips.test.mjs": "modified",
+    "apps/sg-runtime/tests/operation-context.test.mjs": "modified",
+    "apps/sg-runtime/tests/pci-smart-integrity.mjs": "modified",
+    "apps/sg-runtime/tests/pci-smart-integrity.test.mjs": "modified",
+    "apps/sg-runtime/tests/porr-demo-middleware.test.ts": "modified",
+    "apps/sg-runtime/tests/private-host.integration.test.mjs": "modified",
+    "apps/sg-runtime/tests/self-service-account.test.ts": "modified",
+    "apps/sg-runtime/tests/xray-fresh-performance-adoption.test.mjs": "modified",
+    "apps/sg-runtime/tests/xray-gateway.test.ts": "modified",
+    "apps/srm/deployment/root-atomic-claim-targets.json": "modified",
+    "apps/srm/operation-integration.json": "modified",
+    "apps/srm/package-lock.json": "modified",
+    "apps/srm/scripts/diagnostic-telemetry-adoption.test.mjs": "modified",
+    "apps/srm/scripts/native-execution-adoption.test.mjs": "modified",
+    "apps/srm/scripts/operation-context.test.mjs": "modified",
+    "apps/srm/scripts/private-host.integration.test.mjs": "modified",
+    "apps/srm/scripts/request-quota-adoption.test.mjs": "modified",
+    "apps/srm/scripts/source-hub-market-symbol-compatibility.test.mjs": "added",
+    "apps/srm/scripts/source-hub-sdk-compatibility.mjs": "modified",
+    "apps/srm/scripts/supplier-location-admission.integration.test.mjs": "modified",
+    "apps/srm/scripts/xray-performance-adoption.test.mjs": "modified",
+    "apps/srm/src/server/root-atomic-claim-adoption.test.ts": "modified",
+    "packages/maps-embed/package.json": "modified",
+    "packages/platform-contracts/current-e1-authority/package-lock.json": "modified",
+    "packages/platform-contracts/current-e1-authority/package.json": "modified",
+    "packages/platform-contracts/current-fresh-report/package.json": "modified",
+    "packages/platform-contracts/current-fresh-report/test/current-fresh-report.test.mjs": "modified",
+    "packages/platform-contracts/migrations/access/029-market-symbol-transport.sql": "added",
+    "packages/platform-contracts/package-lock.json": "modified",
+    "packages/platform-contracts/package.json": "modified",
+    "packages/platform-contracts/payload-capture/package.json": "modified",
+    "packages/platform-contracts/payload-capture/test/public-package.test.mjs": "modified",
+    "packages/platform-contracts/readonly-miss-report/package.json": "modified",
+    "packages/platform-contracts/readonly-miss-report/test/readonly-miss-report.test.mjs": "modified",
+    "packages/platform-contracts/root-atomic-claim/package.json": "modified",
+    "packages/platform-contracts/root-atomic-claim/test/root-atomic-claim.test.mjs": "modified",
+    "packages/platform-contracts/src/external-call.d.mts": "modified",
+    "packages/platform-contracts/src/external-call.mjs": "modified",
+    "packages/platform-contracts/src/native-external-transport.d.mts": "modified",
+    "packages/platform-contracts/src/native-external-transport.mjs": "modified",
+    "packages/platform-contracts/test/market-symbol-transport.test.mjs": "added",
+    "packages/platform-source-hub-contracts/README.md": "modified",
+    "packages/platform-source-hub-contracts/index.d.ts": "modified",
+    "packages/platform-source-hub-contracts/index.mjs": "modified",
+    "packages/platform-source-hub-contracts/package.json": "modified",
+    "scripts/governance/platform-source-hub-foundation.test.mjs": "modified"
+  },
+  "modes": {
+    "apps/architecture-lab/sdk-1.34-compatibility.json": "100644",
+    "apps/architecture-lab/test/payload-capture-publication.test.mjs": "100644",
+    "apps/architecture-lab/test/sdk-compatibility.test.mjs": "100644",
+    "apps/dashboard-preview/package-lock.json": "100644",
+    "apps/economic-calendar-runtime/package-lock.json": "100644",
+    "apps/identity-runtime/package-lock.json": "100644",
+    "apps/maps-runtime/package-lock.json": "100644",
+    "apps/maps-runtime/platform-integration.json": "100644",
+    "apps/maps-runtime/test/embed.test.mjs": "100644",
+    "apps/newsfeed-runtime/operation-integration.json": "100644",
+    "apps/newsfeed-runtime/package-lock.json": "100644",
+    "apps/newsfeed-runtime/test/runtime.test.mjs": "100644",
+    "apps/platform-source-hub/docs/te-market-observations.pl.md": "100644",
+    "apps/platform-source-hub/migrations/006-market-observations.sql": "100644",
+    "apps/platform-source-hub/package-lock.json": "100644",
+    "apps/platform-source-hub/scripts/ci-routing.mjs": "100644",
+    "apps/platform-source-hub/scripts/migrate.mjs": "100644",
+    "apps/platform-source-hub/src/admission.mjs": "100644",
+    "apps/platform-source-hub/src/capabilities.mjs": "100644",
+    "apps/platform-source-hub/src/providers/trading-economics.mjs": "100644",
+    "apps/platform-source-hub/test/ci-routing.test.mjs": "100644",
+    "apps/platform-source-hub/test/contracts.test.mjs": "100644",
+    "apps/platform-source-hub/test/market-observations.test.mjs": "100644",
+    "apps/platform-source-hub/test/types.ts": "100644",
+    "apps/sg-runtime/operation-integration.json": "100644",
+    "apps/sg-runtime/package-lock.json": "100644",
+    "apps/sg-runtime/tests/adp-appshell-consumer.test.tsx": "100644",
+    "apps/sg-runtime/tests/category-operation.test.ts": "100644",
+    "apps/sg-runtime/tests/diagnostic-telemetry-adoption.test.mjs": "100644",
+    "apps/sg-runtime/tests/identity-runtime.test.ts": "100644",
+    "apps/sg-runtime/tests/integrated-buyer-journey-package.test.mjs": "100644",
+    "apps/sg-runtime/tests/native-sql-roundtrips.test.mjs": "100644",
+    "apps/sg-runtime/tests/operation-context.test.mjs": "100644",
+    "apps/sg-runtime/tests/pci-smart-integrity.mjs": "100644",
+    "apps/sg-runtime/tests/pci-smart-integrity.test.mjs": "100644",
+    "apps/sg-runtime/tests/porr-demo-middleware.test.ts": "100644",
+    "apps/sg-runtime/tests/private-host.integration.test.mjs": "100644",
+    "apps/sg-runtime/tests/self-service-account.test.ts": "100644",
+    "apps/sg-runtime/tests/xray-fresh-performance-adoption.test.mjs": "100644",
+    "apps/sg-runtime/tests/xray-gateway.test.ts": "100644",
+    "apps/srm/deployment/root-atomic-claim-targets.json": "100644",
+    "apps/srm/operation-integration.json": "100644",
+    "apps/srm/package-lock.json": "100644",
+    "apps/srm/scripts/diagnostic-telemetry-adoption.test.mjs": "100644",
+    "apps/srm/scripts/native-execution-adoption.test.mjs": "100644",
+    "apps/srm/scripts/operation-context.test.mjs": "100644",
+    "apps/srm/scripts/private-host.integration.test.mjs": "100644",
+    "apps/srm/scripts/request-quota-adoption.test.mjs": "100644",
+    "apps/srm/scripts/source-hub-market-symbol-compatibility.test.mjs": "100644",
+    "apps/srm/scripts/source-hub-sdk-compatibility.mjs": "100644",
+    "apps/srm/scripts/supplier-location-admission.integration.test.mjs": "100644",
+    "apps/srm/scripts/xray-performance-adoption.test.mjs": "100644",
+    "apps/srm/src/server/root-atomic-claim-adoption.test.ts": "100644",
+    "packages/maps-embed/package.json": "100644",
+    "packages/platform-contracts/current-e1-authority/package-lock.json": "100644",
+    "packages/platform-contracts/current-e1-authority/package.json": "100644",
+    "packages/platform-contracts/current-fresh-report/package.json": "100644",
+    "packages/platform-contracts/current-fresh-report/test/current-fresh-report.test.mjs": "100644",
+    "packages/platform-contracts/migrations/access/029-market-symbol-transport.sql": "100644",
+    "packages/platform-contracts/package-lock.json": "100644",
+    "packages/platform-contracts/package.json": "100644",
+    "packages/platform-contracts/payload-capture/package.json": "100644",
+    "packages/platform-contracts/payload-capture/test/public-package.test.mjs": "100644",
+    "packages/platform-contracts/readonly-miss-report/package.json": "100644",
+    "packages/platform-contracts/readonly-miss-report/test/readonly-miss-report.test.mjs": "100644",
+    "packages/platform-contracts/root-atomic-claim/package.json": "100644",
+    "packages/platform-contracts/root-atomic-claim/test/root-atomic-claim.test.mjs": "100644",
+    "packages/platform-contracts/src/external-call.d.mts": "100644",
+    "packages/platform-contracts/src/external-call.mjs": "100644",
+    "packages/platform-contracts/src/native-external-transport.d.mts": "100644",
+    "packages/platform-contracts/src/native-external-transport.mjs": "100644",
+    "packages/platform-contracts/test/market-symbol-transport.test.mjs": "100644",
+    "packages/platform-source-hub-contracts/README.md": "100644",
+    "packages/platform-source-hub-contracts/index.d.ts": "100644",
+    "packages/platform-source-hub-contracts/index.mjs": "100644",
+    "packages/platform-source-hub-contracts/package.json": "100644",
+    "scripts/governance/platform-source-hub-foundation.test.mjs": "100644"
+  },
+  "routes": {
+    "apps/architecture-lab/sdk-1.34-compatibility.json": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-002"
+    },
+    "apps/architecture-lab/test/payload-capture-publication.test.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-002"
+    },
+    "apps/architecture-lab/test/sdk-compatibility.test.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-002"
+    },
+    "apps/dashboard-preview/package-lock.json": {
+      "projectKey": "SG2",
+      "owner": "Dashboard Preview",
+      "surfaceId": "SG2-BASE-003"
+    },
+    "apps/economic-calendar-runtime/package-lock.json": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ECR-BASE-001"
+    },
+    "apps/identity-runtime/package-lock.json": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "IDENTITY-BASE-001"
+    },
+    "apps/maps-runtime/package-lock.json": {
+      "projectKey": "SRM",
+      "owner": "Maps Capability",
+      "surfaceId": "MAPS-BASE-001"
+    },
+    "apps/maps-runtime/platform-integration.json": {
+      "projectKey": "SRM",
+      "owner": "Maps Capability",
+      "surfaceId": "MAPS-BASE-001"
+    },
+    "apps/maps-runtime/test/embed.test.mjs": {
+      "projectKey": "SRM",
+      "owner": "Maps Capability",
+      "surfaceId": "MAPS-BASE-001"
+    },
+    "apps/newsfeed-runtime/operation-integration.json": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "NEWSFEED-BASE-001"
+    },
+    "apps/newsfeed-runtime/package-lock.json": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "NEWSFEED-BASE-001"
+    },
+    "apps/newsfeed-runtime/test/runtime.test.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "NEWSFEED-BASE-001"
+    },
+    "apps/platform-source-hub/docs/te-market-observations.pl.md": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-001"
+    },
+    "apps/platform-source-hub/migrations/006-market-observations.sql": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-001"
+    },
+    "apps/platform-source-hub/package-lock.json": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-001"
+    },
+    "apps/platform-source-hub/scripts/ci-routing.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-001"
+    },
+    "apps/platform-source-hub/scripts/migrate.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-001"
+    },
+    "apps/platform-source-hub/src/admission.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-001"
+    },
+    "apps/platform-source-hub/src/capabilities.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-001"
+    },
+    "apps/platform-source-hub/src/providers/trading-economics.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-001"
+    },
+    "apps/platform-source-hub/test/ci-routing.test.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-001"
+    },
+    "apps/platform-source-hub/test/contracts.test.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-001"
+    },
+    "apps/platform-source-hub/test/market-observations.test.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-001"
+    },
+    "apps/platform-source-hub/test/types.ts": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-001"
+    },
+    "apps/sg-runtime/operation-integration.json": {
+      "projectKey": "SG2",
+      "owner": "SG Runtime",
+      "surfaceId": "SG2-BASE-001"
+    },
+    "apps/sg-runtime/package-lock.json": {
+      "projectKey": "SG2",
+      "owner": "SG Runtime",
+      "surfaceId": "SG2-BASE-001"
+    },
+    "apps/sg-runtime/tests/adp-appshell-consumer.test.tsx": {
+      "projectKey": "SG2",
+      "owner": "SG Runtime",
+      "surfaceId": "SG2-BASE-001"
+    },
+    "apps/sg-runtime/tests/category-operation.test.ts": {
+      "projectKey": "SG2",
+      "owner": "SG Runtime",
+      "surfaceId": "SG2-BASE-001"
+    },
+    "apps/sg-runtime/tests/diagnostic-telemetry-adoption.test.mjs": {
+      "projectKey": "SG2",
+      "owner": "SG Runtime",
+      "surfaceId": "SG2-BASE-001"
+    },
+    "apps/sg-runtime/tests/identity-runtime.test.ts": {
+      "projectKey": "SG2",
+      "owner": "SG Runtime",
+      "surfaceId": "SG2-BASE-001"
+    },
+    "apps/sg-runtime/tests/integrated-buyer-journey-package.test.mjs": {
+      "projectKey": "SG2",
+      "owner": "SG Runtime",
+      "surfaceId": "SG2-BASE-001"
+    },
+    "apps/sg-runtime/tests/native-sql-roundtrips.test.mjs": {
+      "projectKey": "SG2",
+      "owner": "SG Runtime",
+      "surfaceId": "SG2-BASE-001"
+    },
+    "apps/sg-runtime/tests/operation-context.test.mjs": {
+      "projectKey": "SG2",
+      "owner": "SG Runtime",
+      "surfaceId": "SG2-BASE-001"
+    },
+    "apps/sg-runtime/tests/pci-smart-integrity.mjs": {
+      "projectKey": "SG2",
+      "owner": "SG Runtime",
+      "surfaceId": "SG2-BASE-001"
+    },
+    "apps/sg-runtime/tests/pci-smart-integrity.test.mjs": {
+      "projectKey": "SG2",
+      "owner": "SG Runtime",
+      "surfaceId": "SG2-BASE-001"
+    },
+    "apps/sg-runtime/tests/porr-demo-middleware.test.ts": {
+      "projectKey": "SG2",
+      "owner": "SG Runtime",
+      "surfaceId": "SG2-BASE-001"
+    },
+    "apps/sg-runtime/tests/private-host.integration.test.mjs": {
+      "projectKey": "SG2",
+      "owner": "SG Runtime",
+      "surfaceId": "SG2-BASE-001"
+    },
+    "apps/sg-runtime/tests/self-service-account.test.ts": {
+      "projectKey": "SG2",
+      "owner": "SG Runtime",
+      "surfaceId": "SG2-BASE-001"
+    },
+    "apps/sg-runtime/tests/xray-fresh-performance-adoption.test.mjs": {
+      "projectKey": "SG2",
+      "owner": "SG Runtime",
+      "surfaceId": "SG2-BASE-001"
+    },
+    "apps/sg-runtime/tests/xray-gateway.test.ts": {
+      "projectKey": "SG2",
+      "owner": "SG Runtime",
+      "surfaceId": "SG2-BASE-001"
+    },
+    "apps/srm/deployment/root-atomic-claim-targets.json": {
+      "projectKey": "SRM",
+      "owner": "SRM Runtime",
+      "surfaceId": "SG2-BASE-016"
+    },
+    "apps/srm/operation-integration.json": {
+      "projectKey": "SRM",
+      "owner": "SRM Runtime",
+      "surfaceId": "SG2-BASE-016"
+    },
+    "apps/srm/package-lock.json": {
+      "projectKey": "SRM",
+      "owner": "SRM Runtime",
+      "surfaceId": "SG2-BASE-016"
+    },
+    "apps/srm/scripts/diagnostic-telemetry-adoption.test.mjs": {
+      "projectKey": "SRM",
+      "owner": "SRM Runtime",
+      "surfaceId": "SG2-BASE-016"
+    },
+    "apps/srm/scripts/native-execution-adoption.test.mjs": {
+      "projectKey": "SRM",
+      "owner": "SRM Runtime",
+      "surfaceId": "SG2-BASE-016"
+    },
+    "apps/srm/scripts/operation-context.test.mjs": {
+      "projectKey": "SRM",
+      "owner": "SRM Runtime",
+      "surfaceId": "SG2-BASE-016"
+    },
+    "apps/srm/scripts/private-host.integration.test.mjs": {
+      "projectKey": "SRM",
+      "owner": "SRM Runtime",
+      "surfaceId": "SG2-BASE-016"
+    },
+    "apps/srm/scripts/request-quota-adoption.test.mjs": {
+      "projectKey": "SRM",
+      "owner": "SRM Runtime",
+      "surfaceId": "SG2-BASE-016"
+    },
+    "apps/srm/scripts/source-hub-market-symbol-compatibility.test.mjs": {
+      "projectKey": "SRM",
+      "owner": "SRM Runtime",
+      "surfaceId": "SG2-BASE-016"
+    },
+    "apps/srm/scripts/source-hub-sdk-compatibility.mjs": {
+      "projectKey": "SRM",
+      "owner": "SRM Runtime",
+      "surfaceId": "SG2-BASE-016"
+    },
+    "apps/srm/scripts/supplier-location-admission.integration.test.mjs": {
+      "projectKey": "SRM",
+      "owner": "SRM Runtime",
+      "surfaceId": "SG2-BASE-016"
+    },
+    "apps/srm/scripts/xray-performance-adoption.test.mjs": {
+      "projectKey": "SRM",
+      "owner": "SRM Runtime",
+      "surfaceId": "SG2-BASE-016"
+    },
+    "apps/srm/src/server/root-atomic-claim-adoption.test.ts": {
+      "projectKey": "SRM",
+      "owner": "SRM Runtime",
+      "surfaceId": "SG2-BASE-016"
+    },
+    "packages/maps-embed/package.json": {
+      "projectKey": "SRM",
+      "owner": "Maps Capability",
+      "surfaceId": "MAPS-BASE-003"
+    },
+    "packages/platform-contracts/current-e1-authority/package-lock.json": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    "packages/platform-contracts/current-e1-authority/package.json": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    "packages/platform-contracts/current-fresh-report/package.json": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    "packages/platform-contracts/current-fresh-report/test/current-fresh-report.test.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    "packages/platform-contracts/migrations/access/029-market-symbol-transport.sql": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    "packages/platform-contracts/package-lock.json": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    "packages/platform-contracts/package.json": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    "packages/platform-contracts/payload-capture/package.json": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    "packages/platform-contracts/payload-capture/test/public-package.test.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    "packages/platform-contracts/readonly-miss-report/package.json": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    "packages/platform-contracts/readonly-miss-report/test/readonly-miss-report.test.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    "packages/platform-contracts/root-atomic-claim/package.json": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    "packages/platform-contracts/root-atomic-claim/test/root-atomic-claim.test.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    "packages/platform-contracts/src/external-call.d.mts": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    "packages/platform-contracts/src/external-call.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    "packages/platform-contracts/src/native-external-transport.d.mts": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    "packages/platform-contracts/src/native-external-transport.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    "packages/platform-contracts/test/market-symbol-transport.test.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    "packages/platform-source-hub-contracts/README.md": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-002"
+    },
+    "packages/platform-source-hub-contracts/index.d.ts": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-002"
+    },
+    "packages/platform-source-hub-contracts/index.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-002"
+    },
+    "packages/platform-source-hub-contracts/package.json": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-002"
+    },
+    "scripts/governance/platform-source-hub-foundation.test.mjs": {
+      "projectKey": "ARCHITECTURE",
+      "owner": "Governance Source Layer",
+      "surfaceId": "SG2-BASE-020"
+    }
+  }
+});
+function isPinnedMarketSymbolReview(files){
+ const r=SOURCE_HUB_MARKET_SYMBOL_REVIEW;
+ return Array.isArray(files)&&files.length===Object.keys(r.blobs).length&&new Set(files.map(f=>f?.filename)).size===files.length
+  &&files.every(f=>Object.hasOwn(r.blobs,f?.filename??'')&&f.sha===r.blobs[f.filename]&&f.status===r.statuses[f.filename]&&!Object.hasOwn(f,'previous_filename'));
+}
+function assertMarketSymbolRoutes(files,repositoryRoot){
+ for(const f of files){const e=SOURCE_HUB_MARKET_SYMBOL_REVIEW.routes[f.filename],profile=resolveProjectProfile(e.projectKey,repositoryRoot),route=resolveProjectRouting({profile,targets:[f.filename],repositoryRoot});
+  if(!route.ok||route.results.length!==1)fail('MARKET_SYMBOL_ROUTING_REJECTED');const r=route.results[0];
+  if(r.resolutionStatus!=='RESOLVED'||r.highestSpecificityMatchCount!==1||r.baselineClassification!=='ALIGNED'||r.projectBoundaryStatus!=='ALLOWED'||r.currentOwner!==e.owner||r.matchedSurfaceId!==e.surfaceId)fail('MARKET_SYMBOL_ROUTING_REJECTED');
+ }
+}
+export function assertMarketSymbolReviewEntry(file,entry){
+ const r=SOURCE_HUB_MARKET_SYMBOL_REVIEW;
+ if(!Object.hasOwn(r.blobs,file?.filename??'')||file.sha!==r.blobs[file.filename]||entry!==r.modes[file.filename]+' blob '+file.sha+'\t'+file.filename+'\0')fail('MARKET_SYMBOL_FILE_MODE_REJECTED');
+}
+
 function architecturePathAllowed(name) {
   if (typeof name !== 'string' || !/^[A-Za-z0-9._/-]+$/.test(name) || name.split('/').some(p => !p || p.startsWith('.'))) return false
   return /^packages\/platform-contracts\/(?:src\/[A-Za-z0-9_/-]+\.(?:mjs|d\.mts)|migrations\/[a-z0-9-]+\/[A-Za-z0-9._-]+\.sql|test\/[A-Za-z0-9._/-]+\.(?:mjs|mts|json)|package(?:-lock)?\.json|README\.md)$/.test(name)
@@ -2462,6 +3111,7 @@ function architecturePathAllowed(name) {
 export function assertArchitectureFiles(pr, files, repositoryRoot = controlRoot()) {
   if (!Number.isInteger(pr.changed_files) || pr.changed_files < 1 || pr.changed_files > 300 || !shaPattern.test(pr.base?.sha ?? '')
     || !Array.isArray(files) || files.length !== pr.changed_files) fail('ARCHITECTURE_FILE_LIST_REQUIRED')
+  if(isPinnedMarketSymbolReview(files)){assertMarketSymbolRoutes(files,repositoryRoot);return}
   if(isPinnedEcrBackendReview(files)){assertEcrBackendRoutes(files,repositoryRoot);return}
   if(isPinnedUniversalFirstPartyReview(files)){assertUniversalFirstPartyRoutes(files,repositoryRoot);return}
   if(isPinnedCurrentE1Review(files)){assertCurrentE1Routes(files,repositoryRoot);return}
@@ -2497,9 +3147,13 @@ export function assertArchitectureFiles(pr, files, repositoryRoot = controlRoot(
 
 export function selectCandidate(context, pr, expectedSha, {files, repositoryRoot = controlRoot()} = {}) {
   const family = candidateFamily(context, pr, expectedSha)
+  if(pr&&(pr.number===SOURCE_HUB_MARKET_SYMBOL_REVIEW.prNumber||pr.head.ref===SOURCE_HUB_MARKET_SYMBOL_REVIEW.branch)){
+    if(family!=='ARCHITECTURE'||pr.number!==SOURCE_HUB_MARKET_SYMBOL_REVIEW.prNumber||pr.head.ref!==SOURCE_HUB_MARKET_SYMBOL_REVIEW.branch||!isPinnedMarketSymbolReview(files))fail('MARKET_SYMBOL_REVIEW_IDENTITY_REJECTED')
+  }
   if (family === 'MAIN') return context.controlSha
   if (family === 'ARCHITECTURE') {
     assertArchitectureFiles(pr, files, repositoryRoot)
+    if(isPinnedMarketSymbolReview(files)&&(pr.number!==SOURCE_HUB_MARKET_SYMBOL_REVIEW.prNumber||pr.head.ref!==SOURCE_HUB_MARKET_SYMBOL_REVIEW.branch))fail('MARKET_SYMBOL_REVIEW_IDENTITY_REJECTED')
     if(isPinnedEcrBackendReview(files)&&(pr.number!==ECR_BACKEND_REVIEW.prNumber||pr.head.ref!==ECR_BACKEND_REVIEW.branch))fail('ECR_BACKEND_REVIEW_IDENTITY_REJECTED')
     if(isPinnedEcrG1Review(files)&&(pr.number!==ECR_G1_GOVERNANCE_REVIEW.prNumber||pr.head.ref!==ECR_G1_GOVERNANCE_REVIEW.branch))fail('ECR_G1_REVIEW_IDENTITY_REJECTED')
     if(isPinnedUniversalFirstPartyReview(files)&&(pr.number!==SOURCE_HUB_UNIVERSAL_FIRST_PARTY_REVIEW.prNumber||pr.head.ref!==SOURCE_HUB_UNIVERSAL_FIRST_PARTY_REVIEW.branch))fail('UNIVERSAL_FIRST_PARTY_REVIEW_IDENTITY_REJECTED')
@@ -2565,6 +3219,7 @@ export function assertArchitectureCheckout(root, sha, admission, repositoryRoot 
     if (file.status === 'removed') {if (entry !== '') fail('ARCHITECTURE_DIFF_MISMATCH'); continue}
     if(isPinnedEcrBackendReview(admission.files))assertEcrBackendReviewEntry(file,entry)
     if(isPinnedEcrG1Review(admission.files))assertEcrG1ReviewEntry(file,entry)
+    if(isPinnedMarketSymbolReview(admission.files))assertMarketSymbolReviewEntry(file,entry)
     if(isPinnedUniversalFirstPartyReview(admission.files))assertUniversalFirstPartyReviewEntry(file,entry)
     if(isPinnedCurrentE1Review(admission.files))assertCurrentE1ReviewEntry(file,entry)
     if(isPinnedSourceHubStage2aReview(admission.files)&&entry!==SOURCE_HUB_STAGE2A_REVIEW.modes[file.filename]+' blob '+file.sha+'\t'+file.filename+'\0')fail('SOURCE_HUB_STAGE2A_FILE_MODE_REJECTED')
@@ -2647,7 +3302,7 @@ export function assertManifestPolicy(candidate, authority) {
   }
 }
 
-export function assertLocalPackageSources(root, candidateLock, authorityRoot = controlRoot(), {reviewedStage2a=false}={}) {
+export function assertLocalPackageSources(root, candidateLock, authorityRoot = controlRoot(), {reviewedStage2a=false,reviewedMarketSymbol=false}={}) {
   const canonicalRoot = fs.realpathSync(root)
   const app = path.join(canonicalRoot, 'apps/sg-runtime')
   if (fs.realpathSync(app) !== app) fail('LOCAL_DEPENDENCY_REJECTED')
@@ -2667,6 +3322,11 @@ export function assertLocalPackageSources(root, candidateLock, authorityRoot = c
     let authority=readJson(authorityFile)
     if(name==='@profitia/maps-embed'){
       if(JSON.stringify(entry.peerDependencies??{})!==JSON.stringify(manifest.peerDependencies??{}))fail('LOCAL_PACKAGE_PEER_MISMATCH')
+      if(reviewedMarketSymbol&&manifest.peerDependencies?.['@profitia/platform-contracts']===REVIEWED_MAPS_EMBED_PEERS['@profitia/platform-contracts']+' || 1.33.0 || 1.34.0'&&authority.peerDependencies?.['@profitia/platform-contracts']!==manifest.peerDependencies['@profitia/platform-contracts']){
+        const bytes=fs.readFileSync(manifestPath),blob=createHash('sha1').update('blob '+bytes.length+'\0').update(bytes).digest('hex')
+        if(blob!==SOURCE_HUB_MARKET_SYMBOL_REVIEW.blobs['packages/maps-embed/package.json']||authority.name!==manifest.name||authority.version!==manifest.version||authority.peerDependencies?.['@profitia/platform-contracts']!==REVIEWED_MAPS_EMBED_PEERS['@profitia/platform-contracts']+' || 1.33.0')fail('MARKET_SYMBOL_PEER_TRANSITION_REJECTED')
+        authority=structuredClone(authority);authority.peerDependencies['@profitia/platform-contracts']=manifest.peerDependencies['@profitia/platform-contracts']
+      }
       if(reviewedStage2a&&manifest.peerDependencies?.['@profitia/platform-contracts']===REVIEWED_MAPS_EMBED_PEERS['@profitia/platform-contracts']+' || 1.33.0'){
         const bytes=fs.readFileSync(manifestPath),blob=createHash('sha1').update('blob '+bytes.length+'\0').update(bytes).digest('hex')
         if(blob!==SOURCE_HUB_STAGE2A_REVIEW.blobs['packages/maps-embed/package.json']||authority.name!==manifest.name||authority.version!==manifest.version
@@ -2766,7 +3426,7 @@ function checkCandidate() {
   const candidateLock = readJson(path.join(app, 'package-lock.json'))
   assertPackagePolicy(candidateLock, readJson(path.join(controlRoot(), 'apps/sg-runtime/package-lock.json')), fs.readFileSync(path.join(app, '.npmrc'), 'utf8'))
   assertManifestPolicy(readJson(path.join(app, 'package.json')), readJson(path.join(controlRoot(), 'apps/sg-runtime/package.json')))
-  assertLocalPackageSources(root, candidateLock, controlRoot(), {reviewedStage2a:state.admission?.kind==='ARCHITECTURE'&&isPinnedSourceHubStage2aReview(state.admission.files)})
+  assertLocalPackageSources(root, candidateLock, controlRoot(), {reviewedStage2a:state.admission?.kind==='ARCHITECTURE'&&isPinnedSourceHubStage2aReview(state.admission.files),reviewedMarketSymbol:state.admission?.kind==='ARCHITECTURE'&&isPinnedMarketSymbolReview(state.admission.files)})
   if (operationContractProvenanceDigest(root, state.receipt.contract) !== state.receipt.contract.sourceDigest || JSON.stringify(readJson(path.join(app, 'operation-integration.json'))) !== JSON.stringify(state.receipt)) fail('CONTRACT_PROVENANCE_MISMATCH')
   return {state, app}
 }

@@ -1,0 +1,11 @@
+# Proposed exact CI admission for Source Hub SDK1.34
+
+Status: PROPOSED / OWNER_APPROVAL_REQUIRED. Task: ARCH-SOURCE-HUB-MARKET-SYMBOL-CI-ADMISSION-20261106; profileARCHITECTURE/Development.
+
+CandidatePR915 `0f7bcb9507468a3454846a5fa63eb2f59bb7efe9`; authoritybase `91144599409c3565f309ad9247b9fd2f7ed60422`; closed 77 file versions. Reviewed business/SDK packet SHA256a84e18017e44af327d85f119235db0426c3b368148ea6f9201159d147b37291d explicitly reserves this distinct trusted-controller decision. No prior controller exception transfers.
+
+Scope is only existing controller, its tests, existing runbook and this evidence. Fixed PR/branch, complete API list, SHA1blob, status, regularfile mode and actual owner route remain mandatory. No generic consumer/runtime/Canon/workflow allowlist. SDK1.34 Maps peer transition is bound to its exact manifest and matching lock. All old classes and fingerprints remain intact. Token stays in clean install only and absent from candidate execution/proof; main-only Environment and private dependency pins unchanged.
+
+Before activation: separate owner acceptance of this concrete patch; public security tests; existing bootstrap/proof and exact-SHA CI; controlled main merge; new proof for refreshed PR915. This proposal creates no role, secret, Source licence, Neon/Render resource, migration, deploy or provider request. Source/consumer code acceptance and Hub activation remain separate factual gates.
+
+Offline validation: 160/160 existing and negative policy/path tests PASS. A separate read-only check applied this proposed controller to all77 actual candidate Git blobs, complete diff/tree/100644 modes and routed owners, then verified both SG2/SRM Maps peer lock metadata against the real1.34 manifest, the old trusted authority and the already-adopted1.34 authority. No credential, network call, private installation or workflow change was used in these local checks. Remote exact-SHA controlled proof remains required after owner acceptance.

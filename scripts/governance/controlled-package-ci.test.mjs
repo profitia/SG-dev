@@ -1,3 +1,4 @@
+import {SOURCE_HUB_MARKET_SYMBOL_REVIEW,assertMarketSymbolReviewEntry} from './controlled-package-ci.mjs'
 import {ECR_BACKEND_REVIEW,assertEcrBackendReviewEntry} from './controlled-package-ci.mjs'
 import {createHash} from 'node:crypto'
 import {ECR_G1_GOVERNANCE_REVIEW,assertEcrG1ReviewEntry} from './controlled-package-ci.mjs'
@@ -1083,7 +1084,8 @@ test('Maps peer transition needs exact source, a pinned admission and matching l
   const from=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../../packages/maps-embed/package.json'),original=fs.readFileSync(from,'utf8')
   // Exercise the same frozen candidate before and after its separate main acceptance.
   const installedRange=JSON.parse(original).peerDependencies['@profitia/platform-contracts']
-  const reviewedRange=installedRange.endsWith(' || 1.33.0')?installedRange:installedRange+' || 1.33.0'
+  const priorRange=installedRange.replace(/ \|\| 1\.34\.0$/,'')
+  const reviewedRange=priorRange.endsWith(' || 1.33.0')?priorRange:priorRange+' || 1.33.0'
   const bytes=Buffer.from(original.replace(JSON.stringify(installedRange),JSON.stringify(reviewedRange))),manifest=JSON.parse(bytes)
   const target=path.resolve(candidateApp,relative,'package.json'),trusted=path.resolve(authorityApp,relative,'package.json')
   fs.mkdirSync(path.dirname(target),{recursive:true});fs.mkdirSync(path.dirname(trusted),{recursive:true});fs.writeFileSync(target,bytes)
@@ -1244,4 +1246,48 @@ test('ECR complete API metadata resolution rejects file truncation and concurren
  assert.equal(answer.sha,other);assert.deepEqual(answer.admission.files,files)
  await assert.rejects(resolveCandidateAdmission(context(),'908',other,apiFixture(p,files.slice(1)).request))
  for(const after of [{...p,head:{...p.head,sha}},{...p,base:{...p.base,sha:other}},{...p,head:{...p.head,ref:'architecture/changed'}}])await assert.rejects(resolveCandidateAdmission(context(),'908',other,apiFixture(p,files,after).request))
+})
+
+const marketSymbolFiles=()=>Object.entries(SOURCE_HUB_MARKET_SYMBOL_REVIEW.blobs).map(([filename,sha])=>({filename,sha,status:SOURCE_HUB_MARKET_SYMBOL_REVIEW.statuses[filename]}))
+const marketSymbolPr=()=>({...pr(),number:915,changed_files:marketSymbolFiles().length,base:{...pr().base,sha:SOURCE_HUB_MARKET_SYMBOL_REVIEW.reviewedBaseSha},head:{...pr().head,sha:SOURCE_HUB_MARKET_SYMBOL_REVIEW.reviewedCandidateSha,ref:SOURCE_HUB_MARKET_SYMBOL_REVIEW.branch}})
+test('PR915 permits only the exact reviewed producer and correctly owned consumer file closure',()=>{
+ const p=marketSymbolPr(),files=marketSymbolFiles();assert.equal(files.length,77)
+ assert.equal(selectCandidate(context(),p,p.head.sha,{files}),p.head.sha)
+ assert(Object.values(SOURCE_HUB_MARKET_SYMBOL_REVIEW.routes).some(r=>r.projectKey==='SG2'))
+ assert(Object.values(SOURCE_HUB_MARKET_SYMBOL_REVIEW.routes).some(r=>r.projectKey==='SRM'))
+ for(const edit of [f=>f.pop(),f=>f.push({...f[0]}),f=>f[0].sha=other,f=>f[0].status='removed',f=>f[0].previous_filename='old']){
+  const f=marketSymbolFiles();edit(f);rejection(()=>selectCandidate(context(),{...p,changed_files:f.length},p.head.sha,{files:f}))
+ }
+ for(const filename of ['apps/sg-runtime/app/unreviewed.ts','apps/srm/src/server/unreviewed.ts','Canon/registries/governance-manifest-v2.json','.github/workflows/platform-contracts-ci.yml','scripts/governance/controlled-package-ci.mjs','.npmrc']){
+  const f=[...files,producerFile(filename)];rejection(()=>selectCandidate(context(),{...p,changed_files:f.length},p.head.sha,{files:f}))
+ }
+ // The fixed PR/branch cannot fall back to the generic producer class.
+ const subset=files.filter(f=>f.filename==='packages/platform-contracts/src/external-call.mjs')
+ rejection(()=>selectCandidate(context(),{...p,changed_files:subset.length},p.head.sha,{files:subset}))
+})
+test('PR915 exact admission preserves trusted owner, branch, SHA, route and regular-file boundaries',()=>{
+ const p=marketSymbolPr(),files=marketSymbolFiles()
+ for(const edit of [q=>q.number=916,q=>q.head.ref='architecture/other',q=>q.head.ref='sg2/unreviewed',q=>q.user.login='other',q=>q.head.repo.full_name='other/fork',q=>q.base.ref='production',q=>q.state='closed']){const q=structuredClone(p);edit(q);rejection(()=>selectCandidate(context(),q,q.head.sha,{files}))}
+ rejection(()=>selectCandidate(context(),p,other,{files}));rejection(()=>selectCandidate({...context(),triggeringActor:'other'},p,p.head.sha,{files}))
+ for(const f of files){assertMarketSymbolReviewEntry(f,'100644 blob '+f.sha+'\t'+f.filename+'\0');for(const mode of ['100755','120000','160000'])rejection(()=>assertMarketSymbolReviewEntry(f,mode+' blob '+f.sha+'\t'+f.filename+'\0'))}
+ const root=routingFixture(),file=path.join(root,'Canon/registries/current-architecture-baseline-v1.json'),original=fs.readFileSync(file,'utf8')
+ try{for(const projectKey of ['ARCHITECTURE','SG2','SRM']){const e=Object.values(SOURCE_HUB_MARKET_SYMBOL_REVIEW.routes).find(r=>r.projectKey===projectKey);const v=JSON.parse(original);v.surfaces.find(s=>s.id===e.surfaceId).currentOwner='Other';fs.writeFileSync(file,JSON.stringify(v));rejection(()=>selectCandidate(context(),p,p.head.sha,{files,repositoryRoot:root}))}}finally{fs.rmSync(root,{recursive:true,force:true})}
+})
+test('PR915 resolution rejects truncated API lists and head/base movement',async()=>{
+ const p=marketSymbolPr(),files=marketSymbolFiles(),sha=p.head.sha;const result=await resolveCandidateAdmission(context(),'915',sha,apiFixture(p,files).request);assert.equal(result.sha,sha)
+ await assert.rejects(resolveCandidateAdmission(context(),'915',sha,apiFixture(p,files.slice(1)).request))
+ for(const after of [{...p,head:{...p.head,sha:other}},{...p,base:{...p.base,sha:other}}])await assert.rejects(resolveCandidateAdmission(context(),'915',sha,apiFixture(p,files,after).request))
+})
+test('SDK1.34 Maps peer transition needs pinned bytes, matching lock and the closed review',()=>{
+ const temporary=fs.mkdtempSync(path.join(os.tmpdir(),'market-symbol-peer-transition-')),candidateRoot=path.join(temporary,'candidate'),authorityRoot=path.join(temporary,'authority')
+ try{
+  const relative=LOCAL_PACKAGES['@profitia/maps-embed'],candidateApp=path.join(candidateRoot,'apps/sg-runtime'),authorityApp=path.join(authorityRoot,'apps/sg-runtime');fs.mkdirSync(candidateApp,{recursive:true});fs.mkdirSync(authorityApp,{recursive:true})
+  const original=fs.readFileSync(path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../../packages/maps-embed/package.json'),'utf8'),installed=JSON.parse(original).peerDependencies['@profitia/platform-contracts'];const next=installed.endsWith(' || 1.34.0')?installed:installed+' || 1.34.0';const bytes=Buffer.from(original.replace(JSON.stringify(installed),JSON.stringify(next))),manifest=JSON.parse(bytes)
+  assert.equal(createHash('sha1').update('blob '+bytes.length+'\0').update(bytes).digest('hex'),SOURCE_HUB_MARKET_SYMBOL_REVIEW.blobs['packages/maps-embed/package.json'])
+  const target=path.resolve(candidateApp,relative,'package.json'),trusted=path.resolve(authorityApp,relative,'package.json');fs.mkdirSync(path.dirname(target),{recursive:true});fs.mkdirSync(path.dirname(trusted),{recursive:true});fs.writeFileSync(target,bytes)
+  const prior=structuredClone(manifest);prior.peerDependencies['@profitia/platform-contracts']=next.replace(/ \|\| 1\.34\.0$/,'');fs.writeFileSync(trusted,JSON.stringify(prior))
+  const lock={packages:{'node_modules/@profitia/maps-embed':{version:manifest.version,resolved:'file:'+relative,peerDependencies:manifest.peerDependencies}}};rejection(()=>assertLocalPackageSources(candidateRoot,lock,authorityRoot));assertLocalPackageSources(candidateRoot,lock,authorityRoot,{reviewedMarketSymbol:true});assertLocalPackageSources(candidateRoot,lock,candidateRoot);assertLocalPackageSources(candidateRoot,lock,candidateRoot,{reviewedMarketSymbol:true})
+  const bad=structuredClone(lock);bad.packages['node_modules/@profitia/maps-embed'].peerDependencies=prior.peerDependencies;rejection(()=>assertLocalPackageSources(candidateRoot,bad,authorityRoot,{reviewedMarketSymbol:true}))
+  fs.writeFileSync(target,JSON.stringify({...manifest,unreviewed:true}));rejection(()=>assertLocalPackageSources(candidateRoot,lock,authorityRoot,{reviewedMarketSymbol:true}))
+ }finally{fs.rmSync(temporary,{recursive:true,force:true})}
 })
