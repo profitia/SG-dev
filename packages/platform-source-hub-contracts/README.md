@@ -13,3 +13,15 @@ Additive activation capabilities (2026-11-04): TE News uses the existing News Di
 ## First-party transport (package 1.1.0)
 
 `@profitia/platform-source-hub-contracts/client` exports `createFirstPartySourceHubClient` for any registered component, HUMAN session or canonical SERVICE job. Per-component Ed25519 keys authenticate transport; current E1 grants and the product's provider licence independently authorize data. No provider secrets or new adapter belongs in a consumer. Payload/response contract remains 1.0.0. See [integration](../../apps/platform-source-hub/docs/first-party-consumers.pl.md) and [active amendment](../../Canon/v1.1-platform-source-hub-universal-first-party-consumer-access.md). Legacy Newsfeed remains compatible.
+
+## Calendar durable storage projection (package1.2.0)
+
+The existing1.0.0 family contract adds optional economic-calendar metadata
+`consumerStorage:{mode:'DURABLE_OWNER_ENTITLEMENT',basisRef,licenceVersion}`.
+Only an active owner-controlled universal calendar licence may emit this
+projection. Existing transient cache TTL/retentionUntil and all other families
+retain their meaning. Installing migration005 defaults every row to
+TRANSIENT_ONLY and changes no entitlement or quota. Durable consumers must
+reject missing rights; null cache TTL is never a durable-storage permission.
+The owner declaration governs licensed durable reuse without an invented
+history retention period. Existing consumers remain compatible.
