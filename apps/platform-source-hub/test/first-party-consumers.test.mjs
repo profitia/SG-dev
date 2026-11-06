@@ -3,6 +3,22 @@ import assert from 'node:assert/strict';
 import {consumerFixture} from './first-party-fixtures.mjs';
 import {A,B,U} from '../../../packages/platform-contracts/test/fixtures/first-party-source-postgres.mjs';
 const command={contractVersion:'1.0.0',provider:'newsapi',family:'news-discovery',operation:'search',criteria:{mode:'articles',text:'SYNTHETIC_ONLY'}};
+test('SYNTHETIC_ONLY: Calendar upstream403 remains a provider refusal after E1/Source ALLOW, without a subscription diagnosis or retry',async t=>{
+ const f=await consumerFixture();t.after(()=>f.close());f.source.state.providerStatus=403;
+ const client=await f.client(),execution={kind:'SERVICE',organisationId:A,grantId:f.e1.grantId};
+ const calendar={...command,provider:'trading-economics',family:'economic-calendar',criteria:{countries:['Poland']}};
+ await assert.rejects(client.acquire({command:calendar,execution,idempotencyKey:'calendar-provider-forbidden-0001'}),{code:'PROVIDER_FORBIDDEN',status:502});
+ assert.equal(f.source.state.providerCalls.length,1);
+ const usage=await f.e1.asOwner(1,q=>q.query('SELECT a.error_code,u.upstream_attempts,u.outcome,u.receipt_ref FROM source_hub.first_party_acquisitions a JOIN source_hub.first_party_usage u ON u.acquisition_id=a.id'),'source_hub_development_owner');
+ assert.equal(usage.rowCount,1);assert.equal(usage.rows[0].error_code,'PROVIDER_FORBIDDEN');assert.equal(usage.rows[0].upstream_attempts,1);assert.equal(usage.rows[0].outcome,'RESPONSE');assert(usage.rows[0].receipt_ref);
+ const calls=await f.source.admin(0,'profitia_ingestion_owner',q=>q.query('SELECT http_status FROM profitia_external_call.calls'));
+ assert.equal(calls.rowCount,1);assert.equal(calls.rows[0].http_status,403);
+ const audit=await f.e1.asOwner(1,q=>q.query("SELECT event->>'decision' AS decision FROM profitia_access.security_events WHERE event->>'actorId'=$1",[f.e1.serviceId]),'profitia_access_owner');
+ assert(audit.rowCount>=4);assert(audit.rows.every(r=>r.decision==='ALLOW'));
+ await assert.rejects(client.acquire({command:calendar,execution,idempotencyKey:'calendar-provider-forbidden-0001'}),{code:'PREVIOUS_ATTEMPT_FAILED'});
+ assert.equal(f.source.state.providerCalls.length,1);
+ assert.equal(f.logs.filter(e=>e.outcome==='PROVIDER_FORBIDDEN').length,1);
+});
 test('SYNTHETIC_ONLY: shared Hub accepts independent human and service consumers across all six APIs, with real E1 and Source SQL gates',async t=>{
  const f=await consumerFixture();t.after(()=>f.close());const {e1}=f;
  const human=await f.client({component:'newsfeed',kind:'HUMAN'}),report=await f.client();
