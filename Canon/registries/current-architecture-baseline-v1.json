@@ -868,6 +868,60 @@
       ],
       "classificationReferenceSha": "785c9b5175e65840b4c5a9efb983e0db0972d3e1",
       "onboardingAuthorization": "G1 GRANTED: explicit owner PLATFORM SOURCE HUB / NEWSFEED — STAGE 1B FINAL ACTIVATION & INFRASTRUCTURE BASELINE UPDATE, 2026-11-03, host 01a19fe2-0dc1-7ca2-8acf-28504684e3c1, decision ARCH-SOURCE-HUB-G1-FINAL-ACTIVATION-20261103; Canon/evidence/2026-11-03-platform-source-hub-final-activation.md. Governance/documentation only; no runtime, provider calls, resource changes, schema, grants, consumer adoption or deployment. Owner manually provisions Neon/Render."
+    },
+    {
+      "id": "ECR-BASE-001",
+      "capability": "Economic Calendar Runtime",
+      "name": "Economic Calendar Runtime backend",
+      "pathPatterns": [
+        "apps/economic-calendar-runtime/**"
+      ],
+      "currentOwner": "Architecture Platform",
+      "currentResponsibility": "Provider-independent calendar synchronization through Source Hub, shared licensed event read model, observed revision history, authorized API and private canonical-user preferences; no provider transport, host UI or Identity authority.",
+      "baselineClassification": "ALIGNED",
+      "parentSurfaceId": null,
+      "cleanupReason": null,
+      "allowedProjectKeys": [
+        "ARCHITECTURE"
+      ],
+      "classificationReferenceSha": "1cc5282c718ab1ce85fa9da4831592739c0ff899",
+      "onboardingAuthorization": "G1 GRANTED: explicit owner approval of PR906 candidate 3a1b98b287c09844b8c9064c3ecae1830b4e3fc3, 2026-11-06, host 01a19bde-d925-7eb3-bb0d-718fe3bce137, decision ARCH-ECR-SOURCEHUB-G1-20261106; Canon/evidence/2026-11-06-ecr-g1-governance-activation.md. Development source ownership only; no automatic resource creation or administrative grants."
+    },
+    {
+      "id": "ECR-BASE-002",
+      "capability": "Economic Calendar Contracts",
+      "name": "Economic Calendar Runtime versioned API contracts",
+      "pathPatterns": [
+        "packages/economic-calendar-contracts/**"
+      ],
+      "currentOwner": "Architecture Platform",
+      "currentResponsibility": "Provider-neutral event, coverage, revision, personal-preference and saved-filter contracts for authorized independent consumers; no private consumer imports or separate identity engine.",
+      "baselineClassification": "ALIGNED",
+      "parentSurfaceId": null,
+      "cleanupReason": null,
+      "allowedProjectKeys": [
+        "ARCHITECTURE"
+      ],
+      "classificationReferenceSha": "1cc5282c718ab1ce85fa9da4831592739c0ff899",
+      "onboardingAuthorization": "G1 GRANTED: explicit owner approval of PR906 candidate 3a1b98b287c09844b8c9064c3ecae1830b4e3fc3, 2026-11-06, host 01a19bde-d925-7eb3-bb0d-718fe3bce137, decision ARCH-ECR-SOURCEHUB-G1-20261106; Canon/evidence/2026-11-06-ecr-g1-governance-activation.md. Development source ownership only; no automatic resource creation or administrative grants."
+    },
+    {
+      "id": "ECR-BASE-003",
+      "capability": "Economic Calendar CI",
+      "name": "Economic Calendar Runtime offline validation CI",
+      "pathPatterns": [
+        ".github/workflows/economic-calendar-ci.yml"
+      ],
+      "currentOwner": "Architecture Platform",
+      "currentResponsibility": "Reserved exact-path event, preference, persistence, access and Source Hub consumer contract validation; no deployment credentials or paid provider tests in CI.",
+      "baselineClassification": "ALIGNED",
+      "parentSurfaceId": null,
+      "cleanupReason": null,
+      "allowedProjectKeys": [
+        "ARCHITECTURE"
+      ],
+      "classificationReferenceSha": "1cc5282c718ab1ce85fa9da4831592739c0ff899",
+      "onboardingAuthorization": "G1 GRANTED: explicit owner approval of PR906 candidate 3a1b98b287c09844b8c9064c3ecae1830b4e3fc3, 2026-11-06, host 01a19bde-d925-7eb3-bb0d-718fe3bce137, decision ARCH-ECR-SOURCEHUB-G1-20261106; Canon/evidence/2026-11-06-ecr-g1-governance-activation.md. Development source ownership only; no automatic resource creation or administrative grants."
     }
   ],
   "cleanupFindings": [
