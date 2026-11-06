@@ -24,3 +24,38 @@ test('enrollment profile matches every immutable SQL field, including privateKey
  assert.equal(profile.privateKeyPersistence,'OWNER_APPROVED_SECRET_STORE')
  assert.deepEqual(embedded,profile)
 })
+
+test('only a ledger-reconciled EIA429 can resume; success and uncertain sends never acquire a second key',async()=>{
+ const {createHash}=await import('node:crypto'),{operationPayloadDigest}=await import('@profitia/platform-contracts/operation-context'),{reconcileThrottledAttempt}=await import('../scripts/catalog-commodities.mjs')
+ const c=catalogue(),q={contractVersion:'1.1.0',provider:'eia',family:'data-catalog',operation:'metadata',criteria:{path:''}},old={state:'FAILED_OR_UNCERTAIN',idempotencyKey:'SYNTHETIC_ONLY_429',command:q,code:'RATE_LIMITED'};c.requests={synthetic:old}
+ const p={...profile,componentId:'source-hub-catalogue-development',serviceId:receipt},s={id:receipt,component_id:p.componentId,organisation_id:p.organisationId,actor_kind:'SERVICE',actor_id:p.serviceId,idempotency_digest:createHash('sha256').update(old.idempotencyKey).digest('hex'),request_digest:operationPayloadDigest(q),error_code:'RATE_LIMITED',http_status:429,outcome:'RESPONSE',source_call_status:'RESPONSE',receipt_ref:receipt,completed_at:'2026-11-06T18:00:00.000Z'}
+ for(const bad of[{http_status:200},{outcome:'UNVERIFIED'},{actor_id:'foreign'},{request_digest:'wrong'}])assert.throws(()=>reconcileThrottledAttempt(c,{...s,...bad},p))
+ reconcileThrottledAttempt(c,s,p);assert.equal(old.reconciliation.receiptRef,receipt);assert.equal(old.idempotencyKey,'SYNTHETIC_ONLY_429')
+ old.state='SUCCEEDED';assert.throws(()=>reconcileThrottledAttempt(c,s,p));old.state='PENDING';assert.throws(()=>reconcileThrottledAttempt(c,s,p))
+})
+test('SourceHub Retry-After is bounded and kept only for an actual429',async()=>{
+ const {sourceHubRetryAfter}=await import('../scripts/catalog-commodities.mjs')
+ assert.equal(await sourceHubRetryAfter(Response.json({error:{retryAfterSeconds:37}},{status:429})),37)
+ assert.equal(await sourceHubRetryAfter(Response.json({error:{retryAfterSeconds:37}},{status:200})),null)
+ assert.equal(await sourceHubRetryAfter(Response.json({error:{retryAfterSeconds:999999}},{status:429})),null)
+})
+
+test('explicitly reconciled throttling resumes once with history, while the same unverified checkpoint makes zero calls',async()=>{
+ const {createHash}=await import('node:crypto'),{operationPayloadDigest}=await import('@profitia/platform-contracts/operation-context'),{reconcileThrottledAttempt}=await import('../scripts/catalog-commodities.mjs')
+ const c=catalogue(),q={contractVersion:'1.1.0',provider:'eia',family:'data-catalog',operation:'metadata',criteria:{path:''}},d=createHash('sha256').update(JSON.stringify(q)).digest('hex'),key='SYNTHETIC_ONLY_429',p={...profile,componentId:'source-hub-catalogue-development',serviceId:receipt}
+ c.providers.cftc.catalogueComplete=true;c.providers['commodities-sh'].openapiLiveVerified=true;c.providers['commodities-sh'].catalogueLiveVerified=true;c.requests={[d]:{state:'FAILED_OR_UNCERTAIN',idempotencyKey:key,command:q,code:'RATE_LIMITED'}}
+ let calls=0;const client={async acquire(){calls++;return body('eia',[{datasetId:'',name:'Synthetic root',fields:[],children:[],frequencies:[]}])}}
+ await collectCatalogue({catalogue:c,profile:p,client,save:async()=>{},throttleMs:0});assert.equal(calls,0)
+ reconcileThrottledAttempt(c,{id:receipt,component_id:p.componentId,organisation_id:p.organisationId,actor_kind:'SERVICE',actor_id:p.serviceId,idempotency_digest:createHash('sha256').update(key).digest('hex'),request_digest:operationPayloadDigest(q),error_code:'RATE_LIMITED',http_status:429,outcome:'RESPONSE',source_call_status:'RESPONSE',receipt_ref:receipt,completed_at:'2026-11-06T18:00:00.000Z'},p)
+ await collectCatalogue({catalogue:c,profile:p,client,save:async()=>{},throttleMs:0});assert.equal(calls,1);assert.equal(c.requests[d].state,'SUCCEEDED');assert.equal(c.requests[d].previousAttempts[0].idempotencyKey,key);assert.notEqual(c.requests[d].idempotencyKey,key);assert.equal(c.requests[d].resumedFromReceipt,receipt)
+ await collectCatalogue({catalogue:c,profile:p,client,save:async()=>{},throttleMs:0});assert.equal(calls,1)
+})
+
+test('catalogue keeps actual paid operations closed and separately identifies OpenAPI self-discovery outside paths',async()=>{
+ const {finalizeCatalogue}=await import('../scripts/catalog-commodities.mjs'),c=catalogue()
+ c.providers['commodities-sh'].openapi={info:{'x-free-paths':['/openapi.json','/terms.txt']}};c.providers['commodities-sh'].openapiLiveVerified=true
+ c.providers['commodities-sh'].entries=[{id:'GET /v1/price/{code}',status:'PAID_NOT_ACTIVATED',metadata:{kind:'OPERATION_METADATA',name:'Paid price',fields:[]},path:'/v1/price/{code}',method:'GET'}]
+ c.requests={spec:{state:'SUCCEEDED',command:{provider:'commodities-sh',criteria:{endpoint:'openapi'}},receiptRef:receipt}}
+ finalizeCatalogue(c);assert.equal(c.providers['commodities-sh'].entries[0].status,'PAID_NOT_ACTIVATED');assert.equal(c.providers['commodities-sh'].entries.find(e=>e.path==='/openapi.json').metadataEvidence.receiptRef,receipt);assert.equal(c.coverage.commoditiesSh.structuredOpenapiOperations,1);assert.equal(c.coverage.commoditiesSh.additionalDocumentedDiscovery,2)
+ const n=c.providers['commodities-sh'].entries.length;finalizeCatalogue(c);assert.equal(c.providers['commodities-sh'].entries.length,n)
+})
