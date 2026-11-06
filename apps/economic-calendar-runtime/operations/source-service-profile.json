@@ -1,0 +1,31 @@
+{
+  "schemaVersion": "ECRSourceServiceProfile/1",
+  "status": "PROPOSED_NOT_GRANTED",
+  "applicationId": "profitia-economic-calendar-runtime-development",
+  "componentId": "economic-calendar-runtime-development",
+  "role": "economic_calendar_development_ingest",
+  "profileId": "SPENDGURU_SAAS",
+  "sourceOrigin": "urn:profitia:service:economic-calendar-runtime:development",
+  "receiverApplicationId": "profitia-source-hub-development",
+  "targetOrigin": "https://source-hub-development.onrender.com",
+  "keyId": "ecr-source-service-20261106-v1",
+  "configurationVersion": "ecr-source-service-v1",
+  "organisationId": "225e465b-8b89-467d-92d1-7fef61b555fe",
+  "bindingId": "c713afb2-1668-4cd5-9b2e-8efe052edd6b",
+  "serviceId": "a80cf159-700a-4b5a-bd5a-8598113fa4e2",
+  "expiresAt": "2026-12-04T22:19:09.000Z",
+  "sourceQuotaMode": "UNMETERED",
+  "automaticRetry": false,
+  "publicKey": "GENERATE_AFTER_OWNER_GO",
+  "publicKeySha256": "ATTEST_AFTER_OWNER_GO",
+  "privateKeyPersistence": "OWNER_APPROVED_SECRET_STORE",
+  "grants": [
+    {
+      "grantId": "8eff4273-f10e-43ea-8d6c-0be4f6ceffd8",
+      "resourceId": "api.trading-economics.economic-calendar",
+      "operation": "knowledge.read",
+      "feature": "market",
+      "effect": "ALLOW"
+    }
+  ]
+}
