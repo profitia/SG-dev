@@ -1,6 +1,6 @@
 {
   "schemaVersion": "2.0",
-  "manifestVersion": "3.38.0",
+  "manifestVersion": "3.39.0",
   "owner": "Profitia Governance",
   "entrypoint": "AGENTS.md",
   "preflight": "scripts/governance/governance-preflight.mjs",
@@ -282,6 +282,24 @@
         "platform-source-hub-business-and-architecture-canon",
         "newsfeed-source-hub-responsibility-amendment",
         "shared-development-contract-integration"
+      ]
+    },
+    {
+      "id": "newsfeed-saved-searches-ownership-sharing-history-canon",
+      "version": "1.2",
+      "path": "Canon/v1.2-newsfeed-saved-searches-ownership-sharing-history-canon.md",
+      "status": "ACTIVE",
+      "loadOrder": 476,
+      "owner": "Governance Source Layer",
+      "appliesTo": [
+        "SG2",
+        "SRM",
+        "ARCHITECTURE"
+      ],
+      "dependsOn": [
+        "newsfeed-business-and-architecture-canon",
+        "newsfeed-source-hub-responsibility-amendment",
+        "platform-source-hub-universal-first-party-consumer-access"
       ]
     },
     {
