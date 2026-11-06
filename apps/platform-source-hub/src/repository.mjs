@@ -5,6 +5,11 @@ import {SourceHubError} from '../../../packages/platform-source-hub-contracts/in
 const hash=value=>createHash('sha256').update(value).digest('hex');
 const scope=context=>[context.environment,context.applicationId,context.organisationId,context.subjectUserId];
 const where='environment=$1 AND application_id=$2 AND organisation_id=$3::uuid AND owner_user_id=$4::uuid';
+export function calendarStorageProjection(licence,family){
+ if(family!=='economic-calendar'||licence.consumer_storage_mode!=='DURABLE_OWNER_ENTITLEMENT')return null;
+ if(licence.consumer_access_mode!=='SPENDGURU_PRODUCT'||typeof licence.consumer_storage_basis_ref!=='string'||!licence.consumer_storage_basis_ref.length||licence.consumer_storage_basis_ref.length>256||!/^([1-9][0-9]*)$/.test(String(licence.version)))throw new SourceHubError('LICENCE_STORAGE_PROJECTION_INVALID',403);
+ return {mode:'DURABLE_OWNER_ENTITLEMENT',basisRef:licence.consumer_storage_basis_ref,licenceVersion:String(licence.version)};
+}
 export function createRepository(configuration,database){
  const extensionDigest=hash(readFileSync(new URL('../migrations/002-te-news.sql',import.meta.url)));
  async function licence(transaction,provider,family,consumer){
@@ -34,7 +39,7 @@ export function createRepository(configuration,database){
   const s=scope(context),until=l.retention_seconds>0?new Date(Math.min(Date.now()+l.retention_seconds*1000,new Date(l.expires_at).getTime())).toISOString():null;
   const receipt=evidence?.callId??null;
   body.provenance.licenceRef=l.licence_ref;body.usage.receiptRef=receipt;
-  for(const item of body.items){item.metadata.licenceRef=l.licence_ref;item.metadata.usageReceiptRef=receipt;item.metadata.retentionUntil=until;item.metadata.redistribution='PRIVATE_AUTHORISED_CONSUMER_ONLY';
+  for(const item of body.items){const storage=calendarStorageProjection(l,request.family);if(storage)item.metadata.consumerStorage=storage;item.metadata.licenceRef=l.licence_ref;item.metadata.usageReceiptRef=receipt;item.metadata.retentionUntil=until;item.metadata.redistribution='PRIVATE_AUTHORISED_CONSUMER_ONLY';
    if(until)await transaction.query('INSERT INTO source_hub.source_records(id,environment,application_id,organisation_id,owner_user_id,source_record_ref,provider_id,family,vendor_record_id,licence_ref,content_fingerprint,metadata,payload,retrieved_at,retention_until) VALUES($5::uuid,$1,$2,$3::uuid,$4::uuid,$6,$7,$8,$9,$10,$11,$12::jsonb,$13::jsonb,$14::timestamptz,$15::timestamptz) ON CONFLICT(environment,application_id,organisation_id,owner_user_id,licence_ref,source_record_ref) DO UPDATE SET metadata=excluded.metadata,payload=excluded.payload,retention_until=excluded.retention_until',[...s,randomUUID(),item.metadata.sourceRecordRef,request.provider,request.family,item.metadata.vendorRecordId,l.licence_ref,item.metadata.contentFingerprint,JSON.stringify(item.metadata),JSON.stringify(item.payload),item.metadata.retrievedAt,until]);
   }
   const r=await transaction.query('UPDATE source_hub.acquisitions SET status=\'SUCCEEDED\',result=$6::jsonb,completed_at=clock_timestamp(),retention_until=$7::timestamptz WHERE '+where+' AND id=$5::uuid AND status=\'PENDING\' RETURNING id',[...s,acquisition.id,until?JSON.stringify(body):null,until]);
@@ -74,7 +79,7 @@ export function createFirstPartyRepository(configuration,database){
   const l=await licence(t,request.provider,request.family);if(l.licence_ref!==a.licence.licence_ref||String(l.version)!==String(a.licence.version)||l.source_policy_id!==a.licence.source_policy_id)throw new SourceHubError('LICENCE_CHANGED',403);
   const scope=s(c,consumer),until=l.retention_seconds>0?new Date(Math.min(Date.now()+l.retention_seconds*1000,new Date(l.expires_at).getTime())).toISOString():null,receipt=evidence?.callId??null;
   body.provenance.licenceRef=l.licence_ref;body.usage.receiptRef=receipt;
-  for(const item of body.items){Object.assign(item.metadata,{licenceRef:l.licence_ref,usageReceiptRef:receipt,retentionUntil:until,redistribution:'PRIVATE_AUTHORISED_CONSUMER_ONLY'});
+  for(const item of body.items){const storage=calendarStorageProjection(l,request.family);if(storage)item.metadata.consumerStorage=storage;Object.assign(item.metadata,{licenceRef:l.licence_ref,usageReceiptRef:receipt,retentionUntil:until,redistribution:'PRIVATE_AUTHORISED_CONSUMER_ONLY'});
    if(until)await t.query('INSERT INTO source_hub.first_party_records('+cols+',id,source_record_ref,provider_id,family,vendor_record_id,licence_ref,content_fingerprint,metadata,payload,retrieved_at,retention_until) VALUES('+vals+',$7::uuid,$8,$9,$10,$11,$12,$13,$14::jsonb,$15::jsonb,$16::timestamptz,$17::timestamptz) ON CONFLICT(environment,application_id,organisation_id,actor_kind,actor_id,component_id,licence_ref,source_record_ref) DO UPDATE SET metadata=excluded.metadata,payload=excluded.payload,retention_until=excluded.retention_until',[...scope,randomUUID(),item.metadata.sourceRecordRef,request.provider,request.family,item.metadata.vendorRecordId,l.licence_ref,item.metadata.contentFingerprint,JSON.stringify(item.metadata),JSON.stringify(item.payload),item.metadata.retrievedAt,until]);}
   const r=await t.query('UPDATE source_hub.first_party_acquisitions SET status=\'SUCCEEDED\',result=$8::jsonb,completed_at=clock_timestamp(),retention_until=$9::timestamptz WHERE '+w+' AND id=$7::uuid AND status=\'PENDING\' RETURNING id',[...scope,a.id,until?JSON.stringify(body):null,until]);if(r.rows.length!==1)throw new SourceHubError('ACQUISITION_CONFLICT',409);
   await t.query('INSERT INTO source_hub.first_party_usage('+cols+',acquisition_id,provider_id,family,upstream_attempts,outcome,receipt_ref) VALUES('+vals+',$7::uuid,$8,$9,1,\'RESPONSE\',$10)',[...scope,a.id,request.provider,request.family,receipt]);return body;

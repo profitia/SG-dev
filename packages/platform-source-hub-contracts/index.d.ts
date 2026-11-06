@@ -21,6 +21,7 @@ export type HubRequest=Base<'news-discovery','newsapi','search',DiscoveryQuery>|
  |Base<'indicators','trading-economics','search',IndicatorCriteria>|Base<'external-forecasts','trading-economics','search',ForecastCriteria|MarketForecastCriteria>
  |Base<'news-discovery','trading-economics','search',TradingEconomicsNewsCriteria>;
 export interface CommonMetadata {
+ consumerStorage?:{mode:'DURABLE_OWNER_ENTITLEMENT';basisRef:string;licenceVersion:string};
  contractFamily:ContractFamily;contractVersion:'1.0.0';providerId:ProviderId;apiFamily:string;endpointVersion:string;
  vendorRecordId:string|null;sourceRecordRef:string;sourceUrl:string|null;retrievedAt:string;availableAt:string|null;
  asOf:string|null;licenceRef:string;qualityStatus:'PROVIDER_REPORTED'|'UNKNOWN';contentFingerprint:string;usageReceiptRef:string;retentionUntil:string|null;redistribution:'PRIVATE_AUTHORISED_CONSUMER_ONLY';

@@ -61,7 +61,7 @@ export async function migrate(client,c){
   }
   await client.query('GRANT SELECT ON source_hub.migrations TO '+identifier(runtime));
   const migrations=[];
-  for(const version of ['002-te-news',...(c.installFirstParty===true?['004-universal-consumers']:[])]){
+  for(const version of ['002-te-news',...(c.installFirstParty===true?['004-universal-consumers']:[]),...(c.installCalendarStorage===true?['005-calendar-storage-rights']:[])]){
    const extension=await readFile(new URL('../migrations/'+version+'.sql',import.meta.url),'utf8'),extensionDigest=hash(extension);
    const applied=await client.query('SELECT digest FROM source_hub.migrations WHERE version=$1',[version]);
    if(applied.rows.length){if(applied.rows[0].digest!==extensionDigest)throw Error('EXISTING_MIGRATION_MISMATCH');}
@@ -74,9 +74,10 @@ export async function migrate(client,c){
 async function main(){
  const c=ENVIRONMENTS.development,u=new URL(process.env.SOURCE_HUB_MIGRATOR_DATABASE_URL??'');
  const firstParty=process.env.SOURCE_HUB_INSTALL_FIRST_PARTY;if(firstParty!==undefined&&!['true','false'].includes(firstParty))throw Error('FIRST_PARTY_INSTALL_OPTION_REFUSED');
+ const calendarStorage=process.env.SOURCE_HUB_INSTALL_CALENDAR_STORAGE;if(calendarStorage!==undefined&&!['true','false'].includes(calendarStorage)||calendarStorage==='true'&&firstParty!=='true')throw Error('CALENDAR_STORAGE_INSTALL_OPTION_REFUSED');
  const unmetered=process.env.SOURCE_HUB_INSTALL_UNMETERED_SOURCE;if(unmetered!==undefined&&!['true','false'].includes(unmetered))throw Error('UNMETERED_INSTALL_OPTION_REFUSED');
  if(process.env.SOURCE_HUB_ENVIRONMENT!=='development'||u.hostname!==c.host.replace('-pooler','')||decodeURIComponent(u.username)!=='source_hub_development_migrator'||u.pathname!=='/neondb'||!['require','verify-full'].includes(u.searchParams.get('sslmode')??'')||[...u.searchParams.keys()].some(k=>!['sslmode','channel_binding'].includes(k)))throw Error('MIGRATOR_CONFIGURATION_REFUSED');
  u.searchParams.delete('sslmode');u.searchParams.delete('channel_binding');const client=new pg.Client({connectionString:u.href,ssl:{rejectUnauthorized:true},enableChannelBinding:true});await client.connect();
- try{const result=await migrate(client,{...c,environment:'development',databaseName:'neondb',installUnmetered:unmetered==='true',installFirstParty:firstParty==='true'});process.stdout.write(JSON.stringify(result)+'\n');}finally{await client.end();}
+ try{const result=await migrate(client,{...c,environment:'development',databaseName:'neondb',installUnmetered:unmetered==='true',installFirstParty:firstParty==='true',installCalendarStorage:calendarStorage==='true'});process.stdout.write(JSON.stringify(result)+'\n');}finally{await client.end();}
 }
 if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href)main().catch(()=>{process.stderr.write('{"error":"MIGRATION_REFUSED_OR_FAILED"}\n');process.exitCode=1;});

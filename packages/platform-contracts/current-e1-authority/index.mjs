@@ -8,6 +8,9 @@ import {createFirstPartySourceAuthority} from './first-party.mjs'
 export const CURRENT_E1_CONTRACT=Object.freeze({id:'profitia.current-e1-authority',version:'1.0.0'})
 export const currentE1AuthoritySchemaUrl=new URL('./migrations/001-authority.sql',import.meta.url).href
 export const currentE1ReceiverSchemaUrl=new URL('./migrations/002-receiver.sql',import.meta.url).href
+export const currentE1CalendarAuthoritySchemaUrl=new URL('./migrations/005-calendar-authority.sql',import.meta.url).href
+export const currentE1CalendarReceiverSchemaUrl=new URL('./migrations/006-calendar-receiver.sql',import.meta.url).href
+export const currentE1CalendarSchemaDigest=side=>createHash('sha256').update(readFileSync(new URL(side==='authority'?currentE1CalendarAuthoritySchemaUrl:side==='receiver'?currentE1CalendarReceiverSchemaUrl:invalidSide()))).digest('hex')
 export const currentE1SchemaDigest=side=>createHash('sha256').update(readFileSync(new URL(side==='authority'?currentE1AuthoritySchemaUrl:side==='receiver'?currentE1ReceiverSchemaUrl:invalidSide()))).digest('hex')
 function invalidSide(){throw TypeError('Explicit authority or receiver schema required')}
 const fail=()=>{throw new OperationDenied('POLICY_UNAVAILABLE')}
@@ -23,6 +26,10 @@ async function boundedJson(response){
  try{for(;;){const {done,value}=await reader.read();if(done)break;size+=value.byteLength;if(size>32768){await reader.cancel();fail()}chunks.push(value)}}finally{reader.releaseLock()}
  try{return JSON.parse(Buffer.concat(chunks).toString('utf8'))}catch{fail()}
 }
+function receiverResourceAllows(root,operation,resource){
+ if(root==='economic-calendar')return operation==='knowledge.read'&&resource==='economic-calendar-events'||['personal.list.read','personal.list.write'].includes(operation)&&resource==='economic-calendar-preferences'
+ return resource===root||root==='newsfeed-observations'&&/^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(resource??'')
+}
 function receiverDescriptor(value,binding){
  if(value?.contract!==CURRENT_E1_CONTRACT.id+'/'+CURRENT_E1_CONTRACT.version||!bindingMatches(value.binding,binding))fail()
  let u;try{u=new URL(value.authorityOrigin)}catch{fail()}
@@ -37,12 +44,14 @@ function receiverDescriptor(value,binding){
 export function createCurrentE1OperationHost(options){
  const {independentQuery,transact,readResources,projectOutput,now=Date.now,fetch:send=globalThis.fetch}=options
  const application=freeze(clone(options.application)),binding=freeze(clone(options.binding))
+ const calendarMode=application.features?.join(',')==='market,personal_workspace'&&application.operations?.join(',')==='knowledge.read,personal.list.read,personal.list.write'
+ const personalMode=application.features?.join(',')==='personal_workspace'&&application.operations?.join(',')==='personal.list.read,personal.list.write'
  if(application?.environment!=='development'||binding?.environment!=='development'||binding.applicationId!==application.appId||binding.service!==undefined
- ||application.profileId!=='SPENDGURU_SAAS'||application.operations?.join(',')!=='personal.list.read,personal.list.write'||application.features?.join(',')!=='personal_workspace'
+ ||application.profileId!=='SPENDGURU_SAAS'||!personalMode&&!calendarMode
  ||[independentQuery,transact,readResources,projectOutput,send,now].some(f=>typeof f!=='function'))throw TypeError('Explicit Development current E1 human host required')
  const audit=createAccessStore({binding,now})
  const validate=createOperationExecutor({application,now,authenticate:async()=>null,withTransaction:fail,recordAudit:fail})
- const descriptor=async query=>receiverDescriptor((await one(query,'SELECT profitia_e1_receiver.descriptor() AS descriptor')).descriptor,binding)
+ const descriptor=async query=>{const d=receiverDescriptor((await one(query,'SELECT profitia_e1_receiver.descriptor() AS descriptor')).descriptor,binding);if(calendarMode!==(d.resourceId==='economic-calendar'))fail();return d}
  async function remote(d,request,challenge,previous=null){
   // Only an owner-enrolled HTTPS origin. No caller URL, redirects, cookies,
   // automatic retry, provider acquisition or credentials in error diagnostics.
@@ -114,7 +123,7 @@ export function createCurrentE1Authority({query,client,binding,now=Date.now}){
   async authorize(request,input){
    if(!bearer(request)||!input||Object.getPrototypeOf(input)!==Object.prototype||Object.keys(input).sort().join(',')!=='applicationId,challenge,previous,requestOrigin')denied()
    const captured=freeze(clone(input)),row=await one(query,'SELECT profitia_e1_authority.receiver($1) AS receiver',[captured.applicationId]),d=row.receiver
-   if(!d||!d.authorizedParties?.includes(captured.requestOrigin)||!bindingMatches(captured.challenge?.binding,d.binding)||!(captured.challenge?.resourceId===d.resourceId||d.resourceId==='newsfeed-observations'&&/^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(captured.challenge?.resourceId??'')))denied()
+   if(!d||!d.authorizedParties?.includes(captured.requestOrigin)||!bindingMatches(captured.challenge?.binding,d.binding)||!receiverResourceAllows(d.resourceId,captured.challenge?.operation,captured.challenge?.resourceId))denied()
    let identity=null
    const authenticate=createClerkIdentityAuthenticator({client,application:{appId:captured.applicationId,environment:'development',issuer:d.issuer,authorizedParties:d.authorizedParties,
     bearerPeerReads:d.authorizedParties.filter(sourceOrigin=>sourceOrigin!==captured.requestOrigin).map(sourceOrigin=>({sourceOrigin,targetOrigin:captured.requestOrigin,path:'/'}))},now,

@@ -1,0 +1,91 @@
+name: Economic Calendar backend
+on:
+  pull_request:
+    paths:
+      - 'apps/economic-calendar-runtime/**'
+      - 'packages/economic-calendar-contracts/**'
+      - 'packages/platform-contracts/current-e1-authority/**'
+      - 'packages/platform-contracts/test/calendar-current-e1.test.mjs'
+      - 'packages/platform-contracts/test/fixtures/calendar-current-e1-postgres.mjs'
+      - 'packages/platform-source-hub-contracts/**'
+      - 'apps/platform-source-hub/**'
+      - 'apps/newsfeed-runtime/package-lock.json'
+      - 'apps/identity-runtime/package-lock.json'
+      - '.github/workflows/economic-calendar-ci.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'apps/economic-calendar-runtime/**'
+      - 'packages/economic-calendar-contracts/**'
+      - 'packages/platform-contracts/current-e1-authority/**'
+      - 'packages/platform-contracts/test/calendar-current-e1.test.mjs'
+      - 'packages/platform-contracts/test/fixtures/calendar-current-e1-postgres.mjs'
+      - 'packages/platform-source-hub-contracts/**'
+      - 'apps/platform-source-hub/**'
+      - 'apps/newsfeed-runtime/package-lock.json'
+      - 'apps/identity-runtime/package-lock.json'
+      - '.github/workflows/economic-calendar-ci.yml'
+permissions:
+  contents: read
+jobs:
+  backend:
+    name: ECR contracts, SQL persistence and current E1
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: ecr_test_operator
+          POSTGRES_PASSWORD: SYNTHETIC_ONLY_CI_PASSWORD
+          POSTGRES_DB: postgres
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+    env:
+      SOURCE_HUB_TEST_ADMIN_URL: postgresql://ecr_test_operator:SYNTHETIC_ONLY_CI_PASSWORD@127.0.0.1:5432/postgres
+      OPERATION_FIXTURE_OWNER_URL: postgresql://ecr_test_operator:SYNTHETIC_ONLY_CI_PASSWORD@127.0.0.1:5432/postgres
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - name: Install pinned public and local dependencies without lifecycle scripts
+        run: |
+          npm --prefix apps/architecture-lab ci --ignore-scripts --no-audit --no-fund
+          npm --prefix packages/platform-contracts/current-e1-authority ci --install-links --ignore-scripts --no-audit --no-fund
+          npm --prefix apps/platform-source-hub ci --install-links --ignore-scripts --no-audit --no-fund
+          npm --prefix apps/newsfeed-runtime ci --install-links --ignore-scripts --no-audit --no-fund
+          npm --prefix apps/economic-calendar-runtime ci --install-links --ignore-scripts --no-audit --no-fund
+      - name: Verify unchanged current E1 consumers and new calendar resource profile
+        run: >-
+          node --test --test-timeout=90000
+          packages/platform-contracts/test/current-e1-authority.test.mjs
+          packages/platform-contracts/test/first-party-source-access.test.mjs
+          packages/platform-contracts/test/calendar-current-e1.test.mjs
+      - name: Verify SourceHub storage-owner CAS and all existing API families
+        working-directory: apps/platform-source-hub
+        run: >-
+          node --test --test-timeout=90000
+          test/calendar-storage-rights.test.mjs test/first-party-consumers.test.mjs
+          test/contracts.test.mjs test/adapters.test.mjs
+          test/current-e1-authority.test.mjs test/persistence.test.mjs
+      - name: Verify ECR HTTP, durable cross-session preferences, isolation and rollback
+        working-directory: apps/economic-calendar-runtime
+        run: npm test
+      - name: Typecheck and build actual ECR and compatible SourceHub
+        run: |
+          npm --prefix apps/economic-calendar-runtime run build
+          npm --prefix apps/platform-source-hub run build
+      - name: Verify exact source ownership without deployment
+        run: >-
+          node scripts/governance/governance-preflight.mjs --ci
+          --project ARCHITECTURE --target-environment development
+          --task-id CI-ECR-SOURCE --conversation-id CI-ECR-SOURCE
+          --title "Economic Calendar source verification" --workspace "GitHub Actions"
+          --execution-environment ci --scope product
+          --target apps/economic-calendar-runtime/src/main.mjs
+          --target packages/economic-calendar-contracts/index.mjs
+          --target .github/workflows/economic-calendar-ci.yml

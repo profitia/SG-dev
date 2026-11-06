@@ -53,6 +53,7 @@ export function assertHubResponse(value, expected) {
     ||!validTime(m.retentionUntil)||m.licenceRef!==value.provenance.licenceRef||m.licenceRef==='PENDING_ADMISSION'
     ||m.usageReceiptRef!==value.usage.receiptRef||m.redistribution!=='PRIVATE_AUTHORISED_CONSUMER_ONLY'
     ||!['PROVIDER_REPORTED','UNKNOWN'].includes(m.qualityStatus))reject();
+   if(m.consumerStorage!==undefined){const s=m.consumerStorage;if(value.family!=='economic-calendar'||!closed(s,['mode','basisRef','licenceVersion'])||s.mode!=='DURABLE_OWNER_ENTITLEMENT'||typeof s.basisRef!=='string'||!s.basisRef.length||s.basisRef.length>256||typeof s.licenceVersion!=='string'||!/^[1-9][0-9]*$/.test(s.licenceVersion))reject();}
    if(value.family==='news-discovery'){
     if(!['NEWS_ARTICLE','WEB_PAGE','PUBLISHER'].includes(p.kind)||expected.operation==='search'&&p.kind==='PUBLISHER'
      ||!validUrl(p.url)||!validText(p.title)||!validText(p.description)||!validTime(p.publishedAt)||!validTime(p.modifiedAt)||!validTime(p.indexedAt)

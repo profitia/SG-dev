@@ -9,3 +9,7 @@ export declare function currentE1SchemaDigest(side:'authority'|'receiver'):strin
 export declare function createCurrentE1OperationHost<T>(options:Omit<Parameters<typeof createPrivateOperationHost<T>>[0],'createAuthenticator'|'module'|'requestLedger'|'requestContinuation'|'locationAdmission'|'reportAdmission'|'prepareInputs'|'describeOutcome'>&{fetch?:typeof fetch}):Readonly<OperationExecutor<T>&{hostContract:typeof CURRENT_E1_CONTRACT;ready():Promise<boolean>}>
 export interface CurrentE1Authority{ready():Promise<boolean>;authorize(request:Request,input:unknown):Promise<Readonly<{payload:string;signature:string}>>;sourceReady?():Promise<boolean>;authorizeSource?(request:Request,input:unknown):Promise<Readonly<{payload:string;signature:string}>>}
 export declare function createCurrentE1Authority(options:{query:AccessQuery;client:ClerkIdentityClient;binding:AccessStoreBinding;now?:()=>number}):Readonly<CurrentE1Authority>
+
+export declare const currentE1CalendarAuthoritySchemaUrl:string
+export declare const currentE1CalendarReceiverSchemaUrl:string
+export declare function currentE1CalendarSchemaDigest(side:'authority'|'receiver'):string
