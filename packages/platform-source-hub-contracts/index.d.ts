@@ -1,3 +1,6 @@
+import type {CommodityRequest,CommodityResponse} from './commodities-v1.mjs';
+export {COMMODITY_CONTRACT_VERSION,COMMODITY_FAMILIES,COMMODITY_PROVIDERS} from './commodities-v1.mjs';
+export type {CommodityRequest,CommodityResponse,CommodityFamily,CommodityProvider,DatasetMetadata,SeriesObservation,PositioningObservation,PublicationSchedule} from './commodities-v1.mjs';
 export const SOURCE_HUB_CONTRACT_VERSION:'1.0.0';
 export type ContractFamily='news-discovery'|'economic-calendar'|'indicators'|'external-forecasts'|'market-observations';
 export const CONTRACT_FAMILIES:readonly ContractFamily[];
@@ -18,7 +21,8 @@ export type MarketObservationCriteria={mode:'snapshot';symbols?:string[];instrum
 export interface MarketObservationPayload {mode:'SNAPSHOT'|'HISTORICAL';vendorSymbol:string;name:string|null;marketType:string|null;instrumentType:string|null;underlyingMappingRef:null;mappingStatus:'NOT_ADOPTED_BY_MARKET_DATA';observationAt:string|null;temporalPrecision:'DAY'|'INSTANT'|'UNKNOWN';price:number|string|null;quoteBasis:'VENDOR_LAST'|'VENDOR_CLOSE'|'VENDOR_VALUE';unit:string|null;currency:string|null;contractExpiry:string|null;rolloverRef:null;session:string|null;lastUpdate:string|null;sourceUrl:string|null;ohlc:{open:number|string|null;high:number|string|null;low:number|string|null;close:number|string|null};changes:Record<string,number|string|null>;native:Record<string,unknown>;}
 export interface MarketForecastCriteria {forecastType:'markets';marketCategory:'index'|'currency'|'crypto'|'commodity'|'bond';symbols?:string[];limit?:number;}
 type Base<F extends ContractFamily,P extends ProviderId,O extends string,C>={contractVersion:'1.0.0';family:F;provider:P;operation:O;criteria:C};
-export type HubRequest=Base<'news-discovery','newsapi','search',DiscoveryQuery>|Base<'news-discovery','newsapi','publishers',PublisherQuery>
+export type HubRequest=LegacyHubRequest|CommodityRequest;
+export type LegacyHubRequest=Base<'news-discovery','newsapi','search',DiscoveryQuery>|Base<'news-discovery','newsapi','publishers',PublisherQuery>
  |Base<'news-discovery','brave','search',BraveCriteria>|Base<'economic-calendar','trading-economics','search',CalendarCriteria>
  |Base<'indicators','trading-economics','search',IndicatorCriteria>|Base<'external-forecasts','trading-economics','search',ForecastCriteria|MarketForecastCriteria>
  |Base<'news-discovery','trading-economics','search',TradingEconomicsNewsCriteria>
@@ -58,8 +62,10 @@ export interface ProviderCapability {id:ProviderId;family:ContractFamily;contrac
  requestSupport:readonly CapabilityFilter[];resultMetadataSupport:readonly string[];evidenceKind:'DOCUMENTATION_AND_OFFLINE_TESTS'|'LIVE_VERIFIED';limitations:readonly string[];entitlementRefOrUnknown:string;}
 export class SourceHubError extends Error {code:string;status:number;retryAfterSeconds:number|null;constructor(code:string,status?:number,retryAfterSeconds?:number|null);toJSON():{code:string;retryAfterSeconds:number|null};}
 export function closed(value:unknown,keys:readonly string[]):boolean;
+export function parseHubRequest(value:CommodityRequest):CommodityRequest;
 export function parseHubRequest(value:unknown):HubRequest;
-export function assertHubResponse<T=DiscoveryPayload|CalendarPayload|IndicatorPayload|ExternalForecastPayload>(value:unknown,expected:Pick<HubRequest,'family'|'provider'|'operation'>):HubResponse<T>;
+export function assertHubResponse(value:unknown,expected:CommodityRequest):CommodityResponse;
+export function assertHubResponse<T=DiscoveryPayload|CalendarPayload|IndicatorPayload|ExternalForecastPayload>(value:unknown,expected:Pick<LegacyHubRequest,'family'|'provider'|'operation'>):HubResponse<T>;
 
 // Preserved public NewsDiscovery0.1.0 compatibility contract.
 export const NEWS_DISCOVERY_CONTRACT_VERSION: '0.1.0';

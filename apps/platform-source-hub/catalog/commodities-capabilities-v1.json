@@ -1,0 +1,6034 @@
+{
+  "schemaVersion": "SourceHubCommodityCapabilityCatalogue/1",
+  "status": "DOCUMENTATION_BASELINE_ACTIVATION_PENDING",
+  "generatedAt": "2026-11-06T18:11:00.000Z",
+  "sourceCommit": null,
+  "developmentDeployment": null,
+  "inventoryComplete": false,
+  "statusVocabulary": [
+    "LIVE_VERIFIED",
+    "DOCUMENTED_NOT_TESTED",
+    "ACCESS_RESTRICTED",
+    "PAID_NOT_ACTIVATED",
+    "UNAVAILABLE_OR_UNKNOWN"
+  ],
+  "providers": {
+    "eia": {
+      "status": "ACCESS_RESTRICTED",
+      "reason": "Source Admission and SERVICE enrollment pending; key available privately",
+      "metadataTreeComplete": false,
+      "entries": [],
+      "documentation": [
+        "https://www.eia.gov/opendata/documentation.php",
+        "https://www.eia.gov/opendata/terms-of-service.php"
+      ]
+    },
+    "cftc": {
+      "status": "ACCESS_RESTRICTED",
+      "reason": "Source Admission and SERVICE enrollment pending",
+      "catalogueComplete": false,
+      "entries": [],
+      "reportFamilies": [
+        "Legacy Futures Only",
+        "Legacy Futures and Options Combined",
+        "Disaggregated Futures Only",
+        "Disaggregated Futures and Options Combined",
+        "Traders in Financial Futures Futures Only",
+        "Traders in Financial Futures Futures and Options Combined",
+        "Supplemental"
+      ],
+      "documentation": [
+        "https://publicreporting.cftc.gov/stories/s/COT-Help/p2fg-u73y/",
+        "https://www.cftc.gov/WebPolicy/index.htm"
+      ]
+    },
+    "commodities-sh": {
+      "status": "DOCUMENTED_NOT_TESTED",
+      "entries": [
+        {
+          "id": "GET /health",
+          "provider": "commodities-sh",
+          "group": "discovery",
+          "status": "DOCUMENTED_NOT_TESTED",
+          "priceUsd": 0,
+          "method": "GET",
+          "path": "/health",
+          "metadata": {
+            "kind": "OPERATION_METADATA",
+            "datasetId": "GET /health",
+            "name": "Health + staleness",
+            "description": null,
+            "fields": [],
+            "children": [],
+            "frequencies": [],
+            "facets": [],
+            "periodRange": {
+              "start": null,
+              "end": null
+            },
+            "method": "GET",
+            "path": "/health",
+            "priceUsd": 0,
+            "priceBasis": 0,
+            "access": "FREE_DISCOVERY",
+            "parameters": [],
+            "responseSchemas": {},
+            "security": [],
+            "documentedStatus": "DOCUMENTED_NOT_TESTED",
+            "operationId": null,
+            "observationSchema": null,
+            "upstreamSpecVersion": "0.1.0",
+            "paidExecutionAllowed": false
+          }
+        },
+        {
+          "id": "GET /v1/catalog",
+          "provider": "commodities-sh",
+          "group": "catalog",
+          "status": "DOCUMENTED_NOT_TESTED",
+          "priceUsd": 0,
+          "method": "GET",
+          "path": "/v1/catalog",
+          "metadata": {
+            "kind": "OPERATION_METADATA",
+            "datasetId": "GET /v1/catalog",
+            "name": "Instrument catalog",
+            "description": null,
+            "fields": [],
+            "children": [],
+            "frequencies": [],
+            "facets": [],
+            "periodRange": {
+              "start": null,
+              "end": null
+            },
+            "method": "GET",
+            "path": "/v1/catalog",
+            "priceUsd": 0,
+            "priceBasis": 0,
+            "access": "FREE_DISCOVERY",
+            "parameters": [],
+            "responseSchemas": {},
+            "security": [],
+            "documentedStatus": "DOCUMENTED_NOT_TESTED",
+            "operationId": null,
+            "observationSchema": null,
+            "upstreamSpecVersion": "0.1.0",
+            "paidExecutionAllowed": false
+          }
+        },
+        {
+          "id": "GET /v1/calendar",
+          "provider": "commodities-sh",
+          "group": "calendar",
+          "status": "DOCUMENTED_NOT_TESTED",
+          "priceUsd": 0,
+          "method": "GET",
+          "path": "/v1/calendar",
+          "metadata": {
+            "kind": "OPERATION_METADATA",
+            "datasetId": "GET /v1/calendar",
+            "name": "Release calendar",
+            "description": null,
+            "fields": [],
+            "children": [],
+            "frequencies": [],
+            "facets": [],
+            "periodRange": {
+              "start": null,
+              "end": null
+            },
+            "method": "GET",
+            "path": "/v1/calendar",
+            "priceUsd": 0,
+            "priceBasis": 0,
+            "access": "FREE_DISCOVERY",
+            "parameters": [],
+            "responseSchemas": {},
+            "security": [],
+            "documentedStatus": "DOCUMENTED_NOT_TESTED",
+            "operationId": null,
+            "observationSchema": null,
+            "upstreamSpecVersion": "0.1.0",
+            "paidExecutionAllowed": false
+          }
+        },
+        {
+          "id": "GET /llms.txt",
+          "provider": "commodities-sh",
+          "group": "discovery",
+          "status": "DOCUMENTED_NOT_TESTED",
+          "priceUsd": 0,
+          "method": "GET",
+          "path": "/llms.txt",
+          "metadata": {
+            "kind": "OPERATION_METADATA",
+            "datasetId": "GET /llms.txt",
+            "name": "Agent briefing (llms.txt)",
+            "description": null,
+            "fields": [],
+            "children": [],
+            "frequencies": [],
+            "facets": [],
+            "periodRange": {
+              "start": null,
+              "end": null
+            },
+            "method": "GET",
+            "path": "/llms.txt",
+            "priceUsd": 0,
+            "priceBasis": 0,
+            "access": "FREE_DISCOVERY",
+            "parameters": [],
+            "responseSchemas": {},
+            "security": [],
+            "documentedStatus": "DOCUMENTED_NOT_TESTED",
+            "operationId": null,
+            "observationSchema": null,
+            "upstreamSpecVersion": "0.1.0",
+            "paidExecutionAllowed": false
+          }
+        },
+        {
+          "id": "GET /llms-full.txt",
+          "provider": "commodities-sh",
+          "group": "discovery",
+          "status": "DOCUMENTED_NOT_TESTED",
+          "priceUsd": 0,
+          "method": "GET",
+          "path": "/llms-full.txt",
+          "metadata": {
+            "kind": "OPERATION_METADATA",
+            "datasetId": "GET /llms-full.txt",
+            "name": "Full agent reference",
+            "description": null,
+            "fields": [],
+            "children": [],
+            "frequencies": [],
+            "facets": [],
+            "periodRange": {
+              "start": null,
+              "end": null
+            },
+            "method": "GET",
+            "path": "/llms-full.txt",
+            "priceUsd": 0,
+            "priceBasis": 0,
+            "access": "FREE_DISCOVERY",
+            "parameters": [],
+            "responseSchemas": {},
+            "security": [],
+            "documentedStatus": "DOCUMENTED_NOT_TESTED",
+            "operationId": null,
+            "observationSchema": null,
+            "upstreamSpecVersion": "0.1.0",
+            "paidExecutionAllowed": false
+          }
+        },
+        {
+          "id": "GET /SKILL.md",
+          "provider": "commodities-sh",
+          "group": "discovery",
+          "status": "DOCUMENTED_NOT_TESTED",
+          "priceUsd": 0,
+          "method": "GET",
+          "path": "/SKILL.md",
+          "metadata": {
+            "kind": "OPERATION_METADATA",
+            "datasetId": "GET /SKILL.md",
+            "name": "Agent skill manifest",
+            "description": null,
+            "fields": [],
+            "children": [],
+            "frequencies": [],
+            "facets": [],
+            "periodRange": {
+              "start": null,
+              "end": null
+            },
+            "method": "GET",
+            "path": "/SKILL.md",
+            "priceUsd": 0,
+            "priceBasis": 0,
+            "access": "FREE_DISCOVERY",
+            "parameters": [],
+            "responseSchemas": {},
+            "security": [],
+            "documentedStatus": "DOCUMENTED_NOT_TESTED",
+            "operationId": null,
+            "observationSchema": null,
+            "upstreamSpecVersion": "0.1.0",
+            "paidExecutionAllowed": false
+          }
+        },
+        {
+          "id": "GET /.well-known/agent.json",
+          "provider": "commodities-sh",
+          "group": "agent.json",
+          "status": "DOCUMENTED_NOT_TESTED",
+          "priceUsd": 0,
+          "method": "GET",
+          "path": "/.well-known/agent.json",
+          "metadata": {
+            "kind": "OPERATION_METADATA",
+            "datasetId": "GET /.well-known/agent.json",
+            "name": "A2A agent card",
+            "description": null,
+            "fields": [],
+            "children": [],
+            "frequencies": [],
+            "facets": [],
+            "periodRange": {
+              "start": null,
+              "end": null
+            },
+            "method": "GET",
+            "path": "/.well-known/agent.json",
+            "priceUsd": 0,
+            "priceBasis": 0,
+            "access": "FREE_DISCOVERY",
+            "parameters": [],
+            "responseSchemas": {},
+            "security": [],
+            "documentedStatus": "DOCUMENTED_NOT_TESTED",
+            "operationId": null,
+            "observationSchema": null,
+            "upstreamSpecVersion": "0.1.0",
+            "paidExecutionAllowed": false
+          }
+        },
+        {
+          "id": "GET /.well-known/x402.json",
+          "provider": "commodities-sh",
+          "group": "x402.json",
+          "status": "DOCUMENTED_NOT_TESTED",
+          "priceUsd": 0,
+          "method": "GET",
+          "path": "/.well-known/x402.json",
+          "metadata": {
+            "kind": "OPERATION_METADATA",
+            "datasetId": "GET /.well-known/x402.json",
+            "name": "x402 resource catalog",
+            "description": null,
+            "fields": [],
+            "children": [],
+            "frequencies": [],
+            "facets": [],
+            "periodRange": {
+              "start": null,
+              "end": null
+            },
+            "method": "GET",
+            "path": "/.well-known/x402.json",
+            "priceUsd": 0,
+            "priceBasis": 0,
+            "access": "FREE_DISCOVERY",
+            "parameters": [],
+            "responseSchemas": {},
+            "security": [],
+            "documentedStatus": "DOCUMENTED_NOT_TESTED",
+            "operationId": null,
+            "observationSchema": null,
+            "upstreamSpecVersion": "0.1.0",
+            "paidExecutionAllowed": false
+          }
+        },
+        {
+          "id": "GET /v1/price/{code}",
+          "provider": "commodities-sh",
+          "group": "price",
+          "status": "PAID_NOT_ACTIVATED",
+          "priceUsd": 0.01,
+          "method": "GET",
+          "path": "/v1/price/{code}",
+          "metadata": {
+            "kind": "OPERATION_METADATA",
+            "datasetId": "GET /v1/price/{code}",
+            "name": "Latest price",
+            "description": "Latest cash/fundies price observation",
+            "fields": [
+              {
+                "name": "instrument",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "value",
+                "type": "number",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "unit",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "as_of",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "observed_at",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "freshness_class",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "quality",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "derived",
+                "type": "boolean",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "source",
+                "type": "object",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "license_tag",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "provenance",
+                "type": "object",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "prior",
+                "type": "number",
+                "description": "Previous print value when history exists",
+                "unit": null
+              },
+              {
+                "name": "pct_change",
+                "type": "number",
+                "description": "Percent change vs prior print",
+                "unit": null
+              },
+              {
+                "name": "short_history",
+                "type": "array",
+                "description": "Newest-first short history (≤8 points)",
+                "unit": null
+              },
+              {
+                "name": "cite",
+                "type": "string",
+                "description": "One-line citation for agents",
+                "unit": null
+              }
+            ],
+            "children": [],
+            "frequencies": [],
+            "facets": [],
+            "periodRange": {
+              "start": null,
+              "end": null
+            },
+            "method": "GET",
+            "path": "/v1/price/{code}",
+            "priceUsd": 0.01,
+            "priceBasis": 0.01,
+            "access": "PAID_NOT_ACTIVATED",
+            "parameters": [
+              {
+                "name": "code",
+                "in": "path",
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            ],
+            "responseSchemas": {
+              "200": {
+                "description": "Observation or bundle JSON",
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/Observation"
+                    }
+                  }
+                }
+              },
+              "402": {
+                "description": "Payment Required (x402)"
+              }
+            },
+            "security": [],
+            "documentedStatus": "PAID_NOT_ACTIVATED",
+            "operationId": null,
+            "observationSchema": {
+              "type": "object",
+              "required": [
+                "instrument",
+                "value",
+                "unit",
+                "as_of",
+                "freshness_class",
+                "source",
+                "license_tag",
+                "derived"
+              ],
+              "properties": {
+                "instrument": {
+                  "type": "string",
+                  "example": "CL"
+                },
+                "value": {
+                  "type": "number",
+                  "example": 69.6
+                },
+                "unit": {
+                  "type": "string",
+                  "example": "USD/bbl"
+                },
+                "as_of": {
+                  "type": "string",
+                  "format": "date",
+                  "example": "2026-07-06"
+                },
+                "observed_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "freshness_class": {
+                  "type": "string",
+                  "enum": [
+                    "eod",
+                    "weekly",
+                    "monthly",
+                    "decree",
+                    "intraday",
+                    "delayed"
+                  ]
+                },
+                "quality": {
+                  "type": "string",
+                  "enum": [
+                    "official",
+                    "indicative",
+                    "derived",
+                    "delayed"
+                  ]
+                },
+                "derived": {
+                  "type": "boolean"
+                },
+                "source": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "series_id": {
+                      "type": "string"
+                    },
+                    "url": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "license_tag": {
+                  "type": "string"
+                },
+                "provenance": {
+                  "type": "object",
+                  "properties": {
+                    "retrieved_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "cache_hit": {
+                      "type": "boolean"
+                    },
+                    "cache_ttl_s": {
+                      "type": "number"
+                    }
+                  }
+                },
+                "prior": {
+                  "type": "number",
+                  "description": "Previous print value when history exists"
+                },
+                "pct_change": {
+                  "type": "number",
+                  "description": "Percent change vs prior print"
+                },
+                "short_history": {
+                  "type": "array",
+                  "description": "Newest-first short history (≤8 points)",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "as_of": {
+                        "type": "string",
+                        "format": "date"
+                      },
+                      "value": {
+                        "type": "number"
+                      }
+                    }
+                  }
+                },
+                "cite": {
+                  "type": "string",
+                  "description": "One-line citation for agents"
+                }
+              }
+            },
+            "upstreamSpecVersion": "0.1.0",
+            "paidExecutionAllowed": false
+          }
+        },
+        {
+          "id": "GET /v1/prices",
+          "provider": "commodities-sh",
+          "group": "prices",
+          "status": "PAID_NOT_ACTIVATED",
+          "priceUsd": 0.02,
+          "method": "GET",
+          "path": "/v1/prices",
+          "metadata": {
+            "kind": "OPERATION_METADATA",
+            "datasetId": "GET /v1/prices",
+            "name": "Bundle prices",
+            "description": "Bundle prices (codes=)",
+            "fields": [
+              {
+                "name": "instrument",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "value",
+                "type": "number",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "unit",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "as_of",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "observed_at",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "freshness_class",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "quality",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "derived",
+                "type": "boolean",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "source",
+                "type": "object",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "license_tag",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "provenance",
+                "type": "object",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "prior",
+                "type": "number",
+                "description": "Previous print value when history exists",
+                "unit": null
+              },
+              {
+                "name": "pct_change",
+                "type": "number",
+                "description": "Percent change vs prior print",
+                "unit": null
+              },
+              {
+                "name": "short_history",
+                "type": "array",
+                "description": "Newest-first short history (≤8 points)",
+                "unit": null
+              },
+              {
+                "name": "cite",
+                "type": "string",
+                "description": "One-line citation for agents",
+                "unit": null
+              }
+            ],
+            "children": [],
+            "frequencies": [],
+            "facets": [],
+            "periodRange": {
+              "start": null,
+              "end": null
+            },
+            "method": "GET",
+            "path": "/v1/prices",
+            "priceUsd": 0.02,
+            "priceBasis": 0.02,
+            "access": "PAID_NOT_ACTIVATED",
+            "parameters": [
+              {
+                "name": "codes",
+                "in": "query",
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            ],
+            "responseSchemas": {
+              "200": {
+                "description": "Observation or bundle JSON",
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/Observation"
+                    }
+                  }
+                }
+              },
+              "402": {
+                "description": "Payment Required (x402)"
+              }
+            },
+            "security": [],
+            "documentedStatus": "PAID_NOT_ACTIVATED",
+            "operationId": null,
+            "observationSchema": {
+              "type": "object",
+              "required": [
+                "instrument",
+                "value",
+                "unit",
+                "as_of",
+                "freshness_class",
+                "source",
+                "license_tag",
+                "derived"
+              ],
+              "properties": {
+                "instrument": {
+                  "type": "string",
+                  "example": "CL"
+                },
+                "value": {
+                  "type": "number",
+                  "example": 69.6
+                },
+                "unit": {
+                  "type": "string",
+                  "example": "USD/bbl"
+                },
+                "as_of": {
+                  "type": "string",
+                  "format": "date",
+                  "example": "2026-07-06"
+                },
+                "observed_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "freshness_class": {
+                  "type": "string",
+                  "enum": [
+                    "eod",
+                    "weekly",
+                    "monthly",
+                    "decree",
+                    "intraday",
+                    "delayed"
+                  ]
+                },
+                "quality": {
+                  "type": "string",
+                  "enum": [
+                    "official",
+                    "indicative",
+                    "derived",
+                    "delayed"
+                  ]
+                },
+                "derived": {
+                  "type": "boolean"
+                },
+                "source": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "series_id": {
+                      "type": "string"
+                    },
+                    "url": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "license_tag": {
+                  "type": "string"
+                },
+                "provenance": {
+                  "type": "object",
+                  "properties": {
+                    "retrieved_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "cache_hit": {
+                      "type": "boolean"
+                    },
+                    "cache_ttl_s": {
+                      "type": "number"
+                    }
+                  }
+                },
+                "prior": {
+                  "type": "number",
+                  "description": "Previous print value when history exists"
+                },
+                "pct_change": {
+                  "type": "number",
+                  "description": "Percent change vs prior print"
+                },
+                "short_history": {
+                  "type": "array",
+                  "description": "Newest-first short history (≤8 points)",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "as_of": {
+                        "type": "string",
+                        "format": "date"
+                      },
+                      "value": {
+                        "type": "number"
+                      }
+                    }
+                  }
+                },
+                "cite": {
+                  "type": "string",
+                  "description": "One-line citation for agents"
+                }
+              }
+            },
+            "upstreamSpecVersion": "0.1.0",
+            "paidExecutionAllowed": false
+          }
+        },
+        {
+          "id": "GET /v1/history/{code}",
+          "provider": "commodities-sh",
+          "group": "history",
+          "status": "PAID_NOT_ACTIVATED",
+          "priceUsd": 0.02,
+          "method": "GET",
+          "path": "/v1/history/{code}",
+          "metadata": {
+            "kind": "OPERATION_METADATA",
+            "datasetId": "GET /v1/history/{code}",
+            "name": "Series history",
+            "description": "Series history",
+            "fields": [
+              {
+                "name": "instrument",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "value",
+                "type": "number",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "unit",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "as_of",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "observed_at",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "freshness_class",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "quality",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "derived",
+                "type": "boolean",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "source",
+                "type": "object",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "license_tag",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "provenance",
+                "type": "object",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "prior",
+                "type": "number",
+                "description": "Previous print value when history exists",
+                "unit": null
+              },
+              {
+                "name": "pct_change",
+                "type": "number",
+                "description": "Percent change vs prior print",
+                "unit": null
+              },
+              {
+                "name": "short_history",
+                "type": "array",
+                "description": "Newest-first short history (≤8 points)",
+                "unit": null
+              },
+              {
+                "name": "cite",
+                "type": "string",
+                "description": "One-line citation for agents",
+                "unit": null
+              }
+            ],
+            "children": [],
+            "frequencies": [],
+            "facets": [],
+            "periodRange": {
+              "start": null,
+              "end": null
+            },
+            "method": "GET",
+            "path": "/v1/history/{code}",
+            "priceUsd": 0.02,
+            "priceBasis": 0.02,
+            "access": "PAID_NOT_ACTIVATED",
+            "parameters": [
+              {
+                "name": "code",
+                "in": "path",
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            ],
+            "responseSchemas": {
+              "200": {
+                "description": "Observation or bundle JSON",
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/Observation"
+                    }
+                  }
+                }
+              },
+              "402": {
+                "description": "Payment Required (x402)"
+              }
+            },
+            "security": [],
+            "documentedStatus": "PAID_NOT_ACTIVATED",
+            "operationId": null,
+            "observationSchema": {
+              "type": "object",
+              "required": [
+                "instrument",
+                "value",
+                "unit",
+                "as_of",
+                "freshness_class",
+                "source",
+                "license_tag",
+                "derived"
+              ],
+              "properties": {
+                "instrument": {
+                  "type": "string",
+                  "example": "CL"
+                },
+                "value": {
+                  "type": "number",
+                  "example": 69.6
+                },
+                "unit": {
+                  "type": "string",
+                  "example": "USD/bbl"
+                },
+                "as_of": {
+                  "type": "string",
+                  "format": "date",
+                  "example": "2026-07-06"
+                },
+                "observed_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "freshness_class": {
+                  "type": "string",
+                  "enum": [
+                    "eod",
+                    "weekly",
+                    "monthly",
+                    "decree",
+                    "intraday",
+                    "delayed"
+                  ]
+                },
+                "quality": {
+                  "type": "string",
+                  "enum": [
+                    "official",
+                    "indicative",
+                    "derived",
+                    "delayed"
+                  ]
+                },
+                "derived": {
+                  "type": "boolean"
+                },
+                "source": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "series_id": {
+                      "type": "string"
+                    },
+                    "url": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "license_tag": {
+                  "type": "string"
+                },
+                "provenance": {
+                  "type": "object",
+                  "properties": {
+                    "retrieved_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "cache_hit": {
+                      "type": "boolean"
+                    },
+                    "cache_ttl_s": {
+                      "type": "number"
+                    }
+                  }
+                },
+                "prior": {
+                  "type": "number",
+                  "description": "Previous print value when history exists"
+                },
+                "pct_change": {
+                  "type": "number",
+                  "description": "Percent change vs prior print"
+                },
+                "short_history": {
+                  "type": "array",
+                  "description": "Newest-first short history (≤8 points)",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "as_of": {
+                        "type": "string",
+                        "format": "date"
+                      },
+                      "value": {
+                        "type": "number"
+                      }
+                    }
+                  }
+                },
+                "cite": {
+                  "type": "string",
+                  "description": "One-line citation for agents"
+                }
+              }
+            },
+            "upstreamSpecVersion": "0.1.0",
+            "paidExecutionAllowed": false
+          }
+        },
+        {
+          "id": "GET /v1/inventory/eia",
+          "provider": "commodities-sh",
+          "group": "inventory",
+          "status": "PAID_NOT_ACTIVATED",
+          "priceUsd": 0.03,
+          "method": "GET",
+          "path": "/v1/inventory/eia",
+          "metadata": {
+            "kind": "OPERATION_METADATA",
+            "datasetId": "GET /v1/inventory/eia",
+            "name": "EIA inventories + surprise",
+            "description": "EIA weekly inventories + surprise",
+            "fields": [
+              {
+                "name": "instrument",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "value",
+                "type": "number",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "unit",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "as_of",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "observed_at",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "freshness_class",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "quality",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "derived",
+                "type": "boolean",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "source",
+                "type": "object",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "license_tag",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "provenance",
+                "type": "object",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "prior",
+                "type": "number",
+                "description": "Previous print value when history exists",
+                "unit": null
+              },
+              {
+                "name": "pct_change",
+                "type": "number",
+                "description": "Percent change vs prior print",
+                "unit": null
+              },
+              {
+                "name": "short_history",
+                "type": "array",
+                "description": "Newest-first short history (≤8 points)",
+                "unit": null
+              },
+              {
+                "name": "cite",
+                "type": "string",
+                "description": "One-line citation for agents",
+                "unit": null
+              }
+            ],
+            "children": [],
+            "frequencies": [],
+            "facets": [],
+            "periodRange": {
+              "start": null,
+              "end": null
+            },
+            "method": "GET",
+            "path": "/v1/inventory/eia",
+            "priceUsd": 0.03,
+            "priceBasis": 0.03,
+            "access": "PAID_NOT_ACTIVATED",
+            "parameters": [],
+            "responseSchemas": {
+              "200": {
+                "description": "Observation or bundle JSON",
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/Observation"
+                    }
+                  }
+                }
+              },
+              "402": {
+                "description": "Payment Required (x402)"
+              }
+            },
+            "security": [],
+            "documentedStatus": "PAID_NOT_ACTIVATED",
+            "operationId": null,
+            "observationSchema": {
+              "type": "object",
+              "required": [
+                "instrument",
+                "value",
+                "unit",
+                "as_of",
+                "freshness_class",
+                "source",
+                "license_tag",
+                "derived"
+              ],
+              "properties": {
+                "instrument": {
+                  "type": "string",
+                  "example": "CL"
+                },
+                "value": {
+                  "type": "number",
+                  "example": 69.6
+                },
+                "unit": {
+                  "type": "string",
+                  "example": "USD/bbl"
+                },
+                "as_of": {
+                  "type": "string",
+                  "format": "date",
+                  "example": "2026-07-06"
+                },
+                "observed_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "freshness_class": {
+                  "type": "string",
+                  "enum": [
+                    "eod",
+                    "weekly",
+                    "monthly",
+                    "decree",
+                    "intraday",
+                    "delayed"
+                  ]
+                },
+                "quality": {
+                  "type": "string",
+                  "enum": [
+                    "official",
+                    "indicative",
+                    "derived",
+                    "delayed"
+                  ]
+                },
+                "derived": {
+                  "type": "boolean"
+                },
+                "source": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "series_id": {
+                      "type": "string"
+                    },
+                    "url": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "license_tag": {
+                  "type": "string"
+                },
+                "provenance": {
+                  "type": "object",
+                  "properties": {
+                    "retrieved_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "cache_hit": {
+                      "type": "boolean"
+                    },
+                    "cache_ttl_s": {
+                      "type": "number"
+                    }
+                  }
+                },
+                "prior": {
+                  "type": "number",
+                  "description": "Previous print value when history exists"
+                },
+                "pct_change": {
+                  "type": "number",
+                  "description": "Percent change vs prior print"
+                },
+                "short_history": {
+                  "type": "array",
+                  "description": "Newest-first short history (≤8 points)",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "as_of": {
+                        "type": "string",
+                        "format": "date"
+                      },
+                      "value": {
+                        "type": "number"
+                      }
+                    }
+                  }
+                },
+                "cite": {
+                  "type": "string",
+                  "description": "One-line citation for agents"
+                }
+              }
+            },
+            "upstreamSpecVersion": "0.1.0",
+            "paidExecutionAllowed": false
+          }
+        },
+        {
+          "id": "GET /v1/inventory/eia/{series}",
+          "provider": "commodities-sh",
+          "group": "inventory",
+          "status": "PAID_NOT_ACTIVATED",
+          "priceUsd": 0.02,
+          "method": "GET",
+          "path": "/v1/inventory/eia/{series}",
+          "metadata": {
+            "kind": "OPERATION_METADATA",
+            "datasetId": "GET /v1/inventory/eia/{series}",
+            "name": "Single EIA inventory series",
+            "description": "Single EIA inventory series",
+            "fields": [
+              {
+                "name": "instrument",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "value",
+                "type": "number",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "unit",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "as_of",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "observed_at",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "freshness_class",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "quality",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "derived",
+                "type": "boolean",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "source",
+                "type": "object",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "license_tag",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "provenance",
+                "type": "object",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "prior",
+                "type": "number",
+                "description": "Previous print value when history exists",
+                "unit": null
+              },
+              {
+                "name": "pct_change",
+                "type": "number",
+                "description": "Percent change vs prior print",
+                "unit": null
+              },
+              {
+                "name": "short_history",
+                "type": "array",
+                "description": "Newest-first short history (≤8 points)",
+                "unit": null
+              },
+              {
+                "name": "cite",
+                "type": "string",
+                "description": "One-line citation for agents",
+                "unit": null
+              }
+            ],
+            "children": [],
+            "frequencies": [],
+            "facets": [],
+            "periodRange": {
+              "start": null,
+              "end": null
+            },
+            "method": "GET",
+            "path": "/v1/inventory/eia/{series}",
+            "priceUsd": 0.02,
+            "priceBasis": 0.02,
+            "access": "PAID_NOT_ACTIVATED",
+            "parameters": [
+              {
+                "name": "series",
+                "in": "path",
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            ],
+            "responseSchemas": {
+              "200": {
+                "description": "Observation or bundle JSON",
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/Observation"
+                    }
+                  }
+                }
+              },
+              "402": {
+                "description": "Payment Required (x402)"
+              }
+            },
+            "security": [],
+            "documentedStatus": "PAID_NOT_ACTIVATED",
+            "operationId": null,
+            "observationSchema": {
+              "type": "object",
+              "required": [
+                "instrument",
+                "value",
+                "unit",
+                "as_of",
+                "freshness_class",
+                "source",
+                "license_tag",
+                "derived"
+              ],
+              "properties": {
+                "instrument": {
+                  "type": "string",
+                  "example": "CL"
+                },
+                "value": {
+                  "type": "number",
+                  "example": 69.6
+                },
+                "unit": {
+                  "type": "string",
+                  "example": "USD/bbl"
+                },
+                "as_of": {
+                  "type": "string",
+                  "format": "date",
+                  "example": "2026-07-06"
+                },
+                "observed_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "freshness_class": {
+                  "type": "string",
+                  "enum": [
+                    "eod",
+                    "weekly",
+                    "monthly",
+                    "decree",
+                    "intraday",
+                    "delayed"
+                  ]
+                },
+                "quality": {
+                  "type": "string",
+                  "enum": [
+                    "official",
+                    "indicative",
+                    "derived",
+                    "delayed"
+                  ]
+                },
+                "derived": {
+                  "type": "boolean"
+                },
+                "source": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "series_id": {
+                      "type": "string"
+                    },
+                    "url": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "license_tag": {
+                  "type": "string"
+                },
+                "provenance": {
+                  "type": "object",
+                  "properties": {
+                    "retrieved_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "cache_hit": {
+                      "type": "boolean"
+                    },
+                    "cache_ttl_s": {
+                      "type": "number"
+                    }
+                  }
+                },
+                "prior": {
+                  "type": "number",
+                  "description": "Previous print value when history exists"
+                },
+                "pct_change": {
+                  "type": "number",
+                  "description": "Percent change vs prior print"
+                },
+                "short_history": {
+                  "type": "array",
+                  "description": "Newest-first short history (≤8 points)",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "as_of": {
+                        "type": "string",
+                        "format": "date"
+                      },
+                      "value": {
+                        "type": "number"
+                      }
+                    }
+                  }
+                },
+                "cite": {
+                  "type": "string",
+                  "description": "One-line citation for agents"
+                }
+              }
+            },
+            "upstreamSpecVersion": "0.1.0",
+            "paidExecutionAllowed": false
+          }
+        },
+        {
+          "id": "GET /v1/cot/{code}",
+          "provider": "commodities-sh",
+          "group": "cot",
+          "status": "PAID_NOT_ACTIVATED",
+          "priceUsd": 0.02,
+          "method": "GET",
+          "path": "/v1/cot/{code}",
+          "metadata": {
+            "kind": "OPERATION_METADATA",
+            "datasetId": "GET /v1/cot/{code}",
+            "name": "COT managed-money net",
+            "description": "CFTC managed-money COT net",
+            "fields": [
+              {
+                "name": "instrument",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "value",
+                "type": "number",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "unit",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "as_of",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "observed_at",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "freshness_class",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "quality",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "derived",
+                "type": "boolean",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "source",
+                "type": "object",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "license_tag",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "provenance",
+                "type": "object",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "prior",
+                "type": "number",
+                "description": "Previous print value when history exists",
+                "unit": null
+              },
+              {
+                "name": "pct_change",
+                "type": "number",
+                "description": "Percent change vs prior print",
+                "unit": null
+              },
+              {
+                "name": "short_history",
+                "type": "array",
+                "description": "Newest-first short history (≤8 points)",
+                "unit": null
+              },
+              {
+                "name": "cite",
+                "type": "string",
+                "description": "One-line citation for agents",
+                "unit": null
+              }
+            ],
+            "children": [],
+            "frequencies": [],
+            "facets": [],
+            "periodRange": {
+              "start": null,
+              "end": null
+            },
+            "method": "GET",
+            "path": "/v1/cot/{code}",
+            "priceUsd": 0.02,
+            "priceBasis": 0.02,
+            "access": "PAID_NOT_ACTIVATED",
+            "parameters": [
+              {
+                "name": "code",
+                "in": "path",
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            ],
+            "responseSchemas": {
+              "200": {
+                "description": "Observation or bundle JSON",
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/Observation"
+                    }
+                  }
+                }
+              },
+              "402": {
+                "description": "Payment Required (x402)"
+              }
+            },
+            "security": [],
+            "documentedStatus": "PAID_NOT_ACTIVATED",
+            "operationId": null,
+            "observationSchema": {
+              "type": "object",
+              "required": [
+                "instrument",
+                "value",
+                "unit",
+                "as_of",
+                "freshness_class",
+                "source",
+                "license_tag",
+                "derived"
+              ],
+              "properties": {
+                "instrument": {
+                  "type": "string",
+                  "example": "CL"
+                },
+                "value": {
+                  "type": "number",
+                  "example": 69.6
+                },
+                "unit": {
+                  "type": "string",
+                  "example": "USD/bbl"
+                },
+                "as_of": {
+                  "type": "string",
+                  "format": "date",
+                  "example": "2026-07-06"
+                },
+                "observed_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "freshness_class": {
+                  "type": "string",
+                  "enum": [
+                    "eod",
+                    "weekly",
+                    "monthly",
+                    "decree",
+                    "intraday",
+                    "delayed"
+                  ]
+                },
+                "quality": {
+                  "type": "string",
+                  "enum": [
+                    "official",
+                    "indicative",
+                    "derived",
+                    "delayed"
+                  ]
+                },
+                "derived": {
+                  "type": "boolean"
+                },
+                "source": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "series_id": {
+                      "type": "string"
+                    },
+                    "url": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "license_tag": {
+                  "type": "string"
+                },
+                "provenance": {
+                  "type": "object",
+                  "properties": {
+                    "retrieved_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "cache_hit": {
+                      "type": "boolean"
+                    },
+                    "cache_ttl_s": {
+                      "type": "number"
+                    }
+                  }
+                },
+                "prior": {
+                  "type": "number",
+                  "description": "Previous print value when history exists"
+                },
+                "pct_change": {
+                  "type": "number",
+                  "description": "Percent change vs prior print"
+                },
+                "short_history": {
+                  "type": "array",
+                  "description": "Newest-first short history (≤8 points)",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "as_of": {
+                        "type": "string",
+                        "format": "date"
+                      },
+                      "value": {
+                        "type": "number"
+                      }
+                    }
+                  }
+                },
+                "cite": {
+                  "type": "string",
+                  "description": "One-line citation for agents"
+                }
+              }
+            },
+            "upstreamSpecVersion": "0.1.0",
+            "paidExecutionAllowed": false
+          }
+        },
+        {
+          "id": "GET /v1/spreads/crack",
+          "provider": "commodities-sh",
+          "group": "spreads",
+          "status": "PAID_NOT_ACTIVATED",
+          "priceUsd": 0.03,
+          "method": "GET",
+          "path": "/v1/spreads/crack",
+          "metadata": {
+            "kind": "OPERATION_METADATA",
+            "datasetId": "GET /v1/spreads/crack",
+            "name": "3-2-1 crack",
+            "description": "3-2-1 crack spread cash proxy",
+            "fields": [
+              {
+                "name": "instrument",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "value",
+                "type": "number",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "unit",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "as_of",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "observed_at",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "freshness_class",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "quality",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "derived",
+                "type": "boolean",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "source",
+                "type": "object",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "license_tag",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "provenance",
+                "type": "object",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "prior",
+                "type": "number",
+                "description": "Previous print value when history exists",
+                "unit": null
+              },
+              {
+                "name": "pct_change",
+                "type": "number",
+                "description": "Percent change vs prior print",
+                "unit": null
+              },
+              {
+                "name": "short_history",
+                "type": "array",
+                "description": "Newest-first short history (≤8 points)",
+                "unit": null
+              },
+              {
+                "name": "cite",
+                "type": "string",
+                "description": "One-line citation for agents",
+                "unit": null
+              }
+            ],
+            "children": [],
+            "frequencies": [],
+            "facets": [],
+            "periodRange": {
+              "start": null,
+              "end": null
+            },
+            "method": "GET",
+            "path": "/v1/spreads/crack",
+            "priceUsd": 0.03,
+            "priceBasis": 0.03,
+            "access": "PAID_NOT_ACTIVATED",
+            "parameters": [],
+            "responseSchemas": {
+              "200": {
+                "description": "Observation or bundle JSON",
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/Observation"
+                    }
+                  }
+                }
+              },
+              "402": {
+                "description": "Payment Required (x402)"
+              }
+            },
+            "security": [],
+            "documentedStatus": "PAID_NOT_ACTIVATED",
+            "operationId": null,
+            "observationSchema": {
+              "type": "object",
+              "required": [
+                "instrument",
+                "value",
+                "unit",
+                "as_of",
+                "freshness_class",
+                "source",
+                "license_tag",
+                "derived"
+              ],
+              "properties": {
+                "instrument": {
+                  "type": "string",
+                  "example": "CL"
+                },
+                "value": {
+                  "type": "number",
+                  "example": 69.6
+                },
+                "unit": {
+                  "type": "string",
+                  "example": "USD/bbl"
+                },
+                "as_of": {
+                  "type": "string",
+                  "format": "date",
+                  "example": "2026-07-06"
+                },
+                "observed_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "freshness_class": {
+                  "type": "string",
+                  "enum": [
+                    "eod",
+                    "weekly",
+                    "monthly",
+                    "decree",
+                    "intraday",
+                    "delayed"
+                  ]
+                },
+                "quality": {
+                  "type": "string",
+                  "enum": [
+                    "official",
+                    "indicative",
+                    "derived",
+                    "delayed"
+                  ]
+                },
+                "derived": {
+                  "type": "boolean"
+                },
+                "source": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "series_id": {
+                      "type": "string"
+                    },
+                    "url": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "license_tag": {
+                  "type": "string"
+                },
+                "provenance": {
+                  "type": "object",
+                  "properties": {
+                    "retrieved_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "cache_hit": {
+                      "type": "boolean"
+                    },
+                    "cache_ttl_s": {
+                      "type": "number"
+                    }
+                  }
+                },
+                "prior": {
+                  "type": "number",
+                  "description": "Previous print value when history exists"
+                },
+                "pct_change": {
+                  "type": "number",
+                  "description": "Percent change vs prior print"
+                },
+                "short_history": {
+                  "type": "array",
+                  "description": "Newest-first short history (≤8 points)",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "as_of": {
+                        "type": "string",
+                        "format": "date"
+                      },
+                      "value": {
+                        "type": "number"
+                      }
+                    }
+                  }
+                },
+                "cite": {
+                  "type": "string",
+                  "description": "One-line citation for agents"
+                }
+              }
+            },
+            "upstreamSpecVersion": "0.1.0",
+            "paidExecutionAllowed": false
+          }
+        },
+        {
+          "id": "GET /v1/spreads/crush",
+          "provider": "commodities-sh",
+          "group": "spreads",
+          "status": "PAID_NOT_ACTIVATED",
+          "priceUsd": 0.03,
+          "method": "GET",
+          "path": "/v1/spreads/crush",
+          "metadata": {
+            "kind": "OPERATION_METADATA",
+            "datasetId": "GET /v1/spreads/crush",
+            "name": "Soy crush proxy",
+            "description": "Soy crush margin proxy",
+            "fields": [
+              {
+                "name": "instrument",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "value",
+                "type": "number",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "unit",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "as_of",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "observed_at",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "freshness_class",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "quality",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "derived",
+                "type": "boolean",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "source",
+                "type": "object",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "license_tag",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "provenance",
+                "type": "object",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "prior",
+                "type": "number",
+                "description": "Previous print value when history exists",
+                "unit": null
+              },
+              {
+                "name": "pct_change",
+                "type": "number",
+                "description": "Percent change vs prior print",
+                "unit": null
+              },
+              {
+                "name": "short_history",
+                "type": "array",
+                "description": "Newest-first short history (≤8 points)",
+                "unit": null
+              },
+              {
+                "name": "cite",
+                "type": "string",
+                "description": "One-line citation for agents",
+                "unit": null
+              }
+            ],
+            "children": [],
+            "frequencies": [],
+            "facets": [],
+            "periodRange": {
+              "start": null,
+              "end": null
+            },
+            "method": "GET",
+            "path": "/v1/spreads/crush",
+            "priceUsd": 0.03,
+            "priceBasis": 0.03,
+            "access": "PAID_NOT_ACTIVATED",
+            "parameters": [],
+            "responseSchemas": {
+              "200": {
+                "description": "Observation or bundle JSON",
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/Observation"
+                    }
+                  }
+                }
+              },
+              "402": {
+                "description": "Payment Required (x402)"
+              }
+            },
+            "security": [],
+            "documentedStatus": "PAID_NOT_ACTIVATED",
+            "operationId": null,
+            "observationSchema": {
+              "type": "object",
+              "required": [
+                "instrument",
+                "value",
+                "unit",
+                "as_of",
+                "freshness_class",
+                "source",
+                "license_tag",
+                "derived"
+              ],
+              "properties": {
+                "instrument": {
+                  "type": "string",
+                  "example": "CL"
+                },
+                "value": {
+                  "type": "number",
+                  "example": 69.6
+                },
+                "unit": {
+                  "type": "string",
+                  "example": "USD/bbl"
+                },
+                "as_of": {
+                  "type": "string",
+                  "format": "date",
+                  "example": "2026-07-06"
+                },
+                "observed_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "freshness_class": {
+                  "type": "string",
+                  "enum": [
+                    "eod",
+                    "weekly",
+                    "monthly",
+                    "decree",
+                    "intraday",
+                    "delayed"
+                  ]
+                },
+                "quality": {
+                  "type": "string",
+                  "enum": [
+                    "official",
+                    "indicative",
+                    "derived",
+                    "delayed"
+                  ]
+                },
+                "derived": {
+                  "type": "boolean"
+                },
+                "source": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "series_id": {
+                      "type": "string"
+                    },
+                    "url": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "license_tag": {
+                  "type": "string"
+                },
+                "provenance": {
+                  "type": "object",
+                  "properties": {
+                    "retrieved_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "cache_hit": {
+                      "type": "boolean"
+                    },
+                    "cache_ttl_s": {
+                      "type": "number"
+                    }
+                  }
+                },
+                "prior": {
+                  "type": "number",
+                  "description": "Previous print value when history exists"
+                },
+                "pct_change": {
+                  "type": "number",
+                  "description": "Percent change vs prior print"
+                },
+                "short_history": {
+                  "type": "array",
+                  "description": "Newest-first short history (≤8 points)",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "as_of": {
+                        "type": "string",
+                        "format": "date"
+                      },
+                      "value": {
+                        "type": "number"
+                      }
+                    }
+                  }
+                },
+                "cite": {
+                  "type": "string",
+                  "description": "One-line citation for agents"
+                }
+              }
+            },
+            "upstreamSpecVersion": "0.1.0",
+            "paidExecutionAllowed": false
+          }
+        },
+        {
+          "id": "GET /v1/spreads/basis",
+          "provider": "commodities-sh",
+          "group": "spreads",
+          "status": "PAID_NOT_ACTIVATED",
+          "priceUsd": 0.03,
+          "method": "GET",
+          "path": "/v1/spreads/basis",
+          "metadata": {
+            "kind": "OPERATION_METADATA",
+            "datasetId": "GET /v1/spreads/basis",
+            "name": "WTI-Brent basis",
+            "description": "WTI-Brent basis spread",
+            "fields": [
+              {
+                "name": "instrument",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "value",
+                "type": "number",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "unit",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "as_of",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "observed_at",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "freshness_class",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "quality",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "derived",
+                "type": "boolean",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "source",
+                "type": "object",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "license_tag",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "provenance",
+                "type": "object",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "prior",
+                "type": "number",
+                "description": "Previous print value when history exists",
+                "unit": null
+              },
+              {
+                "name": "pct_change",
+                "type": "number",
+                "description": "Percent change vs prior print",
+                "unit": null
+              },
+              {
+                "name": "short_history",
+                "type": "array",
+                "description": "Newest-first short history (≤8 points)",
+                "unit": null
+              },
+              {
+                "name": "cite",
+                "type": "string",
+                "description": "One-line citation for agents",
+                "unit": null
+              }
+            ],
+            "children": [],
+            "frequencies": [],
+            "facets": [],
+            "periodRange": {
+              "start": null,
+              "end": null
+            },
+            "method": "GET",
+            "path": "/v1/spreads/basis",
+            "priceUsd": 0.03,
+            "priceBasis": 0.03,
+            "access": "PAID_NOT_ACTIVATED",
+            "parameters": [],
+            "responseSchemas": {
+              "200": {
+                "description": "Observation or bundle JSON",
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/Observation"
+                    }
+                  }
+                }
+              },
+              "402": {
+                "description": "Payment Required (x402)"
+              }
+            },
+            "security": [],
+            "documentedStatus": "PAID_NOT_ACTIVATED",
+            "operationId": null,
+            "observationSchema": {
+              "type": "object",
+              "required": [
+                "instrument",
+                "value",
+                "unit",
+                "as_of",
+                "freshness_class",
+                "source",
+                "license_tag",
+                "derived"
+              ],
+              "properties": {
+                "instrument": {
+                  "type": "string",
+                  "example": "CL"
+                },
+                "value": {
+                  "type": "number",
+                  "example": 69.6
+                },
+                "unit": {
+                  "type": "string",
+                  "example": "USD/bbl"
+                },
+                "as_of": {
+                  "type": "string",
+                  "format": "date",
+                  "example": "2026-07-06"
+                },
+                "observed_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "freshness_class": {
+                  "type": "string",
+                  "enum": [
+                    "eod",
+                    "weekly",
+                    "monthly",
+                    "decree",
+                    "intraday",
+                    "delayed"
+                  ]
+                },
+                "quality": {
+                  "type": "string",
+                  "enum": [
+                    "official",
+                    "indicative",
+                    "derived",
+                    "delayed"
+                  ]
+                },
+                "derived": {
+                  "type": "boolean"
+                },
+                "source": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "series_id": {
+                      "type": "string"
+                    },
+                    "url": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "license_tag": {
+                  "type": "string"
+                },
+                "provenance": {
+                  "type": "object",
+                  "properties": {
+                    "retrieved_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "cache_hit": {
+                      "type": "boolean"
+                    },
+                    "cache_ttl_s": {
+                      "type": "number"
+                    }
+                  }
+                },
+                "prior": {
+                  "type": "number",
+                  "description": "Previous print value when history exists"
+                },
+                "pct_change": {
+                  "type": "number",
+                  "description": "Percent change vs prior print"
+                },
+                "short_history": {
+                  "type": "array",
+                  "description": "Newest-first short history (≤8 points)",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "as_of": {
+                        "type": "string",
+                        "format": "date"
+                      },
+                      "value": {
+                        "type": "number"
+                      }
+                    }
+                  }
+                },
+                "cite": {
+                  "type": "string",
+                  "description": "One-line citation for agents"
+                }
+              }
+            },
+            "upstreamSpecVersion": "0.1.0",
+            "paidExecutionAllowed": false
+          }
+        },
+        {
+          "id": "GET /v1/fundamentals/wasde",
+          "provider": "commodities-sh",
+          "group": "fundamentals",
+          "status": "PAID_NOT_ACTIVATED",
+          "priceUsd": 0.03,
+          "method": "GET",
+          "path": "/v1/fundamentals/wasde",
+          "metadata": {
+            "kind": "OPERATION_METADATA",
+            "datasetId": "GET /v1/fundamentals/wasde",
+            "name": "USDA WASDE slice",
+            "description": "USDA WASDE slice",
+            "fields": [
+              {
+                "name": "instrument",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "value",
+                "type": "number",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "unit",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "as_of",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "observed_at",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "freshness_class",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "quality",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "derived",
+                "type": "boolean",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "source",
+                "type": "object",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "license_tag",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "provenance",
+                "type": "object",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "prior",
+                "type": "number",
+                "description": "Previous print value when history exists",
+                "unit": null
+              },
+              {
+                "name": "pct_change",
+                "type": "number",
+                "description": "Percent change vs prior print",
+                "unit": null
+              },
+              {
+                "name": "short_history",
+                "type": "array",
+                "description": "Newest-first short history (≤8 points)",
+                "unit": null
+              },
+              {
+                "name": "cite",
+                "type": "string",
+                "description": "One-line citation for agents",
+                "unit": null
+              }
+            ],
+            "children": [],
+            "frequencies": [],
+            "facets": [],
+            "periodRange": {
+              "start": null,
+              "end": null
+            },
+            "method": "GET",
+            "path": "/v1/fundamentals/wasde",
+            "priceUsd": 0.03,
+            "priceBasis": 0.03,
+            "access": "PAID_NOT_ACTIVATED",
+            "parameters": [],
+            "responseSchemas": {
+              "200": {
+                "description": "Observation or bundle JSON",
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/Observation"
+                    }
+                  }
+                }
+              },
+              "402": {
+                "description": "Payment Required (x402)"
+              }
+            },
+            "security": [],
+            "documentedStatus": "PAID_NOT_ACTIVATED",
+            "operationId": null,
+            "observationSchema": {
+              "type": "object",
+              "required": [
+                "instrument",
+                "value",
+                "unit",
+                "as_of",
+                "freshness_class",
+                "source",
+                "license_tag",
+                "derived"
+              ],
+              "properties": {
+                "instrument": {
+                  "type": "string",
+                  "example": "CL"
+                },
+                "value": {
+                  "type": "number",
+                  "example": 69.6
+                },
+                "unit": {
+                  "type": "string",
+                  "example": "USD/bbl"
+                },
+                "as_of": {
+                  "type": "string",
+                  "format": "date",
+                  "example": "2026-07-06"
+                },
+                "observed_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "freshness_class": {
+                  "type": "string",
+                  "enum": [
+                    "eod",
+                    "weekly",
+                    "monthly",
+                    "decree",
+                    "intraday",
+                    "delayed"
+                  ]
+                },
+                "quality": {
+                  "type": "string",
+                  "enum": [
+                    "official",
+                    "indicative",
+                    "derived",
+                    "delayed"
+                  ]
+                },
+                "derived": {
+                  "type": "boolean"
+                },
+                "source": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "series_id": {
+                      "type": "string"
+                    },
+                    "url": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "license_tag": {
+                  "type": "string"
+                },
+                "provenance": {
+                  "type": "object",
+                  "properties": {
+                    "retrieved_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "cache_hit": {
+                      "type": "boolean"
+                    },
+                    "cache_ttl_s": {
+                      "type": "number"
+                    }
+                  }
+                },
+                "prior": {
+                  "type": "number",
+                  "description": "Previous print value when history exists"
+                },
+                "pct_change": {
+                  "type": "number",
+                  "description": "Percent change vs prior print"
+                },
+                "short_history": {
+                  "type": "array",
+                  "description": "Newest-first short history (≤8 points)",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "as_of": {
+                        "type": "string",
+                        "format": "date"
+                      },
+                      "value": {
+                        "type": "number"
+                      }
+                    }
+                  }
+                },
+                "cite": {
+                  "type": "string",
+                  "description": "One-line citation for agents"
+                }
+              }
+            },
+            "upstreamSpecVersion": "0.1.0",
+            "paidExecutionAllowed": false
+          }
+        },
+        {
+          "id": "GET /v1/fundamentals/crop-progress",
+          "provider": "commodities-sh",
+          "group": "fundamentals",
+          "status": "PAID_NOT_ACTIVATED",
+          "priceUsd": 0.02,
+          "method": "GET",
+          "path": "/v1/fundamentals/crop-progress",
+          "metadata": {
+            "kind": "OPERATION_METADATA",
+            "datasetId": "GET /v1/fundamentals/crop-progress",
+            "name": "Crop progress",
+            "description": "Crop progress",
+            "fields": [
+              {
+                "name": "instrument",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "value",
+                "type": "number",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "unit",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "as_of",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "observed_at",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "freshness_class",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "quality",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "derived",
+                "type": "boolean",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "source",
+                "type": "object",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "license_tag",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "provenance",
+                "type": "object",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "prior",
+                "type": "number",
+                "description": "Previous print value when history exists",
+                "unit": null
+              },
+              {
+                "name": "pct_change",
+                "type": "number",
+                "description": "Percent change vs prior print",
+                "unit": null
+              },
+              {
+                "name": "short_history",
+                "type": "array",
+                "description": "Newest-first short history (≤8 points)",
+                "unit": null
+              },
+              {
+                "name": "cite",
+                "type": "string",
+                "description": "One-line citation for agents",
+                "unit": null
+              }
+            ],
+            "children": [],
+            "frequencies": [],
+            "facets": [],
+            "periodRange": {
+              "start": null,
+              "end": null
+            },
+            "method": "GET",
+            "path": "/v1/fundamentals/crop-progress",
+            "priceUsd": 0.02,
+            "priceBasis": 0.02,
+            "access": "PAID_NOT_ACTIVATED",
+            "parameters": [],
+            "responseSchemas": {
+              "200": {
+                "description": "Observation or bundle JSON",
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/Observation"
+                    }
+                  }
+                }
+              },
+              "402": {
+                "description": "Payment Required (x402)"
+              }
+            },
+            "security": [],
+            "documentedStatus": "PAID_NOT_ACTIVATED",
+            "operationId": null,
+            "observationSchema": {
+              "type": "object",
+              "required": [
+                "instrument",
+                "value",
+                "unit",
+                "as_of",
+                "freshness_class",
+                "source",
+                "license_tag",
+                "derived"
+              ],
+              "properties": {
+                "instrument": {
+                  "type": "string",
+                  "example": "CL"
+                },
+                "value": {
+                  "type": "number",
+                  "example": 69.6
+                },
+                "unit": {
+                  "type": "string",
+                  "example": "USD/bbl"
+                },
+                "as_of": {
+                  "type": "string",
+                  "format": "date",
+                  "example": "2026-07-06"
+                },
+                "observed_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "freshness_class": {
+                  "type": "string",
+                  "enum": [
+                    "eod",
+                    "weekly",
+                    "monthly",
+                    "decree",
+                    "intraday",
+                    "delayed"
+                  ]
+                },
+                "quality": {
+                  "type": "string",
+                  "enum": [
+                    "official",
+                    "indicative",
+                    "derived",
+                    "delayed"
+                  ]
+                },
+                "derived": {
+                  "type": "boolean"
+                },
+                "source": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "series_id": {
+                      "type": "string"
+                    },
+                    "url": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "license_tag": {
+                  "type": "string"
+                },
+                "provenance": {
+                  "type": "object",
+                  "properties": {
+                    "retrieved_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "cache_hit": {
+                      "type": "boolean"
+                    },
+                    "cache_ttl_s": {
+                      "type": "number"
+                    }
+                  }
+                },
+                "prior": {
+                  "type": "number",
+                  "description": "Previous print value when history exists"
+                },
+                "pct_change": {
+                  "type": "number",
+                  "description": "Percent change vs prior print"
+                },
+                "short_history": {
+                  "type": "array",
+                  "description": "Newest-first short history (≤8 points)",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "as_of": {
+                        "type": "string",
+                        "format": "date"
+                      },
+                      "value": {
+                        "type": "number"
+                      }
+                    }
+                  }
+                },
+                "cite": {
+                  "type": "string",
+                  "description": "One-line citation for agents"
+                }
+              }
+            },
+            "upstreamSpecVersion": "0.1.0",
+            "paidExecutionAllowed": false
+          }
+        },
+        {
+          "id": "GET /v1/fundamentals/export-sales",
+          "provider": "commodities-sh",
+          "group": "fundamentals",
+          "status": "PAID_NOT_ACTIVATED",
+          "priceUsd": 0.02,
+          "method": "GET",
+          "path": "/v1/fundamentals/export-sales",
+          "metadata": {
+            "kind": "OPERATION_METADATA",
+            "datasetId": "GET /v1/fundamentals/export-sales",
+            "name": "Export sales",
+            "description": "Export sales",
+            "fields": [
+              {
+                "name": "instrument",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "value",
+                "type": "number",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "unit",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "as_of",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "observed_at",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "freshness_class",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "quality",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "derived",
+                "type": "boolean",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "source",
+                "type": "object",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "license_tag",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "provenance",
+                "type": "object",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "prior",
+                "type": "number",
+                "description": "Previous print value when history exists",
+                "unit": null
+              },
+              {
+                "name": "pct_change",
+                "type": "number",
+                "description": "Percent change vs prior print",
+                "unit": null
+              },
+              {
+                "name": "short_history",
+                "type": "array",
+                "description": "Newest-first short history (≤8 points)",
+                "unit": null
+              },
+              {
+                "name": "cite",
+                "type": "string",
+                "description": "One-line citation for agents",
+                "unit": null
+              }
+            ],
+            "children": [],
+            "frequencies": [],
+            "facets": [],
+            "periodRange": {
+              "start": null,
+              "end": null
+            },
+            "method": "GET",
+            "path": "/v1/fundamentals/export-sales",
+            "priceUsd": 0.02,
+            "priceBasis": 0.02,
+            "access": "PAID_NOT_ACTIVATED",
+            "parameters": [],
+            "responseSchemas": {
+              "200": {
+                "description": "Observation or bundle JSON",
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/Observation"
+                    }
+                  }
+                }
+              },
+              "402": {
+                "description": "Payment Required (x402)"
+              }
+            },
+            "security": [],
+            "documentedStatus": "PAID_NOT_ACTIVATED",
+            "operationId": null,
+            "observationSchema": {
+              "type": "object",
+              "required": [
+                "instrument",
+                "value",
+                "unit",
+                "as_of",
+                "freshness_class",
+                "source",
+                "license_tag",
+                "derived"
+              ],
+              "properties": {
+                "instrument": {
+                  "type": "string",
+                  "example": "CL"
+                },
+                "value": {
+                  "type": "number",
+                  "example": 69.6
+                },
+                "unit": {
+                  "type": "string",
+                  "example": "USD/bbl"
+                },
+                "as_of": {
+                  "type": "string",
+                  "format": "date",
+                  "example": "2026-07-06"
+                },
+                "observed_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "freshness_class": {
+                  "type": "string",
+                  "enum": [
+                    "eod",
+                    "weekly",
+                    "monthly",
+                    "decree",
+                    "intraday",
+                    "delayed"
+                  ]
+                },
+                "quality": {
+                  "type": "string",
+                  "enum": [
+                    "official",
+                    "indicative",
+                    "derived",
+                    "delayed"
+                  ]
+                },
+                "derived": {
+                  "type": "boolean"
+                },
+                "source": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "series_id": {
+                      "type": "string"
+                    },
+                    "url": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "license_tag": {
+                  "type": "string"
+                },
+                "provenance": {
+                  "type": "object",
+                  "properties": {
+                    "retrieved_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "cache_hit": {
+                      "type": "boolean"
+                    },
+                    "cache_ttl_s": {
+                      "type": "number"
+                    }
+                  }
+                },
+                "prior": {
+                  "type": "number",
+                  "description": "Previous print value when history exists"
+                },
+                "pct_change": {
+                  "type": "number",
+                  "description": "Percent change vs prior print"
+                },
+                "short_history": {
+                  "type": "array",
+                  "description": "Newest-first short history (≤8 points)",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "as_of": {
+                        "type": "string",
+                        "format": "date"
+                      },
+                      "value": {
+                        "type": "number"
+                      }
+                    }
+                  }
+                },
+                "cite": {
+                  "type": "string",
+                  "description": "One-line citation for agents"
+                }
+              }
+            },
+            "upstreamSpecVersion": "0.1.0",
+            "paidExecutionAllowed": false
+          }
+        },
+        {
+          "id": "GET /v1/fundamentals/usgs",
+          "provider": "commodities-sh",
+          "group": "fundamentals",
+          "status": "PAID_NOT_ACTIVATED",
+          "priceUsd": 0.03,
+          "method": "GET",
+          "path": "/v1/fundamentals/usgs",
+          "metadata": {
+            "kind": "OPERATION_METADATA",
+            "datasetId": "GET /v1/fundamentals/usgs",
+            "name": "USGS Mineral Commodity Summaries",
+            "description": "USGS Mineral Commodity Summaries (annual)",
+            "fields": [
+              {
+                "name": "instrument",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "value",
+                "type": "number",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "unit",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "as_of",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "observed_at",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "freshness_class",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "quality",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "derived",
+                "type": "boolean",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "source",
+                "type": "object",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "license_tag",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "provenance",
+                "type": "object",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "prior",
+                "type": "number",
+                "description": "Previous print value when history exists",
+                "unit": null
+              },
+              {
+                "name": "pct_change",
+                "type": "number",
+                "description": "Percent change vs prior print",
+                "unit": null
+              },
+              {
+                "name": "short_history",
+                "type": "array",
+                "description": "Newest-first short history (≤8 points)",
+                "unit": null
+              },
+              {
+                "name": "cite",
+                "type": "string",
+                "description": "One-line citation for agents",
+                "unit": null
+              }
+            ],
+            "children": [],
+            "frequencies": [],
+            "facets": [],
+            "periodRange": {
+              "start": null,
+              "end": null
+            },
+            "method": "GET",
+            "path": "/v1/fundamentals/usgs",
+            "priceUsd": 0.03,
+            "priceBasis": 0.03,
+            "access": "PAID_NOT_ACTIVATED",
+            "parameters": [],
+            "responseSchemas": {
+              "200": {
+                "description": "Observation or bundle JSON",
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/Observation"
+                    }
+                  }
+                }
+              },
+              "402": {
+                "description": "Payment Required (x402)"
+              }
+            },
+            "security": [],
+            "documentedStatus": "PAID_NOT_ACTIVATED",
+            "operationId": null,
+            "observationSchema": {
+              "type": "object",
+              "required": [
+                "instrument",
+                "value",
+                "unit",
+                "as_of",
+                "freshness_class",
+                "source",
+                "license_tag",
+                "derived"
+              ],
+              "properties": {
+                "instrument": {
+                  "type": "string",
+                  "example": "CL"
+                },
+                "value": {
+                  "type": "number",
+                  "example": 69.6
+                },
+                "unit": {
+                  "type": "string",
+                  "example": "USD/bbl"
+                },
+                "as_of": {
+                  "type": "string",
+                  "format": "date",
+                  "example": "2026-07-06"
+                },
+                "observed_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "freshness_class": {
+                  "type": "string",
+                  "enum": [
+                    "eod",
+                    "weekly",
+                    "monthly",
+                    "decree",
+                    "intraday",
+                    "delayed"
+                  ]
+                },
+                "quality": {
+                  "type": "string",
+                  "enum": [
+                    "official",
+                    "indicative",
+                    "derived",
+                    "delayed"
+                  ]
+                },
+                "derived": {
+                  "type": "boolean"
+                },
+                "source": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "series_id": {
+                      "type": "string"
+                    },
+                    "url": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "license_tag": {
+                  "type": "string"
+                },
+                "provenance": {
+                  "type": "object",
+                  "properties": {
+                    "retrieved_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "cache_hit": {
+                      "type": "boolean"
+                    },
+                    "cache_ttl_s": {
+                      "type": "number"
+                    }
+                  }
+                },
+                "prior": {
+                  "type": "number",
+                  "description": "Previous print value when history exists"
+                },
+                "pct_change": {
+                  "type": "number",
+                  "description": "Percent change vs prior print"
+                },
+                "short_history": {
+                  "type": "array",
+                  "description": "Newest-first short history (≤8 points)",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "as_of": {
+                        "type": "string",
+                        "format": "date"
+                      },
+                      "value": {
+                        "type": "number"
+                      }
+                    }
+                  }
+                },
+                "cite": {
+                  "type": "string",
+                  "description": "One-line citation for agents"
+                }
+              }
+            },
+            "upstreamSpecVersion": "0.1.0",
+            "paidExecutionAllowed": false
+          }
+        },
+        {
+          "id": "GET /v1/fx/{pair}",
+          "provider": "commodities-sh",
+          "group": "fx",
+          "status": "PAID_NOT_ACTIVATED",
+          "priceUsd": 0.01,
+          "method": "GET",
+          "path": "/v1/fx/{pair}",
+          "metadata": {
+            "kind": "OPERATION_METADATA",
+            "datasetId": "GET /v1/fx/{pair}",
+            "name": "FX pair",
+            "description": "FX for commodity context",
+            "fields": [
+              {
+                "name": "instrument",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "value",
+                "type": "number",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "unit",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "as_of",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "observed_at",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "freshness_class",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "quality",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "derived",
+                "type": "boolean",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "source",
+                "type": "object",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "license_tag",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "provenance",
+                "type": "object",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "prior",
+                "type": "number",
+                "description": "Previous print value when history exists",
+                "unit": null
+              },
+              {
+                "name": "pct_change",
+                "type": "number",
+                "description": "Percent change vs prior print",
+                "unit": null
+              },
+              {
+                "name": "short_history",
+                "type": "array",
+                "description": "Newest-first short history (≤8 points)",
+                "unit": null
+              },
+              {
+                "name": "cite",
+                "type": "string",
+                "description": "One-line citation for agents",
+                "unit": null
+              }
+            ],
+            "children": [],
+            "frequencies": [],
+            "facets": [],
+            "periodRange": {
+              "start": null,
+              "end": null
+            },
+            "method": "GET",
+            "path": "/v1/fx/{pair}",
+            "priceUsd": 0.01,
+            "priceBasis": 0.01,
+            "access": "PAID_NOT_ACTIVATED",
+            "parameters": [
+              {
+                "name": "pair",
+                "in": "path",
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            ],
+            "responseSchemas": {
+              "200": {
+                "description": "Observation or bundle JSON",
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/Observation"
+                    }
+                  }
+                }
+              },
+              "402": {
+                "description": "Payment Required (x402)"
+              }
+            },
+            "security": [],
+            "documentedStatus": "PAID_NOT_ACTIVATED",
+            "operationId": null,
+            "observationSchema": {
+              "type": "object",
+              "required": [
+                "instrument",
+                "value",
+                "unit",
+                "as_of",
+                "freshness_class",
+                "source",
+                "license_tag",
+                "derived"
+              ],
+              "properties": {
+                "instrument": {
+                  "type": "string",
+                  "example": "CL"
+                },
+                "value": {
+                  "type": "number",
+                  "example": 69.6
+                },
+                "unit": {
+                  "type": "string",
+                  "example": "USD/bbl"
+                },
+                "as_of": {
+                  "type": "string",
+                  "format": "date",
+                  "example": "2026-07-06"
+                },
+                "observed_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "freshness_class": {
+                  "type": "string",
+                  "enum": [
+                    "eod",
+                    "weekly",
+                    "monthly",
+                    "decree",
+                    "intraday",
+                    "delayed"
+                  ]
+                },
+                "quality": {
+                  "type": "string",
+                  "enum": [
+                    "official",
+                    "indicative",
+                    "derived",
+                    "delayed"
+                  ]
+                },
+                "derived": {
+                  "type": "boolean"
+                },
+                "source": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "series_id": {
+                      "type": "string"
+                    },
+                    "url": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "license_tag": {
+                  "type": "string"
+                },
+                "provenance": {
+                  "type": "object",
+                  "properties": {
+                    "retrieved_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "cache_hit": {
+                      "type": "boolean"
+                    },
+                    "cache_ttl_s": {
+                      "type": "number"
+                    }
+                  }
+                },
+                "prior": {
+                  "type": "number",
+                  "description": "Previous print value when history exists"
+                },
+                "pct_change": {
+                  "type": "number",
+                  "description": "Percent change vs prior print"
+                },
+                "short_history": {
+                  "type": "array",
+                  "description": "Newest-first short history (≤8 points)",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "as_of": {
+                        "type": "string",
+                        "format": "date"
+                      },
+                      "value": {
+                        "type": "number"
+                      }
+                    }
+                  }
+                },
+                "cite": {
+                  "type": "string",
+                  "description": "One-line citation for agents"
+                }
+              }
+            },
+            "upstreamSpecVersion": "0.1.0",
+            "paidExecutionAllowed": false
+          }
+        },
+        {
+          "id": "GET /v1/snapshot/{sector}",
+          "provider": "commodities-sh",
+          "group": "snapshot",
+          "status": "PAID_NOT_ACTIVATED",
+          "priceUsd": 0.05,
+          "method": "GET",
+          "path": "/v1/snapshot/{sector}",
+          "metadata": {
+            "kind": "OPERATION_METADATA",
+            "datasetId": "GET /v1/snapshot/{sector}",
+            "name": "Sector snapshot",
+            "description": "energy|metals|ags snapshot",
+            "fields": [
+              {
+                "name": "instrument",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "value",
+                "type": "number",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "unit",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "as_of",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "observed_at",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "freshness_class",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "quality",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "derived",
+                "type": "boolean",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "source",
+                "type": "object",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "license_tag",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "provenance",
+                "type": "object",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "prior",
+                "type": "number",
+                "description": "Previous print value when history exists",
+                "unit": null
+              },
+              {
+                "name": "pct_change",
+                "type": "number",
+                "description": "Percent change vs prior print",
+                "unit": null
+              },
+              {
+                "name": "short_history",
+                "type": "array",
+                "description": "Newest-first short history (≤8 points)",
+                "unit": null
+              },
+              {
+                "name": "cite",
+                "type": "string",
+                "description": "One-line citation for agents",
+                "unit": null
+              }
+            ],
+            "children": [],
+            "frequencies": [],
+            "facets": [],
+            "periodRange": {
+              "start": null,
+              "end": null
+            },
+            "method": "GET",
+            "path": "/v1/snapshot/{sector}",
+            "priceUsd": 0.05,
+            "priceBasis": 0.05,
+            "access": "PAID_NOT_ACTIVATED",
+            "parameters": [
+              {
+                "name": "sector",
+                "in": "path",
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            ],
+            "responseSchemas": {
+              "200": {
+                "description": "Observation or bundle JSON",
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/Observation"
+                    }
+                  }
+                }
+              },
+              "402": {
+                "description": "Payment Required (x402)"
+              }
+            },
+            "security": [],
+            "documentedStatus": "PAID_NOT_ACTIVATED",
+            "operationId": null,
+            "observationSchema": {
+              "type": "object",
+              "required": [
+                "instrument",
+                "value",
+                "unit",
+                "as_of",
+                "freshness_class",
+                "source",
+                "license_tag",
+                "derived"
+              ],
+              "properties": {
+                "instrument": {
+                  "type": "string",
+                  "example": "CL"
+                },
+                "value": {
+                  "type": "number",
+                  "example": 69.6
+                },
+                "unit": {
+                  "type": "string",
+                  "example": "USD/bbl"
+                },
+                "as_of": {
+                  "type": "string",
+                  "format": "date",
+                  "example": "2026-07-06"
+                },
+                "observed_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "freshness_class": {
+                  "type": "string",
+                  "enum": [
+                    "eod",
+                    "weekly",
+                    "monthly",
+                    "decree",
+                    "intraday",
+                    "delayed"
+                  ]
+                },
+                "quality": {
+                  "type": "string",
+                  "enum": [
+                    "official",
+                    "indicative",
+                    "derived",
+                    "delayed"
+                  ]
+                },
+                "derived": {
+                  "type": "boolean"
+                },
+                "source": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "series_id": {
+                      "type": "string"
+                    },
+                    "url": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "license_tag": {
+                  "type": "string"
+                },
+                "provenance": {
+                  "type": "object",
+                  "properties": {
+                    "retrieved_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "cache_hit": {
+                      "type": "boolean"
+                    },
+                    "cache_ttl_s": {
+                      "type": "number"
+                    }
+                  }
+                },
+                "prior": {
+                  "type": "number",
+                  "description": "Previous print value when history exists"
+                },
+                "pct_change": {
+                  "type": "number",
+                  "description": "Percent change vs prior print"
+                },
+                "short_history": {
+                  "type": "array",
+                  "description": "Newest-first short history (≤8 points)",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "as_of": {
+                        "type": "string",
+                        "format": "date"
+                      },
+                      "value": {
+                        "type": "number"
+                      }
+                    }
+                  }
+                },
+                "cite": {
+                  "type": "string",
+                  "description": "One-line citation for agents"
+                }
+              }
+            },
+            "upstreamSpecVersion": "0.1.0",
+            "paidExecutionAllowed": false
+          }
+        },
+        {
+          "id": "GET /v1/decision/{sector}",
+          "provider": "commodities-sh",
+          "group": "decision",
+          "status": "PAID_NOT_ACTIVATED",
+          "priceUsd": 0.1,
+          "method": "GET",
+          "path": "/v1/decision/{sector}",
+          "metadata": {
+            "kind": "OPERATION_METADATA",
+            "datasetId": "GET /v1/decision/{sector}",
+            "name": "Decision pack",
+            "description": "Deterministic decision pack (single sector)",
+            "fields": [
+              {
+                "name": "instrument",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "value",
+                "type": "number",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "unit",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "as_of",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "observed_at",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "freshness_class",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "quality",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "derived",
+                "type": "boolean",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "source",
+                "type": "object",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "license_tag",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "provenance",
+                "type": "object",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "prior",
+                "type": "number",
+                "description": "Previous print value when history exists",
+                "unit": null
+              },
+              {
+                "name": "pct_change",
+                "type": "number",
+                "description": "Percent change vs prior print",
+                "unit": null
+              },
+              {
+                "name": "short_history",
+                "type": "array",
+                "description": "Newest-first short history (≤8 points)",
+                "unit": null
+              },
+              {
+                "name": "cite",
+                "type": "string",
+                "description": "One-line citation for agents",
+                "unit": null
+              }
+            ],
+            "children": [],
+            "frequencies": [],
+            "facets": [],
+            "periodRange": {
+              "start": null,
+              "end": null
+            },
+            "method": "GET",
+            "path": "/v1/decision/{sector}",
+            "priceUsd": 0.1,
+            "priceBasis": 0.1,
+            "access": "PAID_NOT_ACTIVATED",
+            "parameters": [
+              {
+                "name": "sector",
+                "in": "path",
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            ],
+            "responseSchemas": {
+              "200": {
+                "description": "Observation or bundle JSON",
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/Observation"
+                    }
+                  }
+                }
+              },
+              "402": {
+                "description": "Payment Required (x402)"
+              }
+            },
+            "security": [],
+            "documentedStatus": "PAID_NOT_ACTIVATED",
+            "operationId": null,
+            "observationSchema": {
+              "type": "object",
+              "required": [
+                "instrument",
+                "value",
+                "unit",
+                "as_of",
+                "freshness_class",
+                "source",
+                "license_tag",
+                "derived"
+              ],
+              "properties": {
+                "instrument": {
+                  "type": "string",
+                  "example": "CL"
+                },
+                "value": {
+                  "type": "number",
+                  "example": 69.6
+                },
+                "unit": {
+                  "type": "string",
+                  "example": "USD/bbl"
+                },
+                "as_of": {
+                  "type": "string",
+                  "format": "date",
+                  "example": "2026-07-06"
+                },
+                "observed_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "freshness_class": {
+                  "type": "string",
+                  "enum": [
+                    "eod",
+                    "weekly",
+                    "monthly",
+                    "decree",
+                    "intraday",
+                    "delayed"
+                  ]
+                },
+                "quality": {
+                  "type": "string",
+                  "enum": [
+                    "official",
+                    "indicative",
+                    "derived",
+                    "delayed"
+                  ]
+                },
+                "derived": {
+                  "type": "boolean"
+                },
+                "source": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "series_id": {
+                      "type": "string"
+                    },
+                    "url": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "license_tag": {
+                  "type": "string"
+                },
+                "provenance": {
+                  "type": "object",
+                  "properties": {
+                    "retrieved_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "cache_hit": {
+                      "type": "boolean"
+                    },
+                    "cache_ttl_s": {
+                      "type": "number"
+                    }
+                  }
+                },
+                "prior": {
+                  "type": "number",
+                  "description": "Previous print value when history exists"
+                },
+                "pct_change": {
+                  "type": "number",
+                  "description": "Percent change vs prior print"
+                },
+                "short_history": {
+                  "type": "array",
+                  "description": "Newest-first short history (≤8 points)",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "as_of": {
+                        "type": "string",
+                        "format": "date"
+                      },
+                      "value": {
+                        "type": "number"
+                      }
+                    }
+                  }
+                },
+                "cite": {
+                  "type": "string",
+                  "description": "One-line citation for agents"
+                }
+              }
+            },
+            "upstreamSpecVersion": "0.1.0",
+            "paidExecutionAllowed": false
+          }
+        },
+        {
+          "id": "GET /v1/snapshot/all",
+          "provider": "commodities-sh",
+          "group": "snapshot",
+          "status": "PAID_NOT_ACTIVATED",
+          "priceUsd": 0.12,
+          "method": "GET",
+          "path": "/v1/snapshot/all",
+          "metadata": {
+            "kind": "OPERATION_METADATA",
+            "datasetId": "GET /v1/snapshot/all",
+            "name": "All-sector snapshot bundle",
+            "description": "All-sector snapshot bundle",
+            "fields": [
+              {
+                "name": "instrument",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "value",
+                "type": "number",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "unit",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "as_of",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "observed_at",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "freshness_class",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "quality",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "derived",
+                "type": "boolean",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "source",
+                "type": "object",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "license_tag",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "provenance",
+                "type": "object",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "prior",
+                "type": "number",
+                "description": "Previous print value when history exists",
+                "unit": null
+              },
+              {
+                "name": "pct_change",
+                "type": "number",
+                "description": "Percent change vs prior print",
+                "unit": null
+              },
+              {
+                "name": "short_history",
+                "type": "array",
+                "description": "Newest-first short history (≤8 points)",
+                "unit": null
+              },
+              {
+                "name": "cite",
+                "type": "string",
+                "description": "One-line citation for agents",
+                "unit": null
+              }
+            ],
+            "children": [],
+            "frequencies": [],
+            "facets": [],
+            "periodRange": {
+              "start": null,
+              "end": null
+            },
+            "method": "GET",
+            "path": "/v1/snapshot/all",
+            "priceUsd": 0.12,
+            "priceBasis": 0.12,
+            "access": "PAID_NOT_ACTIVATED",
+            "parameters": [],
+            "responseSchemas": {
+              "200": {
+                "description": "Observation or bundle JSON",
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/Observation"
+                    }
+                  }
+                }
+              },
+              "402": {
+                "description": "Payment Required (x402)"
+              }
+            },
+            "security": [],
+            "documentedStatus": "PAID_NOT_ACTIVATED",
+            "operationId": null,
+            "observationSchema": {
+              "type": "object",
+              "required": [
+                "instrument",
+                "value",
+                "unit",
+                "as_of",
+                "freshness_class",
+                "source",
+                "license_tag",
+                "derived"
+              ],
+              "properties": {
+                "instrument": {
+                  "type": "string",
+                  "example": "CL"
+                },
+                "value": {
+                  "type": "number",
+                  "example": 69.6
+                },
+                "unit": {
+                  "type": "string",
+                  "example": "USD/bbl"
+                },
+                "as_of": {
+                  "type": "string",
+                  "format": "date",
+                  "example": "2026-07-06"
+                },
+                "observed_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "freshness_class": {
+                  "type": "string",
+                  "enum": [
+                    "eod",
+                    "weekly",
+                    "monthly",
+                    "decree",
+                    "intraday",
+                    "delayed"
+                  ]
+                },
+                "quality": {
+                  "type": "string",
+                  "enum": [
+                    "official",
+                    "indicative",
+                    "derived",
+                    "delayed"
+                  ]
+                },
+                "derived": {
+                  "type": "boolean"
+                },
+                "source": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "series_id": {
+                      "type": "string"
+                    },
+                    "url": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "license_tag": {
+                  "type": "string"
+                },
+                "provenance": {
+                  "type": "object",
+                  "properties": {
+                    "retrieved_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "cache_hit": {
+                      "type": "boolean"
+                    },
+                    "cache_ttl_s": {
+                      "type": "number"
+                    }
+                  }
+                },
+                "prior": {
+                  "type": "number",
+                  "description": "Previous print value when history exists"
+                },
+                "pct_change": {
+                  "type": "number",
+                  "description": "Percent change vs prior print"
+                },
+                "short_history": {
+                  "type": "array",
+                  "description": "Newest-first short history (≤8 points)",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "as_of": {
+                        "type": "string",
+                        "format": "date"
+                      },
+                      "value": {
+                        "type": "number"
+                      }
+                    }
+                  }
+                },
+                "cite": {
+                  "type": "string",
+                  "description": "One-line citation for agents"
+                }
+              }
+            },
+            "upstreamSpecVersion": "0.1.0",
+            "paidExecutionAllowed": false
+          }
+        },
+        {
+          "id": "GET /v1/decision/all",
+          "provider": "commodities-sh",
+          "group": "decision",
+          "status": "PAID_NOT_ACTIVATED",
+          "priceUsd": 0.25,
+          "method": "GET",
+          "path": "/v1/decision/all",
+          "metadata": {
+            "kind": "OPERATION_METADATA",
+            "datasetId": "GET /v1/decision/all",
+            "name": "All-sector decision pack bundle",
+            "description": "All-sector decision pack bundle",
+            "fields": [
+              {
+                "name": "instrument",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "value",
+                "type": "number",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "unit",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "as_of",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "observed_at",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "freshness_class",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "quality",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "derived",
+                "type": "boolean",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "source",
+                "type": "object",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "license_tag",
+                "type": "string",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "provenance",
+                "type": "object",
+                "description": null,
+                "unit": null
+              },
+              {
+                "name": "prior",
+                "type": "number",
+                "description": "Previous print value when history exists",
+                "unit": null
+              },
+              {
+                "name": "pct_change",
+                "type": "number",
+                "description": "Percent change vs prior print",
+                "unit": null
+              },
+              {
+                "name": "short_history",
+                "type": "array",
+                "description": "Newest-first short history (≤8 points)",
+                "unit": null
+              },
+              {
+                "name": "cite",
+                "type": "string",
+                "description": "One-line citation for agents",
+                "unit": null
+              }
+            ],
+            "children": [],
+            "frequencies": [],
+            "facets": [],
+            "periodRange": {
+              "start": null,
+              "end": null
+            },
+            "method": "GET",
+            "path": "/v1/decision/all",
+            "priceUsd": 0.25,
+            "priceBasis": 0.25,
+            "access": "PAID_NOT_ACTIVATED",
+            "parameters": [],
+            "responseSchemas": {
+              "200": {
+                "description": "Observation or bundle JSON",
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "$ref": "#/components/schemas/Observation"
+                    }
+                  }
+                }
+              },
+              "402": {
+                "description": "Payment Required (x402)"
+              }
+            },
+            "security": [],
+            "documentedStatus": "PAID_NOT_ACTIVATED",
+            "operationId": null,
+            "observationSchema": {
+              "type": "object",
+              "required": [
+                "instrument",
+                "value",
+                "unit",
+                "as_of",
+                "freshness_class",
+                "source",
+                "license_tag",
+                "derived"
+              ],
+              "properties": {
+                "instrument": {
+                  "type": "string",
+                  "example": "CL"
+                },
+                "value": {
+                  "type": "number",
+                  "example": 69.6
+                },
+                "unit": {
+                  "type": "string",
+                  "example": "USD/bbl"
+                },
+                "as_of": {
+                  "type": "string",
+                  "format": "date",
+                  "example": "2026-07-06"
+                },
+                "observed_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "freshness_class": {
+                  "type": "string",
+                  "enum": [
+                    "eod",
+                    "weekly",
+                    "monthly",
+                    "decree",
+                    "intraday",
+                    "delayed"
+                  ]
+                },
+                "quality": {
+                  "type": "string",
+                  "enum": [
+                    "official",
+                    "indicative",
+                    "derived",
+                    "delayed"
+                  ]
+                },
+                "derived": {
+                  "type": "boolean"
+                },
+                "source": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "series_id": {
+                      "type": "string"
+                    },
+                    "url": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "license_tag": {
+                  "type": "string"
+                },
+                "provenance": {
+                  "type": "object",
+                  "properties": {
+                    "retrieved_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "cache_hit": {
+                      "type": "boolean"
+                    },
+                    "cache_ttl_s": {
+                      "type": "number"
+                    }
+                  }
+                },
+                "prior": {
+                  "type": "number",
+                  "description": "Previous print value when history exists"
+                },
+                "pct_change": {
+                  "type": "number",
+                  "description": "Percent change vs prior print"
+                },
+                "short_history": {
+                  "type": "array",
+                  "description": "Newest-first short history (≤8 points)",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "as_of": {
+                        "type": "string",
+                        "format": "date"
+                      },
+                      "value": {
+                        "type": "number"
+                      }
+                    }
+                  }
+                },
+                "cite": {
+                  "type": "string",
+                  "description": "One-line citation for agents"
+                }
+              }
+            },
+            "upstreamSpecVersion": "0.1.0",
+            "paidExecutionAllowed": false
+          }
+        },
+        {
+          "id": "GET /v1/curve/{root}",
+          "provider": "commodities-sh",
+          "group": "curve",
+          "status": "UNAVAILABLE_OR_UNKNOWN",
+          "priceUsd": 0,
+          "method": "GET",
+          "path": "/v1/curve/{root}",
+          "metadata": {
+            "kind": "OPERATION_METADATA",
+            "datasetId": "GET /v1/curve/{root}",
+            "name": "Forward curve (stub)",
+            "description": "Forward curve stub — PHASE_2_REQUIRED until CME/ICE delayed license",
+            "fields": [],
+            "children": [],
+            "frequencies": [],
+            "facets": [],
+            "periodRange": {
+              "start": null,
+              "end": null
+            },
+            "method": "GET",
+            "path": "/v1/curve/{root}",
+            "priceUsd": 0,
+            "priceBasis": 0,
+            "access": "STUB_NOT_ACTIVATED",
+            "parameters": [
+              {
+                "name": "root",
+                "in": "path",
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            ],
+            "responseSchemas": {
+              "501": {
+                "description": "PHASE_2_REQUIRED — licensed curve data not available"
+              }
+            },
+            "security": [],
+            "documentedStatus": "UNAVAILABLE_OR_UNKNOWN",
+            "operationId": null,
+            "observationSchema": null,
+            "upstreamSpecVersion": "0.1.0",
+            "paidExecutionAllowed": false
+          }
+        },
+        {
+          "id": "GET /v1/spreads/calendar/{root}",
+          "provider": "commodities-sh",
+          "group": "spreads",
+          "status": "UNAVAILABLE_OR_UNKNOWN",
+          "priceUsd": 0,
+          "method": "GET",
+          "path": "/v1/spreads/calendar/{root}",
+          "metadata": {
+            "kind": "OPERATION_METADATA",
+            "datasetId": "GET /v1/spreads/calendar/{root}",
+            "name": "Calendar spread (stub)",
+            "description": "Calendar spread stub — available:false until licensed curves",
+            "fields": [],
+            "children": [],
+            "frequencies": [],
+            "facets": [],
+            "periodRange": {
+              "start": null,
+              "end": null
+            },
+            "method": "GET",
+            "path": "/v1/spreads/calendar/{root}",
+            "priceUsd": 0,
+            "priceBasis": 0,
+            "access": "STUB_NOT_ACTIVATED",
+            "parameters": [
+              {
+                "name": "root",
+                "in": "path",
+                "required": true,
+                "schema": {
+                  "type": "string"
+                }
+              }
+            ],
+            "responseSchemas": {
+              "200": {
+                "description": "Stub observation with available:false"
+              }
+            },
+            "security": [],
+            "documentedStatus": "UNAVAILABLE_OR_UNKNOWN",
+            "operationId": null,
+            "observationSchema": null,
+            "upstreamSpecVersion": "0.1.0",
+            "paidExecutionAllowed": false
+          }
+        },
+        {
+          "id": "POST /api/mcp",
+          "provider": "commodities-sh",
+          "group": "mcp",
+          "status": "PAID_NOT_ACTIVATED",
+          "priceUsd": null,
+          "method": "POST",
+          "path": "/api/mcp",
+          "metadata": {
+            "kind": "OPERATION_METADATA",
+            "datasetId": "POST /api/mcp",
+            "name": "MCP streamable HTTP",
+            "description": null,
+            "fields": [],
+            "children": [],
+            "frequencies": [],
+            "facets": [],
+            "periodRange": {
+              "start": null,
+              "end": null
+            },
+            "method": "POST",
+            "path": "/api/mcp",
+            "priceUsd": null,
+            "priceBasis": "per-tool",
+            "access": "PAID_NOT_ACTIVATED",
+            "parameters": [],
+            "responseSchemas": {},
+            "security": [],
+            "documentedStatus": "PAID_NOT_ACTIVATED",
+            "operationId": null,
+            "observationSchema": null,
+            "upstreamSpecVersion": "0.1.0",
+            "paidExecutionAllowed": false
+          }
+        },
+        {
+          "id": "GET /api/mcp",
+          "provider": "commodities-sh",
+          "group": "mcp",
+          "status": "DOCUMENTED_NOT_TESTED",
+          "priceUsd": 0,
+          "method": "GET",
+          "path": "/api/mcp",
+          "metadata": {
+            "kind": "OPERATION_METADATA",
+            "datasetId": "GET /api/mcp",
+            "name": "MCP tool names (discovery)",
+            "description": null,
+            "fields": [],
+            "children": [],
+            "frequencies": [],
+            "facets": [],
+            "periodRange": {
+              "start": null,
+              "end": null
+            },
+            "method": "GET",
+            "path": "/api/mcp",
+            "priceUsd": 0,
+            "priceBasis": 0,
+            "access": "FREE_DISCOVERY",
+            "parameters": [],
+            "responseSchemas": {},
+            "security": [],
+            "documentedStatus": "DOCUMENTED_NOT_TESTED",
+            "operationId": null,
+            "observationSchema": null,
+            "upstreamSpecVersion": "0.1.0",
+            "paidExecutionAllowed": false
+          }
+        }
+      ],
+      "openapi": {
+        "openapi": "3.1.0",
+        "info": {
+          "title": "commodities.sh",
+          "version": "0.1.0",
+          "description": "Primary-source commodities API for agents. Every observation includes freshness_class, source, license_tag, provenance. Free discovery paths listed; paid routes use x402 USDC on Base.",
+          "x-free-paths": [
+            "/health",
+            "/v1/catalog",
+            "/v1/calendar",
+            "/llms.txt",
+            "/llms-full.txt",
+            "/openapi.json",
+            "/SKILL.md",
+            "/.well-known/agent.json",
+            "/.well-known/x402.json",
+            "/terms.txt"
+          ],
+          "x-pricing": {
+            "PRICE": 0.01,
+            "PRICES_BUNDLE": 0.02,
+            "HISTORY": 0.02,
+            "CURVE": 0.03,
+            "INVENTORY_BUNDLE": 0.03,
+            "INVENTORY_SERIES": 0.02,
+            "COT": 0.02,
+            "CRACK": 0.03,
+            "CRUSH": 0.03,
+            "BASIS": 0.03,
+            "CALENDAR": 0.02,
+            "WASDE": 0.03,
+            "CROP_PROGRESS": 0.02,
+            "EXPORT_SALES": 0.02,
+            "USGS": 0.03,
+            "FX": 0.01,
+            "SNAPSHOT": 0.05,
+            "DECISION": 0.1,
+            "SNAPSHOT_ALL": 0.12,
+            "DECISION_ALL": 0.25
+          }
+        },
+        "servers": [
+          {
+            "url": "https://api.commodities.sh"
+          }
+        ],
+        "paths": {
+          "/health": {
+            "get": {
+              "summary": "Health + staleness",
+              "x-price": 0
+            }
+          },
+          "/v1/catalog": {
+            "get": {
+              "summary": "Instrument catalog",
+              "x-price": 0
+            }
+          },
+          "/v1/calendar": {
+            "get": {
+              "summary": "Release calendar",
+              "x-price": 0
+            }
+          },
+          "/llms.txt": {
+            "get": {
+              "summary": "Agent briefing (llms.txt)",
+              "x-price": 0
+            }
+          },
+          "/llms-full.txt": {
+            "get": {
+              "summary": "Full agent reference",
+              "x-price": 0
+            }
+          },
+          "/SKILL.md": {
+            "get": {
+              "summary": "Agent skill manifest",
+              "x-price": 0
+            }
+          },
+          "/.well-known/agent.json": {
+            "get": {
+              "summary": "A2A agent card",
+              "x-price": 0
+            }
+          },
+          "/.well-known/x402.json": {
+            "get": {
+              "summary": "x402 resource catalog",
+              "x-price": 0
+            }
+          },
+          "/v1/price/{code}": {
+            "get": {
+              "summary": "Latest price",
+              "description": "Latest cash/fundies price observation",
+              "parameters": [
+                {
+                  "name": "code",
+                  "in": "path",
+                  "required": true,
+                  "schema": {
+                    "type": "string"
+                  }
+                }
+              ],
+              "x-price": 0.01,
+              "responses": {
+                "200": {
+                  "description": "Observation or bundle JSON",
+                  "content": {
+                    "application/json": {
+                      "schema": {
+                        "$ref": "#/components/schemas/Observation"
+                      }
+                    }
+                  }
+                },
+                "402": {
+                  "description": "Payment Required (x402)"
+                }
+              }
+            }
+          },
+          "/v1/prices": {
+            "get": {
+              "summary": "Bundle prices",
+              "description": "Bundle prices (codes=)",
+              "parameters": [
+                {
+                  "name": "codes",
+                  "in": "query",
+                  "required": true,
+                  "schema": {
+                    "type": "string"
+                  }
+                }
+              ],
+              "x-price": 0.02,
+              "responses": {
+                "200": {
+                  "description": "Observation or bundle JSON",
+                  "content": {
+                    "application/json": {
+                      "schema": {
+                        "$ref": "#/components/schemas/Observation"
+                      }
+                    }
+                  }
+                },
+                "402": {
+                  "description": "Payment Required (x402)"
+                }
+              }
+            }
+          },
+          "/v1/history/{code}": {
+            "get": {
+              "summary": "Series history",
+              "description": "Series history",
+              "parameters": [
+                {
+                  "name": "code",
+                  "in": "path",
+                  "required": true,
+                  "schema": {
+                    "type": "string"
+                  }
+                }
+              ],
+              "x-price": 0.02,
+              "responses": {
+                "200": {
+                  "description": "Observation or bundle JSON",
+                  "content": {
+                    "application/json": {
+                      "schema": {
+                        "$ref": "#/components/schemas/Observation"
+                      }
+                    }
+                  }
+                },
+                "402": {
+                  "description": "Payment Required (x402)"
+                }
+              }
+            }
+          },
+          "/v1/inventory/eia": {
+            "get": {
+              "summary": "EIA inventories + surprise",
+              "description": "EIA weekly inventories + surprise",
+              "x-price": 0.03,
+              "responses": {
+                "200": {
+                  "description": "Observation or bundle JSON",
+                  "content": {
+                    "application/json": {
+                      "schema": {
+                        "$ref": "#/components/schemas/Observation"
+                      }
+                    }
+                  }
+                },
+                "402": {
+                  "description": "Payment Required (x402)"
+                }
+              }
+            }
+          },
+          "/v1/inventory/eia/{series}": {
+            "get": {
+              "summary": "Single EIA inventory series",
+              "description": "Single EIA inventory series",
+              "parameters": [
+                {
+                  "name": "series",
+                  "in": "path",
+                  "required": true,
+                  "schema": {
+                    "type": "string"
+                  }
+                }
+              ],
+              "x-price": 0.02,
+              "responses": {
+                "200": {
+                  "description": "Observation or bundle JSON",
+                  "content": {
+                    "application/json": {
+                      "schema": {
+                        "$ref": "#/components/schemas/Observation"
+                      }
+                    }
+                  }
+                },
+                "402": {
+                  "description": "Payment Required (x402)"
+                }
+              }
+            }
+          },
+          "/v1/cot/{code}": {
+            "get": {
+              "summary": "COT managed-money net",
+              "description": "CFTC managed-money COT net",
+              "parameters": [
+                {
+                  "name": "code",
+                  "in": "path",
+                  "required": true,
+                  "schema": {
+                    "type": "string"
+                  }
+                }
+              ],
+              "x-price": 0.02,
+              "responses": {
+                "200": {
+                  "description": "Observation or bundle JSON",
+                  "content": {
+                    "application/json": {
+                      "schema": {
+                        "$ref": "#/components/schemas/Observation"
+                      }
+                    }
+                  }
+                },
+                "402": {
+                  "description": "Payment Required (x402)"
+                }
+              }
+            }
+          },
+          "/v1/spreads/crack": {
+            "get": {
+              "summary": "3-2-1 crack",
+              "description": "3-2-1 crack spread cash proxy",
+              "x-price": 0.03,
+              "responses": {
+                "200": {
+                  "description": "Observation or bundle JSON",
+                  "content": {
+                    "application/json": {
+                      "schema": {
+                        "$ref": "#/components/schemas/Observation"
+                      }
+                    }
+                  }
+                },
+                "402": {
+                  "description": "Payment Required (x402)"
+                }
+              }
+            }
+          },
+          "/v1/spreads/crush": {
+            "get": {
+              "summary": "Soy crush proxy",
+              "description": "Soy crush margin proxy",
+              "x-price": 0.03,
+              "responses": {
+                "200": {
+                  "description": "Observation or bundle JSON",
+                  "content": {
+                    "application/json": {
+                      "schema": {
+                        "$ref": "#/components/schemas/Observation"
+                      }
+                    }
+                  }
+                },
+                "402": {
+                  "description": "Payment Required (x402)"
+                }
+              }
+            }
+          },
+          "/v1/spreads/basis": {
+            "get": {
+              "summary": "WTI-Brent basis",
+              "description": "WTI-Brent basis spread",
+              "x-price": 0.03,
+              "responses": {
+                "200": {
+                  "description": "Observation or bundle JSON",
+                  "content": {
+                    "application/json": {
+                      "schema": {
+                        "$ref": "#/components/schemas/Observation"
+                      }
+                    }
+                  }
+                },
+                "402": {
+                  "description": "Payment Required (x402)"
+                }
+              }
+            }
+          },
+          "/v1/fundamentals/wasde": {
+            "get": {
+              "summary": "USDA WASDE slice",
+              "description": "USDA WASDE slice",
+              "x-price": 0.03,
+              "responses": {
+                "200": {
+                  "description": "Observation or bundle JSON",
+                  "content": {
+                    "application/json": {
+                      "schema": {
+                        "$ref": "#/components/schemas/Observation"
+                      }
+                    }
+                  }
+                },
+                "402": {
+                  "description": "Payment Required (x402)"
+                }
+              }
+            }
+          },
+          "/v1/fundamentals/crop-progress": {
+            "get": {
+              "summary": "Crop progress",
+              "description": "Crop progress",
+              "x-price": 0.02,
+              "responses": {
+                "200": {
+                  "description": "Observation or bundle JSON",
+                  "content": {
+                    "application/json": {
+                      "schema": {
+                        "$ref": "#/components/schemas/Observation"
+                      }
+                    }
+                  }
+                },
+                "402": {
+                  "description": "Payment Required (x402)"
+                }
+              }
+            }
+          },
+          "/v1/fundamentals/export-sales": {
+            "get": {
+              "summary": "Export sales",
+              "description": "Export sales",
+              "x-price": 0.02,
+              "responses": {
+                "200": {
+                  "description": "Observation or bundle JSON",
+                  "content": {
+                    "application/json": {
+                      "schema": {
+                        "$ref": "#/components/schemas/Observation"
+                      }
+                    }
+                  }
+                },
+                "402": {
+                  "description": "Payment Required (x402)"
+                }
+              }
+            }
+          },
+          "/v1/fundamentals/usgs": {
+            "get": {
+              "summary": "USGS Mineral Commodity Summaries",
+              "description": "USGS Mineral Commodity Summaries (annual)",
+              "x-price": 0.03,
+              "responses": {
+                "200": {
+                  "description": "Observation or bundle JSON",
+                  "content": {
+                    "application/json": {
+                      "schema": {
+                        "$ref": "#/components/schemas/Observation"
+                      }
+                    }
+                  }
+                },
+                "402": {
+                  "description": "Payment Required (x402)"
+                }
+              }
+            }
+          },
+          "/v1/fx/{pair}": {
+            "get": {
+              "summary": "FX pair",
+              "description": "FX for commodity context",
+              "parameters": [
+                {
+                  "name": "pair",
+                  "in": "path",
+                  "required": true,
+                  "schema": {
+                    "type": "string"
+                  }
+                }
+              ],
+              "x-price": 0.01,
+              "responses": {
+                "200": {
+                  "description": "Observation or bundle JSON",
+                  "content": {
+                    "application/json": {
+                      "schema": {
+                        "$ref": "#/components/schemas/Observation"
+                      }
+                    }
+                  }
+                },
+                "402": {
+                  "description": "Payment Required (x402)"
+                }
+              }
+            }
+          },
+          "/v1/snapshot/{sector}": {
+            "get": {
+              "summary": "Sector snapshot",
+              "description": "energy|metals|ags snapshot",
+              "parameters": [
+                {
+                  "name": "sector",
+                  "in": "path",
+                  "required": true,
+                  "schema": {
+                    "type": "string"
+                  }
+                }
+              ],
+              "x-price": 0.05,
+              "responses": {
+                "200": {
+                  "description": "Observation or bundle JSON",
+                  "content": {
+                    "application/json": {
+                      "schema": {
+                        "$ref": "#/components/schemas/Observation"
+                      }
+                    }
+                  }
+                },
+                "402": {
+                  "description": "Payment Required (x402)"
+                }
+              }
+            }
+          },
+          "/v1/decision/{sector}": {
+            "get": {
+              "summary": "Decision pack",
+              "description": "Deterministic decision pack (single sector)",
+              "parameters": [
+                {
+                  "name": "sector",
+                  "in": "path",
+                  "required": true,
+                  "schema": {
+                    "type": "string"
+                  }
+                }
+              ],
+              "x-price": 0.1,
+              "responses": {
+                "200": {
+                  "description": "Observation or bundle JSON",
+                  "content": {
+                    "application/json": {
+                      "schema": {
+                        "$ref": "#/components/schemas/Observation"
+                      }
+                    }
+                  }
+                },
+                "402": {
+                  "description": "Payment Required (x402)"
+                }
+              }
+            }
+          },
+          "/v1/snapshot/all": {
+            "get": {
+              "summary": "All-sector snapshot bundle",
+              "description": "All-sector snapshot bundle",
+              "x-price": 0.12,
+              "responses": {
+                "200": {
+                  "description": "Observation or bundle JSON",
+                  "content": {
+                    "application/json": {
+                      "schema": {
+                        "$ref": "#/components/schemas/Observation"
+                      }
+                    }
+                  }
+                },
+                "402": {
+                  "description": "Payment Required (x402)"
+                }
+              }
+            }
+          },
+          "/v1/decision/all": {
+            "get": {
+              "summary": "All-sector decision pack bundle",
+              "description": "All-sector decision pack bundle",
+              "x-price": 0.25,
+              "responses": {
+                "200": {
+                  "description": "Observation or bundle JSON",
+                  "content": {
+                    "application/json": {
+                      "schema": {
+                        "$ref": "#/components/schemas/Observation"
+                      }
+                    }
+                  }
+                },
+                "402": {
+                  "description": "Payment Required (x402)"
+                }
+              }
+            }
+          },
+          "/v1/curve/{root}": {
+            "get": {
+              "summary": "Forward curve (stub)",
+              "description": "Forward curve stub — PHASE_2_REQUIRED until CME/ICE delayed license",
+              "parameters": [
+                {
+                  "name": "root",
+                  "in": "path",
+                  "required": true,
+                  "schema": {
+                    "type": "string"
+                  }
+                }
+              ],
+              "x-price": 0,
+              "responses": {
+                "501": {
+                  "description": "PHASE_2_REQUIRED — licensed curve data not available"
+                }
+              }
+            }
+          },
+          "/v1/spreads/calendar/{root}": {
+            "get": {
+              "summary": "Calendar spread (stub)",
+              "description": "Calendar spread stub — available:false until licensed curves",
+              "parameters": [
+                {
+                  "name": "root",
+                  "in": "path",
+                  "required": true,
+                  "schema": {
+                    "type": "string"
+                  }
+                }
+              ],
+              "x-price": 0,
+              "responses": {
+                "200": {
+                  "description": "Stub observation with available:false"
+                }
+              }
+            }
+          },
+          "/api/mcp": {
+            "post": {
+              "summary": "MCP streamable HTTP",
+              "x-price": "per-tool"
+            },
+            "get": {
+              "summary": "MCP tool names (discovery)",
+              "x-price": 0
+            }
+          }
+        },
+        "components": {
+          "schemas": {
+            "Observation": {
+              "type": "object",
+              "required": [
+                "instrument",
+                "value",
+                "unit",
+                "as_of",
+                "freshness_class",
+                "source",
+                "license_tag",
+                "derived"
+              ],
+              "properties": {
+                "instrument": {
+                  "type": "string",
+                  "example": "CL"
+                },
+                "value": {
+                  "type": "number",
+                  "example": 69.6
+                },
+                "unit": {
+                  "type": "string",
+                  "example": "USD/bbl"
+                },
+                "as_of": {
+                  "type": "string",
+                  "format": "date",
+                  "example": "2026-07-06"
+                },
+                "observed_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "freshness_class": {
+                  "type": "string",
+                  "enum": [
+                    "eod",
+                    "weekly",
+                    "monthly",
+                    "decree",
+                    "intraday",
+                    "delayed"
+                  ]
+                },
+                "quality": {
+                  "type": "string",
+                  "enum": [
+                    "official",
+                    "indicative",
+                    "derived",
+                    "delayed"
+                  ]
+                },
+                "derived": {
+                  "type": "boolean"
+                },
+                "source": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "series_id": {
+                      "type": "string"
+                    },
+                    "url": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "license_tag": {
+                  "type": "string"
+                },
+                "provenance": {
+                  "type": "object",
+                  "properties": {
+                    "retrieved_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "cache_hit": {
+                      "type": "boolean"
+                    },
+                    "cache_ttl_s": {
+                      "type": "number"
+                    }
+                  }
+                },
+                "prior": {
+                  "type": "number",
+                  "description": "Previous print value when history exists"
+                },
+                "pct_change": {
+                  "type": "number",
+                  "description": "Percent change vs prior print"
+                },
+                "short_history": {
+                  "type": "array",
+                  "description": "Newest-first short history (≤8 points)",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "as_of": {
+                        "type": "string",
+                        "format": "date"
+                      },
+                      "value": {
+                        "type": "number"
+                      }
+                    }
+                  }
+                },
+                "cite": {
+                  "type": "string",
+                  "description": "One-line citation for agents"
+                }
+              }
+            }
+          }
+        }
+      },
+      "openapiSha256": "d5e15f2b66ffab19b927a22db4bed8cc86e2e90aae59c537be08aacd63956087",
+      "openapiReferenceUrl": "https://api.commodities.sh/openapi.json",
+      "documentation": [
+        "https://commodities.sh/docs/reference",
+        "https://commodities.sh/terms"
+      ]
+    }
+  },
+  "summary": {
+    "eia": {
+      "entries": 0,
+      "byStatus": {
+        "LIVE_VERIFIED": 0,
+        "DOCUMENTED_NOT_TESTED": 0,
+        "ACCESS_RESTRICTED": 0,
+        "PAID_NOT_ACTIVATED": 0,
+        "UNAVAILABLE_OR_UNKNOWN": 0
+      },
+      "liveDataOperations": 0
+    },
+    "cftc": {
+      "entries": 0,
+      "byStatus": {
+        "LIVE_VERIFIED": 0,
+        "DOCUMENTED_NOT_TESTED": 0,
+        "ACCESS_RESTRICTED": 0,
+        "PAID_NOT_ACTIVATED": 0,
+        "UNAVAILABLE_OR_UNKNOWN": 0
+      },
+      "liveDataOperations": 0
+    },
+    "commodities-sh": {
+      "entries": 30,
+      "byStatus": {
+        "LIVE_VERIFIED": 0,
+        "DOCUMENTED_NOT_TESTED": 9,
+        "ACCESS_RESTRICTED": 0,
+        "PAID_NOT_ACTIVATED": 19,
+        "UNAVAILABLE_OR_UNKNOWN": 2
+      },
+      "liveDataOperations": 0
+    }
+  }
+}

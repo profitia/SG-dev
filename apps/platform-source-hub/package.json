@@ -12,7 +12,9 @@
     "typecheck": "tsc --noEmit",
     "build": "tsc --noEmit && node --check src/main.mjs && node --check src/server.mjs && node --check scripts/migrate.mjs",
     "db:migrate": "node scripts/migrate.mjs",
-    "probe:live": "node scripts/live-probe.mjs"
+    "probe:live": "node scripts/live-probe.mjs",
+    "catalog:commodities": "node scripts/catalog-commodities.mjs",
+    "verify:commodities": "node scripts/verify-commodities-live.mjs"
   },
   "dependencies": {
     "@clerk/backend": "3.25.0",

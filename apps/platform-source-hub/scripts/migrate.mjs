@@ -45,7 +45,6 @@ export async function migrate(client,c){
   for(const signature of['runtime_descriptor()','current_state(text,text)','lock_ingestion(text,text,text)','scope_allows(text,text)','reserve(text,text,text,text,uuid)','complete(uuid,uuid)','receipt(text,text,text,text)','append_audit(jsonb)'])await client.query('GRANT EXECUTE ON FUNCTION profitia_ingestion.'+signature+' TO '+source);
   for(const signature of['descriptor(text,text)','apply_control(uuid,uuid,text)','read_status(uuid,text,text)'])await client.query('GRANT EXECUTE ON FUNCTION profitia_external_call.'+signature+' TO '+source);
   await client.query('GRANT EXECUTE ON FUNCTION profitia_external_native.descriptor(text,text) TO '+source);
-  if(c.installMarketObservations===true)await install(client,{file:'029-market-symbol-transport.sql',schema:'profitia_external_market_symbol',owner:'profitia_ingestion_owner',binding:null});
   const unmeteredDigest=c.installUnmetered===true?await installUnmetered(client):null;
   await client.query('SET LOCAL ROLE '+owner);
   const sql=await readFile(new URL('../migrations/001-foundation.sql',import.meta.url),'utf8'),digest=hash(sql);
@@ -62,7 +61,7 @@ export async function migrate(client,c){
   }
   await client.query('GRANT SELECT ON source_hub.migrations TO '+identifier(runtime));
   const migrations=[];
-  for(const version of ['002-te-news',...(c.installFirstParty===true?['004-universal-consumers']:[]),...(c.installCalendarStorage===true?['005-calendar-storage-rights']:[]),...(c.installMarketObservations===true?['006-market-observations']:[])]){
+  for(const version of ['002-te-news',...(c.installFirstParty===true?['004-universal-consumers']:[]),...(c.installCalendarStorage===true?['005-calendar-storage-rights']:[]),...(c.installCommodities===true?['006-commodity-providers']:[]),...(c.installMarketObservations===true?['006-market-observations']:[])]){
    const extension=await readFile(new URL('../migrations/'+version+'.sql',import.meta.url),'utf8'),extensionDigest=hash(extension);
    const applied=await client.query('SELECT digest FROM source_hub.migrations WHERE version=$1',[version]);
    if(applied.rows.length){if(applied.rows[0].digest!==extensionDigest)throw Error('EXISTING_MIGRATION_MISMATCH');}
@@ -77,9 +76,10 @@ async function main(){
  const firstParty=process.env.SOURCE_HUB_INSTALL_FIRST_PARTY;if(firstParty!==undefined&&!['true','false'].includes(firstParty))throw Error('FIRST_PARTY_INSTALL_OPTION_REFUSED');
  const calendarStorage=process.env.SOURCE_HUB_INSTALL_CALENDAR_STORAGE;if(calendarStorage!==undefined&&!['true','false'].includes(calendarStorage)||calendarStorage==='true'&&firstParty!=='true')throw Error('CALENDAR_STORAGE_INSTALL_OPTION_REFUSED');
  const markets=process.env.SOURCE_HUB_INSTALL_MARKET_OBSERVATIONS;if(markets!==undefined&&!['true','false'].includes(markets)||markets==='true'&&firstParty!=='true')throw Error('MARKET_INSTALL_OPTION_REFUSED');
+ const commodities=process.env.SOURCE_HUB_INSTALL_COMMODITIES;if(commodities!==undefined&&!['true','false'].includes(commodities)||commodities==='true'&&firstParty!=='true')throw Error('COMMODITY_INSTALL_OPTION_REFUSED');
  const unmetered=process.env.SOURCE_HUB_INSTALL_UNMETERED_SOURCE;if(unmetered!==undefined&&!['true','false'].includes(unmetered))throw Error('UNMETERED_INSTALL_OPTION_REFUSED');
  if(process.env.SOURCE_HUB_ENVIRONMENT!=='development'||u.hostname!==c.host.replace('-pooler','')||decodeURIComponent(u.username)!=='source_hub_development_migrator'||u.pathname!=='/neondb'||!['require','verify-full'].includes(u.searchParams.get('sslmode')??'')||[...u.searchParams.keys()].some(k=>!['sslmode','channel_binding'].includes(k)))throw Error('MIGRATOR_CONFIGURATION_REFUSED');
  u.searchParams.delete('sslmode');u.searchParams.delete('channel_binding');const client=new pg.Client({connectionString:u.href,ssl:{rejectUnauthorized:true},enableChannelBinding:true});await client.connect();
- try{const result=await migrate(client,{...c,environment:'development',databaseName:'neondb',installUnmetered:unmetered==='true',installFirstParty:firstParty==='true',installCalendarStorage:calendarStorage==='true',installMarketObservations:markets==='true'});process.stdout.write(JSON.stringify(result)+'\n');}finally{await client.end();}
+ try{const result=await migrate(client,{...c,environment:'development',databaseName:'neondb',installUnmetered:unmetered==='true',installFirstParty:firstParty==='true',installCalendarStorage:calendarStorage==='true',installCommodities:commodities==='true',installMarketObservations:markets==='true'});process.stdout.write(JSON.stringify(result)+'\n');}finally{await client.end();}
 }
 if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href)main().catch(()=>{process.stderr.write('{"error":"MIGRATION_REFUSED_OR_FAILED"}\n');process.exitCode=1;});

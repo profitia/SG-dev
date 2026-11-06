@@ -2,6 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import {createHash} from 'node:crypto'
+import {execFileSync} from 'node:child_process'
 
 const root=new URL('../../../',import.meta.url)
 const receipt=JSON.parse(fs.readFileSync(new URL('../sdk-1.33-compatibility.json',import.meta.url)))
@@ -42,5 +43,7 @@ test('SDK1.34 preserves the complete SDK1.33 receipt and explicit optional peer 
  for(const name of ['apiPathAdopted','schemaChanged','authorizationChanged','deploymentPerformed'])assert.equal(receipt[name],false)
  for(const name of ['marketSymbolAdopted','schemaChanged','authorizationChanged','deploymentPerformed'])assert.equal(next[name],false)
  assert.equal(Object.keys(next.producerFiles).length,27)
- for(const [file,digest] of Object.entries(next.producerFiles))assert.equal(hash(fs.readFileSync(new URL(file,root))),digest,'frozen producer '+file)
+ assert.equal(next.integrationBaseMain,'e07521e7417ed6ce5a995a4ff1c708f32a9731a5')
+ for(const [file,digest]of Object.entries(next.integrationFiles))assert.equal(hash(fs.readFileSync(new URL(file,root))),digest,'integrated producer '+file)
+ for(const [file,digest] of Object.entries(next.producerFiles))assert.equal(hash(execFileSync('git',['show',next.producerCandidateSha+':'+file],{cwd:root})),digest,'frozen producer '+file)
 })
