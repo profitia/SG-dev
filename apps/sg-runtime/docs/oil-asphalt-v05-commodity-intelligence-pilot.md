@@ -4,6 +4,8 @@ Task: `SG2-OIL-V05-COMMODITY-INTELLIGENCE-20261106`. Środowisko: Development.
 
 **BUSINESS RESULT: BLOCKED / raport nie został wygenerowany.** Dokument opisuje przygotowanie konkretnego wykonania i brakujące uprawnienia; nie jest raportem rynkowym, wynikiem LIVE ani przyjęciem nowych źródeł do kanonu.
 
+Aktualizacja po decyzji właściciela: cztery granty i odrębne 5 USD zostały zatwierdzone. Aktywny owner potwierdził jednak, że klucz podpisujący i jednorazowe polityki Source poprzedniego zadania nie mogą obsłużyć drugiej próbki. Pierwotny pakiet pominął tę techniczną zależność. Nie wykonano instalacji przed uzgodnionym oknem ani resetu poprzednich limitów. Wąski nowy wniosek jest w `supplemental-admission-v1`; nie ponawia wniosku finansowego.
+
 ## Zweryfikowane fakty
 
 - Authority: `profitia/SG-dev`, osobny branch `sg2/oil-v05-commodity-intelligence-20261106`, baza `d24336a14437c773ba28a2dd6f2a276c47cf08a0`. Kanon v0.5 pozostaje niezmieniony, SHA-256 `5edb1848d3abd5b90ce7bcee2e894e764b354a6482665d8307e1f6d42a42ad41`.
@@ -25,7 +27,7 @@ commodities.sh: tylko darmowe `publication-calendar`. Istniejący receipt potwie
 
 ## Jedna konkretna decyzja dostępowa i kosztowa
 
-Lokalny pakiet `decision-packet/ACCESS_PROFILE.json` proponuje dokładnie cztery granty `knowledge.read / market` dla istniejącego Oil SERVICE:
+Lokalny pakiet `decision-packet/ACCESS_PROFILE.json` zawiera dokładnie cztery granty `knowledge.read / market` dla istniejącego Oil SERVICE, zatwierdzone późniejszą bezpośrednią decyzją właściciela:
 
 1. `api.eia.data-catalog` - rozpoznanie rzeczywistych selektorów serii.
 2. `api.eia.series-observations` - obserwacje i dostępne projekcje EIA.
@@ -36,7 +38,7 @@ Zmiana wymaga właściciela E1 (`profitia_access_owner`) w centralnym projekcie 
 
 Instalacja wyłącznie po uzgodnieniu bezpiecznego okna z aktywnym ownerem. Nie powstają nowe role ani dostawcy; dotychczasowe klucze, granty, licencje i polityki pozostają zachowane. Cztery nowe identyfikatory grantów są w pakiecie. Cofnięcie usuwa wyłącznie te identyfikatory. Jeśli obecny profil, ważność lub dostęp do własnego runtime Oil nie spełnia warunków, należy zatrzymać wykonanie i uzyskać prawidłowe dopuszczenie właścicielskie. Nie wolno wydobywać klucza z równoległego procesu ani używać tożsamości inwentaryzacyjnej.
 
-Osobny `COST_MANDATE_PROPOSAL.json` wnioskuje o maksymalnie 5 USD dla tej próbki: jeden finalny licznik wejścia i jedno generowanie przez zatwierdzony profil `gpt-6.1-sol`, bez automatycznych retry. Rezerwacje istniejącego profilu wynoszą 0.10 + 4.90 USD. To nowy, obecnie NIEZATWIERDZONY mandat, a nie odnowienie poprzedniego limitu. Licznik Extended TE pozostaje poza tym zadaniem. Bez zatwierdzenia nie wykonano żadnego wywołania OpenAI.
+Osobny `COST_MANDATE_PROPOSAL.json` został zatwierdzony bezpośrednim komunikatem właściciela: maksymalnie 5 USD dla tej próbki, jeden finalny licznik wejścia i jedno generowanie przez profil `gpt-6.1-sol`, bez automatycznych retry. Rezerwacje istniejącego profilu wynoszą 0.10 + 4.90 USD. Nie jest to odnowienie poprzedniego limitu. Nowy ledger jest pusty; całe 5 USD pozostaje niewykorzystane. Finansowe GO nie instaluje osobnej technicznej tożsamości ani polityki Source.
 
 ## Gotowy przebieg po dopuszczeniu
 
@@ -50,4 +52,4 @@ Osobny `COST_MANDATE_PROPOSAL.json` wnioskuje o maksymalnie 5 USD dla tej próbk
 
 ## Rzeczywiste artefakty i braki
 
-Przygotowano wybór metadanych, plan pobrań, wniosek czterech grantów, mandat kosztowy do decyzji i dowody odczytu. Własne wywołania providerów i OpenAI: 0. Nie ma nowego PDF, narracji, faktycznego aneksu obserwacji ani oceny przyrostu jakości. Nie wygenerowano pustego PDF ani makiety udającej wynik rynkowy. Status pozostaje BLOCKED, nie SUCCESS.
+Przygotowano wybór metadanych, plan pobrań, zatwierdzone cztery granty i mandat kosztowy oraz odrębny wniosek techniczny Source/E1. Siedem testów obliczeń i kalendarza przeszło. Własne wywołania providerów i OpenAI: 0. Nie ma nowego PDF, narracji, faktycznego aneksu obserwacji ani oceny przyrostu jakości. Status pozostaje BLOCKED, nie SUCCESS. Historyczny pakiet decyzji i jego archiwum pozostają niezmienione; aktualna kontynuacja ma osobny zapis.
