@@ -37,3 +37,11 @@ test('an unrelated consumer change, foreign owner or false activation claim is r
  assert.throws(()=>validateConsumerGroups([{projectKey:'SG2',targets:['apps/sg-runtime/app/page.tsx']}],widened))
  assert.throws(()=>validateRouting({repositoryRoot,readReceipt,changedPaths:['unregistered/unknown.ts'],runGovernance:()=>({verdict:'PASS'})}))
 })
+test('SDK1.34 routing accepts only the new registered test path while preserving every SDK1.33 guard',()=>{
+ const groups=[{projectKey:'SRM',targets:['apps/srm/scripts/source-hub-market-symbol-compatibility.test.mjs']}]
+ validateConsumerGroups(groups,readReceipt)
+ for(const edit of [r=>r.sourceHubMarketSymbolCompatibility.sql029Installed=true,r=>r.sourceHubMarketSymbolCompatibility.taskId='unregistered',r=>r.sourceHubMarketSymbolCompatibility.consumerSourceDigests['apps/srm/src/server/unapproved.ts']='0'.repeat(64),r=>r.sourceHubApiPathCompatibility.apiPathOptedIn=true]){
+  assert.throws(()=>validateConsumerGroups(groups,file=>{const r=readReceipt(file);edit(r);return r}))
+ }
+ assert.throws(()=>validateConsumerGroups([{projectKey:'SRM',targets:['apps/srm/src/server/unapproved.ts']}],readReceipt))
+})
