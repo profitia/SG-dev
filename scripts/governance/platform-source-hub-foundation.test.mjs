@@ -244,15 +244,34 @@ test('SourceHub optional ECR storage metadata preserves accepted transport and p
  assert.equal(old.version,'1.1.0')
  assert.equal(SOURCE_HUB_CONTRACT_VERSION,'1.0.0')
  assert.equal(json('packages/platform-contracts/package.json').version,'1.33.0')
- for(const path of ['packages/platform-contracts/package.json','packages/platform-source-hub-contracts/client.mjs','packages/platform-source-hub-contracts/client.d.mts'])
+ for(const path of ['packages/platform-contracts/package.json','packages/platform-source-hub-contracts/client.mjs'])
   assert.equal(git(['hash-object',path]),git(['rev-parse',accepted+':'+path]),path)
  if(current.version==='1.1.0'){
   assert.deepEqual(current,old)
  }else{
-  assert.equal(current.version,'1.2.0')
+  assert(['1.2.0','1.3.0'].includes(current.version))
   const {version:oldVersion,peerDependencies:oldPeers,...oldManifest}=old
   const {version,peerDependencies,...currentManifest}=current
-  assert.deepEqual(currentManifest,oldManifest)
+  if(current.version==='1.2.0'){
+   assert.deepEqual(currentManifest,oldManifest)
+   const path='packages/platform-source-hub-contracts/client.d.mts'
+   assert.equal(git(['hash-object',path]),git(['rev-parse',accepted+':'+path]))
+  }else{
+   const {exports:oldExports,scripts:oldScripts,...oldRest}=oldManifest
+   const {exports:currentExports,scripts:currentScripts,...currentRest}=currentManifest
+   assert.deepEqual(currentRest,oldRest)
+   assert.deepEqual(currentExports,{...oldExports,'./commodities':{types:'./commodities-v1.d.mts',import:'./commodities-v1.mjs'}})
+   assert.deepEqual(currentScripts,{...oldScripts,build:'node --check index.mjs && node --check commodities-v1.mjs && node --check client.mjs'})
+   const oldTypes=git(['show',accepted+':packages/platform-source-hub-contracts/index.d.ts'])
+   const legacyTypes=read('packages/platform-source-hub-contracts/index.d.ts')
+   assert.equal(legacyTypes.match(/export type LegacyHubRequest=([\s\S]*?);/)[1],oldTypes.match(/export type HubRequest=([\s\S]*?);/)[1])
+   const oldClient=git(['show',accepted+':packages/platform-source-hub-contracts/client.d.mts'])
+   assert(read('packages/platform-source-hub-contracts/client.d.mts').replaceAll('LegacyHubRequest','HubRequest').includes(oldClient.match(/acquire\(input:[\s\S]*?\):Promise<HubResponse>/)[0]))
+   assert.match(read('packages/platform-source-hub-contracts/client.d.mts'),/command:CommodityRequest[\s\S]*Promise<CommodityResponse>/)
+   const proposal=json('Canon/proposals/sourcehub-commodity-contracts-v1.json')
+   assert.equal(proposal.sdkVersion,'1.3.0');assert.equal(proposal.protocolVersion,'1.1.0');assert.equal(proposal.legacyProtocolUnchanged,'1.0.0')
+   assert.deepEqual(proposal.families,['data-catalog','series-observations','positioning-observations','publication-calendar'])
+  }
   assert.deepEqual(oldPeers,{'@profitia/platform-current-e1-authority':'1.1.0'})
   assert.deepEqual(peerDependencies,{'@profitia/platform-current-e1-authority':'1.1.0 || 1.2.0'})
  }

@@ -1,0 +1,42 @@
+{
+  "schemaVersion": "SourceHubCommodityContractProposal/1",
+  "status": "PROPOSED_OWNER_ACCEPTANCE_PENDING",
+  "owner": "Architecture Platform",
+  "profile": "ARCHITECTURE",
+  "environment": "development",
+  "sdkVersion": "1.3.0",
+  "protocolVersion": "1.1.0",
+  "legacyProtocolUnchanged": "1.0.0",
+  "families": [
+    "data-catalog",
+    "series-observations",
+    "positioning-observations",
+    "publication-calendar"
+  ],
+  "producer": "apps/platform-source-hub",
+  "testConsumer": "source-hub-catalogue-development",
+  "types": "packages/platform-source-hub-contracts/commodities-v1.d.mts",
+  "sourcePlan": "apps/platform-source-hub/operations/commodity-source-owner-plan.json",
+  "serviceProfile": "apps/platform-source-hub/operations/commodity-service-profile.json",
+  "acceptanceRequires": [
+    "Explicit owner acceptance of new payload semantics",
+    "Exact producer and consumer contract tests",
+    "Controlled CI/main acceptance",
+    "Exact Development Source Admission and Identity owner enrollments",
+    "Authorized LIVE receipt and normalized nonempty observations",
+    "No implicit Oil/ECR adoption or paid API authorization"
+  ],
+  "semantics": {
+    "series": "Provider reference period and original units; strings retained, missing never zero; current snapshot, not point-in-time vintage",
+    "positioning": "Contract/report date grain, complete named columns; provider row id not asserted unique; publication time unknown",
+    "publication": "Schedule only, explicit timezone required for UTC; no invented actual/forecast",
+    "catalogue": "Metadata hierarchy/schema/costs only; separate storage licence projection; observation data TTL0"
+  },
+  "excluded": [
+    "Oil/ECR/UI changes",
+    "Paid commodities.sh calls or payments",
+    "Production/Staging activation",
+    "Existing consumer grants/policies/counter resets",
+    "New infrastructure"
+  ]
+}
