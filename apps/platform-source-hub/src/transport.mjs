@@ -31,7 +31,9 @@ export async function providerJson(fetchImpl,target,headers,{timeoutMs=15000,sig
  try{
   const response=await fetchImpl(target,{method:'GET',headers:{Accept:'application/json',...headers},redirect:'error',signal:abort});status=response.status;
   const retry=response.headers.get('retry-after'),retryAfter=retry&&/^\d{1,5}$/.test(retry)?Number(retry):null;
-  if(!response.ok)throw new SourceHubError(status===401?'AUTHENTICATION_FAILED':status===403?'PLAN_RESTRICTED':status===429?'RATE_LIMITED':status>=500?'PROVIDER_UNAVAILABLE':'PROVIDER_REJECTED_CRITERIA',status===429?429:502,retryAfter);
+  // HTTP403 proves an upstream refusal, not a subscription diagnosis. Keep it
+  // distinct from E1/Source Admission and never infer a plan from status alone.
+  if(!response.ok)throw new SourceHubError(status===401?'AUTHENTICATION_FAILED':status===403?'PROVIDER_FORBIDDEN':status===429?'RATE_LIMITED':status>=500?'PROVIDER_UNAVAILABLE':'PROVIDER_REJECTED_CRITERIA',status===429?429:502,retryAfter);
   if(!response.body)fail('INVALID_RESPONSE',502);const reader=response.body.getReader();const chunks=[];let size=0;
   try{for(;;){const {done,value}=await reader.read();if(done)break;size+=value.byteLength;if(size>maximumBytes)fail('RESPONSE_TOO_LARGE',502);chunks.push(value);}}finally{void reader.cancel().catch(()=>{});reader.releaseLock();}
   let value;try{value=JSON.parse(Buffer.concat(chunks).toString('utf8'));}catch{fail('INVALID_RESPONSE',502);}return value;
