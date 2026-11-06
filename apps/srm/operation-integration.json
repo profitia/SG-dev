@@ -8785,7 +8785,7 @@
     },
     "peerSourceDigests": {
       "apps/dashboard-preview/package-lock.json": "d77f0ffdee8dc503651305cb29aa75861e4535c27a95ac66e8c6029edf4d46f1",
-      "apps/sg-runtime/package-lock.json": "bf40aa5e4a67fc51690bf27fe55d5562200af4d65597581dae9385152da48eb5",
+      "apps/sg-runtime/package-lock.json": "bda3fe73ec586e1c56c9f2e3560e59b8908208146c1bcda5c1cae2e36d5604b1",
       "apps/sg-runtime/tests/adp-appshell-consumer.test.tsx": "0239ba95239e24911fea14bb873782b12cb706f5e634d658db2f25b9541f0488",
       "apps/sg-runtime/tests/category-operation.test.ts": "333094a026dbd27fe56362825d4c09c8bde947016e7c35c1616695c40ce7d690",
       "apps/sg-runtime/tests/diagnostic-telemetry-adoption.test.mjs": "c6d430df7f48e8c02a7828d18c649b78425015db42acfc7edb720dfc6df8aa0b",
@@ -8822,7 +8822,7 @@
       "src/server/root-atomic-claim-adoption.test.ts": "7ef29f7b3e162fed8df6e0a04cf6df7ab55c6314401bde0b0dbc4e8cc6643c2d",
       "../../packages/maps-embed/package.json": "70302b4212fe3ddf310fe5049af2d04cbae1784a12330e3b8de08d3da537fc5b",
       "../dashboard-preview/package-lock.json": "d77f0ffdee8dc503651305cb29aa75861e4535c27a95ac66e8c6029edf4d46f1",
-      "../sg-runtime/package-lock.json": "bf40aa5e4a67fc51690bf27fe55d5562200af4d65597581dae9385152da48eb5",
+      "../sg-runtime/package-lock.json": "bda3fe73ec586e1c56c9f2e3560e59b8908208146c1bcda5c1cae2e36d5604b1",
       "../sg-runtime/tests/adp-appshell-consumer.test.tsx": "0239ba95239e24911fea14bb873782b12cb706f5e634d658db2f25b9541f0488",
       "../sg-runtime/tests/category-operation.test.ts": "333094a026dbd27fe56362825d4c09c8bde947016e7c35c1616695c40ce7d690",
       "../sg-runtime/tests/diagnostic-telemetry-adoption.test.mjs": "c6d430df7f48e8c02a7828d18c649b78425015db42acfc7edb720dfc6df8aa0b",
