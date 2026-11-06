@@ -110,3 +110,17 @@ ordinary-role isolation and unchanged old policies. Rollback preserves all
 ledgers/migrations and revokes only new admissions, then disables the new flags
 and restores the verified compatible executable release. Never drop shared
 schemas or reset counters; a global database restore is not routine rollback.
+
+The metadata collector uses slower EIA pacing after an observed provider429;
+this is transport scheduling, not a periodic Source quota. A failed/uncertain
+checkpoint cannot silently retry. `reconcileThrottledAttempt` permits an explicit
+resume only after the ordinary acquisition/usage and Source call ledgers match
+the exact component, organisation, actor, request/idempotency digests and settled
+HTTP429. It preserves the original attempt/receipt and respects the recorded
+backoff. The next invocation uses a new audited attempt; successful nodes remain
+unchanged. SourceHub Retry-After is retained when present. Other failures and
+uncertain sends require separate reconciliation and receive no retry permission.
+The resulting catalogue separates actual data/schedule proof from metadata proof,
+classifies the seven COT variants and their underlying datasets, and includes
+free discovery declarations missing from the OpenAPI paths map. No additional
+provider route or grant is activated by those documentation entries.
