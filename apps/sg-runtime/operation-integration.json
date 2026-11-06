@@ -7464,13 +7464,17 @@
       "apps/sg-runtime/scripts/render-oil-asphalt-v04.py",
       "apps/sg-runtime/tests/adp-appshell-consumer.test.tsx",
       "apps/sg-runtime/tests/category-operation.test.ts",
+      "apps/sg-runtime/tests/diagnostic-telemetry-adoption.test.mjs",
       "apps/sg-runtime/tests/identity-runtime.test.ts",
+      "apps/sg-runtime/tests/integrated-buyer-journey-package.test.mjs",
+      "apps/sg-runtime/tests/native-sql-roundtrips.test.mjs",
       "apps/sg-runtime/tests/oil-asphalt-v04.test.mjs",
       "apps/sg-runtime/tests/operation-context.test.mjs",
       "apps/sg-runtime/tests/pci-smart-integrity.mjs",
       "apps/sg-runtime/tests/pci-smart-integrity.test.mjs",
       "apps/sg-runtime/tests/porr-demo-middleware.test.ts",
       "apps/sg-runtime/tests/self-service-account.test.ts",
+      "apps/sg-runtime/tests/xray-fresh-performance-adoption.test.mjs",
       "apps/sg-runtime/tests/xray-gateway.test.ts"
     ],
     "sourceDigests": {
@@ -7483,13 +7487,17 @@
       "apps/sg-runtime/scripts/render-oil-asphalt-v04.py": "5b98830165909b8075eae6623323a0ae74fa1db1890a4e4912f0058c82013bb5",
       "apps/sg-runtime/tests/adp-appshell-consumer.test.tsx": "5d3da7bb6c67c3c74db91c29a1a3ccd6eabacaca4553579021e4d86591bd50cf",
       "apps/sg-runtime/tests/category-operation.test.ts": "27a30add47c4d0e0fef237992d03223c6064c2fa9082b9eb474cda5720a0144c",
+      "apps/sg-runtime/tests/diagnostic-telemetry-adoption.test.mjs": "ceaa3d0b580fb4fdaad18f21eb5a8137b9ddf9da5c27259ae77458e5c5e58a4c",
       "apps/sg-runtime/tests/identity-runtime.test.ts": "181f854217aa4fa46147292e7500132a4fe8e4bbc95ca90888291a038b5762d0",
+      "apps/sg-runtime/tests/integrated-buyer-journey-package.test.mjs": "4128a99ecb3ab28ac593e2f12165aaabd759983b7569494f4f6189b5f9f7bb52",
+      "apps/sg-runtime/tests/native-sql-roundtrips.test.mjs": "ffc283aba6a4739965013cd7fde69d5cd204e3f209f7517ac39a15384ccf4216",
       "apps/sg-runtime/tests/oil-asphalt-v04.test.mjs": "13c5479c3c773bb6b90085923a36cb1e66b9f1feb4e7d7783e822579fafd4f41",
       "apps/sg-runtime/tests/operation-context.test.mjs": "e31a339eb10a24cfd5e7c4828129f15b754deb26998cf6953a817a0c03ff5a6e",
-      "apps/sg-runtime/tests/pci-smart-integrity.mjs": "d1f81683686f547fc3e6ed7e731955420c5ca4bd37664426693517e8413b196a",
+      "apps/sg-runtime/tests/pci-smart-integrity.mjs": "6e697e8bc276b2318889f580a2a3ae9cd29fed5771cc06569afe608e3d67619b",
       "apps/sg-runtime/tests/pci-smart-integrity.test.mjs": "82b617262d8fb33f668c9b622339bf82d6d189f429260572cad01d1cf32d44ee",
       "apps/sg-runtime/tests/porr-demo-middleware.test.ts": "3f153f694dd2fe5b3052824b5135daca92c37836aaacf716ebbef725e8eef0bc",
       "apps/sg-runtime/tests/self-service-account.test.ts": "d2816f623f1222fe420c54e9614fa2eab4d5a89d8a510b3b25dd86dc00d50a12",
+      "apps/sg-runtime/tests/xray-fresh-performance-adoption.test.mjs": "4e813e0caa678950e9a66243c1f7cb7b66b2b0f20a1f5b85361241f2413467bb",
       "apps/sg-runtime/tests/xray-gateway.test.ts": "43f7b7d5f0347c4a5f3e61865ee7953011294fbb4cce6ca24ed898778b34825f"
     },
     "applicationSourceDigests": {
@@ -7502,13 +7510,17 @@
       "scripts/render-oil-asphalt-v04.py": "5b98830165909b8075eae6623323a0ae74fa1db1890a4e4912f0058c82013bb5",
       "tests/adp-appshell-consumer.test.tsx": "5d3da7bb6c67c3c74db91c29a1a3ccd6eabacaca4553579021e4d86591bd50cf",
       "tests/category-operation.test.ts": "27a30add47c4d0e0fef237992d03223c6064c2fa9082b9eb474cda5720a0144c",
+      "tests/diagnostic-telemetry-adoption.test.mjs": "ceaa3d0b580fb4fdaad18f21eb5a8137b9ddf9da5c27259ae77458e5c5e58a4c",
       "tests/identity-runtime.test.ts": "181f854217aa4fa46147292e7500132a4fe8e4bbc95ca90888291a038b5762d0",
+      "tests/integrated-buyer-journey-package.test.mjs": "4128a99ecb3ab28ac593e2f12165aaabd759983b7569494f4f6189b5f9f7bb52",
+      "tests/native-sql-roundtrips.test.mjs": "ffc283aba6a4739965013cd7fde69d5cd204e3f209f7517ac39a15384ccf4216",
       "tests/oil-asphalt-v04.test.mjs": "13c5479c3c773bb6b90085923a36cb1e66b9f1feb4e7d7783e822579fafd4f41",
       "tests/operation-context.test.mjs": "e31a339eb10a24cfd5e7c4828129f15b754deb26998cf6953a817a0c03ff5a6e",
-      "tests/pci-smart-integrity.mjs": "d1f81683686f547fc3e6ed7e731955420c5ca4bd37664426693517e8413b196a",
+      "tests/pci-smart-integrity.mjs": "6e697e8bc276b2318889f580a2a3ae9cd29fed5771cc06569afe608e3d67619b",
       "tests/pci-smart-integrity.test.mjs": "82b617262d8fb33f668c9b622339bf82d6d189f429260572cad01d1cf32d44ee",
       "tests/porr-demo-middleware.test.ts": "3f153f694dd2fe5b3052824b5135daca92c37836aaacf716ebbef725e8eef0bc",
       "tests/self-service-account.test.ts": "d2816f623f1222fe420c54e9614fa2eab4d5a89d8a510b3b25dd86dc00d50a12",
+      "tests/xray-fresh-performance-adoption.test.mjs": "4e813e0caa678950e9a66243c1f7cb7b66b2b0f20a1f5b85361241f2413467bb",
       "tests/xray-gateway.test.ts": "43f7b7d5f0347c4a5f3e61865ee7953011294fbb4cce6ca24ed898778b34825f"
     },
     "preservedPaths": [
@@ -7527,6 +7539,7 @@
     "historicalB1Changed": false,
     "globalSdkPublished": false,
     "sg2ApplicationDeploymentPerformed": false,
-    "additionalCiClosureTaskId": "SG2-OIL-V04-LEGACY-CI-CLOSURE-20261105"
+    "additionalCiClosureTaskId": "SG2-OIL-V04-LEGACY-CI-CLOSURE-20261105",
+    "finalCiClosureTaskId": "SG2-OIL-V04-CI-CLOSURE-FINAL-20261106"
   }
 }
