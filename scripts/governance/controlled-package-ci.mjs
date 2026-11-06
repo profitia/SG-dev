@@ -2009,6 +2009,66 @@ function assertSourceHubStage2aRoutes(files,repositoryRoot){
  }
 }
 
+// Proposed exact ECR G1 review; activation requires separate CI-policy approval
+// and controlled trusted-main acceptance. No generic Canon/app admission.
+export const ECR_G1_GOVERNANCE_REVIEW=Object.freeze({
+  "prNumber": 906,
+  "branch": "architecture/ecr-sourcehub-backend-20261106",
+  "reviewedCandidateSha": "253bdbd0f445914e2f964d42cd2206de093cb460",
+  "reviewedBaseSha": "1cc5282c718ab1ce85fa9da4831592739c0ff899",
+  "blobs": Object.freeze({
+    ".github/workflows/governance-preflight.yml": "8c268570c40d515fac63905542a5c5997e71034f",
+    "Canon/evidence/2026-11-06-ecr-g1-governance-activation.md": "116e038301c335c7392f8e6fd49db791f009d7d3",
+    "Canon/evidence/2026-11-06-ecr-sourcehub-preimplementation-reconciliation.md": "1f402303038194cb6dcc7bc5c11fe3b80a64522e",
+    "Canon/proposals/economic-calendar-runtime-source-hub-g1-v1.json": "e0b23cd708d1caad3101d31503e6bfa7107aa290",
+    "Canon/proposals/v1.1-economic-calendar-runtime-source-hub-and-preferences-amendment.md": "88169bd1a8edae5a2e6fa7ebb83a8d3f89932c41",
+    "Canon/registries/architecture-onboarding-v1.json": "6070fb51ab0dadb15ada4be789fdce15152e3f54",
+    "Canon/registries/current-architecture-baseline-v1.json": "b24b5f1f9586d6947d192138a0d76b65815405ce",
+    "Canon/registries/governance-manifest-v2.json": "42a0d520016786131efcddfb5d34f84bc44c43ec",
+    "Canon/v1.0-economic-calendar-runtime-business-and-architecture-canon.md": "66166b72b0cfb16937203cd74b7a7c00f67e840d",
+    "Canon/v1.1-economic-calendar-runtime-source-hub-and-preferences-amendment.md": "73a181d9178dc0863d42376071b42e0c7be879c1",
+    "Canon/v1.1-repository-routing-and-module-ownership-canon.md": "ef22e9e324cb309ca689aa742685ceb2563a8242",
+    "scripts/governance/ecr-routing.test.mjs": "0b0753392f309c5e5b0c071e35784b38a7204d4c"
+  }),
+  "statuses": Object.freeze({
+    ".github/workflows/governance-preflight.yml": "modified",
+    "Canon/evidence/2026-11-06-ecr-g1-governance-activation.md": "added",
+    "Canon/evidence/2026-11-06-ecr-sourcehub-preimplementation-reconciliation.md": "added",
+    "Canon/proposals/economic-calendar-runtime-source-hub-g1-v1.json": "added",
+    "Canon/proposals/v1.1-economic-calendar-runtime-source-hub-and-preferences-amendment.md": "added",
+    "Canon/registries/architecture-onboarding-v1.json": "modified",
+    "Canon/registries/current-architecture-baseline-v1.json": "modified",
+    "Canon/registries/governance-manifest-v2.json": "modified",
+    "Canon/v1.0-economic-calendar-runtime-business-and-architecture-canon.md": "added",
+    "Canon/v1.1-economic-calendar-runtime-source-hub-and-preferences-amendment.md": "added",
+    "Canon/v1.1-repository-routing-and-module-ownership-canon.md": "modified",
+    "scripts/governance/ecr-routing.test.mjs": "added"
+  }),
+  "modes": Object.freeze({
+    ".github/workflows/governance-preflight.yml": "100644",
+    "Canon/evidence/2026-11-06-ecr-g1-governance-activation.md": "100644",
+    "Canon/evidence/2026-11-06-ecr-sourcehub-preimplementation-reconciliation.md": "100644",
+    "Canon/proposals/economic-calendar-runtime-source-hub-g1-v1.json": "100644",
+    "Canon/proposals/v1.1-economic-calendar-runtime-source-hub-and-preferences-amendment.md": "100644",
+    "Canon/registries/architecture-onboarding-v1.json": "100644",
+    "Canon/registries/current-architecture-baseline-v1.json": "100644",
+    "Canon/registries/governance-manifest-v2.json": "100644",
+    "Canon/v1.0-economic-calendar-runtime-business-and-architecture-canon.md": "100644",
+    "Canon/v1.1-economic-calendar-runtime-source-hub-and-preferences-amendment.md": "100644",
+    "Canon/v1.1-repository-routing-and-module-ownership-canon.md": "100644",
+    "scripts/governance/ecr-routing.test.mjs": "100644"
+  })
+});
+function isPinnedEcrG1Review(files){
+ const r=ECR_G1_GOVERNANCE_REVIEW;
+ return Array.isArray(files)&&files.length===Object.keys(r.blobs).length&&new Set(files.map(f=>f?.filename)).size===files.length
+  &&files.every(f=>Object.hasOwn(r.blobs,f?.filename??'')&&f.sha===r.blobs[f.filename]&&f.status===r.statuses[f.filename]&&!Object.hasOwn(f,'previous_filename'));
+}
+export function assertEcrG1ReviewEntry(file,entry){
+ const r=ECR_G1_GOVERNANCE_REVIEW;
+ if(!Object.hasOwn(r.blobs,file?.filename??'')||file.sha!==r.blobs[file.filename]||entry!==r.modes[file.filename]+' blob '+file.sha+'\t'+file.filename+'\0')fail('ECR_G1_FILE_MODE_REJECTED');
+}
+
 function architecturePathAllowed(name) {
   if (typeof name !== 'string' || !/^[A-Za-z0-9._/-]+$/.test(name) || name.split('/').some(p => !p || p.startsWith('.'))) return false
   return /^packages\/platform-contracts\/(?:src\/[A-Za-z0-9_/-]+\.(?:mjs|d\.mts)|migrations\/[a-z0-9-]+\/[A-Za-z0-9._-]+\.sql|test\/[A-Za-z0-9._/-]+\.(?:mjs|mts|json)|package(?:-lock)?\.json|README\.md)$/.test(name)
@@ -2028,7 +2088,7 @@ export function assertArchitectureFiles(pr, files, repositoryRoot = controlRoot(
   const readonlyMissReview = isPinnedReadonlyMissReportReview(files)
   const freshFixtureReview = isPinnedFreshFixtureTeardownReview(files)
   const rootAtomicClaimReview = isPinnedRootAtomicClaimReview(files)
-  const closedReview = krsReview || isPinnedAdpGovernanceReview(files) || isPinnedLimitsG1Review(files) || isPinnedNewsfeedG1Review(files) || isPinnedSourceHubG1Review(files) || freshReportReview || payloadCaptureReview || readonlyMissReview || freshFixtureReview || rootAtomicClaimReview
+  const closedReview = isPinnedEcrG1Review(files) || krsReview || isPinnedAdpGovernanceReview(files) || isPinnedLimitsG1Review(files) || isPinnedNewsfeedG1Review(files) || isPinnedSourceHubG1Review(files) || freshReportReview || payloadCaptureReview || readonlyMissReview || freshFixtureReview || rootAtomicClaimReview
   const names = new Set()
   for (const file of files) {
     if (!(closedReview || architecturePathAllowed(file.filename))
@@ -2055,6 +2115,7 @@ export function selectCandidate(context, pr, expectedSha, {files, repositoryRoot
   if (family === 'MAIN') return context.controlSha
   if (family === 'ARCHITECTURE') {
     assertArchitectureFiles(pr, files, repositoryRoot)
+    if(isPinnedEcrG1Review(files)&&(pr.number!==ECR_G1_GOVERNANCE_REVIEW.prNumber||pr.head.ref!==ECR_G1_GOVERNANCE_REVIEW.branch))fail('ECR_G1_REVIEW_IDENTITY_REJECTED')
     if(isPinnedUniversalFirstPartyReview(files)&&(pr.number!==SOURCE_HUB_UNIVERSAL_FIRST_PARTY_REVIEW.prNumber||pr.head.ref!==SOURCE_HUB_UNIVERSAL_FIRST_PARTY_REVIEW.branch))fail('UNIVERSAL_FIRST_PARTY_REVIEW_IDENTITY_REJECTED')
     if(isPinnedCurrentE1Review(files)&&(pr.number!==SOURCE_HUB_CURRENT_E1_REVIEW.prNumber||pr.head.ref!==SOURCE_HUB_CURRENT_E1_REVIEW.branch))fail('CURRENT_E1_REVIEW_IDENTITY_REJECTED')
     if(isPinnedSourceHubStage2aReview(files)&&(pr.number!==SOURCE_HUB_STAGE2A_REVIEW.prNumber||pr.head.ref!==SOURCE_HUB_STAGE2A_REVIEW.branch))fail('SOURCE_HUB_STAGE2A_REVIEW_IDENTITY_REJECTED')
@@ -2116,6 +2177,7 @@ export function assertArchitectureCheckout(root, sha, admission, repositoryRoot 
   for (const file of admission.files) {
     const entry = execFileSync('git', ['ls-tree', '-z', sha, '--', file.filename], {cwd: root, encoding: 'utf8'})
     if (file.status === 'removed') {if (entry !== '') fail('ARCHITECTURE_DIFF_MISMATCH'); continue}
+    if(isPinnedEcrG1Review(admission.files))assertEcrG1ReviewEntry(file,entry)
     if(isPinnedUniversalFirstPartyReview(admission.files))assertUniversalFirstPartyReviewEntry(file,entry)
     if(isPinnedCurrentE1Review(admission.files))assertCurrentE1ReviewEntry(file,entry)
     if(isPinnedSourceHubStage2aReview(admission.files)&&entry!==SOURCE_HUB_STAGE2A_REVIEW.modes[file.filename]+' blob '+file.sha+'\t'+file.filename+'\0')fail('SOURCE_HUB_STAGE2A_FILE_MODE_REJECTED')

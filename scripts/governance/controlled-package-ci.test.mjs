@@ -1,4 +1,5 @@
 import {createHash} from 'node:crypto'
+import {ECR_G1_GOVERNANCE_REVIEW,assertEcrG1ReviewEntry} from './controlled-package-ci.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
@@ -1135,3 +1136,57 @@ test('universal first-party review retains exact PR, branch, owner, repository a
 test('universal first-party review denies executable and symlink modes and altered tree entries',()=>{
  for(const file of universalFiles()){const entry='100644 blob '+file.sha+'\t'+file.filename+'\0';assertUniversalFirstPartyReviewEntry(file,entry);for(const bad of[entry.replace('100644','100755'),entry.replace('100644','120000'),entry.replace(file.sha,sha),entry.replace(file.filename,file.filename+'.extra'),''])rejection(()=>assertUniversalFirstPartyReviewEntry(file,bad));}
 });
+
+const ecrG1Files=()=>Object.entries(ECR_G1_GOVERNANCE_REVIEW.blobs).map(([filename,sha])=>({filename,sha,status:ECR_G1_GOVERNANCE_REVIEW.statuses[filename]}))
+const ecrG1Pr=()=>({...architecturePr(12),number:906,head:{...architecturePr().head,ref:ECR_G1_GOVERNANCE_REVIEW.branch}})
+
+test('ECR G1 admission is one frozen twelve-file review and preserves the exact PR/branch/current-head fence',()=>{
+ const r=ECR_G1_GOVERNANCE_REVIEW,files=ecrG1Files(),p=ecrG1Pr()
+ for(const part of [r,r.blobs,r.statuses,r.modes])assert(Object.isFrozen(part))
+ assert.equal(r.prNumber,906);assert.equal(r.reviewedCandidateSha,'253bdbd0f445914e2f964d42cd2206de093cb460')
+ assert.equal(files.length,12);assert(files.every(f=>!f.filename.startsWith('apps/')&&!f.filename.startsWith('packages/')))
+ assert.equal(selectCandidate(context(),p,other,{files}),other)
+ assert.equal(selectCandidate(context(),p,other,{files:[...files].reverse()}),other)
+ for(const change of [{number:907},{number:undefined},{head:{...p.head,ref:'architecture/ecr-other'}},{head:{...p.head,sha}}])rejection(()=>selectCandidate(context(),{...p,...change},other,{files}))
+ rejection(()=>selectCandidate(context(),p,sha,{files}))
+})
+
+test('ECR closed admission rejects every changed/missing/duplicate/status/rename/copy/deletion entry and any extra scope',()=>{
+ const original=ecrG1Files()
+ for(let i=0;i<original.length;i++){
+  const missing=original.filter((_,j)=>j!==i);rejection(()=>selectCandidate(context(),{...ecrG1Pr(),changed_files:missing.length},other,{files:missing}))
+  for(const patch of [{sha:'d'.repeat(40)},{sha:'invalid'},{status:original[i].status==='added'?'modified':'added'},{status:'removed'},{status:'renamed',previous_filename:original[i].filename},{status:'copied'},{previous_filename:original[i].filename}]){
+   const files=original.map((f,j)=>i===j?{...f,...patch}:f);rejection(()=>selectCandidate(context(),ecrG1Pr(),other,{files}))
+  }
+  const duplicate=original.map((f,j)=>j===i?original[(i+1)%original.length]:f);rejection(()=>selectCandidate(context(),ecrG1Pr(),other,{files:duplicate}))
+ }
+ for(const filename of ['apps/economic-calendar-runtime/src/main.mjs','packages/economic-calendar-contracts/index.mjs','.github/workflows/economic-calendar-ci.yml',WORKFLOW,'scripts/governance/controlled-package-ci.mjs','.npmrc','Canon/evidence/2026-11-06-extra.md']){
+  const files=[...original,producerFile(filename)];rejection(()=>selectCandidate(context(),{...ecrG1Pr(),changed_files:files.length},other,{files}))
+ }
+})
+
+test('ECR exact review admits only regular nonexecutable pinned files',()=>{
+ const r=ECR_G1_GOVERNANCE_REVIEW
+ for(const file of ecrG1Files()){
+  assert.equal(r.modes[file.filename],'100644')
+  assertEcrG1ReviewEntry(file,'100644 blob '+file.sha+'\t'+file.filename+'\0')
+  for(const mode of ['100755','120000','160000'])rejection(()=>assertEcrG1ReviewEntry(file,mode+' blob '+file.sha+'\t'+file.filename+'\0'))
+  rejection(()=>assertEcrG1ReviewEntry({...file,sha:other},'100644 blob '+file.sha+'\t'+file.filename+'\0'))
+ }
+})
+
+test('ECR review retains actual-owner routing and trusted account/repository/main/environment rules',()=>{
+ const files=ecrG1Files()
+ for(const edit of [p=>p.user.login='other',p=>p.head.repo.full_name='other/fork',p=>p.base.ref='production',p=>p.state='closed']){const p=ecrG1Pr();edit(p);rejection(()=>selectCandidate(context(),p,other,{files}))}
+ rejection(()=>selectCandidate({...context(),triggeringActor:'other'},ecrG1Pr(),other,{files}))
+ rejection(()=>selectCandidate({...context(),ref:'refs/heads/sg2/untrusted-control'},ecrG1Pr(),other,{files}))
+ const root=routingFixture(),file=path.join(root,'Canon/registries/current-architecture-baseline-v1.json'),original=fs.readFileSync(file,'utf8')
+ try{for(const patch of [{currentOwner:'Other owner'},{allowedProjectKeys:['SG2']},{baselineClassification:'LEGACY'}]){const registry=JSON.parse(original),surface=registry.surfaces.find(s=>s.pathPatterns.includes('Canon/**'));Object.assign(surface,patch);fs.writeFileSync(file,JSON.stringify(registry));rejection(()=>selectCandidate(context(),ecrG1Pr(),other,{files,repositoryRoot:root}))}}finally{fs.rmSync(root,{recursive:true,force:true})}
+})
+
+test('ECR complete API metadata resolution rejects file truncation and concurrent head/base movement',async()=>{
+ const p=ecrG1Pr(),files=ecrG1Files(),answer=await resolveCandidateAdmission(context(),'906',other,apiFixture(p,files).request)
+ assert.equal(answer.sha,other);assert.deepEqual(answer.admission.files,files)
+ await assert.rejects(resolveCandidateAdmission(context(),'906',other,apiFixture(p,files.slice(1)).request))
+ for(const after of [{...p,head:{...p.head,sha}},{...p,base:{...p.base,sha:other}},{...p,head:{...p.head,ref:'architecture/changed'}}])await assert.rejects(resolveCandidateAdmission(context(),'906',other,apiFixture(p,files,after).request))
+})
