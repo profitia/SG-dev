@@ -229,8 +229,8 @@
             "serviceId": "srv-daclno3m8hqs73bb7rrg",
             "name": "sg2-staging-runtime",
             "autoDeploy": false,
-            "baselineDeployId": "dep-db0dhbm1egvs73f70kr0",
-            "baselineSha": "48dfcd8af93fa9f5e9708653a868b89c138b6b91",
+            "baselineDeployId": "dep-dbjr14jbc2fs73dkllb0",
+            "baselineSha": "88c9e0a2074bfafd1199a9caeb50497412a200bd",
             "url": "https://spendguru-porr-demo.onrender.com",
             "customDomain": "demo-sg-porr.spendguru.app"
           },
@@ -303,7 +303,62 @@
         "sourceRevisionComposition": "MIXED_BY_SERVICE",
         "runtimeMutationPerformed": false,
         "evidence": "Canon/evidence/2026-10-25-sg2-environment-reconciliation.md"
-      }
+      },
+      "deploymentHistory": [
+        {
+          "recordedAt": "2026-11-01T20:49:17.110694+00:00",
+          "reason": "OWNER_AUTHORIZED_RENDER_MANAGED_REPLACEMENT_RECONCILIATION",
+          "taskId": "SG2-SENTRY-STAGING-REGISTRY-20261101",
+          "role": "runtime",
+          "serviceId": "srv-daclno3m8hqs73bb7rrg",
+          "previousBaselineDeployId": "dep-db0dhbm1egvs73f70kr0",
+          "previousBaselineSha": "48dfcd8af93fa9f5e9708653a868b89c138b6b91",
+          "observedDeployId": "dep-dbi4fv7lot8c73auj9og",
+          "observedSha": "48dfcd8af93fa9f5e9708653a868b89c138b6b91",
+          "providerTrigger": "deployed_by_render",
+          "sourceRevisionChanged": false,
+          "applicationDeploymentPerformed": false,
+          "evidence": "Canon/evidence/2026-11-01-sg2-sentry-staging-release.md"
+        },
+        {
+          "recordedAt": "2026-11-01T21:18:57.530862+00:00",
+          "reason": "OWNER_AUTHORIZED_PROTECTED_EXACT_SHA_SENTRY_PROMOTION",
+          "taskId": "SG2-SENTRY-STAGING-REGISTRY-20261101",
+          "role": "runtime",
+          "serviceId": "srv-daclno3m8hqs73bb7rrg",
+          "previousBaselineDeployId": "dep-dbi4fv7lot8c73auj9og",
+          "previousBaselineSha": "48dfcd8af93fa9f5e9708653a868b89c138b6b91",
+          "observedDeployId": "dep-dbjqi2e7bikc73898lg0",
+          "observedSha": "88c9e0a2074bfafd1199a9caeb50497412a200bd",
+          "providerTrigger": "deploy_hook",
+          "sourceRevisionChanged": true,
+          "deploymentPerformed": true,
+          "releaseWorkflowRunId": 41349554926,
+          "requiredEnvironmentApproval": "APPROVED_BY_PROFITIA",
+          "runtimeHealth": "PASS",
+          "sentryStatus": "DISABLED_SERVICE_NAME_MISMATCH",
+          "evidence": "Canon/evidence/2026-11-01-sg2-sentry-staging-release.md"
+        },
+        {
+          "recordedAt": "2026-11-01T21:42:03.747776+00:00",
+          "reason": "OWNER_AUTHORIZED_PROTECTED_SAME_SOURCE_CONFIGURATION_VERIFICATION",
+          "taskId": "SG2-SENTRY-STAGING-REGISTRY-20261101",
+          "role": "runtime",
+          "serviceId": "srv-daclno3m8hqs73bb7rrg",
+          "previousBaselineDeployId": "dep-dbjqi2e7bikc73898lg0",
+          "previousBaselineSha": "88c9e0a2074bfafd1199a9caeb50497412a200bd",
+          "observedDeployId": "dep-dbjr14jbc2fs73dkllb0",
+          "observedSha": "88c9e0a2074bfafd1199a9caeb50497412a200bd",
+          "providerTrigger": "deploy_hook",
+          "sourceRevisionChanged": false,
+          "deploymentPerformed": true,
+          "releaseWorkflowRunId": 41352208337,
+          "requiredEnvironmentApproval": "APPROVED_BY_PROFITIA",
+          "runtimeHealth": "PASS",
+          "sentryStatus": "BLOCKED_NATIVE_SERVICE_NAME_REJECTED_BY_PR850",
+          "evidence": "Canon/evidence/2026-11-01-sg2-sentry-staging-release.md"
+        }
+      ]
     },
     "production": {
       "status": "RESERVED",

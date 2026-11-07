@@ -121,3 +121,59 @@ test('the original metadata reader uses its supplied ordinary client, and a caug
   await assert.rejects(client.getStoredBenchmarkMetadataDefinitions(),e=>e===failure);return {apparent:'success'}
  }),e=>e===failure);assert.equal(reads,1)
 })
+
+test('25 advanced results share each in-flight label dictionary only within their own operation',async()=>{
+ const client=await originalMacrobond(),counts=new Map<string,number>();let tokens=0
+ const fetcher:typeof fetch=async(input)=>{
+  const url=new URL(String(input))
+  if(url.pathname==='/mbauth/connect/token'){tokens++;return Response.json({access_token:'fixture-access',expires_in:3600})}
+  if(url.pathname==='/v1/search/entities')return Response.json({results:Array.from({length:25},(_,i)=>({Name:`fixture_${i}`,Title:`Fixture ${i}`,Frequency:'daily',Source:'fixture_source',Currency:'USD',Region:'pl'}))})
+  assert.equal(url.pathname,'/v1/metadata/listattributevalues')
+  const key=url.searchParams.get('n')!;counts.set(key,(counts.get(key)??0)+1);await pause(5)
+  return Response.json([{value:'daily',description:'Daily'},{value:'fixture_source',description:'Fixture source'},{value:'USD',description:'US Dollar'}])
+ }
+ for(let operation=1;operation<=2;operation++)await runWithBenchmarkProviderScope(ports(fetcher),async()=>{
+  const results=await client.searchMacrobondBenchmarks({query:'fixture',filters:[{metadataKey:'Frequency',operator:'equals',values:['daily']}],limit:25})
+  assert.equal(results.length,25)
+  assert(results.every(item=>item.frequency==='Daily'&&item.source==='Fixture source'&&item.currency==='US Dollar'))
+  assert.deepEqual(Object.fromEntries(counts),{Source:operation,Frequency:operation,Currency:operation})
+ })
+ assert.equal(tokens,2)
+})
+
+test('a shared label failure remains fatal to its provider scope and cannot publish apparent success',async()=>{
+ const client=await originalMacrobond(),failure=Error('Synthetic label transport unavailable');let reads=0
+ const fetcher:typeof fetch=async(input)=>{
+  const url=new URL(String(input))
+  if(url.pathname==='/mbauth/connect/token')return Response.json({access_token:'fixture-access',expires_in:3600})
+  if(url.pathname==='/v1/search/entities')return Response.json({results:Array.from({length:25},(_,i)=>({Name:`fixture_${i}`,Title:`Fixture ${i}`,Source:'fixture_source'}))})
+  assert.equal(url.pathname,'/v1/metadata/listattributevalues');reads++;await pause(5);throw failure
+ }
+ await assert.rejects(runWithBenchmarkProviderScope(ports(fetcher),async()=>{
+  try{await client.searchMacrobondBenchmarks({query:'fixture',filters:[{metadataKey:'Frequency',operator:'equals',values:['daily']}],limit:25})}catch{/* Caller cannot clear uncertainty. */}
+  return {apparent:'success'}
+ }),error=>error===failure)
+ assert.equal(reads,1)
+})
+
+
+test('an approved Region dictionary keeps a valid empty query local without provider fallback',async()=>{
+ const client=await import('../lib/benchmark/metadata-store');let queries=0,providers=0
+ const metadata={benchmarkMetadataValueRecord:{
+  count:async({where}:{where:{OR?:unknown}})=>{queries++;return where.OR?0:102647},
+  findMany:async({take}:{take:number})=>{assert.equal(take,40);return []},
+ }} as unknown as Awaited<ReturnType<BenchmarkProviderPorts['loadMetadataClient']>>
+ await runWithBenchmarkProviderScope(ports(async()=>{providers++;throw Error('Forbidden full-catalogue fallback')},async()=>metadata),async()=>{
+  const value=await client.getStoredBenchmarkMetadataValues('Region',[],{query:'zz-no-matching-region',limit:40})
+  assert.deepEqual(value,{items:[],totalCount:102647,filteredCount:0,query:'zz-no-matching-region',limited:false})
+ });assert.equal(queries,2);assert.equal(providers,0)
+})
+
+test('a refused dictionary query never becomes an empty success or a provider fallback',async()=>{
+ const client=await import('../lib/benchmark/metadata-store'),failure=Error('Ordinary dictionary query refused');let providers=0
+ const metadata={benchmarkMetadataValueRecord:{count:async()=>{throw failure}}} as unknown as Awaited<ReturnType<BenchmarkProviderPorts['loadMetadataClient']>>
+ await assert.rejects(runWithBenchmarkProviderScope(ports(async()=>{providers++;return response('forbidden')},async()=>metadata),async()=>{
+  try{await client.getStoredBenchmarkMetadataValues('Region',[],{query:'Pol',limit:40})}catch{/* Original caller cannot erase the refusal. */}
+  return {items:[]}
+ }),error=>error===failure);assert.equal(providers,0)
+})

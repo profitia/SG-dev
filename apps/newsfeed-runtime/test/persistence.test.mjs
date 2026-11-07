@@ -1,0 +1,14 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {fixture,observation,U,A,B} from './fixtures.mjs';
+import {migrate} from '../scripts/migrate.mjs';
+test('SYNTHETIC_ONLY: migration, RLS, ordinary runtime and private observation constraints',async t=>{
+ const f=await fixture();t.after(()=>f.close());const request=new Request(f.newsfeed.publicOrigin+'/v1/observations',{headers:{authorization:'Bearer SYNTHETIC_A'}});
+ const execute=action=>f.newsfeedAuthorizer.execute({request,organisationId:A,resourceId:'newsfeed-observations',write:true},action);
+ const o=await execute((c,q)=>f.newsfeedRepository.create(q,c,observation));
+ await t.test('persisted observation survives a fresh transaction and has independent owner and author columns',async()=>{const r=await execute((c,q)=>f.newsfeedRepository.get(q,c,o.id));assert.equal(r.id,o.id);assert.equal(r.ownerUserId,U);assert.equal(r.createdByActorId,U);});
+ await t.test('runtime cannot read without scope or alter E1/provider/migration state',async()=>{assert.equal((await f.ndb.query('SELECT * FROM newsfeed.observations')).rows.length,0);for(const sql of['SELECT * FROM profitia_access.accounts','UPDATE newsfeed.installation SET schema_digest=repeat(\'a\',64)','SET ROLE newsfeed_development_owner'])await assert.rejects(()=>f.ndb.query(sql));});
+ await t.test('cross-environment/application writes are refused even with forged scope settings',async()=>{for(const [env,app]of[['production',f.newsfeed.applicationId],['development','foreign-application']])await assert.rejects(()=>f.ndb.transact(async({query})=>{await query("SELECT set_config('profitia.environment',$1,true),set_config('profitia.application_id',$2,true),set_config('profitia.organisation_id',$3,true),set_config('profitia.user_id',$4,true)",[env,app,A,U]);await query('INSERT INTO newsfeed.observations(id,environment,application_id,organisation_id,owner_user_id,created_by_actor_id,updated_by_actor_id,name,subject_kind,subject,filters,status) VALUES(gen_random_uuid(),$1,$2,$3,$4,$4,$4,\'x\',\'topic\',\'x\',\'{}\',\'ACTIVE\')',[env,app,A,U]);}));});
+ await t.test('owner is immutable, a failed change rolls back, and a stale version cannot win',async()=>{await assert.rejects(()=>execute((c,q)=>q.query('UPDATE newsfeed.observations SET organisation_id=$1 WHERE id=$2',[B,o.id])));const updated=await execute((c,q)=>f.newsfeedRepository.update(q,c,o.id,{version:1,name:'changed'}));assert.equal(updated.version,2);await assert.rejects(()=>execute((c,q)=>f.newsfeedRepository.update(q,c,o.id,{version:1,name:'stale'})),{code:'OBSERVATION_VERSION_CONFLICT'});});
+ await t.test('runtime cannot execute migrator and no Staging migration is accepted',async()=>{await assert.rejects(()=>migrate({query:f.ndb.query},{...f.newsfeed}),/MIGRATOR_BINDING_MISMATCH/);await assert.rejects(()=>migrate({query:f.ndb.query},{...f.newsfeed,environment:'staging'}),/ENVIRONMENT_NOT_ACTIVATED/);});
+});

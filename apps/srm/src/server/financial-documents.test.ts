@@ -7,10 +7,10 @@ const record = (overrides: Record<string, unknown> = {}) => ({ id: "xml-1", docu
 
 const archiveOrg = "11111111-1111-4111-8111-111111111111", archiveNip = "5213390341";
 test('financial position order retains Polish numeric collation and original evidence',()=>{
- const paths=['Bilans.Łącznie10','Bilans.Łącznie2','Bilans.Aktywa10','Bilans.Aktywa2','Bilans.Aktywa02','Bilans.Zapas','Bilans.Żródło','RZiS.RZiSKalk.A.Pozycja10','RZiS.RZiSKalk.A.Pozycja2'];
+ const paths=['Bilans>Łącznie10','Bilans.Łącznie2','Bilans>Aktywa10','Bilans.Aktywa2','Bilans.Aktywa02','Bilans.Zapas','Bilans.Żródło','RZiS>RZiSKalk>A>Pozycja10','RZiS.RZiSKalk.A.Pozycja2'];
  const source=record({content:{schema:{name:'JednostkaInnaWZlotych',version:'1-3'},extracted_fields:Object.fromEntries(paths.map((p,i)=>[p+'.KwotaA',String(i+1)]))}});
  const before=JSON.stringify(source),document=projectFinancialDocuments([source])[0];
- assert.deepEqual(document.rows.map(r=>r.sourcePath),paths.slice().sort((a,b)=>a.localeCompare(b,'pl',{numeric:true})));
+ assert.deepEqual(document.rows.map(r=>r.sourcePath),paths.slice().sort((a,b)=>a.replaceAll('>','.').localeCompare(b.replaceAll('>','.'),'pl',{numeric:true})));
  assert.equal(document.checksum,createHash('sha256').update(before).digest('hex'));
  assert.equal(JSON.stringify(source),before);
 });

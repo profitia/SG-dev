@@ -1,0 +1,55 @@
+name: Newsfeed backend
+on:
+  pull_request:
+    paths: ['apps/newsfeed-runtime/**', 'apps/platform-source-hub/**', 'packages/newsfeed-contracts/**', 'packages/platform-source-hub-contracts/**', 'packages/platform-contracts/**', '.github/workflows/newsfeed-ci.yml']
+  push:
+    branches: [main]
+    paths: ['apps/newsfeed-runtime/**', 'apps/platform-source-hub/**', 'packages/newsfeed-contracts/**', 'packages/platform-source-hub-contracts/**', 'packages/platform-contracts/**', '.github/workflows/newsfeed-ci.yml']
+permissions:
+  contents: read
+jobs:
+  connector:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: newsfeed_test_owner
+          POSTGRES_PASSWORD: isolated_ci_only
+          POSTGRES_DB: postgres
+        ports: ['5432:5432']
+        options: --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      SOURCE_HUB_TEST_ADMIN_URL: postgresql://newsfeed_test_owner:isolated_ci_only@127.0.0.1:5432/postgres
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24.15.0'
+      - name: Validate governance and preserved ownership boundaries
+        run: >-
+          node scripts/governance/validate-governance-manifest.mjs &&
+          node --test scripts/governance/governance.test.mjs
+          scripts/governance/identity-runtime-onboarding.test.mjs
+          scripts/governance/krs-registry-routing.test.mjs
+      - name: Install only public test and type tooling without lifecycle scripts
+        run: |
+          npm --prefix apps/platform-source-hub ci --include=dev --install-links --ignore-scripts --no-audit --no-fund
+          npm --prefix apps/newsfeed-runtime ci --include=dev --install-links --ignore-scripts --no-audit --no-fund
+          npm --prefix apps/architecture-lab ci --ignore-scripts --no-audit --no-fund
+          npm --prefix packages/platform-contracts/current-e1-authority ci --install-links --ignore-scripts --no-audit --no-fund
+      - name: Test connector security, filter semantics and neutral consumer contract
+        working-directory: apps/newsfeed-runtime
+        run: npm test && npm run typecheck && npm run build
+      - name: Verify every changed path under its actual registered owner
+        env:
+          CI_ROUTING_BASE: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+          CI_ROUTING_EVENT: ${{ github.event_name }}
+          CI_ROUTING_VALIDATION: ${{ github.sha }}
+          CI_ROUTING_HEAD: ${{ github.event.pull_request.head.sha }}
+        run: node apps/platform-source-hub/scripts/ci-routing.mjs --base "$CI_ROUTING_BASE"
+      # Provider credentials, paid/live requests and deployments are deliberately absent.

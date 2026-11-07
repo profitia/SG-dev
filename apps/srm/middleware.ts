@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { hasDemoSession } from "./src/server/demo-auth";
+import { PRESENTATION_ROUTES } from "@profitia/srm-xray/full-report-operations";
 
 export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
@@ -12,6 +13,12 @@ export async function middleware(request: NextRequest) {
   }
   // These accepted entries own their complete backend identity/permission/audit
   // boundary. Other legacy entrances are still closed in explicit Clerk mode.
+  // Presentation admission delegates only the closed contract path/method pairs
+  // to their peer verifier and current HUMAN/E1 boundary; it grants no access.
+  if (process.env.PROFITIA_AUTH_PROVIDER === "clerk" &&
+    Object.values(PRESENTATION_ROUTES).some(route => route.path === path && route.method === request.method)) {
+    return NextResponse.next({ headers: { "Cache-Control": "private, no-store", "Vary": "Cookie, Authorization" } });
+  }
   if (["/api/xray/admission", "/api/xray/report-data", "/api/xray/financial-excel", "/api/xray/financial-summary", "/api/xray/requests",
     "/api/xray/search", "/api/xray/lookup", "/api/xray/jdg", "/api/xray/jdg/kys",
     "/api/xray/kys", "/api/xray/kys/pesel", "/api/xray/kys/pdf", "/api/xray/kys/krs", "/api/xray/web-identity", "/api/supplier-locations",

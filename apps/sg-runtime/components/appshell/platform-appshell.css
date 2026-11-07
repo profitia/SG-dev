@@ -118,18 +118,50 @@
 
 .appshell .as-module-workspace{--adp-font-family:SpendGuruAppShellInter,Arial,sans-serif;min-width:0}
 .appshell .as-module-error{max-width:90rem;margin:auto;padding:var(--srm-page-block) var(--srm-page-gutter)}
-.appshell.as-module-active .as-main{max-width:none;padding:0}
-.appshell.as-module-active .as-workspace{display:block}
-/* Keep the shared overlay below the public module return row in every state. */
-.appshell.as-module-active .as-assistant{--as-assistant-top:calc(5.5rem + var(--srm-page-block) + 2.75rem + var(--srm-space-compact));position:fixed;z-index:40;right:0;top:var(--as-assistant-top);width:min(28.625rem,100%);height:calc(100dvh - var(--as-assistant-top) - var(--srm-space-compact));pointer-events:none}
-.appshell.as-module-active .as-assistant .srm-chat-slot{height:100%;min-height:0}
-.appshell.as-module-active .as-assistant .srm-chat-motion,
-.appshell.as-module-active .as-assistant .srm-chat-ribbon,
-.appshell.as-module-active .as-assistant .srm-chat-detached-ribbon{pointer-events:auto}
-.appshell.as-module-active .as-assistant .srm-chat-slot.is-collapsed .srm-chat-motion{pointer-events:none}
+.appshell.as-module-active .as-workspace{position:relative}
+/* The same host grid owns the assistant on the desk and in every module.
+   Module content never sits underneath a floating assistant panel. */
+@media(min-width:1101px){
+ .appshell.as-module-active .as-assistant{position:sticky;align-self:start;top:1rem;height:max(20rem,calc(100dvh - 6rem - var(--srm-page-block)));min-height:0}
+ .appshell.as-module-active .as-assistant .srm-chat-slot{height:100%;min-height:0}
+ .appshell.as-module-active .as-workspace.is-chat-collapsed .as-module-workspace{grid-column:1/-1;padding-right:4.625rem}
+ .appshell.as-module-active .as-workspace.is-chat-collapsed .as-assistant{position:absolute;right:0;top:0;width:3.625rem;height:9rem;min-height:0}
+ .appshell.as-module-active .as-workspace.is-chat-collapsed .as-assistant .srm-chat-slot{width:3.625rem;height:9rem;min-height:9rem}
+}
+@media(max-width:1100px){
+ .appshell.as-module-active .as-workspace.is-chat-collapsed .as-assistant .srm-chat-slot{width:100%;height:9rem;min-height:9rem}
+}
 
 .appshell .as-assistant[hidden]{display:none}
 .appshell .as-assistant-portal{display:flex;flex-direction:column;min-height:0;width:100%;height:100%}
-.appshell .as-xray-assistant-host{display:flex;min-height:32rem}
-.appshell .as-xray-assistant-host .srm-chat-slot{height:100%;min-height:32rem;flex:1}
+/* X-Ray consumes the public empty assistant slot; its former assistant column
+   returns to module content while the AppShell rail stays outside the module. */
+.appshell [data-appshell-module="xray"] .srm-finance-module .srm-overview{grid-template-columns:minmax(0,1fr)}
 .appshell .srm-chat-screen-context{margin:0;padding:.5rem 1rem;color:var(--muted);font-size:.8125rem;overflow-wrap:anywhere}
+
+/* SRM-C106 / APP-01 / APP-MOT-01 / SRM-B68 — approved size-locked desk.
+   Card width is resolved against the workspace in both states. Module layouts
+   retain their own geometry; only the desk participates in this reflow. */
+.appshell:not(.as-module-active) .as-workspace{position:relative}
+.appshell:not(.as-module-active) .as-app-card{width:100%;min-width:0;align-self:start}
+@media(min-width:1101px){
+ .appshell:not(.as-module-active) .as-workspace{container-type:inline-size}
+ .appshell:not(.as-module-active) .as-applications{--as-card-locked-width:calc((var(--as-workspace-width,100cqw) - 4.625rem - 1rem) / 2)}
+ .appshell:not(.as-module-active) .as-app-stack{grid-template-columns:minmax(0,var(--as-card-locked-width))}
+ .appshell:not(.as-module-active) .as-workspace.is-chat-collapsed .as-applications{grid-column:1/-1;padding-right:4.625rem}
+ .appshell:not(.as-module-active) .as-workspace.is-chat-collapsed .as-app-stack{grid-template-columns:repeat(2,minmax(0,var(--as-card-locked-width)));gap:1rem;align-items:start}
+ .appshell:not(.as-module-active) .as-workspace.is-chat-collapsed .as-app-card:nth-child(1){grid-column:1;grid-row:1}
+ .appshell:not(.as-module-active) .as-workspace.is-chat-collapsed .as-app-card:nth-child(2){grid-column:1;grid-row:2}
+ .appshell:not(.as-module-active) .as-workspace.is-chat-collapsed .as-app-card:nth-child(3){grid-column:2;grid-row:1}
+ .appshell:not(.as-module-active) .as-workspace.is-chat-collapsed .as-app-card:nth-child(4){grid-column:2;grid-row:2}
+ .appshell:not(.as-module-active) .as-workspace.is-chat-collapsed .as-assistant{position:absolute;right:0;top:0;width:3.625rem;min-width:0;z-index:5}
+ .appshell:not(.as-module-active) .as-workspace.is-chat-collapsed .as-assistant .srm-chat-slot{width:3.625rem;min-height:9rem;height:9rem;overflow:clip}
+}
+@media(max-width:1100px){
+ .appshell:not(.as-module-active) .as-workspace.is-chat-collapsed .as-app-stack{grid-template-columns:minmax(0,1fr);align-items:start}
+ .appshell:not(.as-module-active) .as-workspace.is-chat-collapsed .as-assistant .srm-chat-slot{width:100%;min-height:9rem;height:9rem}
+}
+
+/* The module skip link is relative to its host slot; keep it off canvas until keyboard focus. */
+.appshell [data-appshell-module="xray"] .report-skip-link{position:fixed;top:1rem;left:1rem;transform:translateY(-10rem)}
+.appshell [data-appshell-module="xray"] .report-skip-link:focus{transform:none}

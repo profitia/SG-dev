@@ -68,11 +68,12 @@ export function humanPilot2(repo,output,proof){
  })
  for(const file of['app/session-boundary.tsx','app/login/clerk-sign-in.tsx','src/modules/xray/krs-session-transport.ts',
   'src/modules/xray/supplier-search-gateway.ts','src/modules/xray/use-supplier-report.ts'])copy('apps/srm/'+file)
- for(const file of['supplier-search.tsx','supplier-search.css','shared-financial-summary.ts'])copy('packages/srm-xray/src/'+file)
+ for(const file of['supplier-search.tsx','supplier-search.css','shared-financial-summary.ts','supplier-search-gateway.ts'])copy('packages/srm-xray/src/'+file)
  patch('packages/srm-xray/src/index.ts',source=>source+"\nexport {SupplierSearch} from './supplier-search';\nexport type {SupplierSearchGateway,SupplierCandidate,SupplierSelection} from './supplier-search';\n")
  patch('packages/srm-xray/package.json',source=>{
   const pkg=JSON.parse(source);pkg.exports['./supplier-search.css']='./src/supplier-search.css'
   pkg.exports['./shared-financial-summary']={types:'./src/shared-financial-summary.ts',default:'./src/shared-financial-summary.ts'}
+  pkg.exports['./supplier-search-gateway']={types:'./src/supplier-search-gateway.ts',default:'./src/supplier-search-gateway.ts'}
   return JSON.stringify(pkg,null,2)+'\n'
  })
  patch('apps/srm/app/layout.tsx',source=>{

@@ -1,0 +1,29 @@
+{
+  "name": "@profitia/platform-source-hub-contracts",
+  "version": "1.4.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24.15.0 <25"
+  },
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "import": "./index.mjs"
+    },
+    "./client": {
+      "types": "./client.d.mts",
+      "import": "./client.mjs"
+    },
+    "./commodities": {
+      "types": "./commodities-v1.d.mts",
+      "import": "./commodities-v1.mjs"
+    }
+  },
+  "peerDependencies": {
+    "@profitia/platform-current-e1-authority": "1.1.0 || 1.2.0 || 1.2.1"
+  },
+  "scripts": {
+    "build": "node --check index.mjs && node --check commodities-v1.mjs && node --check client.mjs"
+  }
+}

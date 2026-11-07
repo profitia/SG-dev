@@ -42,16 +42,17 @@ function ensureDir(dir: string): void {
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true })
 }
 
-export function getExecutionTrailPaths(baseName: string): ExecutionTrailPaths {
-  ensureDir(LOGS_DIR)
+export function getExecutionTrailPaths(baseName: string, pmosRoot = PMOS_ROOT): ExecutionTrailPaths {
+  const logsDir = path.join(pmosRoot, ".pmos/conversations/logs")
+  ensureDir(logsDir)
   return {
-    jsonlPath: path.join(LOGS_DIR, `${baseName}.execution-trail.jsonl`),
-    markdownPath: path.join(LOGS_DIR, `${baseName}.execution-trail.md`),
+    jsonlPath: path.join(logsDir, `${baseName}.execution-trail.jsonl`),
+    markdownPath: path.join(logsDir, `${baseName}.execution-trail.md`),
   }
 }
 
-export function readExecutionTrailEvents(baseName: string): ExecutionTrailEvent[] {
-  const { jsonlPath } = getExecutionTrailPaths(baseName)
+export function readExecutionTrailEvents(baseName: string, pmosRoot = PMOS_ROOT): ExecutionTrailEvent[] {
+  const { jsonlPath } = getExecutionTrailPaths(baseName, pmosRoot)
   if (!fs.existsSync(jsonlPath)) return []
   const raw = fs.readFileSync(jsonlPath, "utf-8").trim()
   if (!raw) return []
@@ -79,18 +80,18 @@ function buildJsonl(events: ExecutionTrailEvent[]): string {
   return events.map((event) => JSON.stringify(event)).join("\n") + (events.length > 0 ? "\n" : "")
 }
 
-export function writeExecutionTrailArtifacts(baseName: string, events: ExecutionTrailEvent[]): void {
-  const { jsonlPath, markdownPath } = getExecutionTrailPaths(baseName)
+export function writeExecutionTrailArtifacts(baseName: string, events: ExecutionTrailEvent[], pmosRoot = PMOS_ROOT): void {
+  const { jsonlPath, markdownPath } = getExecutionTrailPaths(baseName, pmosRoot)
   atomicWriteFileSet([
     { filePath: jsonlPath, content: buildJsonl(events) },
     { filePath: markdownPath, content: renderExecutionTrailMarkdown(events) },
   ], {
     label: `execution-trail:${baseName}`,
-    journalPath: path.join(LOGS_DIR, `${baseName}.execution-trail.write.json`),
+    journalPath: path.join(path.dirname(jsonlPath), `${baseName}.execution-trail.write.json`),
   })
 }
 
-export function appendExecutionTrailEvent(input: ExecutionTrailAppendInput): ExecutionTrailEvent {
+export function appendExecutionTrailEvent(input: ExecutionTrailAppendInput, pmosRoot = PMOS_ROOT): ExecutionTrailEvent {
   const event: ExecutionTrailEvent = {
     eventId: randomUUID(),
     taskId: input.taskId,
@@ -110,14 +111,14 @@ export function appendExecutionTrailEvent(input: ExecutionTrailAppendInput): Exe
   const validation = validateExecutionTrailEvent(event)
   if (!validation.valid) throw new Error(`Execution trail event invalid: ${validation.errors.join(" | ")}`)
 
-  const events = readExecutionTrailEvents(input.baseName)
+  const events = readExecutionTrailEvents(input.baseName, pmosRoot)
   events.push(event)
-  writeExecutionTrailArtifacts(input.baseName, events)
+  writeExecutionTrailArtifacts(input.baseName, events, pmosRoot)
   return event
 }
 
-export function validateExecutionTrail(baseName: string): ExecutionTrailValidationResult {
-  const { jsonlPath, markdownPath } = getExecutionTrailPaths(baseName)
+export function validateExecutionTrail(baseName: string, pmosRoot = PMOS_ROOT): ExecutionTrailValidationResult {
+  const { jsonlPath, markdownPath } = getExecutionTrailPaths(baseName, pmosRoot)
   const issues: ExecutionTrailValidationResult["issues"] = []
   if (!fs.existsSync(jsonlPath)) {
     return {
@@ -134,7 +135,7 @@ export function validateExecutionTrail(baseName: string): ExecutionTrailValidati
 
   let events: ExecutionTrailEvent[] = []
   try {
-    events = readExecutionTrailEvents(baseName)
+    events = readExecutionTrailEvents(baseName, pmosRoot)
   } catch (error) {
     return {
       baseName,

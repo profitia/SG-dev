@@ -1,0 +1,21 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {fixture,command,U,A} from './fixtures.mjs';
+import {migrate} from '../scripts/migrate.mjs';
+test('SYNTHETIC_ONLY: Source Hub installation, migrations, intent idempotency and private/source separation',async t=>{
+ const f=await fixture();t.after(()=>f.close());const request=new Request(f.newsfeed.publicOrigin+'/operation',{headers:{authorization:'Bearer SYNTHETIC_A'}});
+ // This is the local private E1 path. M2M forwarding is exercised separately.
+ const execute=action=>f.hubAuthorizer.execute({request,organisationId:A,resourceId:'source-hub-private',write:true},action);
+ await t.test('both capability schemas were applied twice by an ordinary migrator and remain ready',async()=>{assert.equal(await f.hubRepository.ready(),true);assert.equal(await f.admission.ready(),true);await f.hdb.verifyLogin();await f.sdb.verifyLogin();});
+ await t.test('additive migration is recorded once and ordinary runtime only reads its digest',async()=>{
+  const r=await f.hdb.query('SELECT version,digest FROM source_hub.migrations');assert.equal(r.rows.length,1);assert.equal(r.rows[0].version,'002-te-news');assert.match(r.rows[0].digest,/^[a-f0-9]{64}$/);
+  const p=await f.hdb.query("SELECT api_families FROM source_hub.providers WHERE id='trading-economics'");assert(p.rows[0].api_families.includes('news-discovery'));
+  await assert.rejects(()=>f.hdb.query("DELETE FROM source_hub.migrations"));await assert.rejects(()=>f.sdb.query('SELECT * FROM source_hub.migrations'));
+  await f.admin(0,'source_hub_development_owner',q=>q.query("UPDATE source_hub.migrations SET digest=repeat('0',64) WHERE version='002-te-news'"));assert.equal(await f.hubRepository.ready(),false);
+  await f.admin(0,'source_hub_development_owner',q=>q.query("UPDATE source_hub.migrations SET digest=$1 WHERE version='002-te-news'",[r.rows[0].digest]));assert.equal(await f.hubRepository.ready(),true);
+ });
+ await t.test('source login cannot read user queries; private login cannot mutate Source controls',async()=>{for(const sql of['SELECT * FROM source_hub.acquisitions','SELECT * FROM source_hub.provider_licences'])await assert.rejects(()=>f.sdb.query(sql));for(const sql of['SELECT * FROM profitia_ingestion.budgets','SELECT * FROM profitia_external_call.policies','UPDATE source_hub.provider_licences SET retention_seconds=31536000'])await assert.rejects(()=>f.hdb.query(sql));});
+ await t.test('private pending intent is stable and cannot be repeated or reused with different filters',async()=>{const first=await execute((c,q)=>f.hubRepository.begin(q,c,command,f.newsfeed.applicationId,'pending-idempotency'));assert.equal(first.kind,'new');await assert.rejects(()=>execute((c,q)=>f.hubRepository.begin(q,c,command,f.newsfeed.applicationId,'pending-idempotency')),{code:'ACQUISITION_IN_PROGRESS'});await assert.rejects(()=>execute((c,q)=>f.hubRepository.begin(q,c,{...command,criteria:{mode:'articles',text:'other'}},f.newsfeed.applicationId,'pending-idempotency')),{code:'IDEMPOTENCY_CONFLICT'});assert.equal((await f.hdb.query('SELECT * FROM source_hub.acquisitions')).rows.length,0);});
+ await t.test('licence allows no unadmitted consumer and runtime cannot become migrator',async()=>{await assert.rejects(()=>execute((c,q)=>f.hubRepository.begin(q,c,command,'foreign-consumer','foreign-consumer-key')),{code:'LICENCE_ADMISSION_REQUIRED'});await assert.rejects(()=>migrate({query:f.hdb.query},f.hub),/MIGRATOR_BINDING_MISMATCH/);assert.equal(f.state.providerCalls.length,0);});
+ await t.test('a result not retained by the external host is uncertain, never recorded as a zero-cost unsent call',async()=>{const a=await execute((c,q)=>f.hubRepository.begin(q,c,command,f.newsfeed.applicationId,'unretained-result'));await execute((c,q)=>f.hubRepository.failed(q,c,a,command,{code:'EXTERNAL_RESULT_UNVERIFIED'},{certainty:'RESULT_NOT_RETAINED',upstreamAttempts:null,value:null}));await f.admin(0,'source_hub_development_owner',async q=>{const r=await q.query('SELECT a.status,u.outcome,u.upstream_attempts FROM source_hub.acquisitions a JOIN source_hub.provider_usage u ON u.acquisition_id=a.id WHERE a.id=$1',[a.id]);assert.equal(r.rows[0].status,'UNCERTAIN');assert.equal(r.rows[0].outcome,'UNVERIFIED');assert.equal(r.rows[0].upstream_attempts,null);});});
+});

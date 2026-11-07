@@ -5,6 +5,10 @@ import test from 'node:test'
 import pg from 'pg'
 import {NextRequest} from 'next/server'
 import {middleware} from '../middleware.ts'
+import {createPeerOperationSigner} from '@profitia/platform-contracts/peer-operation'
+import {PRESENTATION_ROUTES} from '@profitia/srm-xray/full-report-operations'
+import {readSrmPeerXRayConfiguration} from '../src/server/peer-xray.ts'
+import {presentationPeerRoutes,withSrmPresentationPeer} from '../src/server/peer-xray-presentation.ts'
 import {assertIsolatedTestConnection} from '../../architecture-lab/src/operation-postgres-fixture.mjs'
 import {privateBusinessPlan} from '../db/private-store/initialize.mjs'
 import {createSupplierLocationRuntime,createSupplierLocationHandler} from '../src/server/supplier-locations.ts'
@@ -118,7 +122,8 @@ for(const p1 of[true])test('organization location authority in actual SRM native
   const ordinary=new URL(url);ordinary.username=ROLE;ordinary.password='isolated_ci_only';pool=new pg.Pool({connectionString:ordinary.toString(),max:3});auditPool=new pg.Pool({connectionString:ordinary.toString(),max:1})
 
 
-  const clerk={async authenticateRequest(request){const user=request.headers.get('authorization')?.replace(/^Bearer external-/,'');const auth={isAuthenticated:true,tokenType:'session_token',userId:'external-'+user,sessionId:'session-'+user,actor:null,sessionClaims:{iss:ISSUER,sub:'external-'+user,sid:'session-'+user,azp:ORIGIN,exp:Math.floor(Date.now()/1000)+3600}};return{status:[U,V].includes(user)?'signed-in':'signed-out',isAuthenticated:[U,V].includes(user),toAuth:()=>auth}},sessions:{async getSession(id){return{id,userId:id.replace('session-','external-'),status:'active',expireAt:Date.now()+3600000,abandonAt:Date.now()+3600000,actor:null}}},users:{async getUser(id){return{id,banned:false,locked:false,deprovisioned:false}}}}
+  let presentationSessionExpired=false
+  const clerk={async authenticateRequest(request){const user=request.headers.get('authorization')?.replace(/^Bearer external-/,'');const auth={isAuthenticated:true,tokenType:'session_token',userId:'external-'+user,sessionId:'session-'+user,actor:null,sessionClaims:{iss:ISSUER,sub:'external-'+user,sid:'session-'+user,azp:new URL(request.url).origin,exp:Math.floor(Date.now()/1000)+3600}};return{status:[U,V].includes(user)?'signed-in':'signed-out',isAuthenticated:[U,V].includes(user),toAuth:()=>auth}},sessions:{async getSession(id){return{id,userId:id.replace('session-','external-'),status:'active',expireAt:presentationSessionExpired?0:Date.now()+3600000,abandonAt:Date.now()+3600000,actor:null}}},users:{async getUser(id){return{id,banned:false,locked:false,deprovisioned:false}}}}
   const options={pool,auditPool,clerk,application:{appId:'srm',profileId:'SUPPLIER_INTELLIGENCE_STANDALONE',environment:'development',deploymentId:'isolated-locations',configurationVersion:'locations-test-v1',identityIssuer:ISSUER,organisationId:null,features:['supplier_report'],operations:['supplier.location.read']},identity:{appId:'srm',environment:'development',issuer:ISSUER,authorizedParties:[ORIGIN]},binding:{applicationId:'srm',environment:'development',projectId:'locations-project',branchId:'locations-branch',databaseName:DATABASE,role:ROLE,schemaDigest:hash(core('001-internal-access.sql'))},module:{id:'supplier_report',schemaDigest:hash(core('002-module-scope.sql')),auditSchemaDigest:hash(core('003-module-audit.sql'))},businessDigest:hash(extension),secret:'synthetic-local-secret-'.repeat(3),ledger:{schemaDigest:hash(core('006-request-reservation.sql')),externalSchemaDigest:hash(core('010-external-request-admission.sql')),operationSchemaDigest:hash(core('017-additional-request-operations.sql')),locationSchemaDigest:hash(core('019-supplier-location-operations.sql'))}}
   let parentLockProbed=false,laterParentLockProbed=false
   if(p1){
@@ -183,6 +188,26 @@ for(const p1 of[true])test('organization location authority in actual SRM native
    const updated=await call({action:'UPDATE',supplierId:S,locationId:location.id,expectedVersion:location.version,command:{...manual,label:'Edited by another member'}},V,'org_edit_'+randomUUID());assert.equal(updated.status,202,await updated.clone().text())
    const row=(await owner.query('SELECT created_by_user_id,updated_by_user_id FROM srm.supplier_locations WHERE location_id=$1',[location.id])).rows[0];assert.equal(row.created_by_user_id,U);assert.equal(row.updated_by_user_id,V)
    location=(await(await page()).json()).items[0]
+  })
+  await t.test('signed presentation passes middleware then enforces actual current session, E1 and organization fences',async()=>{
+   const peerEnv={PROFITIA_XRAY_PEER_VERSION:'1.0.0',TARGET_ENVIRONMENT:'development',PROFITIA_AUTH_PROVIDER:'clerk',RENDER_SERVICE_ID:'srv-db1vu6gm7kps73d0e3r0',PROFITIA_XRAY_PEER_KEY_ID:'synthetic-location-test',PROFITIA_XRAY_PEER_KEY:Buffer.alloc(32,43).toString('base64url')}
+   const config={...readSrmPeerXRayConfiguration(peerEnv),routes:presentationPeerRoutes()},sign=createPeerOperationSigner(config)
+   const peerRuntime=createSupplierLocationRuntime({...limited,identity:{...limited.identity,authorizedParties:[ORIGIN,config.sourceOrigin]}})
+   const peerHandler=withSrmPresentationPeer(createSupplierLocationHandler(peerRuntime,A),peerEnv)
+   const send=async(supplierId=S,user=U)=>{
+    const signed=await sign(new Request(config.targetOrigin+PRESENTATION_ROUTES.locations.path,{method:'POST',headers:{Authorization:'Bearer external-'+user,'Content-Type':'application/json','Idempotency-Key':'peer_location_'+randomUUID()},body:JSON.stringify({action:'READ',supplierId,group:'USER_LOCATIONS',offset:0,limit:50})}))
+    const original=new NextRequest(signed),gate=await middleware(original)
+    assert.equal(gate.headers.get('x-middleware-next'),'1')
+    return peerHandler(original)
+   }
+   for(const user of [U,V]){const response=await send(S,user);assert.equal(response.status,200,await response.clone().text());assert.equal((await response.json()).items[0].id,location.id)}
+   assert.equal((await send(S,'unverified-fixture-user')).status,401)
+   presentationSessionExpired=true
+   try{assert.equal((await send()).status,401)}finally{presentationSessionExpired=false}
+   assert.equal((await send(SB)).status,403,'valid peer transport cannot reveal another organization supplier')
+   const deny=randomUUID()
+   await controlled(()=>owner.query("INSERT INTO profitia_access.permission_grants VALUES($1,'srm',$2,$3,'DENY','supplier.location.read','supplier_report',$4)",[deny,A,V,'supplier-locations:'+S]))
+   try{assert.equal((await send(S,V)).status,403);assert.equal((await send(S,U)).status,200)}finally{await controlled(()=>owner.query('DELETE FROM profitia_access.permission_grants WHERE grant_id=$1',[deny]))}
   })
   await t.test('MGBI headquarters sync is stable, keeps manual data and does not acquire KYS',async()=>{
    const section=mapMgbiGeneralRecord({id:'synthetic-org-wp',identifiers:{pl_nip:NIP,pl_krs:'0000123456'},content:{current_excerpt:{dane:{dzial1:{danePodmiotu:{nazwa:'Company'},siedzibaIAdres:{adres:{ulica:'Prosta',nrDomu:'1',kodPocztowy:'00-001',miejscowosc:'Warszawa',kraj:'Polska'}}}}}}},new Date().toISOString()).section

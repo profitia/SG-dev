@@ -1,4 +1,5 @@
 'use client'
+import {productAnalytics} from '@/lib/product-analytics/adapter'
 
 import Link from 'next/link'
 import { useEffect, useState, useTransition } from 'react'
@@ -170,8 +171,8 @@ export function CategoryCostScanClient({ locale, categoryId }: CategoryCostScanC
   function loadScan(nextRange: CostScanRangePreset) {
     setError(null)
 
-    return fetch(`/api/cost-scan/category/${categoryId}?range=${nextRange}`, { cache: 'no-store' })
-      .then(readJson<CategoryCostScanResult>)
+    return productAnalytics.observe('cost_scan','cost_scan',fetch(`/api/cost-scan/category/${categoryId}?range=${nextRange}`, { cache: 'no-store' })
+      .then(readJson<CategoryCostScanResult>),payload=>payload.status==='COMPLETE'?'success':'partial')
       .then((payload) => {
         setResult(payload)
         setRange(nextRange)
@@ -233,6 +234,7 @@ export function CategoryCostScanClient({ locale, categoryId }: CategoryCostScanC
                     })
                   }}
                   data-testid={`cost-scan-range-${preset}`}
+                  data-analytics-id="cost_scan_range"
                 >
                   {preset}
                 </button>

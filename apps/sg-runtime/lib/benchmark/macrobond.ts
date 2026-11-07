@@ -59,6 +59,7 @@ function newProviderState(){return {
  tokenFlight:null as Promise<string>|null,
  metadataDefinitionCache:null as CacheEntry<BenchmarkMetadataDefinition[]>|null,
  metadataValuesCache:new Map<string,CacheEntry<BenchmarkMetadataValue[]>>(),
+ metadataLabelFlights:new Map<string,Promise<BenchmarkMetadataValue[]>>(),
  semanticContextCache:new Map<string,CacheEntry<BenchmarkSemanticContext>>(),
  semanticEntityCache:new Map<string,CacheEntry<Record<string,unknown>|null>>(),
 }}
@@ -483,9 +484,18 @@ async function resolveMetadataDisplayLabel(metadataKey: string, value: string | 
     return value
   }
 
+  // All candidates in one search use the same unfiltered label dictionary.
+  // Share only its in-flight read inside the existing provider state; keep the
+  // existing cache limits, Source admission and request-isolation semantics.
+  const state = providerState()
+  let flight = state.metadataLabelFlights.get(metadataKey)
+  if (!flight) {
+    flight = getMacrobondMetadataValues(metadataKey, []).then((result) => result.items)
+    state.metadataLabelFlights.set(metadataKey, flight)
+  }
   try {
-    const result = await getMacrobondMetadataValues(metadataKey, [])
-    return result.items.find((item) => item.value === value)?.label ?? value
+    const items = await flight
+    return items.find((item) => item.value === value)?.label ?? value
   } catch (error) {
     if (error instanceof BenchmarkAppError) {
       logPerf('BENCHMARK_LABEL_ENRICHMENT_FALLBACK', {
@@ -496,6 +506,8 @@ async function resolveMetadataDisplayLabel(metadataKey: string, value: string | 
     }
 
     throw error
+  } finally {
+    if (state.metadataLabelFlights.get(metadataKey) === flight) state.metadataLabelFlights.delete(metadataKey)
   }
 }
 
@@ -1371,7 +1383,7 @@ export async function getMacrobondSemanticContexts(seriesNames: string[]) {
   return Object.fromEntries(contexts.entries())
 }
 
-export async function fetchMacrobondSeriesHistory(seriesName: string): Promise<BenchmarkHistoricalSeriesResult> {
+export async function fetchMacrobondSeriesHistory(seriesName: string, options: { enrichDisplay?: boolean } = {}): Promise<BenchmarkHistoricalSeriesResult> {
   const payload = await macrobondRequest<Array<{ metadata?: Record<string, unknown>; dates?: unknown[]; values?: unknown[]; errorCode?: number }>>('/v1/series/fetchseries', {
     method: 'POST',
     body: JSON.stringify([{ name: seriesName, dateEndOfPeriod: true }]),
@@ -1387,7 +1399,7 @@ export async function fetchMacrobondSeriesHistory(seriesName: string): Promise<B
   const seriesUnit = getMetadataString(seriesMetadata, ['Unit', 'DisplayUnit', 'TitleUnit'])
   let metadata = seriesMetadata
 
-  if (seriesDisplayName === seriesName || !seriesUnit) {
+  if (options.enrichDisplay !== false && (seriesDisplayName === seriesName || !seriesUnit)) {
     try {
       const entityMetadata = await fetchMacrobondEntityMetadata(seriesName)
       metadata = {
@@ -1402,7 +1414,7 @@ export async function fetchMacrobondSeriesHistory(seriesName: string): Promise<B
   const entityDisplayName = getMetadataString(metadata, ['Title', 'Description', 'PrimName', 'Name']) ?? seriesName
   const entitySource = getMetadataString(metadata, ['Source'])
   const needsDisplayMetadata = entityDisplayName === seriesName || /^src_/i.test(entitySource ?? '')
-  if (needsDisplayMetadata) {
+  if (options.enrichDisplay !== false && needsDisplayMetadata) {
     try {
       const displayPayload = await searchMacrobondDisplayEntities(seriesName)
       const displayResult = (displayPayload.results ?? []).find((result) => getString(result, 'Name') === seriesName)

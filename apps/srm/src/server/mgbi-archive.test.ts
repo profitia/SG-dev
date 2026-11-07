@@ -1,6 +1,34 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { fetchMgbiPages, saveMgbiArchive,takePersistedMgbiArchive } from "./mgbi-archive";
+import { createHash } from 'node:crypto';
+import { captureFinitePayload } from '@profitia/platform-payload-capture';
+import { fetchMgbiPages,readPreparedMgbiPages,saveMgbiArchive,takePersistedMgbiArchive } from "./mgbi-archive";
+
+test('only complete reader-owned pages reuse an immutable archive representation and exact finite shape',async()=>{
+  const text='{"count":1,"results":[{"id":"synthetic","content":{"__proto__":{"x":1},"toJSON":"ordinary data","value":-0,"unicode":"Łódź\\n"}}]}';
+  const response=await fetchMgbiPages(new URL('https://api.mgbi.pl/records'),{},new AbortController().signal,async()=>new Response(text));
+  assert.equal(response.errorCode,null);
+  const data=readPreparedMgbiPages(response.pages,1)!;
+  assert(data);assert(Object.isFrozen(data));assert(Object.isFrozen(data.pages));assert(Object.isFrozen(response.records));
+  assert.throws(()=>{(response.records[0] as {id:string}).id='changed'},TypeError);
+  const expected=JSON.stringify({pages:[JSON.parse(text)]});
+  assert.equal(data.payload,expected);assert.equal(data.byteLength,Buffer.byteLength(expected));
+  assert.equal(data.digest,createHash('sha256').update(expected).digest('hex'));
+  const reference=captureFinitePayload(data.pages);
+  assert.equal(data.depth,reference.depth);assert.equal(data.nodeCount,reference.nodeCount);
+  assert.equal(readPreparedMgbiPages(response.pages,1),data);
+  assert.equal(readPreparedMgbiPages(response.pages,2),undefined);
+  assert.equal(readPreparedMgbiPages(Object.freeze([...response.pages]) as unknown[],1),undefined);
+  assert.equal(readPreparedMgbiPages(JSON.parse(JSON.stringify(response.pages)),1),undefined);
+});
+
+test('reader refuses non-finite parsed numbers and excessive depth instead of minting reusable pages',async()=>{
+  for(const text of ['{"count":1,"results":[{"value":1e999}]}',
+    '{"count":1,"results":['+'['.repeat(129)+'0'+']'.repeat(129)+']}']){
+    const result=await fetchMgbiPages(new URL('https://api.mgbi.pl/records'),{},new AbortController().signal,async()=>new Response(text));
+    assert.equal(result.errorCode,'INVALID_JSON');assert.equal(readPreparedMgbiPages(result.pages,0),undefined);
+  }
+});
 
 test('serialized or fabricated archive rows cannot mint a once-only writer receipt',()=>{
  const forged={organization_id:'11111111-1111-4111-8111-111111111111',nip:'5213390341',model:'pl-krs-rdf-record' as const,

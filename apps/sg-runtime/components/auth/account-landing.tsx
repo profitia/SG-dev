@@ -5,6 +5,7 @@ import { useAuth, useClerk } from '@clerk/react'
 import { useRouter } from 'next/navigation'
 import { AppShellDashboard } from '@/components/appshell/appshell-dashboard'
 import { dashboardPath } from '@/lib/appshell/adp-navigation'
+import {productAnalytics} from '@/lib/product-analytics/adapter'
 
 type State = { key: string; status: 'loading' | 'ready' | 'failed' | 'expired' | 'signing-out' | 'logout-failed'; userId?: string; expiresAt?: string; assistantAvatar?: 'male' | 'female' | null; salutation?: { firstName: string | null; vocative: string | null; dictionaryVersion: string | null } | null }
 export function AccountLanding({ locale, completionUrl, presentation = 'account', organisationBranding, dashboard = false }: {
@@ -25,6 +26,7 @@ export function AccountLanding({ locale, completionUrl, presentation = 'account'
     setState(previous => presentation === 'workspace' && previous.key === key && previous.status === 'ready'
       && Date.parse(previous.expiresAt ?? '') > Date.now() ? previous : { key, status: 'loading' })
     if (isLoaded && isSignedIn && userId && sessionId) void (async () => {
+      const attempt=state.key===key&&state.status==='ready'?null:productAnalytics.begin('account','account_verify',controller.signal)
       let denied = false
       try {
         const credential = await getToken({ skipCache: presentation === 'workspace' }); if (!credential) throw Error('SESSION_REQUIRED')
@@ -36,10 +38,13 @@ export function AccountLanding({ locale, completionUrl, presentation = 'account'
           || ![null, 'male', 'female'].includes(result.assistantAvatar)
           || !(result.salutation === null || result.salutation && ['firstName', 'vocative'].every(field => result.salutation[field] === null || typeof result.salutation[field] === 'string'))) throw Error('ACCOUNT_UNAVAILABLE')
         if (!controller.signal.aborted) {
+          productAnalytics.finish(attempt,'success')
+          productAnalytics.once('verified-auth','auth_session_established',{module:'account'})
           setRefreshError(false)
           setState({ key, status: 'ready', userId: result.userId, expiresAt: result.expiresAt, assistantAvatar: result.assistantAvatar, salutation: result.salutation })
         }
       } catch { if (!controller.signal.aborted) {
+        productAnalytics.finish(attempt,'error')
         setRefreshError(!denied)
         // A missing SDK token, network error or 5xx is not an access denial.
         // Keep this mounted workspace only while its same-scope proof is valid;

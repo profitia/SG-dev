@@ -7,12 +7,12 @@ import {XRAY_LOGO_DATA_URL} from './presentation-assets';
 import {FullSupplierReport,fullReportSlots,reportMessage} from './full-report';
 import {useSupplierReport} from './workflow';
 import {supplierNip,inactiveSupplier} from './workflow-controller';
-export type FullXRayWorkflowProps={locale?:'pl'|'en';transport:typeof fetch;searchGateway:SupplierSearchGateway;active?:boolean;observeWorkflowTiming?:boolean;assistantHost?:ReactNode;onAssistantContext?:(context:import("./assistant-context").AssistantApplicationContext|null)=>void;mapRuntimeOrigin?:string;loadMap?:()=>Promise<import('./supplier-locations-view').SupplierMapMount>;assistantAvatars?:{male:string;anna:string};
+export type FullXRayWorkflowProps={presentation?:'standalone'|'sg2';locale?:'pl'|'en';transport:typeof fetch;searchGateway:SupplierSearchGateway;active?:boolean;observeWorkflowTiming?:boolean;assistantHost?:ReactNode;onAssistantContext?:(context:import("./assistant-context").AssistantApplicationContext|null)=>void;mapRuntimeOrigin?:string;loadMap?:()=>Promise<import('./supplier-locations-view').SupplierMapMount>;assistantAvatars?:{male:string;anna:string};
   ReportComponent?:typeof FullSupplierReport;sessionActions?:(controls:ReactNode,entry:boolean,inactive:boolean)=>ReactNode;onReturn?:()=>void};
 /** Full product UI shared by both hosts. Every external action uses its host's
  * authenticated transport; local charts never fetch a provider. */
 export function FullXRayWorkflow(props:FullXRayWorkflowProps){return <XRayLocaleProvider locale={props.locale??"pl"}><FullWorkflow {...props}/></XRayLocaleProvider>}
-function FullWorkflow({transport,searchGateway,active=true,observeWorkflowTiming=false,assistantHost,onAssistantContext,mapRuntimeOrigin,loadMap,assistantAvatars,ReportComponent=FullSupplierReport,sessionActions,onReturn}:FullXRayWorkflowProps){
+function FullWorkflow({presentation='standalone',transport,searchGateway,active=true,observeWorkflowTiming=false,assistantHost,onAssistantContext,mapRuntimeOrigin,loadMap,assistantAvatars,ReportComponent=FullSupplierReport,sessionActions,onReturn}:FullXRayWorkflowProps){
   const {state,controller}=useSupplierReport(transport);
   const beginSearchTiming=useWorkflowRenderTiming(state,active&&observeWorkflowTiming);
   const [identifier,setIdentifier]=useState('');
@@ -94,12 +94,12 @@ function FullWorkflow({transport,searchGateway,active=true,observeWorkflowTiming
     window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
   }
 
-  return <main className="appshield srm-xray-product">
+  return <main className="appshield srm-xray-product" data-presentation={presentation==='sg2'?'sg2':undefined}>
     {!inactive && <CanonLink canonId="SRM-C55" usage="page:01" className="report-skip-link" href={entry ? "#supplier-search" : "#new-report"}>Przejdź do wyszukiwania</CanonLink>}
-    <SupplierHeader logoSrc={XRAY_LOGO_DATA_URL}>
+    {presentation==='sg2'?<nav className="srm-host-actions" aria-label="Nawigacja X-Ray">{controls}</nav>:<SupplierHeader logoSrc={XRAY_LOGO_DATA_URL}>
       {sessionActions ? sessionActions(controls,entry,inactive) : controls}
-    </SupplierHeader>
-    {entry && <SupplierSearch nip={identifier} onNipChange={setIdentifier} inputRef={inputRef} busy={state.busy}
+    </SupplierHeader>}
+    {entry && <SupplierSearch searchMode={presentation==='sg2'?'nip-only':undefined} nip={identifier} onNipChange={setIdentifier} inputRef={inputRef} busy={state.busy}
       onNipSearch={()=>{if(observeWorkflowTiming)beginSearchTiming(identifier);void controller.search(identifier)}} gateway={searchGateway} onNameSearch={selection=>void controller.searchKrs(selection)} />}
     <div className="appshield-content report-page">
 

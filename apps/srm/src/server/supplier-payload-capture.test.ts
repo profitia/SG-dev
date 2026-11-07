@@ -5,6 +5,9 @@ import type {GeneralCompanyData,SectionEnvelope} from '@profitia/srm-xray'
 import {OperationDenied,operationPayloadDigest,type Json,type OperationContext} from '@profitia/platform-contracts/operation-context'
 import {createSrmSupplierNativeWorkStore} from './supplier-native-work-store'
 import type {SupplierNativeWork} from './supplier-request-work'
+import {fetchMgbiPages,readPreparedMgbiPages} from './mgbi-archive'
+import {mapMgbiGeneralRecords} from './mgbi-general'
+import {mapMgbiFinancialRecords} from './mgbi-financial'
 
 const org='11111111-1111-4111-8111-111111111111',user='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',service='bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',requestId='cccccccc-cccc-4ccc-8ccc-cccccccccccc'
 const selection={organisationId:org,requestId,command:{kind:'SUPPLIER_REPORT' as const,nip:'1234563218'}}
@@ -57,4 +60,51 @@ test('Supplier capture never executes accessors or toJSON on purported provider 
  const converted=envelope();Object.assign(converted.data!,{toJSON(){executions++;return {nip:selection.command.nip}}})
  for(const input of [accessor,converted])assert.throws(()=>f.store.pkd(selection,input),OperationDenied)
  assert.equal(executions,0);assert.equal(f.calls(),0)
+})
+
+async function freshInput(extra:Record<string,unknown>={}){
+ const nip=selection.command.nip,krs='0000000001',at='2026-10-31T00:00:00.000Z'
+ const generalRecord={id:'a'.repeat(24),identifiers:{pl_nip:nip,pl_krs:krs},content:{current_excerpt:{naglowekA:{numerKRS:krs,dataRejestracjiWKRS:'2001-01-01'},dane:{dzial1:{danePodmiotu:{nazwa:'Synthetic finite payload',formaPrawna:'SPÓŁKA Z OGRANICZONĄ ODPOWIEDZIALNOŚCIĄ'}}}}}}
+ const financialRecord={id:'b'.repeat(24),identifiers:{pl_nip:nip,pl_krs:krs},files:[],document:{type:'financial_statement',period_from_date:'2025-01-01',period_to_date:'2025-12-31',is_ias_compliant:false},content:{standardized_fields:{bs:{a_ta_cfy:'100'},pala:{nrfs_cfy:'200',npl_cfy:'10'}}},...extra}
+ const read=async(record:unknown)=>fetchMgbiPages(new URL('https://api.mgbi.pl/records'),{},new AbortController().signal,async()=>Response.json({count:1,results:[record]}))
+ const gp=await read(generalRecord),fp=await read(financialRecord)
+ const g={...mapMgbiGeneralRecords(gp.records,{type:'NIP',value:nip},at),rawResponse:{pages:gp.pages,recordCount:gp.count}}
+ const f={...mapMgbiFinancialRecords(fp.records,{type:'NIP',value:nip},at,fp.count,g.section.data!.registryHistory!),rawResponse:{pages:fp.pages,recordCount:fp.count}}
+ return {g,f}
+}
+function deniedFreshFixture(){
+ const manifests:Json[]=[]
+ const work:SupplierNativeWork={async run(_s,unit,input){assert.equal(unit,'SRM_STORE_COMPANY');manifests.push(input as Json);throw new OperationDenied('POLICY_UNAVAILABLE')}}
+ return {manifests,store:createSrmSupplierNativeWorkStore({work,namedInterestBoundaryDigest:'a'.repeat(64),readyCompanyWorkBoundaryDigest:'b'.repeat(64)})}
+}
+test('owned MGBI reuse retains the complete canonical SDK input digest and fresh Work entry on every attempt',async()=>{
+ const {g,f}=await freshInput({unmapped:{person:'synthetic-only',other:[1,null,true,'Łódź']}}),original={g:operationPayloadDigest(g as unknown as Json),f:operationPayloadDigest(f as unknown as Json)},fixture=deniedFreshFixture()
+ assert(readPreparedMgbiPages(f.rawResponse.pages,1));
+ for(let i=0;i<2;i++)await assert.rejects(fixture.store.freshCompany(selection,g,f),OperationDenied)
+ assert.equal(fixture.manifests.length,2)
+ for(const m of fixture.manifests){const p=(m as {parameters:{generalDigest:string;financialDigest:string}}).parameters;assert.equal(p.generalDigest,original.g);assert.equal(p.financialDigest,original.f)}
+ const cloned=structuredClone({g,f})
+ await assert.rejects(fixture.store.freshCompany(selection,cloned.g,cloned.f),OperationDenied)
+ assert.deepEqual(fixture.manifests[2],fixture.manifests[0],'Unrecognized caller data retains the same strict canonical manifest')
+})
+test('owned pages never exempt mutable metadata, forged wrappers or accessors from Supplier capture',async()=>{
+ const fixture=deniedFreshFixture();let executed=0
+ for(const location of ['root','raw','metadata'] as const){
+  const {g,f}=await freshInput()
+  const target=location==='root'?f:location==='raw'?f.rawResponse:f.section
+  Object.defineProperty(target,'malicious',{enumerable:true,get(){executed++;return 'untrusted'}})
+  await assert.rejects(fixture.store.freshCompany(selection,g,f),OperationDenied)
+ }
+ const {g,f}=await freshInput();Object.assign(f.section,{invalid:Infinity})
+ await assert.rejects(fixture.store.freshCompany(selection,g,f),OperationDenied)
+ const hidden=await freshInput();Object.defineProperty(hidden.f,'toJSON',{value(){executed++;return {}},enumerable:false})
+ await assert.rejects(fixture.store.freshCompany(selection,hidden.g,hidden.f),OperationDenied)
+ assert.equal(executed,0);assert.equal(fixture.manifests.length,0)
+})
+test('owned raw pages retain the complete result depth limit, including rawResponse and pages wrappers',async()=>{
+ let nested:unknown='value';for(let i=0;i<123;i++)nested={child:nested}
+ const {g,f}=await freshInput({nested}),fixture=deniedFreshFixture()
+ assert(readPreparedMgbiPages(f.rawResponse.pages,1),'The page itself is within the reader limit')
+ await assert.rejects(fixture.store.freshCompany(selection,g,f),OperationDenied)
+ assert.equal(fixture.manifests.length,0,'Wrapper depth must be counted before any Work')
 })

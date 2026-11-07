@@ -1,0 +1,9 @@
+{
+  "compilerOptions": {
+    "target": "ES2023", "module": "NodeNext", "moduleResolution": "NodeNext",
+    "allowJs": true, "checkJs": true, "noEmit": true,
+    "strict": true, "noImplicitAny": false, "useUnknownInCatchVariables": false,
+    "types": ["node"], "skipLibCheck": true
+  },
+  "include": ["src/**/*.mjs", "test/contract-consumer.ts", "test/runtime-consumer.ts", "../../packages/newsfeed-contracts/index.d.ts"]
+}
