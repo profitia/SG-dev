@@ -1,3 +1,5 @@
+> **Archiwalny zapis próby z 2026-11-06.** Poniższy oryginalny rekord pozostaje niezmieniony. Statusy Draft, brak zgody na merge i blocker odnoszą się wyłącznie do tamtej daty. Bieżącą finalną zgodę i rzeczywiste przyjęcia opisuje addendum 2026-11-07 na końcu; historyczny blocker nie jest bieżącą odmową adopcji.
+
 # Procurement Insights Unified Product & Assistant v1.1 — documentary adoption
 
 Status: **OWNER_PRODUCT_DIRECTION_CONFIRMED / PROPOSED / AUTHORITY_ACCEPTANCE_BLOCKED**.
@@ -54,3 +56,32 @@ Dokładnie dwa pliki: pełny amendment oraz ten zapis decyzji, zależności i hi
 Normatywny zakres załącznika pozostaje pełny: Procurement Insights z Newsfeed/Raporty, ADP tylko kontekstowe; trwała historia/indeks i sharing; Hub jako jedyny właściciel akwizycji; typowane opcjonalne EIA/CFTC/commodities.sh dopiero po kontrakcie i uprawnieniu; niezależna trwała publikacja raportów i Quality Gate; jeden asystent, opt-in i trwałe neutralne event-referencje; minimalny read-only retrieval z aktualnym E1/provenance/as-of/wersją i revocation. Bez masowego przenoszenia archiwum do globalnej wiedzy CIC.
 
 Nie implementowano UI, API, CIC, workerów, schedulerów, migracji, E1/RLS, Source Hub ani providerów. Nie zmieniono Neon/Render, sześciu istniejących polityk UNMETERED, retencji Hub 0 lub statusów Markets; nie wykonano płatnych wywołań ani deploymentu. Nie twierdzimy, że docelowy moduł lub asystent jest LIVE.
+
+
+## Addendum — finalna adopcja dokumentacyjna, 2026-11-07
+
+Bieżący task: `ARCH-PROCUREMENT-INSIGHTS-DESIGN-FINALIZATION-20261107`, profil ARCHITECTURE / Development / governance. [Rzeczywista finalna zgoda właściciela](2026-11-07-procurement-insights-design-finalization.md) jawnie obejmuje kontrolowane przyjęcie czterech istniejących PR-ów i minimalne, prawidłowo przyjęte rozwiązanie blokady CI G1. Zastępuje wyłącznie historyczny brak zgody na dokumentacyjny merge. Zachowuje pełne **I1–I4, C1–C3 i udzielone G1**; nie wymaga ponownej akceptacji kierunku produktu.
+
+### Przyjęte authority — rzeczywiste, niezależne od kandydata #921
+
+| Zależność | Kontrolowane przyjęcie i dowód |
+| --- | --- |
+| PI Canon v1.0 / [#847](https://github.com/profitia/SG-dev/pull/847) | MERGED; main `734ccc742be1e5183a2d45436a575fd52f185361`; kandydat `504c6070ce4a3552b3f23886733367bb365a9d6a`; [candidate CI](https://github.com/profitia/SG-dev/actions/runs/42348429704) i [actual-main CI](https://github.com/profitia/SG-dev/actions/runs/42348539052) SUCCESS. Manifest ACTIVE, oryginalna treść od §1 i warunki I1–I4 bez zmian. |
+| G1 / [#848](https://github.com/profitia/SG-dev/pull/848) | MERGED; main `7d71b23dc890646e0434a19c83f24105d9064a65`; kandydat `d6361970e52b1fba0281d75d1687979f0d3651bb`. Cztery przejrzane bloby/statusy/mody zachowane. [Trusted-main proof](https://github.com/profitia/SG-dev/actions/runs/42350623624) i [public candidate CI](https://github.com/profitia/SG-dev/actions/runs/42350561945) SUCCESS, niezależna weryfikacja proof PASS. [Resulting-main Platform](https://github.com/profitia/SG-dev/actions/runs/42351742270) i [Governance](https://github.com/profitia/SG-dev/actions/runs/42351742448) wymagają SUCCESS i niezależnego odczytu przed merge #921; finalny wynik zapisuje bieżący handoff. |
+| CIC v1.1 / [CIC #18](https://github.com/profitia/conversational-intelligence-core/pull/18) | MERGED we własnym repo; main `2f561fc82161ddcfdfa2aed7b4302044155371ce`. [Candidate CI](https://github.com/profitia/conversational-intelligence-core/actions/runs/42349333602) i [actual-main CI](https://github.com/profitia/conversational-intelligence-core/actions/runs/42349566701) SUCCESS. Kierunkowy kanon ACTIVE; C1–C3, Advisory/Recovery, Knowledge Freeze i runtime bez zmian. [Kanoniczny, niezależnie sprawdzony PMOS/PHR](https://github.com/profitia/project-history-repository/blob/33e5c503b4c14eeaa08fc31313ed74e15a0fc19d/history/2026/11/07/2026-11-07-07-04-21Z__cic-cic-context-capability-final-adoption-20261107/handoff.md). |
+
+Wymagana osobna poprawka zaufanego kontrolera [#922](https://github.com/profitia/SG-dev/pull/922) została przyjęta na main `56d93b832a53759341d92ff006bb5fc5813b46db`. 164/164 lokalnych testów PASS; [bootstrap przez poprzedni trusted main](https://github.com/profitia/SG-dev/actions/runs/42349473453), [public CI](https://github.com/profitia/SG-dev/actions/runs/42349435257) i [actual-main proof/CI](https://github.com/profitia/SG-dev/actions/runs/42350518945) SUCCESS. Scope to wyłącznie istniejący PR #848, jego pierwotna gałąź i cztery kompletne, przejrzane wersje plików. Historycznych fingerprintów, workflowów, sekretów, globalnych zabezpieczeń i prywatnych pinów nie zmieniono. Nie zastosowano fikcyjnego PASS lub pominięcia testu. Jedno przerwane połączenie w izolowanym teście Calendar przeszło po powtórzeniu tego samego źródła; publiczną weryfikację ponowiono po pojawieniu się właściwego proof.
+
+### Dokładna delta istniejącego #921 i reguła skuteczności
+
+- Oryginalna propozycja pozostaje w historii w całości: SHA-256 `bca56c90d17b6a1eac3b574ed9f0b49b218799d701de6ec44d7f2129e4e4815a`, head `5720894ab602b3785114648ca6ff17a3dce795c6`.
+- **Cała treść od §1 do końca, w tym normatywny model i historyczny opis §11, pozostaje byte-identical**: SHA-256 `ec4af9f80cec932c5f1acc031da092697b15311221319849e01c2a3a987caf69`. Zmieniono wyłącznie preambułę/metadane oraz dodano datowane wyjaśnienie skuteczności i pierwszeństwa.
+- Manifest `3.42.0` dodaje jeden wpis `procurement-insights-unified-product-and-assistant-amendment`, wersja 1.1, loadOrder 500, SG2/ARCHITECTURE, po PI v1.0, szczegółowych Newsfeed/Hub/AppShell i Oil. Wszystkie wcześniejsze wpisy i ich zależności pozostają niezmienione. CIC jest rzeczywistą zależnością między repozytoriami przypiętą powyżej, bez fikcyjnego lokalnego ID lub zmiany walidatora zależności.
+- Status ACTIVE w kandydacie manifestu nie jest deklaracją authority: staje się skuteczny wyłącznie po wymaganych własnych CI, sprawdzeniu przyjętych zależności, kontrolowanym merge #921 oraz niezależnym odczycie rzeczywistego main. Dokładne candidate/main SHA i wyniki po merge zapisuje niezmienny handoff PMOS/PHR i historia PR. Nie tworzymy kolejnego kanonu ani nowego PR dla tej samej treści.
+- Bazowy PI v1.0 zachowuje pełną treść. Jawne pierwszeństwo v1.1 dotyczy tylko docelowej nawigacji/UX, kontekstowego wejścia ADP i dwóch mechanizmów asystenta. Szczegółowe kanony Newsfeed v1.0/v1.1/v1.2, Hub/Universal, AppShell i Oil v0.5 pozostają byte-identical względem initial-main `d943d2ba17eeb6b07ba5a9162a4767e155513a90`.
+
+### Gotowość projektu a przyszła implementacja
+
+Przyjęcie CIC v1.1 oznacza kierunkowy projekt, nie wdrożenie runtime, API retrieval lub nową politykę Analytical. Brakujące wersjonowane interfejsy `Newsfeed context.read`, `Insights context.read` i powiadomień pozostają pracą implementacyjną właściwych ownerów, z aktualnym E1, provenance/as-of/wersją i revocation. Nie tworzą sztucznej wzajemnej blokady zamknięcia projektu. C1–C3 oraz I1–I4 obowiązują przy tej implementacji.
+
+Gotowość do developmentu oznacza zamknięte dokumentacyjne zależności i obowiązujące G1, po rzeczywistym przyjęciu #921. Nie oznacza gotowego UI, asystenta, schedulerów ani pipeline'u raportów. Nie wykonano implementacji, migracji produktowych, E1/RLS, zmian Source/licencji/UNMETERED/retencji/Markets, infrastruktury, płatnych wywołań lub deploymentu. Staging/Production oraz równoległe SG2/SRM/Oil/Calendar pozostają nietknięte.
