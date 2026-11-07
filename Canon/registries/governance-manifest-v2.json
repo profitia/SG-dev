@@ -1,6 +1,6 @@
 {
   "schemaVersion": "2.0",
-  "manifestVersion": "3.41.0",
+  "manifestVersion": "3.42.0",
   "owner": "Profitia Governance",
   "entrypoint": "AGENTS.md",
   "preflight": "scripts/governance/governance-preflight.mjs",
@@ -1291,6 +1291,34 @@
         "operation-access-matrix",
         "profitia-package-and-limits-management",
         "platform-source-hub-business-and-architecture-canon",
+        "shared-development-contract-integration"
+      ]
+    },
+    {
+      "id": "procurement-insights-unified-product-and-assistant-amendment",
+      "version": "1.1",
+      "path": "Canon/v1.1-procurement-insights-unified-product-and-assistant-amendment.md",
+      "status": "ACTIVE",
+      "loadOrder": 500,
+      "owner": "Architecture Platform / Procurement Insights Product Owner",
+      "appliesTo": [
+        "SG2",
+        "ARCHITECTURE"
+      ],
+      "dependsOn": [
+        "procurement-insights-business-and-architecture-canon",
+        "repository-routing",
+        "architecture-baseline",
+        "platform-appshell-business-and-architecture-canon",
+        "newsfeed-business-and-architecture-canon",
+        "newsfeed-source-hub-responsibility-amendment",
+        "newsfeed-saved-searches-ownership-sharing-history-canon",
+        "platform-source-hub-business-and-architecture-canon",
+        "platform-source-hub-universal-first-party-consumer-access",
+        "procurement-oil-insight-report-canon",
+        "operation-context-and-access-contract",
+        "operation-access-matrix",
+        "profitia-package-and-limits-management",
         "shared-development-contract-integration"
       ]
     }
