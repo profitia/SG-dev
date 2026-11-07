@@ -3,8 +3,20 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "engines": { "node": ">=24.15.0 <25" },
-  "exports": { "./conversation": "./src/account-conversation.ts", "./session-boundary": { "types": "./dist/src/session-boundary.d.ts", "import": "./dist/src/session-boundary.js" }, "./contracts": { "types": "./dist/src/contracts.d.ts", "import": "./dist/src/contracts.js" } },
+  "engines": {
+    "node": ">=24.15.0 <25"
+  },
+  "exports": {
+    "./conversation": "./src/account-conversation.ts",
+    "./session-boundary": {
+      "types": "./dist/src/session-boundary.d.ts",
+      "import": "./dist/src/session-boundary.js"
+    },
+    "./contracts": {
+      "types": "./dist/src/contracts.d.ts",
+      "import": "./dist/src/contracts.js"
+    }
+  },
   "scripts": {
     "lint": "node scripts/check.mjs",
     "typecheck": "tsc --noEmit",
@@ -13,6 +25,16 @@
     "start": "node dist/src/main.js",
     "ci:proof": "node scripts/ci-proof.mjs"
   },
-  "dependencies": { "@clerk/localizations": "4.23.0", "@clerk/backend": "3.25.0", "@profitia/platform-contracts": "file:../../packages/platform-contracts", "pg": "8.23.1" },
-  "devDependencies": { "@types/node": "24.10.1", "@types/pg": "8.15.5", "typescript": "5.9.3" }
+  "dependencies": {
+    "@clerk/localizations": "4.23.0",
+    "@clerk/backend": "3.25.0",
+    "@profitia/platform-contracts": "file:../../packages/platform-contracts",
+    "pg": "8.23.1",
+    "@profitia/platform-current-e1-authority": "file:../../packages/platform-contracts/current-e1-authority"
+  },
+  "devDependencies": {
+    "@types/node": "24.10.1",
+    "@types/pg": "8.15.5",
+    "typescript": "5.9.3"
+  }
 }

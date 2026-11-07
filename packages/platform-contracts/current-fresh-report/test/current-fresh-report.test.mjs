@@ -35,7 +35,7 @@ test('the public package entry exposes the same implementation to ESM and Common
  assert.equal(sdk.createCurrentFreshReportHost,createCurrentFreshReportHost)
  assert.equal(sdk.CURRENT_FRESH_REPORT_CONTRACT,CURRENT_FRESH_REPORT_CONTRACT)
 })
-test('packed public install uses exactly one unchanged SDK 1.32.3 peer, without credentials, scripts or registry',async()=>{
+test('packed public install uses exactly one SDK 1.34.0 peer with preserved 1.32.3 compatibility, without credentials, scripts or registry',async()=>{
  const temporary=fs.mkdtempSync(path.join(os.tmpdir(),'fresh-report-public-install-'))
  const artifacts=path.join(temporary,'packages');fs.mkdirSync(artifacts)
  const userconfig=path.join(temporary,'user.npmrc'),globalconfig=path.join(temporary,'global.npmrc')
@@ -56,7 +56,7 @@ test('packed public install uses exactly one unchanged SDK 1.32.3 peer, without 
    import * as fresh from '@profitia/platform-current-fresh-report';
    import {CURRENT_HUMAN_READ_CONTRACT} from '@profitia/platform-contracts/current-human-read';
    const root=new URL('../',import.meta.resolve('@profitia/platform-contracts/operation-context'));
-   assert.equal(JSON.parse(fs.readFileSync(new URL('package.json',root))).version,'1.32.3');
+   assert.equal(JSON.parse(fs.readFileSync(new URL('package.json',root))).version,'1.34.0');
    assert.equal(CURRENT_HUMAN_READ_CONTRACT.version,'1.1.0');assert.equal(fresh.CURRENT_FRESH_REPORT_CONTRACT.version,'1.0.0');
    assert.equal(await fresh.currentFreshReportSourceDigest(),${JSON.stringify(expected)});
    const require=createRequire(import.meta.url),inside=createRequire(import.meta.resolve('@profitia/platform-current-fresh-report'));
@@ -101,7 +101,7 @@ test('abort refuses the opening before authentication or SQL',async()=>{
 })
 test('public declarations compile positive calls and reject alternate authority and Work output',async()=>{
  const require=createRequire(new URL('../../../../apps/architecture-lab/package.json',import.meta.url)),ts=require('typescript')
- const file=new URL('./types/current-fresh-report.mts',import.meta.url).pathname
+ const file=fileURLToPath(new URL('./types/current-fresh-report.mts',import.meta.url))
  const program=ts.createProgram([file],{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.NodeNext,moduleResolution:ts.ModuleResolutionKind.NodeNext,strict:true,noEmit:true,types:[],lib:['lib.es2022.d.ts','lib.dom.d.ts']})
  const errors=ts.getPreEmitDiagnostics(program)
  assert.equal(errors.length,0,ts.formatDiagnosticsWithColorAndContext(errors,{getCanonicalFileName:x=>x,getCurrentDirectory:()=>process.cwd(),getNewLine:()=> '\n'}))

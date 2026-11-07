@@ -1,0 +1,110 @@
+{
+  "schemaVersion": "SourceHubCommodityActivation/1",
+  "status": "PROPOSED_NOT_ACTIVATED",
+  "environment": "development",
+  "projectId": "delicate-queen-44677134",
+  "branchId": "br-orange-salad-ba2llks7",
+  "databaseName": "neondb",
+  "applicationId": "profitia-source-hub-development",
+  "sourceRole": "source_hub_development_source_runtime",
+  "expiresAt": "2026-12-04T22:19:09.000Z",
+  "retentionSeconds": 0,
+  "catalogueMetadataStorageOnly": true,
+  "sourceQuotaMode": "UNMETERED",
+  "automaticRetry": false,
+  "sourceRef": "OWNER_DECISION_REQUIRED",
+  "serviceProfile": "commodity-service-profile.json",
+  "migrations": [
+    "006-commodity-providers"
+  ],
+  "sources": [
+    {
+      "provider": "eia",
+      "family": "data-catalog",
+      "sourceId": "source-hub.eia.data-catalog",
+      "resourceId": "api.eia.data-catalog",
+      "policyId": "c168a822-2d31-4d08-90e2-55bbca786f72",
+      "grantId": "207b531c-685e-4adb-9783-664d4d4a7a13",
+      "budgetId": "2740ccec-285c-4895-ac42-ff5271ed842c",
+      "licenceRef": "source-hub-commodity-eia-data-catalog-20261106",
+      "allowCatalogInventory": true
+    },
+    {
+      "provider": "eia",
+      "family": "series-observations",
+      "sourceId": "source-hub.eia.series-observations",
+      "resourceId": "api.eia.series-observations",
+      "policyId": "41aa5448-de64-4cbf-a447-58247fbaeee8",
+      "grantId": "d519a4db-46b0-457e-a817-aa11fe89f8d1",
+      "budgetId": "47ebef67-fe19-4c65-b6e9-93692cce3b56",
+      "licenceRef": "source-hub-commodity-eia-series-observations-20261106",
+      "allowCatalogInventory": false
+    },
+    {
+      "provider": "cftc",
+      "family": "data-catalog",
+      "sourceId": "source-hub.cftc.data-catalog",
+      "resourceId": "api.cftc.data-catalog",
+      "policyId": "9cd2ff4f-6422-40d3-a0a5-2f1a7644accf",
+      "grantId": "93bab138-0152-46bb-9e0e-ea9b20c7f6f7",
+      "budgetId": "b9e7c6ce-2fff-4240-b036-c7b7166a01c5",
+      "licenceRef": "source-hub-commodity-cftc-data-catalog-20261106",
+      "allowCatalogInventory": true
+    },
+    {
+      "provider": "cftc",
+      "family": "positioning-observations",
+      "sourceId": "source-hub.cftc.positioning-observations",
+      "resourceId": "api.cftc.positioning-observations",
+      "policyId": "db387431-5089-4663-99ef-c75b98f2c632",
+      "grantId": "f09c92e5-69e4-4519-91d3-033e6fbd8304",
+      "budgetId": "4f12758e-b5f1-4444-b693-d21e9c100632",
+      "licenceRef": "source-hub-commodity-cftc-positioning-observations-20261106",
+      "allowCatalogInventory": false
+    },
+    {
+      "provider": "commodities-sh",
+      "family": "data-catalog",
+      "sourceId": "source-hub.commodities-sh.data-catalog",
+      "resourceId": "api.commodities-sh.data-catalog",
+      "policyId": "96ab0dcf-e42b-4117-be48-787e8fa62f5f",
+      "grantId": "4949011e-2648-44b2-8120-0afe58bba4a4",
+      "budgetId": "0a8ad094-42ef-458b-b9a8-e814e39dce92",
+      "licenceRef": "source-hub-commodity-commodities-sh-data-catalog-20261106",
+      "allowCatalogInventory": true
+    },
+    {
+      "provider": "commodities-sh",
+      "family": "publication-calendar",
+      "sourceId": "source-hub.commodities-sh.publication-calendar",
+      "resourceId": "api.commodities-sh.publication-calendar",
+      "policyId": "aa155013-8073-4d5b-9521-1503320bf164",
+      "grantId": "39dcb022-adfb-4fc8-8750-0a3607c163ee",
+      "budgetId": "cbe7c2f7-1793-4133-8d62-a8c63fe11054",
+      "licenceRef": "source-hub-commodity-commodities-sh-publication-calendar-20261106",
+      "allowCatalogInventory": false
+    }
+  ],
+  "configurationVersion": "source-hub-development-unmetered-20261104-v1",
+  "licenceDecisions": {
+    "eia": {
+      "terms": "https://www.eia.gov/opendata/terms-of-service.php",
+      "attribution": "U.S. Energy Information Administration (EIA), original series metadata",
+      "use": "AUTHORISED_PRIVATE_ACQUISITION_AND_METADATA_INVENTORY",
+      "thirdPartyRights": "CHECK_PER_SERIES_BEFORE_REDISTRIBUTION"
+    },
+    "cftc": {
+      "terms": "https://www.cftc.gov/WebPolicy/index.htm",
+      "attribution": "CFTC Commitments of Traders",
+      "use": "GOVERNMENT_PUBLIC_DOMAIN_EXCEPT_THIRD_PARTY_MATERIAL",
+      "primaryKey": "NOT_ASSERTED"
+    },
+    "commodities-sh": {
+      "terms": "https://commodities.sh/terms",
+      "use": "FREE_DISCOVERY_CATALOGUE_AND_PUBLICATION_SCHEDULE_ONLY",
+      "upstreamTermsApply": true,
+      "paidExecution": false,
+      "commercialObservationRedistribution": "NOT_APPROVED"
+    }
+  }
+}

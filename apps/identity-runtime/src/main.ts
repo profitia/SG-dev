@@ -9,6 +9,8 @@ import { createEmailRecipientVerifier } from './email-correlation.js'
 import { createMailgunTransactionalSender } from './mailgun-delivery.js'
 import pg from 'pg'
 import { createHash } from 'node:crypto'
+import {createCurrentAuthority} from './current-e1-authority.js'
+import type {CurrentE1Authority} from '@profitia/platform-current-e1-authority'
 import { createAssistantAvatarSurface, type AssistantAvatarSurface } from './assistant-avatar.js'
 import { createAccountSalutationSurface, type AccountSalutationSurface } from './account-salutation.js'
 import { readConfiguration } from './config.js'
@@ -31,6 +33,9 @@ let language: CommunicationLanguageSurface | null = null
 let registration: RegistrationSurface | null = null
 let registrationStore: RegistrationStore | null = null
 let embedded: ReturnType<typeof createEmbeddedAccountHandler> | null = null
+let currentE1:CurrentE1Authority|null=null
+if (process.env.IDENTITY_CURRENT_E1_ENABLED !== undefined && !['true','false'].includes(process.env.IDENTITY_CURRENT_E1_ENABLED)) throw Error('INVALID_CURRENT_E1_FLAG')
+if (process.env.IDENTITY_CURRENT_E1_ENABLED==='true' && process.env.IDENTITY_RUNTIME_ENABLED!=='true') throw Error('CURRENT_E1_RUNTIME_REQUIRED')
 const embeddedInput: unknown = JSON.parse(process.env.IDENTITY_EMBEDDED_TARGETS ?? '[]')
 if (!Array.isArray(embeddedInput) || embeddedInput.length && process.env.IDENTITY_SELF_SERVICE_ENABLED !== 'true') throw Error('EMBEDDED_ACCOUNT_DEPENDENCIES')
 if (process.env.IDENTITY_REGISTRATION_ENABLED !== undefined && !['true','false'].includes(process.env.IDENTITY_REGISTRATION_ENABLED)) throw Error('INVALID_REGISTRATION_FLAG')
@@ -56,6 +61,10 @@ if (process.env.IDENTITY_RUNTIME_ENABLED === 'true') {
   pool.on('error', () => {})
   const authority = createDatabaseAuthority(binding, (sql, values) => pool!.query(sql, values), config.issuer)
   const client = createOfficialClient(config, process.env.CLERK_SECRET_KEY)
+  if (process.env.IDENTITY_CURRENT_E1_ENABLED==='true') {
+    currentE1=createCurrentAuthority((sql,values)=>pool!.query(sql,values as unknown[]),client,binding)
+    if (!await currentE1.ready()) throw Error('CURRENT_E1_SCHEMA_REQUIRED')
+  }
   if (process.env.IDENTITY_EMAIL_ENABLED === 'true') {
     if (config.environment !== 'development') throw Error('EMAIL_DEVELOPMENT_ONLY')
     const e = JSON.parse(process.env.IDENTITY_EMAIL_CONFIGURATION ?? 'null')
@@ -120,7 +129,7 @@ if (process.env.IDENTITY_RUNTIME_ENABLED === 'true') {
     embedded = createEmbeddedAccountHandler(config, consumers)
   }
 }
-const server = createNodeServer(origin, createHttpHandler(boundary, account, avatar, email, language, registration, embedded, salutation), email !== null); server.listen(port, process.env.HOST ?? '127.0.0.1', () => console.log('identity-runtime started; live readiness requires verified provider and authority'))
+const server = createNodeServer(origin, createHttpHandler(boundary, account, avatar, email, language, registration, embedded, salutation,currentE1), email !== null); server.listen(port, process.env.HOST ?? '127.0.0.1', () => console.log('identity-runtime started; live readiness requires verified provider and authority'))
 let shuttingDown = false
 for (const signal of ['SIGINT','SIGTERM']) process.once(signal, () => {
   if (shuttingDown) return

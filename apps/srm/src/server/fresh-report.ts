@@ -1,5 +1,6 @@
 import type {PoolClient} from 'pg'
 import {createReadonlyMissReportHost,type ReadonlyMissReportReadOptions,type ReadonlyMissReportReadOnlyProbeOptions} from '@profitia/platform-readonly-miss-report'
+import {createRootAtomicClaimReportHost,type CommittedRootClaim} from '@profitia/platform-root-atomic-claim'
 import {createDelegatedJobStore} from '@profitia/platform-contracts/delegated-job'
 import {OperationDenied} from '@profitia/platform-contracts/operation-context'
 import {isCompanyReportRestricted} from '@profitia/srm-xray'
@@ -19,7 +20,8 @@ const headers={'Cache-Control':'private, no-store',Vary:'Cookie, Authorization'}
 const refuse=():never=>{throw new OperationDenied('RESOURCE_SCOPE_MISMATCH')}
 type CompanyOptions=SupplierApiOptions['company']
 type Ports=Readonly<{
- classify?:(selection:SupplierNativeWorkSelection,signal:AbortSignal)=>Promise<'JDG'|'NOT_JDG'|'UNAVAILABLE'>
+ classify?:(selection:SupplierNativeWorkSelection,signal:AbortSignal,rootClaim?:CommittedRootClaim|null)=>Promise<'JDG'|'NOT_JDG'|'UNAVAILABLE'>
+ deliverRootClaim?:(selection:SupplierNativeWorkSelection,signal:AbortSignal,rootClaim:CommittedRootClaim)=>Promise<void>
  company:(selection:SupplierNativeWorkSelection)=>Promise<SupplierXRayCard>
  jdg:(input:SupplierHttpInput)=>Promise<Response>
 }>
@@ -66,6 +68,7 @@ export function createSrmFreshReportSearch(options:CompanyOptions,ports:Ports){
  const {ready,read,request,lookup}=options
  if(!ready||read.reportAdmission||request.reportAdmission||lookup.work.reportAdmission
   ||read.application.environment!=='development'||!read.identity.requestBoundary)return refuse()
+ if(options.rootAtomicClaim&&(!ports.classify||!ports.deliverRootClaim))return refuse()
  const receiverBoundary={...read.identity.requestBoundary,publicOrigins:read.identity.requestBoundary.publicOrigins
   .filter(origin=>origin!==targets.environments.development.summaryPeerRead.sourceOrigin)}
  const definition=srmSupplierRequestDefinition(request)
@@ -77,9 +80,12 @@ export function createSrmFreshReportSearch(options:CompanyOptions,ports:Ports){
   const root={application:request.application,binding:request.binding,module:request.module,
    ...createSrmNativePgDriver(request.pool,request.auditPool),requestLedger:request.requestLedger,
    transactionTimeoutMs:request.transactionTimeoutMs,...definition}
-  const host=createReadonlyMissReportHost<PoolClient>({clerk:read.clerk,identity:read.identity,receiverBoundary,
+  const hostOptions={clerk:read.clerk,identity:read.identity,receiverBoundary,
    probe:probeOptions(probe),probeReadOnly:{statements:READY_REPORT_PROBE_STATEMENTS},
-   refresh:root,read:phaseOptions(final),...(read.now?{now:read.now}:{})})
+   refresh:root,read:phaseOptions(final),...(read.now?{now:read.now}:{})}
+  const host=options.rootAtomicClaim
+   ?createRootAtomicClaimReportHost<PoolClient>({...hostOptions,atomicClaim:options.rootAtomicClaim})
+   :createReadonlyMissReportHost<PoolClient>(hostOptions)
   try{
    const result=await host.execute<Response>({request:input.request,organisationId:input.organisationId,nip,
     idempotencyKey:childIdempotencyKey},{
@@ -95,14 +101,20 @@ export function createSrmFreshReportSearch(options:CompanyOptions,ports:Ports){
      if(dispatch.requestId!==receipt.requestId)return refuse()
      return receipt
     },
-    work:async(selection,signal)=>{
+    work:async(selected:SupplierNativeWorkSelection&{rootClaim?:CommittedRootClaim|null},signal:AbortSignal)=>{
+     if(options.rootAtomicClaim?selected.rootClaim===undefined:selected.rootClaim!==undefined)return refuse()
+     // The opaque control handoff never enters command, Work input, raw MGBI
+     // archives or report output. Existing company ports retain three fields.
+     const selection=Object.freeze({requestId:selected.requestId,organisationId:selected.organisationId,command:selected.command})
+     const rootClaim=selected.rootClaim
+     const known=probe.result().known
      let companyCard:SupplierXRayCard|undefined
      const result=await searchRegistryByNip(input.organisationId,{identifier:{type:'NIP',value:nip}},{
       catalog:async(org,selected)=>{if(org!==input.organisationId||selected!==nip)return refuse();return probe.result().known},
       jdg:async(org,selected)=>{
        if(org!==input.organisationId||selected!==nip)return refuse()
        return measureSupplierStage('CEIDG_LOOKUP',async()=>{
-        if(ports.classify){const classification=await ports.classify(selection,signal)
+        if(ports.classify){const classification=await ports.classify(selection,signal,rootClaim)
          if(classification!=='JDG')return {status:classification==='NOT_JDG'?'EMPTY':'ERROR',data:null}
         }
         const response=await ports.jdg(input)
@@ -113,6 +125,9 @@ export function createSrmFreshReportSearch(options:CompanyOptions,ports:Ports){
       company:async(org,selected)=>{
        if(org!==input.organisationId||selected.identifier.value!==nip)return refuse()
        signal.throwIfAborted()
+       // A known company skips CEIDG. Its new Root claim still needs the same
+       // admitted Source delivery before the unchanged native company engine.
+       if(known&&rootClaim)await ports.deliverRootClaim!(selection,signal,rootClaim)
        const card=await ports.company(selection)
        signal.throwIfAborted()
        if(card.identity.nip!==nip)return refuse()

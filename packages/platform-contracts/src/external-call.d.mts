@@ -3,7 +3,7 @@ import type {AccessQuery} from './access-store.mjs'
 import type {createPlatformIngestionHost} from './platform-ingestion.mjs'
 import type {NativeExternalTransport,NativeExternalResult} from './native-external-transport.mjs'
 export {NATIVE_EXTERNAL_TRANSPORT,nativeExternalTransportSchemaUrl} from './native-external-transport.mjs'
-export type {NativeExternalTransport,NativeExternalResult,NativePathRule} from './native-external-transport.mjs'
+export type {NativeExternalTransport,NativeExternalResult,NativePathRule,NativeApiPathRule,NativeMarketSymbolPathRule} from './native-external-transport.mjs'
 export declare const EXTERNAL_CALL_CONTRACT:Readonly<{id:'profitia.external-call';version:'1.0.0';unit:'UPSTREAM_ATTEMPT_ADMISSION'}>
 export declare const publicWebTransportSchemaUrl:string
 export declare function publicWebTransportSchemaDigest():Promise<string>
@@ -60,3 +60,11 @@ export declare function createExternalCallHost<Transaction,Command>(options:Exte
  /** Pure bounded projection; no unadmitted I/O or other side effects. */
  projectResponse(value:Json,options:{status:number;signal:AbortSignal}):Json|Promise<Json>
 }):ExecuteHost<ExternalCallResult>
+
+export declare const apiPathTransportSchemaUrl:string
+export declare const API_PATH_TRANSPORT:Readonly<{id:'profitia.external-api-path';version:'1.0.0'}>
+export declare function apiPathTransportSchemaDigest():Promise<string>
+
+export declare const MARKET_SYMBOL_TRANSPORT:Readonly<{id:'profitia.external-market-symbol';version:'1.0.0'}>
+export declare const marketSymbolTransportSchemaUrl:string
+export declare function marketSymbolTransportSchemaDigest():Promise<string>

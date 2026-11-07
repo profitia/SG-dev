@@ -1,26 +1,33 @@
 'use client'
-import React,{Component,useMemo,useRef,useLayoutEffect,useCallback,type ReactNode} from 'react';
+import React,{useSyncExternalStore,Component,createContext,useContext,useEffect,useMemo,useRef,useCallback,type ComponentProps,type ReactNode} from 'react';
+import {FullSupplierReport} from '@profitia/srm-xray/full-report';
+import {productAnalytics} from '@/lib/product-analytics/adapter';
 import type {AssistantApplicationContext} from '@profitia/srm-xray/full-report';
 import {FullXRayWorkflow} from '@profitia/srm-xray/full-workflow';
 import {createSupplierSearchGateway} from '@profitia/srm-xray/supplier-search-gateway';
 import '@profitia/srm-xray/full-report.css';
 import {useSg2SessionCredential} from '../auth/session-boundary';
 import {createAppShellFullXRayTransport,loadXRayMap,XRAY_MAP_RUNTIME_ORIGIN} from '@/lib/appshell/xray-full-transport';
-type Props={locale:'pl'|'en';theme:'light'|'dark';active:boolean;onReturn:()=>void;onAssistantTargetChange?:(target:HTMLElement|null)=>void;onAssistantContextChange?:(context:AssistantApplicationContext|null)=>void};
+type Props={locale:'pl'|'en';theme:'light'|'dark';active:boolean;onReturn:()=>void;onAssistantContextChange?:(context:AssistantApplicationContext|null)=>void};
+const ReportVisible=createContext(false);
+/** Public ReportComponent extension: mounted result, never a fetch-start proxy. */
+function ObservedXRayReport(props:ComponentProps<typeof FullSupplierReport>){
+ const visible=useContext(ReportVisible),ready=useSyncExternalStore(productAnalytics.subscribe,productAnalytics.isReady,productAnalytics.serverReady),reported=useRef(false);
+ useEffect(()=>{if(ready&&visible&&!reported.current)reported.current=productAnalytics.capture('xray_report_opened',{module:'xray'})},[ready,visible]);
+ return <FullSupplierReport {...props}/>;
+}
 class XRayBoundary extends Component<{locale:'pl'|'en';active:boolean;onReturn:()=>void;children:ReactNode},{failed:boolean}>{
  state={failed:false};static getDerivedStateFromError(){return {failed:true};}
+ componentDidCatch(){if(this.props.active)productAnalytics.capture('application_error',{module:'xray',error_kind:'render_failed'});}
  componentDidUpdate(previous:{locale:"pl"|"en";active:boolean}){if((previous.locale!==this.props.locale||previous.active&&!this.props.active)&&this.state.failed)this.setState({failed:false});}
  render(){return this.state.failed?<div role="alert"><p>{this.props.locale==='pl'?'Nie udało się wyświetlić X-Ray. Wróć do biurka i uruchom moduł ponownie.':'X-Ray could not be displayed. Return to Dashboard and reopen the module.'}</p><button type="button" className="as-secondary-button" onClick={this.props.onReturn}>{this.props.locale==='pl'?'Wróć do biurka':'Back to Dashboard'}</button></div>:this.props.children;}
-}
-function AssistantTarget({active,onTarget}:{active:boolean;onTarget:(target:HTMLElement|null)=>void}){
- const target=useRef<HTMLDivElement>(null);
- useLayoutEffect(()=>{onTarget(active?target.current:null);return()=>onTarget(null)},[active,onTarget]);
- return <div ref={target} className="srm-host-assessment as-xray-assistant-host"/>;
 }
 export function XRayModuleHost(props:Props){
  const credential=useSg2SessionCredential();
  const onContext=useCallback((value:AssistantApplicationContext|null)=>props.onAssistantContextChange?.(props.active?value:null),[props.active,props.onAssistantContextChange]);
  const transport=useMemo(()=>createAppShellFullXRayTransport(credential??(async()=>null)),[credential]);
  const searchGateway=useMemo(()=>createSupplierSearchGateway(transport),[transport]);
- return <XRayBoundary active={props.active} locale={props.locale} onReturn={props.onReturn}><div data-theme={props.theme} lang={props.locale}><FullXRayWorkflow locale={props.locale} transport={transport} searchGateway={searchGateway} active={props.active} observeWorkflowTiming onAssistantContext={onContext} assistantHost={props.onAssistantTargetChange?<AssistantTarget active={props.active} onTarget={props.onAssistantTargetChange}/>:undefined} onReturn={props.onReturn} loadMap={loadXRayMap} mapRuntimeOrigin={XRAY_MAP_RUNTIME_ORIGIN}/></div></XRayBoundary>;
+ // The public override suppresses the standalone assistant without mounting a
+ // replacement inside the module. AppShell keeps the persistent widget itself.
+ return <XRayBoundary active={props.active} locale={props.locale} onReturn={props.onReturn}><ReportVisible.Provider value={props.active}><div className="srm-ui" data-theme={props.theme} lang={props.locale}><FullXRayWorkflow presentation="sg2" locale={props.locale} transport={transport} searchGateway={searchGateway} ReportComponent={ObservedXRayReport} active={props.active} observeWorkflowTiming onAssistantContext={onContext} assistantHost={<></>} onReturn={props.onReturn} loadMap={loadXRayMap} mapRuntimeOrigin={XRAY_MAP_RUNTIME_ORIGIN}/></div></ReportVisible.Provider></XRayBoundary>;
 }

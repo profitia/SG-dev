@@ -1,0 +1,36 @@
+{
+  "schemaVersion": "1.0.0",
+  "status": "PROPOSED_NOT_INSTALLED_OR_ACTIVATED",
+  "environment": "development",
+  "defaultEnabled": false,
+  "activationVariable": "PROFITIA_MARKET_HISTORY_ENABLED",
+  "configurationVersion": "sg2-market-history-dev-v1",
+  "applicationId": "spendguru-market-history",
+  "serviceId": "srv-dapa3tid0e5s73f8bc5g",
+  "projectId": "autumn-waterfall-65938876",
+  "branchId": "br-dry-hall-b294222f",
+  "databaseName": "neondb",
+  "hosts": [
+    "ep-muddy-pine-b22pdyqd.c-6.eu-central-1.aws.neon.tech",
+    "ep-muddy-pine-b22pdyqd-pooler.c-6.eu-central-1.aws.neon.tech"
+  ],
+  "runtimeRole": "sg2_market_history_development_runtime",
+  "runtimeConnections": 2,
+  "maximumConcurrentRefreshes": 1,
+  "quotaMode": "UNMETERED",
+  "boundaryDigest": "b14c4fce7a7ae97dbe4752a40475d08c1bdd368bd2ed3ef433c004a471473473",
+  "sourceSchemaDigest": "14d46ec280e624d79930833b022a46866864557cecbf2e3b55b1a1143fb9d66b",
+  "unmeteredSchemaDigest": "9fe56c54c22fe54aa4869966cf00e7347e8c0d040b1d3d8110fc7952a78d5e13",
+  "externalSchemaDigest": "69db4ec3787937b24922f7acfc267e5aae400ddc44e0799eff09fa7e6d87e206",
+  "nativeSchemaDigest": "6faff5f258b71cf2525d705c8fcf38c8aef9331c4e8f0bdd6f1af74e6cf76bde",
+  "externalConfigurationVersion": "sg2-market-history-http-dev-v1",
+  "read": {
+    "runtimeRole": "sg2_market_read_development_runtime",
+    "schemaDigest": "596885d43b911a5ee25dee53a8a9c42f23bf2662a68aef755194a9bbb6b64304"
+  },
+  "maximumResponseBytes": 8388608,
+  "maximumObservations": 100000,
+  "newService": false,
+  "newScheduler": false,
+  "deploymentAuthorisedByThisFile": false
+}

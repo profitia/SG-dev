@@ -1,0 +1,25 @@
+{
+  "name": "@profitia/economic-calendar-runtime",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {"node": ">=24.15.0 <25"},
+  "scripts": {
+    "start": "node src/main.mjs",
+    "test": "node --test --test-concurrency=1 --test-timeout=90000 test/*.test.mjs",
+    "typecheck": "tsc --noEmit",
+    "build": "tsc --noEmit && node --check src/main.mjs && node --check scripts/migrate.mjs && node --check scripts/sync.mjs && node --check scripts/source-acquire.mjs && node --check scripts/live-probe.mjs",
+    "db:migrate": "node scripts/migrate.mjs",
+    "sync": "node scripts/sync.mjs",
+    "source:acquire": "node scripts/source-acquire.mjs",
+    "probe:live": "node scripts/live-probe.mjs"
+  },
+  "dependencies": {
+    "@profitia/economic-calendar-contracts": "file:../../packages/economic-calendar-contracts",
+    "@profitia/platform-contracts": "file:../../packages/platform-contracts",
+    "@profitia/platform-current-e1-authority": "file:../../packages/platform-contracts/current-e1-authority",
+    "@profitia/platform-source-hub-contracts": "file:../../packages/platform-source-hub-contracts",
+    "pg": "8.23.1"
+  },
+  "devDependencies": {"@types/node": "24.10.1", "@types/pg": "8.15.5", "typescript": "5.9.3"}
+}

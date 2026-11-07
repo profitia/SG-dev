@@ -8,7 +8,8 @@ import {createSrmCompanyClassifier} from '../src/server/company-classification.t
 import {srmProviderSourcePolicy} from '../src/server/provider-source-transport.ts'
 import {randomUUID} from 'node:crypto'
 import {supplierBusinessFixture} from './supplier-delegated-business.integration.test.mjs'
-import {withSupplierTelemetry} from '../src/server/supplier-telemetry.ts'
+import {withSupplierTelemetry,instrumentSupplierIdentity} from '../src/server/supplier-telemetry.ts'
+import {LookupStageError} from '../src/server/lookup-diagnostics.ts'
 import {withDiagnosticRequest} from '../src/server/diagnostic-trace.ts'
 import {createSrmNativeCompanyLookup} from '../src/server/supplier-native-company.ts'
 import {createSrmCorporateSourceStore,CORPORATE_PUBLICATION_VERSION} from '../src/server/corporate-source-store.ts'
@@ -29,6 +30,7 @@ import {createSrmSupplierNativeWorkStore} from '../src/server/supplier-native-wo
 import {isOperationDenied} from '@profitia/platform-contracts/operation-context'
 import {captureFreshFunctions,freshReportReleasePlan} from './fresh-report-release.mjs'
 import {captureFreshPostfetchFunctions,freshPostfetchReleasePlan} from './fresh-postfetch-release.mjs'
+import {rootAtomicClaimSchemaUrl,rootAtomicClaimSchemaDigest} from '@profitia/platform-root-atomic-claim'
 
 const read=p=>fs.readFileSync(new URL(p,import.meta.url),'utf8')
 test('ready report native Source and current HUMAN read preserve complete financial output, tenant history and rollback',t=>supplierBusinessFixture(t,true,async f=>{
@@ -243,7 +245,12 @@ test('ready report native Source and current HUMAN read preserve complete financ
       assert.deepEqual(row,{status:'UNVERIFIED',http_status:null,response_digest:null})
      }
     }
-   }finally{await new Promise(resolve=>server.close(resolve))}
+   }finally{
+    await new Promise(resolve=>server.close(resolve));
+    await owner.query('BEGIN;SET LOCAL ROLE profitia_ingestion_owner');
+    try{await owner.query("UPDATE profitia_external_call.policies SET status='REVOKED' WHERE policy_id=$1",[id]);await owner.query('COMMIT')}
+    catch(error){await owner.query('ROLLBACK');throw error}
+   }
   })
   let prepared
   await t.test('the original corporate publication atomically prepares one public report without private document storage',async()=>{
@@ -465,6 +472,184 @@ test('ready report native Source and current HUMAN read preserve complete financ
     assert.deepEqual({sessions,accounts,companyCalls,classifications},{sessions:3,accounts:3,companyCalls:1,classifications:1})
    })
   })
+  await t.test('optional atomic Root claim preserves the real SRM classifier, Work and final report boundaries',async t=>{
+   const origin='http://localhost:3400',secret='s'.repeat(40),schemaDigest=await rootAtomicClaimSchemaDigest();
+   await owner.query('BEGIN');
+   try{
+    assert.match(baseBinding.databaseName,/^srm_service_business_[a-f0-9]+$/);
+    await owner.query(`GRANT CREATE ON DATABASE ${baseBinding.databaseName} TO profitia_access_owner;SET LOCAL ROLE profitia_access_owner`);
+    await owner.query(fs.readFileSync(new URL(rootAtomicClaimSchemaUrl),'utf8'));
+    await owner.query("INSERT INTO profitia_root_claim.installation VALUES(true,'1.0.0',$1,'SYNTHETIC_ONLY')",[schemaDigest]);
+    await owner.query("INSERT INTO profitia_root_claim.receivers(foreground_role,executor_role,enabled,expires_at,source_ref) VALUES($1,$2,true,now()+interval '1 hour','SYNTHETIC_ONLY')",[FOREGROUND,f.EXECUTOR]);
+    await owner.query(`GRANT USAGE ON SCHEMA profitia_root_claim TO ${FOREGROUND},${f.EXECUTOR};
+     GRANT EXECUTE ON FUNCTION profitia_root_claim.runtime_descriptor(),profitia_root_claim.claim_dispatch(uuid,uuid,text,text) TO ${FOREGROUND};
+     GRANT EXECUTE ON FUNCTION profitia_root_claim.bind_delivery(uuid,uuid,uuid,text) TO ${f.EXECUTOR}`);
+    await owner.query(`RESET ROLE;REVOKE CREATE ON DATABASE ${baseBinding.databaseName} FROM profitia_access_owner;COMMIT`);
+   }catch(error){await owner.query('ROLLBACK');throw error}
+   assert.equal((await owner.query("SELECT has_database_privilege('profitia_access_owner',$1,'CREATE') allowed",[baseBinding.databaseName])).rows[0].allowed,false);
+   let accounts=0,sessions=0,banAt=0,companyCalls=0,classifications=0,jdgCalls=0,ceidgCalls=0,mode='EMPTY';
+   const current=instrumentSupplierIdentity({...original,sessions:{getSession:async(...args)=>{sessions++;return original.sessions.getSession(...args)}},
+    users:{getUser:async(...args)=>({...await original.users.getUser(...args),banned:++accounts===banAt})}});
+   const reset=()=>{accounts=0;sessions=0;banAt=0;companyCalls=0;classifications=0;jdgCalls=0;mode='EMPTY'};
+   const server=http.createServer((request,response)=>{
+    ceidgCalls++;const nip=new URL(request.url,'http://local').searchParams.get('nip');assert.match(nip,/^[0-9]{10}$/);
+    response.statusCode=mode==='EMPTY'?204:mode==='OUTAGE'?503:200;
+    response.setHeader('content-type','application/json');response.end(mode==='JDG'?JSON.stringify({firma:[{id:'synthetic',nazwa:'PRIVATE BUSINESS',wlasciciel:{nip,imie:'PRIVATE PERSON'}}]}):undefined);
+   });
+   await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
+   const ceidgOrigin='http://127.0.0.1:'+server.address().port,policy=srmProviderSourcePolicy('CEIDG'),id=randomUUID();
+   await owner.query('BEGIN;SET LOCAL ROLE profitia_ingestion_owner');
+   try{
+    await owner.query("INSERT INTO profitia_external_call.policies(policy_id,login_role,source_id,resource_id,configuration_version,origin,transport,path_rules,maximum_request_bytes,maximum_response_bytes,timeout_ms,unit,capacity,window_start,window_end,expires_at,status,source_ref) VALUES($1,$2,$3,$4,'atomic-classification-provider-v1',$5,'LOCAL_SYNTHETIC_HTTP',$6::jsonb,8192,1048576,20000,'UPSTREAM_ATTEMPT_ADMISSION',30,now()-interval '1 hour',now()+interval '1 hour',now()+interval '1 hour','ACTIVE','SYNTHETIC_ONLY')",[id,sourceOptions.binding.role,policy.source.id,policy.resourceId,ceidgOrigin,JSON.stringify(policy.basePathRules)]);
+    await owner.query("INSERT INTO profitia_external_native.policies(policy_id,base_policy_version,path_rules,redirect_origins,maximum_response_bytes,credential_mode,completion_mode,status,expires_at,source_ref) VALUES($1,1,$2::jsonb,'[]'::jsonb,1048576,'SERVER_HEADERS','ADMITTED_ATTEMPT_CURRENT_SETTLEMENT','ACTIVE',now()+interval '1 hour','SYNTHETIC_ONLY')",[id,JSON.stringify(policy.pathRules)]);
+    await owner.query('COMMIT');
+   }catch(error){await owner.query('ROLLBACK');await new Promise(resolve=>server.close(resolve));throw error}
+   const syntheticOrigin=(await owner.query("SELECT origin FROM profitia_external_call.policies WHERE resource_id='srm-provider:mgbi' LIMIT 1")).rows[0].origin;
+   const external={configurationVersion:'company-provider-v1',schemaDigest:hash(f.core('009-external-call-admission.sql')),nativeSchemaDigest:hash(f.core('012-native-external-transport.sql')),maximumResponseBytes:1048576};
+   const lookup={companySourcePolicy:'MGBI_ONLY',work:{...f.workOptions,clerk:current,workSchemaDigest:hash(f.core('016-delegated-native-work.sql')),workBusinessBoundaryDigest:hash(own('008-supplier-native-work.sql'))},
+    namedInterestBoundaryDigest:hash(own('003-named-supplier-interest.sql')),financialInventoryBoundaryDigest:hash(own('023-financial-inventory-work.sql')),readyCompanyWorkBoundaryDigest:hash(own('026-ready-company-work.sql')),source:f.source,
+    corporate:{application,binding:{...sourceOptions.binding,applicationId:application.appId,role:sourceRole,deploymentId:application.deploymentId,configurationVersion:application.configurationVersion},pool,auditPool,
+     publicationSchemaDigest:hash(own('004-corporate-source.sql')+own('005-corporate-source-access.sql')+read('../src/server/corporate-source-shape.json')),readyReportSchemaDigest:digest},
+    mgbi:{apiKey:'synthetic-native-company-key',authScheme:'raw',source:{...sourceOptions,external,syntheticOrigin},msrExternal:{...external,maximumResponseBytes:20*1024*1024}}};
+   const native=createSrmNativeCompanyLookup(lookup),classifier=createSrmCompanyClassifier({work:lookup.work,source:f.source,apiKey:'synthetic-ceidg-token',
+    provider:{...sourceOptions,syntheticOrigin:ceidgOrigin,external:{...external,configurationVersion:'atomic-classification-provider-v1'}}});
+   const options={request:{...humanOptions,clerk:current},lookup,read:{...base,clerk:current,
+    identity:{...base.identity,requestBoundary:{publicOrigins:[origin],internalOrigins:['http://0.0.0.0:10000']}},application:{...base.application,operations:['supplier.report.read']}},ready:{schemaDigest:digest,secret}};
+   const ports={classify:(selection,signal,proof)=>{classifications++;return classifier.classify(selection,signal,proof)},deliverRootClaim:classifier.deliverRootClaim,
+    company:selection=>{assert.deepEqual(Object.keys(selection).sort(),['command','organisationId','requestId']);companyCalls++;return native.run(selection)},
+    jdg:async input=>{jdgCalls++;return Response.json({section:{status:'SUCCESS',data:{entries:[{nip:input.command.nip}]},warnings:[]}})}};
+   const execute=(nip,{atomic=true,org=A,key='atomic-consumer-'+randomUUID(),selectedPorts=ports}={})=>{
+    const request=new Request(origin+'/api/xray/search',{method:'POST',headers:{origin,'content-type':'application/json','idempotency-key':key},body:JSON.stringify({identifier:nip})});
+    return createSrmFreshReportSearch({...options,...(atomic?{rootAtomicClaim:{schemaDigest}}:{})},selectedPorts)({request,organisationId:org,command:{kind:'SUPPLIER_REPORT',nip},idempotencyKey:key},key);
+   };
+   const claims=async()=>(await owner.query('SELECT count(*)::int n FROM profitia_root_claim.claim_log')).rows[0].n;
+   const mgbiCalls=async()=>(await owner.query("SELECT count(*)::int n FROM profitia_external_call.calls WHERE source_id='srm.provider.mgbi'")).rows[0].n;
+   const privateRows=async nip=>(await owner.query(`SELECT
+    (SELECT count(*)::int FROM srm.mgbi_source_archives WHERE nip=$1) archives,
+    (SELECT count(*)::int FROM srm.source_snapshots s JOIN srm.suppliers p ON p.id=s.supplier_id AND p.organization_id=s.organization_id WHERE p.nip=$1) snapshots,
+    (SELECT count(*)::int FROM srm.financial_source_documents WHERE nip=$1) documents`,[nip])).rows[0];
+   try{
+    await t.test('atomic READY has the same two current identity observations and no Root claim, classifier or Work',async()=>{
+     reset();const before=await claims(),calls=await mgbiCalls(),response=await execute(NIP),body=await response.json();
+     assert.equal(body.card.identity.nip,NIP);assert(body.metadata.financial.scanner);
+     assert.deepEqual({accounts,sessions,companyCalls,classifications},{accounts:2,sessions:2,companyCalls:0,classifications:0});
+     assert.equal(await claims(),before);assert.equal(await mgbiCalls(),calls);
+    });
+    await t.test('current H3 refusal rolls back the Root claim before any delivery, classification or HTTP',async()=>{
+     reset();banAt=2;const before=await claims(),calls=ceidgCalls;
+     await assert.rejects(execute('5213390341'),isOperationDenied);
+     assert.equal(accounts,2);assert.equal(await claims(),before);assert.equal(ceidgCalls,calls);assert.equal(companyCalls,0);
+    });
+    await t.test('the same real FRESH composition removes one account read while preserving both native Work outcomes',async()=>{
+     const results=[];
+     for(const [atomic,nip]of[[false,'1180000314'],[true,'6651815893']]){
+      reset();let packet;const before=await claims();
+      const response=await withDiagnosticRequest('search',undefined,()=>execute(nip,{atomic}),{enabled:true,emit:value=>{packet=value}}),body=await response.json();
+      assert.equal(response.status,200);assert.equal(body.card.identity.nip,nip);assert.equal(body.card.financial.status,'SUCCESS');assert(body.metadata.financial.scanner);
+      assert.equal(accounts,atomic?8:9);assert.equal(sessions,3);assert.equal(await claims(),before+(atomic?1:0));
+      const work=packet.rows.filter(row=>row.category==='NATIVE_WORK');assert.deepEqual(work.map(row=>row.unitId),['SRM_REGISTER_LOOKUP','SRM_STORE_COMPANY']);
+      const getAccounts=unit=>packet.rows.filter(row=>row.category==='CLERK_ACCOUNT_READ'&&row.startMs>=unit.startMs&&row.endMs<=unit.endMs).length;
+      assert.deepEqual(work.map(getAccounts),[2,2]);
+      results.push({atomic,accounts,sessions,sql:packet.sqlQueryCalls,work:work.map(row=>row.unitId)});
+     }
+     console.info('ROOT_ATOMIC_CLAIM_CONSUMER_COMPARISON',JSON.stringify(results));
+    });
+    await t.test('a forged handoff is refused without ordinary-admit fallback or provider HTTP',async()=>{
+     reset();const before=ceidgCalls,mgbi=await mgbiCalls();
+     await assert.rejects(execute('5270103385',{selectedPorts:{...ports,classify:(selection,signal,proof)=>classifier.classify(selection,signal,structuredClone(proof))}}),isOperationDenied);
+     assert.equal(ceidgCalls,before);assert.equal(await mgbiCalls(),mgbi);assert.equal(companyCalls,0);
+    });
+    for(const [label,ban,nip]of[['registration outcome',5,'5213390341'],['company store outcome',7,'8790017162']])
+     await t.test('revocation at '+label+' preserves its original transaction rollback',async()=>{
+      reset();banAt=ban;const before=await privateRows(nip),calls=await mgbiCalls();
+      await assert.rejects(execute(nip),error=>isOperationDenied(error)||error instanceof LookupStageError&&error.stage==='lookup_registration'&&isOperationDenied(error.cause));
+      assert.equal(accounts,ban);assert.deepEqual(await privateRows(nip),before);
+      if(ban===5)assert.equal(await mgbiCalls(),calls);
+     });
+    await t.test('current H4 refusal withholds an already committed corporate report',async()=>{
+     reset();banAt=8;const nip='7791817740',before=await counts();
+     await assert.rejects(execute(nip),isOperationDenied);assert.equal(accounts,8);
+     assert.equal((await counts()).reads,before.reads);assert.equal((await owner.query('SELECT count(*)::int n FROM srm.ready_company_reports WHERE nip=$1',[nip])).rows[0].n,1);
+    });
+    await t.test('confirmed JDG consumes its claim only for original dispatch delivery and never runs the company engine',async()=>{
+     reset();mode='JDG';const result=await execute('5252242171'),body=await result.json();
+     assert.equal(body.entityType,'JDG');assert.equal(companyCalls,0);assert.equal(classifications,1);assert.equal(jdgCalls,1);
+    });
+    await t.test('a known current company without READY delivers its Root claim without CEIDG or new provider HTTP',async()=>{
+     const nip='9000000016',retained=structuredClone(packet),{readyReportSchemaDigest,...legacy}=lookup.corporate;
+     retained.nip=nip;retained.general.data.nip=nip;
+     await createSrmCorporateSourceStore(legacy).publish(retained,hash('atomic-retained:'+randomUUID()));
+     assert.equal((await owner.query('SELECT count(*)::int n FROM srm.ready_company_reports WHERE nip=$1',[nip])).rows[0].n,0);
+     reset();const before=ceidgCalls,calls=await mgbiCalls(),claimCount=await claims();
+     const response=await execute(nip),body=await response.json();
+     assert.equal(body.card.identity.nip,nip);assert(body.metadata.financial.scanner);
+     assert.equal(classifications,0);assert.equal(companyCalls,1);assert.equal(ceidgCalls,before);assert.equal(await mgbiCalls(),calls);
+     assert.equal(await claims(),claimCount+1);
+    });
+    await t.test('a committed Root replay preserves confirmed Source and refuses non-retained external results without another provider call',async()=>{
+     reset();const nip='9000000022',key='atomic-replay-'+randomUUID(),proofs=[],sentinel=Error('isolated interruption after real Source delivery'),before=await claims();
+     const observed={...ports,classify:(selection,signal,proof)=>{proofs.push(proof);return ports.classify(selection,signal,proof)}};
+     await assert.rejects(execute(nip,{key,selectedPorts:{...observed,company:async()=>{throw sentinel}}}),error=>error===sentinel);
+     assert.equal(await claims(),before+1);assert(proofs[0]);
+     reset();const calls=ceidgCalls,mgbi=await mgbiCalls();
+     await assert.rejects(execute(nip,{key,selectedPorts:observed}),error=>error instanceof Error&&error.name==='ExternalCallUnavailable'&&error.certainty==='RESULT_NOT_RETAINED'&&error.retryAllowed===false);
+     assert.equal(proofs.length,2);assert.equal(proofs[1],null);assert.equal(await claims(),before+1);
+     assert.equal(ceidgCalls,calls);assert.equal(await mgbiCalls(),mgbi);assert.equal(companyCalls,0);
+    });
+    await t.test('a Root replay after real lease expiry recovers through ordinary admission before the first provider call',async()=>{
+     reset();const nip='9000000051',key='atomic-expired-replay-'+randomUUID(),sentinel=Error('isolated interruption before Source delivery'),before=await claims();
+     let interrupted;
+     await assert.rejects(execute(nip,{key,selectedPorts:{...ports,classify:async selection=>{interrupted=selection;throw sentinel}}}),error=>error===sentinel);
+     assert.equal(await claims(),before+1);
+     const selected=(await owner.query('SELECT lease_id,ceil(extract(epoch FROM lease_expires_at-clock_timestamp())*1000)::int wait_ms FROM profitia_jobs.dispatches WHERE request_id=$1',[interrupted.requestId])).rows[0];
+     assert(selected.lease_id);assert(selected.wait_ms>0&&selected.wait_ms<=30000);
+     await new Promise(resolve=>setTimeout(resolve,selected.wait_ms+50));
+     reset();let replayProof;
+     const response=await execute(nip,{key,selectedPorts:{...ports,classify:(selection,signal,proof)=>{replayProof=proof;return ports.classify(selection,signal,proof)}}}),body=await response.json();
+     assert.equal(body.card.identity.nip,nip);assert(body.metadata.financial.scanner);assert.equal(replayProof,null);assert.equal(await claims(),before+1);
+     const recovered=(await owner.query('SELECT status,attempt_count,lease_id FROM profitia_jobs.dispatches WHERE request_id=$1',[interrupted.requestId])).rows[0];
+     assert.equal(recovered.status,'CONFIRMED');assert.equal(recovered.attempt_count,2);assert.notEqual(recovered.lease_id,selected.lease_id);
+    });
+    await t.test('CEIDG outage is not identity evidence; the original MGBI company path still confirms the exact NIP',async()=>{
+     reset();mode='OUTAGE';const nip='9000000045',response=await execute(nip),body=await response.json();
+     assert.equal(body.entityType,'COMPANY');assert.equal(body.card.identity.nip,nip);assert.equal(companyCalls,1);assert.equal(classifications,1);
+    });
+    await t.test('signed AppShell uses the same atomic FRESH and unchanged READY with current revocation',async()=>{
+     const caller='https://dev-sg2.spendguru.app',receiver='https://srm-development-runtime.onrender.com',nip='9000000039';
+     const policy={environment:'development',callerApplicationId:'spendguru',receiverApplicationId:'srm',sourceOrigin:caller,targetOrigin:receiver,
+      keyId:'synthetic-atomic-peer',key:new Uint8Array(32).fill(11),routes:[{method:'POST',path:'/api/xray/search',maximumRequestBytes:2048,requireIdempotencyKey:true}],internalOrigins:[]};
+     const peerClerk={...current,authenticateRequest:async(...args)=>{
+      const state=await current.authenticateRequest(...args),auth=state.toAuth();
+      return {status:state.status,isAuthenticated:state.isAuthenticated,toAuth:()=>({...auth,sessionClaims:{...auth.sessionClaims,azp:caller}})};
+     }};
+     const peerOptions={...options,rootAtomicClaim:{schemaDigest},read:{...options.read,clerk:peerClerk,identity:{...base.identity,
+      authorizedParties:[caller,receiver],requestBoundary:{publicOrigins:[caller,receiver],internalOrigins:['http://0.0.0.0:10000']}}}};
+     const open=async()=>{
+      const key='atomic-peer-'+randomUUID(),request=await createPeerOperationSigner(policy)(new Request(receiver+'/api/xray/search',{
+       method:'POST',headers:{authorization:'Bearer synthetic-only','content-type':'application/json','idempotency-key':key},body:JSON.stringify({identifier:nip})}));
+      return withSrmPeerXRay(async incoming=>{
+       try{return await createSrmFreshReportSearch(peerOptions,ports)({request:incoming,organisationId:A,command:{kind:'SUPPLIER_REPORT',nip},idempotencyKey:key},key)}
+       catch(error){return supplierHttpFailure(error)}
+      },{TARGET_ENVIRONMENT:'development',PROFITIA_AUTH_PROVIDER:'clerk',RENDER_SERVICE_ID:'srv-db1vu6gm7kps73d0e3r0',
+       PROFITIA_XRAY_PEER_VERSION:'1.0.0',PROFITIA_XRAY_PEER_KEY_ID:policy.keyId,PROFITIA_XRAY_PEER_KEY:Buffer.from(policy.key).toString('base64url')})(request);
+     };
+     reset();const fresh=await open(),body=await fresh.json();
+     assert.equal(fresh.status,200);assert.equal(body.data.card.identity.nip,nip);assert(body.data.metadata.financial.scanner);
+     assert.deepEqual({accounts,sessions,companyCalls,classifications},{accounts:8,sessions:3,companyCalls:1,classifications:1});
+     reset();const before=ceidgCalls,claimCount=await claims(),ready=await open();
+     assert.equal(ready.status,200);assert.equal((await ready.json()).data.card.identity.nip,nip);
+     assert.deepEqual({accounts,sessions,companyCalls,classifications},{accounts:2,sessions:2,companyCalls:0,classifications:0});
+     assert.equal(ceidgCalls,before);assert.equal(await claims(),claimCount);
+     reset();banAt=2;const history=await counts(),revoked=await open();
+     assert.equal(revoked.status,401);assert(!Object.hasOwn(await revoked.json(),'data'));assert.equal((await counts()).reads,history.reads);
+    });
+    await t.test('foreign organisation is refused before claim, Source or classifier',async()=>{
+     reset();const before=await claims(),calls=ceidgCalls;
+     await assert.rejects(execute('1180000314',{org:'33333333-3333-4333-8333-333333333333'}),isOperationDenied);
+     assert.equal(await claims(),before);assert.equal(ceidgCalls,calls);assert.equal(companyCalls,0);
+    });
+   }finally{await new Promise(resolve=>server.close(resolve))}
+  });
   await t.test('complete native FRESH pipeline prepares the report once and the next READY opening performs no Work',async()=>{
    const selectedNip='5260250274',accepted=await f.parent(A,selectedNip)
    const syntheticOrigin=(await owner.query("SELECT origin FROM profitia_external_call.policies WHERE resource_id='srm-provider:mgbi' LIMIT 1")).rows[0].origin

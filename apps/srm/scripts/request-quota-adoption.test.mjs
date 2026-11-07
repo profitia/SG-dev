@@ -53,6 +53,8 @@ const beforeNative=path=>receipt.nativeSqlRoundtripAdoption.applicationSourceDig
  ?execFileSync('git',['show',receipt.readonlyMissReportAdoption.previousReceiptSourceSha+':'+posix.normalize('apps/srm/'+path)])
  :receipt.freshPreparationRecovery?.applicationSourceDigests[path]
  ?execFileSync('git',['show',receipt.freshPreparationRecovery.previousReceiptSourceSha+':'+posix.normalize('apps/srm/'+path)])
+ :receipt.mgbiResponseEnvelopeRecovery?.applicationSourceDigests[path]
+ ?execFileSync('git',['show',receipt.mgbiResponseEnvelopeRecovery.previousReceiptSourceSha+':'+posix.normalize('apps/srm/'+path)])
  :fs.readFileSync(new URL('../'+path,import.meta.url))
 test('SRM explicitly adopts SQL027 and preserves all historical contracts, counts and human grants',async()=>{
  const prior=execFileSync('git',['show',a.previousReceiptSourceSha+':apps/srm/operation-integration.json'])
@@ -64,7 +66,7 @@ test('SRM explicitly adopts SQL027 and preserves all historical contracts, count
  assert.equal(await requestQuotaSchemaDigest(),a.schemaDigest);assert.equal(await operationSourceDigest(),a.sdkDigests.operationSourceDigest);assert.equal(await privateOperationHostSourceDigest(),receipt.freshPostfetchRecovery?.sdkDigests.privateOperationHostSourceDigest??receipt.sourceLeaseClockRecovery?.sdkDigests.privateOperationHostSourceDigest??receipt.diagnosticTelemetryAdoption.sdkDigests.privateOperationHostSourceDigest)
  for(const[path,digest]of Object.entries(a.sourceDigests)){
   assert.equal(hash(execFileSync('git',['show',a.producer.sourceSha+':packages/platform-contracts/'+path])),digest,path)
-  assert.equal(hash(fs.readFileSync(new URL('../../../packages/platform-contracts/'+path,import.meta.url))),receipt.freshPostfetchRecovery?.sourceDigests[path]??receipt.sourceLeaseClockRecovery?.sourceDigests[path]??receipt.settledExternalFailureRecovery?.sourceDigests[path]??receipt.freshPerformanceRecovery.sourceDigests[path]??receipt.appshellXraySourceCompatibility.sourceDigests[path]??receipt.xrayPerformanceRecoveryV2.sourceDigests[path]??receipt.diagnosticTelemetryAdoption.sourceDigests[path]??receipt.nativeSqlRoundtripAdoption.sourceDigests[path]??digest,path)
+  assert.equal(hash(fs.readFileSync(new URL('../../../packages/platform-contracts/'+path,import.meta.url))),receipt.sourceHubMarketSymbolCompatibility?.sourceDigests[path]??receipt.sourceHubApiPathCompatibility?.sourceDigests[path]??receipt.freshPostfetchRecovery?.sourceDigests[path]??receipt.sourceLeaseClockRecovery?.sourceDigests[path]??receipt.settledExternalFailureRecovery?.sourceDigests[path]??receipt.freshPerformanceRecovery.sourceDigests[path]??receipt.appshellXraySourceCompatibility.sourceDigests[path]??receipt.xrayPerformanceRecoveryV2.sourceDigests[path]??receipt.diagnosticTelemetryAdoption.sourceDigests[path]??receipt.nativeSqlRoundtripAdoption.sourceDigests[path]??digest,path)
  }
  for(const[path,digest]of Object.entries(a.applicationSourceDigests)){
   const repair=receipt.pilot2PrivateTransportParentRepair?.applicationSourceDigests[path]?receipt.pilot2PrivateTransportParentRepair

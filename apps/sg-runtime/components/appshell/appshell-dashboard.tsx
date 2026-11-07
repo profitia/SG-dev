@@ -1,8 +1,9 @@
 'use client'
 
-import React, {useEffect, useState, useCallback} from 'react'
+import React, {useSyncExternalStore,useEffect, useState} from 'react'
+import {productAnalytics} from '@/lib/product-analytics/adapter'
 import {usePathname, useRouter, useSearchParams} from 'next/navigation'
-import type {AssistantScreenContext} from './assistant-widget';
+import {useAssistantScreenContext} from './assistant-screen-context';
 import {PlatformAppShell} from './platform-appshell'
 import {XRayModuleHost} from './xray-module-host'
 import {isXrayPath,xrayPath} from '@/lib/appshell/xray-navigation'
@@ -20,9 +21,8 @@ export function AppShellDashboard(props: {
   const active = isAdpPath(pathname, props.locale)
   const benchmarkPath=`/${props.locale}/dashboard/benchmark-finder`
   const benchmarkActive=pathname===benchmarkPath||pathname===benchmarkPath+'/'
-  const [xrayAssistantTarget,setXrayAssistantTarget]=useState<HTMLElement|null>(null);
-  const [xrayAssistantContext,setXrayAssistantContext]=useState<AssistantScreenContext|null>(null);
-  const onXrayAssistantContext=useCallback((next:AssistantScreenContext|null)=>setXrayAssistantContext(previous=>JSON.stringify(previous)===JSON.stringify(next)?previous:next),[]);
+  const assistantModule=xrayActive?'xray':active?'adp':benchmarkActive?'benchmark_finder':'appshell';
+  const {context:assistantContext,onXrayContext}=useAssistantScreenContext(assistantModule);
   const [xrayOpened,setXrayOpened]=useState(xrayActive)
   useEffect(()=>{if(xrayActive)setXrayOpened(true)},[xrayActive])
   const [opened, setOpened] = useState(active)
@@ -30,13 +30,22 @@ export function AppShellDashboard(props: {
   useEffect(() => {if (active) setOpened(true)}, [active])
   useEffect(()=>{if(benchmarkActive)setBenchmarkOpened(true)},[benchmarkActive])
   const navigation = parseAdpNavigation(search.toString())
-  return <PlatformAppShell {...props} assistantTarget={xrayActive?xrayAssistantTarget:null} assistantContext={xrayActive?xrayAssistantContext:null} moduleActive={active||benchmarkActive||xrayActive}
+  const analyticsReady=useSyncExternalStore(productAnalytics.subscribe,productAnalytics.isReady,productAnalytics.serverReady)
+  const analyticsModule=xrayActive?'xray':active?'adp':benchmarkActive?'benchmark_finder':'appshell'
+  useEffect(()=>{
+    if(!analyticsReady)return
+    productAnalytics.once('app','app_opened',{module:'appshell',entry_point:'appshell'})
+    if(analyticsModule==='appshell')productAnalytics.clearTransition('module')
+    else productAnalytics.transition('module',analyticsModule,'module_opened',{module:analyticsModule,entry_point:'appshell'})
+    if(analyticsModule!=='adp')productAnalytics.transition('screen',analyticsModule,'screen_viewed',{module:analyticsModule,view:analyticsModule})
+  },[analyticsReady,analyticsModule])
+  return <PlatformAppShell {...props} assistantContext={assistantContext} moduleActive={active||benchmarkActive||xrayActive}
     onLaunchXray={()=>{setXrayOpened(true);router.push(xrayPath(props.locale))}}
     onLaunchBenchmark={()=>{setBenchmarkOpened(true);router.push(benchmarkPath)}}
     onLaunchAdp={() => {setOpened(true); router.push(adpPath(props.locale))}}
     moduleWorkspace={theme => <>
       <section hidden={!xrayActive} aria-label="X-Ray Supplier Intelligence" data-appshell-module="xray">
-        {xrayOpened&&<Sg2ModuleSession locale={props.locale}><XRayModuleHost locale={props.locale} theme={theme} active={xrayActive} onAssistantTargetChange={setXrayAssistantTarget} onAssistantContextChange={onXrayAssistantContext} onReturn={()=>router.push(dashboardPath(props.locale))}/></Sg2ModuleSession>}
+        {xrayOpened&&<Sg2ModuleSession locale={props.locale}><XRayModuleHost locale={props.locale} theme={theme} active={xrayActive} onAssistantContextChange={onXrayContext} onReturn={()=>router.push(dashboardPath(props.locale))}/></Sg2ModuleSession>}
       </section>
       <section hidden={!benchmarkActive} aria-label="Benchmark Finder" data-appshell-module="benchmark-finder">
         {benchmarkOpened&&<Sg2ModuleSession locale={props.locale}><div className="as-benchmark-module">

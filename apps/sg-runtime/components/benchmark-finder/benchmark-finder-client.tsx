@@ -1,5 +1,7 @@
 'use client'
 
+import {productAnalytics} from '@/lib/product-analytics/adapter'
+
 import {PriceChangeIndexLayer} from '../price-change-index/price-change-index-layer'
 import {BenchmarkQualificationFilter,matchesQualification,type QualificationFilter} from '../benchmark-picker/benchmark-qualification-filter'
 import {BenchmarkQualification} from '../benchmark-picker/benchmark-qualification'
@@ -27,6 +29,9 @@ import {
   normalizeForecastWarmupExperiment,
 } from '@/lib/benchmark/analytics'
 import {
+  METADATA_DICTIONARY_FILTER_SIGNATURE,
+  createMetadataValueLoadQueue,
+  normalizeMetadataValueQuery,
   buildMetadataValueRequestKey,
   buildMetadataValuesRequestPath,
   countReadyMetadataPrewarmFacets,
@@ -569,10 +574,6 @@ function localizeMetadataDefinitions(definitions: BenchmarkMetadataDefinition[],
   }))
 }
 
-function buildFilterParam(filters: BenchmarkSearchFilter[]) {
-  return JSON.stringify(filters)
-}
-
 function filterMetadataItems(items: BenchmarkMetadataValue[], query: string) {
   const normalizedQuery = query.trim().toLowerCase()
   if (!normalizedQuery) {
@@ -999,11 +1000,18 @@ export function BenchmarkFinderClient({
   const [isLoadingSaved, startSavedTransition] = useTransition()
   const searchTimingRef = useRef<SearchTiming | null>(null)
   const searchCounterRef = useRef(0)
+  const [analyticsResults,setAnalyticsResults]=useState<{id:string;mode:'simple'|'advanced'|'exact'|'ai';items:BenchmarkCandidate[]}|null>(null)
+  useEffect(()=>{
+    if(active&&analyticsResults&&analyticsResults.items===results&&!isSearching&&hasSearched)
+      productAnalytics.once(`results:${analyticsResults.id}`,'benchmark_results_displayed',{module:'benchmark_finder',mode:analyticsResults.mode,
+        process_attempt_id:analyticsResults.id,result_count:results.length,status:results.length?'success':'empty'})
+  },[active,analyticsResults,results,isSearching,hasSearched])
   const resultsRef = useRef<HTMLDivElement | null>(null)
   const advancedInputRef = useRef<HTMLInputElement | null>(null)
   const advancedOpenStartedAtRef = useRef<number | null>(null)
   const advancedOpenLoggedRef = useRef(false)
   const metadataAbortControllersRef = useRef<Record<string, AbortController>>({})
+  const [metadataValueLoadQueue] = useState(createMetadataValueLoadQueue)
   const searchAbortControllerRef = useRef<AbortController | null>(null)
   const previewAbortControllersRef = useRef<Record<string, AbortController>>({})
   const analyticsEligibilityAbortControllersRef = useRef<Record<string, AbortController>>({})
@@ -1086,9 +1094,10 @@ export function BenchmarkFinderClient({
 
   async function loadMetadataValues(metadataKey: string, nextSearchQuery?: string, options?: { suppressGlobalError?: boolean }) {
     const remoteFiltering = shouldUseRemoteMetadataQuery(metadataKey)
-    const normalizedQuery = (nextSearchQuery ?? metadataValueSearchByKey[metadataKey] ?? '').trim()
-    const filters = buildSearchFilters(selectedFilters).filter((filter) => filter.metadataKey !== metadataKey)
-    const filterSignature = buildFilterParam(filters)
+    const normalizedQuery = normalizeMetadataValueQuery(metadataKey, nextSearchQuery ?? metadataValueSearchByKey[metadataKey] ?? '')
+    // Keep dictionary reads on the approved bounded metadata view. Search
+    // commands below retain all selected benchmark criteria independently.
+    const filterSignature = METADATA_DICTIONARY_FILTER_SIGNATURE
     const current = metadataValuesByKey[metadataKey]
 
     if (remoteFiltering && normalizedQuery.length < REMOTE_METADATA_QUERY_MIN_LENGTH) {
@@ -1140,7 +1149,6 @@ export function BenchmarkFinderClient({
     try {
       const payload = await readJson<MetadataValuesResponse>(await discoveryFetch(buildMetadataValuesRequestPath({
         metadataKey,
-        filterSignature,
         remoteFiltering,
         query: normalizedQuery,
         limit: MAX_METADATA_VISIBLE_ITEMS,
@@ -1188,9 +1196,9 @@ export function BenchmarkFinderClient({
     } finally {
       if (metadataAbortControllersRef.current[metadataKey] === controller) {
         delete metadataAbortControllersRef.current[metadataKey]
-      }
-      if (metadataValueRequestKeysRef.current[metadataKey] === requestKey) {
-        delete metadataValueRequestKeysRef.current[metadataKey]
+        if (metadataValueRequestKeysRef.current[metadataKey] === requestKey) {
+          delete metadataValueRequestKeysRef.current[metadataKey]
+        }
       }
     }
   }
@@ -1225,9 +1233,22 @@ export function BenchmarkFinderClient({
   }
 
   function queueMetadataValueLoad(metadataKey: string, nextSearchQuery?: string) {
-    startSearchTransition(() => {
+    metadataValueLoadQueue.cancel()
+    const remote = shouldUseRemoteMetadataQuery(metadataKey)
+    if (remote) {
+      metadataAbortControllersRef.current[metadataKey]?.abort()
+      delete metadataAbortControllersRef.current[metadataKey]
+      delete metadataValueRequestKeysRef.current[metadataKey]
+    }
+    const load = () => startSearchTransition(() => {
       loadMetadataValues(metadataKey, nextSearchQuery).catch(() => undefined)
     })
+    const query = normalizeMetadataValueQuery(metadataKey, nextSearchQuery ?? metadataValueSearchByKey[metadataKey] ?? '')
+    if (remote && query.length >= REMOTE_METADATA_QUERY_MIN_LENGTH) {
+      metadataValueLoadQueue.schedule(load)
+    } else {
+      load()
+    }
   }
 
   function openSearchSurface(nextSurfaceMode: SearchSurfaceMode) {
@@ -1474,6 +1495,8 @@ export function BenchmarkFinderClient({
 
     const { requestId, controller } = beginSearchRequest()
     const searchId = beginSearchTiming('simple')
+    const analyticsAttempt=productAnalytics.begin('benchmark_finder','benchmark_search')
+    if(analyticsAttempt)productAnalytics.capture('benchmark_search_submitted',{module:'benchmark_finder',mode:'simple',process_attempt_id:analyticsAttempt.id})
     try {
       const params = new URLSearchParams({ q: normalizedQuery, limit: String(SEARCH_RESULTS_FETCH_LIMIT) })
       const payload = await readJson<{ items: BenchmarkCandidate[] }>(await discoveryFetch(`/api/benchmark/search?${params.toString()}`, {
@@ -1488,6 +1511,8 @@ export function BenchmarkFinderClient({
       markSearchResponse(searchId)
       setQuery(normalizedQuery)
       setResults(payload.items)
+      if(analyticsAttempt)setAnalyticsResults({id:analyticsAttempt.id,mode:'simple',items:payload.items})
+      productAnalytics.finish(analyticsAttempt,'success')
       setHasSearched(true)
       setVisibleResultCount(RESULT_PREVIEW_LIMIT)
       pushRecentSearch({
@@ -1504,6 +1529,7 @@ export function BenchmarkFinderClient({
         return
       }
 
+      productAnalytics.finish(analyticsAttempt,'error')
       throw error
     } finally {
       if (searchAbortControllerRef.current === controller) {
@@ -1537,6 +1563,8 @@ export function BenchmarkFinderClient({
 
     const { requestId, controller } = beginSearchRequest()
     const searchId = beginSearchTiming(normalizedExactSeriesId ? 'exact' : 'advanced')
+    const analyticsAttempt=productAnalytics.begin('benchmark_finder','benchmark_search'),analyticsMode=normalizedExactSeriesId?'exact':'advanced'
+    if(analyticsAttempt)productAnalytics.capture('benchmark_search_submitted',{module:'benchmark_finder',mode:analyticsMode,process_attempt_id:analyticsAttempt.id})
     try {
       const payload = await readJson<{ items: BenchmarkCandidate[] }>(await discoveryFetch('/api/benchmark/search', {
         method: 'POST',
@@ -1559,6 +1587,8 @@ export function BenchmarkFinderClient({
       setExactSeriesId(normalizedExactSeriesId)
       setSelectedFilters(nextFilters)
       setResults(payload.items)
+      if(analyticsAttempt)setAnalyticsResults({id:analyticsAttempt.id,mode:analyticsMode,items:payload.items})
+      productAnalytics.finish(analyticsAttempt,'success')
       setHasSearched(true)
       setVisibleResultCount(RESULT_PREVIEW_LIMIT)
       pushRecentSearch({
@@ -1585,6 +1615,7 @@ export function BenchmarkFinderClient({
         return []
       }
 
+      productAnalytics.finish(analyticsAttempt,'error')
       throw error
     } finally {
       if (searchAbortControllerRef.current === controller) {
@@ -1621,6 +1652,9 @@ export function BenchmarkFinderClient({
 
     const { requestId, controller } = beginSearchRequest()
 
+    const analyticsAttempt=productAnalytics.begin('benchmark_finder','benchmark_search')
+    if(analyticsAttempt)productAnalytics.capture('benchmark_search_submitted',{module:'benchmark_finder',mode:'ai',process_attempt_id:analyticsAttempt.id})
+
     try {
       const payload = await readJson<BenchmarkAiSearchResult>(await discoveryFetch('/api/benchmark/ai-search', {
         method: 'POST',
@@ -1636,6 +1670,8 @@ export function BenchmarkFinderClient({
       setAiPrompt(normalizedPrompt)
       setAiIntent(payload.intent)
       setResults(payload.candidates)
+      if(analyticsAttempt)setAnalyticsResults({id:analyticsAttempt.id,mode:'ai',items:payload.candidates})
+      productAnalytics.finish(analyticsAttempt,'success')
       setHasSearched(true)
       setVisibleResultCount(RESULT_PREVIEW_LIMIT)
       pushRecentSearch({
@@ -1652,6 +1688,7 @@ export function BenchmarkFinderClient({
         return
       }
 
+      productAnalytics.finish(analyticsAttempt,'error')
       throw error
     } finally {
       if (searchAbortControllerRef.current === controller) {
@@ -1853,6 +1890,7 @@ export function BenchmarkFinderClient({
   }
 
   async function handleBenchmarkUse(candidate: BenchmarkCandidate) {
+    productAnalytics.capture('benchmark_selected',{module:'benchmark_finder'})
     if (isPickerMode) {
       const existing = saved.find((item) => item.providerSeries.providerSeriesId === candidate.providerSeries.providerSeriesId)
       if (existing) {
@@ -1872,6 +1910,7 @@ export function BenchmarkFinderClient({
 
   async function handleStartBuildingCategory(candidate: BenchmarkCandidate) {
     if(pciLaunching.current || pciSeed || !pciActive.current)return
+    productAnalytics.capture('pci_build_category_clicked',{module:'price_change_index',entry_point:'benchmark_finder'})
     pciLaunching.current=true
     try {
       const existing=saved.find(item=>item.providerSeries.providerSeriesId===candidate.providerSeries.providerSeriesId)
@@ -1955,6 +1994,7 @@ export function BenchmarkFinderClient({
 
   useEffect(() => {
     return () => {
+      metadataValueLoadQueue.cancel()
       abortSearchRequest()
       abortPreviewRequest()
       abortAnalyticsEligibilityRequest()
@@ -1962,6 +2002,13 @@ export function BenchmarkFinderClient({
       Object.values(metadataAbortControllersRef.current).forEach((controller) => controller.abort())
     }
   }, [])
+
+  useEffect(() => {
+    if (!active || mode !== 'search' || searchSurfaceMode !== 'advanced'
+      || !openMetadataKey || !shouldUseRemoteMetadataQuery(openMetadataKey)) {
+      metadataValueLoadQueue.cancel()
+    }
+  }, [active, mode, searchSurfaceMode, openMetadataKey, metadataValueLoadQueue])
 
   useEffect(() => {
     if (!localeSnapshotHandledRef.current) {

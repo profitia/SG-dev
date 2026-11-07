@@ -1,0 +1,211 @@
+{
+  "schemaVersion": "1.0",
+  "status": "ACTIVE",
+  "commonEnvelopeOnly": true,
+  "universalPayload": false,
+  "implementedContractUnchanged": "NewsDiscovery 0.1.0 in packages/newsfeed-contracts",
+  "commonMetadata": [
+    "contractFamily",
+    "contractVersion",
+    "providerId",
+    "apiFamily",
+    "endpointVersion",
+    "vendorRecordId",
+    "sourceRecordRef",
+    "sourceUrl",
+    "retrievedAt",
+    "availableAtOrUnknown",
+    "asOf",
+    "licenceRef",
+    "qualityStatus",
+    "contentFingerprint",
+    "usageReceiptRef"
+  ],
+  "families": [
+    {
+      "id": "news-discovery",
+      "version": "PROPOSED_1.0",
+      "payloadFields": [
+        "title",
+        "description",
+        "articleUrl",
+        "publisherId",
+        "publishedAt",
+        "languageOrUnknown",
+        "publisherCountryOrUnknown",
+        "eventGeographyOrUnknown"
+      ],
+      "consumerInterpretationOwner": "Newsfeed / Insights Domain",
+      "rules": [
+        "Existing NewsDiscovery 0.1.0 remains unchanged; a Hub successor needs explicit versioned adoption.",
+        "Publisher country, edition country and event geography are distinct; unknown is not zero or inferred."
+      ]
+    },
+    {
+      "id": "economic-calendar",
+      "version": "PROPOSED_1.0",
+      "payloadFields": [
+        "eventId",
+        "eventAt",
+        "eventTimezone",
+        "referencePeriod",
+        "actual",
+        "previous",
+        "revised",
+        "consensusForecast",
+        "vendorForecast",
+        "unit",
+        "currency",
+        "releaseStatus",
+        "revisionRef"
+      ],
+      "consumerInterpretationOwner": "Insights Domain",
+      "rules": [
+        "Missing actual is UNKNOWN, never zero.",
+        "Consensus, vendor forecast and actual stay distinct; preserve point-in-time availability/revisions."
+      ]
+    },
+    {
+      "id": "market-observations",
+      "version": "PROPOSED_1.0",
+      "payloadFields": [
+        "vendorSymbol",
+        "instrumentType",
+        "underlyingMappingRef",
+        "mappingStatus",
+        "observationAt",
+        "price",
+        "unit",
+        "currency",
+        "quoteBasis",
+        "contractExpiry",
+        "rolloverRef",
+        "session"
+      ],
+      "consumerInterpretationOwner": "Benchmark Domain / Market Data",
+      "rules": [
+        "CFD, OTC, spot, futures, close and settlement are not interchangeable.",
+        "Vendor quotes cannot replace Macrobond or accepted Forecast input without separate owner acceptance."
+      ]
+    },
+    {
+      "id": "indicators",
+      "version": "PROPOSED_1.0",
+      "payloadFields": [
+        "indicatorId",
+        "geography",
+        "referencePeriod",
+        "frequency",
+        "value",
+        "unit",
+        "seasonalAdjustment",
+        "releaseAt",
+        "vintage",
+        "revisionRef"
+      ],
+      "consumerInterpretationOwner": "Consumer domain",
+      "rules": [
+        "Preserve units, frequency, vintage and revision lineage; no implicit resampling or fabricated missing values."
+      ]
+    },
+    {
+      "id": "external-forecasts",
+      "version": "PROPOSED_1.0",
+      "payloadFields": [
+        "vendorModel",
+        "targetId",
+        "origin",
+        "targetDate",
+        "horizon",
+        "value",
+        "unit",
+        "currency",
+        "scenario",
+        "vendorIntervalOrUnknown",
+        "vendorMethodRefOrUnknown"
+      ],
+      "consumerInterpretationOwner": "Forecast Core for any canonical adoption; Insights for labelled external context",
+      "rules": [
+        "External forecasts are not Forecast Core predictions, calibrated D7 or Forecast verification metrics.",
+        "Comparison requires equivalent underlying, target, horizon and units; no invented confidence or accuracy."
+      ]
+    }
+  ],
+  "capabilityDescriptor": {
+    "required": [
+      "providerId",
+      "apiFamily",
+      "filterName",
+      "filterSemantics",
+      "acceptedValuesOrRange",
+      "requestSupport",
+      "resultMetadataSupport",
+      "evidenceKind",
+      "evidenceRef",
+      "observedAt",
+      "limitations",
+      "entitlementRefOrUnknown"
+    ],
+    "evidenceKinds": [
+      "DOCUMENTED",
+      "OBSERVED",
+      "UNVERIFIED",
+      "UNSUPPORTED",
+      "ENRICHMENT_REQUIRED"
+    ],
+    "rules": [
+      "HTTP acceptance does not prove filter effect.",
+      "Unsupported filters fail closed; no silent ignore.",
+      "Provider catalogue, result metadata and independently enriched facts stay separate."
+    ]
+  },
+  "providerState": {
+    "NewsAPI": "EXISTING_NEWSFEED_CONNECTOR_NO_MIGRATION",
+    "GDELT": "FUTURE_NOT_IMPLEMENTED",
+    "TradingEconomics": "FUTURE_NOT_IMPLEMENTED",
+    "Brave": "FUTURE_NOT_IMPLEMENTED"
+  },
+  "authority": "Original fields preserve the Stage1B design baseline. stage2aSourceAdoption records the explicitly versioned source implementation and consumer adoption, effective only on controlled main acceptance; it does not activate infrastructure or live admission.",
+  "approval": {
+    "decisionId": "ARCH-SOURCE-HUB-G1-FINAL-ACTIVATION-20261103",
+    "approvedCandidate": "b40564130fe7b6ced4d7df233dd6749653846114",
+    "sourceSha256": "b9cc3ca170f898c4afd4356e4d3ff7686759ce55f5b32fcaf822fdea4e76d36b",
+    "evidenceDocument": "Canon/evidence/2026-11-03-platform-source-hub-final-activation.md",
+    "effectiveOn": "CONTROLLED_MAIN_ACCEPTANCE"
+  },
+  "stage2aSourceAdoption": {
+    "taskId": "ARCHITECTURE-SOURCE-HUB-NEWSFEED-STAGE2A-20261103",
+    "pullRequest": 885,
+    "effectiveOn": "CONTROLLED_MAIN_ACCEPTANCE",
+    "package": "@profitia/platform-source-hub-contracts",
+    "apiVersion": "1.0.0",
+    "legacyCompatibility": "NewsDiscovery 0.1.0",
+    "implementedFamilies": {
+      "news-discovery": "1.0.0",
+      "economic-calendar": "1.0.0",
+      "indicators": "1.0.0",
+      "external-forecasts": "1.0.0"
+    },
+    "futureFamilies": [
+      "market-observations"
+    ],
+    "consumer": {
+      "application": "newsfeed",
+      "contractPackage": "@profitia/newsfeed-contracts",
+      "apiVersion": "1.0.0",
+      "adoptedFamily": "news-discovery"
+    },
+    "providerSourceState": {
+      "NewsAPI": "IMPLEMENTED_OFFLINE_VERIFIED_SINGLE_HUB_IMPLEMENTATION",
+      "Brave": "IMPLEMENTED_OFFLINE_VERIFIED",
+      "TradingEconomicsCalendar": "IMPLEMENTED_OFFLINE_VERIFIED",
+      "TradingEconomicsIndicators": "IMPLEMENTED_OFFLINE_VERIFIED",
+      "TradingEconomicsExternalForecasts": "IMPLEMENTED_OFFLINE_VERIFIED",
+      "GDELT": "NOT_IMPLEMENTED"
+    },
+    "runtimeAdmission": "NOT_ACTIVATED",
+    "infrastructureActivationAuthorized": false,
+    "evidenceDocument": "Canon/evidence/2026-11-03-source-hub-newsfeed-stage2a.md",
+    "compatibilityAndRollback": "apps/platform-source-hub/docs/stage2b-activation.pl.md"
+  }
+}

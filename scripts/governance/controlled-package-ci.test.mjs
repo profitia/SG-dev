@@ -1,3 +1,7 @@
+import {SOURCE_HUB_MARKET_SYMBOL_REVIEW,assertMarketSymbolReviewEntry} from './controlled-package-ci.mjs'
+import {ECR_BACKEND_REVIEW,assertEcrBackendReviewEntry} from './controlled-package-ci.mjs'
+import {createHash} from 'node:crypto'
+import {ECR_G1_GOVERNANCE_REVIEW,assertEcrG1ReviewEntry} from './controlled-package-ci.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
@@ -5,7 +9,7 @@ import os from 'node:os'
 import path from 'node:path'
 import {fileURLToPath} from 'node:url'
 import {spawnSync, execFileSync} from 'node:child_process'
-import {assertTrustedContext, assertEnvironment, selectCandidate, assertArchitectureFiles, resolveCandidateAdmission, assertArchitectureCheckout, CONTROL_POLICY_FILES, assertCredentialMetadata, assertReceipt, assertPackagePolicy, assertManifestPolicy, assertLocalPackageSources, assertProof, controlPolicyDigest, operationContractProvenanceDigest, REPOSITORY, WORKFLOW, PRIVATE_PACKAGES, LOCAL_PACKAGES, CONTROLLED_CANDIDATE_PREFIXES, KRS_GOVERNANCE_REVIEW_FILES, ADP_GOVERNANCE_REVIEW, LIMITS_G1_GOVERNANCE_REVIEW, FRESH_REPORT_PRODUCER_REVIEW, PAYLOAD_CAPTURE_PRODUCER_REVIEW, READONLY_MISS_REPORT_PRODUCER_REVIEW, FRESH_FIXTURE_TEARDOWN_REVIEW} from './controlled-package-ci.mjs'
+import {SOURCE_HUB_UNIVERSAL_FIRST_PARTY_REVIEW,assertUniversalFirstPartyReviewEntry,SOURCE_HUB_CURRENT_E1_REVIEW,assertCurrentE1ReviewEntry,SOURCE_HUB_STAGE2A_REVIEW, assertTrustedContext, assertEnvironment, selectCandidate, assertArchitectureFiles, resolveCandidateAdmission, assertArchitectureCheckout, CONTROL_POLICY_FILES, assertCredentialMetadata, assertReceipt, assertPackagePolicy, assertManifestPolicy, assertLocalPackageSources, assertProof, controlPolicyDigest, operationContractProvenanceDigest, REPOSITORY, WORKFLOW, PRIVATE_PACKAGES, LOCAL_PACKAGES, CONTROLLED_CANDIDATE_PREFIXES, KRS_GOVERNANCE_REVIEW_FILES, ADP_GOVERNANCE_REVIEW, LIMITS_G1_GOVERNANCE_REVIEW, FRESH_REPORT_PRODUCER_REVIEW, PAYLOAD_CAPTURE_PRODUCER_REVIEW, READONLY_MISS_REPORT_PRODUCER_REVIEW, FRESH_FIXTURE_TEARDOWN_REVIEW, ROOT_ATOMIC_CLAIM_PRODUCER_REVIEW} from './controlled-package-ci.mjs'
 
 const sha = 'a'.repeat(40), other = 'b'.repeat(40)
 const context = () => ({repository: REPOSITORY, ref: 'refs/heads/main', workflowRef: `${REPOSITORY}/${WORKFLOW}@refs/heads/main`, event: 'workflow_dispatch', actor: 'profitia', triggeringActor: 'profitia', controlSha: sha})
@@ -173,7 +177,7 @@ for (const name of Object.keys(LOCAL_PACKAGES)) test(`actual local source ${name
   const relative = LOCAL_PACKAGES[name]
   const local = path.resolve(candidateRoot, 'apps/sg-runtime', relative), authorityLocal = path.resolve(authorityRoot, 'apps/sg-runtime', relative)
   const manifest = {name, version: '0.2.0', peerDependencies: {react: '^18.3.1 || ^19.2.4'}}
-  const candidate = lock(); candidate.packages[`node_modules/${name}`] = {version: manifest.version, resolved: `file:${relative}`}
+  const candidate = lock(); candidate.packages[`node_modules/${name}`] = {version: manifest.version, resolved: `file:${relative}`, peerDependencies: structuredClone(manifest.peerDependencies)}
   try {
     fs.mkdirSync(path.join(candidateRoot, 'apps/sg-runtime'), {recursive: true})
     for (const dir of [local, authorityLocal]) {fs.mkdirSync(dir, {recursive: true}); fs.writeFileSync(path.join(dir, 'package.json'), JSON.stringify(manifest))}
@@ -888,4 +892,402 @@ test('FRESH fixture API admission rechecks complete file metadata before checkou
  const request=async endpoint=>{calls.push(endpoint);return{data:structuredClone(endpoint.includes('/files?')?files:p)}}
  const result=await resolveCandidateAdmission(context(),'843',p.head.sha,request)
  assert.equal(result.sha,p.head.sha);assert.deepEqual(result.admission.files,files);assert.equal(calls.length,3)
+})
+
+function rootAtomicClaimCandidate() {
+  const review=ROOT_ATOMIC_CLAIM_PRODUCER_REVIEW,p=pr()
+  p.number=review.prNumber;p.head.ref=review.branch;p.head.sha=review.sourceSha;p.base.sha=sha
+  const files=Object.entries(review.blobs).map(([filename,blob])=>({filename,status:'added',sha:blob}))
+  p.changed_files=files.length
+  return {p,files}
+}
+test('atomic Root claim review is frozen and admits only the exact eleven additive producer blobs',()=>{
+  const review=ROOT_ATOMIC_CLAIM_PRODUCER_REVIEW,{p,files}=rootAtomicClaimCandidate()
+  assert(Object.isFrozen(review));assert(Object.isFrozen(review.blobs));assert.equal(files.length,11)
+  assert.equal(review.prNumber,854);assert.equal(review.sourceSha,'3a494b5432555935168c060be5950589d550d276')
+  assert.equal(review.branch,'architecture/root-atomic-claim-producer-20261101')
+  assert(files.every(f=>f.status==='added' && (f.filename.startsWith('packages/platform-contracts/root-atomic-claim/')
+    || f.filename==='apps/architecture-lab/test/root-atomic-claim.test.mjs')))
+  assert(!files.some(f=>f.filename.includes('/current-fresh-report/')))
+  assertArchitectureFiles(p,files)
+  assert.equal(selectCandidate(context(),p,review.sourceSha,{files}),review.sourceSha)
+})
+test('atomic Root claim review refuses another PR, source SHA or internal branch even with matching caller metadata',()=>{
+  for(const mutate of [p=>p.number++,p=>p.head.ref='architecture/another-candidate',p=>p.head.sha=other]){
+    const {p,files}=rootAtomicClaimCandidate();mutate(p)
+    rejection(()=>selectCandidate(context(),p,p.head.sha,{files}))
+  }
+})
+test('atomic Root claim review preserves trusted main, owner, repository and target fences',()=>{
+  for(const mutate of [p=>p.user.login='attacker',p=>p.head.repo.full_name='profitia/fork',p=>p.base.repo.full_name='other/SG-dev',p=>p.base.ref='staging',p=>p.state='closed']){
+    const {p,files}=rootAtomicClaimCandidate();mutate(p)
+    rejection(()=>selectCandidate(context(),p,p.head.sha,{files}))
+  }
+  for(const change of [{ref:'refs/pull/854/merge'},{event:'pull_request_target'},{triggeringActor:'attacker'},{workflowRef:REPOSITORY+'/'+WORKFLOW+'@refs/heads/untrusted'}]){
+    const {p,files}=rootAtomicClaimCandidate()
+    rejection(()=>selectCandidate({...context(),...change},p,p.head.sha,{files}))
+  }
+})
+test('atomic Root claim review rejects omitted, extra, duplicate, modified, renamed and substituted blobs',()=>{
+  for(const mutate of [files=>files.pop(),files=>files.push({filename:'packages/platform-contracts/src/extra.mjs',status:'added',sha}),
+    files=>files[0]={...files[1]},files=>files[0].status='modified',files=>files[0].previous_filename='other.mjs',files=>files[0].sha=other]){
+    const {p,files}=rootAtomicClaimCandidate();mutate(files);p.changed_files=files.length
+    rejection(()=>selectCandidate(context(),p,p.head.sha,{files}))
+  }
+})
+test('atomic Root claim admission cannot include old FRESH, SDK, product, workflow or registry mutations',()=>{
+  for(const filename of ['packages/platform-contracts/current-fresh-report/package.json','packages/platform-contracts/src/operation-context.mjs',
+    'apps/srm/operation-integration.json','apps/sg-runtime/package.json',WORKFLOW,'Canon/registries/profitia-projects-v1.json']){
+    const {p,files}=rootAtomicClaimCandidate();files[0]={filename,status:'modified',sha}
+    rejection(()=>selectCandidate(context(),p,p.head.sha,{files}))
+  }
+})
+test('atomic Root claim API resolution binds the complete exact file list and rechecks candidate metadata',async()=>{
+  const {p,files}=rootAtomicClaimCandidate(),calls=[]
+  const request=async endpoint=>{calls.push(endpoint);return {data:structuredClone(endpoint.includes('/files?')?files:p)}}
+  const resolved=await resolveCandidateAdmission(context(),'854',p.head.sha,request)
+  assert.equal(resolved.sha,p.head.sha);assert.deepEqual(resolved.admission.files,files);assert.equal(calls.length,3)
+  let reads=0
+  const changing=async endpoint=>{
+    if(endpoint.includes('/files?'))return {data:structuredClone(files)}
+    const value=structuredClone(p);if(++reads===2)value.base.sha=other
+    return {data:value}
+  }
+  await assert.rejects(resolveCandidateAdmission(context(),'854',p.head.sha,changing),/CANDIDATE_CHANGED_DURING_RESOLUTION/)
+})
+
+test('atomic Root claim review rejects substitution at every pinned producer blob',()=>{
+ for(let i=0;i<11;i++)for(const field of ['sha','status','filename']){
+  const {p,files}=rootAtomicClaimCandidate();files[i][field]=field==='sha'?'f'.repeat(40):field==='status'?'modified':files[i].filename+'.extra';
+  rejection(()=>selectCandidate(context(),p,p.head.sha,{files}));
+ }
+})
+
+import {NEWSFEED_G1_GOVERNANCE_REVIEW} from './controlled-package-ci.mjs'
+
+const newsfeedG1ReviewFiles = () => Object.entries(NEWSFEED_G1_GOVERNANCE_REVIEW.blobs).map(([filename,sha])=>({filename,sha,status:'modified'}))
+const newsfeedG1ReviewPr = () => ({...architecturePr(10),number:NEWSFEED_G1_GOVERNANCE_REVIEW.prNumber,head:{...architecturePr().head,ref:NEWSFEED_G1_GOVERNANCE_REVIEW.branch}})
+
+test('Newsfeed G1 admission binds only the ten frozen blobs of PR872 and its exact branch',()=>{
+ assert(Object.isFrozen(NEWSFEED_G1_GOVERNANCE_REVIEW));assert(Object.isFrozen(NEWSFEED_G1_GOVERNANCE_REVIEW.blobs))
+ assert.equal(NEWSFEED_G1_GOVERNANCE_REVIEW.prNumber,872);assert.equal(NEWSFEED_G1_GOVERNANCE_REVIEW.sourceSha,'d7c425651faa354a21bf20c4679e12345365b6be')
+ assert.equal(Object.keys(NEWSFEED_G1_GOVERNANCE_REVIEW.blobs).length,10)
+ assert(!Object.keys(NEWSFEED_G1_GOVERNANCE_REVIEW.blobs).some(n=>n.startsWith('apps/')||n.startsWith('packages/')||n.startsWith('.github/')))
+ const files=newsfeedG1ReviewFiles(),p=newsfeedG1ReviewPr()
+ assert.equal(selectCandidate(context(),p,other,{files}),other)
+ assert.equal(selectCandidate(context(),p,other,{files:[...files].reverse()}),other)
+ assert.equal(selectCandidate(context(),p,other,{files:files.map(f=>({...f,status:'added'}))}),other)
+ for(const delta of [{number:873},{number:undefined},{head:{...p.head,ref:'architecture/another-review'}},{head:{...p.head,sha}}])rejection(()=>selectCandidate(context(),{...p,...delta},other,{files}))
+ rejection(()=>selectCandidate(context(),p,sha,{files}))
+})
+
+test('Newsfeed G1 review refuses changed blobs, missing/extra/duplicate files, deletion and rename',()=>{
+ const original=newsfeedG1ReviewFiles()
+ for(let i=0;i<original.length;i++){
+  const incomplete=original.filter((_,j)=>i!==j);rejection(()=>selectCandidate(context(),{...newsfeedG1ReviewPr(),changed_files:incomplete.length},other,{files:incomplete}))
+  for(const patch of [{sha:'d'.repeat(40)},{status:'removed'},{status:'renamed',previous_filename:original[i].filename},{status:'copied'},{previous_filename:original[i].filename},{sha:'forged'}]){
+   const files=original.map((f,j)=>i===j?{...f,...patch}:f);rejection(()=>selectCandidate(context(),newsfeedG1ReviewPr(),other,{files}))
+  }
+  const files=original.map((f,j)=>i===j?original[(i+1)%original.length]:f);rejection(()=>selectCandidate(context(),newsfeedG1ReviewPr(),other,{files}))
+ }
+ for(const name of ['apps/sg-runtime/package.json','apps/newsfeed-runtime/src/server.ts','packages/platform-contracts/src/operation-context.mjs',WORKFLOW,'scripts/governance/controlled-package-ci.mjs','.npmrc','Canon/evidence/2026-10-27-extra.md']){
+  const files=[...original,producerFile(name)];rejection(()=>selectCandidate(context(),{...newsfeedG1ReviewPr(),changed_files:files.length},other,{files}))
+  const replaced=[...original];replaced[0]=producerFile(name);rejection(()=>selectCandidate(context(),newsfeedG1ReviewPr(),other,{files:replaced}))
+ }
+})
+
+test('Newsfeed G1 review preserves trusted actor/repository/main and current owner routing fences',()=>{
+ const files=newsfeedG1ReviewFiles()
+ for(const edit of [p=>p.user.login='other',p=>p.head.repo.full_name='other/fork',p=>p.base.ref='staging',p=>p.state='closed']){const p=newsfeedG1ReviewPr();edit(p);rejection(()=>selectCandidate(context(),p,other,{files}))}
+ rejection(()=>selectCandidate({...context(),triggeringActor:'other'},newsfeedG1ReviewPr(),other,{files}))
+ rejection(()=>selectCandidate({...context(),ref:'refs/heads/architecture/untrusted'},newsfeedG1ReviewPr(),other,{files}))
+ const root=routingFixture(),file=path.join(root,'Canon/registries/current-architecture-baseline-v1.json'),original=fs.readFileSync(file,'utf8')
+ try{for(const patch of [{currentOwner:'Other owner'},{allowedProjectKeys:['SG2']},{baselineClassification:'LEGACY'}]){const registry=JSON.parse(original),surface=registry.surfaces.find(s=>s.pathPatterns.includes('Canon/**'));Object.assign(surface,patch);fs.writeFileSync(file,JSON.stringify(registry));rejection(()=>selectCandidate(context(),newsfeedG1ReviewPr(),other,{files,repositoryRoot:root}))}}finally{fs.rmSync(root,{recursive:true,force:true})}
+})
+
+test('Newsfeed G1 review uses complete API pagination and metadata race fencing before fixed Git checks',async()=>{
+ const files=newsfeedG1ReviewFiles(),candidate=newsfeedG1ReviewPr(),result=await resolveCandidateAdmission(context(),'872',other,apiFixture(candidate,files).request)
+ assert.equal(result.sha,other);assert.deepEqual(result.admission.files,files)
+ for(const after of [{...candidate,head:{...candidate.head,sha}},{...candidate,base:{...candidate.base,sha:other}},{...candidate,head:{...candidate.head,ref:'architecture/replaced'}}])await assert.rejects(resolveCandidateAdmission(context(),'872',other,apiFixture(candidate,files,after).request))
+ await assert.rejects(resolveCandidateAdmission(context(),'872',other,apiFixture(candidate,files.slice(1)).request))
+})
+
+import {SOURCE_HUB_G1_GOVERNANCE_REVIEW} from './controlled-package-ci.mjs'
+
+const sourceHubG1ReviewFiles = () => Object.entries(SOURCE_HUB_G1_GOVERNANCE_REVIEW.blobs).map(([filename,sha])=>({filename,sha,status:SOURCE_HUB_G1_GOVERNANCE_REVIEW.statuses[filename]}))
+const sourceHubG1ReviewPr = () => ({...architecturePr(14),number:SOURCE_HUB_G1_GOVERNANCE_REVIEW.prNumber,head:{...architecturePr().head,ref:SOURCE_HUB_G1_GOVERNANCE_REVIEW.branch}})
+
+test('Source Hub G1 admission binds only the fourteen frozen blobs of PR878 and its exact branch',()=>{
+ assert(Object.isFrozen(SOURCE_HUB_G1_GOVERNANCE_REVIEW));assert(Object.isFrozen(SOURCE_HUB_G1_GOVERNANCE_REVIEW.blobs))
+ assert.equal(SOURCE_HUB_G1_GOVERNANCE_REVIEW.prNumber,878);assert.equal(SOURCE_HUB_G1_GOVERNANCE_REVIEW.sourceSha,'aef76dd768aa52b0fe0f17349cb1c972d6c67eae')
+ assert.equal(Object.keys(SOURCE_HUB_G1_GOVERNANCE_REVIEW.blobs).length,14)
+ assert(!Object.keys(SOURCE_HUB_G1_GOVERNANCE_REVIEW.blobs).some(n=>n.startsWith('apps/')||n.startsWith('packages/')||n.startsWith('.github/')))
+ const files=sourceHubG1ReviewFiles(),p=sourceHubG1ReviewPr()
+ assert.equal(selectCandidate(context(),p,other,{files}),other)
+ assert.equal(selectCandidate(context(),p,other,{files:[...files].reverse()}),other)
+ for(const delta of [{number:879},{number:undefined},{head:{...p.head,ref:'architecture/another-review'}},{head:{...p.head,sha}}])rejection(()=>selectCandidate(context(),{...p,...delta},other,{files}))
+ rejection(()=>selectCandidate(context(),p,sha,{files}))
+})
+
+test('Source Hub G1 review refuses changed blobs, missing/extra/duplicate files, deletion and rename',()=>{
+ const original=sourceHubG1ReviewFiles()
+ for(let i=0;i<original.length;i++){
+  const incomplete=original.filter((_,j)=>i!==j);rejection(()=>selectCandidate(context(),{...sourceHubG1ReviewPr(),changed_files:incomplete.length},other,{files:incomplete}))
+  for(const patch of [{sha:'d'.repeat(40)},{status:original[i].status==='added'?'modified':'added'},{status:'removed'},{status:'renamed',previous_filename:original[i].filename},{status:'copied'},{previous_filename:original[i].filename},{sha:'forged'}]){
+   const files=original.map((f,j)=>i===j?{...f,...patch}:f);rejection(()=>selectCandidate(context(),sourceHubG1ReviewPr(),other,{files}))
+  }
+  const files=original.map((f,j)=>i===j?original[(i+1)%original.length]:f);rejection(()=>selectCandidate(context(),sourceHubG1ReviewPr(),other,{files}))
+ }
+ for(const name of ['apps/sg-runtime/package.json','apps/newsfeed-runtime/src/server.ts','packages/platform-contracts/src/operation-context.mjs',WORKFLOW,'scripts/governance/controlled-package-ci.mjs','.npmrc','Canon/evidence/2026-10-27-extra.md']){
+  const files=[...original,producerFile(name)];rejection(()=>selectCandidate(context(),{...sourceHubG1ReviewPr(),changed_files:files.length},other,{files}))
+  const replaced=[...original];replaced[0]=producerFile(name);rejection(()=>selectCandidate(context(),sourceHubG1ReviewPr(),other,{files:replaced}))
+ }
+})
+
+test('Source Hub G1 review preserves trusted actor/repository/main and current owner routing fences',()=>{
+ const files=sourceHubG1ReviewFiles()
+ for(const edit of [p=>p.user.login='other',p=>p.head.repo.full_name='other/fork',p=>p.base.ref='staging',p=>p.state='closed']){const p=sourceHubG1ReviewPr();edit(p);rejection(()=>selectCandidate(context(),p,other,{files}))}
+ rejection(()=>selectCandidate({...context(),triggeringActor:'other'},sourceHubG1ReviewPr(),other,{files}))
+ rejection(()=>selectCandidate({...context(),ref:'refs/heads/architecture/untrusted'},sourceHubG1ReviewPr(),other,{files}))
+ const root=routingFixture(),file=path.join(root,'Canon/registries/current-architecture-baseline-v1.json'),original=fs.readFileSync(file,'utf8')
+ try{for(const patch of [{currentOwner:'Other owner'},{allowedProjectKeys:['SG2']},{baselineClassification:'LEGACY'}]){const registry=JSON.parse(original),surface=registry.surfaces.find(s=>s.pathPatterns.includes('Canon/**'));Object.assign(surface,patch);fs.writeFileSync(file,JSON.stringify(registry));rejection(()=>selectCandidate(context(),sourceHubG1ReviewPr(),other,{files,repositoryRoot:root}))}}finally{fs.rmSync(root,{recursive:true,force:true})}
+})
+
+test('Source Hub G1 review uses complete API pagination and metadata race fencing before fixed Git checks',async()=>{
+ const files=sourceHubG1ReviewFiles(),candidate=sourceHubG1ReviewPr(),result=await resolveCandidateAdmission(context(),'878',other,apiFixture(candidate,files).request)
+ assert.equal(result.sha,other);assert.deepEqual(result.admission.files,files)
+ for(const after of [{...candidate,head:{...candidate.head,sha}},{...candidate,base:{...candidate.base,sha:other}},{...candidate,head:{...candidate.head,ref:'architecture/replaced'}}])await assert.rejects(resolveCandidateAdmission(context(),'878',other,apiFixture(candidate,files,after).request))
+ await assert.rejects(resolveCandidateAdmission(context(),'878',other,apiFixture(candidate,files.slice(1)).request))
+})
+
+const sourceHubStage2aFiles=()=>Object.entries(SOURCE_HUB_STAGE2A_REVIEW.blobs).map(([filename,sha])=>({filename,sha,status:SOURCE_HUB_STAGE2A_REVIEW.statuses[filename]}))
+const sourceHubStage2aPr=()=>({...pr(),number:885,changed_files:sourceHubStage2aFiles().length,base:{...pr().base,sha:SOURCE_HUB_STAGE2A_REVIEW.reviewedBaseSha},head:{...pr().head,sha:SOURCE_HUB_STAGE2A_REVIEW.reviewedCandidateSha,ref:SOURCE_HUB_STAGE2A_REVIEW.branch}})
+test('Stage2A closed review admits the exact mixed-owner source and retains PR identity fences',()=>{
+ const p=sourceHubStage2aPr(),files=sourceHubStage2aFiles()
+ assert.equal(selectCandidate(context(),p,p.head.sha,{files}),p.head.sha)
+ for(const mutate of [p=>p.number=886,p=>p.head.ref='architecture/other',p=>p.user.login='other',p=>p.head.repo.full_name='other/SG-dev']){
+  const q=structuredClone(p);mutate(q);rejection(()=>selectCandidate(context(),q,q.head.sha,{files}))
+ }
+})
+test('Stage2A closed review rejects changed, missing, additional, duplicate, renamed or differently classified blobs',()=>{
+ const p=sourceHubStage2aPr()
+ for(const mutate of [f=>f[0].sha='0'.repeat(40),f=>f.pop(),f=>f.push({...f[0],filename:'apps/sg-runtime/app/unreviewed.ts'}),f=>f.push({...f[0]}),f=>f[0].previous_filename='old',f=>f[0].status='removed']){
+  const files=sourceHubStage2aFiles();mutate(files);const q={...p,changed_files:files.length}
+  rejection(()=>selectCandidate(context(),q,q.head.sha,{files}))
+ }
+})
+test('Maps peer transition needs exact source, a pinned admission and matching lock metadata',()=>{
+ const temporary=fs.mkdtempSync(path.join(os.tmpdir(),'stage2a-peer-transition-')),candidateRoot=path.join(temporary,'candidate'),authorityRoot=path.join(temporary,'authority')
+ try{
+  const relative=LOCAL_PACKAGES['@profitia/maps-embed'],candidateApp=path.join(candidateRoot,'apps/sg-runtime'),authorityApp=path.join(authorityRoot,'apps/sg-runtime')
+  fs.mkdirSync(candidateApp,{recursive:true});fs.mkdirSync(authorityApp,{recursive:true})
+  const from=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../../packages/maps-embed/package.json'),original=fs.readFileSync(from,'utf8')
+  // Exercise the same frozen candidate before and after its separate main acceptance.
+  const installedRange=JSON.parse(original).peerDependencies['@profitia/platform-contracts']
+  const priorRange=installedRange.replace(/ \|\| 1\.34\.0$/,'')
+  const reviewedRange=priorRange.endsWith(' || 1.33.0')?priorRange:priorRange+' || 1.33.0'
+  const bytes=Buffer.from(original.replace(JSON.stringify(installedRange),JSON.stringify(reviewedRange))),manifest=JSON.parse(bytes)
+  const target=path.resolve(candidateApp,relative,'package.json'),trusted=path.resolve(authorityApp,relative,'package.json')
+  fs.mkdirSync(path.dirname(target),{recursive:true});fs.mkdirSync(path.dirname(trusted),{recursive:true});fs.writeFileSync(target,bytes)
+  const previous=structuredClone(manifest);previous.peerDependencies['@profitia/platform-contracts']=previous.peerDependencies['@profitia/platform-contracts'].replace(/ \|\| 1\.33\.0$/,'')
+  fs.writeFileSync(trusted,JSON.stringify(previous))
+  const candidate={packages:{'node_modules/@profitia/maps-embed':{version:manifest.version,resolved:'file:'+relative,peerDependencies:manifest.peerDependencies}}}
+  rejection(()=>assertLocalPackageSources(candidateRoot,candidate,authorityRoot))
+  assertLocalPackageSources(candidateRoot,candidate,authorityRoot,{reviewedStage2a:true})
+  assertLocalPackageSources(candidateRoot,candidate,candidateRoot)
+  const inconsistent=structuredClone(candidate);inconsistent.packages['node_modules/@profitia/maps-embed'].peerDependencies=previous.peerDependencies
+  rejection(()=>assertLocalPackageSources(candidateRoot,inconsistent,authorityRoot,{reviewedStage2a:true}))
+  fs.writeFileSync(target,JSON.stringify({...manifest,unreviewed:true}));rejection(()=>assertLocalPackageSources(candidateRoot,candidate,authorityRoot,{reviewedStage2a:true}))
+ }finally{fs.rmSync(temporary,{recursive:true,force:true})}
+})
+
+test('test-only reconciliation preserves all115 other reviewed blobs and every status, mode and owner route',()=>{
+ const corrected={"apps/architecture-lab/test/sdk-compatibility.test.mjs": "1616eb2591d3e6ccd0c68e595f81fe8a16733e84", "apps/sg-runtime/operation-integration.json": "0e494a92f1c0bb151ade7866c2fbc7b0afd2753d", "apps/sg-runtime/tests/adp-appshell-consumer.test.tsx": "2bebee2a9a87d669a597463d0ae4afcccb171382", "apps/sg-runtime/tests/category-operation.test.ts": "249ad2982f8f61dabef235393699f4c52837ecd8", "apps/sg-runtime/tests/diagnostic-telemetry-adoption.test.mjs": "21953cf04a3c1fa0936b4c960757abadc821bbaf", "apps/sg-runtime/tests/identity-runtime.test.ts": "04a365354295640963fb93e559c070ce1a2fdc51", "apps/sg-runtime/tests/integrated-buyer-journey-package.test.mjs": "88f2fbd8d3aa4a7f9dd77bc5433559911019b231", "apps/sg-runtime/tests/native-sql-roundtrips.test.mjs": "24916132ff4bef7c656a602443b8ccd189cebc4d", "apps/sg-runtime/tests/operation-context.test.mjs": "4aacdbd1b70d777a9d6b8d94c10306337d1fb266", "apps/sg-runtime/tests/pci-smart-integrity.mjs": "684a069d0b32c0fee69fc20ec887ab80edb88919", "apps/sg-runtime/tests/pci-smart-integrity.test.mjs": "a646a1df74b845f27da1b792daae6aad09129b55", "apps/sg-runtime/tests/porr-demo-middleware.test.ts": "271825c3cdbd1699b5335a84ca5646a69d2c3cff", "apps/sg-runtime/tests/self-service-account.test.ts": "9143c04a7f6f426f14e758c3174fbe4de075874c", "apps/sg-runtime/tests/xray-fresh-performance-adoption.test.mjs": "1f28a8bb6c7af42b0618fa5c71a83781a98eab16", "apps/sg-runtime/tests/xray-gateway.test.ts": "8339797a56609cde7e4944e95542df440b2ac0be", "packages/platform-contracts/readonly-miss-report/test/readonly-miss-report.test.mjs": "c477d38bcb9f1d067bfa10e4699fd0ec140c96b3"}
+ const stableHash=value=>createHash('sha256').update(JSON.stringify(Object.keys(value).sort().map(key=>[key,value[key]]))).digest('hex')
+ assert.equal(Object.keys(SOURCE_HUB_STAGE2A_REVIEW.blobs).length,131)
+ for(const [file,prior]of Object.entries(corrected))assert.notEqual(SOURCE_HUB_STAGE2A_REVIEW.blobs[file],prior,file)
+ assert.equal(stableHash({...SOURCE_HUB_STAGE2A_REVIEW.blobs,...corrected}),"a23420b718a11a26a9bec8ed4e84700971cf36b48da8aac2a68a2a96378e7292")
+ assert.equal(stableHash(SOURCE_HUB_STAGE2A_REVIEW.statuses),"29cb126ce19de461cc827c6ff32a6178ec8be26cb2195f92b370ae55803d7336")
+ assert.equal(stableHash(SOURCE_HUB_STAGE2A_REVIEW.modes),"217ec78117be5de638851910a7554f455dd0d22411c69c11814bb5c6c404d7f0")
+ assert.equal(stableHash(SOURCE_HUB_STAGE2A_REVIEW.routes),"98a7cc0f331554c2c07b1e51ad3aff91bad8727bb45b6f5d812214241456bd5b")
+})
+
+const currentE1Files=()=>Object.entries(SOURCE_HUB_CURRENT_E1_REVIEW.blobs).map(([filename,sha])=>({filename,sha,status:SOURCE_HUB_CURRENT_E1_REVIEW.statuses[filename]}));
+const currentE1Pr=()=>({...pr(),number:897,changed_files:31,base:{...pr().base,sha:SOURCE_HUB_CURRENT_E1_REVIEW.reviewedBaseSha},head:{...pr().head,sha:SOURCE_HUB_CURRENT_E1_REVIEW.reviewedCandidateSha,ref:SOURCE_HUB_CURRENT_E1_REVIEW.branch}});
+test('current E1 review admits only the exact 31 owner-routed file versions of PR897',()=>{
+ const p=currentE1Pr(),files=currentE1Files();assert.equal(files.length,31);assertArchitectureFiles(p,files);assert.equal(selectCandidate(context(),p,p.head.sha,{files}),p.head.sha);
+ for(const edit of[fs=>fs.pop(),fs=>fs.push({...fs[0],filename:'apps/identity-runtime/src/unreviewed.ts'}),fs=>fs[0].sha=sha,fs=>fs[0].status='removed',fs=>fs[0].previous_filename='renamed',fs=>fs[0].filename='packages/platform-contracts/current-e1-authority/unreviewed.mjs',fs=>fs[1]={...fs[0]}]){const changed=structuredClone(files);edit(changed);rejection(()=>assertArchitectureFiles({...p,changed_files:changed.length},changed));}
+});
+test('current E1 review retains exact PR, branch, owner, repository and candidate SHA fences',()=>{
+ for(const edit of[p=>p.number=898,p=>p.head.ref='architecture/unreviewed-e1',p=>p.head.repo.full_name='profitia/fork',p=>p.user.login='other-owner',p=>p.base.ref='staging',p=>p.head.sha=sha]){const p=currentE1Pr();edit(p);rejection(()=>selectCandidate(context(),p,SOURCE_HUB_CURRENT_E1_REVIEW.reviewedCandidateSha,{files:currentE1Files()}));}
+ const refreshed=currentE1Pr();refreshed.head.sha=other;assert.equal(selectCandidate(context(),refreshed,other,{files:currentE1Files()}),other,'Main refresh may retain only identical reviewed file bytes');
+});
+test('current E1 review denies executable and symlink modes and altered tree entries',()=>{
+ for(const file of currentE1Files()){const entry='100644 blob '+file.sha+'\t'+file.filename+'\0';assertCurrentE1ReviewEntry(file,entry);for(const bad of[entry.replace('100644','100755'),entry.replace('100644','120000'),entry.replace(file.sha,sha),entry.replace(file.filename,file.filename+'.extra'),''])rejection(()=>assertCurrentE1ReviewEntry(file,bad));}
+});
+
+const universalFiles=()=>Object.entries(SOURCE_HUB_UNIVERSAL_FIRST_PARTY_REVIEW.blobs).map(([filename,sha])=>({filename,sha,status:SOURCE_HUB_UNIVERSAL_FIRST_PARTY_REVIEW.statuses[filename]}));
+const universalPr=()=>({...pr(),number:904,changed_files:39,base:{...pr().base,sha:SOURCE_HUB_UNIVERSAL_FIRST_PARTY_REVIEW.reviewedBaseSha},head:{...pr().head,sha:SOURCE_HUB_UNIVERSAL_FIRST_PARTY_REVIEW.reviewedCandidateSha,ref:SOURCE_HUB_UNIVERSAL_FIRST_PARTY_REVIEW.branch}});
+test('universal first-party review admits only the exact 39 owner-routed file versions of PR904',()=>{
+ const p=universalPr(),files=universalFiles();assert.equal(files.length,39);assertArchitectureFiles(p,files);assert.equal(selectCandidate(context(),p,p.head.sha,{files}),p.head.sha);
+ for(const edit of[fs=>fs.pop(),fs=>fs.push({...fs[0],filename:'apps/identity-runtime/src/unreviewed.ts'}),fs=>fs[0].sha=sha,fs=>fs[0].status='removed',fs=>fs[0].previous_filename='renamed',fs=>fs[0].filename='packages/platform-contracts/current-e1-authority/unreviewed.mjs',fs=>fs[1]={...fs[0]}]){const changed=structuredClone(files);edit(changed);rejection(()=>assertArchitectureFiles({...p,changed_files:changed.length},changed));}
+});
+test('universal first-party review retains exact PR, branch, owner, repository and candidate SHA fences',()=>{
+ for(const edit of[p=>p.number=905,p=>p.head.ref='architecture/unreviewed-universal',p=>p.head.repo.full_name='profitia/fork',p=>p.user.login='other-owner',p=>p.base.ref='staging',p=>p.head.sha=sha]){const p=universalPr();edit(p);rejection(()=>selectCandidate(context(),p,SOURCE_HUB_UNIVERSAL_FIRST_PARTY_REVIEW.reviewedCandidateSha,{files:universalFiles()}));}
+ const refreshed=universalPr();refreshed.head.sha=other;assert.equal(selectCandidate(context(),refreshed,other,{files:universalFiles()}),other,'Main refresh may retain only identical reviewed file bytes');
+});
+test('universal first-party review denies executable and symlink modes and altered tree entries',()=>{
+ for(const file of universalFiles()){const entry='100644 blob '+file.sha+'\t'+file.filename+'\0';assertUniversalFirstPartyReviewEntry(file,entry);for(const bad of[entry.replace('100644','100755'),entry.replace('100644','120000'),entry.replace(file.sha,sha),entry.replace(file.filename,file.filename+'.extra'),''])rejection(()=>assertUniversalFirstPartyReviewEntry(file,bad));}
+});
+
+const ecrG1Files=()=>Object.entries(ECR_G1_GOVERNANCE_REVIEW.blobs).map(([filename,sha])=>({filename,sha,status:ECR_G1_GOVERNANCE_REVIEW.statuses[filename]}))
+const ecrG1Pr=()=>({...architecturePr(12),number:906,head:{...architecturePr().head,ref:ECR_G1_GOVERNANCE_REVIEW.branch}})
+
+test('ECR G1 admission is one frozen twelve-file review and preserves the exact PR/branch/current-head fence',()=>{
+ const r=ECR_G1_GOVERNANCE_REVIEW,files=ecrG1Files(),p=ecrG1Pr()
+ for(const part of [r,r.blobs,r.statuses,r.modes])assert(Object.isFrozen(part))
+ assert.equal(r.prNumber,906);assert.equal(r.reviewedCandidateSha,'253bdbd0f445914e2f964d42cd2206de093cb460')
+ assert.equal(files.length,12);assert(files.every(f=>!f.filename.startsWith('apps/')&&!f.filename.startsWith('packages/')))
+ assert.equal(selectCandidate(context(),p,other,{files}),other)
+ assert.equal(selectCandidate(context(),p,other,{files:[...files].reverse()}),other)
+ for(const change of [{number:907},{number:undefined},{head:{...p.head,ref:'architecture/ecr-other'}},{head:{...p.head,sha}}])rejection(()=>selectCandidate(context(),{...p,...change},other,{files}))
+ rejection(()=>selectCandidate(context(),p,sha,{files}))
+})
+
+test('ECR closed admission rejects every changed/missing/duplicate/status/rename/copy/deletion entry and any extra scope',()=>{
+ const original=ecrG1Files()
+ for(let i=0;i<original.length;i++){
+  const missing=original.filter((_,j)=>j!==i);rejection(()=>selectCandidate(context(),{...ecrG1Pr(),changed_files:missing.length},other,{files:missing}))
+  for(const patch of [{sha:'d'.repeat(40)},{sha:'invalid'},{status:original[i].status==='added'?'modified':'added'},{status:'removed'},{status:'renamed',previous_filename:original[i].filename},{status:'copied'},{previous_filename:original[i].filename}]){
+   const files=original.map((f,j)=>i===j?{...f,...patch}:f);rejection(()=>selectCandidate(context(),ecrG1Pr(),other,{files}))
+  }
+  const duplicate=original.map((f,j)=>j===i?original[(i+1)%original.length]:f);rejection(()=>selectCandidate(context(),ecrG1Pr(),other,{files:duplicate}))
+ }
+ for(const filename of ['apps/economic-calendar-runtime/src/main.mjs','packages/economic-calendar-contracts/index.mjs','.github/workflows/economic-calendar-ci.yml',WORKFLOW,'scripts/governance/controlled-package-ci.mjs','.npmrc','Canon/evidence/2026-11-06-extra.md']){
+  const files=[...original,producerFile(filename)];rejection(()=>selectCandidate(context(),{...ecrG1Pr(),changed_files:files.length},other,{files}))
+ }
+})
+
+test('ECR exact review admits only regular nonexecutable pinned files',()=>{
+ const r=ECR_G1_GOVERNANCE_REVIEW
+ for(const file of ecrG1Files()){
+  assert.equal(r.modes[file.filename],'100644')
+  assertEcrG1ReviewEntry(file,'100644 blob '+file.sha+'\t'+file.filename+'\0')
+  for(const mode of ['100755','120000','160000'])rejection(()=>assertEcrG1ReviewEntry(file,mode+' blob '+file.sha+'\t'+file.filename+'\0'))
+  rejection(()=>assertEcrG1ReviewEntry({...file,sha:other},'100644 blob '+file.sha+'\t'+file.filename+'\0'))
+ }
+})
+
+test('ECR review retains actual-owner routing and trusted account/repository/main/environment rules',()=>{
+ const files=ecrG1Files()
+ for(const edit of [p=>p.user.login='other',p=>p.head.repo.full_name='other/fork',p=>p.base.ref='production',p=>p.state='closed']){const p=ecrG1Pr();edit(p);rejection(()=>selectCandidate(context(),p,other,{files}))}
+ rejection(()=>selectCandidate({...context(),triggeringActor:'other'},ecrG1Pr(),other,{files}))
+ rejection(()=>selectCandidate({...context(),ref:'refs/heads/sg2/untrusted-control'},ecrG1Pr(),other,{files}))
+ const root=routingFixture(),file=path.join(root,'Canon/registries/current-architecture-baseline-v1.json'),original=fs.readFileSync(file,'utf8')
+ try{for(const patch of [{currentOwner:'Other owner'},{allowedProjectKeys:['SG2']},{baselineClassification:'LEGACY'}]){const registry=JSON.parse(original),surface=registry.surfaces.find(s=>s.pathPatterns.includes('Canon/**'));Object.assign(surface,patch);fs.writeFileSync(file,JSON.stringify(registry));rejection(()=>selectCandidate(context(),ecrG1Pr(),other,{files,repositoryRoot:root}))}}finally{fs.rmSync(root,{recursive:true,force:true})}
+})
+
+test('ECR complete API metadata resolution rejects file truncation and concurrent head/base movement',async()=>{
+ const p=ecrG1Pr(),files=ecrG1Files(),answer=await resolveCandidateAdmission(context(),'906',other,apiFixture(p,files).request)
+ assert.equal(answer.sha,other);assert.deepEqual(answer.admission.files,files)
+ await assert.rejects(resolveCandidateAdmission(context(),'906',other,apiFixture(p,files.slice(1)).request))
+ for(const after of [{...p,head:{...p.head,sha}},{...p,base:{...p.base,sha:other}},{...p,head:{...p.head,ref:'architecture/changed'}}])await assert.rejects(resolveCandidateAdmission(context(),'906',other,apiFixture(p,files,after).request))
+})
+
+const ecrBackendFiles=()=>Object.entries(ECR_BACKEND_REVIEW.blobs).map(([filename,sha])=>({filename,sha,status:ECR_BACKEND_REVIEW.statuses[filename]}))
+const ecrBackendPr=()=>({...architecturePr(44),number:908,head:{...architecturePr().head,ref:ECR_BACKEND_REVIEW.branch}})
+
+test('ECR backend admission is one frozen forty-four-file review and preserves the exact PR/branch/current-head fence',()=>{
+ const r=ECR_BACKEND_REVIEW,files=ecrBackendFiles(),p=ecrBackendPr()
+ for(const part of [r,r.blobs,r.statuses,r.modes])assert(Object.isFrozen(part))
+ assert.equal(r.prNumber,908);assert.equal(r.reviewedCandidateSha,'253e20369fcd26f1985fc14188fd3e7f927a8faa')
+ assert.equal(files.length,44);assert(files.some(f=>f.filename==='apps/economic-calendar-runtime/src/main.mjs'));assert(files.some(f=>f.filename==='scripts/governance/platform-source-hub-foundation.test.mjs'))
+ assert.equal(selectCandidate(context(),p,other,{files}),other)
+ assert.equal(selectCandidate(context(),p,other,{files:[...files].reverse()}),other)
+ for(const change of [{number:909},{number:undefined},{head:{...p.head,ref:'architecture/ecr-other'}},{head:{...p.head,sha}}])rejection(()=>selectCandidate(context(),{...p,...change},other,{files}))
+ rejection(()=>selectCandidate(context(),p,sha,{files}))
+})
+
+test('ECR closed admission rejects every changed/missing/duplicate/status/rename/copy/deletion entry and any extra scope',()=>{
+ const original=ecrBackendFiles()
+ for(let i=0;i<original.length;i++){
+  const missing=original.filter((_,j)=>j!==i);rejection(()=>selectCandidate(context(),{...ecrBackendPr(),changed_files:missing.length},other,{files:missing}))
+  for(const patch of [{sha:'d'.repeat(40)},{sha:'invalid'},{status:original[i].status==='added'?'modified':'added'},{status:'removed'},{status:'renamed',previous_filename:original[i].filename},{status:'copied'},{previous_filename:original[i].filename}]){
+   const files=original.map((f,j)=>i===j?{...f,...patch}:f);rejection(()=>selectCandidate(context(),ecrBackendPr(),other,{files}))
+  }
+  const duplicate=original.map((f,j)=>j===i?original[(i+1)%original.length]:f);rejection(()=>selectCandidate(context(),ecrBackendPr(),other,{files:duplicate}))
+ }
+ for(const filename of ['apps/economic-calendar-runtime/src/main.mjs','packages/economic-calendar-contracts/index.mjs','.github/workflows/economic-calendar-ci.yml',WORKFLOW,'scripts/governance/controlled-package-ci.mjs','.npmrc','Canon/evidence/2026-11-06-extra.md']){
+  const files=[...original,producerFile(filename)];rejection(()=>selectCandidate(context(),{...ecrBackendPr(),changed_files:files.length},other,{files}))
+ }
+})
+
+test('ECR exact review admits only regular nonexecutable pinned files',()=>{
+ const r=ECR_BACKEND_REVIEW
+ for(const file of ecrBackendFiles()){
+  assert.equal(r.modes[file.filename],'100644')
+  assertEcrBackendReviewEntry(file,'100644 blob '+file.sha+'\t'+file.filename+'\0')
+  for(const mode of ['100755','120000','160000'])rejection(()=>assertEcrBackendReviewEntry(file,mode+' blob '+file.sha+'\t'+file.filename+'\0'))
+  rejection(()=>assertEcrBackendReviewEntry({...file,sha:other},'100644 blob '+file.sha+'\t'+file.filename+'\0'))
+ }
+})
+
+test('ECR review retains actual-owner routing and trusted account/repository/main/environment rules',()=>{
+ const files=ecrBackendFiles()
+ for(const edit of [p=>p.user.login='other',p=>p.head.repo.full_name='other/fork',p=>p.base.ref='production',p=>p.state='closed']){const p=ecrBackendPr();edit(p);rejection(()=>selectCandidate(context(),p,other,{files}))}
+ rejection(()=>selectCandidate({...context(),triggeringActor:'other'},ecrBackendPr(),other,{files}))
+ rejection(()=>selectCandidate({...context(),ref:'refs/heads/sg2/untrusted-control'},ecrBackendPr(),other,{files}))
+ const root=routingFixture(),file=path.join(root,'Canon/registries/current-architecture-baseline-v1.json'),original=fs.readFileSync(file,'utf8')
+ try{for(const patch of [{currentOwner:'Other owner'},{allowedProjectKeys:['SG2']},{baselineClassification:'LEGACY'}]){const registry=JSON.parse(original),surface=registry.surfaces.find(s=>s.id===ECR_BACKEND_REVIEW.routes['apps/economic-calendar-runtime/src/main.mjs'].surfaceId);Object.assign(surface,patch);fs.writeFileSync(file,JSON.stringify(registry));rejection(()=>selectCandidate(context(),ecrBackendPr(),other,{files,repositoryRoot:root}))}}finally{fs.rmSync(root,{recursive:true,force:true})}
+})
+
+test('ECR complete API metadata resolution rejects file truncation and concurrent head/base movement',async()=>{
+ const p=ecrBackendPr(),files=ecrBackendFiles(),answer=await resolveCandidateAdmission(context(),'908',other,apiFixture(p,files).request)
+ assert.equal(answer.sha,other);assert.deepEqual(answer.admission.files,files)
+ await assert.rejects(resolveCandidateAdmission(context(),'908',other,apiFixture(p,files.slice(1)).request))
+ for(const after of [{...p,head:{...p.head,sha}},{...p,base:{...p.base,sha:other}},{...p,head:{...p.head,ref:'architecture/changed'}}])await assert.rejects(resolveCandidateAdmission(context(),'908',other,apiFixture(p,files,after).request))
+})
+
+const marketSymbolFiles=()=>Object.entries(SOURCE_HUB_MARKET_SYMBOL_REVIEW.blobs).map(([filename,sha])=>({filename,sha,status:SOURCE_HUB_MARKET_SYMBOL_REVIEW.statuses[filename]}))
+const marketSymbolPr=()=>({...pr(),number:915,changed_files:marketSymbolFiles().length,base:{...pr().base,sha:SOURCE_HUB_MARKET_SYMBOL_REVIEW.reviewedBaseSha},head:{...pr().head,sha:SOURCE_HUB_MARKET_SYMBOL_REVIEW.reviewedCandidateSha,ref:SOURCE_HUB_MARKET_SYMBOL_REVIEW.branch}})
+test('PR915 permits only the exact reviewed producer and correctly owned consumer file closure',()=>{
+ const p=marketSymbolPr(),files=marketSymbolFiles();assert.equal(files.length,77)
+ assert.equal(selectCandidate(context(),p,p.head.sha,{files}),p.head.sha)
+ assert(Object.values(SOURCE_HUB_MARKET_SYMBOL_REVIEW.routes).some(r=>r.projectKey==='SG2'))
+ assert(Object.values(SOURCE_HUB_MARKET_SYMBOL_REVIEW.routes).some(r=>r.projectKey==='SRM'))
+ for(const edit of [f=>f.pop(),f=>f.push({...f[0]}),f=>f[0].sha=other,f=>f[0].status='removed',f=>f[0].previous_filename='old']){
+  const f=marketSymbolFiles();edit(f);rejection(()=>selectCandidate(context(),{...p,changed_files:f.length},p.head.sha,{files:f}))
+ }
+ for(const filename of ['apps/sg-runtime/app/unreviewed.ts','apps/srm/src/server/unreviewed.ts','Canon/registries/governance-manifest-v2.json','.github/workflows/platform-contracts-ci.yml','scripts/governance/controlled-package-ci.mjs','.npmrc']){
+  const f=[...files,producerFile(filename)];rejection(()=>selectCandidate(context(),{...p,changed_files:f.length},p.head.sha,{files:f}))
+ }
+ // The fixed PR/branch cannot fall back to the generic producer class.
+ const subset=files.filter(f=>f.filename==='packages/platform-contracts/src/external-call.mjs')
+ rejection(()=>selectCandidate(context(),{...p,changed_files:subset.length},p.head.sha,{files:subset}))
+})
+test('PR915 exact admission preserves trusted owner, branch, SHA, route and regular-file boundaries',()=>{
+ const p=marketSymbolPr(),files=marketSymbolFiles()
+ for(const edit of [q=>q.number=916,q=>q.head.ref='architecture/other',q=>q.head.ref='sg2/unreviewed',q=>q.user.login='other',q=>q.head.repo.full_name='other/fork',q=>q.base.ref='production',q=>q.state='closed']){const q=structuredClone(p);edit(q);rejection(()=>selectCandidate(context(),q,q.head.sha,{files}))}
+ rejection(()=>selectCandidate(context(),p,other,{files}));rejection(()=>selectCandidate({...context(),triggeringActor:'other'},p,p.head.sha,{files}))
+ for(const f of files){assertMarketSymbolReviewEntry(f,'100644 blob '+f.sha+'\t'+f.filename+'\0');for(const mode of ['100755','120000','160000'])rejection(()=>assertMarketSymbolReviewEntry(f,mode+' blob '+f.sha+'\t'+f.filename+'\0'))}
+ const root=routingFixture(),file=path.join(root,'Canon/registries/current-architecture-baseline-v1.json'),original=fs.readFileSync(file,'utf8')
+ try{for(const projectKey of ['ARCHITECTURE','SG2','SRM']){const e=Object.values(SOURCE_HUB_MARKET_SYMBOL_REVIEW.routes).find(r=>r.projectKey===projectKey);const v=JSON.parse(original);v.surfaces.find(s=>s.id===e.surfaceId).currentOwner='Other';fs.writeFileSync(file,JSON.stringify(v));rejection(()=>selectCandidate(context(),p,p.head.sha,{files,repositoryRoot:root}))}}finally{fs.rmSync(root,{recursive:true,force:true})}
+})
+test('PR915 resolution rejects truncated API lists and head/base movement',async()=>{
+ const p=marketSymbolPr(),files=marketSymbolFiles(),sha=p.head.sha;const result=await resolveCandidateAdmission(context(),'915',sha,apiFixture(p,files).request);assert.equal(result.sha,sha)
+ await assert.rejects(resolveCandidateAdmission(context(),'915',sha,apiFixture(p,files.slice(1)).request))
+ for(const after of [{...p,head:{...p.head,sha:other}},{...p,base:{...p.base,sha:other}}])await assert.rejects(resolveCandidateAdmission(context(),'915',sha,apiFixture(p,files,after).request))
+})
+test('SDK1.34 Maps peer transition needs pinned bytes, matching lock and the closed review',()=>{
+ const temporary=fs.mkdtempSync(path.join(os.tmpdir(),'market-symbol-peer-transition-')),candidateRoot=path.join(temporary,'candidate'),authorityRoot=path.join(temporary,'authority')
+ try{
+  const relative=LOCAL_PACKAGES['@profitia/maps-embed'],candidateApp=path.join(candidateRoot,'apps/sg-runtime'),authorityApp=path.join(authorityRoot,'apps/sg-runtime');fs.mkdirSync(candidateApp,{recursive:true});fs.mkdirSync(authorityApp,{recursive:true})
+  const original=fs.readFileSync(path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../../packages/maps-embed/package.json'),'utf8'),installed=JSON.parse(original).peerDependencies['@profitia/platform-contracts'];const next=installed.endsWith(' || 1.34.0')?installed:installed+' || 1.34.0';const bytes=Buffer.from(original.replace(JSON.stringify(installed),JSON.stringify(next))),manifest=JSON.parse(bytes)
+  assert.equal(createHash('sha1').update('blob '+bytes.length+'\0').update(bytes).digest('hex'),SOURCE_HUB_MARKET_SYMBOL_REVIEW.blobs['packages/maps-embed/package.json'])
+  const target=path.resolve(candidateApp,relative,'package.json'),trusted=path.resolve(authorityApp,relative,'package.json');fs.mkdirSync(path.dirname(target),{recursive:true});fs.mkdirSync(path.dirname(trusted),{recursive:true});fs.writeFileSync(target,bytes)
+  const prior=structuredClone(manifest);prior.peerDependencies['@profitia/platform-contracts']=next.replace(/ \|\| 1\.34\.0$/,'');fs.writeFileSync(trusted,JSON.stringify(prior))
+  const lock={packages:{'node_modules/@profitia/maps-embed':{version:manifest.version,resolved:'file:'+relative,peerDependencies:manifest.peerDependencies}}};rejection(()=>assertLocalPackageSources(candidateRoot,lock,authorityRoot));assertLocalPackageSources(candidateRoot,lock,authorityRoot,{reviewedMarketSymbol:true});assertLocalPackageSources(candidateRoot,lock,candidateRoot);assertLocalPackageSources(candidateRoot,lock,candidateRoot,{reviewedMarketSymbol:true})
+  const bad=structuredClone(lock);bad.packages['node_modules/@profitia/maps-embed'].peerDependencies=prior.peerDependencies;rejection(()=>assertLocalPackageSources(candidateRoot,bad,authorityRoot,{reviewedMarketSymbol:true}))
+  fs.writeFileSync(target,JSON.stringify({...manifest,unreviewed:true}));rejection(()=>assertLocalPackageSources(candidateRoot,lock,authorityRoot,{reviewedMarketSymbol:true}))
+ }finally{fs.rmSync(temporary,{recursive:true,force:true})}
 })

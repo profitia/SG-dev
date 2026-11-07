@@ -1,0 +1,11 @@
+# Universal first-party Hub — scoped CI admission proposal
+
+Status: DRAFT / OWNER_DECISION_PENDING. Task ARCH-SOURCE-HUB-UNIVERSAL-CI-ADMISSION-20261105, profile ARCHITECTURE, target Development. The explicit platform-wide owner request requires controlled acceptance of a real implementation. Public PR904 tests pass, while the existing verifier reports CONTROLLED_VALIDATION_REQUIRED_FOR_EXACT_SHA. This proposal prepares the missing closed review; it does not activate it.
+
+Exactly four files: controller, its negative tests, existing controlled-CI runbook and this evidence. The controller binds PR904, its exact branch and all39 regular-file blob/status/mode/owner routes of20cd23cec09657562b39bed8904cc1bb9981e08f against817c671e31606536a1536dd187165ac07145a0fc. Routing remains ALIGNED under Architecture/Governance Source Layer. The public source contract, real E1 service authorization, signed SQL/RLS scope and legacy/report compatibility are tested in the implementation PR, not executed by admission.
+
+The active authority remains unchanged until separate owner approval, trusted-main controlled bootstrap proof, required checks and merge. Then a new exact candidate proof and resulting-main CI are mandatory. No broad optional/app/canon path grant, new private package, workflow, Environment rule, credential, live SQL, service enrollment, provider call or deployment. Existing six UNMETERED policies and Markets-off remain untouched. This record is not SOURCE_GO or LIVE evidence.
+
+Local validation:146/146 controller and path-coverage tests PASS, zero skips. Exact real candidate checkout39/39 path/blob/status/mode/owner and regular-file checks PASS. Tests reject changed/missing/extra/duplicate/renamed files, foreign PR/branch/repo/actor/base/HEAD and executable/symlink modes; earlier review tests remain PASS.
+
+Owner decision received in the same execution chat: “Zatwierdzam poprawkę CI i dalsze przyjęcie”. The exact approved proposal is PR905 at32c261c527d52501442a29178a461a5e1ba037a2; the39-file implementation review remains byte-identical. This dated acceptance supersedes only OWNER_DECISION_PENDING above. Controlled-main proof and acceptance remain pending and independently required.

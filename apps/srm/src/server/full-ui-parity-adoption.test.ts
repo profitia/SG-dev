@@ -1,3 +1,5 @@
+import {assertSourceHubApiPathCompatibility} from '../../scripts/source-hub-sdk-compatibility.mjs';
+import {assertStyleConsumerAcceptance,assertSentryHostContinuation,assertMarketHistoryHostContinuation} from '../../scripts/xray-style-acceptance.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -9,6 +11,46 @@ const hash=(bytes:Uint8Array)=>createHash('sha256').update(bytes).digest('hex');
 const read=(file:string)=>fs.readFileSync(path.join(root,file));
 const historical=(sha:string,file:string)=>execFileSync('git',['show',sha+':'+file],{cwd:root});
 function assertAdoption(receipt:any,current=read){
+ if(receipt.sourceHubApiPathCompatibility){const n=assertSourceHubApiPathCompatibility(receipt,current,historical);return assertAdoption(n.prior,n.previousBytes)}
+ if(receipt.marketHistoryHostIntegrityContinuation){const n=assertMarketHistoryHostContinuation(receipt,current,historical);return assertAdoption(n.prior,n.previousBytes)}
+ if(Object.hasOwn(receipt,'rootAtomicClaimAdoption')){
+  const a=receipt.rootAtomicClaimAdoption;
+  assert.equal(a.taskId,'SRM-XRAY-FRESH-PERFORMANCE-RECOVERY-20261029');assert.equal(a.targetEnvironment,'development');
+  assert.equal(a.platformVersion,'1.32.3');assert.equal(a.producerSourceRef,'3a494b5432555935168c060be5950589d550d276');
+  assert.equal(a.sourceDigest,'254ba501e76c0b55ce7c6cdba74f0dc441b2959c7c8506d2b3dc380d6e47830f');
+  assert.equal(a.schemaDigest,'1c1784b3c92753ccc28f7c34af89e26f1784a632859d5dbe45a9f5f3d08f6c0d');
+  assert.equal(a.producerAcceptance.status,'SOURCE_GO');assert.equal(a.producerAcceptance.sourceMergeSha,'35ab64e13a549fdce2876c2ef65f229044c5f2de');
+  const bytes=historical(a.previousReceiptSourceSha,'apps/srm/operation-integration.json');assert.equal(hash(bytes),a.previousReceiptSha256);
+  const {rootAtomicClaimAdoption,...preserved}=receipt,prior=JSON.parse(bytes.toString());
+  assert.deepEqual(preserved,prior,'every accepted receipt remains immutable through Root claim adoption');
+  assert.deepEqual(Object.keys(a.applicationSourceDigests).sort(),[
+   'src/server/company-classification.ts','src/server/fresh-report.ts','src/server/supplier-api-composition.ts',
+   'src/server/supplier-native-runtime.ts','src/server/root-atomic-claim-adoption.test.ts','deployment/root-atomic-claim-targets.json',
+   'scripts/ready-report.integration.test.mjs','scripts/xray-workflow-contract.test.ts','scripts/native-execution-adoption.test.mjs','scripts/rural-location-release.test.mjs','scripts/xray-performance-adoption.test.mjs','scripts/location-cache.integration.test.mjs','scripts/root-atomic-claim-release.mjs','scripts/root-atomic-claim-release.test.mjs',
+   'src/server/peer-read-boundary.test.ts','src/server/supplier-location-geocoding-runtime.test.ts','src/server/full-ui-parity-adoption.test.ts',
+   'package.json','package-lock.json'].sort());
+  for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(current('apps/srm/'+file)),digest,file);
+  for(const key of ['sharedSdkUnchanged','lateWorkAccountChecksPreserved','finalDisclosureCheckPreserved'])assert.equal(a[key],true,key);
+  for(const key of ['defaultEnabled','paidPoliciesChanged','historyReset','uiChanged'])assert.equal(a[key],false,key);
+  return assertAdoption(prior,file=>Object.hasOwn(a.applicationSourceDigests,path.posix.relative('apps/srm',file))?historical(a.previousReceiptSourceSha,file):current(file));
+ }
+ if(receipt.sentryHostIntegrityContinuation){const n=assertSentryHostContinuation(receipt,current,historical);return assertAdoption(n.prior,n.previousBytes)}
+ if(Object.hasOwn(receipt,'mgbiResponseEnvelopeRecovery')){
+
+  const a=receipt.mgbiResponseEnvelopeRecovery,bytes=historical(a.previousReceiptSourceSha,'apps/srm/operation-integration.json');
+  assert.equal(a.taskId,'SRM-XRAY-FRESH-PERFORMANCE-RECOVERY-20261029');assert.equal(a.scope,'FINITE_MGBI_RESPONSE_AND_DIAGNOSTIC_CORRELATION');
+  assert.equal(a.targetEnvironment,'development');assert.equal(a.platformVersion,'1.32.3');
+  assert.equal(a.previousReceiptSourceSha,'7b0ec69b9c5bbc504483c734b09b4f8f242dea8f');assert.equal(hash(bytes),a.previousReceiptDigest);
+  assert.equal(a.previousMaximumResponseBytes,2097152);assert.equal(a.maximumResponseBytes,4194304);assert.equal(a.observedFinancialResponseBytes,2815139);
+  const {mgbiResponseEnvelopeRecovery,...preserved}=receipt,prior=JSON.parse(bytes.toString());assert.deepEqual(preserved,prior,'Every accepted receipt remains immutable');
+  assert.deepEqual(Object.keys(a.applicationSourceDigests).sort(),["db/private-store/034-mgbi-record-envelope-versioned.sql","deployment/mgbi-record-envelope-activation-2026-11-01.json","deployment/mgbi-record-response-bound-2026-11-01.json","scripts/corporate-source.integration.test.mjs","scripts/mgbi-record-envelope-activation.test.mjs","scripts/native-execution-adoption.test.mjs","scripts/request-quota-adoption.test.mjs","scripts/rural-location-release.test.mjs","scripts/xray-performance-adoption.test.mjs","scripts/xray-workflow-contract.test.ts","src/server/company-source-policy.test.ts","src/server/full-ui-parity-adoption.test.ts","src/server/mgbi-response-bound.test.ts","src/server/mgbi-response-bound.ts","src/server/peer-read-boundary.test.ts","src/server/peer-xray.test.ts","src/server/peer-xray.ts","src/server/supplier-location-geocoding-runtime.test.ts"]);
+  for(const [file,digest]of Object.entries(a.applicationSourceDigests) as [string,string][])assert.equal(hash(current('apps/srm/'+file)),digest,'Current bounded-response source '+file);
+  for(const key of ['currentClerkE1RlsPreserved','sourceHistoryAndCountersPreserved','paidQuotaAndOriginalBudgetUnchanged','oldResponseBoundArtifactPreserved','diagnosticIdsAreNotAuthority','separateCloudApprovalRequired'])assert.equal(a[key],true,key);
+  for(const key of ['sdkOrCanonicalSecurityContractChanged','uiOrRoutingChanged','providerRetriesAdded','cloudMutationPerformed','runtimeDeploymentClaimed','performanceThresholdsClaimed','excludedEnvironmentChanges'])assert.equal(a[key],false,key);
+  assertAdoption(prior,file=>Object.hasOwn(a.applicationSourceDigests,path.posix.relative('apps/srm',file))?historical(a.previousReceiptSourceSha,file):current(file));return;
+ }
+
+ if(receipt.xrayStyleIsolationConsumerAcceptance){const n=assertStyleConsumerAcceptance(receipt,current,historical);return assertAdoption(n.prior,n.previousBytes)}
  if(Object.hasOwn(receipt,'freshPreparationRecovery')){
   const next=receipt.freshPreparationRecovery;
   assert.equal(next.taskId,'SRM-XRAY-FRESH-PERFORMANCE-RECOVERY-20261029');
@@ -70,4 +112,12 @@ test('full UI adoption rejects receipt rewriting, public UI drift and financial 
  for(const mutate of [(r:any)=>{r.freshPreparationRecovery.previousReceiptSourceSha='UNACCEPTED'},(r:any)=>{r.freshPreparationRecovery.currentClerkE1RlsPreserved=false},(r:any)=>{r.freshPreparationRecovery.acceptedFullUiSourcesUnchanged=false}]){
   const changed=structuredClone(receipt);mutate(changed);assert.throws(()=>assertAdoption(changed));
  }
+ for(const mutate of [(r:any)=>{r.rootAtomicClaimAdoption.producerSourceRef='0'.repeat(40)},
+  (r:any)=>{r.rootAtomicClaimAdoption.producerAcceptance.status='PENDING'},
+  (r:any)=>{r.rootAtomicClaimAdoption.previousReceiptSha256='0'.repeat(64)},
+  (r:any)=>{r.rootAtomicClaimAdoption.applicationSourceDigests['../../packages/srm-xray/src/full-report.tsx']='0'.repeat(64)},
+  (r:any)=>{r.rootAtomicClaimAdoption.lateWorkAccountChecksPreserved=false}]){
+  const changed=structuredClone(receipt);mutate(changed);assert.throws(()=>assertAdoption(changed));
+ }
+ assert.throws(()=>assertAdoption(receipt,p=>p==='apps/srm/src/server/fresh-report.ts'?Buffer.concat([read(p),Buffer.from('\n/* unaccepted drift */')]):read(p)));
 });

@@ -1,0 +1,458 @@
+{
+  "schemaVersion": "1.0",
+  "status": "OBSERVED_INFRASTRUCTURE_ONLY",
+  "authority": "Canonical resource reference after controlled main acceptance; no runtime, profile activation or operation authority.",
+  "capturedAt": "2026-11-03T16:09:03.507Z",
+  "decisionId": "ARCH-SOURCE-HUB-G1-FINAL-ACTIVATION-20261103",
+  "evidenceDocument": "Canon/evidence/2026-11-03-platform-source-hub-final-activation.md",
+  "resourceCreationActor": "HUMAN_OWNER_ONLY",
+  "agentResourceMutationsAllowed": false,
+  "resourcesCreatedByThisTask": 0,
+  "schemasAppliedByThisTask": 0,
+  "providerCallsByThisTask": 0,
+  "deploymentByThisTask": false,
+  "architecturePmos": {
+    "purpose": "CONTINUITY_ONLY",
+    "projectId": "billowing-credit-07394675",
+    "database": "architecture_pmos",
+    "role": "architecture_pmos_runtime",
+    "productDatabaseAllowed": false
+  },
+  "neon": [
+    {
+      "projectId": "twilight-wind-91374750",
+      "name": "Newsfeed Production",
+      "region": "aws-eu-central-1",
+      "postgresVersion": 18,
+      "historyRetentionSeconds": 86400,
+      "publicConnectionsBlocked": false,
+      "allowedIps": [],
+      "branches": [
+        {
+          "id": "br-noisy-pine-b9i0865t",
+          "name": "production",
+          "parentId": null,
+          "state": "ready",
+          "protected": false,
+          "databases": [
+            {
+              "id": 243133,
+              "branch_id": "br-noisy-pine-b9i0865t",
+              "name": "neondb",
+              "owner_name": "neondb_owner",
+              "created_at": "2026-11-03T15:51:57Z",
+              "updated_at": "2026-11-03T15:51:57Z"
+            }
+          ]
+        }
+      ],
+      "endpoints": [
+        {
+          "id": "ep-aged-sun-b9ooczkd",
+          "branchId": "br-noisy-pine-b9i0865t",
+          "host": "ep-aged-sun-b9ooczkd.c-7.eu-central-1.aws.neon.tech",
+          "pooledHost": "ep-aged-sun-b9ooczkd-pooler.c-7.eu-central-1.aws.neon.tech",
+          "state": "idle",
+          "minCu": 0.25,
+          "maxCu": 8,
+          "suspendTimeoutSeconds": 0
+        }
+      ]
+    },
+    {
+      "projectId": "shiny-bonus-85532609",
+      "name": "Newsfeed Non-Prod",
+      "region": "aws-eu-central-1",
+      "postgresVersion": 18,
+      "historyRetentionSeconds": 86400,
+      "publicConnectionsBlocked": false,
+      "allowedIps": [],
+      "branches": [
+        {
+          "id": "br-frosty-cell-b9hzdh6e",
+          "name": "staging",
+          "parentId": "br-wispy-bonus-b9ohunab",
+          "state": "ready",
+          "protected": false,
+          "databases": [
+            {
+              "id": 239712,
+              "branch_id": "br-frosty-cell-b9hzdh6e",
+              "name": "neondb",
+              "owner_name": "neondb_owner",
+              "created_at": "2026-11-03T12:42:42Z",
+              "updated_at": "2026-11-03T12:42:42Z"
+            }
+          ]
+        },
+        {
+          "id": "br-wispy-bonus-b9ohunab",
+          "name": "development",
+          "parentId": null,
+          "state": "ready",
+          "protected": false,
+          "databases": [
+            {
+              "id": 239694,
+              "branch_id": "br-wispy-bonus-b9ohunab",
+              "name": "neondb",
+              "owner_name": "neondb_owner",
+              "created_at": "2026-11-03T12:42:42Z",
+              "updated_at": "2026-11-03T12:42:42Z"
+            }
+          ]
+        }
+      ],
+      "endpoints": [
+        {
+          "id": "ep-wandering-term-b9v57pi9",
+          "branchId": "br-frosty-cell-b9hzdh6e",
+          "host": "ep-wandering-term-b9v57pi9.c-7.eu-central-1.aws.neon.tech",
+          "pooledHost": "ep-wandering-term-b9v57pi9-pooler.c-7.eu-central-1.aws.neon.tech",
+          "state": "idle",
+          "minCu": 0.25,
+          "maxCu": 8,
+          "suspendTimeoutSeconds": 0
+        },
+        {
+          "id": "ep-mute-night-b9o332my",
+          "branchId": "br-wispy-bonus-b9ohunab",
+          "host": "ep-mute-night-b9o332my.c-7.eu-central-1.aws.neon.tech",
+          "pooledHost": "ep-mute-night-b9o332my-pooler.c-7.eu-central-1.aws.neon.tech",
+          "state": "idle",
+          "minCu": 0.25,
+          "maxCu": 8,
+          "suspendTimeoutSeconds": 0
+        }
+      ]
+    },
+    {
+      "projectId": "crimson-band-46697896",
+      "name": "Source Hub Production",
+      "region": "aws-eu-central-1",
+      "postgresVersion": 18,
+      "historyRetentionSeconds": 86400,
+      "publicConnectionsBlocked": false,
+      "allowedIps": [],
+      "branches": [
+        {
+          "id": "br-flat-resonance-b9dh28bf",
+          "name": "production",
+          "parentId": null,
+          "state": "ready",
+          "protected": false,
+          "databases": [
+            {
+              "id": 243121,
+              "branch_id": "br-flat-resonance-b9dh28bf",
+              "name": "neondb",
+              "owner_name": "neondb_owner",
+              "created_at": "2026-11-03T15:51:15Z",
+              "updated_at": "2026-11-03T15:51:15Z"
+            }
+          ]
+        }
+      ],
+      "endpoints": [
+        {
+          "id": "ep-empty-water-b9yjwui8",
+          "branchId": "br-flat-resonance-b9dh28bf",
+          "host": "ep-empty-water-b9yjwui8.c-7.eu-central-1.aws.neon.tech",
+          "pooledHost": "ep-empty-water-b9yjwui8-pooler.c-7.eu-central-1.aws.neon.tech",
+          "state": "idle",
+          "minCu": 0.25,
+          "maxCu": 8,
+          "suspendTimeoutSeconds": 0
+        }
+      ]
+    },
+    {
+      "projectId": "delicate-queen-44677134",
+      "name": "Source Hub Non-Prod",
+      "region": "aws-eu-central-1",
+      "postgresVersion": 18,
+      "historyRetentionSeconds": 86400,
+      "publicConnectionsBlocked": false,
+      "allowedIps": [],
+      "branches": [
+        {
+          "id": "br-snowy-breeze-bahrkgrr",
+          "name": "staging",
+          "parentId": "br-orange-salad-ba2llks7",
+          "state": "ready",
+          "protected": false,
+          "databases": [
+            {
+              "id": 297187,
+              "branch_id": "br-snowy-breeze-bahrkgrr",
+              "name": "neondb",
+              "owner_name": "neondb_owner",
+              "created_at": "2026-11-03T13:58:47Z",
+              "updated_at": "2026-11-03T13:58:47Z"
+            }
+          ]
+        },
+        {
+          "id": "br-orange-salad-ba2llks7",
+          "name": "development",
+          "parentId": null,
+          "state": "ready",
+          "protected": false,
+          "databases": [
+            {
+              "id": 297145,
+              "branch_id": "br-orange-salad-ba2llks7",
+              "name": "neondb",
+              "owner_name": "neondb_owner",
+              "created_at": "2026-11-03T13:58:47Z",
+              "updated_at": "2026-11-03T13:58:47Z"
+            }
+          ]
+        }
+      ],
+      "endpoints": [
+        {
+          "id": "ep-noisy-darkness-barhqoqw",
+          "branchId": "br-orange-salad-ba2llks7",
+          "host": "ep-noisy-darkness-barhqoqw.c-8.eu-central-1.aws.neon.tech",
+          "pooledHost": "ep-noisy-darkness-barhqoqw-pooler.c-8.eu-central-1.aws.neon.tech",
+          "state": "idle",
+          "minCu": 0.25,
+          "maxCu": 8,
+          "suspendTimeoutSeconds": 0
+        },
+        {
+          "id": "ep-noisy-grass-baszxszx",
+          "branchId": "br-snowy-breeze-bahrkgrr",
+          "host": "ep-noisy-grass-baszxszx.c-8.eu-central-1.aws.neon.tech",
+          "pooledHost": "ep-noisy-grass-baszxszx-pooler.c-8.eu-central-1.aws.neon.tech",
+          "state": "idle",
+          "minCu": 0.25,
+          "maxCu": 8,
+          "suspendTimeoutSeconds": 0
+        }
+      ]
+    }
+  ],
+  "render": {
+    "workspaceId": "tea-d7lps8rbc2fs73cn80dg",
+    "workspaceName": "PROFITIA WORKSPACE",
+    "workspaceConfirmedByOwner": true,
+    "projectId": "prj-dbl079ou01pc73eg0ffg",
+    "projectName": "Source Hub",
+    "url": "https://dashboard.render.com/project/prj-dbl079ou01pc73eg0ffg",
+    "connectorProjectEnvironmentMetadata": "OWNER_CONFIRMATION_REQUIRED",
+    "uiReadback": "VERIFIED_READ_ONLY",
+    "uiSource": "Owner-provided exact Render project URL and visible Environment settings pages",
+    "environments": [
+      {
+        "name": "Development",
+        "id": "evm-dbl079ou01pc73eg0fgg",
+        "serviceCount": 0,
+        "environmentGroupCount": 0,
+        "blockCrossEnvironmentPrivateTraffic": false,
+        "protected": false
+      },
+      {
+        "name": "Staging",
+        "id": "evm-dbl07c0u01pc73eg0kh0",
+        "serviceCount": 0,
+        "environmentGroupCount": 0,
+        "blockCrossEnvironmentPrivateTraffic": false,
+        "protected": false
+      },
+      {
+        "name": "Production",
+        "id": "evm-dbl07lvf3r2c7383en80",
+        "serviceCount": 0,
+        "environmentGroupCount": 0,
+        "blockCrossEnvironmentPrivateTraffic": false,
+        "protected": false
+      }
+    ],
+    "serviceVerification": "Each environment UI reports Services(0); no connector service is bound to these three environment IDs",
+    "workspacePlan": "NOT_VERIFIED"
+  },
+  "environments": [
+    {
+      "name": "development",
+      "status": "PROVISIONED_INFRASTRUCTURE_ONLY_NO_PRODUCT_RUNTIME",
+      "provisioningOnlyNow": true,
+      "renderProject": "Source Hub",
+      "renderEnvironment": "Development",
+      "region": "frankfurt",
+      "autoDeploy": false,
+      "previews": false,
+      "blockCrossEnvironmentPrivateTraffic": true,
+      "servicesCreateWhen": "BACKEND_ACCEPTED_AND_SEPARATE_TASK_AUTHORIZED",
+      "services": [
+        {
+          "name": "profitia-source-hub-development",
+          "type": "web",
+          "compute": "0.5c-512mb",
+          "replicas": 1
+        },
+        {
+          "name": "profitia-newsfeed-api-development",
+          "type": "web",
+          "compute": "0.5c-512mb",
+          "replicas": 1
+        },
+        {
+          "name": "profitia-newsfeed-monitor-development",
+          "type": "cron",
+          "compute": "0.5c-512mb",
+          "schedule": "15 4 * * *",
+          "timezone": "UTC",
+          "scheduleStatus": "EXAMPLE_REQUIRES_MONITORING_ACCEPTANCE"
+        }
+      ],
+      "rolesLater": [
+        "source_hub_development_runtime",
+        "source_hub_development_migrator",
+        "newsfeed_development_runtime",
+        "newsfeed_development_migrator"
+      ],
+      "renderProjectId": "prj-dbl079ou01pc73eg0ffg",
+      "renderEnvironmentId": "evm-dbl079ou01pc73eg0fgg",
+      "observedBlockCrossEnvironmentPrivateTraffic": false,
+      "observedProtected": false,
+      "servicesStatus": "NOT_CREATED",
+      "plannedSettingsOnly": true
+    },
+    {
+      "name": "staging",
+      "status": "PROVISIONED_INFRASTRUCTURE_ONLY_NO_PRODUCT_RUNTIME",
+      "provisioningOnlyNow": true,
+      "renderProject": "Source Hub",
+      "renderEnvironment": "Staging",
+      "region": "frankfurt",
+      "autoDeploy": false,
+      "previews": false,
+      "blockCrossEnvironmentPrivateTraffic": true,
+      "servicesCreateWhen": "BACKEND_ACCEPTED_AND_SEPARATE_TASK_AUTHORIZED",
+      "services": [
+        {
+          "name": "profitia-source-hub-staging",
+          "type": "web",
+          "compute": "0.5c-512mb",
+          "replicas": 1
+        },
+        {
+          "name": "profitia-newsfeed-api-staging",
+          "type": "web",
+          "compute": "0.5c-512mb",
+          "replicas": 1
+        },
+        {
+          "name": "profitia-newsfeed-monitor-staging",
+          "type": "cron",
+          "compute": "0.5c-512mb",
+          "schedule": "15 4 * * *",
+          "timezone": "UTC",
+          "scheduleStatus": "EXAMPLE_REQUIRES_MONITORING_ACCEPTANCE"
+        }
+      ],
+      "rolesLater": [
+        "source_hub_staging_runtime",
+        "source_hub_staging_migrator",
+        "newsfeed_staging_runtime",
+        "newsfeed_staging_migrator"
+      ],
+      "renderProjectId": "prj-dbl079ou01pc73eg0ffg",
+      "renderEnvironmentId": "evm-dbl07c0u01pc73eg0kh0",
+      "observedBlockCrossEnvironmentPrivateTraffic": false,
+      "observedProtected": false,
+      "servicesStatus": "NOT_CREATED",
+      "plannedSettingsOnly": true
+    },
+    {
+      "name": "production",
+      "status": "PROVISIONED_INFRASTRUCTURE_ONLY_NO_PRODUCT_RUNTIME",
+      "provisioningOnlyNow": true,
+      "renderProject": "Source Hub",
+      "renderEnvironment": "Production",
+      "region": "frankfurt",
+      "autoDeploy": false,
+      "previews": false,
+      "blockCrossEnvironmentPrivateTraffic": true,
+      "servicesCreateWhen": "BACKEND_ACCEPTED_AND_SEPARATE_TASK_AUTHORIZED",
+      "services": [
+        {
+          "name": "profitia-source-hub-production",
+          "type": "web",
+          "compute": "0.5c-512mb",
+          "replicas": 1
+        },
+        {
+          "name": "profitia-newsfeed-api-production",
+          "type": "web",
+          "compute": "0.5c-512mb",
+          "replicas": 1
+        },
+        {
+          "name": "profitia-newsfeed-monitor-production",
+          "type": "cron",
+          "compute": "0.5c-512mb",
+          "schedule": "15 4 * * *",
+          "timezone": "UTC",
+          "scheduleStatus": "EXAMPLE_REQUIRES_MONITORING_ACCEPTANCE"
+        }
+      ],
+      "rolesLater": [
+        "source_hub_production_runtime",
+        "source_hub_production_migrator",
+        "newsfeed_production_runtime",
+        "newsfeed_production_migrator"
+      ],
+      "renderProjectId": "prj-dbl079ou01pc73eg0ffg",
+      "renderEnvironmentId": "evm-dbl07lvf3r2c7383en80",
+      "observedBlockCrossEnvironmentPrivateTraffic": false,
+      "observedProtected": false,
+      "servicesStatus": "NOT_CREATED",
+      "plannedSettingsOnly": true
+    }
+  ],
+  "secretHandling": {
+    "actualSecretsInRepository": false,
+    "ownerDatabaseUrlAllowedInRuntime": false,
+    "sharedProductionCredentialsAllowed": false,
+    "returnMetadataOnly": true
+  },
+  "costBasis": {
+    "checkedAt": "2026-11-03",
+    "currency": "USD",
+    "taxesIncluded": false,
+    "neonPlanObserved": "Scale",
+    "neonScaleCuHour": 0.222,
+    "neonLaunchCuHour": 0.106,
+    "neonStorageGbMonth": 0.35,
+    "neonHistoryGbMonth": 0.2,
+    "neonSnapshotGbMonth": 0.09,
+    "renderWorkspaceProMonth": 25,
+    "renderHalfCpu512MbServiceMonth": 7,
+    "renderHalfCpu512MbCronMinute": 0.00016,
+    "renderCronMinimumMonth": 1,
+    "sources": [
+      "https://neon.com/pricing",
+      "https://render.com/pricing",
+      "https://render.com/docs/cronjobs"
+    ]
+  },
+  "runtimeReadiness": "NOT_VERIFIED",
+  "activationPrerequisites": [
+    "SEPARATE_AUTHORIZED_RUNTIME_TASK",
+    "VERSIONED_PRODUCER_CONSUMER_ADOPTION",
+    "E1_PER_OPERATION_AND_REVOCATION",
+    "PROVIDER_LICENCE_AND_COST_ADMISSION",
+    "OWNER_CONFIGURED_AND_VERIFIED_ISOLATION_ROLES_RECOVERY",
+    "ACCEPTED_RUNTIME_BUILD_START_HEALTH_AND_ROLLBACK"
+  ],
+  "requiredOwnerActionsBeforeRuntime": [
+    "All6 Neon endpoints: manually consider cap0.25-1CU instead of observed0.25-8CU and keep scale-to-zero5minutes; set per endpoint as well as future defaults.",
+    "Both Production Neon branches: enable protection and review7day history, independent backup/RPO/RTO and tested restore.",
+    "All3 Render environments: block cross-environment private traffic; Production additionally Protected.",
+    "Confirm Render project/environment API metadata: OWNER_CONFIRMATION_REQUIRED; separately verified visible UI IDs do not constitute API admission.",
+    "Create least-privilege runtime/migrator roles only with separately accepted schema/access task, then safe per-environment secrets, E1, licences/cost and monitored backend."
+  ]
+}

@@ -3,6 +3,7 @@ import {createPeerOperationSigner,PEER_OPERATION_HEADER,peerOperationIdentityReq
 import {withSrmPeerXRay,readSrmPeerXRayConfiguration} from './peer-xray';
 import {isSameOriginRequest} from './request-origin';
 import {sampleCard} from '../demo/fixture';
+import {withDiagnosticRequest} from './diagnostic-trace';
 const publicCard={...sampleCard,kys:{...sampleCard.kys,status:'NOT_REQUESTED' as const,data:null}};
 import {XRAY_WORKFLOW_CONTRACT,unwrapXRayResponse} from '@profitia/srm-xray/workflow-contract';
 const env={PROFITIA_XRAY_PEER_VERSION:'1.0.0',TARGET_ENVIRONMENT:'development',PROFITIA_AUTH_PROVIDER:'clerk',RENDER_SERVICE_ID:'srv-db1vu6gm7kps73d0e3r0',PROFITIA_XRAY_PEER_KEY_ID:'sg2-srm-xray-dev-v1',PROFITIA_XRAY_PEER_KEY:Buffer.alloc(32,13).toString('base64url')};
@@ -43,5 +44,24 @@ test('peer timing measures the complete validated response without retaining cre
   assert(!JSON.stringify(event).includes('synthetic-user'));assert(!JSON.stringify(event).includes(configuration.keyId));
   console.info=()=>{throw Error('unavailable logger')};
   assert.deepEqual(unwrapXRayResponse('search',await (await handler(await signed())).json(),200),{entityType:'COMPANY',card:publicCard});
+ }finally{console.info=original;}
+});
+
+test('peer telemetry correlates the actual native diagnostic trace without changing the wire contract',async()=>{
+ const logs:Record<string,unknown>[]=[],original=console.info;
+ try{
+  console.info=value=>{logs.push(JSON.parse(value));};
+  const handler=withSrmPeerXRay(async request=>withDiagnosticRequest('search',request,async()=>Response.json({entityType:'COMPANY',card:publicCard}),{enabled:true,emit:()=>{}}),env);
+  const response=await handler(await signed());assert.equal(response.status,200);
+  assert.equal(response.headers.get('X-SRM-Diagnostic-Execution'),null);
+  assert.deepEqual(unwrapXRayResponse('search',await response.json(),200),{entityType:'COMPANY',card:publicCard});
+  assert.equal(logs.length,1);assert.match(logs[0].diagnosticTraceId as string,/^[a-f0-9-]{36}$/);assert.match(logs[0].diagnosticFragmentId as string,/^[a-f0-9-]{36}$/);
+  assert(!JSON.stringify(logs).includes('synthetic-user'));
+  for(const [trace,fragment]of [['not-a-trace','33333333-3333-4333-8333-333333333333'],['22222222-2222-4222-8222-222222222222','invalid']]){
+   logs.length=0;
+   const h=withSrmPeerXRay(async()=>Response.json({entityType:'COMPANY',card:publicCard},{headers:{'X-SRM-Diagnostic-Execution':trace,'X-SRM-Diagnostic-Fragment':fragment}}),env);
+   assert.equal((await h(await signed())).status,200);
+   assert.equal('diagnosticTraceId' in logs[0],trace!=='not-a-trace');assert.equal('diagnosticFragmentId' in logs[0],false);
+  }
  }finally{console.info=original;}
 });

@@ -1,12 +1,13 @@
+import { resolveBaselinePaths, validateRegistry } from '../architecture-classify.mjs'
 import assert from 'node:assert/strict'
+import { execFileSync } from 'node:child_process'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import test from 'node:test'
 import { fileURLToPath } from 'node:url'
-import { execFileSync } from 'node:child_process'
+import './platform-source-hub-foundation.test.mjs'
 
-import { resolveBaselinePaths, validateRegistry } from '../architecture-classify.mjs'
 import { validateGovernanceManifest } from './validate-governance-manifest.mjs'
 import { compareProviderSnapshot, loadEnvironmentTopology, resolveEnvironmentProfile, validateEnvironmentTopology } from './environment-profile.mjs'
 import { runGovernancePreflight } from './governance-preflight.mjs'
@@ -15,63 +16,89 @@ import { resolveProjectRouting, validateProjectBoundaryPolicy } from './routing-
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..')
 
-const insightsReference = 'b965924a63fafb1a24b84ceb389dfd5e78648f57'
-const insightsRegistryPath = 'Canon/registries/current-architecture-baseline-v1.json'
-const insightsTargets = ['apps/insights-runtime/src/index.ts', 'packages/insights-contracts/src/index.ts', '.github/workflows/insights-ci.yml']
-const insightsIds = ['INSIGHTS-BASE-001', 'INSIGHTS-BASE-002', 'INSIGHTS-BASE-003']
-const readInsightsRegistry = () => JSON.parse(fs.readFileSync(path.join(repositoryRoot, insightsRegistryPath), 'utf8'))
+const newsfeedTargets = [
+  'apps/newsfeed-runtime/src/server.ts',
+  'packages/newsfeed-contracts/src/index.ts',
+  '.github/workflows/newsfeed-ci.yml',
+]
 
-test('Insights G1 routes all approved producer surfaces only to SG2', () => {
-  const sg2 = resolveProjectProfile('SG2', repositoryRoot)
-  const result = resolveProjectRouting({ profile: sg2, targets: insightsTargets, repositoryRoot })
-  assert.equal(result.ok, true, result.error)
-  assert.deepEqual(result.results.map((entry) => entry.matchedSurfaceId), insightsIds)
-  assert.ok(result.results.every((entry) => entry.currentOwner === 'Insights Domain'
-    && entry.baselineClassification === 'ALIGNED' && entry.projectBoundaryStatus === 'ALLOWED'))
-  for (const project of ['ARCHITECTURE', 'SRM']) {
-    const denied = resolveProjectRouting({ profile: resolveProjectProfile(project, repositoryRoot), targets: insightsTargets, repositoryRoot })
+test('Newsfeed G1 preserves accepted owners and epoch metadata while adding three exact Architecture routes', () => {
+  const registryPath = 'Canon/registries/current-architecture-baseline-v1.json'
+  const before = JSON.parse(execFileSync('git', ['show', `b4023cb02e10fc7045f8b2bc173224ae3da3cb5a:${registryPath}`], { cwd: repositoryRoot, encoding: 'utf8' }))
+  const current = JSON.parse(fs.readFileSync(path.join(repositoryRoot, registryPath), 'utf8'))
+  const active = new Map(current.surfaces.map(row => [row.id, row]))
+  for (const row of before.surfaces) assert.deepEqual(active.get(row.id), row)
+  const { surfaces: oldSurfaces, ...oldMetadata } = before
+  const { surfaces: currentSurfaces, ...currentMetadata } = current
+  assert.deepEqual(currentMetadata, oldMetadata)
+  const admitted = current.surfaces.filter(row => row.id.startsWith('NEWSFEED-BASE-'))
+  assert.deepEqual(admitted.map(row => row.id), ['NEWSFEED-BASE-001', 'NEWSFEED-BASE-002', 'NEWSFEED-BASE-003'])
+  for (const row of admitted) {
+    assert.equal(row.currentOwner, 'Architecture Platform')
+    assert.deepEqual(row.allowedProjectKeys, ['ARCHITECTURE'])
+    assert.equal(row.classificationReferenceSha, 'b4023cb02e10fc7045f8b2bc173224ae3da3cb5a')
+    assert.match(row.onboardingAuthorization, /G1 GRANTED: explicit owner/)
+  }
+  const resolved = resolveProjectRouting({ profile: resolveProjectProfile('ARCHITECTURE', repositoryRoot), targets: newsfeedTargets, repositoryRoot })
+  assert.equal(resolved.ok, true, resolved.error)
+  assert.deepEqual(resolved.results.map(row => row.matchedSurfaceId), admitted.map(row => row.id))
+  assert.ok(resolved.results.every(row => row.highestSpecificityMatchCount === 1 && row.baselineClassification === 'ALIGNED'))
+})
+
+test('Newsfeed routing denies consumer writes, siblings, traversal and equal-specificity conflicts', () => {
+  const resolve = (project, targets, root = repositoryRoot) => resolveProjectRouting({ profile: resolveProjectProfile(project, repositoryRoot), targets, repositoryRoot: root })
+  for (const project of ['SG2', 'SRM']) {
+    const denied = resolve(project, newsfeedTargets)
     assert.equal(denied.ok, false)
-    assert.ok(denied.results.every((entry) => entry.projectBoundaryStatus === 'DENIED'))
+    assert.ok(denied.results.every(row => row.projectBoundaryStatus === 'DENIED'))
   }
-  const registry = readInsightsRegistry()
-  const entries = insightsIds.map((id) => registry.surfaces.find((entry) => entry.id === id))
-  assert.deepEqual(entries.map((entry) => entry.pathPatterns), [['apps/insights-runtime/**'], ['packages/insights-contracts/**'], ['.github/workflows/insights-ci.yml']])
-  for (const entry of entries) {
-    assert.deepEqual(entry.allowedProjectKeys, ['SG2'])
-    assert.equal(entry.classificationReferenceSha, insightsReference)
+  for (const target of ['apps/newsfeed-runtime-copy/index.ts', 'packages/newsfeed-ui/index.ts', 'packages/newsfeed-contracts-copy/index.ts', '.github/workflows/newsfeed-deploy.yml', 'apps/newsfeed-runtime/../../srm/server.ts']) assert.equal(resolve('ARCHITECTURE', [target]).ok, false, target)
+  const scratch = fs.mkdtempSync(path.join(os.tmpdir(), 'newsfeed-conflict-'))
+  try {
+    const relative = 'Canon/registries/current-architecture-baseline-v1.json'
+    const registry = JSON.parse(fs.readFileSync(path.join(repositoryRoot, relative), 'utf8'))
+    registry.surfaces.push({ ...registry.surfaces.find(row => row.id === 'NEWSFEED-BASE-001'), id: 'NEWSFEED-CONFLICT-FIXTURE', currentOwner: 'Conflicting fixture owner' })
+    fs.mkdirSync(path.dirname(path.join(scratch, relative)), { recursive: true })
+    fs.writeFileSync(path.join(scratch, relative), JSON.stringify(registry))
+    const conflict = resolve('ARCHITECTURE', [newsfeedTargets[0]], scratch)
+    assert.equal(conflict.ok, false)
+    assert.equal(conflict.results[0].resolutionStatus, 'CONFLICT')
+  } finally {
+    fs.rmSync(scratch, { recursive: true, force: true })
   }
 })
 
-test('Insights G1 rejects neighbouring scopes, traversal and equal-specificity conflicts', (t) => {
-  const profile = resolveProjectProfile('SG2', repositoryRoot)
-  for (const target of ['apps/insights-runtime-copy/index.ts', 'packages/insights-contract/index.ts', '.github/workflows/insights-deploy.yml', 'apps/insights-runtime/../../srm/src/server.ts']) {
-    const result = resolveProjectRouting({ profile, targets: [target], repositoryRoot })
-    assert.equal(result.ok, false, target)
+test('Newsfeed admission preserves the SRM intelligence, ADP and SG Runtime consumer owners', () => {
+  for (const [project, owner, target] of [
+    ['SRM', 'SRM Runtime', 'apps/srm/src/modules/intelligence/consumer.ts'],
+    ['SRM', 'SRM Runtime', 'packages/srm-adp-ui/src/index.ts'],
+    ['SG2', 'SG Runtime', 'apps/sg-runtime/app/assistant.ts'],
+  ]) {
+    const result = resolveProjectRouting({ profile: resolveProjectProfile(project, repositoryRoot), targets: [target], repositoryRoot })
+    assert.equal(result.ok, true, result.error)
+    assert.equal(result.results[0].currentOwner, owner)
+    assert.equal(resolveProjectRouting({ profile: resolveProjectProfile('ARCHITECTURE', repositoryRoot), targets: [target], repositoryRoot }).ok, false)
   }
-  const temporaryRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'insights-conflict-'))
-  t.after(() => fs.rmSync(temporaryRoot, { recursive: true, force: true }))
-  const registry = readInsightsRegistry()
-  registry.surfaces.push({ ...structuredClone(registry.surfaces.find((entry) => entry.id === insightsIds[0])), id: 'INSIGHTS-CONFLICT-FIXTURE', currentOwner: 'Conflicting test owner' })
-  const destination = path.join(temporaryRoot, insightsRegistryPath)
-  fs.mkdirSync(path.dirname(destination), { recursive: true })
-  fs.writeFileSync(destination, JSON.stringify(registry))
-  assert.equal(resolveProjectRouting({ profile, targets: [insightsTargets[0]], repositoryRoot: temporaryRoot }).ok, false)
 })
 
-test('Insights G1 preserves pre-onboarding owner rows, frozen metadata and all source routing', () => {
-  // Immutable real main checkpoint, not a reconstructed baseline. Full Git
-  // history is required by governance CI and the existing onboarding tests.
-  const git = (args) => execFileSync('git', args, { cwd: repositoryRoot, encoding: 'utf8' })
-  const original = JSON.parse(git(['show', `${insightsReference}:${insightsRegistryPath}`]))
-  const current = readInsightsRegistry()
-  assert.equal(validateRegistry(current).valid, true)
-  assert.equal(validateProjectBoundaryPolicy(current, { required: true }).valid, true)
-  for (const old of original.surfaces) assert.deepEqual(current.surfaces.find((entry) => entry.id === old.id), old)
-  for (const key of Object.keys(original).filter((key) => key !== 'surfaces')) assert.deepEqual(current[key], original[key])
-  assert.ok(resolveBaselinePaths({ registry: original, inputPaths: insightsTargets, repoRoot: repositoryRoot }).every((entry) => entry.resolutionStatus === 'NO_MATCH'))
-  const tracked = git(['ls-tree', '-r', '--name-only', insightsReference]).trim().split('\n')
-  assert.equal(tracked.length, 3652)
-  assert.deepEqual(resolveBaselinePaths({ registry: current, inputPaths: tracked, repoRoot: repositoryRoot }), resolveBaselinePaths({ registry: original, inputPaths: tracked, repoRoot: repositoryRoot }))
+test('Newsfeed active canon follows its dependencies and retains explicit governance-only G1 provenance', () => {
+  const result = validateGovernanceManifest(repositoryRoot)
+  assert.equal(result.valid, true, result.errors.join('\n'))
+  const doc = result.activeDocuments.find(row => row.id === 'newsfeed-business-and-architecture-canon')
+  assert.equal(doc.owner, 'Architecture Platform')
+  assert.deepEqual(doc.appliesTo, ['SG2', 'SRM', 'ARCHITECTURE'])
+  for (const id of doc.dependsOn) assert.ok(result.activeDocuments.find(row => row.id === id).loadOrder < doc.loadOrder)
+  const canon = fs.readFileSync(path.join(repositoryRoot, doc.path), 'utf8')
+  assert.match(canon, /\*\*Status:\*\* ACTIVE/)
+  assert.match(canon, /OWNER APPROVED \/ G1 GRANTED/)
+  assert.match(canon, /5f2377b07ba6449062f6b5bb1b350fc0bad66664/)
+  const onboarding = JSON.parse(fs.readFileSync(path.join(repositoryRoot, 'Canon/registries/architecture-onboarding-v1.json'), 'utf8'))
+  const module = onboarding.plannedModules.find(row => row.capability === 'Newsfeed')
+  assert.equal(module.owner, 'Architecture Platform')
+  assert.equal(module.approval.decision, 'G1 GRANTED')
+  assert.equal(module.approval.governanceOnly, true)
+  for (const key of ['implementationAuthorized', 'resourceCreationAuthorized', 'deploymentAuthorized']) assert.equal(module.approval[key], false)
+  assert.match(fs.readFileSync(path.join(repositoryRoot, module.evidenceDocument), 'utf8'), /ARCH-NEWSFEED-G1-ACTIVATION-20261103/)
 })
 
 test('repository governance manifest is valid and has one active execution canon', () => {
@@ -163,7 +190,13 @@ test('SG2 environment topology prevents cross-environment service and database i
   assert.equal(staging.deploymentPolicy, 'MANUAL_EXACT_SHA')
   assert.equal(staging.render.services.dashboard.autoDeploy, false)
   assert.equal(staging.render.services.runtime.autoDeploy, false)
-  assert.equal(staging.render.services.runtime.baselineSha, '48dfcd8af93fa9f5e9708653a868b89c138b6b91')
+  assert.equal(staging.render.services.runtime.baselineSha, '88c9e0a2074bfafd1199a9caeb50497412a200bd')
+  const sentryPromotion = staging.deploymentHistory.find(entry => entry.releaseWorkflowRunId === 41349554926)
+  assert.equal(sentryPromotion.previousBaselineDeployId, 'dep-dbi4fv7lot8c73auj9og')
+  assert.equal(sentryPromotion.previousBaselineSha, '48dfcd8af93fa9f5e9708653a868b89c138b6b91')
+  assert.equal(sentryPromotion.observedSha, staging.render.services.runtime.baselineSha)
+  assert.equal(sentryPromotion.requiredEnvironmentApproval, 'APPROVED_BY_PROFITIA')
+  assert.equal(staging.deploymentHistory.at(-1).observedDeployId, staging.render.services.runtime.baselineDeployId)
   assert.equal(staging.render.services.mainRuntime.serviceId, 'srv-d98a73btqb8s73fabp90')
   assert.equal(staging.render.services.mainRuntime.autoDeploy, false)
   assert.equal(staging.liveReconciliation.sourceRevisionComposition, 'MIXED_BY_SERVICE')
@@ -670,3 +703,63 @@ test('Architecture rejects substitution of laboratory database, role and continu
     assert.throws(() => resolveEnvironmentProfile({ profile, targetEnvironment: 'development', governanceRoot: root }), /identity mismatch/)
   }
 })
+
+const insightsReference = 'b965924a63fafb1a24b84ceb389dfd5e78648f57'
+const insightsRegistryPath = 'Canon/registries/current-architecture-baseline-v1.json'
+const insightsTargets = ['apps/insights-runtime/src/index.ts', 'packages/insights-contracts/src/index.ts', '.github/workflows/insights-ci.yml']
+const insightsIds = ['INSIGHTS-BASE-001', 'INSIGHTS-BASE-002', 'INSIGHTS-BASE-003']
+const readInsightsRegistry = () => JSON.parse(fs.readFileSync(path.join(repositoryRoot, insightsRegistryPath), 'utf8'))
+
+test('Insights G1 routes all approved producer surfaces only to SG2', () => {
+  const sg2 = resolveProjectProfile('SG2', repositoryRoot)
+  const result = resolveProjectRouting({ profile: sg2, targets: insightsTargets, repositoryRoot })
+  assert.equal(result.ok, true, result.error)
+  assert.deepEqual(result.results.map((entry) => entry.matchedSurfaceId), insightsIds)
+  assert.ok(result.results.every((entry) => entry.currentOwner === 'Insights Domain'
+    && entry.baselineClassification === 'ALIGNED' && entry.projectBoundaryStatus === 'ALLOWED'))
+  for (const project of ['ARCHITECTURE', 'SRM']) {
+    const denied = resolveProjectRouting({ profile: resolveProjectProfile(project, repositoryRoot), targets: insightsTargets, repositoryRoot })
+    assert.equal(denied.ok, false)
+    assert.ok(denied.results.every((entry) => entry.projectBoundaryStatus === 'DENIED'))
+  }
+  const registry = readInsightsRegistry()
+  const entries = insightsIds.map((id) => registry.surfaces.find((entry) => entry.id === id))
+  assert.deepEqual(entries.map((entry) => entry.pathPatterns), [['apps/insights-runtime/**'], ['packages/insights-contracts/**'], ['.github/workflows/insights-ci.yml']])
+  for (const entry of entries) {
+    assert.deepEqual(entry.allowedProjectKeys, ['SG2'])
+    assert.equal(entry.classificationReferenceSha, insightsReference)
+  }
+})
+
+test('Insights G1 rejects neighbouring scopes, traversal and equal-specificity conflicts', (t) => {
+  const profile = resolveProjectProfile('SG2', repositoryRoot)
+  for (const target of ['apps/insights-runtime-copy/index.ts', 'packages/insights-contract/index.ts', '.github/workflows/insights-deploy.yml', 'apps/insights-runtime/../../srm/src/server.ts']) {
+    const result = resolveProjectRouting({ profile, targets: [target], repositoryRoot })
+    assert.equal(result.ok, false, target)
+  }
+  const temporaryRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'insights-conflict-'))
+  t.after(() => fs.rmSync(temporaryRoot, { recursive: true, force: true }))
+  const registry = readInsightsRegistry()
+  registry.surfaces.push({ ...structuredClone(registry.surfaces.find((entry) => entry.id === insightsIds[0])), id: 'INSIGHTS-CONFLICT-FIXTURE', currentOwner: 'Conflicting test owner' })
+  const destination = path.join(temporaryRoot, insightsRegistryPath)
+  fs.mkdirSync(path.dirname(destination), { recursive: true })
+  fs.writeFileSync(destination, JSON.stringify(registry))
+  assert.equal(resolveProjectRouting({ profile, targets: [insightsTargets[0]], repositoryRoot: temporaryRoot }).ok, false)
+})
+
+test('Insights G1 preserves pre-onboarding owner rows, frozen metadata and all source routing', () => {
+  // Immutable real main checkpoint, not a reconstructed baseline. Full Git
+  // history is required by governance CI and the existing onboarding tests.
+  const git = (args) => execFileSync('git', args, { cwd: repositoryRoot, encoding: 'utf8' })
+  const original = JSON.parse(git(['show', `${insightsReference}:${insightsRegistryPath}`]))
+  const current = readInsightsRegistry()
+  assert.equal(validateRegistry(current).valid, true)
+  assert.equal(validateProjectBoundaryPolicy(current, { required: true }).valid, true)
+  for (const old of original.surfaces) assert.deepEqual(current.surfaces.find((entry) => entry.id === old.id), old)
+  for (const key of Object.keys(original).filter((key) => key !== 'surfaces')) assert.deepEqual(current[key], original[key])
+  assert.ok(resolveBaselinePaths({ registry: original, inputPaths: insightsTargets, repoRoot: repositoryRoot }).every((entry) => entry.resolutionStatus === 'NO_MATCH'))
+  const tracked = git(['ls-tree', '-r', '--name-only', insightsReference]).trim().split('\n')
+  assert.equal(tracked.length, 3652)
+  assert.deepEqual(resolveBaselinePaths({ registry: current, inputPaths: tracked, repoRoot: repositoryRoot }), resolveBaselinePaths({ registry: original, inputPaths: tracked, repoRoot: repositoryRoot }))
+})
+
