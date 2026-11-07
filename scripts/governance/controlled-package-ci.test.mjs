@@ -1291,3 +1291,26 @@ test('SDK1.34 Maps peer transition needs pinned bytes, matching lock and the clo
   fs.writeFileSync(target,JSON.stringify({...manifest,unreviewed:true}));rejection(()=>assertLocalPackageSources(candidateRoot,lock,authorityRoot,{reviewedMarketSymbol:true}))
  }finally{fs.rmSync(temporary,{recursive:true,force:true})}
 })
+
+
+import {INSIGHTS_G1_REVIEW,assertInsightsG1ReviewEntry} from './controlled-package-ci.mjs'
+function insightsG1Fixture(){
+ const p=pr();p.number=INSIGHTS_G1_REVIEW.prNumber;p.head.ref=INSIGHTS_G1_REVIEW.branch;
+ const files=Object.entries(INSIGHTS_G1_REVIEW.blobs).map(([filename,sha])=>({filename,sha,status:INSIGHTS_G1_REVIEW.statuses[filename]}));p.changed_files=files.length;p.base.sha=sha;return {p,files};
+}
+test('existing exact Insights G1 governance branch receives the reviewed Architecture path only',()=>{
+ const {p,files}=insightsG1Fixture();assert(Object.isFrozen(INSIGHTS_G1_REVIEW.blobs));assert.equal(selectCandidate(context(),p,other,{files}),other);assertArchitectureFiles(p,files);
+ assert.equal(INSIGHTS_G1_REVIEW.prNumber,848);assert.equal(files.length,4);assert.equal(INSIGHTS_G1_REVIEW.branch,'governance/procurement-insights-g1-20261101');
+});
+test('Insights G1 rejects altered or incomplete file closure before credential use',()=>{
+ const {p,files}=insightsG1Fixture();
+ for(const mutate of [f=>f.pop(),f=>f.push({filename:'apps/insights-runtime/index.mjs',sha:sha,status:'added'}),f=>f[0].sha=sha,f=>f[0].status='removed',f=>f[0].previous_filename='Canon/old.md',f=>f[1]={...f[0]},f=>f[0].filename='scripts/governance/controlled-package-ci.mjs']){const changed=structuredClone(files);mutate(changed);rejection(()=>selectCandidate(context(),p,other,{files:changed}));}
+});
+test('Insights G1 cannot borrow another PR, prefix, actor, fork or candidate SHA',()=>{
+ const {p,files}=insightsG1Fixture();
+ for(const mutate of [x=>x.number=849,x=>x.head.ref='governance/other',x=>x.head.ref='sg2/fallback',x=>x.head.ref='architecture/fallback',x=>x.user.login='other',x=>x.head.repo.full_name='profitia/fork',x=>x.base.ref='staging']){const changed=structuredClone(p);mutate(changed);rejection(()=>selectCandidate(context(),changed,other,{files}));}
+ rejection(()=>selectCandidate(context(),p,sha,{files}));rejection(()=>selectCandidate({...context(),ref:'refs/heads/governance/not-main'},p,other,{files}));
+});
+test('Insights G1 fixes every actual blob to regular100644 entries; executables and symlinks fail',()=>{
+ const {files}=insightsG1Fixture();for(const f of files){assertInsightsG1ReviewEntry(f,`100644 blob ${f.sha}\t${f.filename}\0`);for(const mode of ['100755','120000'])rejection(()=>assertInsightsG1ReviewEntry(f,`${mode} blob ${f.sha}\t${f.filename}\0`));rejection(()=>assertInsightsG1ReviewEntry({...f,sha},`100644 blob ${sha}\t${f.filename}\0`));}
+});
