@@ -58,8 +58,9 @@ function candidateFamily(context, pr, expectedSha) {
     if (expectedSha && expectedSha !== context.controlSha) fail('CANDIDATE_SHA_MISMATCH')
     return 'MAIN'
   }
-  if (pr.state !== 'open' || pr.base?.repo?.full_name !== REPOSITORY || pr.base?.ref !== 'main' || pr.head?.repo?.full_name !== REPOSITORY || pr.user?.login !== 'profitia' || !eligibleCandidateBranch(pr.head?.ref)) fail('UNTRUSTED_CANDIDATE')
-  const family = pr.head.ref.startsWith('architecture/') ? 'ARCHITECTURE' : pr.head.ref.startsWith('srm/') ? 'SRM' : 'SG2'
+  const exactInsightsG1=pr.number===INSIGHTS_G1_REVIEW.prNumber&&pr.head?.ref===INSIGHTS_G1_REVIEW.branch
+  if (pr.state !== 'open' || pr.base?.repo?.full_name !== REPOSITORY || pr.base?.ref !== 'main' || pr.head?.repo?.full_name !== REPOSITORY || pr.user?.login !== 'profitia' || !(eligibleCandidateBranch(pr.head?.ref)||exactInsightsG1)) fail('UNTRUSTED_CANDIDATE')
+  const family = exactInsightsG1||pr.head.ref.startsWith('architecture/') ? 'ARCHITECTURE' : pr.head.ref.startsWith('srm/') ? 'SRM' : 'SG2'
   if (!shaPattern.test(expectedSha ?? '') || pr.head.sha !== expectedSha) fail('CANDIDATE_SHA_MISMATCH')
   return family
 }
@@ -3102,6 +3103,41 @@ export function assertMarketSymbolReviewEntry(file,entry){
  if(!Object.hasOwn(r.blobs,file?.filename??'')||file.sha!==r.blobs[file.filename]||entry!==r.modes[file.filename]+' blob '+file.sha+'\t'+file.filename+'\0')fail('MARKET_SYMBOL_FILE_MODE_REJECTED');
 }
 
+
+// One owner-authorized existing Insights G1 PR; no generic governance prefix.
+export const INSIGHTS_G1_REVIEW=Object.freeze({
+  "prNumber": 848,
+  "branch": "governance/procurement-insights-g1-20261101",
+  "reviewedCandidateSha": "f24d1c017bd6766bf3b2d382ef12c0040bc5311c",
+  "reviewedBaseSha": "734ccc742be1e5183a2d45436a575fd52f185361",
+  "blobs": {
+    "Canon/registries/current-architecture-baseline-v1.json": "d1dff639dee376331f6aea34e89ea5fe5294c1dd",
+    "Canon/v1.1-repository-routing-and-module-ownership-canon.md": "05996c7c2b3dfd66df61b6a9a14c9a771be9c6d5",
+    "Canon/evidence/2026-11-01-procurement-insights-g1-onboarding.md": "f9c8e4f2a4ea8b2defdbb7bd15efb24bfde345f7",
+    "scripts/governance/governance.test.mjs": "07c21dee8234fd52b960181c84eb3d7987f731c0"
+  },
+  "statuses": {
+    "Canon/registries/current-architecture-baseline-v1.json": "modified",
+    "Canon/v1.1-repository-routing-and-module-ownership-canon.md": "modified",
+    "Canon/evidence/2026-11-01-procurement-insights-g1-onboarding.md": "added",
+    "scripts/governance/governance.test.mjs": "modified"
+  },
+  "modes": {
+    "Canon/registries/current-architecture-baseline-v1.json": "100644",
+    "Canon/v1.1-repository-routing-and-module-ownership-canon.md": "100644",
+    "Canon/evidence/2026-11-01-procurement-insights-g1-onboarding.md": "100644",
+    "scripts/governance/governance.test.mjs": "100644"
+  }
+});
+Object.freeze(INSIGHTS_G1_REVIEW.blobs);Object.freeze(INSIGHTS_G1_REVIEW.statuses);Object.freeze(INSIGHTS_G1_REVIEW.modes);
+function isPinnedInsightsG1Review(files){
+ const r=INSIGHTS_G1_REVIEW;return Array.isArray(files)&&files.length===Object.keys(r.blobs).length&&new Set(files.map(f=>f?.filename)).size===files.length
+  &&files.every(f=>Object.hasOwn(r.blobs,f?.filename??'')&&f.sha===r.blobs[f.filename]&&f.status===r.statuses[f.filename]&&!Object.hasOwn(f,'previous_filename'));
+}
+export function assertInsightsG1ReviewEntry(file,entry){
+ const r=INSIGHTS_G1_REVIEW;if(!Object.hasOwn(r.blobs,file?.filename??'')||file.sha!==r.blobs[file.filename]||entry!==r.modes[file.filename]+' blob '+file.sha+'\t'+file.filename+'\0')fail('INSIGHTS_G1_FILE_MODE_REJECTED');
+}
+
 function architecturePathAllowed(name) {
   if (typeof name !== 'string' || !/^[A-Za-z0-9._/-]+$/.test(name) || name.split('/').some(p => !p || p.startsWith('.'))) return false
   return /^packages\/platform-contracts\/(?:src\/[A-Za-z0-9_/-]+\.(?:mjs|d\.mts)|migrations\/[a-z0-9-]+\/[A-Za-z0-9._-]+\.sql|test\/[A-Za-z0-9._/-]+\.(?:mjs|mts|json)|package(?:-lock)?\.json|README\.md)$/.test(name)
@@ -3123,7 +3159,7 @@ export function assertArchitectureFiles(pr, files, repositoryRoot = controlRoot(
   const readonlyMissReview = isPinnedReadonlyMissReportReview(files)
   const freshFixtureReview = isPinnedFreshFixtureTeardownReview(files)
   const rootAtomicClaimReview = isPinnedRootAtomicClaimReview(files)
-  const closedReview = isPinnedEcrG1Review(files) || krsReview || isPinnedAdpGovernanceReview(files) || isPinnedLimitsG1Review(files) || isPinnedNewsfeedG1Review(files) || isPinnedSourceHubG1Review(files) || freshReportReview || payloadCaptureReview || readonlyMissReview || freshFixtureReview || rootAtomicClaimReview
+  const closedReview = isPinnedInsightsG1Review(files) || isPinnedEcrG1Review(files) || krsReview || isPinnedAdpGovernanceReview(files) || isPinnedLimitsG1Review(files) || isPinnedNewsfeedG1Review(files) || isPinnedSourceHubG1Review(files) || freshReportReview || payloadCaptureReview || readonlyMissReview || freshFixtureReview || rootAtomicClaimReview
   const names = new Set()
   for (const file of files) {
     if (!(closedReview || architecturePathAllowed(file.filename))
@@ -3149,6 +3185,9 @@ export function selectCandidate(context, pr, expectedSha, {files, repositoryRoot
   const family = candidateFamily(context, pr, expectedSha)
   if(pr&&(pr.number===SOURCE_HUB_MARKET_SYMBOL_REVIEW.prNumber||pr.head.ref===SOURCE_HUB_MARKET_SYMBOL_REVIEW.branch)){
     if(family!=='ARCHITECTURE'||pr.number!==SOURCE_HUB_MARKET_SYMBOL_REVIEW.prNumber||pr.head.ref!==SOURCE_HUB_MARKET_SYMBOL_REVIEW.branch||!isPinnedMarketSymbolReview(files))fail('MARKET_SYMBOL_REVIEW_IDENTITY_REJECTED')
+  }
+  if(pr&&(pr.number===INSIGHTS_G1_REVIEW.prNumber||pr.head.ref===INSIGHTS_G1_REVIEW.branch||isPinnedInsightsG1Review(files))){
+    if(family!=='ARCHITECTURE'||pr.number!==INSIGHTS_G1_REVIEW.prNumber||pr.head.ref!==INSIGHTS_G1_REVIEW.branch||!isPinnedInsightsG1Review(files))fail('INSIGHTS_G1_REVIEW_IDENTITY_REJECTED')
   }
   if (family === 'MAIN') return context.controlSha
   if (family === 'ARCHITECTURE') {
@@ -3217,6 +3256,7 @@ export function assertArchitectureCheckout(root, sha, admission, repositoryRoot 
   for (const file of admission.files) {
     const entry = execFileSync('git', ['ls-tree', '-z', sha, '--', file.filename], {cwd: root, encoding: 'utf8'})
     if (file.status === 'removed') {if (entry !== '') fail('ARCHITECTURE_DIFF_MISMATCH'); continue}
+    if(isPinnedInsightsG1Review(admission.files))assertInsightsG1ReviewEntry(file,entry)
     if(isPinnedEcrBackendReview(admission.files))assertEcrBackendReviewEntry(file,entry)
     if(isPinnedEcrG1Review(admission.files))assertEcrG1ReviewEntry(file,entry)
     if(isPinnedMarketSymbolReview(admission.files))assertMarketSymbolReviewEntry(file,entry)
