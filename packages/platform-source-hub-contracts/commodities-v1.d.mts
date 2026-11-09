@@ -1,12 +1,14 @@
 import type {CommonMetadata,SourceCoverage,HubResponse} from './index.mjs'
 export const COMMODITY_CONTRACT_VERSION:'1.1.0'
+export const PUBLICATION_SCHEDULE_CONTRACT_VERSION:'1.2.0'
 export type CommodityFamily='data-catalog'|'series-observations'|'positioning-observations'|'publication-calendar'
 export type CommodityProvider='eia'|'cftc'|'commodities-sh'
 export const COMMODITY_FAMILIES:readonly CommodityFamily[]
 export const COMMODITY_PROVIDERS:Readonly<Record<CommodityProvider,readonly CommodityFamily[]>>
 type Page={limit?:number;offset?:number}
 type Request<P,F,O,C>={contractVersion:'1.1.0';provider:P;family:F;operation:O;criteria:C}
-export type CommodityRequest=
+export type CommodityRequest=PublicationScheduleRequest|LegacyCommodityRequest
+export type LegacyCommodityRequest=
  |Request<'eia','data-catalog','catalog'|'metadata',Page&{path?:string;facet?:string}>
  |Request<'eia','series-observations','observations',Page&{path:string;frequency:string;data:string[];facets?:Record<string,string[]>;start?:string;end?:string;sort?:Array<{column:string;direction:'asc'|'desc'}>}>
  |Request<'cftc','data-catalog','catalog',Page>
@@ -41,11 +43,27 @@ export interface PublicationSchedule {
  releaseStatus:'PROVIDER_SCHEDULE_ONLY';sourceName:string|null;sourceUrl:string|null;providerSchedule:Json;actual:null;forecast:null;previous:null
 }
 export type CommodityMetadata=Omit<CommonMetadata,'contractFamily'|'contractVersion'|'providerId'|'consumerStorage'>&{
- contractFamily:CommodityFamily;contractVersion:'1.1.0';providerId:CommodityProvider
+ contractFamily:CommodityFamily;contractVersion:'1.1.0'|'1.2.0';providerId:CommodityProvider
  consumerStorage?:{mode:'CATALOG_METADATA_ONLY';basisRef:string;licenceVersion:string}
 }
-export type CommodityResponse<T=DatasetMetadata|SeriesObservation|PositioningObservation|PublicationSchedule>=Omit<HubResponse,'contractVersion'|'family'|'provider'|'items'|'coverage'>&{
- contractVersion:'1.1.0';family:CommodityFamily;provider:CommodityProvider;items:Array<{metadata:CommodityMetadata;payload:T}>;coverage:SourceCoverage
+export type CommodityResponse<T=DatasetMetadata|SeriesObservation|PositioningObservation|PublicationSchedule|PublicationScheduleV12>=Omit<HubResponse,'contractVersion'|'family'|'provider'|'items'|'coverage'>&{
+ contractVersion:'1.1.0'|'1.2.0';family:CommodityFamily;provider:CommodityProvider;items:Array<{metadata:CommodityMetadata;payload:T}>;coverage:SourceCoverage|PublicationScheduleCoverage
 }
 export function parseCommodityRequest(value:unknown):CommodityRequest
 export function assertCommodityResponse(value:unknown,expected:CommodityRequest):CommodityResponse
+
+export type PublicationScheduleRequest={contractVersion:'1.2.0';family:'publication-calendar';operation:'calendar'}&({provider:'eia';criteria:{publication:'wpsr'|'steo';from:string;to:string;limit?:number}}|{provider:'commodities-sh';criteria:{limit?:number}})
+export interface PublicationScheduleV12 {
+ kind:'PUBLICATION_SCHEDULE';scheduleId:string|null;title:string;publicationRef:string;correlationKey:string
+ identityStatus:'PROVIDER_ID'|'CORRELATION_ONLY'|'OFFICIAL_PUBLICATION_DEFINITION'
+ scheduledAt:string|null;scheduledUntil:string|null;dateOnly:string|null;localDateTime:string|null;timeZone:string|null
+ timePrecision:'INSTANT'|'DATE'|'TIME_WINDOW'|'RECURRENCE_ONLY'|'UNKNOWN';recurrence:string|null;referencePeriod:string|null
+ releaseStatus:'PROVIDER_SCHEDULE_ONLY';scheduleStatus:'OFFICIAL_EXCEPTION'|'OFFICIAL_DATED'|'RULE_DERIVED_UNCONFIRMED'|'PROVIDER_REPORTED'|'UNDATED'
+ sourceName:string|null;sourceUrl:string|null;officialSource:boolean;sourceUpdatedAt:null;lastVerifiedAt:'metadata.retrievedAt'
+ standardSchedule:{weekday:number;localTime:string;timeZone:string}|null;exception:{reason:string;standardDate:string}|null
+ sourceTiming:{rawDate:string|null;typicalTime:string|null;nextHint:string|null}
+ qualityFlags:string[];actual:null;previous:null;forecast:null;publishedAt:null
+}
+export function parsePublicationScheduleRequest(value:unknown):PublicationScheduleRequest
+
+export interface PublicationScheduleCoverage {scope:'SOURCE_SCHEDULE_PROJECTION';completeness:'UNKNOWN'|'INCOMPLETE';providerRows:number|null;projected:number;ruleDerived:number;returned:number;nativeFilters:string[];localFilters:string[]}

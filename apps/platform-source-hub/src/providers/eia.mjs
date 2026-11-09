@@ -1,8 +1,10 @@
 import {parseCommodityRequest} from '../../../../packages/platform-source-hub-contracts/commodities-v1.mjs'
 import {providerJson,credential,fail} from '../transport.mjs'
 import {answer,dataset,field,makeRecord,optional,value,schemaFingerprint} from './commodity-records.mjs'
+import {prepareEiaSchedule,acquireEiaSchedule} from './eia-schedules.mjs'
 export const EIA_ORIGIN='https://api.eia.gov'
 export function prepareEia(request){
+ if(request.family==='publication-calendar')return prepareEiaSchedule(request)
  const r=parseCommodityRequest(request),c=/** @type {any} */(r.criteria),u=new URL(EIA_ORIGIN+'/v2/'+(c.path?c.path+'/':''))
  if(r.family==='series-observations'){
   u.pathname+='data/';u.searchParams.set('frequency',c.frequency)
@@ -22,6 +24,7 @@ export function eiaWireUrl(url,apiKey){const u=new URL(url);if(u.origin!==EIA_OR
 /** @param {{fetchImpl?:Function}} options */
 export function createEiaProvider({fetchImpl}={}){return {/** @param {any} request @param {{signal?:AbortSignal}} options */async acquire(request,options={}){
  const {signal}=/** @type {{signal?:AbortSignal}} */(options)
+ if(request.family==='publication-calendar')return acquireEiaSchedule(request,{fetchImpl,signal})
  const p=prepareEia(request),c=/** @type {any} */(p.request.criteria),json=await providerJson(fetchImpl,p.url,{}, {signal}),r=json?.response
  if(json?.error||!r||typeof r!=='object'||Array.isArray(r))fail('PROVIDER_SCHEMA_CHANGED',502)
  const sourceUrl=p.url,limit=c.limit??100

@@ -19,6 +19,32 @@ const json = p => JSON.parse(read(p))
 const git = args => execFileSync('git', args, { cwd: root, encoding: 'utf8' }).trim()
 const priorText = p => execFileSync('git', ['show', approved + ':' + p], { cwd: root, encoding: 'utf8' })
 const prior = p => JSON.parse(priorText(p))
+const sha256 = bytes => createHash('sha256').update(bytes).digest('hex')
+function scheduleSourceAcceptance(readCurrent=read){
+ if(JSON.parse(readCurrent('packages/platform-source-hub-contracts/package.json')).version!=='1.5.0')return null
+ const file='apps/platform-source-hub/operations/publication-schedule-source-acceptance.json',bytes=readCurrent(file)
+ assert.equal(sha256(bytes),'3f9a3de218368152b86cd4c4efebb831f2033256465248dcf320f362d8c0c422','exact new schedule acceptance')
+ const a=JSON.parse(bytes)
+ assert.equal(a.sourceCandidateSha,'1ed366d9e1fdac87a549dd891d2b7b53abf13b2c')
+ assert.equal(a.predecessorSourceSha,'d943d2ba17eeb6b07ba5a9162a4767e155513a90')
+ assert.equal(a.predecessorManifestSha256,'458ddbf661ce1a5666260a072a03f24ac016346bdd9a9efef7f2a1d497eee403')
+ assert.equal(sha256(readCurrent(a.predecessorManifestPath)),a.predecessorManifestSha256,'immutable previous acceptance')
+ assert.deepEqual(Object.keys(a.sourceFiles),git(['diff','--name-only',a.baseSha,a.sourceCandidateSha]).split('\n').filter(p=>(p.startsWith('apps/platform-source-hub/')||p.startsWith('packages/platform-source-hub-contracts/'))&&p!==file).sort())
+ assert.equal(Object.keys(a.sourceFiles).length,26);assert.equal(Object.keys(a.replacements).length,9)
+ const old=JSON.parse(readCurrent(a.predecessorManifestPath))
+ for(const [p,digest]of Object.entries(a.sourceFiles)){
+  assert(p.startsWith('apps/platform-source-hub/')||p.startsWith('packages/platform-source-hub-contracts/'),'closed schedule owner scope')
+  assert.equal(sha256(execFileSync('git',['show',a.sourceCandidateSha+':'+p],{cwd:root})),digest,'immutable reviewed schedule source '+p)
+  assert.equal(sha256(readCurrent(p)),digest,'current schedule source '+p)
+ }
+ for(const [p,r]of Object.entries(a.replacements)){
+  assert.equal(r.previousSha256,old.integrationFiles[p]);assert.equal(r.sha256,a.sourceFiles[p])
+  assert.equal(sha256(execFileSync('git',['show',a.predecessorSourceSha+':'+p],{cwd:root})),r.previousSha256,'immutable predecessor source '+p)
+ }
+ assert.equal(a.publicationScheduleVersion,'1.2.0');assert.equal(a.legacyCommodityContractVersion,'1.1.0');assert.equal(a.legacyHubContractVersion,'1.0.0')
+ assert.equal(a.consumerRuntimeAdoption,false);assert.equal(a.administrativeActivation,'SEPARATE_EXACT_OWNER_GO_REQUIRED')
+ return a
+}
 const registryPath = 'Canon/registries/current-architecture-baseline-v1.json'
 const manifestPath = 'Canon/registries/governance-manifest-v2.json'
 const g1 = prior('Canon/proposals/platform-source-hub-g1-onboarding-v1.json')
@@ -244,6 +270,7 @@ test('SourceHub optional ECR storage metadata preserves accepted transport and p
  assert.equal(old.version,'1.1.0')
  assert.equal(SOURCE_HUB_CONTRACT_VERSION,'1.0.0')
  const sdkVersion=json('packages/platform-contracts/package.json').version
+ const schedule=scheduleSourceAcceptance()
  if(sdkVersion==='1.34.0'){
   const adoption=json('apps/architecture-lab/sdk-1.34-compatibility.json')
   assert.equal(adoption.producerCandidateSha,'ebf017cae09bf7bd9139af7917534b47ae0c4d4b')
@@ -258,7 +285,10 @@ test('SourceHub optional ECR storage metadata preserves accepted transport and p
    for(const [file,digest]of Object.entries(oil.integrationReplacements))assert.equal(createHash('sha256').update(execFileSync('git',['show',oil.producerSourceSha+':'+file],{cwd:root})).digest('hex'),digest,'exact report producer '+file);
    assert.equal(oil.providerCallsPerformed,false);assert.equal(oil.deploymentPerformed,false);
   }
-  for(const [file,digest]of Object.entries({...adoption.integrationFiles,...oil?.integrationReplacements}))assert.equal(createHash('sha256').update(fs.readFileSync(path.join(root,file))).digest('hex'),digest,'current integrated producer '+file)
+  for(const [file,digest]of Object.entries({...adoption.integrationFiles,...oil?.integrationReplacements})){
+   const bytes=!oil?.integrationReplacements[file]&&schedule?.replacements[file]?execFileSync('git',['show',schedule.predecessorSourceSha+':'+file],{cwd:root}):fs.readFileSync(path.join(root,file))
+   assert.equal(createHash('sha256').update(bytes).digest('hex'),digest,'preserved integrated predecessor '+file)
+  }
  }else{
   assert.equal(sdkVersion,'1.33.0')
   assert.equal(git(['hash-object','packages/platform-contracts/package.json']),git(['rev-parse',accepted+':packages/platform-contracts/package.json']))
@@ -268,7 +298,7 @@ test('SourceHub optional ECR storage metadata preserves accepted transport and p
  if(current.version==='1.1.0'){
   assert.deepEqual(current,old)
  }else{
-  assert.equal(current.version,sdkVersion==='1.34.0'?'1.4.0':'1.3.0')
+  assert.equal(current.version,schedule?'1.5.0':sdkVersion==='1.34.0'?'1.4.0':'1.3.0')
   const {version:oldVersion,peerDependencies:oldPeers,...oldManifest}=old
   const {version,peerDependencies,...currentManifest}=current
   if(current.version==='1.2.0'){
@@ -295,5 +325,16 @@ test('SourceHub optional ECR storage metadata preserves accepted transport and p
   }
   assert.deepEqual(oldPeers,{'@profitia/platform-current-e1-authority':'1.1.0'})
   assert.deepEqual(peerDependencies,{'@profitia/platform-current-e1-authority':sdkVersion==='1.34.0'?'1.1.0 || 1.2.0 || 1.2.1':'1.1.0 || 1.2.0'})
+ }
+})
+
+test('opt-in schedule producer pins its complete new closure while preserving every previous acceptance byte',()=>{
+ const a=scheduleSourceAcceptance();assert(a)
+ assert.equal(a.taskId,'ARCHITECTURE-ECR-STAGE01-SCHEDULE-SOURCES-20261109')
+ assert.equal(a.scope,'SOURCEHUB_PRODUCER_ONLY_OPT_IN_SCHEDULE_CONTRACT')
+})
+test('schedule acceptance rejects altered new source, new metadata and historical receipt without changing fixtures on disk',()=>{
+ for(const target of ['apps/platform-source-hub/src/providers/eia-schedules.mjs','apps/platform-source-hub/operations/publication-schedule-source-acceptance.json','apps/architecture-lab/sdk-1.34-compatibility.json']){
+  assert.throws(()=>scheduleSourceAcceptance(p=>read(p)+(p===target?'\nUNACCEPTED_CHANGE':'')),target)
  }
 })

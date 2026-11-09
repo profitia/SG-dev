@@ -1,6 +1,7 @@
 import {parseCommodityRequest} from '../../../../packages/platform-source-hub-contracts/commodities-v1.mjs'
 import {providerJson,fail} from '../transport.mjs'
 import {answer,dataset,field,makeRecord,optional,utc,safeUrl} from './commodity-records.mjs'
+import {commoditiesSchedule,scheduleRecord,scheduleAnswer} from './publication-schedules.mjs'
 export const COMMODITIES_ORIGIN='https://api.commodities.sh'
 export function prepareCommodities(request){
  const r=parseCommodityRequest(request)
@@ -44,6 +45,12 @@ export function createCommoditiesProvider({fetchImpl}={}){return {/** @param {an
  }
  const rows=Array.isArray(json)?json:Array.isArray(json?.events)?json.events:Array.isArray(json?.calendar)?json.calendar:Array.isArray(json?.releases)?json.releases:null
  if(!rows)fail('PROVIDER_SCHEMA_CHANGED',502)
+ if(request.contractVersion==='1.2.0'){
+  const items=rows.map(row=>scheduleRecord('commodities-sh','calendar',commoditiesSchedule(row),p.url))
+  const ids=items.map(i=>i.metadata.vendorRecordId).filter(id=>id!==null)
+  if(new Set(ids).size!==ids.length)fail('PROVIDER_SCHEMA_CHANGED',502)
+  return scheduleAnswer('commodities-sh',items,{limit,providerReturned:rows.length})
+ }
  const items=rows.map((r,i)=>{
   if(!r||typeof r!=='object')fail('PROVIDER_SCHEMA_CHANGED',502)
   const title=optional(r.title??r.name??r.event??r.report??r.label)
