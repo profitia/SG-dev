@@ -1,0 +1,14 @@
+{
+  "fixtureKind": "CONTROLLED_TEST_ONLY_NOT_MARKET_DATA",
+  "command": {
+    "definitionId": "oil-asphalt",
+    "profileVersion": "oil-v05-autonomous-1",
+    "revision": 1,
+    "period": {
+      "fromDate": "2026-11-03",
+      "throughDate": "2026-11-09"
+    },
+    "asOf": "2026-11-10T08:00:00.000Z",
+    "allowPartial": false
+  }
+}

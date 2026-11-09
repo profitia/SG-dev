@@ -3,6 +3,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import {fileURLToPath} from 'node:url'
 import {execFileSync} from 'node:child_process'
+import {OIL_REPORT_E1_REVIEW,assertArchitectureCheckout} from '../../../scripts/governance/controlled-package-ci.mjs'
 import {partitionChangedPaths,validateCandidate,validateOwnerGroups} from '../../identity-runtime/scripts/ci-routing.mjs'
 
 const acceptedConsumerPaths={
@@ -46,7 +47,7 @@ const acceptedConsumerPaths={
   ]
 }
 
-export function validateConsumerGroups(groups,readReceipt){
+export function validateConsumerGroups(groups,readReceipt,{reviewedOilPaths=new Set()}={}){
  for(const {projectKey,targets} of groups){
   if(projectKey==='ARCHITECTURE')continue
   assert(['SG2','SRM'].includes(projectKey),'Only the separately registered consumers belong to this delivery')
@@ -74,15 +75,27 @@ export function validateConsumerGroups(groups,readReceipt){
    for(const flag of ['marketSymbolOptedIn','sql029Installed','businessLogicChanged','uiChanged','authorizationChanged','sourceBindingsChanged','providerCallsPerformed','deploymentPerformed'])assert.equal(market[flag],false,flag)
    for(const p of paths)allowed.add(p)
   }
-  for(const target of targets)assert(allowed.has(target),'Consumer changes require an exact separately governed acceptance binding: '+target)
+  for(const target of targets)assert(allowed.has(target)||reviewedOilPaths.has(target)&&OIL_REPORT_E1_REVIEW.entries[target]?.projectKey===projectKey,'Consumer changes require an exact separately governed acceptance binding: '+target)
   for(const flag of ['apiPathOptedIn','sql028Installed','businessLogicChanged','uiChanged','authorizationChanged','sourceBindingsChanged','providerCallsPerformed','deploymentPerformed'])assert.equal(a[flag],false,flag)
  }
  return groups
 }
 
-export function validateRouting({changedPaths,repositoryRoot,readReceipt,runGovernance}){
+export function reviewedOilConsumerPaths(repositoryRoot,{baseSha,candidateSha}={}){
+ const git=args=>execFileSync('git',args,{cwd:repositoryRoot,encoding:'utf8'}).trim();
+ assert.equal(git(['rev-parse','HEAD']),candidateSha,'Validate the actual source checkout');
+ const files=Object.entries(OIL_REPORT_E1_REVIEW.entries).map(([filename,e])=>({filename,status:e.status,sha:e.sha}));
+ // Canonical verifier checks complete diff, registered owners, every Git mode,
+ // pinned blob and actual regular-file bytes. A path or caller flag is no proof.
+ assertArchitectureCheckout(repositoryRoot,candidateSha,{kind:'ARCHITECTURE',baseSha,files});
+ return new Set(files.filter(f=>OIL_REPORT_E1_REVIEW.entries[f.filename].projectKey!=='ARCHITECTURE').map(f=>f.filename));
+}
+
+export function validateRouting({changedPaths,repositoryRoot,readReceipt,runGovernance,sourceReview}){
  const {groups,partition}=partitionChangedPaths(changedPaths,repositoryRoot)
- validateConsumerGroups(groups,readReceipt)
+ const needsOil=groups.some(g=>g.projectKey!=='ARCHITECTURE'&&g.targets.some(t=>!acceptedConsumerPaths[g.projectKey]?.includes(t)&&!['apps/sg-runtime/operation-integration.json','apps/srm/operation-integration.json','apps/srm/scripts/source-hub-market-symbol-compatibility.test.mjs'].includes(t)));
+ const reviewedOilPaths=needsOil?reviewedOilConsumerPaths(repositoryRoot,sourceReview):new Set();
+ validateConsumerGroups(groups,readReceipt,{reviewedOilPaths})
  return {partition,results:validateOwnerGroups({groups,runGovernance})}
 }
 
@@ -110,7 +123,7 @@ if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.ur
   event:process.env.CI_ROUTING_EVENT,headSha:process.env.CI_ROUTING_HEAD})
  validateCandidate({git,candidate,base})
  const changedPaths=git(['diff','--name-only',base,candidate]).split('\n').filter(Boolean)
- const result=validateRouting({changedPaths,repositoryRoot,
+ const result=validateRouting({changedPaths,repositoryRoot,sourceReview:{baseSha:base,candidateSha:candidate},
   readReceipt:file=>JSON.parse(fs.readFileSync(path.join(repositoryRoot,file))),
   runGovernance:(projectKey,targets)=>{
    const args=['scripts/governance/governance-preflight.mjs','--ci','--mode','development','--project',projectKey,

@@ -1,0 +1,40 @@
+{
+  "name": "@profitia/insights-runtime",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24.15.0 <25"
+  },
+  "scripts": {
+    "test": "node --test tests/*.test.mjs",
+    "test:postgres": "node --test tests/postgres.test.mjs",
+    "check": "node scripts/check.mjs",
+    "build": "npm run typecheck && npm run check",
+    "worker": "node scripts/worker.mjs",
+    "typecheck": "tsc --noEmit --skipLibCheck --target ES2022 --module NodeNext --moduleResolution NodeNext ../../packages/insights-contracts/index.d.mts"
+  },
+  "dependencies": {
+    "pg": "8.23.1",
+    "@profitia/platform-contracts": "file:../../packages/platform-contracts",
+    "@profitia/platform-current-e1-authority": "file:../../packages/platform-contracts/current-e1-authority",
+    "@profitia/platform-source-hub-contracts": "file:../../packages/platform-source-hub-contracts",
+    "@profitia/insights-contracts": "file:../../packages/insights-contracts"
+  },
+  "devDependencies": {
+    "typescript": "5.9.3",
+    "@types/node": "24.10.1"
+  },
+  "exports": {
+    "./host": {
+      "types": "./src/host.d.mts",
+      "import": "./src/host.mjs",
+      "require": "./src/host.mjs"
+    }
+  },
+  "files": [
+    "src",
+    "render",
+    "sql"
+  ]
+}

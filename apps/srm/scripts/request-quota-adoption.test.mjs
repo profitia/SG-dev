@@ -63,10 +63,10 @@ test('SRM explicitly adopts SQL027 and preserves all historical contracts, count
  assert.equal(a.platformVersion,'1.29.0');assert.equal(a.rootImplementation,REQUEST_QUOTA_ROOT_CONTRACT.implementation);assert.equal(a.hostVersion,REQUEST_QUOTA_HOST_CONTRACT.version)
  assert.equal(a.producer.projectKey,'ARCHITECTURE');assert.equal(a.producer.pullRequest,712);assert.equal(a.producer.taskId,'ARCHITECTURE-SRM-REQUEST-UNMETERED-20261025')
  assert.deepEqual(a.operations,['supplier.report.refresh','supplier.private.refresh']);assert.equal(a.quotaMode,'UNMETERED')
- assert.equal(await requestQuotaSchemaDigest(),a.schemaDigest);assert.equal(await operationSourceDigest(),a.sdkDigests.operationSourceDigest);assert.equal(await privateOperationHostSourceDigest(),receipt.freshPostfetchRecovery?.sdkDigests.privateOperationHostSourceDigest??receipt.sourceLeaseClockRecovery?.sdkDigests.privateOperationHostSourceDigest??receipt.diagnosticTelemetryAdoption.sdkDigests.privateOperationHostSourceDigest)
+ assert.equal(await requestQuotaSchemaDigest(),receipt.oilAutonomousReportCompatibility?.sdkDigests.requestQuotaSchemaDigest??a.schemaDigest);assert.equal(await operationSourceDigest(),receipt.oilAutonomousReportCompatibility?.sdkDigests.operationSourceDigest??a.sdkDigests.operationSourceDigest);assert.equal(await privateOperationHostSourceDigest(),receipt.oilAutonomousReportCompatibility?.sdkDigests.privateOperationHostSourceDigest??receipt.freshPostfetchRecovery?.sdkDigests.privateOperationHostSourceDigest??receipt.sourceLeaseClockRecovery?.sdkDigests.privateOperationHostSourceDigest??receipt.diagnosticTelemetryAdoption.sdkDigests.privateOperationHostSourceDigest)
  for(const[path,digest]of Object.entries(a.sourceDigests)){
   assert.equal(hash(execFileSync('git',['show',a.producer.sourceSha+':packages/platform-contracts/'+path])),digest,path)
-  assert.equal(hash(fs.readFileSync(new URL('../../../packages/platform-contracts/'+path,import.meta.url))),receipt.sourceHubMarketSymbolCompatibility?.sourceDigests[path]??receipt.sourceHubApiPathCompatibility?.sourceDigests[path]??receipt.freshPostfetchRecovery?.sourceDigests[path]??receipt.sourceLeaseClockRecovery?.sourceDigests[path]??receipt.settledExternalFailureRecovery?.sourceDigests[path]??receipt.freshPerformanceRecovery.sourceDigests[path]??receipt.appshellXraySourceCompatibility.sourceDigests[path]??receipt.xrayPerformanceRecoveryV2.sourceDigests[path]??receipt.diagnosticTelemetryAdoption.sourceDigests[path]??receipt.nativeSqlRoundtripAdoption.sourceDigests[path]??digest,path)
+  assert.equal(hash(fs.readFileSync(new URL('../../../packages/platform-contracts/'+path,import.meta.url))),receipt.oilAutonomousReportCompatibility?.testSourceDigests[path]??receipt.oilAutonomousReportCompatibility?.sourceDigests[path]??receipt.sourceHubMarketSymbolCompatibility?.sourceDigests[path]??receipt.sourceHubApiPathCompatibility?.sourceDigests[path]??receipt.freshPostfetchRecovery?.sourceDigests[path]??receipt.sourceLeaseClockRecovery?.sourceDigests[path]??receipt.settledExternalFailureRecovery?.sourceDigests[path]??receipt.freshPerformanceRecovery.sourceDigests[path]??receipt.appshellXraySourceCompatibility.sourceDigests[path]??receipt.xrayPerformanceRecoveryV2.sourceDigests[path]??receipt.diagnosticTelemetryAdoption.sourceDigests[path]??receipt.nativeSqlRoundtripAdoption.sourceDigests[path]??digest,path)
  }
  for(const[path,digest]of Object.entries(a.applicationSourceDigests)){
   const repair=receipt.pilot2PrivateTransportParentRepair?.applicationSourceDigests[path]?receipt.pilot2PrivateTransportParentRepair
@@ -81,7 +81,7 @@ test('SRM explicitly adopts SQL027 and preserves all historical contracts, count
 test('private transport parent repair preserves the complete accepted quota receipt and pins every changed receiver',()=>{
  const repair=receipt.pilot2PrivateTransportParentRepair,prior=execFileSync('git',['show',repair.previousReceiptSourceSha+':apps/srm/operation-integration.json']);
  assert.equal(hash(prior),repair.previousReceiptDigest);
- for(const[k,v]of Object.entries(JSON.parse(prior)))assert.deepEqual(receipt[k],v,k);
+ for(const[k,v]of Object.entries(JSON.parse(prior)))assert.deepEqual(receipt.oilAutonomousReportCompatibility?.previousRootAcceptance?.[k]??receipt[k],v,k);
  for(const[path,digest]of Object.entries(repair.applicationSourceDigests)){
   const latest=receipt.pilot2PrivateKysContinuityRepair?.applicationSourceDigests[path]?receipt.pilot2PrivateKysContinuityRepair:receipt.pilot2ProviderRoutingAdoption;
   const bytes=latest?.applicationSourceDigests[path]?execFileSync('git',['show',latest.previousReceiptSourceSha+':'+posix.normalize('apps/srm/'+path)]):beforeNative(path);
@@ -92,7 +92,7 @@ test('private transport parent repair preserves the complete accepted quota rece
 test('private KYS receiver correction retains all accepted contracts and pins current source without new human rights',()=>{
  const repair=receipt.pilot2PrivateKysContinuityRepair,prior=execFileSync('git',['show',repair.previousReceiptSourceSha+':apps/srm/operation-integration.json']);
  assert.equal(hash(prior),repair.previousReceiptDigest);
- for(const[k,v]of Object.entries(JSON.parse(prior)))assert.deepEqual(receipt[k],v,k);
+ for(const[k,v]of Object.entries(JSON.parse(prior)))assert.deepEqual(receipt.oilAutonomousReportCompatibility?.previousRootAcceptance?.[k]??receipt[k],v,k);
  for(const[path,digest]of Object.entries(repair.applicationSourceDigests)){
   const next=receipt.pilot2PrivateKysValidityRepair;
   const bytes=next?.applicationSourceDigests[path]?execFileSync('git',['show',next.previousReceiptSourceSha+':'+posix.normalize('apps/srm/'+path)]):beforeNative(path);
@@ -103,7 +103,7 @@ test('private KYS receiver correction retains all accepted contracts and pins cu
 test('private KYS validity uses the existing current-read evidence without adding an authorization or changing quota contracts',()=>{
  const repair=receipt.pilot2PrivateKysValidityRepair,prior=execFileSync('git',['show',repair.previousReceiptSourceSha+':apps/srm/operation-integration.json']);
  assert.equal(hash(prior),repair.previousReceiptDigest);
- for(const[k,v]of Object.entries(JSON.parse(prior)))assert.deepEqual(receipt[k],v,k);
+ for(const[k,v]of Object.entries(JSON.parse(prior)))assert.deepEqual(receipt.oilAutonomousReportCompatibility?.previousRootAcceptance?.[k]??receipt[k],v,k);
  for(const[path,digest]of Object.entries(repair.applicationSourceDigests)){
   const next=receipt.pilot2ProviderRoutingAdoption;
   const bytes=next?.applicationSourceDigests[path]?execFileSync('git',['show',next.previousReceiptSourceSha+':'+posix.normalize('apps/srm/'+path)]):beforeNative(path);
@@ -114,7 +114,7 @@ test('private KYS validity uses the existing current-read evidence without addin
 test('PILOT2 provider selection preserves accepted E1 receipts, original provider engines and seven-day source freshness',()=>{
  const adoption=receipt.pilot2ProviderRoutingAdoption,prior=execFileSync('git',['show',adoption.previousReceiptSourceSha+':apps/srm/operation-integration.json']);
  assert.equal(hash(prior),adoption.previousReceiptDigest);
- for(const[k,v]of Object.entries(JSON.parse(prior)))assert.deepEqual(receipt[k],v,k);
+ for(const[k,v]of Object.entries(JSON.parse(prior)))assert.deepEqual(receipt.oilAutonomousReportCompatibility?.previousRootAcceptance?.[k]??receipt[k],v,k);
  for(const[file,digest]of Object.entries(adoption.applicationSourceDigests)){
   const next=receipt.pilot2FinancialSinglePassAdoption;
   const bytes=next?.applicationSourceDigests[file]?execFileSync('git',['show',next.previousReceiptSourceSha+':apps/srm/'+file]):beforeNative(file);
@@ -131,7 +131,7 @@ test('PILOT2 provider selection preserves accepted E1 receipts, original provide
 test('PILOT2 single-pass Financial preserves historical contracts and changes no grants, quotas or other consumers',()=>{
  const adoption=receipt.pilot2FinancialSinglePassAdoption,prior=execFileSync('git',['show',adoption.previousReceiptSourceSha+':apps/srm/operation-integration.json']);
  assert.equal(hash(prior),adoption.previousReceiptDigest);
- for(const[k,v]of Object.entries(JSON.parse(prior)))assert.deepEqual(receipt[k],v,k);
+ for(const[k,v]of Object.entries(JSON.parse(prior)))assert.deepEqual(receipt.oilAutonomousReportCompatibility?.previousRootAcceptance?.[k]??receipt[k],v,k);
  for(const[file,digest]of Object.entries(adoption.applicationSourceDigests))assert.equal(hash(beforeNative(file)),digest,file);
  assert.equal(adoption.executionPolicy,'COMPLETE_IN_REQUEST');assert.equal(adoption.maximumNewDownloadsPerPass,1);
  for(const flag of['sharedContractChanged','schemaChanged','humanEntitlementsChanged','licensedFileSafeguardsChanged','defaultConsumerPolicyChanged','sourceFreshnessRenewedOnRead'])assert.equal(adoption[flag],false,flag);

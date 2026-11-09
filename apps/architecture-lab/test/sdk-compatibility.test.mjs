@@ -10,6 +10,17 @@ const hash=bytes=>createHash('sha256').update(bytes).digest('hex')
 const readSource=file=>fs.readFileSync(new URL(file,root))
 
 function assertIntegratedSourceHistory(readCurrent=readSource){
+ let oil=null
+ const oilFile='apps/architecture-lab/insights-report-source-compatibility.json'
+ if(fs.existsSync(new URL(oilFile,root))){
+  const bytes=readCurrent(oilFile)
+  assert.equal(hash(bytes),'a8ee4bf2bb487b5f807821e600aedb6d265ca3a22d940f5e3d32383e6ae814b4','exact reviewed Oil producer continuation')
+  oil=JSON.parse(bytes)
+  assert.equal(oil.producerSourceSha,'b696932487ef12ef43b862f677931afc5719f733')
+  assert.equal(oil.previousAdoptionFile,'apps/architecture-lab/sdk-1.34-compatibility.json')
+  assert.equal(hash(readCurrent(oil.previousAdoptionFile)),oil.previousAdoptionSha256,'immutable Oil predecessor receipt')
+  for(const [file,digest]of Object.entries(oil.integrationReplacements))assert.equal(hash(readCurrent(file)),digest,'exact reviewed Oil source '+file)
+ }
  let schedule=null
  if(JSON.parse(readCurrent('packages/platform-source-hub-contracts/package.json')).version==='1.5.0'){
   const file='apps/platform-source-hub/operations/publication-schedule-source-acceptance.json',bytes=readCurrent(file)
@@ -31,7 +42,7 @@ function assertIntegratedSourceHistory(readCurrent=readSource){
  for(const [file,digest]of Object.entries(next.integrationFiles)){
   // The immutable continuation binds the previous fingerprint and all new
   // source bytes. Other SDK1.34 integration files still require exact bytes.
-  const expected=schedule?.replacements[file]?.sha256??digest
+  const expected=oil?.integrationReplacements[file]??schedule?.replacements[file]?.sha256??digest
   assert.equal(hash(readCurrent(file)),expected,'integrated producer '+file)
  }
 }
@@ -83,6 +94,16 @@ test('schedule continuation rejects changed source, acceptance, predecessor and 
   assert.throws(()=>assertIntegratedSourceHistory(file=>{
    const bytes=readSource(file)
    return file===target?Buffer.concat([bytes,Buffer.from('\nUNACCEPTED_CHANGE')]):bytes
+  }),target)
+ }
+})
+
+test('Oil continuation rejects changed metadata and every reviewed replacement',()=>{
+ const file='apps/architecture-lab/insights-report-source-compatibility.json'
+ for(const target of [file,...Object.keys(JSON.parse(readSource(file)).integrationReplacements)]){
+  assert.throws(()=>assertIntegratedSourceHistory(current=>{
+   const bytes=readSource(current)
+   return current===target?Buffer.concat([bytes,Buffer.from('\nUNACCEPTED_CHANGE')]):bytes
   }),target)
  }
 })

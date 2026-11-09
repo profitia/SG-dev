@@ -1,8 +1,12 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
+import os from 'node:os'
+import path from 'node:path'
+import {execFileSync} from 'node:child_process'
+import {OIL_REPORT_E1_REVIEW} from '../../../scripts/governance/controlled-package-ci.mjs'
 import {fileURLToPath} from 'node:url'
-import {validateConsumerGroups,validateRouting,validationBase} from '../scripts/ci-routing.mjs'
+import {validateConsumerGroups,validateRouting,validationBase,reviewedOilConsumerPaths} from '../scripts/ci-routing.mjs'
 
 const repositoryRoot=fileURLToPath(new URL('../../../',import.meta.url))
 const readReceipt=file=>JSON.parse(fs.readFileSync(new URL('../../../'+file,import.meta.url)))
@@ -45,3 +49,28 @@ test('SDK1.34 routing accepts only the new registered test path while preserving
  }
  assert.throws(()=>validateConsumerGroups([{projectKey:'SRM',targets:['apps/srm/src/server/unapproved.ts']}],readReceipt))
 })
+
+test('Oil consumer routing requires the complete pinned checkout; changed bytes, extra files and missing proof fail closed',()=>{
+ const temporary=fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(),'hub-oil-review-')));
+ const git=(cwd,...args)=>execFileSync('git',args,{cwd,encoding:'utf8',stdio:['ignore','pipe','pipe']}).trim();
+ try{
+  git(temporary,'clone','--quiet','--shared','--no-checkout',repositoryRoot,'review');
+  const root=path.join(temporary,'review'),candidateSha=OIL_REPORT_E1_REVIEW.sourceSha;
+  // Materialize only the closed reviewed files. Repository history also
+  // contains large, unrelated forecasting diagnostics, unnecessary here.
+  git(root,'update-ref','--no-deref','HEAD',candidateSha);
+  git(root,'read-tree',candidateSha);
+  execFileSync('git',['checkout-index','--stdin','-z'],{cwd:root,input:Object.keys(OIL_REPORT_E1_REVIEW.entries).join('\0')+'\0'});
+  const baseSha=git(repositoryRoot,'merge-base',candidateSha,'origin/main'),sourceReview={baseSha,candidateSha};
+  const paths=reviewedOilConsumerPaths(root,sourceReview);
+  assert(paths.has('.github/workflows/insights-ci.yml'));
+  assert(!paths.has('apps/sg-runtime/app/page.tsx'));
+  assert.throws(()=>reviewedOilConsumerPaths(root));
+  const target='apps/sg-runtime/package.json',bytes=fs.readFileSync(path.join(root,target));
+  fs.appendFileSync(path.join(root,target),' ');
+  assert.throws(()=>reviewedOilConsumerPaths(root,sourceReview));fs.writeFileSync(path.join(root,target),bytes);
+  fs.writeFileSync(path.join(root,'unreviewed.txt'),'unreviewed');git(root,'add','unreviewed.txt');
+  git(root,'-c','user.name=Isolated fixture','-c','user.email=fixture@example.invalid','commit','--quiet','-m','unreviewed source');
+  assert.throws(()=>reviewedOilConsumerPaths(root,{baseSha,candidateSha:git(root,'rev-parse','HEAD')}));
+ }finally{fs.rmSync(temporary,{recursive:true,force:true})}
+});

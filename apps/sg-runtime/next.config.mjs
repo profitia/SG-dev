@@ -22,7 +22,7 @@ export const runtimeAliasWebpack = (config) => {
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-	experimental: { instrumentationHook: true },
+	experimental: { instrumentationHook: true, serverComponentsExternalPackages: ['pg', '@profitia/platform-current-e1-authority', '@profitia/insights-runtime'] },
 	env: {
 		NEXT_PUBLIC_SENTRY_ENABLED: process.env.SENTRY_ENABLED ?? 'false',
 		NEXT_PUBLIC_SENTRY_SCOPE: process.env.SENTRY_SCOPE ?? '',
