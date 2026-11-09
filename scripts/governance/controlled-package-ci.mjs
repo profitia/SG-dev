@@ -24,6 +24,10 @@ export const LOCAL_PACKAGES = Object.freeze({
   '@profitia/srm-adp-ui': '../../packages/srm-adp-ui',
   '@profitia/maps-embed': '../../packages/maps-embed',
   '@profitia/maps-contracts': '../../packages/maps-contracts',
+  '@profitia/insights-runtime': '../insights-runtime',
+  '@profitia/insights-contracts': '../../packages/insights-contracts',
+  '@profitia/platform-current-e1-authority': '../../packages/platform-contracts/current-e1-authority',
+  '@profitia/platform-source-hub-contracts': '../../packages/platform-source-hub-contracts',
 })
 // Owner-reviewed peers of the existing MapsEmbed 0.1.2 package only.
 // App dependencies and every other local dependency still require exact file paths.
@@ -58,9 +62,10 @@ function candidateFamily(context, pr, expectedSha) {
     if (expectedSha && expectedSha !== context.controlSha) fail('CANDIDATE_SHA_MISMATCH')
     return 'MAIN'
   }
+  const exactOilReport=pr.number===OIL_REPORT_E1_REVIEW.prNumber&&pr.head?.ref===OIL_REPORT_E1_REVIEW.branch
   const exactInsightsG1=pr.number===INSIGHTS_G1_REVIEW.prNumber&&pr.head?.ref===INSIGHTS_G1_REVIEW.branch
-  if (pr.state !== 'open' || pr.base?.repo?.full_name !== REPOSITORY || pr.base?.ref !== 'main' || pr.head?.repo?.full_name !== REPOSITORY || pr.user?.login !== 'profitia' || !(eligibleCandidateBranch(pr.head?.ref)||exactInsightsG1)) fail('UNTRUSTED_CANDIDATE')
-  const family = exactInsightsG1||pr.head.ref.startsWith('architecture/') ? 'ARCHITECTURE' : pr.head.ref.startsWith('srm/') ? 'SRM' : 'SG2'
+  if (pr.state !== 'open' || pr.base?.repo?.full_name !== REPOSITORY || pr.base?.ref !== 'main' || pr.head?.repo?.full_name !== REPOSITORY || pr.user?.login !== 'profitia' || !(eligibleCandidateBranch(pr.head?.ref)||exactInsightsG1||exactOilReport)) fail('UNTRUSTED_CANDIDATE')
+  const family = exactInsightsG1||exactOilReport||pr.head.ref.startsWith('architecture/') ? 'ARCHITECTURE' : pr.head.ref.startsWith('srm/') ? 'SRM' : 'SG2'
   if (!shaPattern.test(expectedSha ?? '') || pr.head.sha !== expectedSha) fail('CANDIDATE_SHA_MISMATCH')
   return family
 }
@@ -3138,6 +3143,116 @@ export function assertInsightsG1ReviewEntry(file,entry){
  const r=INSIGHTS_G1_REVIEW;if(!Object.hasOwn(r.blobs,file?.filename??'')||file.sha!==r.blobs[file.filename]||entry!==r.modes[file.filename]+' blob '+file.sha+'\t'+file.filename+'\0')fail('INSIGHTS_G1_FILE_MODE_REJECTED');
 }
 
+// PROPOSED closed review. No activation before owner acceptance and trusted-main CI.
+export const OIL_REPORT_E1_REVIEW=Object.freeze({prNumber:923,branch:'feat/oil-autonomous-runner-20261109',sourceSha:'a3c707b1f7e95c5b69cf2751777752b8423527da',entries:Object.freeze({
+ ".github/workflows/insights-ci.yml":Object.freeze({"sha":"3e8ab8967717514d90af839deb7ae57201234318","status":"added","mode":"100644","projectKey":"SG2","owner":"Insights Domain","surfaceId":"INSIGHTS-BASE-003"}),
+ "Canon/registries/operation-access-matrix-v1.json":Object.freeze({"sha":"504d01381ddecbd4ec0ae689864ec1912526f958","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Governance Source Layer","surfaceId":"SG2-BASE-019"}),
+ "apps/architecture-lab/docs/insights-report-e1.md":Object.freeze({"sha":"b1e5a624cc0af34153764cbc94f0c27ab4ce75d6","status":"added","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ARCH-BASE-002"}),
+ "apps/architecture-lab/insights-report-source-compatibility.json":Object.freeze({"sha":"872d3f4a63186cb1266b8e82a70688c6fde5224a","status":"added","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ARCH-BASE-002"}),
+ "apps/architecture-lab/scripts/install-insights-report.mjs":Object.freeze({"sha":"5669523fdc2c7212eb4e83507a61f715663780de","status":"added","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ARCH-BASE-002"}),
+ "apps/architecture-lab/test/insights-e1.test.mjs":Object.freeze({"sha":"227bf0e151b7bfb53a6af2a53668a6f47d114693","status":"added","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ARCH-BASE-002"}),
+ "apps/insights-runtime/config/development.example.json":Object.freeze({"sha":"30318ded03da3104078831e95720726865d5548a","status":"added","mode":"100644","projectKey":"SG2","owner":"Insights Domain","surfaceId":"INSIGHTS-BASE-001"}),
+ "apps/insights-runtime/docs/autonomous-oil-report.md":Object.freeze({"sha":"ac51a5f094bc8d644f456bae4ba8a56b68b059f6","status":"added","mode":"100644","projectKey":"SG2","owner":"Insights Domain","surfaceId":"INSIGHTS-BASE-001"}),
+ "apps/insights-runtime/package-lock.json":Object.freeze({"sha":"ab3889224899b5c4b964d09464e66b4e7bfb7212","status":"added","mode":"100644","projectKey":"SG2","owner":"Insights Domain","surfaceId":"INSIGHTS-BASE-001"}),
+ "apps/insights-runtime/package.json":Object.freeze({"sha":"f36b06649d234d2198b4f9043880affa842e78ee","status":"added","mode":"100644","projectKey":"SG2","owner":"Insights Domain","surfaceId":"INSIGHTS-BASE-001"}),
+ "apps/insights-runtime/render/fonts/DejaVuSans-Bold.ttf":Object.freeze({"sha":"6d65fa7dc41ae8ffae77a4a843a73ba31ffd78c7","status":"added","mode":"100644","projectKey":"SG2","owner":"Insights Domain","surfaceId":"INSIGHTS-BASE-001"}),
+ "apps/insights-runtime/render/fonts/DejaVuSans.ttf":Object.freeze({"sha":"e5f7eecce43be41ff0703ed99e1553029b849f14","status":"added","mode":"100644","projectKey":"SG2","owner":"Insights Domain","surfaceId":"INSIGHTS-BASE-001"}),
+ "apps/insights-runtime/render/fonts/LICENSE.txt":Object.freeze({"sha":"bd9adcae4f83b6a3a4a94de221ebd2a924a07576","status":"added","mode":"100644","projectKey":"SG2","owner":"Insights Domain","surfaceId":"INSIGHTS-BASE-001"}),
+ "apps/insights-runtime/render/fonts/manifest.json":Object.freeze({"sha":"06764ea378a18554a62a058ac3f423ed2932021e","status":"added","mode":"100644","projectKey":"SG2","owner":"Insights Domain","surfaceId":"INSIGHTS-BASE-001"}),
+ "apps/insights-runtime/render/report.py":Object.freeze({"sha":"48ae49a0c3f468185c14e7878a06946b850048ca","status":"added","mode":"100644","projectKey":"SG2","owner":"Insights Domain","surfaceId":"INSIGHTS-BASE-001"}),
+ "apps/insights-runtime/render/requirements.txt":Object.freeze({"sha":"028739618825d46ec4447c0fbe7e5ac3ed48170e","status":"added","mode":"100644","projectKey":"SG2","owner":"Insights Domain","surfaceId":"INSIGHTS-BASE-001"}),
+ "apps/insights-runtime/scripts/check.mjs":Object.freeze({"sha":"1b71510c33b4d911cbab655d04e02060fb629f32","status":"added","mode":"100644","projectKey":"SG2","owner":"Insights Domain","surfaceId":"INSIGHTS-BASE-001"}),
+ "apps/insights-runtime/scripts/worker.mjs":Object.freeze({"sha":"334211014f1fbc8af40e695c88e8ae225e6df6c4","status":"added","mode":"100644","projectKey":"SG2","owner":"Insights Domain","surfaceId":"INSIGHTS-BASE-001"}),
+ "apps/insights-runtime/sql/001-report-editions.sql":Object.freeze({"sha":"4ac449089c2caab8f223cf34830d8fd750d301f1","status":"added","mode":"100644","projectKey":"SG2","owner":"Insights Domain","surfaceId":"INSIGHTS-BASE-001"}),
+ "apps/insights-runtime/sql/002-runtime-binding.sql":Object.freeze({"sha":"85120c463527930611dc9709d9ce9d1a7dfa10e9","status":"added","mode":"100644","projectKey":"SG2","owner":"Insights Domain","surfaceId":"INSIGHTS-BASE-001"}),
+ "apps/insights-runtime/src/api.mjs":Object.freeze({"sha":"2e06438d1163dbb5272b40950d7f9a00193107b0","status":"added","mode":"100644","projectKey":"SG2","owner":"Insights Domain","surfaceId":"INSIGHTS-BASE-001"}),
+ "apps/insights-runtime/src/calendar.mjs":Object.freeze({"sha":"b8de3cec71e9f40e402c235a0e2b1efc126bb682","status":"added","mode":"100644","projectKey":"SG2","owner":"Insights Domain","surfaceId":"INSIGHTS-BASE-001"}),
+ "apps/insights-runtime/src/composer.mjs":Object.freeze({"sha":"1d5be7c4b6ca813e9ae9a0ae8f9a2c86eab44a1c","status":"added","mode":"100644","projectKey":"SG2","owner":"Insights Domain","surfaceId":"INSIGHTS-BASE-001"}),
+ "apps/insights-runtime/src/evidence.mjs":Object.freeze({"sha":"69ad45da7facac5aa9706669e2be7f9cf87ab08f","status":"added","mode":"100644","projectKey":"SG2","owner":"Insights Domain","surfaceId":"INSIGHTS-BASE-001"}),
+ "apps/insights-runtime/src/host.d.mts":Object.freeze({"sha":"32a2c05ae810f54f47c19c98a9b838d10789c3ea","status":"added","mode":"100644","projectKey":"SG2","owner":"Insights Domain","surfaceId":"INSIGHTS-BASE-001"}),
+ "apps/insights-runtime/src/host.mjs":Object.freeze({"sha":"d72cee9d4190bda2f5851e345043bdf977a8827a","status":"added","mode":"100644","projectKey":"SG2","owner":"Insights Domain","surfaceId":"INSIGHTS-BASE-001"}),
+ "apps/insights-runtime/src/planner.mjs":Object.freeze({"sha":"d357c3842f9d3d2c7d04786176b180ac1a3dd9b9","status":"added","mode":"100644","projectKey":"SG2","owner":"Insights Domain","surfaceId":"INSIGHTS-BASE-001"}),
+ "apps/insights-runtime/src/renderer.mjs":Object.freeze({"sha":"d4e8525aecfd851913d177b5199f212e6f46a390","status":"added","mode":"100644","projectKey":"SG2","owner":"Insights Domain","surfaceId":"INSIGHTS-BASE-001"}),
+ "apps/insights-runtime/src/runner.mjs":Object.freeze({"sha":"7df4cbfb36aeea01b2f1954ff857f62d47f1010a","status":"added","mode":"100644","projectKey":"SG2","owner":"Insights Domain","surfaceId":"INSIGHTS-BASE-001"}),
+ "apps/insights-runtime/src/runtime.mjs":Object.freeze({"sha":"e4b65be0df92f8c30fe3dd99d6b92ce0a4c6d980","status":"added","mode":"100644","projectKey":"SG2","owner":"Insights Domain","surfaceId":"INSIGHTS-BASE-001"}),
+ "apps/insights-runtime/src/scheduler.mjs":Object.freeze({"sha":"a7edf59578fe9bee0675adab0c358c928a353ca9","status":"added","mode":"100644","projectKey":"SG2","owner":"Insights Domain","surfaceId":"INSIGHTS-BASE-001"}),
+ "apps/insights-runtime/src/source-adapters.mjs":Object.freeze({"sha":"06bdc2427faf81fa5e5987615ee524dd086c51ea","status":"added","mode":"100644","projectKey":"SG2","owner":"Insights Domain","surfaceId":"INSIGHTS-BASE-001"}),
+ "apps/insights-runtime/src/store.mjs":Object.freeze({"sha":"a4683f2a26d797e31735c278714e01c0853d5245","status":"added","mode":"100644","projectKey":"SG2","owner":"Insights Domain","surfaceId":"INSIGHTS-BASE-001"}),
+ "apps/insights-runtime/src/telemetry.mjs":Object.freeze({"sha":"0a88372fcda198b352608f950b1637d6ddde0d30","status":"added","mode":"100644","projectKey":"SG2","owner":"Insights Domain","surfaceId":"INSIGHTS-BASE-001"}),
+ "apps/insights-runtime/tests/fixtures/offline-report.json":Object.freeze({"sha":"0853a4efd721d6819613fd456242d8d38cc66ca4","status":"added","mode":"100644","projectKey":"SG2","owner":"Insights Domain","surfaceId":"INSIGHTS-BASE-001"}),
+ "apps/insights-runtime/tests/host.test.mjs":Object.freeze({"sha":"1aecdf95450da9dce09f096a7b624ca11201cd46","status":"added","mode":"100644","projectKey":"SG2","owner":"Insights Domain","surfaceId":"INSIGHTS-BASE-001"}),
+ "apps/insights-runtime/tests/postgres.test.mjs":Object.freeze({"sha":"ea57f0c89f80f956c2cd875e2ca6af4c1a097c98","status":"added","mode":"100644","projectKey":"SG2","owner":"Insights Domain","surfaceId":"INSIGHTS-BASE-001"}),
+ "apps/insights-runtime/tests/report.test.mjs":Object.freeze({"sha":"bdcd5790867d45dab2cbc0e3da1fc0a7e1788d2c","status":"added","mode":"100644","projectKey":"SG2","owner":"Insights Domain","surfaceId":"INSIGHTS-BASE-001"}),
+ "apps/sg-runtime/app/api/v1/insights/[...report]/route.ts":Object.freeze({"sha":"ff02910dc9f59e2b89480d4a425b02297fc2456e","status":"added","mode":"100644","projectKey":"SG2","owner":"SG Runtime","surfaceId":"SG2-BASE-001"}),
+ "apps/sg-runtime/lib/insights/autonomous-runtime.ts":Object.freeze({"sha":"7bd06fb08602b39f2b2fcebe72f6a0cde756bafd","status":"added","mode":"100644","projectKey":"SG2","owner":"SG Runtime","surfaceId":"SG2-BASE-001"}),
+ "apps/sg-runtime/next.config.mjs":Object.freeze({"sha":"3c885a2fd894dbbf7d681a5df0e6b1f83337fdd2","status":"modified","mode":"100644","projectKey":"SG2","owner":"SG Runtime","surfaceId":"SG2-BASE-001"}),
+ "apps/sg-runtime/operation-integration.json":Object.freeze({"sha":"e26b41adcaec3e84973c5af912635970972de734","status":"modified","mode":"100644","projectKey":"SG2","owner":"SG Runtime","surfaceId":"SG2-BASE-001"}),
+ "apps/sg-runtime/package-lock.json":Object.freeze({"sha":"f34b11d38f14de91b5845ff3d743fb98c5357d95","status":"modified","mode":"100644","projectKey":"SG2","owner":"SG Runtime","surfaceId":"SG2-BASE-001"}),
+ "apps/sg-runtime/package.json":Object.freeze({"sha":"5421b46a2b23557af29763e154b5548805692611","status":"modified","mode":"100644","projectKey":"SG2","owner":"SG Runtime","surfaceId":"SG2-BASE-001"}),
+ "apps/sg-runtime/scripts/bootstrap-insights-renderer.mjs":Object.freeze({"sha":"c0f98d601259227e995ac098adc7651243013f03","status":"added","mode":"100644","projectKey":"SG2","owner":"SG Runtime","surfaceId":"SG2-BASE-001"}),
+ "apps/sg-runtime/scripts/insights-worker.ts":Object.freeze({"sha":"fde861589062484672a715f61c892cd0d4db5418","status":"added","mode":"100644","projectKey":"SG2","owner":"SG Runtime","surfaceId":"SG2-BASE-001"}),
+ "apps/sg-runtime/scripts/start-with-insights.mjs":Object.freeze({"sha":"778b7158f95778355b107b9fbaee6c38aa433dbc","status":"added","mode":"100644","projectKey":"SG2","owner":"SG Runtime","surfaceId":"SG2-BASE-001"}),
+ "apps/sg-runtime/tests/adp-appshell-consumer.test.tsx":Object.freeze({"sha":"fd2497bf21ae3683c1618a606e76106314fd759a","status":"modified","mode":"100644","projectKey":"SG2","owner":"SG Runtime","surfaceId":"SG2-BASE-001"}),
+ "apps/sg-runtime/tests/category-operation.test.ts":Object.freeze({"sha":"3e1c6f983278a6be253447f4952dc08f49f090e0","status":"modified","mode":"100644","projectKey":"SG2","owner":"SG Runtime","surfaceId":"SG2-BASE-001"}),
+ "apps/sg-runtime/tests/diagnostic-telemetry-adoption.test.mjs":Object.freeze({"sha":"80e9f9c3b5e37dd022eba8cfac161af24124b28d","status":"modified","mode":"100644","projectKey":"SG2","owner":"SG Runtime","surfaceId":"SG2-BASE-001"}),
+ "apps/sg-runtime/tests/identity-runtime.test.ts":Object.freeze({"sha":"44627abe5825af7b64cf8e32cb1a89afc40a7af4","status":"modified","mode":"100644","projectKey":"SG2","owner":"SG Runtime","surfaceId":"SG2-BASE-001"}),
+ "apps/sg-runtime/tests/insights-host.test.ts":Object.freeze({"sha":"976b8f20e285537cc066e1b1cfe26951e57eec64","status":"added","mode":"100644","projectKey":"SG2","owner":"SG Runtime","surfaceId":"SG2-BASE-001"}),
+ "apps/sg-runtime/tests/integrated-buyer-journey-package.test.mjs":Object.freeze({"sha":"e7ac11c3f69319a7d372c3239e0afe9e8af23ff1","status":"modified","mode":"100644","projectKey":"SG2","owner":"SG Runtime","surfaceId":"SG2-BASE-001"}),
+ "apps/sg-runtime/tests/native-sql-roundtrips.test.mjs":Object.freeze({"sha":"77600116540b284b586350ce8d3edd08800dec4c","status":"modified","mode":"100644","projectKey":"SG2","owner":"SG Runtime","surfaceId":"SG2-BASE-001"}),
+ "apps/sg-runtime/tests/operation-context.test.mjs":Object.freeze({"sha":"4eada4625dcec47dfe89666de017526eb2660e4c","status":"modified","mode":"100644","projectKey":"SG2","owner":"SG Runtime","surfaceId":"SG2-BASE-001"}),
+ "apps/sg-runtime/tests/pci-smart-integrity.test.mjs":Object.freeze({"sha":"ad5f84f7de81c5554b18e5edfbd22fa20db59da3","status":"modified","mode":"100644","projectKey":"SG2","owner":"SG Runtime","surfaceId":"SG2-BASE-001"}),
+ "apps/sg-runtime/tests/porr-demo-middleware.test.ts":Object.freeze({"sha":"a35fccd1df5c195b06d6f94da8989b2d79729728","status":"modified","mode":"100644","projectKey":"SG2","owner":"SG Runtime","surfaceId":"SG2-BASE-001"}),
+ "apps/sg-runtime/tests/private-host.integration.test.mjs":Object.freeze({"sha":"2e39161f109bf6d1f4ef13db51d10f4f89b663e1","status":"modified","mode":"100644","projectKey":"SG2","owner":"SG Runtime","surfaceId":"SG2-BASE-001"}),
+ "apps/sg-runtime/tests/self-service-account.test.ts":Object.freeze({"sha":"0c36a3f520badafc4d071663f3714263fac5f160","status":"modified","mode":"100644","projectKey":"SG2","owner":"SG Runtime","surfaceId":"SG2-BASE-001"}),
+ "apps/sg-runtime/tests/xray-fresh-performance-adoption.test.mjs":Object.freeze({"sha":"c5e0cea278953906177cd44a5057e88be01261d9","status":"modified","mode":"100644","projectKey":"SG2","owner":"SG Runtime","surfaceId":"SG2-BASE-001"}),
+ "apps/sg-runtime/tests/xray-gateway.test.ts":Object.freeze({"sha":"aae078568d04c2c9c1b2e1f6633a88c0eea0169d","status":"modified","mode":"100644","projectKey":"SG2","owner":"SG Runtime","surfaceId":"SG2-BASE-001"}),
+ "apps/srm/operation-integration.json":Object.freeze({"sha":"a0cfa47d7aba826ad623cd89b1748c14abf6996b","status":"modified","mode":"100644","projectKey":"SRM","owner":"SRM Runtime","surfaceId":"SG2-BASE-016"}),
+ "apps/srm/scripts/diagnostic-telemetry-adoption.test.mjs":Object.freeze({"sha":"baab9db450b481f720fb649195d48caf09448bfd","status":"modified","mode":"100644","projectKey":"SRM","owner":"SRM Runtime","surfaceId":"SG2-BASE-016"}),
+ "apps/srm/scripts/native-execution-adoption.test.mjs":Object.freeze({"sha":"02d4a101ab795ee4b3b7e5a21e3c0b16cb114dc5","status":"modified","mode":"100644","projectKey":"SRM","owner":"SRM Runtime","surfaceId":"SG2-BASE-016"}),
+ "apps/srm/scripts/operation-context.test.mjs":Object.freeze({"sha":"d18450b65c083a4503c7561f1e752bf5f393fd58","status":"modified","mode":"100644","projectKey":"SRM","owner":"SRM Runtime","surfaceId":"SG2-BASE-016"}),
+ "apps/srm/scripts/private-host.integration.test.mjs":Object.freeze({"sha":"c646e58eb732d6e6b04ef06a29c2143ebe3df7a1","status":"modified","mode":"100644","projectKey":"SRM","owner":"SRM Runtime","surfaceId":"SG2-BASE-016"}),
+ "apps/srm/scripts/request-quota-adoption.test.mjs":Object.freeze({"sha":"2dffd0bb4c2a22278c6f49550f782f36b608b4c4","status":"modified","mode":"100644","projectKey":"SRM","owner":"SRM Runtime","surfaceId":"SG2-BASE-016"}),
+ "apps/srm/scripts/source-hub-sdk-compatibility.mjs":Object.freeze({"sha":"8b256ee1faf8e26d8723a91307dc5e34ff5befa5","status":"modified","mode":"100644","projectKey":"SRM","owner":"SRM Runtime","surfaceId":"SG2-BASE-016"}),
+ "apps/srm/scripts/supplier-location-admission.integration.test.mjs":Object.freeze({"sha":"7128efa8d7d310a3c2c50341af21bb25c4d6d305","status":"modified","mode":"100644","projectKey":"SRM","owner":"SRM Runtime","surfaceId":"SG2-BASE-016"}),
+ "packages/insights-contracts/index.d.mts":Object.freeze({"sha":"5a51d85194e434d47c9d2ccfe94e365a30f8d6c6","status":"added","mode":"100644","projectKey":"SG2","owner":"Insights Domain","surfaceId":"INSIGHTS-BASE-002"}),
+ "packages/insights-contracts/index.mjs":Object.freeze({"sha":"7e41be8661b134bc796c8f2de6840048b61e6bc6","status":"added","mode":"100644","projectKey":"SG2","owner":"Insights Domain","surfaceId":"INSIGHTS-BASE-002"}),
+ "packages/insights-contracts/package.json":Object.freeze({"sha":"2b727ad5b61feae5945e7bb2855137f99cf40ba2","status":"added","mode":"100644","projectKey":"SG2","owner":"Insights Domain","surfaceId":"INSIGHTS-BASE-002"}),
+ "packages/platform-contracts/current-e1-authority/index.d.mts":Object.freeze({"sha":"b6118e04dab526f816dd3d1e1c3ad0fde499cd80","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ARCH-BASE-001"}),
+ "packages/platform-contracts/current-e1-authority/index.mjs":Object.freeze({"sha":"1cb5e1cea8cf489351c1e84a2cb0d4c60860a034","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ARCH-BASE-001"}),
+ "packages/platform-contracts/current-e1-authority/insights-service.mjs":Object.freeze({"sha":"69e92e2d3d403006f8d5d47210721eefc97f998a","status":"added","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ARCH-BASE-001"}),
+ "packages/platform-contracts/current-e1-authority/migrations/007-insights-authority.sql":Object.freeze({"sha":"a85c520b2d8a1d4d0ad0cbb50e15fa7c0696a9cd","status":"added","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ARCH-BASE-001"}),
+ "packages/platform-contracts/current-e1-authority/migrations/008-insights-receiver.sql":Object.freeze({"sha":"16874e93aa436bc69476dc9370a02b1419f39e21","status":"added","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ARCH-BASE-001"}),
+ "packages/platform-contracts/current-e1-authority/migrations/009-insights-service.sql":Object.freeze({"sha":"621427174d6bc159aea870bc97d6287300343044","status":"added","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ARCH-BASE-001"}),
+ "packages/platform-contracts/current-e1-authority/package.json":Object.freeze({"sha":"a06a78680978fe52d4cbf4c015b9f84a86e7b4cf","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ARCH-BASE-001"}),
+ "packages/platform-contracts/migrations/access/030-model-execution.sql":Object.freeze({"sha":"e2e0c4b785f0560f14a0e67ef86f17aa641fcc1d","status":"added","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ARCH-BASE-001"}),
+ "packages/platform-contracts/migrations/access/031-model-execution-long-report.sql":Object.freeze({"sha":"6701df1f6a26d199b98476c920b92b149b017ff0","status":"added","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ARCH-BASE-001"}),
+ "packages/platform-contracts/migrations/access/032-report-model-templates.sql":Object.freeze({"sha":"03ccd43a36493189e79602662e0d57118582984d","status":"added","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ARCH-BASE-001"}),
+ "packages/platform-contracts/package.json":Object.freeze({"sha":"b2064d615ebd420f126a99b92ff4f4755dab7198","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ARCH-BASE-001"}),
+ "packages/platform-contracts/src/external-call.d.mts":Object.freeze({"sha":"6b9f05082eb47620d249b77fc7eebbb1d257d04f","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ARCH-BASE-001"}),
+ "packages/platform-contracts/src/external-call.mjs":Object.freeze({"sha":"c464da5cb76531b695e3f8b0880d9c45b5644702","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ARCH-BASE-001"}),
+ "packages/platform-contracts/src/model-execution.d.mts":Object.freeze({"sha":"d2fd45069f4fdf133f59ed4463736e31072a74ac","status":"added","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ARCH-BASE-001"}),
+ "packages/platform-contracts/src/model-execution.mjs":Object.freeze({"sha":"b55166de2d891cc8416aba0ee146d294623491b3","status":"added","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ARCH-BASE-001"}),
+ "packages/platform-contracts/src/native-external-transport.mjs":Object.freeze({"sha":"a2c4df67232f89494f5e9d37602b52630104037e","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ARCH-BASE-001"}),
+ "packages/platform-contracts/src/operation-context.d.mts":Object.freeze({"sha":"778f076a22b8a42bc0c0f0340d900eab3cfd9531","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ARCH-BASE-001"}),
+ "packages/platform-contracts/src/operation-context.mjs":Object.freeze({"sha":"5e02cf78c713a658dd7a81a790f8b74998c6cfec","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ARCH-BASE-001"}),
+ "packages/platform-contracts/test/external-call.test.mjs":Object.freeze({"sha":"08e694b6e49ec061dcbb1746dd09e38ee84fc64b","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ARCH-BASE-001"}),
+ "packages/platform-contracts/test/operation-context.test.mjs":Object.freeze({"sha":"99aa0c9a5e24c23b83e41eae1701331a4528f7c4","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ARCH-BASE-001"}),
+ "scripts/governance/platform-source-hub-foundation.test.mjs":Object.freeze({"sha":"b02a375192fe146c828af87c78e9958b8d14d2a9","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Governance Source Layer","surfaceId":"SG2-BASE-020"})
+})});
+function isPinnedOilReportReview(files){
+ const r=OIL_REPORT_E1_REVIEW;return Array.isArray(files)&&files.length===Object.keys(r.entries).length&&new Set(files.map(f=>f?.filename)).size===files.length&&files.every(f=>{const e=r.entries[f?.filename];return e&&e.sha===f.sha&&e.status===f.status&&!Object.hasOwn(f,'previous_filename')});
+}
+function assertOilReportRoutes(files,repositoryRoot){
+ for(const f of files){const e=OIL_REPORT_E1_REVIEW.entries[f.filename],profile=resolveProjectProfile(e.projectKey,repositoryRoot),route=resolveProjectRouting({profile,targets:[f.filename],repositoryRoot});const r=route.results[0];
+  if(!route.ok||route.results.length!==1||r.resolutionStatus!=='RESOLVED'||r.highestSpecificityMatchCount!==1||r.baselineClassification!=='ALIGNED'||r.projectBoundaryStatus!=='ALLOWED'||r.currentOwner!==e.owner||r.matchedSurfaceId!==e.surfaceId)fail('OIL_REPORT_ROUTING_REJECTED');
+ }
+}
+export function assertOilReportReviewEntry(file,entry){const e=OIL_REPORT_E1_REVIEW.entries[file?.filename];if(!e||e.sha!==file.sha||entry!==e.mode+' blob '+file.sha+'\t'+file.filename+'\0')fail('OIL_REPORT_FILE_MODE_REJECTED')}
+function reviewedReportPeer(owner,version,section,name,spec){
+ return owner==='@profitia/platform-current-e1-authority'&&version==='1.2.1'&&name==='@profitia/platform-contracts'&&((section==='peerDependencies'&&spec==='1.33.0 || 1.34.0')||(section==='devDependencies'&&spec==='file:..'))
+ ||owner==='@profitia/platform-source-hub-contracts'&&version==='1.4.0'&&section==='peerDependencies'&&name==='@profitia/platform-current-e1-authority'&&spec==='1.1.0 || 1.2.0 || 1.2.1';
+}
+
 function architecturePathAllowed(name) {
   if (typeof name !== 'string' || !/^[A-Za-z0-9._/-]+$/.test(name) || name.split('/').some(p => !p || p.startsWith('.'))) return false
   return /^packages\/platform-contracts\/(?:src\/[A-Za-z0-9_/-]+\.(?:mjs|d\.mts)|migrations\/[a-z0-9-]+\/[A-Za-z0-9._-]+\.sql|test\/[A-Za-z0-9._/-]+\.(?:mjs|mts|json)|package(?:-lock)?\.json|README\.md)$/.test(name)
@@ -3147,6 +3262,7 @@ function architecturePathAllowed(name) {
 export function assertArchitectureFiles(pr, files, repositoryRoot = controlRoot()) {
   if (!Number.isInteger(pr.changed_files) || pr.changed_files < 1 || pr.changed_files > 300 || !shaPattern.test(pr.base?.sha ?? '')
     || !Array.isArray(files) || files.length !== pr.changed_files) fail('ARCHITECTURE_FILE_LIST_REQUIRED')
+  if(isPinnedOilReportReview(files)){assertOilReportRoutes(files,repositoryRoot);return}
   if(isPinnedMarketSymbolReview(files)){assertMarketSymbolRoutes(files,repositoryRoot);return}
   if(isPinnedEcrBackendReview(files)){assertEcrBackendRoutes(files,repositoryRoot);return}
   if(isPinnedUniversalFirstPartyReview(files)){assertUniversalFirstPartyRoutes(files,repositoryRoot);return}
@@ -3183,6 +3299,7 @@ export function assertArchitectureFiles(pr, files, repositoryRoot = controlRoot(
 
 export function selectCandidate(context, pr, expectedSha, {files, repositoryRoot = controlRoot()} = {}) {
   const family = candidateFamily(context, pr, expectedSha)
+  if(pr&&(pr.number===OIL_REPORT_E1_REVIEW.prNumber||pr.head.ref===OIL_REPORT_E1_REVIEW.branch||isPinnedOilReportReview(files))){if(family!=='ARCHITECTURE'||pr.number!==OIL_REPORT_E1_REVIEW.prNumber||pr.head.ref!==OIL_REPORT_E1_REVIEW.branch||!isPinnedOilReportReview(files))fail('OIL_REPORT_REVIEW_IDENTITY_REJECTED')}
   if(pr&&(pr.number===SOURCE_HUB_MARKET_SYMBOL_REVIEW.prNumber||pr.head.ref===SOURCE_HUB_MARKET_SYMBOL_REVIEW.branch)){
     if(family!=='ARCHITECTURE'||pr.number!==SOURCE_HUB_MARKET_SYMBOL_REVIEW.prNumber||pr.head.ref!==SOURCE_HUB_MARKET_SYMBOL_REVIEW.branch||!isPinnedMarketSymbolReview(files))fail('MARKET_SYMBOL_REVIEW_IDENTITY_REJECTED')
   }
@@ -3256,6 +3373,7 @@ export function assertArchitectureCheckout(root, sha, admission, repositoryRoot 
   for (const file of admission.files) {
     const entry = execFileSync('git', ['ls-tree', '-z', sha, '--', file.filename], {cwd: root, encoding: 'utf8'})
     if (file.status === 'removed') {if (entry !== '') fail('ARCHITECTURE_DIFF_MISMATCH'); continue}
+    if(isPinnedOilReportReview(admission.files))assertOilReportReviewEntry(file,entry)
     if(isPinnedInsightsG1Review(admission.files))assertInsightsG1ReviewEntry(file,entry)
     if(isPinnedEcrBackendReview(admission.files))assertEcrBackendReviewEntry(file,entry)
     if(isPinnedEcrG1Review(admission.files))assertEcrG1ReviewEntry(file,entry)
@@ -3299,6 +3417,7 @@ export function assertPackagePolicy(candidate, authority, configuration) {
       for (const [name, spec] of Object.entries(entry[section] ?? {})) {
         if ((name.startsWith('@profitia/') && !PRIVATE_PACKAGES.includes(name) && !Object.hasOwn(LOCAL_PACKAGES, name)) || String(spec).includes('@profitia/')) fail('PRIVATE_PACKAGE_ALIAS_REJECTED')
         if (Object.hasOwn(LOCAL_PACKAGES, name) && spec !== `file:${LOCAL_PACKAGES[name]}`
+          && !reviewedReportPeer(privateName,entry.version,section,name,spec)
           && !(key === 'node_modules/@profitia/maps-embed' && reviewedMapsPeer(privateName, entry.version, section, name, spec))) fail('LOCAL_DEPENDENCY_REJECTED')
       }
     }
@@ -3333,6 +3452,7 @@ export function assertManifestPolicy(candidate, authority) {
     for (const [name, spec] of Object.entries(candidate[section] ?? {})) {
       if (String(spec).includes('@profitia/')) fail('PRIVATE_PACKAGE_ALIAS_REJECTED')
       if (Object.hasOwn(LOCAL_PACKAGES, name) && spec === `file:${LOCAL_PACKAGES[name]}`) continue
+      if(reviewedReportPeer(candidate.name,candidate.version,section,name,spec)&&authority.name===candidate.name&&authority.version===candidate.version&&authority[section]?.[name]===spec)continue
       if (reviewedMapsPeer(candidate.name, candidate.version, section, name, spec)
         && authority.name === candidate.name && authority.version === candidate.version
         && authority[section]?.[name] === spec) continue
@@ -3342,7 +3462,7 @@ export function assertManifestPolicy(candidate, authority) {
   }
 }
 
-export function assertLocalPackageSources(root, candidateLock, authorityRoot = controlRoot(), {reviewedStage2a=false,reviewedMarketSymbol=false}={}) {
+export function assertLocalPackageSources(root, candidateLock, authorityRoot = controlRoot(), {reviewedStage2a=false,reviewedMarketSymbol=false,reviewedOilReport=false}={}) {
   const canonicalRoot = fs.realpathSync(root)
   const app = path.join(canonicalRoot, 'apps/sg-runtime')
   if (fs.realpathSync(app) !== app) fail('LOCAL_DEPENDENCY_REJECTED')
@@ -3358,8 +3478,12 @@ export function assertLocalPackageSources(root, candidateLock, authorityRoot = c
     if (manifest.name !== name) fail('LOCAL_PACKAGE_NAME_MISMATCH')
     if (typeof manifest.version !== 'string' || manifest.version !== entry.version) fail('LOCAL_PACKAGE_VERSION_MISMATCH')
     const authorityFile = path.resolve(authorityRoot, 'apps/sg-runtime', LOCAL_PACKAGES[name], 'package.json')
-    if (!fs.existsSync(authorityFile)) fail('LOCAL_PACKAGE_AUTHORITY_REQUIRED')
-    let authority=readJson(authorityFile)
+    let authority
+    if(!fs.existsSync(authorityFile)){
+      const relative=path.relative(canonicalRoot,manifestPath).split(path.sep).join('/'),review=OIL_REPORT_E1_REVIEW.entries[relative],bytes=fs.readFileSync(manifestPath),blob=createHash('sha1').update('blob '+bytes.length+'\0').update(bytes).digest('hex');
+      if(!reviewedOilReport||!['@profitia/insights-runtime','@profitia/insights-contracts'].includes(name)||!review||review.sha!==blob)fail('LOCAL_PACKAGE_AUTHORITY_REQUIRED');
+      authority=manifest;
+    }else authority=readJson(authorityFile)
     if(name==='@profitia/maps-embed'){
       if(JSON.stringify(entry.peerDependencies??{})!==JSON.stringify(manifest.peerDependencies??{}))fail('LOCAL_PACKAGE_PEER_MISMATCH')
       if(reviewedMarketSymbol&&manifest.peerDependencies?.['@profitia/platform-contracts']===REVIEWED_MAPS_EMBED_PEERS['@profitia/platform-contracts']+' || 1.33.0 || 1.34.0'&&authority.peerDependencies?.['@profitia/platform-contracts']!==manifest.peerDependencies['@profitia/platform-contracts']){
@@ -3466,7 +3590,7 @@ function checkCandidate() {
   const candidateLock = readJson(path.join(app, 'package-lock.json'))
   assertPackagePolicy(candidateLock, readJson(path.join(controlRoot(), 'apps/sg-runtime/package-lock.json')), fs.readFileSync(path.join(app, '.npmrc'), 'utf8'))
   assertManifestPolicy(readJson(path.join(app, 'package.json')), readJson(path.join(controlRoot(), 'apps/sg-runtime/package.json')))
-  assertLocalPackageSources(root, candidateLock, controlRoot(), {reviewedStage2a:state.admission?.kind==='ARCHITECTURE'&&isPinnedSourceHubStage2aReview(state.admission.files),reviewedMarketSymbol:state.admission?.kind==='ARCHITECTURE'&&isPinnedMarketSymbolReview(state.admission.files)})
+  assertLocalPackageSources(root, candidateLock, controlRoot(), {reviewedOilReport:state.admission?.kind==='ARCHITECTURE'&&isPinnedOilReportReview(state.admission.files),reviewedStage2a:state.admission?.kind==='ARCHITECTURE'&&isPinnedSourceHubStage2aReview(state.admission.files),reviewedMarketSymbol:state.admission?.kind==='ARCHITECTURE'&&isPinnedMarketSymbolReview(state.admission.files)})
   if (operationContractProvenanceDigest(root, state.receipt.contract) !== state.receipt.contract.sourceDigest || JSON.stringify(readJson(path.join(app, 'operation-integration.json'))) !== JSON.stringify(state.receipt)) fail('CONTRACT_PROVENANCE_MISMATCH')
   return {state, app}
 }

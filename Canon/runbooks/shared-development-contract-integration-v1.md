@@ -107,3 +107,45 @@ A separate four-file bootstrap uses the existing sg2/ transport namespace while 
 PROPOSED / CI_POLICY_APPROVAL_PENDING. Existing accepted G1 and PR907 admit the twelve governance files only. The actual PR908 backend candidate 253e20369fcd26f1985fc14188fd3e7f927a8faa is44 exact regular files and is rejected by trusted main with ARCHITECTURE_PATH_REJECTED; the required SG2 check lacks its exact controlled proof. ECR_BACKEND_REVIEW binds that PR/branch and every source blob/status/mode plus actual ARCHITECTURE owner/surface. A normal main refresh may preserve only these identical reviewed versions. No generic runtime, optional-package, source or workflow pattern is admitted.
 
 This separate four-file policy proposal requires explicit owner acceptance before trusted-main activation. The prior twelve-doc approval is not transferred to backend code. Then use the existing trusted-main controlled workflow for the exact policy bootstrap, accept only after all required checks, validate the exact refreshed PR908 head, independently verify its proof and all public/resulting-main gates. Existing read:packages-only credentials, private pins, main-only Environment, ignore-scripts installation and token removal before candidate execution remain unchanged. The sg2/ policy transport namespace is not ownership. No G1 repeat, administrative grant, resource, provider access or runtime deployment follows from this CI review.
+
+## Oil report E1 — proposed coordinated source admission (2026-11-09)
+
+PROPOSED / OWNER_CI_AND_COORDINATION_APPROVAL_PENDING. No activation is implied.
+The existing Oil continuation requires four common E1 operations, SG Runtime host
+integration and compatibility with SRM. Separate owner candidates are Architecture
+PR925 at4809359af22b854cf393aca22b8f731711297625, SG2 PR923 at
+fdc4395b11e2d67be04609c6097f6ce8ab45d345 and SRM PR927 at
+3167a7d26efbb39cf6a3f149ba841113453a52db. The actual SDK producer bytes are
+b696932487ef12ef43b862f677931afc5719f733. All previous receipts remain intact.
+
+The local-only composite a3c707b1f7e95c5b69cf2751777752b8423527da over main
+14f756e77e920ed94cd7ede1626558955f173e11 has tree
+97aa0103e9ce652f7904c6f19c33c76c89d047c0. It has not been published as
+an aggregate, adopted or deployed. OIL_REPORT_E1_REVIEW binds all93 exact source
+paths, blobs, statuses, modes and actual Architecture/SG2/SRM routing results.
+The one feature branch exception is existing PR923 on
+feat/oil-autonomous-runner-20261109; no generic feat branch admission is added.
+
+This separate four-file bootstrap proposes that closed review and four precise
+local package catalog entries: insights-runtime, insights-contracts,
+platform-current-e1-authority and platform-source-hub-contracts. Two existing
+optional manifests have exact reviewed peer ranges. A new local package absent
+from main still requires this complete source review and its exact manifest blob;
+a boolean, unreviewed manifest or changed file grants no admission. Private
+registry artifacts/scopes, main-only execution, internal author/repository/head
+checks, ignore-scripts installation and token removal remain unchanged.
+
+After explicit owner acceptance of this bootstrap and coordinated procedure,
+validate and adopt the four-file policy through the existing trusted-main CI.
+Refresh the local composite onto resulting main only if every93 reviewed source
+entry remains identical. Preserve the original owner PRs/tasks as provenance;
+use a fast-forward of existing PR923 as the coordinated transport only after that
+procedure is authorized. Dispatch exact-head controlled CI, verify all ordinary
+owner and peer checks, then obtain the required exact SOURCE GO after checks.
+Never merge the producer first while its consumers reject the shared source.
+A changed/missing/extra source entry invalidates this closed review.
+
+This proposal and its acceptance authorize no SQL installation, role/permission
+change, runtime configuration, model request, budget, deployment or scheduled
+cost. Those remain their own exact installation/recovery/release gates. Neither
+this source proof nor a historical PDF replay is Development LIVE acceptance.

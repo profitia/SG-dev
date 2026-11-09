@@ -1,4 +1,5 @@
 import {SOURCE_HUB_MARKET_SYMBOL_REVIEW,assertMarketSymbolReviewEntry} from './controlled-package-ci.mjs'
+import {OIL_REPORT_E1_REVIEW,assertOilReportReviewEntry} from './controlled-package-ci.mjs'
 import {ECR_BACKEND_REVIEW,assertEcrBackendReviewEntry} from './controlled-package-ci.mjs'
 import {createHash} from 'node:crypto'
 import {ECR_G1_GOVERNANCE_REVIEW,assertEcrG1ReviewEntry} from './controlled-package-ci.mjs'
@@ -88,8 +89,8 @@ test('manifest changes cannot hide private aliases, new pins or additional works
   assertManifestPolicy({dependencies: {...authority.dependencies, '@profitia/platform-contracts': 'file:../../packages/platform-contracts'}}, authority)
   for (const candidate of [{dependencies: {'@profitia/cic-core': '9.0.0'}}, {dependencies: {alias: 'npm:@profitia/cic-evals@1.0.0'}}, {dependencies: {'@profitia/cic-evals': '1.0.0'}}, {...authority, workspaces: ['../*']}, {...authority, overrides: {'@profitia/cic-core': '9'}}]) rejection(() => assertManifestPolicy(candidate, authority))
 })
-test('only the six reviewed local names bind to their own exact paths, never a registry, alias or nested install', () => {
-  assert.deepEqual(Object.keys(LOCAL_PACKAGES).sort(), ['@profitia/maps-contracts', '@profitia/maps-embed', '@profitia/platform-contracts', '@profitia/sg2-price-change-index-ui', '@profitia/srm-adp-ui', '@profitia/srm-xray'])
+test('only the ten reviewed local names bind to their own exact paths, never a registry, alias or nested install', () => {
+  assert.deepEqual(Object.keys(LOCAL_PACKAGES).sort(), ['@profitia/insights-contracts','@profitia/insights-runtime','@profitia/maps-contracts', '@profitia/maps-embed', '@profitia/platform-contracts','@profitia/platform-current-e1-authority','@profitia/platform-source-hub-contracts', '@profitia/sg2-price-change-index-ui', '@profitia/srm-adp-ui', '@profitia/srm-xray'])
   const authority = {dependencies: {'@profitia/cic-core': '1.1.1'}}
   for (const [name, relative] of Object.entries(LOCAL_PACKAGES)) {
     for (const resolved of [relative, `file:${relative}`]) {
@@ -213,6 +214,12 @@ test('actual current SG2 dependency policy remains valid and admits only the rev
   const candidate = structuredClone(authority)
   const dependencies = {...manifest.dependencies}
   for (const [name, relative] of Object.entries(LOCAL_PACKAGES)) {
+    const file=path.resolve(root,'apps/sg-runtime',relative,'package.json');
+    if(!fs.existsSync(file)){
+      assert(['@profitia/insights-runtime','@profitia/insights-contracts'].includes(name));
+      assert(OIL_REPORT_E1_REVIEW.entries[path.relative(root,file).split(path.sep).join('/')]);
+      continue;
+    }
     const source = JSON.parse(fs.readFileSync(path.resolve(root, 'apps/sg-runtime', relative, 'package.json'), 'utf8'))
     candidate.packages[`node_modules/${name}`] = {version: source.version, resolved: `file:${relative}`, peerDependencies: source.peerDependencies}
     candidate.packages[''].dependencies[name] = `file:${relative}`
@@ -1313,4 +1320,41 @@ test('Insights G1 cannot borrow another PR, prefix, actor, fork or candidate SHA
 });
 test('Insights G1 fixes every actual blob to regular100644 entries; executables and symlinks fail',()=>{
  const {files}=insightsG1Fixture();for(const f of files){assertInsightsG1ReviewEntry(f,`100644 blob ${f.sha}\t${f.filename}\0`);for(const mode of ['100755','120000'])rejection(()=>assertInsightsG1ReviewEntry(f,`${mode} blob ${f.sha}\t${f.filename}\0`));rejection(()=>assertInsightsG1ReviewEntry({...f,sha},`100644 blob ${sha}\t${f.filename}\0`));}
+});
+
+function oilReportFixture(){
+ const p=pr(),r=OIL_REPORT_E1_REVIEW;p.number=r.prNumber;p.head.ref=r.branch;p.base.sha=sha;
+ const files=Object.entries(r.entries).map(([filename,e])=>({filename,sha:e.sha,status:e.status}));p.changed_files=files.length;return{p,files};
+}
+test('Oil report review accepts only the93 exact owner-routed files on existing PR923',()=>{
+ const {p,files}=oilReportFixture();assert.equal(files.length,93);assert.equal(p.number,923);assert(Object.isFrozen(OIL_REPORT_E1_REVIEW.entries));
+ assert.equal(selectCandidate(context(),p,other,{files}),other);assertArchitectureFiles(p,files);
+ assert.deepEqual([...new Set(Object.values(OIL_REPORT_E1_REVIEW.entries).map(e=>e.projectKey))].sort(),['ARCHITECTURE','SG2','SRM']);
+});
+test('Oil review rejects missing, extra, altered, renamed, duplicate or borrowed files and another PR identity',()=>{
+ const {p,files}=oilReportFixture();
+ for(const mutate of [f=>f.pop(),f=>f.push({filename:'apps/sg-runtime/unapproved.ts',sha,status:'added'}),f=>f[0].sha=sha,f=>f[0].status='removed',f=>f[0].previous_filename='old.md',f=>f[1]={...f[0]}]){const f=structuredClone(files);mutate(f);rejection(()=>selectCandidate(context(),p,other,{files:f}));}
+ for(const mutate of [p=>p.number=928,p=>p.head.ref='feat/another',p=>p.user.login='another',p=>p.head.repo.full_name='profitia/fork',p=>p.base.ref='production']){const changed=structuredClone(p);mutate(changed);rejection(()=>selectCandidate(context(),changed,other,{files}));}
+ rejection(()=>selectCandidate(context(),p,sha,{files}));
+});
+test('Oil review fixes each original file mode; a symlink or different blob is never admitted',()=>{
+ const{files}=oilReportFixture();for(const f of files){const e=OIL_REPORT_E1_REVIEW.entries[f.filename];assertOilReportReviewEntry(f,`${e.mode} blob ${f.sha}\t${f.filename}\0`);rejection(()=>assertOilReportReviewEntry(f,`120000 blob ${f.sha}\t${f.filename}\0`));rejection(()=>assertOilReportReviewEntry({...f,sha},`${e.mode} blob ${sha}\t${f.filename}\0`));}
+});
+test('new report package names do not admit arbitrary Source peers or changed private registry artifacts',()=>{
+ const c=lock(),a=lock();
+ c.packages['node_modules/@profitia/platform-current-e1-authority']={version:'1.2.1',resolved:'../../packages/platform-contracts/current-e1-authority',peerDependencies:{'@profitia/platform-contracts':'1.33.0 || 1.34.0'}};
+ assertPackagePolicy(c,a,configuration);
+ c.packages['node_modules/@profitia/platform-current-e1-authority'].peerDependencies['@profitia/platform-contracts']='*';rejection(()=>assertPackagePolicy(c,a,configuration));
+ delete c.packages['node_modules/@profitia/platform-current-e1-authority'];c.packages['node_modules/@profitia/cic-core'].integrity='sha512-unapproved';rejection(()=>assertPackagePolicy(c,a,configuration));
+});
+
+test('missing main package authority needs the exact reviewed manifest, never only an opt-in boolean',()=>{
+ const t=fs.mkdtempSync(path.join(os.tmpdir(),'oil-package-policy-'));
+ try{
+  const root=path.join(t,'candidate'),a=path.join(t,'authority'),app=path.join(root,'apps/sg-runtime'),pkg=path.join(root,'apps/insights-runtime');
+  fs.mkdirSync(app,{recursive:true});fs.mkdirSync(pkg,{recursive:true});fs.mkdirSync(a,{recursive:true});
+  fs.writeFileSync(path.join(pkg,'package.json'),JSON.stringify({name:'@profitia/insights-runtime',version:'1.0.0',scripts:{postinstall:'unapproved'}}));
+  const l={packages:{'node_modules/@profitia/insights-runtime':{version:'1.0.0',resolved:'../insights-runtime'}}};
+  rejection(()=>assertLocalPackageSources(root,l,a));rejection(()=>assertLocalPackageSources(root,l,a,{reviewedOilReport:true}));
+ }finally{fs.rmSync(t,{recursive:true,force:true})}
 });
