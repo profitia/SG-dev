@@ -16,6 +16,10 @@ const rule = (feature, resourceType, dataClass, effect, product = null, mode = '
 const rules = Object.freeze({
   'account.settings.read': rule('account', 'account_settings', 'ACCOUNT_PRIVATE', 'READ', null, 'ACCOUNT'),
   'account.settings.write': rule('account', 'account_settings', 'ACCOUNT_PRIVATE', 'WRITE', null, 'ACCOUNT'),
+  'insights.report.start': rule('market','insights_report','ORGANISATION_PRIVATE','WRITE','SPENDGURU'),
+  'insights.report.status': rule('market','insights_report','ORGANISATION_PRIVATE','READ','SPENDGURU'),
+  'insights.report.list': rule('market','insights_report','ORGANISATION_PRIVATE','READ','SPENDGURU'),
+  'insights.report.download': rule('market','insights_report','ORGANISATION_PRIVATE','EXPORT','SPENDGURU'),
   'knowledge.read': rule('market', 'market_knowledge', 'SHARED_KNOWLEDGE', 'READ', 'SPENDGURU'),
   'benchmark.selection.read': rule('benchmark', 'benchmark_selection', 'ORGANISATION_PRIVATE', 'READ', 'SPENDGURU'),
   'benchmark.selection.write': rule('benchmark', 'benchmark_selection', 'ORGANISATION_PRIVATE', 'WRITE', 'SPENDGURU'),

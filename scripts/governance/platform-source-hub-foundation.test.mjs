@@ -276,8 +276,17 @@ test('SourceHub optional ECR storage metadata preserves accepted transport and p
   assert.equal(adoption.producerCandidateSha,'ebf017cae09bf7bd9139af7917534b47ae0c4d4b')
   assert.equal(Object.keys(adoption.producerFiles).length,27)
   for(const [file,digest]of Object.entries(adoption.producerFiles))assert.equal(createHash('sha256').update(execFileSync('git',['show',adoption.producerCandidateSha+':'+file],{cwd:root})).digest('hex'),digest,'immutable original producer '+file)
-  for(const [file,digest]of Object.entries(adoption.integrationFiles)){
-   const bytes=schedule?.replacements[file]?execFileSync('git',['show',schedule.predecessorSourceSha+':'+file],{cwd:root}):fs.readFileSync(path.join(root,file))
+  const oilPath='apps/architecture-lab/insights-report-source-compatibility.json';
+  const oil=fs.existsSync(path.join(root,oilPath))?json(oilPath):null;
+  if(oil){
+   assert.equal(oil.previousAdoptionSha256,createHash('sha256').update(fs.readFileSync(path.join(root,oil.previousAdoptionFile))).digest('hex'));
+   assert.equal(oil.producerPullRequest,925);assert.equal(oil.producerSourceSha,'b696932487ef12ef43b862f677931afc5719f733');
+   assert.deepEqual(Object.keys(oil.integrationReplacements).sort(),['packages/platform-contracts/current-e1-authority/package.json','packages/platform-contracts/package.json','packages/platform-contracts/src/external-call.d.mts','packages/platform-contracts/src/external-call.mjs','packages/platform-contracts/src/native-external-transport.mjs'].sort());
+   for(const [file,digest]of Object.entries(oil.integrationReplacements))assert.equal(createHash('sha256').update(execFileSync('git',['show',oil.producerSourceSha+':'+file],{cwd:root})).digest('hex'),digest,'exact report producer '+file);
+   assert.equal(oil.providerCallsPerformed,false);assert.equal(oil.deploymentPerformed,false);
+  }
+  for(const [file,digest]of Object.entries({...adoption.integrationFiles,...oil?.integrationReplacements})){
+   const bytes=!oil?.integrationReplacements[file]&&schedule?.replacements[file]?execFileSync('git',['show',schedule.predecessorSourceSha+':'+file],{cwd:root}):fs.readFileSync(path.join(root,file))
    assert.equal(createHash('sha256').update(bytes).digest('hex'),digest,'preserved integrated predecessor '+file)
   }
  }else{
