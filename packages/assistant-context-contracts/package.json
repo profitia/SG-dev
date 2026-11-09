@@ -1,0 +1,16 @@
+{
+  "name": "@profitia/assistant-context-contracts",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.d.mts",
+      "import": "./src/index.mjs"
+    }
+  },
+  "scripts": {
+    "test": "node --test test/*.test.mjs",
+    "build": "node --check src/index.mjs"
+  }
+}
