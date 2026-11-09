@@ -2,11 +2,13 @@ import { createHash, randomUUID } from 'node:crypto'
 import {requestOperationPolicy} from './request-operations.mjs'
 import {SUPPLIER_LOCATION_OPERATIONS,normalizeSupplierLocationEvidence,isSupplierLocationAdmission} from './supplier-location.mjs'
 import {admittedReportObservation} from './report-admission.mjs'
+import {assistantInputBound,assertAssistantUsageReservation} from './assistant-usage.mjs'
 
 export const OPERATION_CONTRACT = Object.freeze({ id: 'profitia.operation-context', version: '1.0.0', implementation: '1.0.0-candidate.16' })
 export const SUPPLIER_LOCATION_ROOT_CONTRACT=Object.freeze({...OPERATION_CONTRACT,implementation:'1.0.0-candidate.17'})
 export const REPORT_ADMISSION_ROOT_CONTRACT=Object.freeze({...OPERATION_CONTRACT,implementation:'1.0.0-candidate.18'})
 export const REQUEST_QUOTA_ROOT_CONTRACT=Object.freeze({...OPERATION_CONTRACT,implementation:'1.0.0-candidate.19'})
+export const ASSISTANT_ROOT_CONTRACT=Object.freeze({...OPERATION_CONTRACT,implementation:'1.0.0-candidate.20'})
 const denialBrand = Symbol.for('profitia.operation-context.denial.v1')
 const denialCodes = new Set(['UNSUPPORTED_CONTRACT', 'UNVERIFIED_IDENTITY', 'CONTEXT_INVALID', 'ENVIRONMENT_MISMATCH', 'APPLICATION_FEATURE_UNAVAILABLE', 'ACCESS_BASIS_INVALID', 'PERMISSION_DENIED', 'PRODUCT_UNAVAILABLE', 'RESOURCE_SCOPE_MISMATCH', 'DATA_CLASSIFICATION_UNKNOWN', 'DELEGATION_INVALID', 'DELIVERY_UNCERTAIN', 'RESOURCE_VERSION_CONFLICT', 'LIMIT_POLICY_UNAVAILABLE', 'LIMIT_EXCEEDED', 'IDEMPOTENCY_CONFLICT', 'AUDIT_UNAVAILABLE', 'POLICY_UNAVAILABLE', 'EXPLICIT_DENY'])
 
@@ -16,6 +18,9 @@ const rule = (feature, resourceType, dataClass, effect, product = null, mode = '
 const rules = Object.freeze({
   'account.settings.read': rule('account', 'account_settings', 'ACCOUNT_PRIVATE', 'READ', null, 'ACCOUNT'),
   'account.settings.write': rule('account', 'account_settings', 'ACCOUNT_PRIVATE', 'WRITE', null, 'ACCOUNT'),
+  'assistant.history.read': rule('assistant', 'assistant_history', 'ACCOUNT_PRIVATE', 'READ', null, 'ACCOUNT'),
+  'assistant.history.write': rule('assistant', 'assistant_history', 'ACCOUNT_PRIVATE', 'WRITE', null, 'ACCOUNT'),
+  'assistant.converse': rule('assistant', 'assistant_turn', 'OPERATION_AUDIT', 'REQUEST_MODEL', 'SPENDGURU'),
   'knowledge.read': rule('market', 'market_knowledge', 'SHARED_KNOWLEDGE', 'READ', 'SPENDGURU'),
   'benchmark.selection.read': rule('benchmark', 'benchmark_selection', 'ORGANISATION_PRIVATE', 'READ', 'SPENDGURU'),
   'benchmark.selection.write': rule('benchmark', 'benchmark_selection', 'ORGANISATION_PRIVATE', 'WRITE', 'SPENDGURU'),
@@ -56,7 +61,7 @@ export const IMPLEMENTED_OPERATIONS = Object.freeze(Object.keys(rules))
 const profiles = Object.freeze({
   PLATFORM_INTERNAL: { features: ['job_execution','knowledge_ingestion'], products: [] },
   PORR_SUITE: { features: ['account', 'market', 'benchmark', 'category', 'supplier_workspace', 'forecast', 'personal_workspace', 'supplier_report'], products: ['SPENDGURU', 'SUPPLIER_INTELLIGENCE'], fixed: true },
-  SPENDGURU_SAAS: { features: ['account', 'market', 'benchmark', 'category', 'supplier_workspace', 'forecast', 'personal_workspace', 'supplier_report'], products: ['SPENDGURU', 'SUPPLIER_INTELLIGENCE'] },
+  SPENDGURU_SAAS: { features: ['account', 'market', 'benchmark', 'category', 'supplier_workspace', 'forecast', 'personal_workspace', 'supplier_report','assistant'], products: ['SPENDGURU', 'SUPPLIER_INTELLIGENCE'] },
   SUPPLIER_INTELLIGENCE_STANDALONE: { features: ['account', 'supplier_workspace', 'personal_workspace', 'supplier_report'], products: ['SUPPLIER_INTELLIGENCE'] },
 })
 
@@ -294,10 +299,12 @@ function ingestionReservation(value,policy){
 
 /** All authority callbacks are server-owned. No context/role/ALLOW from HTTP is accepted. */
 export function createOperationExecutor(options) {
+  if(options.assistantSchemaDigest!==undefined&&(!/^[a-f0-9]{64}$/.test(options.assistantSchemaDigest)
+    ||['requestQuotaSchemaDigest','locationAdmissionSchemaDigest','reportAdmissionSchemaDigest'].some(k=>options[k]!==undefined)))throw TypeError('Explicit isolated Assistant schema adoption required')
   if(options.requestQuotaSchemaDigest!==undefined&&!/^[a-f0-9]{64}$/.test(options.requestQuotaSchemaDigest))throw TypeError('Explicit accepted SQL027 digest required')
   if(options.locationAdmissionSchemaDigest!==undefined&&!/^[a-f0-9]{64}$/.test(options.locationAdmissionSchemaDigest))throw TypeError('Explicit accepted SQL020 digest required')
   if(options.reportAdmissionSchemaDigest!==undefined&&(!/^[a-f0-9]{64}$/.test(options.reportAdmissionSchemaDigest)||options.locationAdmissionSchemaDigest!==undefined))throw TypeError('Explicit accepted SQL025 digest required')
-  const executionContract=options.requestQuotaSchemaDigest!==undefined?REQUEST_QUOTA_ROOT_CONTRACT:options.reportAdmissionSchemaDigest!==undefined?REPORT_ADMISSION_ROOT_CONTRACT:options.locationAdmissionSchemaDigest===undefined?OPERATION_CONTRACT:SUPPLIER_LOCATION_ROOT_CONTRACT
+  const executionContract=options.assistantSchemaDigest!==undefined?ASSISTANT_ROOT_CONTRACT:options.requestQuotaSchemaDigest!==undefined?REQUEST_QUOTA_ROOT_CONTRACT:options.reportAdmissionSchemaDigest!==undefined?REPORT_ADMISSION_ROOT_CONTRACT:options.locationAdmissionSchemaDigest===undefined?OPERATION_CONTRACT:SUPPLIER_LOCATION_ROOT_CONTRACT
   const { authenticate, withTransaction, recordAudit, now = Date.now } = options
   const config = freeze(structuredClone(options.application))
   const ceiling = Object.hasOwn(profiles, config.profileId) ? profiles[config.profileId] : null
@@ -322,6 +329,16 @@ export function createOperationExecutor(options) {
         const payload = freeze(JSON.parse(canonical(input.payload)))
         // Manual WRITE uses the same atomic private request ledger for replay, never external permission.
         const compute = ['REQUEST_COMPUTE','REQUEST_EXTERNAL'].includes(selected.effect)||input.operation==='supplier.location.write'
+        const assistant=input.operation==='assistant.converse'
+        if(input.operation.startsWith('assistant.')&&(options.assistantSchemaDigest===undefined||config.environment!=='development'||config.appId!=='spendguru'||config.profileId!=='SPENDGURU_SAAS'))deny('APPLICATION_FEATURE_UNAVAILABLE')
+        if(assistant){
+          if(!payload||!['AUTHORIZE','GENERATE'].includes(payload.kind)
+            ||Object.keys(payload).sort().join(',')!==(payload.kind==='AUTHORIZE'?'kind':'commandId,input,kind'))deny('CONTEXT_INVALID')
+          if(payload.kind==='GENERATE'){
+            if(!computeUuid.test(payload.commandId??''))deny('CONTEXT_INVALID')
+            try{assistantInputBound(payload.input)}catch{deny('LIMIT_POLICY_UNAVAILABLE')}
+          }
+        }
         const platform=selected.mode==='PLATFORM'
         if (compute||platform ? typeof input.idempotencyKey !== 'string' || !/^[A-Za-z0-9_-]{24,128}$/.test(input.idempotencyKey)
           : input.idempotencyKey != null) deny('CONTEXT_INVALID')
@@ -374,6 +391,7 @@ export function createOperationExecutor(options) {
           }else if (!permission(access, request.operation, selected.feature, request.resourceId)) deny('PERMISSION_DENIED')
           checkResource(state.resource, context, selected)
           if (state.resource.id !== request.resourceId || compute && request.operation!=='supplier.location.write' && state.resource.ownerUserId !== identity.userId) deny('RESOURCE_SCOPE_MISMATCH')
+          if(assistant&&(identity.kind!=='HUMAN'||state.resource.ownerUserId!==identity.userId))deny('RESOURCE_SCOPE_MISMATCH')
           if(request.operation==='benchmark.discovery.read'&&(identity.kind!=='HUMAN'||moduleEvidence?.moduleId!=='benchmark'))deny('APPLICATION_FEATURE_UNAVAILABLE')
           const location=locationEvidence(state,request,context,identity,config,moduleEvidence,now())
           let privateSupplierInput
@@ -436,7 +454,7 @@ export function createOperationExecutor(options) {
           // Export preparation is scoped private SQL, not paid refresh, global
           // ingestion or private request admission with an omitted limit.
           const requestPolicy = compute ? computePolicy(state.requestPolicy, context, now(), options.requestQuotaSchemaDigest) : null
-          if (platform?state.usagePolicy!=='PLATFORM_BUDGET'||typeof session.reserveIngestion!=='function'||typeof session.completeIngestion!=='function': compute ? state.usagePolicy !== 'PRODUCT_POLICY' || typeof session.reserveUsage !== 'function' || typeof session.completeRequest !== 'function'
+          if (assistant?state.usagePolicy!=='PRODUCT_POLICY'||typeof session.reserveAssistantUsage!=='function':platform?state.usagePolicy!=='PLATFORM_BUDGET'||typeof session.reserveIngestion!=='function'||typeof session.completeIngestion!=='function': compute ? state.usagePolicy !== 'PRODUCT_POLICY' || typeof session.reserveUsage !== 'function' || typeof session.completeRequest !== 'function'
             : state.usagePolicy !== 'NOT_APPLICABLE') deny('LIMIT_POLICY_UNAVAILABLE')
           if (session.transactionalEffects !== true || session.outputBoundaryVersion !== state.resource.projectionVersion) deny('POLICY_UNAVAILABLE')
           const continuation=state.requestContinuation
@@ -534,6 +552,11 @@ export function createOperationExecutor(options) {
           }
           if(location&&reservation?.status==='NEW'){
             if(request.operation==='supplier.location.write'&&payload.action==='CREATE'?location.exists:payload.expectedVersion!==location.targetVersion)deny('RESOURCE_VERSION_CONFLICT')
+          }
+          if(assistant&&payload.kind==='GENERATE'){
+            let admitted
+            try{admitted=assertAssistantUsageReservation(await session.reserveAssistantUsage(bound),bound)}catch(error){deny(['LIMIT_EXCEEDED','IDEMPOTENCY_CONFLICT'].includes(error?.code)?error.code:'LIMIT_POLICY_UNAVAILABLE')}
+            bound=freeze({...bound,assistantReservation:admitted})
           }
           const value = privateReservation?.status==='REPLAY'?privateReservation.value:reservation?.status === 'REPLAY' ? reservation.value : sourceReservation?.status==='REPLAY'?sourceReservation.receipt:await action(bound, session.transaction)
           if(working){if(!computeReceipt(value,request.resourceId))deny('POLICY_UNAVAILABLE');await session.verifyWork(bound)}
