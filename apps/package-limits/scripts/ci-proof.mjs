@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { execFileSync } from "node:child_process";
-import { limitsDigest, identityDigest, dashboardDigest } from "./install.mjs";
+import { limitsDigest, identityDigest, dashboardDigest, assistantUsageDigest } from "./install.mjs";
 const root = path.resolve(
     path.dirname(fileURLToPath(import.meta.url)),
     "../../..",
@@ -37,6 +37,7 @@ const files = execFileSync(
 const allowed = (n) =>
   n.startsWith("apps/package-limits/") ||
   n === ".github/workflows/package-limits-ci.yml" ||
+  n === "scripts/governance/package-limits-routing.test.mjs" ||
   n ===
     "Canon/evidence/2026-10-30-package-limits-dashboard-development-release.md";
 if (
@@ -83,6 +84,7 @@ fs.writeFileSync(
       limitsDigest,
       identityDigest,
       dashboardDigest,
+      assistantUsageDigest,
       validationScope: "SOURCE_AND_ISOLATED_SYNTHETIC_POSTGRES_ONLY",
       cloudCredentialsUsed: false,
       liveRuntimeVerified: false,
