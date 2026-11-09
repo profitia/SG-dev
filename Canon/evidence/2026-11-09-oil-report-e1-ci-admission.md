@@ -37,3 +37,30 @@ Owner acceptance is still required for this CI-policy change and coordinated
 publication procedure. Required exact-head controlled proof, all ordinary owner
 CI and the subsequent exact SOURCE GO are retained. No source/runtime success
 is inferred from this proposal or its preparation.
+
+
+## Concurrent main refresh — SourceHub1.5 (2026-11-09)
+
+The owner accepted the original packet5a5968eaf46e96c3343ed2b25a693d8beb7e6f57f8daea368713f14240ac27b8
+and policy sourcedbca1516bf4a104c338e35b439e1af50c245dda6. That decision remains
+recorded and is not represented as activation of a different source version.
+
+While the decision was pending, accepted SourceHub PR929 advanced main to
+f77cde55bab9adb130a79754929a5ee03b3d508b and its contract package to1.5.0.
+A normal main merge preserves that work. The original current-source policy test
+correctly rejected the new optional peer version; it was not skipped. The bounded
+refresh recognizes only1.4.0 and1.5.0 with the same exact existing peer range;
+1.6.0 and broader peer ranges remain rejected. No provider family, E1 grant,
+credential scope or runtime is activated.
+
+The refreshed local composite is63f464be456c54a382f99edd6808e333513236d0, tree
+c4d61019f6b12d38d81e9f6611c895901d121f0a. Inputs: PR925 397ff306b7b32ed175da59e6b417a6c96ce84fc8; PR923 8643ff2d0a90d15b74320be79dc11cbb50dfea0c; PR927 6f7d5f8b6aedcd750d22cb0b6f86d43a2c5230d1.
+All93 paths, statuses, modes and owners are identical to the original review;
+only five reviewed blobs change: the two Insights/SG dependency locks, the two
+SG2/SRM compatibility records and the shared historical-source test. The latter
+preserves the full accepted PR929 schedule closure and the immutable old receipt.
+The report still uses commodity protocol1.1.0; it does not opt into schedules1.2.0.
+
+This refresh is a reviewable amendment, not an assertion that the original exact
+packet approved new hashes. Required CI must pass before controlled source
+adoption, and the final feature SOURCE GO remains separate.

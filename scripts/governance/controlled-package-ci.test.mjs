@@ -1358,3 +1358,13 @@ test('missing main package authority needs the exact reviewed manifest, never on
   rejection(()=>assertLocalPackageSources(root,l,a));rejection(()=>assertLocalPackageSources(root,l,a,{reviewedOilReport:true}));
  }finally{fs.rmSync(t,{recursive:true,force:true})}
 });
+
+test('accepted SourceHub1.5 keeps the same exact peer range; future versions and wider ranges are rejected',()=>{
+ for(const version of ['1.4.0','1.5.0']){
+  const m={name:'@profitia/platform-source-hub-contracts',version,peerDependencies:{'@profitia/platform-current-e1-authority':'1.1.0 || 1.2.0 || 1.2.1'}};
+  assertManifestPolicy(m,m);
+  rejection(()=>assertManifestPolicy({...m,peerDependencies:{'@profitia/platform-current-e1-authority':'*'}},m));
+ }
+ const future={name:'@profitia/platform-source-hub-contracts',version:'1.6.0',peerDependencies:{'@profitia/platform-current-e1-authority':'1.1.0 || 1.2.0 || 1.2.1'}};
+ rejection(()=>assertManifestPolicy(future,future));
+});
