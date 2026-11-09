@@ -973,6 +973,60 @@
       "allowedProjectKeys": [
         "SG2"
       ]
+    },
+    {
+      "id": "ACG-BASE-001",
+      "capability": "Assistant Context Gateway",
+      "name": "Assistant Context Contracts",
+      "pathPatterns": [
+        "packages/assistant-context-contracts/**"
+      ],
+      "currentOwner": "Architecture Platform",
+      "currentResponsibility": "Versioned framework-neutral context request/projection contracts; no data ownership, authorisation or model execution.",
+      "baselineClassification": "ALIGNED",
+      "parentSurfaceId": null,
+      "cleanupReason": null,
+      "classificationReferenceSha": "400f3970fad60d1e24e20bf90e12e5e02bca4365",
+      "allowedProjectKeys": [
+        "ARCHITECTURE"
+      ],
+      "onboardingAuthorization": "Owner approved entire bounded M1 decision in host01a1c177-a1ff-7a52-aad1-96606021f3c5, 2026-11-09; PHR reports/2026/11/09/SG2/SG2-ACG-M1-20261109/OWNER-APPROVAL.md; ARCH-ACG-M1-G1-20261109."
+    },
+    {
+      "id": "ACG-BASE-002",
+      "capability": "Assistant Context Gateway",
+      "name": "Assistant Context Gateway",
+      "pathPatterns": [
+        "packages/assistant-context-gateway/**"
+      ],
+      "currentOwner": "Architecture Platform",
+      "currentResponsibility": "Bounded backend context planning execution, versioned read adapters, minimisation, provenance/freshness and source status; no CIC conversation policy, data copies or alternate E1.",
+      "baselineClassification": "ALIGNED",
+      "parentSurfaceId": null,
+      "cleanupReason": null,
+      "classificationReferenceSha": "400f3970fad60d1e24e20bf90e12e5e02bca4365",
+      "allowedProjectKeys": [
+        "ARCHITECTURE"
+      ],
+      "onboardingAuthorization": "Owner approved entire bounded M1 decision in host01a1c177-a1ff-7a52-aad1-96606021f3c5, 2026-11-09; PHR reports/2026/11/09/SG2/SG2-ACG-M1-20261109/OWNER-APPROVAL.md; ARCH-ACG-M1-G1-20261109."
+    },
+    {
+      "id": "ACG-BASE-003",
+      "capability": "Assistant Context Gateway",
+      "name": "Assistant Context Gateway CI",
+      "pathPatterns": [
+        ".github/workflows/assistant-context-gateway-ci.yml"
+      ],
+      "currentOwner": "Architecture Platform",
+      "currentResponsibility": "Credential-free contracts/gateway tests and consumer compatibility; no automatic product deployment.",
+      "baselineClassification": "ALIGNED",
+      "parentSurfaceId": null,
+      "cleanupReason": null,
+      "classificationReferenceSha": "400f3970fad60d1e24e20bf90e12e5e02bca4365",
+      "allowedProjectKeys": [
+        "ARCHITECTURE"
+      ],
+      "onboardingAuthorization": "Owner approved entire bounded M1 decision in host01a1c177-a1ff-7a52-aad1-96606021f3c5, 2026-11-09; PHR reports/2026/11/09/SG2/SG2-ACG-M1-20261109/OWNER-APPROVAL.md; ARCH-ACG-M1-G1-20261109."
     }
   ],
   "cleanupFindings": [
