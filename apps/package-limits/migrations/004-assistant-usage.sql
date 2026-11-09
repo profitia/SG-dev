@@ -140,7 +140,7 @@ BEGIN
      WHEN 'OPENAI_OUTPUT_TOKENS' THEN output_bound WHEN 'OPENAI_REASONING_TOKENS' THEN output_bound
      WHEN 'OPENAI_TOTAL_TOKENS' THEN input_bound+output_bound ELSE input_bound END END),0)
      INTO consumed FROM assistant_executions WHERE assignment_id=a.id AND status<>'RELEASED';
-    IF consumed+required>(limit_value->>'value')::numeric*CASE WHEN metric='OPENAI_API_COST_USD' THEN 1000000000 ELSE 1 END THEN RAISE EXCEPTION 'LIMIT_EXCEEDED';END IF;
+    IF consumed+required>(limit_value->>'value')::numeric*(CASE WHEN metric='OPENAI_API_COST_USD' THEN 1000000000 ELSE 1 END) THEN RAISE EXCEPTION 'LIMIT_EXCEEDED';END IF;
    END IF;
    limit_value:=NULL;
   END LOOP;
