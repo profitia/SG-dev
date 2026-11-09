@@ -138,6 +138,10 @@
       "types": "./src/peer-operation.d.mts",
       "import": "./src/peer-operation.mjs",
       "require": "./src/peer-operation.mjs"
+    },
+    "./model-execution": {
+      "types": "./src/model-execution.d.mts",
+      "import": "./src/model-execution.mjs"
     }
   },
   "scripts": {
