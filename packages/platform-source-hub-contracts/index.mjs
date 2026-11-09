@@ -1,6 +1,6 @@
 export const NEWS_DISCOVERY_CONTRACT_VERSION = '0.1.0';
 import {parseCommodityRequest,assertCommodityResponse} from './commodities-v1.mjs';
-export {COMMODITY_CONTRACT_VERSION,COMMODITY_PROVIDERS,COMMODITY_FAMILIES} from './commodities-v1.mjs';
+export {COMMODITY_CONTRACT_VERSION,PUBLICATION_SCHEDULE_CONTRACT_VERSION,COMMODITY_PROVIDERS,COMMODITY_FAMILIES} from './commodities-v1.mjs';
 export const SOURCE_HUB_CONTRACT_VERSION = '1.0.0';
 export const CONTRACT_FAMILIES = Object.freeze(['news-discovery','economic-calendar','indicators','external-forecasts','market-observations']);
 export const IMPLEMENTATION_STATES = Object.freeze(['IMPLEMENTED_AND_LIVE_VERIFIED','IMPLEMENTED_OFFLINE_VERIFIED','UNAVAILABLE_OR_NOT_ENTITLED','NOT_IMPLEMENTED']);
@@ -12,7 +12,7 @@ export class SourceHubError extends Error {
 }
 export function closed(value, keys) { return value!==null&&typeof value==='object'&&!Array.isArray(value)&&Object.keys(value).every(k=>keys.includes(k)); }
 export function parseHubRequest(value) {
-  if(value?.contractVersion==='1.1.0')return parseCommodityRequest(value);
+  if(['1.1.0','1.2.0'].includes(value?.contractVersion))return parseCommodityRequest(value);
   if(!closed(value,['contractVersion','family','provider','operation','criteria'])||value.contractVersion!==SOURCE_HUB_CONTRACT_VERSION
     ||!Object.hasOwn(supported,value.provider)||!supported[value.provider].includes(value.family)
     ||!['search','publishers'].includes(value.operation)||value.operation==='publishers'&&value.provider!=='newsapi'
@@ -22,7 +22,7 @@ export function parseHubRequest(value) {
   return structuredClone(value);
 }
 export function assertHubResponse(value, expected) {
-  if(expected?.contractVersion==='1.1.0')return assertCommodityResponse(value,expected);
+  if(['1.1.0','1.2.0'].includes(expected?.contractVersion))return assertCommodityResponse(value,expected);
   if(!expected||!['search','publishers'].includes(expected.operation)||!closed(value,['contractVersion','family','provider','status','items','page','provenance','usage','coverage'])
     ||value.contractVersion!==SOURCE_HUB_CONTRACT_VERSION||value.family!==expected.family||value.provider!==expected.provider
     ||!['ok','empty'].includes(value.status)||!Array.isArray(value.items)||value.items.length>1000
