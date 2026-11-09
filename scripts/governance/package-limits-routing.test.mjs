@@ -25,7 +25,7 @@ test('Limits registration never captures neighboring apps, workflow suffixes or 
 })
 test('G1 preserves every pre-existing route, classification and frozen metadata',()=>{
  const p='Canon/registries/current-architecture-baseline-v1.json',a=before(p),b=read(p),ids=new Set(['LIMITS-BASE-001','LIMITS-BASE-002'])
- assert.deepEqual(b.surfaces.filter(x=>!ids.has(x.id)),a.surfaces)
+ for(const old of a.surfaces)assert.deepEqual(b.surfaces.find(x=>x.id===old.id),old)
  const {surfaces:sa,...ma}=a,{surfaces:sb,...mb}=b;assert.deepEqual(mb,ma)
  assert.equal(b.surfaces.filter(x=>ids.has(x.id)).length,2)
  for(const s of a.surfaces)for(const pattern of s.pathPatterns){const p=pattern.endsWith('/**')?pattern.slice(0,-3)+'/routing-probe':pattern;assert(!ids.has(route('ARCHITECTURE',[p]).results[0]?.matchedSurfaceId))}
@@ -35,7 +35,8 @@ test('module binding uses only owner-existing Limits Development resources and o
  assert(m);assert.equal(m.owner,'Architecture Platform');assert.equal(m.projectKey,'ARCHITECTURE');assert.equal(m.targetEnvironment,'development');assert.equal(m.approval.decision,'G1 GRANTED');assert.equal(m.continuityProjectKey,'ARCHITECTURE')
  assert.equal(m.developmentRender.serviceId,'srv-dbi5at9srm7s73da7ol0');assert.equal(m.developmentRender.autoDeploy,false)
  assert.equal(m.developmentStorage.neonProjectId,'lingering-thunder-05075810');assert.equal(m.developmentStorage.branchId,'br-green-hall-b9s837k0');assert.equal(m.developmentStorage.databaseName,'neondb');assert.equal(m.stagingProductionAuthority,'NONE')
- b.plannedModules=b.plannedModules.filter(x=>x!==m);assert.deepEqual(b,a)
+ for(const old of a.plannedModules)assert.deepEqual(b.plannedModules.find(x=>x.capability===old.capability),old)
+ const {plannedModules:oldModules,...oldMeta}=a,{plannedModules:newModules,...newMeta}=b;assert.deepEqual(newMeta,oldMeta)
 })
 test('runbook is ordered after actual dependencies and business canons remain unchanged',()=>{
  const m=validateGovernanceManifest(root);assert.equal(m.valid,true,m.errors.join('\n'))

@@ -15,6 +15,9 @@ const dashboardSource = fs.readFileSync(
   new URL("../migrations/003-dashboard-summary.sql", import.meta.url),
   "utf8",
 );
+export const assistantUsageSource = fs.readFileSync(new URL("../migrations/004-assistant-usage.sql", import.meta.url), "utf8");
+export const assistantUsageDigest = hash(assistantUsageSource);
+export const assistantUsageSql = assistantUsageSource.replaceAll("__ASSISTANT_USAGE_SCHEMA_DIGEST__", assistantUsageDigest);
 export const dashboardDigest = hash(dashboardSource);
 export const dashboardSql = dashboardSource.replaceAll(
   "__DASHBOARD_SCHEMA_DIGEST__",
