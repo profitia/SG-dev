@@ -38449,6 +38449,7 @@
       "referencePeriod": "Tydzień kończący się w piątek; wyjątki mają pole źródłowe, reguła okres wyprowadza",
       "at": "2026-11-09T19:55:19.600Z",
       "status": "LIVE — oficjalny harmonogram",
+      "updatePolicy": "Odczyt na żądanie przez SourceHub; powtórzenia potwierdzone w Stage 01. Stały interwał odświeżania u dostawcy niepotwierdzony. Brak aktywowanej synchronizacji ECR.",
       "timingEvidence": "DOC-WPSR",
       "proofs": [
         "LIVE-SCHEDULE-eia-wpsr"
@@ -38472,6 +38473,7 @@
       "referencePeriod": "Brak w kontrakcie harmonogramu agregatora",
       "at": "2026-11-09T19:55:19.600Z",
       "status": "LIVE — harmonogram agregatora",
+      "updatePolicy": "Odczyt na żądanie przez SourceHub; powtórzenia potwierdzone w Stage 01. Stały interwał odświeżania u dostawcy niepotwierdzony. Brak aktywowanej synchronizacji ECR.",
       "timingEvidence": "DOC-WPSR",
       "proofs": [
         "LIVE-SCHEDULE-commodities-sh-calendar"
@@ -38495,6 +38497,7 @@
       "referencePeriod": "Brak w kontrakcie harmonogramu agregatora",
       "at": "2026-11-09T19:55:19.600Z",
       "status": "LIVE — harmonogram agregatora",
+      "updatePolicy": "Odczyt na żądanie przez SourceHub; powtórzenia potwierdzone w Stage 01. Stały interwał odświeżania u dostawcy niepotwierdzony. Brak aktywowanej synchronizacji ECR.",
       "timingEvidence": "DOC-WNGSR",
       "proofs": [
         "LIVE-SCHEDULE-commodities-sh-calendar"
@@ -38518,6 +38521,7 @@
       "referencePeriod": "Brak w kontrakcie harmonogramu agregatora",
       "at": "2026-11-09T19:55:19.600Z",
       "status": "LIVE — harmonogram agregatora",
+      "updatePolicy": "Odczyt na żądanie przez SourceHub; powtórzenia potwierdzone w Stage 01. Stały interwał odświeżania u dostawcy niepotwierdzony. Brak aktywowanej synchronizacji ECR.",
       "timingEvidence": "DOC-COT",
       "proofs": [
         "LIVE-SCHEDULE-commodities-sh-calendar"
@@ -38541,6 +38545,7 @@
       "referencePeriod": "Brak w kontrakcie harmonogramu agregatora",
       "at": "2026-11-09T19:55:19.600Z",
       "status": "LIVE — harmonogram agregatora",
+      "updatePolicy": "Odczyt na żądanie przez SourceHub; powtórzenia potwierdzone w Stage 01. Stały interwał odświeżania u dostawcy niepotwierdzony. Brak aktywowanej synchronizacji ECR.",
       "timingEvidence": "DOC-WASDE",
       "proofs": [
         "LIVE-SCHEDULE-commodities-sh-calendar"
@@ -38564,6 +38569,7 @@
       "referencePeriod": "Brak w kontrakcie harmonogramu agregatora",
       "at": "2026-11-09T19:55:19.600Z",
       "status": "LIVE — harmonogram agregatora",
+      "updatePolicy": "Odczyt na żądanie przez SourceHub; powtórzenia potwierdzone w Stage 01. Stały interwał odświeżania u dostawcy niepotwierdzony. Brak aktywowanej synchronizacji ECR.",
       "timingEvidence": "DOC-CROP",
       "proofs": [
         "LIVE-SCHEDULE-commodities-sh-calendar"
@@ -38587,6 +38593,7 @@
       "referencePeriod": "Brak w kontrakcie harmonogramu agregatora",
       "at": "2026-11-09T19:55:19.600Z",
       "status": "LIVE — harmonogram agregatora",
+      "updatePolicy": "Odczyt na żądanie przez SourceHub; powtórzenia potwierdzone w Stage 01. Stały interwał odświeżania u dostawcy niepotwierdzony. Brak aktywowanej synchronizacji ECR.",
       "timingEvidence": "DOC-EXPORT",
       "proofs": [
         "LIVE-SCHEDULE-commodities-sh-calendar"
@@ -38610,6 +38617,7 @@
       "referencePeriod": "Identyfikator wydania miesięcznego; nie horyzont prognozy",
       "at": "2026-11-09T19:55:19.600Z",
       "status": "LIVE — oficjalny harmonogram",
+      "updatePolicy": "Odczyt na żądanie przez SourceHub; powtórzenia potwierdzone w Stage 01. Stały interwał odświeżania u dostawcy niepotwierdzony. Brak aktywowanej synchronizacji ECR.",
       "timingEvidence": "DOC-STEO",
       "proofs": [
         "LIVE-SCHEDULE-eia-steo"

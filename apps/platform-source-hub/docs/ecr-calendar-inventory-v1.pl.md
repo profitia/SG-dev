@@ -35,6 +35,8 @@ W harmonogramach `actual`, `previous`, `forecast`, `publishedAt` i `sourceUpdate
 
 Agregator daje daty bez potwierdzonej godziny. Zwyczajowa pora publikacji nie ustanawia dokładnego timestampu. W sprawdzonym przypadku WPSR agregator podał dzień wcześniejszy od oficjalnego wyjątku EIA; zachowano oba dowody. Miniony plan nie potwierdza opublikowania wyniku.
 
+Harmonogramy są odczytywane na żądanie przez SourceHub. Stały interwał odświeżania po stronie dostawców pozostaje niepotwierdzony; cykliczność raportu nie jest częstotliwością odświeżania API. Synchronizacji ECR nie uruchomiono.
+
 **19 płatnych pozycji commodities.sh pozostaje nieaktywnych; dwie operacje mogą być stubami.** Wszystkie 14 grup ograniczeń opisano w arkuszu Luki.
 
 JSON jest pochodnym widokiem [kanonicznego katalogu technicznego](../catalog/commodities-capabilities-v1.json) i [wcześniejszej inwentaryzacji biznesowej](../catalog/commodities-business-inventory-v1.json), ze wskazaniem ich SHA-256. Nie zastępuje kontraktów ani rejestrów. Zachowano retencję 0: nowe artefakty utrwalają dozwolone metadane i dowody, bez instancji kalendarza, wartości obserwacji i sekretów. Nie zmieniono runtime, grantów, baz ani deploymentów.
