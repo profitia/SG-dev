@@ -24,5 +24,17 @@
   "devDependencies": {
     "typescript": "5.9.3",
     "@types/node": "24.10.1"
-  }
+  },
+  "exports": {
+    "./host": {
+      "types": "./src/host.d.mts",
+      "import": "./src/host.mjs",
+      "require": "./src/host.mjs"
+    }
+  },
+  "files": [
+    "src",
+    "render",
+    "sql"
+  ]
 }

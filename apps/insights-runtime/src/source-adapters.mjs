@@ -3,7 +3,7 @@ import { assertHubResponse } from "@profitia/platform-source-hub-contracts";
 import {
   digest,
   requireThat,
-} from "../../../packages/insights-contracts/index.mjs";
+} from "@profitia/insights-contracts";
 /** No provider HTTP exists in Insights. The projection decision is a current,
  * server-owned licence decision; full raw records are never returned to runner. */
 export function createHubSources({
@@ -21,7 +21,7 @@ export function createHubSources({
       );
       return !!g && Date.parse(g.expiresAt) > Date.now();
     },
-    async acquire(q, job, { idempotencyKey }) {
+    async acquire(q, job, { idempotencyKey, signal }) {
       const g = await grants.current(
         job.organisationId,
         q.command.provider,
@@ -41,6 +41,7 @@ export function createHubSources({
           grantId: g.grantId,
         },
         idempotencyKey,
+        signal,
       });
       assertHubResponse(value, q.command);
       const projected = [],

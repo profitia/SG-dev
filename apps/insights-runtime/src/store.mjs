@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { AsyncLocalStorage } from "node:async_hooks";
 import {
   command,
   assertContext,
@@ -6,15 +7,30 @@ import {
   digest,
   requireThat,
   canonical,
-} from "../../../packages/insights-contracts/index.mjs";
+} from "@profitia/insights-contracts";
 export class PostgresReportStore {
-  constructor(pool) {
+  constructor(pool, { authorizeTransaction = async () => {} } = {}) {
     this.pool = pool;
+    this.authorizeTransaction = authorizeTransaction;
+    this.scope = new AsyncLocalStorage();
+  }
+  // A HUMAN operation must commit/rollback its job write together with E1's
+  // final current-authority observation, never in an independent transaction.
+  async withClient(org, client, fn) {
+    requireThat(!this.scope.getStore(), "NESTED_REPORT_SCOPE");
+    await client.query("SELECT set_config('insights.organisation_id',$1,true)", [org]);
+    return this.scope.run({ org, client }, fn);
   }
   async transaction(org, fn) {
+    const scoped = this.scope.getStore();
+    if (scoped) {
+      requireThat(scoped.org === org, "ORGANISATION_SCOPE_MISMATCH", 403);
+      return fn(scoped.client);
+    }
     const c = await this.pool.connect();
     try {
       await c.query("BEGIN");
+      await this.authorizeTransaction(org);
       await c.query(
         "SELECT set_config('insights.organisation_id',$1,true),set_config('statement_timeout','15000',true)",
         [org],
@@ -109,7 +125,7 @@ export class PostgresReportStore {
       async (db) =>
         (
           await db.query(
-            "SELECT id FROM insights_private.report_jobs WHERE status IN ('QUEUED','RUNNING','FAILED','WAITING_AUTHORIZATION') AND (lease_until IS NULL OR lease_until<now()) ORDER BY created_at LIMIT 1",
+            "SELECT id FROM insights_private.report_jobs WHERE status IN ('QUEUED','RUNNING','FAILED','WAITING_AUTHORIZATION') AND (lease_until IS NULL OR lease_until<now()) AND (status IN ('QUEUED','RUNNING') OR updated_at<now()-interval '60 seconds') ORDER BY updated_at,created_at,id LIMIT 1",
           )
         ).rows[0]?.id ?? null,
     );
@@ -164,7 +180,7 @@ export class PostgresReportStore {
   async release(org, id, lease) {
     await this.transaction(org, (db) =>
       db.query(
-        "UPDATE insights_private.report_jobs SET lease_token=NULL,lease_until=NULL WHERE id=$1 AND lease_token=$2",
+        "UPDATE insights_private.report_jobs SET lease_token=NULL,lease_until=NULL,updated_at=now() WHERE id=$1 AND lease_token=$2",
         [id, lease.token],
       ),
     );

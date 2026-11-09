@@ -1,6 +1,6 @@
 // Report-side arithmetic only. No transport, provider credentials or Forecast fit.
 import { createHash } from "node:crypto";
-import { assertCommodityResponse } from "../../../packages/platform-source-hub-contracts/commodities-v1.mjs";
+import { assertCommodityResponse } from "@profitia/platform-source-hub-contracts/commodities";
 
 const fail = (code) => {
   throw Object.assign(new Error(code), { code });
@@ -346,7 +346,7 @@ import {
   digest as bundleDigest,
   CANON_SHA256,
   requireThat as ensure,
-} from "../../../packages/insights-contracts/index.mjs";
+} from "@profitia/insights-contracts";
 import { windows, localParts } from "./calendar.mjs";
 /** Persist only allowlisted report facts/metadata after the licence projection
  * callback; raw/native fields and complete provider payloads never enter storage. */
@@ -397,7 +397,8 @@ export function buildEvidence(job, acquisitions, canonical) {
   );
   for (const e of evidence.filter((e) => e.family === "market-observations")) {
     const calculated = changes.find((c) => c.symbol === e.facts.symbol);
-    if (calculated) e.facts.weeklyChange = calculated.weeklyChange;
+    if (calculated && ["observationAt","currency","unit","instrumentType","quoteBasis"].every(k => e.facts[k] === calculated[k]))
+      e.facts.weeklyChange = calculated.weeklyChange;
   }
   const latestLocal = localParts(asOf).date;
 
@@ -529,6 +530,26 @@ export function buildEvidence(job, acquisitions, canonical) {
       );
     }
   }
+  // Latest quote and historical weekly comparison are different evidence.
+  // Retain all licensed history for lineage/annex, never render 80 historical
+  // rows as 80 "current" prices or attach an old delta to a newer snapshot.
+  const history = evidence.filter(e => e.family === "market-observations");
+  const latest = new Map();
+  for (const e of history) {
+    const key = JSON.stringify([e.facts.symbol,e.facts.currency,e.facts.unit,e.facts.instrumentType,e.facts.quoteBasis]);
+    const old = latest.get(key);
+    if (!old || e.facts.observationAt > old.facts.observationAt ||
+      e.facts.observationAt === old.facts.observationAt && e.retrievedAt > old.retrievedAt) latest.set(key,e);
+  }
+  const current = new Set([...latest.values()].map(e=>e.id));
+  const selected = evidence.filter(e => e.family !== "market-observations" || current.has(e.id));
+  if (changes.some(c => c.weeklyChange)) selected.push({
+    ...history[0], id: "TE_WEEKLY_COMPARISON", family: "market-comparison",
+    title: "Trading Economics: deterministyczne porównania tygodniowe, daty w danych",
+    materialDepth: "DETERMINISTIC_DERIVED_FACTS",
+    facts: { rows: changes.filter(c=>c.weeklyChange), interpretation: "HISTORICAL_WINDOW_NOT_LATEST_SNAPSHOT_CHANGE" },
+    inputEvidenceIds: history.map(e=>e.id),
+  });
   const b = {
     schemaVersion: "ReportEvidenceBundle/OilAsphalt/0.5",
     runnerVersion: "1.0.0",
@@ -539,7 +560,8 @@ export function buildEvidence(job, acquisitions, canonical) {
     windows: windows(job.command.period),
     admissionRef: job.authorityRef,
     rawRetentionSeconds: 0,
-    evidence,
+    evidence: selected,
+    marketEvidenceHistory: history,
     coverage,
     market: canonical?.market ?? { status: "NOT_AVAILABLE", series: [] },
     forecast: forecasts,

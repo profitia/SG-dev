@@ -140,6 +140,7 @@ def render(bundle,narrative,receipt,out,font,bold=None):
     text='\n'.join(p.extract_text() or '' for p in reader.pages);assert not re.search(r'\bEV\d+\b',text),'RAW_INTERNAL_CITATION'
     (out/(NAME+'.md')).write_text('\n\n'.join(md)+'\n')
     appendix=['# Aneks: dane, prognozy i pochodzenie','Stan wiedzy: '+bundle['asOf'],'TE Calendar świadomie wyłączony: obecna subskrypcja go nie obejmuje.','## Aktualne dodatkowe dane TE',json.dumps(current,ensure_ascii=False,indent=2),'## Forecast Core - odniesienie historyczne',historical]
+    appendix+=['## Historyczne obserwacje TE - odrębne od najnowszego notowania',json.dumps(bundle.get('marketEvidenceHistory',[]),ensure_ascii=False,indent=2)]
     for s in series:
         appendix+=['### '+s['label']+' / '+s['seriesId'],'Model | Origin | Target | Punkt | n | MAE | RMSE | sMAPE','--- | --- | --- | --- | --- | --- | --- | ---']
         for m in s['models']:

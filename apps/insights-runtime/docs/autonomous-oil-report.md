@@ -5,8 +5,9 @@ Owner: Insights Domain. Contract: `procurement-insights.report/1.0`. Canon v0.5 
 **IMPLEMENTATION PARTIAL / NOT DEPLOYED.** This change provides the domain runner,
 Postgres jobs/archive, scheduler, Fetch API handler, Hub consumer, canonical read
 ports, Source-backed Composer, pinned PDF renderer and offline acceptance tests.
-It does not provide an admitted E1 report-operation producer/receiver or a concrete
-SG Runtime host assembly. These must not be replaced with a permissive test adapter.
+The follow-up adds a concrete SG Runtime host and a separate Architecture E1
+producer candidate. Neither source presence nor local tests constitute shared
+admission, installation or LIVE proof. Permissive authority substitutes are forbidden.
 
 ## One execution path
 
@@ -27,7 +28,7 @@ appendix bytes/hashes finalize atomically with the edition. Product storage does
 not use PMOS/PHR/Newsfeed/Forecast tables. Backup and exact installer admission are
 required before applying to Development; no cloud migration was performed here.
 
-## Four API operations (handler contract, not yet mounted in SG Runtime)
+## Four API operations (mounted source candidate; not deployed)
 
 | Method/path | Current proposed operation | Result |
 |---|---|---|
@@ -39,9 +40,10 @@ required before applying to Development; no cloud migration was performed here.
 Start body contains definitionId, profileVersion, period {fromDate,throughDate},
 revision, asOf and allowPartial. No caller organisation, user, price policy,
 provider URL or credential is accepted. The host must invoke every callback with
-current E1 server authority; downloads reauthorize. The accepted shared SDK has
-**none of these four operations**, and its current E1 host supports personal and
-calendar modes only. A test-injected authority is not an adoption proof.
+current E1 server authority; downloads reauthorize. The separate Architecture candidate defines these four operations, their normative
+matrix rows and opt-in authority/receiver/SERVICE modes. Required consumer adoption
+and exact-SHA controlled CI still precede shared activation. A test authority is
+not an adoption proof.
 
 ## Scheduler and hosting
 
@@ -53,11 +55,37 @@ LATEST_ONLY catches up the newest missed slot; SKIP respects graceMinutes. The
 controlled trigger and API use the same job key and runner. Disabling/re-enabling
 does not erase history. Workers consume only currently delegated organisations.
 
-`createInsightsRuntime` assembles admitted host adapters; its `api` is mountable
-by the existing SG Runtime and `serveWorker` needs a supervised host process.
-`worker.mjs` loads server-owned deployed code, not an experiment directory or IPC.
-**The concrete host module, SG route mounting and startup integration remain
-unimplemented pending E1 producer adoption.** No new Render service is assumed.
+`src/host.mjs` builds ordinary pools, current HUMAN/real SQL SERVICE boundaries,
+Hub and native Source hosts. The SG route is
+`apps/sg-runtime/app/api/v1/insights/[...report]/route.ts`; its host assembly is
+`apps/sg-runtime/lib/insights/autonomous-runtime.ts`. It uses the already accepted
+canonical SG read ports behind the existing SERVICE read host.
+`apps/sg-runtime/scripts/start-with-insights.mjs` supervises Next and one worker,
+with graceful shutdown and bounded restart backoff. The worker imports the same
+SG host, without a configurable operator module, local experiment path or IPC.
+No new Render service is used. Default `INSIGHTS_REPORTS_ENABLED` is off.
+
+Configuration and five ordinary credential URLs are server-owned. Existing key
+material remains in approved environment bindings, never in this document.
+`INSIGHTS_OPENAI_API_KEY` is a separate binding of the approved existing key;
+its fingerprint/project admission is verified without replacing global OPENAI_API_KEY
+or OPENAI_MODEL. No key is created.
+Private jobs/receiver use existing `platform_private` on the SG private E1 branch;
+only Source Composer/counter use the existing Market Data/Source database.
+`sql/002-runtime-binding.sql` additionally fences the actual login, organisation,
+expiry/revocation and signed receiver scope; setting a tenant GUC alone grants nothing.
+HUMAN start uses the very same SQL transaction as E1's final current observation.
+
+For one admitted acceptance only, `INSIGHTS_CONTROLLED_SCHEDULE_ONCE=true` invokes
+the scheduler with an owner-installed `definition.controlledEdition` (period,
+revision, allowPartial). It uses actual asOf and the same edition key as API; restart
+or a simultaneous API trigger cannot buy another generation. The ordinary recurring
+schedule remains disabled. Remove the temporary trigger after acceptance.
+
+The native installed Insights package retains its own module URLs/fonts. SG's build
+bootstraps pinned renderer requirements into `.insights-python`; no operator Python
+or private machine font is required. Sentry reuses the existing SG configuration in
+both web and worker processes.
 
 ## Data, costs and rendering
 
@@ -71,6 +99,10 @@ zero OpenAI cost for retrieval is not a claim of zero provider cost.
 
 Canonical Market Data/Forecast reads need current SERVICE authority. Missing or
 historical D7 is not a current forecast. No fitting/ingestion/Forecast maths occurs.
+Latest TE quotes are selected separately from retained history; a historical weekly
+comparison is never relabelled as the change in a newer snapshot. The bounded
+versioned Composer projection preserves exact selected facts and IDs while the
+full licensed bundle/history remains in the private job and annex.
 The report seals actual knowledge asOf after acquisition, preserving the original
 trigger cutoff separately. Future observations/publications are excluded. Chinese
 Bitumen is not a Polish purchase price; incomparable prices are not combined.
@@ -102,8 +134,8 @@ INSIGHTS_TEST_RENDER=true adds actual PDF and API download. Optional immutable
 historical pilot replay is local-only; licensed frozen inputs are not committed.
 CI uses an ephemeral test database, no provider/model credentials or deployment.
 
-Remaining: Architecture/Identity owner's adoption of four report operations;
-concrete SG Runtime assembly/mount/startup; exact database/SERVICE/Source installation
+Remaining: Architecture/Identity and dependent-consumer adoption of the four report operations;
+required controlled CI and full SG build; exact database/SERVICE/Source installation
 and admitted pricing; controlled release and separately authorized LIVE budget/run.
 The task mandate does not grant those permissions. Do not mark the full backend
 IMPLEMENTATION_READY or LIVE_E2E_VERIFIED until these missing pieces are implemented,

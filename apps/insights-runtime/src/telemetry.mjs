@@ -51,6 +51,7 @@ export function telemetry({
               "NO_DATA",
               "WAITING_AUTHORIZATION",
               "RECONCILIATION_REQUIRED",
+              "WORKER_INTERRUPTED",
             ].includes(e.code)
           )
             capture(new Error("INSIGHTS_STAGE_FAILED"), {

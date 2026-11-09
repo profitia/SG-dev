@@ -1,9 +1,9 @@
-import { parseHubRequest } from "../../../packages/platform-source-hub-contracts/index.mjs";
+import { parseHubRequest } from "@profitia/platform-source-hub-contracts";
 import { addDays } from "./calendar.mjs";
 import {
   digest,
   requireThat,
-} from "../../../packages/insights-contracts/index.mjs";
+} from "@profitia/insights-contracts";
 /** Business query plan, no credentials or provider transports. Unadmitted sources
  * are recorded as unavailable rather than silently activated. */
 export function planData(job) {

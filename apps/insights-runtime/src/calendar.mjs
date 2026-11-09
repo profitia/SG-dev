@@ -1,7 +1,7 @@
 import {
   day,
   requireThat,
-} from "../../../packages/insights-contracts/index.mjs";
+} from "@profitia/insights-contracts";
 const zone = "Europe/Warsaw",
   ms = 86400000;
 export function localParts(instant) {

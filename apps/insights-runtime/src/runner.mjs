@@ -5,7 +5,7 @@ import {
   digest,
   requireThat,
   ReportError,
-} from "../../../packages/insights-contracts/index.mjs";
+} from "@profitia/insights-contracts";
 import { planData } from "./planner.mjs";
 import { buildEvidence } from "./evidence.mjs";
 import { validatePeriod } from "./calendar.mjs";
@@ -37,7 +37,7 @@ export function createReportRunner({
     );
     return store.start(ctx, input, profile, trigger);
   }
-  async function run(org, id) {
+  async function run(org, id, { signal } = {}) {
     const lease = await store.claim(org, id);
     if (!lease) return store.get(org, id);
     let j = lease.job;
@@ -47,9 +47,10 @@ export function createReportRunner({
     async function effect(key, reserve, fn) {
       const old = j.calls[key];
       if (old) {
-        if (old.status === "SUCCEEDED") return old.result;
+        if (["SUCCEEDED", "FAILED_NO_RETRY"].includes(old.status)) return old.result;
         throw new ReportError("RECONCILIATION_REQUIRED");
       }
+      requireThat(!signal?.aborted, "WORKER_INTERRUPTED");
       requireThat(
         Number.isSafeInteger(reserve) && reserve >= 0,
         "INVALID_RESERVATION",
@@ -90,6 +91,19 @@ export function createReportRunner({
         await save();
         return out;
       } catch (e) {
+        if (key.startsWith("source:")) {
+          // An unavailable provider is coverage, not permission to retry. Its
+          // cost remains unknown outside the OpenAI ledger. No Hub receipt is
+          // invented when the Hub returned none. Other admitted facts can still
+          // support the explicitly PARTIAL report.
+          const result = { status: "UNAVAILABLE", projection: [], receiptRef: null,
+            localAttemptRef: j.calls[key].id, reason: e.code ?? "SOURCE_HUB_UNAVAILABLE",
+            usage: { logicalRequests: 1, upstreamRequests: null, providerCost: "UNKNOWN_NOT_OPENAI" } };
+          j.calls[key] = { ...j.calls[key], status: "FAILED_NO_RETRY", costMicroUsd: 0,
+            endedAt: now(), result };
+          await save();
+          return result;
+        }
         j.calls[key] = {
           ...j.calls[key],
           status: e.certainty === "NOT_SENT" ? "NOT_SENT" : "UNCERTAIN",
@@ -115,7 +129,7 @@ export function createReportRunner({
         auth.context.actorKind === "SERVICE" &&
           auth.context.organisationId === org &&
           auth.profileId === j.profile.id &&
-          auth.expiresAt > now() &&
+          Date.parse(auth.expiresAt) > Date.parse(now()) &&
           auth.budgetMicroUsd >= j.profile.budgetMicroUsd,
         "WAITING_AUTHORIZATION",
       );
@@ -144,6 +158,7 @@ export function createReportRunner({
             sources.acquire(q, j, {
               idempotencyKey: j.id + ":" + q.id,
               callId,
+              signal,
             }),
           );
           result.push({ ...out, queryId: q.id });
@@ -151,9 +166,10 @@ export function createReportRunner({
         return result;
       });
       const bundle = await stage("evidence", async () => {
+        const values = await canonical.read(j, plan);
         j.asOf = now();
         await save();
-        return buildEvidence(j, acq, await canonical.read(j, plan));
+        return buildEvidence(j, acq, values);
       });
       requireThat(
         bundle.evidence.length > 0 || bundle.market.series?.length > 0,
@@ -168,13 +184,13 @@ export function createReportRunner({
         const counter = await effect(
           "openai:count",
           prepared.counterMaximumCostMicroUsd,
-          (callId) => composer.count(j, prepared, { callId }),
+          (callId) => composer.count(j, prepared, { callId, signal }),
         );
         return effect(
           "openai:compose",
           prepared.maximumCostMicroUsd,
           (callId) =>
-            composer.generate(j, bundle, prepared, { callId, counter }),
+            composer.generate(j, bundle, prepared, { callId, counter, signal }),
         );
       });
       const gate = await stage("quality", () => quality(j, bundle, composed));
@@ -182,8 +198,9 @@ export function createReportRunner({
         gate.status === "PASS_WITH_HUMAN_REVIEW",
         "QUALITY_GATE_FAILED",
       );
-      const rendered = await renderer(j, bundle, composed, gate);
-      j.stages.render = { status: "SUCCEEDED", value: rendered.metadata };
+      const render = await telemetry.stage("render", j, () => renderer(j, bundle, composed, gate));
+      const rendered = render.value;
+      j.stages.render = { status: "SUCCEEDED", timing: render.timing, value: rendered.metadata };
       j.status = "AWAITING_REVIEW";
       j.coverage = bundle.status === "PARTIAL_READY" ? "PARTIAL" : "COMPLETE";
       j.stages.finalize = { status: "SUCCEEDED", at: now() };

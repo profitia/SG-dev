@@ -474,3 +474,36 @@ test(
     }
   },
 );
+
+
+test("receiving E1 transaction owns the job write and rolls it back on final denial", {skip:!enabled}, async()=>{
+ const pool=new Pool({connectionString:process.env.INSIGHTS_TEST_DATABASE_URL,max:2});
+ const store=new PostgresReportStore(pool);
+ const org="e1-rollback-"+randomUUID(),c=await pool.connect();
+ try{
+  await c.query("BEGIN");
+  const j=await store.withClient(org,c,()=>store.start(ctx(org),input,profile,"API"));
+  assert(j.id);
+  await c.query("ROLLBACK");
+  assert.equal(await store.get(org,j.id),null);
+  await c.query("BEGIN");
+  const committed=await store.withClient(org,c,()=>store.start(ctx(org),input,profile,"API"));
+  await c.query("COMMIT");
+  assert.equal((await store.get(org,committed.id)).id,committed.id);
+ }finally{c.release();await pool.end()}
+});
+
+
+test("provider rejection produces explicit PARTIAL coverage without retry or losing admitted canonical facts", {skip:!enabled}, async()=>{
+ const pool=new Pool({connectionString:process.env.INSIGHTS_TEST_DATABASE_URL,max:3});
+ const store=new PostgresReportStore(pool),org="source-partial-"+randomUUID();
+ try{
+  const f=ports(store,{source:async()=>{throw Object.assign(Error("CONTROLLED_PROVIDER_DENIAL"),{code:"SOURCE_NOT_ENTITLED"})}});
+  const runner=createReportRunner(f.deps),job=await runner.start(ctx(org),input,profile);
+  const done=await runner.run(org,job.id);
+  assert.equal(done.status,"AWAITING_REVIEW");assert.equal(done.coverage,"PARTIAL");
+  const attempt=done.calls['source:te-snapshot'];assert.equal(attempt.status,'FAILED_NO_RETRY');
+  assert.equal(attempt.result.receiptRef,null);assert.equal(attempt.result.usage.providerCost,'UNKNOWN_NOT_OPENAI');
+  await runner.run(org,job.id);assert.equal(f.counts.source,1);assert.equal(f.counts.generate,1);
+ }finally{await pool.end()}
+});

@@ -5,7 +5,8 @@ import {
   command,
   requireThat,
   ReportError,
-} from "../../../packages/insights-contracts/index.mjs";
+} from "@profitia/insights-contracts";
+import { isOperationDenied } from "@profitia/platform-contracts/operation-context";
 /** The host authority must invoke the action inside its verified current E1
  * boundary. Neither body/query/header organisation values are accepted. */
 export function createReportApi({
@@ -15,6 +16,7 @@ export function createReportApi({
   profiles,
   now = () => new Date().toISOString(),
 }) {
+  const idPattern = "[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}";
   const respond = (x, status = 200, headers = {}) =>
     Response.json(x, {
       status,
@@ -55,13 +57,13 @@ export function createReportApi({
       )
         op = "list";
       else if (
-        /^\/api\/v1\/insights\/report-jobs\/[a-f0-9-]{36}$/.test(p) &&
+        new RegExp("^/api/v1/insights/report-jobs/" + idPattern + "$").test(p) &&
         request.method === "GET"
       ) {
         op = "status";
         id = p.split("/").at(-1);
       } else if (
-        /^\/api\/v1\/insights\/report-editions\/[a-f0-9-]{36}\/pdf$/.test(p) &&
+        new RegExp("^/api/v1/insights/report-editions/" + idPattern + "/pdf$").test(p) &&
         request.method === "GET"
       ) {
         op = "download";
@@ -136,6 +138,10 @@ export function createReportApi({
         },
       );
     } catch (e) {
+      if (isOperationDenied(e)) {
+        const unavailable = ["POLICY_UNAVAILABLE", "AUDIT_UNAVAILABLE"].includes(e.reasonCode);
+        return respond({ error: { code: unavailable ? "AUTHORITY_UNAVAILABLE" : "ACCESS_DENIED" } }, unavailable ? 503 : 403);
+      }
       return respond(
         {
           error: {

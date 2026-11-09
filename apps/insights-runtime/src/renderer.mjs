@@ -6,7 +6,7 @@ import { spawn } from "node:child_process";
 import {
   digest,
   requireThat,
-} from "../../../packages/insights-contracts/index.mjs";
+} from "@profitia/insights-contracts";
 export function createRenderer({ python = "python3" } = {}) {
   return async (job, bundle, composed, gate) => {
     const root = new URL("../render/", import.meta.url),
