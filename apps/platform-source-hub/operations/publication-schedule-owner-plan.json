@@ -1,0 +1,55 @@
+{
+  "schemaVersion": "SourceHubPublicationScheduleActivation/1",
+  "status": "PROPOSED_NOT_ACTIVATED",
+  "environment": "development",
+  "projectId": "delicate-queen-44677134",
+  "branchId": "br-orange-salad-ba2llks7",
+  "databaseName": "neondb",
+  "applicationId": "profitia-source-hub-development",
+  "sourceRole": "source_hub_development_source_runtime",
+  "configurationVersion": "source-hub-development-unmetered-20261104-v1",
+  "expiresAt": "2026-12-04T22:19:09.000Z",
+  "retentionSeconds": 0,
+  "sourceQuotaMode": "UNMETERED",
+  "automaticRetry": false,
+  "paidExecution": false,
+  "source": {
+    "provider": "eia",
+    "family": "publication-calendar",
+    "sourceId": "source-hub.eia.publication-calendar",
+    "resourceId": "api.eia.publication-calendar",
+    "policyId": "76e25fdd-7d49-4852-9ef8-84c9d25eeae1",
+    "grantId": "7b6aaa5a-9585-48d7-8741-f4d49a0796c1",
+    "budgetId": "e644ce77-b4eb-43fd-aea8-6c7064cd2f42",
+    "licenceRef": "source-hub-eia-official-publication-schedules-20261109",
+    "origin": "https://www.eia.gov",
+    "pathRules": [
+      {
+        "method": "GET",
+        "path": "/petroleum/supply/weekly/schedule.php"
+      },
+      {
+        "method": "GET",
+        "path": "/outlooks/steo/release_schedule.php"
+      }
+    ]
+  },
+  "identity": {
+    "componentId": "source-hub-catalogue-development",
+    "applicationId": "profitia-source-hub-catalogue-development",
+    "role": "source_hub_catalogue_development_ingest",
+    "serviceId": "b7840f12-541f-4feb-8768-5ffdcc718256",
+    "organisationId": "225e465b-8b89-467d-92d1-7fef61b555fe",
+    "grantId": "db188207-a79c-428a-8725-1b244527ccc9",
+    "operation": "knowledge.read",
+    "feature": "market",
+    "resourceId": "api.eia.publication-calendar",
+    "publicKeySha256": "c7ad35af124781eb5d911dd59d1e1d3716697d323becfca6b808c625dc408340"
+  },
+  "runtimeFlag": {
+    "SOURCE_HUB_EIA_SCHEDULES_ENABLED": "true"
+  },
+  "newInfrastructure": false,
+  "newRoles": false,
+  "newKeys": false
+}

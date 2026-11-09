@@ -1,5 +1,6 @@
 import {SourceHubError} from './index.mjs'
 export const COMMODITY_CONTRACT_VERSION='1.1.0'
+export const PUBLICATION_SCHEDULE_CONTRACT_VERSION='1.2.0'
 export const COMMODITY_FAMILIES=Object.freeze(['data-catalog','series-observations','positioning-observations','publication-calendar'])
 export const COMMODITY_PROVIDERS=Object.freeze({eia:['data-catalog','series-observations'],cftc:['data-catalog','positioning-observations'],'commodities-sh':['data-catalog','publication-calendar']})
 const plain=v=>v!==null&&Object.getPrototypeOf(v)===Object.prototype
@@ -8,6 +9,7 @@ const fail=(code='INVALID_CONTRACT')=>{throw new SourceHubError(code)}
 const name=v=>typeof v==='string'&&/^[a-zA-Z][a-zA-Z0-9_-]{0,99}$/.test(v)
 const names=v=>Array.isArray(v)&&v.length>0&&v.length<=200&&v.every(name)&&new Set(v).size===v.length
 export function parseCommodityRequest(v){
+ if(v?.contractVersion===PUBLICATION_SCHEDULE_CONTRACT_VERSION)return parsePublicationScheduleRequest(v)
  if(!closed(v,['contractVersion','provider','family','operation','criteria'])||v.contractVersion!==COMMODITY_CONTRACT_VERSION
   ||!Object.hasOwn(COMMODITY_PROVIDERS,v.provider)||!COMMODITY_PROVIDERS[v.provider].includes(v.family)||!plain(v.criteria))fail()
  const c=v.criteria,fields=v.family==='data-catalog'?['path','datasetId','endpoint','facet','offset','limit']:v.provider==='eia'?['path','frequency','data','facets','start','end','sort','offset','limit']:v.provider==='cftc'?['datasetId','columns','filters','orderBy','direction','offset','limit']:['limit']
@@ -34,6 +36,17 @@ export function parseCommodityRequest(v){
   ||v.provider!=='commodities-sh'&&'endpoint' in c)fail('UNSUPPORTED_CRITERIA')
  return structuredClone(v)
 }
+export function parsePublicationScheduleRequest(v){
+ if(!closed(v,['contractVersion','provider','family','operation','criteria'])||v.contractVersion!==PUBLICATION_SCHEDULE_CONTRACT_VERSION||!['eia','commodities-sh'].includes(v.provider)||v.family!=='publication-calendar'||v.operation!=='calendar')fail()
+ const c=v.criteria
+ if(!closed(c,v.provider==='eia'?['publication','from','to','limit']:['limit']))fail('UNSUPPORTED_CRITERIA')
+ if(c.limit!==undefined&&(!Number.isSafeInteger(c.limit)||c.limit<1||c.limit>1000))fail('INVALID_CRITERIA')
+ if(v.provider==='eia'){
+  const day=s=>typeof s==='string'&&/^\d{4}-\d\d-\d\d$/.test(s)&&Number.isFinite(Date.parse(s))&&new Date(s).toISOString().slice(0,10)===s
+  if(!['wpsr','steo'].includes(c.publication)||!day(c.from)||!day(c.to)||c.from>c.to||(Date.parse(c.to)-Date.parse(c.from))/86400000>366)fail('INVALID_CRITERIA')
+ }
+ return structuredClone(v)
+}
 const scalar=v=>v===null||typeof v==='string'||typeof v==='boolean'||typeof v==='number'&&Number.isFinite(v)
 const text=v=>typeof v==='string'&&v.length<=16384
 const time=v=>v===null||typeof v==='string'&&/^\d{4}-\d\d-\d\dT/.test(v)&&Number.isFinite(Date.parse(v))
@@ -41,17 +54,20 @@ const hex=v=>typeof v==='string'&&/^[a-f0-9]{64}$/.test(v)
 export function assertCommodityResponse(v,expected){
  const reject=()=>{throw new SourceHubError('INVALID_UPSTREAM_RESPONSE',502)}
  parseCommodityRequest(expected)
- if(!closed(v,['contractVersion','provider','family','status','items','page','provenance','usage','coverage'])||v.contractVersion!==COMMODITY_CONTRACT_VERSION
+ if(!closed(v,['contractVersion','provider','family','status','items','page','provenance','usage','coverage'])||v.contractVersion!==expected.contractVersion
   ||v.provider!==expected.provider||v.family!==expected.family||!['ok','empty'].includes(v.status)||!Array.isArray(v.items)||v.items.length>1000||v.status!==(v.items.length?'ok':'empty')
   ||!closed(v.provenance,['retrievedAt','licenceRef','qualityStatus'])||!time(v.provenance.retrievedAt)||!v.provenance.retrievedAt||!text(v.provenance.licenceRef)||v.provenance.licenceRef==='PENDING_ADMISSION'
   ||!v.usage||![0,1].includes(v.usage.upstreamAttempts)||typeof v.usage.cacheHit!=='boolean'||!/^[a-f0-9-]{36}$/i.test(v.usage.receiptRef??'')
   ||!v.page||!['page','pageSize','total'].every(k=>v.page[k]===null||Number.isSafeInteger(v.page[k])&&v.page[k]>=0)||![true,false,null].includes(v.page.more)||typeof v.page.truncated!=='boolean')reject()
  const c=v.coverage
- if(!closed(c,['scope','completeness','providerReturned','matchedLocally','returned','nativeFilters','localFilters'])||c.scope!=='PROVIDER_RETURNED_SUBSET'||!['UNKNOWN','INCOMPLETE'].includes(c.completeness)
+ if(expected.contractVersion===PUBLICATION_SCHEDULE_CONTRACT_VERSION){
+  if(!closed(c,['scope','completeness','providerRows','projected','ruleDerived','returned','nativeFilters','localFilters'])||c.scope!=='SOURCE_SCHEDULE_PROJECTION'||!['UNKNOWN','INCOMPLETE'].includes(c.completeness)
+   ||!(c.providerRows===null||Number.isSafeInteger(c.providerRows)&&c.providerRows>=0)||!['projected','ruleDerived','returned'].every(k=>Number.isSafeInteger(c[k])&&c[k]>=0)||c.returned!==v.items.length||c.returned>c.projected||c.ruleDerived>c.projected||!['nativeFilters','localFilters'].every(k=>Array.isArray(c[k])&&c[k].every(text)))reject()
+ }else if(!closed(c,['scope','completeness','providerReturned','matchedLocally','returned','nativeFilters','localFilters'])||c.scope!=='PROVIDER_RETURNED_SUBSET'||!['UNKNOWN','INCOMPLETE'].includes(c.completeness)
   ||!['providerReturned','matchedLocally','returned'].every(k=>Number.isSafeInteger(c[k])&&c[k]>=0)||c.returned!==v.items.length||c.returned>c.matchedLocally||c.matchedLocally>c.providerReturned
   ||!['nativeFilters','localFilters'].every(k=>Array.isArray(c[k])&&c[k].every(text)))reject()
  for(const {metadata:m,payload:p} of v.items){
-  if(!plain(p)||!m||m.contractVersion!==COMMODITY_CONTRACT_VERSION||m.contractFamily!==v.family||m.apiFamily!==v.family||m.providerId!==v.provider
+  if(!plain(p)||!m||m.contractVersion!==expected.contractVersion||m.contractFamily!==v.family||m.apiFamily!==v.family||m.providerId!==v.provider
    ||!text(m.sourceRecordRef)||!hex(m.contentFingerprint)||m.usageReceiptRef!==v.usage.receiptRef||m.licenceRef!==v.provenance.licenceRef
    ||!['PROVIDER_REPORTED','UNKNOWN'].includes(m.qualityStatus)||!time(m.retrievedAt)||!m.retrievedAt||!time(m.availableAt)||!time(m.asOf)||!time(m.retentionUntil)
    ||m.redistribution!=='PRIVATE_AUTHORISED_CONSUMER_ONLY'||!(m.vendorRecordId===null||text(m.vendorRecordId)))reject()
@@ -64,8 +80,25 @@ export function assertCommodityResponse(v,expected){
    if(m.consumerStorage!==undefined)reject()
    if(v.family==='series-observations'&&(!text(p.datasetId)||!text(p.referencePeriod)||!text(p.frequency)||!plain(p.dimensions)||!Array.isArray(p.measures)||!p.measures.length||p.measures.some(x=>!text(x.field)||!scalar(x.value)||!(x.unit===null||text(x.unit)))||!time(p.observedAt)||!time(p.publishedAt)))reject()
    if(v.family==='positioning-observations'&&(!text(p.datasetId)||!text(p.reportDate)||!text(p.contractCode)||!plain(p.columns)||!Object.values(p.columns).every(scalar)||p.uniqueness!=='NOT_ASSERTED'||p.publicationAt!==null||p.unitBasis!=='PROVIDER_COLUMN_DEFINITION_REQUIRED'))reject()
-   if(v.family==='publication-calendar'&&(!text(p.scheduleId)||!text(p.title)||!time(p.scheduledAt)||!(p.dateOnly===null||text(p.dateOnly))||!(p.recurrence===null||text(p.recurrence))||p.kind!=='PUBLICATION_SCHEDULE'||p.releaseStatus!=='PROVIDER_SCHEDULE_ONLY'))reject()
+   if(v.family==='publication-calendar'){
+    if(expected.contractVersion===PUBLICATION_SCHEDULE_CONTRACT_VERSION)assertPublicationSchedule(p,reject)
+    else if(!text(p.scheduleId)||!text(p.title)||!time(p.scheduledAt)||!(p.dateOnly===null||text(p.dateOnly))||!(p.recurrence===null||text(p.recurrence))||p.kind!=='PUBLICATION_SCHEDULE'||p.releaseStatus!=='PROVIDER_SCHEDULE_ONLY')reject()
+   }
   }
  }
  return v
+}
+function assertPublicationSchedule(p,reject){
+ const nullable=x=>x===null||text(x)
+ const date=x=>x===null||typeof x==='string'&&/^\d{4}-\d\d-\d\d$/.test(x)&&Number.isFinite(Date.parse(x))&&new Date(x).toISOString().slice(0,10)===x
+ if(p.kind!=='PUBLICATION_SCHEDULE'||p.releaseStatus!=='PROVIDER_SCHEDULE_ONLY'||!nullable(p.scheduleId)||!text(p.title)||!text(p.publicationRef)||!hex(p.correlationKey)
+  ||!['PROVIDER_ID','CORRELATION_ONLY','OFFICIAL_PUBLICATION_DEFINITION'].includes(p.identityStatus)||p.identityStatus==='PROVIDER_ID'&&p.scheduleId===null
+  ||!time(p.scheduledAt)||!time(p.scheduledUntil)||!date(p.dateOnly)||!nullable(p.localDateTime)||!nullable(p.timeZone)||!nullable(p.recurrence)||!nullable(p.referencePeriod)
+  ||!['INSTANT','DATE','TIME_WINDOW','RECURRENCE_ONLY','UNKNOWN'].includes(p.timePrecision)||!['OFFICIAL_EXCEPTION','OFFICIAL_DATED','RULE_DERIVED_UNCONFIRMED','PROVIDER_REPORTED','UNDATED'].includes(p.scheduleStatus)
+  ||typeof p.officialSource!=='boolean'||!nullable(p.sourceName)||!nullable(p.sourceUrl)||p.lastVerifiedAt!=='metadata.retrievedAt'||p.sourceUpdatedAt!==null
+  ||!closed(p.sourceTiming,['rawDate','typicalTime','nextHint'])||!['rawDate','typicalTime','nextHint'].every(k=>nullable(p.sourceTiming[k]))
+  ||!Array.isArray(p.qualityFlags)||!p.qualityFlags.every(text)||!p.qualityFlags.includes('SCHEDULE_NOT_RESULT')||!['actual','previous','forecast','publishedAt'].every(k=>p[k]===null))reject()
+ if(p.timeZone!==null){try{new Intl.DateTimeFormat('en',{timeZone:p.timeZone})}catch{reject()}}
+ if(p.timePrecision==='INSTANT'&&p.scheduledAt===null||p.timePrecision==='TIME_WINDOW'&&(p.scheduledAt===null||p.scheduledUntil===null||p.scheduledUntil<=p.scheduledAt)||p.timePrecision==='DATE'&&(p.dateOnly===null||p.scheduledAt!==null)||['RECURRENCE_ONLY','UNKNOWN'].includes(p.timePrecision)&&p.scheduledAt!==null)reject()
+ if(p.scheduleStatus==='OFFICIAL_EXCEPTION'&&(!plain(p.exception)||!text(p.exception.reason)||!date(p.exception.standardDate)))reject()
 }
