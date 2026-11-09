@@ -1368,6 +1368,98 @@
       "effect": "REQUEST_EXTERNAL",
       "audit": "SECURITY_REQUIRED",
       "runtimeAdoption": "SOURCE_CANDIDATE_NOT_ADOPTED_BY_APPLICATIONS"
+    },
+    {
+      "id": "AM-41",
+      "operation": "insights.report.start",
+      "feature": "market",
+      "requiredProduct": "SPENDGURU",
+      "contextMode": "ORGANISATION",
+      "actorKinds": [
+        "HUMAN",
+        "SERVICE"
+      ],
+      "requiredPermission": "insights.report.start",
+      "resourceType": "insights_report",
+      "dataClasses": [
+        "ORGANISATION_PRIVATE"
+      ],
+      "conditionIds": [
+        "ORG_RESOURCE"
+      ],
+      "usagePolicy": "NOT_APPLICABLE",
+      "effect": "WRITE",
+      "audit": "SECURITY_REQUIRED",
+      "runtimeAdoption": "SOURCE_CANDIDATE_NOT_INSTALLED"
+    },
+    {
+      "id": "AM-42",
+      "operation": "insights.report.status",
+      "feature": "market",
+      "requiredProduct": "SPENDGURU",
+      "contextMode": "ORGANISATION",
+      "actorKinds": [
+        "HUMAN",
+        "SERVICE"
+      ],
+      "requiredPermission": "insights.report.status",
+      "resourceType": "insights_report",
+      "dataClasses": [
+        "ORGANISATION_PRIVATE"
+      ],
+      "conditionIds": [
+        "ORG_RESOURCE"
+      ],
+      "usagePolicy": "NOT_APPLICABLE",
+      "effect": "READ",
+      "audit": "SECURITY_REQUIRED",
+      "runtimeAdoption": "SOURCE_CANDIDATE_NOT_INSTALLED"
+    },
+    {
+      "id": "AM-43",
+      "operation": "insights.report.list",
+      "feature": "market",
+      "requiredProduct": "SPENDGURU",
+      "contextMode": "ORGANISATION",
+      "actorKinds": [
+        "HUMAN",
+        "SERVICE"
+      ],
+      "requiredPermission": "insights.report.list",
+      "resourceType": "insights_report",
+      "dataClasses": [
+        "ORGANISATION_PRIVATE"
+      ],
+      "conditionIds": [
+        "ORG_RESOURCE"
+      ],
+      "usagePolicy": "NOT_APPLICABLE",
+      "effect": "READ",
+      "audit": "SECURITY_REQUIRED",
+      "runtimeAdoption": "SOURCE_CANDIDATE_NOT_INSTALLED"
+    },
+    {
+      "id": "AM-44",
+      "operation": "insights.report.download",
+      "feature": "market",
+      "requiredProduct": "SPENDGURU",
+      "contextMode": "ORGANISATION",
+      "actorKinds": [
+        "HUMAN",
+        "SERVICE"
+      ],
+      "requiredPermission": "insights.report.download",
+      "resourceType": "insights_report",
+      "dataClasses": [
+        "ORGANISATION_PRIVATE"
+      ],
+      "conditionIds": [
+        "ORG_RESOURCE"
+      ],
+      "usagePolicy": "NOT_APPLICABLE",
+      "effect": "EXPORT",
+      "audit": "SECURITY_REQUIRED",
+      "runtimeAdoption": "SOURCE_CANDIDATE_NOT_INSTALLED"
     }
   ],
   "acceptanceCases": [
