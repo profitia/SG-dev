@@ -1,4 +1,5 @@
 import {SOURCE_HUB_MARKET_SYMBOL_REVIEW,assertMarketSymbolReviewEntry} from './controlled-package-ci.mjs'
+import {ACG_G1_REVIEW,assertAcgG1ReviewEntry} from './controlled-package-ci.mjs'
 import {OIL_REPORT_E1_REVIEW,assertOilReportReviewEntry} from './controlled-package-ci.mjs'
 import {ECR_BACKEND_REVIEW,assertEcrBackendReviewEntry} from './controlled-package-ci.mjs'
 import {createHash} from 'node:crypto'
@@ -1367,4 +1368,16 @@ test('accepted SourceHub1.5 keeps the same exact peer range; future versions and
  }
  const future={name:'@profitia/platform-source-hub-contracts',version:'1.6.0',peerDependencies:{'@profitia/platform-current-e1-authority':'1.1.0 || 1.2.0 || 1.2.1'}};
  rejection(()=>assertManifestPolicy(future,future));
+});
+
+
+test('ACG G1 review accepts only the two exact governance blobs on its own PR and branch',()=>{
+ const files=Object.entries(ACG_G1_REVIEW.entries).map(([filename,e])=>({filename,status:e.status,sha:e.sha}));
+ const candidate={...pr(),number:ACG_G1_REVIEW.prNumber,changed_files:2,base:{...pr().base,sha},head:{...pr().head,ref:ACG_G1_REVIEW.branch}};
+ assert.equal(selectCandidate(context(),candidate,other,{files}),other);
+ for(const delta of [{number:932},{head:{...candidate.head,ref:'architecture/unreviewed'}},{head:{...candidate.head,ref:'sg2/forged'}}])rejection(()=>selectCandidate(context(),{...candidate,...delta},other,{files}));
+ for(const edit of [f=>f[0].sha='f'.repeat(40),f=>f[0].status='added',f=>f[0].filename='Canon/proposals/other.md',f=>f[0].previous_filename='old',f=>f.push({...f[0]}),f=>f.pop()]){
+  const changed=structuredClone(files);edit(changed);rejection(()=>selectCandidate(context(),candidate,other,{files:changed}));
+ }
+ for(const f of files){assertAcgG1ReviewEntry(f,'100644 blob '+f.sha+'\t'+f.filename+'\0');for(const mode of ['100755','120000','160000'])rejection(()=>assertAcgG1ReviewEntry(f,mode+' blob '+f.sha+'\t'+f.filename+'\0'));}
 });
