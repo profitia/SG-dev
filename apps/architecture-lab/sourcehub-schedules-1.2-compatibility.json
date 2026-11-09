@@ -1,0 +1,82 @@
+{
+  "schemaVersion": "SourceHubScheduleSourceAcceptance/1",
+  "taskId": "ARCHITECTURE-ECR-STAGE01-SCHEDULE-SOURCES-20261109",
+  "sourceCandidateSha": "0d4379f7344e314891697cfc5add4f022320ff47",
+  "baseSha": "14f756e77e920ed94cd7ede1626558955f173e11",
+  "predecessorSourceSha": "d943d2ba17eeb6b07ba5a9162a4767e155513a90",
+  "predecessorManifestPath": "apps/architecture-lab/sdk-1.34-compatibility.json",
+  "predecessorManifestSha256": "458ddbf661ce1a5666260a072a03f24ac016346bdd9a9efef7f2a1d497eee403",
+  "hubContractsVersion": "1.5.0",
+  "publicationScheduleVersion": "1.2.0",
+  "legacyHubContractVersion": "1.0.0",
+  "legacyCommodityContractVersion": "1.1.0",
+  "scope": "SOURCEHUB_PRODUCER_ONLY_OPT_IN_SCHEDULE_CONTRACT",
+  "consumerRuntimeAdoption": false,
+  "administrativeActivation": "SEPARATE_EXACT_OWNER_GO_REQUIRED",
+  "sourceFiles": {
+    "apps/platform-source-hub/docs/publication-schedules.pl.md": "4b434cc3eb667a9d242af932dfa052915d6f49d9b5f8fc35687530195a041423",
+    "apps/platform-source-hub/migrations/007-publication-schedules.sql": "ff7c82d6a00a4a01ea96d596766f8c666a2ad4b4a098cc98cb8ff076bdb61080",
+    "apps/platform-source-hub/operations/enroll-publication-schedule-service.sql": "5acd1fa13e60e0102483ec13b6025a9e1e9a18ef019d9b446dc6a06f19cebbff",
+    "apps/platform-source-hub/operations/publication-schedule-owner-plan.json": "0d49d9d90b5e3a32389727d1fbcd70ba4a11a79a62a504e2b44ac27635a97010",
+    "apps/platform-source-hub/package-lock.json": "36605e4157039b36a836d2b99a4c1f9fbdb64097e0e589f2f25b7477a5f0fe91",
+    "apps/platform-source-hub/scripts/install-publication-schedules.mjs": "95b720604f1b452aee916ff9ba755431fa537b1968eb55d79ca889a5c9b2e355",
+    "apps/platform-source-hub/scripts/migrate.mjs": "f66018c419e3fb15a51cbc090d57dd666e3ac7b0e5d88163cce4463e0036b363",
+    "apps/platform-source-hub/scripts/verify-publication-schedules.mjs": "804ab4881af78c7df9718e50ed6968d6c435851db0c024f3bd34c144ce2b102d",
+    "apps/platform-source-hub/src/admission.mjs": "a318e56be2b4b455375c3973eb48864134335e3f55e0508e6e1e2deb0938c36d",
+    "apps/platform-source-hub/src/capabilities.mjs": "e61c0fc3aa6ec9fc6b0f75a46256972c9ce79ec66e4f2d69b96b52c636b18a1e",
+    "apps/platform-source-hub/src/config.mjs": "15943eb220f9ceea6bbd57aac376e01c8b698f666460d932074555616d9ff12a",
+    "apps/platform-source-hub/src/providers/commodities-sh.mjs": "9f05b5dd5e8116b6750e5ac63131dc579c1997eb2449e2c1e86ff3def488335d",
+    "apps/platform-source-hub/src/providers/eia-schedules.mjs": "0b7ec19bb686e2d7bd6d4b282e55909a3f7261e82015a0f4e93ac2585d60facc",
+    "apps/platform-source-hub/src/providers/eia.mjs": "177679def64a1343c54f8909c488e508c3a969783161e01f12ce6f1498d9805f",
+    "apps/platform-source-hub/src/providers/publication-schedules.mjs": "13279471462dafb49da0b38ec83303514efd0ba2da32bbc07c027fc4788a8331",
+    "apps/platform-source-hub/src/repository.mjs": "21931b68afc0dc6fe5fa545a070c2a92f511478d9a4ae3e9d4c811f1d6c0cb0c",
+    "apps/platform-source-hub/src/transport.mjs": "16cc99fb9281749599462c31499a4472f0639639bf8dfd82cea0dddbfb35a364",
+    "apps/platform-source-hub/test/publication-schedule-integration.test.mjs": "901699acf8cd4dfa107301d58de7b0ee8c62aed367c9045711874e65a2caafc4",
+    "apps/platform-source-hub/test/publication-schedules.test.mjs": "8ccb8435862e474094463850d9e9a7ef39c19684e6e7415a70d3d6d3534f258f",
+    "apps/platform-source-hub/test/types.ts": "ed883d499f5ac3dbc759bb2c8a08985daf45be5da801023f93815cb72f3c06c6",
+    "packages/platform-source-hub-contracts/README.md": "a3278bacb45ab9da37428ff512466c1f1d126113159baa9b7204cb853ce3fe4f",
+    "packages/platform-source-hub-contracts/commodities-v1.d.mts": "e39ff0aa98aee67f612ab0227423916bf13eb525e0870e796d9f5b8568c34749",
+    "packages/platform-source-hub-contracts/commodities-v1.mjs": "febdc98aa8f96567b32a2d6f72d63fc02bea2ca136c0a4a3bc38e903c6ce8d38",
+    "packages/platform-source-hub-contracts/index.d.ts": "3bb5ff69a4c2deddd4661d4414d9082cfbbce265d99d41e87ad4bb3987aeb3be",
+    "packages/platform-source-hub-contracts/index.mjs": "1539805293f53a295a6f5443afa22de06e2b8f7046f7a6254417db92a5c008d2",
+    "packages/platform-source-hub-contracts/package.json": "3e89487d16df9ab17ca6ac3f4ecba34eaf6b4b8788120f3d706db9f8bfd14238"
+  },
+  "replacements": {
+    "apps/platform-source-hub/package-lock.json": {
+      "previousSha256": "d6b087708988a5f8a04f5f066fe1d69599cb50078409898371c0ca8bf7da9efc",
+      "sha256": "36605e4157039b36a836d2b99a4c1f9fbdb64097e0e589f2f25b7477a5f0fe91"
+    },
+    "apps/platform-source-hub/scripts/migrate.mjs": {
+      "previousSha256": "f4f5a83f1052d4da3232d9ba3546d3b6553e36a43d8f2f3cc59cad89311e2214",
+      "sha256": "f66018c419e3fb15a51cbc090d57dd666e3ac7b0e5d88163cce4463e0036b363"
+    },
+    "apps/platform-source-hub/src/admission.mjs": {
+      "previousSha256": "b0ec771a5577157cbad6e76ad2b6bc6de5e96da98631c6d9fe6ecf9e7c6fa161",
+      "sha256": "a318e56be2b4b455375c3973eb48864134335e3f55e0508e6e1e2deb0938c36d"
+    },
+    "apps/platform-source-hub/src/capabilities.mjs": {
+      "previousSha256": "648f2e5c85d954b1e9e28ebedb421e91b8e10235d28e28d79ee7c9da3a7dc76c",
+      "sha256": "e61c0fc3aa6ec9fc6b0f75a46256972c9ce79ec66e4f2d69b96b52c636b18a1e"
+    },
+    "apps/platform-source-hub/test/types.ts": {
+      "previousSha256": "f01d30f920c7a21bbc4bc8220c3e45bff2cc890c98d68e4ffb0cdedba3fe9b31",
+      "sha256": "ed883d499f5ac3dbc759bb2c8a08985daf45be5da801023f93815cb72f3c06c6"
+    },
+    "packages/platform-source-hub-contracts/README.md": {
+      "previousSha256": "1b8a39b087d174f909e8aacdd691f01a4f690b6597abb801c2fc893b3ee5b0c7",
+      "sha256": "a3278bacb45ab9da37428ff512466c1f1d126113159baa9b7204cb853ce3fe4f"
+    },
+    "packages/platform-source-hub-contracts/index.d.ts": {
+      "previousSha256": "eb09306da4c5549f0a723ea8835920afbb382bcb9cad2d8da7fefcbfcefc8236",
+      "sha256": "3bb5ff69a4c2deddd4661d4414d9082cfbbce265d99d41e87ad4bb3987aeb3be"
+    },
+    "packages/platform-source-hub-contracts/index.mjs": {
+      "previousSha256": "d694bd9563942ab6a2dd5a98fc1202fcd0df9d1441398fd6401db2fa72011f84",
+      "sha256": "1539805293f53a295a6f5443afa22de06e2b8f7046f7a6254417db92a5c008d2"
+    },
+    "packages/platform-source-hub-contracts/package.json": {
+      "previousSha256": "adfc4ea651714f311a97c60445dbcea9378ebdaa7fc99bfcf4e487725343f348",
+      "sha256": "3e89487d16df9ab17ca6ac3f4ecba34eaf6b4b8788120f3d706db9f8bfd14238"
+    }
+  }
+}
