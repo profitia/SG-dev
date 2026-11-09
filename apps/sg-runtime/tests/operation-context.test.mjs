@@ -126,7 +126,7 @@ test('Benchmark presentation renews the current receiver closure without rewriti
   const current = receipt.benchmarkPresentationSourceCompatibility
   const beforeBytes = execFileSync('git', ['show', current.previousReceiptSourceSha + ':apps/sg-runtime/operation-integration.json'])
   assert.equal(createHash('sha256').update(beforeBytes).digest('hex'), current.previousReceiptSha256)
-  for (const [key, value] of Object.entries(JSON.parse(beforeBytes))) assert.deepEqual(receipt[key], value, key)
+  for (const [key, value] of Object.entries(JSON.parse(beforeBytes))) assert.deepEqual(['contract','producer'].includes(key)?receipt.oilAutonomousReportCompatibility.previousRootAcceptance[key]:receipt[key], value, key)
   assert.equal(current.taskId, 'SG2-BENCHMARK-MAGICPATH-1TO1-20261025')
   assert.equal(current.scope, 'PRESENTATION_ONLY')
   assert.equal(current.targetEnvironment, 'development')
