@@ -7,6 +7,34 @@ const root=new URL('../../../',import.meta.url)
 const receipt=JSON.parse(fs.readFileSync(new URL('../sdk-1.33-compatibility.json',import.meta.url)))
 const next=JSON.parse(fs.readFileSync(new URL('../sdk-1.34-compatibility.json',import.meta.url)))
 const hash=bytes=>createHash('sha256').update(bytes).digest('hex')
+const readSource=file=>fs.readFileSync(new URL(file,root))
+
+function assertIntegratedSourceHistory(readCurrent=readSource){
+ let schedule=null
+ if(JSON.parse(readCurrent('packages/platform-source-hub-contracts/package.json')).version==='1.5.0'){
+  const file='apps/platform-source-hub/operations/publication-schedule-source-acceptance.json',bytes=readCurrent(file)
+  assert.equal(hash(bytes),'3f9a3de218368152b86cd4c4efebb831f2033256465248dcf320f362d8c0c422','exact accepted schedule continuation')
+  schedule=JSON.parse(bytes)
+  assert.equal(schedule.predecessorManifestPath,'apps/architecture-lab/sdk-1.34-compatibility.json')
+  assert.equal(hash(readCurrent(schedule.predecessorManifestPath)),schedule.predecessorManifestSha256,'immutable SDK1.34 receipt')
+  assert.equal(schedule.sourceCandidateSha,'1ed366d9e1fdac87a549dd891d2b7b53abf13b2c')
+  assert.equal(schedule.scope,'SOURCEHUB_PRODUCER_ONLY_OPT_IN_SCHEDULE_CONTRACT')
+  assert.equal(schedule.consumerRuntimeAdoption,false)
+  assert.equal(Object.keys(schedule.sourceFiles).length,26)
+  assert.equal(Object.keys(schedule.replacements).length,9)
+  for(const [file,digest]of Object.entries(schedule.sourceFiles))assert.equal(hash(readCurrent(file)),digest,'accepted current schedule source '+file)
+  for(const [file,replacement]of Object.entries(schedule.replacements)){
+   assert.equal(replacement.previousSha256,next.integrationFiles[file],'preserved integrated predecessor '+file)
+   assert.equal(replacement.sha256,schedule.sourceFiles[file],'explicit accepted replacement '+file)
+  }
+ }
+ for(const [file,digest]of Object.entries(next.integrationFiles)){
+  // The immutable continuation binds the previous fingerprint and all new
+  // source bytes. Other SDK1.34 integration files still require exact bytes.
+  const expected=schedule?.replacements[file]?.sha256??digest
+  assert.equal(hash(readCurrent(file)),expected,'integrated producer '+file)
+ }
+}
 
 test('SDK1.34 preserves the complete SDK1.33 receipt and explicit optional peer history',()=>{
  assert.equal(hash(fs.readFileSync(new URL('../sdk-1.33-compatibility.json',import.meta.url))),next.previousReceiptSha256)
@@ -43,9 +71,18 @@ test('SDK1.34 preserves the complete SDK1.33 receipt and explicit optional peer 
  for(const name of ['marketSymbolAdopted','schemaChanged','authorizationChanged','deploymentPerformed'])assert.equal(next[name],false)
  assert.equal(Object.keys(next.producerFiles).length,27)
  assert.equal(next.integrationBaseMain,'e07521e7417ed6ce5a995a4ff1c708f32a9731a5')
- for(const [file,digest]of Object.entries(next.integrationFiles))assert.equal(hash(fs.readFileSync(new URL(file,root))),digest,'integrated producer '+file)
+ assertIntegratedSourceHistory()
  // Standalone producer jobs deliberately use shallow source checkouts. Bind
  // the immutable reviewed fingerprint record here; the full-history Canon
  // foundation suite independently checks every original Git blob at its SHA.
  assert.equal(hash(JSON.stringify(Object.entries(next.producerFiles).sort())),'90b10f1c73672ad8c2f3fc44c73206f7be3977184bbc609b131483a1f76397cf')
+})
+
+test('schedule continuation rejects changed source, acceptance, predecessor and unreviewed integration bytes',()=>{
+ for(const target of ['apps/platform-source-hub/src/providers/eia-schedules.mjs','apps/platform-source-hub/operations/publication-schedule-source-acceptance.json','apps/architecture-lab/sdk-1.34-compatibility.json','packages/platform-contracts/src/external-call.mjs']){
+  assert.throws(()=>assertIntegratedSourceHistory(file=>{
+   const bytes=readSource(file)
+   return file===target?Buffer.concat([bytes,Buffer.from('\nUNACCEPTED_CHANGE')]):bytes
+  }),target)
+ }
 })
