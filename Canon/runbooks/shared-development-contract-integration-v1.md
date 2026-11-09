@@ -200,3 +200,46 @@ for the previous policy revision passed1395 tests, typecheck and build in run
 proof. PR930 repair and the policy refresh remain unadopted; no failing-run proof,
 owner decision, PMOS entry or component result replaces the required CI gates.
 The final feature SOURCE GO and every installation/release/cost boundary remain.
+
+
+## Proposed one-time CI baseline repair admission — PR930 only
+
+OWNER_ACCEPTANCE_REQUIRED; no exception is active. This proposal is limited to
+PR930, branch architecture/sourcehub-sdk-history-test-20261109, head
+c3592a012c328216844cc9747f436a258ecdb53e, over unchanged main
+f77cde55bab9adb130a79754929a5ee03b3d508b. The sole changed file is
+apps/architecture-lab/test/sdk-compatibility.test.mjs. It changes no SDK source,
+product code/dependencies, old receipt, CI controller, workflow, grant or runtime.
+
+The main producer regression prevents a successful trusted-main workflow; the
+repair's public SG2 verifier requires that same workflow for the repair SHA.
+The existing controller also rejects this new exact Architecture test path.
+This is a baseline-repair admission decision, not a normal passing source gate.
+
+An explicit Governance Source Layer owner decision may accept the following
+closed evidence substitution solely to admit this exact repair through its PR:
+
+- PR930 Architecture producer, dashboard and SG2/SRM contract jobs pass; SRM
+  operation tests/typecheck/build also pass before any merge.
+- Trusted-main run42687244892 SG2 controlled job129397239468 passed1395 tests,
+  typecheck and build with sanitized receipt13704548027. The full run FAILED and
+  is not relabelled or accepted by assertProof as a successful canonical proof.
+- The repair, main and tested candidate969c86940a7487b11c6bf22e38ddf0250374bf34
+  have byte-identical SG2/SRM/SDK package trees and locks. All control-policy
+  files are identical between repair and main. The new test itself has13 local
+  checks and a successful actual GitHub Architecture producer job.
+- The only permitted failed PR930 job is SG2 operation integration, exclusively
+  CONTROLLED_VALIDATION_REQUIRED_FOR_EXACT_SHA. Any other failure invalidates
+  this proposal. Main/head movement or a changed repair blob also invalidates it.
+
+No admin/force merge, ruleset modification, false check/status, broader path
+allowlist, Environment change, credential access or assertProof relaxation is
+permitted. Native GitHub restrictions must continue to be enforced. If they block
+the exact normal PR merge, stop. After repair adoption, require successful real
+main and trusted-main validation; do not adopt policy PR928 or publish the Oil
+aggregate until their normal exact-head CI can complete successfully.
+
+This narrowly scoped proposal would be exhausted by the single repair. It cannot
+be reused for PR928, the94-file Oil candidate, any feature/source merge, deployment,
+grant, installation, paid call or later failure. All those retain their original
+mandatory controls. Without explicit acceptance, the repair remains BLOCKED.
