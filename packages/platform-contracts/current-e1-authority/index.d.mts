@@ -13,3 +13,6 @@ export declare function createCurrentE1Authority(options:{query:AccessQuery;clie
 export declare const currentE1CalendarAuthoritySchemaUrl:string
 export declare const currentE1CalendarReceiverSchemaUrl:string
 export declare function currentE1CalendarSchemaDigest(side:'authority'|'receiver'):string
+
+export declare const currentE1InsightsAuthoritySchemaUrl:string;
+export declare const currentE1InsightsReceiverSchemaUrl:string;
