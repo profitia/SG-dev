@@ -42,6 +42,12 @@ test('current AUTHORIZE does no paid admission while refusing another organisati
   const f=fixture();edit(f);await assert.rejects(f.execute);assert.equal(f.invoked,0)
  }
 })
+test('the existing fixed-organisation SG2 host preserves its profile and cannot borrow another organisation',async()=>{
+ const f=fixture();f.options.application.profileId='PORR_SUITE';f.options.application.organisationId=id('2')
+ assert.equal((await f.execute()).decision,'ALLOW')
+ const g=fixture();g.options.application.profileId='PORR_SUITE';g.options.application.organisationId=id('9')
+ await assert.rejects(g.execute,e=>e.reasonCode==='CONTEXT_INVALID');assert.equal(g.invoked,0)
+})
 test('GENERATE requires a real bound reservation; JSON/cross-actor receipts and missing metering deny before action',async()=>{
  const f=fixture();f.input.payload={kind:'GENERATE',commandId:id('3'),input:[{role:'user',content:'question'}]}
  f.session.reserveAssistantUsage=async()=>({status:'RESERVED',executionId:id('5')})

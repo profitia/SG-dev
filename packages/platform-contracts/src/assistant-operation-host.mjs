@@ -12,7 +12,7 @@ const freeze=v=>{if(v&&typeof v==='object'){Object.values(v).forEach(freeze);Obj
  * the existing canonical account/membership lease inside its real transaction. */
 export function createAssistantOperationHost(options){
  const{application,binding,independentQuery,transact,createAuthenticator,readResources,projectOutput,usage,assistantSchemaDigest,now=Date.now}=options
- if(application?.appId!=='spendguru'||application.profileId!=='SPENDGURU_SAAS'||application.environment!=='development'
+ if(application?.appId!=='spendguru'||!['SPENDGURU_SAAS','PORR_SUITE'].includes(application.profileId)||application.environment!=='development'
   ||binding?.applicationId!=='spendguru'||binding.environment!=='development'||binding.role!=='sg2_private_development_runtime'
   ||binding.projectId!=='spring-bread-28217539'||binding.branchId!=='br-sparkling-term-b99l107x'||binding.databaseName!=='platform_private'
   ||!Array.isArray(application.operations)||!application.operations.length||application.operations.some(op=>!operations.includes(op))

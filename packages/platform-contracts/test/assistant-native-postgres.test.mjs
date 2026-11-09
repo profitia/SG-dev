@@ -51,7 +51,7 @@ test('Assistant host uses current native E1 account, membership, pilot and SQL l
   const state={sessionActive:true,banned:false}
   const client={async authenticateRequest(request){const user=request.headers.get('authorization')==='Bearer SYNTHETIC_B'?V:U;return {status:'signed-in',isAuthenticated:true,toAuth:()=>({isAuthenticated:true,tokenType:'session_token',userId:'user_'+user,sessionId:'session_'+user,sessionClaims:{iss:'https://synthetic.clerk.accounts.dev',sub:'user_'+user,sid:'session_'+user,azp:'https://sg2.synthetic.test',exp:Math.floor(Date.now()/1000)+3600}})}},
    sessions:{async getSession(id){return {id,userId:id.replace('session_','user_'),status:state.sessionActive?'active':'revoked',actor:null,expireAt:Date.now()+3600000,abandonAt:Date.now()+3600000}}},users:{async getUser(id){return {id,banned:state.banned,locked:false,deprovisioned:false}}}}
-  const application={appId:'spendguru',profileId:'SPENDGURU_SAAS',environment:'development',identityIssuer:'https://synthetic.clerk.accounts.dev',organisationId:null,features:['assistant'],operations:['assistant.converse','assistant.history.read','assistant.history.write'],deploymentId:'SYNTHETIC_ONLY',configurationVersion:'assistant-fixture'}
+  const application={appId:'spendguru',profileId:'PORR_SUITE',environment:'development',identityIssuer:'https://synthetic.clerk.accounts.dev',organisationId:A,features:['assistant'],operations:['assistant.converse','assistant.history.read','assistant.history.write'],deploymentId:'SYNTHETIC_ONLY',configurationVersion:'assistant-fixture'}
   const binding={applicationId:'spendguru',environment:'development',projectId:'spring-bread-28217539',branchId:'br-sparkling-term-b99l107x',databaseName:'platform_private',role,schemaDigest}
   const identity={appId:'spendguru',environment:'development',issuer:application.identityIssuer,authorizedParties:['https://sg2.synthetic.test']}
   let reserves=0
@@ -73,7 +73,7 @@ test('Assistant host uses current native E1 account, membership, pilot and SQL l
   await assert.rejects(()=>execute());await assert.rejects(()=>execute('assistant.history.read',null))
   await asOwner(c=>c.query('UPDATE profitia_assistant_access.pilot SET enabled=true'))
   state.sessionActive=false;await assert.rejects(()=>execute());state.sessionActive=true
-  await asOwner(c=>c.query("UPDATE profitia_access.memberships SET status='REVOKED' WHERE user_id=$1 AND organisation_id=$2",[U,A]))
+  await asOwner(c=>c.query("UPDATE profitia_access.memberships SET status='SUSPENDED' WHERE user_id=$1 AND organisation_id=$2",[U,A]))
   await assert.rejects(()=>execute());assert.equal((await execute('assistant.history.read',null)).value.userId,U)
   state.banned=true;await assert.rejects(()=>execute('assistant.history.read',null));assert.equal(reserves,0)
  }finally{

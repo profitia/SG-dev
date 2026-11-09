@@ -60,7 +60,7 @@ const rules = Object.freeze({
 export const IMPLEMENTED_OPERATIONS = Object.freeze(Object.keys(rules))
 const profiles = Object.freeze({
   PLATFORM_INTERNAL: { features: ['job_execution','knowledge_ingestion'], products: [] },
-  PORR_SUITE: { features: ['account', 'market', 'benchmark', 'category', 'supplier_workspace', 'forecast', 'personal_workspace', 'supplier_report'], products: ['SPENDGURU', 'SUPPLIER_INTELLIGENCE'], fixed: true },
+  PORR_SUITE: { features: ['account', 'market', 'benchmark', 'category', 'supplier_workspace', 'forecast', 'personal_workspace', 'supplier_report','assistant'], products: ['SPENDGURU', 'SUPPLIER_INTELLIGENCE'], fixed: true },
   SPENDGURU_SAAS: { features: ['account', 'market', 'benchmark', 'category', 'supplier_workspace', 'forecast', 'personal_workspace', 'supplier_report','assistant'], products: ['SPENDGURU', 'SUPPLIER_INTELLIGENCE'] },
   SUPPLIER_INTELLIGENCE_STANDALONE: { features: ['account', 'supplier_workspace', 'personal_workspace', 'supplier_report'], products: ['SUPPLIER_INTELLIGENCE'] },
 })
@@ -330,7 +330,7 @@ export function createOperationExecutor(options) {
         // Manual WRITE uses the same atomic private request ledger for replay, never external permission.
         const compute = ['REQUEST_COMPUTE','REQUEST_EXTERNAL'].includes(selected.effect)||input.operation==='supplier.location.write'
         const assistant=input.operation==='assistant.converse'
-        if(input.operation.startsWith('assistant.')&&(options.assistantSchemaDigest===undefined||config.environment!=='development'||config.appId!=='spendguru'||config.profileId!=='SPENDGURU_SAAS'))deny('APPLICATION_FEATURE_UNAVAILABLE')
+        if(input.operation.startsWith('assistant.')&&(options.assistantSchemaDigest===undefined||config.environment!=='development'||config.appId!=='spendguru'||!['SPENDGURU_SAAS','PORR_SUITE'].includes(config.profileId)))deny('APPLICATION_FEATURE_UNAVAILABLE')
         if(assistant){
           if(!payload||!['AUTHORIZE','GENERATE'].includes(payload.kind)
             ||Object.keys(payload).sort().join(',')!==(payload.kind==='AUTHORIZE'?'kind':'commandId,input,kind'))deny('CONTEXT_INVALID')
