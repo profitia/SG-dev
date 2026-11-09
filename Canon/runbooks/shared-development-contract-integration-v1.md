@@ -107,3 +107,139 @@ A separate four-file bootstrap uses the existing sg2/ transport namespace while 
 PROPOSED / CI_POLICY_APPROVAL_PENDING. Existing accepted G1 and PR907 admit the twelve governance files only. The actual PR908 backend candidate 253e20369fcd26f1985fc14188fd3e7f927a8faa is44 exact regular files and is rejected by trusted main with ARCHITECTURE_PATH_REJECTED; the required SG2 check lacks its exact controlled proof. ECR_BACKEND_REVIEW binds that PR/branch and every source blob/status/mode plus actual ARCHITECTURE owner/surface. A normal main refresh may preserve only these identical reviewed versions. No generic runtime, optional-package, source or workflow pattern is admitted.
 
 This separate four-file policy proposal requires explicit owner acceptance before trusted-main activation. The prior twelve-doc approval is not transferred to backend code. Then use the existing trusted-main controlled workflow for the exact policy bootstrap, accept only after all required checks, validate the exact refreshed PR908 head, independently verify its proof and all public/resulting-main gates. Existing read:packages-only credentials, private pins, main-only Environment, ignore-scripts installation and token removal before candidate execution remain unchanged. The sg2/ policy transport namespace is not ownership. No G1 repeat, administrative grant, resource, provider access or runtime deployment follows from this CI review.
+
+## Oil report E1 — proposed coordinated source admission (2026-11-09)
+
+PROPOSED / OWNER_CI_AND_COORDINATION_APPROVAL_PENDING. No activation is implied.
+The existing Oil continuation requires four common E1 operations, SG Runtime host
+integration and compatibility with SRM. Separate owner candidates are Architecture
+PR925 at4809359af22b854cf393aca22b8f731711297625, SG2 PR923 at
+fdc4395b11e2d67be04609c6097f6ce8ab45d345 and SRM PR927 at
+3167a7d26efbb39cf6a3f149ba841113453a52db. The actual SDK producer bytes are
+b696932487ef12ef43b862f677931afc5719f733. All previous receipts remain intact.
+
+The local-only composite a3c707b1f7e95c5b69cf2751777752b8423527da over main
+14f756e77e920ed94cd7ede1626558955f173e11 has tree
+97aa0103e9ce652f7904c6f19c33c76c89d047c0. It has not been published as
+an aggregate, adopted or deployed. OIL_REPORT_E1_REVIEW binds all93 exact source
+paths, blobs, statuses, modes and actual Architecture/SG2/SRM routing results.
+The one feature branch exception is existing PR923 on
+feat/oil-autonomous-runner-20261109; no generic feat branch admission is added.
+
+This separate four-file bootstrap proposes that closed review and four precise
+local package catalog entries: insights-runtime, insights-contracts,
+platform-current-e1-authority and platform-source-hub-contracts. Two existing
+optional manifests have exact reviewed peer ranges. A new local package absent
+from main still requires this complete source review and its exact manifest blob;
+a boolean, unreviewed manifest or changed file grants no admission. Private
+registry artifacts/scopes, main-only execution, internal author/repository/head
+checks, ignore-scripts installation and token removal remain unchanged.
+
+After explicit owner acceptance of this bootstrap and coordinated procedure,
+validate and adopt the four-file policy through the existing trusted-main CI.
+Refresh the local composite onto resulting main only if every93 reviewed source
+entry remains identical. Preserve the original owner PRs/tasks as provenance;
+use a fast-forward of existing PR923 as the coordinated transport only after that
+procedure is authorized. Dispatch exact-head controlled CI, verify all ordinary
+owner and peer checks, then obtain the required exact SOURCE GO after checks.
+Never merge the producer first while its consumers reject the shared source.
+A changed/missing/extra source entry invalidates this closed review.
+
+This proposal and its acceptance authorize no SQL installation, role/permission
+change, runtime configuration, model request, budget, deployment or scheduled
+cost. Those remain their own exact installation/recovery/release gates. Neither
+this source proof nor a historical PDF replay is Development LIVE acceptance.
+
+
+## Concurrent main refresh — SourceHub1.5 (2026-11-09)
+
+The owner accepted the original packet5a5968eaf46e96c3343ed2b25a693d8beb7e6f57f8daea368713f14240ac27b8
+and policy sourcedbca1516bf4a104c338e35b439e1af50c245dda6. That decision remains
+recorded and is not represented as activation of a different source version.
+
+While the decision was pending, accepted SourceHub PR929 advanced main to
+f77cde55bab9adb130a79754929a5ee03b3d508b and its contract package to1.5.0.
+A normal main merge preserves that work. The original current-source policy test
+correctly rejected the new optional peer version; it was not skipped. The bounded
+refresh recognizes only1.4.0 and1.5.0 with the same exact existing peer range;
+1.6.0 and broader peer ranges remain rejected. No provider family, E1 grant,
+credential scope or runtime is activated.
+
+The refreshed local composite is63f464be456c54a382f99edd6808e333513236d0, tree
+c4d61019f6b12d38d81e9f6611c895901d121f0a. Inputs: PR925 397ff306b7b32ed175da59e6b417a6c96ce84fc8; PR923 8643ff2d0a90d15b74320be79dc11cbb50dfea0c; PR927 6f7d5f8b6aedcd750d22cb0b6f86d43a2c5230d1.
+All93 paths, statuses, modes and owners are identical to the original review;
+only five reviewed blobs change: the two Insights/SG dependency locks, the two
+SG2/SRM compatibility records and the shared historical-source test. The latter
+preserves the full accepted PR929 schedule closure and the immutable old receipt.
+The report still uses commodity protocol1.1.0; it does not opt into schedules1.2.0.
+
+This refresh is a reviewable amendment, not an assertion that the original exact
+packet approved new hashes. Required CI must pass before controlled source
+adoption, and the final feature SOURCE GO remains separate.
+
+
+## Lab history compatibility correction — proposed closed94-file review
+
+The original93-file review remains historical. The updated exact review adds only
+apps/architecture-lab/test/sdk-compatibility.test.mjs under Architecture Platform /
+ARCH-BASE-002. It incorporates the separate SourceHub owner repair PR930 source
+c3592a012c328216844cc9747f436a258ecdb53e and validates the five immutable,
+explicitly reviewed Oil successor digests without rewriting SDK1.33/1.34 receipts.
+The shared lab/foundation tests pass14/14, including negative cases for changed
+metadata, source and predecessor records.
+
+The new local-only composite is91dfa48a4b97c0476cb4fd39875347a6d970c0e4, tree
+943c513b8d74393504353f0d48042ae663b1e288. PR925 source is
+00ddd847b9e600514b45fabb02189cf4f6d9dbec; PR923/927 remain the SourceHub1.5
+compatibility inputs above. All original93 path/status/mode/owner bindings remain;
+this is one additional exact test path, not general lab-path admission.
+
+Current main has the PR929 historical-test regression. The SG2 controlled component
+for the previous policy revision passed1395 tests, typecheck and build in run
+42687244892, but the whole run failed. It is not accepted as a valid canonical
+proof. PR930 repair and the policy refresh remain unadopted; no failing-run proof,
+owner decision, PMOS entry or component result replaces the required CI gates.
+The final feature SOURCE GO and every installation/release/cost boundary remain.
+
+
+## Proposed one-time CI baseline repair admission — PR930 only
+
+OWNER_ACCEPTANCE_REQUIRED; no exception is active. This proposal is limited to
+PR930, branch architecture/sourcehub-sdk-history-test-20261109, head
+c3592a012c328216844cc9747f436a258ecdb53e, over unchanged main
+f77cde55bab9adb130a79754929a5ee03b3d508b. The sole changed file is
+apps/architecture-lab/test/sdk-compatibility.test.mjs. It changes no SDK source,
+product code/dependencies, old receipt, CI controller, workflow, grant or runtime.
+
+The main producer regression prevents a successful trusted-main workflow; the
+repair's public SG2 verifier requires that same workflow for the repair SHA.
+The existing controller also rejects this new exact Architecture test path.
+This is a baseline-repair admission decision, not a normal passing source gate.
+
+An explicit Governance Source Layer owner decision may accept the following
+closed evidence substitution solely to admit this exact repair through its PR:
+
+- PR930 Architecture producer, dashboard and SG2/SRM contract jobs pass; SRM
+  operation tests/typecheck/build also pass before any merge.
+- Trusted-main run42687244892 SG2 controlled job129397239468 passed1395 tests,
+  typecheck and build with sanitized receipt13704548027. The full run FAILED and
+  is not relabelled or accepted by assertProof as a successful canonical proof.
+- The repair, main and tested candidate969c86940a7487b11c6bf22e38ddf0250374bf34
+  have byte-identical SG2/SRM/SDK package trees and locks. All control-policy
+  files are identical between repair and main. The new test itself has13 local
+  checks and a successful actual GitHub Architecture producer job.
+- The only permitted failed PR930 job is SG2 operation integration, exclusively
+  CONTROLLED_VALIDATION_REQUIRED_FOR_EXACT_SHA. Any other failure invalidates
+  this proposal. Main/head movement or a changed repair blob also invalidates it.
+
+No admin/force merge, ruleset modification, false check/status, broader path
+allowlist, Environment change, credential access or assertProof relaxation is
+permitted. Native GitHub restrictions must continue to be enforced. If they block
+the exact normal PR merge, stop. After repair adoption, require successful real
+main and trusted-main validation; do not adopt policy PR928 or publish the Oil
+aggregate until their normal exact-head CI can complete successfully.
+
+This narrowly scoped proposal would be exhausted by the single repair. It cannot
+be reused for PR928, the94-file Oil candidate, any feature/source merge, deployment,
+grant, installation, paid call or later failure. All those retain their original
+mandatory controls. Without explicit acceptance, the repair remains BLOCKED.
