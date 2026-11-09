@@ -22,7 +22,7 @@ const prior = p => JSON.parse(priorText(p))
 const sha256 = bytes => createHash('sha256').update(bytes).digest('hex')
 function scheduleSourceAcceptance(readCurrent=read){
  if(JSON.parse(readCurrent('packages/platform-source-hub-contracts/package.json')).version!=='1.5.0')return null
- const file='apps/architecture-lab/sourcehub-schedules-1.2-compatibility.json',bytes=readCurrent(file)
+ const file='apps/platform-source-hub/operations/publication-schedule-source-acceptance.json',bytes=readCurrent(file)
  assert.equal(sha256(bytes),'a2d43b03084198091c4f82d0c328217d2b462b4f2c68b875f5e7bcf3863718fb','exact new schedule acceptance')
  const a=JSON.parse(bytes)
  assert.equal(a.sourceCandidateSha,'0d4379f7344e314891697cfc5add4f022320ff47')
@@ -325,7 +325,7 @@ test('opt-in schedule producer pins its complete new closure while preserving ev
  assert.equal(a.scope,'SOURCEHUB_PRODUCER_ONLY_OPT_IN_SCHEDULE_CONTRACT')
 })
 test('schedule acceptance rejects altered new source, new metadata and historical receipt without changing fixtures on disk',()=>{
- for(const target of ['apps/platform-source-hub/src/providers/eia-schedules.mjs','apps/architecture-lab/sourcehub-schedules-1.2-compatibility.json','apps/architecture-lab/sdk-1.34-compatibility.json']){
+ for(const target of ['apps/platform-source-hub/src/providers/eia-schedules.mjs','apps/platform-source-hub/operations/publication-schedule-source-acceptance.json','apps/architecture-lab/sdk-1.34-compatibility.json']){
   assert.throws(()=>scheduleSourceAcceptance(p=>read(p)+(p===target?'\nUNACCEPTED_CHANGE':'')),target)
  }
 })
