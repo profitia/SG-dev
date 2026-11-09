@@ -8938,6 +8938,7 @@
     "sourceSha": "b696932487ef12ef43b862f677931afc5719f733",
     "applicationSourceDigests": {
       "../insights-runtime/docs/autonomous-oil-report.md": "b2a94f880183f883edf4033e871da9ac9289e399390e4f4b14449c12c17c4e85",
+      "../insights-runtime/package-lock.json": "dd2494920a54897fca9d5266a81f1dec7b47224bdc4bcb39241868c927134d79",
       "../insights-runtime/package.json": "5cd76e3f6cb88c4b6a42a1120d42df8701a8b25dac6e69b4c41988b934a13edc",
       "../insights-runtime/render/report.py": "3377070bdc8480b288d2a72b860654ab69a03bdb5861abc2553957679a3c8306",
       "../insights-runtime/scripts/worker.mjs": "ba8e829bee8de827ae0c324930ea6a751b9442791ab5098bbdaf12b1d1bb2fa4",
@@ -8961,7 +8962,7 @@
       "../sg-runtime/app/api/v1/insights/[...report]/route.ts": "a27a247485cd12e4126234023e20ca102bd762f35991b749712a1f8858ffcaa2",
       "../sg-runtime/lib/insights/autonomous-runtime.ts": "b7bc1dfc0505c39aa573daf255f6d7f178ae58a6d952db63eff020d8bb756171",
       "../sg-runtime/next.config.mjs": "401047ac67338602c536daa9175cf816db0209977160240c377428ad4b55c05f",
-      "../sg-runtime/package-lock.json": "72f0f53b4da234c4afd5319d18bca7627275560f76ff9ad6504d345bbc3b9656",
+      "../sg-runtime/package-lock.json": "6c5f430d29e4f2bb3074fb243eb3ab030bce4aff1dc77fb64a1a98677de77f19",
       "../sg-runtime/package.json": "08f73b15c29a5070a1e05003e17f5af07fa15fe45485fc0e036007c5e4dc5592",
       "../sg-runtime/scripts/bootstrap-insights-renderer.mjs": "f86a70aec9b1faae01e7a029f59ccce6bd4f5502b57bded110e034b17f0f5690",
       "../sg-runtime/scripts/insights-worker.ts": "581e07016902c7af82e3ee02168b011816cca689addf79614110ebaf3ef8fb90",
@@ -8992,6 +8993,14 @@
     "sourceTemplatesInstalled": false,
     "privateArchiveInstalled": false,
     "deploymentPerformed": false,
-    "paidCallsPerformed": false
+    "paidCallsPerformed": false,
+    "parallelMainCompatibility": {
+      "pullRequest": 929,
+      "sourceSha": "f77cde55bab9adb130a79754929a5ee03b3d508b",
+      "hubContractsVersion": "1.5.0",
+      "usedCommodityProtocol": "1.1.0",
+      "newScheduleProtocolAdopted": false,
+      "providerOrRuntimeActivation": false
+    }
   }
 }
