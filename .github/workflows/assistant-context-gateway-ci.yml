@@ -1,0 +1,26 @@
+name: Assistant Context Gateway source
+on:
+  pull_request:
+    paths:
+      - 'packages/assistant-context-contracts/**'
+      - 'packages/assistant-context-gateway/**'
+      - '.github/workflows/assistant-context-gateway-ci.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'packages/assistant-context-contracts/**'
+      - 'packages/assistant-context-gateway/**'
+      - '.github/workflows/assistant-context-gateway-ci.yml'
+permissions:
+  contents: read
+jobs:
+  contracts:
+    name: ACG producer isolation and chart version contracts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: node --check packages/assistant-context-contracts/src/index.mjs && node --check packages/assistant-context-gateway/src/index.mjs
+      - run: node --test packages/assistant-context-contracts/test/*.test.mjs packages/assistant-context-gateway/test/*.test.mjs
