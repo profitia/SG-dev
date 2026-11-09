@@ -46,6 +46,7 @@ test('installed product boundary rejects a forged tenant GUC and a revoked ordin
    if(!(await root.query('SELECT 1 FROM pg_roles WHERE rolname=$1',[roleName])).rowCount)
     await root.query(`CREATE ROLE ${roleName} ${login?'LOGIN':'NOLOGIN'} NOINHERIT NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE`);
   }
+  await root.query(`ALTER ROLE ${role} PASSWORD 'isolated_binding_only'`);
   await root.query('CREATE DATABASE '+name);u.pathname='/'+name;
   db=new Client({connectionString:u.toString()});await db.connect();
   await db.query('GRANT CREATE ON DATABASE '+name+' TO insights_report_owner');
@@ -55,7 +56,7 @@ test('installed product boundary rejects a forged tenant GUC and a revoked ordin
   const binding={role,databaseName:name,environment:'development',projectId:'TEST_ONLY',branchId:'TEST_ONLY'};
   await db.query("INSERT INTO insights_private.runtime_bindings VALUES($1,$2,$3,'WORKER','ACTIVE',now()+interval '1 hour','TEST_ONLY')",[role,binding,org]);
   await db.query(`GRANT USAGE ON SCHEMA insights_private TO ${role};GRANT EXECUTE ON FUNCTION insights_private.runtime_descriptor(),insights_private.scope_allows(text,uuid,boolean) TO ${role};GRANT SELECT,INSERT,UPDATE ON insights_private.report_jobs TO ${role};GRANT SELECT,INSERT ON insights_private.report_artifacts TO ${role}`);
-  const runtimeUrl=new URL(u);runtimeUrl.username=role;runtimeUrl.password='';pool=new Pool({connectionString:runtimeUrl.toString(),max:2});
+  const runtimeUrl=new URL(u);runtimeUrl.username=role;runtimeUrl.password='isolated_binding_only';pool=new Pool({connectionString:runtimeUrl.toString(),max:2});
   assert.deepEqual((await pool.query('SELECT insights_private.runtime_descriptor() AS descriptor')).rows[0].descriptor,binding);
   const store=new PostgresReportStore(pool);
   const profile={canonSha256:CANON_SHA256,version:'test',environment:'development',model:'gpt-6.1-sol'};
