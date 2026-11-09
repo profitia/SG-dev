@@ -1,6 +1,6 @@
 {
   "schemaVersion": "2.0",
-  "manifestVersion": "3.42.0",
+  "manifestVersion": "3.43.0",
   "owner": "Profitia Governance",
   "entrypoint": "AGENTS.md",
   "preflight": "scripts/governance/governance-preflight.mjs",
@@ -1320,6 +1320,26 @@
         "operation-access-matrix",
         "profitia-package-and-limits-management",
         "shared-development-contract-integration"
+      ]
+    },
+    {
+      "id": "economic-calendar-runtime-business-and-architecture-canon",
+      "version": "1.2",
+      "path": "Canon/v1.2-economic-calendar-runtime-business-and-architecture-canon.md",
+      "status": "ACTIVE",
+      "loadOrder": 510,
+      "owner": "Architecture Platform",
+      "appliesTo": [
+        "SG2",
+        "SRM",
+        "ARCHITECTURE"
+      ],
+      "dependsOn": [
+        "economic-calendar-runtime-source-hub-and-preferences-amendment",
+        "repository-routing",
+        "operation-context-and-access-contract",
+        "platform-source-hub-business-and-architecture-canon",
+        "platform-source-hub-universal-first-party-consumer-access"
       ]
     }
   ]
