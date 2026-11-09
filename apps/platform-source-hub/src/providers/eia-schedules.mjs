@@ -45,11 +45,12 @@ export function parseEiaSchedule(html,request){
    exceptions.set(standardDate,{date,localTime:clock(time),referencePeriod,reason,standardDate})
   }
   const out=[]
-  for(let standardDate=plus(c.from,-21);standardDate<=c.to;standardDate=plus(standardDate,1)){
+  const standardSchedule={weekday:3,localTime:'10:30',timeZone:'America/New_York'}
+  for(const ex of exceptions.values())if(ex.date>=c.from&&ex.date<=c.to)out.push(item('wpsr',ex.date,{localTime:ex.localTime,referencePeriod:ex.referencePeriod,scheduleStatus:'OFFICIAL_EXCEPTION',exception:{reason:ex.reason,standardDate:ex.standardDate},standardSchedule}))
+  for(let standardDate=c.from;standardDate<=c.to;standardDate=plus(standardDate,1)){
    if(new Date(standardDate).getUTCDay()!==3)continue
-   const ex=exceptions.get(standardDate),date=ex?.date??standardDate
-   if(date<c.from||date>c.to)continue
-   out.push(item('wpsr',date,{localTime:ex?.localTime??'10:30',referencePeriod:ex?.referencePeriod??plus(standardDate,-5),scheduleStatus:ex?'OFFICIAL_EXCEPTION':'RULE_DERIVED_UNCONFIRMED',exception:ex?{reason:ex.reason,standardDate}:null,standardSchedule:{weekday:3,localTime:'10:30',timeZone:'America/New_York'}}))
+   if(exceptions.has(standardDate))continue
+   out.push(item('wpsr',standardDate,{localTime:'10:30',referencePeriod:plus(standardDate,-5),scheduleStatus:'RULE_DERIVED_UNCONFIRMED',standardSchedule}))
   }
   return out.sort((a,b)=>a.scheduledAt.localeCompare(b.scheduledAt))
  }

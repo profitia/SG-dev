@@ -30,6 +30,8 @@ test('official exception displaces the Wednesday even for a Thursday-only query;
  const items=parseEiaSchedule(wpsrHtml(),q()),exception=items.find(i=>i.scheduleStatus==='OFFICIAL_EXCEPTION')
  assert.equal(items.length,3);assert.equal(exception.scheduledAt,'2026-11-12T17:00:00.000Z');assert.equal(exception.referencePeriod,'2026-11-06');assert.equal(exception.exception.standardDate,'2026-11-11');assert.equal(exception.timeZone,'America/New_York');assert(!items.some(i=>i.dateOnly==='2026-11-11'))
  assert.equal(parseEiaSchedule(wpsrHtml(),q('wpsr','2026-11-12','2026-11-12')).length,1)
+ const early=wpsrHtml().replace('November 12, 2026','November 10, 2026').replace('Thursday','Tuesday')
+ assert.equal(parseEiaSchedule(early,q('wpsr','2026-11-10','2026-11-10'))[0].scheduleStatus,'OFFICIAL_EXCEPTION')
  assert(items.filter(i=>i!==exception).every(i=>i.scheduleStatus==='RULE_DERIVED_UNCONFIRMED'))
  assert(items.every(i=>i.actual===null&&i.publishedAt===null&&i.sourceUpdatedAt===null&&i.lastVerifiedAt==='metadata.retrievedAt'))
 })
