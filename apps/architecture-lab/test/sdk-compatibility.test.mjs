@@ -2,6 +2,8 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import {createHash} from 'node:crypto'
+import {execFileSync} from 'node:child_process'
+import {assistantSdkPredecessor,ASSISTANT_SDK_PRODUCER} from '../assistant-m1-sdk-compatibility.mjs'
 
 const root=new URL('../../../',import.meta.url)
 const receipt=JSON.parse(fs.readFileSync(new URL('../sdk-1.33-compatibility.json',import.meta.url)))
@@ -9,7 +11,21 @@ const next=JSON.parse(fs.readFileSync(new URL('../sdk-1.34-compatibility.json',i
 const hash=bytes=>createHash('sha256').update(bytes).digest('hex')
 const readSource=file=>fs.readFileSync(new URL(file,root))
 
+test('assistant optional source closes the real SDK dependency graph and retains the immutable predecessor',async()=>{
+ const historical=(sha,p)=>execFileSync('git',['show',sha+':'+p],{cwd:root})
+ const {record:a}=assistantSdkPredecessor(readSource,historical)
+ for(const [p,h]of Object.entries(a.sourceDigests))assert.equal(hash(historical(ASSISTANT_SDK_PRODUCER,'packages/platform-contracts/'+p)),h,'producer source '+p)
+ const remaining=new Set(Object.keys(a.sdkDigests))
+ for(const name of fs.readdirSync(new URL('packages/platform-contracts/src/',root)).filter(n=>n.endsWith('.mjs'))){
+  const sdk=await import(new URL('packages/platform-contracts/src/'+name,root))
+  for(const key of remaining)if(typeof sdk[key]==='function'){assert.equal(await sdk[key](),a.sdkDigests[key],key);remaining.delete(key)}
+ }
+ assert.equal(remaining.size,0)
+ for(const target of ['packages/platform-contracts/src/assistant-usage.mjs','packages/platform-contracts/src/operation-context.mjs','packages/platform-contracts/package.json','apps/architecture-lab/assistant-m1-sdk-compatibility.json'])assert.throws(()=>assistantSdkPredecessor(p=>p===target?Buffer.concat([readSource(p),Buffer.from('UNREVIEWED')]):readSource(p),historical),target)
+})
+
 function assertIntegratedSourceHistory(readCurrent=readSource){
+ const previous=assistantSdkPredecessor(readCurrent,(sha,p)=>execFileSync('git',['show',sha+':'+p],{cwd:root})).previousBytes
  let schedule=null
  if(JSON.parse(readCurrent('packages/platform-source-hub-contracts/package.json')).version==='1.5.0'){
   const file='apps/platform-source-hub/operations/publication-schedule-source-acceptance.json',bytes=readCurrent(file)
@@ -32,7 +48,7 @@ function assertIntegratedSourceHistory(readCurrent=readSource){
   // The immutable continuation binds the previous fingerprint and all new
   // source bytes. Other SDK1.34 integration files still require exact bytes.
   const expected=schedule?.replacements[file]?.sha256??digest
-  assert.equal(hash(readCurrent(file)),expected,'integrated producer '+file)
+  assert.equal(hash(previous(file)),expected,'integrated producer '+file)
  }
 }
 
