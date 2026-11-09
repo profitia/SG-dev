@@ -1,25 +1,299 @@
-import test from 'node:test';import assert from 'node:assert/strict';import {readFileSync} from 'node:fs';
-import {command,editionKey,SECTIONS,assertContext,CANON_SHA256,ReportError} from '../../../packages/insights-contracts/index.mjs';
-import {completedPeriod,scheduledInstant,dueSlot,validatePeriod} from '../src/calendar.mjs';
-import {planData} from '../src/planner.mjs';import {maximumCost,qualityGate} from '../src/composer.mjs';import {marketChanges,buildEvidence} from '../src/evidence.mjs';import {telemetry} from '../src/telemetry.mjs';
-const input=JSON.parse(readFileSync(new URL('./fixtures/offline-report.json',import.meta.url))).command;
-test('business key excludes trigger/request hash; revision and organisation distinguish edition',()=>{assert.equal(editionKey('a',input),editionKey('a',{...input,asOf:'2026-11-10T10:00:00Z'}));assert.notEqual(editionKey('a',input),editionKey('b',input));assert.notEqual(editionKey('a',input),editionKey('a',{...input,revision:2}));assert.throws(()=>command({...input,organisationId:'foreign'}))});
-test('last completed Tue–Mon period at Monday/Tuesday and CET/CEST boundaries',()=>{for(const [asOf,fromDate,throughDate]of [['2026-11-09T22:59:59Z','2026-10-27','2026-11-02'],['2026-11-09T23:00:00Z','2026-11-03','2026-11-09'],['2026-03-30T22:00:00Z','2026-03-24','2026-03-30'],['2026-10-26T23:00:00Z','2026-10-20','2026-10-26']])assert.deepEqual(completedPeriod(asOf),{fromDate,throughDate})});
-test('DST gap moves to first valid minute; overlap occurs once at earlier instant',()=>{assert.equal(scheduledInstant('2026-03-29','02:30'),'2026-03-29T01:00:00.000Z');assert.equal(scheduledInstant('2026-10-25','02:30'),'2026-10-25T00:30:00.000Z')});
-test('disabled, latest-only catchup and skip policy',()=>{const s={enabled:true,weekday:2,localTime:'08:00',timezone:'Europe/Warsaw',catchUp:'LATEST_ONLY',graceMinutes:15};assert.equal(dueSlot('2026-11-13T15:00:00Z',{...s,enabled:false}),null);assert.equal(dueSlot('2026-11-13T15:00:00Z',s).period.fromDate,'2026-11-03');assert.equal(dueSlot('2026-11-13T15:00:00Z',{...s,catchUp:'SKIP'}),null)});
-test('future and unmarked incomplete periods rejected',()=>{assert.throws(()=>validatePeriod({...input,asOf:'2026-11-11T00:00:00Z'},input.asOf));assert.throws(()=>validatePeriod({...input,asOf:'2026-11-09T12:00:00Z'},input.asOf));assert.doesNotThrow(()=>validatePeriod({...input,asOf:'2026-11-09T12:00:00Z',allowPartial:true},input.asOf))});
-test('planner uses existing contracts with current dates and explicitly excludes TE Calendar/Forecasts',()=>{const p=planData({command:input});assert.equal(p.queries.length,11);assert.deepEqual(p.marketSeries,['cl_c1_cl','b_c1_cl']);assert.ok(!p.queries.some(q=>['economic-calendar','external-forecasts'].includes(q.command.family)));assert.equal(p.queries[1].command.criteria.to,'2026-11-10')});
-test('price comparisons require same instrument, currency, unit, basis, exact seven days',()=>{const r={symbol:'BIT:COM',mode:'historical',price:110,observationAt:'2026-11-06T00:00:00Z',currency:'CNY',unit:'t',instrumentType:'FUTURES',quoteBasis:'CLOSE'};assert.equal(marketChanges([r,{...r,price:100,observationAt:'2026-10-30T00:00:00Z'}])[0].weeklyChange.percent.toFixed(1),'10.0');assert.equal(marketChanges([r,{...r,currency:'USD',price:100,observationAt:'2026-10-30T00:00:00Z'}])[0].weeklyChange,null)});
-test('unknown/expired pricing fails closed; reasoning already included in output ceiling',()=>{assert.throws(()=>maximumCost(10,20,{}));assert.equal(maximumCost(10,20,{inputMicroUsdPerToken:2,outputMicroUsdPerToken:10,validUntil:'2099-01-01T00:00:00Z'}),220)});
-test('current E1 required; frontend organisation alone cannot authorize',()=>{assert.throws(()=>assertContext({organisationId:'a'}));assert.throws(()=>assertContext({environment:'production',actorKind:'SERVICE',organisationId:'a',actorId:'x',decisionId:'d',expiresAt:'2099-01-01'}))});
-test('quality checks references, digits, lineage and retains Human Review',async()=>{const j={};const b={fingerprint:'f',status:'PARTIAL_READY',evidence:[{id:'E1'}]},n=Object.fromEntries(SECTIONS.map(k=>[k,[{text:'Jawnie oznaczone ograniczenia i warunkowe wnioski.',refs:['E1']}]])),out={status:'completed',evidenceFingerprint:'f',narrative:n};assert.equal((await qualityGate(j,b,out)).automaticPublication,false);await assert.rejects(qualityGate(j,b,{...out,narrative:{...n,executive:[{text:'Cena sto dolarów.',refs:['invented']}]}}));await assert.rejects(qualityGate(j,b,{...out,narrative:{...n,executive:[{text:'Cena 100.',refs:['E1']}]}}))});
-test('evidence rejects lookahead, raw retention and historical forecasts as current',()=>{const j={command:input,profile:{id:'p'},authorityRef:'a'},a={id:'E1',availableAt:null,publishedAt:'2026-11-12T00:00:00Z',receiptRef:'r',licenceRef:'l',projectionBasisRef:'p'};assert.throws(()=>buildEvidence(j,[{projection:[a]}],{}));assert.throws(()=>buildEvidence(j,[{projection:[{...a,publishedAt:null,raw:'forbidden'}]}],{}));assert.throws(()=>buildEvidence(j,[],{forecast:{series:[{seriesId:'cl_c1_cl',models:[{origin:'2026-10-30',target:'2026-11-06'}]}]}}))});
-test('host Sentry spans reused; telemetry capture failure cannot block stage',async()=>{const names=[],t=telemetry({span:async(n,f)=>{names.push(n);return f()},capture:()=>{throw Error('offline')}});assert.equal((await t.stage('plan',{id:'j'},async()=>42)).value,42);await assert.rejects(t.stage('compose',{id:'j'},async()=>{throw Error('fail')}));assert.equal(names[0],'insights.report.plan')});
+import test from "node:test";
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import {
+  command,
+  editionKey,
+  SECTIONS,
+  assertContext,
+  CANON_SHA256,
+  ReportError,
+} from "../../../packages/insights-contracts/index.mjs";
+import {
+  completedPeriod,
+  scheduledInstant,
+  dueSlot,
+  validatePeriod,
+} from "../src/calendar.mjs";
+import { planData } from "../src/planner.mjs";
+import { maximumCost, qualityGate } from "../src/composer.mjs";
+import { marketChanges, buildEvidence } from "../src/evidence.mjs";
+import { telemetry } from "../src/telemetry.mjs";
+const input = JSON.parse(
+  readFileSync(new URL("./fixtures/offline-report.json", import.meta.url)),
+).command;
+test("business key excludes trigger/request hash; revision and organisation distinguish edition", () => {
+  assert.equal(
+    editionKey("a", input),
+    editionKey("a", { ...input, asOf: "2026-11-10T10:00:00Z" }),
+  );
+  assert.notEqual(editionKey("a", input), editionKey("b", input));
+  assert.notEqual(
+    editionKey("a", input),
+    editionKey("a", { ...input, revision: 2 }),
+  );
+  assert.throws(() => command({ ...input, organisationId: "foreign" }));
+});
+test("last completed Tue–Mon period at Monday/Tuesday and CET/CEST boundaries", () => {
+  for (const [asOf, fromDate, throughDate] of [
+    ["2026-11-09T22:59:59Z", "2026-10-27", "2026-11-02"],
+    ["2026-11-09T23:00:00Z", "2026-11-03", "2026-11-09"],
+    ["2026-03-30T22:00:00Z", "2026-03-24", "2026-03-30"],
+    ["2026-10-26T23:00:00Z", "2026-10-20", "2026-10-26"],
+  ])
+    assert.deepEqual(completedPeriod(asOf), { fromDate, throughDate });
+});
+test("DST gap moves to first valid minute; overlap occurs once at earlier instant", () => {
+  assert.equal(
+    scheduledInstant("2026-03-29", "02:30"),
+    "2026-03-29T01:00:00.000Z",
+  );
+  assert.equal(
+    scheduledInstant("2026-10-25", "02:30"),
+    "2026-10-25T00:30:00.000Z",
+  );
+});
+test("disabled, latest-only catchup and skip policy", () => {
+  const s = {
+    enabled: true,
+    weekday: 2,
+    localTime: "08:00",
+    timezone: "Europe/Warsaw",
+    catchUp: "LATEST_ONLY",
+    graceMinutes: 15,
+  };
+  assert.equal(dueSlot("2026-11-13T15:00:00Z", { ...s, enabled: false }), null);
+  assert.equal(
+    dueSlot("2026-11-13T15:00:00Z", s).period.fromDate,
+    "2026-11-03",
+  );
+  assert.equal(
+    dueSlot("2026-11-13T15:00:00Z", { ...s, catchUp: "SKIP" }),
+    null,
+  );
+});
+test("future and unmarked incomplete periods rejected", () => {
+  assert.throws(() =>
+    validatePeriod({ ...input, asOf: "2026-11-11T00:00:00Z" }, input.asOf),
+  );
+  assert.throws(() =>
+    validatePeriod({ ...input, asOf: "2026-11-09T12:00:00Z" }, input.asOf),
+  );
+  assert.doesNotThrow(() =>
+    validatePeriod(
+      { ...input, asOf: "2026-11-09T12:00:00Z", allowPartial: true },
+      input.asOf,
+    ),
+  );
+});
+test("planner uses existing contracts with current dates and explicitly excludes TE Calendar/Forecasts", () => {
+  const p = planData({ command: input });
+  assert.equal(p.queries.length, 11);
+  assert.deepEqual(p.marketSeries, ["cl_c1_cl", "b_c1_cl"]);
+  assert.ok(
+    !p.queries.some((q) =>
+      ["economic-calendar", "external-forecasts"].includes(q.command.family),
+    ),
+  );
+  assert.equal(p.queries[1].command.criteria.to, "2026-11-10");
+});
+test("price comparisons require same instrument, currency, unit, basis, exact seven days", () => {
+  const r = {
+    symbol: "BIT:COM",
+    mode: "historical",
+    price: 110,
+    observationAt: "2026-11-06T00:00:00Z",
+    currency: "CNY",
+    unit: "t",
+    instrumentType: "FUTURES",
+    quoteBasis: "CLOSE",
+  };
+  assert.equal(
+    marketChanges([
+      r,
+      { ...r, price: 100, observationAt: "2026-10-30T00:00:00Z" },
+    ])[0].weeklyChange.percent.toFixed(1),
+    "10.0",
+  );
+  assert.equal(
+    marketChanges([
+      r,
+      {
+        ...r,
+        currency: "USD",
+        price: 100,
+        observationAt: "2026-10-30T00:00:00Z",
+      },
+    ])[0].weeklyChange,
+    null,
+  );
+});
+test("unknown/expired pricing fails closed; reasoning already included in output ceiling", () => {
+  assert.throws(() => maximumCost(10, 20, {}));
+  assert.equal(
+    maximumCost(10, 20, {
+      inputMicroUsdPerToken: 2,
+      outputMicroUsdPerToken: 10,
+      validUntil: "2099-01-01T00:00:00Z",
+    }),
+    220,
+  );
+});
+test("current E1 required; frontend organisation alone cannot authorize", () => {
+  assert.throws(() => assertContext({ organisationId: "a" }));
+  assert.throws(() =>
+    assertContext({
+      environment: "production",
+      actorKind: "SERVICE",
+      organisationId: "a",
+      actorId: "x",
+      decisionId: "d",
+      expiresAt: "2099-01-01",
+    }),
+  );
+});
+test("quality checks references, digits, lineage and retains Human Review", async () => {
+  const j = {};
+  const b = {
+      fingerprint: "f",
+      status: "PARTIAL_READY",
+      evidence: [{ id: "E1" }],
+    },
+    n = Object.fromEntries(
+      SECTIONS.map((k) => [
+        k,
+        [
+          {
+            text: "Jawnie oznaczone ograniczenia i warunkowe wnioski.",
+            refs: ["E1"],
+          },
+        ],
+      ]),
+    ),
+    out = { status: "completed", evidenceFingerprint: "f", narrative: n };
+  assert.equal((await qualityGate(j, b, out)).automaticPublication, false);
+  await assert.rejects(
+    qualityGate(j, b, {
+      ...out,
+      narrative: {
+        ...n,
+        executive: [{ text: "Cena sto dolarów.", refs: ["invented"] }],
+      },
+    }),
+  );
+  await assert.rejects(
+    qualityGate(j, b, {
+      ...out,
+      narrative: { ...n, executive: [{ text: "Cena 100.", refs: ["E1"] }] },
+    }),
+  );
+});
+test("evidence rejects lookahead, raw retention and historical forecasts as current", () => {
+  const j = { command: input, profile: { id: "p" }, authorityRef: "a" },
+    a = {
+      id: "E1",
+      availableAt: null,
+      publishedAt: "2026-11-12T00:00:00Z",
+      receiptRef: "r",
+      licenceRef: "l",
+      projectionBasisRef: "p",
+    };
+  assert.throws(() => buildEvidence(j, [{ projection: [a] }], {}));
+  assert.throws(() =>
+    buildEvidence(
+      j,
+      [{ projection: [{ ...a, publishedAt: null, raw: "forbidden" }] }],
+      {},
+    ),
+  );
+  assert.throws(() =>
+    buildEvidence(j, [], {
+      forecast: {
+        series: [
+          {
+            seriesId: "cl_c1_cl",
+            models: [{ origin: "2026-10-30", target: "2026-11-06" }],
+          },
+        ],
+      },
+    }),
+  );
+});
+test("host Sentry spans reused; telemetry capture failure cannot block stage", async () => {
+  const names = [],
+    t = telemetry({
+      span: async (n, f) => {
+        names.push(n);
+        return f();
+      },
+      capture: () => {
+        throw Error("offline");
+      },
+    });
+  assert.equal((await t.stage("plan", { id: "j" }, async () => 42)).value, 42);
+  await assert.rejects(
+    t.stage("compose", { id: "j" }, async () => {
+      throw Error("fail");
+    }),
+  );
+  assert.equal(names[0], "insights.report.plan");
+});
 
-test('telemetry failure before or after callback never repeats a side effect',async()=>{for(const mode of ['before','after']){let calls=0;const t=telemetry({span:async(_n,f)=>{if(mode==='before')throw Error('monitoring unavailable');await f();throw Error('monitoring unavailable')}});assert.equal((await t.stage('generate',{id:'j'},async()=>{calls++;return 42})).value,42);assert.equal(calls,1)}});
+test("telemetry failure before or after callback never repeats a side effect", async () => {
+  for (const mode of ["before", "after"]) {
+    let calls = 0;
+    const t = telemetry({
+      span: async (_n, f) => {
+        if (mode === "before") throw Error("monitoring unavailable");
+        await f();
+        throw Error("monitoring unavailable");
+      },
+    });
+    assert.equal(
+      (
+        await t.stage("generate", { id: "j" }, async () => {
+          calls++;
+          return 42;
+        })
+      ).value,
+      42,
+    );
+    assert.equal(calls, 1);
+  }
+});
 
-
-test('each planned request passes the existing provider builder without any HTTP',async()=>{
- const [{prepareTradingEconomics},{prepareEia},{prepareCftc},{prepareCommodities},{prepareSearch},{prepareBrave}]=await Promise.all([import('../../platform-source-hub/src/providers/trading-economics.mjs'),import('../../platform-source-hub/src/providers/eia.mjs'),import('../../platform-source-hub/src/providers/cftc.mjs'),import('../../platform-source-hub/src/providers/commodities-sh.mjs'),import('../../platform-source-hub/src/providers/newsapi.mjs'),import('../../platform-source-hub/src/providers/brave.mjs')]);
- for(const q of planData({command:input}).queries){const c=q.command;assert.doesNotThrow(()=>c.provider==='trading-economics'?prepareTradingEconomics(c.family,c.criteria):c.provider==='eia'?prepareEia(c):c.provider==='cftc'?prepareCftc(c):c.provider==='commodities-sh'?prepareCommodities(c):c.provider==='newsapi'?prepareSearch(c.criteria):prepareBrave(c.criteria),q.id)}
+test("each planned request passes the existing provider builder without any HTTP", async () => {
+  const [
+    { prepareTradingEconomics },
+    { prepareEia },
+    { prepareCftc },
+    { prepareCommodities },
+    { prepareSearch },
+    { prepareBrave },
+  ] = await Promise.all([
+    import("../../platform-source-hub/src/providers/trading-economics.mjs"),
+    import("../../platform-source-hub/src/providers/eia.mjs"),
+    import("../../platform-source-hub/src/providers/cftc.mjs"),
+    import("../../platform-source-hub/src/providers/commodities-sh.mjs"),
+    import("../../platform-source-hub/src/providers/newsapi.mjs"),
+    import("../../platform-source-hub/src/providers/brave.mjs"),
+  ]);
+  for (const q of planData({ command: input }).queries) {
+    const c = q.command;
+    assert.doesNotThrow(
+      () =>
+        c.provider === "trading-economics"
+          ? prepareTradingEconomics(c.family, c.criteria)
+          : c.provider === "eia"
+            ? prepareEia(c)
+            : c.provider === "cftc"
+              ? prepareCftc(c)
+              : c.provider === "commodities-sh"
+                ? prepareCommodities(c)
+                : c.provider === "newsapi"
+                  ? prepareSearch(c.criteria)
+                  : prepareBrave(c.criteria),
+      q.id,
+    );
+  }
 });
