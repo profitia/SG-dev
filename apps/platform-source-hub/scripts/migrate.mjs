@@ -61,7 +61,7 @@ export async function migrate(client,c){
   }
   await client.query('GRANT SELECT ON source_hub.migrations TO '+identifier(runtime));
   const migrations=[];
-  for(const version of ['002-te-news',...(c.installFirstParty===true?['004-universal-consumers']:[]),...(c.installCalendarStorage===true?['005-calendar-storage-rights']:[]),...(c.installCommodities===true?['006-commodity-providers']:[]),...(c.installMarketObservations===true?['006-market-observations']:[])]){
+  for(const version of ['002-te-news',...(c.installFirstParty===true?['004-universal-consumers']:[]),...(c.installCalendarStorage===true?['005-calendar-storage-rights']:[]),...(c.installCommodities===true?['006-commodity-providers']:[]),...(c.installMarketObservations===true?['006-market-observations']:[]),...(c.installPublicationSchedules===true?['007-publication-schedules']:[])]){
    const extension=await readFile(new URL('../migrations/'+version+'.sql',import.meta.url),'utf8'),extensionDigest=hash(extension);
    const applied=await client.query('SELECT digest FROM source_hub.migrations WHERE version=$1',[version]);
    if(applied.rows.length){if(applied.rows[0].digest!==extensionDigest)throw Error('EXISTING_MIGRATION_MISMATCH');}
@@ -77,9 +77,10 @@ async function main(){
  const calendarStorage=process.env.SOURCE_HUB_INSTALL_CALENDAR_STORAGE;if(calendarStorage!==undefined&&!['true','false'].includes(calendarStorage)||calendarStorage==='true'&&firstParty!=='true')throw Error('CALENDAR_STORAGE_INSTALL_OPTION_REFUSED');
  const markets=process.env.SOURCE_HUB_INSTALL_MARKET_OBSERVATIONS;if(markets!==undefined&&!['true','false'].includes(markets)||markets==='true'&&firstParty!=='true')throw Error('MARKET_INSTALL_OPTION_REFUSED');
  const commodities=process.env.SOURCE_HUB_INSTALL_COMMODITIES;if(commodities!==undefined&&!['true','false'].includes(commodities)||commodities==='true'&&firstParty!=='true')throw Error('COMMODITY_INSTALL_OPTION_REFUSED');
+ const schedules=process.env.SOURCE_HUB_INSTALL_PUBLICATION_SCHEDULES;if(schedules!==undefined&&!['true','false'].includes(schedules)||schedules==='true'&&firstParty!=='true')throw Error('SCHEDULE_INSTALL_OPTION_REFUSED');
  const unmetered=process.env.SOURCE_HUB_INSTALL_UNMETERED_SOURCE;if(unmetered!==undefined&&!['true','false'].includes(unmetered))throw Error('UNMETERED_INSTALL_OPTION_REFUSED');
  if(process.env.SOURCE_HUB_ENVIRONMENT!=='development'||u.hostname!==c.host.replace('-pooler','')||decodeURIComponent(u.username)!=='source_hub_development_migrator'||u.pathname!=='/neondb'||!['require','verify-full'].includes(u.searchParams.get('sslmode')??'')||[...u.searchParams.keys()].some(k=>!['sslmode','channel_binding'].includes(k)))throw Error('MIGRATOR_CONFIGURATION_REFUSED');
  u.searchParams.delete('sslmode');u.searchParams.delete('channel_binding');const client=new pg.Client({connectionString:u.href,ssl:{rejectUnauthorized:true},enableChannelBinding:true});await client.connect();
- try{const result=await migrate(client,{...c,environment:'development',databaseName:'neondb',installUnmetered:unmetered==='true',installFirstParty:firstParty==='true',installCalendarStorage:calendarStorage==='true',installCommodities:commodities==='true',installMarketObservations:markets==='true'});process.stdout.write(JSON.stringify(result)+'\n');}finally{await client.end();}
+ try{const result=await migrate(client,{...c,environment:'development',databaseName:'neondb',installUnmetered:unmetered==='true',installFirstParty:firstParty==='true',installCalendarStorage:calendarStorage==='true',installCommodities:commodities==='true',installMarketObservations:markets==='true',installPublicationSchedules:schedules==='true'});process.stdout.write(JSON.stringify(result)+'\n');}finally{await client.end();}
 }
 if(process.argv[1]&&import.meta.url===pathToFileURL(process.argv[1]).href)main().catch(()=>{process.stderr.write('{"error":"MIGRATION_REFUSED_OR_FAILED"}\n');process.exitCode=1;});

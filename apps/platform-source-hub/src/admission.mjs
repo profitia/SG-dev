@@ -4,6 +4,7 @@ import {SourceHubError} from '../../../packages/platform-source-hub-contracts/in
 import {DiscoveryError} from './providers/newsapi.mjs';
 import {credential} from './transport.mjs';
 import {eiaWireUrl} from './providers/eia.mjs';
+import {EIA_SCHEDULE_ORIGIN,EIA_SCHEDULE_PATHS} from './providers/eia-schedules.mjs';
 export const SOURCE_CONTROL_VERSION='source-hub-api-control-v1';
 export const SOURCE_DEFINITIONS=Object.freeze({
  'newsapi:news-discovery':{origin:'https://newsapi.org',paths:['/v2/everything','/v2/top-headlines','/v2/top-headlines/sources']},
@@ -24,8 +25,11 @@ export const COMMODITY_SOURCE_DEFINITIONS=Object.freeze({
  'commodities-sh:data-catalog':{origin:'https://api.commodities.sh',paths:['/v1/catalog','/openapi.json']},
  'commodities-sh:publication-calendar':{origin:'https://api.commodities.sh',paths:['/v1/calendar']}
 });
+export const PUBLICATION_SCHEDULE_SOURCE_DEFINITIONS=Object.freeze({
+ 'eia:publication-calendar':{origin:EIA_SCHEDULE_ORIGIN,paths:Object.values(EIA_SCHEDULE_PATHS)}
+});
 export function sourceDefinition(provider,family,{includeMarketForecasts=false}={}){
- const d=SOURCE_DEFINITIONS[provider+':'+family]??COMMODITY_SOURCE_DEFINITIONS[provider+':'+family]??OPTIONAL_SOURCE_DEFINITIONS[provider+':'+family];if(!d)throw new SourceHubError('UNSUPPORTED_FAMILY');
+ const d=SOURCE_DEFINITIONS[provider+':'+family]??COMMODITY_SOURCE_DEFINITIONS[provider+':'+family]??PUBLICATION_SCHEDULE_SOURCE_DEFINITIONS[provider+':'+family]??OPTIONAL_SOURCE_DEFINITIONS[provider+':'+family];if(!d)throw new SourceHubError('UNSUPPORTED_FAMILY');
  return {...d,sourceId:'source-hub.'+provider+'.'+family,resourceId:'api.'+provider+'.'+family,
   pathRules:('basePaths' in d?d.basePaths:d.paths).map(path=>({method:'GET',path})),nativePathRules:[...d.paths.map(path=>({method:'GET',path,requestFormat:'NONE'})),...(includeMarketForecasts&&'marketPaths' in d?d.marketPaths:[]).map(path=>({method:'GET',path,requestFormat:'NONE'})),...('prefix' in d&&d.prefix?[{method:'GET',prefix:d.prefix,suffix:'suffix' in d?d.suffix:'',parameter:'API_PATH',requestFormat:'NONE'}]:[]),...('marketSymbolPrefixes' in d?d.marketSymbolPrefixes.map(prefix=>({method:'GET',prefix,suffix:'',parameter:'MARKET_SYMBOL',requestFormat:'NONE'})):[])]};
 }
@@ -42,6 +46,7 @@ export async function createAdmission(configuration,database){
   return d;
  }
  async function transportFor(provider,family,licence,intentKey){
+  if(provider==='eia'&&family==='publication-calendar'&&configuration.eiaSchedulesEnabled!==true)throw new SourceHubError('PROVIDER_NOT_ACTIVATED',503);
   const d=await assertCurrent(provider,family,licence);
   const sourceHost=createPlatformIngestionHost({application,binding,source:{id:d.sourceId,payloadSchema:'external-call-control-v1',qualityVersion:SOURCE_CONTROL_VERSION,classificationVersion:'TECHNICAL_CONTROL_NO_PRIVATE_DATA'},
    independentQuery:database.query,transact:database.transact,
@@ -57,7 +62,7 @@ export async function createAdmission(configuration,database){
    binding:{role:configuration.sourceRole,configurationVersion:configuration.configurationVersion,origin:d.origin,transport:'HTTPS',schemaDigest:externalDigest,pathRules:d.pathRules},
    nativeTransport,independentQuery:database.query,query:(transaction,sql,values)=>transaction.query(sql,values),
    parseCommand:command=>{if(!command||typeof command!=='object'||Object.keys(command).join(',')!=='url'||!('url' in command)||typeof command.url!=='string')throw new SourceHubError('INVALID_PROVIDER_COMMAND');const u=new URL(command.url);if(u.origin!==d.origin||u.username||u.password||u.hash||[...u.searchParams.keys()].some(k=>/^(?:c|api_?key|token|secret|authorization)$/i.test(k)))throw new SourceHubError('INVALID_PROVIDER_COMMAND');return {url:u.href};},
-   buildRequest:command=>({method:'GET',url:provider==='eia'?eiaWireUrl(command.url,configuration.secrets.eia):command.url,body:null}),getHeaders:()=>headers});
+   buildRequest:command=>({method:'GET',url:provider==='eia'&&family!=='publication-calendar'?eiaWireUrl(command.url,configuration.secrets.eia):command.url,body:null}),getHeaders:()=>headers});
   /** @type {{value:Readonly<import('@profitia/platform-contracts/external-call').ExternalCallEvidence>|null,certainty:string,upstreamAttempts:number|null}} */
   const receipt={value:null,certainty:'NOT_SENT',upstreamAttempts:0};
   return Object.freeze({receipt,async fetchImpl(url,options){
@@ -74,5 +79,5 @@ export async function createAdmission(configuration,database){
    }finally{inFlight--;}
   }});
  }
- return Object.freeze({binding,assertCurrent,transportFor,async ready(){try{for(const v of [configuration.secrets.newsapi,configuration.secrets.brave,configuration.secrets.tradingEconomics,...(configuration.commodityProviders?.includes('eia')?[configuration.secrets.eia]:[])])credential(v);await database.verifyLogin();for(const k of Object.keys({...SOURCE_DEFINITIONS,...COMMODITY_SOURCE_DEFINITIONS})){const [provider,family]=k.split(':');if(['eia','cftc','commodities-sh'].includes(provider)&&!configuration.commodityProviders?.includes(provider))continue;const d=sourceDefinition(provider,family);const r=await database.query('SELECT profitia_external_native.descriptor($1,$2) AS descriptor',[d.sourceId,d.resourceId]);if(!r.rows[0]?.descriptor)return false;}return true;}catch{return false;}}});
+ return Object.freeze({binding,assertCurrent,transportFor,async ready(){try{for(const v of [configuration.secrets.newsapi,configuration.secrets.brave,configuration.secrets.tradingEconomics,...(configuration.commodityProviders?.includes('eia')?[configuration.secrets.eia]:[])])credential(v);await database.verifyLogin();for(const k of Object.keys({...SOURCE_DEFINITIONS,...COMMODITY_SOURCE_DEFINITIONS,...(configuration.eiaSchedulesEnabled===true?PUBLICATION_SCHEDULE_SOURCE_DEFINITIONS:{})})){const [provider,family]=k.split(':');if(['eia','cftc','commodities-sh'].includes(provider)&&!configuration.commodityProviders?.includes(provider))continue;const d=sourceDefinition(provider,family);const r=await database.query('SELECT profitia_external_native.descriptor($1,$2) AS descriptor',[d.sourceId,d.resourceId]);if(!r.rows[0]?.descriptor)return false;}return true;}catch{return false;}}});
 }
