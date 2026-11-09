@@ -25,7 +25,7 @@ export function result(family,provider,items,{retrievedAt=new Date().toISOString
 }
 export function credential(value){if(typeof value!=='string'||value.length<8||value.length>512||/[\r\n]/.test(value))fail('PROVIDER_NOT_CONFIGURED',503);return value;}
 /** @param {Function|undefined} fetchImpl @param {string} target @param {Record<string,string>} headers @param {{timeoutMs?:number,signal?:AbortSignal,maximumBytes?:number}} options */
-export async function providerJson(fetchImpl,target,headers,{timeoutMs=15000,signal,maximumBytes=2*1024*1024}={}){
+export async function providerText(fetchImpl,target,headers,{timeoutMs=15000,signal,maximumBytes=2*1024*1024}={}){
  if(typeof fetchImpl!=='function')fail('ADMITTED_TRANSPORT_REQUIRED',503);
  const abort=AbortSignal.any([AbortSignal.timeout(timeoutMs),...(signal?[signal]:[])]);let status=null;
  try{
@@ -36,6 +36,9 @@ export async function providerJson(fetchImpl,target,headers,{timeoutMs=15000,sig
   if(!response.ok)throw new SourceHubError(status===401?'AUTHENTICATION_FAILED':status===403?'PROVIDER_FORBIDDEN':status===429?'RATE_LIMITED':status>=500?'PROVIDER_UNAVAILABLE':'PROVIDER_REJECTED_CRITERIA',status===429?429:502,retryAfter);
   if(!response.body)fail('INVALID_RESPONSE',502);const reader=response.body.getReader();const chunks=[];let size=0;
   try{for(;;){const {done,value}=await reader.read();if(done)break;size+=value.byteLength;if(size>maximumBytes)fail('RESPONSE_TOO_LARGE',502);chunks.push(value);}}finally{void reader.cancel().catch(()=>{});reader.releaseLock();}
-  let value;try{value=JSON.parse(Buffer.concat(chunks).toString('utf8'));}catch{fail('INVALID_RESPONSE',502);}return value;
+  return Buffer.concat(chunks).toString('utf8');
  }catch(error){if(error instanceof SourceHubError)throw error;throw new SourceHubError(abort.aborted?'TIMEOUT':'PROVIDER_UNAVAILABLE',abort.aborted?504:503);}
+}
+export async function providerJson(fetchImpl,target,headers,options={}){
+ const raw=await providerText(fetchImpl,target,headers,options);try{return JSON.parse(raw)}catch{fail('INVALID_RESPONSE',502)}
 }

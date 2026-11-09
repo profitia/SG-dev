@@ -43,3 +43,16 @@ admission require the owner acceptance recorded in the proposal under
 `Canon/proposals/sourcehub-commodity-contracts-v1.json`.
 
 Proposed market-observations producer (Hub contracts1.4.0 (integrated with accepted commodity contracts1.3.0)): snapshot commodity catalogue with local symbol/TE-URL selection, and dated per-symbol historical series. Shared wire remains1.0.0. Preserve vendor symbol, market classification separately from actual instrument type, time precision, quote basis, OHLC and unknown unit/currency. Canonical Market Data mapping is NOT_ADOPTED. Historical symbol transport is a separately pinned opt-in MARKET_SYMBOL proposal in SDK1.34, never a relaxation of API_PATH. See `apps/platform-source-hub/docs/te-market-observations.pl.md` for the ungranted licence, producer/consumer adoption, SQL, Source/E1 and rollout dependencies. Existing Market Forecasts remains independently licence-gated and OFF; no Calendar request is authorised by this extension.
+# Publication schedules 1.2.0 (SDK 1.5.0)
+
+Additive, opt-in `publication-calendar / calendar` requests use contractVersion
+`1.2.0`: commodities-sh accepts `limit`; EIA accepts publication `wpsr` or `steo`,
+paired local dates `from/to`, and `limit`. Existing 1.0.0 and commodity1.1.0
+requests remain unchanged. No ECR consumer or Source entitlement is activated by
+this source package. The existing SourceHub producer validates the new version;
+later consumers explicitly select it through the same first-party client.
+
+The result distinguishes official dated exceptions, provisional recurrence,
+date precision, IANA time zone, provider ID versus correlation hint, source
+verification time and coverage. A schedule has no actual observation or proven
+publication time. See the [bounded Development adoption and activation](../../apps/platform-source-hub/docs/publication-schedules.pl.md).

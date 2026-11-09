@@ -18,3 +18,8 @@ const fakeHuman:SourceExecution={kind:'SERVICE',organisationId:'synthetic-org',u
 void service;void fakeHuman;void createFirstPartySourceHubClient;
 
 const observations:HubRequest={contractVersion:'1.0.0',provider:'trading-economics',family:'market-observations',operation:'search',criteria:{mode:'historical',symbols:['SYNTHETIC:COM'],from:'2026-11-01',to:'2026-11-06'}};void observations;
+
+const eiaSchedule:HubRequest={contractVersion:'1.2.0',provider:'eia',family:'publication-calendar',operation:'calendar',criteria:{publication:'wpsr',from:'2026-11-01',to:'2026-11-30'}};
+// @ts-expect-error A consumer cannot pick an arbitrary EIA URL.
+const scheduleProxy:HubRequest={contractVersion:'1.2.0',provider:'eia',family:'publication-calendar',operation:'calendar',criteria:{url:'https://example.com'}};
+void eiaSchedule;void scheduleProxy;
