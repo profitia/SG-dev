@@ -1326,8 +1326,8 @@ function oilReportFixture(){
  const p=pr(),r=OIL_REPORT_E1_REVIEW;p.number=r.prNumber;p.head.ref=r.branch;p.base.sha=sha;
  const files=Object.entries(r.entries).map(([filename,e])=>({filename,sha:e.sha,status:e.status}));p.changed_files=files.length;return{p,files};
 }
-test('Oil report review accepts only the93 exact owner-routed files on existing PR923',()=>{
- const {p,files}=oilReportFixture();assert.equal(files.length,93);assert.equal(p.number,923);assert(Object.isFrozen(OIL_REPORT_E1_REVIEW.entries));
+test('Oil report review accepts only the94 exact owner-routed files on existing PR923',()=>{
+ const {p,files}=oilReportFixture();assert.equal(files.length,94);assert.equal(p.number,923);assert(Object.isFrozen(OIL_REPORT_E1_REVIEW.entries));
  assert.equal(selectCandidate(context(),p,other,{files}),other);assertArchitectureFiles(p,files);
  assert.deepEqual([...new Set(Object.values(OIL_REPORT_E1_REVIEW.entries).map(e=>e.projectKey))].sort(),['ARCHITECTURE','SG2','SRM']);
 });

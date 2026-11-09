@@ -64,3 +64,27 @@ The report still uses commodity protocol1.1.0; it does not opt into schedules1.2
 This refresh is a reviewable amendment, not an assertion that the original exact
 packet approved new hashes. Required CI must pass before controlled source
 adoption, and the final feature SOURCE GO remains separate.
+
+
+## Lab history compatibility correction — proposed closed94-file review
+
+The original93-file review remains historical. The updated exact review adds only
+apps/architecture-lab/test/sdk-compatibility.test.mjs under Architecture Platform /
+ARCH-BASE-002. It incorporates the separate SourceHub owner repair PR930 source
+c3592a012c328216844cc9747f436a258ecdb53e and validates the five immutable,
+explicitly reviewed Oil successor digests without rewriting SDK1.33/1.34 receipts.
+The shared lab/foundation tests pass14/14, including negative cases for changed
+metadata, source and predecessor records.
+
+The new local-only composite is91dfa48a4b97c0476cb4fd39875347a6d970c0e4, tree
+943c513b8d74393504353f0d48042ae663b1e288. PR925 source is
+00ddd847b9e600514b45fabb02189cf4f6d9dbec; PR923/927 remain the SourceHub1.5
+compatibility inputs above. All original93 path/status/mode/owner bindings remain;
+this is one additional exact test path, not general lab-path admission.
+
+Current main has the PR929 historical-test regression. The SG2 controlled component
+for the previous policy revision passed1395 tests, typecheck and build in run
+42687244892, but the whole run failed. It is not accepted as a valid canonical
+proof. PR930 repair and the policy refresh remain unadopted; no failing-run proof,
+owner decision, PMOS entry or component result replaces the required CI gates.
+The final feature SOURCE GO and every installation/release/cost boundary remain.

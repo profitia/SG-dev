@@ -3144,13 +3144,14 @@ export function assertInsightsG1ReviewEntry(file,entry){
 }
 
 // PROPOSED closed review. No activation before owner acceptance and trusted-main CI.
-export const OIL_REPORT_E1_REVIEW=Object.freeze({prNumber:923,branch:'feat/oil-autonomous-runner-20261109',sourceSha:'63f464be456c54a382f99edd6808e333513236d0',entries:Object.freeze({
+export const OIL_REPORT_E1_REVIEW=Object.freeze({prNumber:923,branch:'feat/oil-autonomous-runner-20261109',sourceSha:'91dfa48a4b97c0476cb4fd39875347a6d970c0e4',entries:Object.freeze({
  ".github/workflows/insights-ci.yml":Object.freeze({"sha":"3e8ab8967717514d90af839deb7ae57201234318","status":"added","mode":"100644","projectKey":"SG2","owner":"Insights Domain","surfaceId":"INSIGHTS-BASE-003"}),
  "Canon/registries/operation-access-matrix-v1.json":Object.freeze({"sha":"504d01381ddecbd4ec0ae689864ec1912526f958","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Governance Source Layer","surfaceId":"SG2-BASE-019"}),
  "apps/architecture-lab/docs/insights-report-e1.md":Object.freeze({"sha":"b1e5a624cc0af34153764cbc94f0c27ab4ce75d6","status":"added","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ARCH-BASE-002"}),
  "apps/architecture-lab/insights-report-source-compatibility.json":Object.freeze({"sha":"872d3f4a63186cb1266b8e82a70688c6fde5224a","status":"added","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ARCH-BASE-002"}),
  "apps/architecture-lab/scripts/install-insights-report.mjs":Object.freeze({"sha":"5669523fdc2c7212eb4e83507a61f715663780de","status":"added","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ARCH-BASE-002"}),
  "apps/architecture-lab/test/insights-e1.test.mjs":Object.freeze({"sha":"227bf0e151b7bfb53a6af2a53668a6f47d114693","status":"added","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ARCH-BASE-002"}),
+ "apps/architecture-lab/test/sdk-compatibility.test.mjs":Object.freeze({"sha":"825f34fb2a560b98fa9c3bae8f9574e9e985b4c1","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ARCH-BASE-002"}),
  "apps/insights-runtime/config/development.example.json":Object.freeze({"sha":"30318ded03da3104078831e95720726865d5548a","status":"added","mode":"100644","projectKey":"SG2","owner":"Insights Domain","surfaceId":"INSIGHTS-BASE-001"}),
  "apps/insights-runtime/docs/autonomous-oil-report.md":Object.freeze({"sha":"ac51a5f094bc8d644f456bae4ba8a56b68b059f6","status":"added","mode":"100644","projectKey":"SG2","owner":"Insights Domain","surfaceId":"INSIGHTS-BASE-001"}),
  "apps/insights-runtime/package-lock.json":Object.freeze({"sha":"fdc714b0ebd51e2800fee2877ef9a88c68dc63c9","status":"added","mode":"100644","projectKey":"SG2","owner":"Insights Domain","surfaceId":"INSIGHTS-BASE-001"}),
