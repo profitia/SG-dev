@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {createOperationExecutor,OPERATION_CONTRACT} from '../src/operation-context.mjs'
-import {createAssistantUsageStore,takeAssistantAdmission} from '../src/assistant-usage.mjs'
+import {createAssistantUsageStore,takeAssistantAdmission,assistantInputBound} from '../src/assistant-usage.mjs'
 const id=n=>`${n.repeat(8)}-${n.repeat(4)}-4${n.repeat(3)}-8${n.repeat(3)}-${n.repeat(12)}`
 const now=Date.parse('2026-11-09T12:00:00Z'),expiresAt=new Date(now+60000).toISOString(),schemaDigest='a'.repeat(64)
 function fixture(operation='assistant.converse'){
@@ -58,12 +58,18 @@ test('GENERATE requires a real bound reservation; JSON/cross-actor receipts and 
 test('one successful Limits reservation is carried by E1 but cannot itself dispatch before the durable dispatch record',async()=>{
  const f=fixture(),calls=[];f.input.payload={kind:'GENERATE',commandId:id('3'),input:[{role:'user',content:'question'}]}
  const usage=createAssistantUsageStore({schemaDigest,commandKey:'b'.repeat(64),now:()=>now,query:async(_,args)=>{
-  const d=JSON.parse(args[0]);calls.push(d.action);return{rows:[{result:{...d,environment:'development',applicationId:'spendguru',projectId:'lingering-thunder-05075810',branchId:'br-green-hall-b9s837k0',databaseName:'neondb',runtimeRole:'profitia_limits_assistant_runtime',status:'RESERVED',executionId:id('5'),expiresAt:new Date(now+20000).toISOString()}}]}
+  const d=JSON.parse(args[0]);calls.push(d.action);return{rows:[{result:{...d,environment:'development',applicationId:'spendguru',projectId:'lingering-thunder-05075810',branchId:'br-green-hall-b9s837k0',databaseName:'neondb',runtimeRole:'profitia_limits_assistant_runtime',status:d.action==='DISPATCH'?'DISPATCHED':'RESERVED',executionId:id('5'),expiresAt:new Date(now+20000).toISOString()}}]}
  }})
  f.session.reserveAssistantUsage=c=>usage.reserve({actorId:c.actorId,organisationId:c.organisationId,commandId:c.payload.commandId,decisionId:c.decisionId,input:c.payload.input,
   expectedPolicy:{id:id('6'),assignmentId:id('7'),assignmentRevision:1}})
  const result=await f.execute();assert.equal(result.value.status,'RESERVED');assert.deepEqual(calls,['RESERVE'])
  assert.throws(()=>takeAssistantAdmission(result.value,{inputDigest:result.value.inputDigest,now}))
+ await usage.dispatch(result.value)
+ // Root canonicalises payload key ordering. That must not change the exact
+ // semantic input binding seen by the actual model executor.
+ const original=assistantInputBound(f.input.payload.input)
+ assert.equal(takeAssistantAdmission(result.value,{inputDigest:original.inputDigest,now}).executionId,id('5'))
+ assert.deepEqual(calls,['RESERVE','DISPATCH'])
 })
 test('unknown fields and budget errors cannot turn an authorisation check into an unmetered model call',async()=>{
  const f=fixture();f.input.payload={kind:'AUTHORIZE',input:[{role:'user',content:'hidden'}]};await assert.rejects(f.execute,e=>e.reasonCode==='CONTEXT_INVALID')

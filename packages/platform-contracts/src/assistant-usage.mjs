@@ -16,7 +16,8 @@ export function assistantInputBound(input){
  if(!Array.isArray(input)||input.length<1||input.length>32)fail()
  for(const m of input)if(!m||Object.keys(m).sort().join(',')!=='content,role'
   ||!['developer','user','assistant'].includes(m.role)||typeof m.content!=='string')fail()
- const bytes=Buffer.byteLength(JSON.stringify(input),'utf8')
+ const canonicalInput=JSON.stringify(input.map(m=>({role:m.role,content:m.content})))
+ const bytes=Buffer.byteLength(canonicalInput,'utf8')
  if(bytes>32768)fail('LIMIT_EXCEEDED')
  // Plain text only: UTF-8 bytes bound BPE pieces, with a conservative envelope
  // for message framing. Tools, files, images, prior-response IDs and compaction
@@ -25,7 +26,7 @@ export function assistantInputBound(input){
  const nanoUsd=BigInt(inputTokens)*500n+BigInt(outputTokens)*1200n
  if(nanoUsd>500000000n||inputTokens+outputTokens>200000)fail('LIMIT_EXCEEDED')
  return Object.freeze({inputTokens,outputTokens,nanoUsd:nanoUsd.toString(),
-  inputDigest:createHash('sha256').update(JSON.stringify(input)).digest('hex')})
+  inputDigest:createHash('sha256').update(canonicalInput).digest('hex')})
 }
 
 export function readAssistantUsage(usage,model){
