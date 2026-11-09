@@ -15,6 +15,7 @@ test('assistant optional source closes the real SDK dependency graph and retains
  const historical=(sha,p)=>execFileSync('git',['show',sha+':'+p],{cwd:root})
  const {record:a}=assistantSdkPredecessor(readSource,historical)
  for(const [p,h]of Object.entries(a.sourceDigests))assert.equal(hash(historical(ASSISTANT_SDK_PRODUCER,'packages/platform-contracts/'+p)),h,'producer source '+p)
+ for(const [p,h]of Object.entries(a.compatibilityTestSourceDigests))assert.equal(hash(historical(a.compatibilitySourceSha,'packages/platform-contracts/'+p)),h,'compatibility source '+p)
  const remaining=new Set(Object.keys(a.sdkDigests))
  for(const name of fs.readdirSync(new URL('packages/platform-contracts/src/',root)).filter(n=>n.endsWith('.mjs'))){
   const sdk=await import(new URL('packages/platform-contracts/src/'+name,root))

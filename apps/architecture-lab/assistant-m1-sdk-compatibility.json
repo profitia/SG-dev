@@ -201,5 +201,11 @@
   "schemaInstalled": false,
   "grantsChanged": false,
   "providerCallsPerformed": false,
-  "deploymentPerformed": false
+  "deploymentPerformed": false,
+  "compatibilitySourceSha": "fc81d289670930e5048626956146eaa02351567a",
+  "compatibilityTestSourceDigests": {
+    "test/private-operation-host.test.mjs": "d0604e8917f3bafb1d6d08165f8a39088f6d717c5ab6f8d704b6c7290cf66ebb",
+    "current-fresh-report/test/current-fresh-report.test.mjs": "db51a5e8596cb56ff48a8353116081f5baede69c1fe8d40a1f4bcc29ac52b8e0",
+    "readonly-miss-report/test/readonly-miss-report.test.mjs": "5da56e93565107bce9a573b797c1c77936bc1281ac5394643b0562218577fa05"
+  }
 }

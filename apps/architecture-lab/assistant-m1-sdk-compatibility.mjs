@@ -10,7 +10,7 @@ const receiptPath=project=>'apps/'+(project==='SG2'?'sg-runtime':'srm')+'/operat
 const additions=['migrations/access/030-assistant-operations.sql','src/assistant-operation-host.d.mts','src/assistant-operation-host.mjs','src/assistant-usage.d.mts','src/assistant-usage.mjs']
 export function assistantSdkPredecessor(current,historical){
  const recordBytes=current(recordPath)
- assert.equal(hash(recordBytes),'e19f932a0be3e3948cf5ad4712b79adb7397e1198106265d216c5b50802e43f5','exact reviewed assistant SDK source record')
+ assert.equal(hash(recordBytes),'e2d56e213629d1935377ee522f2eb8bb349a3312f6c7e5360a0c388d231fa268','exact reviewed assistant SDK source record')
  const a=JSON.parse(recordBytes)
  assert.equal(a.schemaVersion,'1.0');assert.equal(a.taskId,'ARCH-ACG-M1-EXECUTION-20261109')
  assert.equal(a.scope,'OPTIONAL_ASSISTANT_ROOT_20_SOURCE_COMPATIBILITY');assert.equal(a.platformVersion,'1.34.0')
@@ -21,6 +21,9 @@ export function assistantSdkPredecessor(current,historical){
   const file='packages/platform-contracts/'+p
   assert.equal(hash(current(file)),h,'current admitted assistant SDK '+file)
  }
+ assert.equal(a.compatibilitySourceSha,'fc81d289670930e5048626956146eaa02351567a')
+ assert.deepEqual(Object.keys(a.compatibilityTestSourceDigests).sort(),['current-fresh-report/test/current-fresh-report.test.mjs','readonly-miss-report/test/readonly-miss-report.test.mjs','test/private-operation-host.test.mjs'])
+ for(const [p,h]of Object.entries(a.compatibilityTestSourceDigests))assert.equal(hash(current('packages/platform-contracts/'+p)),h,'current compatibility test '+p)
  for(const flag of ['defaultAssistantEnabled','schemaInstalled','grantsChanged','providerCallsPerformed','deploymentPerformed'])assert.equal(a[flag],false,flag)
  return {record:a,previousBytes:p=>p.startsWith('packages/platform-contracts/')&&Object.hasOwn(prior.sourceDigests,p.slice('packages/platform-contracts/'.length))?Buffer.from(historical(ASSISTANT_SDK_PREDECESSOR,p)):current(p)}
 }
@@ -35,7 +38,7 @@ export function assertAssistantConsumerCompatibility(receipt,current,historical,
  const {assistantM1SourceCompatibility,...preserved}=receipt
  assert.deepEqual(preserved,prior,'every pre-M1 receipt and fingerprint is immutable')
  const sdk=assistantSdkPredecessor(current,historical).record
- assert.deepEqual(a.sourceDigests,sdk.sourceDigests);assert.deepEqual(a.sdkDigests,sdk.sdkDigests);assert.deepEqual(a.optionalPackageDigests,sdk.optionalPackageDigests)
+ assert.deepEqual(a.sourceDigests,{...sdk.sourceDigests,...sdk.compatibilityTestSourceDigests});assert.deepEqual(a.sdkDigests,sdk.sdkDigests);assert.deepEqual(a.optionalPackageDigests,sdk.optionalPackageDigests)
  assert.deepEqual(a.rootContract,{...prior.contract,sourceDigest:sdk.sdkDigests.operationSourceDigest})
  assert.deepEqual(a.rootProducer,{projectKey:'ARCHITECTURE',taskId:'ARCH-ACG-M1-EXECUTION-20261109',pullRequest:937,sourceSha:ASSISTANT_SDK_PRODUCER})
  assert.deepEqual(a.applicationSourceDigests,Object.fromEntries(Object.entries({...a.consumerSourceDigests,...a.peerSourceDigests}).map(([p,h])=>[posix.relative(posix.dirname(file),p),h])))
