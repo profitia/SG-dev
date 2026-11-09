@@ -1,6 +1,8 @@
 import test, { before, after } from "node:test";
 import assert from "node:assert/strict";
-import { randomUUID } from "node:crypto";
+import { randomUUID, createHash, createHmac } from "node:crypto";
+import { readFileSync } from "node:fs";
+import pg from "pg";
 import { fixture, actor, actorId, otherId, orgId } from "./fixture.mjs";
 import { Store, signature } from "../dist/store.js";
 import {
@@ -709,4 +711,77 @@ test("dashboard totals are independent of pagination and retain the signed curre
     ),
     (e) => e.code === "42501",
   );
+});
+
+test("Assistant M1 real SQL roles, atomic admission, actual settlement and uncertainty retain the hard budget", async () => {
+  const org=randomUUID();
+  await f.privateOwner.query('INSERT INTO profitia_access.organisations VALUES($1,$2,$3,1)',[org,'SYNTHETIC ASSISTANT ONLY','ACTIVE']);
+  const draft=await write('package.create',{name:'SYNTHETIC Assistant M1',productId:'SPENDGURU'});
+  const limit=(metricId,value)=>({metricId,mode:'LIMITED',value,period:'CONTRACT',anchor:'ASSIGNMENT',timezone:'Europe/Warsaw',warningPercent:80});
+  const saved=await write('draft.save',{versionId:draft.id,revision:draft.revision,snapshot:{name:'SYNTHETIC Assistant M1',
+    capabilities:['OPENAI_ASSISTANCE'],limits:[limit('OPENAI_INPUT_TOKENS','200000'),limit('OPENAI_OUTPUT_TOKENS','200000'),
+      limit('OPENAI_TOTAL_TOKENS','200000'),limit('OPENAI_API_COST_USD','5')],price:null,currency:null}});
+  const version=await write('version.publish',{versionId:saved.id,revision:saved.revision});
+  const assigned=await write('assignment.create',{organisationId:org,organisationVersion:1,packageVersionId:version.id,
+    terms:terms(),overrides:[],reason:'SYNTHETIC Assistant M1 only',effectiveFrom:today});
+  await f.owner.query("CREATE ROLE profitia_limits_assistant_runtime LOGIN NOINHERIT NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE PASSWORD 'synthetic_assistant_only'");
+  const source=readFileSync(new URL('../migrations/004-assistant-usage.sql',import.meta.url),'utf8');
+  const digest=createHash('sha256').update(source).digest('hex'),key=Buffer.alloc(32,5);
+  const c=await f.owner.connect();
+  try{
+    await c.query('BEGIN');await c.query('SET LOCAL ROLE profitia_limits_owner');
+    await c.query(source.replaceAll('__ASSISTANT_USAGE_SCHEMA_DIGEST__',digest));
+    await c.query('INSERT INTO profitia_limits.assistant_installation(singleton,schema_digest,command_key,created_at,expires_at,maximum_nano_usd,maximum_tokens,source_ref) VALUES(true,$1,$2,now(),now()+interval \'7 days\',5000000000,200000,\'SYNTHETIC LOCAL ONLY\')',[digest,key]);
+    await c.query('INSERT INTO profitia_limits.assistant_policy(singleton,actor_id,organisation_id,assignment_id,assignment_revision,enabled,source_ref) VALUES(true,$1,$2,$3,$4,true,\'SYNTHETIC LOCAL ONLY\')',[actorId,org,assigned.id,assigned.revision]);
+    await c.query('COMMIT');
+  }catch(error){await c.query('ROLLBACK');throw error}finally{c.release()}
+  const policy=(await f.owner.query('SELECT * FROM profitia_limits.assistant_policy')).rows[0];
+  const url=new URL(process.env.LIMITS_TEST_OWNER_URL);url.username='profitia_limits_assistant_runtime';url.password='synthetic_assistant_only';
+  const runtime=new pg.Pool({connectionString:url.toString(),max:3});
+  const call=async data=>{
+    const body=JSON.stringify({...data,contract:'1.0.0',schemaDigest:digest,until:Date.now()+9000});
+    const proof=createHmac('sha256',key).update(body).digest('hex');
+    return(await runtime.query('SELECT profitia_limits.assistant_usage($1,$2) AS result',[body,proof])).rows[0].result;
+  };
+  const command=()=>({action:'RESERVE',actorId,organisationId:org,commandId:randomUUID(),decisionId:randomUUID(),
+    model:'gpt-5.6-luna',pricingVersion:'openai-gpt-5.6-luna-standard-20261109',inputDigest:'a'.repeat(64),
+    inputTokens:12000,outputTokens:2048,nanoUsd:String(12000*500+2048*1200),
+    policyId:policy.policy_id,assignmentId:assigned.id,assignmentRevision:assigned.revision});
+  const actual={model:'gpt-5.6-luna',pricingVersion:'openai-gpt-5.6-luna-standard-20261109',inputTokens:1000,outputTokens:200,totalTokens:1200,
+    cachedTokens:200,cacheWriteTokens:300,cacheWrite30mTokens:200,cacheWrite12hTokens:100,reasoningTokens:100,nanoUsd:'444000'};
+  try{
+    await assert.rejects(runtime.query("SELECT profitia_limits.assistant_usage('{}','forged')"));
+    for(const sql of ['SELECT * FROM profitia_limits.assistant_installation','UPDATE profitia_limits.assistant_policy SET enabled=false','DELETE FROM profitia_limits.assistant_executions'])await assert.rejects(runtime.query(sql),e=>e.code==='42501');
+    await assert.rejects(call({...command(),actorId:otherId}));
+    await assert.rejects(call({...command(),assignmentRevision:assigned.revision+1}));
+    const one=command(),reserved=await call(one),replay=await call(one);
+    assert.equal(reserved.status,'RESERVED');assert.equal(replay.status,'REPLAY');assert.equal(replay.executionId,reserved.executionId);
+    await assert.rejects(call({...one,inputDigest:'b'.repeat(64)}),e=>e.message==='IDEMPOTENCY_CONFLICT');
+    const ref={executionId:reserved.executionId,commandId:one.commandId};
+    await call({action:'DISPATCH',...ref});await assert.rejects(call({action:'DISPATCH',...ref}));
+    const settlement={action:'SETTLE',...ref,responseId:'resp_synthetic_sql',usage:actual};
+    assert.equal((await call(settlement)).status,'SETTLED');assert.equal((await call(settlement)).status,'SETTLED');
+    await assert.rejects(call({...settlement,usage:{...actual,nanoUsd:'0'}}));
+    const count=(await f.owner.query("SELECT count(*)::int AS n,sum((usage->>'nanoUsd')::bigint)::text AS cost FROM profitia_limits.assistant_executions WHERE status='SETTLED'")).rows[0];
+    assert.equal(count.n,1);assert.equal(count.cost,'444000');
+    const two=command(),pending=await call(two),pendingRef={executionId:pending.executionId,commandId:two.commandId};
+    await call({action:'DISPATCH',...pendingRef});await call({action:'PENDING',...pendingRef,reason:'INTERRUPTED'});
+    await assert.rejects(call({action:'RELEASE',...pendingRef}));
+    const uncertain=(await f.owner.query('SELECT status,reserved_nano_usd::text FROM profitia_limits.assistant_executions WHERE execution_id=$1',[pending.executionId])).rows[0];
+    assert.equal(uncertain.status,'PENDING_RECONCILIATION');assert.equal(uncertain.reserved_nano_usd,two.nanoUsd);
+    const malformed={...actual};delete malformed.totalTokens;
+    await assert.rejects(call({action:'SETTLE',...pendingRef,responseId:'resp_missing_usage',usage:malformed}));
+    await assert.rejects(call({action:'SETTLE',...pendingRef,responseId:'resp_extra_content',usage:{...actual,prompt:'must never persist'}}));
+    const releasedCommand=command(),unused=await call(releasedCommand);
+    assert.equal((await call({action:'RELEASE',executionId:unused.executionId,commandId:releasedCommand.commandId})).status,'RELEASED');
+    await assert.rejects(call({action:'DISPATCH',executionId:unused.executionId,commandId:releasedCommand.commandId}));
+    // One remaining reservation fits; two simultaneous requests cannot both win.
+    await f.owner.query('UPDATE profitia_limits.assistant_installation SET maximum_tokens=$1',[1200+2*(12000+2048)]);
+    const races=await Promise.allSettled([call(command()),call(command())]);
+    assert.equal(races.filter(r=>r.status==='fulfilled').length,1);assert.equal(races.filter(r=>r.status==='rejected').length,1);
+    assert.equal(races.find(r=>r.status==='rejected').reason.message,'LIMIT_EXCEEDED');
+    await f.owner.query('UPDATE profitia_limits.assistant_policy SET enabled=false,version=version+1');
+    await assert.rejects(call(command()));
+    await assert.rejects(f.owner.query("UPDATE profitia_limits.assistant_usage_events SET metadata='{}'"),e=>e.code==='42501');
+  }finally{await runtime.end()}
 });
