@@ -75,7 +75,7 @@ export function createAssistantOperationHost(options){
          return reservation
         },
         projectOutput:async(value,context)=>{if(closed)deny();await store.verifyScope(query,lease);return projectOutput(value,context)},
-        recordOutcome:async event=>{if(closed)deny();await store.verifyScope(query,lease);await store.appendAudit(query,event)},
+        recordOutcome:async event=>{if(closed)deny();await store.verifyScope(query,lease);await store.appendAudit(query,event,lease)},
        })
        if(closed)deny();await store.verifyScope(query,lease);return value
       },{timeoutMs:10000,maxWaitMs:3000})
