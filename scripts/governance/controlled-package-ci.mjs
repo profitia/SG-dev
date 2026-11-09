@@ -3260,6 +3260,23 @@ function architecturePathAllowed(name) {
     || /^Canon\/evidence\/[0-9]{4}-[0-9]{2}-[0-9]{2}-[a-z0-9-]+\.md$/.test(name)
 }
 
+// Closed governance-only ACG review. Not generic registry, runtime or package admission.
+export const ACG_G1_REVIEW = Object.freeze({
+ prNumber:931,branch:'architecture/acg-m1-g1-20261109',sourceSha:'5497a96bbc64fc02b8f7a977757dce5cd85a3037',
+ entries:Object.freeze({
+  'Canon/registries/current-architecture-baseline-v1.json':Object.freeze({sha:'f9000e3b157b276d6f7d69df6a2ed27299881bf7',status:'modified',mode:'100644'}),
+  'Canon/v1.1-repository-routing-and-module-ownership-canon.md':Object.freeze({sha:'47fc6dda78cc407969453c9d3d2865502cd98bb2',status:'modified',mode:'100644'}),
+ }),
+})
+function isPinnedAcgG1Review(files){
+ return Array.isArray(files)&&files.length===2&&new Set(files.map(f=>f?.filename)).size===2
+  &&files.every(f=>{const e=ACG_G1_REVIEW.entries[f?.filename];return e&&f.sha===e.sha&&f.status===e.status&&!Object.hasOwn(f,'previous_filename')})
+}
+export function assertAcgG1ReviewEntry(file,entry){
+ const e=ACG_G1_REVIEW.entries[file?.filename]
+ if(!e||e.sha!==file.sha||entry!==e.mode+' blob '+file.sha+'\t'+file.filename+'\0')fail('ACG_G1_FILE_MODE_REJECTED')
+}
+
 export function assertArchitectureFiles(pr, files, repositoryRoot = controlRoot()) {
   if (!Number.isInteger(pr.changed_files) || pr.changed_files < 1 || pr.changed_files > 300 || !shaPattern.test(pr.base?.sha ?? '')
     || !Array.isArray(files) || files.length !== pr.changed_files) fail('ARCHITECTURE_FILE_LIST_REQUIRED')
@@ -3276,7 +3293,7 @@ export function assertArchitectureFiles(pr, files, repositoryRoot = controlRoot(
   const readonlyMissReview = isPinnedReadonlyMissReportReview(files)
   const freshFixtureReview = isPinnedFreshFixtureTeardownReview(files)
   const rootAtomicClaimReview = isPinnedRootAtomicClaimReview(files)
-  const closedReview = isPinnedInsightsG1Review(files) || isPinnedEcrG1Review(files) || krsReview || isPinnedAdpGovernanceReview(files) || isPinnedLimitsG1Review(files) || isPinnedNewsfeedG1Review(files) || isPinnedSourceHubG1Review(files) || freshReportReview || payloadCaptureReview || readonlyMissReview || freshFixtureReview || rootAtomicClaimReview
+  const closedReview = isPinnedAcgG1Review(files) || isPinnedInsightsG1Review(files) || isPinnedEcrG1Review(files) || krsReview || isPinnedAdpGovernanceReview(files) || isPinnedLimitsG1Review(files) || isPinnedNewsfeedG1Review(files) || isPinnedSourceHubG1Review(files) || freshReportReview || payloadCaptureReview || readonlyMissReview || freshFixtureReview || rootAtomicClaimReview
   const names = new Set()
   for (const file of files) {
     if (!(closedReview || architecturePathAllowed(file.filename))
@@ -3300,6 +3317,9 @@ export function assertArchitectureFiles(pr, files, repositoryRoot = controlRoot(
 
 export function selectCandidate(context, pr, expectedSha, {files, repositoryRoot = controlRoot()} = {}) {
   const family = candidateFamily(context, pr, expectedSha)
+  if(pr&&(pr.number===ACG_G1_REVIEW.prNumber||pr.head.ref===ACG_G1_REVIEW.branch||isPinnedAcgG1Review(files))){
+   if(family!=='ARCHITECTURE'||pr.number!==ACG_G1_REVIEW.prNumber||pr.head.ref!==ACG_G1_REVIEW.branch||!isPinnedAcgG1Review(files))fail('ACG_G1_REVIEW_IDENTITY_REJECTED')
+  }
   if(pr&&(pr.number===OIL_REPORT_E1_REVIEW.prNumber||pr.head.ref===OIL_REPORT_E1_REVIEW.branch||isPinnedOilReportReview(files))){if(family!=='ARCHITECTURE'||pr.number!==OIL_REPORT_E1_REVIEW.prNumber||pr.head.ref!==OIL_REPORT_E1_REVIEW.branch||!isPinnedOilReportReview(files))fail('OIL_REPORT_REVIEW_IDENTITY_REJECTED')}
   if(pr&&(pr.number===SOURCE_HUB_MARKET_SYMBOL_REVIEW.prNumber||pr.head.ref===SOURCE_HUB_MARKET_SYMBOL_REVIEW.branch)){
     if(family!=='ARCHITECTURE'||pr.number!==SOURCE_HUB_MARKET_SYMBOL_REVIEW.prNumber||pr.head.ref!==SOURCE_HUB_MARKET_SYMBOL_REVIEW.branch||!isPinnedMarketSymbolReview(files))fail('MARKET_SYMBOL_REVIEW_IDENTITY_REJECTED')
@@ -3374,6 +3394,7 @@ export function assertArchitectureCheckout(root, sha, admission, repositoryRoot 
   for (const file of admission.files) {
     const entry = execFileSync('git', ['ls-tree', '-z', sha, '--', file.filename], {cwd: root, encoding: 'utf8'})
     if (file.status === 'removed') {if (entry !== '') fail('ARCHITECTURE_DIFF_MISMATCH'); continue}
+    if(isPinnedAcgG1Review(admission.files))assertAcgG1ReviewEntry(file,entry)
     if(isPinnedOilReportReview(admission.files))assertOilReportReviewEntry(file,entry)
     if(isPinnedInsightsG1Review(admission.files))assertInsightsG1ReviewEntry(file,entry)
     if(isPinnedEcrBackendReview(admission.files))assertEcrBackendReviewEntry(file,entry)

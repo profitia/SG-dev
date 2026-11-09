@@ -243,3 +243,35 @@ This narrowly scoped proposal would be exhausted by the single repair. It cannot
 be reused for PR928, the94-file Oil candidate, any feature/source merge, deployment,
 grant, installation, paid call or later failure. All those retain their original
 mandatory controls. Without explicit acceptance, the repair remains BLOCKED.
+
+## ACG M1 — proposed closed G1 source admission (2026-11-09)
+
+OWNER_APPROVED_BOUNDED_M1 / CI_ADMISSION_CANDIDATE_NOT_ACTIVE. The owner approved
+the whole bounded M1 decision in host01a1c177-a1ff-7a52-aad1-96606021f3c5;
+PHR SG2/SG2-ACG-M1-20261109/OWNER-APPROVAL.md records that actual decision.
+This closed validation implements only that already approved G1 scope. Its source is PR931,
+`architecture/acg-m1-g1-20261109`, source `5497a96bbc64fc02b8f7a977757dce5cd85a3037`.
+Trusted-main run42698320182/job129436039202 refused it with
+`ARCHITECTURE_PATH_REJECTED`; no check is waived or relabelled.
+
+`ACG_G1_REVIEW` binds exactly two modified regular files and their blobs:
+`Canon/registries/current-architecture-baseline-v1.json` =
+`f9000e3b157b276d6f7d69df6a2ed27299881bf7`, and
+`Canon/v1.1-repository-routing-and-module-ownership-canon.md` =
+`47fc6dda78cc407969453c9d3d2865502cd98bb2`. It requires the same internal PR/branch,
+trusted main, actual Architecture routing/owners, exact source/status/mode and
+complete API/checkout diff. Missing/extra/changed/renamed files or executable and
+symlink modes deny. A normal main refresh is permitted only while both reviewed
+payloads stay byte-identical. No generic registry, workflow, app, package or
+runtime path is admitted. Private names/pins, credential scope/removal,
+main-only environment, assertions and all previous closed reviews remain unchanged.
+
+Require normal exact-head three-file bootstrap CI and controlled main
+acceptance before this candidate becomes active, then validate
+PR931 through the resulting trusted-main controller and require every normal
+PR/resulting-main gate before G1 adoption. This is source validation only: no
+schema, grant, provider execution, cost or deployment follows. Evidence, owner
+provenance and handoffs live only in remote PHR under
+`reports/2026/11/09/ARCHITECTURE/ARCH-ACG-M1-CI-20261109/`.
+The existing `sg2/` bootstrap transport namespace does not select ownership:
+this task and every changed path remain ARCHITECTURE/Governance Source Layer.
