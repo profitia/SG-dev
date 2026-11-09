@@ -1327,8 +1327,8 @@ function oilReportFixture(){
  const p=pr(),r=OIL_REPORT_E1_REVIEW;p.number=r.prNumber;p.head.ref=r.branch;p.base.sha=sha;
  const files=Object.entries(r.entries).map(([filename,e])=>({filename,sha:e.sha,status:e.status}));p.changed_files=files.length;return{p,files};
 }
-test('Oil report review accepts only the94 exact owner-routed files on existing PR923',()=>{
- const {p,files}=oilReportFixture();assert.equal(files.length,94);assert.equal(p.number,923);assert(Object.isFrozen(OIL_REPORT_E1_REVIEW.entries));
+test('Oil report review accepts only the111 exact owner-routed files on existing PR923',()=>{
+ const {p,files}=oilReportFixture();assert.equal(files.length,111);assert.equal(p.number,923);assert.equal(OIL_REPORT_E1_REVIEW.sourceSha,'1eebfb93ab92a79d12293e61b0184327c034a145');assert(Object.isFrozen(OIL_REPORT_E1_REVIEW.entries));
  assert.equal(selectCandidate(context(),p,other,{files}),other);assertArchitectureFiles(p,files);
  assert.deepEqual([...new Set(Object.values(OIL_REPORT_E1_REVIEW.entries).map(e=>e.projectKey))].sort(),['ARCHITECTURE','SG2','SRM']);
 });
@@ -1337,6 +1337,11 @@ test('Oil review rejects missing, extra, altered, renamed, duplicate or borrowed
  for(const mutate of [f=>f.pop(),f=>f.push({filename:'apps/sg-runtime/unapproved.ts',sha,status:'added'}),f=>f[0].sha=sha,f=>f[0].status='removed',f=>f[0].previous_filename='old.md',f=>f[1]={...f[0]}]){const f=structuredClone(files);mutate(f);rejection(()=>selectCandidate(context(),p,other,{files:f}));}
  for(const mutate of [p=>p.number=928,p=>p.head.ref='feat/another',p=>p.user.login='another',p=>p.head.repo.full_name='profitia/fork',p=>p.base.ref='production']){const changed=structuredClone(p);mutate(changed);rejection(()=>selectCandidate(context(),changed,other,{files}));}
  rejection(()=>selectCandidate(context(),p,sha,{files}));
+});
+test('amended Oil source cannot reuse the predecessor94-file admission',()=>{
+ const {p,files}=oilReportFixture();const previous=files.filter(f=>!['apps/newsfeed-runtime/operation-integration.json','apps/newsfeed-runtime/test/runtime.test.mjs','apps/platform-source-hub/scripts/ci-routing.mjs','apps/platform-source-hub/test/ci-routing.test.mjs','apps/srm/deployment/root-atomic-claim-targets.json','apps/srm/scripts/xray-workflow-contract.test.ts','apps/srm/src/modules/xray/krs-session-transport.test.ts','apps/srm/src/server/company-source-policy.test.ts','apps/srm/src/server/supplier-location-geocoding-runtime.test.ts','apps/srm/src/server/supplier-map-readiness.test.ts','apps/srm/scripts/rural-location-release.test.mjs','apps/srm/scripts/xray-performance-adoption.test.mjs','apps/srm/src/modules/xray/supplier-locations-view.test.ts','packages/platform-contracts/current-fresh-report/test/current-fresh-report.test.mjs','packages/platform-contracts/readonly-miss-report/test/readonly-miss-report.test.mjs','packages/platform-contracts/test/fixtures/calendar-current-e1-postgres.mjs','packages/platform-contracts/test/private-operation-host.test.mjs'].includes(f.filename));
+ assert.equal(previous.length,94);rejection(()=>selectCandidate(context(),{...p,changed_files:94},other,{files:previous}));
+ const superseded=files.filter(f=>!['apps/srm/scripts/rural-location-release.test.mjs','apps/srm/scripts/xray-performance-adoption.test.mjs','apps/srm/src/modules/xray/supplier-locations-view.test.ts'].includes(f.filename));assert.equal(superseded.length,108);rejection(()=>selectCandidate(context(),{...p,changed_files:108},other,{files:superseded}));
 });
 test('Oil review fixes each original file mode; a symlink or different blob is never admitted',()=>{
  const{files}=oilReportFixture();for(const f of files){const e=OIL_REPORT_E1_REVIEW.entries[f.filename];assertOilReportReviewEntry(f,`${e.mode} blob ${f.sha}\t${f.filename}\0`);rejection(()=>assertOilReportReviewEntry(f,`120000 blob ${f.sha}\t${f.filename}\0`));rejection(()=>assertOilReportReviewEntry({...f,sha},`${e.mode} blob ${sha}\t${f.filename}\0`));}

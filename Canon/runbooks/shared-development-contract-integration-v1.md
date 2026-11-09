@@ -275,3 +275,24 @@ provenance and handoffs live only in remote PHR under
 `reports/2026/11/09/ARCHITECTURE/ARCH-ACG-M1-CI-20261109/`.
 The existing `sg2/` bootstrap transport namespace does not select ownership:
 this task and every changed path remain ARCHITECTURE/Governance Source Layer.
+
+## Oil report — proposed complete consumer compatibility closure (2026-11-09)
+
+CI_REVIEW_REFRESH_PROPOSED_NOT_ACTIVE. The accepted94-file review remains
+historical evidence at main400f3970; its owner approval does not admit amended
+blobs or new paths. This proposal replaces only `OIL_REPORT_E1_REVIEW` with the
+closed111-file source candidate1eebfb93ab92a79d12293e61b0184327c034a145 on existing
+PR923. It retains exact status, mode, owner, surface and complete current Git
+checkout checks. Normal main refresh may preserve the identical reviewed blobs.
+Parallel ACG/ECR through main7fd6fe9d and every other accepted review remain unchanged.
+
+The17 added paths contain missing SDK consumer receipt/tests, exact Source Hub
+CI routing and synthetic fixture compatibility. Changes to preceding reviewed
+files complete current-first acceptance and immutable historical comparisons.
+No report business logic, E1 grants, provider admission, model budget, deployment,
+new Source family or recurring schedule is admitted by this CI proposal.
+
+The entire changed CI policy requires an exact owner decision and ordinary full
+CI/trusted-main proof before merge. No exception from PR930 carries forward.
+Feature/source adoption remains a separate final SOURCE GO after successful CI.
+See `Canon/evidence/2026-11-09-oil-report-ci-consumer-closure.md`.
