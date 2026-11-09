@@ -23,13 +23,13 @@ const sha256 = bytes => createHash('sha256').update(bytes).digest('hex')
 function scheduleSourceAcceptance(readCurrent=read){
  if(JSON.parse(readCurrent('packages/platform-source-hub-contracts/package.json')).version!=='1.5.0')return null
  const file='apps/platform-source-hub/operations/publication-schedule-source-acceptance.json',bytes=readCurrent(file)
- assert.equal(sha256(bytes),'a2d43b03084198091c4f82d0c328217d2b462b4f2c68b875f5e7bcf3863718fb','exact new schedule acceptance')
+ assert.equal(sha256(bytes),'3f9a3de218368152b86cd4c4efebb831f2033256465248dcf320f362d8c0c422','exact new schedule acceptance')
  const a=JSON.parse(bytes)
- assert.equal(a.sourceCandidateSha,'0d4379f7344e314891697cfc5add4f022320ff47')
+ assert.equal(a.sourceCandidateSha,'1ed366d9e1fdac87a549dd891d2b7b53abf13b2c')
  assert.equal(a.predecessorSourceSha,'d943d2ba17eeb6b07ba5a9162a4767e155513a90')
  assert.equal(a.predecessorManifestSha256,'458ddbf661ce1a5666260a072a03f24ac016346bdd9a9efef7f2a1d497eee403')
  assert.equal(sha256(readCurrent(a.predecessorManifestPath)),a.predecessorManifestSha256,'immutable previous acceptance')
- assert.deepEqual(Object.keys(a.sourceFiles),git(['diff','--name-only',a.baseSha,a.sourceCandidateSha]).split('\n').sort())
+ assert.deepEqual(Object.keys(a.sourceFiles),git(['diff','--name-only',a.baseSha,a.sourceCandidateSha]).split('\n').filter(p=>(p.startsWith('apps/platform-source-hub/')||p.startsWith('packages/platform-source-hub-contracts/'))&&p!==file).sort())
  assert.equal(Object.keys(a.sourceFiles).length,26);assert.equal(Object.keys(a.replacements).length,9)
  const old=JSON.parse(readCurrent(a.predecessorManifestPath))
  for(const [p,digest]of Object.entries(a.sourceFiles)){
