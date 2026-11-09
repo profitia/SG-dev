@@ -129,3 +129,36 @@ test('ECR activation appends one ordered document and one onboarding record with
  assert(evidence.includes('Zgoda nie obejmuje automatycznego tworzenia zasobów infrastrukturalnych ani nadawania grantów administracyjnych.'))
  assert(evidence.includes(approved))
 })
+
+
+const canonV12Path="Canon/v1.2-economic-calendar-runtime-business-and-architecture-canon.md"
+const sourceV12Digest="4fbc0219ed515fcd06395c483ff840d889438a2761514bf27fbcc99737bde6e8"
+const sourceV12Header="**Status:** `OWNER_APPROVED / PUBLICATION_PENDING / NOT_YET_ACTIVE`"
+const publishedV12Header="**Status:** `OWNER_APPROVED / PUBLISHED / ACTIVE` — skuteczny wyłącznie po kontrolowanym przyjęciu do authority `main` i potwierdzeniu aktywnego wpisu manifestu; status gałęzi roboczej nie jest dowodem publikacji."
+const sourceV12Footer="**Status techniczny dokumentu do czasu publikacji:** `PUBLICATION_PENDING / NOT_YET_ACTIVE`. Po kontrolowanym przyjęciu do authority i potwierdzeniu statusu w governance należy odnotować rzeczywisty stan publikacji; sama akceptacja treści nie jest dowodem aktywacji w repozytorium."
+const publishedV12Footer="**Status publikacji kanonicznej:** `OWNER_APPROVED / PUBLISHED / ACTIVE` — skuteczny po kontrolowanym przyjęciu do `profitia/SG-dev/main` i potwierdzeniu aktywnego wpisu governance. [Ślad decyzji, integralności i publikacji](evidence/2026-11-09-ecr-v1.2-canon-publication.md). Przyjęcie kanonu nie uruchamia produktu ani jego praw operacyjnych."
+function restoreV12PublicationMetadata(text){
+ assert.equal(text.split(publishedV12Header).length,2)
+ assert.equal(text.split(publishedV12Footer).length,2)
+ return text.replace(publishedV12Header,sourceV12Header).replace(publishedV12Footer,sourceV12Footer)
+}
+test('ECR v1.2 preserves the exact owner-approved input except two publication metadata spans',()=>{
+ const text=read(canonV12Path)
+ assert.equal(hash(restoreV12PublicationMetadata(text)),sourceV12Digest)
+ assert.equal(hash(text),"0af9974ff232bd78b8e27fc969dc771d32aa634d02765a8780aec96dccc928cb")
+ assert.notEqual(hash(restoreV12PublicationMetadata(text+'\nUnapproved normative addition')),sourceV12Digest)
+ assert.equal(hash(read('Canon/v1.0-economic-calendar-runtime-business-and-architecture-canon.md')),'124a405567648a75c1f5a3722f03419cefa22c49a6df492fa0a3fa601848c947')
+ assert.equal(hash(read(activePath)),'c5ffdbed0e76451ce79bda1e810eaf1bd32ca199574b20f2cab25460596387ab')
+})
+test('ECR v1.2 is an additive ordered canon, preserving v1.1 and existing G1 without runtime authority',()=>{
+ const validation=validateGovernanceManifest(root);assert.equal(validation.valid,true,validation.errors.join('; '))
+ const entry=validation.activeDocuments.find(d=>d.path===canonV12Path)
+ assert(entry);assert.equal(entry.id,'economic-calendar-runtime-business-and-architecture-canon');assert.equal(entry.version,'1.2');assert.equal(entry.status,'ACTIVE');assert.equal(entry.owner,'Architecture Platform')
+ assert.deepEqual(entry.appliesTo,['SG2','SRM','ARCHITECTURE'])
+ assert(entry.dependsOn.includes('economic-calendar-runtime-source-hub-and-preferences-amendment'))
+ for(const id of entry.dependsOn)assert(validation.activeDocuments.find(d=>d.id===id).loadOrder<entry.loadOrder)
+ assert(validation.activeDocuments.some(d=>d.path===activePath))
+ const r=route('ARCHITECTURE',[canonV12Path,"Canon/evidence/2026-11-09-ecr-v1.2-canon-publication.md",'Canon/registries/governance-manifest-v2.json','scripts/governance/ecr-routing.test.mjs'])
+ assert.equal(r.ok,true,r.error);assert(r.results.every(x=>x.currentOwner==='Governance Source Layer'&&x.baselineClassification==='ALIGNED'))
+ const evidence=read("Canon/evidence/2026-11-09-ecr-v1.2-canon-publication.md");assert(evidence.includes(sourceV12Digest));assert(evidence.includes('without another owner decision'));assert(evidence.includes('No implementation stage plan'))
+})
