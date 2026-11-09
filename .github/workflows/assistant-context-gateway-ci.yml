@@ -7,6 +7,8 @@ on:
       - 'packages/platform-contracts/src/assistant-*'
       - 'packages/platform-contracts/test/assistant-*'
       - 'packages/platform-contracts/migrations/access/030-assistant-operations.sql'
+      - 'apps/sg-runtime/migrations/assistant/**'
+      - 'apps/sg-runtime/tests/assistant-history-postgres.test.mjs'
       - '.github/workflows/assistant-context-gateway-ci.yml'
   push:
     branches: [main]
@@ -16,6 +18,8 @@ on:
       - 'packages/platform-contracts/src/assistant-*'
       - 'packages/platform-contracts/test/assistant-*'
       - 'packages/platform-contracts/migrations/access/030-assistant-operations.sql'
+      - 'apps/sg-runtime/migrations/assistant/**'
+      - 'apps/sg-runtime/tests/assistant-history-postgres.test.mjs'
       - '.github/workflows/assistant-context-gateway-ci.yml'
 permissions:
   contents: read
@@ -53,3 +57,9 @@ jobs:
           node-version: '24'
       - run: npm --prefix apps/architecture-lab ci --ignore-scripts --no-audit --no-fund && npm --prefix packages/platform-contracts ci --ignore-scripts --no-audit --no-fund
       - run: node --test packages/platform-contracts/test/assistant-*.test.mjs packages/platform-contracts/test/operation-context.test.mjs
+      - name: Native private history when the SG2 source is adopted
+        if: hashFiles('apps/sg-runtime/migrations/assistant/**', 'apps/sg-runtime/tests/assistant-history-postgres.test.mjs') != ''
+        run: |
+          test -f apps/sg-runtime/migrations/assistant/001-history.sql
+          test -f apps/sg-runtime/tests/assistant-history-postgres.test.mjs
+          node --test apps/sg-runtime/tests/assistant-history-postgres.test.mjs

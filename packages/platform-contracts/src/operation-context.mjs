@@ -627,5 +627,11 @@ export function createOperationExecutor(options) {
 
 export function operationSourceDigest() {
   // Kept outside the decision path: consumers bind the implementation and types.
-  return import('node:fs').then(fs => createHash('sha256').update(fs.readFileSync(new URL('./operation-context.mjs', import.meta.url))).update(fs.readFileSync(new URL('./operation-context.d.mts', import.meta.url))).update(fs.readFileSync(new URL('./request-operations.mjs',import.meta.url))).update(fs.readFileSync(new URL('./request-operations.d.mts',import.meta.url))).update(fs.readFileSync(new URL('../migrations/access/017-additional-request-operations.sql',import.meta.url))).update(fs.readFileSync(new URL('./supplier-location.mjs',import.meta.url))).update(fs.readFileSync(new URL('./supplier-location.d.mts',import.meta.url))).update(fs.readFileSync(new URL('../migrations/access/019-supplier-location-operations.sql',import.meta.url))).digest('hex'))
+  return import('node:fs').then(fs => {
+    const hash=createHash('sha256')
+    // The optional assistant imports real usage receipt verification. Include
+    // that transitive implementation and its types in the closed Root closure.
+    for(const file of ['./operation-context.mjs','./operation-context.d.mts','./request-operations.mjs','./request-operations.d.mts','../migrations/access/017-additional-request-operations.sql','./supplier-location.mjs','./supplier-location.d.mts','../migrations/access/019-supplier-location-operations.sql','./assistant-usage.mjs','./assistant-usage.d.mts'])hash.update(fs.readFileSync(new URL(file,import.meta.url)))
+    return hash.digest('hex')
+  })
 }
