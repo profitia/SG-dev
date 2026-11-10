@@ -1,6 +1,6 @@
 {
   "schemaVersion": "2.0",
-  "manifestVersion": "3.45.0",
+  "manifestVersion": "3.46.0",
   "owner": "Profitia Governance",
   "entrypoint": "AGENTS.md",
   "preflight": "scripts/governance/governance-preflight.mjs",
@@ -1381,6 +1381,30 @@
         "platform-appshell-business-and-architecture-canon",
         "operation-context-and-access-contract",
         "shared-development-contract-integration"
+      ]
+    },
+    {
+      "id": "spendguru-registration-and-organisation-onboarding-canon",
+      "version": "1.0",
+      "path": "Canon/v1.0-spendguru-registration-and-organisation-onboarding-canon.md",
+      "status": "ACTIVE",
+      "loadOrder": 530,
+      "owner": "Architecture Platform",
+      "appliesTo": [
+        "SG2",
+        "SRM",
+        "ARCHITECTURE"
+      ],
+      "dependsOn": [
+        "identity-runtime-architecture-and-ownership",
+        "profitia-package-and-limits-customer-lifecycle",
+        "profitia-package-and-limits-management",
+        "platform-appshell-business-and-architecture-canon",
+        "repository-routing",
+        "architecture-baseline",
+        "operation-context-and-access-contract",
+        "shared-development-contract-integration",
+        "platform-source-hub-universal-first-party-consumer-access"
       ]
     }
   ]
