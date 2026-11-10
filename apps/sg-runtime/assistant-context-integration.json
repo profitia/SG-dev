@@ -178,19 +178,21 @@
     "schemaVersion": "1.0",
     "taskId": "SG2-OIL-RENDERER-RECOVERY-20261110",
     "targetEnvironment": "development",
-    "previousSourceSha": "1e0dc1ca4057437805561a841105e291d028df10",
+    "previousSourceSha": "aae0315cd531d4935656d90fc65cf31ad169c34b",
     "previousReceiptSha256": "d932f227977789643086b6a9eb179598a6f48071964b2d26ba82d25fceb7b2ec",
     "changedSourcePaths": [
       "apps/insights-runtime/render/report.py",
       "apps/insights-runtime/tests/postgres.test.mjs",
       "apps/sg-runtime/tests/assistant-m2-integrity.mjs",
-      "apps/sg-runtime/tests/assistant-m2-integrity.test.mjs"
+      "apps/sg-runtime/tests/assistant-m2-integrity.test.mjs",
+      "apps/sg-runtime/tests/procurement-insights-integrity.test.mjs"
     ],
     "sourceDigests": {
       "apps/insights-runtime/render/report.py": "fc60502cbab052bbe90f7598b437b896bcd94c32fc6037d48203bf0e5d6456cf",
       "apps/insights-runtime/tests/postgres.test.mjs": "f887f544b7eced7928d41b0ed84b0e5b0ccd4b7828f7272d10f42e19a5409a47",
-      "apps/sg-runtime/tests/assistant-m2-integrity.mjs": "c5b5d15244f1501fea95c317811b614e7427082ca445554e013c9c99e98e777e",
-      "apps/sg-runtime/tests/assistant-m2-integrity.test.mjs": "4e011343280c1c3a68ae2f791575730f15d69169a57cfd9907d7be0cc50da295"
+      "apps/sg-runtime/tests/assistant-m2-integrity.mjs": "41f5c29ec09bacb791356cf60764336ced4cee0f7bd2f9ecf9c2a72226664bb1",
+      "apps/sg-runtime/tests/assistant-m2-integrity.test.mjs": "4e011343280c1c3a68ae2f791575730f15d69169a57cfd9907d7be0cc50da295",
+      "apps/sg-runtime/tests/procurement-insights-integrity.test.mjs": "76f05ed6c4cd63104e964b76d31e9b7f289a1874aba2862d31eaf4cbba9e50bf"
     },
     "noSdkChange": true,
     "noGrantChange": true,

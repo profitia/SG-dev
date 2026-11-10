@@ -1,9 +1,9 @@
 import {createHash} from 'node:crypto'
 import {planAnalyticalConversation} from '@profitia/cic-core'
-import {contextReferences,readContextReference,type ContextReference,type ContextSelection,type ChartReference,type SupplierReference} from '../../../../packages/assistant-context-contracts/src/index.mjs'
+import {contextReferences,readContextReference,type ContextReference,type ContextSelection,type ChartReference,type SupplierReference,type NewsfeedReference} from '../../../../packages/assistant-context-contracts/src/index.mjs'
 import type {ContextEntry} from '../../../../packages/assistant-context-gateway/src/index.mjs'
 import type {HistoryScope,StoredConversation} from './history'
-export type AssistantTurnSelection={message:string;locale:'pl'|'en';module:'appshell'|'benchmark_finder'|'xray'|'adp';reference:ChartReference|SupplierReference|null}
+export type AssistantTurnSelection={message:string;locale:'pl'|'en';module:'appshell'|'benchmark_finder'|'xray'|'adp'|'procurement_insights';reference:ChartReference|SupplierReference|NewsfeedReference|null}
 export function referenceIdentity(r:ContextReference):string{
  switch(r.source){
   case 'BENCHMARK_CHART':return JSON.stringify([r.source,r.seriesId,r.from,r.to,r.fingerprint,r.range??'ALL'])
@@ -19,9 +19,12 @@ export function selectConversationContext(turn:AssistantTurnSelection,stored:Sto
   &&(s.viewIdentity===viewIdentity||s.viewIdentity===undefined&&turn.reference?.source==='BENCHMARK_CHART'
    &&s.source==='BENCHMARK_CHART'&&referenceIdentity(s.reference)===referenceIdentity(turn.reference)))
  const previous=sameView?latest!.scopes.map(s=>s.reference):[]
- const policy=planAnalyticalConversation({message:turn.message,locale:turn.locale,userTurnCount:(stored?.turns.length??0)+1,
-  activeModule:turn.module,continuingBenchmarkDiscussion:turn.reference?.source==='BENCHMARK_CHART',
+ const planned=planAnalyticalConversation({message:turn.message,locale:turn.locale,userTurnCount:(stored?.turns.length??0)+1,
+  activeModule:turn.module==='procurement_insights'?'appshell':turn.module,continuingBenchmarkDiscussion:turn.reference?.source==='BENCHMARK_CHART',
   previousSources:[...new Set(previous.map(r=>r.source))]})
+ // The gateway already accepts this read-only reference. In PI only the
+ // explicit selection is retrieved, and only after the user sends a message.
+ const policy=turn.module==='procurement_insights'?{...planned,contextPlan:turn.reference?.source==='NEWSFEED'?[{source:'NEWSFEED' as const,selection:'ACTIVE_VIEW' as const}]:[]}:planned
  const refs=new Map<ContextReference['source'],ContextReference>(previous.map(r=>[r.source,r]))
  if(turn.reference)refs.set(turn.reference.source,turn.reference)
  const explicitNip=/(?<!\p{L})NIP[:\s]+([0-9][0-9 -]{8,15}[0-9])(?![0-9])/iu.exec(turn.message)?.[1]?.replace(/[ -]/g,'')

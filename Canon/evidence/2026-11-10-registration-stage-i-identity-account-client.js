@@ -1,0 +1,335 @@
+const browserCommunicationLanguage = function browserCommunicationLanguage(value) {
+    return typeof value === 'string' && /^pl(?:-[a-z0-9]{1,8})*$/i.test(value) ? 'pl' : 'en';
+};
+const createClerkConversation = function createClerkConversation(sdk, registration, invitationTicket = null, backend = null) {
+    // Opaque provider proof, never interpreted locally or written into chat state.
+    if (invitationTicket !== null && (!registration || !/^[A-Za-z0-9_.-]{20,8000}$/.test(invitationTicket)))
+        throw Error('INVALID_INVITATION');
+    const state = { step: 'avatar', avatarSex: null, firstName: '', lastName: '', email: '', method: 'email_code', complete: false, busy: false };
+    let completedUserId = null;
+    async function finish(result) {
+        if (result.status !== 'complete' || !result.createdSessionId) {
+            state.step = 'challenge';
+            return;
+        }
+        if (registration && typeof result.createdUserId === 'string')
+            completedUserId = result.createdUserId;
+        await sdk.setActive({ session: result.createdSessionId });
+        state.complete = true;
+        state.step = 'done';
+    }
+    async function sendCode() {
+        if (registration && backend && !invitationTicket) {
+            const result = await backend.start({ firstName: state.firstName, lastName: state.lastName, email: state.email, avatar: state.avatarSex });
+            if (result.status === 'login') {
+                state.step = 'existing';
+                return;
+            }
+            if (result.status !== 'code')
+                throw Error('REGISTRATION_UNAVAILABLE');
+        }
+        else if (registration)
+            await sdk.client.signUp.prepareEmailAddressVerification({ strategy: 'email_code' });
+        else {
+            const factor = sdk.client.signIn.supportedFirstFactors?.find((f) => f.strategy === 'email_code');
+            if (!factor?.emailAddressId) {
+                state.step = 'challenge';
+                return;
+            }
+            await sdk.client.signIn.prepareFirstFactor({ strategy: 'email_code', emailAddressId: factor.emailAddressId });
+        }
+        state.step = 'code';
+    }
+    return { state,
+        registrationAvatar(userId) {
+            const signUp = sdk.client.signUp;
+            const subject = completedUserId ?? (signUp?.status === 'complete' ? signUp.createdUserId : null);
+            return registration && subject === userId && ['male', 'female'].includes(state.avatarSex ?? '') ? state.avatarSex : null;
+        },
+        async resend() { if (state.busy || state.step !== 'code')
+            return; state.busy = true; try {
+            await sendCode();
+        }
+        finally {
+            state.busy = false;
+        } },
+        async submit(value) {
+            if (state.busy || state.complete)
+                return;
+            const step = state.step, input = step === 'password' ? value : value.trim();
+            if (!input || input.length > (step === 'password' ? 1024 : 320))
+                throw Error('INVALID_INPUT');
+            if (step === 'code' && !/^\d{6}$/.test(input))
+                throw Error('INVALID_CODE');
+            state.busy = true;
+            try {
+                if (step === 'avatar') {
+                    if (!['male', 'female'].includes(input))
+                        throw Error('INVALID_INPUT');
+                    state.avatarSex = input;
+                    state.step = registration ? 'name' : 'method';
+                }
+                else if (step === 'name') {
+                    state.firstName = input;
+                    state.step = 'surname';
+                }
+                else if (step === 'surname') {
+                    state.lastName = input;
+                    if (invitationTicket) {
+                        const result = await sdk.client.signUp.create({ strategy: 'ticket', ticket: invitationTicket,
+                            firstName: state.firstName, lastName: state.lastName, unsafeMetadata: { assistantAvatar: state.avatarSex } });
+                        // Clerk alone verifies the invitation/mailbox and required challenges.
+                        await finish(result);
+                    }
+                    else
+                        state.step = 'email';
+                }
+                else if (step === 'method') {
+                    if (!['email_code', 'password'].includes(input))
+                        throw Error('INVALID_INPUT');
+                    state.method = input;
+                    state.step = 'email';
+                }
+                else if (step === 'email') {
+                    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(input))
+                        throw Error('INVALID_EMAIL');
+                    state.email = input;
+                    if (registration && backend) {
+                        await sendCode();
+                    }
+                    else if (registration) {
+                        // Presentation preference only. Clerk signup metadata is a temporary
+                        // carrier until the verified account writes its own private profile.
+                        const result = await sdk.client.signUp.create({ firstName: state.firstName, lastName: state.lastName, emailAddress: input, unsafeMetadata: { assistantAvatar: state.avatarSex } });
+                        // Required provider fields, legal acceptance and challenges are never skipped.
+                        if (result.status === 'complete')
+                            await finish(result);
+                        else if (result.missingFields?.length)
+                            state.step = 'challenge';
+                        else
+                            await sendCode();
+                    }
+                    else {
+                        const result = await sdk.client.signIn.create({ identifier: input });
+                        if (result.status === 'complete')
+                            await finish(result);
+                        else if (result.status !== 'needs_first_factor')
+                            state.step = 'challenge';
+                        else if (state.method === 'password') {
+                            state.step = result.supportedFirstFactors?.some((f) => f.strategy === 'password') ? 'password' : 'challenge';
+                        }
+                        else
+                            await sendCode();
+                    }
+                }
+                else if (step === 'code') {
+                    if (registration && backend && !invitationTicket) {
+                        const verified = await backend.verify(input);
+                        if (verified.status !== 'verified' || typeof verified.ticket !== 'string' || typeof verified.subject !== 'string')
+                            throw Error('REGISTRATION_UNAVAILABLE');
+                        const result = await sdk.client.signIn.create({ strategy: 'ticket', ticket: verified.ticket });
+                        await finish(result);
+                        if (state.complete)
+                            completedUserId = verified.subject;
+                        return;
+                    }
+                    const result = registration ? await sdk.client.signUp.attemptEmailAddressVerification({ code: input }) : await sdk.client.signIn.attemptFirstFactor({ strategy: 'email_code', code: input });
+                    await finish(result);
+                }
+                else if (step === 'password')
+                    await finish(await sdk.client.signIn.attemptFirstFactor({ strategy: 'password', password: input }));
+            }
+            finally {
+                state.busy = false;
+            }
+        }
+    };
+};
+
+window.startSpendGuruConversation = function(cfg, nativeChallenge) {
+  const root = document.getElementById('chat-interface');
+  if (!root) { nativeChallenge(); return; }
+  const invitation = new URL(window.location.href).searchParams.get('__clerk_ticket');
+  // Unsupported invitation states are handled by the official provider UI.
+  if (invitation && (cfg.flow !== 'registration' || !/^[A-Za-z0-9_.-]{20,8000}$/.test(invitation))) { nativeChallenge(); return; }
+  let receipt = null;
+  const registrationRequest = async (path, body) => {
+    const response = await fetch('/v1/registration/'+path, {method:'POST',credentials:'same-origin',cache:'no-store',redirect:'error',
+      signal:AbortSignal.timeout(30000),headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    const result = await response.json(); if (!response.ok) throw Error(result.error || 'REGISTRATION_UNAVAILABLE'); return result;
+  };
+  const backend = cfg.backendRegistration ? {
+    start: async draft => { const result = await registrationRequest('start', {...draft,browserLanguage:navigator.languages?.[0] || navigator.language || ''});
+      receipt = result.status === 'code' ? {attemptId:result.attemptId,token:result.token} : null; return result; },
+    verify: code => { if (!receipt) throw Error('REGISTRATION_REQUIRED'); return registrationRequest('verify', {...receipt,code}); }
+  } : null;
+  window.spendGuruRegistrationReceipt = () => receipt?.token || null;
+  const model = createClerkConversation(window.Clerk, cfg.flow === 'registration', invitation, backend);
+  const reg = cfg.flow === 'registration', en = cfg.en;
+  const history = document.getElementById('history'), choices = document.getElementById('choices');
+  const form = document.getElementById('composer-form'), input = document.getElementById('answer');
+  const otp = document.getElementById('otp'), digits = [...otp.querySelectorAll('input')];
+  const error = document.getElementById('chat-error'), send = document.getElementById('send');
+  const dots = document.getElementById('typing'), status = document.getElementById('chat-status');
+  const resend = document.getElementById('resend'), switchMethod = document.getElementById('switch-method');
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let avatar = 'female', writing = false, epoch = 0, resendAt = 0;
+  const tr = (pl, english) => en ? english : pl;
+  const scroll = () => { history.scrollTo({ top: history.scrollHeight, behavior: reduced ? 'instant' : 'smooth' }); };
+  const avatarNode = (size, dynamic = true) => { const wrap = document.createElement('span'); wrap.className = 'sg-v2-avatar'; wrap.style.width = wrap.style.height = size + 'px'; const image = document.createElement('img'); image.src = cfg.avatars[avatar]; image.alt = ''; if (dynamic) image.setAttribute('data-avatar', ''); image.referrerPolicy = 'no-referrer'; wrap.append(image); return wrap; };
+  const setAvatar = value => { if (!['male','female'].includes(value)) return; avatar = value; model.state.avatarSex = value; document.querySelectorAll('[data-avatar]').forEach(image => { image.src = cfg.avatars[avatar]; }); };
+  window.spendGuruRestoreAvatar = value => { setAvatar(value); };
+  window.spendGuruRegistrationAvatar = userId => model.registrationAvatar(userId);
+  function bubble(text, user) {
+    const row = document.createElement('div'); row.className = 'sg-v2-message ' + (user ? 'is-user' : 'is-bot');
+    if (!user) row.append(avatarNode(34)); const box = document.createElement('div'); box.className = 'sg-v2-bubble ' + (user ? 'is-user' : 'is-bot'); box.textContent = text; row.append(box); history.insertBefore(row, dots);
+    if (!reduced) row.animate(user ? [{ opacity: 0, transform: 'translateY(32px) scale(.96)', filter: 'blur(2px)' }, { opacity: 1, transform: 'translateY(0) scale(1)', filter: 'blur(0)' }] : [{ opacity: 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'translateY(0)' }], { duration: user ? 430 : 220, easing: 'cubic-bezier(.2,.8,.2,1)' });
+    scroll(); return box;
+  }
+  const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
+  function lock(yes) { send.disabled = yes; input.disabled = yes; digits.forEach(d => d.disabled = yes); choices.querySelectorAll('button').forEach(b => b.disabled = yes); }
+  async function say(text) {
+    const current = ++epoch; writing = true; lock(true); choices.replaceChildren(); dots.hidden = false; status.textContent = tr('SpendGuru pisze…', 'SpendGuru is typing…'); scroll();
+    await pause(reduced ? 0 : 420); if (current !== epoch) return;
+    dots.hidden = true; const box = bubble('', false); const letters = Array.from(text);
+    for (let i = 0; i < letters.length; i += reduced ? letters.length : 2) { if (current !== epoch) return; box.textContent = letters.slice(0, Math.min(i + (reduced ? letters.length : 2), letters.length)).join(''); if (!reduced) await pause(24); scroll(); }
+    writing = false; status.textContent = tr('Twój rozmówca · online', 'Your guide · online'); lock(false);
+  }
+  function choice(label, value, image) {
+    const button = document.createElement('button'); button.type = 'button'; button.className = 'sg-v2-choice';
+    if (image) { const old = avatar; avatar = image; button.append(avatarNode(80, false)); avatar = old; }
+    const labelNode = document.createElement('span'); labelNode.textContent = label; button.append(labelNode); button.onclick = () => submit(value, label); choices.append(button);
+  }
+  async function ask() {
+    form.hidden = true; otp.hidden = true; input.hidden = false; resend.hidden = true; switchMethod.hidden = true; input.value = ''; digits.forEach(d => d.value = ''); error.textContent = '';
+    const step = model.state.step;
+    document.querySelectorAll('[data-step]').forEach((el, index) => { const phase = step === 'avatar' ? 0 : ['name','surname','email','method','password'].includes(step) ? 1 : 2; el.classList.toggle('is-current', index === phase); el.classList.toggle('is-muted', index !== phase); el.querySelector('span').classList.toggle('is-reached', index <= phase); });
+    const questions = {
+      avatar: tr('Cześć, jestem SpendGuru. Najpierw wybierz, z kim wolisz rozmawiać. Pamiętaj, zawsze możesz zmienić decyzję w dowolnym momencie.', 'Hi, I’m SpendGuru. First, choose who you’d like to talk to. You can change your choice at any time.'),
+      name: tr('Cześć, miło Cię poznać. Zacznijmy od tego, jak masz na imię?', 'Hi, nice to meet you. Let’s start with your first name.'),
+      surname: tr('Miło Cię poznać! A jak masz na nazwisko?', 'Nice to meet you! And your last name?'),
+      email: reg ? tr('Na jaki adres e-mail założymy Twoje konto?', 'Which email address shall we use for your account?') : tr('Podaj adres e-mail swojego konta.', 'What is your account email address?'),
+      method: tr('Dobrze Cię znów widzieć. Jak chcesz się zalogować?', 'Good to see you again. How would you like to sign in?'),
+      password: tr('Teraz wpisz swoje hasło. Zostanie między Tobą a Clerkiem.', 'Now enter your password. It stays between you and Clerk.'),
+      code: tr('Została nam jeszcze jedna rzecz. Sprawdź pocztę i wpisz sześciocyfrowy kod, który otrzymasz w wiadomości.', 'One more thing. Check your inbox and enter the six-digit code from your email.'),
+      existing: tr('Ten adres jest już powiązany z kontem. Przejdź do logowania, aby kontynuować.', 'This email is already linked to an account. Sign in to continue.'),
+      challenge: tr('Potrzebne jest dodatkowe potwierdzenie. Dokończ je w bezpiecznym oknie poniżej.', 'An extra verification is needed. Complete it in the secure panel below.')
+    };
+    await say(questions[step] || tr('Przygotowujemy Twoje konto…', 'Preparing your account…'));
+    if (step === 'avatar') { choices.className = 'sg-v2-choices is-avatars'; choice(tr('Awatar żeński', 'Female avatar'), 'female', 'female'); choice(tr('Awatar męski', 'Male avatar'), 'male', 'male'); }
+    else if (step === 'method') { choices.className = 'sg-v2-choices'; choice(tr('Kodem e-mail', 'Email code'), 'email_code'); choice(tr('Hasłem', 'Password'), 'password'); }
+    else if (step === 'existing') { const link=document.createElement('a'); link.href=cfg.signInUrl; link.className='sg-v2-choice'; link.textContent=tr('Przejdź do logowania','Go to sign in'); choices.append(link); }
+    else if (step === 'challenge') nativeChallenge();
+    else if (!model.state.complete) {
+      form.hidden = false; const code = step === 'code'; otp.hidden = !code; input.hidden = code;
+      input.type = step === 'email' ? 'email' : step === 'password' ? 'password' : 'text'; input.maxLength = step === 'password' ? 1024 : 320;
+      input.autocomplete = ({name:'given-name',surname:'family-name',email:'email',password:'current-password'})[step] || 'off';
+      input.setAttribute('aria-label', ({name:tr('Imię','First name'),surname:tr('Nazwisko','Last name'),email:'E-mail',password:tr('Hasło','Password')})[step] || tr('Odpowiedź','Your answer'));
+      input.placeholder = step === 'email' ? 'twoj@email.pl' : step === 'password' ? tr('Wpisz hasło…','Your password…') : tr('Napisz wiadomość…','Write a message…');
+      resend.hidden = !code; switchMethod.hidden = reg || !['code','password'].includes(step); (code ? digits[0] : input).focus({preventScroll:true});
+    }
+    scroll();
+  }
+  async function submit(value, label) {
+    if (writing || model.state.busy) return;
+    const step = model.state.step;
+    if (!value.trim()) { error.textContent = tr('Wpisz odpowiedź.', 'Please enter your answer.'); return; }
+    if (step === 'code' && !/^\d{6}$/.test(value)) { error.textContent = tr('Wpisz wszystkie sześć cyfr.', 'Please enter all six digits.'); return; }
+    if (step === 'avatar') setAvatar(value);
+    bubble(['password','code'].includes(step) ? (step === 'code' ? '••••••' : '••••••••') : label || value, true);
+    input.value = ''; digits.forEach(d => d.value = ''); error.textContent = ''; lock(true); dots.hidden = false; status.textContent = tr('Sprawdzamy…','Checking…');
+    try { await model.submit(value); dots.hidden = true; if (!model.state.complete) await ask(); }
+    catch (e) { dots.hidden = true; lock(false); status.textContent = tr('Twój rozmówca · online','Your guide · online'); error.textContent = tr('Nie udało się potwierdzić odpowiedzi. Sprawdź wpisane dane lub kod i spróbuj ponownie.', 'We could not verify that answer. Check your details or code and try again.'); if (step === 'code') digits[0].focus(); else input.focus(); }
+  }
+  form.onsubmit = event => { event.preventDefault(); void submit(model.state.step === 'code' ? digits.map(d => d.value).join('') : input.value); };
+  digits.forEach((digit,index) => {
+    digit.oninput = () => { const values = digit.value.replace(/\D/g,'').slice(0,6-index); digit.value = values[0] || ''; [...values].slice(1).forEach((v,j) => digits[index+j+1].value = v); if (values) digits[Math.min(5,index+values.length)].focus(); };
+    digit.onpaste = event => { event.preventDefault(); const value = event.clipboardData.getData('text').replace(/\D/g,'').slice(0,6); [...value].forEach((v,i) => digits[i].value = v); digits[Math.min(5,value.length)].focus(); };
+    digit.onkeydown = event => { if (event.key === 'Backspace' && !digit.value && index > 0) { digits[index-1].value = ''; digits[index-1].focus(); } };
+  });
+  resend.onclick = async () => { if (writing || model.state.busy || Date.now() < resendAt) return; resendAt = Date.now()+30000; resend.disabled = true; try { await model.resend(); error.textContent = tr('Nowy kod został wysłany. Sprawdź pocztę.', 'A new code has been sent. Check your inbox.'); } catch { error.textContent = tr('Nie udało się wysłać nowego kodu. Spróbuj za chwilę.', 'We could not send a new code. Try again shortly.'); } setTimeout(() => resend.disabled = false, 30000); };
+  switchMethod.onclick = () => { if (!writing && !model.state.busy) { model.state.step = 'method'; void ask(); } };
+  document.getElementById('avatar-switch').onclick = () => setAvatar(avatar === 'female' ? 'male' : 'female');
+  document.getElementById('restart').onclick = () => window.location.reload();
+  root.hidden = false;
+  if (cfg.flow === 'recovery') { model.state.step = 'challenge'; }
+  void ask();
+};
+window.addEventListener('load', async () => {
+  const cfg = JSON.parse(document.getElementById('account-config').textContent);
+  const status = document.getElementById('status'), retry = document.getElementById('retry');
+  const logout = document.getElementById('logout'), signIn = document.getElementById('sign-in');
+  let active = null, controller, generation = 0, mounted = false, sdkReady = false;
+  const unavailable = () => { status.textContent = cfg.en ? 'We could not prepare your account. Please try again.' : 'Nie udało się przygotować konta. Spróbuj ponownie.'; retry.hidden = false; };
+  async function complete() {
+    const session = window.Clerk.session, key = session?.id || 'signed-out';
+    if (key === active) return;
+    active = key; const current = ++generation; if (controller) controller.abort();
+    controller = new AbortController(); retry.hidden = true; logout.hidden = !session;
+    if (mounted) { if (cfg.flow === 'registration') window.Clerk.unmountSignUp(signIn); else window.Clerk.unmountSignIn(signIn); mounted = false; } signIn.replaceChildren();
+    if (!session) { status.textContent = cfg.en ? 'Let’s start with a conversation.' : 'Zacznijmy od rozmowy.';
+      const options = { routing: 'hash', signInUrl: cfg.signInUrl, signUpUrl: cfg.signUpUrl,
+        forceRedirectUrl: window.location.origin + window.location.pathname,
+        signInForceRedirectUrl: window.location.origin + window.location.pathname, signUpForceRedirectUrl: window.location.origin + window.location.pathname };
+      const nativeChallenge = () => { if (mounted) return; if (cfg.flow === 'registration') window.Clerk.mountSignUp(signIn, options); else window.Clerk.mountSignIn(signIn, options); mounted = true; };
+      window.startSpendGuruConversation(cfg, nativeChallenge); return; }
+    status.textContent = cfg.en ? 'Preparing your account…' : 'Przygotowujemy Twoje konto…';
+    try {
+      const credential = await session.getToken({ skipCache: true }); if (current !== generation) return; if (!credential) throw Error('SESSION_REQUIRED');
+      const response = await fetch('/v1/account', { method: 'POST', credentials: 'omit', cache: 'no-store', redirect: 'error', signal: controller.signal,
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + credential, ...(window.spendGuruRegistrationReceipt?.() ? {'X-Registration-Receipt':window.spendGuruRegistrationReceipt()} : {}) }, body: '{}' });
+      const result = await response.json();
+      if (current !== generation || window.Clerk.session?.id !== key) return;
+      if (!response.ok || result.authenticated !== true || typeof result.userId !== 'string' || !/^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(result.userId) || !(Date.parse(result.expiresAt) > Date.now())) throw Error('ACCOUNT_UNAVAILABLE');
+      const avatarRequest = async (method, body) => {
+        const response = await fetch('/v1/account/assistant-avatar', { method, credentials: 'omit', cache: 'no-store', redirect: 'error', signal: controller.signal,
+          headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + credential }, ...(body ? { body: JSON.stringify(body) } : {}) });
+        const value = await response.json();
+        if (current !== generation || window.Clerk.session?.id !== key) throw new DOMException('Account changed', 'AbortError');
+        if (response.status === 409 && method === 'POST') return null;
+        if (response.ok && method === 'GET' && value === null) return null;
+        if (!response.ok || !value || value.userId !== result.userId || ![null,'male','female'].includes(value.avatarSex)
+          || !/^[1-9][0-9]{0,18}$/.test(value.version)) throw Error('PROFILE_UNAVAILABLE');
+        return value;
+      };
+      let preference = await avatarRequest('GET');
+      // A verified user's registration metadata is a bounded presentation hint,
+      // never an owner/access claim. A login form's temporary choice is ignored.
+      const initialAvatar = window.spendGuruRegistrationAvatar?.(window.Clerk.user?.id) ?? window.Clerk.user?.unsafeMetadata?.assistantAvatar;
+      if ((!preference || preference.avatarSex === null) && ['male','female'].includes(initialAvatar)) {
+        preference = await avatarRequest('POST', { expectedVersion: preference?.version ?? null, avatarSex: initialAvatar });
+        if (!preference) preference = await avatarRequest('GET');
+      }
+      if (current !== generation || window.Clerk.session?.id !== key) return;
+      if (window.spendGuruRestoreAvatar && preference?.avatarSex) window.spendGuruRestoreAvatar(preference.avatarSex);
+      const languageRequest = async (method, body) => {
+        const response = await fetch('/v1/account/communication-language', {method, credentials:'omit', cache:'no-store', redirect:'error', signal:controller.signal,
+          headers:{'Content-Type':'application/json',Authorization:'Bearer '+credential}, ...(body?{body:JSON.stringify(body)}:{})});
+        const value = await response.json();
+        if (current !== generation || window.Clerk.session?.id !== key) throw new DOMException('Account changed','AbortError');
+        if (response.status === 409 && method === 'POST') return null;
+        if (!response.ok || !value || value.userId !== result.userId || !['pl','en'].includes(value.language)
+          || !['migration','default','browser','user'].includes(value.source) || !/^[1-9][0-9]{0,18}$/.test(value.version)) throw Error('LANGUAGE_UNAVAILABLE');
+        return value;
+      };
+      let language = await languageRequest('GET');
+      if (language.source === 'default') {
+        language = await languageRequest('POST', {expectedVersion:language.version, source:'browser',
+          language:browserCommunicationLanguage(navigator.languages?.[0] || navigator.language)});
+        if (!language) language = await languageRequest('GET');
+      }
+
+      if (!(Date.parse(result.expiresAt) > Date.now())) throw Error('ACCOUNT_EXPIRED');
+      if (current !== generation || window.Clerk.session?.id !== key) return;
+      window.location.replace(cfg.returnTo);
+    } catch (error) { if (current === generation && error.name !== 'AbortError') unavailable(); }
+  }
+  retry.onclick = () => { if (!sdkReady) { window.location.reload(); return; } active = null; void complete(); };
+  logout.onclick = async () => { ++generation; active = null; controller?.abort(); status.textContent = cfg.en ? 'Signing out…' : 'Wylogowywanie…';
+    try { await window.Clerk.signOut(); void complete(); } catch { status.textContent = cfg.en ? 'Sign-out was not confirmed. Please try again.' : 'Wylogowanie nie zostało potwierdzone. Spróbuj ponownie.'; retry.hidden = true; logout.hidden = false; } };
+  try { if (!window.Clerk || !window.__internal_ClerkUICtor) throw Error('SDK_UNAVAILABLE');
+    await window.Clerk.load({ ui: { ClerkUI: window.__internal_ClerkUICtor }, signInUrl: cfg.signInUrl, signUpUrl: cfg.signUpUrl,
+      allowedRedirectOrigins: cfg.allowedRedirectOrigins, localization: cfg.localization }); sdkReady = true;
+    window.Clerk.addListener(() => { void complete(); }); await complete();
+  } catch { unavailable(); }
+});
