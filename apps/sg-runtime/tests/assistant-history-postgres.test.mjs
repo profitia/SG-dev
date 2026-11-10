@@ -29,6 +29,17 @@ test('real ordinary history role persists across connections, isolates the pilot
    const body=signed(action,payload,userId),proof=createHmac('sha256',key).update(body).digest('hex')
    return(await pool.query('SELECT sg2_assistant_history.apply($1,$2) AS result',[body,proof])).rows[0].result
   }
+  const attacker=await pool.connect();
+  try{
+   await attacker.query('CREATE TEMP TABLE installation(singleton boolean,schema_digest text,environment text,application_id text,project_id text,branch_id text,command_key bytea,pilot_user_id uuid,source_ref text)');
+   await attacker.query('GRANT SELECT ON pg_temp.installation TO sg2_assistant_history_owner');
+   const forgedKey=Buffer.alloc(32,17);
+   await attacker.query("INSERT INTO pg_temp.installation VALUES(true,$1,'development','spendguru','autumn-waterfall-65938876','br-dry-hall-b294222f',$2,$3,'SYNTHETIC_TEMP_SHADOW_ONLY')",[schemaDigest,forgedKey,V]);
+   const body=signed('LIST',{},V),proof=createHmac('sha256',forgedKey).update(body).digest('hex');
+   await assert.rejects(()=>attacker.query('SELECT sg2_assistant_history.apply($1,$2)',[body,proof]),/HISTORY_UNAVAILABLE/,'temporary tables cannot replace the real private-history owner or HMAC key');
+   assert.equal((await attacker.query('SELECT sg2_assistant_history.descriptor() AS binding')).rows[0].binding.userId,U);
+   await attacker.query('DROP TABLE pg_temp.installation');
+  }finally{attacker.release()}
   for(const sql of ['SELECT * FROM sg2_assistant_history.turns',"UPDATE sg2_assistant_history.installation SET pilot_user_id='"+V+"'",'SET ROLE '+owner])await assert.rejects(()=>pool.query(sql),e=>e.code==='42501')
   const descriptor=(await pool.query('SELECT sg2_assistant_history.descriptor() AS binding')).rows[0].binding
   assert.equal(descriptor.runtimeRole,role);assert.equal(descriptor.schemaDigest,schemaDigest);assert.equal(descriptor.userId,U)
