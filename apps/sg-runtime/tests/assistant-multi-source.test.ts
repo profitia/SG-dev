@@ -51,6 +51,14 @@ function fixture(){
  return {runtime,stored,plans,prompts,send,handlers,get begun(){return begun},get providerPosts(){return providerPosts},
   revokeKys(){revokeKys=true},removePublication(){removePublication=true},denyNews(){denyNews=true},changeOnAdmission(){changeOnAdmission=true}}
 }
+test('PI retrieves only an explicitly selected observation through the existing gateway and clears implicit archive access',async()=>{
+ const reference={version:'2.0.0' as const,source:'NEWSFEED' as const,observationId,supplierNip:null}
+ const selection=selectConversationContext({message:'Wyjaśnij wybraną obserwację',locale:'pl',module:'procurement_insights',reference},null,org)
+ assert.deepEqual(selection.policy.contextPlan,[{source:'NEWSFEED',selection:'ACTIVE_VIEW'}]);assert.deepEqual(selection.references,[reference])
+ const empty=selectConversationContext({message:'Sprawdź wiadomości z całego archiwum',locale:'pl',module:'procurement_insights',reference:null},null,org);assert.deepEqual(empty.policy.contextPlan,[]);assert.equal(empty.reference,null)
+ const f=fixture(),r=await f.send('Wyjaśnij wybraną obserwację',reference,'procurement_insights');assert.equal(r.response.status,200);assert.deepEqual(f.plans[0],['NEWSFEED']);assert(f.begun.scopes[0].requiredRecordIds.includes('O:'+observationId))
+ f.denyNews();const history=await f.handlers.load(new Request('https://example.test/api/assistant/history/'+conversationId),conversationId);assert(!JSON.stringify(await history.json()).includes('SYNTHETIC_ANSWER_PRIVATE'))
+})
 test('M2 BFF requests four producers and preserves their scoped continuity for a follow-up without reselection',async()=>{
  const f=fixture(),first=await f.send()
  assert.equal(first.response.status,200);assert(first.text.includes('"type":"completed"'))

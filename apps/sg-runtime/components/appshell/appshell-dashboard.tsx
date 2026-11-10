@@ -13,6 +13,8 @@ import {AdpModuleHost} from './adp-module-host'
 import {adpPath, dashboardPath, isAdpPath, parseAdpNavigation} from '@/lib/appshell/adp-navigation'
 import {BenchmarkFinderClient} from '../benchmark-finder/benchmark-finder-client'
 import {Sg2ModuleSession} from '../auth/session-boundary'
+import {ProcurementInsightsWorkspace} from '../procurement-insights/workspace'
+import {ProcurementInsightsNotifications} from '../procurement-insights/notifications'
 
 export function AppShellDashboard(props: {
   locale: 'pl' | 'en'; salutation?: string | null; assistantAvatar?: 'male' | 'female' | null
@@ -24,8 +26,10 @@ export function AppShellDashboard(props: {
   const active = isAdpPath(pathname, props.locale)
   const benchmarkPath=`/${props.locale}/dashboard/benchmark-finder`
   const benchmarkActive=pathname===benchmarkPath||pathname===benchmarkPath+'/'
-  const assistantModule:AssistantModule=xrayActive?'xray':active?'adp':benchmarkActive?'benchmark_finder':'appshell';
-  const {context:assistantContext,onXrayContext,assistantReference,onBenchmarkContext}=useAssistantScreenContext(assistantModule);
+  const insightsPath=`/${props.locale}/dashboard/procurement-insights`
+  const insightsActive=pathname===insightsPath||pathname===insightsPath+'/'
+  const assistantModule:AssistantModule=xrayActive?'xray':active?'adp':benchmarkActive?'benchmark_finder':insightsActive?'procurement_insights':'appshell';
+  const {context:assistantContext,onXrayContext,assistantReference,onBenchmarkContext,onNewsfeedContext}=useAssistantScreenContext(assistantModule);
   const conversationInputs=useRef<{credential?:()=>Promise<string|null>;locale:'pl'|'en';module:AssistantModule;reference:typeof assistantReference}>({credential:props.assistantCredential,locale:props.locale,module:assistantModule,reference:assistantReference})
   conversationInputs.current={credential:props.assistantCredential,locale:props.locale,module:assistantModule,reference:assistantReference}
   const conversation=useMemo(()=>new AssistantConversationSession(createAssistantConversationTransport({
@@ -39,6 +43,8 @@ export function AppShellDashboard(props: {
   useEffect(()=>{if(xrayActive)setXrayOpened(true)},[xrayActive])
   const [opened, setOpened] = useState(active)
   const [benchmarkOpened,setBenchmarkOpened]=useState(benchmarkActive)
+  const [insightsOpened,setInsightsOpened]=useState(insightsActive)
+  useEffect(()=>{if(insightsActive)setInsightsOpened(true)},[insightsActive])
   useEffect(() => {if (active) setOpened(true)}, [active])
   useEffect(()=>{if(benchmarkActive)setBenchmarkOpened(true)},[benchmarkActive])
   const navigation = parseAdpNavigation(search.toString())
@@ -51,11 +57,18 @@ export function AppShellDashboard(props: {
     else productAnalytics.transition('module',analyticsModule,'module_opened',{module:analyticsModule,entry_point:'appshell'})
     if(analyticsModule!=='adp')productAnalytics.transition('screen',analyticsModule,'screen_viewed',{module:analyticsModule,view:analyticsModule})
   },[analyticsReady,analyticsModule])
-  return <PlatformAppShell {...props} assistantConversation={props.assistantCredential?conversation:undefined} assistantContext={assistantContext} moduleActive={active||benchmarkActive||xrayActive}
+  return <PlatformAppShell {...props} assistantConversation={props.assistantCredential?conversation:undefined} assistantContext={assistantContext}
+    assistantSelectionLabel={assistantReference?.source==='NEWSFEED'?(props.locale==='pl'?'Wybrana obserwacja Newsfeed':'Selected Newsfeed observation'):null}
+    assistantNotifications={props.assistantCredential&&props.assistantScope?<ProcurementInsightsNotifications key={props.assistantScope} getToken={props.assistantCredential} locale={props.locale} onOpen={(observationId,publicationId)=>{setInsightsOpened(true);router.push(insightsPath+'?observation='+encodeURIComponent(observationId)+'&publication='+encodeURIComponent(publicationId))}} onOpenReport={id=>{setInsightsOpened(true);router.push(insightsPath+'?tab=reports&edition='+encodeURIComponent(id))}}/>:null}
+    moduleActive={active||benchmarkActive||xrayActive||insightsActive}
     onLaunchXray={()=>{setXrayOpened(true);router.push(xrayPath(props.locale))}}
     onLaunchBenchmark={()=>{setBenchmarkOpened(true);router.push(benchmarkPath)}}
     onLaunchAdp={() => {setOpened(true); router.push(adpPath(props.locale))}}
+    onLaunchInsights={()=>{setInsightsOpened(true);router.push(insightsPath)}}
     moduleWorkspace={theme => <>
+      <section hidden={!insightsActive} aria-label="Procurement Insights" data-appshell-module="procurement-insights">
+        {insightsOpened&&<Sg2ModuleSession key={props.assistantScope??'anonymous'} locale={props.locale}><ProcurementInsightsWorkspace locale={props.locale} active={insightsActive} onContext={onNewsfeedContext} onReturn={()=>router.push(dashboardPath(props.locale))}/></Sg2ModuleSession>}
+      </section>
       <section hidden={!xrayActive} aria-label="X-Ray Supplier Intelligence" data-appshell-module="xray">
         {xrayOpened&&<Sg2ModuleSession locale={props.locale}><XRayModuleHost locale={props.locale} theme={theme} active={xrayActive} onAssistantContextChange={onXrayContext} onReturn={()=>router.push(dashboardPath(props.locale))}/></Sg2ModuleSession>}
       </section>

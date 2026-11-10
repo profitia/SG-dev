@@ -1,12 +1,16 @@
 {
   "name": "@profitia/insights-contracts",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
   "type": "module",
   "exports": {
     ".": {
       "types": "./index.d.mts",
       "import": "./index.mjs"
+    },
+    "./subscriptions": {
+      "types": "./subscriptions.d.mts",
+      "import": "./subscriptions.mjs"
     }
   }
 }
