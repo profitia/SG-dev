@@ -137,7 +137,9 @@ test('account page uses official pinned SDK, closed destination and a parseable 
   assert(html.includes('https://sg2.example.test/account')); assert(!html.includes('sk_test_'))
   assert.throws(() => accountPage(f.config, 'foreign', 'account', 'registration'))
   new vm.Script(accountBrowserScript)
-  assert(!/localStorage|sessionStorage|document\.cookie|setInterval|session_token/.test(accountBrowserScript))
+  assert(!/localStorage|sessionStorage|setInterval|session_token/.test(accountBrowserScript))
+  const cookieLines=accountBrowserScript.split('\n').filter(line=>line.includes('document.cookie'))
+  assert.equal(cookieLines.length,2);assert(cookieLines.every(line=>line.includes('sg_avatar_v1')));assert(cookieLines.some(line=>line.includes('Max-Age=31536000; Path=/; SameSite=Lax')))
   // Custom password input is sent only to the pinned SDK; the conversation masks it.
   assert(accountBrowserScript.includes("attemptFirstFactor({ strategy: 'password', password: input })"))
   assert(accountBrowserScript.includes("['password','code'].includes(step)"))

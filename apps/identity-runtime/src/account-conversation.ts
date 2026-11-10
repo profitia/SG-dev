@@ -2,7 +2,7 @@
 export function createClerkConversation(sdk: any, registration: boolean, invitationTicket: string | null = null, backend: {start(draft: any): Promise<any>; verify(code:string):Promise<any>} | null = null) {
   // Opaque provider proof, never interpreted locally or written into chat state.
   if (invitationTicket !== null && (!registration || !/^[A-Za-z0-9_.-]{20,8000}$/.test(invitationTicket))) throw Error('INVALID_INVITATION')
-  const state = { step: 'avatar', avatarSex: null as 'male' | 'female' | null, firstName: '', lastName: '', email: '', method: 'email_code', complete: false, busy: false }
+  const state = { step: registration ? 'avatar' : 'method', avatarSex: null as 'male' | 'female' | null, firstName: '', lastName: '', email: '', method: 'email_code', complete: false, busy: false }
   let completedUserId: string | null = null
   async function finish(result: any) {
     if (result.status !== 'complete' || !result.createdSessionId) { state.step = 'challenge'; return }
@@ -85,6 +85,19 @@ export function createClerkConversation(sdk: any, registration: boolean, invitat
   }
 }
 
+/** A single conversation field supports typing, paste and browser OTP autofill. */
+export function bindConversationCodeInput(input: any, currentStep: () => string, submit: (code: string) => unknown) {
+  let composing = false
+  const accept = () => {
+    if (composing || currentStep() !== 'code') return
+    input.value = input.value.replace(/\D/g, '').slice(0, 6)
+    if (/^\d{6}$/.test(input.value)) void submit(input.value)
+  }
+  input.addEventListener('compositionstart', () => { composing = true })
+  input.addEventListener('compositionend', () => { composing = false; accept() })
+  input.addEventListener('input', accept)
+}
+
 /** All dynamic chat content uses textContent. Passwords and codes never become transcript data. */
 export const conversationClientScript = String.raw`
 window.startSpendGuruConversation = function(cfg, nativeChallenge) {
@@ -109,16 +122,18 @@ window.startSpendGuruConversation = function(cfg, nativeChallenge) {
   const reg = cfg.flow === 'registration', en = cfg.en;
   const history = document.getElementById('history'), choices = document.getElementById('choices');
   const form = document.getElementById('composer-form'), input = document.getElementById('answer');
-  const otp = document.getElementById('otp'), digits = [...otp.querySelectorAll('input')];
   const error = document.getElementById('chat-error'), send = document.getElementById('send');
   const dots = document.getElementById('typing'), status = document.getElementById('chat-status');
   const resend = document.getElementById('resend'), switchMethod = document.getElementById('switch-method');
   const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  let avatar = 'female', writing = false, epoch = 0, resendAt = 0;
+  // Host-only presentation hint, never an identity or access credential.
+  const rememberedAvatar = () => { try { return document.cookie.match(/(?:^|;\s*)sg_avatar_v1=(male|female)(?:;|$)/)?.[1] || null; } catch { return null; } };
+  const rememberAvatar = value => { try { document.cookie = 'sg_avatar_v1='+value+'; Max-Age=31536000; Path=/; SameSite=Lax'+(window.location.protocol === 'https:' ? '; Secure' : ''); } catch {} };
+  let avatar = rememberedAvatar() || 'female', writing = false, epoch = 0, resendAt = 0;
   const tr = (pl, english) => en ? english : pl;
   const scroll = () => { history.scrollTo({ top: history.scrollHeight, behavior: reduced ? 'instant' : 'smooth' }); };
   const avatarNode = (size, dynamic = true) => { const wrap = document.createElement('span'); wrap.className = 'sg-v2-avatar'; wrap.style.width = wrap.style.height = size + 'px'; const image = document.createElement('img'); image.src = cfg.avatars[avatar]; image.alt = ''; if (dynamic) image.setAttribute('data-avatar', ''); image.referrerPolicy = 'no-referrer'; wrap.append(image); return wrap; };
-  const setAvatar = value => { if (!['male','female'].includes(value)) return; avatar = value; model.state.avatarSex = value; document.querySelectorAll('[data-avatar]').forEach(image => { image.src = cfg.avatars[avatar]; }); };
+  const setAvatar = value => { if (!['male','female'].includes(value)) return; avatar = value; model.state.avatarSex = value; rememberAvatar(value); document.querySelectorAll('[data-avatar]').forEach(image => { image.src = cfg.avatars[avatar]; }); };
   window.spendGuruRestoreAvatar = value => { setAvatar(value); };
   window.spendGuruRegistrationAvatar = userId => model.registrationAvatar(userId);
   function bubble(text, user) {
@@ -128,7 +143,7 @@ window.startSpendGuruConversation = function(cfg, nativeChallenge) {
     scroll(); return box;
   }
   const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
-  function lock(yes) { send.disabled = yes; input.disabled = yes; digits.forEach(d => d.disabled = yes); choices.querySelectorAll('button').forEach(b => b.disabled = yes); }
+  function lock(yes) { send.disabled = yes; input.disabled = yes; choices.querySelectorAll('button').forEach(b => b.disabled = yes); }
   async function say(text) {
     const current = ++epoch; writing = true; lock(true); choices.replaceChildren(); dots.hidden = false; status.textContent = tr('SpendGuru pisze…', 'SpendGuru is typing…'); scroll();
     await pause(reduced ? 0 : 420); if (current !== epoch) return;
@@ -142,7 +157,7 @@ window.startSpendGuruConversation = function(cfg, nativeChallenge) {
     const labelNode = document.createElement('span'); labelNode.textContent = label; button.append(labelNode); button.onclick = () => submit(value, label); choices.append(button);
   }
   async function ask() {
-    form.hidden = true; otp.hidden = true; input.hidden = false; resend.hidden = true; switchMethod.hidden = true; input.value = ''; digits.forEach(d => d.value = ''); error.textContent = '';
+    form.hidden = true; input.hidden = false; send.hidden = false; resend.hidden = true; switchMethod.hidden = true; input.value = ''; error.textContent = '';
     const step = model.state.step;
     document.querySelectorAll('[data-step]').forEach((el, index) => { const phase = step === 'avatar' ? 0 : ['name','surname','email','method','password'].includes(step) ? 1 : 2; el.classList.toggle('is-current', index === phase); el.classList.toggle('is-muted', index !== phase); el.querySelector('span').classList.toggle('is-reached', index <= phase); });
     const questions = {
@@ -162,12 +177,12 @@ window.startSpendGuruConversation = function(cfg, nativeChallenge) {
     else if (step === 'existing') { const link=document.createElement('a'); link.href=cfg.signInUrl; link.className='sg-v2-choice'; link.textContent=tr('Przejdź do logowania','Go to sign in'); choices.append(link); }
     else if (step === 'challenge') nativeChallenge();
     else if (!model.state.complete) {
-      form.hidden = false; const code = step === 'code'; otp.hidden = !code; input.hidden = code;
-      input.type = step === 'email' ? 'email' : step === 'password' ? 'password' : 'text'; input.maxLength = step === 'password' ? 1024 : 320;
-      input.autocomplete = ({name:'given-name',surname:'family-name',email:'email',password:'current-password'})[step] || 'off';
-      input.setAttribute('aria-label', ({name:tr('Imię','First name'),surname:tr('Nazwisko','Last name'),email:'E-mail',password:tr('Hasło','Password')})[step] || tr('Odpowiedź','Your answer'));
-      input.placeholder = step === 'email' ? 'twoj@email.pl' : step === 'password' ? tr('Wpisz hasło…','Your password…') : tr('Napisz wiadomość…','Write a message…');
-      resend.hidden = !code; switchMethod.hidden = reg || !['code','password'].includes(step); (code ? digits[0] : input).focus({preventScroll:true});
+      form.hidden = false; const code = step === 'code'; send.hidden = code;
+      input.type = step === 'email' ? 'email' : step === 'password' ? 'password' : 'text'; input.maxLength = code ? 6 : step === 'password' ? 1024 : 320; input.inputMode = code ? 'numeric' : step === 'email' ? 'email' : 'text';
+      input.autocomplete = code ? 'one-time-code' : ({name:'given-name',surname:'family-name',email:'email',password:'current-password'})[step] || 'off';
+      input.setAttribute('aria-label', ({name:tr('Imię','First name'),surname:tr('Nazwisko','Last name'),email:'E-mail',password:tr('Hasło','Password'),code:tr('Sześciocyfrowy kod z e-maila','Six-digit email code')})[step] || tr('Odpowiedź','Your answer'));
+      input.placeholder = code ? tr('Wpisz sześciocyfrowy kod…','Enter the six-digit code…') : step === 'email' ? 'twoj@email.pl' : step === 'password' ? tr('Wpisz hasło…','Your password…') : tr('Napisz wiadomość…','Write a message…');
+      resend.hidden = !code; switchMethod.hidden = reg || !['code','password'].includes(step); input.focus({preventScroll:true});
     }
     scroll();
   }
@@ -178,20 +193,17 @@ window.startSpendGuruConversation = function(cfg, nativeChallenge) {
     if (step === 'code' && !/^\d{6}$/.test(value)) { error.textContent = tr('Wpisz wszystkie sześć cyfr.', 'Please enter all six digits.'); return; }
     if (step === 'avatar') setAvatar(value);
     bubble(['password','code'].includes(step) ? (step === 'code' ? '••••••' : '••••••••') : label || value, true);
-    input.value = ''; digits.forEach(d => d.value = ''); error.textContent = ''; lock(true); dots.hidden = false; status.textContent = tr('Sprawdzamy…','Checking…');
+    input.value = ''; error.textContent = ''; lock(true); dots.hidden = false; status.textContent = tr('Sprawdzamy…','Checking…');
     try { await model.submit(value); dots.hidden = true; if (!model.state.complete) await ask(); }
-    catch (e) { dots.hidden = true; lock(false); status.textContent = tr('Twój rozmówca · online','Your guide · online'); error.textContent = tr('Nie udało się potwierdzić odpowiedzi. Sprawdź wpisane dane lub kod i spróbuj ponownie.', 'We could not verify that answer. Check your details or code and try again.'); if (step === 'code') digits[0].focus(); else input.focus(); }
+    catch (e) { dots.hidden = true; lock(false); status.textContent = tr('Twój rozmówca · online','Your guide · online'); error.textContent = tr('Nie udało się potwierdzić odpowiedzi. Sprawdź wpisane dane lub kod i spróbuj ponownie.', 'We could not verify that answer. Check your details or code and try again.'); input.focus(); }
   }
-  form.onsubmit = event => { event.preventDefault(); void submit(model.state.step === 'code' ? digits.map(d => d.value).join('') : input.value); };
-  digits.forEach((digit,index) => {
-    digit.oninput = () => { const values = digit.value.replace(/\D/g,'').slice(0,6-index); digit.value = values[0] || ''; [...values].slice(1).forEach((v,j) => digits[index+j+1].value = v); if (values) digits[Math.min(5,index+values.length)].focus(); };
-    digit.onpaste = event => { event.preventDefault(); const value = event.clipboardData.getData('text').replace(/\D/g,'').slice(0,6); [...value].forEach((v,i) => digits[i].value = v); digits[Math.min(5,value.length)].focus(); };
-    digit.onkeydown = event => { if (event.key === 'Backspace' && !digit.value && index > 0) { digits[index-1].value = ''; digits[index-1].focus(); } };
-  });
+  form.onsubmit = event => { event.preventDefault(); void submit(input.value); };
+  bindConversationCodeInput(input, () => model.state.step, value => submit(value));
   resend.onclick = async () => { if (writing || model.state.busy || Date.now() < resendAt) return; resendAt = Date.now()+30000; resend.disabled = true; try { await model.resend(); error.textContent = tr('Nowy kod został wysłany. Sprawdź pocztę.', 'A new code has been sent. Check your inbox.'); } catch { error.textContent = tr('Nie udało się wysłać nowego kodu. Spróbuj za chwilę.', 'We could not send a new code. Try again shortly.'); } setTimeout(() => resend.disabled = false, 30000); };
   switchMethod.onclick = () => { if (!writing && !model.state.busy) { model.state.step = 'method'; void ask(); } };
   document.getElementById('avatar-switch').onclick = () => setAvatar(avatar === 'female' ? 'male' : 'female');
   document.getElementById('restart').onclick = () => window.location.reload();
+  setAvatar(avatar);
   root.hidden = false;
   if (cfg.flow === 'recovery') { model.state.step = 'challenge'; }
   void ask();
