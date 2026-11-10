@@ -1,4 +1,9 @@
-import {createHash} from 'node:crypto'
+import {createHash,randomUUID} from 'node:crypto'
+import {readFileSync} from 'node:fs'
+import {createClerkIdentityAuthenticator} from './identity-provider.mjs'
+import {createPrivateOperationHost} from './private-operation-host.mjs'
+import {OPERATION_CONTRACT,OperationDenied} from './operation-context.mjs'
+import {createProfileSql,ProfileConflict} from './identity-profile-sql.mjs'
 
 /** Platform data contract only. This module grants no access and performs no I/O.
  * Identity owns the workflow; consumers use an authorised platform projection.
@@ -61,7 +66,7 @@ export const PROCUREMENT_TEAM_RANGES=freeze([
  {id:'11+',label:'11 osób lub więcej',minimum:11,maximum:null}
 ])
 export function normalizeIndustry(value){
- if(!exact(value,value?.id==='other'?['id','label']:['id'])||!industries.has(value.id))fail('INVALID_INDUSTRY')
+ if(!closed(value)||!exact(value,value.id==='other'?['id','label']:['id'])||!industries.has(value.id))fail('INVALID_INDUSTRY')
  return freeze({id:value.id,label:value.id==='other'?label(value.label,100,'INVALID_INDUSTRY'):industries.get(value.id).label,source:'USER'})
 }
 export function normalizeProcurementCategories(value){
@@ -126,4 +131,71 @@ export function organisationCommandDigest(value){
   fail('INVALID_COMMAND')
  }
  return createHash('sha256').update(encode(value)).digest('hex')
+}
+
+export function normalizeOnboardingDraftPatch(value){
+ if(!closed(value)||Object.keys(value).length===0||Object.keys(value).some(k=>!['nip','slug','industry','categories','teamRange'].includes(k)))fail('INVALID_ONBOARDING_DRAFT')
+ const out={}
+ for(const [key,item]of Object.entries(value)){
+  if(key==='nip')out.nip=normalizePolishNip(item)
+  else if(key==='slug')out.slug=normalizeOrganisationSlug(item)
+  else if(key==='industry')out.industry=normalizeIndustry(item)
+  else if(key==='categories')out.categories=normalizeProcurementCategories(item)
+  else out.teamRange=normalizeTeamRange(item)
+ }
+ return freeze(out)
+}
+export const organisationOnboardingSchemaUrl=new URL('../migrations/profile/007-organisation-onboarding.sql',import.meta.url).href
+export const organisationOnboardingSchemaDigest=()=>createHash('sha256').update(readFileSync(new URL(organisationOnboardingSchemaUrl))).digest('hex')
+/** Own-account registration draft only. It cannot create an organisation,
+ * membership, permission, invitation or product grant. Those require their
+ * independently authorised bootstrap/organisation operations.
+ */
+export function createOrganisationOnboardingDraftBackend(options){
+ const {client,identityApplication,application,binding,independentQuery,transact,schemaDigest,proofKey,now=Date.now}=options
+ if(identityApplication?.appId!==application?.appId||identityApplication?.issuer!==application?.identityIssuer
+  ||identityApplication?.environment!==application?.environment||application?.organisationId!==null
+  ||application?.operations?.join(',')!=='account.settings.read,account.settings.write'||application?.features?.join(',')!=='account'
+  ||identityApplication?.bearerPeerReads?.length)throw TypeError('Same-receiver account-self draft application required')
+ const sql=createProfileSql({binding,issuer:identityApplication.issuer,schemaDigest,proofKey,now})
+ const queries=new WeakMap()
+ async function descriptor(query){
+  await sql.descriptor(query)
+  const {descriptor:d}=await sql.queryOne(query,'SELECT profitia_profile.organisation_onboarding_descriptor() AS descriptor')
+  if(d?.schemaDigest!==organisationOnboardingSchemaDigest()||d?.enabled!==true)throw new OperationDenied('POLICY_UNAVAILABLE')
+ }
+ const host=createPrivateOperationHost({application,binding,independentQuery,now,
+  createAuthenticator:({resolveBinding})=>createClerkIdentityAuthenticator({client,application:identityApplication,resolveBinding,now}),
+  transact:(run,limits)=>transact(async session=>{
+   if(!session?.transaction||typeof session.query!=='function')throw new OperationDenied('POLICY_UNAVAILABLE')
+   queries.set(session.transaction,session.query)
+   try{return await run(session)}finally{queries.delete(session.transaction)}
+  },limits),
+  readResources:async({actor,request,query})=>{
+   await descriptor(query)
+   const proof=await sql.attest(query,{operation:request.operation,principal:actor.userId,expiresAt:Date.parse(actor.expiresAt)})
+   await query("SELECT set_config('profitia.profile.operation',$1,true),set_config('profitia.profile.expires_ms',$2,true),set_config('profitia.profile.signature',$3,true)",[request.operation,String(proof.until),proof.signature])
+   return {resource:{id:'current-organisation-onboarding',type:'account_settings',dataClass:'ACCOUNT_PRIVATE',
+    ownerOrganisationId:null,ownerUserId:actor.userId,environment:binding.environment,version:'organisation-draft-v1',projectionVersion:'organisation-draft-v1'}}
+  },projectOutput:value=>value})
+ async function execute(request,input){
+  if(!(request instanceof Request)||request.method!==(input?'POST':'GET'))throw new OperationDenied('PERMISSION_DENIED')
+  let patch,expectedVersion
+  if(input){
+   if(!exact(input,['expectedVersion','patch'])||typeof input.expectedVersion!=='string'||! /^(0|[1-9][0-9]{0,18})$/.test(input.expectedVersion)
+    ||BigInt(input.expectedVersion)>9223372036854775806n)fail('INVALID_ONBOARDING_DRAFT')
+   patch=normalizeOnboardingDraftPatch(input.patch);expectedVersion=input.expectedVersion
+  }
+  const operation=input?'account.settings.write':'account.settings.read'
+  let conflict=false,result
+  try{result=await host.execute({contractId:OPERATION_CONTRACT.id,contractVersion:OPERATION_CONTRACT.version,operation,
+   resourceId:'current-organisation-onboarding',organisationId:null,request,
+   payload:{changeId:randomUUID(),fields:patch?Object.keys(patch):[],expectedVersion:expectedVersion??null}},async(_context,transaction)=>{
+    const query=queries.get(transaction)
+    try{return(await sql.queryOne(query,input?'SELECT profitia_profile.organisation_onboarding_save($1::bigint,$2::jsonb) AS draft':'SELECT profitia_profile.organisation_onboarding_read() AS draft',input?[expectedVersion,JSON.stringify(patch)]:[])).draft}
+    catch(error){if(error instanceof ProfileConflict)conflict=true;throw error}
+   })}catch(error){if(conflict&&error?.reasonCode==='POLICY_UNAVAILABLE')throw new ProfileConflict();throw error}
+  return result.value
+ }
+ return Object.freeze({ready:()=>descriptor(independentQuery),readCurrentDraft:request=>execute(request),saveCurrentDraft:(request,input)=>execute(request,input)})
 }

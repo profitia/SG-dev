@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {
  PROCUREMENT_INDUSTRIES,PROCUREMENT_TEAM_RANGES,normalizePolishNip,normalizeOrganisationSlug,suggestOrganisationSlug,
- normalizeIndustry,normalizeProcurementCategories,normalizeTeamRange,normalizeCompanyRecord,normalizeInvitationEmails,organisationCommandDigest
+ normalizeOnboardingDraftPatch,normalizeIndustry,normalizeProcurementCategories,normalizeTeamRange,normalizeCompanyRecord,normalizeInvitationEmails,organisationCommandDigest
 } from '../src/organisation-profile.mjs'
 const reject=(fn,code)=>assert.throws(fn,e=>e.code===code)
 test('NIP accepts one canonical country identity and rejects malformed/checksum-invalid identifiers',()=>{
@@ -61,4 +61,10 @@ test('command digest is stable across object key order; changed values cannot re
  assert.notEqual(organisationCommandDigest({a:'x'}),organisationCommandDigest({a:'y'}))
  for(const v of [{a:undefined},{a:NaN},{a:new Date()},Object.assign(Object.create({foreign:true}),{a:'x'})])reject(()=>organisationCommandDigest(v),'INVALID_COMMAND')
  let invoked=false;const value={get own(){invoked=true;return 'x'}};reject(()=>organisationCommandDigest(value),'INVALID_COMMAND');assert.equal(invoked,false)
+})
+
+test('own-account draft patch never accepts organisation authority or legal data',()=>{
+ assert.equal(normalizeOnboardingDraftPatch({nip:'PL1234563218'}).nip,'1234563218')
+ for(const key of ['organisationId','userId','company','memberRole','productGrant'])reject(()=>normalizeOnboardingDraftPatch({[key]:'injected'}),'INVALID_ONBOARDING_DRAFT')
+ reject(()=>normalizeOnboardingDraftPatch({}),'INVALID_ONBOARDING_DRAFT')
 })
