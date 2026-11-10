@@ -161,3 +161,30 @@ The owner's final-design execution request explicitly authorizes controlled merg
 INSIGHTS_G1_REVIEW is restricted to the existing PR848, its original `governance/procurement-insights-g1-20261101` branch and four frozen real file blobs/statuses/regular100644 modes. Only that exact PR/branch pair is classified as Architecture before the full closed review; there is no new generic governance prefix. Changed/missing/extra/renamed/duplicate files, another PR/branch, SG2 fallback, fork, actor or stale expectedSHA fail closed. All existing owner/routing/ALIGNED, actual Git/API/tree/blob/realpath/size checks remain. Technical main refresh may preserve the same four blobs; the current expectedSHA must still exactly match GitHub.
 
 The separate `sg2/` bootstrap keeps ARCHITECTURE ownership and its own PMOS. It must pass the old trusted-main exact-SHA proof and required checks before controlled merge. Only then may the new main controller validate848 and produce its fresh source-bound proof. Workflow, Environment/main-only rules, private package names/pins, credential scope, install-without-lifecycle and credential-free execution stay unchanged. Existing historical classes/fingerprints remain untouched. Rollback is a reviewed revert of this class alone; no product, database or deployment rollback is implied.
+
+
+## Proposed exact Newsfeed saved-search review — PR969
+
+OWNER_DECISION_PENDING. This separate controller proposal admits only PR969,
+branch `architecture/pi-end-to-end-20261110`, and its18 exact blob/status/mode/owner
+entries at source `8fa964a159a468968293337c9d0c79c326cb84e5`, base `1e0dc1ca4057437805561a841105e291d028df10`.
+No general runtime, Canon, workflow or SDK permission is introduced. A different
+PR/branch, missing/additional/changed/renamed/duplicate file, wrong owner, symlink
+or executable mode is refused. A technical main refresh may preserve only the
+identical18 source blobs; current expected SHA still has to match GitHub HEAD.
+
+Activation requires a separate controller-owner decision, full policy tests, the
+old trusted-main exact-SHA proof for this bootstrap and controlled acceptance.
+Then PR969 and resulting main require fresh trusted-main proof under the new
+policy digest. Existing historical fingerprints, private package pins, main-only
+Environment, credential scope and credential-free execution remain unchanged.
+No live migration, runtime grant, source policy, paid call, deployment or Render
+change is authorized by this proposal. Rollback is a reviewed revert of this
+closed class alone. Additional evidence and the owner decision packet live in PHR.
+
+Owner decision in the execution chat, 2026-11-10: “Zatwierdzam poprawkę CI i dalsze przyjęcie”.
+This accepts the three-file PR971 proposal and its exact PR969/18-blob review at
+`8fa964a159a468968293337c9d0c79c326cb84e5`. The preceding pending status records
+preparation before that decision. Trusted-main exact-head bootstrap and mandatory
+checks remain required before controlled main acceptance. The decision grants no
+live migration, deployment, infrastructure, entitlement or paid-provider action.
