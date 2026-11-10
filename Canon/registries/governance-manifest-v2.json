@@ -1,6 +1,6 @@
 {
   "schemaVersion": "2.0",
-  "manifestVersion": "3.44.0",
+  "manifestVersion": "3.45.0",
   "owner": "Profitia Governance",
   "entrypoint": "AGENTS.md",
   "preflight": "scripts/governance/governance-preflight.mjs",
@@ -1361,6 +1361,26 @@
         "operation-context-and-access-contract",
         "platform-source-hub-business-and-architecture-canon",
         "platform-source-hub-universal-first-party-consumer-access"
+      ]
+    },
+    {
+      "id": "procurement-insights-newsfeed-ux-statistics-and-recurring-reports-amendment",
+      "version": "1.2",
+      "path": "Canon/v1.2-procurement-insights-newsfeed-ux-statistics-and-recurring-reports-amendment.md",
+      "status": "ACTIVE",
+      "loadOrder": 505,
+      "owner": "Architecture Platform / Procurement Insights Product Owner",
+      "appliesTo": [
+        "SG2",
+        "ARCHITECTURE"
+      ],
+      "dependsOn": [
+        "procurement-insights-unified-product-and-assistant-amendment",
+        "newsfeed-saved-searches-ownership-sharing-history-canon",
+        "platform-source-hub-universal-first-party-consumer-access",
+        "platform-appshell-business-and-architecture-canon",
+        "operation-context-and-access-contract",
+        "shared-development-contract-integration"
       ]
     }
   ]
