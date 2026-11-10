@@ -1,6 +1,6 @@
 import * as Sentry from '@sentry/nextjs'
 import { getSg2SelectionRuntime } from '@/lib/platform/private-runtime'
-import { createInstalledInsightsRuntime } from '@profitia/insights-runtime/host'
+import type { createInstalledInsightsRuntime } from '@profitia/insights-runtime/host'
 import path from 'node:path'
 
 const unavailable = () => { throw Object.assign(new Error('NOT_ADMITTED'), { code: 'NOT_ADMITTED' }) }
@@ -57,7 +57,9 @@ const monitoring={
 }
 let runtime:ReturnType<typeof createInstalledInsightsRuntime>|undefined
 export function getInsightsRuntime(){
-  if(!runtime) runtime=createInstalledInsightsRuntime({canonicalPorts,monitoring,python:path.resolve(process.cwd(),'.insights-python/bin/python')}).catch(error=>{runtime=undefined;throw error})
+  if(!runtime) runtime=import('@profitia/insights-runtime/host')
+    .then(({createInstalledInsightsRuntime})=>createInstalledInsightsRuntime({canonicalPorts,monitoring,python:path.resolve(process.cwd(),'.insights-python/bin/python')}))
+    .catch(error=>{runtime=undefined;throw error})
   return runtime
 }
 export async function insightsReportHttp(request:Request):Promise<Response>{
