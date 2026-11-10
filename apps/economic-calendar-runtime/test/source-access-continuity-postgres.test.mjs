@@ -9,9 +9,10 @@ import {sourceDefinition} from '../../platform-source-hub/src/admission.mjs'
 const load=p=>readFileSync(new URL(p,import.meta.url),'utf8'),hash=s=>createHash('sha256').update(s).digest('hex')
 
 test('source lease renewal is bounded, revocable, idempotent, leaves other consumers/counters intact and grants no table access',async()=>{
- const f=await fixture(),root=new pg.Client({connectionString:process.env.SOURCE_HUB_TEST_ADMIN_URL,ssl:false}),role='economic_calendar_development_source_monitor';let monitor,installer
+ const f=await fixture(),root=new pg.Client({connectionString:process.env.SOURCE_HUB_TEST_ADMIN_URL,ssl:false}),role='economic_calendar_development_source_monitor',monitorPassword=randomUUID();let monitor,installer
  try{
   await root.connect();if(!(await root.query('SELECT 1 FROM pg_roles WHERE rolname=$1',[role])).rowCount)await root.query('CREATE ROLE '+role+' LOGIN NOINHERIT NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE NOREPLICATION')
+  await root.query('ALTER ROLE '+role+" PASSWORD '"+monitorPassword+"'")
   const setupUrl=new URL(process.env.SOURCE_HUB_TEST_ADMIN_URL);setupUrl.pathname='/'+f.hub.databaseName;const setup=new pg.Client({connectionString:setupUrl.href,ssl:false});await setup.connect();try{await setup.query('CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA public');await setup.query('ALTER EXTENSION pgcrypto SET SCHEMA public')}finally{await setup.end()}
   await f.admin(0,'profitia_access_owner',async q=>{
    await q.query(load('../../../packages/platform-contracts/current-e1-authority/migrations/002-receiver.sql'))
@@ -41,7 +42,7 @@ test('source lease renewal is bounded, revocable, idempotent, leaves other consu
   }
   const url=new URL(process.env.SOURCE_HUB_TEST_ADMIN_URL);url.pathname='/'+f.hub.databaseName;installer=new pg.Client({connectionString:url.href,ssl:false});await installer.connect()
   await installer.query('BEGIN');try{await installer.query(load('../../platform-source-hub/migrations/010-ecr-source-continuity.sql'));await installer.query('COMMIT')}catch(e){await installer.query('ROLLBACK');throw e}
-  url.username=role;monitor=new pg.Client({connectionString:url.href,ssl:false});await monitor.connect()
+  url.username=role;url.password=monitorPassword;monitor=new pg.Client({connectionString:url.href,ssl:false});await monitor.connect()
   const status=async()=> (await monitor.query('SELECT source_hub.ecr_source_access_status() AS value')).rows[0].value
   const snapshot=await status(),fingerprints=Object.fromEntries(snapshot.dependencies.filter(x=>x.kind!=='OWNER_RENEWAL_BASIS').map(x=>[x.id,x.fingerprint]))
   assert.equal(new Set(snapshot.dependencies.map(x=>x.id)).size,snapshot.dependencies.length)
