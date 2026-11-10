@@ -116,3 +116,37 @@ test('historical TE observations stay in lineage, and an older weekly delta neve
  assert.equal(comparison.weeklyChange.to,'2026-11-09T00:00:00Z');
  assert(Math.abs(comparison.weeklyChange.percent-10)<1e-9);
 });
+
+
+test('report request bytes survive JSONB object reordering while changed facts stay distinct',async()=>{
+ const {digest}=await import('../../../packages/insights-contracts/index.mjs');
+ // Explicitly synthetic values; this is a byte-stability regression, not market evidence.
+ const job={profile:{model:'gpt-6.1-sol',maximumInputTokens:15000,maximumOutputTokens:16000,maximumBodyBytes:65536,counterReservationMicroUsd:100000}};
+ const bundle={fingerprint:'SYNTHETIC_BYTE_ORDER_TEST_ONLY',asOf:'2026-11-10T08:00:00Z',
+  period:{throughDate:'2026-11-09',fromDate:'2026-11-03'},windows:{next:{to:'2026-11-16',from:'2026-11-10'}},
+  evidence:[{id:'TE_TEST',provider:'trading-economics',family:'market-observations',publisher:'TEST_ONLY',title:'Synthetic',
+   availableAt:null,publishedAt:null,facts:{unit:'CNY/T',symbol:'BIT:COM',price:123,quality:{status:'TEST_ONLY',note:'zażółć'}}}],
+  market:{status:'TEST_ONLY',series:[{value:456,seriesId:'cl_c1_cl',history:[{value:450,date:'2026-11-02'}]}]},
+  forecast:{status:'NOT_AVAILABLE',intervals:null},coverage:[{status:'SUCCEEDED',queryId:'test'}],pilotDeviations:[],missing:['D7'],status:'PARTIAL'};
+ const before=structuredClone(bundle);
+ const reorder=v=>Array.isArray(v)?v.map(reorder):v&&typeof v==='object'?Object.fromEntries(Object.keys(v)
+  .sort((a,b)=>Buffer.byteLength(a)-Buffer.byteLength(b)||Buffer.compare(Buffer.from(a),Buffer.from(b))).map(k=>[k,reorder(v[k])])):v;
+ const reversed=v=>Array.isArray(v)?v.map(reversed):v&&typeof v==='object'?Object.fromEntries(Object.entries(v).reverse().map(([k,x])=>[k,reversed(x)])):v;
+ const forbidden=()=>assert.fail('No Source admission, model or provider request in a preparation test');
+ const c=createComposer({counterHost:forbidden,generationHost:forbidden,pricing:{validUntil:'2099-01-01T00:00:00Z',inputMicroUsdPerToken:2,outputMicroUsdPerToken:10,sourceRef:'TEST_ONLY'}});
+ const prepared=await c.prepare(job,bundle);
+ for(const persisted of [JSON.parse(JSON.stringify(reorder(bundle))),reversed(bundle)]){
+  const resumed=await c.prepare(job,persisted);
+  assert.equal(resumed.body,prepared.body,'generation bytes must be stable after persistence/restart');
+  assert.equal(resumed.counterBody,prepared.counterBody,'the reserved counter digest must stay stable');
+  assert.equal(resumed.bodySha256,prepared.bodySha256);assert.equal(digest(resumed.counterBody),digest(prepared.counterBody));
+ }
+ const request=JSON.parse(prepared.body),count=JSON.parse(prepared.counterBody);
+ assert.deepEqual(count,{model:request.model,input:request.input,reasoning:request.reasoning,text:request.text});
+ assert.equal(request.store,false);assert.equal(request.service_tier,'default');assert.equal(request.max_output_tokens,16000);
+ assert.deepEqual(JSON.parse(request.input[1].content).evidence[0].facts,bundle.evidence[0].facts);
+ const altered=structuredClone(bundle);altered.evidence[0].facts.price++;
+ const changed=await c.prepare(job,altered);assert.notEqual(changed.bodySha256,prepared.bodySha256);assert.notEqual(digest(changed.counterBody),digest(prepared.counterBody));
+ const differentDate=structuredClone(bundle);differentDate.asOf='2026-11-10T08:00:01Z';assert.notEqual((await c.prepare(job,differentDate)).bodySha256,prepared.bodySha256);
+ assert.deepEqual(bundle,before,'serialization never mutates the evidence');
+});

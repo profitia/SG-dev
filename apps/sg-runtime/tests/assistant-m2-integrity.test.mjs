@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import {execFileSync} from 'node:child_process'
-import {assistantM2Predecessor,oilReportTransportPredecessor,assistantIngressPredecessor,assistantOutputFencePredecessor,ASSISTANT_M2_PATHS,ASSISTANT_M2_PRODUCER_PATHS} from './assistant-m2-integrity.mjs'
+import {assistantM2Predecessor,oilReportTransportPredecessor,assistantIngressPredecessor,assistantOutputFencePredecessor,oilReportSerializationPredecessor,ASSISTANT_M2_PATHS,ASSISTANT_M2_PRODUCER_PATHS} from './assistant-m2-integrity.mjs'
 const root=new URL('../../../',import.meta.url),current=p=>readFileSync(new URL(p,root))
 const historical=(sha,p)=>execFileSync('git',['show',sha+':'+p],{cwd:root})
 test('native SRM output correction is exact before preserving all earlier acceptance',()=>{
@@ -54,3 +54,17 @@ test('exact SRM ingress source is checked before immutable Oil and M2 predecesso
  assert.equal(assistantIngressPredecessor(()=>{throw Object.assign(Error('ABSENT'),{code:'ENOENT'})},historical),null)
  assert.throws(()=>assistantIngressPredecessor(()=>{throw Object.assign(Error('UNREADABLE'),{code:'EACCES'})},historical),{code:'EACCES'})
 })
+
+
+test('Oil serialization correction validates every new blob and preserves all accepted predecessors',()=>{
+ const repair=oilReportSerializationPredecessor(current,historical);assert(repair)
+ for(const p of repair.manifest.changedSourcePaths)assert.throws(()=>oilReportSerializationPredecessor(f=>f===p?Buffer.concat([current(f),Buffer.from('UNACCEPTED')]):current(f),historical),p)
+ const file='apps/sg-runtime/assistant-context-integration.json'
+ for(const mutate of [r=>r.oilRequestSerializationRepair.noAutomaticRetry=false,r=>r.oilRequestSerializationRepair.noGrantChange=false,r=>r.oilRequestSerializationRepair.changedSourcePaths.push('apps/srm/unadmitted.ts'),r=>r.srmAssistantOutputFenceRepair.noGrantChange=false]){
+  const receipt=JSON.parse(current(file));mutate(receipt)
+  assert.throws(()=>oilReportSerializationPredecessor(p=>p===file?Buffer.from(JSON.stringify(receipt)):current(p),historical))
+ }
+ assert.deepEqual(repair.previousBytes(file),historical(repair.manifest.previousSourceSha,file))
+ assert.equal(oilReportSerializationPredecessor(()=>{throw Object.assign(Error('ABSENT'),{code:'ENOENT'})},historical),null)
+ assert.throws(()=>oilReportSerializationPredecessor(()=>{throw Object.assign(Error('UNREADABLE'),{code:'EACCES'})},historical),{code:'EACCES'})
+});

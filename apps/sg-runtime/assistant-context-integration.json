@@ -150,5 +150,28 @@
     "noGrantChange": true,
     "noContractChange": true,
     "noAcquisition": true
+  },
+  "oilRequestSerializationRepair": {
+    "schemaVersion": "1.0",
+    "taskId": "SG2-OIL-TRANSPORT-RECOVERY-20261110",
+    "targetEnvironment": "development",
+    "previousSourceSha": "675e97fc6d9387bfe3157e2675d085d0f4f2d070",
+    "previousReceiptSha256": "45f7687b56093d6067e8ad1fde81b4944ff889c780392f6e20161525c72a712b",
+    "changedSourcePaths": [
+      "apps/insights-runtime/src/composer.mjs",
+      "apps/insights-runtime/tests/host.test.mjs",
+      "apps/sg-runtime/tests/assistant-m2-integrity.mjs",
+      "apps/sg-runtime/tests/assistant-m2-integrity.test.mjs"
+    ],
+    "sourceDigests": {
+      "apps/insights-runtime/src/composer.mjs": "55e40fdaeb0c5fa5f6fa26688910df6d68bfab4ee8d63a7c39b43878b0652ca2",
+      "apps/insights-runtime/tests/host.test.mjs": "6a75f68bb621c63a03f9293f4974519fc385dec93110795f82c159702699eacc",
+      "apps/sg-runtime/tests/assistant-m2-integrity.mjs": "ea578745e63b647f8ab8eea231e747c08164a3ecb42b7b623d24f1f9dee9ee48",
+      "apps/sg-runtime/tests/assistant-m2-integrity.test.mjs": "f1e8f276f7ec7da7a58a125688b3fb42baefee6e888432332a86d70d4215e932"
+    },
+    "noSdkChange": true,
+    "noGrantChange": true,
+    "noAutomaticRetry": true,
+    "humanReviewRequired": true
   }
 }
