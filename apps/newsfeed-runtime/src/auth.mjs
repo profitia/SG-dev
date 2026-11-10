@@ -17,7 +17,8 @@ export async function createAuthorizer(configuration,database,{clerkClient,curre
  const binding={applicationId:configuration.applicationId,environment:configuration.environment,projectId:configuration.projectId,branchId:configuration.branchId,databaseName:configuration.databaseName,role:configuration.runtimeRole,schemaDigest};
  const host=(currentAuthority?createCurrentE1OperationHost:createPrivateOperationHost)({application,binding,independentQuery:database.query,transact:database.transact,
   createAuthenticator:({resolveBinding})=>{
-   const authenticate=createClerkIdentityAuthenticator({client:clerkClient,application:{appId:configuration.applicationId,environment:configuration.environment,issuer:configuration.identityIssuer,authorizedParties:configuration.authorizedParties},resolveBinding});
+   const authenticate=createClerkIdentityAuthenticator({client:clerkClient,application:{appId:configuration.applicationId,environment:configuration.environment,issuer:configuration.identityIssuer,authorizedParties:configuration.authorizedParties,
+    ...(configuration.assistantReadVersion==='newsfeed-assistant-read-v1'?{bearerPeerReads:[{sourceOrigin:'https://dev-sg2.spendguru.app',targetOrigin:configuration.publicOrigin,path:'/v1/assistant-context'}]}:{})},resolveBinding});
    return request=>authenticate(request);
   },
   async readResources({scope,request,query}){
@@ -26,7 +27,7 @@ export async function createAuthorizer(configuration,database,{clerkClient,curre
   },
   projectOutput:value=>structuredClone(value)
  });
- return Object.freeze({binding,async ready(){try{await database.verifyLogin();if(currentAuthority)return 'ready' in host&&await host.ready();const r=await database.query('SELECT profitia_access.runtime_descriptor() AS descriptor'),d=r.rows[0]?.descriptor;return !!d&&Object.entries(binding).every(([k,v])=>d[k]===v);}catch{return false;}},async execute({request,organisationId,resourceId,write=false,payload=null},action){
+ return Object.freeze({binding,assistantReadEnabled:configuration.assistantReadVersion==='newsfeed-assistant-read-v1',async ready(){try{await database.verifyLogin();if(currentAuthority)return 'ready' in host&&await host.ready();const r=await database.query('SELECT profitia_access.runtime_descriptor() AS descriptor'),d=r.rows[0]?.descriptor;return !!d&&Object.entries(binding).every(([k,v])=>d[k]===v);}catch{return false;}},async execute({request,organisationId,resourceId,write=false,payload=null},action){
   const answer=await host.execute({contractId:host.contract.id,contractVersion:host.contract.version,operation:write?'personal.list.write':'personal.list.read',organisationId:organisationSelector(organisationId),resourceId,payload,request},async(context,transaction)=>{
    await transaction.query('SAVEPOINT business_operation');
    try{const value=await action(context,transaction);await transaction.query('RELEASE SAVEPOINT business_operation');return {ok:true,value};}

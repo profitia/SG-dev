@@ -42,5 +42,25 @@ export function createRepository(configuration,database){
  }
  async function failRun(transaction,context,started,error){await transaction.query('UPDATE newsfeed.monitor_runs SET status=$6,error_code=$7,completed_at=clock_timestamp() WHERE '+w+' AND id=$5::uuid AND status=\'PENDING\'',[...s(context),started.id,error.code==='EXTERNAL_RESULT_UNVERIFIED'?'UNCERTAIN':'FAILED',error.code??'SOURCE_HUB_UNAVAILABLE']);}
  async function ready(){try{await database.verifyLogin();const r=await database.query('SELECT * FROM newsfeed.installation WHERE singleton'),x=r.rows[0];return !!x&&x.schema_version==='1.0.0'&&x.environment===configuration.environment&&x.application_id===configuration.applicationId&&x.project_id===configuration.projectId&&x.branch_id===configuration.branchId&&x.database_name===configuration.databaseName;}catch{return false;}}
- return Object.freeze({create,get,list,update,remove,history,beginRun,completeRun,failRun,ready});
+ async function assistantContext(transaction,context,{observationId=null,supplierNip=null}={}){
+  // All methods below retain the same verified user/organisation predicate.
+  // No discovery, source acquisition, writer, metadata copy or fallback.
+  const page=observationId===null?await list(transaction,context,{limit:10}):{items:[await get(transaction,context,observationId)],nextCursor:null};
+  const matches=page.items.filter(o=>supplierNip===null||o.subjectKind==='company'
+   && /^(?:NIP[:\s]*)?(\d{10})$/i.exec(o.subject.trim())?.[1]===supplierNip);
+  const observations=[];let truncated=page.nextCursor!==null||matches.length>3;
+  for(const o of matches.slice(0,3)){
+   const h=await history(transaction,context,o.id),selected=h.publications.slice(0,5);
+   const dates=selected.length?(await transaction.query('SELECT publication_id,detected_at FROM newsfeed.observation_publications WHERE '+w+' AND observation_id=$5::uuid AND publication_id=ANY($6::uuid[])',
+    [...s(context),o.id,selected.map(p=>p.id)])).rows:[];
+   truncated ||= h.items.length>3||h.publications.length>5;
+   observations.push({id:o.id,name:o.name,subjectKind:o.subjectKind,subject:o.subject,status:o.status,version:o.version,createdAt:o.createdAt,updatedAt:o.updatedAt,
+    runs:h.items.slice(0,3),publications:selected.map(p=>{const date=dates.find(d=>d.publication_id===p.id)?.detected_at;return {
+     id:p.id,provider:p.provider,url:p.url,headline:p.headline,publishedAt:p.publishedAt,discoveredAt:p.discoveredAt,
+     detectedAt:date?new Date(date).toISOString():null,publicationStatus:p.publicationStatus};})});
+  }
+  return {version:'newsfeed-assistant-read-v1',status:observations.length?truncated?'PARTIAL':'OK':'EMPTY',observations,truncated};
+ }
+
+ return Object.freeze({create,get,list,update,remove,history,assistantContext,beginRun,completeRun,failRun,ready});
 }
