@@ -49,7 +49,31 @@ export const ASSISTANT_M2_PRODUCER_PATHS=Object.freeze([
 ])
 const file='apps/sg-runtime/assistant-context-integration.json'
 const hash=bytes=>createHash('sha256').update(bytes).digest('hex')
+// Validate this bounded current Oil correction before exposing any predecessor.
+export function oilReportTransportPredecessor(current,historical){
+ const receiptFile='apps/sg-runtime/assistant-context-integration.json';let bytes;
+ try{bytes=current(receiptFile)}catch(error){
+  const text=String(error?.stderr??error?.message??'');
+  if(error?.code==='ENOENT'||error?.status===128&&text.includes("'"+receiptFile+"' does not exist in "))return null;
+  throw error;
+ }
+ const receipt=JSON.parse(bytes),a=receipt.oilRuntimeTransportRepair;
+ if(a===undefined)return null;
+ assert.deepEqual(Object.keys(a).sort(),['schemaVersion','taskId','targetEnvironment','previousSourceSha','previousReceiptSha256','changedSourcePaths','sourceDigests','noSdkChange','noGrantChange','noAutomaticRetry','humanReviewRequired'].sort());
+ assert.equal(a.schemaVersion,'1.0');assert.equal(a.taskId,'SG2-OIL-TRANSPORT-RECOVERY-20261110');assert.equal(a.targetEnvironment,'development');
+ assert.equal(a.previousSourceSha,'22ad6f867b9bf30c8f01b326c003ea37fdd11f25');
+ const expected=["apps/insights-runtime/src/composer.mjs","apps/insights-runtime/tests/host.test.mjs","apps/sg-runtime/lib/insights/autonomous-runtime.ts","apps/sg-runtime/tests/assistant-m2-integrity.mjs","apps/sg-runtime/tests/assistant-m2-integrity.test.mjs","apps/sg-runtime/tests/insights-host.test.ts"];
+ assert.deepEqual(a.changedSourcePaths,[...expected]);assert.deepEqual(Object.keys(a.sourceDigests).sort(),[...expected]);
+ for(const flag of ['noSdkChange','noGrantChange','noAutomaticRetry','humanReviewRequired'])assert.equal(a[flag],true,flag);
+ const priorBytes=Buffer.from(historical(a.previousSourceSha,receiptFile)),prior=JSON.parse(priorBytes),{oilRuntimeTransportRepair,...preserved}=receipt;
+ assert.equal(hash(priorBytes),a.previousReceiptSha256);assert.deepEqual(preserved,prior,'All previous Oil/M1/M2 acceptances remain unchanged');
+ for(const p of expected){assert.match(a.sourceDigests[p],/^[a-f0-9]{64}$/);assert.equal(hash(current(p)),a.sourceDigests[p],'current Oil transport repair '+p);}
+ const mapped=new Set([receiptFile,...expected]),blobs=new Map([[receiptFile,priorBytes]]);
+ return{manifest:a,previousBytes:p=>{if(!mapped.has(p))return current(p);if(!blobs.has(p))blobs.set(p,Buffer.from(historical(a.previousSourceSha,p)));return Buffer.from(blobs.get(p));}};
+}
+
 export function assistantM2Predecessor(current,historical){
+ const oil=oilReportTransportPredecessor(current,historical);if(oil)return assistantM2Predecessor(oil.previousBytes,historical);
  let bytes
  try{bytes=current(file)}catch(error){
   const text=String(error?.stderr??error?.message??'')
