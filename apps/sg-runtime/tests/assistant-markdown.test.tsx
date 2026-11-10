@@ -84,3 +84,14 @@ test('incomplete streaming Markdown recovers into a table without remounting its
   keys.forEach((key, i) => prior[i] ? Object.defineProperty(globals, key, prior[i]!) : delete globals[key])
  }
 })
+
+test('history shows the question and a full timestamp with seconds in canonical text roles',()=>{
+ const state={...snapshot(''),history:[{id:'saved',title:'Jak zmieniły się ceny stali?',updatedAt:'2026-11-10T12:34:56.789Z'}]}
+ const doc=new JSDOM(renderToStaticMarkup(<AssistantConversationView session={session()} state={state} en={false} historyOpen onCloseHistory={()=>{}} inputId="history-preview"/>)).window.document
+ assert.equal(doc.querySelector('.srm-chat-history-title')?.textContent,'Jak zmieniły się ceny stali?')
+ const time=doc.querySelector('time')!
+ assert.equal(time.dateTime,state.history[0].updatedAt);assert.match(time.textContent??'',/\d{2}:\d{2}:56/)
+ assert.equal(doc.querySelector('.srm-chat-history-title')?.getAttribute('data-canon-font'),'SRM-T14')
+ assert.equal(time.getAttribute('data-canon-font'),'SRM-T02')
+ assert.equal(doc.querySelector('.srm-chat-history-delete')?.getAttribute('aria-label'),'Usuń Jak zmieniły się ceny stali?')
+})

@@ -202,3 +202,14 @@
 .appshell .srm-chat-markdown table{width:100%;min-width:28rem;border-collapse:collapse;font-size:inherit;line-height:1.5}
 .appshell .srm-chat-markdown :is(th,td){padding:.5em .65em;border:1px solid var(--line);vertical-align:top;text-align:left;overflow-wrap:normal}
 .appshell .srm-chat-markdown th{background:var(--blue-soft);color:var(--brand-dark);font-weight:650}
+
+/* Canon 470946417440075776: Inter; T14 content, T02 metadata, T01 action. */
+.appshell .srm-chat-history{font-family:SpendGuruAppShellInter,Arial,sans-serif;font-size:.875rem;line-height:1.6}
+.appshell .srm-chat-history li{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:start;margin:.5rem 0;border:1px solid var(--line);border-radius:.5rem;background:var(--surface);overflow:hidden}
+.appshell .srm-chat-history li button{width:auto;margin:0;border:0;border-radius:0;background:transparent;font:inherit;min-height:2.75rem}
+.appshell .srm-chat-history .srm-chat-history-open{display:grid;gap:.25rem;min-width:0;width:100%;text-align:start;padding:.75rem}
+.appshell .srm-chat-history .srm-chat-history-title{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:.875rem;font-weight:400;line-height:1.6}
+.appshell .srm-chat-history time{font-size:.6875rem;font-weight:400;line-height:1.5;color:var(--muted);font-variant-numeric:tabular-nums}
+.appshell .srm-chat-history li .srm-chat-history-delete{font-size:.75rem;font-weight:500;line-height:1.5;padding:.75rem .5rem;color:var(--muted)}
+.appshell .srm-chat-history li button:hover{background:var(--blue-soft)}
+.appshell .srm-chat-history li button:focus-visible{outline:2px solid var(--brand-light);outline-offset:-3px}

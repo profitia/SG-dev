@@ -5,6 +5,7 @@ import fs from 'node:fs'
 import {createHash,createHmac,randomBytes,randomUUID} from 'node:crypto'
 import pg from '../../architecture-lab/node_modules/pg/lib/index.js'
 import {assertIsolatedTestConnection} from '../../architecture-lab/src/operation-postgres-fixture.mjs'
+import {createAssistantHistory} from '../lib/assistant/history.ts'
 const U='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',V='bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'
 test('real ordinary history role persists across connections, isolates the pilot, serialises turns and deletes expired content',async()=>{
  const url=assertIsolatedTestConnection(process.env.OPERATION_FIXTURE_OWNER_URL,'sg2_operation_test','architecture_test_owner')
@@ -66,6 +67,13 @@ test('real ordinary history role persists across connections, isolates the pilot
   const competing=await Promise.allSettled([1,2].map(n=>call('BEGIN',{...begin,conversationId:id,commandId:randomUUID(),message:'SYNTHETIC competing '+n,expectedRevision:2})))
   assert.equal(competing.filter(r=>r.status==='fulfilled').length,1);assert.equal(competing.filter(r=>r.status==='rejected').length,1)
   assert.equal((await call('LOAD',{conversationId:id})).turns.length,2)
+  const history=createAssistantHistory({commandKey:key.toString('hex'),schemaDigest,query:(sql,params)=>pool.query(sql,params)})
+  const context={applicationId:'spendguru',environment:'development',actorId:U,actor:{kind:'HUMAN',actorId:U},organisationId:null,operation:'assistant.history.read'}
+  const preview=await history.load(context,id,true)
+  assert.equal(preview.turns.length,1);assert.equal(preview.turns[0].message,'SYNTHETIC question')
+  assert.equal(preview.turns[0].response,'');assert.deepEqual(preview.turns[0].sources,[])
+  assert.equal((await call('LOAD',{conversationId:id})).turns[0].response,'SYNTHETIC answer','preview does not rewrite saved content')
+  await assert.rejects(()=>history.load({...context,actorId:V,actor:{kind:'HUMAN',actorId:V}},id,true),e=>e.code==='DENIED')
   await call('DELETE',{conversationId:id});assert.deepEqual((await call('LIST')).items,[])
   await assert.rejects(()=>call('LOAD',{conversationId:id}),/HISTORY_UNAVAILABLE/)
   const expiring=await call('BEGIN',{...begin,commandId:randomUUID()})

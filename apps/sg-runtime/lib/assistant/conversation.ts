@@ -86,7 +86,33 @@ function modelInput(selection:ReturnType<typeof selectConversationContext>,turn:
 }
 export function createAssistantHandlers(resolveRuntime:()=>Promise<AssistantRuntime>){
  return {
-  async history(request:Request){try{const runtime=await resolveRuntime();const items=await runtime.run(request,'assistant.history.read',{action:'LIST'},c=>runtime.history.list(c));return Response.json({items},{headers})}catch(error){observe(error,'history');return failure(error)}},
+  async history(request:Request){try{
+   const runtime=await resolveRuntime(),read=await runtime.run(request,'assistant.history.read',{action:'LIST'},async c=>({userId:c.actorId,items:await runtime.history.list(c)}))
+   const items=[...read.items];let next=0
+   // Bound database/producer work. A preview is subject to the same current
+   // access checks as opening the conversation, including question redaction.
+   await Promise.all(Array.from({length:Math.min(4,items.length)},async()=>{
+    for(;;){
+     const index=next++;if(index>=items.length)return
+     request.signal.throwIfAborted()
+     const entry=items[index]
+     try{
+      const stored=await runtime.run(request,'assistant.history.read',{action:'LOAD',conversationId:entry.id},async c=>{sameUser(c,read.userId);return runtime.history.load(c,entry.id,true)})
+      const messages=await projectHistory(runtime,request,stored),question=messages.find(m=>m.role==='user')?.content
+      if(question&&!question.startsWith('Treść kontekstowa jest niedostępna.')){
+       let title='',truncated=false
+       for(const character of question.replace(/\s+/g,' ').trim()){
+        if(title.length+character.length>160){truncated=true;break}
+        title+=character
+       }
+       if(title)items[index]={...entry,title:title+(truncated?'…':'')}
+      }
+     }catch{/* An unavailable preview retains the existing non-sensitive title. */}
+    }
+   }))
+   await runtime.run(request,'assistant.history.read',{action:'PUBLISH'},async c=>{sameUser(c,read.userId);return null})
+   return Response.json({items},{headers})
+  }catch(error){observe(error,'history');return failure(error)}},
   async load(request:Request,id:string){try{
    if(!uuid(id))return Response.json({error:'INVALID_REQUEST'},{status:400,headers})
    const runtime=await resolveRuntime(),read=await runtime.run(request,'assistant.history.read',{action:'LOAD',conversationId:id},async c=>({userId:c.actorId,stored:await runtime.history.load(c,id)}))

@@ -9,17 +9,24 @@ export type StoredConversation=Readonly<{id:string;revision:number;turns:readonl
 const uuid=(v:unknown):v is string=>typeof v==='string'&&/^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(v)
 const fail=(code='UNAVAILABLE'):never=>{throw Object.assign(Error('Conversation history unavailable'),{code})}
 const record=(v:unknown):v is Record<string,unknown>=>!!v&&typeof v==='object'&&!Array.isArray(v)
+// The same admitted LOAD operation, projected before returning database bytes.
+// No table access, schema change, persisted title or extra model call is needed.
+const previewQuery=`WITH history_reply AS MATERIALIZED (
+ SELECT sg2_assistant_history.apply($1::text,$2::text) AS result,sg2_assistant_history.descriptor() AS binding
+) SELECT result || jsonb_build_object('turns',CASE WHEN jsonb_array_length(result->'turns')>0
+ THEN jsonb_build_array((result->'turns'->0) || '{"response":"","sources":[]}'::jsonb)
+ ELSE '[]'::jsonb END) AS result,binding FROM history_reply`
 export function createAssistantHistory(options:{query:AccessQuery;commandKey:string;schemaDigest:string;now?:()=>number}){
  if(!/^[a-f0-9]{64}$/.test(options.commandKey)||!/^[a-f0-9]{64}$/.test(options.schemaDigest))throw TypeError('Explicit private history binding required')
  const key=Buffer.from(options.commandKey,'hex'),now=options.now??Date.now
- async function call(context:Readonly<OperationContext>,action:string,payload:Record<string,unknown>={}){
+ async function call(context:Readonly<OperationContext>,action:string,payload:Record<string,unknown>={},previewOnly=false){
   const operation=action==='CHECK'?'assistant.converse':['LIST','LOAD'].includes(action)?'assistant.history.read':'assistant.history.write'
   if(context.applicationId!=='spendguru'||context.environment!=='development'||context.actor.kind!=='HUMAN'||!uuid(context.actorId)
    ||context.actor.actorId!==context.actorId||context.operation!==operation||operation!=='assistant.converse'&&context.organisationId!==null)return fail('DENIED')
   const body=JSON.stringify({...payload,action,userId:context.actorId,contract:'1.0.0',schemaDigest:options.schemaDigest,until:now()+10000})
   const proof=createHmac('sha256',key).update(body).digest('hex')
   let rows
-  try{rows=(await options.query('SELECT sg2_assistant_history.apply($1::text,$2::text) AS result,sg2_assistant_history.descriptor() AS binding',[body,proof])).rows}
+  try{rows=(await options.query(previewOnly&&action==='LOAD'?previewQuery:'SELECT sg2_assistant_history.apply($1::text,$2::text) AS result,sg2_assistant_history.descriptor() AS binding',[body,proof])).rows}
   catch(error){const e=error as {code?:string;message?:string;meta?:{message?:string}}
    if((e.code==='P0001'||e.code==='P2010')&&/HISTORY_CONFLICT/.test(e.meta?.message??e.message??''))return fail('INTERRUPTED')
    if((e.code==='P0001'||e.code==='P2010')&&/HISTORY_UNAVAILABLE/.test(e.meta?.message??e.message??''))return fail('DENIED')
@@ -35,9 +42,9 @@ export function createAssistantHistory(options:{query:AccessQuery;commandKey:str
    return r.items.map(item=>{if(!record(item)||!uuid(item.id)||typeof item.updatedAt!=='string'||!Number.isFinite(Date.parse(item.updatedAt)))return fail()
     return {id:item.id,title:(item.locale==='en'?'Conversation ':'Rozmowa ')+new Date(item.updatedAt).toISOString().slice(0,10),updatedAt:item.updatedAt}})
   },
-  async load(context:Readonly<OperationContext>,id:string):Promise<StoredConversation>{
+  async load(context:Readonly<OperationContext>,id:string,previewOnly=false):Promise<StoredConversation>{
    if(!uuid(id))return fail()
-   const r=await call(context,'LOAD',{conversationId:id});if(r.id!==id||!Number.isSafeInteger(r.revision)||Number(r.revision)<0||!Array.isArray(r.turns)||r.turns.length>50)return fail()
+   const r=await call(context,'LOAD',{conversationId:id},previewOnly);if(r.id!==id||!Number.isSafeInteger(r.revision)||Number(r.revision)<0||!Array.isArray(r.turns)||r.turns.length>50)return fail()
    const turns=r.turns.map(t=>{
     if(!record(t)||![t.id,t.commandId,t.assistantMessageId].every(uuid)||typeof t.message!=='string'||t.message.length>8000
      ||typeof t.response!=='string'||t.response.length>64000||typeof t.createdAt!=='string'||!['QUEUED','COMPLETE','INTERRUPTED','FAILED'].includes(String(t.status))
