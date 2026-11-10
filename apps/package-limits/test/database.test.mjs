@@ -752,7 +752,7 @@ test("Assistant M1 real SQL roles, atomic admission, actual settlement and uncer
     const attacker=new pg.Client({connectionString:url.toString()});await attacker.connect();
     try{
       await attacker.query('CREATE TEMP TABLE assistant_installation(singleton boolean,schema_digest text,command_key bytea,created_at timestamptz,expires_at timestamptz,maximum_nano_usd bigint,maximum_tokens bigint,source_ref text)');
-      await attacker.query('GRANT SELECT ON pg_temp.assistant_installation TO profitia_limits_owner');
+      await attacker.query('GRANT SELECT, UPDATE ON pg_temp.assistant_installation TO profitia_limits_owner');
       const forgedKey=Buffer.alloc(32,17);
       await attacker.query("INSERT INTO pg_temp.assistant_installation VALUES(true,$1,$2,now(),now()+interval '7 days',5000000000,200000,'SYNTHETIC_TEMP_SHADOW_ONLY')",[digest,forgedKey]);
       const body=JSON.stringify({...command(),contract:'1.0.0',schemaDigest:digest,until:Date.now()+9000}),proof=createHmac('sha256',forgedKey).update(body).digest('hex');
