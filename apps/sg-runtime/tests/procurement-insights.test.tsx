@@ -37,3 +37,34 @@ test('observation form validates input and keeps save separate from explicit new
   await click('Zapisz i sprawdź nowe artykuły');assert.equal(calls.length,2);assert.equal(calls[1].search,true)
  }finally{await BrowserReact.act(async()=>root.unmount());dom.window.close();globalThis.window=original.window;globalThis.document=original.document;if(original.navigator)Object.defineProperty(globalThis,'navigator',original.navigator);else Reflect.deleteProperty(globalThis,'navigator');Reflect.deleteProperty(globalThis,'IS_REACT_ACT_ENVIRONMENT')}
 })
+
+test('SYNTHETIC_ONLY: report order keeps its explicit retry key and never presents a failed write as a queued report',async()=>{
+ const dom=new JSDOM('<!doctype html><div id="root"></div>',{url:'https://example.test/pl/dashboard/procurement-insights?tab=reports',runScripts:'outside-only'})
+ ;(dom.window as any).MessageChannel=class{port1:{onmessage:(()=>void)|null}={onmessage:null};port2={postMessage:()=>setImmediate(()=>this.port1.onmessage?.())}}
+ const browser=buildSync({stdin:{contents:`import React from 'react';import {createRoot} from 'react-dom/client';import {ReportsWorkspace} from './components/procurement-insights/reports';window.PItest={React,createRoot,ReportsWorkspace};`,resolveDir:app,loader:'tsx'},bundle:true,platform:'browser',format:'iife',write:false,define:{'process.env.NODE_ENV':'"development"'},logLevel:'silent'})
+ const profile={definitionId:'oil-asphalt',profileVersion:'SYNTHETIC_ONLY',label:'SYNTHETIC_ONLY',description:'Offline test',availability:'AVAILABLE',subjectMode:'NONE',cadences:['ONCE','WEEKLY'],timeZones:['Europe/Warsaw'],deliveryChannels:['ASSISTANT'],sections:[]},calls:Array<{key:string;body:Record<string,unknown>}>=[]
+ Object.defineProperty(dom.window.crypto,'randomUUID',{value:()=>crypto.randomUUID()})
+ ;(dom.window as any).AbortController=AbortController
+ ;(dom.window as any).fetch=async(url:string,options:RequestInit)=>{
+  assert(String(url).startsWith('/api/v1/insights/subscriptions'));assert.equal(new Headers(options.headers).get('authorization'),'Bearer SYNTHETIC_ONLY');assert.equal(options.credentials,'omit');assert.equal(options.cache,'no-store');assert.equal(options.redirect,'error')
+  if(url.endsWith('/workspace'))return Response.json({catalog:[profile],orders:{items:[],nextCursor:null},editions:{items:[],nextCursor:null}})
+  if(options.method==='POST'){
+   const body=JSON.parse(String(options.body));calls.push({key:new Headers(options.headers).get('idempotency-key')!,body})
+   if(calls.length===1)return Response.json({error:{code:'SYNTHETIC_OUTAGE'}},{status:503})
+   return Response.json({...body,id:'SYNTHETIC_ORDER',version:1,status:'ACTIVE',executionState:'QUEUED',nextDueAt:null})
+  }
+  if(url.endsWith('/SYNTHETIC_ORDER/runs'))return Response.json({items:[],nextCursor:null})
+  throw Error('UNEXPECTED_TEST_NETWORK')
+ }
+ dom.window.eval(browser.outputFiles[0].text);(dom.window as any).IS_REACT_ACT_ENVIRONMENT=true
+ const {React:R,createRoot,ReportsWorkspace}=(dom.window as any).PItest,node=dom.window.document.getElementById('root')!,root=createRoot(node)
+ const click=async(label:string)=>{const b=[...node.querySelectorAll('button')].find(x=>x.textContent===label);assert(b,label);await R.act(async()=>{b.click();await new Promise(r=>setTimeout(r,5))})}
+ const fill=async(input:HTMLInputElement,value:string)=>{await R.act(async()=>{Object.getOwnPropertyDescriptor(dom.window.HTMLInputElement.prototype,'value')!.set!.call(input,value);input.dispatchEvent(new dom.window.Event('input',{bubbles:true}))})}
+ try{
+  const getToken=async()=>'SYNTHETIC_ONLY';await R.act(async()=>{root.render(R.createElement(ReportsWorkspace,{active:true,locale:'pl',getToken}));await new Promise(r=>setTimeout(r,10))})
+  await click('+ Zamów raport');await fill(node.querySelector('input') as HTMLInputElement,'SYNTHETIC_ONLY')
+  const select=node.querySelector('select') as HTMLSelectElement;await R.act(async()=>{select.value='oil-asphalt@SYNTHETIC_ONLY';select.dispatchEvent(new dom.window.Event('change',{bubbles:true}))})
+  await click('Zamów raport');assert.equal(calls.length,1);assert(node.querySelector('[role=alert]'));assert(!(node.textContent??'').includes('Zapisano zlecenie'))
+  await click('Zamów raport');assert.equal(calls.length,2);assert.equal(calls[0].key,calls[1].key);assert.deepEqual(calls[0].body,calls[1].body);assert(!('ownerUserId' in calls[0].body));assert(!('organisationId' in calls[0].body));assert((node.textContent??'').includes('Zapisano zlecenie'))
+ }finally{await R.act(async()=>root.unmount());dom.window.close()}
+})

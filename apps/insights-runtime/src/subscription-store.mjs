@@ -1,27 +1,38 @@
 import {randomUUID} from 'node:crypto';
+import {readFileSync} from 'node:fs';
 import {assertContext,requireThat,digest} from '@profitia/insights-contracts';
 import {parseSubscription,nextReportOccurrence} from './subscriptions.mjs';
 import {PUBLISHED_EDITION_CONTRACT} from '@profitia/insights-contracts/subscriptions';
 const dto=row=>({...row.definition,id:row.id,organisationId:row.organisation_id,ownerUserId:row.owner_user_id,version:Number(row.version),status:row.status,executionState:row.execution_state,nextDueAt:row.next_due_at?new Date(row.next_due_at).toISOString():null,createdAt:new Date(row.created_at).toISOString(),updatedAt:new Date(row.updated_at).toISOString()});
 const own=ctx=>[ctx.organisationId,ctx.actorId];
+const installedSchemaDigest=digest(readFileSync(new URL('../sql/003-report-subscriptions.sql',import.meta.url)));
 function page({limit=50,cursor=null}={}){
  requireThat(Number.isSafeInteger(limit)&&limit>=1&&limit<=100,'INVALID_PAGINATION',400);let after=null;
  if(cursor!==null){try{requireThat(typeof cursor==='string'&&cursor.length<=300&&/^[A-Za-z0-9_-]+$/.test(cursor),'INVALID_PAGINATION',400);after=JSON.parse(Buffer.from(cursor,'base64url').toString());requireThat(Array.isArray(after)&&after.length===2&&typeof after[0]==='string'&&Number.isFinite(Date.parse(after[0]))&&typeof after[1]==='string'&&/^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(after[1]),'INVALID_PAGINATION',400);}catch{requireThat(false,'INVALID_PAGINATION',400);}}
  return {limit,after};
 }
 const nextCursor=(rows,limit,idKey='id')=>rows.length>limit?Buffer.from(JSON.stringify([rows[limit-1].cursor_at,rows[limit-1][idKey]])).toString('base64url'):null;
-const publication=row=>({contractVersion:PUBLISHED_EDITION_CONTRACT,producerJobId:row.producer_job_id,editionId:row.edition_id,definitionId:row.definition_id,profileVersion:row.profile_version,title:row.title,period:row.period,asOf:new Date(row.as_of).toISOString(),publishedAt:new Date(row.published_at).toISOString(),pdfSha256:row.pdf_sha256,markdownSha256:row.markdown_sha256,status:'PUBLISHED'});
+const publication=row=>({contractVersion:PUBLISHED_EDITION_CONTRACT,producerJobId:row.producer_job_id,editionId:row.edition_id,definitionId:row.definition_id,profileVersion:row.profile_version,title:row.title,period:row.period,asOf:new Date(row.as_of).toISOString(),publishedAt:new Date(row.published_at).toISOString(),pdfSha256:row.pdf_sha256,markdownSha256:row.markdown_sha256,status:'PUBLISHED',readOnly:row.read_only===true});
 const scope=ctx=>{assertContext(ctx);requireThat(ctx.actorKind==='HUMAN','HUMAN_ORDER_REQUIRED',403);};
 export class PostgresSubscriptionStore{
  constructor(reportStore,{now=()=>new Date().toISOString()}={}){requireThat(reportStore&&typeof reportStore.transaction==='function','CURRENT_REPORT_STORE_REQUIRED',503);this.store=reportStore;this.now=now;}
+ async assertInstalled(ctx){scope(ctx);return this.store.transaction(ctx.organisationId,async db=>{
+  const row=(await db.query("SELECT digest FROM insights_private.subscription_migrations WHERE version='1.0.0'")).rows[0];requireThat(row?.digest===installedSchemaDigest,'SUBSCRIPTION_SCHEMA_NOT_READY',503);
+ });}
  async publishedList(ctx,options={}){scope(ctx);const {limit,after}=page(options);return this.store.transaction(ctx.organisationId,async db=>{
-  const r=await db.query('SELECT *,published_at::text AS cursor_at FROM insights_private.published_editions WHERE organisation_id=$1::uuid'+(after?' AND (published_at,producer_job_id)<($3::timestamptz,$4::uuid)':'')+' ORDER BY published_at DESC,producer_job_id DESC LIMIT $2',[ctx.organisationId,limit+1,...(after??[])]);return {items:r.rows.slice(0,limit).map(publication),nextCursor:nextCursor(r.rows,limit,'producer_job_id')};
+  const r=await db.query('SELECT *,NOT insights_private.publication_owned(organisation_id,producer_job_id) AS read_only,published_at::text AS cursor_at FROM insights_private.published_editions WHERE organisation_id=$1::uuid'+(after?' AND (published_at,producer_job_id)<($3::timestamptz,$4::uuid)':'')+' ORDER BY published_at DESC,producer_job_id DESC LIMIT $2',[ctx.organisationId,limit+1,...(after??[])]);return {items:r.rows.slice(0,limit).map(publication),nextCursor:nextCursor(r.rows,limit,'producer_job_id')};
  });}
  async published(ctx,jobId,{pdf=false}={}){scope(ctx);return this.store.transaction(ctx.organisationId,async db=>{
-  const r=await db.query('SELECT * FROM insights_private.published_editions WHERE organisation_id=$1::uuid AND producer_job_id=$2::uuid',[ctx.organisationId,jobId]);requireThat(r.rowCount===1,'PUBLISHED_EDITION_NOT_FOUND',404);const row=r.rows[0],kind=pdf?'pdf':'markdown',artifact=await this.store.artifact(ctx.organisationId,jobId,kind);
+  const r=await db.query('SELECT *,NOT insights_private.publication_owned(organisation_id,producer_job_id) AS read_only FROM insights_private.published_editions WHERE organisation_id=$1::uuid AND producer_job_id=$2::uuid',[ctx.organisationId,jobId]);requireThat(r.rowCount===1,'PUBLISHED_EDITION_NOT_FOUND',404);const row=r.rows[0],kind=pdf?'pdf':'markdown',artifact=await this.store.artifact(ctx.organisationId,jobId,kind);
   requireThat(artifact&&artifact.sha256===(pdf?row.pdf_sha256:row.markdown_sha256)&&digest(artifact.bytes)===artifact.sha256,'PUBLISHED_ARTIFACT_MISMATCH',503);
   if(pdf){requireThat(Buffer.from(artifact.bytes).subarray(0,5).toString()==='%PDF-','PUBLISHED_ARTIFACT_MISMATCH',503);return {...publication(row),bytes:artifact.bytes};}
   requireThat(artifact.bytes.length<=1048576,'PUBLISHED_ARTIFACT_TOO_LARGE',503);const markdown=new TextDecoder('utf-8',{fatal:true}).decode(artifact.bytes);return {...publication(row),markdown};
+ });}
+ async shares(ctx,jobId,{mode='LIST',id=null,kind=null}={}){scope(ctx);return this.store.transaction(ctx.organisationId,async db=>{
+  try{return(await db.query('SELECT insights_private.publication_share_command($1::uuid,$2::uuid,$3,$4::uuid,$5) AS result',[ctx.organisationId,jobId,mode,id,kind])).rows[0].result;}catch(e){if(e.code==='42501')requireThat(false,'PUBLISHED_EDITION_NOT_FOUND',404);throw e;}
+ });}
+ async acceptInvitation(ctx,token){scope(ctx);return this.store.transaction(ctx.organisationId,async db=>{
+  try{return{producerJobId:(await db.query('SELECT insights_private.accept_publication_invitation($1::uuid,$2) AS id',[ctx.organisationId,token])).rows[0].id};}catch(e){if(e.code==='42501')requireThat(false,'INVITATION_UNAVAILABLE',404);throw e;}
  });}
  async withSavepoint(ctx,action){scope(ctx);return this.store.transaction(ctx.organisationId,async db=>{
   await db.query('SAVEPOINT subscription_command');try{const value=await action();await db.query('RELEASE SAVEPOINT subscription_command');return value;}

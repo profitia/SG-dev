@@ -24,7 +24,7 @@ export function ProcurementInsightsWorkspace({locale,active,onReturn,onContext}:
  const [form,setForm]=useState<{initial:Observation|null}|null>(null),[busy,setBusy]=useState(false),[loading,setLoading]=useState(false),[error,setError]=useState(''),[message,setMessage]=useState(''),[text,setText]=useState(''),[filterText,setFilterText]=useState('')
  const [sharing,setSharing]=useState<Shares|null>(null),[inviteLink,setInviteLink]=useState(''),[invitation,setInvitation]=useState<string|null>(null),[contextObservation,setContextObservation]=useState<string|null>(null)
  const forgetDenied=useCallback((error:unknown)=>{
-  if(!(error instanceof NewsfeedError)||![401,403].includes(error.status))return
+  if(!(error instanceof NewsfeedError)||![401,403,404].includes(error.status))return
   setObservations({items:[],nextCursor:null});setSelected(null);setPublications({items:[],nextCursor:null});setHistory({items:[],nextCursor:null});setNotices({items:[],nextCursor:null});setStatistics(null);setSharing(null);setInviteLink('');setForm(null);setContextObservation(null);onContext?.(null)
  },[onContext])
  useEffect(()=>{const match=/^#invite=([a-f0-9]{64})$/.exec(window.location.hash);if(match){setInvitation(match[1]);window.history.replaceState(window.history.state,'',window.location.pathname+window.location.search)}},[])

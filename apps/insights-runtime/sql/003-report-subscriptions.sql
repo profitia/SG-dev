@@ -142,8 +142,104 @@ ALTER TABLE insights_private.subscription_migrations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE insights_private.subscription_migrations FORCE ROW LEVEL SECURITY;
 CREATE POLICY owner_scope ON insights_private.subscription_migrations TO insights_report_owner USING(true) WITH CHECK(true);
 CREATE POLICY version_read ON insights_private.subscription_migrations FOR SELECT TO PUBLIC USING(true);
+
+-- Resource sharing is confined to an already published edition. It never
+-- delegates order execution, an organisation membership or provider access.
+CREATE TABLE insights_private.publication_shares(
+ id uuid PRIMARY KEY,producer_job_id uuid NOT NULL REFERENCES insights_private.published_editions(producer_job_id),organisation_id uuid NOT NULL,
+ granted_by_user_id uuid NOT NULL,mode text NOT NULL CHECK(mode IN('USER','ORG')),recipient_user_id uuid,
+ created_at timestamptz NOT NULL DEFAULT clock_timestamp(),
+ CHECK((mode='USER' AND recipient_user_id IS NOT NULL) OR (mode='ORG' AND recipient_user_id IS NULL)),
+ UNIQUE NULLS NOT DISTINCT(organisation_id,producer_job_id,granted_by_user_id,mode,recipient_user_id)
+);
+CREATE TABLE insights_private.publication_invitations(
+ id uuid PRIMARY KEY,producer_job_id uuid NOT NULL REFERENCES insights_private.published_editions(producer_job_id),organisation_id uuid NOT NULL,
+ granted_by_user_id uuid NOT NULL,token_digest text NOT NULL UNIQUE CHECK(token_digest~'^[a-f0-9]{64}$'),
+ expires_at timestamptz NOT NULL,claimed_at timestamptz,claimed_by_user_id uuid,
+ CHECK((claimed_at IS NULL)=(claimed_by_user_id IS NULL))
+);
+CREATE INDEX publication_share_recipient ON insights_private.publication_shares(organisation_id,recipient_user_id,producer_job_id);
+CREATE INDEX publication_share_edition ON insights_private.publication_shares(organisation_id,producer_job_id,granted_by_user_id);
+CREATE INDEX publication_invitation_edition ON insights_private.publication_invitations(organisation_id,producer_job_id,granted_by_user_id);
+CREATE FUNCTION insights_private.publication_owned(p_org uuid,p_job uuid) RETURNS boolean
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,pg_temp AS $fn$
+DECLARE p jsonb;actor uuid;b insights_private.runtime_bindings%ROWTYPE;
+BEGIN
+ SELECT * INTO b FROM insights_private.runtime_bindings WHERE login_role=session_user AND status='ACTIVE' AND expires_at>clock_timestamp();
+ IF NOT FOUND OR b.mode<>'RECEIVER' OR b.organisation_id<>p_org OR NOT profitia_e1_receiver.report_scope(p_org,p_job,false) THEN RETURN false;END IF;
+ p:=(nullif(current_setting('profitia.current_e1_proof',true),'')::jsonb->>'payload')::jsonb;
+ IF p->'actor'->>'kind'<>'HUMAN' THEN RETURN false;END IF;actor:=(p->'actor'->>'userId')::uuid;
+ RETURN EXISTS(SELECT 1 FROM insights_private.subscription_runs WHERE organisation_id=p_org AND owner_user_id=actor AND producer_job_id=p_job);
+EXCEPTION WHEN OTHERS THEN RETURN false;
+END $fn$;
+CREATE OR REPLACE FUNCTION insights_private.publication_scope(p_org uuid,p_job uuid) RETURNS boolean
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,pg_temp AS $fn$
+DECLARE p jsonb;actor uuid;b insights_private.runtime_bindings%ROWTYPE;
+BEGIN
+ SELECT * INTO b FROM insights_private.runtime_bindings WHERE login_role=session_user AND status='ACTIVE' AND expires_at>clock_timestamp();
+ IF NOT FOUND OR b.mode<>'RECEIVER' OR b.organisation_id<>p_org OR NOT profitia_e1_receiver.report_scope(p_org,p_job,false) THEN RETURN false;END IF;
+ p:=(nullif(current_setting('profitia.current_e1_proof',true),'')::jsonb->>'payload')::jsonb;
+ IF p->'actor'->>'kind'<>'HUMAN' THEN RETURN false;END IF;actor:=(p->'actor'->>'userId')::uuid;
+ IF insights_private.publication_owned(p_org,p_job) THEN RETURN true;END IF;
+ -- Hold the matching ACL rows through final current-E1 observation. A
+ -- concurrent revoke waits and every later transaction sees the revocation.
+ PERFORM id FROM insights_private.publication_shares WHERE organisation_id=p_org AND producer_job_id=p_job AND (mode='ORG' OR recipient_user_id=actor) FOR SHARE;
+ RETURN FOUND;
+EXCEPTION WHEN OTHERS THEN RETURN false;
+END $fn$;
+CREATE FUNCTION insights_private.publication_share_command(p_org uuid,p_job uuid,p_mode text,p_id uuid DEFAULT NULL,p_kind text DEFAULT NULL) RETURNS jsonb
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,pg_temp AS $fn$
+DECLARE p jsonb;actor uuid;token text;new_id uuid;
+BEGIN
+ IF NOT insights_private.publication_owned(p_org,p_job) THEN RAISE EXCEPTION 'Published edition unavailable' USING ERRCODE='42501';END IF;
+ p:=(nullif(current_setting('profitia.current_e1_proof',true),'')::jsonb->>'payload')::jsonb;actor:=(p->'actor'->>'userId')::uuid;
+ PERFORM producer_job_id FROM insights_private.published_editions WHERE producer_job_id=p_job AND organisation_id=p_org FOR SHARE;
+ IF NOT FOUND THEN RAISE EXCEPTION 'Published edition unavailable' USING ERRCODE='42501';END IF;
+ IF p_mode='LIST' THEN
+  RETURN jsonb_build_object('grants',coalesce((SELECT jsonb_agg(jsonb_build_object('id',id,'mode',mode,'createdAt',created_at) ORDER BY created_at,id) FROM insights_private.publication_shares WHERE organisation_id=p_org AND producer_job_id=p_job AND granted_by_user_id=actor),'[]'::jsonb),
+   'invitations',coalesce((SELECT jsonb_agg(jsonb_build_object('id',id,'expiresAt',expires_at,'claimedAt',claimed_at) ORDER BY expires_at,id) FROM insights_private.publication_invitations WHERE organisation_id=p_org AND producer_job_id=p_job AND granted_by_user_id=actor),'[]'::jsonb));
+ END IF;
+ IF NOT insights_private.subscription_scope(p_org,actor,true) THEN RAISE EXCEPTION 'Sharing denied' USING ERRCODE='42501';END IF;
+ IF p_mode='ORG' THEN
+  INSERT INTO insights_private.publication_shares(id,producer_job_id,organisation_id,granted_by_user_id,mode) VALUES(gen_random_uuid(),p_job,p_org,actor,'ORG') ON CONFLICT DO NOTHING;RETURN jsonb_build_object('shared',true);
+ ELSIF p_mode='USER_LINK' THEN
+  token:=encode(public.gen_random_bytes(32),'hex');new_id:=gen_random_uuid();
+  INSERT INTO insights_private.publication_invitations(id,producer_job_id,organisation_id,granted_by_user_id,token_digest,expires_at) VALUES(new_id,p_job,p_org,actor,encode(public.digest(token,'sha256'),'hex'),clock_timestamp()+interval '24 hours');
+  RETURN jsonb_build_object('id',new_id,'token',token);
+ ELSIF p_mode='REVOKE' AND p_id IS NOT NULL THEN
+  IF p_kind='SHARE' THEN DELETE FROM insights_private.publication_shares WHERE id=p_id AND organisation_id=p_org AND producer_job_id=p_job AND granted_by_user_id=actor;
+  ELSIF p_kind='INVITATION' THEN DELETE FROM insights_private.publication_invitations WHERE id=p_id AND organisation_id=p_org AND producer_job_id=p_job AND granted_by_user_id=actor;
+  ELSE RAISE EXCEPTION 'Invalid sharing command' USING ERRCODE='22023';END IF;
+  RETURN jsonb_build_object('revoked',true);
+ END IF;
+ RAISE EXCEPTION 'Invalid sharing command' USING ERRCODE='22023';
+END $fn$;
+CREATE FUNCTION insights_private.accept_publication_invitation(p_org uuid,p_token text) RETURNS uuid
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,pg_temp AS $fn$
+DECLARE p jsonb;actor uuid;i insights_private.publication_invitations%ROWTYPE;
+BEGIN
+ IF p_token IS NULL OR p_token!~'^[a-f0-9]{64}$' OR NOT profitia_e1_receiver.report_scope(p_org,NULL,false) THEN RAISE EXCEPTION 'Invitation unavailable' USING ERRCODE='42501';END IF;
+ p:=(nullif(current_setting('profitia.current_e1_proof',true),'')::jsonb->>'payload')::jsonb;actor:=(p->'actor'->>'userId')::uuid;
+ IF NOT insights_private.subscription_scope(p_org,actor,false) THEN RAISE EXCEPTION 'Invitation unavailable' USING ERRCODE='42501';END IF;
+ SELECT * INTO i FROM insights_private.publication_invitations WHERE organisation_id=p_org AND token_digest=encode(public.digest(p_token,'sha256'),'hex') AND claimed_at IS NULL AND expires_at>clock_timestamp() FOR UPDATE;
+ IF NOT FOUND OR i.granted_by_user_id=actor THEN RAISE EXCEPTION 'Invitation unavailable' USING ERRCODE='42501';END IF;
+ INSERT INTO insights_private.publication_shares(id,producer_job_id,organisation_id,granted_by_user_id,mode,recipient_user_id) VALUES(gen_random_uuid(),i.producer_job_id,i.organisation_id,i.granted_by_user_id,'USER',actor) ON CONFLICT DO NOTHING;
+ UPDATE insights_private.publication_invitations SET claimed_at=clock_timestamp(),claimed_by_user_id=actor WHERE id=i.id;
+ RETURN i.producer_job_id;
+END $fn$;
+DO $sharing$ DECLARE t text;r name;BEGIN
+ FOREACH t IN ARRAY ARRAY['publication_shares','publication_invitations'] LOOP
+  EXECUTE format('ALTER TABLE insights_private.%I ENABLE ROW LEVEL SECURITY',t);EXECUTE format('ALTER TABLE insights_private.%I FORCE ROW LEVEL SECURITY',t);
+  EXECUTE format('CREATE POLICY domain_owner ON insights_private.%I TO insights_report_owner USING(true) WITH CHECK(true)',t);
+ END LOOP;
+ FOR r IN SELECT login_role FROM insights_private.runtime_bindings WHERE mode='RECEIVER' AND status='ACTIVE' AND expires_at>clock_timestamp() LOOP
+  EXECUTE format('GRANT EXECUTE ON FUNCTION insights_private.publication_owned(uuid,uuid),insights_private.publication_share_command(uuid,uuid,text,uuid,text),insights_private.accept_publication_invitation(uuid,text) TO %I',r);
+ END LOOP;
+END $sharing$;
+REVOKE ALL ON FUNCTION insights_private.publication_owned(uuid,uuid),insights_private.publication_share_command(uuid,uuid,text,uuid,text),insights_private.accept_publication_invitation(uuid,text) FROM PUBLIC;
+
 -- Preserve the physical binding and existing checks while admitting exactly
--- the four additional, owner-controlled FORCE-RLS tables of this migration.
+-- the exact additional owner-controlled FORCE-RLS tables of this migration.
 CREATE OR REPLACE FUNCTION insights_private.runtime_descriptor() RETURNS jsonb
 LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,pg_temp AS $fn$
 DECLARE b insights_private.runtime_bindings%ROWTYPE;r pg_catalog.pg_roles%ROWTYPE;
@@ -152,6 +248,6 @@ BEGIN
  IF NOT FOUND OR NOT r.rolcanlogin OR r.rolsuper OR r.rolbypassrls OR r.rolinherit OR r.rolcreatedb OR r.rolcreaterole OR r.rolreplication OR EXISTS(SELECT 1 FROM pg_catalog.pg_auth_members WHERE member=r.oid) THEN RETURN NULL;END IF;
  SELECT * INTO b FROM insights_private.runtime_bindings WHERE login_role=session_user AND status='ACTIVE' AND expires_at>clock_timestamp();
  IF NOT FOUND OR b.binding->>'role' IS DISTINCT FROM session_user::text OR b.binding->>'environment' IS DISTINCT FROM 'development' OR b.binding->>'databaseName' IS DISTINCT FROM current_database()
- OR (SELECT count(*) FROM pg_catalog.pg_class c JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='insights_private' AND c.relkind='r' AND c.relowner='insights_report_owner'::regrole AND c.relrowsecurity AND c.relforcerowsecurity AND c.relname IN('report_jobs','report_artifacts','runtime_bindings','subscription_migrations','report_subscriptions','subscription_versions','subscription_runs','published_editions','subscription_events'))<>9
+ OR (SELECT count(*) FROM pg_catalog.pg_class c JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='insights_private' AND c.relkind='r' AND c.relowner='insights_report_owner'::regrole AND c.relrowsecurity AND c.relforcerowsecurity AND c.relname IN('report_jobs','report_artifacts','runtime_bindings','subscription_migrations','report_subscriptions','subscription_versions','subscription_runs','published_editions','subscription_events','publication_shares','publication_invitations'))<>11
  THEN RETURN NULL;END IF;RETURN b.binding;
 END $fn$;

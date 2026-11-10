@@ -34,6 +34,8 @@ export const PROCUREMENT_INSIGHTS_PATHS=Object.freeze([
  "apps/sg-runtime/lib/newsfeed/runtime.ts",
  "apps/sg-runtime/package-lock.json",
  "apps/sg-runtime/package.json",
+ "apps/sg-runtime/tests/adp-appshell-identity.test.tsx",
+ "apps/sg-runtime/tests/appshell-first-entry.test.tsx",
  "apps/sg-runtime/tests/assistant-m2-integrity.mjs",
  "apps/sg-runtime/tests/assistant-multi-source.test.ts",
  "apps/sg-runtime/tests/newsfeed-proxy.test.ts",
@@ -64,7 +66,7 @@ export function procurementInsightsPredecessor(current,historical){
  assert.equal(hash(prior),a.previousAssistantReceiptSha256)
  assert.deepEqual(Buffer.from(current(assistantReceipt)),prior,'All M1/M2, Oil, SRM ingress and output receipts remain byte-identical')
  assert.deepEqual(Object.keys(a.newsfeedProducer).sort(),['pullRequest','sourceSha','receiptPath','receiptSha256'].sort())
- assert.equal(a.newsfeedProducer.pullRequest,969);assert.equal(a.newsfeedProducer.sourceSha,'43faffaf61dd69322f0303201391f06d8dab8617')
+ assert.equal(a.newsfeedProducer.pullRequest,969);assert.equal(a.newsfeedProducer.sourceSha,'8fa964a159a468968293337c9d0c79c326cb84e5')
  assert.equal(a.newsfeedProducer.receiptPath,'apps/newsfeed-runtime/saved-searches-integration.json')
  assert.equal(hash(historical(a.newsfeedProducer.sourceSha,a.newsfeedProducer.receiptPath)),a.newsfeedProducer.receiptSha256,'Exact Newsfeed candidate, not main/runtime acceptance')
  assert.deepEqual(Object.keys(a.sourceDigests).sort(),[...PROCUREMENT_INSIGHTS_PATHS].sort())
