@@ -3704,6 +3704,7 @@ export const ACG_M1_EXECUTION_REVIEW=Object.freeze({prNumber:937,branch:'archite
     "owner": "Governance Source Layer"
   }
 })});
+function isPinnedAcgM1Review(files){return Array.isArray(files)&&files.length===Object.keys(ACG_M1_EXECUTION_REVIEW.entries).length&&new Set(files.map(f=>f?.filename)).size===files.length&&files.every(f=>{const e=ACG_M1_EXECUTION_REVIEW.entries[f?.filename];return Object.hasOwn(ACG_M1_EXECUTION_REVIEW.entries,f?.filename)&&e&&f.sha===e.sha&&f.status===e.status&&!Object.hasOwn(f,'previous_filename')})}
 export function assertAcgM1ReviewEntry(file,entry){const e=ACG_M1_EXECUTION_REVIEW.entries[file?.filename];if(!e||e.sha!==file.sha||entry!==e.mode+' blob '+file.sha+'\t'+file.filename+'\0')fail('ACG_M1_FILE_MODE_REJECTED')}
 function assertAcgM1ReviewRoutes(files,repositoryRoot){
  for(const projectKey of ['ARCHITECTURE','SG2','SRM']){
