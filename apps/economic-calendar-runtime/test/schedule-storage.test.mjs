@@ -44,7 +44,8 @@ test('both source families persist, reconnect/read, refresh without duplication,
   // New pools, new SQL sessions and a new operation-bound E1 host; no ingestion
   // connection, acquisition response or in-memory store is reused by this read.
   const p=f.e1.calendar.admin.connectionParameters
-  const url=new URL('postgresql://127.0.0.1');url.port=String(p.port);url.username=f.configuration.runtimeRole;url.password=p.password;url.pathname='/'+p.database
+  // Fixture ordinary-role credential differs from the CI operator credential.
+  const url=new URL('postgresql://127.0.0.1');url.port=String(p.port);url.username=f.configuration.runtimeRole;url.password='SYNTHETIC_ONLY_NOT_A_REAL_CREDENTIAL';url.pathname='/'+p.database
   for(let n=0;n<2;n++){
    const db=createDatabase({connectionString:url.href,binding:{databaseName:p.database,role:f.configuration.runtimeRole},ssl:false})
    try{await db.verifyLogin();const authorizer=await createAuthorizer(f.configuration,db,{fetch:f.e1.transport}),repo=createRepository(f.configuration,db)
