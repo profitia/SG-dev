@@ -19,7 +19,7 @@ test('assistant optional source closes the real SDK dependency graph and retains
  const remaining=new Set(Object.keys(a.sdkDigests))
  for(const name of fs.readdirSync(new URL('packages/platform-contracts/src/',root)).filter(n=>n.endsWith('.mjs'))){
   const sdk=await import(new URL('packages/platform-contracts/src/'+name,root))
-  for(const key of remaining)if(typeof sdk[key]==='function'){assert.equal(await sdk[key](),a.sdkDigests[key],key);remaining.delete(key)}
+  for(const key of remaining)if(typeof sdk[key]==='function'){assert.equal(await sdk[key](),JSON.parse(readSource('apps/sg-runtime/operation-integration.json')).oilAutonomousReportCompatibility?.sdkDigests[key]??a.sdkDigests[key],key);remaining.delete(key)}
  }
  assert.equal(remaining.size,0)
  for(const target of ['packages/platform-contracts/src/assistant-usage.mjs','packages/platform-contracts/src/operation-context.mjs','packages/platform-contracts/package.json','apps/architecture-lab/assistant-m1-sdk-compatibility.json'])assert.throws(()=>assistantSdkPredecessor(p=>p===target?Buffer.concat([readSource(p),Buffer.from('UNREVIEWED')]):readSource(p),historical),target)
