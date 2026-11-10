@@ -169,6 +169,8 @@ export function assistantM2Predecessor(current,historical){
 
 // Check the current serialization correction before any historical acceptance.
 export function oilReportSerializationPredecessor(current,historical){
+ const renderer=oilReportRendererPredecessor(current,historical)
+ if(renderer)return oilReportSerializationPredecessor(renderer.previousBytes,historical)
  let bytes
  try{bytes=current(file)}catch(error){
   const text=String(error?.stderr??error?.message??'')
@@ -187,6 +189,30 @@ export function oilReportSerializationPredecessor(current,historical){
  assert.equal(hash(priorBytes),a.previousReceiptSha256)
  assert.deepEqual(preserved,prior,'All accepted Oil, SRM, M1 and M2 receipts remain immutable')
  for(const p of expected){assert.match(a.sourceDigests[p],/^[a-f0-9]{64}$/);assert.equal(hash(current(p)),a.sourceDigests[p],'current Oil request serialization '+p)}
+ const mapped=new Set([file,...expected]),blobs=new Map([[file,priorBytes]])
+ return{manifest:a,previousBytes:p=>{if(!mapped.has(p))return current(p);if(!blobs.has(p))blobs.set(p,Buffer.from(historical(a.previousSourceSha,p)));return Buffer.from(blobs.get(p))}}
+}
+
+// Validate every renderer correction byte before exposing immutable acceptance.
+export function oilReportRendererPredecessor(current,historical){
+ let bytes
+ try{bytes=current(file)}catch(error){
+  const text=String(error?.stderr??error?.message??'')
+  if(error?.code==='ENOENT'||error?.status===128&&text.includes("'"+file+"' does not exist in "))return null
+  throw error
+ }
+ const receipt=JSON.parse(bytes),a=receipt.oilReportRendererRepair
+ if(a===undefined)return null
+ assert.deepEqual(Object.keys(a).sort(),['schemaVersion','taskId','targetEnvironment','previousSourceSha','previousReceiptSha256','changedSourcePaths','sourceDigests','noSdkChange','noGrantChange','noNewModelCall','originalNarrativePreserved','humanReviewRequired'].sort())
+ assert.equal(a.schemaVersion,'1.0');assert.equal(a.taskId,'SG2-OIL-RENDERER-RECOVERY-20261110');assert.equal(a.targetEnvironment,'development')
+ assert.equal(a.previousSourceSha,'1e0dc1ca4057437805561a841105e291d028df10')
+ const expected=['apps/insights-runtime/render/report.py','apps/insights-runtime/tests/postgres.test.mjs','apps/sg-runtime/tests/assistant-m2-integrity.mjs','apps/sg-runtime/tests/assistant-m2-integrity.test.mjs']
+ assert.deepEqual(a.changedSourcePaths,expected);assert.deepEqual(Object.keys(a.sourceDigests).sort(),[...expected].sort())
+ for(const flag of ['noSdkChange','noGrantChange','noNewModelCall','originalNarrativePreserved','humanReviewRequired'])assert.equal(a[flag],true,flag)
+ const priorBytes=Buffer.from(historical(a.previousSourceSha,file)),prior=JSON.parse(priorBytes),{oilReportRendererRepair,...preserved}=receipt
+ assert.equal(hash(priorBytes),a.previousReceiptSha256)
+ assert.deepEqual(preserved,prior,'All accepted serialization, Oil, SRM, M1 and M2 receipts remain immutable')
+ for(const p of expected){assert.match(a.sourceDigests[p],/^[a-f0-9]{64}$/);assert.equal(hash(current(p)),a.sourceDigests[p],'current Oil renderer correction '+p)}
  const mapped=new Set([file,...expected]),blobs=new Map([[file,priorBytes]])
  return{manifest:a,previousBytes:p=>{if(!mapped.has(p))return current(p);if(!blobs.has(p))blobs.set(p,Buffer.from(historical(a.previousSourceSha,p)));return Buffer.from(blobs.get(p))}}
 }

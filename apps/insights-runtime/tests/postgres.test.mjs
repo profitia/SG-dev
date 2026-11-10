@@ -16,6 +16,38 @@ import {
 } from "../../../packages/insights-contracts/index.mjs";
 import { qualityGate } from "../src/composer.mjs";
 import { createRenderer } from "../src/renderer.mjs";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { createHash } from "node:crypto";
+
+test("renderer handles incomplete vendor metadata, long unedited prose and deterministic pagination", {skip: process.env.INSIGHTS_TEST_RENDER !== "true"}, () => {
+  // Controlled synthetic layout case; no provider data, model or network.
+  const dir = mkdtempSync(join(tmpdir(), "oil-render-regression-"));
+  try {
+    const keys = ["executive", "statistical", "events", "macro", "outlook", "calendar", "asphalt", "procurement"];
+    const phrase = "To kontrolowany materiał do sprawdzenia układu dokumentu i zachowania pełnej treści. Nie stanowi obserwacji rynkowej ani rekomendacji zakupowej. ";
+    const evidence = Array.from({length:18}, (_,i) => ({id:"TEST_"+i,provider:"test-only",publisher:{id:"test",name:"Kontrolowane źródło"},title:"Materiał testowy",url:"https://example.invalid/layout-test",publishedAt:null,materialDepth:"CONTROLLED_TEST_ONLY",family:i<6?"market-observations":"news",facts:i<6?{symbol:["CL1:COM","CO1:COM","BIT:COM"][i%3],label:null,price:10+i,currency:null,unit:i<3?"TEST/t":null,instrumentType:"UNKNOWN",referenceMarket:"Rynek testowy",observationAt:"2026-11-10T08:00:00Z",weeklyChange:null}:{} }));
+    const narrative = Object.fromEntries(keys.map((k,i)=>[k,Array.from({length:[3,4,3,3,3,3,3,4][i]},(_,j)=>({text:phrase.repeat(3),refs:["TEST_"+((i*3+j)%18)]}))]));
+    const bundle={schemaVersion:"ReportEvidenceBundle/OilAsphalt/0.5",profileId:"CONTROLLED_TEST_ONLY",fingerprint:"test-fingerprint",admissionRef:"TEST_NOT_LIVE",asOf:"2026-11-10T08:00:00Z",evidence,forecast:{series:[]},windows:{review:{fromDate:"2026-11-03",throughDate:"2026-11-09"},outlook:{fromDate:"2026-11-10",throughDate:"2026-11-16"}},pilotDeviations:[],coverage:{}};
+    const receipt={profileId:bundle.profileId,status:"completed",evidenceFingerprint:bundle.fingerprint};
+    for(const[n,v]of Object.entries({bundle,narrative,receipt}))writeFileSync(join(dir,n+".json"),JSON.stringify(v));
+    const hashes=[];
+    for(let i=0;i<2;i++){
+      const out=join(dir,"output-"+i),root=fileURLToPath(new URL("../render/",import.meta.url));
+      const r=spawnSync(process.env.INSIGHTS_TEST_PYTHON??"python3",[join(root,"report.py"),"--bundle",join(dir,"bundle.json"),"--narrative",join(dir,"narrative.json"),"--receipt",join(dir,"receipt.json"),"--output",out,"--font",join(root,"fonts/DejaVuSans.ttf"),"--bold",join(root,"fonts/DejaVuSans-Bold.ttf")],{encoding:"utf8",timeout:60000,env:{...process.env,PYTHONHASHSEED:"0",TZ:"UTC"}});
+      assert.equal(r.status,0,r.stderr);
+      const metadata=JSON.parse(readFileSync(join(out,"RENDER_VALIDATION.json")));
+      assert.equal(metadata.pages,4);assert.equal(metadata.originalNarrativePreserved,true);
+      const markdown=readFileSync(join(out,"OIL_ASPHALT_MARKET_OUTLOOK_v0.5_PL.md"),"utf8");
+      assert.ok(markdown.includes("waluta niepotwierdzona"));assert.ok(markdown.includes("jednostka niepotwierdzona"));
+      assert.ok(markdown.includes("Kontrolowane źródło"));assert.ok(!markdown.includes("{'id':"));
+      for(const statements of Object.values(narrative))for(const statement of statements)assert.ok(markdown.includes(statement.text));
+      hashes.push(createHash("sha256").update(readFileSync(join(out,"OIL_ASPHALT_MARKET_OUTLOOK_v0.5_PL.pdf"))).digest("hex"));
+    }
+    assert.equal(hashes[0],hashes[1],"identical inputs preserve exact PDF bytes");
+  } finally {rmSync(dir,{recursive:true,force:true});}
+});
 const enabled = !!process.env.INSIGHTS_TEST_DATABASE_URL;
 const TEST_ORG = "org-a-" + randomUUID(),
   REPLAY_ORG = "offline-replay-" + randomUUID();
