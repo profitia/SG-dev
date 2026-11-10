@@ -4,7 +4,7 @@ import {createAccessStore} from './access-store.mjs'
 import {createClerkIdentityAuthenticator} from './identity-provider.mjs'
 import {createProfileSql,ProfileConflict} from './identity-profile-sql.mjs'
 import {createOperationExecutor,OPERATION_CONTRACT,OperationDenied} from './operation-context.mjs'
-import {normalizePolishNip,normalizeOrganisationSlug,normalizeIndustry,normalizeProcurementCategories,normalizeTeamRange,normalizeCompanyRecord,organisationCommandDigest} from './organisation-profile.mjs'
+import {normalizePolishNip,normalizeOrganisationSlug,normalizeCompanySelection,normalizeIndustry,normalizeProcurementCategories,normalizeTeamRange,normalizeCompanyRecord,organisationCommandDigest} from './organisation-profile.mjs'
 
 export const ORGANISATION_BOOTSTRAP_CONTRACT=Object.freeze({id:'profitia.organisation-bootstrap',version:'1.0.0'})
 export const organisationBootstrapSchemaUrl=new URL('../migrations/profile/008-organisation-create.sql',import.meta.url).href
@@ -15,9 +15,10 @@ const exact=(v,keys)=>closed(v)&&Object.keys(v).sort().join(',')===[...keys].sor
 const unavailable=()=>{throw new OperationDenied('POLICY_UNAVAILABLE')}
 const ref=v=>typeof v==='string'&&v.length>0&&v.length<=256&&!/[\u0000-\u001f\u007f]|gh[pousr]_|sk_(?:live|test)_|postgres(?:ql)?:\/\/|Bearer\s/i.test(v)
 function completeAnswers(value){
- if(!exact(value,['nip','slug','industry','categories','teamRange'])||!Array.isArray(value.categories))return null
+ if(!exact(value,['nip','slug','industry','categories','teamRange','companySelection'])||!Array.isArray(value.categories))return null
  try{
-  const normalized={nip:normalizePolishNip(value.nip),slug:normalizeOrganisationSlug(value.slug),
+  const selection=normalizeCompanySelection(value.companySelection);if(!selection)return null
+  const normalized={nip:normalizePolishNip(value.nip),slug:normalizeOrganisationSlug(value.slug),companySelection:selection,
    industry:normalizeIndustry({id:value.industry?.id,...(value.industry?.id==='other'?{label:value.industry.label}:{})}),
    categories:normalizeProcurementCategories(value.categories.map(c=>c.catalogueId?{catalogueId:c.catalogueId}:{customName:c.label})),
    teamRange:normalizeTeamRange(value.teamRange?.id)}
@@ -25,7 +26,7 @@ function completeAnswers(value){
  }catch{return null}
 }
 function projectReceipt(value,commandId){
- if(exact(value,['status'])&&['INCOMPLETE_DRAFT','COMPANY_LOOKUP_REQUIRED','ORGANISATION_ALREADY_EXISTS','SLUG_UNAVAILABLE'].includes(value.status))return Object.freeze({...value})
+ if(exact(value,['status'])&&['INCOMPLETE_DRAFT','COMPANY_LOOKUP_REQUIRED','COMPANY_CHANGED','ORGANISATION_ALREADY_EXISTS','SLUG_UNAVAILABLE'].includes(value.status))return Object.freeze({...value})
  if(!exact(value,['status','organisationId','slug','activation','commandId'])||value.status!=='CREATED'||!uuid.test(value.organisationId??'')
   ||value.commandId!==commandId||value.activation!=='PENDING_PACKAGE'||normalizeOrganisationSlug(value.slug)!==value.slug)unavailable()
  return Object.freeze({...value})
@@ -117,6 +118,7 @@ export function createOrganisationBootstrapBackend(options){
      const stored=await readVerifiedCompany(Object.freeze({nip:answers.nip,context}))
      if(stored===null)return {status:'COMPANY_LOOKUP_REQUIRED'}
      if(!exact(stored,['company','sourceRef','version'])||!ref(stored.sourceRef)||!ref(stored.version))unavailable()
+     if(stored.sourceRef!==answers.companySelection.sourceRef||stored.version!==answers.companySelection.version)return {status:'COMPANY_CHANGED'}
      const company=normalizeCompanyRecord(stored.company,answers.nip)
      const payload=JSON.stringify({commandId,draftVersion,answers,company,registryRef:stored.sourceRef,registryVersion:stored.version})
      const digest=createHash('sha256').update(payload).digest('hex')

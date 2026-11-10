@@ -19,7 +19,7 @@ test('organisation bootstrap: real PostgreSQL atomic creation, duplicate arbitra
  const ids=[]
  for(const actor of actors)ids.push((await createIdentityProvisioner(f.options(actor)).ensureAccount(actor.request('POST'))).userId)
  const nips=['1234563218','1234563218','5261040828','5261040828'],slugs=['alpha-firma','second-firma','alpha-firma','fourth-firma']
- for(const[i,actor]of actors.entries())await createOrganisationOnboardingDraftBackend(f.options(actor)).saveCurrentDraft(actor.request('POST'),{expectedVersion:'0',patch:{nip:nips[i],slug:slugs[i],industry:{id:'construction'},categories:[{catalogueId:'construction.asphalt'},{customName:'Energia odnawialna'}],teamRange:'6-10'}})
+ for(const[i,actor]of actors.entries())await createOrganisationOnboardingDraftBackend(f.options(actor)).saveCurrentDraft(actor.request('POST'),{expectedVersion:'0',patch:{nip:nips[i],slug:slugs[i],companySelection:{sourceRef:'synthetic-stored-registry',version:'synthetic-snapshot-1'},industry:{id:'construction'},categories:[{catalogueId:'construction.asphalt'},{customName:'Energia odnawialna'}],teamRange:'6-10'}})
  let registryReads=0
  const api=actors.map(actor=>createOrganisationBootstrapBackend({...f.options(actor),application:{...f.options(actor).application,features:['organisation_admin'],operations:['organisation.create']},
   readVerifiedCompany:async({nip,context})=>{registryReads++;assert.equal(context.mode,'BOOTSTRAP');assert.equal(context.organisationId,null);return{company:company(nip),sourceRef:'synthetic-stored-registry',version:'synthetic-snapshot-1'}}}))
@@ -31,6 +31,11 @@ test('organisation bootstrap: real PostgreSQL atomic creation, duplicate arbitra
   await assert.rejects(f.pool.query("SELECT profitia_profile.organisation_bootstrap_create('{}',1,$1,gen_random_uuid())",['0'.repeat(64)]))
   await f.admin.query('UPDATE profitia_profile.organisation_bootstrap_policies SET enabled=true')
   await api[0].ready()
+ })
+ await t.test('changed registry data requires fresh confirmation and creates no organisation',async()=>{
+  const changed=createOrganisationBootstrapBackend({...f.options(actors[0]),application:{...f.options(actors[0]).application,features:['organisation_admin'],operations:['organisation.create']},readVerifiedCompany:async({nip})=>({company:company(nip),sourceRef:'synthetic-stored-registry',version:'synthetic-snapshot-2'})})
+  assert.deepEqual(await changed.completeCurrentOrganisation(actors[0].request('POST'),{commandId:randomUUID(),draftVersion:'1'}),{status:'COMPANY_CHANGED'})
+  assert.equal((await f.admin.query('SELECT count(*) FROM profitia_access.organisations')).rows[0].count,'0')
  })
  const commands=actors.map(()=>({commandId:randomUUID(),draftVersion:'1'}))
  let created,winner

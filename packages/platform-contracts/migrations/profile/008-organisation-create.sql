@@ -145,12 +145,14 @@ BEGIN
  END IF;
  SELECT answers INTO a FROM profitia_profile.organisation_onboarding_drafts WHERE user_id=uid AND version=v FOR UPDATE;
  IF NOT FOUND OR a IS DISTINCT FROM q->'answers' THEN RAISE EXCEPTION 'Draft version conflict' USING ERRCODE='PT409';END IF;
- IF(SELECT count(*) FROM jsonb_object_keys(a))<>5 OR NOT(a?'nip' AND a?'slug' AND a?'industry' AND a?'categories' AND a?'teamRange')
+ IF(SELECT count(*) FROM jsonb_object_keys(a))<>6 OR NOT(a?'nip' AND a?'slug' AND a?'industry' AND a?'categories' AND a?'teamRange' AND a?'companySelection')
+  OR jsonb_typeof(a->'companySelection') IS DISTINCT FROM 'object'
   OR a->>'slug' IN('www','app','api','admin','auth','login','register','account','dashboard','x-ray','support','help','billing','static','assets','cdn','mail','status','development','staging','production','dev','test','localhost','spendguru','profitia')
  THEN RAISE EXCEPTION 'Complete onboarding required' USING ERRCODE='PT403';END IF;
  co:=q->'company';
  IF jsonb_typeof(co) IS DISTINCT FROM 'object' OR(SELECT count(*) FROM jsonb_object_keys(co))<>8
   OR NOT(co?'entityType' AND co?'country' AND co?'nip' AND co?'krs' AND co?'regon' AND co?'legalName' AND co?'address' AND co?'postalCode')
+  OR a->'companySelection'->>'sourceRef' IS DISTINCT FROM q->>'registryRef' OR a->'companySelection'->>'version' IS DISTINCT FROM q->>'registryVersion'
   OR co->>'entityType' IS DISTINCT FROM 'COMPANY' OR co->>'country' IS DISTINCT FROM 'PL' OR co->>'nip' IS DISTINCT FROM a->>'nip'
   OR co->>'krs'!~'^[0-9]{10}$' OR co->>'krs'='0000000000' OR co->>'regon'!~'^([0-9]{9}|[0-9]{14})$'
   OR jsonb_typeof(co->'legalName') IS DISTINCT FROM 'string' OR length(co->>'legalName') NOT BETWEEN 1 AND 300 OR co->>'legalName'~'[[:cntrl:]]'

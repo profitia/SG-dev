@@ -29,7 +29,7 @@ test('onboarding draft: real PostgreSQL self-scope, optimistic concurrency, dura
   const attempts=await Promise.allSettled([apiA.saveCurrentDraft(a.request('POST'),input),apiA.saveCurrentDraft(a.request('POST'),input)])
   assert.equal(attempts.filter(r=>r.status==='fulfilled').length,1)
   assert.equal(attempts.filter(r=>r.status==='rejected'&&r.reason.code==='PROFILE_VERSION_CONFLICT').length,1)
-  assert.deepEqual((await apiA.readCurrentDraft(a.request('GET'))).answers,{nip:'1234563218'})
+  assert.deepEqual((await apiA.readCurrentDraft(a.request('GET'))).answers,{nip:'1234563218',companySelection:null})
   assert.equal((await apiB.readCurrentDraft(b.request('GET'))).version,'0')
  })
  await t.test('each accepted answer resumes with its version; server-derived fields and ownership cannot be injected',async()=>{

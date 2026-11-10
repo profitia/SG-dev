@@ -5,7 +5,7 @@ import type {CompanyRecord} from './organisation-profile.mjs'
 export const ORGANISATION_BOOTSTRAP_CONTRACT:Readonly<{id:'profitia.organisation-bootstrap';version:'1.0.0'}>
 export const organisationBootstrapSchemaUrl:string
 export function organisationBootstrapSchemaDigest():string
-export type OrganisationCreationReceipt=Readonly<{status:'CREATED';organisationId:string;slug:string;activation:'PENDING_PACKAGE';commandId:string}>|Readonly<{status:'INCOMPLETE_DRAFT'|'COMPANY_LOOKUP_REQUIRED'|'ORGANISATION_ALREADY_EXISTS'|'SLUG_UNAVAILABLE'}>
+export type OrganisationCreationReceipt=Readonly<{status:'CREATED';organisationId:string;slug:string;activation:'PENDING_PACKAGE';commandId:string}>|Readonly<{status:'INCOMPLETE_DRAFT'|'COMPANY_LOOKUP_REQUIRED'|'COMPANY_CHANGED'|'ORGANISATION_ALREADY_EXISTS'|'SLUG_UNAVAILABLE'}>
 export interface StoredCompanyRecord{company:CompanyRecord;sourceRef:string;version:string}
 export function createOrganisationBootstrapBackend<Transaction extends object>(options:{
  client:ClerkIdentityClient;identityApplication:IdentityApplication;application:Application;binding:AccessStoreBinding
