@@ -1386,7 +1386,7 @@ test('ACG G1 review accepts only the two exact governance blobs on its own PR an
 
 test('M1 admits only the reviewed 63 source blobs through their actual three owner profiles',()=>{
  const review=ACG_M1_EXECUTION_REVIEW,files=Object.entries(review.entries).map(([filename,e])=>({filename,sha:e.sha,status:e.status})),p={...architecturePr(files.length),number:937,head:{...pr().head,ref:review.branch}}
- assert.equal(Object.keys(review.entries).length,63);assert.equal(review.sourceSha,'a0952d407c2ddf736684ebe6ed580b2835a3def8')
+ assert.equal(Object.keys(review.entries).length,63);assert.equal(review.sourceSha,'1f25d37589d0c8e0e0020f014ab9788b4a04417b')
  assert.deepEqual([...new Set(Object.values(review.entries).map(e=>e.projectKey))].sort(),['ARCHITECTURE','SG2','SRM'])
  assert.equal(selectCandidate(context(),p,other,{files}),other)
  assert.equal(selectCandidate(context(),{...p,base:{...p.base,sha:'f'.repeat(40)}},other,{files:[...files].reverse()}),other,'main refresh requires unchanged reviewed versions')
@@ -1418,7 +1418,7 @@ test('M1 fixed Root layout binds both real usage dependencies and cannot fall ba
 test('explicit current Root acceptance preserves the complete historical receipt and closes false activation claims',()=>{
  const r={contract:{id:'profitia.operation-context',version:'1.0.0',implementation:'1.0.0-candidate.16',sourceDigest:'a'.repeat(64)}}
  assert.equal(adoptedOperationContract(r),r.contract)
- const a={schemaVersion:'1.0',taskId:'SG2-ACG-M1-20261109',targetEnvironment:'development',scope:'OPTIONAL_ASSISTANT_SOURCE_NO_RUNTIME_ACTIVATION',rootContract:{...r.contract,sourceDigest:'b'.repeat(64)},rootProducer:{projectKey:'ARCHITECTURE',taskId:'ARCH-ACG-M1-EXECUTION-20261109',pullRequest:937,sourceSha:'7988f89d3aa8e32ac8a3929a3ab9e55a10243df2'},sdkDigests:{operationSourceDigest:'b'.repeat(64)},assistantOptedIn:false,sql030Installed:false,historyInstalled:false,grantsChanged:false,providerCallsPerformed:false,deploymentPerformed:false}
+ const a={schemaVersion:'1.0',taskId:'SG2-ACG-M1-20261109',targetEnvironment:'development',scope:'OPTIONAL_ASSISTANT_SOURCE_NO_RUNTIME_ACTIVATION',rootContract:{...r.contract,sourceDigest:'b'.repeat(64)},rootProducer:{projectKey:'ARCHITECTURE',taskId:'ARCH-ACG-M1-EXECUTION-20261109',pullRequest:937,sourceSha:'6a7863459977f5651bf30100935118e1613021fd'},sdkDigests:{operationSourceDigest:'b'.repeat(64)},assistantOptedIn:false,sql030Installed:false,historyInstalled:false,grantsChanged:false,providerCallsPerformed:false,deploymentPerformed:false}
  const current={...r,assistantM1SourceCompatibility:a};assert.equal(adoptedOperationContract(current),a.rootContract);assert.equal(current.contract.sourceDigest,'a'.repeat(64))
  for(const mutate of [x=>x.assistantOptedIn=true,x=>x.grantsChanged=true,x=>x.targetEnvironment='production',x=>x.rootProducer.sourceSha='0'.repeat(40),x=>x.rootContract.implementation='1.0.0-candidate.19',x=>x.sdkDigests.operationSourceDigest='f'.repeat(64)]){const changed=structuredClone(a);mutate(changed);rejection(()=>adoptedOperationContract({...r,assistantM1SourceCompatibility:changed}))}
 })

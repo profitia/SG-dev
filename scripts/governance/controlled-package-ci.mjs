@@ -3282,7 +3282,7 @@ export function assertAcgG1ReviewEntry(file,entry){
 
 
 // Owner-approved M1 dependency: closed blobs, modes and actual owner profiles.
-export const ACG_M1_EXECUTION_REVIEW=Object.freeze({prNumber:937,branch:'architecture/acg-m1-execution-20261109',sourceSha:'a0952d407c2ddf736684ebe6ed580b2835a3def8',baseSha:'f737c0228960c928d079b09a97056f60d433089a',entries:Object.freeze({
+export const ACG_M1_EXECUTION_REVIEW=Object.freeze({prNumber:937,branch:'architecture/acg-m1-execution-20261109',sourceSha:'1f25d37589d0c8e0e0020f014ab9788b4a04417b',baseSha:'adce82d074984743eb2f3c1cab10690fcc0aa0ff',entries:Object.freeze({
   ".github/workflows/assistant-context-gateway-ci.yml": {
     "sha": "f88119a3291fea0b448f89a184268b1f87c046a5",
     "status": "modified",
@@ -3298,14 +3298,14 @@ export const ACG_M1_EXECUTION_REVIEW=Object.freeze({prNumber:937,branch:'archite
     "owner": "Architecture Platform"
   },
   "apps/architecture-lab/assistant-m1-sdk-compatibility.json": {
-    "sha": "c676bd74579083a69565f44895379ab253351b2d",
+    "sha": "8b6ab7ad850431d622fc2254b50baab36e8d8198",
     "status": "added",
     "mode": "100644",
     "projectKey": "ARCHITECTURE",
     "owner": "Architecture Platform"
   },
   "apps/architecture-lab/assistant-m1-sdk-compatibility.mjs": {
-    "sha": "247957e63932d7eebc512509e478e69095230ae8",
+    "sha": "52a7cf3b58baa0ab655b301edbd498821ba611e9",
     "status": "added",
     "mode": "100644",
     "projectKey": "ARCHITECTURE",
@@ -3319,7 +3319,7 @@ export const ACG_M1_EXECUTION_REVIEW=Object.freeze({prNumber:937,branch:'archite
     "owner": "Architecture Platform"
   },
   "apps/newsfeed-runtime/operation-integration.json": {
-    "sha": "0961f878b0170c9bdfa5f525677fab98b01fcef6",
+    "sha": "d1cdd3cbca4e410dd89401902fd3ee0d9aa00149",
     "status": "modified",
     "mode": "100644",
     "projectKey": "ARCHITECTURE",
@@ -3333,7 +3333,7 @@ export const ACG_M1_EXECUTION_REVIEW=Object.freeze({prNumber:937,branch:'archite
     "owner": "Architecture Platform"
   },
   "apps/package-limits/migrations/004-assistant-usage.sql": {
-    "sha": "4508f43fe9b9c9659d4b79c369a8c9492431eb08",
+    "sha": "1c639f4aac951e8b14b74abcdf0bc6f4433e6607",
     "status": "modified",
     "mode": "100644",
     "projectKey": "ARCHITECTURE",
@@ -3347,14 +3347,14 @@ export const ACG_M1_EXECUTION_REVIEW=Object.freeze({prNumber:937,branch:'archite
     "owner": "Architecture Platform"
   },
   "apps/package-limits/test/database.test.mjs": {
-    "sha": "018ca78da77dd46a8a7a19c64e6cf797ed925f6a",
+    "sha": "4290b938c263b56c749eb2f613842b6bb2e439ae",
     "status": "modified",
     "mode": "100644",
     "projectKey": "ARCHITECTURE",
     "owner": "Architecture Platform"
   },
   "apps/platform-source-hub/scripts/ci-routing.mjs": {
-    "sha": "b9ea90981cbf49f3fa3c544ad1f17f3224038a3c",
+    "sha": "0a2ecc60a65d9c453bb038642fe369a17e7ad7ad",
     "status": "modified",
     "mode": "100644",
     "projectKey": "ARCHITECTURE",
@@ -3368,7 +3368,7 @@ export const ACG_M1_EXECUTION_REVIEW=Object.freeze({prNumber:937,branch:'archite
     "owner": "Architecture Platform"
   },
   "apps/sg-runtime/operation-integration.json": {
-    "sha": "5ce2d09f7656f5ec47efbba95aaee7bed5905e7d",
+    "sha": "9ddf935ac4e314c4fb20726c52e4d14e14b5306c",
     "status": "modified",
     "mode": "100644",
     "projectKey": "SG2",
@@ -3459,7 +3459,7 @@ export const ACG_M1_EXECUTION_REVIEW=Object.freeze({prNumber:937,branch:'archite
     "owner": "SG Runtime"
   },
   "apps/sg-runtime/tests/xray-fresh-performance-adoption.test.mjs": {
-    "sha": "45fa31a0d22320542c858a3e2a5bc3fb8273bcf0",
+    "sha": "29373faaaf2bed8df6ec7ea53f4e821a9b204d25",
     "status": "modified",
     "mode": "100644",
     "projectKey": "SG2",
@@ -3480,7 +3480,7 @@ export const ACG_M1_EXECUTION_REVIEW=Object.freeze({prNumber:937,branch:'archite
     "owner": "SRM Runtime"
   },
   "apps/srm/operation-integration.json": {
-    "sha": "e34b866d8837f5f24c01fcc782aadfb35ed11c43",
+    "sha": "895cdca5bce4940d3da12d01db040b7d01203203",
     "status": "modified",
     "mode": "100644",
     "projectKey": "SRM",
@@ -3620,7 +3620,7 @@ export const ACG_M1_EXECUTION_REVIEW=Object.freeze({prNumber:937,branch:'archite
     "owner": "Architecture Platform"
   },
   "packages/platform-contracts/migrations/access/030-assistant-operations.sql": {
-    "sha": "ba2bbc636d3f78ed0bdc712e91f6aeda9746d545",
+    "sha": "cd51f699b27b9be8a7a955b4acb6710b184c4b24",
     "status": "added",
     "mode": "100644",
     "projectKey": "ARCHITECTURE",
@@ -3683,7 +3683,7 @@ export const ACG_M1_EXECUTION_REVIEW=Object.freeze({prNumber:937,branch:'archite
     "owner": "Architecture Platform"
   },
   "packages/platform-contracts/test/assistant-native-postgres.test.mjs": {
-    "sha": "bc7a1db593f04e724bddac084ec0902b036bd7b0",
+    "sha": "e976e47a73ae76322747602f3c19892941fa1976",
     "status": "added",
     "mode": "100644",
     "projectKey": "ARCHITECTURE",
@@ -3898,7 +3898,7 @@ export function adoptedOperationContract(receipt){
  if(a.schemaVersion!=='1.0'||a.taskId!=='SG2-ACG-M1-20261109'||a.targetEnvironment!=='development'
   ||a.scope!=='OPTIONAL_ASSISTANT_SOURCE_NO_RUNTIME_ACTIVATION'
   ||a.rootProducer?.projectKey!=='ARCHITECTURE'||a.rootProducer?.taskId!=='ARCH-ACG-M1-EXECUTION-20261109'||a.rootProducer?.pullRequest!==937
-  ||a.rootProducer?.sourceSha!=='7988f89d3aa8e32ac8a3929a3ab9e55a10243df2'
+  ||a.rootProducer?.sourceSha!=='6a7863459977f5651bf30100935118e1613021fd'
   ||['assistantOptedIn','sql030Installed','historyInstalled','grantsChanged','providerCallsPerformed','deploymentPerformed'].some(k=>a[k]!==false))fail('ASSISTANT_SOURCE_RECEIPT_REJECTED')
  assertOperationContractMetadata(a.rootContract)
  if(['id','version','implementation'].some(k=>a.rootContract[k]!==receipt.contract[k])||a.rootContract.sourceDigest!==a.sdkDigests?.operationSourceDigest)fail('ASSISTANT_SOURCE_RECEIPT_REJECTED')
