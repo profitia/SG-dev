@@ -1,0 +1,50 @@
+{
+  "environment": "development",
+  "enabled": false,
+  "authorityDecisionRef": null,
+  "runtimeRole": "REQUIRES_EXACT_INSTALLATION_APPROVAL",
+  "definitions": [
+    {
+      "id": "oil-asphalt",
+      "profileVersion": "oil-v05-autonomous-1",
+      "revision": 1,
+      "schedule": {
+        "enabled": false,
+        "weekday": 2,
+        "localTime": "08:00",
+        "timezone": "Europe/Warsaw",
+        "catchUp": "LATEST_ONLY",
+        "graceMinutes": 15
+      }
+    }
+  ],
+  "profiles": {
+    "oil-v05-autonomous-1": {
+      "id": "oil-v05-autonomous-1",
+      "version": "oil-v05-autonomous-1",
+      "environment": "development",
+      "canonSha256": "5edb1848d3abd5b90ce7bcee2e894e764b354a6482665d8307e1f6d42a42ad41",
+      "model": "gpt-6.1-sol",
+      "reasoning": "high",
+      "budgetMicroUsd": 5000000,
+      "counterReservationMicroUsd": 100000,
+      "maximumInputTokens": 15000,
+      "maximumOutputTokens": 16000,
+      "maximumBodyBytes": 65536,
+      "timeoutMs": 600000,
+      "autoRetry": false,
+      "store": false,
+      "rawRetentionSeconds": 0
+    }
+  },
+  "pricing": {
+    "sourceRef": null,
+    "validUntil": null,
+    "inputMicroUsdPerToken": null,
+    "outputMicroUsdPerToken": null
+  },
+  "notes": [
+    "Budget values are candidates, not an owner cost authorization.",
+    "No credentials, SERVICE, Source grants, migration or recurring schedule is enabled by this file."
+  ]
+}

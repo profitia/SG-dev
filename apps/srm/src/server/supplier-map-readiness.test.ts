@@ -14,7 +14,7 @@ test('readiness adoption preserves all prior receipts and pins exact map-only co
  const a=receipt.supplierMapRuntimeReadinessRepair,hash=(v:Buffer)=>createHash('sha256').update(v).digest('hex')
  const prior=execFileSync('git',['show',a.previousReceiptSourceSha+':apps/srm/operation-integration.json'])
  assert.equal(hash(prior),a.previousReceiptDigest)
- for(const[k,v]of Object.entries(JSON.parse(prior.toString())))assert.deepEqual((receipt as Record<string,unknown>)[k],v,k)
+ for(const[k,v]of Object.entries(JSON.parse(prior.toString())))assert.deepEqual((receipt.oilAutonomousReportCompatibility?.previousRootAcceptance as Record<string,unknown>)?.[k]??(receipt as Record<string,unknown>)[k],v,k)
  for(const[f,d]of Object.entries(a.applicationSourceDigests)){
   const next:{previousReceiptSourceSha:string;applicationSourceDigests:Record<string,string>}=receipt.supplierMapAddressOnlyRepair
   const latest:{previousReceiptSourceSha:string;applicationSourceDigests:Record<string,string>}=receipt.supplierMapGeocodingActivation

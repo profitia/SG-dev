@@ -148,6 +148,10 @@
       "types": "./src/assistant-usage.d.mts",
       "import": "./src/assistant-usage.mjs",
       "require": "./src/assistant-usage.mjs"
+    },
+    "./model-execution": {
+      "types": "./src/model-execution.d.mts",
+      "import": "./src/model-execution.mjs"
     }
   },
   "scripts": {
