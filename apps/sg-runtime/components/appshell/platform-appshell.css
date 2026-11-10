@@ -174,3 +174,42 @@
 .appshell .srm-chat-history{flex:none;max-height:40%;overflow:auto;padding:var(--srm-space-base);border-bottom:1px solid var(--line)}
 .appshell .srm-chat-history ul{list-style:none;padding:0}
 .appshell .srm-chat-history li button{width:100%;text-align:start;background:var(--surface);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:var(--srm-space-small);margin-bottom:var(--srm-space-micro);overflow-wrap:anywhere}
+
+/* Assistant response Markdown: reuse AppShell tokens and contain wide content. */
+.appshell .srm-chat-turn{min-width:0;max-width:100%}
+.appshell .srm-chat-turn-assistant{flex:1}
+.appshell .srm-chat-markdown{min-width:0}
+.appshell .srm-chat-markdown>:first-child{margin-top:0}
+.appshell .srm-chat-markdown>:last-child{margin-bottom:0}
+.appshell .srm-chat-markdown p{margin:0 0 .75em;white-space:normal}
+.appshell .srm-chat-markdown :is(h1,h2,h3,h4,h5,h6){margin:1em 0 .5em;font-weight:650;line-height:1.4;color:var(--brand-dark)}
+.appshell .srm-chat-markdown h1{font-size:1.25em}
+.appshell .srm-chat-markdown h2{font-size:1.15em}
+.appshell .srm-chat-markdown :is(h3,h4,h5,h6){font-size:1em}
+.appshell .srm-chat-markdown :is(ul,ol){margin:.5em 0 .75em;padding-left:1.5em}
+.appshell .srm-chat-markdown ul{list-style:disc}
+.appshell .srm-chat-markdown ol{list-style:decimal}
+.appshell .srm-chat-markdown li+li{margin-top:.3em}
+.appshell .srm-chat-markdown li>p{margin-bottom:.3em}
+.appshell .srm-chat-markdown a{color:var(--brand);text-decoration:underline;text-underline-offset:.15em;overflow-wrap:anywhere}
+.appshell .srm-chat-markdown blockquote{margin:.75em 0;padding:.25em 0 .25em .75em;border-left:3px solid var(--line);color:var(--muted)}
+.appshell .srm-chat-markdown code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:.9em;padding:.1em .3em;border-radius:4px;background:var(--surface)}
+.appshell .srm-chat-markdown pre{max-width:100%;overflow-x:auto;margin:.75em 0;padding:.75em;border:1px solid var(--line);border-radius:8px;background:var(--surface);white-space:pre;overscroll-behavior-x:contain}
+.appshell .srm-chat-markdown pre code{padding:0;background:transparent;overflow-wrap:normal}
+.appshell .srm-chat-markdown hr{margin:1em 0;border:0;border-top:1px solid var(--line)}
+.appshell .srm-chat-table-scroll{width:100%;max-width:100%;overflow-x:auto;margin:.75em 0;overscroll-behavior-x:contain;scrollbar-width:thin}
+.appshell .srm-chat-table-scroll:focus-visible{outline:2px solid var(--brand-light);outline-offset:2px}
+.appshell .srm-chat-markdown table{width:100%;min-width:28rem;border-collapse:collapse;font-size:inherit;line-height:1.5}
+.appshell .srm-chat-markdown :is(th,td){padding:.5em .65em;border:1px solid var(--line);vertical-align:top;text-align:left;overflow-wrap:normal}
+.appshell .srm-chat-markdown th{background:var(--blue-soft);color:var(--brand-dark);font-weight:650}
+
+/* Canon 470946417440075776: Inter; T14 content, T02 metadata, T01 action. */
+.appshell .srm-chat-history{font-family:SpendGuruAppShellInter,Arial,sans-serif;font-size:.875rem;line-height:1.6}
+.appshell .srm-chat-history li{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:start;margin:.5rem 0;border:1px solid var(--line);border-radius:.5rem;background:var(--surface);overflow:hidden}
+.appshell .srm-chat-history li button{width:auto;margin:0;border:0;border-radius:0;background:transparent;font:inherit;min-height:2.75rem}
+.appshell .srm-chat-history .srm-chat-history-open{display:grid;gap:.25rem;min-width:0;width:100%;text-align:start;padding:.75rem}
+.appshell .srm-chat-history .srm-chat-history-title{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:.875rem;font-weight:400;line-height:1.6}
+.appshell .srm-chat-history time{font-size:.6875rem;font-weight:400;line-height:1.5;color:var(--muted);font-variant-numeric:tabular-nums}
+.appshell .srm-chat-history li .srm-chat-history-delete{font-size:.75rem;font-weight:500;line-height:1.5;padding:.75rem .5rem;color:var(--muted)}
+.appshell .srm-chat-history li button:hover{background:var(--blue-soft)}
+.appshell .srm-chat-history li button:focus-visible{outline:2px solid var(--brand-light);outline-offset:-3px}

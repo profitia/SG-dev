@@ -1,10 +1,26 @@
 import test from 'node:test'
+import {assistantMarkdownPredecessor} from './assistant-markdown-integrity.mjs'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import {execFileSync} from 'node:child_process'
 import {assistantM2Predecessor,oilReportTransportPredecessor,assistantIngressPredecessor,assistantOutputFencePredecessor,oilReportSerializationPredecessor,ASSISTANT_M2_PATHS,ASSISTANT_M2_PRODUCER_PATHS} from './assistant-m2-integrity.mjs'
 const root=new URL('../../../',import.meta.url),current=p=>readFileSync(new URL(p,root))
 const historical=(sha,p)=>execFileSync('git',['show',sha+':'+p],{cwd:root})
+test('Markdown presentation verifies every current file while preserving previous product acceptance',()=>{
+ const repair=assistantMarkdownPredecessor(current,historical);assert(repair)
+ for(const p of repair.manifest.changedSourcePaths)assert.throws(()=>assistantMarkdownPredecessor(f=>f===p?Buffer.concat([current(f),Buffer.from('UNACCEPTED')]):current(f),historical),p)
+ const file='apps/sg-runtime/assistant-markdown-integration.json'
+ for(const mutate of [r=>r.noAccessChange=false,r=>r.libraries['react-markdown']='99.0.0',r=>r.changedSourcePaths.push('apps/srm/unadmitted.ts'),r=>r.unadmitted=true]){
+  const receipt=JSON.parse(current(file));mutate(receipt)
+  assert.throws(()=>assistantMarkdownPredecessor(p=>p===file?Buffer.from(JSON.stringify(receipt)):current(p),historical))
+ }
+ const assistant='apps/sg-runtime/assistant-context-integration.json'
+ assert.deepEqual(current(assistant),historical(repair.manifest.previousSourceSha,assistant))
+ assert.throws(()=>assistantMarkdownPredecessor(p=>p===assistant?Buffer.concat([current(p),Buffer.from('UNACCEPTED')]):current(p),historical))
+ assert.throws(()=>repair.previousBytes(file),{code:'ENOENT'})
+ assert.equal(assistantMarkdownPredecessor(()=>{throw Object.assign(Error('ABSENT'),{code:'ENOENT'})},historical),null)
+ assert.throws(()=>assistantMarkdownPredecessor(()=>{throw Object.assign(Error('UNREADABLE'),{code:'EACCES'})},historical),{code:'EACCES'})
+})
 test('native SRM output correction is exact before preserving all earlier acceptance',()=>{
  const repair=assistantOutputFencePredecessor(current,historical);assert(repair)
  for(const p of repair.manifest.changedSourcePaths)assert.throws(()=>assistantOutputFencePredecessor(f=>f===p?Buffer.concat([current(f),Buffer.from('UNACCEPTED')]):current(f),historical),p)

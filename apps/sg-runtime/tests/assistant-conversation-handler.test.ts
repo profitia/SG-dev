@@ -70,3 +70,28 @@ test('malformed authority fields and replay commands cannot create a provider st
  f.replay();const replay=await f.execute();assert.equal(replay.response.status,409);assert.equal(f.generated(),0)
  assert.equal(f.calls.some(c=>c.payload?.kind==='GENERATE'),false)
 })
+test('history identifies conversations by a bounded first question without invoking the model',async()=>{
+ const f=fixture(),stamp='2026-11-10T12:34:56.789Z'
+ f.runtime.history.list=async()=>[{id,title:'Rozmowa 2026-11-10',updatedAt:stamp}]
+ f.runtime.history.load=async(_context:any,loadedId:string,previewOnly:boolean)=>{
+  assert.equal(loadedId,id);assert.equal(previewOnly,true)
+  return{id,revision:2,turns:[{commandId:randomUUID(),assistantMessageId:randomUUID(),status:'COMPLETE',message:'  SYNTHETIC pytanie\n o zakupach '+ '🙂'.repeat(180),response:'',sources:[],scopes:[]}]}
+ }
+ const response=await f.handlers.history(new Request('https://example.test')),body=await response.json()
+ assert.equal(response.status,200);assert.equal(response.headers.get('cache-control'),'private, no-store')
+ assert.match(body.items[0].title,/^SYNTHETIC pytanie o zakupach /);assert(body.items[0].title.endsWith('…'))
+ assert(body.items[0].title.length<=161);assert.doesNotMatch(body.items[0].title,/\p{Surrogate}/u);assert.equal(body.items[0].updatedAt,stamp)
+ assert.equal(f.generated(),0);assert.equal(f.calls.at(-1).payload.action,'PUBLISH')
+})
+test('history question previews retain current context redaction and final identity revocation',async()=>{
+ const f=fixture(),title='Rozmowa 2026-11-10'
+ f.runtime.history.list=async()=>[{id,title,updatedAt:'2026-11-10T12:34:56Z'}]
+ f.stored.turns=[{commandId:randomUUID(),assistantMessageId:randomUUID(),status:'COMPLETE',message:'FOREIGN_PREVIEW_SECRET',response:'',sources:[],scopes:[{organisationId:foreign,reference}]}]
+ let response=await f.handlers.history(new Request('https://example.test')),body=await response.text()
+ assert.equal(response.status,200);assert(!body.includes('FOREIGN_PREVIEW_SECRET'));assert(body.includes(title))
+ assert.equal(f.events.filter(e=>e.plan).length,0)
+ f.runtime.history.load=async()=>{f.revoked();return f.stored}
+ response=await f.handlers.history(new Request('https://example.test'));body=await response.text()
+ assert.equal(response.status,403);assert(!body.includes('FOREIGN_PREVIEW_SECRET'));assert(!body.includes(title))
+ assert.equal(f.generated(),0)
+})
