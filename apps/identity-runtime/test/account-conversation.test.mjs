@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { createClerkConversation, conversationClientScript } from '../dist/src/account-conversation.js'
+import { createClerkConversation, bindConversationCodeInput, conversationClientScript } from '../dist/src/account-conversation.js'
 import { conversationMarkup } from '../dist/src/account-visuals.js'
 function fixture(registration=true, overrides={}, ticket=null) {
  const calls=[], factors=[{strategy:'email_code',emailAddressId:'email_fixture'},{strategy:'password'}]
@@ -24,13 +24,13 @@ test('missing required provider fields and legal acceptance go to the official c
  const f=fixture(true,{createUp:()=>({status:'missing_requirements',missingFields:['legal_accepted']})});await registrationToCode(f);assert.equal(f.model.state.step,'challenge');assert.deepEqual(f.calls.map(x=>x[0]),['createUp']);assert.equal(f.model.state.complete,false)
 })
 test('email sign-in selects provider-issued email factor and waits for verified session',async()=>{
- const f=fixture(false);for(const x of ['female','email_code','synthetic@example.test'])await f.model.submit(x);assert.equal(f.model.state.step,'code');assert.deepEqual(f.calls.at(-1),['prepareIn',{strategy:'email_code',emailAddressId:'email_fixture'}]);await f.model.submit('654321');assert.deepEqual(f.calls.at(-2),['verifyIn',{strategy:'email_code',code:'654321'}]);assert.equal(f.model.state.complete,true)
+ const f=fixture(false);for(const x of ['email_code','synthetic@example.test'])await f.model.submit(x);assert.equal(f.model.state.step,'code');assert.deepEqual(f.calls.at(-1),['prepareIn',{strategy:'email_code',emailAddressId:'email_fixture'}]);await f.model.submit('654321');assert.deepEqual(f.calls.at(-2),['verifyIn',{strategy:'email_code',code:'654321'}]);assert.equal(f.model.state.complete,true)
 })
 test('password sign-in keeps password out of conversation state and delegates device/MFA challenge',async()=>{
- const f=fixture(false,{verifyIn:()=>({status:'needs_second_factor'})});for(const x of ['male','password','synthetic@example.test','sensitive fixture only'])await f.model.submit(x);assert.equal(f.model.state.step,'challenge');assert.equal(f.model.state.complete,false);assert(!JSON.stringify(f.model.state).includes('sensitive'));assert(!f.calls.some(x=>x[0]==='activate'));assert.deepEqual(f.calls.at(-1),['verifyIn',{strategy:'password',password:'sensitive fixture only'}])
+ const f=fixture(false,{verifyIn:()=>({status:'needs_second_factor'})});for(const x of ['password','synthetic@example.test','sensitive fixture only'])await f.model.submit(x);assert.equal(f.model.state.step,'challenge');assert.equal(f.model.state.complete,false);assert(!JSON.stringify(f.model.state).includes('sensitive'));assert(!f.calls.some(x=>x[0]==='activate'));assert.deepEqual(f.calls.at(-1),['verifyIn',{strategy:'password',password:'sensitive fixture only'}])
 })
 test('unsupported sign-in strategies cannot be locally treated as authenticated',async()=>{
- const f=fixture(false);f.sdk.client.signIn.supportedFirstFactors=[];for(const x of ['male','email_code','synthetic@example.test'])await f.model.submit(x);assert.equal(f.model.state.step,'challenge');assert(!f.calls.some(x=>x[0]==='activate'))
+ const f=fixture(false);f.sdk.client.signIn.supportedFirstFactors=[];for(const x of ['email_code','synthetic@example.test'])await f.model.submit(x);assert.equal(f.model.state.step,'challenge');assert(!f.calls.some(x=>x[0]==='activate'))
 })
 test('incomplete provider result with session id and complete result without id cannot activate',async()=>{
  for(const result of [{status:'needs_second_factor',createdSessionId:'sess_incomplete'},{status:'complete',createdSessionId:null}]){const f=fixture(true,{verifyUp:()=>result});await registrationToCode(f);await f.model.submit('123456');assert.equal(f.model.state.complete,false);assert(!f.calls.some(x=>x[0]==='activate'))}
@@ -44,8 +44,8 @@ test('provider activation failure never reports account ready',async()=>{
 test('resend remains provider-owned and contains no user supplied verification authority',async()=>{
  const f=fixture();await registrationToCode(f);await f.model.resend();assert.deepEqual(f.calls.at(-1),['prepareUp',{strategy:'email_code'}]);assert.equal(f.model.state.complete,false)
 })
-test('V2 keeps six secure code inputs, submit/Enter semantics, accessible send and avatar controls',()=>{
- const html=conversationMarkup(false,true,'https://identity.example/login','https://identity.example/registration');assert.equal((html.match(/class="sg-v2-code-input"/g)||[]).length,6);assert(html.includes('type="submit"'));assert(html.includes('aria-label="Wyślij"'));assert(html.includes('id="clerk-captcha"'));assert(html.includes('Zmień awatara'));assert(!/firma|branża|Organisation ID|Symulacja|dowolny kod/.test(html));assert(!/innerHTML|insertAdjacentHTML|localStorage|sessionStorage|console\./.test(conversationClientScript));assert(conversationClientScript.includes('row.animate'));assert(conversationClientScript.includes('prefers-reduced-motion'))
+test('conversation uses one code field, automatic submission and accessible avatar controls',()=>{
+ const html=conversationMarkup(false,true,'https://identity.example/login','https://identity.example/registration');assert.equal((html.match(/class="sg-v2-code-input"/g)||[]).length,0);assert.equal((html.match(/id="answer"/g)||[]).length,1);assert(conversationClientScript.includes('bindConversationCodeInput(input'));assert(conversationClientScript.includes("send.hidden = code"));assert(html.includes('type="submit"'));assert(html.includes('aria-label="Wyślij"'));assert(html.includes('id="clerk-captcha"'));assert(html.includes('Zmień awatara'));assert(!/firma|branża|Organisation ID|Symulacja|dowolny kod/.test(html));assert(!/innerHTML|insertAdjacentHTML|localStorage|sessionStorage|console\./.test(conversationClientScript));assert(conversationClientScript.includes('row.animate'));assert(conversationClientScript.includes('prefers-reduced-motion'))
 })
 
 test('registration choice remains presentation-only until provider completion for the same subject',async()=>{
@@ -88,4 +88,32 @@ test('existing account is directed to login; backend failure cannot fall back to
  const f=fixture();const model=createClerkConversation(f.sdk,true,null,{start:async()=>({status:'login'}),verify:async()=>{throw Error()}})
  for(const v of ['male','Adam','Testowy','synthetic@example.test'])await model.submit(v)
  assert.equal(model.state.step,'existing');assert.equal(model.state.complete,false);assert.equal(f.calls.length,0)
+})
+
+test('returning sign-in begins with authentication, never a required avatar choice',()=>{
+ const f=fixture(false);assert.equal(f.model.state.step,'method');assert.equal(f.model.state.avatarSex,null)
+ assert.equal(fixture(true).model.state.step,'avatar')
+})
+test('single-field OTP typing, formatted paste and autofill submit only complete codes through the provider',async()=>{
+ for(const values of [['1','12','123','1234','12345','123456'],['123 456'],['654321']]){
+  const f=fixture(false);for(const v of ['email_code','synthetic@example.test'])await f.model.submit(v)
+  const listeners={},input={value:'',addEventListener:(event,fn)=>listeners[event]=fn};let pending
+  bindConversationCodeInput(input,()=>f.model.state.step,code=>{pending=f.model.submit(code)})
+  for(const value of values){input.value=value;listeners.input()}
+  await pending;assert.equal(f.calls.filter(c=>c[0]==='verifyIn').length,1);assert.equal(f.model.state.complete,true)
+ }
+})
+test('OTP composition waits for completion and repeated events cannot create parallel provider attempts',async()=>{
+ let release;const f=fixture(false,{verifyIn:()=>new Promise(r=>release=r)})
+ for(const v of ['email_code','synthetic@example.test'])await f.model.submit(v)
+ const listeners={},input={value:'123456',addEventListener:(event,fn)=>listeners[event]=fn};let pending
+ bindConversationCodeInput(input,()=>f.model.state.step,code=>{const call=f.model.submit(code);if(!pending)pending=call})
+ listeners.compositionstart();listeners.input();assert.equal(f.calls.filter(c=>c[0]==='verifyIn').length,0)
+ listeners.compositionend();listeners.input();listeners.input();assert.equal(f.calls.filter(c=>c[0]==='verifyIn').length,1)
+ release({status:'complete',createdSessionId:'sess_fixture'});await pending
+})
+test('code input does not submit ordinary conversation text or incomplete codes',()=>{
+ const listeners={},input={value:'123456',addEventListener:(event,fn)=>listeners[event]=fn};let step='email',calls=0
+ bindConversationCodeInput(input,()=>step,()=>calls++)
+ listeners.input();assert.equal(calls,0);step='code';input.value='12x';listeners.input();assert.equal(input.value,'12');assert.equal(calls,0)
 })
