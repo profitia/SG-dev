@@ -1331,7 +1331,7 @@ function oilReportFixture(){
  const files=Object.entries(r.entries).map(([filename,e])=>({filename,sha:e.sha,status:e.status}));p.changed_files=files.length;return{p,files};
 }
 test('Oil report review accepts only the113 exact owner-routed files on existing PR923',()=>{
- const {p,files}=oilReportFixture();assert.equal(files.length,113);assert.equal(p.number,923);assert.equal(OIL_REPORT_E1_REVIEW.sourceSha,'9b820dcac90239f59a9cf5d875eb5497cb93be0e');assert(Object.isFrozen(OIL_REPORT_E1_REVIEW.entries));
+ const {p,files}=oilReportFixture();assert.equal(files.length,113);assert.equal(p.number,923);assert.equal(OIL_REPORT_E1_REVIEW.sourceSha,'fb7871486d69b8432315ae12e20d8768e2dcd2c0');assert(Object.isFrozen(OIL_REPORT_E1_REVIEW.entries));
  assert.equal(selectCandidate(context(),p,other,{files}),other);assertArchitectureFiles(p,files);
  assert.deepEqual([...new Set(Object.values(OIL_REPORT_E1_REVIEW.entries).map(e=>e.projectKey))].sort(),['ARCHITECTURE','SG2','SRM']);
 });
@@ -1342,7 +1342,7 @@ test('Oil review rejects missing, extra, altered, renamed, duplicate or borrowed
  rejection(()=>selectCandidate(context(),p,sha,{files}));
 });
 test('current Oil source cannot reuse the actual prior94,111,112 or prior113-file admission',()=>{
- for(const[commit,count]of [['400f3970fad60d1e24e20bf90e12e5e02bca4365',94],['71a9bec5970ac8c0db401044533e3cb37279db68',111],['58307056e55f218fe4501c4c1aa8715511bba523',112],['1a5d36da9e1ff0be118225613035f2b0070307a9',113]]){
+ for(const[commit,count]of [['400f3970fad60d1e24e20bf90e12e5e02bca4365',94],['71a9bec5970ac8c0db401044533e3cb37279db68',111],['58307056e55f218fe4501c4c1aa8715511bba523',112],['1a5d36da9e1ff0be118225613035f2b0070307a9',113],['140d567f47ce2eb7bd6ef42f9041def127733fe0',113]]){
   const text=execFileSync('git',['show',commit+':scripts/governance/controlled-package-ci.mjs'],{cwd:new URL('../../',import.meta.url),encoding:'utf8'});
   const start=text.indexOf('export const OIL_REPORT_E1_REVIEW='),end=text.indexOf('function isPinnedOilReportReview',start);
   const previous=[...text.slice(start,end).matchAll(/"([^"\n]+)":Object\.freeze\((\{[^\n]+\})\)/g)].map(m=>({filename:m[1],...JSON.parse(m[2])}));
