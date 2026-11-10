@@ -350,3 +350,25 @@ Requires an exact technical scope decision, a narrow CI PR with ordinary full
 CI and independent proof, its normal main acceptance, then full feature CI.
 Final feature SOURCE GO remains separate. No installation, grant, deployment,
 new budget, provider/model call or recurring schedule is admitted.
+
+## Oil X-Ray history continuation — proposed exact113 update (2026-11-10)
+
+PROPOSED_NOT_ACTIVE. Accepted CI PR949 and its original proof remain historical.
+The exact feature controlled run42788891173 passed1362 initial SG2 tests, then
+stopped at4 historical Root comparisons in the following X-Ray suite. The local
+correction keeps immutable previous Root records, selects the actual Oil SDK
+digests for current checks and renews only the two current consumer bindings.
+The existing six-case X-Ray suite and two M1/history mutation tests pass.
+
+Proposed source 9b820dcac90239f59a9cf5d875eb5497cb93be0e has the same113 owner-routed paths, statuses and
+modes as v7. Only3 existing blobs differ: the X-Ray adoption test and the paired
+SG2/SRM current metadata. SDK, runtime, producer, SQL, permissions, model,
+workflow and all earlier acceptances are unchanged. The exact closed review
+and its negative regression reject even the actual prior113-file inventory.
+All ECR Stage03 and other main controls remain unchanged.
+
+An exact publication/CI decision is required for these changed reviewed bytes.
+Use a narrow CI PR with normal full CI and original proof; accept only that CI
+policy, then validate the same PR923 at its current exact source. Final feature
+SOURCE GO remains separate. No exception, new PMOS begin, installation, grant,
+deployment, provider/model call or recurring activation is admitted.

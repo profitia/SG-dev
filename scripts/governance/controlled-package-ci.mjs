@@ -3147,7 +3147,7 @@ export function assertInsightsG1ReviewEntry(file,entry){
 }
 
 // PROPOSED closed review. No activation before owner acceptance and trusted-main CI.
-export const OIL_REPORT_E1_REVIEW=Object.freeze({prNumber:923,branch:'feat/oil-autonomous-runner-20261109',sourceSha:'5866c06f553328e93450b1c4d98d03706b4ccc55',baseSha:'3d1eb89373fbb1d6d358b7c0a40726a0fe8c5c62',entries:Object.freeze({
+export const OIL_REPORT_E1_REVIEW=Object.freeze({prNumber:923,branch:'feat/oil-autonomous-runner-20261109',sourceSha:'9b820dcac90239f59a9cf5d875eb5497cb93be0e',baseSha:'8880af0255574c8cd16ade81c641b6e0f2f44ca8',entries:Object.freeze({
  ".github/workflows/insights-ci.yml":Object.freeze({"sha":"3e8ab8967717514d90af839deb7ae57201234318","status":"added","mode":"100644","projectKey":"SG2","owner":"Insights Domain","surfaceId":"INSIGHTS-BASE-003"}),
  "Canon/registries/operation-access-matrix-v1.json":Object.freeze({"sha":"e2c9498fca2365568dca9c2c810e0946f96ccd30","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Governance Source Layer","surfaceId":"SG2-BASE-019"}),
  "apps/architecture-lab/assistant-m1-sdk-compatibility.mjs":Object.freeze({"sha":"c9dd58a6d55c142b61e0fda069db20589fdd29f4","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ARCH-BASE-002"}),
@@ -3195,7 +3195,7 @@ export const OIL_REPORT_E1_REVIEW=Object.freeze({prNumber:923,branch:'feat/oil-a
  "apps/sg-runtime/app/api/v1/insights/[...report]/route.ts":Object.freeze({"sha":"ff02910dc9f59e2b89480d4a425b02297fc2456e","status":"added","mode":"100644","projectKey":"SG2","owner":"SG Runtime","surfaceId":"SG2-BASE-001"}),
  "apps/sg-runtime/lib/insights/autonomous-runtime.ts":Object.freeze({"sha":"7bd06fb08602b39f2b2fcebe72f6a0cde756bafd","status":"added","mode":"100644","projectKey":"SG2","owner":"SG Runtime","surfaceId":"SG2-BASE-001"}),
  "apps/sg-runtime/next.config.mjs":Object.freeze({"sha":"3c885a2fd894dbbf7d681a5df0e6b1f83337fdd2","status":"modified","mode":"100644","projectKey":"SG2","owner":"SG Runtime","surfaceId":"SG2-BASE-001"}),
- "apps/sg-runtime/operation-integration.json":Object.freeze({"sha":"43db9a010066489aa007ba79905b2a9b7aefed03","status":"modified","mode":"100644","projectKey":"SG2","owner":"SG Runtime","surfaceId":"SG2-BASE-001"}),
+ "apps/sg-runtime/operation-integration.json":Object.freeze({"sha":"3b3a3592aecb354cbb477c3b19516166ef8e1dd5","status":"modified","mode":"100644","projectKey":"SG2","owner":"SG Runtime","surfaceId":"SG2-BASE-001"}),
  "apps/sg-runtime/package-lock.json":Object.freeze({"sha":"b53578686a6e4a4f789cb8f21382566d59a5f98a","status":"modified","mode":"100644","projectKey":"SG2","owner":"SG Runtime","surfaceId":"SG2-BASE-001"}),
  "apps/sg-runtime/package.json":Object.freeze({"sha":"1e6a9825259b3158d0011ab03720490158e42db6","status":"modified","mode":"100644","projectKey":"SG2","owner":"SG Runtime","surfaceId":"SG2-BASE-001"}),
  "apps/sg-runtime/scripts/bootstrap-insights-renderer.mjs":Object.freeze({"sha":"c0f98d601259227e995ac098adc7651243013f03","status":"added","mode":"100644","projectKey":"SG2","owner":"SG Runtime","surfaceId":"SG2-BASE-001"}),
@@ -3214,10 +3214,10 @@ export const OIL_REPORT_E1_REVIEW=Object.freeze({prNumber:923,branch:'feat/oil-a
  "apps/sg-runtime/tests/porr-demo-middleware.test.ts":Object.freeze({"sha":"d77079c20c85b099505e54c895fec66785315664","status":"modified","mode":"100644","projectKey":"SG2","owner":"SG Runtime","surfaceId":"SG2-BASE-001"}),
  "apps/sg-runtime/tests/private-host.integration.test.mjs":Object.freeze({"sha":"673503d7c6402aa426232ad76b2fa6a9b6f63d6c","status":"modified","mode":"100644","projectKey":"SG2","owner":"SG Runtime","surfaceId":"SG2-BASE-001"}),
  "apps/sg-runtime/tests/self-service-account.test.ts":Object.freeze({"sha":"98abc6c8f720939b41c66359e4ad3c64606cd1a7","status":"modified","mode":"100644","projectKey":"SG2","owner":"SG Runtime","surfaceId":"SG2-BASE-001"}),
- "apps/sg-runtime/tests/xray-fresh-performance-adoption.test.mjs":Object.freeze({"sha":"16ed059fee80ae9098d80931829d81ae770d22ff","status":"modified","mode":"100644","projectKey":"SG2","owner":"SG Runtime","surfaceId":"SG2-BASE-001"}),
+ "apps/sg-runtime/tests/xray-fresh-performance-adoption.test.mjs":Object.freeze({"sha":"506748ff0aabbd6bb54ab43acdc54fd792f1d267","status":"modified","mode":"100644","projectKey":"SG2","owner":"SG Runtime","surfaceId":"SG2-BASE-001"}),
  "apps/sg-runtime/tests/xray-gateway.test.ts":Object.freeze({"sha":"9f9b02b0eca8ca708a7e55311551ed9c335dfcbc","status":"modified","mode":"100644","projectKey":"SG2","owner":"SG Runtime","surfaceId":"SG2-BASE-001"}),
  "apps/srm/deployment/root-atomic-claim-targets.json":Object.freeze({"sha":"47dae24d46489e0883702eba7c620961286679d2","status":"modified","mode":"100644","projectKey":"SRM","owner":"SRM Runtime","surfaceId":"SG2-BASE-016"}),
- "apps/srm/operation-integration.json":Object.freeze({"sha":"014063c753f7f97bf178f1781242aa352a642ab1","status":"modified","mode":"100644","projectKey":"SRM","owner":"SRM Runtime","surfaceId":"SG2-BASE-016"}),
+ "apps/srm/operation-integration.json":Object.freeze({"sha":"11e2c2a2e299e1b5a9b35278211ce65a121d7994","status":"modified","mode":"100644","projectKey":"SRM","owner":"SRM Runtime","surfaceId":"SG2-BASE-016"}),
  "apps/srm/scripts/diagnostic-telemetry-adoption.test.mjs":Object.freeze({"sha":"d986d8e4f6df7b02ccfb0f29db6148bf13db06fb","status":"modified","mode":"100644","projectKey":"SRM","owner":"SRM Runtime","surfaceId":"SG2-BASE-016"}),
  "apps/srm/scripts/native-execution-adoption.test.mjs":Object.freeze({"sha":"a353e2a2161f21e049bfcf73bf0484feb7fb37d4","status":"modified","mode":"100644","projectKey":"SRM","owner":"SRM Runtime","surfaceId":"SG2-BASE-016"}),
  "apps/srm/scripts/operation-context.test.mjs":Object.freeze({"sha":"a72074e65a203cbee84f9811bcdbdfb1f47d50ad","status":"modified","mode":"100644","projectKey":"SRM","owner":"SRM Runtime","surfaceId":"SG2-BASE-016"}),
