@@ -10,9 +10,9 @@ test('SYNTHETIC_ONLY: saved searches persist immutable runs and permitted metada
  const f=await currentE1Fixture(),original=globalThis.fetch;globalThis.fetch=f.transport;t.after(async()=>{globalThis.fetch=original;await f.close();});
  const configuration={...f.bindings[2],runtimeRole:f.bindings[2].role,identityIssuer:f.issuer,authorizedParties:[f.origin],requiredProduct:'SPENDGURU',deploymentId:'SYNTHETIC_ONLY',configurationVersion:'fixture-v1'};
  await f.databases[2].query("SELECT pg_advisory_lock(hashtextextended('stage2a-test-role-setup',0))");
- try{if(!(await f.databases[2].query("SELECT 1 FROM pg_roles WHERE rolname='newsfeed_development_migrator'")).rowCount)await f.databases[2].query('CREATE ROLE newsfeed_development_migrator LOGIN NOINHERIT NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE NOREPLICATION');await f.databases[2].query('GRANT newsfeed_development_owner TO newsfeed_development_migrator');}
+ try{if(!(await f.databases[2].query("SELECT 1 FROM pg_roles WHERE rolname='newsfeed_development_migrator'")).rowCount)await f.databases[2].query("CREATE ROLE newsfeed_development_migrator LOGIN PASSWORD 'SYNTHETIC_ONLY_NOT_A_REAL_CREDENTIAL' NOINHERIT NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE NOREPLICATION");await f.databases[2].query('GRANT newsfeed_development_owner TO newsfeed_development_migrator');}
  finally{await f.databases[2].query("SELECT pg_advisory_unlock(hashtextextended('stage2a-test-role-setup',0))");}
- const migrator=new pg.Client({...f.databases[2].connectionParameters,user:'newsfeed_development_migrator'});await migrator.connect();
+ const migrator=new pg.Client({...f.databases[2].connectionParameters,user:'newsfeed_development_migrator',password:'SYNTHETIC_ONLY_NOT_A_REAL_CREDENTIAL',connectionTimeoutMillis:3000});await migrator.connect();
  try{
   await assert.rejects(()=>migrateSavedSearches(migrator,configuration,'wrong'),/EXACT_MIGRATION_DIGEST_REQUIRED/);
   await assert.rejects(()=>migrateSavedSearches(migrator,configuration,digest),/SHARED_READ_PROOF_VALIDATOR_GRANT_REQUIRED/);

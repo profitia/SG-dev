@@ -15,7 +15,7 @@
     "apps/newsfeed-runtime/src/server.mjs": "473c8ac63dffdc48e0a68397cf4cae33b1906208afc577f5851c16b5ff95d8fa",
     "apps/newsfeed-runtime/src/statistics.mjs": "0bcf3c0ef66f9c4a0fd8606de4e5393021ea9b3b699233c8e5a8018a89a54c1b",
     "apps/newsfeed-runtime/test/assistant-context.test.mjs": "14b486c41eab990d79960b4ecc459850432cdf788314341a2f3e23aad5c2e3ae",
-    "apps/newsfeed-runtime/test/saved-searches.test.mjs": "e55d897cc38f12759243727bf2aecc82947a1b603fa306a63631c0a0b49effb6",
+    "apps/newsfeed-runtime/test/saved-searches.test.mjs": "51f36490b192443ff18f668a5fd6747d8e4838bdfaef8c890ac664f325e91bab",
     "apps/newsfeed-runtime/test/scheduler.test.mjs": "dd6cbaea2d930c847671390ea424ec9fc051c99ba2b2012b867f5c6e08d340cc",
     "apps/newsfeed-runtime/test/statistics.test.mjs": "ffca9f0a27146d7a9f4d154f0a6c3a436f6e2bcbc7f3ff8e8b6d5cf498f9a47c",
     "packages/newsfeed-contracts/README.md": "52612c956226d6d0f467a143c5cdf51776f81ec4995041564abd93daee212f58",
