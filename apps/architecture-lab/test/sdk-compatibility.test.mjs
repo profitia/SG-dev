@@ -1,3 +1,4 @@
+import {calendarStoragePredecessor} from '../ecr-stage03-sdk-compatibility.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
@@ -26,6 +27,8 @@ test('assistant optional source closes the real SDK dependency graph and retains
 })
 
 function assertIntegratedSourceHistory(readCurrent=readSource){
+ const historical=(sha,p)=>execFileSync('git',['show',sha+':'+p],{cwd:root})
+ readCurrent=calendarStoragePredecessor(readCurrent,historical,(base,head)=>execFileSync('git',['diff','--name-only',base,head],{cwd:root,encoding:'utf8'}).trim().split('\n')).previousBytes
  const previous=assistantSdkPredecessor(readCurrent,(sha,p)=>execFileSync('git',['show',sha+':'+p],{cwd:root})).previousBytes
  let schedule=null
  if(JSON.parse(readCurrent('packages/platform-source-hub-contracts/package.json')).version==='1.5.0'){
