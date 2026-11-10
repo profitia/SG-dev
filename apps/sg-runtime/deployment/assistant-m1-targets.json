@@ -6,7 +6,7 @@
   "applicationId": "spendguru",
   "targetEnvironment": "development",
   "model": "gpt-5.6-luna",
-  "accessSchemaDigest": "19d4c19ae06ff4a8941a7de5a029f295b6e9f69cbc2997792258965ef77be81e",
+  "accessSchemaDigest": "4cf61265cbff5244dd48484e321f969cb10440d097fcc72d735a34ea861f74b2",
   "history": {
     "projectId": "autumn-waterfall-65938876",
     "branchId": "br-dry-hall-b294222f",
@@ -16,7 +16,7 @@
       "ep-muddy-pine-b22pdyqd-pooler.c-6.eu-central-1.aws.neon.tech"
     ],
     "runtimeRole": "sg2_assistant_history_runtime",
-    "schemaDigest": "823920c5b9b32235e139633299b1f900a432d17fdf22fbbfd946c9ac4aeb8b2e",
+    "schemaDigest": "caba0c7f5fa5f0b458471e57c8a46597b3177922c61199542fc58df6c732235c",
     "retentionDays": 30
   },
   "usage": {
@@ -28,7 +28,7 @@
       "ep-muddy-surf-b9vpyy2d-pooler.c-7.eu-central-1.aws.neon.tech"
     ],
     "runtimeRole": "profitia_limits_assistant_runtime",
-    "schemaDigest": "bb3cebc7930e460501c7064f1dca93108c0e323a5150fde7e09697a358b82670",
+    "schemaDigest": "cf8b4e404e0199c41381c14d1c55b7c3ae3414160c8fbd2a8aeeea3c514be802",
     "maximumNanoUsd": "5000000000",
     "maximumTokens": 200000,
     "pilotDays": 7,

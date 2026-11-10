@@ -55,7 +55,7 @@ export const ASSISTANT_M1_RUNTIME_PATHS=Object.freeze([
   "apps/sg-runtime/tests/xray-gateway.test.ts"
 ])
 export const ASSISTANT_M1_PEER_PATHS=Object.freeze(['apps/srm/scripts/source-hub-sdk-compatibility.mjs'])
-const priorSha='78f31ef4ae9d90603b506045a76ba1a44b6335fb',file='apps/sg-runtime/operation-integration.json'
+const priorSha='1f25d37589d0c8e0e0020f014ab9788b4a04417b',file='apps/sg-runtime/operation-integration.json'
 const hash=v=>createHash('sha256').update(v).digest('hex')
 export function assertAssistantM1Integrity(receipt,current,historical){
  const a=receipt.assistantM1RuntimeSourceCompatibility;assert(a,'explicit M1 runtime source receipt required')

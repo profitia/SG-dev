@@ -38,21 +38,21 @@ DO $rls$ DECLARE t text;BEGIN
  END LOOP;
 END $rls$;
 CREATE FUNCTION sg2_assistant_history.prune() RETURNS integer LANGUAGE plpgsql SECURITY DEFINER
-SET search_path=pg_catalog,sg2_assistant_history AS $fn$
+SET search_path=pg_catalog,sg2_assistant_history,pg_temp AS $fn$
 DECLARE removed integer;
 BEGIN
  IF session_user<>'sg2_assistant_history_runtime' THEN RAISE EXCEPTION 'HISTORY_UNAVAILABLE';END IF;
  DELETE FROM conversations WHERE expires_at<=clock_timestamp();GET DIAGNOSTICS removed=ROW_COUNT;RETURN removed;
 END $fn$;
 CREATE FUNCTION sg2_assistant_history.descriptor() RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER
-SET search_path=pg_catalog,sg2_assistant_history AS $fn$
+SET search_path=pg_catalog,sg2_assistant_history,pg_temp AS $fn$
 BEGIN
  IF session_user<>'sg2_assistant_history_runtime' OR current_database()<>'neondb' THEN RAISE EXCEPTION 'HISTORY_UNAVAILABLE';END IF;
  RETURN(SELECT jsonb_build_object('schemaDigest',schema_digest,'environment',environment,'applicationId',application_id,
   'projectId',project_id,'branchId',branch_id,'databaseName',current_database(),'runtimeRole',session_user,'userId',pilot_user_id) FROM installation WHERE singleton);
 END $fn$;
 CREATE FUNCTION sg2_assistant_history.apply(p_json text,p_proof text) RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER
-SET search_path=pg_catalog,sg2_assistant_history AS $fn$
+SET search_path=pg_catalog,sg2_assistant_history,pg_temp AS $fn$
 DECLARE i installation%ROWTYPE;d jsonb;actor uuid;action text;c conversations%ROWTYPE;t turns%ROWTYPE;result jsonb;keys text[];
 BEGIN
  IF session_user<>'sg2_assistant_history_runtime' OR current_database()<>'neondb' OR p_json IS NULL OR octet_length(p_json)>262144
