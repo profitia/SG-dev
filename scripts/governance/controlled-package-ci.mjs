@@ -4467,6 +4467,128 @@ function assertEcrStage0405Routes(files,repositoryRoot){
  if(profile.repository.slug!==REPOSITORY||!routing.ok||routing.results.length!==files.length||routing.results.some(r=>{const e=ECR_STAGE0405_REVIEW.entries[r.normalizedPath];return !e||r.resolutionStatus!=='RESOLVED'||r.highestSpecificityMatchCount!==1||r.projectBoundaryStatus!=='ALLOWED'||r.baselineClassification!=='ALIGNED'||r.currentOwner!==e.owner||r.matchedSurfaceId!==e.surfaceId}))fail('ECR_STAGE0405_ROUTING_REJECTED')
 }
 
+// Proposed source-only closure; exact owner acceptance is required before adoption.
+export const ECR_SOURCE_CONTINUITY_REVIEW=Object.freeze({"prNumber":972,"branch":"architecture/ecr-source-access-continuity-20261110","sourceSha":"a54d313b88a5d477613a17a38ac53e2d32e4dd32","baseSha":"84544da6be8f5a8cf62b63cdd07dfa4ff6926fdd",entries:Object.freeze({
+  "apps/architecture-lab/ecr-stage03-sdk-compatibility.mjs": {
+    "sha": "e7e89b0293300dfb10e9be9680a250d8a8ff5aa4",
+    "status": "modified",
+    "mode": "100644",
+    "projectKey": "ARCHITECTURE",
+    "owner": "Architecture Platform",
+    "surfaceId": "ARCH-BASE-002"
+  },
+  "apps/economic-calendar-runtime/README.md": {
+    "sha": "0728a5a11199b969055ef95e3b721f87db657158",
+    "status": "modified",
+    "mode": "100644",
+    "projectKey": "ARCHITECTURE",
+    "owner": "Architecture Platform",
+    "surfaceId": "ECR-BASE-001"
+  },
+  "apps/economic-calendar-runtime/operations/activate-source-access-continuity.sql": {
+    "sha": "178b734fa0b56fdf222139e11c87f8ba1f9cd39e",
+    "status": "added",
+    "mode": "100644",
+    "projectKey": "ARCHITECTURE",
+    "owner": "Architecture Platform",
+    "surfaceId": "ECR-BASE-001"
+  },
+  "apps/economic-calendar-runtime/operations/source-access-continuity-owner-plan.json": {
+    "sha": "0c0341afd6f6ebd277aa370c2560682fc651a2f7",
+    "status": "added",
+    "mode": "100644",
+    "projectKey": "ARCHITECTURE",
+    "owner": "Architecture Platform",
+    "surfaceId": "ECR-BASE-001"
+  },
+  "apps/economic-calendar-runtime/scripts/continuous.mjs": {
+    "sha": "e74b3ae63165250bd4cec2ded2171453af7356de",
+    "status": "modified",
+    "mode": "100644",
+    "projectKey": "ARCHITECTURE",
+    "owner": "Architecture Platform",
+    "surfaceId": "ECR-BASE-001"
+  },
+  "apps/economic-calendar-runtime/src/access-continuity.mjs": {
+    "sha": "b5b3be4d8b4b780bb2a38620438877420e7ea0dd",
+    "status": "added",
+    "mode": "100644",
+    "projectKey": "ARCHITECTURE",
+    "owner": "Architecture Platform",
+    "surfaceId": "ECR-BASE-001"
+  },
+  "apps/economic-calendar-runtime/src/continuous.mjs": {
+    "sha": "ef9732ec3aefc64dc59ba97c9bf23bd90642b1b3",
+    "status": "modified",
+    "mode": "100644",
+    "projectKey": "ARCHITECTURE",
+    "owner": "Architecture Platform",
+    "surfaceId": "ECR-BASE-001"
+  },
+  "apps/economic-calendar-runtime/test/access-continuity.test.mjs": {
+    "sha": "7fa8f4b0dd944fb903125d7d43a4fae6266eebfb",
+    "status": "added",
+    "mode": "100644",
+    "projectKey": "ARCHITECTURE",
+    "owner": "Architecture Platform",
+    "surfaceId": "ECR-BASE-001"
+  },
+  "apps/economic-calendar-runtime/test/source-access-continuity-postgres.test.mjs": {
+    "sha": "d39ce2adcebe8b5b64bd8994591b3af787b99825",
+    "status": "added",
+    "mode": "100644",
+    "projectKey": "ARCHITECTURE",
+    "owner": "Architecture Platform",
+    "surfaceId": "ECR-BASE-001"
+  },
+  "apps/platform-source-hub/migrations/010-ecr-source-continuity.sql": {
+    "sha": "7ed60424b1d7f1128bd82908377ff6d85a1b3bb1",
+    "status": "added",
+    "mode": "100644",
+    "projectKey": "ARCHITECTURE",
+    "owner": "Architecture Platform",
+    "surfaceId": "SOURCE-HUB-BASE-001"
+  },
+  "packages/platform-contracts/current-e1-authority/migrations/011-ecr-source-continuity.sql": {
+    "sha": "607339b1d10cfcd185a68e157487ac20ecf3214f",
+    "status": "added",
+    "mode": "100644",
+    "projectKey": "ARCHITECTURE",
+    "owner": "Architecture Platform",
+    "surfaceId": "ARCH-BASE-001"
+  },
+  "packages/platform-contracts/test/ecr-service-continuity.test.mjs": {
+    "sha": "a2fade7d9310f6e8ec847d921a24ce93c3d88d38",
+    "status": "modified",
+    "mode": "100644",
+    "projectKey": "ARCHITECTURE",
+    "owner": "Architecture Platform",
+    "surfaceId": "ARCH-BASE-001"
+  },
+  "packages/platform-source-hub-contracts/source-access-continuity-acceptance-v1.json": {
+    "sha": "9a7ee676ed4e3c0a992b3c16974f67f89e5bd8df",
+    "status": "added",
+    "mode": "100644",
+    "projectKey": "ARCHITECTURE",
+    "owner": "Architecture Platform",
+    "surfaceId": "SOURCE-HUB-BASE-002"
+  },
+  "scripts/governance/platform-source-hub-foundation.test.mjs": {
+    "sha": "7a1710d795c441cc80a468ce8a4f33191e899f5b",
+    "status": "modified",
+    "mode": "100644",
+    "projectKey": "ARCHITECTURE",
+    "owner": "Governance Source Layer",
+    "surfaceId": "SG2-BASE-020"
+  }
+})});
+function isPinnedEcrSourceContinuityReview(files){const r=ECR_SOURCE_CONTINUITY_REVIEW;return Array.isArray(files)&&files.length===Object.keys(r.entries).length&&new Set(files.map(f=>f?.filename)).size===files.length&&files.every(f=>{const e=r.entries[f?.filename];return Object.hasOwn(r.entries,f?.filename)&&e&&e.sha===f.sha&&e.status===f.status&&!Object.hasOwn(f,'previous_filename')})}
+export function assertEcrSourceContinuityReviewEntry(file,entry){const e=ECR_SOURCE_CONTINUITY_REVIEW.entries[file?.filename];if(!e||e.sha!==file.sha||entry!==e.mode+' blob '+file.sha+'\t'+file.filename+'\0')fail('ECR_SOURCE_CONTINUITY_FILE_MODE_REJECTED')}
+function assertEcrSourceContinuityRoutes(files,repositoryRoot){
+ const profile=resolveProjectProfile('ARCHITECTURE',repositoryRoot),routing=resolveProjectRouting({profile,targets:files.map(f=>f.filename),repositoryRoot})
+ if(profile.repository.slug!==REPOSITORY||!routing.ok||routing.results.length!==files.length||routing.results.some(r=>{const e=ECR_SOURCE_CONTINUITY_REVIEW.entries[r.normalizedPath];return !e||r.resolutionStatus!=='RESOLVED'||r.highestSpecificityMatchCount!==1||r.projectBoundaryStatus!=='ALLOWED'||r.baselineClassification!=='ALIGNED'||r.currentOwner!==e.owner||r.matchedSurfaceId!==e.surfaceId}))fail('ECR_SOURCE_CONTINUITY_ROUTING_REJECTED')
+}
+
 // Proposed exact Newsfeed saved-search review; activation requires the separate
 // controller owner decision and trusted-main acceptance. No generic app grant.
 export const NEWSFEED_SAVED_SEARCH_REVIEW=Object.freeze({"prNumber":969,"branch":"architecture/pi-end-to-end-20261110","sourceSha":"8fa964a159a468968293337c9d0c79c326cb84e5","baseSha":"1e0dc1ca4057437805561a841105e291d028df10","entries":Object.freeze({"apps/newsfeed-runtime/docs/development-v1.2.md":{"sha":"87bc9ff343f6726ab47454c81c03d529211e2ca7","status":"added","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"NEWSFEED-BASE-001"},"apps/newsfeed-runtime/migrations/003-saved-searches.sql":{"sha":"0da6a251c5af904f9784abf8e8ff80cedb36ab80","status":"added","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"NEWSFEED-BASE-001"},"apps/newsfeed-runtime/saved-searches-integration.json":{"sha":"af2cfcf9ce736a6beb53db85fe3ed41122886466","status":"added","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"NEWSFEED-BASE-001"},"apps/newsfeed-runtime/scripts/migrate.mjs":{"sha":"1f71ed906188dce57b7399d9c06b287485c8dfea","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"NEWSFEED-BASE-001"},"apps/newsfeed-runtime/src/main.mjs":{"sha":"40955da8f73a74de6db24fed2dde064cf757c040","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"NEWSFEED-BASE-001"},"apps/newsfeed-runtime/src/repository.mjs":{"sha":"94031e717c45686b1629bf627a5db97e4c2a4e48","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"NEWSFEED-BASE-001"},"apps/newsfeed-runtime/src/scheduler.mjs":{"sha":"3257d018479164eb64a17f0e748630cfbf93cab0","status":"added","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"NEWSFEED-BASE-001"},"apps/newsfeed-runtime/src/server.mjs":{"sha":"7cc04ec11fb1597cd4cdd5b447890207a5c538bf","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"NEWSFEED-BASE-001"},"apps/newsfeed-runtime/src/statistics.mjs":{"sha":"b4d4191a03c0c3e84dd463ca99bac2d4e136928a","status":"added","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"NEWSFEED-BASE-001"},"apps/newsfeed-runtime/test/assistant-context.test.mjs":{"sha":"49a071dc01e23c307900b6ad1af9dc7045f53125","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"NEWSFEED-BASE-001"},"apps/newsfeed-runtime/test/saved-searches.test.mjs":{"sha":"956f37e1045bd7d4b7cbacdf3358c96af1223755","status":"added","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"NEWSFEED-BASE-001"},"apps/newsfeed-runtime/test/scheduler.test.mjs":{"sha":"f89761ecabe037a0f7888c9ac4891d18769acdfa","status":"added","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"NEWSFEED-BASE-001"},"apps/newsfeed-runtime/test/statistics.test.mjs":{"sha":"cafa33a981d8e651e54fa9a791eabdb71536cbdb","status":"added","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"NEWSFEED-BASE-001"},"packages/newsfeed-contracts/README.md":{"sha":"0db6057f326af75520d0fcbf98b19fd04b410a46","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"NEWSFEED-BASE-002"},"packages/newsfeed-contracts/index.d.ts":{"sha":"25f0171264bcebfb678bf1dc61d5a75541040652","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"NEWSFEED-BASE-002"},"packages/newsfeed-contracts/index.mjs":{"sha":"a4be29318480ba5bc49a710f57058cdae8d994e5","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"NEWSFEED-BASE-002"},"packages/newsfeed-contracts/package.json":{"sha":"331c263ef3b32744d347c562e14486be54d8ce6f","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"NEWSFEED-BASE-002"},"scripts/governance/platform-source-hub-foundation.test.mjs":{"sha":"bb6eb6fcfc7465ed6b3b67fed4106ff155b51280","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Governance Source Layer","surfaceId":"SG2-BASE-020"}})})
@@ -4487,6 +4609,7 @@ export function assertArchitectureFiles(pr, files, repositoryRoot = controlRoot(
   if (!Number.isInteger(pr.changed_files) || pr.changed_files < 1 || pr.changed_files > 300 || !shaPattern.test(pr.base?.sha ?? '')
     || !Array.isArray(files) || files.length !== pr.changed_files) fail('ARCHITECTURE_FILE_LIST_REQUIRED')
   if(isPinnedNewsfeedSavedSearchReview(files)){assertNewsfeedSavedSearchRoutes(files,repositoryRoot);return}
+  if(isPinnedEcrSourceContinuityReview(files)){assertEcrSourceContinuityRoutes(files,repositoryRoot);return}
   if(isPinnedEcrStage0405Review(files)){assertEcrStage0405Routes(files,repositoryRoot);return}
   if(isPinnedEcrStage03Review(files)){assertEcrStage03Routes(files,repositoryRoot);return}
   if(isPinnedAcgM1Review(files)){assertAcgM1ReviewRoutes(files,repositoryRoot);return}
@@ -4528,6 +4651,7 @@ export function assertArchitectureFiles(pr, files, repositoryRoot = controlRoot(
 export function selectCandidate(context, pr, expectedSha, {files, repositoryRoot = controlRoot()} = {}) {
   const family = candidateFamily(context, pr, expectedSha)
   if(pr&&(pr.number===NEWSFEED_SAVED_SEARCH_REVIEW.prNumber||pr.head.ref===NEWSFEED_SAVED_SEARCH_REVIEW.branch||isPinnedNewsfeedSavedSearchReview(files))){if(family!=='ARCHITECTURE'||pr.number!==NEWSFEED_SAVED_SEARCH_REVIEW.prNumber||pr.head.ref!==NEWSFEED_SAVED_SEARCH_REVIEW.branch||!isPinnedNewsfeedSavedSearchReview(files))fail('NEWSFEED_SAVED_SEARCH_REVIEW_IDENTITY_REJECTED')}
+  if(pr&&(pr.number===ECR_SOURCE_CONTINUITY_REVIEW.prNumber||pr.head.ref===ECR_SOURCE_CONTINUITY_REVIEW.branch||isPinnedEcrSourceContinuityReview(files))){if(family!=='ARCHITECTURE'||pr.number!==ECR_SOURCE_CONTINUITY_REVIEW.prNumber||pr.head.ref!==ECR_SOURCE_CONTINUITY_REVIEW.branch||!isPinnedEcrSourceContinuityReview(files))fail('ECR_SOURCE_CONTINUITY_REVIEW_IDENTITY_REJECTED')}
   if(pr&&(pr.number===ECR_STAGE0405_REVIEW.prNumber||pr.head.ref===ECR_STAGE0405_REVIEW.branch||isPinnedEcrStage0405Review(files))){if(family!=='ARCHITECTURE'||pr.number!==ECR_STAGE0405_REVIEW.prNumber||pr.head.ref!==ECR_STAGE0405_REVIEW.branch||!isPinnedEcrStage0405Review(files))fail('ECR_STAGE0405_REVIEW_IDENTITY_REJECTED')}
   if(pr&&(pr.number===ECR_STAGE03_REVIEW.prNumber||pr.head.ref===ECR_STAGE03_REVIEW.branch||isPinnedEcrStage03Review(files))){if(family!=='ARCHITECTURE'||pr.number!==ECR_STAGE03_REVIEW.prNumber||pr.head.ref!==ECR_STAGE03_REVIEW.branch||!isPinnedEcrStage03Review(files))fail('ECR_STAGE03_REVIEW_IDENTITY_REJECTED')}
   if(pr&&(pr.number===ACG_M1_EXECUTION_REVIEW.prNumber||pr.head.ref===ACG_M1_EXECUTION_REVIEW.branch||isPinnedAcgM1Review(files))){if(family!=='ARCHITECTURE'||pr.number!==ACG_M1_EXECUTION_REVIEW.prNumber||pr.head.ref!==ACG_M1_EXECUTION_REVIEW.branch||!isPinnedAcgM1Review(files))fail('ACG_M1_REVIEW_IDENTITY_REJECTED')}
@@ -4609,6 +4733,7 @@ export function assertArchitectureCheckout(root, sha, admission, repositoryRoot 
     const entry = execFileSync('git', ['ls-tree', '-z', sha, '--', file.filename], {cwd: root, encoding: 'utf8'})
     if (file.status === 'removed') {if (entry !== '') fail('ARCHITECTURE_DIFF_MISMATCH'); continue}
     if(isPinnedNewsfeedSavedSearchReview(admission.files))assertNewsfeedSavedSearchReviewEntry(file,entry)
+    if(isPinnedEcrSourceContinuityReview(admission.files))assertEcrSourceContinuityReviewEntry(file,entry)
     if(isPinnedEcrStage0405Review(admission.files))assertEcrStage0405ReviewEntry(file,entry)
     if(isPinnedEcrStage03Review(admission.files))assertEcrStage03ReviewEntry(file,entry)
     if(isPinnedAcgM1Review(admission.files))assertAcgM1ReviewEntry(file,entry)
