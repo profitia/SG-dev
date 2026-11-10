@@ -7,6 +7,7 @@ export const SRM_ASSISTANT_M2_PATHS=Object.freeze([
  'apps/srm/deployment/private-runtime-targets.json',
  'apps/srm/scripts/assistant-m2-integrity.mjs',
  'apps/srm/scripts/source-hub-sdk-compatibility.mjs',
+ 'apps/srm/scripts/xray-workflow-contract.test.ts',
  'apps/srm/src/server/assistant-context-runtime.test.ts',
  'apps/srm/src/server/assistant-context-runtime.ts',
  'apps/srm/src/server/private-runtime.ts',
