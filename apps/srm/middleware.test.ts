@@ -4,6 +4,33 @@ import {NextRequest} from 'next/server'
 import {middleware} from './middleware'
 import {PRESENTATION_ROUTES} from '@profitia/srm-xray/full-report-operations'
 
+test('opted-in assistant stored GET reaches native E1, while other methods, adjacent paths and disabled modes stay closed',async()=>{
+ const names=['PROFITIA_AUTH_PROVIDER','PROFITIA_ASSISTANT_CONTEXT_PEER_READ_VERSION'] as const
+ const before=Object.fromEntries(names.map(name=>[name,process.env[name]]))
+ try{
+  process.env.PROFITIA_AUTH_PROVIDER='clerk'
+  process.env.PROFITIA_ASSISTANT_CONTEXT_PEER_READ_VERSION='srm-assistant-context-peer-development-v1'
+  const entry='https://srm.fixture.test/api/xray/assistant-context'
+  const response=await middleware(new NextRequest(entry,{method:'GET'}))
+  assert.equal(response.headers.get('x-middleware-next'),'1')
+  assert.equal(response.headers.get('cache-control'),'private, no-store')
+  assert.equal(response.headers.get('vary'),'Cookie, Authorization')
+  for(const method of ['POST','PUT','PATCH','DELETE','HEAD','OPTIONS']){
+   const denied=await middleware(new NextRequest(entry,{method}))
+   assert.equal(denied.status,401,method);assert.equal(denied.headers.get('x-middleware-next'),null)
+  }
+  for(const suffix of ['/extra','-extra','/'])assert.equal((await middleware(new NextRequest(entry+suffix))).status,401)
+  for(const value of [undefined,'unsupported-version']){
+   if(value===undefined)delete process.env.PROFITIA_ASSISTANT_CONTEXT_PEER_READ_VERSION
+   else process.env.PROFITIA_ASSISTANT_CONTEXT_PEER_READ_VERSION=value
+   assert.equal((await middleware(new NextRequest(entry))).status,401)
+  }
+  process.env.PROFITIA_ASSISTANT_CONTEXT_PEER_READ_VERSION='srm-assistant-context-peer-development-v1'
+  delete process.env.PROFITIA_AUTH_PROVIDER
+  assert.equal((await middleware(new NextRequest(entry))).status,401)
+ }finally{for(const name of names){if(before[name]===undefined)delete process.env[name];else process.env[name]=before[name]}}
+})
+
 test('only exact presentation routes and methods reach their signed current HUMAN backend in Clerk mode',async()=>{
  const before=process.env.PROFITIA_AUTH_PROVIDER
  try{
