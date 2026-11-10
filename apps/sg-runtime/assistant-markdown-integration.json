@@ -19,6 +19,7 @@
     "apps/sg-runtime/tests/assistant-m2-integrity.test.mjs",
     "apps/sg-runtime/tests/assistant-markdown-integrity.mjs",
     "apps/sg-runtime/tests/assistant-markdown.test.tsx",
+    "apps/sg-runtime/tests/pci-smart-integrity.test.mjs",
     "apps/sg-runtime/tests/procurement-insights-integrity.mjs"
   ],
   "sourceDigests": {
@@ -34,8 +35,9 @@
     "apps/sg-runtime/tests/assistant-history.test.ts": "666179bc68ad349f01b0ef225ddb9ff240186257ac7c4323afb273d44610479c",
     "apps/sg-runtime/tests/assistant-m2-integrity.mjs": "e3e866c64b5cb57fd9b0822f747ed7e4ff923a358532ec118373503732282596",
     "apps/sg-runtime/tests/assistant-m2-integrity.test.mjs": "9e2cd1afd3f7511ca5b76d41ca6c01465c43d1d531b9ff9e054d162bdce03a6d",
-    "apps/sg-runtime/tests/assistant-markdown-integrity.mjs": "2055e046cc57b69e747f3a513cba3ea916c352187f8aa5c20ac2a2ed96ba6332",
+    "apps/sg-runtime/tests/assistant-markdown-integrity.mjs": "665eff344b4a66531fc7c8da629260bc42cbcfb2b042174ddab0240f836eecfb",
     "apps/sg-runtime/tests/assistant-markdown.test.tsx": "b171ee8c76e92de85f6103bbb7fa9232a4f0cf2f456a4eff35853991ed624ab0",
+    "apps/sg-runtime/tests/pci-smart-integrity.test.mjs": "1c9510603a53719605cb185a4d82b8e2fbd945d0f18f21eeb428c9f29e63fa2b",
     "apps/sg-runtime/tests/procurement-insights-integrity.mjs": "b92572c97603125e1c462367d6f7c863bd5cd19481b79d3d3531d7cf367f3991"
   },
   "libraries": {
