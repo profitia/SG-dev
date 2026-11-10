@@ -6,6 +6,8 @@ const file='apps/srm/assistant-context-integration.json'
 export const SRM_ASSISTANT_M2_PATHS=Object.freeze([
  'apps/srm/app/api/xray/assistant-context/route.ts',
  'apps/srm/deployment/private-runtime-targets.json',
+ 'apps/srm/middleware.ts',
+ 'apps/srm/middleware.test.ts',
  'apps/srm/scripts/assistant-m2-integrity.mjs',
  'apps/srm/scripts/source-hub-sdk-compatibility.mjs',
  'apps/srm/scripts/xray-workflow-contract.test.ts',

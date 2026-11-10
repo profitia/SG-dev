@@ -19,6 +19,13 @@ export async function middleware(request: NextRequest) {
     Object.values(PRESENTATION_ROUTES).some(route => route.path === path && route.method === request.method)) {
     return NextResponse.next({ headers: { "Cache-Control": "private, no-store", "Vary": "Cookie, Authorization" } });
   }
+  // The opted-in assistant reader owns bearer verification and current E1.
+  // Delegate this exact stored GET only; no demo cookie or adjacent API is admitted.
+  if (path === "/api/xray/assistant-context" && request.method === "GET"
+    && process.env.PROFITIA_AUTH_PROVIDER === "clerk"
+    && process.env.PROFITIA_ASSISTANT_CONTEXT_PEER_READ_VERSION === "srm-assistant-context-peer-development-v1") {
+    return NextResponse.next({ headers: { "Cache-Control": "private, no-store", "Vary": "Cookie, Authorization" } });
+  }
   if (["/api/xray/admission", "/api/xray/report-data", "/api/xray/financial-excel", "/api/xray/financial-summary", "/api/xray/requests",
     "/api/xray/search", "/api/xray/lookup", "/api/xray/jdg", "/api/xray/jdg/kys",
     "/api/xray/kys", "/api/xray/kys/pesel", "/api/xray/kys/pdf", "/api/xray/kys/krs", "/api/xray/web-identity", "/api/supplier-locations",

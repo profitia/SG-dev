@@ -22,7 +22,9 @@
   "sourceDigests": {
     "apps/srm/app/api/xray/assistant-context/route.ts": "45e7ce0807ef650b36ee968cdcd46f36e4699b636a08bb1eb3a48a5d34e85bc6",
     "apps/srm/deployment/private-runtime-targets.json": "30e5bc1f8e74ff183fc2596678887e91611894de57d80557d24a0fe72208a9c3",
-    "apps/srm/scripts/assistant-m2-integrity.mjs": "da2f8ba454ff32795f1c3caa51fd4415bb4e67f514417b5bcca2350fe387fc73",
+    "apps/srm/middleware.test.ts": "ad613f838733aa46e61a30566d4c2399be688016a54c5b0c7863f87a35bf1eb3",
+    "apps/srm/middleware.ts": "cc36f20a698da6a95bcd2d7df587b2501baf9d5562b10e534d0d3d1a3d86f3a2",
+    "apps/srm/scripts/assistant-m2-integrity.mjs": "d0f5ba3ba190c3a802195cba445352d8ea3857da42e99e6fd14965df31eaae45",
     "apps/srm/scripts/source-hub-sdk-compatibility.mjs": "f85a5264fa04224160f0b4d5d95f02bacf5108499804ec8f96876e541095cf3a",
     "apps/srm/scripts/xray-workflow-contract.test.ts": "9d39818479a4db17a5c43073a1f0e1a6ca04c8576a5bb6512af6a520c26f5a27",
     "apps/srm/src/server/assistant-context-runtime.test.ts": "7ee14b67f5411dc0f69264349028e2a3363f4c35fb625ad7cc0412eef2fb7529",
