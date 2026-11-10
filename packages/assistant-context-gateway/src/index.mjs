@@ -2,6 +2,19 @@ import {createHash} from 'node:crypto'
 import {ASSISTANT_CONTEXT_CONTRACT,readChartReference,benchmarkSnapshotBytes,contextDate,CONTEXT_STATUSES} from '../../assistant-context-contracts/src/index.mjs'
 const freeze=v=>{if(v&&typeof v==='object'){Object.values(v).forEach(freeze);Object.freeze(v)}return v}
 const hash=v=>createHash('sha256').update(v).digest('hex')
+function historicalComparison(from,to){
+ const absoluteChange=to.value-from.value
+ return {from:from.date,to:to.date,fromValue:from.value,toValue:to.value,absoluteChange,
+  percentChange:from.value>0?absoluteChange/from.value*100:null}
+}
+function historicalChanges(observations){
+ const first=observations[0],last=observations.at(-1)
+ const recent=observations.filter(point=>point.date.slice(0,7)===last.date.slice(0,7))
+ const minimum=recent.reduce((a,b)=>b.value<a.value?b:a),maximum=recent.reduce((a,b)=>b.value>a.value?b:a)
+ return {entirePeriod:historicalComparison(first,last),finalCalendarMonth:{
+  period:historicalComparison(recent[0],last),latestVersusMinimum:historicalComparison(minimum,last),latestVersusMaximum:historicalComparison(maximum,last)},
+  meaning:'Deterministic changes in the verified stored historical observations. Absolute changes use the benchmark unit; percentChange is a percentage with a positive base, otherwise null. These calculations are not a forecast.'}
+}
 export const ASSISTANT_GATEWAY_CONTRACT=Object.freeze({id:'profitia.assistant-context-gateway',version:'1.1.0'})
 /** Producers own reads, data and E1 authorisation. The gateway never accepts a
  * client ALLOW, cached permission, browser values or provider credentials. */
@@ -55,7 +68,7 @@ export function createBenchmarkContextAdapter({readAuthorised}){
   return {...base,status:sampled.length<points.length||points.some(p=>p.value===null)||data.unit===null?'PARTIAL':'OK',
    selection:{seriesId:selected.seriesId,range:selected.range??'ALL',from:selected.from,to:selected.to,series:['historical']},
    data:{name:data.displayName,unit:data.unit,currency:data.currency,provider:data.source,frequency:data.frequency,
-    observationCount:points.length,sampled:sampled.length<points.length,points:sampled,minimum,maximum,
+    observationCount:points.length,sampled:sampled.length<points.length,points:sampled,minimum,maximum,historicalChanges:historicalChanges(numeric),
     meaning:'Stored historical benchmark observations; no Forecast Core forecast or guaranteed latest provider refresh.'}}
  }})
 }
