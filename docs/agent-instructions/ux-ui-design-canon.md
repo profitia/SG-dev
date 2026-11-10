@@ -297,3 +297,38 @@ Biblioteka jest centralnym źródłem definicji.
 Projekty korzystają z jej komponentów.
 Zmiany kanoniczne powinny propagować się do powiązanych projektów zgodnie z rzeczywistym mechanizmem współdzielenia.
 Nie budujemy zbioru podobnych ekranów. Budujemy jeden spójny i rozwijany system interfejsu użytkownika.
+
+
+## 13. Global Navigation — kanon zatwierdzony (2026-11-10)
+
+Źródło: MagicPath **Kanon SpendGuru**, rozdział 17 „Global Navigation”, projekt `460628300646219776`, komponent źródłowy `460628347660177408`, implementacja referencyjna `src/components/generated/CanonGlobalNavigation.tsx`. Wzorce GN-01–GN-06 i komponenty SRM-C107–SRM-C111 mają w aktualnym rejestrze MagicPath status **Kanon**.
+
+### 13.1. Rejestr wzorców
+
+| Wzorzec | Kanoniczne komponenty | Reguła zachowania |
+| --- | --- | --- |
+| GN-01 — Global Navigation / AppShell Navigation | SRM-C107 | Host dostarcza URL, breadcrumbs, stan historii i właściciela motywu. Moduły nie duplikują nagłówka. |
+| GN-02 — Biurko, Wstecz i Dalej | SRM-C108/C109 | Home otwiera biurko; Wstecz/Dalej prowadzą przez historię użytkownika, nigdy automatycznie do rodzica. |
+| GN-03 — Breadcrumbs i kompaktowy wariant mobile | SRM-C110/C111 | Hierarchia widoku niezależna od historii; otwarcie z deep linku odtwarza breadcrumbs. |
+| GN-04 — Motyw należy do AppShell | SRM-C95 | Jedna preferencja i stan hosta; zmiana nie resetuje danych. |
+| GN-05 — Ochrona niezapisanych zmian | Reuse istniejących | Zatrzymanie przejścia, potwierdzenie lub anulowanie. Dialog bez wpisu do historii. |
+| GN-06 — Klasyfikacja i właściciel wdrożenia | Reuse istniejących | Produkcja używa prawdziwego routingu i autoryzacji. Bez kopiowania syntetycznego stosu historii. |
+
+### 13.2. Reguły implementacji i zastosowania
+
+- **Właściciel nawigacji:** SpendGuru AppShell, nie każdy moduł z osobna. Moduły udostępniają strukturę breadcrumbs i kontekst widoku, ale nie wdrażają niezależnych pasków Global Navigation.
+- **Zasada selective placement:** globalną nawigację stosujemy tylko tam, gdzie jest uzasadniona w rzeczywistym flow i odpowiada roli widoku. Widoki wejścia/rejestracji, samodzielne demonstratory, osadzone panele i dedykowany SRM nie otrzymują automatycznie przycisku „Biurko” ani drugiego AppShell.
+- **Komponenty:** SRM-C107 (global navigation bar), SRM-C108 (powrót do biurka), SRM-C109 (wstecz/dalej), SRM-C110 (breadcrumbs desktop), SRM-C111 (breadcrumbs mobile). Ponownie wykorzystujemy SRM-C95 (motyw) i SRM-C27 (dialog ochrony niezapisanych zmian), wraz z istniejącymi przyciskami kanonicznymi.
+- **Historia ≠ hierarchia:** Wstecz/Dalej działają na rzeczywistej historii routera; breadcrumbs przedstawiają hierarchię widoku i odtwarzają się po deep-linku. Nie zastępuj historii nawigacją do rodzica i nie używaj syntetycznego stosu demonstratora w aplikacji.
+- **Niezapisane dane:** przejścia mogą wymagać blokady, anulowania lub potwierdzenia w kanonicznym dialogu; sam dialog nie tworzy dodatkowego wpisu historii.
+- **Responsywność:** wariant desktop i kompaktowy mobile, stany focus/hover/disabled, światło/ciemność, aria-current, dostępność klawiaturowa oraz brak poziomego przepełnienia.
+- **Minimalizm i flow:** przed dodaniem nawigacji przeanalizuj już istniejący nagłówek, przestrzeń roboczą, marginesy, padding, proporcje, typografię oraz kontekst. Usuwaj duplikaty i dostosowuj kompozycję tylko wtedy, gdy poprawia to czytelność. Zawsze zachowaj bieżące flow użytkownika.
+- **Kwalifikacja do produktu:** zatwierdzony UI i zachowania paska mogą być **PRODUKT**, lecz demonstrator, scenariusze i dane przykładowe pozostają **TYLKO PROJEKT/SYMULACJA** zgodnie z rozdziałem 16. Wdrożenie wymaga prawdziwego routingu, autoryzacji i kontraktów danych.
+- **Powiązania między projektami:** zgodność wyglądu, zapis identyfikatora SRM-Cxx lub podobieństwo plików nie dowodzą live binding. Zależność od centralnego źródła należy potwierdzić odczytem kodu / mechanizmu udostępniania MagicPath; gdy mechanizm nie obsługuje współdzielenia, aktualizacja musi być kontrolowana i raportowana, bez deklarowania automatycznej propagacji.
+
+### 13.3. Referencje i granice
+
+- Projekt źródłowy: https://www.magicpath.ai/files/460628300646219776 — rozdział 17.
+- Wzorzec referencyjny prezentuje stany i interakcje; nie oznacza, że odpowiadające mu moduły zostały już wdrożone.
+- GitHub jest źródłem technicznych kontraktów; ta zmiana dokumentu nie aktualizuje automatycznie projektów MagicPath ani aplikacji Development.
+- W przypadku konfliktu wariantów hosta: AppShell SpendGuru zarządza nawigacją globalną, samodzielny SRM zachowuje własny odpowiedni shell, a ekrany wejściowe nie dziedziczą wymuszonego paska globalnego.
