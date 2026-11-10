@@ -3282,7 +3282,7 @@ export function assertAcgG1ReviewEntry(file,entry){
 
 
 // Owner-approved M1 dependency: closed blobs, modes and actual owner profiles.
-export const ACG_M1_EXECUTION_REVIEW=Object.freeze({prNumber:937,branch:'architecture/acg-m1-execution-20261109',sourceSha:'a0952d407c2ddf736684ebe6ed580b2835a3def8',baseSha:'f737c0228960c928d079b09a97056f60d433089a',entries:Object.freeze({
+export const ACG_M1_EXECUTION_REVIEW=Object.freeze({prNumber:937,branch:'architecture/acg-m1-execution-20261109',sourceSha:'78f31ef4ae9d90603b506045a76ba1a44b6335fb',baseSha:'adce82d074984743eb2f3c1cab10690fcc0aa0ff',entries:Object.freeze({
   ".github/workflows/assistant-context-gateway-ci.yml": {
     "sha": "f88119a3291fea0b448f89a184268b1f87c046a5",
     "status": "modified",
@@ -3368,7 +3368,7 @@ export const ACG_M1_EXECUTION_REVIEW=Object.freeze({prNumber:937,branch:'archite
     "owner": "Architecture Platform"
   },
   "apps/sg-runtime/operation-integration.json": {
-    "sha": "5ce2d09f7656f5ec47efbba95aaee7bed5905e7d",
+    "sha": "a02815d6f52dc973cb9127e724eaf662321dc113",
     "status": "modified",
     "mode": "100644",
     "projectKey": "SG2",
@@ -3459,7 +3459,7 @@ export const ACG_M1_EXECUTION_REVIEW=Object.freeze({prNumber:937,branch:'archite
     "owner": "SG Runtime"
   },
   "apps/sg-runtime/tests/xray-fresh-performance-adoption.test.mjs": {
-    "sha": "45fa31a0d22320542c858a3e2a5bc3fb8273bcf0",
+    "sha": "29373faaaf2bed8df6ec7ea53f4e821a9b204d25",
     "status": "modified",
     "mode": "100644",
     "projectKey": "SG2",
@@ -3480,7 +3480,7 @@ export const ACG_M1_EXECUTION_REVIEW=Object.freeze({prNumber:937,branch:'archite
     "owner": "SRM Runtime"
   },
   "apps/srm/operation-integration.json": {
-    "sha": "e34b866d8837f5f24c01fcc782aadfb35ed11c43",
+    "sha": "dd271ad036aa792cbaa25f8a675d4859f23cdedf",
     "status": "modified",
     "mode": "100644",
     "projectKey": "SRM",
