@@ -5,7 +5,7 @@ const sha256=bytes=>createHash('sha256').update(bytes).digest('hex')
 export function calendarStoragePredecessor(readCurrent,historical,changedPaths){
  if(JSON.parse(readCurrent('packages/platform-source-hub-contracts/package.json')).version!=='1.6.0')return {record:null,previousBytes:readCurrent}
  const file='packages/platform-source-hub-contracts/calendar-storage-acceptance-v1.json',bytes=readCurrent(file)
- assert.equal(sha256(bytes),'8f37ea919782ab0814308e9dc801d641628e8be3bdb7021cff4e932e3e5f6cb1','exact Stage03 producer-consumer acceptance')
+ assert.equal(sha256(bytes),'bd57c9bc76749ef116e5b9bc703e3a92315a79767e754abffe4629b12cafbdab','exact Stage03 producer-consumer acceptance')
  const a=JSON.parse(bytes)
  assert.equal(a.schemaVersion,'ECRCalendarStorageSourceAcceptance/1');assert.equal(a.taskId,'ARCHITECTURE-ECR-STAGE03-DURABLE-STORE-20261110')
  assert.equal(a.hubContractsVersion,'1.6.0');assert.equal(a.scheduleProtocolVersion,'1.3.0');assert.equal(a.ecrContractVersion,'1.1.0')

@@ -1,7 +1,7 @@
 {
   "schemaVersion": "ECRCalendarStorageSourceAcceptance/1",
   "taskId": "ARCHITECTURE-ECR-STAGE03-DURABLE-STORE-20261110",
-  "sourceCandidateSha": "024a7ef1f94210c59637ac95f07d3ff46eacd49a",
+  "sourceCandidateSha": "29d4d0d843ca26de399e2324edb55e38698ce1e6",
   "baseSha": "3d1eb89373fbb1d6d358b7c0a40726a0fe8c5c62",
   "hubContractsVersion": "1.6.0",
   "scheduleProtocolVersion": "1.3.0",
@@ -26,7 +26,7 @@
     "apps/economic-calendar-runtime/src/server.mjs": "851eb80211781e145b3ed885d3394cf836e1c0a00e4046049df93a597c4331b1",
     "apps/economic-calendar-runtime/src/source-service.mjs": "62acb76f263a883718539eb669af0b7771c7b851c1f771a2f8b5869c59d4dbdd",
     "apps/economic-calendar-runtime/src/synchronization.mjs": "72da036810e6bc8e8bfb96e31206d3bb358c5a4341435362c98441b707380b54",
-    "apps/economic-calendar-runtime/test/schedule-storage.test.mjs": "5ba0ed383fc278c360d472668941fcdcb53d8daedec9f275bd16d76f91cf8e45",
+    "apps/economic-calendar-runtime/test/schedule-storage.test.mjs": "61c22e15cdccbed47a176d77b4bfccac76616c05ed1952cc285d6e7c45548d15",
     "apps/economic-calendar-runtime/test/source-service.test.mjs": "8730e3947ccf9464fa20bdb3d50810bf49ddce9fe44175bd69b9773c394ffb32",
     "apps/platform-source-hub/migrations/008-calendar-consumer-storage.sql": "efad2cfa39087ce920f7a8657c2f96f3caa8ae1d7201c628eec0c7d49a5977d4",
     "apps/platform-source-hub/operations/calendar-consumer-storage-owner-plan.json": "2a081808ca9f070b00edbf7c557fd0d9821a3bead491c1c19b43a699ad41ab9b",
