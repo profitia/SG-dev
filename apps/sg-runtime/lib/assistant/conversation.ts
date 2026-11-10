@@ -31,9 +31,9 @@ async function readTurn(request:Request):Promise<TurnRequest>{
  const v:unknown=JSON.parse(Buffer.concat(chunks).toString('utf8'))
  if(!record(v)||Object.keys(v).sort().join(',')!=='commandId,conversationId,locale,message,module,reference'
   ||v.conversationId!==null&&!uuid(v.conversationId)||!uuid(v.commandId)||typeof v.message!=='string'||!v.message.trim()||v.message.length>8000
-  ||!['pl','en'].includes(String(v.locale))||!['appshell','benchmark_finder','xray','adp'].includes(String(v.module)))throw Error('Invalid request')
+  ||!['pl','en'].includes(String(v.locale))||!['appshell','benchmark_finder','xray','adp','procurement_insights'].includes(String(v.module)))throw Error('Invalid request')
  const reference=readContextSelection(v.reference)
- if(reference!==null&&!(v.module==='benchmark_finder'&&reference.source==='BENCHMARK_CHART'||v.module==='xray'&&reference.source==='SRM_XRAY'))throw Error('Invalid active view')
+ if(reference!==null&&!(v.module==='benchmark_finder'&&reference.source==='BENCHMARK_CHART'||v.module==='xray'&&reference.source==='SRM_XRAY'||v.module==='procurement_insights'&&reference.source==='NEWSFEED'&&reference.observationId!==null&&reference.supplierNip===null))throw Error('Invalid active view')
  return {...v,message:v.message.trim(),reference} as TurnRequest
 }
 const sourceFingerprint=(contexts:readonly ContextEntry[])=>JSON.stringify(contexts.map(c=>[c.source,c.status,c.sourceVersion,c.selection]))

@@ -1,0 +1,36 @@
+{
+  "schemaVersion": "1.0",
+  "recordedAt": "2026-11-10T21:21:59.447Z",
+  "serviceId": "srv-dbcse6jrjlhs73eib3sg",
+  "workspaceId": "tea-d7lps8rbc2fs73cn80dg",
+  "environment": "development",
+  "sourceSha": "57b85043b0781faf9bebb0dee793c7003cf6bf09",
+  "liveDeployId": "dep-dbpkaiek1f9s73fdeo30",
+  "providerObservation": "Render get_service/get_deploy independently confirm this active live deployment; autoDeploy off.",
+  "changedSurfaceArtifact": {
+    "kind": "exact currently served account-client JavaScript",
+    "path": "Canon/evidence/2026-11-10-registration-stage-i-identity-account-client.js",
+    "url": "https://identity-runtime-development.onrender.com/account-client",
+    "sha256": "84c90d724bbebf00d01f875c945044a3d5cfbafd13197ace1d4fd5d905fccebf",
+    "bytes": 27297
+  },
+  "health": {
+    "path": "/healthz",
+    "status": 200
+  },
+  "configuration": {
+    "plannedChangeKeys": [
+      "IDENTITY_RUNTIME_EXPECTED_SOURCE_SHA"
+    ],
+    "unchanged": "Existing runtime flags, provider/SQL bindings, mail policies, keys and grants."
+  },
+  "dataChanges": "NONE for login corrections",
+  "recovery": {
+    "method": "Render native rollback to the retained deployment build; not rebuilding the old source.",
+    "targetDeployId": "dep-dbpkaiek1f9s73fdeo30",
+    "databaseRestoreRequired": false,
+    "eligibility": "Current live native build; verify fresh provider state before release/rollback.",
+    "limits": "The retained public client SHA256 is measured; this does not claim an exposed container image digest. Provider rollback retention and exact settings remain required.",
+    "executionStatus": "PROCEDURE_PREPARED_NOT_EXECUTED"
+  }
+}

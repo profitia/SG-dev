@@ -9,7 +9,7 @@ import {AssistantConversationView} from './assistant-conversation-view'
 import type {AssistantConversationSession} from './assistant-conversation-session'
 
 type AvatarChoice='male'|'female'|null|undefined
-type Props={locale:'pl'|'en';salutation?:string|null;avatar:AvatarChoice;theme:'light'|'dark';content?:AssistantContent;conversation?:AssistantConversationSession;onCollapsedChange?:(collapsed:boolean)=>void}
+type Props={locale:'pl'|'en';salutation?:string|null;avatar:AvatarChoice;theme:'light'|'dark';content?:AssistantContent;conversation?:AssistantConversationSession;notifications?:React.ReactNode;onCollapsedChange?:(collapsed:boolean)=>void}
 const noSubscription=()=>()=>{},noConversation=()=>null
 function Glyph({kind}:{kind:'collapse'|'expand'|'detach'|'attach'|'clock'|'more'|'send'}){
  return <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -30,7 +30,7 @@ function Avatar({choice,en,ribbon=false}:{choice:AvatarChoice;en:boolean;ribbon?
 }
 
 /** One host-owned widget; a report context label does not invoke a model or grant data access. */
-export function AssistantWidget({locale,salutation,avatar,theme,content=createAssistantContent(locale,salutation),conversation,onCollapsedChange}:Props){
+export function AssistantWidget({locale,salutation,avatar,theme,content=createAssistantContent(locale,salutation),conversation,notifications,onCollapsedChange}:Props){
  const en=locale==='en',id=useId(),inputId=useId(),[collapsed,setCollapsed]=useState(false)
  const state=useSyncExternalStore(conversation?.subscribe??noSubscription,conversation?.getSnapshot??noConversation,conversation?.getSnapshot??noConversation)
  const [historyOpen,setHistoryOpen]=useState(false)
@@ -49,6 +49,7 @@ export function AssistantWidget({locale,salutation,avatar,theme,content=createAs
    </div>
   </header>
   {!host.target&&content.contextLabel&&<p className="srm-chat-screen-context" aria-label={en?"Assistant context":"Kontekst asystenta"}>{content.contextLabel}</p>}
+  {notifications}
   {host.error&&<p className="srm-chat-window-error" role="alert">{host.error}</p>}
   {conversation&&state?<AssistantConversationView key={state.scopeRevision} session={conversation} state={state} en={en} historyOpen={historyOpen} onCloseHistory={()=>setHistoryOpen(false)} inputId={inputId} avatar={<Avatar choice={avatar} en={en}/>}/>:<><div className="srm-chat-transcript" role="region" aria-label={en?'SpendGuru introduction':'Powitanie SpendGuru'} tabIndex={0}>
    <div className="srm-chat-welcome-live"><div className="srm-chat-incoming"><Avatar choice={avatar} en={en}/>

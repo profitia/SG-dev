@@ -34,12 +34,15 @@ test('the adopted host enables only the ADP entry and keeps other business modul
  assert.doesNotMatch(html,/iframe|\/api\/|href="https?:/)
 })
 
-test('Procurement Insight uses the approved product copy and closed launch state in both locales',()=>{
- for(const [locale,copy] of [['pl',['BUDUJ WŁASNE RAPORTY','Łącz dane zakupowe w przejrzyste raporty. Odkrywaj trendy i wspieraj decyzje zakupowe.','Własne raporty','Analiza zakupów','Wkrótce']],['en',['BUILD YOUR OWN REPORTS','Turn procurement data into clear reports. Discover trends and support purchasing decisions.','Custom reports','Procurement analysis','Coming soon']]] as const){
+test('Procurement Insights uses the accepted Newsfeed/Reports copy and launches only with an explicit host callback',()=>{
+ for(const [locale,copy] of [['pl',['WIADOMOŚCI I ANALIZY','Wiadomości rynkowe i analizy zakupowe.','Newsfeed','Raporty','Wkrótce']],['en',['NEWS AND ANALYSIS','Market news and procurement analysis.','Newsfeed','Reports','Coming soon']]] as const){
   const html=view({locale,onLaunchAdp(){},onLaunchXray(){},onLaunchBenchmark(){}})
   for(const text of copy)assert(html.includes(text))
   assert.equal((html.match(/class="as-primary-button as-launch"[^>]*disabled=""/g)||[]).length,1)
-  assert.match(html,/disabled="" aria-label="Procurement Insight — /)
+  assert.match(html,/disabled="" aria-label="Procurement Insights — /)
+  const enabled=view({locale,onLaunchAdp(){},onLaunchXray(){},onLaunchBenchmark(){},onLaunchInsights(){}})
+  assert.equal((enabled.match(/class="as-primary-button as-launch"[^>]*disabled=""/g)||[]).length,0)
+  assert(enabled.includes((locale==='pl'?'Uruchom ':'Launch ')+'Procurement Insights'))
   assert.equal((html.match(/data-canon-id="SRM-C106"/g)||[]).length,4)
   assert.match(html,/data-canon-motion="SRM-B68 MOT-01"/)
  }
@@ -100,7 +103,7 @@ test('desk toggles preserve the single assistant, draft, focus, theme and existi
   assert.equal(document.querySelector('.srm-chat-slot'),original);assert.equal(document.querySelector('.srm-chat-motion'),panel);assert.equal(document.querySelector('textarea'),input);assert.equal(input.value,'Zachowany szkic')
   assert.equal(document.querySelectorAll('.as-assistant-portal').length,1);assert.equal(document.querySelectorAll('.srm-chat-slot').length,1)
   for(const name of ['Benchmark Finder','X-Ray Supplier Intelligence','ADP — Arkusz Danych Podstawowych'])await click(`[aria-label="Uruchom ${name}"]`)
-  await click('[aria-label="Procurement Insight — Wkrótce"]');assert.deepEqual(launched,['benchmark','xray','adp'])
+  await click('[aria-label="Procurement Insights — Wkrótce"]');assert.deepEqual(launched,['benchmark','xray','adp'])
  }finally{await React.act(async()=>root.unmount());dom.window.close();Object.assign(g,previous)}
 })
 test('avatar comes only from the saved explicit choice, independently of the salutation',()=>{
