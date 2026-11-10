@@ -26,8 +26,8 @@ test('additive producer has an independent fingerprint and preserves existing RE
  assert.deepEqual(READONLY_MISS_REPORT_CONTRACT,{id:'profitia.readonly-miss-report',version:'1.0.0'})
  assert.deepEqual(CURRENT_HUMAN_READ_CONTRACT,{id:'profitia.current-human-read',version:'1.1.0'})
  const accepted=JSON.parse(fs.readFileSync(new URL('../../../../apps/srm/operation-integration.json',import.meta.url)))
- assert.equal(await currentHumanReadSourceDigest(),accepted.assistantM1SourceCompatibility.sdkDigests.currentHumanReadSourceDigest)
- assert.equal(await privateOperationHostSourceDigest(),accepted.assistantM1SourceCompatibility.sdkDigests.privateOperationHostSourceDigest)
+ assert.equal(await currentHumanReadSourceDigest(),accepted.oilAutonomousReportCompatibility?.sdkDigests.currentHumanReadSourceDigest??accepted.assistantM1SourceCompatibility.sdkDigests.currentHumanReadSourceDigest)
+ assert.equal(await privateOperationHostSourceDigest(),accepted.oilAutonomousReportCompatibility?.sdkDigests.privateOperationHostSourceDigest??accepted.assistantM1SourceCompatibility.sdkDigests.privateOperationHostSourceDigest)
  assert.match(await readonlyMissReportSourceDigest(),/^[a-f0-9]{64}$/)
  assert.equal(createReadonlyMissReportHost(fixture()).hostContract,READONLY_MISS_REPORT_CONTRACT)
 })
@@ -35,7 +35,7 @@ test('accepted current FRESH 1.0 metadata and fingerprint remain unchanged besid
  const receipt=JSON.parse(fs.readFileSync(new URL('../../../../apps/srm/operation-integration.json',import.meta.url)))
  const accepted=receipt.freshCurrentBoundaryAdoption
  assert.deepEqual(CURRENT_FRESH_REPORT_CONTRACT,accepted.contract)
- assert.equal(await currentFreshReportSourceDigest(),receipt.assistantM1SourceCompatibility?.optionalPackageDigests.currentFreshReportSourceDigest ?? receipt.sourceHubMarketSymbolCompatibility?.optionalPackageDigests.currentFreshReportSourceDigest ?? receipt.sourceHubApiPathCompatibility?.optionalPackageDigests.currentFreshReportSourceDigest ?? accepted.optionalPackage.sourceDigest)
+ assert.equal(await currentFreshReportSourceDigest(),receipt.oilAutonomousReportCompatibility?.optionalPackageDigests.currentFreshReportSourceDigest??receipt.assistantM1SourceCompatibility?.optionalPackageDigests.currentFreshReportSourceDigest ?? receipt.sourceHubMarketSymbolCompatibility?.optionalPackageDigests.currentFreshReportSourceDigest ?? receipt.sourceHubApiPathCompatibility?.optionalPackageDigests.currentFreshReportSourceDigest ?? accepted.optionalPackage.sourceDigest)
  const metadata=JSON.parse(fs.readFileSync(new URL('../../current-fresh-report/package.json',import.meta.url)))
  assert.equal(metadata.name,'@profitia/platform-current-fresh-report');assert.equal(metadata.version,'1.0.0')
  for(const [name,digest] of Object.entries(accepted.producerSourceDigests)){

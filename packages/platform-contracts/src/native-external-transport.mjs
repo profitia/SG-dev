@@ -112,13 +112,14 @@ function boundedHeader(response,key,max){
  if(Buffer.byteLength(value)>max||/[\r\n\0]/.test(value))invalid()
  return value
 }
-export async function readNativeProviderResponse(response,{config,requestUrl,assertActive,signal,publicWeb=false}){
+export async function readNativeProviderResponse(response,{config,requestUrl,assertActive,signal,publicWeb=false,modelRequestId=false}){
  if(!(signal instanceof AbortSignal))invalid()
  assertActive()
  const headers={}
  const type=boundedHeader(response,'content-type',256),retry=boundedHeader(response,'retry-after',256)
  if(type!==null)headers['content-type']=type
  if(retry!==null)headers['retry-after']=retry
+ if(modelRequestId){const id=boundedHeader(response,'x-request-id',512);if(id!==null){if(!/^[\x21-\x7e]{1,512}$/.test(id))invalid();headers['x-request-id']=id}}
  if(response.status>=300&&response.status<400&&response.status!==304){
   if(![301,302,303,307,308].includes(response.status))invalid()
   const location=boundedHeader(response,'location',8192);if(!location)invalid()

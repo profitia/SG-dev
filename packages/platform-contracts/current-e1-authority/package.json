@@ -9,7 +9,8 @@
     "index.d.mts",
     "first-party.mjs",
     "first-party.d.mts",
-    "migrations"
+    "migrations",
+    "insights-service.mjs"
   ],
   "exports": {
     "./first-party": {
@@ -20,7 +21,8 @@
       "types": "./index.d.mts",
       "import": "./index.mjs",
       "require": "./index.mjs"
-    }
+    },
+    "./insights-service": "./insights-service.mjs"
   },
   "scripts": {
     "build": "node --check index.mjs"
