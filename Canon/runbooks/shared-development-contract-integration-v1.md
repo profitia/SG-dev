@@ -316,3 +316,27 @@ proof. Preserve all old receipts and fingerprints. No source installation,
 SERVICE grant, deployment, budget, provider call or scheduler activation is
 admitted. Final feature SOURCE GO remains separate after successful full CI.
 See `Canon/evidence/2026-11-09-oil-report-ci-consumer-closure.md`.
+
+## Oil consumer metadata regression — proposed continuation (2026-11-10)
+
+PROPOSED_NOT_ACTIVE. PR934 accepted the112-file review without activating product
+source. Actual controlled SG2 CI and SRM CI exposed stale current SDK/optional
+Root expectations after the accepted M1 integration. This continuation corrects
+the current-view selectors and test-source maps, while verifying the actual SDK,
+producer, schema, target roles and complete immutable acceptance history. It
+does not remove assertions or change runtime code, SQL, grants or access.
+
+The proposed113-file source is `5866c06f553328e93450b1c4d98d03706b4ccc55`. Relative to the refreshed112-file
+candidate f48d4cab, five existing consumer test files are corrected, one SRM
+optional Root test enters the closed review, and the three existing current
+metadata/helper files bind the exact bytes. All remaining source blobs stay
+identical. Historical M1/Root receipts and the existing closed112 review evidence
+remain unchanged. The CI delta changes only the closed review table, regression
+tests and this appended note. Current Root recognition, producer, model/SQL,
+private packages, M1/ACG/ECR controls and normal original-proof requirements
+remain unchanged. Earlier94/111/112 inventories are explicitly rejected.
+
+Requires an exact technical scope decision, a narrow CI PR with ordinary full
+CI and independent proof, its normal main acceptance, then full feature CI.
+Final feature SOURCE GO remains separate. No installation, grant, deployment,
+new budget, provider/model call or recurring schedule is admitted.
