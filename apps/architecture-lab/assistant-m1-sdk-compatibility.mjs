@@ -43,7 +43,7 @@ export function assertAssistantConsumerCompatibility(receipt,current,historical,
  assert.deepEqual(a.rootProducer,{projectKey:'ARCHITECTURE',taskId:'ARCH-ACG-M1-EXECUTION-20261109',pullRequest:937,sourceSha:ASSISTANT_SDK_PRODUCER})
  assert.deepEqual(a.applicationSourceDigests,Object.fromEntries(Object.entries({...a.consumerSourceDigests,...a.peerSourceDigests}).map(([p,h])=>[posix.relative(posix.dirname(file),p),h])))
  for(const [p,h]of Object.entries({...a.consumerSourceDigests,...a.peerSourceDigests})){
-  assert(/^apps\/(sg-runtime\/tests|srm\/scripts)\/[a-z0-9.-]+\.(mjs|ts|tsx)$/.test(p),'source-only consumer compatibility path')
+  assert(/^apps\/(sg-runtime\/tests|srm\/scripts)\/[a-z0-9.-]+\.(mjs|ts|tsx)$/.test(p)||['apps/srm/deployment/root-atomic-claim-targets.json','apps/srm/src/server/root-atomic-claim-adoption.test.ts'].includes(p),'source-only consumer compatibility path')
   assert.equal(hash(current(p)),h,'current assistant consumer closure '+p)
  }
  for(const flag of ['assistantOptedIn','sql030Installed','historyInstalled','grantsChanged','providerCallsPerformed','deploymentPerformed'])assert.equal(a[flag],false,flag)

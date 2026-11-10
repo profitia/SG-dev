@@ -717,10 +717,9 @@ test("Assistant M1 real SQL roles, atomic admission, actual settlement and uncer
   const org=randomUUID();
   await f.privateOwner.query('INSERT INTO profitia_access.organisations VALUES($1,$2,$3,1)',[org,'SYNTHETIC ASSISTANT ONLY','ACTIVE']);
   const draft=await write('package.create',{name:'SYNTHETIC Assistant M1',productId:'SPENDGURU'});
-  const limit=(metricId,value)=>({metricId,mode:'LIMITED',value,period:'CONTRACT',anchor:'ASSIGNMENT',timezone:'Europe/Warsaw',warningPercent:80});
+  const limit=(metricId,value)=>({metricId,mode:'LIMITED',value,period:'MONTH',anchor:'CALENDAR',timezone:'Europe/Warsaw',warningPercent:80});
   const saved=await write('draft.save',{versionId:draft.id,revision:draft.revision,snapshot:{name:'SYNTHETIC Assistant M1',
-    capabilities:['OPENAI_ASSISTANCE'],limits:[limit('OPENAI_INPUT_TOKENS','200000'),limit('OPENAI_OUTPUT_TOKENS','200000'),
-      limit('OPENAI_TOTAL_TOKENS','200000'),limit('OPENAI_API_COST_USD','5')],price:null,currency:null}});
+    capabilities:['OPENAI_ASSISTANCE'],limits:[limit('OPENAI_TOTAL_TOKENS','120000')],price:null,currency:null}});
   const version=await write('version.publish',{versionId:saved.id,revision:saved.revision});
   const assigned=await write('assignment.create',{organisationId:org,organisationVersion:1,packageVersionId:version.id,
     terms:terms(),overrides:[],reason:'SYNTHETIC Assistant M1 only',effectiveFrom:today});
@@ -754,6 +753,21 @@ test("Assistant M1 real SQL roles, atomic admission, actual settlement and uncer
     for(const sql of ['SELECT * FROM profitia_limits.assistant_installation','UPDATE profitia_limits.assistant_policy SET enabled=false','DELETE FROM profitia_limits.assistant_executions'])await assert.rejects(runtime.query(sql),e=>e.code==='42501');
     await assert.rejects(call({...command(),actorId:otherId}));
     await assert.rejects(call({...command(),assignmentRevision:assigned.revision+1}));
+    // A genuine existing monthly licence needs no fabricated input/output/cost
+    // package entitlement. Independent installation caps still constrain all.
+    // Prior-month settled usage stays in the global pilot budget, while the
+    // Warsaw monthly commercial limit starts a new period.
+    await f.owner.query(`INSERT INTO profitia_limits.assistant_executions(actor_id,organisation_id,command_id,decision_id,policy_id,policy_version,assignment_id,assignment_revision,
+      model,pricing_version,input_digest,input_bound,output_bound,reserved_nano_usd,status,dispatch_before,created_at,response_id,usage,settlement_digest)
+      VALUES($1,$2,$3,$4,$5,1,$6,$7,'gpt-5.6-luna','openai-gpt-5.6-luna-standard-20261109',$8,100000,2048,52457600,'SETTLED',now(),
+       ((date_trunc('month',now() AT TIME ZONE 'Europe/Warsaw')-interval '1 day') AT TIME ZONE 'Europe/Warsaw'),'resp_synthetic_past_month',$9,'synthetic_prior_month_only')`,
+      [actorId,org,randomUUID(),randomUUID(),policy.policy_id,assigned.id,assigned.revision,'b'.repeat(64),JSON.stringify({...actual,inputTokens:100000,outputTokens:0,totalTokens:100000,cachedTokens:0,cacheWriteTokens:0,cacheWrite30mTokens:0,cacheWrite12hTokens:0,reasoningTokens:0,nanoUsd:'20000000'})]);
+    for(const patch of [{period:'DAY'}, {timezone:'UTC'}, {anchor:'ASSIGNMENT'}, {mode:'UNKNOWN'}]){
+      const invalid={...limit('OPENAI_TOTAL_TOKENS','120000'),...patch};
+      await f.owner.query("UPDATE profitia_limits.assignments SET payload=jsonb_set(payload,'{overrides}',$1) WHERE id=$2",[JSON.stringify([invalid]),assigned.id]);
+      await assert.rejects(call(command()),e=>e.message==='POLICY_UNAVAILABLE');
+    }
+    await f.owner.query("UPDATE profitia_limits.assignments SET payload=jsonb_set(payload,'{overrides}','[]') WHERE id=$1",[assigned.id]);
     const one=command(),reserved=await call(one),replay=await call(one);
     assert.equal(reserved.status,'RESERVED');assert.equal(replay.status,'REPLAY');assert.equal(replay.executionId,reserved.executionId);
     await assert.rejects(call({...one,inputDigest:'b'.repeat(64)}),e=>e.message==='IDEMPOTENCY_CONFLICT');
@@ -763,7 +777,7 @@ test("Assistant M1 real SQL roles, atomic admission, actual settlement and uncer
     assert.equal((await call(settlement)).status,'SETTLED');assert.equal((await call(settlement)).status,'SETTLED');
     await assert.rejects(call({...settlement,usage:{...actual,nanoUsd:'0'}}));
     const count=(await f.owner.query("SELECT count(*)::int AS n,sum((usage->>'nanoUsd')::bigint)::text AS cost FROM profitia_limits.assistant_executions WHERE status='SETTLED'")).rows[0];
-    assert.equal(count.n,1);assert.equal(count.cost,'444000');
+    assert.equal(count.n,2);assert.equal(count.cost,'20444000');
     const two=command(),pending=await call(two),pendingRef={executionId:pending.executionId,commandId:two.commandId};
     await call({action:'DISPATCH',...pendingRef});await call({action:'PENDING',...pendingRef,reason:'INTERRUPTED'});
     await assert.rejects(call({action:'RELEASE',...pendingRef}));
@@ -776,7 +790,7 @@ test("Assistant M1 real SQL roles, atomic admission, actual settlement and uncer
     assert.equal((await call({action:'RELEASE',executionId:unused.executionId,commandId:releasedCommand.commandId})).status,'RELEASED');
     await assert.rejects(call({action:'DISPATCH',executionId:unused.executionId,commandId:releasedCommand.commandId}));
     // One remaining reservation fits; two simultaneous requests cannot both win.
-    await f.owner.query('UPDATE profitia_limits.assistant_installation SET maximum_tokens=$1',[1200+2*(12000+2048)]);
+    await f.owner.query('UPDATE profitia_limits.assistant_installation SET maximum_tokens=$1',[100000+1200+2*(12000+2048)]);
     const races=await Promise.allSettled([call(command()),call(command())]);
     assert.equal(races.filter(r=>r.status==='fulfilled').length,1);assert.equal(races.filter(r=>r.status==='rejected').length,1);
     assert.equal(races.find(r=>r.status==='rejected').reason.message,'LIMIT_EXCEEDED');

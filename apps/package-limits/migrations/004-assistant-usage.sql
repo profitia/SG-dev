@@ -65,6 +65,7 @@ DECLARE d jsonb;i assistant_installation%ROWTYPE;p assistant_policy%ROWTYPE;a as
  e assistant_executions%ROWTYPE;v_action text;v_input integer;v_output integer;v_cost bigint;
  used_cost numeric;used_tokens numeric;receipt jsonb;u jsonb;metric text;limit_value jsonb;consumed numeric;required numeric;
  cached bigint;written bigint;write30 bigint;write12 bigint;reasoning bigint;uncached bigint;usage_digest text;expected_keys text[];
+period_start timestamptz;period_end timestamptz;
 BEGIN
  IF session_user<>'profitia_limits_assistant_runtime'
  OR EXISTS(SELECT 1 FROM pg_roles WHERE rolname=session_user AND (NOT rolcanlogin OR rolsuper OR rolbypassrls OR rolcreatedb OR rolcreaterole OR rolinherit))
@@ -121,14 +122,22 @@ BEGIN
    coalesce(sum(CASE WHEN status='SETTLED' THEN (usage->>'totalTokens')::numeric ELSE input_bound+output_bound END),0)
    INTO used_cost,used_tokens FROM assistant_executions WHERE status<>'RELEASED';
   IF used_cost+v_cost>i.maximum_nano_usd OR used_tokens+v_input+v_output>i.maximum_tokens THEN RAISE EXCEPTION 'LIMIT_EXCEEDED';END IF;
-  -- This first adapter accepts explicit contract-period package limits only.
-  -- Other periods/unknown metrics fail closed rather than resetting usage.
+  -- Preserve the existing commercial assignment and overrides. Pilot bounds
+  -- independently cap every token category and cost, including when the
+  -- existing licence specifies only total tokens per Warsaw calendar month.
   FOREACH metric IN ARRAY ARRAY['OPENAI_INPUT_TOKENS','OPENAI_OUTPUT_TOKENS','OPENAI_TOTAL_TOKENS','OPENAI_API_COST_USD','OPENAI_CACHED_TOKENS','OPENAI_REASONING_TOKENS','OPENAI_CACHE_WRITE_TOKENS'] LOOP
    SELECT value INTO limit_value FROM jsonb_array_elements(coalesce(a.payload->'overrides','[]'::jsonb)) WHERE value->>'metricId'=metric;
    IF limit_value IS NULL THEN SELECT value INTO limit_value FROM jsonb_array_elements(a.payload->'packageSnapshot'->'limits') WHERE value->>'metricId'=metric;END IF;
-   IF limit_value IS NULL AND metric IN('OPENAI_INPUT_TOKENS','OPENAI_OUTPUT_TOKENS','OPENAI_TOTAL_TOKENS','OPENAI_API_COST_USD')
-    OR limit_value IS NOT NULL AND (coalesce(limit_value->>'mode','') NOT IN('LIMITED','UNMETERED') OR limit_value->>'period' IS DISTINCT FROM 'CONTRACT')
+   IF limit_value IS NULL AND metric='OPENAI_TOTAL_TOKENS'
+    OR limit_value IS NOT NULL AND (coalesce(limit_value->>'mode','') NOT IN('LIMITED','UNMETERED')
+     OR limit_value->>'timezone' IS DISTINCT FROM 'Europe/Warsaw'
+     OR NOT(coalesce(limit_value->>'period'='CONTRACT' AND limit_value->>'anchor'='ASSIGNMENT',false)
+      OR coalesce(limit_value->>'period'='MONTH' AND limit_value->>'anchor'='CALENDAR',false)))
    THEN RAISE EXCEPTION 'POLICY_UNAVAILABLE';END IF;
+   period_start:=CASE WHEN limit_value->>'period'='MONTH'
+    THEN date_trunc('month',clock_timestamp() AT TIME ZONE 'Europe/Warsaw') AT TIME ZONE 'Europe/Warsaw' ELSE a.active_from END;
+   period_end:=CASE WHEN limit_value->>'period'='MONTH'
+    THEN (date_trunc('month',clock_timestamp() AT TIME ZONE 'Europe/Warsaw')+interval '1 month') AT TIME ZONE 'Europe/Warsaw' ELSE a.active_until END;
    IF limit_value->>'mode'='LIMITED' THEN
     required:=CASE metric WHEN 'OPENAI_API_COST_USD' THEN v_cost WHEN 'OPENAI_OUTPUT_TOKENS' THEN v_output
      WHEN 'OPENAI_REASONING_TOKENS' THEN v_output WHEN 'OPENAI_TOTAL_TOKENS' THEN v_input+v_output ELSE v_input END;
@@ -139,7 +148,8 @@ BEGIN
      ELSE (usage->>'cacheWriteTokens')::numeric END ELSE CASE metric WHEN 'OPENAI_API_COST_USD' THEN reserved_nano_usd
      WHEN 'OPENAI_OUTPUT_TOKENS' THEN output_bound WHEN 'OPENAI_REASONING_TOKENS' THEN output_bound
      WHEN 'OPENAI_TOTAL_TOKENS' THEN input_bound+output_bound ELSE input_bound END END),0)
-     INTO consumed FROM assistant_executions WHERE assignment_id=a.id AND status<>'RELEASED';
+     INTO consumed FROM assistant_executions WHERE assignment_id=a.id AND status<>'RELEASED'
+      AND (status<>'SETTLED' OR created_at>=period_start AND created_at<period_end);
     IF consumed+required>(limit_value->>'value')::numeric*(CASE WHEN metric='OPENAI_API_COST_USD' THEN 1000000000 ELSE 1 END) THEN RAISE EXCEPTION 'LIMIT_EXCEEDED';END IF;
    END IF;
    limit_value:=NULL;

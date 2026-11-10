@@ -275,3 +275,13 @@ provenance and handoffs live only in remote PHR under
 `reports/2026/11/09/ARCHITECTURE/ARCH-ACG-M1-CI-20261109/`.
 The existing `sg2/` bootstrap transport namespace does not select ownership:
 this task and every changed path remain ARCHITECTURE/Governance Source Layer.
+
+## Assistant Context Gateway M1 — bounded source admission (2026-11-10)
+
+The owner accepted the complete M1 decision in PHR (`reports/2026/11/09/SG2/SG2-ACG-M1-20261109/OWNER-APPROVAL.md`). The coordinated dependency review binds PR937, branch `architecture/acg-m1-execution-20261109`, source `763be8d4c140bed05c9ccda0c0e05828c29fabd3` over `b39fcc6f99ce6e06184080e5eaf5e6e4c7e120b5`, and exactly 52 regular-file blob/status/mode/actual-owner bindings. Architecture, SG2 and SRM retain separate profiles and tasks; receiving dependency PRs938 and939 retain their respective ownership. A main refresh may preserve only the identical reviewed versions. No generic package, application or workflow path is admitted.
+
+The default Root remains candidate16 and the explicit assistant extension is candidate20. Root provenance now closes over the two fixed imported assistant-usage implementation/type files when the exact assistant declaration is present; an imported dependency cannot fall back to the older eight-file closure. A separately named current acceptance binds those real imported bytes while preserving the complete historical receipt unchanged. Controlled proof and public proof verification use that explicit current contract.
+
+CIC analytical consumption is restricted to the single published `@profitia/cic-core`1.3.0 artifact, its exact registry URL and SHA512 integrity. Advisory Widget and Procurement pins, the three allowed private package names, the sole `read:packages` scope, owner/main/environment fences, clean ignore-scripts installation and removal of credentials before candidate execution are preserved. No alternative artifact or floating version is accepted.
+
+Require exact-candidate trusted CI, ordinary producer/native/receiving checks and resulting-main checks before installation or release. This source policy itself installs no schema, adds no product grant, deploys no service and makes no model call. The already-approved controlled Development pilot remains a subsequent, independently verified execution step.
