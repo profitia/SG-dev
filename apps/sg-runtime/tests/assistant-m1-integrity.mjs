@@ -63,9 +63,17 @@ export const ASSISTANT_M1_CHART_CORRECTIVE_PATHS=Object.freeze([
  'apps/sg-runtime/tests/assistant-m1-integrity.mjs',
  'apps/sg-runtime/tests/assistant-m1-integrity.test.mjs',
  'apps/sg-runtime/tests/assistant-model.test.ts',
+ 'apps/sg-runtime/tests/category-operation.test.ts',
+ 'apps/sg-runtime/tests/diagnostic-telemetry-adoption.test.mjs',
+ 'apps/sg-runtime/tests/identity-runtime.test.ts',
  'apps/sg-runtime/tests/integrated-buyer-journey-package.test.mjs',
+ 'apps/sg-runtime/tests/native-sql-roundtrips.test.mjs',
  'apps/sg-runtime/tests/operation-context.test.mjs',
  'apps/sg-runtime/tests/pci-smart-integrity.test.mjs',
+ 'apps/sg-runtime/tests/porr-demo-middleware.test.ts',
+ 'apps/sg-runtime/tests/self-service-account.test.ts',
+ 'apps/sg-runtime/tests/xray-fresh-performance-adoption.test.mjs',
+ 'apps/sg-runtime/tests/xray-gateway.test.ts',
 ])
 export function assertAssistantM1ChartCorrective(receipt,current,historical){
  const a=receipt.assistantM1ChartContextCorrective
@@ -78,6 +86,7 @@ export function assertAssistantM1ChartCorrective(receipt,current,historical){
  const {assistantM1ChartContextCorrective,...preserved}=receipt
  assert.deepEqual(preserved,prior,'accepted M1 and all earlier acceptance remain immutable')
  assert.deepEqual(Object.keys(a.sourceDigests).sort(),ASSISTANT_M1_CHART_CORRECTIVE_PATHS)
+ assert.deepEqual(a.addedBoundaryFiles,['apps/sg-runtime/tests/assistant-chart-context.test.ts'])
  assert.deepEqual(a.applicationSourceDigests,Object.fromEntries(Object.entries(a.sourceDigests).map(([p,h])=>[posix.relative('apps/sg-runtime',p),h])))
  for(const [p,h]of Object.entries(a.sourceDigests)){
   assert.match(h,/^[a-f0-9]{64}$/);assert.equal(hash(current(p)),h,'current chart corrective '+p)
