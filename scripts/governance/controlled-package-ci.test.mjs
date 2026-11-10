@@ -1,3 +1,4 @@
+import {NEWSFEED_SAVED_SEARCH_REVIEW,assertNewsfeedSavedSearchReviewEntry} from './controlled-package-ci.mjs'
 import {ECR_SOURCE_CONTINUITY_REVIEW,assertEcrSourceContinuityReviewEntry} from './controlled-package-ci.mjs'
 import {ECR_STAGE0405_REVIEW,assertEcrStage0405ReviewEntry} from './controlled-package-ci.mjs'
 import {ECR_STAGE03_REVIEW,assertEcrStage03ReviewEntry} from './controlled-package-ci.mjs'
@@ -1522,5 +1523,17 @@ test('ECR source continuity admits only14 exact routed files and rejects blob, m
  for(const f of files){assertEcrSourceContinuityReviewEntry(f,'100644 blob '+f.sha+'\t'+f.filename+'\0');for(const mode of ['100755','120000','160000'])rejection(()=>assertEcrSourceContinuityReviewEntry(f,mode+' blob '+f.sha+'\t'+f.filename+'\0'))}
  for(const edit of [a=>a.pop(),a=>a.push(a[0]),a=>a[0]={...a[0],sha:'f'.repeat(40)},a=>a[0]={...a[0],status:'removed'},a=>a[0]={...a[0],previous_filename:a[0].filename},a=>a[0]={...a[0],filename:'apps/economic-calendar-runtime/src/unreviewed.mjs'}]){const bad=structuredClone(files);edit(bad);rejection(()=>selectCandidate(context(),{...p,changed_files:bad.length},review.sourceSha,{files:bad}))}
  for(const edit of [q=>q.number++,q=>q.head.ref='architecture/another-ecr',q=>q.head.ref='sg2/ecr-source-continuity',q=>q.head.repo.full_name='profitia/fork',q=>q.user.login='attacker',q=>q.base.ref='staging']){const bad=structuredClone(p);edit(bad);rejection(()=>selectCandidate(context(),bad,review.sourceSha,{files}))}
+ assert(files.every(f=>!f.filename.startsWith('Canon/')&&!f.filename.startsWith('.github/')&&!f.filename.startsWith('apps/sg-runtime/')&&!f.filename.startsWith('apps/srm/')))
+})
+
+test('Newsfeed saved-search review binds only PR969 and its18 exact regular blobs; historical reviews remain unchanged',()=>{
+ const review=NEWSFEED_SAVED_SEARCH_REVIEW,files=Object.entries(review.entries).map(([filename,e])=>({filename,sha:e.sha,status:e.status})),p={...pr(),number:review.prNumber,changed_files:files.length,base:{...pr().base,sha:review.baseSha},head:{...pr().head,sha:review.sourceSha,ref:review.branch}}
+ assert.equal(files.length,18);assert.equal(review.sourceSha,'8fa964a159a468968293337c9d0c79c326cb84e5')
+ assertArchitectureFiles(p,files);assert.equal(selectCandidate(context(),p,review.sourceSha,{files}),review.sourceSha)
+ for(const f of files){assertNewsfeedSavedSearchReviewEntry(f,'100644 blob '+f.sha+'\t'+f.filename+'\0');for(const mode of ['100755','120000','160000'])rejection(()=>assertNewsfeedSavedSearchReviewEntry(f,mode+' blob '+f.sha+'\t'+f.filename+'\0'))}
+ for(const edit of [a=>a.pop(),a=>a.push(a[0]),a=>a[0]={...a[0],sha:'f'.repeat(40)},a=>a[0]={...a[0],status:'removed'},a=>a[0]={...a[0],previous_filename:a[0].filename},a=>a[0]={...a[0],filename:'apps/newsfeed-runtime/src/unreviewed.mjs'}]){const bad=structuredClone(files);edit(bad);rejection(()=>selectCandidate(context(),{...p,changed_files:bad.length},review.sourceSha,{files:bad}))}
+ for(const edit of [q=>q.number++,q=>q.head.ref='architecture/another-newsfeed',q=>q.head.ref='sg2/pi-end-to-end-20261110',q=>q.head.repo.full_name='profitia/fork',q=>q.user.login='attacker',q=>q.base.ref='staging',q=>q.head.sha=sha]){const bad=structuredClone(p);edit(bad);rejection(()=>selectCandidate(context(),bad,review.sourceSha,{files}))}
+ // Reserved identity cannot fall back to a narrower generic SDK-only candidate.
+ const generic=architectureFiles();rejection(()=>selectCandidate(context(),{...p,changed_files:generic.length},review.sourceSha,{files:generic}))
  assert(files.every(f=>!f.filename.startsWith('Canon/')&&!f.filename.startsWith('.github/')&&!f.filename.startsWith('apps/sg-runtime/')&&!f.filename.startsWith('apps/srm/')))
 })
