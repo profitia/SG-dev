@@ -1,0 +1,35 @@
+{
+  "schemaVersion": "ECRSourceAccessContinuitySourceAcceptance/1",
+  "taskId": "ARCHITECTURE-ECR-SOURCE-ACCESS-CONTINUITY-20261110",
+  "baseSha": "1e0dc1ca4057437805561a841105e291d028df10",
+  "sourceCandidateSha": "d7f1d6b1f58441a855e57409cdf3b78ae239fd6b",
+  "scope": "EXACT_SOURCE_CONTINUITY_ONLY_NO_CONTRACT_VERSION_CHANGE",
+  "hubContractsVersion": "1.7.0",
+  "ecrContractVersion": "1.2.0",
+  "administrativeActivation": "SEPARATE_EXACT_OWNER_GO_REQUIRED",
+  "liveAcceptance": false,
+  "sourceFiles": {
+    "apps/economic-calendar-runtime/README.md": "40b3f709ead774938ebdac7d140ba0b4d8e168d8fe20b63bf4be4c3f4093e010",
+    "apps/economic-calendar-runtime/operations/activate-source-access-continuity.sql": "20ce2bdc136387f429bb17c36bff1a7c9353da7586466e2de6d113a5e2fbfb3e",
+    "apps/economic-calendar-runtime/operations/source-access-continuity-owner-plan.json": "23e4786c2fc66f4281587ba97f0d578bb30fccba8588560dc965f4022ebb9bc2",
+    "apps/economic-calendar-runtime/scripts/continuous.mjs": "e5eb5bd644fc67c5de759c76cad8a4a5d31e8689364de5b344d2825e82c66628",
+    "apps/economic-calendar-runtime/src/access-continuity.mjs": "3ba1a87ffbea6d7f280f98158b88d6cc838646a17ce2b40026e26424032fdab6",
+    "apps/economic-calendar-runtime/src/continuous.mjs": "221947a083f640ffcb0296c3397f87d4ea74515ab94ae45b72cd65d237ed5bb3",
+    "apps/economic-calendar-runtime/test/access-continuity.test.mjs": "978a1d2838ad1d03a9e4da83304e598bfdb769a7b2dfacf21880fedf27354aed",
+    "apps/economic-calendar-runtime/test/source-access-continuity-postgres.test.mjs": "23e1ed25fc29e194e5f0259f0bcb50d9c03b494e98a7c1d609ba1ff22a2f0bc1",
+    "apps/platform-source-hub/migrations/010-ecr-source-continuity.sql": "fa2a62451e890a1f239dfc67278f7ad943a4c3e172e4de53397cfe58e71e91a0",
+    "packages/platform-contracts/current-e1-authority/migrations/011-ecr-source-continuity.sql": "3f18fa53b7ebcd6c6674a6014dabcda5b87f395cdddeeca1f0edd2df926007d1",
+    "packages/platform-contracts/test/ecr-service-continuity.test.mjs": "17408b3a38254cdcf7df6a4a671068fdbd92301af1545051c1705d0bc6954639"
+  },
+  "preservedReceipts": {
+    "packages/platform-source-hub-contracts/semantic-continuous-acceptance-v1.json": "f63364c997dacdb779da861685a93faa27d7b8bca84a75c6d277c9c188ccea76",
+    "packages/platform-source-hub-contracts/calendar-storage-acceptance-v1.json": "bd57c9bc76749ef116e5b9bc703e3a92315a79767e754abffe4629b12cafbdab",
+    "apps/platform-source-hub/operations/publication-schedule-source-acceptance.json": "3f9a3de218368152b86cd4c4efebb831f2033256465248dcf320f362d8c0c422"
+  },
+  "replacements": {
+    "apps/economic-calendar-runtime/README.md": "8660a19f6bd4775e65ed49624b2925a5240c9fc939b013f04c1c12bf5936f793",
+    "apps/economic-calendar-runtime/scripts/continuous.mjs": "1b410957d341bda84debdd225ac12a6a017be533e923961194c909a4ec9422dc",
+    "apps/economic-calendar-runtime/src/continuous.mjs": "e79912c01f9519a4dc900a46375a8155948b93e1cbe4900fe0412edd0229215e",
+    "packages/platform-contracts/test/ecr-service-continuity.test.mjs": "e6e25384a46a104017a7f028e2c12cc67d5c4de80ee474cc2147d4b4dbeb74f6"
+  }
+}
