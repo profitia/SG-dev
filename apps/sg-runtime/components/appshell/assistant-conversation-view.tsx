@@ -1,6 +1,7 @@
 'use client'
 
 import React,{useEffect,useRef} from 'react'
+import {AssistantMessageMarkdown} from './assistant-message-markdown'
 import type {AssistantConversationSession,AssistantConversationSnapshot,AssistantConversationError} from './assistant-conversation-session'
 
 const errors:Record<AssistantConversationError,readonly [string,string]>={
@@ -27,7 +28,9 @@ export function AssistantConversationView({session,state,en,historyOpen,onCloseH
   <div className="srm-chat-transcript" role="log" aria-label={en?'Conversation with SpendGuru':'Rozmowa ze SpendGuru'} aria-live="polite" aria-relevant="additions text" aria-busy={state.busy} tabIndex={0}>
    {state.messages.length===0&&<div className="srm-chat-incoming">{avatar}<p>{en?'Ask about procurement or the benchmark you are viewing.':'Zapytaj o zakupy lub benchmark, który oglądasz.'}</p></div>}
    {state.messages.map(message=><div key={message.id} className={message.role==='assistant'?'srm-chat-incoming':'srm-chat-outgoing'}>{message.role==='assistant'&&avatar}<article className={'srm-chat-message srm-chat-turn srm-chat-turn-'+message.role} aria-label={message.role==='user'?(en?'Your message':'Twoja wiadomość'):'SpendGuru'}>
-    <p>{message.content|| (message.status==='streaming'?(en?'Preparing a response…':'Przygotowuję odpowiedź…'):'')}</p>
+    {message.role==='assistant'&&message.content
+     ? <AssistantMessageMarkdown content={message.content} en={en}/>
+     : <p>{message.content|| (message.status==='streaming'?(en?'Preparing a response…':'Przygotowuję odpowiedź…'):'')}</p>}
     {message.status==='interrupted'&&<small>{en?'Response stopped':'Odpowiedź zatrzymana'}</small>}
     {message.status==='failed'&&<small>{en?'Response incomplete':'Odpowiedź niepełna'}</small>}
     {!!message.sources.length&&<ul className="srm-chat-sources" aria-label={en?'Sources':'Źródła'}>{message.sources.map(source=><li key={source.id}>{source.label}{source.asOf?' · '+source.asOf:''}{source.status!=='OK'?' · '+sourceStatus[source.status][en?1:0]:''}</li>)}</ul>}
