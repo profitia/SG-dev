@@ -20,6 +20,10 @@ export const PRIVATE_PACKAGES = Object.freeze(['@profitia/advisory-widget', '@pr
 // One published CIC artifact accepted by the M1 owner; names and token scope
 // remain unchanged. No floating version, registry or alternate artifact.
 export const CIC_ANALYTICAL_PIN=Object.freeze({version:'1.3.0',resolved:'https://npm.pkg.github.com/download/@profitia/cic-core/1.3.0/b66e166cf5dd698796036ea5ccfedea4fe24ec19',integrity:'sha512-RnA24q7wPkz1cqXUA7g6JfS2uZnLQg3GfXzyihvzvQh2r+DgTwb4z/3v/uCtW63xSvl4GX7ur8pBUuGldEzWBA=='})
+// Exact M2 publication; the M1 pin remains accepted independently. Same
+// package name, registry and read-only credential phase, without new access.
+export const CIC_ANALYTICAL_M2_PIN=Object.freeze({version:'1.5.1',resolved:'https://npm.pkg.github.com/download/@profitia/cic-core/1.5.1/5576c0f96f4a994bf94e056bd1695aadc9cde0bf',integrity:'sha512-8W0RGrX/ghLrM/u2nYxSWBcdcNnjyNpoaGRcBr8BwuAVchTyR9UEIG1gwjdSS33+Mr9ZJF5IuqHghjxtE9BSQg=='})
+const analyticalPins=Object.freeze([CIC_ANALYTICAL_PIN,CIC_ANALYTICAL_M2_PIN])
 export const LOCAL_PACKAGES = Object.freeze({
   '@profitia/platform-contracts': '../../packages/platform-contracts',
   '@profitia/sg2-price-change-index-ui': '../../packages/sg2-price-change-index-ui',
@@ -4307,7 +4311,7 @@ export function assertPackagePolicy(candidate, authority, configuration) {
       if (PRIVATE_PACKAGES.includes(privateName)) {
         if (key !== `node_modules/${privateName}`) fail('NESTED_PRIVATE_PACKAGE_REJECTED')
         const accepted = authority.packages?.[key]
-        const analytical=privateName==='@profitia/cic-core'&&candidate.packages?.['']?.name==='@sg/runtime'&&candidate.packages?.['']?.dependencies?.[privateName]==='1.3.0'&&Object.entries(CIC_ANALYTICAL_PIN).every(([k,v])=>entry[k]===v)
+        const analytical=privateName==='@profitia/cic-core'&&candidate.packages?.['']?.name==='@sg/runtime'&&analyticalPins.some(pin=>candidate.packages?.['']?.dependencies?.[privateName]===pin.version&&Object.entries(pin).every(([k,v])=>entry[k]===v))
         if (!accepted?.integrity?.startsWith('sha512-') || !analytical&&(entry.version !== accepted.version || entry.integrity !== accepted.integrity || entry.resolved !== accepted.resolved) || entry.link) fail('PRIVATE_PACKAGE_PIN_MISMATCH')
         found.add(privateName)
       }
@@ -4338,7 +4342,7 @@ export function assertManifestPolicy(candidate, authority) {
       if (reviewedMapsPeer(candidate.name, candidate.version, section, name, spec)
         && authority.name === candidate.name && authority.version === candidate.version
         && authority[section]?.[name] === spec) continue
-      const analytical=candidate.name==='@sg/runtime'&&section==='dependencies'&&name==='@profitia/cic-core'&&spec===CIC_ANALYTICAL_PIN.version
+      const analytical=candidate.name==='@sg/runtime'&&section==='dependencies'&&name==='@profitia/cic-core'&&analyticalPins.some(pin=>spec===pin.version)
       if (name.startsWith('@profitia/') && (!PRIVATE_PACKAGES.includes(name) || !analytical&&spec !== authority[section]?.[name])) fail('PRIVATE_MANIFEST_PIN_MISMATCH')
       if (/^(?:file:|link:|workspace:)/.test(String(spec))) fail('LOCAL_DEPENDENCY_REJECTED')
     }
