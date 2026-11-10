@@ -372,3 +372,25 @@ Use a narrow CI PR with normal full CI and original proof; accept only that CI
 policy, then validate the same PR923 at its current exact source. Final feature
 SOURCE GO remains separate. No exception, new PMOS begin, installation, grant,
 deployment, provider/model call or recurring activation is admitted.
+
+## Oil and accepted ECR source compatibility — proposed continuation (2026-11-10)
+
+PROPOSED_NOT_ACTIVE. Owner-approved v8 remains frozen. Main then accepted ECR
+PR947 at1baa0744, overlapping one Oil SDK-history test and advancing the existing
+Hub contracts to1.6.0. A source refresh cannot keep every v8 blob and also keep
+the accepted ECR test. The narrow proposed composition retains both test layers,
+updates only the existing Hub SDK entry in the two report-consumer locks, and
+renews the paired current-source hashes. No historical record is rewritten.
+
+Proposed source fb7871486d69b8432315ae12e20d8768e2dcd2c0 retains113 paths, statuses, modes and owners.
+Five reviewed blobs differ from v8: the SDK-history test, two existing locks and
+the two current SG2/SRM receipts. The v8 X-Ray fix remains byte-identical. All
+other ECR files equal accepted main, the immutable Oil/Core SDK producer stays
+e189433899349ddda6664c37988255c13845b3e2, and existing Root recognition and every
+other controller, ECR, credential and workflow rule remain unchanged.
+
+A separate exact decision is required for the five reviewed replacements and
+this renewed closed map. Use ordinary full CI and original proof before CI-only
+adoption, then complete exact feature CI and separate final SOURCE GO. No new
+role, source operation, calendar integration, grant, deployment, paid call,
+PMOS registration or recurring activation is granted.
