@@ -1,9 +1,9 @@
 import {createHmac} from 'node:crypto'
 import type {OperationContext} from '@profitia/platform-contracts/operation-context'
 import type {AccessQuery} from '@profitia/platform-contracts/access-store'
-import {readChartReference,type ChartReference} from '../../../../packages/assistant-context-contracts/src/index.mjs'
+import {readContextReference,type ContextReference} from '../../../../packages/assistant-context-contracts/src/index.mjs'
 import type {AssistantSource} from '@/components/appshell/assistant-conversation-session'
-export type HistoryScope=Readonly<{source:'BENCHMARK_CHART';organisationId:string;reference:ChartReference}>
+export type HistoryScope=Readonly<{source:ContextReference['source'];organisationId:string;reference:ContextReference;viewIdentity?:string;sourceVersion?:string|null;privateKys?:boolean;privateKysUntil?:string;requiredRecordIds?:readonly string[]}>
 export type StoredTurn=Readonly<{id:string;commandId:string;assistantMessageId:string;message:string;response:string;status:'QUEUED'|'COMPLETE'|'INTERRUPTED'|'FAILED';scopes:readonly HistoryScope[];sources:readonly AssistantSource[];createdAt:string}>
 export type StoredConversation=Readonly<{id:string;revision:number;turns:readonly StoredTurn[]}>
 const uuid=(v:unknown):v is string=>typeof v==='string'&&/^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(v)
@@ -42,8 +42,17 @@ export function createAssistantHistory(options:{query:AccessQuery;commandKey:str
     if(!record(t)||![t.id,t.commandId,t.assistantMessageId].every(uuid)||typeof t.message!=='string'||t.message.length>8000
      ||typeof t.response!=='string'||t.response.length>64000||typeof t.createdAt!=='string'||!['QUEUED','COMPLETE','INTERRUPTED','FAILED'].includes(String(t.status))
      ||!Array.isArray(t.scopes)||t.scopes.length>4||!Array.isArray(t.sources)||t.sources.length>4)return fail()
-    const scopes=t.scopes.map(s=>{if(!record(s)||s.source!=='BENCHMARK_CHART'||!uuid(s.organisationId))return fail()
-     return {source:'BENCHMARK_CHART' as const,organisationId:s.organisationId,reference:readChartReference(s.reference)}})
+    const scopes=t.scopes.map(s=>{
+     if(!record(s)||!uuid(s.organisationId)||Object.keys(s).some(k=>!['source','organisationId','reference','viewIdentity','sourceVersion','privateKys','privateKysUntil','requiredRecordIds'].includes(k)))return fail()
+     const reference=readContextReference(s.reference)
+     if(reference.source!==s.source||s.viewIdentity!==undefined&&(typeof s.viewIdentity!=='string'||!/^[a-f0-9]{64}$/.test(s.viewIdentity))
+      ||s.sourceVersion!==undefined&&s.sourceVersion!==null&&(typeof s.sourceVersion!=='string'||!/^[a-f0-9]{64}$/.test(s.sourceVersion))
+      ||s.privateKys!==undefined&&(reference.source!=='SRM_XRAY'||typeof s.privateKys!=='boolean')
+      ||s.privateKys===true&&(typeof s.privateKysUntil!=='string'||s.privateKysUntil.length>40||!Number.isFinite(Date.parse(s.privateKysUntil)))
+      ||s.privateKysUntil!==undefined&&s.privateKys!==true
+      ||s.requiredRecordIds!==undefined&&(reference.source!=='NEWSFEED'||!Array.isArray(s.requiredRecordIds)||s.requiredRecordIds.length>32||s.requiredRecordIds.some(id=>typeof id!=='string'||!/^[OP]:[a-f0-9-]{36}$/i.test(id))))return fail()
+     return {...s,source:reference.source,organisationId:s.organisationId,reference} as HistoryScope
+    })
     const sources:AssistantSource[]=t.sources.map(s=>{
      if(!record(s)||typeof s.id!=='string'||s.id.length>512||typeof s.label!=='string'||s.label.length>1024
       ||s.asOf!==null&&(typeof s.asOf!=='string'||s.asOf.length>40)||!['OK','EMPTY','PARTIAL','DENIED','UNAVAILABLE','STALE'].includes(String(s.status)))return fail()

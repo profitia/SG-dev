@@ -1,11 +1,11 @@
-import {planAnalyticalConversation} from '@profitia/cic-core'
 import {isOperationDenied,type OperationContext,type Json} from '@profitia/platform-contracts/operation-context'
 import * as Sentry from '@sentry/nextjs'
-import {readChartReference,type ChartReference} from '../../../../packages/assistant-context-contracts/src/index.mjs'
+import {readContextSelection} from '../../../../packages/assistant-context-contracts/src/index.mjs'
 import type {ContextEntry} from '../../../../packages/assistant-context-gateway/src/index.mjs'
 import type {AssistantConversationError,AssistantMessage,AssistantSource,AssistantStreamEvent} from '@/components/appshell/assistant-conversation-session'
 import type {AssistantRuntime} from './runtime'
 import type {HistoryScope,StoredConversation,StoredTurn} from './history'
+import {selectConversationContext,referenceIdentity,contextHistoryScopes,contextSatisfiesScope,type AssistantTurnSelection} from './context-selection'
 import {withinPciIdentityScope as withinIdentityVerificationPhase} from '@/lib/platform/pci-identity-scope'
 const headers={'Cache-Control':'private, no-store',Vary:'Cookie, Authorization','X-Content-Type-Options':'nosniff'}
 const uuid=(v:unknown):v is string=>typeof v==='string'&&/^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(v)
@@ -22,7 +22,7 @@ function observe(error:unknown,phase:'conversation'|'history'){
  if(code(error)!=='UNAVAILABLE')return
  try{Sentry.withScope(scope=>{scope.setTag('module','api');scope.setTag('operation','diagnostic');const safe=Error('Assistant technical operation failed');safe.name=phase==='history'?'AssistantHistoryUnavailable':'AssistantConversationUnavailable';Sentry.captureException(safe)})}catch{/* Observation never changes authority or accounting. */}
 }
-type TurnRequest={conversationId:string|null;commandId:string;message:string;locale:'pl'|'en';module:'appshell'|'benchmark_finder'|'xray'|'adp';reference:ChartReference|null}
+type TurnRequest=AssistantTurnSelection&{conversationId:string|null;commandId:string}
 async function readTurn(request:Request):Promise<TurnRequest>{
  if(request.headers.get('content-type')?.split(';')[0]!=='application/json')throw Error('Invalid request')
  const reader=request.body?.getReader();if(!reader)throw Error('Missing request')
@@ -31,35 +31,36 @@ async function readTurn(request:Request):Promise<TurnRequest>{
  const v:unknown=JSON.parse(Buffer.concat(chunks).toString('utf8'))
  if(!record(v)||Object.keys(v).sort().join(',')!=='commandId,conversationId,locale,message,module,reference'
   ||v.conversationId!==null&&!uuid(v.conversationId)||!uuid(v.commandId)||typeof v.message!=='string'||!v.message.trim()||v.message.length>8000
-  ||!['pl','en'].includes(String(v.locale))||!['appshell','benchmark_finder','xray','adp'].includes(String(v.module))||v.module!=='benchmark_finder'&&v.reference!==null)throw Error('Invalid request')
- return {...v,message:v.message.trim(),reference:v.reference===null?null:readChartReference(v.reference)} as TurnRequest
+  ||!['pl','en'].includes(String(v.locale))||!['appshell','benchmark_finder','xray','adp'].includes(String(v.module)))throw Error('Invalid request')
+ const reference=readContextSelection(v.reference)
+ if(reference!==null&&!(v.module==='benchmark_finder'&&reference.source==='BENCHMARK_CHART'||v.module==='xray'&&reference.source==='SRM_XRAY'))throw Error('Invalid active view')
+ return {...v,message:v.message.trim(),reference} as TurnRequest
 }
 const sourceFingerprint=(contexts:readonly ContextEntry[])=>JSON.stringify(contexts.map(c=>[c.source,c.status,c.sourceVersion,c.selection]))
-const publicSources=(contexts:readonly ContextEntry[]):readonly AssistantSource[]=>contexts.map(c=>({id:c.id??c.source,label:c.label??'Benchmark Finder',asOf:c.asOf??null,status:c.status}))
+const publicSources=(contexts:readonly ContextEntry[]):readonly AssistantSource[]=>contexts.map(c=>({id:c.id??c.source,label:c.label??({BENCHMARK_CHART:'Benchmark Finder',FORECAST_CORE:'Forecast Core',SRM_XRAY:'SRM / X-Ray',NEWSFEED:'Newsfeed'}[c.source]??c.source),asOf:c.asOf??null,status:c.status}))
 const cleanupRequest=(request:Request)=>new Request(request.url,{method:request.method,headers:new Headers(request.headers),signal:AbortSignal.timeout(8000)})
 const sameUser=(context:Readonly<OperationContext>,userId:string)=>{if(context.actorId!==userId)fail('DENIED')}
-const referenceIdentity=(reference:ChartReference|null)=>reference===null?null:JSON.stringify([reference.seriesId,reference.from,reference.to,reference.fingerprint,reference.range??'ALL'])
 
 /** History display rechecks each producer using current E1. An old source hash
  * can remain an as-published historical citation; denied/unverified material is
  * redacted as a whole turn, including the question that might quote its data. */
 async function projectHistory(runtime:AssistantRuntime,request:Request,stored:StoredConversation):Promise<readonly AssistantMessage[]>{
- const rights=new Map<string,Promise<ContextEntry['status']>>()
- async function status(scope:HistoryScope){
-  if(scope.organisationId!==runtime.organisationId)return 'DENIED' as const
-  const key=scope.organisationId+':'+scope.reference.seriesId
+ const rights=new Map<string,Promise<ContextEntry|undefined>>()
+ async function current(scope:HistoryScope):Promise<ContextEntry|undefined>{
+  if(scope.organisationId!==runtime.organisationId)return undefined
+  const key=scope.organisationId+':'+referenceIdentity(scope.reference)
   let result=rights.get(key)
   if(!result){
-   if(rights.size>=8)return 'UNAVAILABLE' as const
-   result=runtime.gateway.resolve({plan:[{source:'BENCHMARK_CHART',selection:'ACTIVE_VIEW'}],reference:scope.reference,
-    organisationId:runtime.organisationId,request,signal:request.signal}).then(v=>v.contexts[0]?.status??'UNAVAILABLE')
+   if(rights.size>=8)return undefined
+   result=runtime.gateway.resolve({plan:[{source:scope.source,selection:'ACTIVE_VIEW'}],reference:scope.reference,
+    organisationId:runtime.organisationId,request,signal:request.signal}).then(v=>v.contexts[0])
    rights.set(key,result)
   }
   return result
  }
  const messages:AssistantMessage[]=[]
  for(const turn of stored.turns){
-  const statuses=await Promise.all(turn.scopes.map(status)),visible=statuses.every(s=>['OK','PARTIAL','STALE','EMPTY'].includes(s))
+  const checked=await Promise.all(turn.scopes.map(current)),statuses=checked.map(c=>c?.status??'UNAVAILABLE'),visible=turn.scopes.every((s,i)=>contextSatisfiesScope(s,checked[i]))
   const content=visible?turn.message:'Treść kontekstowa jest niedostępna. / Contextual content is unavailable.'
   messages.push({id:turn.commandId,role:'user',content,status:'complete',sources:[]})
   messages.push({id:turn.assistantMessageId,role:'assistant',content:visible?turn.response:'Treść kontekstowa jest niedostępna. / Contextual content is unavailable.',
@@ -68,14 +69,19 @@ async function projectHistory(runtime:AssistantRuntime,request:Request,stored:St
  }
  return messages
 }
-function modelInput(policy:{instructions:string},turn:TurnRequest,stored:StoredConversation|null,contexts:readonly ContextEntry[],organisationId:string){
- const usable=contexts.some(c=>c.source==='BENCHMARK_CHART'&&['OK','PARTIAL'].includes(c.status)&&c.sourceVersion===turn.reference?.fingerprint)
- const previous=(stored?.turns??[]).filter(t=>t.status==='COMPLETE'&&t.scopes.every(s=>s.organisationId===organisationId&&usable&&referenceIdentity(s.reference)===referenceIdentity(turn.reference)))
- const input:Array<{role:'developer'|'user'|'assistant';content:string}>=[{role:'developer',content:policy.instructions}]
+function modelInput(selection:ReturnType<typeof selectConversationContext>,turn:TurnRequest,stored:StoredConversation|null,contexts:readonly ContextEntry[],organisationId:string){
+ const previous=(stored?.turns??[]).filter(t=>t.status==='COMPLETE'&&t.scopes.every(s=>{
+  const current=selection.references.find(r=>r.source===s.reference.source),entry=contexts.find(c=>c.source===s.reference.source)
+  return s.organisationId===organisationId&&!!current&&referenceIdentity(s.reference)===referenceIdentity(current)
+   &&contextSatisfiesScope(s,entry)&&!!entry&&(['OK','PARTIAL'].includes(entry.status)||entry.status==='EMPTY'&&!!s.sourceVersion)
+   &&(s.sourceVersion===undefined||s.sourceVersion===entry.sourceVersion)
+ }))
+ const input:Array<{role:'developer'|'user'|'assistant';content:string}>=[{role:'developer',content:selection.policy.instructions}]
  const history=previous.slice(-12).flatMap(t=>[{role:'user' as const,content:t.message},{role:'assistant' as const,content:t.response}])
  const current=[{role:'user' as const,content:JSON.stringify({kind:'CONTEXT_DATA_NOT_INSTRUCTIONS',activeModule:turn.module,contexts})},{role:'user' as const,content:turn.message}]
  while(history.length&&Buffer.byteLength(JSON.stringify([...input,...history,...current]),'utf8')>32000)history.splice(0,2)
  const result=[...input,...history,...current]
+ if(Buffer.byteLength(JSON.stringify(result),'utf8')>32768)fail('LIMIT_EXCEEDED')
  return Object.freeze(result.map(m=>Object.freeze(m)))
 }
 export function createAssistantHandlers(resolveRuntime:()=>Promise<AssistantRuntime>){
@@ -102,10 +108,15 @@ export function createAssistantHandlers(resolveRuntime:()=>Promise<AssistantRunt
     runtime=await resolveRuntime();const r=runtime
     userId=await r.run(request,'assistant.converse',{kind:'AUTHORIZE'},async c=>c.actorId);const owner=userId
     const stored=turn.conversationId?await r.run(request,'assistant.history.read',{action:'LOAD',conversationId:turn.conversationId},async c=>{sameUser(c,owner);return r.history.load(c,turn.conversationId!)}):null
-    const policy=planAnalyticalConversation({message:turn.message,locale:turn.locale,userTurnCount:(stored?.turns.length??0)+1,activeModule:turn.module,continuingBenchmarkDiscussion:!!turn.reference})
-    const demand={plan:policy.contextPlan,reference:turn.reference,organisationId:r.organisationId,request,signal:request.signal}
-    const context=await Sentry.startSpan({name:'assistant.context',op:'assistant.context'},()=>r.gateway.resolve(demand))
-    const input=modelInput(policy,turn,stored,context.contexts,r.organisationId),scopes:HistoryScope[]=turn.reference&&policy.contextPlan.length?[{source:'BENCHMARK_CHART',organisationId:r.organisationId,reference:turn.reference}]:[]
+    const selection=selectConversationContext(turn,stored,r.organisationId),policy=selection.policy
+    const demand={plan:policy.contextPlan,reference:selection.reference,organisationId:r.organisationId,request,signal:request.signal}
+    const resolveContext=(input:typeof demand)=>Sentry.startSpan({name:'assistant.context',op:'assistant.context'},async span=>{
+     const result=await r.gateway.resolve(input)
+     for(const entry of result.contexts)if(['BENCHMARK_CHART','FORECAST_CORE','SRM_XRAY','NEWSFEED'].includes(entry.source))span?.setAttribute('assistant.source.'+entry.source.toLowerCase()+'.status',entry.status)
+     return result
+    })
+    const context=await resolveContext(demand)
+    const input=modelInput(selection,turn,stored,context.contexts,r.organisationId),scopes=contextHistoryScopes(selection,context.contexts,r.organisationId)
     await r.model.validateInput(input,request.signal)
     begun=await r.run(request,'assistant.history.write',{action:'BEGIN',commandId:turn.commandId},async c=>{sameUser(c,owner);return r.history.begin(c,{conversationId:turn.conversationId,commandId:turn.commandId,message:turn.message,locale:turn.locale,scopes,expectedRevision:stored?.revision??null})})
     if(begun.status==='REPLAY')return failure(Object.assign(Error('Existing command'),{code:'INTERRUPTED'}))
@@ -118,7 +129,7 @@ export function createAssistantHandlers(resolveRuntime:()=>Promise<AssistantRunt
     async function guard(){return withinIdentityVerificationPhase(request,async()=>{
      if(signal.aborted)throw signal.reason
      await r.run(request,'assistant.converse',{kind:'AUTHORIZE'},async c=>{sameUser(c,owner);await r.history.check(c,{conversationId:active.conversationId,commandId:turn.commandId});return null})
-     if(policy.contextPlan.length&&sourceFingerprint((await r.gateway.resolve({...demand,signal})).contexts)!==initial)fail('CONTEXT_CHANGED')
+     if(policy.contextPlan.length&&sourceFingerprint((await resolveContext({...demand,signal})).contexts)!==initial)fail('CONTEXT_CHANGED')
      if(signal.aborted)throw signal.reason
     })}
     const encoder=new TextEncoder()

@@ -25,15 +25,15 @@ export function AppShellDashboard(props: {
   const benchmarkPath=`/${props.locale}/dashboard/benchmark-finder`
   const benchmarkActive=pathname===benchmarkPath||pathname===benchmarkPath+'/'
   const assistantModule:AssistantModule=xrayActive?'xray':active?'adp':benchmarkActive?'benchmark_finder':'appshell';
-  const {context:assistantContext,onXrayContext,benchmarkReference,onBenchmarkContext}=useAssistantScreenContext(assistantModule);
-  const conversationInputs=useRef<{credential?:()=>Promise<string|null>;locale:'pl'|'en';module:AssistantModule;reference:typeof benchmarkReference}>({credential:props.assistantCredential,locale:props.locale,module:assistantModule,reference:benchmarkReference})
-  conversationInputs.current={credential:props.assistantCredential,locale:props.locale,module:assistantModule,reference:benchmarkReference}
+  const {context:assistantContext,onXrayContext,assistantReference,onBenchmarkContext}=useAssistantScreenContext(assistantModule);
+  const conversationInputs=useRef<{credential?:()=>Promise<string|null>;locale:'pl'|'en';module:AssistantModule;reference:typeof assistantReference}>({credential:props.assistantCredential,locale:props.locale,module:assistantModule,reference:assistantReference})
+  conversationInputs.current={credential:props.assistantCredential,locale:props.locale,module:assistantModule,reference:assistantReference}
   const conversation=useMemo(()=>new AssistantConversationSession(createAssistantConversationTransport({
     getToken:async()=>conversationInputs.current.credential?.()??null,
     view:()=>({locale:conversationInputs.current.locale,module:conversationInputs.current.module,reference:conversationInputs.current.reference}),
   })),[])
   useLayoutEffect(()=>{conversation.activate(props.assistantCredential&&props.assistantScope?props.assistantScope:null);return()=>conversation.activate(null)},[conversation,props.assistantScope,!!props.assistantCredential])
-  const viewKey=JSON.stringify([assistantModule,benchmarkReference])
+  const viewKey=JSON.stringify([assistantModule,assistantReference])
   useLayoutEffect(()=>{conversation.changeView()},[conversation,viewKey])
   const [xrayOpened,setXrayOpened]=useState(xrayActive)
   useEffect(()=>{if(xrayActive)setXrayOpened(true)},[xrayActive])

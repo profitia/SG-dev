@@ -9,6 +9,9 @@ import type {AccessStoreBinding,AccessQuery} from '@profitia/platform-contracts/
 import {createAssistantContextGateway,createBenchmarkContextAdapter} from '../../../../packages/assistant-context-gateway/src/index.mjs'
 import {createAssistantHistory} from './history'
 import {createAssistantModel} from './model'
+import {createAssistantSourceAdapters} from './sources'
+import m2Targets from '@/deployment/assistant-m2-targets.json'
+import type {Sg2SelectionRuntime} from '@/lib/platform/private-runtime'
 import targets from '@/deployment/assistant-m1-targets.json'
 import type {BenchmarkRangePreset} from '@/lib/benchmark/contracts'
 type Env=Readonly<Record<string,string|undefined>>
@@ -35,7 +38,9 @@ export function readAssistantConfiguration(env:Env){
   ||!env.OPENAI_API_KEY||env.OPENAI_MODEL!==undefined&&env.OPENAI_MODEL!==targets.model)return unavailable()
  const historyKey=env.PROFITIA_ASSISTANT_HISTORY_COMMAND_KEY,usageKey=env.PROFITIA_ASSISTANT_USAGE_COMMAND_KEY
  if(!/^[a-f0-9]{64}$/.test(historyKey??'')||!/^[a-f0-9]{64}$/.test(usageKey??'')||historyKey===usageKey)return unavailable()
+ if(env.PROFITIA_ASSISTANT_M2_CONFIGURATION_VERSION!==undefined&&env.PROFITIA_ASSISTANT_M2_CONFIGURATION_VERSION!==m2Targets.configurationVersion)return unavailable()
  return Object.freeze({historyKey:historyKey!,usageKey:usageKey!,openaiKey:env.OPENAI_API_KEY,
+  multiSource:env.PROFITIA_ASSISTANT_M2_CONFIGURATION_VERSION===m2Targets.configurationVersion,
   historyUrl:storeUrl(env.PROFITIA_ASSISTANT_HISTORY_DATABASE_URL,targets.history),
   usageUrl:storeUrl(env.PROFITIA_ASSISTANT_USAGE_DATABASE_URL,targets.usage)})
 }
@@ -44,6 +49,7 @@ const pooled=(input:string,schema:string)=>{const u=new URL(input);u.searchParam
 export function createSg2AssistantRuntime(config:AssistantConfiguration,options:{
  prisma:PrismaClient;auditPrisma:PrismaClient;clerk:ClerkIdentityClient;application:Application;identity:PublicIdentityApplication;binding:AccessStoreBinding
  market?:{executor:OperationExecutor<Prisma.TransactionClient>;series:(selection:{seriesName:string;range:BenchmarkRangePreset})=>Promise<unknown>}
+ forecast?:Extract<Sg2SelectionRuntime,{provider:'clerk'}>['forecastRead']
 }){
  const {prisma,auditPrisma,clerk,identity,binding}=options
  if(options.application.environment!=='development'||options.application.appId!=='spendguru'||options.application.profileId!=='PORR_SUITE'
@@ -78,7 +84,7 @@ export function createSg2AssistantRuntime(config:AssistantConfiguration,options:
    })
   if(!(result.value instanceof Response)||!result.value.ok)return unavailable()
   return result.value.json()
- }})]})
+ }}),...createAssistantSourceAdapters({enabled:config.multiSource,organisationId,forecast:options.forecast,market:options.market})]})
  const prune=()=>{void historyDb.$queryRawUnsafe('SELECT sg2_assistant_history.prune()').catch(()=>{})}
  prune();const retention=setInterval(prune,10*60*1000);retention.unref()
  const model=createAssistantModel(new OpenAI({apiKey:config.openaiKey,baseURL:'https://api.openai.com/v1',organization:null,project:null,maxRetries:0,timeout:60000}),usage)

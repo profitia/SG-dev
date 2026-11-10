@@ -1,0 +1,74 @@
+{
+  "schemaVersion": "1.0.0",
+  "taskId": "SG2-ACG-M2-20261110",
+  "targetEnvironment": "development",
+  "previousSourceSha": "c3b399b13241ae2f4ea8c1b3ae0168fe9a6aac7f",
+  "configuration": {
+    "variable": "PROFITIA_ASSISTANT_M2_CONFIGURATION_VERSION",
+    "version": "sg2-assistant-m2-development-v1",
+    "enabledByDefault": false
+  },
+  "producers": {
+    "architecture": {
+      "pullRequest": 954,
+      "sourceSha": "c3b399b13241ae2f4ea8c1b3ae0168fe9a6aac7f"
+    },
+    "srm": {
+      "pullRequest": 955,
+      "sourceSha": "dcb70f7123d1ec483aad3c7d61ac459386897f47"
+    },
+    "cic": {
+      "pullRequest": 22,
+      "sourceSha": "967a5775f45408549d7942d727289818212ef506",
+      "version": "1.5.1"
+    }
+  },
+  "storedReadsOnly": true,
+  "newGrant": false,
+  "acquisitionAllowed": false,
+  "sourceDigests": {
+    "apps/sg-runtime/components/appshell/appshell-dashboard.tsx": "3ff5bd3d9982b0401a4e0ae212fd717ee0dbb71cb7ca817dcf1a49dc1a9d29c0",
+    "apps/sg-runtime/components/appshell/assistant-conversation-transport.ts": "c95e1f96f2e5b588fdefb918564cc6eac73c95e33665855d2c87bba68603d2b7",
+    "apps/sg-runtime/components/appshell/assistant-screen-context.ts": "be797fb83815775090180e039de749abaf87835cba1f71bd53949e77ffb8ccd2",
+    "apps/sg-runtime/deployment/assistant-m2-targets.json": "3f9c5c10ab9d9c65b76079fa6d960adec2b72ad8526a122219b85c7906185cf4",
+    "apps/sg-runtime/lib/assistant/context-selection.ts": "3c65d23a72b45eb331a38105ae76a550e2a779c572a0f03146c72d92fcdda95a",
+    "apps/sg-runtime/lib/assistant/conversation.ts": "a8d664d4d29f073ec29a90ece89fe20eb18d04c193b69424c5970fea3e1e4c12",
+    "apps/sg-runtime/lib/assistant/history.ts": "dee8a2d8883ca0399ae02e55fd92ed1c284390df985421a01df5d453aa428c15",
+    "apps/sg-runtime/lib/assistant/runtime.ts": "2224879d6f67ac9672041a87e56ba306701def6381cdd1c6dac0f45a54b34489",
+    "apps/sg-runtime/lib/assistant/sources.ts": "38cbe01479e98bd228cd3e2edfc65e1815c2bc397bcc65f5f956a05b67aa857c",
+    "apps/sg-runtime/lib/platform/private-runtime.ts": "e8bf59371f28eb16dfbc5c97452aaec42b47462eeda982186e4c38cce8bc89b6",
+    "apps/sg-runtime/package.json": "57dc0ebd566e0abcb8078a7827160fd4109719fec7902bfd81ae0a50445ec321",
+    "apps/sg-runtime/package-lock.json": "0b352b594112cbd93694ed24ab96b693b406b21b688ea90c98bd8018e8241350",
+    "apps/sg-runtime/tests/assistant-conversation-handler.test.ts": "c14d5de810eafed93df42ea9be7791cf91f5a025485b53ba9a2355cb05fbbb1f",
+    "apps/sg-runtime/tests/assistant-m1-integrity.mjs": "f3b175d69e8ed77eb8c703818a7dcaf191ffb5725f76fa75b27619c0a6c3fe47",
+    "apps/sg-runtime/tests/assistant-m2-integrity.mjs": "4d5ecaa88c0d4e72a329751c31efd4369662df4f3693900863a652b8fa98a8d3",
+    "apps/sg-runtime/tests/assistant-m2-integrity.test.mjs": "24e0dff0df26eefebe6a8216d9ce373dd9977efcb6b1add7521c7f7403de3345",
+    "apps/sg-runtime/tests/assistant-multi-source.test.ts": "d675bf670ad11ad9734019b297c756ddd67d8eca1bce9a5749dd1ae8c352c358",
+    "apps/sg-runtime/tests/assistant-screen-context.test.ts": "b1873b5ec51aaf2f1242f5931d6b89b65dd428ca40d789f39056aecf3a378e7e",
+    "apps/sg-runtime/tests/assistant-sources.test.ts": "b1fba759b306a131f036d9426877bb132b73ce6b4615386ad0b5bf3137c28d63",
+    "apps/sg-runtime/tests/assistant-m2-source-view.mjs": "1b98c12cdc79240e194954976e68f68e489d8d4d522b6b79666d75ba4516c83a",
+    "apps/sg-runtime/tests/assistant-m2-source-view.test.mjs": "e665182b158a6484694fe7f3fec85a0eb97bbe00aa7ae4879d03091007443ed5",
+    "apps/sg-runtime/tests/adp-appshell-preview.mjs": "234caf65ee43e7c2e0bf7eac421b67cff9251b08b5f4243493fc2c610f6732df",
+    "apps/sg-runtime/tests/category-operation.test.ts": "a125adc675e113a45178d24f3ccf53eecd0dba15d15fb16d5b48b7dc7955480e",
+    "apps/sg-runtime/tests/diagnostic-telemetry-adoption.test.mjs": "dabbb3e95dcc574846ef6bd32fcea230c74e24dca748a6caa29877e3278e297b",
+    "apps/sg-runtime/tests/identity-runtime.test.ts": "b312027b2bbfe59a72d0be9a1f564899f4f584ed7b9b9b146a958ea281e81602",
+    "apps/sg-runtime/tests/integrated-buyer-journey-package.test.mjs": "c78ac7587a73f4a2257527ad54970f13f2a595e200997f0a2ccae4103c58d3ab",
+    "apps/sg-runtime/tests/native-sql-roundtrips.test.mjs": "e3060d2aa65784d52b018668820fe050668f91cf807e454ccabc49ab8965a65c",
+    "apps/sg-runtime/tests/operation-context.test.mjs": "6216a886aa2d6c6eee0353c40d96648d1dbd19468c9f9ff126b88cfe27befc55",
+    "apps/sg-runtime/tests/porr-demo-middleware.test.ts": "4f7051b329e6dcee3eb36b5305d01d4257bdf279eb2807e018e640549f803c51",
+    "apps/sg-runtime/tests/self-service-account.test.ts": "c96d43daa84edbdcd2bd4b8e7a6c9b91d9a426014aed3acc046a9937363a5307",
+    "apps/sg-runtime/tests/xray-fresh-performance-adoption.test.mjs": "ea4f07536c09bfd89b9f3995f1f26e75ac882acda442cde402c1d3eded0715ef",
+    "apps/sg-runtime/tests/xray-gateway.test.ts": "efc21ba0e279498b244465cd23cac0849f045103811ec42268527f98c9d624f3"
+  },
+  "producerDigests": {
+    "packages/assistant-context-contracts/package.json": "553ebea212858afab288d2fdc6d6ecebf01a47e0ef48e355e040dfbd0ae08a6e",
+    "packages/assistant-context-contracts/src/index.mjs": "f8a84a46bbf9c0cc8b66d689947279dd3510eb1cee7b2538a07ae1800a3dd91c",
+    "packages/assistant-context-contracts/src/index.d.mts": "9010e9cc90edf1cab45203a9509111117cf06489e6f78c2c538d1685efc7bdcf",
+    "packages/assistant-context-gateway/package.json": "9651516ac4c090ecd6423693c3a22aa4249d8d0c4068213dfd83589877797cb9",
+    "packages/assistant-context-gateway/src/index.mjs": "22eae05a6c5b8939fcb82e5cede4a9045a918acab5a134d440ef832256a0b0d9",
+    "packages/assistant-context-gateway/src/index.d.mts": "ef9da4451112eb018474fa535f180b65b367d3f05a1b60040c3171c65abfaf1e",
+    "packages/assistant-context-gateway/src/multi-source.mjs": "9f85816fcc7c682a24dbf43bd2ffe4c580d68b6e93a9c88ed15cc319521bef3f",
+    "apps/newsfeed-runtime/assistant-context-integration.json": "4057379e02c7b698f3f24348c40b84275d92c3a892b55e96b1c6d23175298dfc",
+    "apps/srm/assistant-context-integration.json": "baccc1bdb751ddd33de708a7efe95287f7ee187454f21342ff95fed72951dbc5"
+  }
+}

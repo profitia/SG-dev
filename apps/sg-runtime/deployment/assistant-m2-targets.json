@@ -1,0 +1,28 @@
+{
+  "schemaVersion": "1.0.0",
+  "configurationVersion": "sg2-assistant-m2-development-v1",
+  "serviceId": "srv-dapa3tid0e5s73f8bc5g",
+  "targetEnvironment": "development",
+  "enabledByDefault": false,
+  "contractVersions": {
+    "assistantContext": "2.0.0",
+    "gateway": "2.0.0",
+    "cicAnalytical": "2.1.0"
+  },
+  "sources": {
+    "srm": {
+      "origin": "https://srm-development-runtime.onrender.com",
+      "path": "/api/xray/assistant-context",
+      "producerConfigurationVersion": "srm-assistant-context-peer-development-v1"
+    },
+    "newsfeed": {
+      "origin": "https://newsfeed-api-development.onrender.com",
+      "path": "/v1/assistant-context",
+      "producerConfigurationVersion": "newsfeed-assistant-read-v1"
+    }
+  },
+  "storedReadsOnly": true,
+  "newService": false,
+  "newAiKey": false,
+  "deploymentAuthorisedByThisFile": false
+}
