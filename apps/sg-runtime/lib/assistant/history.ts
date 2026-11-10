@@ -11,11 +11,13 @@ const fail=(code='UNAVAILABLE'):never=>{throw Object.assign(Error('Conversation 
 const record=(v:unknown):v is Record<string,unknown>=>!!v&&typeof v==='object'&&!Array.isArray(v)
 // The same admitted LOAD operation, projected before returning database bytes.
 // No table access, schema change, persisted title or extra model call is needed.
-const previewQuery=`WITH history_reply AS MATERIALIZED (
- SELECT sg2_assistant_history.apply($1::text,$2::text) AS result,sg2_assistant_history.descriptor() AS binding
-) SELECT result || jsonb_build_object('turns',CASE WHEN jsonb_array_length(result->'turns')>0
+const previewQuery=`SELECT result || jsonb_build_object('turns',CASE WHEN jsonb_array_length(result->'turns')>0
  THEN jsonb_build_array((result->'turns'->0) || '{"response":"","sources":[]}'::jsonb)
- ELSE '[]'::jsonb END) AS result,binding FROM history_reply`
+ ELSE '[]'::jsonb END) AS result,binding FROM (
+ WITH history_reply AS MATERIALIZED (
+ SELECT sg2_assistant_history.apply($1::text,$2::text) AS result,sg2_assistant_history.descriptor() AS binding
+ ) SELECT result,binding FROM history_reply
+) AS history_projection`
 export function createAssistantHistory(options:{query:AccessQuery;commandKey:string;schemaDigest:string;now?:()=>number}){
  if(!/^[a-f0-9]{64}$/.test(options.commandKey)||!/^[a-f0-9]{64}$/.test(options.schemaDigest))throw TypeError('Explicit private history binding required')
  const key=Buffer.from(options.commandKey,'hex'),now=options.now??Date.now

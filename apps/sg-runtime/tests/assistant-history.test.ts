@@ -15,6 +15,7 @@ test('question preview uses the existing signed LOAD and validates the original 
  const result=await history.load(context,id,true)
  assert.equal(result.turns[0].message,'SYNTHETIC first question');assert.equal(result.turns[0].response,'')
  const {sql,params}=calls[0],body=JSON.parse(params[0])
+ assert.match(sql,/^\s*SELECT\b/i,'the existing runtime query adapter reads SELECT statements')
  assert.match(sql,/WITH history_reply AS MATERIALIZED/);assert.match(sql,/result->'turns'->0/)
  assert.equal(body.action,'LOAD');assert.equal(body.userId,user);assert.equal(body.conversationId,id)
  assert.equal(params[1],createHmac('sha256',Buffer.from(key,'hex')).update(params[0]).digest('hex'))
