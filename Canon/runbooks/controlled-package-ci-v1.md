@@ -181,3 +181,10 @@ Environment, credential scope and credential-free execution remain unchanged.
 No live migration, runtime grant, source policy, paid call, deployment or Render
 change is authorized by this proposal. Rollback is a reviewed revert of this
 closed class alone. Additional evidence and the owner decision packet live in PHR.
+
+Owner decision in the execution chat, 2026-11-10: “Zatwierdzam poprawkę CI i dalsze przyjęcie”.
+This accepts the three-file PR971 proposal and its exact PR969/18-blob review at
+`8fa964a159a468968293337c9d0c79c326cb84e5`. The preceding pending status records
+preparation before that decision. Trusted-main exact-head bootstrap and mandatory
+checks remain required before controlled main acceptance. The decision grants no
+live migration, deployment, infrastructure, entitlement or paid-provider action.
