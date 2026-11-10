@@ -8,7 +8,7 @@ import { OPERATION_CONTRACT, operationSourceDigest } from '@profitia/platform-co
 import { operationSourceDigest as sourceDigest } from '../../../packages/platform-contracts/src/operation-context.mjs'
 const receipt = JSON.parse(fs.readFileSync(new URL('../operation-integration.json', import.meta.url)))
 test('explicit consumer binds exact implemented contract and installed/source digest without enabling live deployment', async () => {
-  const current=receipt.assistantM1SourceCompatibility,contract=current.rootContract,producer=current.rootProducer
+  const current=receipt.oilAutonomousReportCompatibility??receipt.assistantM1SourceCompatibility,contract=receipt.oilAutonomousReportCompatibility?receipt.contract:current.rootContract,producer=receipt.oilAutonomousReportCompatibility?current.producer:current.rootProducer
   assert.equal(receipt.projectKey, 'SRM')
   assert.equal(receipt.scope, 'ISOLATED_OPERATION_INTEGRATION_ONLY')
   assert.equal(contract.id, OPERATION_CONTRACT.id)
