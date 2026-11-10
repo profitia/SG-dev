@@ -1518,11 +1518,12 @@ test('ECR backward compatibility binds the actual unchanged SG2 lock and only th
 
 test('ECR source continuity admits only14 exact routed files and rejects blob, mode, identity and closure drift',()=>{
  const review=ECR_SOURCE_CONTINUITY_REVIEW,files=Object.entries(review.entries).map(([filename,e])=>({filename,sha:e.sha,status:e.status})),p={...pr(),number:review.prNumber,changed_files:files.length,base:{...pr().base,sha:review.baseSha},head:{...pr().head,sha:review.sourceSha,ref:review.branch}}
- assert.equal(files.length,14);assert.equal(review.sourceSha,'a54d313b88a5d477613a17a38ac53e2d32e4dd32');assert.equal(createHash('sha256').update(JSON.stringify(review.entries)).digest('hex'),'fef62e85b4b257f2aa7c48190bc26969c37ccce8aa225c4fcfdc6e455bd8acd3')
+ assert.equal(files.length,14);assert.equal(review.sourceSha,'c537ffb8a8cbef06f45f984d9e3875dee2288505');assert.equal(createHash('sha256').update(JSON.stringify(review.entries)).digest('hex'),'e80e9d028447773f299961688dda7df8c0267ad02b037def894cd353a7fbb231')
  assertArchitectureFiles(p,files);assert.equal(selectCandidate(context(),p,review.sourceSha,{files}),review.sourceSha)
  for(const f of files){assertEcrSourceContinuityReviewEntry(f,'100644 blob '+f.sha+'\t'+f.filename+'\0');for(const mode of ['100755','120000','160000'])rejection(()=>assertEcrSourceContinuityReviewEntry(f,mode+' blob '+f.sha+'\t'+f.filename+'\0'))}
  for(const edit of [a=>a.pop(),a=>a.push(a[0]),a=>a[0]={...a[0],sha:'f'.repeat(40)},a=>a[0]={...a[0],status:'removed'},a=>a[0]={...a[0],previous_filename:a[0].filename},a=>a[0]={...a[0],filename:'apps/economic-calendar-runtime/src/unreviewed.mjs'}]){const bad=structuredClone(files);edit(bad);rejection(()=>selectCandidate(context(),{...p,changed_files:bad.length},review.sourceSha,{files:bad}))}
  for(const edit of [q=>q.number++,q=>q.head.ref='architecture/another-ecr',q=>q.head.ref='sg2/ecr-source-continuity',q=>q.head.repo.full_name='profitia/fork',q=>q.user.login='attacker',q=>q.base.ref='staging']){const bad=structuredClone(p);edit(bad);rejection(()=>selectCandidate(context(),bad,review.sourceSha,{files}))}
+ const oldFiles=files.map(f=>f.filename==='scripts/governance/platform-source-hub-foundation.test.mjs'?{...f,sha:'7a1710d795c441cc80a468ce8a4f33191e899f5b'}:f);rejection(()=>selectCandidate(context(),p,review.sourceSha,{files:oldFiles}))
  assert(files.every(f=>!f.filename.startsWith('Canon/')&&!f.filename.startsWith('.github/')&&!f.filename.startsWith('apps/sg-runtime/')&&!f.filename.startsWith('apps/srm/')))
 })
 
@@ -1536,4 +1537,14 @@ test('Newsfeed saved-search review binds only PR969 and its18 exact regular blob
  // Reserved identity cannot fall back to a narrower generic SDK-only candidate.
  const generic=architectureFiles();rejection(()=>selectCandidate(context(),{...p,changed_files:generic.length},review.sourceSha,{files:generic}))
  assert(files.every(f=>!f.filename.startsWith('Canon/')&&!f.filename.startsWith('.github/')&&!f.filename.startsWith('apps/sg-runtime/')&&!f.filename.startsWith('apps/srm/')))
+})
+
+// Real Git bytes prove this is only the accepted Newsfeed prefix plus the
+// already reviewed ECR test suffix, preserving both owners' work.
+test('shared test continuation preserves the accepted main and exact ECR suffix',()=>{
+ const file='scripts/governance/platform-source-hub-foundation.test.mjs',read=(sha)=>execFileSync('git',['show',sha+':'+file],{cwd:authorityRoot})
+ const previous=read('84544da6be8f5a8cf62b63cdd07dfa4ff6926fdd'),approved=read('a54d313b88a5d477613a17a38ac53e2d32e4dd32'),main=read('ce520b5a3d4ca5f2a48156f8d879ff31f3c874c2'),combined=read('c537ffb8a8cbef06f45f984d9e3875dee2288505')
+ assert(approved.subarray(0,previous.length).equals(previous));assert.deepEqual(combined,Buffer.concat([main,approved.subarray(previous.length)]))
+ const blob=b=>createHash('sha1').update('blob '+b.length+'\0').update(b).digest('hex')
+ assert.equal(blob(combined),ECR_SOURCE_CONTINUITY_REVIEW.entries[file].sha);assert.notEqual(blob(combined),'7a1710d795c441cc80a468ce8a4f33191e899f5b')
 })
