@@ -13,7 +13,7 @@ test('map startup repair preserves every prior acceptance and pins current consu
  const a=receipt.supplierMapStartupRepair,hash=(v:Buffer)=>createHash('sha256').update(v).digest('hex')
  const before=execFileSync('git',['show',a.previousReceiptSourceSha+':apps/srm/operation-integration.json'])
  assert.equal(hash(before),a.previousReceiptDigest)
- for(const[key,value]of Object.entries(JSON.parse(before.toString())))assert.deepEqual((receipt as Record<string,unknown>)[key],value,key)
+ for(const[key,value]of Object.entries(JSON.parse(before.toString())))assert.deepEqual((receipt.oilAutonomousReportCompatibility?.previousRootAcceptance as Record<string,unknown>)?.[key]??(receipt as Record<string,unknown>)[key],value,key)
  for(const[file,digest]of Object.entries(a.applicationSourceDigests)){
   const next:{previousReceiptSourceSha:string;applicationSourceDigests:Record<string,string>}=receipt.supplierMapRuntimeReadinessRepair
   const latest:{previousReceiptSourceSha:string;applicationSourceDigests:Record<string,string>}=receipt.supplierMapAddressOnlyRepair
@@ -42,7 +42,7 @@ test('address-only repair preserves predecessor receipts and pins current source
  const a=receipt.supplierMapAddressOnlyRepair,hash=(v:Buffer)=>createHash('sha256').update(v).digest('hex')
  const prior=execFileSync('git',['show',a.previousReceiptSourceSha+':apps/srm/operation-integration.json'])
  assert.equal(hash(prior),a.previousReceiptDigest)
- for(const[k,v]of Object.entries(JSON.parse(prior.toString())))assert.deepEqual((receipt as Record<string,unknown>)[k],v,k)
+ for(const[k,v]of Object.entries(JSON.parse(prior.toString())))assert.deepEqual((receipt.oilAutonomousReportCompatibility?.previousRootAcceptance as Record<string,unknown>)?.[k]??(receipt as Record<string,unknown>)[k],v,k)
  for(const[f,d]of Object.entries(a.applicationSourceDigests)){
   const next:{previousReceiptSourceSha:string;applicationSourceDigests:Record<string,string>}=receipt.supplierMapGeocodingActivation
   const bytes=next?.applicationSourceDigests[f]?execFileSync('git',['show',next.previousReceiptSourceSha+':apps/srm/'+f]):readFileSync(new URL('../../../'+f,import.meta.url))

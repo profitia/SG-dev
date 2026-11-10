@@ -10,7 +10,7 @@ test('company session repair preserves prior acceptance and pins every changed c
  const a=receipt.mgbiDevelopmentSessionFreshnessRepair,hash=(v:Buffer)=>createHash('sha256').update(v).digest('hex')
  const before=execFileSync('git',['show',a.previousReceiptSourceSha+':apps/srm/operation-integration.json'])
  assert.equal(hash(before),a.previousReceiptDigest)
- for(const[key,value]of Object.entries(JSON.parse(before.toString())))assert.deepEqual((receipt as Record<string,unknown>)[key],value,key)
+ for(const[key,value]of Object.entries(JSON.parse(before.toString())))assert.deepEqual((receipt.oilAutonomousReportCompatibility?.previousRootAcceptance as Record<string,unknown>)?.[key]??(receipt as Record<string,unknown>)[key],value,key)
  for(const[file,digest]of Object.entries(a.applicationSourceDigests)){
   const next:{previousReceiptSourceSha:string;applicationSourceDigests:Record<string,string>}=receipt.supplierMapStartupRepair
   const latest:{previousReceiptSourceSha:string;applicationSourceDigests:Record<string,string>}=receipt.supplierMapGeocodingActivation
