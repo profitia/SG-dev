@@ -19,8 +19,11 @@ type Props = {
   onLaunchXray?: () => void
   onLaunchAdp?: () => void
   onLaunchBenchmark?: () => void
+  onLaunchInsights?: () => void
   assistantContext?:AssistantScreenContext|null
   assistantConversation?:AssistantConversationSession
+  assistantNotifications?:React.ReactNode
+  assistantSelectionLabel?:string|null
   moduleActive?: boolean
   moduleWorkspace?: (theme: 'light' | 'dark') => React.ReactNode
 }
@@ -41,17 +44,17 @@ const applications = [
   { key: 'benchmark', name: 'Benchmark Finder', category: 'RYNEK I CENY', description: 'Analizuj benchmarki i koszty zasadne Twoich kategorii.', tags: ['Benchmarki rynkowe', 'Ceny historyczne i prognozy'], kind: 'chart' as const },
   { key: 'xray', name: 'X-Ray Supplier Intelligence', category: 'WIEDZA O DOSTAWCACH', description: 'Poznaj swoich dostawców lepiej, niż oni znają Ciebie.', tags: ['Informacje o firmach', 'Ocena dostawców'], kind: 'search' as const },
   { key: 'adp', name: 'ADP — Arkusz Danych Podstawowych', category: 'DANE OD DOSTAWCÓW', description: 'Zbieraj i organizuj informacje o Twoich dostawcach.', tags: ['Ankiety dostawców', 'Dane podstawowe'], kind: 'table' as const },
-  { key: 'insight', name: 'Procurement Insight', category: 'BUDUJ WŁASNE RAPORTY', description: 'Łącz dane zakupowe w przejrzyste raporty. Odkrywaj trendy i wspieraj decyzje zakupowe.', tags: ['Własne raporty', 'Analiza zakupów'], kind: 'insight' as const },
+  { key: 'insight', name: 'Procurement Insights', category: 'WIADOMOŚCI I ANALIZY', description: 'Wiadomości rynkowe i analizy zakupowe.', tags: ['Newsfeed', 'Raporty'], kind: 'insight' as const },
 ]
 const englishApplications = [
   {name:'Benchmark Finder',category:'MARKET AND PRICES',description:'Analyse benchmarks and relevant costs for your categories.',tags:['Market benchmarks','Historical prices and forecasts']},
   {name:'X-Ray Supplier Intelligence',category:'SUPPLIER INTELLIGENCE',description:'Know your suppliers better than they know you.',tags:['Company information','Supplier assessment']},
   {name:'ADP — Master Data Sheet',category:'SUPPLIER DATA',description:'Collect and organise information about your suppliers.',tags:['Supplier questionnaires','Master data']},
-  {name:'Procurement Insight',category:'BUILD YOUR OWN REPORTS',description:'Turn procurement data into clear reports. Discover trends and support purchasing decisions.',tags:['Custom reports','Procurement analysis']},
+  {name:'Procurement Insights',category:'NEWS AND ANALYSIS',description:'Market news and procurement analysis.',tags:['Newsfeed','Reports']},
 ]
 
 /** Presentation only. The host owns verified account data and sign-out. */
-export function PlatformAppShell({ locale, salutation, assistantAvatar, organisationBranding, onLogout, signingOut = false, onLaunchXray, onLaunchAdp, onLaunchBenchmark, moduleActive = false, moduleWorkspace, assistantContext,assistantConversation }: Props) {
+export function PlatformAppShell({ locale, salutation, assistantAvatar, organisationBranding, onLogout, signingOut = false, onLaunchXray, onLaunchAdp, onLaunchBenchmark,onLaunchInsights, moduleActive = false, moduleWorkspace, assistantContext,assistantConversation,assistantNotifications,assistantSelectionLabel }: Props) {
   const cardStack=useRef<HTMLDivElement>(null), workspace=useRef<HTMLDivElement>(null)
   const positions=useRef<CardPositions>(new Map()), animations=useRef<CardAnimations>(new Map()), reducedMotion=useRef(false)
   const collapsedRef=useRef(false), [assistantCollapsed,setAssistantCollapsed]=useState(false)
@@ -91,7 +94,7 @@ export function PlatformAppShell({ locale, salutation, assistantAvatar, organisa
   }
   const addressed = salutation ? `, ${salutation}` : ''
   const userGreeting = en ? `Good morning${addressed}.` : `Dzień dobry${addressed}.`
-  const assistant=<AssistantWidget locale={locale} salutation={salutation} avatar={assistantAvatar} theme={theme} conversation={assistantConversation} content={createAssistantContent(locale,salutation,assistantContext)} onCollapsedChange={handleCollapsedChange}/>;
+  const assistant=<AssistantWidget locale={locale} salutation={salutation} avatar={assistantAvatar} theme={theme} conversation={assistantConversation} notifications={assistantNotifications} content={{...createAssistantContent(locale,salutation,assistantContext),...(assistantSelectionLabel?{contextLabel:assistantSelectionLabel}:{})}} onCollapsedChange={handleCollapsedChange}/>;
   return <div className={`appshell${moduleActive ? ' as-module-active' : ''}`} data-theme={theme} style={{ colorScheme: theme }}>
     <a className="as-skip" href="#appshell-main">{en ? 'Skip to applications' : 'Przejdź do aplikacji'}</a>
     <header className="as-header"><div className="as-header-inner">
@@ -114,7 +117,7 @@ export function PlatformAppShell({ locale, salutation, assistantAvatar, organisa
             <div className="as-app-top"><div className="as-app-icon"><Icon kind={app.kind} size={28} /></div></div>
             <div className="as-app-copy"><p className="as-eyebrow">{app.category}</p><h3>{app.name}</h3><p>{app.description}</p></div>
             <div className="as-app-footer"><ul className="as-tags" aria-label={en ? 'Application scope' : 'Zakres aplikacji'}>{app.tags.map(tag => <li key={tag}>{tag}</li>)}</ul>
-              <button className="as-primary-button as-launch" type="button" disabled={app.key==='benchmark'?!onLaunchBenchmark:app.key==='xray'?!onLaunchXray:app.key==='adp'?!onLaunchAdp:true} onClick={app.key==='benchmark'?onLaunchBenchmark:app.key==='adp'?onLaunchAdp:app.key==='xray'?onLaunchXray:undefined} aria-label={app.key==='insight'?app.name+' — '+(en?'Coming soon':'Wkrótce'):(en ? 'Launch ' : 'Uruchom ') + app.name}>{app.key==='insight'?(en?'Coming soon':'Wkrótce'):(en ? 'Launch' : 'Uruchom')}<Icon kind="arrow" size={18} /></button>
+              <button className="as-primary-button as-launch" type="button" disabled={app.key==='benchmark'?!onLaunchBenchmark:app.key==='xray'?!onLaunchXray:app.key==='adp'?!onLaunchAdp:!onLaunchInsights} onClick={app.key==='benchmark'?onLaunchBenchmark:app.key==='adp'?onLaunchAdp:app.key==='xray'?onLaunchXray:onLaunchInsights} aria-label={app.key==='insight'&&!onLaunchInsights?app.name+' — '+(en?'Coming soon':'Wkrótce'):(en ? 'Launch ' : 'Uruchom ') + app.name}>{app.key==='insight'&&!onLaunchInsights?(en?'Coming soon':'Wkrótce'):(en ? 'Launch' : 'Uruchom')}<Icon kind="arrow" size={18} /></button>
             </div>
           </article>})}
         </div></section>
