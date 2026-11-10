@@ -256,7 +256,7 @@ export function getSg2SelectionRuntime(env: EnvironmentInput = process.env): Sg2
   let discoveryPromise:Promise<DiscoveryApi>|undefined
   let assistantPromise:Promise<AssistantRuntime>|undefined
   const assistant=config.assistant?()=>assistantPromise??=import('@/lib/assistant/runtime').then(async({createSg2AssistantRuntime})=>{const runtime=createSg2AssistantRuntime(config.assistant!,{
-    prisma,auditPrisma,clerk,application:config.application,identity:config.identity,binding:config.binding,market:marketRead?.analytics,
+    prisma,auditPrisma,clerk,application:config.application,identity:config.identity,binding:config.binding,market:marketRead?.analytics,forecast:forecastRead,
   });await runtime.ready();return runtime}):undefined
   const benchmarkDiscovery=config.discovery?()=>discoveryPromise??=import('@/lib/benchmark/discovery-runtime').then(({createDiscoveryRuntime})=>createDiscoveryRuntime(config.discovery!,{prisma,auditPrisma,clerk,application:config.application,identity:config.identity,binding:config.binding,module:config.module})):undefined
   const runtime = Object.freeze({ provider: 'clerk' as const, executor, defaultOrganisationId: config.application.organisationId!,

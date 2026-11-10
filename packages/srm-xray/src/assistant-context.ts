@@ -32,7 +32,7 @@ export type AssistantApplicationContext = {
     capturedOn: string | null;
     statementScope: 'standalone' | 'consolidated';
   };
-  supplier: { id: string; name: string; nip: string | null; krs: string | null };
+  supplier: { id: string; name: string; nip: string | null; krs: string | null; entityType?: 'COMPANY' | 'JDG' };
   view: {
     page: 'supplier-intelligence-dashboard';
     radar: {

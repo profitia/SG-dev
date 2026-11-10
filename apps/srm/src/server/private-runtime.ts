@@ -87,6 +87,13 @@ export function readSrmPrivateReportConfiguration(env: EnvironmentInput = proces
       || !identity.application.authorizedParties.includes(peer.targetOrigin)) unavailable()
     bearerPeerReads = [peer]
   }
+  if (env.PROFITIA_ASSISTANT_CONTEXT_PEER_READ_VERSION !== undefined) {
+    const { configurationVersion, ...peer } = target.assistantContextPeerRead
+    if (env.PROFITIA_ASSISTANT_CONTEXT_PEER_READ_VERSION !== configurationVersion
+      || !identity.application.authorizedParties.includes(peer.sourceOrigin)
+      || !identity.application.authorizedParties.includes(peer.targetOrigin)) unavailable()
+    bearerPeerReads = [...(bearerPeerReads ?? []), peer]
+  }
   const config: PrivateConfiguration = { provider: 'clerk', databaseUrl: url.toString(), identity: { ...identity.application,
     ...(bearerPeerReads ? { bearerPeerReads } : {}),
     requestBoundary: { publicOrigins: [...identity.application.authorizedParties], internalOrigins: ['http://0.0.0.0:10000', 'https://0.0.0.0:10000'] } },

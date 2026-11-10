@@ -144,7 +144,7 @@ export function createSrmSupplierApi(options:SupplierApiOptions){
    input.request.signal.throwIfAborted()
    return prepareSrmReportAdmission(options.company.lookup.work,selected)
   },
-  readAcceptedKys:(request:Request,organisationId:string,nip:string)=>read({request,organisationId},nip,'COMPANY','kys'),
+  readAcceptedKys:(request:Request,organisationId:string,nip:string,entityType:'COMPANY'|'JDG'='COMPANY')=>read({request,organisationId},nip,entityType,'kys'),
   known:(input:Pick<SupplierHttpInput,'request'|'organisationId'>,nip:string)=>known.read(input.request,input.organisationId,nip),
   async prepareKrsFinancial(input:SupplierHttpInput,identity:VerifiedIdentityV1,recheck:KrsFinancialRecheck,general?:SectionEnvelope<GeneralCompanyData>,execution?:KrsFinancialExecution){
    if(input.command.nip!==identity.identity.nip)return refuse()

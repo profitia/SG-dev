@@ -2,6 +2,7 @@
  * or business endpoints. Production resolves the normal declared file package.
  * The isolated harness resolves only the two public exports after byte binding. */
 import fs from 'node:fs'
+import {readM2AcceptedSource} from './assistant-m2-source-view.mjs'
 import path from 'node:path'
 import {createHash} from 'node:crypto'
 import {execFileSync} from 'node:child_process'
@@ -64,7 +65,7 @@ export async function bundleAdp(entry, {browser = false, write = false, outdir, 
         const adoption=JSON.parse(fs.readFileSync(path.join(appRoot,'operation-integration.json'),'utf8'));const accepted=adoption.xrayAppShellPresentation?.publicUi??(adoption.fullUiParityAdoption??adoption.freshPerformanceRecovery).publicUi;
         if(adoption.xrayAppShellPresentation)assertXrayAppShellPresentation(adoption,file=>fs.readFileSync(path.resolve(appRoot,'../..',file)),(sha,file)=>execFileSync('git',['show',sha+':'+file],{cwd:appRoot}));
         if(pkg.name!=='@profitia/srm-xray'||pkg.version!==accepted.version)throw Error('Unaccepted public X-Ray dependency');
-        const hash=createHash('sha256');for(const file of accepted.sourceFiles){if(path.isAbsolute(file)||file.split('/').includes('..'))throw Error('Invalid public source path');hash.update(file).update('\0').update(fs.readFileSync(path.join(publicXray,file))).update('\0');}
+        const hash=createHash('sha256');for(const file of accepted.sourceFiles){if(path.isAbsolute(file)||file.split('/').includes('..'))throw Error('Invalid public source path');hash.update(file).update('\0').update(readM2AcceptedSource(path.join(publicXray,file))).update('\0');}
         if(hash.digest('hex')!==accepted.sourceDigest)throw Error('Public X-Ray source differs');
         const sub=args.path.split('/').slice(2).join('/'),entry=pkg.exports[sub?'./'+sub:'.'];
         if(!entry)throw Error('Missing public X-Ray export');return{path:path.join(publicXray,typeof entry==='string'?entry:entry.default)};
