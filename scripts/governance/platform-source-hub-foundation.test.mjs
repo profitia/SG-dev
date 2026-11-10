@@ -22,10 +22,10 @@ const git = args => execFileSync('git', args, { cwd: root, encoding: 'utf8' }).t
 const priorText = p => execFileSync('git', ['show', approved + ':' + p], { cwd: root, encoding: 'utf8' })
 const prior = p => JSON.parse(priorText(p))
 const sha256 = bytes => createHash('sha256').update(bytes).digest('hex')
-function durableStorageAcceptance(readCurrent=read){return calendarStoragePredecessor(readCurrent,(sha,p)=>execFileSync('git',['show',sha+':'+p],{cwd:root}),(base,head)=>git(['diff','--name-only',base,head]).split('\n')).record}
+function calendarPredecessor(readCurrent=read){return calendarStoragePredecessor(readCurrent,(sha,p)=>execFileSync('git',['show',sha+':'+p],{cwd:root}),(base,head)=>git(['diff','--name-only',base,head]).split('\n'))}
+function durableStorageAcceptance(readCurrent=read){return calendarPredecessor(readCurrent).record}
 function scheduleSourceAcceptance(readCurrent=read){
- const successor=durableStorageAcceptance(readCurrent),actual=readCurrent
- readCurrent=p=>successor&&Object.hasOwn(successor.replacements,p)?execFileSync('git',['show',successor.baseSha+':'+p],{cwd:root,encoding:'utf8'}):actual(p)
+ readCurrent=calendarPredecessor(readCurrent).previousBytes
  if(JSON.parse(readCurrent('packages/platform-source-hub-contracts/package.json')).version!=='1.5.0')return null
  const file='apps/platform-source-hub/operations/publication-schedule-source-acceptance.json',bytes=readCurrent(file)
  assert.equal(sha256(bytes),'3f9a3de218368152b86cd4c4efebb831f2033256465248dcf320f362d8c0c422','exact new schedule acceptance')
@@ -277,7 +277,7 @@ test('SourceHub optional ECR storage metadata preserves accepted transport and p
  const sdkVersion=json('packages/platform-contracts/package.json').version
  const durable=durableStorageAcceptance(),schedule=scheduleSourceAcceptance()
  if(sdkVersion==='1.34.0'){
-  const previous=assistantSdkPredecessor(p=>fs.readFileSync(path.join(root,p)),(sha,p)=>execFileSync('git',['show',sha+':'+p],{cwd:root})).previousBytes
+  const previous=assistantSdkPredecessor(calendarPredecessor(p=>fs.readFileSync(path.join(root,p))).previousBytes,(sha,p)=>execFileSync('git',['show',sha+':'+p],{cwd:root})).previousBytes
   const adoption=json('apps/architecture-lab/sdk-1.34-compatibility.json')
   assert.equal(adoption.producerCandidateSha,'ebf017cae09bf7bd9139af7917534b47ae0c4d4b')
   assert.equal(Object.keys(adoption.producerFiles).length,27)
@@ -295,7 +295,7 @@ test('SourceHub optional ECR storage metadata preserves accepted transport and p
  if(current.version==='1.1.0'){
   assert.deepEqual(current,old)
  }else{
-  assert.equal(current.version,durable?'1.6.0':schedule?'1.5.0':sdkVersion==='1.34.0'?'1.4.0':'1.3.0')
+  assert.equal(current.version,current.version==='1.7.0'?'1.7.0':durable?'1.6.0':schedule?'1.5.0':sdkVersion==='1.34.0'?'1.4.0':'1.3.0')
   const {version:oldVersion,peerDependencies:oldPeers,...oldManifest}=old
   const {version,peerDependencies,...currentManifest}=current
   if(current.version==='1.2.0'){
@@ -340,5 +340,16 @@ test('Stage03 pins both producer and consumer and rejects altered licence, contr
  assert(durableStorageAcceptance())
  for(const target of ['apps/economic-calendar-runtime/migrations/002-multi-source-calendar.sql','apps/economic-calendar-runtime/operations/stage03-owner-plan.json','packages/platform-source-hub-contracts/commodities-v1.mjs','apps/platform-source-hub/operations/publication-schedule-source-acceptance.json']){
   assert.throws(()=>durableStorageAcceptance(p=>read(p)+(p===target?'\nUNACCEPTED_CHANGE':'')),target)
+ }
+})
+
+// The successor helper validates the complete new source set before exposing
+// historical bytes; the old schedule and Stage03 tests still run unchanged.
+test('Stage04–05 acceptance rejects modified new source and immutable history before predecessor traversal',()=>{
+ const record=json('packages/platform-source-hub-contracts/semantic-continuous-acceptance-v1.json')
+ assert.equal(record.hubContractsVersion,'1.7.0')
+ assert(durableStorageAcceptance())
+ for(const target of ['apps/platform-source-hub/src/providers/eia.mjs','apps/economic-calendar-runtime/src/semantics.mjs','packages/platform-contracts/current-e1-authority/migrations/010-ecr-service-continuity.sql','packages/platform-source-hub-contracts/semantic-continuous-acceptance-v1.json','packages/platform-source-hub-contracts/calendar-storage-acceptance-v1.json']){
+  assert.throws(()=>calendarPredecessor(p=>read(p)+(p===target?'\nUNACCEPTED_CHANGE':'')),target)
  }
 })
