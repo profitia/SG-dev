@@ -55,6 +55,10 @@ export async function migrate(client, configuration) {
     const {rows:[extension]}=await client.query("SELECT to_jsonb(i)->>'multi_source_schema_digest' AS digest FROM economic_calendar.installation i WHERE singleton")
     if(extension?.digest){if(extension.digest!==multiSourceDigest)throw new Error('EXISTING_MULTI_SOURCE_SCHEMA_MISMATCH')}
     else{await client.query(multiSource);await client.query('UPDATE economic_calendar.installation SET multi_source_schema_digest=$1 WHERE singleton',[multiSourceDigest])}
+    const semantic=await readFile(new URL('../migrations/003-semantic-continuous.sql',import.meta.url),'utf8'),semanticDigest=digest(semantic)
+    const {rows:[knowledge]}=await client.query("SELECT to_jsonb(i)->>'semantic_schema_digest' AS digest FROM economic_calendar.installation i WHERE singleton")
+    if(knowledge?.digest){if(knowledge.digest!==semanticDigest)throw new Error('EXISTING_SEMANTIC_SCHEMA_MISMATCH')}
+    else{await client.query(semantic);await client.query('UPDATE economic_calendar.installation SET semantic_schema_digest=$1 WHERE singleton',[semanticDigest])}
     await client.query('COMMIT')
     return {status: 'INSTALLED_OR_VERIFIED', schemaDigest: digest(schema), receiverBaseDigest: digest(receiver), calendarReceiverDigest: digest(calendar), enrollment: 'SEPARATE_OWNER_ACTION_REQUIRED'}
   } catch (error) {await client.query('ROLLBACK'); throw error}

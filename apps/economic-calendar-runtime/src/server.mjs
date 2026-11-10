@@ -1,5 +1,7 @@
 import http from 'node:http'
 import {performance} from 'node:perf_hooks'
+import {createSemanticRepository} from './semantics.mjs'
+import {semanticFilter,semanticId} from '../../../packages/economic-calendar-contracts/semantic.mjs'
 import {isOperationDenied, OperationDenied} from '@profitia/platform-contracts/operation-context'
 import {CalendarError, ECR_CONTRACT, calendarFilter, closedObject, eventId, publicationId, publicationFilter, fingerprint, organisationId} from '@profitia/economic-calendar-contracts'
 const integer = value => {if (typeof value !== 'string' || !/^(0|[1-9][0-9]{0,14})$/.test(value)) throw new CalendarError('INVALID_INTEGER'); return Number(value)}
@@ -24,6 +26,7 @@ async function body(request) {
 }
 export function createServer({configuration, authorizer, repository, report = (_event) => {}}) {
   if (!authorizer?.execute || !repository?.ready) throw new TypeError('Explicit ECR runtime dependencies required')
+  const semantics=createSemanticRepository(repository)
   const server = http.createServer(async (incoming, outgoing) => {
     const started = performance.now(); let operation = 'unmatched', status = 500,recordsReturned=null,databaseOperationMs=null
     const send = (code, value) => {status = code; if(Number.isSafeInteger(value.version))outgoing.setHeader('etag','"'+value.version+'"'); outgoing.writeHead(code, {'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store', 'x-content-type-options': 'nosniff'}); outgoing.end(JSON.stringify(value))}
@@ -43,9 +46,9 @@ export function createServer({configuration, authorizer, repository, report = (_
       }
       if (url.pathname === '/health' && incoming.method === 'GET') {operation = 'health'; return send(200, {status: 'ok', contract: ECR_CONTRACT, sourceSha: configuration.deploymentId})}
       if (url.pathname === '/ready' && incoming.method === 'GET') {operation = 'ready'; const ready = await repository.ready() && await authorizer.ready(); return send(ready ? 200 : 503, {ready, sourceSha: configuration.deploymentId})}
-      const match = /^\/v1\/organisations\/([^/]+)\/calendar\/(events|publications|preferences|favourites)(?:\/([^/]+))?(?:\/(revisions))?$/.exec(url.pathname)
+      const match = /^\/v1\/organisations\/([^/]+)\/calendar\/(events|publications|preferences|favourites|timeline|context|knowledge|freshness|evidence)(?:\/([^/]+))?(?:\/(revisions))?$/.exec(url.pathname)
       if (!match) throw new CalendarError('NOT_FOUND', 404)
-      const organisation = organisationId(decodeURIComponent(match[1])), collection = match[2], id = match[3] ? (collection==='publications'?publicationId:eventId)(decodeURIComponent(match[3])) : null
+      const organisation = organisationId(decodeURIComponent(match[1])), collection = match[2], id = match[3] ? (collection==='publications'?publicationId:collection==='knowledge'?semanticId:eventId)(decodeURIComponent(match[3])) : null
       const history = match[4] === 'revisions', method = incoming.method ?? ''
       const value = await body(incoming)
       if (method === 'GET' && value !== null) throw new CalendarError('BODY_NOT_ALLOWED')
@@ -56,8 +59,20 @@ export function createServer({configuration, authorizer, repository, report = (_
       const request = new Request(configuration.publicOrigin + url.pathname, {method, headers, signal: abort.signal})
       let expectedVersion
       if(incoming.headers['if-match']!==undefined){const match=/^"(0|[1-9][0-9]{0,14})"$/.exec(String(incoming.headers['if-match']));if(!match)throw new CalendarError('INVALID_IF_MATCH');expectedVersion=integer(match[1])}
-      let action, kind = ['events','publications'].includes(collection) ? 'events' : 'preferences', write = method !== 'GET'
-      if (collection === 'events' && method === 'GET') {
+      let action, kind = ['events','publications','timeline','context','knowledge','freshness','evidence'].includes(collection) ? 'events' : 'preferences', write = method !== 'GET'
+      if(['timeline','context'].includes(collection)&&method==='GET'&&!id&&!history){
+        parameters(url.searchParams,['targetType','targetId','from','to','asKnownAt','after','limit'])
+        const criteria=semanticFilter(Object.fromEntries([...url.searchParams.keys()].map(k=>[k,k==='limit'?integer(single(url.searchParams,k)):single(url.searchParams,k)])))
+        operation='semantic_'+collection;action=(_,t)=>semantics[collection](t,criteria)
+      }else if(collection==='knowledge'&&method==='GET'){
+        operation=history?'semantic_history':'semantic_knowledge'
+        if(history&&id){parameters(url.searchParams,['after','limit']);action=(_,t)=>semantics.history(t,id,{after:url.searchParams.has('after')?integer(single(url.searchParams,'after')):0,limit:url.searchParams.has('limit')?integer(single(url.searchParams,'limit')):100})}
+        else if(!id&&!history){parameters(url.searchParams,['asKnownAt']);action=(_,t)=>semantics.knowledge(t,{asKnownAt:single(url.searchParams,'asKnownAt')})}
+        else throw new CalendarError('NOT_FOUND',404)
+      }else if(collection==='freshness'&&method==='GET'&&!id&&!history){parameters(url.searchParams,[]);operation='sync_freshness';action=(_,t)=>semantics.freshness(t)}
+      else if(collection==='evidence'&&method==='GET'&&id&&history){parameters(url.searchParams,['after','limit']);operation='result_history';action=(_,t)=>semantics.resultHistory(t,id,{after:single(url.searchParams,'after')??'',limit:url.searchParams.has('limit')?integer(single(url.searchParams,'limit')):100})}
+      else if(collection==='evidence'&&method==='GET'&&id&&!history){parameters(url.searchParams,['asKnownAt']);operation='event_evidence';action=(_,t)=>semantics.evidence(t,id,single(url.searchParams,'asKnownAt'))}
+      else if (collection === 'events' && method === 'GET') {
         operation = history ? 'event_history' : id ? 'event_detail' : 'events'
         if (history) {if (!id) throw new CalendarError('NOT_FOUND', 404); parameters(url.searchParams, ['after', 'limit']); const page = {after: url.searchParams.has('after') ? integer(single(url.searchParams, 'after')) : 0, limit: url.searchParams.has('limit') ? integer(single(url.searchParams, 'limit')) : 100}; action = (_, t) => repository.revisions(t, id, page)}
         else if (id) {parameters(url.searchParams, ['asKnownAt']); action = (_, t) => repository.detail(t, id, single(url.searchParams, 'asKnownAt'))}

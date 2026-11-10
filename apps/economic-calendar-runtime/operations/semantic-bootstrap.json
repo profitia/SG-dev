@@ -1,0 +1,547 @@
+[
+  {
+    "kind": "concept",
+    "id": "ecr.concept.wpsr",
+    "expectedVersion": 0,
+    "status": "accepted",
+    "effectiveAt": "2026-11-10T00:00:00.000Z",
+    "data": {
+      "namePl": "Tygodniowy raport o rynku ropy i paliw",
+      "nameEn": "Weekly Petroleum Status Report",
+      "description": "Cotygodniowe zestawienie bilansu ropy i produktów paliwowych w USA. Harmonogram nie jest wynikiem publikacji.",
+      "aliases": [
+        "Weekly Petroleum Status Report",
+        "Tygodniowy raport o rynku ropy i paliw"
+      ],
+      "taxonomy": [
+        "ropa",
+        "paliwa",
+        "zapasy"
+      ],
+      "geography": "USA"
+    },
+    "evidence": [
+      {
+        "ref": "https://github.com/profitia/SG-dev/blob/276b6d333ad902b63f809e3150f663ab829a4d31/apps/platform-source-hub/catalog/ecr-calendar-inventory-v1.json",
+        "reason": "Accepted inventory and exact source publication identifiers; this is curation evidence, not a new provider LIVE test."
+      }
+    ],
+    "curatorRef": "ARCHITECTURE-ECR-STAGE04-05-SEMANTIC-CONTINUOUS-20261110:controlled-source-curation-v1"
+  },
+  {
+    "kind": "concept",
+    "id": "ecr.concept.steo",
+    "expectedVersion": 0,
+    "status": "accepted",
+    "effectiveAt": "2026-11-10T00:00:00.000Z",
+    "data": {
+      "namePl": "Krótkoterminowa prognoza energetyczna",
+      "nameEn": "Short-Term Energy Outlook",
+      "description": "Prognozy podaży, zużycia i cen energii. Prognoza nie jest rzeczywistym odczytem.",
+      "aliases": [
+        "Short-Term Energy Outlook",
+        "Krótkoterminowa prognoza energetyczna"
+      ],
+      "taxonomy": [
+        "energia",
+        "prognozy"
+      ],
+      "geography": "USA i świat"
+    },
+    "evidence": [
+      {
+        "ref": "https://github.com/profitia/SG-dev/blob/276b6d333ad902b63f809e3150f663ab829a4d31/apps/platform-source-hub/catalog/ecr-calendar-inventory-v1.json",
+        "reason": "Accepted inventory and exact source publication identifiers; this is curation evidence, not a new provider LIVE test."
+      }
+    ],
+    "curatorRef": "ARCHITECTURE-ECR-STAGE04-05-SEMANTIC-CONTINUOUS-20261110:controlled-source-curation-v1"
+  },
+  {
+    "kind": "concept",
+    "id": "ecr.concept.natural-gas-storage",
+    "expectedVersion": 0,
+    "status": "accepted",
+    "effectiveAt": "2026-11-10T00:00:00.000Z",
+    "data": {
+      "namePl": "Tygodniowe zapasy gazu ziemnego",
+      "nameEn": "Weekly Natural Gas Storage Report",
+      "description": "Informacja o stanie zapasów gazu ziemnego; poziom zapasów i ich zmiana to różne miary.",
+      "aliases": [
+        "Weekly Natural Gas Storage Report",
+        "Tygodniowe zapasy gazu ziemnego"
+      ],
+      "taxonomy": [
+        "gaz",
+        "zapasy"
+      ],
+      "geography": "USA"
+    },
+    "evidence": [
+      {
+        "ref": "https://github.com/profitia/SG-dev/blob/276b6d333ad902b63f809e3150f663ab829a4d31/apps/platform-source-hub/catalog/ecr-calendar-inventory-v1.json",
+        "reason": "Accepted inventory and exact source publication identifiers; this is curation evidence, not a new provider LIVE test."
+      }
+    ],
+    "curatorRef": "ARCHITECTURE-ECR-STAGE04-05-SEMANTIC-CONTINUOUS-20261110:controlled-source-curation-v1"
+  },
+  {
+    "kind": "concept",
+    "id": "ecr.concept.cot-disaggregated",
+    "expectedVersion": 0,
+    "status": "accepted",
+    "effectiveAt": "2026-11-10T00:00:00.000Z",
+    "data": {
+      "namePl": "Pozycje uczestników rynku kontraktów",
+      "nameEn": "CFTC Commitments of Traders (Disaggregated)",
+      "description": "Pozycjonowanie kategorii uczestników kontraktów futures; nie fizyczna podaż surowców.",
+      "aliases": [
+        "CFTC Commitments of Traders (Disaggregated)",
+        "Pozycje uczestników rynku kontraktów"
+      ],
+      "taxonomy": [
+        "kontrakty terminowe",
+        "pozycjonowanie"
+      ],
+      "geography": "Rynki objęte CFTC"
+    },
+    "evidence": [
+      {
+        "ref": "https://github.com/profitia/SG-dev/blob/276b6d333ad902b63f809e3150f663ab829a4d31/apps/platform-source-hub/catalog/ecr-calendar-inventory-v1.json",
+        "reason": "Accepted inventory and exact source publication identifiers; this is curation evidence, not a new provider LIVE test."
+      }
+    ],
+    "curatorRef": "ARCHITECTURE-ECR-STAGE04-05-SEMANTIC-CONTINUOUS-20261110:controlled-source-curation-v1"
+  },
+  {
+    "kind": "concept",
+    "id": "ecr.concept.wasde",
+    "expectedVersion": 0,
+    "status": "accepted",
+    "effectiveAt": "2026-11-10T00:00:00.000Z",
+    "data": {
+      "namePl": "Bilans i prognozy rolne",
+      "nameEn": "World Agricultural Supply and Demand Estimates",
+      "description": "Szacunki podaży, zużycia i bilansów produktów rolnych.",
+      "aliases": [
+        "World Agricultural Supply and Demand Estimates",
+        "Bilans i prognozy rolne"
+      ],
+      "taxonomy": [
+        "rolnictwo",
+        "prognozy"
+      ],
+      "geography": "USA i świat"
+    },
+    "evidence": [
+      {
+        "ref": "https://github.com/profitia/SG-dev/blob/276b6d333ad902b63f809e3150f663ab829a4d31/apps/platform-source-hub/catalog/ecr-calendar-inventory-v1.json",
+        "reason": "Accepted inventory and exact source publication identifiers; this is curation evidence, not a new provider LIVE test."
+      }
+    ],
+    "curatorRef": "ARCHITECTURE-ECR-STAGE04-05-SEMANTIC-CONTINUOUS-20261110:controlled-source-curation-v1"
+  },
+  {
+    "kind": "concept",
+    "id": "ecr.concept.crop-progress",
+    "expectedVersion": 0,
+    "status": "accepted",
+    "effectiveAt": "2026-11-10T00:00:00.000Z",
+    "data": {
+      "namePl": "Postęp upraw",
+      "nameEn": "Crop Progress",
+      "description": "Stan i postęp prac oraz rozwoju upraw w zakresie raportu.",
+      "aliases": [
+        "Crop Progress",
+        "Postęp upraw"
+      ],
+      "taxonomy": [
+        "rolnictwo",
+        "uprawy"
+      ],
+      "geography": "USA"
+    },
+    "evidence": [
+      {
+        "ref": "https://github.com/profitia/SG-dev/blob/276b6d333ad902b63f809e3150f663ab829a4d31/apps/platform-source-hub/catalog/ecr-calendar-inventory-v1.json",
+        "reason": "Accepted inventory and exact source publication identifiers; this is curation evidence, not a new provider LIVE test."
+      }
+    ],
+    "curatorRef": "ARCHITECTURE-ECR-STAGE04-05-SEMANTIC-CONTINUOUS-20261110:controlled-source-curation-v1"
+  },
+  {
+    "kind": "concept",
+    "id": "ecr.concept.export-sales",
+    "expectedVersion": 0,
+    "status": "accepted",
+    "effectiveAt": "2026-11-10T00:00:00.000Z",
+    "data": {
+      "namePl": "Sprzedaż eksportowa produktów rolnych",
+      "nameEn": "Export Sales",
+      "description": "Zgłoszona sprzedaż eksportowa produktów rolnych; nie cena ani potwierdzona dostawa.",
+      "aliases": [
+        "Export Sales",
+        "Sprzedaż eksportowa produktów rolnych"
+      ],
+      "taxonomy": [
+        "rolnictwo",
+        "handel"
+      ],
+      "geography": "USA"
+    },
+    "evidence": [
+      {
+        "ref": "https://github.com/profitia/SG-dev/blob/276b6d333ad902b63f809e3150f663ab829a4d31/apps/platform-source-hub/catalog/ecr-calendar-inventory-v1.json",
+        "reason": "Accepted inventory and exact source publication identifiers; this is curation evidence, not a new provider LIVE test."
+      }
+    ],
+    "curatorRef": "ARCHITECTURE-ECR-STAGE04-05-SEMANTIC-CONTINUOUS-20261110:controlled-source-curation-v1"
+  },
+  {
+    "kind": "mapping",
+    "id": "ecr.mapping.eia.wpsr",
+    "expectedVersion": 0,
+    "status": "accepted",
+    "effectiveAt": "2026-11-10T00:00:00.000Z",
+    "data": {
+      "provider": "eia",
+      "publicationRef": "eia:wpsr",
+      "conceptId": "ecr.concept.wpsr",
+      "certainty": "CONFIRMED",
+      "relation": "EQUIVALENT_DEFINITION",
+      "reason": "Exact registered publication identifier and retained title identify the report definition. This does not equate individual releases or their values."
+    },
+    "evidence": [
+      {
+        "ref": "https://github.com/profitia/SG-dev/blob/276b6d333ad902b63f809e3150f663ab829a4d31/apps/platform-source-hub/catalog/ecr-calendar-inventory-v1.json",
+        "reason": "Accepted inventory and exact source publication identifiers; this is curation evidence, not a new provider LIVE test."
+      }
+    ],
+    "curatorRef": "ARCHITECTURE-ECR-STAGE04-05-SEMANTIC-CONTINUOUS-20261110:controlled-source-curation-v1"
+  },
+  {
+    "kind": "mapping",
+    "id": "ecr.mapping.eia.steo",
+    "expectedVersion": 0,
+    "status": "accepted",
+    "effectiveAt": "2026-11-10T00:00:00.000Z",
+    "data": {
+      "provider": "eia",
+      "publicationRef": "eia:steo",
+      "conceptId": "ecr.concept.steo",
+      "certainty": "CONFIRMED",
+      "relation": "EQUIVALENT_DEFINITION",
+      "reason": "Exact registered publication identifier and retained title identify the report definition. This does not equate individual releases or their values."
+    },
+    "evidence": [
+      {
+        "ref": "https://github.com/profitia/SG-dev/blob/276b6d333ad902b63f809e3150f663ab829a4d31/apps/platform-source-hub/catalog/ecr-calendar-inventory-v1.json",
+        "reason": "Accepted inventory and exact source publication identifiers; this is curation evidence, not a new provider LIVE test."
+      }
+    ],
+    "curatorRef": "ARCHITECTURE-ECR-STAGE04-05-SEMANTIC-CONTINUOUS-20261110:controlled-source-curation-v1"
+  },
+  {
+    "kind": "mapping",
+    "id": "ecr.mapping.commodities-sh.eia-wpsr",
+    "expectedVersion": 0,
+    "status": "accepted",
+    "effectiveAt": "2026-11-10T00:00:00.000Z",
+    "data": {
+      "provider": "commodities-sh",
+      "publicationRef": "commodities-sh:eia-wpsr",
+      "conceptId": "ecr.concept.wpsr",
+      "certainty": "CONFIRMED",
+      "relation": "EQUIVALENT_DEFINITION",
+      "reason": "Exact registered publication identifier and retained title identify the report definition. This does not equate individual releases or their values."
+    },
+    "evidence": [
+      {
+        "ref": "https://github.com/profitia/SG-dev/blob/276b6d333ad902b63f809e3150f663ab829a4d31/apps/platform-source-hub/catalog/ecr-calendar-inventory-v1.json",
+        "reason": "Accepted inventory and exact source publication identifiers; this is curation evidence, not a new provider LIVE test."
+      }
+    ],
+    "curatorRef": "ARCHITECTURE-ECR-STAGE04-05-SEMANTIC-CONTINUOUS-20261110:controlled-source-curation-v1"
+  },
+  {
+    "kind": "mapping",
+    "id": "ecr.mapping.commodities-sh.eia-ng",
+    "expectedVersion": 0,
+    "status": "accepted",
+    "effectiveAt": "2026-11-10T00:00:00.000Z",
+    "data": {
+      "provider": "commodities-sh",
+      "publicationRef": "commodities-sh:eia-ng",
+      "conceptId": "ecr.concept.natural-gas-storage",
+      "certainty": "CONFIRMED",
+      "relation": "EQUIVALENT_DEFINITION",
+      "reason": "Exact registered publication identifier and retained title identify the report definition. This does not equate individual releases or their values."
+    },
+    "evidence": [
+      {
+        "ref": "https://github.com/profitia/SG-dev/blob/276b6d333ad902b63f809e3150f663ab829a4d31/apps/platform-source-hub/catalog/ecr-calendar-inventory-v1.json",
+        "reason": "Accepted inventory and exact source publication identifiers; this is curation evidence, not a new provider LIVE test."
+      }
+    ],
+    "curatorRef": "ARCHITECTURE-ECR-STAGE04-05-SEMANTIC-CONTINUOUS-20261110:controlled-source-curation-v1"
+  },
+  {
+    "kind": "mapping",
+    "id": "ecr.mapping.commodities-sh.cftc-cot",
+    "expectedVersion": 0,
+    "status": "accepted",
+    "effectiveAt": "2026-11-10T00:00:00.000Z",
+    "data": {
+      "provider": "commodities-sh",
+      "publicationRef": "commodities-sh:cftc-cot",
+      "conceptId": "ecr.concept.cot-disaggregated",
+      "certainty": "CONFIRMED",
+      "relation": "EQUIVALENT_DEFINITION",
+      "reason": "Exact registered publication identifier and retained title identify the report definition. This does not equate individual releases or their values."
+    },
+    "evidence": [
+      {
+        "ref": "https://github.com/profitia/SG-dev/blob/276b6d333ad902b63f809e3150f663ab829a4d31/apps/platform-source-hub/catalog/ecr-calendar-inventory-v1.json",
+        "reason": "Accepted inventory and exact source publication identifiers; this is curation evidence, not a new provider LIVE test."
+      }
+    ],
+    "curatorRef": "ARCHITECTURE-ECR-STAGE04-05-SEMANTIC-CONTINUOUS-20261110:controlled-source-curation-v1"
+  },
+  {
+    "kind": "mapping",
+    "id": "ecr.mapping.commodities-sh.usda-wasde",
+    "expectedVersion": 0,
+    "status": "accepted",
+    "effectiveAt": "2026-11-10T00:00:00.000Z",
+    "data": {
+      "provider": "commodities-sh",
+      "publicationRef": "commodities-sh:usda-wasde",
+      "conceptId": "ecr.concept.wasde",
+      "certainty": "CONFIRMED",
+      "relation": "EQUIVALENT_DEFINITION",
+      "reason": "Exact registered publication identifier and retained title identify the report definition. This does not equate individual releases or their values."
+    },
+    "evidence": [
+      {
+        "ref": "https://github.com/profitia/SG-dev/blob/276b6d333ad902b63f809e3150f663ab829a4d31/apps/platform-source-hub/catalog/ecr-calendar-inventory-v1.json",
+        "reason": "Accepted inventory and exact source publication identifiers; this is curation evidence, not a new provider LIVE test."
+      }
+    ],
+    "curatorRef": "ARCHITECTURE-ECR-STAGE04-05-SEMANTIC-CONTINUOUS-20261110:controlled-source-curation-v1"
+  },
+  {
+    "kind": "mapping",
+    "id": "ecr.mapping.commodities-sh.usda-crop",
+    "expectedVersion": 0,
+    "status": "accepted",
+    "effectiveAt": "2026-11-10T00:00:00.000Z",
+    "data": {
+      "provider": "commodities-sh",
+      "publicationRef": "commodities-sh:usda-crop",
+      "conceptId": "ecr.concept.crop-progress",
+      "certainty": "CONFIRMED",
+      "relation": "EQUIVALENT_DEFINITION",
+      "reason": "Exact registered publication identifier and retained title identify the report definition. This does not equate individual releases or their values."
+    },
+    "evidence": [
+      {
+        "ref": "https://github.com/profitia/SG-dev/blob/276b6d333ad902b63f809e3150f663ab829a4d31/apps/platform-source-hub/catalog/ecr-calendar-inventory-v1.json",
+        "reason": "Accepted inventory and exact source publication identifiers; this is curation evidence, not a new provider LIVE test."
+      }
+    ],
+    "curatorRef": "ARCHITECTURE-ECR-STAGE04-05-SEMANTIC-CONTINUOUS-20261110:controlled-source-curation-v1"
+  },
+  {
+    "kind": "mapping",
+    "id": "ecr.mapping.commodities-sh.usda-esr",
+    "expectedVersion": 0,
+    "status": "accepted",
+    "effectiveAt": "2026-11-10T00:00:00.000Z",
+    "data": {
+      "provider": "commodities-sh",
+      "publicationRef": "commodities-sh:usda-esr",
+      "conceptId": "ecr.concept.export-sales",
+      "certainty": "CONFIRMED",
+      "relation": "EQUIVALENT_DEFINITION",
+      "reason": "Exact registered publication identifier and retained title identify the report definition. This does not equate individual releases or their values."
+    },
+    "evidence": [
+      {
+        "ref": "https://github.com/profitia/SG-dev/blob/276b6d333ad902b63f809e3150f663ab829a4d31/apps/platform-source-hub/catalog/ecr-calendar-inventory-v1.json",
+        "reason": "Accepted inventory and exact source publication identifiers; this is curation evidence, not a new provider LIVE test."
+      }
+    ],
+    "curatorRef": "ARCHITECTURE-ECR-STAGE04-05-SEMANTIC-CONTINUOUS-20261110:controlled-source-curation-v1"
+  },
+  {
+    "kind": "measure",
+    "id": "ecr.measure.crude-commercial-stocks",
+    "expectedVersion": 0,
+    "status": "accepted",
+    "effectiveAt": "2026-11-10T00:00:00.000Z",
+    "data": {
+      "conceptId": "ecr.concept.wpsr",
+      "namePl": "Zapasy ropy bez rezerwy strategicznej",
+      "nameEn": "Weekly U.S. Ending Stocks excluding SPR of Crude Oil",
+      "description": "Stan zapasów na koniec podanego tygodnia. Zmiana stanu nie jest bezpośrednią miarą podaży lub popytu.",
+      "unit": "Thousand Barrels",
+      "frequency": "weekly",
+      "geography": "USA",
+      "sourceSelector": {
+        "provider": "eia",
+        "path": "petroleum/stoc/wstk",
+        "series": "WCESTUS1",
+        "field": "value"
+      },
+      "valueMeaning": "CURRENT_SNAPSHOT_NOT_PUBLICATION_VINTAGE"
+    },
+    "evidence": [
+      {
+        "ref": "https://www.eia.gov/dnav/pet/hist/LeafHandler.ashx?n=PET&s=WCESTUS1&f=W",
+        "reason": "Official series title, weekly period and thousand-barrel unit; preserve exact API unit in each observation."
+      },
+      {
+        "ref": "https://www.eia.gov/petroleum/supply/weekly/",
+        "reason": "WPSR lists stocks of crude oil and petroleum products as report measures."
+      }
+    ],
+    "curatorRef": "ARCHITECTURE-ECR-STAGE04-05-SEMANTIC-CONTINUOUS-20261110:controlled-source-curation-v1"
+  },
+  {
+    "kind": "measure",
+    "id": "ecr.measure.gasoline-stocks",
+    "expectedVersion": 0,
+    "status": "accepted",
+    "effectiveAt": "2026-11-10T00:00:00.000Z",
+    "data": {
+      "conceptId": "ecr.concept.wpsr",
+      "namePl": "Zapasy benzyny ogółem",
+      "nameEn": "Weekly U.S. Ending Stocks of Total Gasoline",
+      "description": "Stan zapasów na koniec podanego tygodnia. Zmiana stanu nie jest bezpośrednią miarą podaży lub popytu.",
+      "unit": "Thousand Barrels",
+      "frequency": "weekly",
+      "geography": "USA",
+      "sourceSelector": {
+        "provider": "eia",
+        "path": "petroleum/stoc/wstk",
+        "series": "WGTSTUS1",
+        "field": "value"
+      },
+      "valueMeaning": "CURRENT_SNAPSHOT_NOT_PUBLICATION_VINTAGE"
+    },
+    "evidence": [
+      {
+        "ref": "https://www.eia.gov/dnav/pet/hist/LeafHandler.ashx?n=PET&s=WGTSTUS1&f=W",
+        "reason": "Official series title, weekly period and thousand-barrel unit; preserve exact API unit in each observation."
+      },
+      {
+        "ref": "https://www.eia.gov/petroleum/supply/weekly/",
+        "reason": "WPSR lists stocks of crude oil and petroleum products as report measures."
+      }
+    ],
+    "curatorRef": "ARCHITECTURE-ECR-STAGE04-05-SEMANTIC-CONTINUOUS-20261110:controlled-source-curation-v1"
+  },
+  {
+    "kind": "rule",
+    "id": "ecr.rule.oil-relevance",
+    "expectedVersion": 0,
+    "status": "accepted",
+    "effectiveAt": "2026-11-10T00:00:00.000Z",
+    "data": {
+      "description": "Evidence-curated relevance to a recognised oil benchmark. Supply/stock or forecast context is STRONG; broad futures positioning is CONTEXTUAL. DIRECT requires documented identity of the target measure and is not inferred here.",
+      "method": "CURATED_EVIDENCE_RULE",
+      "version": "1",
+      "causalityClaim": false
+    },
+    "evidence": [
+      {
+        "ref": "https://github.com/profitia/SG-dev/blob/276b6d333ad902b63f809e3150f663ab829a4d31/apps/platform-source-hub/catalog/ecr-calendar-inventory-v1.json",
+        "reason": "Accepted inventory and exact source publication identifiers; this is curation evidence, not a new provider LIVE test."
+      }
+    ],
+    "curatorRef": "ARCHITECTURE-ECR-STAGE04-05-SEMANTIC-CONTINUOUS-20261110:controlled-source-curation-v1"
+  },
+  {
+    "kind": "relevance",
+    "id": "ecr.relevance.wpsr.brent-ice",
+    "expectedVersion": 0,
+    "status": "accepted",
+    "effectiveAt": "2026-11-10T00:00:00.000Z",
+    "data": {
+      "conceptId": "ecr.concept.wpsr",
+      "targetType": "BENCHMARK_SERIES",
+      "targetId": "MACROBOND:b_c1_cl",
+      "level": "STRONG",
+      "reason": "WPSR measures US crude and petroleum balances and stocks. These are oil-market fundamentals relevant to Brent; the report is not the ICE futures price and does not prove price causation.",
+      "ruleId": "ecr.rule.oil-relevance",
+      "ruleVersion": 1,
+      "targetEvidenceRef": "neon:autumn-waterfall-65938876/br-dry-hall-b294222f/neondb/public.market_series/cmsrg7n26000pu5pxq45qu7ex"
+    },
+    "evidence": [
+      {
+        "ref": "https://github.com/profitia/SG-dev/blob/276b6d333ad902b63f809e3150f663ab829a4d31/apps/platform-source-hub/catalog/ecr-calendar-inventory-v1.json",
+        "reason": "Accepted inventory and exact source publication identifiers; this is curation evidence, not a new provider LIVE test."
+      },
+      {
+        "ref": "neon:autumn-waterfall-65938876/br-dry-hall-b294222f/neondb/public.market_series/cmsrg7n26000pu5pxq45qu7ex",
+        "reason": "Read-only authoritative Development catalogue lookup: MACROBOND b_c1_cl; ICE Brent first position close; daily USD/Barrel. No prices or competing catalogue are stored."
+      }
+    ],
+    "curatorRef": "ARCHITECTURE-ECR-STAGE04-05-SEMANTIC-CONTINUOUS-20261110:controlled-source-curation-v1"
+  },
+  {
+    "kind": "relevance",
+    "id": "ecr.relevance.steo.brent-ice",
+    "expectedVersion": 0,
+    "status": "accepted",
+    "effectiveAt": "2026-11-10T00:00:00.000Z",
+    "data": {
+      "conceptId": "ecr.concept.steo",
+      "targetType": "BENCHMARK_SERIES",
+      "targetId": "MACROBOND:b_c1_cl",
+      "level": "STRONG",
+      "reason": "STEO supplies oil supply, consumption and price outlook context. Its forecast measures are distinct from the ICE Brent first-position closing price.",
+      "ruleId": "ecr.rule.oil-relevance",
+      "ruleVersion": 1,
+      "targetEvidenceRef": "neon:autumn-waterfall-65938876/br-dry-hall-b294222f/neondb/public.market_series/cmsrg7n26000pu5pxq45qu7ex"
+    },
+    "evidence": [
+      {
+        "ref": "https://github.com/profitia/SG-dev/blob/276b6d333ad902b63f809e3150f663ab829a4d31/apps/platform-source-hub/catalog/ecr-calendar-inventory-v1.json",
+        "reason": "Accepted inventory and exact source publication identifiers; this is curation evidence, not a new provider LIVE test."
+      },
+      {
+        "ref": "neon:autumn-waterfall-65938876/br-dry-hall-b294222f/neondb/public.market_series/cmsrg7n26000pu5pxq45qu7ex",
+        "reason": "Read-only authoritative Development catalogue lookup: MACROBOND b_c1_cl; ICE Brent first position close; daily USD/Barrel. No prices or competing catalogue are stored."
+      }
+    ],
+    "curatorRef": "ARCHITECTURE-ECR-STAGE04-05-SEMANTIC-CONTINUOUS-20261110:controlled-source-curation-v1"
+  },
+  {
+    "kind": "relevance",
+    "id": "ecr.relevance.cot-disaggregated.brent-ice",
+    "expectedVersion": 0,
+    "status": "accepted",
+    "effectiveAt": "2026-11-10T00:00:00.000Z",
+    "data": {
+      "conceptId": "ecr.concept.cot-disaggregated",
+      "targetType": "BENCHMARK_SERIES",
+      "targetId": "MACROBOND:b_c1_cl",
+      "level": "CONTEXTUAL",
+      "reason": "The disaggregated COT publication covers commodity-futures participant positioning. A report-wide link is context only; this is not a verified Brent-specific contract position or physical demand.",
+      "ruleId": "ecr.rule.oil-relevance",
+      "ruleVersion": 1,
+      "targetEvidenceRef": "neon:autumn-waterfall-65938876/br-dry-hall-b294222f/neondb/public.market_series/cmsrg7n26000pu5pxq45qu7ex"
+    },
+    "evidence": [
+      {
+        "ref": "https://github.com/profitia/SG-dev/blob/276b6d333ad902b63f809e3150f663ab829a4d31/apps/platform-source-hub/catalog/ecr-calendar-inventory-v1.json",
+        "reason": "Accepted inventory and exact source publication identifiers; this is curation evidence, not a new provider LIVE test."
+      },
+      {
+        "ref": "neon:autumn-waterfall-65938876/br-dry-hall-b294222f/neondb/public.market_series/cmsrg7n26000pu5pxq45qu7ex",
+        "reason": "Read-only authoritative Development catalogue lookup: MACROBOND b_c1_cl; ICE Brent first position close; daily USD/Barrel. No prices or competing catalogue are stored."
+      }
+    ],
+    "curatorRef": "ARCHITECTURE-ECR-STAGE04-05-SEMANTIC-CONTINUOUS-20261110:controlled-source-curation-v1"
+  }
+]

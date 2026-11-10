@@ -1,0 +1,26 @@
+{
+  "schemaVersion": "ECRResultStorageOwnerActivation/1",
+  "status": "PROPOSED_NOT_ACTIVATED",
+  "ownerPacketSha256": "47a387b345d9fb4fdecb6ca9f9c600c78ecb7a90eb7c17ef26de118889d3edcd",
+  "applicationId": "profitia-economic-calendar-runtime-development",
+  "consumerStorage": {
+    "provider": "eia",
+    "family": "series-observations",
+    "datasetId": "petroleum/stoc/wstk",
+    "seriesIds": [
+      "WCESTUS1",
+      "WGTSTUS1"
+    ],
+    "fields": [
+      "value"
+    ],
+    "frequency": "weekly",
+    "geography": "NUS",
+    "licenceRef": "source-hub-commodity-eia-series-observations-20261106",
+    "retentionMode": "DURABLE_NO_FIXED_EXPIRY",
+    "redistribution": "PRIVATE_AUTHORISED_CONSUMER_ONLY"
+  },
+  "globalLicenceMutation": false,
+  "hubCacheRetentionSeconds": 0,
+  "otherConsumersChanged": false
+}

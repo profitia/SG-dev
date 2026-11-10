@@ -4,6 +4,7 @@ import {createHash} from 'node:crypto'
 import {assertHubResponse} from '@profitia/platform-source-hub-contracts'
 import {publicationScheduleObservation,publicationId,publicationFilter} from '@profitia/economic-calendar-contracts'
 import {CalendarError, calendarFilter, calendarObservation, canonical, changeKinds, eventId, fingerprint, instant, preferences} from '@profitia/economic-calendar-contracts'
+import {reconcileResultLinks} from './result-links.mjs'
 
 const emptyPreferences = () => preferences({})
 const actor = context => {
@@ -12,12 +13,13 @@ const actor = context => {
 }
 const schemaDigest = createHash('sha256').update(readFileSync(new URL('../migrations/001-read-model-and-preferences.sql', import.meta.url))).digest('hex')
 const multiSourceDigest=createHash('sha256').update(readFileSync(new URL('../migrations/002-multi-source-calendar.sql',import.meta.url))).digest('hex')
+const semanticDigest=createHash('sha256').update(readFileSync(new URL('../migrations/003-semantic-continuous.sql',import.meta.url))).digest('hex')
 export function createRepository(configuration, database) {
   configuration=Object.freeze({...configuration})
   async function assertInstalled(transaction) {
     const {rows: [i]} = await transaction.query('SELECT * FROM economic_calendar.installation WHERE singleton')
     if (!(i?.status === 'ACTIVE' && i.schema_digest === schemaDigest && i.receiver_base_digest === currentE1SchemaDigest('receiver') && i.calendar_receiver_digest === currentE1CalendarSchemaDigest('receiver')
-      && i.multi_source_schema_digest===multiSourceDigest && i.application_id === configuration.applicationId && i.environment === 'development' && i.project_id === configuration.projectId && i.branch_id === configuration.branchId && i.database_name === configuration.databaseName)) throw new CalendarError('CALENDAR_STORAGE_UNAVAILABLE',503)
+      && i.multi_source_schema_digest===multiSourceDigest && i.semantic_schema_digest===semanticDigest && i.application_id === configuration.applicationId && i.environment === 'development' && i.project_id === configuration.projectId && i.branch_id === configuration.branchId && i.database_name === configuration.databaseName)) throw new CalendarError('CALENDAR_STORAGE_UNAVAILABLE',503)
   }
   async function ready() {try {await database.verifyLogin();await assertInstalled(database);return true}catch{return false}}
   /** @param {any} transaction @param {string|null|undefined} asKnownAt */
@@ -146,7 +148,7 @@ async function persistPublication(query,o,receipt){
  * SourceHub has already admitted the genuine component/actor and storage basis.
  * This function is never installed as an unauthenticated HTTP sync endpoint.
  */
-export async function persistAcquisition(database, command, response, {intentDigest = fingerprint({receipt:response.usage.receiptRef})} = {}) {
+export async function persistAcquisition(database, command, response, {intentDigest = fingerprint({receipt:response.usage.receiptRef}),assertLease=async(_t)=>{}} = {}) {
   if(!/^[a-f0-9]{64}$/.test(intentDigest))throw new CalendarError('INVALID_SYNC_INTENT')
   command=structuredClone(command);response=structuredClone(response)
   const scheduleMode=command.contractVersion==='1.3.0'
@@ -164,6 +166,7 @@ export async function persistAcquisition(database, command, response, {intentDig
     deduplicated.set(o.eventId, o)
   }
   return database.transact(async ({query}) => {
+    await assertLease({query})
     await query("SELECT pg_advisory_xact_lock(hashtextextended('ecr-intent:'||$1,0))", [intentDigest])
     await query("SELECT pg_advisory_xact_lock(hashtextextended('ecr-receipt:'||$1,0))", [receipt])
     if(scheduleMode){
@@ -178,7 +181,7 @@ export async function persistAcquisition(database, command, response, {intentDig
     }
     const {rows: [clock]} = await query('SELECT clock_timestamp() AS observed_at')
     const startedAt = clock.observed_at
-    const result = {received: response.items.length, distinctEvents: deduplicated.size, duplicates: observations.length - deduplicated.size, created: 0, changed: 0, unchanged: 0, stale: 0, receiptRef: receipt, observedAt: startedAt, replay: false,
+    const result = {received: response.items.length, distinctEvents: deduplicated.size, duplicates: observations.length - deduplicated.size, created: 0, changed: 0, unchanged: 0, stale: 0, receiptRef: receipt, observedAt: startedAt, replay: false,coverage:response.coverage??{completeness:'UNKNOWN'},
       ...(scheduleMode?{publications:publications.size,publicationCreated:0,publicationChanged:0,publicationUnchanged:0,publicationStale:0}: {})}
     for(const p of [...publications.values()].sort((a,b)=>a.publicationId.localeCompare(b.publicationId))){const outcome=await persistPublication(query,p,receipt);result['publication'+outcome[0].toUpperCase()+outcome.slice(1)]++}
     // Stable lock ordering makes overlapping multi-event synchronizations safe.
@@ -204,6 +207,7 @@ export async function persistAcquisition(database, command, response, {intentDig
       if(o.data.publicationId)await query('UPDATE economic_calendar.events SET publication_id=$2 WHERE event_id=$1',[o.eventId,o.data.publicationId])
       await query('INSERT INTO economic_calendar.observations(event_id,sequence,fingerprint,data,observed_at,source_retrieved_at,receipt_ref,adopted_as_current,change_kinds) VALUES($1,$2,$3,$4::jsonb,$5,$6,$7::uuid,$8,$9::text[])', [o.eventId, sequence, o.fingerprint, JSON.stringify(o.data), observedAt, o.sourceRetrievedAt, receipt, !stale, kinds])
     }
+    if(scheduleMode)await reconcileResultLinks({query})
     const {rows: [completedClock]} = await query('SELECT clock_timestamp() AS observed_at')
     const observedAt = completedClock.observed_at; result.observedAt = observedAt
     const coverage = {provider: response.coverage ?? {completeness: 'UNKNOWN'}, page: response.page, status: response.status, historyMeaning: 'OBSERVED_BY_ECR_ONLY'}

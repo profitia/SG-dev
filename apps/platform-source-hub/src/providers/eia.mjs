@@ -50,5 +50,7 @@ export function createEiaProvider({fetchImpl}={}){return {/** @param {any} reque
   return makeRecord(request.family,'eia','v2-data',{datasetId:c.path,referencePeriod:row.period,frequency:optional(r.frequency)??c.frequency,dimensions,measures,observedAt:null,publishedAt:null,revisionStatus:'PROVIDER_CURRENT_SNAPSHOT_NOT_VINTAGE',upstreamApiVersion:optional(json.apiVersion)},{sourceUrl})
  })
  const total=/^\d+$/.test(String(r.total))&&Number.isSafeInteger(Number(r.total))?Number(r.total):null
- return answer(request.family,'eia',items,{limit,offset:c.offset??0,total,nativeFilters:Object.keys(c),providerReturned:r.data.length})
+ const result=answer(request.family,'eia',items,{limit,offset:c.offset??0,total,nativeFilters:Object.keys(c),providerReturned:r.data.length})
+ if(request.contractVersion==='1.4.0'){result.contractVersion='1.4.0';for(const item of result.items)item.metadata.contractVersion='1.4.0'}
+ return result
 }}}

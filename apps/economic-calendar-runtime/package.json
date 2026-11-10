@@ -1,6 +1,6 @@
 {
   "name": "@profitia/economic-calendar-runtime",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "private": true,
   "type": "module",
   "engines": {
@@ -10,12 +10,14 @@
     "start": "node src/main.mjs",
     "test": "node --test --test-concurrency=1 --test-timeout=90000 test/*.test.mjs",
     "typecheck": "tsc --noEmit",
-    "build": "tsc --noEmit && node --check src/main.mjs && node --check scripts/migrate.mjs && node --check scripts/sync.mjs && node --check scripts/source-acquire.mjs && node --check scripts/live-probe.mjs && node --check scripts/verify-storage.mjs",
+    "build": "tsc --noEmit && node --check src/main.mjs && node --check scripts/migrate.mjs && node --check scripts/sync.mjs && node --check scripts/source-acquire.mjs && node --check scripts/live-probe.mjs && node --check scripts/verify-storage.mjs && node --check scripts/continuous.mjs && node --check scripts/curate.mjs",
     "db:migrate": "node scripts/migrate.mjs",
     "sync": "node scripts/sync.mjs",
     "source:acquire": "node scripts/source-acquire.mjs",
     "probe:live": "node scripts/live-probe.mjs",
-    "storage:verify": "node scripts/verify-storage.mjs"
+    "storage:verify": "node scripts/verify-storage.mjs",
+    "sync:continuous": "node scripts/continuous.mjs",
+    "semantic:curate": "node scripts/curate.mjs"
   },
   "dependencies": {
     "@profitia/economic-calendar-contracts": "file:../../packages/economic-calendar-contracts",

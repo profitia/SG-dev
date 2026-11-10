@@ -16,6 +16,18 @@ export function catalogueStorageProjection(licence,family){
  return {mode:'CATALOG_METADATA_ONLY',basisRef:licence.licence_ref,licenceVersion:String(licence.version)};
 }
 async function scheduleStorageProjection(t,configuration,context,licence,request,consumer){
+ if(request.contractVersion==='1.4.0'){
+  if(configuration.ecrResultsStorageEnabled!==true||context.actorKind!=='SERVICE'||consumer.applicationId!=='profitia-economic-calendar-runtime-development'
+   ||request.provider!=='eia'||request.family!=='series-observations'||licence.consumer_access_mode!=='SPENDGURU_PRODUCT')throw new SourceHubError('DURABLE_STORAGE_NOT_ADMITTED',403);
+  await t.query("SELECT pg_advisory_xact_lock_shared(hashtextextended('ecr-result-storage:'||$1,0))",[request.criteria.path]);
+  const {rows:[r]}=await t.query('SELECT * FROM source_hub.result_consumer_storage WHERE consumer_application_id=$1 AND provider_id=$2 AND family=$3 AND dataset_id=$4',[consumer.applicationId,request.provider,request.family,request.criteria.path]);
+  const c=request.criteria,facets=c.facets??{};
+  if(!r||r.status!=='ACTIVE'||c.frequency!==r.frequency||c.data.length!==r.fields.length||c.data.some(f=>!r.fields.includes(f))
+    ||!Array.isArray(facets.series)||!facets.series.length||facets.series.some(s=>!r.series_ids.includes(s))
+    ||Object.keys(facets).some(k=>!['series','duoarea'].includes(k))||facets.duoarea&&(facets.duoarea.length!==1||facets.duoarea[0]!==r.geography))throw new SourceHubError('RESULT_STORAGE_SCOPE_NOT_ADMITTED',403);
+  return {mode:'DURABLE_OWNER_ENTITLEMENT',basisRef:r.basis_ref,licenceVersion:String(licence.version),rightsVersion:String(r.version),consumerApplicationId:consumer.applicationId,retentionMode:r.retention_mode,redistribution:r.redistribution,
+   scope:{datasetId:r.dataset_id,seriesIds:facets.series,fields:r.fields,frequency:r.frequency,geography:r.geography}};
+ }
  if(request.contractVersion!=='1.3.0')return null;
  if(configuration.calendarConsumerStorageEnabled!==true||context.actorKind!=='SERVICE'||consumer.applicationId!=='profitia-economic-calendar-runtime-development'
   ||request.family!=='publication-calendar'||!['eia','commodities-sh'].includes(request.provider)||licence.consumer_access_mode!=='SPENDGURU_PRODUCT')throw new SourceHubError('DURABLE_STORAGE_NOT_ADMITTED',403);
@@ -31,7 +43,7 @@ export function createRepository(configuration,database){
   if(r.rows.length!==1)throw new SourceHubError('LICENCE_ADMISSION_REQUIRED',403);return r.rows[0];
  }
  async function begin(transaction,context,request,consumer,idempotencyKey){
-  if(request.contractVersion==='1.3.0')throw new SourceHubError('FIRST_PARTY_SERVICE_REQUIRED',403);
+  if(['1.3.0','1.4.0'].includes(request.contractVersion))throw new SourceHubError('FIRST_PARTY_SERVICE_REQUIRED',403);
   if(typeof idempotencyKey!=='string'||!/^[A-Za-z0-9][A-Za-z0-9._:-]{7,127}$/.test(idempotencyKey))throw new SourceHubError('IDEMPOTENCY_KEY_REQUIRED');
   const l=await licence(transaction,request.provider,request.family,consumer),s=scope(context),key=hash(idempotencyKey),digest=operationPayloadDigest(request);
   if(request.provider==='trading-economics'&&request.family==='external-forecasts'&&request.criteria.forecastType==='markets'&&l.allow_market_forecasts!==true)throw new SourceHubError('LICENCE_ADMISSION_REQUIRED',403);
@@ -79,6 +91,7 @@ export function createFirstPartyRepository(configuration,database){
  const vals='$1,$2,$3::uuid,$4,$5::uuid,$6';
  async function licence(t,provider,family){const r=await t.query('SELECT * FROM source_hub.current_first_party_licence($1,$2)',[provider,family]);if(r.rows.length!==1)throw new SourceHubError('LICENCE_ADMISSION_REQUIRED',403);return r.rows[0];}
  async function begin(t,c,request,consumer,idempotencyKey){
+  if(consumer.applicationId==='profitia-economic-calendar-runtime-development'&&request.provider==='eia'&&request.family==='series-observations'&&request.contractVersion!=='1.4.0')throw new SourceHubError('DURABLE_RESULT_CONTRACT_REQUIRED',403);
   if(typeof idempotencyKey!=='string'||!/^[A-Za-z0-9][A-Za-z0-9._:-]{7,127}$/.test(idempotencyKey))throw new SourceHubError('IDEMPOTENCY_KEY_REQUIRED');
   const l=await licence(t,request.provider,request.family),scope=s(c,consumer),key=hash(idempotencyKey),digest=operationPayloadDigest(request);
   const scheduleStorage=await scheduleStorageProjection(t,configuration,c,l,request,consumer);
@@ -108,5 +121,5 @@ export function createFirstPartyRepository(configuration,database){
   await t.query('INSERT INTO source_hub.first_party_usage('+cols+',acquisition_id,provider_id,family,upstream_attempts,outcome,receipt_ref) VALUES('+vals+',$7::uuid,$8,$9,$10,$11,$12) ON CONFLICT DO NOTHING',[...scope,a.id,request.provider,request.family,attempt?.upstreamAttempts??null,attempt?.certainty==='RESPONSE'?'RESPONSE':uncertain?'UNVERIFIED':'NOT_SENT',attempt?.value?.callId??null]);
  }
  const migrationDigest=hash(readFileSync(new URL('../migrations/004-universal-consumers.sql',import.meta.url)));
- return Object.freeze({licence,begin,complete,failed,async ready(){try{if(!await createRepository(configuration,database).ready())return false;if(configuration.calendarConsumerStorageEnabled===true){const x=await database.query('SELECT digest FROM source_hub.migrations WHERE version=$1',['008-calendar-consumer-storage']);if(x.rows[0]?.digest!==hash(readFileSync(new URL('../migrations/008-calendar-consumer-storage.sql',import.meta.url))))return false;}const r=await database.query('SELECT digest FROM source_hub.migrations WHERE version=$1',['004-universal-consumers']);return r.rows.length===1&&r.rows[0].digest===migrationDigest;}catch{return false;}}});
+ return Object.freeze({licence,begin,complete,failed,async ready(){try{if(!await createRepository(configuration,database).ready())return false;if(configuration.ecrResultsStorageEnabled===true){const x=await database.query('SELECT digest FROM source_hub.migrations WHERE version=$1',['009-ecr-results-storage']);if(x.rows[0]?.digest!==hash(readFileSync(new URL('../migrations/009-ecr-results-storage.sql',import.meta.url))))return false;}if(configuration.calendarConsumerStorageEnabled===true){const x=await database.query('SELECT digest FROM source_hub.migrations WHERE version=$1',['008-calendar-consumer-storage']);if(x.rows[0]?.digest!==hash(readFileSync(new URL('../migrations/008-calendar-consumer-storage.sql',import.meta.url))))return false;}const r=await database.query('SELECT digest FROM source_hub.migrations WHERE version=$1',['004-universal-consumers']);return r.rows.length===1&&r.rows[0].digest===migrationDigest;}catch{return false;}}});
 }
