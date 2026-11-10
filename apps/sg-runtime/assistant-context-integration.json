@@ -187,8 +187,8 @@
       "apps/sg-runtime/tests/assistant-m2-integrity.test.mjs"
     ],
     "sourceDigests": {
-      "apps/insights-runtime/render/report.py": "9fac4548d2e57bc7be712b6ebea3e7a491ed52440ad5864122b509ca85db720c",
-      "apps/insights-runtime/tests/postgres.test.mjs": "5e1973f3f97a7384d109bcb193a00175967873d6c85dc2da335c09806f6db999",
+      "apps/insights-runtime/render/report.py": "fc60502cbab052bbe90f7598b437b896bcd94c32fc6037d48203bf0e5d6456cf",
+      "apps/insights-runtime/tests/postgres.test.mjs": "f887f544b7eced7928d41b0ed84b0e5b0ccd4b7828f7272d10f42e19a5409a47",
       "apps/sg-runtime/tests/assistant-m2-integrity.mjs": "c5b5d15244f1501fea95c317811b614e7427082ca445554e013c9c99e98e777e",
       "apps/sg-runtime/tests/assistant-m2-integrity.test.mjs": "4e011343280c1c3a68ae2f791575730f15d69169a57cfd9907d7be0cc50da295"
     },

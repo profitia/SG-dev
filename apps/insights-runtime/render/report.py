@@ -108,7 +108,9 @@ def render(bundle,narrative,receipt,out,font,bold=None):
         canvas.setFont('OilSans',8);canvas.setFillColor(colors.HexColor('#4f6370'));canvas.drawString(44,24,'SpendGuru | ewaluacja wewnętrzna - wymagana ocena człowieka');canvas.drawRightString(A4[0]-44,24,f'{document.page}/4');canvas.restoreState()
     doc.addPageTemplates([PageTemplate(id='flow',frames=[Frame(44,48,w,A4[1]-92,leftPadding=0,rightPadding=0,topPadding=0,bottomPadding=0)],onPage=footer)])
     flow=[Paragraph('Oil & Asphalt Market Outlook',title),Paragraph(escape(lead),small),Paragraph(escape(window),small),Paragraph('Wydanie eksperymentalne. Region, ekspozycja i formuła kontraktu nabywcy nie zostały określone.',small)]
+    section_starts=[]
     for i,key in enumerate(KEYS):
+        section_starts.append(len(flow))
         flow.append(Paragraph(f'{i+1}. '+escape(TITLES[i]),heading));flow.extend(html_rows[key])
         if i==1:
             table=Table([[Paragraph(escape(v),small) for v in row] for row in price_rows],colWidths=[w*.29,w*.25,w*.23,w*.23],repeatRows=1)
@@ -124,6 +126,13 @@ def render(bundle,narrative,receipt,out,font,bold=None):
         e=ids[ref];url=checked_url(e.get('url'));date=(e.get('publishedAt') or e.get('facts',{}).get('observationAt') or '')[:10]
         label=f"{n}. {publisher_label(e)}"+(f", {date}" if date else '')
         flow.append(Paragraph(f'<a name="source_{n}"/>'+escape(label)+(f' <link href="{escape(url)}" color="#16556a">Źródło</link>' if url else '')+'; pełny opis i ograniczenia w aneksie.',note))
+    # Preserve the original four section-pair pages when every pair fits.
+    # Otherwise continuous flow accommodates the full narrative without cuts.
+    boundaries=[0]+[section_starts[i] for i in (2,4,6)]+[len(flow)]
+    available=A4[1]-92
+    heights=[sum(p.wrap(w,available)[1]+p.getSpaceBefore()+p.getSpaceAfter() for p in flow[a:b]) for a,b in zip(boundaries,boundaries[1:])]
+    if all(height<=available-12 for height in heights):
+        for index in reversed(boundaries[1:-1]): flow.insert(index,PageBreak())
     pdf_build_start=time.perf_counter_ns();doc.build(flow);pdf_build_ms=(time.perf_counter_ns()-pdf_build_start)/1e6;reader=PdfReader(str(pdf));assert len(reader.pages)==4,'FOUR_READABLE_PAGES_REQUIRED'
     assert all(abs(float(p.mediabox.width)-A4[0])<1 and abs(float(p.mediabox.height)-A4[1])<1 for p in reader.pages)
     text='\n'.join(p.extract_text() or '' for p in reader.pages);assert not re.search(r'\bEV\d+\b',text),'RAW_INTERNAL_CITATION'

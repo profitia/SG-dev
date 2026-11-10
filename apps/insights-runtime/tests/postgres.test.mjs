@@ -46,6 +46,13 @@ test("renderer handles incomplete vendor metadata, long unedited prose and deter
       hashes.push(createHash("sha256").update(readFileSync(join(out,"OIL_ASPHALT_MARKET_OUTLOOK_v0.5_PL.pdf"))).digest("hex"));
     }
     assert.equal(hashes[0],hashes[1],"identical inputs preserve exact PDF bytes");
+    const short=Object.fromEntries(keys.map(k=>[k,[{text:phrase,refs:["METHODOLOGY"]}]]));
+    writeFileSync(join(dir,"narrative.json"),JSON.stringify(short));
+    const root=fileURLToPath(new URL("../render/",import.meta.url)),out=join(dir,"short-output");
+    const r=spawnSync(process.env.INSIGHTS_TEST_PYTHON??"python3",[join(root,"report.py"),"--bundle",join(dir,"bundle.json"),"--narrative",join(dir,"narrative.json"),"--receipt",join(dir,"receipt.json"),"--output",out,"--font",join(root,"fonts/DejaVuSans.ttf"),"--bold",join(root,"fonts/DejaVuSans-Bold.ttf")],{encoding:"utf8",timeout:60000,env:{...process.env,PYTHONHASHSEED:"0",TZ:"UTC"}});
+    assert.equal(r.status,0,r.stderr);
+    assert.equal(JSON.parse(readFileSync(join(out,"RENDER_VALIDATION.json"))).pages,4,"short input preserves the same four-page renderer contract");
+
   } finally {rmSync(dir,{recursive:true,force:true});}
 });
 const enabled = !!process.env.INSIGHTS_TEST_DATABASE_URL;
