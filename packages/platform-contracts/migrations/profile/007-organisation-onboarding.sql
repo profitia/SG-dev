@@ -100,7 +100,11 @@ BEGIN
  SELECT version INTO old_version FROM profitia_profile.organisation_onboarding_drafts WHERE user_id=uid FOR UPDATE;
  IF NOT FOUND THEN
   IF p_expected<>0 THEN RAISE EXCEPTION 'Draft version conflict' USING ERRCODE='PT409'; END IF;
-  INSERT INTO profitia_profile.organisation_onboarding_drafts(user_id,answers) VALUES(uid,p_patch);
+  -- A missing row cannot be locked by SELECT FOR UPDATE. The unique insert
+  -- arbitrates concurrent first saves; report the same CAS conflict as updates.
+  INSERT INTO profitia_profile.organisation_onboarding_drafts(user_id,answers) VALUES(uid,p_patch) ON CONFLICT(user_id) DO NOTHING;
+  GET DIAGNOSTICS n=ROW_COUNT;
+  IF n<>1 THEN RAISE EXCEPTION 'Draft version conflict' USING ERRCODE='PT409'; END IF;
  ELSE
   IF old_version<>p_expected THEN RAISE EXCEPTION 'Draft version conflict' USING ERRCODE='PT409'; END IF;
   UPDATE profitia_profile.organisation_onboarding_drafts SET answers=answers||p_patch WHERE user_id=uid AND version=p_expected;
