@@ -60,7 +60,7 @@ DO $rls$ DECLARE t text; BEGIN
 END $rls$;
 
 CREATE FUNCTION profitia_limits.assistant_usage(p_json text,p_proof text) RETURNS jsonb
-LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,profitia_limits AS $fn$
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,profitia_limits,pg_temp AS $fn$
 DECLARE d jsonb;i assistant_installation%ROWTYPE;p assistant_policy%ROWTYPE;a assignments%ROWTYPE;
  e assistant_executions%ROWTYPE;v_action text;v_input integer;v_output integer;v_cost bigint;
  used_cost numeric;used_tokens numeric;receipt jsonb;u jsonb;metric text;limit_value jsonb;consumed numeric;required numeric;
