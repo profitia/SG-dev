@@ -12,7 +12,7 @@
   },
   "sourceDigests": {
     ".github/workflows/insights-ci.yml": "2471de5222cbb750df49987473f41aadb720db04f30f688b01332c207bc8d122",
-    "apps/insights-runtime/package-lock.json": "570b9be44f1fd07793019e0140947311cdc45d61cc724f36422c323879c608f8",
+    "apps/insights-runtime/package-lock.json": "8262c7e852c00d2be0d3b3e98446af77d55e92c32d3b38536e2bda6ca4f33e31",
     "apps/insights-runtime/package.json": "8964dfdbd1d061a666ec055f0d4276c88f02e16255a368c9f269157eb112ef8d",
     "apps/insights-runtime/sql/003-report-subscriptions.sql": "63bd83ed23ae094bb71eb570574ec003c028a913753d20bcc9ed5b8c3ec7ec37",
     "apps/insights-runtime/src/host.d.mts": "53e6d747881808f43ca651e21350be6ca9856a6384baf6bf4617f3b248894449",
@@ -41,7 +41,7 @@
     "apps/sg-runtime/lib/insights/subscriptions.ts": "70ac3ebe9462c4634714ae4d6b221889e0416e49fccdcb615d6cf5220101e271",
     "apps/sg-runtime/lib/newsfeed/client.ts": "1229d5a9ceae7a5662cfac3542fe8ee182817f4778fa2c4bfe5fbeed1f6c753d",
     "apps/sg-runtime/lib/newsfeed/runtime.ts": "7ca5574365eae68dcd9f576eed5a736023b96902f67dfca10d49541701b5b207",
-    "apps/sg-runtime/package-lock.json": "18ce9b2022b3ea0d85daef1319e96ec308b37f81c6ed1d1c5c8f62f1c4337133",
+    "apps/sg-runtime/package-lock.json": "2a09900d491f0845c5f7b04a32404da07234a1200d47c4d9ce7b8f2c110cffbf",
     "apps/sg-runtime/package.json": "525cedbcf8bcf55b7360e9e24614ed227a331eb6d039e1dc6bc3f2cac2f4614b",
     "apps/sg-runtime/tests/adp-appshell-identity.test.tsx": "f2d479af152741391f01ca0bb8b69810d8553fda8991c0eed92a807406f6dfd0",
     "apps/sg-runtime/tests/appshell-first-entry.test.tsx": "23607f8aea8f3aa6bfdc330b19e999873e3e438a1697cd9d1c2d5189f50e194b",
