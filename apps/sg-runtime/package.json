@@ -11,7 +11,7 @@
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "test:runtime-build-contract": "node --test tests/runtime-build-contract.test.mjs",
-    "test:observability": "tsc --noEmit --skipLibCheck --esModuleInterop --moduleResolution bundler --module esnext --target ES2020 --jsx preserve instrumentation.ts sentry.client.config.ts sentry.server.config.ts sentry.edge.config.ts && node --import tsx --test tests/sentry-observability.test.ts",
+    "test:observability": "node --input-type=module -e 'import ts from \"typescript\";const config=ts.readConfigFile(\"tsconfig.json\",ts.sys.readFile);const parsed=ts.parseJsonConfigFileContent(config.config,ts.sys,\".\");const roots=[\"instrumentation.ts\",\"sentry.client.config.ts\",\"sentry.server.config.ts\",\"sentry.edge.config.ts\"];const program=ts.createProgram(roots,{...parsed.options,noEmit:true,incremental:false});const diagnostics=[...(config.error?[config.error]:[]),...parsed.errors,...ts.getPreEmitDiagnostics(program)];if(diagnostics.length){process.stderr.write(ts.formatDiagnosticsWithColorAndContext(diagnostics,{getCanonicalFileName:f=>f,getCurrentDirectory:ts.sys.getCurrentDirectory,getNewLine:()=>\"\\n\"}));process.exitCode=1;}' && node --import tsx --test tests/sentry-observability.test.ts",
     "test:advisory-widget": "node --import tsx --test tests/advisory-widget.test.ts",
     "test:market-data": "node --import tsx --test tests/market-data-service.test.ts",
     "test:forecast-library": "node --import tsx --test tests/forecast-library-service.test.ts",
