@@ -8173,5 +8173,37 @@
     "newServiceCreated": false,
     "otherEnvironmentsChanged": false,
     "srmProductChanged": false
+  },
+  "assistantM1ChartContextCorrective": {
+    "schemaVersion": "1.0",
+    "taskId": "SG2-ACG-M1-20261109",
+    "scope": "ACTUAL_MAGICPATH_CHART_CONTEXT_PRODUCER_ONLY",
+    "targetEnvironment": "development",
+    "previousReceiptSourceSha": "4a58d6cdc57334aa5c5aa9cba20cad8e7e5e47b5",
+    "previousReceiptSha256": "37eb6e36539f1bd94441e1ae64797d4c290e576f375cb7c4ac10f8ce869a3de6",
+    "sourceProducerSha": "50acf8462ad5b75637ca738995c9536402b2adcb",
+    "sourceDigests": {
+      "apps/dashboard-preview/components/raw-data-view/magicpath-benchmark-chart.tsx": "57a855fbff07263d2138660e88091b7a52320eb5a54d97174774249a28c0c150",
+      "apps/sg-runtime/package.json": "d5e6bbb8e96d426b17627ce3b2d64893c0e430495da993a6600789d46cb607b2",
+      "apps/sg-runtime/tests/assistant-chart-context.test.ts": "bfacdec9f1c7c56a8883445c92247c5749e743d61e8ba148702711a960aa4681",
+      "apps/sg-runtime/tests/assistant-m1-integrity.mjs": "841ec1ab68f8f7daf7ad4ff27799e8b14d39ad301cea446a154fc147ce2a5e68",
+      "apps/sg-runtime/tests/assistant-m1-integrity.test.mjs": "997884ff8fe83b477d12ec32fccfb3abc90a96ae156befd59fad7238d1444f39",
+      "apps/sg-runtime/tests/integrated-buyer-journey-package.test.mjs": "503f0052928467558a970e82d61539549cad34fc17592c36c9638ae5d9613f11"
+    },
+    "applicationSourceDigests": {
+      "../dashboard-preview/components/raw-data-view/magicpath-benchmark-chart.tsx": "57a855fbff07263d2138660e88091b7a52320eb5a54d97174774249a28c0c150",
+      "package.json": "d5e6bbb8e96d426b17627ce3b2d64893c0e430495da993a6600789d46cb607b2",
+      "tests/assistant-chart-context.test.ts": "bfacdec9f1c7c56a8883445c92247c5749e743d61e8ba148702711a960aa4681",
+      "tests/assistant-m1-integrity.mjs": "841ec1ab68f8f7daf7ad4ff27799e8b14d39ad301cea446a154fc147ce2a5e68",
+      "tests/assistant-m1-integrity.test.mjs": "997884ff8fe83b477d12ec32fccfb3abc90a96ae156befd59fad7238d1444f39",
+      "tests/integrated-buyer-journey-package.test.mjs": "503f0052928467558a970e82d61539549cad34fc17592c36c9638ae5d9613f11"
+    },
+    "visualDesignChanged": false,
+    "authorizationChanged": false,
+    "schemaChanged": false,
+    "providerConfigurationChanged": false,
+    "pilotLimitsChanged": false,
+    "srmProductChanged": false,
+    "otherEnvironmentsChanged": false
   }
 }
