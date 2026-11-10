@@ -68,8 +68,14 @@ test('Oil consumer routing requires the complete pinned checkout; changed bytes,
   git(root,'update-ref','--no-deref','HEAD',candidateSha);
   git(root,'read-tree',candidateSha);
   execFileSync('git',['checkout-index','--stdin','-z'],{cwd:root,input:Object.keys(OIL_REPORT_E1_REVIEW.entries).join('\0')+'\0'});
-  const baseSha=git(repositoryRoot,'merge-base',candidateSha,'origin/main'),sourceReview={baseSha,candidateSha};
+  // The reviewed fixture must retain its immutable base after the candidate
+  // becomes an ancestor of main; a moving merge-base would erase its diff.
+  const baseSha=OIL_REPORT_E1_REVIEW.baseSha,sourceReview={baseSha,candidateSha};
   const paths=reviewedOilConsumerPaths(root,sourceReview);
+  for(const authoritySha of [baseSha,candidateSha,git(repositoryRoot,'rev-parse','origin/main')]){
+   git(root,'update-ref','refs/remotes/origin/main',authoritySha);
+   assert.deepEqual(reviewedOilConsumerPaths(root,sourceReview),paths);
+  }
   assert(paths.has('.github/workflows/insights-ci.yml'));
   assert(!paths.has('apps/sg-runtime/app/page.tsx'));
   assert.throws(()=>reviewedOilConsumerPaths(root));
