@@ -98,5 +98,31 @@
     "noGrantChange": true,
     "noAutomaticRetry": true,
     "humanReviewRequired": true
+  },
+  "srmAssistantIngressRepair": {
+    "schemaVersion": "1.0",
+    "taskId": "SRM-ACG-M2-20261110",
+    "targetEnvironment": "development",
+    "previousSourceSha": "7cf1af53cca6f650a3a2025228546ceca3bfd081",
+    "previousReceiptSha256": "f0a0f29eded875e173f3e41b547563da689541563b4e17a05dcf9c1ba840c88f",
+    "owner": {
+      "pullRequest": 963,
+      "sourceSha": "c29b773d8dd8156cd7ce600f16aa43733286c711"
+    },
+    "changedSourcePaths": [
+      "apps/sg-runtime/tests/assistant-m2-integrity.mjs",
+      "apps/sg-runtime/tests/assistant-m2-integrity.test.mjs",
+      "apps/srm/middleware.ts",
+      "apps/srm/middleware.test.ts"
+    ],
+    "sourceDigests": {
+      "apps/sg-runtime/tests/assistant-m2-integrity.mjs": "532cec65f206e6d01e0823927437d13a31d99dd8f840b303f77ade7c29a5d823",
+      "apps/sg-runtime/tests/assistant-m2-integrity.test.mjs": "aef747b8804008f4ab3f39edc9d7d835de1ef907e56795757058702249c3f859",
+      "apps/srm/middleware.ts": "cc36f20a698da6a95bcd2d7df587b2501baf9d5562b10e534d0d3d1a3d86f3a2",
+      "apps/srm/middleware.test.ts": "ad613f838733aa46e61a30566d4c2399be688016a54c5b0c7863f87a35bf1eb3"
+    },
+    "noGrantChange": true,
+    "noContractChange": true,
+    "noAcquisition": true
   }
 }

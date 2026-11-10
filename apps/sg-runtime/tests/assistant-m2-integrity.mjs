@@ -49,8 +49,36 @@ export const ASSISTANT_M2_PRODUCER_PATHS=Object.freeze([
 ])
 const file='apps/sg-runtime/assistant-context-integration.json'
 const hash=bytes=>createHash('sha256').update(bytes).digest('hex')
+// Verify the exact ingress correction before either accepted Oil or M2 byte view.
+export function assistantIngressPredecessor(current,historical){
+ let bytes
+ try{bytes=current(file)}catch(error){
+  const text=String(error?.stderr??error?.message??'')
+  if(error?.code==='ENOENT'||error?.status===128&&text.includes("'"+file+"' does not exist in "))return null
+  throw error
+ }
+ const receipt=JSON.parse(bytes),a=receipt.srmAssistantIngressRepair
+ if(a===undefined)return null
+ assert.deepEqual(Object.keys(a).sort(),['schemaVersion','taskId','targetEnvironment','previousSourceSha','previousReceiptSha256','owner','changedSourcePaths','sourceDigests','noGrantChange','noContractChange','noAcquisition'].sort())
+ assert.equal(a.schemaVersion,'1.0');assert.equal(a.taskId,'SRM-ACG-M2-20261110');assert.equal(a.targetEnvironment,'development')
+ assert.equal(a.previousSourceSha,'7cf1af53cca6f650a3a2025228546ceca3bfd081')
+ assert.deepEqual(a.owner,{pullRequest:963,sourceSha:'c29b773d8dd8156cd7ce600f16aa43733286c711'})
+ const expected=['apps/sg-runtime/tests/assistant-m2-integrity.mjs','apps/sg-runtime/tests/assistant-m2-integrity.test.mjs','apps/srm/middleware.ts','apps/srm/middleware.test.ts']
+ assert.deepEqual(a.changedSourcePaths,expected);assert.deepEqual(Object.keys(a.sourceDigests).sort(),[...expected].sort())
+ for(const flag of ['noGrantChange','noContractChange','noAcquisition'])assert.equal(a[flag],true,flag)
+ const priorBytes=Buffer.from(historical(a.previousSourceSha,file)),prior=JSON.parse(priorBytes),{srmAssistantIngressRepair,...preserved}=receipt
+ assert.equal(hash(priorBytes),a.previousReceiptSha256)
+ assert.deepEqual(preserved,prior,'All accepted Oil, M1 and M2 receipt fields remain immutable')
+ for(const p of expected){
+  assert.match(a.sourceDigests[p],/^[a-f0-9]{64}$/);assert.equal(hash(current(p)),a.sourceDigests[p],'current SRM ingress correction '+p)
+  if(p.startsWith('apps/srm/'))assert.equal(hash(historical(a.owner.sourceSha,p)),a.sourceDigests[p],'exact SRM owner source '+p)
+ }
+ const mapped=new Set([file,...expected]),blobs=new Map([[file,priorBytes]])
+ return{manifest:a,previousBytes:p=>{if(!mapped.has(p))return current(p);if(!blobs.has(p))blobs.set(p,Buffer.from(historical(a.previousSourceSha,p)));return Buffer.from(blobs.get(p))}}
+}
 // Validate this bounded current Oil correction before exposing any predecessor.
 export function oilReportTransportPredecessor(current,historical){
+ const ingress=assistantIngressPredecessor(current,historical);if(ingress)return oilReportTransportPredecessor(ingress.previousBytes,historical)
  const receiptFile='apps/sg-runtime/assistant-context-integration.json';let bytes;
  try{bytes=current(receiptFile)}catch(error){
   const text=String(error?.stderr??error?.message??'');
