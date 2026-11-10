@@ -1,3 +1,4 @@
+import {ECR_SOURCE_CONTINUITY_REVIEW,assertEcrSourceContinuityReviewEntry} from './controlled-package-ci.mjs'
 import {ECR_STAGE0405_REVIEW,assertEcrStage0405ReviewEntry} from './controlled-package-ci.mjs'
 import {ECR_STAGE03_REVIEW,assertEcrStage03ReviewEntry} from './controlled-package-ci.mjs'
 import {SOURCE_HUB_MARKET_SYMBOL_REVIEW,assertMarketSymbolReviewEntry} from './controlled-package-ci.mjs'
@@ -1512,4 +1513,14 @@ test('ECR backward compatibility binds the actual unchanged SG2 lock and only th
   write(authority,relative,Buffer.concat([before,Buffer.from('\n')]));rejection(()=>assertLocalPackageSources(candidate,currentLock,authority));write(authority,relative,before)
   fs.renameSync(path.join(candidate,consumer),path.join(candidate,consumer+'.saved'));fs.symlinkSync(path.join(candidate,consumer+'.saved'),path.join(candidate,consumer));rejection(()=>assertLocalPackageSources(candidate,currentLock,authority))
  }finally{fs.rmSync(t,{recursive:true,force:true})}
+})
+
+test('ECR source continuity admits only14 exact routed files and rejects blob, mode, identity and closure drift',()=>{
+ const review=ECR_SOURCE_CONTINUITY_REVIEW,files=Object.entries(review.entries).map(([filename,e])=>({filename,sha:e.sha,status:e.status})),p={...pr(),number:review.prNumber,changed_files:files.length,base:{...pr().base,sha:review.baseSha},head:{...pr().head,sha:review.sourceSha,ref:review.branch}}
+ assert.equal(files.length,14);assert.equal(review.sourceSha,'a54d313b88a5d477613a17a38ac53e2d32e4dd32');assert.equal(createHash('sha256').update(JSON.stringify(review.entries)).digest('hex'),'fef62e85b4b257f2aa7c48190bc26969c37ccce8aa225c4fcfdc6e455bd8acd3')
+ assertArchitectureFiles(p,files);assert.equal(selectCandidate(context(),p,review.sourceSha,{files}),review.sourceSha)
+ for(const f of files){assertEcrSourceContinuityReviewEntry(f,'100644 blob '+f.sha+'\t'+f.filename+'\0');for(const mode of ['100755','120000','160000'])rejection(()=>assertEcrSourceContinuityReviewEntry(f,mode+' blob '+f.sha+'\t'+f.filename+'\0'))}
+ for(const edit of [a=>a.pop(),a=>a.push(a[0]),a=>a[0]={...a[0],sha:'f'.repeat(40)},a=>a[0]={...a[0],status:'removed'},a=>a[0]={...a[0],previous_filename:a[0].filename},a=>a[0]={...a[0],filename:'apps/economic-calendar-runtime/src/unreviewed.mjs'}]){const bad=structuredClone(files);edit(bad);rejection(()=>selectCandidate(context(),{...p,changed_files:bad.length},review.sourceSha,{files:bad}))}
+ for(const edit of [q=>q.number++,q=>q.head.ref='architecture/another-ecr',q=>q.head.ref='sg2/ecr-source-continuity',q=>q.head.repo.full_name='profitia/fork',q=>q.user.login='attacker',q=>q.base.ref='staging']){const bad=structuredClone(p);edit(bad);rejection(()=>selectCandidate(context(),bad,review.sourceSha,{files}))}
+ assert(files.every(f=>!f.filename.startsWith('Canon/')&&!f.filename.startsWith('.github/')&&!f.filename.startsWith('apps/sg-runtime/')&&!f.filename.startsWith('apps/srm/')))
 })
