@@ -9,6 +9,10 @@ import { createHubSources, createCanonicalReads } from "./source-adapters.mjs";
 import { createComposer, qualityGate } from "./composer.mjs";
 import { createRenderer } from "./renderer.mjs";
 import { telemetry } from "./telemetry.mjs";
+import {PostgresSubscriptionStore} from './subscription-store.mjs';
+import {createSubscriptionApi} from './subscription-api.mjs';
+import {installedReportProfiles} from './subscriptions.mjs';
+import {completedPeriod} from './calendar.mjs';
 import { assertProfile, assertContext, requireThat, digest, OPERATIONS } from "@profitia/insights-contracts";
 
 const operations = Object.values(OPERATIONS);
@@ -189,6 +193,10 @@ export async function createInstalledInsightsRuntime({ env = process.env, canoni
       composer: createComposer({ counterHost: x => sourceHost("counter",x), generationHost: x => sourceHost("composer",x), pricing: c.pricing }),
       quality: qualityGate, renderer: createRenderer({ python }), telemetry: telemetry(monitoring),
       onError: code => monitoring.capture?.(new Error(code), { environment: "development" }) });
-    return Object.assign(runtime, { async close() { runtime.stop(); await Promise.all([...pools.values()].map(p=>p.end())); } });
+    const subscriptions=new PostgresSubscriptionStore(store);
+    const subscriptionsApi=createSubscriptionApi({authority,store:subscriptions,profiles:()=>installedReportProfiles(c),
+      onOrder:(ctx,order)=>runtime.runner.start(ctx,{definitionId:order.definitionId,profileVersion:order.profileVersion,
+        period:completedPeriod(new Date().toISOString()),revision:1,asOf:new Date().toISOString(),allowPartial:false},c.profiles[order.profileVersion],'API')});
+    return Object.assign(runtime, {subscriptionsApi,async close() { runtime.stop(); await Promise.all([...pools.values()].map(p=>p.end())); } });
   } catch (e) { await Promise.all([...pools.values()].map(p=>p.end())); throw e; }
 }

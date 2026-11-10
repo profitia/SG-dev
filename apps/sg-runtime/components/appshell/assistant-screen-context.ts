@@ -1,7 +1,7 @@
 import {useCallback,useLayoutEffect,useMemo,useState} from 'react'
-import {readChartReference,readContextReference,type ChartReference,type SupplierReference} from '../../../../packages/assistant-context-contracts/src/index.mjs'
+import {readChartReference,readContextReference,type ChartReference,type SupplierReference,type NewsfeedReference} from '../../../../packages/assistant-context-contracts/src/index.mjs'
 
-export type AssistantModule='appshell'|'benchmark_finder'|'xray'|'adp'
+export type AssistantModule='appshell'|'benchmark_finder'|'xray'|'adp'|'procurement_insights'
 /** Volatile display projection only. It neither carries nor proves access. */
 export type AssistantScreenContext=Readonly<{supplierName:string;year:number|null;reference?:SupplierReference}>
 
@@ -29,6 +29,7 @@ export function useAssistantScreenContext(module:AssistantModule){
  const lease=useMemo(()=>({module,active:false}),[module])
  const [entry,setEntry]=useState<{lease:typeof lease;context:AssistantScreenContext|null}|null>(null)
  const [benchmark,setBenchmark]=useState<{lease:typeof lease;reference:ChartReference|null}|null>(null)
+ const [newsfeed,setNewsfeed]=useState<{lease:typeof lease;reference:NewsfeedReference|null}|null>(null)
  useLayoutEffect(()=>{lease.active=true;setEntry(null);return()=>{lease.active=false}},[lease])
  const onXrayContext=useCallback((value:unknown)=>{
   if(!lease.active||lease.module!=='xray')return
@@ -41,7 +42,13 @@ export function useAssistantScreenContext(module:AssistantModule){
   try{reference=value===null?null:readChartReference(value)}catch{/* Reference is a hint only. */}
   setBenchmark(previous=>previous?.lease===lease&&JSON.stringify(previous.reference)===JSON.stringify(reference)?previous:{lease,reference})
  },[lease])
+ const onNewsfeedContext=useCallback((observationId:string|null)=>{
+  if(!lease.active||lease.module!=='procurement_insights')return
+  let reference:NewsfeedReference|null=null
+  try{const v=observationId===null?null:readContextReference({version:'2.0.0',source:'NEWSFEED',observationId,supplierNip:null});if(v?.source==='NEWSFEED')reference=v}catch{/* A selection never grants access. */}
+  setNewsfeed({lease,reference})
+ },[lease])
  return {context:module==='xray'&&entry?.lease===lease?entry.context:null,onXrayContext,
-  assistantReference:module==='benchmark_finder'&&benchmark?.lease===lease?benchmark.reference:module==='xray'&&entry?.lease===lease?entry.context?.reference??null:null,
-  benchmarkReference:module==='benchmark_finder'&&benchmark?.lease===lease?benchmark.reference:null,onBenchmarkContext}
+  assistantReference:module==='procurement_insights'&&newsfeed?.lease===lease?newsfeed.reference:module==='benchmark_finder'&&benchmark?.lease===lease?benchmark.reference:module==='xray'&&entry?.lease===lease?entry.context?.reference??null:null,
+  benchmarkReference:module==='benchmark_finder'&&benchmark?.lease===lease?benchmark.reference:null,onBenchmarkContext,onNewsfeedContext}
 }

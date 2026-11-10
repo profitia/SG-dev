@@ -1,6 +1,7 @@
 // Test/build-only adoption; this file cannot grant runtime access.
 import assert from 'node:assert/strict'
 import {createHash} from 'node:crypto'
+import {procurementInsightsPredecessor} from './procurement-insights-integrity.mjs'
 export const ASSISTANT_M2_PATHS=Object.freeze([
  'apps/sg-runtime/components/appshell/appshell-dashboard.tsx',
  'apps/sg-runtime/components/appshell/assistant-conversation-transport.ts',
@@ -169,6 +170,8 @@ export function assistantM2Predecessor(current,historical){
 
 // Check the current serialization correction before any historical acceptance.
 export function oilReportSerializationPredecessor(current,historical){
+ const pi=procurementInsightsPredecessor(current,historical)
+ if(pi)return oilReportSerializationPredecessor(pi.previousBytes,historical)
  let bytes
  try{bytes=current(file)}catch(error){
   const text=String(error?.stderr??error?.message??'')
