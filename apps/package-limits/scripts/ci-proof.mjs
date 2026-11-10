@@ -1,4 +1,5 @@
 import fs from "node:fs";
+import {validateRouting} from "../../platform-source-hub/scripts/ci-routing.mjs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { execFileSync } from "node:child_process";
@@ -40,37 +41,25 @@ const allowed = (n) =>
   n === "scripts/governance/package-limits-routing.test.mjs" ||
   n ===
     "Canon/evidence/2026-10-30-package-limits-dashboard-development-release.md";
-if (
-  !files.length ||
-  files.some((n) => !allowed(n) || n.includes("..") || n.includes("\\"))
-)
-  throw Error("SOURCE_SCOPE_EXPANSION");
-execFileSync(
-  process.execPath,
-  [
-    "scripts/governance/governance-preflight.mjs",
-    "--ci",
-    "--mode",
-    "development",
-    "--project",
-    "ARCHITECTURE",
-    "--target-environment",
-    "development",
-    "--task-id",
-    "CI-PACKAGE-LIMITS-SOURCE",
-    "--title",
-    "Package Limits source CI",
-    "--scope",
-    "implementation",
-    "--workspace",
-    "GitHub Actions",
-    "--execution-environment",
-    "ci",
-    "--host-conversation-unavailable",
-    ...files.flatMap((n) => ["--target", n]),
-  ],
-  { cwd: root, stdio: "inherit" },
-);
+if(!files.length||files.some(n=>n.includes('..')||n.includes('\\')))throw Error('SOURCE_SCOPE_EXPANSION');
+let ownerRouting;
+if(files.some(n=>!allowed(n))){
+ const consumer=JSON.parse(fs.readFileSync(path.join(root,'apps/sg-runtime/operation-integration.json')));
+ if(consumer.assistantM1SourceCompatibility?.taskId!=='SG2-ACG-M1-20261109')throw Error('SOURCE_SCOPE_EXPANSION');
+ ownerRouting=validateRouting({changedPaths:files,repositoryRoot:root,
+  readReceipt:file=>JSON.parse(fs.readFileSync(path.join(root,file))),
+  runGovernance:(projectKey,targets)=>JSON.parse(execFileSync(process.execPath,
+   ['scripts/governance/governance-preflight.mjs','--ci','--mode','development','--project',projectKey,
+    '--target-environment','development','--task-id','CI-PACKAGE-LIMITS-M1-'+projectKey,'--title','M1 existing Limits consumer source CI',
+    '--scope','implementation','--workspace','GitHub Actions','--execution-environment','ci','--host-conversation-unavailable',
+    ...targets.flatMap(n=>['--target',n]),'--json'],{cwd:root,encoding:'utf8'}))});
+}else{
+ execFileSync(process.execPath,
+  ['scripts/governance/governance-preflight.mjs','--ci','--mode','development','--project','ARCHITECTURE',
+   '--target-environment','development','--task-id','CI-PACKAGE-LIMITS-SOURCE','--title','Package Limits source CI',
+   '--scope','implementation','--workspace','GitHub Actions','--execution-environment','ci','--host-conversation-unavailable',
+   ...files.flatMap(n=>['--target',n])],{cwd:root,stdio:'inherit'});
+}
 fs.writeFileSync(
   new URL("../dist/source-proof.json", import.meta.url),
   JSON.stringify(
@@ -81,6 +70,7 @@ fs.writeFileSync(
       candidateSha: sha,
       baseSha: base,
       files,
+      ownerRouting,
       limitsDigest,
       identityDigest,
       dashboardDigest,

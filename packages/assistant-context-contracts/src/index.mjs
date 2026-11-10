@@ -1,4 +1,4 @@
-export const ASSISTANT_CONTEXT_CONTRACT=Object.freeze({id:'profitia.assistant-context',version:'1.0.0'})
+export const ASSISTANT_CONTEXT_CONTRACT=Object.freeze({id:'profitia.assistant-context',version:'1.1.0'})
 export const CONTEXT_STATUSES=Object.freeze(['OK','EMPTY','PARTIAL','DENIED','UNAVAILABLE','STALE'])
 const record=v=>!!v&&typeof v==='object'&&!Array.isArray(v)
 const exact=(v,keys)=>record(v)&&Object.keys(v).sort().join(',')===[...keys].sort().join(',')
@@ -9,7 +9,8 @@ export function contextDate(value){
  return day
 }
 export function readChartReference(value){
- if(!exact(value,['version','source','seriesId','from','to','fingerprint'])||value.version!=='1.0.0'||value.source!=='BENCHMARK_CHART'
+ if(!exact(value,['version','source','seriesId','from','to','fingerprint',...(value?.version==='1.1.0'?['range']:[])])||!['1.0.0','1.1.0'].includes(value.version)||value.source!=='BENCHMARK_CHART'
+  ||value.version==='1.1.0'&&!['1M','3M','6M','1Y','3Y','5Y','ALL'].includes(value.range)
   ||typeof value.seriesId!=='string'||!/^[a-z0-9_./-]{1,256}$/i.test(value.seriesId)||!/^[a-f0-9]{64}$/.test(value.fingerprint??''))throw TypeError('Invalid chart reference')
  const from=contextDate(value.from),to=contextDate(value.to)
  if(from>to)throw TypeError('Invalid chart period')

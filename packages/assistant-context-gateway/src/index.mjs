@@ -2,7 +2,7 @@ import {createHash} from 'node:crypto'
 import {ASSISTANT_CONTEXT_CONTRACT,readChartReference,benchmarkSnapshotBytes,contextDate,CONTEXT_STATUSES} from '../../assistant-context-contracts/src/index.mjs'
 const freeze=v=>{if(v&&typeof v==='object'){Object.values(v).forEach(freeze);Object.freeze(v)}return v}
 const hash=v=>createHash('sha256').update(v).digest('hex')
-export const ASSISTANT_GATEWAY_CONTRACT=Object.freeze({id:'profitia.assistant-context-gateway',version:'1.0.0'})
+export const ASSISTANT_GATEWAY_CONTRACT=Object.freeze({id:'profitia.assistant-context-gateway',version:'1.1.0'})
 /** Producers own reads, data and E1 authorisation. The gateway never accepts a
  * client ALLOW, cached permission, browser values or provider credentials. */
 export function createAssistantContextGateway({adapters,now=Date.now}){
@@ -24,7 +24,7 @@ export function createAssistantContextGateway({adapters,now=Date.now}){
     results.push(freeze(value))
    }catch(error){
     if(signal?.aborted)throw signal.reason??error
-    results.push(freeze({source:demand.source,status:error?.reasonCode==='UNVERIFIED_IDENTITY'||['PERMISSION_DENIED','PRODUCT_DENIED','MEMBERSHIP_DENIED'].includes(error?.reasonCode)?'DENIED':'UNAVAILABLE'}))
+    results.push(freeze({source:demand.source,status:['UNVERIFIED_IDENTITY','PERMISSION_DENIED','ACCESS_BASIS_INVALID','PRODUCT_UNAVAILABLE','RESOURCE_SCOPE_MISMATCH','EXPLICIT_DENY','APPLICATION_FEATURE_UNAVAILABLE'].includes(error?.reasonCode)?'DENIED':'UNAVAILABLE'}))
    }
   }
   return freeze({contract:ASSISTANT_CONTEXT_CONTRACT,contexts:results})
@@ -38,7 +38,7 @@ export function createBenchmarkContextAdapter({readAuthorised}){
  return Object.freeze({source:'BENCHMARK_CHART',async read({reference,request,organisationId,signal,observedAt}){
   if(reference===null)return {source:'BENCHMARK_CHART',status:'EMPTY'}
   const selected=readChartReference(reference)
-  const data=await readAuthorised({seriesId:selected.seriesId,range:'ALL',organisationId,request,signal})
+  const data=await readAuthorised({seriesId:selected.seriesId,range:selected.range??'ALL',organisationId,request,signal})
   if(!data||data.providerSeries?.providerSeriesId!==selected.seriesId||!Array.isArray(data.historical)
    ||typeof data.displayName!=='string'||data.displayName.length>1024)throw TypeError('Invalid benchmark publication')
   const points=data.historical.map(p=>({date:contextDate(p.date),value:p.value})).filter(p=>p.date>=selected.from&&p.date<=selected.to)
@@ -53,7 +53,7 @@ export function createBenchmarkContextAdapter({readAuthorised}){
   const numeric=points.filter(p=>p.value!==null)
   const minimum=numeric.reduce((a,b)=>b.value<a.value?b:a),maximum=numeric.reduce((a,b)=>b.value>a.value?b:a)
   return {...base,status:sampled.length<points.length||points.some(p=>p.value===null)||data.unit===null?'PARTIAL':'OK',
-   selection:{seriesId:selected.seriesId,from:selected.from,to:selected.to,series:['historical']},
+   selection:{seriesId:selected.seriesId,range:selected.range??'ALL',from:selected.from,to:selected.to,series:['historical']},
    data:{name:data.displayName,unit:data.unit,currency:data.currency,provider:data.source,frequency:data.frequency,
     observationCount:points.length,sampled:sampled.length<points.length,points:sampled,minimum,maximum,
     meaning:'Stored historical benchmark observations; no Forecast Core forecast or guaranteed latest provider refresh.'}}

@@ -1,3 +1,4 @@
+import {assertAssistantConsumerCompatibility} from '../../architecture-lab/assistant-m1-sdk-compatibility.mjs'
 import {assertSourceHubApiPathCompatibility as assertPeerApiPathCompatibility, assertSourceHubMarketSymbolCompatibility} from '../../srm/scripts/source-hub-sdk-compatibility.mjs'
 /** Additive continuation: exact current bytes AND immutable prior evidence, never digest replacement. */
 import assert from 'node:assert/strict'
@@ -422,6 +423,7 @@ export function assertPciSmartIntegrity(receipt,current,historical){
 
 // Test-only additive compatibility; never imported by a product runtime.
 export function assertSourceHubApiPathCompatibility(receipt,current,historical,{validatePeer=true}={}){
+ if(receipt.assistantM1SourceCompatibility){const n=assertAssistantConsumerCompatibility(receipt,current,historical,{projectKey:'SG2',validatePeer});return assertSourceHubApiPathCompatibility(n.prior,n.previousBytes,historical,{validatePeer})}
  if(receipt.sourceHubMarketSymbolCompatibility){const n=assertSourceHubMarketSymbolCompatibility(receipt,current,historical,{projectKey:'SG2',validatePeer});return assertSourceHubApiPathCompatibility(n.prior,n.previousBytes,historical,{validatePeer})}
  if(receipt.finderMetadataRequestPacing){
   const f=receipt.finderMetadataRequestPacing,file='apps/sg-runtime/operation-integration.json'

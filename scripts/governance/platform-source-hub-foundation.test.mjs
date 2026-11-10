@@ -11,6 +11,7 @@ import { resolveProjectProfile } from './project-profile.mjs'
 import { resolveProjectRouting } from './routing-engine.mjs'
 import { validateGovernanceManifest } from './validate-governance-manifest.mjs'
 import { resolveEnvironmentProfile } from './environment-profile.mjs'
+import {assistantSdkPredecessor} from '../../apps/architecture-lab/assistant-m1-sdk-compatibility.mjs'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
 const approved = 'b40564130fe7b6ced4d7df233dd6749653846114'
@@ -272,12 +273,13 @@ test('SourceHub optional ECR storage metadata preserves accepted transport and p
  const sdkVersion=json('packages/platform-contracts/package.json').version
  const schedule=scheduleSourceAcceptance()
  if(sdkVersion==='1.34.0'){
+  const previous=assistantSdkPredecessor(p=>fs.readFileSync(path.join(root,p)),(sha,p)=>execFileSync('git',['show',sha+':'+p],{cwd:root})).previousBytes
   const adoption=json('apps/architecture-lab/sdk-1.34-compatibility.json')
   assert.equal(adoption.producerCandidateSha,'ebf017cae09bf7bd9139af7917534b47ae0c4d4b')
   assert.equal(Object.keys(adoption.producerFiles).length,27)
   for(const [file,digest]of Object.entries(adoption.producerFiles))assert.equal(createHash('sha256').update(execFileSync('git',['show',adoption.producerCandidateSha+':'+file],{cwd:root})).digest('hex'),digest,'immutable original producer '+file)
   for(const [file,digest]of Object.entries(adoption.integrationFiles)){
-   const bytes=schedule?.replacements[file]?execFileSync('git',['show',schedule.predecessorSourceSha+':'+file],{cwd:root}):fs.readFileSync(path.join(root,file))
+   const bytes=schedule?.replacements[file]?execFileSync('git',['show',schedule.predecessorSourceSha+':'+file],{cwd:root}):previous(file)
    assert.equal(createHash('sha256').update(bytes).digest('hex'),digest,'preserved integrated predecessor '+file)
   }
  }else{

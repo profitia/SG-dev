@@ -19,10 +19,18 @@ test('changed data is stale and never substituted for the viewed version',async(
  const result=(await g.resolve(input)).contexts[0];assert.equal(result.status,'STALE');assert.equal(result.data,undefined)
 })
 test('denial, empty and unavailable remain distinct without leaking exception text',async()=>{
- for(const [reasonCode,status] of [['PERMISSION_DENIED','DENIED'],['POLICY_UNAVAILABLE','UNAVAILABLE']]){
+ for(const [reasonCode,status] of [['PERMISSION_DENIED','DENIED'],['ACCESS_BASIS_INVALID','DENIED'],['PRODUCT_UNAVAILABLE','DENIED'],['POLICY_UNAVAILABLE','UNAVAILABLE']]){
   const g=createAssistantContextGateway({adapters:[createBenchmarkContextAdapter({readAuthorised:async()=>{throw Object.assign(Error('private secret'),{reasonCode})}})]})
   assert.deepEqual((await g.resolve(input)).contexts,[{source:'BENCHMARK_CHART',status}])
  }
  const g=createAssistantContextGateway({adapters:[createBenchmarkContextAdapter({readAuthorised:async()=>{throw Error('Must not read')}})]})
  assert.equal((await g.resolve({...input,reference:null})).contexts[0].status,'EMPTY')
+})
+test('the actual chart server range is preserved, so zoom never broadens the producer read',async()=>{
+ let selected
+ const g=createAssistantContextGateway({adapters:[createBenchmarkContextAdapter({readAuthorised:async input=>{selected=input;return data}})]})
+ const result=await g.resolve({...input,reference:{...reference,version:'1.1.0',range:'3M'}})
+ assert.equal(selected.range,'3M');assert.equal(result.contexts[0].status,'OK');assert.equal(result.contexts[0].selection.range,'3M')
+ const previous=selected,invalid=await g.resolve({...input,reference:{...reference,version:'1.1.0',range:'unbounded'}})
+ assert.equal(invalid.contexts[0].status,'UNAVAILABLE');assert.equal(selected,previous)
 })
