@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {
  PROCUREMENT_INDUSTRIES,PROCUREMENT_TEAM_RANGES,normalizePolishNip,normalizeOrganisationSlug,suggestOrganisationSlug,
- normalizeOnboardingDraftPatch,normalizeIndustry,normalizeProcurementCategories,normalizeTeamRange,normalizeCompanyRecord,normalizeInvitationEmails,organisationCommandDigest
+ normalizeOnboardingDraftPatch,normalizeIndustry,normalizeProcurementCategories,normalizeTeamRange,normalizeCompanyRecord,normalizeInvitationEmails,classifyOrganisationInvitations,organisationCommandDigest
 } from '../src/organisation-profile.mjs'
 const reject=(fn,code)=>assert.throws(fn,e=>e.code===code)
 test('NIP accepts one canonical country identity and rejects malformed/checksum-invalid identifiers',()=>{
@@ -67,4 +67,28 @@ test('own-account draft patch never accepts organisation authority or legal data
  assert.equal(normalizeOnboardingDraftPatch({nip:'PL1234563218'}).nip,'1234563218')
  for(const key of ['organisationId','userId','company','memberRole','productGrant'])reject(()=>normalizeOnboardingDraftPatch({[key]:'injected'}),'INVALID_ONBOARDING_DRAFT')
  reject(()=>normalizeOnboardingDraftPatch({}),'INVALID_ONBOARDING_DRAFT')
+})
+
+const orgA='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',orgB='bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'
+const inviteInput=(candidates,members=[],pendingInvitations=[])=>({organisationId:orgA,ownEmail:'owner@example.test',candidates,observations:{organisationId:orgA,members,pendingInvitations}})
+test('same-organisation member is skipped by email; other valid invitees proceed as a partial batch',()=>{
+ const plan=classifyOrganisationInvitations(inviteInput([' MEMBER@EXAMPLE.TEST ','new@example.test','member@example.test','owner@example.test','wrong'],[{email:'member@example.test',status:'ACTIVE'}]))
+ assert.deepEqual(plan.items.map(i=>i.status),['ALREADY_MEMBER','READY','DUPLICATE','SELF','INVALID_EMAIL'])
+ assert.deepEqual(plan.readyEmails,['new@example.test']);assert.deepEqual(plan.counts,{ready:1,skipped:4});assert(Object.isFrozen(plan.items[0]))
+})
+test('an existing SpendGuru account in another organisation can receive an invitation to this one',()=>{
+ // The authority queries only the target organisation. The global fact that
+ // this email already has an account/member in orgB is never a duplicate test.
+ const account={email:'existing-account@example.test',memberOf:orgB}
+ const plan=classifyOrganisationInvitations(inviteInput([account.email]))
+ assert.deepEqual(plan.readyEmails,[account.email]);assert.equal(plan.items[0].status,'READY')
+ reject(()=>classifyOrganisationInvitations({...inviteInput([account.email]),observations:{organisationId:orgB,members:[{email:account.email,status:'ACTIVE'}],pendingInvitations:[]}}),'INVITATION_OBSERVATION_SCOPE_MISMATCH')
+})
+test('valid pending invitation prevents duplicate mail; expired links can be replaced; restricted membership is never silently reactivated',()=>{
+ const now=Date.parse('2026-11-10T12:00:00Z')
+ const result=classifyOrganisationInvitations(inviteInput(['pending@example.test','expired@example.test','suspended@example.test','lease-expired@example.test'],
+ [{email:'suspended@example.test',status:'SUSPENDED'},{email:'lease-expired@example.test',status:'EXPIRED'}],
+ [{email:'pending@example.test',expiresAt:'2026-11-11T12:00:00Z'},{email:'expired@example.test',expiresAt:'2026-11-10T12:00:00Z'}]),{now:()=>now})
+ assert.deepEqual(result.items.map(i=>i.status),['ALREADY_INVITED','READY','MEMBERSHIP_REQUIRES_REVIEW','MEMBERSHIP_REQUIRES_REVIEW'])
+ assert.deepEqual(result.readyEmails,['expired@example.test'])
 })

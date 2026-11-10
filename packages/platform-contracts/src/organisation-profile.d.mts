@@ -25,3 +25,7 @@ export function organisationOnboardingSchemaDigest():string
 export function createOrganisationOnboardingDraftBackend<T>(options:import('./identity-provisioning.mjs').IdentityProvisioningOptions<T> & {
  application:import('./operation-context.mjs').Application;independentQuery:import('./access-store.mjs').AccessQuery
 }):Readonly<{ready():Promise<void>;readCurrentDraft(request:Request):Promise<OnboardingDraft>;saveCurrentDraft(request:Request,input:{expectedVersion:string;patch:OnboardingDraftPatch}):Promise<OnboardingDraft>}>
+
+export function normalizeInvitationEmail(input:unknown):string
+export type OrganisationInvitationDisposition='READY'|'ALREADY_MEMBER'|'MEMBERSHIP_REQUIRES_REVIEW'|'ALREADY_INVITED'|'SELF'|'DUPLICATE'|'INVALID_EMAIL'
+export function classifyOrganisationInvitations(input:{organisationId:string;ownEmail:string;candidates:readonly unknown[];observations:{organisationId:string;members:readonly {email:string;status:'ACTIVE'|'SUSPENDED'|'EXPIRED'}[];pendingInvitations:readonly {email:string;expiresAt:string}[]}},options?:{now?:()=>number}):Readonly<{organisationId:string;items:readonly Readonly<{index:number;email:string|null;status:OrganisationInvitationDisposition}>[];readyEmails:readonly string[];counts:Readonly<{ready:number;skipped:number}>}>

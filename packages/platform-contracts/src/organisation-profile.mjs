@@ -104,17 +104,17 @@ export function normalizeCompanyRecord(value,expectedNip){
  return freeze({entityType:'COMPANY',country:'PL',nip,krs:value.krs,regon:value.regon,
   legalName:label(value.legalName,240,'INVALID_COMPANY_NAME'),address:label(value.address,400,'INVALID_COMPANY_ADDRESS'),postalCode:value.postalCode})
 }
+export function normalizeInvitationEmail(input){
+ if(typeof input!=='string'||input.length>254||/[\p{Cc}\p{Cf}]/u.test(input)||/\s/u.test(input.trim()))fail('INVALID_INVITATION_EMAILS')
+ const email=input.trim().toLowerCase()
+ if(!/^[a-z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?\.[a-z]{2,63}$/.test(email)
+  ||email.split('@')[0].length>64||email.includes('..')||email.startsWith('.')||email.includes('.@')
+  ||email.split('@')[1].split('.').some(part=>!part||part.length>63||part.startsWith('-')||part.endsWith('-')))fail('INVALID_INVITATION_EMAILS')
+ return email
+}
 export function normalizeInvitationEmails(value,ownEmail){
  if(!Array.isArray(value)||value.length<1||value.length>20)fail('INVALID_INVITATION_EMAILS')
- const normalize=input=>{
-  if(typeof input!=='string'||input.length>254||/[\p{Cc}\p{Cf}\s]/u.test(input.trim()))fail('INVALID_INVITATION_EMAILS')
-  const email=input.trim().toLowerCase()
-  if(!/^[a-z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?\.[a-z]{2,63}$/.test(email)
-   ||email.split('@')[0].length>64||email.includes('..')||email.startsWith('.')||email.includes('.@')
-   ||email.split('@')[1].split('.').some(part=>!part||part.length>63||part.startsWith('-')||part.endsWith('-')))fail('INVALID_INVITATION_EMAILS')
-  return email
- }
- const own=normalize(ownEmail),emails=[...new Set(value.map(normalize))]
+ const own=normalizeInvitationEmail(ownEmail),emails=[...new Set(value.map(normalizeInvitationEmail))]
  if(emails.includes(own))fail('CANNOT_INVITE_SELF')
  return freeze(emails)
 }
@@ -198,4 +198,43 @@ export function createOrganisationOnboardingDraftBackend(options){
   return result.value
  }
  return Object.freeze({ready:()=>descriptor(independentQuery),readCurrentDraft:request=>execute(request),saveCurrentDraft:(request,input)=>execute(request,input)})
+}
+
+/** Plan against a server-owned snapshot from the TARGET organisation only.
+ * This is not authorization or a delivery receipt. The repository must repeat
+ * current membership/pending-invitation checks inside the enqueue transaction.
+ * A registered account in another organisation is intentionally not a blocker.
+ */
+export function classifyOrganisationInvitations(input,{now=Date.now}={}){
+ if(!exact(input,['organisationId','ownEmail','candidates','observations'])
+  ||typeof input.organisationId!=='string'||! /^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(input.organisationId)
+  ||!exact(input.observations,['organisationId','members','pendingInvitations'])
+  ||input.observations.organisationId!==input.organisationId)fail('INVITATION_OBSERVATION_SCOPE_MISMATCH')
+ if(!Array.isArray(input.candidates)||input.candidates.length<1||input.candidates.length>20
+  ||!Array.isArray(input.observations.members)||input.observations.members.length>2000
+  ||!Array.isArray(input.observations.pendingInvitations)||input.observations.pendingInvitations.length>2000)fail('INVALID_INVITATION_BATCH')
+ const own=normalizeInvitationEmail(input.ownEmail),members=new Map(),pending=new Set(),seen=new Set(),time=now()
+ if(!Number.isSafeInteger(time))fail('INVALID_INVITATION_BATCH')
+ for(const member of input.observations.members){
+  if(!exact(member,['email','status'])||!['ACTIVE','SUSPENDED','EXPIRED'].includes(member.status))fail('INVALID_INVITATION_OBSERVATION')
+  const email=normalizeInvitationEmail(member.email),old=members.get(email)
+  if(old&&old!==member.status)fail('INVALID_INVITATION_OBSERVATION')
+  members.set(email,member.status)
+ }
+ for(const invitation of input.observations.pendingInvitations){
+  if(!exact(invitation,['email','expiresAt'])||typeof invitation.expiresAt!=='string'||!Number.isFinite(Date.parse(invitation.expiresAt)))fail('INVALID_INVITATION_OBSERVATION')
+  const email=normalizeInvitationEmail(invitation.email)
+  if(Date.parse(invitation.expiresAt)>time)pending.add(email)
+ }
+ const items=input.candidates.map((value,index)=>{
+  let email
+  try{email=normalizeInvitationEmail(value)}catch(error){if(!(error instanceof OrganisationProfileError))throw error;return {index,email:null,status:'INVALID_EMAIL'}}
+  if(seen.has(email))return {index,email,status:'DUPLICATE'}
+  seen.add(email)
+  const member=members.get(email)
+  const status=email===own?'SELF':member==='ACTIVE'?'ALREADY_MEMBER':member?'MEMBERSHIP_REQUIRES_REVIEW':pending.has(email)?'ALREADY_INVITED':'READY'
+  return {index,email,status}
+ })
+ const readyEmails=items.filter(i=>i.status==='READY').map(i=>i.email)
+ return freeze({organisationId:input.organisationId,items,readyEmails,counts:{ready:readyEmails.length,skipped:items.length-readyEmails.length}})
 }
