@@ -302,3 +302,19 @@ publication pages through E1, and independently closes/reopens two ordinary
 SQL connections. It emits only counts, fingerprints and receipt references.
 It makes no provider request and writes no user preferences. Synthetic tests
 are not a substitute for that real Development acceptance.
+
+## Stage04–05 — global semantics and continuous operation
+
+Source proposal; activation requires the exact `operations/stage04-05-owner-plan.json` owner decision, normal CI and actual Development readback. Existing Stage03 records and private preferences remain separate. No new user identity or business quota is introduced.
+
+The same E1 `economic-calendar-events` read operation protects `GET /v1/organisations/:org/calendar/timeline`, `/context`, `/knowledge`, `/knowledge/:semanticId/revisions`, `/freshness`, `/evidence/:eventId` and `/evidence/:eventId/revisions`. Timeline/context accept `targetType`, `targetId`, `from`, `to`, `asKnownAt`, `after` and `limit`. Responses distinguish confirmed source definitions from unresolved aggregator editions; consumer rendering and assistant interpretation remain outside ECR. `MACROBOND:b_c1_cl` references the existing Development market catalogue; ECR stores relationships, not a benchmark catalogue or price series.
+
+`migrations/003-semantic-continuous.sql` adds global, append-only semantic revisions, exact licensed result observations and durable work state. Controlled curation uses `scripts/curate.mjs` with the ordinary migrator and `ECR_CURATION_FILE`; expected versions, evidence, curator reference and database record time are mandatory. The ingestion login cannot curate. Read-time semantic history never predates its database record time, even when a rule has an earlier effective date.
+
+SourceHub protocol1.4 is an opt-in ECR-only durable projection of two explicitly accepted weekly EIA stock series. No forecast, previous value, publication timestamp or prior vintage is invented. Source API snapshots link to a retained WPSR edition only on an exact unique reference-period match; unresolved observations retain that status. SourceHub cache retention stays0. Local and SourceHub recipient policies are separately revocable and versioned.
+
+A separate bounded cron command `scripts/continuous.mjs` reads due jobs, claims a180-second fenced lease and keeps each intent and its command across restarts. At most one claim per job occurs in a tick. Successful replay checks ECR before acquisition. A definitive lost/non-retained response can create an auditable new observation intent; uncertain delivery pauses. Transient retries are capped at3 and no commercial usage counter exists. The cron checks due times every15minutes; provider refresh cadence differs: WPSR/calendar daily, STEO weekly, numerical results after the next WPSR schedule plus30minutes, or daily when lagging. It never runs in the web process.
+
+The proposed Identity continuity migration010 adds only an owner-revocable ECR renewal policy and finite30-day SERVICE leases. Expired or revoked entitlements cannot renew. The shared receiver rows are untouched: only the exact ECR SERVICE receives its admitted technical receiver lease; other consumers and HUMAN source operations retain existing expiry. Current provider licences, Source Admission and the parent product are independent gates and are not renewed.
+
+The proposed cron owns only ECR ingest credentials, its existing signing key and an ordinary central ECR login restricted to the renewal function. It has no provider keys, migration/admin credentials or human session. The web service receives none of those credentials. Exact deployed source must match the execution pin. Rollback pauses the cron, revokes only new rights, restores captured ECR/SourceHub Last Known Good releases and preserves all retained data and history. No automatic destructive downgrade exists.

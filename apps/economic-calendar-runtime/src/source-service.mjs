@@ -28,7 +28,8 @@ export function calendarSourceIntent(input) {
   if(sourceCommand!==undefined&&criteria!==undefined)throw new CalendarError('AMBIGUOUS_SOURCE_COMMAND')
   const command = parseHubRequest(sourceCommand??{contractVersion: '1.0.0', family: 'economic-calendar', provider: 'trading-economics', operation: 'search', criteria})
   if(!(command.contractVersion==='1.0.0'&&command.provider==='trading-economics'&&command.family==='economic-calendar'&&command.operation==='search'
-    ||command.contractVersion==='1.3.0'&&['eia','commodities-sh'].includes(command.provider)&&command.family==='publication-calendar'&&command.operation==='calendar'))throw new CalendarError('UNSUPPORTED_CALENDAR_SOURCE')
+    ||command.contractVersion==='1.3.0'&&['eia','commodities-sh'].includes(command.provider)&&command.family==='publication-calendar'&&command.operation==='calendar'
+    ||command.contractVersion==='1.4.0'&&command.provider==='eia'&&command.family==='series-observations'&&command.operation==='observations'))throw new CalendarError('UNSUPPORTED_CALENDAR_SOURCE')
   /** @type {import('@profitia/platform-current-e1-authority/first-party').SourceExecution} */
   const execution = {kind: 'SERVICE', organisationId: organisationId(organisation), grantId}
   return {command, execution}

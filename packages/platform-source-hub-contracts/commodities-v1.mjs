@@ -2,6 +2,7 @@ import {SourceHubError} from './index.mjs'
 export const COMMODITY_CONTRACT_VERSION='1.1.0'
 export const PUBLICATION_SCHEDULE_CONTRACT_VERSION='1.2.0'
 export const DURABLE_SCHEDULE_CONTRACT_VERSION='1.3.0'
+export const DURABLE_RESULT_CONTRACT_VERSION='1.4.0'
 const scheduleVersion=v=>[PUBLICATION_SCHEDULE_CONTRACT_VERSION,DURABLE_SCHEDULE_CONTRACT_VERSION].includes(v)
 export const COMMODITY_FAMILIES=Object.freeze(['data-catalog','series-observations','positioning-observations','publication-calendar'])
 export const COMMODITY_PROVIDERS=Object.freeze({eia:['data-catalog','series-observations'],cftc:['data-catalog','positioning-observations'],'commodities-sh':['data-catalog','publication-calendar']})
@@ -11,6 +12,10 @@ const fail=(code='INVALID_CONTRACT')=>{throw new SourceHubError(code)}
 const name=v=>typeof v==='string'&&/^[a-zA-Z][a-zA-Z0-9_-]{0,99}$/.test(v)
 const names=v=>Array.isArray(v)&&v.length>0&&v.length<=200&&v.every(name)&&new Set(v).size===v.length
 export function parseCommodityRequest(v){
+ if(v?.contractVersion===DURABLE_RESULT_CONTRACT_VERSION){
+  if(v.provider!=='eia'||v.family!=='series-observations'||v.operation!=='observations')fail('UNSUPPORTED_DURABLE_RESULT_FAMILY')
+  parseCommodityRequest({...v,contractVersion:COMMODITY_CONTRACT_VERSION});return structuredClone(v)
+ }
  if(scheduleVersion(v?.contractVersion))return parsePublicationScheduleRequest(v)
  if(!closed(v,['contractVersion','provider','family','operation','criteria'])||v.contractVersion!==COMMODITY_CONTRACT_VERSION
   ||!Object.hasOwn(COMMODITY_PROVIDERS,v.provider)||!COMMODITY_PROVIDERS[v.provider].includes(v.family)||!plain(v.criteria))fail()
@@ -79,7 +84,18 @@ export function assertCommodityResponse(v,expected){
    if(p.fields.some(f=>!plain(f)||!text(f.name)||!(f.unit===null||text(f.unit))))reject()
    if(m.consumerStorage!==undefined&&(!closed(m.consumerStorage,['mode','basisRef','licenceVersion'])||m.consumerStorage.mode!=='CATALOG_METADATA_ONLY'||!text(m.consumerStorage.basisRef)||!/^[1-9][0-9]*$/.test(m.consumerStorage.licenceVersion)))reject()
   }else{
-   if(expected.contractVersion===DURABLE_SCHEDULE_CONTRACT_VERSION){if(!validScheduleStorageRights(m.consumerStorage))reject()}
+   if(expected.contractVersion===DURABLE_RESULT_CONTRACT_VERSION){
+    const s=m.consumerStorage,scope=s?.scope
+    if(!closed(s,['mode','basisRef','licenceVersion','rightsVersion','consumerApplicationId','retentionMode','redistribution','scope'])
+      ||!validScheduleStorageRights(Object.fromEntries(Object.entries(s??{}).filter(([k])=>k!=='scope')))
+      ||!closed(scope,['datasetId','seriesIds','fields','frequency','geography'])||scope.datasetId!==expected.criteria.path
+      ||!Array.isArray(scope.seriesIds)||!scope.seriesIds.length||!scope.seriesIds.every(text)||!Array.isArray(scope.fields)||!scope.fields.every(text)
+      ||scope.frequency!==expected.criteria.frequency||!text(scope.geography)
+      ||!closed(p,['datasetId','referencePeriod','frequency','dimensions','measures','observedAt','publishedAt','revisionStatus','upstreamApiVersion'])
+      ||p.datasetId!==scope.datasetId||!scope.seriesIds.includes(p.dimensions?.series)||p.dimensions?.duoarea!==scope.geography
+      ||!Array.isArray(p.measures)||p.measures.some(x=>!scope.fields.includes(x.field))||p.revisionStatus!=='PROVIDER_CURRENT_SNAPSHOT_NOT_VINTAGE')reject()
+   }
+   else if(expected.contractVersion===DURABLE_SCHEDULE_CONTRACT_VERSION){if(!validScheduleStorageRights(m.consumerStorage))reject()}
    else if(m.consumerStorage!==undefined)reject()
    if(v.family==='series-observations'&&(!text(p.datasetId)||!text(p.referencePeriod)||!text(p.frequency)||!plain(p.dimensions)||!Array.isArray(p.measures)||!p.measures.length||p.measures.some(x=>!text(x.field)||!scalar(x.value)||!(x.unit===null||text(x.unit)))||!time(p.observedAt)||!time(p.publishedAt)))reject()
    if(v.family==='positioning-observations'&&(!text(p.datasetId)||!text(p.reportDate)||!text(p.contractCode)||!plain(p.columns)||!Object.values(p.columns).every(scalar)||p.uniqueness!=='NOT_ASSERTED'||p.publicationAt!==null||p.unitBasis!=='PROVIDER_COLUMN_DEFINITION_REQUIRED'))reject()
