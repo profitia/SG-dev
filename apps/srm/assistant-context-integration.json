@@ -1,0 +1,36 @@
+{
+  "schemaVersion": "1.0.0",
+  "taskId": "SRM-ACG-M2-20261110",
+  "contract": {
+    "id": "srm-assistant-summary",
+    "version": "1.0.0"
+  },
+  "targetEnvironment": "development",
+  "previousSourceSha": "c3b399b13241ae2f4ea8c1b3ae0168fe9a6aac7f",
+  "configuration": {
+    "variable": "PROFITIA_ASSISTANT_CONTEXT_PEER_READ_VERSION",
+    "version": "srm-assistant-context-peer-development-v1",
+    "enabledByDefault": false
+  },
+  "operations": [
+    "supplier.report.read",
+    "supplier.private.read"
+  ],
+  "grantsAccess": false,
+  "storedReadsOnly": true,
+  "acquisitionAllowed": false,
+  "sourceDigests": {
+    "apps/srm/app/api/xray/assistant-context/route.ts": "45e7ce0807ef650b36ee968cdcd46f36e4699b636a08bb1eb3a48a5d34e85bc6",
+    "apps/srm/deployment/private-runtime-targets.json": "30e5bc1f8e74ff183fc2596678887e91611894de57d80557d24a0fe72208a9c3",
+    "apps/srm/scripts/assistant-m2-integrity.mjs": "4b75d73f582d7002a45c7cf218a6a8dfcab2089e353176f06c484422a0c40c4f",
+    "apps/srm/scripts/source-hub-sdk-compatibility.mjs": "f85a5264fa04224160f0b4d5d95f02bacf5108499804ec8f96876e541095cf3a",
+    "apps/srm/src/server/assistant-context-runtime.test.ts": "7ee14b67f5411dc0f69264349028e2a3363f4c35fb625ad7cc0412eef2fb7529",
+    "apps/srm/src/server/assistant-context-runtime.ts": "2e12a537e2e595f9891515caa362f3ad3c2c248153b6a59a44ef393f96c45687",
+    "apps/srm/src/server/private-runtime.ts": "03b53ad4f962f8c206c479675b4138aa098055aa097fdbad92d23393fd97cfce",
+    "apps/srm/src/server/supplier-api-composition.ts": "79512a24e48beaeb8d2bee5aa31ef03808d7c252cd247699d85893a818bc78f3",
+    "packages/srm-xray/package.json": "41ddd624c626a0561418ef604e135bbf7df056d957f984a2467dbc77d7dd1587",
+    "packages/srm-xray/src/assistant-context.ts": "a083835350817b96ccd398051185f2b6493af051969977ba62e9ac318493d8b2",
+    "packages/srm-xray/src/assistant-summary.ts": "9f967c2e9338db33fa40d64216dd540709de77933a49228dc516914fa5701df0",
+    "packages/srm-xray/src/financial-scanner.tsx": "aef08e44006b145dcb2457366eaef64767ec093adf690c48167b13e417cc3998"
+  }
+}
