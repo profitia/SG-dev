@@ -36,7 +36,7 @@
     "test:source-worker": "npm run forecast:python:bootstrap && node --import tsx --test tests/source-worker.integration.test.mjs",
     "test:self-service-account": "node scripts/with-cross-host-local-packages.mjs --import tsx --test tests/self-service-account.test.ts",
     "test:market-history": "node --import tsx --test tests/market-history.test.ts tests/market-history.integration.test.mjs",
-    "test:assistant": "node --import tsx --test tests/assistant-conversation.test.ts tests/assistant-conversation-transport.test.ts tests/assistant-conversation-handler.test.ts tests/assistant-model.test.ts tests/advisory-widget.test.ts && node --test tests/assistant-m1-integrity.test.mjs"
+    "test:assistant": "node --import tsx --test tests/assistant-conversation.test.ts tests/assistant-conversation-transport.test.ts tests/assistant-conversation-handler.test.ts tests/assistant-model.test.ts tests/assistant-chart-context.test.ts tests/advisory-widget.test.ts && node --test tests/assistant-m1-integrity.test.mjs"
   },
   "dependencies": {
     "@clerk/backend": "3.25.0",
