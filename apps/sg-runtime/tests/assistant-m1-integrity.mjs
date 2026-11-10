@@ -57,7 +57,46 @@ export const ASSISTANT_M1_RUNTIME_PATHS=Object.freeze([
 export const ASSISTANT_M1_PEER_PATHS=Object.freeze(['apps/srm/scripts/source-hub-sdk-compatibility.mjs'])
 const priorSha='1f25d37589d0c8e0e0020f014ab9788b4a04417b',file='apps/sg-runtime/operation-integration.json'
 const hash=v=>createHash('sha256').update(v).digest('hex')
+export const ASSISTANT_M1_CHART_CORRECTIVE_PATHS=Object.freeze([
+ 'apps/dashboard-preview/components/raw-data-view/magicpath-benchmark-chart.tsx',
+ 'apps/sg-runtime/tests/assistant-chart-context.test.ts',
+ 'apps/sg-runtime/tests/assistant-m1-integrity.mjs',
+ 'apps/sg-runtime/tests/assistant-m1-integrity.test.mjs',
+ 'apps/sg-runtime/tests/assistant-model.test.ts',
+ 'apps/sg-runtime/tests/category-operation.test.ts',
+ 'apps/sg-runtime/tests/diagnostic-telemetry-adoption.test.mjs',
+ 'apps/sg-runtime/tests/identity-runtime.test.ts',
+ 'apps/sg-runtime/tests/integrated-buyer-journey-package.test.mjs',
+ 'apps/sg-runtime/tests/native-sql-roundtrips.test.mjs',
+ 'apps/sg-runtime/tests/operation-context.test.mjs',
+ 'apps/sg-runtime/tests/pci-smart-integrity.test.mjs',
+ 'apps/sg-runtime/tests/porr-demo-middleware.test.ts',
+ 'apps/sg-runtime/tests/self-service-account.test.ts',
+ 'apps/sg-runtime/tests/xray-fresh-performance-adoption.test.mjs',
+ 'apps/sg-runtime/tests/xray-gateway.test.ts',
+])
+export function assertAssistantM1ChartCorrective(receipt,current,historical){
+ const a=receipt.assistantM1ChartContextCorrective
+ assert(a,'explicit chart corrective required');assert.equal(a.schemaVersion,'1.0')
+ assert.equal(a.taskId,'SG2-ACG-M1-20261109');assert.equal(a.scope,'ACTUAL_MAGICPATH_CHART_CONTEXT_PRODUCER_ONLY')
+ assert.equal(a.targetEnvironment,'development');assert.equal(a.previousReceiptSourceSha,'4a58d6cdc57334aa5c5aa9cba20cad8e7e5e47b5')
+ assert.match(a.sourceProducerSha,/^[a-f0-9]{40}$/)
+ const bytes=Buffer.from(historical(a.previousReceiptSourceSha,file)),prior=JSON.parse(bytes)
+ assert.equal(hash(bytes),a.previousReceiptSha256)
+ const {assistantM1ChartContextCorrective,...preserved}=receipt
+ assert.deepEqual(preserved,prior,'accepted M1 and all earlier acceptance remain immutable')
+ assert.deepEqual(Object.keys(a.sourceDigests).sort(),ASSISTANT_M1_CHART_CORRECTIVE_PATHS)
+ assert.deepEqual(a.addedBoundaryFiles,['apps/sg-runtime/tests/assistant-chart-context.test.ts'])
+ assert.deepEqual(a.applicationSourceDigests,Object.fromEntries(Object.entries(a.sourceDigests).map(([p,h])=>[posix.relative('apps/sg-runtime',p),h])))
+ for(const [p,h]of Object.entries(a.sourceDigests)){
+  assert.match(h,/^[a-f0-9]{64}$/);assert.equal(hash(current(p)),h,'current chart corrective '+p)
+  assert.equal(hash(historical(a.sourceProducerSha,p)),h,'committed chart corrective '+p)
+ }
+ for(const flag of ['visualDesignChanged','authorizationChanged','schemaChanged','providerConfigurationChanged','pilotLimitsChanged','srmProductChanged','otherEnvironmentsChanged'])assert.equal(a[flag],false,flag)
+ return {prior,previousBytes:p=>ASSISTANT_M1_CHART_CORRECTIVE_PATHS.includes(p)||p===file?Buffer.from(historical(a.previousReceiptSourceSha,p)):current(p)}
+}
 export function assertAssistantM1Integrity(receipt,current,historical){
+ if(receipt.assistantM1ChartContextCorrective){const n=assertAssistantM1ChartCorrective(receipt,current,historical);return assertAssistantM1Integrity(n.prior,n.previousBytes,historical)}
  const a=receipt.assistantM1RuntimeSourceCompatibility;assert(a,'explicit M1 runtime source receipt required')
  assert.equal(a.schemaVersion,'1.0');assert.equal(a.taskId,'SG2-ACG-M1-20261109');assert.equal(a.scope,'ASSISTANT_M1_SHARED_APPSHELL_SOURCE_ONLY');assert.equal(a.targetEnvironment,'development')
  assert.equal(a.previousReceiptSourceSha,priorSha);assert.match(a.sourceProducerSha,/^[a-f0-9]{40}$/)

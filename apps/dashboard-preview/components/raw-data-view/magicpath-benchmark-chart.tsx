@@ -10,6 +10,8 @@ import {CanonTimeIntervalHighlight,type TimeIntervalFocus} from './magicpath/Can
 import {chartControlPanelVariables} from './magicpath/chart-control-panel-contract'
 import {rangeForTimePreset,type ChartTimePreset} from './magicpath/chart-time-presets'
 import {buildMagicPathScene,chartTimeline,dateMs,timeIndex,pathFor,finitePoint} from './magicpath-chart-geometry'
+import {useEmbeddedReadPresentation} from '../native-embedded-read-provider'
+import {benchmarkSnapshotBytes,contextDate,type ChartReference} from '../../../../packages/assistant-context-contracts/src/index.mjs'
 
 
 
@@ -75,6 +77,33 @@ export function MagicPathBenchmarkChart({payload:inputPayload,isLoading,emptyMes
   const scene=useMemo(()=>visiblePayload&&dates.length?buildMagicPathScene(payload!,dates,range,height,16,hidden,showForecastAccuracy,progress):null,[payload,dates,range[0],range[1],height,hidden,showForecastAccuracy,progress])
   const interval:ChartInterval=payload?.series.find(series=>series.kind==='historical')?.points.some(point=>point.detailModel.temporalResolution==='day')?'daily':'monthly'
   const anchorIndex=scene?.hasFuture&&scene.anchor?dates.indexOf(scene.anchor.date):undefined
+  const {readOnly,publishChartReference}=useEmbeddedReadPresentation()
+  // Publish the actual structured historical window. The server independently
+  // authorises and reconstructs these bytes; the browser sends no prices.
+  const contextSnapshot=useMemo(()=>{
+    if(!readOnly||isLoading||!inputPayload?.benchmarkCode||!scene||hidden.includes('historical'))return null
+    const points=inputPayload.series.find(series=>series.kind==='historical')?.points
+      .filter(point=>dateMs(point.date)>=scene.start&&dateMs(point.date)<=scene.end)
+    if(!points?.some(finitePoint))return null
+    const seriesId=inputPayload.benchmarkCode
+    return {seriesId,from:contextDate(points[0].date),to:contextDate(points[points.length-1].date),
+      range:preset==='1M'?'1M' as const:initialPreset,
+      bytes:benchmarkSnapshotBytes({seriesId,unit:inputPayload.unit,currency:inputPayload.currency,
+        source:inputPayload.sourceInfo?.sourceLabel??null,points})}
+  },[readOnly,isLoading,inputPayload,scene?.start,scene?.end,hidden,preset,initialPreset])
+  const contextKey=contextSnapshot?JSON.stringify(contextSnapshot):null
+  useEffect(()=>{
+    let retired=false
+    publishChartReference(null)
+    if(!contextKey)return
+    const {bytes,...selection}=JSON.parse(contextKey) as NonNullable<typeof contextSnapshot>
+    void crypto.subtle.digest('SHA-256',new TextEncoder().encode(bytes)).then(digest=>{
+      const reference:ChartReference={version:'1.1.0',source:'BENCHMARK_CHART',...selection,
+        fingerprint:Array.from(new Uint8Array(digest),value=>value.toString(16).padStart(2,'0')).join('')}
+      if(!retired)publishChartReference(reference)
+    }).catch(()=>{if(!retired)publishChartReference(null)})
+    return()=>{retired=true;publishChartReference(null)}
+  },[contextKey,publishChartReference])
   useEffect(()=>{setSelection(null);setHidden([]);setPreset(initialPreset==='ALL'?'All':initialPreset)},[payload?.benchmarkCode,payload?.title,initialPreset])
   useEffect(()=>{setSelection(null)},[dates[0],dates[dates.length-1]])
   useEffect(()=>{const el=plot.current;if(!el)return;const observer=new ResizeObserver(()=>setHeight(el.getBoundingClientRect().height||512));observer.observe(el);return()=>observer.disconnect()},[!!scene])
