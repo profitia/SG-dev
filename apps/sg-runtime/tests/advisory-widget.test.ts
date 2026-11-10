@@ -37,5 +37,5 @@ test('keeps copy bilingual and preserves four entry prompts', () => {
 
 test('keeps the widget out of the frozen PORR demo profile', () => {
   const layout = readFileSync(path.join(process.cwd(), 'app/[locale]/layout.tsx'), 'utf8')
-  assert.match(layout, /enabled={!isPorrDemoProfile}/)
+  assert.match(layout, /enabled=\{identity\?\.provider === 'legacy_demo' && !isPorrDemoProfile\}/)
 })

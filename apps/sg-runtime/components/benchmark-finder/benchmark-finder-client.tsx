@@ -16,6 +16,7 @@ import { RESULT_PREVIEW_LIMIT, RESULT_BATCH_SIZE, SEARCH_RESULTS_FETCH_LIMIT, ne
 
 import {createDiscoveryRequester} from './discovery-request'
 import { NativeAnalyticsEmbed } from './native-analytics-embed'
+import type {ChartReference} from '../../../../packages/assistant-context-contracts/src/index.mjs'
 
 import { memo, useDeferredValue, useEffect, useRef, useState, useTransition } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -70,6 +71,7 @@ type BenchmarkFinderClientProps = {
   /** AppShell owns branding and theme controls when embedded. */
   headerOwner?: 'module' | 'host'
   hostTheme?: 'light' | 'dark'
+  onAssistantContextChange?:(reference:ChartReference|null)=>void
   selectionMode?: 'standalone' | 'picker'
   onBenchmarkSelected?: (benchmark: SavedBenchmark) => void
   initialMode?: DiscoveryMode
@@ -923,6 +925,7 @@ export function BenchmarkFinderClient({
   assistantOwner = 'module',
   headerOwner = 'module',
   hostTheme,
+  onAssistantContextChange,
 }: BenchmarkFinderClientProps) {
   useEffect(()=>{
     if(headerOwner!=='host'||!hostTheme||!active)return
@@ -977,6 +980,24 @@ export function BenchmarkFinderClient({
   const [results, setResults] = useState<BenchmarkCandidate[]>(initialLocaleSwitchSnapshot?.results ?? [])
   const [saved, setSaved] = useState<SavedBenchmark[]>([])
   const [previewStates, setPreviewStates] = useState<Record<string, CandidatePreviewState>>(initialLocaleSwitchSnapshot?.previewStates ?? {})
+  const assistantCharts=useRef(new Map<string,ChartReference>()),assistantChart=useRef<string|null>(null)
+  const assistantSink=useRef({active,onAssistantContextChange});assistantSink.current={active,onAssistantContextChange}
+  function selectAssistantChart(seriesId:string){
+    if(!assistantSink.current.active)return
+    assistantChart.current=seriesId
+    assistantSink.current.onAssistantContextChange?.(assistantCharts.current.get(seriesId)??null)
+  }
+  function receiveAssistantChart(seriesId:string,reference:ChartReference|null,activated:boolean){
+    if(reference)assistantCharts.current.set(seriesId,reference);else assistantCharts.current.delete(seriesId)
+    if(!assistantSink.current.active)return
+    if(activated)assistantChart.current=seriesId
+    if(assistantChart.current===seriesId)assistantSink.current.onAssistantContextChange?.(reference)
+  }
+  useEffect(()=>{
+    const selected=assistantChart.current
+    if(selected&&!previewStates[selected]?.expanded){assistantChart.current=null;assistantCharts.current.delete(selected)}
+    onAssistantContextChange?.(active&&assistantChart.current?assistantCharts.current.get(assistantChart.current)??null:null)
+  },[active,previewStates,onAssistantContextChange])
   const [analyticsFrameHeights, setAnalyticsFrameHeights] = useState<Record<string, number>>({})
   const [aiIntent, setAiIntent] = useState<BenchmarkSearchIntent | null>(initialLocaleSwitchSnapshot?.aiIntent ?? null)
   const [searchError, setSearchError] = useState<string | null>(null)
@@ -2155,6 +2176,13 @@ export function BenchmarkFinderClient({
   }, [hasSearched, previewStates, visibleResults])
 
   const presentedResults = visibleResults.filter(candidate=>matchesQualification(enrichedCandidates[candidate.providerSeries.providerSeriesId]??candidate,pciFilter)).filter(candidate=>!onlyForecast||PORR_DEMO_FORECAST_BENCHMARKS.some(item=>item.seriesId===candidate.providerSeries.providerSeriesId)||previewStates[candidate.providerSeries.providerSeriesId]?.analyticsEligibility.forecastPortfolioEnabled).sort((a,b)=>resultSort==='name'?a.displayName.localeCompare(b.displayName,locale):0)
+  const presentedSeriesKey=JSON.stringify(presentedResults.map(candidate=>candidate.providerSeries.providerSeriesId))
+  useEffect(()=>{
+    const selected=assistantChart.current
+    if(selected&&!presentedResults.some(candidate=>candidate.providerSeries.providerSeriesId===selected)){
+      assistantChart.current=null;assistantCharts.current.delete(selected);onAssistantContextChange?.(null)
+    }
+  },[presentedSeriesKey,onAssistantContextChange])
 
   return (
     <BenchmarkPresentation compact={isPickerMode||assistantOwner==='host'}><main className={`bf-page min-h-screen${isPickerMode ? ' bf-visual-picker' : ''}`} data-testid="benchmark-finder-page">
@@ -2534,6 +2562,8 @@ export function BenchmarkFinderClient({
               return (
                 <article
                   key={candidate.candidateId}
+                  onPointerDownCapture={()=>{if(isActive)selectAssistantChart(seriesId)}}
+                  onFocusCapture={()=>{if(isActive)selectAssistantChart(seriesId)}}
                   data-testid="benchmark-result-card"
                   data-series-id={seriesId}
                   className={`bf-candidate${isActive ? ' is-open' : ''}`}
@@ -2570,7 +2600,7 @@ export function BenchmarkFinderClient({
                           title={isActive ? t('actions.collapseAnalytics') : t('actions.expandAnalytics')}
                           aria-expanded={isActive}
                           className="bf-expand-control"
-                          onClick={() => togglePreviewCard(candidate)}
+                          onClick={() => {selectAssistantChart(seriesId);togglePreviewCard(candidate)}}
                         >
                           <span className="bf-expand-icon"><FinderGlyph kind="chevron"/></span>
                         </button>
@@ -2603,6 +2633,7 @@ export function BenchmarkFinderClient({
                         <>
                           <NativeAnalyticsEmbed
                             locale={locale}
+                            onChartReference={(reference,activated)=>receiveAssistantChart(seriesId,reference,activated)}
                             key={localizeDashboardPreviewAnalyticsUrl(previewState.analyticsEligibility.analyticsUrl, locale)}
                             title={`${previewState.preview?.displayName ?? candidate.displayName} analytics`}
                             src={localizeDashboardPreviewAnalyticsUrl(previewState.analyticsEligibility.analyticsUrl, locale)}
