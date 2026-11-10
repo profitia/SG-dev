@@ -3282,7 +3282,7 @@ export function assertAcgG1ReviewEntry(file,entry){
 
 
 // Owner-approved M1 dependency: closed blobs, modes and actual owner profiles.
-export const ACG_M1_EXECUTION_REVIEW=Object.freeze({prNumber:937,branch:'architecture/acg-m1-execution-20261109',sourceSha:'90561a9785d7adc0e07c989f5bf0cac4a63b57f6',baseSha:'f737c0228960c928d079b09a97056f60d433089a',entries:Object.freeze({
+export const ACG_M1_EXECUTION_REVIEW=Object.freeze({prNumber:937,branch:'architecture/acg-m1-execution-20261109',sourceSha:'a0952d407c2ddf736684ebe6ed580b2835a3def8',baseSha:'f737c0228960c928d079b09a97056f60d433089a',entries:Object.freeze({
   ".github/workflows/assistant-context-gateway-ci.yml": {
     "sha": "f88119a3291fea0b448f89a184268b1f87c046a5",
     "status": "modified",
@@ -3296,20 +3296,6 @@ export const ACG_M1_EXECUTION_REVIEW=Object.freeze({prNumber:937,branch:'archite
     "mode": "100644",
     "projectKey": "ARCHITECTURE",
     "owner": "Architecture Platform"
-  },
-  "Canon/registries/operation-access-matrix-v1.json": {
-    "sha": "163fec8f8b3cc0aafb4a60c0e18a3b446cbc3149",
-    "status": "modified",
-    "mode": "100644",
-    "projectKey": "ARCHITECTURE",
-    "owner": "Governance Source Layer"
-  },
-  "Canon/v1.0-operation-context-and-access-contract.md": {
-    "sha": "20c89648fbf6e8f360ac72048a92ca87b76c2d02",
-    "status": "modified",
-    "mode": "100644",
-    "projectKey": "ARCHITECTURE",
-    "owner": "Governance Source Layer"
   },
   "apps/architecture-lab/assistant-m1-sdk-compatibility.json": {
     "sha": "c676bd74579083a69565f44895379ab253351b2d",
@@ -3348,6 +3334,13 @@ export const ACG_M1_EXECUTION_REVIEW=Object.freeze({prNumber:937,branch:'archite
   },
   "apps/package-limits/migrations/004-assistant-usage.sql": {
     "sha": "4508f43fe9b9c9659d4b79c369a8c9492431eb08",
+    "status": "modified",
+    "mode": "100644",
+    "projectKey": "ARCHITECTURE",
+    "owner": "Architecture Platform"
+  },
+  "apps/package-limits/scripts/ci-proof.mjs": {
+    "sha": "9501ca3f134f870f6198ea050bae89fb4c226fe5",
     "status": "modified",
     "mode": "100644",
     "projectKey": "ARCHITECTURE",
@@ -3555,6 +3548,20 @@ export const ACG_M1_EXECUTION_REVIEW=Object.freeze({prNumber:937,branch:'archite
     "mode": "100644",
     "projectKey": "SRM",
     "owner": "SRM Runtime"
+  },
+  "Canon/registries/operation-access-matrix-v1.json": {
+    "sha": "163fec8f8b3cc0aafb4a60c0e18a3b446cbc3149",
+    "status": "modified",
+    "mode": "100644",
+    "projectKey": "ARCHITECTURE",
+    "owner": "Governance Source Layer"
+  },
+  "Canon/v1.0-operation-context-and-access-contract.md": {
+    "sha": "20c89648fbf6e8f360ac72048a92ca87b76c2d02",
+    "status": "modified",
+    "mode": "100644",
+    "projectKey": "ARCHITECTURE",
+    "owner": "Governance Source Layer"
   },
   "packages/assistant-context-contracts/package.json": {
     "sha": "45a389f274c6bd2b102403583eb18583d51efe1a",
