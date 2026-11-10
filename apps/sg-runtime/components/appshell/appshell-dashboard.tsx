@@ -1,9 +1,11 @@
 'use client'
 
-import React, {useSyncExternalStore,useEffect, useState} from 'react'
+import React, {useSyncExternalStore,useEffect,useLayoutEffect,useRef,useMemo, useState} from 'react'
+import {AssistantConversationSession} from './assistant-conversation-session'
+import {createAssistantConversationTransport} from './assistant-conversation-transport'
 import {productAnalytics} from '@/lib/product-analytics/adapter'
 import {usePathname, useRouter, useSearchParams} from 'next/navigation'
-import {useAssistantScreenContext} from './assistant-screen-context';
+import {useAssistantScreenContext,type AssistantModule} from './assistant-screen-context';
 import {PlatformAppShell} from './platform-appshell'
 import {XRayModuleHost} from './xray-module-host'
 import {isXrayPath,xrayPath} from '@/lib/appshell/xray-navigation'
@@ -15,14 +17,24 @@ import {Sg2ModuleSession} from '../auth/session-boundary'
 export function AppShellDashboard(props: {
   locale: 'pl' | 'en'; salutation?: string | null; assistantAvatar?: 'male' | 'female' | null
   organisationBranding?: 'porr' | null; onLogout: () => void
+  assistantCredential?:()=>Promise<string|null>;assistantScope?:string
 }) {
   const router = useRouter(), pathname = usePathname(), search = useSearchParams()
   const xrayActive=isXrayPath(pathname,props.locale)
   const active = isAdpPath(pathname, props.locale)
   const benchmarkPath=`/${props.locale}/dashboard/benchmark-finder`
   const benchmarkActive=pathname===benchmarkPath||pathname===benchmarkPath+'/'
-  const assistantModule=xrayActive?'xray':active?'adp':benchmarkActive?'benchmark_finder':'appshell';
-  const {context:assistantContext,onXrayContext}=useAssistantScreenContext(assistantModule);
+  const assistantModule:AssistantModule=xrayActive?'xray':active?'adp':benchmarkActive?'benchmark_finder':'appshell';
+  const {context:assistantContext,onXrayContext,benchmarkReference,onBenchmarkContext}=useAssistantScreenContext(assistantModule);
+  const conversationInputs=useRef<{credential?:()=>Promise<string|null>;locale:'pl'|'en';module:AssistantModule;reference:typeof benchmarkReference}>({credential:props.assistantCredential,locale:props.locale,module:assistantModule,reference:benchmarkReference})
+  conversationInputs.current={credential:props.assistantCredential,locale:props.locale,module:assistantModule,reference:benchmarkReference}
+  const conversation=useMemo(()=>new AssistantConversationSession(createAssistantConversationTransport({
+    getToken:async()=>conversationInputs.current.credential?.()??null,
+    view:()=>({locale:conversationInputs.current.locale,module:conversationInputs.current.module,reference:conversationInputs.current.reference}),
+  })),[])
+  useLayoutEffect(()=>{conversation.activate(props.assistantCredential&&props.assistantScope?props.assistantScope:null);return()=>conversation.activate(null)},[conversation,props.assistantScope,!!props.assistantCredential])
+  const viewKey=JSON.stringify([assistantModule,benchmarkReference])
+  useLayoutEffect(()=>{conversation.changeView()},[conversation,viewKey])
   const [xrayOpened,setXrayOpened]=useState(xrayActive)
   useEffect(()=>{if(xrayActive)setXrayOpened(true)},[xrayActive])
   const [opened, setOpened] = useState(active)
@@ -39,7 +51,7 @@ export function AppShellDashboard(props: {
     else productAnalytics.transition('module',analyticsModule,'module_opened',{module:analyticsModule,entry_point:'appshell'})
     if(analyticsModule!=='adp')productAnalytics.transition('screen',analyticsModule,'screen_viewed',{module:analyticsModule,view:analyticsModule})
   },[analyticsReady,analyticsModule])
-  return <PlatformAppShell {...props} assistantContext={assistantContext} moduleActive={active||benchmarkActive||xrayActive}
+  return <PlatformAppShell {...props} assistantConversation={props.assistantCredential?conversation:undefined} assistantContext={assistantContext} moduleActive={active||benchmarkActive||xrayActive}
     onLaunchXray={()=>{setXrayOpened(true);router.push(xrayPath(props.locale))}}
     onLaunchBenchmark={()=>{setBenchmarkOpened(true);router.push(benchmarkPath)}}
     onLaunchAdp={() => {setOpened(true); router.push(adpPath(props.locale))}}
@@ -50,7 +62,7 @@ export function AppShellDashboard(props: {
       <section hidden={!benchmarkActive} aria-label="Benchmark Finder" data-appshell-module="benchmark-finder">
         {benchmarkOpened&&<Sg2ModuleSession locale={props.locale}><div className="as-benchmark-module">
           <button type="button" className="as-secondary-button" onClick={()=>router.push(dashboardPath(props.locale))}>{props.locale==='en'?'Back to AppShell':'Wróć do AppShella'}</button>
-          <BenchmarkFinderClient locale={props.locale} active={benchmarkActive} assistantOwner="host" headerOwner="host" hostTheme={theme}/>
+          <BenchmarkFinderClient locale={props.locale} active={benchmarkActive} assistantOwner="host" headerOwner="host" hostTheme={theme} onAssistantContextChange={onBenchmarkContext}/>
         </div></Sg2ModuleSession>}
       </section>
       <section hidden={!active} data-appshell-module="adp">{opened || active ? <AdpModuleHost locale={props.locale} theme={theme} active={active}

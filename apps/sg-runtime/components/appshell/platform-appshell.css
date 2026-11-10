@@ -165,3 +165,12 @@
 /* The module skip link is relative to its host slot; keep it off canvas until keyboard focus. */
 .appshell [data-appshell-module="xray"] .report-skip-link{position:fixed;top:1rem;left:1rem;transform:translateY(-10rem)}
 .appshell [data-appshell-module="xray"] .report-skip-link:focus{transform:none}
+
+/* Conversation surfaces reuse the existing AppShell assistant tokens. */
+.appshell .srm-chat-turn-user{margin-left:12%;border-radius:16px 16px 5px 16px;background:var(--surface)}
+.appshell .srm-chat-turn-assistant{margin-right:4%}
+.appshell .srm-chat-turn small,.appshell .srm-chat-sources{font-size:.75rem;color:var(--muted)}
+.appshell .srm-chat-sources{padding-left:1rem;overflow-wrap:anywhere}
+.appshell .srm-chat-history{flex:none;max-height:40%;overflow:auto;padding:var(--srm-space-base);border-bottom:1px solid var(--line)}
+.appshell .srm-chat-history ul{list-style:none;padding:0}
+.appshell .srm-chat-history li button{width:100%;text-align:start;background:var(--surface);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:var(--srm-space-small);margin-bottom:var(--srm-space-micro);overflow-wrap:anywhere}

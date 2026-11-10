@@ -83,6 +83,29 @@ test('detached widget survives module navigation and theme/content changes witho
  });
 });
 
+test('the active conversation preserves its draft, selected avatar and transcript across detach and reattach',async()=>{
+ const {PlatformAppShell}=await loadXRayModule('components/appshell/platform-appshell.tsx')
+ const {AssistantConversationSession}=await loadXRayModule('components/appshell/assistant-conversation-session.ts')
+ const session=new AssistantConversationSession({list:async()=>[],load:async(id:string)=>({id,messages:[]}),send:async function*(){yield{type:'started',conversationId:'synthetic',turnId:'synthetic'};yield{type:'delta',text:'Synthetic answer'};yield{type:'completed',sources:[]}}})
+ session.activate('SYNTHETIC_OWNER')
+ await environment(async(dom,root)=>{
+  const child=new JSDOM('<html><head></head><body></body></html>',{url:'about:blank'});child.window.focus=()=>{};dom.window.open=()=>child.window
+  try{
+   await React.act(async()=>root.render(React.createElement(PlatformAppShell,{locale:'pl',assistantAvatar:'female',onLogout(){},assistantConversation:session})))
+   await React.act(async()=>session.setDraft('Unsent draft'))
+   assert.equal((document.querySelector('textarea') as HTMLTextAreaElement).value,'Unsent draft')
+   await click('Otwórz asystenta w osobnym oknie')
+   assert.equal(child.window.document.querySelector('textarea')?.value,'Unsent draft')
+   await React.act(async()=>session.send('Synthetic question'))
+   assert(child.window.document.body.textContent?.includes('Synthetic answer'))
+   assert(child.window.document.querySelector('.srm-chat-incoming img')?.getAttribute('src')?.endsWith('assistant-female.png'))
+   await click('Przyłącz asystenta do biurka',child.window.document)
+   assert(document.querySelector('[role="log"]')?.textContent?.includes('Synthetic question'));assert(document.querySelector('[role="log"]')?.textContent?.includes('Synthetic answer'))
+   await React.act(async()=>session.activate(null));assert(!document.querySelector('[role="log"]')?.textContent?.includes('Synthetic question'))
+  }finally{child.window.close()}
+ })
+})
+
 test('a blocked popup leaves the one AppShell widget usable and cleanup removes window listeners',async()=>{
  const {PlatformAppShell}=await loadXRayModule('components/appshell/platform-appshell.tsx');
  await environment(async(dom,root)=>{

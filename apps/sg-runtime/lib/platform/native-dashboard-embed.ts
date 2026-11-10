@@ -4,6 +4,7 @@ import placement from '../../../dashboard-preview/deployment/native-forecast-tar
 import { selectNativeEmbedPage } from '../../../dashboard-preview/lib/platform/native-chart-publication'
 import {EMBEDDED_COMMAND_CONTRACT} from '@profitia/platform-contracts/embedded-command-channel'
 import {openNativeDashboardCommandHost} from './native-dashboard-command'
+import {readChartReference,type ChartReference} from '../../../../packages/assistant-context-contracts/src/index.mjs'
 
 // One public placement descriptor shared by the two SG2 hosts. The browser
 // never imports the private database/role deployment descriptor.
@@ -91,13 +92,21 @@ export function openNativeDashboardReadHost(options: { port: EmbeddedReadPort; i
 
 export function attachNativeDashboardEmbed(options: { iframe: Pick<HTMLIFrameElement,'contentWindow'>; analyticsUrl: string;
   hostWindow: Pick<Window,'location'|'addEventListener'|'removeEventListener'>; getToken: () => Promise<string | null>;
-  fetch?: typeof fetch; onResize?: (height: number) => void; channelFactory?: () => MessageChannel }) {
+  fetch?: typeof fetch; onResize?: (height: number) => void; onChartReference?:(value:ChartReference|null,activated:boolean)=>void; channelFactory?: () => MessageChannel }) {
   const context = nativeDashboardContext(options.analyticsUrl, options.hostWindow.location.origin)
   let currentDocument: string | null = null, host: ReturnType<typeof openNativeDashboardReadHost> | null = null, closed = false
   let commandDocument:string|null=null,commandHost:ReturnType<typeof openNativeDashboardCommandHost>|null=null
   const listener = (event: MessageEvent) => {
     if (closed || !options.iframe.contentWindow || event.source !== options.iframe.contentWindow || event.origin !== context.childOrigin) return
     const data = event.data
+    if(exact(data,['type','version','documentId','reference','activated'])&&data.type==='profitia.dashboard-assistant.context'){
+      if(data.version!=='1.0.0'||data.documentId!==currentDocument||typeof data.activated!=='boolean')return
+      try{const reference=data.reference===null?null:readChartReference(data.reference)
+        if(reference&&reference.seriesId!==context.seriesId)return
+        options.onChartReference?.(reference,data.activated)
+      }catch{/* Malformed display reference has no authority. */}
+      return
+    }
     if(exact(data,['type','version','documentId'])&&data.type==='profitia.dashboard-command.ready'){
       if(data.version!==EMBEDDED_COMMAND_CONTRACT.version||typeof data.documentId!=='string'||data.documentId!==currentDocument
         ||!uuid.test(data.documentId)||data.documentId===commandDocument)return
@@ -116,7 +125,7 @@ export function attachNativeDashboardEmbed(options: { iframe: Pick<HTMLIFrameEle
     if (!exact(data,['type','version','documentId']) || data.type !== 'profitia.dashboard-read.ready'
       || data.version !== EMBEDDED_READ_CONTRACT.version || typeof data.documentId !== 'string' || !uuid.test(data.documentId)
       || data.documentId === currentDocument) return
-    host?.close(); host = null;commandHost?.close();commandHost=null;commandDocument=null
+    host?.close(); host = null;commandHost?.close();commandHost=null;commandDocument=null;options.onChartReference?.(null,false)
     const channel = options.channelFactory?.() ?? new MessageChannel(), instanceId = crypto.randomUUID()
     try {
       host = openNativeDashboardReadHost({ port: channel.port1, instanceId, context, getToken: options.getToken, fetch: options.fetch })
@@ -129,6 +138,7 @@ export function attachNativeDashboardEmbed(options: { iframe: Pick<HTMLIFrameEle
   return Object.freeze({ close() {
     if (closed) return
     closed = true; host?.close(); host = null;commandHost?.close();commandHost=null;commandDocument=null
+    options.onChartReference?.(null,false)
     options.hostWindow.removeEventListener('message',listener as EventListener)
   } })
 }

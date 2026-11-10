@@ -5,6 +5,7 @@ import { SpendGuruLogo, PorrLogo } from './appshell-brand'
 import {AssistantWidget} from './assistant-widget'
 import {createAssistantContent} from './assistant-content'
 import type {AssistantScreenContext} from './assistant-screen-context'
+import type {AssistantConversationSession} from './assistant-conversation-session'
 import {animateCardPositions,cancelCardAnimations,captureCardPositions,type CardAnimations,type CardPositions} from './appshell-card-motion'
 import './platform-appshell.css'
 
@@ -19,6 +20,7 @@ type Props = {
   onLaunchAdp?: () => void
   onLaunchBenchmark?: () => void
   assistantContext?:AssistantScreenContext|null
+  assistantConversation?:AssistantConversationSession
   moduleActive?: boolean
   moduleWorkspace?: (theme: 'light' | 'dark') => React.ReactNode
 }
@@ -49,7 +51,7 @@ const englishApplications = [
 ]
 
 /** Presentation only. The host owns verified account data and sign-out. */
-export function PlatformAppShell({ locale, salutation, assistantAvatar, organisationBranding, onLogout, signingOut = false, onLaunchXray, onLaunchAdp, onLaunchBenchmark, moduleActive = false, moduleWorkspace, assistantContext }: Props) {
+export function PlatformAppShell({ locale, salutation, assistantAvatar, organisationBranding, onLogout, signingOut = false, onLaunchXray, onLaunchAdp, onLaunchBenchmark, moduleActive = false, moduleWorkspace, assistantContext,assistantConversation }: Props) {
   const cardStack=useRef<HTMLDivElement>(null), workspace=useRef<HTMLDivElement>(null)
   const positions=useRef<CardPositions>(new Map()), animations=useRef<CardAnimations>(new Map()), reducedMotion=useRef(false)
   const collapsedRef=useRef(false), [assistantCollapsed,setAssistantCollapsed]=useState(false)
@@ -89,7 +91,7 @@ export function PlatformAppShell({ locale, salutation, assistantAvatar, organisa
   }
   const addressed = salutation ? `, ${salutation}` : ''
   const userGreeting = en ? `Good morning${addressed}.` : `Dzień dobry${addressed}.`
-  const assistant=<AssistantWidget locale={locale} salutation={salutation} avatar={assistantAvatar} theme={theme} content={createAssistantContent(locale,salutation,assistantContext)} onCollapsedChange={handleCollapsedChange}/>;
+  const assistant=<AssistantWidget locale={locale} salutation={salutation} avatar={assistantAvatar} theme={theme} conversation={assistantConversation} content={createAssistantContent(locale,salutation,assistantContext)} onCollapsedChange={handleCollapsedChange}/>;
   return <div className={`appshell${moduleActive ? ' as-module-active' : ''}`} data-theme={theme} style={{ colorScheme: theme }}>
     <a className="as-skip" href="#appshell-main">{en ? 'Skip to applications' : 'Przejdź do aplikacji'}</a>
     <header className="as-header"><div className="as-header-inner">

@@ -104,17 +104,25 @@ test('window handshake fixture rejects foreign origin/source, duplicate document
   const emit=(data:unknown,origin=binding.childOrigin,source=child)=>{
     const event=Object.assign(new Event('message'),{data,origin,source});for(const listener of listeners)listener(event)
   }
-  const heights:number[]=[],connection=attachNativeDashboardEmbed({analyticsUrl,iframe:{contentWindow:child as unknown as Window},
-    hostWindow:windowFixture as unknown as Window,getToken:async()=>token,onResize:value=>heights.push(value)})
+  const heights:number[]=[],references:unknown[]=[],connection=attachNativeDashboardEmbed({analyticsUrl,iframe:{contentWindow:child as unknown as Window},
+    hostWindow:windowFixture as unknown as Window,getToken:async()=>token,onResize:value=>heights.push(value),onChartReference:(value,activated)=>references.push({value,activated})})
   t.after(()=>{connection.close();for(const transfer of transfers)transfer.port.close()})
   const ready={type:'profitia.dashboard-read.ready',version:'1.0.0',documentId:A}
   emit(ready,'https://foreign.test');emit(ready,binding.childOrigin,{} as typeof child);emit({...ready,version:'unknown'})
   assert.equal(transfers.length,0)
   emit(ready);assert.equal(transfers.length,1);assert.equal(transfers[0].origin,binding.childOrigin)
   assert(!JSON.stringify(transfers[0].data).includes(token));emit(ready);assert.equal(transfers.length,1)
+  const reference={version:'1.1.0',source:'BENCHMARK_CHART',seriesId:'stored_series',range:'1Y',from:'2026-01-01',to:'2026-02-01',fingerprint:'a'.repeat(64)}
+  const message={type:'profitia.dashboard-assistant.context',version:'1.0.0',documentId:A,reference,activated:true},before=references.length
+  emit(message,'https://foreign.test');emit(message,binding.childOrigin,{} as typeof child)
+  emit({...message,documentId:B});emit({...message,reference:{...reference,seriesId:'foreign'}});emit({...message,reference:{...reference,values:[999]}})
+  assert.equal(references.length,before,'only a current document reference from this exact child can publish')
+  emit(message);assert.deepEqual(references.at(-1),{value:reference,activated:true})
   emit({type:'sg-dashboard-preview:resize',seriesId:'foreign',height:1000})
   emit({type:'sg-dashboard-preview:resize',seriesId:'stored_series',height:Infinity})
   emit({type:'sg-dashboard-preview:resize',seriesId:'stored_series',height:1000000});assert.deepEqual(heights,[12000])
   emit({...ready,documentId:B});assert.equal(transfers.length,2)
+  assert.deepEqual(references.at(-1),{value:null,activated:false});const retired=references.length
+  emit(message);assert.equal(references.length,retired,'an earlier child document cannot restore its context')
   connection.close();assert.equal(listeners.size,0)
 })

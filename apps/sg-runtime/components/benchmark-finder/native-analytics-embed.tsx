@@ -4,19 +4,21 @@ import React, { useEffect, useRef, useState, type ComponentProps } from 'react'
 import { useAuth } from '@clerk/react'
 import { useSg2IdentityMode } from '@/components/auth/session-boundary'
 import { attachNativeDashboardEmbed } from '@/lib/platform/native-dashboard-embed'
+import type {ChartReference} from '../../../../packages/assistant-context-contracts/src/index.mjs'
 
-type Props = ComponentProps<'iframe'> & { src: string; locale: 'pl' | 'en' }
+type Props = ComponentProps<'iframe'> & { src: string; locale: 'pl' | 'en'; onChartReference?:(value:ChartReference|null,activated:boolean)=>void }
 
-function NamedAnalyticsEmbed({ locale, ...props }: Props) {
+function NamedAnalyticsEmbed({ locale, onChartReference, ...props }: Props) {
   const iframe = useRef<HTMLIFrameElement>(null)
   const { getToken } = useAuth(), tokenReader = useRef(getToken)
   tokenReader.current = getToken
+  const contextReader=useRef(onChartReference);contextReader.current=onChartReference
   const [height, setHeight] = useState<number | null>(null), [unavailable, setUnavailable] = useState(false)
   useEffect(() => {
     if (!iframe.current) return
     try {
       const channel = attachNativeDashboardEmbed({ iframe: iframe.current, analyticsUrl: props.src,
-        hostWindow: window, getToken: () => tokenReader.current(), onResize: setHeight })
+        hostWindow: window, getToken: () => tokenReader.current(), onResize: setHeight,onChartReference:(value,activated)=>contextReader.current?.(value,activated) })
       return () => channel.close()
     } catch { setUnavailable(true) }
   }, [props.src])
@@ -31,7 +33,7 @@ function NamedAnalyticsEmbed({ locale, ...props }: Props) {
  * the URL keys the frame by subject/organisation and closes all old work. */
 export function NativeAnalyticsEmbed(props: Props) {
   const mode = useSg2IdentityMode()
-  if (mode === 'legacy_demo') { const { locale: _locale, ...iframeProps } = props; return <iframe {...iframeProps} /> }
+  if (mode === 'legacy_demo') { const { locale: _locale,onChartReference:_context, ...iframeProps } = props; return <iframe {...iframeProps} /> }
   if (mode === 'clerk') return <NamedAnalyticsEmbed {...props} />
   return <p role="status">{props.locale === 'pl' ? 'Podgląd jest niedostępny.' : 'Preview is unavailable.'}</p>
 }

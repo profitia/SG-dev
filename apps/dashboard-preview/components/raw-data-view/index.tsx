@@ -4,6 +4,7 @@ import {BenchmarkChartControls, BenchmarkVisualSelect, BenchmarkForecastHelp, Be
 import {MagicPathBenchmarkChart} from './magicpath-benchmark-chart'
 
 import { useEmbeddedReadPresentation } from '../native-embedded-read-provider'
+import {benchmarkSnapshotBytes,contextDate,type ChartReference} from '../../../../packages/assistant-context-contracts/src/index.mjs'
 import {nativeForecastCommandFromUi,nativeForecastCompletionPlan,type NativeForecastCommandOutcome,type NativeForecastCommandSelection} from '@/lib/benchmark-forecast/native-command-presentation'
 
 import { useEffect, useId, useMemo, useRef, useState } from 'react'
@@ -1773,6 +1774,7 @@ function ChartPanel({
   embedded?: boolean
 }) {
   const [activeDate, setActiveDate] = useState<string | null>(null)
+  const {publishChartReference}=useEmbeddedReadPresentation()
   const [activeTooltip, setActiveTooltip] = useState<AccuracyMarker | null>(null)
   const [activePreset, setActivePreset] = useState<RangePreset>(initialPreset)
   const [selectedSurfaceKey, setSelectedSurfaceKey] = useState<string | null>(null)
@@ -1882,6 +1884,23 @@ function ChartPanel({
     chartLayout.valueTickCount,
     chartLayout.isTouch,
   ])
+
+  useEffect(()=>{
+    let retired=false
+    publishChartReference(null)
+    const points=chartScene?.historicalVisibleSeries?.points
+    if(!embedded||isLoading||!payload?.benchmarkCode||!points?.length)return
+    const seriesId=payload.benchmarkCode,unit=payload.unit,currency=payload.currency,source=payload.sourceInfo?.sourceLabel??null
+    void (async()=>{try{
+      const bytes=benchmarkSnapshotBytes({seriesId,unit,currency,source,points})
+      const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(bytes))
+      const reference:ChartReference={version:'1.1.0',source:'BENCHMARK_CHART',seriesId,range:initialPreset,
+        from:contextDate(points[0].date),to:contextDate(points[points.length-1].date),
+        fingerprint:Array.from(new Uint8Array(digest),v=>v.toString(16).padStart(2,'0')).join('')}
+      if(!retired)publishChartReference(reference)
+    }catch{if(!retired)publishChartReference(null)}})()
+    return()=>{retired=true;publishChartReference(null)}
+  },[embedded,isLoading,payload,chartScene,initialPreset,publishChartReference])
 
   useEffect(() => {
     setActivePreset(initialPreset)

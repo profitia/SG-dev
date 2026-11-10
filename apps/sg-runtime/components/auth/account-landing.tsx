@@ -88,7 +88,7 @@ export function AccountLanding({ locale, completionUrl, presentation = 'account'
   if (workspaceReady && !dashboard) return <p role="status">{en ? 'Opening your workspace…' : 'Otwieramy Twoje biurko…'}</p>
   if (workspaceReady && dashboard) return <>
     {refreshError && <p role="status">{en ? 'Session refresh is temporarily unavailable. Retrying; your work is retained while the current access confirmation remains valid.' : 'Odświeżenie sesji jest chwilowo niedostępne. Ponawiamy; Twoja praca pozostaje zachowana, dopóki bieżące potwierdzenie dostępu jest ważne.'}</p>}
-    <AppShellDashboard key={JSON.stringify([key, state.userId])} locale={locale}
+    <AppShellDashboard key={JSON.stringify([key, state.userId])} locale={locale} assistantCredential={getToken} assistantScope={key}
     assistantAvatar={state.assistantAvatar} salutation={locale === 'en' ? state.salutation?.firstName : state.salutation?.vocative}
     organisationBranding={organisationBranding} onLogout={() => void logout()} /></>
   return <section className="space-y-5" key={key}>
