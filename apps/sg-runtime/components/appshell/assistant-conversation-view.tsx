@@ -1,6 +1,7 @@
 'use client'
 
 import React,{useEffect,useRef} from 'react'
+import {AssistantMessageMarkdown} from './assistant-message-markdown'
 import type {AssistantConversationSession,AssistantConversationSnapshot,AssistantConversationError} from './assistant-conversation-session'
 
 const errors:Record<AssistantConversationError,readonly [string,string]>={
@@ -12,6 +13,7 @@ const errors:Record<AssistantConversationError,readonly [string,string]>={
  INTERRUPTED:['Połączenie zostało przerwane. Sprawdź zapisaną rozmowę przed kontynuowaniem.','The connection was interrupted. Check the saved conversation before continuing.'],
 }
 const sourceStatus={OK:['',''],EMPTY:['Brak danych','No data'],PARTIAL:['Dane częściowe','Partial data'],DENIED:['Brak dostępu','Access denied'],UNAVAILABLE:['Źródło niedostępne','Source unavailable'],STALE:['Dane zmieniły się','Data has changed']} as const
+const historyDates=[new Intl.DateTimeFormat('pl-PL',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'}),new Intl.DateTimeFormat('en-GB',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'})]
 export function AssistantConversationView({session,state,en,historyOpen,onCloseHistory,inputId,avatar}:{
  session:AssistantConversationSession;state:AssistantConversationSnapshot;en:boolean;historyOpen:boolean;onCloseHistory:()=>void;inputId:string;avatar?:React.ReactNode
 }){
@@ -21,13 +23,21 @@ export function AssistantConversationView({session,state,en,historyOpen,onCloseH
  return <>
   {historyOpen&&<section className="srm-chat-history" aria-label={en?'Conversation history':'Historia rozmowy'}>
    <button type="button" className="as-secondary-button" disabled={!state.active} onClick={()=>{session.newConversation();setDraft('');onCloseHistory()}}>{en?'New conversation':'Nowa rozmowa'}</button>
-   {state.loadingHistory?<p role="status">{en?'Loading…':'Wczytywanie…'}</p>:state.history.length===0?<p>{en?'No saved conversations.':'Brak zapisanych rozmów.'}</p>:<ul>{state.history.map(entry=><li key={entry.id}><button type="button" disabled={state.busy} onClick={()=>{setDraft('');void session.open(entry.id);onCloseHistory()}}>{entry.title}</button><button type="button" className="as-secondary-button" disabled={state.busy} onClick={()=>void session.deleteConversation(entry.id)} aria-label={(en?'Delete ':'Usuń ')+entry.title}>{en?'Delete':'Usuń'}</button></li>)}</ul>}
+   {state.loadingHistory?<p role="status">{en?'Loading…':'Wczytywanie…'}</p>:state.history.length===0?<p>{en?'No saved conversations.':'Brak zapisanych rozmów.'}</p>:<ul>{state.history.map(entry=><li key={entry.id}>
+    <button type="button" className="srm-chat-history-open" disabled={state.busy} onClick={()=>{setDraft('');void session.open(entry.id);onCloseHistory()}}>
+     <span className="srm-chat-history-title" data-canon-font="SRM-T14">{entry.title}</span>
+     <time dateTime={entry.updatedAt} data-canon-font="SRM-T02" title={historyDates[en?1:0].resolvedOptions().timeZone}>{Number.isFinite(Date.parse(entry.updatedAt))?historyDates[en?1:0].format(new Date(entry.updatedAt)):(en?'Date unavailable':'Brak daty')}</time>
+    </button>
+    <button type="button" className="as-secondary-button srm-chat-history-delete" data-canon-font="SRM-T01" disabled={state.busy} onClick={()=>void session.deleteConversation(entry.id)} aria-label={(en?'Delete ':'Usuń ')+entry.title}>{en?'Delete':'Usuń'}</button>
+   </li>)}</ul>}
    <button type="button" className="as-secondary-button" onClick={onCloseHistory}>{en?'Return to conversation':'Wróć do rozmowy'}</button>
   </section>}
   <div className="srm-chat-transcript" role="log" aria-label={en?'Conversation with SpendGuru':'Rozmowa ze SpendGuru'} aria-live="polite" aria-relevant="additions text" aria-busy={state.busy} tabIndex={0}>
    {state.messages.length===0&&<div className="srm-chat-incoming">{avatar}<p>{en?'Ask about procurement or the benchmark you are viewing.':'Zapytaj o zakupy lub benchmark, który oglądasz.'}</p></div>}
    {state.messages.map(message=><div key={message.id} className={message.role==='assistant'?'srm-chat-incoming':'srm-chat-outgoing'}>{message.role==='assistant'&&avatar}<article className={'srm-chat-message srm-chat-turn srm-chat-turn-'+message.role} aria-label={message.role==='user'?(en?'Your message':'Twoja wiadomość'):'SpendGuru'}>
-    <p>{message.content|| (message.status==='streaming'?(en?'Preparing a response…':'Przygotowuję odpowiedź…'):'')}</p>
+    {message.role==='assistant'&&message.content
+     ? <AssistantMessageMarkdown content={message.content} en={en}/>
+     : <p>{message.content|| (message.status==='streaming'?(en?'Preparing a response…':'Przygotowuję odpowiedź…'):'')}</p>}
     {message.status==='interrupted'&&<small>{en?'Response stopped':'Odpowiedź zatrzymana'}</small>}
     {message.status==='failed'&&<small>{en?'Response incomplete':'Odpowiedź niepełna'}</small>}
     {!!message.sources.length&&<ul className="srm-chat-sources" aria-label={en?'Sources':'Źródła'}>{message.sources.map(source=><li key={source.id}>{source.label}{source.asOf?' · '+source.asOf:''}{source.status!=='OK'?' · '+sourceStatus[source.status][en?1:0]:''}</li>)}</ul>}

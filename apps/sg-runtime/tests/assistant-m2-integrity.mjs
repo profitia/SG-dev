@@ -3,6 +3,7 @@ import {registrationStageOnePredecessor} from './registration-stage-i-integrity.
 import assert from 'node:assert/strict'
 import {createHash} from 'node:crypto'
 import {procurementInsightsPredecessor} from './procurement-insights-integrity.mjs'
+import {assistantMarkdownPredecessor} from './assistant-markdown-integrity.mjs'
 export const ASSISTANT_M2_PATHS=Object.freeze([
  'apps/sg-runtime/components/appshell/appshell-dashboard.tsx',
  'apps/sg-runtime/components/appshell/assistant-conversation-transport.ts',
@@ -172,6 +173,8 @@ export function assistantM2Predecessor(current,historical){
 
 // Check the current serialization correction before any historical acceptance.
 export function oilReportSerializationPredecessor(current,historical){
+ const markdown=assistantMarkdownPredecessor(current,historical)
+ if(markdown)return oilReportSerializationPredecessor(markdown.previousBytes,historical)
  const pi=procurementInsightsPredecessor(current,historical)
  if(pi)return oilReportSerializationPredecessor(pi.previousBytes,historical)
  let bytes
