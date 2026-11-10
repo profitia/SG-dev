@@ -64,6 +64,7 @@ export const ASSISTANT_M1_CHART_CORRECTIVE_PATHS=Object.freeze([
  'apps/sg-runtime/tests/assistant-m1-integrity.mjs',
  'apps/sg-runtime/tests/assistant-m1-integrity.test.mjs',
  'apps/sg-runtime/tests/integrated-buyer-journey-package.test.mjs',
+ 'apps/sg-runtime/tests/pci-smart-integrity.test.mjs',
 ])
 export function assertAssistantM1ChartCorrective(receipt,current,historical){
  const a=receipt.assistantM1ChartContextCorrective
