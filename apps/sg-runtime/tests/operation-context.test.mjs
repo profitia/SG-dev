@@ -150,6 +150,8 @@ test('Benchmark presentation renews the current receiver closure without rewriti
       ?execFileSync('git',['show',receipt.sentryObservabilityCompatibility.previousReceiptSourceSha+':'+posix.normalize('apps/sg-runtime/'+path)])
       :receipt.xrayStyleIsolationContinuation?.applicationSourceDigests[path]
       ?execFileSync('git',['show',receipt.xrayStyleIsolationContinuation.previousReceiptSourceSha+':'+posix.normalize('apps/sg-runtime/'+path)])
+      :receipt.assistantM1RuntimeSourceCompatibility?.consumerSourceDigests[posix.normalize('apps/sg-runtime/'+path)]
+      ?execFileSync('git',['show',receipt.assistantM1RuntimeSourceCompatibility.previousReceiptSourceSha+':'+posix.normalize('apps/sg-runtime/'+path)])
       :fs.readFileSync(new URL('../'+path,import.meta.url))
     const observed = createHash('sha256').update(bytes).digest('hex')
     assert.equal(observed, digest, path)
