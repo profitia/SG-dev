@@ -1,6 +1,7 @@
 export {NEWS_DISCOVERY_CONTRACT_VERSION} from '../platform-source-hub-contracts/index.mjs';
 import {parseHubRequest,closed,SourceHubError} from '../platform-source-hub-contracts/index.mjs';
 export const NEWSFEED_API_CONTRACT_VERSION='1.0.0';
+export const SAVED_SEARCH_CONTRACT_VERSION='1.2.0';
 const kinds=['company','product','investment','category','topic'];
 const text=(value,max)=>{if(typeof value!=='string'||!value.trim()||value.length>max||/[\x00-\x1f]/.test(value))throw new SourceHubError('INVALID_OBSERVATION');return value.trim();};
 export function parseObservation(value,{partial=false}={}){
@@ -11,4 +12,33 @@ export function parseObservation(value,{partial=false}={}){
  if(!partial||value.request!==undefined){out.request=parseHubRequest(value.request);if(out.request.family!=='news-discovery'||out.request.operation!=='search')throw new SourceHubError('NEWS_DISCOVERY_REQUIRED');}
  if(partial){if(!Number.isSafeInteger(value.version)||value.version<1)throw new SourceHubError('OBSERVATION_VERSION_REQUIRED');out.version=value.version;if(value.status!==undefined){if(!['ACTIVE','PAUSED'].includes(value.status))throw new SourceHubError('INVALID_OBSERVATION');out.status=value.status;}if(Object.keys(out).length===1)throw new SourceHubError('EMPTY_UPDATE');}
  return out;
+}
+
+const date=value=>typeof value==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(value)&&Number.isFinite(Date.parse(value+'T00:00:00Z'))&&new Date(value+'T00:00:00Z').toISOString().slice(0,10)===value;
+export function parseSchedule(value){
+ if(value===null)return null;
+ if(!closed(value,['frequency','timeZone','localTime','startDate','endDate','weekdays','monthDay'])||!['DAILY','WEEKLY','MONTHLY'].includes(value.frequency)||!/^([01]\d|2[0-3]):[0-5]\d$/.test(value.localTime??'')||!date(value.startDate)||value.endDate!==null&&(!date(value.endDate)||value.endDate<value.startDate))throw new SourceHubError('INVALID_SCHEDULE');
+ try{new Intl.DateTimeFormat('en',{timeZone:value.timeZone}).format();}catch{throw new SourceHubError('INVALID_TIME_ZONE');}
+ if(typeof value.timeZone!=='string'||value.timeZone.length>100)throw new SourceHubError('INVALID_TIME_ZONE');
+ const weekdays=value.weekdays??[],monthDay=value.monthDay??null;
+ if(!Array.isArray(weekdays)||new Set(weekdays).size!==weekdays.length||weekdays.some(x=>!Number.isSafeInteger(x)||x<1||x>7)||value.frequency==='WEEKLY'&&!weekdays.length||value.frequency!=='WEEKLY'&&weekdays.length||value.frequency==='MONTHLY'&&(!Number.isSafeInteger(monthDay)||monthDay<1||monthDay>31)||value.frequency!=='MONTHLY'&&monthDay!==null)throw new SourceHubError('INVALID_SCHEDULE');
+ return {frequency:value.frequency,timeZone:value.timeZone,localTime:value.localTime,startDate:value.startDate,endDate:value.endDate,weekdays:[...weekdays].sort(),monthDay,dstPolicy:'SKIP_NONEXISTENT_EARLIEST_REPEAT'};
+}
+export function parseSavedSearch(value,{partial=false}={}){
+ const fields=['contractVersion','name','subjectKind','subject','request','phrases','schedule','notifications',...(partial?['version','status']:[])];
+ if(!closed(value,fields)||value.contractVersion!==SAVED_SEARCH_CONTRACT_VERSION)throw new SourceHubError('INVALID_SAVED_SEARCH');
+ const base=Object.fromEntries(Object.entries(value).filter(([key])=>['name','subjectKind','subject','request','version','status'].includes(key)));
+ const onlyExtension=partial&&Object.keys(base).length===1&&['phrases','schedule','notifications'].some(k=>value[k]!==undefined);
+ if(onlyExtension&&(!Number.isSafeInteger(base.version)||base.version<1))throw new SourceHubError('OBSERVATION_VERSION_REQUIRED');
+ /** @type {{name?:string,subjectKind?:string,subject?:string,request?:any,version?:number,status?:string,phrases?:string[],schedule?:ReturnType<typeof parseSchedule>,notifications?:boolean}} */
+ const out=onlyExtension?{version:base.version}:parseObservation(base,{partial});
+ if(!partial||value.phrases!==undefined){
+  if(!Array.isArray(value.phrases)||value.phrases.length<1||value.phrases.length>20)throw new SourceHubError('INVALID_PHRASES');
+  const phrases=value.phrases.map(x=>text(x,200));
+  if(new Set(phrases.map(x=>x.normalize('NFKC').toLocaleLowerCase('pl-PL').replace(/\s+/gu,' '))).size!==phrases.length)throw new SourceHubError('DUPLICATE_PHRASE');
+  out.phrases=phrases;
+ }
+ if(!partial||value.schedule!==undefined)out.schedule=parseSchedule(value.schedule);
+ if(!partial||value.notifications!==undefined){if(typeof value.notifications!=='boolean')throw new SourceHubError('INVALID_NOTIFICATIONS');out.notifications=value.notifications;}
+ return {...out,contractVersion:SAVED_SEARCH_CONTRACT_VERSION};
 }

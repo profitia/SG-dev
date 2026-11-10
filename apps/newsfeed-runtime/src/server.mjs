@@ -2,11 +2,57 @@ import {createServer} from 'node:http';
 import {randomUUID} from 'node:crypto';
 import {SourceHubError} from '../../../packages/platform-source-hub-contracts/index.mjs';
 const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-const safeError=error=>error instanceof SourceHubError?{status:error.status,code:error.code}:error?.name==='OperationDenied'?{status:403,code:'OPERATION_DENIED'}:{status:503,code:'SERVICE_UNAVAILABLE'};
-export function createApplication({authorizer,repository,sourceHub,log=line=>process.stdout.write(line+'\n')}){
+const safeError=error=>error instanceof SourceHubError?{status:error.status,code:error.code}:error?.name==='OperationDenied'?['POLICY_UNAVAILABLE','AUDIT_UNAVAILABLE'].includes(error.reasonCode)?{status:503,code:'AUTHORITY_UNAVAILABLE'}:{status:403,code:'OPERATION_DENIED'}:{status:503,code:'SERVICE_UNAVAILABLE'};
+/** @param {{authorizer:any,repository:any,savedSearches?:ReturnType<typeof import('./repository.mjs').createSavedSearchRepository>|null,sourceHub:any,log?:(line:string)=>void}} options */
+export function createApplication({authorizer,repository,savedSearches=null,sourceHub,log=line=>process.stdout.write(line+'\n')}){
  async function dispatch(request){
   const u=new URL(request.url),parts=u.pathname.split('/').filter(Boolean);
-  if(request.method==='GET'&&['/health','/live','/ready'].includes(u.pathname)){const ready=u.pathname!=='/ready'||await repository.ready()&&await authorizer.ready();return Response.json({service:'newsfeed-runtime',status:ready?'ok':'not_ready'},{status:ready?200:503});}
+  if(request.method==='GET'&&['/health','/live','/ready'].includes(u.pathname)){const ready=u.pathname!=='/ready'||await repository.ready()&&await authorizer.ready()&&(!savedSearches||await savedSearches.ready());return Response.json({service:'newsfeed-runtime',status:ready?'ok':'not_ready'},{status:ready?200:503});}
+  if(parts[0]==='v1.2'){
+   if(!savedSearches)throw new SourceHubError('NOT_FOUND',404);
+   const query=Object.fromEntries(u.searchParams);if([...new Set(u.searchParams.keys())].some(k=>u.searchParams.getAll(k).length!==1))throw new SourceHubError('INVALID_QUERY');
+   const id=parts[2];if(id&&!uuid.test(id))throw new SourceHubError('NOT_FOUND',404);
+   const args={request,organisationId:request.headers.get('x-profitia-organisation-id'),resourceId:id??'newsfeed-observations',write:request.method!=='GET'};
+   const execute=(action,payload=null)=>authorizer.execute({...args,payload},action);
+   const page=()=>({limit:query.limit===undefined?50:Number(query.limit),cursor:query.cursor??null});
+   const only=(...allowed)=>{if(Object.keys(query).some(k=>!allowed.includes(k)))throw new SourceHubError('INVALID_QUERY');};
+   const json=async()=>{if(request.headers.get('content-type')!=='application/json'||request.headers.has('content-encoding'))throw new SourceHubError('JSON_REQUIRED',415);return request.clone().json().catch(()=>{throw new SourceHubError('INVALID_JSON');});};
+   if(parts[1]==='invitations'&&parts.length===2&&request.method==='POST'){only();const body=await json();return Response.json(await execute((c,t)=>savedSearches.claimInvitation(t,c,body),body));}
+   if(parts[1]==='feed'&&parts.length===2&&request.method==='GET'){only('limit','cursor','q');return Response.json(await execute((c,t)=>savedSearches.feed(t,c,{...page(),q:query.q??''})));}
+   if(parts[1]==='notifications'){
+    only('limit','cursor');
+    if(parts.length===2&&request.method==='GET')return Response.json(await execute((c,t)=>savedSearches.inbox(t,c,page())));
+    if(parts.length===3&&request.method==='PATCH'){only();if((await request.clone().arrayBuffer()).byteLength)throw new SourceHubError('BODY_NOT_ALLOWED');return Response.json(await execute((c,t)=>savedSearches.markRead(t,c,id)));}
+    throw new SourceHubError('NOT_FOUND',404);
+   }
+   if(parts[1]!=='observations'||parts.length>4)throw new SourceHubError('NOT_FOUND',404);
+   if(parts.length===2){
+    if(request.method==='GET'){only('limit','cursor','access');return Response.json(await execute((c,t)=>savedSearches.list(t,c,{...page(),access:query.access??'mine'})));}
+    if(request.method==='POST'){only();const body=await json();return Response.json(await execute((c,t)=>savedSearches.create(t,c,body),body),{status:201});}
+   }
+   if(parts.length===3){
+    only();if(request.method==='GET')return Response.json(await execute((c,t)=>savedSearches.get(t,c,id)));
+    if(request.method==='PATCH'){const body=await json();return Response.json(await execute((c,t)=>savedSearches.update(t,c,id,body),body));}
+    if(request.method==='DELETE')return Response.json(await execute((c,t)=>savedSearches.remove(t,c,id)));
+   }
+   if(parts.length===4&&request.method==='GET'){
+    if(parts[3]==='shares'){only();return Response.json(await execute((c,t)=>savedSearches.shares(t,c,id)));}
+    if(parts[3]==='history'){only('limit','cursor');return Response.json(await execute((c,t)=>savedSearches.history(t,c,id,page())));}
+    if(parts[3]==='publications'){only('limit','cursor','runId','q','publicationId');if(query.runId&&!uuid.test(query.runId)||query.publicationId&&!uuid.test(query.publicationId))throw new SourceHubError('INVALID_QUERY');return Response.json(await execute((c,t)=>savedSearches.publications(t,c,id,{...page(),runId:query.runId??null,q:query.q??'',publicationId:query.publicationId??null})));}
+    if(parts[3]==='statistics'){only('weeks','dateBasis','timeZone');return Response.json(await execute((c,t)=>savedSearches.statistics(t,c,id,{weeks:query.weeks===undefined?4:Number(query.weeks),dateBasis:query.dateBasis??'publishedAt',timeZone:query.timeZone??'Europe/Warsaw'})));}
+   }
+   if(parts.length===4&&parts[3]==='shares'){
+    if(request.method==='POST'){only();const body=await json();return Response.json(await execute((c,t)=>savedSearches.share(t,c,id,body),body),{status:201});}
+    if(request.method==='DELETE'){only('shareId','kind');return Response.json(await execute((c,t)=>savedSearches.revokeShare(t,c,id,query.shareId,query.kind)));}
+   }
+   if(parts.length===4&&parts[3]==='discover'&&request.method==='POST'){
+    only();if((await request.clone().arrayBuffer()).byteLength)throw new SourceHubError('DISCOVERY_BODY_NOT_ALLOWED');
+    const started=await execute((c,t)=>savedSearches.beginRun(t,c,id,request.headers.get('idempotency-key')));if(started.kind==='replay')return Response.json(started);
+    try{const body=await sourceHub.acquire({request,command:started.observation.request,context:started,idempotencyKey:'newsfeed:'+started.id});return Response.json(await execute((c,t)=>savedSearches.completeRun(t,c,started,body)));}
+    catch(error){await execute((c,t)=>savedSearches.failRun(t,c,started,safeError(error))).catch(()=>{});throw error;}
+   }
+   throw new SourceHubError('NOT_FOUND',404);
+  }
   if(u.pathname==='/v1/assistant-context'){
    if(authorizer.assistantReadEnabled!==true)throw new SourceHubError('NOT_FOUND',404);
    if(request.method!=='GET')throw new SourceHubError('METHOD_NOT_ALLOWED',405);
@@ -15,7 +61,7 @@ export function createApplication({authorizer,repository,sourceHub,log=line=>pro
    const selection={observationId:u.searchParams.get('observationId'),supplierNip:u.searchParams.get('supplierNip')};
    if(selection.observationId!==null&&!uuid.test(selection.observationId)||selection.supplierNip!==null&&!/^\d{10}$/.test(selection.supplierNip))throw new SourceHubError('INVALID_QUERY');
    const value=await authorizer.execute({request,organisationId:request.headers.get('x-profitia-organisation-id'),resourceId:selection.observationId??'newsfeed-observations',payload:selection,write:false},
-    (context,transaction)=>repository.assistantContext(transaction,context,selection));
+    (context,transaction)=>(savedSearches??repository).assistantContext(transaction,context,selection));
    return Response.json(value,{headers:{'cache-control':'private, no-store',vary:'Cookie, Authorization'}});
   }
   if(parts[0]!=='v1'||parts[1]!=='observations'||parts.length>4)throw new SourceHubError('NOT_FOUND',404);
