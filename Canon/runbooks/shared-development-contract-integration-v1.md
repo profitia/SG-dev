@@ -447,3 +447,24 @@ rights or grants, renewal credentials, a scheduled service, costs, deployments
 or provider calls. Those depend on the separately approved exact owner package
 in PR959 and actual installation readback. Provider licences remain independent
 of finite SERVICE lease renewal; SourceHub cache retention remains0.
+
+### Exact legacy consumer version compatibility — proposed correction
+
+The owner accepted source5425e1c0 and policy9061e1d9 in this task. The original
+policy's trusted-main controlled run42861641291 passed, but source producer
+job129986809516 found LOCAL_PACKAGE_VERSION_MISMATCH: unchanged SG2 retains
+Hub1.6 metadata while the ECR producer is1.7. The source44-file closure and
+operational owner package remain unchanged and approved.
+
+This correction requires a separate exact CI-policy decision before adoption.
+It recognizes only the byte-identical SG2 lock blob
+0ae03c01834736fb682323e184af79e984912c1a and exact new Hub manifest from the
+Stage04–05 review, against either the exact predecessor1.6 manifest
+05184f565c407177c50b524fd93346a07829c3b7 or that exact1.7 manifest. The supplied
+lock must match its actual file. Other versions, metadata edits, wider peers,
+authority drift and symlinks still fail. Existing source admission, package
+checks, main-only credentials and full candidate/main proof remain mandatory.
+No SG2 source, lock, receipt, feature opt-in, operation or deployment changes.
+An actual filesystem fixture verifies both before/after authority cases and
+rejects each altered binding. Require new exact-head public and controlled CI;
+the successful proof for9061e1d9 is not reused for the corrected policy.

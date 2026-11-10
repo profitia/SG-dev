@@ -21,3 +21,23 @@ workflow or credential scope changes, admin merge, fake proof or generic path
 exception. Source admission grants no runtime, licence, database, enrollment,
 scheduler, resource or deployment authority. Administrative activation remains
 a separate exact owner operation; no Stage04–05 LIVE result is claimed here.
+
+## Required exact version-compatibility correction
+
+Owner GO for source5425e1c0, policy9061e1d9 and the exact operation package was
+recorded in the original chat. Its controlled run42861641291 passed. Source
+producer job129986809516 nevertheless rejected the unchanged SG2 lock1.6
+against the reviewed Hub1.7 producer. The initial proposal omitted this exact
+version transition; no installation or deployment has occurred.
+
+The corrected policy adds a closed backward-compatibility binding for that
+unchanged SG2 lock (blob0ae03c01834736fb682323e184af79e984912c1a), the already
+reviewed Hub1.7 manifest and its exact1.6 predecessor. The package, lock,
+authority, peer and regular-file checks remain; no other mismatch is admitted.
+All44 source files, the owner package and SG2 source/acceptance bytes are
+unchanged.189 local controller/coverage tests pass, including a real filesystem
+fixture and negative changed-version/peer/lock/authority/symlink cases.
+
+PROPOSED_CORRECTION_NOT_ACTIVE. A new exact CI-policy decision and fresh public
+and trusted-main proof are required for these changed policy bytes. The
+administrative owner decision remains valid for its unchanged operation packet.

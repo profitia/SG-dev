@@ -1495,3 +1495,21 @@ test('Stage0405 exact review binds44 actual-owner blobs and rejects source, mode
  for(const edit of [q=>q.number++,q=>q.head.ref='architecture/another-ecr',q=>q.head.ref='sg2/ecr-stage04-05',q=>q.head.repo.full_name='profitia/fork',q=>q.user.login='attacker',q=>q.base.ref='staging']){const bad=structuredClone(p);edit(bad);rejection(()=>selectCandidate(context(),bad,review.sourceSha,{files}))}
  assert(files.every(f=>!f.filename.startsWith('Canon/')&&!f.filename.startsWith('.github/')&&!f.filename.startsWith('apps/sg-runtime/')&&!f.filename.startsWith('apps/srm/')))
 })
+
+test('ECR backward compatibility binds the actual unchanged SG2 lock and only the exact 1.6-to-1.7 SDK manifests',()=>{
+ const t=fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(),'ecr-reviewed-legacy-'))),candidate=path.join(t,'candidate'),authority=path.join(t,'authority'),base=ECR_STAGE0405_REVIEW.baseSha
+ const historical=p=>execFileSync('git',['show',base+':'+p],{cwd:authorityRoot}),relative='packages/platform-source-hub-contracts/package.json',consumer='apps/sg-runtime/package-lock.json',lockBytes=historical(consumer),currentLock=JSON.parse(lockBytes),before=historical(relative),after=Buffer.from(before.toString().replace('"version": "1.6.0"','"version": "1.7.0"'))
+ const write=(root,file,bytes)=>{fs.mkdirSync(path.dirname(path.join(root,file)),{recursive:true});fs.writeFileSync(path.join(root,file),bytes)}
+ try{
+  for(const root of [candidate,authority]){write(root,consumer,lockBytes);for(const relative of Object.values(LOCAL_PACKAGES)){const p=path.relative(authorityRoot,path.resolve(authorityRoot,'apps/sg-runtime',relative)).split(path.sep).join('/')+'/package.json';write(root,p,historical(p))}}
+  write(candidate,relative,after)
+  assertLocalPackageSources(candidate,currentLock,authority)
+  write(authority,relative,after);assertLocalPackageSources(candidate,currentLock,authority);write(authority,relative,before)
+  for(const bytes of [Buffer.concat([after,Buffer.from('\n')]),Buffer.from(after.toString().replace('1.7.0','1.8.0')),Buffer.from(after.toString().replace('1.1.0 || 1.2.0 || 1.2.1','*'))]){write(candidate,relative,bytes);rejection(()=>assertLocalPackageSources(candidate,currentLock,authority))}
+  write(candidate,relative,after)
+  const altered=structuredClone(currentLock);altered.packages['node_modules/@profitia/platform-source-hub-contracts'].version='1.5.0';rejection(()=>assertLocalPackageSources(candidate,altered,authority))
+  write(candidate,consumer,JSON.stringify(altered));rejection(()=>assertLocalPackageSources(candidate,altered,authority));write(candidate,consumer,lockBytes)
+  write(authority,relative,Buffer.concat([before,Buffer.from('\n')]));rejection(()=>assertLocalPackageSources(candidate,currentLock,authority));write(authority,relative,before)
+  fs.renameSync(path.join(candidate,consumer),path.join(candidate,consumer+'.saved'));fs.symlinkSync(path.join(candidate,consumer+'.saved'),path.join(candidate,consumer));rejection(()=>assertLocalPackageSources(candidate,currentLock,authority))
+ }finally{fs.rmSync(t,{recursive:true,force:true})}
+})

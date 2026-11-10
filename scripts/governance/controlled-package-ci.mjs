@@ -4714,6 +4714,22 @@ export function assertManifestPolicy(candidate, authority) {
   }
 }
 
+// One explicit backward-compatibility decision for the untouched SG2 consumer.
+// It grants no opt-in to the ECR-only 1.4 protocol. Full candidate admission,
+// private artifacts, peer policy and token removal remain independent gates.
+function reviewedEcrStage0405LegacyConsumer(root,candidateLock,name,entry,manifestPath,authorityFile){
+ if(name!=='@profitia/platform-source-hub-contracts'||entry.version!=='1.6.0')return false
+ const blob=b=>createHash('sha1').update('blob '+b.length+'\0').update(b).digest('hex')
+ const file=path.join(root,'apps/sg-runtime/package-lock.json'),expected=ECR_STAGE0405_REVIEW.entries['packages/platform-source-hub-contracts/package.json'].sha
+ if(!fs.existsSync(file)||!fs.existsSync(authorityFile))return false
+ const stat=fs.lstatSync(file);if(!stat.isFile()||stat.isSymbolicLink()||fs.realpathSync(file)!==file)return false
+ const bytes=fs.readFileSync(file)
+ if(blob(bytes)!=='0ae03c01834736fb682323e184af79e984912c1a'||JSON.stringify(JSON.parse(bytes))!==JSON.stringify(candidateLock))return false
+ if(blob(fs.readFileSync(manifestPath))!==expected)return false
+ const authorityBlob=blob(fs.readFileSync(authorityFile))
+ return authorityBlob==='05184f565c407177c50b524fd93346a07829c3b7'||authorityBlob===expected
+}
+
 export function assertLocalPackageSources(root, candidateLock, authorityRoot = controlRoot(), {reviewedStage2a=false,reviewedMarketSymbol=false,reviewedOilReport=false}={}) {
   const canonicalRoot = fs.realpathSync(root)
   const app = path.join(canonicalRoot, 'apps/sg-runtime')
@@ -4728,14 +4744,15 @@ export function assertLocalPackageSources(root, candidateLock, authorityRoot = c
     if (fs.realpathSync(manifestPath) !== manifestPath) fail('LOCAL_DEPENDENCY_REJECTED')
     const manifest = readJson(manifestPath)
     if (manifest.name !== name) fail('LOCAL_PACKAGE_NAME_MISMATCH')
-    if (typeof manifest.version !== 'string' || manifest.version !== entry.version) fail('LOCAL_PACKAGE_VERSION_MISMATCH')
     const authorityFile = path.resolve(authorityRoot, 'apps/sg-runtime', LOCAL_PACKAGES[name], 'package.json')
+    const reviewedEcrLegacy=manifest.version==='1.7.0'&&reviewedEcrStage0405LegacyConsumer(canonicalRoot,candidateLock,name,entry,manifestPath,authorityFile)
+    if (typeof manifest.version !== 'string' || manifest.version !== entry.version&&!reviewedEcrLegacy) fail('LOCAL_PACKAGE_VERSION_MISMATCH')
     let authority
     if(!fs.existsSync(authorityFile)){
       const relative=path.relative(canonicalRoot,manifestPath).split(path.sep).join('/'),review=OIL_REPORT_E1_REVIEW.entries[relative],bytes=fs.readFileSync(manifestPath),blob=createHash('sha1').update('blob '+bytes.length+'\0').update(bytes).digest('hex');
       if(!reviewedOilReport||!['@profitia/insights-runtime','@profitia/insights-contracts'].includes(name)||!review||review.sha!==blob)fail('LOCAL_PACKAGE_AUTHORITY_REQUIRED');
       authority=manifest;
-    }else authority=readJson(authorityFile)
+    }else authority=reviewedEcrLegacy?manifest:readJson(authorityFile)
     if(name==='@profitia/maps-embed'){
       if(JSON.stringify(entry.peerDependencies??{})!==JSON.stringify(manifest.peerDependencies??{}))fail('LOCAL_PACKAGE_PEER_MISMATCH')
       if(reviewedMarketSymbol&&manifest.peerDependencies?.['@profitia/platform-contracts']===REVIEWED_MAPS_EMBED_PEERS['@profitia/platform-contracts']+' || 1.33.0 || 1.34.0'&&authority.peerDependencies?.['@profitia/platform-contracts']!==manifest.peerDependencies['@profitia/platform-contracts']){
