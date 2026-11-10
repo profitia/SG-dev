@@ -3282,7 +3282,7 @@ export function assertAcgG1ReviewEntry(file,entry){
 
 
 // Owner-approved M1 dependency: closed blobs, modes and actual owner profiles.
-export const ACG_M1_EXECUTION_REVIEW=Object.freeze({prNumber:937,branch:'architecture/acg-m1-execution-20261109',sourceSha:'763be8d4c140bed05c9ccda0c0e05828c29fabd3',baseSha:'b39fcc6f99ce6e06184080e5eaf5e6e4c7e120b5',entries:Object.freeze({
+export const ACG_M1_EXECUTION_REVIEW=Object.freeze({prNumber:937,branch:'architecture/acg-m1-execution-20261109',sourceSha:'a0952d407c2ddf736684ebe6ed580b2835a3def8',baseSha:'f737c0228960c928d079b09a97056f60d433089a',entries:Object.freeze({
   ".github/workflows/assistant-context-gateway-ci.yml": {
     "sha": "f88119a3291fea0b448f89a184268b1f87c046a5",
     "status": "modified",
@@ -3290,19 +3290,12 @@ export const ACG_M1_EXECUTION_REVIEW=Object.freeze({prNumber:937,branch:'archite
     "projectKey": "ARCHITECTURE",
     "owner": "Architecture Platform"
   },
-  "Canon/registries/operation-access-matrix-v1.json": {
-    "sha": "163fec8f8b3cc0aafb4a60c0e18a3b446cbc3149",
+  ".github/workflows/identity-runtime-ci.yml": {
+    "sha": "70abc781e47c2ebbc9b3bb65ff470dba25e79439",
     "status": "modified",
     "mode": "100644",
     "projectKey": "ARCHITECTURE",
-    "owner": "Governance Source Layer"
-  },
-  "Canon/v1.0-operation-context-and-access-contract.md": {
-    "sha": "20c89648fbf6e8f360ac72048a92ca87b76c2d02",
-    "status": "modified",
-    "mode": "100644",
-    "projectKey": "ARCHITECTURE",
-    "owner": "Governance Source Layer"
+    "owner": "Architecture Platform"
   },
   "apps/architecture-lab/assistant-m1-sdk-compatibility.json": {
     "sha": "c676bd74579083a69565f44895379ab253351b2d",
@@ -3312,7 +3305,7 @@ export const ACG_M1_EXECUTION_REVIEW=Object.freeze({prNumber:937,branch:'archite
     "owner": "Architecture Platform"
   },
   "apps/architecture-lab/assistant-m1-sdk-compatibility.mjs": {
-    "sha": "6f8130890450ad3ce7f79113c2d1f83ab1a50ba1",
+    "sha": "247957e63932d7eebc512509e478e69095230ae8",
     "status": "added",
     "mode": "100644",
     "projectKey": "ARCHITECTURE",
@@ -3325,8 +3318,64 @@ export const ACG_M1_EXECUTION_REVIEW=Object.freeze({prNumber:937,branch:'archite
     "projectKey": "ARCHITECTURE",
     "owner": "Architecture Platform"
   },
+  "apps/newsfeed-runtime/operation-integration.json": {
+    "sha": "0961f878b0170c9bdfa5f525677fab98b01fcef6",
+    "status": "modified",
+    "mode": "100644",
+    "projectKey": "ARCHITECTURE",
+    "owner": "Architecture Platform"
+  },
+  "apps/newsfeed-runtime/test/runtime.test.mjs": {
+    "sha": "91304e3143dc553fad161c7381bf6c314ed3f683",
+    "status": "modified",
+    "mode": "100644",
+    "projectKey": "ARCHITECTURE",
+    "owner": "Architecture Platform"
+  },
+  "apps/package-limits/migrations/004-assistant-usage.sql": {
+    "sha": "4508f43fe9b9c9659d4b79c369a8c9492431eb08",
+    "status": "modified",
+    "mode": "100644",
+    "projectKey": "ARCHITECTURE",
+    "owner": "Architecture Platform"
+  },
+  "apps/package-limits/scripts/ci-proof.mjs": {
+    "sha": "9501ca3f134f870f6198ea050bae89fb4c226fe5",
+    "status": "modified",
+    "mode": "100644",
+    "projectKey": "ARCHITECTURE",
+    "owner": "Architecture Platform"
+  },
+  "apps/package-limits/test/database.test.mjs": {
+    "sha": "018ca78da77dd46a8a7a19c64e6cf797ed925f6a",
+    "status": "modified",
+    "mode": "100644",
+    "projectKey": "ARCHITECTURE",
+    "owner": "Architecture Platform"
+  },
+  "apps/platform-source-hub/scripts/ci-routing.mjs": {
+    "sha": "b9ea90981cbf49f3fa3c544ad1f17f3224038a3c",
+    "status": "modified",
+    "mode": "100644",
+    "projectKey": "ARCHITECTURE",
+    "owner": "Architecture Platform"
+  },
+  "apps/platform-source-hub/test/ci-routing.test.mjs": {
+    "sha": "2be4400eab88bbb8c968e621dd68842d328f29b1",
+    "status": "modified",
+    "mode": "100644",
+    "projectKey": "ARCHITECTURE",
+    "owner": "Architecture Platform"
+  },
   "apps/sg-runtime/operation-integration.json": {
-    "sha": "5227a817e1f873f6f2220dfbc181f225b352579c",
+    "sha": "5ce2d09f7656f5ec47efbba95aaee7bed5905e7d",
+    "status": "modified",
+    "mode": "100644",
+    "projectKey": "SG2",
+    "owner": "SG Runtime"
+  },
+  "apps/sg-runtime/tests/adp-appshell-consumer.test.tsx": {
+    "sha": "9a128ea7561da55f774f3498c36aa5d61794d959",
     "status": "modified",
     "mode": "100644",
     "projectKey": "SG2",
@@ -3396,7 +3445,7 @@ export const ACG_M1_EXECUTION_REVIEW=Object.freeze({prNumber:937,branch:'archite
     "owner": "SG Runtime"
   },
   "apps/sg-runtime/tests/private-host.integration.test.mjs": {
-    "sha": "a0be640a5c7a5a19b78d7fb05d4490aa906897db",
+    "sha": "5ca8199681831048b1b92b0420113e62b332e8fa",
     "status": "modified",
     "mode": "100644",
     "projectKey": "SG2",
@@ -3423,8 +3472,15 @@ export const ACG_M1_EXECUTION_REVIEW=Object.freeze({prNumber:937,branch:'archite
     "projectKey": "SG2",
     "owner": "SG Runtime"
   },
+  "apps/srm/deployment/root-atomic-claim-targets.json": {
+    "sha": "96d2fcd6fdc1d3f5ad448084101094e994ecf2cb",
+    "status": "modified",
+    "mode": "100644",
+    "projectKey": "SRM",
+    "owner": "SRM Runtime"
+  },
   "apps/srm/operation-integration.json": {
-    "sha": "8dd57b9cd401ba46e8ed3e45feadca15256dffea",
+    "sha": "e34b866d8837f5f24c01fcc782aadfb35ed11c43",
     "status": "modified",
     "mode": "100644",
     "projectKey": "SRM",
@@ -3485,6 +3541,27 @@ export const ACG_M1_EXECUTION_REVIEW=Object.freeze({prNumber:937,branch:'archite
     "mode": "100644",
     "projectKey": "SRM",
     "owner": "SRM Runtime"
+  },
+  "apps/srm/src/server/root-atomic-claim-adoption.test.ts": {
+    "sha": "a28205517cb176ce08799555756da30b2b788cbc",
+    "status": "modified",
+    "mode": "100644",
+    "projectKey": "SRM",
+    "owner": "SRM Runtime"
+  },
+  "Canon/registries/operation-access-matrix-v1.json": {
+    "sha": "163fec8f8b3cc0aafb4a60c0e18a3b446cbc3149",
+    "status": "modified",
+    "mode": "100644",
+    "projectKey": "ARCHITECTURE",
+    "owner": "Governance Source Layer"
+  },
+  "Canon/v1.0-operation-context-and-access-contract.md": {
+    "sha": "20c89648fbf6e8f360ac72048a92ca87b76c2d02",
+    "status": "modified",
+    "mode": "100644",
+    "projectKey": "ARCHITECTURE",
+    "owner": "Governance Source Layer"
   },
   "packages/assistant-context-contracts/package.json": {
     "sha": "45a389f274c6bd2b102403583eb18583d51efe1a",
@@ -3647,7 +3724,7 @@ export const ACG_M1_EXECUTION_REVIEW=Object.freeze({prNumber:937,branch:'archite
     "projectKey": "ARCHITECTURE",
     "owner": "Governance Source Layer"
   }
-})})
+})});
 function isPinnedAcgM1Review(files){return Array.isArray(files)&&files.length===Object.keys(ACG_M1_EXECUTION_REVIEW.entries).length&&new Set(files.map(f=>f?.filename)).size===files.length&&files.every(f=>{const e=ACG_M1_EXECUTION_REVIEW.entries[f?.filename];return Object.hasOwn(ACG_M1_EXECUTION_REVIEW.entries,f?.filename)&&e&&f.sha===e.sha&&f.status===e.status&&!Object.hasOwn(f,'previous_filename')})}
 export function assertAcgM1ReviewEntry(file,entry){const e=ACG_M1_EXECUTION_REVIEW.entries[file?.filename];if(!e||e.sha!==file.sha||entry!==e.mode+' blob '+file.sha+'\t'+file.filename+'\0')fail('ACG_M1_FILE_MODE_REJECTED')}
 function assertAcgM1ReviewRoutes(files,repositoryRoot){
