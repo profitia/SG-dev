@@ -1,5 +1,6 @@
 import {createHash} from 'node:crypto'
-import {ASSISTANT_CONTEXT_CONTRACT,readChartReference,benchmarkSnapshotBytes,contextDate,CONTEXT_STATUSES} from '../../assistant-context-contracts/src/index.mjs'
+import {ASSISTANT_CONTEXT_CONTRACT,readChartReference,contextReferences,benchmarkSnapshotBytes,contextDate,CONTEXT_STATUSES} from '../../assistant-context-contracts/src/index.mjs'
+export {createForecastContextAdapter,createSupplierContextAdapter,createNewsfeedContextAdapter} from './multi-source.mjs'
 const freeze=v=>{if(v&&typeof v==='object'){Object.values(v).forEach(freeze);Object.freeze(v)}return v}
 const hash=v=>createHash('sha256').update(v).digest('hex')
 function historicalComparison(from,to){
@@ -15,7 +16,7 @@ function historicalChanges(observations){
   period:historicalComparison(recent[0],last),latestVersusMinimum:historicalComparison(minimum,last),latestVersusMaximum:historicalComparison(maximum,last)},
   meaning:'Deterministic changes in the verified stored historical observations. Absolute changes use the benchmark unit; percentChange is a percentage with a positive base, otherwise null. These calculations are not a forecast.'}
 }
-export const ASSISTANT_GATEWAY_CONTRACT=Object.freeze({id:'profitia.assistant-context-gateway',version:'1.1.0'})
+export const ASSISTANT_GATEWAY_CONTRACT=Object.freeze({id:'profitia.assistant-context-gateway',version:'2.0.0'})
 /** Producers own reads, data and E1 authorisation. The gateway never accepts a
  * client ALLOW, cached permission, browser values or provider credentials. */
 export function createAssistantContextGateway({adapters,now=Date.now}){
@@ -23,17 +24,19 @@ export function createAssistantContextGateway({adapters,now=Date.now}){
   ||adapters.some(a=>typeof a.source!=='string'||typeof a.read!=='function'))throw TypeError('Explicit context producers required')
  const sources=new Map(adapters.map(a=>[a.source,a]))
  return Object.freeze({contract:ASSISTANT_GATEWAY_CONTRACT,async resolve({plan,reference,request,organisationId,signal}){
-  if(!Array.isArray(plan)||plan.length>4||plan.some(p=>!p||Object.keys(p).sort().join(',')!=='selection,source'||p.selection!=='ACTIVE_VIEW'))throw TypeError('Invalid context demand')
+  if(!Array.isArray(plan)||plan.length>4||new Set(plan.map(p=>p?.source)).size!==plan.length||plan.some(p=>!p||Object.keys(p).sort().join(',')!=='selection,source'||p.selection!=='ACTIVE_VIEW'))throw TypeError('Invalid context demand')
+  let references
+  try{references=contextReferences(reference)}catch{return freeze({contract:ASSISTANT_CONTEXT_CONTRACT,contexts:plan.map(p=>({source:p.source,status:'UNAVAILABLE'}))})}
   const results=[]
   for(const demand of plan){
    if(signal?.aborted)throw signal.reason??Error('Context cancelled')
    const adapter=sources.get(demand.source)
    if(!adapter){results.push(freeze({source:demand.source,status:'UNAVAILABLE'}));continue}
    try{
-    const value=await adapter.read({reference,request,organisationId,signal,observedAt:new Date(now()).toISOString()})
+    const value=await adapter.read({reference:references.find(r=>r.source===demand.source)??null,request,organisationId,signal,observedAt:new Date(now()).toISOString()})
     if(signal?.aborted)throw signal.reason??Error('Context cancelled')
     if(!value||value.source!==demand.source||!CONTEXT_STATUSES.includes(value.status))throw TypeError('Invalid producer response')
-    if(Buffer.byteLength(JSON.stringify(value),'utf8')>16000)throw TypeError('Oversized context')
+    if(Buffer.byteLength(JSON.stringify(value),'utf8')>16000||Buffer.byteLength(JSON.stringify([...results,value]),'utf8')>24000)throw TypeError('Oversized context')
     results.push(freeze(value))
    }catch(error){
     if(signal?.aborted)throw signal.reason??error

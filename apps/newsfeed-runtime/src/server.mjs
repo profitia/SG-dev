@@ -7,6 +7,17 @@ export function createApplication({authorizer,repository,sourceHub,log=line=>pro
  async function dispatch(request){
   const u=new URL(request.url),parts=u.pathname.split('/').filter(Boolean);
   if(request.method==='GET'&&['/health','/live','/ready'].includes(u.pathname)){const ready=u.pathname!=='/ready'||await repository.ready()&&await authorizer.ready();return Response.json({service:'newsfeed-runtime',status:ready?'ok':'not_ready'},{status:ready?200:503});}
+  if(u.pathname==='/v1/assistant-context'){
+   if(authorizer.assistantReadEnabled!==true)throw new SourceHubError('NOT_FOUND',404);
+   if(request.method!=='GET')throw new SourceHubError('METHOD_NOT_ALLOWED',405);
+   if(request.headers.has('cookie')||request.headers.has('origin')||!/^Bearer [^\s]{1,8192}$/.test(request.headers.get('authorization')??''))throw new SourceHubError('BEARER_SESSION_REQUIRED',401);
+   if([...u.searchParams.keys()].some(k=>!['observationId','supplierNip'].includes(k))||[...new Set(u.searchParams.keys())].some(k=>u.searchParams.getAll(k).length!==1))throw new SourceHubError('INVALID_QUERY');
+   const selection={observationId:u.searchParams.get('observationId'),supplierNip:u.searchParams.get('supplierNip')};
+   if(selection.observationId!==null&&!uuid.test(selection.observationId)||selection.supplierNip!==null&&!/^\d{10}$/.test(selection.supplierNip))throw new SourceHubError('INVALID_QUERY');
+   const value=await authorizer.execute({request,organisationId:request.headers.get('x-profitia-organisation-id'),resourceId:selection.observationId??'newsfeed-observations',payload:selection,write:false},
+    (context,transaction)=>repository.assistantContext(transaction,context,selection));
+   return Response.json(value,{headers:{'cache-control':'private, no-store',vary:'Cookie, Authorization'}});
+  }
   if(parts[0]!=='v1'||parts[1]!=='observations'||parts.length>4)throw new SourceHubError('NOT_FOUND',404);
   const id=parts[2];if(id&&!uuid.test(id))throw new SourceHubError('NOT_FOUND',404);
   if([...u.searchParams.keys()].some(k=>!['limit','cursor'].includes(k))||u.search&&!(request.method==='GET'&&parts.length===2))throw new SourceHubError('INVALID_QUERY');
@@ -38,7 +49,7 @@ export function createApplication({authorizer,repository,sourceHub,log=line=>pro
   throw new SourceHubError('NOT_FOUND',404);
  }
  return Object.freeze({async handle(request){const requestId=randomUUID(),start=performance.now();let response,outcome='OK';try{response=await dispatch(request);}catch(error){const safe=safeError(error);outcome=safe.code;response=Response.json({error:{code:safe.code},requestId},{status:safe.status});}
-  response.headers.set('cache-control','no-store');response.headers.set('x-request-id',requestId);
+  if(!response.headers.has('cache-control'))response.headers.set('cache-control','no-store');response.headers.set('x-request-id',requestId);
   try{log(JSON.stringify({event:'newsfeed_backend',requestId,service:'newsfeed-runtime',operation:request.method,outcome,status:response.status,durationMs:Math.max(0,Math.round(performance.now()-start))}));}catch{}return response;
  }});
 }

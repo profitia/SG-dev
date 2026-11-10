@@ -1,0 +1,34 @@
+{
+  "schemaVersion": "1.0.0",
+  "taskId": "ARCH-ACG-M2-20261110",
+  "contract": {
+    "id": "newsfeed-assistant-stored-read",
+    "version": "1.0.0"
+  },
+  "targetEnvironment": "development",
+  "previousSourceSha": "57b85043b0781faf9bebb0dee793c7003cf6bf09",
+  "configuration": {
+    "variable": "NEWSFEED_ASSISTANT_READ_VERSION",
+    "version": "newsfeed-assistant-read-v1",
+    "enabledByDefault": false
+  },
+  "route": {
+    "method": "GET",
+    "path": "/v1/assistant-context",
+    "sourceOrigin": "https://dev-sg2.spendguru.app",
+    "targetOrigin": "https://newsfeed-api-development.onrender.com"
+  },
+  "operations": [
+    "personal.list.read"
+  ],
+  "grantsAccess": false,
+  "storedReadsOnly": true,
+  "acquisitionAllowed": false,
+  "sourceDigests": {
+    "apps/newsfeed-runtime/src/auth.mjs": "e8485ceed28f74294997c71852a991ad5d7b5f1858cdbb3039ee2b8ff621ac1f",
+    "apps/newsfeed-runtime/src/config.mjs": "ec4502b64b7eb2e1b18ae3091d3b733f473024dd5503ae324cbd20d9090ccacc",
+    "apps/newsfeed-runtime/src/repository.mjs": "3829bc5f4ae2d88932fc2d9ceb5da55c1962c4838471f11032b601c51e0f6154",
+    "apps/newsfeed-runtime/src/server.mjs": "d5881c14e76184dd48782a7ed5afca3995c70e7752c19bdb71cf71c0f1cd7267",
+    "apps/newsfeed-runtime/test/assistant-context.test.mjs": "351771e6ad585460f89743fe5adb5c6567879ba1537dc145986940aa2a74521d"
+  }
+}
