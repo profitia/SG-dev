@@ -3272,7 +3272,7 @@ function assertOilReportRoutes(files,repositoryRoot){
 export function assertOilReportReviewEntry(file,entry){const e=OIL_REPORT_E1_REVIEW.entries[file?.filename];if(!e||e.sha!==file.sha||entry!==e.mode+' blob '+file.sha+'\t'+file.filename+'\0')fail('OIL_REPORT_FILE_MODE_REJECTED')}
 function reviewedReportPeer(owner,version,section,name,spec){
  return owner==='@profitia/platform-current-e1-authority'&&version==='1.2.1'&&name==='@profitia/platform-contracts'&&((section==='peerDependencies'&&spec==='1.33.0 || 1.34.0')||(section==='devDependencies'&&spec==='file:..'))
- ||owner==='@profitia/platform-source-hub-contracts'&&['1.4.0','1.5.0'].includes(version)&&section==='peerDependencies'&&name==='@profitia/platform-current-e1-authority'&&spec==='1.1.0 || 1.2.0 || 1.2.1';
+ ||owner==='@profitia/platform-source-hub-contracts'&&['1.4.0','1.5.0','1.6.0'].includes(version)&&section==='peerDependencies'&&name==='@profitia/platform-current-e1-authority'&&spec==='1.1.0 || 1.2.0 || 1.2.1';
 }
 
 function architecturePathAllowed(name) {
@@ -3754,9 +3754,356 @@ function assertAcgM1ReviewRoutes(files,repositoryRoot){
  }
 }
 
+// PROPOSED exact Stage03 review; separate CI owner acceptance required.
+export const ECR_STAGE03_REVIEW=Object.freeze({"prNumber":947,"branch":"architecture/ecr-stage03-durable-store-20261110","sourceSha":"995c2b5f385b515d647e6d770d77873503815311","baseSha":"3d1eb89373fbb1d6d358b7c0a40726a0fe8c5c62",entries:Object.freeze({
+  "apps/architecture-lab/ecr-stage03-sdk-compatibility.mjs": {
+    "sha": "70c0ac4f58b70d6d60bd4c043c47f99afe3274b5",
+    "status": "added",
+    "mode": "100644",
+    "projectKey": "ARCHITECTURE",
+    "owner": "Architecture Platform",
+    "surfaceId": "ARCH-BASE-002"
+  },
+  "apps/architecture-lab/test/sdk-compatibility.test.mjs": {
+    "sha": "2ae79feeb859c08a837fbf620400bc5f9f531896",
+    "status": "modified",
+    "mode": "100644",
+    "projectKey": "ARCHITECTURE",
+    "owner": "Architecture Platform",
+    "surfaceId": "ARCH-BASE-002"
+  },
+  "apps/economic-calendar-runtime/README.md": {
+    "sha": "7253c2dfb84169aa9161e1de45c68d94b523b82e",
+    "status": "modified",
+    "mode": "100644",
+    "projectKey": "ARCHITECTURE",
+    "owner": "Architecture Platform",
+    "surfaceId": "ECR-BASE-001"
+  },
+  "apps/economic-calendar-runtime/migrations/002-multi-source-calendar.sql": {
+    "sha": "71e196c0a9fd66536d98b6034f027fa13f6dbbc4",
+    "status": "added",
+    "mode": "100644",
+    "projectKey": "ARCHITECTURE",
+    "owner": "Architecture Platform",
+    "surfaceId": "ECR-BASE-001"
+  },
+  "apps/economic-calendar-runtime/operations/activate-calendar-storage.sql": {
+    "sha": "7616c152aebee31959d2272b27d5363155a96051",
+    "status": "added",
+    "mode": "100644",
+    "projectKey": "ARCHITECTURE",
+    "owner": "Architecture Platform",
+    "surfaceId": "ECR-BASE-001"
+  },
+  "apps/economic-calendar-runtime/operations/enroll-schedule-service.sql": {
+    "sha": "406da6fd87e74f8a4c684e2e7a0b74bf0747e4b6",
+    "status": "added",
+    "mode": "100644",
+    "projectKey": "ARCHITECTURE",
+    "owner": "Architecture Platform",
+    "surfaceId": "ECR-BASE-001"
+  },
+  "apps/economic-calendar-runtime/operations/stage03-owner-plan.json": {
+    "sha": "c9c0a0d5fd753d6684327cc80ea501eebd5eeef5",
+    "status": "added",
+    "mode": "100644",
+    "projectKey": "ARCHITECTURE",
+    "owner": "Architecture Platform",
+    "surfaceId": "ECR-BASE-001"
+  },
+  "apps/economic-calendar-runtime/package-lock.json": {
+    "sha": "90ad77dd37b8d8602422b91fb159a877d4086f9b",
+    "status": "modified",
+    "mode": "100644",
+    "projectKey": "ARCHITECTURE",
+    "owner": "Architecture Platform",
+    "surfaceId": "ECR-BASE-001"
+  },
+  "apps/economic-calendar-runtime/package.json": {
+    "sha": "6f4012b95dafbe27a91c599bf303475a923f0ccc",
+    "status": "modified",
+    "mode": "100644",
+    "projectKey": "ARCHITECTURE",
+    "owner": "Architecture Platform",
+    "surfaceId": "ECR-BASE-001"
+  },
+  "apps/economic-calendar-runtime/scripts/migrate.mjs": {
+    "sha": "95b28753a431d13e82b63703de0f9bb55d3e9d2b",
+    "status": "modified",
+    "mode": "100644",
+    "projectKey": "ARCHITECTURE",
+    "owner": "Architecture Platform",
+    "surfaceId": "ECR-BASE-001"
+  },
+  "apps/economic-calendar-runtime/scripts/source-acquire.mjs": {
+    "sha": "66fff5df4588cd43b4b6e2fb3bea18a61da3e932",
+    "status": "modified",
+    "mode": "100644",
+    "projectKey": "ARCHITECTURE",
+    "owner": "Architecture Platform",
+    "surfaceId": "ECR-BASE-001"
+  },
+  "apps/economic-calendar-runtime/scripts/sync.mjs": {
+    "sha": "934f35edcfeb05cea8cd45e9fd112be6596493df",
+    "status": "modified",
+    "mode": "100644",
+    "projectKey": "ARCHITECTURE",
+    "owner": "Architecture Platform",
+    "surfaceId": "ECR-BASE-001"
+  },
+  "apps/economic-calendar-runtime/scripts/verify-storage.mjs": {
+    "sha": "1f68ebf054a56a8b58c02a978144cb4ec20c4d34",
+    "status": "added",
+    "mode": "100644",
+    "projectKey": "ARCHITECTURE",
+    "owner": "Architecture Platform",
+    "surfaceId": "ECR-BASE-001"
+  },
+  "apps/economic-calendar-runtime/src/repository.mjs": {
+    "sha": "b0fcf84eb693674ffd8d3d204d1954607252428a",
+    "status": "modified",
+    "mode": "100644",
+    "projectKey": "ARCHITECTURE",
+    "owner": "Architecture Platform",
+    "surfaceId": "ECR-BASE-001"
+  },
+  "apps/economic-calendar-runtime/src/server.mjs": {
+    "sha": "a93c569d14584dc299cdb1ab1ae04736ba14d533",
+    "status": "modified",
+    "mode": "100644",
+    "projectKey": "ARCHITECTURE",
+    "owner": "Architecture Platform",
+    "surfaceId": "ECR-BASE-001"
+  },
+  "apps/economic-calendar-runtime/src/source-service.mjs": {
+    "sha": "38a7c241abb1bcf5a4e09d4fcb1f590990b30f78",
+    "status": "modified",
+    "mode": "100644",
+    "projectKey": "ARCHITECTURE",
+    "owner": "Architecture Platform",
+    "surfaceId": "ECR-BASE-001"
+  },
+  "apps/economic-calendar-runtime/src/synchronization.mjs": {
+    "sha": "ae7be62ee8853b1142a0aa1759681237a8075df6",
+    "status": "modified",
+    "mode": "100644",
+    "projectKey": "ARCHITECTURE",
+    "owner": "Architecture Platform",
+    "surfaceId": "ECR-BASE-001"
+  },
+  "apps/economic-calendar-runtime/test/schedule-storage.test.mjs": {
+    "sha": "92f3b3058e515e309c8d6ebd98b55e64bbd14054",
+    "status": "added",
+    "mode": "100644",
+    "projectKey": "ARCHITECTURE",
+    "owner": "Architecture Platform",
+    "surfaceId": "ECR-BASE-001"
+  },
+  "apps/economic-calendar-runtime/test/source-service.test.mjs": {
+    "sha": "f6039b97b8b4ad25a7da4b3b9b973c1cd15de064",
+    "status": "modified",
+    "mode": "100644",
+    "projectKey": "ARCHITECTURE",
+    "owner": "Architecture Platform",
+    "surfaceId": "ECR-BASE-001"
+  },
+  "apps/platform-source-hub/migrations/008-calendar-consumer-storage.sql": {
+    "sha": "35eeae1dd1decc162022ecbc20009fad91038667",
+    "status": "added",
+    "mode": "100644",
+    "projectKey": "ARCHITECTURE",
+    "owner": "Architecture Platform",
+    "surfaceId": "SOURCE-HUB-BASE-001"
+  },
+  "apps/platform-source-hub/operations/calendar-consumer-storage-owner-plan.json": {
+    "sha": "ad7fb5cdc7f7ffbeff47c0d46aee2df1108db8c6",
+    "status": "added",
+    "mode": "100644",
+    "projectKey": "ARCHITECTURE",
+    "owner": "Architecture Platform",
+    "surfaceId": "SOURCE-HUB-BASE-001"
+  },
+  "apps/platform-source-hub/package-lock.json": {
+    "sha": "0f17bea4342130ec2f07354d918a63bd9585a91d",
+    "status": "modified",
+    "mode": "100644",
+    "projectKey": "ARCHITECTURE",
+    "owner": "Architecture Platform",
+    "surfaceId": "SOURCE-HUB-BASE-001"
+  },
+  "apps/platform-source-hub/scripts/migrate.mjs": {
+    "sha": "e2818ec72eef43789743740a47abe2e59edbad26",
+    "status": "modified",
+    "mode": "100644",
+    "projectKey": "ARCHITECTURE",
+    "owner": "Architecture Platform",
+    "surfaceId": "SOURCE-HUB-BASE-001"
+  },
+  "apps/platform-source-hub/src/capabilities.mjs": {
+    "sha": "a102342de087f1e4a9c796be7f1e0180d8a7e6c3",
+    "status": "modified",
+    "mode": "100644",
+    "projectKey": "ARCHITECTURE",
+    "owner": "Architecture Platform",
+    "surfaceId": "SOURCE-HUB-BASE-001"
+  },
+  "apps/platform-source-hub/src/config.mjs": {
+    "sha": "f43ebb5cc6bff4cca3b246da822feee7838cf379",
+    "status": "modified",
+    "mode": "100644",
+    "projectKey": "ARCHITECTURE",
+    "owner": "Architecture Platform",
+    "surfaceId": "SOURCE-HUB-BASE-001"
+  },
+  "apps/platform-source-hub/src/providers/commodities-sh.mjs": {
+    "sha": "38e80e80468731ac8ebf0f989a80e8ddf6831798",
+    "status": "modified",
+    "mode": "100644",
+    "projectKey": "ARCHITECTURE",
+    "owner": "Architecture Platform",
+    "surfaceId": "SOURCE-HUB-BASE-001"
+  },
+  "apps/platform-source-hub/src/providers/eia-schedules.mjs": {
+    "sha": "5a98882cb4e5ce8cb06ffd4b18accd497e5fb56f",
+    "status": "modified",
+    "mode": "100644",
+    "projectKey": "ARCHITECTURE",
+    "owner": "Architecture Platform",
+    "surfaceId": "SOURCE-HUB-BASE-001"
+  },
+  "apps/platform-source-hub/src/providers/publication-schedules.mjs": {
+    "sha": "c3ce5f10f90bc99fe808ff36c61de375cb7077e1",
+    "status": "modified",
+    "mode": "100644",
+    "projectKey": "ARCHITECTURE",
+    "owner": "Architecture Platform",
+    "surfaceId": "SOURCE-HUB-BASE-001"
+  },
+  "apps/platform-source-hub/src/repository.mjs": {
+    "sha": "bade8272b55e8c7e0be9e696dfdcce3951ea6702",
+    "status": "modified",
+    "mode": "100644",
+    "projectKey": "ARCHITECTURE",
+    "owner": "Architecture Platform",
+    "surfaceId": "SOURCE-HUB-BASE-001"
+  },
+  "apps/platform-source-hub/test/publication-schedule-integration.test.mjs": {
+    "sha": "63d6ae5fac228edd37c8816ad8d982d8eee6b420",
+    "status": "modified",
+    "mode": "100644",
+    "projectKey": "ARCHITECTURE",
+    "owner": "Architecture Platform",
+    "surfaceId": "SOURCE-HUB-BASE-001"
+  },
+  "packages/economic-calendar-contracts/README.md": {
+    "sha": "5c1d98b53fa26b33f47eb649aa14a75ad4e3a094",
+    "status": "modified",
+    "mode": "100644",
+    "projectKey": "ARCHITECTURE",
+    "owner": "Architecture Platform",
+    "surfaceId": "ECR-BASE-002"
+  },
+  "packages/economic-calendar-contracts/index.d.mts": {
+    "sha": "2824e81924254fa59f04218461c54aea4e9c576a",
+    "status": "modified",
+    "mode": "100644",
+    "projectKey": "ARCHITECTURE",
+    "owner": "Architecture Platform",
+    "surfaceId": "ECR-BASE-002"
+  },
+  "packages/economic-calendar-contracts/index.mjs": {
+    "sha": "dc72a388d78e5248ab43409b3f5b3a46f9044daf",
+    "status": "modified",
+    "mode": "100644",
+    "projectKey": "ARCHITECTURE",
+    "owner": "Architecture Platform",
+    "surfaceId": "ECR-BASE-002"
+  },
+  "packages/economic-calendar-contracts/package.json": {
+    "sha": "882f9ba8e3c7baa4b62f7eab7938d904c453b359",
+    "status": "modified",
+    "mode": "100644",
+    "projectKey": "ARCHITECTURE",
+    "owner": "Architecture Platform",
+    "surfaceId": "ECR-BASE-002"
+  },
+  "packages/platform-source-hub-contracts/README.md": {
+    "sha": "0873bb5149cd1a100084be3d1eca086877033865",
+    "status": "modified",
+    "mode": "100644",
+    "projectKey": "ARCHITECTURE",
+    "owner": "Architecture Platform",
+    "surfaceId": "SOURCE-HUB-BASE-002"
+  },
+  "packages/platform-source-hub-contracts/calendar-storage-acceptance-v1.json": {
+    "sha": "ab926b070738a2fbf611e9ec6cf1c1d439ab9d5b",
+    "status": "added",
+    "mode": "100644",
+    "projectKey": "ARCHITECTURE",
+    "owner": "Architecture Platform",
+    "surfaceId": "SOURCE-HUB-BASE-002"
+  },
+  "packages/platform-source-hub-contracts/commodities-v1.d.mts": {
+    "sha": "5d7b3bef6d7b4c36ba29128fe8a251303278c9bf",
+    "status": "modified",
+    "mode": "100644",
+    "projectKey": "ARCHITECTURE",
+    "owner": "Architecture Platform",
+    "surfaceId": "SOURCE-HUB-BASE-002"
+  },
+  "packages/platform-source-hub-contracts/commodities-v1.mjs": {
+    "sha": "9c7a551f38e30c2b877b0401e1c33fce537c2688",
+    "status": "modified",
+    "mode": "100644",
+    "projectKey": "ARCHITECTURE",
+    "owner": "Architecture Platform",
+    "surfaceId": "SOURCE-HUB-BASE-002"
+  },
+  "packages/platform-source-hub-contracts/index.d.ts": {
+    "sha": "8650b3c6c39a66f7ea773e7c458db7d7bcb685da",
+    "status": "modified",
+    "mode": "100644",
+    "projectKey": "ARCHITECTURE",
+    "owner": "Architecture Platform",
+    "surfaceId": "SOURCE-HUB-BASE-002"
+  },
+  "packages/platform-source-hub-contracts/index.mjs": {
+    "sha": "4f9eb552f19aac613af697aeb64634e40e4e26b1",
+    "status": "modified",
+    "mode": "100644",
+    "projectKey": "ARCHITECTURE",
+    "owner": "Architecture Platform",
+    "surfaceId": "SOURCE-HUB-BASE-002"
+  },
+  "packages/platform-source-hub-contracts/package.json": {
+    "sha": "05184f565c407177c50b524fd93346a07829c3b7",
+    "status": "modified",
+    "mode": "100644",
+    "projectKey": "ARCHITECTURE",
+    "owner": "Architecture Platform",
+    "surfaceId": "SOURCE-HUB-BASE-002"
+  },
+  "scripts/governance/platform-source-hub-foundation.test.mjs": {
+    "sha": "c2766162eb2cb023d60a62ea0ca3a69be3fe1764",
+    "status": "modified",
+    "mode": "100644",
+    "projectKey": "ARCHITECTURE",
+    "owner": "Governance Source Layer",
+    "surfaceId": "SG2-BASE-020"
+  }
+})});
+function isPinnedEcrStage03Review(files){const r=ECR_STAGE03_REVIEW;return Array.isArray(files)&&files.length===Object.keys(r.entries).length&&new Set(files.map(f=>f?.filename)).size===files.length&&files.every(f=>{const e=r.entries[f?.filename];return Object.hasOwn(r.entries,f?.filename)&&e&&e.sha===f.sha&&e.status===f.status&&!Object.hasOwn(f,'previous_filename')})}
+export function assertEcrStage03ReviewEntry(file,entry){const e=ECR_STAGE03_REVIEW.entries[file?.filename];if(!e||e.sha!==file.sha||entry!==e.mode+' blob '+file.sha+'\t'+file.filename+'\0')fail('ECR_STAGE03_FILE_MODE_REJECTED')}
+function assertEcrStage03Routes(files,repositoryRoot){
+ const profile=resolveProjectProfile('ARCHITECTURE',repositoryRoot),routing=resolveProjectRouting({profile,targets:files.map(f=>f.filename),repositoryRoot})
+ if(profile.repository.slug!==REPOSITORY||!routing.ok||routing.results.length!==files.length||routing.results.some(r=>{const e=ECR_STAGE03_REVIEW.entries[r.normalizedPath];return !e||r.resolutionStatus!=='RESOLVED'||r.highestSpecificityMatchCount!==1||r.projectBoundaryStatus!=='ALLOWED'||r.baselineClassification!=='ALIGNED'||r.currentOwner!==e.owner||r.matchedSurfaceId!==e.surfaceId}))fail('ECR_STAGE03_ROUTING_REJECTED')
+}
+
 export function assertArchitectureFiles(pr, files, repositoryRoot = controlRoot()) {
   if (!Number.isInteger(pr.changed_files) || pr.changed_files < 1 || pr.changed_files > 300 || !shaPattern.test(pr.base?.sha ?? '')
     || !Array.isArray(files) || files.length !== pr.changed_files) fail('ARCHITECTURE_FILE_LIST_REQUIRED')
+  if(isPinnedEcrStage03Review(files)){assertEcrStage03Routes(files,repositoryRoot);return}
   if(isPinnedAcgM1Review(files)){assertAcgM1ReviewRoutes(files,repositoryRoot);return}
   if(isPinnedOilReportReview(files)){assertOilReportRoutes(files,repositoryRoot);return}
   if(isPinnedMarketSymbolReview(files)){assertMarketSymbolRoutes(files,repositoryRoot);return}
@@ -3795,6 +4142,7 @@ export function assertArchitectureFiles(pr, files, repositoryRoot = controlRoot(
 
 export function selectCandidate(context, pr, expectedSha, {files, repositoryRoot = controlRoot()} = {}) {
   const family = candidateFamily(context, pr, expectedSha)
+  if(pr&&(pr.number===ECR_STAGE03_REVIEW.prNumber||pr.head.ref===ECR_STAGE03_REVIEW.branch||isPinnedEcrStage03Review(files))){if(family!=='ARCHITECTURE'||pr.number!==ECR_STAGE03_REVIEW.prNumber||pr.head.ref!==ECR_STAGE03_REVIEW.branch||!isPinnedEcrStage03Review(files))fail('ECR_STAGE03_REVIEW_IDENTITY_REJECTED')}
   if(pr&&(pr.number===ACG_M1_EXECUTION_REVIEW.prNumber||pr.head.ref===ACG_M1_EXECUTION_REVIEW.branch||isPinnedAcgM1Review(files))){if(family!=='ARCHITECTURE'||pr.number!==ACG_M1_EXECUTION_REVIEW.prNumber||pr.head.ref!==ACG_M1_EXECUTION_REVIEW.branch||!isPinnedAcgM1Review(files))fail('ACG_M1_REVIEW_IDENTITY_REJECTED')}
   if(pr&&(pr.number===ACG_G1_REVIEW.prNumber||pr.head.ref===ACG_G1_REVIEW.branch||isPinnedAcgG1Review(files))){
    if(family!=='ARCHITECTURE'||pr.number!==ACG_G1_REVIEW.prNumber||pr.head.ref!==ACG_G1_REVIEW.branch||!isPinnedAcgG1Review(files))fail('ACG_G1_REVIEW_IDENTITY_REJECTED')
@@ -3873,6 +4221,7 @@ export function assertArchitectureCheckout(root, sha, admission, repositoryRoot 
   for (const file of admission.files) {
     const entry = execFileSync('git', ['ls-tree', '-z', sha, '--', file.filename], {cwd: root, encoding: 'utf8'})
     if (file.status === 'removed') {if (entry !== '') fail('ARCHITECTURE_DIFF_MISMATCH'); continue}
+    if(isPinnedEcrStage03Review(admission.files))assertEcrStage03ReviewEntry(file,entry)
     if(isPinnedAcgM1Review(admission.files))assertAcgM1ReviewEntry(file,entry)
     if(isPinnedAcgG1Review(admission.files))assertAcgG1ReviewEntry(file,entry)
     if(isPinnedOilReportReview(admission.files))assertOilReportReviewEntry(file,entry)

@@ -1,3 +1,4 @@
+import {ECR_STAGE03_REVIEW,assertEcrStage03ReviewEntry} from './controlled-package-ci.mjs'
 import {SOURCE_HUB_MARKET_SYMBOL_REVIEW,assertMarketSymbolReviewEntry} from './controlled-package-ci.mjs'
 import {ACG_G1_REVIEW,assertAcgG1ReviewEntry} from './controlled-package-ci.mjs'
 import {ACG_M1_EXECUTION_REVIEW,assertAcgM1ReviewEntry,adoptedOperationContract,CIC_ANALYTICAL_PIN} from './controlled-package-ci.mjs'
@@ -1371,13 +1372,13 @@ test('missing main package authority needs the exact reviewed manifest, never on
  }finally{fs.rmSync(t,{recursive:true,force:true})}
 });
 
-test('accepted SourceHub1.5 keeps the same exact peer range; future versions and wider ranges are rejected',()=>{
- for(const version of ['1.4.0','1.5.0']){
+test('accepted SourceHub1.6 keeps the same exact peer range; future versions and wider ranges are rejected',()=>{
+ for(const version of ['1.4.0','1.5.0','1.6.0']){
   const m={name:'@profitia/platform-source-hub-contracts',version,peerDependencies:{'@profitia/platform-current-e1-authority':'1.1.0 || 1.2.0 || 1.2.1'}};
   assertManifestPolicy(m,m);
   rejection(()=>assertManifestPolicy({...m,peerDependencies:{'@profitia/platform-current-e1-authority':'*'}},m));
  }
- const future={name:'@profitia/platform-source-hub-contracts',version:'1.6.0',peerDependencies:{'@profitia/platform-current-e1-authority':'1.1.0 || 1.2.0 || 1.2.1'}};
+ const future={name:'@profitia/platform-source-hub-contracts',version:'1.7.0',peerDependencies:{'@profitia/platform-current-e1-authority':'1.1.0 || 1.2.0 || 1.2.1'}};
  rejection(()=>assertManifestPolicy(future,future));
 });
 
@@ -1450,3 +1451,14 @@ test('Oil current Root is separate from immutable M1 and refuses an altered prod
  assert.equal(adoptedOperationContract(r),r.contract);
  for(const edit of [x=>x.oilAutonomousReportCompatibility.runtimeGrantsActivated=true,x=>x.oilAutonomousReportCompatibility.producer.sourceSha='0'.repeat(40),x=>x.oilAutonomousReportCompatibility.previousReceiptSha256='0'.repeat(64),x=>x.oilAutonomousReportCompatibility.sdkDigests.operationSourceDigest='0'.repeat(64),x=>x.contract.sourceDigest='0'.repeat(64),x=>x.oilAutonomousReportCompatibility.targetEnvironment='production']){const changed=structuredClone(r);edit(changed);rejection(()=>adoptedOperationContract(changed));}
 });
+
+test('Stage03 exact review binds42 actual-owner blobs and rejects source, mode, namespace and identity drift',()=>{
+ const review=ECR_STAGE03_REVIEW,files=Object.entries(review.entries).map(([filename,e])=>({filename,sha:e.sha,status:e.status})),p={...pr(),number:review.prNumber,changed_files:files.length,base:{...pr().base,sha:review.baseSha},head:{...pr().head,sha:review.sourceSha,ref:review.branch}}
+ assert.equal(files.length,42);assert.equal(review.sourceSha,'995c2b5f385b515d647e6d770d77873503815311');assert.equal(createHash('sha256').update(JSON.stringify(review.entries)).digest('hex'),'cb0bfee1e807211a0f091ded9f7c47205ded1954c7a8e22071718d9d201fe019')
+ assertArchitectureFiles(p,files)
+ assert.equal(selectCandidate(context(),p,review.sourceSha,{files}),review.sourceSha)
+ for(const f of files){assertEcrStage03ReviewEntry(f,'100644 blob '+f.sha+'\t'+f.filename+'\0');for(const mode of ['100755','120000','160000'])rejection(()=>assertEcrStage03ReviewEntry(f,mode+' blob '+f.sha+'\t'+f.filename+'\0'))}
+ for(const edit of [a=>a.pop(),a=>a.push(a[0]),a=>a[0]={...a[0],sha:'f'.repeat(40)},a=>a[0]={...a[0],status:'removed'},a=>a[0]={...a[0],previous_filename:a[0].filename},a=>a[0]={...a[0],filename:'apps/economic-calendar-runtime/src/unreviewed.mjs'}]){const bad=structuredClone(files);edit(bad);rejection(()=>selectCandidate(context(),{...p,changed_files:bad.length},review.sourceSha,{files:bad}))}
+ for(const edit of [q=>q.number++,q=>q.head.ref='architecture/another-ecr',q=>q.head.ref='sg2/ecr-stage03',q=>q.head.repo.full_name='profitia/fork',q=>q.user.login='attacker',q=>q.base.ref='staging']){const bad=structuredClone(p);edit(bad);rejection(()=>selectCandidate(context(),bad,review.sourceSha,{files}))}
+ assert(files.every(f=>!f.filename.startsWith('Canon/')&&!f.filename.startsWith('.github/')&&!f.filename.startsWith('apps/sg-runtime/')&&!f.filename.startsWith('apps/srm/')))
+})
