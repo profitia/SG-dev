@@ -749,6 +749,15 @@ test("Assistant M1 real SQL roles, atomic admission, actual settlement and uncer
   const actual={model:'gpt-5.6-luna',pricingVersion:'openai-gpt-5.6-luna-standard-20261109',inputTokens:1000,outputTokens:200,totalTokens:1200,
     cachedTokens:200,cacheWriteTokens:300,cacheWrite30mTokens:200,cacheWrite12hTokens:100,reasoningTokens:100,nanoUsd:'444000'};
   try{
+    const attacker=new pg.Client({connectionString:url.toString()});await attacker.connect();
+    try{
+      await attacker.query('CREATE TEMP TABLE assistant_installation(singleton boolean,schema_digest text,command_key bytea,created_at timestamptz,expires_at timestamptz,maximum_nano_usd bigint,maximum_tokens bigint,source_ref text)');
+      await attacker.query('GRANT SELECT ON pg_temp.assistant_installation TO profitia_limits_owner');
+      const forgedKey=Buffer.alloc(32,17);
+      await attacker.query("INSERT INTO pg_temp.assistant_installation VALUES(true,$1,$2,now(),now()+interval '7 days',5000000000,200000,'SYNTHETIC_TEMP_SHADOW_ONLY')",[digest,forgedKey]);
+      const body=JSON.stringify({...command(),contract:'1.0.0',schemaDigest:digest,until:Date.now()+9000}),proof=createHmac('sha256',forgedKey).update(body).digest('hex');
+      await assert.rejects(attacker.query('SELECT profitia_limits.assistant_usage($1,$2)',[body,proof]),e=>e.message==='POLICY_UNAVAILABLE','temporary tables cannot replace the real admission HMAC installation');
+    }finally{await attacker.end()}
     await assert.rejects(runtime.query("SELECT profitia_limits.assistant_usage('{}','forged')"));
     for(const sql of ['SELECT * FROM profitia_limits.assistant_installation','UPDATE profitia_limits.assistant_policy SET enabled=false','DELETE FROM profitia_limits.assistant_executions'])await assert.rejects(runtime.query(sql),e=>e.code==='42501');
     await assert.rejects(call({...command(),actorId:otherId}));
