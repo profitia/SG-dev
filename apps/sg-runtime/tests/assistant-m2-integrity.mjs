@@ -1,4 +1,5 @@
 // Test/build-only adoption; this file cannot grant runtime access.
+import {registrationStageOnePredecessor} from './registration-stage-i-integrity.mjs'
 import assert from 'node:assert/strict'
 import {createHash} from 'node:crypto'
 import {procurementInsightsPredecessor} from './procurement-insights-integrity.mjs'
@@ -134,6 +135,7 @@ export function oilReportTransportPredecessor(current,historical){
 }
 
 export function assistantM2Predecessor(current,historical){
+ const registration=registrationStageOnePredecessor(current,historical);if(registration)return assistantM2Predecessor(registration.previousBytes,historical)
  const oil=oilReportTransportPredecessor(current,historical);if(oil)return assistantM2Predecessor(oil.previousBytes,historical);
  let bytes
  try{bytes=current(file)}catch(error){
