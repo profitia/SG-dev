@@ -83,3 +83,27 @@ test('owner enrollment SQL applies exactly one Calendar grant in a disposable sy
     } finally {await root.query('ROLLBACK')}
   } finally {await hub.close()}
 })
+
+test('Stage03 exact owner packet adds only two own-source grants and current read receiver; drift, wrong binding, revocation and replay fail closed',async t=>{
+ const {firstPartyFixture,U,A}=await import('../../../packages/platform-contracts/test/fixtures/first-party-source-postgres.mjs'),f=await firstPartyFixture();t.after(()=>f.close())
+ const original=JSON.parse(readFileSync(new URL('../operations/stage03-owner-plan.json',import.meta.url))),sourceSql=readFileSync(new URL('../operations/enroll-schedule-service.sql',import.meta.url),'utf8')
+ assert.deepEqual(JSON.parse(sourceSql.match(/expected jsonb:=\$plan\$([\s\S]*?)\$plan\$::jsonb/)[1]),original)
+ assert.equal(original.privateKeyPersistence,'OWNER_APPROVED_SECRET_STORE');assert.equal(original.storage.sourceHubCacheRetentionSeconds,0);assert.equal(original.storage.retentionMode,'DURABLE_NO_FIXED_EXPIRY');assert.equal(original.grants.length,2)
+ const component=f.components.report,binding=(await f.asOwner(0,q=>q.query('SELECT binding_id FROM profitia_services.runtime_bindings WHERE login_role=$1',[component.role]))).rows[0].binding_id
+ const p={...original,applicationId:component.app,componentId:component.id,role:component.role,organisationId:A,serviceId:f.serviceId,bindingId:binding,keyId:'synthetic-key',publicKeySha256:createHash('sha256').update(component.key.publicKey.export({type:'spki',format:'pem'})).digest('hex'),expiresAt:new Date(Date.now()+30*60*1000).toISOString(),humanRead:{...original.humanRead,userId:U,issuer:f.issuer}}
+ const sql=sourceSql.replace(/(?<=expected jsonb:=\$plan\$)[\s\S]*?(?=\$plan\$::jsonb)/,JSON.stringify(p))
+ await f.asOwner(0,async q=>{await q.query(readFileSync(new URL('../../../packages/platform-contracts/current-e1-authority/migrations/005-calendar-authority.sql',import.meta.url),'utf8'));await q.query("UPDATE profitia_access.installation SET project_id='spring-bread-28217539',branch_id='br-sparkling-term-b99l107x',database_name=current_database()");await q.query('UPDATE profitia_access.applications SET fixed_organisation_id=$2 WHERE application_id=$1',[p.applicationId,A])})
+ const b={applicationId:p.applicationId,environment:'development',projectId:p.store.projectId,branchId:'br-synthetic-only-new-store',databaseName:p.store.databaseName,role:p.store.roles.runtime,schemaDigest:'1'.repeat(64)}
+ const enroll=(plan=p,bind=b)=>f.asOwner(0,async q=>{await q.query("SELECT set_config('ecr.stage03_plan',$1,true),set_config('ecr.stage03_owner_ref',$2,true),set_config('ecr.stage03_binding',$3,true),set_config('ecr.stage03_proof_key_hex',$4,true)",[JSON.stringify(plan),'owner-decision:sha256:'+'1'.repeat(64),JSON.stringify(bind),'2'.repeat(64)]);await q.query(sql)})
+ const before=(await f.asOwner(0,q=>q.query('SELECT to_jsonb(g) AS value FROM profitia_services.read_grants g ORDER BY grant_id'))).rows
+ await assert.rejects(enroll({...p,privateKeyPersistence:'OWNER_APPROVED_SSourceHub catalogueET_STORE'}),/EXACT_STAGE03_APPROVAL_REQUIRED/)
+ await assert.rejects(enroll(p,{...b,branchId:p.store.sourceBranchId}),/ACTUAL_ISOLATED_ECR_RECEIVER_BINDING_REQUIRED/)
+ await f.asOwner(0,q=>q.query("UPDATE profitia_e1_authority.source_components SET status='REVOKED' WHERE component_id=$1",[component.id]));await assert.rejects(enroll(),/CURRENT_ORIGINAL_ECR_COMPONENT_REQUIRED/)
+ await f.asOwner(0,q=>q.query("UPDATE profitia_e1_authority.source_components SET status='ACTIVE' WHERE component_id=$1",[component.id]));await enroll()
+ const grants=(await f.asOwner(0,q=>q.query('SELECT resource_id FROM profitia_services.read_grants WHERE grant_id=ANY($1::uuid[]) ORDER BY resource_id',[p.grants.map(g=>g.grantId)]))).rows
+ assert.deepEqual(grants.map(g=>g.resource_id),['api.commodities-sh.publication-calendar','api.eia.publication-calendar'])
+ const after=(await f.asOwner(0,q=>q.query('SELECT to_jsonb(g) AS value FROM profitia_services.read_grants g WHERE NOT(grant_id=ANY($1::uuid[])) ORDER BY grant_id',[p.grants.map(g=>g.grantId)]))).rows;assert.deepEqual(after,before)
+ assert.equal((await f.asOwner(0,q=>q.query('SELECT count(*) FROM profitia_access.permission_grants WHERE application_id=$1 AND operation LIKE $2',[p.applicationId,'personal.%']))).rows[0].count,'0')
+ const receiver=(await f.asOwner(0,q=>q.query('SELECT binding,resource_id FROM profitia_e1_authority.receivers WHERE application_id=$1',[p.applicationId]))).rows[0];assert.deepEqual(receiver.binding,b);assert.equal(receiver.resource_id,'economic-calendar')
+ await assert.rejects(enroll(),/ECR_RECEIVER_EXISTS_RECONCILE/)
+})

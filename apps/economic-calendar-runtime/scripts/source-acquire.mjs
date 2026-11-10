@@ -8,11 +8,12 @@ import {createCalendarSourceService, sourceServiceConfiguration} from '../src/so
  */
 export async function runSourceAcquire(env = process.env) {
   if (env.ECR_ENVIRONMENT !== 'development' || !/^[a-f0-9]{40}$/.test(env.ECR_EXECUTION_SHA ?? '')) throw new Error('EXPLICIT_DEVELOPMENT_EXECUTION_REQUIRED')
-  if (!env.ECR_SYNC_CRITERIA_FILE) throw new Error('EXPLICIT_CRITERIA_FILE_REQUIRED')
-  const bytes = await readFile(env.ECR_SYNC_CRITERIA_FILE)
+  const inputPath=env.ECR_SYNC_COMMAND_FILE??env.ECR_SYNC_CRITERIA_FILE
+  if (!inputPath||env.ECR_SYNC_COMMAND_FILE&&env.ECR_SYNC_CRITERIA_FILE) throw new Error('ONE_EXPLICIT_SOURCE_COMMAND_REQUIRED')
+  const bytes = await readFile(inputPath)
   if (bytes.length > 16000) throw new Error('CRITERIA_FILE_TOO_LARGE')
   const source = createCalendarSourceService(sourceServiceConfiguration(env))
-  const response = await source.acquire({criteria: JSON.parse(bytes.toString('utf8')), organisation: env.ECR_SYNC_ORGANISATION_ID,
+  const response = await source.acquire({[env.ECR_SYNC_COMMAND_FILE?'command':'criteria']: JSON.parse(bytes.toString('utf8')), organisation: env.ECR_SYNC_ORGANISATION_ID,
     grantId: env.ECR_SYNC_SERVICE_GRANT_ID, idempotencyKey: env.ECR_SYNC_IDEMPOTENCY_KEY})
   // Provider items and private criteria are transient and never logged/exported.
   return {event: 'calendar_source_acquisition', executionSha: env.ECR_EXECUTION_SHA, returned: response.items.length,

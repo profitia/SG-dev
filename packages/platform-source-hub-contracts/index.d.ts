@@ -1,5 +1,5 @@
 import type {CommodityRequest,CommodityResponse} from './commodities-v1.mjs';
-export {COMMODITY_CONTRACT_VERSION,PUBLICATION_SCHEDULE_CONTRACT_VERSION,COMMODITY_FAMILIES,COMMODITY_PROVIDERS} from './commodities-v1.mjs';
+export {COMMODITY_CONTRACT_VERSION,PUBLICATION_SCHEDULE_CONTRACT_VERSION,DURABLE_SCHEDULE_CONTRACT_VERSION,COMMODITY_FAMILIES,COMMODITY_PROVIDERS} from './commodities-v1.mjs';
 export type {CommodityRequest,CommodityResponse,CommodityFamily,CommodityProvider,DatasetMetadata,SeriesObservation,PositioningObservation,PublicationSchedule,PublicationScheduleV12,PublicationScheduleRequest} from './commodities-v1.mjs';
 export const SOURCE_HUB_CONTRACT_VERSION:'1.0.0';
 export type ContractFamily='news-discovery'|'economic-calendar'|'indicators'|'external-forecasts'|'market-observations';

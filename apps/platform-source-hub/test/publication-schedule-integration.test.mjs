@@ -3,11 +3,12 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import pg from 'pg'
 import {readFileSync} from 'node:fs'
-import {createHash,randomUUID} from 'node:crypto'
+import {createHash,randomUUID,generateKeyPairSync} from 'node:crypto'
 import {consumerFixture} from './first-party-fixtures.mjs'
 import {A,B} from '../../../packages/platform-contracts/test/fixtures/first-party-source-postgres.mjs'
 import {createAdmission,sourceDefinition} from '../src/admission.mjs'
 import {createApplication} from '../src/server.mjs'
+import {createConsumerAccess} from '../src/consumer-access.mjs'
 import {createFirstPartySourceHubClient} from '@profitia/platform-source-hub-contracts/client'
 import {installPublicationScheduleSource} from '../scripts/install-publication-schedules.mjs'
 const hash=b=>createHash('sha256').update(b).digest('hex'),load=p=>readFileSync(new URL(p,import.meta.url),'utf8')
@@ -15,9 +16,9 @@ const html='<html><h1>Weekly Petroleum Status Report Schedule</h1><p>The standar
 const q={contractVersion:'1.2.0',provider:'eia',family:'publication-calendar',operation:'calendar',criteria:{publication:'wpsr',from:'2026-11-09',to:'2026-11-13'}}
 test('existing ordinary SERVICE uses current E1 and native Source for both versioned schedules; denies before HTTP and retains zero content',async t=>{
  const f=await consumerFixture(),originalFetch=globalThis.fetch;let installer;t.after(async()=>{globalThis.fetch=originalFetch;await installer?.end();await f.close()})
- const {source,e1}=f,config={...source.hub,eiaSchedulesEnabled:true,commodityProviders:['eia','commodities-sh'],secrets:{...source.hub.secrets,eia:'SYNTHETIC_ONLY_UNUSED_EIA_KEY'}}
+ const {source,e1}=f,config={...source.hub,eiaSchedulesEnabled:true,calendarConsumerStorageEnabled:true,commodityProviders:['eia','commodities-sh'],secrets:{...source.hub.secrets,eia:'SYNTHETIC_ONLY_UNUSED_EIA_KEY'}}
  await source.admin(0,'profitia_ingestion_owner',async c=>{await c.query("UPDATE profitia_ingestion.runtime_bindings SET status='REVOKED'");const sql=load('../../../packages/platform-contracts/migrations/access/024-unmetered-public-sources.sql');await c.query("SELECT set_config('profitia.install.unmetered_digest',$1,true)",[hash(sql)]);await c.query(sql);await c.query("UPDATE profitia_ingestion.runtime_bindings SET status='ACTIVE'")})
- await e1.asOwner(1,async c=>{for(const version of ['006-commodity-providers','007-publication-schedules']){const sql=load('../migrations/'+version+'.sql');await c.query(sql);await c.query('INSERT INTO source_hub.migrations VALUES($1,$2)',[version,hash(sql)])}},'source_hub_development_owner')
+ await e1.asOwner(1,async c=>{for(const version of ['006-commodity-providers','007-publication-schedules','008-calendar-consumer-storage']){const sql=load('../migrations/'+version+'.sql');await c.query(sql);await c.query('INSERT INTO source_hub.migrations VALUES($1,$2)',[version,hash(sql)])}},'source_hub_development_owner')
  const url=new URL(process.env.SOURCE_HUB_TEST_ADMIN_URL);url.pathname='/'+source.hub.databaseName;installer=new pg.Client({connectionString:url.href,ssl:false});await installer.connect()
  const sources=[]
  await installer.query('BEGIN');try{
@@ -33,14 +34,38 @@ test('existing ordinary SERVICE uses current E1 and native Source for both versi
   await installer.query('COMMIT')
  }catch(e){await installer.query('ROLLBACK');throw e}
  await e1.asOwner(1,async c=>{for(const s of sources)await c.query("INSERT INTO source_hub.provider_licences(provider_id,family,licence_ref,version,source_id,resource_id,source_policy_id,private_consumer_use,consumer_application_ids,retention_seconds,redistribution,status,expires_at,consumer_access_mode) VALUES($1,'publication-calendar','SYNTHETIC_ONLY',1,$2,$3,$4,true,ARRAY['SYNTHETIC_ONLY'],0,'PRIVATE_AUTHORISED_CONSUMER_ONLY','ACTIVE',now()+interval '1 hour','SPENDGURU_PRODUCT')",[s.provider,s.d.sourceId,s.d.resourceId,s.policy])},'source_hub_development_owner')
- let calls=0,mode='ok';globalThis.fetch=async(input,options)=>{
+ let calls=0,mode='ok',beforeProviderReturn=null;globalThis.fetch=async(input,options)=>{
   const u=new URL(input instanceof Request?input.url:input);if(!['www.eia.gov','api.commodities.sh'].includes(u.hostname))return originalFetch(input,options)
   calls++;assert(!u.search);assert(!new Headers(options.headers).has('authorization'));assert(!String(input).includes('SYNTHETIC_ONLY_UNUSED_EIA_KEY'))
+  if(beforeProviderReturn){const action=beforeProviderReturn;beforeProviderReturn=null;await action()}
   const r=mode==='malformed'?new Response('<html>changed</html>'):u.hostname==='www.eia.gov'?new Response(html):Response.json({events:[{id:'SYNTHETIC-WPSR',name:'Synthetic schedule',date:'2026-11-12'}]});Object.defineProperty(r,'url',{value:u.href});return r
  }
- const admission=await createAdmission(config,source.sdb),configuration={...config,projectId:e1.bindings[1].projectId,branchId:e1.bindings[1].branchId,databaseName:e1.bindings[1].databaseName,configurationVersion:'fixture-v1',legacyPeerEnabled:false},logs=[],app=createApplication({configuration,authorizer:null,repository:null,consumerAccess:f.access,admission,telemetry:{requestId:randomUUID,emit:e=>logs.push(e)}})
+ const admission=await createAdmission(config,source.sdb),configuration={...config,projectId:e1.bindings[1].projectId,branchId:e1.bindings[1].branchId,databaseName:e1.bindings[1].databaseName,configurationVersion:'fixture-v1',legacyPeerEnabled:false},logs=[],access=await createConsumerAccess(configuration,e1.db(1),{fetch:e1.sourceTransport}),app=createApplication({configuration,authorizer:null,repository:null,consumerAccess:access,admission,telemetry:{requestId:randomUUID,emit:e=>logs.push(e)}})
  const signed=await e1.makeSigned(),client=createFirstPartySourceHubClient(signed.configuration,{fetchImpl:r=>app.handle(r)}),execution={kind:'SERVICE',organisationId:A,grantId:e1.grantId},acquire=(command=q,ex=execution)=>client.acquire({execution:ex,command,idempotencyKey:'schedule-test:'+randomUUID()})
  for(let repeat=0;repeat<2;repeat++)for(const command of [q,{contractVersion:'1.2.0',provider:'commodities-sh',family:'publication-calendar',operation:'calendar',criteria:{}}]){const r=await acquire(command);assert.equal(r.items.length,1);assert.equal(r.contractVersion,'1.2.0');assert.equal(r.usage.upstreamAttempts,1);assert(r.usage.receiptRef);assert.equal(r.items[0].metadata.retentionUntil,null);assert.equal(r.items[0].metadata.consumerStorage,undefined)}
+ // The new storage protocol is denied before HTTP to an otherwise admitted
+ // consumer. Only its exact ECR SERVICE recipient may receive durable rights.
+ const deniedCalls=calls;await assert.rejects(acquire({...q,contractVersion:'1.3.0'}),{code:'DURABLE_STORAGE_NOT_ADMITTED'});assert.equal(calls,deniedCalls)
+ const ecrApp='profitia-economic-calendar-runtime-development',ecrRole='economic_calendar_development_ingest',component='SYNTHETIC_ONLY_ECR_STORAGE',keyId='SYNTHETIC_ONLY_ECR_KEY',sourceOrigin='urn:profitia:service:synthetic-ecr-storage',key=generateKeyPairSync('ed25519'),grants=new Map()
+ if(!(await e1.databases[0].query('SELECT 1 FROM pg_roles WHERE rolname=$1',[ecrRole])).rowCount)await e1.databases[0].query('CREATE ROLE '+ecrRole+' LOGIN NOINHERIT NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE NOREPLICATION')
+ await e1.asOwner(0,async c=>{
+  await c.query("INSERT INTO profitia_access.applications(application_id,status) VALUES($1,'ACTIVE')",[ecrApp]);await c.query("INSERT INTO profitia_access.runtime_bindings(login_role,application_id,status) VALUES($1,$2,'ACTIVE')",[ecrRole,ecrApp])
+  await c.query("INSERT INTO profitia_services.runtime_bindings(login_role,binding_id,service_id,profile_id,deployment_id,configuration_version,status,source_ref,expires_at) VALUES($1,$2,$3,'SPENDGURU_SAAS','SYNTHETIC_ONLY','fixture-v1','ACTIVE','SYNTHETIC_ONLY',now()+interval '1 hour')",[ecrRole,randomUUID(),randomUUID()])
+  for(const provider of ['eia','commodities-sh']){const grant=randomUUID();grants.set(provider,grant);await c.query("INSERT INTO profitia_services.read_grants(grant_id,login_role,organisation_id,operation,feature,resource_id,effect,status,source_ref,expires_at) VALUES($1,$2,$3,'knowledge.read','market',$4,'ALLOW','ACTIVE','SYNTHETIC_ONLY',now()+interval '1 hour')",[grant,ecrRole,A,'api.'+provider+'.publication-calendar'])}
+  await c.query("INSERT INTO profitia_e1_authority.source_components(component_id,key_id,application_id,login_role,receiver_application_id,source_origin,public_key,deployment_id,configuration_version,status,source_ref,expires_at) VALUES($1,$2,$3,$4,$5,$6,$7,'SYNTHETIC_ONLY','fixture-v1','ACTIVE','SYNTHETIC_ONLY',now()+interval '1 hour')",[component,keyId,ecrApp,ecrRole,e1.apps[1],sourceOrigin,key.publicKey.export({type:'spki',format:'pem'})])
+ })
+ await assert.rejects(e1.pools[1].query("SELECT source_hub.set_calendar_consumer_storage(0,$1,'eia','ACTIVE','SYNTHETIC_ONLY_OWNER_STORAGE')",[ecrApp]),e=>e.code==='42501')
+ const licenceBefore=await e1.asOwner(1,c=>c.query('SELECT * FROM source_hub.provider_licences ORDER BY provider_id,family'),'source_hub_development_owner')
+ await e1.asOwner(1,async c=>{for(const provider of ['eia','commodities-sh'])await c.query("SELECT source_hub.set_calendar_consumer_storage(0,$1,$2,'ACTIVE','SYNTHETIC_ONLY_OWNER_STORAGE')",[ecrApp,provider])},'source_hub_development_owner')
+ await assert.rejects(e1.asOwner(1,c=>c.query("SELECT source_hub.set_calendar_consumer_storage(0,$1,'eia','ACTIVE','SYNTHETIC_ONLY_OWNER_STORAGE')",[ecrApp]),'source_hub_development_owner'),/expected version changed/)
+ const ecrClient=createFirstPartySourceHubClient({...signed.configuration,consumerApplicationId:ecrApp,componentId:component,sourceOrigin,keyId,privateKey:key.privateKey},{fetchImpl:r=>app.handle(r)})
+ const durable=provider=>ecrClient.acquire({command:provider==='eia'?{...q,contractVersion:'1.3.0'}:{contractVersion:'1.3.0',provider,family:'publication-calendar',operation:'calendar',criteria:{}},execution:{kind:'SERVICE',organisationId:A,grantId:grants.get(provider)},idempotencyKey:'SYNTHETIC_ONLY_DURABLE:'+randomUUID()})
+ for(const provider of ['eia','commodities-sh']){const r=await durable(provider);assert.equal(r.items[0].metadata.consumerStorage.consumerApplicationId,ecrApp);assert.equal(r.items[0].metadata.consumerStorage.retentionMode,'DURABLE_NO_FIXED_EXPIRY');assert.equal(r.items[0].metadata.retentionUntil,null)}
+ assert.deepEqual((await e1.asOwner(1,c=>c.query('SELECT * FROM source_hub.provider_licences ORDER BY provider_id,family'),'source_hub_development_owner')).rows,licenceBefore.rows)
+ beforeProviderReturn=()=>e1.asOwner(1,c=>c.query("SELECT source_hub.set_calendar_consumer_storage(1,$1,'eia','REVOKED','SYNTHETIC_ONLY_REVOKED')",[ecrApp]),'source_hub_development_owner')
+ await assert.rejects(durable('eia'),{code:'DURABLE_STORAGE_NOT_ADMITTED'})
+ const revokedCalls=calls;await assert.rejects(durable('eia'),{code:'DURABLE_STORAGE_NOT_ADMITTED'});assert.equal(calls,revokedCalls)
+ assert.equal((await acquire(q)).items[0].metadata.consumerStorage,undefined)
  const before=calls;await assert.rejects(acquire(q,{...execution,organisationId:B}),{code:'OPERATION_DENIED'});assert.equal(calls,before)
  const unsigned=await app.handle(new Request('https://synthetic.invalid/v1/acquire',{method:'POST',body:JSON.stringify({context:execution,request:q})}));assert.equal(unsigned.status,401);assert.equal(calls,before)
  const l=sources[0],transport=await admission.transportFor('eia','publication-calendar',{source_id:l.d.sourceId,resource_id:l.d.resourceId,source_policy_id:l.policy},'b'.repeat(64));await assert.rejects(transport.fetchImpl('https://www.eia.gov/private/unadmitted.php'));assert.equal(calls,before)

@@ -45,11 +45,11 @@ export function createCommoditiesProvider({fetchImpl}={}){return {/** @param {an
  }
  const rows=Array.isArray(json)?json:Array.isArray(json?.events)?json.events:Array.isArray(json?.calendar)?json.calendar:Array.isArray(json?.releases)?json.releases:null
  if(!rows)fail('PROVIDER_SCHEMA_CHANGED',502)
- if(request.contractVersion==='1.2.0'){
+ if(['1.2.0','1.3.0'].includes(request.contractVersion)){
   const items=rows.map(row=>scheduleRecord('commodities-sh','calendar',commoditiesSchedule(row),p.url))
   const ids=items.map(i=>i.metadata.vendorRecordId).filter(id=>id!==null)
   if(new Set(ids).size!==ids.length)fail('PROVIDER_SCHEMA_CHANGED',502)
-  return scheduleAnswer('commodities-sh',items,{limit,providerReturned:rows.length})
+  return scheduleAnswer('commodities-sh',items,{contractVersion:request.contractVersion,limit,providerReturned:rows.length})
  }
  const items=rows.map((r,i)=>{
   if(!r||typeof r!=='object')fail('PROVIDER_SCHEMA_CHANGED',502)

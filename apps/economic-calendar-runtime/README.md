@@ -1,4 +1,4 @@
-# Economic Calendar Runtime 1.0.0 — Development backend
+# Economic Calendar Runtime 1.1.0 — Development backend
 
 Source candidate for the accepted ECR vision and SourceHub/preference amendment.
 G1 was explicitly granted and accepted in PR906, authority main
@@ -259,3 +259,46 @@ remain BLOCKED/PARTIAL; neither tests, health200, G1, PR nor PMOS is LIVE approv
 
 AppShell UI, Finder overlay, reports, CIC/SRM adoption, notifications, Staging and
 Production remain outside this backend implementation.
+
+## Stage03 — multi-source licensed store (source, activation separate)
+
+The owner-approved v1.2 canon is implemented by reusing this product store,
+not by a second calendar database. `operations/stage03-owner-plan.json` is the
+exact proposed administrative packet; its presence is not activation evidence.
+Its own ECR SERVICE retains its key and TE grant; two additional finite source
+grants authorize EIA and commodities.sh publication schedules only.
+
+Opt-in SourceHub schedule protocol1.3.0 supplies recipient-bound durable rights.
+SourceHub migration008 and the ECR-only owner CAS do not change any provider
+licence, another consumer, transient TTL0 or Source policy. ECR migration002
+adds its own versioned storage policies and append-only observed publication
+history. An unchanged refresh cannot invent a revision or move the source-time
+fence backwards. SQL failures roll back the whole acquisition. There is no
+fixed commercial history expiry; acquisition expiry and the right to retain
+already acquired facts are separate. Revoked local storage rights hide retained
+source data and refuse new ingestion; they do not silently delete history.
+
+`GET /publications`, `/publications/{id}` and `/publications/{id}/revisions` use
+the existing shared `knowledge.read / market / economic-calendar-events`
+boundary. Stable ID pagination1–500 is a technical response bound, not a stored
+event or usage quota. Current E1 is observed at admission and outcome; the SQL
+proof is checked once per query, with no per-record Clerk or full E1 loop.
+
+A definition is provider-local. EIA reference periods, when actually supplied,
+identify concrete releases independently of changed scheduled times. An
+aggregator next date without a release key is retained as
+`unresolvedNextSchedule`, not a fabricated immutable release. Date-only, rule
+derived, exception and official schedule evidence retain their precision and
+limitations. Schedules have null results and publication times; numerical
+readings and revisions are not inferred. No cross-source correlation is added.
+
+For schedules, supply exactly one bounded `ECR_SYNC_COMMAND_FILE` using
+`contractVersion:1.3.0`, `family:publication-calendar`, `operation:calendar` and
+provider `eia` or `commodities-sh`; legacy `ECR_SYNC_CRITERIA_FILE` remains for
+TE. Run explicit `sync` with the provider-specific own SERVICE grant.
+`npm run storage:verify` then uses a genuine existing Clerk session supplied
+privately as `ECR_PROBE_TOKEN`, checks the exact deployed SHA, reads all local
+publication pages through E1, and independently closes/reopens two ordinary
+SQL connections. It emits only counts, fingerprints and receipt references.
+It makes no provider request and writes no user preferences. Synthetic tests
+are not a substitute for that real Development acceptance.

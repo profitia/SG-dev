@@ -1,0 +1,32 @@
+{
+  "schemaVersion": "SourceHubCalendarConsumerStorageActivation/1",
+  "status": "PROPOSED_NOT_ACTIVATED",
+  "ownerPacket": "apps/economic-calendar-runtime/operations/stage03-owner-plan.json",
+  "ownerPacketSha256": "37be116bb9ea0b6de6483583f44aca9a3e60a9760f842a47b775767c49063856",
+  "consumerApplicationId": "profitia-economic-calendar-runtime-development",
+  "projectId": "delicate-queen-44677134",
+  "branchId": "br-orange-salad-ba2llks7",
+  "databaseName": "neondb",
+  "serviceId": "srv-dbllmk0n74is73c2eptg",
+  "migration": "apps/platform-source-hub/migrations/008-calendar-consumer-storage.sql",
+  "activationFlag": "SOURCE_HUB_CALENDAR_CONSUMER_STORAGE_ENABLED",
+  "globalLicenceMutation": false,
+  "family": "publication-calendar",
+  "providers": [
+    "eia",
+    "commodities-sh"
+  ],
+  "retentionMode": "DURABLE_NO_FIXED_EXPIRY",
+  "redistribution": "PRIVATE_AUTHORISED_CONSUMER_ONLY",
+  "sourceHubCacheRetentionSeconds": 0,
+  "activateOtherConsumers": false,
+  "rawProviderPayloadRetention": false,
+  "numericObservationRetention": false,
+  "basisDocument": "Canon/v1.2-economic-calendar-runtime-business-and-architecture-canon.md",
+  "basisDocumentSha256": "0af9974ff232bd78b8e27fc969dc771d32aa634d02765a8780aec96dccc928cb",
+  "expectedVersion": 0,
+  "activationStatements": [
+    "SELECT source_hub.set_calendar_consumer_storage(0,'profitia-economic-calendar-runtime-development','eia','ACTIVE',current_setting('ecr.stage03_owner_ref'))",
+    "SELECT source_hub.set_calendar_consumer_storage(0,'profitia-economic-calendar-runtime-development','commodities-sh','ACTIVE',current_setting('ecr.stage03_owner_ref'))"
+  ]
+}
