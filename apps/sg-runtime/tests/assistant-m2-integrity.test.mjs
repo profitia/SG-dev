@@ -10,7 +10,7 @@ test('M2 adopts exact current consumer/producer source without rewriting histori
  assert.deepEqual(view.previousBytes('apps/sg-runtime/package.json'),historical(view.manifest.previousSourceSha,'apps/sg-runtime/package.json'))
  for(const path of [...ASSISTANT_M2_PATHS,...ASSISTANT_M2_PRODUCER_PATHS])assert.throws(()=>assistantM2Predecessor(
   p=>p===path?Buffer.concat([current(p),Buffer.from('UNACCEPTED')]):current(p),historical),path)
- for(const mutate of [a=>a.acquisitionAllowed=true,a=>a.newGrant=true,a=>a.configuration.enabledByDefault=true,a=>a.producers.cic.version='99.0.0']){
+ for(const mutate of [a=>a.acquisitionAllowed=true,a=>a.newGrant=true,a=>a.configuration.enabledByDefault=true,a=>a.producers.cic.version='99.0.0',a=>a.unreviewedScope=true]){
   const value=structuredClone(view.manifest);mutate(value)
   assert.throws(()=>assistantM2Predecessor(p=>p==='apps/sg-runtime/assistant-context-integration.json'?Buffer.from(JSON.stringify(value)):current(p),historical))
  }

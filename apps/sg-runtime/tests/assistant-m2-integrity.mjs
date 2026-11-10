@@ -34,6 +34,7 @@ export const ASSISTANT_M2_PATHS=Object.freeze([
  'apps/sg-runtime/tests/self-service-account.test.ts',
  'apps/sg-runtime/tests/xray-fresh-performance-adoption.test.mjs',
  'apps/sg-runtime/tests/xray-gateway.test.ts',
+ 'apps/sg-runtime/tests/pci-smart-integrity.test.mjs',
 ])
 export const ASSISTANT_M2_PRODUCER_PATHS=Object.freeze([
  'packages/assistant-context-contracts/package.json',
@@ -56,6 +57,7 @@ export function assistantM2Predecessor(current,historical){
   throw error
  }
  const a=JSON.parse(bytes)
+ assert.deepEqual(Object.keys(a).sort(),['schemaVersion','taskId','targetEnvironment','previousSourceSha','configuration','producers','storedReadsOnly','newGrant','acquisitionAllowed','sourceDigests','producerDigests'].sort())
  assert.equal(a.schemaVersion,'1.0.0');assert.equal(a.taskId,'SG2-ACG-M2-20261110');assert.equal(a.targetEnvironment,'development')
  assert.equal(a.previousSourceSha,'c3b399b13241ae2f4ea8c1b3ae0168fe9a6aac7f')
  assert.deepEqual(a.configuration,{variable:'PROFITIA_ASSISTANT_M2_CONFIGURATION_VERSION',version:'sg2-assistant-m2-development-v1',enabledByDefault:false})
