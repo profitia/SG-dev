@@ -49,7 +49,31 @@ export const ASSISTANT_M2_PRODUCER_PATHS=Object.freeze([
 ])
 const file='apps/sg-runtime/assistant-context-integration.json'
 const hash=bytes=>createHash('sha256').update(bytes).digest('hex')
+// Validate this bounded current Oil correction before exposing any predecessor.
+export function oilReportTransportPredecessor(current,historical){
+ const receiptFile='apps/sg-runtime/assistant-context-integration.json';let bytes;
+ try{bytes=current(receiptFile)}catch(error){
+  const text=String(error?.stderr??error?.message??'');
+  if(error?.code==='ENOENT'||error?.status===128&&text.includes("'"+receiptFile+"' does not exist in "))return null;
+  throw error;
+ }
+ const receipt=JSON.parse(bytes),a=receipt.oilRuntimeTransportRepair;
+ if(a===undefined)return null;
+ assert.deepEqual(Object.keys(a).sort(),['schemaVersion','taskId','targetEnvironment','previousSourceSha','previousReceiptSha256','changedSourcePaths','sourceDigests','noSdkChange','noGrantChange','noAutomaticRetry','humanReviewRequired'].sort());
+ assert.equal(a.schemaVersion,'1.0');assert.equal(a.taskId,'SG2-OIL-TRANSPORT-RECOVERY-20261110');assert.equal(a.targetEnvironment,'development');
+ assert.equal(a.previousSourceSha,'22ad6f867b9bf30c8f01b326c003ea37fdd11f25');
+ const expected=["apps/insights-runtime/src/composer.mjs","apps/insights-runtime/tests/host.test.mjs","apps/sg-runtime/lib/insights/autonomous-runtime.ts","apps/sg-runtime/tests/assistant-m2-integrity.mjs","apps/sg-runtime/tests/assistant-m2-integrity.test.mjs","apps/sg-runtime/tests/insights-host.test.ts"];
+ assert.deepEqual(a.changedSourcePaths,[...expected]);assert.deepEqual(Object.keys(a.sourceDigests).sort(),[...expected]);
+ for(const flag of ['noSdkChange','noGrantChange','noAutomaticRetry','humanReviewRequired'])assert.equal(a[flag],true,flag);
+ const priorBytes=Buffer.from(historical(a.previousSourceSha,receiptFile)),prior=JSON.parse(priorBytes),{oilRuntimeTransportRepair,...preserved}=receipt;
+ assert.equal(hash(priorBytes),a.previousReceiptSha256);assert.deepEqual(preserved,prior,'All previous Oil/M1/M2 acceptances remain unchanged');
+ for(const p of expected){assert.match(a.sourceDigests[p],/^[a-f0-9]{64}$/);assert.equal(hash(current(p)),a.sourceDigests[p],'current Oil transport repair '+p);}
+ const mapped=new Set([receiptFile,...expected]),blobs=new Map([[receiptFile,priorBytes]]);
+ return{manifest:a,previousBytes:p=>{if(!mapped.has(p))return current(p);if(!blobs.has(p))blobs.set(p,Buffer.from(historical(a.previousSourceSha,p)));return Buffer.from(blobs.get(p));}};
+}
+
 export function assistantM2Predecessor(current,historical){
+ const oil=oilReportTransportPredecessor(current,historical);if(oil)return assistantM2Predecessor(oil.previousBytes,historical);
  let bytes
  try{bytes=current(file)}catch(error){
   const text=String(error?.stderr??error?.message??'')
@@ -61,7 +85,7 @@ export function assistantM2Predecessor(current,historical){
  assert.equal(a.schemaVersion,'1.0.0');assert.equal(a.taskId,'SG2-ACG-M2-20261110');assert.equal(a.targetEnvironment,'development')
  assert.equal(a.previousSourceSha,'c3b399b13241ae2f4ea8c1b3ae0168fe9a6aac7f')
  assert.deepEqual(a.configuration,{variable:'PROFITIA_ASSISTANT_M2_CONFIGURATION_VERSION',version:'sg2-assistant-m2-development-v1',enabledByDefault:false})
- assert.deepEqual(a.producers,{architecture:{pullRequest:954,sourceSha:'c3b399b13241ae2f4ea8c1b3ae0168fe9a6aac7f'},srm:{pullRequest:963,sourceSha:'a2cf089e0620877c0bde2ac7d08292a75d2e8b67'},cic:{pullRequest:22,sourceSha:'967a5775f45408549d7942d727289818212ef506',version:'1.5.1'}})
+ assert.deepEqual(a.producers,{architecture:{pullRequest:954,sourceSha:'c3b399b13241ae2f4ea8c1b3ae0168fe9a6aac7f'},srm:{pullRequest:958,sourceSha:'25bb13a2a64991c04257bdb5c32d1c14240a0cc4'},cic:{pullRequest:22,sourceSha:'967a5775f45408549d7942d727289818212ef506',version:'1.5.1'}})
  assert.equal(a.storedReadsOnly,true);assert.equal(a.newGrant,false);assert.equal(a.acquisitionAllowed,false)
  assert.deepEqual(Object.keys(a.sourceDigests).sort(),[...ASSISTANT_M2_PATHS].sort())
  assert.deepEqual(Object.keys(a.producerDigests).sort(),[...ASSISTANT_M2_PRODUCER_PATHS].sort())

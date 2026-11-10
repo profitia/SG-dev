@@ -14,8 +14,8 @@
       "sourceSha": "c3b399b13241ae2f4ea8c1b3ae0168fe9a6aac7f"
     },
     "srm": {
-      "pullRequest": 963,
-      "sourceSha": "a2cf089e0620877c0bde2ac7d08292a75d2e8b67"
+      "pullRequest": 958,
+      "sourceSha": "25bb13a2a64991c04257bdb5c32d1c14240a0cc4"
     },
     "cic": {
       "pullRequest": 22,
@@ -41,7 +41,7 @@
     "apps/sg-runtime/package-lock.json": "0b352b594112cbd93694ed24ab96b693b406b21b688ea90c98bd8018e8241350",
     "apps/sg-runtime/tests/assistant-conversation-handler.test.ts": "c14d5de810eafed93df42ea9be7791cf91f5a025485b53ba9a2355cb05fbbb1f",
     "apps/sg-runtime/tests/assistant-m1-integrity.mjs": "f3b175d69e8ed77eb8c703818a7dcaf191ffb5725f76fa75b27619c0a6c3fe47",
-    "apps/sg-runtime/tests/assistant-m2-integrity.mjs": "262a55b591240042c7b8dc9274bb4877577c8a0dc34f2c03b1dfe2e596675655",
+    "apps/sg-runtime/tests/assistant-m2-integrity.mjs": "0c1c7198623458332e9e98ba1addcbebd1e499bedd973c657fc4862807ebb1e7",
     "apps/sg-runtime/tests/assistant-m2-integrity.test.mjs": "d507b2c64877e6baa760407aef3c314a35ea3d16437a76f147ad779ca007d0ce",
     "apps/sg-runtime/tests/assistant-multi-source.test.ts": "d675bf670ad11ad9734019b297c756ddd67d8eca1bce9a5749dd1ae8c352c358",
     "apps/sg-runtime/tests/assistant-screen-context.test.ts": "b1873b5ec51aaf2f1242f5931d6b89b65dd428ca40d789f39056aecf3a378e7e",
@@ -70,6 +70,33 @@
     "packages/assistant-context-gateway/src/index.d.mts": "ef9da4451112eb018474fa535f180b65b367d3f05a1b60040c3171c65abfaf1e",
     "packages/assistant-context-gateway/src/multi-source.mjs": "9f85816fcc7c682a24dbf43bd2ffe4c580d68b6e93a9c88ed15cc319521bef3f",
     "apps/newsfeed-runtime/assistant-context-integration.json": "4057379e02c7b698f3f24348c40b84275d92c3a892b55e96b1c6d23175298dfc",
-    "apps/srm/assistant-context-integration.json": "55eec8a614747f14943c46bdc0b2e0bb540cea96efc140ed1c4aeecfb236a21a"
+    "apps/srm/assistant-context-integration.json": "e39cc67fc7b1a9dd787365e0cea5407e11c47744f15c4f9cf83ea15eddeb2aff"
+  },
+  "oilRuntimeTransportRepair": {
+    "schemaVersion": "1.0",
+    "taskId": "SG2-OIL-TRANSPORT-RECOVERY-20261110",
+    "targetEnvironment": "development",
+    "previousSourceSha": "22ad6f867b9bf30c8f01b326c003ea37fdd11f25",
+    "previousReceiptSha256": "668d63ee8553ee18f7d7e44e7215dd4509935bd93d360341e2344b2286dec605",
+    "changedSourcePaths": [
+      "apps/insights-runtime/src/composer.mjs",
+      "apps/insights-runtime/tests/host.test.mjs",
+      "apps/sg-runtime/lib/insights/autonomous-runtime.ts",
+      "apps/sg-runtime/tests/assistant-m2-integrity.mjs",
+      "apps/sg-runtime/tests/assistant-m2-integrity.test.mjs",
+      "apps/sg-runtime/tests/insights-host.test.ts"
+    ],
+    "sourceDigests": {
+      "apps/insights-runtime/src/composer.mjs": "680429d2d14a41b37287c44a139e7dbbcb6be4ba483c7642dc7509eec0fddfa3",
+      "apps/insights-runtime/tests/host.test.mjs": "f6bed3a2e27d59d770e4c0c521a0b53440fcf2e153c82951c7f1f79873764a32",
+      "apps/sg-runtime/lib/insights/autonomous-runtime.ts": "5db2d43b65217df9e6f3c26ab01717c4b68bd0e4226ed8cd17ebec9adbbd573a",
+      "apps/sg-runtime/tests/assistant-m2-integrity.mjs": "7eed79df934d34d82c165a18f38c4234df25505ece3ff4635765a722cc9f577b",
+      "apps/sg-runtime/tests/assistant-m2-integrity.test.mjs": "c6a07bfc14f7c4ec3192b3257714da6cb7b742103e010525bd02ae212d8862d2",
+      "apps/sg-runtime/tests/insights-host.test.ts": "7f9d9cd10d2160e3ce1a387ea8463e694e32618ca33771ec924c5e7c87a87794"
+    },
+    "noSdkChange": true,
+    "noGrantChange": true,
+    "noAutomaticRetry": true,
+    "humanReviewRequired": true
   }
 }

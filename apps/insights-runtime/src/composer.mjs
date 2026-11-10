@@ -120,7 +120,7 @@ export function createComposer({
       const host = await counterHost({ job, prepared });
       const result = await host.execute({
         command: { body: prepared.counterBody, callId },
-        intentKey: callId,
+        intentKey: digest(callId),
       }, { signal });
       const e = externalCallEvidence(result),
         r = externalNativeResponse(result);
@@ -154,7 +154,7 @@ export function createComposer({
         counter,
       });
       const result = await host.execute(
-        { command: { body: prepared.body, callId }, intentKey: callId },
+        { command: { body: prepared.body, callId }, intentKey: digest(callId) },
         { signal: AbortSignal.any([AbortSignal.timeout(job.profile.timeoutMs), ...(signal ? [signal] : [])]) },
       );
       const e = externalCallEvidence(result),

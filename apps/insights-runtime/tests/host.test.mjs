@@ -2,8 +2,28 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createHumanReportAuthority,compactContext,packResponse,unpackResponse,pgPorts} from '../src/host.mjs';
 import {PostgresReportStore} from '../src/store.mjs';
+import {createComposer} from '../src/composer.mjs';
+import {createPlatformIngestionHost} from '@profitia/platform-contracts/platform-ingestion';
+import {createExternalCallHost} from '@profitia/platform-contracts/external-call';
 const org='11111111-1111-4111-8111-111111111111';
 const context={environment:'development',organisationId:org,decisionId:'test-only-current-E1',actor:{kind:'HUMAN',userId:'test-user',expiresAt:new Date(Date.now()+60000).toISOString()},productEvidence:[]};
+test('composer counter and generation enter the real Source guard with a UUID call ID and a bounded intent digest',async()=>{
+ let descriptorReads=0;
+ const independentQuery=async()=>{descriptorReads++;throw Error('SYNTHETIC_DESCRIPTOR_UNAVAILABLE_NO_NETWORK')};
+ const binding={applicationId:'insights_fixture',environment:'development',projectId:'LOCAL_TEST',branchId:'LOCAL_TEST',databaseName:'LOCAL_TEST',role:'fixture_runtime',deploymentId:'LOCAL_TEST',configurationVersion:'LOCAL_TEST',schemaDigest:'a'.repeat(64)};
+ const sourceHost=createPlatformIngestionHost({application:{appId:binding.applicationId,environment:'development',profileId:'PLATFORM_INTERNAL',identityIssuer:'urn:profitia:database-service-runtime:v1',organisationId:null,features:['knowledge_ingestion'],operations:['knowledge.ingest'],deploymentId:binding.deploymentId,configurationVersion:binding.configurationVersion},binding,
+  source:{id:'fixture-source',payloadSchema:'external-call-control-v1',qualityVersion:'sg2-source-control-v1',classificationVersion:'technical-source-control-v1'},independentQuery,transact:()=>assert.fail('No Source transaction or network is admitted'),validateSharedPayload:()=>true});
+ const host=createExternalCallHost({sourceHost,sourceId:'fixture-source',resourceId:'fixture-resource',binding:{role:'fixture_runtime',configurationVersion:'LOCAL_TEST',schemaDigest:'b'.repeat(64),origin:'https://synthetic.invalid',transport:'HTTPS',pathRules:[{method:'POST',path:'/fixture'}]},
+  independentQuery,query:()=>assert.fail('No write'),parseCommand:v=>v,buildRequest:()=>assert.fail('No provider request'),
+  nativeTransport:{schemaDigest:'c'.repeat(64),pathRules:[{method:'POST',path:'/fixture',requestFormat:'JSON'}],redirectOrigins:[],maximumResponseBytes:1024,credentialMode:'NONE',completionMode:'ADMITTED_ATTEMPT_CURRENT_SETTLEMENT'}});
+ const composer=createComposer({counterHost:async()=>host,generationHost:async()=>host,pricing:{}}),callId='11111111-1111-4111-8111-111111111111';
+ const prepared={body:'{}',counterBody:'{}',bodySha256:'d'.repeat(64)};
+ for(const operation of [()=>composer.count({profile:{}},prepared,{callId}),
+  ()=>composer.generate({profile:{timeoutMs:1000}},{},prepared,{callId,counter:{bodySha256:prepared.bodySha256}})]){
+  const before=descriptorReads;await assert.rejects(operation(),e=>e.certainty==='NOT_SENT');
+  assert.equal(descriptorReads,before+1,'the actual Source input guard must accept the intent before its deliberately unavailable descriptor');
+ }
+});
 test('HTTP returns actual PDF bytes and headers after the E1 boundary, not a structured-cloned Response',async()=>{
  const bytes=Buffer.from('%PDF-CONTROLLED_TEST_ONLY');
  const restored=unpackResponse(await packResponse(new Response(bytes,{headers:{'content-type':'application/pdf','x-report-status':'HUMAN_REVIEW_REQUIRED'}})));

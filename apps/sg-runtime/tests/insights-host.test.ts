@@ -1,7 +1,24 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {GET,POST,dynamic,runtime} from '../app/api/v1/insights/[...report]/route'
-import {getInsightsRuntime} from '../lib/insights/autonomous-runtime'
+import {getInsightsRuntime,normalizeInsightsReportRequest} from '../lib/insights/autonomous-runtime'
+
+test('report ingress preserves POST bytes and validates the public authority behind Render',async()=>{
+ const body=JSON.stringify({definitionId:'oil-asphalt',revision:1})
+ const request=new Request('https://localhost:10000/api/v1/insights/report-jobs',{method:'POST',
+  headers:{host:'dev-sg2.spendguru.app',authorization:'Bearer SYNTHETIC_ONLY',origin:'https://dev-sg2.spendguru.app',
+   'content-type':'application/json','x-forwarded-host':'untrusted.example','x-forwarded-proto':'http'},body})
+ const current=normalizeInsightsReportRequest(request,['https://dev-sg2.spendguru.app'])
+ assert(current);assert.equal(current.url,'https://dev-sg2.spendguru.app/api/v1/insights/report-jobs')
+ assert.equal(current.headers.get('authorization'),'Bearer SYNTHETIC_ONLY')
+ assert.equal(current.headers.has('x-forwarded-host'),false);assert.equal(current.headers.has('x-forwarded-proto'),false)
+ assert.equal(await current.text(),body)
+ for(const headers of [{host:'untrusted.example','x-forwarded-host':'dev-sg2.spendguru.app'},
+  {host:'dev-sg2.spendguru.app',origin:'https://untrusted.example'}])
+  assert.equal(normalizeInsightsReportRequest(new Request('https://localhost:10000/api/v1/insights/report-editions',{headers}),['https://dev-sg2.spendguru.app']),null)
+ const direct=normalizeInsightsReportRequest(new Request('https://dev-sg2.spendguru.app/api/v1/insights/report-editions'),['https://dev-sg2.spendguru.app'])
+ assert.equal(direct?.url,'https://dev-sg2.spendguru.app/api/v1/insights/report-editions')
+})
 
 test('actual SG route exports deny a disabled report host without database/model side effects',async()=>{
  const before=process.env.INSIGHTS_REPORTS_ENABLED
