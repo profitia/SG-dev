@@ -52,6 +52,16 @@ test('SRM requires authoritative identity and exact selected year and statement 
  const rejected=(await g.resolve({...input,plan:plan(['SRM_XRAY'])})).contexts[0]
  assert.equal(rejected.status,'UNAVAILABLE');assert.equal(rejected.data,undefined)
 })
+test('expired private KYS cannot cross the gateway even if a producer returns a body',async()=>{
+ let until='2020-01-01T00:00:00Z'
+ const g=createAssistantContextGateway({adapters:[createSupplierContextAdapter({readAuthorised:async()=>({version:'srm-assistant-summary-v1',status:'PARTIAL',asOf:null,
+  identity:{nip:supplier.nip,krs:supplier.krs,entityType:'COMPANY'},selection:{year:supplier.year,comparisonYear:supplier.comparisonYear,statementScope:supplier.statementScope},
+  kys:{status:'OK',retentionUntil:until,riskLevel:'PRIVATE_SOURCE_VALUE'}})})]})
+ const stale=(await g.resolve({...input,plan:plan(['SRM_XRAY'])})).contexts[0]
+ assert.equal(stale.status,'STALE');assert.equal(stale.data,undefined);assert(!JSON.stringify(stale).includes('PRIVATE_SOURCE_VALUE'))
+ until='2030-01-01T00:00:00Z'
+ assert.equal((await g.resolve({...input,plan:plan(['SRM_XRAY'])})).contexts[0].status,'PARTIAL')
+})
 test('Newsfeed matches exact NIP only; similar names stay unconfirmed, all four dates retain their meaning',async()=>{
  const observation=subject=>({id:'abc',name:'Observation',subjectKind:'company',subject,status:'ACTIVE',version:1,
   createdAt:'2026-11-01T00:00:00Z',updatedAt:'2026-11-02T00:00:00Z',runs:[{createdAt:'2026-11-02T00:00:00Z',status:'SUCCEEDED'}],

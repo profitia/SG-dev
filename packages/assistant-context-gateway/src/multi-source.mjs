@@ -76,6 +76,8 @@ export function createSupplierContextAdapter({readAuthorised}){
    ||data.identity.entityType!==selection.entityType||!status(data.status)||!stamp(data.asOf)
    ||data.selection?.year!==selection.year||data.selection?.comparisonYear!==selection.comparisonYear||data.selection?.statementScope!==selection.statementScope)throw TypeError('Invalid SRM publication')
   if(selection.krs!==null&&data.identity.krs!==null&&selection.krs!==data.identity.krs)return {source:'SRM_XRAY',label:'SRM / X-Ray',status:'STALE'}
+  if(['OK','PARTIAL'].includes(data.kys?.status)&&(!stamp(data.kys.retentionUntil)||data.kys.retentionUntil===null
+   ||Date.parse(data.kys.retentionUntil)<=Date.parse(observedAt)))return {source:'SRM_XRAY',label:'SRM / X-Ray',status:'STALE'}
   // Producer metadata only; never browser financialSummary or risk text.
   return entry('SRM_XRAY','SRM / X-Ray',selection,data,data.status,data.asOf,observedAt)
  }})
