@@ -314,8 +314,9 @@ test('regular files and bounded size are required; symlink files and parent dire
 })
 test('actual current source provenance is the exact accepted SDK digest with all old trust rules intact',async()=>{
  const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..'),receipt=JSON.parse(fs.readFileSync(path.join(root,'apps/sg-runtime/operation-integration.json'),'utf8'))
- assert.equal(operationContractProvenanceDigest(root,receipt.contract),receipt.contract.sourceDigest)
- const sdk=await import('../../packages/platform-contracts/src/operation-context.mjs');assert.equal(await sdk.operationSourceDigest(),receipt.contract.sourceDigest)
+ const contract=adoptedOperationContract(receipt)
+ assert.equal(operationContractProvenanceDigest(root,contract),contract.sourceDigest)
+ const sdk=await import('../../packages/platform-contracts/src/operation-context.mjs');assert.equal(await sdk.operationSourceDigest(),contract.sourceDigest)
 })
 
 for(const patch of[{id:'untrusted.contract'},{version:'9.0.0'},{sourceDigest:'invalid'},{paths:['../../outside']},{implementation:'1.0.0-candidate.14'}])test('source identity refuses malformed metadata or a downgrade '+JSON.stringify(patch),()=>{
@@ -1383,9 +1384,9 @@ test('ACG G1 review accepts only the two exact governance blobs on its own PR an
  for(const f of files){assertAcgG1ReviewEntry(f,'100644 blob '+f.sha+'\t'+f.filename+'\0');for(const mode of ['100755','120000','160000'])rejection(()=>assertAcgG1ReviewEntry(f,mode+' blob '+f.sha+'\t'+f.filename+'\0'));}
 });
 
-test('M1 admits only the reviewed 51 source blobs through their actual three owner profiles',()=>{
+test('M1 admits only the reviewed 52 source blobs through their actual three owner profiles',()=>{
  const review=ACG_M1_EXECUTION_REVIEW,files=Object.entries(review.entries).map(([filename,e])=>({filename,sha:e.sha,status:e.status})),p={...architecturePr(files.length),number:937,head:{...pr().head,ref:review.branch}}
- assert.equal(Object.keys(review.entries).length,51);assert.equal(review.sourceSha,'d8142a087759a285c431ff23769d3d9f562f545f')
+ assert.equal(Object.keys(review.entries).length,52);assert.equal(review.sourceSha,'763be8d4c140bed05c9ccda0c0e05828c29fabd3')
  assert.deepEqual([...new Set(Object.values(review.entries).map(e=>e.projectKey))].sort(),['ARCHITECTURE','SG2','SRM'])
  assert.equal(selectCandidate(context(),p,other,{files}),other)
  assert.equal(selectCandidate(context(),{...p,base:{...p.base,sha:'f'.repeat(40)}},other,{files:[...files].reverse()}),other,'main refresh requires unchanged reviewed versions')

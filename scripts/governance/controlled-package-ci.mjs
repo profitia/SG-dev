@@ -3282,7 +3282,7 @@ export function assertAcgG1ReviewEntry(file,entry){
 
 
 // Owner-approved M1 dependency: closed blobs, modes and actual owner profiles.
-export const ACG_M1_EXECUTION_REVIEW=Object.freeze({prNumber:937,branch:'architecture/acg-m1-execution-20261109',sourceSha:'d8142a087759a285c431ff23769d3d9f562f545f',baseSha:'b39fcc6f99ce6e06184080e5eaf5e6e4c7e120b5',entries:Object.freeze({
+export const ACG_M1_EXECUTION_REVIEW=Object.freeze({prNumber:937,branch:'architecture/acg-m1-execution-20261109',sourceSha:'763be8d4c140bed05c9ccda0c0e05828c29fabd3',baseSha:'b39fcc6f99ce6e06184080e5eaf5e6e4c7e120b5',entries:Object.freeze({
   ".github/workflows/assistant-context-gateway-ci.yml": {
     "sha": "f88119a3291fea0b448f89a184268b1f87c046a5",
     "status": "modified",
@@ -3326,7 +3326,7 @@ export const ACG_M1_EXECUTION_REVIEW=Object.freeze({prNumber:937,branch:'archite
     "owner": "Architecture Platform"
   },
   "apps/sg-runtime/operation-integration.json": {
-    "sha": "17b87ebf3ce9e35780e03587be841860b0f417f3",
+    "sha": "5227a817e1f873f6f2220dfbc181f225b352579c",
     "status": "modified",
     "mode": "100644",
     "projectKey": "SG2",
@@ -3424,7 +3424,7 @@ export const ACG_M1_EXECUTION_REVIEW=Object.freeze({prNumber:937,branch:'archite
     "owner": "SG Runtime"
   },
   "apps/srm/operation-integration.json": {
-    "sha": "56a50554dc31b7daed1c1a4493b0c391d2d13308",
+    "sha": "8dd57b9cd401ba46e8ed3e45feadca15256dffea",
     "status": "modified",
     "mode": "100644",
     "projectKey": "SRM",
@@ -3452,14 +3452,14 @@ export const ACG_M1_EXECUTION_REVIEW=Object.freeze({prNumber:937,branch:'archite
     "owner": "SRM Runtime"
   },
   "apps/srm/scripts/private-host.integration.test.mjs": {
-    "sha": "321ca6af0651565f350c388b20eef195039c952a",
+    "sha": "d5c22562e9a587be8fe7e4bb7f7f1a3012ef90b0",
     "status": "modified",
     "mode": "100644",
     "projectKey": "SRM",
     "owner": "SRM Runtime"
   },
   "apps/srm/scripts/request-quota-adoption.test.mjs": {
-    "sha": "a79baafcd875c69841182d1cc134a7568eda2c6f",
+    "sha": "b93b9d0176858433c5cdc350259530644a0bb5fe",
     "status": "modified",
     "mode": "100644",
     "projectKey": "SRM",
@@ -3473,7 +3473,14 @@ export const ACG_M1_EXECUTION_REVIEW=Object.freeze({prNumber:937,branch:'archite
     "owner": "SRM Runtime"
   },
   "apps/srm/scripts/supplier-location-admission.integration.test.mjs": {
-    "sha": "564771f6c7f438837a1cb03d1c6e64d65e2e5c5b",
+    "sha": "07bf1aa43c7343b28babf0f97b0797e63ae2ffe9",
+    "status": "modified",
+    "mode": "100644",
+    "projectKey": "SRM",
+    "owner": "SRM Runtime"
+  },
+  "apps/srm/scripts/xray-performance-adoption.test.mjs": {
+    "sha": "4251cc6356fb35fddd96bd2cd2e85128b0c3f944",
     "status": "modified",
     "mode": "100644",
     "projectKey": "SRM",
