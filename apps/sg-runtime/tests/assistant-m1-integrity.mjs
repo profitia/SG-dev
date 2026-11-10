@@ -59,11 +59,12 @@ const priorSha='1f25d37589d0c8e0e0020f014ab9788b4a04417b',file='apps/sg-runtime/
 const hash=v=>createHash('sha256').update(v).digest('hex')
 export const ASSISTANT_M1_CHART_CORRECTIVE_PATHS=Object.freeze([
  'apps/dashboard-preview/components/raw-data-view/magicpath-benchmark-chart.tsx',
- 'apps/sg-runtime/package.json',
  'apps/sg-runtime/tests/assistant-chart-context.test.ts',
  'apps/sg-runtime/tests/assistant-m1-integrity.mjs',
  'apps/sg-runtime/tests/assistant-m1-integrity.test.mjs',
+ 'apps/sg-runtime/tests/assistant-model.test.ts',
  'apps/sg-runtime/tests/integrated-buyer-journey-package.test.mjs',
+ 'apps/sg-runtime/tests/operation-context.test.mjs',
  'apps/sg-runtime/tests/pci-smart-integrity.test.mjs',
 ])
 export function assertAssistantM1ChartCorrective(receipt,current,historical){

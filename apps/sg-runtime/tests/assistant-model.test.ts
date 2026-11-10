@@ -1,3 +1,5 @@
+// Keep the actual chart regression in the existing required assistant test entry.
+import './assistant-chart-context.test'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {randomUUID} from 'node:crypto'
