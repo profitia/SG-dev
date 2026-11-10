@@ -47,7 +47,7 @@ export function createContinuousRuntime({database,synchronizer,renewAccess=async
             if(next.due)seconds=Math.min(seconds,Math.max(900,Math.ceil((new Date(next.due).getTime()-Date.now())/1000)))
             if(next.expected_period&&(!result.latestReferencePeriod||result.latestReferencePeriod<next.expected_period))seconds=Math.min(seconds,86400)
           }
-          await t.query("UPDATE economic_calendar.sync_jobs SET next_due_at=clock_timestamp()+$2*interval '1 second',last_success_at=clock_timestamp(),last_error_code=NULL,last_receipt_ref=$3::uuid,last_result=$4::jsonb,lease_token=NULL,lease_until=NULL,intent_id=NULL,active_command=NULL,attempts=0 WHERE job_id=$1",[job.job_id,seconds,result.receiptRef,JSON.stringify(result)])
+          await t.query("UPDATE economic_calendar.sync_jobs SET next_due_at=clock_timestamp()+$2*interval '1 second',last_success_at=clock_timestamp(),last_error_code=NULL,last_receipt_ref=$3::uuid,last_result=$4::jsonb||CASE WHEN last_result?'accessMonitoring' THEN jsonb_build_object('accessMonitoring',last_result->'accessMonitoring') ELSE '{}'::jsonb END,lease_token=NULL,lease_until=NULL,intent_id=NULL,active_command=NULL,attempts=0 WHERE job_id=$1",[job.job_id,seconds,result.receiptRef,JSON.stringify(result)])
           await t.query("UPDATE economic_calendar.sync_attempts SET outcome='SUCCEEDED',finished_at=clock_timestamp(),receipt_ref=$2::uuid,result=$3::jsonb WHERE attempt_id=$1::uuid",[job.attempt,result.receiptRef,JSON.stringify(result)])
         })
         completed.push({jobId:job.job_id,status:'SUCCEEDED',receiptRef:result.receiptRef,replay:result.replay})
