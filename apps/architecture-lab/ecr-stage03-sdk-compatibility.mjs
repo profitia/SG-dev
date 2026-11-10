@@ -5,7 +5,7 @@ const sha256=bytes=>createHash('sha256').update(bytes).digest('hex')
 export function calendarStoragePredecessor(readCurrent,historical,changedPaths){
  if(JSON.parse(readCurrent('packages/platform-source-hub-contracts/package.json')).version==='1.7.0'){
   const file='packages/platform-source-hub-contracts/semantic-continuous-acceptance-v1.json',bytes=readCurrent(file)
-  assert.equal(sha256(bytes),'8c104ea4d20fa2ec2918e3c5d91f8b3ed1a749c24bbd0476aae742ea64fefb5f','exact Stage04–05 source adoption')
+  assert.equal(sha256(bytes),'f63364c997dacdb779da861685a93faa27d7b8bca84a75c6d277c9c188ccea76','exact Stage04–05 source adoption')
   const a=JSON.parse(bytes)
   assert.equal(a.schemaVersion,'ECRSemanticContinuousSourceAcceptance/1');assert.equal(a.taskId,'ARCHITECTURE-ECR-STAGE04-05-SEMANTIC-CONTINUOUS-20261110')
   assert.equal(a.hubContractsVersion,'1.7.0');assert.equal(a.durableResultProtocolVersion,'1.4.0');assert.equal(a.ecrContractVersion,'1.2.0');assert.equal(a.semanticProtocolVersion,'1.0.0')
