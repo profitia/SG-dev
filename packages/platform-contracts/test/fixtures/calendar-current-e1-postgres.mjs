@@ -12,7 +12,10 @@ export async function calendarE1Fixture({base = null, closeBase = true} = {}) {
   let admin, created = false
   const runtimeRole = 'economic_calendar_development_runtime', ownerRole = 'economic_calendar_development_owner', ingestRole = 'economic_calendar_development_ingest', migratorRole = 'economic_calendar_development_migrator'
   const password = 'SYNTHETIC_ONLY_NOT_A_REAL_CREDENTIAL', applicationId = 'profitia-economic-calendar-runtime-development', origin = 'https://calendar.synthetic.test'
-  const close = async () => {for (const pool of pools) await pool.end(); if (admin) await admin.end(); if (created) await f.databases[0].query('DROP DATABASE IF EXISTS ' + name + ' WITH (FORCE)'); if (!base || closeBase) await f.close()}
+  const close = async () => {for (const pool of pools) await pool.end(); if (admin) await admin.end(); // Let already-ended pool sockets disconnect; FORCE can emit an asynchronous
+  // fatal error while pg finishes closing an idle client. A genuine retained
+  // connection must fail teardown rather than be terminated underneath a test.
+  if (created) await f.databases[0].query('DROP DATABASE IF EXISTS ' + name); if (!base || closeBase) await f.close()}
   try {
     const root = f.databases[0]
     await root.query("SELECT pg_advisory_lock(hashtextextended('calendar-fixture-roles',0))")

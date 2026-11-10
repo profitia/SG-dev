@@ -53,7 +53,7 @@ type ExecuteHost<Result>=Readonly<{contract:typeof EXTERNAL_CALL_CONTRACT
 type NativeCredentialOptions=({nativeTransport:NativeExternalTransport&{readonly credentialMode:'NONE'};getHeaders?:never}
  |{nativeTransport:NativeExternalTransport&{readonly credentialMode:'SERVER_HEADERS'}})
 export declare function createExternalCallHost<Transaction,Command>(options:ExternalCallOptions<Transaction,Command>&NativeCredentialOptions&{
- projectResponse?:never
+ projectResponse?:never;modelExecution?:import('./model-execution.mjs').ModelExecutionPolicy;countModelInputTokens?:(body:string)=>number|Promise<number>
 }):ExecuteHost<NativeExternalResult>
 export declare function createExternalCallHost<Transaction,Command>(options:ExternalCallOptions<Transaction,Command>&{
  nativeTransport?:never
@@ -68,3 +68,5 @@ export declare function apiPathTransportSchemaDigest():Promise<string>
 export declare const MARKET_SYMBOL_TRANSPORT:Readonly<{id:'profitia.external-market-symbol';version:'1.0.0'}>
 export declare const marketSymbolTransportSchemaUrl:string
 export declare function marketSymbolTransportSchemaDigest():Promise<string>
+
+export type ModelExecutionPolicy = import('./model-execution.mjs').ModelExecutionPolicy;
