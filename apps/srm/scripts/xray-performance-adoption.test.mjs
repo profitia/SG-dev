@@ -32,7 +32,7 @@ const actualReceipt=JSON.parse(actualAppShellSource('apps/srm/operation-integrat
 const marketSdk=actualReceipt.sourceHubMarketSymbolCompatibility
 // SDK1.34 binds implementation/SQL bytes; unchanged SDK1.33 test artefacts
 // retain their already accepted fingerprints in the earlier additive receipt.
-const apiPath=marketSdk?{...marketSdk,sourceDigests:{...actualReceipt.sourceHubApiPathCompatibility.sourceDigests,...marketSdk.sourceDigests}}:actualReceipt.sourceHubApiPathCompatibility
+const apiPath=marketSdk?{...marketSdk,...actualReceipt.assistantM1SourceCompatibility,sourceDigests:{...actualReceipt.sourceHubApiPathCompatibility.sourceDigests,...marketSdk.sourceDigests,...actualReceipt.assistantM1SourceCompatibility?.sourceDigests}}:actualReceipt.sourceHubApiPathCompatibility
 if(apiPath)assertSourceHubApiPathCompatibility(actualReceipt,actualAppShellSource,(sha,file)=>historicalBlob(sha+':'+file))
 // The host view validates both current API_PATH closures and the later AppShell
 // amendments before exposing the presentation predecessor used by these guards.
@@ -205,7 +205,7 @@ test('FRESH postfetch adoption preserves exact history, producer and current sec
  for(const flag of ['peerWireContractChanged','runtimeDeploymentClaimed','performanceThresholdsClaimed','uiOrRoutingChanged'])assert.equal(a[flag],false,flag)
  const sdk=await import('@profitia/platform-contracts/identity-provider'),root=new URL('../',import.meta.resolve('@profitia/platform-contracts/identity-provider'))
  assert.equal(await sdk.identitySourceDigest(),a.sdkDigests.identitySourceDigest)
- assert.equal(await currentHumanReadSourceDigest(),a.sdkDigests.currentHumanReadSourceDigest)
+ assert.equal(await currentHumanReadSourceDigest(),actualReceipt.assistantM1SourceCompatibility.sdkDigests.currentHumanReadSourceDigest)
  for(const[file,digest]of Object.entries(a.sourceDigests)){
   assert.equal(hash(historicalBlob(a.producer.sourceSha+':packages/platform-contracts/'+file)),digest,'producer '+file)
   if(file!=='package-lock.json')assert.equal(hash(fs.readFileSync(new URL(file,root))),apiPath?.sourceDigests[file]??receipt.xrayAppShellPresentation?.sourceDigests?.[file]??digest,'installed '+file)
