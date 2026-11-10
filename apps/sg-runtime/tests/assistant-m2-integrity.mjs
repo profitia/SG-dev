@@ -49,8 +49,38 @@ export const ASSISTANT_M2_PRODUCER_PATHS=Object.freeze([
 ])
 const file='apps/sg-runtime/assistant-context-integration.json'
 const hash=bytes=>createHash('sha256').update(bytes).digest('hex')
+// Verify this exact native output-fence correction before exposing its
+// accepted predecessor. Historical producer and consumer receipts stay intact.
+export function assistantOutputFencePredecessor(current,historical){
+ let bytes
+ try{bytes=current(file)}catch(error){
+  const text=String(error?.stderr??error?.message??'')
+  if(error?.code==='ENOENT'||error?.status===128&&text.includes("'"+file+"' does not exist in "))return null
+  throw error
+ }
+ const receipt=JSON.parse(bytes),a=receipt.srmAssistantOutputFenceRepair
+ if(a===undefined)return null
+ assert.deepEqual(Object.keys(a).sort(),['schemaVersion','taskId','targetEnvironment','previousSourceSha','previousReceiptSha256','owner','changedSourcePaths','sourceDigests','noGrantChange','noContractChange','noAcquisition'].sort())
+ assert.equal(a.schemaVersion,'1.0');assert.equal(a.taskId,'SRM-ACG-M2-20261110');assert.equal(a.targetEnvironment,'development')
+ assert.equal(a.previousSourceSha,'a10ba000eafed736383d46823f5fc0dbb0981347')
+ assert.deepEqual(a.owner,{pullRequest:965,sourceSha:'acd7f2b090365c601e4e0d5d3ec176345a3ae571'})
+ const expected=['apps/sg-runtime/tests/assistant-m2-integrity.mjs','apps/sg-runtime/tests/assistant-m2-integrity.test.mjs','apps/srm/src/server/assistant-context-runtime.test.ts','apps/srm/src/server/assistant-context-runtime.ts']
+ assert.deepEqual(a.changedSourcePaths,expected);assert.deepEqual(Object.keys(a.sourceDigests).sort(),[...expected].sort())
+ for(const flag of ['noGrantChange','noContractChange','noAcquisition'])assert.equal(a[flag],true,flag)
+ const priorBytes=Buffer.from(historical(a.previousSourceSha,file)),prior=JSON.parse(priorBytes),{srmAssistantOutputFenceRepair,...preserved}=receipt
+ assert.equal(hash(priorBytes),a.previousReceiptSha256)
+ assert.deepEqual(preserved,prior,'All accepted ingress, Oil, M1 and M2 receipt fields remain immutable')
+ for(const p of expected){
+  assert.match(a.sourceDigests[p],/^[a-f0-9]{64}$/);assert.equal(hash(current(p)),a.sourceDigests[p],'current SRM native output correction '+p)
+  if(p.startsWith('apps/srm/'))assert.equal(hash(historical(a.owner.sourceSha,p)),a.sourceDigests[p],'exact SRM owner source '+p)
+ }
+ const mapped=new Set([file,...expected]),blobs=new Map([[file,priorBytes]])
+ return{manifest:a,previousBytes:p=>{if(!mapped.has(p))return current(p);if(!blobs.has(p))blobs.set(p,Buffer.from(historical(a.previousSourceSha,p)));return Buffer.from(blobs.get(p))}}
+}
 // Verify the exact ingress correction before either accepted Oil or M2 byte view.
 export function assistantIngressPredecessor(current,historical){
+ const output=assistantOutputFencePredecessor(current,historical)
+ if(output)return assistantIngressPredecessor(output.previousBytes,historical)
  let bytes
  try{bytes=current(file)}catch(error){
   const text=String(error?.stderr??error?.message??'')

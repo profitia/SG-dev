@@ -124,5 +124,31 @@
     "noGrantChange": true,
     "noContractChange": true,
     "noAcquisition": true
+  },
+  "srmAssistantOutputFenceRepair": {
+    "schemaVersion": "1.0",
+    "taskId": "SRM-ACG-M2-20261110",
+    "targetEnvironment": "development",
+    "previousSourceSha": "a10ba000eafed736383d46823f5fc0dbb0981347",
+    "previousReceiptSha256": "65866db24213e4cea75624e088f70ca3b0642d020a2c6b8949ddfd1456133c2c",
+    "owner": {
+      "pullRequest": 965,
+      "sourceSha": "acd7f2b090365c601e4e0d5d3ec176345a3ae571"
+    },
+    "changedSourcePaths": [
+      "apps/sg-runtime/tests/assistant-m2-integrity.mjs",
+      "apps/sg-runtime/tests/assistant-m2-integrity.test.mjs",
+      "apps/srm/src/server/assistant-context-runtime.test.ts",
+      "apps/srm/src/server/assistant-context-runtime.ts"
+    ],
+    "sourceDigests": {
+      "apps/sg-runtime/tests/assistant-m2-integrity.mjs": "36b5e5028ff899770e63e5dd4d3ab9ee7fc58b909b0f92eec3f45c97b6bb8e68",
+      "apps/sg-runtime/tests/assistant-m2-integrity.test.mjs": "40ac0004534862c7e2bd558cc1fdcfe699346d3e0ca33c4652cef4d8af77f1e4",
+      "apps/srm/src/server/assistant-context-runtime.test.ts": "1d47d555cf75808440ebb4fc9b8406f6b175bd8b82eb9499ea1add008a0f0f08",
+      "apps/srm/src/server/assistant-context-runtime.ts": "5fa4212f4f260a007e4b8078b65729d79ef4ac9c3fbc6e5fc4e76e739c9ee789"
+    },
+    "noGrantChange": true,
+    "noContractChange": true,
+    "noAcquisition": true
   }
 }
