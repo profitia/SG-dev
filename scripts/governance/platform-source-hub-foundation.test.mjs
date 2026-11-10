@@ -357,3 +357,15 @@ test('Stage04–05 acceptance rejects modified new source and immutable history 
   assert.throws(()=>calendarPredecessor(p=>read(p)+(p===target?'\nUNACCEPTED_CHANGE':'')),target)
  }
 })
+
+// The exact successor preserves the original 1.7/1.6 receipts and traverses
+// the unchanged historical checks only after every reviewed current byte passes.
+test('source access continuity pins every new source and retains immutable producer history',()=>{
+ const file='packages/platform-source-hub-contracts/source-access-continuity-acceptance-v1.json',record=json(file)
+ assert.equal(record.hubContractsVersion,'1.7.0');assert.equal(record.ecrContractVersion,'1.2.0')
+ assert.equal(record.liveAcceptance,false);assert(durableStorageAcceptance())
+ for(const target of [...Object.keys(record.sourceFiles),file,...Object.keys(record.preservedReceipts)]){
+  assert.throws(()=>calendarPredecessor(p=>read(p)+(p===target?'\nUNACCEPTED_CHANGE':'')),target)
+ }
+ assert.throws(()=>calendarPredecessor(p=>{if(p===file)throw Object.assign(Error('missing continuity receipt'),{code:'ENOENT'});return read(p)}))
+})

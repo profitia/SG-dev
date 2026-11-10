@@ -1,0 +1,132 @@
+{
+  "schemaVersion": "EcrSourceAccessContinuity/1",
+  "status": "PROPOSED_NOT_ACTIVATED",
+  "environment": "development",
+  "repository": "profitia/SG-dev",
+  "taskId": "ARCHITECTURE-ECR-SOURCE-ACCESS-CONTINUITY-20261110",
+  "sourceHub": {
+    "projectId": "delicate-queen-44677134",
+    "branchId": "br-orange-salad-ba2llks7",
+    "databaseName": "neondb",
+    "migratorRole": "source_hub_development_migrator",
+    "newMonitorRole": "economic_calendar_development_source_monitor",
+    "allowedFunctions": [
+      "source_hub.ecr_source_access_status()",
+      "source_hub.maintain_ecr_source_access()"
+    ],
+    "directBusinessDataAccess": false,
+    "sourceIds": [
+      "source-hub.eia.publication-calendar",
+      "source-hub.eia.series-observations",
+      "source-hub.commodities-sh.publication-calendar"
+    ],
+    "sharedTechnicalPrerequisites": [
+      "profitia_ingestion.runtime_bindings:source_hub_development_source_runtime",
+      "profitia_e1_receiver.installation:source_hub_development_runtime"
+    ],
+    "expectedFingerprints": {
+      "budget:source-hub.commodities-sh.publication-calendar": "4b0907297e4ad805276de4754f2dbd831e06d6ffd603d8b04764f777a5802235",
+      "budget:source-hub.eia.publication-calendar": "e9bc788b372467e41712a349e2ce2c2f1ac585f7142c84e87f32654eab0e4e83",
+      "budget:source-hub.eia.series-observations": "8da7e603175f2ed58b26c51436bf3624150291530093e213174d2a0308d2f222",
+      "external:source-hub.commodities-sh.publication-calendar": "abe1f603a7b6f2274614b4d8d148234d918924184e06f5a439adfb085cd93547",
+      "external:source-hub.eia.publication-calendar": "e52c0308262d1f9b117970612f3fe3ac85e20e8dfe16d9ae7f4ab5acf7bf56e8",
+      "external:source-hub.eia.series-observations": "d2bd4f130d2326a6e7f5e59647b324d5ec41e9bff5f1961d1d16c1bc3182df65",
+      "grant:source-hub.commodities-sh.publication-calendar": "e53e9bd5a7e466a4ed92121dedce420ce6bf758c4948b3655a2ec54e8a4f5f01",
+      "grant:source-hub.eia.publication-calendar": "eabe4db4a6237980076cad26e866a1ecd0903d2bccf5d19c1a516d2c32703f18",
+      "grant:source-hub.eia.series-observations": "343ec912186222a23cc48338460491bc6ba5c657645e90fb14c13f2fdab27839",
+      "native:source-hub.commodities-sh.publication-calendar": "2b1332ae1cb462ade05904fc253767e499396324ba19f4a29e836711d19e06c9",
+      "native:source-hub.eia.publication-calendar": "a99e460a9d0bdb70b92d2380e3803c73918130d838e45542a61d98bf827d00f3",
+      "native:source-hub.eia.series-observations": "c998fcbb732445569f4f31eaa2dc11c09e52faac9768bec590c6a2b5754ce1e3",
+      "source-runtime": "1c08d935d3623b43387256b255dbcf501b7520a2626059b93a5da44e60ae3a5c",
+      "source:source-hub.commodities-sh.publication-calendar": "185d1f67baccd0c8d2e662b5a80ef06bd8f94d5d9c91aaa90c82ba0091337aad",
+      "source:source-hub.eia.publication-calendar": "54fc006a3d7166bd1ee450ee2bf9a5fca7d6a8b477e0a935e4c883ceca80d81b",
+      "source:source-hub.eia.series-observations": "1adcf0af1a09850ed16e1dc8b3822163c031dc9c2e08c6ad694d38aa995ce9e5",
+      "licence:source-hub.commodities-sh.publication-calendar": "a065fff9426ae38cb2e1ff4c4ce888b2949371babf53b5bc630d6036766aa8be",
+      "licence:source-hub.eia.publication-calendar": "b248993f9b2c184538a07beb4399d95450c3de63c804559f8840ce73ceb0a770",
+      "licence:source-hub.eia.series-observations": "357f0c97b4639e602fb66afca7334cccec582e1f796574f9ca0e62a9da244987",
+      "hub-local-receiver": "68ce519fb5c761612135cdc068155d231ea2f9fdd20ab01111ca520a30c65bd1"
+    },
+    "initialLeaseUntil": "2026-12-04T22:19:09.000Z",
+    "rightsMode": "NO_FIXED_EXPIRY_OWNER_ATTESTED",
+    "rightsValidUntil": null,
+    "renewalPeriodDays": 30,
+    "renewalLeadDays": 1,
+    "revocation": "Never restore an expired, revoked, missing, denied or structurally changed record; retain existing E1/Source denial",
+    "newRolePassword": "RANDOM_PROTECTED_OUTSIDE_GIT_AND_RENDER_SECRET_ONLY",
+    "unchanged": [
+      "provider endpoints and filters",
+      "provider credentials",
+      "SourceHub retention 0",
+      "ECR durable storage rights",
+      "all unrelated source/licence/grant rows",
+      "UNMETERED counters and policy windows",
+      "central E1 grants and other consumers"
+    ]
+  },
+  "identity": {
+    "projectId": "spring-bread-28217539",
+    "branchId": "br-sparkling-term-b99l107x",
+    "databaseName": "platform_private",
+    "function": "profitia_e1_authority.ecr_access_expiry_status()",
+    "executeRole": "economic_calendar_development_ingest",
+    "operation": "Install read-only function only; one transaction SET ROLE profitia_access_owner with exact restoration of prior operator memberships",
+    "newGrantRows": 0,
+    "applicationDeployment": false
+  },
+  "cron": {
+    "serviceId": "crn-dbpmfgc9v7es73fb9e30",
+    "workspaceId": "tea-d7lps8rbc2fs73cn80dg",
+    "projectId": "prj-db717krrjlhs739jgo0g",
+    "environmentId": "evm-db717krrjlhs739jgo1g",
+    "scheduleUTC": "*/15 * * * *",
+    "plan": "0.5c-512mb",
+    "autoDeploy": "no",
+    "releasePolicy": "Exact resulting main retaining every owner-reviewed source blob after required CI; pinned release branch and execution SHA guard",
+    "configuration": {
+      "ECR_ACCESS_MONITOR_ENABLED": "true",
+      "ECR_SOURCE_MONITOR_DATABASE_URL": "PROTECTED_NEW_MONITOR_LOGIN_ONLY"
+    },
+    "noNewServices": true,
+    "noPlanOrScheduleChange": true,
+    "unchangedWebReleases": [
+      "ECR",
+      "SourceHub",
+      "Identity"
+    ],
+    "lastKnownGoodSha": "22ad6f867b9bf30c8f01b326c003ea37fdd11f25",
+    "lastKnownGoodDeploy": "dep-dbpmfgs9v7es73fb9fh0"
+  },
+  "notifications": {
+    "channel": "Existing Render workspace email failure notification",
+    "workspaceEmailEnabled": true,
+    "slackEnabled": false,
+    "serviceOverride": "default",
+    "details": "Structured ecr_access_expiry_alert in the linked private cron log: source, layer, UTC expiry, remaining days, reason and operator action",
+    "thresholdsDays": [
+      14,
+      7,
+      3,
+      1
+    ],
+    "failureReminderHours": 24,
+    "deduplication": "Existing sync_jobs.last_result.accessMonitoring; preserved through successful sync; no ECR schema change",
+    "deliveryTest": "One bounded, clearly labelled delivery rehearsal with actual source metadata, a unique request ID and validity no longer than one hour; verify receipt in operator mailbox",
+    "noProviderRequestsForMonitoring": true
+  },
+  "licenceProvenance": {
+    "administrativeDate": "2026-12-04T22:19:09Z derives from approved 2026-11-04/06/09 Development admissions, not an evidenced provider subscription end",
+    "eiaTerms": "https://www.eia.gov/opendata/terms-of-service.php",
+    "commoditiesTerms": "https://commodities.sh/terms",
+    "scope": "Existing free publication calendars and the two admitted EIA series only; private authorised use, attribution and upstream terms remain binding",
+    "ownerApprovalNeeded": "Permit renewable administrative leases under existing accepted business rights; no automatic extension of a real finite provider agreement"
+  },
+  "sqlSha256": {
+    "apps/platform-source-hub/migrations/010-ecr-source-continuity.sql": "fa2a62451e890a1f239dfc67278f7ad943a4c3e172e4de53397cfe58e71e91a0",
+    "packages/platform-contracts/current-e1-authority/migrations/011-ecr-source-continuity.sql": "3f18fa53b7ebcd6c6674a6014dabcda5b87f395cdddeeca1f0edd2df926007d1"
+  },
+  "newInfrastructure": false,
+  "newPaidEndpoints": false,
+  "newSourceFamilies": false,
+  "newE1ServiceIdentity": false,
+  "rollback": "Disable monitor and roll back existing cron to retained exact LKG artifact; set source continuity owner policy REVOKED to stop renewal. Preserve audit, data, keys and finite leases; no global database restore."
+}
