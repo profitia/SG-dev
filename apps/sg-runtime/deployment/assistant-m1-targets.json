@@ -28,7 +28,7 @@
       "ep-muddy-surf-b9vpyy2d-pooler.c-7.eu-central-1.aws.neon.tech"
     ],
     "runtimeRole": "profitia_limits_assistant_runtime",
-    "schemaDigest": "2abd567723c9837182dd0f3ed878cadd0145f7ce68d0610c22981483e1975432",
+    "schemaDigest": "bb3cebc7930e460501c7064f1dca93108c0e323a5150fde7e09697a358b82670",
     "maximumNanoUsd": "5000000000",
     "maximumTokens": 200000,
     "pilotDays": 7,
