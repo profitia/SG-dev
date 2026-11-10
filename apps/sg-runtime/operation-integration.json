@@ -8181,26 +8181,42 @@
     "targetEnvironment": "development",
     "previousReceiptSourceSha": "4a58d6cdc57334aa5c5aa9cba20cad8e7e5e47b5",
     "previousReceiptSha256": "37eb6e36539f1bd94441e1ae64797d4c290e576f375cb7c4ac10f8ce869a3de6",
-    "sourceProducerSha": "740dca9f9476d8e4194ec6074ce34dbb148d307f",
+    "sourceProducerSha": "d84a0f95ac0d8959287996366d0b314c2d0d936d",
     "sourceDigests": {
       "apps/dashboard-preview/components/raw-data-view/magicpath-benchmark-chart.tsx": "57a855fbff07263d2138660e88091b7a52320eb5a54d97174774249a28c0c150",
       "apps/sg-runtime/tests/assistant-chart-context.test.ts": "bfacdec9f1c7c56a8883445c92247c5749e743d61e8ba148702711a960aa4681",
-      "apps/sg-runtime/tests/assistant-m1-integrity.mjs": "9eff058684b3c3d44a1e37017b959cdf23299d85b028db2628a0c36010a191af",
+      "apps/sg-runtime/tests/assistant-m1-integrity.mjs": "3bdaabf08c82f82c56a9621c42901502b954f2bcc5a1ef3e7c1a80b2a964b833",
       "apps/sg-runtime/tests/assistant-m1-integrity.test.mjs": "997884ff8fe83b477d12ec32fccfb3abc90a96ae156befd59fad7238d1444f39",
       "apps/sg-runtime/tests/assistant-model.test.ts": "7a246f37904766dc47dc468f668384db617cb7c8ba84ec395343e9ef09da0ca1",
+      "apps/sg-runtime/tests/category-operation.test.ts": "4fc4642348824fd684b04c40c3d4d3ba57456c422d0c00e819f73a674394c61e",
+      "apps/sg-runtime/tests/diagnostic-telemetry-adoption.test.mjs": "bd4cbb06551ef3206b90f733240cf905dff23bcc917331d136968a5ec53b0af8",
+      "apps/sg-runtime/tests/identity-runtime.test.ts": "37fef98a3dd9b9ec7d68f24ae2b7461a094e6d37a92811dd15e9149595324df2",
       "apps/sg-runtime/tests/integrated-buyer-journey-package.test.mjs": "503f0052928467558a970e82d61539549cad34fc17592c36c9638ae5d9613f11",
-      "apps/sg-runtime/tests/operation-context.test.mjs": "b52b64fff029bc16c4348e4c72816ab2556229bcfd9af3809c40b5902d3ef880",
-      "apps/sg-runtime/tests/pci-smart-integrity.test.mjs": "e0d88a579762f86d464774bab9466ac265af98710f5aebc2bba95610841e2792"
+      "apps/sg-runtime/tests/native-sql-roundtrips.test.mjs": "78ca4809b8333b8808b9b1ab88ee05f6506921e89fac2ca860faf45a1a2f0f52",
+      "apps/sg-runtime/tests/operation-context.test.mjs": "efe57a4c494cf729c30bcc0b2036a21df40366acb90e201008249223eab59881",
+      "apps/sg-runtime/tests/pci-smart-integrity.test.mjs": "e0d88a579762f86d464774bab9466ac265af98710f5aebc2bba95610841e2792",
+      "apps/sg-runtime/tests/porr-demo-middleware.test.ts": "d1558d6b4b78925a0f75ffd39d03eb592ea9fd4abb99d917f3ecb16a99c3cba8",
+      "apps/sg-runtime/tests/self-service-account.test.ts": "308312792847c26e7f9a65a80d9dadc125ac1e3ccfbd6136f9161963a5928984",
+      "apps/sg-runtime/tests/xray-fresh-performance-adoption.test.mjs": "730185d8e733077294b2aa75a81370cd7d0ca4ef06647ec62c508ec3812a0b4b",
+      "apps/sg-runtime/tests/xray-gateway.test.ts": "11d9e37a07b34115528f1d91677c3cae29991dcb214da6b188fbc2effc7d4090"
     },
     "applicationSourceDigests": {
       "../dashboard-preview/components/raw-data-view/magicpath-benchmark-chart.tsx": "57a855fbff07263d2138660e88091b7a52320eb5a54d97174774249a28c0c150",
       "tests/assistant-chart-context.test.ts": "bfacdec9f1c7c56a8883445c92247c5749e743d61e8ba148702711a960aa4681",
-      "tests/assistant-m1-integrity.mjs": "9eff058684b3c3d44a1e37017b959cdf23299d85b028db2628a0c36010a191af",
+      "tests/assistant-m1-integrity.mjs": "3bdaabf08c82f82c56a9621c42901502b954f2bcc5a1ef3e7c1a80b2a964b833",
       "tests/assistant-m1-integrity.test.mjs": "997884ff8fe83b477d12ec32fccfb3abc90a96ae156befd59fad7238d1444f39",
       "tests/assistant-model.test.ts": "7a246f37904766dc47dc468f668384db617cb7c8ba84ec395343e9ef09da0ca1",
+      "tests/category-operation.test.ts": "4fc4642348824fd684b04c40c3d4d3ba57456c422d0c00e819f73a674394c61e",
+      "tests/diagnostic-telemetry-adoption.test.mjs": "bd4cbb06551ef3206b90f733240cf905dff23bcc917331d136968a5ec53b0af8",
+      "tests/identity-runtime.test.ts": "37fef98a3dd9b9ec7d68f24ae2b7461a094e6d37a92811dd15e9149595324df2",
       "tests/integrated-buyer-journey-package.test.mjs": "503f0052928467558a970e82d61539549cad34fc17592c36c9638ae5d9613f11",
-      "tests/operation-context.test.mjs": "b52b64fff029bc16c4348e4c72816ab2556229bcfd9af3809c40b5902d3ef880",
-      "tests/pci-smart-integrity.test.mjs": "e0d88a579762f86d464774bab9466ac265af98710f5aebc2bba95610841e2792"
+      "tests/native-sql-roundtrips.test.mjs": "78ca4809b8333b8808b9b1ab88ee05f6506921e89fac2ca860faf45a1a2f0f52",
+      "tests/operation-context.test.mjs": "efe57a4c494cf729c30bcc0b2036a21df40366acb90e201008249223eab59881",
+      "tests/pci-smart-integrity.test.mjs": "e0d88a579762f86d464774bab9466ac265af98710f5aebc2bba95610841e2792",
+      "tests/porr-demo-middleware.test.ts": "d1558d6b4b78925a0f75ffd39d03eb592ea9fd4abb99d917f3ecb16a99c3cba8",
+      "tests/self-service-account.test.ts": "308312792847c26e7f9a65a80d9dadc125ac1e3ccfbd6136f9161963a5928984",
+      "tests/xray-fresh-performance-adoption.test.mjs": "730185d8e733077294b2aa75a81370cd7d0ca4ef06647ec62c508ec3812a0b4b",
+      "tests/xray-gateway.test.ts": "11d9e37a07b34115528f1d91677c3cae29991dcb214da6b188fbc2effc7d4090"
     },
     "visualDesignChanged": false,
     "authorizationChanged": false,
@@ -8208,6 +8224,9 @@
     "providerConfigurationChanged": false,
     "pilotLimitsChanged": false,
     "srmProductChanged": false,
-    "otherEnvironmentsChanged": false
+    "otherEnvironmentsChanged": false,
+    "addedBoundaryFiles": [
+      "apps/sg-runtime/tests/assistant-chart-context.test.ts"
+    ]
   }
 }
