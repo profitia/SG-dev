@@ -36,7 +36,9 @@ test('optional Root claim target pins the exact producer and existing main Devel
  assert.deepEqual({id:root.contractId,version:root.contractVersion},ROOT_ATOMIC_CLAIM_CONTRACT)
  assert.equal(root.schemaDigest,await rootAtomicClaimSchemaDigest())
  const receipt=JSON.parse(readFileSync(new URL('../../operation-integration.json',import.meta.url),'utf8'))
- assert.equal(currentRoot.sourceDigest,receipt.assistantM1SourceCompatibility.optionalPackageDigests.rootAtomicClaimSourceDigest)
+ // Current Oil acceptance is checked separately; retain the complete M1
+ // receipt for historical validation instead of comparing it to new bytes.
+ assert.equal(currentRoot.sourceDigest,(receipt.oilAutonomousReportCompatibility??receipt.assistantM1SourceCompatibility).optionalPackageDigests.rootAtomicClaimSourceDigest)
  assert.equal(currentRoot.sourceDigest,await rootAtomicClaimSourceDigest())
  const {sourceDigest,...currentMetadata}=currentRoot;const {sourceDigest:previousDigest,...previousMetadata}=root;assert.deepEqual(currentMetadata,previousMetadata)
  assert.equal(root.producerPullRequest,854);assert.equal(root.producerSourceRef,'3a494b5432555935168c060be5950589d550d276')
