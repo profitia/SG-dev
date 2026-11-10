@@ -2,7 +2,7 @@ import { browserCommunicationLanguage } from './communication-language.js'
 import type { RuntimeConfiguration } from './contracts.js'
 import { resolveReturnRoute } from './return-routes.js'
 import { plPL, enUS } from '@clerk/localizations'
-import { createClerkConversation, conversationClientScript } from './account-conversation.js'
+import { createClerkConversation, bindConversationCodeInput, conversationClientScript } from './account-conversation.js'
 import { conversationAssets, conversationStyles, conversationMarkup } from './account-visuals.js'
 
 // Official browser SDK/UI, exact public registry versions verified 2026-10-22.
@@ -19,8 +19,8 @@ export function accountPage(configuration: RuntimeConfiguration, targetId: strin
   return `<!doctype html><html lang="${en ? 'en' : 'pl'}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>SpendGuru — ${en ? 'Your account' : 'Twoje konto'}</title><style>${conversationStyles}</style></head><body class="srm-ui sg-v2">${conversationMarkup(en, flow === 'registration', base + '/login', base + '/registration')}<script id="account-config" type="application/json">${data}</script><script defer crossorigin="anonymous" src="${escape(frontend)}/npm/@clerk/ui@${uiVersion}/dist/ui.browser.js"></script><script defer crossorigin="anonymous" data-clerk-publishable-key="${escape(configuration.publishableKey)}" src="${escape(frontend)}/npm/@clerk/clerk-js@${sdkVersion}/dist/clerk.browser.js"></script><script defer src="/account-client"></script></body></html>`
 }
 
-/** No passwords/codes, JWT interpretation, persistent storage or permission UI. */
-export const accountBrowserScript = 'const browserCommunicationLanguage = ' + browserCommunicationLanguage.toString() + ';\n' + 'const createClerkConversation = ' + createClerkConversation.toString() + ';\n' + conversationClientScript + String.raw`
+/** No passwords/codes, JWT interpretation or permission UI; only a bounded avatar presentation hint persists. */
+export const accountBrowserScript = 'const browserCommunicationLanguage = ' + browserCommunicationLanguage.toString() + ';\n' + 'const createClerkConversation = ' + createClerkConversation.toString() + ';\n' + 'const bindConversationCodeInput = ' + bindConversationCodeInput.toString() + ';\n' + conversationClientScript + String.raw`
 window.addEventListener('load', async () => {
   const cfg = JSON.parse(document.getElementById('account-config').textContent);
   const status = document.getElementById('status'), retry = document.getElementById('retry');
