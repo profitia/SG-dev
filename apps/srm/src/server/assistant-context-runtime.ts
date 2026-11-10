@@ -24,12 +24,13 @@ export function createSrmAssistantContextHandler(options:Options,env:Readonly<Re
    const organisationId=params.get('organisationId')??options.defaultOrganisationId
    if(!uuid.test(organisationId))return respond(400)
    const native=validateReportSelection({nip:selection.nip,entityType:selection.entityType})
-   // This is the original ordinary shared read, including its output fence.
+   let kys:AssistantKysRead={status:'UNAVAILABLE'}
+   // The ordinary shared read must publish its original financial DTO through
+   // its existing output fence. Private KYS keeps its own native read fence.
    const result=await options.executor.execute({contractId:OPERATION_CONTRACT.id,contractVersion:OPERATION_CONTRACT.version,
     operation:'supplier.report.read',organisationId,resourceId:'supplier-report:'+selection.entityType+':'+selection.nip,payload:native,request},
     async(context,client)=>{
    const financial=await readSharedFinancialReport(client,context.organisationId!,native,context.resource.version,new Date(),env)
-   let kys:AssistantKysRead={status:'UNAVAILABLE'}
    if(options.api){
     try{
      // Existing native current HUMAN supplier.private.read only. No lookup,
@@ -45,12 +46,16 @@ export function createSrmAssistantContextHandler(options:Options,env:Readonly<Re
     }catch(error){if(request.signal.aborted)throw error;kys={status:isOperationDenied(error)&&!['POLICY_UNAVAILABLE','AUDIT_UNAVAILABLE'].includes(error.reasonCode)?'DENIED':'UNAVAILABLE'}}
    }
    request.signal.throwIfAborted()
-   // Keep the combined projection inside the ordinary financial executor's
-   // final disclosure fence, including time spent checking private KYS.
-   return Response.json(projectSupplierAssistantSummary({selection,financial,kys}),{headers})
+   // Recheck ordinary financial authority after the separately authorised KYS
+   // read, without passing private data as a shared financial publication.
+   return Response.json(financial,{headers})
     })
    if(!(result.value instanceof Response)||result.value.status!==200)throw Error('Unavailable financial publication')
-   return result.value
+   const financial=await result.value.json()
+   request.signal.throwIfAborted()
+   // Compose only the successfully fenced producer output. Never fall back
+   // to the callback's unfenced financial value if its final check fails.
+   return Response.json(projectSupplierAssistantSummary({selection,financial,kys}),{headers})
   }catch(error){
    const reason=isOperationDenied(error)?error.reasonCode:null
    return respond(reason==='UNVERIFIED_IDENTITY'?401:reason&&!['POLICY_UNAVAILABLE','AUDIT_UNAVAILABLE'].includes(reason)?403:error instanceof TypeError?400:503)

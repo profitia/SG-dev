@@ -6,7 +6,7 @@ import type {PoolClient} from 'pg'
 import {createSrmAssistantContextHandler} from './assistant-context-runtime'
 import {FINANCIAL_MAPPING_VERSION} from './shared-catalog'
 import {projectSupplierAssistantSummary,readSupplierAssistantSelection} from '@profitia/srm-xray/assistant-summary'
-import {readSharedFinancialReport} from './shared-financial-read'
+import {readSharedFinancialReport,projectSharedFinancialResponse} from './shared-financial-read'
 import type {ReportReadRow} from './report-data'
 const org='11111111-1111-4111-8111-111111111111',nip='8650004194',version='a'.repeat(64),at=new Date()
 const selection={nip,entityType:'COMPANY' as const,krs:null,year:2025,comparisonYear:2024,statementScope:'standalone' as const}
@@ -46,7 +46,14 @@ test('bounded financial projection preserves the native year, scope, currency an
 test('native stored financial read and private KYS are separate, current producer operations; personal fields never leave the projection',async()=>{
  let financialReads=0,kysReads=0
  const executor={execute:async(input:any,action:any)=>{financialReads++;assert.equal(input.operation,'supplier.report.read');assert.equal(input.organisationId,org)
-  assert.equal(input.resourceId,'supplier-report:COMPANY:'+nip);return {value:await action({organisationId:org,resource:{version}},client)}}} as unknown as OperationExecutor<PoolClient>
+  assert.equal(input.resourceId,'supplier-report:COMPANY:'+nip)
+  const context={operation:input.operation,payload:input.payload,organisationId:org,resource:{version}} as OperationContext
+  const value=await action(context,client)
+  // Exercise the real native output boundary, rather than accepting whatever
+  // the callback returned. Private KYS must never enter this shared DTO.
+  const publication=await projectSharedFinancialResponse(value,context)
+  assert.equal((await publication.clone().json()).kys.status,'NOT_REQUESTED')
+  return {value:publication}}} as unknown as OperationExecutor<PoolClient>
  const api={readAcceptedKys:async(request:Request,organisationId:string,selectedNip:string,entityType?:'COMPANY'|'JDG')=>{kysReads++;assert.equal(organisationId,org);assert.equal(selectedNip,nip);assert.equal(entityType,'COMPANY')
   assert.equal(request.headers.get('authorization'),'Bearer synthetic-session')
   return Response.json({privateReport:{nip,entityType:'COMPANY',retentionUntil:new Date(Date.now()+60000).toISOString()},section:{status:'SUCCESS',retrievedAt:at.toISOString(),effectiveAt:null,warnings:[],
@@ -57,6 +64,19 @@ test('native stored financial read and private KYS are separate, current produce
  assert.equal(r.status,200);assert.equal(financialReads,1);assert.equal(kysReads,1);assert.equal(body.kys.riskLevel,'SOURCE_LOW')
  for(const privateValue of ['PRIVATE_PERSON','12345678901','PRIVATE_TOKEN','snapshotId','exportRef'])assert(!text.includes(privateValue))
  assert.equal(r.headers.get('cache-control'),'private, no-store');assert.equal(r.headers.get('vary'),'Cookie, Authorization')
+})
+test('final ordinary financial refusal after KYS prevents all combined disclosure',async()=>{
+ let kysReads=0
+ const executor={execute:async(_input:unknown,action:any)=>{
+  await action({organisationId:org,resource:{version}},client)
+  throw new OperationDenied('RESOURCE_SCOPE_MISMATCH')
+ }} as unknown as OperationExecutor<PoolClient>
+ const r=await createSrmAssistantContextHandler({executor,defaultOrganisationId:org,api:{readAcceptedKys:async()=>{
+  kysReads++;return Response.json({privateReport:{nip,entityType:'COMPANY',retentionUntil:new Date(Date.now()+60000).toISOString()},
+   section:{status:'SUCCESS',retrievedAt:at.toISOString(),effectiveAt:null,warnings:[],data:{company:{nip,name:'PRIVATE_COMPANY'},riskLevel:'PRIVATE_RISK'}}})
+ }}})(req())
+ assert.equal(kysReads,1);assert.equal(r.status,403)
+ assert.deepEqual(await r.json(),{error:'Operation unavailable'})
 })
 test('source refusal blocks its data; KYS refusal leaves only separately authorised public financials',async()=>{
  const denied={execute:async()=>{throw new OperationDenied('PERMISSION_DENIED')}} as unknown as OperationExecutor<PoolClient>
