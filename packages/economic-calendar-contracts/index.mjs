@@ -1,6 +1,6 @@
 import {createHash} from 'node:crypto'
 
-export const ECR_CONTRACT = Object.freeze({id: 'profitia.economic-calendar', version: '1.0.0'})
+export const ECR_CONTRACT = Object.freeze({id: 'profitia.economic-calendar', version: '1.1.0'})
 export const ECR_APPLICATION = 'profitia-economic-calendar-runtime-development'
 export const ECR_EVENT_RESOURCE = 'economic-calendar-events'
 export const ECR_PREFERENCE_RESOURCE = 'economic-calendar-preferences'
@@ -123,10 +123,49 @@ export function calendarObservation(item) {
 export function changeKinds(previous, next) {
   if (!previous) return ['FIRST_OBSERVED']
   const kinds = []
-  if (previous.eventAt !== next.eventAt || previous.dateSpan !== next.dateSpan) kinds.push('SCHEDULE_CHANGED')
+  const timing=v=>['scheduledAt','scheduledUntil','dateOnly','localDateTime','timeZone','timePrecision'].map(k=>v.schedule?.[k]??null)
+  if (previous.eventAt !== next.eventAt || previous.dateSpan !== next.dateSpan || canonical(timing(previous))!==canonical(timing(next))) kinds.push('SCHEDULE_CHANGED')
   if (canonical(previous.values.actual) !== canonical(next.values.actual)) kinds.push('ACTUAL_CHANGED')
   if (canonical([previous.values.previousAfterRevision, previous.values.previousBeforeRevision]) !== canonical([next.values.previousAfterRevision, next.values.previousBeforeRevision])) kinds.push('PREVIOUS_REVISED')
   if (canonical([previous.values.consensusForecast, previous.values.vendorForecast]) !== canonical([next.values.consensusForecast, next.values.vendorForecast])) kinds.push('FORECAST_CHANGED')
   if (!kinds.length && fingerprint(previous) !== fingerprint(next)) kinds.push('SOURCE_METADATA_CHANGED')
   return kinds
+}
+export function publicationId(value){if(typeof value!=='string'||!/^ecr_pub_[a-f0-9]{64}$/.test(value))refuse('INVALID_PUBLICATION_ID');return value}
+export function publicationFilter(value={}){
+ if(!closedObject(value,['provider','after','limit','asKnownAt']))refuse('UNSUPPORTED_FILTER')
+ const out=/** @type {any} */({limit:value.limit??100})
+ if(!Number.isSafeInteger(out.limit)||out.limit<1||out.limit>500)refuse('INVALID_PAGE_SIZE')
+ if(value.provider!==undefined){if(!['eia','commodities-sh'].includes(value.provider))refuse('UNSUPPORTED_PROVIDER');out.provider=value.provider}
+ if(value.after!==undefined)out.after=publicationId(value.after)
+ if(value.asKnownAt!==undefined)out.asKnownAt=instant(value.asKnownAt)
+ return out
+}
+/** Publication references are provider-local definitions, never cross-provider
+ * event identities. A moving aggregator next date cannot identify a release.
+ */
+export function publicationScheduleObservation(item){
+ const p=item?.payload,m=item?.metadata,r=m?.consumerStorage
+ if(!closedObject(p,['kind','scheduleId','title','publicationRef','correlationKey','identityStatus','scheduledAt','scheduledUntil','dateOnly','localDateTime','timeZone','timePrecision','recurrence','referencePeriod','releaseStatus','scheduleStatus','sourceName','sourceUrl','officialSource','sourceUpdatedAt','lastVerifiedAt','standardSchedule','exception','sourceTiming','qualityFlags','actual','previous','forecast','publishedAt'])||!m||m.contractVersion!=='1.3.0'||m.contractFamily!=='publication-calendar'||m.apiFamily!=='publication-calendar'
+  ||!['eia','commodities-sh'].includes(m.providerId)||p.kind!=='PUBLICATION_SCHEDULE'||p.releaseStatus!=='PROVIDER_SCHEDULE_ONLY'
+  ||typeof p.publicationRef!=='string'||!p.publicationRef.length||p.publicationRef.length>256||typeof p.title!=='string'||!p.title.length
+  ||!uuidPattern.test(m.usageReceiptRef??'')||!/^[a-f0-9]{64}$/.test(m.contentFingerprint??'')||!nullableText(p.referencePeriod)
+  ||!['actual','previous','forecast','publishedAt','sourceUpdatedAt'].every(k=>p[k]===null))refuse('INVALID_SOURCE_OBSERVATION')
+ if(!closedObject(r,['mode','basisRef','licenceVersion','rightsVersion','consumerApplicationId','retentionMode','redistribution'])
+  ||r.mode!=='DURABLE_OWNER_ENTITLEMENT'||r.consumerApplicationId!==ECR_APPLICATION||r.retentionMode!=='DURABLE_NO_FIXED_EXPIRY'||r.redistribution!=='PRIVATE_AUTHORISED_CONSUMER_ONLY'
+  ||typeof r.basisRef!=='string'||!r.basisRef.length||r.basisRef.length>256||!['licenceVersion','rightsVersion'].every(k=>typeof r[k]==='string'&&/^[1-9][0-9]*$/.test(r[k])))throw new CalendarError('DURABLE_STORAGE_NOT_ADMITTED',403)
+ text(m.licenceRef);text(m.sourceRecordRef,512)
+ const id='ecr_pub_'+fingerprint({provider:m.providerId,publicationRef:p.publicationRef})
+ const source={provider:m.providerId,family:'publication-calendar',publicationRef:p.publicationRef,sourceRecordRef:m.sourceRecordRef,licenceRef:m.licenceRef,storageBasisRef:r.basisRef,licenceVersion:r.licenceVersion,rightsVersion:r.rightsVersion,consumerApplicationId:r.consumerApplicationId,retentionMode:r.retentionMode,redistribution:r.redistribution}
+ const concrete=m.providerId==='eia'&&typeof p.referencePeriod==='string'&&/^(\d{4}-\d\d|\d{4}-\d\d-\d\d)$/.test(p.referencePeriod)
+ const definition={publicationId:id,source,title:p.title,recurrence:p.recurrence,timeZone:p.timeZone,sourceName:p.sourceName,sourceUrl:p.sourceUrl,
+  entityLevel:'PUBLICATION_DEFINITION',releaseIdentityStatus:concrete?'REFERENCE_PERIOD_IDENTIFIES_EIA_RELEASE':'UNRESOLVED_NEXT_RELEASE',unresolvedNextSchedule:concrete?null:structuredClone(p),historyMeaning:'OBSERVED_BY_ECR_ONLY'}
+ const publication={publicationId:id,data:definition,fingerprint:fingerprint({...definition,source:{provider:m.providerId,publicationRef:p.publicationRef}}),sourceRetrievedAt:instant(m.retrievedAt),receiptRef:m.usageReceiptRef}
+ if(!concrete)return {publication,event:null}
+ const vendorEventId=p.publicationRef+':'+p.referencePeriod,eventId='ecr_evt_'+fingerprint({provider:m.providerId,vendorId:vendorEventId})
+ const data={eventId,publicationId:id,entityLevel:'EVENT_RELEASE',source:{...source,vendorEventId},eventAt:p.scheduledAt===null?null:instant(p.scheduledAt),eventTimeZone:p.timeZone,dateSpan:null,
+  country:null,indicator:null,title:p.title,importance:null,values:{actual:null,previousAfterRevision:null,previousBeforeRevision:null,consensusForecast:null,vendorForecast:null,measurements:[]},
+  reference:{providerValue:p.referencePeriod,label:p.referencePeriod,date:null},unit:null,currency:null,providerUpdatedAt:null,publishedAt:null,sourceName:p.sourceName,sourceUrl:p.sourceUrl,
+  schedule:structuredClone(p),historyMeaning:'OBSERVED_BY_ECR_ONLY',releaseIdentityStatus:'EIA_PUBLICATION_REFERENCE_PERIOD'}
+ return {publication,event:{eventId,fingerprint:fingerprint({...data,source:{provider:m.providerId,vendorEventId}}),data,sourceRetrievedAt:instant(m.retrievedAt),providerFingerprint:m.contentFingerprint,receiptRef:m.usageReceiptRef}}
 }

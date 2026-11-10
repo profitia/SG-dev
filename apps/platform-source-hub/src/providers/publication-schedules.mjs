@@ -12,8 +12,10 @@ export function scheduleRecord(provider,endpoint,payload,sourceUrl){
  const r=makeRecord('publication-calendar',provider,endpoint,payload,{sourceUrl,vendorRecordId:payload.identityStatus==='PROVIDER_ID'?payload.scheduleId:null});r.metadata.contractVersion=SCHEDULE_VERSION;return r
 }
 export function scheduleAnswer(provider,items,options={}){
+ const version=options.contractVersion??SCHEDULE_VERSION
+ items=items.map(i=>({...i,metadata:{...i.metadata,contractVersion:version}}))
  const out=answer('publication-calendar',provider,items,options)
- return {...out,contractVersion:SCHEDULE_VERSION,coverage:{scope:'SOURCE_SCHEDULE_PROJECTION',completeness:out.page.truncated?'INCOMPLETE':'UNKNOWN',providerRows:provider==='commodities-sh'?items.length:null,
+ return {...out,contractVersion:version,coverage:{scope:'SOURCE_SCHEDULE_PROJECTION',completeness:out.page.truncated?'INCOMPLETE':'UNKNOWN',providerRows:provider==='commodities-sh'?items.length:null,
   projected:items.length,ruleDerived:items.filter(i=>i.payload.scheduleStatus==='RULE_DERIVED_UNCONFIRMED').length,returned:out.items.length,nativeFilters:[],localFilters:options.localFilters??[]}}
 }
 export function commoditiesSchedule(row){

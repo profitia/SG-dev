@@ -7,6 +7,7 @@ const digest = bytes => createHash('sha256').update(bytes).digest('hex')
 const accessUrl = new URL('../../../packages/platform-contracts/migrations/access/001-internal-access.sql', import.meta.url)
 const receiverUrl = new URL('../../../packages/platform-contracts/current-e1-authority/migrations/', import.meta.url)
 const schemaUrl = new URL('../migrations/001-read-model-and-preferences.sql', import.meta.url)
+const multiSourceUrl = new URL('../migrations/002-multi-source-calendar.sql', import.meta.url)
 export async function migrate(client, configuration) {
   const {rows: [login]} = await client.query('SELECT current_user AS role,session_user AS login,current_database() AS database,rolsuper,rolbypassrls,rolcreaterole,rolcreatedb,rolreplication FROM pg_roles WHERE rolname=current_user')
   if (configuration.environment !== 'development' || login.role !== 'economic_calendar_development_migrator' || login.login !== login.role || login.database !== configuration.databaseName || login.rolsuper || login.rolbypassrls || login.rolcreaterole || login.rolcreatedb || login.rolreplication) throw new Error('MIGRATOR_BINDING_REFUSED')
@@ -50,6 +51,10 @@ export async function migrate(client, configuration) {
       const {rows: [i]} = await client.query('SELECT * FROM economic_calendar.installation WHERE singleton')
       if (!i || i.schema_digest !== digest(schema) || i.receiver_base_digest !== digest(receiver) || i.calendar_receiver_digest !== digest(calendar) || i.application_id !== configuration.applicationId || i.project_id !== configuration.projectId || i.branch_id !== configuration.branchId || i.database_name !== configuration.databaseName) throw new Error('EXISTING_PRODUCT_SCHEMA_MISMATCH')
     }
+    const multiSource=await readFile(multiSourceUrl,'utf8'),multiSourceDigest=digest(multiSource)
+    const {rows:[extension]}=await client.query("SELECT to_jsonb(i)->>'multi_source_schema_digest' AS digest FROM economic_calendar.installation i WHERE singleton")
+    if(extension?.digest){if(extension.digest!==multiSourceDigest)throw new Error('EXISTING_MULTI_SOURCE_SCHEMA_MISMATCH')}
+    else{await client.query(multiSource);await client.query('UPDATE economic_calendar.installation SET multi_source_schema_digest=$1 WHERE singleton',[multiSourceDigest])}
     await client.query('COMMIT')
     return {status: 'INSTALLED_OR_VERIFIED', schemaDigest: digest(schema), receiverBaseDigest: digest(receiver), calendarReceiverDigest: digest(calendar), enrollment: 'SEPARATE_OWNER_ACTION_REQUIRED'}
   } catch (error) {await client.query('ROLLBACK'); throw error}

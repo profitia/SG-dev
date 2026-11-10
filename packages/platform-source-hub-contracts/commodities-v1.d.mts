@@ -1,6 +1,9 @@
 import type {CommonMetadata,SourceCoverage,HubResponse} from './index.mjs'
 export const COMMODITY_CONTRACT_VERSION:'1.1.0'
 export const PUBLICATION_SCHEDULE_CONTRACT_VERSION:'1.2.0'
+export const DURABLE_SCHEDULE_CONTRACT_VERSION:'1.3.0'
+export interface DurableScheduleStorageRights {mode:'DURABLE_OWNER_ENTITLEMENT';basisRef:string;licenceVersion:string;rightsVersion:string;consumerApplicationId:'profitia-economic-calendar-runtime-development';retentionMode:'DURABLE_NO_FIXED_EXPIRY';redistribution:'PRIVATE_AUTHORISED_CONSUMER_ONLY'}
+export function validScheduleStorageRights(value:unknown):value is DurableScheduleStorageRights
 export type CommodityFamily='data-catalog'|'series-observations'|'positioning-observations'|'publication-calendar'
 export type CommodityProvider='eia'|'cftc'|'commodities-sh'
 export const COMMODITY_FAMILIES:readonly CommodityFamily[]
@@ -43,16 +46,16 @@ export interface PublicationSchedule {
  releaseStatus:'PROVIDER_SCHEDULE_ONLY';sourceName:string|null;sourceUrl:string|null;providerSchedule:Json;actual:null;forecast:null;previous:null
 }
 export type CommodityMetadata=Omit<CommonMetadata,'contractFamily'|'contractVersion'|'providerId'|'consumerStorage'>&{
- contractFamily:CommodityFamily;contractVersion:'1.1.0'|'1.2.0';providerId:CommodityProvider
- consumerStorage?:{mode:'CATALOG_METADATA_ONLY';basisRef:string;licenceVersion:string}
+ contractFamily:CommodityFamily;contractVersion:'1.1.0'|'1.2.0'|'1.3.0';providerId:CommodityProvider
+ consumerStorage?:{mode:'CATALOG_METADATA_ONLY';basisRef:string;licenceVersion:string}|DurableScheduleStorageRights
 }
 export type CommodityResponse<T=DatasetMetadata|SeriesObservation|PositioningObservation|PublicationSchedule|PublicationScheduleV12>=Omit<HubResponse,'contractVersion'|'family'|'provider'|'items'|'coverage'>&{
- contractVersion:'1.1.0'|'1.2.0';family:CommodityFamily;provider:CommodityProvider;items:Array<{metadata:CommodityMetadata;payload:T}>;coverage:SourceCoverage|PublicationScheduleCoverage
+ contractVersion:'1.1.0'|'1.2.0'|'1.3.0';family:CommodityFamily;provider:CommodityProvider;items:Array<{metadata:CommodityMetadata;payload:T}>;coverage:SourceCoverage|PublicationScheduleCoverage
 }
 export function parseCommodityRequest(value:unknown):CommodityRequest
 export function assertCommodityResponse(value:unknown,expected:CommodityRequest):CommodityResponse
 
-export type PublicationScheduleRequest={contractVersion:'1.2.0';family:'publication-calendar';operation:'calendar'}&({provider:'eia';criteria:{publication:'wpsr'|'steo';from:string;to:string;limit?:number}}|{provider:'commodities-sh';criteria:{limit?:number}})
+export type PublicationScheduleRequest={contractVersion:'1.2.0'|'1.3.0';family:'publication-calendar';operation:'calendar'}&({provider:'eia';criteria:{publication:'wpsr'|'steo';from:string;to:string;limit?:number}}|{provider:'commodities-sh';criteria:{limit?:number}})
 export interface PublicationScheduleV12 {
  kind:'PUBLICATION_SCHEDULE';scheduleId:string|null;title:string;publicationRef:string;correlationKey:string
  identityStatus:'PROVIDER_ID'|'CORRELATION_ONLY'|'OFFICIAL_PUBLICATION_DEFINITION'

@@ -56,3 +56,18 @@ The result distinguishes official dated exceptions, provisional recurrence,
 date precision, IANA time zone, provider ID versus correlation hint, source
 verification time and coverage. A schedule has no actual observation or proven
 publication time. See the [bounded Development adoption and activation](../../apps/platform-source-hub/docs/publication-schedules.pl.md).
+
+## Recipient-bound durable schedules1.3.0 (SDK1.6.0)
+
+ECR explicitly adopts the existing schedule shape under an opt-in version.
+Only its own genuine SERVICE can receive required `consumerStorage` metadata:
+exact recipient application, licence/rights versions, owner basis, durable
+retention without a fixed expiry, and private authorized-consumer distribution.
+Missing/revoked rights fail before upstream; outcome rechecks prevent a
+midflight revocation from disclosing a durable projection. No source licence
+or cache TTL is changed. Existing1.0/1.1/1.2 consumers retain their contracts.
+
+`calendar-storage-acceptance-v1.json` binds the producer/consumer source closure
+and preserved historical receipts. Source acceptance does not install migration
+008, activate rights, grant source access or provision an ECR product store.
+The exact owner packet separately controls those administrative operations.

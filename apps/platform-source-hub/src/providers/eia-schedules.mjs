@@ -67,5 +67,5 @@ export function parseEiaSchedule(html,request){
 /** @param {any} request @param {{fetchImpl?:Function,signal?:AbortSignal}} options */
 export async function acquireEiaSchedule(request,{fetchImpl,signal}={}){
  const p=prepareEiaSchedule(request),html=await providerText(fetchImpl,p.url,{Accept:'text/html'},{signal}),items=parseEiaSchedule(html,request).map(payload=>scheduleRecord('eia','official-schedule-v1',payload,p.url))
- return scheduleAnswer('eia',items,{limit:request.criteria.limit??100,localFilters:['publication','from','to'],providerReturned:items.length})
+ return scheduleAnswer('eia',items,{contractVersion:request.contractVersion,limit:request.criteria.limit??100,localFilters:['publication','from','to'],providerReturned:items.length})
 }

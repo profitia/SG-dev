@@ -10,13 +10,13 @@ export function createSynchronizer({configuration, database, sourceConfiguration
     || sourceConfiguration.receiverApplicationId !== 'profitia-source-hub-development' || sourceConfiguration.environment !== 'development') throw new CalendarError('INGESTION_COMPONENT_BINDING_REQUIRED', 503)
   const storage = createRepository(configuration,database)
   const source = createCalendarSourceService(sourceConfiguration, {fetchImpl})
-  return Object.freeze({async synchronize({criteria, organisation, grantId, idempotencyKey}) {
-    const {command, execution} = calendarSourceIntent({criteria, organisation, grantId, idempotencyKey})
+  return Object.freeze({async synchronize({criteria=undefined,command:sourceCommand=undefined,organisation, grantId, idempotencyKey}) {
+    const {command, execution} = calendarSourceIntent({criteria,command:sourceCommand,organisation, grantId, idempotencyKey})
     if (!await storage.ready()) throw new CalendarError('CALENDAR_STORAGE_UNAVAILABLE',503)
     const intentDigest=fingerprint({component:sourceConfiguration.componentId,application:configuration.applicationId,execution,idempotencyKey})
     const {rows:[existing]}=await database.query('SELECT request_digest,result FROM economic_calendar.sync_runs WHERE intent_digest=$1',[intentDigest])
     if(existing){if(existing.request_digest!==fingerprint(command))throw new CalendarError('ACQUISITION_INTENT_CONFLICT',409);return {...existing.result,replay:true}}
-    const response = await source.acquire({criteria, organisation, grantId, idempotencyKey})
+    const response = await source.acquire({command,organisation, grantId, idempotencyKey})
     return persistAcquisition(database, command, response,{intentDigest})
   }})
 }
