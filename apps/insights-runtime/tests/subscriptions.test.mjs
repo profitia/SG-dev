@@ -70,8 +70,10 @@ test('SYNTHETIC_ONLY: report orders use current E1, private SQL, immutable histo
   for(const [kind,bytes]of[['pdf',pdf],['markdown',markdown]])await q.query('INSERT INTO insights_private.report_artifacts(job_id,organisation_id,kind,sha256,bytes) VALUES($1,$2,$3,$4,$5)',[jobId,A,kind,createHash('sha256').update(bytes).digest('hex'),bytes]);
  })();
  assert.equal((await api(req('/editions/'+jobId+'/pdf'))).status,404,'A real review candidate still is not a publication');
+ assert.equal((await(await api(req('/'+one.id+'/runs'))).json()).items[0].status,'AWAITING_REVIEW');
  await f.databases[1].query("INSERT INTO insights_private.published_editions(producer_job_id,organisation_id,edition_id,definition_id,profile_version,title,period,as_of,published_at,approval_ref,pdf_sha256,markdown_sha256) SELECT id,organisation_id::uuid,document->>'editionId',definition_id,document->'command'->>'profileVersion','SYNTHETIC_ONLY',document->'command'->'period',(document->'command'->>'asOf')::timestamptz,clock_timestamp(),'SYNTHETIC_ONLY_REVIEW_APPROVAL',$2,$3 FROM insights_private.report_jobs WHERE id=$1",[jobId,createHash('sha256').update(pdf).digest('hex'),createHash('sha256').update(markdown).digest('hex')]);
  const published=await api(req('/editions/'+jobId));assert.equal(published.status,200,JSON.stringify(await published.clone().json()));const read=await published.json();assert.equal(read.status,'PUBLISHED');assert.equal(read.markdown,markdown.toString());
+ assert.equal((await(await api(req('/'+one.id+'/runs'))).json()).items[0].status,'PUBLISHED');
  const file=await api(req('/editions/'+jobId+'/pdf'));assert.equal(file.status,200);assert.equal(file.headers.get('x-report-publication'),'PUBLISHED');assert.equal(file.headers.get('etag'),'"'+read.pdfSha256+'"');assert.deepEqual(Buffer.from(await file.arrayBuffer()),pdf);
  assert.equal((await api(req('/editions/'+jobId,{token:'SYNTHETIC_B'}))).status,404,'An organisation permission does not disclose another user’s private order');
  assert.equal((await api(req('/editions/'+jobId+'/pdf',{token:'SYNTHETIC_B'}))).status,404);

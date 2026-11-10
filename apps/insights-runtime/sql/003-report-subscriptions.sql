@@ -15,14 +15,16 @@ CREATE TABLE insights_private.report_subscriptions(
 CREATE TABLE insights_private.subscription_versions(
  subscription_id uuid NOT NULL REFERENCES insights_private.report_subscriptions(id) ON DELETE CASCADE,
  organisation_id uuid NOT NULL,owner_user_id uuid NOT NULL,version bigint NOT NULL,definition jsonb NOT NULL,status text NOT NULL,
- recorded_at timestamptz NOT NULL DEFAULT clock_timestamp(),PRIMARY KEY(subscription_id,version)
+ recorded_at timestamptz NOT NULL DEFAULT clock_timestamp(),PRIMARY KEY(subscription_id,version),
+ FOREIGN KEY(organisation_id,owner_user_id,subscription_id) REFERENCES insights_private.report_subscriptions(organisation_id,owner_user_id,id)
 );
 CREATE TABLE insights_private.subscription_runs(
  id uuid PRIMARY KEY,subscription_id uuid NOT NULL REFERENCES insights_private.report_subscriptions(id),organisation_id uuid NOT NULL,owner_user_id uuid NOT NULL,
  subscription_version bigint NOT NULL,slot_key text NOT NULL,producer_job_id uuid,
  status text NOT NULL CHECK(status IN('WAITING_AUTHORIZATION','QUEUED','RUNNING','AWAITING_REVIEW','PUBLISHED','FAILED','UNCERTAIN','CANCELLED')),
  created_at timestamptz NOT NULL DEFAULT clock_timestamp(),UNIQUE(subscription_id,slot_key),
- FOREIGN KEY(subscription_id,subscription_version) REFERENCES insights_private.subscription_versions(subscription_id,version)
+ FOREIGN KEY(subscription_id,subscription_version) REFERENCES insights_private.subscription_versions(subscription_id,version),
+ FOREIGN KEY(organisation_id,owner_user_id,subscription_id) REFERENCES insights_private.report_subscriptions(organisation_id,owner_user_id,id)
 );
 CREATE INDEX subscriptions_own_list ON insights_private.report_subscriptions(organisation_id,owner_user_id,updated_at DESC,id DESC);
 CREATE INDEX subscriptions_due ON insights_private.report_subscriptions(next_due_at,id) WHERE status='ACTIVE' AND execution_state='READY';
@@ -37,7 +39,7 @@ CREATE TABLE insights_private.published_editions(
  pdf_kind text NOT NULL DEFAULT 'pdf' CHECK(pdf_kind='pdf'),markdown_kind text NOT NULL DEFAULT 'markdown' CHECK(markdown_kind='markdown'),
  pdf_sha256 text NOT NULL CHECK(pdf_sha256~'^[a-f0-9]{64}$'),markdown_sha256 text NOT NULL CHECK(markdown_sha256~'^[a-f0-9]{64}$'),
  FOREIGN KEY(producer_job_id,pdf_kind) REFERENCES insights_private.report_artifacts(job_id,kind),
- FOREIGN KEY(producer_job_id,markdown_kind) REFERENCES insights_private.report_artifacts(job_id,kind),UNIQUE(organisation_id,edition_id)
+ FOREIGN KEY(producer_job_id,markdown_kind) REFERENCES insights_private.report_artifacts(job_id,kind),UNIQUE(organisation_id,edition_id),UNIQUE(organisation_id,producer_job_id)
 );
 CREATE FUNCTION insights_private.publication_scope(p_org uuid,p_job uuid) RETURNS boolean
 LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,pg_temp AS $fn$
@@ -150,13 +152,15 @@ CREATE TABLE insights_private.publication_shares(
  granted_by_user_id uuid NOT NULL,mode text NOT NULL CHECK(mode IN('USER','ORG')),recipient_user_id uuid,
  created_at timestamptz NOT NULL DEFAULT clock_timestamp(),
  CHECK((mode='USER' AND recipient_user_id IS NOT NULL) OR (mode='ORG' AND recipient_user_id IS NULL)),
- UNIQUE NULLS NOT DISTINCT(organisation_id,producer_job_id,granted_by_user_id,mode,recipient_user_id)
+ UNIQUE NULLS NOT DISTINCT(organisation_id,producer_job_id,granted_by_user_id,mode,recipient_user_id),
+ FOREIGN KEY(organisation_id,producer_job_id) REFERENCES insights_private.published_editions(organisation_id,producer_job_id)
 );
 CREATE TABLE insights_private.publication_invitations(
  id uuid PRIMARY KEY,producer_job_id uuid NOT NULL REFERENCES insights_private.published_editions(producer_job_id),organisation_id uuid NOT NULL,
  granted_by_user_id uuid NOT NULL,token_digest text NOT NULL UNIQUE CHECK(token_digest~'^[a-f0-9]{64}$'),
  expires_at timestamptz NOT NULL,claimed_at timestamptz,claimed_by_user_id uuid,
- CHECK((claimed_at IS NULL)=(claimed_by_user_id IS NULL))
+ CHECK((claimed_at IS NULL)=(claimed_by_user_id IS NULL)),
+ FOREIGN KEY(organisation_id,producer_job_id) REFERENCES insights_private.published_editions(organisation_id,producer_job_id)
 );
 CREATE INDEX publication_share_recipient ON insights_private.publication_shares(organisation_id,recipient_user_id,producer_job_id);
 CREATE INDEX publication_share_edition ON insights_private.publication_shares(organisation_id,producer_job_id,granted_by_user_id);
