@@ -46,6 +46,9 @@ test('Assistant host uses current native E1 account, membership, pilot and SQL l
    await c.query("INSERT INTO profitia_access.permission_grants(grant_id,application_id,organisation_id,user_id,effect,operation,feature,resource_id) VALUES($1,'spendguru',$2,$3,'ALLOW','assistant.converse','assistant',NULL)",[randomUUID(),A,U])
    await c.query("INSERT INTO profitia_assistant_access.pilot(singleton,user_id,organisation_id,limits_policy_id,limits_assignment_id,limits_assignment_revision,enabled,converse_until,history_until,source_ref) VALUES(true,$1,$2,$3,$4,1,true,now()+interval '7 days',now()+interval '37 days','SYNTHETIC_ONLY')",[U,A,randomUUID(),randomUUID()])
   })
+  const functions=await asOwner(c=>c.query("SELECT p.proname,p.proconfig FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='profitia_assistant_access' ORDER BY p.proname"));
+  assert.equal(functions.rows.length,2);
+  for(const row of functions.rows)assert.equal(row.proconfig.find(x=>x.startsWith('search_path=')).split(',').at(-1).trim(),'pg_temp','effective native search path '+row.proname);
   dbUrl.username=role;dbUrl.password=password
   pool=new pg.Pool({connectionString:dbUrl.href,max:5,connectionTimeoutMillis:3000})
   const state={sessionActive:true,banned:false}

@@ -31,13 +31,13 @@ ALTER TABLE profitia_assistant_access.pilot ENABLE ROW LEVEL SECURITY;
 ALTER TABLE profitia_assistant_access.pilot FORCE ROW LEVEL SECURITY;
 CREATE POLICY controlled_owner ON profitia_assistant_access.pilot TO profitia_access_owner USING(true) WITH CHECK(true);
 CREATE FUNCTION profitia_assistant_access.revise() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER
- SET search_path=pg_catalog,profitia_access AS $fn$
+ SET search_path=pg_catalog,profitia_access,pg_temp AS $fn$
 BEGIN UPDATE profitia_access.installation SET revision=revision+1 WHERE singleton;RETURN coalesce(NEW,OLD);END $fn$;
 CREATE TRIGGER assistant_pilot_revision AFTER INSERT OR UPDATE OR DELETE ON profitia_assistant_access.pilot
  FOR EACH ROW EXECUTE FUNCTION profitia_assistant_access.revise();
 
 CREATE FUNCTION profitia_assistant_access.current_pilot(p_user uuid,p_org uuid,p_digest text) RETURNS jsonb
-LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,profitia_assistant_access,profitia_access AS $fn$
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,profitia_assistant_access,profitia_access,pg_temp AS $fn$
 DECLARE p pilot%ROWTYPE;until_at timestamptz;d jsonb;
 BEGIN
  IF session_user<>'sg2_private_development_runtime' OR current_database()<>'platform_private'
