@@ -7960,6 +7960,7 @@
       "rootAtomicClaimSourceDigest": "f6a8917898fe9f3fb7af87da09ba127ba534b4f6fd64c5eeca59ed948f5a7dd2"
     },
     "consumerSourceDigests": {
+      "apps/sg-runtime/tests/adp-appshell-consumer.test.tsx": "8866f25fec60bfc69689350d54fd020d0694e956510f077ef1ae450dd1926595",
       "apps/sg-runtime/tests/category-operation.test.ts": "c8500f9162d1e0632d6d627eadeca6fc590c2317198eec8926f6a814c7dcfd2f",
       "apps/sg-runtime/tests/diagnostic-telemetry-adoption.test.mjs": "01b051fb0ad842e1514d0d04c5c13130d9439efa8149b0a1afd5bf291768b388",
       "apps/sg-runtime/tests/identity-runtime.test.ts": "e93e1320f60007dd1bdf5072c2d0f52dc514d711186f11f188e010f5a9c55ec5",
@@ -7969,12 +7970,13 @@
       "apps/sg-runtime/tests/pci-smart-integrity.mjs": "0ad77bbc29d7ac1a39e5f205d9942dcf2ab3a4dcfdbcc9d41c733e3d8e151a4c",
       "apps/sg-runtime/tests/pci-smart-integrity.test.mjs": "768f11a20746275033ee205694d48bc4351aa0676e57a33c6981b73b94c5abfa",
       "apps/sg-runtime/tests/porr-demo-middleware.test.ts": "f6d1c5fdefe6c8bdcdaeab4dd20b94924485c5db924973b5254531b09f789c41",
-      "apps/sg-runtime/tests/private-host.integration.test.mjs": "eb3a58f3067e40e42f256c33596a4b56bf8cb832e7088ff9d841847f0355448a",
+      "apps/sg-runtime/tests/private-host.integration.test.mjs": "253a924c8f5f02d3360629fe22997e334dd524de610ebf046ff8acca13fa8d6d",
       "apps/sg-runtime/tests/self-service-account.test.ts": "7b7a4824a84294e41973e80b80bb9ac41a66d4098794dd337cc23a0aa7c0a3ee",
       "apps/sg-runtime/tests/xray-fresh-performance-adoption.test.mjs": "3812999681f6bc0fee8178aa6ab63f67d06f0250e853b421ce8cab17d61d4e96",
       "apps/sg-runtime/tests/xray-gateway.test.ts": "59b131a27c8f374344a25d5d2b22cc3ac05b893d0670c5fdc464b8676dfbe531"
     },
     "peerSourceDigests": {
+      "apps/srm/deployment/root-atomic-claim-targets.json": "bfe8e65d36707474c5aee0596c9fe1b5d0b3cc2c81755975e2984168febe6777",
       "apps/srm/scripts/diagnostic-telemetry-adoption.test.mjs": "8d6f9183b6012b16d86aff337867f4682ffb3744fce70e9d46d7e854c71e729d",
       "apps/srm/scripts/native-execution-adoption.test.mjs": "c111164f9342056d26f560b12345921da0fff5d7f04b6cab038a3fc1c45fb7b8",
       "apps/srm/scripts/operation-context.test.mjs": "1ff033675bcdeb189905c1ead4f5bb6cc1683a364e34f153110a90659c678afa",
@@ -7982,9 +7984,11 @@
       "apps/srm/scripts/request-quota-adoption.test.mjs": "4a627a345964fffd91e8ba5d6191866252bb3577b6e9832af3e988d33a83bd62",
       "apps/srm/scripts/source-hub-sdk-compatibility.mjs": "f5073330cedf46ec801c8237abdc99a7f098f6b254edf2b256079952a2d1afc5",
       "apps/srm/scripts/supplier-location-admission.integration.test.mjs": "23c50e5e82c2a1203c8a3f0e9c46bc4f4626abfa0efc70be3c5c4ca9db368787",
-      "apps/srm/scripts/xray-performance-adoption.test.mjs": "b170e271bbbe40a7e0ef1461e4921db3662dc8b9e85257f1a69bfea50cf7563f"
+      "apps/srm/scripts/xray-performance-adoption.test.mjs": "b170e271bbbe40a7e0ef1461e4921db3662dc8b9e85257f1a69bfea50cf7563f",
+      "apps/srm/src/server/root-atomic-claim-adoption.test.ts": "2662194092456217eec69c3b67b29eaee5b4a7ac903f666f9474b6b783d0aa2f"
     },
     "applicationSourceDigests": {
+      "tests/adp-appshell-consumer.test.tsx": "8866f25fec60bfc69689350d54fd020d0694e956510f077ef1ae450dd1926595",
       "tests/category-operation.test.ts": "c8500f9162d1e0632d6d627eadeca6fc590c2317198eec8926f6a814c7dcfd2f",
       "tests/diagnostic-telemetry-adoption.test.mjs": "01b051fb0ad842e1514d0d04c5c13130d9439efa8149b0a1afd5bf291768b388",
       "tests/identity-runtime.test.ts": "e93e1320f60007dd1bdf5072c2d0f52dc514d711186f11f188e010f5a9c55ec5",
@@ -7994,10 +7998,11 @@
       "tests/pci-smart-integrity.mjs": "0ad77bbc29d7ac1a39e5f205d9942dcf2ab3a4dcfdbcc9d41c733e3d8e151a4c",
       "tests/pci-smart-integrity.test.mjs": "768f11a20746275033ee205694d48bc4351aa0676e57a33c6981b73b94c5abfa",
       "tests/porr-demo-middleware.test.ts": "f6d1c5fdefe6c8bdcdaeab4dd20b94924485c5db924973b5254531b09f789c41",
-      "tests/private-host.integration.test.mjs": "eb3a58f3067e40e42f256c33596a4b56bf8cb832e7088ff9d841847f0355448a",
+      "tests/private-host.integration.test.mjs": "253a924c8f5f02d3360629fe22997e334dd524de610ebf046ff8acca13fa8d6d",
       "tests/self-service-account.test.ts": "7b7a4824a84294e41973e80b80bb9ac41a66d4098794dd337cc23a0aa7c0a3ee",
       "tests/xray-fresh-performance-adoption.test.mjs": "3812999681f6bc0fee8178aa6ab63f67d06f0250e853b421ce8cab17d61d4e96",
       "tests/xray-gateway.test.ts": "59b131a27c8f374344a25d5d2b22cc3ac05b893d0670c5fdc464b8676dfbe531",
+      "../srm/deployment/root-atomic-claim-targets.json": "bfe8e65d36707474c5aee0596c9fe1b5d0b3cc2c81755975e2984168febe6777",
       "../srm/scripts/diagnostic-telemetry-adoption.test.mjs": "8d6f9183b6012b16d86aff337867f4682ffb3744fce70e9d46d7e854c71e729d",
       "../srm/scripts/native-execution-adoption.test.mjs": "c111164f9342056d26f560b12345921da0fff5d7f04b6cab038a3fc1c45fb7b8",
       "../srm/scripts/operation-context.test.mjs": "1ff033675bcdeb189905c1ead4f5bb6cc1683a364e34f153110a90659c678afa",
@@ -8005,7 +8010,8 @@
       "../srm/scripts/request-quota-adoption.test.mjs": "4a627a345964fffd91e8ba5d6191866252bb3577b6e9832af3e988d33a83bd62",
       "../srm/scripts/source-hub-sdk-compatibility.mjs": "f5073330cedf46ec801c8237abdc99a7f098f6b254edf2b256079952a2d1afc5",
       "../srm/scripts/supplier-location-admission.integration.test.mjs": "23c50e5e82c2a1203c8a3f0e9c46bc4f4626abfa0efc70be3c5c4ca9db368787",
-      "../srm/scripts/xray-performance-adoption.test.mjs": "b170e271bbbe40a7e0ef1461e4921db3662dc8b9e85257f1a69bfea50cf7563f"
+      "../srm/scripts/xray-performance-adoption.test.mjs": "b170e271bbbe40a7e0ef1461e4921db3662dc8b9e85257f1a69bfea50cf7563f",
+      "../srm/src/server/root-atomic-claim-adoption.test.ts": "2662194092456217eec69c3b67b29eaee5b4a7ac903f666f9474b6b783d0aa2f"
     },
     "assistantOptedIn": false,
     "sql030Installed": false,

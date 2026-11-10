@@ -45,3 +45,10 @@ test('SDK1.34 routing accepts only the new registered test path while preserving
  }
  assert.throws(()=>validateConsumerGroups([{projectKey:'SRM',targets:['apps/srm/src/server/unapproved.ts']}],readReceipt))
 })
+
+test('M1 routing admits the closed registered SDK consumers and refuses widened paths or activation claims',()=>{
+ const groups=[{projectKey:'SRM',targets:['apps/srm/src/server/root-atomic-claim-adoption.test.ts']},{projectKey:'SG2',targets:['apps/sg-runtime/tests/pci-smart-integrity.mjs']}]
+ validateConsumerGroups(groups,readReceipt)
+ for(const change of [r=>r.assistantM1SourceCompatibility.grantsChanged=true,r=>r.assistantM1SourceCompatibility.rootContract.sourceDigest='0'.repeat(64),r=>r.assistantM1SourceCompatibility.consumerSourceDigests['apps/srm/src/server/unapproved.ts']='0'.repeat(64),r=>r.sourceHubApiPathCompatibility.apiPathOptedIn=true])assert.throws(()=>validateConsumerGroups(groups,file=>{const r=readReceipt(file);change(r);return r}))
+ assert.throws(()=>validateConsumerGroups([{projectKey:'SG2',targets:['apps/sg-runtime/app/page.tsx']}],readReceipt))
+})

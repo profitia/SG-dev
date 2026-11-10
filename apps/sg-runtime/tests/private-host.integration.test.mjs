@@ -1600,7 +1600,7 @@ test('SG2 explicitly receives platform1.21 while private Supplier application ca
  assert.equal(current.taskId,'SG2-E1-PRIVATE-SUPPLIER-CONTRACT-RECEPTION-20261019')
  assert.equal(current.platformVersion,'1.21.0');assert.equal(current.rootImplementation,'1.0.0-candidate.14')
  assert.equal(current.producer.sourceSha,'fe5b31f1390d2a9b12f7d16df7e35249c1a75402');assert.equal(current.producer.initialSourceSha,'48714e896f206b4d5b7693c163c34eba0c895c2a');assert.equal(current.producer.pullRequest,551)
- assert.equal(await sdk.operationSourceDigest(),manifest.contract.sourceDigest)
+ assert.equal(await sdk.operationSourceDigest(),(manifest.assistantM1SourceCompatibility?.rootContract??manifest.contract).sourceDigest)
  assert.equal(Object.keys(current.sourceDigests).length,51)
  assert.equal(manifest.delegatedNativeWorkSourceCompatibility.sourceRecordIsHistorical,true)
  const root=new URL('../',import.meta.resolve('@profitia/platform-contracts/operation-context'))
