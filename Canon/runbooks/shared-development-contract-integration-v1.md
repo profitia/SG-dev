@@ -394,3 +394,33 @@ this renewed closed map. Use ordinary full CI and original proof before CI-only
 adoption, then complete exact feature CI and separate final SOURCE GO. No new
 role, source operation, calendar integration, grant, deployment, paid call,
 PMOS registration or recurring activation is granted.
+
+## Oil native ESM host and exact SDK test bindings — proposed continuation (2026-11-10)
+
+PROPOSED_NOT_ACTIVE. CI-only PR951 has been adopted at515c19bb and its
+resulting-main full CI42803092855 passed. The exact v9 feature remains unmerged.
+Its controlled SG2 run42803593113 passed1362 primary tests and the following
+regression suites, then failed when the CommonJS TypeScript host synchronously
+loaded the native ESM Insights dependency tree. Its SRM public integration also
+found historical test fingerprints and one M1-only current Root expectation.
+
+The narrow proposed fix uses native dynamic import for the existing shared
+Insights host, retaining one initialization promise and rejection reset. An
+actual route/initialization regression test exercises the unchanged disabled
+and missing-configuration guards. Three existing SRM test files select the
+already-recorded current testSourceDigests and Oil SDK digest, preserving all
+historical producer checks. Paired current consumer hash maps are renewed.
+
+Source 493746c6f3d70b41ea39a7ec2a76e5609a94b9bb retains exactly113 paths, statuses, modes
+and owners. Seven reviewed blobs differ from v9; no shared SDK implementation,
+package exports, manifest, lockfile, authority rule, Source adapter, permission,
+Forecast, canon or workflow is changed. This controller continuation changes
+only the closed review table, its exact-pin regression and this appended note.
+Every other control, credential and proof rule remains byte-identical.
+
+Publication requires a new exact owner decision under the existing frozen-blob
+condition. Then use normal full CI and original proof, adopt only the narrow CI
+PR after PASS, refresh the same feature preserving its reviewed blobs and
+complete full feature CI. Separate SOURCE GO is still required before PR923
+merge. No new PMOS registration, runtime installation, grant, deployment, paid
+API, recurring activation or customer publication is authorized.
