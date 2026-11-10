@@ -2,6 +2,7 @@ import {ECR_STAGE03_REVIEW,assertEcrStage03ReviewEntry} from './controlled-packa
 import {SOURCE_HUB_MARKET_SYMBOL_REVIEW,assertMarketSymbolReviewEntry} from './controlled-package-ci.mjs'
 import {ACG_G1_REVIEW,assertAcgG1ReviewEntry} from './controlled-package-ci.mjs'
 import {ACG_M1_EXECUTION_REVIEW,assertAcgM1ReviewEntry,adoptedOperationContract,CIC_ANALYTICAL_PIN} from './controlled-package-ci.mjs'
+import {CIC_ANALYTICAL_M2_PIN} from './controlled-package-ci.mjs'
 import {OIL_REPORT_E1_REVIEW,assertOilReportReviewEntry} from './controlled-package-ci.mjs'
 import {ECR_BACKEND_REVIEW,assertEcrBackendReviewEntry} from './controlled-package-ci.mjs'
 import {createHash} from 'node:crypto'
@@ -21,6 +22,26 @@ const pr = () => ({state: 'open', user: {login: 'profitia'}, base: {ref: 'main',
 const configuration = '@profitia:registry=https://npm.pkg.github.com\n//npm.pkg.github.com/:_authToken=${NPM_TOKEN}\n'
 const lock = () => ({lockfileVersion: 3, packages: Object.fromEntries(PRIVATE_PACKAGES.map(name => [`node_modules/${name}`, {version: '1.0.0', integrity: 'sha512-approved'}]))})
 const rejection = fn => assert.throws(fn)
+
+test('M2 admits only its exact published CIC artifact for the existing SG2 consumer; M1 remains independently pinned',()=>{
+ const authority=lock()
+ for(const pin of [CIC_ANALYTICAL_PIN,CIC_ANALYTICAL_M2_PIN]){
+  const candidate=lock();candidate.packages['']={name:'@sg/runtime',dependencies:{'@profitia/cic-core':pin.version}}
+  candidate.packages['node_modules/@profitia/cic-core']={...pin}
+  assertPackagePolicy(candidate,authority,configuration)
+  const manifest={name:'@sg/runtime',dependencies:{'@profitia/cic-core':pin.version}}
+  assertManifestPolicy(manifest,{dependencies:{'@profitia/cic-core':'1.1.1'}})
+  for(const mutate of [c=>c.packages[''].name='another-host',c=>c.packages[''].dependencies['@profitia/cic-core']='^'+pin.version,
+   c=>c.packages['node_modules/@profitia/cic-core'].integrity='sha512-forged',
+   c=>c.packages['node_modules/@profitia/cic-core'].resolved+='?other=1',
+   c=>c.packages['node_modules/@profitia/cic-core'].version='1.5.2',
+   c=>c.packages['node_modules/@profitia/cic-core'].link=true]){
+   const changed=structuredClone(candidate);mutate(changed);rejection(()=>assertPackagePolicy(changed,authority,configuration))
+  }
+ }
+ assert.equal(CIC_ANALYTICAL_PIN.version,'1.3.0');assert.equal(CIC_ANALYTICAL_M2_PIN.version,'1.5.1')
+ assert.deepEqual(PRIVATE_PACKAGES,['@profitia/advisory-widget','@profitia/cic-core','@profitia/cic-procurement'])
+})
 
 test('only trusted main workflow accepts owner execution, including push', () => {
   assertTrustedContext(context())
