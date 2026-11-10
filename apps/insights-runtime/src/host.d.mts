@@ -1,5 +1,6 @@
 export interface InstalledInsightsRuntime {
  api(request:Request):Promise<Response>;
+ subscriptionsApi(request:Request):Promise<Response>;
  runner:{start(...args:unknown[]):Promise<unknown>;run(...args:unknown[]):Promise<unknown>};
  scheduler:{tick(options?:{controlled?:boolean}):Promise<unknown>};
  tick(options?:{controlled?:boolean}):Promise<void>;
