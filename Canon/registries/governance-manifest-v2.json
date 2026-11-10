@@ -1,6 +1,6 @@
 {
   "schemaVersion": "2.0",
-  "manifestVersion": "3.43.0",
+  "manifestVersion": "3.44.0",
   "owner": "Profitia Governance",
   "entrypoint": "AGENTS.md",
   "preflight": "scripts/governance/governance-preflight.mjs",
@@ -1335,6 +1335,27 @@
         "ARCHITECTURE"
       ],
       "dependsOn": [
+        "economic-calendar-runtime-source-hub-and-preferences-amendment",
+        "repository-routing",
+        "operation-context-and-access-contract",
+        "platform-source-hub-business-and-architecture-canon",
+        "platform-source-hub-universal-first-party-consumer-access"
+      ]
+    },
+    {
+      "id": "economic-calendar-runtime-global-semantic-knowledge-amendment",
+      "version": "1.3",
+      "path": "Canon/v1.3-economic-calendar-runtime-global-semantic-knowledge-amendment.md",
+      "status": "ACTIVE",
+      "loadOrder": 520,
+      "owner": "Architecture Platform",
+      "appliesTo": [
+        "SG2",
+        "SRM",
+        "ARCHITECTURE"
+      ],
+      "dependsOn": [
+        "economic-calendar-runtime-business-and-architecture-canon",
         "economic-calendar-runtime-source-hub-and-preferences-amendment",
         "repository-routing",
         "operation-context-and-access-contract",
