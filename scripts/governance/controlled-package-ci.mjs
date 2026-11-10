@@ -4468,7 +4468,7 @@ function assertEcrStage0405Routes(files,repositoryRoot){
 }
 
 // Proposed source-only closure; exact owner acceptance is required before adoption.
-export const ECR_SOURCE_CONTINUITY_REVIEW=Object.freeze({"prNumber":972,"branch":"architecture/ecr-source-access-continuity-20261110","sourceSha":"a54d313b88a5d477613a17a38ac53e2d32e4dd32","baseSha":"84544da6be8f5a8cf62b63cdd07dfa4ff6926fdd",entries:Object.freeze({
+export const ECR_SOURCE_CONTINUITY_REVIEW=Object.freeze({"prNumber":972,"branch":"architecture/ecr-source-access-continuity-20261110","sourceSha":"c537ffb8a8cbef06f45f984d9e3875dee2288505","baseSha":"ce520b5a3d4ca5f2a48156f8d879ff31f3c874c2",entries:Object.freeze({
   "apps/architecture-lab/ecr-stage03-sdk-compatibility.mjs": {
     "sha": "e7e89b0293300dfb10e9be9680a250d8a8ff5aa4",
     "status": "modified",
@@ -4574,7 +4574,7 @@ export const ECR_SOURCE_CONTINUITY_REVIEW=Object.freeze({"prNumber":972,"branch"
     "surfaceId": "SOURCE-HUB-BASE-002"
   },
   "scripts/governance/platform-source-hub-foundation.test.mjs": {
-    "sha": "7a1710d795c441cc80a468ce8a4f33191e899f5b",
+    "sha": "6678398d4e645670eee3c892e685967749990a8c",
     "status": "modified",
     "mode": "100644",
     "projectKey": "ARCHITECTURE",
