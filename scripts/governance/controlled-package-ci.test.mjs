@@ -1384,9 +1384,9 @@ test('ACG G1 review accepts only the two exact governance blobs on its own PR an
  for(const f of files){assertAcgG1ReviewEntry(f,'100644 blob '+f.sha+'\t'+f.filename+'\0');for(const mode of ['100755','120000','160000'])rejection(()=>assertAcgG1ReviewEntry(f,mode+' blob '+f.sha+'\t'+f.filename+'\0'));}
 });
 
-test('M1 admits only the reviewed 60 source blobs through their actual three owner profiles',()=>{
+test('M1 admits only the reviewed 62 source blobs through their actual three owner profiles',()=>{
  const review=ACG_M1_EXECUTION_REVIEW,files=Object.entries(review.entries).map(([filename,e])=>({filename,sha:e.sha,status:e.status})),p={...architecturePr(files.length),number:937,head:{...pr().head,ref:review.branch}}
- assert.equal(Object.keys(review.entries).length,60);assert.equal(review.sourceSha,'4dc839b4726b48ab77bed53a2656a4c4052b5fd9')
+ assert.equal(Object.keys(review.entries).length,62);assert.equal(review.sourceSha,'90561a9785d7adc0e07c989f5bf0cac4a63b57f6')
  assert.deepEqual([...new Set(Object.values(review.entries).map(e=>e.projectKey))].sort(),['ARCHITECTURE','SG2','SRM'])
  assert.equal(selectCandidate(context(),p,other,{files}),other)
  assert.equal(selectCandidate(context(),{...p,base:{...p.base,sha:'f'.repeat(40)}},other,{files:[...files].reverse()}),other,'main refresh requires unchanged reviewed versions')

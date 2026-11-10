@@ -3282,7 +3282,7 @@ export function assertAcgG1ReviewEntry(file,entry){
 
 
 // Owner-approved M1 dependency: closed blobs, modes and actual owner profiles.
-export const ACG_M1_EXECUTION_REVIEW=Object.freeze({prNumber:937,branch:'architecture/acg-m1-execution-20261109',sourceSha:'4dc839b4726b48ab77bed53a2656a4c4052b5fd9',baseSha:'f737c0228960c928d079b09a97056f60d433089a',entries:Object.freeze({
+export const ACG_M1_EXECUTION_REVIEW=Object.freeze({prNumber:937,branch:'architecture/acg-m1-execution-20261109',sourceSha:'90561a9785d7adc0e07c989f5bf0cac4a63b57f6',baseSha:'f737c0228960c928d079b09a97056f60d433089a',entries:Object.freeze({
   ".github/workflows/assistant-context-gateway-ci.yml": {
     "sha": "f88119a3291fea0b448f89a184268b1f87c046a5",
     "status": "modified",
@@ -3341,6 +3341,20 @@ export const ACG_M1_EXECUTION_REVIEW=Object.freeze({prNumber:937,branch:'archite
   },
   "apps/newsfeed-runtime/test/runtime.test.mjs": {
     "sha": "91304e3143dc553fad161c7381bf6c314ed3f683",
+    "status": "modified",
+    "mode": "100644",
+    "projectKey": "ARCHITECTURE",
+    "owner": "Architecture Platform"
+  },
+  "apps/package-limits/migrations/004-assistant-usage.sql": {
+    "sha": "4508f43fe9b9c9659d4b79c369a8c9492431eb08",
+    "status": "modified",
+    "mode": "100644",
+    "projectKey": "ARCHITECTURE",
+    "owner": "Architecture Platform"
+  },
+  "apps/package-limits/test/database.test.mjs": {
+    "sha": "018ca78da77dd46a8a7a19c64e6cf797ed925f6a",
     "status": "modified",
     "mode": "100644",
     "projectKey": "ARCHITECTURE",
