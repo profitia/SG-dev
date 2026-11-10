@@ -424,3 +424,47 @@ PR after PASS, refresh the same feature preserving its reviewed blobs and
 complete full feature CI. Separate SOURCE GO is still required before PR923
 merge. No new PMOS registration, runtime installation, grant, deployment, paid
 API, recurring activation or customer publication is authorized.
+
+## ECR Stage04–05 exact source admission — proposed (2026-11-10)
+
+PROPOSED_NOT_ACTIVE; separate exact CI owner acceptance is required. PR959,
+architecture/ecr-stage04-05-semantic-continuous-20261110, source
+5425e1c0605c391397f87c98d1bfee57b520da0f, base
+4b03a7cf552ba88506c8cbb5ca627acc8f4e505f: exactly44 regular-file blobs,
+statuses and modes owned by Architecture Platform / Governance Source Layer at their existing surfaces.
+No generic ECR, SourceHub, Identity or architecture path is opened. The existing
+SDK peer exception adds only SourceHub1.7.0 with the unchanged exact authority
+peer range. All earlier ECR, Oil, ACG, package, credential and proof controls remain.
+
+The four-file policy proposal must pass the existing public CI and trusted-main
+exact-SHA controlled proof before policy adoption. Then refresh PR959 only while
+retaining all44 reviewed bytes, validate the exact new head and the resulting
+main with the normal full gates. No workflow, Environment or credential changes.
+Entry-map SHA-256:35ef610262501d50c73ef64e6d43bc8a972b62347ab24bdf8b87b29941699fda.
+
+This admission is source-only. It does not authorize migrations003/009/010, new
+rights or grants, renewal credentials, a scheduled service, costs, deployments
+or provider calls. Those depend on the separately approved exact owner package
+in PR959 and actual installation readback. Provider licences remain independent
+of finite SERVICE lease renewal; SourceHub cache retention remains0.
+
+### Exact legacy consumer version compatibility — proposed correction
+
+The owner accepted source5425e1c0 and policy9061e1d9 in this task. The original
+policy's trusted-main controlled run42861641291 passed, but source producer
+job129986809516 found LOCAL_PACKAGE_VERSION_MISMATCH: unchanged SG2 retains
+Hub1.6 metadata while the ECR producer is1.7. The source44-file closure and
+operational owner package remain unchanged and approved.
+
+This correction requires a separate exact CI-policy decision before adoption.
+It recognizes only the byte-identical SG2 lock blob
+0ae03c01834736fb682323e184af79e984912c1a and exact new Hub manifest from the
+Stage04–05 review, against either the exact predecessor1.6 manifest
+05184f565c407177c50b524fd93346a07829c3b7 or that exact1.7 manifest. The supplied
+lock must match its actual file. Other versions, metadata edits, wider peers,
+authority drift and symlinks still fail. Existing source admission, package
+checks, main-only credentials and full candidate/main proof remain mandatory.
+No SG2 source, lock, receipt, feature opt-in, operation or deployment changes.
+An actual filesystem fixture verifies both before/after authority cases and
+rejects each altered binding. Require new exact-head public and controlled CI;
+the successful proof for9061e1d9 is not reused for the corrected policy.

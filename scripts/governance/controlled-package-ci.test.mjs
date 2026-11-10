@@ -1,3 +1,4 @@
+import {ECR_STAGE0405_REVIEW,assertEcrStage0405ReviewEntry} from './controlled-package-ci.mjs'
 import {ECR_STAGE03_REVIEW,assertEcrStage03ReviewEntry} from './controlled-package-ci.mjs'
 import {SOURCE_HUB_MARKET_SYMBOL_REVIEW,assertMarketSymbolReviewEntry} from './controlled-package-ci.mjs'
 import {ACG_G1_REVIEW,assertAcgG1ReviewEntry} from './controlled-package-ci.mjs'
@@ -1393,13 +1394,13 @@ test('missing main package authority needs the exact reviewed manifest, never on
  }finally{fs.rmSync(t,{recursive:true,force:true})}
 });
 
-test('accepted SourceHub1.6 keeps the same exact peer range; future versions and wider ranges are rejected',()=>{
- for(const version of ['1.4.0','1.5.0','1.6.0']){
+test('accepted SourceHub1.7 keeps the same exact peer range; future versions and wider ranges are rejected',()=>{
+ for(const version of ['1.4.0','1.5.0','1.6.0','1.7.0']){
   const m={name:'@profitia/platform-source-hub-contracts',version,peerDependencies:{'@profitia/platform-current-e1-authority':'1.1.0 || 1.2.0 || 1.2.1'}};
   assertManifestPolicy(m,m);
   rejection(()=>assertManifestPolicy({...m,peerDependencies:{'@profitia/platform-current-e1-authority':'*'}},m));
  }
- const future={name:'@profitia/platform-source-hub-contracts',version:'1.7.0',peerDependencies:{'@profitia/platform-current-e1-authority':'1.1.0 || 1.2.0 || 1.2.1'}};
+ const future={name:'@profitia/platform-source-hub-contracts',version:'1.8.0',peerDependencies:{'@profitia/platform-current-e1-authority':'1.1.0 || 1.2.0 || 1.2.1'}};
  rejection(()=>assertManifestPolicy(future,future));
 });
 
@@ -1482,4 +1483,33 @@ test('Stage03 exact review binds42 actual-owner blobs and rejects source, mode, 
  for(const edit of [a=>a.pop(),a=>a.push(a[0]),a=>a[0]={...a[0],sha:'f'.repeat(40)},a=>a[0]={...a[0],status:'removed'},a=>a[0]={...a[0],previous_filename:a[0].filename},a=>a[0]={...a[0],filename:'apps/economic-calendar-runtime/src/unreviewed.mjs'}]){const bad=structuredClone(files);edit(bad);rejection(()=>selectCandidate(context(),{...p,changed_files:bad.length},review.sourceSha,{files:bad}))}
  for(const edit of [q=>q.number++,q=>q.head.ref='architecture/another-ecr',q=>q.head.ref='sg2/ecr-stage03',q=>q.head.repo.full_name='profitia/fork',q=>q.user.login='attacker',q=>q.base.ref='staging']){const bad=structuredClone(p);edit(bad);rejection(()=>selectCandidate(context(),bad,review.sourceSha,{files}))}
  assert(files.every(f=>!f.filename.startsWith('Canon/')&&!f.filename.startsWith('.github/')&&!f.filename.startsWith('apps/sg-runtime/')&&!f.filename.startsWith('apps/srm/')))
+})
+
+test('Stage0405 exact review binds44 actual-owner blobs and rejects source, mode, namespace and identity drift',()=>{
+ const review=ECR_STAGE0405_REVIEW,files=Object.entries(review.entries).map(([filename,e])=>({filename,sha:e.sha,status:e.status})),p={...pr(),number:review.prNumber,changed_files:files.length,base:{...pr().base,sha:review.baseSha},head:{...pr().head,sha:review.sourceSha,ref:review.branch}}
+ assert.equal(files.length,44);assert.equal(review.sourceSha,'5425e1c0605c391397f87c98d1bfee57b520da0f');assert.equal(createHash('sha256').update(JSON.stringify(review.entries)).digest('hex'),'35ef610262501d50c73ef64e6d43bc8a972b62347ab24bdf8b87b29941699fda')
+ assertArchitectureFiles(p,files)
+ assert.equal(selectCandidate(context(),p,review.sourceSha,{files}),review.sourceSha)
+ for(const f of files){assertEcrStage0405ReviewEntry(f,'100644 blob '+f.sha+'\t'+f.filename+'\0');for(const mode of ['100755','120000','160000'])rejection(()=>assertEcrStage0405ReviewEntry(f,mode+' blob '+f.sha+'\t'+f.filename+'\0'))}
+ for(const edit of [a=>a.pop(),a=>a.push(a[0]),a=>a[0]={...a[0],sha:'f'.repeat(40)},a=>a[0]={...a[0],status:'removed'},a=>a[0]={...a[0],previous_filename:a[0].filename},a=>a[0]={...a[0],filename:'apps/economic-calendar-runtime/src/unreviewed.mjs'}]){const bad=structuredClone(files);edit(bad);rejection(()=>selectCandidate(context(),{...p,changed_files:bad.length},review.sourceSha,{files:bad}))}
+ for(const edit of [q=>q.number++,q=>q.head.ref='architecture/another-ecr',q=>q.head.ref='sg2/ecr-stage04-05',q=>q.head.repo.full_name='profitia/fork',q=>q.user.login='attacker',q=>q.base.ref='staging']){const bad=structuredClone(p);edit(bad);rejection(()=>selectCandidate(context(),bad,review.sourceSha,{files}))}
+ assert(files.every(f=>!f.filename.startsWith('Canon/')&&!f.filename.startsWith('.github/')&&!f.filename.startsWith('apps/sg-runtime/')&&!f.filename.startsWith('apps/srm/')))
+})
+
+test('ECR backward compatibility binds the actual unchanged SG2 lock and only the exact 1.6-to-1.7 SDK manifests',()=>{
+ const t=fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(),'ecr-reviewed-legacy-'))),candidate=path.join(t,'candidate'),authority=path.join(t,'authority'),base=ECR_STAGE0405_REVIEW.baseSha
+ const historical=p=>execFileSync('git',['show',base+':'+p],{cwd:authorityRoot}),relative='packages/platform-source-hub-contracts/package.json',consumer='apps/sg-runtime/package-lock.json',lockBytes=historical(consumer),currentLock=JSON.parse(lockBytes),before=historical(relative),after=Buffer.from(before.toString().replace('"version": "1.6.0"','"version": "1.7.0"'))
+ const write=(root,file,bytes)=>{fs.mkdirSync(path.dirname(path.join(root,file)),{recursive:true});fs.writeFileSync(path.join(root,file),bytes)}
+ try{
+  for(const root of [candidate,authority]){write(root,consumer,lockBytes);for(const relative of Object.values(LOCAL_PACKAGES)){const p=path.relative(authorityRoot,path.resolve(authorityRoot,'apps/sg-runtime',relative)).split(path.sep).join('/')+'/package.json';write(root,p,historical(p))}}
+  write(candidate,relative,after)
+  assertLocalPackageSources(candidate,currentLock,authority)
+  write(authority,relative,after);assertLocalPackageSources(candidate,currentLock,authority);write(authority,relative,before)
+  for(const bytes of [Buffer.concat([after,Buffer.from('\n')]),Buffer.from(after.toString().replace('1.7.0','1.8.0')),Buffer.from(after.toString().replace('1.1.0 || 1.2.0 || 1.2.1','*'))]){write(candidate,relative,bytes);rejection(()=>assertLocalPackageSources(candidate,currentLock,authority))}
+  write(candidate,relative,after)
+  const altered=structuredClone(currentLock);altered.packages['node_modules/@profitia/platform-source-hub-contracts'].version='1.5.0';rejection(()=>assertLocalPackageSources(candidate,altered,authority))
+  write(candidate,consumer,JSON.stringify(altered));rejection(()=>assertLocalPackageSources(candidate,altered,authority));write(candidate,consumer,lockBytes)
+  write(authority,relative,Buffer.concat([before,Buffer.from('\n')]));rejection(()=>assertLocalPackageSources(candidate,currentLock,authority));write(authority,relative,before)
+  fs.renameSync(path.join(candidate,consumer),path.join(candidate,consumer+'.saved'));fs.symlinkSync(path.join(candidate,consumer+'.saved'),path.join(candidate,consumer));rejection(()=>assertLocalPackageSources(candidate,currentLock,authority))
+ }finally{fs.rmSync(t,{recursive:true,force:true})}
 })
