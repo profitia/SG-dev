@@ -82,7 +82,7 @@ export function validateConsumerGroups(groups,readReceipt){
    assert.equal(assistant.schemaVersion,'1.0');assert.equal(assistant.taskId,projectKey==='SG2'?'SG2-ACG-M1-20261109':'SRM-ACG-M1-SDK-COMPATIBILITY-20261110')
    assert.equal(assistant.scope,'OPTIONAL_ASSISTANT_SOURCE_NO_RUNTIME_ACTIVATION');assert.equal(assistant.targetEnvironment,'development')
    assert.equal(assistant.previousReceiptSourceSha,'b39fcc6f99ce6e06184080e5eaf5e6e4c7e120b5');assert.match(assistant.previousReceiptSha256,/^[a-f0-9]{64}$/)
-   assert.deepEqual(assistant.rootProducer,{projectKey:'ARCHITECTURE',taskId:'ARCH-ACG-M1-EXECUTION-20261109',pullRequest:937,sourceSha:'7988f89d3aa8e32ac8a3929a3ab9e55a10243df2'})
+   assert.deepEqual(assistant.rootProducer,{projectKey:'ARCHITECTURE',taskId:'ARCH-ACG-M1-EXECUTION-20261109',pullRequest:937,sourceSha:'6a7863459977f5651bf30100935118e1613021fd'})
    assert.equal(assistant.rootContract.sourceDigest,'509db0da7ba61cd08632a9edb440dbcdda5c9e3bd5805298865a2d3ef460b834')
    assert.deepEqual(Object.keys(assistant.consumerSourceDigests).sort(),assistantConsumerPaths[projectKey])
    for(const value of Object.values(assistant.consumerSourceDigests))assert.match(value,/^[a-f0-9]{64}$/)

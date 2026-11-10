@@ -8864,7 +8864,7 @@
       "projectKey": "ARCHITECTURE",
       "taskId": "ARCH-ACG-M1-EXECUTION-20261109",
       "pullRequest": 937,
-      "sourceSha": "7988f89d3aa8e32ac8a3929a3ab9e55a10243df2"
+      "sourceSha": "6a7863459977f5651bf30100935118e1613021fd"
     },
     "sourceDigests": {
       "README.md": "36e013b6f6692566004e152020d3d43b38a4567680b5dd0b53677edc519bc1e7",
@@ -8913,7 +8913,7 @@
       "migrations/access/027-unmetered-supplier-requests.sql": "88c5014db027c40568fcc737acbcf27766bb5db1c434c32ce6c236af859d90ef",
       "migrations/access/028-api-path-transport.sql": "bd35367f22eccb34dc6c8f62b3a82bfc8947471142fc5daab45a32d67c07707c",
       "migrations/access/029-market-symbol-transport.sql": "fee0f8738f7ccb8481ce2894b6e5a84792256d5230ef0ef1585fc34ac851d504",
-      "migrations/access/030-assistant-operations.sql": "19d4c19ae06ff4a8941a7de5a029f295b6e9f69cbc2997792258965ef77be81e",
+      "migrations/access/030-assistant-operations.sql": "4cf61265cbff5244dd48484e321f969cb10440d097fcc72d735a34ea861f74b2",
       "migrations/denial-audit/expire.sql": "8855e8fabaa95758799a54f366654be1e475d9e1f9270b477bcebe33d5ebdd2b",
       "migrations/denial-audit/private.sql": "a964115f6bf51e4038ad7c63db7b1a741590e86672a66bdba2f9dfb7cc9ee3e1",
       "migrations/denial-audit/roles.sql": "09ace8f3621d31c4d411a375b1b31f2f6a48a9f53f86da3b5bb4e05b292f692b",

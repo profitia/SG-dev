@@ -3,14 +3,14 @@ import assert from 'node:assert/strict'
 import {createHash} from 'node:crypto'
 import {posix} from 'node:path'
 export const ASSISTANT_SDK_PREDECESSOR='b39fcc6f99ce6e06184080e5eaf5e6e4c7e120b5'
-export const ASSISTANT_SDK_PRODUCER='7988f89d3aa8e32ac8a3929a3ab9e55a10243df2'
+export const ASSISTANT_SDK_PRODUCER='6a7863459977f5651bf30100935118e1613021fd'
 const recordPath='apps/architecture-lab/assistant-m1-sdk-compatibility.json'
 const hash=bytes=>createHash('sha256').update(bytes).digest('hex')
 const receiptPath=project=>'apps/'+(project==='SG2'?'sg-runtime':'srm')+'/operation-integration.json'
 const additions=['migrations/access/030-assistant-operations.sql','src/assistant-operation-host.d.mts','src/assistant-operation-host.mjs','src/assistant-usage.d.mts','src/assistant-usage.mjs']
 export function assistantSdkPredecessor(current,historical){
  const recordBytes=current(recordPath)
- assert.equal(hash(recordBytes),'e2d56e213629d1935377ee522f2eb8bb349a3312f6c7e5360a0c388d231fa268','exact reviewed assistant SDK source record')
+ assert.equal(hash(recordBytes),'f9bd750bd7c4af2b1123a41396cfeacac90bb1744f9abdd5331c76260872b70c','exact reviewed assistant SDK source record')
  const a=JSON.parse(recordBytes)
  assert.equal(a.schemaVersion,'1.0');assert.equal(a.taskId,'ARCH-ACG-M1-EXECUTION-20261109')
  assert.equal(a.scope,'OPTIONAL_ASSISTANT_ROOT_20_SOURCE_COMPATIBILITY');assert.equal(a.platformVersion,'1.34.0')
