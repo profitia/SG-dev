@@ -27,6 +27,7 @@ test('ECR lease renewal keeps revocation and finite proofs, never extends anothe
    for(let i=0;i<2;i++)await q.query("INSERT INTO profitia_services.read_grants(grant_id,login_role,organisation_id,operation,feature,resource_id,effect,status,source_ref,expires_at) VALUES($1,$2,$3,'knowledge.read','market',$4,'ALLOW','ACTIVE','SYNTHETIC_ONLY',clock_timestamp()+interval '1 day')",[ids[i],role,org,resources[i]])
    await q.query("INSERT INTO profitia_e1_authority.source_components(component_id,key_id,application_id,login_role,receiver_application_id,source_origin,public_key,deployment_id,configuration_version,status,source_ref,expires_at) VALUES('economic-calendar-runtime-development','SYNTHETIC_ONLY',$1,$2,$3,'urn:profitia:service:synthetic-ecr',$4,'SYNTHETIC_ONLY','SYNTHETIC_ONLY','ACTIVE','SYNTHETIC_ONLY',clock_timestamp()+interval '1 day')",[app,role,f.apps[1],publicKey])
    await q.query(readFileSync(new URL('../current-e1-authority/migrations/010-ecr-service-continuity.sql',import.meta.url),'utf8'))
+   await q.query(readFileSync(new URL('../current-e1-authority/migrations/011-ecr-source-continuity.sql',import.meta.url),'utf8'))
    await q.query("UPDATE profitia_access.installation SET project_id=$1,branch_id=$2,database_name=current_database()",[plan.identity.projectId,plan.identity.branchId])
   })
   const enroll=p=>f.asOwner(0,async q=>{await q.query("SELECT set_config('ecr.stage0405_plan',$1,true),set_config('ecr.stage0405_owner_ref',$2,true)",[JSON.stringify(p),'owner-decision:sha256:'+'1'.repeat(64)]);await q.query(syntheticEnrollment)})
@@ -37,6 +38,9 @@ test('ECR lease renewal keeps revocation and finite proofs, never extends anothe
   const r=(await own.query('SELECT profitia_e1_authority.renew_ecr_service_access() AS value')).rows[0].value
   assert.equal(r.status,'RENEWED');assert.equal(r.licenceRenewed,false);assert(Number.isFinite(Date.parse(r.leaseUntil)))
   assert.equal((await own.query('SELECT profitia_e1_authority.renew_ecr_service_access() AS value')).rows[0].value.status,'CURRENT')
+  const status=(await own.query('SELECT profitia_e1_authority.ecr_access_expiry_status() AS value')).rows[0].value
+  assert.equal(status.dependencies.filter(x=>x.kind==='SERVICE_GRANT').length,3);assert(status.dependencies.every(x=>x.status==='ACTIVE'));assert.equal(status.dependencies.find(x=>x.id==='parent-product-market').kind,'PRODUCT_ENTITLEMENT')
+  await assert.rejects(f.pools[0].query('SELECT profitia_e1_authority.ecr_access_expiry_status()'),e=>e.code==='42501')
   const after=(await f.asOwner(0,q=>q.query('SELECT to_jsonb(g) AS value FROM profitia_services.read_grants g WHERE login_role<>$1 ORDER BY grant_id',[role]))).rows;assert.deepEqual(before,after)
   const expiry=await f.asOwner(0,q=>q.query("SELECT profitia_e1_authority.ecr_receiver_deadline('economic-calendar-runtime-development','profitia-source-hub-development',clock_timestamp()-interval '1 day') AS own,profitia_e1_authority.ecr_receiver_deadline('synthetic-other','profitia-source-hub-development',clock_timestamp()-interval '1 day') AS other"))
   assert(expiry.rows[0].own>new Date());assert(expiry.rows[0].other<new Date())
@@ -49,6 +53,7 @@ test('ECR lease renewal keeps revocation and finite proofs, never extends anothe
   await assert.rejects(f.pools[0].query('SELECT profitia_e1_authority.renew_ecr_service_access()'),e=>e.code==='42501')
   await f.asOwner(0,q=>q.query("UPDATE profitia_services.read_grants SET status='REVOKED' WHERE grant_id=$1",[ids[0]]))
   assert.equal((await own.query('SELECT profitia_e1_authority.renew_ecr_service_access() AS value')).rows[0].value,null)
+  assert((await own.query('SELECT profitia_e1_authority.ecr_access_expiry_status() AS value')).rows[0].value.dependencies.some(x=>x.kind==='SERVICE_GRANT'&&x.status==='REVOKED'))
   await f.asOwner(0,q=>q.query("UPDATE profitia_e1_authority.ecr_continuity_policy SET status='REVOKED'"))
   const revoked=await f.asOwner(0,q=>q.query("SELECT profitia_e1_authority.ecr_receiver_deadline('economic-calendar-runtime-development','profitia-source-hub-development',clock_timestamp()-interval '1 day') AS value"));assert(revoked.rows[0].value<new Date())
   const noPrivilege=await own.query("SELECT has_table_privilege(current_user,'profitia_e1_authority.ecr_continuity_policy','UPDATE') AS mutate");assert.equal(noPrivilege.rows[0].mutate,false)
