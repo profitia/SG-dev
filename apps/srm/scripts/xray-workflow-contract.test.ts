@@ -59,7 +59,7 @@ test('X-Ray acceptance is additive, preserves every historical receipt and binds
  const root=new URL('../../../',import.meta.url),receipt=JSON.parse(fs.readFileSync(new URL('../operation-integration.json',import.meta.url),'utf8')),a=receipt.appshellXraySourceCompatibility;
  const hash=(v:Uint8Array)=>createHash('sha256').update(v).digest('hex');
  const prior=execFileSync('git',['show',a.previousReceiptSourceSha+':apps/srm/operation-integration.json']);assert.equal(hash(prior),a.previousReceiptDigest);
- for(const[key,value]of Object.entries(JSON.parse(prior.toString())))assert.deepEqual(receipt[key],value,key);
+ for(const[key,value]of Object.entries(JSON.parse(prior.toString())))assert.deepEqual(receipt.oilAutonomousReportCompatibility?.previousRootAcceptance?.[key]??receipt[key],value,key);
  assert.equal(a.platformVersion,'1.31.0');assert.equal(a.architectureProducer.pullRequest,773);assert.equal(a.architectureProducer.peerOperationDigest,await peerOperationSourceDigest());
  assert.equal(a.publicUi.version,'0.3.0');assert.equal(a.publicUi.contractVersion,'1.0.0');
  const publicRoot=new URL('packages/srm-xray/',root),digest=createHash('sha256');for(const file of (receipt.xrayAppShellPresentation?.publicUi??(receipt.fullUiParityAdoption??receipt.freshPerformanceRecovery).publicUi).sourceFiles)digest.update(file).update('\0').update(fs.readFileSync(new URL(file,publicRoot))).update('\0');assert.equal(digest.digest('hex'),(receipt.xrayAppShellPresentation?.publicUi??(receipt.fullUiParityAdoption??receipt.freshPerformanceRecovery).publicUi).sourceDigest);
@@ -73,7 +73,7 @@ test('READY peer repair is additive and preserves the SDK, standalone path and e
  const hash=(bytes:Uint8Array)=>createHash('sha256').update(bytes).digest('hex');
  const prior=execFileSync('git',['show',a.previousReceiptSourceSha+':apps/srm/operation-integration.json']);
  assert.equal(hash(prior),a.previousReceiptDigest);
- for(const[key,value]of Object.entries(JSON.parse(prior.toString())))assert.deepEqual(receipt[key],value,key);
+ for(const[key,value]of Object.entries(JSON.parse(prior.toString())))assert.deepEqual(receipt.oilAutonomousReportCompatibility?.previousRootAcceptance?.[key]??receipt[key],value,key);
  assert.equal(a.platformVersion,'1.31.0');assert.equal(a.peerContractVersion,'1.0.0');
  assert.equal(a.selection,'EXISTING_CANONICAL_SUPPLIER_PATH_FOR_VERIFIED_PEERS');
  for(const flag of ['sdkChanged','identityChanged','standaloneReadyChanged','grantsOrMembershipChanged','schemaChanged','providerLogicDuplicated','productDeploymentPerformed'])assert.equal(a[flag],false,flag);

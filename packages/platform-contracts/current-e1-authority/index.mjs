@@ -27,6 +27,7 @@ async function boundedJson(response){
  try{return JSON.parse(Buffer.concat(chunks).toString('utf8'))}catch{fail()}
 }
 function receiverResourceAllows(root,operation,resource){
+ if(root==='insights-reports')return ['insights.report.start','insights.report.list'].includes(operation)?resource==='oil-asphalt':['insights.report.status','insights.report.download'].includes(operation)&&/^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(resource??'')
  if(root==='economic-calendar')return operation==='knowledge.read'&&resource==='economic-calendar-events'||['personal.list.read','personal.list.write'].includes(operation)&&resource==='economic-calendar-preferences'
  return resource===root||root==='newsfeed-observations'&&/^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(resource??'')
 }
@@ -45,13 +46,14 @@ export function createCurrentE1OperationHost(options){
  const {independentQuery,transact,readResources,projectOutput,now=Date.now,fetch:send=globalThis.fetch}=options
  const application=freeze(clone(options.application)),binding=freeze(clone(options.binding))
  const calendarMode=application.features?.join(',')==='market,personal_workspace'&&application.operations?.join(',')==='knowledge.read,personal.list.read,personal.list.write'
+ const reportMode=application.features?.join(',')==='market'&&application.operations?.join(',')==='insights.report.start,insights.report.status,insights.report.list,insights.report.download'
  const personalMode=application.features?.join(',')==='personal_workspace'&&application.operations?.join(',')==='personal.list.read,personal.list.write'
  if(application?.environment!=='development'||binding?.environment!=='development'||binding.applicationId!==application.appId||binding.service!==undefined
- ||application.profileId!=='SPENDGURU_SAAS'||!personalMode&&!calendarMode
+ ||application.profileId!=='SPENDGURU_SAAS'||!personalMode&&!calendarMode&&!reportMode
  ||[independentQuery,transact,readResources,projectOutput,send,now].some(f=>typeof f!=='function'))throw TypeError('Explicit Development current E1 human host required')
  const audit=createAccessStore({binding,now})
  const validate=createOperationExecutor({application,now,authenticate:async()=>null,withTransaction:fail,recordAudit:fail})
- const descriptor=async query=>{const d=receiverDescriptor((await one(query,'SELECT profitia_e1_receiver.descriptor() AS descriptor')).descriptor,binding);if(calendarMode!==(d.resourceId==='economic-calendar'))fail();return d}
+ const descriptor=async query=>{const d=receiverDescriptor((await one(query,'SELECT profitia_e1_receiver.descriptor() AS descriptor')).descriptor,binding);if(calendarMode!==(d.resourceId==='economic-calendar')||reportMode!==(d.resourceId==='insights-reports'))fail();return d}
  async function remote(d,request,challenge,previous=null){
   // Only an owner-enrolled HTTPS origin. No caller URL, redirects, cookies,
   // automatic retry, provider acquisition or credentials in error diagnostics.
@@ -139,3 +141,6 @@ export function createCurrentE1Authority({query,client,binding,now=Date.now}){
   }
  })
 }
+
+export const currentE1InsightsAuthoritySchemaUrl=new URL('./migrations/007-insights-authority.sql',import.meta.url).href;
+export const currentE1InsightsReceiverSchemaUrl=new URL('./migrations/008-insights-receiver.sql',import.meta.url).href;

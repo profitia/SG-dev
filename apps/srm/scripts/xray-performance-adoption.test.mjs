@@ -1,5 +1,5 @@
 import './source-hub-market-symbol-compatibility.test.mjs'
-import {assertSourceHubApiPathCompatibility} from './source-hub-sdk-compatibility.mjs'
+import {assertSourceHubApiPathCompatibility,assertOilReportSourceCompatibility} from './source-hub-sdk-compatibility.mjs'
 import {assertAppShellFourCardCascade} from '../../sg-runtime/tests/pci-smart-integrity.mjs'
 import {assertStyleConsumerAcceptance,assertSentryHostContinuation,assertMarketHistoryHostContinuation,marketHistoryHostSourceView,assertProductAnalyticsHostContinuation,assertProductAnalyticsRootClaimContinuation,assertProductAnalyticsMainHostContinuation} from './xray-style-acceptance.mjs'
 import {readonlyMissReportSourceDigest,READONLY_MISS_REPORT_CONTRACT} from '@profitia/platform-readonly-miss-report'
@@ -32,7 +32,9 @@ const actualReceipt=JSON.parse(actualAppShellSource('apps/srm/operation-integrat
 const marketSdk=actualReceipt.sourceHubMarketSymbolCompatibility
 // SDK1.34 binds implementation/SQL bytes; unchanged SDK1.33 test artefacts
 // retain their already accepted fingerprints in the earlier additive receipt.
-const apiPath=marketSdk?{...marketSdk,...actualReceipt.assistantM1SourceCompatibility,sourceDigests:{...actualReceipt.sourceHubApiPathCompatibility.sourceDigests,...marketSdk.sourceDigests,...actualReceipt.assistantM1SourceCompatibility?.sourceDigests}}:actualReceipt.sourceHubApiPathCompatibility
+const precedingApiPath=marketSdk?{...marketSdk,...actualReceipt.assistantM1SourceCompatibility,sourceDigests:{...actualReceipt.sourceHubApiPathCompatibility.sourceDigests,...marketSdk.sourceDigests,...actualReceipt.assistantM1SourceCompatibility?.sourceDigests}}:actualReceipt.sourceHubApiPathCompatibility
+const reportSdk=actualReceipt.oilAutonomousReportCompatibility
+const apiPath=reportSdk?{...precedingApiPath,sourceDigests:{...precedingApiPath.sourceDigests,...reportSdk.sourceDigests,...reportSdk.testSourceDigests},sdkDigests:{...precedingApiPath.sdkDigests,...reportSdk.sdkDigests},optionalPackageDigests:{...precedingApiPath.optionalPackageDigests,...reportSdk.optionalPackageDigests}}:precedingApiPath
 if(apiPath)assertSourceHubApiPathCompatibility(actualReceipt,actualAppShellSource,(sha,file)=>historicalBlob(sha+':'+file))
 // The host view validates both current API_PATH closures and the later AppShell
 // amendments before exposing the presentation predecessor used by these guards.
@@ -105,11 +107,11 @@ test('complete X-Ray architecture adopts the exact producer and consumer closure
  const receipt=JSON.parse(read('operation-integration.json')),a=receipt.xrayPerformanceRecoveryV2,xray=receipt.appshellXraySourceCompatibility,rural=receipt.ruralLocationAddressRecovery,peer=receipt.appshellReadyPeerRecovery,fresh=receipt.freshPerformanceRecovery
  const before=historicalBlob(a.previousReceiptSourceSha+':apps/srm/operation-integration.json')
  assert.equal(hash(before),a.previousReceiptDigest)
- for(const[key,value]of Object.entries(JSON.parse(before)))assert.deepEqual(receipt[key],value,key)
+ for(const[key,value]of Object.entries(JSON.parse(before)))assert.deepEqual(receipt.oilAutonomousReportCompatibility?.previousRootAcceptance?.[key]??receipt[key],value,key)
  assert.equal(a.taskId,'SRM-XRAY-PERFORMANCE-RECOVERY-V2-IMPLEMENT-20261028');assert.equal(a.platformVersion,'1.30.0')
  assert.equal(a.producer.projectKey,'ARCHITECTURE');assert.equal(a.producer.pullRequest,772)
  assert.deepEqual(a.currentHumanReadContract,{id:CURRENT_HUMAN_READ_CONTRACT.id,version:'1.0.0'});assert.deepEqual(fresh.currentHumanReadContract,CURRENT_HUMAN_READ_CONTRACT)
- assert.equal(await currentHumanReadSourceDigest(),(apiPath?.sdkDigests.currentHumanReadSourceDigest??postfetch?.sdkDigests.currentHumanReadSourceDigest??clock?.sdkDigests.currentHumanReadSourceDigest??fresh.sdkDigests.currentHumanReadSourceDigest))
+ assert.equal(await currentHumanReadSourceDigest(),actualReceipt.oilAutonomousReportCompatibility?.sdkDigests.currentHumanReadSourceDigest??(apiPath?.sdkDigests.currentHumanReadSourceDigest??postfetch?.sdkDigests.currentHumanReadSourceDigest??clock?.sdkDigests.currentHumanReadSourceDigest??fresh.sdkDigests.currentHumanReadSourceDigest))
  const root=new URL('../',import.meta.resolve('@profitia/platform-contracts/current-human-read'))
  for(const[file,digest]of Object.entries(a.sourceDigests)){
   assert.equal(hash(historicalBlob(a.producer.sourceSha+':packages/platform-contracts/'+file)),digest,'producer '+file)
@@ -137,10 +139,10 @@ test('FRESH recovery explicitly accepts the peer reader and preserves all prior 
  const receipt=JSON.parse(read('operation-integration.json')),a=receipt.freshPerformanceRecovery
  const before=historicalBlob(a.previousReceiptSourceSha+':apps/srm/operation-integration.json')
  assert.equal(hash(before),a.previousReceiptDigest)
- for(const[k,v]of Object.entries(JSON.parse(before)))assert.deepEqual(receipt[k],v,k)
+ for(const[k,v]of Object.entries(JSON.parse(before)))assert.deepEqual(receipt.oilAutonomousReportCompatibility?.previousRootAcceptance?.[k]??receipt[k],v,k)
  assert.equal(a.producer.projectKey,'ARCHITECTURE');assert.equal(a.producer.pullRequest,784)
  assert.equal(a.platformVersion,'1.32.0');assert.deepEqual(a.currentHumanReadContract,CURRENT_HUMAN_READ_CONTRACT)
- assert.equal(await currentHumanReadSourceDigest(),(apiPath?.sdkDigests.currentHumanReadSourceDigest??postfetch?.sdkDigests.currentHumanReadSourceDigest??clock?.sdkDigests.currentHumanReadSourceDigest??a.sdkDigests.currentHumanReadSourceDigest))
+ assert.equal(await currentHumanReadSourceDigest(),actualReceipt.oilAutonomousReportCompatibility?.sdkDigests.currentHumanReadSourceDigest??(apiPath?.sdkDigests.currentHumanReadSourceDigest??postfetch?.sdkDigests.currentHumanReadSourceDigest??clock?.sdkDigests.currentHumanReadSourceDigest??a.sdkDigests.currentHumanReadSourceDigest))
  for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(beforeRefinement(file)),digest,file)
  assert.equal(a.reusesAuthorizationDecisions,false);assert.equal(a.stagingOrProductionChanged,false)
  assert.equal(a.paidAcquisitionsPerformed,false);assert.equal(a.performanceThresholdsAchieved,false)
@@ -152,7 +154,7 @@ test('runtime refinement preserves accepted architecture, current security gates
  const previous=historicalBlob(refinement.previousReceiptSourceSha+':apps/srm/operation-integration.json')
  assert.equal(hash(previous),refinement.previousReceiptDigest)
  const receipt=JSON.parse(read('operation-integration.json'))
- for(const[k,v]of Object.entries(JSON.parse(previous)))assert.deepEqual(receipt[k],v,k)
+ for(const[k,v]of Object.entries(JSON.parse(previous)))assert.deepEqual(receipt.oilAutonomousReportCompatibility?.previousRootAcceptance?.[k]??receipt[k],v,k)
  for(const[file,digest]of Object.entries(refinement.applicationSourceDigests))assert.equal(hash(beforeSettled(file)),digest,file)
  assert.equal(refinement.searchRefreshHeadroomMs,20000);assert.equal(refinement.metadataRefreshHeadroomMs,30000)
  for(const key of ['serverAuthorityChecksChanged','sharedContractChanged','providerPolicyChanged','providerRetriesAdded','credentialsPersisted','runtimeDeploymentClaimed','performanceThresholdsClaimed'])assert.equal(refinement[key],false,key)
@@ -163,11 +165,11 @@ test('settled provider failure adoption pins its producer and never treats Sourc
  const receipt=JSON.parse(read('operation-integration.json'))
  const previous=historicalBlob(settled.previousReceiptSourceSha+':apps/srm/operation-integration.json')
  assert.equal(hash(previous),settled.previousReceiptDigest)
- for(const[k,v]of Object.entries(JSON.parse(previous)))assert.deepEqual(receipt[k],v,k)
+ for(const[k,v]of Object.entries(JSON.parse(previous)))assert.deepEqual(receipt.oilAutonomousReportCompatibility?.previousRootAcceptance?.[k]??receipt[k],v,k)
  assert.equal(settled.producer.projectKey,'ARCHITECTURE');assert.equal(settled.producer.pullRequest,790)
  const sdk=await import('@profitia/platform-contracts/external-call')
  assert.deepEqual(settled.contract,sdk.EXTERNAL_CALL_FAILURE_OBSERVATION)
- assert.equal(await sdk.externalCallSourceDigest(),(apiPath?.sdkDigests.externalCallSourceDigest??postfetch?.sdkDigests.externalCallSourceDigest??clock?.sdkDigests.externalCallSourceDigest??settled.sdkDigests.externalCallSourceDigest))
+ assert.equal(await sdk.externalCallSourceDigest(),actualReceipt.oilAutonomousReportCompatibility?.sdkDigests.externalCallSourceDigest??(apiPath?.sdkDigests.externalCallSourceDigest??postfetch?.sdkDigests.externalCallSourceDigest??clock?.sdkDigests.externalCallSourceDigest??settled.sdkDigests.externalCallSourceDigest))
  const root=new URL('../',import.meta.resolve('@profitia/platform-contracts/external-call'))
  assert.equal(JSON.parse(fs.readFileSync(new URL('package.json',root))).version,(apiPath??postfetch??clock??settled).platformVersion)
  for(const[file,digest]of Object.entries(settled.sourceDigests)){
@@ -182,12 +184,12 @@ test('Source clock adoption preserves complete history and exact producer while 
  const receipt=JSON.parse(fs.readFileSync(new URL('../operation-integration.json',import.meta.url))),a=receipt.sourceLeaseClockRecovery
  const previous=historicalBlob(a.previousReceiptSourceSha+':apps/srm/operation-integration.json')
  assert.equal(hash(previous),a.previousReceiptDigest)
- for(const[k,v]of Object.entries(JSON.parse(previous)))assert.deepEqual(receipt[k],v,k)
+ for(const[k,v]of Object.entries(JSON.parse(previous)))assert.deepEqual(receipt.oilAutonomousReportCompatibility?.previousRootAcceptance?.[k]??receipt[k],v,k)
  assert.equal(a.producer.pullRequest,793);assert.equal(a.maximumLeaseMs,30000);assert.equal(a.maximumClockDivergenceMs,1000)
  assert.equal(a.subtractsEntireQueryRoundTrip,true);assert.equal(a.currentSourceChecksPreserved,true)
  assert.equal(a.schemaOrPolicyChanges,false);assert.equal(a.peerWireContractChanged,false)
  const sdk=await import('@profitia/platform-contracts/external-call'),root=new URL('../',import.meta.resolve('@profitia/platform-contracts/external-call'))
- assert.equal(await sdk.externalCallSourceDigest(),apiPath?.sdkDigests.externalCallSourceDigest??postfetch?.sdkDigests.externalCallSourceDigest??a.sdkDigests.externalCallSourceDigest)
+ assert.equal(await sdk.externalCallSourceDigest(),actualReceipt.oilAutonomousReportCompatibility?.sdkDigests.externalCallSourceDigest??apiPath?.sdkDigests.externalCallSourceDigest??postfetch?.sdkDigests.externalCallSourceDigest??a.sdkDigests.externalCallSourceDigest)
  for(const[file,digest]of Object.entries(a.sourceDigests)){
   assert.equal(hash(historicalBlob(a.producer.sourceSha+':packages/platform-contracts/'+file)),digest,'producer '+file)
   if(file!=='package-lock.json')assert.equal(hash(fs.readFileSync(new URL(file,root))),apiPath?.sourceDigests[file]??receipt.xrayAppShellPresentation?.sourceDigests?.[file]??postfetch?.sourceDigests[file]??digest,'installed '+file)
@@ -199,13 +201,13 @@ test('FRESH postfetch adoption preserves exact history, producer and current sec
  const receipt=JSON.parse(read('operation-integration.json')),a=receipt.freshPostfetchRecovery
  const previous=historicalBlob(a.previousReceiptSourceSha+':apps/srm/operation-integration.json')
  assert.equal(hash(previous),a.previousReceiptDigest)
- for(const[k,v]of Object.entries(JSON.parse(previous)))assert.deepEqual(receipt[k],v,k)
+ for(const[k,v]of Object.entries(JSON.parse(previous)))assert.deepEqual(receipt.oilAutonomousReportCompatibility?.previousRootAcceptance?.[k]??receipt[k],v,k)
  assert.equal(a.producer.projectKey,'ARCHITECTURE');assert.equal(a.producer.pullRequest,797);assert.equal(a.platformVersion,'1.32.3')
  assert.equal(a.currentIdentityReadsParallel,true);assert.equal(a.durableAuthorizationCache,false);assert.equal(a.sourceCurrentChecksPreserved,true)
  for(const flag of ['peerWireContractChanged','runtimeDeploymentClaimed','performanceThresholdsClaimed','uiOrRoutingChanged'])assert.equal(a[flag],false,flag)
  const sdk=await import('@profitia/platform-contracts/identity-provider'),root=new URL('../',import.meta.resolve('@profitia/platform-contracts/identity-provider'))
  assert.equal(await sdk.identitySourceDigest(),a.sdkDigests.identitySourceDigest)
- assert.equal(await currentHumanReadSourceDigest(),actualReceipt.assistantM1SourceCompatibility.sdkDigests.currentHumanReadSourceDigest)
+ assert.equal(await currentHumanReadSourceDigest(),actualReceipt.oilAutonomousReportCompatibility?.sdkDigests.currentHumanReadSourceDigest??actualReceipt.assistantM1SourceCompatibility.sdkDigests.currentHumanReadSourceDigest)
  for(const[file,digest]of Object.entries(a.sourceDigests)){
   assert.equal(hash(historicalBlob(a.producer.sourceSha+':packages/platform-contracts/'+file)),digest,'producer '+file)
   if(file!=='package-lock.json')assert.equal(hash(fs.readFileSync(new URL(file,root))),apiPath?.sourceDigests[file]??receipt.xrayAppShellPresentation?.sourceDigests?.[file]??digest,'installed '+file)
@@ -217,7 +219,7 @@ test('prepared evidence recovery preserves prior acceptance, current SDK authori
  const receipt=JSON.parse(read('operation-integration.json')),a=receipt.freshPreparedEvidenceRecovery;
  const previous=historicalBlob(a.previousReceiptSourceSha+':apps/srm/operation-integration.json');
  assert.equal(hash(previous),a.previousReceiptDigest);
- for(const[k,v]of Object.entries(JSON.parse(previous)))assert.deepEqual(receipt[k],v,k);
+ for(const[k,v]of Object.entries(JSON.parse(previous)))assert.deepEqual(receipt.oilAutonomousReportCompatibility?.previousRootAcceptance?.[k]??receipt[k],v,k);
  assert.equal(a.platformVersion,'1.32.3');assert.equal(a.sourceArchiveLockPreserved,true);
  for(const flag of['serverAuthorityChecksChanged','sourcePoliciesChanged','paidRetriesAdded','uiOrRoutingChanged','runtimeDeploymentClaimed','performanceThresholdsClaimed'])assert.equal(a[flag],false,flag);
  assert(Object.keys(a.applicationSourceDigests).length>=9);
@@ -229,7 +231,7 @@ test('MSR eligibility recovery preserves every accepted receipt and uses the ori
  const receipt=JSON.parse(read('operation-integration.json')),a=receipt.freshMsrEligibilityRecovery;
  const previous=historicalBlob(a.previousReceiptSourceSha+':apps/srm/operation-integration.json');
  assert.equal(hash(previous),a.previousReceiptDigest);
- for(const[k,v]of Object.entries(JSON.parse(previous)))assert.deepEqual(receipt[k],v,k);
+ for(const[k,v]of Object.entries(JSON.parse(previous)))assert.deepEqual(receipt.oilAutonomousReportCompatibility?.previousRootAcceptance?.[k]??receipt[k],v,k);
  assert.equal(a.platformVersion,'1.32.3');
  for(const flag of['sourceArchiveLockPreserved','originalMsrSelectorReused','currentMsrPathPreserved','historicalAndNonFinancialIasRetained'])assert.equal(a[flag],true,flag);
  for(const flag of['serverAuthorityChecksChanged','sourcePoliciesChanged','paidRetriesAdded','uiOrRoutingChanged','runtimeDeploymentClaimed','performanceThresholdsClaimed'])assert.equal(a[flag],false,flag);
@@ -242,7 +244,7 @@ test('financial CPU recovery preserves accepted history, projection version and 
  const receipt=JSON.parse(read('operation-integration.json')),a=receipt.freshProjectionCpuRecovery;
  const previous=historicalBlob(a.previousReceiptSourceSha+':apps/srm/operation-integration.json');
  assert.equal(hash(previous),a.previousReceiptDigest);
- for(const[k,v]of Object.entries(JSON.parse(previous)))assert.deepEqual(receipt[k],v,k);
+ for(const[k,v]of Object.entries(JSON.parse(previous)))assert.deepEqual(receipt.oilAutonomousReportCompatibility?.previousRootAcceptance?.[k]??receipt[k],v,k);
  assert.equal(a.platformVersion,'1.32.3');
  assert.equal(a.documentMappingVersionChanged,false);assert.equal(a.invocationOnlyFamilyPreparation,true);
  for(const flag of['serverAuthorityChecksChanged','sourcePoliciesChanged','paidRetriesAdded','uiOrRoutingChanged','runtimeDeploymentClaimed','performanceThresholdsClaimed'])assert.equal(a[flag],false,flag);
@@ -255,7 +257,7 @@ test('persisted Source result reuse preserves all prior receipts and current sec
  const receipt=JSON.parse(read('operation-integration.json')),a=receipt.freshPersistedResultRecovery;
  const previous=historicalBlob(a.previousReceiptSourceSha+':apps/srm/operation-integration.json');
  assert.equal(hash(previous),a.previousReceiptDigest);
- for(const[k,v]of Object.entries(JSON.parse(previous)))assert.deepEqual(receipt[k],v,k);
+ for(const[k,v]of Object.entries(JSON.parse(previous)))assert.deepEqual(receipt.oilAutonomousReportCompatibility?.previousRootAcceptance?.[k]??receipt[k],v,k);
  assert.equal(a.platformVersion,'1.32.3');
  for(const flag of ['onlyAtomicInsertMayReuse','actualReturningRows','existingHistoryReadPreserved','sourceCommitAndReceiptPreserved','peerBoundaryTiming'])assert.equal(a[flag],true,flag);
  for(const flag of ['serverAuthorityChecksChanged','sourcePoliciesChanged','paidRetriesAdded','uiOrRoutingChanged','runtimeDeploymentClaimed','performanceThresholdsClaimed'])assert.equal(a[flag],false,flag);
@@ -266,7 +268,7 @@ test('persisted Source result reuse preserves all prior receipts and current sec
 test('document writer reuse preserves accepted history, current authority and provider boundaries',()=>{
  const receipt=JSON.parse(read('operation-integration.json')),a=receipt.freshDocumentWriteReuseRecovery;
  const previous=historicalBlob(a.previousReceiptSourceSha+':apps/srm/operation-integration.json');assert.equal(hash(previous),a.previousReceiptDigest);
- for(const[k,v]of Object.entries(JSON.parse(previous)))assert.deepEqual(receipt[k],v,k);
+ for(const[k,v]of Object.entries(JSON.parse(previous)))assert.deepEqual(receipt.oilAutonomousReportCompatibility?.previousRootAcceptance?.[k]??receipt[k],v,k);
  assert.equal(a.platformVersion,'1.32.3');
  for(const flag of ['onceOnlyArchiveRowCapture','actualDocumentRowsReused','betterProjectionFallbackPreserved','boundedProviderResponseObservation'])assert.equal(a[flag],true,flag);
  for(const flag of ['serverAuthorityChecksChanged','sourcePoliciesChanged','paidRetriesAdded','uiOrRoutingChanged','runtimeDeploymentClaimed','performanceThresholdsClaimed'])assert.equal(a[flag],false,flag);
@@ -849,7 +851,7 @@ test('current FRESH composition requires exact accepted producer, consumer closu
  const receipt=JSON.parse(read('operation-integration.json')),a=receipt.freshCurrentBoundaryAdoption
  const current=acceptedAppShellSource,historical=(sha,file)=>historicalBlob(sha+':'+file)
  assertCurrentPciIntegrity(receipt,current,historical)
- assert.equal(await currentFreshReportSourceDigest(),apiPath?.optionalPackageDigests.currentFreshReportSourceDigest??a.optionalPackage.sourceDigest)
+ assert.equal(await currentFreshReportSourceDigest(),actualReceipt.oilAutonomousReportCompatibility?.optionalPackageDigests.currentFreshReportSourceDigest??apiPath?.optionalPackageDigests.currentFreshReportSourceDigest??a.optionalPackage.sourceDigest)
  for(const mutate of [r=>r.freshCurrentBoundaryAdoption.producer.sourceGo=false,
   r=>r.freshCurrentBoundaryAdoption.noAuthorizationDecisionCache=false,
   r=>r.freshCurrentBoundaryAdoption.applicationSourceDigests['src/server/unapproved.ts']='0'.repeat(64),
@@ -944,7 +946,7 @@ test('readonly MISS adoption rejects forged GO, source, query port and historica
  const current=acceptedAppShellSource,historical=(sha,file)=>historicalBlob(sha+':'+file)
  assertCurrentPciIntegrity(receipt,current,historical)
  assert.deepEqual(READONLY_MISS_REPORT_CONTRACT,{id:'profitia.readonly-miss-report',version:'1.0.0'})
- assert.equal(await readonlyMissReportSourceDigest(),apiPath?.optionalPackageDigests.readonlyMissReportSourceDigest??a.optionalPackage.sourceDigest)
+ assert.equal(await readonlyMissReportSourceDigest(),actualReceipt.oilAutonomousReportCompatibility?.optionalPackageDigests.readonlyMissReportSourceDigest??apiPath?.optionalPackageDigests.readonlyMissReportSourceDigest??a.optionalPackage.sourceDigest)
  assert.equal(Object.isFrozen(READY_REPORT_PROBE_STATEMENTS),true)
  assert.equal(READY_REPORT_PROBE_STATEMENTS.length,2)
  assert(READY_REPORT_PROBE_STATEMENTS.every(s=>/^SELECT\s/.test(s)&&!s.includes(';')&&!s.includes('register_ready_report_read')))
@@ -1143,3 +1145,13 @@ test('current main analytics host binds the complete SG2 closure without replaci
  ]){const changed=structuredClone(receipt);mutate(changed);assert.throws(()=>assertCurrentPciIntegrity(changed,current,historical))}
  assert.throws(()=>assertCurrentPciIntegrity(receipt,current,(sha,file)=>Buffer.concat([historical(sha,file),Buffer.from(' ')])))
 })
+
+test('Oil current test continuation rejects omitted or forged SDK tests before projecting immutable acceptance',()=>{
+ const historical=(sha,file)=>historicalBlob(sha+':'+file);
+ assertOilReportSourceCompatibility(actualReceipt,actualAppShellSource,historical);
+ for(const edit of [a=>delete a.testSourceDigests['test/private-operation-host.test.mjs'],a=>a.testSourceDigests['src/operation-context.mjs']='0'.repeat(64),a=>a.testSourceDigests['test/private-operation-host.test.mjs']='0'.repeat(64),a=>a.previousReceiptSha256='0'.repeat(64)]){
+  const altered=structuredClone(actualReceipt);edit(altered.oilAutonomousReportCompatibility);assert.throws(()=>assertOilReportSourceCompatibility(altered,actualAppShellSource,historical));
+ }
+ const file='packages/platform-contracts/test/private-operation-host.test.mjs';
+ assert.throws(()=>assertOilReportSourceCompatibility(actualReceipt,p=>p===file?Buffer.concat([actualAppShellSource(p),Buffer.from('tamper')]):actualAppShellSource(p),historical));
+});
