@@ -2,9 +2,21 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import {execFileSync} from 'node:child_process'
-import {assistantM2Predecessor,oilReportTransportPredecessor,assistantIngressPredecessor,ASSISTANT_M2_PATHS,ASSISTANT_M2_PRODUCER_PATHS} from './assistant-m2-integrity.mjs'
+import {assistantM2Predecessor,oilReportTransportPredecessor,assistantIngressPredecessor,assistantOutputFencePredecessor,ASSISTANT_M2_PATHS,ASSISTANT_M2_PRODUCER_PATHS} from './assistant-m2-integrity.mjs'
 const root=new URL('../../../',import.meta.url),current=p=>readFileSync(new URL(p,root))
 const historical=(sha,p)=>execFileSync('git',['show',sha+':'+p],{cwd:root})
+test('native SRM output correction is exact before preserving all earlier acceptance',()=>{
+ const repair=assistantOutputFencePredecessor(current,historical);assert(repair)
+ for(const p of repair.manifest.changedSourcePaths)assert.throws(()=>assistantOutputFencePredecessor(f=>f===p?Buffer.concat([current(f),Buffer.from('UNACCEPTED')]):current(f),historical),p)
+ const file='apps/sg-runtime/assistant-context-integration.json'
+ for(const mutate of [r=>r.srmAssistantOutputFenceRepair.owner.sourceSha='0'.repeat(40),r=>r.srmAssistantOutputFenceRepair.noGrantChange=false,r=>r.srmAssistantOutputFenceRepair.changedSourcePaths.push('apps/srm/unadmitted.ts'),r=>r.srmAssistantIngressRepair.noGrantChange=false,r=>r.oilRuntimeTransportRepair.noAutomaticRetry=false]){
+  const receipt=JSON.parse(current(file));mutate(receipt)
+  assert.throws(()=>assistantOutputFencePredecessor(p=>p===file?Buffer.from(JSON.stringify(receipt)):current(p),historical))
+ }
+ assert.deepEqual(repair.previousBytes(file),historical(repair.manifest.previousSourceSha,file))
+ assert.equal(assistantOutputFencePredecessor(()=>{throw Object.assign(Error('ABSENT'),{code:'ENOENT'})},historical),null)
+ assert.throws(()=>assistantOutputFencePredecessor(()=>{throw Object.assign(Error('UNREADABLE'),{code:'EACCES'})},historical),{code:'EACCES'})
+})
 test('M2 adopts exact current consumer/producer source without rewriting historical acceptance',()=>{
  const view=assistantM2Predecessor(current,historical);assert(view)
  assert.deepEqual(view.previousBytes('apps/sg-runtime/package.json'),historical(view.manifest.previousSourceSha,'apps/sg-runtime/package.json'))
