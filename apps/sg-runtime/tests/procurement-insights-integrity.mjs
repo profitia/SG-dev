@@ -39,6 +39,7 @@ export const PROCUREMENT_INSIGHTS_PATHS=Object.freeze([
  "apps/sg-runtime/tests/assistant-m2-integrity.mjs",
  "apps/sg-runtime/tests/assistant-multi-source.test.ts",
  "apps/sg-runtime/tests/newsfeed-proxy.test.ts",
+ "apps/sg-runtime/tests/pci-smart-integrity.test.mjs",
  "apps/sg-runtime/tests/procurement-insights-integrity.mjs",
  "apps/sg-runtime/tests/procurement-insights-integrity.test.mjs",
  "apps/sg-runtime/tests/procurement-insights.test.tsx",
