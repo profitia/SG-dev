@@ -1,6 +1,7 @@
 // Test/build-only source continuation. Never imported by a product runtime.
 import assert from 'node:assert/strict'
 import {createHash} from 'node:crypto'
+import {assistantM2Predecessor} from '../../sg-runtime/tests/assistant-m2-integrity.mjs'
 const file='apps/srm/assistant-context-integration.json'
 export const SRM_ASSISTANT_M2_PATHS=Object.freeze([
  'apps/srm/app/api/xray/assistant-context/route.ts',
@@ -19,6 +20,10 @@ export const SRM_ASSISTANT_M2_PATHS=Object.freeze([
 ])
 const hash=bytes=>createHash('sha256').update(bytes).digest('hex')
 export function srmAssistantM2Predecessor(current,historical){
+ // Both current owners are checked before either historical byte view.
+ // The integrated SG2 view hides its own manifest, ending this recursion.
+ const consumer=assistantM2Predecessor(current,historical)
+ if(consumer)return srmAssistantM2Predecessor(consumer.previousBytes,historical)
  let bytes
  try{bytes=current(file)}catch(error){
   const text=String(error?.stderr??error?.message??'')
