@@ -1,6 +1,7 @@
 import {calendarStoragePredecessor} from '../../apps/architecture-lab/ecr-stage03-sdk-compatibility.mjs'
 import assert from 'node:assert/strict'
 import {SOURCE_HUB_CONTRACT_VERSION} from '../../packages/platform-source-hub-contracts/index.mjs'
+import {NEWSFEED_API_CONTRACT_VERSION} from '../../packages/newsfeed-contracts/index.mjs'
 import { execFileSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import fs from 'node:fs'
@@ -259,7 +260,10 @@ test('Stage2A adopts four separate versioned source families and the real Newsfe
  assert.deepEqual(a.implementedFamilies,{'news-discovery':'1.0.0','economic-calendar':'1.0.0','indicators':'1.0.0','external-forecasts':'1.0.0'})
  assert.deepEqual(a.futureFamilies,['market-observations']);assert.equal(a.legacyCompatibility,'NewsDiscovery 0.1.0')
  assert.equal(a.consumer.contractPackage,json('packages/newsfeed-contracts/package.json').name)
- assert.equal(a.consumer.apiVersion,json('packages/newsfeed-contracts/package.json').version)
+ // Compare the immutable Stage2A record to its accepted source. Additive saved
+ // search package releases preserve the existing 1.0 API contract separately.
+ assert.equal(a.consumer.apiVersion,JSON.parse(git(['show','addffa47dda40c96af263973c61aa6652fb74b08:packages/newsfeed-contracts/package.json'])).version)
+ assert.equal(a.consumer.apiVersion,NEWSFEED_API_CONTRACT_VERSION)
  assert.equal(a.consumer.adoptedFamily,'news-discovery')
  assert.equal(a.runtimeAdmission,'NOT_ACTIVATED');assert.equal(a.infrastructureActivationAuthorized,false)
  const evidence=json('apps/platform-source-hub/docs/live-evidence.json')
