@@ -9,7 +9,6 @@ import type {AccessStoreBinding,AccessQuery} from '@profitia/platform-contracts/
 import {createAssistantContextGateway,createBenchmarkContextAdapter} from '../../../../packages/assistant-context-gateway/src/index.mjs'
 import {createAssistantHistory} from './history'
 import {createAssistantModel} from './model'
-import {cognitionOk} from '@/lib/api/middleware'
 import targets from '@/deployment/assistant-m1-targets.json'
 import type {BenchmarkRangePreset} from '@/lib/benchmark/contracts'
 type Env=Readonly<Record<string,string|undefined>>
@@ -73,7 +72,10 @@ export function createSg2AssistantRuntime(config:AssistantConfiguration,options:
   if(selected!==organisationId||!options.market||!(request instanceof Request)||signal?.aborted)return unavailable()
   const a=options.market,result=await a.executor.execute({contractId:OPERATION_CONTRACT.id,contractVersion:OPERATION_CONTRACT.version,
    operation:'knowledge.read',organisationId,resourceId:'market-analytics:'+seriesId,payload:{seriesName:seriesId,range},request},
-   async()=>cognitionOk(await a.series({seriesName:seriesId,range})))
+   async()=>{
+    const {cognitionOk}=await import('@/lib/api/middleware')
+    return cognitionOk(await a.series({seriesName:seriesId,range}))
+   })
   if(!(result.value instanceof Response)||!result.value.ok)return unavailable()
   return result.value.json()
  }})]})

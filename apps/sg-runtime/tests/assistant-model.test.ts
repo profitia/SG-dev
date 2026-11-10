@@ -1,8 +1,20 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {randomUUID} from 'node:crypto'
+import {spawnSync} from 'node:child_process'
 import {createAssistantUsageStore} from '@profitia/platform-contracts/assistant-usage'
 import {createAssistantModel} from '../lib/assistant/model'
+test('reading disabled assistant configuration leaves legacy provider environment initialisation lazy',()=>{
+ const result=spawnSync(process.execPath,['--import','tsx','--input-type=module','-e',`
+  import assert from 'node:assert/strict';
+  const {readAssistantConfiguration}=await import('./lib/assistant/runtime.ts');
+  assert.equal(readAssistantConfiguration({}),null);
+  process.env.MACROBOND_CLIENT_ID='SYNTHETIC_AFTER_CONFIGURATION_IMPORT';
+  const {serverEnv}=await import('./lib/env.ts');
+  assert.equal(serverEnv.MACROBOND_CLIENT_ID,'SYNTHETIC_AFTER_CONFIGURATION_IMPORT');
+ `],{cwd:new URL('../',import.meta.url),encoding:'utf8'})
+ assert.equal(result.status,0,result.stderr)
+})
 const input=()=>[{role:'user' as const,content:'SYNTHETIC question'}]
 function fixture(events?:()=>AsyncIterable<unknown>){
  const commands:any[]=[],posts:any[]=[],executionId=randomUUID(),schemaDigest='a'.repeat(64)
