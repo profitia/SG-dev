@@ -17,6 +17,9 @@ export const ARTIFACT = 'sg2-controlled-operation-proof'
 export const CONTROLLED_CANDIDATE_PREFIXES = Object.freeze(['sg2/', 'srm/', 'architecture/'])
 const eligibleCandidateBranch = ref => typeof ref === 'string' && CONTROLLED_CANDIDATE_PREFIXES.some(prefix => ref.startsWith(prefix) && ref.length > prefix.length)
 export const PRIVATE_PACKAGES = Object.freeze(['@profitia/advisory-widget', '@profitia/cic-core', '@profitia/cic-procurement'])
+// One published CIC artifact accepted by the M1 owner; names and token scope
+// remain unchanged. No floating version, registry or alternate artifact.
+export const CIC_ANALYTICAL_PIN=Object.freeze({version:'1.3.0',resolved:'https://npm.pkg.github.com/download/@profitia/cic-core/1.3.0/b66e166cf5dd698796036ea5ccfedea4fe24ec19',integrity:'sha512-RnA24q7wPkz1cqXUA7g6JfS2uZnLQg3GfXzyihvzvQh2r+DgTwb4z/3v/uCtW63xSvl4GX7ur8pBUuGldEzWBA=='})
 export const LOCAL_PACKAGES = Object.freeze({
   '@profitia/platform-contracts': '../../packages/platform-contracts',
   '@profitia/sg2-price-change-index-ui': '../../packages/sg2-price-change-index-ui',
@@ -3277,9 +3280,382 @@ export function assertAcgG1ReviewEntry(file,entry){
  if(!e||e.sha!==file.sha||entry!==e.mode+' blob '+file.sha+'\t'+file.filename+'\0')fail('ACG_G1_FILE_MODE_REJECTED')
 }
 
+
+// Owner-approved M1 dependency: closed blobs, modes and actual owner profiles.
+export const ACG_M1_EXECUTION_REVIEW=Object.freeze({prNumber:937,branch:'architecture/acg-m1-execution-20261109',sourceSha:'d8142a087759a285c431ff23769d3d9f562f545f',baseSha:'b39fcc6f99ce6e06184080e5eaf5e6e4c7e120b5',entries:Object.freeze({
+  ".github/workflows/assistant-context-gateway-ci.yml": {
+    "sha": "f88119a3291fea0b448f89a184268b1f87c046a5",
+    "status": "modified",
+    "mode": "100644",
+    "projectKey": "ARCHITECTURE",
+    "owner": "Architecture Platform"
+  },
+  "Canon/registries/operation-access-matrix-v1.json": {
+    "sha": "163fec8f8b3cc0aafb4a60c0e18a3b446cbc3149",
+    "status": "modified",
+    "mode": "100644",
+    "projectKey": "ARCHITECTURE",
+    "owner": "Governance Source Layer"
+  },
+  "Canon/v1.0-operation-context-and-access-contract.md": {
+    "sha": "20c89648fbf6e8f360ac72048a92ca87b76c2d02",
+    "status": "modified",
+    "mode": "100644",
+    "projectKey": "ARCHITECTURE",
+    "owner": "Governance Source Layer"
+  },
+  "apps/architecture-lab/assistant-m1-sdk-compatibility.json": {
+    "sha": "c676bd74579083a69565f44895379ab253351b2d",
+    "status": "added",
+    "mode": "100644",
+    "projectKey": "ARCHITECTURE",
+    "owner": "Architecture Platform"
+  },
+  "apps/architecture-lab/assistant-m1-sdk-compatibility.mjs": {
+    "sha": "6f8130890450ad3ce7f79113c2d1f83ab1a50ba1",
+    "status": "added",
+    "mode": "100644",
+    "projectKey": "ARCHITECTURE",
+    "owner": "Architecture Platform"
+  },
+  "apps/architecture-lab/test/sdk-compatibility.test.mjs": {
+    "sha": "23d2487a6c500dd6d0c265a7e22aa25d66747490",
+    "status": "modified",
+    "mode": "100644",
+    "projectKey": "ARCHITECTURE",
+    "owner": "Architecture Platform"
+  },
+  "apps/sg-runtime/operation-integration.json": {
+    "sha": "17b87ebf3ce9e35780e03587be841860b0f417f3",
+    "status": "modified",
+    "mode": "100644",
+    "projectKey": "SG2",
+    "owner": "SG Runtime"
+  },
+  "apps/sg-runtime/tests/category-operation.test.ts": {
+    "sha": "35b9a787798311ae1fd9eb3a7ed597289961fec0",
+    "status": "modified",
+    "mode": "100644",
+    "projectKey": "SG2",
+    "owner": "SG Runtime"
+  },
+  "apps/sg-runtime/tests/diagnostic-telemetry-adoption.test.mjs": {
+    "sha": "59b6d14e35edf75a08269bf9f6e1e5c027438bc4",
+    "status": "modified",
+    "mode": "100644",
+    "projectKey": "SG2",
+    "owner": "SG Runtime"
+  },
+  "apps/sg-runtime/tests/identity-runtime.test.ts": {
+    "sha": "b1482a970a6e97127acceda1afaec59e3b14c26c",
+    "status": "modified",
+    "mode": "100644",
+    "projectKey": "SG2",
+    "owner": "SG Runtime"
+  },
+  "apps/sg-runtime/tests/integrated-buyer-journey-package.test.mjs": {
+    "sha": "abd206fb6214a6a84b243e5e21cd00136b0f5b9a",
+    "status": "modified",
+    "mode": "100644",
+    "projectKey": "SG2",
+    "owner": "SG Runtime"
+  },
+  "apps/sg-runtime/tests/native-sql-roundtrips.test.mjs": {
+    "sha": "3b5e41eff030adb5aca96b3e21f020c5dcb8790d",
+    "status": "modified",
+    "mode": "100644",
+    "projectKey": "SG2",
+    "owner": "SG Runtime"
+  },
+  "apps/sg-runtime/tests/operation-context.test.mjs": {
+    "sha": "c918fa390c2618d3f9cc71ee38117c979bb327a5",
+    "status": "modified",
+    "mode": "100644",
+    "projectKey": "SG2",
+    "owner": "SG Runtime"
+  },
+  "apps/sg-runtime/tests/pci-smart-integrity.mjs": {
+    "sha": "15625d7f5721b13b0a9dc46d03a5bfa37ad43c2f",
+    "status": "modified",
+    "mode": "100644",
+    "projectKey": "SG2",
+    "owner": "SG Runtime"
+  },
+  "apps/sg-runtime/tests/pci-smart-integrity.test.mjs": {
+    "sha": "0718b16857a99f1e87ea5378a07752b9e6c2918d",
+    "status": "modified",
+    "mode": "100644",
+    "projectKey": "SG2",
+    "owner": "SG Runtime"
+  },
+  "apps/sg-runtime/tests/porr-demo-middleware.test.ts": {
+    "sha": "a339a281345a864f15b2d4092be2901b3dd3a321",
+    "status": "modified",
+    "mode": "100644",
+    "projectKey": "SG2",
+    "owner": "SG Runtime"
+  },
+  "apps/sg-runtime/tests/private-host.integration.test.mjs": {
+    "sha": "a0be640a5c7a5a19b78d7fb05d4490aa906897db",
+    "status": "modified",
+    "mode": "100644",
+    "projectKey": "SG2",
+    "owner": "SG Runtime"
+  },
+  "apps/sg-runtime/tests/self-service-account.test.ts": {
+    "sha": "afaed35a2a760ce0fa275320637e0da21fc33687",
+    "status": "modified",
+    "mode": "100644",
+    "projectKey": "SG2",
+    "owner": "SG Runtime"
+  },
+  "apps/sg-runtime/tests/xray-fresh-performance-adoption.test.mjs": {
+    "sha": "45fa31a0d22320542c858a3e2a5bc3fb8273bcf0",
+    "status": "modified",
+    "mode": "100644",
+    "projectKey": "SG2",
+    "owner": "SG Runtime"
+  },
+  "apps/sg-runtime/tests/xray-gateway.test.ts": {
+    "sha": "27239de29a2362150febdf75bfa4173aeb998a08",
+    "status": "modified",
+    "mode": "100644",
+    "projectKey": "SG2",
+    "owner": "SG Runtime"
+  },
+  "apps/srm/operation-integration.json": {
+    "sha": "56a50554dc31b7daed1c1a4493b0c391d2d13308",
+    "status": "modified",
+    "mode": "100644",
+    "projectKey": "SRM",
+    "owner": "SRM Runtime"
+  },
+  "apps/srm/scripts/diagnostic-telemetry-adoption.test.mjs": {
+    "sha": "19c448507031d8a30e6778fac37b21fed5866db7",
+    "status": "modified",
+    "mode": "100644",
+    "projectKey": "SRM",
+    "owner": "SRM Runtime"
+  },
+  "apps/srm/scripts/native-execution-adoption.test.mjs": {
+    "sha": "7a633c656a5f21035a74b2456ee2978edc3669d7",
+    "status": "modified",
+    "mode": "100644",
+    "projectKey": "SRM",
+    "owner": "SRM Runtime"
+  },
+  "apps/srm/scripts/operation-context.test.mjs": {
+    "sha": "c2a5752fb5654a3a919fe1ba00bb7ea9cee56681",
+    "status": "modified",
+    "mode": "100644",
+    "projectKey": "SRM",
+    "owner": "SRM Runtime"
+  },
+  "apps/srm/scripts/private-host.integration.test.mjs": {
+    "sha": "321ca6af0651565f350c388b20eef195039c952a",
+    "status": "modified",
+    "mode": "100644",
+    "projectKey": "SRM",
+    "owner": "SRM Runtime"
+  },
+  "apps/srm/scripts/request-quota-adoption.test.mjs": {
+    "sha": "a79baafcd875c69841182d1cc134a7568eda2c6f",
+    "status": "modified",
+    "mode": "100644",
+    "projectKey": "SRM",
+    "owner": "SRM Runtime"
+  },
+  "apps/srm/scripts/source-hub-sdk-compatibility.mjs": {
+    "sha": "894b433202a61fa4c760593cca0bfdc5275047d4",
+    "status": "modified",
+    "mode": "100644",
+    "projectKey": "SRM",
+    "owner": "SRM Runtime"
+  },
+  "apps/srm/scripts/supplier-location-admission.integration.test.mjs": {
+    "sha": "564771f6c7f438837a1cb03d1c6e64d65e2e5c5b",
+    "status": "modified",
+    "mode": "100644",
+    "projectKey": "SRM",
+    "owner": "SRM Runtime"
+  },
+  "packages/assistant-context-contracts/package.json": {
+    "sha": "45a389f274c6bd2b102403583eb18583d51efe1a",
+    "status": "modified",
+    "mode": "100644",
+    "projectKey": "ARCHITECTURE",
+    "owner": "Architecture Platform"
+  },
+  "packages/assistant-context-contracts/src/index.d.mts": {
+    "sha": "ff14b296bf55fac8b254abac2e0c1fd0e78fcf60",
+    "status": "modified",
+    "mode": "100644",
+    "projectKey": "ARCHITECTURE",
+    "owner": "Architecture Platform"
+  },
+  "packages/assistant-context-contracts/src/index.mjs": {
+    "sha": "4c3bce4c4abedba5c4366307e307b5de3a60bc8a",
+    "status": "modified",
+    "mode": "100644",
+    "projectKey": "ARCHITECTURE",
+    "owner": "Architecture Platform"
+  },
+  "packages/assistant-context-gateway/package.json": {
+    "sha": "f8fb36356d413aebd797c6266c0669dcf3e451ac",
+    "status": "modified",
+    "mode": "100644",
+    "projectKey": "ARCHITECTURE",
+    "owner": "Architecture Platform"
+  },
+  "packages/assistant-context-gateway/src/index.d.mts": {
+    "sha": "6a85d36db2aa2b6de436b65756b10ecd07f0d948",
+    "status": "modified",
+    "mode": "100644",
+    "projectKey": "ARCHITECTURE",
+    "owner": "Architecture Platform"
+  },
+  "packages/assistant-context-gateway/src/index.mjs": {
+    "sha": "32ec2f6da053e55fb69bf086257df8c53ae5e47f",
+    "status": "modified",
+    "mode": "100644",
+    "projectKey": "ARCHITECTURE",
+    "owner": "Architecture Platform"
+  },
+  "packages/assistant-context-gateway/test/gateway.test.mjs": {
+    "sha": "a59888bed3bca7ccd8b6132825d39f73f7d75700",
+    "status": "modified",
+    "mode": "100644",
+    "projectKey": "ARCHITECTURE",
+    "owner": "Architecture Platform"
+  },
+  "packages/platform-contracts/current-fresh-report/test/current-fresh-report.test.mjs": {
+    "sha": "e129d69d23205ca0c89815e21f8677adfe0a179b",
+    "status": "modified",
+    "mode": "100644",
+    "projectKey": "ARCHITECTURE",
+    "owner": "Architecture Platform"
+  },
+  "packages/platform-contracts/migrations/access/030-assistant-operations.sql": {
+    "sha": "ba2bbc636d3f78ed0bdc712e91f6aeda9746d545",
+    "status": "added",
+    "mode": "100644",
+    "projectKey": "ARCHITECTURE",
+    "owner": "Architecture Platform"
+  },
+  "packages/platform-contracts/package.json": {
+    "sha": "6c6d0c4b67f751d02cbaeddb88e9e9b43d3156c6",
+    "status": "modified",
+    "mode": "100644",
+    "projectKey": "ARCHITECTURE",
+    "owner": "Architecture Platform"
+  },
+  "packages/platform-contracts/readonly-miss-report/test/readonly-miss-report.test.mjs": {
+    "sha": "9166a1b887a8e082440addafac8af6d387fb07f5",
+    "status": "modified",
+    "mode": "100644",
+    "projectKey": "ARCHITECTURE",
+    "owner": "Architecture Platform"
+  },
+  "packages/platform-contracts/src/assistant-operation-host.d.mts": {
+    "sha": "420747b0b5ad9a9fe5f12bbdaca80d48a3406083",
+    "status": "added",
+    "mode": "100644",
+    "projectKey": "ARCHITECTURE",
+    "owner": "Architecture Platform"
+  },
+  "packages/platform-contracts/src/assistant-operation-host.mjs": {
+    "sha": "201d40081298116e8aad9b6288d9ccbf6975a717",
+    "status": "added",
+    "mode": "100644",
+    "projectKey": "ARCHITECTURE",
+    "owner": "Architecture Platform"
+  },
+  "packages/platform-contracts/src/assistant-usage.d.mts": {
+    "sha": "05f953e5c2953f670190510d75fd34cad78457da",
+    "status": "added",
+    "mode": "100644",
+    "projectKey": "ARCHITECTURE",
+    "owner": "Architecture Platform"
+  },
+  "packages/platform-contracts/src/assistant-usage.mjs": {
+    "sha": "27a1d4f4297cf7f7dfe01685eb6a4bda47827518",
+    "status": "added",
+    "mode": "100644",
+    "projectKey": "ARCHITECTURE",
+    "owner": "Architecture Platform"
+  },
+  "packages/platform-contracts/src/operation-context.d.mts": {
+    "sha": "e6a8d3c78bb826b4106f192bc93573d4b984db3f",
+    "status": "modified",
+    "mode": "100644",
+    "projectKey": "ARCHITECTURE",
+    "owner": "Architecture Platform"
+  },
+  "packages/platform-contracts/src/operation-context.mjs": {
+    "sha": "7876cea1facda17c7f2aa240bd10cfccd1f792a2",
+    "status": "modified",
+    "mode": "100644",
+    "projectKey": "ARCHITECTURE",
+    "owner": "Architecture Platform"
+  },
+  "packages/platform-contracts/test/assistant-native-postgres.test.mjs": {
+    "sha": "bc7a1db593f04e724bddac084ec0902b036bd7b0",
+    "status": "added",
+    "mode": "100644",
+    "projectKey": "ARCHITECTURE",
+    "owner": "Architecture Platform"
+  },
+  "packages/platform-contracts/test/assistant-operation-host.test.mjs": {
+    "sha": "9cac1aae230abb6bb3b563ce300c65163e55e976",
+    "status": "added",
+    "mode": "100644",
+    "projectKey": "ARCHITECTURE",
+    "owner": "Architecture Platform"
+  },
+  "packages/platform-contracts/test/assistant-usage.test.mjs": {
+    "sha": "02e272db1fca05d72078e65508a261adc5054c75",
+    "status": "added",
+    "mode": "100644",
+    "projectKey": "ARCHITECTURE",
+    "owner": "Architecture Platform"
+  },
+  "packages/platform-contracts/test/operation-context.test.mjs": {
+    "sha": "02489d7f2810a0ea42b4583a42c3a604a6ff4d9b",
+    "status": "modified",
+    "mode": "100644",
+    "projectKey": "ARCHITECTURE",
+    "owner": "Architecture Platform"
+  },
+  "packages/platform-contracts/test/private-operation-host.test.mjs": {
+    "sha": "0dda8548d39ae5c4109b2ac3c6783a5a7ac8db6c",
+    "status": "modified",
+    "mode": "100644",
+    "projectKey": "ARCHITECTURE",
+    "owner": "Architecture Platform"
+  },
+  "scripts/governance/platform-source-hub-foundation.test.mjs": {
+    "sha": "544d40b2ae17134042a465e1c50cbc5768651b45",
+    "status": "modified",
+    "mode": "100644",
+    "projectKey": "ARCHITECTURE",
+    "owner": "Governance Source Layer"
+  }
+})})
+function isPinnedAcgM1Review(files){return Array.isArray(files)&&files.length===Object.keys(ACG_M1_EXECUTION_REVIEW.entries).length&&new Set(files.map(f=>f?.filename)).size===files.length&&files.every(f=>{const e=ACG_M1_EXECUTION_REVIEW.entries[f?.filename];return Object.hasOwn(ACG_M1_EXECUTION_REVIEW.entries,f?.filename)&&e&&f.sha===e.sha&&f.status===e.status&&!Object.hasOwn(f,'previous_filename')})}
+export function assertAcgM1ReviewEntry(file,entry){const e=ACG_M1_EXECUTION_REVIEW.entries[file?.filename];if(!e||e.sha!==file.sha||entry!==e.mode+' blob '+file.sha+'\t'+file.filename+'\0')fail('ACG_M1_FILE_MODE_REJECTED')}
+function assertAcgM1ReviewRoutes(files,repositoryRoot){
+ for(const projectKey of ['ARCHITECTURE','SG2','SRM']){
+  const selected=files.filter(f=>ACG_M1_EXECUTION_REVIEW.entries[f.filename].projectKey===projectKey),profile=resolveProjectProfile(projectKey,repositoryRoot)
+  if(profile.repository.slug!==REPOSITORY)fail('ACG_M1_ROUTING_REJECTED')
+  const routing=resolveProjectRouting({profile,targets:selected.map(f=>f.filename),repositoryRoot})
+  if(!routing.ok||routing.results.some(r=>r.projectBoundaryStatus!=='ALLOWED'||r.baselineClassification!=='ALIGNED'||r.currentOwner!==ACG_M1_EXECUTION_REVIEW.entries[r.normalizedPath]?.owner))fail('ACG_M1_ROUTING_REJECTED')
+ }
+}
+
 export function assertArchitectureFiles(pr, files, repositoryRoot = controlRoot()) {
   if (!Number.isInteger(pr.changed_files) || pr.changed_files < 1 || pr.changed_files > 300 || !shaPattern.test(pr.base?.sha ?? '')
     || !Array.isArray(files) || files.length !== pr.changed_files) fail('ARCHITECTURE_FILE_LIST_REQUIRED')
+  if(isPinnedAcgM1Review(files)){assertAcgM1ReviewRoutes(files,repositoryRoot);return}
   if(isPinnedOilReportReview(files)){assertOilReportRoutes(files,repositoryRoot);return}
   if(isPinnedMarketSymbolReview(files)){assertMarketSymbolRoutes(files,repositoryRoot);return}
   if(isPinnedEcrBackendReview(files)){assertEcrBackendRoutes(files,repositoryRoot);return}
@@ -3317,6 +3693,7 @@ export function assertArchitectureFiles(pr, files, repositoryRoot = controlRoot(
 
 export function selectCandidate(context, pr, expectedSha, {files, repositoryRoot = controlRoot()} = {}) {
   const family = candidateFamily(context, pr, expectedSha)
+  if(pr&&(pr.number===ACG_M1_EXECUTION_REVIEW.prNumber||pr.head.ref===ACG_M1_EXECUTION_REVIEW.branch||isPinnedAcgM1Review(files))){if(family!=='ARCHITECTURE'||pr.number!==ACG_M1_EXECUTION_REVIEW.prNumber||pr.head.ref!==ACG_M1_EXECUTION_REVIEW.branch||!isPinnedAcgM1Review(files))fail('ACG_M1_REVIEW_IDENTITY_REJECTED')}
   if(pr&&(pr.number===ACG_G1_REVIEW.prNumber||pr.head.ref===ACG_G1_REVIEW.branch||isPinnedAcgG1Review(files))){
    if(family!=='ARCHITECTURE'||pr.number!==ACG_G1_REVIEW.prNumber||pr.head.ref!==ACG_G1_REVIEW.branch||!isPinnedAcgG1Review(files))fail('ACG_G1_REVIEW_IDENTITY_REJECTED')
   }
@@ -3394,6 +3771,7 @@ export function assertArchitectureCheckout(root, sha, admission, repositoryRoot 
   for (const file of admission.files) {
     const entry = execFileSync('git', ['ls-tree', '-z', sha, '--', file.filename], {cwd: root, encoding: 'utf8'})
     if (file.status === 'removed') {if (entry !== '') fail('ARCHITECTURE_DIFF_MISMATCH'); continue}
+    if(isPinnedAcgM1Review(admission.files))assertAcgM1ReviewEntry(file,entry)
     if(isPinnedAcgG1Review(admission.files))assertAcgG1ReviewEntry(file,entry)
     if(isPinnedOilReportReview(admission.files))assertOilReportReviewEntry(file,entry)
     if(isPinnedInsightsG1Review(admission.files))assertInsightsG1ReviewEntry(file,entry)
@@ -3424,7 +3802,23 @@ function assertOperationContractMetadata(c) {
 export function assertReceipt(receipt) {
   if (receipt?.projectKey !== 'SG2' || receipt.targetEnvironment !== 'development' || receipt.scope !== 'ISOLATED_OPERATION_INTEGRATION_ONLY' || receipt.liveRouteUsesContract !== false || receipt.automaticProductDeployment !== false) fail('ADOPTION_RECEIPT_REJECTED')
   assertOperationContractMetadata(receipt.contract)
+  adoptedOperationContract(receipt)
   return receipt
+}
+
+/** Old acceptance remains immutable. M1 explicitly binds the currently imported
+ * Root without rewriting any historical consumer or producer claim. */
+export function adoptedOperationContract(receipt){
+ const a=receipt?.assistantM1SourceCompatibility
+ if(a===undefined)return receipt.contract
+ if(a.schemaVersion!=='1.0'||a.taskId!=='SG2-ACG-M1-20261109'||a.targetEnvironment!=='development'
+  ||a.scope!=='OPTIONAL_ASSISTANT_SOURCE_NO_RUNTIME_ACTIVATION'
+  ||a.rootProducer?.projectKey!=='ARCHITECTURE'||a.rootProducer?.taskId!=='ARCH-ACG-M1-EXECUTION-20261109'||a.rootProducer?.pullRequest!==937
+  ||a.rootProducer?.sourceSha!=='7988f89d3aa8e32ac8a3929a3ab9e55a10243df2'
+  ||['assistantOptedIn','sql030Installed','historyInstalled','grantsChanged','providerCallsPerformed','deploymentPerformed'].some(k=>a[k]!==false))fail('ASSISTANT_SOURCE_RECEIPT_REJECTED')
+ assertOperationContractMetadata(a.rootContract)
+ if(['id','version','implementation'].some(k=>a.rootContract[k]!==receipt.contract[k])||a.rootContract.sourceDigest!==a.sdkDigests?.operationSourceDigest)fail('ASSISTANT_SOURCE_RECEIPT_REJECTED')
+ return a.rootContract
 }
 
 export function assertPackagePolicy(candidate, authority, configuration) {
@@ -3448,7 +3842,8 @@ export function assertPackagePolicy(candidate, authority, configuration) {
       if (PRIVATE_PACKAGES.includes(privateName)) {
         if (key !== `node_modules/${privateName}`) fail('NESTED_PRIVATE_PACKAGE_REJECTED')
         const accepted = authority.packages?.[key]
-        if (!accepted?.integrity?.startsWith('sha512-') || entry.version !== accepted.version || entry.integrity !== accepted.integrity || entry.resolved !== accepted.resolved || entry.link) fail('PRIVATE_PACKAGE_PIN_MISMATCH')
+        const analytical=privateName==='@profitia/cic-core'&&candidate.packages?.['']?.name==='@sg/runtime'&&candidate.packages?.['']?.dependencies?.[privateName]==='1.3.0'&&Object.entries(CIC_ANALYTICAL_PIN).every(([k,v])=>entry[k]===v)
+        if (!accepted?.integrity?.startsWith('sha512-') || !analytical&&(entry.version !== accepted.version || entry.integrity !== accepted.integrity || entry.resolved !== accepted.resolved) || entry.link) fail('PRIVATE_PACKAGE_PIN_MISMATCH')
         found.add(privateName)
       }
       if (Object.hasOwn(LOCAL_PACKAGES, privateName)) {
@@ -3478,7 +3873,8 @@ export function assertManifestPolicy(candidate, authority) {
       if (reviewedMapsPeer(candidate.name, candidate.version, section, name, spec)
         && authority.name === candidate.name && authority.version === candidate.version
         && authority[section]?.[name] === spec) continue
-      if (name.startsWith('@profitia/') && (!PRIVATE_PACKAGES.includes(name) || spec !== authority[section]?.[name])) fail('PRIVATE_MANIFEST_PIN_MISMATCH')
+      const analytical=candidate.name==='@sg/runtime'&&section==='dependencies'&&name==='@profitia/cic-core'&&spec===CIC_ANALYTICAL_PIN.version
+      if (name.startsWith('@profitia/') && (!PRIVATE_PACKAGES.includes(name) || !analytical&&spec !== authority[section]?.[name])) fail('PRIVATE_MANIFEST_PIN_MISMATCH')
       if (/^(?:file:|link:|workspace:)/.test(String(spec))) fail('LOCAL_DEPENDENCY_REJECTED')
     }
   }
@@ -3591,12 +3987,19 @@ export function operationContractProvenanceDigest(root, contract) {
   let base, contents
   try {
     base = fs.realpathSync(root)
-    contents = names.map(name => {
+    const read = name => {
       const file = path.join(base, 'packages/platform-contracts', name)
       const stat = fs.lstatSync(file)
       if (!stat.isFile() || stat.isSymbolicLink() || stat.size > 1024 * 1024 || fs.realpathSync(file) !== file) fail('CONTRACT_SOURCE_FILE_REJECTED')
       return fs.readFileSync(file)
-    })
+    }
+    contents = names.map(read)
+    const source=contents[0].toString('utf8')
+    const assistant=/^export const ASSISTANT_ROOT_CONTRACT=Object\.freeze\(\{\.\.\.OPERATION_CONTRACT,implementation:'1\.0\.0-candidate\.20'\}\)$/m.test(source)
+    if(assistant){
+      if(Number(legacy[1])!==16)fail('CONTRACT_SOURCE_LAYOUT_UNSUPPORTED')
+      contents.push(...['src/assistant-usage.mjs','src/assistant-usage.d.mts'].map(read))
+    }else if(source.includes('./assistant-usage.mjs'))fail('CONTRACT_SOURCE_LAYOUT_UNSUPPORTED')
   } catch { fail('CONTRACT_SOURCE_FILE_REJECTED') }
   const identity = /^export\s+const\s+OPERATION_CONTRACT\s*=\s*Object\.freeze\(\s*\{\s*id:\s*'profitia\.operation-context',\s*version:\s*'1\.0\.0',\s*implementation:\s*'(1\.0\.0-candidate\.[1-9][0-9]*)'\s*\}\s*\)\s*;?\s*$/m.exec(contents[0].toString('utf8'))
   if (!identity || identity[1] !== contract.implementation) fail('CONTRACT_IMPLEMENTATION_MISMATCH')
@@ -3613,7 +4016,8 @@ function checkCandidate() {
   assertPackagePolicy(candidateLock, readJson(path.join(controlRoot(), 'apps/sg-runtime/package-lock.json')), fs.readFileSync(path.join(app, '.npmrc'), 'utf8'))
   assertManifestPolicy(readJson(path.join(app, 'package.json')), readJson(path.join(controlRoot(), 'apps/sg-runtime/package.json')))
   assertLocalPackageSources(root, candidateLock, controlRoot(), {reviewedOilReport:state.admission?.kind==='ARCHITECTURE'&&isPinnedOilReportReview(state.admission.files),reviewedStage2a:state.admission?.kind==='ARCHITECTURE'&&isPinnedSourceHubStage2aReview(state.admission.files),reviewedMarketSymbol:state.admission?.kind==='ARCHITECTURE'&&isPinnedMarketSymbolReview(state.admission.files)})
-  if (operationContractProvenanceDigest(root, state.receipt.contract) !== state.receipt.contract.sourceDigest || JSON.stringify(readJson(path.join(app, 'operation-integration.json'))) !== JSON.stringify(state.receipt)) fail('CONTRACT_PROVENANCE_MISMATCH')
+  const contract=adoptedOperationContract(state.receipt)
+  if (operationContractProvenanceDigest(root, contract) !== contract.sourceDigest || JSON.stringify(readJson(path.join(app, 'operation-integration.json'))) !== JSON.stringify(state.receipt)) fail('CONTRACT_PROVENANCE_MISMATCH')
   return {state, app}
 }
 async function install() {
@@ -3634,7 +4038,7 @@ function proof() {
   if (process.env.NPM_TOKEN || process.env.NODE_AUTH_TOKEN || process.env.GH_TOKEN) fail('CREDENTIAL_PRESENT_IN_EXECUTION_PHASE')
   const {state} = checkCandidate(), directory = path.join(process.env.RUNNER_TEMP, ARTIFACT)
   fs.mkdirSync(directory, {recursive: true})
-  fs.writeFileSync(path.join(directory, 'proof.json'), JSON.stringify({schemaVersion: '1.0', repository: REPOSITORY, workflow: WORKFLOW, projectKey: 'SG2', targetEnvironment: 'development', scope: 'ISOLATED_API_AND_PERSISTENCE', candidateSha: state.sha, controlSha: state.controlSha, controlPolicyDigest: controlPolicyDigest(), runId: state.runId, contract: state.receipt.contract, install: 'CLEAN_REGISTRY_IGNORE_SCRIPTS', credentialRemovedBeforeCandidateExecution: true, privatePackageArtifactsPublished: false, tests: 'PASS', typecheck: 'PASS', build: 'PASS', productDeploymentPerformed: false, customerIdentityAdapterVerified: false}, null, 2))
+  fs.writeFileSync(path.join(directory, 'proof.json'), JSON.stringify({schemaVersion: '1.0', repository: REPOSITORY, workflow: WORKFLOW, projectKey: 'SG2', targetEnvironment: 'development', scope: 'ISOLATED_API_AND_PERSISTENCE', candidateSha: state.sha, controlSha: state.controlSha, controlPolicyDigest: controlPolicyDigest(), runId: state.runId, contract: adoptedOperationContract(state.receipt), install: 'CLEAN_REGISTRY_IGNORE_SCRIPTS', credentialRemovedBeforeCandidateExecution: true, privatePackageArtifactsPublished: false, tests: 'PASS', typecheck: 'PASS', build: 'PASS', productDeploymentPerformed: false, customerIdentityAdapterVerified: false}, null, 2))
   output('proof_sha', state.sha)
 }
 async function verify() {
@@ -3661,7 +4065,7 @@ async function verify() {
       if (actualControl.digest('hex') !== p.controlPolicyDigest) fail('CONTROL_POLICY_PROVENANCE_MISMATCH')
       const sourceReceipt = JSON.parse(Buffer.from((await api(`repos/${REPOSITORY}/contents/apps/sg-runtime/operation-integration.json?ref=${sha}`)).data.content, 'base64').toString('utf8'))
       assertReceipt(sourceReceipt)
-      if (JSON.stringify(p.contract) !== JSON.stringify(sourceReceipt.contract)) fail('CONTRACT_PROVENANCE_MISMATCH')
+      if (JSON.stringify(p.contract) !== JSON.stringify(adoptedOperationContract(sourceReceipt))) fail('CONTRACT_PROVENANCE_MISMATCH')
       console.log(`Verified actual SG2 tests/build for ${sha}: https://github.com/${REPOSITORY}/actions/runs/${run.id}`)
       return
     } finally {fs.rmSync(directory, {recursive: true, force: true})}

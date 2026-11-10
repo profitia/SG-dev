@@ -1,5 +1,6 @@
 import {SOURCE_HUB_MARKET_SYMBOL_REVIEW,assertMarketSymbolReviewEntry} from './controlled-package-ci.mjs'
 import {ACG_G1_REVIEW,assertAcgG1ReviewEntry} from './controlled-package-ci.mjs'
+import {ACG_M1_EXECUTION_REVIEW,assertAcgM1ReviewEntry,adoptedOperationContract,CIC_ANALYTICAL_PIN} from './controlled-package-ci.mjs'
 import {OIL_REPORT_E1_REVIEW,assertOilReportReviewEntry} from './controlled-package-ci.mjs'
 import {ECR_BACKEND_REVIEW,assertEcrBackendReviewEntry} from './controlled-package-ci.mjs'
 import {createHash} from 'node:crypto'
@@ -1381,3 +1382,55 @@ test('ACG G1 review accepts only the two exact governance blobs on its own PR an
  }
  for(const f of files){assertAcgG1ReviewEntry(f,'100644 blob '+f.sha+'\t'+f.filename+'\0');for(const mode of ['100755','120000','160000'])rejection(()=>assertAcgG1ReviewEntry(f,mode+' blob '+f.sha+'\t'+f.filename+'\0'));}
 });
+
+test('M1 admits only the reviewed 51 source blobs through their actual three owner profiles',()=>{
+ const review=ACG_M1_EXECUTION_REVIEW,files=Object.entries(review.entries).map(([filename,e])=>({filename,sha:e.sha,status:e.status})),p={...architecturePr(files.length),number:937,head:{...pr().head,ref:review.branch}}
+ assert.equal(Object.keys(review.entries).length,51);assert.equal(review.sourceSha,'d8142a087759a285c431ff23769d3d9f562f545f')
+ assert.deepEqual([...new Set(Object.values(review.entries).map(e=>e.projectKey))].sort(),['ARCHITECTURE','SG2','SRM'])
+ assert.equal(selectCandidate(context(),p,other,{files}),other)
+ assert.equal(selectCandidate(context(),{...p,base:{...p.base,sha:'f'.repeat(40)}},other,{files:[...files].reverse()}),other,'main refresh requires unchanged reviewed versions')
+ for(const patch of [{number:938},{head:{...p.head,ref:'architecture/other'}},{head:{...p.head,ref:'sg2/other'}},{head:{...p.head,sha}},{base:{...p.base,ref:'staging'}}])rejection(()=>selectCandidate(context(),{...p,...patch},other,{files}))
+ for(const original of files){
+  for(const patch of [{sha:'0'.repeat(40)},{status:original.status==='added'?'modified':'added'},{previous_filename:original.filename},{filename:'constructor'}]){
+   const changed=files.map(f=>f===original?{...f,...patch}:f);rejection(()=>selectCandidate(context(),p,other,{files:changed}))
+  }
+  for(const mode of ['120000','100755','040000'])rejection(()=>assertAcgM1ReviewEntry(original,mode+' blob '+original.sha+'\t'+original.filename+'\0'))
+  assertAcgM1ReviewEntry(original,review.entries[original.filename].mode+' blob '+original.sha+'\t'+original.filename+'\0')
+ }
+ for(const changed of [files.slice(1),[...files,files[0]],[...files,{filename:'apps/sg-runtime/unreviewed.ts',sha:other,status:'added'}]])rejection(()=>selectCandidate(context(),{...p,changed_files:changed.length},other,{files:changed}))
+})
+
+test('M1 fixed Root layout binds both real usage dependencies and cannot fall back to eight files',()=>{
+ const f=sourceLayoutFixture('1.0.0-candidate.16'),extras=['src/assistant-usage.mjs','src/assistant-usage.d.mts']
+ try{
+  fs.appendFileSync(f.file('src/operation-context.mjs'),"export const ASSISTANT_ROOT_CONTRACT=Object.freeze({...OPERATION_CONTRACT,implementation:'1.0.0-candidate.20'})\nimport './assistant-usage.mjs'\n")
+  for(const name of extras)fs.writeFileSync(f.file(name),'throw new Error("source hashing must never evaluate candidate code")')
+  const h=createHash('sha256');for(const name of [...f.names,...extras])h.update(fs.readFileSync(f.file(name)))
+  const before=operationContractProvenanceDigest(f.root,f.contract);assert.equal(before,h.digest('hex'))
+  const legacy=createHash('sha256');for(const name of f.names)legacy.update(fs.readFileSync(f.file(name)));assert.notEqual(before,legacy.digest('hex'))
+  for(const name of extras){const bytes=fs.readFileSync(f.file(name));fs.appendFileSync(f.file(name),'changed');assert.notEqual(operationContractProvenanceDigest(f.root,f.contract),before);fs.unlinkSync(f.file(name));assert.throws(()=>operationContractProvenanceDigest(f.root,f.contract));fs.writeFileSync(f.file(name),bytes)}
+  fs.writeFileSync(f.file('src/operation-context.mjs'),fs.readFileSync(f.file('src/operation-context.mjs'),'utf8').replace(/^export const ASSISTANT_ROOT_CONTRACT=.*\n/m,''))
+  assert.throws(()=>operationContractProvenanceDigest(f.root,f.contract),'imported usage cannot select the old layout by removing the marker')
+ }finally{f.close()}
+})
+
+test('explicit current Root acceptance preserves the complete historical receipt and closes false activation claims',()=>{
+ const r={contract:{id:'profitia.operation-context',version:'1.0.0',implementation:'1.0.0-candidate.16',sourceDigest:'a'.repeat(64)}}
+ assert.equal(adoptedOperationContract(r),r.contract)
+ const a={schemaVersion:'1.0',taskId:'SG2-ACG-M1-20261109',targetEnvironment:'development',scope:'OPTIONAL_ASSISTANT_SOURCE_NO_RUNTIME_ACTIVATION',rootContract:{...r.contract,sourceDigest:'b'.repeat(64)},rootProducer:{projectKey:'ARCHITECTURE',taskId:'ARCH-ACG-M1-EXECUTION-20261109',pullRequest:937,sourceSha:'7988f89d3aa8e32ac8a3929a3ab9e55a10243df2'},sdkDigests:{operationSourceDigest:'b'.repeat(64)},assistantOptedIn:false,sql030Installed:false,historyInstalled:false,grantsChanged:false,providerCallsPerformed:false,deploymentPerformed:false}
+ const current={...r,assistantM1SourceCompatibility:a};assert.equal(adoptedOperationContract(current),a.rootContract);assert.equal(current.contract.sourceDigest,'a'.repeat(64))
+ for(const mutate of [x=>x.assistantOptedIn=true,x=>x.grantsChanged=true,x=>x.targetEnvironment='production',x=>x.rootProducer.sourceSha='0'.repeat(40),x=>x.rootContract.implementation='1.0.0-candidate.19',x=>x.sdkDigests.operationSourceDigest='f'.repeat(64)]){const changed=structuredClone(a);mutate(changed);rejection(()=>adoptedOperationContract({...r,assistantM1SourceCompatibility:changed}))}
+})
+
+test('CIC M1 allows exactly the already-published analytical artifact without expanding private names or credential scope',()=>{
+ const authority=lock(),candidate=lock();candidate.packages['']={name:'@sg/runtime',dependencies:{'@profitia/cic-core':'1.3.0'}}
+ candidate.packages['node_modules/@profitia/cic-core']={...CIC_ANALYTICAL_PIN}
+ assertPackagePolicy(candidate,authority,configuration)
+ const manifest={name:'@sg/runtime',dependencies:{'@profitia/cic-core':'1.3.0'}},prior={name:'@sg/runtime',dependencies:{'@profitia/cic-core':'1.1.1'}}
+ assertManifestPolicy(manifest,prior)
+ for(const [key,value]of [['version','1.3.1'],['integrity','sha512-forged'],['resolved',CIC_ANALYTICAL_PIN.resolved+'?other=1'],['link',true]]){const altered=structuredClone(candidate);altered.packages['node_modules/@profitia/cic-core'][key]=value;rejection(()=>assertPackagePolicy(altered,authority,configuration))}
+ for(const value of ['^1.3.0','latest','1.3.1'])rejection(()=>assertManifestPolicy({...manifest,dependencies:{'@profitia/cic-core':value}},prior))
+ rejection(()=>assertManifestPolicy({...manifest,name:'unrelated'},prior))
+ assert.deepEqual(PRIVATE_PACKAGES,['@profitia/advisory-widget','@profitia/cic-core','@profitia/cic-procurement'])
+ rejection(()=>assertCredentialMetadata({login:'profitia',scopes:'read:packages,repo',expiresAt:new Date(Date.now()+86400000).toISOString()}))
+})
