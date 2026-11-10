@@ -293,3 +293,26 @@ The actual owner organisation already has an operator-confirmed OPENAI_ASSISTANC
 The final source correction changes two historical current-HUMAN-read comparisons to the explicitly adopted current SDK digest and refreshes the paired immutable consumer continuations. All six peer/history tests pass locally. No product or SDK implementation byte, path scope, grant, SQL or runtime flag changes in this correction.
 
 Before any product installation, isolated PostgreSQL reproduced temporary-table shadowing of the new history/admission installations (history run42737956351; admission run42738239882). New Assistant definer functions now put pg_temp last, and native tests require the real HMAC/owner and effective protected function configuration. The hardened SDK producer is `6a7863459977f5651bf30100935118e1613021fd`; complete immutable predecessor and consumer checks remain mandatory. The source inventory remains63; no product namespace, grant or provider execution was activated.
+
+## Oil report — proposed current-main compatibility closure (2026-11-10)
+
+PROPOSED_NOT_ACTIVE. Owner approval v5 for PR934/71a9bec5 remains valid for its
+exact historical111-file candidate1eebfb93. Main subsequently accepted Assistant
+M1 and its chart corrective through7ed96210. Their protected SDK and consumer
+history overlap40 Oil paths; the old four blobs cannot replace current main.
+
+The reconciled source candidatee67564d29a7391432bba9726d300b94a118a6881 on existing PR923
+contains112 exact owner-routed blob/status/mode bindings. It retains every M1
+runtime byte, AM45–47, hardened Assistant definer, CIC1.3.0 pin and chart change.
+Oil keeps AM41–44 and its original report runner. Two existing test helpers
+validate the newest Oil source before projecting complete immutable M1 history.
+The combined producer is e189433899349ddda6664c37988255c13845b3e2. The control
+recognises only this separately named Oil Root and the pinned112-file inventory;
+the prior M1, ACG, ECR and all generic credential/proof rules remain unchanged.
+
+This proposal needs a new exact technical scope decision and ordinary full CI.
+It does not reuse the exhausted PR930 exception or certify new source using old
+proof. Preserve all old receipts and fingerprints. No source installation,
+SERVICE grant, deployment, budget, provider call or scheduler activation is
+admitted. Final feature SOURCE GO remains separate after successful full CI.
+See `Canon/evidence/2026-11-09-oil-report-ci-consumer-closure.md`.
