@@ -2,6 +2,8 @@ import * as Sentry from '@sentry/nextjs'
 import { getSg2SelectionRuntime } from '@/lib/platform/private-runtime'
 import type { createInstalledInsightsRuntime } from '@profitia/insights-runtime/host'
 import path from 'node:path'
+import { createPublicIdentityRequestBoundary } from '@profitia/platform-contracts/public-request'
+import { readSg2IdentityRuntime } from '@/lib/platform/identity-runtime'
 
 const unavailable = () => { throw Object.assign(new Error('NOT_ADMITTED'), { code: 'NOT_ADMITTED' }) }
 type ReadInput = {seriesId: string; asOf: string; organisationId: string}
@@ -62,8 +64,24 @@ export function getInsightsRuntime(){
     .catch(error=>{runtime=undefined;throw error})
   return runtime
 }
+/** Use SG2's admitted public ingress boundary; forwarded headers grant no authority.
+ * Keep the original business body for the report API; the shared identity adapter
+ * intentionally returns only a header request. */
+export function normalizeInsightsReportRequest(request:Request,publicOrigins:readonly string[]):Request|null{
+  const normalized=createPublicIdentityRequestBoundary({publicOrigins:[...publicOrigins],
+    internalOrigins:['http://0.0.0.0:10000','https://0.0.0.0:10000','http://localhost:10000','https://localhost:10000']})(request)
+  if(!normalized)return null
+  return new Request(normalized.url,{method:request.method,headers:normalized.headers,signal:request.signal,
+    ...(request.body?{body:request.body,duplex:'half' as const}:{})})
+}
 export async function insightsReportHttp(request:Request):Promise<Response>{
   if(process.env.INSIGHTS_REPORTS_ENABLED!=='true') return Response.json({error:{code:'INSIGHTS_NOT_ENABLED'}},{status:503,headers:{'cache-control':'private, no-store'}})
-  try{return await(await getInsightsRuntime()).api(request)}
+  try{
+    const identity=readSg2IdentityRuntime()
+    if(identity.provider!=='clerk')throw Error('CURRENT_E1_IDENTITY_REQUIRED')
+    const current=normalizeInsightsReportRequest(request,identity.application.authorizedParties)
+    if(!current)return Response.json({error:{code:'ACCESS_DENIED'}},{status:403,headers:{'cache-control':'private, no-store'}})
+    return await(await getInsightsRuntime()).api(current)
+  }
   catch {return Response.json({error:{code:'INSIGHTS_NOT_ADMITTED'}},{status:503,headers:{'cache-control':'private, no-store'}})}
 }
