@@ -61,7 +61,7 @@ export function assistantM2Predecessor(current,historical){
  assert.equal(a.schemaVersion,'1.0.0');assert.equal(a.taskId,'SG2-ACG-M2-20261110');assert.equal(a.targetEnvironment,'development')
  assert.equal(a.previousSourceSha,'c3b399b13241ae2f4ea8c1b3ae0168fe9a6aac7f')
  assert.deepEqual(a.configuration,{variable:'PROFITIA_ASSISTANT_M2_CONFIGURATION_VERSION',version:'sg2-assistant-m2-development-v1',enabledByDefault:false})
- assert.deepEqual(a.producers,{architecture:{pullRequest:954,sourceSha:'c3b399b13241ae2f4ea8c1b3ae0168fe9a6aac7f'},srm:{pullRequest:958,sourceSha:'25bb13a2a64991c04257bdb5c32d1c14240a0cc4'},cic:{pullRequest:22,sourceSha:'967a5775f45408549d7942d727289818212ef506',version:'1.5.1'}})
+ assert.deepEqual(a.producers,{architecture:{pullRequest:954,sourceSha:'c3b399b13241ae2f4ea8c1b3ae0168fe9a6aac7f'},srm:{pullRequest:963,sourceSha:'a2cf089e0620877c0bde2ac7d08292a75d2e8b67'},cic:{pullRequest:22,sourceSha:'967a5775f45408549d7942d727289818212ef506',version:'1.5.1'}})
  assert.equal(a.storedReadsOnly,true);assert.equal(a.newGrant,false);assert.equal(a.acquisitionAllowed,false)
  assert.deepEqual(Object.keys(a.sourceDigests).sort(),[...ASSISTANT_M2_PATHS].sort())
  assert.deepEqual(Object.keys(a.producerDigests).sort(),[...ASSISTANT_M2_PRODUCER_PATHS].sort())
