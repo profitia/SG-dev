@@ -1,3 +1,4 @@
+import {assertOilReportSourceCompatibility} from '../srm/scripts/source-hub-sdk-compatibility.mjs'
 // Source acceptance only. Product runtimes never import this helper.
 import assert from 'node:assert/strict'
 import {createHash} from 'node:crypto'
@@ -9,6 +10,8 @@ const hash=bytes=>createHash('sha256').update(bytes).digest('hex')
 const receiptPath=project=>'apps/'+(project==='SG2'?'sg-runtime':'srm')+'/operation-integration.json'
 const additions=['migrations/access/030-assistant-operations.sql','src/assistant-operation-host.d.mts','src/assistant-operation-host.mjs','src/assistant-usage.d.mts','src/assistant-usage.mjs']
 export function assistantSdkPredecessor(current,historical){
+ const consumer=JSON.parse(current(receiptPath('SG2')))
+ if(consumer.oilAutonomousReportCompatibility){const n=assertOilReportSourceCompatibility(consumer,current,historical,{projectKey:'SG2'});return assistantSdkPredecessor(n.previousBytes,historical)}
  const recordBytes=current(recordPath)
  assert.equal(hash(recordBytes),'f9bd750bd7c4af2b1123a41396cfeacac90bb1744f9abdd5331c76260872b70c','exact reviewed assistant SDK source record')
  const a=JSON.parse(recordBytes)
@@ -28,6 +31,7 @@ export function assistantSdkPredecessor(current,historical){
  return {record:a,previousBytes:p=>p.startsWith('packages/platform-contracts/')&&Object.hasOwn(prior.sourceDigests,p.slice('packages/platform-contracts/'.length))?Buffer.from(historical(ASSISTANT_SDK_PREDECESSOR,p)):current(p)}
 }
 export function assertAssistantConsumerCompatibility(receipt,current,historical,{projectKey,validatePeer=true}){
+ if(receipt.oilAutonomousReportCompatibility){const n=assertOilReportSourceCompatibility(receipt,current,historical,{projectKey,validatePeer});return assertAssistantConsumerCompatibility(n.prior,n.previousBytes,historical,{projectKey,validatePeer})}
  assert(['SG2','SRM'].includes(projectKey));const file=receiptPath(projectKey),peer=projectKey==='SG2'?'SRM':'SG2'
  const a=receipt.assistantM1SourceCompatibility;assert(a,'explicit assistant SDK source receipt required')
  assert.equal(a.schemaVersion,'1.0');assert.equal(a.targetEnvironment,'development')

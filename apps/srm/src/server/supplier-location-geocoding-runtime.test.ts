@@ -50,7 +50,7 @@ test('geocoding adoption preserves all previous receipts and pins the exact unch
  const hash=(bytes:Uint8Array)=>createHash('sha256').update(bytes).digest('hex')
  const previous=execFileSync('git',['show',a.previousReceiptSourceSha+':apps/srm/operation-integration.json'])
  assert.equal(hash(previous),a.previousReceiptDigest)
- for(const[key,value]of Object.entries(JSON.parse(previous.toString())))assert.deepEqual(receipt[key],value,key)
+ for(const[key,value]of Object.entries(JSON.parse(previous.toString())))assert.deepEqual(receipt.oilAutonomousReportCompatibility?.previousRootAcceptance?.[key]??receipt[key],value,key)
  const {posix}=await import('node:path')
  const marketHostView=marketHistoryHostSourceView((file:string)=>readFileSync(new URL('../../../../'+file,import.meta.url)),(sha:string,file:string)=>execFileSync('git',['show',sha+':'+file]));
  const peer=JSON.parse(marketHostView.bytes.toString())
@@ -59,7 +59,7 @@ test('geocoding adoption preserves all previous receipts and pins the exact unch
  if(current!==a){
   const prior=execFileSync('git',['show',current.previousReceiptSourceSha+':apps/srm/operation-integration.json'])
   assert.equal(hash(prior),current.previousReceiptDigest)
-  for(const[key,value]of Object.entries(JSON.parse(prior.toString())))assert.deepEqual(receipt[key],value,key)
+  for(const[key,value]of Object.entries(JSON.parse(prior.toString())))assert.deepEqual(receipt.oilAutonomousReportCompatibility?.previousRootAcceptance?.[key]??receipt[key],value,key)
   assert.equal(current.sourceControlQuery,'EXACT_ADMITTED_TRANSACTION');assert.equal(current.automaticUncertainRetry,false)
  }
  const acceptedBytes=(file:string)=>{
