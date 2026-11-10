@@ -1,0 +1,29 @@
+{
+  "schemaVersion": "1.0",
+  "contract": "newsfeed.saved-searches/1.2.0",
+  "taskId": "ARCH-PI-DEVELOPMENT-E2E-20261110",
+  "targetEnvironment": "development",
+  "previousSourceSha": "675e97fc6d9387bfe3157e2675d085d0f4f2d070",
+  "previousAssistantReceiptSha256": "4057379e02c7b698f3f24348c40b84275d92c3a892b55e96b1c6d23175298dfc",
+  "sourceDigests": {
+    "apps/newsfeed-runtime/docs/development-v1.2.md": "8372246b45227664c3f38b97c9097c6cd042ec1ad02832fa9a23735768f8c86b",
+    "apps/newsfeed-runtime/migrations/003-saved-searches.sql": "d818a0868a57ea68c551c4162c4e2f01b0744044d8ac5dfa620d4277cb7d4442",
+    "apps/newsfeed-runtime/scripts/migrate.mjs": "aefe631903ee1902e1e2429f8627f7bb73334c917ed368c2f20b1ca211c3b5bc",
+    "apps/newsfeed-runtime/src/main.mjs": "98ad4a584f914390171b13077382dd90bf43883963abf452976eae9f7f7b4a72",
+    "apps/newsfeed-runtime/src/repository.mjs": "ae71be04620302eb863df56ae37a6da8d8a900b7858c3ef23f6aad01e35f3d09",
+    "apps/newsfeed-runtime/src/scheduler.mjs": "0e084e14aca440341393ba55704688da27647067fb99ce9269eef4e548d103b2",
+    "apps/newsfeed-runtime/src/server.mjs": "473c8ac63dffdc48e0a68397cf4cae33b1906208afc577f5851c16b5ff95d8fa",
+    "apps/newsfeed-runtime/src/statistics.mjs": "0bcf3c0ef66f9c4a0fd8606de4e5393021ea9b3b699233c8e5a8018a89a54c1b",
+    "apps/newsfeed-runtime/test/assistant-context.test.mjs": "14b486c41eab990d79960b4ecc459850432cdf788314341a2f3e23aad5c2e3ae",
+    "apps/newsfeed-runtime/test/saved-searches.test.mjs": "e55d897cc38f12759243727bf2aecc82947a1b603fa306a63631c0a0b49effb6",
+    "apps/newsfeed-runtime/test/scheduler.test.mjs": "dd6cbaea2d930c847671390ea424ec9fc051c99ba2b2012b867f5c6e08d340cc",
+    "apps/newsfeed-runtime/test/statistics.test.mjs": "ffca9f0a27146d7a9f4d154f0a6c3a436f6e2bcbc7f3ff8e8b6d5cf498f9a47c",
+    "packages/newsfeed-contracts/README.md": "52612c956226d6d0f467a143c5cdf51776f81ec4995041564abd93daee212f58",
+    "packages/newsfeed-contracts/index.d.ts": "e4060feb4d250f8e1802c114a4ca774af0ed5c985267ff342fd855a0e791847e",
+    "packages/newsfeed-contracts/index.mjs": "ba997d7ace93d804d3a664579e1ba34cbc69f6b129a585b7649548aecac860c9",
+    "packages/newsfeed-contracts/package.json": "3b038516c65bb72d0909bfcc28c89f2541a21f3ea9b0a3be1c9e6aed7686576f"
+  },
+  "migrationSha256": "d818a0868a57ea68c551c4162c4e2f01b0744044d8ac5dfa620d4277cb7d4442",
+  "assistantStoredReadOnly": true,
+  "serviceMonitoring": "NOT_ADMITTED"
+}
