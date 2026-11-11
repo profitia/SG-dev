@@ -34,7 +34,7 @@
     "build": "node --check index.mjs"
   },
   "peerDependencies": {
-    "@profitia/platform-contracts": "1.35.0"
+    "@profitia/platform-contracts": "1.36.0"
   },
   "devDependencies": {
     "@profitia/platform-contracts": "file:.."

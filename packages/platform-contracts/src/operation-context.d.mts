@@ -140,7 +140,7 @@ export interface OperationExecutor<Transaction = unknown> {
 }
 export declare const OPERATION_CONTRACT: Readonly<{ id: 'profitia.operation-context'; version: '1.0.0'; implementation: '1.0.0-candidate.16' }>
 export declare const IMPLEMENTED_OPERATIONS: readonly OperationId[]
-export declare const RECURRING_ROOT_CONTRACT:Readonly<{id:'profitia.operation-context';version:'1.0.0';implementation:'1.0.0-candidate.21'}>
+export declare const RECURRING_ROOT_CONTRACT:Readonly<{id:'profitia.operation-context';version:'1.0.0';implementation:'1.0.0-candidate.22'}>
 export declare const ASSISTANT_ROOT_CONTRACT:Readonly<{id:'profitia.operation-context';version:'1.0.0';implementation:'1.0.0-candidate.20'}>
 export declare class OperationDenied extends Error { reasonCode: string; decisionId: string; constructor(reasonCode: string, decisionId?: string) }
 export declare function isOperationDenied(error: unknown): error is OperationDenied

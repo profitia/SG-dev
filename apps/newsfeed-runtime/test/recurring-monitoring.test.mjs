@@ -91,6 +91,23 @@ test('SYNTHETIC_ONLY: durable monitoring runs without a browser and fences priva
    await execute((ctx,q)=>repo.update(q,ctx,o.id,{contractVersion:'1.2.0',version:o.version,status:'PAUSED'}),{id:o.id});
    await assert.rejects(monitoring.execute(job));assert.equal(upstream,before);
   });
+  await t.test('shared readers opt in independently; current ACL revocation removes notice access',async()=>{
+   const recipient=action=>execute(action,{token:'SYNTHETIC_B'});
+   const first=await create();await execute((ctx,q)=>repo.share(q,ctx,first.id,{contractVersion:'1.2.0',version:first.version,mode:'ORG'}),{id:first.id});
+   assert.equal((await recipient((ctx,q)=>repo.get(q,ctx,first.id))).notifications,false);
+   await monitoring.execute(await monitoring.claim((await monitoring.candidates()).find(x=>x.id===first.id)));
+   assert.equal((await recipient((ctx,q)=>repo.inbox(q,ctx,{}))).items.length,0);
+   const second=await create();await execute((ctx,q)=>repo.share(q,ctx,second.id,{contractVersion:'1.2.0',version:second.version,mode:'ORG'}),{id:second.id});
+   await recipient((ctx,q)=>repo.setNotifications(q,ctx,second.id,true));
+   await monitoring.execute(await monitoring.claim((await monitoring.candidates()).find(x=>x.id===second.id)));
+   const notices=(await recipient((ctx,q)=>repo.inbox(q,ctx,{}))).items;assert.equal(notices.length,1);assert.equal(notices[0].observationId,second.id);
+   await recipient((ctx,q)=>repo.markRead(q,ctx,notices[0].id));
+   await recipient((ctx,q)=>repo.setNotifications(q,ctx,second.id,false));assert.equal((await recipient((ctx,q)=>repo.inbox(q,ctx,{}))).items.length,0);
+   await recipient((ctx,q)=>repo.setNotifications(q,ctx,second.id,true));
+   const shares=await execute((ctx,q)=>repo.shares(q,ctx,second.id),{id:second.id});await execute((ctx,q)=>repo.revokeShare(q,ctx,second.id,shares.grants[0].id,'SHARE'),{id:second.id});
+   assert.equal((await recipient((ctx,q)=>repo.inbox(q,ctx,{}))).items.length,0);await assert.rejects(recipient((ctx,q)=>repo.markRead(q,ctx,notices[0].id)));
+   await assert.rejects(f.db(2).query('SELECT * FROM newsfeed.monitor_delivery_events'));
+  });
   await t.test('permitted metadata only; no article content or signing key in persisted rows/audit',async()=>{
    const rows=await f.databases[2].query('SELECT to_jsonb(p) AS value FROM newsfeed.publication_index p UNION ALL SELECT to_jsonb(e) FROM profitia_access.security_events e');
    const serialized=JSON.stringify(rows.rows);assert(!serialized.includes('MUST_NOT_PERSIST'));assert(!serialized.includes('BEGIN PRIVATE KEY'));

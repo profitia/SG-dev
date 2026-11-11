@@ -6,7 +6,7 @@ DO $guard$ BEGIN IF current_user<>'newsfeed_development_owner'
 CREATE TABLE newsfeed.recurring_migrations(version text PRIMARY KEY,digest text NOT NULL CHECK(digest~'^[a-f0-9]{64}$'));
 CREATE TABLE newsfeed.monitor_delegations(
  environment text NOT NULL,application_id text NOT NULL,organisation_id uuid NOT NULL,owner_user_id uuid NOT NULL,observation_id uuid NOT NULL,
- delegation_id uuid NOT NULL UNIQUE,delegation_version bigint NOT NULL,resource_version bigint NOT NULL,definition_digest text NOT NULL,
+ delegation_id uuid NOT NULL UNIQUE,delegation_version bigint NOT NULL,resource_version bigint NOT NULL,definition_digest text NOT NULL,schedule jsonb NOT NULL,
  status text NOT NULL CHECK(status IN('ACTIVE','REVOKED')),next_due_at timestamptz,
  PRIMARY KEY(environment,application_id,organisation_id,owner_user_id,observation_id),
  FOREIGN KEY(environment,application_id,organisation_id,owner_user_id,observation_id) REFERENCES newsfeed.observations(environment,application_id,organisation_id,owner_user_id,id) ON DELETE CASCADE
@@ -19,8 +19,22 @@ CREATE TABLE newsfeed.monitor_jobs(
  UNIQUE(environment,application_id,organisation_id,owner_user_id,observation_id,schedule_slot),
  FOREIGN KEY(environment,application_id,organisation_id,owner_user_id,observation_id) REFERENCES newsfeed.observations(environment,application_id,organisation_id,owner_user_id,id) ON DELETE CASCADE
 );
+CREATE TABLE newsfeed.monitor_preferences(
+ environment text NOT NULL,application_id text NOT NULL,organisation_id uuid NOT NULL,owner_user_id uuid NOT NULL,observation_id uuid NOT NULL,
+ recipient_user_id uuid NOT NULL,enabled boolean NOT NULL,updated_at timestamptz NOT NULL DEFAULT clock_timestamp(),
+ PRIMARY KEY(observation_id,recipient_user_id),CHECK(recipient_user_id<>owner_user_id),
+ FOREIGN KEY(environment,application_id,organisation_id,owner_user_id,observation_id) REFERENCES newsfeed.observations(environment,application_id,organisation_id,owner_user_id,id) ON DELETE CASCADE
+);
+CREATE TABLE newsfeed.monitor_delivery_events(
+ id uuid PRIMARY KEY DEFAULT gen_random_uuid(),environment text NOT NULL,application_id text NOT NULL,organisation_id uuid NOT NULL,owner_user_id uuid NOT NULL,
+ observation_id uuid NOT NULL,publication_id uuid NOT NULL,recipient_user_id uuid NOT NULL,created_at timestamptz NOT NULL DEFAULT clock_timestamp(),read_at timestamptz,
+ UNIQUE(observation_id,publication_id,recipient_user_id),
+ FOREIGN KEY(environment,application_id,organisation_id,owner_user_id,observation_id) REFERENCES newsfeed.observations(environment,application_id,organisation_id,owner_user_id,id) ON DELETE CASCADE,
+ FOREIGN KEY(environment,application_id,organisation_id,owner_user_id,publication_id) REFERENCES newsfeed.publication_index(environment,application_id,organisation_id,owner_user_id,id) ON DELETE CASCADE
+);
+CREATE INDEX recipient_inbox ON newsfeed.monitor_delivery_events(environment,application_id,organisation_id,recipient_user_id,created_at DESC,id DESC);
 CREATE INDEX monitoring_due ON newsfeed.monitor_delegations(next_due_at,observation_id) WHERE status='ACTIVE';
-DO $policy$ DECLARE t text;BEGIN FOREACH t IN ARRAY ARRAY['recurring_migrations','monitor_delegations','monitor_jobs'] LOOP
+DO $policy$ DECLARE t text;BEGIN FOREACH t IN ARRAY ARRAY['recurring_migrations','monitor_delegations','monitor_jobs','monitor_preferences','monitor_delivery_events'] LOOP
  EXECUTE format('ALTER TABLE newsfeed.%I ENABLE ROW LEVEL SECURITY',t);EXECUTE format('ALTER TABLE newsfeed.%I FORCE ROW LEVEL SECURITY',t);
  EXECUTE format('CREATE POLICY controlled_owner ON newsfeed.%I TO newsfeed_development_owner USING(true) WITH CHECK(true)',t);
 END LOOP;END $policy$;
@@ -29,7 +43,7 @@ DECLARE d jsonb;
 BEGIN d:=profitia_e1_receiver.recurring_descriptor();
  IF session_user<>'newsfeed_development_runtime' OR d->'binding'->>'environment' IS DISTINCT FROM 'development'
  OR d->'binding'->>'applicationId' IS DISTINCT FROM 'profitia-newsfeed-api-development'
- OR (SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='newsfeed' AND c.relname IN('recurring_migrations','monitor_delegations','monitor_jobs') AND c.relowner='newsfeed_development_owner'::regrole AND c.relrowsecurity AND c.relforcerowsecurity)<>3 THEN RAISE EXCEPTION 'Monitoring binding refused' USING ERRCODE='42501';END IF;RETURN d;
+ OR (SELECT count(*) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='newsfeed' AND c.relname IN('recurring_migrations','monitor_delegations','monitor_jobs','monitor_preferences','monitor_delivery_events') AND c.relowner='newsfeed_development_owner'::regrole AND c.relrowsecurity AND c.relforcerowsecurity)<>5 THEN RAISE EXCEPTION 'Monitoring binding refused' USING ERRCODE='42501';END IF;RETURN d;
 END $fn$;
 CREATE FUNCTION newsfeed.monitoring_digest(o newsfeed.observations) RETURNS text LANGUAGE sql IMMUTABLE SET search_path=pg_catalog,pg_temp AS $fn$
  SELECT encode(public.digest(convert_to(jsonb_build_object('request',o.filters,'phrases',o.phrases,'schedule',o.schedule,'notifications',o.notifications)::text,'UTF8'),'sha256'),'hex')
@@ -40,25 +54,28 @@ BEGIN
  PERFORM newsfeed.monitoring_binding();proof:=profitia_e1_receiver.accept(nullif(current_setting('profitia.current_e1_proof',true),'')::jsonb);
  SELECT * INTO o FROM newsfeed.observations WHERE id=p_id AND environment='development' AND application_id='profitia-newsfeed-api-development'
  AND organisation_id=(proof->'request'->>'organisationId')::uuid AND owner_user_id=(proof->'actor'->>'userId')::uuid FOR UPDATE;
- IF NOT FOUND OR o.version<>p_version OR o.schedule IS NULL OR p_enabled AND o.status<>'ACTIVE'
+ IF NOT FOUND OR o.version<>p_version OR p_enabled AND o.status<>'ACTIVE'
  OR NOT profitia_e1_receiver.scope_allows(o.application_id,o.organisation_id,o.owner_user_id,true) THEN RAISE EXCEPTION 'Observation delegation refused' USING ERRCODE='42501';END IF;
  SELECT * INTO d FROM newsfeed.monitor_delegations WHERE (environment,application_id,organisation_id,owner_user_id,observation_id)=(o.environment,o.application_id,o.organisation_id,o.owner_user_id,o.id);
+ IF coalesce(o.schedule,d.schedule) IS NULL OR p_enabled AND o.schedule IS NULL THEN RAISE EXCEPTION 'Monitoring schedule required' USING ERRCODE='42501';END IF;
  RETURN jsonb_build_object('delegationId',coalesce(d.delegation_id,gen_random_uuid()),'organisationId',o.organisation_id,'operation','newsfeed.monitor.execute',
- 'resourceId',o.id,'resourceVersion',(o.version+1)::text,'definitionDigest',newsfeed.monitoring_digest(o),'schedule',o.schedule,'enabled',p_enabled);
+ 'resourceId',o.id,'resourceVersion',(o.version+1)::text,'definitionDigest',newsfeed.monitoring_digest(o),'schedule',coalesce(o.schedule,d.schedule),'enabled',p_enabled);
 END $fn$;
 CREATE FUNCTION newsfeed.monitoring_activate(p_receipt jsonb,p_next timestamptz) RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,pg_temp AS $fn$
-DECLARE p jsonb;o newsfeed.observations%ROWTYPE;
+DECLARE p jsonb;o newsfeed.observations%ROWTYPE;d newsfeed.monitor_delegations%ROWTYPE;
 BEGIN
  PERFORM newsfeed.monitoring_binding();p:=profitia_e1_receiver.recurring_consent_receipt(p_receipt);
  SELECT * INTO o FROM newsfeed.observations WHERE environment='development' AND application_id=p->>'applicationId' AND organisation_id=(p->>'organisationId')::uuid
  AND owner_user_id=(p->>'ownerUserId')::uuid AND id=(p->>'resourceId')::uuid FOR UPDATE;
- IF NOT FOUND OR o.version+1<>(p->>'resourceVersion')::bigint OR o.schedule IS DISTINCT FROM p->'schedule'
+ IF NOT FOUND THEN RAISE EXCEPTION 'Observation unavailable' USING ERRCODE='42501';END IF;
+ SELECT * INTO d FROM newsfeed.monitor_delegations WHERE(environment,application_id,organisation_id,owner_user_id,observation_id)=(o.environment,o.application_id,o.organisation_id,o.owner_user_id,o.id);
+ IF o.version+1<>(p->>'resourceVersion')::bigint OR coalesce(o.schedule,d.schedule) IS DISTINCT FROM p->'schedule'
  OR newsfeed.monitoring_digest(o) IS DISTINCT FROM p->>'definitionDigest' OR p->>'status'='ACTIVE' AND(p_next IS NULL OR p_next<=clock_timestamp()) OR NOT profitia_e1_receiver.scope_allows(o.application_id,o.organisation_id,o.owner_user_id,true)
  THEN RAISE EXCEPTION 'Current observation consent required' USING ERRCODE='42501';END IF;
- UPDATE newsfeed.observations SET next_due_at=p_next,monitoring_state=CASE WHEN p->>'status'='ACTIVE' THEN 'ACTIVE' ELSE 'PAUSED' END
+ UPDATE newsfeed.observations SET next_due_at=p_next,monitoring_state=CASE WHEN p->>'status'='ACTIVE' THEN 'ACTIVE' WHEN o.schedule IS NULL THEN 'MANUAL' ELSE 'PAUSED' END
  WHERE (environment,application_id,organisation_id,owner_user_id,id)=(o.environment,o.application_id,o.organisation_id,o.owner_user_id,o.id) RETURNING * INTO o;
- INSERT INTO newsfeed.monitor_delegations VALUES(o.environment,o.application_id,o.organisation_id,o.owner_user_id,o.id,(p->>'delegationId')::uuid,(p->>'version')::bigint,o.version,p->>'definitionDigest',p->>'status',o.next_due_at)
- ON CONFLICT(environment,application_id,organisation_id,owner_user_id,observation_id) DO UPDATE SET delegation_id=excluded.delegation_id,delegation_version=excluded.delegation_version,resource_version=excluded.resource_version,definition_digest=excluded.definition_digest,status=excluded.status,next_due_at=excluded.next_due_at;
+ INSERT INTO newsfeed.monitor_delegations VALUES(o.environment,o.application_id,o.organisation_id,o.owner_user_id,o.id,(p->>'delegationId')::uuid,(p->>'version')::bigint,o.version,p->>'definitionDigest',p->'schedule',p->>'status',o.next_due_at)
+ ON CONFLICT(environment,application_id,organisation_id,owner_user_id,observation_id) DO UPDATE SET delegation_id=excluded.delegation_id,delegation_version=excluded.delegation_version,resource_version=excluded.resource_version,definition_digest=excluded.definition_digest,schedule=excluded.schedule,status=excluded.status,next_due_at=excluded.next_due_at;
  RETURN jsonb_build_object('id',o.id,'version',o.version,'monitoringState',o.monitoring_state,'nextDueAt',o.next_due_at);
 END $fn$;
 CREATE FUNCTION newsfeed.monitoring_candidates() RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,pg_temp AS $fn$
@@ -177,3 +194,68 @@ GRANT EXECUTE ON FUNCTION newsfeed.monitoring_command(uuid,bigint,boolean),newsf
 GRANT SELECT ON newsfeed.recurring_migrations TO newsfeed_development_runtime;
 CREATE POLICY migration_read ON newsfeed.recurring_migrations FOR SELECT TO newsfeed_development_runtime USING(true);
 
+
+-- This one fixed projection reuses the accepted resource ACL, including its
+-- revocation locks. Recipient notification preferences never grant ownership.
+CREATE FUNCTION newsfeed.monitoring_visible(p_id uuid) RETURNS boolean LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,pg_temp AS $fn$
+DECLARE actor uuid;
+BEGIN
+ actor:=newsfeed.shared_actor(false);
+ IF EXISTS(SELECT 1 FROM newsfeed.observations WHERE id=p_id AND environment=current_setting('profitia.environment',true) AND application_id=current_setting('profitia.application_id',true) AND organisation_id::text=current_setting('profitia.organisation_id',true) AND owner_user_id=actor FOR SHARE) THEN RETURN true;END IF;
+ PERFORM newsfeed.read_shared(p_id,'observation');RETURN true;
+EXCEPTION WHEN SQLSTATE 'PT404' THEN RETURN false;
+END $fn$;
+CREATE FUNCTION newsfeed.monitoring_projection(p_ids uuid[]) RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,pg_temp AS $fn$
+DECLARE actor uuid;
+BEGIN
+ PERFORM newsfeed.monitoring_binding();actor:=newsfeed.shared_actor(false);
+ IF cardinality(p_ids)>101 THEN RAISE EXCEPTION 'Invalid projection';END IF;
+ RETURN(SELECT coalesce(jsonb_agg(jsonb_build_object('id',o.id,'nextDueAt',CASE WHEN d.resource_version=o.version AND d.status='ACTIVE' THEN d.next_due_at ELSE o.next_due_at END,'notifications',CASE WHEN o.owner_user_id=actor THEN o.notifications ELSE coalesce(p.enabled,false) END)),'[]')
+ FROM newsfeed.observations o LEFT JOIN newsfeed.monitor_delegations d ON d.observation_id=o.id LEFT JOIN newsfeed.monitor_preferences p ON p.observation_id=o.id AND p.recipient_user_id=actor
+ WHERE o.id=ANY(p_ids) AND newsfeed.monitoring_visible(o.id));
+END $fn$;
+CREATE FUNCTION newsfeed.monitoring_preference(p_id uuid,p_enabled boolean) RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,pg_temp AS $fn$
+DECLARE actor uuid;o newsfeed.observations%ROWTYPE;
+BEGIN
+ PERFORM newsfeed.monitoring_binding();actor:=newsfeed.shared_actor(true);
+ IF NOT newsfeed.monitoring_visible(p_id) THEN RAISE EXCEPTION 'Observation unavailable' USING ERRCODE='PT404';END IF;
+ SELECT * INTO STRICT o FROM newsfeed.observations WHERE id=p_id FOR SHARE;
+ IF o.owner_user_id=actor THEN RAISE EXCEPTION 'Use own observation settings' USING ERRCODE='22023';END IF;
+ INSERT INTO newsfeed.monitor_preferences(environment,application_id,organisation_id,owner_user_id,observation_id,recipient_user_id,enabled)
+ VALUES(o.environment,o.application_id,o.organisation_id,o.owner_user_id,o.id,actor,p_enabled)
+ ON CONFLICT(observation_id,recipient_user_id) DO UPDATE SET enabled=excluded.enabled,updated_at=clock_timestamp();
+ RETURN jsonb_build_object('id',o.id,'notifications',p_enabled);
+END $fn$;
+CREATE FUNCTION newsfeed.monitoring_notify_shared() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,pg_temp AS $fn$
+BEGIN
+ INSERT INTO newsfeed.monitor_delivery_events(environment,application_id,organisation_id,owner_user_id,observation_id,publication_id,recipient_user_id)
+ SELECT NEW.environment,NEW.application_id,NEW.organisation_id,NEW.owner_user_id,NEW.observation_id,NEW.publication_id,p.recipient_user_id
+ FROM newsfeed.monitor_preferences p WHERE(p.environment,p.application_id,p.organisation_id,p.owner_user_id,p.observation_id)=(NEW.environment,NEW.application_id,NEW.organisation_id,NEW.owner_user_id,NEW.observation_id) AND p.enabled
+ AND EXISTS(SELECT 1 FROM newsfeed.observation_shares a WHERE(a.environment,a.application_id,a.organisation_id,a.owner_user_id,a.observation_id)=(p.environment,p.application_id,p.organisation_id,p.owner_user_id,p.observation_id) AND(a.access_kind='ORG' OR a.recipient_user_id=p.recipient_user_id))
+ ON CONFLICT DO NOTHING;RETURN NEW;
+END $fn$;
+CREATE TRIGGER shared_publication_notice AFTER INSERT ON newsfeed.search_publications FOR EACH ROW EXECUTE FUNCTION newsfeed.monitoring_notify_shared();
+CREATE FUNCTION newsfeed.monitoring_inbox(p_limit integer,p_after timestamptz DEFAULT NULL,p_after_id uuid DEFAULT NULL) RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,pg_temp AS $fn$
+DECLARE actor uuid;
+BEGIN
+ PERFORM newsfeed.monitoring_binding();actor:=newsfeed.shared_actor(false);
+ IF p_limit NOT BETWEEN 1 AND 101 OR(p_after IS NULL)<>(p_after_id IS NULL) THEN RAISE EXCEPTION 'Invalid pagination';END IF;
+ RETURN(SELECT coalesce(jsonb_agg(to_jsonb(x)),'[]') FROM(
+ SELECT * FROM(SELECT e.id,e.observation_id,e.publication_id,e.created_at,e.read_at,'PUBLICATION_DETECTED'::text AS event_kind FROM newsfeed.inbox_events e WHERE e.environment=current_setting('profitia.environment',true) AND e.application_id=current_setting('profitia.application_id',true) AND e.organisation_id::text=current_setting('profitia.organisation_id',true) AND e.owner_user_id=actor
+ UNION ALL
+ SELECT e.id,e.observation_id,e.publication_id,e.created_at,e.read_at,'PUBLICATION_DETECTED'::text FROM newsfeed.monitor_delivery_events e JOIN newsfeed.monitor_preferences p USING(observation_id,recipient_user_id) WHERE e.environment=current_setting('profitia.environment',true) AND e.application_id=current_setting('profitia.application_id',true) AND e.organisation_id::text=current_setting('profitia.organisation_id',true) AND e.recipient_user_id=actor AND p.enabled AND newsfeed.monitoring_visible(e.observation_id)) visible
+ WHERE p_after IS NULL OR(created_at,id)<(p_after,p_after_id) ORDER BY created_at DESC,id DESC LIMIT p_limit)x);
+END $fn$;
+CREATE FUNCTION newsfeed.monitoring_mark_read(p_id uuid) RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,pg_temp AS $fn$
+DECLARE actor uuid;updated uuid;
+BEGIN
+ PERFORM newsfeed.monitoring_binding();actor:=newsfeed.shared_actor(true);
+ UPDATE newsfeed.inbox_events SET read_at=coalesce(read_at,clock_timestamp()) WHERE id=p_id AND environment=current_setting('profitia.environment',true) AND application_id=current_setting('profitia.application_id',true) AND organisation_id::text=current_setting('profitia.organisation_id',true) AND owner_user_id=actor RETURNING id INTO updated;
+ IF updated IS NULL THEN
+ UPDATE newsfeed.monitor_delivery_events e SET read_at=coalesce(read_at,clock_timestamp()) WHERE id=p_id AND environment=current_setting('profitia.environment',true) AND application_id=current_setting('profitia.application_id',true) AND organisation_id::text=current_setting('profitia.organisation_id',true) AND recipient_user_id=actor AND newsfeed.monitoring_visible(e.observation_id) AND EXISTS(SELECT 1 FROM newsfeed.monitor_preferences p WHERE p.observation_id=e.observation_id AND p.recipient_user_id=actor AND p.enabled) RETURNING id INTO updated;
+ END IF;
+ IF updated IS NULL THEN RAISE EXCEPTION 'Notification unavailable' USING ERRCODE='PT404';END IF;RETURN jsonb_build_object('id',updated,'read',true);
+END $fn$;
+REVOKE ALL ON newsfeed.monitor_preferences,newsfeed.monitor_delivery_events FROM PUBLIC;
+REVOKE ALL ON FUNCTION newsfeed.monitoring_visible(uuid),newsfeed.monitoring_notify_shared(),newsfeed.monitoring_projection(uuid[]),newsfeed.monitoring_preference(uuid,boolean),newsfeed.monitoring_inbox(integer,timestamptz,uuid),newsfeed.monitoring_mark_read(uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION newsfeed.monitoring_projection(uuid[]),newsfeed.monitoring_preference(uuid,boolean),newsfeed.monitoring_inbox(integer,timestamptz,uuid),newsfeed.monitoring_mark_read(uuid) TO newsfeed_development_runtime;

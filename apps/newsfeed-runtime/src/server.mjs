@@ -32,9 +32,10 @@ export function createApplication({authorizer,repository,savedSearches=null,sour
    }
    if(parts.length===3){
     only();if(request.method==='GET')return Response.json(await execute((c,t)=>savedSearches.get(t,c,id)));
-    if(request.method==='PATCH'){const body=await json();return Response.json(await execute((c,t)=>(async()=>{const o=await savedSearches.update(t,c,id,body);if(monitoring&&o.schedule){await monitoring.activate(t,request,o.id,o.version,o.status==='ACTIVE');return savedSearches.get(t,c,o.id)}return o})(),body));}
-    if(request.method==='DELETE')return Response.json(await execute((c,t)=>savedSearches.remove(t,c,id)));
+    if(request.method==='PATCH'){const body=await json();return Response.json(await execute((c,t)=>(async()=>{const old=await savedSearches.get(t,c,id),o=await savedSearches.update(t,c,id,body);if(monitoring&&(o.schedule||old.schedule&&body.schedule===null)){await monitoring.activate(t,request,o.id,o.version,o.status==='ACTIVE'&&o.schedule!==null);return savedSearches.get(t,c,o.id)}return o})(),body));}
+    if(request.method==='DELETE')return Response.json(await execute(async(c,t)=>{const old=await savedSearches.get(t,c,id);if(monitoring&&old.schedule&&!old.readOnly)await monitoring.activate(t,request,id,old.version,false);return savedSearches.remove(t,c,id)}));
    }
+   if(parts.length===4&&parts[3]==='notifications'&&request.method==='PATCH'){only();const body=await json();if(!body||Object.keys(body).join(',')!=='enabled'||typeof body.enabled!=='boolean')throw new SourceHubError('INVALID_NOTIFICATION_PREFERENCES');return Response.json(await execute((c,t)=>savedSearches.setNotifications(t,c,id,body.enabled),body));}
    if(parts.length===4&&parts[3]==='monitoring'&&request.method==='POST'){only();if(!monitoring)throw new SourceHubError('MONITORING_NOT_CONFIGURED',503);const body=await json();if(!body||Object.keys(body).sort().join(',')!=='enabled,version'||typeof body.enabled!=='boolean'||!Number.isSafeInteger(body.version)||body.version<1)throw new SourceHubError('INVALID_MONITORING_COMMAND');return Response.json(await execute((c,t)=>monitoring.activate(t,request,id,body.version,body.enabled),body));}
    if(parts.length===4&&request.method==='GET'){
     if(parts[3]==='shares'){only();return Response.json(await execute((c,t)=>savedSearches.shares(t,c,id)));}

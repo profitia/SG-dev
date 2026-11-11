@@ -2,6 +2,7 @@ import { createRegistrationStore, registrationSchemaDigest, type RegistrationSto
 import { createRegistrationProvider } from './registration-provider.js'
 import { createRegistrationSurface, type RegistrationSurface } from './registration.js'
 import { createCommunicationLanguageSurface, type CommunicationLanguageSurface } from './communication-language.js'
+import {createReportEmailRuntime} from './report-email.js'
 import { createEmailRuntime, loadEmailRenderer, type EmailSurface } from './email-runtime.js'
 import { createClerkEmailVerifier } from './email-webhook.js'
 import { createEmailStore } from './email-store.js'
@@ -23,6 +24,7 @@ import type { SessionBoundary } from './contracts.js'
 import { embeddedTargets, createEmbeddedAccountHandler, type EmbeddedAccountSurface } from './embedded-account.js'
 import { createAccountSurface, accountTransactions, type AccountSurface } from './account-provisioning.js'
 let email: EmailSurface | null = null
+let reportEmail:ReturnType<typeof createReportEmailRuntime>|null=null
 let pool: pg.Pool | null = null
 async function start() {
 let boundary: SessionBoundary | null = null
@@ -96,7 +98,17 @@ if (process.env.IDENTITY_RUNTIME_ENABLED === 'true') {
     const render = await loadEmailRenderer(e.appName, e.allowedInvitationOrigins,fetch,revocationOrigins)
     email = createEmailRuntime({verify,store,render,send,recipient:createEmailRecipientVerifier(client),
       diagnostic:code => console.error('identity-email: '+code)})
+    if(process.env.IDENTITY_REPORT_DELIVERY_ENABLED==='true'){
+      if(!currentE1||!process.env.IDENTITY_REPORT_DELIVERY_SCHEMA_DIGEST)throw Error('REPORT_DELIVERY_AUTHORITY_REQUIRED')
+      reportEmail=createReportEmailRuntime({query:(sql,values)=>pool!.query(sql,values),client,reportSchemaDigest:process.env.IDENTITY_REPORT_DELIVERY_SCHEMA_DIGEST,
+        mailgun:{environment:'development',region:e.region,domain:e.domain,apiKey:process.env.MAILGUN_SENDING_KEY,authorizedRecipients:[],from:e.from,senderName:e.senderName},
+        diagnostic:code=>console.error('identity-email: '+code)})
+      await reportEmail.ready()
+      const security=email,report=reportEmail
+      email={...security,async ready(){await Promise.all([security.ready(),report.ready()])},async stop(){await Promise.all([security.stop(),report.stop()])}}
+    }
   }
+  if(process.env.IDENTITY_REPORT_DELIVERY_ENABLED==='true'&&!reportEmail)throw Error('EXISTING_EMAIL_TRANSPORT_REQUIRED')
   boundary = createSessionBoundary({ configuration: config, client, authority }); origin = config.origin
   if (process.env.IDENTITY_SELF_SERVICE_ENABLED === 'true') {
     const key = process.env.IDENTITY_PROFILE_PROOF_KEY, digest = process.env.IDENTITY_PROFILE_SCHEMA_DIGEST
@@ -140,4 +152,4 @@ for (const signal of ['SIGINT','SIGTERM']) process.once(signal, () => {
   server.closeIdleConnections()
 })
 }
-start().catch(async () => { console.error('identity-runtime configuration unavailable'); await email?.stop(); await pool?.end(); process.exitCode = 1 })
+start().catch(async () => { console.error('identity-runtime configuration unavailable'); await Promise.all([email?.stop(),reportEmail?.stop()]); await pool?.end(); process.exitCode = 1 })
