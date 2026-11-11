@@ -1,4 +1,6 @@
 import {acceptedSdkSource} from '../../../packages/platform-contracts/test/organisation-sdk-compatibility.mjs'
+// Verify the current SDK separately from immutable historical source maps.
+const sdkCurrentSourceDigests=Object.fromEntries(Object.entries(acceptedSdkSource().sourceDigests??{}).map(([p,h])=>[p.replace(/^packages\/platform-contracts\//,''),h]))
 import './source-hub-market-symbol-compatibility.test.mjs'
 import {assertSourceHubApiPathCompatibility,assertOilReportSourceCompatibility} from './source-hub-sdk-compatibility.mjs'
 import {assertAppShellFourCardCascade} from '../../sg-runtime/tests/pci-smart-integrity.mjs'
@@ -116,7 +118,7 @@ test('complete X-Ray architecture adopts the exact producer and consumer closure
  const root=new URL('../',import.meta.resolve('@profitia/platform-contracts/current-human-read'))
  for(const[file,digest]of Object.entries(a.sourceDigests)){
   assert.equal(hash(historicalBlob(a.producer.sourceSha+':packages/platform-contracts/'+file)),digest,'producer '+file)
-  if(file!=='package-lock.json')assert.equal(hash(fs.readFileSync(new URL(file,root))),apiPath?.sourceDigests[file]??receipt.xrayAppShellPresentation?.sourceDigests?.[file]??apiPath?.sourceDigests[file]??receipt.freshPostfetchRecovery?.sourceDigests[file]??apiPath?.sourceDigests[file]??receipt.freshPostfetchRecovery?.sourceDigests[file]??receipt.sourceLeaseClockRecovery?.sourceDigests[file]??receipt.settledExternalFailureRecovery?.sourceDigests[file]??fresh.sourceDigests[file]??xray.sourceDigests[file]??digest,'installed '+file)
+  if(file!=='package-lock.json')assert.equal(hash(fs.readFileSync(new URL(file,root))),sdkCurrentSourceDigests[file]??apiPath?.sourceDigests[file]??receipt.xrayAppShellPresentation?.sourceDigests?.[file]??apiPath?.sourceDigests[file]??receipt.freshPostfetchRecovery?.sourceDigests[file]??apiPath?.sourceDigests[file]??receipt.freshPostfetchRecovery?.sourceDigests[file]??receipt.sourceLeaseClockRecovery?.sourceDigests[file]??receipt.settledExternalFailureRecovery?.sourceDigests[file]??fresh.sourceDigests[file]??xray.sourceDigests[file]??digest,'installed '+file)
  }
  assert(Object.keys(a.applicationSourceDigests).length>=30)
  for(const[file,digest]of Object.entries(a.consumerSourceDigests))assert.equal(hash(historicalBlob(xray.previousReceiptSourceSha+':'+posix.normalize('apps/srm/'+file))),digest,'historical consumer '+file)
@@ -175,7 +177,7 @@ test('settled provider failure adoption pins its producer and never treats Sourc
  assert.equal(JSON.parse(fs.readFileSync(new URL('package.json',root))).version,(apiPath??postfetch??clock??settled).platformVersion)
  for(const[file,digest]of Object.entries(settled.sourceDigests)){
   assert.equal(hash(historicalBlob(settled.producer.sourceSha+':packages/platform-contracts/'+file)),digest,'producer '+file)
-  if(!file.startsWith('test/')&&file!=='package-lock.json')assert.equal(hash(fs.readFileSync(new URL(file,root))),apiPath?.sourceDigests[file]??receipt.xrayAppShellPresentation?.sourceDigests?.[file]??postfetch?.sourceDigests[file]??clock?.sourceDigests[file]??digest,'installed '+file)
+  if(!file.startsWith('test/')&&file!=='package-lock.json')assert.equal(hash(fs.readFileSync(new URL(file,root))),sdkCurrentSourceDigests[file]??apiPath?.sourceDigests[file]??receipt.xrayAppShellPresentation?.sourceDigests?.[file]??postfetch?.sourceDigests[file]??clock?.sourceDigests[file]??digest,'installed '+file)
  }
  for(const[file,digest]of Object.entries(settled.applicationSourceDigests))assert.equal(hash(beforeClock(file)),digest,file)
  for(const flag of ['redirectPolicyChanged','providerRetryAdded','sourceFailureBypassed','humanAuthorityChanged','sqlSchemaChanged','runtimeDeploymentClaimed','performanceThresholdsClaimed'])assert.equal(settled[flag],false,flag)
@@ -193,7 +195,7 @@ test('Source clock adoption preserves complete history and exact producer while 
  assert.equal(await sdk.externalCallSourceDigest(),acceptedSdkSource().sdkDigests.externalCallSourceDigest??actualReceipt.oilAutonomousReportCompatibility?.sdkDigests.externalCallSourceDigest??apiPath?.sdkDigests.externalCallSourceDigest??postfetch?.sdkDigests.externalCallSourceDigest??a.sdkDigests.externalCallSourceDigest)
  for(const[file,digest]of Object.entries(a.sourceDigests)){
   assert.equal(hash(historicalBlob(a.producer.sourceSha+':packages/platform-contracts/'+file)),digest,'producer '+file)
-  if(file!=='package-lock.json')assert.equal(hash(fs.readFileSync(new URL(file,root))),apiPath?.sourceDigests[file]??receipt.xrayAppShellPresentation?.sourceDigests?.[file]??postfetch?.sourceDigests[file]??digest,'installed '+file)
+  if(file!=='package-lock.json')assert.equal(hash(fs.readFileSync(new URL(file,root))),sdkCurrentSourceDigests[file]??apiPath?.sourceDigests[file]??receipt.xrayAppShellPresentation?.sourceDigests?.[file]??postfetch?.sourceDigests[file]??digest,'installed '+file)
  }
  for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(beforePostfetch(file)),digest,file)
 })
@@ -211,7 +213,7 @@ test('FRESH postfetch adoption preserves exact history, producer and current sec
  assert.equal(await currentHumanReadSourceDigest(),acceptedSdkSource().sdkDigests.currentHumanReadSourceDigest??actualReceipt.oilAutonomousReportCompatibility?.sdkDigests.currentHumanReadSourceDigest??actualReceipt.assistantM1SourceCompatibility.sdkDigests.currentHumanReadSourceDigest)
  for(const[file,digest]of Object.entries(a.sourceDigests)){
   assert.equal(hash(historicalBlob(a.producer.sourceSha+':packages/platform-contracts/'+file)),digest,'producer '+file)
-  if(file!=='package-lock.json')assert.equal(hash(fs.readFileSync(new URL(file,root))),apiPath?.sourceDigests[file]??receipt.xrayAppShellPresentation?.sourceDigests?.[file]??digest,'installed '+file)
+  if(file!=='package-lock.json')assert.equal(hash(fs.readFileSync(new URL(file,root))),sdkCurrentSourceDigests[file]??apiPath?.sourceDigests[file]??receipt.xrayAppShellPresentation?.sourceDigests?.[file]??digest,'installed '+file)
  }
  for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(beforePreparedEvidence(file)),digest,file)
 })

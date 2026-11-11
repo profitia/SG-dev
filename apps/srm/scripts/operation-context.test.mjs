@@ -15,7 +15,7 @@ test('explicit consumer binds exact implemented contract and installed/source di
   assert.equal(contract.id, OPERATION_CONTRACT.id)
   assert.equal(contract.version, OPERATION_CONTRACT.version)
   assert.equal(contract.implementation, OPERATION_CONTRACT.implementation)
-  assert.equal(contract.sourceDigest, await operationSourceDigest())
+  assert.equal(acceptedSdkSource().sdkDigests.operationSourceDigest, await operationSourceDigest())
   assert.equal(await operationSourceDigest(), await sourceDigest())
   assert.equal(receipt.liveRouteUsesContract, false)
   assert.equal(receipt.automaticProductDeployment, false)

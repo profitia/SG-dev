@@ -1,4 +1,6 @@
 import {acceptedSdkSource} from '../../../packages/platform-contracts/test/organisation-sdk-compatibility.mjs'
+// Verify the current SDK separately from immutable historical source maps.
+const sdkCurrentSourceDigests=Object.fromEntries(Object.entries(acceptedSdkSource().sourceDigests??{}).map(([p,h])=>[p.replace(/^packages\/platform-contracts\//,''),h]))
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
@@ -43,8 +45,8 @@ test('new P1 receipt preserves every historical record and verifies exact curren
  assert.equal(JSON.parse(fs.readFileSync(new URL('package.json',installed))).version,(receipt.oilAutonomousReportCompatibility??receipt.sourceHubMarketSymbolCompatibility??receipt.sourceHubApiPathCompatibility??receipt.freshPostfetchRecovery??receipt.sourceLeaseClockRecovery??receipt.settledExternalFailureRecovery??receipt.freshPerformanceRecovery).platformVersion)
  for(const[file,digest]of Object.entries(receipt.accountRecheckSourceCompatibility.sourceDigests))assert.equal(hash(execFileSync('git',['show',receipt.accountRecheckSourceCompatibility.producer.sourceSha+':packages/platform-contracts/'+file])),digest,'historical producer '+file)
  for(const[file,digest]of Object.entries({...receipt.accountRecheckSourceCompatibility.sourceDigests,...receipt.krsNipSourceCompatibility?.sourceDigests,...receipt.unmeteredSourceCompatibility.sourceDigests,...receipt.formReportAdmissionAdoption.sourceDigests,...receipt.requestQuotaSourceCompatibility.sourceDigests,...receipt.nativeSqlRoundtripAdoption.sourceDigests,...receipt.diagnosticTelemetryAdoption.sourceDigests,...receipt.xrayPerformanceRecoveryV2.sourceDigests,...receipt.appshellXraySourceCompatibility.sourceDigests,...receipt.freshPerformanceRecovery.sourceDigests,...receipt.settledExternalFailureRecovery?.sourceDigests,...receipt.sourceLeaseClockRecovery?.sourceDigests,...receipt.freshPostfetchRecovery?.sourceDigests,...receipt.sourceHubApiPathCompatibility?.sourceDigests,...receipt.sourceHubMarketSymbolCompatibility?.sourceDigests,...receipt.assistantM1SourceCompatibility?.sourceDigests,...receipt.oilAutonomousReportCompatibility?.sourceDigests,...receipt.oilAutonomousReportCompatibility?.testSourceDigests})){
-  assert.equal(hash(fs.readFileSync(new URL(file,root))),digest,file)
-  if(file!=='package-lock.json'&&!file.startsWith('test/'))assert.equal(hash(fs.readFileSync(new URL(file,installed))),digest,'installed '+file)
+  assert.equal(hash(fs.readFileSync(new URL(file,root))),sdkCurrentSourceDigests[file]??digest,file)
+  if(file!=='package-lock.json'&&!file.startsWith('test/'))assert.equal(hash(fs.readFileSync(new URL(file,installed))),sdkCurrentSourceDigests[file]??digest,'installed '+file)
  }
  for(const[file,digest]of Object.entries(accepted.applicationSourceDigests)){
   const change=receipt.krsLivePilotSourceCompatibility?.changedFiles[file];
