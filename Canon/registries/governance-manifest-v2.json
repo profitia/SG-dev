@@ -1,6 +1,6 @@
 {
   "schemaVersion": "2.0",
-  "manifestVersion": "3.48.0",
+  "manifestVersion": "3.49.0",
   "owner": "Profitia Governance",
   "entrypoint": "AGENTS.md",
   "preflight": "scripts/governance/governance-preflight.mjs",
@@ -1451,6 +1451,29 @@
         "repository-routing",
         "architecture-baseline",
         "architecture-execution-adapter",
+        "shared-development-contract-integration",
+        "architecture-reporting-runbook"
+      ]
+    },
+    {
+      "id": "platform-knowledge-development-foundation",
+      "version": "1.0",
+      "path": "Canon/runbooks/platform-knowledge-development-foundation-v1.md",
+      "status": "ACTIVE",
+      "loadOrder": 560,
+      "owner": "Architecture Platform",
+      "appliesTo": [
+        "SG2",
+        "SRM",
+        "ARCHITECTURE"
+      ],
+      "dependsOn": [
+        "platform-knowledge-development-delivery-plan",
+        "repository-routing",
+        "architecture-baseline",
+        "architecture-resource-onboarding",
+        "operation-context-and-access-contract",
+        "operation-access-matrix",
         "shared-development-contract-integration",
         "architecture-reporting-runbook"
       ]

@@ -1027,6 +1027,78 @@
         "ARCHITECTURE"
       ],
       "onboardingAuthorization": "Owner approved entire bounded M1 decision in host01a1c177-a1ff-7a52-aad1-96606021f3c5, 2026-11-09; PHR reports/2026/11/09/SG2/SG2-ACG-M1-20261109/OWNER-APPROVAL.md; ARCH-ACG-M1-G1-20261109."
+    },
+    {
+      "id": "PK-BASE-001",
+      "capability": "Platform Knowledge",
+      "name": "Platform Knowledge Runtime",
+      "pathPatterns": [
+        "apps/platform-knowledge-runtime/**"
+      ],
+      "currentOwner": "Architecture Platform",
+      "currentResponsibility": "Document ingestion, private and shared knowledge, durable processing, memory, lifecycle and environment-local persistence; no alternate Identity, E1 or conversation history.",
+      "baselineClassification": "ALIGNED",
+      "parentSurfaceId": null,
+      "cleanupReason": null,
+      "classificationReferenceSha": "d88adf594dfa51cd2011c2567dfc5f6506f6ffc1",
+      "allowedProjectKeys": [
+        "ARCHITECTURE"
+      ],
+      "onboardingAuthorization": "G1: owner accepted the exact four surfaces in Platform Knowledge plan v1 and explicitly ordered Stage1 implementation on 2026-11-11, host 01a1c98f-af9f-7252-b4b8-d1e1d14b309a; Canon/evidence/2026-11-11-platform-knowledge-stage1-g1-onboarding.md. Source registration only; resources remain human-owner-only."
+    },
+    {
+      "id": "PK-BASE-002",
+      "capability": "Platform Knowledge",
+      "name": "Platform Knowledge Contracts",
+      "pathPatterns": [
+        "packages/platform-knowledge-contracts/**"
+      ],
+      "currentOwner": "Architecture Platform",
+      "currentResponsibility": "Versioned provider-neutral HTTP/OpenAPI and data contracts for knowledge, memory and lifecycle; explicit producer and consumer adoption, no private database imports.",
+      "baselineClassification": "ALIGNED",
+      "parentSurfaceId": null,
+      "cleanupReason": null,
+      "classificationReferenceSha": "d88adf594dfa51cd2011c2567dfc5f6506f6ffc1",
+      "allowedProjectKeys": [
+        "ARCHITECTURE"
+      ],
+      "onboardingAuthorization": "G1: owner accepted the exact four surfaces in Platform Knowledge plan v1 and explicitly ordered Stage1 implementation on 2026-11-11, host 01a1c98f-af9f-7252-b4b8-d1e1d14b309a; Canon/evidence/2026-11-11-platform-knowledge-stage1-g1-onboarding.md. Source registration only; resources remain human-owner-only."
+    },
+    {
+      "id": "PK-BASE-003",
+      "capability": "Platform Knowledge",
+      "name": "Platform Knowledge Core",
+      "pathPatterns": [
+        "packages/platform-knowledge-core/**"
+      ],
+      "currentOwner": "Architecture Platform",
+      "currentResponsibility": "Reusable source coverage, segmentation, source alignment and context preparation through explicit model and storage ports; no credentials or independent identity authority.",
+      "baselineClassification": "ALIGNED",
+      "parentSurfaceId": null,
+      "cleanupReason": null,
+      "classificationReferenceSha": "d88adf594dfa51cd2011c2567dfc5f6506f6ffc1",
+      "allowedProjectKeys": [
+        "ARCHITECTURE"
+      ],
+      "onboardingAuthorization": "G1: owner accepted the exact four surfaces in Platform Knowledge plan v1 and explicitly ordered Stage1 implementation on 2026-11-11, host 01a1c98f-af9f-7252-b4b8-d1e1d14b309a; Canon/evidence/2026-11-11-platform-knowledge-stage1-g1-onboarding.md. Source registration only; resources remain human-owner-only."
+    },
+    {
+      "id": "PK-BASE-004",
+      "capability": "Platform Knowledge",
+      "name": "Platform Knowledge CI",
+      "pathPatterns": [
+        ".github/workflows/platform-knowledge-ci.yml"
+      ],
+      "currentOwner": "Architecture Platform",
+      "currentResponsibility": "Credential-free contracts, source coverage, routing and compatibility checks; no automatic product deployment or resource provisioning.",
+      "baselineClassification": "ALIGNED",
+      "parentSurfaceId": null,
+      "cleanupReason": null,
+      "classificationReferenceSha": "d88adf594dfa51cd2011c2567dfc5f6506f6ffc1",
+      "allowedProjectKeys": [
+        "ARCHITECTURE"
+      ],
+      "onboardingAuthorization": "G1: owner accepted the exact four surfaces in Platform Knowledge plan v1 and explicitly ordered Stage1 implementation on 2026-11-11, host 01a1c98f-af9f-7252-b4b8-d1e1d14b309a; Canon/evidence/2026-11-11-platform-knowledge-stage1-g1-onboarding.md. Source registration only; resources remain human-owner-only."
     }
   ],
   "cleanupFindings": [
