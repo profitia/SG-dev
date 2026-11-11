@@ -1,5 +1,6 @@
 import {readM2AcceptedSource} from './assistant-m2-source-view.mjs'
 import {assistantM2Predecessor} from './assistant-m2-integrity.mjs'
+import {assistantEcrPredecessor,ECR_ADDITIONS} from './assistant-ecr-integrity.mjs'
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import { createHash } from 'node:crypto'
@@ -162,7 +163,11 @@ test('Benchmark presentation renews the current receiver closure without rewriti
     assert.notEqual(createHash('sha256').update('changed-content').digest('hex'), digest, path)
   }
   const repository = new URL('../../../', import.meta.url)
-  const m2=assistantM2Predecessor(file=>fs.readFileSync(new URL(file,repository)),(sha,file)=>execFileSync('git',['show',sha+':'+file],{cwd:repository}))
+  const readCurrent=file=>fs.readFileSync(new URL(file,repository)),historical=(sha,file)=>execFileSync('git',['show',sha+':'+file],{cwd:repository})
+  const ecr=assistantEcrPredecessor(readCurrent,historical)
+  const ecrAddedBoundaryFiles=ecr?ECR_ADDITIONS:[]
+  for(const file of ecrAddedBoundaryFiles)assert(Object.hasOwn(ecr.manifest.sourceDigests,file))
+  const m2=assistantM2Predecessor(readCurrent,historical)
   assert(m2,'Exact M2 source closure is required before extending the historical inventory')
   const m2AddedBoundaryFiles=['apps/sg-runtime/deployment/assistant-m2-targets.json']
   for(const file of m2AddedBoundaryFiles)assert(Object.hasOwn(m2.manifest.sourceDigests,file))
@@ -171,7 +176,7 @@ test('Benchmark presentation renews the current receiver closure without rewriti
     assert(paths.length > 0, path)
     const currentPaths = [...new Set([...execFileSync('git', ['ls-files', '--', path], { encoding: 'utf8', cwd: repository }).trim().split('\n').filter(Boolean),...execFileSync('git',['ls-files','--others','--exclude-standard','--',path],{encoding:'utf8',cwd:repository}).trim().split('\n').filter(Boolean)])].sort()
     const additions=[...(receipt.assistantM1ChartContextCorrective?.addedBoundaryFiles??[]),...(receipt.assistantM1RuntimeSourceCompatibility?.addedBoundaryFiles??[]),...(receipt.appShellFourCardCascade?.addedBoundaryFiles??[]),...Object.keys(receipt.productAnalyticsMainCompatibility?.sourceDigests??{}).filter(file=>{try{execFileSync('git',['cat-file','-e',receipt.productAnalyticsMainCompatibility.sharedBaselineSourceSha+':'+file],{stdio:'pipe'});return false}catch{return true}}),...Object.keys(receipt.bqlPciFirstSourceCompatibility?.sourceDigests??{}).filter(file=>{try{execFileSync('git',['cat-file','-e',receipt.bqlPciFirstSourceCompatibility.previousReceiptSourceSha+':'+file],{stdio:'pipe'});return false}catch{return true}}),...receipt.appShellSourceCompatibility.addedBoundaryFiles,...receipt.integratedBuyerJourneySourceCompatibility.addedBoundaryFiles,...receipt.appshellXraySourceCompatibility.addedBoundaryFiles].filter(file=>file.startsWith(path+'/'))
-    assert.deepEqual(currentPaths, [...paths,...additions,...m2AddedBoundaryFiles.filter(file=>file.startsWith(path+'/'))].sort(), 'Boundary inventory with explicit AppShell release record: ' + path)
+    assert.deepEqual(currentPaths, [...paths,...additions,...m2AddedBoundaryFiles.filter(file=>file.startsWith(path+'/')),...ecrAddedBoundaryFiles.filter(file=>file.startsWith(path+'/'))].sort(), 'Boundary inventory with explicit AppShell release record: ' + path)
     for(const file of additions)assert.equal(createHash('sha256').update(readM2AcceptedSource(new URL(file,repository))).digest('hex'),receipt.assistantM1ChartContextCorrective?.sourceDigests[file]??receipt.assistantM1RuntimeSourceCompatibility?.consumerSourceDigests[file]??receipt.d1AuditReaderPreparation?.sourceDigests[file]??receipt.appShellFourCardCascade?.sourceDigests[file]??receipt.xrayAppShellPresentation?.sourceDigests[file]??receipt.productAnalyticsMainCompatibility?.sourceDigests[file]??receipt.marketHistoryIngestionCompatibility?.sourceDigests[file]??receipt.bqlLiveAcceptanceCompatibility?.sourceDigests[file]??receipt.bqlPciFirstSourceCompatibility?.sourceDigests[file]??receipt.appshellXraySourceCompatibility.applicationSourceDigests[file.replace('apps/sg-runtime/','')]??receipt.integratedBuyerJourneySourceCompatibility.applicationSourceDigests[file.replace('apps/sg-runtime/','')]??receipt.appShellSourceCompatibility.applicationSourceDigests[file.replace('apps/sg-runtime/','')],file)
     for (const file of paths) {
       // The later source-compatibility task adds only its CI test command.

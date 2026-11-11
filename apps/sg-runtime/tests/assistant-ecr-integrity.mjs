@@ -21,6 +21,7 @@ export const ECR_PATHS=Object.freeze([
  'apps/sg-runtime/tests/assistant-send-arrow-integrity.mjs',
  'apps/sg-runtime/tests/assistant-send-arrow-integrity.test.mjs',
  'apps/sg-runtime/tests/pci-smart-integrity.test.mjs',
+ 'apps/sg-runtime/tests/operation-context.test.mjs',
  'packages/assistant-context-contracts/package.json',
  'packages/assistant-context-contracts/src/index.d.mts',
  'packages/assistant-context-contracts/src/index.mjs',
