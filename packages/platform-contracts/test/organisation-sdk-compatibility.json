@@ -249,9 +249,10 @@
       "apps/srm/scripts/operation-context.test.mjs": "fa58ab16238b7581ae1ed8554b8a8445a6ede8feac80bd43822301701a4d0bf6",
       "apps/srm/scripts/private-host.integration.test.mjs": "bc00805189c2319691229276c6b626e63dce062ec610edab3d446c49264d06d3",
       "apps/srm/scripts/request-quota-adoption.test.mjs": "d32180adb6facdd8a76035ff043bff55b7a192d49b74a253e7b65aff0230a533",
-      "apps/srm/scripts/source-hub-sdk-compatibility.mjs": "88b06883d6899e08cb1d240078cdbc8facb2b0f04cdbf2e73338467b7d7fcd8e",
+      "apps/srm/scripts/source-hub-sdk-compatibility.mjs": "377842347c9a299095021937c1c2fcbae57de5d913fedd04e4f6c440201e1963",
       "apps/srm/scripts/supplier-location-admission.integration.test.mjs": "729351a9c3cabe3ea8f7bebd0093b307fc4cb30bb2bb9c98dfc6cb15c18f0c57",
-      "apps/srm/scripts/xray-performance-adoption.test.mjs": "345abe0029ff18bed8f44d4dae03168c0a32e750a5c46f87976e66353d7eba42"
+      "apps/srm/scripts/xray-performance-adoption.test.mjs": "345abe0029ff18bed8f44d4dae03168c0a32e750a5c46f87976e66353d7eba42",
+      "apps/srm/src/server/root-atomic-claim-adoption.test.ts": "085794670b9762dab90d0d8baead744c70f59ba395c40baf217882fef5334a0b"
     }
   },
   "preservedSourceDigests": {

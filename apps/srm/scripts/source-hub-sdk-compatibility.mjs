@@ -9,6 +9,8 @@ import {posix} from 'node:path'
 const hash=bytes=>createHash('sha256').update(bytes).digest('hex')
 // Test-only additive compatibility; never imported by a product runtime.
 export function assertSourceHubApiPathCompatibility(receipt,current,historical,{validatePeer=true}={}){
+ const sdk=sdkContinuationPredecessor(receipt,current,historical,{projectKey:'SRM',validatePeer})
+ if(sdk)return assertSourceHubApiPathCompatibility(sdk.prior,sdk.previousBytes,historical,{validatePeer})
  const m2=srmAssistantM2Predecessor(current,historical);if(m2)return assertSourceHubApiPathCompatibility(receipt,m2.previousBytes,historical,{validatePeer})
  if(receipt.oilAutonomousReportCompatibility){const n=assertOilReportSourceCompatibility(receipt,current,historical,{projectKey:'SRM',validatePeer});return assertSourceHubApiPathCompatibility(n.prior,n.previousBytes,historical,{validatePeer})}
  if(receipt.sourceHubMarketSymbolCompatibility){const n=assertSourceHubMarketSymbolCompatibility(receipt,current,historical,{projectKey:'SRM',validatePeer});return assertSourceHubApiPathCompatibility(n.prior,n.previousBytes,historical,{validatePeer})}
