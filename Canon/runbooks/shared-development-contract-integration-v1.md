@@ -724,3 +724,26 @@ Known failing source is never published or accepted by a policy-only result.
 
 This decision does not install product SQL, change roles/grants/packages, send
 mail, call providers/models, change DNS, activate runtime or deploy a product.
+
+
+## Owner-approved registration history fixture correction — same67 (2026-11-11)
+
+Owner decision in the execution chat: “Zatwierdzam korektę z PR #1026”.
+The frozen249eec42 packet was accepted as inert documents only atddbd4af8,
+preserving current main36df38e9 and all five approved document blobs. The closed
+active source review binds the same67 paths/owners/statuses/modes, map5f69b16e,
+recordb5a228db and preparedsourcea791b5f0.61 FFE blobs are unchanged; six exact
+versions cover three test-fixture corrections, datarecord, exact known-record
+recognition and immutableFFE regression. All165 SDK production bytes,48SDK/
+3optional fingerprints,21 historical guards,13 supplemental pins and receipts
+remain unchanged. Preserve the entire priorFFE67 map and both old65 maps as
+separate accepted graphs; reject every mixed, drifted, renamed or unknown graph.
+
+This four-file trusted policy requires its own exact protected/public/governance
+and entire resulting-main checks before active use. Existing credential scope,
+main-only environment, immutable pins, ignore-scripts installation, token removal,
+actual-owner routing, complete diff/mode and exact-head/race fences are unchanged.
+The source may use original983 coordinated transport only after mandatory exact
+producer/SG2/SRM tests, controlled/public proof and actual SOURCE GO. New source
+or a changed record never inherits this decision. No productSQL/grants/packages,
+provider/model/mail/DNS/runtime activation or deployment is authorized here.
