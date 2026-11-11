@@ -19,10 +19,11 @@ function historicalSource(reader,sha,path){
 const receiptPath=project=>'apps/'+(project==='SG2'?'sg-runtime':'srm')+'/operation-integration.json'
 const tasks={SG2:'SG2-REGISTRATION-ORGANISATION-HANDOFF-STAGE-I-20261110',SRM:'SRM-REGISTRATION-BOOTSTRAP-SDK-ADOPTION-20261111'}
 const known=Object.freeze({
- 'organisation-bootstrap-v1':Object.freeze({path:'packages/platform-contracts/test/organisation-sdk-compatibility.json',sha256:'66c07a72cd3817f17eca8243697a633106cc79caa2e2e8a19b1d7a74e0e4d3f1'})
+ 'organisation-bootstrap-v1':Object.freeze({path:'packages/platform-contracts/test/organisation-sdk-compatibility.json',sha256:'bac262f70369a2da7682a0f50906a4772b1bfaef3f50e2334180e49f55a613d0'})
 })
 const recordKeys=['schemaVersion','acceptanceId','taskId','targetEnvironment','scope','platformVersion','previousSourceSha','producer','sourceDigests','compatibilityTestSourceDigests','sdkDigests','optionalPackageDigests','consumerSourceDigests','preservedSourceDigests','defaultRootImplementation','optionalRootImplementation','optionalOperations','runtimeOptedIn','sqlInstalled','permissionsChanged','providerCallsPerformed','deploymentPerformed']
 const compatibilityTests=[
+ 'apps/newsfeed-runtime/test/runtime.test.mjs',
  'apps/architecture-lab/test/sdk-compatibility.test.mjs',
  'packages/platform-contracts/current-fresh-report/test/current-fresh-report.test.mjs',
  'packages/platform-contracts/readonly-miss-report/test/readonly-miss-report.test.mjs',

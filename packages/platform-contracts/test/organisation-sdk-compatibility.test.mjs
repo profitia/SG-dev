@@ -29,6 +29,7 @@ test('altered current SDK, receiver source, source record or preserved guard can
   'packages/platform-contracts/src/organisation-bootstrap.mjs','packages/platform-contracts/migrations/profile/008-organisation-create.sql',
   'packages/platform-contracts/package.json','apps/architecture-lab/sdk-1.34-compatibility.json',
   'apps/sg-runtime/tests/operation-context.test.mjs','apps/srm/scripts/source-hub-sdk-compatibility.mjs',
+  'apps/sg-runtime/tests/assistant-m2-integrity.mjs','apps/newsfeed-runtime/test/runtime.test.mjs',
   'apps/sg-runtime/registration-stage-i-integration.json']
  for(const target of targets){
   const changed=path=>path===target?Buffer.concat([current(path),Buffer.from('\nUNREVIEWED')]):current(path)
