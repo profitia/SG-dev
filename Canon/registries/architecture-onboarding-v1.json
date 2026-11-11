@@ -339,6 +339,58 @@
       "frozenVisionSha256": "124a405567648a75c1f5a3722f03419cefa22c49a6df492fa0a3fa601848c947",
       "evidenceDocument": "Canon/evidence/2026-11-06-ecr-g1-governance-activation.md",
       "publicContractVersioning": "INDEPENDENT_VERSIONED_NO_PRIVATE_APP_IMPORTS"
+    },
+    {
+      "capability": "Platform Knowledge",
+      "owner": "Architecture Platform",
+      "projectKey": "ARCHITECTURE",
+      "targetEnvironment": "development",
+      "pathPattern": "apps/platform-knowledge-runtime/**",
+      "contractsPath": "packages/platform-knowledge-contracts/**",
+      "corePath": "packages/platform-knowledge-core/**",
+      "ciPath": ".github/workflows/platform-knowledge-ci.yml",
+      "approval": {
+        "decision": "G1 GRANTED",
+        "decisionId": "ARCH-PLATFORM-KNOWLEDGE-STAGE1-G1-20261111",
+        "sourceType": "EXPLICIT_OWNER_STAGE1_EXECUTION_OF_APPROVED_PLAN",
+        "hostConversationId": "01a1c98f-af9f-7252-b4b8-d1e1d14b309a",
+        "date": "2026-11-11",
+        "reference": "Canon/evidence/2026-11-11-platform-knowledge-stage1-g1-onboarding.md",
+        "registrationTaskId": "ARCH-PLATFORM-KNOWLEDGE-STAGE1-G1-20261111",
+        "governanceOnly": true,
+        "resourceCreationAuthorized": false,
+        "administrativeGrantsAuthorized": false
+      },
+      "status": "SOURCE_G1_REGISTERED_STAGE1_IN_PROGRESS",
+      "canonActivation": "ON_CONTROLLED_MAIN_ACCEPTANCE",
+      "continuityProjectKey": "ARCHITECTURE",
+      "firstConsumerProfile": "SG2",
+      "consumerAdoption": "OWN_PROFILE_TASK_AND_EXACT_VERSION_ACCEPTANCE",
+      "runtimeCreated": false,
+      "productStatus": "NOT_IMPLEMENTED",
+      "implementationAuthority": "OWNER_ORDERED_STAGE1_CONTRACTS_AND_READINESS_AFTER_EFFECTIVE_MAIN_ROUTING",
+      "resourceCreationAuthority": "HUMAN_OWNER_ONLY_RENDER_GITHUB_NEON",
+      "productDatabaseMutationAuthority": "NOT_AUTHORIZED_BY_SOURCE_ONBOARDING",
+      "e1GrantExpansionAuthority": "NOT_AUTHORIZED_BY_G1",
+      "stagingProductionAuthority": "NONE",
+      "decisionDocument": "Canon/runbooks/platform-knowledge-development-delivery-plan-v1.md",
+      "evidenceDocument": "Canon/evidence/2026-11-11-platform-knowledge-stage1-g1-onboarding.md",
+      "foundationDocument": "Canon/runbooks/platform-knowledge-development-foundation-v1.md",
+      "developmentStorage": {
+        "neonProjectId": null,
+        "branchId": null,
+        "databaseName": "platform_knowledge",
+        "schemaName": "platform_knowledge",
+        "status": "OWNER_PREPARATION_REQUIRED"
+      },
+      "developmentRender": {
+        "workspaceId": "tea-d7lps8rbc2fs73cn80dg",
+        "projectId": null,
+        "environmentId": null,
+        "apiServiceId": null,
+        "workerServiceId": null,
+        "status": "OWNER_PREPARATION_REQUIRED"
+      }
     }
   ]
 }
