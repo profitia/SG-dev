@@ -1,0 +1,906 @@
+{
+  "prNumber": 983,
+  "branch": "architecture/registration-bootstrap-stage-i-20261111",
+  "sourceSha": "a791b5f03abdee49c54c03215f8902f39bda1cdf",
+  "baseSha": "4c8f2d98cdb42cde8b8de4d77af5aeef64b025ae",
+  "treeSha": "56875b9cd82555b756a29a4398f4fe874025f2e4",
+  "scope": "OPTIONAL_ORGANISATION_SDK_SOURCE_ONLY; same67 exact test-fixture correction; no verifier-policy change beyond exact record recognition",
+  "inputs": [
+    {
+      "projectKey": "ARCHITECTURE",
+      "sourceSha": "5a963f313317d57e1946e1d7aabd28192db9c7bd"
+    },
+    {
+      "projectKey": "SG2",
+      "sourceSha": "1ea8487fe7cc40cd5a817958c8b093203233fe82"
+    },
+    {
+      "projectKey": "SRM",
+      "sourceSha": "2e087d89e6d0bf9f75a289df3e6c161ba658a922"
+    },
+    {
+      "projectKey": "ARCHITECTURE",
+      "sourceSha": "6dd651bee360d80a644f7526cf1397f60a0db461"
+    }
+  ],
+  "provenance": {
+    "recordDigest": "b5a228db0a77f4cd7e2235506738a994fffcd741ff942e67717633d858c5b94a",
+    "previousSourceSha": "0775f8a18d2fbeca462bb0a9d654914b15c53dad",
+    "sourceCount": 165,
+    "operationSourceDigest": "3877ef17593c118c4d188aa9e464c329373723cb8776a44cbda5987c31dd67ce",
+    "bindings": {
+      "SG2": {
+        "taskId": "SG2-REGISTRATION-ORGANISATION-HANDOFF-STAGE-I-20261110",
+        "raw": "a6bf50993c98a71aeccd349dd904baafb53b3cd653324d97bab3fc5e34ac509f",
+        "normalized": "5f85f0a172508e80a7502aff2c8d3f388dcb4f0c1197eebe6e51917834cd8136"
+      },
+      "SRM": {
+        "taskId": "SRM-REGISTRATION-BOOTSTRAP-SDK-ADOPTION-20261111",
+        "raw": "1303ac82c0570ca4929f64e1620e2ec7a6bfd3809607f57eb33da621c8ecd06d",
+        "normalized": "d0626a3b74287b03c77feedb0ace57737257126c3012c7b56547331ea9bb9aa7"
+      }
+    }
+  },
+  "entries": {
+    "apps/architecture-lab/test/sdk-compatibility.test.mjs": {
+      "sha": "44f4b10b5a7aae6e9488fbe93471ba8f2a13404a",
+      "status": "modified",
+      "mode": "100644",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-002"
+    },
+    "apps/identity-runtime/README.md": {
+      "sha": "5120ffc0369dbf61768d4b8eec350e15c40fe444",
+      "status": "modified",
+      "mode": "100644",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "IDENTITY-BASE-001"
+    },
+    "apps/identity-runtime/src/http-handler.ts": {
+      "sha": "5a0814c30b27854ac5fdd35f0733b31663b65010",
+      "status": "modified",
+      "mode": "100644",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "IDENTITY-BASE-001"
+    },
+    "apps/identity-runtime/src/main.ts": {
+      "sha": "f501b78acfb1b57fbfef2fd77d9ce0ee2dc2ded2",
+      "status": "modified",
+      "mode": "100644",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "IDENTITY-BASE-001"
+    },
+    "apps/identity-runtime/src/organisation-draft.ts": {
+      "sha": "2aa5b0bd1dc9ac6a6cdaa52ad8cc7ecc3a532de2",
+      "status": "added",
+      "mode": "100644",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "IDENTITY-BASE-001"
+    },
+    "apps/identity-runtime/src/organisation-onboarding.ts": {
+      "sha": "98169978b157e0676f513f1b7ce11bac5c0a84d3",
+      "status": "added",
+      "mode": "100644",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "IDENTITY-BASE-001"
+    },
+    "apps/identity-runtime/test/organisation-draft.test.mjs": {
+      "sha": "c0aec90965fe8e59a8ddf7c54b26defdd6bdf715",
+      "status": "added",
+      "mode": "100644",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "IDENTITY-BASE-001"
+    },
+    "apps/identity-runtime/test/organisation-onboarding.test.mjs": {
+      "sha": "f04a4b27f7b39d7031839afb877fe6f5e836ff83",
+      "status": "added",
+      "mode": "100644",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "IDENTITY-BASE-001"
+    },
+    "apps/newsfeed-runtime/test/runtime.test.mjs": {
+      "sha": "5519835ee8bc3c475c89955c90b40d2d9f6b3e31",
+      "status": "modified",
+      "mode": "100644",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "NEWSFEED-BASE-001"
+    },
+    "apps/platform-source-hub/scripts/ci-routing.mjs": {
+      "sha": "8e4cdafb5f714e7e5453aaf3ca9f6070d5e369a7",
+      "status": "modified",
+      "mode": "100644",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-001"
+    },
+    "apps/platform-source-hub/test/ci-routing.test.mjs": {
+      "sha": "1d2ce68442dda9f02f4038c6e0f38f6edab9088a",
+      "status": "modified",
+      "mode": "100644",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-001"
+    },
+    "apps/sg-runtime/operation-integration.json": {
+      "sha": "bd3b3d6169ef575c2a79ae9c80ee529014f41632",
+      "status": "modified",
+      "mode": "100644",
+      "projectKey": "SG2",
+      "owner": "SG Runtime",
+      "surfaceId": "SG2-BASE-001"
+    },
+    "apps/sg-runtime/tests/assistant-ecr-integrity.mjs": {
+      "sha": "3aa3efce05c1e32852db09e0712d505f545703a9",
+      "status": "modified",
+      "mode": "100644",
+      "projectKey": "SG2",
+      "owner": "SG Runtime",
+      "surfaceId": "SG2-BASE-001"
+    },
+    "apps/sg-runtime/tests/assistant-ecr-integrity.test.mjs": {
+      "sha": "8d2e68fa62b1295d35fbe74b9bdef6e9ab920582",
+      "status": "modified",
+      "mode": "100644",
+      "projectKey": "SG2",
+      "owner": "SG Runtime",
+      "surfaceId": "SG2-BASE-001"
+    },
+    "apps/sg-runtime/tests/assistant-ecr-precision-integrity.mjs": {
+      "sha": "128042b7ecf8338580490d94cb2c32a4554a4e2c",
+      "status": "modified",
+      "mode": "100644",
+      "projectKey": "SG2",
+      "owner": "SG Runtime",
+      "surfaceId": "SG2-BASE-001"
+    },
+    "apps/sg-runtime/tests/assistant-m1-integrity.mjs": {
+      "sha": "9f28f13a7da11d6def28a91a1440d22ea793b59c",
+      "status": "modified",
+      "mode": "100644",
+      "projectKey": "SG2",
+      "owner": "SG Runtime",
+      "surfaceId": "SG2-BASE-001"
+    },
+    "apps/sg-runtime/tests/assistant-m2-integrity.mjs": {
+      "sha": "55d2d9f8cc17adb3dcb7c5a2dfb0495b2b4c8de0",
+      "status": "modified",
+      "mode": "100644",
+      "projectKey": "SG2",
+      "owner": "SG Runtime",
+      "surfaceId": "SG2-BASE-001"
+    },
+    "apps/sg-runtime/tests/assistant-m2-source-view.mjs": {
+      "sha": "a526345d7c153113ea629f3c16ec5c35c41567cb",
+      "status": "modified",
+      "mode": "100644",
+      "projectKey": "SG2",
+      "owner": "SG Runtime",
+      "surfaceId": "SG2-BASE-001"
+    },
+    "apps/sg-runtime/tests/assistant-send-arrow-integrity.mjs": {
+      "sha": "b19f2eea8f16ddb07d67dc0cbf4a97c15ea51181",
+      "status": "modified",
+      "mode": "100644",
+      "projectKey": "SG2",
+      "owner": "SG Runtime",
+      "surfaceId": "SG2-BASE-001"
+    },
+    "apps/sg-runtime/tests/assistant-send-arrow-integrity.test.mjs": {
+      "sha": "4189be2d1998d14cfd5f25d74093595b6581b7fa",
+      "status": "modified",
+      "mode": "100644",
+      "projectKey": "SG2",
+      "owner": "SG Runtime",
+      "surfaceId": "SG2-BASE-001"
+    },
+    "apps/sg-runtime/tests/diagnostic-telemetry-adoption.test.mjs": {
+      "sha": "bbaea986f3025be73b3671f060a22fb0eb04577e",
+      "status": "modified",
+      "mode": "100644",
+      "projectKey": "SG2",
+      "owner": "SG Runtime",
+      "surfaceId": "SG2-BASE-001"
+    },
+    "apps/sg-runtime/tests/native-sql-roundtrips.test.mjs": {
+      "sha": "d036b253252494e96188cb597100e8dd50ee202a",
+      "status": "modified",
+      "mode": "100644",
+      "projectKey": "SG2",
+      "owner": "SG Runtime",
+      "surfaceId": "SG2-BASE-001"
+    },
+    "apps/sg-runtime/tests/operation-context.test.mjs": {
+      "sha": "14cffed76391f717fd86b677b57996d2fea9e9a5",
+      "status": "modified",
+      "mode": "100644",
+      "projectKey": "SG2",
+      "owner": "SG Runtime",
+      "surfaceId": "SG2-BASE-001"
+    },
+    "apps/sg-runtime/tests/organisation-sdk-history.test.mjs": {
+      "sha": "17589d04860513fe43adf6ce9c8404ce55827f1e",
+      "status": "added",
+      "mode": "100644",
+      "projectKey": "SG2",
+      "owner": "SG Runtime",
+      "surfaceId": "SG2-BASE-001"
+    },
+    "apps/sg-runtime/tests/pci-smart-integrity.test.mjs": {
+      "sha": "67a4d7c372dad41e70db60fab3cf362298195c35",
+      "status": "modified",
+      "mode": "100644",
+      "projectKey": "SG2",
+      "owner": "SG Runtime",
+      "surfaceId": "SG2-BASE-001"
+    },
+    "apps/sg-runtime/tests/private-host.integration.test.mjs": {
+      "sha": "d7634ec820378e16fe77b528a2c3ae7aca981021",
+      "status": "modified",
+      "mode": "100644",
+      "projectKey": "SG2",
+      "owner": "SG Runtime",
+      "surfaceId": "SG2-BASE-001"
+    },
+    "apps/sg-runtime/tests/xray-fresh-performance-adoption.test.mjs": {
+      "sha": "f53c72ba9f83eeccbc3fbc2acfdcfd7f43987058",
+      "status": "modified",
+      "mode": "100644",
+      "projectKey": "SG2",
+      "owner": "SG Runtime",
+      "surfaceId": "SG2-BASE-001"
+    },
+    "apps/sg-runtime/tests/xray-platform-compatibility.test.mjs": {
+      "sha": "e2a7d72bc910352bab449ff4cf2e651e015af96b",
+      "status": "modified",
+      "mode": "100644",
+      "projectKey": "SG2",
+      "owner": "SG Runtime",
+      "surfaceId": "SG2-BASE-001"
+    },
+    "apps/srm/app/login/porr-account.tsx": {
+      "sha": "c0149d2354e38b5ca701df7bedb5bf29ba25caa1",
+      "status": "modified",
+      "mode": "100644",
+      "projectKey": "SRM",
+      "owner": "SRM Runtime",
+      "surfaceId": "SG2-BASE-016"
+    },
+    "apps/srm/operation-integration.json": {
+      "sha": "7d399125fbb50f8b4f0b00db2662c05b1096995f",
+      "status": "modified",
+      "mode": "100644",
+      "projectKey": "SRM",
+      "owner": "SRM Runtime",
+      "surfaceId": "SG2-BASE-016"
+    },
+    "apps/srm/scripts/diagnostic-telemetry-adoption.test.mjs": {
+      "sha": "72173ae2f3a552621318edb5de432159b862e620",
+      "status": "modified",
+      "mode": "100644",
+      "projectKey": "SRM",
+      "owner": "SRM Runtime",
+      "surfaceId": "SG2-BASE-016"
+    },
+    "apps/srm/scripts/native-execution-adoption.test.mjs": {
+      "sha": "0da985a6c0c0f84a0d4aacabb2f134dd7c2c3db7",
+      "status": "modified",
+      "mode": "100644",
+      "projectKey": "SRM",
+      "owner": "SRM Runtime",
+      "surfaceId": "SG2-BASE-016"
+    },
+    "apps/srm/scripts/operation-context.test.mjs": {
+      "sha": "e5bddf17ef1a94029a2bea96d48ed0c731b9bce6",
+      "status": "modified",
+      "mode": "100644",
+      "projectKey": "SRM",
+      "owner": "SRM Runtime",
+      "surfaceId": "SG2-BASE-016"
+    },
+    "apps/srm/scripts/porr-account-ui.test.mjs": {
+      "sha": "353de6a9e489103b2bea6e02c4bf7639ce624b63",
+      "status": "modified",
+      "mode": "100644",
+      "projectKey": "SRM",
+      "owner": "SRM Runtime",
+      "surfaceId": "SG2-BASE-016"
+    },
+    "apps/srm/scripts/private-host.integration.test.mjs": {
+      "sha": "d74fce2fb8412368352686171770a85861d74ad5",
+      "status": "modified",
+      "mode": "100644",
+      "projectKey": "SRM",
+      "owner": "SRM Runtime",
+      "surfaceId": "SG2-BASE-016"
+    },
+    "apps/srm/scripts/request-quota-adoption.test.mjs": {
+      "sha": "4c62c98034d1d951da03e697ddbd210ed2004f06",
+      "status": "modified",
+      "mode": "100644",
+      "projectKey": "SRM",
+      "owner": "SRM Runtime",
+      "surfaceId": "SG2-BASE-016"
+    },
+    "apps/srm/scripts/source-hub-sdk-compatibility.mjs": {
+      "sha": "efedf34427ba2529e599d1568de31312df63bbda",
+      "status": "modified",
+      "mode": "100644",
+      "projectKey": "SRM",
+      "owner": "SRM Runtime",
+      "surfaceId": "SG2-BASE-016"
+    },
+    "apps/srm/scripts/supplier-location-admission.integration.test.mjs": {
+      "sha": "6e7fa64e937164caba4b2bf40171ae382d697f01",
+      "status": "modified",
+      "mode": "100644",
+      "projectKey": "SRM",
+      "owner": "SRM Runtime",
+      "surfaceId": "SG2-BASE-016"
+    },
+    "apps/srm/scripts/xray-performance-adoption.test.mjs": {
+      "sha": "cebe2d1f9522d5937cd6535bc500679362904c40",
+      "status": "modified",
+      "mode": "100644",
+      "projectKey": "SRM",
+      "owner": "SRM Runtime",
+      "surfaceId": "SG2-BASE-016"
+    },
+    "apps/srm/src/server/peer-read-boundary.test.ts": {
+      "sha": "84a815444776c192eec80211190ff0dea189d26c",
+      "status": "modified",
+      "mode": "100644",
+      "projectKey": "SRM",
+      "owner": "SRM Runtime",
+      "surfaceId": "SG2-BASE-016"
+    },
+    "apps/srm/src/server/root-atomic-claim-adoption.test.ts": {
+      "sha": "b3830877a971df99cfc53d9497aa9b17048437af",
+      "status": "modified",
+      "mode": "100644",
+      "projectKey": "SRM",
+      "owner": "SRM Runtime",
+      "surfaceId": "SG2-BASE-016"
+    },
+    "apps/srm/src/server/supplier-location-geocoding-runtime.test.ts": {
+      "sha": "0cb4a302f931fdbdb93cb3cb34c1e9dcf9d0fca7",
+      "status": "modified",
+      "mode": "100644",
+      "projectKey": "SRM",
+      "owner": "SRM Runtime",
+      "surfaceId": "SG2-BASE-016"
+    },
+    "Canon/evidence/2026-11-11-registration-native-draft-http.md": {
+      "sha": "267c92c5aec1f342c2c5ee00123f69505677368a",
+      "status": "added",
+      "mode": "100644",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Governance Source Layer",
+      "surfaceId": "SG2-BASE-019"
+    },
+    "packages/platform-contracts/current-fresh-report/test/current-fresh-report.test.mjs": {
+      "sha": "f826d708d9e11b309592bd681a1ebafa5223a1f3",
+      "status": "modified",
+      "mode": "100644",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    "packages/platform-contracts/migrations/profile/007-organisation-onboarding.sql": {
+      "sha": "a0239d930b8da5333e5589a1734bacb54d67191c",
+      "status": "modified",
+      "mode": "100644",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    "packages/platform-contracts/migrations/profile/008-organisation-create.sql": {
+      "sha": "5571f58c2ee30e3a0f1a33204ba8af4c53c29660",
+      "status": "added",
+      "mode": "100644",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    "packages/platform-contracts/package.json": {
+      "sha": "db586c8d54c09507fe05fe3e218ff1c0370d2c34",
+      "status": "modified",
+      "mode": "100644",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    "packages/platform-contracts/readonly-miss-report/test/readonly-miss-report.test.mjs": {
+      "sha": "f3a7fd2b1867f2126e9c9ab633b63c7c8a2eff16",
+      "status": "modified",
+      "mode": "100644",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    "packages/platform-contracts/src/operation-context.d.mts": {
+      "sha": "f8d97e7a27cb885d7f7f800a7d35543941605ba2",
+      "status": "modified",
+      "mode": "100644",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    "packages/platform-contracts/src/operation-context.mjs": {
+      "sha": "5be3fbe9824d2a671f6b504322314b3a8be3759c",
+      "status": "modified",
+      "mode": "100644",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    "packages/platform-contracts/src/organisation-bootstrap.d.mts": {
+      "sha": "ffcacec4080ca608ab00e3aff0b7371f23f08a55",
+      "status": "added",
+      "mode": "100644",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    "packages/platform-contracts/src/organisation-bootstrap.mjs": {
+      "sha": "008ef066c74bd72a2a546f15f4cc1694db9ef297",
+      "status": "added",
+      "mode": "100644",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    "packages/platform-contracts/src/organisation-invitations.d.mts": {
+      "sha": "674a1e3d7841bad6194a176ecccd70622bae012b",
+      "status": "added",
+      "mode": "100644",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    "packages/platform-contracts/src/organisation-invitations.mjs": {
+      "sha": "280935c68a5d1c8194669f8894b87324c2ed6843",
+      "status": "added",
+      "mode": "100644",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    "packages/platform-contracts/src/organisation-profile.d.mts": {
+      "sha": "a8e933f8f4946ad9459baab93110976be88e97ef",
+      "status": "modified",
+      "mode": "100644",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    "packages/platform-contracts/src/organisation-profile.mjs": {
+      "sha": "be2730964c8af8b32f8c8f2baf45aa26fe807949",
+      "status": "modified",
+      "mode": "100644",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    "packages/platform-contracts/test/organisation-bootstrap-postgres.test.mjs": {
+      "sha": "28e82cc2af6d32f6a7e396c48ad081323680b140",
+      "status": "added",
+      "mode": "100644",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    "packages/platform-contracts/test/organisation-bootstrap.test.mjs": {
+      "sha": "f4df6bd2aad25b441a3ab80fd611442cbf4884b8",
+      "status": "added",
+      "mode": "100644",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    "packages/platform-contracts/test/organisation-invitations.test.mjs": {
+      "sha": "64fcb4270f376573c132040eb8fd66642240ecdc",
+      "status": "added",
+      "mode": "100644",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    "packages/platform-contracts/test/organisation-onboarding-postgres.test.mjs": {
+      "sha": "203ee38cf32c28327eecd1093100bef54db3a84d",
+      "status": "modified",
+      "mode": "100644",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    "packages/platform-contracts/test/organisation-profile.test.mjs": {
+      "sha": "a6ed612325ad049dded4a4fbfdc00b254bc147e1",
+      "status": "modified",
+      "mode": "100644",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    "packages/platform-contracts/test/organisation-sdk-compatibility.json": {
+      "sha": "12e90a641f7c7dde6efa0be9be3d7e41eae27fb4",
+      "status": "added",
+      "mode": "100644",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    "packages/platform-contracts/test/organisation-sdk-compatibility.mjs": {
+      "sha": "e8443e149ea2e7d09bbb2e21b3e8eab88dad8fd9",
+      "status": "added",
+      "mode": "100644",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    "packages/platform-contracts/test/organisation-sdk-compatibility.test.mjs": {
+      "sha": "b8c80258bb25722ae33d963343f3beaa8ffe7d8b",
+      "status": "added",
+      "mode": "100644",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    "packages/platform-contracts/test/private-operation-host.test.mjs": {
+      "sha": "d821982f50e009a3452502308fc98fcec4f92b0d",
+      "status": "modified",
+      "mode": "100644",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    "apps/architecture-lab/private-recurring-source.mjs": {
+      "sha": "7f58fb9f40c136a79152455642ad339dfa5d057c",
+      "status": "modified",
+      "mode": "100644",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-002"
+    },
+    "apps/architecture-lab/test/private-recurring-source.test.mjs": {
+      "sha": "8572ef047e09e2a3bed536c00d7fb0c9f54a0aa8",
+      "status": "modified",
+      "mode": "100644",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-002"
+    }
+  },
+  "sourceRecord": {
+    "schemaVersion": "1.0",
+    "acceptanceId": "organisation-bootstrap-v1",
+    "taskId": "ARCH-REGISTRATION-ORGANISATION-STAGE-I-20261110",
+    "targetEnvironment": "development",
+    "scope": "OPTIONAL_ORGANISATION_SDK_SOURCE_ONLY",
+    "platformVersion": "1.36.0",
+    "previousSourceSha": "0775f8a18d2fbeca462bb0a9d654914b15c53dad",
+    "producer": {
+      "projectKey": "ARCHITECTURE",
+      "taskId": "ARCH-REGISTRATION-ORGANISATION-STAGE-I-20261110",
+      "pullRequest": 983,
+      "sourceSha": "5a963f313317d57e1946e1d7aabd28192db9c7bd"
+    },
+    "sourceDigests": {
+      "packages/platform-contracts/README.md": "36e013b6f6692566004e152020d3d43b38a4567680b5dd0b53677edc519bc1e7",
+      "packages/platform-contracts/current-e1-authority/first-party.d.mts": "7e5aa9c6c113387532bb78fac80d5aa42cf95e5599bda64197d2f71a28be31df",
+      "packages/platform-contracts/current-e1-authority/first-party.mjs": "3bfe6952dff2d2c407489960d3cc2c9b6bf63d6eb02859462abf1eff86e02eae",
+      "packages/platform-contracts/current-e1-authority/index.d.mts": "3c0cf13371421d278f5472f941519608ec73a9aa47bdb93e350c10adc33988af",
+      "packages/platform-contracts/current-e1-authority/index.mjs": "f842e8f894b8e4465d509aa6ac2be7e73effc339e86a3bb520b8dd19fd47962d",
+      "packages/platform-contracts/current-e1-authority/insights-service.mjs": "5f641f094211733ca18fe82af0a4700dc0b9acbb00a036067d00e4f6834d5da3",
+      "packages/platform-contracts/current-e1-authority/install-recurring.mjs": "8374ad340ae9e314b5405f1dbd6fe669c2ad0bad2a8883a84a927fce8bb10f50",
+      "packages/platform-contracts/current-e1-authority/migrations/001-authority.sql": "2346e2f1b099e40eb633651530c15bfb2ca109c20fbf6b5a9b98243447afc00d",
+      "packages/platform-contracts/current-e1-authority/migrations/002-receiver.sql": "28db9a012f7408e28b3a742abdc7870f80974aef977cf40615bd07216beafc10",
+      "packages/platform-contracts/current-e1-authority/migrations/003-first-party-authority.sql": "646bdab4fb112c553bc376107872c1be2610068d80754809aca222513e20f82f",
+      "packages/platform-contracts/current-e1-authority/migrations/004-first-party-receiver.sql": "1cc8dff949bf632b7288a705cee13bbf65a8aa5e6eba5a3edfa3d7e694c40938",
+      "packages/platform-contracts/current-e1-authority/migrations/005-calendar-authority.sql": "a6615f8cab67bbff19f490604ee02d67b44ed7143bdaa8b51409491ea026a010",
+      "packages/platform-contracts/current-e1-authority/migrations/006-calendar-receiver.sql": "d96f386d5aa26d71cd358e9c56ad38fdc686036a6e278cfa53ba04b5b2057445",
+      "packages/platform-contracts/current-e1-authority/migrations/007-insights-authority.sql": "30d8534fc1b315bef1d7f8657f69a6476fb23bfe445c96d0684bc04d528380c3",
+      "packages/platform-contracts/current-e1-authority/migrations/008-insights-receiver.sql": "e24bf4a2be8cdba0e27fc8d2a03d6c0194dafbfba32f605ea28ff6f30546c5c3",
+      "packages/platform-contracts/current-e1-authority/migrations/009-insights-service.sql": "704b130e908078df70902e4fc3572b744d1646b938a1c1e8848b144adfd308c8",
+      "packages/platform-contracts/current-e1-authority/migrations/010-ecr-service-continuity.sql": "8ec9e142019f43fce27c962483bb913ff76914043523e80a5cffcd6da8a343a3",
+      "packages/platform-contracts/current-e1-authority/migrations/011-ecr-source-continuity.sql": "3f18fa53b7ebcd6c6674a6014dabcda5b87f395cdddeeca1f0edd2df926007d1",
+      "packages/platform-contracts/current-e1-authority/migrations/012-recurring-authority.sql": "96856496b273af8fb197cec117a179357d03497a4109e2a16787e12a9d8c85fa",
+      "packages/platform-contracts/current-e1-authority/migrations/013-recurring-receiver.sql": "f81922d83dcb2f27c4bea0cdd8c2150c6f585fe64b16ecd96fa9f531db76f6d8",
+      "packages/platform-contracts/current-e1-authority/migrations/014-recurring-delivery.sql": "a68531d41f2e1cbd3ac443efbbf7641beec2a263affff6c84f2463dd3d32482e",
+      "packages/platform-contracts/current-e1-authority/package-lock.json": "fec4cc17dabea286ff2a803816c51380c8d3ed668a277b6e1bb0d40cfbbe2c51",
+      "packages/platform-contracts/current-e1-authority/package.json": "2542f68ab8c599784307d9d42fe3c25dfef1cae1a993ef6bec2310d1c7cded9a",
+      "packages/platform-contracts/current-e1-authority/recurring.d.mts": "82bc456fa8c962923ef70414e16573e974daa8f81bd54a1e51605b63c3cf00ee",
+      "packages/platform-contracts/current-e1-authority/recurring.mjs": "29aa19ad73e19b001a28ffe364646eaf3b77934ff041a07459daf64536310193",
+      "packages/platform-contracts/current-fresh-report/package-lock.json": "a4aa3080a474d5c7190035e61cdfe0626ce90e9cc7d0a3a05db807b944e5e221",
+      "packages/platform-contracts/current-fresh-report/package.json": "60efe7d6154fa19a698db403780585e118dd7c7ab0700482592d9045f987d3ca",
+      "packages/platform-contracts/current-fresh-report/src/current-fresh-report.d.mts": "2da701f79cb5aaf4447239255a96169b5394f6ddd62713c19b213a240fe39a38",
+      "packages/platform-contracts/current-fresh-report/src/current-fresh-report.mjs": "29c8a0fb5d048217afd25a3678c35ff03d0d5a663ba76b338a1e8117875176cb",
+      "packages/platform-contracts/migrations/access/001-internal-access.sql": "356463492c3304ca11fa533f6e99f1d41628a3ab830488142c6030fb9a920ff2",
+      "packages/platform-contracts/migrations/access/002-module-scope.sql": "c4ea1883af310934b1e83dfcf936ba15dfc32a3f4be206c752efe2d69a55b9ed",
+      "packages/platform-contracts/migrations/access/003-module-audit.sql": "af296074b8b4dab2f952e1d2e0553e17d6567f480152870d151dc36c9302e6ac",
+      "packages/platform-contracts/migrations/access/004-initial-directory.sql": "7004cc968183fdf1406b143066134138426eecfeaae823a3765321e72a9a4811",
+      "packages/platform-contracts/migrations/access/005-service-read.sql": "f7757dc5805b3759959505fa852715e70d207e94bf5d85827db3d52b0a5d0d49",
+      "packages/platform-contracts/migrations/access/006-request-reservation.sql": "0af5eed241ad1db08bfed89c95c47ef21a7dbeed0ee54bcccce52164ddcc4127",
+      "packages/platform-contracts/migrations/access/007-delegated-jobs.sql": "6a12132efab396e6e647e15d1a9711d0a1bacaaab4482639178acd0258d518cb",
+      "packages/platform-contracts/migrations/access/008-platform-ingestion.sql": "14d46ec280e624d79930833b022a46866864557cecbf2e3b55b1a1143fb9d66b",
+      "packages/platform-contracts/migrations/access/009-external-call-admission.sql": "69db4ec3787937b24922f7acfc267e5aae400ddc44e0799eff09fa7e6d87e206",
+      "packages/platform-contracts/migrations/access/010-external-request-admission.sql": "8244a3a02d4ef5821822a6684023148c41bc9caac355c9f1200215e1a339df79",
+      "packages/platform-contracts/migrations/access/011-request-continuation.sql": "d12b2e404cd6a9174f954c233982633076501f7ea493facd0cabf34c709604c1",
+      "packages/platform-contracts/migrations/access/012-native-external-transport.sql": "6faff5f258b71cf2525d705c8fcf38c8aef9331c4e8f0bdd6f1af74e6cf76bde",
+      "packages/platform-contracts/migrations/access/013-supplier-delegation.sql": "cd12f9b88397da88241499548b8a5977d0aca830ad83c53a1bcf146265503555",
+      "packages/platform-contracts/migrations/access/014-delegated-private-phases.sql": "13f4bb374cbfb31604823083261bbc8f5142e88be7443b704c792a232defb6e3",
+      "packages/platform-contracts/migrations/access/015-delegated-private-inspection.sql": "00db4ebae666f6cd94475b789fecfbb775c0ebb2d66f87e595d674b827cdf13d",
+      "packages/platform-contracts/migrations/access/016-delegated-native-work.sql": "19fb1d9045bccdb3299317b4c5b7df41e361e971c83ab683a55b56d6fbc8e5fe",
+      "packages/platform-contracts/migrations/access/017-additional-request-operations.sql": "a0bd21a268e41f8a41befad777f7717fb3014fb851ff42cdb290004f93a98f94",
+      "packages/platform-contracts/migrations/access/018-public-web-transport.sql": "f334e0efe99aac742ecad53e9cfa4d0199dbd2333a56792c58c387621b5b174d",
+      "packages/platform-contracts/migrations/access/019-supplier-location-operations.sql": "34ec633dbf38dfffd6b3954ae79b0ef6f771d75ad8f0443882be71ca78b084e5",
+      "packages/platform-contracts/migrations/access/020-supplier-location-admission.sql": "90ac1d28103f689edc8d11979210ce83cd6218e9f3549f37150fd307d165e9cc",
+      "packages/platform-contracts/migrations/access/021-native-soap-transport.sql": "f80ae5a06cfc621e92847f0c197b5b8adfca1b261fbea168488742e85adc2bc2",
+      "packages/platform-contracts/migrations/access/022-organisation-location-grants.sql": "88211a1c8e601fe81cb04ad73321f86135f4585e45d3f176f34507e136632e11",
+      "packages/platform-contracts/migrations/access/023-current-work-audit-index.sql": "93cb4edee303c3c104eb3cf4fd1be598deebe26256f3a66acf6851b1bcc6561e",
+      "packages/platform-contracts/migrations/access/024-unmetered-public-sources.sql": "9fe56c54c22fe54aa4869966cf00e7347e8c0d040b1d3d8110fc7952a78d5e13",
+      "packages/platform-contracts/migrations/access/025-form-report-admission.sql": "296ca7ea39f6baeaa9ea5de4846a946e5804a0bc5ff53d0ca52ccaa08eb9e98e",
+      "packages/platform-contracts/migrations/access/026-role-source-quotas.sql": "b3e8ec02ccaff27b99d1bb961a7ae3d8df7663e5d6cd20da6bb09647c7dfa6c4",
+      "packages/platform-contracts/migrations/access/027-unmetered-supplier-requests.sql": "88c5014db027c40568fcc737acbcf27766bb5db1c434c32ce6c236af859d90ef",
+      "packages/platform-contracts/migrations/access/028-api-path-transport.sql": "bd35367f22eccb34dc6c8f62b3a82bfc8947471142fc5daab45a32d67c07707c",
+      "packages/platform-contracts/migrations/access/029-market-symbol-transport.sql": "fee0f8738f7ccb8481ce2894b6e5a84792256d5230ef0ef1585fc34ac851d504",
+      "packages/platform-contracts/migrations/access/030-assistant-operations.sql": "4cf61265cbff5244dd48484e321f969cb10440d097fcc72d735a34ea861f74b2",
+      "packages/platform-contracts/migrations/access/030-model-execution.sql": "196a6e056141cdb1a65626afae8e6091c94d6427d54ff36363d19905c6d0b891",
+      "packages/platform-contracts/migrations/access/031-model-execution-long-report.sql": "a034ad1eb21fd3b54061b2a50446c698954c6e82465d18b71b387ecb8587382f",
+      "packages/platform-contracts/migrations/access/032-report-model-templates.sql": "c6f5dacb81ecff2b8d270a180efcb59c65e1fdf8cc510acf059544391aeb6dab",
+      "packages/platform-contracts/migrations/denial-audit/expire.sql": "8855e8fabaa95758799a54f366654be1e475d9e1f9270b477bcebe33d5ebdd2b",
+      "packages/platform-contracts/migrations/denial-audit/private.sql": "a964115f6bf51e4038ad7c63db7b1a741590e86672a66bdba2f9dfb7cc9ee3e1",
+      "packages/platform-contracts/migrations/denial-audit/roles.sql": "09ace8f3621d31c4d411a375b1b31f2f6a48a9f53f86da3b5bb4e05b292f692b",
+      "packages/platform-contracts/migrations/denial-audit/source.sql": "4712a2cd706219a23eccd3fbf5804f6f8bff9c3c9f1cd9588f1407cb6b2099c8",
+      "packages/platform-contracts/migrations/profile/001-user-profile.sql": "a43e146cee1ad5e5b95751781f691695b66e061b8eb0764220ebf25c44f52af3",
+      "packages/platform-contracts/migrations/profile/002-binding-renewal.sql": "ea8a23a4d9db92587b1be1abde67bfa54cf061b79ce63eae09e96db3da20ee76",
+      "packages/platform-contracts/migrations/profile/003-email-delivery.sql": "f8e8ca3ecebaa9bc73f87310e43a93765d516a454e05270606261ded78f95e45",
+      "packages/platform-contracts/migrations/profile/004-communication-language.sql": "1fdff82e8d9638338662f898c06b41c54bed6a23fc2fd8dc710bf36687fecd2b",
+      "packages/platform-contracts/migrations/profile/005-registration.sql": "78af6bfebf483db2d49df5a11caf7fecfc608ac5768725f20adacdc1079cedd1",
+      "packages/platform-contracts/migrations/profile/006-vocative.sql": "6dd18a5b044bd1e7448f4ed298270fa2a37edad8f94374160d333718322f89ab",
+      "packages/platform-contracts/migrations/profile/007-organisation-onboarding.sql": "cec63fc31e2ed9caf6a7146bacc0954d7698e784c60284d1695f080c443e7b18",
+      "packages/platform-contracts/migrations/profile/008-organisation-create.sql": "4da9e422e95e46c55d592040789b29202b54362dded8cddea356e3f036e1feec",
+      "packages/platform-contracts/package-lock.json": "79c75571d479c2519179427f433d72b328a84c7249103b61a419be42227c5a90",
+      "packages/platform-contracts/package.json": "27afaea41565e2b2b226adcc91f41a63ccef38dc0b86d221f8567a833e6e834e",
+      "packages/platform-contracts/payload-capture/package.json": "fbdbe94b1e7ef3eb628bed8fbe6dfc9c7297669b211fe55b178f748b9cbd3f12",
+      "packages/platform-contracts/payload-capture/src/payload-capture.d.mts": "ac8c8399b33ee143a4191530fd7a236f04b6055c437b6a38bf69a888f86d2634",
+      "packages/platform-contracts/payload-capture/src/payload-capture.mjs": "7eabea213158e6193c481dcbe2721b98837cfd729ae1af3bac7d2396c950f08f",
+      "packages/platform-contracts/readonly-miss-report/README.md": "1512a31ec3d2af928b1c77ea5a26e1b090f4175e614302eb94d59fb215c5ddbc",
+      "packages/platform-contracts/readonly-miss-report/package-lock.json": "bcbdc1fbfabcf2094445afcf1e107ce8ebe11e39de1b01e0645b88a62310dc54",
+      "packages/platform-contracts/readonly-miss-report/package.json": "c7952cc07a0df9794b9600fa29d4dc91414427bf16b180f1a6446ad3ce7f97d3",
+      "packages/platform-contracts/readonly-miss-report/src/readonly-miss-report.d.mts": "84939e1327f7260523f39a7f82385f6285013f8013c0fd8b33675ce676418493",
+      "packages/platform-contracts/readonly-miss-report/src/readonly-miss-report.mjs": "ed0337acb60b334faef60273d9913cf9c71c731fbc7ea6b2bf75f85f2e0d9b3d",
+      "packages/platform-contracts/root-atomic-claim/README.md": "e08d5c64e78c02d69e46e059fa0c2147e1998e53f05e9607b8cdf70ca6070224",
+      "packages/platform-contracts/root-atomic-claim/migrations/001-root-atomic-claim.sql": "1c1784b3c92753ccc28f7c34af89e26f1784a632859d5dbe45a9f5f3d08f6c0d",
+      "packages/platform-contracts/root-atomic-claim/package-lock.json": "e537fea8debcddf68b0b478aa3a2e9f248e4a6c08c7cf68d5a07b08df0624d78",
+      "packages/platform-contracts/root-atomic-claim/package.json": "55fd670cdc18f4a3764bfa86958af6dd7273d4cda90e0f6642a8678b9e729f82",
+      "packages/platform-contracts/root-atomic-claim/src/root-atomic-claim.d.mts": "955b2d6076a8e5a34ac6add66920fb6d4ec27dfccd1e5308932ae9bfef1c2d75",
+      "packages/platform-contracts/root-atomic-claim/src/root-atomic-claim.mjs": "fab1780877f66ba582be74bd3944649628624bfcc62754b0256275236d960398",
+      "packages/platform-contracts/src/access-store.d.mts": "90cb7cfb0aa6413382a7936cd9001d533b44de70e622c7e50fbaabee3ea54cd1",
+      "packages/platform-contracts/src/access-store.mjs": "f1e6c382e4d91d8ac7f366e755ad918857c710265b6ba3b22ddfd8779e5b0934",
+      "packages/platform-contracts/src/assistant-operation-host.d.mts": "32b5e76f35024cacea5a2f3814b8c9d0107054f71399ed7b24204195373531fd",
+      "packages/platform-contracts/src/assistant-operation-host.mjs": "776624aae620a5b655c1e8e628f39e488937227ad25bd863b7a87d54f16177bc",
+      "packages/platform-contracts/src/assistant-usage.d.mts": "9aedd45fccca1aa51364ff34d147e4be4f4f7562945ce31787d19a13c0b6504e",
+      "packages/platform-contracts/src/assistant-usage.mjs": "89aeb035a96f5e425c6914c1f174cd1662c9c94b2f161db29f60b093e1f2189b",
+      "packages/platform-contracts/src/clerk-configuration.d.mts": "f81af5115df7054bb131ec95a63eb7cb6316744052fea8098492e762caa46f08",
+      "packages/platform-contracts/src/clerk-configuration.mjs": "1c9b688960d6fa9a1875195cac6d2d9a9c07a03c41f37c56623a4179b35171e2",
+      "packages/platform-contracts/src/current-human-read.d.mts": "0b3858e217511522ae8be2df5b8ff9f433ce360c435056ae4ef7055631f9f17d",
+      "packages/platform-contracts/src/current-human-read.mjs": "81a8977e119d1c844812c6598ac79024530830e3eaed5e57cbfa2a45f4379325",
+      "packages/platform-contracts/src/database-lease.mjs": "0d6d6366ea12b48d3f06cbaffb5f2ce6b3dacdb4617ab41e346ae28344774183",
+      "packages/platform-contracts/src/delegated-job.d.mts": "ad19381623d2a8bd31baac9a2bfa667026e79bffd2ab3c6bf97b585389d012c2",
+      "packages/platform-contracts/src/delegated-job.mjs": "c40206b03e24ee1d2b719fda4bd37f573f6e568dd51f97fb6c9b2a3cdbde5772",
+      "packages/platform-contracts/src/development-context.d.mts": "5b9f8bde428fa8dd65b7cc515f2b2e0485d6aced4709f257e215ae724e9975a4",
+      "packages/platform-contracts/src/development-context.mjs": "7b82e5d3fe3fc0e3826c6b165c9bcdd7b1ffd5505a1380e3dc6a86a5bc481013",
+      "packages/platform-contracts/src/diagnostic-phase.d.mts": "51497cfa548f7a4876c4884b7b139e907ee4a8526ce37a400c9bff6d48376ea7",
+      "packages/platform-contracts/src/diagnostic-phase.mjs": "0317fa7ef0d95c7574c1b0143094012f75876dee0b3fcd4602ee1a1a17f2bc07",
+      "packages/platform-contracts/src/embedded-channel-core.mjs": "337530ea6df1387b9383065ac65b8f55f90afaa598f85ec9ad1628480335911a",
+      "packages/platform-contracts/src/embedded-command-channel.d.mts": "d137964bc0ca86ab3908313b0837a5f3ec3b4d461a674e1029c37b040a733389",
+      "packages/platform-contracts/src/embedded-command-channel.mjs": "ea67d7d0ed9bdcd5739e6d42493e0457688af2c9d87db153f6fefcbe5bb8dc78",
+      "packages/platform-contracts/src/embedded-read-channel.d.mts": "79cd32e83cfa19e13fc3ebfd874cf0b45cde53213d4c5438c7a63cbb99a5ccaa",
+      "packages/platform-contracts/src/embedded-read-channel.mjs": "d134041c197a7fb3c7653810c18b27c65e001733f156cd489ecc1ef7b2fd5a89",
+      "packages/platform-contracts/src/external-call.d.mts": "043c43ce8027305e36a9b9684bb8b390ffceb813a08cf07b97614d2361545bbe",
+      "packages/platform-contracts/src/external-call.mjs": "7681dc9521f93c8769a943f66b192550c60e46658903b44d97aca007645c43a8",
+      "packages/platform-contracts/src/identity-profile-sql.mjs": "20b0d3ebeb2fbe3b37b5c2deab75e226d250275be1249de204058e8a7930d259",
+      "packages/platform-contracts/src/identity-provider.d.mts": "1a91eccce21baa063cbb508f1df34d19287d49e05e3182cda0fb1f643ec15734",
+      "packages/platform-contracts/src/identity-provider.mjs": "1fc428a14196509a6493d96404e5f4c3ff9fc0fdfdcecfebcf8f18394e6a68c3",
+      "packages/platform-contracts/src/identity-provisioning.d.mts": "77ad3313ebb337a37e1ddb4af15ed6ecbad8fb198f5cbcbba57ba4fb26196289",
+      "packages/platform-contracts/src/identity-provisioning.mjs": "e6082719dc27405100326cf285f1d216ba08e2e59ef80b8fe42eff5b95b7c45b",
+      "packages/platform-contracts/src/identity-renewal.d.mts": "9d4fb57b174f64ee21fba13ff9e8f5a07f2a46d44725c0820eb56af6c144e4dd",
+      "packages/platform-contracts/src/identity-renewal.mjs": "01e869250f5bab3c9b10fbc6f25aef3f7c06aa8e8572b3559a681739607318ca",
+      "packages/platform-contracts/src/model-execution.d.mts": "347864802b2ae361ed50b08ea55cfb2ad2688a672eb0bc4fce29ad69a02614f1",
+      "packages/platform-contracts/src/model-execution.mjs": "bab7297f4835a3c87d581d2b9c8f54cc15c3d9b5e629d0e43f7de3a97d1d84e0",
+      "packages/platform-contracts/src/module-scope.d.mts": "123d4b08864acbb2dc2509f3fbad21fd50f1b5d0e42ca00f6f21b2275d280db6",
+      "packages/platform-contracts/src/module-scope.mjs": "0dd5d00dc1571b3712fbe42d04fbada7a655bf29af2e89ff3812ff575ac3d629",
+      "packages/platform-contracts/src/native-external-transport.d.mts": "165a7ea0703ec31b1af89ed8b980a215ddee2fb181dbbe1498a5bea77cbd44da",
+      "packages/platform-contracts/src/native-external-transport.mjs": "09c6595500f5b10fbf16b57b460c2064fe573bf6f1e1b754b3b39a9e53e40c9b",
+      "packages/platform-contracts/src/operation-context.d.mts": "bb5a7d25e02d7f30d169697a2db202a567363031f889044d293f237c30a3588f",
+      "packages/platform-contracts/src/operation-context.mjs": "e4a09838907176171b09303092c1916cb78620f99f5cfce098b9896a0d945764",
+      "packages/platform-contracts/src/organisation-bootstrap.d.mts": "80a7ecc043ee71bf96c000167c32d67759ab878ed274c8ee41d56986f5c056a1",
+      "packages/platform-contracts/src/organisation-bootstrap.mjs": "15b08b09019d9d34c89dd0df3966f3859d67823fe09f380722384ef64a151941",
+      "packages/platform-contracts/src/organisation-invitations.d.mts": "e20325e5903b0a529604bb2e45a6f6caade74eec9288c6149031e546436e70b6",
+      "packages/platform-contracts/src/organisation-invitations.mjs": "4ef4077e77b5c0870ebfb3cb316001d4c3c7eb67c6ecd93998453dcc174eda4f",
+      "packages/platform-contracts/src/organisation-profile.d.mts": "f5e134b1c43b773d2a399ad0e5dce9cbff4e90ed1639eaeb64568a75d5b521f1",
+      "packages/platform-contracts/src/organisation-profile.mjs": "da6b8101bcc23d6a7edebf2f3bd8d12985159d452657317f24c0d0d19ac2b582",
+      "packages/platform-contracts/src/peer-operation.d.mts": "a3f6d6463bc508475674667f3abb5b136a1cb4d2b0bbafa1c4eb5974c935f6b5",
+      "packages/platform-contracts/src/peer-operation.mjs": "316282f0b9b76c927427c62cdbd2dbda2c917457dfd91e280e652b89bde36a10",
+      "packages/platform-contracts/src/platform-ingestion.d.mts": "4335070ca01216b5ce651264f72328b24483d66a850feffbf7dfe14f5b4161d0",
+      "packages/platform-contracts/src/platform-ingestion.mjs": "4159bcd2bdc6de7e32e573461ac07d73572d0ab9c4d9bf6aafc1b3fe41036a1f",
+      "packages/platform-contracts/src/private-operation-host.d.mts": "248a3b60f525afb102c7aaaf230c6d10fde6793dcbb71c94e1f9b9db9ee57897",
+      "packages/platform-contracts/src/private-operation-host.mjs": "8de0db0d5cc2e0e5fd0fdaf0583c4bb1d89fbaeb3170be33aa732720591e2034",
+      "packages/platform-contracts/src/public-request.d.mts": "c92a6faa2764eb7d40671971abc531cf72b92f1c12d74f30be3f4f54c632722b",
+      "packages/platform-contracts/src/public-request.mjs": "7d23cbe9ee5742f9305ff4c97c76254ea1cba55dd64594864a5536b2bea1de6b",
+      "packages/platform-contracts/src/public-web-transport.d.mts": "9d386895e800bf5fc42135d9e0dd152e5596c86938954e47c694509122ee8f35",
+      "packages/platform-contracts/src/public-web-transport.mjs": "ba32dd4cc97b7e6de9290c1047242cf793484e03e5817b5b301759a55bf2e9c7",
+      "packages/platform-contracts/src/recurring-job.d.mts": "a6333cde217596c4b957cfa62052c109911f8f30b7c383a892180aa9d8f668a4",
+      "packages/platform-contracts/src/recurring-job.mjs": "35577567eb2ead8ffc751c03795d535d302dd623182ec2202442291effba291b",
+      "packages/platform-contracts/src/report-admission.d.mts": "397f8c861e85215587c4bc88e696908ec0d4f50ca6917cd2e74f6df9163100c5",
+      "packages/platform-contracts/src/report-admission.mjs": "60752635661a60fb1fc18f44656cff3a3052b6488d4ce9be94e277966e6d10a7",
+      "packages/platform-contracts/src/request-continuation.d.mts": "a2d587a34766a3d3fd27838261ec9d0a258252fbd81e4c6d116bc4dbb2afa45f",
+      "packages/platform-contracts/src/request-continuation.mjs": "a6ff274d4f780f961789be9bf4e87b07db0ee9335e0acff86bff13f0c15b4ed8",
+      "packages/platform-contracts/src/request-inspection.d.mts": "dcf7335c34e9437fd63c492b0af0458bb346104d5af07f32421e8181b6ef90f9",
+      "packages/platform-contracts/src/request-inspection.mjs": "8a3006c80be2ba8df0357592981ab6fd6a9172067ff3c16d300a0b76aafc8c59",
+      "packages/platform-contracts/src/request-ledger.d.mts": "6bc6786ddee0e5b410959061a7bf4464f7a4eca5e8c887731693b39f15478697",
+      "packages/platform-contracts/src/request-ledger.mjs": "07118e6e21ae7074c7f01aca800d56e9aa0464a51c7c7562d640cb16864c0f41",
+      "packages/platform-contracts/src/request-operations.d.mts": "df96b4da0f7f92f6d2e6d710451325b21b6037ab701dfc9fa4e698f63559adbd",
+      "packages/platform-contracts/src/request-operations.mjs": "5f157b92e630f1f0720e3c920dad55696368058fa1e4d6574178bcb927192c9f",
+      "packages/platform-contracts/src/request-work.d.mts": "1413741b67e20e11ec8e26755e054857ab2d0efea92a9a65f839516acbf1a1b8",
+      "packages/platform-contracts/src/request-work.mjs": "45e849b3bb4bd1c50cd0e1296588f2de6562c9ab0cbcd99f3ab989540f5fd73b",
+      "packages/platform-contracts/src/sg2-denial-audit-reader.mjs": "92625af7db8ada25e8226f4f31db5845bca2a93151b0232325f76d68fae88170",
+      "packages/platform-contracts/src/supplier-location.d.mts": "627a809c7ccb0104ca37cb6f93b959cb09a458ad29503f6518d5baf2998084b4",
+      "packages/platform-contracts/src/supplier-location.mjs": "41fcd54d03bbf42e7d448f34ab63b6c054e02b18266be5d0c0e4cafc0711461b",
+      "packages/platform-contracts/src/user-profile.d.mts": "ece7aaa04d9100fd4379038995454e3a2b46da9d21b7def98ac2bb5817b6b94a",
+      "packages/platform-contracts/src/user-profile.mjs": "9933887cbfabaa5c709e00d013274eb0ad344e56192456d5e9c622c461202347",
+      "packages/platform-contracts/src/vocative-dictionary.mjs": "e767aaaacb020b959bb16221c1c70e7e78bbb34c1ebf793e96a4b4cd1e01ad47"
+    },
+    "compatibilityTestSourceDigests": {
+      "apps/architecture-lab/test/sdk-compatibility.test.mjs": "0f1251d1379c5dea23904bbacee89af36393dd100fa75642795158dc10d13d5b",
+      "apps/newsfeed-runtime/test/runtime.test.mjs": "0a1d761d740f11c676f22831adb2f2433df6c78eee8fbfeaa423f4b2b5d23e3a",
+      "apps/platform-source-hub/scripts/ci-routing.mjs": "261e289ea36a9cd2ade93240d0859ae7a656454efba209da7bbbd8c6e02215d8",
+      "apps/platform-source-hub/test/ci-routing.test.mjs": "1b810218808797528ce60dff3a79a24c9a546431322f49f5f28c7935dea9d797",
+      "packages/platform-contracts/current-fresh-report/test/current-fresh-report.test.mjs": "8687139600d51ef87b553fd2461aafc5515c225ca7341229b40a03777488d4a7",
+      "packages/platform-contracts/readonly-miss-report/test/readonly-miss-report.test.mjs": "edbb99d5ade23ee483587d19352602ec55353932128b523655ddd76b509fe57e",
+      "packages/platform-contracts/test/private-operation-host.test.mjs": "604a1459b33a8b45ec76f3af21974459d481bc48197f9894b2d203553f62b287",
+      "apps/architecture-lab/private-recurring-source.mjs": "ad0aa73142c9fa6f7f672bc2eddcec26b05b1e103bc7197beae1628bc19a768e",
+      "apps/architecture-lab/test/private-recurring-source.test.mjs": "3007ae603e789b53ca2a33456dcefce3746a1956ae636a7dac83f77cb14a06da"
+    },
+    "sdkDigests": {
+      "accessSchemaDigest": "356463492c3304ca11fa533f6e99f1d41628a3ab830488142c6030fb9a920ff2",
+      "accessStoreSourceDigest": "71e42f5e194f8b251c86a70c22bfbd7cb940cf66b8279159b08781f042ec9f47",
+      "additionalRequestSchemaDigest": "a0bd21a268e41f8a41befad777f7717fb3014fb851ff42cdb290004f93a98f94",
+      "apiPathTransportSchemaDigest": "bd35367f22eccb34dc6c8f62b3a82bfc8947471142fc5daab45a32d67c07707c",
+      "clerkConfigurationSourceDigest": "b3bdad865a16cbf677db1dd7450f594870abca30f8a252bd4d361d2387417246",
+      "currentHumanReadSourceDigest": "c75e8fbb65e69a31fa1fec13456c9e1bc56415864ec8dc2e50eca378e57fa938",
+      "delegatedJobSchemaDigest": "6a12132efab396e6e647e15d1a9711d0a1bacaaab4482639178acd0258d518cb",
+      "delegatedJobSourceDigest": "2a2bc66260bc33b1bcafe80c9a1e1f594c0206b9efe362082760b1f24d8e7f4a",
+      "delegatedPrivatePhasesSchemaDigest": "13f4bb374cbfb31604823083261bbc8f5142e88be7443b704c792a232defb6e3",
+      "diagnosticPhaseSourceDigest": "52816918087b9bd437c8c7619be643146f5af9527ea692263b4f2aa0471c7556",
+      "externalCallSchemaDigest": "69db4ec3787937b24922f7acfc267e5aae400ddc44e0799eff09fa7e6d87e206",
+      "externalCallSourceDigest": "8a6de7bf58170e97a01dc656f0ef822701a5ff4dae343bfa9e5d3e7a38e825a8",
+      "externalRequestSchemaDigest": "8244a3a02d4ef5821822a6684023148c41bc9caac355c9f1200215e1a339df79",
+      "identitySourceDigest": "662f6c95138a0f8cd8f835c569084d669fbe85e34a762676584297ecd5f03606",
+      "marketSymbolTransportSchemaDigest": "fee0f8738f7ccb8481ce2894b6e5a84792256d5230ef0ef1585fc34ac851d504",
+      "modelExecutionSchemaDigest": "1d4b6af7900b44f3d6a311bdcef85280d1b5c968ca67128e0e641e9adb8d253c",
+      "moduleAuditSchemaDigest": "af296074b8b4dab2f952e1d2e0553e17d6567f480152870d151dc36c9302e6ac",
+      "moduleSchemaDigest": "c4ea1883af310934b1e83dfcf936ba15dfc32a3f4be206c752efe2d69a55b9ed",
+      "moduleScopeSourceDigest": "1a37a9c5ccb19515baf343a122b3c9a9e246c18995b421854c4a0ef7b4211bf8",
+      "nativeExternalTransportSchemaDigest": "6faff5f258b71cf2525d705c8fcf38c8aef9331c4e8f0bdd6f1af74e6cf76bde",
+      "operationSourceDigest": "3877ef17593c118c4d188aa9e464c329373723cb8776a44cbda5987c31dd67ce",
+      "organisationBootstrapSchemaDigest": "4da9e422e95e46c55d592040789b29202b54362dded8cddea356e3f036e1feec",
+      "organisationOnboardingSchemaDigest": "cec63fc31e2ed9caf6a7146bacc0954d7698e784c60284d1695f080c443e7b18",
+      "peerOperationSourceDigest": "adf348cf4424f36d0c2b96acca56a4087e2bb02a4107708788e559c1fcf5d6a7",
+      "platformIngestionSchemaDigest": "14d46ec280e624d79930833b022a46866864557cecbf2e3b55b1a1143fb9d66b",
+      "platformIngestionSourceDigest": "f2b3e272b00b7fe2dc51c345826855e2fd1426bc49a84ff11fd28317854dd9bc",
+      "privateOperationHostSourceDigest": "63d2e2721f2a7bc2223e90f39192e4933f657a89f91be03c84db7db9958f7a08",
+      "profileSchemaDigest": "a43e146cee1ad5e5b95751781f691695b66e061b8eb0764220ebf25c44f52af3",
+      "publicIdentityRequestSourceDigest": "a4f2c41df487704522e5ac2e73e80e66295713dd6a84bd4f984edd5c07cdd394",
+      "publicWebTransportSchemaDigest": "f334e0efe99aac742ecad53e9cfa4d0199dbd2333a56792c58c387621b5b174d",
+      "renewalSchemaDigest": "ea8a23a4d9db92587b1be1abde67bfa54cf061b79ce63eae09e96db3da20ee76",
+      "reportAdmissionSchemaDigest": "296ca7ea39f6baeaa9ea5de4846a946e5804a0bc5ff53d0ca52ccaa08eb9e98e",
+      "reportAdmissionSourceDigest": "f24e3f71ef76fdb1e8935d0ddc935ea96c146d93b7ecbc9d6a4a4e2d7879f794",
+      "requestContinuationSchemaDigest": "d12b2e404cd6a9174f954c233982633076501f7ea493facd0cabf34c709604c1",
+      "requestContinuationSourceDigest": "d49673ecec3a85dad478b4e8d3e38aa30241cf04b61b6a7dfbb99e7af33c3c53",
+      "requestInspectionSchemaDigest": "00db4ebae666f6cd94475b789fecfbb775c0ebb2d66f87e595d674b827cdf13d",
+      "requestInspectionSourceDigest": "772f1f5a58e8e544d275c4b8bb0ab09774317a6673c1f6bd8563f96fc6a19811",
+      "requestLedgerSourceDigest": "d24a1c98efe2f04a2d9cd6335f75bd6a37eda4bfe0eca0ebae712a638e9e43d5",
+      "requestOperationsSourceDigest": "65e1d46269df57ccd7f3f1637e9ac6a73171ecbdad02b35677d23469d73e7237",
+      "requestQuotaSchemaDigest": "88c5014db027c40568fcc737acbcf27766bb5db1c434c32ce6c236af859d90ef",
+      "requestReservationSchemaDigest": "0af5eed241ad1db08bfed89c95c47ef21a7dbeed0ee54bcccce52164ddcc4127",
+      "requestWorkSchemaDigest": "19fb1d9045bccdb3299317b4c5b7df41e361e971c83ab683a55b56d6fbc8e5fe",
+      "requestWorkSourceDigest": "1b9a56aa85548fa0025366bf725ccad5c4ef278f43753dee9714ea97197bee86",
+      "serviceReadSchemaDigest": "f7757dc5805b3759959505fa852715e70d207e94bf5d85827db3d52b0a5d0d49",
+      "supplierDelegationSchemaDigest": "cd12f9b88397da88241499548b8a5977d0aca830ad83c53a1bcf146265503555",
+      "supplierLocationAdmissionSchemaDigest": "90ac1d28103f689edc8d11979210ce83cd6218e9f3549f37150fd307d165e9cc",
+      "supplierLocationSchemaDigest": "34ec633dbf38dfffd6b3954ae79b0ef6f771d75ad8f0443882be71ca78b084e5",
+      "unmeteredSourceSchemaDigest": "9fe56c54c22fe54aa4869966cf00e7347e8c0d040b1d3d8110fc7952a78d5e13"
+    },
+    "optionalPackageDigests": {
+      "currentFreshReportSourceDigest": "da21aeb3b295f707e3d8c61b0a33de443b09bc560e8abc0254724ae68bf16820",
+      "readonlyMissReportSourceDigest": "0a1f90fa9a22175fa96610a41012713a55791d8a633d245b790e8221adc29f52",
+      "rootAtomicClaimSourceDigest": "dead3c6035449169b961aa96462e9e73dddef12276163f7e32fbc9c647e95d4c"
+    },
+    "consumerSourceDigests": {
+      "SG2": {
+        "apps/sg-runtime/tests/assistant-ecr-integrity.mjs": "ce659aa104c58cbbbb9be16b75bc37ff21094515a136c88e57cbf8bd63772e16",
+        "apps/sg-runtime/tests/assistant-ecr-integrity.test.mjs": "675c864b0e13e2646553942ef6e0e9416b694baf2666f5e09672873799d9df57",
+        "apps/sg-runtime/tests/assistant-ecr-precision-integrity.mjs": "53ae9558cb5dac431ae0035a363713dccb2ce59dd61700167fa3a521a6421508",
+        "apps/sg-runtime/tests/assistant-m1-integrity.mjs": "b172eab829d4b8e3b141e067d10e2effd166725b6a4aee585663c3c9c80d916c",
+        "apps/sg-runtime/tests/assistant-m2-integrity.mjs": "a9a761bd0742406f8a36c0ce5f44045d2783bfe505284e34c58057f3f204220e",
+        "apps/sg-runtime/tests/assistant-m2-source-view.mjs": "37ff427f894617700e46b5bb70e1f090649c544140c3366bddba6e41d8167031",
+        "apps/sg-runtime/tests/assistant-send-arrow-integrity.mjs": "04f9a2b75f9b64b400f34f39cafd35fdd1d895280c1093ec565d7370c885d6cc",
+        "apps/sg-runtime/tests/assistant-send-arrow-integrity.test.mjs": "ab23fa54b7a3abb9636c43ded0c8ea441745ef36b7ad75d32c0b7781df616443",
+        "apps/sg-runtime/tests/diagnostic-telemetry-adoption.test.mjs": "d236f361ed38a9d5b18e348eca79378b7dcf921eec3eb9613bbfdaa9916d0806",
+        "apps/sg-runtime/tests/native-sql-roundtrips.test.mjs": "ce45cd52dde814db21c746ac8a22902f1405295534dbcc509f4f7f9a98a195fe",
+        "apps/sg-runtime/tests/operation-context.test.mjs": "6bfdde26ff7214056c84e6964b05bcbec8fe68ad20799323d53bd41feb77db77",
+        "apps/sg-runtime/tests/organisation-sdk-history.test.mjs": "3661d42f176f07c377f45fa582cf9baab844d9924a2cccd2dc64a8d871827eed",
+        "apps/sg-runtime/tests/pci-smart-integrity.test.mjs": "ce841e4e761f08bed41dfd97c451d30c8441bb9c8f2faecf7aacccdd3ea2e484",
+        "apps/sg-runtime/tests/private-host.integration.test.mjs": "2f76d4df55adb4b1e9c391482f3372c45573955c348f5869e2048657476de955",
+        "apps/sg-runtime/tests/xray-fresh-performance-adoption.test.mjs": "1bc8fa65799503d8554518aa1c55c98b4e486e2f7a451c51a97d762652fca5fe",
+        "apps/sg-runtime/tests/xray-platform-compatibility.test.mjs": "d9602b68580641c217673d27124321ee2590d6cf77ec6f13d215467284cf3c73"
+      },
+      "SRM": {
+        "apps/srm/app/login/porr-account.tsx": "8c9d56ac4c8487d4382a171db0de7f7328101f8f361b3d8083250ab74012a839",
+        "apps/srm/scripts/diagnostic-telemetry-adoption.test.mjs": "a09194ec75871198cff53d9307425a82288584b820dba23ba1f1f18cb6455b66",
+        "apps/srm/scripts/native-execution-adoption.test.mjs": "0ca11dfe1f86150e9c988a424b5f53a6bf217e62deb693ef15927f11f5608687",
+        "apps/srm/scripts/operation-context.test.mjs": "282792e61fdbf1fdc279d6408e4fe5dbe5e66a78f8268d947caa54a183669173",
+        "apps/srm/scripts/porr-account-ui.test.mjs": "d27b744dbd0f54e0dfe7ee6986fb65dddc29c3cbe3f0da9cf2de1d5f0b2a39ac",
+        "apps/srm/scripts/private-host.integration.test.mjs": "101469a1df54b7c9e1d5264d124dda9804e6a1e168a11aea9b024e984216673a",
+        "apps/srm/scripts/request-quota-adoption.test.mjs": "4ab4acacc61780797da0993d2faa894089d5094ad5e95362dd0f2d89c5faaa49",
+        "apps/srm/scripts/source-hub-sdk-compatibility.mjs": "fea4b1fe8d6804a8ecada0de4368c70bd24a11710ef3143ed1be233aac8a80d8",
+        "apps/srm/scripts/supplier-location-admission.integration.test.mjs": "8117762fcfc7bf4b65a8ad68b4cd5817be848ca9353ae003bad4197457253583",
+        "apps/srm/scripts/xray-performance-adoption.test.mjs": "8ab92e886689cbe3953e41f06e7d7c934f4e6144c2aee6fb779a18699f1171b8",
+        "apps/srm/src/server/peer-read-boundary.test.ts": "fe1ccf72c24460b1e2edc26b44e307fa271de55c5a215b488c6b0592bc93fcd6",
+        "apps/srm/src/server/root-atomic-claim-adoption.test.ts": "53da443fa12c8830a3940b29fc8f31b6b6fa00a9e9a397c4c9e281eb19470c37",
+        "apps/srm/src/server/supplier-location-geocoding-runtime.test.ts": "63ee7b29f2b8d6651be9423a2cbca17b1517a6e35c53b7c53a3b7334080c72c2"
+      }
+    },
+    "preservedSourceDigests": {
+      "apps/architecture-lab/assistant-m1-sdk-compatibility.json": "f9bd750bd7c4af2b1123a41396cfeacac90bb1744f9abdd5331c76260872b70c",
+      "apps/architecture-lab/private-recurring-source-adoption.json": "a79c186897851acb93142949fe7aee19184cbfe68b3acdf51cbda084c00c1254",
+      "apps/architecture-lab/private-recurring-source.json": "75877d5750e07d1c8172be0af76bc5933f2eeefc22cc39747a2621b9cab24619",
+      "apps/architecture-lab/private-recurring-source.mjs": "575d14d460e4340b8b62743d9c4792fa094cacd974c7ea4c22c5e16b022f34e6",
+      "apps/architecture-lab/sdk-1.33-compatibility.json": "3e3c8f43813d5c4888e206ac31433f60470eac4310abaa62bd32e1c901a0df3e",
+      "apps/architecture-lab/sdk-1.34-compatibility.json": "458ddbf661ce1a5666260a072a03f24ac016346bdd9a9efef7f2a1d497eee403",
+      "apps/architecture-lab/test/private-recurring-source.test.mjs": "a6ad661024974813fe790627ee950b6a418e26c708e89002ef4f5e82d584e6bf",
+      "apps/sg-runtime/assistant-context-integration.json": "d932f227977789643086b6a9eb179598a6f48071964b2d26ba82d25fceb7b2ec",
+      "apps/sg-runtime/assistant-ecr-integration.json": "5814e2e5cbdf1a32d22cff3aa55de806ec34c9debdecc21ff06c4f9f887a82bc",
+      "apps/sg-runtime/assistant-ecr-precision-integration.json": "a017c2b971e3c72606847264150715c983fa9483537d26be90144a64e0377ee7",
+      "apps/sg-runtime/assistant-markdown-integration.json": "27ff06aff8bc44592f0073732748834b7759182fa4307d901c7d63304381a38b",
+      "apps/sg-runtime/assistant-send-arrow-integration.json": "62c6af6817a022c31788d801cc0eac293a24b3f25d9e529d32b1bff4908fa230",
+      "apps/sg-runtime/components/appshell/assistant-conversation-view.tsx": "a4cd2979aa331ec67709b113784043318627c91a29cdb3dcbc886928c8c2aacd",
+      "apps/sg-runtime/deployment/assistant-ecr-targets.json": "edc6e1632845f8aa0648dcfed3caf0fddfacc3c6a2ebc06e8c2c1b6ce4f2b8a7",
+      "apps/sg-runtime/package-lock.json": "3a8d14447e21fa9ab879dcd0094b5d8c4401196d2db632bc39540ed66e8440de",
+      "apps/sg-runtime/package.json": "0788dea096b8a5f1411d1f152c77490aced3834f1770da8c9d26167bc073ad0a",
+      "apps/sg-runtime/private-recurring-source-adoption.json": "edf9d51c199251e148b39c92a3084944c1a4b8419be29175c88b6e2583df11f2",
+      "apps/sg-runtime/registration-stage-i-integration.json": "4a7a572e67e12ed73c523502cef4cb432009e735737df851419d80898653f414",
+      "apps/srm/private-recurring-source-adoption.json": "88d0252f634eface35b34adf31ac97cbf0d396fcf1fe6da452c74bdc23c7c633",
+      "packages/platform-contracts/test/external-call.test.mjs": "3107f59bdf15198448894f0f20f4b86fdd534028b91d1ce94a23696b346654a1",
+      "packages/platform-contracts/test/operation-context.test.mjs": "f00169504167c1b208cd0b51f2f2d7927fcffed33a70480cd3980d21c44f3e80"
+    },
+    "defaultRootImplementation": "1.0.0-candidate.16",
+    "optionalRootImplementation": "1.0.0-candidate.21",
+    "optionalOperations": [
+      "organisation.create"
+    ],
+    "runtimeOptedIn": false,
+    "sqlInstalled": false,
+    "permissionsChanged": false,
+    "providerCallsPerformed": false,
+    "deploymentPerformed": false
+  },
+  "sourceRecordSha256": "b5a228db0a77f4cd7e2235506738a994fffcd741ff942e67717633d858c5b94a",
+  "additionalSourceTexts": {
+    "apps/architecture-lab/private-recurring-source.mjs": "// Source acceptance only. Never imported by an application runtime.\n// The reviewed current graph is verified before any immutable predecessor is read.\nimport assert from 'node:assert/strict'\nimport {sdkContinuationPredecessor} from '../../packages/platform-contracts/test/organisation-sdk-compatibility.mjs'\nimport {createHash} from 'node:crypto'\nimport fs from 'node:fs'\nimport {execFileSync} from 'node:child_process'\nimport path from 'node:path'\nimport {fileURLToPath} from 'node:url'\nexport const RECURRING_SOURCE_RECORD='apps/architecture-lab/private-recurring-source.json'\nexport const RECURRING_SOURCE_BASE='141cc559063c43cefa991acb9260b32ac5b92615'\nconst RECORD_SHA256='75877d5750e07d1c8172be0af76bc5933f2eeefc22cc39747a2621b9cab24619'\nconst hash=b=>createHash('sha256').update(b).digest('hex')\nconst absent=error=>error?.code==='ENOENT'||error?.status===128&&[\"' does not exist in \",\"' exists on disk, but not in \"].some(s=>String(error?.stderr??error?.message??'').includes(\"'\"+RECURRING_SOURCE_RECORD+s))\nexport function recurringSourcePredecessor(current,historical){\n let bytes;try{bytes=current(RECURRING_SOURCE_RECORD)}catch(error){if(absent(error))return null;throw error}\n assert.equal(hash(bytes),RECORD_SHA256,'exact reviewed recurring source record')\n // Current registration is authenticated before either historical graph is exposed.\n // An already-layered caller has no SDK frame, so it cannot be projected twice.\n const receipt=JSON.parse(current('apps/sg-runtime/operation-integration.json'))\n if(receipt.sdkSourceContinuations!==undefined){\n  const sdk=sdkContinuationPredecessor(receipt,current,historical)\n  assert(sdk,'reviewed registration continuation required')\n  return recurringSourcePredecessor(sdk.previousBytes,historical)\n }\n const a=JSON.parse(bytes)\n assert.equal(a.schemaVersion,'1.0.0');assert.equal(a.scope,'PRIVATE_RECURRING_SOURCE_ACCEPTANCE');assert.equal(a.previousSourceSha,RECURRING_SOURCE_BASE)\n assert.equal(a.platformVersion,'1.36.0');assert.equal(a.legacyImplementation,'1.0.0-candidate.16');assert.equal(a.optionalImplementation,'1.0.0-candidate.22')\n assert.deepEqual(a.taskIds,{ARCHITECTURE:'ARCH-PI-RECURRING-E1-20261111',SG2:'SG2-PI-RECURRING-E2E-20261111',SRM:'SRM-PI-RECURRING-SDK-20261111'})\n for(const flag of ['runtimeActivated','newGrantsInstalled','providerCallsPerformed','deploymentPerformed'])assert.equal(a[flag],false,flag)\n for(const[p,h]of Object.entries(a.sourceDigests))assert.equal(hash(current(p)),h,'current recurring source '+p)\n for(const[p,h]of Object.entries(a.preservedReceipts)){\n  assert.equal(hash(current(p)),h,'immutable receipt '+p);assert.equal(hash(historical(RECURRING_SOURCE_BASE,p)),h,'original receipt '+p)\n }\n for(const project of ['ARCHITECTURE','SG2','SRM']){\n  const file=project==='ARCHITECTURE'?'apps/architecture-lab/private-recurring-source-adoption.json':'apps/'+(project==='SG2'?'sg-runtime':'srm')+'/private-recurring-source-adoption.json'\n  assert.deepEqual(JSON.parse(current(file)),{schemaVersion:'1.0.0',projectKey:project,taskId:a.taskIds[project],targetEnvironment:'development',scope:'SOURCE_ONLY_NO_RUNTIME_ACTIVATION',sourceRecord:RECURRING_SOURCE_RECORD,sourceRecordSha256:RECORD_SHA256})\n }\n const additions=new Set(a.addedPaths),mapped=new Set([...a.changedPaths,...(a.predecessorProjectionPaths??[])]),cache=new Map()\n const authorityCache=new Map(),own=new Set(a.changedPaths),ownAdded=new Set(a.recurringAddedPaths??a.addedPaths)\n return {manifest:a,authorityBytes:p=>{\n  if(p===RECURRING_SOURCE_RECORD||p.endsWith('/private-recurring-source-adoption.json')||ownAdded.has(p))throw Object.assign(Error('Recurring source absent from authority predecessor'),{code:'ENOENT'})\n  if(!own.has(p))return current(p)\n  if(!authorityCache.has(p))authorityCache.set(p,Buffer.from(historical(a.authorityMainSha,p)))\n  return Buffer.from(authorityCache.get(p))\n },previousBytes:p=>{\n  if(p===RECURRING_SOURCE_RECORD||p.endsWith('/private-recurring-source-adoption.json')||additions.has(p))throw Object.assign(Error('Recurring source absent from predecessor'),{code:'ENOENT'})\n  if(!mapped.has(p))return current(p)\n  if(!cache.has(p))cache.set(p,Buffer.from(historical(RECURRING_SOURCE_BASE,p)))\n  return Buffer.from(cache.get(p))\n }}\n}\n\n// Test/adoption convenience only; every actual source byte is authenticated.\nexport function recurringSourceFilesystem(root){\n const cwd=root instanceof URL?fileURLToPath(root):root\n const current=p=>fs.readFileSync(path.join(cwd,p))\n const historical=(sha,p)=>execFileSync('git',['show',sha+':'+p],{cwd})\n return recurringSourcePredecessor(current,historical)??{manifest:null,previousBytes:current}\n}\n",
+    "apps/architecture-lab/test/private-recurring-source.test.mjs": "// SYNTHETIC_ONLY. This checks source provenance, never runtime authority.\nimport test from 'node:test';\nimport {sdkContinuationPredecessor} from '../../../packages/platform-contracts/test/organisation-sdk-compatibility.mjs';\nimport assert from 'node:assert/strict';\nimport {readFileSync} from 'node:fs';\nimport {execFileSync} from 'node:child_process';\nimport {recurringSourcePredecessor,recurringSourceFilesystem,RECURRING_SOURCE_RECORD,RECURRING_SOURCE_BASE} from '../private-recurring-source.mjs';\nconst root=new URL('../../../',import.meta.url),current=p=>readFileSync(new URL(p,root));\nconst cache=new Map(),history=(sha,p)=>{const key=sha+':'+p;if(!cache.has(key))cache.set(key,execFileSync('git',['show',key],{cwd:root,stdio:['ignore','pipe','pipe']}));return cache.get(key)};\ntest('current recurring source is closed before the complete immutable predecessor can be used',()=>{\n const view=recurringSourcePredecessor(current,history);assert(view);\n const sdk=sdkContinuationPredecessor(JSON.parse(current('apps/sg-runtime/operation-integration.json')),current,history),accepted=sdk?.previousBytes??current;\n for(const p of Object.keys(view.manifest.preservedReceipts))assert.deepEqual(accepted(p),history(RECURRING_SOURCE_BASE,p));\n for(const p of view.manifest.changedPaths.filter(p=>!view.manifest.addedPaths.includes(p)))assert.deepEqual(view.previousBytes(p),history(RECURRING_SOURCE_BASE,p),p);\n for(const p of [...view.manifest.addedPaths,RECURRING_SOURCE_RECORD])assert.throws(()=>view.previousBytes(p),{code:'ENOENT'});\n assert.equal(recurringSourcePredecessor(view.previousBytes,history),null);\n});\ntest('changed private runtime, SDK, consumer, receipt or candidate record is refused before a historical projection',()=>{\n const view=recurringSourcePredecessor(current,history);\n for(const p of [...view.manifest.changedPaths,...Object.keys(view.manifest.preservedReceipts)])assert.throws(()=>recurringSourcePredecessor(f=>f===p?Buffer.concat([current(f),Buffer.from('UNACCEPTED')]):current(f),history),p);\n for(const mutate of [a=>a.runtimeActivated=true,a=>a.platformVersion='1.34.0',a=>a.previousSourceSha='0'.repeat(40),a=>a.sourceDigests['unadmitted.mjs']='a'.repeat(64),a=>a.newGrantsInstalled=true,a=>delete a.sourceDigests[a.changedPaths[0]]]){\n  const a=JSON.parse(current(RECURRING_SOURCE_RECORD));mutate(a);assert.throws(()=>recurringSourcePredecessor(p=>p===RECURRING_SOURCE_RECORD?Buffer.from(JSON.stringify(a)):current(p),history));\n }\n});\ntest('a genuinely absent successor is optional; unreadable source and unrelated Git failures remain fatal',()=>{\n assert.equal(recurringSourcePredecessor(()=>{throw Object.assign(Error('Absent'),{code:'ENOENT'})},history),null);\n const denied=Object.assign(Error('Denied'),{code:'EACCES'});assert.throws(()=>recurringSourcePredecessor(()=>{throw denied},history),e=>e===denied);\n const wrong=Object.assign(Error('Other Git error'),{status:128,stderr:\"fatal: path 'another-file' does not exist in 'main'\"});assert.throws(()=>recurringSourcePredecessor(()=>{throw wrong},history),e=>e===wrong);\n});\n\ntest('parallel accepted ECR precision stays current and separately reviewable in the authority projection',()=>{\n const view=recurringSourcePredecessor(current,history);\n const receipt='apps/sg-runtime/assistant-ecr-precision-integration.json',helper='apps/sg-runtime/tests/assistant-ecr-precision-integrity.mjs';\n assert.deepEqual(view.authorityBytes(receipt),current(receipt));\n assert.deepEqual(view.authorityBytes(helper),history(view.manifest.authorityMainSha,helper));\n assert.throws(()=>view.previousBytes(receipt),{code:'ENOENT'});\n assert.equal(recurringSourcePredecessor(view.authorityBytes,history),null);\n for(const p of view.manifest.predecessorProjectionPaths){\n  assert(Object.hasOwn(view.manifest.sourceDigests,p),'parallel current source is explicitly bound');\n  assert.throws(()=>recurringSourcePredecessor(f=>f===p?Buffer.concat([current(f),Buffer.from('UNACCEPTED')]):current(f),history),p);\n }\n});\n\ntest('direct and filesystem APIs both validate the current registration before returning recurring history',()=>{\n const view=recurringSourcePredecessor(current,history),physical=recurringSourceFilesystem(root);\n assert.deepEqual(physical.manifest,view.manifest);\n const record=JSON.parse(current('packages/platform-contracts/test/organisation-sdk-compatibility.json'));\n const targets=new Set([...Object.keys(record.sourceDigests),...Object.keys(record.compatibilityTestSourceDigests),'apps/identity-runtime/src/http-handler.ts','packages/platform-contracts/test/organisation-onboarding-postgres.test.mjs','packages/platform-contracts/test/organisation-profile.test.mjs']);\n for(const target of targets)assert.throws(()=>recurringSourcePredecessor(p=>p===target?Buffer.concat([current(p),Buffer.from('\\nUNREVIEWED')]):current(p),history),target);\n});\ntest('an explicitly layered caller and direct current source expose the same exact predecessor',()=>{\n const sdk=sdkContinuationPredecessor(JSON.parse(current('apps/sg-runtime/operation-integration.json')),current,history);assert(sdk);\n const direct=recurringSourcePredecessor(current,history),layered=recurringSourcePredecessor(sdk.previousBytes,history);assert.deepEqual(direct.manifest,layered.manifest);\n for(const p of direct.manifest.changedPaths.filter(p=>!direct.manifest.addedPaths.includes(p)))assert.deepEqual(direct.previousBytes(p),layered.previousBytes(p),p);\n assert.equal(recurringSourcePredecessor(direct.previousBytes,history),null);\n});\n",
+    "apps/architecture-lab/test/sdk-compatibility.test.mjs": "import {recurringSourcePredecessor} from '../private-recurring-source.mjs'\nimport {acceptedSdkSource,sdkContinuationPredecessor} from '../../../packages/platform-contracts/test/organisation-sdk-compatibility.mjs'\nimport {calendarStoragePredecessor} from '../ecr-stage03-sdk-compatibility.mjs'\nimport test from 'node:test'\nimport assert from 'node:assert/strict'\nimport fs from 'node:fs'\nimport {createHash} from 'node:crypto'\nimport {execFileSync} from 'node:child_process'\nimport {assistantSdkPredecessor,ASSISTANT_SDK_PRODUCER} from '../assistant-m1-sdk-compatibility.mjs'\n\nconst root=new URL('../../../',import.meta.url)\nconst receipt=JSON.parse(fs.readFileSync(new URL('../sdk-1.33-compatibility.json',import.meta.url)))\nconst next=JSON.parse(fs.readFileSync(new URL('../sdk-1.34-compatibility.json',import.meta.url)))\nconst hash=bytes=>createHash('sha256').update(bytes).digest('hex')\nconst physicalSource=file=>fs.readFileSync(new URL(file,root))\nconst historicalSource=(sha,p)=>execFileSync('git',['show',sha+':'+p],{cwd:root})\nconst bootstrapSource=sdkContinuationPredecessor(JSON.parse(physicalSource('apps/sg-runtime/operation-integration.json')),physicalSource,historicalSource)\nconst readSource=bootstrapSource?.previousBytes??physicalSource\nconst recurring=recurringSourcePredecessor(readSource,historicalSource)??{manifest:null,previousBytes:readSource}\n\ntest('assistant optional source closes the real SDK dependency graph and retains the immutable predecessor',async()=>{\n const historical=(sha,p)=>execFileSync('git',['show',sha+':'+p],{cwd:root})\n const {record:a}=assistantSdkPredecessor(readSource,historical)\n for(const [p,h]of Object.entries(a.sourceDigests))assert.equal(hash(historical(ASSISTANT_SDK_PRODUCER,'packages/platform-contracts/'+p)),h,'producer source '+p)\n for(const [p,h]of Object.entries(a.compatibilityTestSourceDigests))assert.equal(hash(historical(a.compatibilitySourceSha,'packages/platform-contracts/'+p)),h,'compatibility source '+p)\n const remaining=new Set(Object.keys(a.sdkDigests))\n for(const name of fs.readdirSync(new URL('packages/platform-contracts/src/',root)).filter(n=>n.endsWith('.mjs'))){\n  const sdk=await import(new URL('packages/platform-contracts/src/'+name,root))\n  for(const key of remaining)if(typeof sdk[key]==='function'){assert.equal(await sdk[key](),acceptedSdkSource().sdkDigests[key]??a.sdkDigests[key],key);remaining.delete(key)}\n }\n assert.equal(remaining.size,0)\n for(const target of ['packages/platform-contracts/src/assistant-usage.mjs','packages/platform-contracts/src/operation-context.mjs','packages/platform-contracts/package.json','apps/architecture-lab/assistant-m1-sdk-compatibility.json'])assert.throws(()=>assistantSdkPredecessor(p=>p===target?Buffer.concat([readSource(p),Buffer.from('UNREVIEWED')]):readSource(p),historical),target)\n})\n\nfunction assertIntegratedSourceHistory(readCurrent=readSource){\n const historical=(sha,p)=>execFileSync('git',['show',sha+':'+p],{cwd:root})\n readCurrent=calendarStoragePredecessor(readCurrent,historical,(base,head)=>execFileSync('git',['diff','--name-only',base,head],{cwd:root,encoding:'utf8'}).trim().split('\\n')).previousBytes\n const previous=assistantSdkPredecessor(readCurrent,(sha,p)=>execFileSync('git',['show',sha+':'+p],{cwd:root})).previousBytes\n let schedule=null\n if(JSON.parse(readCurrent('packages/platform-source-hub-contracts/package.json')).version==='1.5.0'){\n  const file='apps/platform-source-hub/operations/publication-schedule-source-acceptance.json',bytes=readCurrent(file)\n  assert.equal(hash(bytes),'3f9a3de218368152b86cd4c4efebb831f2033256465248dcf320f362d8c0c422','exact accepted schedule continuation')\n  schedule=JSON.parse(bytes)\n  assert.equal(schedule.predecessorManifestPath,'apps/architecture-lab/sdk-1.34-compatibility.json')\n  assert.equal(hash(readCurrent(schedule.predecessorManifestPath)),schedule.predecessorManifestSha256,'immutable SDK1.34 receipt')\n  assert.equal(schedule.sourceCandidateSha,'1ed366d9e1fdac87a549dd891d2b7b53abf13b2c')\n  assert.equal(schedule.scope,'SOURCEHUB_PRODUCER_ONLY_OPT_IN_SCHEDULE_CONTRACT')\n  assert.equal(schedule.consumerRuntimeAdoption,false)\n  assert.equal(Object.keys(schedule.sourceFiles).length,26)\n  assert.equal(Object.keys(schedule.replacements).length,9)\n  for(const [file,digest]of Object.entries(schedule.sourceFiles))assert.equal(hash(readCurrent(file)),digest,'accepted current schedule source '+file)\n  for(const [file,replacement]of Object.entries(schedule.replacements)){\n   assert.equal(replacement.previousSha256,next.integrationFiles[file],'preserved integrated predecessor '+file)\n   assert.equal(replacement.sha256,schedule.sourceFiles[file],'explicit accepted replacement '+file)\n  }\n }\n for(const [file,digest]of Object.entries(next.integrationFiles)){\n  // The immutable continuation binds the previous fingerprint and all new\n  // source bytes. Other SDK1.34 integration files still require exact bytes.\n  const expected=schedule?.replacements[file]?.sha256??digest\n  assert.equal(hash(previous(file)),expected,'integrated producer '+file)\n }\n}\n\ntest('SDK1.34 preserves the complete SDK1.33 receipt and explicit optional peer history',()=>{\n assert.equal(hash(fs.readFileSync(new URL('../sdk-1.33-compatibility.json',import.meta.url))),next.previousReceiptSha256)\n assert.equal(next.previousReceiptSourceSha,'3d660eeaf8b6b7ef914a612b8383514f99e857d3')\n assert.equal(next.producerCandidateSha,'ebf017cae09bf7bd9139af7917534b47ae0c4d4b')\n assert.equal(next.taskId,'ARCH-SOURCE-HUB-TE-MARKETS-ACTIVATION-20261106')\n assert.equal(JSON.parse(recurring.previousBytes('packages/platform-contracts/package.json')).version,next.platformVersion)\n assert.equal(next.platformVersion,'1.34.0');assert.equal(next.marketSymbolContractVersion,'1.0.0')\n assert.deepEqual(next.allowedSdkVersions,['1.32.3','1.33.0','1.34.0'])\n assert.deepEqual(receipt.allowedSdkVersions,['1.32.3','1.33.0'])\n for(const [name,record] of Object.entries(receipt.packages)){\n  const prefix='packages/platform-contracts/'+name+'/'\n  const installed=recurring.previousBytes(prefix+'package.json')\n  const current=Buffer.from(installed.toString().replace('\"1.32.3 || 1.33.0 || 1.34.0\"','\"1.32.3 || 1.33.0\"'))\n  assert.equal(hash(installed),next.packages[name].manifestSha256)\n  assert.equal(hash(current),next.packages[name].previousManifestSha256)\n  assert.deepEqual(next.packages[name].unchangedSourceDigests,record.unchangedSourceDigests)\n  const metadata=JSON.parse(current)\n  assert.equal(metadata.peerDependencies['@profitia/platform-contracts'],'1.32.3 || 1.33.0')\n  // Reconstruct only the reviewed peer edit; the frozen predecessor hash still\n  // detects every other byte change, including in shallow CI checkouts.\n  const previous=Buffer.from(current.toString().replace('\"1.32.3 || 1.33.0\"','\"1.32.3\"'))\n  assert.equal(hash(previous),record.previousManifestSha256)\n  assert.equal(hash(current),record.manifestSha256)\n  const expected=JSON.parse(previous)\n  assert.equal(expected.peerDependencies['@profitia/platform-contracts'],'1.32.3')\n  expected.peerDependencies['@profitia/platform-contracts']='1.32.3 || 1.33.0'\n  assert.deepEqual(JSON.parse(current),expected,'only the explicit peer range changes')\n  for(const [file,digest] of Object.entries(record.unchangedSourceDigests)){\n   assert.equal(hash(fs.readFileSync(new URL(prefix+file,root))),digest)\n  }\n }\n for(const name of ['apiPathAdopted','schemaChanged','authorizationChanged','deploymentPerformed'])assert.equal(receipt[name],false)\n for(const name of ['marketSymbolAdopted','schemaChanged','authorizationChanged','deploymentPerformed'])assert.equal(next[name],false)\n assert.equal(Object.keys(next.producerFiles).length,27)\n assert.equal(next.integrationBaseMain,'e07521e7417ed6ce5a995a4ff1c708f32a9731a5')\n assertIntegratedSourceHistory()\n // Standalone producer jobs deliberately use shallow source checkouts. Bind\n // the immutable reviewed fingerprint record here; the full-history Canon\n // foundation suite independently checks every original Git blob at its SHA.\n assert.equal(hash(JSON.stringify(Object.entries(next.producerFiles).sort())),'90b10f1c73672ad8c2f3fc44c73206f7be3977184bbc609b131483a1f76397cf')\n})\n\ntest('schedule continuation rejects changed source, acceptance, predecessor and unreviewed integration bytes',()=>{\n for(const target of ['apps/platform-source-hub/src/providers/eia-schedules.mjs','apps/platform-source-hub/operations/publication-schedule-source-acceptance.json','apps/architecture-lab/sdk-1.34-compatibility.json','packages/platform-contracts/src/external-call.mjs']){\n  assert.throws(()=>assertIntegratedSourceHistory(file=>{\n   const bytes=readSource(file)\n   return file===target?Buffer.concat([bytes,Buffer.from('\\nUNACCEPTED_CHANGE')]):bytes\n  }),target)\n }\n})\n",
+    "packages/platform-contracts/readonly-miss-report/test/readonly-miss-report.test.mjs": "import {recurringSourcePredecessor} from '../../../../apps/architecture-lab/private-recurring-source.mjs'\nimport {acceptedSdkSource,sdkContinuationPredecessor} from '../../test/organisation-sdk-compatibility.mjs'\nimport assert from 'node:assert/strict'\nimport test from 'node:test'\nimport fs from 'node:fs'\nimport {createRequire} from 'node:module'\nimport {execFileSync} from 'node:child_process'\nimport os from 'node:os'\nimport path from 'node:path'\nimport {fileURLToPath} from 'node:url'\nimport {createReadonlyMissReportHost,READONLY_MISS_REPORT_CONTRACT,readonlyMissReportSourceDigest} from '../src/readonly-miss-report.mjs'\nimport {currentHumanReadSourceDigest,CURRENT_HUMAN_READ_CONTRACT} from '@profitia/platform-contracts/current-human-read'\nimport {privateOperationHostSourceDigest} from '@profitia/platform-contracts/private-operation-host'\nimport {CURRENT_FRESH_REPORT_CONTRACT,currentFreshReportSourceDigest} from '@profitia/platform-current-fresh-report'\n\nconst sourceRoot=new URL('../../../../',import.meta.url),physicalSource=p=>fs.readFileSync(new URL(p,sourceRoot)),historicalSource=(sha,p)=>execFileSync('git',['show',sha+':'+p],{cwd:sourceRoot})\nconst bootstrapSource=sdkContinuationPredecessor(JSON.parse(physicalSource('apps/sg-runtime/operation-integration.json')),physicalSource,historicalSource)\nconst recurring=recurringSourcePredecessor(bootstrapSource?.previousBytes??physicalSource,historicalSource)??{manifest:null,previousBytes:bootstrapSource?.previousBytes??physicalSource}\n\nfunction fixture(){\n const unexpected=async()=>assert.fail('No external call in constructor or rejected input')\n const application={appId:'srm',profileId:'SUPPLIER_INTELLIGENCE_STANDALONE',environment:'development',deploymentId:'synthetic',configurationVersion:'1',identityIssuer:'https://identity.fixture.test',organisationId:null,operations:['supplier.report.read'],features:['supplier_report']}\n const binding={applicationId:'srm',environment:'development',projectId:'isolated',branchId:'isolated',databaseName:'synthetic',role:'synthetic_runtime',schemaDigest:'a'.repeat(64)}\n const module={id:'supplier_report',schemaDigest:'b'.repeat(64),auditSchemaDigest:'c'.repeat(64)}\n const probe={application,binding,module,independentQuery:unexpected,transact:unexpected,readResources:unexpected,projectOutput:unexpected}\n return {probeReadOnly:{statements:['SELECT 1']},clerk:{authenticateRequest:unexpected,sessions:{getSession:unexpected},users:{getUser:unexpected}},\n  identity:{appId:'srm',environment:'development',issuer:application.identityIssuer,authorizedParties:['https://srm.fixture.test']},\n  receiverBoundary:{publicOrigins:['https://srm.fixture.test'],internalOrigins:['http://127.0.0.1:9999']},\n  probe,refresh:{...probe,application:{...application,operations:['supplier.report.refresh']},requestLedger:{schemaDigest:'d'.repeat(64),externalSchemaDigest:'e'.repeat(64)}},read:{...probe}}\n}\ntest('additive producer has an independent fingerprint and preserves existing READY and host digests',async()=>{\n assert.deepEqual(READONLY_MISS_REPORT_CONTRACT,{id:'profitia.readonly-miss-report',version:'1.0.0'})\n assert.deepEqual(CURRENT_HUMAN_READ_CONTRACT,{id:'profitia.current-human-read',version:'1.1.0'})\n const accepted=JSON.parse(fs.readFileSync(new URL('../../../../apps/srm/operation-integration.json',import.meta.url)))\n assert.equal(await currentHumanReadSourceDigest(),acceptedSdkSource().sdkDigests.currentHumanReadSourceDigest)\n assert.equal(await privateOperationHostSourceDigest(),acceptedSdkSource().sdkDigests.privateOperationHostSourceDigest)\n assert.match(await readonlyMissReportSourceDigest(),/^[a-f0-9]{64}$/)\n assert.equal(createReadonlyMissReportHost(fixture()).hostContract,READONLY_MISS_REPORT_CONTRACT)\n})\ntest('accepted current FRESH 1.0 metadata and fingerprint remain unchanged beside the new package',async()=>{\n const receipt=JSON.parse(fs.readFileSync(new URL('../../../../apps/srm/operation-integration.json',import.meta.url)))\n const accepted=receipt.freshCurrentBoundaryAdoption\n assert.deepEqual(CURRENT_FRESH_REPORT_CONTRACT,accepted.contract)\n assert.equal(await currentFreshReportSourceDigest(),acceptedSdkSource().optionalPackageDigests.currentFreshReportSourceDigest)\n const metadata=JSON.parse(fs.readFileSync(new URL('../../current-fresh-report/package.json',import.meta.url)))\n assert.equal(metadata.name,'@profitia/platform-current-fresh-report');assert.equal(metadata.version,'1.0.0')\n for(const [name,digest] of Object.entries(accepted.producerSourceDigests)){\n  const {createHash}=await import('node:crypto')\n  const current=recurring.previousBytes('packages/platform-contracts/current-fresh-report/'+name)\n  let preserved=current\n  if(name==='package.json'){\n   const peer=JSON.parse(current).peerDependencies['@profitia/platform-contracts']\n   assert(['1.32.3','1.32.3 || 1.33.0','1.32.3 || 1.33.0 || 1.34.0',...(recurring.manifest?['1.32.3 || 1.33.0 || 1.34.0 || 1.36.0']:[])].includes(peer))\n   if(peer!=='1.32.3')preserved=Buffer.from(current.toString().replace(JSON.stringify(peer),'\"1.32.3\"'))\n  }\n  assert.equal(createHash('sha256').update(preserved).digest('hex'),digest)\n }\n})\ntest('the public package entry exposes the same implementation to ESM and CommonJS',()=>{\n const sdk=createRequire(new URL('../package.json',import.meta.url))('@profitia/platform-readonly-miss-report')\n assert.equal(sdk.createReadonlyMissReportHost,createReadonlyMissReportHost)\n assert.equal(sdk.READONLY_MISS_REPORT_CONTRACT,READONLY_MISS_REPORT_CONTRACT)\n})\ntest('packed public install uses exactly one SDK 1.34.0 peer with preserved 1.32.3 compatibility, without credentials, scripts or registry',async()=>{\n const temporary=fs.mkdtempSync(path.join(os.tmpdir(),'fresh-report-public-install-'))\n const artifacts=path.join(temporary,'packages');fs.mkdirSync(artifacts)\n const userconfig=path.join(temporary,'user.npmrc'),globalconfig=path.join(temporary,'global.npmrc')\n fs.writeFileSync(userconfig,'');fs.writeFileSync(globalconfig,'')\n const env=Object.fromEntries(['PATH','HOME','TMPDIR','SystemRoot'].filter(k=>process.env[k]).map(k=>[k,process.env[k]]))\n const args=['--userconfig',userconfig,'--globalconfig',globalconfig,'--cache',path.join(temporary,'cache'),'--offline','--ignore-scripts','--no-audit','--no-fund']\n const npm=(arguments_,cwd)=>execFileSync('npm',[...arguments_,...args],{cwd,env,encoding:'utf8',stdio:['ignore','pipe','pipe']})\n const sdkRoot=fileURLToPath(new URL('../../',import.meta.url)),leafRoot=path.join(sdkRoot,'readonly-miss-report')\n let passed=false\n try{\n  const pack=cwd=>path.join(artifacts,JSON.parse(npm(['pack','--json','--pack-destination',artifacts],cwd))[0].filename)\n  const sdk=pack(sdkRoot),leaf=pack(leafRoot),classifier=pack(fs.realpathSync(path.join(sdkRoot,'node_modules/ipaddr.js')))\n  fs.writeFileSync(path.join(temporary,'package.json'),JSON.stringify({name:'isolated-fresh-public-consumer',version:'1.0.0',private:true,type:'module',\n   dependencies:{'@profitia/platform-contracts':'file:'+sdk,'@profitia/platform-readonly-miss-report':'file:'+leaf,'ipaddr.js':'file:'+classifier}}))\n  npm(['install','--omit=dev'],temporary)\n  const expected=await readonlyMissReportSourceDigest()\n  const script=`import assert from 'node:assert/strict';import fs from 'node:fs';import {createRequire} from 'node:module';\n   import * as fresh from '@profitia/platform-readonly-miss-report';\n   import {CURRENT_HUMAN_READ_CONTRACT} from '@profitia/platform-contracts/current-human-read';\n   const root=new URL('../',import.meta.resolve('@profitia/platform-contracts/operation-context'));\n   assert.equal(JSON.parse(fs.readFileSync(new URL('package.json',root))).version,${JSON.stringify(recurring.manifest?.platformVersion??'1.34.0')});\n   assert.equal(CURRENT_HUMAN_READ_CONTRACT.version,'1.1.0');assert.equal(fresh.READONLY_MISS_REPORT_CONTRACT.version,'1.0.0');\n   assert.equal(await fresh.readonlyMissReportSourceDigest(),${JSON.stringify(expected)});\n   const require=createRequire(import.meta.url),inside=createRequire(import.meta.resolve('@profitia/platform-readonly-miss-report'));\n   assert.equal(require('@profitia/platform-readonly-miss-report').createReadonlyMissReportHost,fresh.createReadonlyMissReportHost);\n   assert.equal(inside.resolve('@profitia/platform-contracts/operation-context'),require.resolve('@profitia/platform-contracts/operation-context'));\n   console.log('PASS: packed ESM/CommonJS export, exact unchanged peer, one SDK copy, matching complete fingerprint');`\n  fs.writeFileSync(path.join(temporary,'verify.mjs'),script)\n  const output=execFileSync(process.execPath,['verify.mjs'],{cwd:temporary,env,encoding:'utf8'})\n  assert.match(output,/PASS: packed ESM\\/CommonJS/);passed=true\n }finally{\n  if(passed)fs.rmSync(temporary,{recursive:true,force:true})\n  else process.stderr.write('Public-install fixture retained: '+temporary+'\\n')\n }\n})\nfor(const key of ['clerk','identity','receiverBoundary','probe','refresh','read','now','probeReadOnly'])test('rejects missing/invalid '+key,()=>{\n const f=fixture();f[key]=null;assert.throws(()=>createReadonlyMissReportHost(f),TypeError)\n})\nfor(const key of ['reportAdmission','cache','authenticate','createAuthenticator','readExternalAccount','allow'])test('does not accept another authorization path '+key,()=>{\n assert.throws(()=>createReadonlyMissReportHost({...fixture(),[key]:()=>true}),TypeError)\n})\ntest('new package cannot fall back to the legacy mode when the read-only policy is omitted',()=>{\n const options=fixture();delete options.probeReadOnly\n assert.throws(()=>createReadonlyMissReportHost(options),TypeError)\n})\nfor(const statements of [[],['COMMIT'],[' SELECT 1'],['SELECT 1; COMMIT'],['SELECT 1','SELECT 1'],[()=>true]])test('read-only policy rejects non-closed statements '+String(statements),()=>{\n assert.throws(()=>createReadonlyMissReportHost({...fixture(),probeReadOnly:{statements}}),TypeError)\n})\ntest('read-only adoption requires a separate READY callback before making external calls',async()=>{\n const host=createReadonlyMissReportHost({...fixture(),probeReadOnly:{statements:['SELECT 1']}}),bad=async()=>assert.fail('No external call')\n await assert.rejects(host.execute({request:new Request('https://srm.fixture.test/api/search'),organisationId:'11111111-1111-4111-8111-111111111111',nip:'5272443955',idempotencyKey:null},\n {probe:bad,refresh:bad,work:bad,read:bad}),e=>e.reasonCode==='CONTEXT_INVALID')\n})\nfor(const key of ['probe','refresh','read'])for(const mutation of ['application','store','service','module','operation','authenticator'])test(key+' rejects foreign '+mutation,()=>{\n const f=fixture(),base={...f[key]};f[key]=base\n if(mutation==='application')base.application={...base.application,appId:'foreign'}\n if(mutation==='store')base.binding={...base.binding,databaseName:'foreign'}\n if(mutation==='service')base.binding={...base.binding,service:{}}\n if(mutation==='module')base.module={...base.module,id:'supplier_private'}\n if(mutation==='operation')base.application={...base.application,operations:['supplier.private.read']}\n if(mutation==='authenticator')base.createAuthenticator=()=>async()=>({kind:'HUMAN'})\n assert.throws(()=>createReadonlyMissReportHost(f),TypeError)\n})\ntest('invalid input and reused factory cannot trigger SQL or identity',async()=>{\n const host=createReadonlyMissReportHost(fixture())\n await assert.rejects(host.execute({},{}),e=>e.reasonCode==='CONTEXT_INVALID')\n await assert.rejects(host.execute({},{}),e=>e.reasonCode==='ACCESS_BASIS_INVALID')\n})\ntest('abort refuses the opening before authentication or SQL',async()=>{\n const controller=new AbortController();controller.abort()\n const host=createReadonlyMissReportHost(fixture()),bad=async()=>assert.fail('No action')\n await assert.rejects(host.execute({request:new Request('https://srm.fixture.test/api/search',{signal:controller.signal}),\n  organisationId:'11111111-1111-4111-8111-111111111111',nip:'5272443955',idempotencyKey:null},\n {probe:bad,ready:bad,refresh:bad,work:bad,read:bad}),e=>e.name==='AbortError')\n})\ntest('public declarations compile positive calls and reject alternate authority and Work output',async()=>{\n const require=createRequire(new URL('../../../../apps/architecture-lab/package.json',import.meta.url)),ts=require('typescript')\n const file=fileURLToPath(new URL('./types/readonly-miss-report.mts',import.meta.url))\n const program=ts.createProgram([file],{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.NodeNext,moduleResolution:ts.ModuleResolutionKind.NodeNext,strict:true,noEmit:true,types:[],lib:['lib.es2022.d.ts','lib.dom.d.ts']})\n const errors=ts.getPreEmitDiagnostics(program)\n assert.equal(errors.length,0,ts.formatDiagnosticsWithColorAndContext(errors,{getCanonicalFileName:x=>x,getCurrentDirectory:()=>process.cwd(),getNewLine:()=> '\\n'}))\n})\n",
+    "apps/sg-runtime/tests/organisation-sdk-history.test.mjs": "// Real paired receipt, immutable Git history and an isolated installed-copy\n// fixture. No database, identity or provider I/O.\nimport test from 'node:test'\nimport assert from 'node:assert/strict'\nimport fs from 'node:fs'\nimport path from 'node:path'\nimport {randomUUID,createHash} from 'node:crypto'\nimport {fileURLToPath} from 'node:url'\nimport {execFileSync} from 'node:child_process'\nimport {sdkContinuationPredecessor} from '../../../packages/platform-contracts/test/organisation-sdk-compatibility.mjs'\nimport {assistantSendArrowPredecessor} from './assistant-send-arrow-integrity.mjs'\nimport {assertAssistantM1Integrity} from './assistant-m1-integrity.mjs'\nimport {readM2AcceptedSource} from './assistant-m2-source-view.mjs'\nconst root=fileURLToPath(new URL('../../../',import.meta.url)),current=p=>fs.readFileSync(path.join(root,p)),history=new Map()\nconst historical=(sha,p)=>{const key=sha+':'+p;if(!history.has(key))history.set(key,execFileSync('git',['show',key],{cwd:root,stdio:['ignore','pipe','ignore']}));return Buffer.from(history.get(key))}\nconst receipt=()=>JSON.parse(current('apps/sg-runtime/operation-integration.json')),hash=b=>createHash('sha256').update(b).digest('hex')\ntest('current SDK is verified before immutable arrow and M1 receipt views are exposed',()=>{\n const r=receipt(),sdk=sdkContinuationPredecessor(r,current,historical)\n assert(sdk);assert.deepEqual(sdk.prior,JSON.parse(historical(sdk.record.previousSourceSha,'apps/sg-runtime/operation-integration.json')))\n const arrow=assistantSendArrowPredecessor(current,historical);assert(arrow)\n assert.doesNotThrow(()=>assertAssistantM1Integrity(r,current,historical))\n const guard='apps/sg-runtime/tests/assistant-send-arrow-integrity.mjs'\n assert.equal(hash(sdk.previousBytes(guard)),hash(historical(sdk.record.previousSourceSha,guard)))\n for(const flag of ['runtimeOptedIn','sqlInstalled','permissionsChanged','providerCallsPerformed','deploymentPerformed'])assert.equal(sdk.record[flag],false)\n})\ntest('receipt/view alignment cannot discard caller mutations or accept historical SDK bytes as current',()=>{\n const changed=receipt();changed.operations.push('supplier.private.unreviewed')\n assert.throws(()=>assertAssistantM1Integrity(changed,current,historical))\n const sql='packages/platform-contracts/migrations/profile/007-organisation-onboarding.sql'\n assert.throws(()=>assertAssistantM1Integrity(receipt(),p=>p===sql?historical('f8f6340ab1ac862a584352f86988dde199172b37',p):current(p),historical))\n const guard='apps/sg-runtime/tests/assistant-send-arrow-integrity.mjs'\n assert.throws(()=>assistantSendArrowPredecessor(p=>p===guard?Buffer.concat([current(p),Buffer.from('\\n')]):current(p),historical))\n})\ntest('installed SDK aliases validate physical current bytes before returning exact historical views',()=>{\n const sdk=sdkContinuationPredecessor(receipt(),current,historical)\n const fixture=path.join(root,'apps/sg-runtime/node_modules/.registration-sdk-view-'+randomUUID()),installed=path.join(fixture,'node_modules/@profitia/platform-contracts')\n try{\n  for(const file of ['package.json','src/operation-context.d.mts']){\n   const target=path.join(installed,file);fs.mkdirSync(path.dirname(target),{recursive:true});fs.writeFileSync(target,current('packages/platform-contracts/'+file))\n   assert.deepEqual(Buffer.from(readM2AcceptedSource(target)),historical('c3b399b13241ae2f4ea8c1b3ae0168fe9a6aac7f','packages/platform-contracts/'+file))\n  }\n  const target=path.join(installed,'package.json');fs.appendFileSync(target,'\\n')\n  assert.throws(()=>readM2AcceptedSource(target),/Actual installed SDK source/)\n }finally{fs.rmSync(fixture,{recursive:true,force:true})}\n})\n"
+  }
+}
