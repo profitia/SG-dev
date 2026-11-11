@@ -1,0 +1,24 @@
+{
+  "name": "@profitia/platform-knowledge-contracts",
+  "version": "0.1.0",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "import": "./index.mjs"
+    },
+    "./schemas": "./schemas.json"
+  },
+  "files": [
+    "index.mjs",
+    "index.d.ts",
+    "schemas.json",
+    "README.md"
+  ],
+  "scripts": {
+    "test": "node --test test/*.test.mjs"
+  },
+  "engines": {
+    "node": ">=24.15.0 <25"
+  }
+}
