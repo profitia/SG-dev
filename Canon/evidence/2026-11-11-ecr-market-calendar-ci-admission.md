@@ -4,12 +4,12 @@
 
 PROPOSED / OWNER_CI_AND_COORDINATED_TEST_ADOPTION_PENDING.
 This continuation supersedes the earlier metadata-only review181e322f.
-Producer PR1018 source `7630a212f5e029616323d6e59dc478d27a3d9503` is based on
+Producer PR1018 source `4e49580e768bb02d50577243d49b87fc5de22295` is based on
 `38a9fe371e7993b47e2358d297647086ea999428`. The closed review contains exactly18 files:
 17 ARCHITECTURE producer paths and one SG2 test-only compatibility path,
 `apps/sg-runtime/tests/assistant-ecr-week-integrity.test.mjs`.
 The latter is owned by registered task SG2-PROCUREMENT-MARKET-CALENDAR-20261111
-and preserves the original SG2 test commit2f669f7a, cherry-picked without edits as89edc4a9;
+and preserves the original SG2 test commits2f669f7a/93296b8c, cherry-picked without edits as89edc4a9/3f07e005;
 the exact blob in the review is the authority. No SG2 runtime/UI file is included in this transport.
 
 Main PR1031 activated three approved instruction references; PR1021 accepted
@@ -21,7 +21,7 @@ no historical receipt or week source record is rewritten. The trusted CI reader
 uses that same authenticated view for the fourteen exact week hashes, while
 retaining physical regular-file, symlink and executable-mode checks.
 
-Producer record SHA256 `eb1e476a4ec05657eacd70294f432c7e4d2031b94a0b8d64ca1169c50c2b4887`.
+Producer record SHA256 `abc0833d4f58bdacfcbbf8eb89206a9aa8cdd7be20fba34a7e96c018e7ce8dd6`.
 The original E1 owner plan remains exactly
 `caadc0cdf9322e218db6f1f9285d52ef5fe5ceaca84f672d77fe49e8fa44a1d0`.
 Of the previous17 producer files, thirteen are byte-identical; four source
@@ -35,7 +35,8 @@ not a general exception to separate owner tasks or product adoption.
 Actual local evidence: complete controller222/222 PASS; four focused CI tests PASS, including a real-Git fixture
 composing both acceptances over all368 recurring source files. Source, immutable
 receipt, executable-mode and symlink tampering is rejected. Both three-test
-Calendar and ECR-week source suites PASS. Complete controller, exact-head
+Calendar and ECR-week source suites PASS; the real combined SG2 consumer also
+passes its five integrity tests and seventeen functional tests. Complete controller, exact-head
 controlled/public and resulting-main CI remain mandatory before activation.
 No grant installation, release, provider request or PMOS closeout has occurred.
 
