@@ -1,3 +1,4 @@
+import {assistantSendArrowPredecessor} from './assistant-send-arrow-integrity.mjs'
 // Test/build-only exact adoption; cannot authorize runtime, deployment or grants.
 import {registrationStageOnePredecessor} from './registration-stage-i-integrity.mjs'
 import assert from 'node:assert/strict'
@@ -53,6 +54,7 @@ const receiptPath='apps/sg-runtime/procurement-insights-integration.json'
 const assistantReceipt='apps/sg-runtime/assistant-context-integration.json'
 const hash=bytes=>createHash('sha256').update(bytes).digest('hex')
 export function procurementInsightsPredecessor(current,historical){
+ const arrow=assistantSendArrowPredecessor(current,historical);if(arrow)return procurementInsightsPredecessor(arrow.previousBytes,historical)
  const registration=registrationStageOnePredecessor(current,historical);if(registration)return procurementInsightsPredecessor(registration.previousBytes,historical)
  const markdown=assistantMarkdownPredecessor(current,historical)
  if(markdown)return procurementInsightsPredecessor(markdown.previousBytes,historical)

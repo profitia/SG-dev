@@ -1,0 +1,29 @@
+{
+  "schemaVersion": "1.0",
+  "taskId": "SG2-ASSISTANT-MARKDOWN-UX-20261110",
+  "targetEnvironment": "development",
+  "scope": "CANONICAL_SEND_ARROW",
+  "previousSourceSha": "ef1d34e82ed6908a8f26103e2d6694e71374985d",
+  "sourceDigests": {
+    "apps/sg-runtime/components/appshell/assistant-conversation-view.tsx": "a4cd2979aa331ec67709b113784043318627c91a29cdb3dcbc886928c8c2aacd",
+    "apps/sg-runtime/tests/assistant-m2-integrity.mjs": "bf0cd30d0909ce6ef0572ecec08f09de1a38ed076e03178e552d6b400995cae3",
+    "apps/sg-runtime/tests/assistant-markdown-integrity.mjs": "845e0e8eed23e3f5eeb54ca5beca468d24e14b24243e54848a9e63b6cc5abe0c",
+    "apps/sg-runtime/tests/assistant-send-arrow-integrity.mjs": "a6b5949df2f2717d2c8c6dd1680cb6c0fa659f7c78e6287a83a52076e7b4e7f9",
+    "apps/sg-runtime/tests/assistant-send-arrow-integrity.test.mjs": "6f66bd2f00650e6320576c683bc9ec9bd946e0466bcaafb08bba83c97bb21437",
+    "apps/sg-runtime/tests/pci-smart-integrity.test.mjs": "db82b8a29c352f14ea3227a1c50b2d37924addc88fb9a734806fd95585a2e6c5",
+    "apps/sg-runtime/tests/procurement-insights-integrity.mjs": "1f0e6b9584c24d58ee266ee9bd0e04ed23374c67f4f3c032a65318830e4699b1",
+    "apps/sg-runtime/tests/registration-stage-i-integrity.mjs": "fea4f28dd1ee8cc08db551bfe2dfee4e6f3b34337c596cffc4692c88a2d3e5b3"
+  },
+  "previousReceipts": {
+    "apps/sg-runtime/assistant-context-integration.json": "d932f227977789643086b6a9eb179598a6f48071964b2d26ba82d25fceb7b2ec",
+    "apps/sg-runtime/assistant-markdown-integration.json": "27ff06aff8bc44592f0073732748834b7759182fa4307d901c7d63304381a38b",
+    "apps/sg-runtime/operation-integration.json": "a6bf50993c98a71aeccd349dd904baafb53b3cd653324d97bab3fc5e34ac509f",
+    "apps/sg-runtime/procurement-insights-integration.json": "6dca06d8b0731e585925100b0578d41a61711f335940350d1ea32c296a3d7177",
+    "apps/sg-runtime/registration-stage-i-integration.json": "4a7a572e67e12ed73c523502cef4cb432009e735737df851419d80898653f414"
+  },
+  "authorisationChanged": false,
+  "sdkChanged": false,
+  "databaseChanged": false,
+  "modelChanged": false,
+  "deploymentPerformed": false
+}
