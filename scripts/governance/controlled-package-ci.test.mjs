@@ -1577,7 +1577,7 @@ test('Stage I review binds all41 exact owner-routed regular source files and pre
  // admits no generic app path, role, provider policy, installation or release.
 })
 
-import {REGISTRATION_SDK_REVIEW as reconciledRegistrationReview,REGISTRATION_SDK_PROVENANCE,assertRegistrationSdkRecord,readRegistrationSdkFile} from './controlled-package-ci.mjs'
+import {REGISTRATION_SDK_PREVIOUS_REVIEW as reconciledRegistrationReview,REGISTRATION_SDK_PROVENANCE,assertRegistrationSdkRecord,readRegistrationSdkFile} from './controlled-package-ci.mjs'
 test('SDK reconciliation preserves the initial41 entries and binds its exact48-file metadata-only successor',()=>{
  const r=reconciledRegistrationReview,files=Object.entries(r.entries).map(([filename,e])=>({filename,sha:e.sha,status:e.status})),p={...pr(),number:r.prNumber,changed_files:files.length,base:{...pr().base,sha:r.baseSha},head:{...pr().head,sha:r.sourceSha,ref:r.branch}}
  assert.equal(files.length,48);assert.equal(createHash('sha256').update(JSON.stringify(r.entries)).digest('hex'),'96694ec1cfd285d7972add61a706cade825fbb447e94f265fd3192b4e275790a')
@@ -1616,4 +1616,64 @@ test('trusted SDK source reads reject traversal, symlinks, non-files and oversiz
   fs.writeFileSync(path.join(root,'large.json'),Buffer.alloc(1024*1024+1))
   for(const name of ['../outside.json','/etc/passwd','nested/../regular.json','link.json','linked-directory/file.json','nested','large.json','bad'+String.fromCharCode(92)+'path'])rejection(()=>readRegistrationSdkFile(root,name))
  }finally{fs.rmSync(root,{recursive:true,force:true})}
+})
+
+import {REGISTRATION_SDK_REVIEW as completeRegistrationReview} from './controlled-package-ci.mjs'
+test('owner-approved Stage I successor admits exactly59 routed files while preserving41 and48 reviews',()=>{
+ const r=completeRegistrationReview,files=Object.entries(r.entries).map(([filename,e])=>({filename,sha:e.sha,status:e.status})),p={...pr(),number:r.prNumber,changed_files:files.length,base:{...pr().base,sha:r.baseSha},head:{...pr().head,sha:r.sourceSha,ref:r.branch}}
+ assert.equal(files.length,59)
+ assert.equal(r.sourceSha,'23954edbc65b8b404e7491f3bda56b8877b72864')
+ assert.equal(r.treeSha,'3907ddec3ec7bda18329a3e8db3d93c5515ceba4')
+ assert.equal(createHash('sha256').update(JSON.stringify(r.entries)).digest('hex'),'6894754702e205691a42c4b32b678169d36d341cf00845d6e2eed54c19e1ec65')
+ assert.deepEqual(Object.fromEntries(['ARCHITECTURE','SG2','SRM'].map(project=>[project,Object.values(r.entries).filter(e=>e.projectKey===project).length])),{ARCHITECTURE:28,SG2:17,SRM:14})
+ assert.equal(Object.entries(reconciledRegistrationReview.entries).filter(([p,e])=>JSON.stringify(e)===JSON.stringify(r.entries[p])).length,35)
+ assert.equal(Object.keys(r.entries).filter(p=>!Object.hasOwn(reconciledRegistrationReview.entries,p)).length,11)
+ assertArchitectureFiles(p,files);assert.equal(selectCandidate(context(),p,r.sourceSha,{files}),r.sourceSha)
+ for(const file of files){
+  assertRegistrationSdkReviewEntry(file,'100644 blob '+file.sha+'\t'+file.filename+'\0')
+  for(const mode of ['100755','120000','160000'])rejection(()=>assertRegistrationSdkReviewEntry(file,mode+' blob '+file.sha+'\t'+file.filename+'\0'))
+ }
+ for(const edit of [a=>a.pop(),a=>a.push(a[0]),a=>a[0]={...a[0],sha:'f'.repeat(40)},a=>a[0]={...a[0],status:'removed'},a=>a[0]={...a[0],previous_filename:a[0].filename},a=>a.push({filename:'apps/srm/app/login/unreviewed.tsx',sha:'f'.repeat(40),status:'added'}),a=>{const i=a.findIndex(f=>f.filename==='apps/srm/app/login/porr-account.tsx');a[i]={...a[i],sha:'f'.repeat(40)}}]){
+  const bad=structuredClone(files);edit(bad);rejection(()=>selectCandidate(context(),{...p,changed_files:bad.length},r.sourceSha,{files:bad}))
+ }
+ for(const edit of [q=>q.number++,q=>q.head.ref='architecture/another-registration',q=>q.head.repo.full_name='profitia/fork',q=>q.user.login='attacker',q=>q.base.ref='staging',q=>q.head.sha=sha]){
+  const bad=structuredClone(p);edit(bad);rejection(()=>selectCandidate(context(),bad,r.sourceSha,{files}))
+ }
+ assert(files.every(f=>!f.filename.startsWith('Canon/')&&!f.filename.startsWith('.github/')&&!f.filename.startsWith('scripts/')))
+})
+test('complete59 SDK provenance pins its new predecessor without rewriting older receipt history',()=>{
+ const text=fs.readFileSync(path.join(authorityRoot,'Canon/evidence/2026-11-11-registration-sdk-ci-complete-review.md'),'utf8'),start=text.indexOf('<!-- registration-sdk-fixture -->'),match=/\x60\x60\x60json\n([\s\S]*?)\x60\x60\x60/.exec(text.slice(start))
+ assert(start>=0&&match)
+ const bytes=Buffer.from(match[1]),record=JSON.parse(bytes),hash=b=>createHash('sha256').update(b).digest('hex')
+ const digest=hash(bytes),previous='b2fccbb8b9132a63c2c39507a1ebc838cf6228e1'
+ assert.equal(digest,'020b9db676804688ce1758865084d2af02c42af169ede00c265432422e4d993e')
+ assert.equal(REGISTRATION_SDK_PROVENANCE.recordPredecessors[digest],previous)
+ assert.equal(record.previousSourceSha,previous)
+ assert.equal(REGISTRATION_SDK_PROVENANCE.previousSourceSha,'f8f6340ab1ac862a584352f86988dde199172b37')
+ assert.equal(REGISTRATION_SDK_PROVENANCE.recordDigests.length,3)
+ assert.equal(Object.keys(record.sourceDigests).length,155)
+ assert.equal(Object.keys(record.compatibilityTestSourceDigests).length,7)
+ assert.equal(Object.keys(record.preservedSourceDigests).length,15)
+ assert.equal(Object.keys(record.consumerSourceDigests.SG2).length,16)
+ assert.equal(Object.keys(record.consumerSourceDigests.SRM).length,13)
+ const files={SG2:'apps/sg-runtime/operation-integration.json',SRM:'apps/srm/operation-integration.json'},historicalReceipts={},receipts={}
+ for(const [project,p]of Object.entries(files)){
+  historicalReceipts[project]=execFileSync('git',['show',previous+':'+p],{cwd:authorityRoot})
+  const old=execFileSync('git',['show',REGISTRATION_SDK_PROVENANCE.previousSourceSha+':'+p],{cwd:authorityRoot})
+  assert.deepEqual(historicalReceipts[project],old)
+  receipts[project]={...JSON.parse(historicalReceipts[project]),sdkSourceContinuations:[{schemaVersion:'1.0',acceptanceId:'organisation-bootstrap-v1',taskId:REGISTRATION_SDK_PROVENANCE.bindings[project].taskId,targetEnvironment:'development',previousReceiptSha256:hash(historicalReceipts[project])}]}
+ }
+ const maps=Object.assign({},record.sourceDigests,record.compatibilityTestSourceDigests,record.preservedSourceDigests,...Object.values(record.consumerSourceDigests)),options={digestForPath:p=>maps[p],receipts,historicalReceipts}
+ assert.equal(assertRegistrationSdkRecord(bytes,options).previousSourceSha,previous)
+ assert.equal(adoptedOperationContract(receipts.SG2).sourceDigest,REGISTRATION_SDK_PROVENANCE.operationSourceDigest)
+ for(const map of [record.sourceDigests,record.compatibilityTestSourceDigests,record.preservedSourceDigests,record.consumerSourceDigests.SG2,record.consumerSourceDigests.SRM])
+  for(const name of Object.keys(map))rejection(()=>assertRegistrationSdkRecord(bytes,{...options,digestForPath:p=>p===name?'0'.repeat(64):maps[p]}))
+ for(const edit of [r=>r.previousSourceSha=REGISTRATION_SDK_PROVENANCE.previousSourceSha,r=>r.defaultRootImplementation='1.0.0-candidate.21',r=>r.runtimeOptedIn=true,r=>r.sqlInstalled=true,r=>r.permissionsChanged=true,r=>r.providerCallsPerformed=true,r=>r.deploymentPerformed=true]){
+  const bad=structuredClone(record);edit(bad);rejection(()=>assertRegistrationSdkRecord(Buffer.from(JSON.stringify(bad)+'\n'),options))
+ }
+ rejection(()=>assertRegistrationSdkRecord(Buffer.concat([bytes,Buffer.from('\n')]),options))
+ for(const edit of [r=>r.SG2.sdkSourceContinuations[0].previousReceiptSha256='0'.repeat(64),r=>r.SRM.sdkSourceContinuations[0].taskId='wrong-owner',r=>r.SRM.projectKey='SG2',r=>r.SG2.automaticProductDeployment=true]){
+  const bad=structuredClone(receipts);edit(bad);rejection(()=>assertRegistrationSdkRecord(bytes,{...options,receipts:bad}))
+ }
+ rejection(()=>assertRegistrationSdkRecord(bytes,{...options,historicalReceipts:{...historicalReceipts,SRM:Buffer.from('{}')}}))
 })
