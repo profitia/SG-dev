@@ -20,11 +20,11 @@ function historicalSource(reader,sha,path){
 const receiptPath=project=>'apps/'+(project==='SG2'?'sg-runtime':'srm')+'/operation-integration.json'
 const tasks={SG2:'SG2-REGISTRATION-ORGANISATION-HANDOFF-STAGE-I-20261110',SRM:'SRM-REGISTRATION-BOOTSTRAP-SDK-ADOPTION-20261111'}
 const known=Object.freeze({
- 'organisation-bootstrap-v1':Object.freeze({path:'packages/platform-contracts/test/organisation-sdk-compatibility.json',sha256:'020b9db676804688ce1758865084d2af02c42af169ede00c265432422e4d993e',successorSha256s:Object.freeze(['25fea141baf42c154f64a256d40808d548562c010e3f2fd3143657f24b15295c','ccf680f0a83b61f3944dd2823259e9487ddae5c2a7707b8d05e793241c4aae40'])})
+ 'organisation-bootstrap-v1':Object.freeze({path:'packages/platform-contracts/test/organisation-sdk-compatibility.json',sha256:'020b9db676804688ce1758865084d2af02c42af169ede00c265432422e4d993e',successorSha256s:Object.freeze(['25fea141baf42c154f64a256d40808d548562c010e3f2fd3143657f24b15295c','ccf680f0a83b61f3944dd2823259e9487ddae5c2a7707b8d05e793241c4aae40','ffe2065f84e7a9808a74f896170588b9ff5fc66973096a15a407a7cbf006808d'])})
 })
-// Already reviewed Identity source bytes are verified before exposing0775.
+// All supplemental reviewed source bytes are verified before exposing0775.
 // These pins add no runtime authority and apply only to reconciled1.36 history.
-const reconciledIdentitySources=Object.freeze({
+const reconciledSourceOverlay=Object.freeze({
   "apps/identity-runtime/src/organisation-onboarding.ts": {
     "sha256": "2bd52ce90cbb522cf465298228524ba7f51e87646e3dcbcbbd8ae49a2203ad53",
     "producerSha": "5a963f313317d57e1946e1d7aabd28192db9c7bd"
@@ -56,6 +56,26 @@ const reconciledIdentitySources=Object.freeze({
   "Canon/evidence/2026-11-11-registration-native-draft-http.md": {
     "sha256": "9baa883a9af8beb2e658a351ce022c57fa8c869f126e35e0da95b4400c626c7a",
     "producerSha": "6dd651bee360d80a644f7526cf1397f60a0db461"
+  },
+  "packages/platform-contracts/test/organisation-bootstrap-postgres.test.mjs": {
+    "sha256": "15165c930440ceb7cbe7dbfdd0263637951f31b83c0a33d01a1f065d7dd1fd08",
+    "producerSha": "5a963f313317d57e1946e1d7aabd28192db9c7bd"
+  },
+  "packages/platform-contracts/test/organisation-bootstrap.test.mjs": {
+    "sha256": "ed13fb983ef78aeab7210ebb26a122af8ba96d0529769c1db6fa8458bcfc690d",
+    "producerSha": "5a963f313317d57e1946e1d7aabd28192db9c7bd"
+  },
+  "packages/platform-contracts/test/organisation-invitations.test.mjs": {
+    "sha256": "2deaad88c6b70f57e8cb72d98221f58c976afa1fcf029868d67191289e6e7ed2",
+    "producerSha": "5a963f313317d57e1946e1d7aabd28192db9c7bd"
+  },
+  "packages/platform-contracts/test/organisation-onboarding-postgres.test.mjs": {
+    "sha256": "fd9d06252c3342d956d0db0755a3200660b6db9ac9d458fa1c6162935627248e",
+    "producerSha": "5a963f313317d57e1946e1d7aabd28192db9c7bd"
+  },
+  "packages/platform-contracts/test/organisation-profile.test.mjs": {
+    "sha256": "3a6ddbf6ee633a7245d14608792ec412d5acd3c72879e0104e3105476990091c",
+    "producerSha": "5a963f313317d57e1946e1d7aabd28192db9c7bd"
   }
 })
 const recordKeys=['schemaVersion','acceptanceId','taskId','targetEnvironment','scope','platformVersion','previousSourceSha','producer','sourceDigests','compatibilityTestSourceDigests','sdkDigests','optionalPackageDigests','consumerSourceDigests','preservedSourceDigests','defaultRootImplementation','optionalRootImplementation','optionalOperations','runtimeOptedIn','sqlInstalled','permissionsChanged','providerCallsPerformed','deploymentPerformed']
@@ -71,7 +91,8 @@ const compatibilityTests=[
 function exactKeys(value,keys,label){assert(value&&Object.getPrototypeOf(value)===Object.prototype,label);assert.deepEqual(Object.keys(value).sort(),[...keys].sort(),label)}
 function fileMap(value,label){assert(value&&Object.getPrototypeOf(value)===Object.prototype,label);assert(Object.keys(value).length>0,label);for(const[p,h]of Object.entries(value)){assert(/^[a-zA-Z0-9_./-]+$/.test(p)&&!p.split('/').includes('..')&&!p.startsWith('/'),label);assert(/^[a-f0-9]{64}$/.test(h),label)}}
 function cloneBytes(value){assert(value!==null&&value!==undefined,'missing source bytes');return Buffer.from(value)}
-function verifyRecord(a,current,historical){
+function verifyRecord(a,current,historical,recordDigest){
+ const complete=recordDigest==='ffe2065f84e7a9808a74f896170588b9ff5fc66973096a15a407a7cbf006808d'
  exactKeys(a,recordKeys,'closed organisation SDK source record')
  assert.equal(a.schemaVersion,'1.0');assert.equal(a.acceptanceId,'organisation-bootstrap-v1')
  assert.equal(a.taskId,'ARCH-REGISTRATION-ORGANISATION-STAGE-I-20261110')
@@ -84,7 +105,7 @@ function verifyRecord(a,current,historical){
  assert.deepEqual(a.optionalOperations,['organisation.create'])
  for(const flag of ['runtimeOptedIn','sqlInstalled','permissionsChanged','providerCallsPerformed','deploymentPerformed'])assert.equal(a[flag],false,flag)
  for(const field of ['sourceDigests','compatibilityTestSourceDigests','preservedSourceDigests'])fileMap(a[field],field)
- assert.deepEqual(Object.keys(a.compatibilityTestSourceDigests).sort(),compatibilityTests,'closed compatibility test changes')
+ assert.deepEqual(Object.keys(a.compatibilityTestSourceDigests).sort(),complete?[...compatibilityTests,...["apps/architecture-lab/private-recurring-source.mjs","apps/architecture-lab/test/private-recurring-source.test.mjs"]].sort():compatibilityTests,'closed compatibility test changes')
  for(const[p,h]of Object.entries(a.sourceDigests)){
   assert(/^packages\/platform-contracts\/(?:src\/[a-z0-9-]+\.(?:mjs|d\.mts)|migrations\/(?:access|profile)\/[a-z0-9-]+\.sql|(?:current-e1-authority\/)?[a-z0-9/.-]+|package\.json)$/.test(p)||/^packages\/platform-contracts\/(?:(?:readonly-miss-report|root-atomic-claim)\/)?README\.md$/.test(p),'SDK source path '+p)
   assert.equal(hash(current(p)),h,'current organisation SDK '+p)
@@ -92,7 +113,7 @@ function verifyRecord(a,current,historical){
  }
  for(const[p,h]of Object.entries(a.compatibilityTestSourceDigests))assert.equal(hash(current(p)),h,'current compatibility test '+p)
  for(const[p,h]of Object.entries(a.preservedSourceDigests)){
-  assert.equal(hash(current(p)),h,'preserved source '+p)
+  assert.equal(hash(current(p)),complete&&["apps/architecture-lab/private-recurring-source.mjs","apps/architecture-lab/test/private-recurring-source.test.mjs"].includes(p)?a.compatibilityTestSourceDigests[p]:h,'preserved source '+p)
   assert.equal(hash(historicalSource(historical,a.previousSourceSha,p)),h,'actual predecessor guard '+p)
  }
  exactKeys(a.consumerSourceDigests,['SG2','SRM'],'both consumer owners required')
@@ -104,9 +125,9 @@ function verifyRecord(a,current,historical){
    assert.equal(hash(current(p)),h,'current '+project+' acceptance '+p)
   }
  }
- if(reconciled)for(const[p,pin]of Object.entries(reconciledIdentitySources)){
-  assert.equal(hash(current(p)),pin.sha256,'current reviewed Identity source '+p)
-  assert.equal(hash(historicalSource(historical,pin.producerSha,p)),pin.sha256,'actual immutable Identity producer '+p)
+ if(reconciled)for(const[p,pin]of Object.entries(reconciledSourceOverlay)){
+  assert.equal(hash(current(p)),pin.sha256,'current reviewed supplemental source '+p)
+  assert.equal(hash(historicalSource(historical,pin.producerSha,p)),pin.sha256,'actual immutable supplemental producer '+p)
  }
  for(const field of ['sdkDigests','optionalPackageDigests']){assert(a[field]&&Object.keys(a[field]).length);for(const[name,digest]of Object.entries(a[field])){assert(/^[a-zA-Z][a-zA-Z0-9]+Digest$/.test(name));assert.match(digest,/^[a-f0-9]{64}$/)}}
 }
@@ -122,7 +143,7 @@ export function sdkContinuationPredecessor(receipt,current,historical,{projectKe
  assert.equal(frame.schemaVersion,'1.0');assert.equal(frame.taskId,tasks[projectKey]);assert.equal(frame.targetEnvironment,'development')
  const entry=known[frame.acceptanceId];assert(entry,'reviewed SDK continuation required')
  const recordBytes=cloneBytes(current(entry.path));assert([entry.sha256,...(entry.successorSha256s??[])].includes(hash(recordBytes)),'exact organisation SDK source acceptance')
- const record=JSON.parse(recordBytes);verifyRecord(record,current,historical)
+ const record=JSON.parse(recordBytes);verifyRecord(record,current,historical,hash(recordBytes))
  assert.equal(frame.acceptanceId,record.acceptanceId)
  const file=receiptPath(projectKey),actual=JSON.parse(current(file));assert.deepEqual(receipt,actual,'receiver metadata must be the current source view')
  const priorBytes=cloneBytes(historicalSource(historical,record.previousSourceSha,file));assert.equal(hash(priorBytes),frame.previousReceiptSha256,'immutable previous receiver bytes')
@@ -134,7 +155,7 @@ export function sdkContinuationPredecessor(receipt,current,historical,{projectKe
   sdkContinuationPredecessor(other,current,historical,{projectKey:peer,validatePeer:false})
  }
  const mapped=new Set([...Object.keys(record.sourceDigests),...Object.keys(record.compatibilityTestSourceDigests),
-  ...Object.values(record.consumerSourceDigests).flatMap(v=>Object.keys(v)),...(record.platformVersion==='1.36.0'?Object.keys(reconciledIdentitySources):[]),file,peerFile])
+  ...Object.values(record.consumerSourceDigests).flatMap(v=>Object.keys(v)),...(record.platformVersion==='1.36.0'?Object.keys(reconciledSourceOverlay):[]),file,peerFile])
  const cache=new Map([[file,priorBytes]])
  return {record,prior,previousBytes:inputPath=>{
   const path=posix.normalize(inputPath)

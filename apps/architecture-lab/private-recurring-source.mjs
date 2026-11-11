@@ -1,6 +1,7 @@
 // Source acceptance only. Never imported by an application runtime.
 // The reviewed current graph is verified before any immutable predecessor is read.
 import assert from 'node:assert/strict'
+import {sdkContinuationPredecessor} from '../../packages/platform-contracts/test/organisation-sdk-compatibility.mjs'
 import {createHash} from 'node:crypto'
 import fs from 'node:fs'
 import {execFileSync} from 'node:child_process'
@@ -14,6 +15,14 @@ const absent=error=>error?.code==='ENOENT'||error?.status===128&&["' does not ex
 export function recurringSourcePredecessor(current,historical){
  let bytes;try{bytes=current(RECURRING_SOURCE_RECORD)}catch(error){if(absent(error))return null;throw error}
  assert.equal(hash(bytes),RECORD_SHA256,'exact reviewed recurring source record')
+ // Current registration is authenticated before either historical graph is exposed.
+ // An already-layered caller has no SDK frame, so it cannot be projected twice.
+ const receipt=JSON.parse(current('apps/sg-runtime/operation-integration.json'))
+ if(receipt.sdkSourceContinuations!==undefined){
+  const sdk=sdkContinuationPredecessor(receipt,current,historical)
+  assert(sdk,'reviewed registration continuation required')
+  return recurringSourcePredecessor(sdk.previousBytes,historical)
+ }
  const a=JSON.parse(bytes)
  assert.equal(a.schemaVersion,'1.0.0');assert.equal(a.scope,'PRIVATE_RECURRING_SOURCE_ACCEPTANCE');assert.equal(a.previousSourceSha,RECURRING_SOURCE_BASE)
  assert.equal(a.platformVersion,'1.36.0');assert.equal(a.legacyImplementation,'1.0.0-candidate.16');assert.equal(a.optionalImplementation,'1.0.0-candidate.22')

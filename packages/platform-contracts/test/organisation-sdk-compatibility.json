@@ -186,7 +186,9 @@
     "apps/platform-source-hub/test/ci-routing.test.mjs": "1b810218808797528ce60dff3a79a24c9a546431322f49f5f28c7935dea9d797",
     "packages/platform-contracts/current-fresh-report/test/current-fresh-report.test.mjs": "8687139600d51ef87b553fd2461aafc5515c225ca7341229b40a03777488d4a7",
     "packages/platform-contracts/readonly-miss-report/test/readonly-miss-report.test.mjs": "c2e8f3cdd2b253d58ce2eda4971d3beb1e46e7e54b61da2b905978d42c996b18",
-    "packages/platform-contracts/test/private-operation-host.test.mjs": "604a1459b33a8b45ec76f3af21974459d481bc48197f9894b2d203553f62b287"
+    "packages/platform-contracts/test/private-operation-host.test.mjs": "604a1459b33a8b45ec76f3af21974459d481bc48197f9894b2d203553f62b287",
+    "apps/architecture-lab/private-recurring-source.mjs": "ad0aa73142c9fa6f7f672bc2eddcec26b05b1e103bc7197beae1628bc19a768e",
+    "apps/architecture-lab/test/private-recurring-source.test.mjs": "3007ae603e789b53ca2a33456dcefce3746a1956ae636a7dac83f77cb14a06da"
   },
   "sdkDigests": {
     "accessSchemaDigest": "356463492c3304ca11fa533f6e99f1d41628a3ab830488142c6030fb9a920ff2",
