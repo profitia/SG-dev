@@ -1,10 +1,12 @@
 """Synthetic reference files, no provider calls or customer material.
 
-Usage: python generate.py [output-directory] [--legacy-office]
-CI additionally uses LibreOffice to produce and round-trip real DOC/PPT files.
+Usage: python generate.py [output-directory] [--legacy-office | --verified-legacy]
+LibreOffice regeneration performs a real round-trip. Normal CI reuses those
+verified binaries with provenance, content and hash checks, without claiming
+that it performed another Office conversion.
 """
 from pathlib import Path
-import io, json, sys, subprocess, hashlib, tempfile
+import io, json, sys, subprocess, hashlib, tempfile, zipfile
 from reportlab.pdfgen import canvas
 from docx import Document
 from pptx import Presentation
@@ -51,6 +53,9 @@ assert 'PK_LAST_PAGE_MARKER_100' in long.pages[99].extract_text()
 assert not PdfReader(out/'scanned-table.pdf').pages[0].extract_text().strip()
 assert marker in '\n'.join(p.text for p in Document(out/'reference.docx').paragraphs)
 assert marker in '\n'.join(s.text for s in Presentation(out/'reference.pptx').slides[0].shapes if s.has_text_frame)
+assert not ('--legacy-office' in sys.argv and '--verified-legacy' in sys.argv), 'Choose one legacy fixture mode'
+legacy_reference_verified=False
+legacy_provenance=None
 if '--legacy-office' in sys.argv:
     with tempfile.TemporaryDirectory(prefix='pk-office-') as tmp:
         profile=Path(tmp)/'profile'
@@ -63,5 +68,27 @@ if '--legacy-office' in sys.argv:
             office('--convert-to','pdf','--outdir',tmp,str(out/name))
             extracted='\n'.join(p.extract_text() for p in PdfReader(Path(tmp)/'reference.pdf').pages)
             assert '30190000-7' in extracted and '12' in extracted
+elif '--verified-legacy' in sys.argv:
+    legacy=Path(__file__).parent/'legacy-office'
+    legacy_provenance=json.loads((legacy/'provenance.json').read_text())
+    assert legacy_provenance['roundTripVerified'] is True
+    assert set(legacy_provenance['files'])=={'reference.doc','reference.ppt'}
+    # A changed source document must regenerate the Office references; a valid
+    # old binary alone does not prove that it represents the current content.
+    for name,digest in legacy_provenance['sourceFiles'].items():
+        assert hashlib.sha256((out/name).read_bytes()).hexdigest()==digest, 'Legacy fixture source changed: '+name
+    for name,members in legacy_provenance['sourceXml'].items():
+        with zipfile.ZipFile(out/name) as archive:
+            for member,digest in members.items():
+                assert hashlib.sha256(archive.read(member)).hexdigest()==digest, 'Legacy Office content changed: '+name+'/'+member
+    for name,digest in legacy_provenance['files'].items():
+        content=(legacy/name).read_bytes()
+        assert content[:8]==bytes.fromhex('d0cf11e0a1b11ae1'), 'Invalid Office reference: '+name
+        assert hashlib.sha256(content).hexdigest()==digest, 'Legacy fixture hash mismatch: '+name
+        (out/name).write_bytes(content)
+    legacy_reference_verified=True
+if '--legacy-office' in sys.argv or legacy_reference_verified:
     (out/'reference.markdown').write_text((out/'reference.md').read_text(),encoding='utf-8')
-print(json.dumps({'status':'PASS','synthetic':True,'legacyOfficeVerified':'--legacy-office' in sys.argv,'files':{p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(out.iterdir()) if p.is_file()}},indent=2))
+print(json.dumps({'status':'PASS','synthetic':True,'legacyOfficeVerified':'--legacy-office' in sys.argv,
+    'legacyReferenceVerified':legacy_reference_verified,'legacyReferenceRun':legacy_provenance['runId'] if legacy_provenance else None,
+    'files':{p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(out.iterdir()) if p.is_file()}},indent=2))

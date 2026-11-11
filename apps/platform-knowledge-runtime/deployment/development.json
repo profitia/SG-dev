@@ -21,7 +21,9 @@
     "healthCheckPath": "/health/live",
     "instances": 1,
     "plan": "starter",
-    "dockerCommand": "node src/main.mjs"
+    "dockerCommand": "node src/main.mjs",
+    "id": "srv-dbq6n2m7bikc73dmvs8g",
+    "url": "https://platform-knowledge-development-api.onrender.com"
   },
   "worker": {
     "name": "platform-knowledge-development-worker",
@@ -29,15 +31,24 @@
     "instances": 1,
     "plan": "standard",
     "concurrency": 1,
-    "dockerCommand": "node src/worker.mjs"
+    "dockerCommand": "node src/worker.mjs",
+    "id": "srv-dbq6njec6qcc738fjf50"
   },
   "firstRelease": {
     "previousArtifact": null,
     "previousLkg": "NONE_FIRST_DEPLOYMENT",
-    "stopProcedure": "Suspend only these two new services; preserve Neon schema and private bucket; no global database restore or destructive rollback."
+    "stopProcedure": "Suspend only these two new services; preserve Neon schema and private bucket; no global database restore or destructive rollback.",
+    "sourceCommit": "1fef8b3837c1bdd6ea9ff95dd4e976cc71cf9526"
   },
   "runtime": "docker",
   "dockerfilePath": "./apps/platform-knowledge-runtime/Dockerfile",
   "dockerContext": ".",
-  "baseImage": "node:24.15.0-bookworm-slim@sha256:4e6b70dd6cbfc88c8157ba19aa3d9f9cce6ba4703576d55459e45efcbc9c5f5d"
+  "baseImage": "node:24.15.0-bookworm-slim@sha256:4e6b70dd6cbfc88c8157ba19aa3d9f9cce6ba4703576d55459e45efcbc9c5f5d",
+  "renderProjectId": "prj-dbq52nbl550s739jii6g",
+  "renderEnvironmentId": "evm-dbq534rl550s739jjma0",
+  "githubEnvironmentId": 26951998632,
+  "storageSigningRegion": "eu-central-1",
+  "storageForcePathStyle": true,
+  "sentryProject": "profitia/platform-knowledge",
+  "sentryProjectId": "4512413142810704"
 }
