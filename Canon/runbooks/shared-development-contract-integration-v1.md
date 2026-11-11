@@ -555,3 +555,30 @@ OWNER_APPROVED / REQUIRED_CI_PENDING. PR988 and its initial41-file decision rema
 The new48-file source review, its exact input commits and all eleven metadata/test replacements or additions are in [the concrete reconciliation review](../evidence/2026-11-11-registration-sdk-ci-reconciliation-review.md). Main refresh may retain only identical reviewed source versions. The trusted checker reads regular files and immutable Git receipts, validates the full pinned source graph and selects the already reviewed default Root16 digest; it never imports candidate JavaScript before credentials are removed. No generic path or credential scope is opened.
 
 The owner explicitly answered “Zatwierdzam poprawkę z PR #990” in the implementation chat, approving document ca497603e534d5928801c2e26201f2eb2be6ae4f and its exact48-file manifest. This exact new decision resolves the earlier automatic rejection; no rejected operation was executed or bypassed. Activation still requires all mandatory policy/source/main checks. Preserve separate owner inputs; no producer-first merge or runtime installation, grant, provider, invitation or deployment follows.
+
+
+## Stage I SDK CI — owner-approved complete59 successor (2026-11-11)
+
+OWNER_APPROVED / REQUIRED_CI_PENDING. The owner explicitly approved PR1003,
+document6964cad150b8151df929de21f85ba27a14afdcfb, with the exact59-path manifest
+and source-record digest in [the complete review](../evidence/2026-11-11-registration-sdk-ci-complete-review.md).
+Preserve the initial41 and previous48 manifests and all separately accepted
+Platform Knowledge rules. The closed59 successor pins28 Architecture,17 SG2
+and14 SRM paths; it does not admit a generic application directory.
+
+The trusted controller binds record020b9db676804688ce1758865084d2af02c42af169ede00c265432422e4d993e
+to predecessorb2fccbb8b9132a63c2c39507a1ebc838cf6228e1. Earlier pinned records
+retain their original predecessor. Verify all155 production SDK sources, all
+compatibility and receiver maps, regular-file modes, historical receipts and
+default Root16 provenance before credentials; never import candidate JavaScript
+during that verification. Preserve private-package pins, ignore-scripts,
+credential removal, repository/author/main-only and exact-head fences.
+
+Admit this bounded four-file policy only after all required policy checks.
+Refresh the jointly reviewed source onto resulting main with every exact59
+entry unchanged; fast-forward existing PR983 without a producer-first merge.
+Require full controlled/public source tests, SQL fixture tests, typecheck/build,
+required SOURCE GO and resulting-main proof before calling source adoption
+complete. This decision grants no product SQL installation, runtime opt-in,
+organisation/package entitlement, invitation, paid provider call or deployment.
+Continue the parent Stage I implementation after the bounded CI task closes.
