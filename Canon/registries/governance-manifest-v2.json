@@ -1,6 +1,6 @@
 {
   "schemaVersion": "2.0",
-  "manifestVersion": "3.46.0",
+  "manifestVersion": "3.47.0",
   "owner": "Profitia Governance",
   "entrypoint": "AGENTS.md",
   "preflight": "scripts/governance/governance-preflight.mjs",
@@ -1405,6 +1405,33 @@
         "operation-context-and-access-contract",
         "shared-development-contract-integration",
         "platform-source-hub-universal-first-party-consumer-access"
+      ]
+    },
+    {
+      "id": "platform-knowledge-business-and-architecture-canon",
+      "version": "1.0",
+      "path": "Canon/v1.0-platform-knowledge-business-and-architecture-canon.md",
+      "status": "ACTIVE",
+      "loadOrder": 540,
+      "owner": "Architecture Platform",
+      "appliesTo": [
+        "SG2",
+        "SRM",
+        "ARCHITECTURE"
+      ],
+      "dependsOn": [
+        "repository-routing",
+        "architecture-baseline",
+        "architecture-execution-adapter",
+        "spendguru-srm-target-architecture-canon",
+        "operation-context-and-access-contract",
+        "operation-access-matrix",
+        "identity-runtime-architecture-and-ownership",
+        "platform-appshell-business-and-architecture-canon",
+        "profitia-package-and-limits-management",
+        "platform-source-hub-business-and-architecture-canon",
+        "shared-development-contract-integration",
+        "architecture-reporting-runbook"
       ]
     }
   ]
