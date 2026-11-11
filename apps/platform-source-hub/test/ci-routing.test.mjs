@@ -19,7 +19,7 @@ function recurringReviewBase(){
  for(let i=0;i<64;i++){
   try{git(['cat-file','-e',base+':apps/architecture-lab/private-recurring-source.json'])}
   catch(error){
-   const missing=String(error.stderr??'').includes("path 'apps/architecture-lab/private-recurring-source.json' does not exist in ")
+   const missing=[" does not exist in "," exists on disk, but not in "].some(part=>String(error.stderr??'').includes("path 'apps/architecture-lab/private-recurring-source.json'"+part))
    if(error.status===128&&missing)return base
    throw error
   }
