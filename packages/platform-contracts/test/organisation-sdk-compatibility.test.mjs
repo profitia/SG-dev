@@ -11,6 +11,40 @@ const hash=b=>createHash('sha256').update(b).digest('hex')
 const sourcePath='packages/platform-contracts/test/organisation-sdk-compatibility.json'
 const receiptPath=p=>'apps/'+(p==='SG2'?'sg-runtime':'srm')+'/operation-integration.json'
 const receipt=(p,read=current)=>JSON.parse(read(receiptPath(p)))
+const identitySources={
+  "apps/identity-runtime/src/organisation-onboarding.ts": {
+    "sha256": "2bd52ce90cbb522cf465298228524ba7f51e87646e3dcbcbbd8ae49a2203ad53",
+    "producerSha": "5a963f313317d57e1946e1d7aabd28192db9c7bd"
+  },
+  "apps/identity-runtime/test/organisation-onboarding.test.mjs": {
+    "sha256": "8e63ae4b5b21724f13fa29659f546424804bf63e2ea0568a238a26f365506e8b",
+    "producerSha": "5a963f313317d57e1946e1d7aabd28192db9c7bd"
+  },
+  "apps/identity-runtime/src/organisation-draft.ts": {
+    "sha256": "bba7165ae3bbd799778312722725e888b7a33347918f393618c67ca4026b3a4f",
+    "producerSha": "6dd651bee360d80a644f7526cf1397f60a0db461"
+  },
+  "apps/identity-runtime/src/main.ts": {
+    "sha256": "5396d018303d3356c73523ee4edfc06ab8725d29c42125c7c8e60087e4345fd4",
+    "producerSha": "6dd651bee360d80a644f7526cf1397f60a0db461"
+  },
+  "apps/identity-runtime/src/http-handler.ts": {
+    "sha256": "362687ff03605bc908443992844f887aba69d7e263383f2f38893bbb2fca3ca0",
+    "producerSha": "6dd651bee360d80a644f7526cf1397f60a0db461"
+  },
+  "apps/identity-runtime/test/organisation-draft.test.mjs": {
+    "sha256": "128683cefed1ba9ee0dadf271a66320678a2d5babbb4f69c794e8b643a1c0328",
+    "producerSha": "6dd651bee360d80a644f7526cf1397f60a0db461"
+  },
+  "apps/identity-runtime/README.md": {
+    "sha256": "f5b66a9294e6c74d2973911779e1ac9b7a3bd898ccd330581885e05e081aa30b",
+    "producerSha": "6dd651bee360d80a644f7526cf1397f60a0db461"
+  },
+  "Canon/evidence/2026-11-11-registration-native-draft-http.md": {
+    "sha256": "9baa883a9af8beb2e658a351ce022c57fa8c869f126e35e0da95b4400c626c7a",
+    "producerSha": "6dd651bee360d80a644f7526cf1397f60a0db461"
+  }
+}
 test('current165-file producer and both receivers precede accepted recurring main',()=>{
  const record=JSON.parse(current(sourcePath))
  assert.equal(record.platformVersion,'1.36.0');assert.equal(Object.keys(record.sourceDigests).length,165)
@@ -23,6 +57,12 @@ test('current165-file producer and both receivers precede accepted recurring mai
   assert.deepEqual(value.prior,JSON.parse(historical(record.previousSourceSha,receiptPath(projectKey))))
   for(const p of ['packages/platform-contracts/src/operation-context.mjs','packages/platform-contracts/package.json','apps/sg-runtime/tests/operation-context.test.mjs','apps/srm/scripts/operation-context.test.mjs'])
    assert.deepEqual(value.previousBytes(p),historical(record.previousSourceSha,p))
+  for(const p of Object.keys(identitySources)){
+   let prior;try{prior=historical(record.previousSourceSha,p)}catch{
+    assert.throws(()=>value.previousBytes(p),'new source absent from actual predecessor: '+p);continue
+   }
+   assert.deepEqual(value.previousBytes(p),prior,'actual Identity predecessor: '+p)
+  }
   assert.equal(hash(value.previousBytes('apps/architecture-lab/private-recurring-source.json')),'75877d5750e07d1c8172be0af76bc5933f2eeefc22cc39747a2621b9cab24619')
   assert.throws(()=>value.previousBytes('../outside'))
  }
@@ -30,7 +70,7 @@ test('current165-file producer and both receivers precede accepted recurring mai
 })
 test('every physical SDK, recurring guard, receiver and compatibility file remains authenticated',()=>{
  const record=JSON.parse(current(sourcePath))
- const targets=[...Object.keys(record.sourceDigests),...Object.keys(record.compatibilityTestSourceDigests),...Object.keys(record.preservedSourceDigests),...Object.values(record.consumerSourceDigests).flatMap(Object.keys)]
+ const targets=[...Object.keys(record.sourceDigests),...Object.keys(record.compatibilityTestSourceDigests),...Object.keys(record.preservedSourceDigests),...Object.values(record.consumerSourceDigests).flatMap(Object.keys),...Object.keys(identitySources)]
  for(const target of targets){
   const changed=p=>p===target?Buffer.concat([current(p),Buffer.from('\nUNREVIEWED')]):current(p)
   assert.throws(()=>sdkContinuationPredecessor(receipt('SG2'),changed,historical),target)
@@ -62,4 +102,11 @@ test('original020 and approved25fea retain their actual immutable full source gr
  const restored=Buffer.from(source.replace(next,before));assert.equal(hash(restored),original.consumerSourceDigests.SG2[name])
  const view=p=>p===sourcePath?bytes:p===name?restored:old(p)
  for(const projectKey of ['SG2','SRM'])assert.deepEqual(sdkContinuationPredecessor(receipt(projectKey,view),view,historical,{projectKey}).record,original)
+})
+
+test('every immutable Identity producer is authenticated before exposing historical sources',()=>{
+ for(const [target,pin]of Object.entries(identitySources)){
+  const forged=(sha,p)=>sha===pin.producerSha&&p===target?Buffer.concat([historical(sha,p),Buffer.from('\nFORGED')]):historical(sha,p)
+  assert.throws(()=>sdkContinuationPredecessor(receipt('SG2'),current,forged),/actual immutable Identity producer/,'immutable Identity source '+target)
+ }
 })

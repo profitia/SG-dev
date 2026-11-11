@@ -22,6 +22,42 @@ const tasks={SG2:'SG2-REGISTRATION-ORGANISATION-HANDOFF-STAGE-I-20261110',SRM:'S
 const known=Object.freeze({
  'organisation-bootstrap-v1':Object.freeze({path:'packages/platform-contracts/test/organisation-sdk-compatibility.json',sha256:'020b9db676804688ce1758865084d2af02c42af169ede00c265432422e4d993e',successorSha256s:Object.freeze(['25fea141baf42c154f64a256d40808d548562c010e3f2fd3143657f24b15295c','ccf680f0a83b61f3944dd2823259e9487ddae5c2a7707b8d05e793241c4aae40'])})
 })
+// Already reviewed Identity source bytes are verified before exposing0775.
+// These pins add no runtime authority and apply only to reconciled1.36 history.
+const reconciledIdentitySources=Object.freeze({
+  "apps/identity-runtime/src/organisation-onboarding.ts": {
+    "sha256": "2bd52ce90cbb522cf465298228524ba7f51e87646e3dcbcbbd8ae49a2203ad53",
+    "producerSha": "5a963f313317d57e1946e1d7aabd28192db9c7bd"
+  },
+  "apps/identity-runtime/test/organisation-onboarding.test.mjs": {
+    "sha256": "8e63ae4b5b21724f13fa29659f546424804bf63e2ea0568a238a26f365506e8b",
+    "producerSha": "5a963f313317d57e1946e1d7aabd28192db9c7bd"
+  },
+  "apps/identity-runtime/src/organisation-draft.ts": {
+    "sha256": "bba7165ae3bbd799778312722725e888b7a33347918f393618c67ca4026b3a4f",
+    "producerSha": "6dd651bee360d80a644f7526cf1397f60a0db461"
+  },
+  "apps/identity-runtime/src/main.ts": {
+    "sha256": "5396d018303d3356c73523ee4edfc06ab8725d29c42125c7c8e60087e4345fd4",
+    "producerSha": "6dd651bee360d80a644f7526cf1397f60a0db461"
+  },
+  "apps/identity-runtime/src/http-handler.ts": {
+    "sha256": "362687ff03605bc908443992844f887aba69d7e263383f2f38893bbb2fca3ca0",
+    "producerSha": "6dd651bee360d80a644f7526cf1397f60a0db461"
+  },
+  "apps/identity-runtime/test/organisation-draft.test.mjs": {
+    "sha256": "128683cefed1ba9ee0dadf271a66320678a2d5babbb4f69c794e8b643a1c0328",
+    "producerSha": "6dd651bee360d80a644f7526cf1397f60a0db461"
+  },
+  "apps/identity-runtime/README.md": {
+    "sha256": "f5b66a9294e6c74d2973911779e1ac9b7a3bd898ccd330581885e05e081aa30b",
+    "producerSha": "6dd651bee360d80a644f7526cf1397f60a0db461"
+  },
+  "Canon/evidence/2026-11-11-registration-native-draft-http.md": {
+    "sha256": "9baa883a9af8beb2e658a351ce022c57fa8c869f126e35e0da95b4400c626c7a",
+    "producerSha": "6dd651bee360d80a644f7526cf1397f60a0db461"
+  }
+})
 const recordKeys=['schemaVersion','acceptanceId','taskId','targetEnvironment','scope','platformVersion','previousSourceSha','producer','sourceDigests','compatibilityTestSourceDigests','sdkDigests','optionalPackageDigests','consumerSourceDigests','preservedSourceDigests','defaultRootImplementation','optionalRootImplementation','optionalOperations','runtimeOptedIn','sqlInstalled','permissionsChanged','providerCallsPerformed','deploymentPerformed']
 const compatibilityTests=[
  'apps/platform-source-hub/scripts/ci-routing.mjs',
@@ -68,6 +104,10 @@ function verifyRecord(a,current,historical){
    assert.equal(hash(current(p)),h,'current '+project+' acceptance '+p)
   }
  }
+ if(reconciled)for(const[p,pin]of Object.entries(reconciledIdentitySources)){
+  assert.equal(hash(current(p)),pin.sha256,'current reviewed Identity source '+p)
+  assert.equal(hash(historicalSource(historical,pin.producerSha,p)),pin.sha256,'actual immutable Identity producer '+p)
+ }
  for(const field of ['sdkDigests','optionalPackageDigests']){assert(a[field]&&Object.keys(a[field]).length);for(const[name,digest]of Object.entries(a[field])){assert(/^[a-zA-Z][a-zA-Z0-9]+Digest$/.test(name));assert.match(digest,/^[a-f0-9]{64}$/)}}
 }
 /** Validates current producer, both receivers and unchanged guards BEFORE any
@@ -94,7 +134,7 @@ export function sdkContinuationPredecessor(receipt,current,historical,{projectKe
   sdkContinuationPredecessor(other,current,historical,{projectKey:peer,validatePeer:false})
  }
  const mapped=new Set([...Object.keys(record.sourceDigests),...Object.keys(record.compatibilityTestSourceDigests),
-  ...Object.values(record.consumerSourceDigests).flatMap(v=>Object.keys(v)),file,peerFile])
+  ...Object.values(record.consumerSourceDigests).flatMap(v=>Object.keys(v)),...(record.platformVersion==='1.36.0'?Object.keys(reconciledIdentitySources):[]),file,peerFile])
  const cache=new Map([[file,priorBytes]])
  return {record,prior,previousBytes:inputPath=>{
   const path=posix.normalize(inputPath)
