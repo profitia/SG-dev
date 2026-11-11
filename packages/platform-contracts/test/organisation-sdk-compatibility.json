@@ -248,7 +248,7 @@
       "apps/sg-runtime/tests/operation-context.test.mjs": "da92af15f4ab89b848c6dae32d796e4845c43944b527037b68404665bfe35cb1",
       "apps/sg-runtime/tests/organisation-sdk-history.test.mjs": "f72e74a31e0614129d7cf77d3f51b1d7451d5de7ea368961c9cd81b732c3327e",
       "apps/sg-runtime/tests/pci-smart-integrity.test.mjs": "8eae9b5996e69f3987ec777f553676bdcabe73535d9adb0a2032a97fb3486cfb",
-      "apps/sg-runtime/tests/private-host.integration.test.mjs": "4665c2db201f124958f48c584762e477a7ee9c6e04b05451e500a2881c036f16",
+      "apps/sg-runtime/tests/private-host.integration.test.mjs": "e0ba202290ed52bcaafd8371210e81c1acfb16f18b0ddb65b654a24a990b99f5",
       "apps/sg-runtime/tests/xray-fresh-performance-adoption.test.mjs": "69f6d36384096c5ab93dc34751841ff16b44057cc13596ac8f29e0e17bb2c0f4",
       "apps/sg-runtime/tests/xray-platform-compatibility.test.mjs": "d9602b68580641c217673d27124321ee2590d6cf77ec6f13d215467284cf3c73"
     },
