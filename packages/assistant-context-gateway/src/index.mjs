@@ -1,6 +1,7 @@
 import {createHash} from 'node:crypto'
 import {ASSISTANT_CONTEXT_CONTRACT,readChartReference,contextReferences,benchmarkSnapshotBytes,contextDate,CONTEXT_STATUSES} from '../../assistant-context-contracts/src/index.mjs'
 export {createForecastContextAdapter,createSupplierContextAdapter,createNewsfeedContextAdapter} from './multi-source.mjs'
+export {createEconomicCalendarContextAdapter,ECONOMIC_CONTEXT_ADAPTER_CONTRACT} from './economic-calendar.mjs'
 const freeze=v=>{if(v&&typeof v==='object'){Object.values(v).forEach(freeze);Object.freeze(v)}return v}
 const hash=v=>createHash('sha256').update(v).digest('hex')
 function historicalComparison(from,to){
