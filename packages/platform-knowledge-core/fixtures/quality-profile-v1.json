@@ -1,0 +1,55 @@
+{
+  "id": "pk-development-quality-v1",
+  "version": "1.0.0",
+  "fixtureRights": "AUTHOR_SYNTHETIC_TEST_ONLY",
+  "formats": [
+    "pdf-text",
+    "pdf-scan",
+    "doc",
+    "docx",
+    "ppt",
+    "pptx",
+    "txt",
+    "md",
+    "markdown"
+  ],
+  "requiredCases": [
+    "natural-discovery-no-document-id",
+    "competing-documents",
+    "multi-fragment-answer",
+    "exact-CPV-norm-number",
+    "citation-location",
+    "no-answer",
+    "contradiction-authority",
+    "private-user-isolation",
+    "organisation-constraint-after-membership-change",
+    "account-deletion-no-session",
+    "tail-without-punctuation",
+    "oversized-single-sentence",
+    "100-page-end-marker",
+    "table-and-chart",
+    "lease-recovery-no-duplicate-paid-call",
+    "shadow-index-cutover"
+  ],
+  "thresholds": {
+    "sourceUnitsAccountedRatio": 1,
+    "extractedCharacterCoverageRatio": 1,
+    "unauthorizedExposures": 0,
+    "exactIdentifierRecallAt10": 1,
+    "naturalQueryRecallAt10": 0.9,
+    "citationCorrectnessRatio": 1,
+    "multiFragmentEvidenceRecallRatio": 1,
+    "noAnswerCorrectRatio": 1,
+    "unknownAnswerFabrications": 0
+  },
+  "referenceSetFrozenBeforePaidRun": true,
+  "readyRules": [
+    "no unaccounted source units",
+    "failed extraction explicitly PARTIAL",
+    "all chunk embeddings indexed",
+    "natural query smoke without document id or title",
+    "full document summary requires coverage manifest"
+  ],
+  "status": "REFERENCE_PROFILE_NOT_ENGINE_PASS",
+  "legacyFixtures": "Generated and checked with LibreOffice in credential-free CI; CI artifact, not invented binary fixtures."
+}

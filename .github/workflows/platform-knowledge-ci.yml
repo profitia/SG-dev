@@ -1,0 +1,41 @@
+name: Platform Knowledge foundation
+on:
+  pull_request:
+    paths: ['apps/platform-knowledge-runtime/**', 'packages/platform-knowledge-contracts/**', 'packages/platform-knowledge-core/**', '.github/workflows/platform-knowledge-ci.yml']
+  push:
+    branches: [main]
+    paths: ['apps/platform-knowledge-runtime/**', 'packages/platform-knowledge-contracts/**', 'packages/platform-knowledge-core/**', '.github/workflows/platform-knowledge-ci.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  foundation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 24.15.0
+      - run: npm ci --prefix apps/platform-knowledge-runtime --ignore-scripts --no-audit --no-fund
+      - run: node --test packages/platform-knowledge-contracts/test/*.test.mjs packages/platform-knowledge-core/test/*.test.mjs apps/platform-knowledge-runtime/test/*.test.mjs
+      - run: npm run build --prefix apps/platform-knowledge-runtime
+      - name: Generate and verify actual reference formats including legacy office
+        env:
+          FIXTURE_OUTPUT: ${{ runner.temp }}/pk-quality-fixtures
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends libreoffice-writer libreoffice-impress
+          python3 -m venv "$RUNNER_TEMP/pk-fixture-tools"
+          "$RUNNER_TEMP/pk-fixture-tools/bin/pip" install --disable-pip-version-check -r packages/platform-knowledge-core/fixtures/requirements.txt
+          "$RUNNER_TEMP/pk-fixture-tools/bin/python" packages/platform-knowledge-core/fixtures/generate.py "$FIXTURE_OUTPUT" --legacy-office > "$RUNNER_TEMP/pk-fixtures-proof.json"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: pk-quality-reference-fixtures
+          path: |
+            ${{ runner.temp }}/pk-quality-fixtures
+            ${{ runner.temp }}/pk-fixtures-proof.json
+          retention-days: 30
+          if-no-files-found: error

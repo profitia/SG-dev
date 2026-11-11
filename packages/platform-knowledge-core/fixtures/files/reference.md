@@ -1,0 +1,8 @@
+# Delivery standard
+PK_REFERENCE CPV 30190000-7 ISO 9001:2015 DELIVERY 12 DAYS
+Commission A evaluates delivery. Reference brochure proposes 5 days.
+
+| Supplier | Days |
+|---|---|
+| Alpha | 12 |
+| Beta | 18 |
