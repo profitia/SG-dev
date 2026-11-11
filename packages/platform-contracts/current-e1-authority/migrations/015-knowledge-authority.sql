@@ -68,7 +68,7 @@ DECLARE grants jsonb; organisations jsonb; u jsonb; chosen profitia_e1_authority
  SELECT coalesce(jsonb_agg(to_jsonb(m)||jsonb_build_object('organisationStatus',o.status) ORDER BY m.organisation_id),'[]') INTO organisations
  FROM profitia_access.memberships m JOIN profitia_access.organisations o USING(organisation_id) WHERE m.user_id=p_user;
  fingerprint:=encode(public.digest(convert_to(jsonb_build_object('account',u,'grants',grants,'memberships',organisations)::text,'UTF8'),'sha256'),'hex');
- RETURN jsonb_build_object('grantFingerprint',fingerprint,'grantExpiresAt',chosen.expires_at,
+ RETURN jsonb_build_object('grantFingerprint',fingerprint,'delegationFingerprint',encode(public.digest(convert_to(jsonb_build_object('account',u,'grant',to_jsonb(chosen))::text,'UTF8'),'sha256'),'hex'),'grantExpiresAt',chosen.expires_at,
   'principal',jsonb_build_object('environment','development','internalUserId',p_user,'organisationIds',
    (SELECT coalesce(jsonb_agg(m.organisation_id ORDER BY m.organisation_id),'[]') FROM profitia_access.memberships m JOIN profitia_access.organisations o USING(organisation_id)
     WHERE m.user_id=p_user AND m.status='ACTIVE' AND m.expires_at>clock_timestamp() AND o.status='ACTIVE'),
@@ -98,7 +98,8 @@ DECLARE r jsonb; e profitia_access.external_identities%ROWTYPE; u profitia_acces
   st:=profitia_e1_authority.knowledge_state(u.user_id,s,p_request->>'operation');IF st IS NULL THEN RETURN NULL;END IF;
   IF principal IS NULL THEN principal:=st->'principal';grant_fp:=st->>'grantFingerprint';ELSE
    principal:=principal||jsonb_build_object('sharedKnowledgeAllowed',(principal->>'sharedKnowledgeAllowed')::boolean OR(st->'principal'->>'sharedKnowledgeAllowed')::boolean,
-    'operator',(principal->>'operator')::boolean OR(st->'principal'->>'operator')::boolean);
+    'operator',(principal->>'operator')::boolean OR(st->'principal'->>'operator')::boolean,
+    'usePurpose',CASE WHEN principal->>'usePurpose'='PROFITIA_INTERNAL' OR st->'principal'->>'usePurpose'='PROFITIA_INTERNAL' THEN 'PROFITIA_INTERNAL' ELSE 'CUSTOMER_SERVICE' END);
   END IF;
   expiry:=least(expiry,(st->>'grantExpiresAt')::timestamptz);
  END LOOP;
@@ -110,7 +111,7 @@ DECLARE r jsonb; e profitia_access.external_identities%ROWTYPE; u profitia_acces
    OR(d->>'scope'='ACCOUNT_PRIVATE' AND d->>'ownerUserId' IS NOT NULL AND d->>'ownerUserId' IS DISTINCT FROM u.user_id::text)
    OR(d->>'scope'='PROFITIA_SHARED' AND d->>'ownerUserId' IS NOT NULL) THEN RETURN NULL;END IF;
   INSERT INTO profitia_e1_authority.knowledge_delegations(delegation_id,job_id,source_id,generation_id,user_id,issuer,subject,scope,rights_digest,source_version,maximum_microusd,grant_fingerprint,status,created_at,expires_at)
-   VALUES(gen_random_uuid(),(d->>'jobId')::uuid,(d->>'sourceId')::uuid,(d->>'generationId')::uuid,u.user_id,e.issuer,e.subject,d->>'scope',d->>'rightsDigest',1,(d->>'maximumMicrousd')::bigint,grant_fp,'ACTIVE',started_at,
+   VALUES(gen_random_uuid(),(d->>'jobId')::uuid,(d->>'sourceId')::uuid,(d->>'generationId')::uuid,u.user_id,e.issuer,e.subject,d->>'scope',d->>'rightsDigest',1,(d->>'maximumMicrousd')::bigint,st->>'delegationFingerprint','ACTIVE',started_at,
     least((st->>'grantExpiresAt')::timestamptz,started_at+interval '30 minutes')) ON CONFLICT(job_id) DO NOTHING;
   SELECT jsonb_build_object('delegationId',delegation_id,'jobId',job_id,'sourceId',source_id,'generationId',generation_id,'rightsDigest',rights_digest,'expiresAt',expires_at)
    INTO delegated FROM profitia_e1_authority.knowledge_delegations WHERE job_id=(d->>'jobId')::uuid AND source_id=(d->>'sourceId')::uuid AND generation_id=(d->>'generationId')::uuid AND user_id=u.user_id AND status='ACTIVE';
@@ -125,17 +126,17 @@ LANGUAGE sql SECURITY DEFINER SET search_path=pg_catalog AS $$
  SELECT jsonb_build_object('environment','development','issuer',d.issuer,'subject',d.subject)
  FROM profitia_e1_authority.knowledge_delegations d WHERE d.job_id=p_job AND d.delegation_id=p_delegation AND d.status='ACTIVE' AND d.expires_at>clock_timestamp()
  AND profitia_e1_authority.knowledge_receiver(p_role)->>'kind'='WORKER' $$;
-CREATE FUNCTION profitia_e1_authority.knowledge_job_issue(p_role text,p_job uuid,p_delegation uuid,p_nonce text,p_observation jsonb) RETURNS jsonb
+CREATE FUNCTION profitia_e1_authority.knowledge_job_issue(p_role text,p_job uuid,p_delegation uuid,p_nonce text,p_observation jsonb,p_require_external boolean) RETURNS jsonb
 LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
 DECLARE r jsonb; d profitia_e1_authority.knowledge_delegations%ROWTYPE; st jsonb; BEGIN
  r:=profitia_e1_authority.knowledge_receiver(p_role);IF r IS NULL OR r->>'kind'<>'WORKER' OR p_nonce!~'^[a-f0-9]{64}$' THEN RETURN NULL;END IF;
  SELECT * INTO d FROM profitia_e1_authority.knowledge_delegations WHERE delegation_id=p_delegation AND job_id=p_job AND status='ACTIVE' AND expires_at>clock_timestamp();
  IF NOT FOUND THEN RETURN NULL;END IF;
  st:=profitia_e1_authority.knowledge_state(d.user_id,d.scope,'document.import');
- IF st IS NULL OR st->>'grantFingerprint' IS DISTINCT FROM d.grant_fingerprint OR p_observation->>'status'<>'ACTIVE'
+ IF st IS NULL OR st->>'delegationFingerprint' IS DISTINCT FROM d.grant_fingerprint OR(p_require_external AND(p_observation->>'status'<>'ACTIVE'
  OR p_observation->>'issuer' IS DISTINCT FROM d.issuer OR p_observation->>'subject' IS DISTINCT FROM d.subject OR p_observation->>'environment'<>'development'
  OR NOT coalesce((p_observation->>'observedAt')::timestamptz<=clock_timestamp() AND(p_observation->>'expiresAt')::timestamptz>clock_timestamp()
- AND(p_observation->>'expiresAt')::timestamptz<=(p_observation->>'observedAt')::timestamptz+interval '5 seconds',false) THEN RETURN NULL;END IF;
+ AND(p_observation->>'expiresAt')::timestamptz<=(p_observation->>'observedAt')::timestamptz+interval '5 seconds',false))) THEN RETURN NULL;END IF;
  IF NOT EXISTS(SELECT 1 FROM profitia_access.external_identities WHERE issuer=d.issuer AND subject=d.subject AND user_id=d.user_id AND status='ACTIVE' AND expires_at>clock_timestamp()) THEN RETURN NULL;END IF;
  RETURN jsonb_build_object('contract','profitia.current-e1-knowledge/1.0.0','nonce',p_nonce,'binding',r->'binding','principal',(st->'principal')||jsonb_build_object('allowedScopes',jsonb_build_array(d.scope)),
  'grantFingerprint',st->>'grantFingerprint','expiresAt',least(d.expires_at,clock_timestamp()+interval '15 seconds'),
@@ -144,7 +145,7 @@ END $$;
 REVOKE ALL ON profitia_e1_authority.knowledge_receivers,profitia_e1_authority.knowledge_grants,profitia_e1_authority.knowledge_delegations FROM PUBLIC;
 REVOKE ALL ON FUNCTION profitia_e1_authority.knowledge_receiver(text),profitia_e1_authority.knowledge_ready(),profitia_e1_authority.knowledge_state(uuid,text,text),
  profitia_e1_authority.knowledge_human_issue(text,jsonb,jsonb,jsonb),profitia_e1_authority.knowledge_job_identity(text,uuid,uuid),
- profitia_e1_authority.knowledge_job_issue(text,uuid,uuid,text,jsonb) FROM PUBLIC;
+ profitia_e1_authority.knowledge_job_issue(text,uuid,uuid,text,jsonb,boolean) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION profitia_e1_authority.knowledge_receiver(text),profitia_e1_authority.knowledge_ready(),
  profitia_e1_authority.knowledge_human_issue(text,jsonb,jsonb,jsonb),profitia_e1_authority.knowledge_job_identity(text,uuid,uuid),
- profitia_e1_authority.knowledge_job_issue(text,uuid,uuid,text,jsonb) TO identity_b1_runtime;
+ profitia_e1_authority.knowledge_job_issue(text,uuid,uuid,text,jsonb,boolean) TO identity_b1_runtime;

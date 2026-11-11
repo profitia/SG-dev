@@ -15,6 +15,6 @@ export function fuseCandidates({semantic=[],lexical=[],exact=[]},{limit=40}={}){
 }
 
 export function queryIdentifiers(text){
- if(typeof text!=='string'||text.length>12000)throw TypeError('INVALID_QUERY_TEXT');
+ if(typeof text!=='string'||text.length>64000)throw TypeError('INVALID_QUERY_TEXT');
  return [...new Set([...(text.match(/\b\d{8}-\d\b/g)??[]),...(text.match(/\b(?:ISO|EN|IEC|DIN|PN)(?:[\s/-]+(?:ISO|EN|IEC))?[\s-]+\d+(?::\d{2,4})?/gi)??[])].map(s=>s.normalize('NFKC').toUpperCase().replace(/\s+/g,' ')))];
 }

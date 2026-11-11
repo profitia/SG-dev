@@ -138,8 +138,8 @@ export function createLibrary({pool,storage,createDelegation}){
     await db.query('UPDATE platform_knowledge.sources SET published_at=clock_timestamp(),published_by=$2,authority=$3,status=$4,revision=revision+1 WHERE id=$1',[
      sourceId,scope.principal.internalUserId,authority,authority==='HISTORICAL'?'HISTORICAL':'CURRENT']);
     await audit(db,{sourceId,operation:'SOURCE_PUBLISHED',actorRef:scope.principal.internalUserId,outcome:'COMPLETED'});return{sourceId,status:'PUBLISHED'};
-   },scope.principal);
+   },scope.principal,scope.transaction??null);
   },
-  async revoke(sourceId,deleted,scope){return transaction(pool,db=>revokeSource(db,{sourceId,deleted,actorRef:scope.principal.internalUserId}),scope.principal);}
+  async revoke(sourceId,deleted,scope){return transaction(pool,db=>revokeSource(db,{sourceId,deleted,actorRef:scope.principal.internalUserId}),scope.principal,scope.transaction??null);}
  };
 }

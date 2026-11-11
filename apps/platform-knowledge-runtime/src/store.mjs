@@ -1,16 +1,16 @@
 import {randomUUID,createHash} from 'node:crypto';
 export const digest=v=>createHash('sha256').update(typeof v==='string'||Buffer.isBuffer(v)?v:JSON.stringify(v)).digest('hex');
 export class Fault extends Error{constructor(status,code){super(code);this.status=status;this.code=code;}}
-export async function transaction(pool,action,principal=null){
- const db=await pool.connect();
+export async function transaction(pool,action,principal=null,existing=null){
+ const db=existing??await pool.connect();
  try{
-  await db.query("BEGIN; SET LOCAL statement_timeout='10000ms'; SET LOCAL lock_timeout='2000ms'; SET LOCAL idle_in_transaction_session_timeout='15000ms'");
+  if(!existing)await db.query("BEGIN; SET LOCAL statement_timeout='10000ms'; SET LOCAL lock_timeout='2000ms'; SET LOCAL idle_in_transaction_session_timeout='15000ms'");
   if(principal)await db.query(`SELECT set_config('pk.user_id',$1,true),set_config('pk.organisation_ids',$2,true),set_config('pk.allowed_scopes',$6,true),
    set_config('pk.shared_read',$3,true),set_config('pk.operator',$4,true),set_config('pk.purpose',$5,true)`,[
     principal.internalUserId??'',JSON.stringify(principal.organisationIds??[]),String(principal.sharedKnowledgeAllowed===true),
     String(principal.operator===true),principal.usePurpose??'CUSTOMER_SERVICE',JSON.stringify(principal.allowedScopes??[])]);
-  const result=await action(db);await db.query('COMMIT');return result;
- }catch(error){await db.query('ROLLBACK').catch(()=>{});throw error;}finally{db.release();}
+  const result=await action(db);if(!existing)await db.query('COMMIT');return result;
+ }catch(error){if(!existing)await db.query('ROLLBACK').catch(()=>{});throw error;}finally{if(!existing)db.release();}
 }
 export async function audit(db,{sourceId=null,jobId=null,operation,actorRef,outcome,technical={}}){
  // Fixed operation codes and numeric/boolean diagnostics only: no document text.

@@ -4,14 +4,21 @@ import {queryIdentifiers} from '@profitia/platform-knowledge-core/ranking';
 import {extractDocument,PARSER_VERSION} from './extraction.mjs';
 import {embeddingTokens} from './provider.mjs';
 import {withJob,checkpoint} from './jobs.mjs';
-import {Fault,audit} from './store.mjs';
+import {Fault,audit,digest} from './store.mjs';
 
 export async function processJob({pool,storage,provider,authorizeJob,job,signal}){
  // Resume/recovery obtains a fresh bounded service delegation from the existing
  // authority. A serialized user id in a queue is never treated as permission.
  const scope=await authorizeJob(job);
  let source=await withJob(pool,job,async db=>(await db.query('SELECT * FROM platform_knowledge.sources WHERE id=$1',[job.source_id])).rows[0]);
- if(!source.rights.externalAiAllowed)throw new Fault(403,'RIGHTS_DENIED');
+ const checkRights=principal=>{
+  if(!source.rights.externalAiAllowed||source.source_version!==1||digest(source.rights)!==job.delegation.rightsDigest
+   ||source.owner_organisation_id!==null||!principal.allowedScopes.includes(source.scope)
+   ||source.scope==='ACCOUNT_PRIVATE'&&source.owner_user_id!==principal.internalUserId
+   ||source.scope==='PROFITIA_SHARED'&&!principal.operator
+   ||source.rights.organisationConstraintId!==null&&!principal.organisationIds.includes(source.rights.organisationConstraintId)
+   ||source.rights.purpose==='PROFITIA_INTERNAL'&&principal.usePurpose!=='PROFITIA_INTERNAL')throw new Fault(403,'RIGHTS_DENIED');
+ };checkRights(scope.principal);
  let chunks=await withJob(pool,job,async db=>(await db.query('SELECT * FROM platform_knowledge.chunks WHERE generation_id=$1 ORDER BY ordinal',[job.generation_id])).rows);
  if(!chunks.length){
   if(!source.raw_key||source.raw_deleted_at||source.raw_expires_at<=new Date())throw new Fault(409,'REUPLOAD_REQUIRED');
@@ -41,6 +48,29 @@ export async function processJob({pool,storage,provider,authorizeJob,job,signal}
   await withJob(pool,job,db=>db.query(`INSERT INTO platform_knowledge.cognition(generation_id,ordinal,chunk_ids,analysis,complete)
    VALUES($1,$2,$3,$4,true) ON CONFLICT(generation_id,ordinal) DO NOTHING`,[job.generation_id,ordinal,batch.map(c=>c.id),JSON.stringify(analysis)]));
  }
+ // Every cognitive part participates in a durable synthesis tree. Generated
+ // summaries supplement the original representation; they never replace it.
+ let parts=await withJob(pool,job,async db=>(await db.query('SELECT * FROM platform_knowledge.cognition WHERE generation_id=$1 AND ordinal>=0 AND ordinal<1000000 ORDER BY ordinal',[job.generation_id])).rows);
+ const originalEvidence=usable.map(c=>({id:c.id,text:c.text_content}));let level=0;
+ while(parts.length>1){
+  const next=[];
+  for(let index=0;index<parts.length;index+=2){
+   const batch=parts.slice(index,index+2);if(batch.length===1){next.push(batch[0]);continue;}
+   const ordinal=1000000+level*10000+index/2;
+   let node=await withJob(pool,job,async db=>(await db.query('SELECT * FROM platform_knowledge.cognition WHERE generation_id=$1 AND ordinal=$2',[job.generation_id,ordinal])).rows[0]);
+   if(!node){
+    const input=batch.map((part,i)=>({id:'section-'+i,text:'GENERATED PRIOR SYNTHESIS:\n'+part.analysis.summary+'\n'+part.analysis.statements.map(s=>'ORIGINAL_CHUNK_ID '+s.chunkId+'\nORIGINAL_EVIDENCE:\n'+s.quote).join('\n\n')}));
+    const analysis=await provider.analyze({sourceId:source.id,generationId:job.generation_id,chunks:input,sourceEvidence:originalEvidence,summaryMode:true,
+     key:'synthesis-'+ordinal,scope,signal});
+    node={ordinal,chunk_ids:[...new Set(batch.flatMap(p=>p.chunk_ids))],analysis};
+    await withJob(pool,job,db=>db.query('INSERT INTO platform_knowledge.cognition(generation_id,ordinal,chunk_ids,analysis,complete) VALUES($1,$2,$3,$4,true)',[
+     job.generation_id,ordinal,node.chunk_ids,JSON.stringify(analysis)]));
+   }next.push(node);
+  }parts=next;level++;
+ }
+ if(parts.length!==1)throw new Fault(422,'COGNITIVE_COVERAGE_FAILED');
+ await withJob(pool,job,db=>db.query(`INSERT INTO platform_knowledge.cognition(generation_id,ordinal,chunk_ids,analysis,complete) VALUES($1,-1,$2,$3,true)
+  ON CONFLICT(generation_id,ordinal) DO NOTHING`,[job.generation_id,parts[0].chunk_ids,JSON.stringify(parts[0].analysis)]));
  await checkpoint(pool,job,'EMBEDDING',{cognitiveComplete:true});
  for(let index=0;index<usable.length;index+=16){
   signal?.throwIfAborted();
@@ -51,6 +81,7 @@ export async function processJob({pool,storage,provider,authorizeJob,job,signal}
   await withJob(pool,job,async db=>{for(let i=0;i<batch.length;i++)await db.query('UPDATE platform_knowledge.chunks SET embedding=$2::public.vector WHERE id=$1',[batch[i].id,JSON.stringify(vectors[i])]);});
  }
  await checkpoint(pool,job,'VERIFY',{embeddingComplete:true});
+ const finalScope=await authorizeJob(job);checkRights(finalScope.principal);
  // Full round-trip, independent source inventory, complete cognition/embedding
  // coverage and searchable lexical rows are required before any cutover.
  await withJob(pool,job,async db=>{
@@ -58,10 +89,10 @@ export async function processJob({pool,storage,provider,authorizeJob,job,signal}
   const stored=(await db.query('SELECT * FROM platform_knowledge.chunks WHERE generation_id=$1 ORDER BY ordinal',[job.generation_id])).rows;
   reconstructSource(stored.map(c=>({start:c.start_offset,end:c.end_offset,text:c.text_content,sha256:c.sha256})),generation.source_digest);
   const evidenceRows=stored.filter(c=>c.text_content.trim()&&c.locations.length);
-  const cognitive=(await db.query('SELECT * FROM platform_knowledge.cognition WHERE generation_id=$1 AND complete=true',[job.generation_id])).rows;
+  const cognitive=(await db.query('SELECT * FROM platform_knowledge.cognition WHERE generation_id=$1 AND ordinal>=0 AND ordinal<1000000 AND complete=true',[job.generation_id])).rows;
   const covered=new Set(cognitive.flatMap(c=>c.chunk_ids));
   if(generation.coverage.expectedUnits!==generation.coverage.accountedUnits||generation.coverage.chunkedCharacters!==generation.coverage.extractedCharacters
-    ||evidenceRows.some(c=>!c.embedding||!covered.has(c.id))||!evidenceRows.length)throw new Fault(422,'GENERATION_VALIDATION_FAILED');
+    ||cognitive.length!==Math.ceil(evidenceRows.length/4)||evidenceRows.some(c=>!c.embedding||!covered.has(c.id))||!evidenceRows.length)throw new Fault(422,'GENERATION_VALIDATION_FAILED');
   const searchable=(await db.query("SELECT count(*)::integer AS n FROM platform_knowledge.chunks WHERE generation_id=$1 AND embedding IS NOT NULL AND length(search_text)>0",[job.generation_id])).rows[0].n;
   if(!searchable)throw new Fault(422,'GENERATION_NOT_SEARCHABLE');
   const partial=generation.coverage.failedUnitIds.length>0;

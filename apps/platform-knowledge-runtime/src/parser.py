@@ -1,4 +1,4 @@
-import json, os, re, subprocess, sys, zipfile
+import json, os, re, subprocess, sys, zipfile, time, posixpath, contextlib
 from pathlib import Path
 import xml.etree.ElementTree as ET
 import pymupdf
@@ -33,14 +33,16 @@ def zip_safe(path):
         if i.filename.startswith('/') or '..' in Path(i.filename).parts or re.search(r'vbaproject|activex|embeddings/|customui/',i.filename,re.I):
             raise ValueError('UNSAFE_DOCUMENT')
         if i.filename.endswith('.rels'):
-            if any(e.get('TargetMode')=='External' for e in xml(z.read(i.filename))):
+            if any(e.get('TargetMode')=='External' and re.search(r'vba|activex|oleobject|attachedtemplate',e.get('Type',''),re.I) for e in xml(z.read(i.filename))):
                 raise ValueError('UNSAFE_DOCUMENT')
     return z
 
 def text_nodes(e):
     out=[]
     for n in e.iter():
-        if n.tag.endswith('}t'): out.append(n.text or '')
+        if n.tag.endswith('}p') and out and not out[-1].endswith('\n'):out.append('\n')
+        elif n.tag.endswith('}delText'):out.append('[DELETED_TEXT]'+(n.text or '')+'[/DELETED_TEXT]')
+        elif n.tag.endswith('}t'): out.append(n.text or '')
         elif n.tag.endswith('}tab'): out.append('\t')
         elif n.tag.endswith('}br'): out.append('\n')
     return ''.join(out)
@@ -58,18 +60,20 @@ def word(path, derived=False):
             if child.tag.endswith('}sectPr'): continue
             inventory.append(('TABLE' if child.tag.endswith('}tbl') else 'PARAGRAPH',child))
         for name in sorted(z.namelist()):
-            if re.match(r'word/(header\d+|footer\d+|footnotes|endnotes)\.xml$',name):
+            if re.match(r'word/(header\d+|footer\d+|footnotes|endnotes|comments)\.xml$',name):
                 inventory.append(('PARAGRAPH',xml(z.read(name))))
         result=[]
         for index,(kind,e) in enumerate(inventory,1):
             if kind=='TABLE':
                 rows=e.findall('w:tr',NS)
-                content='\n'.join(' | '.join(text_nodes(c) for c in row.findall('w:tc',NS)) for row in rows)
+                content='[TABLE: JSON ROWS]\n'+'\n'.join(json.dumps([text_nodes(c) for c in row.findall('w:tc',NS)],ensure_ascii=False) for row in rows)
             else: content=text_nodes(e)
             drawings=len(e.findall('.//w:drawing',NS))+len(e.findall('.//w:object',NS))
-            partial=derived or drawings>0
+            tracked=bool(e.findall('.//w:ins',NS)) or bool(e.findall('.//w:del',NS))
+            merged=bool(e.findall('.//w:gridSpan',NS)) or bool(e.findall('.//w:vMerge',NS))
+            partial=derived or drawings>0 or tracked or merged
             result.append(unit(kind,index,content,'PARTIAL' if partial else 'COMPLETE',
-                'LEGACY_DERIVED_STRUCTURE' if derived else ('VISUAL_CONTENT_NOT_INTERPRETED' if drawings else None),derived))
+                'LEGACY_DERIVED_STRUCTURE' if derived else ('TRACKED_CHANGES' if tracked else ('COMPLEX_TABLE_STRUCTURE' if merged else ('VISUAL_CONTENT_NOT_INTERPRETED' if drawings else None))),derived))
         return result, {'nativeUnits':len(inventory),'nativeLocation':'DOCUMENT_BLOCK','legacyDerived':derived}
 
 def slides(path, derived=False):
@@ -82,18 +86,38 @@ def slides(path, derived=False):
         for index,entry in enumerate(ids,1):
             rel=entry.get('{http://schemas.openxmlformats.org/officeDocument/2006/relationships}id')
             target=rels.get(rel,'')
-            name=('ppt/'+target).replace('/./','/') if not target.startswith('/') else target[1:]
-            if '..' in Path(name).parts or name not in z.namelist():
+            name=posixpath.normpath('ppt/'+target) if not target.startswith('/') else target[1:]
+            if not name.startswith('ppt/slides/') or name not in z.namelist():
                 result.append(unit('SLIDE',index,'','FAILED','MISSING_SLIDE'));continue
             slide=xml(z.read(name))
-            paragraphs=[''.join(t.text or '' for t in p.findall('.//a:t',NS)) for p in slide.findall('.//a:p',NS)]
-            content='\n'.join(paragraphs)
-            visual=bool(slide.findall('.//p:pic',NS)) or any(e.tag.endswith('}graphicData') and 'chart' in (e.get('uri') or '') for e in slide.iter())
-            note='ppt/notesSlides/notesSlide'+re.search(r'(\d+)\.xml$',name).group(1)+'.xml'
-            if note in z.namelist():
-                notes=xml(z.read(note));content+='\n[NOTES]\n'+'\n'.join(text_nodes(p) for p in notes.findall('.//a:p',NS))
-            result.append(unit('SLIDE',index,content,'PARTIAL' if derived or visual else 'COMPLETE',
-                'LEGACY_DERIVED_STRUCTURE' if derived else ('VISUAL_CONTENT_NOT_INTERPRETED' if visual else None),derived))
+            content=[];shapes=[]
+            def walk_shapes(parent):
+                for child in parent:
+                    if child.tag=='{'+NS['p']+'}grpSp':walk_shapes(child)
+                    else:shapes.append(child)
+            shape_tree=slide.find('p:cSld/p:spTree',NS)
+            if shape_tree is not None:walk_shapes(shape_tree)
+            for shape in shapes:
+                table=shape.find('.//a:tbl',NS)
+                if table is not None:
+                    content.append('[TABLE: JSON ROWS]\n'+'\n'.join(json.dumps([text_nodes(cell) for cell in row.findall('a:tc',NS)],ensure_ascii=False) for row in table.findall('a:tr',NS)))
+                else:
+                    content.extend(text_nodes(p) for p in shape.findall('.//a:p',NS))
+            content='\n'.join(content)
+            visual=bool(slide.findall('.//p:pic',NS)) or bool(slide.findall('.//p:contentPart',NS)) or any(e.tag.endswith('}graphicData') and 'chart' in (e.get('uri') or '') for e in slide.iter())
+            merged=any(any(c.get(k) not in [None,'0','1','false'] for k in ['gridSpan','rowSpan']) or c.get('hMerge') in ['1','true'] or c.get('vMerge') in ['1','true'] for c in slide.findall('.//a:tc',NS))
+            # Notes numbering need not equal slide numbering. Resolve the actual
+            # internal relationship; never silently drop notes on reordered slides.
+            rel_name=posixpath.dirname(name)+'/_rels/'+posixpath.basename(name)+'.rels'
+            notes_missing=False
+            if rel_name in z.namelist():
+                for relationship in xml(z.read(rel_name)):
+                    if relationship.get('Type','').endswith('/notesSlide'):
+                        note=posixpath.normpath(posixpath.join(posixpath.dirname(name),relationship.get('Target','')))
+                        if not note.startswith('ppt/notesSlides/') or note not in z.namelist():notes_missing=True;continue
+                        notes=xml(z.read(note));content+='\n[NOTES]\n'+'\n'.join(text_nodes(p) for p in notes.findall('.//a:p',NS))
+            result.append(unit('SLIDE',index,content,'PARTIAL' if derived or visual or notes_missing or merged else 'COMPLETE',
+                'LEGACY_DERIVED_STRUCTURE' if derived else ('NOTES_MISSING' if notes_missing else ('COMPLEX_TABLE_STRUCTURE' if merged else ('VISUAL_CONTENT_NOT_INTERPRETED' if visual else None))),derived))
         return result, {'nativeUnits':len(ids),'nativeLocation':'SLIDE','legacyDerived':derived}
 
 def pdf(path, job):
@@ -102,8 +126,10 @@ def pdf(path, job):
     for xref in range(1,doc.xref_length()):
         data=doc.xref_object(xref,compressed=True)
         if re.search(r'/(JavaScript|JS|Launch|RichMedia|XFA)\b',data): raise ValueError('UNSAFE_DOCUMENT')
-    count=doc.page_count;result=[]
+    count=doc.page_count;result=[];deadline=time.monotonic()+80
     for index in range(count):
+        if time.monotonic()>deadline:
+            result.append(unit('PAGE',index+1,'','FAILED','EXTRACTION_TIME_BUDGET'));continue
         page=doc.load_page(index)
         try:
             text=page.get_text(sort=True);reason=None
@@ -113,7 +139,14 @@ def pdf(path, job):
                 png=job/f'ocr-{index}.png';page.get_pixmap(matrix=pymupdf.Matrix(1.6,1.6)).save(png)
                 completed=subprocess.run(['tesseract',str(png),'stdout','-l','pol+eng','--psm','3'],capture_output=True,timeout=25,check=True)
                 text=completed.stdout.decode('utf8');reason='OCR_REQUIRES_VISUAL_FIDELITY_REVIEW'
-            elif images: reason='VISUAL_CONTENT_NOT_INTERPRETED'
+            elif images or page.get_drawings(): reason='VISUAL_CONTENT_NOT_INTERPRETED'
+            # Retain native text, then add an explicitly normalized row matrix.
+            # No cell is replaced with zero; merged/unresolved cells remain null.
+            tables=page.find_tables().tables
+            for table_index,table in enumerate(tables,1):
+                rows=table.extract()
+                text+='\n[TABLE '+str(table_index)+': NORMALIZED JSON ROWS]\n'+'\n'.join(json.dumps(row,ensure_ascii=False) for row in rows)
+                if any(cell is None for row in rows for cell in row):reason='COMPLEX_TABLE_STRUCTURE'
             result.append(unit('PAGE',index+1,text,'PARTIAL' if reason else 'COMPLETE',reason))
         except Exception:
             result.append(unit('PAGE',index+1,'','FAILED','PAGE_EXTRACTION_FAILED'))
@@ -159,7 +192,8 @@ if __name__=='__main__':
             'SAL_USE_VCLPLUGIN':'svp','OMP_THREAD_LIMIT':'1','OPENBLAS_NUM_THREADS':'1'})
         isolate(str(job))
         if not path.is_file() or not 0<path.stat().st_size<=52428800: raise ValueError('FILE_LIMIT')
-        units,inventory=extract(path,sys.argv[2].lower(),job)
+        with contextlib.redirect_stdout(sys.stderr):
+            units,inventory=extract(path,sys.argv[2].lower(),job)
         if not units or len(units)>MAX_UNITS or sum(len(u['text']) for u in units)>MAX_CHARS: raise ValueError('EXTRACTED_TEXT_LIMIT')
         print(json.dumps({'parserVersion':VERSION,'inventory':inventory,'units':units},ensure_ascii=False))
     except Exception as error:

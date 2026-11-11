@@ -7,7 +7,7 @@ if(uri){const parsed=new URL(uri);if(!['127.0.0.1','localhost','pk-postgres'].in
  pool=new pg.Pool({connectionString:uri,max:4});}
 after(async()=>pool?.end());
 const rights={classification:'UNKNOWN',purpose:'PRIVATE',organisationConstraintId:null,externalAiAllowed:true,quotingAllowed:true,apiExcerptAllowed:true};
-const principal=user=>({internalUserId:user,organisationIds:[],sharedKnowledgeAllowed:false,operator:false,usePurpose:'CUSTOMER_SERVICE'});
+const principal=user=>({internalUserId:user,organisationIds:[],allowedScopes:['ACCOUNT_PRIVATE'],sharedKnowledgeAllowed:false,operator:false,usePurpose:'CUSTOMER_SERVICE'});
 async function fixture(db,owner,changes={}){
  const id=randomUUID(),generation=randomUUID();
  await db.query(`INSERT INTO platform_knowledge.sources(id,scope,owner_user_id,uploaded_by,request_id,file_name,media_type,size_bytes,sha256,rights,expires_at,raw_expires_at)

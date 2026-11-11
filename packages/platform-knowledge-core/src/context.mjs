@@ -15,19 +15,19 @@ export function fitContext(query,evidence,{countTokens,version='0.1.0',omissions
 // The provider's authoritative tokenizer is asynchronous for models whose
 // encoding is not published locally. Count the COMPLETE envelope, including
 // metadata, rights and citation locations; never guess characters/4.
-export async function fitContextAsync(query,evidence,{countTokens,version='0.1.0',omissions=[],continuation=null}={}){
+export async function fitContextAsync(query,evidence,{countTokens,version='0.1.0',omissions=[],continuation=null,summary=null}={}){
  if(typeof countTokens!=='function')throw TypeError('TOKENIZER_REQUIRED');
- const items=[...evidence],missing=new Set(omissions);let prior=-1;
+ const items=[...evidence],missing=new Set(omissions);let prior=-1,includedSummary=summary;
  for(;;){
-  const value={version,requestId:query.requestId,status:items.length?(missing.size||items.some(e=>e.coverage!=='COMPLETE')?'PARTIAL':'READY'):'INSUFFICIENT_EVIDENCE',
-   evidence:items,usedTokens:0,tokenizerId:query.tokenizerId,targetModel:query.targetModel,omissions:[...missing],continuation};
+  const value={version,requestId:query.requestId,status:items.length?(missing.size||items.some(e=>e.coverage!=='COMPLETE')?'PARTIAL':'READY'):(includedSummary?'PARTIAL':'INSUFFICIENT_EVIDENCE'),
+   evidence:items,usedTokens:0,tokenizerId:query.tokenizerId,targetModel:query.targetModel,omissions:[...missing],continuation,...(includedSummary?{summary:includedSummary}:{})};
   for(let i=0;i<16;i++){
    const n=await countTokens(JSON.stringify(value));if(!Number.isSafeInteger(n)||n<0)throw TypeError('INVALID_TOKEN_COUNT');
    if(n===value.usedTokens){if(n<=query.maxTokens)return value;break;}
    value.usedTokens=n;
    if(i===15)throw Error('TOKEN_COUNT_NOT_STABLE');
   }
-  if(!items.length)throw RangeError('CONTEXT_BUDGET_TOO_SMALL');
+  if(!items.length){if(includedSummary){includedSummary=null;missing.add('BUDGET');missing.add('SUMMARY_INCOMPLETE');continue;}throw RangeError('CONTEXT_BUDGET_TOO_SMALL');}
   // Remove batches proportionally to measured overflow, then recount. Whole
   // chunks remain literal; a large evidence item is never cut mid-citation.
   const overflow=Math.max(1,value.usedTokens-query.maxTokens),average=Math.max(1,value.usedTokens/items.length);

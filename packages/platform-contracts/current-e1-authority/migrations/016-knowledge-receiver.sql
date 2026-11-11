@@ -9,7 +9,7 @@ CREATE TABLE platform_knowledge.authority_bindings(
  status text NOT NULL CHECK(status IN ('ACTIVE','REVOKED')), expires_at timestamptz NOT NULL,
  CHECK(binding->>'environment'='development' AND binding->>'projectId'='sparkling-sky-79692560'
  AND binding->>'branchId'='br-billowing-grass-b9ko5s4f' AND binding->>'databaseName'='platform_knowledge'
- AND binding->>'role'=login_role::text)
+ AND binding->>'role'=login_role::text AND binding->>'knowledgeSchemaDigest'~'^[a-f0-9]{64}$')
 );
 ALTER TABLE platform_knowledge.authority_bindings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE platform_knowledge.authority_bindings FORCE ROW LEVEL SECURITY;

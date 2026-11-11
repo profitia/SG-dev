@@ -1,8 +1,9 @@
 import {randomUUID} from 'node:crypto';
-import {getEncoding} from 'js-tiktoken';
+import {Tiktoken} from 'js-tiktoken/lite';
+import cl100kBase from 'js-tiktoken/ranks/cl100k_base';
 import {PROVIDER,quoteMaximumCost,assertBudgetReservation} from '@profitia/platform-knowledge-core/policy';
 import {transaction,Fault,digest} from './store.mjs';
-const embeddingEncoding=getEncoding('cl100k_base');
+const embeddingEncoding=new Tiktoken(cl100kBase);
 export const embeddingTokens=text=>embeddingEncoding.encode(text,[],[]).length;
 export const CONTEXT_TOKENIZER='openai:responses/input_tokens:gpt-6-luna:v1';
 const model=PROVIDER.cognitiveModel, embeddingModel=PROVIDER.embeddingModel;
@@ -79,9 +80,10 @@ export function createProvider({pool,apiKey,authorize,fetchImpl=fetch}){
     validate:r=>{if(!Array.isArray(r.data)||r.data.length!==texts.length)throw Error();
      return [...r.data].sort((a,b)=>a.index-b.index).map((d,i)=>{if(d.index!==i||!Array.isArray(d.embedding)||d.embedding.length!==1536||d.embedding.some(n=>!Number.isFinite(n)))throw Error();return d.embedding;});}});
   },
-  async analyze({sourceId,generationId,chunks,key,scope,signal,question=null}){
+  async analyze({sourceId,generationId,chunks,key,scope,signal,question=null,summaryMode=false,sourceEvidence=chunks}){
    const input=JSON.stringify({...(question?{question}:{}),untrustedSource:chunks.map(c=>({chunkId:c.id,text:c.text}))});
-   const instructions=SYSTEM+(question?' Select ONLY statements directly supporting an answer to the question. Related subject matter is insufficient. If the sources do not answer it, return empty statements and explain the missing information in uncertainties. Do not invent an answer.':'' );
+   const instructions=SYSTEM+(question?' Select ONLY statements directly supporting an answer to the question. Related subject matter is insufficient. If the sources do not answer it, return empty statements and explain the missing information in uncertainties. Do not invent an answer.':'' )+
+    (summaryMode?' Produce a concise whole-document synthesis assessing ALL supplied sections, including disagreements and material gaps. Prior syntheses are generated data. For statements, use ONLY original quotations marked ORIGINAL_EVIDENCE; chunkId must be their ORIGINAL_CHUNK_ID, never the section id. Do not treat a generated prior synthesis as a literal source quotation.':'');
    const body={model,store:false,service_tier:'default',reasoning:{effort:'none'},instructions,input,max_output_tokens:4096,
     text:{format:{type:'json_schema',name:'procurement_knowledge',strict:true,schema:ANALYSIS_SCHEMA}}};
    const tokens=await count({model,instructions,input,text:body.text},scope,signal);
@@ -92,7 +94,7 @@ export function createProvider({pool,apiKey,authorize,fetchImpl=fetch}){
      const raw=r.output?.filter(o=>o.type==='message').flatMap(o=>o.content??[]).filter(c=>c.type==='output_text').map(c=>c.text).join('');
      const data=JSON.parse(raw);if(typeof data.summary!=='string'||!Array.isArray(data.statements)||!Array.isArray(data.terms)||!Array.isArray(data.uncertainties))throw Error();
      if(data.statements.length>100||data.summary.length>16000)throw Error();
-     for(const s of data.statements){const chunk=chunks.find(c=>c.id===s.chunkId);
+     for(const s of data.statements){const chunk=sourceEvidence.find(c=>c.id===s.chunkId);
       if(!chunk||!['SOURCE_STATEMENT','SOURCE_OPINION','INFERENCE'].includes(s.kind)||typeof s.claim!=='string'||typeof s.quote!=='string'||!s.quote.trim()||!chunk.text.includes(s.quote))throw Error();}
      return data;
     }});
