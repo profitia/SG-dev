@@ -1,3 +1,4 @@
+import { createOrganisationDraftSurface, readOrganisationDraftOptIn, type OrganisationDraftSurface } from './organisation-draft.js'
 import { createRegistrationStore, registrationSchemaDigest, type RegistrationStore } from './registration-store.js'
 import { createRegistrationProvider } from './registration-provider.js'
 import { createRegistrationSurface, type RegistrationSurface } from './registration.js'
@@ -36,6 +37,8 @@ let registration: RegistrationSurface | null = null
 let registrationStore: RegistrationStore | null = null
 let embedded: ReturnType<typeof createEmbeddedAccountHandler> | null = null
 let currentE1:CurrentE1Authority|null=null
+let organisationDraft:OrganisationDraftSurface|null=null
+const organisationDraftSchema = readOrganisationDraftOptIn(process.env)
 if (process.env.IDENTITY_CURRENT_E1_ENABLED !== undefined && !['true','false'].includes(process.env.IDENTITY_CURRENT_E1_ENABLED)) throw Error('INVALID_CURRENT_E1_FLAG')
 if (process.env.IDENTITY_CURRENT_E1_ENABLED==='true' && process.env.IDENTITY_RUNTIME_ENABLED!=='true') throw Error('CURRENT_E1_RUNTIME_REQUIRED')
 const embeddedInput: unknown = JSON.parse(process.env.IDENTITY_EMBEDDED_TARGETS ?? '[]')
@@ -127,6 +130,12 @@ if (process.env.IDENTITY_RUNTIME_ENABLED === 'true') {
       transact: accountTransactions(pool), independentQuery: (sql, values) => pool!.query(sql, values as unknown[]),
       deploymentId: process.env.RENDER_GIT_COMMIT ?? 'local-development', configurationVersion: createHash('sha256').update(JSON.stringify(config)).digest('hex') })
     await language.ready()
+    if (organisationDraftSchema !== null) {
+      organisationDraft = createOrganisationDraftSurface({configuration:config,client,binding,schemaDigest:digest!,proofKey:Buffer.from(key!,'hex'),
+        onboardingSchemaDigest:organisationDraftSchema,transact:accountTransactions(pool),independentQuery:(sql,values)=>pool!.query(sql,values as unknown[]),
+        deploymentId:process.env.RENDER_GIT_COMMIT ?? 'local-development',configurationVersion:createHash('sha256').update(JSON.stringify(config)).digest('hex')})
+      await organisationDraft.ready()
+    }
     const consumers = new Map<string, EmbeddedAccountSurface>()
     for (const targetId of embeddedTargets(config, embeddedInput)) {
       if (!registration || !registrationStore) throw Error('EMBEDDED_REGISTRATION_REQUIRED')
@@ -141,7 +150,7 @@ if (process.env.IDENTITY_RUNTIME_ENABLED === 'true') {
     embedded = createEmbeddedAccountHandler(config, consumers)
   }
 }
-const server = createNodeServer(origin, createHttpHandler(boundary, account, avatar, email, language, registration, embedded, salutation,currentE1), email !== null); server.listen(port, process.env.HOST ?? '127.0.0.1', () => console.log('identity-runtime started; live readiness requires verified provider and authority'))
+const server = createNodeServer(origin, createHttpHandler(boundary, account, avatar, email, language, registration, embedded, salutation,currentE1,organisationDraft), email !== null); server.listen(port, process.env.HOST ?? '127.0.0.1', () => console.log('identity-runtime started; live readiness requires verified provider and authority'))
 let shuttingDown = false
 for (const signal of ['SIGINT','SIGTERM']) process.once(signal, () => {
   if (shuttingDown) return
