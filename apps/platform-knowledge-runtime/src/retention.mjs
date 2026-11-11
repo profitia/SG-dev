@@ -39,10 +39,14 @@ export async function runRetention({pool,storage}){
   AND(raw_expires_at<=clock_timestamp() OR deleted_at IS NOT NULL) ORDER BY raw_expires_at LIMIT 20`)).rows;
  for(const source of raw){await storage.remove(source.raw_key);await pool.query('UPDATE platform_knowledge.sources SET raw_deleted_at=clock_timestamp() WHERE id=$1',[source.id]);}
  await transaction(pool,async db=>{
+  await db.query(`UPDATE platform_knowledge.jobs SET status='FAILED',error_code='JOB_DEADLINE_OR_ATTEMPTS',finished_at=clock_timestamp(),fence=fence+1,lease_until=NULL
+   WHERE status IN ('QUEUED','RUNNING','RETRY_WAIT') AND deadline_at<=clock_timestamp()`);
   await db.query(`UPDATE platform_knowledge.sources SET deleted_at=clock_timestamp(),revoked_at=coalesce(revoked_at,clock_timestamp()),revision=revision+1
    WHERE expires_at<=clock_timestamp() AND deleted_at IS NULL`);
   await db.query(`UPDATE platform_knowledge.jobs SET status='REVOKED',fence=fence+1,lease_until=NULL WHERE status IN ('QUEUED','RUNNING','RETRY_WAIT')
    AND source_id IN(SELECT id FROM platform_knowledge.sources WHERE deleted_at IS NOT NULL OR revoked_at IS NOT NULL)`);
+  await db.query("UPDATE platform_knowledge.provider_calls SET state='UNKNOWN' WHERE state='RESERVED' AND created_at<clock_timestamp()-interval '5 minutes'");
+  await db.query("UPDATE platform_knowledge.provider_calls SET result=NULL WHERE generation_id IS NULL AND result IS NOT NULL AND created_at<clock_timestamp()-interval '24 hours'");
   // Keep only finite non-content technical audit. Unknown paid outcomes retain
   // their financial reservation; deleting text must not reset the spend budget.
   const sources=(await db.query('SELECT id FROM platform_knowledge.sources WHERE deleted_at IS NOT NULL AND(raw_key IS NULL OR raw_deleted_at IS NOT NULL) FOR UPDATE SKIP LOCKED LIMIT 20')).rows;

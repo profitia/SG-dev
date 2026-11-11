@@ -132,6 +132,41 @@
           "type": "string",
           "minLength": 1,
           "maxLength": 200
+        },
+        "filters": {
+          "type": "object",
+          "additionalProperties": false,
+          "maxProperties": 4,
+          "properties": {
+            "domain": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            },
+            "materialType": {
+              "enum": [
+                "BOOK",
+                "STANDARD",
+                "REPORT",
+                "PRESENTATION",
+                "NOTE",
+                "OTHER"
+              ]
+            },
+            "language": {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 32
+            },
+            "authority": {
+              "enum": [
+                "BINDING_STANDARD",
+                "REFERENCE",
+                "HISTORICAL",
+                "UNKNOWN"
+              ]
+            }
+          }
         }
       }
     },
@@ -270,6 +305,28 @@
             "null"
           ],
           "format": "date-time"
+        },
+        "sourceTitle": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "publishedAt": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date"
+        },
+        "language": {
+          "type": "string",
+          "maxLength": 32
+        },
+        "status": {
+          "enum": [
+            "CURRENT",
+            "REFERENCE",
+            "HISTORICAL"
+          ]
         }
       }
     },
@@ -820,6 +877,26 @@
           "format": "date-time"
         }
       }
+    },
+    "PublishCommand": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "acknowledgePartial": {
+          "type": "boolean"
+        },
+        "authority": {
+          "enum": [
+            "REFERENCE",
+            "HISTORICAL",
+            "BINDING_STANDARD"
+          ]
+        }
+      },
+      "required": [
+        "acknowledgePartial",
+        "authority"
+      ]
     }
   }
 }

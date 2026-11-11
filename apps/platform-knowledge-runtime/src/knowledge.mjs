@@ -16,14 +16,18 @@ export async function queryKnowledge({pool,provider,query,scope}){
  // exact candidate formation or any model call. No global top-k then filter.
  const sources=await transaction(pool,async db=>(await db.query(`SELECT s.*,g.coverage,g.inventory FROM platform_knowledge.sources s
   JOIN platform_knowledge.generations g ON g.id=s.active_generation_id AND g.state='ACTIVE'
-  WHERE s.scope=ANY($1::text[]) AND($2::uuid[] IS NULL OR s.id=ANY($2::uuid[]))`,[query.scopes,query.documentIds??null])).rows,principal);
+  WHERE s.scope=ANY($1::text[]) AND($2::uuid[] IS NULL OR s.id=ANY($2::uuid[]))
+  AND($3::jsonb IS NULL OR(NOT $3::jsonb ? 'domain' OR s.metadata->>'domain'=$3::jsonb->>'domain')
+   AND(NOT $3::jsonb ? 'materialType' OR s.metadata->>'materialType'=$3::jsonb->>'materialType')
+   AND(NOT $3::jsonb ? 'language' OR s.metadata->>'language'=$3::jsonb->>'language')
+   AND(NOT $3::jsonb ? 'authority' OR s.authority=$3::jsonb->>'authority'))`,[query.scopes,query.documentIds??null,query.filters??null])).rows,principal);
  const allowed=sources.filter(s=>eligibleSource(sourceFromRow(s),principal,'apiExcerpt')&&eligibleSource(sourceFromRow(s),principal,'quote')
   &&s.rights.externalAiAllowed===true);
  let evidence=[],summary=null;const omissions=[];
  if(sources.length>allowed.length)omissions.push('RIGHTS');
  const makeEvidence=(row,source,rank)=>({evidenceId:row.id,sourceId:source.id,documentId:source.id,generationId:row.generation_id,sourceVersion:String(source.source_version),
   text:row.text_content,scope:source.scope,locations:row.locations,rights:source.rights,coverage:source.coverage.failedUnitIds.length?'PARTIAL':'COMPLETE',
-  authority:source.authority,rank,validUntil:source.expires_at?.toISOString()??null});
+  authority:source.authority,...(query.version==='0.2.0'?{sourceTitle:source.metadata.title??source.file_name,publishedAt:source.metadata.publishedAt??null,language:source.metadata.language??'und',status:source.status}:{}),rank,validUntil:source.expires_at?.toISOString()??null});
  if(allowed.length&&query.task==='DOCUMENT_SUMMARY'){
   const source=allowed[0];
   const content=await transaction(pool,async db=>{
@@ -49,7 +53,8 @@ export async function queryKnowledge({pool,provider,query,scope}){
     ORDER BY lexical_score DESC,id LIMIT 40`,[generations,query.query])).rows;
    const exact=identifiers.length?(await db.query(`SELECT id,generation_id FROM platform_knowledge.chunks
     WHERE generation_id=ANY($1::uuid[]) AND identifiers && $2::text[] ORDER BY id LIMIT 40`,[generations,identifiers])).rows:[];
-   const fused=fuseCandidates({semantic,lexical,exact},{limit:24});
+   const rankAuthority=list=>list.map(c=>({...c,authorityRank:({BINDING_STANDARD:3,REFERENCE:2,HISTORICAL:1,UNKNOWN:0})[allowed.find(s=>s.active_generation_id===c.generation_id)?.authority]??0}));
+   const fused=fuseCandidates({semantic:rankAuthority(semantic),lexical:rankAuthority(lexical),exact:rankAuthority(exact)},{limit:24});
    const items=(await db.query('SELECT * FROM platform_knowledge.chunks WHERE id=ANY($1::uuid[])',[fused.map(c=>c.id)])).rows;
    return fused.map(c=>({...items.find(i=>i.id===c.id),rank:c.score}));
   },principal);
@@ -83,7 +88,7 @@ export async function queryKnowledge({pool,provider,query,scope}){
   // never become apparently usable context. It cannot run document commands.
   if(evidence.length){
    const supported=await provider.analyze({sourceId:allowed[0].id,generationId:null,
-    chunks:evidence.map(e=>({id:e.evidenceId,text:e.text})),question:query.query,
+    chunks:evidence.map(e=>({id:e.evidenceId,text:e.text,authority:e.authority,publishedAt:e.publishedAt??null,status:e.status??null})),question:query.query,
     sourceRefs:evidence.map(e=>({sourceId:e.sourceId,generationId:e.generationId,requireActive:true})),
     key:'support-'+digest({requestId:query.requestId,evidence:evidence.map(e=>e.evidenceId)}),scope});
    const ids=new Set(supported.statements.filter(s=>s.kind!=='INFERENCE').map(s=>s.chunkId));

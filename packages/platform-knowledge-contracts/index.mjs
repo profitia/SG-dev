@@ -22,6 +22,8 @@ export function assertQuery(q) {
   if (q.documentIds!==undefined && (!Array.isArray(q.documentIds) || q.documentIds.length>50
     || new Set(q.documentIds).size!==q.documentIds.length
     || q.documentIds.some(id=>!text(id)||id.length>200))) fail('INVALID_DOCUMENT_IDS');
+  if(q.filters!==undefined&&(q.version!=='0.2.0'||!q.filters||Object.getPrototypeOf(q.filters)!==Object.prototype
+   ||Object.entries(q.filters).some(([k,v])=>!['domain','materialType','language','authority'].includes(k)||!text(v)||v.length>200)))fail('INVALID_METADATA_FILTERS');
   if (q.task==='DOCUMENT_SUMMARY' && q.documentIds?.length!==1) fail('SUMMARY_REQUIRES_ONE_DOCUMENT');
   if (q.task==='MEMORY_RECALL' && (q.scopes.length!==1 || q.scopes[0]!=='ACCOUNT_PRIVATE')) fail('MEMORY_IS_PRIVATE');
   return q;

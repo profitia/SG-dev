@@ -13,10 +13,12 @@ try{
  }else{
   const authority=createAuthority({config,pool:database.pool,env:process.env}),storage=createStorage(process.env);
   const provider=createProvider({pool:database.pool,apiKey:process.env.OPENAI_API_KEY,authorize:authority.authorizeProvider});
-  if(!await database.engineReady()||!await authority.ready())throw Error('ENGINE_ADMISSION_NOT_READY');
-  const workerId=randomUUID();let retentionAt=0;
+  if(!await database.engineReady())throw Error('ENGINE_ADMISSION_NOT_READY');
+  const workerId=randomUUID();let retentionAt=0,authorityNoticeAt=0;
   try{while(!shutdown.signal.aborted){
    if(Date.now()>=retentionAt){try{await runRetention({pool:database.pool,storage});}catch{telemetry.emit('RETENTION_FAILED');}retentionAt=Date.now()+60000;}
+   const waiting=(await database.pool.query("SELECT 1 FROM platform_knowledge.jobs WHERE status IN ('QUEUED','RETRY_WAIT','RUNNING') AND available_at<=clock_timestamp() AND deadline_at>clock_timestamp() LIMIT 1")).rowCount;
+   if(waiting&&!await authority.ready()){if(Date.now()>authorityNoticeAt){telemetry.emit('E1_AUTHORITY_UNAVAILABLE');authorityNoticeAt=Date.now()+300000;}await delay(10000,null,{signal:shutdown.signal}).catch(()=>{});continue;}
    const job=await claimJob(database.pool,workerId);
    if(!job){await delay(10000,null,{signal:shutdown.signal}).catch(()=>{});continue;}
    const control=new AbortController(),scopes=[];let heartbeatRunning=false;

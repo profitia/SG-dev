@@ -143,7 +143,18 @@ export function createKnowledgeOperationHost({independentQuery,application,trans
        sourceRef:'current-e1-knowledge',expiresAt:admission.expiresAt,permissions:[{operation:request.operation,feature:'platform_knowledge',resourceId:request.resourceId}],denies:[]}},
      assertKnowledgeBudget:async()=>{const b=await one(db.query.bind(db),'SELECT ceiling_microusd,spent_microusd,reserved_microusd FROM platform_knowledge.budget WHERE id=true');
       if(Number(b.ceiling_microusd)>10000000||Number(b.ceiling_microusd)<1||Number(b.spent_microusd)<0||Number(b.reserved_microusd)<0)deny();},
-     projectOutput:async value=>{if(refresh){const current=await refresh();if(current.grantFingerprint!==admission.grantFingerprint||current.principal.internalUserId!==p.internalUserId)deny();}return value;},
+     projectOutput:async value=>{if(refresh){const current=await refresh();if(current.grantFingerprint!==admission.grantFingerprint||hash(current.principal)!==hash(p))deny();}
+      if(command.operation==='document.import'&&phase==='RESULT'){
+       if(!uuid(value?.sourceId))deny();
+       const source=await one(db.query.bind(db),'SELECT scope,owner_user_id,owner_organisation_id FROM platform_knowledge.sources WHERE id=$1 FOR SHARE',[value.sourceId]);
+       if(!command.scopes.includes(source.scope)||source.owner_organisation_id!==null||source.scope==='ACCOUNT_PRIVATE'&&source.owner_user_id!==p.internalUserId||source.scope==='PROFITIA_SHARED'&&(!p.operator||source.owner_user_id!==null))deny();
+      }
+      if(command.operation==='document.query'&&phase==='RESULT'&&Array.isArray(value?.evidence)&&value.evidence.length){
+       const refs=value.evidence,rows=(await db.query(`SELECT id,active_generation_id FROM platform_knowledge.sources s WHERE id=ANY($1::uuid[])
+        AND platform_knowledge.source_visible(s) AND (scope='ACCOUNT_PRIVATE' OR published_at IS NOT NULL)
+        AND(rights->>'apiExcerptAllowed')::boolean AND(rights->>'quotingAllowed')::boolean FOR SHARE`,[[...new Set(refs.map(e=>e.sourceId))]])).rows;
+       if(refs.some(e=>!rows.some(r=>r.id===e.sourceId&&r.active_generation_id===e.generationId)))deny();
+      }return value;},
      recordOutcome:event=>writeAudit(db.query.bind(db),event)});
    })});
   let value;
@@ -169,7 +180,7 @@ export function createKnowledgeOperationHost({independentQuery,application,trans
      return await rootPhase(d,first,command,'COMMIT',db=>action(Object.freeze({...scope,transaction:db})),refresh);
     await rootPhase(d,first,command,'ADMIT');
     const value=await action(scope),current=await refresh();
-    if(current.grantFingerprint!==first.grantFingerprint)deny();
+    if(current.grantFingerprint!==first.grantFingerprint||hash(current.principal)!==hash(first.principal))deny();
     return await rootPhase(await descriptor(),current,command,'RESULT',async()=>value);
    }finally{active.delete(scope);}
   },

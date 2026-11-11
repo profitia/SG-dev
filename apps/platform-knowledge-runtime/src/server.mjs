@@ -3,7 +3,7 @@ import {randomUUID} from 'node:crypto';
 import {Fault,digest} from './store.mjs';
 import {httpContract} from '@profitia/platform-knowledge-contracts';
 import {queryKnowledge} from './knowledge.mjs';
-import {adminPage,adminScript} from './admin.mjs';
+import {adminPage,adminScript,validateSchema} from './admin.mjs';
 const UUID=/^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i;
 async function readBody(req,max){
  const declared=req.headers['content-length'];if(declared&&(!/^\d+$/.test(declared)||Number(declared)>max))throw new Fault(413,'BODY_LIMIT');
@@ -53,8 +53,10 @@ export function createServer({database,telemetry,config=null,authority=null,libr
     if(req.method==='POST'&&url.pathname==='/v1/imports'&&!url.search){
      const header=req.headers['x-pk-import'];if(typeof header!=='string'||header.length>12000||req.headers['content-type']!=='application/octet-stream')throw new Fault(422,'IMPORT_METADATA_REQUIRED');
      try{payload=JSON.parse(Buffer.from(header,'base64url').toString('utf8'));}catch{throw new Fault(422,'INVALID_IMPORT');}
-     scopes=[payload.scope];operation='document.import';resourceId=randomUUID();
-     delegation={jobId:randomUUID(),sourceId:resourceId,generationId:randomUUID(),scope:payload.scope,ownerUserId:null,
+     if(!validateSchema('Import',payload))throw new Fault(422,'INVALID_IMPORT');
+     if(uploading)throw new Fault(429,'UPLOAD_BUSY');
+     scopes=[payload.scope];operation='document.import';resourceId='library';
+     delegation={jobId:randomUUID(),sourceId:randomUUID(),generationId:randomUUID(),scope:payload.scope,ownerUserId:null,
       rightsDigest:digest(payload.rights),sourceVersion:1,maximumMicrousd:1000000};
      // The internal UserID is bound centrally, never accepted from the upload.
      // For private admission the authority fills ownerUserId from actual identity.
@@ -63,11 +65,11 @@ export function createServer({database,telemetry,config=null,authority=null,libr
     }else if(req.method==='GET'&&url.pathname==='/v1/sources'){
      operation='document.read';scopes=[selected];action=scope=>library.list(scope);
     }else if(req.method==='GET'&&url.pathname==='/v1/capabilities'){
-     operation='document.read';scopes=[selected];action=async()=>({version:'0.2.0',formats:['PDF','DOC','DOCX','PPT','PPTX','TXT','MD','MARKDOWN'],maximumBytes:52428800,maximumPdfPages:500,originalRetentionHours:24,privateKnowledgeRetentionDays:180,memory:'PREPARED_NOT_ACTIVE',queryTasks:['ANSWER','DOCUMENT_SUMMARY'],lifecycle:'POLL_CURRENT_SOURCE_STATUS',manualChunkApproval:false});
+     operation='document.read';scopes=[selected];action=async()=>({version:'0.2.0',formats:['PDF','DOC','DOCX','PPT','PPTX','TXT','MD','MARKDOWN'],maximumBytes:52428800,maximumPdfPages:500,originalRetentionHours:24,privateKnowledgeRetentionDays:180,memory:'PREPARED_NOT_ACTIVE',queryTasks:['ANSWER','DOCUMENT_SUMMARY'],contextModels:['gpt-6-luna'],lifecycle:'POLL_CURRENT_SOURCE_STATUS',manualChunkApproval:false});
     }else if(req.method==='POST'&&url.pathname==='/v1/source-statuses'){
      payload=await readJson(req);operation='document.read';scopes=[selected];action=scope=>library.statuses(payload,scope);
     }else if(req.method==='POST'&&url.pathname==='/v1/query'&&!url.search){
-     payload=await readJson(req);operation='document.query';scopes=payload.scopes;
+     payload=await readJson(req);if(!validateSchema('Query',payload))throw new Fault(422,'INVALID_QUERY');operation='document.query';scopes=payload.scopes;
      action=scope=>queryKnowledge({pool:database.pool,provider,query:payload,scope});
     }else{
      const match=url.pathname.match(/^\/v1\/sources\/([^/]+)(?:\/(publish|withdraw|reindex))?$/);
@@ -78,7 +80,7 @@ export function createServer({database,telemetry,config=null,authority=null,libr
       operation='document.import';payload={kind:'REINDEX'};delegation={jobId:randomUUID(),sourceId:resourceId,generationId:randomUUID(),scope:plan.scope,ownerUserId:null,rightsDigest:plan.rightsDigest,sourceVersion:plan.sourceVersion,maximumMicrousd:1000000};
       action=scope=>library.reindex(resourceId,scope);
      }
-     else if(req.method==='POST'&&match[2]==='publish'){payload=await readJson(req);operation='document.publish';scopes=['PROFITIA_SHARED'];action=scope=>library.publish(resourceId,payload,scope);}
+     else if(req.method==='POST'&&match[2]==='publish'){payload=await readJson(req);if(!validateSchema('PublishCommand',payload))throw new Fault(422,'INVALID_PUBLICATION');operation='document.publish';scopes=['PROFITIA_SHARED'];action=scope=>library.publish(resourceId,payload,scope);}
      else if(req.method==='POST'&&match[2]==='withdraw'){operation='document.withdraw';action=scope=>library.revoke(resourceId,false,scope);}
      else if(req.method==='DELETE'&&!match[2]){operation='document.delete';action=scope=>library.revoke(resourceId,true,scope);}
      else throw new Fault(405,'METHOD_NOT_ALLOWED');

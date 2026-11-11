@@ -15,6 +15,7 @@ export function validateUpload(input,bytes,principal){
  const extension=path.extname(input.fileName).toLowerCase();
  if(!EXTENSIONS.has(extension)||MEDIA[extension]!==input.mediaType||/[\x00-\x1f/\\]/.test(input.fileName))throw new Fault(415,'FORMAT_MISMATCH');
  const r=input.rights;
+ if(input.memoryRequested)throw new Fault(422,'MEMORY_HOST_ADOPTION_REQUIRED');
  if(!r.externalAiAllowed)throw new Fault(403,'EXTERNAL_AI_NOT_ALLOWED');
  if(input.scope==='ACCOUNT_PRIVATE'&&!principal.internalUserId)throw new Fault(403,'ACCOUNT_REQUIRED');
  if(input.scope==='PROFITIA_SHARED'&&(!principal.operator||r.classification==='UNKNOWN'||r.purpose==='PRIVATE'))throw new Fault(403,'SHARED_IMPORT_NOT_ALLOWED');
@@ -88,8 +89,8 @@ export function createLibrary({pool,storage,createDelegation}){
    validateUpload(input,bytes,scope.principal);
    const principal=scope.principal,{sourceId,generationId,jobId}=scope.delegation??{};
    if(![sourceId,generationId,jobId].every(v=>/^[a-f0-9-]{36}$/.test(v??'')))throw new Fault(403,'JOB_DELEGATION_REQUIRED');
-   const prior=await transaction(pool,async db=>(await db.query('SELECT id,sha256 FROM platform_knowledge.sources WHERE uploaded_by=$1 AND request_id=$2',[principal.internalUserId,input.requestId])).rows[0],principal);
-   if(prior){if(prior.sha256!==input.sha256)throw new Fault(409,'IMPORT_REQUEST_CONFLICT');return{sourceId:prior.id,status:'ALREADY_ACCEPTED'};}
+   const prior=await transaction(pool,async db=>(await db.query('SELECT id,sha256,import_digest,status FROM platform_knowledge.sources WHERE uploaded_by=$1 AND request_id=$2',[principal.internalUserId,input.requestId])).rows[0],principal);
+   if(prior){if(prior.sha256!==input.sha256||prior.import_digest!==digest(input))throw new Fault(409,'IMPORT_REQUEST_CONFLICT');return{sourceId:prior.id,status:'ALREADY_ACCEPTED',sourceStatus:prior.status};}
    const delegation=await createDelegation(scope,{jobId,sourceId,generationId,scope:input.scope,ownerUserId:input.scope==='ACCOUNT_PRIVATE'?principal.internalUserId:null,
     rightsDigest:digest(input.rights),sourceVersion:1,maximumMicrousd:1000000});
    const rawKey='development/'+sourceId+'/'+input.sha256;
@@ -105,10 +106,10 @@ export function createLibrary({pool,storage,createDelegation}){
     if(rightsUntil&&(!until||until>rightsUntil))until=rightsUntil;
     if(until&&until<=now)throw new Fault(422,'SOURCE_ALREADY_EXPIRED');
     await db.query(`INSERT INTO platform_knowledge.sources(id,scope,owner_user_id,uploaded_by,request_id,file_name,media_type,size_bytes,sha256,
-     rights,metadata,expires_at,rights_expires_at,raw_key,raw_expires_at,created_at)
-     VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)`,[
+     rights,metadata,expires_at,rights_expires_at,raw_key,raw_expires_at,created_at,import_digest)
+     VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)`,[
       sourceId,input.scope,input.scope==='ACCOUNT_PRIVATE'?principal.internalUserId:null,principal.internalUserId,input.requestId,input.fileName,input.mediaType,
-      input.sizeBytes,input.sha256,JSON.stringify(input.rights),JSON.stringify(metadata),until,rightsUntil,rawKey,rawUntil,now]);
+      input.sizeBytes,input.sha256,JSON.stringify(input.rights),JSON.stringify(metadata),until,rightsUntil,rawKey,rawUntil,now,digest(input)]);
     await db.query(`INSERT INTO platform_knowledge.generations(id,source_id,parser_version,chunker_version,cognitive_model,embedding_model,embedding_dimensions,config_digest)
      VALUES($1,$2,$3,$4,$5,$6,$7,$8)`,[generationId,sourceId,...Object.values(generationProfile),digest(generationProfile)]);
     await db.query(`INSERT INTO platform_knowledge.jobs(id,source_id,generation_id,kind,delegation,available_at,stage) VALUES($1,$2,$3,'IMPORT',$4,clock_timestamp()+interval '3 minutes','UPLOAD_PENDING')`,[jobId,sourceId,generationId,JSON.stringify(delegation)]);

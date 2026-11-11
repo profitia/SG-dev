@@ -7,6 +7,6 @@ export function createAuthority({config,pool,env}){
   workerCredential:config.role==='worker'?{keyId:env.PK_E1_WORKER_KEY_ID,privateKey:env.PK_E1_WORKER_PRIVATE_KEY}:null});
  return {...native,async execute(request,command,action){
   try{return await native.execute(request,command,action);}
-  catch(e){if(e.reasonCode)throw new Fault(e.reasonCode==='ACCESS_BASIS_INVALID'?403:503,e.reasonCode==='ACCESS_BASIS_INVALID'?'OPERATION_DENIED':'IDENTITY_E1_UNAVAILABLE');throw e;}
+  catch(e){if(e.reasonCode){const denied=['ACCESS_BASIS_INVALID','PERMISSION_DENIED','RESOURCE_SCOPE_MISMATCH','DELEGATION_INVALID','APPLICATION_FEATURE_UNAVAILABLE','UNVERIFIED_IDENTITY'].includes(e.reasonCode);throw new Fault(denied?403:503,denied?'OPERATION_DENIED':'IDENTITY_E1_UNAVAILABLE');}throw e;}
  }};
 }

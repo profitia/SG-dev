@@ -138,3 +138,48 @@ test('private query caches on a shared document stay user-scoped; its cost cap c
   if(source){await db.query('DELETE FROM platform_knowledge.provider_calls WHERE source_id=$1',[source.id]);await db.query('DELETE FROM platform_knowledge.generations WHERE source_id=$1',[source.id]);await db.query('DELETE FROM platform_knowledge.sources WHERE id=$1',[source.id]);}db.release();await api.end();
  }
 });
+
+test('import retry returns its original source and rejects a changed payload without another upload',{skip:!uri,timeout:10000},async()=>{
+ const {createLibrary}=await import('../src/admin.mjs');const user='99999999-9999-4999-8999-999999999999';
+ const apiUri=new URL(uri);apiUri.username='platform_knowledge_api';const api=new pg.Pool({connectionString:apiUri.href});let sourceId;
+ try{
+  let puts=0;const library=createLibrary({pool:api,storage:{put:async()=>{puts++;},remove:async()=>{}},createDelegation:async(scope)=>scope.delegation});
+  const bytes=Buffer.from('A synthetic complete upload.');const input={version:'0.2.0',requestId:randomUUID(),scope:'ACCOUNT_PRIVATE',fileName:'retry.txt',mediaType:'text/plain',sizeBytes:bytes.length,sha256:digest(bytes),memoryRequested:false,rights};
+  const scope=()=>({principal:principal(user),delegation:{sourceId:randomUUID(),generationId:randomUUID(),jobId:randomUUID(),rightsDigest:digest(rights)}});
+  const first=await library.import(input,bytes,scope());sourceId=first.sourceId;
+  const second=await library.import(input,bytes,scope());assert.equal(second.sourceId,first.sourceId);assert.equal(second.status,'ALREADY_ACCEPTED');assert.equal(puts,1);
+  await assert.rejects(library.import({...input,rights:{...rights,quotingAllowed:false}},bytes,scope()),/IMPORT_REQUEST_CONFLICT/);assert.equal(puts,1);
+  const db=await pool.connect();try{assert.equal((await db.query('SELECT id FROM platform_knowledge.jobs WHERE source_id=$1',[sourceId])).rowCount,1);}finally{db.release();}
+ }finally{
+  if(sourceId){await pool.query('DELETE FROM platform_knowledge.jobs WHERE source_id=$1',[sourceId]);await pool.query('DELETE FROM platform_knowledge.generations WHERE source_id=$1',[sourceId]);await pool.query('DELETE FROM platform_knowledge.sources WHERE id=$1',[sourceId]);}await api.end();
+ }
+});
+
+test('retained normalized source traverses cognition, embeddings, verification and atomic activation with synthetic provider',{skip:!uri,timeout:10000},async()=>{
+ const {createProvider}=await import('../src/provider.mjs'),{processJob}=await import('../src/processing.mjs');
+ const user='aaaaaaaa-1111-4111-8111-aaaaaaaaaaaa',db=await pool.connect();let source;
+ const workerUri=new URL(uri);workerUri.username='platform_knowledge_worker';const worker=new pg.Pool({connectionString:workerUri.href});
+ try{
+  await db.query('BEGIN;SET LOCAL ROLE platform_knowledge_owner');source=await fixture(db,user);
+  const text='Delivery takes 12 days after approval by Commission A.',chunkId=randomUUID(),jobId=randomUUID();
+  await db.query('UPDATE platform_knowledge.generations SET source_digest=$2,inventory=$3,coverage=$4,character_count=$5,chunk_count=1 WHERE id=$1',[
+   source.generation,digest(text),JSON.stringify({nativeUnits:1,sourceInventoryVerified:true,units:[{id:'p1',kind:'PAGE',ordinal:1,start:0,end:text.length,status:'COMPLETE'}]}),JSON.stringify({expectedUnits:1,accountedUnits:1,completeUnits:1,failedUnitIds:[],extractedCharacters:text.length,chunkedCharacters:text.length}),text.length]);
+  await db.query(`INSERT INTO platform_knowledge.chunks(id,generation_id,ordinal,start_offset,end_offset,text_content,sha256,token_count,locations)
+   VALUES($1,$2,0,0,$3,$4,$5,12,$6)`,[chunkId,source.generation,text.length,text,digest(text),JSON.stringify([{unitId:'p1',kind:'PAGE',ordinal:1,start:0,end:text.length}])]);
+  await db.query("INSERT INTO platform_knowledge.jobs(id,source_id,generation_id,kind,delegation) VALUES($1,$2,$3,'REINDEX',$4)",[jobId,source.id,source.generation,JSON.stringify({rightsDigest:digest(rights)})]);await db.query('COMMIT');
+  let paid=0;const provider=createProvider({pool:worker,apiKey:'SYNTHETIC_ONLY',authorize:async()=>true,fetchImpl:async(url,init)=>{
+   if(url.endsWith('/input_tokens'))return Response.json({input_tokens:100});paid++;
+   if(url.endsWith('/embeddings'))return Response.json({usage:{prompt_tokens:12},data:[{index:0,embedding:Array(1536).fill(0.1)}]});
+   const body=JSON.parse(init.body),input=JSON.parse(body.input),first=input.untrustedSource[0];
+   return Response.json({id:'synthetic-response',status:'completed',usage:{input_tokens:100,output_tokens:50},output:[{type:'message',content:[{type:'output_text',text:JSON.stringify({summary:text,statements:[{kind:'SOURCE_STATEMENT',claim:'Delivery and approval conditions',chunkId:first.chunkId,quote:first.text}],terms:['delivery'],uncertainties:[]})}]}]});
+  }});
+  const job=await claimJob(worker,'synthetic-pipeline');assert.equal(job.id,jobId);
+  await processJob({pool:worker,provider,job,storage:{remove:async()=>{}},authorizeJob:async()=>({principal:principal(user)})});
+  assert.equal(paid,2);assert.equal((await db.query('SELECT status FROM platform_knowledge.jobs WHERE id=$1',[jobId])).rows[0].status,'READY');
+  assert.equal((await db.query('SELECT active_generation_id FROM platform_knowledge.sources WHERE id=$1',[source.id])).rows[0].active_generation_id,source.generation);
+  const generation=(await db.query('SELECT state,validation FROM platform_knowledge.generations WHERE id=$1',[source.generation])).rows[0];assert.equal(generation.state,'ACTIVE');assert.equal(generation.validation.roundTrip,true);
+  assert.equal((await db.query('SELECT ordinal FROM platform_knowledge.cognition WHERE generation_id=$1',[source.generation])).rowCount,2);
+ }finally{
+  if(source){await db.query('UPDATE platform_knowledge.sources SET active_generation_id=NULL WHERE id=$1',[source.id]);await db.query('DELETE FROM platform_knowledge.jobs WHERE source_id=$1',[source.id]);await db.query('DELETE FROM platform_knowledge.provider_calls WHERE source_id=$1',[source.id]);await db.query('DELETE FROM platform_knowledge.cognition WHERE generation_id=$1',[source.generation]);await db.query('DELETE FROM platform_knowledge.chunks WHERE generation_id=$1',[source.generation]);await db.query('DELETE FROM platform_knowledge.generations WHERE source_id=$1',[source.id]);await db.query('DELETE FROM platform_knowledge.sources WHERE id=$1',[source.id]);}db.release();await worker.end();
+ }
+});

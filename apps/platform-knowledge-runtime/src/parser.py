@@ -1,7 +1,9 @@
 import json, os, re, subprocess, sys, zipfile, time, posixpath, contextlib
 from pathlib import Path
 import xml.etree.ElementTree as ET
-import pymupdf
+import pdfplumber
+from pypdf import PdfReader
+from pypdf.generic import IndirectObject
 import olefile
 from sandbox import isolate
 
@@ -122,37 +124,42 @@ def slides(path, derived=False):
         return result, {'nativeUnits':len(ids),'nativeLocation':'SLIDE','legacyDerived':derived,'sourceInventoryVerified':not derived}
 
 def pdf(path, job):
-    doc=pymupdf.open(path)
-    if doc.is_encrypted or doc.page_count>500 or doc.embfile_count(): raise ValueError('UNSAFE_DOCUMENT')
-    for xref in range(1,doc.xref_length()):
-        data=doc.xref_object(xref,compressed=True)
-        if re.search(r'/(JavaScript|JS|Launch|RichMedia|XFA)\b',data): raise ValueError('UNSAFE_DOCUMENT')
-    count=doc.page_count;result=[];deadline=time.monotonic()+80
-    for index in range(count):
-        if time.monotonic()>deadline:
-            result.append(unit('PAGE',index+1,'','FAILED','EXTRACTION_TIME_BUDGET'));continue
-        text=''
-        try:
-            page=doc.load_page(index)
-            text=page.get_text(sort=True);reason=None
-            images=page.get_images()
-            if len(text.strip())<24 and images:
-                if page.rect.width*page.rect.height>2000000: raise ValueError('PAGE_RENDER_LIMIT')
-                png=job/f'ocr-{index}.png';page.get_pixmap(matrix=pymupdf.Matrix(1.6,1.6)).save(png)
-                completed=subprocess.run(['tesseract',str(png),'stdout','-l','pol+eng','--psm','3'],capture_output=True,timeout=25,check=True)
-                text=completed.stdout.decode('utf8');reason='OCR_REQUIRES_VISUAL_FIDELITY_REVIEW'
-            elif images or page.get_drawings(): reason='VISUAL_CONTENT_NOT_INTERPRETED'
-            # Retain native text, then add an explicitly normalized row matrix.
-            # No cell is replaced with zero; merged/unresolved cells remain null.
-            tables=page.find_tables().tables
-            for table_index,table in enumerate(tables,1):
-                rows=table.extract()
-                text+='\n[TABLE '+str(table_index)+': NORMALIZED JSON ROWS]\n'+'\n'.join(json.dumps(row,ensure_ascii=False) for row in rows)
-                if any(cell is None for row in rows for cell in row):reason='COMPLEX_TABLE_STRUCTURE'
-            result.append(unit('PAGE',index+1,text,'PARTIAL' if reason else 'COMPLETE',reason))
-        except Exception:
-            result.append(unit('PAGE',index+1,text,'PARTIAL' if text else 'FAILED','PAGE_EXTRACTION_FAILED'))
-    return result, {'nativeUnits':count,'nativeLocation':'PAGE'}
+    reader=PdfReader(path,strict=True)
+    if reader.is_encrypted or len(reader.pages)>500: raise ValueError('UNSAFE_DOCUMENT')
+    # Inspect decoded PDF object keys, including escaped names. Never execute
+    # an action, macro, attachment or remote resource during extraction.
+    objects=list(set([(number,generation) for generation,refs in reader.xref.items() for number in refs if number]+[(number,0) for number in reader.xref_objStm]))
+    if len(objects)>100000: raise ValueError('UNSAFE_DOCUMENT')
+    for number,generation in objects:
+        obj=reader.get_object(IndirectObject(number,generation,reader))
+        if isinstance(obj,dict):
+            if obj.get('/Type')=='/EmbeddedFile' or obj.get('/Subtype')=='/FileAttachment':raise ValueError('UNSAFE_DOCUMENT')
+            if any(key in obj for key in ['/JavaScript','/JS','/EmbeddedFiles','/RichMedia','/XFA']):raise ValueError('UNSAFE_DOCUMENT')
+            if obj.get('/S') in ['/JavaScript','/Launch','/SubmitForm','/ImportData','/GoToR']:raise ValueError('UNSAFE_DOCUMENT')
+    count=len(reader.pages);result=[];deadline=time.monotonic()+80
+    with pdfplumber.open(path) as doc:
+        if len(doc.pages)!=count:raise ValueError('UNSAFE_DOCUMENT')
+        for index in range(count):
+            if time.monotonic()>deadline:
+                result.append(unit('PAGE',index+1,'','FAILED','EXTRACTION_TIME_BUDGET'));continue
+            text=''
+            try:
+                page=doc.pages[index];text=page.extract_text() or '';reason=None
+                if len(text.strip())<24 and page.images:
+                    if page.width*page.height>2000000:raise ValueError('PAGE_RENDER_LIMIT')
+                    png=job/f'ocr-{index}.png';page.to_image(resolution=150).save(png)
+                    completed=subprocess.run(['tesseract',str(png),'stdout','-l','pol+eng','--psm','3'],capture_output=True,timeout=25,check=True)
+                    text=completed.stdout.decode('utf8');reason='OCR_REQUIRES_VISUAL_FIDELITY_REVIEW'
+                elif page.images or page.curves or page.lines or page.rects:reason='VISUAL_CONTENT_NOT_INTERPRETED'
+                for table_index,rows in enumerate(page.extract_tables(),1):
+                    text+='\n[TABLE '+str(table_index)+': NORMALIZED JSON ROWS]\n'+'\n'.join(json.dumps(row,ensure_ascii=False) for row in rows)
+                    if any(cell is None for row in rows for cell in row):reason='COMPLEX_TABLE_STRUCTURE'
+                if '\ufffd' in text or re.search(r'\(cid:\d+\)',text):reason='UNRESOLVED_GLYPHS'
+                result.append(unit('PAGE',index+1,text,'PARTIAL' if reason else 'COMPLETE',reason))
+                page.close()
+            except Exception:
+                result.append(unit('PAGE',index+1,text,'PARTIAL' if text else 'FAILED','PAGE_EXTRACTION_FAILED'))
+    return result, {'nativeUnits':count,'nativeLocation':'PAGE','sourceInventoryVerified':True}
 
 def extract(path, extension, job):
     magic=path.read_bytes()[:8]

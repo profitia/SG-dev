@@ -1,4 +1,4 @@
-const errors=new Set(['FOUNDATION_PROBE_FAILED','JOB_FAILED','RETENTION_FAILED','OPERATION_FAILED']);
+const errors=new Set(['FOUNDATION_PROBE_FAILED','JOB_FAILED','RETENTION_FAILED','OPERATION_FAILED','E1_AUTHORITY_UNAVAILABLE']);
 const allowed=new Set(['BOOTSTRAP_STARTED','FOUNDATION_PROBE_OK','BOOTSTRAP_STOPPED','JOB_STARTED','JOB_COMPLETED','JOB_STAGE','JOB_REJECTED','OPERATION_DENIED','RAW_CLEANUP_PENDING',...errors]);
 export function createTelemetry({config,write=line=>process.stdout.write(line+'\n'),send=()=>{}}){
  return {emit(code,diagnostics={}){

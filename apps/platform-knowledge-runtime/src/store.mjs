@@ -1,5 +1,8 @@
 import {randomUUID,createHash} from 'node:crypto';
-export const digest=v=>createHash('sha256').update(typeof v==='string'||Buffer.isBuffer(v)?v:JSON.stringify(v)).digest('hex');
+const canonical=v=>v&&typeof v.toJSON==='function'?canonical(v.toJSON()):Array.isArray(v)?v.map(canonical):v&&typeof v==='object'?Object.fromEntries(Object.keys(v).sort().map(k=>[k,canonical(v[k])])):v;
+// JSONB changes object-key order. Rights, imports and paid-call identity must
+// hash their semantic JSON, while file/text digests still hash exact bytes.
+export const digest=v=>createHash('sha256').update(typeof v==='string'||Buffer.isBuffer(v)?v:JSON.stringify(canonical(v))).digest('hex');
 export class Fault extends Error{constructor(status,code){super(code);this.status=status;this.code=code;}}
 export async function transaction(pool,action,principal=null,existing=null){
  const db=existing??await pool.connect();

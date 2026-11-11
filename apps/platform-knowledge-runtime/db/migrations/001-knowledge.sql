@@ -20,7 +20,7 @@ CREATE TABLE platform_knowledge.sources(
  id uuid PRIMARY KEY, environment text NOT NULL DEFAULT 'development' CHECK(environment='development'),
  scope text NOT NULL CHECK(scope IN ('PROFITIA_SHARED','ACCOUNT_PRIVATE')),
  owner_user_id text, owner_organisation_id text CHECK(owner_organisation_id IS NULL),
- uploaded_by text NOT NULL, request_id text NOT NULL, file_name text NOT NULL,
+ uploaded_by text NOT NULL, request_id text NOT NULL, import_digest text NOT NULL DEFAULT repeat('0',64) CHECK(import_digest~'^[a-f0-9]{64}$'), file_name text NOT NULL,
  media_type text NOT NULL, size_bytes bigint NOT NULL CHECK(size_bytes BETWEEN 1 AND 52428800),
  sha256 text NOT NULL CHECK(sha256 ~ '^[a-f0-9]{64}$'), source_version integer NOT NULL DEFAULT 1,
  rights jsonb NOT NULL CHECK(jsonb_typeof(rights)='object'), metadata jsonb NOT NULL DEFAULT '{}',

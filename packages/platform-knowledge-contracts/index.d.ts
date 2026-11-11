@@ -2,7 +2,7 @@ export type KnowledgeScope = 'PROFITIA_SHARED' | 'ACCOUNT_PRIVATE';
 export type QueryTask = 'ANSWER' | 'DOCUMENT_SUMMARY' | 'MEMORY_RECALL';
 export interface KnowledgeQuery {
   version:'0.1.0'|'0.2.0'; requestId:string; task:QueryTask; query:string; language:string;
-  scopes:KnowledgeScope[]; documentIds?:string[]; maxTokens:number; tokenizerId:string; targetModel:string;
+  scopes:KnowledgeScope[]; documentIds?:string[]; filters?:{domain?:string;materialType?:'BOOK'|'STANDARD'|'REPORT'|'PRESENTATION'|'NOTE'|'OTHER';language?:string;authority?:'BINDING_STANDARD'|'REFERENCE'|'HISTORICAL'|'UNKNOWN'}; maxTokens:number; tokenizerId:string; targetModel:string;
 }
 export interface SourceRights {
   classification:'UNKNOWN'|'PUBLIC'|'INTERNAL'|'CONFIDENTIAL'|'RESTRICTED';
@@ -14,7 +14,7 @@ export interface Evidence {
   text:string; scope:KnowledgeScope; rights:SourceRights; coverage:'COMPLETE'|'PARTIAL';
   authority:'BINDING_STANDARD'|'REFERENCE'|'HISTORICAL'|'WITHDRAWN'|'UNKNOWN';
   locations:{unitId:string;kind:'PAGE'|'SLIDE'|'PARAGRAPH'|'TABLE'|'CHART';ordinal:number;start:number;end:number}[];
-  rank:number; validUntil:string|null;
+  rank:number; validUntil:string|null; sourceTitle?:string;publishedAt?:string|null;language?:string;status?:'CURRENT'|'REFERENCE'|'HISTORICAL';
 }
 export interface KnowledgeContext {
   version:'0.1.0'|'0.2.0'; requestId:string;
