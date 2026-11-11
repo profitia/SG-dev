@@ -1,6 +1,6 @@
 {
   "schemaVersion": "2.0",
-  "manifestVersion": "3.49.0",
+  "manifestVersion": "3.49.1",
   "owner": "Profitia Governance",
   "entrypoint": "AGENTS.md",
   "preflight": "scripts/governance/governance-preflight.mjs",
@@ -13,6 +13,26 @@
     "requireOrderedActiveDocuments": true
   },
   "documents": [
+    {
+      "id": "universal-project-execution-wrapper",
+      "version": "1.2",
+      "path": "docs/agent-instructions/profitia-universal-project-execution-v1.2.md",
+      "status": "ACTIVE",
+      "loadOrder": 570,
+      "owner": "Governance Source Layer",
+      "appliesTo": [
+        "SG2",
+        "SRM",
+        "ARCHITECTURE"
+      ],
+      "dependsOn": [
+        "agent-execution-canon",
+        "project-profile-registry",
+        "repository-routing",
+        "post-migration-classification",
+        "environment-release-promotion"
+      ]
+    },
     {
       "id": "newsfeed-business-and-architecture-canon",
       "version": "1.0",
