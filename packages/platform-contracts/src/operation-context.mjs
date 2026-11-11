@@ -9,6 +9,8 @@ export const SUPPLIER_LOCATION_ROOT_CONTRACT=Object.freeze({...OPERATION_CONTRAC
 export const REPORT_ADMISSION_ROOT_CONTRACT=Object.freeze({...OPERATION_CONTRACT,implementation:'1.0.0-candidate.18'})
 export const REQUEST_QUOTA_ROOT_CONTRACT=Object.freeze({...OPERATION_CONTRACT,implementation:'1.0.0-candidate.19'})
 export const ASSISTANT_ROOT_CONTRACT=Object.freeze({...OPERATION_CONTRACT,implementation:'1.0.0-candidate.20'})
+export const ORGANISATION_BOOTSTRAP_ROOT_CONTRACT=Object.freeze({...OPERATION_CONTRACT,implementation:'1.0.0-candidate.21'})
+export const ORGANISATION_BOOTSTRAP_OPERATIONS=Object.freeze(['organisation.create'])
 const denialBrand = Symbol.for('profitia.operation-context.denial.v1')
 const denialCodes = new Set(['UNSUPPORTED_CONTRACT', 'UNVERIFIED_IDENTITY', 'CONTEXT_INVALID', 'ENVIRONMENT_MISMATCH', 'APPLICATION_FEATURE_UNAVAILABLE', 'ACCESS_BASIS_INVALID', 'PERMISSION_DENIED', 'PRODUCT_UNAVAILABLE', 'RESOURCE_SCOPE_MISMATCH', 'DATA_CLASSIFICATION_UNKNOWN', 'DELEGATION_INVALID', 'DELIVERY_UNCERTAIN', 'RESOURCE_VERSION_CONFLICT', 'LIMIT_POLICY_UNAVAILABLE', 'LIMIT_EXCEEDED', 'IDEMPOTENCY_CONFLICT', 'AUDIT_UNAVAILABLE', 'POLICY_UNAVAILABLE', 'EXPLICIT_DENY'])
 
@@ -61,11 +63,13 @@ const rules = Object.freeze({
   'supplier.private.reveal': rule('supplier_report', 'supplier_private_identifier', 'ORGANISATION_PRIVATE', 'READ', 'SUPPLIER_INTELLIGENCE'),
   'supplier.private.export': rule('supplier_report', 'supplier_private_export', 'ORGANISATION_PRIVATE', 'EXPORT', 'SUPPLIER_INTELLIGENCE'),
 })
+// Optional bootstrap is absent from the unchanged default operation family.
+const organisationBootstrapRules=Object.freeze({'organisation.create':rule('organisation_admin','organisation','ORGANISATION_PRIVATE','CREATE',null,'BOOTSTRAP')})
 export const IMPLEMENTED_OPERATIONS = Object.freeze(Object.keys(rules))
 const profiles = Object.freeze({
   PLATFORM_INTERNAL: { features: ['job_execution','knowledge_ingestion'], products: [] },
   PORR_SUITE: { features: ['account', 'market', 'benchmark', 'category', 'supplier_workspace', 'forecast', 'personal_workspace', 'supplier_report','assistant'], products: ['SPENDGURU', 'SUPPLIER_INTELLIGENCE'], fixed: true },
-  SPENDGURU_SAAS: { features: ['account', 'market', 'benchmark', 'category', 'supplier_workspace', 'forecast', 'personal_workspace', 'supplier_report','assistant'], products: ['SPENDGURU', 'SUPPLIER_INTELLIGENCE'] },
+  SPENDGURU_SAAS: { features: ['organisation_admin', 'account', 'market', 'benchmark', 'category', 'supplier_workspace', 'forecast', 'personal_workspace', 'supplier_report','assistant'], products: ['SPENDGURU', 'SUPPLIER_INTELLIGENCE'] },
   SUPPLIER_INTELLIGENCE_STANDALONE: { features: ['account', 'supplier_workspace', 'personal_workspace', 'supplier_report'], products: ['SUPPLIER_INTELLIGENCE'] },
 })
 
@@ -301,18 +305,42 @@ function ingestionReservation(value,policy){
   return freeze(structuredClone(value))
 }
 
+
+// One explicit HUMAN pre-organisation policy. No role label, existing tenant,
+// product grant, client ID or account.settings permission can substitute for it.
+function validateOrganisationBootstrap(state,request,identity,config,digest,time){
+ const p=state.bootstrapPolicy,keys=['actorId','applicationId','commandId','environment','expiresAt','operation','policyId','policyVersion','resourceId','schemaDigest','sourceRef','transactionId']
+ if(!p||Object.getPrototypeOf(p)!==Object.prototype||Reflect.ownKeys(p).length!==keys.length
+  ||Object.keys(p).some(k=>!keys.includes(k))||Object.values(Object.getOwnPropertyDescriptors(p)).some(d=>!('value'in d)||!d.enumerable)
+  ||p.schemaDigest!==digest||p.actorId!==identity.userId||p.applicationId!==config.appId||p.environment!==config.environment
+  ||p.operation!==request.operation||p.resourceId!==request.resourceId||p.resourceId!=='current-organisation-onboarding'
+  ||p.commandId!==request.payload.commandId||request.idempotencyKey!==p.commandId
+  ||!computeUuid.test(p.policyId??'')||!/^[1-9][0-9]*$/.test(p.policyVersion??'')
+  ||!nonempty(p.sourceRef)||!/^[1-9][0-9]*$/.test(p.transactionId??'')||p.transactionId!==state.transactionId
+  ||!validUntil(p.expiresAt,time)||Date.parse(p.expiresAt)>time+30000
+  ||state.access.sourceRef!==p.sourceRef||state.access.version!==p.policyVersion
+  ||Date.parse(state.access.expiresAt)>Date.parse(p.expiresAt)
+  ||state.access.permissions?.length!==1||state.access.permissions[0]?.resourceId!==request.resourceId
+  ||state.products?.length!==0||state.inputs!==undefined)deny('ACCESS_BASIS_INVALID')
+ return p
+}
+
 /** All authority callbacks are server-owned. No context/role/ALLOW from HTTP is accepted. */
 export function createOperationExecutor(options) {
+  const bootstrapDigest=options.organisationBootstrapSchemaDigest
+  if(bootstrapDigest!==undefined&&(!/^[a-f0-9]{64}$/.test(bootstrapDigest)||['assistantSchemaDigest','requestQuotaSchemaDigest','locationAdmissionSchemaDigest','reportAdmissionSchemaDigest'].some(k=>options[k]!==undefined)))throw TypeError('Explicit isolated organisation bootstrap adoption required')
+  const availableRules=bootstrapDigest===undefined?rules:{...rules,...organisationBootstrapRules}
   if(options.assistantSchemaDigest!==undefined&&(!/^[a-f0-9]{64}$/.test(options.assistantSchemaDigest)
     ||['requestQuotaSchemaDigest','locationAdmissionSchemaDigest','reportAdmissionSchemaDigest'].some(k=>options[k]!==undefined)))throw TypeError('Explicit isolated Assistant schema adoption required')
   if(options.requestQuotaSchemaDigest!==undefined&&!/^[a-f0-9]{64}$/.test(options.requestQuotaSchemaDigest))throw TypeError('Explicit accepted SQL027 digest required')
   if(options.locationAdmissionSchemaDigest!==undefined&&!/^[a-f0-9]{64}$/.test(options.locationAdmissionSchemaDigest))throw TypeError('Explicit accepted SQL020 digest required')
   if(options.reportAdmissionSchemaDigest!==undefined&&(!/^[a-f0-9]{64}$/.test(options.reportAdmissionSchemaDigest)||options.locationAdmissionSchemaDigest!==undefined))throw TypeError('Explicit accepted SQL025 digest required')
-  const executionContract=options.assistantSchemaDigest!==undefined?ASSISTANT_ROOT_CONTRACT:options.requestQuotaSchemaDigest!==undefined?REQUEST_QUOTA_ROOT_CONTRACT:options.reportAdmissionSchemaDigest!==undefined?REPORT_ADMISSION_ROOT_CONTRACT:options.locationAdmissionSchemaDigest===undefined?OPERATION_CONTRACT:SUPPLIER_LOCATION_ROOT_CONTRACT
+  const executionContract=bootstrapDigest!==undefined?ORGANISATION_BOOTSTRAP_ROOT_CONTRACT:options.assistantSchemaDigest!==undefined?ASSISTANT_ROOT_CONTRACT:options.requestQuotaSchemaDigest!==undefined?REQUEST_QUOTA_ROOT_CONTRACT:options.reportAdmissionSchemaDigest!==undefined?REPORT_ADMISSION_ROOT_CONTRACT:options.locationAdmissionSchemaDigest===undefined?OPERATION_CONTRACT:SUPPLIER_LOCATION_ROOT_CONTRACT
   const { authenticate, withTransaction, recordAudit, now = Date.now } = options
   const config = freeze(structuredClone(options.application))
   const ceiling = Object.hasOwn(profiles, config.profileId) ? profiles[config.profileId] : null
-  if (!ceiling || !['development', 'staging', 'production'].includes(config.environment) || !['appId', 'deploymentId', 'configurationVersion', 'identityIssuer'].every(k => nonempty(config[k])) || !Array.isArray(config.operations) || config.operations.some(op => !Object.hasOwn(rules, op)) || !Array.isArray(config.features) || config.features.some(f => !ceiling.features.includes(f)) || (ceiling.fixed && !nonempty(config.organisationId)) || (!ceiling.fixed && config.organisationId !== null) || [authenticate, withTransaction, recordAudit, now].some(f => typeof f !== 'function')) throw new TypeError('Explicit supported application and server authority adapters required')
+  if(bootstrapDigest!==undefined&&(config.profileId!=='SPENDGURU_SAAS'||config.environment!=='development'||config.organisationId!==null||config.operations?.join(',')!=='organisation.create'||config.features?.join(',')!=='organisation_admin'))throw TypeError('Isolated Development SaaS organisation bootstrap application required')
+  if (!ceiling || !['development', 'staging', 'production'].includes(config.environment) || !['appId', 'deploymentId', 'configurationVersion', 'identityIssuer'].every(k => nonempty(config[k])) || !Array.isArray(config.operations) || config.operations.some(op => !Object.hasOwn(availableRules, op)) || !Array.isArray(config.features) || config.features.some(f => !ceiling.features.includes(f)) || (ceiling.fixed && !nonempty(config.organisationId)) || (!ceiling.fixed && config.organisationId !== null) || [authenticate, withTransaction, recordAudit, now].some(f => typeof f !== 'function')) throw new TypeError('Explicit supported application and server authority adapters required')
   const stamp = event => ({ ...event, occurredAt: new Date(now()).toISOString() })
 
   return Object.freeze({
@@ -326,7 +354,7 @@ export function createOperationExecutor(options) {
       try {
         // Snapshot inputs before the first await; never execute a later, mutated payload.
         if (!input || input.contractId !== executionContract.id || input.contractVersion !== executionContract.version) deny('UNSUPPORTED_CONTRACT')
-        const selected = Object.hasOwn(rules, input.operation) ? rules[input.operation] : null
+        const selected = Object.hasOwn(availableRules, input.operation) ? availableRules[input.operation] : null
         if (!selected || !config.operations.includes(input.operation)) deny('PERMISSION_DENIED')
         if (!config.features.includes(selected.feature)) deny('APPLICATION_FEATURE_UNAVAILABLE')
         if (typeof action !== 'function' || !nonempty(input.resourceId) || !(input.organisationId === null || nonempty(input.organisationId))) deny('CONTEXT_INVALID')
@@ -343,11 +371,12 @@ export function createOperationExecutor(options) {
             try{assistantInputBound(payload.input)}catch{deny('LIMIT_POLICY_UNAVAILABLE')}
           }
         }
-        const platform=selected.mode==='PLATFORM'
-        if (compute||platform ? typeof input.idempotencyKey !== 'string' || !/^[A-Za-z0-9_-]{24,128}$/.test(input.idempotencyKey)
+        const platform=selected.mode==='PLATFORM',bootstrap=selected.mode==='BOOTSTRAP'
+        if(bootstrap&&(!payload||Object.getPrototypeOf(payload)!==Object.prototype||Object.keys(payload).sort().join(',')!=='commandId,draftVersion'||!computeUuid.test(payload.commandId??'')||typeof payload.draftVersion!=='string'||!/^[1-9][0-9]{0,18}$/.test(payload.draftVersion)))deny('CONTEXT_INVALID')
+        if (compute||platform||bootstrap ? typeof input.idempotencyKey !== 'string' || !/^[A-Za-z0-9_-]{24,128}$/.test(input.idempotencyKey)
           : input.idempotencyKey != null) deny('CONTEXT_INVALID')
         const request = freeze({ operation: input.operation, resourceId: input.resourceId, organisationId: input.organisationId, payload,
-          payloadDigest: operationPayloadDigest(payload), ...(compute||platform ? { idempotencyKey: input.idempotencyKey } : {}) })
+          payloadDigest: operationPayloadDigest(payload), ...(compute||platform||bootstrap ? { idempotencyKey: input.idempotencyKey } : {}) })
         audit = { ...audit, resourceId: request.resourceId, payloadDigest: request.payloadDigest }
         const actor = await authenticate(input.request)
         const time = now()
@@ -367,6 +396,9 @@ export function createOperationExecutor(options) {
           if(platform){
             if(identity.kind!=='SERVICE'||config.profileId!=='PLATFORM_INTERNAL'||organisationId!==null
               ||access.organisationId!==null||access.type!=='SERVICE_GRANT')deny('CONTEXT_INVALID')
+          } else if(bootstrap){
+            if(identity.kind!=='HUMAN'||access.type!=='BOOTSTRAP'||organisationId!==null||access.organisationId!==null||bootstrapDigest===undefined)deny('CONTEXT_INVALID')
+            validateOrganisationBootstrap(state,request,identity,config,bootstrapDigest,now())
           } else if (selected.mode === 'ACCOUNT') {
             if (identity.kind !== 'HUMAN' || access.type !== 'ACCOUNT_SELF' || organisationId !== null || access.organisationId !== null) deny('CONTEXT_INVALID')
           } else {
@@ -458,7 +490,7 @@ export function createOperationExecutor(options) {
           // Export preparation is scoped private SQL, not paid refresh, global
           // ingestion or private request admission with an omitted limit.
           const requestPolicy = compute ? computePolicy(state.requestPolicy, context, now(), options.requestQuotaSchemaDigest) : null
-          if (assistant?state.usagePolicy!=='PRODUCT_POLICY'||typeof session.reserveAssistantUsage!=='function':platform?state.usagePolicy!=='PLATFORM_BUDGET'||typeof session.reserveIngestion!=='function'||typeof session.completeIngestion!=='function': compute ? state.usagePolicy !== 'PRODUCT_POLICY' || typeof session.reserveUsage !== 'function' || typeof session.completeRequest !== 'function'
+          if (bootstrap?state.usagePolicy!=='ONBOARDING_POLICY':assistant?state.usagePolicy!=='PRODUCT_POLICY'||typeof session.reserveAssistantUsage!=='function':platform?state.usagePolicy!=='PLATFORM_BUDGET'||typeof session.reserveIngestion!=='function'||typeof session.completeIngestion!=='function': compute ? state.usagePolicy !== 'PRODUCT_POLICY' || typeof session.reserveUsage !== 'function' || typeof session.completeRequest !== 'function'
             : state.usagePolicy !== 'NOT_APPLICABLE') deny('LIMIT_POLICY_UNAVAILABLE')
           if (session.transactionalEffects !== true || session.outputBoundaryVersion !== state.resource.projectionVersion) deny('POLICY_UNAVAILABLE')
           const continuation=state.requestContinuation
@@ -603,6 +635,7 @@ export function createOperationExecutor(options) {
           if (compute) computePolicy(requestPolicy, context, now(), options.requestQuotaSchemaDigest)
           if (delegated) delegatedJob(outcomeState,identity,request,config,now(),options.reportAdmissionSchemaDigest)
           if(platform)ingestionPolicy(platformPolicy,context,request,now())
+          if(bootstrap)validateOrganisationBootstrap(state,request,identity,config,bootstrapDigest,now())
           try { await session.recordOutcome(stamp({ ...audit, phase: 'OUTCOME', decision: 'ALLOW', reasonCode: outcome })) }
           catch (error) {
             // A current scope denial is different from an unavailable writer.
