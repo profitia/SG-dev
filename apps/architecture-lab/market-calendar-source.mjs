@@ -4,7 +4,7 @@ import assert from 'node:assert/strict'
 import {createHash} from 'node:crypto'
 export const MARKET_CALENDAR_PRODUCER_RECORD='apps/economic-calendar-runtime/market-calendar-preferences-integration.json'
 export const MARKET_CALENDAR_PRODUCER_BASE='38a9fe371e7993b47e2358d297647086ea999428'
-export const MARKET_CALENDAR_PRODUCER_RECORD_SHA='eb1e476a4ec05657eacd70294f432c7e4d2031b94a0b8d64ca1169c50c2b4887'
+export const MARKET_CALENDAR_PRODUCER_RECORD_SHA='abc0833d4f58bdacfcbbf8eb89206a9aa8cdd7be20fba34a7e96c018e7ce8dd6'
 export const MARKET_CALENDAR_PRODUCER_PATHS=Object.freeze([
  'Canon/evidence/2026-11-11-procurement-insights-market-calendar-owner-approval.md',
  'Canon/registries/governance-manifest-v2.json',
