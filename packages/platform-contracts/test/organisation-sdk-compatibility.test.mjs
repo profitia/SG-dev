@@ -153,3 +153,9 @@ test('new current compatibility guards still require the actual unchanged predec
   assert.throws(()=>sdkContinuationPredecessor(receipt('SG2'),current,forged),/actual predecessor guard/,target);
  }
 });
+
+test('approved ffe source remains authenticated at its complete immutable graph',()=>{
+ const old=p=>historical('09cf78d48c85986e4973f13007e32638bf040a2f',p);
+ assert.equal(hash(old(sourcePath)),'ffe2065f84e7a9808a74f896170588b9ff5fc66973096a15a407a7cbf006808d');
+ for(const projectKey of ['SG2','SRM'])assert.deepEqual(sdkContinuationPredecessor(receipt(projectKey,old),old,historical,{projectKey}).record,JSON.parse(old(sourcePath)));
+});

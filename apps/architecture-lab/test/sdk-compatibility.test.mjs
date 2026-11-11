@@ -16,7 +16,7 @@ const physicalSource=file=>fs.readFileSync(new URL(file,root))
 const historicalSource=(sha,p)=>execFileSync('git',['show',sha+':'+p],{cwd:root})
 const bootstrapSource=sdkContinuationPredecessor(JSON.parse(physicalSource('apps/sg-runtime/operation-integration.json')),physicalSource,historicalSource)
 const readSource=bootstrapSource?.previousBytes??physicalSource
-const recurring={manifest:recurringSourcePredecessor(readSource,historicalSource)?.manifest}
+const recurring=recurringSourcePredecessor(readSource,historicalSource)??{manifest:null,previousBytes:readSource}
 
 test('assistant optional source closes the real SDK dependency graph and retains the immutable predecessor',async()=>{
  const historical=(sha,p)=>execFileSync('git',['show',sha+':'+p],{cwd:root})

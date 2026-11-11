@@ -15,7 +15,7 @@ import {CURRENT_FRESH_REPORT_CONTRACT,currentFreshReportSourceDigest} from '@pro
 
 const sourceRoot=new URL('../../../../',import.meta.url),physicalSource=p=>fs.readFileSync(new URL(p,sourceRoot)),historicalSource=(sha,p)=>execFileSync('git',['show',sha+':'+p],{cwd:sourceRoot})
 const bootstrapSource=sdkContinuationPredecessor(JSON.parse(physicalSource('apps/sg-runtime/operation-integration.json')),physicalSource,historicalSource)
-const recurring={manifest:recurringSourcePredecessor(bootstrapSource?.previousBytes??physicalSource,historicalSource)?.manifest}
+const recurring=recurringSourcePredecessor(bootstrapSource?.previousBytes??physicalSource,historicalSource)??{manifest:null,previousBytes:bootstrapSource?.previousBytes??physicalSource}
 
 function fixture(){
  const unexpected=async()=>assert.fail('No external call in constructor or rejected input')

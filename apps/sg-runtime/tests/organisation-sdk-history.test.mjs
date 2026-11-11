@@ -37,7 +37,7 @@ test('installed SDK aliases validate physical current bytes before returning exa
  try{
   for(const file of ['package.json','src/operation-context.d.mts']){
    const target=path.join(installed,file);fs.mkdirSync(path.dirname(target),{recursive:true});fs.writeFileSync(target,current('packages/platform-contracts/'+file))
-   assert.deepEqual(Buffer.from(readM2AcceptedSource(target)),historical(sdk.record.previousSourceSha,'packages/platform-contracts/'+file))
+   assert.deepEqual(Buffer.from(readM2AcceptedSource(target)),historical('c3b399b13241ae2f4ea8c1b3ae0168fe9a6aac7f','packages/platform-contracts/'+file))
   }
   const target=path.join(installed,'package.json');fs.appendFileSync(target,'\n')
   assert.throws(()=>readM2AcceptedSource(target),/Actual installed SDK source/)

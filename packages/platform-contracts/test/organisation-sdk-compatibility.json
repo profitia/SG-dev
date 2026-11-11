@@ -180,12 +180,12 @@
     "packages/platform-contracts/src/vocative-dictionary.mjs": "e767aaaacb020b959bb16221c1c70e7e78bbb34c1ebf793e96a4b4cd1e01ad47"
   },
   "compatibilityTestSourceDigests": {
-    "apps/architecture-lab/test/sdk-compatibility.test.mjs": "beaade12f99e6e3c669037d74c3cf59d47d37c8ccdd9ccd9ada8da0d9c242f19",
+    "apps/architecture-lab/test/sdk-compatibility.test.mjs": "0f1251d1379c5dea23904bbacee89af36393dd100fa75642795158dc10d13d5b",
     "apps/newsfeed-runtime/test/runtime.test.mjs": "0a1d761d740f11c676f22831adb2f2433df6c78eee8fbfeaa423f4b2b5d23e3a",
     "apps/platform-source-hub/scripts/ci-routing.mjs": "261e289ea36a9cd2ade93240d0859ae7a656454efba209da7bbbd8c6e02215d8",
     "apps/platform-source-hub/test/ci-routing.test.mjs": "1b810218808797528ce60dff3a79a24c9a546431322f49f5f28c7935dea9d797",
     "packages/platform-contracts/current-fresh-report/test/current-fresh-report.test.mjs": "8687139600d51ef87b553fd2461aafc5515c225ca7341229b40a03777488d4a7",
-    "packages/platform-contracts/readonly-miss-report/test/readonly-miss-report.test.mjs": "c2e8f3cdd2b253d58ce2eda4971d3beb1e46e7e54b61da2b905978d42c996b18",
+    "packages/platform-contracts/readonly-miss-report/test/readonly-miss-report.test.mjs": "edbb99d5ade23ee483587d19352602ec55353932128b523655ddd76b509fe57e",
     "packages/platform-contracts/test/private-operation-host.test.mjs": "604a1459b33a8b45ec76f3af21974459d481bc48197f9894b2d203553f62b287",
     "apps/architecture-lab/private-recurring-source.mjs": "ad0aa73142c9fa6f7f672bc2eddcec26b05b1e103bc7197beae1628bc19a768e",
     "apps/architecture-lab/test/private-recurring-source.test.mjs": "3007ae603e789b53ca2a33456dcefce3746a1956ae636a7dac83f77cb14a06da"
@@ -258,7 +258,7 @@
       "apps/sg-runtime/tests/diagnostic-telemetry-adoption.test.mjs": "d236f361ed38a9d5b18e348eca79378b7dcf921eec3eb9613bbfdaa9916d0806",
       "apps/sg-runtime/tests/native-sql-roundtrips.test.mjs": "ce45cd52dde814db21c746ac8a22902f1405295534dbcc509f4f7f9a98a195fe",
       "apps/sg-runtime/tests/operation-context.test.mjs": "6bfdde26ff7214056c84e6964b05bcbec8fe68ad20799323d53bd41feb77db77",
-      "apps/sg-runtime/tests/organisation-sdk-history.test.mjs": "f72e74a31e0614129d7cf77d3f51b1d7451d5de7ea368961c9cd81b732c3327e",
+      "apps/sg-runtime/tests/organisation-sdk-history.test.mjs": "3661d42f176f07c377f45fa582cf9baab844d9924a2cccd2dc64a8d871827eed",
       "apps/sg-runtime/tests/pci-smart-integrity.test.mjs": "ce841e4e761f08bed41dfd97c451d30c8441bb9c8f2faecf7aacccdd3ea2e484",
       "apps/sg-runtime/tests/private-host.integration.test.mjs": "2f76d4df55adb4b1e9c391482f3372c45573955c348f5869e2048657476de955",
       "apps/sg-runtime/tests/xray-fresh-performance-adoption.test.mjs": "1bc8fa65799503d8554518aa1c55c98b4e486e2f7a451c51a97d762652fca5fe",
