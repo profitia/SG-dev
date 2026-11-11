@@ -44,7 +44,7 @@ test('isolated BFF makes CIC demand, then authorises, persists and completes one
  assert(f.inputs[0][0].role==='developer');assert(f.events.some(e=>e.plan?.[0]?.source==='BENCHMARK_CHART'))
 })
 test('history reuse requires current organisation and exact canonical reference; general turns remain usable',async()=>{
- const f=fixture(),saved=(message:string,scopes:any[])=>({status:'COMPLETE',message,response:message+' answer',scopes})
+ const f=fixture(),saved=(message:string,scopes:any[])=>({status:'COMPLETE',message,response:message+' answer',scopes:scopes.map(s=>({...s,source:s.reference.source}))})
  const jsonbReference=Object.fromEntries(Object.entries(reference).sort(([a],[b])=>a.localeCompare(b)))
  f.stored.turns=[saved('GENERAL',[]),saved('CURRENT',[{organisationId:org,reference:jsonbReference}]),saved('FOREIGN_SECRET',[{organisationId:foreign,reference}]),saved('STALE_SECRET',[{organisationId:org,reference:{...reference,fingerprint:'b'.repeat(64)}}])]
  await f.execute({conversationId:id})

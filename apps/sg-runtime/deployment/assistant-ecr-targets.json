@@ -1,0 +1,19 @@
+{
+  "schemaVersion": "1.0.0",
+  "configurationVersion": "sg2-assistant-ecr-development-v1",
+  "serviceId": "srv-dapa3tid0e5s73f8bc5g",
+  "targetEnvironment": "development",
+  "enabledByDefault": false,
+  "producer": {
+    "origin": "https://economic-calendar-runtime-development.onrender.com",
+    "pathPrefix": "/v1/organisations/",
+    "pathSuffix": "/calendar/context",
+    "contract": "profitia.economic-calendar/1.1.0",
+    "semanticContract": "profitia.economic-calendar-semantics/1.0.0"
+  },
+  "pageSize": 8,
+  "storedReadsOnly": true,
+  "privatePreferences": false,
+  "directSourceHubOrProviderCalls": false,
+  "deploymentAuthorisedByThisFile": false
+}
