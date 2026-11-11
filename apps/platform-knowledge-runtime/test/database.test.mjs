@@ -53,7 +53,7 @@ test('a reclaimed job fences the previous worker and finite deadlines stop forev
 test('native paid ledger prevents concurrent duplicate calls and settles spend after source revocation',{skip:!uri,timeout:10000},async()=>{
  const {createProvider}=await import('../src/provider.mjs');
  const user='44444444-4444-4444-8444-444444444444';
- let source;const db=await pool.connect();const apiUri=new URL(uri);apiUri.username='platform_knowledge_api';apiUri.password='';
+ let source;const db=await pool.connect();const apiUri=new URL(uri);apiUri.username='platform_knowledge_api';apiUri.password=new URL(uri).password;
  const api=new pg.Pool({connectionString:apiUri.href,max:3});
  try{
   await db.query('BEGIN;SET LOCAL ROLE platform_knowledge_owner');source=await fixture(db,user);await db.query('COMMIT');
@@ -75,7 +75,7 @@ test('native paid ledger prevents concurrent duplicate calls and settles spend a
 });
 test('uncertain paid outcome retains one reservation and never resends on retry',{skip:!uri,timeout:10000},async()=>{
  const {createProvider}=await import('../src/provider.mjs');let source,calls=0;const db=await pool.connect();
- const apiUri=new URL(uri);apiUri.username='platform_knowledge_api';apiUri.password='';const api=new pg.Pool({connectionString:apiUri.href});
+ const apiUri=new URL(uri);apiUri.username='platform_knowledge_api';apiUri.password=new URL(uri).password;const api=new pg.Pool({connectionString:apiUri.href});
  try{
   await db.query('BEGIN;SET LOCAL ROLE platform_knowledge_owner');source=await fixture(db,'55555555-5555-4555-8555-555555555555');await db.query('COMMIT');
   const provider=createProvider({pool:api,apiKey:'SYNTHETIC_ONLY',authorize:async()=>true,fetchImpl:async()=>{calls++;throw Error('SYNTHETIC_NETWORK_LOSS');}});

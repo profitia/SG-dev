@@ -20,9 +20,7 @@
     "@profitia/platform-knowledge-core": "file:../../packages/platform-knowledge-core",
     "@profitia/platform-knowledge-contracts": "file:../../packages/platform-knowledge-contracts",
     "@profitia/platform-contracts": "file:../../packages/platform-contracts",
-    "@profitia/platform-current-e1-authority": "file:../../packages/platform-contracts/current-e1-authority"
-  },
-  "devDependencies": {
+    "@profitia/platform-current-e1-authority": "file:../../packages/platform-contracts/current-e1-authority",
     "ajv": "8.17.1",
     "ajv-formats": "3.0.1"
   }
