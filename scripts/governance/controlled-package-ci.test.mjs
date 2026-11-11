@@ -1621,7 +1621,7 @@ test('trusted SDK source reads reject traversal, symlinks, non-files and oversiz
  }finally{fs.rmSync(root,{recursive:true,force:true})}
 })
 
-import {REGISTRATION_SDK_REVIEW as completeRegistrationReview} from './controlled-package-ci.mjs'
+import {REGISTRATION_SDK_COMPLETE_REVIEW as completeRegistrationReview} from './controlled-package-ci.mjs'
 test('owner-approved Stage I successor admits exactly59 routed files while preserving41 and48 reviews',()=>{
  const r=completeRegistrationReview,files=Object.entries(r.entries).map(([filename,e])=>({filename,sha:e.sha,status:e.status})),p={...pr(),number:r.prNumber,changed_files:files.length,base:{...pr().base,sha:r.baseSha},head:{...pr().head,sha:r.sourceSha,ref:r.branch}}
  assert.equal(files.length,59)
@@ -1653,7 +1653,7 @@ test('complete59 SDK provenance pins its new predecessor without rewriting older
  assert.equal(REGISTRATION_SDK_PROVENANCE.recordPredecessors[digest],previous)
  assert.equal(record.previousSourceSha,previous)
  assert.equal(REGISTRATION_SDK_PROVENANCE.previousSourceSha,'f8f6340ab1ac862a584352f86988dde199172b37')
- assert.equal(REGISTRATION_SDK_PROVENANCE.recordDigests.length,3)
+ assert.deepEqual(REGISTRATION_SDK_PROVENANCE.recordDigests.slice(0,3),['66c07a72cd3817f17eca8243697a633106cc79caa2e2e8a19b1d7a74e0e4d3f1','a0ebdd9af086aba27d025aa821b2c22d43551e997dfa0642c0c59aac11cc4ac5','020b9db676804688ce1758865084d2af02c42af169ede00c265432422e4d993e'])
  assert.equal(Object.keys(record.sourceDigests).length,155)
  assert.equal(Object.keys(record.compatibilityTestSourceDigests).length,7)
  assert.equal(Object.keys(record.preservedSourceDigests).length,15)
@@ -1824,4 +1824,53 @@ test('final continuation binds the current proof to unchanged legacy Root and ne
  assert.equal(privateRecurringProofContract(r,finalRecurringBytes,b).implementation,'1.0.0-candidate.16')
  const record=JSON.parse(finalRecurringBytes);for(const flag of ['runtimeActivated','newGrantsInstalled','providerCallsPerformed','deploymentPerformed'])assert.equal(record[flag],false)
  rejection(()=>privateRecurringProofContract(r,finalRecurringBytes,Buffer.concat([b,Buffer.from('\n')])))
+})
+
+
+import {REGISTRATION_SDK_REVIEW as testSourceRegistrationReview} from './controlled-package-ci.mjs'
+test('approved1012 pins exactly59 source entries, preserves55 and refuses mixed earlier successor versions',()=>{
+ const r=testSourceRegistrationReview,files=Object.entries(r.entries).map(([filename,e])=>({filename,sha:e.sha,status:e.status})),p={...pr(),number:r.prNumber,changed_files:files.length,base:{...pr().base,sha:r.baseSha},head:{...pr().head,sha:r.sourceSha,ref:r.branch}}
+ assert.equal(files.length,59)
+ assert.equal(createHash('sha256').update(JSON.stringify(r.entries)).digest('hex'),'4e32bcb2ec3deaee75ab495761e60b90a848ab27954b33fdae3f975c1154939c')
+ const changed=Object.keys(r.entries).filter(p=>JSON.stringify(r.entries[p])!==JSON.stringify(completeRegistrationReview.entries[p]))
+ assert.deepEqual(changed.sort(),['apps/sg-runtime/tests/private-host.integration.test.mjs','packages/platform-contracts/test/organisation-sdk-compatibility.json','packages/platform-contracts/test/organisation-sdk-compatibility.mjs','packages/platform-contracts/test/organisation-sdk-compatibility.test.mjs'])
+ assert.equal(Object.keys(r.entries).length-changed.length,55)
+ assertArchitectureFiles(p,files);assert.equal(selectCandidate(context(),p,r.sourceSha,{files}),r.sourceSha)
+ for(const f of files){
+  assertRegistrationSdkReviewEntry(f,'100644 blob '+f.sha+'\t'+f.filename+'\0')
+  for(const mode of ['100755','120000','160000'])rejection(()=>assertRegistrationSdkReviewEntry(f,mode+' blob '+f.sha+'\t'+f.filename+'\0'))
+ }
+ for(const name of changed){
+  const mixed=structuredClone(files),i=mixed.findIndex(f=>f.filename===name);mixed[i].sha=completeRegistrationReview.entries[name].sha
+  rejection(()=>selectCandidate(context(),p,r.sourceSha,{files:mixed}))
+ }
+ for(const edit of [a=>a.pop(),a=>a.push(a[0]),a=>a[0].sha='f'.repeat(40),a=>a[0].status='removed',a=>a[0].previous_filename=a[0].filename,a=>a.push({filename:'apps/srm/app/login/unreviewed.tsx',sha:'f'.repeat(40),status:'added'})]){
+  const bad=structuredClone(files);edit(bad);rejection(()=>selectCandidate(context(),{...p,changed_files:bad.length},r.sourceSha,{files:bad}))
+ }
+ for(const edit of [q=>q.number++,q=>q.head.ref='architecture/other',q=>q.head.repo.full_name='attacker/fork',q=>q.user.login='attacker',q=>q.base.ref='staging',q=>q.head.sha=sha]){
+  const bad=structuredClone(p);edit(bad);rejection(()=>selectCandidate(context(),bad,r.sourceSha,{files}))
+ }
+})
+test('approved1012 record binds its exact source graph and original receipts without relaxing old record pins',()=>{
+ const doc=fs.readFileSync(path.join(authorityRoot,'Canon/evidence/2026-11-11-registration-sdk-test-source-successor-review.md'),'utf8'),start=doc.indexOf('<!-- registration-sdk-test-successor-fixture -->'),match=/\x60\x60\x60json\n([\s\S]*?)\x60\x60\x60/.exec(doc.slice(start))
+ assert(start>=0&&match);const bytes=Buffer.from(match[1]),record=JSON.parse(bytes),hash=b=>createHash('sha256').update(b).digest('hex'),digest=hash(bytes)
+ assert.equal(digest,'25fea141baf42c154f64a256d40808d548562c010e3f2fd3143657f24b15295c')
+ assert.equal(REGISTRATION_SDK_PROVENANCE.recordDigests.length,4)
+ assert.equal(REGISTRATION_SDK_PROVENANCE.recordPredecessors[digest],'b2fccbb8b9132a63c2c39507a1ebc838cf6228e1')
+ assert.equal(REGISTRATION_SDK_PROVENANCE.recordPredecessors['020b9db676804688ce1758865084d2af02c42af169ede00c265432422e4d993e'],record.previousSourceSha)
+ assert.equal(Object.keys(REGISTRATION_SDK_PROVENANCE.recordPredecessors).length,2)
+ assert.equal(Object.keys(record.sourceDigests).length,155)
+ const files={SG2:'apps/sg-runtime/operation-integration.json',SRM:'apps/srm/operation-integration.json'},historicalReceipts={},receipts={}
+ for(const[project,p]of Object.entries(files)){
+  historicalReceipts[project]=execFileSync('git',['show',record.previousSourceSha+':'+p],{cwd:authorityRoot})
+  receipts[project]={...JSON.parse(historicalReceipts[project]),sdkSourceContinuations:[{schemaVersion:'1.0',acceptanceId:'organisation-bootstrap-v1',taskId:REGISTRATION_SDK_PROVENANCE.bindings[project].taskId,targetEnvironment:'development',previousReceiptSha256:hash(historicalReceipts[project])}]}
+ }
+ const maps=Object.assign({},record.sourceDigests,record.compatibilityTestSourceDigests,record.preservedSourceDigests,...Object.values(record.consumerSourceDigests)),options={digestForPath:p=>maps[p],receipts,historicalReceipts}
+ assert.equal(assertRegistrationSdkRecord(bytes,options).previousSourceSha,record.previousSourceSha)
+ for(const name of Object.keys(maps))rejection(()=>assertRegistrationSdkRecord(bytes,{...options,digestForPath:p=>p===name?'0'.repeat(64):maps[p]}))
+ rejection(()=>assertRegistrationSdkRecord(Buffer.concat([bytes,Buffer.from('\n')]),options))
+ rejection(()=>assertRegistrationSdkRecord(bytes,{...options,historicalReceipts:{...historicalReceipts,SG2:Buffer.from('{}')}}))
+ for(const edit of [r=>r.SG2.sdkSourceContinuations[0].previousReceiptSha256='0'.repeat(64),r=>r.SRM.sdkSourceContinuations[0].taskId='wrong-owner',r=>r.SG2.automaticProductDeployment=true]){
+  const bad=structuredClone(receipts);edit(bad);rejection(()=>assertRegistrationSdkRecord(bytes,{...options,receipts:bad}))
+ }
 })
