@@ -76,6 +76,17 @@ test('real ordinary history role persists across connections, isolates the pilot
   await assert.rejects(()=>history.load({...context,actorId:V,actor:{kind:'HUMAN',actorId:V}},id,true),e=>e.code==='DENIED')
   await call('DELETE',{conversationId:id});assert.deepEqual((await call('LIST')).items,[])
   await assert.rejects(()=>call('LOAD',{conversationId:id}),/HISTORY_UNAVAILABLE/)
+  // The admitted schema already stores opaque source references within its
+  // four-source cap. Prove ECR works through the real ordinary role unchanged.
+  const ecrReference={version:'2.1.0',source:'ECONOMIC_CALENDAR',from:'2026-11-01T00:00:00.000Z',to:'2026-11-30T23:59:59.999Z',targetType:null,targetId:null,asKnownAt:null,after:null}
+  const ecrScope={source:'ECONOMIC_CALENDAR',organisationId:'11111111-1111-4111-8111-111111111111',reference:ecrReference,sourceVersion:'e'.repeat(64),requiredRecordIds:['E:ecr_evt_'+'a'.repeat(64)]}
+  const ecrCommand=randomUUID(),ecr=await call('BEGIN',{...begin,commandId:ecrCommand,message:'SYNTHETIC_ONLY ECR',scopes:[ecrScope]})
+  await call('COMPLETE',{conversationId:ecr.conversationId,commandId:ecrCommand,response:'SYNTHETIC_ONLY ECR context',sources:[{id:'ECONOMIC_CALENDAR',label:'ECR',asOf:null,status:'PARTIAL'}]})
+  const ecrStored=await history.load(context,ecr.conversationId)
+  assert.deepEqual(ecrStored.turns[0].scopes[0].reference,ecrReference);assert.deepEqual(ecrStored.turns[0].scopes[0].requiredRecordIds,ecrScope.requiredRecordIds)
+  await assert.rejects(()=>call('LOAD',{conversationId:ecr.conversationId},V),/HISTORY_UNAVAILABLE/)
+  await assert.rejects(()=>call('BEGIN',{...begin,commandId:randomUUID(),scopes:Array(5).fill(ecrScope)}),/HISTORY_UNAVAILABLE/,'ECR does not expand the admitted four-source boundary')
+  await call('DELETE',{conversationId:ecr.conversationId})
   const expiring=await call('BEGIN',{...begin,commandId:randomUUID()})
   await asOwner(c=>c.query("UPDATE sg2_assistant_history.conversations SET expires_at=clock_timestamp()-interval '1 second' WHERE id=$1",[expiring.conversationId]))
   await pool.query('SELECT sg2_assistant_history.prune()')

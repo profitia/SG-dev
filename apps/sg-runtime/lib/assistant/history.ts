@@ -59,7 +59,8 @@ export function createAssistantHistory(options:{query:AccessQuery;commandKey:str
       ||s.privateKys!==undefined&&(reference.source!=='SRM_XRAY'||typeof s.privateKys!=='boolean')
       ||s.privateKys===true&&(typeof s.privateKysUntil!=='string'||s.privateKysUntil.length>40||!Number.isFinite(Date.parse(s.privateKysUntil)))
       ||s.privateKysUntil!==undefined&&s.privateKys!==true
-      ||s.requiredRecordIds!==undefined&&(reference.source!=='NEWSFEED'||!Array.isArray(s.requiredRecordIds)||s.requiredRecordIds.length>32||s.requiredRecordIds.some(id=>typeof id!=='string'||!/^[OP]:[a-f0-9-]{36}$/i.test(id))))return fail()
+      ||s.requiredRecordIds!==undefined&&(!['NEWSFEED','ECONOMIC_CALENDAR'].includes(reference.source)||!Array.isArray(s.requiredRecordIds)||s.requiredRecordIds.length>32
+       ||s.requiredRecordIds.some(id=>typeof id!=='string'||!(reference.source==='NEWSFEED'?/^[OP]:[a-f0-9-]{36}$/i:/^(?:E:ecr_evt|N:ecr_obs|C:ecr_pub)_[a-f0-9]{64}$/).test(id))))return fail()
      return {...s,source:reference.source,organisationId:s.organisationId,reference} as HistoryScope
     })
     const sources:AssistantSource[]=t.sources.map(s=>{
