@@ -48,8 +48,13 @@ function observation(r,event){
 }
 function schedule(s){
  if(s===null)return null
- if(!object(s)||!['INSTANT','DATE','LOCAL_DATETIME','UNKNOWN'].includes(s.timePrecision))throw TypeError('Invalid ECR schedule')
- return {timePrecision:s.timePrecision,scheduledAt:stamp(s.scheduledAt),dateOnly:s.dateOnly===null?null:contextDate(s.dateOnly),
+ if(!object(s)||!['INSTANT','DATE','TIME_WINDOW','RECURRENCE_ONLY','UNKNOWN'].includes(s.timePrecision))throw TypeError('Invalid ECR schedule')
+ const scheduledAt=stamp(s.scheduledAt),scheduledUntil=stamp(s.scheduledUntil??null),dateOnly=s.dateOnly===null?null:contextDate(s.dateOnly)
+ if(s.timePrecision==='INSTANT'&&scheduledAt===null
+  ||s.timePrecision==='TIME_WINDOW'&&(scheduledAt===null||scheduledUntil===null||scheduledUntil<=scheduledAt)
+  ||s.timePrecision==='DATE'&&(dateOnly===null||scheduledAt!==null)
+  ||['RECURRENCE_ONLY','UNKNOWN'].includes(s.timePrecision)&&scheduledAt!==null)throw TypeError('Invalid ECR schedule precision')
+ return {timePrecision:s.timePrecision,scheduledAt,scheduledUntil,dateOnly,recurrence:optional(s.recurrence??null,4096),
   localDateTime:optional(s.localDateTime),timeZone:optional(s.timeZone),scheduleStatus:text(s.scheduleStatus),
   qualityFlags:list(s.qualityFlags,30).map(v=>text(v)),officialSource:s.officialSource===true}
 }
@@ -104,13 +109,13 @@ export function createEconomicCalendarContextAdapter({readAuthorised}){
    coverage:{completeness:text(r.coverage.completeness),numericHistory:'OBSERVED_BY_ECR_ONLY',publishedAtNotInferred:r.coverage.publishedAtNotInferred===true,
     unresolvedDefinitionPageMore:r.coverage.unresolvedDefinitionPageMore===true,unmappedDefinitionCount:list(r.coverage.unmappedDefinitions,500).length},
    semanticVersionFingerprint:hash(versions),omitted:{events:0,definitions:0,unresolvedSchedules:0},
-   meaning:'Retained ECR facts and accepted global semantics only. Scheduled time is not confirmed publication or an actual result. Null is unknown, never zero. Numeric observations are source snapshots, not publication vintages. Relevance is not causation. GLOBAL is not a confirmed match to the active benchmark. Unknown or empty coverage is not evidence that no economic event occurred. No provider acquisition was run.'}
+   meaning:'Retained ECR facts and accepted global semantics only. Scheduled time is not confirmed publication or an actual result. TIME_WINDOW retains both endpoints; RECURRENCE_ONLY is an undated publication definition, not a confirmed release in the selected interval. Null is unknown, never zero. Numeric observations are source snapshots, not publication vintages. Relevance is not causation. GLOBAL is not a confirmed match to the active benchmark. Unknown or empty coverage is not evidence that no economic event occurred. No provider acquisition was run.'}
   const recordCount=()=>new Set([...data.events.flatMap(e=>[e.eventId,...e.results.map(r=>r.observationId)]),...data.unresolvedSchedules.map(p=>p.publicationId)]).size
   // The existing private-history schema admits at most32 cited record IDs.
   // Minimise the projection rather than changing that schema or losing checks.
   for(const key of ['unresolvedSchedules','events'])while(recordCount()>32&&data[key].length){data[key].pop();data.omitted[key]++}
   // Keep the existing gateway/model byte budgets, with explicit omissions.
-  for(const key of ['events','unresolvedSchedules','definitions'])while(Buffer.byteLength(JSON.stringify(data),'utf8')>14500&&data[key].length){data[key].pop();data.omitted[key]++}
+  for(const key of ['unresolvedSchedules','events','definitions'])while(Buffer.byteLength(JSON.stringify(data),'utf8')>14500&&data[key].length){data[key].pop();data.omitted[key]++}
   if(Buffer.byteLength(JSON.stringify(data),'utf8')>14500)throw TypeError('ECR metadata exceeds context budget')
   const omitted=Object.values(data.omitted).some(Boolean),hasFacts=data.events.length+data.unresolvedSchedules.length+data.definitions.length>0
   const status=!hasFacts&&!omitted?'EMPTY':r.coverage.completeness==='COMPLETE'&&!r.nextAfter&&!omitted&&!data.unresolvedSchedules.length&&!data.coverage.unmappedDefinitionCount?'OK':'PARTIAL'
