@@ -9,17 +9,20 @@ import {selectConversationContext,contextHistoryScopes,contextSatisfiesScope} fr
 const app=path.resolve(fileURLToPath(new URL('..',import.meta.url))),require=createRequire(path.join(app,'package.json'))
 const compiled=buildSync({entryPoints:[path.join(app,'lib/assistant/conversation.ts')],bundle:true,write:false,platform:'node',format:'cjs',packages:'external',alias:{'@':app},external:['@/lib/platform/private-runtime']})
 const mod={exports:{}} as {exports:any}
-new Function('require','module','exports',compiled.outputFiles[0].text)((id:string)=>id==='@sentry/nextjs'?{startSpan:(_o:unknown,run:()=>unknown)=>run(),withScope:(run:any)=>run({setTag(){}}),captureException(){}}:require(id),mod,mod.exports)
+const sourceTags:Array<[string,unknown]>=[]
+new Function('require','module','exports',compiled.outputFiles[0].text)((id:string)=>id==='@sentry/nextjs'?{startSpan:(_o:unknown,run:(span:any)=>unknown)=>run({setAttribute:(key:string,value:unknown)=>sourceTags.push([key,value])}),withScope:(run:any)=>run({setTag(){}}),captureException(){}}:require(id),mod,mod.exports)
 const {createAssistantHandlers}=mod.exports
 const org=randomUUID(),owner=randomUUID(),conversationId=randomUUID(),observationId=randomUUID(),publicationId=randomUUID()
 const chart={version:'1.1.0' as const,source:'BENCHMARK_CHART' as const,seriesId:'synthetic-oil',from:'2026-01-01',to:'2026-11-01',range:'1Y' as const,fingerprint:'a'.repeat(64)}
 const supplier={version:'2.0.0' as const,source:'SRM_XRAY' as const,nip:'8650004194',entityType:'COMPANY' as const,krs:null,year:2025,comparisonYear:2024,statementScope:'standalone' as const,sourceVersion:null}
+const ecrEventId='ecr_evt_'+'e'.repeat(64),ecrObservationId='ecr_obs_'+'f'.repeat(64)
 function fixture(){
- let revokeKys=false,removePublication=false,denyNews=false,changeOnAdmission=false,providerPosts=0
+ let revokeKys=false,removePublication=false,denyNews=false,changeOnAdmission=false,providerPosts=0,denyEcr=false,withdrawEcr=false,changeEcrOnAdmission=false,changedEcr=false
  const plans:any[]=[],prompts:any[]=[],stored:any={id:conversationId,revision:0,turns:[]}
  let begun:any
  const runtime:any={organisationId:org,
   async run(_request:Request,operation:string,payload:any,action:any){if(payload.kind==='GENERATE'&&changeOnAdmission)revokeKys=true
+   if(payload.kind==='GENERATE'&&changeEcrOnAdmission)changedEcr=true
    return action({actorId:owner,assistantReservation:{status:'RESERVED'}})},
   history:{list:async()=>[],load:async()=>stored,begin:async(_c:any,input:any)=>{begun=structuredClone(input);return {conversationId,turnId:randomUUID(),status:'NEW'}},
    check:async()=>null,complete:async(_c:any,value:any)=>{stored.turns.push({id:randomUUID(),commandId:begun.commandId,assistantMessageId:randomUUID(),message:begun.message,response:value.response,
@@ -30,8 +33,10 @@ function fixture(){
    return {contexts:demand.plan.map((p:any)=>{
     const reference=refs.find((r:any)=>r.source===p.source)
     if(p.source==='NEWSFEED'&&denyNews)return {source:p.source,status:'DENIED'}
+    if(p.source==='ECONOMIC_CALENDAR'&&denyEcr)return {source:p.source,status:'DENIED'}
     if(!reference)return {source:p.source,status:'EMPTY'}
-    const data=p.source==='SRM_XRAY'?{identity:{nip:reference.nip},financial:{year:2025,amount:'123.456',unit:'PLN'},kys:{status:revokeKys?'DENIED':'OK',riskLevel:revokeKys?null:'SYNTHETIC_PRIVATE_RISK',retentionUntil:'2030-01-01T00:00:00.000Z'}}
+    const data=p.source==='ECONOMIC_CALENDAR'?{events:withdrawEcr?[]:[{eventId:ecrEventId,results:[{observationId:ecrObservationId,actual:changedEcr?'SYNTHETIC_CHANGED_ECR':'SYNTHETIC_PRIVATE_ECR',unit:'MBBL'}]}],unresolvedSchedules:[],coverage:{completeness:'UNKNOWN'}}
+     :p.source==='SRM_XRAY'?{identity:{nip:reference.nip},financial:{year:2025,amount:'123.456',unit:'PLN'},kys:{status:revokeKys?'DENIED':'OK',riskLevel:revokeKys?null:'SYNTHETIC_PRIVATE_RISK',retentionUntil:'2030-01-01T00:00:00.000Z'}}
      :p.source==='NEWSFEED'?{observations:[{id:observationId,name:'SYNTHETIC_PRIVATE_OBSERVATION',publications:removePublication?[]:[{id:publicationId,headline:'SYNTHETIC_PRIVATE_HEADLINE'}]}]}
       :p.source==='FORECAST_CORE'?{models:reference.modelIds.map((modelId:string)=>({modelId,horizon:'1M',unit:'USD/barrel',value:70}))}
        :{unit:'USD/barrel',historical:[{date:'2026-11-01',value:65}]}
@@ -49,8 +54,30 @@ function fixture(){
   const text=await response.text();return {response,text}
  }
  return {runtime,stored,plans,prompts,send,handlers,get begun(){return begun},get providerPosts(){return providerPosts},
-  revokeKys(){revokeKys=true},removePublication(){removePublication=true},denyNews(){denyNews=true},changeOnAdmission(){changeOnAdmission=true}}
+  revokeKys(){revokeKys=true},removePublication(){removePublication=true},denyNews(){denyNews=true},changeOnAdmission(){changeOnAdmission=true},
+  denyEcr(){denyEcr=true},withdrawEcr(){withdrawEcr=true},changeEcrOnAdmission(){changeEcrOnAdmission=true}}
 }
+test('the real conversation handlers pass ECR facts to the model and preserve scoped continuation and status telemetry',async()=>{
+ const f=fixture(),first=await f.send('Pokaż kalendarz makro od 2026-11-01 do 2026-11-30',null,'appshell')
+ assert(first.text.includes('"type":"completed"'));assert.deepEqual(f.plans[0],['ECONOMIC_CALENDAR']);assert.equal(f.providerPosts,1)
+ assert(JSON.stringify(f.prompts[0]).includes('SYNTHETIC_PRIVATE_ECR'));assert.deepEqual(f.begun.scopes[0].requiredRecordIds,['E:'+ecrEventId,'N:'+ecrObservationId])
+ const reference=f.begun.scopes[0].reference
+ assert((await f.send('Co to oznacza dla zakupów?',null,'appshell')).text.includes('"type":"completed"'))
+ assert.deepEqual(f.begun.scopes[0].reference,reference)
+ assert(sourceTags.some(([key,value])=>key==='assistant.source.economic_calendar.status'&&value==='OK'))
+ assert(!JSON.stringify(sourceTags).includes('SYNTHETIC_PRIVATE_ECR'))
+})
+test('ECR denial or withdrawal redacts the previously saved whole turn and question',async()=>{
+ for(const remove of ['denyEcr','withdrawEcr']as const){const f=fixture();await f.send('Kalendarz makro 2026-11-01 2026-11-30',null,'appshell');f[remove]()
+  const response=await f.handlers.load(new Request('https://example.test/api/assistant/history/'+conversationId),conversationId)
+  const body=await response.json();assert(!JSON.stringify(body).includes('SYNTHETIC_ANSWER_PRIVATE'))
+  assert(!JSON.stringify(body).includes('Kalendarz makro 2026-11-01'));assert(!JSON.stringify(body).includes('SYNTHETIC_PRIVATE_ECR'))
+ }
+})
+test('changed ECR evidence at admission prevents even the simulated model dispatch',async()=>{
+ const f=fixture();f.changeEcrOnAdmission();const response=await f.send('Kalendarz makro 2026-11-01 2026-11-30',null,'appshell')
+ assert(!response.text.includes('"type":"completed"'));assert.equal(f.providerPosts,0)
+})
 test('PI retrieves only an explicitly selected observation through the existing gateway and clears implicit archive access',async()=>{
  const reference={version:'2.0.0' as const,source:'NEWSFEED' as const,observationId,supplierNip:null}
  const selection=selectConversationContext({message:'Wyjaśnij wybraną obserwację',locale:'pl',module:'procurement_insights',reference},null,org)

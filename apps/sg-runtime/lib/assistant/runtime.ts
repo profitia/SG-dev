@@ -11,6 +11,7 @@ import {createAssistantHistory} from './history'
 import {createAssistantModel} from './model'
 import {createAssistantSourceAdapters} from './sources'
 import m2Targets from '@/deployment/assistant-m2-targets.json'
+import economicTargets from '@/deployment/assistant-ecr-targets.json'
 import type {Sg2SelectionRuntime} from '@/lib/platform/private-runtime'
 import targets from '@/deployment/assistant-m1-targets.json'
 import type {BenchmarkRangePreset} from '@/lib/benchmark/contracts'
@@ -39,8 +40,12 @@ export function readAssistantConfiguration(env:Env){
  const historyKey=env.PROFITIA_ASSISTANT_HISTORY_COMMAND_KEY,usageKey=env.PROFITIA_ASSISTANT_USAGE_COMMAND_KEY
  if(!/^[a-f0-9]{64}$/.test(historyKey??'')||!/^[a-f0-9]{64}$/.test(usageKey??'')||historyKey===usageKey)return unavailable()
  if(env.PROFITIA_ASSISTANT_M2_CONFIGURATION_VERSION!==undefined&&env.PROFITIA_ASSISTANT_M2_CONFIGURATION_VERSION!==m2Targets.configurationVersion)return unavailable()
+ if(env.PROFITIA_ASSISTANT_ECR_CONFIGURATION_VERSION!==undefined
+  &&(env.PROFITIA_ASSISTANT_ECR_CONFIGURATION_VERSION!==economicTargets.configurationVersion
+   ||env.PROFITIA_ASSISTANT_M2_CONFIGURATION_VERSION!==m2Targets.configurationVersion))return unavailable()
  return Object.freeze({historyKey:historyKey!,usageKey:usageKey!,openaiKey:env.OPENAI_API_KEY,
   multiSource:env.PROFITIA_ASSISTANT_M2_CONFIGURATION_VERSION===m2Targets.configurationVersion,
+  economicCalendar:env.PROFITIA_ASSISTANT_ECR_CONFIGURATION_VERSION===economicTargets.configurationVersion,
   historyUrl:storeUrl(env.PROFITIA_ASSISTANT_HISTORY_DATABASE_URL,targets.history),
   usageUrl:storeUrl(env.PROFITIA_ASSISTANT_USAGE_DATABASE_URL,targets.usage)})
 }
@@ -84,7 +89,7 @@ export function createSg2AssistantRuntime(config:AssistantConfiguration,options:
    })
   if(!(result.value instanceof Response)||!result.value.ok)return unavailable()
   return result.value.json()
- }}),...createAssistantSourceAdapters({enabled:config.multiSource,organisationId,forecast:options.forecast,market:options.market})]})
+ }}),...createAssistantSourceAdapters({enabled:config.multiSource,economicCalendarEnabled:config.economicCalendar,organisationId,forecast:options.forecast,market:options.market})]})
  const prune=()=>{void historyDb.$queryRawUnsafe('SELECT sg2_assistant_history.prune()').catch(()=>{})}
  prune();const retention=setInterval(prune,10*60*1000);retention.unref()
  const model=createAssistantModel(new OpenAI({apiKey:config.openaiKey,baseURL:'https://api.openai.com/v1',organization:null,project:null,maxRetries:0,timeout:60000}),usage)

@@ -1,6 +1,7 @@
 import {createHash} from 'node:crypto'
 import {ASSISTANT_CONTEXT_CONTRACT,readChartReference,contextReferences,benchmarkSnapshotBytes,contextDate,CONTEXT_STATUSES} from '../../assistant-context-contracts/src/index.mjs'
 export {createForecastContextAdapter,createSupplierContextAdapter,createNewsfeedContextAdapter,createPublishedReportContextAdapter} from './multi-source.mjs'
+export {createEconomicCalendarContextAdapter,ECONOMIC_CONTEXT_ADAPTER_CONTRACT} from './economic-calendar.mjs'
 const freeze=v=>{if(v&&typeof v==='object'){Object.values(v).forEach(freeze);Object.freeze(v)}return v}
 const hash=v=>createHash('sha256').update(v).digest('hex')
 function historicalComparison(from,to){
@@ -16,7 +17,7 @@ function historicalChanges(observations){
   period:historicalComparison(recent[0],last),latestVersusMinimum:historicalComparison(minimum,last),latestVersusMaximum:historicalComparison(maximum,last)},
   meaning:'Deterministic changes in the verified stored historical observations. Absolute changes use the benchmark unit; percentChange is a percentage with a positive base, otherwise null. These calculations are not a forecast.'}
 }
-export const ASSISTANT_GATEWAY_CONTRACT=Object.freeze({id:'profitia.assistant-context-gateway',version:'2.1.0'})
+export const ASSISTANT_GATEWAY_CONTRACT=Object.freeze({id:'profitia.assistant-context-gateway',version:'2.2.0'})
 /** Producers own reads, data and E1 authorisation. The gateway never accepts a
  * client ALLOW, cached permission, browser values or provider credentials. */
 export function createAssistantContextGateway({adapters,now=Date.now}){
