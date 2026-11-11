@@ -1,0 +1,166 @@
+{
+  "schemaVersion": "1.0",
+  "verifiedAt": "2026-11-11T13:48:58.908Z",
+  "targetEnvironment": "development",
+  "stage": 1,
+  "status": "FOUNDATION_READINESS_VERIFIED",
+  "phase": "FOUNDATION_ONLY",
+  "processingEnabled": false,
+  "taskId": "ARCH-PK-STAGE1-DEVELOPMENT-ACTIVATION-20261111",
+  "repository": "profitia/SG-dev",
+  "sourceCommit": "1fef8b3837c1bdd6ea9ff95dd4e976cc71cf9526",
+  "github": {
+    "environment": "platform-knowledge-development",
+    "environmentId": 26951998632,
+    "allowedBranch": "main",
+    "branchPolicyId": 66315439,
+    "secretsAdded": 0
+  },
+  "render": {
+    "workspaceId": "tea-d7lps8rbc2fs73cn80dg",
+    "projectId": "prj-dbq52nbl550s739jii6g",
+    "environmentId": "evm-dbq534rl550s739jjma0",
+    "autoDeploy": false,
+    "region": "frankfurt",
+    "api": {
+      "serviceId": "srv-dbq6n2m7bikc73dmvs8g",
+      "deployId": "dep-dbq71vutlv9c73epgb2g",
+      "status": "live",
+      "commit": "1fef8b3837c1bdd6ea9ff95dd4e976cc71cf9526",
+      "url": "https://platform-knowledge-development-api.onrender.com",
+      "plan": "0.5c-512mb",
+      "instances": 1
+    },
+    "worker": {
+      "serviceId": "srv-dbq6njec6qcc738fjf50",
+      "deployId": "dep-dbq72f5g1s2s739m10dg",
+      "status": "live",
+      "commit": "1fef8b3837c1bdd6ea9ff95dd4e976cc71cf9526",
+      "plan": "1c-2g",
+      "instances": 1
+    },
+    "imageDigest": "NOT_EXPOSED_BY_READBACK",
+    "estimatedMonthlyServiceUsd": 32,
+    "actualBilledCost": "NOT_MEASURED"
+  },
+  "neon": {
+    "projectId": "sparkling-sky-79692560",
+    "branchId": "br-billowing-grass-b9ko5s4f",
+    "database": "platform_knowledge",
+    "schema": "platform_knowledge",
+    "postgresVersion": "18.6",
+    "pgvectorVersion": "0.8.6",
+    "productObjects": 0,
+    "authenticatedRoles": [
+      "platform_knowledge_api",
+      "platform_knowledge_worker",
+      "platform_knowledge_migrator"
+    ],
+    "ownerLogin": false,
+    "migratorInRuntime": false,
+    "limitedRuntimeRoleProbes": "PASS",
+    "databaseTlsMode": "verify-full"
+  },
+  "storage": {
+    "bucket": "platform-knowledge-uploads",
+    "access": "private",
+    "endpoint": "https://br-billowing-grass-b9ko5s4f.storage.c-7.eu-central-1.aws.neon.tech",
+    "signingRegion": "eu-central-1",
+    "forcePathStyle": true,
+    "credentialScopes": [
+      "storage:read",
+      "storage:write"
+    ],
+    "separateRuntimeCredentials": true,
+    "apiListObjectsV2MaxKeys0": 200,
+    "workerListObjectsV2MaxKeys0": 200,
+    "anonymousHead": 403,
+    "uploadDeleteTest": "STAGE_2_NOT_RUN",
+    "initialWriteOnlyCredentials": "REPLACED_CLEANUP_PENDING_OWNER_CONFIRMATION"
+  },
+  "openai": {
+    "existingKeyReusedWithOwnerApproval": true,
+    "configuredServices": [
+      "api",
+      "worker"
+    ],
+    "modelsCatalogFromRuntime": 200,
+    "availableModels": [
+      "gpt-6-luna",
+      "text-embedding-3-small"
+    ],
+    "paidGenerations": 0,
+    "embeddingRequests": 0,
+    "startupBudgetUsd": 10,
+    "documentLimitUsd": 1,
+    "durableLedger": "STAGE_2_BEFORE_PAID_PROCESSING",
+    "privacyBeforeRealDocuments": "STAGE_2_ACTIVATION_REQUIREMENT"
+  },
+  "sentry": {
+    "organisation": "profitia",
+    "project": "platform-knowledge",
+    "projectId": "4512413142810704",
+    "environment": "development",
+    "release": "1fef8b3837c1bdd6ea9ff95dd4e976cc71cf9526",
+    "syntheticProbe": true,
+    "apiEventId": "182a959ff24b4509b87dfc1aab373810",
+    "workerEventId": "dbfef7cc45c742c8aa5df3df3ab48860",
+    "eventReceipt": "UI_VERIFIED_FOR_BOTH_SERVICES",
+    "containsCustomerDocuments": false,
+    "dsnIncluded": false
+  },
+  "checks": {
+    "foundationTests": {
+      "passed": 13,
+      "failed": 0
+    },
+    "mainFoundationCiRun": 43019062423,
+    "mainFoundationCiConclusion": "success",
+    "referenceFileCount": 10,
+    "legacyOfficeVerified": true,
+    "ownerDbRunbookLocalPostgres": "16.14_PASS_GUARDS_IDEMPOTENCE_AND_LIMITED_ROLES",
+    "legacyOfficeProofMode": "ORIGINAL_ROUND_TRIP_PLUS_CURRENT_REFERENCE_AND_SOURCE_HASH_VALIDATION",
+    "legacyOfficeReferenceRun": 43018496713,
+    "legacyOfficeReferenceArtifactId": 13854630194,
+    "legacyOfficeNegativeChecks": [
+      "binary_tamper_rejected",
+      "source_text_change_rejected",
+      "word_content_change_rejected"
+    ]
+  },
+  "httpChecks": [
+    {
+      "path": "/health/live",
+      "status": 200
+    },
+    {
+      "path": "/health/foundation",
+      "status": 200
+    },
+    {
+      "path": "/health/ready",
+      "status": 503
+    },
+    {
+      "path": "/v1/import",
+      "status": 503
+    }
+  ],
+  "recovery": {
+    "firstDeploymentPreviousLkg": "NONE_FIRST_DEPLOYMENT",
+    "procedure": "Suspend only the two Platform Knowledge Development services; preserve Neon and private bucket. Never restore a shared database globally.",
+    "productMigrationRun": false
+  },
+  "notImplemented": [
+    "document ingestion",
+    "cognitive processing",
+    "embeddings",
+    "hybrid retrieval",
+    "administrator UI",
+    "ACG/CIC/SG2 adoption",
+    "E1 private operations",
+    "Identity account deletion producer",
+    "memory and retention workers"
+  ],
+  "acceptanceBoundary": "Stage 1 readiness only; all Stage 3 Development criteria and canon section29 remain mandatory for complete product delivery."
+}
