@@ -1,3 +1,4 @@
+import {recurringSourcePredecessor} from '../../architecture-lab/private-recurring-source.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {createApplication} from '../src/server.mjs'
@@ -27,6 +28,7 @@ const SAVED_SEARCH_PATHS=Object.freeze([
 const adoptionFile='apps/newsfeed-runtime/saved-searches-integration.json'
 const hash=value=>createHash('sha256').update(value).digest('hex')
 function savedSearchPredecessor(current,historical){
+ const recurring=recurringSourcePredecessor(current,historical);if(recurring)return savedSearchPredecessor(recurring.previousBytes,historical)
  const a=JSON.parse(current(adoptionFile))
  assert.deepEqual(Object.keys(a).sort(),['schemaVersion','contract','taskId','targetEnvironment','previousSourceSha','previousAssistantReceiptSha256','sourceDigests','migrationSha256','assistantStoredReadOnly','serviceMonitoring'].sort())
  assert.equal(a.schemaVersion,'1.0');assert.equal(a.contract,'newsfeed.saved-searches/1.2.0');assert.equal(a.taskId,'ARCH-PI-DEVELOPMENT-E2E-20261110');assert.equal(a.targetEnvironment,'development')
