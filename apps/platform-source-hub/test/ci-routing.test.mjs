@@ -10,6 +10,24 @@ import {validateConsumerGroups,validateRouting,validationBase,reviewedOilConsume
 
 const repositoryRoot=fileURLToPath(new URL('../../../',import.meta.url))
 const readReceipt=file=>JSON.parse(fs.readFileSync(new URL('../../../'+file,import.meta.url)))
+// The test must work both on a refreshed candidate and on its resulting main.
+// Use the last actual main ancestor before this source record was introduced;
+// unrelated later main-only governance commits are never part of this review.
+function recurringReviewBase(){
+ const git=args=>execFileSync('git',args,{cwd:repositoryRoot,encoding:'utf8',stdio:['ignore','pipe','pipe']}).trim()
+ let base=git(['merge-base','origin/main','HEAD'])
+ for(let i=0;i<64;i++){
+  try{git(['cat-file','-e',base+':apps/architecture-lab/private-recurring-source.json'])}
+  catch(error){
+   const missing=String(error.stderr??'').includes("path 'apps/architecture-lab/private-recurring-source.json' does not exist in ")
+   if(error.status===128&&missing)return base
+   throw error
+  }
+  base=git(['rev-parse',base+'^1'])
+ }
+ assert.fail('Exact pre-acceptance main ancestor required')
+}
+
 test('mixed producer and consumer changes run every actual owner gate',()=>{
  const called=[]
  const result=validateRouting({repositoryRoot,readReceipt,
@@ -89,7 +107,7 @@ test('Oil consumer routing requires the complete pinned checkout; changed bytes,
 });
 
 test('private recurring source routing validates the complete actual candidate before admitting each real owner',()=>{
- const a=readReceipt('apps/architecture-lab/private-recurring-source.json'),candidateSha=execFileSync('git',['rev-parse','HEAD'],{cwd:repositoryRoot,encoding:'utf8'}).trim(),baseSha=a.authorityMainSha
+ const a=readReceipt('apps/architecture-lab/private-recurring-source.json'),candidateSha=execFileSync('git',['rev-parse','HEAD'],{cwd:repositoryRoot,encoding:'utf8'}).trim(),baseSha=recurringReviewBase()
  const paths=reviewedRecurringConsumerPaths(repositoryRoot,{baseSha,candidateSha})
  assert.equal(paths.get('apps/sg-runtime/components/procurement-insights/reports.tsx'),'SG2')
  assert.equal(paths.get('apps/srm/scripts/private-host.integration.test.mjs'),'SRM')
@@ -106,7 +124,7 @@ test('private recurring public routing refuses changed bytes, symbolic files and
  const temporary=fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(),'hub-recurring-source-')))
  const git=(cwd,...args)=>execFileSync('git',args,{cwd,encoding:'utf8',stdio:['ignore','pipe','pipe']}).trim()
  try{
-  const candidateSha=git(repositoryRoot,'rev-parse','HEAD'),a=readReceipt('apps/architecture-lab/private-recurring-source.json'),baseSha=a.authorityMainSha
+  const candidateSha=git(repositoryRoot,'rev-parse','HEAD'),a=readReceipt('apps/architecture-lab/private-recurring-source.json'),baseSha=recurringReviewBase()
   git(temporary,'clone','--quiet','--shared','--no-checkout',repositoryRoot,'candidate')
   const root=path.join(temporary,'candidate');git(root,'update-ref','--no-deref','HEAD',candidateSha);git(root,'read-tree',candidateSha)
   const canonical=git(root,'ls-tree','-r','--name-only',candidateSha,'--','Canon').split('\n')
