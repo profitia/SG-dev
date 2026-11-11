@@ -45,6 +45,8 @@ export async function runRetention({pool,storage}){
    WHERE expires_at<=clock_timestamp() AND deleted_at IS NULL`);
   await db.query(`UPDATE platform_knowledge.jobs SET status='REVOKED',fence=fence+1,lease_until=NULL WHERE status IN ('QUEUED','RUNNING','RETRY_WAIT')
    AND source_id IN(SELECT id FROM platform_knowledge.sources WHERE deleted_at IS NOT NULL OR revoked_at IS NOT NULL)`);
+  await db.query(`UPDATE platform_knowledge.provider_calls c SET result=NULL WHERE result IS NOT NULL AND EXISTS(
+   SELECT 1 FROM platform_knowledge.sources s WHERE s.id=ANY(c.input_source_ids) AND(s.deleted_at IS NOT NULL OR s.revoked_at IS NOT NULL OR s.expires_at<=clock_timestamp()))`);
   await db.query("UPDATE platform_knowledge.provider_calls SET state='UNKNOWN' WHERE state='RESERVED' AND created_at<clock_timestamp()-interval '5 minutes'");
   await db.query("UPDATE platform_knowledge.provider_calls SET result=NULL WHERE generation_id IS NULL AND result IS NOT NULL AND created_at<clock_timestamp()-interval '24 hours'");
   // Keep only finite non-content technical audit. Unknown paid outcomes retain
@@ -52,7 +54,7 @@ export async function runRetention({pool,storage}){
   const sources=(await db.query('SELECT id FROM platform_knowledge.sources WHERE deleted_at IS NOT NULL AND(raw_key IS NULL OR raw_deleted_at IS NOT NULL) FOR UPDATE SKIP LOCKED LIMIT 20')).rows;
   for(const {id} of sources){
    await db.query('UPDATE platform_knowledge.sources SET active_generation_id=NULL,file_name=$2,metadata=$3,raw_key=NULL WHERE id=$1',[id,'[deleted]','{}']);
-   await db.query('UPDATE platform_knowledge.provider_calls SET result=NULL WHERE source_id=$1',[id]);
+   await db.query('UPDATE platform_knowledge.provider_calls SET result=NULL WHERE source_id=$1 OR $1=ANY(input_source_ids)',[id]);
    await db.query('DELETE FROM platform_knowledge.cognition WHERE generation_id IN(SELECT id FROM platform_knowledge.generations WHERE source_id=$1)',[id]);
    await db.query('DELETE FROM platform_knowledge.chunks WHERE generation_id IN(SELECT id FROM platform_knowledge.generations WHERE source_id=$1)',[id]);
    await db.query("UPDATE platform_knowledge.generations SET inventory=NULL,coverage=NULL,validation=NULL,state='RETIRED' WHERE source_id=$1",[id]);

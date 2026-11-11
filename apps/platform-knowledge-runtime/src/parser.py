@@ -210,5 +210,9 @@ if __name__=='__main__':
     except Exception as error:
         code=str(error) if str(error) in ['PARSER_ISOLATION_UNAVAILABLE','UNSAFE_DOCUMENT','UNSUPPORTED_FORMAT','FORMAT_MISMATCH','FILE_LIMIT','EXTRACTED_TEXT_LIMIT','LEGACY_CONVERSION_FAILED'] else 'EXTRACTION_FAILED'
         kind=type(error).__name__
+        # Only fixed code locations are diagnostic; no message, source path or data.
+        import traceback
+        trace=[{'module':Path(f.filename).name,'line':f.lineno,'function':f.name} for f in traceback.extract_tb(error.__traceback__) if Path(f.filename).name in ['parser.py','subprocess.py','olefile.py','pathlib.py']]
+        sys.stderr.write(json.dumps({'parserCodeTrace':trace[-4:]})+'\n')
         allowed=['PermissionError','ImportError','ModuleNotFoundError','RuntimeError','ValueError','MemoryError','FileNotFoundError','TypeError','AttributeError','OSError']
         print(json.dumps({'error':code,'failureStage':stage,'exceptionType':kind if kind in allowed else 'UNKNOWN'}));sys.exit(1)

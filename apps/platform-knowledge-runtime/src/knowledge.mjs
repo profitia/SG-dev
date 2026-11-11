@@ -87,11 +87,16 @@ export async function queryKnowledge({pool,provider,query,scope}){
   // support check returns only literal source quotes; unsupported candidates
   // never become apparently usable context. It cannot run document commands.
   if(evidence.length){
-   const supported=await provider.analyze({sourceId:allowed[0].id,generationId:null,
-    chunks:evidence.map(e=>({id:e.evidenceId,text:e.text,authority:e.authority,publishedAt:e.publishedAt??null,status:e.status??null})),question:query.query,
-    sourceRefs:evidence.map(e=>({sourceId:e.sourceId,generationId:e.generationId,requireActive:true})),
-    key:'support-'+digest({requestId:query.requestId,evidence:evidence.map(e=>e.evidenceId)}),scope});
-   const ids=new Set(supported.statements.filter(s=>s.kind!=='INFERENCE').map(s=>s.chunkId));
+   const ids=new Set();
+   // Bound model work without dropping candidates from the support check.
+   for(let offset=0;offset<evidence.length;offset+=4){
+    const batch=evidence.slice(offset,offset+4);
+    const supported=await provider.analyze({sourceId:batch[0].sourceId,generationId:null,
+     chunks:batch.map(e=>({id:e.evidenceId,text:e.text,authority:e.authority,publishedAt:e.publishedAt??null,status:e.status??null})),question:query.query,
+     sourceRefs:batch.map(e=>({sourceId:e.sourceId,generationId:e.generationId,requireActive:true})),
+     key:'support-'+digest({requestId:query.requestId,evidence:batch.map(e=>e.evidenceId)}),scope});
+    for(const s of supported.statements)if(s.kind!=='INFERENCE')ids.add(s.chunkId);
+   }
    evidence=evidence.filter(e=>ids.has(e.evidenceId));
    if(!evidence.length)omissions.push('NO_SUPPORT');
   }
@@ -106,5 +111,5 @@ export async function queryKnowledge({pool,provider,query,scope}){
    &&eligibleSource(sourceFromRow(source),principal,'apiExcerpt')&&eligibleSource(sourceFromRow(source),principal,'quote');});
  },principal);
  if(evidence.some(e=>e.coverage==='PARTIAL'))omissions.push('SOURCE_PARTIAL');
- return fitContextAsync(query,evidence,{countTokens:text=>provider.countContext(text,scope),omissions,version:query.version,summary});
+ return fitContextAsync(query,evidence,{countTokens:text=>provider.countContext(text,scope,evidence.map(e=>({sourceId:e.sourceId,generationId:e.generationId,requireActive:true}))),omissions,version:query.version,summary});
 }

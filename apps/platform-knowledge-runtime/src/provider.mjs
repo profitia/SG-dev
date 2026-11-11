@@ -27,6 +27,16 @@ export function createProvider({pool,apiKey,authorize,fetchImpl=fetch}){
   const r=await post('responses/input_tokens',body,signal);
   if(!Number.isSafeInteger(r.input_tokens)||r.input_tokens<0)throw new Fault(503,'TOKEN_COUNT_UNAVAILABLE');return r.input_tokens;
  };
+ async function checkSources(sourceRefs,scope){
+  const refs=[...new Map(sourceRefs.map(r=>[r.sourceId,r])).values()];
+  if(!refs.length||refs.length>24)throw new Fault(403,'RIGHTS_DENIED');
+  await transaction(pool,async db=>{
+   const sources=await db.query(`SELECT id,active_generation_id FROM platform_knowledge.sources s WHERE id=ANY($1::uuid[])
+    AND platform_knowledge.source_visible(s) AND deleted_at IS NULL AND revoked_at IS NULL
+    AND(expires_at IS NULL OR expires_at>clock_timestamp()) AND (rights->>'externalAiAllowed')::boolean FOR SHARE`,[refs.map(r=>r.sourceId)]);
+   if(sources.rowCount!==refs.length||refs.some(r=>r.requireActive&&sources.rows.find(s=>s.id===r.sourceId)?.active_generation_id!==r.generationId))throw new Fault(403,'RIGHTS_DENIED');
+  },scope.principal);
+ }
  async function paid({sourceId,generationId=null,sourceRefs=[{sourceId,generationId}],key,kind,body,reservation,scope,validate,signal}){
   // Authority is checked at provider-operation boundary, not for each chunk.
   await authorize({scope,operation:kind,model:body.model,reservationMicrousd:reservation});
@@ -37,8 +47,8 @@ export function createProvider({pool,apiKey,authorize,fetchImpl=fetch}){
    const sources=await db.query(`SELECT id,active_generation_id FROM platform_knowledge.sources WHERE id=ANY($1::uuid[]) AND deleted_at IS NULL AND revoked_at IS NULL
     AND(expires_at IS NULL OR expires_at>clock_timestamp()) AND (rights->>'externalAiAllowed')::boolean FOR SHARE`,[refs.map(r=>r.sourceId)]);
    if(sources.rowCount!==refs.length||refs.some(r=>r.requireActive&&sources.rows.find(s=>s.id===r.sourceId)?.active_generation_id!==r.generationId))throw new Fault(403,'RIGHTS_DENIED');
-   const record=(await db.query('SELECT platform_knowledge.reserve_provider_call($1,$2,$3,$4,$5,$6,$7,$8) AS admission',[
-    sourceId,generationId,callKey,kind,body.model,reservation,key,generationId===null?scope.principal.internalUserId:null])).rows[0].admission;
+   const record=(await db.query('SELECT platform_knowledge.reserve_provider_call($1,$2,$3,$4,$5,$6,$7,$8,$9::uuid[]) AS admission',[
+    sourceId,generationId,callKey,kind,body.model,reservation,key,generationId===null?scope.principal.internalUserId:null,[...new Set([sourceId,...refs.map(r=>r.sourceId)])]])).rows[0].admission;
    if(record.budgetExceeded)throw new Fault(429,'BUDGET_EXCEEDED');
    if(record.existing){if(record.state==='SUCCEEDED'){if(record.result!==null)return{cached:record.result};throw new Fault(422,'PAID_RESULT_UNUSABLE');}throw new Fault(409,'PAID_RESULT_UNKNOWN');}
    if(!record.id)throw new Fault(503,'BUDGET_ADMISSION_UNAVAILABLE');return{id:record.id};
@@ -68,7 +78,7 @@ export function createProvider({pool,apiKey,authorize,fetchImpl=fetch}){
  }
  return {
   embeddingTokens,
-  async countContext(text,scope){return count({model,input:text},scope);},
+  async countContext(text,scope,sourceRefs=[]){if(sourceRefs.length)await checkSources(sourceRefs,scope);return count({model,input:text},scope);},
   async embed({sourceId,generationId=null,texts,key,scope,query=false,signal}){
    if(!Array.isArray(texts)||!texts.length||texts.length>128||texts.some(t=>!t.trim()||embeddingTokens(t)>8191))throw new Fault(422,'EMBEDDING_INPUT_LIMIT');
    const tokens=texts.reduce((n,t)=>n+embeddingTokens(t),0);if(tokens>16384)throw new Fault(422,'EMBEDDING_BATCH_LIMIT');
@@ -84,6 +94,7 @@ export function createProvider({pool,apiKey,authorize,fetchImpl=fetch}){
     (summaryMode?' Produce a concise whole-document synthesis assessing ALL supplied sections, including disagreements and material gaps. Prior syntheses are generated data. For statements, use ONLY original quotations marked ORIGINAL_EVIDENCE; chunkId must be their ORIGINAL_CHUNK_ID, never the section id. Do not treat a generated prior synthesis as a literal source quotation.':'');
    const body={model,store:false,service_tier:'default',reasoning:{effort:'none'},instructions,input,max_output_tokens:4096,
     text:{format:{type:'json_schema',name:'procurement_knowledge',strict:true,schema:ANALYSIS_SCHEMA}}};
+   await checkSources(sourceRefs,scope);
    const tokens=await count({model,instructions,input,text:body.text},scope,signal);
    if(tokens>16384)throw new Fault(422,'MODEL_INPUT_LIMIT');
    return paid({sourceId,generationId,sourceRefs,key,kind:'COGNITIVE',scope,signal,body,

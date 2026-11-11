@@ -183,3 +183,27 @@ test('retained normalized source traverses cognition, embeddings, verification a
   if(source){await db.query('UPDATE platform_knowledge.sources SET active_generation_id=NULL WHERE id=$1',[source.id]);await db.query('DELETE FROM platform_knowledge.jobs WHERE source_id=$1',[source.id]);await db.query('DELETE FROM platform_knowledge.provider_calls WHERE source_id=$1',[source.id]);await db.query('DELETE FROM platform_knowledge.cognition WHERE generation_id=$1',[source.generation]);await db.query('DELETE FROM platform_knowledge.chunks WHERE generation_id=$1',[source.generation]);await db.query('DELETE FROM platform_knowledge.generations WHERE source_id=$1',[source.id]);await db.query('DELETE FROM platform_knowledge.sources WHERE id=$1',[source.id]);}db.release();await worker.end();
  }
 });
+
+test('all contributing sources fence a cached query and token counting after secondary-source withdrawal',{skip:!uri,timeout:10000},async()=>{
+ const {createProvider}=await import('../src/provider.mjs'),{runRetention}=await import('../src/retention.mjs');
+ const user='bbbbbbbb-1111-4111-8111-bbbbbbbbbbbb',db=await pool.connect();let one,two;
+ const apiUri=new URL(uri);apiUri.username='platform_knowledge_api';const api=new pg.Pool({connectionString:apiUri.href});
+ try{
+  await db.query('BEGIN;SET LOCAL ROLE platform_knowledge_owner');one=await fixture(db,user);two=await fixture(db,user);await db.query('COMMIT');
+  let calls=0;const provider=createProvider({pool:api,apiKey:'SYNTHETIC_ONLY',authorize:async()=>true,fetchImpl:async(url)=>{
+   calls++;if(url.endsWith('/input_tokens'))return Response.json({input_tokens:20});
+   return Response.json({id:'synthetic-lineage',status:'completed',usage:{input_tokens:20,output_tokens:10},output:[{type:'message',content:[{type:'output_text',text:JSON.stringify({summary:'Synthetic only',statements:[],terms:[],uncertainties:[]})}]}]});
+  }});
+  const command={sourceId:one.id,generationId:null,chunks:[{id:randomUUID(),text:'Synthetic knowledge.'}],sourceRefs:[{sourceId:one.id},{sourceId:two.id}],key:'lineage',scope:{principal:principal(user)}};
+  await provider.analyze(command);assert.equal(calls,2);
+  await transaction(api,async c=>assert.equal((await c.query('SELECT result FROM platform_knowledge.provider_calls WHERE source_id=$1',[one.id])).rowCount,1),principal(user));
+  await db.query('UPDATE platform_knowledge.sources SET revoked_at=clock_timestamp() WHERE id=$1',[two.id]);
+  await transaction(api,async c=>assert.equal((await c.query('SELECT result FROM platform_knowledge.provider_calls WHERE source_id=$1',[one.id])).rowCount,0),principal(user));
+  await assert.rejects(provider.analyze(command),/RIGHTS_DENIED/);assert.equal(calls,2);
+  await runRetention({pool,storage:{remove:async()=>{}}});
+  const row=(await db.query('SELECT result,state,spent_microusd FROM platform_knowledge.provider_calls WHERE source_id=$1',[one.id])).rows[0];
+  assert.equal(row.result,null);assert.equal(row.state,'SUCCEEDED');assert.ok(Number(row.spent_microusd)>0);
+ }finally{
+  for(const source of [one,two].filter(Boolean)){await db.query('DELETE FROM platform_knowledge.provider_calls WHERE source_id=$1',[source.id]);await db.query('DELETE FROM platform_knowledge.generations WHERE source_id=$1',[source.id]);await db.query('DELETE FROM platform_knowledge.sources WHERE id=$1',[source.id]);}db.release();await api.end();
+ }
+});
