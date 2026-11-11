@@ -1,3 +1,4 @@
+import {sdkContinuationPredecessor} from '../../../packages/platform-contracts/test/organisation-sdk-compatibility.mjs'
 // Build/test-only continuation of the accepted ECR source. No runtime authority.
 import assert from 'node:assert/strict'
 import {createHash} from 'node:crypto'
@@ -22,6 +23,17 @@ export const PRECISION_RECEIPTS=Object.freeze([
 ])
 const hash=b=>createHash('sha256').update(b).digest('hex')
 export function assistantEcrPrecisionPredecessor(current,historical){
+ // The newest exact SDK view is verified before the immutable ECR algorithm.
+ let sdkReceipt
+ try{sdkReceipt=JSON.parse(current('apps/sg-runtime/operation-integration.json'))}catch(error){
+  const text=String(error?.stderr??error?.message??'')
+  const absent=error?.status===128&&(text.includes("'apps/sg-runtime/operation-integration.json' does not exist in ")||text.includes("'apps/sg-runtime/operation-integration.json' exists on disk, but not in "))
+  if(error?.code!=='ENOENT'&&!absent)throw error
+ }
+ if(sdkReceipt?.sdkSourceContinuations!==undefined){
+  const sdk=sdkContinuationPredecessor(sdkReceipt,current,historical,{projectKey:'SG2'})
+  if(sdk)return assistantEcrPrecisionPredecessor(sdk.previousBytes,historical)
+ }
  let bytes
  try{bytes=current(PRECISION_RECEIPT)}catch(error){
   const message=String(error?.stderr??error?.message??'')
