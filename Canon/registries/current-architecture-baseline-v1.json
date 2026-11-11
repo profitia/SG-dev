@@ -6,6 +6,24 @@
   "pathResolutionStrategy": "MOST_SPECIFIC_MATCH_WINS",
   "surfaces": [
     {
+      "id": "GOV-DOCS-UNIVERSAL-V12-001",
+      "capability": "Agent Instruction Documentation",
+      "name": "Universal Execution Wrapper v1.2 — inactive library document",
+      "pathPatterns": [
+        "docs/agent-instructions/profitia-universal-project-execution-v1.2.md"
+      ],
+      "currentOwner": "Governance Source Layer",
+      "currentResponsibility": "Documentation-only publication of the owner-approved universal execution wrapper v1.2 in the existing wrapper library; no activation, replacement or runtime policy change.",
+      "baselineClassification": "ALIGNED",
+      "parentSurfaceId": null,
+      "cleanupReason": null,
+      "classificationReferenceSha": "4c8f2d98cdb42cde8b8de4d77af5aeef64b025ae",
+      "allowedProjectKeys": [
+        "ARCHITECTURE"
+      ],
+      "onboardingAuthorization": "Explicit owner response: Zatwierdzam jeden wpis i dokończenie publikacji; 2026-11-11, host 01a1cc30-dccf-7942-b613-e33a0fe38b30. Exact documentation path only; publication without activation or replacement of existing wrappers."
+    },
+    {
       "id": "LIMITS-BASE-001",
       "capability": "Package & Limits Management",
       "name": "Package & Limits Dashboard Runtime",
