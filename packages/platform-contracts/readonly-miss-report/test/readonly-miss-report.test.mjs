@@ -1,4 +1,5 @@
-import {recurringSourceFilesystem} from '../../../../apps/architecture-lab/private-recurring-source.mjs'
+import {recurringSourcePredecessor} from '../../../../apps/architecture-lab/private-recurring-source.mjs'
+import {acceptedSdkSource,sdkContinuationPredecessor} from '../../test/organisation-sdk-compatibility.mjs'
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import fs from 'node:fs'
@@ -12,7 +13,9 @@ import {currentHumanReadSourceDigest,CURRENT_HUMAN_READ_CONTRACT} from '@profiti
 import {privateOperationHostSourceDigest} from '@profitia/platform-contracts/private-operation-host'
 import {CURRENT_FRESH_REPORT_CONTRACT,currentFreshReportSourceDigest} from '@profitia/platform-current-fresh-report'
 
-const recurring=recurringSourceFilesystem(new URL('../../../../',import.meta.url))
+const sourceRoot=new URL('../../../../',import.meta.url),physicalSource=p=>fs.readFileSync(new URL(p,sourceRoot)),historicalSource=(sha,p)=>execFileSync('git',['show',sha+':'+p],{cwd:sourceRoot})
+const bootstrapSource=sdkContinuationPredecessor(JSON.parse(physicalSource('apps/sg-runtime/operation-integration.json')),physicalSource,historicalSource)
+const recurring={manifest:recurringSourcePredecessor(bootstrapSource?.previousBytes??physicalSource,historicalSource)?.manifest}
 
 function fixture(){
  const unexpected=async()=>assert.fail('No external call in constructor or rejected input')
@@ -29,8 +32,8 @@ test('additive producer has an independent fingerprint and preserves existing RE
  assert.deepEqual(READONLY_MISS_REPORT_CONTRACT,{id:'profitia.readonly-miss-report',version:'1.0.0'})
  assert.deepEqual(CURRENT_HUMAN_READ_CONTRACT,{id:'profitia.current-human-read',version:'1.1.0'})
  const accepted=JSON.parse(fs.readFileSync(new URL('../../../../apps/srm/operation-integration.json',import.meta.url)))
- assert.equal(await currentHumanReadSourceDigest(),recurring.manifest?.sdkDigests.currentHumanReadSourceDigest??accepted.oilAutonomousReportCompatibility?.sdkDigests.currentHumanReadSourceDigest??accepted.assistantM1SourceCompatibility.sdkDigests.currentHumanReadSourceDigest)
- assert.equal(await privateOperationHostSourceDigest(),recurring.manifest?.sdkDigests.privateOperationHostSourceDigest??accepted.oilAutonomousReportCompatibility?.sdkDigests.privateOperationHostSourceDigest??accepted.assistantM1SourceCompatibility.sdkDigests.privateOperationHostSourceDigest)
+ assert.equal(await currentHumanReadSourceDigest(),acceptedSdkSource().sdkDigests.currentHumanReadSourceDigest)
+ assert.equal(await privateOperationHostSourceDigest(),acceptedSdkSource().sdkDigests.privateOperationHostSourceDigest)
  assert.match(await readonlyMissReportSourceDigest(),/^[a-f0-9]{64}$/)
  assert.equal(createReadonlyMissReportHost(fixture()).hostContract,READONLY_MISS_REPORT_CONTRACT)
 })
@@ -38,7 +41,7 @@ test('accepted current FRESH 1.0 metadata and fingerprint remain unchanged besid
  const receipt=JSON.parse(fs.readFileSync(new URL('../../../../apps/srm/operation-integration.json',import.meta.url)))
  const accepted=receipt.freshCurrentBoundaryAdoption
  assert.deepEqual(CURRENT_FRESH_REPORT_CONTRACT,accepted.contract)
- assert.equal(await currentFreshReportSourceDigest(),recurring.manifest?.optionalPackageDigests.currentFreshReportSourceDigest??receipt.oilAutonomousReportCompatibility?.optionalPackageDigests.currentFreshReportSourceDigest??receipt.assistantM1SourceCompatibility?.optionalPackageDigests.currentFreshReportSourceDigest ?? receipt.sourceHubMarketSymbolCompatibility?.optionalPackageDigests.currentFreshReportSourceDigest ?? receipt.sourceHubApiPathCompatibility?.optionalPackageDigests.currentFreshReportSourceDigest ?? accepted.optionalPackage.sourceDigest)
+ assert.equal(await currentFreshReportSourceDigest(),acceptedSdkSource().optionalPackageDigests.currentFreshReportSourceDigest)
  const metadata=JSON.parse(fs.readFileSync(new URL('../../current-fresh-report/package.json',import.meta.url)))
  assert.equal(metadata.name,'@profitia/platform-current-fresh-report');assert.equal(metadata.version,'1.0.0')
  for(const [name,digest] of Object.entries(accepted.producerSourceDigests)){
