@@ -546,3 +546,12 @@ never merge producer/receivers in an order that leaves main invalid.
 This source review grants no SQL007/008 installation, runtime opt-in, access,
 provider request, invitation send, package bypass or deployment. Existing
 installation, recovery, source and activation decisions remain separate.
+
+
+## Stage I SDK CI reconciliation — proposed exact successor (2026-11-11)
+
+OWNER_APPROVED / REQUIRED_CI_PENDING. PR988 and its initial41-file decision remain immutable. Required CI identified missing trusted Root21 source provenance, old M2 byte-view ordering, Newsfeed fingerprint selection and an Oil-only SourceHub routing assumption. The repair changes only test/build metadata and CI support; all155 runtime SDK files,48 SDK fingerprints, optional package digests, historical receipt fields and preserved guards remain unchanged.
+
+The new48-file source review, its exact input commits and all eleven metadata/test replacements or additions are in [the concrete reconciliation review](../evidence/2026-11-11-registration-sdk-ci-reconciliation-review.md). Main refresh may retain only identical reviewed source versions. The trusted checker reads regular files and immutable Git receipts, validates the full pinned source graph and selects the already reviewed default Root16 digest; it never imports candidate JavaScript before credentials are removed. No generic path or credential scope is opened.
+
+The owner explicitly answered “Zatwierdzam poprawkę z PR #990” in the implementation chat, approving document ca497603e534d5928801c2e26201f2eb2be6ae4f and its exact48-file manifest. This exact new decision resolves the earlier automatic rejection; no rejected operation was executed or bypassed. Activation still requires all mandatory policy/source/main checks. Preserve separate owner inputs; no producer-first merge or runtime installation, grant, provider, invitation or deployment follows.
