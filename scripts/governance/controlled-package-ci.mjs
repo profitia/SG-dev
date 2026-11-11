@@ -23,7 +23,8 @@ export const CIC_ANALYTICAL_PIN=Object.freeze({version:'1.3.0',resolved:'https:/
 // Exact M2 publication; the M1 pin remains accepted independently. Same
 // package name, registry and read-only credential phase, without new access.
 export const CIC_ANALYTICAL_M2_PIN=Object.freeze({version:'1.5.1',resolved:'https://npm.pkg.github.com/download/@profitia/cic-core/1.5.1/5576c0f96f4a994bf94e056bd1695aadc9cde0bf',integrity:'sha512-8W0RGrX/ghLrM/u2nYxSWBcdcNnjyNpoaGRcBr8BwuAVchTyR9UEIG1gwjdSS33+Mr9ZJF5IuqHghjxtE9BSQg=='})
-const analyticalPins=Object.freeze([CIC_ANALYTICAL_PIN,CIC_ANALYTICAL_M2_PIN])
+export const CIC_ANALYTICAL_ECR_PIN=Object.freeze({version:'1.6.0',resolved:'https://npm.pkg.github.com/download/@profitia/cic-core/1.6.0/6201251ccac36d5d207f87dfdd40a1547c351753',integrity:'sha512-F2Kkx37hkbqaa8JKkChrrpLsK/9C92lJYwxw5Rl2s97MZZsLfaQCQQmwjwKvwoj34YdIT7tbZ1TOElhf63GckQ=='})
+const analyticalPins=Object.freeze([CIC_ANALYTICAL_PIN,CIC_ANALYTICAL_M2_PIN,CIC_ANALYTICAL_ECR_PIN])
 export const LOCAL_PACKAGES = Object.freeze({
   '@profitia/platform-contracts': '../../packages/platform-contracts',
   '@profitia/sg2-price-change-index-ui': '../../packages/sg2-price-change-index-ui',

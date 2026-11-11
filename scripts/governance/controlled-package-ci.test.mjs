@@ -5,7 +5,7 @@ import {ECR_STAGE03_REVIEW,assertEcrStage03ReviewEntry} from './controlled-packa
 import {SOURCE_HUB_MARKET_SYMBOL_REVIEW,assertMarketSymbolReviewEntry} from './controlled-package-ci.mjs'
 import {ACG_G1_REVIEW,assertAcgG1ReviewEntry} from './controlled-package-ci.mjs'
 import {ACG_M1_EXECUTION_REVIEW,assertAcgM1ReviewEntry,adoptedOperationContract,CIC_ANALYTICAL_PIN} from './controlled-package-ci.mjs'
-import {CIC_ANALYTICAL_M2_PIN} from './controlled-package-ci.mjs'
+import {CIC_ANALYTICAL_M2_PIN,CIC_ANALYTICAL_ECR_PIN} from './controlled-package-ci.mjs'
 import {OIL_REPORT_E1_REVIEW,assertOilReportReviewEntry} from './controlled-package-ci.mjs'
 import {ECR_BACKEND_REVIEW,assertEcrBackendReviewEntry} from './controlled-package-ci.mjs'
 import {createHash} from 'node:crypto'
@@ -26,9 +26,9 @@ const configuration = '@profitia:registry=https://npm.pkg.github.com\n//npm.pkg.
 const lock = () => ({lockfileVersion: 3, packages: Object.fromEntries(PRIVATE_PACKAGES.map(name => [`node_modules/${name}`, {version: '1.0.0', integrity: 'sha512-approved'}]))})
 const rejection = fn => assert.throws(fn)
 
-test('M2 admits only its exact published CIC artifact for the existing SG2 consumer; M1 remains independently pinned',()=>{
+test('ECR admits only its exact published CIC artifact for SG2 while preserving the independent M1 and M2 pins',()=>{
  const authority=lock()
- for(const pin of [CIC_ANALYTICAL_PIN,CIC_ANALYTICAL_M2_PIN]){
+ for(const pin of [CIC_ANALYTICAL_PIN,CIC_ANALYTICAL_M2_PIN,CIC_ANALYTICAL_ECR_PIN]){
   const candidate=lock();candidate.packages['']={name:'@sg/runtime',dependencies:{'@profitia/cic-core':pin.version}}
   candidate.packages['node_modules/@profitia/cic-core']={...pin}
   assertPackagePolicy(candidate,authority,configuration)
@@ -43,6 +43,7 @@ test('M2 admits only its exact published CIC artifact for the existing SG2 consu
   }
  }
  assert.equal(CIC_ANALYTICAL_PIN.version,'1.3.0');assert.equal(CIC_ANALYTICAL_M2_PIN.version,'1.5.1')
+ assert.deepEqual(CIC_ANALYTICAL_ECR_PIN,{version:'1.6.0',resolved:'https://npm.pkg.github.com/download/@profitia/cic-core/1.6.0/6201251ccac36d5d207f87dfdd40a1547c351753',integrity:'sha512-F2Kkx37hkbqaa8JKkChrrpLsK/9C92lJYwxw5Rl2s97MZZsLfaQCQQmwjwKvwoj34YdIT7tbZ1TOElhf63GckQ=='})
  assert.deepEqual(PRIVATE_PACKAGES,['@profitia/advisory-widget','@profitia/cic-core','@profitia/cic-procurement'])
 })
 
