@@ -65,7 +65,11 @@
       ],
       "properties": {
         "version": {
-          "const": "0.1.0"
+          "type": "string",
+          "enum": [
+            "0.1.0",
+            "0.2.0"
+          ]
         },
         "requestId": {
           "type": "string",
@@ -285,7 +289,11 @@
       ],
       "properties": {
         "version": {
-          "const": "0.1.0"
+          "type": "string",
+          "enum": [
+            "0.1.0",
+            "0.2.0"
+          ]
         },
         "requestId": {
           "type": "string",
@@ -350,6 +358,9 @@
             "null"
           ],
           "maxLength": 2000
+        },
+        "summary": {
+          "$ref": "#/$defs/DocumentSummary"
         }
       }
     },
@@ -369,7 +380,11 @@
       ],
       "properties": {
         "version": {
-          "const": "0.1.0"
+          "type": "string",
+          "enum": [
+            "0.1.0",
+            "0.2.0"
+          ]
         },
         "requestId": {
           "type": "string",
@@ -414,6 +429,9 @@
         },
         "memoryRequested": {
           "type": "boolean"
+        },
+        "metadata": {
+          "$ref": "#/$defs/SourceMetadata"
         }
       }
     },
@@ -433,7 +451,11 @@
       ],
       "properties": {
         "version": {
-          "const": "0.1.0"
+          "type": "string",
+          "enum": [
+            "0.1.0",
+            "0.2.0"
+          ]
         },
         "jobId": {
           "type": "string",
@@ -512,7 +534,11 @@
       ],
       "properties": {
         "version": {
-          "const": "0.1.0"
+          "type": "string",
+          "enum": [
+            "0.1.0",
+            "0.2.0"
+          ]
         },
         "commandId": {
           "type": "string",
@@ -557,7 +583,11 @@
       ],
       "properties": {
         "version": {
-          "const": "0.1.0"
+          "type": "string",
+          "enum": [
+            "0.1.0",
+            "0.2.0"
+          ]
         },
         "commandId": {
           "type": "string",
@@ -598,6 +628,124 @@
           "minItems": 0,
           "maxItems": 2,
           "uniqueItems": true
+        }
+      }
+    },
+    "SourceMetadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "domain",
+        "materialType",
+        "title",
+        "author",
+        "language",
+        "publishedAt",
+        "validFrom",
+        "validUntil"
+      ],
+      "properties": {
+        "domain": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "materialType": {
+          "type": "string",
+          "enum": [
+            "STANDARD",
+            "BOOK",
+            "REPORT",
+            "PRESENTATION",
+            "NOTE",
+            "OTHER"
+          ]
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "author": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 300
+        },
+        "language": {
+          "type": "string",
+          "maxLength": 32
+        },
+        "publishedAt": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date"
+        },
+        "validFrom": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "validUntil": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        }
+      }
+    },
+    "DocumentSummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "text",
+        "expectedUnits",
+        "coveredUnitIds",
+        "missingUnitIds",
+        "evidenceIds",
+        "generated"
+      ],
+      "properties": {
+        "text": {
+          "type": "string",
+          "maxLength": 160000
+        },
+        "expectedUnits": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10000
+        },
+        "coveredUnitIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 10000,
+          "uniqueItems": true
+        },
+        "missingUnitIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 10000,
+          "uniqueItems": true
+        },
+        "evidenceIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 10000,
+          "uniqueItems": true
+        },
+        "generated": {
+          "const": true
         }
       }
     }

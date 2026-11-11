@@ -1,4 +1,4 @@
-name: Platform Knowledge foundation
+name: Platform Knowledge engine
 on:
   pull_request:
     paths: ['apps/platform-knowledge-runtime/**', 'packages/platform-knowledge-contracts/**', 'packages/platform-knowledge-core/**', '.github/workflows/platform-knowledge-ci.yml']
@@ -11,7 +11,7 @@ permissions:
 jobs:
   foundation:
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
@@ -21,7 +21,20 @@ jobs:
           node-version: 24.15.0
       - run: npm ci --prefix apps/platform-knowledge-runtime --ignore-scripts --no-audit --no-fund
       - run: node --test packages/platform-knowledge-contracts/test/*.test.mjs packages/platform-knowledge-core/test/*.test.mjs apps/platform-knowledge-runtime/test/*.test.mjs
+      - run: npm ci --prefix packages/platform-contracts/current-e1-authority --ignore-scripts --no-audit --no-fund
+      - run: node --test packages/assistant-context-gateway/test/*.test.mjs packages/platform-contracts/test/current-e1-knowledge.test.mjs
+      - run: npm ci --prefix apps/identity-runtime --ignore-scripts --no-audit --no-fund
+      - run: npm run build --prefix apps/identity-runtime
+      - run: node --test apps/identity-runtime/test/knowledge-authority.test.mjs apps/identity-runtime/test/first-party-source.test.mjs
       - run: npm run build --prefix apps/platform-knowledge-runtime
+      - name: Generate reference formats and verify proven DOC/PPT fixtures
+        timeout-minutes: 3
+        env:
+          FIXTURE_OUTPUT: ${{ runner.temp }}/pk-quality-fixtures
+        run: |
+          python3 -m venv "$RUNNER_TEMP/pk-fixture-tools"
+          "$RUNNER_TEMP/pk-fixture-tools/bin/pip" install --disable-pip-version-check -r packages/platform-knowledge-core/fixtures/requirements.txt
+          "$RUNNER_TEMP/pk-fixture-tools/bin/python" packages/platform-knowledge-core/fixtures/generate.py "$FIXTURE_OUTPUT" --verified-legacy > "$RUNNER_TEMP/pk-fixtures-proof.json"
       - name: Build and smoke the actual nonroot Render image without external network
         run: |
           set -eu
@@ -39,16 +52,30 @@ jobs:
             assert.equal(live?.status,200);assert.equal((await live.json()).phase,"FOUNDATION_ONLY");
             assert.equal((await fetch("http://127.0.0.1:10000/health/ready")).status,503);
             assert.notEqual(process.getuid(),0);console.log("Nonroot container live; processing remains disabled");'
+          docker cp "$RUNNER_TEMP/pk-quality-fixtures" pk-foundation-smoke:/tmp/pk-fixtures
+          docker exec -i pk-foundation-smoke node --input-type=module <<'JS'
+          import fs from 'node:fs/promises';
+          import assert from 'node:assert/strict';
+          import {extractDocument} from './src/extraction.mjs';
+          import {chunkDocument,reconstructSource} from '@profitia/platform-knowledge-core/chunking';
+          import {embeddingTokens} from './src/provider.mjs';
+          const files=(await fs.readdir('/tmp/pk-fixtures')).filter(n=>/\.(pdf|docx?|pptx?|txt|md|markdown)$/.test(n));
+          assert.equal(files.length,10);
+          const proofs=[];
+          for(const name of files){
+            const bytes=await fs.readFile('/tmp/pk-fixtures/'+name);
+            const parsed=await extractDocument(bytes,name);
+            const chunks=chunkDocument(parsed.units,{countTokens:embeddingTokens});
+            const text=reconstructSource(chunks.chunks,chunks.sourceDigest);
+            assert.equal(chunks.coverage.expectedUnits,chunks.coverage.accountedUnits);
+            assert.equal(chunks.coverage.extractedCharacters,chunks.coverage.chunkedCharacters);
+            assert.ok(text.trim());
+            proofs.push({file:name,parser:parsed.parserVersion,units:chunks.units.length,partialUnits:chunks.coverage.failedUnitIds.length,characters:chunks.characterCount,roundTrip:true});
+          }
+          console.log(JSON.stringify({isolation:'LINUX_SECCOMP_AND_LANDLOCK',formats:proofs}));
+          JS
           docker kill --signal=TERM pk-foundation-smoke
           test "$(docker wait pk-foundation-smoke)" = 0
-      - name: Generate reference formats and verify proven DOC/PPT fixtures
-        timeout-minutes: 3
-        env:
-          FIXTURE_OUTPUT: ${{ runner.temp }}/pk-quality-fixtures
-        run: |
-          python3 -m venv "$RUNNER_TEMP/pk-fixture-tools"
-          "$RUNNER_TEMP/pk-fixture-tools/bin/pip" install --disable-pip-version-check -r packages/platform-knowledge-core/fixtures/requirements.txt
-          "$RUNNER_TEMP/pk-fixture-tools/bin/python" packages/platform-knowledge-core/fixtures/generate.py "$FIXTURE_OUTPUT" --verified-legacy > "$RUNNER_TEMP/pk-fixtures-proof.json"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: pk-quality-reference-fixtures

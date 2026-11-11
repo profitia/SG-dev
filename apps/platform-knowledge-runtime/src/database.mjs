@@ -3,7 +3,7 @@ export function createDatabase(config){
  const pool=new pg.Pool({connectionString:config.databaseUrl,max:2,connectionTimeoutMillis:8000,idleTimeoutMillis:10000,statement_timeout:5000,query_timeout:6000});
  // Never forward raw SQL/client errors, connection strings or server notices.
  pool.on('error',()=>{});
- return {async probe(){
+ return {pool,async engineReady(){const r=await pool.query('SELECT version FROM platform_knowledge.schema_version');return r.rows.some(x=>x.version===1);},async probe(){
    const {rows}=await pool.query(`SELECT current_database() AS database_name,current_user AS role_name,
      r.rolsuper,r.rolinherit,r.rolcreatedb,r.rolcreaterole,r.rolreplication,r.rolbypassrls,
      has_schema_privilege(current_user,'platform_knowledge','USAGE') AS schema_usage,

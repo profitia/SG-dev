@@ -1,7 +1,7 @@
 export type KnowledgeScope = 'PROFITIA_SHARED' | 'ACCOUNT_PRIVATE';
 export type QueryTask = 'ANSWER' | 'DOCUMENT_SUMMARY' | 'MEMORY_RECALL';
 export interface KnowledgeQuery {
-  version:'0.1.0'; requestId:string; task:QueryTask; query:string; language:string;
+  version:'0.1.0'|'0.2.0'; requestId:string; task:QueryTask; query:string; language:string;
   scopes:KnowledgeScope[]; documentIds?:string[]; maxTokens:number; tokenizerId:string; targetModel:string;
 }
 export interface SourceRights {
@@ -17,11 +17,13 @@ export interface Evidence {
   rank:number; validUntil:string|null;
 }
 export interface KnowledgeContext {
-  version:'0.1.0'; requestId:string;
+  version:'0.1.0'|'0.2.0'; requestId:string;
   status:'READY'|'EMPTY'|'INSUFFICIENT_EVIDENCE'|'PARTIAL'|'DENIED'|'UNAVAILABLE'|'STALE';
   evidence:Evidence[]; usedTokens:number; tokenizerId:string; targetModel:string;
   omissions:('SOURCE_PARTIAL'|'BUDGET'|'RIGHTS'|'EXPIRED'|'NO_SUPPORT'|'SUMMARY_INCOMPLETE')[];
   continuation:string|null;
+  /** Generated synthesis, never a literal quotation; all source units assessed. */
+  summary?:{text:string;generated:true;expectedUnits:number;coveredUnitIds:string[];missingUnitIds:string[];evidenceIds:string[]};
 }
 export interface AccountDeletionCommand {
   version:'0.1.0'; commandId:string; environment:'development'|'staging'|'production';
@@ -31,7 +33,7 @@ export interface DeletionReceipt {
   version:'0.1.0'; commandId:string; state:'ACCEPTED'|'RETRIEVAL_REVOKED'|'PURGING'|'PURGED'|'RETAINED_BY_POLICY'|'FAILED_RETRYABLE';
   effectiveAt:string; backupPurgeBy:string|null; retainedCategories:('LEGAL_HOLD'|'MANDATORY_AUDIT')[];
 }
-export const CONTRACT:Readonly<{id:'profitia.platform-knowledge';version:'0.1.0'}>;
+export const CONTRACT:Readonly<{id:'profitia.platform-knowledge';version:'0.2.0'}>;
 export const schemas:Record<string,unknown>;
 export function assertQuery(q:unknown):KnowledgeQuery;
 export function assertContextSemantics(q:KnowledgeQuery,result:KnowledgeContext,countTokens:(serialized:string)=>number):KnowledgeContext;

@@ -1,5 +1,5 @@
 import schemas from './schemas.json' with {type: 'json'};
-export const CONTRACT = Object.freeze({id:'profitia.platform-knowledge', version:'0.1.0'});
+export const CONTRACT = Object.freeze({id:'profitia.platform-knowledge', version:'0.2.0'});
 export {schemas};
 const fail = code => {throw new TypeError(code);};
 const text = v => typeof v === 'string' && v.trim().length > 0;
@@ -11,7 +11,7 @@ export function assertQuery(q) {
   const fields = schemas.$defs.Query.properties;
   if (Object.keys(q).some(k => !Object.hasOwn(fields,k))
     || schemas.$defs.Query.required.some(k => !Object.hasOwn(q,k))) fail('INVALID_QUERY_FIELDS');
-  if (q.version !== CONTRACT.version || !text(q.requestId) || q.requestId.length>200
+  if (!['0.1.0',CONTRACT.version].includes(q.version) || !text(q.requestId) || q.requestId.length>200
     || !fields.task.enum.includes(q.task) || !text(q.query) || q.query.length>12000
     || !text(q.language) || q.language.length>32 || !text(q.tokenizerId) || q.tokenizerId.length>200
     || !text(q.targetModel) || q.targetModel.length>200
@@ -32,7 +32,7 @@ export function assertQuery(q) {
 export function assertContextSemantics(q, result, countTokens) {
   assertQuery(q);
   if(typeof countTokens!=='function') fail('TOKENIZER_REQUIRED');
-  if(!result || result.version!==CONTRACT.version || result.requestId!==q.requestId
+  if(!result || result.version!==q.version || result.requestId!==q.requestId
     || result.tokenizerId!==q.tokenizerId || result.targetModel!==q.targetModel
     || !schemas.$defs.Context.properties.status.enum.includes(result.status)
     || !Array.isArray(result.evidence) || !Array.isArray(result.omissions)) fail('INVALID_CONTEXT');
@@ -50,5 +50,13 @@ export function assertContextSemantics(q, result, countTokens) {
       ||e.locations.some(l=>!Number.isSafeInteger(l.start)||!Number.isSafeInteger(l.end)||l.start<0||l.end<=l.start)) fail('CITATION_LOCATION_REQUIRED');
     if(!e.rights || e.rights.apiExcerptAllowed!==true) fail('EXCERPT_NOT_ALLOWED');
   }
+  if(result.summary){
+    const s=result.summary;
+    if(q.version!=='0.2.0'||q.task!=='DOCUMENT_SUMMARY'||s.generated!==true||typeof s.text!=='string'
+      ||!Array.isArray(s.coveredUnitIds)||!Array.isArray(s.missingUnitIds)||!Array.isArray(s.evidenceIds)
+      ||new Set([...s.coveredUnitIds,...s.missingUnitIds]).size!==s.expectedUnits
+      ||s.coveredUnitIds.length+s.missingUnitIds.length!==s.expectedUnits)fail('INVALID_SUMMARY_COVERAGE');
+    if(result.status==='READY'&&(s.missingUnitIds.length||!s.text.trim()))fail('SUMMARY_INCOMPLETE');
+  }else if(q.task==='DOCUMENT_SUMMARY'&&result.status==='READY')fail('SUMMARY_REPRESENTATION_REQUIRED');
   return result;
 }
