@@ -1,6 +1,7 @@
 import {acceptedSdkSource} from '../../../packages/platform-contracts/test/organisation-sdk-compatibility.mjs'
 // Verify the current SDK separately from immutable historical source maps.
-const sdkCurrentSourceDigests=Object.fromEntries(Object.entries(acceptedSdkSource().sourceDigests??{}).map(([p,h])=>[p.replace(/^packages\/platform-contracts\//,''),h]))
+const sdkSourceAcceptance=acceptedSdkSource()
+const sdkCurrentSourceDigests=Object.fromEntries(Object.entries({...sdkSourceAcceptance.sourceDigests,...sdkSourceAcceptance.compatibilityTestSourceDigests}).map(([p,h])=>[p.replace(/^packages\/platform-contracts\//,''),h]))
 import './source-hub-market-symbol-compatibility.test.mjs'
 import {assertSourceHubApiPathCompatibility,assertOilReportSourceCompatibility} from './source-hub-sdk-compatibility.mjs'
 import {assertAppShellFourCardCascade} from '../../sg-runtime/tests/pci-smart-integrity.mjs'
