@@ -104,6 +104,25 @@ jobs:
             assert.notEqual(process.getuid(),0);console.log("Nonroot container live; processing remains disabled");'
           docker update --memory=2g --memory-swap=2g pk-foundation-smoke
           docker cp "$RUNNER_TEMP/pk-quality-fixtures" pk-foundation-smoke:/tmp/pk-fixtures
+          # Diagnostics are limited to the verified author-synthetic DOC fixture.
+          # The container has no provider credentials or external network.
+          docker exec -i pk-foundation-smoke /opt/pk-venv/bin/python -B - <<'PYCODE'
+          import os,sys,runpy,subprocess
+          from pathlib import Path
+          import shutil,tempfile
+          job=Path(tempfile.mkdtemp(prefix='pk-legacy-synthetic-'))
+          source=job/'source.doc';shutil.copyfile('/tmp/pk-fixtures/reference.doc',source)
+          original=subprocess.run
+          def diagnostic(*args,**kwargs):
+              result=original(*args,**kwargs)
+              if args and isinstance(args[0],list) and args[0][0]=='libreoffice' and result.returncode:
+                  sys.stderr.write('SYNTHETIC_CONVERTER_DIAGNOSTIC\n'+result.stderr.decode('utf-8',errors='replace')+'\n'+result.stdout.decode('utf-8',errors='replace'))
+              return result
+          subprocess.run=diagnostic
+          sys.path.insert(0,str(Path.cwd()/'src'));sys.argv=['parser.py',str(source),'.doc']
+          try:runpy.run_path(str(Path.cwd()/'src/parser.py'),run_name='__main__')
+          except SystemExit:pass
+          PYCODE
           docker exec -i pk-foundation-smoke node --input-type=module <<'JS'
           import fs from 'node:fs/promises';
           import assert from 'node:assert/strict';

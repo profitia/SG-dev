@@ -1,0 +1,29 @@
+{
+  "schemaVersion": "1.0",
+  "stage": 2,
+  "targetEnvironment": "development",
+  "status": "IN_PROGRESS_NOT_LIVE",
+  "sourcePullRequest": "https://github.com/profitia/SG-dev/pull/1019",
+  "cicPullRequest": "https://github.com/profitia/conversational-intelligence-core/pull/24",
+  "sourceAcceptedOnMain": false,
+  "productSchemaInstalled": false,
+  "knowledgeAuthorityInstalled": false,
+  "knowledgeGrantsInstalled": false,
+  "developmentProcessingEnabled": false,
+  "liveSourceCommit": "1fef8b3837c1bdd6ea9ff95dd4e976cc71cf9526",
+  "checks": {
+    "postgres18_6_vector0_8_6_native": {"status":"PASS","runId":43103230401,"jobId":130799791619},
+    "nativeRlsLedgerQueueReindexPipelineSynthetic": {"status":"PASS","localCases":9,"paidOpenAiRequests":0},
+    "allFormatsLinuxIsolation": {"status":"IN_PROGRESS","complete":false},
+    "independentCicAcgDevelopmentFlow": {"status":"NOT_EXECUTED"},
+    "developmentRetrievalQuality": {"status":"NOT_EXECUTED","profile":"pk-development-quality-v1"},
+    "developmentOperatorImportPublishWithdraw": {"status":"NOT_EXECUTED"},
+    "developmentRawDeletionAndRetrieval": {"status":"NOT_EXECUTED"},
+    "developmentRecoveryAndShadowCutover": {"status":"NOT_EXECUTED"},
+    "developmentStage2Sentry": {"status":"NOT_EXECUTED"},
+    "controlledSdkSourceAdoption": {"status":"PENDING"},
+    "stage2ContinuityCloseout": {"status":"PENDING"}
+  },
+  "budget": {"approvedTotalUsd":10,"approvedPerDocumentUsd":1,"paidOpenAiRequestsPerformed":0,"providerInvoice":"NOT_MEASURED"},
+  "stage3Complete": false
+}
