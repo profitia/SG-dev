@@ -1,3 +1,4 @@
+import {posix} from 'node:path'
 // Source acceptance and historical verification only. Never imported by a
 // product runtime or used as an identity, permission, licence or activation.
 import assert from 'node:assert/strict'
@@ -19,10 +20,12 @@ function historicalSource(reader,sha,path){
 const receiptPath=project=>'apps/'+(project==='SG2'?'sg-runtime':'srm')+'/operation-integration.json'
 const tasks={SG2:'SG2-REGISTRATION-ORGANISATION-HANDOFF-STAGE-I-20261110',SRM:'SRM-REGISTRATION-BOOTSTRAP-SDK-ADOPTION-20261111'}
 const known=Object.freeze({
- 'organisation-bootstrap-v1':Object.freeze({path:'packages/platform-contracts/test/organisation-sdk-compatibility.json',sha256:'bac262f70369a2da7682a0f50906a4772b1bfaef3f50e2334180e49f55a613d0'})
+ 'organisation-bootstrap-v1':Object.freeze({path:'packages/platform-contracts/test/organisation-sdk-compatibility.json',sha256:'29a88a2ff75614f745f976252cb79cdd50801d6e1b224e94ebeeb20dd232a9b6'})
 })
 const recordKeys=['schemaVersion','acceptanceId','taskId','targetEnvironment','scope','platformVersion','previousSourceSha','producer','sourceDigests','compatibilityTestSourceDigests','sdkDigests','optionalPackageDigests','consumerSourceDigests','preservedSourceDigests','defaultRootImplementation','optionalRootImplementation','optionalOperations','runtimeOptedIn','sqlInstalled','permissionsChanged','providerCallsPerformed','deploymentPerformed']
 const compatibilityTests=[
+ 'apps/platform-source-hub/scripts/ci-routing.mjs',
+ 'apps/platform-source-hub/test/ci-routing.test.mjs',
  'apps/newsfeed-runtime/test/runtime.test.mjs',
  'apps/architecture-lab/test/sdk-compatibility.test.mjs',
  'packages/platform-contracts/current-fresh-report/test/current-fresh-report.test.mjs',
@@ -91,8 +94,10 @@ export function sdkContinuationPredecessor(receipt,current,historical,{projectKe
  const mapped=new Set([...Object.keys(record.sourceDigests),...Object.keys(record.compatibilityTestSourceDigests),
   ...Object.values(record.consumerSourceDigests).flatMap(v=>Object.keys(v)),file,peerFile])
  const cache=new Map([[file,priorBytes]])
- return {record,prior,previousBytes:path=>{
-  if(!mapped.has(path))return current(path)
+ return {record,prior,previousBytes:inputPath=>{
+  const path=posix.normalize(inputPath)
+  assert(!posix.isAbsolute(path)&&path!=='..'&&!path.startsWith('../'),'source path remains inside the repository')
+  if(!mapped.has(path))return current(inputPath)
   if(!cache.has(path))cache.set(path,cloneBytes(historicalSource(historical,record.previousSourceSha,path)))
   return Buffer.from(cache.get(path))
  }}
