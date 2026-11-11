@@ -7,6 +7,7 @@ import {assistantSendArrowPredecessor,SEND_ARROW_RECEIPT,SEND_ARROW_BASE,SEND_AR
 import {registrationStageOnePredecessor} from './registration-stage-i-integrity.mjs'
 import {assistantMarkdownPredecessor} from './assistant-markdown-integrity.mjs'
 import {assistantM2Predecessor} from './assistant-m2-integrity.mjs'
+import {assistantEcrPredecessor} from './assistant-ecr-integrity.mjs'
 const current=p=>fs.readFileSync(new URL('../../../'+p,import.meta.url))
 const blobs=new Map()
 const historical=(sha,p)=>{const k=sha+':'+p;if(!blobs.has(k))blobs.set(k,execFileSync('git',['show',k],{stdio:['ignore','pipe','pipe']}));return blobs.get(k)}
@@ -29,9 +30,11 @@ test('send-arrow source rejects amended files, rewritten receipts, expanded scop
  for(const change of [a=>a.previousSourceSha='0'.repeat(40),a=>a.authorisationChanged=true,a=>a.scope='ALL_UI',a=>a.sourceDigests['apps/sg-runtime/unapproved.ts']='0'.repeat(64),a=>delete a.sourceDigests[SEND_ARROW_VIEW],a=>a.previousReceipts[SEND_ARROW_PRESERVED_RECEIPTS[0]]='0'.repeat(64),a=>a.unknown=true]){
   const a=manifest();change(a);assert.throws(()=>assistantSendArrowPredecessor(readerWithManifest(a),historical))
  }
- const changed=Buffer.from(current(SEND_ARROW_VIEW).toString().replace('m5 12 7-7 7 7M12 5v14','M0 0'))
+ // Exercise the immutable arrow validator itself after validating the new ECR source layer.
+ const arrowCurrent=assistantEcrPredecessor(current,historical)?.previousBytes??current
+ const changed=Buffer.from(arrowCurrent(SEND_ARROW_VIEW).toString().replace('m5 12 7-7 7 7M12 5v14','M0 0'))
  const a=manifest();a.sourceDigests[SEND_ARROW_VIEW]=hash(changed)
- assert.throws(()=>assistantSendArrowPredecessor(readerWithManifest(a,p=>p===SEND_ARROW_VIEW?changed:current(p)),historical),/only the canonical send icon/)
+ assert.throws(()=>assistantSendArrowPredecessor(readerWithManifest(a,p=>p===SEND_ARROW_VIEW?changed:arrowCurrent(p)),historical),/only the canonical send icon/)
 })
 test('only an absent continuation may be skipped; unknown current and historical read errors remain fatal',()=>{
  assert.equal(assistantSendArrowPredecessor(p=>historical(SEND_ARROW_BASE,p),historical),null)

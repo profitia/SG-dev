@@ -84,4 +84,8 @@ test('PI can request shared ECR without opening the private Newsfeed archive',()
  const selected=selectConversationContext({...turn('Pokaż kalendarz makro'),module:'procurement_insights'},null,org,now)
  assert.deepEqual(selected.policy.contextPlan,[{source:'ECONOMIC_CALENDAR',selection:'ACTIVE_VIEW'}])
  assert.deepEqual(selectConversationContext({...turn('Sprawdź wiadomości z całego archiwum'),module:'procurement_insights'},null,org,now).policy.contextPlan,[])
+ const bounded=selectConversationContext({...turn('Przeanalizuj ceny surowców, prognozy, finanse dostawcy, wiadomości i kalendarz makro'),
+  module:'procurement_insights',reference:{version:'2.0.0',source:'NEWSFEED',observationId:randomUUID(),supplierNip:null}},null,org,now)
+ assert.deepEqual(bounded.policy.omittedContextSources,['NEWSFEED'])
+ assert.deepEqual(bounded.policy.contextPlan,[{source:'ECONOMIC_CALENDAR',selection:'ACTIVE_VIEW'}])
 })

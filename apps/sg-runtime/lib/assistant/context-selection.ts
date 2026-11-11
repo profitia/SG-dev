@@ -56,7 +56,7 @@ export function selectConversationContext(turn:AssistantTurnSelection,stored:Sto
  // The gateway already accepts this read-only reference. In PI only the
  // explicit selection is retrieved, and only after the user sends a message.
  const policy=turn.module==='procurement_insights'?{...planned,contextPlan:[
-  ...(turn.reference?.source==='NEWSFEED'?[{source:'NEWSFEED' as const,selection:'ACTIVE_VIEW' as const}]:[]),
+  ...(turn.reference?.source==='NEWSFEED'&&!planned.omittedContextSources.includes('NEWSFEED')?[{source:'NEWSFEED' as const,selection:'ACTIVE_VIEW' as const}]:[]),
   ...planned.contextPlan.filter(p=>p.source==='ECONOMIC_CALENDAR'),
  ]}:planned
  const refs=new Map<ContextReference['source'],ContextReference>(previous.map(r=>[r.source,r]))
