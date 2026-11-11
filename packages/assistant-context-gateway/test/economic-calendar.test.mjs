@@ -2,6 +2,8 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {createEconomicCalendarContextAdapter,createAssistantContextGateway} from '../src/index.mjs'
+import {schedulePayload,correlationKey} from '../../../apps/platform-source-hub/src/providers/publication-schedules.mjs'
+import {publicationScheduleObservation,ECR_APPLICATION} from '../../economic-calendar-contracts/index.mjs'
 const id='ecr_evt_'+'a'.repeat(64),observationId='ecr_obs_'+'b'.repeat(64)
 const reference={version:'2.1.0',source:'ECONOMIC_CALENDAR',from:'2026-11-01T00:00:00.000Z',to:'2026-12-01T00:00:00.000Z',targetType:null,targetId:null,asKnownAt:null,after:null}
 const source={provider:'eia',publicationRef:'eia:wpsr',sourceRecordRef:'SYNTHETIC_ONLY',licenceRef:'SYNTHETIC_ONLY',storageBasisRef:'SYNTHETIC_ONLY',rightsVersion:'1',redistribution:'PRIVATE_AUTHORISED_CONSUMER_ONLY'}
@@ -21,6 +23,39 @@ function publication(){return {contract:{id:'profitia.economic-calendar',version
  results:[{observationId,sequence:1,eventId:id,measureId:'measure.synthetic',seriesId:'SYNTHETIC_ONLY',referencePeriod:'2026-11-06',unit:'MBBL',geography:'USA',actual:'0',previous:null,forecast:null,revised:null,
   publishedAt:null,sourceUpdatedAt:null,sourceRetrievedAt:at,observedAt:at,receiptRef:'SYNTHETIC_ONLY',sourceRecordRef:'SYNTHETIC_ONLY',sourceUrl:'https://api.eia.gov/v2/',licenceRef:'SYNTHETIC_ONLY',storageBasisRef:'SYNTHETIC_ONLY',rightsVersion:'1',correlationStatus:'CONFIRMED',valueMeaning:'CURRENT_SNAPSHOT_NOT_PUBLICATION_VINTAGE'}]}]}}
 const input={reference,organisationId:'SYNTHETIC_ONLY',request:{},observedAt:at}
+// Exercise the actual SourceHub -> ECR projection, without network or credentials.
+function nativeSchedule(precision){
+ const window=precision==='TIME_WINDOW',provider=window?'eia':'commodities-sh',publicationRef=window?'eia:steo':'SYNTHETIC_ONLY:monthly'
+ const payload=schedulePayload({title:'SYNTHETIC_ONLY native schedule',publicationRef,
+  correlationKey:correlationKey(provider,publicationRef,'https://www.eia.gov/outlooks/steo/'),
+  timePrecision:precision,recurrence:'monthly',referencePeriod:window?'2026-11':null,
+  scheduledAt:window?'2026-11-10T17:00:00.000Z':null,scheduledUntil:window?'2026-11-10T17:15:00.000Z':null,
+  dateOnly:window?'2026-11-10':null,timeZone:window?'America/New_York':null,
+  scheduleStatus:window?'OFFICIAL_DATED':'UNDATED',sourceUrl:'https://www.eia.gov/outlooks/steo/'})
+ return publicationScheduleObservation({payload,metadata:{providerId:provider,contractVersion:'1.3.0',contractFamily:'publication-calendar',apiFamily:'publication-calendar',
+  retrievedAt:at,usageReceiptRef:'12345678-1234-4123-8123-123456789abc',contentFingerprint:'c'.repeat(64),licenceRef:'SYNTHETIC_ONLY',sourceRecordRef:'SYNTHETIC_ONLY',
+  consumerStorage:{mode:'DURABLE_OWNER_ENTITLEMENT',basisRef:'SYNTHETIC_ONLY',licenceVersion:'1',rightsVersion:'1',consumerApplicationId:ECR_APPLICATION,
+   retentionMode:'DURABLE_NO_FIXED_EXPIRY',redistribution:'PRIVATE_AUTHORISED_CONSUMER_ONLY'}}})
+}
+test('native ECR release windows retain both endpoints and recurrence without becoming publication evidence',async()=>{
+ const native=nativeSchedule('TIME_WINDOW'),raw=publication(),item=raw.items[0]
+ item.eventId=native.event.eventId;item.event=native.event.data;item.results=[]
+ item.mapping.data.publicationRef='eia:steo'
+ const result=await createEconomicCalendarContextAdapter({readAuthorised:async()=>raw}).read(input),s=result.data.events[0].schedule
+ assert.equal(s.timePrecision,'TIME_WINDOW');assert.equal(s.scheduledAt,'2026-11-10T17:00:00.000Z');assert.equal(s.scheduledUntil,'2026-11-10T17:15:00.000Z')
+ assert.equal(s.recurrence,'monthly');assert.equal(result.data.events[0].publishedAt,null);assert.equal(result.status,'PARTIAL')
+ for(const until of [null,'2026-11-10T17:00:00.000Z','2026-11-10T16:59:00.000Z']){
+  const bad=structuredClone(raw);bad.items[0].event.schedule.scheduledUntil=until
+  await assert.rejects(createEconomicCalendarContextAdapter({readAuthorised:async()=>bad}).read(input))
+ }
+})
+test('native recurrence-only ECR definitions remain undated and do not suppress the whole context',async()=>{
+ const native=nativeSchedule('RECURRENCE_ONLY'),raw=publication();assert.equal(native.event,null)
+ raw.items=[];raw.definitions=[];raw.unresolvedSchedules=[{publication:{...native.publication.data,knownAt:at}}]
+ const result=await createEconomicCalendarContextAdapter({readAuthorised:async()=>raw}).read(input),s=result.data.unresolvedSchedules[0].schedule
+ assert.equal(s.timePrecision,'RECURRENCE_ONLY');assert.equal(s.recurrence,'monthly');assert.equal(s.scheduledAt,null);assert.equal(s.scheduledUntil,null)
+ assert.equal(s.dateOnly,null);assert.equal(result.data.events.length,0);assert.equal(result.status,'PARTIAL')
+})
 test('ECR preserves missing values, precision, native source evidence and stable versions across read clocks',async()=>{
  const raw=publication();raw.privatePreferences={secret:'NEVER_RELEASE'};raw.items[0].event.identity={secret:'NEVER_RELEASE'}
  let calls=0
