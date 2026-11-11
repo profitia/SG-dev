@@ -1,0 +1,957 @@
+{
+  "schemaVersion": "1.0.0",
+  "status": "PROPOSED_NOT_ACTIVATED",
+  "review": {
+    "prNumber": 1019,
+    "branch": "architecture/platform-knowledge-stage2-engine-20261111",
+    "sourceSha": "191aad1967f4c60d585ff474e51effc77e85d8bd",
+    "baseSha": "983f45a4b60f123a1a456219590667e94718edcb",
+    "treeSha": "5649e6ccaa21cd4a80615fa2a0dd3661b1664584",
+    "inputs": [
+      {
+        "projectKey": "ARCHITECTURE",
+        "prNumber": 1019,
+        "sha": "bf29d5a52569d80af79390e477a94dacc448504f"
+      },
+      {
+        "projectKey": "SG2",
+        "prNumber": 1033,
+        "sha": "77d85d6ba2ef0992d2cd62b6f78e17367b2c5a77"
+      },
+      {
+        "projectKey": "SRM",
+        "prNumber": 1034,
+        "sha": "44ce434ef3f2956ee033952cb338dc836e443c26"
+      }
+    ],
+    "entries": {
+      ".github/workflows/platform-knowledge-ci.yml": {
+        "sha": "09ac019b5ae974580e1ed48db3b671aeb6dd2ec7",
+        "status": "modified",
+        "mode": "100644",
+        "projectKey": "ARCHITECTURE",
+        "owner": "Architecture Platform",
+        "surfaceId": "PK-BASE-004"
+      },
+      "Canon/evidence/2026-11-11-platform-knowledge-stage2-development.md": {
+        "sha": "7a6783c35f11bf37e58ce83118cd2b9cb04dbf75",
+        "status": "added",
+        "mode": "100644",
+        "projectKey": "ARCHITECTURE",
+        "owner": "Governance Source Layer",
+        "surfaceId": "SG2-BASE-019"
+      },
+      "Canon/runbooks/platform-knowledge-development-delivery-plan-v1.md": {
+        "sha": "080424b1e98218b69e8130c9d799398c0c68c718",
+        "status": "modified",
+        "mode": "100644",
+        "projectKey": "ARCHITECTURE",
+        "owner": "Governance Source Layer",
+        "surfaceId": "SG2-BASE-019"
+      },
+      "Canon/runbooks/platform-knowledge-stage2-development-v1.md": {
+        "sha": "65322009a2b3823fe1d4d84d8d3033241e12f006",
+        "status": "added",
+        "mode": "100644",
+        "projectKey": "ARCHITECTURE",
+        "owner": "Governance Source Layer",
+        "surfaceId": "SG2-BASE-019"
+      },
+      "Canon/runbooks/platform-knowledge-stage2-e1-activation-v1.md": {
+        "sha": "5d99af910eb4a6c64f700efdbb1e8efb3fb05dc7",
+        "status": "added",
+        "mode": "100644",
+        "projectKey": "ARCHITECTURE",
+        "owner": "Governance Source Layer",
+        "surfaceId": "SG2-BASE-019"
+      },
+      "apps/architecture-lab/knowledge-source-adoption.json": {
+        "sha": "7114c3ef829fb668c8bf2667e94003b58602625e",
+        "status": "added",
+        "mode": "100644",
+        "projectKey": "ARCHITECTURE",
+        "owner": "Architecture Platform",
+        "surfaceId": "ARCH-BASE-002"
+      },
+      "apps/architecture-lab/knowledge-source.json": {
+        "sha": "938143695d366223f22722d30528f06e398733b3",
+        "status": "added",
+        "mode": "100644",
+        "projectKey": "ARCHITECTURE",
+        "owner": "Architecture Platform",
+        "surfaceId": "ARCH-BASE-002"
+      },
+      "apps/architecture-lab/knowledge-source.mjs": {
+        "sha": "e3e5cb9c77e6c72be8f2a0438390ed589a5dabe9",
+        "status": "added",
+        "mode": "100644",
+        "projectKey": "ARCHITECTURE",
+        "owner": "Architecture Platform",
+        "surfaceId": "ARCH-BASE-002"
+      },
+      "apps/architecture-lab/private-recurring-source.mjs": {
+        "sha": "62ef82a54a13f98754b2e67c9cb3e276a2f7a732",
+        "status": "modified",
+        "mode": "100644",
+        "projectKey": "ARCHITECTURE",
+        "owner": "Architecture Platform",
+        "surfaceId": "ARCH-BASE-002"
+      },
+      "apps/architecture-lab/test/knowledge-source.test.mjs": {
+        "sha": "8106b3f4a00b48735ad5c9822ae0df7396032a32",
+        "status": "added",
+        "mode": "100644",
+        "projectKey": "ARCHITECTURE",
+        "owner": "Architecture Platform",
+        "surfaceId": "ARCH-BASE-002"
+      },
+      "apps/dashboard-preview/package-lock.json": {
+        "sha": "6bc5a25bbfd4103f575e06233d294911530b06ce",
+        "status": "modified",
+        "mode": "100644",
+        "projectKey": "SG2",
+        "owner": "Dashboard Preview",
+        "surfaceId": "SG2-BASE-003"
+      },
+      "apps/economic-calendar-runtime/package-lock.json": {
+        "sha": "6c8765dee926c3320a7dea9c41ece4c121ddc3bc",
+        "status": "modified",
+        "mode": "100644",
+        "projectKey": "ARCHITECTURE",
+        "owner": "Architecture Platform",
+        "surfaceId": "ECR-BASE-001"
+      },
+      "apps/identity-runtime/package-lock.json": {
+        "sha": "413c7f3d01d32ecc013a3715a298f2d7a920e3b4",
+        "status": "modified",
+        "mode": "100644",
+        "projectKey": "ARCHITECTURE",
+        "owner": "Architecture Platform",
+        "surfaceId": "IDENTITY-BASE-001"
+      },
+      "apps/identity-runtime/src/http-handler.ts": {
+        "sha": "25141f23d67296a7cd0732f4a9d33e4554542fb0",
+        "status": "modified",
+        "mode": "100644",
+        "projectKey": "ARCHITECTURE",
+        "owner": "Architecture Platform",
+        "surfaceId": "IDENTITY-BASE-001"
+      },
+      "apps/identity-runtime/src/node-server.ts": {
+        "sha": "41d50bbf0326f8c5e8188105c290bf001ff5f778",
+        "status": "modified",
+        "mode": "100644",
+        "projectKey": "ARCHITECTURE",
+        "owner": "Architecture Platform",
+        "surfaceId": "IDENTITY-BASE-001"
+      },
+      "apps/identity-runtime/test/knowledge-authority.test.mjs": {
+        "sha": "b63fa01e3d5d3b6dadf20c14f5c7d729e1f3036c",
+        "status": "added",
+        "mode": "100644",
+        "projectKey": "ARCHITECTURE",
+        "owner": "Architecture Platform",
+        "surfaceId": "IDENTITY-BASE-001"
+      },
+      "apps/insights-runtime/package-lock.json": {
+        "sha": "d9a286d91ab6968a4ca2b908ba8ea04f57ea27e6",
+        "status": "modified",
+        "mode": "100644",
+        "projectKey": "SG2",
+        "owner": "Insights Domain",
+        "surfaceId": "INSIGHTS-BASE-001"
+      },
+      "apps/maps-runtime/package-lock.json": {
+        "sha": "48cb5627f4ad3000f4eedb1689be2440f60b04c8",
+        "status": "modified",
+        "mode": "100644",
+        "projectKey": "SRM",
+        "owner": "Maps Capability",
+        "surfaceId": "MAPS-BASE-001"
+      },
+      "apps/newsfeed-runtime/package-lock.json": {
+        "sha": "4960bf595370d2b469b87bdb2d5580d0c761890b",
+        "status": "modified",
+        "mode": "100644",
+        "projectKey": "ARCHITECTURE",
+        "owner": "Architecture Platform",
+        "surfaceId": "NEWSFEED-BASE-001"
+      },
+      "apps/package-limits/package-lock.json": {
+        "sha": "40bc4fe9b5b50a970c44344049e0a12fb2964740",
+        "status": "modified",
+        "mode": "100644",
+        "projectKey": "ARCHITECTURE",
+        "owner": "Architecture Platform",
+        "surfaceId": "LIMITS-BASE-001"
+      },
+      "apps/platform-knowledge-runtime/Dockerfile": {
+        "sha": "7eed0000b67fccd9980dcbe0a5927e29421093d1",
+        "status": "modified",
+        "mode": "100644",
+        "projectKey": "ARCHITECTURE",
+        "owner": "Architecture Platform",
+        "surfaceId": "PK-BASE-001"
+      },
+      "apps/platform-knowledge-runtime/Dockerfile.dockerignore": {
+        "sha": "b224bd16e825efd6b806ede2a629fa07d7d83c56",
+        "status": "modified",
+        "mode": "100644",
+        "projectKey": "ARCHITECTURE",
+        "owner": "Architecture Platform",
+        "surfaceId": "PK-BASE-001"
+      },
+      "apps/platform-knowledge-runtime/README.md": {
+        "sha": "f283b4ef8a2c89e1c45eec256fb486a5d3f1d6d9",
+        "status": "modified",
+        "mode": "100644",
+        "projectKey": "ARCHITECTURE",
+        "owner": "Architecture Platform",
+        "surfaceId": "PK-BASE-001"
+      },
+      "apps/platform-knowledge-runtime/db/migrations/001-knowledge.sql": {
+        "sha": "f353b141802df41edc4dca723d1723d1e94a2d54",
+        "status": "added",
+        "mode": "100644",
+        "projectKey": "ARCHITECTURE",
+        "owner": "Architecture Platform",
+        "surfaceId": "PK-BASE-001"
+      },
+      "apps/platform-knowledge-runtime/deployment/stage2-evidence.json": {
+        "sha": "48daf1b53f87399945c77577bc969d092f5e954f",
+        "status": "added",
+        "mode": "100644",
+        "projectKey": "ARCHITECTURE",
+        "owner": "Architecture Platform",
+        "surfaceId": "PK-BASE-001"
+      },
+      "apps/platform-knowledge-runtime/examples/development.env.example": {
+        "sha": "803cbf759125d1d56a870c32af8a6ab87e7c869a",
+        "status": "modified",
+        "mode": "100644",
+        "projectKey": "ARCHITECTURE",
+        "owner": "Architecture Platform",
+        "surfaceId": "PK-BASE-001"
+      },
+      "apps/platform-knowledge-runtime/package-lock.json": {
+        "sha": "20b54f63243c43197f180da0b1797064a8d90f96",
+        "status": "modified",
+        "mode": "100644",
+        "projectKey": "ARCHITECTURE",
+        "owner": "Architecture Platform",
+        "surfaceId": "PK-BASE-001"
+      },
+      "apps/platform-knowledge-runtime/package.json": {
+        "sha": "df13af2cdba7b5317e4661f82758f9c88a0784cd",
+        "status": "modified",
+        "mode": "100644",
+        "projectKey": "ARCHITECTURE",
+        "owner": "Architecture Platform",
+        "surfaceId": "PK-BASE-001"
+      },
+      "apps/platform-knowledge-runtime/requirements.txt": {
+        "sha": "086a809726d3a83451a5d7da3f7844cb195d7666",
+        "status": "added",
+        "mode": "100644",
+        "projectKey": "ARCHITECTURE",
+        "owner": "Architecture Platform",
+        "surfaceId": "PK-BASE-001"
+      },
+      "apps/platform-knowledge-runtime/scripts/migrate.mjs": {
+        "sha": "902f4d83e098554bd1871375df8c360b18c1b324",
+        "status": "added",
+        "mode": "100644",
+        "projectKey": "ARCHITECTURE",
+        "owner": "Architecture Platform",
+        "surfaceId": "PK-BASE-001"
+      },
+      "apps/platform-knowledge-runtime/scripts/verify-development.mjs": {
+        "sha": "2938c0cbe1d62e439220098d01afd26302753b5d",
+        "status": "added",
+        "mode": "100644",
+        "projectKey": "ARCHITECTURE",
+        "owner": "Architecture Platform",
+        "surfaceId": "PK-BASE-001"
+      },
+      "apps/platform-knowledge-runtime/src/admin.mjs": {
+        "sha": "2ccf60d6a1e9e6c342a8fab7a0ead8d47412c2e8",
+        "status": "added",
+        "mode": "100644",
+        "projectKey": "ARCHITECTURE",
+        "owner": "Architecture Platform",
+        "surfaceId": "PK-BASE-001"
+      },
+      "apps/platform-knowledge-runtime/src/auth.mjs": {
+        "sha": "61cce1b0527e7fffb0ecbbdb2b1f6a08dba51fc2",
+        "status": "added",
+        "mode": "100644",
+        "projectKey": "ARCHITECTURE",
+        "owner": "Architecture Platform",
+        "surfaceId": "PK-BASE-001"
+      },
+      "apps/platform-knowledge-runtime/src/config.mjs": {
+        "sha": "b9b3a769e60b67317b1f3161030f6996cbf705c6",
+        "status": "modified",
+        "mode": "100644",
+        "projectKey": "ARCHITECTURE",
+        "owner": "Architecture Platform",
+        "surfaceId": "PK-BASE-001"
+      },
+      "apps/platform-knowledge-runtime/src/database.mjs": {
+        "sha": "046e45e921d9ae0904bdcc9e48f7b54720d60977",
+        "status": "modified",
+        "mode": "100644",
+        "projectKey": "ARCHITECTURE",
+        "owner": "Architecture Platform",
+        "surfaceId": "PK-BASE-001"
+      },
+      "apps/platform-knowledge-runtime/src/extraction.mjs": {
+        "sha": "7b117b996b29296c60b39d1218c1359400b5c012",
+        "status": "added",
+        "mode": "100644",
+        "projectKey": "ARCHITECTURE",
+        "owner": "Architecture Platform",
+        "surfaceId": "PK-BASE-001"
+      },
+      "apps/platform-knowledge-runtime/src/jobs.mjs": {
+        "sha": "6ca8dc52e1a553e12fd40059c1174106b102b3ae",
+        "status": "added",
+        "mode": "100644",
+        "projectKey": "ARCHITECTURE",
+        "owner": "Architecture Platform",
+        "surfaceId": "PK-BASE-001"
+      },
+      "apps/platform-knowledge-runtime/src/knowledge.mjs": {
+        "sha": "da134c10dc82119d513c8b4f6c7148609c82755f",
+        "status": "added",
+        "mode": "100644",
+        "projectKey": "ARCHITECTURE",
+        "owner": "Architecture Platform",
+        "surfaceId": "PK-BASE-001"
+      },
+      "apps/platform-knowledge-runtime/src/main.mjs": {
+        "sha": "7665245cb4fadf3c69eb553f4e4dd38cb5154685",
+        "status": "modified",
+        "mode": "100644",
+        "projectKey": "ARCHITECTURE",
+        "owner": "Architecture Platform",
+        "surfaceId": "PK-BASE-001"
+      },
+      "apps/platform-knowledge-runtime/src/memory.mjs": {
+        "sha": "12571f308c62d6bd50d1f2337ac404bb178fefd3",
+        "status": "added",
+        "mode": "100644",
+        "projectKey": "ARCHITECTURE",
+        "owner": "Architecture Platform",
+        "surfaceId": "PK-BASE-001"
+      },
+      "apps/platform-knowledge-runtime/src/observability.mjs": {
+        "sha": "5d57579d5a073ac82b90608efffa995039c73399",
+        "status": "modified",
+        "mode": "100644",
+        "projectKey": "ARCHITECTURE",
+        "owner": "Architecture Platform",
+        "surfaceId": "PK-BASE-001"
+      },
+      "apps/platform-knowledge-runtime/src/parser.py": {
+        "sha": "4e0f6857e5770349d0eba0d8973480ee97a054d0",
+        "status": "added",
+        "mode": "100644",
+        "projectKey": "ARCHITECTURE",
+        "owner": "Architecture Platform",
+        "surfaceId": "PK-BASE-001"
+      },
+      "apps/platform-knowledge-runtime/src/processing.mjs": {
+        "sha": "633661616840b3c14d7c7ef6a9b66b10fcd4d11d",
+        "status": "added",
+        "mode": "100644",
+        "projectKey": "ARCHITECTURE",
+        "owner": "Architecture Platform",
+        "surfaceId": "PK-BASE-001"
+      },
+      "apps/platform-knowledge-runtime/src/provider.mjs": {
+        "sha": "7648230892d9e5c77e85e2b511f91c71ae3ea60d",
+        "status": "added",
+        "mode": "100644",
+        "projectKey": "ARCHITECTURE",
+        "owner": "Architecture Platform",
+        "surfaceId": "PK-BASE-001"
+      },
+      "apps/platform-knowledge-runtime/src/retention.mjs": {
+        "sha": "f7f7857b3442a09e7c37559259a4646d032939f9",
+        "status": "added",
+        "mode": "100644",
+        "projectKey": "ARCHITECTURE",
+        "owner": "Architecture Platform",
+        "surfaceId": "PK-BASE-001"
+      },
+      "apps/platform-knowledge-runtime/src/sandbox.py": {
+        "sha": "4449fdcec4b5061dab79dfce9a1fa07e1b1f4421",
+        "status": "added",
+        "mode": "100644",
+        "projectKey": "ARCHITECTURE",
+        "owner": "Architecture Platform",
+        "surfaceId": "PK-BASE-001"
+      },
+      "apps/platform-knowledge-runtime/src/server.mjs": {
+        "sha": "fc697573b6465fe42383583a931938ded4dd967e",
+        "status": "modified",
+        "mode": "100644",
+        "projectKey": "ARCHITECTURE",
+        "owner": "Architecture Platform",
+        "surfaceId": "PK-BASE-001"
+      },
+      "apps/platform-knowledge-runtime/src/storage.mjs": {
+        "sha": "438a91178c8c548e73d638ed7370f5c78fb65955",
+        "status": "added",
+        "mode": "100644",
+        "projectKey": "ARCHITECTURE",
+        "owner": "Architecture Platform",
+        "surfaceId": "PK-BASE-001"
+      },
+      "apps/platform-knowledge-runtime/src/store.mjs": {
+        "sha": "2436772704470572a86496baddfd64f30e813742",
+        "status": "added",
+        "mode": "100644",
+        "projectKey": "ARCHITECTURE",
+        "owner": "Architecture Platform",
+        "surfaceId": "PK-BASE-001"
+      },
+      "apps/platform-knowledge-runtime/src/worker.mjs": {
+        "sha": "cfe28eac2733fe9dc51397fb3e46114eb002099f",
+        "status": "modified",
+        "mode": "100644",
+        "projectKey": "ARCHITECTURE",
+        "owner": "Architecture Platform",
+        "surfaceId": "PK-BASE-001"
+      },
+      "apps/platform-knowledge-runtime/test/database.test.mjs": {
+        "sha": "751835bbd6a8a5cbc3e2613b965b0284694958fe",
+        "status": "added",
+        "mode": "100644",
+        "projectKey": "ARCHITECTURE",
+        "owner": "Architecture Platform",
+        "surfaceId": "PK-BASE-001"
+      },
+      "apps/platform-knowledge-runtime/test/security.test.mjs": {
+        "sha": "e792902535386b6d39ebfbbd882802ad0f6ba36f",
+        "status": "added",
+        "mode": "100644",
+        "projectKey": "ARCHITECTURE",
+        "owner": "Architecture Platform",
+        "surfaceId": "PK-BASE-001"
+      },
+      "apps/platform-source-hub/package-lock.json": {
+        "sha": "6121e01c373701f42c380dd89eb56605a8aee2bd",
+        "status": "modified",
+        "mode": "100644",
+        "projectKey": "ARCHITECTURE",
+        "owner": "Architecture Platform",
+        "surfaceId": "SOURCE-HUB-BASE-001"
+      },
+      "apps/sg-runtime/knowledge-source-adoption.json": {
+        "sha": "3b872965a51dbe35be131bf1d84f108f2a521cef",
+        "status": "added",
+        "mode": "100644",
+        "projectKey": "SG2",
+        "owner": "SG Runtime",
+        "surfaceId": "SG2-BASE-001"
+      },
+      "apps/sg-runtime/package-lock.json": {
+        "sha": "d99ab6618ef2363fa68b74666cd01f9a175fb9ed",
+        "status": "modified",
+        "mode": "100644",
+        "projectKey": "SG2",
+        "owner": "SG Runtime",
+        "surfaceId": "SG2-BASE-001"
+      },
+      "apps/srm/knowledge-source-adoption.json": {
+        "sha": "801362151c6c751c86c815e4085edf909210b0dc",
+        "status": "added",
+        "mode": "100644",
+        "projectKey": "SRM",
+        "owner": "SRM Runtime",
+        "surfaceId": "SG2-BASE-016"
+      },
+      "apps/srm/package-lock.json": {
+        "sha": "8f33ab0fce29b41d18e05d543469225dd0fe7368",
+        "status": "modified",
+        "mode": "100644",
+        "projectKey": "SRM",
+        "owner": "SRM Runtime",
+        "surfaceId": "SG2-BASE-016"
+      },
+      "packages/assistant-context-gateway/package.json": {
+        "sha": "0c41e51b0d1aac5605d4b617d9ba3455418bde67",
+        "status": "modified",
+        "mode": "100644",
+        "projectKey": "ARCHITECTURE",
+        "owner": "Architecture Platform",
+        "surfaceId": "ACG-BASE-002"
+      },
+      "packages/assistant-context-gateway/src/knowledge.d.mts": {
+        "sha": "8b452cda1c226bf810c39dad1d043a1107dd61f0",
+        "status": "added",
+        "mode": "100644",
+        "projectKey": "ARCHITECTURE",
+        "owner": "Architecture Platform",
+        "surfaceId": "ACG-BASE-002"
+      },
+      "packages/assistant-context-gateway/src/knowledge.mjs": {
+        "sha": "f50b7dcb6bd192538b1adcaa63ef3c238d4f86f3",
+        "status": "added",
+        "mode": "100644",
+        "projectKey": "ARCHITECTURE",
+        "owner": "Architecture Platform",
+        "surfaceId": "ACG-BASE-002"
+      },
+      "packages/assistant-context-gateway/test/knowledge.test.mjs": {
+        "sha": "72fec0ea1debe341904cd8cd538b7b9925a2382a",
+        "status": "added",
+        "mode": "100644",
+        "projectKey": "ARCHITECTURE",
+        "owner": "Architecture Platform",
+        "surfaceId": "ACG-BASE-002"
+      },
+      "packages/maps-embed/package.json": {
+        "sha": "cf1314b91a842d46a4692ed48823d3503db70059",
+        "status": "modified",
+        "mode": "100644",
+        "projectKey": "SRM",
+        "owner": "Maps Capability",
+        "surfaceId": "MAPS-BASE-003"
+      },
+      "packages/platform-contracts/current-e1-authority/index.d.mts": {
+        "sha": "643a965b9093d13ef336244bd3282bea653f1f8a",
+        "status": "modified",
+        "mode": "100644",
+        "projectKey": "ARCHITECTURE",
+        "owner": "Architecture Platform",
+        "surfaceId": "ARCH-BASE-001"
+      },
+      "packages/platform-contracts/current-e1-authority/index.mjs": {
+        "sha": "6d77ad9ef4a1b5a5f4ee7258c47ed753294a9105",
+        "status": "modified",
+        "mode": "100644",
+        "projectKey": "ARCHITECTURE",
+        "owner": "Architecture Platform",
+        "surfaceId": "ARCH-BASE-001"
+      },
+      "packages/platform-contracts/current-e1-authority/install-knowledge.mjs": {
+        "sha": "c2222bd32f37ffe790b59095648e8aef597f796b",
+        "status": "added",
+        "mode": "100644",
+        "projectKey": "ARCHITECTURE",
+        "owner": "Architecture Platform",
+        "surfaceId": "ARCH-BASE-001"
+      },
+      "packages/platform-contracts/current-e1-authority/knowledge.d.mts": {
+        "sha": "97fd5e03e8cb09cdee00d9e84b6aa80c045c10df",
+        "status": "added",
+        "mode": "100644",
+        "projectKey": "ARCHITECTURE",
+        "owner": "Architecture Platform",
+        "surfaceId": "ARCH-BASE-001"
+      },
+      "packages/platform-contracts/current-e1-authority/knowledge.mjs": {
+        "sha": "40f5aed43a443c01d41d228c310a78e2fa24d4ca",
+        "status": "added",
+        "mode": "100644",
+        "projectKey": "ARCHITECTURE",
+        "owner": "Architecture Platform",
+        "surfaceId": "ARCH-BASE-001"
+      },
+      "packages/platform-contracts/current-e1-authority/migrations/015-knowledge-authority.sql": {
+        "sha": "e94a304193a3cd06894c865020d56abad8ce3d4d",
+        "status": "added",
+        "mode": "100644",
+        "projectKey": "ARCHITECTURE",
+        "owner": "Architecture Platform",
+        "surfaceId": "ARCH-BASE-001"
+      },
+      "packages/platform-contracts/current-e1-authority/migrations/016-knowledge-receiver.sql": {
+        "sha": "35f33292c0f1764d42f810ac150286d3734a86e6",
+        "status": "added",
+        "mode": "100644",
+        "projectKey": "ARCHITECTURE",
+        "owner": "Architecture Platform",
+        "surfaceId": "ARCH-BASE-001"
+      },
+      "packages/platform-contracts/current-e1-authority/package-lock.json": {
+        "sha": "5e174c94b25cdb34080d4d3b95c6241acbe6f6df",
+        "status": "modified",
+        "mode": "100644",
+        "projectKey": "ARCHITECTURE",
+        "owner": "Architecture Platform",
+        "surfaceId": "ARCH-BASE-001"
+      },
+      "packages/platform-contracts/current-e1-authority/package.json": {
+        "sha": "33d3e034c26e80045ed39f6583cfec2e3c219dd3",
+        "status": "modified",
+        "mode": "100644",
+        "projectKey": "ARCHITECTURE",
+        "owner": "Architecture Platform",
+        "surfaceId": "ARCH-BASE-001"
+      },
+      "packages/platform-contracts/package-lock.json": {
+        "sha": "7c4b6288e17752d626f0417453cb46a133c2546a",
+        "status": "modified",
+        "mode": "100644",
+        "projectKey": "ARCHITECTURE",
+        "owner": "Architecture Platform",
+        "surfaceId": "ARCH-BASE-001"
+      },
+      "packages/platform-contracts/package.json": {
+        "sha": "284cef836ddfd8835d50a1b3bc6ba6dd7d7d0ce3",
+        "status": "modified",
+        "mode": "100644",
+        "projectKey": "ARCHITECTURE",
+        "owner": "Architecture Platform",
+        "surfaceId": "ARCH-BASE-001"
+      },
+      "packages/platform-contracts/src/knowledge-operations.d.mts": {
+        "sha": "b945d3874e92f9ec7a79bd3973ab25560b2e7406",
+        "status": "added",
+        "mode": "100644",
+        "projectKey": "ARCHITECTURE",
+        "owner": "Architecture Platform",
+        "surfaceId": "ARCH-BASE-001"
+      },
+      "packages/platform-contracts/src/knowledge-operations.mjs": {
+        "sha": "178411729945ec97cbbcb484a7b692e769b6ab27",
+        "status": "added",
+        "mode": "100644",
+        "projectKey": "ARCHITECTURE",
+        "owner": "Architecture Platform",
+        "surfaceId": "ARCH-BASE-001"
+      },
+      "packages/platform-contracts/src/operation-context.d.mts": {
+        "sha": "9a40cbd6a4b2f37e8b4827bbd74241d7853dd7c9",
+        "status": "modified",
+        "mode": "100644",
+        "projectKey": "ARCHITECTURE",
+        "owner": "Architecture Platform",
+        "surfaceId": "ARCH-BASE-001"
+      },
+      "packages/platform-contracts/src/operation-context.mjs": {
+        "sha": "5a25f06f00d50c051769aeeb4f5288219246f63f",
+        "status": "modified",
+        "mode": "100644",
+        "projectKey": "ARCHITECTURE",
+        "owner": "Architecture Platform",
+        "surfaceId": "ARCH-BASE-001"
+      },
+      "packages/platform-contracts/test/current-e1-knowledge.test.mjs": {
+        "sha": "32965096b77b3acaed10dae5bd6c6099403ed1e6",
+        "status": "added",
+        "mode": "100644",
+        "projectKey": "ARCHITECTURE",
+        "owner": "Architecture Platform",
+        "surfaceId": "ARCH-BASE-001"
+      },
+      "packages/platform-contracts/test/knowledge-operations.test.mjs": {
+        "sha": "d7f12901e8d9e639f23e92152f10a4c9b1c89e9c",
+        "status": "added",
+        "mode": "100644",
+        "projectKey": "ARCHITECTURE",
+        "owner": "Architecture Platform",
+        "surfaceId": "ARCH-BASE-001"
+      },
+      "packages/platform-knowledge-contracts/README.md": {
+        "sha": "2571122c8193caf2540c881d2d50ea1fe804d5eb",
+        "status": "modified",
+        "mode": "100644",
+        "projectKey": "ARCHITECTURE",
+        "owner": "Architecture Platform",
+        "surfaceId": "PK-BASE-002"
+      },
+      "packages/platform-knowledge-contracts/index.d.ts": {
+        "sha": "ea065c6019d8f92e01a4fea29d9e396b0a48b491",
+        "status": "modified",
+        "mode": "100644",
+        "projectKey": "ARCHITECTURE",
+        "owner": "Architecture Platform",
+        "surfaceId": "PK-BASE-002"
+      },
+      "packages/platform-knowledge-contracts/index.mjs": {
+        "sha": "b1f6e566371336cfc0e56e512e154f67e49d3d88",
+        "status": "modified",
+        "mode": "100644",
+        "projectKey": "ARCHITECTURE",
+        "owner": "Architecture Platform",
+        "surfaceId": "PK-BASE-002"
+      },
+      "packages/platform-knowledge-contracts/package.json": {
+        "sha": "401b13ca28034a09fce2d476232667d21bb5f870",
+        "status": "modified",
+        "mode": "100644",
+        "projectKey": "ARCHITECTURE",
+        "owner": "Architecture Platform",
+        "surfaceId": "PK-BASE-002"
+      },
+      "packages/platform-knowledge-contracts/schemas.json": {
+        "sha": "17303023297d1099dfd303681328d766cfec56ca",
+        "status": "modified",
+        "mode": "100644",
+        "projectKey": "ARCHITECTURE",
+        "owner": "Architecture Platform",
+        "surfaceId": "PK-BASE-002"
+      },
+      "packages/platform-knowledge-contracts/test/contracts.test.mjs": {
+        "sha": "1bccad556eb4628bf0fb35551ea21c7e54bc748f",
+        "status": "added",
+        "mode": "100644",
+        "projectKey": "ARCHITECTURE",
+        "owner": "Architecture Platform",
+        "surfaceId": "PK-BASE-002"
+      },
+      "packages/platform-knowledge-core/package.json": {
+        "sha": "01325d133d85b6626ba998d520a19a213b4c99cd",
+        "status": "modified",
+        "mode": "100644",
+        "projectKey": "ARCHITECTURE",
+        "owner": "Architecture Platform",
+        "surfaceId": "PK-BASE-003"
+      },
+      "packages/platform-knowledge-core/src/chunking.mjs": {
+        "sha": "76d51fca62dfc6723879e909581b9348bd9ffd03",
+        "status": "added",
+        "mode": "100644",
+        "projectKey": "ARCHITECTURE",
+        "owner": "Architecture Platform",
+        "surfaceId": "PK-BASE-003"
+      },
+      "packages/platform-knowledge-core/src/context.mjs": {
+        "sha": "8d9efd1d248f88c1f8f2f421edaf2a9d9288def7",
+        "status": "added",
+        "mode": "100644",
+        "projectKey": "ARCHITECTURE",
+        "owner": "Architecture Platform",
+        "surfaceId": "PK-BASE-003"
+      },
+      "packages/platform-knowledge-core/src/ranking.mjs": {
+        "sha": "bfdc6721ddbe94474cf131d973983d36f720b0f6",
+        "status": "added",
+        "mode": "100644",
+        "projectKey": "ARCHITECTURE",
+        "owner": "Architecture Platform",
+        "surfaceId": "PK-BASE-003"
+      },
+      "packages/platform-knowledge-core/test/knowledge.test.mjs": {
+        "sha": "95bd3f11088ef827a4fb694032efab29988f6798",
+        "status": "added",
+        "mode": "100644",
+        "projectKey": "ARCHITECTURE",
+        "owner": "Architecture Platform",
+        "surfaceId": "PK-BASE-003"
+      },
+      "packages/platform-source-hub-contracts/package.json": {
+        "sha": "3c1405dbedccfb72249026fe94c28ee6b357dab4",
+        "status": "modified",
+        "mode": "100644",
+        "projectKey": "ARCHITECTURE",
+        "owner": "Architecture Platform",
+        "surfaceId": "SOURCE-HUB-BASE-002"
+      }
+    }
+  },
+  "provenance": {
+    "recordPath": "apps/architecture-lab/knowledge-source.json",
+    "recordSha256": "977e0857fee4fc0a3ab9d83b2d215a0697d4e40bffd0552e6e0f990c75d74604",
+    "previousSourceSha": "38a9fe371e7993b47e2358d297647086ea999428",
+    "operationSourceDigest": "8e19bc106da0ff03f6ad2b50e9fd9c3ac9b95ebce1b55a4a18987a8311d50315",
+    "sourceFileCount": 406,
+    "helperSha256": "93c11f45af4d320e7f00a0aeb1819e795a1df20167b32294509c14676dcac4e1",
+    "adoptions": {
+      "ARCHITECTURE": "apps/architecture-lab/knowledge-source-adoption.json",
+      "SG2": "apps/sg-runtime/knowledge-source-adoption.json",
+      "SRM": "apps/srm/knowledge-source-adoption.json"
+    }
+  },
+  "controller": {
+    "authorityMain": "983f45a4b60f123a1a456219590667e94718edcb",
+    "originalSha256": "db11261ced02c25e465b784b568e8acbce49bd626865755d7e70c5d548f9fc12",
+    "patchSha256": "661819f7aa79db2ea8abee569b4628723181e23394f59f753f91a3b2da97acb1",
+    "targetPaths": [
+      "scripts/governance/controlled-package-ci.mjs",
+      "scripts/governance/controlled-package-ci.test.mjs",
+      "scripts/governance/platform-knowledge-routing.test.mjs"
+    ],
+    "localTests": {
+      "total": 508,
+      "passed": 508,
+      "failed": 0,
+      "skipped": 0
+    },
+    "activated": false
+  },
+  "activation": {
+    "status": "REQUIRES_SEPARATE_OWNER_GO",
+    "environment": "development",
+    "centralAuthority": {
+      "projectId": "spring-bread-28217539",
+      "branchId": "br-sparkling-term-b99l107x",
+      "database": "platform_private",
+      "role": "profitia_access_owner",
+      "runtimeRole": "identity_b1_runtime",
+      "origin": "https://identity-runtime-development.onrender.com",
+      "serviceId": "srv-dbcse6jrjlhs73eib3sg",
+      "lkgDeployId": "dep-dbq9bn0m7kps738pq75g",
+      "lkgSourceSha": "f78f5867064c96f4497e13bcd53c97af2da2e07a"
+    },
+    "knowledgeDatabase": {
+      "projectId": "sparkling-sky-79692560",
+      "branchId": "br-billowing-grass-b9ko5s4f",
+      "database": "platform_knowledge",
+      "migrationRole": "platform_knowledge_migrator",
+      "ownerRole": "platform_knowledge_owner",
+      "productSchemaCurrentlyInstalled": false
+    },
+    "sql": [
+      {
+        "path": "apps/platform-knowledge-runtime/db/migrations/001-knowledge.sql",
+        "sha256": "9a049aa46804f5fea4e84cb6dcedc4be358ffd983183ac7d21129b663654e9d7",
+        "side": "product",
+        "role": "platform_knowledge_migrator -> SET LOCAL ROLE platform_knowledge_owner",
+        "installed": false
+      },
+      {
+        "path": "packages/platform-contracts/current-e1-authority/migrations/015-knowledge-authority.sql",
+        "sha256": "2122522771623b8becc5cd46b12aa87fd7d9f9a8e5fea82194335913458c630a",
+        "side": "central-authority",
+        "role": "profitia_access_owner",
+        "installed": false
+      },
+      {
+        "path": "packages/platform-contracts/current-e1-authority/migrations/016-knowledge-receiver.sql",
+        "sha256": "66d4432cedf3364085624d9cc9a5166cb7958e82a0573d9da48df1711060fe9f",
+        "side": "native-receiver",
+        "role": "platform_knowledge_migrator -> SET LOCAL ROLE platform_knowledge_owner",
+        "installed": false
+      }
+    ],
+    "operator": {
+      "userId": "092c2d9f-a84b-4c18-b3d6-e172a61399b8",
+      "expiresAt": "2026-12-11T23:59:00Z",
+      "usePurpose": "PROFITIA_INTERNAL",
+      "grants": [
+        {
+          "scope": "PROFITIA_SHARED",
+          "operation": "document.import",
+          "bindingStandard": false
+        },
+        {
+          "scope": "PROFITIA_SHARED",
+          "operation": "document.read",
+          "bindingStandard": false
+        },
+        {
+          "scope": "PROFITIA_SHARED",
+          "operation": "document.query",
+          "bindingStandard": false
+        },
+        {
+          "scope": "PROFITIA_SHARED",
+          "operation": "document.publish",
+          "bindingStandard": true
+        },
+        {
+          "scope": "PROFITIA_SHARED",
+          "operation": "document.withdraw",
+          "bindingStandard": false
+        },
+        {
+          "scope": "PROFITIA_SHARED",
+          "operation": "document.delete",
+          "bindingStandard": false
+        },
+        {
+          "scope": "ACCOUNT_PRIVATE",
+          "operation": "document.import",
+          "bindingStandard": false
+        },
+        {
+          "scope": "ACCOUNT_PRIVATE",
+          "operation": "document.read",
+          "bindingStandard": false
+        },
+        {
+          "scope": "ACCOUNT_PRIVATE",
+          "operation": "document.query",
+          "bindingStandard": false
+        },
+        {
+          "scope": "ACCOUNT_PRIVATE",
+          "operation": "document.withdraw",
+          "bindingStandard": false
+        },
+        {
+          "scope": "ACCOUNT_PRIVATE",
+          "operation": "document.delete",
+          "bindingStandard": false
+        }
+      ]
+    },
+    "receivers": [
+      {
+        "kind": "API",
+        "applicationId": "platform-knowledge-development-api",
+        "loginRole": "platform_knowledge_api",
+        "serviceId": "srv-dbq6n2m7bikc73dmvs8g",
+        "lkgDeployId": "dep-dbq71vutlv9c73epgb2g",
+        "lkgSourceSha": "1fef8b3837c1bdd6ea9ff95dd4e976cc71cf9526",
+        "origin": "https://platform-knowledge-development-api.onrender.com",
+        "authorityOrigin": "https://identity-runtime-development.onrender.com",
+        "issuer": "https://unified-drum-7191.clerk.accounts.dev",
+        "authorizedParties": [
+          "https://platform-knowledge-development-api.onrender.com"
+        ],
+        "expiresAt": "2026-12-11T23:59:00Z",
+        "logicalDeploymentId": "FINAL_ACCEPTED_MAIN_RELEASE_SHA_WITH_IDENTICAL_REVIEWED_PRODUCT_BYTES",
+        "actualRenderDeployIds": "RECORDED_SEPARATELY_AFTER_DEPLOY",
+        "knowledgeSchemaDigest": "9a049aa46804f5fea4e84cb6dcedc4be358ffd983183ac7d21129b663654e9d7"
+      },
+      {
+        "kind": "WORKER",
+        "applicationId": "platform-knowledge-development-worker",
+        "loginRole": "platform_knowledge_worker",
+        "serviceId": "srv-dbq6njec6qcc738fjf50",
+        "lkgDeployId": "dep-dbq72f5g1s2s739m10dg",
+        "lkgSourceSha": "1fef8b3837c1bdd6ea9ff95dd4e976cc71cf9526",
+        "origin": "https://platform-knowledge-development-api.onrender.com",
+        "authorityOrigin": "https://identity-runtime-development.onrender.com",
+        "issuer": "https://unified-drum-7191.clerk.accounts.dev",
+        "authorizedParties": [
+          "https://platform-knowledge-development-api.onrender.com"
+        ],
+        "expiresAt": "2026-12-11T23:59:00Z",
+        "logicalDeploymentId": "FINAL_ACCEPTED_MAIN_RELEASE_SHA_WITH_IDENTICAL_REVIEWED_PRODUCT_BYTES",
+        "actualRenderDeployIds": "RECORDED_SEPARATELY_AFTER_DEPLOY",
+        "knowledgeSchemaDigest": "9a049aa46804f5fea4e84cb6dcedc4be358ffd983183ac7d21129b663654e9d7"
+      }
+    ],
+    "workerKey": {
+      "keyId": "pk-development-b012c6ba858a8fc5",
+      "publicKey": "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEARIjNUHF7VMc2GGskHzIClNCKU87U+LFfzfqvbu+AynM=\n-----END PUBLIC KEY-----\n",
+      "privateKeyDestination": "EXISTING_RENDER_WORKER_ONLY",
+      "activated": false
+    },
+    "resources": {
+      "createNewGithubRepositories": false,
+      "createNewRenderServices": false,
+      "changeComputePlans": false,
+      "createNewNeonBranches": false
+    },
+    "budget": {
+      "approvedTotalUsd": 10,
+      "approvedPerDocumentUsd": 1,
+      "reuseExistingOpenAiKey": true,
+      "newBudgetRequested": false
+    },
+    "recoveryDecision": {
+      "status": "OWNER_DECISION_REQUIRED",
+      "missingEvidence": "Render git-backed image artifact digest is not exposed by observed deploy API, build logs or Dashboard. Base image digest is not application artifact digest.",
+      "proposedLimitedAlternative": "Only this Development activation: retain and verify exact provider deploy IDs, source SHA, nonsecret configuration and Dashboard rollback availability before mutation; fail closed if unavailable. Keep compatible Stage2 worker in retention-only mode after product data exists. Existing24h Neon history plus native PostgreSQL18.6/pgvector0.8.6 disposable migration tests, and an actual owner-role SQL trial rolled back before installation. No global restore and no new cloud resource."
+    }
+  }
+}
