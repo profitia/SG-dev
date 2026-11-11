@@ -1924,6 +1924,9 @@ test('complete recurring proof preserves legacy Root without claiming runtime ac
 test('reconciled registration admission pins65 entries and preserves all old59/48/41 reviews',async()=>{
  const c=await import('./controlled-package-ci.mjs')
  assert.equal(Object.keys(c.REGISTRATION_SDK_REVIEW.entries).length,65)
+ assert.equal(Object.keys(c.REGISTRATION_SDK_RECONCILED_REVIEW.entries).length,65)
+ assert.deepEqual(Object.keys(c.REGISTRATION_SDK_REVIEW.entries).filter(p=>JSON.stringify(c.REGISTRATION_SDK_REVIEW.entries[p])!==JSON.stringify(c.REGISTRATION_SDK_RECONCILED_REVIEW.entries[p])).sort(),['packages/platform-contracts/test/organisation-sdk-compatibility.mjs','packages/platform-contracts/test/organisation-sdk-compatibility.test.mjs'])
+ for(const [filename,e]of Object.entries(c.REGISTRATION_SDK_RECONCILED_REVIEW.entries))c.assertRegistrationSdkReviewEntry({filename,status:e.status,sha:e.sha},e.mode+' blob '+e.sha+'\t'+filename+'\0')
  assert.equal(Object.keys(c.REGISTRATION_SDK_TEST_SOURCE_REVIEW.entries).length,59)
  assert.equal(Object.keys(c.REGISTRATION_SDK_COMPLETE_REVIEW.entries).length,59)
  assert.equal(Object.keys(c.REGISTRATION_SDK_PREVIOUS_REVIEW.entries).length,48)
@@ -1959,6 +1962,7 @@ test('the physical65 overlay authenticates native Identity before the unchanged3
  t.after(()=>fh.rmSync(root,{recursive:true,force:true}));
  const readGit=(sha,name)=>cp.execFileSync('git',['show',sha+':'+name],{cwd:repository,stdio:['ignore','pipe','pipe']});
  const base='0775f8a18d2fbeca462bb0a9d654914b15c53dad',prefix=p.join(repository,'Canon/proposals/registration-recurring-admission-20261111');
+ const successor=p.join(repository,'Canon/proposals/registration-identity-history-successor-20261111');
  const reg=JSON.parse(fh.readFileSync(p.join(prefix,'source-record.json'))),rec=JSON.parse(readGit(base,'apps/architecture-lab/private-recurring-source.json'));
  const natives=new Set(['apps/identity-runtime/src/organisation-draft.ts','apps/identity-runtime/src/main.ts','apps/identity-runtime/src/http-handler.ts','apps/identity-runtime/test/organisation-draft.test.mjs','apps/identity-runtime/README.md','Canon/evidence/2026-11-11-registration-native-draft-http.md']);
  const owners={ARCHITECTURE:'5a963f313317d57e1946e1d7aabd28192db9c7bd',SG2:'1ea8487fe7cc40cd5a817958c8b093203233fe82',SRM:'2e087d89e6d0bf9f75a289df3e6c161ba658a922'};
@@ -1967,8 +1971,8 @@ test('the physical65 overlay authenticates native Identity before the unchanged3
  for(const name of needed){
   const e=c.REGISTRATION_SDK_REVIEW.entries[name];let bytes;
   if(name==='packages/platform-contracts/test/organisation-sdk-compatibility.json')bytes=fh.readFileSync(p.join(prefix,'source-record.json'));
-  else if(name==='packages/platform-contracts/test/organisation-sdk-compatibility.mjs')bytes=fh.readFileSync(p.join(prefix,'organisation-sdk-compatibility.mjs.txt'));
-  else if(name==='packages/platform-contracts/test/organisation-sdk-compatibility.test.mjs')bytes=fh.readFileSync(p.join(prefix,'organisation-sdk-compatibility.test.mjs.txt'));
+  else if(name==='packages/platform-contracts/test/organisation-sdk-compatibility.mjs')bytes=fh.readFileSync(p.join(successor,'organisation-sdk-compatibility.mjs.txt'));
+  else if(name==='packages/platform-contracts/test/organisation-sdk-compatibility.test.mjs')bytes=fh.readFileSync(p.join(successor,'organisation-sdk-compatibility.test.mjs.txt'));
   else bytes=readGit(e?(natives.has(name)?'6dd651bee360d80a644f7526cf1397f60a0db461':owners[e.projectKey]):base,name);
   const file=p.join(root,name);fh.mkdirSync(p.dirname(file),{recursive:true});fh.writeFileSync(file,bytes);
  }
@@ -1977,6 +1981,14 @@ test('the physical65 overlay authenticates native Identity before the unchanged3
  assert.equal(Object.keys(c.assertPrivateRecurringProvenance(root).sourceDigests).length,368);
  const receipt=JSON.parse(fh.readFileSync(p.join(root,'apps/sg-runtime/operation-integration.json'))),contract={...c.adoptedOperationContract(receipt),sourceDigest:reg.sdkDigests.operationSourceDigest};
  assert.equal(c.operationContractProvenanceDigest(root,contract,{reviewedPrivateRecurring:true}),reg.sdkDigests.operationSourceDigest);
+ const helper='packages/platform-contracts/test/organisation-sdk-compatibility.mjs',helperTest='packages/platform-contracts/test/organisation-sdk-compatibility.test.mjs';
+ const newHelper=fh.readFileSync(p.join(root,helper)),newTest=fh.readFileSync(p.join(root,helperTest));
+ fh.writeFileSync(p.join(root,helper),fh.readFileSync(p.join(prefix,'organisation-sdk-compatibility.mjs.txt')));
+ assert.throws(()=>c.assertPrivateRecurringProvenance(root),/REGISTRATION_SDK_SOURCE_BYTES_REJECTED/,'a mixed old/new65 map is rejected');
+ fh.writeFileSync(p.join(root,helperTest),fh.readFileSync(p.join(prefix,'organisation-sdk-compatibility.test.mjs.txt')));
+ assert.equal(Object.keys(c.assertPrivateRecurringProvenance(root).sourceDigests).length,368,'the full prior approved65 map remains supported');
+ fh.writeFileSync(p.join(root,helper),newHelper);fh.writeFileSync(p.join(root,helperTest),newTest);
+ assert.equal(Object.keys(c.assertPrivateRecurringProvenance(root).sourceDigests).length,368,'the complete successor65 map remains supported');
  const native=p.join(root,'apps/identity-runtime/src/http-handler.ts'),saved=fh.readFileSync(native);fh.appendFileSync(native,'\nUNREVIEWED');
  assert.throws(()=>c.assertPrivateRecurringProvenance(root),/REGISTRATION_SDK_SOURCE_BYTES_REJECTED/);fh.writeFileSync(native,saved);
  const protectedPaths=new Set(regMaps.flatMap(Object.keys)),unmapped=Object.keys(rec.sourceDigests).find(name=>!c.REGISTRATION_SDK_REVIEW.entries[name]&&!protectedPaths.has(name));assert(unmapped);

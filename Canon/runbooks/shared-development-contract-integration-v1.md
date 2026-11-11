@@ -646,3 +646,43 @@ and resulting-main proof. This does not install SQL, grant access/packages,
 activate runtime features, send mail, call a provider/model or deploy an app.
 
 Required physical-source validation must also authenticate all65 approved Git blobs/modes, including native Identity paths outside the SDK record maps, before projecting that exact closed overlay to the unchanged recurring graph. Preserve all previous records and reject native or recurring-only drift; this does not admit a new path or change the approved65 source map.
+
+
+## Stage I registration / Identity history — approved1022 (2026-11-11)
+
+OWNER_APPROVED / REQUIRED_CI_PENDING. The owner explicitly answered
+“Zatwierdzam poprawkę z PR #1022”, binding document
+b76de15c929389d82d6179203c94ec57cc378cda; inert-only main
+18d7a66320259c566272309db67c0da56d54854e.
+
+Retain the entire1016 exact65 map as REGISTRATION_SDK_RECONCILED_REVIEW and
+every earlier41/48/59/1012 and recurring119/123/124 acceptance. Add only the
+same65-path successor, entry-map SHA256
+3dfc27a7152b5fb451db069e2c250dbd2713dedd93ddf4ecbc7291a16eca3c11:
+63 unchanged blobs; test-only helper857e029d2326452071572ce1709584eaeb807752
+and test891bd121e8699f5070571f8aadc19a6c108bd39f. Preserve all path/status/mode/
+owner/project/surface bindings and recordccf680f0/165 production SDK sources,
+application bytes, receipts, defaultRoot16 and optional21/22 isolation.
+
+[The frozen packet](../evidence/2026-11-11-registration-identity-history-successor-review.md)
+contains exact helper/test text and inert controller patch SHA256
+d925fe985b46302c2171e9743a4d028c11c7e6edb312488e0302336e8382d3a1.
+The reconciled1.36 helper authenticates all eight already-reviewed Identity
+sources against immutable5a963/6dd651 before projecting actual0775 predecessor
+bytes. New paths remain absent from the predecessor. Original020/25fea behavior
+is unchanged. Match full known65 maps, never just length; mixed versions,
+unreviewed Identity or recurring drift remain rejected before any projection.
+No generic path, credential or package authority is opened.
+
+Require all prior/new/negative policy and helper tests, the previously failing
+actual Architecture/SG2 historical suites, native Identity/core/ordinary
+PostgreSQL16 tests, exact policy controlled/public/governance and resulting-main
+checks. Then refresh prepared source4b35bddaa2d30e29b59a1b25f937870c8dad0753
+onto accepted policy main with identical65 reviewed versions. Use existing983
+as joint transport, preserve independent actual-owner inputs/tasks, and require
+SOURCE GO plus exact-source full protected/public/owner/resulting-main acceptance.
+Do not publish the known-failing previous source or waive assertions.
+
+This source/test approval does not install product SQL, assign permissions/
+packages, activate runtime, send invitations, call a provider/model, change DNS
+or deploy. Full Stage I product outcome remains separately open.
