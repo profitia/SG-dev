@@ -1,0 +1,29 @@
+{
+  "schemaVersion": "1.0",
+  "synthetic": true,
+  "repository": "profitia/SG-dev",
+  "sourceCommit": "7723c5b8b08e1d05117f040365e53caba56443b0",
+  "runId": 43018496713,
+  "runUrl": "https://github.com/profitia/SG-dev/actions/runs/43018496713",
+  "artifactId": 13854630194,
+  "artifactArchiveSha256": "37035575edcb595b17c1ffd5656ae42ebfaf152debfdf655b18c65bf40f2c059",
+  "roundTripVerified": true,
+  "verification": "LibreOffice DOC/PPT generation and conversion to PDF; CPV30190000-7 and delivery value12 found. Normal CI verifies reuse and never reports a fresh conversion.",
+  "files": {
+    "reference.doc": "46bdf1e8e43981395402d8f60ff9df98bcb901cf891d7e58184ab38e7e2d11b5",
+    "reference.ppt": "68a7c411c16bcfa316371ca8d2cd30b593412f71d7f33a3eae6f1abb81b09a95"
+  },
+  "sourceFiles": {
+    "reference.txt": "858932a6242655af1debaca1bdd57ee6e1529ca2bb3ddb2baa47dd8d78d177b7",
+    "reference.md": "069714e2e038bf425dfdc91ad5dc6df927e277415a49273d2726065bd0b55470"
+  },
+  "sourceXml": {
+    "reference.docx": {
+      "word/document.xml": "f25c4216d6c39263d05d5f566f51274c8be4e745349202a323f626a72d93f1fe"
+    },
+    "reference.pptx": {
+      "ppt/slides/slide1.xml": "3b337aee1a1b4088954138a46fc58a5e6f538d3b20ee29bb8916768a302e4446",
+      "ppt/notesSlides/notesSlide1.xml": "71330ccd21d9dee4cd2da95fb21d7cb72efe09a9c156385cd9e438b2649e4413"
+    }
+  }
+}

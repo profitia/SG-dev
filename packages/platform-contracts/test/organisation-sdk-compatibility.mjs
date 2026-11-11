@@ -20,7 +20,7 @@ function historicalSource(reader,sha,path){
 const receiptPath=project=>'apps/'+(project==='SG2'?'sg-runtime':'srm')+'/operation-integration.json'
 const tasks={SG2:'SG2-REGISTRATION-ORGANISATION-HANDOFF-STAGE-I-20261110',SRM:'SRM-REGISTRATION-BOOTSTRAP-SDK-ADOPTION-20261111'}
 const known=Object.freeze({
- 'organisation-bootstrap-v1':Object.freeze({path:'packages/platform-contracts/test/organisation-sdk-compatibility.json',sha256:'020b9db676804688ce1758865084d2af02c42af169ede00c265432422e4d993e'})
+ 'organisation-bootstrap-v1':Object.freeze({path:'packages/platform-contracts/test/organisation-sdk-compatibility.json',sha256:'020b9db676804688ce1758865084d2af02c42af169ede00c265432422e4d993e',successorSha256s:Object.freeze(['25fea141baf42c154f64a256d40808d548562c010e3f2fd3143657f24b15295c'])})
 })
 const recordKeys=['schemaVersion','acceptanceId','taskId','targetEnvironment','scope','platformVersion','previousSourceSha','producer','sourceDigests','compatibilityTestSourceDigests','sdkDigests','optionalPackageDigests','consumerSourceDigests','preservedSourceDigests','defaultRootImplementation','optionalRootImplementation','optionalOperations','runtimeOptedIn','sqlInstalled','permissionsChanged','providerCallsPerformed','deploymentPerformed']
 const compatibilityTests=[
@@ -79,7 +79,7 @@ export function sdkContinuationPredecessor(receipt,current,historical,{projectKe
  const frame=frames.at(-1);exactKeys(frame,['schemaVersion','acceptanceId','taskId','targetEnvironment','previousReceiptSha256'],'closed receiver source frame')
  assert.equal(frame.schemaVersion,'1.0');assert.equal(frame.taskId,tasks[projectKey]);assert.equal(frame.targetEnvironment,'development')
  const entry=known[frame.acceptanceId];assert(entry,'reviewed SDK continuation required')
- const recordBytes=cloneBytes(current(entry.path));assert.equal(hash(recordBytes),entry.sha256,'exact organisation SDK source acceptance')
+ const recordBytes=cloneBytes(current(entry.path));assert([entry.sha256,...(entry.successorSha256s??[])].includes(hash(recordBytes)),'exact organisation SDK source acceptance')
  const record=JSON.parse(recordBytes);verifyRecord(record,current,historical)
  assert.equal(frame.acceptanceId,record.acceptanceId)
  const file=receiptPath(projectKey),actual=JSON.parse(current(file));assert.deepEqual(receipt,actual,'receiver metadata must be the current source view')
