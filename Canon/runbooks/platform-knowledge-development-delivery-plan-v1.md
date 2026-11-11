@@ -140,13 +140,13 @@ Pełne Platform Knowledge v1 działa w SpendGuru Development: Profitia zasila wi
 
 Statusy: NIE_ROZPOCZĘTY, W_TOKU, CZĘŚCIOWY, ZABLOKOWANY, ZAKOŃCZONY. ZABLOKOWANY wskazuje konkretną zależność i nie zatrzymuje niezależnych prac. ZAKOŃCZONY wymaga dowodów kryteriów etapu; nie jest nadawany po samym merge.
 
-| Etap | Status przy publikacji | Początek / koniec | Dowody taskId / PR / SHA / deploy / test | Rzeczywiste braki |
+| Etap | Status aktualny | Początek / koniec | Dowody taskId / PR / SHA / deploy / test | Rzeczywiste braki |
 |---|---|---|---|---|
-| 1. Przygotowanie realizacji i integracji | NIE_ROZPOCZĘTY | — / — | — | Gotowość zasobów i dopuszczeń do potwierdzenia w wykonaniu |
+| 1. Przygotowanie realizacji i integracji | W_TOKU | 2026-11-11 / — | ARCH-PLATFORM-KNOWLEDGE-STAGE1-G1-20261111; [przygotowanie integracji i pakiet właścicielski](platform-knowledge-development-foundation-v1.md) | Zasoby właściciela, poświadczenia/budżet i kontrakty wykonywalne do potwierdzenia |
 | 2. Biblioteka wiedzy na Development | NIE_ROZPOCZĘTY | — / — | — | Implementacja i uruchomienie do wykonania |
 | 3. Pełne wykorzystanie w SpendGuru | NIE_ROZPOCZĘTY | — / — | — | Integracja i cały odbiór Development do wykonania |
 
-Wykonawca aktualizuje rejestr po rzeczywistych wynikach, bez ponownej akceptacji planu. Operacyjne dowody pozostają w istniejących PMOS/PHR, CI i artefaktach wydania; tabela odsyła do nich zamiast tworzyć konkurencyjną historię. Sama publikacja tego dokumentu nie realizuje żadnego etapu wdrożeniowego.
+Wykonawca aktualizuje rejestr po rzeczywistych wynikach, bez ponownej akceptacji planu. Operacyjne dowody pozostają w istniejących PMOS/PHR, CI i artefaktach wydania; tabela odsyła do nich zamiast tworzyć konkurencyjną historię. Sama publikacja tego dokumentu nie realizuje żadnego etapu wdrożeniowego. Właściciel zlecił rozpoczęcie etapu pierwszego 11 listopada 2026 r.; stan przy pierwotnej publikacji w nagłówku pozostaje historyczny, a bieżący postęp wskazuje tabela.
 
 ## 8. Lista końcowego odbioru etapu trzeciego
 
