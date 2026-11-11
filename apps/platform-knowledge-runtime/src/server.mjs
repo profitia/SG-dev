@@ -11,6 +11,7 @@ async function readBody(req,max){
 async function readJson(req){try{return JSON.parse((await readBody(req,65536)).toString('utf8'));}catch(e){if(e instanceof Fault)throw e;throw new Fault(422,'INVALID_JSON');}}
 export function createServer({database,telemetry,config=null,authority=null,library=null,provider=null}){
  const enabled=config?.processingEnabled===true;
+ let uploading=false;
  let pending=null,last=null,validUntil=0;
  const probe=()=>{
    if(last!==null && Date.now()<validUntil)return Promise.resolve(last);
@@ -55,7 +56,8 @@ export function createServer({database,telemetry,config=null,authority=null,libr
       rightsDigest:digest(payload.rights),sourceVersion:1,maximumMicrousd:1000000};
      // The internal UserID is bound centrally, never accepted from the upload.
      // For private admission the authority fills ownerUserId from actual identity.
-     action=async scope=>library.import(payload,await readBody(req,52428800),scope);
+     action=async scope=>{if(uploading)throw new Fault(429,'UPLOAD_BUSY');uploading=true;
+      try{return await library.import(payload,await readBody(req,52428800),scope);}finally{uploading=false;}};
     }else if(req.method==='GET'&&url.pathname==='/v1/sources'){
      operation='document.read';scopes=[selected];action=scope=>library.list(scope);
     }else if(req.method==='POST'&&url.pathname==='/v1/query'&&!url.search){
@@ -70,7 +72,12 @@ export function createServer({database,telemetry,config=null,authority=null,libr
      else if(req.method==='DELETE'&&!match[2]){operation='document.delete';action=scope=>library.revoke(resourceId,true,scope);}
      else throw new Fault(405,'METHOD_NOT_ALLOWED');
     }
-    const result=await authority.execute(request,{operation,resourceId,scopes,requestDigest:digest({method:req.method,path:url.pathname,payload}),delegation},action);
+    let admittedScope;const businessAction=async scope=>{admittedScope=scope;return action(scope);};
+    const result=await authority.execute(request,{operation,resourceId,scopes,requestDigest:digest({method:req.method,path:url.pathname,payload}),delegation},businessAction);
+    if(library.recordUse&&(operation==='document.query'||operation==='document.read'&&resourceId!=='library')){
+     const used=operation==='document.query'?[...new Set((result.evidence??[]).map(e=>e.sourceId))]:[resourceId];
+     await library.recordUse(used,admittedScope);
+    }
     return reply(operation==='document.import'?202:200,result);
    }catch(error){const known=error instanceof Fault;telemetry.emit('OPERATION_FAILED');return reply(known?error.status:503,{error:known?error.code:'OPERATION_UNAVAILABLE'});}}
    // Foundation remains a safe, independently deployable stop state.

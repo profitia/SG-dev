@@ -74,7 +74,7 @@ def word(path, derived=False):
             partial=derived or drawings>0 or tracked or merged
             result.append(unit(kind,index,content,'PARTIAL' if partial else 'COMPLETE',
                 'LEGACY_DERIVED_STRUCTURE' if derived else ('TRACKED_CHANGES' if tracked else ('COMPLEX_TABLE_STRUCTURE' if merged else ('VISUAL_CONTENT_NOT_INTERPRETED' if drawings else None))),derived))
-        return result, {'nativeUnits':len(inventory),'nativeLocation':'DOCUMENT_BLOCK','legacyDerived':derived}
+        return result, {'nativeUnits':len(inventory),'nativeLocation':'DOCUMENT_BLOCK','legacyDerived':derived,'sourceInventoryVerified':not derived}
 
 def slides(path, derived=False):
     with zip_safe(path) as z:
@@ -113,12 +113,13 @@ def slides(path, derived=False):
             if rel_name in z.namelist():
                 for relationship in xml(z.read(rel_name)):
                     if relationship.get('Type','').endswith('/notesSlide'):
-                        note=posixpath.normpath(posixpath.join(posixpath.dirname(name),relationship.get('Target','')))
+                        target=relationship.get('Target','')
+                        note=target[1:] if target.startswith('/') else posixpath.normpath(posixpath.join(posixpath.dirname(name),target))
                         if not note.startswith('ppt/notesSlides/') or note not in z.namelist():notes_missing=True;continue
                         notes=xml(z.read(note));content+='\n[NOTES]\n'+'\n'.join(text_nodes(p) for p in notes.findall('.//a:p',NS))
             result.append(unit('SLIDE',index,content,'PARTIAL' if derived or visual or notes_missing or merged else 'COMPLETE',
                 'LEGACY_DERIVED_STRUCTURE' if derived else ('NOTES_MISSING' if notes_missing else ('COMPLEX_TABLE_STRUCTURE' if merged else ('VISUAL_CONTENT_NOT_INTERPRETED' if visual else None))),derived))
-        return result, {'nativeUnits':len(ids),'nativeLocation':'SLIDE','legacyDerived':derived}
+        return result, {'nativeUnits':len(ids),'nativeLocation':'SLIDE','legacyDerived':derived,'sourceInventoryVerified':not derived}
 
 def pdf(path, job):
     doc=pymupdf.open(path)

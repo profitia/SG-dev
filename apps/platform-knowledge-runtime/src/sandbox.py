@@ -54,7 +54,7 @@ def isolate(job_dir):
     instructions = [(0x20,0,0,4),(0x15,1,0,arch),(0x06,0,0,0x80000000),(0x20,0,0,0),
                     (0x35,0,1,0x40000000),(0x06,0,0,0x80000000)]
     for call in blocked:
-        instructions.extend([(0x15,0,1,call),(0x06,0,0,0x00050000 | errno.EPERM)])
+        instructions.extend([(0x15,0,1,call),(0x06,0,0,0x00050000 | (errno.ENOSYS if call == 435 else errno.EPERM))])
     instructions.append((0x06,0,0,0x7fff0000))
     filters = (Filter * len(instructions))(*(Filter(*x) for x in instructions))
     program = Program(len(instructions), filters)

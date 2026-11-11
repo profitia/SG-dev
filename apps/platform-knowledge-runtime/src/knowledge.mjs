@@ -6,7 +6,9 @@ import {transaction,sourceFromRow,Fault,digest} from './store.mjs';
 import {CONTEXT_TOKENIZER} from './provider.mjs';
 
 export async function queryKnowledge({pool,provider,query,scope}){
- assertQuery(query);const principal=scope.principal;
+ try{assertQuery(query);}catch{throw new Fault(422,'INVALID_QUERY');}
+ if(query.documentIds?.some(id=>!/^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(id)))throw new Fault(422,'INVALID_DOCUMENT_ID');
+ const principal=scope.principal;
  if(query.targetModel!=='gpt-6-luna'||query.tokenizerId!==CONTEXT_TOKENIZER)throw new Fault(422,'TARGET_TOKENIZER_UNSUPPORTED');
  if(query.task==='MEMORY_RECALL')throw new Fault(422,'MEMORY_HOST_ADOPTION_REQUIRED');
  if(query.task==='DOCUMENT_SUMMARY'&&query.version!=='0.2.0')throw new Fault(422,'SUMMARY_REQUIRES_CONTRACT_V02');
@@ -61,6 +63,7 @@ export async function queryKnowledge({pool,provider,query,scope}){
   if(evidence.length){
    const supported=await provider.analyze({sourceId:allowed[0].id,generationId:null,
     chunks:evidence.slice(0,12).map(e=>({id:e.evidenceId,text:e.text})),question:query.query,
+    sourceRefs:evidence.slice(0,12).map(e=>({sourceId:e.sourceId,generationId:e.generationId,requireActive:true})),
     key:'support-'+digest({requestId:query.requestId,evidence:evidence.map(e=>e.evidenceId)}),scope});
    const ids=new Set(supported.statements.filter(s=>s.kind!=='INFERENCE').map(s=>s.chunkId));
    evidence=evidence.filter(e=>ids.has(e.evidenceId));

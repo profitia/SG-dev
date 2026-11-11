@@ -96,7 +96,7 @@ export async function processJob({pool,storage,provider,authorizeJob,job,signal}
   const searchable=(await db.query("SELECT count(*)::integer AS n FROM platform_knowledge.chunks WHERE generation_id=$1 AND embedding IS NOT NULL AND length(search_text)>0",[job.generation_id])).rows[0].n;
   if(!searchable)throw new Fault(422,'GENERATION_NOT_SEARCHABLE');
   const partial=generation.coverage.failedUnitIds.length>0;
-  await db.query("UPDATE platform_knowledge.generations SET state='VERIFIED',verified_at=clock_timestamp(),validation=$2 WHERE id=$1",[job.generation_id,JSON.stringify({roundTrip:true,inventory:true,indexed:true,cognitiveCoverage:true,embeddingCoverage:true,quality:partial?'PARTIAL':'COMPLETE'})]);
+  await db.query("UPDATE platform_knowledge.generations SET state='VERIFIED',verified_at=clock_timestamp(),validation=$2 WHERE id=$1",[job.generation_id,JSON.stringify({roundTrip:true,inventory:generation.inventory.sourceInventoryVerified!==false,indexed:true,cognitiveCoverage:true,embeddingCoverage:true,quality:partial?'PARTIAL':'COMPLETE'})]);
   await db.query("UPDATE platform_knowledge.generations SET state='RETIRED' WHERE id=(SELECT active_generation_id FROM platform_knowledge.sources WHERE id=$1)",[source.id]);
   await db.query("UPDATE platform_knowledge.generations SET state='ACTIVE' WHERE id=$1",[job.generation_id]);
   await db.query('UPDATE platform_knowledge.sources SET active_generation_id=$2,revision=revision+1 WHERE id=$1',[source.id,job.generation_id]);

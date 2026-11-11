@@ -14,7 +14,7 @@ jobs:
     timeout-minutes: 30
     services:
       postgres:
-        image: pgvector/pgvector:pg18-trixie
+        image: pgvector/pgvector:0.8.6-pg18-trixie@sha256:78bf48b801e792f99e3ac62b5036fd3876e9be48afda16c1e331af1c75ceb2ff
         env:
           POSTGRES_USER: pk_test_owner
           POSTGRES_PASSWORD: SYNTHETIC_ONLY_CI_PASSWORD
@@ -53,6 +53,7 @@ jobs:
             const v=(await db.query("SELECT extversion FROM pg_extension WHERE extname='vector'")).rows[0].extversion;
             assert.equal(v,'0.8.6');
             await db.query('CREATE SCHEMA platform_knowledge AUTHORIZATION platform_knowledge_owner');
+            await db.query('GRANT USAGE ON SCHEMA platform_knowledge TO platform_knowledge_api,platform_knowledge_worker,platform_knowledge_migrator');
             await db.query('SET ROLE platform_knowledge_owner');
             await db.query(await fs.readFile('db/migrations/001-knowledge.sql','utf8'));
             console.log('Disposable product schema installed with actual vector '+v);

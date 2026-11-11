@@ -163,7 +163,7 @@ export function createKnowledgeOperationHost({independentQuery,application,trans
    const authorization=request.headers.get('authorization'),first=await remote(d,'human',input,authorization);
    const refresh=()=>remote(d,'human',{...input,nonce:randomBytes(32).toString('hex'),delegation:null},authorization);
    const scope=Object.freeze({principal:freeze(structuredClone(first.principal)),delegation:freeze(structuredClone(first.delegation??null)),expiresAt:first.expiresAt});
-   active.set(scope,{deadline:now()+300000,job:false,refresh,fingerprint:first.grantFingerprint});
+   active.set(scope,{deadline:now()+300000,job:false,refresh,fingerprint:first.grantFingerprint,principalDigest:hash(first.principal)});
    try{
     if(['document.publish','document.withdraw','document.delete','memory.write','memory.forget'].includes(command.operation))
      return await rootPhase(d,first,command,'COMMIT',db=>action(Object.freeze({...scope,transaction:db})),refresh);
@@ -189,7 +189,7 @@ export function createKnowledgeOperationHost({independentQuery,application,trans
   async authorizeProvider({scope,operation,model,reservationMicrousd=0}){
    const lease=active.get(scope);if(!lease||lease.deadline<=now()||!['gpt-6-luna','text-embedding-3-small'].includes(model)
     ||!['TOKEN_COUNT','COGNITIVE','EMBEDDING','QUERY_EMBEDDING','SUMMARY'].includes(operation)||!Number.isSafeInteger(reservationMicrousd)||reservationMicrousd<0||reservationMicrousd>1000000)deny();
-   if(!lease.job&&operation!=='TOKEN_COUNT'){const p=await lease.refresh();if(p.grantFingerprint!==lease.fingerprint)deny();}
+   if(!lease.job&&operation!=='TOKEN_COUNT'){const p=await lease.refresh();if(p.grantFingerprint!==lease.fingerprint||hash(p.principal)!==lease.principalDigest)deny();}
    if(lease.job&&operation!=='TOKEN_COUNT'){
     const d=await descriptor(),job=lease.jobRecord,nonce=randomBytes(32).toString('hex');
     const body={jobId:job.id,delegationId:job.delegation.delegationId,nonce,phase:'CHECKPOINT'},issuedAt=now();

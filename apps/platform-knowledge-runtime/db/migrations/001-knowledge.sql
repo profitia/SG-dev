@@ -115,10 +115,19 @@ CREATE FUNCTION platform_knowledge.source_visible(s platform_knowledge.sources) 
    OR (coalesce(nullif(current_setting('pk.organisation_ids',true),''),'[]')::jsonb ? (s.rights->>'organisationConstraintId')))
  AND (s.rights->>'purpose'<>'PROFITIA_INTERNAL' OR current_setting('pk.purpose',true)='PROFITIA_INTERNAL')
  $$;
+-- Management access keeps revocation/removal possible without granting content.
+-- An owner who leaves an organisation may remove their entry but cannot read
+-- its restricted text, generated knowledge, quotations or cached AI results.
+CREATE FUNCTION platform_knowledge.source_manageable(s platform_knowledge.sources) RETURNS boolean
+ LANGUAGE sql STABLE SECURITY INVOKER SET search_path=pg_catalog AS $$
+ SELECT coalesce(nullif(current_setting('pk.allowed_scopes',true),''),'[]')::jsonb ? s.scope
+ AND NOT EXISTS(SELECT 1 FROM platform_knowledge.account_state a WHERE a.user_id=s.owner_user_id AND a.deleted_at IS NOT NULL)
+ AND((s.scope='ACCOUNT_PRIVATE' AND s.owner_user_id=nullif(current_setting('pk.user_id',true),''))
+ OR(s.scope='PROFITIA_SHARED' AND current_setting('pk.operator',true)='true')) $$;
 ALTER TABLE platform_knowledge.sources ENABLE ROW LEVEL SECURITY;
 ALTER TABLE platform_knowledge.sources FORCE ROW LEVEL SECURITY;
 CREATE POLICY api_sources ON platform_knowledge.sources TO platform_knowledge_api
- USING(platform_knowledge.source_visible(sources))
+ USING(platform_knowledge.source_visible(sources) OR platform_knowledge.source_manageable(sources))
  WITH CHECK(coalesce(nullif(current_setting('pk.allowed_scopes',true),''),'[]')::jsonb ? scope AND
   ((scope='ACCOUNT_PRIVATE' AND owner_user_id=nullif(current_setting('pk.user_id',true),'') AND owner_organisation_id IS NULL)
   OR(scope='PROFITIA_SHARED' AND owner_user_id IS NULL AND current_setting('pk.operator',true)='true')));
@@ -129,13 +138,13 @@ DO $$ DECLARE t text; BEGIN
  FOREACH t IN ARRAY ARRAY['generations','jobs','provider_calls'] LOOP
   EXECUTE format('ALTER TABLE platform_knowledge.%I ENABLE ROW LEVEL SECURITY',t);
   EXECUTE format('ALTER TABLE platform_knowledge.%I FORCE ROW LEVEL SECURITY',t);
-  EXECUTE format('CREATE POLICY api_child ON platform_knowledge.%I TO platform_knowledge_api USING(EXISTS(SELECT 1 FROM platform_knowledge.sources s WHERE s.id=source_id)) WITH CHECK(EXISTS(SELECT 1 FROM platform_knowledge.sources s WHERE s.id=source_id))',t);
+  EXECUTE format('CREATE POLICY api_child ON platform_knowledge.%I TO platform_knowledge_api USING(EXISTS(SELECT 1 FROM platform_knowledge.sources s WHERE s.id=source_id AND platform_knowledge.source_visible(s))) WITH CHECK(EXISTS(SELECT 1 FROM platform_knowledge.sources s WHERE s.id=source_id AND platform_knowledge.source_visible(s)))',t);
   EXECUTE format('CREATE POLICY worker_child ON platform_knowledge.%I TO platform_knowledge_worker,platform_knowledge_owner USING(true) WITH CHECK(true)',t);
  END LOOP;
  FOREACH t IN ARRAY ARRAY['chunks','cognition'] LOOP
   EXECUTE format('ALTER TABLE platform_knowledge.%I ENABLE ROW LEVEL SECURITY',t);
   EXECUTE format('ALTER TABLE platform_knowledge.%I FORCE ROW LEVEL SECURITY',t);
-  EXECUTE format('CREATE POLICY api_child ON platform_knowledge.%I TO platform_knowledge_api USING(EXISTS(SELECT 1 FROM platform_knowledge.generations g WHERE g.id=generation_id)) WITH CHECK(EXISTS(SELECT 1 FROM platform_knowledge.generations g WHERE g.id=generation_id))',t);
+  EXECUTE format('CREATE POLICY api_child ON platform_knowledge.%I TO platform_knowledge_api USING(EXISTS(SELECT 1 FROM platform_knowledge.generations g JOIN platform_knowledge.sources s ON s.id=g.source_id WHERE g.id=generation_id AND platform_knowledge.source_visible(s))) WITH CHECK(EXISTS(SELECT 1 FROM platform_knowledge.generations g JOIN platform_knowledge.sources s ON s.id=g.source_id WHERE g.id=generation_id AND platform_knowledge.source_visible(s)))',t);
   EXECUTE format('CREATE POLICY worker_child ON platform_knowledge.%I TO platform_knowledge_worker,platform_knowledge_owner USING(true) WITH CHECK(true)',t);
  END LOOP;
 END $$;
@@ -150,7 +159,7 @@ GRANT SELECT,INSERT,UPDATE,DELETE ON platform_knowledge.sources,platform_knowled
  platform_knowledge.account_state,platform_knowledge.lifecycle_receipts TO platform_knowledge_worker;
 GRANT INSERT ON platform_knowledge.audit TO platform_knowledge_api,platform_knowledge_worker;
 GRANT USAGE ON SEQUENCE platform_knowledge.audit_id_seq TO platform_knowledge_api,platform_knowledge_worker;
-GRANT EXECUTE ON FUNCTION platform_knowledge.source_visible(platform_knowledge.sources) TO platform_knowledge_api;
+GRANT EXECUTE ON FUNCTION platform_knowledge.source_visible(platform_knowledge.sources),platform_knowledge.source_manageable(platform_knowledge.sources) TO platform_knowledge_api;
 -- Settle an already-reserved external effect even after source/account
 -- revocation. Runtime cannot read another principal's data through this port.
 CREATE FUNCTION platform_knowledge.settle_provider_call(p_id uuid,p_spent bigint,p_input integer,p_output integer,p_response text,p_result jsonb) RETURNS boolean

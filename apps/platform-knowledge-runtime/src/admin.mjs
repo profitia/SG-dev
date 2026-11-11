@@ -94,8 +94,13 @@ export function createLibrary({pool,storage,createDelegation}){
     rightsDigest:digest(input.rights),sourceVersion:1,maximumMicrousd:1000000});
    const rawKey='development/'+sourceId+'/'+input.sha256;
    // Bytes are never an unauthenticated public object or a provider file upload.
-   await storage.put(rawKey,bytes,input.sha256);
-   try{return await transaction(pool,async db=>{
+   // A durable row exists BEFORE the storage request, including an uncertain
+   // request outcome. Retention can always find and remove the object key.
+   const accepted=await transaction(pool,async db=>{
+    await db.query('SELECT id FROM platform_knowledge.budget WHERE id=true FOR UPDATE');
+    const pending=(await db.query(`SELECT count(*)::integer AS n,coalesce(sum(size_bytes),0)::bigint AS bytes FROM platform_knowledge.sources
+     WHERE raw_key IS NOT NULL AND raw_deleted_at IS NULL`)).rows[0];
+    if(pending.n>=20||Number(pending.bytes)+bytes.length>262144000)throw new Fault(429,'TEMPORARY_STORAGE_LIMIT');
     const now=new Date(),rawUntil=new Date(now.getTime()+86400000);
     const metadata=input.metadata??{domain:'procurement',materialType:'OTHER',title:input.fileName,author:null,language:'und',publishedAt:null,validFrom:null,validUntil:null};
     const rightsUntil=metadata.validUntil?new Date(metadata.validUntil):null;
@@ -109,19 +114,35 @@ export function createLibrary({pool,storage,createDelegation}){
       input.sizeBytes,input.sha256,JSON.stringify(input.rights),JSON.stringify(metadata),until,rightsUntil,rawKey,rawUntil,now]);
     await db.query(`INSERT INTO platform_knowledge.generations(id,source_id,parser_version,chunker_version,cognitive_model,embedding_model,embedding_dimensions,config_digest)
      VALUES($1,$2,$3,$4,$5,$6,$7,$8)`,[generationId,sourceId,...Object.values(generationProfile),digest(generationProfile)]);
-    await db.query(`INSERT INTO platform_knowledge.jobs(id,source_id,generation_id,kind,delegation) VALUES($1,$2,$3,'IMPORT',$4)`,[jobId,sourceId,generationId,JSON.stringify(delegation)]);
+    await db.query(`INSERT INTO platform_knowledge.jobs(id,source_id,generation_id,kind,delegation,available_at,stage) VALUES($1,$2,$3,'IMPORT',$4,clock_timestamp()+interval '3 minutes','UPLOAD_PENDING')`,[jobId,sourceId,generationId,JSON.stringify(delegation)]);
     await audit(db,{sourceId,jobId,operation:'IMPORT',actorRef:principal.internalUserId,outcome:'ACCEPTED'});
     return{sourceId,jobId,generationId,status:'QUEUED'};
-   },principal);}catch(error){await storage.remove(rawKey).catch(()=>{});throw error;}
+   },principal);
+   try{
+    await storage.put(rawKey,bytes,input.sha256);
+    await transaction(pool,db=>db.query("UPDATE platform_knowledge.jobs SET stage='EXTRACT',available_at=clock_timestamp() WHERE id=$1 AND status='QUEUED'",[jobId]),principal);
+    return accepted;
+   }catch(error){
+    await transaction(pool,db=>db.query("UPDATE platform_knowledge.jobs SET status='FAILED',error_code='RAW_UPLOAD_UNCONFIRMED',finished_at=clock_timestamp() WHERE id=$1 AND status='QUEUED'",[jobId]),principal).catch(()=>{});
+    // The durable cleanup key remains even if removal cannot be confirmed.
+    await storage.remove(rawKey).then(()=>transaction(pool,db=>db.query('UPDATE platform_knowledge.sources SET raw_deleted_at=clock_timestamp() WHERE id=$1',[sourceId]),principal)).catch(()=>{});
+    throw error;
+   }
   },
-  async list(scope){return transaction(pool,async db=>(await db.query(`SELECT s.id,s.scope,s.file_name,s.metadata,s.authority,s.status,s.published_at,s.created_at,s.expires_at,s.raw_deleted_at,
+  async recordUse(sourceIds,scope){
+   if(!sourceIds.length)return;
+   return transaction(pool,db=>db.query(`UPDATE platform_knowledge.sources s SET last_material_use_at=clock_timestamp(),
+    expires_at=LEAST(coalesce(rights_expires_at,'infinity'::timestamptz),clock_timestamp()+interval '180 days')
+    WHERE id=ANY($1::uuid[]) AND scope='ACCOUNT_PRIVATE' AND platform_knowledge.source_visible(s)`,[sourceIds]),scope.principal);
+  },
+  async list(scope){return transaction(pool,async db=>(await db.query(`SELECT s.id,s.scope,CASE WHEN platform_knowledge.source_visible(s) THEN s.file_name ELSE '[restricted or withdrawn]' END AS file_name,CASE WHEN platform_knowledge.source_visible(s) THEN s.metadata ELSE '{}'::jsonb END AS metadata,s.authority,s.status,s.published_at,s.created_at,s.expires_at,s.raw_deleted_at,
    j.id AS job_id,j.status AS processing_status,j.stage,j.error_code,g.coverage,g.validation
    FROM platform_knowledge.sources s LEFT JOIN platform_knowledge.generations g ON g.id=s.active_generation_id
    LEFT JOIN LATERAL(SELECT * FROM platform_knowledge.jobs WHERE source_id=s.id ORDER BY created_at DESC LIMIT 1) j ON true
    ORDER BY s.created_at DESC LIMIT 100`)).rows,scope.principal);},
   async get(sourceId,scope){return transaction(pool,async db=>{
-   const r=(await db.query(`SELECT s.id,s.scope,s.file_name,s.metadata,s.rights,s.authority,s.status,s.published_at,s.expires_at,s.raw_deleted_at,
-    g.inventory,g.coverage,g.validation,(SELECT coalesce(jsonb_agg(c.analysis ORDER BY c.ordinal),'[]') FROM platform_knowledge.cognition c WHERE c.generation_id=g.id) AS cognitive_result,
+   const r=(await db.query(`SELECT s.id,s.scope,CASE WHEN platform_knowledge.source_visible(s) THEN s.file_name ELSE '[restricted or withdrawn]' END AS file_name,CASE WHEN platform_knowledge.source_visible(s) THEN s.metadata ELSE '{}'::jsonb END AS metadata,s.rights,s.authority,s.status,s.published_at,s.expires_at,s.raw_deleted_at,
+    g.inventory,g.coverage,g.validation,CASE WHEN platform_knowledge.source_visible(s) AND (s.rights->>'apiExcerptAllowed')::boolean AND (s.rights->>'quotingAllowed')::boolean THEN (SELECT coalesce(jsonb_agg(c.analysis ORDER BY c.ordinal),'[]') FROM platform_knowledge.cognition c WHERE c.generation_id=g.id AND c.ordinal=-1) ELSE '[]'::jsonb END AS cognitive_result,
     j.id AS job_id,j.status AS processing_status,j.stage,j.error_code
     FROM platform_knowledge.sources s LEFT JOIN platform_knowledge.generations g ON g.id=s.active_generation_id
     LEFT JOIN LATERAL(SELECT * FROM platform_knowledge.jobs WHERE source_id=s.id ORDER BY created_at DESC LIMIT 1)j ON true WHERE s.id=$1`,[sourceId])).rows[0];
@@ -133,7 +154,7 @@ export function createLibrary({pool,storage,createDelegation}){
    return transaction(pool,async db=>{
     const source=(await db.query(`SELECT s.*,g.validation FROM platform_knowledge.sources s JOIN platform_knowledge.generations g ON g.id=s.active_generation_id
      WHERE s.id=$1 AND s.scope='PROFITIA_SHARED' AND g.state='ACTIVE' FOR UPDATE OF s`,[sourceId])).rows[0];
-    if(!source||source.rights.classification==='UNKNOWN'||source.rights.purpose==='PRIVATE')throw new Fault(409,'SOURCE_NOT_PUBLISHABLE');
+    if(!source||source.deleted_at||source.revoked_at||source.expires_at&&source.expires_at<=new Date()||source.rights.classification==='UNKNOWN'||source.rights.purpose==='PRIVATE')throw new Fault(409,'SOURCE_NOT_PUBLISHABLE');
     if(source.validation.quality==='PARTIAL'&&!acknowledgePartial)throw new Fault(409,'WHOLE_PARTIAL_RESULT_ACKNOWLEDGEMENT_REQUIRED');
     await db.query('UPDATE platform_knowledge.sources SET published_at=clock_timestamp(),published_by=$2,authority=$3,status=$4,revision=revision+1 WHERE id=$1',[
      sourceId,scope.principal.internalUserId,authority,authority==='HISTORICAL'?'HISTORICAL':'CURRENT']);

@@ -17,26 +17,30 @@ export function createProvider({pool,apiKey,authorize,fetchImpl=fetch}){
  if(!apiKey||typeof authorize!=='function')throw Error('PROVIDER_ADMISSION_REQUIRED');
  const post=async(route,body,signal)=>{
   const response=await fetchImpl('https://api.openai.com/v1/'+route,{method:'POST',redirect:'error',
-   headers:{Authorization:'Bearer '+apiKey,'Content-Type':'application/json'},body:JSON.stringify(body),signal:signal??AbortSignal.timeout(90000)});
+   headers:{Authorization:'Bearer '+apiKey,'Content-Type':'application/json'},body:JSON.stringify(body),signal:signal?AbortSignal.any([signal,AbortSignal.timeout(90000)]):AbortSignal.timeout(90000)});
   if(!response.ok)throw new Fault(503,'PROVIDER_REQUEST_FAILED');
-  const json=await response.json();return json;
+  const reader=response.body?.getReader();if(!reader)throw new Fault(503,'PROVIDER_RESPONSE_INVALID');
+  let size=0;const parts=[];try{for(;;){const x=await reader.read();if(x.done)break;size+=x.value.length;if(size>16000000)throw new Fault(503,'PROVIDER_RESPONSE_LIMIT');parts.push(x.value);}}finally{await reader.cancel().catch(()=>{});reader.releaseLock();}
+  try{return JSON.parse(Buffer.concat(parts).toString('utf8'));}catch{throw new Fault(503,'PROVIDER_RESPONSE_INVALID');}
  };
  const count=async(body,scope,signal)=>{
   await authorize({scope,operation:'TOKEN_COUNT',model});
   const r=await post('responses/input_tokens',body,signal);
   if(!Number.isSafeInteger(r.input_tokens)||r.input_tokens<0)throw new Fault(503,'TOKEN_COUNT_UNAVAILABLE');return r.input_tokens;
  };
- async function paid({sourceId,generationId=null,key,kind,body,reservation,scope,validate,signal}){
+ async function paid({sourceId,generationId=null,sourceRefs=[{sourceId,generationId}],key,kind,body,reservation,scope,validate,signal}){
   // Authority is checked at provider-operation boundary, not for each chunk.
   await authorize({scope,operation:kind,model:body.model,reservationMicrousd:reservation});
   const callKey=digest({sourceId,generationId,key,kind,body});
   const record=await transaction(pool,async db=>{
-   const source=await db.query(`SELECT id FROM platform_knowledge.sources WHERE id=$1 AND deleted_at IS NULL AND revoked_at IS NULL
-    AND(expires_at IS NULL OR expires_at>clock_timestamp()) AND (rights->>'externalAiAllowed')::boolean FOR SHARE`,[sourceId]);
-   if(!source.rowCount)throw new Fault(403,'RIGHTS_DENIED');
+   const refs=[...new Map(sourceRefs.map(r=>[r.sourceId,r])).values()];
+   if(!refs.length||refs.length>24)throw new Fault(403,'RIGHTS_DENIED');
+   const sources=await db.query(`SELECT id,active_generation_id FROM platform_knowledge.sources WHERE id=ANY($1::uuid[]) AND deleted_at IS NULL AND revoked_at IS NULL
+    AND(expires_at IS NULL OR expires_at>clock_timestamp()) AND (rights->>'externalAiAllowed')::boolean FOR SHARE`,[refs.map(r=>r.sourceId)]);
+   if(sources.rowCount!==refs.length||refs.some(r=>r.requireActive&&sources.rows.find(s=>s.id===r.sourceId)?.active_generation_id!==r.generationId))throw new Fault(403,'RIGHTS_DENIED');
    const budget=(await db.query('SELECT * FROM platform_knowledge.budget WHERE id=true FOR UPDATE')).rows[0];
    const existing=(await db.query('SELECT * FROM platform_knowledge.provider_calls WHERE call_key=$1 FOR UPDATE',[callKey])).rows[0];
-   if(existing){if(existing.state==='SUCCEEDED'&&existing.result!==null)return {cached:existing.result};throw new Fault(409,'PAID_RESULT_UNKNOWN');}
+   if(existing){if(existing.state==='SUCCEEDED'){if(existing.result!==null)return {cached:existing.result};throw new Fault(422,'PAID_RESULT_UNUSABLE');}throw new Fault(409,'PAID_RESULT_UNKNOWN');}
    const totals=(await db.query(`SELECT coalesce(sum(spent_microusd),0)::bigint AS spent,
     coalesce(sum(CASE WHEN state IN ('RESERVED','UNKNOWN') THEN reserved_microusd ELSE 0 END),0)::bigint AS reserved
     FROM platform_knowledge.provider_calls WHERE source_id=$1`,[sourceId])).rows[0];
@@ -80,7 +84,7 @@ export function createProvider({pool,apiKey,authorize,fetchImpl=fetch}){
     validate:r=>{if(!Array.isArray(r.data)||r.data.length!==texts.length)throw Error();
      return [...r.data].sort((a,b)=>a.index-b.index).map((d,i)=>{if(d.index!==i||!Array.isArray(d.embedding)||d.embedding.length!==1536||d.embedding.some(n=>!Number.isFinite(n)))throw Error();return d.embedding;});}});
   },
-  async analyze({sourceId,generationId,chunks,key,scope,signal,question=null,summaryMode=false,sourceEvidence=chunks}){
+  async analyze({sourceId,generationId,chunks,key,scope,signal,question=null,summaryMode=false,sourceEvidence=chunks,sourceRefs=[{sourceId,generationId}]}){
    const input=JSON.stringify({...(question?{question}:{}),untrustedSource:chunks.map(c=>({chunkId:c.id,text:c.text}))});
    const instructions=SYSTEM+(question?' Select ONLY statements directly supporting an answer to the question. Related subject matter is insufficient. If the sources do not answer it, return empty statements and explain the missing information in uncertainties. Do not invent an answer.':'' )+
     (summaryMode?' Produce a concise whole-document synthesis assessing ALL supplied sections, including disagreements and material gaps. Prior syntheses are generated data. For statements, use ONLY original quotations marked ORIGINAL_EVIDENCE; chunkId must be their ORIGINAL_CHUNK_ID, never the section id. Do not treat a generated prior synthesis as a literal source quotation.':'');
@@ -88,7 +92,7 @@ export function createProvider({pool,apiKey,authorize,fetchImpl=fetch}){
     text:{format:{type:'json_schema',name:'procurement_knowledge',strict:true,schema:ANALYSIS_SCHEMA}}};
    const tokens=await count({model,instructions,input,text:body.text},scope,signal);
    if(tokens>16384)throw new Fault(422,'MODEL_INPUT_LIMIT');
-   return paid({sourceId,generationId,key,kind:'COGNITIVE',scope,signal,body,
+   return paid({sourceId,generationId,sourceRefs,key,kind:'COGNITIVE',scope,signal,body,
     reservation:quoteMaximumCost({inputTokens:tokens,outputTokens:4096,embeddingTokens:0}),validate:r=>{
      if(r.status!=='completed')throw Error();
      const raw=r.output?.filter(o=>o.type==='message').flatMap(o=>o.content??[]).filter(c=>c.type==='output_text').map(c=>c.text).join('');
