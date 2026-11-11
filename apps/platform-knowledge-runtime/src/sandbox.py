@@ -12,9 +12,9 @@ def isolate(job_dir):
     libc = ctypes.CDLL(None, use_errno=True)
     machine = platform.machine()
     if machine == 'x86_64':
-        arch, blocked = 0xc000003e, [42,43,44,45,46,47,51,52,54,55,101,165,166,272,298,308,310,311,321,323,425,426,427,435,438]
+        arch, blocked = 0xc000003e, [42,43,44,45,46,47,51,52,54,55,101,165,166,272,298,308,310,311,288,299,307,321,323,425,426,427,435,438]
     elif machine == 'aarch64':
-        arch, blocked = 0xc00000b7, [202,203,206,207,208,209,210,211,117,40,39,97,241,268,270,271,280,282,425,426,427,435,438]
+        arch, blocked = 0xc00000b7, [202,203,206,207,208,209,211,212,242,243,269,117,40,39,97,241,268,270,271,280,282,425,426,427,435,438]
     else:
         raise RuntimeError('PARSER_ISOLATION_UNAVAILABLE')
     if libc.prctl(38, 1, 0, 0, 0) != 0:
@@ -61,7 +61,8 @@ def isolate(job_dir):
     # to another process. DAC makes /tmp and /var/tmp nonwritable; the fixed
     # OSL_SOCKET_PATH is this Landlock-confined private job directory.
     for local_call in ([41,53] if machine=='x86_64' else [198,199]):
-        instructions.extend([(0x15,0,4,local_call),(0x20,0,0,16),(0x15,0,1,1),
+        instructions.extend([(0x15,0,7,local_call),(0x20,0,0,16),(0x15,0,4,1),
+                             (0x20,0,0,24),(0x54,0,0,15),(0x15,0,1,1),
                              (0x06,0,0,0x7fff0000),(0x06,0,0,0x00050000 | errno.EPERM)])
     for call in blocked:
         instructions.extend([(0x15,0,1,call),(0x06,0,0,0x00050000 | (errno.ENOSYS if call == 435 else errno.EPERM))])

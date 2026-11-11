@@ -16,6 +16,7 @@ WORKDIR /opt/profitia/apps/platform-knowledge-runtime
 COPY --from=dependencies --chown=node:node /opt/profitia/apps/platform-knowledge-runtime/node_modules ./node_modules
 COPY --chown=node:node apps/platform-knowledge-runtime/package.json ./package.json
 COPY --chown=node:node apps/platform-knowledge-runtime/src ./src
+COPY --chown=node:node apps/platform-knowledge-runtime/db/migrations/001-knowledge.sql ./db/migrations/001-knowledge.sql
 ENV NODE_ENV=production TMPDIR=/tmp/pk
 USER node
 EXPOSE 10000

@@ -207,3 +207,22 @@ test('all contributing sources fence a cached query and token counting after sec
   for(const source of [one,two].filter(Boolean)){await db.query('DELETE FROM platform_knowledge.provider_calls WHERE source_id=$1',[source.id]);await db.query('DELETE FROM platform_knowledge.generations WHERE source_id=$1',[source.id]);await db.query('DELETE FROM platform_knowledge.sources WHERE id=$1',[source.id]);}db.release();await api.end();
  }
 });
+
+test('native readiness and receiver bind the exact installed SQL receipt; API cannot rewrite it',{skip:!uri,timeout:10000},async()=>{
+ const {readFile}=await import('node:fs/promises'),{createDatabase}=await import('../src/database.mjs');
+ const sha=digest(await readFile(new URL('../db/migrations/001-knowledge.sql',import.meta.url)));
+ const db=await pool.connect(),apiUri=new URL(uri);apiUri.username='platform_knowledge_api';
+ const api=createDatabase({databaseUrl:apiUri.href,expectedRole:'platform_knowledge_api'});
+ try{
+  await db.query('UPDATE platform_knowledge.schema_version SET source_sha256=$1 WHERE version=1',[sha]);
+  await db.query('BEGIN;SET LOCAL ROLE platform_knowledge_owner');
+  if(!(await db.query("SELECT to_regclass('platform_knowledge.authority_bindings') AS present")).rows[0].present)await db.query(await readFile(new URL('../../../packages/platform-contracts/current-e1-authority/migrations/016-knowledge-receiver.sql',import.meta.url),'utf8'));
+  const binding={environment:'development',projectId:'sparkling-sky-79692560',branchId:'br-billowing-grass-b9ko5s4f',databaseName:'platform_knowledge',role:'platform_knowledge_api',knowledgeSchemaDigest:sha};
+  await db.query(`INSERT INTO platform_knowledge.authority_bindings(login_role,kind,binding,origin,authority_origin,status,expires_at)
+   VALUES('platform_knowledge_api','API',$1,'https://platform-knowledge-development-api.onrender.com','https://identity.synthetic.test','ACTIVE',clock_timestamp()+interval '1 hour')`,[JSON.stringify(binding)]);await db.query('COMMIT');
+  assert.equal(await api.engineReady(),true);assert.equal((await api.pool.query('SELECT platform_knowledge.authority_descriptor() AS d')).rows[0].d.binding.knowledgeSchemaDigest,sha);
+  await assert.rejects(api.pool.query('UPDATE platform_knowledge.schema_version SET source_sha256=$1',['d'.repeat(64)]),/permission denied/);
+  await db.query('UPDATE platform_knowledge.schema_version SET source_sha256=$1 WHERE version=1',['d'.repeat(64)]);
+  assert.equal(await api.engineReady(),false);assert.equal((await api.pool.query('SELECT platform_knowledge.authority_descriptor() AS d')).rows[0].d,null);
+ }finally{await db.query('ROLLBACK');await db.query('UPDATE platform_knowledge.schema_version SET source_sha256=$1 WHERE version=1',[sha]);await db.query("DELETE FROM platform_knowledge.authority_bindings WHERE login_role='platform_knowledge_api'").catch(()=>{});db.release();await api.close();}
+});

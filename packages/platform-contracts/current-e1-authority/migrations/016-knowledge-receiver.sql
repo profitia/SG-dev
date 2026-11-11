@@ -17,7 +17,7 @@ CREATE POLICY owner_binding ON platform_knowledge.authority_bindings TO platform
 CREATE FUNCTION platform_knowledge.authority_descriptor() RETURNS jsonb
 LANGUAGE sql SECURITY DEFINER SET search_path=pg_catalog AS $$
  SELECT jsonb_build_object('contract','profitia.current-e1-knowledge/1.0.0','binding',binding,'kind',kind,'origin',origin,'authorityOrigin',authority_origin)
- FROM platform_knowledge.authority_bindings WHERE login_role=session_user AND status='ACTIVE' AND expires_at>clock_timestamp()
+ FROM platform_knowledge.authority_bindings b JOIN platform_knowledge.schema_version v ON v.version=1 AND v.source_sha256=b.binding->>'knowledgeSchemaDigest' WHERE login_role=session_user AND status='ACTIVE' AND expires_at>clock_timestamp()
  AND binding->>'databaseName'=current_database() $$;
 REVOKE ALL ON platform_knowledge.authority_bindings FROM PUBLIC;
 REVOKE ALL ON FUNCTION platform_knowledge.authority_descriptor() FROM PUBLIC;

@@ -39,7 +39,7 @@ jobs:
         working-directory: apps/platform-knowledge-runtime
         run: |
           node --input-type=module <<'JS'
-          import pg from 'pg';import fs from 'node:fs/promises';import assert from 'node:assert/strict';
+          import pg from 'pg';import fs from 'node:fs/promises';import assert from 'node:assert/strict';import {createHash} from 'node:crypto';
           const admin=new pg.Client({connectionString:process.env.OPERATION_FIXTURE_OWNER_URL});await admin.connect();
           try{
             await admin.query('CREATE DATABASE platform_knowledge');
@@ -55,7 +55,8 @@ jobs:
             await db.query('CREATE SCHEMA platform_knowledge AUTHORIZATION platform_knowledge_owner');
             await db.query('GRANT USAGE ON SCHEMA platform_knowledge TO platform_knowledge_api,platform_knowledge_worker,platform_knowledge_migrator');
             await db.query('SET ROLE platform_knowledge_owner');
-            await db.query(await fs.readFile('db/migrations/001-knowledge.sql','utf8'));
+            const sql=await fs.readFile('db/migrations/001-knowledge.sql','utf8');await db.query(sql);
+            await db.query('UPDATE platform_knowledge.schema_version SET source_sha256=$1 WHERE version=1',[createHash('sha256').update(sql).digest('hex')]);
             console.log('Disposable product schema installed with actual vector '+v);
           }finally{await db.end();}
           JS
@@ -104,6 +105,32 @@ jobs:
             assert.notEqual(process.getuid(),0);console.log("Nonroot container live; processing remains disabled");'
           docker update --memory=2g --memory-swap=2g pk-foundation-smoke
           docker cp "$RUNNER_TEMP/pk-quality-fixtures" pk-foundation-smoke:/tmp/pk-fixtures
+          docker exec -i pk-foundation-smoke /opt/pk-venv/bin/python -B - <<'PYISOLATION'
+          import sys,os,socket,tempfile,errno
+          from pathlib import Path
+          sys.path.insert(0,str(Path.cwd()/'src'))
+          from sandbox import isolate
+          job=Path(tempfile.mkdtemp(prefix='pk-i-'))
+          isolate(str(job))
+          for family in [socket.AF_INET,socket.AF_INET6]:
+              try:socket.socket(family,socket.SOCK_STREAM);raise AssertionError('IP socket was not blocked')
+              except PermissionError:pass
+          for target in ['/etc/passwd','/proc/1/environ']:
+              try:Path(target).read_bytes();raise AssertionError('Outside read was not blocked')
+              except PermissionError:pass
+          Path(job/'inside').write_text('synthetic')
+          try:Path('/tmp/outside-job').write_text('synthetic');raise AssertionError('Outside write was not blocked')
+          except PermissionError:pass
+          server=socket.socket(socket.AF_UNIX,socket.SOCK_STREAM);server.bind(str(job/'listener'));server.listen(1)
+          try:server.accept();raise AssertionError('Incoming local commands were not blocked')
+          except PermissionError:pass
+          client=socket.socket(socket.AF_UNIX,socket.SOCK_STREAM)
+          try:client.connect(str(job/'listener'));raise AssertionError('Addressed local connection was not blocked')
+          except PermissionError:pass
+          a,b=socket.socketpair(socket.AF_UNIX,socket.SOCK_STREAM)
+          os.write(a.fileno(),b'fixture');assert os.read(b.fileno(),7)==b'fixture'
+          print('Linux isolation: IP, addressed connections, command acceptance, outside reads/writes blocked; anonymous child IPC works')
+          PYISOLATION
           # Diagnostics are limited to the verified author-synthetic DOC fixture.
           # The container has no provider credentials or external network.
           docker exec -i pk-foundation-smoke /opt/pk-venv/bin/python -B - <<'PYCODE'

@@ -28,3 +28,7 @@
 !packages/platform-contracts/current-e1-authority/*.mts
 !packages/platform-contracts/current-e1-authority/migrations/
 !packages/platform-contracts/current-e1-authority/migrations/**
+
+!apps/platform-knowledge-runtime/db/
+!apps/platform-knowledge-runtime/db/migrations/
+!apps/platform-knowledge-runtime/db/migrations/001-knowledge.sql

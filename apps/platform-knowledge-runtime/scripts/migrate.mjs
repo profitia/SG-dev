@@ -14,7 +14,7 @@ try{
  await client.connect();await client.query('BEGIN; SET LOCAL ROLE platform_knowledge_owner');
  const existing=await client.query("SELECT to_regclass('platform_knowledge.schema_version') AS present");
  if(existing.rows[0].present)throw Error('MIGRATION_ALREADY_PRESENT_VERIFY_INSTEAD');
- await client.query(sql);await client.query('COMMIT');
+ await client.query(sql);await client.query('UPDATE platform_knowledge.schema_version SET source_sha256=$1 WHERE version=1',[sha256]);await client.query('COMMIT');
  process.stdout.write(JSON.stringify({status:'INSTALLED',version:1,sha256})+'\n');
 }catch(error){await client.query('ROLLBACK').catch(()=>{});process.stderr.write('MIGRATION_FAILED\n');process.exitCode=1;}
 finally{await client.end().catch(()=>{});}

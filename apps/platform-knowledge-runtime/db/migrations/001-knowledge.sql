@@ -4,7 +4,7 @@ DO $$ BEGIN
  IF current_database()<>'platform_knowledge' OR current_user<>'platform_knowledge_owner'
  THEN RAISE EXCEPTION 'PK_MIGRATION_BINDING_REJECTED'; END IF;
 END $$;
-CREATE TABLE platform_knowledge.schema_version(version integer PRIMARY KEY, installed_at timestamptz NOT NULL DEFAULT clock_timestamp());
+CREATE TABLE platform_knowledge.schema_version(version integer PRIMARY KEY, source_sha256 text CHECK(source_sha256~'^[a-f0-9]{64}$'), installed_at timestamptz NOT NULL DEFAULT clock_timestamp());
 CREATE TABLE platform_knowledge.account_state(
  user_id text PRIMARY KEY, deleted_at timestamptz, lifecycle_event_id text UNIQUE,
  memory_enabled boolean NOT NULL DEFAULT false, consent_version text, consent_at timestamptz,
