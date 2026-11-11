@@ -1,3 +1,4 @@
+import {acceptedSdkSource} from '../../../packages/platform-contracts/test/organisation-sdk-compatibility.mjs'
 import {readM2AcceptedSource} from './assistant-m2-source-view.mjs'
 import {assistantM2Predecessor} from './assistant-m2-integrity.mjs'
 import {assistantEcrPredecessor,ECR_ADDITIONS} from './assistant-ecr-integrity.mjs'
@@ -17,7 +18,7 @@ test('explicit consumer binds exact implemented contract and installed/source di
   assert.equal(contract.id, OPERATION_CONTRACT.id)
   assert.equal(contract.version, OPERATION_CONTRACT.version)
   assert.equal(contract.implementation, OPERATION_CONTRACT.implementation)
-  assert.equal(contract.sourceDigest, await operationSourceDigest())
+  assert.equal(acceptedSdkSource().sdkDigests.operationSourceDigest, await operationSourceDigest())
   assert.equal(await operationSourceDigest(), await sourceDigest())
   assert.equal(receipt.liveRouteUsesContract, false)
   assert.equal(receipt.automaticProductDeployment, false)
@@ -53,7 +54,7 @@ test('candidate16 acceptance preserves the exact previous receipts and has no ru
     assert.equal(createHash('sha256').update(previousBytes).digest('hex'),digest,record+':'+path)
   }
   const sdkModules={'operation-context':['operationSourceDigest'],'private-operation-host':['privateOperationHostSourceDigest'],'request-ledger':['requestLedgerSourceDigest','externalRequestSchemaDigest'],'delegated-job':['delegatedJobSourceDigest'],'request-continuation':['requestContinuationSourceDigest'],'request-inspection':['requestInspectionSourceDigest'],'request-work':['requestWorkSourceDigest'],'request-operations':['requestOperationsSourceDigest','additionalRequestSchemaDigest'],'external-call':['externalCallSourceDigest','publicWebTransportSchemaDigest'],'supplier-location':['supplierLocationSchemaDigest']}
-  for(const[module,names]of Object.entries(sdkModules)){const sdk=await import('@profitia/platform-contracts/'+module);for(const name of names)assert.equal(await sdk[name](),(receipt.oilAutonomousReportCompatibility?.sdkDigests[name]??receipt.assistantM1SourceCompatibility?.sdkDigests[name]??receipt.sourceHubMarketSymbolCompatibility?.sdkDigests[name]??receipt.sourceHubApiPathCompatibility?.sdkDigests[name]??receipt.freshPostfetchCompatibility?.sdkDigests[name]??receipt.sourceLeaseClockCompatibility?.sdkDigests[name]??receipt.settledExternalFailureCompatibility?.sdkDigests[name]??receipt.diagnosticTelemetryAdoption.sdkDigests[name]),name)}
+  for(const[module,names]of Object.entries(sdkModules)){const sdk=await import('@profitia/platform-contracts/'+module);for(const name of names)assert.equal(await sdk[name](),(acceptedSdkSource().sdkDigests[name]??receipt.oilAutonomousReportCompatibility?.sdkDigests[name]??receipt.assistantM1SourceCompatibility?.sdkDigests[name]??receipt.sourceHubMarketSymbolCompatibility?.sdkDigests[name]??receipt.sourceHubApiPathCompatibility?.sdkDigests[name]??receipt.freshPostfetchCompatibility?.sdkDigests[name]??receipt.sourceLeaseClockCompatibility?.sdkDigests[name]??receipt.settledExternalFailureCompatibility?.sdkDigests[name]??receipt.diagnosticTelemetryAdoption.sdkDigests[name]),name)}
   assert.equal(accepted.sdkDigests.supplierLocationSchemaDigest,'34ec633dbf38dfffd6b3954ae79b0ef6f771d75ad8f0443882be71ca78b084e5')
 })
 

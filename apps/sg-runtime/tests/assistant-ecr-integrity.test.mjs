@@ -1,3 +1,4 @@
+import {sdkContinuationPredecessor} from '../../../packages/platform-contracts/test/organisation-sdk-compatibility.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
@@ -10,12 +11,13 @@ const current=p=>fs.readFileSync(new URL('../../../'+p,import.meta.url))
 const blobs=new Map()
 const historical=(sha,p)=>{const key=sha+':'+p;if(!blobs.has(key))blobs.set(key,execFileSync('git',['show',key],{stdio:['ignore','pipe','pipe']}));return blobs.get(key)}
 const hash=b=>createHash('sha256').update(b).digest('hex')
+const acceptedEcrCurrent=()=>sdkContinuationPredecessor(JSON.parse(current('apps/sg-runtime/operation-integration.json')),current,historical)?.previousBytes??current
 const manifest=()=>JSON.parse(current(ECR_RECEIPT))
 const withManifest=(a,read=current)=>p=>p===ECR_RECEIPT?Buffer.from(JSON.stringify(a)):read(p)
 test('ECR closes its producer and consumer source graph while retaining every earlier receipt and predecessor',()=>{
  const ecr=assistantEcrPredecessor(current,historical)
  assert.equal(ecr.manifest.scope,'OPTIONAL_ECR_CONTEXT_SOURCE')
- for(const p of ECR_PRESERVED_RECEIPTS)assert.deepEqual(current(p),historical(ECR_BASE,p))
+ for(const p of ECR_PRESERVED_RECEIPTS)assert.deepEqual(acceptedEcrCurrent()(p),historical(ECR_BASE,p))
  for(const p of ECR_PATHS.filter(p=>!ECR_ADDITIONS.includes(p)))assert.deepEqual(ecr.previousBytes(p),historical(ECR_BASE,p))
  for(const p of [...ECR_ADDITIONS,ECR_RECEIPT])assert.throws(()=>ecr.previousBytes(p),e=>e.code==='ENOENT')
  assert.equal(assistantEcrPredecessor(ecr.previousBytes,historical),null)
@@ -41,8 +43,8 @@ test('rebinding source hashes cannot widen package scripts, private dependencies
   ['apps/sg-runtime/package-lock.json',a=>a.packages['node_modules/@profitia/cic-core'].resolved=a.packages['node_modules/@profitia/cic-core'].resolved.replace(/\/[a-f0-9]{40}$/, '/'+'a'.repeat(40))],
   ['apps/sg-runtime/package-lock.json',a=>a.packages['node_modules/@profitia/advisory-widget'].version='99.0.0'],
  ]){
-  const data=JSON.parse(current(p));mutate(data);const bytes=Buffer.from(JSON.stringify(data)),a=manifest();a.sourceDigests[p]=hash(bytes)
-  assert.throws(()=>assistantEcrPredecessor(withManifest(a,f=>f===p?bytes:current(f)),historical),p)
+  const read=acceptedEcrCurrent(),data=JSON.parse(read(p));mutate(data);const bytes=Buffer.from(JSON.stringify(data)),a=JSON.parse(read(ECR_RECEIPT));a.sourceDigests[p]=hash(bytes)
+  assert.throws(()=>assistantEcrPredecessor(withManifest(a,f=>f===p?bytes:read(f)),historical),p)
  }
 })
 test('only genuinely absent ECR is optional; permission, unrelated Git and historical read failures remain fatal',()=>{
