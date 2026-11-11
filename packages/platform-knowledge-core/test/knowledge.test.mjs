@@ -36,3 +36,11 @@ test('async full-envelope budget never leaves a synthesis with missing evidence 
  if(result.summary)assert.ok(result.summary.evidenceIds.every(id=>result.evidence.some(e=>e.evidenceId===id)));
  else assert.ok(result.omissions.includes('SUMMARY_INCOMPLETE'));
 });
+
+
+test('generated synthesis with no original evidence is omitted instead of becoming reusable context',async()=>{
+ const q={version:'0.2.0',requestId:'q',maxTokens:2000,tokenizerId:'test',targetModel:'test'};
+ const summary={text:'Unsupported generated assertion',generated:true,expectedUnits:1,coveredUnitIds:['p1'],missingUnitIds:[],evidenceIds:[]};
+ const result=await fitContextAsync(q,[],{version:q.version,summary,countTokens:async text=>tokens(text)});
+ assert.equal(result.summary,undefined);assert.equal(result.status,'INSUFFICIENT_EVIDENCE');assert.ok(result.omissions.includes('SUMMARY_INCOMPLETE'));
+});

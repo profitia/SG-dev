@@ -56,6 +56,13 @@ test('native central SQL admits exact private account only and revokes durable w
    bodyDigest:createHash('sha256').update(JSON.stringify(body)).digest('hex'),issuedAt,expiresAt:issuedAt+15000});
   const input={consumerProof:{payload,signature:sign(null,Buffer.from(payload),pair.privateKey).toString('base64url')},...body};
   const worker=new Request(f.authorityOrigin+'/v1/e1/knowledge/worker');const job=await f.authority.authorizeKnowledgeWorker(worker,input);assert.equal(job.sourceId,ids.sourceId);assert.equal(job.principal.internalUserId,U);assert.equal(job.rightsDigest,ids.rightsDigest);assert.equal(job.sourceVersion,1);assert.equal(job.maximumMicrousd,1000000);
+  const clerkBefore=f.clerkState.calls.length;
+  for(let i=0;i<3;i++){
+   const checkpoint={...body,nonce:randomUUID().replaceAll('-','').repeat(2),phase:'CHECKPOINT'},at=Date.now();
+   const raw=JSON.stringify({contract:KNOWLEDGE_E1_CONTRACT,role:'platform_knowledge_worker',keyId:'synthetic-key',targetOrigin:f.authorityOrigin,bodyDigest:createHash('sha256').update(JSON.stringify(checkpoint)).digest('hex'),issuedAt:at,expiresAt:at+15000});
+   const observed=await f.authority.authorizeKnowledgeWorker(worker,{...checkpoint,consumerProof:{payload:raw,signature:sign(null,Buffer.from(raw),pair.privateKey).toString('base64url')}});assert.equal(observed.sourceId,ids.sourceId);
+  }
+  assert.equal(f.clerkState.calls.length,clerkBefore,'worker checkpoints do not call Clerk per chunk/batch');
   await f.asOwner(0,db=>db.query("UPDATE profitia_e1_authority.knowledge_grants SET status='REVOKED' WHERE user_id=$1 AND operation='document.import'",[U]));
   await assert.rejects(f.authority.authorizeKnowledgeWorker(worker,input));
  }finally{await f.close();}

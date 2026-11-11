@@ -123,7 +123,10 @@ export function createLibrary({pool,storage,createDelegation}){
    }catch(error){
     await transaction(pool,db=>db.query("UPDATE platform_knowledge.jobs SET status='FAILED',error_code='RAW_UPLOAD_UNCONFIRMED',finished_at=clock_timestamp() WHERE id=$1 AND status='QUEUED'",[jobId]),principal).catch(()=>{});
     // The durable cleanup key remains even if removal cannot be confirmed.
-    await storage.remove(rawKey).then(()=>transaction(pool,db=>db.query('UPDATE platform_knowledge.sources SET raw_deleted_at=clock_timestamp() WHERE id=$1',[sourceId]),principal)).catch(()=>{});
+    // A timed-out PUT may still finish after this immediate DELETE. Keep the
+    // durable key eligible for the final deadline sweep; do not claim a final
+    // deletion receipt for an uncertain upload.
+    await storage.remove(rawKey).catch(()=>{});
     throw error;
    }
   },

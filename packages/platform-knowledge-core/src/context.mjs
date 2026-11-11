@@ -19,7 +19,7 @@ export async function fitContextAsync(query,evidence,{countTokens,version='0.1.0
  if(typeof countTokens!=='function'||!Number.isSafeInteger(query?.maxTokens)||query.maxTokens<1)throw TypeError('TOKENIZER_AND_BUDGET_REQUIRED');
  const items=[...evidence],missing=new Set(omissions);let prior=-1,includedSummary=summary;
  for(;;){
-  if(includedSummary?.evidenceIds.some(id=>!items.some(e=>e.evidenceId===id))){includedSummary=null;missing.add('SUMMARY_INCOMPLETE');}
+  if(includedSummary&&(!includedSummary.evidenceIds.length||includedSummary.evidenceIds.some(id=>!items.some(e=>e.evidenceId===id)))){includedSummary=null;missing.add('SUMMARY_INCOMPLETE');}
   const value={version,requestId:query.requestId,status:items.length?(missing.size||items.some(e=>e.coverage!=='COMPLETE')?'PARTIAL':'READY'):(includedSummary?'PARTIAL':'INSUFFICIENT_EVIDENCE'),
    evidence:items,usedTokens:0,tokenizerId:query.tokenizerId,targetModel:query.targetModel,omissions:[...missing],continuation,...(includedSummary?{summary:includedSummary}:{})};
   for(let i=0;i<16;i++){

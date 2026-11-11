@@ -110,7 +110,13 @@ test('shadow rebuild uses retained text after raw deletion; failed generation pr
   assert.equal((await library.get(source.id,scope)).status,'CURRENT');
   await library.revoke(source.id,false,scope);assert.equal((await library.get(source.id,scope)).cognitive_result.length,0);
   await transaction(api,async c=>assert.equal((await c.query('SELECT id FROM platform_knowledge.chunks WHERE generation_id=$1',[source.generation])).rowCount,0),scope.principal);
-  await library.revoke(source.id,true,scope);await runRetention({pool,storage:{remove:async()=>{}}});
+  await db.query("UPDATE platform_knowledge.sources SET raw_key=$2,raw_deleted_at=NULL,raw_expires_at=clock_timestamp()-interval '1 second' WHERE id=$1",[source.id,'development/'+source.id+'/'+'a'.repeat(64)]);
+  await library.revoke(source.id,true,scope);
+  await assert.rejects(runRetention({pool,storage:{remove:async()=>{throw Error('SYNTHETIC_STORAGE_OUTAGE');}}}),/RAW_CLEANUP_PENDING/);
+  assert.equal((await db.query('SELECT id FROM platform_knowledge.chunks WHERE generation_id=ANY($1::uuid[])',[[source.generation,next]])).rowCount,0);
+  assert.ok((await db.query('SELECT raw_key FROM platform_knowledge.sources WHERE id=$1',[source.id])).rows[0].raw_key);
+  await runRetention({pool,storage:{remove:async()=>{}}});
+  assert.equal((await db.query('SELECT raw_key FROM platform_knowledge.sources WHERE id=$1',[source.id])).rows[0].raw_key,null);
   assert.equal((await db.query('SELECT id FROM platform_knowledge.chunks WHERE generation_id=ANY($1::uuid[])',[[source.generation,next]])).rowCount,0);
   assert.equal((await db.query('SELECT active_generation_id FROM platform_knowledge.sources WHERE id=$1',[source.id])).rows[0].active_generation_id,null);
  }finally{
@@ -225,4 +231,25 @@ test('native readiness and receiver bind the exact installed SQL receipt; API ca
   await db.query('UPDATE platform_knowledge.schema_version SET source_sha256=$1 WHERE version=1',['d'.repeat(64)]);
   assert.equal(await api.engineReady(),false);assert.equal((await api.pool.query('SELECT platform_knowledge.authority_descriptor() AS d')).rows[0].d,null);
  }finally{await db.query('ROLLBACK');await db.query('UPDATE platform_knowledge.schema_version SET source_sha256=$1 WHERE version=1',[sha]);await db.query("DELETE FROM platform_knowledge.authority_bindings WHERE login_role='platform_knowledge_api'").catch(()=>{});db.release();await api.close();}
+});
+
+test('uncertain upload retains its durable cleanup key until the deadline sweep',{skip:!uri,timeout:10000},async()=>{
+ const {createLibrary}=await import('../src/admin.mjs'),{runRetention}=await import('../src/retention.mjs');
+ const user='cccccccc-1111-4111-8111-cccccccccccc',apiUri=new URL(uri);apiUri.username='platform_knowledge_api';const api=new pg.Pool({connectionString:apiUri.href});
+ const requestId=randomUUID(),bytes=Buffer.from('Synthetic uncertain upload');let source,removes=0;
+ const storage={put:async()=>{throw Error('SYNTHETIC_PUT_LOST_REPLY');},remove:async()=>{removes++;}};
+ try{
+  const library=createLibrary({pool:api,storage,createDelegation:async s=>s.delegation});
+  const input={version:'0.2.0',requestId,scope:'ACCOUNT_PRIVATE',fileName:'uncertain.txt',mediaType:'text/plain',sizeBytes:bytes.length,sha256:digest(bytes),memoryRequested:false,rights};
+  const scope={principal:principal(user),delegation:{sourceId:randomUUID(),generationId:randomUUID(),jobId:randomUUID(),rightsDigest:digest(rights)}};
+  await assert.rejects(library.import(input,bytes,scope),/SYNTHETIC_PUT_LOST_REPLY/);
+  source=(await pool.query('SELECT id,raw_key,raw_deleted_at FROM platform_knowledge.sources WHERE uploaded_by=$1 AND request_id=$2',[user,requestId])).rows[0];
+  assert.ok(source.raw_key);assert.equal(source.raw_deleted_at,null);assert.equal(removes,1);
+  // A late object is still addressed by the recorded key, after an earlier
+  // best-effort delete; no orphan is hidden behind an early deletion flag.
+  await pool.query("UPDATE platform_knowledge.sources SET raw_expires_at=clock_timestamp()-interval '1 second' WHERE id=$1",[source.id]);
+  await runRetention({pool,storage});assert.equal(removes,2);assert.ok((await pool.query('SELECT raw_deleted_at FROM platform_knowledge.sources WHERE id=$1',[source.id])).rows[0].raw_deleted_at);
+ }finally{
+  if(source){await pool.query('DELETE FROM platform_knowledge.jobs WHERE source_id=$1',[source.id]);await pool.query('DELETE FROM platform_knowledge.generations WHERE source_id=$1',[source.id]);await pool.query('DELETE FROM platform_knowledge.sources WHERE id=$1',[source.id]);}await api.end();
+ }
 });

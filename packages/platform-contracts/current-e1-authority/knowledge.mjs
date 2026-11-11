@@ -206,7 +206,7 @@ export function createKnowledgeOperationHost({independentQuery,application,trans
   async authorizeProvider({scope,operation,model,reservationMicrousd=0}){
    const lease=active.get(scope);if(!lease||lease.deadline<=now()||!['gpt-6-luna','text-embedding-3-small'].includes(model)
     ||!['TOKEN_COUNT','COGNITIVE','EMBEDDING','QUERY_EMBEDDING','SUMMARY'].includes(operation)||!Number.isSafeInteger(reservationMicrousd)||reservationMicrousd<0||reservationMicrousd>1000000)deny();
-   if(!lease.job&&operation!=='TOKEN_COUNT'){const p=await lease.refresh();if(p.grantFingerprint!==lease.fingerprint||hash(p.principal)!==lease.principalDigest)deny();}
+   if(!lease.job){const p=await lease.refresh();if(p.grantFingerprint!==lease.fingerprint||hash(p.principal)!==lease.principalDigest)deny();}
    if(lease.job){
     const d=await descriptor(),job=lease.jobRecord,nonce=randomBytes(32).toString('hex');
     const body={jobId:job.id,delegationId:job.delegation.delegationId,nonce,phase:'CHECKPOINT'},issuedAt=now();

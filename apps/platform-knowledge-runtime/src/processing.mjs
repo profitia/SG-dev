@@ -100,8 +100,20 @@ export async function processJob({pool,storage,provider,authorizeJob,job,signal,
     ||cognitive.length!==Math.ceil(evidenceRows.length/4)||evidenceRows.some(c=>!c.embedding||!covered.has(c.id))||!evidenceRows.length)throw new Fault(422,'GENERATION_VALIDATION_FAILED');
   const searchable=(await db.query("SELECT count(*)::integer AS n FROM platform_knowledge.chunks WHERE generation_id=$1 AND embedding IS NOT NULL AND length(search_text)>0",[job.generation_id])).rows[0].n;
   if(!searchable)throw new Fault(422,'GENERATION_NOT_SEARCHABLE');
+  // Basic import smoke is deliberately known-document retrieval. Natural
+  // discovery among competing sources remains a separate release acceptance.
+  const indexedRows=evidenceRows.filter(c=>c.search_text);
+  const samples=[...new Set([0,Math.floor(indexedRows.length/2),indexedRows.length-1])].map(i=>indexedRows[i]);
+  for(const sample of samples){
+   const phrase=(sample.text_content.match(/[\p{L}\p{N}][\p{L}\p{N}_-]*/gu)??[]).slice(0,6).join(' ');
+   const lexical=phrase?(await db.query(`SELECT id FROM platform_knowledge.chunks WHERE generation_id=$1
+    AND search_text@@plainto_tsquery('simple',$2) LIMIT 1`,[job.generation_id,phrase])).rowCount:0;
+   const nearest=(await db.query(`SELECT embedding <=> $2::public.vector AS distance FROM platform_knowledge.chunks
+    WHERE generation_id=$1 AND embedding IS NOT NULL ORDER BY embedding <=> $2::public.vector LIMIT 1`,[job.generation_id,sample.embedding])).rows[0];
+   if(!lexical||!nearest||!Number.isFinite(Number(nearest.distance))||Number(nearest.distance)>0.00001)throw new Fault(422,'GENERATION_RETRIEVAL_SMOKE_FAILED');
+  }
   const partial=generation.coverage.failedUnitIds.length>0;
-  await db.query("UPDATE platform_knowledge.generations SET state='VERIFIED',verified_at=clock_timestamp(),validation=$2 WHERE id=$1",[job.generation_id,JSON.stringify({roundTrip:true,inventory:generation.inventory.sourceInventoryVerified!==false,indexed:true,cognitiveCoverage:true,embeddingCoverage:true,quality:partial?'PARTIAL':'COMPLETE'})]);
+  await db.query("UPDATE platform_knowledge.generations SET state='VERIFIED',verified_at=clock_timestamp(),validation=$2 WHERE id=$1",[job.generation_id,JSON.stringify({knownDocumentRetrievalSmoke:{samples:samples.length,lexical:true,vector:true},roundTrip:true,inventory:generation.inventory.sourceInventoryVerified!==false,indexed:true,cognitiveCoverage:true,embeddingCoverage:true,quality:partial?'PARTIAL':'COMPLETE'})]);
   await db.query("UPDATE platform_knowledge.generations SET state='RETIRED' WHERE id=(SELECT active_generation_id FROM platform_knowledge.sources WHERE id=$1)",[source.id]);
   await db.query("UPDATE platform_knowledge.generations SET state='ACTIVE' WHERE id=$1",[job.generation_id]);
   await db.query('UPDATE platform_knowledge.sources SET active_generation_id=$2,revision=revision+1 WHERE id=$1',[source.id,job.generation_id]);

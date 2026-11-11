@@ -40,7 +40,7 @@ export async function queryKnowledge({pool,provider,query,scope}){
   summary={text:content.analysis.summary,generated:true,expectedUnits:source.inventory.units.length,
    coveredUnitIds:source.inventory.units.filter(u=>!failed.has(u.id)).map(u=>u.id),missingUnitIds:[...failed],evidenceIds:content.refs};
   evidence=content.chunks.map((row,index)=>makeEvidence(row,source,1/(index+1)));
-  if(failed.size)omissions.push('SUMMARY_INCOMPLETE');if(!evidence.length)omissions.push('NO_SUPPORT');
+  if(failed.size)omissions.push('SUMMARY_INCOMPLETE');if(!evidence.length){omissions.push('NO_SUPPORT');summary=null;}
  }else if(allowed.length){
   const vectors=await provider.embed({sourceId:allowed[0].id,texts:[query.query],key:'query-'+digest({requestId:query.requestId,user:principal.internalUserId??null,scopes:query.scopes}),query:true,scope});
   const rows=await transaction(pool,async db=>{

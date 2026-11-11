@@ -55,7 +55,7 @@ export function assertContextSemantics(q, result, countTokens) {
   if(result.summary){
     const s=result.summary;
     if(q.version!=='0.2.0'||q.task!=='DOCUMENT_SUMMARY'||s.generated!==true||typeof s.text!=='string'
-      ||!Array.isArray(s.coveredUnitIds)||!Array.isArray(s.missingUnitIds)||!Array.isArray(s.evidenceIds)
+      ||!Array.isArray(s.coveredUnitIds)||!Array.isArray(s.missingUnitIds)||!Array.isArray(s.evidenceIds)||!s.evidenceIds.length
       ||new Set([...s.coveredUnitIds,...s.missingUnitIds]).size!==s.expectedUnits
       ||s.coveredUnitIds.length+s.missingUnitIds.length!==s.expectedUnits)fail('INVALID_SUMMARY_COVERAGE');
     if(s.evidenceIds.some(id=>!result.evidence.some(e=>e.evidenceId===id)))fail('SUMMARY_CITATION_NOT_INCLUDED');

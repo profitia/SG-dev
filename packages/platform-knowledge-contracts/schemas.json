@@ -799,7 +799,8 @@
             "type": "string"
           },
           "maxItems": 10000,
-          "uniqueItems": true
+          "uniqueItems": true,
+          "minItems": 1
         },
         "generated": {
           "const": true
