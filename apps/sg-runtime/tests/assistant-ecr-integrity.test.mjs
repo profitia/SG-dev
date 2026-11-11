@@ -74,5 +74,8 @@ test('ECR precision continuation cannot widen authority, hide missing sources or
  const denied=Object.assign(Error('opaque denial'),{code:'EACCES'})
  assert.throws(()=>assistantEcrPrecisionPredecessor(()=>{throw denied},historical),e=>e===denied)
  assert.throws(()=>assistantEcrPrecisionPredecessor(current,()=>{throw denied}),e=>e===denied)
+ const scope='apps/sg-runtime/tests/pci-smart-integrity.test.mjs',changed=Buffer.from(current(scope).toString().replace('assertSourceCoverage(changed,','void(changed,'))
+ const rebound=structuredClone(manifest);rebound.sourceDigests[scope]=hash(changed)
+ assert.throws(()=>assistantEcrPrecisionPredecessor(p=>p===PRECISION_RECEIPT?Buffer.from(JSON.stringify(rebound)):p===scope?changed:current(p),historical),'a rebound digest cannot suppress candidate coverage')
  assert.equal(assistantEcrPrecisionPredecessor(p=>historical(PRECISION_BASE,p),historical),null)
 })

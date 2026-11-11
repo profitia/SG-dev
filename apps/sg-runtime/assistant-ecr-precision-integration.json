@@ -9,8 +9,9 @@
     "packages/assistant-context-gateway/src/economic-calendar.mjs": "ee11d1dbbacf0f3d7dfcd6b7018c5f5db401cae7b1f62d222ee6b10ac9558a3d",
     "packages/assistant-context-gateway/test/economic-calendar.test.mjs": "4dc2a7a1caf7ad1e58dc9768692f3c74f24257defcc626247b2b103edbc3f6eb",
     "apps/sg-runtime/tests/assistant-ecr-integrity.mjs": "8c49237f0a1675d0ebca00b756333be8a81e8abacc6c1e98138748f3b6b10648",
-    "apps/sg-runtime/tests/assistant-ecr-integrity.test.mjs": "0643887c574808f8813a545881b83aea0262abee5469d01e619aa8bc184b4301",
-    "apps/sg-runtime/tests/assistant-ecr-precision-integrity.mjs": "3536b017aea04dab1d6de342e541beebd3577f555b0983aeb05926bbc4d2e697"
+    "apps/sg-runtime/tests/assistant-ecr-integrity.test.mjs": "5db092c73f9192604d7ffabcdf7d7b97f5fd80dc23c02016ada318ffe89588e5",
+    "apps/sg-runtime/tests/assistant-ecr-precision-integrity.mjs": "1e50e6622c0727d7a5364b8d05eac90cdc33f48d3942dbc374f1834775d02829",
+    "apps/sg-runtime/tests/pci-smart-integrity.test.mjs": "05c621c94043e2f42d1ae35bca44f35451cabe8bcc91d16848dffeab3a675dac"
   },
   "previousReceipts": {
     "apps/sg-runtime/operation-integration.json": "a6bf50993c98a71aeccd349dd904baafb53b3cd653324d97bab3fc5e34ac509f",

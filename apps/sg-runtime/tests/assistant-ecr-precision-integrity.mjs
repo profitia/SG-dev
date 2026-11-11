@@ -9,6 +9,7 @@ export const PRECISION_PATHS=Object.freeze([
  'apps/sg-runtime/tests/assistant-ecr-integrity.mjs',
  'apps/sg-runtime/tests/assistant-ecr-integrity.test.mjs',
  'apps/sg-runtime/tests/assistant-ecr-precision-integrity.mjs',
+ 'apps/sg-runtime/tests/pci-smart-integrity.test.mjs',
 ])
 export const PRECISION_RECEIPTS=Object.freeze([
  'apps/sg-runtime/operation-integration.json',
@@ -45,6 +46,13 @@ export function assistantEcrPrecisionPredecessor(current,historical){
  const expected=before.replace("import assert from 'node:assert/strict'","import {assistantEcrPrecisionPredecessor} from './assistant-ecr-precision-integrity.mjs'\nimport assert from 'node:assert/strict'")
   .replace('export function assistantEcrPredecessor(current,historical){','export function assistantEcrPredecessor(current,historical){\n const precision=assistantEcrPrecisionPredecessor(current,historical);if(precision)return assistantEcrPredecessor(precision.previousBytes,historical)')
  assert.equal(Buffer.from(current(path)).toString('utf8'),expected,'only additive ECR continuation')
+ const scope='apps/sg-runtime/tests/pci-smart-integrity.test.mjs',scopeBefore=Buffer.from(historical(PRECISION_BASE,scope)).toString('utf8')
+ const scopeExpected=scopeBefore
+  .replace("import {assistantEcrPredecessor,ECR_RECEIPT} from './assistant-ecr-integrity.mjs'","import {assistantEcrPredecessor,ECR_RECEIPT} from './assistant-ecr-integrity.mjs'\nimport {assistantEcrPrecisionPredecessor,PRECISION_RECEIPT} from './assistant-ecr-precision-integrity.mjs'")
+  .replace(' const ecr=assistantEcrPredecessor(current,historical)\n const arrow=',' const precision=assistantEcrPrecisionPredecessor(current,historical)\n const ecr=assistantEcrPredecessor(current,historical)\n const arrow=')
+  .replace('.filter(file=>(!ecr||file!==ECR_RECEIPT)&&','.filter(file=>(!precision||file!==PRECISION_RECEIPT)&&(!ecr||file!==ECR_RECEIPT)&&')
+  .replace('assertSourceCoverage(changed,{...ecr?.manifest.sourceDigests,','assertSourceCoverage(changed,{...precision?.manifest.sourceDigests,...ecr?.manifest.sourceDigests,')
+ assert.equal(Buffer.from(current(scope)).toString('utf8'),scopeExpected,'only verified precision bindings extend candidate coverage')
  const tests='apps/sg-runtime/tests/assistant-ecr-integrity.test.mjs'
  assert(Buffer.from(current(tests)).toString('utf8').startsWith(Buffer.from(historical(PRECISION_BASE,tests)).toString('utf8')),'all accepted ECR regressions retained')
  const mapped=new Set(PRECISION_PATHS),added='apps/sg-runtime/tests/assistant-ecr-precision-integrity.mjs',cache=new Map()
