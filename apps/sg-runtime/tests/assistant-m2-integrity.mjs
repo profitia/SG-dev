@@ -1,3 +1,4 @@
+import {assistantSendArrowPredecessor} from './assistant-send-arrow-integrity.mjs'
 // Test/build-only adoption; this file cannot grant runtime access.
 import {registrationStageOnePredecessor} from './registration-stage-i-integrity.mjs'
 import assert from 'node:assert/strict'
@@ -136,6 +137,7 @@ export function oilReportTransportPredecessor(current,historical){
 }
 
 export function assistantM2Predecessor(current,historical){
+ const arrow=assistantSendArrowPredecessor(current,historical);if(arrow)return assistantM2Predecessor(arrow.previousBytes,historical)
  const registration=registrationStageOnePredecessor(current,historical);if(registration)return assistantM2Predecessor(registration.previousBytes,historical)
  const oil=oilReportTransportPredecessor(current,historical);if(oil)return assistantM2Predecessor(oil.previousBytes,historical);
  let bytes
