@@ -724,3 +724,21 @@ Known failing source is never published or accepted by a policy-only result.
 
 This decision does not install product SQL, change roles/grants/packages, send
 mail, call providers/models, change DNS, activate runtime or deploy a product.
+
+
+### Market Calendar — preserve parallel active-wrapper adoption
+
+PROPOSED / CI_POLICY_APPROVAL_PENDING. PR1020 was accepted at d8665198
+after approvals87d28140/6f9ac68f and full candidate/resulting-main CI.
+Parallel PR1028 activated the universal wrapper in the shared manifest.
+Producer64d14ee171cdabcda4401b68b3fc4e56f67e8ec7 preserves the full current main manifest plus exactly
+one approved PI amendment. Only three of17 producer versions change:
+manifest, its source-record hash and helper record pin; all other14 versions,
+SQL/owner planSHA256caadc0cdf9322e218db6f1f9285d52ef5fe5ceaca84f672d77fe49e8fa44a1d0,
+runtime contracts, old receipts and consumer closure remain unchanged.
+New recordSHA2562403aac429e8958b9a5ec09184de4969da495e2fd83ec9e4debfdc9617d8ede9. Mainbase0e42f41e1151c839fd62a287d40345c3dde18903, including the separately
+accepted complete67 registration policy, remains preserved. This four-file
+continuation changes exact review/pin data and adds a real-Git preservation
+test. It requires exact owner CI acceptance and all normal current-candidate
+and resulting-main controls; no generic path, right, resource, cost, licence
+or notification operation is added. Original PMOS task identities remain.

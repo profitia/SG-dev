@@ -2047,3 +2047,12 @@ test('Market Calendar authenticates the real Git source and immutable receipts b
  for(const edit of [a=>a.noNotificationDelivery=false,a=>a.unknown=true,a=>a.taskId='different',a=>a.sourceDigests['apps/sg-runtime/unreviewed.ts']='0'.repeat(64),a=>delete a.sourceDigests[cfg.consumerPaths[0]],a=>a.preservedReceipts[cfg.consumerReceipts[0]]='0'.repeat(64)]){const bad=structuredClone(a);edit(bad);rejection(()=>marketCalendarTrustedPredecessor(read(bad),historical))}
  const changed={...additions,'apps/sg-runtime/package.json':Buffer.from(JSON.stringify({...JSON.parse(additions['apps/sg-runtime/package.json']),dependencies:{'@profitia/unreviewed':'1.0.0'}}))},rebound=structuredClone(a);rebound.sourceDigests['apps/sg-runtime/package.json']=createHash('sha256').update(changed['apps/sg-runtime/package.json']).digest('hex');rejection(()=>marketCalendarTrustedPredecessor(read(rebound,changed),historical))
 })
+
+// Preserve the parallel active instruction during the one-row PI adoption.
+test('Market Calendar governance refresh preserves every main document and active universal wrapper',()=>{
+ const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..'),read=(sha,p)=>JSON.parse(execFileSync('git',['cat-file','blob',sha+':'+p],{cwd:root,encoding:'utf8'}))
+ const p='Canon/registries/governance-manifest-v2.json',before=read('0e42f41e1151c839fd62a287d40345c3dde18903',p),after=read(ECR_MARKET_CALENDAR_REVIEW.sourceSha,p)
+ const addition=after.documents.filter(d=>!before.documents.some(b=>b.id===d.id));assert.equal(addition.length,1);assert.equal(addition[0].id,'procurement-insights-market-calendar-amendment')
+ assert.deepEqual({...after,manifestVersion:before.manifestVersion,documents:after.documents.filter(d=>d.id!==addition[0].id)},before)
+ assert.equal(after.documents.find(d=>d.id==='universal-project-execution-wrapper').status,'ACTIVE')
+})
