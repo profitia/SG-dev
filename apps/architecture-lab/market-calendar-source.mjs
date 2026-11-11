@@ -4,7 +4,7 @@ import assert from 'node:assert/strict'
 import {createHash} from 'node:crypto'
 export const MARKET_CALENDAR_PRODUCER_RECORD='apps/economic-calendar-runtime/market-calendar-preferences-integration.json'
 export const MARKET_CALENDAR_PRODUCER_BASE='38a9fe371e7993b47e2358d297647086ea999428'
-export const MARKET_CALENDAR_PRODUCER_RECORD_SHA='4fb8f320a63844bccd7ddccc9cf8fed3e22ac12d6b0f8306fa41274009d7a0af'
+export const MARKET_CALENDAR_PRODUCER_RECORD_SHA='eb1e476a4ec05657eacd70294f432c7e4d2031b94a0b8d64ca1169c50c2b4887'
 export const MARKET_CALENDAR_PRODUCER_PATHS=Object.freeze([
  'Canon/evidence/2026-11-11-procurement-insights-market-calendar-owner-approval.md',
  'Canon/registries/governance-manifest-v2.json',
@@ -18,6 +18,7 @@ export const MARKET_CALENDAR_PRODUCER_PATHS=Object.freeze([
  'apps/economic-calendar-runtime/src/server.mjs',
  'apps/economic-calendar-runtime/test/api.test.mjs',
  'apps/economic-calendar-runtime/test/market-calendar-preferences.test.mjs',
+ 'apps/sg-runtime/tests/assistant-ecr-week-integrity.test.mjs',
  'packages/economic-calendar-contracts/index.d.mts',
  'packages/economic-calendar-contracts/index.mjs',
  'packages/economic-calendar-contracts/package.json'
