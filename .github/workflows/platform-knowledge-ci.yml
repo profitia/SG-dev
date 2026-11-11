@@ -22,6 +22,25 @@ jobs:
       - run: npm ci --prefix apps/platform-knowledge-runtime --ignore-scripts --no-audit --no-fund
       - run: node --test packages/platform-knowledge-contracts/test/*.test.mjs packages/platform-knowledge-core/test/*.test.mjs apps/platform-knowledge-runtime/test/*.test.mjs
       - run: npm run build --prefix apps/platform-knowledge-runtime
+      - name: Build and smoke the actual nonroot Render image without external network
+        run: |
+          set -eu
+          docker build --platform linux/amd64 --iidfile "$RUNNER_TEMP/pk-foundation-image.id" -t pk-foundation-ci -f apps/platform-knowledge-runtime/Dockerfile .
+          trap 'docker rm -f pk-foundation-smoke >/dev/null 2>&1 || true' EXIT
+          docker run -d --network=none --name pk-foundation-smoke \
+            -e PK_ENVIRONMENT=development -e PK_RELEASE_SHA="$GITHUB_SHA" \
+            -e PK_PROCESSING_ENABLED=false -e PK_NEON_PROJECT_ID=synthetic -e PK_NEON_BRANCH_ID=br-fixture \
+            -e PK_DATABASE_HOST=ep-fixture-pooler.c-7.eu-central-1.aws.neon.tech \
+            -e 'DATABASE_URL=postgresql://platform_knowledge_api:synthetic@ep-fixture-pooler.c-7.eu-central-1.aws.neon.tech/platform_knowledge?sslmode=require' pk-foundation-ci
+          docker exec pk-foundation-smoke node --input-type=module -e '
+            import assert from "node:assert/strict";
+            let live;
+            for(let n=0;n<20;n++){try{live=await fetch("http://127.0.0.1:10000/health/live");break;}catch{await new Promise(r=>setTimeout(r,200));}}
+            assert.equal(live?.status,200);assert.equal((await live.json()).phase,"FOUNDATION_ONLY");
+            assert.equal((await fetch("http://127.0.0.1:10000/health/ready")).status,503);
+            assert.notEqual(process.getuid(),0);console.log("Nonroot container live; processing remains disabled");'
+          docker kill --signal=TERM pk-foundation-smoke
+          test "$(docker wait pk-foundation-smoke)" = 0
       - name: Generate and verify actual reference formats including legacy office
         env:
           FIXTURE_OUTPUT: ${{ runner.temp }}/pk-quality-fixtures
@@ -37,5 +56,6 @@ jobs:
           path: |
             ${{ runner.temp }}/pk-quality-fixtures
             ${{ runner.temp }}/pk-fixtures-proof.json
+            ${{ runner.temp }}/pk-foundation-image.id
           retention-days: 30
           if-no-files-found: error

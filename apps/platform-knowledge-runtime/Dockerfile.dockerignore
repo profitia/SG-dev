@@ -1,0 +1,7 @@
+**
+!apps/
+!apps/platform-knowledge-runtime/
+!apps/platform-knowledge-runtime/package.json
+!apps/platform-knowledge-runtime/package-lock.json
+!apps/platform-knowledge-runtime/src/
+!apps/platform-knowledge-runtime/src/**
