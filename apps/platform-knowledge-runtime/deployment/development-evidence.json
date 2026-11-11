@@ -118,7 +118,15 @@
     "mainFoundationCiConclusion": "success",
     "referenceFileCount": 10,
     "legacyOfficeVerified": true,
-    "ownerDbRunbookLocalPostgres": "16.14_PASS_GUARDS_IDEMPOTENCE_AND_LIMITED_ROLES"
+    "ownerDbRunbookLocalPostgres": "16.14_PASS_GUARDS_IDEMPOTENCE_AND_LIMITED_ROLES",
+    "legacyOfficeProofMode": "ORIGINAL_ROUND_TRIP_PLUS_CURRENT_REFERENCE_AND_SOURCE_HASH_VALIDATION",
+    "legacyOfficeReferenceRun": 43018496713,
+    "legacyOfficeReferenceArtifactId": 13854630194,
+    "legacyOfficeNegativeChecks": [
+      "binary_tamper_rejected",
+      "source_text_change_rejected",
+      "word_content_change_rejected"
+    ]
   },
   "httpChecks": [
     {
