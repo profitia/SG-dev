@@ -5,7 +5,7 @@
 PROPOSED / OWNER_CI_APPROVAL_PENDING. The third-tab UX approval does not
 activate trusted CI policy or private E1 grants. This separate four-file policy
 proposal binds PR1018, architecture/ecr-market-calendar-consumer-20261111,
-source e3e0f54d85e20ad12b8e98ec87a37fcaea32fea1 and exactly17 regular
+source 5abaca24ce29e895e6954e5b8c2a4883d0c9b382 and exactly17 regular
 path/blob/status/mode/actual ARCHITECTURE-owner entries in
 ECR_MARKET_CALENDAR_REVIEW. No generic Canon, app or package path is admitted.
 Main refresh is allowed only with identical reviewed versions.
@@ -13,7 +13,7 @@ Main refresh is allowed only with identical reviewed versions.
 The pure trusted verifier authenticates every producer byte, frozen source
 record and predecessor receipt before the existing recurring-source checks.
 No candidate module is imported. The separately registered SG2 consumer then
-binds its16 own source files, accepted producer record and twelve old receipts;
+binds its17 own source files, accepted producer record and twelve old receipts;
 dependencies and lock remain unchanged. Separate producer and consumer PRs
 remain mandatory; no aggregate publication is authorised.
 
