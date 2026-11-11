@@ -10,7 +10,7 @@ permissions:
   contents: read
 jobs:
   foundation:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
@@ -42,11 +42,12 @@ jobs:
           docker kill --signal=TERM pk-foundation-smoke
           test "$(docker wait pk-foundation-smoke)" = 0
       - name: Generate and verify actual reference formats including legacy office
+        timeout-minutes: 3
         env:
           FIXTURE_OUTPUT: ${{ runner.temp }}/pk-quality-fixtures
         run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y --no-install-recommends libreoffice-writer libreoffice-impress
+          sudo apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=20 -o Acquire::https::Timeout=20 update -qq
+          sudo apt-get -o Acquire::Retries=2 -o Acquire::http::Timeout=20 -o Acquire::https::Timeout=20 install -y --no-install-recommends libreoffice-writer libreoffice-impress
           python3 -m venv "$RUNNER_TEMP/pk-fixture-tools"
           "$RUNNER_TEMP/pk-fixture-tools/bin/pip" install --disable-pip-version-check -r packages/platform-knowledge-core/fixtures/requirements.txt
           "$RUNNER_TEMP/pk-fixture-tools/bin/python" packages/platform-knowledge-core/fixtures/generate.py "$FIXTURE_OUTPUT" --legacy-office > "$RUNNER_TEMP/pk-fixtures-proof.json"
