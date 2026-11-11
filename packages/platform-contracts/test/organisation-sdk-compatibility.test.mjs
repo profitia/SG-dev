@@ -28,7 +28,7 @@ test('current organisation SDK requires both actual receivers before exposing im
  assert.equal(acceptedSdkSource().acceptanceId,'organisation-bootstrap-v1')
 })
 test('altered current SDK, receiver source, source record or preserved guard cannot acquire a historical source view',()=>{
- const targets=[sourcePath,'packages/platform-contracts/src/operation-context.mjs','packages/platform-contracts/src/operation-context.d.mts',
+ const targets=[sourcePath,'apps/srm/app/login/porr-account.tsx','apps/srm/scripts/porr-account-ui.test.mjs','packages/platform-contracts/src/operation-context.mjs','packages/platform-contracts/src/operation-context.d.mts',
   'packages/platform-contracts/src/organisation-bootstrap.mjs','packages/platform-contracts/migrations/profile/008-organisation-create.sql',
   'packages/platform-contracts/package.json','apps/architecture-lab/sdk-1.34-compatibility.json',
   'apps/sg-runtime/tests/operation-context.test.mjs','apps/srm/scripts/source-hub-sdk-compatibility.mjs',
