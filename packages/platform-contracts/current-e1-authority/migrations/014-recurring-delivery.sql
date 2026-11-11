@@ -27,23 +27,22 @@ BEGIN
  RETURN jsonb_build_object('schemaDigest',(SELECT schema_digest FROM profitia_e1_authority.recurring_delivery_installation WHERE singleton),'policies',coalesce((SELECT jsonb_agg(jsonb_build_object('applicationId',application_id,'appOrigin',app_origin,'serviceId',service_id)) FROM profitia_e1_authority.recurring_delivery_policies WHERE login_role=session_user AND status='ACTIVE' AND expires_at>clock_timestamp()),'[]'));
 END $fn$;
 CREATE FUNCTION profitia_e1_authority.recurring_delivery_identity(p_request jsonb) RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,pg_temp AS $fn$
-DECLARE c profitia_e1_authority.recurring_consents%ROWTYPE;e profitia_access.external_identities%ROWTYPE;p profitia_e1_authority.recurring_delivery_policies%ROWTYPE;
+DECLARE e profitia_access.external_identities%ROWTYPE;p profitia_e1_authority.recurring_delivery_policies%ROWTYPE;
 BEGIN
- IF profitia_e1_authority.recurring_delivery_descriptor() IS NULL OR(SELECT array_agg(key ORDER BY key) FROM jsonb_object_keys(p_request) key) IS DISTINCT FROM ARRAY['applicationId','deliveryId','leaseId','nonce','organisationId','ownerUserId','pdfSha256','producerJobId','subscriptionId','subscriptionVersion']
+ IF profitia_e1_authority.recurring_delivery_descriptor() IS NULL OR octet_length(p_request::text)>4096 OR(SELECT array_agg(key ORDER BY key) FROM jsonb_object_keys(p_request) key) IS DISTINCT FROM ARRAY['applicationId','deliveryId','leaseId','nonce','organisationId','ownerUserId','pdfSha256','producerJobId','subscriptionId','subscriptionVersion']
  OR p_request->>'nonce'!~'^[a-f0-9]{64}$' OR p_request->>'pdfSha256'!~'^[a-f0-9]{64}$' THEN RETURN NULL;END IF;
  SELECT * INTO p FROM profitia_e1_authority.recurring_delivery_policies WHERE application_id=p_request->>'applicationId' AND login_role=session_user AND status='ACTIVE' AND expires_at>clock_timestamp();IF NOT FOUND THEN RETURN NULL;END IF;
- SELECT * INTO c FROM profitia_e1_authority.recurring_consents WHERE application_id=p.application_id AND organisation_id=(p_request->>'organisationId')::uuid AND owner_user_id=(p_request->>'ownerUserId')::uuid AND resource_id=(p_request->>'subscriptionId')::uuid AND resource_version=(p_request->>'subscriptionVersion')::bigint AND operation='insights.subscription.execute' AND status='ACTIVE';IF NOT FOUND THEN RETURN NULL;END IF;
  SELECT e1.* INTO e FROM profitia_access.external_identities e1
- JOIN profitia_e1_authority.receivers r ON r.application_id=c.application_id AND r.issuer=e1.issuer AND r.status='ACTIVE' AND r.expires_at>clock_timestamp()
- JOIN profitia_access.applications a ON a.application_id=r.application_id AND a.status='ACTIVE' AND(a.fixed_organisation_id IS NULL OR a.fixed_organisation_id=c.organisation_id)
+ JOIN profitia_e1_authority.receivers r ON r.application_id=p.application_id AND r.issuer=e1.issuer AND r.status='ACTIVE' AND r.expires_at>clock_timestamp()
+ JOIN profitia_access.applications a ON a.application_id=r.application_id AND a.status='ACTIVE' AND(a.fixed_organisation_id IS NULL OR a.fixed_organisation_id=(p_request->>'organisationId')::uuid)
  JOIN profitia_access.accounts u ON u.user_id=e1.user_id AND u.status='ACTIVE'
- WHERE e1.user_id=c.owner_user_id AND e1.status='ACTIVE' AND e1.expires_at>clock_timestamp();IF NOT FOUND THEN RETURN NULL;END IF;
- IF NOT EXISTS(SELECT 1 FROM profitia_access.organisations WHERE organisation_id=c.organisation_id AND status='ACTIVE')
- OR NOT EXISTS(SELECT 1 FROM profitia_access.memberships WHERE organisation_id=c.organisation_id AND user_id=c.owner_user_id AND status='ACTIVE' AND expires_at>clock_timestamp())
- OR NOT EXISTS(SELECT 1 FROM profitia_access.product_grants WHERE application_id=c.application_id AND organisation_id=c.organisation_id AND product='SPENDGURU' AND 'market'=ANY(features) AND status='ACTIVE' AND expires_at>clock_timestamp())
- OR NOT EXISTS(SELECT 1 FROM profitia_access.product_grants WHERE application_id='spendguru' AND organisation_id=c.organisation_id AND product='SPENDGURU' AND 'market'=ANY(features) AND status='ACTIVE' AND expires_at>clock_timestamp())
- OR NOT EXISTS(SELECT 1 FROM profitia_access.permission_grants WHERE application_id=c.application_id AND organisation_id=c.organisation_id AND user_id=c.owner_user_id AND operation='insights.report.download' AND feature='market' AND effect='ALLOW' AND(resource_id IS NULL OR resource_id=p_request->>'producerJobId'))
- OR EXISTS(SELECT 1 FROM profitia_access.permission_grants WHERE application_id=c.application_id AND organisation_id=c.organisation_id AND user_id=c.owner_user_id AND operation='insights.report.download' AND feature='market' AND effect='DENY' AND(resource_id IS NULL OR resource_id=p_request->>'producerJobId')) THEN RETURN NULL;END IF;
+ WHERE e1.user_id=(p_request->>'ownerUserId')::uuid AND e1.status='ACTIVE' AND e1.expires_at>clock_timestamp();IF NOT FOUND THEN RETURN NULL;END IF;
+ IF NOT EXISTS(SELECT 1 FROM profitia_access.organisations WHERE organisation_id=(p_request->>'organisationId')::uuid AND status='ACTIVE')
+ OR NOT EXISTS(SELECT 1 FROM profitia_access.memberships WHERE organisation_id=(p_request->>'organisationId')::uuid AND user_id=(p_request->>'ownerUserId')::uuid AND status='ACTIVE' AND expires_at>clock_timestamp())
+ OR NOT EXISTS(SELECT 1 FROM profitia_access.product_grants WHERE application_id=p.application_id AND organisation_id=(p_request->>'organisationId')::uuid AND product='SPENDGURU' AND 'market'=ANY(features) AND status='ACTIVE' AND expires_at>clock_timestamp())
+ OR NOT EXISTS(SELECT 1 FROM profitia_access.product_grants WHERE application_id='spendguru' AND organisation_id=(p_request->>'organisationId')::uuid AND product='SPENDGURU' AND 'market'=ANY(features) AND status='ACTIVE' AND expires_at>clock_timestamp())
+ OR NOT EXISTS(SELECT 1 FROM profitia_access.permission_grants WHERE application_id=p.application_id AND organisation_id=(p_request->>'organisationId')::uuid AND user_id=(p_request->>'ownerUserId')::uuid AND operation='insights.report.download' AND feature='market' AND effect='ALLOW' AND(resource_id IS NULL OR resource_id=p_request->>'producerJobId'))
+ OR EXISTS(SELECT 1 FROM profitia_access.permission_grants WHERE application_id=p.application_id AND organisation_id=(p_request->>'organisationId')::uuid AND user_id=(p_request->>'ownerUserId')::uuid AND operation='insights.report.download' AND feature='market' AND effect='DENY' AND(resource_id IS NULL OR resource_id=p_request->>'producerJobId')) THEN RETURN NULL;END IF;
  RETURN jsonb_build_object('environment','development','issuer',e.issuer,'subject',e.subject,'appOrigin',p.app_origin);
 EXCEPTION WHEN OTHERS THEN RETURN NULL;
 END $fn$;
