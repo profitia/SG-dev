@@ -516,3 +516,33 @@ package, resources, licences and operational mandate are unchanged. Require
 separate exact CI-policy acceptance, normal public and trusted-main proof,
 then fresh exact-source and resulting-main gates. This is the same PMOS task;
 no new begin, live SQL, role, renewal, release or alert delivery is claimed here.
+
+
+## Stage I organisation SDK — proposed coordinated source admission (2026-11-11)
+
+PROPOSED / OWNER_CI_AND_COORDINATION_APPROVAL_PENDING. The concrete four-file
+proposal and full41-file source manifest are in
+[the dated source review](../evidence/2026-11-11-registration-sdk-ci-admission.md).
+No source, CI-policy, installation or activation decision is implied.
+
+Separate owner inputs remain Architecture PR983 at4e67c9234a88f82479d669598fb730d6ad8fbc53,
+SG2 PR987 at67c758774a58b09b2df31942ba6e6ce79f3141ac and
+SRM PR986 at99dca957c47d4f755e49b731e79db0e8dbd56c9d, with their own
+PMOS registrations. The unpublished local composite is57f175c61ecc205a57a18401bace8037dffd4ff7,
+tree392ade60a03e3874a69d974bd4ae1f72d6cf6c65, over mainf8f6340ab1ac862a584352f86988dde199172b37.
+REGISTRATION_SDK_REVIEW binds every exact path/blob/status/mode and its actual
+Architecture, SG2 or SRM owner. Main refresh may retain only those identical
+reviewed versions. No generic path, optional package or credential admission changes.
+
+After explicit acceptance of this CI proposal and coordinated publication procedure,
+validate and admit only the four-file policy through existing trusted-main CI.
+Refresh the composite onto resulting main, preserving the exact41-file review.
+Fast-forward existing PR983 as the single source transport only after this
+procedure is authorized; preserve PR987/986 and all owner tasks as provenance.
+Require exact-head controlled proof, all ordinary owner tests/types/build and
+resulting-main gates. Obtain the required exact SOURCE GO after checks pass;
+never merge producer/receivers in an order that leaves main invalid.
+
+This source review grants no SQL007/008 installation, runtime opt-in, access,
+provider request, invitation send, package bypass or deployment. Existing
+installation, recovery, source and activation decisions remain separate.
