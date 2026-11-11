@@ -1,3 +1,4 @@
+import {recurringSourcePredecessor} from '../../architecture-lab/private-recurring-source.mjs'
 // Build/test source continuation only. This cannot authorise a runtime read or deployment.
 import assert from 'node:assert/strict'
 import {createHash} from 'node:crypto'
@@ -57,6 +58,7 @@ export const ECR_CIC_PUBLICATION=Object.freeze({
 const hash=bytes=>createHash('sha256').update(bytes).digest('hex')
 const json=bytes=>JSON.parse(Buffer.from(bytes).toString('utf8'))
 export function assistantEcrPredecessor(current,historical){
+ const recurring=recurringSourcePredecessor(current,historical);if(recurring)return assistantEcrPredecessor(recurring.previousBytes,historical)
  let bytes
  try{bytes=current(ECR_RECEIPT)}catch(error){
   const text=String(error?.stderr??error?.message??'')
