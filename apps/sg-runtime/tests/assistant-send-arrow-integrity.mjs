@@ -1,3 +1,4 @@
+import {sdkContinuationPredecessor} from '../../../packages/platform-contracts/test/organisation-sdk-compatibility.mjs'
 // Test/build-only source continuation. Cannot authorize a runtime operation.
 import assert from 'node:assert/strict'
 import {createHash} from 'node:crypto'
@@ -33,6 +34,18 @@ export function assistantSendArrowPredecessor(current,historical){
   const missingGit=error?.status===128&&(text.includes("'"+SEND_ARROW_RECEIPT+"' does not exist in ")||text.includes("'"+SEND_ARROW_RECEIPT+"' exists on disk, but not in "))
   if(error?.code==='ENOENT'||missingGit)return null
   throw error
+ }
+ // Verify the complete current SDK view before exposing the exact historical
+ // algorithm and unchanged receipt. Genuine absence keeps its prior semantics.
+ let sdkReceipt
+ try{sdkReceipt=JSON.parse(current('apps/sg-runtime/operation-integration.json'))}catch(error){
+  const text=String(error?.stderr??error?.message??'')
+  const missingGit=error?.status===128&&(text.includes("'apps/sg-runtime/operation-integration.json' does not exist in ")||text.includes("'apps/sg-runtime/operation-integration.json' exists on disk, but not in "))
+  if(error?.code!=='ENOENT'&&!missingGit)throw error
+ }
+ if(sdkReceipt?.sdkSourceContinuations!==undefined){
+  const sdk=sdkContinuationPredecessor(sdkReceipt,current,historical,{projectKey:'SG2'})
+  if(sdk)return assistantSendArrowPredecessor(sdk.previousBytes,historical)
  }
  const a=JSON.parse(bytes)
  assert.deepEqual(Object.keys(a).sort(),['schemaVersion','taskId','targetEnvironment','scope','previousSourceSha','sourceDigests','previousReceipts','authorisationChanged','sdkChanged','databaseChanged','modelChanged','deploymentPerformed'].sort())
