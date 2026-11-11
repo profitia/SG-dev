@@ -1549,7 +1549,7 @@ test('shared test continuation preserves the accepted main and exact ECR suffix'
  assert.equal(blob(combined),ECR_SOURCE_CONTINUITY_REVIEW.entries[file].sha);assert.notEqual(blob(combined),'7a1710d795c441cc80a468ce8a4f33191e899f5b')
 })
 
-import {REGISTRATION_SDK_REVIEW,assertRegistrationSdkReviewEntry} from './controlled-package-ci.mjs'
+import {REGISTRATION_SDK_INITIAL_REVIEW as REGISTRATION_SDK_REVIEW,assertRegistrationSdkReviewEntry} from './controlled-package-ci.mjs'
 
 test('Stage I review binds all41 exact owner-routed regular source files and preserves historical CI reviews',()=>{
  const review=REGISTRATION_SDK_REVIEW,files=Object.entries(review.entries).map(([filename,e])=>({filename,sha:e.sha,status:e.status})),p={...pr(),number:review.prNumber,changed_files:files.length,base:{...pr().base,sha:review.baseSha},head:{...pr().head,sha:review.sourceSha,ref:review.branch}}
@@ -1574,4 +1574,45 @@ test('Stage I review binds all41 exact owner-routed regular source files and pre
  assert(files.every(f=>!f.filename.startsWith('Canon/')&&!f.filename.startsWith('.github/')&&!f.filename.startsWith('scripts/')))
  // Every original review assertion above still runs. This additional binding
  // admits no generic app path, role, provider policy, installation or release.
+})
+
+import {REGISTRATION_SDK_REVIEW as reconciledRegistrationReview,REGISTRATION_SDK_PROVENANCE,assertRegistrationSdkRecord,readRegistrationSdkFile} from './controlled-package-ci.mjs'
+test('SDK reconciliation preserves the initial41 entries and binds its exact48-file metadata-only successor',()=>{
+ const r=reconciledRegistrationReview,files=Object.entries(r.entries).map(([filename,e])=>({filename,sha:e.sha,status:e.status})),p={...pr(),number:r.prNumber,changed_files:files.length,base:{...pr().base,sha:r.baseSha},head:{...pr().head,sha:r.sourceSha,ref:r.branch}}
+ assert.equal(files.length,48);assert.equal(createHash('sha256').update(JSON.stringify(r.entries)).digest('hex'),'96694ec1cfd285d7972add61a706cade825fbb447e94f265fd3192b4e275790a')
+ assertArchitectureFiles(p,files);assert.equal(selectCandidate(context(),p,r.sourceSha,{files}),r.sourceSha)
+ assert.equal(Object.entries(REGISTRATION_SDK_REVIEW.entries).filter(([p,e])=>JSON.stringify(e)===JSON.stringify(r.entries[p])).length,37)
+ for(const edit of [a=>a.pop(),a=>a.push(a[0]),a=>a[0]={...a[0],sha:'f'.repeat(40)},a=>a[0]={...a[0],status:'removed'},a=>a[0]={...a[0],previous_filename:a[0].filename},a=>a[0]={...a[0],filename:'apps/srm/src/server/unreviewed.ts'}]){
+  const bad=structuredClone(files);edit(bad);rejection(()=>selectCandidate(context(),{...p,changed_files:bad.length},r.sourceSha,{files:bad}))
+ }
+ for(const f of files){assertRegistrationSdkReviewEntry(f,'100644 blob '+f.sha+'\t'+f.filename+'\0');rejection(()=>assertRegistrationSdkReviewEntry(f,'100755 blob '+f.sha+'\t'+f.filename+'\0'))}
+})
+test('trusted SDK provenance accepts exact data bytes, both immutable predecessors and no runtime opt-in',()=>{
+ const text=fs.readFileSync(path.join(authorityRoot,'Canon/evidence/2026-11-11-registration-sdk-ci-reconciliation-review.md'),'utf8'),start=text.indexOf('<!-- registration-sdk-fixture -->'),tail=text.slice(start),match=/\x60\x60\x60json\n([\s\S]*?)\x60\x60\x60/.exec(tail)
+ assert(match);const bytes=Buffer.from(match[1]),record=JSON.parse(bytes),hash=b=>createHash('sha256').update(b).digest('hex')
+ const files={SG2:'apps/sg-runtime/operation-integration.json',SRM:'apps/srm/operation-integration.json'},historicalReceipts={},receipts={}
+ for(const [project,p]of Object.entries(files)){
+  historicalReceipts[project]=execFileSync('git',['show',REGISTRATION_SDK_PROVENANCE.previousSourceSha+':'+p],{cwd:authorityRoot})
+  receipts[project]={...JSON.parse(historicalReceipts[project]),sdkSourceContinuations:[{schemaVersion:'1.0',acceptanceId:'organisation-bootstrap-v1',taskId:REGISTRATION_SDK_PROVENANCE.bindings[project].taskId,targetEnvironment:'development',previousReceiptSha256:hash(historicalReceipts[project])}]}
+ }
+ const maps=Object.assign({},record.sourceDigests,record.compatibilityTestSourceDigests,record.preservedSourceDigests,...Object.values(record.consumerSourceDigests)),options={digestForPath:p=>maps[p],receipts,historicalReceipts}
+ assert.equal(assertRegistrationSdkRecord(bytes,options).acceptanceId,'organisation-bootstrap-v1')
+ assert.equal(adoptedOperationContract(receipts.SG2).sourceDigest,REGISTRATION_SDK_PROVENANCE.operationSourceDigest)
+ rejection(()=>assertRegistrationSdkRecord(Buffer.concat([bytes,Buffer.from('\n')]),options))
+ rejection(()=>assertRegistrationSdkRecord(bytes,{...options,digestForPath:p=>p==='packages/platform-contracts/src/operation-context.mjs'?'0'.repeat(64):maps[p]}))
+ for(const mutate of [r=>delete r.SRM.sdkSourceContinuations,r=>r.SG2.sdkSourceContinuations[0].taskId='wrong-owner',r=>r.SRM.sdkSourceContinuations[0].previousReceiptSha256='0'.repeat(64),r=>r.SG2.sdkSourceContinuations.push({...r.SG2.sdkSourceContinuations[0]}),r=>r.SG2.automaticProductDeployment=true]){
+  const changed=structuredClone(receipts);mutate(changed);rejection(()=>assertRegistrationSdkRecord(bytes,{...options,receipts:changed}))
+ }
+ rejection(()=>assertRegistrationSdkRecord(bytes,{...options,historicalReceipts:{...historicalReceipts,SG2:Buffer.from('{}')}}))
+})
+test('trusted SDK source reads reject traversal, symlinks, non-files and oversized sources',()=>{
+ const root=fs.mkdtempSync(path.join(os.tmpdir(),'registration-ci-files-'))
+ try{
+  fs.writeFileSync(path.join(root,'regular.json'),'{}')
+  assert.equal(readRegistrationSdkFile(root,'regular.json').toString(),'{}')
+  fs.symlinkSync(path.join(root,'regular.json'),path.join(root,'link.json'))
+  fs.mkdirSync(path.join(root,'nested'));fs.symlinkSync(path.join(root,'nested'),path.join(root,'linked-directory'))
+  fs.writeFileSync(path.join(root,'large.json'),Buffer.alloc(1024*1024+1))
+  for(const name of ['../outside.json','/etc/passwd','nested/../regular.json','link.json','linked-directory/file.json','nested','large.json','bad'+String.fromCharCode(92)+'path'])rejection(()=>readRegistrationSdkFile(root,name))
+ }finally{fs.rmSync(root,{recursive:true,force:true})}
 })
