@@ -1,3 +1,4 @@
+import {recurringSourcePredecessor,RECURRING_SOURCE_RECORD} from '../../architecture-lab/private-recurring-source.mjs'
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
@@ -50,7 +51,7 @@ const acceptedConsumerPaths={
 
 const assistantConsumerPaths={"SG2":["apps/sg-runtime/tests/adp-appshell-consumer.test.tsx","apps/sg-runtime/tests/category-operation.test.ts","apps/sg-runtime/tests/diagnostic-telemetry-adoption.test.mjs","apps/sg-runtime/tests/identity-runtime.test.ts","apps/sg-runtime/tests/integrated-buyer-journey-package.test.mjs","apps/sg-runtime/tests/native-sql-roundtrips.test.mjs","apps/sg-runtime/tests/operation-context.test.mjs","apps/sg-runtime/tests/pci-smart-integrity.mjs","apps/sg-runtime/tests/pci-smart-integrity.test.mjs","apps/sg-runtime/tests/porr-demo-middleware.test.ts","apps/sg-runtime/tests/private-host.integration.test.mjs","apps/sg-runtime/tests/self-service-account.test.ts","apps/sg-runtime/tests/xray-fresh-performance-adoption.test.mjs","apps/sg-runtime/tests/xray-gateway.test.ts"],"SRM":["apps/srm/deployment/root-atomic-claim-targets.json","apps/srm/scripts/diagnostic-telemetry-adoption.test.mjs","apps/srm/scripts/native-execution-adoption.test.mjs","apps/srm/scripts/operation-context.test.mjs","apps/srm/scripts/private-host.integration.test.mjs","apps/srm/scripts/request-quota-adoption.test.mjs","apps/srm/scripts/source-hub-sdk-compatibility.mjs","apps/srm/scripts/supplier-location-admission.integration.test.mjs","apps/srm/scripts/xray-performance-adoption.test.mjs","apps/srm/src/server/root-atomic-claim-adoption.test.ts"]}
 const assistantUiPaths=["apps/dashboard-preview/components/native-embedded-read-provider.tsx","apps/dashboard-preview/components/raw-data-view/index.tsx","apps/sg-runtime/app/api/assistant/conversation/route.ts","apps/sg-runtime/app/api/assistant/history/[id]/route.ts","apps/sg-runtime/app/api/assistant/history/route.ts","apps/sg-runtime/components/appshell/appshell-dashboard.tsx","apps/sg-runtime/components/appshell/assistant-conversation-session.ts","apps/sg-runtime/components/appshell/assistant-conversation-transport.ts","apps/sg-runtime/components/appshell/assistant-conversation-view.tsx","apps/sg-runtime/components/appshell/assistant-screen-context.ts","apps/sg-runtime/components/appshell/assistant-widget.tsx","apps/sg-runtime/components/appshell/platform-appshell.css","apps/sg-runtime/components/appshell/platform-appshell.tsx","apps/sg-runtime/components/auth/account-landing.tsx","apps/sg-runtime/components/benchmark-finder/benchmark-finder-client.tsx","apps/sg-runtime/components/benchmark-finder/native-analytics-embed.tsx","apps/sg-runtime/deployment/assistant-m1-targets.json","apps/sg-runtime/instrumentation.ts","apps/sg-runtime/lib/assistant/conversation.ts","apps/sg-runtime/lib/assistant/history.ts","apps/sg-runtime/lib/assistant/model.ts","apps/sg-runtime/lib/assistant/runtime.ts","apps/sg-runtime/lib/platform/native-dashboard-embed.ts","apps/sg-runtime/lib/platform/private-runtime.ts","apps/sg-runtime/migrations/assistant/001-history.sql","apps/sg-runtime/package-lock.json","apps/sg-runtime/package.json","apps/sg-runtime/tests/advisory-widget.test.ts","apps/sg-runtime/tests/assistant-conversation-handler.test.ts","apps/sg-runtime/tests/assistant-conversation-transport.test.ts","apps/sg-runtime/tests/assistant-conversation.test.ts","apps/sg-runtime/tests/assistant-history-postgres.test.mjs","apps/sg-runtime/tests/assistant-m1-integrity.mjs","apps/sg-runtime/tests/assistant-m1-integrity.test.mjs","apps/sg-runtime/tests/assistant-model.test.ts","apps/sg-runtime/tests/category-operation.test.ts","apps/sg-runtime/tests/diagnostic-telemetry-adoption.test.mjs","apps/sg-runtime/tests/identity-runtime.test.ts","apps/sg-runtime/tests/integrated-buyer-journey-package.test.mjs","apps/sg-runtime/tests/native-dashboard-embed.test.ts","apps/sg-runtime/tests/native-sql-roundtrips.test.mjs","apps/sg-runtime/tests/operation-context.test.mjs","apps/sg-runtime/tests/pci-smart-integrity.mjs","apps/sg-runtime/tests/pci-smart-integrity.test.mjs","apps/sg-runtime/tests/porr-demo-middleware.test.ts","apps/sg-runtime/tests/private-host.integration.test.mjs","apps/sg-runtime/tests/self-service-account.test.ts","apps/sg-runtime/tests/xray-assistant-host.test.tsx","apps/sg-runtime/tests/xray-fresh-performance-adoption.test.mjs","apps/sg-runtime/tests/xray-gateway.test.ts"]
-export function validateConsumerGroups(groups,readReceipt,{reviewedOilPaths=new Set()}={}){
+export function validateConsumerGroups(groups,readReceipt,{reviewedOilPaths=new Set(),reviewedRecurringPaths=new Map()}={}){
  for(const {projectKey,targets} of groups){
   if(projectKey==='ARCHITECTURE')continue
   assert(['SG2','SRM'].includes(projectKey),'Only the separately registered consumers belong to this delivery')
@@ -103,7 +104,7 @@ export function validateConsumerGroups(groups,readReceipt,{reviewedOilPaths=new 
    for(const flag of ['runtimeActivated','historyInstalled','sql030Installed','grantsChanged','providerCallsPerformed','deploymentPerformed','privateContentInTelemetry','borrowedCredentials','newServiceCreated','otherEnvironmentsChanged','srmProductChanged'])assert.equal(ui[flag],false,flag)
    for(const p of assistantUiPaths)allowed.add(p)
   }
-  for(const target of targets)assert(allowed.has(target)||reviewedOilPaths.has(target)&&OIL_REPORT_E1_REVIEW.entries[target]?.projectKey===projectKey,'Consumer changes require an exact separately governed acceptance binding: '+target)
+  for(const target of targets)assert(allowed.has(target)||reviewedRecurringPaths.get(target)===projectKey||reviewedOilPaths.has(target)&&OIL_REPORT_E1_REVIEW.entries[target]?.projectKey===projectKey,'Consumer changes require an exact separately governed acceptance binding: '+target)
   for(const flag of ['apiPathOptedIn','sql028Installed','businessLogicChanged','uiChanged','authorizationChanged','sourceBindingsChanged','providerCallsPerformed','deploymentPerformed'])assert.equal(a[flag],false,flag)
  }
  return groups
@@ -119,11 +120,36 @@ export function reviewedOilConsumerPaths(repositoryRoot,{baseSha,candidateSha}={
  return new Set(files.filter(f=>OIL_REPORT_E1_REVIEW.entries[f.filename].projectKey!=='ARCHITECTURE').map(f=>f.filename));
 }
 
+// Public, credential-free source routing. The trusted main controller still
+// independently pins the PR/branch/blob review before controlled validation.
+export function reviewedRecurringConsumerPaths(repositoryRoot,{baseSha,candidateSha}={}){
+ const current=p=>fs.readFileSync(path.join(repositoryRoot,p))
+ const historical=(sha,p)=>execFileSync('git',['show',sha+':'+p],{cwd:repositoryRoot})
+ const view=recurringSourcePredecessor(current,historical)
+ if(!view)return null
+ assert(/^[a-f0-9]{40}$/.test(baseSha??'')&&/^[a-f0-9]{40}$/.test(candidateSha??''),'Exact recurring CI revisions required')
+ const git=args=>execFileSync('git',args,{cwd:repositoryRoot,encoding:'utf8'}).trim()
+ assert.equal(git(['rev-parse','HEAD']),candidateSha,'Validate the actual source checkout')
+ git(['merge-base','--is-ancestor',view.manifest.authorityMainSha,baseSha])
+ const adoptions=['apps/architecture-lab/private-recurring-source-adoption.json','apps/sg-runtime/private-recurring-source-adoption.json','apps/srm/private-recurring-source-adoption.json']
+ const expected=[...view.manifest.changedPaths,RECURRING_SOURCE_RECORD,'apps/architecture-lab/private-recurring-source.mjs',...adoptions].sort()
+ const changed=git(['diff','--name-only','--no-renames',baseSha+'...'+candidateSha]).split('\n').filter(Boolean).sort()
+ assert.deepEqual(changed,expected,'Exact complete reviewed recurring diff required')
+ const {partition}=partitionChangedPaths(changed,repositoryRoot)
+ for(const p of changed){
+  const stat=fs.lstatSync(path.join(repositoryRoot,p)),tree=git(['ls-tree',candidateSha,'--',p])
+  assert(stat.isFile()&&!stat.isSymbolicLink()&&stat.size<=1024*1024,'Regular bounded source required')
+  assert(tree.startsWith('100644 blob '+git(['hash-object','--no-filters','--',p])+'\t'),'Exact regular reviewed source required')
+ }
+ return new Map(partition.filter(p=>p.projectKey!=='ARCHITECTURE').map(p=>[p.path,p.projectKey]))
+}
+
 export function validateRouting({changedPaths,repositoryRoot,readReceipt,runGovernance,sourceReview}){
  const {groups,partition}=partitionChangedPaths(changedPaths,repositoryRoot)
  const needsOil=groups.some(g=>g.projectKey!=='ARCHITECTURE'&&g.targets.some(t=>!acceptedConsumerPaths[g.projectKey]?.includes(t)&&!['apps/sg-runtime/operation-integration.json','apps/srm/operation-integration.json','apps/srm/scripts/source-hub-market-symbol-compatibility.test.mjs'].includes(t)));
- const reviewedOilPaths=needsOil?reviewedOilConsumerPaths(repositoryRoot,sourceReview):new Set();
- validateConsumerGroups(groups,readReceipt,{reviewedOilPaths})
+ const reviewedRecurringPaths=needsOil?reviewedRecurringConsumerPaths(repositoryRoot,sourceReview):null;
+ const reviewedOilPaths=needsOil&&!reviewedRecurringPaths?reviewedOilConsumerPaths(repositoryRoot,sourceReview):new Set();
+ validateConsumerGroups(groups,readReceipt,{reviewedOilPaths,reviewedRecurringPaths:reviewedRecurringPaths??new Map()})
  return {partition,results:validateOwnerGroups({groups,runGovernance})}
 }
 

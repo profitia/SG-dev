@@ -58,7 +58,7 @@ export function AppShellDashboard(props: {
     if(analyticsModule!=='adp')productAnalytics.transition('screen',analyticsModule,'screen_viewed',{module:analyticsModule,view:analyticsModule})
   },[analyticsReady,analyticsModule])
   return <PlatformAppShell {...props} assistantConversation={props.assistantCredential?conversation:undefined} assistantContext={assistantContext}
-    assistantSelectionLabel={assistantReference?.source==='NEWSFEED'?(props.locale==='pl'?'Wybrana obserwacja Newsfeed':'Selected Newsfeed observation'):null}
+    assistantSelectionLabel={assistantReference?.source==='PUBLISHED_REPORT'?(props.locale==='pl'?'Wybrana wersja opublikowanego raportu':'Selected published report edition'):assistantReference?.source==='NEWSFEED'?(props.locale==='pl'?'Wybrana obserwacja Newsfeed':'Selected Newsfeed observation'):null}
     assistantNotifications={props.assistantCredential&&props.assistantScope?<ProcurementInsightsNotifications key={props.assistantScope} getToken={props.assistantCredential} locale={props.locale} onOpen={(observationId,publicationId)=>{setInsightsOpened(true);router.push(insightsPath+'?observation='+encodeURIComponent(observationId)+'&publication='+encodeURIComponent(publicationId))}} onOpenReport={id=>{setInsightsOpened(true);router.push(insightsPath+'?tab=reports&edition='+encodeURIComponent(id))}}/>:null}
     moduleActive={active||benchmarkActive||xrayActive||insightsActive}
     onLaunchXray={()=>{setXrayOpened(true);router.push(xrayPath(props.locale))}}

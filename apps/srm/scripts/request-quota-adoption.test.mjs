@@ -1,3 +1,4 @@
+import {recurringSourceFilesystem} from '../../architecture-lab/private-recurring-source.mjs'
 import test from 'node:test'
 import {posix} from 'node:path'
 import assert from 'node:assert/strict'
@@ -7,6 +8,9 @@ import {execFileSync} from 'node:child_process'
 import {requestQuotaSchemaDigest} from '@profitia/platform-contracts/request-ledger'
 import {REQUEST_QUOTA_ROOT_CONTRACT,operationSourceDigest} from '@profitia/platform-contracts/operation-context'
 import {REQUEST_QUOTA_HOST_CONTRACT,privateOperationHostSourceDigest} from '@profitia/platform-contracts/private-operation-host'
+const recurring=recurringSourceFilesystem(new URL('../../../',import.meta.url)).manifest
+const recurringSdkFiles=Object.fromEntries(Object.entries(recurring?.sourceDigests??{}).filter(([p])=>p.startsWith('packages/platform-contracts/')).map(([p,h])=>[p.slice('packages/platform-contracts/'.length),h]))
+
 const receipt=JSON.parse(fs.readFileSync(new URL('../operation-integration.json',import.meta.url))),a=receipt.requestQuotaSourceCompatibility,hash=x=>createHash('sha256').update(x).digest('hex')
 // These assertions verify pre-native receipts. If both later adoptions changed
 // a path, use the earlier native predecessor; current diagnostic bytes are
@@ -63,10 +67,10 @@ test('SRM explicitly adopts SQL027 and preserves all historical contracts, count
  assert.equal(a.platformVersion,'1.29.0');assert.equal(a.rootImplementation,REQUEST_QUOTA_ROOT_CONTRACT.implementation);assert.equal(a.hostVersion,REQUEST_QUOTA_HOST_CONTRACT.version)
  assert.equal(a.producer.projectKey,'ARCHITECTURE');assert.equal(a.producer.pullRequest,712);assert.equal(a.producer.taskId,'ARCHITECTURE-SRM-REQUEST-UNMETERED-20261025')
  assert.deepEqual(a.operations,['supplier.report.refresh','supplier.private.refresh']);assert.equal(a.quotaMode,'UNMETERED')
- assert.equal(await requestQuotaSchemaDigest(),a.schemaDigest);assert.equal(await operationSourceDigest(),receipt.oilAutonomousReportCompatibility?.sdkDigests.operationSourceDigest??receipt.assistantM1SourceCompatibility.rootContract.sourceDigest);assert.equal(await privateOperationHostSourceDigest(),receipt.freshPostfetchRecovery?.sdkDigests.privateOperationHostSourceDigest??receipt.sourceLeaseClockRecovery?.sdkDigests.privateOperationHostSourceDigest??receipt.diagnosticTelemetryAdoption.sdkDigests.privateOperationHostSourceDigest)
+ assert.equal(await requestQuotaSchemaDigest(),a.schemaDigest);assert.equal(await operationSourceDigest(),recurring?.sdkDigests.operationSourceDigest??receipt.oilAutonomousReportCompatibility?.sdkDigests.operationSourceDigest??receipt.assistantM1SourceCompatibility.rootContract.sourceDigest);assert.equal(await privateOperationHostSourceDigest(),receipt.freshPostfetchRecovery?.sdkDigests.privateOperationHostSourceDigest??receipt.sourceLeaseClockRecovery?.sdkDigests.privateOperationHostSourceDigest??receipt.diagnosticTelemetryAdoption.sdkDigests.privateOperationHostSourceDigest)
  for(const[path,digest]of Object.entries(a.sourceDigests)){
   assert.equal(hash(execFileSync('git',['show',a.producer.sourceSha+':packages/platform-contracts/'+path])),digest,path)
-  assert.equal(hash(fs.readFileSync(new URL('../../../packages/platform-contracts/'+path,import.meta.url))),receipt.oilAutonomousReportCompatibility?.testSourceDigests[path]??receipt.oilAutonomousReportCompatibility?.sourceDigests[path]??receipt.assistantM1SourceCompatibility?.sourceDigests[path]??receipt.sourceHubMarketSymbolCompatibility?.sourceDigests[path]??receipt.sourceHubApiPathCompatibility?.sourceDigests[path]??receipt.freshPostfetchRecovery?.sourceDigests[path]??receipt.sourceLeaseClockRecovery?.sourceDigests[path]??receipt.settledExternalFailureRecovery?.sourceDigests[path]??receipt.freshPerformanceRecovery.sourceDigests[path]??receipt.appshellXraySourceCompatibility.sourceDigests[path]??receipt.xrayPerformanceRecoveryV2.sourceDigests[path]??receipt.diagnosticTelemetryAdoption.sourceDigests[path]??receipt.nativeSqlRoundtripAdoption.sourceDigests[path]??digest,path)
+  assert.equal(hash(fs.readFileSync(new URL('../../../packages/platform-contracts/'+path,import.meta.url))),recurringSdkFiles[path]??receipt.oilAutonomousReportCompatibility?.testSourceDigests[path]??recurringSdkFiles[path]??receipt.oilAutonomousReportCompatibility?.sourceDigests[path]??receipt.assistantM1SourceCompatibility?.sourceDigests[path]??receipt.sourceHubMarketSymbolCompatibility?.sourceDigests[path]??receipt.sourceHubApiPathCompatibility?.sourceDigests[path]??receipt.freshPostfetchRecovery?.sourceDigests[path]??receipt.sourceLeaseClockRecovery?.sourceDigests[path]??receipt.settledExternalFailureRecovery?.sourceDigests[path]??receipt.freshPerformanceRecovery.sourceDigests[path]??receipt.appshellXraySourceCompatibility.sourceDigests[path]??receipt.xrayPerformanceRecoveryV2.sourceDigests[path]??receipt.diagnosticTelemetryAdoption.sourceDigests[path]??receipt.nativeSqlRoundtripAdoption.sourceDigests[path]??digest,path)
  }
  for(const[path,digest]of Object.entries(a.applicationSourceDigests)){
   const repair=receipt.pilot2PrivateTransportParentRepair?.applicationSourceDigests[path]?receipt.pilot2PrivateTransportParentRepair

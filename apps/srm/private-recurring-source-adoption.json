@@ -1,0 +1,9 @@
+{
+  "schemaVersion": "1.0.0",
+  "projectKey": "SRM",
+  "taskId": "SRM-PI-RECURRING-SDK-20261111",
+  "targetEnvironment": "development",
+  "scope": "SOURCE_ONLY_NO_RUNTIME_ACTIVATION",
+  "sourceRecord": "apps/architecture-lab/private-recurring-source.json",
+  "sourceRecordSha256": "75877d5750e07d1c8172be0af76bc5933f2eeefc22cc39747a2621b9cab24619"
+}

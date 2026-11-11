@@ -7,6 +7,7 @@ import { requireThat } from "@profitia/insights-contracts";
 export function createInsightsRuntime({
   configuration,
   store,
+  subscriptionTick=null,
   authority,
   sources,
   canonical,
@@ -54,6 +55,7 @@ export function createInsightsRuntime({
         configuration.enabled && configuration.authorityDecisionRef,
         "WAITING_AUTHORIZATION",
       );
+      if(subscriptionTick){try{await subscriptionTick(options)}catch{try{onError("SUBSCRIPTION_WORKER_UNAVAILABLE")}catch{}}}
       await scheduler.tick(options);
       for (const context of await authority.workerContexts()) {
         const id = await store.queued(context.organisationId);

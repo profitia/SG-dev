@@ -1,3 +1,4 @@
+import {recurringSourcePredecessor} from '../../architecture-lab/private-recurring-source.mjs'
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import { createHash } from 'node:crypto'
@@ -7,6 +8,7 @@ import path from 'node:path'
 import { OPERATION_CONTRACT, operationSourceDigest } from '@profitia/platform-contracts/operation-context'
 import { operationSourceDigest as sourceDigest } from '../../../packages/platform-contracts/src/operation-context.mjs'
 const receipt = JSON.parse(fs.readFileSync(new URL('../operation-integration.json', import.meta.url)))
+const recurring=recurringSourcePredecessor(p=>fs.readFileSync(new URL('../../../'+p,import.meta.url)),(sha,p)=>execFileSync('git',['show',sha+':'+p],{cwd:new URL('../../../',import.meta.url)}))
 test('explicit consumer binds exact implemented contract and installed/source digest without enabling live deployment', async () => {
   const current=receipt.oilAutonomousReportCompatibility??receipt.assistantM1SourceCompatibility,contract=receipt.oilAutonomousReportCompatibility?receipt.contract:current.rootContract,producer=receipt.oilAutonomousReportCompatibility?current.producer:current.rootProducer
   assert.equal(receipt.projectKey, 'SRM')
@@ -14,7 +16,7 @@ test('explicit consumer binds exact implemented contract and installed/source di
   assert.equal(contract.id, OPERATION_CONTRACT.id)
   assert.equal(contract.version, OPERATION_CONTRACT.version)
   assert.equal(contract.implementation, OPERATION_CONTRACT.implementation)
-  assert.equal(contract.sourceDigest, await operationSourceDigest())
+  assert.equal(recurring?.manifest.sdkDigests.operationSourceDigest??contract.sourceDigest, await operationSourceDigest())
   assert.equal(await operationSourceDigest(), await sourceDigest())
   assert.equal(receipt.liveRouteUsesContract, false)
   assert.equal(receipt.automaticProductDeployment, false)
@@ -45,7 +47,7 @@ test('candidate16 acceptance preserves the exact previous receipts and has no ru
     assert.equal(createHash('sha256').update(execFileSync('git',['show',receipt.p1ReceiverSourceCompatibility.previousRootAcceptance.producer.sourceSha+':packages/platform-contracts/'+path])).digest('hex'),digest,path)
   }
   const sdkModules={'operation-context':['operationSourceDigest'],'private-operation-host':['privateOperationHostSourceDigest'],'request-ledger':['requestLedgerSourceDigest','externalRequestSchemaDigest'],'delegated-job':['delegatedJobSourceDigest'],'request-continuation':['requestContinuationSourceDigest'],'request-inspection':['requestInspectionSourceDigest'],'request-work':['requestWorkSourceDigest'],'request-operations':['requestOperationsSourceDigest','additionalRequestSchemaDigest'],'external-call':['externalCallSourceDigest','publicWebTransportSchemaDigest'],'supplier-location':['supplierLocationSchemaDigest']}
-  for(const[module,names]of Object.entries(sdkModules)){const sdk=await import('@profitia/platform-contracts/'+module);for(const name of names)assert.equal(await sdk[name](),(receipt.oilAutonomousReportCompatibility?.sdkDigests[name]??receipt.assistantM1SourceCompatibility?.sdkDigests[name]??receipt.sourceHubMarketSymbolCompatibility?.sdkDigests[name]??receipt.sourceHubApiPathCompatibility?.sdkDigests[name]??receipt.freshPostfetchRecovery?.sdkDigests[name]??receipt.sourceLeaseClockRecovery?.sdkDigests[name]??receipt.settledExternalFailureRecovery?.sdkDigests[name]??receipt.diagnosticTelemetryAdoption.sdkDigests[name]),name)}
+  for(const[module,names]of Object.entries(sdkModules)){const sdk=await import('@profitia/platform-contracts/'+module);for(const name of names)assert.equal(await sdk[name](),(recurring?.manifest.sdkDigests[name]??receipt.oilAutonomousReportCompatibility?.sdkDigests[name]??receipt.assistantM1SourceCompatibility?.sdkDigests[name]??receipt.sourceHubMarketSymbolCompatibility?.sdkDigests[name]??receipt.sourceHubApiPathCompatibility?.sdkDigests[name]??receipt.freshPostfetchRecovery?.sdkDigests[name]??receipt.sourceLeaseClockRecovery?.sdkDigests[name]??receipt.settledExternalFailureRecovery?.sdkDigests[name]??receipt.diagnosticTelemetryAdoption.sdkDigests[name]),name)}
   assert.equal(accepted.sdkDigests.supplierLocationSchemaDigest,'34ec633dbf38dfffd6b3954ae79b0ef6f771d75ad8f0443882be71ca78b084e5')
 })
 

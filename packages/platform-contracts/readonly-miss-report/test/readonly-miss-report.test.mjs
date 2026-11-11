@@ -1,3 +1,4 @@
+import {recurringSourceFilesystem} from '../../../../apps/architecture-lab/private-recurring-source.mjs'
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import fs from 'node:fs'
@@ -10,6 +11,8 @@ import {createReadonlyMissReportHost,READONLY_MISS_REPORT_CONTRACT,readonlyMissR
 import {currentHumanReadSourceDigest,CURRENT_HUMAN_READ_CONTRACT} from '@profitia/platform-contracts/current-human-read'
 import {privateOperationHostSourceDigest} from '@profitia/platform-contracts/private-operation-host'
 import {CURRENT_FRESH_REPORT_CONTRACT,currentFreshReportSourceDigest} from '@profitia/platform-current-fresh-report'
+
+const recurring=recurringSourceFilesystem(new URL('../../../../',import.meta.url))
 
 function fixture(){
  const unexpected=async()=>assert.fail('No external call in constructor or rejected input')
@@ -26,8 +29,8 @@ test('additive producer has an independent fingerprint and preserves existing RE
  assert.deepEqual(READONLY_MISS_REPORT_CONTRACT,{id:'profitia.readonly-miss-report',version:'1.0.0'})
  assert.deepEqual(CURRENT_HUMAN_READ_CONTRACT,{id:'profitia.current-human-read',version:'1.1.0'})
  const accepted=JSON.parse(fs.readFileSync(new URL('../../../../apps/srm/operation-integration.json',import.meta.url)))
- assert.equal(await currentHumanReadSourceDigest(),accepted.oilAutonomousReportCompatibility?.sdkDigests.currentHumanReadSourceDigest??accepted.assistantM1SourceCompatibility.sdkDigests.currentHumanReadSourceDigest)
- assert.equal(await privateOperationHostSourceDigest(),accepted.oilAutonomousReportCompatibility?.sdkDigests.privateOperationHostSourceDigest??accepted.assistantM1SourceCompatibility.sdkDigests.privateOperationHostSourceDigest)
+ assert.equal(await currentHumanReadSourceDigest(),recurring.manifest?.sdkDigests.currentHumanReadSourceDigest??accepted.oilAutonomousReportCompatibility?.sdkDigests.currentHumanReadSourceDigest??accepted.assistantM1SourceCompatibility.sdkDigests.currentHumanReadSourceDigest)
+ assert.equal(await privateOperationHostSourceDigest(),recurring.manifest?.sdkDigests.privateOperationHostSourceDigest??accepted.oilAutonomousReportCompatibility?.sdkDigests.privateOperationHostSourceDigest??accepted.assistantM1SourceCompatibility.sdkDigests.privateOperationHostSourceDigest)
  assert.match(await readonlyMissReportSourceDigest(),/^[a-f0-9]{64}$/)
  assert.equal(createReadonlyMissReportHost(fixture()).hostContract,READONLY_MISS_REPORT_CONTRACT)
 })
@@ -35,16 +38,16 @@ test('accepted current FRESH 1.0 metadata and fingerprint remain unchanged besid
  const receipt=JSON.parse(fs.readFileSync(new URL('../../../../apps/srm/operation-integration.json',import.meta.url)))
  const accepted=receipt.freshCurrentBoundaryAdoption
  assert.deepEqual(CURRENT_FRESH_REPORT_CONTRACT,accepted.contract)
- assert.equal(await currentFreshReportSourceDigest(),receipt.oilAutonomousReportCompatibility?.optionalPackageDigests.currentFreshReportSourceDigest??receipt.assistantM1SourceCompatibility?.optionalPackageDigests.currentFreshReportSourceDigest ?? receipt.sourceHubMarketSymbolCompatibility?.optionalPackageDigests.currentFreshReportSourceDigest ?? receipt.sourceHubApiPathCompatibility?.optionalPackageDigests.currentFreshReportSourceDigest ?? accepted.optionalPackage.sourceDigest)
+ assert.equal(await currentFreshReportSourceDigest(),recurring.manifest?.optionalPackageDigests.currentFreshReportSourceDigest??receipt.oilAutonomousReportCompatibility?.optionalPackageDigests.currentFreshReportSourceDigest??receipt.assistantM1SourceCompatibility?.optionalPackageDigests.currentFreshReportSourceDigest ?? receipt.sourceHubMarketSymbolCompatibility?.optionalPackageDigests.currentFreshReportSourceDigest ?? receipt.sourceHubApiPathCompatibility?.optionalPackageDigests.currentFreshReportSourceDigest ?? accepted.optionalPackage.sourceDigest)
  const metadata=JSON.parse(fs.readFileSync(new URL('../../current-fresh-report/package.json',import.meta.url)))
  assert.equal(metadata.name,'@profitia/platform-current-fresh-report');assert.equal(metadata.version,'1.0.0')
  for(const [name,digest] of Object.entries(accepted.producerSourceDigests)){
   const {createHash}=await import('node:crypto')
-  const current=fs.readFileSync(new URL('../../current-fresh-report/'+name,import.meta.url))
+  const current=recurring.previousBytes('packages/platform-contracts/current-fresh-report/'+name)
   let preserved=current
   if(name==='package.json'){
    const peer=JSON.parse(current).peerDependencies['@profitia/platform-contracts']
-   assert(['1.32.3','1.32.3 || 1.33.0','1.32.3 || 1.33.0 || 1.34.0'].includes(peer))
+   assert(['1.32.3','1.32.3 || 1.33.0','1.32.3 || 1.33.0 || 1.34.0',...(recurring.manifest?['1.32.3 || 1.33.0 || 1.34.0 || 1.36.0']:[])].includes(peer))
    if(peer!=='1.32.3')preserved=Buffer.from(current.toString().replace(JSON.stringify(peer),'"1.32.3"'))
   }
   assert.equal(createHash('sha256').update(preserved).digest('hex'),digest)
@@ -76,7 +79,7 @@ test('packed public install uses exactly one SDK 1.34.0 peer with preserved 1.32
    import * as fresh from '@profitia/platform-readonly-miss-report';
    import {CURRENT_HUMAN_READ_CONTRACT} from '@profitia/platform-contracts/current-human-read';
    const root=new URL('../',import.meta.resolve('@profitia/platform-contracts/operation-context'));
-   assert.equal(JSON.parse(fs.readFileSync(new URL('package.json',root))).version,'1.34.0');
+   assert.equal(JSON.parse(fs.readFileSync(new URL('package.json',root))).version,${JSON.stringify(recurring.manifest?.platformVersion??'1.34.0')});
    assert.equal(CURRENT_HUMAN_READ_CONTRACT.version,'1.1.0');assert.equal(fresh.READONLY_MISS_REPORT_CONTRACT.version,'1.0.0');
    assert.equal(await fresh.readonlyMissReportSourceDigest(),${JSON.stringify(expected)});
    const require=createRequire(import.meta.url),inside=createRequire(import.meta.resolve('@profitia/platform-readonly-miss-report'));

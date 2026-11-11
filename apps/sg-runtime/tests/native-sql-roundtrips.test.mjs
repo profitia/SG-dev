@@ -1,3 +1,4 @@
+import {recurringSourceFilesystem} from '../../architecture-lab/private-recurring-source.mjs'
 import {readM2AcceptedSource} from './assistant-m2-source-view.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
@@ -5,6 +6,8 @@ import fs from 'node:fs'
 import {posix} from 'node:path'
 import {createHash} from 'node:crypto'
 import {execFileSync} from 'node:child_process'
+const recurringView=recurringSourceFilesystem(new URL('../../../',import.meta.url)),recurring=recurringView.manifest
+const recurringSdkFiles=Object.fromEntries(Object.entries(recurring?.sourceDigests??{}).filter(([p])=>p.startsWith('packages/platform-contracts/')).map(([p,h])=>[p.slice('packages/platform-contracts/'.length),h]))
 const receipt=JSON.parse(fs.readFileSync(new URL('../operation-integration.json',import.meta.url))),a=receipt.nativeSqlRoundtripAdoption,current=receipt.xrayPlatform130CiClosureCompatibility??receipt.diagnosticTelemetryAdoption??a
 const hash=v=>createHash('sha256').update(v).digest('hex')
 test('native SQL adoption preserves complete prior acceptance and pins the exact reviewed producer',async()=>{
@@ -13,14 +16,14 @@ test('native SQL adoption preserves complete prior acceptance and pins the exact
  for(const[k,v]of Object.entries(JSON.parse(bytes)))assert.deepEqual(receipt.oilAutonomousReportCompatibility?.previousRootAcceptance?.[k]??receipt[k],v,k)
  assert.equal(a.platformVersion,'1.29.1');assert.equal(a.producer.projectKey,'ARCHITECTURE');assert.equal(a.producer.pullRequest,729)
  const root=new URL('../',import.meta.resolve('@profitia/platform-contracts/private-operation-host')),xray=receipt.appshellXraySourceCompatibility
- assert.equal(JSON.parse(fs.readFileSync(new URL('package.json',root))).version,(receipt.oilAutonomousReportCompatibility??receipt.sourceHubMarketSymbolCompatibility??receipt.sourceHubApiPathCompatibility??receipt.freshPostfetchCompatibility??receipt.sourceLeaseClockCompatibility??receipt.settledExternalFailureCompatibility??receipt.freshPerformanceRecovery).platformVersion)
+ assert.equal(JSON.parse(fs.readFileSync(new URL('package.json',root))).version,(recurring??receipt.oilAutonomousReportCompatibility??receipt.sourceHubMarketSymbolCompatibility??receipt.sourceHubApiPathCompatibility??receipt.freshPostfetchCompatibility??receipt.sourceLeaseClockCompatibility??receipt.settledExternalFailureCompatibility??receipt.freshPerformanceRecovery).platformVersion)
  for(const[file,digest]of Object.entries(a.sourceDigests)){
   assert.equal(hash(execFileSync('git',['show',a.producer.sourceSha+':packages/platform-contracts/'+file])),digest,file)
-  if(file.startsWith('src/')||file==='package.json')assert.equal(hash(readM2AcceptedSource(new URL(file,root))),receipt.oilAutonomousReportCompatibility?.sourceDigests[file]??receipt.assistantM1SourceCompatibility?.sourceDigests[file]??receipt.sourceHubMarketSymbolCompatibility?.sourceDigests[file]??receipt.sourceHubApiPathCompatibility?.sourceDigests[file]??receipt.freshPostfetchCompatibility?.sourceDigests[file]??receipt.sourceLeaseClockCompatibility?.sourceDigests[file]??receipt.settledExternalFailureCompatibility?.sourceDigests[file]??receipt.freshPerformanceRecovery.sourceDigests[file]??xray.sourceDigests[file]??receipt.appshellXraySourceCompatibility.sourceDigests[file]??current.sourceDigests[file]??digest,file)
+  if(file.startsWith('src/')||file==='package.json')assert.equal(hash(fs.readFileSync(new URL(file,root))),recurringSdkFiles[file]??receipt.oilAutonomousReportCompatibility?.sourceDigests[file]??receipt.assistantM1SourceCompatibility?.sourceDigests[file]??receipt.sourceHubMarketSymbolCompatibility?.sourceDigests[file]??receipt.sourceHubApiPathCompatibility?.sourceDigests[file]??receipt.freshPostfetchCompatibility?.sourceDigests[file]??receipt.sourceLeaseClockCompatibility?.sourceDigests[file]??receipt.settledExternalFailureCompatibility?.sourceDigests[file]??receipt.freshPerformanceRecovery.sourceDigests[file]??xray.sourceDigests[file]??receipt.appshellXraySourceCompatibility.sourceDigests[file]??current.sourceDigests[file]??digest,file)
  }
  const modules={'private-operation-host':'privateOperationHostSourceDigest','access-store':'accessStoreSourceDigest',
   'delegated-job':'delegatedJobSourceDigest','platform-ingestion':'platformIngestionSourceDigest','request-work':'requestWorkSourceDigest'}
- for(const[module,fn]of Object.entries(modules))assert.equal(await(await import('@profitia/platform-contracts/'+module))[fn](),(receipt.oilAutonomousReportCompatibility?.sdkDigests[fn]??receipt.assistantM1SourceCompatibility?.sdkDigests[fn]??receipt.sourceHubMarketSymbolCompatibility?.sdkDigests[fn]??receipt.sourceHubApiPathCompatibility?.sdkDigests[fn]??receipt.freshPostfetchCompatibility?.sdkDigests[fn]??receipt.sourceLeaseClockCompatibility?.sdkDigests[fn]??current.sdkDigests[fn]),fn)
+ for(const[module,fn]of Object.entries(modules))assert.equal(await(await import('@profitia/platform-contracts/'+module))[fn](),(recurring?.sdkDigests[fn]??receipt.oilAutonomousReportCompatibility?.sdkDigests[fn]??receipt.assistantM1SourceCompatibility?.sdkDigests[fn]??receipt.sourceHubMarketSymbolCompatibility?.sdkDigests[fn]??receipt.sourceHubApiPathCompatibility?.sdkDigests[fn]??receipt.freshPostfetchCompatibility?.sdkDigests[fn]??receipt.sourceLeaseClockCompatibility?.sdkDigests[fn]??current.sdkDigests[fn]),fn)
  for(const[file,digest]of Object.entries(a.applicationSourceDigests)){
   const latest=receipt.appShellSourceCompatibility,adp=receipt.adpPresentationSourceCompatibility
   const journey=receipt.integratedBuyerJourneySourceCompatibility

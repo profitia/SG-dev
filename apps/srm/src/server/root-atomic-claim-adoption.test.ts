@@ -1,3 +1,4 @@
+import {recurringSourceFilesystem} from '../../../architecture-lab/private-recurring-source.mjs'
 import {assertMarketHistoryHostContinuation} from '../../scripts/xray-style-acceptance.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
@@ -5,6 +6,7 @@ import {readFileSync} from 'node:fs'
 import {execFileSync} from 'node:child_process'
 import {createHash} from 'node:crypto'
 import {rootAtomicClaimSchemaDigest,rootAtomicClaimSourceDigest,ROOT_ATOMIC_CLAIM_CONTRACT} from '@profitia/platform-root-atomic-claim'
+const recurring=recurringSourceFilesystem(new URL('../../../../',import.meta.url)).manifest
 import currentRoot from '../../deployment/root-atomic-claim-targets.json'
 const root=JSON.parse(execFileSync('git',['show','36b07672f572ff7c1c81117e3f3b01fa93ec1e65:apps/srm/deployment/root-atomic-claim-targets.json'],{encoding:'utf8'})) as typeof currentRoot
 import native from '../../deployment/supplier-native-targets.json'
@@ -38,7 +40,7 @@ test('optional Root claim target pins the exact producer and existing main Devel
  const receipt=JSON.parse(readFileSync(new URL('../../operation-integration.json',import.meta.url),'utf8'))
  // Current Oil acceptance is checked separately; retain the complete M1
  // receipt for historical validation instead of comparing it to new bytes.
- assert.equal(currentRoot.sourceDigest,(receipt.oilAutonomousReportCompatibility??receipt.assistantM1SourceCompatibility).optionalPackageDigests.rootAtomicClaimSourceDigest)
+ assert.equal(currentRoot.sourceDigest,recurring?.optionalPackageDigests.rootAtomicClaimSourceDigest??(receipt.oilAutonomousReportCompatibility??receipt.assistantM1SourceCompatibility).optionalPackageDigests.rootAtomicClaimSourceDigest)
  assert.equal(currentRoot.sourceDigest,await rootAtomicClaimSourceDigest())
  const {sourceDigest,...currentMetadata}=currentRoot;const {sourceDigest:previousDigest,...previousMetadata}=root;assert.deepEqual(currentMetadata,previousMetadata)
  assert.equal(root.producerPullRequest,854);assert.equal(root.producerSourceRef,'3a494b5432555935168c060be5950589d550d276')
@@ -116,5 +118,5 @@ test('Root claim adoption preserves every prior receipt and pins only the review
  assert.equal(pkg.dependencies['@profitia/platform-root-atomic-claim'],'file:../../packages/platform-contracts/root-atomic-claim')
  const dependencies={...pkg.dependencies};delete dependencies['@profitia/platform-root-atomic-claim']
  assert.deepEqual(dependencies,previousPackage.dependencies)
- assert.equal(JSON.parse(readFileSync(new URL('../../node_modules/@profitia/platform-contracts/package.json',import.meta.url),'utf8')).version,complete.sourceHubMarketSymbolCompatibility?.platformVersion??complete.sourceHubApiPathCompatibility?.platformVersion??'1.32.3')
+ assert.equal(JSON.parse(readFileSync(new URL('../../node_modules/@profitia/platform-contracts/package.json',import.meta.url),'utf8')).version,recurring?.platformVersion??complete.sourceHubMarketSymbolCompatibility?.platformVersion??complete.sourceHubApiPathCompatibility?.platformVersion??'1.32.3')
 })

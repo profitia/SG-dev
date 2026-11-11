@@ -1,3 +1,4 @@
+import {recurringSourcePredecessor} from './private-recurring-source.mjs'
 // Exact source compatibility continuation; grants no runtime activation.
 import assert from 'node:assert/strict'
 import {createHash} from 'node:crypto'
@@ -25,6 +26,8 @@ function accessContinuityPredecessor(readCurrent,historical,changedPaths){
  return p=>Object.hasOwn(a.replacements,p)?historical(a.baseSha,p):readCurrent(p)
 }
 export function calendarStoragePredecessor(readCurrent,historical,changedPaths){
+ const reviewed=recurringSourcePredecessor(readCurrent,historical)
+ if(reviewed)readCurrent=reviewed.previousBytes
  const prior=accessContinuityPredecessor(readCurrent,historical,changedPaths)
  return calendarStoragePredecessorHistory(prior,historical,changedPaths)
 }

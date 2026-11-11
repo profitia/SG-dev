@@ -1,11 +1,12 @@
 'use client'
+import type {PublishedReportReference} from '../../../../packages/assistant-context-contracts/src/index.mjs'
 import React,{useEffect,useMemo,useRef,useState} from 'react'
 import {CanonButton,CanonInput,CanonSelect} from '@profitia/srm-xray'
 import type {ReportProfile as Profile,Subscription as Order,PublishedEdition as Published,PublicationShares} from '@profitia/insights-contracts/subscriptions'
 type Page<T>={items:T[];nextCursor:string|null}
-type Run={id:string;producerJobId:string|null;status:string;createdAt:string}
+type Run={id:string;producerJobId:string|null;status:string;createdAt:string;emailDelivery?:string|null}
 const contract='procurement-insights.subscription/1.0.0'
-const statusLabel:Record<string,string>={WAITING_AUTHORIZATION:'Oczekuje na dopuszczenie wykonania',QUEUED:'Zaplanowany',RUNNING:'W przygotowaniu',AWAITING_REVIEW:'Weryfikacja jakości',PUBLISHED:'Opublikowany',FAILED:'Nie można przygotować',UNCERTAIN:'Wynik wymaga wyjaśnienia',CANCELLED:'Anulowany'}
+const statusLabel:Record<string,string>={READY:'Monitoring aktywny',WAITING_AUTHORIZATION:'Oczekuje na dopuszczenie wykonania',QUEUED:'Zaplanowany',RUNNING:'W przygotowaniu',AWAITING_REVIEW:'Weryfikacja jakości',PUBLISHED:'Opublikowany',FAILED:'Nie można przygotować',UNCERTAIN:'Wynik wymaga wyjaśnienia',CANCELLED:'Anulowany'}
 function ReportText({text}:{text:string}){
  return <div className="pi-report-text">{text.split(/\n\s*\n/).map((block,i)=>{
   const heading=/^(#{1,4}) (.+)$/.exec(block)
@@ -18,13 +19,14 @@ function ReportText({text}:{text:string}){
   return <p key={i} style={{whiteSpace:'pre-wrap'}}>{block}</p>
  })}</div>
 }
-export function ReportsWorkspace({active,locale,getToken,editionId=null,onEdition}:{active:boolean;locale:'pl'|'en';getToken:()=>Promise<string|null>;editionId?:string|null;onEdition?:(id:string|null)=>void}){
+export function ReportsWorkspace({active,locale,getToken,editionId=null,onEdition,onContext}:{active:boolean;locale:'pl'|'en';getToken:()=>Promise<string|null>;editionId?:string|null;onEdition?:(id:string|null)=>void;onContext?:(reference:PublishedReportReference|null)=>void}){
  const [view,setView]=useState('orders'),[profiles,setProfiles]=useState<Profile[]>([]),[orders,setOrders]=useState<Page<Order>>({items:[],nextCursor:null}),[selected,setSelected]=useState<Order|null>(null)
  const [runs,setRuns]=useState<Page<Run>>({items:[],nextCursor:null}),[published,setPublished]=useState<Page<Published>>({items:[],nextCursor:null}),[reader,setReader]=useState<Published|null>(null)
+ useEffect(()=>{onContext?.(null);return()=>onContext?.(null)},[active,reader?.producerJobId,onContext])
  const [sharing,setSharing]=useState<{jobId:string;title:string;value:PublicationShares}|null>(null),[inviteLink,setInviteLink]=useState(''),[invitation,setInvitation]=useState<string|null>(null)
  const [revision,setRevision]=useState(0),[loading,setLoading]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState(''),[message,setMessage]=useState(''),[ordering,setOrdering]=useState(false),[editing,setEditing]=useState<Order|null>(null)
  const [name,setName]=useState(''),[profileKey,setProfileKey]=useState(''),[recurring,setRecurring]=useState(false),[weekday,setWeekday]=useState(2),[time,setTime]=useState('08:00')
- const [start,setStart]=useState(new Date().toLocaleDateString('en-CA')),[end,setEnd]=useState(''),[notify,setNotify]=useState(false),[search,setSearch]=useState('')
+ const [start,setStart]=useState(new Date().toLocaleDateString('en-CA')),[end,setEnd]=useState(''),[notify,setNotify]=useState(false),[email,setEmail]=useState(false),[search,setSearch]=useState('')
  const lifecycle=useMemo(()=>({controller:new AbortController()}),[getToken]),lock=useRef(false),orderKey=useRef<string|null>(null),downloadUrl=useRef<string|null>(null)
  useEffect(()=>{const match=/^#reportInvite=([a-f0-9]{64})$/.exec(window.location.hash);if(match){setInvitation(match[1]);window.history.replaceState(window.history.state,'',window.location.pathname+window.location.search)}},[])
  useEffect(()=>{if(lifecycle.controller.signal.aborted)lifecycle.controller=new AbortController();return()=>{lifecycle.controller.abort();if(downloadUrl.current)URL.revokeObjectURL(downloadUrl.current)}},[lifecycle])
@@ -57,8 +59,8 @@ export function ReportsWorkspace({active,locale,getToken,editionId=null,onEditio
  }
  const profile=profiles.find(p=>p.definitionId+'@'+p.profileVersion===profileKey)
  function configure(order:Order|null=null){
-  if(order){setEditing(order);setName(order.name);setProfileKey(order.definitionId+'@'+order.profileVersion);setRecurring(!!order.schedule);setWeekday(order.schedule?.weekday??2);setTime(order.schedule?.localTime??'08:00');setStart(order.schedule?.startDate??new Date().toLocaleDateString('en-CA'));setEnd(order.schedule?.endDate??'');setNotify(order.notifications.assistant)}
-  else if(!ordering){setEditing(null);orderKey.current=crypto.randomUUID()}
+  if(order){setEditing(order);setName(order.name);setProfileKey(order.definitionId+'@'+order.profileVersion);setRecurring(!!order.schedule);setWeekday(order.schedule?.weekday??2);setTime(order.schedule?.localTime??'08:00');setStart(order.schedule?.startDate??new Date().toLocaleDateString('en-CA'));setEnd(order.schedule?.endDate??'');setNotify(order.notifications.assistant);setEmail(order.notifications.email)}
+  else if(!ordering){setEditing(null);setNotify(false);setEmail(false);orderKey.current=crypto.randomUUID()}
   setOrdering(true);setReader(null)
  }
  async function order(){
@@ -66,7 +68,7 @@ export function ReportsWorkspace({active,locale,getToken,editionId=null,onEditio
   await act(async()=>{
    orderKey.current??=crypto.randomUUID()
    const value=await api<Order>(editing?'/'+editing.id:'',editing?'PATCH':'POST',{contractVersion:contract,name:name.trim(),definitionId:profile!.definitionId,profileVersion:profile!.profileVersion,subjectRef:editing?.subjectRef??null,
-    schedule:recurring?{frequency:'WEEKLY',weekday,localTime:time,timeZone:'Europe/Warsaw',startDate:start,endDate:end||null}:null,notifications:{assistant:notify,email:false},...(editing?{version:editing.version,status:editing.status}:{})},editing?undefined:orderKey.current)
+    schedule:recurring?{frequency:'WEEKLY',weekday,localTime:time,timeZone:'Europe/Warsaw',startDate:start,endDate:end||null}:null,notifications:{assistant:notify,email},...(editing?{version:editing.version,status:editing.status}:{})},editing?undefined:orderKey.current)
    setSelected(value);setOrdering(false);setEditing(null);orderKey.current=null;setRevision(x=>x+1);setMessage(value.executionState==='WAITING_AUTHORIZATION'?'Zapisano harmonogram. Wykonanie oczekuje na dopuszczenie.':'Zapisano zlecenie. Rzeczywisty status jest widoczny w historii.')
   })
  }
@@ -122,13 +124,13 @@ export function ReportsWorkspace({active,locale,getToken,editionId=null,onEditio
      <label>Początek<CanonInput canonId="SRM-C06" usage="PI:report-start" type="date" value={start} onChange={e=>setStart(e.target.value)}/></label>
      <label>Koniec (puste = bezterminowo)<CanonInput canonId="SRM-C06" usage="PI:report-end" type="date" value={end} onChange={e=>setEnd(e.target.value)}/></label></div>}
    </fieldset>
-   <fieldset disabled={busy}><legend>Dostęp i powiadomienia</legend><p>Prywatne zlecenie. Autor i organizacja wynikają z Twojego bieżącego dostępu.</p><label><input type="checkbox" checked={notify} onChange={e=>setNotify(e.target.checked)}/> Powiadomienie o opublikowanym wydaniu</label></fieldset>
+   <fieldset disabled={busy}><legend>Dostęp i powiadomienia</legend><p>Prywatne zlecenie. Autor i organizacja wynikają z Twojego bieżącego dostępu.</p><label><input type="checkbox" checked={notify} onChange={e=>setNotify(e.target.checked)}/> Powiadomienie o opublikowanym wydaniu</label><label><input type="checkbox" checked={email} disabled={!profile?.deliveryChannels.includes('EMAIL')&&!email} onChange={e=>setEmail(e.target.checked)}/> E-mail z odnośnikiem do opublikowanego wydania</label></fieldset>
    <div className="pi-actions"><CanonButton canonId="SRM-C01" usage="PI:order-report" type="button" disabled={busy||!profile} onClick={()=>void order()}>{editing?'Zapisz zmiany':'Zamów raport'}</CanonButton><CanonButton canonId="SRM-C02" usage="PI:cancel-report" type="button" disabled={busy} onClick={()=>setOrdering(false)}>{locale==='pl'?'Anuluj':'Cancel'}</CanonButton></div>
   </div>
   {!ordering&&selected&&<><h3>{selected.name}</h3><p>{selected.status==='PAUSED'?'Przyszłe wydania wstrzymane':selected.status==='ENDED'?'Cykl zakończony':statusLabel[!selected.schedule&&runs.items[0]?runs.items[0].status:selected.executionState]??'Status wykonania jest niedostępny'}</p>
    <p>{selected.nextDueAt?'Następny termin: '+new Date(selected.nextDueAt).toLocaleString(locale):'Brak kolejnego zaplanowanego terminu'}</p>
    {selected.status!=='ENDED'&&<div className="pi-actions"><button type="button" disabled={busy} onClick={()=>configure(selected)}>Edytuj</button>{selected.schedule&&<><button type="button" disabled={busy} onClick={()=>void status(selected.status==='PAUSED'?'ACTIVE':'PAUSED')}>{selected.status==='PAUSED'?'Wznów cykl':'Wstrzymaj przyszłe wydania'}</button><button type="button" disabled={busy} onClick={()=>{if(window.confirm('Zakończyć przyszłe wydania tego raportu?'))void status('ENDED')}}>Zakończ cykl</button></>}</div>}
-   <ul className="pi-history">{runs.items.map(r=><li key={r.id}><span>{new Date(r.createdAt).toLocaleString(locale)} · {statusLabel[r.status]??'Status wykonania jest niedostępny'}</span>{published.items.some(p=>p.producerJobId===r.producerJobId)&&<button type="button" disabled={busy} onClick={()=>r.producerJobId&&openEdition(r.producerJobId)}>Czytaj opublikowane wydanie</button>}</li>)}</ul>
+   <ul className="pi-history">{runs.items.map(r=><li key={r.id}><span>{new Date(r.createdAt).toLocaleString(locale)} · {statusLabel[r.status]??'Status wykonania jest niedostępny'}{r.emailDelivery&&<small> · E-mail: {({QUEUED:'oczekuje',LEASED:'oczekuje',SENDING:'wysyłanie',ACCEPTED:'przyjęty przez operatora — doręczenie niepotwierdzone',REJECTED:'niewysłany',UNKNOWN:'wynik niepotwierdzony',EXPIRED:'wygasł'} as Record<string,string>)[r.emailDelivery]??'status niedostępny'}</small>}</span>{published.items.some(p=>p.producerJobId===r.producerJobId)&&<button type="button" disabled={busy} onClick={()=>r.producerJobId&&openEdition(r.producerJobId)}>Czytaj opublikowane wydanie</button>}</li>)}</ul>
    {!runs.items.length&&<p>Brak przygotowanych wydań. Raport pojawi się po rzeczywistym wykonaniu i wymaganej weryfikacji.</p>}
    {runs.nextCursor&&<button type="button" disabled={busy} onClick={()=>void more('runs')}>Wcześniejsze wykonania</button>}
   </>}
@@ -139,6 +141,6 @@ export function ReportsWorkspace({active,locale,getToken,editionId=null,onEditio
   </>}
   {!ordering&&view==='catalog'&&profiles.map(p=><article className="pi-publication" key={p.definitionId+'@'+p.profileVersion}><div className="pi-publication-body"><h3>{p.label}</h3><p>{p.description}</p><button type="button" onClick={()=>{setProfileKey(p.definitionId+'@'+p.profileVersion);configure()}}>Skonfiguruj zlecenie</button></div></article>)}
   {!ordering&&!selected&&!reader&&!loading&&!error&&['orders','cycles'].includes(view)&&<div className="pi-empty"><h3>{shownOrders.length?'Wybierz raport po lewej stronie':'Nie masz jeszcze zleceń w tym widoku'}</h3><p>Możesz zamówić raport z aktualnie dostępnego katalogu.</p></div>}
-  {!ordering&&reader&&<article className="pi-report-reader"><header><h3>{reader.title}</h3><p>Opublikowano: {new Date(reader.publishedAt).toLocaleString(locale)} · Aktualność danych: {new Date(reader.asOf).toLocaleString(locale)}{reader.readOnly?' · Udostępnione tylko do odczytu':''}</p><button type="button" onClick={()=>{setReader(null);onEdition?.(null)}}>Zamknij czytnik</button><button type="button" disabled={busy} onClick={()=>void download(reader)}>Pobierz tę wersję PDF</button>{!reader.readOnly&&<button type="button" disabled={busy} onClick={()=>void openSharing(reader.producerJobId)}>Udostępnij to wydanie</button>}</header><ReportText text={reader.markdown??''}/></article>}
+  {!ordering&&reader&&<article className="pi-report-reader"><header><h3>{reader.title}</h3><p>Opublikowano: {new Date(reader.publishedAt).toLocaleString(locale)} · Aktualność danych: {new Date(reader.asOf).toLocaleString(locale)}{reader.readOnly?' · Udostępnione tylko do odczytu':''}</p><button type="button" onClick={()=>{setReader(null);onEdition?.(null)}}>Zamknij czytnik</button><button type="button" disabled={busy} onClick={()=>void download(reader)}>Pobierz tę wersję PDF</button>{!reader.readOnly&&<button type="button" disabled={busy} onClick={()=>void openSharing(reader.producerJobId)}>Udostępnij to wydanie</button>}</header>{onContext&&<div className="pi-actions"><button type="button" onClick={()=>onContext({version:'2.1.0',source:'PUBLISHED_REPORT',producerJobId:reader.producerJobId,pdfSha256:reader.pdfSha256,markdownSha256:reader.markdownSha256})}>Wybierz tę wersję dla asystenta</button><button type="button" onClick={()=>onContext(null)}>Usuń wybór</button></div>}<ReportText text={reader.markdown??''}/></article>}
  </section></div>
 }

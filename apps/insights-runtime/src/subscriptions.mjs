@@ -14,12 +14,12 @@ export function nextReportOccurrence(schedule,after){
  }return null;
 }
 /** A catalogue of installed producers, not a list of illustrative markets. */
-export function installedReportProfiles(configuration){
+export function installedReportProfiles(configuration,{email=false}={}){
  requireThat(configuration?.environment==='development'&&Array.isArray(configuration.definitions),'REPORT_CONFIGURATION_REQUIRED',503);
  if(!configuration.enabled||!configuration.authorityDecisionRef)return [];
  return configuration.definitions.filter(d=>d.id==='oil-asphalt'&&configuration.profiles[d.profileVersion]).map(d=>({
   definitionId:d.id,profileVersion:d.profileVersion,label:'Oil & Asphalt Market Outlook',description:'Analiza rynku ropy i asfaltu przygotowywana przez właściwy proces raportowy.',
-  availability:'AVAILABLE',subjectMode:'NONE',cadences:['ONCE','WEEKLY'],timeZones:['Europe/Warsaw'],deliveryChannels:['ASSISTANT'],
+  availability:'AVAILABLE',subjectMode:'NONE',cadences:['ONCE','WEEKLY'],timeZones:['Europe/Warsaw'],deliveryChannels:email?['ASSISTANT','EMAIL']:['ASSISTANT'],
   sections:['Executive Summary','Rynek i dane','Wydarzenia','Perspektywy i ograniczenia'],publicationRequiresReview:true,
  }));
 }
