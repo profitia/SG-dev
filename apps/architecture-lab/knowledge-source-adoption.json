@@ -1,0 +1,9 @@
+{
+  "schemaVersion": "1.0.0",
+  "projectKey": "ARCHITECTURE",
+  "taskId": "ARCH-PK-STAGE2-SDK-ADOPTION-20261111",
+  "targetEnvironment": "development",
+  "scope": "SOURCE_ONLY_NO_RUNTIME_ACTIVATION",
+  "sourceRecord": "apps/architecture-lab/knowledge-source.json",
+  "sourceRecordSha256": "977e0857fee4fc0a3ab9d83b2d215a0697d4e40bffd0552e6e0f990c75d74604"
+}

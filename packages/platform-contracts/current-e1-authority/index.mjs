@@ -5,6 +5,7 @@ import {createAccessStore} from '@profitia/platform-contracts/access-store'
 import {createClerkIdentityAuthenticator} from '@profitia/platform-contracts/identity-provider'
 import {createRecurringAuthority} from './recurring.mjs'
 import {createFirstPartySourceAuthority} from './first-party.mjs'
+import {createKnowledgeAuthority} from './knowledge.mjs'
 
 export const CURRENT_E1_CONTRACT=Object.freeze({id:'profitia.current-e1-authority',version:'1.0.0'})
 export const currentE1AuthoritySchemaUrl=new URL('./migrations/001-authority.sql',import.meta.url).href
@@ -120,8 +121,9 @@ export function createCurrentE1Authority({query,client,binding,now=Date.now}){
  const store=createAccessStore({binding,now})
  if(binding.applicationId!=='identity-runtime-development'||binding.environment!=='development')throw TypeError('Existing Development Identity owner required')
  const source=createFirstPartySourceAuthority({query,client,binding,now})
+ const knowledge=createKnowledgeAuthority({query,client,binding,now})
  const authority={
-  sourceReady:source.ready,authorizeSource:source.authorize,
+  sourceReady:source.ready,authorizeSource:source.authorize,knowledgeReady:knowledge.ready,authorizeKnowledgeHuman:knowledge.human,authorizeKnowledgeWorker:knowledge.worker,
   async ready(){try{for(const app of ['profitia-source-hub-development','profitia-newsfeed-api-development'])if(!(await one(query,'SELECT profitia_e1_authority.receiver($1) AS receiver',[app])).receiver)return false;return true}catch{return false}},
   async authorize(request,input){
    if(!bearer(request)||!input||Object.getPrototypeOf(input)!==Object.prototype||Object.keys(input).sort().join(',')!=='applicationId,challenge,previous,requestOrigin')denied()

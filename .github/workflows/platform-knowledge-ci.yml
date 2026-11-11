@@ -1,4 +1,4 @@
-name: Platform Knowledge foundation
+name: Platform Knowledge engine
 on:
   pull_request:
     paths: ['apps/platform-knowledge-runtime/**', 'packages/platform-knowledge-contracts/**', 'packages/platform-knowledge-core/**', '.github/workflows/platform-knowledge-ci.yml']
@@ -11,7 +11,22 @@ permissions:
 jobs:
   foundation:
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: pgvector/pgvector:0.8.6-pg18-trixie@sha256:78bf48b801e792f99e3ac62b5036fd3876e9be48afda16c1e331af1c75ceb2ff
+        env:
+          POSTGRES_USER: pk_test_owner
+          POSTGRES_PASSWORD: SYNTHETIC_ONLY_CI_PASSWORD
+          POSTGRES_DB: postgres
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U pk_test_owner -d postgres"
+          --health-interval 10s --health-timeout 5s --health-retries 6
+    env:
+      PK_TEST_DATABASE_URL: postgresql://pk_test_owner:SYNTHETIC_ONLY_CI_PASSWORD@127.0.0.1:5432/platform_knowledge
+      OPERATION_FIXTURE_OWNER_URL: postgresql://pk_test_owner:SYNTHETIC_ONLY_CI_PASSWORD@127.0.0.1:5432/postgres
+      PK_E1_DATABASE_TESTS: '1'
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
@@ -19,15 +34,64 @@ jobs:
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: 24.15.0
-      - run: npm ci --prefix apps/platform-knowledge-runtime --ignore-scripts --no-audit --no-fund
+      - run: npm ci --prefix apps/platform-knowledge-runtime --install-links --ignore-scripts --no-audit --no-fund
+      - name: Install product schema in disposable PostgreSQL 18 with real pgvector
+        working-directory: apps/platform-knowledge-runtime
+        run: |
+          node --input-type=module <<'JS'
+          import pg from 'pg';import fs from 'node:fs/promises';import assert from 'node:assert/strict';import {createHash} from 'node:crypto';
+          const admin=new pg.Client({connectionString:process.env.OPERATION_FIXTURE_OWNER_URL});await admin.connect();
+          try{
+            await admin.query('CREATE DATABASE platform_knowledge');
+            for(const [name,login] of [['owner',false],['api',true],['worker',true],['migrator',true]])
+              await admin.query('CREATE ROLE platform_knowledge_'+name+' '+(login?'LOGIN':'NOLOGIN')+" NOINHERIT"+(login?" PASSWORD 'SYNTHETIC_ONLY_CI_PASSWORD'":''));
+            await admin.query('GRANT platform_knowledge_owner TO platform_knowledge_migrator');
+          }finally{await admin.end();}
+          const db=new pg.Client({connectionString:process.env.PK_TEST_DATABASE_URL});await db.connect();
+          try{
+            await db.query('CREATE EXTENSION vector');
+            const v=(await db.query("SELECT extversion FROM pg_extension WHERE extname='vector'")).rows[0].extversion;
+            assert.equal(v,'0.8.6');
+            await db.query('CREATE SCHEMA platform_knowledge AUTHORIZATION platform_knowledge_owner');
+            await db.query('GRANT USAGE ON SCHEMA platform_knowledge TO platform_knowledge_api,platform_knowledge_worker,platform_knowledge_migrator');
+            await db.query('SET ROLE platform_knowledge_owner');
+            const sql=await fs.readFile('db/migrations/001-knowledge.sql','utf8');await db.query(sql);
+            await db.query('UPDATE platform_knowledge.schema_version SET source_sha256=$1 WHERE version=1',[createHash('sha256').update(sql).digest('hex')]);
+            console.log('Disposable product schema installed with actual vector '+v);
+          }finally{await db.end();}
+          JS
       - run: node --test packages/platform-knowledge-contracts/test/*.test.mjs packages/platform-knowledge-core/test/*.test.mjs apps/platform-knowledge-runtime/test/*.test.mjs
+      - run: npm ci --prefix apps/architecture-lab --ignore-scripts --no-audit --no-fund
+      - run: npm ci --prefix packages/platform-contracts/current-e1-authority --install-links --ignore-scripts --no-audit --no-fund
+      - run: node --test packages/assistant-context-gateway/test/*.test.mjs packages/platform-contracts/test/current-e1-knowledge.test.mjs packages/platform-contracts/test/knowledge-operations.test.mjs packages/platform-contracts/test/operation-context.test.mjs
+      - run: npm ci --prefix apps/identity-runtime --install-links --ignore-scripts --no-audit --no-fund
+      - run: npm run build --prefix apps/identity-runtime
+      - run: node --test apps/identity-runtime/test/knowledge-authority.test.mjs apps/identity-runtime/test/first-party-source.test.mjs
       - run: npm run build --prefix apps/platform-knowledge-runtime
+  parser-container:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 24.15.0
+      - name: Generate reference formats and verify proven DOC/PPT fixtures
+        timeout-minutes: 3
+        env:
+          FIXTURE_OUTPUT: ${{ runner.temp }}/pk-quality-fixtures
+        run: |
+          python3 -m venv "$RUNNER_TEMP/pk-fixture-tools"
+          "$RUNNER_TEMP/pk-fixture-tools/bin/pip" install --disable-pip-version-check -r packages/platform-knowledge-core/fixtures/requirements.txt
+          "$RUNNER_TEMP/pk-fixture-tools/bin/python" packages/platform-knowledge-core/fixtures/generate.py "$FIXTURE_OUTPUT" --verified-legacy > "$RUNNER_TEMP/pk-fixtures-proof.json"
       - name: Build and smoke the actual nonroot Render image without external network
         run: |
           set -eu
           docker build --platform linux/amd64 --iidfile "$RUNNER_TEMP/pk-foundation-image.id" -t pk-foundation-ci -f apps/platform-knowledge-runtime/Dockerfile .
-          trap 'docker rm -f pk-foundation-smoke >/dev/null 2>&1 || true' EXIT
-          docker run -d --network=none --name pk-foundation-smoke \
+          trap 'docker inspect --format "status={{.State.Status}} exit={{.State.ExitCode}} oom={{.State.OOMKilled}}" pk-foundation-smoke || true; docker logs pk-foundation-smoke || true; docker rm -f pk-foundation-smoke >/dev/null 2>&1 || true' EXIT
+          docker run -d --network=none --memory=512m --name pk-foundation-smoke \
             -e PK_ENVIRONMENT=development -e PK_RELEASE_SHA="$GITHUB_SHA" \
             -e PK_PROCESSING_ENABLED=false -e PK_NEON_PROJECT_ID=synthetic -e PK_NEON_BRANCH_ID=br-fixture \
             -e PK_DATABASE_HOST=ep-fixture-pooler.c-7.eu-central-1.aws.neon.tech \
@@ -39,16 +103,58 @@ jobs:
             assert.equal(live?.status,200);assert.equal((await live.json()).phase,"FOUNDATION_ONLY");
             assert.equal((await fetch("http://127.0.0.1:10000/health/ready")).status,503);
             assert.notEqual(process.getuid(),0);console.log("Nonroot container live; processing remains disabled");'
+          docker update --memory=2g --memory-swap=2g pk-foundation-smoke
+          docker cp "$RUNNER_TEMP/pk-quality-fixtures" pk-foundation-smoke:/tmp/pk-fixtures
+          docker exec -i pk-foundation-smoke /opt/pk-venv/bin/python -B - <<'PYISOLATION'
+          import sys,os,socket,tempfile,errno
+          from pathlib import Path
+          sys.path.insert(0,str(Path.cwd()/'src'))
+          from sandbox import isolate
+          job=Path(tempfile.mkdtemp(prefix='pk-i-'))
+          isolate(str(job))
+          for family in [socket.AF_INET,socket.AF_INET6]:
+              try:socket.socket(family,socket.SOCK_STREAM);raise AssertionError('IP socket was not blocked')
+              except PermissionError:pass
+          for target in ['/etc/passwd','/proc/1/environ']:
+              try:Path(target).read_bytes();raise AssertionError('Outside read was not blocked')
+              except PermissionError:pass
+          Path(job/'inside').write_text('synthetic')
+          try:Path('/tmp/outside-job').write_text('synthetic');raise AssertionError('Outside write was not blocked')
+          except PermissionError:pass
+          server=socket.socket(socket.AF_UNIX,socket.SOCK_STREAM);server.bind(str(job/'listener'));server.listen(1)
+          try:server.accept();raise AssertionError('Incoming local commands were not blocked')
+          except PermissionError:pass
+          client=socket.socket(socket.AF_UNIX,socket.SOCK_STREAM)
+          try:client.connect(str(job/'listener'));raise AssertionError('Addressed local connection was not blocked')
+          except PermissionError:pass
+          a,b=socket.socketpair(socket.AF_UNIX,socket.SOCK_STREAM)
+          os.write(a.fileno(),b'fixture');assert os.read(b.fileno(),7)==b'fixture'
+          print('Linux isolation: IP, addressed connections, command acceptance, outside reads/writes blocked; anonymous child IPC works')
+          PYISOLATION
+          docker exec -i pk-foundation-smoke node --input-type=module <<'JS'
+          import fs from 'node:fs/promises';
+          import assert from 'node:assert/strict';
+          import {extractDocument} from './src/extraction.mjs';
+          import {chunkDocument,reconstructSource} from '@profitia/platform-knowledge-core/chunking';
+          import {embeddingTokens} from './src/provider.mjs';
+          const files=(await fs.readdir('/tmp/pk-fixtures')).filter(n=>/\.(pdf|docx?|pptx?|txt|md|markdown)$/.test(n));
+          assert.equal(files.length,10);
+          const proofs=[];
+          for(const name of files){
+            const bytes=await fs.readFile('/tmp/pk-fixtures/'+name);
+            console.log('Checking synthetic fixture '+name);
+            let parsed;try{parsed=await extractDocument(bytes,name);}catch(error){console.log(JSON.stringify({file:name,code:error.code,stage:error.parserStage,exceptionType:error.exceptionType}));throw error;}
+            const chunks=chunkDocument(parsed.units,{countTokens:embeddingTokens});
+            const text=reconstructSource(chunks.chunks,chunks.sourceDigest);
+            assert.equal(chunks.coverage.expectedUnits,chunks.coverage.accountedUnits);
+            assert.equal(chunks.coverage.extractedCharacters,chunks.coverage.chunkedCharacters);
+            assert.ok(text.trim());
+            proofs.push({file:name,parser:parsed.parserVersion,units:chunks.units.length,partialUnits:chunks.coverage.failedUnitIds.length,characters:chunks.characterCount,roundTrip:true});
+          }
+          console.log(JSON.stringify({isolation:'LINUX_SECCOMP_AND_LANDLOCK',formats:proofs}));
+          JS
           docker kill --signal=TERM pk-foundation-smoke
           test "$(docker wait pk-foundation-smoke)" = 0
-      - name: Generate reference formats and verify proven DOC/PPT fixtures
-        timeout-minutes: 3
-        env:
-          FIXTURE_OUTPUT: ${{ runner.temp }}/pk-quality-fixtures
-        run: |
-          python3 -m venv "$RUNNER_TEMP/pk-fixture-tools"
-          "$RUNNER_TEMP/pk-fixture-tools/bin/pip" install --disable-pip-version-check -r packages/platform-knowledge-core/fixtures/requirements.txt
-          "$RUNNER_TEMP/pk-fixture-tools/bin/python" packages/platform-knowledge-core/fixtures/generate.py "$FIXTURE_OUTPUT" --verified-legacy > "$RUNNER_TEMP/pk-fixtures-proof.json"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: pk-quality-reference-fixtures
