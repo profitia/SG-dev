@@ -1,3 +1,4 @@
+import {acceptedSdkSource} from '../../../packages/platform-contracts/test/organisation-sdk-compatibility.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
@@ -36,7 +37,7 @@ test('new P1 receipt preserves every historical record and verifies exact curren
  for(const[k,v]of Object.entries(before))assert.deepEqual(['contract','producer'].includes(k)?accepted.previousRootAcceptance[k]:receipt[k],v,k)
  assert.equal(accepted.platformVersion,'1.25.0');assert.equal(OPERATION_CONTRACT.implementation,'1.0.0-candidate.16')
  assert.equal(accepted.optInRootImplementation,'1.0.0-candidate.17');assert.equal(accepted.optInHostVersion,'1.12.0')
- assert.equal(await operationSourceDigest(),receipt.oilAutonomousReportCompatibility?.sdkDigests.operationSourceDigest??receipt.assistantM1SourceCompatibility.rootContract.sourceDigest)
+ assert.equal(await operationSourceDigest(),acceptedSdkSource().sdkDigests.operationSourceDigest??receipt.oilAutonomousReportCompatibility?.sdkDigests.operationSourceDigest??receipt.assistantM1SourceCompatibility.rootContract.sourceDigest)
  const root=new URL('../../../packages/platform-contracts/',import.meta.url)
  const installed=new URL('../',import.meta.resolve('@profitia/platform-contracts/supplier-location'))
  assert.equal(JSON.parse(fs.readFileSync(new URL('package.json',installed))).version,(receipt.oilAutonomousReportCompatibility??receipt.sourceHubMarketSymbolCompatibility??receipt.sourceHubApiPathCompatibility??receipt.freshPostfetchRecovery??receipt.sourceLeaseClockRecovery??receipt.settledExternalFailureRecovery??receipt.freshPerformanceRecovery).platformVersion)

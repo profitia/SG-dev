@@ -1,3 +1,4 @@
+import {acceptedSdkSource} from '../../../packages/platform-contracts/test/organisation-sdk-compatibility.mjs'
 import {readM2AcceptedSource} from './assistant-m2-source-view.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
@@ -20,7 +21,7 @@ test('native SQL adoption preserves complete prior acceptance and pins the exact
  }
  const modules={'private-operation-host':'privateOperationHostSourceDigest','access-store':'accessStoreSourceDigest',
   'delegated-job':'delegatedJobSourceDigest','platform-ingestion':'platformIngestionSourceDigest','request-work':'requestWorkSourceDigest'}
- for(const[module,fn]of Object.entries(modules))assert.equal(await(await import('@profitia/platform-contracts/'+module))[fn](),(receipt.oilAutonomousReportCompatibility?.sdkDigests[fn]??receipt.assistantM1SourceCompatibility?.sdkDigests[fn]??receipt.sourceHubMarketSymbolCompatibility?.sdkDigests[fn]??receipt.sourceHubApiPathCompatibility?.sdkDigests[fn]??receipt.freshPostfetchCompatibility?.sdkDigests[fn]??receipt.sourceLeaseClockCompatibility?.sdkDigests[fn]??current.sdkDigests[fn]),fn)
+ for(const[module,fn]of Object.entries(modules))assert.equal(await(await import('@profitia/platform-contracts/'+module))[fn](),(acceptedSdkSource().sdkDigests[fn]??receipt.oilAutonomousReportCompatibility?.sdkDigests[fn]??receipt.assistantM1SourceCompatibility?.sdkDigests[fn]??receipt.sourceHubMarketSymbolCompatibility?.sdkDigests[fn]??receipt.sourceHubApiPathCompatibility?.sdkDigests[fn]??receipt.freshPostfetchCompatibility?.sdkDigests[fn]??receipt.sourceLeaseClockCompatibility?.sdkDigests[fn]??current.sdkDigests[fn]),fn)
  for(const[file,digest]of Object.entries(a.applicationSourceDigests)){
   const latest=receipt.appShellSourceCompatibility,adp=receipt.adpPresentationSourceCompatibility
   const journey=receipt.integratedBuyerJourneySourceCompatibility
