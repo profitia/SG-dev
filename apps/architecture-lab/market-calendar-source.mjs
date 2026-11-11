@@ -34,6 +34,7 @@ export const MARKET_CALENDAR_CONSUMER_PATHS=Object.freeze([
  'apps/sg-runtime/lib/market-calendar/client.ts',
  'apps/sg-runtime/lib/market-calendar/model.ts',
  'apps/sg-runtime/lib/market-calendar/runtime.ts',
+ 'apps/sg-runtime/middleware.ts',
  'apps/sg-runtime/package.json',
  'apps/sg-runtime/tests/market-calendar-integrity.mjs',
  'apps/sg-runtime/tests/market-calendar-integrity.test.mjs',
