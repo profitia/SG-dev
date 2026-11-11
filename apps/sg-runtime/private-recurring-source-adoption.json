@@ -5,5 +5,5 @@
   "targetEnvironment": "development",
   "scope": "SOURCE_ONLY_NO_RUNTIME_ACTIVATION",
   "sourceRecord": "apps/architecture-lab/private-recurring-source.json",
-  "sourceRecordSha256": "18fd989078e19c19ac1358ab844fb02057815761b148283690f918597183ee19"
+  "sourceRecordSha256": "9e9dd40ee05fb5c8889868f6c3b5282d74c6b05d68914b8652d16bbd1f0021c8"
 }
