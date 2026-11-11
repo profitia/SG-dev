@@ -31,7 +31,7 @@ def isolate(job_dir):
     read = (1 << 0) | (1 << 2) | (1 << 3)  # execute, read file/directory
     try:
         for path, access in [(job_dir, handled), ('/usr', read), ('/lib', read), ('/lib64', read),
-                             ('/opt', read), ('/etc/fonts', read), ('/etc/ld.so.cache', 1 << 2),
+                             ('/opt', read), ('/etc/libreoffice', read), ('/etc/fonts', read), ('/etc/ld.so.cache', 1 << 2),
                              ('/dev/null', (1 << 1) | (1 << 2)), ('/dev/urandom', 1 << 2)]:
             if not os.path.exists(path):
                 continue

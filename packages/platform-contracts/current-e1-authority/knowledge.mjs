@@ -149,6 +149,11 @@ export function createKnowledgeOperationHost({independentQuery,application,trans
        const source=await one(db.query.bind(db),'SELECT scope,owner_user_id,owner_organisation_id FROM platform_knowledge.sources WHERE id=$1 FOR SHARE',[value.sourceId]);
        if(!command.scopes.includes(source.scope)||source.owner_organisation_id!==null||source.scope==='ACCOUNT_PRIVATE'&&source.owner_user_id!==p.internalUserId||source.scope==='PROFITIA_SHARED'&&(!p.operator||source.owner_user_id!==null))deny();
       }
+      if(command.operation==='document.read'&&phase==='RESULT'&&Array.isArray(value?.cognitive_result)&&value.cognitive_result.length){
+       const source=await one(db.query.bind(db),`SELECT active_generation_id FROM platform_knowledge.sources s WHERE id=$1
+        AND platform_knowledge.source_visible(s) AND(rights->>'apiExcerptAllowed')::boolean AND(rights->>'quotingAllowed')::boolean FOR SHARE`,[value.id]);
+       if(source.active_generation_id!==value.generation_id)deny();
+      }
       if(command.operation==='document.query'&&phase==='RESULT'&&Array.isArray(value?.evidence)&&value.evidence.length){
        const refs=value.evidence,rows=(await db.query(`SELECT id,active_generation_id FROM platform_knowledge.sources s WHERE id=ANY($1::uuid[])
         AND platform_knowledge.source_visible(s) AND (scope='ACCOUNT_PRIVATE' OR published_at IS NOT NULL)

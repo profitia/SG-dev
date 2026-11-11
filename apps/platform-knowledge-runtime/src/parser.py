@@ -180,8 +180,13 @@ def extract(path, extension, job):
         profile=job/'lo-profile';(profile/'user').mkdir(parents=True,exist_ok=True)
         (profile/'user'/'registrymodifications.xcu').write_text('<oor:items xmlns:oor="http://openoffice.org/2001/registry"><item oor:path="/org.openoffice.Office.Common/Security/Scripting"><prop oor:name="MacroSecurityLevel" oor:op="fuse"><value>3</value></prop></item></oor:items>')
         target='docx' if extension=='.doc' else 'pptx'
-        subprocess.run(['libreoffice',f'-env:UserInstallation={profile.as_uri()}','--headless','--nologo','--nodefault','--nolockcheck','--nofirststartwizard',
-            '--convert-to',target,'--outdir',str(job),str(path)],capture_output=True,timeout=70,check=True)
+        converted_process=subprocess.run(['libreoffice',f'-env:UserInstallation={profile.as_uri()}','--headless','--nologo','--nodefault','--nolockcheck','--nofirststartwizard',
+            '--convert-to',target,'--outdir',str(job),str(path)],capture_output=True,timeout=70,check=False)
+        if converted_process.returncode:
+            markers=['Permission denied','Operation not permitted','bootstrap','User installation','javaldx','socket','terminate','osl::','Fatal exception','Cannot create','Error:']
+            diagnostic=converted_process.stderr.decode('utf-8',errors='replace')
+            sys.stderr.write(json.dumps({'legacyExitCode':converted_process.returncode,'legacyFailureMarkers':[m for m in markers if m.lower() in diagnostic.lower()]})+'\n')
+            raise ValueError('LEGACY_CONVERSION_FAILED')
         converted=job/(path.stem+'.'+target)
         if not converted.exists(): raise ValueError('LEGACY_CONVERSION_FAILED')
         return word(converted,True) if target=='docx' else slides(converted,True)
