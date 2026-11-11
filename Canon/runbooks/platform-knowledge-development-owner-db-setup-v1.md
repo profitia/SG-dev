@@ -1,6 +1,6 @@
 # Platform Knowledge — przygotowanie ograniczonych ról Neon Development
 
-Status: instrukcja wykonania przez właściciela; samo opublikowanie nie oznacza instalacji.
+Status: instrukcja wykonania przez właściciela lub wyraźnie upoważnionego wykonawcę; samo opublikowanie nie oznacza instalacji. Korekta pierwszej inicjalizacji haseł: 2026-11-11.
 
 Powiązanie: [kanon v1](../v1.0-platform-knowledge-business-and-architecture-canon.md), [harmonogram](platform-knowledge-development-delivery-plan-v1.md), etap 1. Nie tworzy tabel produktu ani nie nadaje dostępu do dokumentów. Nie zastępuje migracji i odbioru etapu 2.
 
@@ -29,6 +29,7 @@ DO $roles$
 DECLARE
   role_name text;
   expected_login boolean;
+  initial_password text;
   actual record;
 BEGIN
   FOREACH role_name IN ARRAY ARRAY[
@@ -37,10 +38,19 @@ BEGIN
   ] LOOP
     expected_login := role_name <> 'platform_knowledge_owner';
     IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = role_name) THEN
-      EXECUTE format(
-        'CREATE ROLE %I %s NOINHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS',
-        role_name, CASE WHEN expected_login THEN 'LOGIN' ELSE 'NOLOGIN' END
-      );
+      IF expected_login THEN
+        initial_password := replace(pg_catalog.gen_random_uuid()::text, '-', '')
+                         || replace(pg_catalog.gen_random_uuid()::text, '-', '');
+        EXECUTE format(
+          'CREATE ROLE %I LOGIN NOINHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS PASSWORD %L',
+          role_name, initial_password
+        );
+        initial_password := NULL;
+      ELSE
+        EXECUTE format(
+          'CREATE ROLE %I NOLOGIN NOINHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS', role_name
+        );
+      END IF;
     END IF;
     SELECT * INTO actual FROM pg_roles WHERE rolname = role_name;
     IF actual.rolcanlogin <> expected_login OR actual.rolinherit
@@ -109,7 +119,13 @@ Skrypt zakłada pusty, nowy schemat produktu. Nie odbiera grantów istniejącym 
 
 ## 3. Hasła i konfiguracja połączeń
 
-Ustaw odrębne silne hasła dla trzech ról LOGIN w bezpiecznym narzędziu administracyjnym Neon albo przez interaktywny `psql` i `\password <nazwa_roli>`. Nie wstawiaj haseł do powyższego SQL, GitHub, rozmowy, historii poleceń ani raportów. Rola `platform_knowledge_owner` pozostaje NOLOGIN.
+Nowe role LOGIN otrzymują w tym skrypcie losowe hasła startowe generowane przez serwer, bez wypisywania wartości. Hasło nie jest nadawane roli NOLOGIN. Powtórzenie skryptu nie zmienia haseł istniejących ról. Dla runtime przygotuj odrębne silne poświadczenia i zachowaj je w bezpiecznej konfiguracji. Nie wstawiaj docelowych haseł do GitHub, rozmowy, historii poleceń ani raportów.
+
+**Role utworzone poprzednią wersją skryptu bez PASSWORD:** konsola Neon może zwrócić `cannot update password for role without password`. Najpierw potrzebna jest jednorazowa inicjalizacja przez autoryzowane połączenie SQL, poleceniem `ALTER ROLE ... WITH PASSWORD ...`, z zachowaniem tożsamości roli i istniejących grantów. Po tym kroku można użyć panelu Reset password. Nie usuwaj ani nie odtwarzaj ról i nie nadawaj `neon_superuser` w celu obejścia problemu.
+
+Neon wymaga przekazania hasła jawnego do operacji SQL przez szyfrowane połączenie i nie obsługuje haseł wstępnie zahashowanych. Dlatego nie używamy tu `psql \password`, które wysyła wstępnie wyliczony verifier. Docelowe wartości należy wczytać z autoryzowanego źródła sekretów w kontrolowanym kliencie, bez wypisywania SQL i odpowiedzi zawierających hasła, zamiast wpisywać je do historii SQL Editora. Nie zakładamy, że ta instrukcja zmienia zasady logowania po stronie dostawcy. [Neon: zarządzanie rolami i hasłami](https://neon.com/docs/manage/roles#manage-roles-with-sql).
+
+W Development potwierdzono inicjalizację trzech istniejących ról przez SQL oraz logowanie każdą z nich. Odczyt zachował NOINHERIT oraz brak superuser/createdb/createrole/replication/bypassrls. Nie wykonano migracji tabel produktu. Wartości haseł nie są częścią dokumentacji.
 
 W konfiguracji usług Render zapisz połączenia bezpośrednio jako sekrety:
 
@@ -142,6 +158,6 @@ Przekaż wyłącznie: projekt, branch, nazwę bazy, potwierdzenie wykonania i us
 
 ## 5. Weryfikacja instrukcji i granice
 
-Weryfikacja 2026-11-11: PASS w izolowanym lokalnym PostgreSQL 16.14, instalacja przez niesuperużytkownika `pk_setup_owner` z CREATEROLE. Sprawdzono odmowę w innej bazie bez utworzenia ról, dwukrotne wykonanie, atrybuty i członkostwa, brak możliwości tworzenia obiektów i przejęcia roli właściciela przez API/Worker oraz brak dostępu do nowej tabeli i automatycznego PUBLIC EXECUTE nowej funkcji. Klaster testowy zatrzymano. Wynik lokalny nie zastępuje odczytu rzeczywistej instalacji na Neon PostgreSQL 18; agent nie wykonał instalacji w Neon.
+Weryfikacja 2026-11-11: PASS w izolowanym lokalnym PostgreSQL 16.14, instalacja przez niesuperużytkownika `pk_setup_owner` z CREATEROLE. Sprawdzono odmowę w innej bazie bez utworzenia ról, dwukrotne wykonanie, atrybuty i członkostwa, brak możliwości tworzenia obiektów i przejęcia roli właściciela przez API/Worker oraz brak dostępu do nowej tabeli i automatycznego PUBLIC EXECUTE nowej funkcji. Po korekcie sprawdzono również obecność haseł wyłącznie trzech ról LOGIN oraz zachowanie tych samych verifierów przy ponownym uruchomieniu; ich wartości nie były wypisywane. Klaster testowy zatrzymano. Wynik lokalny nie zastępuje odczytu rzeczywistej instalacji na Neon PostgreSQL 18; agent nie wykonał instalacji w Neon.
 
 Przy błędzie przed COMMIT wycofaj transakcję. Po pomyślnym COMMIT nie usuwaj automatycznie ról ani schematu: najpierw sprawdź, czy rozpoczęły się migracje lub pojawiły się zależne obiekty. Zatrzymanie nieudanego pierwszego uruchomienia usług nie wymaga kasowania przygotowanej bazy.

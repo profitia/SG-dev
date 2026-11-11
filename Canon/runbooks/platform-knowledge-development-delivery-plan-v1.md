@@ -33,7 +33,7 @@ Obowiązują wskazane przez właściciela wrappery:
 
 Wrapper SG2 stosuje się do prac właściwego profilu SG2. Producent Platform Knowledge pozostaje w ARCHITECTURE, a CIC we własnym profilu. Każdy zachowuje właściwe routing, taskId, PMOS, kontrakty i dopuszczenia. Wspólny cel biznesowy nie nadaje prawa do zapisu cudzych powierzchni przez zmianę profilu.
 
-**Przygotowanie wymaganych środowisk i projektów Render, GitHub oraz Neon wykonuje właściciel według instrukcji wykonawcy. Agent nie tworzy ich w zastępstwie właściciela.** W pierwszej kolejności sprawdza się możliwość ponownego wykorzystania istniejących zasobów; nowe repozytoria lub projekty nie są domyślnym wymaganiem.
+**Przygotowanie wymaganych środowisk i projektów Render, GitHub oraz Neon wykonuje właściciel według instrukcji wykonawcy. Agent nie tworzy ich w zastępstwie właściciela.** W dniu 2026-11-11 właściciel odrębnie powierzył wykonawcy dokończenie konfiguracji Platform Knowledge z użyciem Neon/Render i przeglądarki, następnie jawnie zatwierdził utworzenie GitHub Environment, projektu Sentry oraz zapis wskazanych poświadczeń w dwóch usługach Render Development. To upoważnienie dotyczy tego pakietu; nie rozszerza automatycznie zasobów, kosztów ani uprawnień innych capability i środowisk. W pierwszej kolejności sprawdza się możliwość ponownego wykorzystania istniejących zasobów; nowe repozytoria lub projekty nie są domyślnym wymaganiem.
 
 Wykonawca przygotowuje wcześnie jeden zbiorczy pakiet niezbędnych instrukcji i decyzji, a następnie kontynuuje niezależne, dopuszczone prace. Pakiet nie służy ponownemu zatwierdzaniu harmonogramu. Obejmuje czynności zastrzeżone dla właściciela oraz rzeczywiście brakujące dopuszczenia.
 
@@ -142,7 +142,7 @@ Statusy: NIE_ROZPOCZĘTY, W_TOKU, CZĘŚCIOWY, ZABLOKOWANY, ZAKOŃCZONY. ZABLOKO
 
 | Etap | Status aktualny | Początek / koniec | Dowody taskId / PR / SHA / deploy / test | Rzeczywiste braki |
 |---|---|---|---|---|
-| 1. Przygotowanie realizacji i integracji | W_TOKU | 2026-11-11 / — | ARCH-PLATFORM-KNOWLEDGE-STAGE1-G1-20261111; [przygotowanie integracji i pakiet właścicielski](platform-knowledge-development-foundation-v1.md) | Zasoby właściciela, poświadczenia/budżet i kontrakty wykonywalne do potwierdzenia |
+| 1. Przygotowanie realizacji i integracji | ZAKOŃCZONY | 2026-11-11 / 2026-11-11 | PR #999, #1000, #1002, #1004, #1005; ARCH-PK-STAGE1-DEVELOPMENT-ACTIVATION-20261111; [readiness i rzeczywiste wdrożenia](../evidence/2026-11-11-platform-knowledge-stage1-development-readiness.md) | Brak blokady do rozpoczęcia etapu2. Implementacja CIC/ACG/E1/Identity/SG2 i silnika pozostaje rozpisaną pracą etapów2–3; FOUNDATION_ONLY nie przetwarza dokumentów |
 | 2. Biblioteka wiedzy na Development | NIE_ROZPOCZĘTY | — / — | — | Implementacja i uruchomienie do wykonania |
 | 3. Pełne wykorzystanie w SpendGuru | NIE_ROZPOCZĘTY | — / — | — | Integracja i cały odbiór Development do wykonania |
 
