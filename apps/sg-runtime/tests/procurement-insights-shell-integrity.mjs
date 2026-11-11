@@ -1,4 +1,5 @@
 // Exact source continuation only. This module never authorises data or runtime access.
+import {procurementInsightsCompletionPredecessor} from './procurement-insights-completion-integrity.mjs'
 import assert from 'node:assert/strict'
 import {createHash} from 'node:crypto'
 export const PI_SHELL_RECEIPT='apps/sg-runtime/procurement-insights-shell-integration.json'
@@ -11,6 +12,7 @@ export const PI_SHELL_PATHS=Object.freeze([
 ])
 const hash=b=>createHash('sha256').update(b).digest('hex')
 export function procurementInsightsShellPredecessor(current,historical){
+ const completion=procurementInsightsCompletionPredecessor(current,historical);if(completion)return procurementInsightsShellPredecessor(completion.previousBytes,historical)
  let bytes
  try{bytes=current(PI_SHELL_RECEIPT)}catch(error){
   const text=String(error?.stderr??error?.message??'')
