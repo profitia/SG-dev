@@ -24,7 +24,7 @@ const preBqlBytes=url=>{
  const relative=path.relative(path.resolve(appRoot,'../..'),fileURLToPath(url)).split(path.sep).join('/')
  const m1=readCurrent()
  const currentBytes=()=>{
-  if(!m1.assistantM1ChartContextCorrective?.sourceDigests[relative]&&!m1.assistantM1RuntimeSourceCompatibility?.consumerSourceDigests[relative])return fs.readFileSync(url)
+  if(!m1.assistantM1ChartContextCorrective?.sourceDigests[relative]&&!m1.assistantM1RuntimeSourceCompatibility?.consumerSourceDigests[relative])return readM2AcceptedSource(url)
   const current=p=>fs.readFileSync(path.resolve(appRoot,'../..',p))
   const historical=(sha,p)=>execFileSync('git',['show',sha+':'+p],{cwd:appRoot})
   return assertAssistantM1Integrity(m1,current,historical).previousBytes(relative)

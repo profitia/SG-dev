@@ -1,4 +1,5 @@
 // Test/build-only exact adoption; cannot authorize runtime, deployment or grants.
+import {registrationStageOnePredecessor} from './registration-stage-i-integrity.mjs'
 import assert from 'node:assert/strict'
 import {assistantMarkdownPredecessor} from './assistant-markdown-integrity.mjs'
 import {createHash} from 'node:crypto'
@@ -52,8 +53,10 @@ const receiptPath='apps/sg-runtime/procurement-insights-integration.json'
 const assistantReceipt='apps/sg-runtime/assistant-context-integration.json'
 const hash=bytes=>createHash('sha256').update(bytes).digest('hex')
 export function procurementInsightsPredecessor(current,historical){
+ const registration=registrationStageOnePredecessor(current,historical);if(registration)return procurementInsightsPredecessor(registration.previousBytes,historical)
  const markdown=assistantMarkdownPredecessor(current,historical)
  if(markdown)return procurementInsightsPredecessor(markdown.previousBytes,historical)
+
  let bytes
  try{bytes=current(receiptPath)}catch(error){
   const text=String(error?.stderr??error?.message??'')
