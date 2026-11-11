@@ -5492,15 +5492,87 @@ export function assertPrivateRecurringRecord(bytes,{digestForPath,adoptions,curr
  for(const [p,h]of Object.entries(a.preservedReceipts))if(recurringHash(currentReceipts[p])!==h||recurringHash(historicalReceipts[p])!==h)fail('PRIVATE_RECURRING_PREDECESSOR_REJECTED')
  return a
 }
+
+// Closed continuation for PR #1021. Preparation is not policy activation.
+// Only these exact14 regular source bytes may be projected to their accepted
+// predecessor. The existing registration, recurring, package and credential
+// checks remain mandatory; candidate JavaScript is never imported here.
+export const ASSISTANT_ECR_WEEK_REVIEW=Object.freeze({
+  "recordPath": "apps/sg-runtime/assistant-ecr-week-integration.json",
+  "recordSha256": "31ce8f1d7e5ca1d9c3aedf80f92e23fe0f1a93cb8f5fd5d003eb54a244859dd4",
+  "previousSourceSha": "b6df3533750d0278440b0a432e412731bff47a42",
+  "sourceCommit": "0ebf41d600ac6ab1df8dffcde1dfe3c982ea8771",
+  "prNumber": 1021,
+  "branch": "sg2/acg-ecr-weeks-20261111-40671bf2",
+  "sourceDigests": {
+    "apps/sg-runtime/components/appshell/assistant-conversation-session.ts": "96d063c60c29030ea06a7f242567690d48f694ebae51538f1ec229b0ae6568df",
+    "apps/sg-runtime/lib/assistant/context-selection.ts": "8a8f4e995f2cf3f739d8182905e436675cb4ddd0d9b9240146c2d6b6cd917ab2",
+    "apps/sg-runtime/lib/assistant/conversation.ts": "04fdf8afb4571a9acac826d0ffe1f6061813216c6b262ce5b571769eb40aed5d",
+    "apps/sg-runtime/lib/assistant/model.ts": "b9c0558a11017760fcc25768aee1c8269dcd5093963255b79f4446af2b55246f",
+    "apps/sg-runtime/lib/assistant/runtime.ts": "52f379da1e703976fefa7900519b8c716df25b026079a6a99dd2732867d6c6ef",
+    "apps/sg-runtime/tests/assistant-conversation-handler.test.ts": "f5af231edac5eb8f82a5c7a349d47c2819191d692d7f19f536b396ac44c37b46",
+    "apps/sg-runtime/tests/assistant-conversation.test.ts": "b954b440d59bcd1a66f90ec3d02d274b84917f5d8de97761fb38941fd23bddf1",
+    "apps/sg-runtime/tests/assistant-economic-calendar.test.ts": "d4ab11946dc33a309c8346aa2edd80fdcb68d59ab847b6ec10a807782f2ee1f9",
+    "apps/sg-runtime/tests/assistant-model.test.ts": "f589c834c94488e7b9d37524cd0a13515ac0ce7b8f9071a07bb11d9f3fcd7908",
+    "apps/sg-runtime/tests/pci-smart-integrity.test.mjs": "aa9b2199d5d2cd1554f808a02f7fd63bf397adca045f4d535e7d2af0f158c080",
+    "apps/sg-runtime/tests/assistant-ecr-week-integrity.mjs": "8c602c69c4da51e51525d48d73674e223daa8dbd96bf58d80863c0471a652639",
+    "apps/sg-runtime/tests/assistant-ecr-week-integrity.test.mjs": "0787795fdd513113107c3ee7e0b840a588f27186c5adfba92f7d8020aefda46f",
+    "apps/sg-runtime/assistant-ecr-week-integration.json": "31ce8f1d7e5ca1d9c3aedf80f92e23fe0f1a93cb8f5fd5d003eb54a244859dd4",
+    "apps/architecture-lab/private-recurring-source.mjs": "9035324816864e64040c1ad3d29e064284ad2e3f8eb626a9b3c1ede55fbb4b28"
+  },
+  "preservedReceipts": {
+    "apps/sg-runtime/operation-integration.json": "a6bf50993c98a71aeccd349dd904baafb53b3cd653324d97bab3fc5e34ac509f",
+    "apps/sg-runtime/assistant-context-integration.json": "d932f227977789643086b6a9eb179598a6f48071964b2d26ba82d25fceb7b2ec",
+    "apps/sg-runtime/procurement-insights-integration.json": "6dca06d8b0731e585925100b0578d41a61711f335940350d1ea32c296a3d7177",
+    "apps/sg-runtime/assistant-markdown-integration.json": "27ff06aff8bc44592f0073732748834b7759182fa4307d901c7d63304381a38b",
+    "apps/sg-runtime/registration-stage-i-integration.json": "4a7a572e67e12ed73c523502cef4cb432009e735737df851419d80898653f414",
+    "apps/sg-runtime/assistant-send-arrow-integration.json": "62c6af6817a022c31788d801cc0eac293a24b3f25d9e529d32b1bff4908fa230",
+    "apps/sg-runtime/assistant-ecr-integration.json": "5814e2e5cbdf1a32d22cff3aa55de806ec34c9debdecc21ff06c4f9f887a82bc",
+    "apps/sg-runtime/assistant-ecr-precision-integration.json": "a017c2b971e3c72606847264150715c983fa9483537d26be90144a64e0377ee7",
+    "apps/sg-runtime/private-recurring-source-adoption.json": "edf9d51c199251e148b39c92a3084944c1a4b8419be29175c88b6e2583df11f2",
+    "apps/architecture-lab/private-recurring-source.json": "75877d5750e07d1c8172be0af76bc5933f2eeefc22cc39747a2621b9cab24619",
+    "apps/architecture-lab/private-recurring-source-adoption.json": "a79c186897851acb93142949fe7aee19184cbfe68b3acdf51cbda084c00c1254",
+    "apps/srm/private-recurring-source-adoption.json": "88d0252f634eface35b34adf31ac97cbf0d396fcf1fe6da452c74bdc23c7c633"
+  }
+})
+export function assertAssistantEcrWeekRecord(bytes,{sourceDigestForPath,currentReceiptDigestForPath,historicalReceiptDigestForPath}){
+ if(recurringHash(bytes)!==ASSISTANT_ECR_WEEK_REVIEW.recordSha256)fail('ASSISTANT_ECR_WEEK_RECORD_REJECTED')
+ for(const [p,h]of Object.entries(ASSISTANT_ECR_WEEK_REVIEW.sourceDigests))
+  if(sourceDigestForPath(p)!==h)fail('ASSISTANT_ECR_WEEK_SOURCE_BYTES_REJECTED')
+ for(const [p,h]of Object.entries(ASSISTANT_ECR_WEEK_REVIEW.preservedReceipts))
+  if(currentReceiptDigestForPath(p)!==h||historicalReceiptDigestForPath(p)!==h)fail('ASSISTANT_ECR_WEEK_PREDECESSOR_REJECTED')
+ return JSON.parse(bytes)
+}
+export function assistantEcrWeekSourceProjection(root){
+ const recordPath=ASSISTANT_ECR_WEEK_REVIEW.recordPath
+ let bytes;try{bytes=readRegistrationSdkFile(root,recordPath)}catch(error){if(error?.code==='ENOENT')return null;throw error}
+ const read=p=>{
+  const bytes=readRegistrationSdkFile(root,p)
+  if(fs.lstatSync(path.join(fs.realpathSync(root),p)).mode&0o111)fail('ASSISTANT_ECR_WEEK_FILE_MODE_REJECTED')
+  return bytes
+ }
+ const historical=p=>execFileSync('git',['show',ASSISTANT_ECR_WEEK_REVIEW.previousSourceSha+':'+p],{cwd:root,stdio:['ignore','pipe','ignore']})
+ assertAssistantEcrWeekRecord(bytes,{sourceDigestForPath:p=>recurringHash(read(p)),
+  currentReceiptDigestForPath:p=>recurringHash(read(p)),historicalReceiptDigestForPath:p=>recurringHash(historical(p))})
+ const mapped=new Set(Object.keys(ASSISTANT_ECR_WEEK_REVIEW.sourceDigests)),cache=new Map()
+ return p=>{
+  if(!mapped.has(p))return readRegistrationSdkFile(root,p)
+  if(!cache.has(p))cache.set(p,historical(p))
+  return Buffer.from(cache.get(p))
+ }
+}
+
 export function assertPrivateRecurringProvenance(root){
- const physical=p=>readRegistrationSdkFile(root,p)
+ const calendarHistorical=(sha,p)=>execFileSync('git',['cat-file','blob',sha+':'+p],{cwd:root,stdio:['ignore','pipe','pipe']})
+ const physical=marketCalendarTrustedPredecessor(p=>readRegistrationSdkFile(root,p),calendarHistorical)
  let bytes;try{bytes=physical(PRIVATE_RECURRING_PROVENANCE.recordPath)}catch(error){if(error?.code==='ENOENT')return null;throw error}
  // Authenticate the complete current graph before projecting only the exact
  // reviewed registration overlay onto accepted recurring main. No candidate JS.
  let registration=null,hasRegistration=false
  try{physical('packages/platform-contracts/test/organisation-sdk-compatibility.json');hasRegistration=true}catch(error){if(error?.code!=='ENOENT')throw error}
  if(hasRegistration)registration=assertRegistrationSdkProvenance(root)
- let read=physical
+ const weekRead=assistantEcrWeekSourceProjection(root)
+ let read=weekRead??physical
  if(registration&&registrationHash(physical('packages/platform-contracts/test/organisation-sdk-compatibility.json'))===REGISTRATION_SDK_RECONCILED_PROVENANCE.recordDigest){
   // The approved overlay also includes native Identity files outside the SDK
   // record's source-only maps. Verify every exact65 physical blob before any
@@ -5511,7 +5583,7 @@ export function assertPrivateRecurringProvenance(root){
   }
   const mapped=new Set([...Object.keys(REGISTRATION_SDK_REVIEW.entries),...Object.keys(registration.sourceDigests),...Object.keys(registration.compatibilityTestSourceDigests),...Object.values(registration.consumerSourceDigests).flatMap(v=>Object.keys(v)),'apps/sg-runtime/operation-integration.json','apps/srm/operation-integration.json'])
   const cache=new Map()
-  read=p=>{if(!mapped.has(p))return physical(p);if(!cache.has(p))cache.set(p,execFileSync('git',['show',registration.previousSourceSha+':'+p],{cwd:root,stdio:['ignore','pipe','ignore']}));return Buffer.from(cache.get(p))}
+  read=p=>{if(!mapped.has(p))return (weekRead??physical)(p);if(!cache.has(p))cache.set(p,execFileSync('git',['show',registration.previousSourceSha+':'+p],{cwd:root,stdio:['ignore','pipe','ignore']}));return Buffer.from(cache.get(p))}
  }
  const a=privateRecurringMetadata(bytes),adoptions={},currentReceipts={},historicalReceipts={}
  for(const [k,p]of Object.entries(PRIVATE_RECURRING_PROVENANCE.adoptions))adoptions[k]=JSON.parse(read(p))
@@ -5558,9 +5630,51 @@ function reviewedPrivateRecurringAuthority(candidate,authority,section,name,spec
  return false
 }
 
+
+// PROPOSED exact ECR Market Calendar source review. Separate owner CI approval
+// and trusted-main acceptance are mandatory before activation.
+export const ECR_MARKET_CALENDAR_REVIEW=Object.freeze({"prNumber":1018,"branch":"architecture/ecr-market-calendar-consumer-20261111","sourceSha":"5abaca24ce29e895e6954e5b8c2a4883d0c9b382","baseSha":"a9194acae09132e6570fe8071bf327125ebb8577","entries":{"Canon/evidence/2026-11-11-procurement-insights-market-calendar-owner-approval.md":{"sha":"ed5f05d10540fa5c91acf8500d69ac53e08f1aca","status":"added","mode":"100644","projectKey":"ARCHITECTURE","owner":"Governance Source Layer","surfaceId":"SG2-BASE-019"},"Canon/registries/governance-manifest-v2.json":{"sha":"096f5ab778a4a1508deef8b6de97504f83be3ac7","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Governance Source Layer","surfaceId":"SG2-BASE-019"},"Canon/v1.3-procurement-insights-market-calendar-amendment.md":{"sha":"481897797e664c9bab162e0180f5be5d20582531","status":"added","mode":"100644","projectKey":"ARCHITECTURE","owner":"Governance Source Layer","surfaceId":"SG2-BASE-019"},"apps/architecture-lab/market-calendar-source.mjs":{"sha":"3de8d9c20581e0d5e21c7fefc8ddc2a2366a45ed","status":"added","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ARCH-BASE-002"},"apps/architecture-lab/private-recurring-source.mjs":{"sha":"cd3b2b55be2ee2cfe13ab0fab3f0a174b62af06f","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ARCH-BASE-002"},"apps/architecture-lab/test/market-calendar-source.test.mjs":{"sha":"9870ce8f7a0de63ab21a9832b0077a1144789e91","status":"added","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ARCH-BASE-002"},"apps/economic-calendar-runtime/market-calendar-preferences-integration.json":{"sha":"e059c7797f3543ee234a51a9a0ea205041ffa186","status":"added","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ECR-BASE-001"},"apps/economic-calendar-runtime/operations/market-calendar-owner-plan.json":{"sha":"449a11d7abfe7a63a72da76100ad30b1e7da5628","status":"added","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ECR-BASE-001"},"apps/economic-calendar-runtime/operations/market-calendar-private-access.sql":{"sha":"e57e0b7d86ca24c0c1aba91a9208dfd6b725cf38","status":"added","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ECR-BASE-001"},"apps/economic-calendar-runtime/package-lock.json":{"sha":"09166e1819517b94754e2df497feaadb5638873e","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ECR-BASE-001"},"apps/economic-calendar-runtime/package.json":{"sha":"bf1a50e400ac3a28a4fad505a2747a5f9d6ea79b","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ECR-BASE-001"},"apps/economic-calendar-runtime/src/server.mjs":{"sha":"6febb661c68d325e745c363e66f31929b047c3b6","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ECR-BASE-001"},"apps/economic-calendar-runtime/test/api.test.mjs":{"sha":"5e66581b1dcc1cf80ed34b704b2b095b0b8ccad9","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ECR-BASE-001"},"apps/economic-calendar-runtime/test/market-calendar-preferences.test.mjs":{"sha":"58dcb4865e4cde65c99dd96f24b1fc6c27a4eddd","status":"added","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ECR-BASE-001"},"packages/economic-calendar-contracts/index.d.mts":{"sha":"c0e6d24ea718b2dfa10813c38ade16a9b5e47239","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ECR-BASE-002"},"packages/economic-calendar-contracts/index.mjs":{"sha":"d1130d15e358631800215804fd4fda3b03ec6775","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ECR-BASE-002"},"packages/economic-calendar-contracts/package.json":{"sha":"326c463ee131df7300703848db406bc0e509e404","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ECR-BASE-002"}}})
+export const ECR_MARKET_CALENDAR_PROVENANCE=Object.freeze({"recordPath":"apps/economic-calendar-runtime/market-calendar-preferences-integration.json","recordSha256":"91d4301899b43c8dba5c3720162f3c61888db087bc8ebfd3563fe151fbb5dc37","consumerRecord":"apps/sg-runtime/market-calendar-integration.json","consumerPaths":["apps/sg-runtime/app/api/v1/market-calendar/[[...path]]/route.ts","apps/sg-runtime/components/procurement-insights/calendar-detail.tsx","apps/sg-runtime/components/procurement-insights/calendar-dialogs.tsx","apps/sg-runtime/components/procurement-insights/market-calendar.css","apps/sg-runtime/components/procurement-insights/market-calendar.tsx","apps/sg-runtime/components/procurement-insights/workspace.css","apps/sg-runtime/components/procurement-insights/workspace.tsx","apps/sg-runtime/lib/market-calendar/client.ts","apps/sg-runtime/lib/market-calendar/model.ts","apps/sg-runtime/lib/market-calendar/runtime.ts","apps/sg-runtime/middleware.ts","apps/sg-runtime/package.json","apps/sg-runtime/tests/market-calendar-integrity.mjs","apps/sg-runtime/tests/market-calendar-integrity.test.mjs","apps/sg-runtime/tests/market-calendar-model.test.ts","apps/sg-runtime/tests/market-calendar-proxy.test.ts","apps/sg-runtime/tests/market-calendar.test.tsx"],"consumerReceipts":["apps/sg-runtime/adp-integration.json","apps/sg-runtime/assistant-context-integration.json","apps/sg-runtime/assistant-ecr-integration.json","apps/sg-runtime/assistant-ecr-precision-integration.json","apps/sg-runtime/assistant-markdown-integration.json","apps/sg-runtime/assistant-send-arrow-integration.json","apps/sg-runtime/development-integration.json","apps/sg-runtime/operation-integration.json","apps/sg-runtime/private-recurring-source-adoption.json","apps/sg-runtime/procurement-insights-integration.json","apps/sg-runtime/registration-stage-i-integration.json","apps/sg-runtime/xray-appshell-integration.json"]})
+
+function isPinnedEcrMarketCalendarReview(files){const r=ECR_MARKET_CALENDAR_REVIEW;return Array.isArray(files)&&files.length===Object.keys(r.entries).length&&new Set(files.map(f=>f?.filename)).size===files.length&&files.every(f=>{const e=r.entries[f?.filename];return Object.hasOwn(r.entries,f?.filename)&&e&&e.sha===f.sha&&e.status===f.status&&!Object.hasOwn(f,'previous_filename')})}
+export function assertEcrMarketCalendarReviewEntry(file,entry){const e=ECR_MARKET_CALENDAR_REVIEW.entries[file?.filename];if(!e||e.sha!==file.sha||entry!==e.mode+' blob '+file.sha+'\t'+file.filename+'\0')fail('ECR_MARKET_CALENDAR_FILE_MODE_REJECTED')}
+function assertEcrMarketCalendarRoutes(files,repositoryRoot){
+ const profile=resolveProjectProfile('ARCHITECTURE',repositoryRoot),routing=resolveProjectRouting({profile,targets:files.map(f=>f.filename),repositoryRoot})
+ if(profile.repository.slug!==REPOSITORY||!routing.ok||routing.results.length!==files.length||routing.results.some(r=>{const e=ECR_MARKET_CALENDAR_REVIEW.entries[r.normalizedPath];return !e||r.resolutionStatus!=='RESOLVED'||r.highestSpecificityMatchCount!==1||r.projectBoundaryStatus!=='ALLOWED'||r.baselineClassification!=='ALIGNED'||r.currentOwner!==e.owner||r.matchedSurfaceId!==e.surfaceId}))fail('ECR_MARKET_CALENDAR_ROUTING_REJECTED')
+}
+const calendarKeys=a=>JSON.stringify(Object.keys(a).sort())
+const calendarHash=b=>createHash('sha256').update(b).digest('hex')
+const calendarBlob=b=>createHash('sha1').update('blob '+b.length+'\0').update(b).digest('hex')
+function optionalCalendarFile(read,p){try{return read(p)}catch(e){if(e?.code==='ENOENT')return null;throw e}}
+/** Pure trusted verification. No candidate module is imported or evaluated.
+ * Current source and every old receipt are checked before historical projection. */
+export function marketCalendarTrustedPredecessor(current,historical){
+ const cfg=ECR_MARKET_CALENDAR_PROVENANCE,review=ECR_MARKET_CALENDAR_REVIEW
+ const consumer=optionalCalendarFile(current,cfg.consumerRecord)
+ if(consumer){
+  const a=JSON.parse(consumer),expected=['schemaVersion','taskId','targetEnvironment','scope','previousSourceSha','producerRecordSha256','sourceDigests','preservedReceipts','noProviderAcquisition','noIndependentStore','noNotificationDelivery','activationIsSeparate']
+  if(calendarKeys(a)!==JSON.stringify(expected.sort())||a.schemaVersion!=='1.0.0'||a.taskId!=='SG2-PROCUREMENT-MARKET-CALENDAR-20261111'||a.targetEnvironment!=='development'||a.scope!=='MARKET_CALENDAR_CONSUMER_SOURCE'||!shaPattern.test(a.previousSourceSha)||a.producerRecordSha256!==cfg.recordSha256)fail('ECR_MARKET_CALENDAR_CONSUMER_REJECTED')
+  if(['noProviderAcquisition','noIndependentStore','noNotificationDelivery','activationIsSeparate'].some(k=>a[k]!==true)||calendarKeys(a.sourceDigests)!==JSON.stringify([...cfg.consumerPaths].sort())||calendarKeys(a.preservedReceipts)!==JSON.stringify([...cfg.consumerReceipts].sort()))fail('ECR_MARKET_CALENDAR_CONSUMER_REJECTED')
+  if(calendarHash(current(cfg.recordPath))!==cfg.recordSha256||calendarHash(historical(a.previousSourceSha,cfg.recordPath))!==cfg.recordSha256)fail('ECR_MARKET_CALENDAR_PREDECESSOR_REJECTED')
+  for(const p of cfg.consumerPaths)if(calendarHash(current(p))!==a.sourceDigests[p])fail('ECR_MARKET_CALENDAR_CONSUMER_BYTES_REJECTED')
+  for(const p of cfg.consumerReceipts)if(calendarHash(current(p))!==a.preservedReceipts[p]||calendarHash(historical(a.previousSourceSha,p))!==a.preservedReceipts[p])fail('ECR_MARKET_CALENDAR_PREDECESSOR_REJECTED')
+  const before=JSON.parse(historical(a.previousSourceSha,'apps/sg-runtime/package.json')),after=JSON.parse(current('apps/sg-runtime/package.json'))
+  if(JSON.stringify({...after,scripts:before.scripts})!==JSON.stringify(before)||!Buffer.from(current('apps/sg-runtime/package-lock.json')).equals(Buffer.from(historical(a.previousSourceSha,'apps/sg-runtime/package-lock.json'))))fail('ECR_MARKET_CALENDAR_DEPENDENCY_REJECTED')
+  const mapped=new Set(cfg.consumerPaths),prior=p=>{if(p===cfg.consumerRecord)throw Object.assign(Error('Consumer absent from predecessor'),{code:'ENOENT'});return mapped.has(p)?historical(a.previousSourceSha,p):current(p)}
+  return marketCalendarTrustedPredecessor(prior,historical)
+ }
+ const bytes=optionalCalendarFile(current,cfg.recordPath);if(bytes===null)return current
+ if(calendarHash(bytes)!==cfg.recordSha256)fail('ECR_MARKET_CALENDAR_PRODUCER_RECORD_REJECTED')
+ const a=JSON.parse(bytes)
+ for(const[p,e]of Object.entries(review.entries))if(calendarBlob(current(p))!==e.sha)fail('ECR_MARKET_CALENDAR_PRODUCER_BYTES_REJECTED')
+ for(const[p,h]of Object.entries(a.preservedReceipts))if(calendarHash(current(p))!==h||calendarHash(historical(review.baseSha,p))!==h)fail('ECR_MARKET_CALENDAR_PREDECESSOR_REJECTED')
+ return p=>{const e=review.entries[p];if(!e)return current(p);if(e.status==='added')throw Object.assign(Error('Producer source absent from predecessor'),{code:'ENOENT'});return historical(review.baseSha,p)}
+}
+
 export function assertArchitectureFiles(pr, files, repositoryRoot = controlRoot()) {
   if (!Number.isInteger(pr.changed_files) || pr.changed_files < 1 || pr.changed_files > 300 || !shaPattern.test(pr.base?.sha ?? '')
     || !Array.isArray(files) || files.length !== pr.changed_files) fail('ARCHITECTURE_FILE_LIST_REQUIRED')
+  if(isPinnedEcrMarketCalendarReview(files)){assertEcrMarketCalendarRoutes(files,repositoryRoot);return}
   if(isPinnedPrivateRecurringReview(files)){assertPrivateRecurringRoutes(files,repositoryRoot);return}
   if(isPinnedRegistrationSdkReview(files)){assertRegistrationSdkRoutes(files,repositoryRoot);return}
   if(isPinnedNewsfeedSavedSearchReview(files)){assertNewsfeedSavedSearchRoutes(files,repositoryRoot);return}
@@ -5605,6 +5719,7 @@ export function assertArchitectureFiles(pr, files, repositoryRoot = controlRoot(
 
 export function selectCandidate(context, pr, expectedSha, {files, repositoryRoot = controlRoot()} = {}) {
   const family = candidateFamily(context, pr, expectedSha)
+  if(pr&&(pr.number===ECR_MARKET_CALENDAR_REVIEW.prNumber||pr.head.ref===ECR_MARKET_CALENDAR_REVIEW.branch||isPinnedEcrMarketCalendarReview(files))){if(family!=='ARCHITECTURE'||pr.number!==ECR_MARKET_CALENDAR_REVIEW.prNumber||pr.head.ref!==ECR_MARKET_CALENDAR_REVIEW.branch||!isPinnedEcrMarketCalendarReview(files))fail('ECR_MARKET_CALENDAR_REVIEW_IDENTITY_REJECTED')}
   if(pr&&(pr.number===PRIVATE_RECURRING_REVIEW.prNumber||pr.head.ref===PRIVATE_RECURRING_REVIEW.branch||isPinnedPrivateRecurringReview(files))){if(family!=='ARCHITECTURE'||pr.number!==PRIVATE_RECURRING_REVIEW.prNumber||pr.head.ref!==PRIVATE_RECURRING_REVIEW.branch||!isPinnedPrivateRecurringReview(files))fail('PRIVATE_RECURRING_REVIEW_IDENTITY_REJECTED')}
   if (pr && (pr.number===PLATFORM_KNOWLEDGE_G1_REVIEW.prNumber || pr.head?.ref===PLATFORM_KNOWLEDGE_G1_REVIEW.branch || isPinnedPlatformKnowledgeG1Review(files))) {
     if (family!=='ARCHITECTURE' || pr.number!==PLATFORM_KNOWLEDGE_G1_REVIEW.prNumber
@@ -5695,6 +5810,7 @@ export function assertArchitectureCheckout(root, sha, admission, repositoryRoot 
   for (const file of admission.files) {
     const entry = execFileSync('git', ['ls-tree', '-z', sha, '--', file.filename], {cwd: root, encoding: 'utf8'})
     if (file.status === 'removed') {if (entry !== '') fail('ARCHITECTURE_DIFF_MISMATCH'); continue}
+    if(isPinnedEcrMarketCalendarReview(admission.files))assertEcrMarketCalendarReviewEntry(file,entry)
     if(isPinnedPrivateRecurringReview(admission.files))assertPrivateRecurringReviewEntry(file,entry)
     if(isPinnedRegistrationSdkReview(admission.files))assertRegistrationSdkReviewEntry(file,entry)
     if(isPinnedNewsfeedSavedSearchReview(admission.files))assertNewsfeedSavedSearchReviewEntry(file,entry)

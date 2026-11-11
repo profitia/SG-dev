@@ -1,3 +1,4 @@
+import {ECR_MARKET_CALENDAR_REVIEW,ECR_MARKET_CALENDAR_PROVENANCE,assertEcrMarketCalendarReviewEntry,marketCalendarTrustedPredecessor} from './controlled-package-ci.mjs'
 import {NEWSFEED_SAVED_SEARCH_REVIEW,assertNewsfeedSavedSearchReviewEntry} from './controlled-package-ci.mjs'
 import {ECR_SOURCE_CONTINUITY_REVIEW,assertEcrSourceContinuityReviewEntry} from './controlled-package-ci.mjs'
 import {ECR_STAGE0405_REVIEW,assertEcrStage0405ReviewEntry} from './controlled-package-ci.mjs'
@@ -1982,4 +1983,65 @@ test('the physical65 overlay authenticates native Identity before the unchanged3
  const protectedPaths=new Set(regMaps.flatMap(Object.keys)),unmapped=Object.keys(rec.sourceDigests).find(name=>!c.REGISTRATION_SDK_REVIEW.entries[name]&&!protectedPaths.has(name));assert(unmapped);
  fh.appendFileSync(p.join(root,unmapped),'\nUNREVIEWED');
  assert.throws(()=>c.assertPrivateRecurringProvenance(root),/PRIVATE_RECURRING_SOURCE_BYTES_REJECTED/);
+})
+
+
+import {ASSISTANT_ECR_WEEK_REVIEW as ecrWeeksReview,assertAssistantEcrWeekRecord,assistantEcrWeekSourceProjection} from './controlled-package-ci.mjs'
+test('ECR week continuation is closed to14 exact bytes and12 immutable receipts',()=>{
+ assert.equal(Object.keys(ecrWeeksReview.sourceDigests).length,14)
+ assert.equal(Object.keys(ecrWeeksReview.preservedReceipts).length,12)
+ assert.equal(ecrWeeksReview.prNumber,1021)
+ assert.equal(ecrWeeksReview.previousSourceSha,'b6df3533750d0278440b0a432e412731bff47a42')
+ const record=Buffer.from("{\n  \"schemaVersion\": \"1.0.0\",\n  \"taskId\": \"SG2-ACG-ECR-INCOMPLETE-20261111\",\n  \"producerTaskId\": \"ARCH-ACG-ECR-WEEK-ADOPTION-20261111\",\n  \"targetEnvironment\": \"development\",\n  \"scope\": \"ASSISTANT_ECR_WEEKS_AND_ADMISSION_CORRECTION\",\n  \"previousSourceSha\": \"b6df3533750d0278440b0a432e412731bff47a42\",\n  \"sourceDigests\": {\n    \"apps/sg-runtime/components/appshell/assistant-conversation-session.ts\": \"96d063c60c29030ea06a7f242567690d48f694ebae51538f1ec229b0ae6568df\",\n    \"apps/sg-runtime/lib/assistant/context-selection.ts\": \"8a8f4e995f2cf3f739d8182905e436675cb4ddd0d9b9240146c2d6b6cd917ab2\",\n    \"apps/sg-runtime/lib/assistant/conversation.ts\": \"04fdf8afb4571a9acac826d0ffe1f6061813216c6b262ce5b571769eb40aed5d\",\n    \"apps/sg-runtime/lib/assistant/model.ts\": \"b9c0558a11017760fcc25768aee1c8269dcd5093963255b79f4446af2b55246f\",\n    \"apps/sg-runtime/lib/assistant/runtime.ts\": \"52f379da1e703976fefa7900519b8c716df25b026079a6a99dd2732867d6c6ef\",\n    \"apps/sg-runtime/tests/assistant-conversation-handler.test.ts\": \"f5af231edac5eb8f82a5c7a349d47c2819191d692d7f19f536b396ac44c37b46\",\n    \"apps/sg-runtime/tests/assistant-conversation.test.ts\": \"b954b440d59bcd1a66f90ec3d02d274b84917f5d8de97761fb38941fd23bddf1\",\n    \"apps/sg-runtime/tests/assistant-economic-calendar.test.ts\": \"d4ab11946dc33a309c8346aa2edd80fdcb68d59ab847b6ec10a807782f2ee1f9\",\n    \"apps/sg-runtime/tests/assistant-model.test.ts\": \"f589c834c94488e7b9d37524cd0a13515ac0ce7b8f9071a07bb11d9f3fcd7908\",\n    \"apps/sg-runtime/tests/pci-smart-integrity.test.mjs\": \"aa9b2199d5d2cd1554f808a02f7fd63bf397adca045f4d535e7d2af0f158c080\",\n    \"apps/sg-runtime/tests/assistant-ecr-week-integrity.mjs\": \"8c602c69c4da51e51525d48d73674e223daa8dbd96bf58d80863c0471a652639\",\n    \"apps/sg-runtime/tests/assistant-ecr-week-integrity.test.mjs\": \"0787795fdd513113107c3ee7e0b840a588f27186c5adfba92f7d8020aefda46f\"\n  },\n  \"previousReceipts\": {\n    \"apps/sg-runtime/operation-integration.json\": \"a6bf50993c98a71aeccd349dd904baafb53b3cd653324d97bab3fc5e34ac509f\",\n    \"apps/sg-runtime/assistant-context-integration.json\": \"d932f227977789643086b6a9eb179598a6f48071964b2d26ba82d25fceb7b2ec\",\n    \"apps/sg-runtime/procurement-insights-integration.json\": \"6dca06d8b0731e585925100b0578d41a61711f335940350d1ea32c296a3d7177\",\n    \"apps/sg-runtime/assistant-markdown-integration.json\": \"27ff06aff8bc44592f0073732748834b7759182fa4307d901c7d63304381a38b\",\n    \"apps/sg-runtime/registration-stage-i-integration.json\": \"4a7a572e67e12ed73c523502cef4cb432009e735737df851419d80898653f414\",\n    \"apps/sg-runtime/assistant-send-arrow-integration.json\": \"62c6af6817a022c31788d801cc0eac293a24b3f25d9e529d32b1bff4908fa230\",\n    \"apps/sg-runtime/assistant-ecr-integration.json\": \"5814e2e5cbdf1a32d22cff3aa55de806ec34c9debdecc21ff06c4f9f887a82bc\",\n    \"apps/sg-runtime/assistant-ecr-precision-integration.json\": \"a017c2b971e3c72606847264150715c983fa9483537d26be90144a64e0377ee7\",\n    \"apps/sg-runtime/private-recurring-source-adoption.json\": \"edf9d51c199251e148b39c92a3084944c1a4b8419be29175c88b6e2583df11f2\",\n    \"apps/architecture-lab/private-recurring-source.json\": \"75877d5750e07d1c8172be0af76bc5933f2eeefc22cc39747a2621b9cab24619\",\n    \"apps/architecture-lab/private-recurring-source-adoption.json\": \"a79c186897851acb93142949fe7aee19184cbfe68b3acdf51cbda084c00c1254\",\n    \"apps/srm/private-recurring-source-adoption.json\": \"88d0252f634eface35b34adf31ac97cbf0d396fcf1fe6da452c74bdc23c7c633\"\n  },\n  \"authorisationChanged\": false,\n  \"schemaChanged\": false,\n  \"modelChanged\": false,\n  \"limitsChanged\": false,\n  \"providerAcquisitionAdded\": false,\n  \"deploymentPerformed\": false\n}\n")
+ const options={sourceDigestForPath:p=>ecrWeeksReview.sourceDigests[p],currentReceiptDigestForPath:p=>ecrWeeksReview.preservedReceipts[p],historicalReceiptDigestForPath:p=>ecrWeeksReview.preservedReceipts[p]}
+ const a=assertAssistantEcrWeekRecord(record,options)
+ assert.equal(a.scope,'ASSISTANT_ECR_WEEKS_AND_ADMISSION_CORRECTION')
+ for(const flag of ['authorisationChanged','schemaChanged','modelChanged','limitsChanged','providerAcquisitionAdded','deploymentPerformed'])assert.equal(a[flag],false)
+ rejection(()=>assertAssistantEcrWeekRecord(Buffer.concat([record,Buffer.from('\n')]),options))
+ for(const name of Object.keys(ecrWeeksReview.sourceDigests))
+  rejection(()=>assertAssistantEcrWeekRecord(record,{...options,sourceDigestForPath:p=>p===name?'0'.repeat(64):options.sourceDigestForPath(p)}))
+ for(const name of Object.keys(ecrWeeksReview.preservedReceipts)){
+  rejection(()=>assertAssistantEcrWeekRecord(record,{...options,currentReceiptDigestForPath:p=>p===name?'0'.repeat(64):options.currentReceiptDigestForPath(p)}))
+  rejection(()=>assertAssistantEcrWeekRecord(record,{...options,historicalReceiptDigestForPath:p=>p===name?'0'.repeat(64):options.historicalReceiptDigestForPath(p)}))
+ }
+})
+test('ECR continuation absence preserves legacy validation; forged and linked records fail closed',()=>{
+ const root=fs.mkdtempSync(path.join(os.tmpdir(),'ecr-weeks-policy-'))
+ try{
+  assert.equal(assistantEcrWeekSourceProjection(root),null)
+  const record=path.join(root,ecrWeeksReview.recordPath);fs.mkdirSync(path.dirname(record),{recursive:true})
+  fs.writeFileSync(record,'{}');rejection(()=>assistantEcrWeekSourceProjection(root))
+  fs.unlinkSync(record);fs.writeFileSync(path.join(root,'other'),'{}');fs.symlinkSync(path.join(root,'other'),record)
+  rejection(()=>assistantEcrWeekSourceProjection(root))
+ }finally{fs.rmSync(root,{recursive:true,force:true})}
+})
+
+test('Market Calendar admits only its17 reviewed regular producer blobs and preserves all candidate fences',()=>{
+ const r=ECR_MARKET_CALENDAR_REVIEW,files=Object.entries(r.entries).map(([filename,e])=>({filename,sha:e.sha,status:e.status})),p={...pr(),number:r.prNumber,changed_files:files.length,base:{...pr().base,sha:r.baseSha},head:{...pr().head,sha:r.sourceSha,ref:r.branch}}
+ assert.equal(files.length,17);assert.equal(r.prNumber,1018)
+ assertArchitectureFiles(p,files);assert.equal(selectCandidate(context(),p,r.sourceSha,{files}),r.sourceSha)
+ for(const f of files){assertEcrMarketCalendarReviewEntry(f,'100644 blob '+f.sha+'\t'+f.filename+'\0');for(const mode of ['100755','120000','160000'])rejection(()=>assertEcrMarketCalendarReviewEntry(f,mode+' blob '+f.sha+'\t'+f.filename+'\0'))}
+ for(const edit of [a=>a.pop(),a=>a.push(a[0]),a=>a[0]={...a[0],sha:'f'.repeat(40)},a=>a[0]={...a[0],status:'removed'},a=>a[0]={...a[0],previous_filename:a[0].filename},a=>a[0]={...a[0],filename:'apps/economic-calendar-runtime/src/unreviewed.mjs'}]){const bad=structuredClone(files);edit(bad);rejection(()=>selectCandidate(context(),{...p,changed_files:bad.length},r.sourceSha,{files:bad}))}
+ for(const edit of [q=>q.number++,q=>q.head.ref='architecture/unreviewed',q=>q.head.ref='sg2/market-calendar',q=>q.head.repo.full_name='profitia/fork',q=>q.user.login='attacker',q=>q.base.ref='staging',q=>q.head.sha=sha]){const bad=structuredClone(p);edit(bad);rejection(()=>selectCandidate(context(),bad,r.sourceSha,{files}))}
+ const generic=architectureFiles();rejection(()=>selectCandidate(context(),{...p,changed_files:generic.length},r.sourceSha,{files:generic}))
+})
+
+test('Market Calendar authenticates the real Git source and immutable receipts before historical projection',()=>{
+ const r=ECR_MARKET_CALENDAR_REVIEW,cfg=ECR_MARKET_CALENDAR_PROVENANCE,cache=new Map(),root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..')
+ const historical=(sha,p)=>{const key=sha+':'+p;if(!cache.has(key))cache.set(key,execFileSync('git',['cat-file','blob',key],{cwd:root,stdio:['ignore','pipe','pipe']}));return Buffer.from(cache.get(key))}
+ const current=p=>{if(p===cfg.consumerRecord)throw Object.assign(Error('not yet adopted'),{code:'ENOENT'});return historical(r.sourceSha,p)}
+ const prior=marketCalendarTrustedPredecessor(current,historical)
+ for(const[p,e]of Object.entries(r.entries))if(e.status==='added')assert.throws(()=>prior(p),e=>e.code==='ENOENT');else assert.deepEqual(prior(p),historical(r.baseSha,p))
+ const record=JSON.parse(current(cfg.recordPath))
+ for(const p of [...Object.keys(r.entries),...Object.keys(record.preservedReceipts)])rejection(()=>marketCalendarTrustedPredecessor(f=>f===p?Buffer.concat([current(f),Buffer.from('tamper')]):current(f),historical))
+ const denied=Object.assign(Error('opaque denial'),{code:'EACCES'});assert.throws(()=>marketCalendarTrustedPredecessor(()=>{throw denied},historical),e=>e===denied)
+ const empty=p=>{throw Object.assign(Error('absent'),{code:'ENOENT'})};assert.equal(marketCalendarTrustedPredecessor(empty,historical),empty)
+ // A consumer is a separate SG2 source adoption, not a mixed producer PR. The
+ // trusted verifier never imports its JavaScript while a credential may exist.
+ const additions=Object.fromEntries(cfg.consumerPaths.map(p=>[p,Buffer.from('synthetic SG2 source '+p)]));additions['apps/sg-runtime/package.json']=current('apps/sg-runtime/package.json')
+ const a={schemaVersion:'1.0.0',taskId:'SG2-PROCUREMENT-MARKET-CALENDAR-20261111',targetEnvironment:'development',scope:'MARKET_CALENDAR_CONSUMER_SOURCE',previousSourceSha:r.sourceSha,producerRecordSha256:cfg.recordSha256,sourceDigests:Object.fromEntries(Object.entries(additions).map(([p,b])=>[p,createHash('sha256').update(b).digest('hex')])),preservedReceipts:Object.fromEntries(cfg.consumerReceipts.map(p=>[p,createHash('sha256').update(current(p)).digest('hex')])),noProviderAcquisition:true,noIndependentStore:true,noNotificationDelivery:true,activationIsSeparate:true}
+ const read=(manifest=a,files=additions)=>p=>p===cfg.consumerRecord?Buffer.from(JSON.stringify(manifest)):files[p]??current(p)
+ const adopted=marketCalendarTrustedPredecessor(read(),historical);assert.deepEqual(adopted('apps/sg-runtime/package.json'),current('apps/sg-runtime/package.json'))
+ for(const edit of [a=>a.noNotificationDelivery=false,a=>a.unknown=true,a=>a.taskId='different',a=>a.sourceDigests['apps/sg-runtime/unreviewed.ts']='0'.repeat(64),a=>delete a.sourceDigests[cfg.consumerPaths[0]],a=>a.preservedReceipts[cfg.consumerReceipts[0]]='0'.repeat(64)]){const bad=structuredClone(a);edit(bad);rejection(()=>marketCalendarTrustedPredecessor(read(bad),historical))}
+ const changed={...additions,'apps/sg-runtime/package.json':Buffer.from(JSON.stringify({...JSON.parse(additions['apps/sg-runtime/package.json']),dependencies:{'@profitia/unreviewed':'1.0.0'}}))},rebound=structuredClone(a);rebound.sourceDigests['apps/sg-runtime/package.json']=createHash('sha256').update(changed['apps/sg-runtime/package.json']).digest('hex');rejection(()=>marketCalendarTrustedPredecessor(read(rebound,changed),historical))
 })

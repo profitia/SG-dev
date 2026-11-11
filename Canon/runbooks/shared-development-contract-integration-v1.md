@@ -1,5 +1,33 @@
 # Przyjmowanie wspólnych kontraktów Development
 
+## ECR Market Calendar — proposed exact producer review (2026-11-11)
+
+PROPOSED / OWNER_CI_APPROVAL_PENDING. The third-tab UX approval does not
+activate trusted CI policy or private E1 grants. This separate four-file policy
+proposal binds PR1018, architecture/ecr-market-calendar-consumer-20261111,
+source 5abaca24ce29e895e6954e5b8c2a4883d0c9b382 and exactly17 regular
+path/blob/status/mode/actual ARCHITECTURE-owner entries in
+ECR_MARKET_CALENDAR_REVIEW. No generic Canon, app or package path is admitted.
+Main refresh is allowed only with identical reviewed versions.
+
+The pure trusted verifier authenticates every producer byte, frozen source
+record and predecessor receipt before the existing recurring-source checks.
+No candidate module is imported. The separately registered SG2 consumer then
+binds its17 own source files, accepted producer record and twelve old receipts;
+dependencies and lock remain unchanged. Separate producer and consumer PRs
+remain mandatory; no aggregate publication is authorised.
+
+After explicit acceptance, validate this exact policy through the existing
+trusted-main workflow, all public and resulting-main gates; then validate the
+exact producer head and independently verify its proof. Accept producer before
+consumer. Repository/author/head/race/routing fences, main-only environment,
+immutable private package pins, read:packages-only credential, ignore-scripts
+installation and credential removal before candidate execution remain required.
+The prepared private-access transaction, Development releases and real owner
+acceptance remain separate steps. This review changes no SourceHub, Identity
+runtime, licence, retention, provider acquisition, scheduler, resource, cost,
+commercial quota or notification delivery.
+
 Zakres: E0-A-06, trzy tory SG2, SRM i ARCHITECTURE. Project key developmentu nie zastępuje Organisation ID ani User ID produktu.
 
 ARCHITECTURE utrzymuje jeden pakiet packages/platform-contracts i techniczny harness apps/architecture-lab. Integracje aplikacji prowadzą osobne zadania i PR-y właścicieli SG2/SRM, z referencją do taskId, wersji, SHA i digestu kontraktu. Producent został przyjęty w PR280; odbiorcy w osobnych PR281 (SG2) i PR282 (SRM). Workflow platform-contracts-ci.yml sprawdza oba rzeczywiste przyjęcia. Dated proof: Canon/evidence/2026-10-13-e0-a-06-controlled-integration.md.
@@ -646,3 +674,13 @@ and resulting-main proof. This does not install SQL, grant access/packages,
 activate runtime features, send mail, call a provider/model or deploy an app.
 
 Required physical-source validation must also authenticate all65 approved Git blobs/modes, including native Identity paths outside the SDK record maps, before projecting that exact closed overlay to the unchanged recurring graph. Preserve all previous records and reject native or recurring-only drift; this does not admit a new path or change the approved65 source map.
+
+### Proposed ECR week and admission correction — preparation only
+
+Task: `ARCH-ACG-ECR-WEEKS-CI-20261111`. Product candidate: [PR #1021](https://github.com/profitia/SG-dev/pull/1021), reviewed source `0ebf41d600ac6ab1df8dffcde1dfe3c982ea8771`, predecessor `b6df3533750d0278440b0a432e412731bff47a42`.
+
+The proposed data-only controller continuation admits exactly14 source files pinned by SHA-256, including the immutable ECR correction receipt `31ce8f1d7e5ca1d9c3aedf80f92e23fe0f1a93cb8f5fd5d003eb54a244859dd4`. All12 predecessor receipts remain byte-identical. Every current file is authenticated as a regular non-executable source before projecting only reviewed paths onto the accepted predecessor. Existing registration and recurring validation still run; no candidate module is imported during credential handling.
+
+Package names, registry, exact CIC pins, read-only credential scope, main-only environment, owner and fork restrictions, ignore-scripts installation, token removal before candidate execution and exact-SHA proof checks remain unchanged. This proposal adds no runtime grant, schema, AI budget, deployment or provider acquisition.
+
+The separate owner decision and execution evidence belong to [the remote task PHR](https://github.com/profitia/project-history-repository/tree/main/reports/2026/11/11/SG2/SG2-ACG-ECR-INCOMPLETE-20261111). Drafting or testing this change does not activate policy. After acceptance, the product branch must inherit the accepted controller and receive fresh full checks and a controlled proof for its exact resulting SHA.
