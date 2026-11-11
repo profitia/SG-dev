@@ -21,7 +21,7 @@
     }
   },
   "peerDependencies": {
-    "@profitia/platform-current-e1-authority": "1.1.0 || 1.2.0 || 1.2.1 || 1.3.0"
+    "@profitia/platform-current-e1-authority": "1.1.0 || 1.2.0 || 1.2.1 || 1.3.0 || 1.4.0"
   },
   "scripts": {
     "build": "node --check index.mjs && node --check commodities-v1.mjs && node --check client.mjs"
