@@ -94,7 +94,7 @@ function AccountConversation({ identityOrigin, mode, onLogin, onBusy }: { identi
         if (value !== confirmation) { setError('Hasła muszą być identyczne. Wpisz je ponownie.'); return; }
         next = await recovery.finish(value);
         setPasswordChanged(true); setConfirmation('');
-      } else { await model.submit(value); next = model.state.step; }
+      } else if (previous === 'avatar' && mode === 'login') next = model.state.step; else { await model.submit(value); next = model.state.step; }
       // An account without a password is not a security challenge. Preserve every
       // other provider status (MFA, device trust, Protect) for the official UI.
       if (previous === 'email' && mode === 'login' && model.state.method === 'password' && next === 'challenge'
