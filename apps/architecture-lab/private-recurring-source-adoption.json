@@ -1,0 +1,9 @@
+{
+  "schemaVersion": "1.0.0",
+  "projectKey": "ARCHITECTURE",
+  "taskId": "ARCH-PI-RECURRING-E1-20261111",
+  "targetEnvironment": "development",
+  "scope": "SOURCE_ONLY_NO_RUNTIME_ACTIVATION",
+  "sourceRecord": "apps/architecture-lab/private-recurring-source.json",
+  "sourceRecordSha256": "92b7ad887e64811219ba9b1d7fd8f7a5c0cf7dddd02ef3270a5fc9782016ed41"
+}
