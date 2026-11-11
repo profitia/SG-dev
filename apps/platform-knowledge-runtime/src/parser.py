@@ -170,7 +170,7 @@ def extract(path, extension, job):
         if not magic.startswith(b'PK'): raise ValueError('FORMAT_MISMATCH')
         return word(path) if extension=='.docx' else slides(path)
     if extension in ['.doc','.ppt']:
-        if magic!=bytes.fromhex('d0cf11e0a1b11e1'): raise ValueError('FORMAT_MISMATCH')
+        if magic!=bytes.fromhex('d0cf11e0a1b11ae1'): raise ValueError('FORMAT_MISMATCH')
         with olefile.OleFileIO(path) as ole:
             names=['/'.join(n) for n in ole.listdir()]
             if any(re.search(r'vba|macros|objectpool|encryptedpackage',n,re.I) for n in names): raise ValueError('UNSAFE_DOCUMENT')

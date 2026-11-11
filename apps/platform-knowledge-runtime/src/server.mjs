@@ -31,7 +31,7 @@ export function createServer({database,telemetry,config=null,authority=null,libr
     return reply(ready?200:503,{status:ready?'READY':'NOT_READY_FOR_PROCESSING',phase:enabled?'KNOWLEDGE_ENGINE':'FOUNDATION_ONLY'});
    }
    if(req.method==='GET'&&req.url==='/health/foundation'){
-     if(await probe())return reply(200,{status:'FOUNDATION_DATABASE_VERIFIED',phase:'FOUNDATION_ONLY',processingEnabled:false});
+     if(await probe())return reply(200,{status:'FOUNDATION_DATABASE_VERIFIED',phase:enabled?'KNOWLEDGE_ENGINE':'FOUNDATION_ONLY',processingEnabled:enabled});
      return reply(503,{status:'FOUNDATION_UNAVAILABLE'});
    }
    if(enabled){try{
