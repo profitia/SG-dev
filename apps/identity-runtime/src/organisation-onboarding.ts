@@ -85,7 +85,7 @@ export function createOrganisationOnboardingConversation(api:OrganisationOnboard
     await persist({nip});lastNip=nip
     const result=await api.lookupCompany({nip,draftVersion:state.snapshot!.draft.version})
     if('status'in result){state.issue=result.status==='NOT_FOUND'?'COMPANY_NOT_FOUND':result.status==='UNSUPPORTED_COMPANY'?'COMPANIES_ONLY':'LOOKUP_UNAVAILABLE';return}
-    state.company=clone(result);state.proposedSlug=result.suggestedSlug;state.step='company'
+    state.company=clone(result);state.proposedSlug=state.snapshot!.draft.answers.slug??result.suggestedSlug;state.step='company'
    })
   },
   /** A data-confirmation action; no legal authority checkbox or declaration. */

@@ -112,7 +112,10 @@ BEGIN
   IF n<>1 THEN RAISE EXCEPTION 'Draft version conflict' USING ERRCODE='PT409'; END IF;
  ELSE
   IF old_version<>p_expected THEN RAISE EXCEPTION 'Draft version conflict' USING ERRCODE='PT409'; END IF;
-  UPDATE profitia_profile.organisation_onboarding_drafts SET answers=answers||p_patch WHERE user_id=uid AND version=p_expected;
+  UPDATE profitia_profile.organisation_onboarding_drafts SET answers=
+   (CASE WHEN p_patch?'nip' AND answers->>'nip' IS DISTINCT FROM p_patch->>'nip'
+     THEN answers-ARRAY['companySelection','slug','industry','categories','teamRange'] ELSE answers END)||p_patch
+   WHERE user_id=uid AND version=p_expected;
   GET DIAGNOSTICS n=ROW_COUNT;
   IF n<>1 THEN RAISE EXCEPTION 'Draft version conflict' USING ERRCODE='PT409'; END IF;
  END IF;

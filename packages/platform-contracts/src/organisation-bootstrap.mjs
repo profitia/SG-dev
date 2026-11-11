@@ -4,7 +4,7 @@ import {createAccessStore} from './access-store.mjs'
 import {createClerkIdentityAuthenticator} from './identity-provider.mjs'
 import {createProfileSql,ProfileConflict} from './identity-profile-sql.mjs'
 import {createOperationExecutor,OPERATION_CONTRACT,OperationDenied} from './operation-context.mjs'
-import {normalizePolishNip,normalizeOrganisationSlug,normalizeCompanySelection,normalizeIndustry,normalizeProcurementCategories,normalizeTeamRange,normalizeCompanyRecord,organisationCommandDigest} from './organisation-profile.mjs'
+import {organisationOnboardingSchemaDigest,normalizePolishNip,normalizeOrganisationSlug,normalizeCompanySelection,normalizeIndustry,normalizeProcurementCategories,normalizeTeamRange,normalizeCompanyRecord,organisationCommandDigest} from './organisation-profile.mjs'
 
 export const ORGANISATION_BOOTSTRAP_CONTRACT=Object.freeze({id:'profitia.organisation-bootstrap',version:'1.0.0'})
 export const organisationBootstrapSchemaUrl=new URL('../migrations/profile/008-organisation-create.sql',import.meta.url).href
@@ -45,11 +45,11 @@ export function createOrganisationBootstrapBackend(options){
   ||identityApplication?.appId!==application?.appId||identityApplication?.issuer!==application?.identityIssuer
   ||identityApplication?.environment!==application?.environment||identityApplication?.bearerPeerReads?.length)throw TypeError('Same-receiver HUMAN bootstrap and governed stored-company reader required')
  const store=createAccessStore({binding,now}),sql=createProfileSql({binding,issuer:identityApplication.issuer,schemaDigest,proofKey,now})
- const schema=organisationBootstrapSchemaDigest(),transactions=new WeakMap()
+ const schema=organisationBootstrapSchemaDigest(),draftSchema=organisationOnboardingSchemaDigest(),transactions=new WeakMap()
  async function descriptor(query){
   await sql.descriptor(query)
-  const {descriptor:d}=await sql.queryOne(query,'SELECT profitia_profile.organisation_bootstrap_descriptor() AS descriptor')
-  if(d?.schemaDigest!==schema||!uuid.test(d?.policyId??'')||!/^[1-9][0-9]*$/.test(d?.policyVersion??'')||!ref(d?.sourceRef)||!(Date.parse(d?.expiresAt)>now()))unavailable()
+  const {descriptor:d,onboarding}=await sql.queryOne(query,'SELECT profitia_profile.organisation_bootstrap_descriptor() AS descriptor,profitia_profile.organisation_onboarding_descriptor() AS onboarding')
+  if(d?.schemaDigest!==schema||onboarding?.schemaDigest!==draftSchema||!uuid.test(d?.policyId??'')||!/^[1-9][0-9]*$/.test(d?.policyVersion??'')||!ref(d?.sourceRef)||!(Date.parse(d?.expiresAt)>now()))unavailable()
   return d
  }
  function executorFor(httpRequest,onConflict){

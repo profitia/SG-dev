@@ -31,6 +31,10 @@ test('organisation bootstrap: real PostgreSQL atomic creation, duplicate arbitra
   await assert.rejects(f.pool.query("SELECT profitia_profile.organisation_bootstrap_create('{}',1,$1,gen_random_uuid())",['0'.repeat(64)]))
   await f.admin.query('UPDATE profitia_profile.organisation_bootstrap_policies SET enabled=true')
   await api[0].ready()
+  await f.admin.query("UPDATE profitia_profile.organisation_onboarding_installation SET schema_digest=$1",['0'.repeat(64)])
+  await assert.rejects(api[0].ready())
+  await f.admin.query("UPDATE profitia_profile.organisation_onboarding_installation SET schema_digest=$1",[organisationOnboardingSchemaDigest()])
+  await api[0].ready()
  })
  await t.test('changed registry data requires fresh confirmation and creates no organisation',async()=>{
   const changed=createOrganisationBootstrapBackend({...f.options(actors[0]),application:{...f.options(actors[0]).application,features:['organisation_admin'],operations:['organisation.create']},readVerifiedCompany:async({nip})=>({company:company(nip),sourceRef:'synthetic-stored-registry',version:'synthetic-snapshot-2'})})

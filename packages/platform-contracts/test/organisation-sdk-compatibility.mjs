@@ -19,7 +19,7 @@ function historicalSource(reader,sha,path){
 const receiptPath=project=>'apps/'+(project==='SG2'?'sg-runtime':'srm')+'/operation-integration.json'
 const tasks={SG2:'SG2-REGISTRATION-ORGANISATION-HANDOFF-STAGE-I-20261110',SRM:'SRM-REGISTRATION-BOOTSTRAP-SDK-ADOPTION-20261111'}
 const known=Object.freeze({
- 'organisation-bootstrap-v1':Object.freeze({path:'packages/platform-contracts/test/organisation-sdk-compatibility.json',sha256:'e1f38699f6198f8e7014b556a7c2525d53f5b8146ce6114487194bc07ed66f2c'})
+ 'organisation-bootstrap-v1':Object.freeze({path:'packages/platform-contracts/test/organisation-sdk-compatibility.json',sha256:'66c07a72cd3817f17eca8243697a633106cc79caa2e2e8a19b1d7a74e0e4d3f1'})
 })
 const recordKeys=['schemaVersion','acceptanceId','taskId','targetEnvironment','scope','platformVersion','previousSourceSha','producer','sourceDigests','compatibilityTestSourceDigests','sdkDigests','optionalPackageDigests','consumerSourceDigests','preservedSourceDigests','defaultRootImplementation','optionalRootImplementation','optionalOperations','runtimeOptedIn','sqlInstalled','permissionsChanged','providerCallsPerformed','deploymentPerformed']
 const compatibilityTests=[
@@ -37,7 +37,7 @@ function verifyRecord(a,current,historical){
  assert.equal(a.taskId,'ARCH-REGISTRATION-ORGANISATION-STAGE-I-20261110')
  assert.equal(a.targetEnvironment,'development');assert.equal(a.scope,'OPTIONAL_ORGANISATION_SDK_SOURCE_ONLY')
  assert.equal(a.platformVersion,'1.34.0');assert.match(a.previousSourceSha,/^[a-f0-9]{40}$/)
- assert.deepEqual(a.producer,{projectKey:'ARCHITECTURE',taskId:a.taskId,pullRequest:983,sourceSha:'1f1d7ae740f5d4ce6204551474789dcba1f4124d'})
+ assert.deepEqual(a.producer,{projectKey:'ARCHITECTURE',taskId:a.taskId,pullRequest:983,sourceSha:'c373be45a5bf52c93034f5a1b6878e531c81b2ca'})
  assert.equal(a.defaultRootImplementation,'1.0.0-candidate.16');assert.equal(a.optionalRootImplementation,'1.0.0-candidate.21')
  assert.deepEqual(a.optionalOperations,['organisation.create'])
  for(const flag of ['runtimeOptedIn','sqlInstalled','permissionsChanged','providerCallsPerformed','deploymentPerformed'])assert.equal(a[flag],false,flag)
