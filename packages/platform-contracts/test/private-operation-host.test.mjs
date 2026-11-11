@@ -1,3 +1,4 @@
+import {acceptedSdkSource} from './organisation-sdk-compatibility.mjs'
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { createPrivateOperationHost, PRIVATE_OPERATION_HOST_CONTRACT, privateOperationHostSourceDigest } from '../src/private-operation-host.mjs'
@@ -20,7 +21,7 @@ test('the versioned host pins the additive candidate and preserves the base SQL'
   assert.equal(host.hostContract.version,'1.11.0')
   assert.match(await privateOperationHostSourceDigest(),/^[a-f0-9]{64}$/)
   const current=JSON.parse(fs.readFileSync(new URL('../../../apps/srm/operation-integration.json',import.meta.url)))
-  assert.equal(await operationSourceDigest(),current.oilAutonomousReportCompatibility.sdkDigests.operationSourceDigest)
+  assert.equal(await operationSourceDigest(),acceptedSdkSource().sdkDigests.operationSourceDigest)
   assert.equal(await identitySourceDigest(),'662f6c95138a0f8cd8f835c569084d669fbe85e34a762676584297ecd5f03606')
   assert.equal(await accessStoreSourceDigest(),'71e42f5e194f8b251c86a70c22bfbd7cb940cf66b8279159b08781f042ec9f47')
   assert.equal(await accessSchemaDigest(),'356463492c3304ca11fa533f6e99f1d41628a3ab830488142c6030fb9a920ff2')
