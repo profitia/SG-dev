@@ -45,11 +45,12 @@ export class PostgresReportStore {
       c.release();
     }
   }
-  async start(ctx, input, profile, trigger) {
+  async start(ctx, input, profile, trigger, subscription = null) {
+    if(subscription!==null)requireThat(trigger==="SUBSCRIPTION"&&ctx.operation==="insights.subscription.execute"&&ctx.actorKind==="SERVICE"&&ctx.subjectUserId===ctx.recurringDelegation?.ownerUserId&&ctx.actorId===ctx.recurringDelegation?.serviceActorId&&ctx.resourceId===subscription.jobId&&ctx.recurringDelegation?.jobId===subscription.jobId,"CURRENT_PRIVATE_SUBSCRIPTION_REQUIRED",403);
     assertContext(ctx);
     const c = command(input),
       key = editionKey(ctx.organisationId, c),
-      id = randomUUID();
+      id = subscription?.jobId??randomUUID();
     const j = {
       id,
       editionId: id,

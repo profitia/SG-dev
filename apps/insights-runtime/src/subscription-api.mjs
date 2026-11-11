@@ -9,7 +9,7 @@ async function readBody(request){
  try{for(;;){const part=await reader.read();if(part.done)break;size+=part.value.byteLength;requireThat(size<=16384,'REQUEST_TOO_LARGE',413);chunks.push(part.value);}}finally{await reader.cancel().catch(()=>{});reader.releaseLock();}
  return JSON.parse(Buffer.concat(chunks).toString());
 }
-export function createSubscriptionApi({authority,store,profiles,onOrder}){
+export function createSubscriptionApi({authority,store,profiles,onOrder,recurring=null}){
  requireThat(authority&&typeof authority.execute==='function'&&store&&typeof profiles==='function'&&typeof onOrder==='function','INSTALLED_SUBSCRIPTION_HOST_REQUIRED',503);
  return async request=>{try{
   const u=new URL(request.url),prefix='/api/v1/insights/subscriptions',parts=u.pathname.slice(prefix.length).split('/').filter(Boolean);
@@ -53,14 +53,15 @@ export function createSubscriptionApi({authority,store,profiles,onOrder}){
    const input=await readBody(request);
    if(request.method==='PATCH'&&input&&Object.keys(input).sort().join(',')==='contractVersion,status,version'&&input.contractVersion===SUBSCRIPTION_CONTRACT){
     if(input.status==='ACTIVE'){const old=await store.get(ctx,parts[0]);requireThat(catalog.some(p=>p.definitionId===old.definitionId&&p.profileVersion===old.profileVersion),'PROFILE_NOT_AVAILABLE',409);}
-    return respond(await store.setStatus(ctx,parts[0],input));
+    const order=await store.setStatus(ctx,parts[0],input);if(recurring&&order.schedule){await recurring.activate(ctx,request,order.id,order.version,order.status==='ACTIVE');return respond(await store.get(ctx,order.id))}return respond(order);
    }
    const profile=catalog.find(x=>x.definitionId===input?.definitionId&&x.profileVersion===input?.profileVersion);requireThat(profile,'PROFILE_NOT_AVAILABLE',409);
-   if(request.method==='PATCH')return respond(await store.update(ctx,parts[0],input,profile));
+   if(request.method==='PATCH'){const order=await store.update(ctx,parts[0],input,profile);if(recurring&&order.schedule){await recurring.activate(ctx,request,order.id,order.version,order.status==='ACTIVE');return respond(await store.get(ctx,order.id))}return respond(order);}
    const order=await store.create(ctx,input,profile,request.headers.get('idempotency-key'));
    if(order.schedule===null&&order.executionState==='WAITING_AUTHORIZATION'){
     const job=await onOrder(ctx,order);return respond(await store.linkJob(ctx,order,job),201);
    }
+   if(recurring&&order.schedule&&order.version===1&&order.status==='ACTIVE'&&order.executionState==='WAITING_AUTHORIZATION'){await recurring.activate(ctx,request,order.id,order.version,true);return respond(await store.get(ctx,order.id),201)}
    return respond(order,201);
   });}catch(error){if(error instanceof ReportError||error instanceof SyntaxError)return respond({error:{code:error instanceof SyntaxError?'INVALID_JSON':error.code}},error instanceof SyntaxError?400:error.status);throw error;}});
  }catch(error){if(isOperationDenied(error)){const unavailable=['POLICY_UNAVAILABLE','AUDIT_UNAVAILABLE'].includes(error.reasonCode);return respond({error:{code:unavailable?'AUTHORITY_UNAVAILABLE':'ACCESS_DENIED'}},unavailable?503:403);}return respond({error:{code:error instanceof SyntaxError?'INVALID_JSON':error instanceof ReportError?error.code:'SUBSCRIPTIONS_UNAVAILABLE'}},error instanceof SyntaxError?400:error instanceof ReportError?error.status:503);}};

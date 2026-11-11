@@ -1,7 +1,7 @@
 import type {Prisma} from '@prisma/client'
 import {OPERATION_CONTRACT,OperationDenied,type OperationExecutor} from '@profitia/platform-contracts/operation-context'
 import {readPresentationJson} from '@profitia/platform-contracts/embedded-read-channel'
-import {createForecastContextAdapter,createSupplierContextAdapter,createNewsfeedContextAdapter} from '../../../../packages/assistant-context-gateway/src/index.mjs'
+import {createForecastContextAdapter,createSupplierContextAdapter,createNewsfeedContextAdapter,createPublishedReportContextAdapter} from '../../../../packages/assistant-context-gateway/src/index.mjs'
 import type {Sg2SelectionRuntime} from '@/lib/platform/private-runtime'
 import targets from '@/deployment/assistant-m2-targets.json'
 import type {BenchmarkRangePreset} from '@/lib/benchmark/contracts'
@@ -77,7 +77,17 @@ export function createAssistantSourceAdapters(options:Options){
    const params:Record<string,string>={}
    if(selection.observationId!==null)params.observationId=selection.observationId
    if(selection.supplierNip!==null)params.supplierNip=selection.supplierNip
+   if(selection.version==='2.1.0'){params.selectionVersion=selection.version;if(selection.runId)params.runId=selection.runId;if(selection.publicationId)params.publicationId=selection.publicationId}
    return peerRead(options,request,organisationId,'newsfeed',params,signal)
+  }}),
+  createPublishedReportContextAdapter({readAuthorised:async({selection,organisationId,request,signal})=>{
+   if(!options.enabled||organisationId!==options.organisationId||!(request instanceof Request)||signal?.aborted)return unavailable()
+   const authorization=request.headers.get('authorization');if(!authorization||!/^Bearer [^\s]{1,8192}$/.test(authorization))throw new OperationDenied('UNVERIFIED_IDENTITY')
+   const {reportSubscriptionsHttp}=await import('@/lib/insights/subscriptions')
+   const response=await reportSubscriptionsHttp(new Request(new URL('/api/v1/insights/subscriptions/editions/'+selection.producerJobId,request.url),{headers:{authorization},signal:AbortSignal.any([request.signal,...(signal?[signal]:[]),AbortSignal.timeout(15000)])}))
+   if(response.status!==200){await response.body?.cancel();throw new OperationDenied([401,403,404].includes(response.status)?'PERMISSION_DENIED':'POLICY_UNAVAILABLE')}
+   if(response.headers.get('cache-control')!=='private, no-store'||response.headers.has('set-cookie'))return unavailable()
+   return readPresentationJson(response,2*1024*1024)
   }}),
  ]
 }
