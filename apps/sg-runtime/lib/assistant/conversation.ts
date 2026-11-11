@@ -37,7 +37,7 @@ async function readTurn(request:Request):Promise<TurnRequest>{
  return {...v,message:v.message.trim(),reference} as TurnRequest
 }
 const sourceFingerprint=(contexts:readonly ContextEntry[])=>JSON.stringify(contexts.map(c=>[c.source,c.status,c.sourceVersion,c.selection]))
-const publicSources=(contexts:readonly ContextEntry[]):readonly AssistantSource[]=>contexts.map(c=>({id:c.id??c.source,label:c.label??({BENCHMARK_CHART:'Benchmark Finder',FORECAST_CORE:'Forecast Core',SRM_XRAY:'SRM / X-Ray',NEWSFEED:'Newsfeed'}[c.source]??c.source),asOf:c.asOf??null,status:c.status}))
+const publicSources=(contexts:readonly ContextEntry[]):readonly AssistantSource[]=>contexts.map(c=>({id:c.id??c.source,label:c.label??({BENCHMARK_CHART:'Benchmark Finder',FORECAST_CORE:'Forecast Core',SRM_XRAY:'SRM / X-Ray',NEWSFEED:'Newsfeed',ECONOMIC_CALENDAR:'Kalendarz makroekonomiczny (ECR)'}[c.source]??c.source),asOf:c.asOf??null,status:c.status}))
 const cleanupRequest=(request:Request)=>new Request(request.url,{method:request.method,headers:new Headers(request.headers),signal:AbortSignal.timeout(8000)})
 const sameUser=(context:Readonly<OperationContext>,userId:string)=>{if(context.actorId!==userId)fail('DENIED')}
 
@@ -138,7 +138,7 @@ export function createAssistantHandlers(resolveRuntime:()=>Promise<AssistantRunt
     const demand={plan:policy.contextPlan,reference:selection.reference,organisationId:r.organisationId,request,signal:request.signal}
     const resolveContext=(input:typeof demand)=>Sentry.startSpan({name:'assistant.context',op:'assistant.context'},async span=>{
      const result=await r.gateway.resolve(input)
-     for(const entry of result.contexts)if(['BENCHMARK_CHART','FORECAST_CORE','SRM_XRAY','NEWSFEED'].includes(entry.source))span?.setAttribute('assistant.source.'+entry.source.toLowerCase()+'.status',entry.status)
+     for(const entry of result.contexts)if(['BENCHMARK_CHART','FORECAST_CORE','SRM_XRAY','NEWSFEED','ECONOMIC_CALENDAR'].includes(entry.source))span?.setAttribute('assistant.source.'+entry.source.toLowerCase()+'.status',entry.status)
      return result
     })
     const context=await resolveContext(demand)

@@ -6,7 +6,8 @@ export type ForecastFrequency='DAILY'|'WEEKLY'|'MONTHLY'|'BIMONTHLY'|'QUARTERLY'
 export type ForecastReference=Readonly<{version:'2.0.0';source:'FORECAST_CORE';seriesId:string;modelIds:readonly ('naive'|'damped_holt'|'ets'|'arima')[];targetBasis:'POINT_IN_TIME'|'MONTHLY_AVERAGE'|'END_OF_PERIOD';sourceFrequency:ForecastFrequency|null;targetCadence:ForecastFrequency|null;verification:boolean}>
 export type SupplierReference=Readonly<{version:'2.0.0';source:'SRM_XRAY';nip:string;entityType:'COMPANY'|'JDG';krs:string|null;year:number|null;comparisonYear:number|null;statementScope:'standalone'|'consolidated';sourceVersion:string|null}>
 export type NewsfeedReference=Readonly<{version:'2.0.0';source:'NEWSFEED';observationId:string|null;supplierNip:string|null}>
-export type ContextReference=ChartReference|ForecastReference|SupplierReference|NewsfeedReference
+export type EconomicCalendarReference=Readonly<{version:'2.1.0';source:'ECONOMIC_CALENDAR';targetType:'BENCHMARK_SERIES'|'MARKET'|'COMMODITY'|'CATEGORY'|null;targetId:string|null;from:string;to:string;asKnownAt:string|null;after:string|null}>
+export type ContextReference=ChartReference|ForecastReference|SupplierReference|NewsfeedReference|EconomicCalendarReference
 export type ContextSelection=ContextReference|Readonly<{version:'2.0.0';source:'CONTEXT_SELECTION';references:readonly ContextReference[]}>
 export function readContextReference(value:unknown):ContextReference
 export function readContextSelection(value:unknown):ContextSelection|null

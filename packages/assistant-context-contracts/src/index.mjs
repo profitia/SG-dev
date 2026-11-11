@@ -23,6 +23,17 @@ const frequencies=['DAILY','WEEKLY','MONTHLY','BIMONTHLY','QUARTERLY','QUADMONTH
  * Each producer must resolve these hints under the current server authority. */
 export function readContextReference(value){
  if(value?.source==='BENCHMARK_CHART')return readChartReference(value)
+ if(value?.source==='ECONOMIC_CALENDAR'){
+  if(!exact(value,['version','source','targetType','targetId','from','to','asKnownAt','after'])||value.version!=='2.1.0'
+   ||(value.targetType===null)!==(value.targetId===null)
+   ||value.targetType!==null&&!['BENCHMARK_SERIES','MARKET','COMMODITY','CATEGORY'].includes(value.targetType)
+   ||value.targetId!==null&&(typeof value.targetId!=='string'||!/^[A-Za-z0-9][A-Za-z0-9._:/-]{0,255}$/.test(value.targetId))
+   ||value.after!==null&&(typeof value.after!=='string'||!/^ecr_evt_[a-f0-9]{64}$/.test(value.after)))throw TypeError('Invalid ECR reference')
+  const instant=v=>{if(typeof v!=='string'||!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z$/.test(v)||!Number.isFinite(Date.parse(v)))throw TypeError('Invalid ECR instant');const at=new Date(v).toISOString();if(at!==(v.includes('.')?v:v.slice(0,-1)+'.000Z'))throw TypeError('Invalid ECR calendar day');return at}
+  const from=instant(value.from),to=instant(value.to),asKnownAt=value.asKnownAt===null?null:instant(value.asKnownAt)
+  if(from>to)throw TypeError('Invalid ECR interval')
+  return Object.freeze({...value,from,to,asKnownAt})
+ }
  if(value?.version!=='2.0.0')throw TypeError('Invalid context reference')
  if(value.source==='FORECAST_CORE'){
   if(!exact(value,['version','source','seriesId','modelIds','targetBasis','sourceFrequency','targetCadence','verification'])

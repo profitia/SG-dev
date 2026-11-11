@@ -1,4 +1,5 @@
 // Test/build-only source continuation. Cannot authorize a runtime operation.
+import {assistantEcrPredecessor} from './assistant-ecr-integrity.mjs'
 import assert from 'node:assert/strict'
 import {createHash} from 'node:crypto'
 export const SEND_ARROW_RECEIPT='apps/sg-runtime/assistant-send-arrow-integration.json'
@@ -27,6 +28,7 @@ const canonicalSubmit=`<button className="as-primary-button" type="submit" disab
     </button>`
 const hash=b=>createHash('sha256').update(b).digest('hex')
 export function assistantSendArrowPredecessor(current,historical){
+ const ecr=assistantEcrPredecessor(current,historical);if(ecr)return assistantSendArrowPredecessor(ecr.previousBytes,historical)
  let bytes
  try{bytes=current(SEND_ARROW_RECEIPT)}catch(error){
   const text=String(error?.stderr??error?.message??'')
