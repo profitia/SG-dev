@@ -252,7 +252,9 @@
       "apps/srm/scripts/source-hub-sdk-compatibility.mjs": "377842347c9a299095021937c1c2fcbae57de5d913fedd04e4f6c440201e1963",
       "apps/srm/scripts/supplier-location-admission.integration.test.mjs": "729351a9c3cabe3ea8f7bebd0093b307fc4cb30bb2bb9c98dfc6cb15c18f0c57",
       "apps/srm/scripts/xray-performance-adoption.test.mjs": "345abe0029ff18bed8f44d4dae03168c0a32e750a5c46f87976e66353d7eba42",
-      "apps/srm/src/server/root-atomic-claim-adoption.test.ts": "085794670b9762dab90d0d8baead744c70f59ba395c40baf217882fef5334a0b"
+      "apps/srm/src/server/peer-read-boundary.test.ts": "fe1ccf72c24460b1e2edc26b44e307fa271de55c5a215b488c6b0592bc93fcd6",
+      "apps/srm/src/server/root-atomic-claim-adoption.test.ts": "085794670b9762dab90d0d8baead744c70f59ba395c40baf217882fef5334a0b",
+      "apps/srm/src/server/supplier-location-geocoding-runtime.test.ts": "63ee7b29f2b8d6651be9423a2cbca17b1517a6e35c53b7c53a3b7334080c72c2"
     }
   },
   "preservedSourceDigests": {

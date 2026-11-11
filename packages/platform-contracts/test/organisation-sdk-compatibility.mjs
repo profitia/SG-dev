@@ -20,7 +20,7 @@ function historicalSource(reader,sha,path){
 const receiptPath=project=>'apps/'+(project==='SG2'?'sg-runtime':'srm')+'/operation-integration.json'
 const tasks={SG2:'SG2-REGISTRATION-ORGANISATION-HANDOFF-STAGE-I-20261110',SRM:'SRM-REGISTRATION-BOOTSTRAP-SDK-ADOPTION-20261111'}
 const known=Object.freeze({
- 'organisation-bootstrap-v1':Object.freeze({path:'packages/platform-contracts/test/organisation-sdk-compatibility.json',sha256:'02fb0d1e938d6fc13d4aa89de5257af5112e155efa159e004f3de743ba069850'})
+ 'organisation-bootstrap-v1':Object.freeze({path:'packages/platform-contracts/test/organisation-sdk-compatibility.json',sha256:'a0ebdd9af086aba27d025aa821b2c22d43551e997dfa0642c0c59aac11cc4ac5'})
 })
 const recordKeys=['schemaVersion','acceptanceId','taskId','targetEnvironment','scope','platformVersion','previousSourceSha','producer','sourceDigests','compatibilityTestSourceDigests','sdkDigests','optionalPackageDigests','consumerSourceDigests','preservedSourceDigests','defaultRootImplementation','optionalRootImplementation','optionalOperations','runtimeOptedIn','sqlInstalled','permissionsChanged','providerCallsPerformed','deploymentPerformed']
 const compatibilityTests=[
@@ -60,7 +60,7 @@ function verifyRecord(a,current,historical){
  exactKeys(a.consumerSourceDigests,['SG2','SRM'],'both consumer owners required')
  for(const project of ['SG2','SRM']){
   fileMap(a.consumerSourceDigests[project],project+' consumer closure')
-  const pattern=project==='SG2'?/^apps\/sg-runtime\/tests\/[a-z0-9.-]+\.(?:mjs|ts)$/:/^apps\/srm\/(?:scripts\/[a-z0-9.-]+\.(?:mjs|ts)|src\/server\/root-atomic-claim-adoption\.test\.ts)$/
+  const pattern=project==='SG2'?/^apps\/sg-runtime\/tests\/[a-z0-9.-]+\.(?:mjs|ts)$/:/^apps\/srm\/(?:scripts\/[a-z0-9.-]+\.(?:mjs|ts)|src\/server\/(?:root-atomic-claim-adoption|peer-read-boundary|supplier-location-geocoding-runtime)\.test\.ts)$/
   for(const[p,h]of Object.entries(a.consumerSourceDigests[project])){
    assert(pattern.test(p),'source-only consumer path '+p)
    assert.equal(hash(current(p)),h,'current '+project+' acceptance '+p)
