@@ -13,6 +13,7 @@ test('SYNTHETIC_ONLY: durable monitoring runs without a browser and fences priva
  const f=await firstPartyFixture(),original=globalThis.fetch;let afterInitial=null,transportError=null;
  const transport=async(url,options={})=>{
   if(!url.startsWith(f.authorityOrigin+'/v1/e1/recurring/'))return f.transport(url,options);
+  if(url.endsWith('/component-ready')){try{return Response.json(await f.authority.recurringComponentReady(new Request(url,{method:'POST',headers:options.headers}),JSON.parse(options.body)))}catch{return Response.json({ready:false},{status:403})}}
   const input=JSON.parse(options.body);
   try{const p=await(url.endsWith('/consent')?f.authority.recurringConsent:f.authority.authorizeRecurring)(new Request(url,{method:'POST',headers:options.headers}),input);
    if(input.previous===null&&afterInitial)await afterInitial();return Response.json(p);
@@ -23,7 +24,7 @@ test('SYNTHETIC_ONLY: durable monitoring runs without a browser and fences priva
   await f.asOwner(0,async q=>{
    await q.query(load('../../../packages/platform-contracts/current-e1-authority/migrations/012-recurring-authority.sql'));
    await q.query('INSERT INTO profitia_e1_authority.recurring_installation VALUES(true,$1)',[recurringSchemaDigest('authority')]);
-   await q.query('GRANT EXECUTE ON FUNCTION profitia_e1_authority.recurring_ready(),profitia_e1_authority.recurring_consent(text,jsonb,jsonb),profitia_e1_authority.recurring_identity(text,text,jsonb),profitia_e1_authority.issue_recurring(text,text,text,jsonb,jsonb,jsonb) TO identity_b1_runtime');
+   await q.query('GRANT EXECUTE ON FUNCTION profitia_e1_authority.recurring_component_ready(text,text,text,text),profitia_e1_authority.recurring_ready(),profitia_e1_authority.recurring_schema_digest(),profitia_e1_authority.recurring_consent(text,jsonb,jsonb),profitia_e1_authority.recurring_identity(text,text,jsonb),profitia_e1_authority.issue_recurring(text,text,text,jsonb,jsonb,jsonb) TO identity_b1_runtime');
    await q.query("INSERT INTO profitia_services.runtime_bindings(login_role,binding_id,service_id,profile_id,deployment_id,configuration_version,status,source_ref,expires_at) VALUES('newsfeed_development_runtime',$1,$2,'SPENDGURU_SAAS','SYNTHETIC_ONLY','synthetic-first-party-v1','ACTIVE','SYNTHETIC_ONLY',now()+interval '1 hour')",[randomUUID(),randomUUID()]);
    await q.query("INSERT INTO profitia_services.read_grants(grant_id,login_role,organisation_id,operation,feature,resource_id,effect,status,source_ref,expires_at) VALUES($1,'newsfeed_development_runtime',$2,'knowledge.read','market','api.brave.news-discovery','ALLOW','ACTIVE','SYNTHETIC_ONLY',now()+interval '1 hour')",[randomUUID(),A]);
    await q.query("INSERT INTO profitia_e1_authority.recurring_executors(component_id,key_id,owner_application_id,operation,status,source_ref,expires_at) VALUES($1,'synthetic-key',$2,'newsfeed.monitor.execute','ACTIVE','SYNTHETIC_ONLY',now()+interval '1 hour')",[f.components.newsfeed.id,f.apps[2]]);
@@ -75,6 +76,15 @@ test('SYNTHETIC_ONLY: durable monitoring runs without a browser and fences priva
    const o=await create(),candidate=(await monitoring.candidates()).find(x=>x.id===o.id),job=await monitoring.claim(candidate),before=upstream;
    await f.asOwner(0,q=>q.query("UPDATE profitia_access.memberships SET status='SUSPENDED' WHERE organisation_id=$1 AND user_id=$2",[A,U]));
    await assert.rejects(monitoring.execute(job));assert.equal(upstream,before);await f.asOwner(0,q=>q.query("UPDATE profitia_access.memberships SET status='ACTIVE' WHERE organisation_id=$1 AND user_id=$2",[A,U]));
+  });
+  await t.test('restart reconciles a lost completion without repeating an ambiguous provider attempt',async()=>{
+   const o=await create(),candidate=(await monitoring.candidates()).find(x=>x.id===o.id),job=await monitoring.claim(candidate);
+   const disconnected={...f.db(2),query:(sql,args)=>sql.includes('monitoring_uncertain')?Promise.reject(Error('SYNTHETIC_PROCESS_LOSS')):f.db(2).query(sql,args)};
+   const interrupted=await createNewsfeedMonitoring(c,disconnected,{binding:f.bindings[2],fetch:transport,sourceHub});
+   failUpstream=true;await assert.rejects(interrupted.execute(job));failUpstream=false;const before=upstream;
+   await f.asOwner(2,q=>q.query("UPDATE newsfeed.monitor_jobs SET lease_until=clock_timestamp()-interval '1 second' WHERE id=$1",[job.id]),'newsfeed_development_owner');
+   await createMonitoringWorker({monitoring:{...monitoring,async candidates(){return(await monitoring.candidates()).filter(x=>x.id===o.id)}}}).tick();assert.equal(upstream,before);
+   assert.equal((await f.databases[2].query('SELECT state FROM newsfeed.monitor_jobs WHERE id=$1',[job.id])).rows[0].state,'UNCERTAIN');
   });
   await t.test('version change and pause fence an already claimed job',async()=>{
    const o=await create(),candidate=(await monitoring.candidates()).find(x=>x.id===o.id),job=await monitoring.claim(candidate),before=upstream;

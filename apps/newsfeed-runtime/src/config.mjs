@@ -27,6 +27,7 @@ export function readConfiguration(env=process.env){
   recurringPrivateKey=env.NEWSFEED_SIGNING_PRIVATE_KEY;if(typeof recurringPrivateKey!=='string'||recurringPrivateKey.length>4096||!recurringPrivateKey.startsWith('-----BEGIN PRIVATE KEY-----'))bad('NEWSFEED_SIGNING_PRIVATE_KEY');
   recurring=Object.freeze({version:'private-recurring-v1',componentId,keyId});
  }
+ if(recurring&&(env.RENDER_SERVICE_ID!=='srv-dbllnv8m7kps73btro5g'||!/^[a-f0-9]{40}$/.test(env.RENDER_GIT_COMMIT??'')||env.NEWSFEED_DEPLOYMENT_ID!==env.RENDER_GIT_COMMIT))bad('EXACT_MONITORING_DEPLOYMENT_BINDING');
  const port=Number(env.PORT??10000);if(!Number.isInteger(port)||port<1||port>65535||[18012,18013,19099].includes(port))bad('PORT');
  const c={environment,...target,databaseName:'neondb',runtimeRole,publicOrigin,sourceHubOrigin,identityIssuer,authorizedParties,requiredProduct,port,host:'0.0.0.0',sourceHubApplicationId:'profitia-source-hub-development',deploymentId:value('NEWSFEED_DEPLOYMENT_ID'),configurationVersion:value('NEWSFEED_CONFIGURATION_VERSION'),peerKeyId:value('SOURCE_HUB_PEER_KEY_ID'),assistantReadVersion,recurring};
  Object.defineProperty(c,'secrets',{enumerable:false,value:Object.freeze({databaseUrl,clerkSecretKey,clerkPublishableKey,peerKey,recurringPrivateKey})});return Object.freeze(/** @type {typeof c & {secrets:{databaseUrl:string,clerkSecretKey:string,clerkPublishableKey:string,peerKey:Buffer,recurringPrivateKey:string|null}}} */(c));

@@ -24,7 +24,7 @@ function validateCommand(c){
  * Oil identity. A signature authenticates transport; central E1 still decides
  * current membership, product and the exact revocable private consent. */
 export function createRecurringSigner(c,{now=Date.now}={}){
- if(c?.environment!=='development'||!https(c.authorityOrigin)||![/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/].every(r=>r.test(c.componentId??'')&&r.test(c.keyId??'')))throw TypeError('Enrolled Development recurring consumer required');
+ if(c?.environment!=='development'||!https(c.authorityOrigin)||!['componentId','keyId'].every(k=>/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(c[k]??'')))throw TypeError('Enrolled Development recurring consumer required');
  const privateKey=c.privateKey?.type==='private'?c.privateKey:createPrivateKey(c.privateKey);
  if(privateKey.asymmetricKeyType!=='ed25519')throw TypeError('Own Ed25519 credential required');
  return body=>{const issuedAt=now(),p={contract:RECURRING_E1_CONTRACT,componentId:c.componentId,keyId:c.keyId,targetOrigin:c.authorityOrigin,requestId:randomUUID(),issuedAt,expiresAt:issuedAt+15000,bodyDigest:operationPayloadDigest(body)};
@@ -44,9 +44,28 @@ export function createRecurringConsentClient({fetch:send=globalThis.fetch}={}){
 }
 export function createRecurringAuthority({query,client,binding,authorizeHuman,now=Date.now}){
  if(binding?.applicationId!=='identity-runtime-development'||binding.environment!=='development'||typeof query!=='function'||typeof authorizeHuman!=='function')throw TypeError('Existing central E1 owner required');
- return Object.freeze({
- async ready(){try{return(await one(query,'SELECT profitia_e1_authority.recurring_ready() AS ready')).ready===true}catch{return false}},
+ const expectedSchema=recurringSchemaDigest('authority');
+ const ready=async()=>{try{const r=await one(query,'SELECT profitia_e1_authority.recurring_ready() AS ready,profitia_e1_authority.recurring_schema_digest() AS digest');return r.ready===true&&r.digest===expectedSchema}catch{return false}};
+ async function consumer(request,proof,body){
+  if(!(request instanceof Request)||request.headers.has('authorization')||request.headers.has('cookie')||request.headers.has('origin'))deny();
+  if(!plain(proof,['payload','signature'])||typeof proof.payload!=='string'||proof.payload.length>4096||!/^[A-Za-z0-9_-]{86}$/.test(proof.signature??''))deny();
+  let p;try{p=JSON.parse(proof.payload)}catch{deny()}
+  if(JSON.stringify(p)!==proof.payload||Buffer.from(proof.signature,'base64url').toString('base64url')!==proof.signature||!plain(p,['contract','componentId','keyId','targetOrigin','requestId','issuedAt','expiresAt','bodyDigest'])||p.contract!==RECURRING_E1_CONTRACT||!uuid.test(p.requestId??'')||!https(p.targetOrigin)||p.targetOrigin!==new URL(request.url).origin
+   ||!Number.isSafeInteger(p.issuedAt)||p.issuedAt>now()+3000||p.expiresAt!==p.issuedAt+15000||p.expiresAt<=now()||p.bodyDigest!==operationPayloadDigest(body))deny();
+  const registered=(await one(query,'SELECT profitia_e1_authority.source_consumer($1,$2) AS consumer',[p.componentId,p.keyId])).consumer;
+  if(!registered)deny();let valid=false;try{const key=createPublicKey(registered.publicKey);valid=key.asymmetricKeyType==='ed25519'&&verify(null,Buffer.from(proof.payload),key,Buffer.from(proof.signature,'base64url'))}catch{deny()}if(!valid)deny();
+  return{p,registered};
+ }
+ return Object.freeze({ready,
+ async componentReady(request,input){
+  if(!await ready())fail();
+  if(!plain(input,['consumerProof','body'])||!plain(input.body,['kind','applicationId','operation'])||input.body.kind!=='COMPONENT_READINESS'||!operations.includes(input.body.operation))deny();
+  const x=clone(input),{p}=await consumer(request,x.consumerProof,x.body);
+  const allowed=(await one(query,'SELECT profitia_e1_authority.recurring_component_ready($1,$2,$3,$4) AS ready',[p.componentId,p.keyId,x.body.applicationId,x.body.operation])).ready;
+  if(allowed!==true)deny();return{ready:true};
+ },
  async consent(request,input){
+  if(!await ready())fail();
   if(!(request instanceof Request)||request.headers.has('cookie')||request.headers.has('origin')||!plain(input,['applicationId','challenge','command','requestOrigin']))deny();
   const c=clone(validateCommand(input.command)),challenge=clone(input.challenge);
   if(challenge?.organisationId!==c.organisationId||challenge.resourceId!==(c.operation==='newsfeed.monitor.execute'?c.resourceId:'oil-asphalt')||challenge.requestDigest!==operationPayloadDigest(c)
@@ -56,13 +75,9 @@ export function createRecurringAuthority({query,client,binding,authorizeHuman,no
   if(!result)deny();return clone(result);
  },
  async authorize(request,input){
+  if(!await ready())fail();
   if(!(request instanceof Request)||request.headers.has('authorization')||request.headers.has('cookie')||request.headers.has('origin')||!plain(input,['consumerProof','challenge','previous']))deny();
-  const x=clone(input),proof=x.consumerProof;if(!plain(proof,['payload','signature'])||typeof proof.payload!=='string'||proof.payload.length>4096||!/^[A-Za-z0-9_-]{86}$/.test(proof.signature??''))deny();
-  let p;try{p=JSON.parse(proof.payload)}catch{deny()}
-  if(JSON.stringify(p)!==proof.payload||Buffer.from(proof.signature,'base64url').toString('base64url')!==proof.signature||!plain(p,['contract','componentId','keyId','targetOrigin','requestId','issuedAt','expiresAt','bodyDigest'])||p.contract!==RECURRING_E1_CONTRACT||!uuid.test(p.requestId??'')||!https(p.targetOrigin)||p.targetOrigin!==new URL(request.url).origin
-   ||!Number.isSafeInteger(p.issuedAt)||p.issuedAt>now()+3000||p.expiresAt!==p.issuedAt+15000||p.expiresAt<=now()||p.bodyDigest!==operationPayloadDigest({challenge:x.challenge,previous:x.previous}))deny();
-  const registered=(await one(query,'SELECT profitia_e1_authority.source_consumer($1,$2) AS consumer',[p.componentId,p.keyId])).consumer;
-  if(!registered)deny();let valid=false;try{const key=createPublicKey(registered.publicKey);valid=key.asymmetricKeyType==='ed25519'&&verify(null,Buffer.from(proof.payload),key,Buffer.from(proof.signature,'base64url'))}catch{deny()}if(!valid)deny();
+  const x=clone(input),{p,registered}=await consumer(request,x.consumerProof,{challenge:x.challenge,previous:x.previous});
   const identity=(await one(query,'SELECT profitia_e1_authority.recurring_identity($1,$2,$3::jsonb) AS identity',[p.componentId,p.keyId,JSON.stringify(x.challenge)])).identity;
   if(!identity)deny();
   const observation=await createClerkAccountStatusReader({client,environment:'development',issuer:identity.issuer,now})(identity);
@@ -84,7 +99,7 @@ export function createRecurringOperationHost({application,binding,independentQue
  async function remote(d,challenge,previous=null){const body={challenge,previous},consumerProof=signer(body);let r;try{r=await send(d.authorityOrigin+'/v1/e1/recurring/authorize',{method:'POST',redirect:'error',signal:AbortSignal.timeout(3000),headers:{'content-type':'application/json'},body:JSON.stringify({consumerProof,...body})})}catch{fail()}if(r.status===403||r.status===401)deny();if(r.status!==200)fail();return json(r)}
  const append=(q,event)=>one(q,'SELECT profitia_e1_receiver.recurring_audit($1::jsonb) AS recorded',[JSON.stringify(event)]);
  return Object.freeze({
- async ready(){try{await descriptor(independentQuery);return true}catch{return false}},
+ async ready(){try{const d=await descriptor(independentQuery),body={kind:'COMPONENT_READINESS',applicationId:binding.applicationId,operation:application.operations[0]},r=await send(d.authorityOrigin+'/v1/e1/recurring/component-ready',{method:'POST',redirect:'error',signal:AbortSignal.timeout(3000),headers:{'content-type':'application/json'},body:JSON.stringify({consumerProof:signer(body),body})});return r.status===200&&(await json(r)).ready===true}catch{return false}},
  async execute(input,action){
   if(typeof action!=='function')throw TypeError('Explicit private transaction effect required');
   const captured=clone(input);delete captured.request;const d=await descriptor(independentQuery);

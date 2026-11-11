@@ -11,7 +11,7 @@ test('SYNTHETIC_ONLY: current central private recurrence, SERVICE identity and S
   await f.asOwner(0,async q=>{
    await q.query(load('../current-e1-authority/migrations/012-recurring-authority.sql'));
    await q.query('INSERT INTO profitia_e1_authority.recurring_installation VALUES(true,$1)',[recurringSchemaDigest('authority')]);
-   await q.query('GRANT EXECUTE ON FUNCTION profitia_e1_authority.recurring_ready(),profitia_e1_authority.recurring_consent(text,jsonb,jsonb),profitia_e1_authority.recurring_identity(text,text,jsonb),profitia_e1_authority.issue_recurring(text,text,text,jsonb,jsonb,jsonb) TO identity_b1_runtime');
+   await q.query('GRANT EXECUTE ON FUNCTION profitia_e1_authority.recurring_component_ready(text,text,text,text),profitia_e1_authority.recurring_ready(),profitia_e1_authority.recurring_schema_digest(),profitia_e1_authority.recurring_consent(text,jsonb,jsonb),profitia_e1_authority.recurring_identity(text,text,jsonb),profitia_e1_authority.issue_recurring(text,text,text,jsonb,jsonb,jsonb) TO identity_b1_runtime');
    await q.query("INSERT INTO profitia_e1_authority.recurring_executors(component_id,key_id,owner_application_id,operation,status,source_ref,expires_at) VALUES($1,'synthetic-key',$2,'newsfeed.monitor.execute','ACTIVE','SYNTHETIC_ONLY',now()+interval '1 hour')",[f.components.report.id,f.apps[2]]);
   });
   await f.asOwner(2,async q=>{
@@ -35,6 +35,7 @@ test('SYNTHETIC_ONLY: current central private recurrence, SERVICE identity and S
   assert.equal(JSON.parse(consent.payload).status,'ACTIVE');
   let afterInitial=null,latestProof=null;const calls=[];
   const transport=async(url,options)=>{
+   if(url===f.authorityOrigin+'/v1/e1/recurring/component-ready'){try{return Response.json(await f.authority.recurringComponentReady(new Request(url,{method:'POST',headers:options.headers}),JSON.parse(options.body)))}catch{return Response.json({ready:false},{status:403})}}
    assert.equal(url,f.authorityOrigin+'/v1/e1/recurring/authorize');assert.equal(options.headers.authorization,undefined);
    const input=JSON.parse(options.body);calls.push(input);
    try{latestProof=await f.authority.authorizeRecurring(new Request(url,{method:'POST',headers:options.headers}),input);if(input.previous===null&&afterInitial)await afterInitial();return Response.json(latestProof)}catch(e){return Response.json({error:e.reasonCode},{status:403})}
@@ -45,6 +46,7 @@ test('SYNTHETIC_ONLY: current central private recurrence, SERVICE identity and S
    readResource:async(_q,p)=>({id:p.request.resourceId,type:'private_recurring_job',dataClass:'USER_IN_ORGANISATION_PRIVATE',environment:'development',ownerOrganisationId:p.state.recurringDelegation.organisationId,ownerUserId:p.state.recurringDelegation.ownerUserId,version:p.state.recurringDelegation.resourceVersion,projectionVersion:'synthetic-recurring-v1'})});
   const input=()=>({operation:'newsfeed.monitor.execute',organisationId:A,resourceId:randomUUID(),payload:{delegationId,resourceId:resource,resourceVersion:'1',definitionDigest,leaseId:randomUUID(),claimedAt:new Date().toISOString(),slotAt:slot,scheduleSlot:date+'T'+time+'@UTC',phase:'EFFECT'}});
   const execute=(i,owner=U,org=A)=>host.execute(i,async(ctx,tx)=>{assert.equal(ctx.actorKind,'SERVICE');assert.equal(ctx.actorId,f.serviceId);assert.equal(ctx.subjectUserId,U);await tx.query('INSERT INTO synthetic_recurring.effects VALUES($1,$2,$3,$4,1)',[i.resourceId,org,owner,resource]);return{recorded:true}});
+  await t.test('readiness validates the actual component key and explicit enrollment without a session',async()=>{assert.equal(await host.ready(),true);await f.asOwner(0,q=>q.query("UPDATE profitia_e1_authority.recurring_executors SET status='REVOKED'"));assert.equal(await host.ready(),false);await f.asOwner(0,q=>q.query("UPDATE profitia_e1_authority.recurring_executors SET status='ACTIVE'"))});
   await t.test('SERVICE observes actual account without a fabricated session and commits a bound row',async()=>{
    const sessionCalls=f.clerkState.calls.filter(x=>x==='session').length;const value=await execute(input());assert.equal(value.recorded,true);assert.equal(calls.length,2);assert.equal(f.clerkState.calls.filter(x=>x==='session').length,sessionCalls);
   });
@@ -62,6 +64,25 @@ test('SYNTHETIC_ONLY: current central private recurrence, SERVICE identity and S
     await f.asOwner(0,q=>q.query(restore,[A,U]));
    });
   }
+  await t.test('schema drift refuses the new feature before external identity checks',async()=>{
+   const before=f.clerkState.calls.length;
+   await f.asOwner(0,q=>q.query("UPDATE profitia_e1_authority.recurring_installation SET schema_digest=repeat('0',64)"));
+   assert.equal(await f.authority.recurringReady(),false);await assert.rejects(execute(input()));
+   assert.equal(f.clerkState.calls.length,before);
+   await f.asOwner(0,q=>q.query('UPDATE profitia_e1_authority.recurring_installation SET schema_digest=$1',[recurringSchemaDigest('authority')]));
+  });
+  await t.test('calendar policies preserve the distinct accepted Newsfeed and Reports DST behavior',async()=>{
+   await f.asOwner(0,async q=>{
+    const schedule={frequency:'DAILY',timeZone:'Europe/Warsaw',localTime:'02:30',startDate:'2027-01-01',endDate:null,weekdays:[],monthDay:null,dstPolicy:'SKIP_NONEXISTENT_EARLIEST_REPEAT'};
+    const slot=async(s,at)=>(await q.query('SELECT profitia_e1_authority.recurring_slot($1::jsonb,$2::timestamptz) AS allowed',[JSON.stringify(s),at])).rows[0].allowed;
+    assert.equal(await slot(schedule,'2027-03-28T01:00:00Z'),false);
+    const reports={...schedule,dstPolicy:'NEXT_VALID_MINUTE_EARLIEST_REPEAT'};
+    assert.equal(await slot(reports,'2027-03-28T01:00:00Z'),true);
+    assert.equal(await slot(reports,'2027-03-27T01:30:00Z'),true);
+    assert.equal(await slot(reports,'2027-03-27T02:00:00Z'),false);
+    for(const s of[schedule,reports]){assert.equal(await slot(s,'2027-10-31T00:30:00Z'),true);assert.equal(await slot(s,'2027-10-31T01:30:00Z'),false)}
+   });
+  });
   await t.test('key revocation is observed before commit',async()=>{const i=input();afterInitial=()=>f.asOwner(0,q=>q.query("UPDATE profitia_e1_authority.source_components SET status='REVOKED' WHERE component_id=$1",[f.components.report.id]));await assert.rejects(execute(i));afterInitial=null;assert.equal((await f.databases[2].query('SELECT count(*) FROM synthetic_recurring.effects WHERE job_id=$1',[i.resourceId])).rows[0].count,'0')});
  }finally{await f.close()}
 });

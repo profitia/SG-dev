@@ -103,6 +103,8 @@ BEGIN
  THEN RAISE EXCEPTION 'Current monitoring lease required' USING ERRCODE='42501';END IF;
  p:=profitia_e1_receiver.recurring_accept(nullif(current_setting('profitia.recurring_proof',true),'')::jsonb);
  IF p->'request'->>'resourceId' IS DISTINCT FROM j.id::text OR p->'request'->>'leaseId' IS DISTINCT FROM j.lease_id::text OR p->'request'->>'scheduleSlot' IS DISTINCT FROM j.schedule_slot
+ OR (p->'request'->>'slotAt')::timestamptz IS DISTINCT FROM j.slot_at OR(p->'request'->>'claimedAt')::timestamptz IS DISTINCT FROM j.claimed_at
+ OR p->'request'->>'definitionDigest' IS DISTINCT FROM j.definition_digest OR p->'request'->>'delegationId' IS DISTINCT FROM j.delegation_id::text
  THEN RAISE EXCEPTION 'Monitoring job binding refused' USING ERRCODE='42501';END IF;
  SELECT * INTO o FROM newsfeed.observations WHERE(environment,application_id,organisation_id,owner_user_id,id)=(j.environment,j.application_id,j.organisation_id,j.owner_user_id,j.observation_id) FOR SHARE;
  IF NOT FOUND OR o.version<>j.resource_version OR o.status<>'ACTIVE' OR o.monitoring_state<>'ACTIVE' OR newsfeed.monitoring_digest(o)<>j.definition_digest

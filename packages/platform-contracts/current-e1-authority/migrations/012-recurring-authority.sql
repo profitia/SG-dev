@@ -39,23 +39,36 @@ BEGIN
  RETURN profitia_access.runtime_descriptor()->>'applicationId'='identity-runtime-development'
  AND EXISTS(SELECT 1 FROM profitia_e1_authority.recurring_installation);
 END $fn$;
+CREATE FUNCTION profitia_e1_authority.recurring_schema_digest() RETURNS text LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,pg_temp AS $fn$
+BEGIN
+ IF profitia_access.runtime_descriptor()->>'applicationId' IS DISTINCT FROM 'identity-runtime-development' THEN RETURN NULL;END IF;
+ RETURN(SELECT schema_digest FROM profitia_e1_authority.recurring_installation WHERE singleton);
+END $fn$;
+REVOKE ALL ON FUNCTION profitia_e1_authority.recurring_schema_digest() FROM PUBLIC;
 CREATE FUNCTION profitia_e1_authority.recurring_slot(p_schedule jsonb,p_at timestamptz) RETURNS boolean
 LANGUAGE plpgsql STABLE SET search_path=pg_catalog,pg_temp AS $fn$
 DECLARE wall timestamp;local_date date;candidate timestamptz;earliest timestamptz;
 BEGIN
- IF p_schedule->>'frequency' NOT IN('DAILY','WEEKLY','MONTHLY') OR p_schedule->>'dstPolicy'<>'SKIP_NONEXISTENT_EARLIEST_REPEAT'
- OR p_schedule->>'localTime'!~'^([01][0-9]|2[0-3]):[0-5][0-9]$' OR p_schedule->>'startDate'!~'^[0-9]{4}-[0-9]{2}-[0-9]{2}$'
+ IF coalesce(p_schedule->>'frequency','') NOT IN('DAILY','WEEKLY','MONTHLY') OR coalesce(p_schedule->>'dstPolicy','') NOT IN('SKIP_NONEXISTENT_EARLIEST_REPEAT','NEXT_VALID_MINUTE_EARLIEST_REPEAT')
+ OR coalesce(p_schedule->>'localTime','')!~'^([01][0-9]|2[0-3]):[0-5][0-9]$' OR coalesce(p_schedule->>'startDate','')!~'^[0-9]{4}-[0-9]{2}-[0-9]{2}$'
  OR NOT EXISTS(SELECT 1 FROM pg_timezone_names WHERE name=p_schedule->>'timeZone') OR NOT isfinite(p_at) THEN RETURN false;END IF;
+ IF jsonb_typeof(p_schedule->'weekdays') IS DISTINCT FROM 'array'
+ OR p_schedule->>'frequency'='WEEKLY' AND(jsonb_array_length(p_schedule->'weekdays')=0 OR EXISTS(SELECT 1 FROM jsonb_array_elements(p_schedule->'weekdays') v WHERE jsonb_typeof(v)<>'number' OR v::text!~'^[1-7]$'))
+ OR p_schedule->>'frequency'<>'WEEKLY' AND p_schedule->'weekdays' IS DISTINCT FROM '[]'::jsonb
+ OR p_schedule->>'frequency'='MONTHLY' AND(jsonb_typeof(p_schedule->'monthDay') IS DISTINCT FROM 'number' OR coalesce(p_schedule->>'monthDay','')!~'^([1-9]|[12][0-9]|3[01])$')
+ OR p_schedule->>'frequency'<>'MONTHLY' AND p_schedule->'monthDay' IS DISTINCT FROM 'null'::jsonb
+ OR date_trunc('minute',p_at)<>p_at THEN RETURN false;END IF;
  wall:=p_at AT TIME ZONE (p_schedule->>'timeZone');local_date:=wall::date;
- IF to_char(wall,'HH24:MI:SS')<>(p_schedule->>'localTime')||':00' OR local_date<(p_schedule->>'startDate')::date
+ IF (p_schedule->>'dstPolicy'='SKIP_NONEXISTENT_EARLIEST_REPEAT' AND to_char(wall,'HH24:MI:SS')<>(p_schedule->>'localTime')||':00') OR local_date<(p_schedule->>'startDate')::date
  OR (p_schedule->>'endDate' IS NOT NULL AND local_date>(p_schedule->>'endDate')::date)
  OR p_schedule->>'frequency'='WEEKLY' AND NOT coalesce(p_schedule->'weekdays' @> to_jsonb(extract(isodow FROM wall)::integer),false)
  OR p_schedule->>'frequency'='MONTHLY' AND extract(day FROM wall)::integer<>(p_schedule->>'monthDay')::integer
  THEN RETURN false;END IF;
  -- Both sides of DST are checked. One logical local slot uses its earliest
  -- matching UTC instant; a nonexistent wall time has no matching instant.
- SELECT min(x) INTO earliest FROM generate_series(p_at-interval '3 hours',p_at+interval '3 hours',interval '1 minute') x
- WHERE x AT TIME ZONE (p_schedule->>'timeZone')=wall;
+ SELECT min(x) INTO earliest FROM generate_series(p_at-interval '36 hours',p_at+interval '36 hours',interval '1 minute') x
+ WHERE CASE WHEN p_schedule->>'dstPolicy'='SKIP_NONEXISTENT_EARLIEST_REPEAT' THEN x AT TIME ZONE(p_schedule->>'timeZone')=wall
+ ELSE (x AT TIME ZONE(p_schedule->>'timeZone'))::date=local_date AND to_char(x AT TIME ZONE(p_schedule->>'timeZone'),'HH24:MI:SS')>=(p_schedule->>'localTime')||':00' END;
  RETURN earliest=p_at;
 EXCEPTION WHEN OTHERS THEN RETURN false;
 END $fn$;
@@ -80,7 +93,9 @@ BEGIN
  raw:=p_proof->>'payload';
  IF NOT FOUND OR raw IS NULL OR octet_length(raw)>16384 OR p_proof->>'signature' IS DISTINCT FROM encode(public.hmac(convert_to(raw,'UTF8'),r.proof_key,'sha256'),'hex') THEN RETURN NULL;END IF;
  p:=raw::jsonb;op:=p_command->>'operation';
- IF op NOT IN('newsfeed.monitor.execute','insights.subscription.execute')
+ IF coalesce(op,'') NOT IN('newsfeed.monitor.execute','insights.subscription.execute')
+ OR (SELECT array_agg(key ORDER BY key) FROM jsonb_object_keys(p_command) key) IS DISTINCT FROM ARRAY['definitionDigest','delegationId','enabled','operation','organisationId','resourceId','resourceVersion','schedule']
+ OR (SELECT array_agg(key ORDER BY key) FROM jsonb_object_keys(p_command->'schedule') key) IS DISTINCT FROM ARRAY['dstPolicy','endDate','frequency','localTime','monthDay','startDate','timeZone','weekdays']
  OR p->>'contract'<>'profitia.current-e1-authority/1.0.0' OR p->>'keyId' IS DISTINCT FROM r.key_id OR p->'request'->'binding' IS DISTINCT FROM r.binding
  OR p->'actor'->>'kind' IS DISTINCT FROM 'HUMAN' OR p->'actor'->>'actorId' IS DISTINCT FROM p->'actor'->>'userId'
  OR p->'state'->'access'->>'type' IS DISTINCT FROM 'MEMBERSHIP'
@@ -90,7 +105,8 @@ BEGIN
  OR p->'request'->>'resourceId' IS DISTINCT FROM (CASE op WHEN 'newsfeed.monitor.execute' THEN p_command->>'resourceId' ELSE 'oil-asphalt' END)
  OR NOT coalesce((p->>'expiresAt')::timestamptz>clock_timestamp(),false)
  OR p_command->>'resourceVersion'!~'^[1-9][0-9]*$' OR p_command->>'definitionDigest'!~'^[a-f0-9]{64}$'
- OR jsonb_typeof(p_command->'schedule') IS DISTINCT FROM 'object' THEN RETURN NULL;END IF;
+ OR jsonb_typeof(p_command->'schedule') IS DISTINCT FROM 'object'
+ OR p_command->'schedule'->>'dstPolicy' IS DISTINCT FROM (CASE op WHEN 'newsfeed.monitor.execute' THEN 'SKIP_NONEXISTENT_EARLIEST_REPEAT' ELSE 'NEXT_VALID_MINUTE_EARLIEST_REPEAT' END) THEN RETURN NULL;END IF;
  SELECT * INTO c FROM profitia_e1_authority.recurring_consents WHERE application_id=p_app AND organisation_id=(p_command->>'organisationId')::uuid
  AND owner_user_id=(p->'actor'->>'userId')::uuid AND operation=op AND resource_id=(p_command->>'resourceId')::uuid FOR UPDATE;
  IF FOUND THEN
@@ -106,6 +122,22 @@ BEGIN
  raw:=jsonb_build_object('contract','profitia.recurring-consent-receipt/1.0.0','applicationId',p_app,'organisationId',c.organisation_id,'ownerUserId',c.owner_user_id,'resourceId',c.resource_id,'definitionDigest',c.definition_digest,'schedule',c.schedule,'delegationId',c.delegation_id,'version',c.version::text,'resourceVersion',c.resource_version::text,'status',c.status,'expiresAt',least((p->>'expiresAt')::timestamptz,clock_timestamp()+interval '15 seconds'))::text;
  RETURN jsonb_build_object('payload',raw,'signature',encode(public.hmac(convert_to(raw,'UTF8'),r.proof_key,'sha256'),'hex'));
 END $fn$;
+-- Technical readiness authenticates the component's own key and actual E1
+-- enrollment; it never grants access to a user's private scheduled resource.
+CREATE FUNCTION profitia_e1_authority.recurring_component_ready(p_component text,p_key text,p_app text,p_operation text) RETURNS boolean
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,pg_temp AS $fn$
+BEGIN
+ RETURN profitia_e1_authority.recurring_ready() AND profitia_e1_authority.source_consumer(p_component,p_key) IS NOT NULL
+ AND EXISTS(SELECT 1 FROM profitia_e1_authority.recurring_executors x
+ JOIN profitia_e1_authority.source_components sc USING(component_id,key_id)
+ JOIN profitia_services.runtime_bindings b ON b.login_role=sc.login_role AND b.status='ACTIVE' AND b.expires_at>clock_timestamp()
+  AND b.deployment_id=sc.deployment_id AND b.configuration_version=sc.configuration_version AND b.profile_id IN('SPENDGURU_SAAS','PORR_SUITE')
+ JOIN profitia_access.applications app ON app.application_id=sc.application_id AND app.status='ACTIVE'
+ JOIN profitia_e1_authority.receivers r ON r.application_id=x.owner_application_id AND r.status='ACTIVE' AND r.expires_at>clock_timestamp()
+ JOIN profitia_access.applications owner_app ON owner_app.application_id=r.application_id AND owner_app.status='ACTIVE'
+ WHERE x.component_id=p_component AND x.key_id=p_key AND x.owner_application_id=p_app AND x.operation=p_operation AND x.status='ACTIVE' AND x.expires_at>clock_timestamp());
+END $fn$;
+REVOKE ALL ON FUNCTION profitia_e1_authority.recurring_component_ready(text,text,text,text) FROM PUBLIC;
 CREATE FUNCTION profitia_e1_authority.recurring_identity(p_component text,p_key text,p_request jsonb) RETURNS jsonb
 LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,pg_temp AS $fn$
 DECLARE k jsonb;c profitia_e1_authority.recurring_consents%ROWTYPE;e profitia_access.external_identities%ROWTYPE;
@@ -118,7 +150,8 @@ BEGIN
  OR c.resource_id::text IS DISTINCT FROM p_request->>'privateResourceId' OR c.resource_version::text IS DISTINCT FROM p_request->>'resourceVersion'
  OR c.definition_digest IS DISTINCT FROM p_request->>'definitionDigest' OR c.operation IS DISTINCT FROM p_request->>'operation'
  OR NOT EXISTS(SELECT 1 FROM profitia_e1_authority.recurring_executors x JOIN profitia_e1_authority.source_components sc USING(component_id,key_id)
- JOIN profitia_services.runtime_bindings b ON b.login_role=sc.login_role AND b.status='ACTIVE' AND b.expires_at>clock_timestamp()
+ JOIN profitia_services.runtime_bindings b ON b.login_role=sc.login_role AND b.status='ACTIVE' AND b.expires_at>clock_timestamp() AND b.deployment_id=sc.deployment_id AND b.configuration_version=sc.configuration_version AND b.profile_id IN('SPENDGURU_SAAS','PORR_SUITE')
+ JOIN profitia_access.applications component_app ON component_app.application_id=sc.application_id AND component_app.status='ACTIVE' AND(component_app.fixed_organisation_id IS NULL OR component_app.fixed_organisation_id=c.organisation_id)
  WHERE x.component_id=p_component AND x.key_id=p_key AND x.owner_application_id=c.application_id AND x.operation=c.operation AND x.status='ACTIVE' AND x.expires_at>clock_timestamp())
  THEN RETURN NULL;END IF;
  SELECT ee.* INTO e FROM profitia_access.external_identities ee JOIN profitia_access.accounts a USING(user_id)
@@ -145,7 +178,7 @@ BEGIN
  SELECT * INTO r FROM profitia_e1_authority.receivers WHERE application_id=c.application_id AND status='ACTIVE' AND expires_at>clock_timestamp();
  IF NOT FOUND OR (SELECT array_agg(key ORDER BY key) FROM jsonb_object_keys(p_request) key) IS DISTINCT FROM ARRAY['binding','claimedAt','definitionDigest','delegationId','leaseId','nonce','operation','organisationId','payloadDigest','phase','privateResourceId','resourceId','resourceVersion','scheduleSlot','schemaDigest','slotAt','sourceResourceId','transactionId'] OR p_request->'binding' IS DISTINCT FROM r.binding OR p_request->>'nonce'!~'^[a-f0-9]{64}$' OR p_request->>'payloadDigest'!~'^[a-f0-9]{64}$'
  OR p_request->>'schemaDigest'!~'^[a-f0-9]{64}$' OR p_request->>'transactionId'!~'^[0-9]{1,20}$' THEN RETURN NULL;END IF;
- IF NOT profitia_e1_authority.recurring_slot(c.schedule,(p_request->>'slotAt')::timestamptz) OR (p_request->>'slotAt')::timestamptz>clock_timestamp()
+ IF NOT profitia_e1_authority.recurring_slot(c.schedule,(p_request->>'slotAt')::timestamptz) OR (p_request->>'slotAt')::timestamptz>clock_timestamp()+(CASE WHEN c.operation='insights.subscription.execute' THEN interval '3 hours' ELSE interval '0 seconds' END)
  OR (p_request->>'claimedAt')::timestamptz>clock_timestamp() OR (p_request->>'claimedAt')::timestamptz<clock_timestamp()-interval '30 seconds'
  THEN RETURN NULL;END IF;
  SELECT * INTO u FROM profitia_access.accounts WHERE user_id=c.owner_user_id AND status='ACTIVE';IF NOT FOUND THEN RETURN NULL;END IF;
@@ -172,7 +205,7 @@ BEGIN
   IF NOT FOUND OR EXISTS(SELECT 1 FROM profitia_services.read_grants WHERE login_role=sc.login_role AND organisation_id=c.organisation_id AND operation='knowledge.read'
    AND effect='DENY' AND status='ACTIVE' AND expires_at>clock_timestamp() AND(resource_id IS NULL OR resource_id=p_request->>'sourceResourceId')) THEN RETURN NULL;END IF;
  END IF;
- fingerprint:=encode(public.digest(convert_to(jsonb_build_object('sourceGrant',to_jsonb(sg),'consent',to_jsonb(c),'executor',to_jsonb(ex),'identityBinding',to_jsonb(ei),'component',k,'service',to_jsonb(sb),'account',to_jsonb(u),'member',to_jsonb(m),'organisation',to_jsonb(o),'product',to_jsonb(pg),'parent',to_jsonb(parent),'permissions',permissions,'denies',denies,'receiver',to_jsonb(r)-'proof_key','identity',identity)::text,'UTF8'),'sha256'),'hex');
+ fingerprint:=encode(public.digest(convert_to(jsonb_build_object('authoritySchema',(SELECT schema_digest FROM profitia_e1_authority.recurring_installation WHERE singleton),'sourceGrant',to_jsonb(sg),'consent',to_jsonb(c),'executor',to_jsonb(ex),'identityBinding',to_jsonb(ei),'component',k,'service',to_jsonb(sb),'account',to_jsonb(u),'member',to_jsonb(m),'organisation',to_jsonb(o),'product',to_jsonb(pg),'parent',to_jsonb(parent),'permissions',permissions,'denies',denies,'receiver',to_jsonb(r)-'proof_key','identity',identity)::text,'UTF8'),'sha256'),'hex');
  lease_until:=(p_request->>'claimedAt')::timestamptz+interval '30 seconds';
  expiry:=least(lease_until,clock_timestamp()+interval '15 seconds',m.expires_at,pg.expires_at,parent.expires_at,r.expires_at,sb.expires_at,(k->>'expiresAt')::timestamptz);
  IF p_previous IS NOT NULL THEN

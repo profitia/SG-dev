@@ -142,7 +142,7 @@ export function createCurrentE1Authority({query,client,binding,now=Date.now}){
   }
  }
  const recurring=createRecurringAuthority({query,client,binding,now,authorizeHuman:(request,input)=>authority.authorize(request,input)})
- return Object.freeze({...authority,recurringReady:recurring.ready,recurringConsent:recurring.consent,authorizeRecurring:recurring.authorize})
+ return Object.freeze({...authority,recurringReady:recurring.ready,recurringComponentReady:recurring.componentReady,recurringConsent:recurring.consent,authorizeRecurring:recurring.authorize})
 }
 
 export const currentE1InsightsAuthoritySchemaUrl=new URL('./migrations/007-insights-authority.sql',import.meta.url).href;
