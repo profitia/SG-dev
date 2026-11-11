@@ -20,7 +20,7 @@ function historicalSource(reader,sha,path){
 const receiptPath=project=>'apps/'+(project==='SG2'?'sg-runtime':'srm')+'/operation-integration.json'
 const tasks={SG2:'SG2-REGISTRATION-ORGANISATION-HANDOFF-STAGE-I-20261110',SRM:'SRM-REGISTRATION-BOOTSTRAP-SDK-ADOPTION-20261111'}
 const known=Object.freeze({
- 'organisation-bootstrap-v1':Object.freeze({path:'packages/platform-contracts/test/organisation-sdk-compatibility.json',sha256:'39e4826986a494526598e6e870fb3db7121a68cc3b97fa1fe67dcbd30d917a6a'})
+ 'organisation-bootstrap-v1':Object.freeze({path:'packages/platform-contracts/test/organisation-sdk-compatibility.json',sha256:'fe06dc9c8c26d70245446e6e803eb4aaf555e6b692e3f57157e3c00a9d3333b9'})
 })
 const recordKeys=['schemaVersion','acceptanceId','taskId','targetEnvironment','scope','platformVersion','previousSourceSha','producer','sourceDigests','compatibilityTestSourceDigests','sdkDigests','optionalPackageDigests','consumerSourceDigests','preservedSourceDigests','defaultRootImplementation','optionalRootImplementation','optionalOperations','runtimeOptedIn','sqlInstalled','permissionsChanged','providerCallsPerformed','deploymentPerformed']
 const compatibilityTests=[
@@ -60,7 +60,7 @@ function verifyRecord(a,current,historical){
  exactKeys(a.consumerSourceDigests,['SG2','SRM'],'both consumer owners required')
  for(const project of ['SG2','SRM']){
   fileMap(a.consumerSourceDigests[project],project+' consumer closure')
-  const pattern=project==='SG2'?/^apps\/sg-runtime\/tests\/[a-z0-9.-]+\.(?:mjs|ts)$/:/^apps\/srm\/(?:scripts\/[a-z0-9.-]+\.(?:mjs|ts)|src\/server\/(?:root-atomic-claim-adoption|peer-read-boundary|supplier-location-geocoding-runtime)\.test\.ts)$/
+  const pattern=project==='SG2'?/^apps\/sg-runtime\/tests\/[a-z0-9.-]+\.(?:mjs|ts)$/:/^apps\/srm\/(?:app\/login\/porr-account\.tsx|scripts\/[a-z0-9.-]+\.(?:mjs|ts)|src\/server\/(?:root-atomic-claim-adoption|peer-read-boundary|supplier-location-geocoding-runtime)\.test\.ts)$/
   for(const[p,h]of Object.entries(a.consumerSourceDigests[project])){
    assert(pattern.test(p),'source-only consumer path '+p)
    assert.equal(hash(current(p)),h,'current '+project+' acceptance '+p)
