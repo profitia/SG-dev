@@ -37,3 +37,6 @@ export const CONTRACT:Readonly<{id:'profitia.platform-knowledge';version:'0.2.0'
 export const schemas:Record<string,unknown>;
 export function assertQuery(q:unknown):KnowledgeQuery;
 export function assertContextSemantics(q:KnowledgeQuery,result:KnowledgeContext,countTokens:(serialized:string)=>number):KnowledgeContext;
+
+export interface SourceStatus {sourceId:string;event:'READY'|'PREPARED'|'PROCESSING'|'WITHDRAWN'|'DELETED'|'EXPIRED'|'UNAVAILABLE';available:boolean;revision:string|null;generationId:string|null;checkedAt:string}
+export const httpContract:Readonly<Record<string,unknown>>;

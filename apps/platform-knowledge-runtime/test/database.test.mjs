@@ -87,3 +87,33 @@ test('uncertain paid outcome retains one reservation and never resends on retry'
   if(source){await db.query('DELETE FROM platform_knowledge.provider_calls WHERE source_id=$1',[source.id]);await db.query('DELETE FROM platform_knowledge.generations WHERE source_id=$1',[source.id]);await db.query('DELETE FROM platform_knowledge.sources WHERE id=$1',[source.id]);}db.release();await api.end();
  }
 });
+
+test('shadow rebuild uses retained text after raw deletion; failed generation preserves active retrieval; delete purges derivatives',{skip:!uri,timeout:10000},async()=>{
+ const {createLibrary}=await import('../src/admin.mjs'),{runRetention}=await import('../src/retention.mjs');
+ const db=await pool.connect(),user='66666666-6666-4666-8666-666666666666';let source;
+ const apiUri=new URL(uri);apiUri.username='platform_knowledge_api';const api=new pg.Pool({connectionString:apiUri.href});
+ try{
+  await db.query('BEGIN;SET LOCAL ROLE platform_knowledge_owner');source=await fixture(db,user);
+  const text='Delivery takes 12 days after approval by Commission A.',chunkId=randomUUID();
+  await db.query("UPDATE platform_knowledge.generations SET parser_version='pk-passive-inventory-v1',state='ACTIVE',source_digest=$2,character_count=$3,chunk_count=1,inventory=$4,coverage=$5,validation=$6 WHERE id=$1",[
+   source.generation,digest(text),text.length,JSON.stringify({nativeUnits:1,units:[{id:'p1',kind:'PAGE',ordinal:1,start:0,end:text.length,status:'COMPLETE'}]}),JSON.stringify({expectedUnits:1,accountedUnits:1,extractedCharacters:text.length,chunkedCharacters:text.length,completeUnits:1,failedUnitIds:[]}),JSON.stringify({quality:'COMPLETE'})]);
+  await db.query(`INSERT INTO platform_knowledge.chunks(id,generation_id,ordinal,start_offset,end_offset,text_content,sha256,token_count,locations,embedding)
+   VALUES($1,$2,0,0,$3,$4,$5,12,$6,$7::public.vector)`,[chunkId,source.generation,text.length,text,digest(text),JSON.stringify([{unitId:'p1',kind:'PAGE',ordinal:1,start:0,end:text.length}]),JSON.stringify(Array(1536).fill(0.1))]);
+  await db.query('UPDATE platform_knowledge.sources SET active_generation_id=$2,raw_deleted_at=clock_timestamp() WHERE id=$1',[source.id,source.generation]);await db.query('COMMIT');
+  const next=randomUUID(),jobId=randomUUID(),delegation={sourceId:source.id,generationId:next,jobId,rightsDigest:digest(rights)};
+  const scope={principal:principal(user),delegation};const library=createLibrary({pool:api,storage:{remove:async()=>{}},createDelegation:async()=>delegation});
+  const result=await library.reindex(source.id,scope);assert.equal(result.activeGenerationId,source.generation);
+  const copied=(await db.query('SELECT id,text_content FROM platform_knowledge.chunks WHERE generation_id=$1',[next])).rows;
+  assert.equal(copied.length,1);assert.equal(copied[0].text_content,text);assert.notEqual(copied[0].id,chunkId);
+  await db.query("UPDATE platform_knowledge.jobs SET status='FAILED',error_code='SYNTHETIC_INVALID_REBUILD' WHERE id=$1",[jobId]);
+  assert.equal((await db.query('SELECT active_generation_id FROM platform_knowledge.sources WHERE id=$1',[source.id])).rows[0].active_generation_id,source.generation);
+  assert.equal((await library.get(source.id,scope)).status,'CURRENT');
+  await library.revoke(source.id,false,scope);assert.equal((await library.get(source.id,scope)).cognitive_result.length,0);
+  await transaction(api,async c=>assert.equal((await c.query('SELECT id FROM platform_knowledge.chunks WHERE generation_id=$1',[source.generation])).rowCount,0),scope.principal);
+  await library.revoke(source.id,true,scope);await runRetention({pool,storage:{remove:async()=>{}}});
+  assert.equal((await db.query('SELECT id FROM platform_knowledge.chunks WHERE generation_id=ANY($1::uuid[])',[[source.generation,next]])).rowCount,0);
+  assert.equal((await db.query('SELECT active_generation_id FROM platform_knowledge.sources WHERE id=$1',[source.id])).rows[0].active_generation_id,null);
+ }finally{
+  if(source){await db.query('DELETE FROM platform_knowledge.jobs WHERE source_id=$1',[source.id]);await db.query('UPDATE platform_knowledge.sources SET active_generation_id=NULL WHERE id=$1',[source.id]);await db.query('DELETE FROM platform_knowledge.chunks WHERE generation_id IN(SELECT id FROM platform_knowledge.generations WHERE source_id=$1)',[source.id]);await db.query('DELETE FROM platform_knowledge.generations WHERE source_id=$1',[source.id]);await db.query('DELETE FROM platform_knowledge.sources WHERE id=$1',[source.id]);}db.release();await api.end();
+ }
+});

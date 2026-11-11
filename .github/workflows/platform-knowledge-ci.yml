@@ -60,12 +60,23 @@ jobs:
           }finally{await db.end();}
           JS
       - run: node --test packages/platform-knowledge-contracts/test/*.test.mjs packages/platform-knowledge-core/test/*.test.mjs apps/platform-knowledge-runtime/test/*.test.mjs
+      - run: npm ci --prefix apps/architecture-lab --ignore-scripts --no-audit --no-fund
       - run: npm ci --prefix packages/platform-contracts/current-e1-authority --install-links --ignore-scripts --no-audit --no-fund
       - run: node --test packages/assistant-context-gateway/test/*.test.mjs packages/platform-contracts/test/current-e1-knowledge.test.mjs packages/platform-contracts/test/knowledge-operations.test.mjs packages/platform-contracts/test/operation-context.test.mjs
       - run: npm ci --prefix apps/identity-runtime --install-links --ignore-scripts --no-audit --no-fund
       - run: npm run build --prefix apps/identity-runtime
       - run: node --test apps/identity-runtime/test/knowledge-authority.test.mjs apps/identity-runtime/test/first-party-source.test.mjs
       - run: npm run build --prefix apps/platform-knowledge-runtime
+  parser-container:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 24.15.0
       - name: Generate reference formats and verify proven DOC/PPT fixtures
         timeout-minutes: 3
         env:

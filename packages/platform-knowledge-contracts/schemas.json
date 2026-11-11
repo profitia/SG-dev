@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://contracts.profitia.pl/platform-knowledge/0.1.0",
+  "$id": "https://contracts.profitia.pl/platform-knowledge/0.2.0",
   "$defs": {
     "Rights": {
       "type": "object",
@@ -746,6 +746,78 @@
         },
         "generated": {
           "const": true
+        }
+      }
+    },
+    "SourceStatusRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "version",
+        "sourceIds"
+      ],
+      "properties": {
+        "version": {
+          "const": "0.2.0"
+        },
+        "sourceIds": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 100,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      }
+    },
+    "SourceStatus": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sourceId",
+        "event",
+        "available",
+        "revision",
+        "generationId",
+        "checkedAt"
+      ],
+      "properties": {
+        "sourceId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "event": {
+          "enum": [
+            "READY",
+            "PREPARED",
+            "PROCESSING",
+            "WITHDRAWN",
+            "DELETED",
+            "EXPIRED",
+            "UNAVAILABLE"
+          ]
+        },
+        "available": {
+          "type": "boolean"
+        },
+        "revision": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "generationId": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "uuid"
+        },
+        "checkedAt": {
+          "type": "string",
+          "format": "date-time"
         }
       }
     }

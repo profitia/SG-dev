@@ -22,9 +22,9 @@ try{
    const control=new AbortController(),scopes=[];let heartbeatRunning=false;
    const onStop=()=>control.abort();shutdown.signal.addEventListener('abort',onStop,{once:true});
    const timer=setInterval(async()=>{if(heartbeatRunning)return;heartbeatRunning=true;try{await heartbeat(database.pool,job);}catch{control.abort();}finally{heartbeatRunning=false;}},20000);
-   try{telemetry.emit('JOB_STARTED');await processJob({pool:database.pool,storage,provider,job,signal:control.signal,
-     authorizeJob:async value=>{const scope=await authority.authorizeJob(value);scopes.push(scope);return scope;}});telemetry.emit('JOB_COMPLETED');}
-   catch(error){await failJob(database.pool,job,error);telemetry.emit('JOB_FAILED');}
+   try{const started=Date.now();telemetry.emit('JOB_STARTED');const result=await processJob({pool:database.pool,storage,provider,job,signal:control.signal,
+     reportStage:stage=>telemetry.emit('JOB_STAGE',{stage,durationMs:Date.now()-started}),authorizeJob:async value=>{const scope=await authority.authorizeJob(value);scopes.push(scope);return scope;}});telemetry.emit('JOB_COMPLETED',{durationMs:Date.now()-started});if(result?.rawCleanupPending)telemetry.emit('RAW_CLEANUP_PENDING');}
+   catch(error){await failJob(database.pool,job,error);telemetry.emit(['ACCESS_BASIS_INVALID','RIGHTS_DENIED','SOURCE_REVOKED','ACCOUNT_DELETED','BUDGET_EXCEEDED'].includes(error.reasonCode??error.code)?'JOB_REJECTED':'JOB_FAILED',{technicalCode:error.reasonCode??error.code});}
    finally{clearInterval(timer);shutdown.signal.removeEventListener('abort',onStop);scopes.forEach(s=>authority.release(s));}
   }}finally{storage.close();}
  }

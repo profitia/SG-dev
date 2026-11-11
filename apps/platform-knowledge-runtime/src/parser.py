@@ -131,8 +131,9 @@ def pdf(path, job):
     for index in range(count):
         if time.monotonic()>deadline:
             result.append(unit('PAGE',index+1,'','FAILED','EXTRACTION_TIME_BUDGET'));continue
-        page=doc.load_page(index)
+        text=''
         try:
+            page=doc.load_page(index)
             text=page.get_text(sort=True);reason=None
             images=page.get_images()
             if len(text.strip())<24 and images:
@@ -150,7 +151,7 @@ def pdf(path, job):
                 if any(cell is None for row in rows for cell in row):reason='COMPLEX_TABLE_STRUCTURE'
             result.append(unit('PAGE',index+1,text,'PARTIAL' if reason else 'COMPLETE',reason))
         except Exception:
-            result.append(unit('PAGE',index+1,'','FAILED','PAGE_EXTRACTION_FAILED'))
+            result.append(unit('PAGE',index+1,text,'PARTIAL' if text else 'FAILED','PAGE_EXTRACTION_FAILED'))
     return result, {'nativeUnits':count,'nativeLocation':'PAGE'}
 
 def extract(path, extension, job):

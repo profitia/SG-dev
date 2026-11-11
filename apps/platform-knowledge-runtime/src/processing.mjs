@@ -6,10 +6,10 @@ import {embeddingTokens} from './provider.mjs';
 import {withJob,checkpoint} from './jobs.mjs';
 import {Fault,audit,digest} from './store.mjs';
 
-export async function processJob({pool,storage,provider,authorizeJob,job,signal}){
+export async function processJob({pool,storage,provider,authorizeJob,job,signal,reportStage=()=>{}}){
  // Resume/recovery obtains a fresh bounded service delegation from the existing
  // authority. A serialized user id in a queue is never treated as permission.
- const scope=await authorizeJob(job);
+ reportStage('EXTRACT');const scope=await authorizeJob(job);
  let source=await withJob(pool,job,async db=>(await db.query('SELECT * FROM platform_knowledge.sources WHERE id=$1',[job.source_id])).rows[0]);
  const checkRights=principal=>{
   if(!source.rights.externalAiAllowed||source.source_version!==1||digest(source.rights)!==job.delegation.rightsDigest
@@ -37,13 +37,16 @@ export async function processJob({pool,storage,provider,authorizeJob,job,signal}
   });
   chunks=rows.map(c=>({...c,text_content:c.text,start_offset:c.start,end_offset:c.end,locations:c.locations,embedding:null}));
  }
+ reportStage('COGNITIVE');
  const usable=chunks.filter(c=>c.text_content.trim()&&c.locations.length);
  for(let index=0;index<usable.length;index+=4){
   signal?.throwIfAborted();
   const ordinal=index/4;
   const existing=await withJob(pool,job,async db=>(await db.query('SELECT 1 FROM platform_knowledge.cognition WHERE generation_id=$1 AND ordinal=$2 AND complete=true',[job.generation_id,ordinal])).rowCount);
   if(existing)continue;
-  const batch=usable.slice(index,index+4).map(c=>({id:c.id,text:c.text_content}));
+  const selected=usable.slice(index,index+4);
+  const anchors=selected.flatMap(c=>c.locations.filter(l=>['TABLE','PAGE','SLIDE'].includes(l.kind)).map(l=>usable.find(x=>x.locations.some(k=>k.unitId===l.unitId))));
+  const batch=[...new Map([...anchors,...selected].filter(Boolean).map(c=>[c.id,{id:c.id,text:c.text_content}])).values()];
   const analysis=await provider.analyze({sourceId:source.id,generationId:job.generation_id,chunks:batch,key:'cognitive-'+ordinal,scope,signal});
   await withJob(pool,job,db=>db.query(`INSERT INTO platform_knowledge.cognition(generation_id,ordinal,chunk_ids,analysis,complete)
    VALUES($1,$2,$3,$4,true) ON CONFLICT(generation_id,ordinal) DO NOTHING`,[job.generation_id,ordinal,batch.map(c=>c.id),JSON.stringify(analysis)]));
@@ -72,14 +75,16 @@ export async function processJob({pool,storage,provider,authorizeJob,job,signal}
  await withJob(pool,job,db=>db.query(`INSERT INTO platform_knowledge.cognition(generation_id,ordinal,chunk_ids,analysis,complete) VALUES($1,-1,$2,$3,true)
   ON CONFLICT(generation_id,ordinal) DO NOTHING`,[job.generation_id,parts[0].chunk_ids,JSON.stringify(parts[0].analysis)]));
  await checkpoint(pool,job,'EMBEDDING',{cognitiveComplete:true});
- for(let index=0;index<usable.length;index+=16){
+ reportStage('EMBEDDING');
+ for(let index=0;index<usable.length;index+=8){
   signal?.throwIfAborted();
-  const batch=usable.slice(index,index+16);
+  const batch=usable.slice(index,index+8);
   const present=await withJob(pool,job,async db=>(await db.query('SELECT count(*)::integer AS n FROM platform_knowledge.chunks WHERE id=ANY($1::uuid[]) AND embedding IS NOT NULL',[batch.map(c=>c.id)])).rows[0].n);
   if(present===batch.length)continue;
-  const vectors=await provider.embed({sourceId:source.id,generationId:job.generation_id,texts:batch.map(c=>c.text_content),key:'embedding-'+index,scope,signal});
+  const vectors=await provider.embed({sourceId:source.id,generationId:job.generation_id,texts:batch.map(c=>{const anchor=c.locations.map(l=>usable.find(x=>x.locations.some(k=>k.unitId===l.unitId))).find(x=>x&&x.id!==c.id);return anchor?'[SOURCE UNIT CONTEXT]\n'+Array.from(anchor.text_content).slice(0,256).join('')+'\n[CONTINUATION]\n'+c.text_content:c.text_content;}),key:'embedding-'+index,scope,signal});
   await withJob(pool,job,async db=>{for(let i=0;i<batch.length;i++)await db.query('UPDATE platform_knowledge.chunks SET embedding=$2::public.vector WHERE id=$1',[batch[i].id,JSON.stringify(vectors[i])]);});
  }
+ reportStage('VERIFY');
  await checkpoint(pool,job,'VERIFY',{embeddingComplete:true});
  const finalScope=await authorizeJob(job);checkRights(finalScope.principal);
  // Full round-trip, independent source inventory, complete cognition/embedding
@@ -104,6 +109,9 @@ export async function processJob({pool,storage,provider,authorizeJob,job,signal}
   await audit(db,{sourceId:source.id,jobId:job.id,operation:'GENERATION_ACTIVATED',actorRef:'worker',outcome:'COMPLETED',technical:{partial,chunks:stored.length}});
  });
  // Cleanup is independently retried by retention if storage is temporarily down.
- if(source.raw_key){await storage.remove(source.raw_key);await pool.query('UPDATE platform_knowledge.sources SET raw_deleted_at=clock_timestamp() WHERE id=$1 AND raw_deleted_at IS NULL',[source.id]);}
+ reportStage('COMPLETE');
+ if(source.raw_key&&!source.raw_deleted_at){try{await storage.remove(source.raw_key);await pool.query('UPDATE platform_knowledge.sources SET raw_deleted_at=clock_timestamp() WHERE id=$1 AND raw_deleted_at IS NULL',[source.id]);}
+ catch{return{rawCleanupPending:true};}}
+ return{rawCleanupPending:false};
 }
 export const generationProfile={parserVersion:PARSER_VERSION,chunkerVersion:CHUNKING_VERSION,cognitiveModel:'gpt-6-luna',embeddingModel:'text-embedding-3-small',embeddingDimensions:1536};

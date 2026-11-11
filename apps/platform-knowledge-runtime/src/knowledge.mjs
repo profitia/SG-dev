@@ -57,13 +57,34 @@ export async function queryKnowledge({pool,provider,query,scope}){
    const source=allowed.find(s=>s.active_generation_id===row.generation_id);if(!source||!row.text_content?.trim()||!row.locations?.length)continue;
    evidence.push(makeEvidence(row,source,row.rank));
   }
+  // Bring the original unit's first chunk alongside a continuation. These
+  // are real source ranges (headers, units, definitions), never synthetic text
+  // quoted as evidence. The consumer's complete token budget still applies.
+  if(evidence.length){
+   const anchors=await transaction(pool,async db=>{
+    const starts=[];
+    for(const e of evidence.slice(0,12)){
+     const source=allowed.find(s=>s.id===e.sourceId);
+     for(const location of e.locations.filter(l=>['TABLE','PAGE','SLIDE'].includes(l.kind))){
+      const unit=source.inventory.units.find(u=>u.id===location.unitId);
+      if(unit&&unit.start<location.start)starts.push({generationId:e.generationId,start:unit.start,rank:e.rank});
+     }
+    }
+    const found=[];
+    for(const ref of starts.slice(0,12)){
+     const row=(await db.query('SELECT * FROM platform_knowledge.chunks WHERE generation_id=$1 AND start_offset<=$2 AND end_offset>$2 ORDER BY ordinal LIMIT 1',[ref.generationId,ref.start])).rows[0];
+     if(row){const source=allowed.find(s=>s.active_generation_id===row.generation_id);found.push(makeEvidence(row,source,ref.rank));}
+    }return found;
+   },principal);
+   evidence=[...new Map([...evidence.slice(0,12),...anchors].map(e=>[e.evidenceId,e])).values()].slice(0,24);
+  }
   // Semantic proximity is not proof of answering a question. An independent
   // support check returns only literal source quotes; unsupported candidates
   // never become apparently usable context. It cannot run document commands.
   if(evidence.length){
    const supported=await provider.analyze({sourceId:allowed[0].id,generationId:null,
-    chunks:evidence.slice(0,12).map(e=>({id:e.evidenceId,text:e.text})),question:query.query,
-    sourceRefs:evidence.slice(0,12).map(e=>({sourceId:e.sourceId,generationId:e.generationId,requireActive:true})),
+    chunks:evidence.map(e=>({id:e.evidenceId,text:e.text})),question:query.query,
+    sourceRefs:evidence.map(e=>({sourceId:e.sourceId,generationId:e.generationId,requireActive:true})),
     key:'support-'+digest({requestId:query.requestId,evidence:evidence.map(e=>e.evidenceId)}),scope});
    const ids=new Set(supported.statements.filter(s=>s.kind!=='INFERENCE').map(s=>s.chunkId));
    evidence=evidence.filter(e=>ids.has(e.evidenceId));

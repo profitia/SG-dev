@@ -56,7 +56,26 @@ export function assertContextSemantics(q, result, countTokens) {
       ||!Array.isArray(s.coveredUnitIds)||!Array.isArray(s.missingUnitIds)||!Array.isArray(s.evidenceIds)
       ||new Set([...s.coveredUnitIds,...s.missingUnitIds]).size!==s.expectedUnits
       ||s.coveredUnitIds.length+s.missingUnitIds.length!==s.expectedUnits)fail('INVALID_SUMMARY_COVERAGE');
+    if(s.evidenceIds.some(id=>!result.evidence.some(e=>e.evidenceId===id)))fail('SUMMARY_CITATION_NOT_INCLUDED');
     if(result.status==='READY'&&(s.missingUnitIds.length||!s.text.trim()))fail('SUMMARY_INCOMPLETE');
   }else if(q.task==='DOCUMENT_SUMMARY'&&result.status==='READY')fail('SUMMARY_REPRESENTATION_REQUIRED');
   return result;
 }
+
+// Consumer-neutral HTTP description; no private database or ACG import needed.
+const response=schema=>({description:'Current authorized result',content:{'application/json':{schema}}});
+const documentResponse={type:'object'};
+const operation=(operationId,method,body,result=documentResponse)=>({operationId,security:[{BearerAuth:[]}],...(body?{requestBody:{required:true,content:{'application/json':{schema:body}}}}:{}),responses:{'200':response(result),'401':{description:'Identity required'},'403':{description:'Current access denied'},'422':{description:'Invalid command'},'429':{description:'Budget or resource limit'},'503':{description:'Capability unavailable'}}});
+const ref=name=>({$ref:'#/components/schemas/'+name});
+export const httpContract=Object.freeze({openapi:'3.1.0',info:{title:'Profitia Platform Knowledge',version:CONTRACT.version},
+ components:{securitySchemes:{BearerAuth:{type:'http',scheme:'bearer'}},schemas:JSON.parse(JSON.stringify(schemas.$defs).replaceAll('#/$defs/','#/components/schemas/'))},paths:{
+ '/v1/imports':{post:{...operation('importDocument','POST',null),parameters:[{name:'x-pk-import',in:'header',required:true,description:'Base64url UTF-8 JSON Import metadata',schema:{type:'string',maxLength:12000}}],requestBody:{required:true,content:{'application/octet-stream':{schema:{type:'string',format:'binary'}}}},responses:{'202':response(documentResponse),'403':{description:'Import not permitted'},'422':{description:'Invalid source metadata'},'429':{description:'Budget or resource limit'}}}},
+ '/v1/sources':{get:operation('listDocuments','GET',null,{type:'array',items:documentResponse})},
+ '/v1/sources/{sourceId}':{parameters:[{name:'sourceId',in:'path',required:true,schema:{type:'string',format:'uuid'}},{name:'scope',in:'query',schema:{enum:['PROFITIA_SHARED','ACCOUNT_PRIVATE']}}],get:operation('getDocument','GET'),delete:operation('deleteDocument','DELETE')},
+ '/v1/sources/{sourceId}/publish':{parameters:[{name:'sourceId',in:'path',required:true,schema:{type:'string',format:'uuid'}}],post:operation('publishWholeDocument','POST',{type:'object',additionalProperties:false,properties:{acknowledgePartial:{type:'boolean'},authority:{enum:['REFERENCE','HISTORICAL','BINDING_STANDARD']}}})},
+ '/v1/sources/{sourceId}/withdraw':{parameters:[{name:'sourceId',in:'path',required:true,schema:{type:'string',format:'uuid'}}],post:operation('withdrawDocument','POST')},
+ '/v1/sources/{sourceId}/reindex':{parameters:[{name:'sourceId',in:'path',required:true,schema:{type:'string',format:'uuid'}}],post:operation('rebuildShadowIndex','POST')},
+ '/v1/source-statuses':{post:operation('pollSourceLifecycle','POST',ref('SourceStatusRequest'),{type:'object',properties:{version:{const:'0.2.0'},sources:{type:'array',items:ref('SourceStatus')}}})},
+ '/v1/query':{post:operation('queryKnowledge','POST',ref('Query'),ref('Context'))},
+ '/v1/capabilities':{get:operation('readCapabilities','GET')}
+}});

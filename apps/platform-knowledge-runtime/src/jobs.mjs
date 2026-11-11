@@ -33,13 +33,13 @@ export const checkpoint=(pool,job,stage,value)=>withJob(pool,job,async db=>{
 });
 export async function failJob(pool,job,error){
  // No raw parser/provider/SQL errors enter persistence or telemetry.
- const code=/^[A-Z_]{3,64}$/.test(error?.code??error?.message??'')?(error.code??error.message):'PROCESSING_FAILED';
+ const code=/^[A-Z_]{3,64}$/.test(error?.reasonCode??error?.code??error?.message??'')?(error.reasonCode??error.code??error.message):'PROCESSING_FAILED';
  return transaction(pool,async db=>{
   const r=await db.query(`UPDATE platform_knowledge.jobs SET status=CASE WHEN $4 OR attempt>=3 OR deadline_at<=clock_timestamp()
     THEN 'FAILED' ELSE 'RETRY_WAIT' END,error_code=$5,available_at=clock_timestamp()+interval '15 seconds',lease_until=NULL,
     finished_at=CASE WHEN $4 OR attempt>=3 OR deadline_at<=clock_timestamp() THEN clock_timestamp() ELSE NULL END
    WHERE id=$1 AND fence=$2 AND lease_owner=$3 AND status='RUNNING' RETURNING source_id`,[
-    job.id,job.fence,job.lease_owner,['PAID_RESULT_UNKNOWN','BUDGET_EXCEEDED','SOURCE_REVOKED','ACCOUNT_DELETED','UNSUPPORTED_FORMAT','UNSAFE_DOCUMENT','PARSER_ISOLATION_UNAVAILABLE','RIGHTS_DENIED','COGNITIVE_OUTPUT_INVALID','MODEL_INPUT_LIMIT','SOURCE_ALREADY_EXPIRED'].includes(code),code]);
+    job.id,job.fence,job.lease_owner,['PAID_RESULT_UNKNOWN','PAID_RESULT_UNUSABLE','ACCESS_BASIS_INVALID','BUDGET_EXCEEDED','SOURCE_REVOKED','ACCOUNT_DELETED','UNSUPPORTED_FORMAT','UNSAFE_DOCUMENT','PARSER_ISOLATION_UNAVAILABLE','RIGHTS_DENIED','COGNITIVE_OUTPUT_INVALID','MODEL_INPUT_LIMIT','SOURCE_ALREADY_EXPIRED'].includes(code),code]);
   if(r.rowCount)await audit(db,{sourceId:job.source_id,jobId:job.id,operation:'PROCESSING',actorRef:'worker',outcome:'FAILED'});
  });
 }

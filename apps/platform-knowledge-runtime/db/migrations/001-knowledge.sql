@@ -10,6 +10,12 @@ CREATE TABLE platform_knowledge.account_state(
  memory_enabled boolean NOT NULL DEFAULT false, consent_version text, consent_at timestamptz,
  CHECK (NOT memory_enabled OR consent_at IS NOT NULL)
 );
+ALTER TABLE platform_knowledge.account_state ENABLE ROW LEVEL SECURITY;
+ALTER TABLE platform_knowledge.account_state FORCE ROW LEVEL SECURITY;
+CREATE POLICY account_owner ON platform_knowledge.account_state TO platform_knowledge_owner,platform_knowledge_worker USING(true) WITH CHECK(true);
+CREATE POLICY account_private ON platform_knowledge.account_state TO platform_knowledge_api
+ USING(user_id=nullif(current_setting('pk.user_id',true),''))
+ WITH CHECK(user_id=nullif(current_setting('pk.user_id',true),'') AND deleted_at IS NULL AND lifecycle_event_id IS NULL);
 CREATE TABLE platform_knowledge.sources(
  id uuid PRIMARY KEY, environment text NOT NULL DEFAULT 'development' CHECK(environment='development'),
  scope text NOT NULL CHECK(scope IN ('PROFITIA_SHARED','ACCOUNT_PRIVATE')),
@@ -153,7 +159,9 @@ REVOKE ALL ON ALL FUNCTIONS IN SCHEMA platform_knowledge FROM PUBLIC;
 GRANT SELECT ON platform_knowledge.schema_version TO platform_knowledge_api,platform_knowledge_worker;
 GRANT SELECT,INSERT,UPDATE ON platform_knowledge.sources,platform_knowledge.generations,platform_knowledge.jobs TO platform_knowledge_api;
 GRANT SELECT ON platform_knowledge.chunks,platform_knowledge.cognition TO platform_knowledge_api;
-GRANT SELECT,INSERT,UPDATE ON platform_knowledge.provider_calls,platform_knowledge.budget,platform_knowledge.account_state,platform_knowledge.lifecycle_receipts TO platform_knowledge_api;
+GRANT SELECT,INSERT,UPDATE ON platform_knowledge.provider_calls,platform_knowledge.budget TO platform_knowledge_api;
+GRANT SELECT ON platform_knowledge.account_state TO platform_knowledge_api;
+GRANT INSERT(user_id,memory_enabled,consent_version,consent_at),UPDATE(memory_enabled,consent_version,consent_at) ON platform_knowledge.account_state TO platform_knowledge_api;
 GRANT SELECT,INSERT,UPDATE,DELETE ON platform_knowledge.sources,platform_knowledge.generations,platform_knowledge.jobs,
  platform_knowledge.chunks,platform_knowledge.cognition,platform_knowledge.provider_calls,platform_knowledge.budget,
  platform_knowledge.account_state,platform_knowledge.lifecycle_receipts TO platform_knowledge_worker;
@@ -180,4 +188,19 @@ CREATE FUNCTION platform_knowledge.unknown_provider_call(p_id uuid) RETURNS void
 REVOKE ALL ON FUNCTION platform_knowledge.settle_provider_call(uuid,bigint,integer,integer,text,jsonb),platform_knowledge.unknown_provider_call(uuid) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION platform_knowledge.settle_provider_call(uuid,bigint,integer,integer,text,jsonb),platform_knowledge.unknown_provider_call(uuid) TO platform_knowledge_api,platform_knowledge_worker;
 GRANT DELETE ON platform_knowledge.audit TO platform_knowledge_worker;
+CREATE FUNCTION platform_knowledge.copy_reindex_chunks(p_next uuid,p_old uuid) RETURNS void
+ LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE next_source uuid;old_source uuid;visible boolean;BEGIN
+ IF session_user<>'platform_knowledge_api' THEN RAISE EXCEPTION 'REINDEX_ROLE_REJECTED';END IF;
+ SELECT source_id INTO next_source FROM platform_knowledge.generations WHERE id=p_next AND state='BUILDING';
+ SELECT g.source_id,platform_knowledge.source_visible(s) INTO old_source,visible FROM platform_knowledge.generations g
+ JOIN platform_knowledge.sources s ON s.id=g.source_id WHERE g.id=p_old AND s.active_generation_id=g.id AND g.state='ACTIVE';
+ IF next_source IS NULL OR next_source IS DISTINCT FROM old_source OR NOT coalesce(visible,false) THEN RAISE EXCEPTION 'REINDEX_SOURCE_REJECTED';END IF;
+ INSERT INTO platform_knowledge.chunks(id,generation_id,ordinal,start_offset,end_offset,text_content,sha256,token_count,locations,identifiers)
+ SELECT gen_random_uuid(),p_next,ordinal,start_offset,end_offset,text_content,sha256,token_count,locations,identifiers
+ FROM platform_knowledge.chunks WHERE generation_id=p_old;
+END $$;
+REVOKE ALL ON FUNCTION platform_knowledge.copy_reindex_chunks(uuid,uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION platform_knowledge.copy_reindex_chunks(uuid,uuid) TO platform_knowledge_api;
+CREATE UNIQUE INDEX source_active_job ON platform_knowledge.jobs(source_id) WHERE status IN ('QUEUED','RUNNING','RETRY_WAIT');
 INSERT INTO platform_knowledge.schema_version(version) VALUES(1);

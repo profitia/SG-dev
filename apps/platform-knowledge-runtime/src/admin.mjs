@@ -59,8 +59,8 @@ async function refresh(){try{const sources=await api('/v1/sources');const list=e
  row.append(node('div',(labels[source.processing_status]??source.processing_status??'')+(source.published_at?' · Opublikowany':' · Nieopublikowany')));
  if(source.coverage)row.append(node('p','Rozliczone jednostki: '+source.coverage.accountedUnits+'/'+source.coverage.expectedUnits+' · Odczytane w całości: '+source.coverage.completeUnits));
  const actions=node('div','');actions.className='actions';
- const details=node('button','Zobacz wynik');details.className='secondary';details.onclick=async()=>{try{const data=await api('/v1/sources/'+source.id);let pre=row.querySelector('pre');if(!pre){pre=node('pre','');row.append(pre);}pre.textContent=JSON.stringify(data,null,2);}catch(e){status(e.message);}};actions.append(details);
- if(['READY','PARTIAL'].includes(source.processing_status)&&!source.published_at){const publish=node('button','Opublikuj materiał');publish.onclick=async()=>{if(!confirm(source.processing_status==='PARTIAL'?'Materiał zawiera oznaczone braki. Czy akceptujesz publikację całego częściowego wyniku?':'Czy publikujesz ten materiał zgodnie z wybranymi prawami wykorzystania?'))return;
+ const details=node('button','Zobacz wynik');details.className='secondary';details.onclick=async()=>{try{const data=await api('/v1/sources/'+source.id);let pre=row.querySelector('pre');if(!pre){pre=node('pre','');row.append(pre);}pre.textContent=(data.cognitive_result??[]).map(part=>part.summary).filter(Boolean).join('\n\n')||'Wynik nie jest jeszcze dostępny.';if(data.coverage?.failedUnitIds?.length)pre.textContent+='\n\nNiepełny odczyt: '+data.coverage.failedUnitIds.join(', ');}catch(e){status(e.message);}};actions.append(details);
+ if(source.status!=='WITHDRAWN'&&['READY','PARTIAL'].includes(source.processing_status)&&!source.published_at){const publish=node('button','Opublikuj materiał');publish.onclick=async()=>{if(!confirm(source.processing_status==='PARTIAL'?'Materiał zawiera oznaczone braki. Czy akceptujesz publikację całego częściowego wyniku?':'Czy publikujesz ten materiał zgodnie z wybranymi prawami wykorzystania?'))return;
   try{await api('/v1/sources/'+source.id+'/publish',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({acknowledgePartial:source.processing_status==='PARTIAL',authority:'REFERENCE'})});status('Materiał opublikowany.');await refresh();}catch(e){status(e.message);}};actions.append(publish);}
  const withdraw=node('button','Wycofaj');withdraw.className='secondary';withdraw.onclick=async()=>{try{await api('/v1/sources/'+source.id+'/withdraw',{method:'POST'});status('Materiał odcięty od wyszukiwania.');await refresh();}catch(e){status(e.message);}};actions.append(withdraw);
  const remove=node('button','Usuń');remove.className='danger';remove.onclick=async()=>{if(!confirm('Usunąć materiał i jego wiedzę pochodną?'))return;try{await api('/v1/sources/'+source.id,{method:'DELETE'});status('Dostęp odcięty. Trwa kontrolowane usuwanie danych.');await refresh();}catch(e){status(e.message);}};actions.append(remove);
@@ -128,6 +128,49 @@ export function createLibrary({pool,storage,createDelegation}){
     await storage.remove(rawKey).then(()=>transaction(pool,db=>db.query('UPDATE platform_knowledge.sources SET raw_deleted_at=clock_timestamp() WHERE id=$1',[sourceId]),principal)).catch(()=>{});
     throw error;
    }
+  },
+  async reindexPlan(sourceId,scope){return transaction(pool,async db=>{
+   const source=(await db.query(`SELECT s.*,g.parser_version FROM platform_knowledge.sources s JOIN platform_knowledge.generations g ON g.id=s.active_generation_id
+    WHERE s.id=$1 AND platform_knowledge.source_visible(s)`,[sourceId])).rows[0];
+   if(!source||!source.rights.externalAiAllowed)throw new Fault(409,'SOURCE_NOT_REBUILDABLE');
+   if(source.parser_version!==generationProfile.parserVersion&&(!source.raw_key||source.raw_deleted_at||source.raw_expires_at<=new Date()))throw new Fault(409,'REUPLOAD_REQUIRED');
+   return{scope:source.scope,rightsDigest:digest(source.rights),sourceVersion:source.source_version,parserVersion:source.parser_version};
+  },scope.principal);},
+  async reindex(sourceId,scope){
+   const {generationId,jobId}=scope.delegation??{};
+   if(!generationId||!jobId)throw new Fault(403,'JOB_DELEGATION_REQUIRED');
+   const plan=await this.reindexPlan(sourceId,scope);
+   const delegation=await createDelegation(scope,{sourceId,generationId,jobId,rightsDigest:plan.rightsDigest});
+   return transaction(pool,async db=>{
+    const source=(await db.query('SELECT * FROM platform_knowledge.sources WHERE id=$1 FOR UPDATE',[sourceId])).rows[0];
+    if(!source||digest(source.rights)!==plan.rightsDigest)throw new Fault(409,'SOURCE_CHANGED');
+    if((await db.query("SELECT 1 FROM platform_knowledge.jobs WHERE source_id=$1 AND status IN ('QUEUED','RUNNING','RETRY_WAIT')",[sourceId])).rowCount)throw new Fault(409,'SOURCE_JOB_ACTIVE');
+    await db.query(`INSERT INTO platform_knowledge.generations(id,source_id,parser_version,chunker_version,cognitive_model,embedding_model,embedding_dimensions,config_digest)
+     VALUES($1,$2,$3,$4,$5,$6,$7,$8)`,[generationId,sourceId,...Object.values(generationProfile),digest(generationProfile)]);
+    // Reuse the lossless normalized representation when the parser is unchanged.
+    // The active generation remains readable until the entire shadow is valid.
+    if(plan.parserVersion===generationProfile.parserVersion){
+     await db.query(`UPDATE platform_knowledge.generations next SET source_digest=old.source_digest,inventory=old.inventory,coverage=old.coverage,
+      character_count=old.character_count,chunk_count=old.chunk_count FROM platform_knowledge.generations old WHERE next.id=$1 AND old.id=$2`,[generationId,source.active_generation_id]);
+     await db.query('SELECT platform_knowledge.copy_reindex_chunks($1::uuid,$2::uuid)',[generationId,source.active_generation_id]);
+    }
+    await db.query("INSERT INTO platform_knowledge.jobs(id,source_id,generation_id,kind,delegation) VALUES($1,$2,$3,'REINDEX',$4)",[jobId,sourceId,generationId,JSON.stringify(delegation)]);
+    await audit(db,{sourceId,jobId,operation:'REINDEX',actorRef:scope.principal.internalUserId,outcome:'ACCEPTED'});
+    return{sourceId,jobId,generationId,status:'QUEUED',activeGenerationId:source.active_generation_id};
+   },scope.principal);
+  },
+  async statuses(input,scope){
+   if(!validateSchema('SourceStatusRequest',input))throw new Fault(422,'INVALID_SOURCE_STATUS_REQUEST');
+   return transaction(pool,async db=>{
+    const sources=(await db.query('SELECT s.*,platform_knowledge.source_visible(s) AS content_visible FROM platform_knowledge.sources s WHERE id=ANY($1::uuid[])',[input.sourceIds])).rows;
+    return{version:'0.2.0',sources:input.sourceIds.map(sourceId=>{
+     const source=sources.find(s=>s.id===sourceId),checkedAt=new Date().toISOString();
+     if(!source)return{sourceId,event:'UNAVAILABLE',available:false,revision:null,generationId:null,checkedAt};
+     const expired=source.expires_at&&source.expires_at<=new Date(),available=!!(source.content_visible&&source.active_generation_id&&(source.scope==='ACCOUNT_PRIVATE'||source.published_at)&&source.rights.apiExcerptAllowed&&source.rights.quotingAllowed);
+     return{sourceId,event:source.deleted_at?'DELETED':expired?'EXPIRED':source.revoked_at?'WITHDRAWN':available?'READY':source.active_generation_id?'PREPARED':'PROCESSING',available,
+      revision:String(source.revision),generationId:available?source.active_generation_id:null,checkedAt};
+    })};
+   },scope.principal);
   },
   async recordUse(sourceIds,scope){
    if(!sourceIds.length)return;
