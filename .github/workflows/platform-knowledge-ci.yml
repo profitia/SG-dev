@@ -142,7 +142,7 @@ jobs:
           original=subprocess.run
           def diagnostic(*args,**kwargs):
               result=original(*args,**kwargs)
-              if args and isinstance(args[0],list) and args[0][0]=='libreoffice' and result.returncode:
+              if args and isinstance(args[0],list) and args[0][0]=='/usr/lib/libreoffice/program/soffice.bin' and result.returncode:
                   sys.stderr.write('SYNTHETIC_CONVERTER_DIAGNOSTIC\n'+result.stderr.decode('utf-8',errors='replace')+'\n'+result.stdout.decode('utf-8',errors='replace'))
               return result
           subprocess.run=diagnostic
