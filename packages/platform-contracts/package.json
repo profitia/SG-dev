@@ -1,6 +1,6 @@
 {
   "name": "@profitia/platform-contracts",
-  "version": "1.34.0",
+  "version": "1.35.0",
   "private": true,
   "type": "module",
   "description": "Governed Development integration contracts; project identity is not tenant identity",
@@ -152,6 +152,11 @@
     "./model-execution": {
       "types": "./src/model-execution.d.mts",
       "import": "./src/model-execution.mjs"
+    },
+    "./recurring-job": {
+      "types": "./src/recurring-job.d.mts",
+      "import": "./src/recurring-job.mjs",
+      "require": "./src/recurring-job.mjs"
     }
   },
   "scripts": {

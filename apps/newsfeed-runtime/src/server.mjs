@@ -3,11 +3,11 @@ import {randomUUID} from 'node:crypto';
 import {SourceHubError} from '../../../packages/platform-source-hub-contracts/index.mjs';
 const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const safeError=error=>error instanceof SourceHubError?{status:error.status,code:error.code}:error?.name==='OperationDenied'?['POLICY_UNAVAILABLE','AUDIT_UNAVAILABLE'].includes(error.reasonCode)?{status:503,code:'AUTHORITY_UNAVAILABLE'}:{status:403,code:'OPERATION_DENIED'}:{status:503,code:'SERVICE_UNAVAILABLE'};
-/** @param {{authorizer:any,repository:any,savedSearches?:ReturnType<typeof import('./repository.mjs').createSavedSearchRepository>|null,sourceHub:any,log?:(line:string)=>void}} options */
-export function createApplication({authorizer,repository,savedSearches=null,sourceHub,log=line=>process.stdout.write(line+'\n')}){
+/** @param {{authorizer:any,repository:any,savedSearches?:ReturnType<typeof import('./repository.mjs').createSavedSearchRepository>|null,sourceHub:any,monitoring?:any,log?:(line:string)=>void}} options */
+export function createApplication({authorizer,repository,savedSearches=null,sourceHub,monitoring=null,log=line=>process.stdout.write(line+'\n')}){
  async function dispatch(request){
   const u=new URL(request.url),parts=u.pathname.split('/').filter(Boolean);
-  if(request.method==='GET'&&['/health','/live','/ready'].includes(u.pathname)){const ready=u.pathname!=='/ready'||await repository.ready()&&await authorizer.ready()&&(!savedSearches||await savedSearches.ready());return Response.json({service:'newsfeed-runtime',status:ready?'ok':'not_ready'},{status:ready?200:503});}
+  if(request.method==='GET'&&['/health','/live','/ready'].includes(u.pathname)){const ready=u.pathname!=='/ready'||await repository.ready()&&await authorizer.ready()&&(!savedSearches||await savedSearches.ready())&&(!monitoring||await monitoring.ready());return Response.json({service:'newsfeed-runtime',status:ready?'ok':'not_ready'},{status:ready?200:503});}
   if(parts[0]==='v1.2'){
    if(!savedSearches)throw new SourceHubError('NOT_FOUND',404);
    const query=Object.fromEntries(u.searchParams);if([...new Set(u.searchParams.keys())].some(k=>u.searchParams.getAll(k).length!==1))throw new SourceHubError('INVALID_QUERY');
@@ -28,13 +28,14 @@ export function createApplication({authorizer,repository,savedSearches=null,sour
    if(parts[1]!=='observations'||parts.length>4)throw new SourceHubError('NOT_FOUND',404);
    if(parts.length===2){
     if(request.method==='GET'){only('limit','cursor','access');return Response.json(await execute((c,t)=>savedSearches.list(t,c,{...page(),access:query.access??'mine'})));}
-    if(request.method==='POST'){only();const body=await json();return Response.json(await execute((c,t)=>savedSearches.create(t,c,body),body),{status:201});}
+    if(request.method==='POST'){only();const body=await json();return Response.json(await execute((c,t)=>(async()=>{const o=await savedSearches.create(t,c,body);if(monitoring&&o.schedule){await monitoring.activate(t,request,o.id,o.version,o.status==='ACTIVE');return savedSearches.get(t,c,o.id)}return o})(),body),{status:201});}
    }
    if(parts.length===3){
     only();if(request.method==='GET')return Response.json(await execute((c,t)=>savedSearches.get(t,c,id)));
-    if(request.method==='PATCH'){const body=await json();return Response.json(await execute((c,t)=>savedSearches.update(t,c,id,body),body));}
+    if(request.method==='PATCH'){const body=await json();return Response.json(await execute((c,t)=>(async()=>{const o=await savedSearches.update(t,c,id,body);if(monitoring&&o.schedule){await monitoring.activate(t,request,o.id,o.version,o.status==='ACTIVE');return savedSearches.get(t,c,o.id)}return o})(),body));}
     if(request.method==='DELETE')return Response.json(await execute((c,t)=>savedSearches.remove(t,c,id)));
    }
+   if(parts.length===4&&parts[3]==='monitoring'&&request.method==='POST'){only();if(!monitoring)throw new SourceHubError('MONITORING_NOT_CONFIGURED',503);const body=await json();if(!body||Object.keys(body).sort().join(',')!=='enabled,version'||typeof body.enabled!=='boolean'||!Number.isSafeInteger(body.version)||body.version<1)throw new SourceHubError('INVALID_MONITORING_COMMAND');return Response.json(await execute((c,t)=>monitoring.activate(t,request,id,body.version,body.enabled),body));}
    if(parts.length===4&&request.method==='GET'){
     if(parts[3]==='shares'){only();return Response.json(await execute((c,t)=>savedSearches.shares(t,c,id)));}
     if(parts[3]==='history'){only('limit','cursor');return Response.json(await execute((c,t)=>savedSearches.history(t,c,id,page())));}

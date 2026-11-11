@@ -77,6 +77,7 @@ function pageOptions({limit=50,cursor=null}={}){
 }
 const cursorFor=(rows,limit,dateKey)=>rows.length>limit?Buffer.from(JSON.stringify([typeof (rows[limit-1].cursor_at??rows[limit-1][dateKey])==='string'?(rows[limit-1].cursor_at??rows[limit-1][dateKey]):new Date(rows[limit-1][dateKey]).toISOString(),rows[limit-1].id])).toString('base64url'):null;
 const iso=value=>value?new Date(value).toISOString():null;
+export function indexNewsfeedPublications(body){return body.items.map(item=>indexedItem(item,body.provider)).filter(item=>item!==null);}
 function indexedItem(item,provider){
  const p=item?.payload,m=item?.metadata;if(!['NEWS_ARTICLE','WEB_PAGE'].includes(p?.kind))return null;
  let u;try{u=new URL(p.url);if(!['https:','http:'].includes(u.protocol)||u.username||u.password||u.href.length>4096)throw Error();u.hash='';}catch{throw new SourceHubError('INVALID_PUBLICATION_URL');}

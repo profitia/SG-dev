@@ -24,16 +24,17 @@ export function createHttpHandler(boundary: SessionBoundary | null, account: Acc
     try {
       const url = new URL(request.url)
       if (url.pathname.startsWith('/v1/e1/')) {
-        if (url.search || url.hash || !['/v1/e1/ready','/v1/e1/authorize','/v1/e1/source/ready','/v1/e1/source/authorize'].includes(url.pathname)) return json(404,{error:'NOT_FOUND'})
+        if (url.search || url.hash || !['/v1/e1/ready','/v1/e1/authorize','/v1/e1/source/ready','/v1/e1/source/authorize','/v1/e1/recurring/ready','/v1/e1/recurring/consent','/v1/e1/recurring/authorize'].includes(url.pathname)) return json(404,{error:'NOT_FOUND'})
         if (!boundary || !currentE1) return json(503,{error:'E1_AUTHORITY_UNAVAILABLE'})
         if (url.origin !== boundary.configuration.origin || url.username || url.password) return json(403,{error:'REQUEST_ORIGIN_REJECTED'})
         if (request.method !== (url.pathname.endsWith('/ready')?'GET':'POST')) return json(405,{error:'METHOD_NOT_ALLOWED'})
-        const source=url.pathname.startsWith('/v1/e1/source/')
+        const source=url.pathname.startsWith('/v1/e1/source/'),recurring=url.pathname.startsWith('/v1/e1/recurring/')
+        if(recurring&&(!currentE1.recurringReady||!currentE1.recurringConsent||!currentE1.authorizeRecurring))return json(503,{error:'E1_AUTHORITY_UNAVAILABLE'})
         if (source && (!currentE1.sourceReady || !currentE1.authorizeSource)) return json(503,{error:'E1_AUTHORITY_UNAVAILABLE'})
-        if (url.pathname.endsWith('/ready')) {const ready=source?await currentE1.sourceReady!():await currentE1.ready();return json(ready?200:503,{ready})}
+        if (url.pathname.endsWith('/ready')) {const ready=recurring?await currentE1.recurringReady!():source?await currentE1.sourceReady!():await currentE1.ready();return json(ready?200:503,{ready})}
         if (request.headers.has('cookie') || request.headers.has('origin') || request.headers.get('content-type') !== 'application/json') return json(403,{error:'E1_REQUEST_REFUSED'})
-        try {const input=await body(request,24576);return json(200,source?await currentE1.authorizeSource!(request,input):await currentE1.authorize(request,input))}
-        catch (error) {const reason=(error as {reasonCode?:string}).reasonCode;return json(reason==='ACCESS_BASIS_INVALID'||source&&['UNVERIFIED_IDENTITY','IDENTITY_REQUIRED','PERMISSION_DENIED','PRODUCT_UNAVAILABLE','EXPLICIT_DENY'].includes(reason??'')?403:503,{error:'E1_AUTHORITY_REFUSED'})}
+        try {const input=await body(request,24576);return json(200,recurring?(url.pathname.endsWith('/consent')?await currentE1.recurringConsent!(request,input):await currentE1.authorizeRecurring!(request,input)):source?await currentE1.authorizeSource!(request,input):await currentE1.authorize(request,input))}
+        catch (error) {const reason=(error as {reasonCode?:string}).reasonCode;return json(reason==='ACCESS_BASIS_INVALID'||(source||recurring)&&['UNVERIFIED_IDENTITY','IDENTITY_REQUIRED','PERMISSION_DENIED','PRODUCT_UNAVAILABLE','EXPLICIT_DENY'].includes(reason??'')?403:503,{error:'E1_AUTHORITY_REFUSED'})}
       }
       if (url.pathname === '/v1/account/salutation') {
         if (url.search || url.hash) return json(404, { error: 'NOT_FOUND' })

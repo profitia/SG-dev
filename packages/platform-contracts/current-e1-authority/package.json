@@ -1,6 +1,6 @@
 {
   "name": "@profitia/platform-current-e1-authority",
-  "version": "1.2.1",
+  "version": "1.3.0",
   "private": true,
   "type": "module",
   "description": "Optional current central E1 admission and outcome contract; canonical SDK unchanged",
@@ -10,7 +10,9 @@
     "first-party.mjs",
     "first-party.d.mts",
     "migrations",
-    "insights-service.mjs"
+    "insights-service.mjs",
+    "recurring.mjs",
+    "recurring.d.mts"
   ],
   "exports": {
     "./first-party": {
@@ -22,13 +24,17 @@
       "import": "./index.mjs",
       "require": "./index.mjs"
     },
-    "./insights-service": "./insights-service.mjs"
+    "./insights-service": "./insights-service.mjs",
+    "./recurring": {
+      "types": "./recurring.d.mts",
+      "import": "./recurring.mjs"
+    }
   },
   "scripts": {
     "build": "node --check index.mjs"
   },
   "peerDependencies": {
-    "@profitia/platform-contracts": "1.33.0 || 1.34.0"
+    "@profitia/platform-contracts": "1.35.0"
   },
   "devDependencies": {
     "@profitia/platform-contracts": "file:.."

@@ -7,7 +7,7 @@ export declare const currentE1AuthoritySchemaUrl:string
 export declare const currentE1ReceiverSchemaUrl:string
 export declare function currentE1SchemaDigest(side:'authority'|'receiver'):string
 export declare function createCurrentE1OperationHost<T>(options:Omit<Parameters<typeof createPrivateOperationHost<T>>[0],'createAuthenticator'|'module'|'requestLedger'|'requestContinuation'|'locationAdmission'|'reportAdmission'|'prepareInputs'|'describeOutcome'>&{fetch?:typeof fetch}):Readonly<OperationExecutor<T>&{hostContract:typeof CURRENT_E1_CONTRACT;ready():Promise<boolean>}>
-export interface CurrentE1Authority{ready():Promise<boolean>;authorize(request:Request,input:unknown):Promise<Readonly<{payload:string;signature:string}>>;sourceReady?():Promise<boolean>;authorizeSource?(request:Request,input:unknown):Promise<Readonly<{payload:string;signature:string}>>}
+export interface CurrentE1Authority{recurringReady?():Promise<boolean>;recurringConsent?(request:Request,input:unknown):Promise<unknown>;authorizeRecurring?(request:Request,input:unknown):Promise<Readonly<{payload:string;signature:string}>>;ready():Promise<boolean>;authorize(request:Request,input:unknown):Promise<Readonly<{payload:string;signature:string}>>;sourceReady?():Promise<boolean>;authorizeSource?(request:Request,input:unknown):Promise<Readonly<{payload:string;signature:string}>>}
 export declare function createCurrentE1Authority(options:{query:AccessQuery;client:ClerkIdentityClient;binding:AccessStoreBinding;now?:()=>number}):Readonly<CurrentE1Authority>
 
 export declare const currentE1CalendarAuthoritySchemaUrl:string
