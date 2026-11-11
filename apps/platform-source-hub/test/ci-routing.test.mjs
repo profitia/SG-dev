@@ -141,3 +141,31 @@ test('private recurring public routing refuses changed bytes, symbolic files and
   assert.throws(()=>reviewedRecurringConsumerPaths(root,{baseSha,candidateSha:git(root,'rev-parse','HEAD')}))
  }finally{fs.rmSync(temporary,{recursive:true,force:true})}
 })
+
+import {REGISTRATION_SDK_REVIEW} from '../../../scripts/governance/controlled-package-ci.mjs'
+import {partitionChangedPaths,validateOwnerGroups} from '../../identity-runtime/scripts/ci-routing.mjs'
+import {reviewedRegistrationConsumerPaths} from '../scripts/ci-routing.mjs'
+test('organisation SDK routing requires its complete pinned checkout and every real owner gate',()=>{
+ const temporary=fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(),'hub-registration-review-')))
+ const git=(cwd,...args)=>execFileSync('git',args,{cwd,encoding:'utf8',stdio:['ignore','pipe','pipe']}).trim()
+ try{
+  git(temporary,'clone','--quiet','--shared','--no-checkout',repositoryRoot,'review')
+  const root=path.join(temporary,'review'),candidateSha=REGISTRATION_SDK_REVIEW.sourceSha,baseSha=REGISTRATION_SDK_REVIEW.baseSha
+  git(root,'update-ref','--no-deref','HEAD',candidateSha);git(root,'read-tree',candidateSha)
+  execFileSync('git',['checkout-index','--stdin','-z'],{cwd:root,input:Object.keys(REGISTRATION_SDK_REVIEW.entries).join('\0')+'\0',stdio:['pipe','pipe','pipe']})
+  const sourceReview={baseSha,candidateSha},paths=reviewedRegistrationConsumerPaths(root,sourceReview)
+  assert(paths.has('apps/sg-runtime/operation-integration.json'));assert(paths.has('apps/srm/operation-integration.json'));assert(!paths.has('apps/sg-runtime/app/page.tsx'))
+  const called=[],readReceipt=file=>JSON.parse(fs.readFileSync(path.join(root,file),'utf8'))
+  const {groups}=partitionChangedPaths(Object.keys(REGISTRATION_SDK_REVIEW.entries),repositoryRoot)
+  validateConsumerGroups(groups,readReceipt,{reviewedRegistrationPaths:paths})
+  validateOwnerGroups({groups,runGovernance:(owner)=>{called.push(owner);return {verdict:'PASS'}}})
+  assert.deepEqual(called,['ARCHITECTURE','SG2','SRM'])
+  assert.throws(()=>reviewedRegistrationConsumerPaths(root,{...sourceReview,candidateSha:'0'.repeat(40)}))
+  const target=Object.keys(REGISTRATION_SDK_REVIEW.entries)[0],original=fs.readFileSync(path.join(root,target))
+  fs.appendFileSync(path.join(root,target),'\nUNREVIEWED');assert.throws(()=>reviewedRegistrationConsumerPaths(root,sourceReview));fs.writeFileSync(path.join(root,target),original)
+  fs.chmodSync(path.join(root,target),0o755);git(root,'update-index','--chmod=+x',target)
+  const tree=git(root,'write-tree'),changed=git(root,'-c','user.name=Fixture','-c','user.email=fixture@example.test','commit-tree',tree,'-p',candidateSha,'-m','Changed fixture mode')
+  git(root,'update-ref','--no-deref','HEAD',changed)
+  assert.throws(()=>reviewedRegistrationConsumerPaths(root,{baseSha,candidateSha:changed}))
+ }finally{fs.rmSync(temporary,{recursive:true,force:true})}
+})
