@@ -43,7 +43,7 @@ test('accepted current FRESH 1.0 metadata and fingerprint remain unchanged besid
  assert.equal(metadata.name,'@profitia/platform-current-fresh-report');assert.equal(metadata.version,'1.0.0')
  for(const [name,digest] of Object.entries(accepted.producerSourceDigests)){
   const {createHash}=await import('node:crypto')
-  const current=fs.readFileSync(new URL('../../current-fresh-report/'+name,import.meta.url))
+  const current=recurring.previousBytes('packages/platform-contracts/current-fresh-report/'+name)
   let preserved=current
   if(name==='package.json'){
    const peer=JSON.parse(current).peerDependencies['@profitia/platform-contracts']
