@@ -582,3 +582,30 @@ required SOURCE GO and resulting-main proof before calling source adoption
 complete. This decision grants no product SQL installation, runtime opt-in,
 organisation/package entitlement, invitation, paid provider call or deployment.
 Continue the parent Stage I implementation after the bounded CI task closes.
+
+
+## Stage I SDK compatibility-test successor — approved1012 (2026-11-11)
+
+OWNER_APPROVED / REQUIRED_CI_PENDING. The owner explicitly approved PR1012 at
+dfb66754c5acb26682b7db17241905a1d552dfe8. Preserve initial41, previous48 and
+the original complete59 manifest68947547 unchanged. Add only the next59 map
+4e32bcb2ec3deaee75ab495761e60b90a848ab27954b33fdae3f975c1154939c:
+55 identical versions and4 exact successors in the same paths and owners.
+[The frozen decision](../evidence/2026-11-11-registration-sdk-test-source-successor-review.md)
+contains the approved helper/test text and exact blobs.
+
+Record25fea141baf42c154f64a256d40808d548562c010e3f2fd3143657f24b15295c
+binds only predecessorb2fccbb8b9132a63c2c39507a1ebc838cf6228e1. Retain
+record020 and all previous record/predecessor pins. Validate complete regular
+source graphs and receipts without candidate imports before credentials.
+Select equal-count reviews by every exact entry, never only their length.
+Preserve all PK and recurring119/123 rules,155 runtime SDK files,Root16,
+package pins,main-only,read-only credentials,ignore-scripts and token removal.
+
+The earlier automatic rejection is resolved by this explicit exact approval,
+not bypassed. Require helper/old/new/negative tests, actual six SG2 cases,
+full private-host PostgreSQL16, bounded policy trusted-main/public/main checks,
+then exact-source full checks and resulting-main proof before atomic adoption.
+Use existing sg2/* policy transport with actual Architecture ownership and
+existing983 source transport; no producer-first merge. No product SQL,grant,
+package bypass,email,provider call or deployment is granted by this decision.
