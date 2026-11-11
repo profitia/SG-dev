@@ -9,9 +9,9 @@
 **Cel:** zachować rygor profilo-zależnego PMOS/continuity, PHR, routingu, klasyfikacji kodu, E1, UX/UI, monitoringu i release, eliminując twarde przypisanie zasad do SG2 i dublowanie ich definicji.  
 **Zakres dokumentu:** instrukcja zachowania wykonawcy; **nie** jest nowym kanonem, grantem G1, zmianą rejestrów, zgodą na mutację, koszt, nowe zasoby, PR/merge ani deployment.  
 **Akceptacja właściciela:** właściciel zatwierdził wcześniejszą wersję v1.1 dnia 11 listopada 2026 r., następnie publikację v1.2 bez aktywacji. Odrębnym poleceniem „aktywuj wrapper” z 11 listopada 2026 r. zatwierdził aktywację niniejszego dokumentu dla SG2, ARCHITECTURE i SRM. Obowiązujące kanony, profile, uprawnienia i polityki continuity zachowują pierwszeństwo; aktywacja nie wyłącza MEMOROS ani nie upoważnia do zmian aplikacji lub środowisk.
-**Aktywne źródło:** [profitia/SG-dev · main · Universal Wrapper v1.2](https://github.com/profitia/SG-dev/blob/main/docs/agent-instructions/profitia-universal-project-execution-v1.2.md), ładowane przez `AGENTS.md` i aktywny manifest. Biblioteka na `docs/codex-wrapper-library-20261110` zawiera zsynchronizowaną kopię.  
+**Aktywne źródło:** [profitia/SG-dev · main · Universal Wrapper v1.2](https://github.com/profitia/SG-dev/blob/main/docs/agent-instructions/profitia-universal-project-execution-v1.2.md), ładowane przez `AGENTS.md` i aktywny manifest. Wszystkie cztery obowiązujące instrukcje znajdują się w `docs/agent-instructions` na `main`; dotychczasowa gałąź biblioteki jest punktem zgodności i odsyła do tych źródeł.
 **Zakres stosowania:** `SG2`, `ARCHITECTURE`, `SRM`. Business Outcome Engineering v1.1 obowiązuje w obu trybach: konsultacji i wykonania; Full Autopilot v2.0 pozostaje standardem pomocniczym wykonania. CIC zachowuje odrębne źródło instrukcji i nie jest aktywowany przez tę zmianę.
-**Zatwierdzone wersje odniesień:** [Business Outcome Engineering v1.1](https://github.com/profitia/SG-dev/blob/0fe00d579b31ad72bb45724e7080afc94a262be1/docs/agent-instructions/business-outcome-engineering-v1.1.md), [Full Autopilot v2.0](https://github.com/profitia/SG-dev/blob/0fe00d579b31ad72bb45724e7080afc94a262be1/docs/agent-instructions/full-autopilot-v2.md) i [UX/UI Design Canon — warunkowo](https://github.com/profitia/SG-dev/blob/0fe00d579b31ad72bb45724e7080afc94a262be1/docs/agent-instructions/ux-ui-design-canon.md). Przy aktywnym użyciu stosuj te utrwalone wersje; źródła gałęziowe w Aneksie B dokumentują pochodzenie.
+**Zatwierdzone wersje odniesień na main:** [Business Outcome Engineering v1.1](./business-outcome-engineering-v1.1.md), [Full Autopilot v2.0](./full-autopilot-v2.md) i [UX/UI Design Canon — warunkowo](./ux-ui-design-canon.md). Ich treść zachowuje zatwierdzony snapshot `0fe00d579b31ad72bb45724e7080afc94a262be1`; obowiązujące pliki są rejestrowane i sprawdzane przez aktywny manifest. Odwołania archiwalne dokumentują pochodzenie i nie tworzą drugiego źródła bieżących instrukcji.
 
 > **Zasada nadrzędna:** Osiągnij i zweryfikuj cały zaakceptowany rezultat biznesowy, stosując **rzeczywistą konfigurację wybranego projektu**. Myśl autonomicznie; wykonuj autonomicznie tylko dopuszczone operacje. Nie twórz nowego governance ani nie obchodź istniejącego.
 
@@ -47,7 +47,7 @@ Nie stosuj historycznych dokumentów `SUPERSEDED` jako źródła uprawnień. Nie
 - `Canon/registries/governance-manifest-v2.json`
 - adapter wskazany przez aktywny profil, a nie wszystkie adaptery naraz.
 
-**Repozytoria i załadunek:** dokumenty pomocnicze BOE, Full Autopilot i UX/UI znajdują się obecnie w bibliotece na gałęzi `docs/codex-wrapper-library-20261110`, a nie w `main` SG-dev. Przed operacyjnym wymaganiem ich załadowania potwierdź trwałą, dostępną referencję zatwierdzonej wersji. Nie twierdź, że sam plik na tej gałęzi jest aktywnym kanonem. CIC używa własnego repozytorium i `AGENTS.md`; nie przypisuj jego kodu do SG-dev.
+**Repozytoria i załadunek:** wspólny wrapper oraz BOE, Full Autopilot i UX/UI Design Canon mają jedno obowiązujące źródło: `profitia/SG-dev` / `main` / `docs/agent-instructions`. `AGENTS.md` i aktywny manifest zapewniają ich odczyt w zadeklarowanej kolejności oraz weryfikację zależności. BOE obowiązuje w konsultacji i wykonaniu; Full Autopilot stosuj wyłącznie przy autoryzowanym wykonaniu; kanon UX/UI stosuj przy wpływie na interfejs. Sam odczyt dokumentu pomocniczego nie zleca implementacji ani audytu MagicPath. Dotychczasowa gałąź biblioteki zawiera punkty zgodności kierujące do `main`. CIC używa własnego repozytorium i `AGENTS.md`; niniejsze uporządkowanie nie aktywuje instrukcji CIC.
 
 ---
 
@@ -236,7 +236,7 @@ W handoffie podaj status: `REUSED / EXTENDED / NOT_APPLICABLE / BLOCKED` oraz is
 
 ## 10. UI/UX, MagicPath i kanoniczne wzorce projektowe
 
-**Design Canon First.** Jeżeli zadanie dotyczy tworzenia lub zmiany UI/UX, projektowania interakcji, wdrożenia zatwierdzonego prototypu albo zmiany współdzielonego komponentu wizualnego SG2/SRM, **załaduj i zastosuj** aktualny [UX/UI DESIGN CANON — MagicPath Integration Context](https://github.com/profitia/SG-dev/blob/docs/codex-wrapper-library-20261110/docs/agent-instructions/ux-ui-design-canon.md). Centralnym źródłem kanonicznych wzorców projektowych jest [Kanon SpendGuru w MagicPath](https://www.magicpath.ai/files/460628300646219776). Nie zastępuje on źródła prawdy dla kodu aplikacyjnego, kontraktów danych ani dostępu.
+**Design Canon First.** Jeżeli zadanie dotyczy tworzenia lub zmiany UI/UX, projektowania interakcji, wdrożenia zatwierdzonego prototypu albo zmiany współdzielonego komponentu wizualnego SG2/SRM, **załaduj i zastosuj** aktualny [UX/UI DESIGN CANON — MagicPath Integration Context](https://github.com/profitia/SG-dev/blob/main/docs/agent-instructions/ux-ui-design-canon.md). Centralnym źródłem kanonicznych wzorców projektowych jest [Kanon SpendGuru w MagicPath](https://www.magicpath.ai/files/460628300646219776). Nie zastępuje on źródła prawdy dla kodu aplikacyjnego, kontraktów danych ani dostępu.
 
 1. **Sprawdź obowiązujący wzorzec przed tworzeniem.** Odczytaj aktualny element biblioteki, jego identyfikator (np. `SRM-Cxx`), warianty, typografię, rozmiary, stany i interakcje. Wykorzystuj istniejący wzorzec, zamiast tworzyć drugi system projektowy.
 2. **Projektuj flow, nie tylko wygląd.** Dla nowego lub istotnie zmienianego UX określ odpowiednie scenariusze użytkownika, loading/empty/error/success, zachowanie klawiatury, dostępność, responsywność i integrację z rzeczywistą logiką aplikacji. Nie dokładaj elementów bez potrzeby; zachowuj estetykę, przejrzystość, proporcje i dotychczasowy flow.
@@ -330,20 +330,20 @@ Ten wrapper **wyłącznie unifikuje wykonanie** w istniejących projektach. Nie 
 
 ### B.1. Źródła dokumentacyjne
 
-- Business Outcome Engineering v1.1: https://github.com/profitia/SG-dev/blob/docs/codex-wrapper-library-20261110/docs/agent-instructions/business-outcome-engineering-v1.1.md
-- Full Autopilot — Outcome First v2.0: https://github.com/profitia/SG-dev/blob/docs/codex-wrapper-library-20261110/docs/agent-instructions/full-autopilot-v2.md
-- UX/UI Design Canon — MagicPath: https://github.com/profitia/SG-dev/blob/docs/codex-wrapper-library-20261110/docs/agent-instructions/ux-ui-design-canon.md
+- Business Outcome Engineering v1.1: https://github.com/profitia/SG-dev/blob/main/docs/agent-instructions/business-outcome-engineering-v1.1.md
+- Full Autopilot — Outcome First v2.0: https://github.com/profitia/SG-dev/blob/main/docs/agent-instructions/full-autopilot-v2.md
+- UX/UI Design Canon — MagicPath: https://github.com/profitia/SG-dev/blob/main/docs/agent-instructions/ux-ui-design-canon.md
 - SG2/E1 — wcześniejszy wrapper: https://github.com/profitia/SG-dev/blob/docs/codex-wrapper-library-20261110/docs/agent-instructions/sg2-e1-wrapper.md
 - SRM/E1 — wcześniejszy wrapper: https://github.com/profitia/SG-dev/blob/docs/codex-wrapper-library-20261110/docs/agent-instructions/srm-e1-wrapper.md
 - Agent Execution Canon v3.0: https://github.com/profitia/SG-dev/blob/main/Canon/v3.0-profitia-agent-execution-canon.md
 - Rejestr profili: https://github.com/profitia/SG-dev/blob/main/Canon/registries/profitia-projects-v1.json
 - Environment & Release Canon: https://github.com/profitia/SG-dev/blob/main/Canon/v1.0-profitia-environment-and-release-promotion-canon.md
 
-**Status źródeł:** biblioteka `docs/agent-instructions` istnieje na gałęzi `docs/codex-wrapper-library-20261110`. Przy publikacji i aktywacji trzeba rozstrzygnąć jej trwałą lokalizację/wersjonowanie, przejść obowiązujące bramki i potwierdzić realną dostępność dla agentów. Sam URL na gałęzi dokumentacyjnej nie stanowi rejestracji w aktywnym governance `main`.
+**Status źródeł:** cztery obowiązujące instrukcje znajdują się na `main` w `docs/agent-instructions` i są objęte aktywnym manifestem. Zatwierdzone treści BOE, Full Autopilot oraz UX/UI zachowano bez zmian względem commitu `0fe00d579b31ad72bb45724e7080afc94a262be1`. Gałąź `docs/codex-wrapper-library-20261110` pozostaje punktem zgodności; jej odnośniki nie są niezależnymi, edytowalnymi wersjami standardu. Historyczny commit pozostaje dowodem pochodzenia.
 
 ### B.2. Migracja istniejących wrapperów
 
-Po osobnej akceptacji wersji v1.2 i prawidłowej publikacji można zastąpić wspólną treść SG2/E1 i SRM/E1 nowym wrapperem; stary plik może zostać krótkim selektorem odpowiedniego `projectKey`. Nie usuwaj aktywnego wrappera ani nie przekierowuj wykonywanych zadań bez zgodnego procesu wdrożenia dokumentacji. Nie modyfikuj adapterów i rejestrów przy samej publikacji tekstu.
+Porządkowanie lokalizacji obejmuje wspólny wrapper i jego trzy zatwierdzone dokumenty odniesienia. Ich dotychczasowe adresy kierują do obowiązujących plików na `main`. Wcześniejsze wrappery SG2/E1 i SRM/E1 pozostają bez zmian i wymagają stosowania aktualnego `AGENTS.md` oraz manifestu. Ich ewentualne zastąpienie krótkimi selektorami pozostaje odrębną migracją; nie przekierowuj automatycznie już wykonywanych zadań. Uporządkowanie dokumentacji nie zmienia adapterów, profili ani polityk wykonawczych.
 
 ### B.3. Zamierzone uproszczenie PMOS + PHR — jeszcze nieobowiązujące
 
