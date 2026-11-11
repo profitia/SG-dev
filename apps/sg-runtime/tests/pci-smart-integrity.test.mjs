@@ -2,6 +2,7 @@ import {sdkContinuationPredecessor} from '../../../packages/platform-contracts/t
 import './assistant-send-arrow-integrity.test.mjs'
 import './assistant-ecr-integrity.test.mjs'
 import {assistantEcrPredecessor,ECR_RECEIPT} from './assistant-ecr-integrity.mjs'
+import {assistantEcrPrecisionPredecessor,PRECISION_RECEIPT} from './assistant-ecr-precision-integrity.mjs'
 import {assistantSendArrowPredecessor,SEND_ARROW_RECEIPT} from './assistant-send-arrow-integrity.mjs'
 import '../scripts/denial-audit/d1-reader.test.mjs'
 import './xray-style-isolation.test.ts'
@@ -125,7 +126,9 @@ test('tampered current file, receipt, historical digest, engine and rollback evi
 test('every changed SG2 source in the candidate or resulting main has an exact additive binding',()=>{
  const r=receipt(),a=r.pciSmartPreparationCompatibility
  const sdk=sdkContinuationPredecessor(r,current,historical,{projectKey:'SG2'})
- const ecr=assistantEcrPredecessor(sdk?sdk.previousBytes:current,historical)
+ const sdkCurrent=sdk?sdk.previousBytes:current
+ const precision=assistantEcrPrecisionPredecessor(sdkCurrent,historical)
+ const ecr=assistantEcrPredecessor(sdkCurrent,historical)
  const arrow=assistantSendArrowPredecessor(current,historical)
  const registration=registrationStageOnePredecessor(current,historical)
  const m2=assistantM2Predecessor(current,historical)
@@ -133,11 +136,11 @@ test('every changed SG2 source in the candidate or resulting main has an exact a
  const markdown=assistantMarkdownPredecessor(current,historical)
  // Like the original receipt, the closed, validated build manifest declares
  // the source graph rather than containing a self-referential file hash.
- const changed=candidateSourcePaths(new URL('../../../',import.meta.url)).filter(file=>(!sdk||file!=='apps/sg-runtime/operation-integration.json')&&(!ecr||file!==ECR_RECEIPT)&&(!arrow||file!==SEND_ARROW_RECEIPT)&&(!registration||file!==REGISTRATION_ENTRY_PATH)&&(!m2||file!=='apps/sg-runtime/assistant-context-integration.json')&&(!pi||file!=='apps/sg-runtime/procurement-insights-integration.json')&&(!markdown||file!=='apps/sg-runtime/assistant-markdown-integration.json'))
+ const changed=candidateSourcePaths(new URL('../../../',import.meta.url)).filter(file=>(!sdk||file!=='apps/sg-runtime/operation-integration.json')&&(!precision||file!==PRECISION_RECEIPT)&&(!ecr||file!==ECR_RECEIPT)&&(!arrow||file!==SEND_ARROW_RECEIPT)&&(!registration||file!==REGISTRATION_ENTRY_PATH)&&(!m2||file!=='apps/sg-runtime/assistant-context-integration.json')&&(!pi||file!=='apps/sg-runtime/procurement-insights-integration.json')&&(!markdown||file!=='apps/sg-runtime/assistant-markdown-integration.json'))
  // Prisma lifecycle output is independently generated, never an authored source change.
  // A published receipt retains its original source set after merge. Current
  // bytes are strictly verified above; an accepted main has no new amendments.
- assertSourceCoverage(changed,{...ecr?.manifest.sourceDigests,...arrow?.manifest.sourceDigests,...markdown?.manifest.sourceDigests,...registration?.manifest.sourceDigests,...pi?.manifest.sourceDigests,...m2?.manifest.sourceDigests,...a.sourceDigests,...r.xrayAppShellPresentation?.sourceDigests,...r.appShellFourCardCascade?.sourceDigests,...r.d1AuditReaderPreparation?.sourceDigests,...r.productAnalyticsStageOneCompatibility?.sourceDigests,...r.xrayStyleIsolationContinuation?.sourceDigests,...r.sentryObservabilityCompatibility?.sourceDigests,...r.marketHistoryIngestionCompatibility?.sourceDigests,...r.pciSmartInputCorrective?.sourceDigests,...r.pciSmartResultingMainScopeCompatibility?.sourceDigests,...Object.fromEntries(Object.entries(r.fullUiParityAdoption?.applicationSourceDigests??{}).map(([f,d])=>['apps/sg-runtime/'+f,d])),...r.productAnalyticsMainCompatibility?.sourceDigests,...r.appShellFourCardCascade?.sourceDigests,...r.d1AuditReaderPreparation?.sourceDigests,...r.productAnalyticsStageOneCompatibility?.sourceDigests,...r.productAnalyticsMonitoringCompatibility?.sourceDigests,...r.appShellAssistantOwnership?.sourceDigests,...r.sourceHubApiPathCompatibility?.consumerSourceDigests,...r.finderMetadataSingleFlight?.sourceDigests,...r.finderMetadataDictionaryLookups?.sourceDigests,...r.finderMetadataRequestPacing?.sourceDigests,...r.sourceHubMarketSymbolCompatibility?.sourceDigests,...r.assistantM1SourceCompatibility?.sourceDigests,...r.assistantM1RuntimeSourceCompatibility?.consumerSourceDigests,...r.oilAutonomousReportCompatibility?.consumerSourceDigests,...r.assistantM1ChartContextCorrective?.sourceDigests,...r.oilAutonomousReportCompatibility?.sourceDigests,...sdk?.record.consumerSourceDigests.SG2})
+ assertSourceCoverage(changed,{...precision?.manifest.sourceDigests,...ecr?.manifest.sourceDigests,...arrow?.manifest.sourceDigests,...markdown?.manifest.sourceDigests,...registration?.manifest.sourceDigests,...pi?.manifest.sourceDigests,...m2?.manifest.sourceDigests,...a.sourceDigests,...r.xrayAppShellPresentation?.sourceDigests,...r.appShellFourCardCascade?.sourceDigests,...r.d1AuditReaderPreparation?.sourceDigests,...r.productAnalyticsStageOneCompatibility?.sourceDigests,...r.xrayStyleIsolationContinuation?.sourceDigests,...r.sentryObservabilityCompatibility?.sourceDigests,...r.marketHistoryIngestionCompatibility?.sourceDigests,...r.pciSmartInputCorrective?.sourceDigests,...r.pciSmartResultingMainScopeCompatibility?.sourceDigests,...Object.fromEntries(Object.entries(r.fullUiParityAdoption?.applicationSourceDigests??{}).map(([f,d])=>['apps/sg-runtime/'+f,d])),...r.productAnalyticsMainCompatibility?.sourceDigests,...r.appShellFourCardCascade?.sourceDigests,...r.d1AuditReaderPreparation?.sourceDigests,...r.productAnalyticsStageOneCompatibility?.sourceDigests,...r.productAnalyticsMonitoringCompatibility?.sourceDigests,...r.appShellAssistantOwnership?.sourceDigests,...r.sourceHubApiPathCompatibility?.consumerSourceDigests,...r.finderMetadataSingleFlight?.sourceDigests,...r.finderMetadataDictionaryLookups?.sourceDigests,...r.finderMetadataRequestPacing?.sourceDigests,...r.sourceHubMarketSymbolCompatibility?.sourceDigests,...r.assistantM1SourceCompatibility?.sourceDigests,...r.assistantM1RuntimeSourceCompatibility?.consumerSourceDigests,...r.oilAutonomousReportCompatibility?.consumerSourceDigests,...r.assistantM1ChartContextCorrective?.sourceDigests,...r.oilAutonomousReportCompatibility?.sourceDigests,...sdk?.record.consumerSourceDigests.SG2})
 
 
 })

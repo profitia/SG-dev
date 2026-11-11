@@ -1,0 +1,30 @@
+{
+  "schemaVersion": "1.0",
+  "taskId": "SG2-ACG-ECR-CONTEXT-20261111",
+  "producerTaskId": "ARCHITECTURE-ACG-ECR-TIME-PRECISION-20261111",
+  "targetEnvironment": "development",
+  "scope": "NATIVE_ECR_SCHEDULE_PRECISION",
+  "previousSourceSha": "141cc559063c43cefa991acb9260b32ac5b92615",
+  "sourceDigests": {
+    "packages/assistant-context-gateway/src/economic-calendar.mjs": "ee11d1dbbacf0f3d7dfcd6b7018c5f5db401cae7b1f62d222ee6b10ac9558a3d",
+    "packages/assistant-context-gateway/test/economic-calendar.test.mjs": "4dc2a7a1caf7ad1e58dc9768692f3c74f24257defcc626247b2b103edbc3f6eb",
+    "apps/sg-runtime/tests/assistant-ecr-integrity.mjs": "8c49237f0a1675d0ebca00b756333be8a81e8abacc6c1e98138748f3b6b10648",
+    "apps/sg-runtime/tests/assistant-ecr-integrity.test.mjs": "5db092c73f9192604d7ffabcdf7d7b97f5fd80dc23c02016ada318ffe89588e5",
+    "apps/sg-runtime/tests/assistant-ecr-precision-integrity.mjs": "1e50e6622c0727d7a5364b8d05eac90cdc33f48d3942dbc374f1834775d02829",
+    "apps/sg-runtime/tests/pci-smart-integrity.test.mjs": "05c621c94043e2f42d1ae35bca44f35451cabe8bcc91d16848dffeab3a675dac"
+  },
+  "previousReceipts": {
+    "apps/sg-runtime/operation-integration.json": "a6bf50993c98a71aeccd349dd904baafb53b3cd653324d97bab3fc5e34ac509f",
+    "apps/sg-runtime/assistant-context-integration.json": "d932f227977789643086b6a9eb179598a6f48071964b2d26ba82d25fceb7b2ec",
+    "apps/sg-runtime/procurement-insights-integration.json": "6dca06d8b0731e585925100b0578d41a61711f335940350d1ea32c296a3d7177",
+    "apps/sg-runtime/assistant-markdown-integration.json": "27ff06aff8bc44592f0073732748834b7759182fa4307d901c7d63304381a38b",
+    "apps/sg-runtime/registration-stage-i-integration.json": "4a7a572e67e12ed73c523502cef4cb432009e735737df851419d80898653f414",
+    "apps/sg-runtime/assistant-send-arrow-integration.json": "62c6af6817a022c31788d801cc0eac293a24b3f25d9e529d32b1bff4908fa230",
+    "apps/sg-runtime/assistant-ecr-integration.json": "5814e2e5cbdf1a32d22cff3aa55de806ec34c9debdecc21ff06c4f9f887a82bc"
+  },
+  "authorisationChanged": false,
+  "schemaChanged": false,
+  "providerAcquisitionAdded": false,
+  "modelChanged": false,
+  "deploymentPerformed": false
+}

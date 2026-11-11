@@ -11,7 +11,8 @@ const current=p=>fs.readFileSync(new URL('../../../'+p,import.meta.url))
 const blobs=new Map()
 const historical=(sha,p)=>{const key=sha+':'+p;if(!blobs.has(key))blobs.set(key,execFileSync('git',['show',key],{stdio:['ignore','pipe','pipe']}));return blobs.get(key)}
 const hash=b=>createHash('sha256').update(b).digest('hex')
-const acceptedEcrCurrent=()=>sdkContinuationPredecessor(JSON.parse(current('apps/sg-runtime/operation-integration.json')),current,historical)?.previousBytes??current
+const acceptedSdkCurrent=()=>sdkContinuationPredecessor(JSON.parse(current('apps/sg-runtime/operation-integration.json')),current,historical)?.previousBytes??current
+const acceptedEcrCurrent=()=>{const read=acceptedSdkCurrent();return assistantEcrPrecisionPredecessor(read,historical)?.previousBytes??read}
 const manifest=()=>JSON.parse(current(ECR_RECEIPT))
 const withManifest=(a,read=current)=>p=>p===ECR_RECEIPT?Buffer.from(JSON.stringify(a)):read(p)
 test('ECR closes its producer and consumer source graph while retaining every earlier receipt and predecessor',()=>{
@@ -54,4 +55,31 @@ test('only genuinely absent ECR is optional; permission, unrelated Git and histo
  assert.throws(()=>assistantEcrPredecessor(current,()=>{throw denied}),e=>e===denied)
  const unrelated=Object.assign(Error('unrelated path'),{status:128,stderr:"fatal: path 'another-file' exists on disk, but not in 'source'"})
  assert.throws(()=>assistantEcrPredecessor(()=>{throw unrelated},historical),e=>e===unrelated)
+})
+
+import {assistantEcrPrecisionPredecessor,PRECISION_RECEIPT,PRECISION_BASE,PRECISION_PATHS,PRECISION_RECEIPTS} from './assistant-ecr-precision-integrity.mjs'
+test('native ECR precision continuation retains the exact accepted ECR receipt and all earlier sources',()=>{
+ const correction=assistantEcrPrecisionPredecessor(current,historical)
+ assert.equal(correction.manifest.scope,'NATIVE_ECR_SCHEDULE_PRECISION')
+ for(const p of PRECISION_RECEIPTS)assert.deepEqual(acceptedSdkCurrent()(p),historical(PRECISION_BASE,p))
+ for(const p of PRECISION_PATHS.filter(p=>!p.endsWith('assistant-ecr-precision-integrity.mjs')))assert.deepEqual(correction.previousBytes(p),historical(PRECISION_BASE,p))
+ assert.equal(assistantEcrPrecisionPredecessor(correction.previousBytes,historical),null)
+ assert(assistantEcrPredecessor(current,historical));assert(assistantSendArrowPredecessor(current,historical));assert(assistantM2Predecessor(current,historical))
+ for(const p of [...PRECISION_PATHS,...PRECISION_RECEIPTS])assert.throws(()=>assistantEcrPrecisionPredecessor(f=>f===p?Buffer.concat([current(f),Buffer.from('tamper')]):current(f),historical),p)
+})
+test('ECR precision continuation cannot widen authority, hide missing sources or suppress a read failure',()=>{
+ const read=acceptedSdkCurrent(),manifest=JSON.parse(read(PRECISION_RECEIPT))
+ for(const change of [a=>a.authorisationChanged=true,a=>a.modelChanged=true,a=>a.previousSourceSha='0'.repeat(40),
+  a=>a.scope='ALL_CONTEXT',a=>delete a.sourceDigests[PRECISION_PATHS[0]],a=>a.sourceDigests['unbound']='0'.repeat(64),a=>a.extra=true]){
+  const a=structuredClone(manifest);change(a)
+  assert.throws(()=>assistantEcrPrecisionPredecessor(p=>p===PRECISION_RECEIPT?Buffer.from(JSON.stringify(a)):current(p),historical))
+ }
+ const denied=Object.assign(Error('opaque denial'),{code:'EACCES'})
+ assert.throws(()=>assistantEcrPrecisionPredecessor(()=>{throw denied},historical),e=>e===denied)
+ assert.throws(()=>assistantEcrPrecisionPredecessor(current,()=>{throw denied}),e=>e===denied)
+ const scope='apps/sg-runtime/tests/pci-smart-integrity.test.mjs',changed=Buffer.from(read(scope).toString().replace('assertSourceCoverage(changed,','void(changed,'))
+ const rebound=structuredClone(manifest);rebound.sourceDigests[scope]=hash(changed)
+ assert.throws(()=>assistantEcrPrecisionPredecessor(p=>p===PRECISION_RECEIPT?Buffer.from(JSON.stringify(rebound)):p===scope?changed:read(p),historical),'a rebound digest cannot suppress candidate coverage')
+ assert.throws(()=>assistantEcrPrecisionPredecessor(p=>p===PRECISION_RECEIPT?Buffer.from(JSON.stringify(rebound)):p===scope?changed:current(p),historical),'the current SDK view also rejects rebound precision sources')
+ assert.equal(assistantEcrPrecisionPredecessor(p=>historical(PRECISION_BASE,p),historical),null)
 })

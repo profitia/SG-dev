@@ -1,5 +1,6 @@
 import {sdkContinuationPredecessor} from '../../../packages/platform-contracts/test/organisation-sdk-compatibility.mjs'
 // Build/test source continuation only. This cannot authorise a runtime read or deployment.
+import {assistantEcrPrecisionPredecessor} from './assistant-ecr-precision-integrity.mjs'
 import assert from 'node:assert/strict'
 import {createHash} from 'node:crypto'
 export const ECR_RECEIPT='apps/sg-runtime/assistant-ecr-integration.json'
@@ -69,6 +70,8 @@ export function assistantEcrPredecessor(current,historical){
   const sdk=sdkContinuationPredecessor(sdkReceipt,current,historical,{projectKey:'SG2'})
   if(sdk)return assistantEcrPredecessor(sdk.previousBytes,historical)
  }
+ const precision=assistantEcrPrecisionPredecessor(current,historical);if(precision)return assistantEcrPredecessor(precision.previousBytes,historical)
+
  let bytes
  try{bytes=current(ECR_RECEIPT)}catch(error){
   const text=String(error?.stderr??error?.message??'')
