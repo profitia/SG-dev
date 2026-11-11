@@ -74,3 +74,12 @@ test('an existing NIP does not attach the second founder to the first organisati
  await flow.createOrganisation();assert.equal(flow.state.step,'existing-organisation');assert.equal(flow.state.snapshot.organisation,null)
  assert.equal(f.calls.filter(c=>c[0]==='activation').length,0)
 })
+
+test('formatted NIP uses one canonical lookup while preserving an existing chosen company address',async()=>{
+ const f=fixture({...complete,slug:'my-chosen-address'}),flow=f.flow()
+ await flow.load();await flow.changeNip();await flow.submitNip(' PL 123 456 32 18 ')
+ assert.equal(flow.state.step,'company');assert.equal(flow.state.issue,null)
+ assert.equal(f.calls.filter(c=>c[0]==='lookup').length,1)
+ assert.equal(f.calls.find(c=>c[0]==='lookup')[1].nip,'1234563218')
+ assert.equal(flow.state.proposedSlug,'my-chosen-address')
+})

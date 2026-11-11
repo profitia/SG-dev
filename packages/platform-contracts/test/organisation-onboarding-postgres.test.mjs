@@ -59,6 +59,17 @@ test('onboarding draft: real PostgreSQL self-scope, optimistic concurrency, dura
   const audit=(await f.admin.query("SELECT event FROM profitia_access.security_events WHERE event->>'resourceId'='current-organisation-onboarding'")).rows
   assert(audit.length>0);assert(!JSON.stringify(audit).includes('1234563218'));assert(!JSON.stringify(audit).includes('Odnawialna energia'))
  })
+ await t.test('changing the company identity clears dependent answers; re-entering the same NIP preserves preferences',async()=>{
+  const before=await apiA.readCurrentDraft(a.request('GET'))
+  const selected=await apiA.saveCurrentDraft(a.request('POST'),{expectedVersion:before.version,patch:{companySelection:{sourceRef:'synthetic-registry',version:'snapshot-1'}}})
+  const same=await apiA.saveCurrentDraft(a.request('POST'),{expectedVersion:selected.version,patch:{nip:'PL123 456 32 18'}})
+  assert.equal(same.answers.slug,'porr');assert.equal(same.answers.industry.id,'construction')
+  assert.equal(same.answers.categories.length,2);assert.equal(same.answers.teamRange.id,'6-10')
+  const changed=await apiA.saveCurrentDraft(a.request('POST'),{expectedVersion:same.version,patch:{nip:'5261040828'}})
+  assert.deepEqual(changed.answers,{nip:'5261040828',companySelection:null})
+  assert.deepEqual((await apiA.readCurrentDraft(a.request('GET'))).answers,changed.answers)
+  assert.equal((await f.admin.query('SELECT count(*) FROM profitia_access.organisations')).rows[0].count,'0')
+ })
  await t.test('revoked identity and disabled runtime policy both fail closed',async()=>{
   a.active=false;await assert.rejects(apiA.readCurrentDraft(a.request('GET')));a.active=true
   await f.admin.query('UPDATE profitia_profile.organisation_onboarding_policies SET enabled=false')
