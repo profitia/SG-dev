@@ -188,3 +188,13 @@ This accepts the three-file PR971 proposal and its exact PR969/18-blob review at
 preparation before that decision. Trusted-main exact-head bootstrap and mandatory
 checks remain required before controlled main acceptance. The decision grants no
 live migration, deployment, infrastructure, entitlement or paid-provider action.
+
+## Propozycja zamkniętego przeglądu Platform Knowledge G1 — PR999
+
+DRAFT / CONTROLLER_OWNER_DECISION_PENDING. W ramach zleconego etapu pierwszego przygotowano wąskie dopuszczenie wyłącznie PR999, gałęzi `architecture/platform-knowledge-stage1-g1-20261111`, dokładnego HEAD `174cb59fd9770f1ced8d4b1108f6090934937a4f` i siedmiu zamrożonych blobów/statusów. Zestaw obejmuje dowód G1, trzy istniejące rejestry, harmonogram, instrukcję przygotowania Development i test routingu. Nie obejmuje kodu aplikacji, prywatnych pakietów, nowych nazw zależności, nowego workflow lub poświadczeń.
+
+Inny PR, branch, HEAD, zmiana blobu/statusu, brak/dodatkowa ścieżka, rename/copy/delete, duplikat, symlink lub executable mode są odrzucane. Wcześniejsze klasy i fingerprinty pozostają niezmienione. Wszystkie siedem powierzchni musi rozstrzygać się na trusted-main jako Governance Source Layer / ALIGNED / ARCHITECTURE. Nie jest to ogólne dopuszczenie Canon, runtime lub pakietów Platform Knowledge.
+
+Aktywacja wymaga odrębnej decyzji właściciela kontrolera, testów polityki, exact-SHA proof dotychczasowego trusted-main dla bootstrapu oraz kontrolowanego przyjęcia. Namespace `sg2/` bootstrapu jest wyłącznie transportem; profil, routing i PMOS pozostają ARCHITECTURE. Po aktywacji nowy main waliduje dokładnego PR999 i wymagany jest świeży proof oraz ponowienie publicznego weryfikatora. Digesty historyczne, main-only Environment, nazwy i piny prywatnych pakietów, zakres credentiala oraz wykonanie bez credentiali pozostają bez zmian. Revert tej zamkniętej klasy jest lokalnym rollbackiem polityki; nie cofa produktu lub danych.
+
+[Pakiet decyzji i testów](../evidence/2026-11-11-platform-knowledge-stage1-ci-admission.md). Propozycja nie jest jeszcze aktywną zmianą authority.
