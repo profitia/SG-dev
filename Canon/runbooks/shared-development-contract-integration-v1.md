@@ -609,3 +609,40 @@ then exact-source full checks and resulting-main proof before atomic adoption.
 Use existing sg2/* policy transport with actual Architecture ownership and
 existing983 source transport; no producer-first merge. No product SQL,grant,
 package bypass,email,provider call or deployment is granted by this decision.
+
+## Stage I registration / recurring reconciliation — approved1016 (2026-11-11)
+
+OWNER_APPROVED / REQUIRED_CI_PENDING. The owner explicitly answered
+“Zatwierdzam propozycję PR #1016”, binding document
+7a6c4aca86119fe77120a22d69acaa1ce6f4e555. The inert proposal was accepted at
+a9194acae09132e6570fe8071bf327125ebb8577. Preserve the prior41/48/original59/
+approved1012 maps and every recurring119/123/124 acceptance.
+
+The exact65-entry successor has34 Architecture,17 SG2 and14 SRM paths.
+Its recordccf680f0a83b61f3944dd2823259e9487ddae5c2a7707b8d05e793241c4aae40
+binds165 SDK sources to immutable producer5a963f313317d57e1946e1d7aabd28192db9c7bd
+and predecessor0775f8a18d2fbeca462bb0a9d654914b15c53dad.
+[The frozen review](../evidence/2026-11-11-registration-recurring-final-admission-review.md)
+contains exact65 map e26befa870d7c6366f19bcec6e0b31c60fdd52dc1d160f8972aac36cc19cefbd,
+helperfd15eb0b9b07fc59b7e92697c40b26684e79a1f0, testc7baabf64e3ad2c35ec7e57b009f0eacd12bf9d9
+and the exact controller text patch. DefaultRoot16, optional21/22 isolation,
+48 SDK/3 optional fingerprints and all previous receipts remain authoritative.
+
+Before credentials, authenticate the full current registration graph, then only
+its closed exact overlay may expose accepted0775 bytes to the unchanged recurring
+guard. Both graphs must pass; current proof uses the actual verified defaultRoot
+digest3877ef17593c118c4d188aa9e464c329373723cb8776a44cbda5987c31dd67ce.
+No candidate JavaScript import is permitted in that credential phase. Preserve
+regular-file/full-diff/owner/repository/head/main-only and package-pin fences,
+ignore-scripts, the same read-only package credential and its removal.
+
+Require old/new/negative policy/helper tests, actual native receiver/core/SQL
+tests, exact policy controlled/public checks and resulting-main checks before
+policy completion. Refresh prepared source2be25df1b7b5c81519673d43504f056261387fe9
+onto resulting policy main only with all65 exact reviewed versions unchanged.
+Use existing983 as the coordinated joint source transport; retain separate owner
+tasks. Require full exact-source controlled/public/owner tests, required SOURCE GO
+and resulting-main proof. This does not install SQL, grant access/packages,
+activate runtime features, send mail, call a provider/model or deploy an app.
+
+Required physical-source validation must also authenticate all65 approved Git blobs/modes, including native Identity paths outside the SDK record maps, before projecting that exact closed overlay to the unchanged recurring graph. Preserve all previous records and reject native or recurring-only drift; this does not admit a new path or change the approved65 source map.
