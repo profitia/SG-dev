@@ -26,6 +26,14 @@ test('own delete clears the current saved conversation after server acknowledgem
  assert.deepEqual(session.getSnapshot().history,[]);assert.deepEqual(session.getSnapshot().messages,[]);assert.equal(session.getSnapshot().draft,'')
 })
 
+test('a limit refusal before a stream starts keeps the question without inventing an incomplete response or retrying',async()=>{
+ let sends=0
+ const session=new AssistantConversationSession(transport(async function*(){sends++;throw Object.assign(Error('Limit'),{code:'LIMIT_EXCEEDED'});yield {type:'error',code:'UNAVAILABLE'}}),ids())
+ session.activate('owner');await session.send('Question about last week')
+ const state=session.getSnapshot()
+ assert.equal(sends,1);assert.equal(state.error,'LIMIT_EXCEEDED');assert.equal(state.busy,false)
+ assert.equal(state.messages.length,1);assert.equal(state.messages[0].role,'user');assert.equal(state.messages[0].content,'Question about last week')
+})
 test('streams before completion and supports six explicitly sent turns without automatic calls',async()=>{
  const started=deferred(),finish=deferred(),commands:string[]=[]
  const session=new AssistantConversationSession(transport(async function*(input){

@@ -3,8 +3,8 @@
   "taskId": "SG2-PROCUREMENT-MARKET-CALENDAR-20261111",
   "targetEnvironment": "development",
   "scope": "MARKET_CALENDAR_CONSUMER_SOURCE",
-  "previousSourceSha": "ff80ea55b384a3528225f6b09a942e942428f275",
-  "producerRecordSha256": "2403aac429e8958b9a5ec09184de4969da495e2fd83ec9e4debfdc9617d8ede9",
+  "previousSourceSha": "ad4bdc7f5c9e2ffa8827cf66ce558b24766546e5",
+  "producerRecordSha256": "4fb8f320a63844bccd7ddccc9cf8fed3e22ac12d6b0f8306fa41274009d7a0af",
   "sourceDigests": {
     "apps/sg-runtime/app/api/v1/market-calendar/[[...path]]/route.ts": "4ba92f85a88b8f64459fa1f7bf531f681febaf3cf36d323da310cf4de578c2b0",
     "apps/sg-runtime/components/procurement-insights/calendar-detail.tsx": "01015c244afcd8d143c0f68604f7baa78147339e6bc43f2704c320d75accfd6d",
