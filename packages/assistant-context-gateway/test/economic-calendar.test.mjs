@@ -60,3 +60,10 @@ test('a revoked ECR read is DENIED at the gateway; no provider or knowledge fall
  const r=await g.resolve({plan:[{source:'ECONOMIC_CALENDAR',selection:'ACTIVE_VIEW'}],reference,organisationId:'SYNTHETIC_ONLY',request:{}})
  assert.deepEqual(r.contexts,[{source:'ECONOMIC_CALENDAR',status:'DENIED'}])
 })
+test('the ECR projection fits the admitted history record bound as well as the byte bound',async()=>{
+ const r=publication(),schedule={timePrecision:'DATE',scheduledAt:null,dateOnly:'2026-11-12',localDateTime:null,timeZone:null,scheduleStatus:'PROVIDER_REPORTED',qualityFlags:[],officialSource:false}
+ r.unresolvedSchedules=Array.from({length:40},(_,i)=>({publication:{publicationId:'ecr_pub_'+i.toString(16).padStart(64,'0'),title:'SYNTHETIC_ONLY',knownAt:at,source,sourceUrl:'https://www.eia.gov/',releaseIdentityStatus:'UNRESOLVED_NEXT_RELEASE',unresolvedNextSchedule:schedule}}))
+ const result=await createEconomicCalendarContextAdapter({readAuthorised:async()=>r}).read(input),d=result.data
+ assert(d.events.length+d.events.reduce((n,e)=>n+e.results.length,0)+d.unresolvedSchedules.length<=32)
+ assert(d.omitted.unresolvedSchedules>0);assert.equal(result.status,'PARTIAL');assert(Buffer.byteLength(JSON.stringify(result))<16000)
+})
