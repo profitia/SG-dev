@@ -63,6 +63,14 @@ test('SYNTHETIC_ONLY: durable monitoring runs without a browser and fences priva
    const inbox=await execute((ctx,q)=>repo.inbox(q,ctx,{}));assert.equal(inbox.items.length,1);
   });
   await t.test('restart and duplicate due-slot claim cannot repeat an upstream effect',async()=>{const worker=createMonitoringWorker({monitoring});await worker.tick();await worker.stop();assert.equal(upstream,1);assert.equal((await monitoring.candidates()).length,0)});
+  await t.test('assistant reads the selected immutable run and publication without discovery or newer criteria',async()=>{
+   const history=await execute((ctx,q)=>repo.history(q,ctx,observation.id,{}),{id:observation.id}),runId=history.items[0].id;
+   const publications=await execute((ctx,q)=>repo.publications(q,ctx,observation.id,{runId}),{id:observation.id}),publicationId=publications.items[0].id,before=upstream;
+   await execute((ctx,q)=>repo.update(q,ctx,observation.id,{contractVersion:'1.2.0',version:observation.version,name:'SYNTHETIC_NEWER_CRITERIA'}),{id:observation.id});
+   const value=await execute((ctx,q)=>repo.assistantContext(q,ctx,{observationId:observation.id,selectionVersion:'2.1.0',runId,publicationId}),{id:observation.id});
+   assert.equal(value.version,'newsfeed-assistant-read-v2');assert.equal(value.observations[0].name,'SYNTHETIC_ONLY');assert.equal(value.observations[0].runs[0].id,runId);assert.equal(value.observations[0].publications[0].id,publicationId);assert.equal(upstream,before);
+   await assert.rejects(execute((ctx,q)=>repo.assistantContext(q,ctx,{observationId:observation.id,selectionVersion:'2.1.0',runId,publicationId}),{id:observation.id,token:'SYNTHETIC_B'}));
+  });
   await t.test('another user or organisation cannot activate the private resource',async()=>{
    await assert.rejects(execute((_,q)=>monitoring.activate(q,f.request('SYNTHETIC_B'),observation.id,observation.version,true),{id:observation.id,token:'SYNTHETIC_B'}));
    await assert.rejects(execute((_,q)=>monitoring.activate(q,f.request(),observation.id,observation.version,true),{id:observation.id,org:B}));

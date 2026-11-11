@@ -152,17 +152,20 @@ export function createSavedSearchRepository(configuration,database,{now=()=>new 
  }
  async function revokeShare(t,c,id,shareId,kind){await get(t,c,id,true);if(!['SHARE','INVITATION'].includes(kind)||!uuidValue(shareId))throw new SourceHubError('INVALID_SHARE');const r=await t.query('DELETE FROM newsfeed.'+(kind==='SHARE'?'observation_shares':'share_invitations')+' WHERE '+w+' AND observation_id=$5::uuid AND id=$6::uuid RETURNING id',[...s(c),id,shareId]);if(!r.rowCount)throw new SourceHubError('SHARE_NOT_FOUND',404);return {revoked:true,id:shareId};}
  async function claimInvitation(t,c,input){if(!input||Object.keys(input).join(',')!=='token'||typeof input.token!=='string'||!/^[a-f0-9]{64}$/.test(input.token))throw new SourceHubError('INVALID_INVITATION');try{const r=await t.query('SELECT newsfeed.claim_invitation($1,$2::uuid) AS id',[hash(input.token),randomUUID()]);return get(t,c,r.rows[0].id);}catch(error){if(error.code==='PT404')throw new SourceHubError('INVITATION_UNAVAILABLE',404);throw error;}}
- async function assistantContext(t,c,{observationId=null,supplierNip=null}={}){
+ async function assistantContext(t,c,{observationId=null,supplierNip=null,selectionVersion=null,runId=null,publicationId=null}={}){
   const page=observationId?{items:[await get(t,c,observationId)],nextCursor:null}:await list(t,c,{limit:10});
   const matches=page.items.filter(o=>supplierNip===null||o.subjectKind==='company'&&/^(?:NIP[:\s]*)?(\d{10})$/i.exec(o.subject.trim())?.[1]===supplierNip);
   const observations=[];let truncated=page.nextCursor!==null||matches.length>3;
-  for(const o of matches.slice(0,3)){
-   const h=await history(t,c,o.id,{limit:3}),p=await publications(t,c,o.id,{limit:5});truncated ||= !!h.nextCursor||!!p.nextCursor;
+  for(const current of matches.slice(0,3)){
+   let o=current,h;
+   if(runId){const value=(await t.query('SELECT newsfeed.monitoring_read_run($1::uuid,$2::uuid) AS value',[o.id,runId])).rows[0].value;o={...o,...value.definition,version:Number(value.run.observation_version),updatedAt:iso(value.versionCreatedAt)};h={items:[{...run(value.run),observationVersion:Number(value.run.observation_version)}],nextCursor:null}}
+   else h=await history(t,c,o.id,{limit:3});
+   const p=await publications(t,c,o.id,{limit:5,...(runId?{runId}:{}),...(publicationId?{publicationId}:{})});truncated ||= !!h.nextCursor||!!p.nextCursor;
    observations.push({id:o.id,name:o.name,subjectKind:o.subjectKind,subject:o.subject,status:o.status,version:o.version,createdAt:o.createdAt,updatedAt:o.updatedAt,
     runs:h.items.map(({criteriaSnapshot,...r})=>r),publications:p.items.filter(x=>typeof x.headline==='string').map(x=>({id:x.id,provider:x.provider,url:x.url,headline:x.headline.slice(0,1200),publishedAt:x.publishedAt,discoveredAt:x.retrievedAt,detectedAt:x.detectedAt,publicationStatus:'DETECTED'}))});
   }
   while(Buffer.byteLength(JSON.stringify(observations))>24000){const last=[...observations].reverse().find(x=>x.publications.length);if(!last)throw new SourceHubError('CONTEXT_TOO_LARGE',503);last.publications.pop();truncated=true;}
-  return {version:'newsfeed-assistant-read-v1',status:observations.length?truncated?'PARTIAL':'OK':'EMPTY',observations,truncated};
+  return {version:selectionVersion==='2.1.0'?'newsfeed-assistant-read-v2':'newsfeed-assistant-read-v1',status:observations.length?truncated?'PARTIAL':'OK':'EMPTY',observations,truncated};
  }
  async function inbox(t,c,options){const {limit,after}=pageOptions(options);const r=configuration.recurring?{rows:(await t.query('SELECT newsfeed.monitoring_inbox($1,$2::timestamptz,$3::uuid) AS items',[limit+1,after?.[0]??null,after?.[1]??null])).rows[0].items}:await t.query('SELECT *,created_at::text AS cursor_at FROM newsfeed.inbox_events WHERE '+w+(after?' AND (created_at,id)<($6::timestamptz,$7::uuid)':'')+' ORDER BY created_at DESC,id DESC LIMIT $5',[...s(c),limit+1,...(after??[])]);return {items:r.rows.slice(0,limit).map(x=>({id:x.id,kind:x.event_kind,observationId:x.observation_id,publicationId:x.publication_id,createdAt:iso(x.created_at),readAt:iso(x.read_at)})),nextCursor:cursorFor(r.rows,limit,'created_at')};}
  async function markRead(t,c,id){if(configuration.recurring){try{return(await t.query('SELECT newsfeed.monitoring_mark_read($1::uuid) AS value',[id])).rows[0].value}catch(e){if(e.code==='PT404')throw new SourceHubError('NOTIFICATION_NOT_FOUND',404);throw e}}const r=await t.query('UPDATE newsfeed.inbox_events SET read_at=coalesce(read_at,clock_timestamp()) WHERE '+w+' AND id=$5::uuid RETURNING id',[...s(c),id]);if(!r.rowCount)throw new SourceHubError('NOTIFICATION_NOT_FOUND',404);return {id,read:true};}

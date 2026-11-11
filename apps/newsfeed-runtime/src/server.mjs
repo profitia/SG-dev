@@ -59,8 +59,9 @@ export function createApplication({authorizer,repository,savedSearches=null,sour
    if(authorizer.assistantReadEnabled!==true)throw new SourceHubError('NOT_FOUND',404);
    if(request.method!=='GET')throw new SourceHubError('METHOD_NOT_ALLOWED',405);
    if(request.headers.has('cookie')||request.headers.has('origin')||!/^Bearer [^\s]{1,8192}$/.test(request.headers.get('authorization')??''))throw new SourceHubError('BEARER_SESSION_REQUIRED',401);
-   if([...u.searchParams.keys()].some(k=>!['observationId','supplierNip'].includes(k))||[...new Set(u.searchParams.keys())].some(k=>u.searchParams.getAll(k).length!==1))throw new SourceHubError('INVALID_QUERY');
-   const selection={observationId:u.searchParams.get('observationId'),supplierNip:u.searchParams.get('supplierNip')};
+   if([...u.searchParams.keys()].some(k=>!['observationId','supplierNip','runId','publicationId','selectionVersion'].includes(k))||[...new Set(u.searchParams.keys())].some(k=>u.searchParams.getAll(k).length!==1))throw new SourceHubError('INVALID_QUERY');
+   const selected=u.searchParams.get('selectionVersion'),selection={observationId:u.searchParams.get('observationId'),supplierNip:u.searchParams.get('supplierNip'),...(selected==='2.1.0'?{selectionVersion:selected,runId:u.searchParams.get('runId'),publicationId:u.searchParams.get('publicationId')}:{})};
+   if(selected!==null&&selected!=='2.1.0'||!selected&&(u.searchParams.has('runId')||u.searchParams.has('publicationId'))||selected&&(selection.observationId===null||selection.supplierNip!==null||[selection.runId,selection.publicationId].some(x=>x!==null&&(typeof x!=='string'||!uuid.test(x)))))throw new SourceHubError('INVALID_QUERY');
    if(selection.observationId!==null&&!uuid.test(selection.observationId)||selection.supplierNip!==null&&!/^\d{10}$/.test(selection.supplierNip))throw new SourceHubError('INVALID_QUERY');
    const value=await authorizer.execute({request,organisationId:request.headers.get('x-profitia-organisation-id'),resourceId:selection.observationId??'newsfeed-observations',payload:selection,write:false},
     (context,transaction)=>(savedSearches??repository).assistantContext(transaction,context,selection));

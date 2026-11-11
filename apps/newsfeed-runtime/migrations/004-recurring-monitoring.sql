@@ -259,3 +259,15 @@ END $fn$;
 REVOKE ALL ON newsfeed.monitor_preferences,newsfeed.monitor_delivery_events FROM PUBLIC;
 REVOKE ALL ON FUNCTION newsfeed.monitoring_visible(uuid),newsfeed.monitoring_notify_shared(),newsfeed.monitoring_projection(uuid[]),newsfeed.monitoring_preference(uuid,boolean),newsfeed.monitoring_inbox(integer,timestamptz,uuid),newsfeed.monitoring_mark_read(uuid) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION newsfeed.monitoring_projection(uuid[]),newsfeed.monitoring_preference(uuid,boolean),newsfeed.monitoring_inbox(integer,timestamptz,uuid),newsfeed.monitoring_mark_read(uuid) TO newsfeed_development_runtime;
+
+CREATE FUNCTION newsfeed.monitoring_read_run(p_observation uuid,p_run uuid) RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,pg_temp AS $fn$
+DECLARE r newsfeed.monitor_runs%ROWTYPE;v newsfeed.observation_versions%ROWTYPE;
+BEGIN
+ PERFORM newsfeed.monitoring_binding();IF NOT newsfeed.monitoring_visible(p_observation) THEN RAISE EXCEPTION 'Stored run unavailable' USING ERRCODE='PT404';END IF;
+ SELECT * INTO r FROM newsfeed.monitor_runs WHERE observation_id=p_observation AND id=p_run AND environment=current_setting('profitia.environment',true) AND application_id=current_setting('profitia.application_id',true) AND organisation_id::text=current_setting('profitia.organisation_id',true) FOR SHARE;
+ IF NOT FOUND THEN RAISE EXCEPTION 'Stored run unavailable' USING ERRCODE='PT404';END IF;
+ SELECT * INTO STRICT v FROM newsfeed.observation_versions WHERE(environment,application_id,organisation_id,owner_user_id,observation_id,version)=(r.environment,r.application_id,r.organisation_id,r.owner_user_id,r.observation_id,r.observation_version);
+ RETURN jsonb_build_object('run',to_jsonb(r),'definition',v.definition,'versionCreatedAt',v.created_at);
+END $fn$;
+REVOKE ALL ON FUNCTION newsfeed.monitoring_read_run(uuid,uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION newsfeed.monitoring_read_run(uuid,uuid) TO newsfeed_development_runtime;

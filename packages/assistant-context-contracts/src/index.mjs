@@ -1,4 +1,4 @@
-export const ASSISTANT_CONTEXT_CONTRACT=Object.freeze({id:'profitia.assistant-context',version:'2.0.0'})
+export const ASSISTANT_CONTEXT_CONTRACT=Object.freeze({id:'profitia.assistant-context',version:'2.1.0'})
 export const CONTEXT_STATUSES=Object.freeze(['OK','EMPTY','PARTIAL','DENIED','UNAVAILABLE','STALE'])
 const record=v=>!!v&&typeof v==='object'&&!Array.isArray(v)
 const exact=(v,keys)=>record(v)&&Object.keys(v).sort().join(',')===[...keys].sort().join(',')
@@ -23,6 +23,14 @@ const frequencies=['DAILY','WEEKLY','MONTHLY','BIMONTHLY','QUARTERLY','QUADMONTH
  * Each producer must resolve these hints under the current server authority. */
 export function readContextReference(value){
  if(value?.source==='BENCHMARK_CHART')return readChartReference(value)
+ if(value?.version==='2.1.0'&&value.source==='PUBLISHED_REPORT'){
+  if(!exact(value,['version','source','producerJobId','pdfSha256','markdownSha256'])||!uuid(value.producerJobId)||![value.pdfSha256,value.markdownSha256].every(v=>typeof v==='string'&&/^[a-f0-9]{64}$/.test(v)))throw TypeError('Invalid published report reference')
+  return Object.freeze({...value})
+ }
+ if(value?.version==='2.1.0'&&value.source==='NEWSFEED'){
+  if(!exact(value,['version','source','observationId','supplierNip','runId','publicationId'])||!uuid(value.observationId)||value.supplierNip!==null||[value.runId,value.publicationId].some(v=>v!==null&&!uuid(v)))throw TypeError('Invalid selected Newsfeed reference')
+  return Object.freeze({...value})
+ }
  if(value?.version!=='2.0.0')throw TypeError('Invalid context reference')
  if(value.source==='FORECAST_CORE'){
   if(!exact(value,['version','source','seriesId','modelIds','targetBasis','sourceFrequency','targetCadence','verification'])
