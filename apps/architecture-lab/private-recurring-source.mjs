@@ -27,8 +27,14 @@ export function recurringSourcePredecessor(current,historical){
   const file=project==='ARCHITECTURE'?'apps/architecture-lab/private-recurring-source-adoption.json':'apps/'+(project==='SG2'?'sg-runtime':'srm')+'/private-recurring-source-adoption.json'
   assert.deepEqual(JSON.parse(current(file)),{schemaVersion:'1.0.0',projectKey:project,taskId:a.taskIds[project],targetEnvironment:'development',scope:'SOURCE_ONLY_NO_RUNTIME_ACTIVATION',sourceRecord:RECURRING_SOURCE_RECORD,sourceRecordSha256:RECORD_SHA256})
  }
- const additions=new Set(a.addedPaths),mapped=new Set(a.changedPaths),cache=new Map()
- return {manifest:a,previousBytes:p=>{
+ const additions=new Set(a.addedPaths),mapped=new Set([...a.changedPaths,...(a.predecessorProjectionPaths??[])]),cache=new Map()
+ const authorityCache=new Map(),own=new Set(a.changedPaths),ownAdded=new Set(a.recurringAddedPaths??a.addedPaths)
+ return {manifest:a,authorityBytes:p=>{
+  if(p===RECURRING_SOURCE_RECORD||p.endsWith('/private-recurring-source-adoption.json')||ownAdded.has(p))throw Object.assign(Error('Recurring source absent from authority predecessor'),{code:'ENOENT'})
+  if(!own.has(p))return current(p)
+  if(!authorityCache.has(p))authorityCache.set(p,Buffer.from(historical(a.authorityMainSha,p)))
+  return Buffer.from(authorityCache.get(p))
+ },previousBytes:p=>{
   if(p===RECURRING_SOURCE_RECORD||p.endsWith('/private-recurring-source-adoption.json')||additions.has(p))throw Object.assign(Error('Recurring source absent from predecessor'),{code:'ENOENT'})
   if(!mapped.has(p))return current(p)
   if(!cache.has(p))cache.set(p,Buffer.from(historical(RECURRING_SOURCE_BASE,p)))
