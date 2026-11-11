@@ -8,12 +8,12 @@
     {
       "id": "GOV-DOCS-UNIVERSAL-V12-001",
       "capability": "Agent Instruction Documentation",
-      "name": "Universal Execution Wrapper v1.2 — inactive library document",
+      "name": "Universal Execution Wrapper v1.2 — active shared instruction",
       "pathPatterns": [
         "docs/agent-instructions/profitia-universal-project-execution-v1.2.md"
       ],
       "currentOwner": "Governance Source Layer",
-      "currentResponsibility": "Documentation-only publication of the owner-approved universal execution wrapper v1.2 in the existing wrapper library; no activation, replacement or runtime policy change.",
+      "currentResponsibility": "Canonical shared execution instruction for SG2, ARCHITECTURE and SRM, selected by the active governance manifest; subordinate to existing canons, profiles and permissions; no product, environment or continuity-policy grant.",
       "baselineClassification": "ALIGNED",
       "parentSurfaceId": null,
       "cleanupReason": null,
@@ -21,7 +21,7 @@
       "allowedProjectKeys": [
         "ARCHITECTURE"
       ],
-      "onboardingAuthorization": "Explicit owner response: Zatwierdzam jeden wpis i dokończenie publikacji; 2026-11-11, host 01a1cc30-dccf-7942-b613-e33a0fe38b30. Exact documentation path only; publication without activation or replacement of existing wrappers."
+      "onboardingAuthorization": "Explicit owner response: Zatwierdzam jeden wpis i dokończenie publikacji; 2026-11-11, host 01a1cc30-dccf-7942-b613-e33a0fe38b30. Exact documentation path only; publication without activation or replacement of existing wrappers. Separate owner activation instruction: aktywuj wrapper; 2026-11-11, same host. Activates the instruction for SG2, ARCHITECTURE and SRM through the existing manifest; no CIC activation or change to existing continuity requirements."
     },
     {
       "id": "LIMITS-BASE-001",
