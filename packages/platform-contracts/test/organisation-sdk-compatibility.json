@@ -171,6 +171,7 @@
   },
   "compatibilityTestSourceDigests": {
     "apps/architecture-lab/test/sdk-compatibility.test.mjs": "6edca19fffa91824a415067cfb18725355dba9f84ba86da7a70fd96ae4f162f1",
+    "apps/newsfeed-runtime/test/runtime.test.mjs": "bf7c20a33b349251a1e53f7b85c5d1c3fa5071713f330ac24b3f2a5b9f9f2dee",
     "packages/platform-contracts/current-fresh-report/test/current-fresh-report.test.mjs": "e7e6ca84000cf68b4624ae3a8b5a33c992b9dd68cdc2163e7c19a66bcea42f5f",
     "packages/platform-contracts/readonly-miss-report/test/readonly-miss-report.test.mjs": "6af51cd771fe192e9d99337ee0de4b0cf65366e9df79a23e6d4f311224d3d416",
     "packages/platform-contracts/test/private-operation-host.test.mjs": "95bb086241c1653f7205072762a67f1e4c6a99cf2b98d4e8afa6a4bf1c52c660"
@@ -232,6 +233,7 @@
   },
   "consumerSourceDigests": {
     "SG2": {
+      "apps/sg-runtime/tests/assistant-m2-integrity.mjs": "a9a761bd0742406f8a36c0ce5f44045d2783bfe505284e34c58057f3f204220e",
       "apps/sg-runtime/tests/diagnostic-telemetry-adoption.test.mjs": "78c8cf122122c08c34d94842e34f4bf1348d712f891432bd2e9cd5de1f5685ab",
       "apps/sg-runtime/tests/native-sql-roundtrips.test.mjs": "b6a3e1775e8b0214ba247a8428f02d310bb5b4b0e48648a28076daffa1f4b85a",
       "apps/sg-runtime/tests/operation-context.test.mjs": "d7ffb69925877b677c795be31cbeeea66a9de94f91ecac83c56f37499e06d206",
