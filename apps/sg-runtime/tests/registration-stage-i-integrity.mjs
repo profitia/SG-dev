@@ -1,3 +1,4 @@
+import {assistantSendArrowPredecessor} from './assistant-send-arrow-integrity.mjs'
 // Exact source adoption for the account-entry correction. No runtime authority.
 import assert from 'node:assert/strict'
 import {createHash} from 'node:crypto'
@@ -28,6 +29,7 @@ export const REGISTRATION_ENTRY_PRESERVED=Object.freeze([
 const receipts=['apps/sg-runtime/operation-integration.json','apps/sg-runtime/assistant-context-integration.json','apps/sg-runtime/procurement-insights-integration.json','apps/sg-runtime/assistant-markdown-integration.json']
 const hash=b=>createHash('sha256').update(b).digest('hex')
 export function registrationStageOnePredecessor(current,historical){
+ const arrow=assistantSendArrowPredecessor(current,historical);if(arrow)return registrationStageOnePredecessor(arrow.previousBytes,historical)
  let bytes
  try{bytes=current(REGISTRATION_ENTRY_PATH)}catch(error){
   const text=String(error?.stderr??error?.message??'')
