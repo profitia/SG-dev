@@ -1,4 +1,4 @@
-import type {ContextReference,ContextSelection,ChartReference,ForecastReference,SupplierReference,NewsfeedReference,ContextStatus} from '../../assistant-context-contracts/src/index.mjs'
+import type {ContextReference,ContextSelection,ChartReference,ForecastReference,SupplierReference,NewsfeedReference,EconomicCalendarReference,ContextStatus} from '../../assistant-context-contracts/src/index.mjs'
 export const ASSISTANT_GATEWAY_CONTRACT:Readonly<{id:'profitia.assistant-context-gateway';version:'2.0.0'}>
 export type ContextEntry=Readonly<{source:string;status:ContextStatus;id?:string;label?:string;sourceVersion?:string;observedAt?:string;asOf?:string|null;data?:unknown;selection?:unknown}>
 type ReadInput={reference:ContextReference|null;request:unknown;organisationId:string;signal?:AbortSignal;observedAt:string}
@@ -8,3 +8,5 @@ type AuthorisedInput<R>={selection:R;organisationId:string;request:unknown;signa
 export function createForecastContextAdapter(options:{readAuthorised:(input:AuthorisedInput<ForecastReference>)=>Promise<unknown>}):{source:string;read:(input:ReadInput)=>Promise<ContextEntry>}
 export function createSupplierContextAdapter(options:{readAuthorised:(input:AuthorisedInput<SupplierReference>)=>Promise<unknown>}):{source:string;read:(input:ReadInput)=>Promise<ContextEntry>}
 export function createNewsfeedContextAdapter(options:{readAuthorised:(input:AuthorisedInput<NewsfeedReference>)=>Promise<unknown>}):{source:string;read:(input:ReadInput)=>Promise<ContextEntry>}
+export const ECONOMIC_CONTEXT_ADAPTER_CONTRACT:Readonly<{id:'profitia.assistant-economic-context';version:'1.0.0'}>
+export function createEconomicCalendarContextAdapter(options:{readAuthorised:(input:AuthorisedInput<EconomicCalendarReference>)=>Promise<unknown>}):{source:string;read:(input:ReadInput)=>Promise<ContextEntry>}
