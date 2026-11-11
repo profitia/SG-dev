@@ -1,3 +1,4 @@
+import {assistantSendArrowPredecessor} from './assistant-send-arrow-integrity.mjs'
 // Test/build-only presentation continuation. No runtime authority.
 import {registrationStageOnePredecessor} from './registration-stage-i-integrity.mjs'
 import assert from 'node:assert/strict'
@@ -7,6 +8,7 @@ const assistantReceipt='apps/sg-runtime/assistant-context-integration.json'
 const hash=bytes=>createHash('sha256').update(bytes).digest('hex')
 // Bound the presentation-only continuation before reading historical receipts.
 export function assistantMarkdownPredecessor(current,historical){
+ const arrow=assistantSendArrowPredecessor(current,historical);if(arrow)return assistantMarkdownPredecessor(arrow.previousBytes,historical)
  const registration=registrationStageOnePredecessor(current,historical);if(registration)return assistantMarkdownPredecessor(registration.previousBytes,historical)
  let bytes
  try{bytes=current(file)}catch(error){
