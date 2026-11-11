@@ -44,7 +44,7 @@ function verifyRecord(a,current,historical){
  for(const field of ['sourceDigests','compatibilityTestSourceDigests','preservedSourceDigests'])fileMap(a[field],field)
  assert.deepEqual(Object.keys(a.compatibilityTestSourceDigests).sort(),compatibilityTests,'closed compatibility test changes')
  for(const[p,h]of Object.entries(a.sourceDigests)){
-  assert(/^packages\/platform-contracts\/(?:src\/[a-z0-9-]+\.(?:mjs|d\.mts)|migrations\/(?:access|profile)\/[a-z0-9-]+\.sql|(?:current-e1-authority\/)?[a-z0-9/.-]+|package\.json)$/.test(p),'SDK source path')
+  assert(/^packages\/platform-contracts\/(?:src\/[a-z0-9-]+\.(?:mjs|d\.mts)|migrations\/(?:access|profile)\/[a-z0-9-]+\.sql|(?:current-e1-authority\/)?[a-z0-9/.-]+|package\.json)$/.test(p)||/^packages\/platform-contracts\/(?:(?:readonly-miss-report|root-atomic-claim)\/)?README\.md$/.test(p),'SDK source path '+p)
   assert.equal(hash(current(p)),h,'current organisation SDK '+p)
   assert.equal(hash(historicalSource(historical,a.producer.sourceSha,p)),h,'actual immutable SDK producer '+p)
  }
