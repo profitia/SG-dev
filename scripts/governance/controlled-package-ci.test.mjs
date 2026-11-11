@@ -1548,3 +1548,30 @@ test('shared test continuation preserves the accepted main and exact ECR suffix'
  const blob=b=>createHash('sha1').update('blob '+b.length+'\0').update(b).digest('hex')
  assert.equal(blob(combined),ECR_SOURCE_CONTINUITY_REVIEW.entries[file].sha);assert.notEqual(blob(combined),'7a1710d795c441cc80a468ce8a4f33191e899f5b')
 })
+
+import {REGISTRATION_SDK_REVIEW,assertRegistrationSdkReviewEntry} from './controlled-package-ci.mjs'
+
+test('Stage I review binds all41 exact owner-routed regular source files and preserves historical CI reviews',()=>{
+ const review=REGISTRATION_SDK_REVIEW,files=Object.entries(review.entries).map(([filename,e])=>({filename,sha:e.sha,status:e.status})),p={...pr(),number:review.prNumber,changed_files:files.length,base:{...pr().base,sha:review.baseSha},head:{...pr().head,sha:review.sourceSha,ref:review.branch}}
+ assert.equal(files.length,41)
+ assert.equal(review.sourceSha,'57f175c61ecc205a57a18401bace8037dffd4ff7')
+ assert.equal(review.treeSha,'392ade60a03e3874a69d974bd4ae1f72d6cf6c65')
+ assert.equal(createHash('sha256').update(JSON.stringify(review.entries)).digest('hex'),'128d0fee007e9fd22050d9c0d192077ae387146bd7b421b5adff3e2ab62e77e6')
+ assert.deepEqual(Object.fromEntries(['ARCHITECTURE','SG2','SRM'].map(project=>[project,Object.values(review.entries).filter(e=>e.projectKey===project).length])),{ARCHITECTURE:25,SG2:7,SRM:9})
+ assertArchitectureFiles(p,files);assert.equal(selectCandidate(context(),p,review.sourceSha,{files}),review.sourceSha)
+ for(const file of files){
+  assertRegistrationSdkReviewEntry(file,'100644 blob '+file.sha+'\t'+file.filename+'\0')
+  for(const mode of ['100755','120000','160000'])rejection(()=>assertRegistrationSdkReviewEntry(file,mode+' blob '+file.sha+'\t'+file.filename+'\0'))
+ }
+ for(const edit of [a=>a.pop(),a=>a.push(a[0]),a=>a[0]={...a[0],sha:'f'.repeat(40)},a=>a[0]={...a[0],status:'removed'},a=>a[0]={...a[0],previous_filename:a[0].filename},a=>a[0]={...a[0],filename:'apps/identity-runtime/src/unreviewed.ts'}]){
+  const bad=structuredClone(files);edit(bad);rejection(()=>selectCandidate(context(),{...p,changed_files:bad.length},review.sourceSha,{files:bad}))
+ }
+ for(const edit of [q=>q.number++,q=>q.head.ref='architecture/another-registration',q=>q.head.ref='sg2/registration-bootstrap-stage-i-20261111',q=>q.head.repo.full_name='profitia/fork',q=>q.user.login='attacker',q=>q.base.ref='staging',q=>q.head.sha=sha]){
+  const bad=structuredClone(p);edit(bad);rejection(()=>selectCandidate(context(),bad,review.sourceSha,{files}))
+ }
+ const generic=architectureFiles()
+ rejection(()=>selectCandidate(context(),{...p,changed_files:generic.length},review.sourceSha,{files:generic}))
+ assert(files.every(f=>!f.filename.startsWith('Canon/')&&!f.filename.startsWith('.github/')&&!f.filename.startsWith('scripts/')))
+ // Every original review assertion above still runs. This additional binding
+ // admits no generic app path, role, provider policy, installation or release.
+})
