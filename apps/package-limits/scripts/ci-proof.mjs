@@ -46,7 +46,7 @@ let ownerRouting;
 if(files.some(n=>!allowed(n))){
  const consumer=JSON.parse(fs.readFileSync(path.join(root,'apps/sg-runtime/operation-integration.json')));
  if(consumer.assistantM1SourceCompatibility?.taskId!=='SG2-ACG-M1-20261109')throw Error('SOURCE_SCOPE_EXPANSION');
- ownerRouting=validateRouting({changedPaths:files,repositoryRoot:root,
+ ownerRouting=validateRouting({changedPaths:files,repositoryRoot:root,sourceReview:{baseSha:base,candidateSha:sha},
   readReceipt:file=>JSON.parse(fs.readFileSync(path.join(root,file))),
   runGovernance:(projectKey,targets)=>JSON.parse(execFileSync(process.execPath,
    ['scripts/governance/governance-preflight.mjs','--ci','--mode','development','--project',projectKey,
