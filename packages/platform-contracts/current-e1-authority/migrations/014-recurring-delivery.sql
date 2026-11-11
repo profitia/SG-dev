@@ -44,7 +44,6 @@ BEGIN
  OR NOT EXISTS(SELECT 1 FROM profitia_access.permission_grants WHERE application_id=p.application_id AND organisation_id=(p_request->>'organisationId')::uuid AND user_id=(p_request->>'ownerUserId')::uuid AND operation='insights.report.download' AND feature='market' AND effect='ALLOW' AND(resource_id IS NULL OR resource_id=p_request->>'producerJobId'))
  OR EXISTS(SELECT 1 FROM profitia_access.permission_grants WHERE application_id=p.application_id AND organisation_id=(p_request->>'organisationId')::uuid AND user_id=(p_request->>'ownerUserId')::uuid AND operation='insights.report.download' AND feature='market' AND effect='DENY' AND(resource_id IS NULL OR resource_id=p_request->>'producerJobId')) THEN RETURN NULL;END IF;
  RETURN jsonb_build_object('environment','development','issuer',e.issuer,'subject',e.subject,'appOrigin',p.app_origin);
-EXCEPTION WHEN OTHERS THEN RETURN NULL;
 END $fn$;
 CREATE FUNCTION profitia_e1_authority.recurring_delivery_proof(p_request jsonb,p_observation jsonb,p_recipient_digest text) RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,pg_temp AS $fn$
 DECLARE identity jsonb;r profitia_e1_authority.receivers%ROWTYPE;raw text;decision uuid:=gen_random_uuid();policy profitia_e1_authority.recurring_delivery_policies%ROWTYPE;
@@ -58,7 +57,6 @@ BEGIN
  raw:=jsonb_build_object('contract','profitia.recurring-report-delivery/1.0.0','request',p_request,'decisionId',decision,'recipientDigest',p_recipient_digest,'expiresAt',least((p_observation->>'expiresAt')::timestamptz,clock_timestamp()+interval '5 seconds'))::text;
  PERFORM profitia_access.append_audit(jsonb_build_object('applicationId','identity-runtime-development','environment','development','decisionId',decision::text,'phase','DECISION','decision','ALLOW','reasonCode','CURRENT_REPORT_DELIVERY','operation','insights.report.notify','actorKind','SERVICE','actorId',policy.service_id,'subjectUserId',p_request->>'ownerUserId','organisationId',p_request->>'organisationId','resourceId',p_request->>'producerJobId'));
  RETURN jsonb_build_object('payload',raw,'signature',encode(public.hmac(convert_to(raw,'UTF8'),r.proof_key,'sha256'),'hex'));
-EXCEPTION WHEN OTHERS THEN RETURN NULL;
 END $fn$;
 REVOKE ALL ON profitia_e1_authority.recurring_delivery_installation,profitia_e1_authority.recurring_delivery_policies FROM PUBLIC;
 REVOKE ALL ON FUNCTION profitia_e1_authority.recurring_delivery_descriptor(),profitia_e1_authority.recurring_delivery_identity(jsonb),profitia_e1_authority.recurring_delivery_proof(jsonb,jsonb,text) FROM PUBLIC;
