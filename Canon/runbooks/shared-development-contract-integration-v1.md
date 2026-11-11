@@ -656,3 +656,43 @@ The proposed data-only controller continuation admits exactly14 source files pin
 Package names, registry, exact CIC pins, read-only credential scope, main-only environment, owner and fork restrictions, ignore-scripts installation, token removal before candidate execution and exact-SHA proof checks remain unchanged. This proposal adds no runtime grant, schema, AI budget, deployment or provider acquisition.
 
 The separate owner decision and execution evidence belong to [the remote task PHR](https://github.com/profitia/project-history-repository/tree/main/reports/2026/11/11/SG2/SG2-ACG-ECR-INCOMPLETE-20261111). Drafting or testing this change does not activate policy. After acceptance, the product branch must inherit the accepted controller and receive fresh full checks and a controlled proof for its exact resulting SHA.
+
+
+## Stage I registration / complete source history — approved1024 (2026-11-11)
+
+OWNER_APPROVED / REQUIRED_CI_PENDING. The owner explicitly answered
+“Zatwierdzam propozycję PR #1024”, binding document
+61fda62e94fb2e83e78b57b14fe346eedc78a7c4. Inert documents were accepted at
+4c8f2d98cdb42cde8b8de4d77af5aeef64b025ae, preserving main40d6148e ECR week policy.
+
+The closed67 map a12c2d65fc11145654bcd49c74cef6cfe6d84905fac70a4b22b4e2cecba73e26
+binds36 Architecture,17 SG2 and14 SRM paths. Preserve both1016/1022 complete65
+maps and every earlier41/48/59/1012 and recurring119/123/124 admission.
+New exact recordffe2065f84e7a9808a74f896170588b9ff5fc66973096a15a407a7cbf006808d
+retains165 immutable producer sources, all21 old guard pins, receipts,
+48 SDK/3 optional fingerprints, defaultRoot16 and optional21/22 isolation.
+Only two explicitly current guard versions use the9-file compatibility map;
+all21 actual0775 predecessor guards remain checked.
+
+[The frozen packet](../evidence/2026-11-11-registration-complete-history-closure-review.md)
+binds source09cf78d48c85986e4973f13007e32638bf040a2f and inert patch35a46e4d.
+The existing source guard reuses the shared SDK continuation to cover direct,
+filesystem and already-layered callers without projecting a caller twice.
+The helper authenticates all13 supplemental source pins before any historical
+view is returned. Same-count variants require every exact entry, never length.
+Reject mixed records/maps, changed native or recurring source and wrong modes.
+
+Normal three-way integration with main40d6148e retains its ECR week source
+projection and complete tests. Its remaining source view is composed beneath the
+closed registration overlay. No ECR review, actor, credential, package or
+source-proof fence may be replaced or bypassed.
+
+Require old/new/negative policy and physical67 plus both old65 tests, protected/
+public/governance and resulting-main checks before policy completion. Source
+acceptance remains separate: helper/recurring/producer/PG16/nativeIdentity and
+actual SG2/SRM owner suites, SOURCE GO, joint existing983 and resulting-main proof.
+Refresh only identical reviewed67 versions while preserving newer main features.
+Known failing source is never published or accepted by a policy-only result.
+
+This decision does not install product SQL, change roles/grants/packages, send
+mail, call providers/models, change DNS, activate runtime or deploy a product.
