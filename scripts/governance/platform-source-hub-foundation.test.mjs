@@ -1,3 +1,4 @@
+import {recurringSourcePredecessor} from '../../apps/architecture-lab/private-recurring-source.mjs'
 import {calendarStoragePredecessor} from '../../apps/architecture-lab/ecr-stage03-sdk-compatibility.mjs'
 import assert from 'node:assert/strict'
 import {SOURCE_HUB_CONTRACT_VERSION} from '../../packages/platform-source-hub-contracts/index.mjs'
@@ -275,10 +276,12 @@ test('Stage2A adopts four separate versioned source families and the real Newsfe
 test('SourceHub optional ECR storage metadata preserves accepted transport and payload compatibility',()=>{
  const accepted='b837f93b47d15cd812242a2ab0df6e69c35b3656'
  const p='packages/platform-source-hub-contracts/package.json'
- const old=JSON.parse(git(['show',accepted+':'+p])),current=json(p)
+ const reviewed=recurringSourcePredecessor(file=>fs.readFileSync(path.join(root,file)),(sha,file)=>execFileSync('git',['show',sha+':'+file],{cwd:root}))
+ const acceptedSource=reviewed?.previousBytes??read
+ const old=JSON.parse(git(['show',accepted+':'+p])),current=JSON.parse(acceptedSource(p))
  assert.equal(old.version,'1.1.0')
  assert.equal(SOURCE_HUB_CONTRACT_VERSION,'1.0.0')
- const sdkVersion=json('packages/platform-contracts/package.json').version
+ const sdkVersion=JSON.parse(acceptedSource('packages/platform-contracts/package.json')).version
  const durable=durableStorageAcceptance(),schedule=scheduleSourceAcceptance()
  if(sdkVersion==='1.34.0'){
   const previous=assistantSdkPredecessor(calendarPredecessor(p=>fs.readFileSync(path.join(root,p))).previousBytes,(sha,p)=>execFileSync('git',['show',sha+':'+p],{cwd:root})).previousBytes

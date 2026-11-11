@@ -27,7 +27,7 @@ export function createReportRunner({
     ),
     "EXPLICIT_RUNTIME_PORTS_REQUIRED",
   );
-  async function start(ctx, input, profile, trigger = "API") {
+  async function start(ctx, input, profile, trigger = "API", subscription = null) {
     assertContext(ctx);
     assertProfile(profile);
     validatePeriod(input, now());
@@ -35,7 +35,7 @@ export function createReportRunner({
       input.profileVersion === profile.version,
       "PROFILE_VERSION_MISMATCH",
     );
-    return store.start(ctx, input, profile, trigger);
+    return store.start(ctx, input, profile, trigger, subscription);
   }
   async function run(org, id, { signal } = {}) {
     const lease = await store.claim(org, id);

@@ -3,12 +3,14 @@ import {requestOperationPolicy} from './request-operations.mjs'
 import {SUPPLIER_LOCATION_OPERATIONS,normalizeSupplierLocationEvidence,isSupplierLocationAdmission} from './supplier-location.mjs'
 import {admittedReportObservation} from './report-admission.mjs'
 import {assistantInputBound,assertAssistantUsageReservation} from './assistant-usage.mjs'
+import {recurringOperationPolicy,validateRecurringDelegation} from './recurring-job.mjs'
 
 export const OPERATION_CONTRACT = Object.freeze({ id: 'profitia.operation-context', version: '1.0.0', implementation: '1.0.0-candidate.16' })
 export const SUPPLIER_LOCATION_ROOT_CONTRACT=Object.freeze({...OPERATION_CONTRACT,implementation:'1.0.0-candidate.17'})
 export const REPORT_ADMISSION_ROOT_CONTRACT=Object.freeze({...OPERATION_CONTRACT,implementation:'1.0.0-candidate.18'})
 export const REQUEST_QUOTA_ROOT_CONTRACT=Object.freeze({...OPERATION_CONTRACT,implementation:'1.0.0-candidate.19'})
 export const ASSISTANT_ROOT_CONTRACT=Object.freeze({...OPERATION_CONTRACT,implementation:'1.0.0-candidate.20'})
+export const RECURRING_ROOT_CONTRACT=Object.freeze({...OPERATION_CONTRACT,implementation:'1.0.0-candidate.22'})
 const denialBrand = Symbol.for('profitia.operation-context.denial.v1')
 const denialCodes = new Set(['UNSUPPORTED_CONTRACT', 'UNVERIFIED_IDENTITY', 'CONTEXT_INVALID', 'ENVIRONMENT_MISMATCH', 'APPLICATION_FEATURE_UNAVAILABLE', 'ACCESS_BASIS_INVALID', 'PERMISSION_DENIED', 'PRODUCT_UNAVAILABLE', 'RESOURCE_SCOPE_MISMATCH', 'DATA_CLASSIFICATION_UNKNOWN', 'DELEGATION_INVALID', 'DELIVERY_UNCERTAIN', 'RESOURCE_VERSION_CONFLICT', 'LIMIT_POLICY_UNAVAILABLE', 'LIMIT_EXCEEDED', 'IDEMPOTENCY_CONFLICT', 'AUDIT_UNAVAILABLE', 'POLICY_UNAVAILABLE', 'EXPLICIT_DENY'])
 
@@ -48,6 +50,8 @@ const rules = Object.freeze({
   // AM27 authorises the private dispatch boundary. Publication of shared
   // effects requires its own AM26 source authority and durable receipt.
   'job.execute': rule('job_execution', 'job', 'ORGANISATION_PRIVATE', 'EXECUTE_BOUND_OPERATION'),
+  'newsfeed.monitor.execute': rule('personal_workspace','private_recurring_job','USER_IN_ORGANISATION_PRIVATE','EXECUTE_BOUND_OPERATION'),
+  'insights.subscription.execute': rule('market','private_recurring_job','USER_IN_ORGANISATION_PRIVATE','EXECUTE_BOUND_OPERATION'),
   'knowledge.ingest': rule('knowledge_ingestion','shared_knowledge','SHARED_KNOWLEDGE','WRITE',null,'PLATFORM'),
   'personal.list.read': rule('personal_workspace', 'personal_list', 'USER_IN_ORGANISATION_PRIVATE', 'READ'),
   'personal.list.write': rule('personal_workspace', 'personal_list', 'USER_IN_ORGANISATION_PRIVATE', 'WRITE'),
@@ -61,7 +65,7 @@ const rules = Object.freeze({
   'supplier.private.reveal': rule('supplier_report', 'supplier_private_identifier', 'ORGANISATION_PRIVATE', 'READ', 'SUPPLIER_INTELLIGENCE'),
   'supplier.private.export': rule('supplier_report', 'supplier_private_export', 'ORGANISATION_PRIVATE', 'EXPORT', 'SUPPLIER_INTELLIGENCE'),
 })
-export const IMPLEMENTED_OPERATIONS = Object.freeze(Object.keys(rules))
+export const IMPLEMENTED_OPERATIONS = Object.freeze(Object.keys(rules).filter(operation=>!recurringOperationPolicy(operation)))
 const profiles = Object.freeze({
   PLATFORM_INTERNAL: { features: ['job_execution','knowledge_ingestion'], products: [] },
   PORR_SUITE: { features: ['account', 'market', 'benchmark', 'category', 'supplier_workspace', 'forecast', 'personal_workspace', 'supplier_report','assistant'], products: ['SPENDGURU', 'SUPPLIER_INTELLIGENCE'], fixed: true },
@@ -230,6 +234,15 @@ function computeReceipt(value, id) {
 // Closed target policies for the SAME AM27 interpreter. The store/host also
 // selects its explicit target; adding Supplier never widens a Forecast host.
 
+function recurringJob(state,identity,request,config,time,schemaDigest){
+ if(identity.kind!=='SERVICE'||!['SPENDGURU_SAAS','PORR_SUITE'].includes(config.profileId)||config.environment!=='development')deny('DELEGATION_INVALID')
+ let d;try{d=validateRecurringDelegation(state.recurringDelegation,{operation:request.operation,jobId:request.resourceId,
+  applicationId:config.appId,organisationId:request.organisationId,actorId:identity.actorId,payloadDigest:request.payloadDigest,schemaDigest,now:time})}catch{deny('DELEGATION_INVALID')}
+ if(d.policyVersion!==state.policyVersion||state.resource?.ownerUserId!==d.ownerUserId||state.resource?.version!==d.resourceVersion)deny('RESOURCE_SCOPE_MISMATCH')
+ const policy=recurringOperationPolicy(request.operation),p=d.ownerProducts.find(p=>p.product==='SPENDGURU'&&p.features?.includes(policy.ownerFeature)&&p.applicationId===d.ownerApplication.appId&&p.organisationId===request.organisationId&&p.environment===config.environment&&p.status==='ACTIVE'&&['CONTRACT','VERIFIED_BILLING','EXPLICIT_OFFER'].includes(p.source)&&nonempty(p.version)&&nonempty(p.sourceRef)&&validUntil(p.expiresAt,time))
+ return {subjectUserId:d.ownerUserId,delegation:d,products:{product:'SPENDGURU',feature:policy.ownerFeature,version:p.version,sourceRef:p.sourceRef,source:p.source,expiresAt:p.expiresAt}}
+}
+
 function delegatedJob(state, identity, request, config, time, admissionDigest) {
   const d=state.delegation, t=d?.target, a=t?.application, ceiling=profiles[a?.profileId]
   const subject=d?.subjectUserId, observation=d?.externalAccountObservation, key=d?.identityKey
@@ -303,12 +316,16 @@ function ingestionReservation(value,policy){
 
 /** All authority callbacks are server-owned. No context/role/ALLOW from HTTP is accepted. */
 export function createOperationExecutor(options) {
+  if(options.recurringSchemaDigest!==undefined&&(!/^[a-f0-9]{64}$/.test(options.recurringSchemaDigest)
+    ||['assistantSchemaDigest','requestQuotaSchemaDigest','locationAdmissionSchemaDigest','reportAdmissionSchemaDigest'].some(k=>options[k]!==undefined)))throw TypeError('Explicit isolated private-recurring schema adoption required')
+  if(options.recurringSchemaDigest!==undefined&&(options.application?.environment!=='development'||!options.application?.operations?.length||options.application.operations.some(op=>!recurringOperationPolicy(op))))throw TypeError('Isolated Development recurring operations required')
+  if(options.application?.operations?.some(op=>recurringOperationPolicy(op))&&options.recurringSchemaDigest===undefined)throw TypeError('Private recurring operations require explicit schema adoption')
   if(options.assistantSchemaDigest!==undefined&&(!/^[a-f0-9]{64}$/.test(options.assistantSchemaDigest)
     ||['requestQuotaSchemaDigest','locationAdmissionSchemaDigest','reportAdmissionSchemaDigest'].some(k=>options[k]!==undefined)))throw TypeError('Explicit isolated Assistant schema adoption required')
   if(options.requestQuotaSchemaDigest!==undefined&&!/^[a-f0-9]{64}$/.test(options.requestQuotaSchemaDigest))throw TypeError('Explicit accepted SQL027 digest required')
   if(options.locationAdmissionSchemaDigest!==undefined&&!/^[a-f0-9]{64}$/.test(options.locationAdmissionSchemaDigest))throw TypeError('Explicit accepted SQL020 digest required')
   if(options.reportAdmissionSchemaDigest!==undefined&&(!/^[a-f0-9]{64}$/.test(options.reportAdmissionSchemaDigest)||options.locationAdmissionSchemaDigest!==undefined))throw TypeError('Explicit accepted SQL025 digest required')
-  const executionContract=options.assistantSchemaDigest!==undefined?ASSISTANT_ROOT_CONTRACT:options.requestQuotaSchemaDigest!==undefined?REQUEST_QUOTA_ROOT_CONTRACT:options.reportAdmissionSchemaDigest!==undefined?REPORT_ADMISSION_ROOT_CONTRACT:options.locationAdmissionSchemaDigest===undefined?OPERATION_CONTRACT:SUPPLIER_LOCATION_ROOT_CONTRACT
+  const executionContract=options.recurringSchemaDigest!==undefined?RECURRING_ROOT_CONTRACT:options.assistantSchemaDigest!==undefined?ASSISTANT_ROOT_CONTRACT:options.requestQuotaSchemaDigest!==undefined?REQUEST_QUOTA_ROOT_CONTRACT:options.reportAdmissionSchemaDigest!==undefined?REPORT_ADMISSION_ROOT_CONTRACT:options.locationAdmissionSchemaDigest===undefined?OPERATION_CONTRACT:SUPPLIER_LOCATION_ROOT_CONTRACT
   const { authenticate, withTransaction, recordAudit, now = Date.now } = options
   const config = freeze(structuredClone(options.application))
   const ceiling = Object.hasOwn(profiles, config.profileId) ? profiles[config.profileId] : null
@@ -361,7 +378,8 @@ export function createOperationExecutor(options) {
           if (!state || !nonempty(state.policyVersion) || state.environment !== config.environment || state.applicationId !== config.appId || typeof session.recordOutcome !== 'function' || typeof session.projectOutput !== 'function' || (session.describeOutcome !== undefined && typeof session.describeOutcome !== 'function')) deny('POLICY_UNAVAILABLE')
           const access = state.access
           if (!access || access.actorId !== identity.actorId || access.status !== 'ACTIVE' || !nonempty(access.version) || !nonempty(access.sourceRef) || !validUntil(access.expiresAt, now())) deny('ACCESS_BASIS_INVALID')
-          const delegated=request.operation==='job.execute' ? delegatedJob(state,identity,request,config,now(),options.reportAdmissionSchemaDigest) : null
+          if(recurringOperationPolicy(request.operation)&&typeof session.revalidateExternalAccount!=='function')deny('POLICY_UNAVAILABLE')
+          const delegated=request.operation==='job.execute' ? delegatedJob(state,identity,request,config,now(),options.reportAdmissionSchemaDigest) : recurringOperationPolicy(request.operation)?recurringJob(state,identity,request,config,now(),options.recurringSchemaDigest):null
           if (access.type === 'DELEGATED_USER' && !delegated) deny('DELEGATION_INVALID')
           const organisationId = request.organisationId
           if(platform){
@@ -423,7 +441,7 @@ export function createOperationExecutor(options) {
             if (!eligible) deny('PRODUCT_UNAVAILABLE')
             productEvidence.push(productAvailable(state, eligible, selected.feature, config, ceiling, now()))
           }
-          if (selected.dataClass === 'USER_IN_ORGANISATION_PRIVATE') {
+          if (selected.dataClass === 'USER_IN_ORGANISATION_PRIVATE' && !recurringOperationPolicy(request.operation)) {
             if (identity.kind !== 'HUMAN') deny('DELEGATION_INVALID')
             const requirements = state.resource.contentRequirements
             if (!Array.isArray(requirements) || !requirements.length) deny('PRODUCT_UNAVAILABLE')
@@ -461,6 +479,7 @@ export function createOperationExecutor(options) {
           if (assistant?state.usagePolicy!=='PRODUCT_POLICY'||typeof session.reserveAssistantUsage!=='function':platform?state.usagePolicy!=='PLATFORM_BUDGET'||typeof session.reserveIngestion!=='function'||typeof session.completeIngestion!=='function': compute ? state.usagePolicy !== 'PRODUCT_POLICY' || typeof session.reserveUsage !== 'function' || typeof session.completeRequest !== 'function'
             : state.usagePolicy !== 'NOT_APPLICABLE') deny('LIMIT_POLICY_UNAVAILABLE')
           if (session.transactionalEffects !== true || session.outputBoundaryVersion !== state.resource.projectionVersion) deny('POLICY_UNAVAILABLE')
+          if(recurringOperationPolicy(request.operation)&&['requestContinuation','requestInspection','requestWork','dispatchAdmission'].some(key=>state[key]!==undefined))deny('POLICY_UNAVAILABLE')
           const continuation=state.requestContinuation
           const delegatedPhase=delegated!==null&&continuation!==undefined
           if(continuation!==undefined && (!(compute&&request.operation==='supplier.report.refresh'||delegatedPhase&&delegated.delegation.target.operation==='supplier.report.refresh')
@@ -494,7 +513,7 @@ export function createOperationExecutor(options) {
             ||!['inputDigest','schemaDigest'].every(k=>/^[a-f0-9]{64}$/.test(work[k]??''))
             ||!['policyVersion','transactionId'].every(k=>/^[1-9][0-9]*$/.test(work[k]??''))||work.transactionId!==state.transactionId
             ||typeof session.recordWorkIntent!=='function'||typeof session.bindWork!=='function'||typeof session.verifyWork!=='function'))deny('POLICY_UNAVAILABLE')
-          let bound = freeze({ ...context, actor: identity, resource: structuredClone(state.resource), productEvidence, usagePolicy: state.usagePolicy, payload, payloadDigest: request.payloadDigest, correlationId: randomUUID(), ...(delegated ? {delegation:delegated.delegation} : {}),...(delegatedPhase?{requestContinuation:structuredClone(continuation)}:{}),...(inspecting?{requestInspection:structuredClone(inspection)}:{}),...(working?{requestWork:structuredClone(work)}:{}) })
+          let bound = freeze({ ...context, actor: identity, resource: structuredClone(state.resource), productEvidence, usagePolicy: state.usagePolicy, payload, payloadDigest: request.payloadDigest, correlationId: randomUUID(), ...(delegated ? recurringOperationPolicy(request.operation)?{recurringDelegation:delegated.delegation}:{delegation:delegated.delegation} : {}),...(delegatedPhase?{requestContinuation:structuredClone(continuation)}:{}),...(inspecting?{requestInspection:structuredClone(inspection)}:{}),...(working?{requestWork:structuredClone(work)}:{}) })
           audit = { ...audit, ...(delegatedPhase?{requestContinuation:structuredClone(continuation)}:{}),...(inspecting?{requestInspection:structuredClone(inspection)}:{}),...(working?{requestWork:structuredClone(work)}:{}), correlationId: bound.correlationId, resourceType: bound.resource.type, dataClass: bound.resource.dataClass, ownerOrganisationId: bound.resource.ownerOrganisationId, ownerUserId: bound.resource.ownerUserId, resourceVersion: bound.resource.version, projectionVersion: bound.resource.projectionVersion, productEvidence, usagePolicy: state.usagePolicy }
           // Work and inspection bind their actual transaction scope to a physical
           // INTENT. Its deferred audit constraint verifies OUTCOME at COMMIT.
@@ -537,7 +556,7 @@ export function createOperationExecutor(options) {
           }
           if(inspecting)await session.bindInspection(bound)
           if(working)await session.bindWork(bound)
-          if(delegated&&!delegatedPhase&&!inspecting&&!working){
+          if(delegated&&!recurringOperationPolicy(request.operation)&&!delegatedPhase&&!inspecting&&!working){
             if(typeof session.admitDispatch!=='function')deny('POLICY_UNAVAILABLE')
             const admission=await session.admitDispatch(bound)
             if(!admission||admission.jobId!==request.resourceId||!['READY','BUSY','CONFIRMED','RECONCILE_REQUIRED'].includes(admission.status))deny('POLICY_UNAVAILABLE')
@@ -593,15 +612,16 @@ export function createOperationExecutor(options) {
           if (delegated && session.revalidateExternalAccount !== undefined) {
             if (typeof session.revalidateExternalAccount !== 'function') deny('POLICY_UNAVAILABLE')
             const observation = await session.revalidateExternalAccount()
-            outcomeState = { ...state, delegation: { ...state.delegation, externalAccountObservation: observation } }
+            if(recurringOperationPolicy(request.operation)&&(observation?.issuer!==state.recurringDelegation.identityObservation.issuer||observation?.subject!==state.recurringDelegation.identityObservation.subject))deny('ACCESS_BASIS_INVALID')
+            outcomeState = recurringOperationPolicy(request.operation)?{...state,recurringDelegation:{...state.recurringDelegation,identityObservation:observation}}:{ ...state, delegation: { ...state.delegation, externalAccountObservation: observation } }
           }
           if (!validUntil(identity.expiresAt, now()) || !validUntil(access.expiresAt, now())) deny('ACCESS_BASIS_INVALID')
           if (selected.product) productAvailable(state, selected.product, selected.feature, config, ceiling, now())
           if (selected.feature === 'supplier_workspace') productAvailable(state, productEvidence[0].product, selected.feature, config, ceiling, now())
-          if (selected.dataClass === 'USER_IN_ORGANISATION_PRIVATE') for (const requirement of state.resource.contentRequirements) productAvailable(state, requirement.product, requirement.feature, config, ceiling, now())
+          if (selected.dataClass === 'USER_IN_ORGANISATION_PRIVATE' && !recurringOperationPolicy(request.operation)) for (const requirement of state.resource.contentRequirements) productAvailable(state, requirement.product, requirement.feature, config, ceiling, now())
           if (moduleEvidence) normalizeModuleEvidence(moduleEvidence, { now })
           if (compute) computePolicy(requestPolicy, context, now(), options.requestQuotaSchemaDigest)
-          if (delegated) delegatedJob(outcomeState,identity,request,config,now(),options.reportAdmissionSchemaDigest)
+          if (delegated) { if(recurringOperationPolicy(request.operation)) recurringJob(outcomeState,identity,request,config,now(),options.recurringSchemaDigest); else delegatedJob(outcomeState,identity,request,config,now(),options.reportAdmissionSchemaDigest) }
           if(platform)ingestionPolicy(platformPolicy,context,request,now())
           try { await session.recordOutcome(stamp({ ...audit, phase: 'OUTCOME', decision: 'ALLOW', reasonCode: outcome })) }
           catch (error) {
@@ -635,7 +655,7 @@ export function operationSourceDigest() {
     const hash=createHash('sha256')
     // The optional assistant imports real usage receipt verification. Include
     // that transitive implementation and its types in the closed Root closure.
-    for(const file of ['./operation-context.mjs','./operation-context.d.mts','./request-operations.mjs','./request-operations.d.mts','../migrations/access/017-additional-request-operations.sql','./supplier-location.mjs','./supplier-location.d.mts','../migrations/access/019-supplier-location-operations.sql','./assistant-usage.mjs','./assistant-usage.d.mts'])hash.update(fs.readFileSync(new URL(file,import.meta.url)))
+    for(const file of ['./operation-context.mjs','./operation-context.d.mts','./request-operations.mjs','./request-operations.d.mts','../migrations/access/017-additional-request-operations.sql','./supplier-location.mjs','./supplier-location.d.mts','../migrations/access/019-supplier-location-operations.sql','./assistant-usage.mjs','./assistant-usage.d.mts','./recurring-job.mjs','./recurring-job.d.mts'])hash.update(fs.readFileSync(new URL(file,import.meta.url)))
     return hash.digest('hex')
   })
 }

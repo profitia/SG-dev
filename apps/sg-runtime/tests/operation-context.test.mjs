@@ -1,3 +1,4 @@
+import {recurringSourcePredecessor} from '../../architecture-lab/private-recurring-source.mjs'
 import {readM2AcceptedSource} from './assistant-m2-source-view.mjs'
 import {assistantM2Predecessor} from './assistant-m2-integrity.mjs'
 import {assistantEcrPredecessor,ECR_ADDITIONS} from './assistant-ecr-integrity.mjs'
@@ -10,6 +11,7 @@ import {posix} from 'node:path'
 import { OPERATION_CONTRACT, operationSourceDigest } from '@profitia/platform-contracts/operation-context'
 import { operationSourceDigest as sourceDigest } from '../../../packages/platform-contracts/src/operation-context.mjs'
 const receipt = JSON.parse(fs.readFileSync(new URL('../operation-integration.json', import.meta.url)))
+const recurring=recurringSourcePredecessor(p=>fs.readFileSync(new URL('../../../'+p,import.meta.url)),(sha,p)=>execFileSync('git',['show',sha+':'+p],{cwd:new URL('../../../',import.meta.url)}))
 test('explicit consumer binds exact implemented contract and installed/source digest without enabling live deployment', async () => {
   const current=receipt.oilAutonomousReportCompatibility??receipt.assistantM1SourceCompatibility,contract=receipt.oilAutonomousReportCompatibility?receipt.contract:current.rootContract,producer=receipt.oilAutonomousReportCompatibility?current.producer:current.rootProducer
   assert.equal(receipt.projectKey, 'SG2')
@@ -17,7 +19,7 @@ test('explicit consumer binds exact implemented contract and installed/source di
   assert.equal(contract.id, OPERATION_CONTRACT.id)
   assert.equal(contract.version, OPERATION_CONTRACT.version)
   assert.equal(contract.implementation, OPERATION_CONTRACT.implementation)
-  assert.equal(contract.sourceDigest, await operationSourceDigest())
+  assert.equal(recurring?.manifest.sdkDigests.operationSourceDigest??contract.sourceDigest, await operationSourceDigest())
   assert.equal(await operationSourceDigest(), await sourceDigest())
   assert.equal(receipt.liveRouteUsesContract, false)
   assert.equal(receipt.automaticProductDeployment, false)
@@ -53,7 +55,7 @@ test('candidate16 acceptance preserves the exact previous receipts and has no ru
     assert.equal(createHash('sha256').update(previousBytes).digest('hex'),digest,record+':'+path)
   }
   const sdkModules={'operation-context':['operationSourceDigest'],'private-operation-host':['privateOperationHostSourceDigest'],'request-ledger':['requestLedgerSourceDigest','externalRequestSchemaDigest'],'delegated-job':['delegatedJobSourceDigest'],'request-continuation':['requestContinuationSourceDigest'],'request-inspection':['requestInspectionSourceDigest'],'request-work':['requestWorkSourceDigest'],'request-operations':['requestOperationsSourceDigest','additionalRequestSchemaDigest'],'external-call':['externalCallSourceDigest','publicWebTransportSchemaDigest'],'supplier-location':['supplierLocationSchemaDigest']}
-  for(const[module,names]of Object.entries(sdkModules)){const sdk=await import('@profitia/platform-contracts/'+module);for(const name of names)assert.equal(await sdk[name](),(receipt.oilAutonomousReportCompatibility?.sdkDigests[name]??receipt.assistantM1SourceCompatibility?.sdkDigests[name]??receipt.sourceHubMarketSymbolCompatibility?.sdkDigests[name]??receipt.sourceHubApiPathCompatibility?.sdkDigests[name]??receipt.freshPostfetchCompatibility?.sdkDigests[name]??receipt.sourceLeaseClockCompatibility?.sdkDigests[name]??receipt.settledExternalFailureCompatibility?.sdkDigests[name]??receipt.diagnosticTelemetryAdoption.sdkDigests[name]),name)}
+  for(const[module,names]of Object.entries(sdkModules)){const sdk=await import('@profitia/platform-contracts/'+module);for(const name of names)assert.equal(await sdk[name](),(recurring?.manifest.sdkDigests[name]??receipt.oilAutonomousReportCompatibility?.sdkDigests[name]??receipt.assistantM1SourceCompatibility?.sdkDigests[name]??receipt.sourceHubMarketSymbolCompatibility?.sdkDigests[name]??receipt.sourceHubApiPathCompatibility?.sdkDigests[name]??receipt.freshPostfetchCompatibility?.sdkDigests[name]??receipt.sourceLeaseClockCompatibility?.sdkDigests[name]??receipt.settledExternalFailureCompatibility?.sdkDigests[name]??receipt.diagnosticTelemetryAdoption.sdkDigests[name]),name)}
   assert.equal(accepted.sdkDigests.supplierLocationSchemaDigest,'34ec633dbf38dfffd6b3954ae79b0ef6f771d75ad8f0443882be71ca78b084e5')
 })
 
@@ -67,7 +69,7 @@ test('P1B accepts exact1.25 source while preserving all1.24 history and legacy d
  const previous=JSON.parse(previousBytes)
  for(const[key,value]of Object.entries(previous))assert.deepEqual(['contract','producer'].includes(key)?accepted.previousRootAcceptance[key]:receipt[key],value,key)
  const root=new URL('../../../packages/platform-contracts/',import.meta.url)
- assert.equal(JSON.parse(fs.readFileSync(new URL('package.json',root))).version,(receipt.oilAutonomousReportCompatibility??receipt.sourceHubMarketSymbolCompatibility??receipt.sourceHubApiPathCompatibility??receipt.freshPostfetchCompatibility??receipt.sourceLeaseClockCompatibility??receipt.settledExternalFailureCompatibility??receipt.freshPerformanceRecovery).platformVersion)
+ assert.equal(JSON.parse(fs.readFileSync(new URL('package.json',root))).version,recurring?.manifest.platformVersion??(receipt.oilAutonomousReportCompatibility??receipt.sourceHubMarketSymbolCompatibility??receipt.sourceHubApiPathCompatibility??receipt.freshPostfetchCompatibility??receipt.sourceLeaseClockCompatibility??receipt.settledExternalFailureCompatibility??receipt.freshPerformanceRecovery).platformVersion)
  const host=await import('@profitia/platform-contracts/private-operation-host')
  assert.equal(host.PRIVATE_OPERATION_HOST_CONTRACT.version,'1.11.0');assert.equal(host.SUPPLIER_LOCATION_HOST_CONTRACT.version,'1.12.0')
  for(const[path,digest]of Object.entries(receipt.accountRecheckSourceCompatibility.sourceDigests))assert.equal(createHash('sha256').update(execFileSync('git',['show',receipt.accountRecheckSourceCompatibility.producer.sourceSha+':packages/platform-contracts/'+path])).digest('hex'),digest,'historical producer '+path)
@@ -176,7 +178,7 @@ test('Benchmark presentation renews the current receiver closure without rewriti
     assert(paths.length > 0, path)
     const currentPaths = [...new Set([...execFileSync('git', ['ls-files', '--', path], { encoding: 'utf8', cwd: repository }).trim().split('\n').filter(Boolean),...execFileSync('git',['ls-files','--others','--exclude-standard','--',path],{encoding:'utf8',cwd:repository}).trim().split('\n').filter(Boolean)])].sort()
     const additions=[...(receipt.assistantM1ChartContextCorrective?.addedBoundaryFiles??[]),...(receipt.assistantM1RuntimeSourceCompatibility?.addedBoundaryFiles??[]),...(receipt.appShellFourCardCascade?.addedBoundaryFiles??[]),...Object.keys(receipt.productAnalyticsMainCompatibility?.sourceDigests??{}).filter(file=>{try{execFileSync('git',['cat-file','-e',receipt.productAnalyticsMainCompatibility.sharedBaselineSourceSha+':'+file],{stdio:'pipe'});return false}catch{return true}}),...Object.keys(receipt.bqlPciFirstSourceCompatibility?.sourceDigests??{}).filter(file=>{try{execFileSync('git',['cat-file','-e',receipt.bqlPciFirstSourceCompatibility.previousReceiptSourceSha+':'+file],{stdio:'pipe'});return false}catch{return true}}),...receipt.appShellSourceCompatibility.addedBoundaryFiles,...receipt.integratedBuyerJourneySourceCompatibility.addedBoundaryFiles,...receipt.appshellXraySourceCompatibility.addedBoundaryFiles].filter(file=>file.startsWith(path+'/'))
-    assert.deepEqual(currentPaths, [...paths,...additions,...m2AddedBoundaryFiles.filter(file=>file.startsWith(path+'/')),...ecrAddedBoundaryFiles.filter(file=>file.startsWith(path+'/'))].sort(), 'Boundary inventory with explicit AppShell release record: ' + path)
+    assert.deepEqual(currentPaths, [...paths,...additions,...m2AddedBoundaryFiles.filter(file=>file.startsWith(path+'/')),...ecrAddedBoundaryFiles.filter(file=>file.startsWith(path+'/')),...(recurring?.manifest.addedPaths??[]).filter(file=>file.startsWith(path+'/'))].sort(), 'Boundary inventory with explicit AppShell release record: ' + path)
     for(const file of additions)assert.equal(createHash('sha256').update(readM2AcceptedSource(new URL(file,repository))).digest('hex'),receipt.assistantM1ChartContextCorrective?.sourceDigests[file]??receipt.assistantM1RuntimeSourceCompatibility?.consumerSourceDigests[file]??receipt.d1AuditReaderPreparation?.sourceDigests[file]??receipt.appShellFourCardCascade?.sourceDigests[file]??receipt.xrayAppShellPresentation?.sourceDigests[file]??receipt.productAnalyticsMainCompatibility?.sourceDigests[file]??receipt.marketHistoryIngestionCompatibility?.sourceDigests[file]??receipt.bqlLiveAcceptanceCompatibility?.sourceDigests[file]??receipt.bqlPciFirstSourceCompatibility?.sourceDigests[file]??receipt.appshellXraySourceCompatibility.applicationSourceDigests[file.replace('apps/sg-runtime/','')]??receipt.integratedBuyerJourneySourceCompatibility.applicationSourceDigests[file.replace('apps/sg-runtime/','')]??receipt.appShellSourceCompatibility.applicationSourceDigests[file.replace('apps/sg-runtime/','')],file)
     for (const file of paths) {
       // The later source-compatibility task adds only its CI test command.

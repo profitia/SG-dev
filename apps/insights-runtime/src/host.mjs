@@ -9,6 +9,7 @@ import { createHubSources, createCanonicalReads } from "./source-adapters.mjs";
 import { createComposer, qualityGate } from "./composer.mjs";
 import { createRenderer } from "./renderer.mjs";
 import { telemetry } from "./telemetry.mjs";
+import {createRecurringSubscriptions} from './recurring.mjs';
 import {PostgresSubscriptionStore} from './subscription-store.mjs';
 import {createSubscriptionApi} from './subscription-api.mjs';
 import {installedReportProfiles} from './subscriptions.mjs';
@@ -109,6 +110,7 @@ export function createHumanReportAuthority({ configuration: c, receiver, store, 
  * read-only Market Data / Forecast readers, not a second database reader. */
 export async function createInstalledInsightsRuntime({ env = process.env, canonicalPorts, monitoring = {}, python }) {
   const c = readInsightsConfiguration(env);
+  requireThat(env.INSIGHTS_RECURRING_VERSION===undefined||env.INSIGHTS_RECURRING_VERSION==="private-recurring-v1","INVALID_RECURRING_VERSION");
   const openaiKey = env.INSIGHTS_OPENAI_API_KEY;
   requireThat(typeof python === "string" && python.startsWith("/"), "DETERMINISTIC_PYTHON_REQUIRED");
   const { createCurrentE1ReportServiceHost } = await import("@profitia/platform-current-e1-authority/insights-service");
@@ -124,8 +126,9 @@ export async function createInstalledInsightsRuntime({ env = process.env, canoni
     const workerPool = pools.get("INSIGHTS_DATABASE_URL");
     const installation = (await workerPool.query("SELECT insights_private.runtime_descriptor() AS descriptor")).rows[0]?.descriptor;
     requireThat(installation && Object.entries(c.workerBinding).filter(([k])=>k!=="hosts").every(([k,v]) => installation[k] === v), "INSIGHTS_STORE_NOT_INSTALLED");
+    const receiver=pgPorts(make("INSIGHTS_RECEIVER_DATABASE_URL"));
     const authority = {
-      execute: createHumanReportAuthority({ configuration: c, receiver: pgPorts(make("INSIGHTS_RECEIVER_DATABASE_URL")), store }),
+      execute: createHumanReportAuthority({ configuration: c, receiver, store }),
       async authorizeJob(job) {
         const context = await current(job.organisationId), p = await service.claimProfile(job);
         requireThat(p, "WAITING_AUTHORIZATION");
@@ -189,12 +192,18 @@ export async function createInstalledInsightsRuntime({ env = process.env, canoni
         buildRequest: () => ({ method: "POST", url: "https://api.openai.com" + paths[0].path, body }),
         getHeaders: command => ({ authorization: "Bearer " + openaiKey, "x-client-request-id": command.callId }) });
     };
-    const runtime = createInsightsRuntime({ configuration: c, store, authority, sources, canonical,
+    let recurring=null;
+    const runtime = createInsightsRuntime({
+      subscriptionTick: options=>recurring?.tick(options), configuration: c, store, authority, sources, canonical,
       composer: createComposer({ counterHost: x => sourceHost("counter",x), generationHost: x => sourceHost("composer",x), pricing: c.pricing }),
       quality: qualityGate, renderer: createRenderer({ python }), telemetry: telemetry(monitoring),
       onError: code => monitoring.capture?.(new Error(code), { environment: "development" }) });
-    const subscriptions=new PostgresSubscriptionStore(store);
-    const subscriptionsApi=createSubscriptionApi({authority,store:subscriptions,profiles:()=>installedReportProfiles(c),
+    const email=env.INSIGHTS_EMAIL_DELIVERY_VERSION==="published-report-v1";
+    requireThat(!env.INSIGHTS_EMAIL_DELIVERY_VERSION||email,"INVALID_REPORT_DELIVERY_VERSION",503);
+    const subscriptions=new PostgresSubscriptionStore(store,{recurring:env.INSIGHTS_RECURRING_VERSION==="private-recurring-v1",email});
+    requireThat(!email||await subscriptions.emailReady(receiver.independentQuery),"REPORT_DELIVERY_NOT_ADMITTED",503);
+    if(env.INSIGHTS_RECURRING_VERSION==="private-recurring-v1"){recurring=await createRecurringSubscriptions({configuration:c,receiver,store,runner:runtime.runner,privateKey:env.INSIGHTS_SIGNING_PRIVATE_KEY});requireThat(await recurring.ready(),"PRIVATE_REPORT_RECURRING_NOT_READY",503);}
+    const subscriptionsApi=createSubscriptionApi({authority,store:subscriptions,recurring,profiles:()=>installedReportProfiles(c,{email}),
       onOrder:(ctx,order)=>runtime.runner.start(ctx,{definitionId:order.definitionId,profileVersion:order.profileVersion,
         period:completedPeriod(new Date().toISOString()),revision:1,asOf:new Date().toISOString(),allowPartial:false},c.profiles[order.profileVersion],'API')});
     return Object.assign(runtime, {subscriptionsApi,async close() { runtime.stop(); await Promise.all([...pools.values()].map(p=>p.end())); } });

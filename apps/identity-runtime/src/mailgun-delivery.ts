@@ -38,17 +38,23 @@ export function createMailgunSandboxSender(config: SandboxMailgunConfig, fetcher
 export function createMailgunTransactionalSender(config: TransactionalMailgunConfig, fetcher: typeof fetch = fetch) {
   return createSender(config, fetcher, config)
 }
-function createSender(config: SandboxMailgunConfig, fetcher: typeof fetch, transactional: TransactionalMailgunConfig | null) {
+/** A distinct admitted product purpose. It shares the transport, never Clerk's
+ * signed-webhook recipient policy or its security-message templates. */
+export function createMailgunReportSender(config: Omit<TransactionalMailgunConfig,'recipientPolicy'>, authorize: (message: SandboxMessage) => Promise<boolean>, fetcher: typeof fetch = fetch) {
+  if (typeof authorize !== 'function' || config.authorizedRecipients.length !== 0) throw Error('REPORT_RECIPIENT_AUTHORITY_REQUIRED')
+  return createSender(config, fetcher, config, authorize)
+}
+function createSender(config: SandboxMailgunConfig, fetcher: typeof fetch, transactional: TransactionalMailgunConfig | null, reportAuthorization: ((message: SandboxMessage) => Promise<boolean>) | null = null) {
   if (config.environment !== 'development' || !['us', 'eu'].includes(config.region) ||
     !(transactional ? /^(?!sandbox)[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)+$/.test(config.domain) : /^sandbox[a-f0-9]{32}\.mailgun\.org$/.test(config.domain)) ||
     typeof config.apiKey !== 'string' || !/^[A-Za-z0-9_-]{20,256}$/.test(config.apiKey)) {
     throw new Error('Invalid sandbox configuration');
   }
   const recipients = new Set(config.authorizedRecipients.map(mailbox));
-  const policy = transactional?.recipientPolicy ?? 'allowlist';
-  if (!['allowlist','signed-clerk'].includes(policy)
+  const policy = reportAuthorization ? 'admitted-report' : transactional?.recipientPolicy ?? 'allowlist';
+  if (!['allowlist','signed-clerk','admitted-report'].includes(policy)
     || policy === 'allowlist' && (recipients.size < 1 || recipients.size > 5)
-    || policy === 'signed-clerk' && recipients.size !== 0) throw new Error('Invalid recipient policy');
+    || ['signed-clerk','admitted-report'].includes(policy) && recipients.size !== 0) throw new Error('Invalid recipient policy');
   const timeout = config.timeoutMs ?? 15000;
   if (!Number.isInteger(timeout) || timeout < 10 || timeout > 30000) throw new Error('Invalid send timeout');
   const endpoint = `https://${config.region === 'eu' ? 'api.eu.mailgun.net' : 'api.mailgun.net'}/v3/${config.domain}/messages`;
@@ -92,12 +98,12 @@ function createSender(config: SandboxMailgunConfig, fetcher: typeof fetch, trans
     for (const [key, value] of Object.entries({
       from, to: recipient, subject: message.subject, html: message.html, text: message.text,
       'o:tracking': 'no', 'o:tracking-clicks': 'no', 'o:tracking-opens': 'no',
-      'o:require-tls': 'yes', 'o:skip-verification': 'no', 'o:tag': transactional ? 'identity-transactional-development' : 'avatar-sandbox',
+      'o:require-tls': 'yes', 'o:skip-verification': 'no', 'o:tag': reportAuthorization ? 'report-published-development' : transactional ? 'identity-transactional-development' : 'avatar-sandbox',
     })) form.set(key, value);
     if (message.template) {
       const t=message.template, keys=Object.keys(t.variables).sort().join(',');
       const newDevice = /^identity-new-device-sign-in-(pl|en)-(male|female|neutral)$/.test(t.name);
-      if (!transactional || !/^identity-(verification-code|invitation|new-device-sign-in)-(pl|en)-(male|female|neutral)$/.test(t.name)
+      if (reportAuthorization || !transactional || !/^identity-(verification-code|invitation|new-device-sign-in)-(pl|en)-(male|female|neutral)$/.test(t.name)
         || !/^v-[a-f0-9]{24}$/.test(t.version)
         || !(newDevice ? keys === 'app_name,current_year,device,greeting,ip_address,location,revoke_session_url,session_created_at,sign_in_method'
           : ['app_name,current_year,greeting,otp_code,requested_at,requested_from','action_url,app_name,current_year,expires_in_days,greeting'].includes(keys))
@@ -106,6 +112,7 @@ function createSender(config: SandboxMailgunConfig, fetcher: typeof fetch, trans
       // Template values must never be placed in provider event/user variables.
       form.set('t:variables',JSON.stringify(t.variables));
     }
+    if (reportAuthorization && !await reportAuthorization({...message,recipient})) return {status:'rejected',code:'provider_rejected'}
     try {
       const response = await fetcher(endpoint, {
         method: 'POST', headers: { Authorization: authorization }, body: form,

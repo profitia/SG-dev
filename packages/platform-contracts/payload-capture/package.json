@@ -4,13 +4,21 @@
   "private": true,
   "type": "module",
   "description": "Bounded immutable finite-data snapshots using the existing canonical SDK digest",
-  "files": ["src"],
+  "files": [
+    "src"
+  ],
   "exports": {
-    ".": {"types": "./src/payload-capture.d.mts", "import": "./src/payload-capture.mjs", "require": "./src/payload-capture.mjs"}
+    ".": {
+      "types": "./src/payload-capture.d.mts",
+      "import": "./src/payload-capture.mjs",
+      "require": "./src/payload-capture.mjs"
+    }
   },
   "scripts": {
     "build": "node --check src/payload-capture.mjs",
     "test": "node --test test/*.test.mjs"
   },
-  "peerDependencies": {"@profitia/platform-contracts": "1.32.3 || 1.33.0 || 1.34.0"}
+  "peerDependencies": {
+    "@profitia/platform-contracts": "1.32.3 || 1.33.0 || 1.34.0 || 1.36.0"
+  }
 }

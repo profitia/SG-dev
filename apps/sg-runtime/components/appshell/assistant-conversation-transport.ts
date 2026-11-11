@@ -1,7 +1,7 @@
 import {readPresentationJson} from '@profitia/platform-contracts/embedded-read-channel'
-import type {ChartReference,SupplierReference,NewsfeedReference} from '../../../../packages/assistant-context-contracts/src/index.mjs'
+import type {ChartReference,SupplierReference,NewsfeedReference,PublishedReportReference} from '../../../../packages/assistant-context-contracts/src/index.mjs'
 import type {AssistantConversationTransport,AssistantConversationError,AssistantStreamEvent,AssistantSource,AssistantMessage} from './assistant-conversation-session'
-type View={locale:'pl'|'en';module:'appshell'|'benchmark_finder'|'xray'|'adp'|'procurement_insights';reference:ChartReference|SupplierReference|NewsfeedReference|null}
+type View={locale:'pl'|'en';module:'appshell'|'benchmark_finder'|'xray'|'adp'|'procurement_insights';reference:ChartReference|SupplierReference|NewsfeedReference|PublishedReportReference|null}
 const record=(v:unknown):v is Record<string,unknown>=>!!v&&typeof v==='object'&&!Array.isArray(v)
 const uuid=(v:unknown):v is string=>typeof v==='string'&&/^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(v)
 const fail=(code:AssistantConversationError='UNAVAILABLE'):never=>{throw Object.assign(Error('Conversation unavailable'),{code})}

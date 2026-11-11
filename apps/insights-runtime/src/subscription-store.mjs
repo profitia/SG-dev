@@ -3,7 +3,7 @@ import {readFileSync} from 'node:fs';
 import {assertContext,requireThat,digest} from '@profitia/insights-contracts';
 import {parseSubscription,nextReportOccurrence} from './subscriptions.mjs';
 import {PUBLISHED_EDITION_CONTRACT} from '@profitia/insights-contracts/subscriptions';
-const dto=row=>({...row.definition,id:row.id,organisationId:row.organisation_id,ownerUserId:row.owner_user_id,version:Number(row.version),status:row.status,executionState:row.execution_state,nextDueAt:row.next_due_at?new Date(row.next_due_at).toISOString():null,createdAt:new Date(row.created_at).toISOString(),updatedAt:new Date(row.updated_at).toISOString()});
+const dto=row=>({...row.definition,id:row.id,organisationId:row.organisation_id,ownerUserId:row.owner_user_id,version:Number(row.version),status:row.status,executionState:row.execution_state,nextDueAt:(row.worker_schedule_active?row.worker_next_due_at:row.next_due_at)?new Date(row.worker_schedule_active?row.worker_next_due_at:row.next_due_at).toISOString():null,createdAt:new Date(row.created_at).toISOString(),updatedAt:new Date(row.updated_at).toISOString()});
 const own=ctx=>[ctx.organisationId,ctx.actorId];
 const installedSchemaDigest=digest(readFileSync(new URL('../sql/003-report-subscriptions.sql',import.meta.url)));
 function page({limit=50,cursor=null}={}){
@@ -15,7 +15,10 @@ const nextCursor=(rows,limit,idKey='id')=>rows.length>limit?Buffer.from(JSON.str
 const publication=row=>({contractVersion:PUBLISHED_EDITION_CONTRACT,producerJobId:row.producer_job_id,editionId:row.edition_id,definitionId:row.definition_id,profileVersion:row.profile_version,title:row.title,period:row.period,asOf:new Date(row.as_of).toISOString(),publishedAt:new Date(row.published_at).toISOString(),pdfSha256:row.pdf_sha256,markdownSha256:row.markdown_sha256,status:'PUBLISHED',readOnly:row.read_only===true});
 const scope=ctx=>{assertContext(ctx);requireThat(ctx.actorKind==='HUMAN','HUMAN_ORDER_REQUIRED',403);};
 export class PostgresSubscriptionStore{
- constructor(reportStore,{now=()=>new Date().toISOString()}={}){requireThat(reportStore&&typeof reportStore.transaction==='function','CURRENT_REPORT_STORE_REQUIRED',503);this.store=reportStore;this.now=now;}
+ constructor(reportStore,{now=()=>new Date().toISOString(),recurring=false,email=false}={}){requireThat(reportStore&&typeof reportStore.transaction==='function','CURRENT_REPORT_STORE_REQUIRED',503);this.store=reportStore;this.now=now;this.recurring=recurring;this.email=email;}
+ async emailReady(query){if(!this.email||typeof query!=='function')return false;try{const r=await query("SELECT insights_private.delivery_available() AS ready,(SELECT schema_digest FROM insights_private.delivery_installation WHERE singleton) AS digest");return r.rows[0]?.ready===true&&r.rows[0].digest===digest(readFileSync(new URL('../sql/005-report-delivery.sql',import.meta.url)))}catch{return false}}
+ async decorateMany(db,rows){if(!this.recurring||!rows.length)return rows.map(dto);const r=await db.query("SELECT subscription_id,resource_version,next_due_at FROM insights_private.subscription_delegations WHERE subscription_id=ANY($1::uuid[]) AND status='ACTIVE'",[rows.map(x=>x.id)]);const states=new Map(r.rows.map(x=>[x.subscription_id,x]));return rows.map(row=>{const d=states.get(row.id);return dto(d&&String(d.resource_version)===String(row.version)?{...row,worker_schedule_active:true,worker_next_due_at:d.next_due_at}:row)});}
+ async decorate(db,row){return(await this.decorateMany(db,[row]))[0];}
  async assertInstalled(ctx){scope(ctx);return this.store.transaction(ctx.organisationId,async db=>{
   const row=(await db.query("SELECT digest FROM insights_private.subscription_migrations WHERE version='1.0.0'")).rows[0];requireThat(row?.digest===installedSchemaDigest,'SUBSCRIPTION_SCHEMA_NOT_READY',503);
  });}
@@ -46,10 +49,10 @@ export class PostgresSubscriptionStore{
   const r=await db.query('UPDATE insights_private.subscription_events SET read_at=coalesce(read_at,clock_timestamp()) WHERE organisation_id=$1::uuid AND owner_user_id=$2::uuid AND id=$3::uuid RETURNING id',[...own(ctx),id]);requireThat(r.rowCount===1,'NOTIFICATION_NOT_FOUND',404);return {id,read:true};
  });}
  async get(ctx,id,lock=false){scope(ctx);return this.store.transaction(ctx.organisationId,async db=>{
-  const r=await db.query('SELECT * FROM insights_private.report_subscriptions WHERE organisation_id=$1::uuid AND owner_user_id=$2::uuid AND id=$3::uuid'+(lock?' FOR UPDATE':''),[...own(ctx),id]);requireThat(r.rowCount===1,'SUBSCRIPTION_NOT_FOUND',404);return dto(r.rows[0]);
+  const r=await db.query('SELECT * FROM insights_private.report_subscriptions WHERE organisation_id=$1::uuid AND owner_user_id=$2::uuid AND id=$3::uuid'+(lock?' FOR UPDATE':''),[...own(ctx),id]);requireThat(r.rowCount===1,'SUBSCRIPTION_NOT_FOUND',404);return this.decorate(db,r.rows[0]);
  });}
  async list(ctx,options={}){scope(ctx);const {limit,after}=page(options);return this.store.transaction(ctx.organisationId,async db=>{
-  const r=await db.query('SELECT *,updated_at::text AS cursor_at FROM insights_private.report_subscriptions WHERE organisation_id=$1::uuid AND owner_user_id=$2::uuid'+(after?' AND (updated_at,id)<($4::timestamptz,$5::uuid)':'')+' ORDER BY updated_at DESC,id DESC LIMIT $3',[...own(ctx),limit+1,...(after??[])]);return {items:r.rows.slice(0,limit).map(dto),nextCursor:nextCursor(r.rows,limit)};
+  const r=await db.query('SELECT *,updated_at::text AS cursor_at FROM insights_private.report_subscriptions WHERE organisation_id=$1::uuid AND owner_user_id=$2::uuid'+(after?' AND (updated_at,id)<($4::timestamptz,$5::uuid)':'')+' ORDER BY updated_at DESC,id DESC LIMIT $3',[...own(ctx),limit+1,...(after??[])]);return {items:await this.decorateMany(db,r.rows.slice(0,limit)),nextCursor:nextCursor(r.rows,limit)};
  });}
  async create(ctx,input,profile,key){scope(ctx);const v=parseSubscription(input,profile);requireThat(typeof key==='string'&&/^[A-Za-z0-9._:-]{8,128}$/.test(key),'IDEMPOTENCY_KEY_REQUIRED',400);return this.store.transaction(ctx.organisationId,async db=>{
   const commandDigest=digest(v),nonce=digest(key),next=nextReportOccurrence(v.schedule,this.now());
@@ -74,6 +77,6 @@ export class PostgresSubscriptionStore{
  });}
  async runs(ctx,id,options={}){await this.get(ctx,id);const {limit,after}=page(options);return this.store.transaction(ctx.organisationId,async db=>{
   const r=await db.query('SELECT r.id,r.subscription_id,r.subscription_version,r.slot_key,r.producer_job_id,CASE WHEN p.producer_job_id IS NOT NULL THEN \'PUBLISHED\' ELSE coalesce(j.status,r.status) END AS status,r.created_at,r.created_at::text AS cursor_at FROM insights_private.subscription_runs r LEFT JOIN insights_private.report_jobs j ON j.id=r.producer_job_id AND j.organisation_id=r.organisation_id::text LEFT JOIN insights_private.published_editions p ON p.producer_job_id=r.producer_job_id AND p.organisation_id=r.organisation_id WHERE r.organisation_id=$1::uuid AND r.owner_user_id=$2::uuid AND r.subscription_id=$3::uuid'+(after?' AND (r.created_at,r.id)<($5::timestamptz,$6::uuid)':'')+' ORDER BY r.created_at DESC,r.id DESC LIMIT $4',[...own(ctx),id,limit+1,...(after??[])]);
-  return {items:r.rows.slice(0,limit).map(x=>({id:x.id,subscriptionId:x.subscription_id,subscriptionVersion:Number(x.subscription_version),slot:x.slot_key,producerJobId:x.producer_job_id,status:x.status,createdAt:new Date(x.created_at).toISOString()})),nextCursor:nextCursor(r.rows,limit)};
+  const statuses=this.email?(await db.query('SELECT insights_private.delivery_states($1::uuid[]) AS items',[r.rows.slice(0,limit).map(x=>x.producer_job_id).filter(Boolean)])).rows[0].items:[];return {items:r.rows.slice(0,limit).map(x=>({...(this.email?{emailDelivery:statuses.find(s=>s.producerJobId===x.producer_job_id)?.state??null}:{}),id:x.id,subscriptionId:x.subscription_id,subscriptionVersion:Number(x.subscription_version),slot:x.slot_key,producerJobId:x.producer_job_id,status:x.status,createdAt:new Date(x.created_at).toISOString()})),nextCursor:nextCursor(r.rows,limit)};
  });}
 }
