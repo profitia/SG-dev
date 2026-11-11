@@ -78,6 +78,40 @@ function candidateFamily(context, pr, expectedSha) {
   return family
 }
 
+// Proposed closed Stage1 review of seven governance sources only. Activation
+// requires controller-owner acceptance; no generic Canon/runtime/package grant.
+export const PLATFORM_KNOWLEDGE_G1_REVIEW = Object.freeze({
+  "prNumber": 999,
+  "branch": "architecture/platform-knowledge-stage1-g1-20261111",
+  "sourceSha": "174cb59fd9770f1ced8d4b1108f6090934937a4f",
+  "blobs": {
+    "Canon/evidence/2026-11-11-platform-knowledge-stage1-g1-onboarding.md": "29d9e8342832f4f95cd01925d41b43fa5f6450db",
+    "Canon/registries/architecture-onboarding-v1.json": "2881780b31947605e9f6127a894b3bcc32eb36fb",
+    "Canon/registries/current-architecture-baseline-v1.json": "4e0a9ddb77e99d2a764af9ff2d719a107e66c0dc",
+    "Canon/registries/governance-manifest-v2.json": "b77945d874efec290aa50a598c23aae80ed6ad23",
+    "Canon/runbooks/platform-knowledge-development-delivery-plan-v1.md": "48e727adbdd5d410d8b87aa59cc190cc68422e5b",
+    "Canon/runbooks/platform-knowledge-development-foundation-v1.md": "3f684e8fa49b099bbc174cd8475a0a2cdf4c53e2",
+    "scripts/governance/platform-knowledge-routing.test.mjs": "54b736cb6f5410452d281576a77ebb11e44be111"
+  },
+  "statuses": {
+    "Canon/evidence/2026-11-11-platform-knowledge-stage1-g1-onboarding.md": "added",
+    "Canon/registries/architecture-onboarding-v1.json": "modified",
+    "Canon/registries/current-architecture-baseline-v1.json": "modified",
+    "Canon/registries/governance-manifest-v2.json": "modified",
+    "Canon/runbooks/platform-knowledge-development-delivery-plan-v1.md": "modified",
+    "Canon/runbooks/platform-knowledge-development-foundation-v1.md": "added",
+    "scripts/governance/platform-knowledge-routing.test.mjs": "added"
+  }
+})
+function isPinnedPlatformKnowledgeG1Review(files) {
+  return Array.isArray(files) && files.length === Object.keys(PLATFORM_KNOWLEDGE_G1_REVIEW.blobs).length
+    && new Set(files.map(f=>f?.filename)).size === files.length
+    && files.every(f=>Object.hasOwn(PLATFORM_KNOWLEDGE_G1_REVIEW.blobs,f?.filename??'')
+      && f.sha===PLATFORM_KNOWLEDGE_G1_REVIEW.blobs[f.filename]
+      && f.status===PLATFORM_KNOWLEDGE_G1_REVIEW.statuses[f.filename]
+      && !Object.hasOwn(f,'previous_filename'))
+}
+
 // The producer class remains deliberately narrower than ARCHITECTURE ownership.
 // A separate closed KRS governance review bundle below grants no app or generic
 // workflow/tooling admission and never reads a candidate-provided allowlist.
@@ -5416,7 +5450,7 @@ export function assertArchitectureFiles(pr, files, repositoryRoot = controlRoot(
   const readonlyMissReview = isPinnedReadonlyMissReportReview(files)
   const freshFixtureReview = isPinnedFreshFixtureTeardownReview(files)
   const rootAtomicClaimReview = isPinnedRootAtomicClaimReview(files)
-  const closedReview = isPinnedAcgG1Review(files) || isPinnedInsightsG1Review(files) || isPinnedEcrG1Review(files) || krsReview || isPinnedAdpGovernanceReview(files) || isPinnedLimitsG1Review(files) || isPinnedNewsfeedG1Review(files) || isPinnedSourceHubG1Review(files) || freshReportReview || payloadCaptureReview || readonlyMissReview || freshFixtureReview || rootAtomicClaimReview
+  const closedReview = isPinnedPlatformKnowledgeG1Review(files) || isPinnedAcgG1Review(files) || isPinnedInsightsG1Review(files) || isPinnedEcrG1Review(files) || krsReview || isPinnedAdpGovernanceReview(files) || isPinnedLimitsG1Review(files) || isPinnedNewsfeedG1Review(files) || isPinnedSourceHubG1Review(files) || freshReportReview || payloadCaptureReview || readonlyMissReview || freshFixtureReview || rootAtomicClaimReview
   const names = new Set()
   for (const file of files) {
     if (!(closedReview || architecturePathAllowed(file.filename))
@@ -5440,6 +5474,11 @@ export function assertArchitectureFiles(pr, files, repositoryRoot = controlRoot(
 
 export function selectCandidate(context, pr, expectedSha, {files, repositoryRoot = controlRoot()} = {}) {
   const family = candidateFamily(context, pr, expectedSha)
+  if (pr && (pr.number===PLATFORM_KNOWLEDGE_G1_REVIEW.prNumber || pr.head?.ref===PLATFORM_KNOWLEDGE_G1_REVIEW.branch || isPinnedPlatformKnowledgeG1Review(files))) {
+    if (family!=='ARCHITECTURE' || pr.number!==PLATFORM_KNOWLEDGE_G1_REVIEW.prNumber
+      || pr.head.ref!==PLATFORM_KNOWLEDGE_G1_REVIEW.branch || expectedSha!==PLATFORM_KNOWLEDGE_G1_REVIEW.sourceSha
+      || !isPinnedPlatformKnowledgeG1Review(files)) fail('PLATFORM_KNOWLEDGE_G1_REVIEW_IDENTITY_REJECTED')
+  }
   if(pr&&(pr.number===REGISTRATION_SDK_REVIEW.prNumber||pr.head.ref===REGISTRATION_SDK_REVIEW.branch||isPinnedRegistrationSdkReview(files))){if(family!=='ARCHITECTURE'||pr.number!==REGISTRATION_SDK_REVIEW.prNumber||pr.head.ref!==REGISTRATION_SDK_REVIEW.branch||!isPinnedRegistrationSdkReview(files))fail('REGISTRATION_SDK_REVIEW_IDENTITY_REJECTED')}
   if(pr&&(pr.number===NEWSFEED_SAVED_SEARCH_REVIEW.prNumber||pr.head.ref===NEWSFEED_SAVED_SEARCH_REVIEW.branch||isPinnedNewsfeedSavedSearchReview(files))){if(family!=='ARCHITECTURE'||pr.number!==NEWSFEED_SAVED_SEARCH_REVIEW.prNumber||pr.head.ref!==NEWSFEED_SAVED_SEARCH_REVIEW.branch||!isPinnedNewsfeedSavedSearchReview(files))fail('NEWSFEED_SAVED_SEARCH_REVIEW_IDENTITY_REJECTED')}
   if(pr&&(pr.number===ECR_SOURCE_CONTINUITY_REVIEW.prNumber||pr.head.ref===ECR_SOURCE_CONTINUITY_REVIEW.branch||isPinnedEcrSourceContinuityReview(files))){if(family!=='ARCHITECTURE'||pr.number!==ECR_SOURCE_CONTINUITY_REVIEW.prNumber||pr.head.ref!==ECR_SOURCE_CONTINUITY_REVIEW.branch||!isPinnedEcrSourceContinuityReview(files))fail('ECR_SOURCE_CONTINUITY_REVIEW_IDENTITY_REJECTED')}
@@ -5538,6 +5577,7 @@ export function assertArchitectureCheckout(root, sha, admission, repositoryRoot 
     if(isPinnedUniversalFirstPartyReview(admission.files))assertUniversalFirstPartyReviewEntry(file,entry)
     if(isPinnedCurrentE1Review(admission.files))assertCurrentE1ReviewEntry(file,entry)
     if(isPinnedSourceHubStage2aReview(admission.files)&&entry!==SOURCE_HUB_STAGE2A_REVIEW.modes[file.filename]+' blob '+file.sha+'\t'+file.filename+'\0')fail('SOURCE_HUB_STAGE2A_FILE_MODE_REJECTED')
+    if (isPinnedPlatformKnowledgeG1Review(admission.files) && entry !== `100644 blob ${file.sha}\t${file.filename}\0`) fail('PLATFORM_KNOWLEDGE_G1_FILE_MODE_REJECTED')
     if (!['100644', '100755'].some(mode => entry === `${mode} blob ${file.sha}\t${file.filename}\0`)) fail('ARCHITECTURE_CHECKOUT_REJECTED')
     const target = path.join(root, file.filename), stat = fs.lstatSync(target)
     if (!stat.isFile() || stat.isSymbolicLink() || stat.size > 1024 * 1024 || fs.realpathSync(target) !== target
