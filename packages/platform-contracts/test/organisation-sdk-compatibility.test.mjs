@@ -59,3 +59,30 @@ test('an absent peer frame or forged predecessor remains closed without a permis
  const a=JSON.parse(current(sourcePath))
  for(const flag of ['runtimeOptedIn','sqlInstalled','permissionsChanged','providerCallsPerformed','deploymentPerformed'])assert.equal(a[flag],false)
 })
+
+import {createHash} from 'node:crypto'
+test('the pinned compatibility-test successor preserves the exact prior SDK record and physical receiver graph',()=>{
+ const doc=current('Canon/evidence/2026-11-11-registration-sdk-ci-complete-review.md').toString(),marker=doc.indexOf('<!-- registration-sdk-fixture -->'),match=/\x60\x60\x60json\n([\s\S]*?)\x60\x60\x60/.exec(doc.slice(marker))
+ assert(marker>=0&&match);const bytes=Buffer.from(match[1]),old=JSON.parse(bytes),digest=b=>createHash('sha256').update(b).digest('hex')
+ assert.equal(digest(bytes),'020b9db676804688ce1758865084d2af02c42af169ede00c265432422e4d993e')
+ const name='apps/sg-runtime/tests/private-host.integration.test.mjs',next="currentSdkRecord.sourceDigests?.['packages/platform-contracts/'+file]??currentSdkRecord.compatibilityTestSourceDigests?.['packages/platform-contracts/'+file]??digest",previous="currentSdkRecord.sourceDigests?.['packages/platform-contracts/'+file]??digest",source=current(name).toString()
+ // Reverse only the declared one-line edit, requiring the frozen predecessor
+ // SHA before exposing reconstructed bytes to the original verifier.
+ assert.equal(source.split(next).length,2)
+ const restored=Buffer.from(source.replace(next,previous));assert.equal(digest(restored),old.consumerSourceDigests.SG2[name])
+ const previousView=p=>p===sourcePath?bytes:p===name?restored:current(p)
+ for(const projectKey of ['SG2','SRM']){
+  const result=sdkContinuationPredecessor(receipt(projectKey),previousView,historical,{projectKey})
+  assert.deepEqual(result.record,old)
+  assert.deepEqual(result.prior,JSON.parse(historical(old.previousSourceSha,pathFor(projectKey))))
+ }
+})
+test('current compatibility-test bytes are verified and an unknown forged hash record never opens the predecessor',()=>{
+ const record=acceptedSdkSource(),name='packages/platform-contracts/current-fresh-report/test/current-fresh-report.test.mjs',digest=b=>createHash('sha256').update(b).digest('hex')
+ assert.equal(record.compatibilityTestSourceDigests[name],digest(current(name)))
+ const changedBytes=Buffer.concat([current(name),Buffer.from('\nUNREVIEWED')]),changed=p=>p===name?changedBytes:current(p)
+ assert.throws(()=>sdkContinuationPredecessor(receipt('SG2'),changed,historical),/current compatibility test/)
+ const forged=structuredClone(record);forged.compatibilityTestSourceDigests[name]=digest(changedBytes)
+ const forgedView=p=>p===sourcePath?Buffer.from(JSON.stringify(forged)+'\n'):changed(p)
+ assert.throws(()=>sdkContinuationPredecessor(receipt('SG2'),forgedView,historical),/exact organisation SDK source acceptance/)
+})
