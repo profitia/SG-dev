@@ -1,3 +1,4 @@
+import {marketCalendarSourcePredecessor} from '../../architecture-lab/market-calendar-source.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
@@ -5,8 +6,10 @@ import {execFileSync} from 'node:child_process'
 import {createHash} from 'node:crypto'
 import {assistantEcrWeekPredecessor,WEEK_BASE,WEEK_RECEIPT,WEEK_PATHS,WEEK_RECEIPTS,weekArchitectureSource} from './assistant-ecr-week-integrity.mjs'
 import {recurringSourcePredecessor,ECR_WEEK_SOURCE_SHA} from '../../architecture-lab/private-recurring-source.mjs'
-const root=new URL('../../../',import.meta.url),current=p=>fs.readFileSync(new URL(p,root)),cache=new Map()
+const root=new URL('../../../',import.meta.url),rawCurrent=p=>fs.readFileSync(new URL(p,root)),cache=new Map()
 const historical=(sha,p)=>{const k=sha+':'+p;if(!cache.has(k))cache.set(k,execFileSync('git',['show',k],{cwd:root,stdio:['ignore','pipe','pipe']}));return cache.get(k)}
+// Verify the exact later adoption before exercising the immutable week source.
+const current=marketCalendarSourcePredecessor(rawCurrent,historical)?.previousBytes??rawCurrent
 const hash=b=>createHash('sha256').update(b).digest('hex')
 test('ECR correction closes current source before retaining all prior receipts and recurring acceptance',()=>{
  const view=assistantEcrWeekPredecessor(current,historical,ECR_WEEK_SOURCE_SHA);assert(view)
