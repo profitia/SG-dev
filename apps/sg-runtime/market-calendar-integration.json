@@ -10,11 +10,11 @@
     "apps/sg-runtime/components/procurement-insights/calendar-detail.tsx": "01015c244afcd8d143c0f68604f7baa78147339e6bc43f2704c320d75accfd6d",
     "apps/sg-runtime/components/procurement-insights/calendar-dialogs.tsx": "20fd1e27538af74c5d3064dc04f653c82bf6d076a67aba4c72cfda81e6639f4a",
     "apps/sg-runtime/components/procurement-insights/market-calendar.css": "66f3e3dc2bc345b9b0e9082e488cda85755c2d9c19d5265c897539e603750f3c",
-    "apps/sg-runtime/components/procurement-insights/market-calendar.tsx": "7f8c050ca5680e1644b5382a4dd5fb3fb0ee565d3c700f77368d59c1259b973f",
+    "apps/sg-runtime/components/procurement-insights/market-calendar.tsx": "a8e31853ba3a80449ee3dc55ac24e64fec7f59e8d4431200e9fde13f37605b36",
     "apps/sg-runtime/components/procurement-insights/workspace.css": "d53660a0b32f8b2e7790a4a3fb38c736fef588daf8c70c0e8596a181ec6ac3c4",
     "apps/sg-runtime/components/procurement-insights/workspace.tsx": "00716dff5777a6f6b34e437d64b2e50c3892826b7d8bb617934e80e670540dbf",
     "apps/sg-runtime/lib/market-calendar/client.ts": "360740b6d015f62bad55d3693d8f41f573cc3e1e68db78147148bbf5f4bed79f",
-    "apps/sg-runtime/lib/market-calendar/model.ts": "1284aab170bb206c82e41aebd0a530580d70a532073b292b1707c64b1478cdc6",
+    "apps/sg-runtime/lib/market-calendar/model.ts": "ac321bb91abddaabb2a5661c0850eebc50b683920730cb827d3b5d828375abce",
     "apps/sg-runtime/lib/market-calendar/runtime.ts": "78a6e3d2fce90aab00cc41357ee07fab9cd2430c54229d8ad885b51ada9cfc0d",
     "apps/sg-runtime/middleware.ts": "d8736f570d537e5f9841f5120470f1c46a617233756c12038df0a5a9215c9179",
     "apps/sg-runtime/package.json": "d2ed74190322d0e5315212519709ca2e06a6cbfc32def8e23e64794101ee1517",
@@ -22,7 +22,7 @@
     "apps/sg-runtime/tests/market-calendar-integrity.test.mjs": "856a5b824c40b78b0fc44d27364f4c9455d2aae1a5abd1ac537d7d93ff5a6e9e",
     "apps/sg-runtime/tests/market-calendar-model.test.ts": "4e97afc70fe5e98ef1d8b547d45bc10b512cb01463aa311696aa3cd9ade3095c",
     "apps/sg-runtime/tests/market-calendar-proxy.test.ts": "e51736cfa1b6de4a3876f6b05029dedf8cabbddb9d9e7dd61c00c3c3525c45f8",
-    "apps/sg-runtime/tests/market-calendar.test.tsx": "643eb54c679ee7335adca5587c25c21a4d66069d12d0b28595bfa5eda9d6a54e"
+    "apps/sg-runtime/tests/market-calendar.test.tsx": "c59b39e1831e5db5ca41c3e8439dd7229f4bb506dd7edf7027df0462547c427c"
   },
   "preservedReceipts": {
     "apps/sg-runtime/adp-integration.json": "9dbd4921c5262202902c3c7ae318e2296f130512fc0784840880eb42370d45fb",

@@ -24,9 +24,10 @@ test('approved calendar flow uses ECR requests for favourites, named calendars a
  const date=new Date().toISOString().slice(0,10),tomorrow=new Date(Date.parse(date+'T12:00:00Z')+86400000).toISOString().slice(0,10),pub='ecr_pub_'+'a'.repeat(64),pub2='ecr_pub_'+'c'.repeat(64),id='ecr_evt_'+'b'.repeat(64)
  const event={eventId:id,publicationId:pub,title:'SYNTHETIC_ONLY WPSR',eventAt:tomorrow+'T15:30:00Z',eventTimeZone:'UTC',dateSpan:0,source:{provider:'eia',licenceRef:'SYNTHETIC_ONLY'},values:{actual:null},reference:{label:null,providerValue:null},knownAt:date+'T10:00:00Z',observation:{sourceRetrievedAt:date+'T10:00:00Z'},schedule:{scheduleStatus:'OFFICIAL_DATED',timePrecision:'INSTANT'}}
  const concept={data:{namePl:'SYNTHETIC_ONLY Raport ropy',description:'SYNTHETIC_ONLY opis',taxonomy:['ropa'],geography:'USA'}}
- let state={version:0,preferences:{watchedCountries:['PRESERVE'],watchedIndicators:[],watchedTopics:[],savedFilters:[],display:{timeZone:'UTC'},publicationFavourites:[],publicationWatches:[]}} as any,conflict=false
+ let state={version:0,preferences:{watchedCountries:['PRESERVE'],watchedIndicators:[],watchedTopics:[],savedFilters:[],display:{timeZone:'UTC'},publicationFavourites:[],publicationWatches:[]}} as any,conflict=false,denied=false
  const calls:Array<{path:string;method:string;body:any}>=[]
  w.fetch=async(input:string,options:any={})=>{const u=new URL(input,w.location.origin),p=u.pathname.split('/api/v1/market-calendar/')[1],method=options.method??'GET';calls.push({path:p,method,body:options.body?JSON.parse(options.body):null});assert(p,'Only the consumer ECR route is allowed');assert.equal(options.headers.authorization,'Bearer SYNTHETIC_ONLY')
+  if(p==='query'&&denied)return Response.json({error:{code:'ACCESS_DENIED'}},{status:403})
   if(p==='preferences'){
    if(method==='PUT'){if(conflict){conflict=false;state.version++;state.preferences.watchedCountries=['CONCURRENT'];return Response.json({error:{code:'PREFERENCE_VERSION_CONFLICT'}},{status:409})}const b=JSON.parse(options.body);assert.equal(b.expectedVersion,state.version);state={...state,version:state.version+1,preferences:b.preferences}}
    return Response.json({contract:{id:'profitia.economic-calendar',version:'1.1.0'},...state})
@@ -54,6 +55,7 @@ test('approved calendar flow uses ECR requests for favourites, named calendars a
   conflict=true;await click('Usuń z ulubionych',eventCard());assert.match(node.textContent,/innej sesji/);assert.deepEqual(state.preferences.publicationFavourites,[pub]);await click('Usuń z ulubionych',eventCard());assert.deepEqual(state.preferences.publicationFavourites,[]);assert.deepEqual(state.preferences.watchedCountries,['CONCURRENT'])
   await React.act(async()=>root.render(React.createElement(MarketCalendar,{key:'new-session',active:true,getToken:token})));await settle();assert.match(node.textContent,/Rynek energii/)
   await click('Moje kalendarze');await click('Usuń');await click('Usuń kalendarz');assert.deepEqual(state.preferences.savedFilters,[])
+  denied=true;await React.act(async()=>root.render(React.createElement(MarketCalendar,{key:'denied-session',active:true,getToken:token})));await settle();assert.match(node.textContent,/Brak uprawnienia/);assert.equal(node.querySelector('.pi-cal-event'),null);assert.deepEqual([...node.querySelectorAll('.pi-cal-summary strong')].slice(0,2).map((x:any)=>x.textContent),['—','—'])
   assert(calls.every(c=>!c.path.includes('source')&&!c.path.includes('sync')));assert(calls.filter(c=>c.method==='PUT').every(c=>!('userId'in c.body)&&!('organisationId'in c.body)))
  }finally{await React.act(async()=>root.unmount());dom.window.close();fs.rmSync(tmp,{recursive:true})}
 })
