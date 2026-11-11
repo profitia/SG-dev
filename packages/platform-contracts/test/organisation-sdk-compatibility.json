@@ -235,11 +235,16 @@
   },
   "consumerSourceDigests": {
     "SG2": {
+      "apps/sg-runtime/tests/assistant-m1-integrity.mjs": "b172eab829d4b8e3b141e067d10e2effd166725b6a4aee585663c3c9c80d916c",
       "apps/sg-runtime/tests/assistant-m2-integrity.mjs": "a9a761bd0742406f8a36c0ce5f44045d2783bfe505284e34c58057f3f204220e",
+      "apps/sg-runtime/tests/assistant-m2-source-view.mjs": "37ff427f894617700e46b5bb70e1f090649c544140c3366bddba6e41d8167031",
+      "apps/sg-runtime/tests/assistant-send-arrow-integrity.mjs": "dbeab8bbf56a77efd11b80cc933772bdba32b1727343492f870f73c35bd5a48f",
       "apps/sg-runtime/tests/diagnostic-telemetry-adoption.test.mjs": "78c8cf122122c08c34d94842e34f4bf1348d712f891432bd2e9cd5de1f5685ab",
       "apps/sg-runtime/tests/native-sql-roundtrips.test.mjs": "b6a3e1775e8b0214ba247a8428f02d310bb5b4b0e48648a28076daffa1f4b85a",
-      "apps/sg-runtime/tests/operation-context.test.mjs": "d7ffb69925877b677c795be31cbeeea66a9de94f91ecac83c56f37499e06d206",
-      "apps/sg-runtime/tests/private-host.integration.test.mjs": "6cd462a93d075d9f86eb1af836e5144b65df1308a4d5ade79c85552607c3e2b1",
+      "apps/sg-runtime/tests/operation-context.test.mjs": "65141aec6471a0ef4f1a7cfafd254d1246fd801473b86a537c5724d6242eb0e9",
+      "apps/sg-runtime/tests/organisation-sdk-history.test.mjs": "f72e74a31e0614129d7cf77d3f51b1d7451d5de7ea368961c9cd81b732c3327e",
+      "apps/sg-runtime/tests/pci-smart-integrity.test.mjs": "827ccc05fbc99894840160c2ef7b72bb65facd89d0ce3995a04821b54b00f213",
+      "apps/sg-runtime/tests/private-host.integration.test.mjs": "4665c2db201f124958f48c584762e477a7ee9c6e04b05451e500a2881c036f16",
       "apps/sg-runtime/tests/xray-fresh-performance-adoption.test.mjs": "69f6d36384096c5ab93dc34751841ff16b44057cc13596ac8f29e0e17bb2c0f4",
       "apps/sg-runtime/tests/xray-platform-compatibility.test.mjs": "d9602b68580641c217673d27124321ee2590d6cf77ec6f13d215467284cf3c73"
     },
@@ -265,7 +270,6 @@
     "apps/sg-runtime/assistant-markdown-integration.json": "27ff06aff8bc44592f0073732748834b7759182fa4307d901c7d63304381a38b",
     "apps/sg-runtime/registration-stage-i-integration.json": "4a7a572e67e12ed73c523502cef4cb432009e735737df851419d80898653f414",
     "apps/sg-runtime/assistant-send-arrow-integration.json": "62c6af6817a022c31788d801cc0eac293a24b3f25d9e529d32b1bff4908fa230",
-    "apps/sg-runtime/tests/assistant-send-arrow-integrity.mjs": "a6b5949df2f2717d2c8c6dd1680cb6c0fa659f7c78e6287a83a52076e7b4e7f9",
     "apps/sg-runtime/tests/assistant-send-arrow-integrity.test.mjs": "6f66bd2f00650e6320576c683bc9ec9bd946e0466bcaafb08bba83c97bb21437",
     "apps/sg-runtime/components/appshell/assistant-conversation-view.tsx": "a4cd2979aa331ec67709b113784043318627c91a29cdb3dcbc886928c8c2aacd",
     "apps/sg-runtime/package.json": "e57db5a6904a8381adf60fd1d5626e9b1f5df84168c3e9db8540c4466d127848",
