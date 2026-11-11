@@ -25,3 +25,16 @@ test('a genuinely absent successor is optional; unreadable source and unrelated 
  const denied=Object.assign(Error('Denied'),{code:'EACCES'});assert.throws(()=>recurringSourcePredecessor(()=>{throw denied},history),e=>e===denied);
  const wrong=Object.assign(Error('Other Git error'),{status:128,stderr:"fatal: path 'another-file' does not exist in 'main'"});assert.throws(()=>recurringSourcePredecessor(()=>{throw wrong},history),e=>e===wrong);
 });
+
+test('parallel accepted ECR precision stays current and separately reviewable in the authority projection',()=>{
+ const view=recurringSourcePredecessor(current,history);
+ const receipt='apps/sg-runtime/assistant-ecr-precision-integration.json',helper='apps/sg-runtime/tests/assistant-ecr-precision-integrity.mjs';
+ assert.deepEqual(view.authorityBytes(receipt),current(receipt));
+ assert.deepEqual(view.authorityBytes(helper),history(view.manifest.authorityMainSha,helper));
+ assert.throws(()=>view.previousBytes(receipt),{code:'ENOENT'});
+ assert.equal(recurringSourcePredecessor(view.authorityBytes,history),null);
+ for(const p of view.manifest.predecessorProjectionPaths){
+  assert(Object.hasOwn(view.manifest.sourceDigests,p),'parallel current source is explicitly bound');
+  assert.throws(()=>recurringSourcePredecessor(f=>f===p?Buffer.concat([current(f),Buffer.from('UNACCEPTED')]):current(f),history),p);
+ }
+});
