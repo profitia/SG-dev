@@ -1,6 +1,6 @@
 # Platform Knowledge — etap 1: integracja i pakiet przygotowania Development
 
-Data: 2026-11-11, Europe/Warsaw. Owner: Architecture Platform / ARCHITECTURE. Podstawa: [zaakceptowany harmonogram](platform-knowledge-development-delivery-plan-v1.md), etap 1. **Stan: W_TOKU. Źródła są rejestrowane; zasoby produktu i adopcja kontraktów nie są jeszcze potwierdzone.**
+Data: 2026-11-11, Europe/Warsaw. Owner: Architecture Platform / ARCHITECTURE. Podstawa: [zaakceptowany harmonogram](platform-knowledge-development-delivery-plan-v1.md), etap 1. **Stan: W_TOKU. Rejestracja G1 jest przyjęta na main; właściciel przygotował projekt Neon i projekt/środowisko Render. Pełna konfiguracja usług i adopcja kontraktów pozostają do potwierdzenia.**
 
 ## 1. Co ustalono na podstawie aktualnych źródeł
 
@@ -75,7 +75,7 @@ Pakiet dotyczy wyłącznie Development. Właściciel tworzy i przygotowuje zasob
 
 - Repozytoria pozostają istniejące: `profitia/SG-dev` i `profitia/conversational-intelligence-core`; nowego repo nie potrzeba.
 - Przygotuj environment **platform-knowledge-development** w SG-dev, dopuszczający wydania z main, przypisany tylko do tej capability. Nie zmieniaj istniejących Staging/Production ani wspólnych credentials. Kontrole źródłowe będą credential-free; klucz OpenAI nie trafi do workflow CI.
-- OpenAI: decyzja właściciela o użyciu istniejącego lub dedykowanego klucza jest oczekiwana. Nie wykonano nim żądania. Przed pierwszym płatnym przetwarzaniem potrzebny jest skończony limit budżetu i potwierdzona konfiguracja prywatności. Nie tworzymy automatycznie nowego projektu lub klucza i nie zakładamy, że dowolny klucz środowiska jest przeznaczony dla Profitii.
+- OpenAI: właściciel zatwierdził istniejący klucz i budżet 10 USD; limit techniczny wynosi 1 USD/dokument. Odczyt katalogu modeli potwierdził dostępność `gpt-6-luna` i `text-embedding-3-small`, bez płatnej generacji. Przed przetwarzaniem rzeczywistych treści wymagane są trwałe rezerwacje kosztu i potwierdzona konfiguracja prywatności. Nie tworzymy automatycznie nowego projektu lub klucza i nie zakładamy, że dowolny klucz środowiska jest przeznaczony dla Profitii.
 - Konfiguracja aplikacji będzie używać ograniczonych połączeń DB, gałęziowego S3 i jawnych identyfikatorów środowiska/usługi. Migrator nie będzie sekretem runtime; wartości trafiają wyłącznie do bezpiecznej konfiguracji, nie do Git i rozmowy.
 - Monitoring nowego API i workera wymaga jawnego przypisania do zaakceptowanego projektu Sentry oraz środowiska i release. Nie kierujemy automatycznie nowej usługi do `profitia/sg-porr`. Połączenie do właściwego projektu/DSN lub decyzja o nowym projekcie pozostaje do potwierdzenia; testy z kontrolowanym transportem nie dowodzą odbioru w Sentry.
 
@@ -94,10 +94,20 @@ Przed pierwszym wydaniem: backup/izolowana gałąź do sprawdzenia migracji, zap
 | Obszar | Stan | Dowód lub brak |
 |---|---|---|
 | Zlecenie etapu | POTWIERDZONE | Właściciel 2026-11-11; [dowód G1](../evidence/2026-11-11-platform-knowledge-stage1-g1-onboarding.md) |
-| Cztery powierzchnie źródeł | PRZYGOTOWANE_DO_MAIN | PK-BASE-001–004; nie jest to grant produktu |
+| Cztery powierzchnie źródeł | PRZYJĘTE_MAIN | PR #999, merge fb1d250321623de2bafc4f0fdd5deb937ba2c062; PK-BASE-001–004; nie jest to grant produktu |
 | Memoros i luki integracji | ROZPOZNANE | §1–2, bieżące źródła |
-| Kontrakty wykonywalne i profil testowy | DO_WYKONANIA_PO_G1 | Pakiet, schematy i testy wymagają aktywnego routingu |
-| Zasoby produktu | OCZEKUJE_NA_WŁAŚCICIELA | §3; żaden zasób nie został utworzony przez agenta |
-| OpenAI i budżet | OCZEKUJE_NA_DECYZJĘ_I_KONFIGURACJĘ | Brak dopuszczonych płatnych wywołań |
+| Kontrakty wykonywalne i profil testowy | BOOTSTRAP_I_WALIDACJA | Publiczny pakiet 0.1.0, scenariusze i pliki referencyjne; rzeczywiste retrieval nie jest jeszcze implementowane |
+| Zasoby produktu | CZĘŚCIOWO_POTWIERDZONE | Neon sparkling-sky-79692560 / br-billowing-grass-b9ko5s4f, platform_knowledge, PostgreSQL 18.6 / vector 0.8.6, private bucket, cztery role i schemat odczytane; hasła, GitHub environment i dwie usługi Render do readbacku; agent nie tworzył zasobów |
+| OpenAI i budżet | ZATWIERDZONE_BINDING_DO_DOMKNIĘCIA | Istniejący klucz, 10 USD; modele dostępne. Brak płatnego przetwarzania i brak deklaracji gotowego ledgera |
 | Monitoring | ZAKRES_USTALONY_BINDING_DO_POTWIERDZENIA | Nowy runtime nie dziedziczy projektu Sentry przez monorepo |
 | Odbiór etapu pierwszego | W_TOKU | Nie wolno zamknąć przed spełnieniem wszystkich kryteriów etapu |
+
+## 6. Opublikowany pakiet startowy i profil dostawcy
+
+[Instrukcja ról Neon](platform-knowledge-development-owner-db-setup-v1.md) jest sprawdzona lokalnie i opublikowana przez PR #1002; wykonuje ją właściciel. [Bootstrap API i workera](../../apps/platform-knowledge-runtime/README.md) zawiera kompletne polecenia, konfigurację i odróżnienie liveness od gotowości przetwarzania. [Publiczny kontrakt](../../packages/platform-knowledge-contracts/README.md) określa transport, prawa, prywatny UserID, komendy usuwania konta i właścicieli adopcji. Żaden z tych artefaktów nie oznacza zainstalowanych operacji E1 lub gotowego silnika.
+
+Wstępny profil OpenAI: `gpt-6-luna` przez Responses, `store=false`, oraz `text-embedding-3-small`, 1536 wymiarów. Oficjalne stawki zweryfikowane 2026-11-11: Luna 0,10 USD input / 0,50 USD output na milion tokenów; embedding 0,02 USD na milion. Rezerwacja bez dyskonta cache uwzględnia premium regionalne i cache-write; każdy request ma maksymalnie 16384 input i 4096 output tokenów, poniżej progu długiego kontekstu. Nie używamy płatnych narzędzi ani automatycznego przejścia na droższy model. Model nie ma oddzielnego snapshotu w odczytanym katalogu: zapisujemy dokładne zwrócone ID, wersję promptu i generację indeksu. Dostępność katalogu nie dowodzi płatnego wykonania, kwalifikacji jakości ani prywatności projektu. [Luna](https://developers.openai.com/api/docs/models/gpt-6-luna), [embedding](https://developers.openai.com/api/docs/models/text-embedding-3-small).
+
+Limity startowe: plik 50 MiB, 500 stron, 2 mln odczytanych znaków, zadanie 30 minut, współbieżność 1, maksymalnie 3 próby techniczne. Ponowienie po nieznanym wyniku płatnego requestu wymaga rozliczenia poprzedniej próby; rezerwacja nie znika przy timeout. Właściwy trwały ledger i koszt globalny są częścią aktywacji silnika. Pierwotny plik maksymalnie 24 godziny od uploadu, pamięć i dopuszczone pochodne 180 dni albo krócej według praw źródła. Skasowanie oryginału nie unieważnia samodzielnie pochodnych; wycofanie praw lub usunięcie źródła odcina retrieval natychmiast.
+
+Odczyt Neon po zgłoszeniu właściciela: PASS. `platform_knowledge_owner` NOLOGIN jest właścicielem schematu; API/Worker mają USAGE bez CREATE i bez członkostwa owner. Migrator jest NOINHERIT i ma wyłącznie członkostwo owner; trzy role LOGIN mają `search_path=pg_catalog, platform_knowledge`. Wszystkie cztery role bez superuser/createdb/createrole/replication/bypassrls. Globalne default ACL funkcji pozostawiają EXECUTE wyłącznie owner; schemat zawiera zero obiektów produktu. Hasła i rzeczywiste połączenia usług nie są jeszcze potwierdzone. Readback nie odczytywał hashy haseł ani sekretów.
