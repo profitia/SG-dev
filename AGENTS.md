@@ -6,6 +6,8 @@ Before any mutation:
 
 1. Identify the project through `Canon/registries/profitia-projects-v1.json`; unknown projects fail closed.
 2. Load `Canon/v3.0-profitia-agent-execution-canon.md` and every active document whose `appliesTo` contains `CORE` or the selected project key, in declared order.
+
+   For SG2, ARCHITECTURE and SRM, the four approved instruction documents in `docs/agent-instructions` on current `main` are the single current source. Their manifest entries and dependencies guarantee local availability and ordered reading. Business Outcome Engineering applies in both consulting and execution; Full Autopilot applies only to authorized execution; UX/UI Design Canon applies only when the task affects UI/UX. Reading a reference document does not authorize implementation during consulting or require a MagicPath audit for non-UI work. The former library branch contains compatibility pointers, not independently maintained instruction versions.
 3. Load every nested `AGENTS.md` covering the exact target paths.
 4. Run `node scripts/governance/validate-governance-manifest.mjs`.
 5. Declare `TARGET_ENVIRONMENT` (`development`, `staging`, or `production`) and run `node scripts/governance/governance-preflight.mjs` with the project, target environment, task ID, every exact target path, and the actual chat/thread ID as `--host-conversation-id`. If the host does not expose an ID, use `--host-conversation-unavailable`; never invent one.
