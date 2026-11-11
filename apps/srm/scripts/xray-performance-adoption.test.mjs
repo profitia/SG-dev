@@ -38,7 +38,7 @@ const marketSdk=actualReceipt.sourceHubMarketSymbolCompatibility
 // retain their already accepted fingerprints in the earlier additive receipt.
 const precedingApiPath=marketSdk?{...marketSdk,...actualReceipt.assistantM1SourceCompatibility,sourceDigests:{...actualReceipt.sourceHubApiPathCompatibility.sourceDigests,...marketSdk.sourceDigests,...actualReceipt.assistantM1SourceCompatibility?.sourceDigests}}:actualReceipt.sourceHubApiPathCompatibility
 const reportSdk=actualReceipt.oilAutonomousReportCompatibility
-const apiPath=reportSdk?{...precedingApiPath,sourceDigests:{...precedingApiPath.sourceDigests,...reportSdk.sourceDigests,...reportSdk.testSourceDigests},sdkDigests:{...precedingApiPath.sdkDigests,...reportSdk.sdkDigests},optionalPackageDigests:{...precedingApiPath.optionalPackageDigests,...reportSdk.optionalPackageDigests}}:precedingApiPath
+const apiPath=reportSdk?{...precedingApiPath,platformVersion:recurring?.platformVersion??reportSdk.platformVersion,sourceDigests:{...precedingApiPath.sourceDigests,...reportSdk.sourceDigests,...reportSdk.testSourceDigests,...recurringSdkFiles},sdkDigests:{...precedingApiPath.sdkDigests,...reportSdk.sdkDigests,...recurring?.sdkDigests},optionalPackageDigests:{...precedingApiPath.optionalPackageDigests,...reportSdk.optionalPackageDigests,...recurring?.optionalPackageDigests},producerMetadataDigests:{...precedingApiPath.producerMetadataDigests,...recurring?.sourceDigests}}:precedingApiPath
 if(apiPath)assertSourceHubApiPathCompatibility(actualReceipt,actualAppShellSource,(sha,file)=>historicalBlob(sha+':'+file))
 // The host view validates both current API_PATH closures and the later AppShell
 // amendments before exposing the presentation predecessor used by these guards.

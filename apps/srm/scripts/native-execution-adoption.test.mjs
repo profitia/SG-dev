@@ -6,10 +6,10 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import {createHash} from 'node:crypto'
 import {execFileSync} from 'node:child_process'
-const recurring=recurringSourceFilesystem(new URL('../../../',import.meta.url)).manifest
+const recurringView=recurringSourceFilesystem(new URL('../../../',import.meta.url)),recurring=recurringView.manifest
 const recurringSdkFiles=Object.fromEntries(Object.entries(recurring?.sourceDigests??{}).filter(([p])=>p.startsWith('packages/platform-contracts/')).map(([p,h])=>[p.slice('packages/platform-contracts/'.length),h]))
 
-const actualAppShellSource=file=>fs.readFileSync(new URL('../../../'+file,import.meta.url))
+const actualAppShellSource=file=>recurringView.previousBytes(file)
 const hostReceipt=JSON.parse(actualAppShellSource('apps/sg-runtime/operation-integration.json'))
 const acceptedAppShellSource=hostReceipt.appShellFourCardCascade?assertAppShellFourCardCascade(hostReceipt,actualAppShellSource,(sha,file)=>execFileSync('git',['show',sha+':'+file])).previousBytes:actualAppShellSource
 const receipt=JSON.parse(fs.readFileSync(new URL('../operation-integration.json',import.meta.url))),a=receipt.nativeSqlRoundtripAdoption,current=receipt.xrayPerformanceRecoveryV2??receipt.diagnosticTelemetryAdoption??a
