@@ -60,8 +60,8 @@ export async function installRecurringMigration(client,phase,expectedDigest){
  }catch(error){await client.query('ROLLBACK');throw error}
 }
 async function main(){
- const phase=process.argv[2],p=recurringMigrationPlan(phase),u=new URL(process.env.PI_RECURRING_INSTALLER_DATABASE_URL??'');
- if(process.env.PI_RECURRING_ENVIRONMENT!=='development'||!u.hostname.endsWith('.neon.tech')||u.hostname.includes('-pooler.')||u.pathname!=='/'+p.target.database_name||u.searchParams.get('sslmode')!=='require'||u.searchParams.get('channel_binding')!=='require'||[...u.searchParams.keys()].some(k=>!['sslmode','channel_binding'].includes(k)))throw Error('DIRECT_DEVELOPMENT_INSTALLER_URL_REQUIRED');
+ const phase=process.argv[2],p=recurringMigrationPlan(phase),u=new URL(process.env.PI_RECURRING_INSTALLER_DATABASE_URL??''),host=phase==='newsfeed-receiver'?'ep-mute-night-b9o332my.c-7.eu-central-1.aws.neon.tech':'ep-late-heart-b9mxo8oi.c-7.eu-central-1.aws.neon.tech';
+ if(process.env.PI_RECURRING_ENVIRONMENT!=='development'||!['postgres:','postgresql:'].includes(u.protocol)||u.hostname!==host||u.hash||u.port&&u.port!=='5432'||u.pathname!=='/'+p.target.database_name||u.searchParams.get('sslmode')!=='require'||u.searchParams.get('channel_binding')!=='require'||[...u.searchParams.keys()].some(k=>!['sslmode','channel_binding'].includes(k)))throw Error('DIRECT_DEVELOPMENT_INSTALLER_URL_REQUIRED');
  const {default:pg}=await import('../../../apps/architecture-lab/node_modules/pg/lib/index.js');u.searchParams.delete('sslmode');u.searchParams.delete('channel_binding');
  const client=new pg.Client({connectionString:u.href,ssl:{rejectUnauthorized:true},enableChannelBinding:true});await client.connect();
  try{console.log(JSON.stringify(await installRecurringMigration(client,phase,process.argv[3])))}finally{await client.end()}
