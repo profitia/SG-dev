@@ -11,6 +11,7 @@ const colors = catalog.tokens;
 const languageCheck = language => { if (!['pl','en'].includes(language)) throw new Error('Unknown communication language'); return language; };
 const labelsFor = language => languageCheck(language) === 'en' ? locales.en.labels : null;
 const variants = ['male', 'female', 'neutral'];
+const invitationKind = kind => kind === 'invitation' || kind === 'organisation-invitation';
 const escapeHtml = value => String(value).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const font = 'font-family:Arial,Helvetica,sans-serif;';
 
@@ -21,8 +22,19 @@ export function normalizeAvatar(value) {
 
 function messageFor(kind, avatar, language = 'pl') {
   languageCheck(language);
-  if (!Object.hasOwn(catalog.messages, kind)) throw new Error('Unknown message kind');
   if (!variants.includes(avatar)) throw new Error('Unknown avatar variant');
+  if (kind === 'organisation-invitation') return language === 'pl' ? {
+    title:'Twoje zaproszenie do {{app.name}}',subject:'Zaproszenie do {{organization.name}} w {{app.name}}',
+    message:'Do {{app.name}} zaprasza Cię {{invitation.inviter_name}} ({{invitation.inviter_email}}) z organizacji {{organization.name}}.',
+    followup:'Dołącz do wspólnej przestrzeni zakupowej. Po potwierdzeniu konta wybierzesz swoje kategorie zakupowe. Dane organizacji są już przygotowane.',
+    instruction:'Zaproszenie wygaśnie za {{invitation.expires_in_days}} dni.'
+  } : {
+    title:'Your invitation to {{app.name}}',subject:'Invitation to {{organization.name}} in {{app.name}}',
+    message:'{{invitation.inviter_name}} ({{invitation.inviter_email}}) from {{organization.name}} invites you to {{app.name}}.',
+    followup:'Join your shared procurement workspace. After verifying your account, choose your own procurement categories. Your organisation details are already prepared.',
+    instruction:'This invitation expires in {{invitation.expires_in_days}} days.'
+  };
+  if (!Object.hasOwn(catalog.messages, kind)) throw new Error('Unknown message kind');
   const message = language === 'pl' ? catalog.messages[kind] : {...catalog.messages[kind], ...locales.en.messages[kind]};
   return {...message, message: typeof message.message === 'string' ? message.message : message.message[avatar]};
 }
@@ -34,7 +46,7 @@ function avatarHtml(avatar, language = 'pl') {
 
 function contentParts(kind, avatar, language = 'pl') {
   const labels=labelsFor(language);
-  const m = messageFor(kind, avatar, language), invite = kind === 'invitation';
+  const m = messageFor(kind, avatar, language), invite = invitationKind(kind);
   const p = (text, extra = '') => `<p style="margin:0 0 12px;${font}font-size:14px;line-height:1.6;color:${colors.text};${extra}">${escapeHtml(text)}</p>`;
   const action = invite
     ? `${p(m.instruction)}<p style="margin:22px 0;"><a href="{{action_url}}" style="${font}display:inline-block;background:${colors.brand};color:#FFFFFF;text-decoration:none;padding:13px 20px;border-radius:7px;font-size:14px;font-weight:bold;">${labels?.accept ?? 'Przyjmij zaproszenie'}</a></p><p style="${font}font-size:12px;line-height:1.6;color:${colors.muted};margin:0;">${labels?.fallback ?? 'Jeśli przycisk nie działa,'} <a href="{{action_url}}" style="color:${colors.brand};">${labels?.openLink ?? 'otwórz link zaproszenia'}</a>.</p>`
@@ -44,7 +56,7 @@ function contentParts(kind, avatar, language = 'pl') {
     ? labels?.unexpectedInvitation ?? '<b>Nie oczekiwano tego zaproszenia?</b><br />Jeśli ta wiadomość trafiła do Ciebie omyłkowo, możesz ją zignorować.'
     : labels?.unexpectedCode ?? '<b>Nie proszono o ten kod?</b><br />Jeśli to nie Ty, możesz zignorować tę wiadomość.<br /><br />Prośba z: {{requested_from}}<br />Data prośby: {{requested_at}}';
   const footer = `<b>${catalog.footer.company.map(escapeHtml).join('<br />')}</b><br /><br />${escapeHtml(labels?.services ?? catalog.footer.services)}<br /><br />${(labels?.address ?? catalog.footer.address).map(escapeHtml).join('<br />')}<br /><br />© {{current_year}} {{app.name}}`;
-  return {m, bubble: p('{{greeting}}') + p(m.message) + action, note, request, footer};
+  return {m, bubble: p('{{greeting}}') + p(m.message) + (m.followup ? p(m.followup) : '') + action, note, request, footer};
 }
 
 /** Portable table-based HTML, still containing Clerk's dynamic placeholders. */
@@ -56,7 +68,7 @@ export function renderHtml(kind, avatar = 'neutral', language = 'pl') {
 <body style="margin:0;padding:0;background:${colors.background};${font}"><div style="display:none;max-height:0;overflow:hidden;opacity:0;">${escapeHtml(m.subject)}</div>
 <table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr><td class="outer" align="center" style="padding:32px 16px;">
 <table role="presentation" width="600" cellspacing="0" cellpadding="0" style="width:100%;max-width:600px;background:#FFFFFF;border:1px solid ${colors.border};border-radius:18px;"><tr><td class="inside" style="padding:32px 36px;">
-<table role="presentation" cellspacing="0" cellpadding="0"><tr><td style="padding-right:24px;"><img src="${catalog.assets.logo}" width="145" alt="SpendGuru" style="display:block;width:145px;max-width:100%;height:auto;" /></td><td style="border-left:1px solid ${colors.border};padding-left:24px;"><img src="${catalog.assets.partner}" width="52" alt="PORR" style="display:block;width:52px;height:auto;" /></td></tr></table>
+<table role="presentation" cellspacing="0" cellpadding="0"><tr><td style="padding-right:24px;"><img src="${catalog.assets.logo}" width="145" alt="SpendGuru" style="display:block;width:145px;max-width:100%;height:auto;" /></td>${kind==='organisation-invitation'?'':`<td style="border-left:1px solid ${colors.border};padding-left:24px;"><img src="${catalog.assets.partner}" width="52" alt="PORR" style="display:block;width:52px;height:auto;" /></td>`}</tr></table>
 <h1 style="${font}font-size:28px;line-height:1.25;color:${colors.ink};margin:28px 0 30px;">${escapeHtml(m.title)}</h1>
 <table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr><td class="avatar-column" width="76" valign="top" style="width:76px;padding:24px 18px 0 0;box-sizing:border-box;">${avatarHtml(avatar, language)}</td><td valign="top"><p style="${font}font-size:12px;font-weight:bold;color:${colors.ink};margin:0 0 10px;">SpendGuru</p><table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr><td class="bubble" style="padding:22px 24px;background:${colors.bubble};border:1px solid ${colors.border};border-radius:5px 19px 19px 19px;">${bubble}</td></tr></table><p style="${font}font-size:12px;line-height:1.6;color:${colors.muted};margin:16px 0 0;">${note}</p></td></tr></table>
 <p style="${font}font-size:13px;line-height:1.6;color:${colors.muted};border-top:1px solid ${colors.border};margin:28px 0 0;padding:24px 0;">${request}</p>
@@ -71,13 +83,13 @@ export function renderRevolvapp(kind, avatar = 'neutral', language = 'pl') {
   const text = (value, margin = '0 0 12px') => `<re-text margin="${margin}" font-size="14px" line-height="22px" color="${colors.text}">${escapeHtml(value)}</re-text>`;
   // Separate native elements prevent the editor from applying a CTA's white
   // link color to the fallback link in the same rich-text block.
-  const bubble = text(m.greeting) + text(m.message) + (kind === 'invitation'
+  const bubble = text(m.greeting ?? '{{greeting}}') + text(m.message) + (m.followup ? text(m.followup) : '') + (invitationKind(kind)
     ? text(m.instruction) + `<re-button href="{{action_url}}" margin="10px 0 20px" background-color="${colors.brand}" color="#FFFFFF" border-radius="7px" font-size="14px" font-weight="bold">${labels?.accept ?? 'Przyjmij zaproszenie'}</re-button><re-text margin="0" font-size="12px" line-height="19px" color="${colors.muted}">${labels?.fallback ?? 'Jeśli przycisk nie działa:'}</re-text><re-link href="{{action_url}}" margin="0" font-size="12px" line-height="19px" color="${colors.brand}" text-decoration="underline">${labels?.openLink ?? 'Otwórz link zaproszenia'}</re-link>`
     : `<re-text class="otp" margin="24px 0" font-size="38px" line-height="49px" font-weight="bold" color="${colors.ink}">{{otp_code}}</re-text>` + text(m.instruction, '0'));
   return `<re-html><re-head><re-title>${escapeHtml(m.subject)}</re-title><re-style>p,a,span {font-family:Arial,Helvetica,sans-serif;} @media(max-width:520px){.mail-content{padding:24px 16px!important}.otp{font-size:28px!important;letter-spacing:3px!important}}</re-style></re-head>
 <re-body background-color="${colors.background}" padding="32px 12px"><re-preheader>${escapeHtml(m.subject)}</re-preheader>
 <re-main width="600px" background-color="#FFFFFF" border="1px solid ${colors.border}" border-radius="18px"><re-block padding="32px 36px" class="mail-content">
-<re-text margin="0"><img src="${catalog.assets.logo}" width="145" alt="SpendGuru" style="vertical-align:middle;height:auto;" /> <span style="display:inline-block;margin:0 20px;height:28px;vertical-align:middle;border-left:1px solid ${colors.border};"></span> <img src="${catalog.assets.partner}" width="52" alt="PORR" style="vertical-align:middle;height:auto;" /></re-text>
+<re-text margin="0"><img src="${catalog.assets.logo}" width="145" alt="SpendGuru" style="vertical-align:middle;height:auto;" />${kind==='organisation-invitation'?'':` <span style="display:inline-block;margin:0 20px;height:28px;vertical-align:middle;border-left:1px solid ${colors.border};"></span> <img src="${catalog.assets.partner}" width="52" alt="PORR" style="vertical-align:middle;height:auto;" />`}</re-text>
 <re-heading level="h1" margin="28px 0 30px" font-size="28px" line-height="35px" color="${colors.ink}">${escapeHtml(m.title)}</re-heading>
 <re-grid><re-column width="58px" valign="top" padding="24px 0 0"><re-text margin="0">${avatarHtml(avatar, language)}</re-text></re-column><re-column-spacer width="18px"></re-column-spacer><re-column width="452px" valign="top">
 <re-text margin="0 0 10px" font-size="12px" font-weight="bold" color="${colors.ink}">SpendGuru</re-text><re-block background-color="${colors.bubble}" border="1px solid ${colors.border}" border-radius="19px" padding="22px 24px">${bubble}</re-block>
@@ -87,9 +99,9 @@ export function renderRevolvapp(kind, avatar = 'neutral', language = 'pl') {
 }
 
 export function renderPlain(kind, avatar = 'neutral', language = 'pl') {
-  const {m,note,request}=contentParts(kind,avatar,language), labels=labelsFor(language),invite=kind==='invitation';
+  const {m,note,request}=contentParts(kind,avatar,language), labels=labelsFor(language),invite=invitationKind(kind);
   const plain = html => html.replace(/<br\s*\/?\s*>/gi,'\n').replace(/<[^>]+>/g,'');
-  return [m.title,'{{greeting}}',m.message,invite?m.instruction:'{{otp_code}}',
+  return [m.title,'{{greeting}}',m.message,m.followup,invite?m.instruction:'{{otp_code}}',
     invite?(labels?.accept ?? 'Przyjmij zaproszenie')+': {{action_url}}':m.instruction,plain(note),plain(request),
     catalog.footer.company.join('\n'),labels?.services ?? catalog.footer.services,(labels?.address ?? catalog.footer.address).join('\n'),
     '© {{current_year}} {{app.name}}'].filter(Boolean).join('\n\n')+'\n';
@@ -119,10 +131,21 @@ export function renderResolved({kind, avatar = 'neutral', language = 'pl', data,
     current_year: scalar(String(data?.currentYear), 4),
   };
   if (!/^20\d{2}$/.test(values.current_year)) throw new Error('Invalid email year');
-  if (kind === 'invitation') {
+  if (kind === 'organisation-invitation') {
+    // Native organisation purpose, not a Clerk invitation or a generic link.
+    if (values['app.name'] !== 'SpendGuru') throw new Error('Invalid SaaS application name');
+    values['invitation.inviter_name'] = scalar(data?.inviterName || (language === 'pl' ? 'użytkownik' : 'A teammate'));
+    values['invitation.inviter_email'] = scalar(data?.inviterEmail, 254);
+    if (!/^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/.test(values['invitation.inviter_email'])) throw new Error('Invalid inviter email');
+    values['organization.name'] = scalar(data?.organisationName, 200);
+  }
+  if (invitationKind(kind)) {
     const url = new URL(scalar(data?.actionUrl, 2000));
     if (url.protocol !== 'https:' || url.username || url.password || !allowedActionOrigins.includes(url.origin)) throw new Error('Untrusted invitation URL');
     if (!Number.isInteger(data?.expiresInDays) || data.expiresInDays < 1 || data.expiresInDays > 365) throw new Error('Invalid invitation expiry');
+    if (kind === 'organisation-invitation' && (data.expiresInDays !== 7 || url.pathname !== '/invite' || url.hash
+      || [...url.searchParams.keys()].join(',') !== 'proof' || !/^sgi1_[A-Za-z0-9_-]{43}$/.test(url.searchParams.get('proof') ?? '')))
+      throw new Error('Invalid organisation invitation link');
     values.action_url = url.href;
     values['invitation.expires_in_days'] = String(data.expiresInDays);
   } else {
@@ -139,9 +162,9 @@ export function renderResolved({kind, avatar = 'neutral', language = 'pl', data,
 }
 
 /** Deliberately non-functional sample; never connected to Clerk code issuance. */
-export function inlineAssetsForAvatar(avatar) {
+export function inlineAssetsForAvatar(avatar, kind = null) {
   if (!variants.includes(avatar)) throw new Error('Unknown avatar variant');
-  const keys = ['logo', 'partner', ...(avatar === 'neutral' ? [] : [avatar])];
+  const keys = ['logo', ...(kind === 'organisation-invitation' ? [] : ['partner']), ...(avatar === 'neutral' ? [] : [avatar])];
   const filenames = {logo:'spendguru-logo.png',partner:'porr-logo.png',male:'assistant-male.png',female:'assistant-female.png'};
   return keys.map(key=>({filename:filenames[key],url:catalog.assets[key],sha256:new URL(catalog.assets[key]).pathname.split('/').at(-1).replace('.png','')}));
 }
@@ -198,23 +221,25 @@ if (process.argv[1] && pathToFileURL(path.resolve(process.argv[1])).href === imp
 /** Domain-scoped Mailgun versions are pinned to canonical HTML content. */
 export function mailgunTemplate(kind, avatar, language) {
   if(kind==='new-device-sign-in')return newDeviceMailgunTemplate(avatar,language,catalog,inlineAssetsForAvatar(avatar));
-  if (!['verification-code','invitation'].includes(kind)) throw new Error('Unsupported transport template');
-  let html=renderHtml(kind,avatar,language).replaceAll('{{app.name}}','{{app_name}}').replaceAll('{{invitation.expires_in_days}}','{{expires_in_days}}');
-  for(const asset of inlineAssetsForAvatar(avatar)) html=html.replaceAll(asset.url,'cid:'+asset.filename);
+  if (!['verification-code','invitation','organisation-invitation'].includes(kind)) throw new Error('Unsupported transport template');
+  let html=renderHtml(kind,avatar,language).replaceAll('{{app.name}}','{{app_name}}').replaceAll('{{invitation.expires_in_days}}','{{expires_in_days}}')
+    .replaceAll('{{invitation.inviter_name}}','{{inviter_name}}').replaceAll('{{invitation.inviter_email}}','{{inviter_email}}').replaceAll('{{organization.name}}','{{organisation_name}}');
+  for(const asset of inlineAssetsForAvatar(avatar,kind)) html=html.replaceAll(asset.url,'cid:'+asset.filename);
   return {name:`identity-${kind}-${language}-${avatar}`,version:'v-'+createHash('sha256').update(html).digest('hex').slice(0,24),html};
 }
 export function renderMailgunResolved(options) {
   if(options.kind==='new-device-sign-in'){
     const {variables,...content}=resolveNewDevice(options,catalog,greetingFor(options.language,options.data));
-    for(const asset of inlineAssetsForAvatar(options.avatar))content.html=content.html.replaceAll(asset.url,'cid:'+asset.filename);
+    for(const asset of inlineAssetsForAvatar(options.avatar,options.kind))content.html=content.html.replaceAll(asset.url,'cid:'+asset.filename);
     const spec=mailgunTemplate(options.kind,options.avatar,options.language);
     return {...content,template:{name:spec.name,version:spec.version,variables}};
   }
   const content=renderResolved(options), spec=mailgunTemplate(options.kind,options.avatar,options.language);
-  for(const asset of inlineAssetsForAvatar(options.avatar)) content.html=content.html.replaceAll(asset.url,'cid:'+asset.filename);
+  for(const asset of inlineAssetsForAvatar(options.avatar,options.kind)) content.html=content.html.replaceAll(asset.url,'cid:'+asset.filename);
   const d=options.data;
-  const variables={greeting:greetingFor(options.language,d),app_name:d.appName,current_year:String(d.currentYear),...(options.kind==='invitation'
+  const variables={greeting:greetingFor(options.language,d),app_name:d.appName,current_year:String(d.currentYear),...(invitationKind(options.kind)
     ?{action_url:d.actionUrl,expires_in_days:String(d.expiresInDays)}
-    :{otp_code:d.otpCode,requested_from:d.requestedFrom,requested_at:d.requestedAt})};
+    :{otp_code:d.otpCode,requested_from:d.requestedFrom,requested_at:d.requestedAt}),
+    ...(options.kind==='organisation-invitation'?{inviter_name:d.inviterName || (options.language==='pl'?'użytkownik':'A teammate'),inviter_email:d.inviterEmail,organisation_name:d.organisationName}:{})};
   return {...content,template:{name:spec.name,version:spec.version,variables}};
 }
