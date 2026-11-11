@@ -14,6 +14,49 @@
   },
   "documents": [
     {
+      "id": "procurement-insights-market-calendar-amendment",
+      "version": "1.3",
+      "path": "Canon/v1.3-procurement-insights-market-calendar-amendment.md",
+      "status": "ACTIVE",
+      "loadOrder": 525,
+      "owner": "Architecture Platform",
+      "appliesTo": [
+        "SG2",
+        "ARCHITECTURE"
+      ],
+      "dependsOn": [
+        "agent-execution-canon",
+        "repository-routing",
+        "operation-context-and-access-contract",
+        "operation-access-matrix",
+        "platform-appshell-business-and-architecture-canon",
+        "procurement-insights-unified-product-and-assistant-amendment",
+        "procurement-insights-newsfeed-ux-statistics-and-recurring-reports-amendment",
+        "economic-calendar-runtime-business-and-architecture-canon",
+        "economic-calendar-runtime-global-semantic-knowledge-amendment"
+      ]
+    },
+    {
+      "id": "universal-project-execution-wrapper",
+      "version": "1.2",
+      "path": "docs/agent-instructions/profitia-universal-project-execution-v1.2.md",
+      "status": "ACTIVE",
+      "loadOrder": 570,
+      "owner": "Governance Source Layer",
+      "appliesTo": [
+        "SG2",
+        "SRM",
+        "ARCHITECTURE"
+      ],
+      "dependsOn": [
+        "agent-execution-canon",
+        "project-profile-registry",
+        "repository-routing",
+        "post-migration-classification",
+        "environment-release-promotion"
+      ]
+    },
+    {
       "id": "newsfeed-business-and-architecture-canon",
       "version": "1.0",
       "path": "Canon/v1.0-newsfeed-business-and-architecture-canon.md",
@@ -1476,29 +1519,6 @@
         "operation-access-matrix",
         "shared-development-contract-integration",
         "architecture-reporting-runbook"
-      ]
-    },
-    {
-      "id": "procurement-insights-market-calendar-amendment",
-      "version": "1.3",
-      "path": "Canon/v1.3-procurement-insights-market-calendar-amendment.md",
-      "status": "ACTIVE",
-      "loadOrder": 525,
-      "owner": "Architecture Platform",
-      "appliesTo": [
-        "SG2",
-        "ARCHITECTURE"
-      ],
-      "dependsOn": [
-        "agent-execution-canon",
-        "repository-routing",
-        "operation-context-and-access-contract",
-        "operation-access-matrix",
-        "platform-appshell-business-and-architecture-canon",
-        "procurement-insights-unified-product-and-assistant-amendment",
-        "procurement-insights-newsfeed-ux-statistics-and-recurring-reports-amendment",
-        "economic-calendar-runtime-business-and-architecture-canon",
-        "economic-calendar-runtime-global-semantic-knowledge-amendment"
       ]
     }
   ]
