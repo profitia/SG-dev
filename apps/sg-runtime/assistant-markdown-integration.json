@@ -23,7 +23,7 @@
     "apps/sg-runtime/tests/procurement-insights-integrity.mjs"
   ],
   "sourceDigests": {
-    "apps/sg-runtime/components/appshell/assistant-conversation-view.tsx": "eded34569f84836e441c25aebf3c3335bd86199f2a03683bda6a8d177e4e6d41",
+    "apps/sg-runtime/components/appshell/assistant-conversation-view.tsx": "a4cd2979aa331ec67709b113784043318627c91a29cdb3dcbc886928c8c2aacd",
     "apps/sg-runtime/components/appshell/assistant-message-markdown.tsx": "0adf1ee5a304380a628c8bd1d130b074d71ee9cce5844f86cc657c070fe20e93",
     "apps/sg-runtime/components/appshell/platform-appshell.css": "70f7cc8a287694720e386e7f76858b2da69f778d02fb4bda86605b7789ad8da7",
     "apps/sg-runtime/lib/assistant/conversation.ts": "dce535bd39c36b0dd3b74ee3b03f41d7e51b44282224b8e63f24ba98ab77404f",
