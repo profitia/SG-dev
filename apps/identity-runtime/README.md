@@ -55,3 +55,28 @@ email limitations, tests and required Development release evidence.
 ### Embedded SRM account (opt-in)
 
 The PORR Development consumer may reuse the pure `@profitia/identity-runtime/conversation` engine and opt into the exact-origin embedded ACCOUNT_SELF adapter. `IDENTITY_EMBEDDED_TARGETS` defaults to `[]`; adding a navigation target alone does not enable it. See [the deployment and rollback runbook](../../Canon/runbooks/identity-embedded-account-development-v1.md). This is account creation/session completion only, never organisation assignment or product authorisation.
+
+
+## Stage I candidate: resumable organisation draft
+
+The source-only opt-in `IDENTITY_ORGANISATION_DRAFT_ENABLED=true` adds GET/POST
+`/v1/account/organisation-onboarding` on the configured Identity origin only.
+It requires the existing runtime and self-service flags, Development, the exact
+`IDENTITY_ORGANISATION_DRAFT_SCHEMA_DIGEST` for profile007, and an independently
+installed/enabled ordinary-role SQL policy. Startup and readiness fail closed
+when that installation is missing. Defaults preserve the current runtime.
+
+POST accepts exactly `{expectedVersion, patch}`, with a decimal string version
+and the shared draft fields. Reads return the current account's draft. Writes
+use the existing verified-primary-email Clerk adapter, Root16 ACCOUNT_SELF,
+SQL attestation, audit transaction and optimistic version checks. The common
+Identity HTTP limit remains4096 bytes. A conflict returns409 so the conversation
+can reread the server state instead of overwriting another tab's answer.
+
+No user/organisation ID, membership, product grant or registry company record
+can be supplied through this endpoint. The draft does not create a tenant,
+join an existing company, send an invitation or unlock AppShell. Embedded
+consumers require their own admitted receiver wiring; this adds no CORS.
+This source is not deployed or runtime-enabled. See the dated GitHub evidence
+`Canon/evidence/2026-11-11-registration-native-draft-http.md` for actual tests
+and the remaining Stage I integration work.
