@@ -1,5 +1,46 @@
 # Przyjmowanie wspólnych kontraktów Development
 
+## Current continuation — accepted ECR weeks and active references
+
+PROPOSED / OWNER_CI_AND_COORDINATED_TEST_ADOPTION_PENDING.
+This continuation supersedes the earlier metadata-only review181e322f.
+Producer PR1018 source `7630a212f5e029616323d6e59dc478d27a3d9503` is based on
+`38a9fe371e7993b47e2358d297647086ea999428`. The closed review contains exactly18 files:
+17 ARCHITECTURE producer paths and one SG2 test-only compatibility path,
+`apps/sg-runtime/tests/assistant-ecr-week-integrity.test.mjs`.
+The latter is owned by registered task SG2-PROCUREMENT-MARKET-CALENDAR-20261111
+and preserves the original SG2 test commit2f669f7a, cherry-picked without edits as89edc4a9;
+the exact blob in the review is the authority. No SG2 runtime/UI file is included in this transport.
+
+Main PR1031 activated three approved instruction references; PR1021 accepted
+the ECR week correction. The producer preserves all current manifest entries
+and adds only the approved PI amendment. Its source predecessor now includes
+the accepted week graph. The existing SG2 week test reads the independently
+authenticated Calendar predecessor before testing the frozen week graph;
+no historical receipt or week source record is rewritten. The trusted CI reader
+uses that same authenticated view for the fourteen exact week hashes, while
+retaining physical regular-file, symlink and executable-mode checks.
+
+Producer record SHA256 `eb1e476a4ec05657eacd70294f432c7e4d2031b94a0b8d64ca1169c50c2b4887`.
+The original E1 owner plan remains exactly
+`caadc0cdf9322e218db6f1f9285d52ef5fe5ceaca84f672d77fe49e8fa44a1d0`.
+Of the previous17 producer files, thirteen are byte-identical; four source
+adoption/manifest versions change. One SG2 test file is added to the closure.
+Existing runtime, contracts, SQL, rights, UI closure, costs and licences are
+unchanged. The ordinary SG2 UI consumer remains a separate later PR, accepted
+only after this producer/test compatibility transport. This one exact mixed
+test-only transport requires an explicit coordinated source decision; it is
+not a general exception to separate owner tasks or product adoption.
+
+Actual local evidence: complete controller222/222 PASS; four focused CI tests PASS, including a real-Git fixture
+composing both acceptances over all368 recurring source files. Source, immutable
+receipt, executable-mode and symlink tampering is rejected. Both three-test
+Calendar and ECR-week source suites PASS. Complete controller, exact-head
+controlled/public and resulting-main CI remain mandatory before activation.
+No grant installation, release, provider request or PMOS closeout has occurred.
+
+## Earlier Market Calendar preparation (historical)
+
 ## ECR Market Calendar — proposed exact producer review (2026-11-11)
 
 PROPOSED / OWNER_CI_APPROVAL_PENDING. The third-tab UX approval does not
