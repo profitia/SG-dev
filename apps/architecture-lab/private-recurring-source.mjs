@@ -8,7 +8,7 @@ import path from 'node:path'
 import {fileURLToPath} from 'node:url'
 export const RECURRING_SOURCE_RECORD='apps/architecture-lab/private-recurring-source.json'
 export const RECURRING_SOURCE_BASE='141cc559063c43cefa991acb9260b32ac5b92615'
-const RECORD_SHA256='ae3641b3a874922a95d7dfc0cc4b3a2f758595e0b60a5b1d197b84b85cb19432'
+const RECORD_SHA256='75877d5750e07d1c8172be0af76bc5933f2eeefc22cc39747a2621b9cab24619'
 const hash=b=>createHash('sha256').update(b).digest('hex')
 const absent=error=>error?.code==='ENOENT'||error?.status===128&&["' does not exist in ","' exists on disk, but not in "].some(s=>String(error?.stderr??error?.message??'').includes("'"+RECURRING_SOURCE_RECORD+s))
 export function recurringSourcePredecessor(current,historical){
