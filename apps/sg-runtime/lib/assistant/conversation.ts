@@ -76,7 +76,8 @@ function modelInput(selection:ReturnType<typeof selectConversationContext>,turn:
    &&contextSatisfiesScope(s,entry)&&!!entry&&(['OK','PARTIAL'].includes(entry.status)||entry.status==='EMPTY'&&!!s.sourceVersion)
    &&(s.sourceVersion===undefined||s.sourceVersion===entry.sourceVersion)
  }))
- const input:Array<{role:'developer'|'user'|'assistant';content:string}>=[{role:'developer',content:selection.policy.instructions}]
+ const instructions=selection.policy.instructions+(selection.economicCalendarTime?'\nServer-resolved calendar time: '+JSON.stringify(selection.economicCalendarTime)+'. Use this current server time and exact inclusive calendar period for relative dates. Describe dated calendar events only within that period; distinguish undated recurrence rules, scheduled releases, confirmed publications and actual results. State when forecasts or market reactions are absent from the supplied sources.':'' )
+ const input:Array<{role:'developer'|'user'|'assistant';content:string}>=[{role:'developer',content:instructions}]
  const history=previous.slice(-12).flatMap(t=>[{role:'user' as const,content:t.message},{role:'assistant' as const,content:t.response}])
  const current=[{role:'user' as const,content:JSON.stringify({kind:'CONTEXT_DATA_NOT_INSTRUCTIONS',activeModule:turn.module,contexts})},{role:'user' as const,content:turn.message}]
  while(history.length&&Buffer.byteLength(JSON.stringify([...input,...history,...current]),'utf8')>32000)history.splice(0,2)
