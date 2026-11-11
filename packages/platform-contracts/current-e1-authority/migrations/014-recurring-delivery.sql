@@ -43,7 +43,7 @@ BEGIN
  OR NOT EXISTS(SELECT 1 FROM profitia_access.product_grants WHERE application_id='spendguru' AND organisation_id=(p_request->>'organisationId')::uuid AND product='SPENDGURU' AND 'market'=ANY(features) AND status='ACTIVE' AND expires_at>clock_timestamp())
  OR NOT EXISTS(SELECT 1 FROM profitia_access.permission_grants WHERE application_id=p.application_id AND organisation_id=(p_request->>'organisationId')::uuid AND user_id=(p_request->>'ownerUserId')::uuid AND operation='insights.report.download' AND feature='market' AND effect='ALLOW' AND(resource_id IS NULL OR resource_id=p_request->>'producerJobId'))
  OR EXISTS(SELECT 1 FROM profitia_access.permission_grants WHERE application_id=p.application_id AND organisation_id=(p_request->>'organisationId')::uuid AND user_id=(p_request->>'ownerUserId')::uuid AND operation='insights.report.download' AND feature='market' AND effect='DENY' AND(resource_id IS NULL OR resource_id=p_request->>'producerJobId')) THEN RETURN NULL;END IF;
- RETURN jsonb_build_object('environment','development','issuer',e.issuer,'subject',e.subject,'appOrigin',p.app_origin);
+ RETURN jsonb_build_object('environment','development','issuer',e.issuer,'subject',e.subject);
 END $fn$;
 CREATE FUNCTION profitia_e1_authority.recurring_delivery_proof(p_request jsonb,p_observation jsonb,p_recipient_digest text) RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,pg_temp AS $fn$
 DECLARE identity jsonb;r profitia_e1_authority.receivers%ROWTYPE;raw text;decision uuid:=gen_random_uuid();policy profitia_e1_authority.recurring_delivery_policies%ROWTYPE;
