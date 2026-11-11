@@ -3,20 +3,23 @@
   "taskId": "SG2-REGISTRATION-ORGANISATION-HANDOFF-STAGE-I-20261110",
   "targetEnvironment": "development",
   "scope": "ACCOUNT_ENTRY_SERVER_REDIRECT",
-  "previousSourceSha": "b4cb5b7f7a731c2d845b569d21f09b88d84b3d8d",
+  "previousSourceSha": "a99fd7d0a3d6d0e179d54b131e0e871e76c75b06",
   "sourceDigests": {
     "apps/sg-runtime/app/[locale]/account/page.tsx": "bbe49801c94021120d35ebfa86b61816976c09133e5c03d602c0e7e381b077a3",
     "apps/sg-runtime/tests/appshell-product-boundary.test.ts": "1c59bc7872c96b3d3488c1eff5fc512c1c0ba77bf690eb42e683dbad9ea6cd29",
-    "apps/sg-runtime/tests/assistant-m2-integrity.mjs": "cbb7fc3a15b6a757b72154d020b4c79a400ef6a39c51c1e44cdf5445981b80cb",
-    "apps/sg-runtime/tests/pci-smart-integrity.test.mjs": "0da63ee4bb69a64eda11c1b9237bf39a7f5ee0a3023a3136a302c5ed0f0eceb7",
-    "apps/sg-runtime/tests/procurement-insights-integrity.mjs": "8a749f6c940cbead22ba520381e6e0ce92727208b32f5740e9470c9825d41e0e",
-    "apps/sg-runtime/tests/registration-stage-i-integrity.mjs": "9b5cd0beb95efe926364173af6be821eb7b15d91158c035551d918b8a8269001",
+    "apps/sg-runtime/tests/assistant-m2-integrity.mjs": "a828108e1e59b89960570572911f39d79597991491c03b8f3b90af11e607e823",
+    "apps/sg-runtime/tests/assistant-markdown-integrity.mjs": "97ba1506921617680067aae6dbbc3ad72f8dd8de3227139ad12daafc1b85d61d",
+    "apps/sg-runtime/tests/integrated-buyer-journey-package.test.mjs": "fe6e6aad2bbc445af0cbb85b21a5ab4e8926e378b9ec876b99e464587d5f057a",
+    "apps/sg-runtime/tests/pci-smart-integrity.test.mjs": "39b7c27954018904ca3b5e05967473fd4165d649748f0da5abf6fc98085a7bea",
+    "apps/sg-runtime/tests/procurement-insights-integrity.mjs": "a8f362d55898394ec1a0f2a0469b4bd4b8aadb1b3be6784f03b5fb77d43d47a6",
+    "apps/sg-runtime/tests/registration-stage-i-integrity.mjs": "13690e211bdb8aa46381990615498fb36bf6db01455103c225f8af6c8508e693",
     "apps/sg-runtime/tests/registration-stage-i-integrity.test.mjs": "4fd93789b1971581af1df63b7c31b616a6fb70c6a6953f7d677b0df13456277b"
   },
   "previousReceipts": {
     "apps/sg-runtime/operation-integration.json": "a6bf50993c98a71aeccd349dd904baafb53b3cd653324d97bab3fc5e34ac509f",
     "apps/sg-runtime/assistant-context-integration.json": "d932f227977789643086b6a9eb179598a6f48071964b2d26ba82d25fceb7b2ec",
-    "apps/sg-runtime/procurement-insights-integration.json": "6dca06d8b0731e585925100b0578d41a61711f335940350d1ea32c296a3d7177"
+    "apps/sg-runtime/procurement-insights-integration.json": "6dca06d8b0731e585925100b0578d41a61711f335940350d1ea32c296a3d7177",
+    "apps/sg-runtime/assistant-markdown-integration.json": "27ff06aff8bc44592f0073732748834b7759182fa4307d901c7d63304381a38b"
   },
   "authorisationChanged": false,
   "sdkChanged": false,

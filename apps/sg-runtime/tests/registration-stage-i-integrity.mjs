@@ -2,11 +2,13 @@
 import assert from 'node:assert/strict'
 import {createHash} from 'node:crypto'
 export const REGISTRATION_ENTRY_PATH='apps/sg-runtime/registration-stage-i-integration.json'
-export const REGISTRATION_ENTRY_BASE_SHA='b4cb5b7f7a731c2d845b569d21f09b88d84b3d8d'
+export const REGISTRATION_ENTRY_BASE_SHA='a99fd7d0a3d6d0e179d54b131e0e871e76c75b06'
 export const REGISTRATION_ENTRY_PATHS=Object.freeze([
  'apps/sg-runtime/app/[locale]/account/page.tsx',
  'apps/sg-runtime/tests/appshell-product-boundary.test.ts',
  'apps/sg-runtime/tests/assistant-m2-integrity.mjs',
+ 'apps/sg-runtime/tests/assistant-markdown-integrity.mjs',
+ 'apps/sg-runtime/tests/integrated-buyer-journey-package.test.mjs',
  'apps/sg-runtime/tests/pci-smart-integrity.test.mjs',
  'apps/sg-runtime/tests/procurement-insights-integrity.mjs',
  'apps/sg-runtime/tests/registration-stage-i-integrity.mjs',
@@ -23,7 +25,7 @@ export const REGISTRATION_ENTRY_PRESERVED=Object.freeze([
  'apps/sg-runtime/package.json',
  'apps/sg-runtime/package-lock.json'
 ])
-const receipts=['apps/sg-runtime/operation-integration.json','apps/sg-runtime/assistant-context-integration.json','apps/sg-runtime/procurement-insights-integration.json']
+const receipts=['apps/sg-runtime/operation-integration.json','apps/sg-runtime/assistant-context-integration.json','apps/sg-runtime/procurement-insights-integration.json','apps/sg-runtime/assistant-markdown-integration.json']
 const hash=b=>createHash('sha256').update(b).digest('hex')
 export function registrationStageOnePredecessor(current,historical){
  let bytes
