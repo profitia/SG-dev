@@ -1,3 +1,4 @@
+import {recurringSourcePredecessor} from '../../architecture-lab/private-recurring-source.mjs';
 import {assertOilReportSourceCompatibility} from '../../srm/scripts/source-hub-sdk-compatibility.mjs';
 import {assistantSdkPredecessor,ASSISTANT_SDK_PREDECESSOR,ASSISTANT_SDK_PRODUCER} from '../../architecture-lab/assistant-m1-sdk-compatibility.mjs';
 import test from 'node:test';
@@ -8,6 +9,7 @@ import {readFileSync} from 'node:fs';
 import {createHash} from 'node:crypto';
 import {execFileSync} from 'node:child_process';
 const root=new URL('../../../',import.meta.url),rawCurrent=p=>readFileSync(new URL(p,root)),historical=(sha,p)=>execFileSync('git',['show',sha+':'+p],{cwd:root}),hash=bytes=>createHash('sha256').update(bytes).digest('hex');
+const recurring=recurringSourcePredecessor(rawCurrent,historical),legacyCurrent=p=>recurring?.previousBytes(p)??rawCurrent(p);
 function oilAcceptance(receipt=JSON.parse(rawCurrent('apps/newsfeed-runtime/operation-integration.json'))){
  const file='apps/newsfeed-runtime/operation-integration.json',a=receipt.oilAutonomousReportSdkCompatibility;
  assert(a,'explicit Oil SDK receipt required');assert.equal(a.producerSourceSha,'e189433899349ddda6664c37988255c13845b3e2');assert.equal(a.previousReceiptSourceSha,'7ed96210f4cc3ccfcd0e0dac6ad126144bdcdecb');
@@ -15,7 +17,7 @@ function oilAcceptance(receipt=JSON.parse(rawCurrent('apps/newsfeed-runtime/oper
  const {oilAutonomousReportSdkCompatibility,...preserved}=receipt;assert.deepEqual(preserved,prior,'all pre-Oil Newsfeed and M1 acceptance stays immutable');
  const owner=JSON.parse(rawCurrent('apps/sg-runtime/operation-integration.json')),view=assertOilReportSourceCompatibility(owner,rawCurrent,historical,{projectKey:'SG2'});
  assert.deepEqual(a.sdkDigests,owner.oilAutonomousReportCompatibility.sdkDigests);assert.deepEqual(a.sourceDigests,owner.oilAutonomousReportCompatibility.sourceDigests);
- assert.deepEqual(Object.keys(a.consumerSourceDigests),['apps/newsfeed-runtime/test/runtime.test.mjs']);for(const[p,h]of Object.entries(a.consumerSourceDigests))assert.equal(hash(rawCurrent(p)),h,p);
+ assert.deepEqual(Object.keys(a.consumerSourceDigests),['apps/newsfeed-runtime/test/runtime.test.mjs']);for(const[p,h]of Object.entries(a.consumerSourceDigests))assert.equal(hash(legacyCurrent(p)),h,p);
  for(const flag of ['runtimeAdoption','authorizationChanged','providerCallsPerformed','deploymentPerformed'])assert.equal(a[flag],false,flag);
  return {receipt,prior,previousBytes:p=>p===file?bytes:view.previousBytes(p)};
 }
@@ -36,7 +38,7 @@ test('updates require an optimistic version and explicit active/paused status',(
 test('Newsfeed refuses Staging, Production and a Production/owner connection before any I/O',()=>{for(const e of['production','staging'])assert.throws(()=>readConfiguration({NEWSFEED_ENVIRONMENT:e}));assert.throws(()=>readConfiguration({NEWSFEED_ENVIRONMENT:'development',NEWSFEED_DATABASE_URL:'postgresql://neondb_owner@ep-aged-sun-b9ooczkd-pooler.c-7.eu-central-1.aws.neon.tech/neondb?sslmode=require'}));});
 test('consumer adoption pins the actual installed SDK and migration bytes without claiming infrastructure activation',async()=>{
  const receipt=JSON.parse(readFileSync(new URL('../operation-integration.json',import.meta.url))),modules=await Promise.all(['operation-context','identity-provider','access-store','private-operation-host','peer-operation','platform-ingestion','external-call'].map(name=>import('@profitia/platform-contracts/'+name)));
- for(const [name,expected]of Object.entries(receipt.sdkDigests)){const source=modules.find(m=>typeof m[name]==='function');assert(source,name);assert.equal(await source[name](),receipt.oilAutonomousReportSdkCompatibility?.sdkDigests[name]??receipt.assistantM1SourceCompatibility?.sdkDigests[name]??receipt.marketSymbolSdkCompatibility?.sdkDigests[name]??expected,name);}
+ for(const [name,expected]of Object.entries(receipt.sdkDigests)){const source=modules.find(m=>typeof m[name]==='function');assert(source,name);assert.equal(await source[name](),recurring?.manifest.sdkDigests[name]??receipt.oilAutonomousReportSdkCompatibility?.sdkDigests[name]??receipt.assistantM1SourceCompatibility?.sdkDigests[name]??receipt.marketSymbolSdkCompatibility?.sdkDigests[name]??expected,name);}
  for(const m of Object.values(receipt.migrations))assert.equal(createHash('sha256').update(readFileSync(new URL('../../../'+m.file,import.meta.url))).digest('hex'),m.sha256,m.file);
  assert.equal(receipt.contractVersions.platformSdk,'1.33.0');assert.equal(receipt.authorization.peerProofIsBusinessGrant,false);assert.equal(receipt.authorization.realE1AndSourceActivation,'NOT_ACTIVATED');assert.equal(receipt.validation.deploymentPerformed,false);
 });

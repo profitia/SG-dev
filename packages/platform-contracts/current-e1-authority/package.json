@@ -32,7 +32,7 @@
     }
   },
   "scripts": {
-    "build": "node --check index.mjs"
+    "build": "node --check index.mjs && node --check recurring.mjs && node --check install-recurring.mjs"
   },
   "peerDependencies": {
     "@profitia/platform-contracts": "1.36.0"
