@@ -674,3 +674,13 @@ and resulting-main proof. This does not install SQL, grant access/packages,
 activate runtime features, send mail, call a provider/model or deploy an app.
 
 Required physical-source validation must also authenticate all65 approved Git blobs/modes, including native Identity paths outside the SDK record maps, before projecting that exact closed overlay to the unchanged recurring graph. Preserve all previous records and reject native or recurring-only drift; this does not admit a new path or change the approved65 source map.
+
+### Proposed ECR week and admission correction — preparation only
+
+Task: `ARCH-ACG-ECR-WEEKS-CI-20261111`. Product candidate: [PR #1021](https://github.com/profitia/SG-dev/pull/1021), reviewed source `0ebf41d600ac6ab1df8dffcde1dfe3c982ea8771`, predecessor `b6df3533750d0278440b0a432e412731bff47a42`.
+
+The proposed data-only controller continuation admits exactly14 source files pinned by SHA-256, including the immutable ECR correction receipt `31ce8f1d7e5ca1d9c3aedf80f92e23fe0f1a93cb8f5fd5d003eb54a244859dd4`. All12 predecessor receipts remain byte-identical. Every current file is authenticated as a regular non-executable source before projecting only reviewed paths onto the accepted predecessor. Existing registration and recurring validation still run; no candidate module is imported during credential handling.
+
+Package names, registry, exact CIC pins, read-only credential scope, main-only environment, owner and fork restrictions, ignore-scripts installation, token removal before candidate execution and exact-SHA proof checks remain unchanged. This proposal adds no runtime grant, schema, AI budget, deployment or provider acquisition.
+
+The separate owner decision and execution evidence belong to [the remote task PHR](https://github.com/profitia/project-history-repository/tree/main/reports/2026/11/11/SG2/SG2-ACG-ECR-INCOMPLETE-20261111). Drafting or testing this change does not activate policy. After acceptance, the product branch must inherit the accepted controller and receive fresh full checks and a controlled proof for its exact resulting SHA.
