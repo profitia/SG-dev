@@ -5492,6 +5492,76 @@ export function assertPrivateRecurringRecord(bytes,{digestForPath,adoptions,curr
  for(const [p,h]of Object.entries(a.preservedReceipts))if(recurringHash(currentReceipts[p])!==h||recurringHash(historicalReceipts[p])!==h)fail('PRIVATE_RECURRING_PREDECESSOR_REJECTED')
  return a
 }
+
+// Closed continuation for PR #1021. Preparation is not policy activation.
+// Only these exact14 regular source bytes may be projected to their accepted
+// predecessor. The existing registration, recurring, package and credential
+// checks remain mandatory; candidate JavaScript is never imported here.
+export const ASSISTANT_ECR_WEEK_REVIEW=Object.freeze({
+  "recordPath": "apps/sg-runtime/assistant-ecr-week-integration.json",
+  "recordSha256": "31ce8f1d7e5ca1d9c3aedf80f92e23fe0f1a93cb8f5fd5d003eb54a244859dd4",
+  "previousSourceSha": "b6df3533750d0278440b0a432e412731bff47a42",
+  "sourceCommit": "0ebf41d600ac6ab1df8dffcde1dfe3c982ea8771",
+  "prNumber": 1021,
+  "branch": "sg2/acg-ecr-weeks-20261111-40671bf2",
+  "sourceDigests": {
+    "apps/sg-runtime/components/appshell/assistant-conversation-session.ts": "96d063c60c29030ea06a7f242567690d48f694ebae51538f1ec229b0ae6568df",
+    "apps/sg-runtime/lib/assistant/context-selection.ts": "8a8f4e995f2cf3f739d8182905e436675cb4ddd0d9b9240146c2d6b6cd917ab2",
+    "apps/sg-runtime/lib/assistant/conversation.ts": "04fdf8afb4571a9acac826d0ffe1f6061813216c6b262ce5b571769eb40aed5d",
+    "apps/sg-runtime/lib/assistant/model.ts": "b9c0558a11017760fcc25768aee1c8269dcd5093963255b79f4446af2b55246f",
+    "apps/sg-runtime/lib/assistant/runtime.ts": "52f379da1e703976fefa7900519b8c716df25b026079a6a99dd2732867d6c6ef",
+    "apps/sg-runtime/tests/assistant-conversation-handler.test.ts": "f5af231edac5eb8f82a5c7a349d47c2819191d692d7f19f536b396ac44c37b46",
+    "apps/sg-runtime/tests/assistant-conversation.test.ts": "b954b440d59bcd1a66f90ec3d02d274b84917f5d8de97761fb38941fd23bddf1",
+    "apps/sg-runtime/tests/assistant-economic-calendar.test.ts": "d4ab11946dc33a309c8346aa2edd80fdcb68d59ab847b6ec10a807782f2ee1f9",
+    "apps/sg-runtime/tests/assistant-model.test.ts": "f589c834c94488e7b9d37524cd0a13515ac0ce7b8f9071a07bb11d9f3fcd7908",
+    "apps/sg-runtime/tests/pci-smart-integrity.test.mjs": "aa9b2199d5d2cd1554f808a02f7fd63bf397adca045f4d535e7d2af0f158c080",
+    "apps/sg-runtime/tests/assistant-ecr-week-integrity.mjs": "8c602c69c4da51e51525d48d73674e223daa8dbd96bf58d80863c0471a652639",
+    "apps/sg-runtime/tests/assistant-ecr-week-integrity.test.mjs": "0787795fdd513113107c3ee7e0b840a588f27186c5adfba92f7d8020aefda46f",
+    "apps/sg-runtime/assistant-ecr-week-integration.json": "31ce8f1d7e5ca1d9c3aedf80f92e23fe0f1a93cb8f5fd5d003eb54a244859dd4",
+    "apps/architecture-lab/private-recurring-source.mjs": "9035324816864e64040c1ad3d29e064284ad2e3f8eb626a9b3c1ede55fbb4b28"
+  },
+  "preservedReceipts": {
+    "apps/sg-runtime/operation-integration.json": "a6bf50993c98a71aeccd349dd904baafb53b3cd653324d97bab3fc5e34ac509f",
+    "apps/sg-runtime/assistant-context-integration.json": "d932f227977789643086b6a9eb179598a6f48071964b2d26ba82d25fceb7b2ec",
+    "apps/sg-runtime/procurement-insights-integration.json": "6dca06d8b0731e585925100b0578d41a61711f335940350d1ea32c296a3d7177",
+    "apps/sg-runtime/assistant-markdown-integration.json": "27ff06aff8bc44592f0073732748834b7759182fa4307d901c7d63304381a38b",
+    "apps/sg-runtime/registration-stage-i-integration.json": "4a7a572e67e12ed73c523502cef4cb432009e735737df851419d80898653f414",
+    "apps/sg-runtime/assistant-send-arrow-integration.json": "62c6af6817a022c31788d801cc0eac293a24b3f25d9e529d32b1bff4908fa230",
+    "apps/sg-runtime/assistant-ecr-integration.json": "5814e2e5cbdf1a32d22cff3aa55de806ec34c9debdecc21ff06c4f9f887a82bc",
+    "apps/sg-runtime/assistant-ecr-precision-integration.json": "a017c2b971e3c72606847264150715c983fa9483537d26be90144a64e0377ee7",
+    "apps/sg-runtime/private-recurring-source-adoption.json": "edf9d51c199251e148b39c92a3084944c1a4b8419be29175c88b6e2583df11f2",
+    "apps/architecture-lab/private-recurring-source.json": "75877d5750e07d1c8172be0af76bc5933f2eeefc22cc39747a2621b9cab24619",
+    "apps/architecture-lab/private-recurring-source-adoption.json": "a79c186897851acb93142949fe7aee19184cbfe68b3acdf51cbda084c00c1254",
+    "apps/srm/private-recurring-source-adoption.json": "88d0252f634eface35b34adf31ac97cbf0d396fcf1fe6da452c74bdc23c7c633"
+  }
+})
+export function assertAssistantEcrWeekRecord(bytes,{sourceDigestForPath,currentReceiptDigestForPath,historicalReceiptDigestForPath}){
+ if(recurringHash(bytes)!==ASSISTANT_ECR_WEEK_REVIEW.recordSha256)fail('ASSISTANT_ECR_WEEK_RECORD_REJECTED')
+ for(const [p,h]of Object.entries(ASSISTANT_ECR_WEEK_REVIEW.sourceDigests))
+  if(sourceDigestForPath(p)!==h)fail('ASSISTANT_ECR_WEEK_SOURCE_BYTES_REJECTED')
+ for(const [p,h]of Object.entries(ASSISTANT_ECR_WEEK_REVIEW.preservedReceipts))
+  if(currentReceiptDigestForPath(p)!==h||historicalReceiptDigestForPath(p)!==h)fail('ASSISTANT_ECR_WEEK_PREDECESSOR_REJECTED')
+ return JSON.parse(bytes)
+}
+export function assistantEcrWeekSourceProjection(root){
+ const recordPath=ASSISTANT_ECR_WEEK_REVIEW.recordPath
+ let bytes;try{bytes=readRegistrationSdkFile(root,recordPath)}catch(error){if(error?.code==='ENOENT')return null;throw error}
+ const read=p=>{
+  const bytes=readRegistrationSdkFile(root,p)
+  if(fs.lstatSync(path.join(fs.realpathSync(root),p)).mode&0o111)fail('ASSISTANT_ECR_WEEK_FILE_MODE_REJECTED')
+  return bytes
+ }
+ const historical=p=>execFileSync('git',['show',ASSISTANT_ECR_WEEK_REVIEW.previousSourceSha+':'+p],{cwd:root,stdio:['ignore','pipe','ignore']})
+ assertAssistantEcrWeekRecord(bytes,{sourceDigestForPath:p=>recurringHash(read(p)),
+  currentReceiptDigestForPath:p=>recurringHash(read(p)),historicalReceiptDigestForPath:p=>recurringHash(historical(p))})
+ const mapped=new Set(Object.keys(ASSISTANT_ECR_WEEK_REVIEW.sourceDigests)),cache=new Map()
+ return p=>{
+  if(!mapped.has(p))return readRegistrationSdkFile(root,p)
+  if(!cache.has(p))cache.set(p,historical(p))
+  return Buffer.from(cache.get(p))
+ }
+}
+
 export function assertPrivateRecurringProvenance(root){
  const physical=p=>readRegistrationSdkFile(root,p)
  let bytes;try{bytes=physical(PRIVATE_RECURRING_PROVENANCE.recordPath)}catch(error){if(error?.code==='ENOENT')return null;throw error}
@@ -5500,7 +5570,8 @@ export function assertPrivateRecurringProvenance(root){
  let registration=null,hasRegistration=false
  try{physical('packages/platform-contracts/test/organisation-sdk-compatibility.json');hasRegistration=true}catch(error){if(error?.code!=='ENOENT')throw error}
  if(hasRegistration)registration=assertRegistrationSdkProvenance(root)
- let read=physical
+ const weekRead=assistantEcrWeekSourceProjection(root)
+ let read=weekRead??physical
  if(registration&&registrationHash(physical('packages/platform-contracts/test/organisation-sdk-compatibility.json'))===REGISTRATION_SDK_RECONCILED_PROVENANCE.recordDigest){
   // The approved overlay also includes native Identity files outside the SDK
   // record's source-only maps. Verify every exact65 physical blob before any
@@ -5511,7 +5582,7 @@ export function assertPrivateRecurringProvenance(root){
   }
   const mapped=new Set([...Object.keys(REGISTRATION_SDK_REVIEW.entries),...Object.keys(registration.sourceDigests),...Object.keys(registration.compatibilityTestSourceDigests),...Object.values(registration.consumerSourceDigests).flatMap(v=>Object.keys(v)),'apps/sg-runtime/operation-integration.json','apps/srm/operation-integration.json'])
   const cache=new Map()
-  read=p=>{if(!mapped.has(p))return physical(p);if(!cache.has(p))cache.set(p,execFileSync('git',['show',registration.previousSourceSha+':'+p],{cwd:root,stdio:['ignore','pipe','ignore']}));return Buffer.from(cache.get(p))}
+  read=p=>{if(!mapped.has(p))return (weekRead??physical)(p);if(!cache.has(p))cache.set(p,execFileSync('git',['show',registration.previousSourceSha+':'+p],{cwd:root,stdio:['ignore','pipe','ignore']}));return Buffer.from(cache.get(p))}
  }
  const a=privateRecurringMetadata(bytes),adoptions={},currentReceipts={},historicalReceipts={}
  for(const [k,p]of Object.entries(PRIVATE_RECURRING_PROVENANCE.adoptions))adoptions[k]=JSON.parse(read(p))
