@@ -4591,6 +4591,380 @@ function assertEcrSourceContinuityRoutes(files,repositoryRoot){
 
 // Proposed exact Newsfeed saved-search review; activation requires the separate
 // controller owner decision and trusted-main acceptance. No generic app grant.
+// PROPOSED closed Stage I source review. A local test/import does not activate
+// policy: explicit owner acceptance and trusted-main admission are required.
+export const REGISTRATION_SDK_REVIEW=Object.freeze({
+  "prNumber": 983,
+  "branch": "architecture/registration-bootstrap-stage-i-20261111",
+  "sourceSha": "57f175c61ecc205a57a18401bace8037dffd4ff7",
+  "baseSha": "f8f6340ab1ac862a584352f86988dde199172b37",
+  "treeSha": "392ade60a03e3874a69d974bd4ae1f72d6cf6c65",
+  "inputs": [
+    {
+      "projectKey": "ARCHITECTURE",
+      "taskId": "ARCH-REGISTRATION-ORGANISATION-STAGE-I-20261110",
+      "prNumber": 983,
+      "sourceSha": "4e67c9234a88f82479d669598fb730d6ad8fbc53"
+    },
+    {
+      "projectKey": "SG2",
+      "taskId": "SG2-REGISTRATION-ORGANISATION-HANDOFF-STAGE-I-20261110",
+      "prNumber": 987,
+      "sourceSha": "67c758774a58b09b2df31942ba6e6ce79f3141ac"
+    },
+    {
+      "projectKey": "SRM",
+      "taskId": "SRM-REGISTRATION-BOOTSTRAP-SDK-ADOPTION-20261111",
+      "prNumber": 986,
+      "sourceSha": "99dca957c47d4f755e49b731e79db0e8dbd56c9d"
+    }
+  ],
+  "entries": {
+    "apps/architecture-lab/test/sdk-compatibility.test.mjs": {
+      "sha": "184536c22980b5c40df41ce65362caa4130de63c",
+      "status": "modified",
+      "mode": "100644",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-002"
+    },
+    "apps/identity-runtime/src/organisation-onboarding.ts": {
+      "sha": "98169978b157e0676f513f1b7ce11bac5c0a84d3",
+      "status": "added",
+      "mode": "100644",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "IDENTITY-BASE-001"
+    },
+    "apps/identity-runtime/test/organisation-onboarding.test.mjs": {
+      "sha": "f04a4b27f7b39d7031839afb877fe6f5e836ff83",
+      "status": "added",
+      "mode": "100644",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "IDENTITY-BASE-001"
+    },
+    "apps/sg-runtime/operation-integration.json": {
+      "sha": "bd3b3d6169ef575c2a79ae9c80ee529014f41632",
+      "status": "modified",
+      "mode": "100644",
+      "projectKey": "SG2",
+      "owner": "SG Runtime",
+      "surfaceId": "SG2-BASE-001"
+    },
+    "apps/sg-runtime/tests/diagnostic-telemetry-adoption.test.mjs": {
+      "sha": "5f2c3194cadc617806f2a097e75cbdaebdef21a5",
+      "status": "modified",
+      "mode": "100644",
+      "projectKey": "SG2",
+      "owner": "SG Runtime",
+      "surfaceId": "SG2-BASE-001"
+    },
+    "apps/sg-runtime/tests/native-sql-roundtrips.test.mjs": {
+      "sha": "6836893a46e189aade7a422b4eca912dc9cbc9b1",
+      "status": "modified",
+      "mode": "100644",
+      "projectKey": "SG2",
+      "owner": "SG Runtime",
+      "surfaceId": "SG2-BASE-001"
+    },
+    "apps/sg-runtime/tests/operation-context.test.mjs": {
+      "sha": "f77c83fa347330a710d53079fe8f3f12a0ba8d6c",
+      "status": "modified",
+      "mode": "100644",
+      "projectKey": "SG2",
+      "owner": "SG Runtime",
+      "surfaceId": "SG2-BASE-001"
+    },
+    "apps/sg-runtime/tests/private-host.integration.test.mjs": {
+      "sha": "e2c3e0ae81a713425b104139f036783e81f5aa1e",
+      "status": "modified",
+      "mode": "100644",
+      "projectKey": "SG2",
+      "owner": "SG Runtime",
+      "surfaceId": "SG2-BASE-001"
+    },
+    "apps/sg-runtime/tests/xray-fresh-performance-adoption.test.mjs": {
+      "sha": "6e53641ad436dbd95568a49c26f7176616c8c686",
+      "status": "modified",
+      "mode": "100644",
+      "projectKey": "SG2",
+      "owner": "SG Runtime",
+      "surfaceId": "SG2-BASE-001"
+    },
+    "apps/sg-runtime/tests/xray-platform-compatibility.test.mjs": {
+      "sha": "e2a7d72bc910352bab449ff4cf2e651e015af96b",
+      "status": "modified",
+      "mode": "100644",
+      "projectKey": "SG2",
+      "owner": "SG Runtime",
+      "surfaceId": "SG2-BASE-001"
+    },
+    "apps/srm/operation-integration.json": {
+      "sha": "7d399125fbb50f8b4f0b00db2662c05b1096995f",
+      "status": "modified",
+      "mode": "100644",
+      "projectKey": "SRM",
+      "owner": "SRM Runtime",
+      "surfaceId": "SG2-BASE-016"
+    },
+    "apps/srm/scripts/diagnostic-telemetry-adoption.test.mjs": {
+      "sha": "ce2340a7ab9c700795715281aa9ee922d8daedfa",
+      "status": "modified",
+      "mode": "100644",
+      "projectKey": "SRM",
+      "owner": "SRM Runtime",
+      "surfaceId": "SG2-BASE-016"
+    },
+    "apps/srm/scripts/native-execution-adoption.test.mjs": {
+      "sha": "2f79f558f44efa3b94cbbec919bc774044b8a73b",
+      "status": "modified",
+      "mode": "100644",
+      "projectKey": "SRM",
+      "owner": "SRM Runtime",
+      "surfaceId": "SG2-BASE-016"
+    },
+    "apps/srm/scripts/operation-context.test.mjs": {
+      "sha": "b152578e6931f9fa1582b0ced87d93606143130b",
+      "status": "modified",
+      "mode": "100644",
+      "projectKey": "SRM",
+      "owner": "SRM Runtime",
+      "surfaceId": "SG2-BASE-016"
+    },
+    "apps/srm/scripts/private-host.integration.test.mjs": {
+      "sha": "a9544af37bb7b32b5a36105d40beb4769f1da489",
+      "status": "modified",
+      "mode": "100644",
+      "projectKey": "SRM",
+      "owner": "SRM Runtime",
+      "surfaceId": "SG2-BASE-016"
+    },
+    "apps/srm/scripts/request-quota-adoption.test.mjs": {
+      "sha": "da960d8679088a1a108f23f445a997bc5b5ea788",
+      "status": "modified",
+      "mode": "100644",
+      "projectKey": "SRM",
+      "owner": "SRM Runtime",
+      "surfaceId": "SG2-BASE-016"
+    },
+    "apps/srm/scripts/source-hub-sdk-compatibility.mjs": {
+      "sha": "f08c6b08e09258ebddd4f8891cbf268cfcc623a2",
+      "status": "modified",
+      "mode": "100644",
+      "projectKey": "SRM",
+      "owner": "SRM Runtime",
+      "surfaceId": "SG2-BASE-016"
+    },
+    "apps/srm/scripts/supplier-location-admission.integration.test.mjs": {
+      "sha": "731a3a0d130ea41c3af85509130a0df9911c0df2",
+      "status": "modified",
+      "mode": "100644",
+      "projectKey": "SRM",
+      "owner": "SRM Runtime",
+      "surfaceId": "SG2-BASE-016"
+    },
+    "apps/srm/scripts/xray-performance-adoption.test.mjs": {
+      "sha": "071102735bd9d3322c5d096c05d1513c3772e5d6",
+      "status": "modified",
+      "mode": "100644",
+      "projectKey": "SRM",
+      "owner": "SRM Runtime",
+      "surfaceId": "SG2-BASE-016"
+    },
+    "packages/platform-contracts/current-fresh-report/test/current-fresh-report.test.mjs": {
+      "sha": "f412f1607a4fca31cb1bbb583d45e7dc0828854c",
+      "status": "modified",
+      "mode": "100644",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    "packages/platform-contracts/migrations/profile/007-organisation-onboarding.sql": {
+      "sha": "a0239d930b8da5333e5589a1734bacb54d67191c",
+      "status": "modified",
+      "mode": "100644",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    "packages/platform-contracts/migrations/profile/008-organisation-create.sql": {
+      "sha": "5571f58c2ee30e3a0f1a33204ba8af4c53c29660",
+      "status": "added",
+      "mode": "100644",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    "packages/platform-contracts/package.json": {
+      "sha": "c2b5ab6d8a117c351fa0e03b3878eeec83f5c9f7",
+      "status": "modified",
+      "mode": "100644",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    "packages/platform-contracts/readonly-miss-report/test/readonly-miss-report.test.mjs": {
+      "sha": "cd02bb919957e9da7cebb4c40fbe9a3ff4940fbe",
+      "status": "modified",
+      "mode": "100644",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    "packages/platform-contracts/src/operation-context.d.mts": {
+      "sha": "b00220f767db22897bb3ec65233bb39fba715e4e",
+      "status": "modified",
+      "mode": "100644",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    "packages/platform-contracts/src/operation-context.mjs": {
+      "sha": "d018c17a251abbf698c87a29aded91f93a4e493c",
+      "status": "modified",
+      "mode": "100644",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    "packages/platform-contracts/src/organisation-bootstrap.d.mts": {
+      "sha": "ffcacec4080ca608ab00e3aff0b7371f23f08a55",
+      "status": "added",
+      "mode": "100644",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    "packages/platform-contracts/src/organisation-bootstrap.mjs": {
+      "sha": "008ef066c74bd72a2a546f15f4cc1694db9ef297",
+      "status": "added",
+      "mode": "100644",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    "packages/platform-contracts/src/organisation-invitations.d.mts": {
+      "sha": "674a1e3d7841bad6194a176ecccd70622bae012b",
+      "status": "added",
+      "mode": "100644",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    "packages/platform-contracts/src/organisation-invitations.mjs": {
+      "sha": "280935c68a5d1c8194669f8894b87324c2ed6843",
+      "status": "added",
+      "mode": "100644",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    "packages/platform-contracts/src/organisation-profile.d.mts": {
+      "sha": "a8e933f8f4946ad9459baab93110976be88e97ef",
+      "status": "modified",
+      "mode": "100644",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    "packages/platform-contracts/src/organisation-profile.mjs": {
+      "sha": "be2730964c8af8b32f8c8f2baf45aa26fe807949",
+      "status": "modified",
+      "mode": "100644",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    "packages/platform-contracts/test/organisation-bootstrap-postgres.test.mjs": {
+      "sha": "28e82cc2af6d32f6a7e396c48ad081323680b140",
+      "status": "added",
+      "mode": "100644",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    "packages/platform-contracts/test/organisation-bootstrap.test.mjs": {
+      "sha": "ea30c87f19cfb0bc064cd922c23a0b0dde354c99",
+      "status": "added",
+      "mode": "100644",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    "packages/platform-contracts/test/organisation-invitations.test.mjs": {
+      "sha": "64fcb4270f376573c132040eb8fd66642240ecdc",
+      "status": "added",
+      "mode": "100644",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    "packages/platform-contracts/test/organisation-onboarding-postgres.test.mjs": {
+      "sha": "203ee38cf32c28327eecd1093100bef54db3a84d",
+      "status": "modified",
+      "mode": "100644",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    "packages/platform-contracts/test/organisation-profile.test.mjs": {
+      "sha": "a6ed612325ad049dded4a4fbfdc00b254bc147e1",
+      "status": "modified",
+      "mode": "100644",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    "packages/platform-contracts/test/organisation-sdk-compatibility.json": {
+      "sha": "53f6aedd40627606841dac0ae5c6cd639751a793",
+      "status": "added",
+      "mode": "100644",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    "packages/platform-contracts/test/organisation-sdk-compatibility.mjs": {
+      "sha": "7f86765be878281f1c721ecfd669bb628b5e1781",
+      "status": "added",
+      "mode": "100644",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    "packages/platform-contracts/test/organisation-sdk-compatibility.test.mjs": {
+      "sha": "aa8cdb529f429628561fc2fcb89c2624dd782f26",
+      "status": "added",
+      "mode": "100644",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    "packages/platform-contracts/test/private-operation-host.test.mjs": {
+      "sha": "b96001f516411487bf6e1ca07aa21cb0a007cc5d",
+      "status": "modified",
+      "mode": "100644",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    }
+  }
+})
+function isPinnedRegistrationSdkReview(files){
+ const r=REGISTRATION_SDK_REVIEW
+ return Array.isArray(files)&&files.length===Object.keys(r.entries).length&&new Set(files.map(f=>f?.filename)).size===files.length&&files.every(f=>Object.hasOwn(r.entries,f?.filename)&&r.entries[f.filename].sha===f.sha&&r.entries[f.filename].status===f.status&&!Object.hasOwn(f,'previous_filename'))
+}
+function assertRegistrationSdkRoutes(files,repositoryRoot){
+ for(const file of files){
+  const e=REGISTRATION_SDK_REVIEW.entries[file.filename],profile=resolveProjectProfile(e.projectKey,repositoryRoot),routing=resolveProjectRouting({profile,targets:[file.filename],repositoryRoot}),r=routing.results[0]
+  if(profile.repository.slug!==REPOSITORY||!routing.ok||routing.results.length!==1||r.resolutionStatus!=='RESOLVED'||r.highestSpecificityMatchCount!==1||r.baselineClassification!=='ALIGNED'||r.projectBoundaryStatus!=='ALLOWED'||r.currentOwner!==e.owner||r.matchedSurfaceId!==e.surfaceId)fail('REGISTRATION_SDK_ROUTING_REJECTED')
+ }
+}
+export function assertRegistrationSdkReviewEntry(file,entry){
+ const e=Object.hasOwn(REGISTRATION_SDK_REVIEW.entries,file?.filename)?REGISTRATION_SDK_REVIEW.entries[file.filename]:null
+ if(!e||e.sha!==file.sha||e.status!==file.status||entry!==e.mode+' blob '+file.sha+'\t'+file.filename+'\0')fail('REGISTRATION_SDK_FILE_MODE_REJECTED')
+}
+
 export const NEWSFEED_SAVED_SEARCH_REVIEW=Object.freeze({"prNumber":969,"branch":"architecture/pi-end-to-end-20261110","sourceSha":"8fa964a159a468968293337c9d0c79c326cb84e5","baseSha":"1e0dc1ca4057437805561a841105e291d028df10","entries":Object.freeze({"apps/newsfeed-runtime/docs/development-v1.2.md":{"sha":"87bc9ff343f6726ab47454c81c03d529211e2ca7","status":"added","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"NEWSFEED-BASE-001"},"apps/newsfeed-runtime/migrations/003-saved-searches.sql":{"sha":"0da6a251c5af904f9784abf8e8ff80cedb36ab80","status":"added","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"NEWSFEED-BASE-001"},"apps/newsfeed-runtime/saved-searches-integration.json":{"sha":"af2cfcf9ce736a6beb53db85fe3ed41122886466","status":"added","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"NEWSFEED-BASE-001"},"apps/newsfeed-runtime/scripts/migrate.mjs":{"sha":"1f71ed906188dce57b7399d9c06b287485c8dfea","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"NEWSFEED-BASE-001"},"apps/newsfeed-runtime/src/main.mjs":{"sha":"40955da8f73a74de6db24fed2dde064cf757c040","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"NEWSFEED-BASE-001"},"apps/newsfeed-runtime/src/repository.mjs":{"sha":"94031e717c45686b1629bf627a5db97e4c2a4e48","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"NEWSFEED-BASE-001"},"apps/newsfeed-runtime/src/scheduler.mjs":{"sha":"3257d018479164eb64a17f0e748630cfbf93cab0","status":"added","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"NEWSFEED-BASE-001"},"apps/newsfeed-runtime/src/server.mjs":{"sha":"7cc04ec11fb1597cd4cdd5b447890207a5c538bf","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"NEWSFEED-BASE-001"},"apps/newsfeed-runtime/src/statistics.mjs":{"sha":"b4d4191a03c0c3e84dd463ca99bac2d4e136928a","status":"added","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"NEWSFEED-BASE-001"},"apps/newsfeed-runtime/test/assistant-context.test.mjs":{"sha":"49a071dc01e23c307900b6ad1af9dc7045f53125","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"NEWSFEED-BASE-001"},"apps/newsfeed-runtime/test/saved-searches.test.mjs":{"sha":"956f37e1045bd7d4b7cbacdf3358c96af1223755","status":"added","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"NEWSFEED-BASE-001"},"apps/newsfeed-runtime/test/scheduler.test.mjs":{"sha":"f89761ecabe037a0f7888c9ac4891d18769acdfa","status":"added","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"NEWSFEED-BASE-001"},"apps/newsfeed-runtime/test/statistics.test.mjs":{"sha":"cafa33a981d8e651e54fa9a791eabdb71536cbdb","status":"added","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"NEWSFEED-BASE-001"},"packages/newsfeed-contracts/README.md":{"sha":"0db6057f326af75520d0fcbf98b19fd04b410a46","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"NEWSFEED-BASE-002"},"packages/newsfeed-contracts/index.d.ts":{"sha":"25f0171264bcebfb678bf1dc61d5a75541040652","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"NEWSFEED-BASE-002"},"packages/newsfeed-contracts/index.mjs":{"sha":"a4be29318480ba5bc49a710f57058cdae8d994e5","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"NEWSFEED-BASE-002"},"packages/newsfeed-contracts/package.json":{"sha":"331c263ef3b32744d347c562e14486be54d8ce6f","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"NEWSFEED-BASE-002"},"scripts/governance/platform-source-hub-foundation.test.mjs":{"sha":"bb6eb6fcfc7465ed6b3b67fed4106ff155b51280","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Governance Source Layer","surfaceId":"SG2-BASE-020"}})})
 function isPinnedNewsfeedSavedSearchReview(files){
  const r=NEWSFEED_SAVED_SEARCH_REVIEW
@@ -4608,6 +4982,7 @@ export function assertNewsfeedSavedSearchReviewEntry(file,entry){
 export function assertArchitectureFiles(pr, files, repositoryRoot = controlRoot()) {
   if (!Number.isInteger(pr.changed_files) || pr.changed_files < 1 || pr.changed_files > 300 || !shaPattern.test(pr.base?.sha ?? '')
     || !Array.isArray(files) || files.length !== pr.changed_files) fail('ARCHITECTURE_FILE_LIST_REQUIRED')
+  if(isPinnedRegistrationSdkReview(files)){assertRegistrationSdkRoutes(files,repositoryRoot);return}
   if(isPinnedNewsfeedSavedSearchReview(files)){assertNewsfeedSavedSearchRoutes(files,repositoryRoot);return}
   if(isPinnedEcrSourceContinuityReview(files)){assertEcrSourceContinuityRoutes(files,repositoryRoot);return}
   if(isPinnedEcrStage0405Review(files)){assertEcrStage0405Routes(files,repositoryRoot);return}
@@ -4650,6 +5025,7 @@ export function assertArchitectureFiles(pr, files, repositoryRoot = controlRoot(
 
 export function selectCandidate(context, pr, expectedSha, {files, repositoryRoot = controlRoot()} = {}) {
   const family = candidateFamily(context, pr, expectedSha)
+  if(pr&&(pr.number===REGISTRATION_SDK_REVIEW.prNumber||pr.head.ref===REGISTRATION_SDK_REVIEW.branch||isPinnedRegistrationSdkReview(files))){if(family!=='ARCHITECTURE'||pr.number!==REGISTRATION_SDK_REVIEW.prNumber||pr.head.ref!==REGISTRATION_SDK_REVIEW.branch||!isPinnedRegistrationSdkReview(files))fail('REGISTRATION_SDK_REVIEW_IDENTITY_REJECTED')}
   if(pr&&(pr.number===NEWSFEED_SAVED_SEARCH_REVIEW.prNumber||pr.head.ref===NEWSFEED_SAVED_SEARCH_REVIEW.branch||isPinnedNewsfeedSavedSearchReview(files))){if(family!=='ARCHITECTURE'||pr.number!==NEWSFEED_SAVED_SEARCH_REVIEW.prNumber||pr.head.ref!==NEWSFEED_SAVED_SEARCH_REVIEW.branch||!isPinnedNewsfeedSavedSearchReview(files))fail('NEWSFEED_SAVED_SEARCH_REVIEW_IDENTITY_REJECTED')}
   if(pr&&(pr.number===ECR_SOURCE_CONTINUITY_REVIEW.prNumber||pr.head.ref===ECR_SOURCE_CONTINUITY_REVIEW.branch||isPinnedEcrSourceContinuityReview(files))){if(family!=='ARCHITECTURE'||pr.number!==ECR_SOURCE_CONTINUITY_REVIEW.prNumber||pr.head.ref!==ECR_SOURCE_CONTINUITY_REVIEW.branch||!isPinnedEcrSourceContinuityReview(files))fail('ECR_SOURCE_CONTINUITY_REVIEW_IDENTITY_REJECTED')}
   if(pr&&(pr.number===ECR_STAGE0405_REVIEW.prNumber||pr.head.ref===ECR_STAGE0405_REVIEW.branch||isPinnedEcrStage0405Review(files))){if(family!=='ARCHITECTURE'||pr.number!==ECR_STAGE0405_REVIEW.prNumber||pr.head.ref!==ECR_STAGE0405_REVIEW.branch||!isPinnedEcrStage0405Review(files))fail('ECR_STAGE0405_REVIEW_IDENTITY_REJECTED')}
@@ -4732,6 +5108,7 @@ export function assertArchitectureCheckout(root, sha, admission, repositoryRoot 
   for (const file of admission.files) {
     const entry = execFileSync('git', ['ls-tree', '-z', sha, '--', file.filename], {cwd: root, encoding: 'utf8'})
     if (file.status === 'removed') {if (entry !== '') fail('ARCHITECTURE_DIFF_MISMATCH'); continue}
+    if(isPinnedRegistrationSdkReview(admission.files))assertRegistrationSdkReviewEntry(file,entry)
     if(isPinnedNewsfeedSavedSearchReview(admission.files))assertNewsfeedSavedSearchReviewEntry(file,entry)
     if(isPinnedEcrSourceContinuityReview(admission.files))assertEcrSourceContinuityReviewEntry(file,entry)
     if(isPinnedEcrStage0405Review(admission.files))assertEcrStage0405ReviewEntry(file,entry)
