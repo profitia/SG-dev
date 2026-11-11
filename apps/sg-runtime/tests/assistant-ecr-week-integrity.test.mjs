@@ -9,7 +9,8 @@ import {recurringSourcePredecessor,ECR_WEEK_SOURCE_SHA} from '../../architecture
 const root=new URL('../../../',import.meta.url),rawCurrent=p=>fs.readFileSync(new URL(p,root)),cache=new Map()
 const historical=(sha,p)=>{const k=sha+':'+p;if(!cache.has(k))cache.set(k,execFileSync('git',['show',k],{cwd:root,stdio:['ignore','pipe','pipe']}));return cache.get(k)}
 // Verify the exact later adoption before exercising the immutable week source.
-const current=marketCalendarSourcePredecessor(rawCurrent,historical)?.previousBytes??rawCurrent
+let current=rawCurrent
+for(let prior;(prior=marketCalendarSourcePredecessor(current,historical));)current=prior.previousBytes
 const hash=b=>createHash('sha256').update(b).digest('hex')
 test('ECR correction closes current source before retaining all prior receipts and recurring acceptance',()=>{
  const view=assistantEcrWeekPredecessor(current,historical,ECR_WEEK_SOURCE_SHA);assert(view)
