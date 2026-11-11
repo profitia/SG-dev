@@ -129,7 +129,10 @@ export class AssistantConversationSession {
    else this.publish({busy:false})
   }catch(error){
    if(!operation.signal.aborted&&generation===this.generation){
-    update({status:'failed'});this.fail(errorCode(error))
+    const code=errorCode(error)
+    if(!started&&code==='LIMIT_EXCEEDED')this.publish({messages:this.snapshot.messages.filter(m=>m.id!==assistantId)})
+    else update({status:'failed'})
+    this.fail(code)
    }
   }finally{
    if(generation===this.generation){this.operation=null;if(!completed)operation.abort()}

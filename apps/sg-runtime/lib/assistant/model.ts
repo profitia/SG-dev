@@ -1,9 +1,24 @@
 import OpenAI from 'openai'
 import {assistantInputBound,takeAssistantAdmission,ASSISTANT_PRICING,type AssistantUsageAdmission,createAssistantUsageStore} from '@profitia/platform-contracts/assistant-usage'
 import {isOperationDenied} from '@profitia/platform-contracts/operation-context'
+import type {AccessQuery} from '@profitia/platform-contracts/access-store'
 type Input=readonly {role:'developer'|'user'|'assistant';content:string}[]
 type Usage=ReturnType<typeof createAssistantUsageStore>
 const fail=(code='UNAVAILABLE'):never=>{throw Object.assign(Error('Assistant model unavailable'),{code})}
+/** Preserve the native Limits refusal across Prisma's raw-query wrapper.
+ * Only an exact, known PostgreSQL application error can cross this adapter. */
+export function adaptAssistantUsageQuery(query:AccessQuery):AccessQuery{
+ return async(sql,values=[])=>{
+  try{return await query(sql,values)}catch(error){
+   const e=error as {code?:unknown;meta?:{code?:unknown;message?:unknown}}
+   if(e?.code==='P2010'&&e.meta?.code==='P0001'&&typeof e.meta.message==='string'){
+    const reason=/^(?:ERROR:\s*)?(LIMIT_EXCEEDED|IDEMPOTENCY_CONFLICT|POLICY_UNAVAILABLE)$/.exec(e.meta.message.trim())?.[1]
+    if(reason)throw Object.assign(Error(reason),{code:'P0001'})
+   }
+   throw error
+  }
+ }
+}
 /** Exactly one generation, no automatic retry, tools, remote conversation,
  * response storage or variable private-content cache write. */
 export function createAssistantModel(client:OpenAI,usage:Usage){

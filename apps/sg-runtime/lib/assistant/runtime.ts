@@ -8,7 +8,7 @@ import {OPERATION_CONTRACT,OperationDenied,type Application,type OperationContex
 import type {AccessStoreBinding,AccessQuery} from '@profitia/platform-contracts/access-store'
 import {createAssistantContextGateway,createBenchmarkContextAdapter} from '../../../../packages/assistant-context-gateway/src/index.mjs'
 import {createAssistantHistory} from './history'
-import {createAssistantModel} from './model'
+import {createAssistantModel,adaptAssistantUsageQuery} from './model'
 import {createAssistantSourceAdapters} from './sources'
 import m2Targets from '@/deployment/assistant-m2-targets.json'
 import economicTargets from '@/deployment/assistant-ecr-targets.json'
@@ -64,7 +64,7 @@ export function createSg2AssistantRuntime(config:AssistantConfiguration,options:
  // Each new product role gets one connection and execute-only functions.
  const historyDb=new PrismaClient({datasources:{db:{url:pooled(config.historyUrl,'sg2_assistant_history')}}})
  const usageDb=new PrismaClient({datasources:{db:{url:pooled(config.usageUrl,'profitia_limits')}}})
- const usage=createAssistantUsageStore({query:queryFor(usageDb),commandKey:config.usageKey,schemaDigest:targets.usage.schemaDigest})
+ const usage=createAssistantUsageStore({query:adaptAssistantUsageQuery(queryFor(usageDb)),commandKey:config.usageKey,schemaDigest:targets.usage.schemaDigest})
  const history=createAssistantHistory({query:queryFor(historyDb),commandKey:config.historyKey,schemaDigest:targets.history.schemaDigest})
  const executor=createAssistantOperationHost<Prisma.TransactionClient>({
   application:{...options.application,features:['assistant'],operations:['assistant.converse','assistant.history.read','assistant.history.write'],configurationVersion:targets.configurationVersion},binding,
