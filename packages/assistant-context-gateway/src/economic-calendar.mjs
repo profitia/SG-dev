@@ -104,7 +104,11 @@ export function createEconomicCalendarContextAdapter({readAuthorised}){
    coverage:{completeness:text(r.coverage.completeness),numericHistory:'OBSERVED_BY_ECR_ONLY',publishedAtNotInferred:r.coverage.publishedAtNotInferred===true,
     unresolvedDefinitionPageMore:r.coverage.unresolvedDefinitionPageMore===true,unmappedDefinitionCount:list(r.coverage.unmappedDefinitions,500).length},
    semanticVersionFingerprint:hash(versions),omitted:{events:0,definitions:0,unresolvedSchedules:0},
-   meaning:'Retained ECR facts and accepted global semantics only. Scheduled time is not confirmed publication or an actual result. Null is unknown, never zero. Numeric observations are source snapshots, not publication vintages. Relevance is not causation. Unknown or empty coverage is not evidence that no economic event occurred. No provider acquisition was run.'}
+   meaning:'Retained ECR facts and accepted global semantics only. Scheduled time is not confirmed publication or an actual result. Null is unknown, never zero. Numeric observations are source snapshots, not publication vintages. Relevance is not causation. GLOBAL is not a confirmed match to the active benchmark. Unknown or empty coverage is not evidence that no economic event occurred. No provider acquisition was run.'}
+  const recordCount=()=>new Set([...data.events.flatMap(e=>[e.eventId,...e.results.map(r=>r.observationId)]),...data.unresolvedSchedules.map(p=>p.publicationId)]).size
+  // The existing private-history schema admits at most32 cited record IDs.
+  // Minimise the projection rather than changing that schema or losing checks.
+  for(const key of ['unresolvedSchedules','events'])while(recordCount()>32&&data[key].length){data[key].pop();data.omitted[key]++}
   // Keep the existing gateway/model byte budgets, with explicit omissions.
   for(const key of ['events','unresolvedSchedules','definitions'])while(Buffer.byteLength(JSON.stringify(data),'utf8')>14500&&data[key].length){data[key].pop();data.omitted[key]++}
   if(Buffer.byteLength(JSON.stringify(data),'utf8')>14500)throw TypeError('ECR metadata exceeds context budget')
