@@ -1,0 +1,49 @@
+{
+  "schemaVersion": "1.0.0",
+  "taskId": "ARCHITECTURE-ECR-MARKET-CALENDAR-CONSUMER-20261111",
+  "targetEnvironment": "development",
+  "scope": "MARKET_CALENDAR_PRODUCER_SOURCE_ONLY",
+  "previousSourceSha": "a9194acae09132e6570fe8071bf327125ebb8577",
+  "contractPackageVersion": "1.3.0",
+  "existingEventWireContract": "1.1.0",
+  "calendarQueryContract": "profitia.calendar-query/1.0.0",
+  "sourceDigests": {
+    "Canon/evidence/2026-11-11-procurement-insights-market-calendar-owner-approval.md": "eb83436a1e6a0dae002e34e27811e8918708381f29a7e1eae0a01e721d880be6",
+    "Canon/registries/governance-manifest-v2.json": "f6950821527901a128f7923998bbcc3b308ff3616eb906057ed7c2a1c61e49da",
+    "Canon/v1.3-procurement-insights-market-calendar-amendment.md": "542e3f99196440eb2afa6fd0f69a20f5f4562a5cad978a92c160429866e1c8c5",
+    "apps/architecture-lab/private-recurring-source.mjs": "02bf1cbbc1bfd1b71302280e348e3b589cf42b6f4b1347ff385ab1c954283a70",
+    "apps/architecture-lab/test/market-calendar-source.test.mjs": "618f9e9643f17c7db385572bdd11e8b8c940504a55b0bae317094352878ca6a1",
+    "apps/economic-calendar-runtime/operations/market-calendar-owner-plan.json": "caadc0cdf9322e218db6f1f9285d52ef5fe5ceaca84f672d77fe49e8fa44a1d0",
+    "apps/economic-calendar-runtime/operations/market-calendar-private-access.sql": "3073ba8d54c61d095142f4780fc24d97ea7340b850e57ce734ccf9d5a6475c15",
+    "apps/economic-calendar-runtime/package-lock.json": "b536e2947cfe4ef67a9c560f958457727860b85f3dfbc3222bafda36ef22c547",
+    "apps/economic-calendar-runtime/package.json": "9e3e8e2fe981feef860e2c4dc939a34a39f9075f84420f6cf370735eade289ed",
+    "apps/economic-calendar-runtime/src/server.mjs": "4e09d38a03edbe4abc19acc0fb5855a918c7c4e83b3f1d2fb6b6eb2ee2f27180",
+    "apps/economic-calendar-runtime/test/api.test.mjs": "daf07318943eb4b1f94eb157d8a66048a7d254e581ef5a6cd519a8c2c7b70c1d",
+    "apps/economic-calendar-runtime/test/market-calendar-preferences.test.mjs": "235341475630aa1c95cb6c6217b3ea418f14c45e10dd65c777be5fc18e4108d2",
+    "packages/economic-calendar-contracts/index.d.mts": "e8b3736cbacdc72d2b3a5096e0a5640ca473f10334c895fd349e19e24b05b789",
+    "packages/economic-calendar-contracts/index.mjs": "e0bd4a362db40df74e04414bd44e716ce1191e0d004fb8e831655208b70ff02f",
+    "packages/economic-calendar-contracts/package.json": "ad32e6da0feef51ba1a3015f53df96804eaa0930ad555bf8b46e8eee86f6f6e4"
+  },
+  "preservedReceipts": {
+    "apps/architecture-lab/assistant-m1-sdk-compatibility.json": "f9bd750bd7c4af2b1123a41396cfeacac90bb1744f9abdd5331c76260872b70c",
+    "apps/architecture-lab/current-fresh-report-acceptance.json": "33a8db95572c32c6ab7eae6b16a9a9890508691338036142c095dcab69f576b4",
+    "apps/architecture-lab/current-human-peer-read-acceptance.json": "8b0fad0dc86002e3c1bf01442ff4eb156cd97f37f6a857dd2846786df3e7b971",
+    "apps/architecture-lab/current-identity-parallel-acceptance.json": "c4f53c4ee5354e45c756c66940c5127a776f60ba500bf15f94ab2d6ed7df2ba8",
+    "apps/architecture-lab/database-lease-clock-acceptance.json": "8fb19b5d94e6475a63ad33df84016b25c83785e30e25075fab901c7392e05b04",
+    "apps/architecture-lab/insights-report-source-compatibility.json": "502d4bc0529427664b2a13f9a3e273b288ba7285fd85e11199bfca72e906c809",
+    "apps/architecture-lab/private-recurring-source-adoption.json": "a79c186897851acb93142949fe7aee19184cbfe68b3acdf51cbda084c00c1254",
+    "apps/architecture-lab/private-recurring-source.json": "75877d5750e07d1c8172be0af76bc5933f2eeefc22cc39747a2621b9cab24619",
+    "apps/architecture-lab/sdk-1.33-compatibility.json": "3e3c8f43813d5c4888e206ac31433f60470eac4310abaa62bd32e1c901a0df3e",
+    "apps/architecture-lab/sdk-1.34-compatibility.json": "458ddbf661ce1a5666260a072a03f24ac016346bdd9a9efef7f2a1d497eee403",
+    "apps/architecture-lab/settled-external-failure-acceptance.json": "012a8223acd389ff655abdd61c2b8f436647955563ad9ad88a618bc7676a30bb",
+    "apps/architecture-lab/xray-current-operation-acceptance.json": "15486090ed10297e2ee5b666ff56245b72e346ccd37272ad076222c0af2068de"
+  },
+  "ownerPacketSha256": "caadc0cdf9322e218db6f1f9285d52ef5fe5ceaca84f672d77fe49e8fa44a1d0",
+  "runtimeActivated": false,
+  "newGrantsInstalled": false,
+  "providerAcquisitions": 0,
+  "notificationsDelivery": false,
+  "metadataPinnedByControlledCI": [
+    "apps/architecture-lab/market-calendar-source.mjs"
+  ]
+}

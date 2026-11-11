@@ -1,10 +1,14 @@
 export declare const ECR_CONTRACT: Readonly<{id: 'profitia.economic-calendar'; version: '1.1.0'}>
+export declare const ECR_CALENDAR_QUERY_CONTRACT: Readonly<{id: 'profitia.calendar-query'; version: '1.0.0'}>
 export declare const ECR_APPLICATION: string
 export declare const ECR_EVENT_RESOURCE: string
 export declare const ECR_PREFERENCE_RESOURCE: string
 export declare class CalendarError extends Error {code: string; status: number; constructor(code: string, status?: number)}
 export interface CalendarFilter {from?: string; to?: string; countries?: string[]; indicators?: string[]; importance?: number[]; eventText?: string; eventIds?: string[]; asKnownAt?: string; limit: number; after?: string}
-export interface Preferences {watchedCountries: string[]; watchedIndicators: string[]; watchedTopics: {kind: 'LOCAL_EVENT_TEXT_CONTAINS'; text: string}[]; savedFilters: {name: string; filter: CalendarFilter}[]; display: {timeZone?: string; view?: string}}
+export interface MarketCalendarSelection {q:string;targetId:string;region:string;status:'all'|'planned'|'published'|'revised'|'unresolved';period:'next'|'recent';view:'list'|'week'|'month'}
+export interface PublicationWatch {publicationId:string;approaching:boolean;results:boolean;changes:boolean}
+export interface Preferences {watchedCountries: string[]; watchedIndicators: string[]; watchedTopics: {kind: 'LOCAL_EVENT_TEXT_CONTAINS'; text: string}[]; savedFilters: {name: string; filter: CalendarFilter; calendar?:MarketCalendarSelection}[]; display: {timeZone?: string; view?: string};publicationFavourites?:string[];publicationWatches?:PublicationWatch[]}
+export declare function marketCalendarSelection(value:unknown):MarketCalendarSelection
 export type CalendarValue = string|number|null
 export interface EventData {
  eventId:string;publicationId?:string;entityLevel?:'EVENT_RELEASE';schedule?:Record<string,any>;releaseIdentityStatus?:string;source:{provider:'trading-economics'|'eia'|'commodities-sh';vendorEventId:string;sourceRecordRef:string;licenceRef:string;storageBasisRef:string;licenceVersion:string;family?:'publication-calendar';publicationRef?:string;rightsVersion?:string;consumerApplicationId?:string;retentionMode?:string;redistribution?:string};
