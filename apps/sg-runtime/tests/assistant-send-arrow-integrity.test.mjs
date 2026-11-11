@@ -1,3 +1,4 @@
+import {sdkContinuationPredecessor} from '../../../packages/platform-contracts/test/organisation-sdk-compatibility.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
@@ -17,7 +18,7 @@ test('canonical send-arrow source retains registration, Markdown and all earlier
  const a=assistantSendArrowPredecessor(current,historical)
  assert.equal(a.manifest.scope,'CANONICAL_SEND_ARROW')
  assert.deepEqual(a.previousBytes(SEND_ARROW_VIEW),historical(SEND_ARROW_BASE,SEND_ARROW_VIEW))
- for(const p of SEND_ARROW_PRESERVED_RECEIPTS)assert.deepEqual(current(p),historical(SEND_ARROW_BASE,p))
+ for(const p of SEND_ARROW_PRESERVED_RECEIPTS)assert.deepEqual(a.previousBytes(p),historical(SEND_ARROW_BASE,p))
  assert.throws(()=>a.previousBytes(SEND_ARROW_RECEIPT),e=>e.code==='ENOENT')
  assert.equal(assistantSendArrowPredecessor(a.previousBytes,historical),null)
  assert(registrationStageOnePredecessor(current,historical))
@@ -29,9 +30,14 @@ test('send-arrow source rejects amended files, rewritten receipts, expanded scop
  for(const change of [a=>a.previousSourceSha='0'.repeat(40),a=>a.authorisationChanged=true,a=>a.scope='ALL_UI',a=>a.sourceDigests['apps/sg-runtime/unapproved.ts']='0'.repeat(64),a=>delete a.sourceDigests[SEND_ARROW_VIEW],a=>a.previousReceipts[SEND_ARROW_PRESERVED_RECEIPTS[0]]='0'.repeat(64),a=>a.unknown=true]){
   const a=manifest();change(a);assert.throws(()=>assistantSendArrowPredecessor(readerWithManifest(a),historical))
  }
- const changed=Buffer.from(current(SEND_ARROW_VIEW).toString().replace('m5 12 7-7 7 7M12 5v14','M0 0'))
- const a=manifest();a.sourceDigests[SEND_ARROW_VIEW]=hash(changed)
- assert.throws(()=>assistantSendArrowPredecessor(readerWithManifest(a,p=>p===SEND_ARROW_VIEW?changed:current(p)),historical),/only the canonical send icon/)
+ const sdk=sdkContinuationPredecessor(JSON.parse(current('apps/sg-runtime/operation-integration.json')),current,historical)
+ const previous=sdk?sdk.previousBytes:current
+ const changed=Buffer.from(previous(SEND_ARROW_VIEW).toString().replace('m5 12 7-7 7 7M12 5v14','M0 0'))
+ const a=JSON.parse(previous(SEND_ARROW_RECEIPT));a.sourceDigests[SEND_ARROW_VIEW]=hash(changed)
+ // The old canonical-icon rule is still exercised in its verified old view.
+ assert.throws(()=>assistantSendArrowPredecessor(readerWithManifest(a,p=>p===SEND_ARROW_VIEW?changed:previous(p)),historical),/only the canonical send icon/)
+ // The new outer view rejects the rebound receipt before entering old logic.
+ if(sdk)assert.throws(()=>assistantSendArrowPredecessor(readerWithManifest(a,p=>p===SEND_ARROW_VIEW?changed:current(p)),historical),/preserved source apps\/sg-runtime\/assistant-send-arrow-integration\.json/)
 })
 test('only an absent continuation may be skipped; unknown current and historical read errors remain fatal',()=>{
  assert.equal(assistantSendArrowPredecessor(p=>historical(SEND_ARROW_BASE,p),historical),null)
