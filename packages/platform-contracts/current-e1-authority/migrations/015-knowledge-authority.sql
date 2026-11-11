@@ -113,7 +113,7 @@ DECLARE r jsonb; e profitia_access.external_identities%ROWTYPE; u profitia_acces
   INSERT INTO profitia_e1_authority.knowledge_delegations(delegation_id,job_id,source_id,generation_id,user_id,issuer,subject,scope,rights_digest,source_version,maximum_microusd,grant_fingerprint,status,created_at,expires_at)
    VALUES(gen_random_uuid(),(d->>'jobId')::uuid,(d->>'sourceId')::uuid,(d->>'generationId')::uuid,u.user_id,e.issuer,e.subject,d->>'scope',d->>'rightsDigest',1,(d->>'maximumMicrousd')::bigint,st->>'delegationFingerprint','ACTIVE',started_at,
     least((st->>'grantExpiresAt')::timestamptz,started_at+interval '30 minutes')) ON CONFLICT(job_id) DO NOTHING;
-  SELECT jsonb_build_object('delegationId',delegation_id,'jobId',job_id,'sourceId',source_id,'generationId',generation_id,'rightsDigest',rights_digest,'expiresAt',expires_at)
+  SELECT jsonb_build_object('delegationId',delegation_id,'jobId',job_id,'sourceId',source_id,'generationId',generation_id,'rightsDigest',rights_digest,'scope',scope,'sourceVersion',source_version,'maximumMicrousd',maximum_microusd,'expiresAt',expires_at)
    INTO delegated FROM profitia_e1_authority.knowledge_delegations WHERE job_id=(d->>'jobId')::uuid AND source_id=(d->>'sourceId')::uuid AND generation_id=(d->>'generationId')::uuid AND user_id=u.user_id AND status='ACTIVE';
   IF delegated IS NULL THEN RETURN NULL;END IF;
  END IF;
@@ -140,7 +140,7 @@ DECLARE r jsonb; d profitia_e1_authority.knowledge_delegations%ROWTYPE; st jsonb
  IF NOT EXISTS(SELECT 1 FROM profitia_access.external_identities WHERE issuer=d.issuer AND subject=d.subject AND user_id=d.user_id AND status='ACTIVE' AND expires_at>clock_timestamp()) THEN RETURN NULL;END IF;
  RETURN jsonb_build_object('contract','profitia.current-e1-knowledge/1.0.0','nonce',p_nonce,'binding',r->'binding','principal',(st->'principal')||jsonb_build_object('allowedScopes',jsonb_build_array(d.scope)),
  'grantFingerprint',st->>'grantFingerprint','expiresAt',least(d.expires_at,clock_timestamp()+interval '15 seconds'),
- 'sourceId',d.source_id,'generationId',d.generation_id,'delegationExpiresAt',d.expires_at);
+ 'sourceId',d.source_id,'generationId',d.generation_id,'rightsDigest',d.rights_digest,'sourceVersion',d.source_version,'maximumMicrousd',d.maximum_microusd,'delegationExpiresAt',d.expires_at);
 END $$;
 REVOKE ALL ON profitia_e1_authority.knowledge_receivers,profitia_e1_authority.knowledge_grants,profitia_e1_authority.knowledge_delegations FROM PUBLIC;
 REVOKE ALL ON FUNCTION profitia_e1_authority.knowledge_receiver(text),profitia_e1_authority.knowledge_ready(),profitia_e1_authority.knowledge_state(uuid,text,text),

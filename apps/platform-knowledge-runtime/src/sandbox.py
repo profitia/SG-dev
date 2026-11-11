@@ -12,9 +12,9 @@ def isolate(job_dir):
     libc = ctypes.CDLL(None, use_errno=True)
     machine = platform.machine()
     if machine == 'x86_64':
-        arch, blocked = 0xc000003e, [41,42,43,44,45,46,47,48,49,50,51,52,54,55,101,165,166,272,298,308,310,311,321,323,425,426,427,435,438]
+        arch, blocked = 0xc000003e, [42,43,44,45,46,47,51,52,54,55,101,165,166,272,298,308,310,311,321,323,425,426,427,435,438]
     elif machine == 'aarch64':
-        arch, blocked = 0xc00000b7, [198,200,201,202,203,204,205,206,207,208,209,210,211,117,40,39,97,241,268,270,271,280,282,425,426,427,435,438]
+        arch, blocked = 0xc00000b7, [202,203,206,207,208,209,210,211,117,40,39,97,241,268,270,271,280,282,425,426,427,435,438]
     else:
         raise RuntimeError('PARSER_ISOLATION_UNAVAILABLE')
     if libc.prctl(38, 1, 0, 0, 0) != 0:
@@ -54,11 +54,15 @@ def isolate(job_dir):
     instructions = [(0x20,0,0,4),(0x15,1,0,arch),(0x06,0,0,0x80000000),(0x20,0,0,0),
                     (0x35,0,1,0x40000000),(0x06,0,0,0x80000000)]
     # LibreOffice process launch uses an anonymous AF_UNIX socketpair. It
-    # cannot reach an address: socket, bind and connect remain denied, as do
+    # cannot reach an address: connect and accept remain denied, as do
     # message/FD transfer and io_uring. All other socketpair domains deny.
-    pair=53 if machine=='x86_64' else 199
-    instructions.extend([(0x15,0,4,pair),(0x20,0,0,16),(0x15,0,1,1),
-                         (0x06,0,0,0x7fff0000),(0x06,0,0,0x00050000 | errno.EPERM)])
+    # A dormant job-local Unix listener is required by Office initialization.
+    # Accept/connect stay denied: it cannot accept document commands or connect
+    # to another process. DAC makes /tmp and /var/tmp nonwritable; the fixed
+    # OSL_SOCKET_PATH is this Landlock-confined private job directory.
+    for local_call in ([41,53] if machine=='x86_64' else [198,199]):
+        instructions.extend([(0x15,0,4,local_call),(0x20,0,0,16),(0x15,0,1,1),
+                             (0x06,0,0,0x7fff0000),(0x06,0,0,0x00050000 | errno.EPERM)])
     for call in blocked:
         instructions.extend([(0x15,0,1,call),(0x06,0,0,0x00050000 | (errno.ENOSYS if call == 435 else errno.EPERM))])
     instructions.append((0x06,0,0,0x7fff0000))

@@ -180,7 +180,7 @@ def extract(path, extension, job):
         profile=job/'lo-profile';(profile/'user').mkdir(parents=True,exist_ok=True)
         (profile/'user'/'registrymodifications.xcu').write_text('<oor:items xmlns:oor="http://openoffice.org/2001/registry"><item oor:path="/org.openoffice.Office.Common/Security/Scripting"><prop oor:name="MacroSecurityLevel" oor:op="fuse"><value>3</value></prop></item></oor:items>')
         target='docx' if extension=='.doc' else 'pptx'
-        converted_process=subprocess.run(['libreoffice',f'-env:UserInstallation={profile.as_uri()}','--headless','--nologo','--nodefault','--nolockcheck','--nofirststartwizard',
+        converted_process=subprocess.run(['libreoffice',f'-env:UserInstallation={profile.as_uri()}',f'-env:OSL_SOCKET_PATH={job}','--headless','--nologo','--nodefault','--nolockcheck','--nofirststartwizard',
             '--convert-to',target,'--outdir',str(job),str(path)],capture_output=True,timeout=70,check=False)
         if converted_process.returncode:
             markers=['Permission denied','Operation not permitted','bootstrap','User installation','javaldx','socket','terminate','osl::','Fatal exception','Cannot create','Error:']

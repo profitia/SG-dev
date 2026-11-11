@@ -196,10 +196,11 @@ export function createKnowledgeOperationHost({independentQuery,application,trans
    const raw=JSON.stringify(p),key=createPrivateKey(workerCredential.privateKey);
    if(key.asymmetricKeyType!=='ed25519')deny();
    const admission=await remote(d,'worker',{consumerProof:{payload:raw,signature:sign(null,Buffer.from(raw),key).toString('base64url')},...body});
-   if(admission.sourceId!==job.source_id||admission.generationId!==job.generation_id)deny();
+   if(admission.sourceId!==job.source_id||admission.generationId!==job.generation_id||admission.rightsDigest!==job.delegation.rightsDigest
+    ||admission.sourceVersion!==job.delegation.sourceVersion||admission.maximumMicrousd!==job.delegation.maximumMicrousd)deny();
    const scope=Object.freeze({principal:freeze(structuredClone(admission.principal)),delegation:freeze(structuredClone(job.delegation)),expiresAt:admission.expiresAt});
    await rootPhase(d,admission,{scope:job.delegation.scope??admission.principal.allowedScopes[0],resourceId:job.source_id,delegationId:job.delegation.delegationId},'ADMIT');
-   active.set(scope,{deadline:Math.min(Date.parse(admission.delegationExpiresAt),Date.parse(job.deadline_at)),job:true,jobRecord:job,fingerprint:admission.grantFingerprint,principalDigest:hash(admission.principal)});return scope;
+   active.set(scope,{deadline:Math.min(Date.parse(admission.delegationExpiresAt),Date.parse(job.deadline_at)),job:true,jobRecord:freeze(structuredClone(job)),fingerprint:admission.grantFingerprint,principalDigest:hash(admission.principal)});return scope;
   },
   release(scope){active.delete(scope);},
   async authorizeProvider({scope,operation,model,reservationMicrousd=0}){
@@ -211,7 +212,8 @@ export function createKnowledgeOperationHost({independentQuery,application,trans
     const body={jobId:job.id,delegationId:job.delegation.delegationId,nonce,phase:'CHECKPOINT'},issuedAt=now();
     const payload=JSON.stringify({contract:KNOWLEDGE_E1_CONTRACT,role:d.binding.role,keyId:workerCredential.keyId,targetOrigin:d.authorityOrigin,bodyDigest:hash(body),issuedAt,expiresAt:issuedAt+15000});
     const current=await remote(d,'worker',{...body,consumerProof:{payload,signature:sign(null,Buffer.from(payload),createPrivateKey(workerCredential.privateKey)).toString('base64url')}});
-    if(current.grantFingerprint!==lease.fingerprint||hash(current.principal)!==lease.principalDigest||current.sourceId!==job.source_id||current.generationId!==job.generation_id)deny();
+    if(current.grantFingerprint!==lease.fingerprint||hash(current.principal)!==lease.principalDigest||current.sourceId!==job.source_id||current.generationId!==job.generation_id
+     ||current.rightsDigest!==job.delegation.rightsDigest||current.sourceVersion!==job.delegation.sourceVersion||current.maximumMicrousd!==job.delegation.maximumMicrousd)deny();
    }
    return true;
   },

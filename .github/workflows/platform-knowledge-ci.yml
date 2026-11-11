@@ -110,7 +110,7 @@ jobs:
           import os,sys,runpy,subprocess
           from pathlib import Path
           import shutil,tempfile
-          job=Path(tempfile.mkdtemp(prefix='pk-legacy-synthetic-'))
+          job=Path(tempfile.mkdtemp(prefix='pk-d-'))
           source=job/'source.doc';shutil.copyfile('/tmp/pk-fixtures/reference.doc',source)
           original=subprocess.run
           def diagnostic(*args,**kwargs):

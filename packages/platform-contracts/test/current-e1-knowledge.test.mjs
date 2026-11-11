@@ -47,7 +47,7 @@ test('native central SQL admits exact private account only and revokes durable w
   await assert.rejects(f.authority.authorizeKnowledgeHuman(new Request(human.url,{headers:{authorization:'Bearer SYNTHETIC_B'}}),make()));
   f.clerkState.banned=true;await assert.rejects(f.authority.authorizeKnowledgeHuman(human,make()));f.clerkState.banned=false;
   const ids={jobId:randomUUID(),sourceId:randomUUID(),generationId:randomUUID(),scope:'ACCOUNT_PRIVATE',ownerUserId:null,rightsDigest:'e'.repeat(64),sourceVersion:1,maximumMicrousd:1000000};
-  const admitted=await f.authority.authorizeKnowledgeHuman(human,make(['ACCOUNT_PRIVATE'],ids));assert.equal(admitted.delegation.sourceId,ids.sourceId);
+  const admitted=await f.authority.authorizeKnowledgeHuman(human,make(['ACCOUNT_PRIVATE'],ids));assert.equal(admitted.delegation.sourceId,ids.sourceId);assert.equal(admitted.delegation.sourceVersion,1);assert.equal(admitted.delegation.maximumMicrousd,1000000);assert.equal(admitted.delegation.scope,'ACCOUNT_PRIVATE');
   const pair=generateKeyPairSync('ed25519'),publicKey=pair.publicKey.export({type:'spki',format:'pem'}),workerBinding={...binding,applicationId:'platform-knowledge-development-worker',role:'platform_knowledge_worker'};
   await f.asOwner(0,db=>db.query(`INSERT INTO profitia_e1_authority.knowledge_receivers(login_role,application_id,kind,binding,origin,authority_origin,issuer,authorized_parties,key_id,public_key,status,source_ref,expires_at)
    VALUES('platform_knowledge_worker','platform-knowledge-development-worker','WORKER',$1,$2,$3,$4,$5,'synthetic-key',$6,'ACTIVE','SYNTHETIC_ONLY',now()+interval '1 hour')`,[JSON.stringify(workerBinding),origin,f.authorityOrigin,f.issuer,[origin],publicKey]));
@@ -55,7 +55,7 @@ test('native central SQL admits exact private account only and revokes durable w
   const issuedAt=Date.now(),payload=JSON.stringify({contract:KNOWLEDGE_E1_CONTRACT,role:'platform_knowledge_worker',keyId:'synthetic-key',targetOrigin:f.authorityOrigin,
    bodyDigest:createHash('sha256').update(JSON.stringify(body)).digest('hex'),issuedAt,expiresAt:issuedAt+15000});
   const input={consumerProof:{payload,signature:sign(null,Buffer.from(payload),pair.privateKey).toString('base64url')},...body};
-  const worker=new Request(f.authorityOrigin+'/v1/e1/knowledge/worker');const job=await f.authority.authorizeKnowledgeWorker(worker,input);assert.equal(job.sourceId,ids.sourceId);assert.equal(job.principal.internalUserId,U);
+  const worker=new Request(f.authorityOrigin+'/v1/e1/knowledge/worker');const job=await f.authority.authorizeKnowledgeWorker(worker,input);assert.equal(job.sourceId,ids.sourceId);assert.equal(job.principal.internalUserId,U);assert.equal(job.rightsDigest,ids.rightsDigest);assert.equal(job.sourceVersion,1);assert.equal(job.maximumMicrousd,1000000);
   await f.asOwner(0,db=>db.query("UPDATE profitia_e1_authority.knowledge_grants SET status='REVOKED' WHERE user_id=$1 AND operation='document.import'",[U]));
   await assert.rejects(f.authority.authorizeKnowledgeWorker(worker,input));
  }finally{await f.close();}
