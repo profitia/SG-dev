@@ -12,7 +12,8 @@
     "migrations",
     "insights-service.mjs",
     "recurring.mjs",
-    "recurring.d.mts"
+    "recurring.d.mts",
+    "install-recurring.mjs"
   ],
   "exports": {
     "./first-party": {
