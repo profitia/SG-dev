@@ -20,6 +20,9 @@ test('current organisation SDK requires both actual receivers before exposing im
   assert.deepEqual(value.prior,JSON.parse(historical(value.record.previousSourceSha,pathFor(projectKey))))
   const core='packages/platform-contracts/src/operation-context.mjs'
   assert.deepEqual(value.previousBytes(core),historical(value.record.previousSourceSha,core))
+  const route='apps/platform-source-hub/scripts/ci-routing.mjs'
+  assert.deepEqual(value.previousBytes('apps/srm/../platform-source-hub/scripts/ci-routing.mjs'),historical(value.record.previousSourceSha,route))
+  assert.throws(()=>value.previousBytes('../outside-the-repository'))
   assert.equal(value.prior.sdkSourceContinuations,undefined)
  }
  assert.equal(acceptedSdkSource().acceptanceId,'organisation-bootstrap-v1')
