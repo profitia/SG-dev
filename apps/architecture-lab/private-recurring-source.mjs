@@ -2,6 +2,10 @@
 // The reviewed current graph is verified before any immutable predecessor is read.
 import assert from 'node:assert/strict'
 import {createHash} from 'node:crypto'
+import fs from 'node:fs'
+import {execFileSync} from 'node:child_process'
+import path from 'node:path'
+import {fileURLToPath} from 'node:url'
 export const RECURRING_SOURCE_RECORD='apps/architecture-lab/private-recurring-source.json'
 export const RECURRING_SOURCE_BASE='141cc559063c43cefa991acb9260b32ac5b92615'
 const RECORD_SHA256='92b7ad887e64811219ba9b1d7fd8f7a5c0cf7dddd02ef3270a5fc9782016ed41'
@@ -30,4 +34,12 @@ export function recurringSourcePredecessor(current,historical){
   if(!cache.has(p))cache.set(p,Buffer.from(historical(RECURRING_SOURCE_BASE,p)))
   return Buffer.from(cache.get(p))
  }}
+}
+
+// Test/adoption convenience only; every actual source byte is authenticated.
+export function recurringSourceFilesystem(root){
+ const cwd=root instanceof URL?fileURLToPath(root):root
+ const current=p=>fs.readFileSync(path.join(cwd,p))
+ const historical=(sha,p)=>execFileSync('git',['show',sha+':'+p],{cwd})
+ return recurringSourcePredecessor(current,historical)??{manifest:null,previousBytes:current}
 }
