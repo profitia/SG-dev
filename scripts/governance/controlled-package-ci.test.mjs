@@ -12,6 +12,7 @@ import {createHash} from 'node:crypto'
 import {ECR_G1_GOVERNANCE_REVIEW,assertEcrG1ReviewEntry} from './controlled-package-ci.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
+import {PRIVATE_RECURRING_SHELL_REVIEW} from './controlled-package-ci.mjs'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
@@ -1919,4 +1920,35 @@ test('complete recurring proof preserves legacy Root without claiming runtime ac
  assert.deepEqual(privateRecurringProofContract(r,completeRecurringBytes,b),privateRecurringProofContract(r,finalRecurringBytes,b))
  const record=JSON.parse(completeRecurringBytes);for(const flag of ['runtimeActivated','newGrantsInstalled','providerCallsPerformed','deploymentPerformed'])assert.equal(record[flag],false)
  rejection(()=>privateRecurringProofContract(r,completeRecurringBytes,Buffer.concat([b,Buffer.from('\n')])))
+})
+
+
+function piShellFixture(){
+ const r=PRIVATE_RECURRING_SHELL_REVIEW,files=Object.entries(r.entries).map(([filename,e])=>({filename,sha:e.sha,status:e.status}))
+ return{r,files,p:{...pr(),number:r.prNumber,changed_files:files.length,base:{...pr().base,sha:r.baseSha},head:{...pr().head,sha:r.sourceSha,ref:r.branch}}}
+}
+test('PI shell correction admits exactly five owner-routed source versions and regular modes',()=>{
+ const {r,files,p}=piShellFixture();assert.equal(files.length,5);assert.equal(r.prNumber,1014)
+ assert.equal(createHash('sha256').update(JSON.stringify(r.entries)).digest('hex'),'da0b1212c36b21a3f3e59bbb90b012cd727e8a80108c11fd1f92d8e33464ef6a')
+ assert.deepEqual([...new Set(Object.values(r.entries).map(e=>e.projectKey))].sort(),['ARCHITECTURE','SG2'])
+ assertArchitectureFiles(p,files);assert.equal(selectCandidate(context(),p,r.sourceSha,{files}),r.sourceSha)
+ for(const f of files){assertPrivateRecurringReviewEntry(f,'100644 blob '+f.sha+'\t'+f.filename+'\0');for(const mode of ['100755','120000','160000'])rejection(()=>assertPrivateRecurringReviewEntry(f,mode+' blob '+f.sha+'\t'+f.filename+'\0'))}
+})
+test('PI shell correction rejects changed scope, source bytes, status and borrowed owner identity',()=>{
+ const {r,files,p}=piShellFixture()
+ for(const edit of [f=>f.pop(),f=>f.push(f[0]),f=>f[0].sha='f'.repeat(40),f=>f[0].status='removed',f=>f[0].previous_filename='elsewhere',f=>f[0].filename='apps/sg-runtime/app/api/unreviewed.ts']){
+  const bad=structuredClone(files);edit(bad);rejection(()=>selectCandidate(context(),{...p,changed_files:bad.length},r.sourceSha,{files:bad}))
+ }
+ for(const edit of [q=>q.number=995,q=>q.head.ref='architecture/pi-private-recurring-20261111',q=>q.head.ref='architecture/another',q=>q.head.repo.full_name='attacker/fork',q=>q.user.login='attacker',q=>q.base.ref='staging',q=>q.head.sha=sha]){
+  const bad=structuredClone(p);edit(bad);rejection(()=>selectCandidate(context(),bad,r.sourceSha,{files}))
+ }
+})
+test('PI shell correction cannot reuse or alter any of the three accepted recurring review sets',()=>{
+ const shell=piShellFixture()
+ for(const old of [PRIVATE_RECURRING_REVIEW,PRIVATE_RECURRING_FINAL_REVIEW,PRIVATE_RECURRING_COMPLETION_REVIEW]){
+  const files=Object.entries(old.entries).map(([filename,e])=>({filename,sha:e.sha,status:e.status})),p={...pr(),number:old.prNumber,changed_files:files.length,base:{...pr().base,sha:old.baseSha},head:{...pr().head,sha:old.sourceSha,ref:old.branch}}
+  assert.equal(selectCandidate(context(),p,p.head.sha,{files}),p.head.sha)
+  rejection(()=>selectCandidate(context(),{...shell.p,changed_files:files.length},shell.r.sourceSha,{files}))
+  rejection(()=>selectCandidate(context(),{...p,changed_files:shell.files.length},p.head.sha,{files:shell.files}))
+ }
 })
