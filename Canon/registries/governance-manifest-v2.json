@@ -1,6 +1,6 @@
 {
   "schemaVersion": "2.0",
-  "manifestVersion": "3.49.1",
+  "manifestVersion": "3.49.2",
   "owner": "Profitia Governance",
   "entrypoint": "AGENTS.md",
   "preflight": "scripts/governance/governance-preflight.mjs",
@@ -13,6 +13,56 @@
     "requireOrderedActiveDocuments": true
   },
   "documents": [
+    {
+      "id": "business-outcome-engineering",
+      "version": "1.1",
+      "path": "docs/agent-instructions/business-outcome-engineering-v1.1.md",
+      "status": "ACTIVE",
+      "loadOrder": 561,
+      "owner": "Governance Source Layer",
+      "appliesTo": [
+        "SG2",
+        "SRM",
+        "ARCHITECTURE"
+      ],
+      "dependsOn": [
+        "agent-execution-canon"
+      ]
+    },
+    {
+      "id": "full-autopilot-outcome-first",
+      "version": "2.0",
+      "path": "docs/agent-instructions/full-autopilot-v2.md",
+      "status": "ACTIVE",
+      "loadOrder": 562,
+      "owner": "Governance Source Layer",
+      "appliesTo": [
+        "SG2",
+        "SRM",
+        "ARCHITECTURE"
+      ],
+      "dependsOn": [
+        "agent-execution-canon",
+        "business-outcome-engineering"
+      ]
+    },
+    {
+      "id": "ux-ui-design-canon",
+      "version": "snapshot-0fe00d579b31",
+      "path": "docs/agent-instructions/ux-ui-design-canon.md",
+      "status": "ACTIVE",
+      "loadOrder": 563,
+      "owner": "Governance Source Layer",
+      "appliesTo": [
+        "SG2",
+        "SRM",
+        "ARCHITECTURE"
+      ],
+      "dependsOn": [
+        "repository-routing",
+        "post-migration-classification"
+      ]
+    },
     {
       "id": "universal-project-execution-wrapper",
       "version": "1.2",
@@ -30,7 +80,10 @@
         "project-profile-registry",
         "repository-routing",
         "post-migration-classification",
-        "environment-release-promotion"
+        "environment-release-promotion",
+        "business-outcome-engineering",
+        "full-autopilot-outcome-first",
+        "ux-ui-design-canon"
       ]
     },
     {
