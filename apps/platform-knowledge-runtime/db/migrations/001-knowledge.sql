@@ -86,7 +86,7 @@ CREATE INDEX jobs_pending ON platform_knowledge.jobs(status,available_at);
 CREATE TABLE platform_knowledge.provider_calls(
  id uuid PRIMARY KEY, source_id uuid NOT NULL REFERENCES platform_knowledge.sources(id),
  generation_id uuid REFERENCES platform_knowledge.generations(id),
- call_key text NOT NULL UNIQUE, stage_key text NOT NULL, reserved_by name NOT NULL DEFAULT current_user,
+ call_key text NOT NULL UNIQUE, stage_key text NOT NULL, request_owner_user_id text, reserved_by name NOT NULL DEFAULT current_user,
  kind text NOT NULL CHECK(kind IN ('COGNITIVE','EMBEDDING','QUERY_EMBEDDING','SUMMARY')),
  model text NOT NULL, state text NOT NULL CHECK(state IN ('RESERVED','SUCCEEDED','FAILED_BEFORE_SEND','UNKNOWN')),
  reserved_microusd bigint NOT NULL CHECK(reserved_microusd>0), spent_microusd bigint NOT NULL DEFAULT 0 CHECK(spent_microusd>=0),
@@ -141,7 +141,7 @@ CREATE POLICY worker_sources ON platform_knowledge.sources TO platform_knowledge
 CREATE POLICY owner_sources ON platform_knowledge.sources TO platform_knowledge_owner USING(true) WITH CHECK(true);
 -- Product rows never carry identity grants. Child rows inherit source access.
 DO $$ DECLARE t text; BEGIN
- FOREACH t IN ARRAY ARRAY['generations','jobs','provider_calls'] LOOP
+ FOREACH t IN ARRAY ARRAY['generations','jobs'] LOOP
   EXECUTE format('ALTER TABLE platform_knowledge.%I ENABLE ROW LEVEL SECURITY',t);
   EXECUTE format('ALTER TABLE platform_knowledge.%I FORCE ROW LEVEL SECURITY',t);
   EXECUTE format('CREATE POLICY api_child ON platform_knowledge.%I TO platform_knowledge_api USING(EXISTS(SELECT 1 FROM platform_knowledge.sources s WHERE s.id=source_id AND platform_knowledge.source_visible(s))) WITH CHECK(EXISTS(SELECT 1 FROM platform_knowledge.sources s WHERE s.id=source_id AND platform_knowledge.source_visible(s)))',t);
@@ -154,20 +154,68 @@ DO $$ DECLARE t text; BEGIN
   EXECUTE format('CREATE POLICY worker_child ON platform_knowledge.%I TO platform_knowledge_worker,platform_knowledge_owner USING(true) WITH CHECK(true)',t);
  END LOOP;
 END $$;
+ALTER TABLE platform_knowledge.provider_calls ENABLE ROW LEVEL SECURITY;
+ALTER TABLE platform_knowledge.provider_calls FORCE ROW LEVEL SECURITY;
+CREATE POLICY api_calls ON platform_knowledge.provider_calls TO platform_knowledge_api USING(
+ (generation_id IS NOT NULL OR request_owner_user_id=nullif(current_setting('pk.user_id',true),''))
+ AND EXISTS(SELECT 1 FROM platform_knowledge.sources s WHERE s.id=source_id AND platform_knowledge.source_visible(s)));
+CREATE POLICY worker_calls ON platform_knowledge.provider_calls TO platform_knowledge_worker,platform_knowledge_owner USING(true) WITH CHECK(true);
 REVOKE ALL ON ALL TABLES IN SCHEMA platform_knowledge FROM PUBLIC;
 REVOKE ALL ON ALL FUNCTIONS IN SCHEMA platform_knowledge FROM PUBLIC;
 GRANT SELECT ON platform_knowledge.schema_version TO platform_knowledge_api,platform_knowledge_worker;
 GRANT SELECT,INSERT,UPDATE ON platform_knowledge.sources,platform_knowledge.generations,platform_knowledge.jobs TO platform_knowledge_api;
 GRANT SELECT ON platform_knowledge.chunks,platform_knowledge.cognition TO platform_knowledge_api;
-GRANT SELECT,INSERT,UPDATE ON platform_knowledge.provider_calls,platform_knowledge.budget TO platform_knowledge_api;
+GRANT SELECT ON platform_knowledge.provider_calls,platform_knowledge.budget TO platform_knowledge_api,platform_knowledge_worker;
 GRANT SELECT ON platform_knowledge.account_state TO platform_knowledge_api;
 GRANT INSERT(user_id,memory_enabled,consent_version,consent_at),UPDATE(memory_enabled,consent_version,consent_at) ON platform_knowledge.account_state TO platform_knowledge_api;
 GRANT SELECT,INSERT,UPDATE,DELETE ON platform_knowledge.sources,platform_knowledge.generations,platform_knowledge.jobs,
- platform_knowledge.chunks,platform_knowledge.cognition,platform_knowledge.provider_calls,platform_knowledge.budget,
+ platform_knowledge.chunks,platform_knowledge.cognition,platform_knowledge.provider_calls,
  platform_knowledge.account_state,platform_knowledge.lifecycle_receipts TO platform_knowledge_worker;
 GRANT INSERT ON platform_knowledge.audit TO platform_knowledge_api,platform_knowledge_worker;
 GRANT USAGE ON SEQUENCE platform_knowledge.audit_id_seq TO platform_knowledge_api,platform_knowledge_worker;
 GRANT EXECUTE ON FUNCTION platform_knowledge.source_visible(platform_knowledge.sources),platform_knowledge.source_manageable(platform_knowledge.sources) TO platform_knowledge_api;
+-- Native financial boundary sees ALL calls for the document while API caches
+-- remain private to their request owner. Neither runtime can reset the budget.
+CREATE FUNCTION platform_knowledge.reserve_provider_call(p_source uuid,p_generation uuid,p_key text,p_kind text,p_model text,p_max bigint,p_stage text,p_user text)
+ RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE b platform_knowledge.budget%ROWTYPE;c platform_knowledge.provider_calls%ROWTYPE;s platform_knowledge.sources%ROWTYPE;
+ doc_spent bigint;doc_reserved bigint;call_id uuid;BEGIN
+ IF session_user NOT IN ('platform_knowledge_api','platform_knowledge_worker') OR p_key!~'^[a-f0-9]{64}$' OR p_max NOT BETWEEN 1 AND 1000000
+ OR p_kind NOT IN ('COGNITIVE','SUMMARY','EMBEDDING','QUERY_EMBEDDING') OR length(p_stage) NOT BETWEEN 1 AND 128
+ OR p_model IS DISTINCT FROM (CASE WHEN p_kind IN ('EMBEDDING','QUERY_EMBEDDING') THEN 'text-embedding-3-small' ELSE 'gpt-6-luna' END)
+ OR(session_user='platform_knowledge_api' AND(p_user IS DISTINCT FROM nullif(current_setting('pk.user_id',true),'') OR p_user IS NULL OR p_generation IS NOT NULL))
+ OR(session_user='platform_knowledge_worker' AND(p_generation IS NULL OR p_user IS NOT NULL)) THEN RAISE EXCEPTION 'CALL_RESERVATION_REJECTED';END IF;
+ SELECT * INTO s FROM platform_knowledge.sources WHERE id=p_source FOR SHARE;
+ IF NOT FOUND OR NOT platform_knowledge.source_visible(s) OR NOT coalesce((s.rights->>'externalAiAllowed')::boolean,false)
+ OR(p_generation IS NOT NULL AND NOT EXISTS(SELECT 1 FROM platform_knowledge.generations WHERE id=p_generation AND source_id=p_source AND state='BUILDING')) THEN RAISE EXCEPTION 'CALL_SOURCE_REJECTED';END IF;
+ SELECT * INTO b FROM platform_knowledge.budget WHERE id=true FOR UPDATE;
+ IF b.id IS DISTINCT FROM true THEN RAISE EXCEPTION 'BUDGET_NOT_CONFIGURED';END IF;
+ SELECT * INTO c FROM platform_knowledge.provider_calls WHERE call_key=p_key;
+ IF FOUND THEN
+  IF c.source_id IS DISTINCT FROM p_source OR c.generation_id IS DISTINCT FROM p_generation OR c.request_owner_user_id IS DISTINCT FROM p_user
+   OR c.reserved_by<>session_user THEN RAISE EXCEPTION 'CALL_CACHE_SCOPE_REJECTED';END IF;
+  RETURN jsonb_build_object('existing',true,'state',c.state,'result',c.result);
+ END IF;
+ SELECT coalesce(sum(spent_microusd),0),coalesce(sum(CASE WHEN state IN ('RESERVED','UNKNOWN') THEN reserved_microusd ELSE 0 END),0)
+ INTO doc_spent,doc_reserved FROM platform_knowledge.provider_calls WHERE source_id=p_source;
+ IF b.ceiling_microusd NOT BETWEEN 1 AND 10000000 OR b.spent_microusd+b.reserved_microusd+p_max>b.ceiling_microusd
+ OR doc_spent+doc_reserved+p_max>1000000 THEN RETURN jsonb_build_object('budgetExceeded',true);END IF;
+ call_id:=gen_random_uuid();
+ INSERT INTO platform_knowledge.provider_calls(id,source_id,generation_id,call_key,kind,model,state,reserved_microusd,stage_key,request_owner_user_id,reserved_by)
+ VALUES(call_id,p_source,p_generation,p_key,p_kind,p_model,'RESERVED',p_max,p_stage,p_user,session_user);
+ UPDATE platform_knowledge.budget SET reserved_microusd=reserved_microusd+p_max WHERE id=true;
+ RETURN jsonb_build_object('id',call_id);
+END $$;
+REVOKE ALL ON FUNCTION platform_knowledge.reserve_provider_call(uuid,uuid,text,text,text,bigint,text,text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION platform_knowledge.reserve_provider_call(uuid,uuid,text,text,text,bigint,text,text) TO platform_knowledge_api,platform_knowledge_worker;
+CREATE FUNCTION platform_knowledge.upload_capacity(p_bytes integer) RETURNS boolean
+ LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$ DECLARE n integer;size bigint;BEGIN
+ IF session_user<>'platform_knowledge_api' OR p_bytes NOT BETWEEN 1 AND 52428800 THEN RETURN false;END IF;
+ PERFORM 1 FROM platform_knowledge.budget WHERE id=true FOR UPDATE;
+ SELECT count(*),coalesce(sum(size_bytes),0) INTO n,size FROM platform_knowledge.sources WHERE raw_key IS NOT NULL AND raw_deleted_at IS NULL;
+ RETURN n<20 AND size+p_bytes<=262144000;END $$;
+REVOKE ALL ON FUNCTION platform_knowledge.upload_capacity(integer) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION platform_knowledge.upload_capacity(integer) TO platform_knowledge_api;
 -- Settle an already-reserved external effect even after source/account
 -- revocation. Runtime cannot read another principal's data through this port.
 CREATE FUNCTION platform_knowledge.settle_provider_call(p_id uuid,p_spent bigint,p_input integer,p_output integer,p_response text,p_result jsonb) RETURNS boolean
@@ -175,7 +223,7 @@ CREATE FUNCTION platform_knowledge.settle_provider_call(p_id uuid,p_spent bigint
 DECLARE c platform_knowledge.provider_calls%ROWTYPE; usable boolean; BEGIN
  SELECT * INTO c FROM platform_knowledge.provider_calls WHERE id=p_id AND reserved_by=session_user FOR UPDATE;
  IF NOT FOUND OR c.state<>'RESERVED' OR p_spent<0 OR p_input<0 OR p_output<0 THEN RAISE EXCEPTION 'CALL_SETTLEMENT_REJECTED';END IF;
- SELECT deleted_at IS NULL AND revoked_at IS NULL AND NOT EXISTS(SELECT 1 FROM platform_knowledge.account_state a WHERE a.user_id=s.owner_user_id AND a.deleted_at IS NOT NULL)
+ SELECT deleted_at IS NULL AND revoked_at IS NULL AND(expires_at IS NULL OR expires_at>clock_timestamp()) AND coalesce((rights->>'externalAiAllowed')::boolean,false) AND NOT EXISTS(SELECT 1 FROM platform_knowledge.account_state a WHERE a.user_id=s.owner_user_id AND a.deleted_at IS NOT NULL)
  INTO usable FROM platform_knowledge.sources s WHERE id=c.source_id FOR SHARE;
  UPDATE platform_knowledge.provider_calls SET state='SUCCEEDED',spent_microusd=p_spent,input_tokens=p_input,output_tokens=p_output,
   response_id=p_response,result=CASE WHEN usable THEN p_result ELSE NULL END,finished_at=clock_timestamp() WHERE id=p_id;

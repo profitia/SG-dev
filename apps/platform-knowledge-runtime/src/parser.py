@@ -188,16 +188,20 @@ def extract(path, extension, job):
     raise ValueError('UNSUPPORTED_FORMAT')
 
 if __name__=='__main__':
+    stage='INITIALIZE'
     try:
         path=Path(sys.argv[1]).resolve();job=path.parent
         os.environ.clear();os.environ.update({'PATH':'/usr/local/bin:/usr/bin:/bin','HOME':str(job),'TMPDIR':str(job),'LANG':'C.UTF-8',
             'SAL_USE_VCLPLUGIN':'svp','OMP_THREAD_LIMIT':'1','OPENBLAS_NUM_THREADS':'1'})
-        isolate(str(job))
+        stage='ISOLATION';isolate(str(job));stage='SOURCE_CHECK'
         if not path.is_file() or not 0<path.stat().st_size<=52428800: raise ValueError('FILE_LIMIT')
+        stage='EXTRACTION'
         with contextlib.redirect_stdout(sys.stderr):
             units,inventory=extract(path,sys.argv[2].lower(),job)
         if not units or len(units)>MAX_UNITS or sum(len(u['text']) for u in units)>MAX_CHARS: raise ValueError('EXTRACTED_TEXT_LIMIT')
         print(json.dumps({'parserVersion':VERSION,'inventory':inventory,'units':units},ensure_ascii=False))
     except Exception as error:
         code=str(error) if str(error) in ['PARSER_ISOLATION_UNAVAILABLE','UNSAFE_DOCUMENT','UNSUPPORTED_FORMAT','FORMAT_MISMATCH','FILE_LIMIT','EXTRACTED_TEXT_LIMIT','LEGACY_CONVERSION_FAILED'] else 'EXTRACTION_FAILED'
-        print(json.dumps({'error':code}));sys.exit(1)
+        kind=type(error).__name__
+        allowed=['PermissionError','ImportError','ModuleNotFoundError','RuntimeError','ValueError','MemoryError','FileNotFoundError','TypeError','AttributeError','OSError']
+        print(json.dumps({'error':code,'failureStage':stage,'exceptionType':kind if kind in allowed else 'UNKNOWN'}));sys.exit(1)

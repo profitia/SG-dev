@@ -142,7 +142,7 @@ export function createKnowledgeOperationHost({independentQuery,application,trans
       access:{type:isJob?'SERVICE_GRANT':'ACCOUNT_SELF',actorId,organisationId:null,status:'ACTIVE',version:admission.grantFingerprint,
        sourceRef:'current-e1-knowledge',expiresAt:admission.expiresAt,permissions:[{operation:request.operation,feature:'platform_knowledge',resourceId:request.resourceId}],denies:[]}},
      assertKnowledgeBudget:async()=>{const b=await one(db.query.bind(db),'SELECT ceiling_microusd,spent_microusd,reserved_microusd FROM platform_knowledge.budget WHERE id=true');
-      if(Number(b.ceiling_microusd)>10000000||Number(b.ceiling_microusd)<1||Number(b.spent_microusd)+Number(b.reserved_microusd)>=Number(b.ceiling_microusd))deny();},
+      if(Number(b.ceiling_microusd)>10000000||Number(b.ceiling_microusd)<1||Number(b.spent_microusd)<0||Number(b.reserved_microusd)<0)deny();},
      projectOutput:async value=>{if(refresh){const current=await refresh();if(current.grantFingerprint!==admission.grantFingerprint||current.principal.internalUserId!==p.internalUserId)deny();}return value;},
      recordOutcome:event=>writeAudit(db.query.bind(db),event)});
    })});
@@ -190,7 +190,7 @@ export function createKnowledgeOperationHost({independentQuery,application,trans
    const lease=active.get(scope);if(!lease||lease.deadline<=now()||!['gpt-6-luna','text-embedding-3-small'].includes(model)
     ||!['TOKEN_COUNT','COGNITIVE','EMBEDDING','QUERY_EMBEDDING','SUMMARY'].includes(operation)||!Number.isSafeInteger(reservationMicrousd)||reservationMicrousd<0||reservationMicrousd>1000000)deny();
    if(!lease.job&&operation!=='TOKEN_COUNT'){const p=await lease.refresh();if(p.grantFingerprint!==lease.fingerprint||hash(p.principal)!==lease.principalDigest)deny();}
-   if(lease.job&&operation!=='TOKEN_COUNT'){
+   if(lease.job){
     const d=await descriptor(),job=lease.jobRecord,nonce=randomBytes(32).toString('hex');
     const body={jobId:job.id,delegationId:job.delegation.delegationId,nonce,phase:'CHECKPOINT'},issuedAt=now();
     const payload=JSON.stringify({contract:KNOWLEDGE_E1_CONTRACT,role:d.binding.role,keyId:workerCredential.keyId,targetOrigin:d.authorityOrigin,bodyDigest:hash(body),issuedAt,expiresAt:issuedAt+15000});

@@ -1,7 +1,6 @@
-import {randomUUID} from 'node:crypto';
 import {Tiktoken} from 'js-tiktoken/lite';
 import cl100kBase from 'js-tiktoken/ranks/cl100k_base';
-import {PROVIDER,quoteMaximumCost,assertBudgetReservation} from '@profitia/platform-knowledge-core/policy';
+import {PROVIDER,quoteMaximumCost} from '@profitia/platform-knowledge-core/policy';
 import {transaction,Fault,digest} from './store.mjs';
 const embeddingEncoding=new Tiktoken(cl100kBase);
 export const embeddingTokens=text=>embeddingEncoding.encode(text,[],[]).length;
@@ -31,25 +30,18 @@ export function createProvider({pool,apiKey,authorize,fetchImpl=fetch}){
  async function paid({sourceId,generationId=null,sourceRefs=[{sourceId,generationId}],key,kind,body,reservation,scope,validate,signal}){
   // Authority is checked at provider-operation boundary, not for each chunk.
   await authorize({scope,operation:kind,model:body.model,reservationMicrousd:reservation});
-  const callKey=digest({sourceId,generationId,key,kind,body});
+  const callKey=digest({sourceId,generationId,key,kind,body,requestOwnerId:generationId===null?scope.principal.internalUserId:null});
   const record=await transaction(pool,async db=>{
    const refs=[...new Map(sourceRefs.map(r=>[r.sourceId,r])).values()];
    if(!refs.length||refs.length>24)throw new Fault(403,'RIGHTS_DENIED');
    const sources=await db.query(`SELECT id,active_generation_id FROM platform_knowledge.sources WHERE id=ANY($1::uuid[]) AND deleted_at IS NULL AND revoked_at IS NULL
     AND(expires_at IS NULL OR expires_at>clock_timestamp()) AND (rights->>'externalAiAllowed')::boolean FOR SHARE`,[refs.map(r=>r.sourceId)]);
    if(sources.rowCount!==refs.length||refs.some(r=>r.requireActive&&sources.rows.find(s=>s.id===r.sourceId)?.active_generation_id!==r.generationId))throw new Fault(403,'RIGHTS_DENIED');
-   const budget=(await db.query('SELECT * FROM platform_knowledge.budget WHERE id=true FOR UPDATE')).rows[0];
-   const existing=(await db.query('SELECT * FROM platform_knowledge.provider_calls WHERE call_key=$1 FOR UPDATE',[callKey])).rows[0];
-   if(existing){if(existing.state==='SUCCEEDED'){if(existing.result!==null)return {cached:existing.result};throw new Fault(422,'PAID_RESULT_UNUSABLE');}throw new Fault(409,'PAID_RESULT_UNKNOWN');}
-   const totals=(await db.query(`SELECT coalesce(sum(spent_microusd),0)::bigint AS spent,
-    coalesce(sum(CASE WHEN state IN ('RESERVED','UNKNOWN') THEN reserved_microusd ELSE 0 END),0)::bigint AS reserved
-    FROM platform_knowledge.provider_calls WHERE source_id=$1`,[sourceId])).rows[0];
-   assertBudgetReservation({spentMicrousd:Number(budget.spent_microusd),reservedMicrousd:Number(budget.reserved_microusd),
-    documentSpentMicrousd:Number(totals.spent),documentReservedMicrousd:Number(totals.reserved),nextMicrousd:reservation});
-   if(Number(budget.spent_microusd)+Number(budget.reserved_microusd)+reservation>Number(budget.ceiling_microusd))throw new Fault(429,'BUDGET_EXCEEDED');
-   const id=randomUUID();await db.query(`INSERT INTO platform_knowledge.provider_calls(id,source_id,generation_id,call_key,kind,model,state,reserved_microusd,stage_key)
-    VALUES($1,$2,$3,$4,$5,$6,'RESERVED',$7,$8)`,[id,sourceId,generationId,callKey,kind,body.model,reservation,key]);
-   await db.query('UPDATE platform_knowledge.budget SET reserved_microusd=reserved_microusd+$1 WHERE id=true',[reservation]);return{id};
+   const record=(await db.query('SELECT platform_knowledge.reserve_provider_call($1,$2,$3,$4,$5,$6,$7,$8) AS admission',[
+    sourceId,generationId,callKey,kind,body.model,reservation,key,generationId===null?scope.principal.internalUserId:null])).rows[0].admission;
+   if(record.budgetExceeded)throw new Fault(429,'BUDGET_EXCEEDED');
+   if(record.existing){if(record.state==='SUCCEEDED'){if(record.result!==null)return{cached:record.result};throw new Fault(422,'PAID_RESULT_UNUSABLE');}throw new Fault(409,'PAID_RESULT_UNKNOWN');}
+   if(!record.id)throw new Fault(503,'BUDGET_ADMISSION_UNAVAILABLE');return{id:record.id};
   },scope?.principal??null);
   if(record.cached)return record.cached;
   let response;
@@ -58,6 +50,7 @@ export function createProvider({pool,apiKey,authorize,fetchImpl=fetch}){
    await pool.query('SELECT platform_knowledge.unknown_provider_call($1::uuid)',[record.id]);
    throw new Fault(503,'PAID_RESULT_UNKNOWN');
   }
+  let authorityCurrent=true;try{await authorize({scope,operation:kind,model:body.model,reservationMicrousd:0});}catch{authorityCurrent=false;}
   const usage=response.usage;
   const inputTokens=usage?.input_tokens??usage?.prompt_tokens,outputTokens=usage?.output_tokens??0;
   if(!Number.isSafeInteger(inputTokens)||!Number.isSafeInteger(outputTokens)||inputTokens<0||outputTokens<0){
@@ -67,6 +60,7 @@ export function createProvider({pool,apiKey,authorize,fetchImpl=fetch}){
   // Conservative usage-based estimate; billing reconciliation remains separate.
   const spent=Math.ceil((kind.includes('EMBEDDING')?inputTokens*0.02:inputTokens*0.125+outputTokens*0.5)*1.1);
   let value,validationError;try{value=validate(response);}catch{validationError=true;value=null;}
+  if(!authorityCurrent)value=null;
   const settled=await pool.query('SELECT platform_knowledge.settle_provider_call($1,$2,$3,$4,$5,$6::jsonb) AS usable',[record.id,spent,inputTokens,outputTokens,response.id??null,JSON.stringify(value)]);
   if(!settled.rows[0].usable)value=null;
   if(validationError)throw new Fault(422,'COGNITIVE_OUTPUT_INVALID');

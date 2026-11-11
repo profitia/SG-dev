@@ -61,7 +61,7 @@ test('native paid ledger prevents concurrent duplicate calls and settles spend a
   const provider=createProvider({pool:api,apiKey:'SYNTHETIC_ONLY',authorize:async()=>true,fetchImpl:async()=>{
    calls++;started();await wait;return Response.json({usage:{prompt_tokens:2,total_tokens:2},data:[{index:0,embedding:Array(1536).fill(0.1)}]});
   }});
-  const command={sourceId:source.id,generationId:source.generation,texts:['synthetic test'],key:'one-call',scope:{principal:principal(user)}};
+  const command={sourceId:source.id,generationId:null,query:true,texts:['synthetic test'],key:'one-call',scope:{principal:principal(user)}};
   const first=provider.embed(command);first.catch(()=>{});await Promise.race([began,first]);
   await assert.rejects(provider.embed(command),/PAID_RESULT_UNKNOWN/);assert.equal(calls,1);
   await db.query('UPDATE platform_knowledge.sources SET revoked_at=clock_timestamp() WHERE id=$1',[source.id]);release();
@@ -79,7 +79,7 @@ test('uncertain paid outcome retains one reservation and never resends on retry'
  try{
   await db.query('BEGIN;SET LOCAL ROLE platform_knowledge_owner');source=await fixture(db,'55555555-5555-4555-8555-555555555555');await db.query('COMMIT');
   const provider=createProvider({pool:api,apiKey:'SYNTHETIC_ONLY',authorize:async()=>true,fetchImpl:async()=>{calls++;throw Error('SYNTHETIC_NETWORK_LOSS');}});
-  const command={sourceId:source.id,generationId:source.generation,texts:['synthetic uncertain'],key:'unknown',scope:{principal:principal('55555555-5555-4555-8555-555555555555')}};
+  const command={sourceId:source.id,generationId:null,query:true,texts:['synthetic uncertain'],key:'unknown',scope:{principal:principal('55555555-5555-4555-8555-555555555555')}};
   await assert.rejects(provider.embed(command),/PAID_RESULT_UNKNOWN/);await assert.rejects(provider.embed(command),/PAID_RESULT_UNKNOWN/);assert.equal(calls,1);
   const rows=(await db.query('SELECT state,reserved_microusd FROM platform_knowledge.provider_calls WHERE source_id=$1',[source.id])).rows;
   assert.equal(rows.length,1);assert.equal(rows[0].state,'UNKNOWN');assert.ok(Number(rows[0].reserved_microusd)>0);
@@ -115,5 +115,26 @@ test('shadow rebuild uses retained text after raw deletion; failed generation pr
   assert.equal((await db.query('SELECT active_generation_id FROM platform_knowledge.sources WHERE id=$1',[source.id])).rows[0].active_generation_id,null);
  }finally{
   if(source){await db.query('DELETE FROM platform_knowledge.jobs WHERE source_id=$1',[source.id]);await db.query('UPDATE platform_knowledge.sources SET active_generation_id=NULL WHERE id=$1',[source.id]);await db.query('DELETE FROM platform_knowledge.chunks WHERE generation_id IN(SELECT id FROM platform_knowledge.generations WHERE source_id=$1)',[source.id]);await db.query('DELETE FROM platform_knowledge.generations WHERE source_id=$1',[source.id]);await db.query('DELETE FROM platform_knowledge.sources WHERE id=$1',[source.id]);}db.release();await api.end();
+ }
+});
+
+test('private query caches on a shared document stay user-scoped; its cost cap counts every user',{skip:!uri,timeout:10000},async()=>{
+ const {createProvider}=await import('../src/provider.mjs');const db=await pool.connect();let source;
+ const user='77777777-7777-4777-8777-777777777777',other='88888888-8888-4888-8888-888888888888';
+ const apiUri=new URL(uri);apiUri.username='platform_knowledge_api';const api=new pg.Pool({connectionString:apiUri.href});
+ try{
+  await db.query('BEGIN;SET LOCAL ROLE platform_knowledge_owner');source=await fixture(db,user);
+  await db.query("UPDATE platform_knowledge.sources SET scope='PROFITIA_SHARED',owner_user_id=NULL,published_at=clock_timestamp(),rights=$2 WHERE id=$1",[source.id,JSON.stringify({...rights,classification:'PUBLIC',purpose:'CUSTOMER_SERVICE'})]);
+  await db.query(`INSERT INTO platform_knowledge.provider_calls(id,source_id,call_key,stage_key,kind,model,state,reserved_microusd,spent_microusd,request_owner_user_id,reserved_by,result)
+   VALUES($1,$2,$3,'synthetic-private-query','COGNITIVE','gpt-6-luna','SUCCEEDED',1000000,1000000,$4,'platform_knowledge_api',$5)`,[randomUUID(),source.id,'d'.repeat(64),user,JSON.stringify({private:'SYNTHETIC_USER_A_ONLY'})]);
+  await db.query('UPDATE platform_knowledge.budget SET spent_microusd=spent_microusd+1000000 WHERE id=true');await db.query('COMMIT');
+  const p=id=>({...principal(id),allowedScopes:['PROFITIA_SHARED'],sharedKnowledgeAllowed:true});
+  await transaction(api,async c=>assert.equal((await c.query('SELECT result FROM platform_knowledge.provider_calls WHERE source_id=$1',[source.id])).rowCount,1),p(user));
+  await transaction(api,async c=>assert.equal((await c.query('SELECT result FROM platform_knowledge.provider_calls WHERE source_id=$1',[source.id])).rowCount,0),p(other));
+  let calls=0;const provider=createProvider({pool:api,apiKey:'SYNTHETIC_ONLY',authorize:async()=>true,fetchImpl:async()=>{calls++;throw Error('MUST_NOT_SEND');}});
+  await assert.rejects(provider.embed({sourceId:source.id,texts:['query by user B'],query:true,key:'global-document-cap',scope:{principal:p(other)}}),/BUDGET_EXCEEDED/);assert.equal(calls,0);
+  await assert.rejects(transaction(api,c=>c.query('UPDATE platform_knowledge.budget SET spent_microusd=0'),p(other)),/permission denied/);
+ }finally{
+  if(source){await db.query('DELETE FROM platform_knowledge.provider_calls WHERE source_id=$1',[source.id]);await db.query('DELETE FROM platform_knowledge.generations WHERE source_id=$1',[source.id]);await db.query('DELETE FROM platform_knowledge.sources WHERE id=$1',[source.id]);}db.release();await api.end();
  }
 });

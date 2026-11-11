@@ -115,7 +115,8 @@ jobs:
           const proofs=[];
           for(const name of files){
             const bytes=await fs.readFile('/tmp/pk-fixtures/'+name);
-            const parsed=await extractDocument(bytes,name);
+            console.log('Checking synthetic fixture '+name);
+            let parsed;try{parsed=await extractDocument(bytes,name);}catch(error){console.log(JSON.stringify({file:name,code:error.code,stage:error.parserStage,exceptionType:error.exceptionType}));throw error;}
             const chunks=chunkDocument(parsed.units,{countTokens:embeddingTokens});
             const text=reconstructSource(chunks.chunks,chunks.sourceDigest);
             assert.equal(chunks.coverage.expectedUnits,chunks.coverage.accountedUnits);

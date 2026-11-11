@@ -97,10 +97,7 @@ export function createLibrary({pool,storage,createDelegation}){
    // A durable row exists BEFORE the storage request, including an uncertain
    // request outcome. Retention can always find and remove the object key.
    const accepted=await transaction(pool,async db=>{
-    await db.query('SELECT id FROM platform_knowledge.budget WHERE id=true FOR UPDATE');
-    const pending=(await db.query(`SELECT count(*)::integer AS n,coalesce(sum(size_bytes),0)::bigint AS bytes FROM platform_knowledge.sources
-     WHERE raw_key IS NOT NULL AND raw_deleted_at IS NULL`)).rows[0];
-    if(pending.n>=20||Number(pending.bytes)+bytes.length>262144000)throw new Fault(429,'TEMPORARY_STORAGE_LIMIT');
+    if(!(await db.query('SELECT platform_knowledge.upload_capacity($1) AS allowed',[bytes.length])).rows[0]?.allowed)throw new Fault(429,'TEMPORARY_STORAGE_LIMIT');
     const now=new Date(),rawUntil=new Date(now.getTime()+86400000);
     const metadata=input.metadata??{domain:'procurement',materialType:'OTHER',title:input.fileName,author:null,language:'und',publishedAt:null,validFrom:null,validUntil:null};
     const rightsUntil=metadata.validUntil?new Date(metadata.validUntil):null;

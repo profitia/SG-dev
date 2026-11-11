@@ -23,7 +23,9 @@ export async function extractDocument(bytes,fileName,{signal}={}){
    child.stdout.on('data',b=>{size+=b.length;if(size>16000000){stop();finish(new Fault(422,'EXTRACTED_TEXT_LIMIT'));}else parts.push(b);});
    child.stderr.resume();child.on('error',()=>finish(new Fault(503,'PARSER_UNAVAILABLE')));
    child.on('exit',code=>{let value;try{value=JSON.parse(Buffer.concat(parts).toString('utf8'));}catch{return finish(new Fault(422,'EXTRACTION_FAILED'));}
-    if(code!==0||value.error)return finish(new Fault(422,/^[A-Z_]{3,64}$/.test(value.error??'')?value.error:'EXTRACTION_FAILED'));
+    if(code!==0||value.error){const error=new Fault(422,/^[A-Z_]{3,64}$/.test(value.error??'')?value.error:'EXTRACTION_FAILED');
+     error.parserStage=['INITIALIZE','ISOLATION','SOURCE_CHECK','EXTRACTION'].includes(value.failureStage)?value.failureStage:'UNKNOWN';
+     error.exceptionType=['PermissionError','ImportError','ModuleNotFoundError','RuntimeError','ValueError','MemoryError','FileNotFoundError','TypeError','AttributeError','OSError'].includes(value.exceptionType)?value.exceptionType:'UNKNOWN';return finish(error);}
     if(value.parserVersion!==PARSER_VERSION||!Array.isArray(value.units)||!value.units.length||value.inventory?.nativeUnits!==value.units.length)return finish(new Fault(422,'SOURCE_INVENTORY_MISMATCH'));
     finish(null,value);
    });if(signal?.aborted)abort();
