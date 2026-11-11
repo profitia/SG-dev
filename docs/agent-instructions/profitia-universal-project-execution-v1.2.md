@@ -1,14 +1,17 @@
 # PROFITIA — UNIVERSAL PROJECT EXECUTION WRAPPER
-## PMOS · Code Routing · Code State · E1/Access · PHR · Observability · Release | v1.2 (OWNER APPROVED — PUBLISHED — NOT ACTIVE)
+## PMOS · Code Routing · Code State · E1/Access · PHR · Observability · Release | v1.2 (OWNER APPROVED — PUBLISHED — ACTIVE)
 
-**Status:** `OWNER_APPROVED / PUBLISHED / NOT_ACTIVE`  
-**Podstawa:** przyjęty kierunek v1.1, skorygowany o recenzję Codex z 11 listopada 2026 r.; właściciel zatwierdził publikację v1.2 jako dokumentu biblioteki, bez aktywacji standardu.  
+**Status:** `OWNER_APPROVED / PUBLISHED / ACTIVE`  
+**Podstawa:** przyjęty kierunek v1.1 i recenzje v1.2 z 11 listopada 2026 r.; właściciel zatwierdził publikację, a następnie odrębnie aktywację v1.2 jako wspólnego standardu wykonawczego SG2, ARCHITECTURE i SRM.  
 **Przeznaczenie:** wspólny wrapper wykonawczy Codex dla zarejestrowanych projektów Profitii, w szczególności `SG2`, `ARCHITECTURE`, `SRM`; z możliwością użycia w `CIC` na podstawie jego odrębnego profilu.  
 **Tryb:** `PROJECT-AWARE EXECUTION / OUTCOME FIRST / GOVERNED FULL AUTOPILOT`  
 **Źródło standaryzacji:** dotychczasowy `sg2-e1-wrapper.md` i aktywne kanony/adaptery projektów.  
 **Cel:** zachować rygor profilo-zależnego PMOS/continuity, PHR, routingu, klasyfikacji kodu, E1, UX/UI, monitoringu i release, eliminując twarde przypisanie zasad do SG2 i dublowanie ich definicji.  
 **Zakres dokumentu:** instrukcja zachowania wykonawcy; **nie** jest nowym kanonem, grantem G1, zmianą rejestrów, zgodą na mutację, koszt, nowe zasoby, PR/merge ani deployment.  
-**Akceptacja właściciela:** właściciel zatwierdził wcześniejszą wersję v1.1 dnia 11 listopada 2026 r. Dnia 11 listopada 2026 r. zatwierdził publikację niniejszej wersji v1.2 w bibliotece wrapperów. Publikacja nie aktywuje nowego standardu, nie zastępuje dotychczasowych wrapperów i nie zmienia aktywnego governance. Do odrębnej aktywacji obowiązują dotychczasowe aktywne instrukcje.
+**Akceptacja właściciela:** właściciel zatwierdził wcześniejszą wersję v1.1 dnia 11 listopada 2026 r., następnie publikację v1.2 bez aktywacji. Odrębnym poleceniem „aktywuj wrapper” z 11 listopada 2026 r. zatwierdził aktywację niniejszego dokumentu dla SG2, ARCHITECTURE i SRM. Obowiązujące kanony, profile, uprawnienia i polityki continuity zachowują pierwszeństwo; aktywacja nie wyłącza MEMOROS ani nie upoważnia do zmian aplikacji lub środowisk.
+**Aktywne źródło:** [profitia/SG-dev · main · Universal Wrapper v1.2](https://github.com/profitia/SG-dev/blob/main/docs/agent-instructions/profitia-universal-project-execution-v1.2.md), ładowane przez `AGENTS.md` i aktywny manifest. Biblioteka na `docs/codex-wrapper-library-20261110` zawiera zsynchronizowaną kopię.  
+**Zakres stosowania:** `SG2`, `ARCHITECTURE`, `SRM`. Business Outcome Engineering v1.1 obowiązuje w obu trybach: konsultacji i wykonania; Full Autopilot v2.0 pozostaje standardem pomocniczym wykonania. CIC zachowuje odrębne źródło instrukcji i nie jest aktywowany przez tę zmianę.
+**Zatwierdzone wersje odniesień:** [Business Outcome Engineering v1.1](https://github.com/profitia/SG-dev/blob/0fe00d579b31ad72bb45724e7080afc94a262be1/docs/agent-instructions/business-outcome-engineering-v1.1.md), [Full Autopilot v2.0](https://github.com/profitia/SG-dev/blob/0fe00d579b31ad72bb45724e7080afc94a262be1/docs/agent-instructions/full-autopilot-v2.md) i [UX/UI Design Canon — warunkowo](https://github.com/profitia/SG-dev/blob/0fe00d579b31ad72bb45724e7080afc94a262be1/docs/agent-instructions/ux-ui-design-canon.md). Przy aktywnym użyciu stosuj te utrwalone wersje; źródła gałęziowe w Aneksie B dokumentują pochodzenie.
 
 > **Zasada nadrzędna:** Osiągnij i zweryfikuj cały zaakceptowany rezultat biznesowy, stosując **rzeczywistą konfigurację wybranego projektu**. Myśl autonomicznie; wykonuj autonomicznie tylko dopuszczone operacje. Nie twórz nowego governance ani nie obchodź istniejącego.
 
