@@ -1,3 +1,4 @@
+import {acceptedSdkSource} from '../../../packages/platform-contracts/test/organisation-sdk-compatibility.mjs'
 import './source-hub-market-symbol-compatibility.test.mjs'
 import {assertSourceHubApiPathCompatibility,assertOilReportSourceCompatibility} from './source-hub-sdk-compatibility.mjs'
 import {assertAppShellFourCardCascade} from '../../sg-runtime/tests/pci-smart-integrity.mjs'
@@ -111,7 +112,7 @@ test('complete X-Ray architecture adopts the exact producer and consumer closure
  assert.equal(a.taskId,'SRM-XRAY-PERFORMANCE-RECOVERY-V2-IMPLEMENT-20261028');assert.equal(a.platformVersion,'1.30.0')
  assert.equal(a.producer.projectKey,'ARCHITECTURE');assert.equal(a.producer.pullRequest,772)
  assert.deepEqual(a.currentHumanReadContract,{id:CURRENT_HUMAN_READ_CONTRACT.id,version:'1.0.0'});assert.deepEqual(fresh.currentHumanReadContract,CURRENT_HUMAN_READ_CONTRACT)
- assert.equal(await currentHumanReadSourceDigest(),actualReceipt.oilAutonomousReportCompatibility?.sdkDigests.currentHumanReadSourceDigest??(apiPath?.sdkDigests.currentHumanReadSourceDigest??postfetch?.sdkDigests.currentHumanReadSourceDigest??clock?.sdkDigests.currentHumanReadSourceDigest??fresh.sdkDigests.currentHumanReadSourceDigest))
+ assert.equal(await currentHumanReadSourceDigest(),acceptedSdkSource().sdkDigests.currentHumanReadSourceDigest??actualReceipt.oilAutonomousReportCompatibility?.sdkDigests.currentHumanReadSourceDigest??(apiPath?.sdkDigests.currentHumanReadSourceDigest??postfetch?.sdkDigests.currentHumanReadSourceDigest??clock?.sdkDigests.currentHumanReadSourceDigest??fresh.sdkDigests.currentHumanReadSourceDigest))
  const root=new URL('../',import.meta.resolve('@profitia/platform-contracts/current-human-read'))
  for(const[file,digest]of Object.entries(a.sourceDigests)){
   assert.equal(hash(historicalBlob(a.producer.sourceSha+':packages/platform-contracts/'+file)),digest,'producer '+file)
@@ -142,7 +143,7 @@ test('FRESH recovery explicitly accepts the peer reader and preserves all prior 
  for(const[k,v]of Object.entries(JSON.parse(before)))assert.deepEqual(receipt.oilAutonomousReportCompatibility?.previousRootAcceptance?.[k]??receipt[k],v,k)
  assert.equal(a.producer.projectKey,'ARCHITECTURE');assert.equal(a.producer.pullRequest,784)
  assert.equal(a.platformVersion,'1.32.0');assert.deepEqual(a.currentHumanReadContract,CURRENT_HUMAN_READ_CONTRACT)
- assert.equal(await currentHumanReadSourceDigest(),actualReceipt.oilAutonomousReportCompatibility?.sdkDigests.currentHumanReadSourceDigest??(apiPath?.sdkDigests.currentHumanReadSourceDigest??postfetch?.sdkDigests.currentHumanReadSourceDigest??clock?.sdkDigests.currentHumanReadSourceDigest??a.sdkDigests.currentHumanReadSourceDigest))
+ assert.equal(await currentHumanReadSourceDigest(),acceptedSdkSource().sdkDigests.currentHumanReadSourceDigest??actualReceipt.oilAutonomousReportCompatibility?.sdkDigests.currentHumanReadSourceDigest??(apiPath?.sdkDigests.currentHumanReadSourceDigest??postfetch?.sdkDigests.currentHumanReadSourceDigest??clock?.sdkDigests.currentHumanReadSourceDigest??a.sdkDigests.currentHumanReadSourceDigest))
  for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(beforeRefinement(file)),digest,file)
  assert.equal(a.reusesAuthorizationDecisions,false);assert.equal(a.stagingOrProductionChanged,false)
  assert.equal(a.paidAcquisitionsPerformed,false);assert.equal(a.performanceThresholdsAchieved,false)
@@ -169,7 +170,7 @@ test('settled provider failure adoption pins its producer and never treats Sourc
  assert.equal(settled.producer.projectKey,'ARCHITECTURE');assert.equal(settled.producer.pullRequest,790)
  const sdk=await import('@profitia/platform-contracts/external-call')
  assert.deepEqual(settled.contract,sdk.EXTERNAL_CALL_FAILURE_OBSERVATION)
- assert.equal(await sdk.externalCallSourceDigest(),actualReceipt.oilAutonomousReportCompatibility?.sdkDigests.externalCallSourceDigest??(apiPath?.sdkDigests.externalCallSourceDigest??postfetch?.sdkDigests.externalCallSourceDigest??clock?.sdkDigests.externalCallSourceDigest??settled.sdkDigests.externalCallSourceDigest))
+ assert.equal(await sdk.externalCallSourceDigest(),acceptedSdkSource().sdkDigests.externalCallSourceDigest??actualReceipt.oilAutonomousReportCompatibility?.sdkDigests.externalCallSourceDigest??(apiPath?.sdkDigests.externalCallSourceDigest??postfetch?.sdkDigests.externalCallSourceDigest??clock?.sdkDigests.externalCallSourceDigest??settled.sdkDigests.externalCallSourceDigest))
  const root=new URL('../',import.meta.resolve('@profitia/platform-contracts/external-call'))
  assert.equal(JSON.parse(fs.readFileSync(new URL('package.json',root))).version,(apiPath??postfetch??clock??settled).platformVersion)
  for(const[file,digest]of Object.entries(settled.sourceDigests)){
@@ -189,7 +190,7 @@ test('Source clock adoption preserves complete history and exact producer while 
  assert.equal(a.subtractsEntireQueryRoundTrip,true);assert.equal(a.currentSourceChecksPreserved,true)
  assert.equal(a.schemaOrPolicyChanges,false);assert.equal(a.peerWireContractChanged,false)
  const sdk=await import('@profitia/platform-contracts/external-call'),root=new URL('../',import.meta.resolve('@profitia/platform-contracts/external-call'))
- assert.equal(await sdk.externalCallSourceDigest(),actualReceipt.oilAutonomousReportCompatibility?.sdkDigests.externalCallSourceDigest??apiPath?.sdkDigests.externalCallSourceDigest??postfetch?.sdkDigests.externalCallSourceDigest??a.sdkDigests.externalCallSourceDigest)
+ assert.equal(await sdk.externalCallSourceDigest(),acceptedSdkSource().sdkDigests.externalCallSourceDigest??actualReceipt.oilAutonomousReportCompatibility?.sdkDigests.externalCallSourceDigest??apiPath?.sdkDigests.externalCallSourceDigest??postfetch?.sdkDigests.externalCallSourceDigest??a.sdkDigests.externalCallSourceDigest)
  for(const[file,digest]of Object.entries(a.sourceDigests)){
   assert.equal(hash(historicalBlob(a.producer.sourceSha+':packages/platform-contracts/'+file)),digest,'producer '+file)
   if(file!=='package-lock.json')assert.equal(hash(fs.readFileSync(new URL(file,root))),apiPath?.sourceDigests[file]??receipt.xrayAppShellPresentation?.sourceDigests?.[file]??postfetch?.sourceDigests[file]??digest,'installed '+file)
@@ -207,7 +208,7 @@ test('FRESH postfetch adoption preserves exact history, producer and current sec
  for(const flag of ['peerWireContractChanged','runtimeDeploymentClaimed','performanceThresholdsClaimed','uiOrRoutingChanged'])assert.equal(a[flag],false,flag)
  const sdk=await import('@profitia/platform-contracts/identity-provider'),root=new URL('../',import.meta.resolve('@profitia/platform-contracts/identity-provider'))
  assert.equal(await sdk.identitySourceDigest(),a.sdkDigests.identitySourceDigest)
- assert.equal(await currentHumanReadSourceDigest(),actualReceipt.oilAutonomousReportCompatibility?.sdkDigests.currentHumanReadSourceDigest??actualReceipt.assistantM1SourceCompatibility.sdkDigests.currentHumanReadSourceDigest)
+ assert.equal(await currentHumanReadSourceDigest(),acceptedSdkSource().sdkDigests.currentHumanReadSourceDigest??actualReceipt.oilAutonomousReportCompatibility?.sdkDigests.currentHumanReadSourceDigest??actualReceipt.assistantM1SourceCompatibility.sdkDigests.currentHumanReadSourceDigest)
  for(const[file,digest]of Object.entries(a.sourceDigests)){
   assert.equal(hash(historicalBlob(a.producer.sourceSha+':packages/platform-contracts/'+file)),digest,'producer '+file)
   if(file!=='package-lock.json')assert.equal(hash(fs.readFileSync(new URL(file,root))),apiPath?.sourceDigests[file]??receipt.xrayAppShellPresentation?.sourceDigests?.[file]??digest,'installed '+file)
@@ -851,7 +852,7 @@ test('current FRESH composition requires exact accepted producer, consumer closu
  const receipt=JSON.parse(read('operation-integration.json')),a=receipt.freshCurrentBoundaryAdoption
  const current=acceptedAppShellSource,historical=(sha,file)=>historicalBlob(sha+':'+file)
  assertCurrentPciIntegrity(receipt,current,historical)
- assert.equal(await currentFreshReportSourceDigest(),actualReceipt.oilAutonomousReportCompatibility?.optionalPackageDigests.currentFreshReportSourceDigest??apiPath?.optionalPackageDigests.currentFreshReportSourceDigest??a.optionalPackage.sourceDigest)
+ assert.equal(await currentFreshReportSourceDigest(),acceptedSdkSource().optionalPackageDigests.currentFreshReportSourceDigest??actualReceipt.oilAutonomousReportCompatibility?.optionalPackageDigests.currentFreshReportSourceDigest??apiPath?.optionalPackageDigests.currentFreshReportSourceDigest??a.optionalPackage.sourceDigest)
  for(const mutate of [r=>r.freshCurrentBoundaryAdoption.producer.sourceGo=false,
   r=>r.freshCurrentBoundaryAdoption.noAuthorizationDecisionCache=false,
   r=>r.freshCurrentBoundaryAdoption.applicationSourceDigests['src/server/unapproved.ts']='0'.repeat(64),
@@ -946,7 +947,7 @@ test('readonly MISS adoption rejects forged GO, source, query port and historica
  const current=acceptedAppShellSource,historical=(sha,file)=>historicalBlob(sha+':'+file)
  assertCurrentPciIntegrity(receipt,current,historical)
  assert.deepEqual(READONLY_MISS_REPORT_CONTRACT,{id:'profitia.readonly-miss-report',version:'1.0.0'})
- assert.equal(await readonlyMissReportSourceDigest(),actualReceipt.oilAutonomousReportCompatibility?.optionalPackageDigests.readonlyMissReportSourceDigest??apiPath?.optionalPackageDigests.readonlyMissReportSourceDigest??a.optionalPackage.sourceDigest)
+ assert.equal(await readonlyMissReportSourceDigest(),acceptedSdkSource().optionalPackageDigests.readonlyMissReportSourceDigest??actualReceipt.oilAutonomousReportCompatibility?.optionalPackageDigests.readonlyMissReportSourceDigest??apiPath?.optionalPackageDigests.readonlyMissReportSourceDigest??a.optionalPackage.sourceDigest)
  assert.equal(Object.isFrozen(READY_REPORT_PROBE_STATEMENTS),true)
  assert.equal(READY_REPORT_PROBE_STATEMENTS.length,2)
  assert(READY_REPORT_PROBE_STATEMENTS.every(s=>/^SELECT\s/.test(s)&&!s.includes(';')&&!s.includes('register_ready_report_read')))
