@@ -20,6 +20,7 @@
     "apps/economic-calendar-runtime/src/server.mjs": "4e09d38a03edbe4abc19acc0fb5855a918c7c4e83b3f1d2fb6b6eb2ee2f27180",
     "apps/economic-calendar-runtime/test/api.test.mjs": "daf07318943eb4b1f94eb157d8a66048a7d254e581ef5a6cd519a8c2c7b70c1d",
     "apps/economic-calendar-runtime/test/market-calendar-preferences.test.mjs": "235341475630aa1c95cb6c6217b3ea418f14c45e10dd65c777be5fc18e4108d2",
+    "apps/sg-runtime/tests/assistant-ecr-week-integrity.test.mjs": "f24393bc825a8081e71e2883b8569b1e24c0c01fdb4c62d4cbe7d8c10654e46e",
     "packages/economic-calendar-contracts/index.d.mts": "e8b3736cbacdc72d2b3a5096e0a5640ca473f10334c895fd349e19e24b05b789",
     "packages/economic-calendar-contracts/index.mjs": "e0bd4a362db40df74e04414bd44e716ce1191e0d004fb8e831655208b70ff02f",
     "packages/economic-calendar-contracts/package.json": "ad32e6da0feef51ba1a3015f53df96804eaa0930ad555bf8b46e8eee86f6f6e4"
