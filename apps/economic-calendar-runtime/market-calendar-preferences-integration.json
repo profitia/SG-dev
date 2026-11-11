@@ -9,7 +9,7 @@
   "calendarQueryContract": "profitia.calendar-query/1.0.0",
   "sourceDigests": {
     "Canon/evidence/2026-11-11-procurement-insights-market-calendar-owner-approval.md": "eb83436a1e6a0dae002e34e27811e8918708381f29a7e1eae0a01e721d880be6",
-    "Canon/registries/governance-manifest-v2.json": "f6950821527901a128f7923998bbcc3b308ff3616eb906057ed7c2a1c61e49da",
+    "Canon/registries/governance-manifest-v2.json": "c6cbace919188fd091fd0ab408e3724791e12e459fb73721e8e03ee32df3525e",
     "Canon/v1.3-procurement-insights-market-calendar-amendment.md": "542e3f99196440eb2afa6fd0f69a20f5f4562a5cad978a92c160429866e1c8c5",
     "apps/architecture-lab/private-recurring-source.mjs": "02bf1cbbc1bfd1b71302280e348e3b589cf42b6f4b1347ff385ab1c954283a70",
     "apps/architecture-lab/test/market-calendar-source.test.mjs": "618f9e9643f17c7db385572bdd11e8b8c940504a55b0bae317094352878ca6a1",
