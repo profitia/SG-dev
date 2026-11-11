@@ -23,3 +23,16 @@ test('preference body crosses Render ingress unchanged; oversized/foreign respon
  const big=createCalendarProxy({organisationId:org,fetcher:async()=>new Response('x'.repeat(2*1024*1024+1),{headers:{'cache-control':'no-store','content-type':'application/json'}})})
  assert.equal((await big(new Request(origin+'/api/v1/market-calendar/events',{headers}))).status,502)
 })
+
+test('the accepted PI page and calendar deep link pass the existing neutral shell while unadopted pages remain denied',async()=>{
+ const {NextRequest}=await import('next/server'),{default:middleware}=await import('../middleware'),previous=process.env.PROFITIA_AUTH_PROVIDER
+ process.env.PROFITIA_AUTH_PROVIDER='clerk'
+ try{
+  for(const locale of ['pl','en']){
+   const request=new NextRequest('https://dev-sg2.spendguru.app/'+locale+'/dashboard/procurement-insights?tab=calendar&calView=month',{headers:{cookie:'sg_porr_demo_session_development=not-a-human-credential'}})
+   const response=await middleware(request);assert([200,307].includes(response.status));assert.equal(response.headers.get('cache-control'),'private, no-store');assert.equal(response.cookies.get('sg_porr_demo_session_development'),undefined)
+   const rewrite=response.headers.get('x-middleware-rewrite');if(rewrite){assert.equal(new URL(rewrite).searchParams.get('tab'),'calendar');assert.equal(new URL(rewrite).searchParams.get('calView'),'month')}
+  }
+  for(const path of ['/pl/dashboard/procurement-insights/unadopted','/pl/dashboard/unadopted','/de/dashboard/procurement-insights'])assert.equal((await middleware(new NextRequest('https://dev-sg2.spendguru.app'+path))).status,403)
+ }finally{if(previous===undefined)delete process.env.PROFITIA_AUTH_PROVIDER;else process.env.PROFITIA_AUTH_PROVIDER=previous}
+})

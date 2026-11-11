@@ -3,7 +3,7 @@
   "taskId": "SG2-PROCUREMENT-MARKET-CALENDAR-20261111",
   "targetEnvironment": "development",
   "scope": "MARKET_CALENDAR_CONSUMER_SOURCE",
-  "previousSourceSha": "e3e0f54d85e20ad12b8e98ec87a37fcaea32fea1",
+  "previousSourceSha": "5abaca24ce29e895e6954e5b8c2a4883d0c9b382",
   "producerRecordSha256": "91d4301899b43c8dba5c3720162f3c61888db087bc8ebfd3563fe151fbb5dc37",
   "sourceDigests": {
     "apps/sg-runtime/app/api/v1/market-calendar/[[...path]]/route.ts": "4ba92f85a88b8f64459fa1f7bf531f681febaf3cf36d323da310cf4de578c2b0",
@@ -16,11 +16,12 @@
     "apps/sg-runtime/lib/market-calendar/client.ts": "360740b6d015f62bad55d3693d8f41f573cc3e1e68db78147148bbf5f4bed79f",
     "apps/sg-runtime/lib/market-calendar/model.ts": "1284aab170bb206c82e41aebd0a530580d70a532073b292b1707c64b1478cdc6",
     "apps/sg-runtime/lib/market-calendar/runtime.ts": "78a6e3d2fce90aab00cc41357ee07fab9cd2430c54229d8ad885b51ada9cfc0d",
+    "apps/sg-runtime/middleware.ts": "d8736f570d537e5f9841f5120470f1c46a617233756c12038df0a5a9215c9179",
     "apps/sg-runtime/package.json": "d2ed74190322d0e5315212519709ca2e06a6cbfc32def8e23e64794101ee1517",
     "apps/sg-runtime/tests/market-calendar-integrity.mjs": "cb83f9f3142dbbfa7c4a3a649dc3559ff493a2402bac3abe5061d24cb5c4a8b5",
-    "apps/sg-runtime/tests/market-calendar-integrity.test.mjs": "1769a84ea44fe35cc90204233c910220935a06f09523b6e6ffc00de75183bc77",
+    "apps/sg-runtime/tests/market-calendar-integrity.test.mjs": "856a5b824c40b78b0fc44d27364f4c9455d2aae1a5abd1ac537d7d93ff5a6e9e",
     "apps/sg-runtime/tests/market-calendar-model.test.ts": "4e97afc70fe5e98ef1d8b547d45bc10b512cb01463aa311696aa3cd9ade3095c",
-    "apps/sg-runtime/tests/market-calendar-proxy.test.ts": "c9f8310e4bae9ea5127cb2dc68a75a74c9f7cdcf3b25f4f1ffa50e17c48ed715",
+    "apps/sg-runtime/tests/market-calendar-proxy.test.ts": "e51736cfa1b6de4a3876f6b05029dedf8cabbddb9d9e7dd61c00c3c3525c45f8",
     "apps/sg-runtime/tests/market-calendar.test.tsx": "643eb54c679ee7335adca5587c25c21a4d66069d12d0b28595bfa5eda9d6a54e"
   },
   "preservedReceipts": {
