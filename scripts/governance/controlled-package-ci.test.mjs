@@ -1,3 +1,4 @@
+import {ECR_MARKET_CALENDAR_REVIEW,ECR_MARKET_CALENDAR_PROVENANCE,assertEcrMarketCalendarReviewEntry,marketCalendarTrustedPredecessor} from './controlled-package-ci.mjs'
 import {NEWSFEED_SAVED_SEARCH_REVIEW,assertNewsfeedSavedSearchReviewEntry} from './controlled-package-ci.mjs'
 import {ECR_SOURCE_CONTINUITY_REVIEW,assertEcrSourceContinuityReviewEntry} from './controlled-package-ci.mjs'
 import {ECR_STAGE0405_REVIEW,assertEcrStage0405ReviewEntry} from './controlled-package-ci.mjs'
@@ -1982,4 +1983,34 @@ test('the physical65 overlay authenticates native Identity before the unchanged3
  const protectedPaths=new Set(regMaps.flatMap(Object.keys)),unmapped=Object.keys(rec.sourceDigests).find(name=>!c.REGISTRATION_SDK_REVIEW.entries[name]&&!protectedPaths.has(name));assert(unmapped);
  fh.appendFileSync(p.join(root,unmapped),'\nUNREVIEWED');
  assert.throws(()=>c.assertPrivateRecurringProvenance(root),/PRIVATE_RECURRING_SOURCE_BYTES_REJECTED/);
+})
+
+test('Market Calendar admits only its17 reviewed regular producer blobs and preserves all candidate fences',()=>{
+ const r=ECR_MARKET_CALENDAR_REVIEW,files=Object.entries(r.entries).map(([filename,e])=>({filename,sha:e.sha,status:e.status})),p={...pr(),number:r.prNumber,changed_files:files.length,base:{...pr().base,sha:r.baseSha},head:{...pr().head,sha:r.sourceSha,ref:r.branch}}
+ assert.equal(files.length,17);assert.equal(r.prNumber,1018)
+ assertArchitectureFiles(p,files);assert.equal(selectCandidate(context(),p,r.sourceSha,{files}),r.sourceSha)
+ for(const f of files){assertEcrMarketCalendarReviewEntry(f,'100644 blob '+f.sha+'\t'+f.filename+'\0');for(const mode of ['100755','120000','160000'])rejection(()=>assertEcrMarketCalendarReviewEntry(f,mode+' blob '+f.sha+'\t'+f.filename+'\0'))}
+ for(const edit of [a=>a.pop(),a=>a.push(a[0]),a=>a[0]={...a[0],sha:'f'.repeat(40)},a=>a[0]={...a[0],status:'removed'},a=>a[0]={...a[0],previous_filename:a[0].filename},a=>a[0]={...a[0],filename:'apps/economic-calendar-runtime/src/unreviewed.mjs'}]){const bad=structuredClone(files);edit(bad);rejection(()=>selectCandidate(context(),{...p,changed_files:bad.length},r.sourceSha,{files:bad}))}
+ for(const edit of [q=>q.number++,q=>q.head.ref='architecture/unreviewed',q=>q.head.ref='sg2/market-calendar',q=>q.head.repo.full_name='profitia/fork',q=>q.user.login='attacker',q=>q.base.ref='staging',q=>q.head.sha=sha]){const bad=structuredClone(p);edit(bad);rejection(()=>selectCandidate(context(),bad,r.sourceSha,{files}))}
+ const generic=architectureFiles();rejection(()=>selectCandidate(context(),{...p,changed_files:generic.length},r.sourceSha,{files:generic}))
+})
+
+test('Market Calendar authenticates the real Git source and immutable receipts before historical projection',()=>{
+ const r=ECR_MARKET_CALENDAR_REVIEW,cfg=ECR_MARKET_CALENDAR_PROVENANCE,cache=new Map(),root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..')
+ const historical=(sha,p)=>{const key=sha+':'+p;if(!cache.has(key))cache.set(key,execFileSync('git',['cat-file','blob',key],{cwd:root,stdio:['ignore','pipe','pipe']}));return Buffer.from(cache.get(key))}
+ const current=p=>{if(p===cfg.consumerRecord)throw Object.assign(Error('not yet adopted'),{code:'ENOENT'});return historical(r.sourceSha,p)}
+ const prior=marketCalendarTrustedPredecessor(current,historical)
+ for(const[p,e]of Object.entries(r.entries))if(e.status==='added')assert.throws(()=>prior(p),e=>e.code==='ENOENT');else assert.deepEqual(prior(p),historical(r.baseSha,p))
+ const record=JSON.parse(current(cfg.recordPath))
+ for(const p of [...Object.keys(r.entries),...Object.keys(record.preservedReceipts)])rejection(()=>marketCalendarTrustedPredecessor(f=>f===p?Buffer.concat([current(f),Buffer.from('tamper')]):current(f),historical))
+ const denied=Object.assign(Error('opaque denial'),{code:'EACCES'});assert.throws(()=>marketCalendarTrustedPredecessor(()=>{throw denied},historical),e=>e===denied)
+ const empty=p=>{throw Object.assign(Error('absent'),{code:'ENOENT'})};assert.equal(marketCalendarTrustedPredecessor(empty,historical),empty)
+ // A consumer is a separate SG2 source adoption, not a mixed producer PR. The
+ // trusted verifier never imports its JavaScript while a credential may exist.
+ const additions=Object.fromEntries(cfg.consumerPaths.map(p=>[p,Buffer.from('synthetic SG2 source '+p)]));additions['apps/sg-runtime/package.json']=current('apps/sg-runtime/package.json')
+ const a={schemaVersion:'1.0.0',taskId:'SG2-PROCUREMENT-MARKET-CALENDAR-20261111',targetEnvironment:'development',scope:'MARKET_CALENDAR_CONSUMER_SOURCE',previousSourceSha:r.sourceSha,producerRecordSha256:cfg.recordSha256,sourceDigests:Object.fromEntries(Object.entries(additions).map(([p,b])=>[p,createHash('sha256').update(b).digest('hex')])),preservedReceipts:Object.fromEntries(cfg.consumerReceipts.map(p=>[p,createHash('sha256').update(current(p)).digest('hex')])),noProviderAcquisition:true,noIndependentStore:true,noNotificationDelivery:true,activationIsSeparate:true}
+ const read=(manifest=a,files=additions)=>p=>p===cfg.consumerRecord?Buffer.from(JSON.stringify(manifest)):files[p]??current(p)
+ const adopted=marketCalendarTrustedPredecessor(read(),historical);assert.deepEqual(adopted('apps/sg-runtime/package.json'),current('apps/sg-runtime/package.json'))
+ for(const edit of [a=>a.noNotificationDelivery=false,a=>a.unknown=true,a=>a.taskId='different',a=>a.sourceDigests['apps/sg-runtime/unreviewed.ts']='0'.repeat(64),a=>delete a.sourceDigests[cfg.consumerPaths[0]],a=>a.preservedReceipts[cfg.consumerReceipts[0]]='0'.repeat(64)]){const bad=structuredClone(a);edit(bad);rejection(()=>marketCalendarTrustedPredecessor(read(bad),historical))}
+ const changed={...additions,'apps/sg-runtime/package.json':Buffer.from(JSON.stringify({...JSON.parse(additions['apps/sg-runtime/package.json']),dependencies:{'@profitia/unreviewed':'1.0.0'}}))},rebound=structuredClone(a);rebound.sourceDigests['apps/sg-runtime/package.json']=createHash('sha256').update(changed['apps/sg-runtime/package.json']).digest('hex');rejection(()=>marketCalendarTrustedPredecessor(read(rebound,changed),historical))
 })

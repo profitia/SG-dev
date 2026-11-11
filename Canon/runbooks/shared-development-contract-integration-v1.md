@@ -1,5 +1,33 @@
 # Przyjmowanie wspólnych kontraktów Development
 
+## ECR Market Calendar — proposed exact producer review (2026-11-11)
+
+PROPOSED / OWNER_CI_APPROVAL_PENDING. The third-tab UX approval does not
+activate trusted CI policy or private E1 grants. This separate four-file policy
+proposal binds PR1018, architecture/ecr-market-calendar-consumer-20261111,
+source e3e0f54d85e20ad12b8e98ec87a37fcaea32fea1 and exactly17 regular
+path/blob/status/mode/actual ARCHITECTURE-owner entries in
+ECR_MARKET_CALENDAR_REVIEW. No generic Canon, app or package path is admitted.
+Main refresh is allowed only with identical reviewed versions.
+
+The pure trusted verifier authenticates every producer byte, frozen source
+record and predecessor receipt before the existing recurring-source checks.
+No candidate module is imported. The separately registered SG2 consumer then
+binds its16 own source files, accepted producer record and twelve old receipts;
+dependencies and lock remain unchanged. Separate producer and consumer PRs
+remain mandatory; no aggregate publication is authorised.
+
+After explicit acceptance, validate this exact policy through the existing
+trusted-main workflow, all public and resulting-main gates; then validate the
+exact producer head and independently verify its proof. Accept producer before
+consumer. Repository/author/head/race/routing fences, main-only environment,
+immutable private package pins, read:packages-only credential, ignore-scripts
+installation and credential removal before candidate execution remain required.
+The prepared private-access transaction, Development releases and real owner
+acceptance remain separate steps. This review changes no SourceHub, Identity
+runtime, licence, retention, provider acquisition, scheduler, resource, cost,
+commercial quota or notification delivery.
+
 Zakres: E0-A-06, trzy tory SG2, SRM i ARCHITECTURE. Project key developmentu nie zastępuje Organisation ID ani User ID produktu.
 
 ARCHITECTURE utrzymuje jeden pakiet packages/platform-contracts i techniczny harness apps/architecture-lab. Integracje aplikacji prowadzą osobne zadania i PR-y właścicieli SG2/SRM, z referencją do taskId, wersji, SHA i digestu kontraktu. Producent został przyjęty w PR280; odbiorcy w osobnych PR281 (SG2) i PR282 (SRM). Workflow platform-contracts-ci.yml sprawdza oba rzeczywiste przyjęcia. Dated proof: Canon/evidence/2026-10-13-e0-a-06-controlled-integration.md.
