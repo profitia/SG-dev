@@ -56,6 +56,15 @@ test('native recurrence-only ECR definitions remain undated and do not suppress 
  assert.equal(s.timePrecision,'RECURRENCE_ONLY');assert.equal(s.recurrence,'monthly');assert.equal(s.scheduledAt,null);assert.equal(s.scheduledUntil,null)
  assert.equal(s.dateOnly,null);assert.equal(result.data.events.length,0);assert.equal(result.status,'PARTIAL')
 })
+test('undated publication definitions cannot displace dated ECR events from the bounded context',async()=>{
+ const raw=publication(),definition=nativeSchedule('RECURRENCE_ONLY').publication.data
+ raw.unresolvedSchedules=Array.from({length:30},(_,i)=>({publication:{...definition,
+  publicationId:'ecr_pub_'+i.toString(16).padStart(64,'0'),title:'SYNTHETIC_ONLY '+String(i)+'x'.repeat(1000),knownAt:at}}))
+ const result=await createEconomicCalendarContextAdapter({readAuthorised:async()=>raw}).read(input)
+ assert.equal(result.data.events.length,1);assert.equal(result.data.events[0].eventId,id)
+ assert.equal(result.data.omitted.events,0);assert(result.data.omitted.unresolvedSchedules>0)
+ assert.equal(result.status,'PARTIAL');assert(Buffer.byteLength(JSON.stringify(result))<16000)
+})
 test('ECR preserves missing values, precision, native source evidence and stable versions across read clocks',async()=>{
  const raw=publication();raw.privatePreferences={secret:'NEVER_RELEASE'};raw.items[0].event.identity={secret:'NEVER_RELEASE'}
  let calls=0

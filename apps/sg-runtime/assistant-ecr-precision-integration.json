@@ -6,8 +6,8 @@
   "scope": "NATIVE_ECR_SCHEDULE_PRECISION",
   "previousSourceSha": "141cc559063c43cefa991acb9260b32ac5b92615",
   "sourceDigests": {
-    "packages/assistant-context-gateway/src/economic-calendar.mjs": "8198f0bf5a9a2b1acfc74ebf284e246497cc8c0eda6b2075b541c08d6d26579a",
-    "packages/assistant-context-gateway/test/economic-calendar.test.mjs": "a12468d0e6edac39bad8a2b10d9cb1aa2a1910e224af55068b3e4bbf161d45fe",
+    "packages/assistant-context-gateway/src/economic-calendar.mjs": "ee11d1dbbacf0f3d7dfcd6b7018c5f5db401cae7b1f62d222ee6b10ac9558a3d",
+    "packages/assistant-context-gateway/test/economic-calendar.test.mjs": "4dc2a7a1caf7ad1e58dc9768692f3c74f24257defcc626247b2b103edbc3f6eb",
     "apps/sg-runtime/tests/assistant-ecr-integrity.mjs": "8c49237f0a1675d0ebca00b756333be8a81e8abacc6c1e98138748f3b6b10648",
     "apps/sg-runtime/tests/assistant-ecr-integrity.test.mjs": "0643887c574808f8813a545881b83aea0262abee5469d01e619aa8bc184b4301",
     "apps/sg-runtime/tests/assistant-ecr-precision-integrity.mjs": "3536b017aea04dab1d6de342e541beebd3577f555b0983aeb05926bbc4d2e697"

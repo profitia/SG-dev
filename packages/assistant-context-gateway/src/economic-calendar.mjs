@@ -115,7 +115,7 @@ export function createEconomicCalendarContextAdapter({readAuthorised}){
   // Minimise the projection rather than changing that schema or losing checks.
   for(const key of ['unresolvedSchedules','events'])while(recordCount()>32&&data[key].length){data[key].pop();data.omitted[key]++}
   // Keep the existing gateway/model byte budgets, with explicit omissions.
-  for(const key of ['events','unresolvedSchedules','definitions'])while(Buffer.byteLength(JSON.stringify(data),'utf8')>14500&&data[key].length){data[key].pop();data.omitted[key]++}
+  for(const key of ['unresolvedSchedules','events','definitions'])while(Buffer.byteLength(JSON.stringify(data),'utf8')>14500&&data[key].length){data[key].pop();data.omitted[key]++}
   if(Buffer.byteLength(JSON.stringify(data),'utf8')>14500)throw TypeError('ECR metadata exceeds context budget')
   const omitted=Object.values(data.omitted).some(Boolean),hasFacts=data.events.length+data.unresolvedSchedules.length+data.definitions.length>0
   const status=!hasFacts&&!omitted?'EMPTY':r.coverage.completeness==='COMPLETE'&&!r.nextAfter&&!omitted&&!data.unresolvedSchedules.length&&!data.coverage.unmappedDefinitionCount?'OK':'PARTIAL'
