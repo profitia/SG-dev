@@ -51,5 +51,5 @@
     "full document summary requires coverage manifest"
   ],
   "status": "REFERENCE_PROFILE_NOT_ENGINE_PASS",
-  "legacyFixtures": "Generated and checked with LibreOffice in credential-free CI; CI artifact, not invented binary fixtures."
+  "legacyFixtures": "Real DOC/PPT generated and round-trip verified in accepted CI43018496713. Vendored references have original artifact provenance plus binary and source-content hash guards. Regenerate with --legacy-office after source changes; ordinary CI --verified-legacy reuses these fixtures without claiming a new conversion."
 }
