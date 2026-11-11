@@ -47,7 +47,9 @@ export function AssistantConversationView({session,state,en,historyOpen,onCloseH
   <form className="srm-chat-composer" onSubmit={event=>{event.preventDefault();void send()}}>
    <label htmlFor={inputId}>{en?'What would you like to ask?':'O co chcesz zapytać?'}</label>
    <div className="srm-chat-input-wrap"><textarea id={inputId} value={draft} onChange={event=>setDraft(event.target.value)} maxLength={8000} rows={2} placeholder={en?'Write a message…':'Napisz wiadomość…'} disabled={!state.active||state.busy}/>
-    {state.busy?<button className="as-primary-button" type="button" onClick={session.cancel}>{en?'Stop':'Zatrzymaj'}</button>:<button className="as-primary-button" type="submit" disabled={!state.active||!draft.trim()}>{en?'Send':'Wyślij'}</button>}
+    {state.busy?<button className="as-primary-button" type="button" onClick={session.cancel}>{en?'Stop':'Zatrzymaj'}</button>:<button className="as-primary-button" type="submit" disabled={!state.active||!draft.trim()} aria-label={en?'Send message':'Wyślij wiadomość'} title={en?'Send message':'Wyślij wiadomość'}>
+     <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m5 12 7-7 7 7M12 5v14"/></svg>
+    </button>}
    </div>
   </form>
  </>
