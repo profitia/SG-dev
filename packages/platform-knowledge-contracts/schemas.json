@@ -1,0 +1,605 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://contracts.profitia.pl/platform-knowledge/0.1.0",
+  "$defs": {
+    "Rights": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "classification",
+        "purpose",
+        "organisationConstraintId",
+        "externalAiAllowed",
+        "quotingAllowed",
+        "apiExcerptAllowed"
+      ],
+      "properties": {
+        "classification": {
+          "type": "string",
+          "enum": [
+            "UNKNOWN",
+            "PUBLIC",
+            "INTERNAL",
+            "CONFIDENTIAL",
+            "RESTRICTED"
+          ]
+        },
+        "purpose": {
+          "type": "string",
+          "enum": [
+            "PRIVATE",
+            "PROFITIA_INTERNAL",
+            "CUSTOMER_SERVICE"
+          ]
+        },
+        "organisationConstraintId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "externalAiAllowed": {
+          "type": "boolean"
+        },
+        "quotingAllowed": {
+          "type": "boolean"
+        },
+        "apiExcerptAllowed": {
+          "type": "boolean"
+        }
+      }
+    },
+    "Query": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "version",
+        "requestId",
+        "task",
+        "query",
+        "language",
+        "scopes",
+        "maxTokens",
+        "tokenizerId",
+        "targetModel"
+      ],
+      "properties": {
+        "version": {
+          "const": "0.1.0"
+        },
+        "requestId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "task": {
+          "type": "string",
+          "enum": [
+            "ANSWER",
+            "DOCUMENT_SUMMARY",
+            "MEMORY_RECALL"
+          ]
+        },
+        "query": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 12000
+        },
+        "language": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 32
+        },
+        "scopes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "PROFITIA_SHARED",
+              "ACCOUNT_PRIVATE"
+            ]
+          },
+          "minItems": 1,
+          "maxItems": 2,
+          "uniqueItems": true
+        },
+        "documentIds": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "minItems": 0,
+          "maxItems": 50,
+          "uniqueItems": true
+        },
+        "maxTokens": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 16000
+        },
+        "tokenizerId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "targetModel": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        }
+      }
+    },
+    "Location": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "unitId",
+        "kind",
+        "ordinal",
+        "start",
+        "end"
+      ],
+      "properties": {
+        "unitId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "PAGE",
+            "SLIDE",
+            "PARAGRAPH",
+            "TABLE",
+            "CHART"
+          ]
+        },
+        "ordinal": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "start": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "end": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "Evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "evidenceId",
+        "sourceId",
+        "documentId",
+        "generationId",
+        "sourceVersion",
+        "text",
+        "scope",
+        "locations",
+        "rights",
+        "coverage",
+        "authority",
+        "rank",
+        "validUntil"
+      ],
+      "properties": {
+        "evidenceId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "sourceId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "documentId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "generationId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "sourceVersion": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64000
+        },
+        "scope": {
+          "type": "string",
+          "enum": [
+            "PROFITIA_SHARED",
+            "ACCOUNT_PRIVATE"
+          ]
+        },
+        "locations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Location"
+          },
+          "minItems": 1,
+          "maxItems": 100,
+          "uniqueItems": true
+        },
+        "rights": {
+          "$ref": "#/$defs/Rights"
+        },
+        "coverage": {
+          "type": "string",
+          "enum": [
+            "COMPLETE",
+            "PARTIAL"
+          ]
+        },
+        "authority": {
+          "type": "string",
+          "enum": [
+            "BINDING_STANDARD",
+            "REFERENCE",
+            "HISTORICAL",
+            "WITHDRAWN",
+            "UNKNOWN"
+          ]
+        },
+        "rank": {
+          "type": "number",
+          "minimum": 0
+        },
+        "validUntil": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        }
+      }
+    },
+    "Context": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "version",
+        "requestId",
+        "status",
+        "evidence",
+        "usedTokens",
+        "tokenizerId",
+        "targetModel",
+        "omissions",
+        "continuation"
+      ],
+      "properties": {
+        "version": {
+          "const": "0.1.0"
+        },
+        "requestId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "READY",
+            "EMPTY",
+            "INSUFFICIENT_EVIDENCE",
+            "PARTIAL",
+            "DENIED",
+            "UNAVAILABLE",
+            "STALE"
+          ]
+        },
+        "evidence": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Evidence"
+          },
+          "minItems": 0,
+          "maxItems": 200,
+          "uniqueItems": true
+        },
+        "usedTokens": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "tokenizerId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "targetModel": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "omissions": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "SOURCE_PARTIAL",
+              "BUDGET",
+              "RIGHTS",
+              "EXPIRED",
+              "NO_SUPPORT",
+              "SUMMARY_INCOMPLETE"
+            ]
+          },
+          "minItems": 0,
+          "maxItems": 6,
+          "uniqueItems": true
+        },
+        "continuation": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 2000
+        }
+      }
+    },
+    "Import": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "version",
+        "requestId",
+        "scope",
+        "fileName",
+        "mediaType",
+        "sizeBytes",
+        "sha256",
+        "rights",
+        "memoryRequested"
+      ],
+      "properties": {
+        "version": {
+          "const": "0.1.0"
+        },
+        "requestId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "scope": {
+          "type": "string",
+          "enum": [
+            "PROFITIA_SHARED",
+            "ACCOUNT_PRIVATE"
+          ]
+        },
+        "fileName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 255
+        },
+        "mediaType": {
+          "type": "string",
+          "enum": [
+            "application/pdf",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "application/msword",
+            "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+            "application/vnd.ms-powerpoint",
+            "text/plain",
+            "text/markdown"
+          ]
+        },
+        "sizeBytes": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 52428800
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "rights": {
+          "$ref": "#/$defs/Rights"
+        },
+        "memoryRequested": {
+          "type": "boolean"
+        }
+      }
+    },
+    "Job": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "version",
+        "jobId",
+        "status",
+        "stage",
+        "expectedUnits",
+        "accountedUnits",
+        "failedUnits",
+        "generationId",
+        "updatedAt"
+      ],
+      "properties": {
+        "version": {
+          "const": "0.1.0"
+        },
+        "jobId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "QUEUED",
+            "RUNNING",
+            "RETRY_WAIT",
+            "READY",
+            "PARTIAL",
+            "FAILED",
+            "CANCELLED",
+            "REVOKED"
+          ]
+        },
+        "stage": {
+          "type": "string",
+          "enum": [
+            "VALIDATE",
+            "EXTRACT",
+            "NORMALIZE",
+            "COGNITIVE",
+            "CHUNK",
+            "EMBED",
+            "INDEX",
+            "VERIFY",
+            "PUBLISH"
+          ]
+        },
+        "expectedUnits": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "accountedUnits": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "failedUnits": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "minItems": 0,
+          "maxItems": 10000,
+          "uniqueItems": true
+        },
+        "generationId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "AccountDeletionCommand": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "version",
+        "commandId",
+        "environment",
+        "internalUserId",
+        "scope",
+        "effectiveAt",
+        "reason"
+      ],
+      "properties": {
+        "version": {
+          "const": "0.1.0"
+        },
+        "commandId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "environment": {
+          "type": "string",
+          "enum": [
+            "development",
+            "staging",
+            "production"
+          ]
+        },
+        "internalUserId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "scope": {
+          "const": "ACCOUNT_PRIVATE_ALL"
+        },
+        "effectiveAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "reason": {
+          "const": "ACCOUNT_DELETED"
+        }
+      }
+    },
+    "DeletionReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "version",
+        "commandId",
+        "state",
+        "effectiveAt",
+        "backupPurgeBy",
+        "retainedCategories"
+      ],
+      "properties": {
+        "version": {
+          "const": "0.1.0"
+        },
+        "commandId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "state": {
+          "type": "string",
+          "enum": [
+            "ACCEPTED",
+            "RETRIEVAL_REVOKED",
+            "PURGING",
+            "PURGED",
+            "RETAINED_BY_POLICY",
+            "FAILED_RETRYABLE"
+          ]
+        },
+        "effectiveAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "backupPurgeBy": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "retainedCategories": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "LEGAL_HOLD",
+              "MANDATORY_AUDIT"
+            ]
+          },
+          "minItems": 0,
+          "maxItems": 2,
+          "uniqueItems": true
+        }
+      }
+    }
+  }
+}

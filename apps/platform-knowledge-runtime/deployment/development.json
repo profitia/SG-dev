@@ -1,0 +1,12 @@
+{
+  "schemaVersion":"1.0","phase":"FOUNDATION_ONLY","processingEnabled":false,
+  "repository":"profitia/SG-dev","branch":"main","region":"frankfurt","autoDeploy":false,
+  "renderWorkspaceId":"tea-d7lps8rbc2fs73cn80dg","renderProjectName":"Platform Knowledge","renderEnvironmentName":"platform-knowledge-development",
+  "neonProjectId":"sparkling-sky-79692560","neonBranchId":"br-billowing-grass-b9ko5s4f","databaseName":"platform_knowledge",
+  "databasePooledHost":"ep-wild-mode-b972j8k0-pooler.c-7.eu-central-1.aws.neon.tech",
+  "storageEndpoint":"https://br-billowing-grass-b9ko5s4f.storage.c-7.eu-central-1.aws.neon.tech","storageBucket":"platform-knowledge-uploads",
+  "buildCommand":"npm ci --prefix apps/platform-knowledge-runtime --ignore-scripts --no-audit --no-fund && npm run build --prefix apps/platform-knowledge-runtime",
+  "api":{"name":"platform-knowledge-development-api","type":"web_service","startCommand":"node apps/platform-knowledge-runtime/src/main.mjs","healthCheckPath":"/health/live","instances":1,"plan":"starter"},
+  "worker":{"name":"platform-knowledge-development-worker","type":"background_worker","startCommand":"node apps/platform-knowledge-runtime/src/worker.mjs","instances":1,"plan":"standard","concurrency":1},
+  "firstRelease":{"previousArtifact":null,"previousLkg":"NONE_FIRST_DEPLOYMENT","stopProcedure":"Suspend only these two new services; preserve Neon schema and private bucket; no global database restore or destructive rollback."}
+}
