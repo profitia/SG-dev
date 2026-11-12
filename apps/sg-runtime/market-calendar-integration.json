@@ -3,7 +3,7 @@
   "taskId": "SG2-PROCUREMENT-MARKET-CALENDAR-20261111",
   "targetEnvironment": "development",
   "scope": "MARKET_CALENDAR_CONSUMER_SOURCE",
-  "previousSourceSha": "fc212dcc86f3b4865652cbfc8cf483ed05dad5f8",
+  "previousSourceSha": "877c55c6ef7879c088255284dd852d5cab6d5f44",
   "producerRecordSha256": "e3bc27ddf22b9165555c05f938a3c5d8f9f4f09334fcb7c55e760da44e9a59b6",
   "sourceDigests": {
     "apps/sg-runtime/app/api/v1/market-calendar/[[...path]]/route.ts": "4ba92f85a88b8f64459fa1f7bf531f681febaf3cf36d323da310cf4de578c2b0",
