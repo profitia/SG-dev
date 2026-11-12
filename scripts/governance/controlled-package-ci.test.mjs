@@ -947,7 +947,7 @@ function rootAtomicClaimCandidate() {
 }
 test('atomic Root claim review is frozen and admits only the exact eleven additive producer blobs',()=>{
   const review=ROOT_ATOMIC_CLAIM_PRODUCER_REVIEW,{p,files}=rootAtomicClaimCandidate()
-  assert(Object.isFrozen(review));assert(Object.isFrozen(review.blobs));assert.equal(files.length,11)
+  assert(Object.isFrozen(review));assert(Object.isFrozen(review.blobs));assert.equal(files.length,12)
   assert.equal(review.prNumber,854);assert.equal(review.sourceSha,'3a494b5432555935168c060be5950589d550d276')
   assert.equal(review.branch,'architecture/root-atomic-claim-producer-20261101')
   assert(files.every(f=>f.status==='added' && (f.filename.startsWith('packages/platform-contracts/root-atomic-claim/')
@@ -2546,9 +2546,9 @@ function piLiveAcceptanceFixture(){
  const r=PRIVATE_RECURRING_LIVE_ACCEPTANCE_REVIEW,files=Object.entries(r.entries).map(([filename,e])=>({filename,sha:e.sha,status:e.status}))
  return{r,files,p:{...pr(),number:r.prNumber,changed_files:files.length,base:{...pr().base,sha:r.baseSha},head:{...pr().head,sha:r.sourceSha,ref:r.branch}}}
 }
-test('PI live corrections admit only the eleven exact routed source versions and preserve earlier reviews',()=>{
- const {r,files,p}=piLiveAcceptanceFixture();assert.equal(files.length,11)
- assert.equal(createHash('sha256').update(JSON.stringify(r.entries)).digest('hex'),'6df2cc5cdd3d6e15291b508f22cd25f487d50fb53be296fb2ff056250acf9260')
+test('PI live corrections admit only the twelve exact routed source versions and preserve earlier reviews',()=>{
+ const {r,files,p}=piLiveAcceptanceFixture();assert.equal(files.length,12)
+ assert.equal(createHash('sha256').update(JSON.stringify(r.entries)).digest('hex'),'ae3c35fc25bab49c31491330c8c7152057c2a559e68a57e58d8a7bb194149373')
  assertArchitectureFiles(p,files);assert.equal(selectCandidate(context(),p,r.sourceSha,{files}),r.sourceSha)
  for(const f of files){assertPrivateRecurringReviewEntry(f,'100644 blob '+f.sha+'\t'+f.filename+'\0');for(const mode of ['100755','120000','160000'])rejection(()=>assertPrivateRecurringReviewEntry(f,mode+' blob '+f.sha+'\t'+f.filename+'\0'))}
  for(const edit of [f=>f.pop(),f=>f.push(f[0]),f=>f[0].sha='f'.repeat(40),f=>f[0].status='removed',f=>f[0].previous_filename='elsewhere',f=>f[0].filename='apps/sg-runtime/app/api/unreviewed.ts']){
@@ -2560,7 +2560,7 @@ test('PI live corrections admit only the eleven exact routed source versions and
 test('trusted live correction projection validates all current bytes and immutable history as data',()=>{
  const r=PRIVATE_RECURRING_LIVE_ACCEPTANCE_REVIEW,cache=new Map(),current=p=>{if(!cache.has(p))cache.set(p,execFileSync('git',['show',r.sourceSha+':'+p],{cwd:authorityRoot}));return cache.get(p)}
  const bytes=current(PI_LIVE_ACCEPTANCE_PROVENANCE_PATH),a=JSON.parse(bytes),options={sha256ForPath:p=>a.sourceDigests[p]??a.preservedReceipts[p],blobForPath:p=>r.entries[p]?.sha,historicalDigestForPath:(sha,p)=>{assert.equal(sha,a.baseCandidateSha);return a.preservedReceipts[p]}}
- assert.equal(Object.keys(assertPiLiveAcceptanceRecord(bytes,options).sourceDigests).length,10)
+ assert.equal(Object.keys(assertPiLiveAcceptanceRecord(bytes,options).sourceDigests).length,11)
  for(const p of Object.keys(a.sourceDigests))for(const field of ['sha256ForPath','blobForPath'])rejection(()=>assertPiLiveAcceptanceRecord(bytes,{...options,[field]:q=>q===p?'0'.repeat(field==='blobForPath'?40:64):options[field](q)}))
  for(const p of Object.keys(a.preservedReceipts))for(const field of ['sha256ForPath','historicalDigestForPath'])rejection(()=>assertPiLiveAcceptanceRecord(bytes,{...options,[field]:field==='sha256ForPath'?q=>q===p?'0'.repeat(64):options[field](q):(sha,q)=>q===p?'0'.repeat(64):options[field](sha,q)}))
  rejection(()=>assertPiLiveAcceptanceRecord(Buffer.concat([bytes,Buffer.from(' ')]),options))
