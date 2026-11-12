@@ -132,7 +132,8 @@ export function reviewedRecurringConsumerPaths(repositoryRoot,{baseSha,candidate
  assert.equal(git(['rev-parse','HEAD']),candidateSha,'Validate the actual source checkout')
  git(['merge-base','--is-ancestor',view.manifest.authorityMainSha,baseSha])
  const adoptions=['apps/architecture-lab/private-recurring-source-adoption.json','apps/sg-runtime/private-recurring-source-adoption.json','apps/srm/private-recurring-source-adoption.json']
- const expected=[...view.manifest.changedPaths,RECURRING_SOURCE_RECORD,'apps/architecture-lab/private-recurring-source.mjs',...adoptions].sort()
+ const expected=(view.transport?view.transport.manifest.reviewedPaths:[...view.manifest.changedPaths,RECURRING_SOURCE_RECORD,'apps/architecture-lab/private-recurring-source.mjs',...adoptions]).slice().sort()
+ if(view.transport)git(['merge-base','--is-ancestor',view.transport.manifest.reviewBaseSha,baseSha])
  const changed=git(['diff','--name-only','--no-renames',baseSha+'...'+candidateSha]).split('\n').filter(Boolean).sort()
  assert.deepEqual(changed,expected,'Exact complete reviewed recurring diff required')
  const {partition}=partitionChangedPaths(changed,repositoryRoot)

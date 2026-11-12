@@ -1,12 +1,16 @@
+import {sdkContinuationPredecessor} from '../../../packages/platform-contracts/test/organisation-sdk-compatibility.mjs'
+import {procurementInsightsCompletionPredecessor} from './procurement-insights-completion-integrity.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import {execFileSync} from 'node:child_process'
 import {marketCalendarPredecessor,MARKET_CALENDAR_CONSUMER_RECORD as record,MARKET_CALENDAR_CONSUMER_PATHS as paths,MARKET_CALENDAR_PRODUCER_RECORD,MARKET_CALENDAR_PRODUCER_RECORD_SHA} from './market-calendar-integrity.mjs'
 const root=new URL('../../../',import.meta.url)
-const current=p=>fs.readFileSync(new URL(p,root))
+const physical=p=>fs.readFileSync(new URL(p,root))
 const cache=new Map()
 const historical=(sha,p)=>{const k=sha+':'+p;if(!cache.has(k))cache.set(k,execFileSync('git',['cat-file','blob',k],{cwd:root,stdio:['ignore','pipe','pipe']}));return cache.get(k)}
+const sdk=sdkContinuationPredecessor(JSON.parse(physical('apps/sg-runtime/operation-integration.json')),physical,historical)
+const current=sdk?.calendarCurrent??procurementInsightsCompletionPredecessor(physical,historical)?.previousBytes??physical
 test('actual calendar consumer preserves its accepted producer, dependencies and historical receipts',()=>{
  const a=marketCalendarPredecessor(current,historical)
  assert.equal(a.manifest.scope,'MARKET_CALENDAR_CONSUMER_SOURCE')

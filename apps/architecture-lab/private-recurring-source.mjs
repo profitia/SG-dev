@@ -1,3 +1,5 @@
+import {recurringConsentTransportPredecessor} from '../../packages/platform-contracts/test/recurring-consent-transport-source.mjs'
+import {procurementInsightsShellPredecessor} from '../sg-runtime/tests/procurement-insights-shell-integrity.mjs'
 // Source acceptance only. Never imported by an application runtime.
 // The reviewed current graph is verified before any immutable predecessor is read.
 import {assistantEcrWeekPredecessor} from '../sg-runtime/tests/assistant-ecr-week-integrity.mjs'
@@ -24,8 +26,10 @@ export function recurringSourcePredecessor(current,historical){
  if(receipt.sdkSourceContinuations!==undefined){
   const sdk=sdkContinuationPredecessor(receipt,current,historical)
   assert(sdk,'reviewed registration continuation required')
-  return recurringSourcePredecessor(sdk.previousBytes,historical)
+  const accepted=recurringSourcePredecessor(sdk.previousBytes,historical);return {...accepted,...(sdk.composition?{transport:sdk.composition.transport,completion:sdk.composition.completion}:{})}
  }
+ const transport=recurringConsentTransportPredecessor(current,historical);if(transport){const accepted=recurringSourcePredecessor(transport.previousBytes,historical);return {...accepted,transport}}
+ const shell=procurementInsightsShellPredecessor(current,historical);if(shell){const accepted=recurringSourcePredecessor(shell.previousBytes,historical);return {...accepted,completion:shell}}
  const calendar=marketCalendarSourcePredecessor(current,historical);if(calendar)return recurringSourcePredecessor(calendar.previousBytes,historical)
  // The verified SDK view retains the separately accepted ECR week frame.
  // Authenticate that frame after SDK closure, before recurring history.

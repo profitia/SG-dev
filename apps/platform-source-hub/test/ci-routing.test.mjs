@@ -13,13 +13,13 @@ const readReceipt=file=>JSON.parse(fs.readFileSync(new URL('../../../'+file,impo
 // The test must work both on a refreshed candidate and on its resulting main.
 // Use the last actual main ancestor before this source record was introduced;
 // unrelated later main-only governance commits are never part of this review.
-function withRecurringReviewFixture(action){
+function withRecurringReviewFixture(action,{candidateSha='f78f5867064c96f4497e13bcd53c97af2da2e07a',baseSha='3491c915ad27c07898124b23d6193ea7d703b12b',full=false}={}){
  const temporary=fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(),'hub-recurring-source-')))
  const git=(cwd,...args)=>execFileSync('git',args,{cwd,encoding:'utf8',stdio:['ignore','pipe','pipe']}).trim()
  try{
   // This regression owns the original closed recurring review, not every
   // later governance/registration/Calendar change in the moving main history.
-  const candidateSha='f78f5867064c96f4497e13bcd53c97af2da2e07a',baseSha='3491c915ad27c07898124b23d6193ea7d703b12b'
+  // Immutable fixture versions are explicit; they never follow moving main.
   const a=JSON.parse(git(repositoryRoot,'show',candidateSha+':apps/architecture-lab/private-recurring-source.json'))
   git(temporary,'clone','--quiet','--shared','--no-checkout',repositoryRoot,'candidate')
   const root=path.join(temporary,'candidate');git(root,'update-ref','--no-deref','HEAD',candidateSha);git(root,'read-tree',candidateSha)
@@ -27,7 +27,7 @@ function withRecurringReviewFixture(action){
   const files=[...new Set([...canonical,...Object.keys(a.sourceDigests),...Object.keys(a.preservedReceipts),
    'apps/architecture-lab/private-recurring-source.json','apps/architecture-lab/private-recurring-source.mjs',
    'apps/architecture-lab/private-recurring-source-adoption.json','apps/sg-runtime/private-recurring-source-adoption.json','apps/srm/private-recurring-source-adoption.json'])]
-  execFileSync('git',['checkout-index','--stdin','-z'],{cwd:root,input:files.join('\0')+'\0'})
+  if(full)git(root,'checkout-index','-a');else execFileSync('git',['checkout-index','--stdin','-z'],{cwd:root,input:files.join('\0')+'\0'})
   return action({root,baseSha,candidateSha,git,readReceipt:p=>JSON.parse(fs.readFileSync(path.join(root,p),'utf8'))})
  }finally{fs.rmSync(temporary,{recursive:true,force:true})}
 }
@@ -169,3 +169,16 @@ test('organisation SDK routing requires its complete pinned checkout and every r
   assert.throws(()=>reviewedRegistrationConsumerPaths(root,{baseSha,candidateSha:changed}))
  }finally{fs.rmSync(temporary,{recursive:true,force:true})}
 })
+
+test('accepted recurring transport continuation preserves its complete29 owner review and rejects tampered current files',()=>{
+ withRecurringReviewFixture(({root,baseSha,candidateSha,git,readReceipt})=>{
+  const sourceReview={baseSha,candidateSha},paths=reviewedRecurringConsumerPaths(root,sourceReview);
+  assert.equal(paths.get('apps/srm/scripts/private-host.integration.test.mjs'),'SRM');
+  const changedPaths=git(root,'diff','--name-only',baseSha,candidateSha).split('\n'),called=[];
+  assert.equal(changedPaths.length,29);
+  validateRouting({changedPaths,repositoryRoot:root,readReceipt,sourceReview,runGovernance:projectKey=>{called.push(projectKey);return {verdict:'PASS'}}});
+  assert.deepEqual([...new Set(called)].sort(),['ARCHITECTURE','SG2','SRM']);
+  const p=path.join(root,'packages/platform-contracts/current-e1-authority/recurring.mjs'),bytes=fs.readFileSync(p);
+  fs.appendFileSync(p,'UNREVIEWED');assert.throws(()=>reviewedRecurringConsumerPaths(root,sourceReview));fs.writeFileSync(p,bytes);
+ },{candidateSha:'82bcb78813937331d7822a96c5319b26e788abe1',baseSha:'f8f4b7f7f36357186a01ee54c7d5511c46ef5ed1',full:true});
+});

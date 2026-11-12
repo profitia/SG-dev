@@ -1,3 +1,4 @@
+import {procurementInsightsCompletionPredecessor} from './procurement-insights-completion-integrity.mjs'
 import {marketCalendarSourcePredecessor} from '../../architecture-lab/market-calendar-source.mjs'
 import {sdkContinuationPredecessor} from '../../../packages/platform-contracts/test/organisation-sdk-compatibility.mjs'
 import test from 'node:test'
@@ -12,7 +13,7 @@ const historical=(sha,p)=>{const k=sha+':'+p;if(!cache.has(k))cache.set(k,execFi
 const hash=b=>createHash('sha256').update(b).digest('hex')
 test('ECR correction closes current source before retaining all prior receipts and recurring acceptance',()=>{
  const sdk=sdkContinuationPredecessor(JSON.parse(current('apps/sg-runtime/operation-integration.json')),current,historical)
- let ecrCurrent=sdk?.previousBytes??current
+ let ecrCurrent=sdk?.previousBytes??procurementInsightsCompletionPredecessor(current,historical)?.previousBytes??current
  for(let prior;(prior=marketCalendarSourcePredecessor(ecrCurrent,historical));)ecrCurrent=prior.previousBytes
  const view=assistantEcrWeekPredecessor(ecrCurrent,historical,ECR_WEEK_SOURCE_SHA);assert(view)
  for(const p of WEEK_RECEIPTS)assert.deepEqual(ecrCurrent(p),historical(WEEK_BASE,p))

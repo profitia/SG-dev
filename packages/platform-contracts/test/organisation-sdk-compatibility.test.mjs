@@ -252,3 +252,16 @@ test('separate SG2 Calendar helper is authenticated before the exact accepted Ca
  assert.equal(hash(old(sourcePath)),'0174f13d576346174ab07e50bff31abcacc57400d0f8779531c8aa146994bb1f')
  for(const projectKey of ['SG2','SRM'])assert(sdkContinuationPredecessor(receipt(projectKey,old),old,historical,{projectKey}))
 })
+
+test('accepted PI main and registration close all current physical inputs before either historical view',()=>{
+ const view=sdkContinuationPredecessor(receipt('SG2'),current,historical);assert(view.composition)
+ assert.deepEqual(view.record,JSON.parse(current(sourcePath)))
+ assert.equal(view.composition.transport.manifest.scope,'RECURRING_CONSENT_BEARER_TRANSPORT_CORRECTION')
+ assert(view.composition.completion)
+ for(const target of ['packages/platform-contracts/current-e1-authority/recurring.mjs','apps/insights-runtime/src/publication-query.mjs','apps/sg-runtime/components/procurement-insights/reports.tsx','apps/sg-runtime/procurement-insights-completion-integration.json','apps/platform-source-hub/test/ci-routing.test.mjs','apps/srm/scripts/private-host.integration.test.mjs']){
+  const changed=p=>p===target?Buffer.concat([current(p),Buffer.from('UNREVIEWED')]):current(p)
+  assert.throws(()=>sdkContinuationPredecessor(receipt('SG2'),changed,historical),target)
+ }
+ const forged=(sha,p)=>sha==='82bcb78813937331d7822a96c5319b26e788abe1'&&p==='packages/platform-contracts/current-e1-authority/recurring.mjs'?Buffer.from('forged'):historical(sha,p)
+ assert.throws(()=>sdkContinuationPredecessor(receipt('SG2'),current,forged))
+})
