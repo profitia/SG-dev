@@ -1,3 +1,4 @@
+import {ECR_CALENDAR_TEST_REVIEW,assertCalendarTestReviewEntry,calendarTestCompatibilityTrustedCurrent,readCalendarSourceFile} from './controlled-package-ci.mjs'
 import {ECR_MARKET_CALENDAR_REVIEW,ECR_MARKET_CALENDAR_PROVENANCE,assertEcrMarketCalendarReviewEntry,marketCalendarTrustedPredecessor} from './controlled-package-ci.mjs'
 import {NEWSFEED_SAVED_SEARCH_REVIEW,assertNewsfeedSavedSearchReviewEntry} from './controlled-package-ci.mjs'
 import {ECR_SOURCE_CONTINUITY_REVIEW,assertEcrSourceContinuityReviewEntry} from './controlled-package-ci.mjs'
@@ -2163,3 +2164,33 @@ test('parallel ECR reconciliation retains exact B5 scope and all old records',as
  assert.equal(c.REGISTRATION_SDK_FIXTURE_PROVENANCE.recordDigest,'b5a228db0a77f4cd7e2235506738a994fffcd741ff942e67717633d858c5b94a');
  assert.equal(c.REGISTRATION_SDK_COMPLETE_HISTORY_PROVENANCE.recordDigest,'ffe2065f84e7a9808a74f896170588b9ff5fc66973096a15a407a7cbf006808d');
 });
+
+// The successor is preparation-only until separately accepted by the owner.
+test('Calendar test correction is restricted to its three exact Architecture files, owner and PR',()=>{
+ const r=ECR_CALENDAR_TEST_REVIEW,files=Object.entries(r.entries).map(([filename,e])=>({filename,sha:e.sha,status:e.status})),p={...pr(),number:r.prNumber,changed_files:files.length,base:{...pr().base,sha:r.baseSha},head:{...pr().head,sha:r.sourceSha,ref:r.branch}}
+ assert.equal(files.length,3);assertArchitectureFiles(p,files);assert.equal(selectCandidate(context(),p,r.sourceSha,{files}),r.sourceSha)
+ for(const f of files){assertCalendarTestReviewEntry(f,'100644 blob '+f.sha+'\t'+f.filename+'\0');for(const mode of ['100755','120000','160000'])rejection(()=>assertCalendarTestReviewEntry(f,mode+' blob '+f.sha+'\t'+f.filename+'\0'))}
+ for(const edit of [a=>a.pop(),a=>a.push(a[0]),a=>a[0]={...a[0],sha:'f'.repeat(40)},a=>a[0]={...a[0],status:'removed'},a=>a[0]={...a[0],previous_filename:a[0].filename},a=>a[0]={...a[0],filename:'apps/sg-runtime/middleware.ts'}]){const bad=structuredClone(files);edit(bad);rejection(()=>selectCandidate(context(),{...p,changed_files:bad.length},r.sourceSha,{files:bad}))}
+ for(const edit of [q=>q.number++,q=>q.head.ref='architecture/other',q=>q.head.repo.full_name='profitia/fork',q=>q.user.login='attacker',q=>q.base.ref='staging',q=>q.head.sha=sha]){const bad=structuredClone(p);edit(bad);rejection(()=>selectCandidate(context(),bad,r.sourceSha,{files}))}
+})
+test('Calendar correction authenticates real Git bytes and every current consumer source before preserving original history',()=>{
+ const r=ECR_CALENDAR_TEST_REVIEW,cfg=ECR_MARKET_CALENDAR_PROVENANCE,base=ECR_MARKET_CALENDAR_REVIEW,cache=new Map(),root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..')
+ const historical=(sha,p)=>{const key=sha+':'+p;if(!cache.has(key))cache.set(key,execFileSync('git',['cat-file','blob',key],{cwd:root,stdio:['ignore','pipe','pipe']}));return Buffer.from(cache.get(key))}
+ const missing=()=>{throw Object.assign(Error('not adopted'),{code:'ENOENT'})},current=p=>p===cfg.consumerRecord?missing():historical(r.sourceSha,p)
+ const restored=calendarTestCompatibilityTrustedCurrent(current,historical)
+ for(const[p,e]of Object.entries(r.entries))if(e.status==='added')assert.throws(()=>restored(p),e=>e.code==='ENOENT');else assert.deepEqual(restored(p),historical(r.baseSha,p))
+ assert.deepEqual(current(cfg.recordPath),historical(r.baseSha,cfg.recordPath))
+ const files=Object.fromEntries(cfg.consumerPaths.map(p=>[p,Buffer.from('SYNTHETIC_TEST_ONLY '+p)]));files['apps/sg-runtime/package.json']=current('apps/sg-runtime/package.json')
+ const hash=b=>createHash('sha256').update(b).digest('hex'),a={schemaVersion:'1.0.0',taskId:'SG2-PROCUREMENT-MARKET-CALENDAR-20261111',targetEnvironment:'development',scope:'MARKET_CALENDAR_CONSUMER_SOURCE',previousSourceSha:r.baseSha,producerRecordSha256:cfg.recordSha256,sourceDigests:Object.fromEntries(Object.entries(files).map(([p,b])=>[p,hash(b)])),preservedReceipts:Object.fromEntries(cfg.consumerReceipts.map(p=>[p,hash(current(p))])),noProviderAcquisition:true,noIndependentStore:true,noNotificationDelivery:true,activationIsSeparate:true}
+ assert.equal(cfg.consumerPaths.length,20)
+ const read=p=>p===cfg.consumerRecord?Buffer.from(JSON.stringify(a)):files[p]??current(p),prior=marketCalendarTrustedPredecessor(read,historical)
+ for(const[p,e]of Object.entries(base.entries))if(e.status==='added')assert.throws(()=>prior(p),e=>e.code==='ENOENT');else assert.deepEqual(prior(p),historical(base.baseSha,p))
+ const record=JSON.parse(current(cfg.recordPath))
+ for(const p of [...Object.keys(r.entries),...cfg.consumerPaths,...cfg.consumerReceipts,...Object.keys(base.entries),...Object.keys(record.preservedReceipts)])rejection(()=>marketCalendarTrustedPredecessor(f=>f===p?Buffer.concat([read(f),Buffer.from('tamper')]):read(f),historical))
+ const denied=Object.assign(Error('denied'),{code:'EACCES'});assert.throws(()=>calendarTestCompatibilityTrustedCurrent(()=>{throw denied},historical),e=>e===denied)
+ const foreign=Object.assign(Error('foreign Git error'),{status:128,stderr:"fatal: path 'other' does not exist in 'main'"});assert.throws(()=>calendarTestCompatibilityTrustedCurrent(()=>{throw foreign},historical),e=>e===foreign)
+ const fixture=fs.mkdtempSync(path.join(os.tmpdir(),'calendar-test-source-'))
+ try{for(const p of Object.keys(r.entries)){fs.mkdirSync(path.dirname(path.join(fixture,p)),{recursive:true});fs.writeFileSync(path.join(fixture,p),current(p))}fs.mkdirSync(path.dirname(path.join(fixture,cfg.recordPath)),{recursive:true});fs.writeFileSync(path.join(fixture,cfg.recordPath),current(cfg.recordPath));calendarTestCompatibilityTrustedCurrent(p=>readCalendarSourceFile(fixture,p),historical)
+ for(const p of Object.keys(r.entries)){const file=path.join(fixture,p),bytes=fs.readFileSync(file);fs.chmodSync(file,0o755);rejection(()=>calendarTestCompatibilityTrustedCurrent(n=>readCalendarSourceFile(fixture,n),historical));fs.chmodSync(file,0o644);fs.unlinkSync(file);fs.symlinkSync(path.join(fixture,cfg.recordPath),file);rejection(()=>calendarTestCompatibilityTrustedCurrent(n=>readCalendarSourceFile(fixture,n),historical));fs.unlinkSync(file);fs.writeFileSync(file,bytes)}
+ }finally{fs.rmSync(fixture,{recursive:true,force:true})}
+})

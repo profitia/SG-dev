@@ -100,3 +100,29 @@ or notification operation is added. Original PMOS task identities remain.
 
 The predecessor closeout was only prepared; no pending or conversation artifact
 was materialized or published. No E1 installation or product deployment has occurred.
+
+## Test composition corrective — proposal, 2026-11-12
+
+Owner accepted1484417c and producer1018 was integrated at877c55c6. The first
+separate UI candidate1043 revealed a real Architecture test mismatch: its outer
+consumer predecessor was compared directly with the older producer baseline.
+Its controlled SG2 run43172261299 also identified three stale compatibility
+assertions (ADP route bytes, AppShell route syntax and complete source coverage).
+These failures are retained; no historical PASS substitutes for their repair.
+
+Prepared source1044/334273b2 closes only three Architecture test/adoption paths.
+Original producer E3, its18-path review, all old receipts and runtime/SQL/contract
+bytes remain identical. Separate UI test changes authenticate the20-path consumer
+closure before verifying the prior graph; none of the original coverage, history,
+source, permission or credential assertions is disabled. This policy adds an
+exact three-file review and retains148/#1032/current accepted registration/week
+controls. It does not adopt the separate unaccepted Stage I source proposal.
+
+Status: PROPOSED_NOT_ACTIVATED. Exact owner decision, complete policy regression,
+trusted controlled/public proof and resulting-main verification are required.
+Original PMOS task ARCHITECTURE-ECR-MARKET-CALENDAR-CI-20261111 remains open.
+
+Local verification of the exact proposed controller:228/228 PASS, zero failures
+or skips. Producer/recurring8, composed integrity9, and SG2 compatibility80/80
+PASS. UI functional bytes, E1 plan and application build inputs are unchanged.
+Public and trusted exact-SHA CI of this corrective remain mandatory and pending.
