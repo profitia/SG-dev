@@ -12,7 +12,7 @@ export const PI_SHELL_PATHS=Object.freeze([
 ])
 const hash=b=>createHash('sha256').update(b).digest('hex')
 export function procurementInsightsShellPredecessor(current,historical){
- const completion=procurementInsightsCompletionPredecessor(current,historical);if(completion)return procurementInsightsShellPredecessor(completion.previousBytes,historical)
+ const completion=procurementInsightsCompletionPredecessor(current,historical);if(completion)return {...completion,manifest:{...completion.manifest,previousSourceSha:completion.manifest.baseCandidateSha}}
  let bytes
  try{bytes=current(PI_SHELL_RECEIPT)}catch(error){
   const text=String(error?.stderr??error?.message??'')

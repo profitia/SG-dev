@@ -16,7 +16,7 @@ const RECORD_SHA256='75877d5750e07d1c8172be0af76bc5933f2eeefc22cc39747a2621b9cab
 const hash=b=>createHash('sha256').update(b).digest('hex')
 const absent=error=>error?.code==='ENOENT'||error?.status===128&&["' does not exist in ","' exists on disk, but not in "].some(s=>String(error?.stderr??error?.message??'').includes("'"+RECURRING_SOURCE_RECORD+s))
 export function recurringSourcePredecessor(current,historical){
- const shell=procurementInsightsShellPredecessor(current,historical);if(shell)return recurringSourcePredecessor(shell.previousBytes,historical)
+ const shell=procurementInsightsShellPredecessor(current,historical);if(shell){const accepted=recurringSourcePredecessor(shell.previousBytes,historical);return {...accepted,completion:shell}}
  const calendar=marketCalendarSourcePredecessor(current,historical);if(calendar)return recurringSourcePredecessor(calendar.previousBytes,historical)
  const successor=assistantEcrWeekPredecessor(current,historical,ECR_WEEK_SOURCE_SHA)
  if(successor){const accepted=recurringSourcePredecessor(successor.previousBytes,historical);assert(accepted,'accepted recurring source retained');return {...accepted,successor}}

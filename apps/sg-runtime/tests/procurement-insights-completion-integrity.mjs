@@ -2,8 +2,10 @@
 import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
 export const PI_COMPLETION_RECEIPT='apps/sg-runtime/procurement-insights-completion-integration.json';
-export const PI_COMPLETION_BASE='1ab05e295fa974cb9d92f34b5f472207c45da45c';
+export const PI_COMPLETION_BASE='924f803f807f63de2505734b50883c9047e78a70';
 export const PI_COMPLETION_PATHS=Object.freeze([
+ 'apps/architecture-lab/private-recurring-source.mjs',
+ 'apps/architecture-lab/test/market-calendar-source.test.mjs',
  'apps/insights-runtime/src/publication-query.mjs',
  'apps/insights-runtime/src/subscription-api.mjs',
  'apps/insights-runtime/src/subscription-store.mjs',
@@ -13,12 +15,17 @@ export const PI_COMPLETION_PATHS=Object.freeze([
  'apps/sg-runtime/components/procurement-insights/reports.tsx',
  'apps/sg-runtime/components/procurement-insights/workspace.css',
  'apps/sg-runtime/components/procurement-insights/workspace.tsx',
+ 'apps/sg-runtime/middleware.ts',
  'apps/sg-runtime/package.json',
+ 'apps/sg-runtime/procurement-insights-shell-integration.json',
+ 'apps/sg-runtime/tests/porr-demo-middleware.test.ts',
+ 'apps/sg-runtime/tests/pci-smart-integrity.test.mjs',
+ 'apps/sg-runtime/tests/assistant-ecr-week-integrity.test.mjs',
  'apps/sg-runtime/tests/procurement-insights-completion.test.mjs',
  'apps/sg-runtime/tests/procurement-insights-completion-integrity.mjs',
  'apps/sg-runtime/tests/procurement-insights-shell-integrity.mjs'
 ]);
-const added=new Set(['apps/insights-runtime/src/publication-query.mjs','apps/insights-runtime/tests/report-library.test.mjs','apps/sg-runtime/tests/procurement-insights-completion.test.mjs','apps/sg-runtime/tests/procurement-insights-completion-integrity.mjs']);
+const added=new Set(['apps/insights-runtime/src/publication-query.mjs','apps/insights-runtime/tests/report-library.test.mjs','apps/sg-runtime/procurement-insights-shell-integration.json','apps/sg-runtime/tests/procurement-insights-completion.test.mjs','apps/sg-runtime/tests/procurement-insights-completion-integrity.mjs','apps/sg-runtime/tests/procurement-insights-shell-integrity.mjs']);
 const hash=bytes=>createHash('sha256').update(bytes).digest('hex');
 export function procurementInsightsCompletionPredecessor(current,historical){
  let bytes;try{bytes=current(PI_COMPLETION_RECEIPT)}catch(error){
@@ -33,8 +40,9 @@ export function procurementInsightsCompletionPredecessor(current,historical){
  for(const flag of ['authorisationChanged','schemaChanged','providerCallsPerformed','deploymentPerformed'])assert.equal(a[flag],false,flag);
  assert.deepEqual(Object.keys(a.sourceDigests).sort(),[...PI_COMPLETION_PATHS].sort());
  for(const p of PI_COMPLETION_PATHS){assert.match(a.sourceDigests[p],/^[a-f0-9]{64}$/);assert.equal(hash(current(p)),a.sourceDigests[p],'exact PI completion source '+p);}
- const shell='apps/sg-runtime/procurement-insights-shell-integration.json',prior=JSON.parse(historical(PI_COMPLETION_BASE,shell));
- assert.deepEqual(Object.keys(a.preservedReceipts).sort(),[shell,...Object.keys(prior.preservedReceipts)].sort());
+ const source=JSON.parse(historical(PI_COMPLETION_BASE,'apps/architecture-lab/private-recurring-source.json'));
+ const preserved=['apps/architecture-lab/private-recurring-source.json',...Object.keys(source.preservedReceipts),...['apps/architecture-lab','apps/sg-runtime','apps/srm'].map(p=>p+'/private-recurring-source-adoption.json'),'apps/sg-runtime/assistant-ecr-week-integration.json','apps/economic-calendar-runtime/market-calendar-preferences-integration.json'];
+ assert.deepEqual(Object.keys(a.preservedReceipts).sort(),preserved.sort());
  for(const [p,digest]of Object.entries(a.preservedReceipts)){assert.equal(hash(historical(PI_COMPLETION_BASE,p)),digest);assert.equal(hash(current(p)),digest,'immutable source receipt '+p);}
  const mapped=new Set(PI_COMPLETION_PATHS),cache=new Map();
  return {manifest:a,previousBytes:p=>{
