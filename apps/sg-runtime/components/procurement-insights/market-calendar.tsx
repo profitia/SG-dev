@@ -1,6 +1,6 @@
 'use client'
 import React,{useCallback,useEffect,useMemo,useRef,useState} from 'react'
-import {usePathname,useRouter,useSearchParams} from 'next/navigation'
+import {usePathname,useSearchParams} from 'next/navigation'
 import {createCalendarClient,readPrivate,readSnapshot,calendarErrorMessage,CalendarRequestError,type CalendarClient} from '@/lib/market-calendar/client'
 import {DEFAULT_FILTERS,emptyPreferences,entriesFrom,evidenceEntry,publicationEntry,filterEntries,calendarDate,localDate,addDays,periodRange,formatDate,providerLabel,statusLabel,type Filters,type Entry,type PrivateEnvelope,type PrivatePreferences,type Snapshot,type View} from '@/lib/market-calendar/model'
 import {CalendarIcon as Icon,CalendarButton as Btn,CalendarInput as Input,CalendarSelect as Select,CalendarDialog,CalendarEmpty as Empty} from './calendar-dialogs'
@@ -13,7 +13,7 @@ function readFilters(params:URLSearchParams):Filters{
  if(!['all','planned','published','revised','unresolved'].includes(f.status))f.status='all';if(!['next','recent'].includes(f.period))f.period='next';if(!['list','week','month'].includes(f.view))f.view='list';f.q=f.q.slice(0,256);return f
 }
 export function MarketCalendar({active,getToken}:{active:boolean;getToken:()=>Promise<string|null>}){
- const router=useRouter(),path=usePathname(),params=useSearchParams(),address=params.toString(),f=readFilters(new URLSearchParams(address))
+ const path=usePathname(),params=useSearchParams(),address=params.toString(),f=readFilters(new URLSearchParams(address))
  const [deepEntry,setDeepEntry]=useState<Entry|null>(null),[detailError,setDetailError]=useState(''),[snapshot,setSnapshot]=useState<Snapshot|null>(null),[privateState,setPrivate]=useState<PrivateEnvelope>(emptyPreferences),[privateAllowed,setPrivateAllowed]=useState(false),[loading,setLoading]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState(''),[privateError,setPrivateError]=useState(''),[message,setMessage]=useState(''),[reload,setReload]=useState(0)
  const [modal,setModal]=useState<'save'|'rename'|'delete'|'watch'|null>(null),[editing,setEditing]=useState<string|null>(null),[draft,setDraft]=useState(''),[formError,setFormError]=useState(''),[watch,setWatch]=useState({approaching:true,results:true,changes:false})
  const privateRef=useRef(privateState),writing=useRef(false),lifetime=useMemo(()=>({controller:new AbortController()}),[getToken,active,reload])
@@ -25,7 +25,9 @@ export function MarketCalendar({active,getToken}:{active:boolean;getToken:()=>Pr
  const anchor=calendarDate(params.get('calDate'))??today
  const offset=/^-?\d{1,4}$/.test(params.get('calOffset')??'')?Number(params.get('calOffset')):0,range=periodRange(f,anchor,offset)
  const rawSection=params.get('calSection'),section:Section=['all','saved','favorites','watching'].includes(rawSection??'')?rawSection as Section:'all',selectedSaved=params.get('calSaved'),day=calendarDate(params.get('calDay'))
- const update=useCallback((values:Record<string,string|null>,replace=false)=>{const q=new URLSearchParams(address);q.set('tab','calendar');for(const [k,v] of Object.entries(values)){if(v===null||v==='')q.delete(k);else q.set(k,v)}router[replace?'replace':'push'](path+'?'+q.toString(),{scroll:false})},[address,path,router])
+ // These controls select already authorised local ECR data. Next integrates the
+ // native history API with useSearchParams without another server navigation.
+ const update=useCallback((values:Record<string,string|null>,replace=false)=>{const q=new URLSearchParams(window.location.search);q.set('tab','calendar');for(const [k,v] of Object.entries(values)){if(v===null||v==='')q.delete(k);else q.set(k,v)}window.history[replace?'replaceState':'pushState'](null,'',path+'?'+q.toString())},[path])
  const setFilters=(patch:Partial<Filters>,extra:Record<string,string|null>={})=>{const values:Record<string,string|null>={calSaved:null,calDay:null,...extra};for(const [k,v] of Object.entries(patch))values[filterKeys[k as keyof Filters]]=v;if('period'in patch||'view'in patch)values.calOffset=null;update(values)}
  const reset=()=>{const values:Record<string,string|null>={calSection:null,calOffset:null,calDate:null,calDay:null,calSaved:null};for(const k of Object.values(filterKeys))values[k]=null;update(values)}
  const installPrivate=useCallback((p:PrivateEnvelope)=>{privateRef.current=p;setPrivate(p)},[])
