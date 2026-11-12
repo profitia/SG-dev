@@ -258,7 +258,7 @@ test('accepted PI main and registration close all current physical inputs before
  assert.deepEqual(view.record,JSON.parse(current(sourcePath)))
  assert.equal(view.composition.transport.manifest.scope,'RECURRING_CONSENT_BEARER_TRANSPORT_CORRECTION')
  assert(view.composition.completion)
- for(const target of ['apps/architecture-lab/market-calendar-source.mjs','scripts/governance/platform-source-hub-foundation.test.mjs','Canon/evidence/2026-11-12-bsdc-v11-manifest-continuity.json','packages/platform-contracts/current-e1-authority/recurring.mjs','apps/insights-runtime/src/publication-query.mjs','apps/sg-runtime/components/procurement-insights/reports.tsx','apps/sg-runtime/procurement-insights-completion-integration.json','apps/platform-source-hub/test/ci-routing.test.mjs','apps/srm/scripts/private-host.integration.test.mjs']){
+ for(const target of ['AGENTS.md','Canon/registries/governance-manifest-v2.json','Canon/v1.1-business-solution-design-and-canonization-canon.md','docs/agent-instructions/bsdc-launcher-v1.1.md','apps/architecture-lab/market-calendar-source.mjs','scripts/governance/platform-source-hub-foundation.test.mjs','Canon/evidence/2026-11-12-bsdc-v11-manifest-continuity.json','packages/platform-contracts/current-e1-authority/recurring.mjs','apps/insights-runtime/src/publication-query.mjs','apps/sg-runtime/components/procurement-insights/reports.tsx','apps/sg-runtime/procurement-insights-completion-integration.json','apps/platform-source-hub/test/ci-routing.test.mjs','apps/srm/scripts/private-host.integration.test.mjs']){
   const changed=p=>p===target?Buffer.concat([current(p),Buffer.from('UNREVIEWED')]):current(p)
   assert.throws(()=>sdkContinuationPredecessor(receipt('SG2'),changed,historical),target)
  }
