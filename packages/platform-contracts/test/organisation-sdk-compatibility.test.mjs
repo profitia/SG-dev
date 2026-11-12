@@ -6,7 +6,7 @@ import {execFileSync} from 'node:child_process'
 import {sdkContinuationPredecessor,acceptedSdkSource} from './organisation-sdk-compatibility.mjs'
 const root=new URL('../../../',import.meta.url)
 const current=p=>fs.readFileSync(new URL(p,root))
-const historical=(sha,p)=>execFileSync('git',['show',sha+':'+p],{cwd:root,stdio:['ignore','pipe','ignore']})
+const historical=(sha,p)=>execFileSync('git',['show',sha+':'+p],{cwd:root,stdio:['ignore','pipe','pipe']})
 const hash=b=>createHash('sha256').update(b).digest('hex')
 const sourcePath='packages/platform-contracts/test/organisation-sdk-compatibility.json'
 const receiptPath=p=>'apps/'+(p==='SG2'?'sg-runtime':'srm')+'/operation-integration.json'
@@ -197,4 +197,17 @@ test('accepted Calendar and registration both authenticate their complete curren
  }
  const view=sdkContinuationPredecessor(receipt('SG2',current),current,historical);assert(view);
  assert.throws(()=>view.previousBytes('apps/economic-calendar-runtime/market-calendar-preferences-integration.json'));
+});
+
+test('accepted49 Calendar69 graph remains verified at its complete immutable source',()=>{
+ const old=p=>historical('f251c7bf94cf7142d43ee512eb7dc0a7d6d7d61d',p);assert.equal(hash(old(sourcePath)),'49d746aad0ff4de6d0e910e2e3aaf7c53c9e4e0ab3aed9d86acd94761ec707ba');
+ for(const projectKey of ['SG2','SRM'])assert.deepEqual(sdkContinuationPredecessor(receipt(projectKey,old),old,historical,{projectKey}).record,JSON.parse(old(sourcePath)));
+});
+
+test('accepted Calendar corrective record and its physical verifier cannot be omitted or rebound',()=>{
+ const p='apps/architecture-lab/market-calendar-test-compatibility.json';assert.equal(hash(current(p)),'52e859d4a99bc4c8e4d986f38afea2d58e9c1fe1ee1e0eb62cc2672dbdb60078');
+ for(const f of [p,'apps/architecture-lab/market-calendar-source.mjs']){
+  assert.throws(()=>sdkContinuationPredecessor(receipt('SG2'),n=>n===f?Buffer.concat([current(n),Buffer.from('UNREVIEWED')]):current(n),historical),f);
+  assert.throws(()=>sdkContinuationPredecessor(receipt('SG2'),n=>{if(n===f)throw Object.assign(Error('Absent'),{code:'ENOENT'});return current(n)},historical),f);
+ }
 });

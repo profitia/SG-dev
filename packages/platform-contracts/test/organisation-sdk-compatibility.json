@@ -189,7 +189,7 @@
     "packages/platform-contracts/test/private-operation-host.test.mjs": "604a1459b33a8b45ec76f3af21974459d481bc48197f9894b2d203553f62b287",
     "apps/architecture-lab/private-recurring-source.mjs": "258e74446dc8d8489b058c18abd39966276263af36aa629c750822472d822ca9",
     "apps/architecture-lab/test/private-recurring-source.test.mjs": "af7e93f69c80cdef1bd9e277693d3b3b9ab8083d8e8d56afee2061aa7a26cd47",
-    "apps/architecture-lab/test/market-calendar-source.test.mjs": "43094f44c9f96cc67893a254f6896ae22a171571b183fd98368adb5677446552"
+    "apps/architecture-lab/test/market-calendar-source.test.mjs": "b234bf439a47918e4c616154a78b5bbeee92de7b86f3b343e4b6e89551f3483d"
   },
   "sdkDigests": {
     "accessSchemaDigest": "356463492c3304ca11fa533f6e99f1d41628a3ab830488142c6030fb9a920ff2",
