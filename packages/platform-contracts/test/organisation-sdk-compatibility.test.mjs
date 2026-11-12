@@ -218,7 +218,50 @@ test('accepted a805 Calendar corrective69 graph remains complete at its actual i
 });
 
 test('accepted Calendar consumer closes all20 physical paths and its immutable record before projection',()=>{
- const p='apps/sg-runtime/market-calendar-integration.json',a=JSON.parse(current(p));assert.equal(hash(current(p)),'42406b5b07071408d35e39d5b9bb20d18402e52581d3c516bb08fb68b718f119');assert.equal(Object.keys(a.sourceDigests).length,20);
+ const p='apps/sg-runtime/market-calendar-integration.json',a=JSON.parse(current(p));assert.equal(hash(current(p)),'b66d88e724f84d513677554e77484bc29a2021b238ce28d4b7db7492aba9903c');assert.equal(Object.keys(a.sourceDigests).length,20);
  for(const f of [p,...Object.keys(a.sourceDigests)])assert.throws(()=>sdkContinuationPredecessor(receipt('SG2'),n=>n===f?Buffer.concat([current(n),Buffer.from('UNREVIEWED')]):current(n),historical),f);
  assert.throws(()=>sdkContinuationPredecessor(receipt('SG2'),n=>{if(n===p)throw Object.assign(Error('Absent'),{code:'ENOENT'});return current(n)},historical));
 });
+
+test('immutable c26 Calendar consumer source remains accepted after navigation correction',()=>{
+ const old=p=>historical('b80e7577c3fea1e6c555796089d2336997631996',p)
+ assert.equal(hash(old(sourcePath)),'c26ca9c1c02b788bd010b315d5c522c8247fedb5b72d858eafd7780667c76bcb')
+ for(const projectKey of ['SG2','SRM'])assert(sdkContinuationPredecessor(receipt(projectKey,old),old,historical,{projectKey}))
+})
+
+test('accepted Oil source and record are closed before exposing historical ECR helpers',()=>{
+ const paths=['apps/sg-runtime/oil-renderer-integration.json','apps/insights-runtime/render/report.py','apps/insights-runtime/tests/postgres.test.mjs','apps/sg-runtime/tests/assistant-ecr-week-integrity.mjs']
+ for(const p of paths)assert.throws(()=>sdkContinuationPredecessor(receipt('SG2'),f=>f===p?Buffer.concat([current(f),Buffer.from('UNREVIEWED')]):current(f),historical,{projectKey:'SG2'}),p)
+ const prior=p=>historical('b80e7577c3fea1e6c555796089d2336997631996',p)
+ assert.equal(hash(prior('apps/sg-runtime/market-calendar-integration.json')),'42406b5b07071408d35e39d5b9bb20d18402e52581d3c516bb08fb68b718f119')
+})
+
+test('immutable61 source profile remains verifiable after original recurring routing fixture repair',()=>{
+ const old=p=>historical('845eb9137efa96d377b8498414f0b8b08c0ce4ad',p)
+ assert.equal(hash(old(sourcePath)),'61c57570f25fe90c89a5d2bd0f27f2b228091a6bd239a72a7f1fc87e06ae36ad')
+ for(const projectKey of ['SG2','SRM'])assert(sdkContinuationPredecessor(receipt(projectKey,old),old,historical,{projectKey}))
+})
+
+test('separate SG2 Calendar helper is authenticated before the exact accepted Calendar view and all69 history remains closed',()=>{
+ const file='apps/sg-runtime/tests/market-calendar-integrity.mjs'
+ for(const projectKey of ['SG2','SRM']){
+  assert(sdkContinuationPredecessor(receipt(projectKey),current,historical,{projectKey}))
+  assert.throws(()=>sdkContinuationPredecessor(receipt(projectKey),p=>p===file?Buffer.concat([current(p),Buffer.from('UNREVIEWED')]):current(p),historical,{projectKey}))
+ }
+ const old=p=>historical('9f6dc4176bbdd0cbe2a7cfcb2e6dd99351b02506',p)
+ assert.equal(hash(old(sourcePath)),'0174f13d576346174ab07e50bff31abcacc57400d0f8779531c8aa146994bb1f')
+ for(const projectKey of ['SG2','SRM'])assert(sdkContinuationPredecessor(receipt(projectKey,old),old,historical,{projectKey}))
+})
+
+test('accepted PI main and registration close all current physical inputs before either historical view',()=>{
+ const view=sdkContinuationPredecessor(receipt('SG2'),current,historical);assert(view.composition)
+ assert.deepEqual(view.record,JSON.parse(current(sourcePath)))
+ assert.equal(view.composition.transport.manifest.scope,'RECURRING_CONSENT_BEARER_TRANSPORT_CORRECTION')
+ assert(view.composition.completion)
+ for(const target of ['packages/platform-contracts/current-e1-authority/recurring.mjs','apps/insights-runtime/src/publication-query.mjs','apps/sg-runtime/components/procurement-insights/reports.tsx','apps/sg-runtime/procurement-insights-completion-integration.json','apps/platform-source-hub/test/ci-routing.test.mjs','apps/srm/scripts/private-host.integration.test.mjs']){
+  const changed=p=>p===target?Buffer.concat([current(p),Buffer.from('UNREVIEWED')]):current(p)
+  assert.throws(()=>sdkContinuationPredecessor(receipt('SG2'),changed,historical),target)
+ }
+ const forged=(sha,p)=>sha==='82bcb78813937331d7822a96c5319b26e788abe1'&&p==='packages/platform-contracts/current-e1-authority/recurring.mjs'?Buffer.from('forged'):historical(sha,p)
+ assert.throws(()=>sdkContinuationPredecessor(receipt('SG2'),current,forged))
+})

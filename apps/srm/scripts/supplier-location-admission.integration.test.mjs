@@ -15,8 +15,8 @@ import {createSupplierLocationAdmission} from '@profitia/platform-contracts/supp
 
 const sdkContinuationRoot=new URL('../../../',import.meta.url),sdkContinuationCurrent=p=>fs.readFileSync(new URL(p,sdkContinuationRoot)),sdkContinuationHistory=(sha,p)=>execFileSync('git',['show',sha+':'+p],{cwd:sdkContinuationRoot})
 const organisationSourceView=sdkContinuationPredecessor(JSON.parse(sdkContinuationCurrent('apps/srm/operation-integration.json')),sdkContinuationCurrent,sdkContinuationHistory,{projectKey:'SRM'})
-const recurring=recurringSourcePredecessor(organisationSourceView?.previousBytes??sdkContinuationCurrent,sdkContinuationHistory)?.manifest
-const recurringSdkFiles=Object.fromEntries(Object.entries({...recurring?.sourceDigests,...organisationSourceView?.record.sourceDigests,...organisationSourceView?.record.compatibilityTestSourceDigests}).filter(([p])=>p.startsWith('packages/platform-contracts/')).map(([p,h])=>[p.slice('packages/platform-contracts/'.length),h]))
+const recurringView=recurringSourcePredecessor(sdkContinuationCurrent,sdkContinuationHistory),recurring=recurringView?.manifest
+const recurringSdkFiles=Object.fromEntries(Object.entries({...recurring?.sourceDigests,...organisationSourceView?.record.sourceDigests,...organisationSourceView?.record.compatibilityTestSourceDigests,...recurringView?.transport?.manifest.sourceDigests,...organisationSourceView?.currentSourceDigests}).filter(([p])=>p.startsWith('packages/platform-contracts/')).map(([p,h])=>[p.slice('packages/platform-contracts/'.length),h]))
 
 const hash=v=>createHash('sha256').update(v).digest('hex'),receipt=JSON.parse(fs.readFileSync(new URL('../operation-integration.json',import.meta.url)))
 const accepted=receipt.p1ReceiverSourceCompatibility,key=Buffer.alloc(32,59).toString('base64')
