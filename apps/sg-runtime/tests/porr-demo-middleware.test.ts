@@ -1,6 +1,7 @@
 import {readM2AcceptedSource} from './assistant-m2-source-view.mjs'
 import assert from 'node:assert/strict'
 import test, { before } from 'node:test'
+import {procurementInsightsShellPredecessor,PI_SHELL_PATHS,PI_SHELL_RECEIPT} from './procurement-insights-shell-integrity.mjs'
 
 import { NextRequest } from 'next/server'
 
@@ -85,6 +86,39 @@ test('unknown, empty and whitespace provider modes refuse pages without demo fal
       assert.equal(response.cookies.get('sg_porr_demo_session_development'),undefined)
     }
   }finally{if(previous===undefined)delete process.env.PROFITIA_AUTH_PROVIDER;else process.env.PROFITIA_AUTH_PROVIDER=previous}
+})
+
+test('Procurement Insights opens its adopted neutral shell in both locales while private descendants remain denied',async()=>{
+ const previous=process.env.PROFITIA_AUTH_PROVIDER;process.env.PROFITIA_AUTH_PROVIDER='clerk'
+ try{
+  for(const locale of ['pl','en']){
+   for(const suffix of ['', '/', '?tab=reports','?observation=11111111-1111-4111-8111-111111111111']){
+    const response=await middleware(new NextRequest('https://dev-sg2.spendguru.app/'+locale+'/dashboard/procurement-insights'+suffix))
+    assert([200,307].includes(response.status));assert.equal(response.headers.get('Cache-Control'),'private, no-store')
+    assert.equal(response.cookies.get('sg_porr_demo_session_development'),undefined)
+   }
+   for(const path of ['/dashboard/procurement-insights/admin','/dashboard/unadopted','/procurement-insights'])
+    assert.equal((await middleware(new NextRequest('https://dev-sg2.spendguru.app/'+locale+path))).status,403)
+  }
+  assert.equal((await middleware(new NextRequest('https://dev-sg2.spendguru.app/de/dashboard/procurement-insights'))).status,403)
+ }finally{if(previous===undefined)delete process.env.PROFITIA_AUTH_PROVIDER;else process.env.PROFITIA_AUTH_PROVIDER=previous}
+})
+
+test('PI shell source continuation preserves original receipts and rejects source or authority tampering',async()=>{
+ const {readFileSync}=await import('node:fs'),{execFileSync}=await import('node:child_process'),root=new URL('../../../',import.meta.url)
+ const current=(p:string)=>readFileSync(new URL(p,root)),historical=(sha:string,p:string)=>execFileSync('git',['show',sha+':'+p],{cwd:root})
+ const view=procurementInsightsShellPredecessor(current,historical);assert(view)
+ // Exercise the actual accepted continuation closure, rather than the superseded four-file shell.
+ for(const p of Object.keys(view.manifest.sourceDigests))assert.throws(()=>procurementInsightsShellPredecessor(f=>f===p?Buffer.concat([current(f),Buffer.from('UNACCEPTED')]):current(f),historical),p)
+ // Middleware is already on authority main and outside this continuation's editable paths.
+ assert.deepEqual(current('apps/sg-runtime/middleware.ts'),historical('99cd4aa1591ba2fc3a387ce637f920dac74880be','apps/sg-runtime/middleware.ts'))
+ for(const change of [(a:any)=>a.authorisationChanged=true,(a:any)=>a.previousSourceSha='0'.repeat(40),(a:any)=>delete a.sourceDigests[PI_SHELL_PATHS[0]],(a:any)=>a.unreviewed=true]){
+  const a=JSON.parse(current(PI_SHELL_RECEIPT).toString());change(a)
+  assert.throws(()=>procurementInsightsShellPredecessor(p=>p===PI_SHELL_RECEIPT?Buffer.from(JSON.stringify(a)):current(p),historical))
+ }
+ for(const p of Object.keys(view.manifest.preservedReceipts))assert.throws(()=>procurementInsightsShellPredecessor(f=>f===p?Buffer.concat([current(f),Buffer.from('UNACCEPTED')]):current(f),historical),p)
+ assert.equal(procurementInsightsShellPredecessor(view.previousBytes,historical),null)
+ assert.deepEqual(view.previousBytes('apps/sg-runtime/middleware.ts'),historical(view.manifest.previousSourceSha,'apps/sg-runtime/middleware.ts'))
 })
 
 test('category shell adoption preserves the prior source acceptance and pins the complete current receiver', async () => {

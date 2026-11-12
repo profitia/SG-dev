@@ -9,18 +9,20 @@
 | Repozytorium / authority | profitia/SG-dev / main |
 | Ścieżka | Canon/proposals/bsdc/ARCHITECTURE/cic-assistant-continuous-quality.md |
 | Gałąź robocza | architecture/bsdc-cic-quality-20261112 |
-| Status | WORKING / NOT_ACCEPTED |
-| Projekt rozwiązania | READY_FOR_OWNER_REVIEW / PROPOSED_NOT_ACCEPTED; kompletny projekt w §4–5, decyzja w §7 |
-| Tryb | DESIGN / BUSINESS CONSULTING |
-| Etap | F — kompletna propozycja v1 przedstawiona do akceptacji; decyzja właściciela oczekiwana |
+| Status | COMPLETED / OWNER_APPROVED |
+| Aktywacja rozwiązania | NOT_ACTIVE / NOT_IMPLEMENTED |
+| Zaakceptowana propozycja | Rewizja 5; commit 3f79f10a1e8b6df4dc9176634ee6339675df5f7a; blob 695164e98b1562acb00aa937ca6003726f6ca368 |
+| Projekt rozwiązania | OWNER_APPROVED — zamrożona specyfikacja v1 w §4–5, decyzja DEC-03; bez aktywacji kanonu wykonawczego |
+| Tryb | OWNER ACCEPTANCE / DESIGN CLOSED — bez execution |
+| Etap | F — zakończony; A–F domknięte projektowo, 28/28 USTALONE |
 | Utworzono / zaktualizowano | 2026-11-12 / 2026-11-12, Europe/Warsaw |
-| Rewizja | 5 |
-| Rewizja bazowa ostatniej aktualizacji | PDR b27ece32e3df81751399b2153b5cd24978e4c3dd; aktualne źródła governance main 42e9d43ea846a5e6216faa18bfec8f939aac6971 |
+| Rewizja | 6 — zapis akceptacji i zamknięcia BSDC; specyfikacja v1 bez zmian |
+| Rewizja bazowa ostatniej aktualizacji | PDR 3f79f10a1e8b6df4dc9176634ee6339675df5f7a; aktualne źródła governance main 82bcb78813937331d7822a96c5319b26e788abe1 |
 | Zadanie inicjalizacji | ARCH-BSDC-CIC-QUALITY-INIT-20261112 |
-| Zadanie bieżącej aktualizacji | ARCH-BSDC-CIC-QUALITY-V1-PROPOSAL-20261112 |
-| Upoważnienie | Uruchomienie BSDC i prowadzenie jednej roboczej karty. Bez implementacji produktu, aktywacji kanonu, zasobów, płatnych przebiegów i deploymentów. |
+| Zadanie bieżącej aktualizacji | ARCH-BSDC-CIC-QUALITY-ACCEPT-CLOSE-20261112 |
+| Upoważnienie | Zapis akceptacji rewizji 5 i zakończenie BSDC w tej samej Karcie. Bez implementacji produktu, aktywacji kanonu, merge do main, zasobów, płatnych przebiegów i deploymentów. |
 
-Publiczna karta zawiera opis potrzeby i stan konsultacji. Nie zawiera transkryptów, wyników odczytów prywatnych systemów, danych użytkowników/klientów, materiałów prywatnego repozytorium CIC ani sekretów. Bieżący commit zapisu potwierdza się odczytem GitHuba poza plikiem. Gałąź robocza nie oznacza przyjęcia do main ani akceptacji rozwiązania.
+Publiczna karta zawiera opis potrzeby i stan konsultacji. Nie zawiera transkryptów, wyników odczytów prywatnych systemów, danych użytkowników/klientów, materiałów prywatnego repozytorium CIC ani sekretów. Bieżący commit zapisu potwierdza się odczytem GitHuba poza plikiem. Publikacja gałęzi nie oznacza przyjęcia do main ani aktywacji. Merytoryczna akceptacja rozwiązania wynika z decyzji właściciela DEC-03.
 
 ## 1. Potrzeba i rezultat biznesowy
 
@@ -34,14 +36,14 @@ Wynik: mniej istotnych błędów docierających do użytkowników, mniej nawrot�
 
 Dodatkowo potrzebny jest wspólny standard CIC/Assistant Context Gateway dla braku, nieaktualności i sprzeczności danych, niezgodności z pytaniem, niejednoznaczności, awarii integracji, braku możliwości weryfikacji oraz sprzeczności w odpowiedzi.
 
-## 2. Dotychczasowe ustalenia i rekomendacja robocza
+## 2. Ustalenia i przyjęte decyzje
 
 Wcześniejsza rozmowa obejmowała analizę architektury, porównanie możliwości technologicznych i gotowych rozwiązań oraz doprecyzowanie przez właściciela dwóch najważniejszych braków:
 
 - A: konkretny mechanizm automatycznego uruchamiania wykonawcy, testowania, PR, dopuszczonego scalania/promocji i odzyskiwania kontroli po niepowodzeniu;
 - B: kryteria wykrywalności, fałszywych alarmów, skuteczności napraw, gotowości do autonomii i wycofania.
 
-Te wymagania są częścią potrzeby. Właściciel przyjął granicę środowiska v1 w DEC-01 oraz projektowe limity modeli w DEC-02. Rewizja 5 scala pozostałe ustalenia w kompletną propozycję v1 (§4–5), gotową do oceny właściciela. Nie została jeszcze przyjęta ani aktywowana.
+Te wymagania są częścią potrzeby. Właściciel przyjął granicę środowiska v1 w DEC-01 oraz projektowe limity modeli w DEC-02. Rewizja 5 scala ustalenia w kompletną propozycję v1 (§4–5). Właściciel przyjął ją w całości w DEC-03; rewizja 6 utrwala tę akceptację i zamyka BSDC, bez uruchomienia wykonania.
 
 ### 2.1. DEC-01 — decyzja właściciela, 12 listopada 2026
 
@@ -49,19 +51,19 @@ Te wymagania są częścią potrzeby. Właściciel przyjął granicę środowisk
 
 Decyzja ustala zakres projektowanego rozwiązania. Nie uruchamia obecnie agenta, merge do main, kosztów, nowych zasobów ani deploymentów. Nie nadaje przyszłemu systemowi prawa zmiany własnego mandatu. Staging również nie zostaje domyślnie dodany do zakresu. Wykonanie będzie wymagało przyjęcia odpowiednich reguł i odrębnego upoważnienia zgodnie z aktywnym governance.
 
-Rekomendacja do dalszego sprawdzenia: połączyć kontrolę odpowiedzi przed jej pokazaniem z późniejszym procesem wykrycie → diagnoza → test → poprawka → niezależna weryfikacja → dopuszczone uruchomienie → sprawdzenie skutku. Wykonawca przygotowuje zmianę, a odrębny kontroler egzekwuje zakres i warunki promocji oraz nadzoruje wynik.
+Przyjęty kierunek v1 (DEC-03): połączyć kontrolę odpowiedzi przed jej pokazaniem z późniejszym procesem wykrycie → diagnoza → test → poprawka → niezależna weryfikacja → dopuszczone uruchomienie → sprawdzenie skutku. Wykonawca przygotowuje zmianę, a odrębny kontroler egzekwuje zakres i warunki promocji oraz nadzoruje wynik.
 
-Preferowane jest rozszerzanie istniejących zdolności i wykorzystanie gotowych narzędzi tam, gdzie skraca to drogę do wyniku. Ostateczny wybór wykonawcy, oceniających, zapisu dowodów i umiejscowienia kodu nie jest jeszcze przyjęty. Historyczne rozpoznanie nie zastępuje sprawdzenia bieżącego stanu przed finalnym projektem.
+Przyjęto wariant v1 opisany w §4–5: reuse istniejących zdolności, ograniczony kontroler i izolowany wykonawca. Techniczne dopuszczenie konkretnej instalacji, poświadczeń i dokładnych ścieżek jest przyszłym warunkiem wykonania, nie niezamkniętą decyzją projektową BSDC.
 
 ### 2.2. DEC-02 — potwierdzony limit pilotażu, 12 listopada 2026
 
 **PRZYJĘTA DECYZJA PROJEKTOWA:** 50 USD łącznie na dodatkowe wywołania modeli podczas 14-dniowego pilotażu, maksymalnie 5 USD na incydent, bez automatycznego zwiększania. Limit obejmuje QA, replay i wykonawcę napraw; nie jest limitem dziennym. Okres pilotażu rozpocznie się po odrębnie autoryzowanym uruchomieniu, nie w dniu tej decyzji.
 
-Hosting, storage i CI pozostają do osobnego oszacowania. Potwierdzenie limitu nie uruchamia wydatków, nie zatwierdza nowego zasobu ani implementacji. Proponowany limit dwóch prób pozostaje odrębną, jeszcze nieprzyjętą regułą.
+Hosting, storage i CI pozostają do osobnego oszacowania. Potwierdzenie limitu nie uruchamia wydatków, nie zatwierdza nowego zasobu ani implementacji. Limit dwóch prób nie należał do samej decyzji DEC-02; został następnie przyjęty wraz z pełną rewizją 5 w DEC-03.
 
-### 2.3. Propozycja v1 w skrócie — nowy pakiet do akceptacji
+### 2.3. Zaakceptowane v1 w skrócie — zakres DEC-03
 
-| Pytanie właściciela | Rekomendacja |
+| Pytanie właściciela | Przyjęty projekt v1 |
 | --- | --- |
 | Co otrzymamy? | Ocenę realnych rozmów i pełny obieg naprawy: diagnoza → test → kod/reguła → niezależne sprawdzenie → Development → sprawdzenie skutku/rollback. |
 | Co naprawia się samo? | C1: daty i zakres; C2: wierność źródłu; C3: egzekwowanie ustalonej polityki wyjątków. Inne problemy podlegają diagnozie i trafiają do ownera technicznego. |
@@ -69,11 +71,21 @@ Hosting, storage i CI pozostają do osobnego oszacowania. Potwierdzenie limitu n
 | Kiedy uznamy sukces? | Najpierw pełny techniczny odbiór trzech różnych przypadków z recovery. W pilotażu cel ≥80% kwalifikujących się realnych incydentów zamkniętych bez ręcznego wykonania, zero krytycznych regresji, jawne pokrycie i próby. Pełne mianowniki w §5.5. |
 | Co dzieje się po pogorszeniu? | Stop i kontrolowany rollback własnej wersji; cel decyzji ≤5 min i sprawdzonego LKG ≤15 min później. Nigdy cofanie cudzej nowszej zmiany lub bazy danych. |
 | Dane, miejsce i koszty | Prywatny dowód do 7 dni/metadane do 90 dni; agent tylko syntetyk. Render kontroler + jednorazowa VM GitHub. Przyjęte 50 USD dotyczy modeli; zasoby i praca zespołu osobno. |
-| Co oznacza akceptacja teraz? | Przyjęcie opisanego projektu i kryteriów. Implementacja, aktywacja mandatu, dane i wydatki wymagają późniejszego osobnego upoważnienia. |
+| Co oznacza akceptacja DEC-03? | Przyjęcie opisanego projektu i kryteriów. Implementacja, aktywacja mandatu, dane i wydatki wymagają późniejszego osobnego upoważnienia. |
+
+### 2.4. DEC-03 — akceptacja pełnej propozycji v1 i zamknięcie BSDC, 12 listopada 2026
+
+**Decyzja właściciela: OWNER_APPROVED.** Właściciel jednoznacznie zaakceptował „propozycję v1 z rewizji 5”, polecił zapis akceptacji w tej samej Karcie i zakończenie BSDC, **nadal bez implementacji**.
+
+- Przedmiot akceptacji: [pełna rewizja 5](https://github.com/profitia/SG-dev/blob/3f79f10a1e8b6df4dc9176634ee6339675df5f7a/Canon/proposals/bsdc/ARCHITECTURE/cic-assistant-continuous-quality.md), commit 3f79f10a1e8b6df4dc9176634ee6339675df5f7a, blob 695164e98b1562acb00aa937ca6003726f6ca368.
+- Zakres: kompletny pakiet biznesowo-architektoniczny i plan v1, w tym C1–C3, R-DATA-01, R-EXEC-01, kryteria sukcesu/gotowości, limity, wyjątki, bramki promocji, stop/rollback, dwa etapy i warunki przyszłego wykonania. DEC-01 i DEC-02 zachowują moc.
+- Skutek: proces projektowania/konsultacji BSDC jest zakończony, checklista A–F domknięta. Nie oznacza to osiągnięcia wskaźników lub wykonania testów produktu.
+- Granica: brak upoważnienia do implementacji, aktywacji kanonu/mandatu/routingu, przetwarzania rozmów, wydatków, zasobów, merge do main i deploymentu. Production pozostaje poza v1.
+- Rewizja 6 jest administracyjnym zapisem tej decyzji. **Treść specyfikacji §4–5 pozostaje identyczna z zaakceptowaną rewizją 5.** Jej historyczne etykiety „propozycja”, „DO AKCEPTACJI” lub „NOT_OWNER_APPROVED” opisują stan w chwili przedstawienia; aktualny status ustala DEC-03 i metryka tej Karty: OWNER_APPROVED / NOT_ACTIVE.
 
 ## 3. Checklista BSDC A–F
 
-Status USTALONE oznacza opracowanie i sprawdzenie **propozycji projektowej**, nie akceptację właściciela, osiągnięcie wskaźnika, dopuszczenie routingu lub wdrożenie. Pełny projekt pozostaje NOT_ACCEPTED. Warunki wykonania są jawne; nie stanowią kolejnych nieopisanych funkcji v1.
+Status USTALONE oznacza kompletność projektu; DEC-03 dodatkowo potwierdza jego merytoryczną akceptację. Wszystkie 28 kryteriów A–F są domknięte projektowo. Nie oznacza to osiągnięcia wskaźników, dopuszczenia nowych ścieżek, wykonania testów produktu lub wdrożenia. Warunki przyszłego wykonania pozostają obowiązujące.
 
 | ID | Status | Ustalenie / dowód |
 | --- | --- | --- |
@@ -101,10 +113,12 @@ Status USTALONE oznacza opracowanie i sprawdzenie **propozycji projektowej**, ni
 | E3 | USTALONE | Przygotowanie/uruchomienie wymaga osobnego upoważnienia i właścicieli; granice dopuszczenia w §5.4 i §7. |
 | E4 | USTALONE | Weryfikacja dokładnej wersji, zamrożony holdout, negatywne próby, CI, live odbiór i rollback w §5.4–5.7. |
 | E5 | USTALONE | Budżet modeli DEC-02, koszt bazowego workera, koszty nieobjęte limitem i estymaty czasu w §5.8; bez otwartego prawa do zakupów. |
-| F1 | USTALONE | DEC-01/02 oddzielono od kompletnego nieprzyjętego pakietu §7 i warunków uruchomienia. |
-| F2 | USTALONE | Kompletny projekt kanonu v1 osadzony w tej samej Karcie (§4–5), bez aktywacji i bez nowego pliku kanonu. |
-| F3 | W_TRAKCIE | Propozycja przedstawiona do akceptacji; właściciel nie przyjął jeszcze rewizji 5. |
+| F1 | USTALONE | DEC-01/02/03, zaakceptowany zakres oraz warunki przyszłego uruchomienia zapisano w §2 i §7–8. |
+| F2 | USTALONE | Zaakceptowany kanon biznesowo-architektoniczny v1 utrwalony jako zamrożona specyfikacja §4–5 rewizji 5; bez aktywacji i bez nowego pliku kanonu. |
+| F3 | USTALONE | Właściciel przyjął pełną rewizję 5 w DEC-03; zapisano dokładny commit/blob oraz ograniczenie bez implementacji. |
 | F4 | USTALONE | Jednoznaczny handoff projektowy w §8 i §5.7, bez promptu wykonawczego i bez uruchomienia execution. |
+
+> **Zaakceptowana specyfikacja v1 — zamrożona treść rewizji 5.** Poniższe §4–5 są zachowane bez zmian dla wierności akceptacji. Ich historyczne etykiety statusu są zastąpione decyzją DEC-03: OWNER_APPROVED / NOT_ACTIVE. Nie są dowodem wdrożenia.
 
 ## 4. Architektura i umiejscowienie
 
@@ -425,7 +439,7 @@ Właściciel nie zatwierdza rutynowo każdego incydentu. Potrzebny jest jednak w
 
 ## 6. Decyzje i źródła
 
-Przyjęte wymagania: cel ciągłego doskonalenia, nacisk na autonomiczne wykonanie i mierzalną gotowość, wspólny standard nietypowych sytuacji oraz minimalny udział właściciela. Polecenie uruchomienia BSDC i jedna karta nie stanowią zgody na implementację. DEC-01 przyjmuje autonomiczne naprawy i wdrożenia do Development w v1 oraz późniejsze rozpatrzenie Production; właściciel jawnie zachował tryb bez implementacji. DEC-02 przyjmuje limity modeli 50 USD / 14 dni i 5 USD / incydent bez automatycznego zwiększania. R-DATA-01 i R-EXEC-01 wraz z kompletnym §5 stanowią spójną propozycję rewizji 5 do akceptacji. Progi, liczba prób, szczegółowe klasy i rollback są już zaproponowane konkretnie; oczekiwana jest decyzja o całym pakiecie, a nie kolejne rozpoznawanie potrzeby.
+Przyjęte wymagania: cel ciągłego doskonalenia, nacisk na autonomiczne wykonanie i mierzalną gotowość, wspólny standard nietypowych sytuacji oraz minimalny udział właściciela. Polecenie uruchomienia BSDC i jedna karta nie stanowią zgody na implementację. DEC-01 przyjmuje autonomiczne naprawy i wdrożenia do Development w v1 oraz późniejsze rozpatrzenie Production; właściciel jawnie zachował tryb bez implementacji. DEC-02 przyjmuje limity modeli 50 USD / 14 dni i 5 USD / incydent bez automatycznego zwiększania. DEC-03 przyjmuje cały pakiet rewizji 5, w tym R-DATA-01, R-EXEC-01, progi, liczbę prób, klasy i rollback. Konsultacje BSDC zakończono. Specyfikacja jest zaakceptowana merytorycznie i zachowana w §4–5; aktywacja oraz wykonanie pozostają odrębne.
 
 Źródła publiczne:
 
@@ -439,30 +453,36 @@ Przyjęte wymagania: cel ciągłego doskonalenia, nacisk na autonomiczne wykonan
 - Uzupełnione oficjalne źródła: [OpenAI deprecations](https://developers.openai.com/api/docs/deprecations#2026-06-03-evals-platform), [eval methodology](https://developers.openai.com/api/docs/guides/evaluation-best-practices), [Structured Outputs](https://developers.openai.com/api/docs/guides/structured-outputs), [PostHog evals](https://posthog.com/docs/ai-evals), [Langfuse evals](https://langfuse.com/docs/evaluation/overview), odczyt 12 XI 2026. Opis możliwości nie dowodzi dostępu/aktywacji konta SpendGuru.
 - Potrzeba oraz uwagi A/B właściciela w poprzedzającej rozmowie są podstawą opisu biznesowego. Nie publikuje się rozmowy ani materiałów operacyjnych. Inna sesja kontynuuje z tej karty, bez domniemania dostępu do historii czatu.
 
-## 7. Pakiet do akceptacji właściciela
+## 7. Końcowy zapis akceptacji i zakończenia BSDC
 
-**Jedna decyzja projektowa do podjęcia:** przyjęcie kompletnej propozycji v1 z §4–5, w szczególności:
+**BSDC: COMPLETED. Rozwiązanie v1: OWNER_APPROVED / NOT_ACTIVE.** Decyzja DEC-03 dotyczy pełnej [rewizji 5](https://github.com/profitia/SG-dev/blob/3f79f10a1e8b6df4dc9176634ee6339675df5f7a/Canon/proposals/bsdc/ARCHITECTURE/cic-assistant-continuous-quality.md), commit 3f79f10a1e8b6df4dc9176634ee6339675df5f7a, blob 695164e98b1562acb00aa937ca6003726f6ca368. W tej rewizji 6 zapisano akceptację i domknięcie, bez zmiany zaakceptowanej specyfikacji.
 
-1. Trzy klasy C1–C3, granice i wyłączenia; możliwość automatycznego zlecenia, naprawy, PR, scalenia, wydania i rollback wyłącznie Development po dopuszczeniu mandatu.
+Przyjęty pakiet obejmuje:
+
+1. Trzy klasy C1–C3, granice i wyłączenia; projekt automatycznego zlecenia, naprawy, PR, scalenia, wydania i rollback wyłącznie Development po dopuszczeniu mandatu.
 2. Standard sytuacji nietypowych, bramki promocji, definicje metryk, próby i warunki biznesowego odbioru.
-3. R-DATA-01: minimalny prywatny dowód do 7 dni, operacyjne metadane do 90 dni, uprawnienia konta/organizacji/źródeł, usunięcia i syntetyczne wejście agenta.
+3. R-DATA-01: minimalny prywatny dowód do 7 dni, operacyjne metadane do 90 dni, prawa konta/organizacji/źródeł, usunięcia i syntetyczne wejście agenta.
 4. R-EXEC-01: zaufany kontroler Render + jednorazowe GitHub-hosted VM z ograniczającym koszty dostępem do modelu; niezależna publikacja.
 5. Dwa kompletne etapy i model nadzoru: rutynowe naprawy bez właściciela, wyjątki do ownera technicznego/domenowego, rozszerzenia zakresu do właściciela.
-6. Warunki zatrzymania, wycofania oraz latched zawieszenie klasy; jedna aktywna naprawa/wydanie, dwa podejścia i brak automatycznego rozszerzenia.
+6. Warunki zatrzymania, wycofania oraz zawieszenie klasy; jedna aktywna naprawa/wydanie, dwa podejścia i brak automatycznego rozszerzania.
 
-DEC-01 i DEC-02 są już przyjęte; nie prosi się o ich ponowne potwierdzenie. Pozostały pakiet ma status **PROPOSED_NOT_ACCEPTED**. Zgoda na projekt nie jest zgodą na implementację, zakup zasobu, przetwarzanie wszystkich rozmów, merge do main lub deployment. Nie zatwierdza też nieoszacowanych kosztów pozamodelowych. Warunki konkretnej instalacji, legalne uprawnienia danych, koszt zasobów i źródłowe dopuszczenie automatyzacji muszą zostać zamknięte przed wykonaniem.
+Akceptacja nie potwierdza wyników jakości, skuteczności modelu, bezpieczeństwa nieuruchomionego wykonawcy ani gotowości środowiska. Zawarte w specyfikacji progi są przyjętymi kryteriami przyszłego odbioru. Wnioski o dostępach/danych/retencji są przyjętą polityką projektową, nie obecnie nadanym prawem przetwarzania.
 
-PDR pozostaje jedyną Kartą inicjatywy. Po ewentualnej akceptacji można wyodrębnić kanon i przeprowadzić jego właściwą publikację/aktywację w osobno upoważnionym workflow. Obecnie kompletny projekt kanonu jest osadzony tutaj zgodnie z poleceniem właściciela; nie tworzy się drugiej karty.
+**Nie udzielono upoważnienia wykonawczego.** Implementacja, aktywacja kanonu i mandatu, rejestracja nowych ścieżek, migracje/granty, zasoby i płatne przebiegi, merge do main oraz deployment wymagają późniejszego właściwego upoważnienia. Nie zaakceptowano nieoszacowanych kosztów pozamodelowych. Warunki konkretnej instalacji, praw danych, kosztu i kontroli z §4–5 nie zostały uchylone.
 
-## 8. Punkt wznowienia i handoff projektowy
+Nie pozostaje żadna otwarta decyzja merytoryczna do zakończenia BSDC v1. Przygotowanie techniczne i dopuszczenia są przyszłymi warunkami egzekucji. PDR pozostaje jedyną Kartą inicjatywy; końcowy kanon biznesowo-architektoniczny jest utrwalony w niej jako zaakceptowana specyfikacja. Wyodrębnienie osobnego pliku, przyjęcie do main lub aktywacja manifestu nie były objęte tym poleceniem i nie zostały wykonane.
 
-- Gdzie skończyliśmy: rewizja 5 zawiera kompletną propozycję v1, pełne A–F, zakres klasowej autonomii, metryki i liczebności, standard odpowiedzi, dane, wykonawcę, koszt, dwa etapy i rollback.
-- Ostatnie przyjęte decyzje: DEC-01 (Development v1, Production później) i DEC-02 (50 USD / 14 dni, do 5 USD / incydent, bez automatycznej podwyżki). Brak przyjęcia pakietu rewizji 5.
-- Następny krok: właściciel ocenia i przyjmuje projekt z §7 lub wskazuje korektę. Nie wracać do serii pytań o elementy już objęte gotową rekomendacją.
-- Dopiero po decyzji: zapisać dokładny zakres merytorycznej akceptacji w tej Karcie; wykonanie nadal wymaga jawnego osobnego polecenia i aktywnego execution governance.
-- Handoff do przyszłej egzekucji: ta Karta i jej zaakceptowany dokładny commit; §4 drzewo, profile/route i cztery kontrakty; §5 zakres, bramki, metryki/rollback i dwa etapy. ARCHITECTURE koordynuje, SG2 wdraża swój runtime/dane, CIC własną politykę; każdy zachowuje własną ciągłość i uprawnienia. Pierwszy krok wykonawczy to dopuszczenia/bootstrap, nie uruchomienie agenta na istniejących admin credentials.
-- Zakazy obecnego kroku: kod produktu, dane/konfiguracja, kanony aktywne, rejestry, zasoby, płatne przebiegi, nowe PR-y produktu i deploymenty. Nie przygotowano promptu implementacyjnego.
-- Stan finalnego kanonu: projekt kompletny w §4–5, **nieprzyjęty i nieaktywny**; F3 oczekuje na właściciela.
+## 8. Końcowy handoff — bez rozpoczęcia wykonania
+
+- Gdzie skończyliśmy: właściciel zaakceptował propozycję v1 z rewizji 5; decyzję zapisano jako DEC-03; A–F zakończone, 28/28 USTALONE projektowo. Rewizja 6 utrwala zamknięcie.
+- Obowiązujący zakres: dokładny zaakceptowany commit 3f79f10a1e8b6df4dc9176634ee6339675df5f7a; niezmienione §4–5 tej Karty; DEC-01/02/03. Wcześniejsze robocze propozycje nie rozszerzają v1.
+- Następny krok w obecnym zleceniu: brak — BSDC zakończony. Dalsze wykonanie może rozpocząć się dopiero po odrębnym, jawnym poleceniu właściciela. Nie tworzy się automatycznego zadania wdrożenia.
+- Przyszłe źródła wejściowe: ta Karta z DEC-03, zamrożona rewizja 5, aktywne AGENTS/manifest/profil/routing i execution wrapper na ówczesnym main. Sprawdzić stan rzeczywisty przed mutacją; akceptowany projekt nie jest snapshotem przyszłego runtime.
+- Ownerzy: ARCHITECTURE koordynacja/kontroler/dopuszczenia; SG2 runtime, produktowe dane i adopcja; CIC polityka rozmowy. Każde repo/profil zachowuje swoje exact paths, PMOS/PHR/MEMOROS i uprawnienia. Brak zgody na kopiowanie prywatnego CIC do publicznego repo.
+- Pierwszy przyszły wynik wykonawczy: dopuszczona, ograniczona pętla etapu 1 (§5.7), z pełnym odbiorem i recovery; etap 2 to pomiar pilotażu. Handoff obejmuje zakres, kontrakty, dane, koszt, role, metryki, odbiór i rollback, a nie prompt implementacyjny.
+- Warunki startu: odrębne upoważnienie; właściwy routing/onboarding tam, gdzie NO_MATCH; mandat klas C1–C3 zgodny z aktualnym governance; legalna instalacja/dane/processorzy; ograniczone poświadczenia; sprawdzony limit kosztu; LKG/wyłącznik/rollback; osobna zgoda owner-only na nowe zasoby i pozamodelowe koszty.
+- Limity zachowane: Development v1, Production później; modele 50 USD / 14 dni, do 5 USD na incydent; bez resetu/automatycznego zwiększania. Sam zapis akceptacji nie otwiera okna pilotażu ani nie uruchamia licznika wydatków.
+- Stan końcowy: **DESIGN COMPLETE / OWNER_APPROVED / NOT_ACTIVE / NOT_IMPLEMENTED**. Brak aktywacji, kodu produktu, migracji, konfiguracji, zasobów, płatnych wywołań, merge do main i deploymentów w tym kroku. Brak promptu wykonawczego.
 
 ## 9. Historia
 
@@ -473,3 +493,4 @@ PDR pozostaje jedyną Kartą inicjatywy. Po ewentualnej akceptacji można wyodr�
 | 3 | 2026-11-12 | Przyjęta DEC-02: limity modeli 50 USD / 14 dni i 5 USD / incydent, bez automatycznego zwiększania. Odświeżono źródła historii/runtime; dodano wymagania dowodu odtworzenia, granice danych i projekt trwałego wykonania. Nadal bez implementacji. |
 | 4 | 2026-11-12 | Dodano R-DATA-01 i R-EXEC-01: konkretne zasady danych QA, retencja i usunięcia, Render worker + jednorazowe GitHub-hosted VM, granice poświadczeń, kontroli kosztu i odbioru. Rekomendacje niezaakceptowane; nadal bez implementacji. |
 | 5 | 2026-11-12 | Kompletna propozycja v1 do akceptacji: trzy klasy autonomii, standard wyjątków, metryki i próby, kryteria promocji, stop/rollback, dwa etapy i koszty. Domknięto checklistę projektową A–E; F3 oczekuje na właściciela. Nadal bez implementacji. |
+| 6 | 2026-11-12 | DEC-03: właściciel zaakceptował pełną propozycję v1 z rewizji 5 (3f79f10a). BSDC zakończony, 28/28 USTALONE projektowo. Specyfikacja §4–5 zachowana identycznie; OWNER_APPROVED / NOT_ACTIVE / NOT_IMPLEMENTED. |

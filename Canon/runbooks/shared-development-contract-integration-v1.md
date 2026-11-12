@@ -835,6 +835,39 @@ diff/mode/owner and exact-head/race fences remain mandatory. No business grant,
 product SQL installation, invitation delivery or deployment occurs through
 this CI-only change. Continue the parent Stage I after this bounded gate closes.
 
+## Owner-approved direct ECR source closure and bounded test repair mandate (2026-11-12)
+
+The owner explicitly accepted PR1041 including its described delegation:
+“Zatwierdzam #1041 wraz z opisanym upoważnieniem”.
+The frozen d8580cc8 documents were preserved at cc230a52 and accepted bfc4a228.
+Retain the complete owner-reviewed68 map/record8e3eb530 and the complete earlier
+b0/B5/FFE67 and both65 graphs as separate exact reviews.
+
+For completing this Stage I source acceptance only, the owner delegates
+necessary test/provenance-only corrections inside these exact68 source paths
+and the four specified policy files, without another human decision solely
+for each resulting hash. Every version must retain a complete exact closed
+map and pass actual owner, protected/public and whole resulting-main checks.
+No new source path, production SDK/native Identity/SRM runtime or UI byte,
+SQL, manifest/lock, current/historical receipt, operation, Root default,
+grant, commercial policy, provider, cost or deployment is delegated here.
+Credential/author/repository/main-only/private-pin/mode/race fences cannot change.
+This is the express narrow exception to earlier per-version decision notes;
+it grants no generic source admission and no independent deployment authority.
+
+The first delegated continuation is source04107d13bc245ee7e82feb3059291ba4d182d54a,
+record52f6fbeba63a7585d3b909ca6cb5b91c1b6b2ebdeb118975473f312acc6ba7f3, the same68 owners/statuses/modes, with63 frozen1041 blobs and
+five exact test/data successors. Actual owner commits are recorded in the
+dated acceptance packet. The direct ECR test uses its authenticated source
+frame for both source and prior receipt comparisons. SRM preserves its immutable
+AppShell reader and selects authenticated current SRM bytes only for the one
+current-source assertion. Full physical68 authentication precedes the unchanged
+three exact historical guard pins. All prior assertions and tamper cases remain.
+
+### Registration1046 — bounded69 technical repair delegation
+
+Owner accepted1046 on2026-11-12 and clarified Full Autopilot: ordinary test/provenance/integration repairs needed for the accepted Stage I outcome are completed autonomously, without per-hash questions. This extends the1041 exact68 closure by only apps/architecture-lab/test/market-calendar-source.test.mjs to69 source paths and retains the same4 policy/evidence paths. Exact current source maps, actual owners, protected/public/resulting-main tests and independent proofs remain mandatory. Frozen production SDK/native runtime/UI, SQL, package manifests/locks, receipts, authority, commercial/cost/provider/deployment rules are unchanged. This is no source or runtime activation and no waiver of any failing check. Source/CI and business Development acceptance remain separate.
+
 ## Calendar producer/consumer test composition — proposed corrective (2026-11-12)
 
 Preparation only; requires a separate owner decision and all exact-head/public/main
@@ -863,3 +896,8 @@ ECR-week verifier. Controller tests retain the original renderer tampering,
 history and widened-scope negatives. The verifier authenticates every added
 byte before exposing its additive coverage bindings; no original receipt is
 rewritten. This routine contraction stays inside the owner's approved paths.
+
+
+### Registration69 — raw SDK and accepted Oil/Calendar composition
+
+Under the owner1046 Full Autopilot delegation, retain the complete c26 consumer profile and add the exact same69-path technical successor 845eb9137efa96d377b8498414f0b8b08c0ce4ad / record 61c57570f25fe90c89a5d2bd0f27f2b228091a6bd239a72a7f1fc87e06ae36ad. Only four Architecture test/helper/record blobs change;165 production SDK files and SG2/SRM owner inputs are unchanged. Authenticate raw SDK/receiver provenance before independent Oil predecessor checks; authenticate the accepted Calendar99 complete20-source record and exact Oil42 record/source/14 receipts before exposing old ECR helpers. All original negatives and public/protected/resulting-main gates remain mandatory. This bounded technical continuation requires no renewed per-hash question and authorizes no runtime, SQL, grant, cost, provider or invitation action.

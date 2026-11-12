@@ -15,11 +15,12 @@ const readReceipt=file=>JSON.parse(fs.readFileSync(new URL('../../../'+file,impo
 // unrelated later main-only governance commits are never part of this review.
 function recurringReviewBase(){
  const git=args=>execFileSync('git',args,{cwd:repositoryRoot,encoding:'utf8',stdio:['ignore','pipe','pipe']}).trim()
+ const marker=fs.existsSync(path.join(repositoryRoot,'packages/platform-contracts/test/recurring-consent-transport-source.json'))?'packages/platform-contracts/test/recurring-consent-transport-source.json':'apps/architecture-lab/private-recurring-source.json'
  let base=git(['merge-base','origin/main','HEAD'])
  for(let i=0;i<64;i++){
-  try{git(['cat-file','-e',base+':apps/architecture-lab/private-recurring-source.json'])}
+  try{git(['cat-file','-e',base+':'+marker])}
   catch(error){
-   const missing=[" does not exist in "," exists on disk, but not in "].some(part=>String(error.stderr??'').includes("path 'apps/architecture-lab/private-recurring-source.json'"+part))
+   const missing=[" does not exist in "," exists on disk, but not in "].some(part=>String(error.stderr??'').includes("path '"+marker+"'"+part))
    if(error.status===128&&missing)return base
    throw error
   }
@@ -110,11 +111,13 @@ test('private recurring source routing validates the complete actual candidate b
  const a=readReceipt('apps/architecture-lab/private-recurring-source.json'),candidateSha=execFileSync('git',['rev-parse','HEAD'],{cwd:repositoryRoot,encoding:'utf8'}).trim(),baseSha=recurringReviewBase()
  const paths=reviewedRecurringConsumerPaths(repositoryRoot,{baseSha,candidateSha})
  assert.equal(paths.get('apps/sg-runtime/components/procurement-insights/reports.tsx'),'SG2')
- assert.equal(paths.get('apps/srm/scripts/private-host.integration.test.mjs'),'SRM')
+ const continuation=fs.existsSync(path.join(repositoryRoot,'packages/platform-contracts/test/recurring-consent-transport-source.json'))
+ const includesSrm=!continuation||readReceipt('packages/platform-contracts/test/recurring-consent-transport-source.json').reviewedPaths.includes('apps/srm/scripts/private-host.integration.test.mjs')
+ if(includesSrm)assert.equal(paths.get('apps/srm/scripts/private-host.integration.test.mjs'),'SRM');else assert(!paths.has('apps/srm/scripts/private-host.integration.test.mjs'))
  assert(!paths.has('apps/platform-source-hub/src/server.mjs'));assert(!paths.has('apps/srm/src/server/unreviewed.ts'))
  const called=[],changedPaths=execFileSync('git',['diff','--name-only',baseSha,candidateSha],{cwd:repositoryRoot,encoding:'utf8'}).trim().split('\n')
  validateRouting({changedPaths,repositoryRoot,readReceipt,sourceReview:{baseSha,candidateSha},runGovernance:(projectKey)=>{called.push(projectKey);return {verdict:'PASS'}}})
- assert.deepEqual([...new Set(called)].sort(),['ARCHITECTURE','SG2','SRM'])
+ assert.deepEqual([...new Set(called)].sort(),includesSrm?['ARCHITECTURE','SG2','SRM']:['ARCHITECTURE','SG2'])
  assert.throws(()=>reviewedRecurringConsumerPaths(repositoryRoot))
  assert.throws(()=>reviewedRecurringConsumerPaths(repositoryRoot,{baseSha,candidateSha:'a'.repeat(40)}))
  const wrongReceipt=p=>{const r=readReceipt(p);r.sourceHubApiPathCompatibility.apiPathOptedIn=true;return r}
@@ -128,7 +131,10 @@ test('private recurring public routing refuses changed bytes, symbolic files and
   git(temporary,'clone','--quiet','--shared','--no-checkout',repositoryRoot,'candidate')
   const root=path.join(temporary,'candidate');git(root,'update-ref','--no-deref','HEAD',candidateSha);git(root,'read-tree',candidateSha)
   const canonical=git(root,'ls-tree','-r','--name-only',candidateSha,'--','Canon').split('\n')
-  const files=[...new Set([...canonical,...Object.keys(a.sourceDigests),...Object.keys(a.preservedReceipts),
+  const referenced=new Set(),tracked=new Set(git(root,'ls-tree','-r','--name-only',candidateSha).split('\n'))
+  const visit=value=>{if(!value||typeof value!=='object')return;for(const[k,v]of Object.entries(value)){if(/^(apps|packages|scripts|Canon)\//.test(k)&&tracked.has(k))referenced.add(k);if(typeof v==='string'&&/^(apps|packages|scripts|Canon)\//.test(v)&&tracked.has(v))referenced.add(v);visit(v)}}
+  for(const f of tracked)if(/(?:-integration|-source|compatibility)\.json$/.test(f))visit(JSON.parse(fs.readFileSync(path.join(repositoryRoot,f),'utf8')))
+  const files=[...new Set([...canonical,...referenced,...Object.keys(a.sourceDigests),...Object.keys(a.preservedReceipts),
    'apps/architecture-lab/private-recurring-source.json','apps/architecture-lab/private-recurring-source.mjs',
    'apps/architecture-lab/private-recurring-source-adoption.json','apps/sg-runtime/private-recurring-source-adoption.json','apps/srm/private-recurring-source-adoption.json'])]
   execFileSync('git',['checkout-index','--stdin','-z'],{cwd:root,input:files.join('\0')+'\0'})

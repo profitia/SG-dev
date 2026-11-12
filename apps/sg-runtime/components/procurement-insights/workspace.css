@@ -5,7 +5,14 @@
 
 .srm-chat-notifications{font-size:.8125rem;padding:.5rem 1rem;border-bottom:1px solid var(--line,#dce5ed)}.srm-chat-notifications>div{max-height:18rem;overflow:auto}.srm-chat-notifications ul{list-style:none;margin:0;padding:0}.srm-chat-notifications li{display:grid;gap:.4rem;padding:.6rem 0;border-bottom:1px solid var(--line,#dce5ed)}.srm-chat-notifications button{font:inherit;color:inherit;background:transparent;border:1px solid var(--line,#cbd7e2);border-radius:.4rem;padding:.4rem .6rem}.srm-chat-notifications>button{width:auto}
 
+/* Current product reference: MagicPath component470472206477045760 revision471304520744468480. */
+.pi-library-filters{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem;padding:1rem;border:1px solid var(--line,#dce5ed);border-radius:9px;background:var(--surface,#fff)}.pi-library-filters fieldset{display:flex;flex-wrap:wrap;gap:.75rem;border:0;margin:0;padding:0}.pi-library-filters fieldset label{display:flex;align-items:center}.pi-library-filters p{grid-column:1/-1;font-size:.75rem;color:var(--muted,#61778b);margin:0}.pi-publication-compact summary{padding:.8rem 1rem;display:flex;align-items:center;justify-content:space-between;gap:1rem}.pi-publication-compact summary span{font-size:.75rem;color:var(--muted,#61778b)}
+@media(max-width:700px){.pi-library-filters{grid-template-columns:1fr}.pi-publication-compact summary{align-items:flex-start;flex-direction:column}}
+
 /* Three peer tabs from approved MagicPath471304520744468480; content behavior is unchanged. */
+.pi-workspace{container-type:inline-size;container-name:procurement-insights}
 .pi-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;border:0;margin-bottom:24px}.pi-tabs button{display:flex;align-items:center;gap:10px;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:9px;padding:16px 20px;color:var(--muted);font-weight:600}.pi-tabs button small{margin-left:auto;font-size:11px;font-weight:400}.pi-tabs button[aria-current]{border-color:var(--brand);background:var(--blue-soft);color:var(--text);box-shadow:inset 0 -2px var(--brand)}
 @media(max-width:900px){.pi-tabs button{padding:12px;font-size:13px;flex-wrap:wrap}.pi-tabs button small{display:none}}
 @media(max-width:520px){.pi-tabs{gap:6px}.pi-tabs button{padding:10px 7px;font-size:12px;justify-content:center;text-align:center}}
+@container procurement-insights (max-width:900px){.pi-tabs button{padding:12px;font-size:13px;flex-wrap:wrap}.pi-tabs button small{display:none}}
+@container procurement-insights (max-width:520px){.pi-tabs{gap:6px}.pi-tabs button{padding:10px 7px;font-size:12px;justify-content:center;text-align:center}}
