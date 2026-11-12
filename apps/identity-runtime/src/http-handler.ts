@@ -1,3 +1,4 @@
+import type { OrganisationHttpSurface } from './organisation-http.js'
 import type { OrganisationDraftSurface } from './organisation-draft.js'
 import type { RegistrationSurface } from './registration.js'
 import type { CommunicationLanguageSurface } from './communication-language.js'
@@ -20,7 +21,7 @@ async function body(request: Request, maximum = 4096): Promise<unknown> {
   try { return JSON.parse(Buffer.concat(chunks).toString('utf8')) } catch { throw new BoundaryError(400, 'INVALID_JSON') }
 }
 /** A missing SDK/authority is an explicit health-only application, never an operational login. */
-export function createHttpHandler(boundary: SessionBoundary | null, account: AccountSurface | null = null, avatar: AssistantAvatarSurface | null = null, email: EmailSurface | null = null, language: CommunicationLanguageSurface | null = null, registration: RegistrationSurface | null = null, embedded: ((request: Request) => Promise<Response | null>) | null = null, salutation: AccountSalutationSurface | null = null, currentE1: CurrentE1Authority | null = null, organisationDraft: OrganisationDraftSurface | null = null) {
+export function createHttpHandler(boundary: SessionBoundary | null, account: AccountSurface | null = null, avatar: AssistantAvatarSurface | null = null, email: EmailSurface | null = null, language: CommunicationLanguageSurface | null = null, registration: RegistrationSurface | null = null, embedded: ((request: Request) => Promise<Response | null>) | null = null, salutation: AccountSalutationSurface | null = null, currentE1: CurrentE1Authority | null = null, organisationDraft: OrganisationDraftSurface | null = null, organisation: OrganisationHttpSurface | null = null) {
   return async (request: Request): Promise<Response> => {
     try {
       const url = new URL(request.url)
@@ -36,6 +37,13 @@ export function createHttpHandler(boundary: SessionBoundary | null, account: Acc
         if (request.headers.has('cookie') || request.headers.has('origin') || request.headers.get('content-type') !== 'application/json') return json(403,{error:'E1_REQUEST_REFUSED'})
         try {const input=await body(request,24576);return json(200,recurring?(url.pathname.endsWith('/component-ready')?await currentE1.recurringComponentReady!(request,input):url.pathname.endsWith('/consent')?await currentE1.recurringConsent!(request,input):await currentE1.authorizeRecurring!(request,input)):source?await currentE1.authorizeSource!(request,input):await currentE1.authorize(request,input))}
         catch (error) {const reason=(error as {reasonCode?:string}).reasonCode;return json(reason==='ACCESS_BASIS_INVALID'||(source||recurring)&&['UNVERIFIED_IDENTITY','IDENTITY_REQUIRED','PERMISSION_DENIED','PRODUCT_UNAVAILABLE','EXPLICIT_DENY'].includes(reason??'')?403:503,{error:'E1_AUTHORITY_REFUSED'})}
+      }
+      if (url.pathname === '/v1/account/organisation-onboarding/complete') {
+        if (url.search || url.hash) return json(404, { error: 'NOT_FOUND' })
+        if (request.method !== 'POST') return json(405, { error: 'METHOD_NOT_ALLOWED' })
+        if (!boundary || !account || !organisation) return json(503, { error: 'ONBOARDING_UNAVAILABLE' })
+        checkRequest(request, boundary.configuration, true)
+        return json(200, await organisation.complete(request, await body(request)))
       }
       if (url.pathname === '/v1/account/organisation-onboarding') {
         if (url.search || url.hash) return json(404, { error: 'NOT_FOUND' })
@@ -105,7 +113,7 @@ export function createHttpHandler(boundary: SessionBoundary | null, account: Acc
       const get = ['/healthz','/readyz','/v1/session'].includes(url.pathname)
       if (request.method !== (get ? 'GET' : 'POST')) return json(405, { error: 'METHOD_NOT_ALLOWED' })
       if (url.pathname === '/healthz') return json(200, { service: 'identity-runtime', status: 'ok' })
-      if (url.pathname === '/readyz') { const ready = Boolean(boundary && await boundary.ready() && (!email || await email.ready().then(() => true, () => false)) && (!language || await language.ready().then(() => true, () => false)) && (!registration || await registration.ready().then(() => true, () => false)) && (!organisationDraft || await organisationDraft.ready().then(() => true, () => false))); return json(ready ? 200 : 503, { ready }) }
+      if (url.pathname === '/readyz') { const ready = Boolean(boundary && await boundary.ready() && (!email || await email.ready().then(() => true, () => false)) && (!language || await language.ready().then(() => true, () => false)) && (!registration || await registration.ready().then(() => true, () => false)) && (!organisationDraft || await organisationDraft.ready().then(() => true, () => false)) && (!organisation || await organisation.ready().then(() => true, () => false))); return json(ready ? 200 : 503, { ready }) }
       if (!boundary) return json(503, { error: 'IDENTITY_UNAVAILABLE' })
       checkRequest(request, boundary.configuration, !get)
       if (url.pathname === '/v1/session') { const result = await boundary.session(request); return json(result.status === 'authenticated' ? 200 : result.status === 'unavailable' ? 503 : 401, { authenticated: result.status === 'authenticated' }) }
