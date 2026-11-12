@@ -258,10 +258,11 @@ test('accepted PI main and registration close all current physical inputs before
  assert.deepEqual(view.record,JSON.parse(current(sourcePath)))
  assert.equal(view.composition.transport.manifest.scope,'RECURRING_CONSENT_BEARER_TRANSPORT_CORRECTION')
  assert(view.composition.completion)
- for(const target of ['packages/platform-contracts/current-e1-authority/recurring.mjs','apps/insights-runtime/src/publication-query.mjs','apps/sg-runtime/components/procurement-insights/reports.tsx','apps/sg-runtime/procurement-insights-completion-integration.json','apps/platform-source-hub/test/ci-routing.test.mjs','apps/srm/scripts/private-host.integration.test.mjs']){
+ for(const target of ['apps/architecture-lab/market-calendar-source.mjs','scripts/governance/platform-source-hub-foundation.test.mjs','Canon/evidence/2026-11-12-bsdc-v11-manifest-continuity.json','packages/platform-contracts/current-e1-authority/recurring.mjs','apps/insights-runtime/src/publication-query.mjs','apps/sg-runtime/components/procurement-insights/reports.tsx','apps/sg-runtime/procurement-insights-completion-integration.json','apps/platform-source-hub/test/ci-routing.test.mjs','apps/srm/scripts/private-host.integration.test.mjs']){
   const changed=p=>p===target?Buffer.concat([current(p),Buffer.from('UNREVIEWED')]):current(p)
   assert.throws(()=>sdkContinuationPredecessor(receipt('SG2'),changed,historical),target)
  }
  const forged=(sha,p)=>sha==='82bcb78813937331d7822a96c5319b26e788abe1'&&p==='packages/platform-contracts/current-e1-authority/recurring.mjs'?Buffer.from('forged'):historical(sha,p)
  assert.throws(()=>sdkContinuationPredecessor(receipt('SG2'),current,forged))
+ for(const target of ["apps/architecture-lab/market-calendar-source.mjs","scripts/governance/platform-source-hub-foundation.test.mjs","Canon/evidence/2026-11-12-bsdc-v11-manifest-continuity.json"]){const bad=(sha,p)=>sha==='09a39f3ac3cad19b12d525168f9c719ff842e8cc'&&p===target?Buffer.from('forged continuity'):historical(sha,p);assert.throws(()=>sdkContinuationPredecessor(receipt('SG2'),current,bad),target)}
 })

@@ -1,6 +1,6 @@
 import {recurringConsentTransportPredecessor} from './recurring-consent-transport-source.mjs'
 import {procurementInsightsCompletionPredecessor} from '../../../apps/sg-runtime/tests/procurement-insights-completion-integrity.mjs'
-import {marketCalendarSourcePredecessor} from '../../../apps/architecture-lab/market-calendar-source.mjs'
+import {marketCalendarSourcePredecessor,bsdcManifestContinuityCurrent} from '../../../apps/architecture-lab/market-calendar-source.mjs'
 import {posix} from 'node:path'
 // Source acceptance and historical verification only. Never imported by a
 // product runtime or used as an identity, permission, licence or activation.
@@ -558,7 +558,10 @@ const mainComposition=Object.freeze({
     "packages/platform-contracts/test/private-operation-host.test.mjs": "604a1459b33a8b45ec76f3af21974459d481bc48197f9894b2d203553f62b287",
     "packages/platform-contracts/test/recurring-consent-transport-source.json": "0c9ffe5bfd89cf2bd65cd9adc7ad241a04e7468b5821f97171f4a6c550aaba36",
     "packages/platform-contracts/test/recurring-consent-transport-source.mjs": "cdd6edb2f7018545ad60dd62b2b8fee2d46de01c7123e8a4d5f1aaac32df816d",
-    "packages/platform-contracts/test/recurring-consent-transport.test.mjs": "20bcb51d4f35e82e889eaee49c1d006f047f46452225ea708b24b40b768538c2"
+    "packages/platform-contracts/test/recurring-consent-transport.test.mjs": "20bcb51d4f35e82e889eaee49c1d006f047f46452225ea708b24b40b768538c2",
+    "apps/architecture-lab/market-calendar-source.mjs": "8f57073b55c1233c4573e54185e352d6400d7baa47bd5303fefb7b893b123847",
+    "scripts/governance/platform-source-hub-foundation.test.mjs": "dadd4f9fcc5be03afee02ae51038efa48b07b3f9b2b62e9476a7b288c1d42d77",
+    "Canon/evidence/2026-11-12-bsdc-v11-manifest-continuity.json": "92fe69f99bbda13a9971d841cc391207d9e7944ccc516a68d9cc48b7a9151160"
   },
   "acceptedMainDigests": {
     "apps/architecture-lab/market-calendar-test-compatibility.json": "52e859d4a99bc4c8e4d986f38afea2d58e9c1fe1ee1e0eb62cc2672dbdb60078",
@@ -621,6 +624,16 @@ const mainComposition=Object.freeze({
     "packages/platform-contracts/test/recurring-consent-transport-source.json",
     "packages/platform-contracts/test/recurring-consent-transport-source.mjs",
     "packages/platform-contracts/test/recurring-consent-transport.test.mjs"
+  ],
+  "acceptedContinuations": [
+    {
+      "sourceSha": "09a39f3ac3cad19b12d525168f9c719ff842e8cc",
+      "sourceDigests": {
+        "apps/architecture-lab/market-calendar-source.mjs": "8f57073b55c1233c4573e54185e352d6400d7baa47bd5303fefb7b893b123847",
+        "scripts/governance/platform-source-hub-foundation.test.mjs": "dadd4f9fcc5be03afee02ae51038efa48b07b3f9b2b62e9476a7b288c1d42d77",
+        "Canon/evidence/2026-11-12-bsdc-v11-manifest-continuity.json": "92fe69f99bbda13a9971d841cc391207d9e7944ccc516a68d9cc48b7a9151160"
+      }
+    }
   ]
 })
 
@@ -635,11 +648,13 @@ function registrationMainComposition(current,historical){
  assert.equal(hash(transportBytes),mainComposition.transportRecordSha256,'exact accepted parallel transport record');
  for(const[p,digest]of Object.entries(mainComposition.physicalDigests))assert.equal(hash(current(p)),digest,(p.startsWith('apps/sg-runtime/tests/')?'current SG2 acceptance ':'current composed registration/PI source ')+p);
  for(const[p,digest]of Object.entries(mainComposition.acceptedMainDigests))assert.equal(hash(historicalSource(historical,mainComposition.acceptedMainSha,p)),digest,'immutable accepted parallel source '+p);
+ for(const continuation of mainComposition.acceptedContinuations)for(const[p,digest]of Object.entries(continuation.sourceDigests))assert.equal(hash(historicalSource(historical,continuation.sourceSha,p)),digest,'immutable accepted continuity '+p);
+ const documentation=bsdcManifestContinuityCurrent(current,historical);
  const mainView=p=>historicalSource(historical,mainComposition.acceptedMainSha,p);
  const transport=recurringConsentTransportPredecessor(mainView,historical);assert(transport,'accepted transport closure required');
  const completion=procurementInsightsCompletionPredecessor(mainView,historical);assert(completion,'accepted PI closure required');
  const mapped=new Set(mainComposition.projectedPaths);
- const absent=new Set(mainComposition.absentFromRegistration);const registration=p=>{if(absent.has(p))throw Object.assign(Error('Parallel addition absent from registration predecessor'),{code:'ENOENT'});return mapped.has(p)?historicalSource(historical,mainComposition.registrationSourceSha,p):current(p)};
+ const absent=new Set(mainComposition.absentFromRegistration);const registration=p=>{if(absent.has(p))throw Object.assign(Error('Parallel addition absent from registration predecessor'),{code:'ENOENT'});return mapped.has(p)?historicalSource(historical,mainComposition.registrationSourceSha,p):documentation(p)};
  return {registration,transport,completion,acceptedMain:mainView,physicalDigests:mainComposition.physicalDigests};
 }
 
