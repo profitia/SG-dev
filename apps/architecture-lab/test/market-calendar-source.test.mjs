@@ -4,13 +4,16 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import {execFileSync} from 'node:child_process'
 import {createHash} from 'node:crypto'
-import {marketCalendarSourcePredecessor,MARKET_CALENDAR_PRODUCER_PATHS,MARKET_CALENDAR_PRODUCER_RECORD,MARKET_CALENDAR_PRODUCER_BASE,MARKET_CALENDAR_PRODUCER_RECORD_SHA,MARKET_CALENDAR_CONSUMER_PATHS,MARKET_CALENDAR_CONSUMER_RECORD} from '../market-calendar-source.mjs'
-const root=new URL('../../../',import.meta.url),rawCurrent=p=>fs.readFileSync(new URL(p,root)),cache=new Map(),historical=(sha,p)=>{const k=sha+':'+p;if(!cache.has(k))cache.set(k,execFileSync('git',['show',k],{cwd:root,stdio:['ignore','pipe','pipe']}));return cache.get(k)}
-// Authenticate the current SDK and both receivers before preserving Calendar source.
-const sdk=sdkContinuationPredecessor(JSON.parse(rawCurrent('apps/sg-runtime/operation-integration.json')),rawCurrent,historical)
-const current=sdk?.calendarCurrent??rawCurrent
+import {marketCalendarSourcePredecessor,calendarTestCompatibilityCurrent,MARKET_CALENDAR_TEST_COMPATIBILITY_RECORD,MARKET_CALENDAR_PRODUCER_PATHS,MARKET_CALENDAR_PRODUCER_RECORD,MARKET_CALENDAR_PRODUCER_BASE,MARKET_CALENDAR_PRODUCER_RECORD_SHA,MARKET_CALENDAR_CONSUMER_PATHS,MARKET_CALENDAR_CONSUMER_RECORD} from '../market-calendar-source.mjs'
+const root=new URL('../../../',import.meta.url),rawPhysical=p=>fs.readFileSync(new URL(p,root)),cache=new Map(),historical=(sha,p)=>{const k=sha+':'+p;if(!cache.has(k))cache.set(k,execFileSync('git',['show',k],{cwd:root,stdio:['ignore','pipe','pipe']}));return cache.get(k)}
+// Authenticate the complete current SDK and both receivers before Calendar history.
+const sdk=sdkContinuationPredecessor(JSON.parse(rawPhysical('apps/sg-runtime/operation-integration.json')),rawPhysical,historical)
+const physical=sdk?.calendarCurrent??rawPhysical
+const current=calendarTestCompatibilityCurrent(physical,historical)
 test('calendar source is checked before a preserved historical view; all earlier architecture acceptances remain byte-identical',()=>{
- const view=marketCalendarSourcePredecessor(current,historical);assert(view)
+ const top=marketCalendarSourcePredecessor(current,historical);assert(top)
+ const producerCurrent=top.manifest.scope==='MARKET_CALENDAR_CONSUMER_SOURCE'?top.previousBytes:current
+ const view=marketCalendarSourcePredecessor(producerCurrent,historical);assert(view)
  for(const p of MARKET_CALENDAR_PRODUCER_PATHS){
   assert.throws(()=>marketCalendarSourcePredecessor(f=>f===p?Buffer.concat([current(p),Buffer.from('UNREVIEWED')]):current(f),historical),p)
   try{assert.deepEqual(view.previousBytes(p),historical(MARKET_CALENDAR_PRODUCER_BASE,p))}catch(e){assert.match(String(e.stderr??e.message),/does not exist|exists on disk/)}
@@ -19,6 +22,13 @@ test('calendar source is checked before a preserved historical view; all earlier
  assert.equal(marketCalendarSourcePredecessor(view.previousBytes,historical),null)
  const receipt=JSON.parse(current(MARKET_CALENDAR_PRODUCER_RECORD));receipt.sourceDigests[MARKET_CALENDAR_PRODUCER_PATHS[0]]='a'.repeat(64)
  assert.throws(()=>marketCalendarSourcePredecessor(p=>p===MARKET_CALENDAR_PRODUCER_RECORD?Buffer.from(JSON.stringify(receipt)):current(p),historical))
+})
+test('test-only compatibility authenticates the physical correction before preserving the original producer receipt',()=>{
+ const p='apps/architecture-lab/test/market-calendar-source.test.mjs',a=JSON.parse(physical(MARKET_CALENDAR_TEST_COMPATIBILITY_RECORD))
+ assert.deepEqual(current(p),historical(a.previousSourceSha,p))
+ assert.deepEqual(current(MARKET_CALENDAR_PRODUCER_RECORD),physical(MARKET_CALENDAR_PRODUCER_RECORD))
+ assert.throws(()=>current(MARKET_CALENDAR_TEST_COMPATIBILITY_RECORD),{code:'ENOENT'})
+ for(const f of [p,MARKET_CALENDAR_TEST_COMPATIBILITY_RECORD,MARKET_CALENDAR_PRODUCER_RECORD])assert.throws(()=>calendarTestCompatibilityCurrent(n=>n===f?Buffer.concat([physical(n),Buffer.from('UNREVIEWED')]):physical(n),historical),f)
 })
 test('absent successor is optional; access failures and unrelated Git failures remain fatal',()=>{
  assert.equal(marketCalendarSourcePredecessor(()=>{throw Object.assign(Error('Absent'),{code:'ENOENT'})},historical),null)
