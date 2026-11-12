@@ -24,7 +24,11 @@ const git = args => execFileSync('git', args, { cwd: root, encoding: 'utf8' }).t
 const priorText = p => execFileSync('git', ['show', approved + ':' + p], { cwd: root, encoding: 'utf8' })
 const prior = p => JSON.parse(priorText(p))
 const sha256 = bytes => createHash('sha256').update(bytes).digest('hex')
-function calendarPredecessor(readCurrent=read){return calendarStoragePredecessor(readCurrent,(sha,p)=>execFileSync('git',['show',sha+':'+p],{cwd:root}),(base,head)=>git(['diff','--name-only',base,head]).split('\n'))}
+// Git commit/blob identities are immutable. Cache only historical bytes and
+// return copies; physical candidate reads and injected negative cases stay fresh.
+const sourceHistoryCache=new Map()
+function sourceHistoryBytes(sha,p){const k=sha+':'+p;if(!sourceHistoryCache.has(k))sourceHistoryCache.set(k,execFileSync('git',['cat-file','blob',k],{cwd:root,stdio:['ignore','pipe','pipe']}));return Buffer.from(sourceHistoryCache.get(k))}
+function calendarPredecessor(readCurrent=read){return calendarStoragePredecessor(readCurrent,sourceHistoryBytes,(base,head)=>git(['diff','--name-only',base,head]).split('\n'))}
 function durableStorageAcceptance(readCurrent=read){return calendarPredecessor(readCurrent).record}
 function scheduleSourceAcceptance(readCurrent=read){
  readCurrent=calendarPredecessor(readCurrent).previousBytes
@@ -276,7 +280,7 @@ test('Stage2A adopts four separate versioned source families and the real Newsfe
 test('SourceHub optional ECR storage metadata preserves accepted transport and payload compatibility',()=>{
  const accepted='b837f93b47d15cd812242a2ab0df6e69c35b3656'
  const p='packages/platform-source-hub-contracts/package.json'
- const reviewed=recurringSourcePredecessor(file=>fs.readFileSync(path.join(root,file)),(sha,file)=>execFileSync('git',['show',sha+':'+file],{cwd:root}))
+ const reviewed=recurringSourcePredecessor(file=>fs.readFileSync(path.join(root,file)),sourceHistoryBytes)
  const acceptedSource=reviewed?.previousBytes??read
  const old=JSON.parse(git(['show',accepted+':'+p])),current=JSON.parse(acceptedSource(p))
  assert.equal(old.version,'1.1.0')
@@ -284,7 +288,7 @@ test('SourceHub optional ECR storage metadata preserves accepted transport and p
  const sdkVersion=JSON.parse(acceptedSource('packages/platform-contracts/package.json')).version
  const durable=durableStorageAcceptance(),schedule=scheduleSourceAcceptance()
  if(sdkVersion==='1.34.0'){
-  const previous=assistantSdkPredecessor(calendarPredecessor(p=>fs.readFileSync(path.join(root,p))).previousBytes,(sha,p)=>execFileSync('git',['show',sha+':'+p],{cwd:root})).previousBytes
+  const previous=assistantSdkPredecessor(calendarPredecessor(p=>fs.readFileSync(path.join(root,p))).previousBytes,sourceHistoryBytes).previousBytes
   const adoption=json('apps/architecture-lab/sdk-1.34-compatibility.json')
   assert.equal(adoption.producerCandidateSha,'ebf017cae09bf7bd9139af7917534b47ae0c4d4b')
   assert.equal(Object.keys(adoption.producerFiles).length,27)
@@ -371,4 +375,89 @@ test('source access continuity pins every new source and retains immutable produ
   assert.throws(()=>calendarPredecessor(p=>read(p)+(p===target?'\nUNACCEPTED_CHANGE':'')),target)
  }
  assert.throws(()=>calendarPredecessor(p=>{if(p===file)throw Object.assign(Error('missing continuity receipt'),{code:'ENOENT'});return read(p)}))
+})
+
+
+// The owner-approved BSDC change is a closed documentation successor, not a
+// replacement for the Calendar/SDK/runtime source graph or its old receipts.
+import {bsdcManifestContinuityCurrent, BSDC_MANIFEST_CONTINUITY as bsdcLabPolicy, marketCalendarSourcePredecessor} from '../../apps/architecture-lab/market-calendar-source.mjs'
+import {bsdcManifestContinuityTrustedCurrent, BSDC_MANIFEST_CONTINUITY as bsdcTrustedPolicy, BSDC_V11_DOCUMENTATION_REVIEW, marketCalendarTrustedPredecessor, assertPrivateRecurringProvenance, selectCandidate, assertBsdcDocumentationReviewEntry} from './controlled-package-ci.mjs'
+const bsdcHistoryCache=new Map()
+const bsdcHistory=(sha,p)=>{const k=sha+':'+p;if(!bsdcHistoryCache.has(k))bsdcHistoryCache.set(k,execFileSync('git',['cat-file','blob',k],{cwd:root,stdio:['ignore','pipe','pipe']}));return Buffer.from(bsdcHistoryCache.get(k))}
+const bsdcPhysical=p=>fs.readFileSync(path.join(root,p))
+const bsdcApproved=p=>bsdcTrustedPolicy.sourcePaths.includes(p)?bsdcHistory(BSDC_V11_DOCUMENTATION_REVIEW.approvedSourceSha,p):bsdcPhysical(p)
+const bsdcFiles=()=>Object.entries(BSDC_V11_DOCUMENTATION_REVIEW.entries).map(([filename,e])=>({filename,sha:e.sha,status:e.status}))
+const bsdcContext={repository:'profitia/SG-dev',ref:'refs/heads/main',workflowRef:'profitia/SG-dev/.github/workflows/platform-contracts-ci.yml@refs/heads/main',event:'workflow_dispatch',actor:'profitia',triggeringActor:'profitia',controlSha:bsdcTrustedPolicy.baseSha}
+const bsdcPr=()=>({number:1057,state:'open',base:{ref:'main',repo:{full_name:'profitia/SG-dev'},sha:bsdcTrustedPolicy.baseSha},head:{ref:BSDC_V11_DOCUMENTATION_REVIEW.branch,repo:{full_name:'profitia/SG-dev'},sha:BSDC_V11_DOCUMENTATION_REVIEW.approvedSourceSha},user:{login:'profitia'},changed_files:4})
+
+test('BSDC continuity bootstrap preserves the old manifest and every original Calendar source pin',()=>{
+ const record=JSON.parse(bsdcPhysical(bsdcTrustedPolicy.recordPath))
+ assert.equal(record.ownerApproval.decision,'Zatwierdzam ten zakres i dokończenie publikacji')
+ assert.deepEqual(bsdcLabPolicy.sourcePaths,bsdcTrustedPolicy.sourcePaths)
+ assert.equal(sha256(bsdcPhysical(bsdcTrustedPolicy.helperPath)),bsdcTrustedPolicy.helperSha256)
+ for(const project of [bsdcManifestContinuityCurrent,bsdcManifestContinuityTrustedCurrent]){
+  const view=project(bsdcPhysical,bsdcHistory)
+  assert.deepEqual(view(bsdcTrustedPolicy.manifestPath),bsdcHistory(bsdcTrustedPolicy.baseSha,bsdcTrustedPolicy.manifestPath))
+  assert.deepEqual(view(bsdcTrustedPolicy.helperPath),bsdcHistory(bsdcTrustedPolicy.baseSha,bsdcTrustedPolicy.helperPath))
+  assert.throws(()=>view(bsdcTrustedPolicy.recordPath),{code:'ENOENT'})
+ }
+ assert(calendarPredecessor(bsdcPhysical).record)
+ assert(assertPrivateRecurringProvenance(root))
+})
+
+test('BSDC activation authenticates exactly the approved four documents before old source traversal',()=>{
+ for(const project of [bsdcManifestContinuityCurrent,bsdcManifestContinuityTrustedCurrent]){
+  const view=project(bsdcApproved,bsdcHistory)
+  assert.equal(sha256(view(bsdcTrustedPolicy.manifestPath)),bsdcTrustedPolicy.previousManifestSha256)
+  for(const p of bsdcTrustedPolicy.sourcePaths.filter(p=>p!==bsdcTrustedPolicy.manifestPath))assert.deepEqual(view(p),bsdcApproved(p))
+ }
+ assert(calendarPredecessor(bsdcApproved).record)
+})
+
+test('BSDC continuity rejects changed approved documents, a rebound receipt and an arbitrary manifest',()=>{
+ for(const target of [...bsdcTrustedPolicy.sourcePaths,bsdcTrustedPolicy.recordPath,bsdcTrustedPolicy.testPath]){
+  const changed=p=>Buffer.concat([bsdcApproved(p),Buffer.from(p===target?'UNAPPROVED':'')])
+  for(const project of [bsdcManifestContinuityCurrent,bsdcManifestContinuityTrustedCurrent])assert.throws(()=>project(changed,bsdcHistory),target)
+ }
+ const record=JSON.parse(bsdcApproved(bsdcTrustedPolicy.recordPath));record.sourceDigests['unapproved.md']='a'.repeat(64)
+ const widened=p=>p===bsdcTrustedPolicy.recordPath?Buffer.from(JSON.stringify(record)):bsdcApproved(p)
+ assert.throws(()=>bsdcManifestContinuityCurrent(widened,bsdcHistory))
+ assert.throws(()=>bsdcManifestContinuityTrustedCurrent(widened,bsdcHistory))
+})
+
+test('BSDC continuity cannot hide missing evidence, altered history, changed helper or old receipt',()=>{
+ const absent=p=>{if(p===bsdcTrustedPolicy.recordPath)throw Object.assign(Error('Absent'),{code:'ENOENT'});return bsdcApproved(p)}
+ assert.throws(()=>calendarPredecessor(absent))
+ for(const target of [bsdcTrustedPolicy.manifestPath,bsdcTrustedPolicy.helperPath]){
+  const history=(sha,p)=>Buffer.concat([bsdcHistory(sha,p),Buffer.from(p===target?'ALTERED_HISTORY':'')])
+  assert.throws(()=>bsdcManifestContinuityCurrent(bsdcApproved,history),target)
+  assert.throws(()=>bsdcManifestContinuityTrustedCurrent(bsdcApproved,history),target)
+ }
+ assert.throws(()=>bsdcManifestContinuityTrustedCurrent(p=>Buffer.concat([bsdcApproved(p),Buffer.from(p===bsdcTrustedPolicy.helperPath?'ALTERED_HELPER':'')]),bsdcHistory))
+ const receipt='apps/economic-calendar-runtime/market-calendar-preferences-integration.json'
+ const changed=p=>Buffer.concat([bsdcApproved(p),Buffer.from(p===receipt?'ALTERED_OLD_RECEIPT':'')])
+ assert.throws(()=>calendarPredecessor(changed))
+ assert.deepEqual(bsdcManifestContinuityTrustedCurrent(changed,bsdcHistory)(receipt),changed(receipt),'trusted BSDC projection leaves tampered old receipts visible to existing checks')
+})
+
+test('BSDC continuity propagates access failures and unrelated Git failures',()=>{
+ for(const project of [bsdcManifestContinuityCurrent,bsdcManifestContinuityTrustedCurrent]){
+  const denied=Object.assign(Error('Denied'),{code:'EACCES'})
+  assert.throws(()=>project(()=>{throw denied},bsdcHistory),e=>e===denied)
+  const foreign=Object.assign(Error('Foreign Git error'),{status:128,stderr:"fatal: path 'unrelated' does not exist in 'main'"})
+  assert.throws(()=>project(()=>{throw foreign},bsdcHistory),e=>e===foreign)
+ }
+})
+
+test('BSDC controlled admission binds the approved PR, complete file list, blobs, modes and owner routes',()=>{
+ const sha=BSDC_V11_DOCUMENTATION_REVIEW.approvedSourceSha,files=bsdcFiles()
+ assert.equal(selectCandidate(bsdcContext,bsdcPr(),sha,{files,repositoryRoot:root}),sha)
+ for(const file of files){
+  const entry=BSDC_V11_DOCUMENTATION_REVIEW.entries[file.filename]
+  assertBsdcDocumentationReviewEntry(file,entry.mode+' blob '+entry.sha+'\t'+file.filename+'\0')
+  for(const mode of ['100755','120000','160000'])assert.throws(()=>assertBsdcDocumentationReviewEntry(file,mode+' blob '+entry.sha+'\t'+file.filename+'\0'))
+ }
+ for(const changed of [files.slice(1),[...files,{filename:'Canon/unapproved.md',sha:'a'.repeat(40),status:'added'}],files.map((f,i)=>i?f:{...f,sha:'a'.repeat(40)}),files.map((f,i)=>i?f:{...f,previous_filename:'old.md'})])assert.throws(()=>selectCandidate(bsdcContext,bsdcPr(),sha,{files:changed,repositoryRoot:root}))
+ const wrong=bsdcPr();wrong.number=999999;assert.throws(()=>selectCandidate(bsdcContext,wrong,sha,{files,repositoryRoot:root}))
+ const moved=bsdcPr();moved.head.sha='a'.repeat(40);assert.throws(()=>selectCandidate(bsdcContext,moved,sha,{files,repositoryRoot:root}))
 })
