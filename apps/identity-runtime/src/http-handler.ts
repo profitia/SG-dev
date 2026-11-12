@@ -38,6 +38,23 @@ export function createHttpHandler(boundary: SessionBoundary | null, account: Acc
         try {const input=await body(request,24576);return json(200,recurring?(url.pathname.endsWith('/component-ready')?await currentE1.recurringComponentReady!(request,input):url.pathname.endsWith('/consent')?await currentE1.recurringConsent!(request,input):await currentE1.authorizeRecurring!(request,input)):source?await currentE1.authorizeSource!(request,input):await currentE1.authorize(request,input))}
         catch (error) {const reason=(error as {reasonCode?:string}).reasonCode;return json(reason==='ACCESS_BASIS_INVALID'||(source||recurring)&&['UNVERIFIED_IDENTITY','IDENTITY_REQUIRED','PERMISSION_DENIED','PRODUCT_UNAVAILABLE','EXPLICIT_DENY'].includes(reason??'')?403:503,{error:'E1_AUTHORITY_REFUSED'})}
       }
+      const conversationPath='/v1/account/organisation-onboarding/'
+      const conversationRoute=url.pathname.startsWith(conversationPath)?url.pathname.slice(conversationPath.length):''
+      if (['snapshot','company','slug','categories','invitations','activation'].includes(conversationRoute)) {
+        if (url.search || url.hash) return json(404, { error: 'NOT_FOUND' })
+        const read=conversationRoute==='snapshot'||conversationRoute==='activation'
+        if (request.method !== (read?'GET':'POST')) return json(405, { error: 'METHOD_NOT_ALLOWED' })
+        const view=organisation?.conversation
+        if (!boundary || !account || !organisationDraft || !view) return json(503, { error: 'ONBOARDING_UNAVAILABLE' })
+        checkRequest(request,boundary.configuration,!read)
+        if (conversationRoute==='snapshot') return json(200,await view.snapshot(request))
+        if (conversationRoute==='activation') return json(200,await view.activation(request))
+        const input=await body(request,conversationRoute==='invitations'?16384:4096)
+        if (conversationRoute==='company') return json(200,await view.lookupCompany(request,input))
+        if (conversationRoute==='slug') return json(200,await view.checkSlug(request,input))
+        if (conversationRoute==='categories') return json(200,await view.savePersonalCategories(request,input))
+        return json(200,await view.sendInvitations(request,input))
+      }
       if (url.pathname === '/v1/account/organisation-onboarding/complete') {
         if (url.search || url.hash) return json(404, { error: 'NOT_FOUND' })
         if (request.method !== 'POST') return json(405, { error: 'METHOD_NOT_ALLOWED' })
@@ -98,7 +115,7 @@ export function createHttpHandler(boundary: SessionBoundary | null, account: Acc
           if (url.origin !== boundary.configuration.origin || url.username || url.password || url.search.length > 8192) return json(403, { error: 'REQUEST_ORIGIN_REJECTED' })
           const page = /^\/account\/([a-z0-9-]+)\/([a-z0-9-]+)\/(registration|login|recovery)$/.exec(url.pathname)
           if (url.pathname !== '/account-client' && !page) return json(404, { error: 'NOT_FOUND' })
-          return new Response(page ? accountPage(boundary.configuration, page[1]!, page[2]!, page[3]!, registration !== null) : accountBrowserScript,
+          return new Response(page ? accountPage(boundary.configuration, page[1]!, page[2]!, page[3]!, registration !== null, Boolean(organisationDraft && organisation?.conversation)) : accountBrowserScript,
             { headers: { ...headers, 'content-type': page ? 'text/html; charset=utf-8' : 'text/javascript; charset=utf-8',
               'content-security-policy': "frame-ancestors 'none'; base-uri 'none'", 'x-frame-options': 'DENY' } })
         }

@@ -124,3 +124,46 @@ test('native creation HTTP preserves real atomic SQL, replay, duplicate and iden
     }finally{server.closeAllConnections();await new Promise(resolve=>server.close(resolve))}
   })
 })
+
+import vm from 'node:vm'
+import { organisationOnboardingClientScript, organisationOnboardingMarkup } from '../dist/src/organisation-onboarding.js'
+import { accountBrowserScript } from '../dist/src/account-page.js'
+
+test('browser conversation scripts remain executable and the native layout excludes the legal declaration',()=>{
+  new vm.Script(organisationOnboardingClientScript)
+  new vm.Script(accountBrowserScript)
+  const pl=organisationOnboardingMarkup(false),en=organisationOnboardingMarkup(true)
+  assert.match(pl,/id="organisation-onboarding"/)
+  assert.match(pl,/role="log"/)
+  assert.match(pl,/role="alert"/)
+  assert.doesNotMatch(pl,/type="checkbox"|oświadczam|mogę założyć/)
+  assert.match(en,/Your organisation/)
+})
+
+test('native conversation receiver refuses missing ports, foreign receivers, methods, queries and oversized input',async t=>{
+  const cfg=configuration(),base='/v1/account/organisation-onboarding/'
+  let calls=0
+  const value=async()=>{calls++;return {ok:true}}
+  const view={ready:async()=>{},snapshot:value,lookupCompany:value,checkSlug:value,savePersonalCategories:value,sendInvitations:value,activation:value}
+  const org={ready:async()=>{},complete:value,conversation:view}
+  const draft={ready:async()=>{},read:value,update:value}
+  const handler=createHttpHandler({configuration:cfg},{},null,null,null,null,null,null,null,draft,org)
+  const missing=createHttpHandler({configuration:cfg},{},null,null,null,null,null,null,null,draft,{ready:async()=>{},complete:value})
+  for(const [path,method]of [['snapshot','GET'],['company','POST'],['slug','POST'],['categories','POST'],['invitations','POST'],['activation','GET']]){
+    await t.test(path,async()=>{
+      const req=(m=method,suffix='',origin=cfg.origin,body='{}')=>new Request(origin+base+path+suffix,{method:m,headers:m==='POST'?{'content-type':'application/json',origin:cfg.origin}:{},...(m==='POST'?{body}:{})})
+      const before=calls
+      assert.equal((await missing(req())).status,503)
+      assert.equal((await handler(req(method==='GET'?'POST':'GET'))).status,405)
+      assert.equal((await handler(req(method,'?organisationId=foreign'))).status,404)
+      assert.equal((await handler(req(method,'',cfg.targets.sg2.origin))).status,403)
+      if(method==='POST')assert.equal((await handler(req(method,'',cfg.origin,'x'.repeat(path==='invitations'?16385:4097)))).status,400)
+      assert.equal(calls,before)
+      const response=await handler(req())
+      assert.equal(response.status,200)
+      assert.equal(response.headers.get('cache-control'),'private, no-store')
+      assert.equal(response.headers.get('access-control-allow-origin'),null)
+      assert.equal(calls,before+1)
+    })
+  }
+})

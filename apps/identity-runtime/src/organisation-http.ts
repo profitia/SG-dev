@@ -1,3 +1,4 @@
+import type { OrganisationOnboardingApi, OnboardingSnapshot } from './organisation-onboarding.js'
 import type pg from 'pg'
 import { createOrganisationBootstrapBackend, organisationBootstrapSchemaDigest, type OrganisationCreationReceipt, type StoredCompanyRecord } from '@profitia/platform-contracts/organisation-bootstrap'
 import { organisationOnboardingSchemaDigest, OrganisationProfileError } from '@profitia/platform-contracts/organisation-profile'
@@ -10,7 +11,20 @@ import { readConfiguration } from './config.js'
 import { checkRequest } from './session-boundary.js'
 import { verifiedEmailClient, type accountTransactions } from './account-provisioning.js'
 
+/** Each port owns current verified-account authorization and its original
+ * transaction/audit. Merely supplying a view cannot create an organisation. */
+export interface OrganisationConversationSurface {
+  ready(): Promise<void>
+  snapshot(request: Request): Promise<OnboardingSnapshot>
+  lookupCompany(request: Request, input: unknown): ReturnType<OrganisationOnboardingApi['lookupCompany']>
+  checkSlug(request: Request, input: unknown): ReturnType<OrganisationOnboardingApi['checkSlug']>
+  savePersonalCategories(request: Request, input: unknown): ReturnType<OrganisationOnboardingApi['savePersonalCategories']>
+  sendInvitations(request: Request, input: unknown): ReturnType<OrganisationOnboardingApi['sendInvitations']>
+  activation(request: Request): ReturnType<OrganisationOnboardingApi['activation']>
+}
+
 export interface OrganisationHttpSurface {
+  readonly conversation?: OrganisationConversationSurface
   ready(): Promise<void>
   complete(request: Request, input: unknown): Promise<OrganisationCreationReceipt>
 }
@@ -31,6 +45,7 @@ export function readOrganisationBootstrapOptIn(env: Readonly<Record<string, stri
  * port; this operation never calls a paid provider, installs a grant or selects a
  * tenant from browser input. Atomic creation and replay stay in the shared SDK. */
 export function createOrganisationHttpSurface(options: {
+  conversation?: OrganisationConversationSurface
   configuration: RuntimeConfiguration; client: RuntimeSdk
   binding: IdentityProvisioningOptions<pg.PoolClient>['binding']; schemaDigest: string; proofKey: Uint8Array
   bootstrapSchemaDigest: string; transact: ReturnType<typeof accountTransactions>; independentQuery: AccessQuery
@@ -38,6 +53,7 @@ export function createOrganisationHttpSurface(options: {
   readVerifiedCompany(input: Readonly<{ nip: string; context: Readonly<OperationContext> }>): Promise<StoredCompanyRecord | null>
 }): OrganisationHttpSurface {
   if (options.bootstrapSchemaDigest !== organisationBootstrapSchemaDigest()) throw Error('ORGANISATION_BOOTSTRAP_SCHEMA_REQUIRED')
+  if (options.conversation && !['ready','snapshot','lookupCompany','checkSlug','savePersonalCategories','sendInvitations','activation'].every(key => typeof (options.conversation as unknown as Record<string, unknown>)[key] === 'function')) throw Error('ORGANISATION_CONVERSATION_PORTS_REQUIRED')
   const configuration = readConfiguration(options.configuration)
   if (configuration.environment !== 'development') throw Error('ORGANISATION_BOOTSTRAP_DEVELOPMENT_ONLY')
   const backend = (request?: Request) => createOrganisationBootstrapBackend({
@@ -51,7 +67,8 @@ export function createOrganisationHttpSurface(options: {
   })
   backend()
   return Object.freeze({
-    async ready() { await backend().ready() },
+    ...(options.conversation ? {conversation: options.conversation} : {}),
+    async ready() { await backend().ready(); await options.conversation?.ready() },
     async complete(request: Request, input: unknown) {
       checkRequest(request, configuration, true)
       if (!input || typeof input !== 'object' || Object.getPrototypeOf(input) !== Object.prototype
