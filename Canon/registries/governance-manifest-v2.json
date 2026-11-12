@@ -1,6 +1,6 @@
 {
   "schemaVersion": "2.0",
-  "manifestVersion": "3.49.2",
+  "manifestVersion": "3.50.0",
   "owner": "Profitia Governance",
   "entrypoint": "AGENTS.md",
   "preflight": "scripts/governance/governance-preflight.mjs",
@@ -84,6 +84,45 @@
         "business-outcome-engineering",
         "full-autopilot-outcome-first",
         "ux-ui-design-canon"
+      ]
+    },
+    {
+      "id": "business-solution-design-and-canonization-canon",
+      "version": "1.0",
+      "path": "Canon/v1.0-business-solution-design-and-canonization-canon.md",
+      "status": "ACTIVE",
+      "loadOrder": 571,
+      "owner": "Governance Source Layer",
+      "appliesTo": [
+        "SG2",
+        "SRM",
+        "ARCHITECTURE"
+      ],
+      "dependsOn": [
+        "agent-execution-canon",
+        "repository-routing",
+        "architecture-baseline",
+        "business-outcome-engineering",
+        "universal-project-execution-wrapper"
+      ]
+    },
+    {
+      "id": "business-solution-design-and-canonization-launcher",
+      "version": "1.0",
+      "path": "docs/agent-instructions/bsdc-launcher-v1.0.md",
+      "status": "ACTIVE",
+      "loadOrder": 572,
+      "owner": "Governance Source Layer",
+      "appliesTo": [
+        "SG2",
+        "SRM",
+        "ARCHITECTURE"
+      ],
+      "dependsOn": [
+        "business-solution-design-and-canonization-canon",
+        "business-outcome-engineering",
+        "universal-project-execution-wrapper",
+        "full-autopilot-outcome-first"
       ]
     },
     {
