@@ -1,0 +1,34 @@
+{
+  "schemaVersion": "1.0",
+  "scope": "BSDC_V11_DOCUMENTATION_MANIFEST_CONTINUITY",
+  "projectKey": "ARCHITECTURE",
+  "previousSourceSha": "df2214265e577ef653c35fa18a38c717ffe8905e",
+  "approvedDocumentationSourceSha": "80325d0cad8e65057952a3ffddb0ca00f51e0d35",
+  "manifestPath": "Canon/registries/governance-manifest-v2.json",
+  "previousManifestSha256": "953aa8ff82c12fca85d22d04de865e1969a5e4548465766b259db0bd3ce56587",
+  "sourceDigests": {
+    "AGENTS.md": "f7779c112d683a9edfa30a966e55cdafc16e43092dc75765e5f57410634b33bd",
+    "Canon/registries/governance-manifest-v2.json": "7f5498afa10f3edaf0b364ca7bf4576de5dc8100e61bc4fc2773c845b771e2a4",
+    "Canon/v1.1-business-solution-design-and-canonization-canon.md": "1e396b688b9565d0d5478867f15a6830e3392e6783422c3b337e2644d269ae9b",
+    "docs/agent-instructions/bsdc-launcher-v1.1.md": "eaf1e7a814e184f63d1b9d3079a8f1b0783f349cc81cafc3f672c5696713c739"
+  },
+  "ownerApproval": {
+    "date": "2026-11-12",
+    "hostConversationId": "01a1cc30-dccf-7942-b613-e33a0fe38b30",
+    "decision": "Zatwierdzam ten zakres i dokończenie publikacji",
+    "approvedCorrectionPaths": [
+      "apps/architecture-lab/market-calendar-source.mjs",
+      "scripts/governance/controlled-package-ci.mjs",
+      "scripts/governance/platform-source-hub-foundation.test.mjs",
+      "Canon/evidence/2026-11-12-bsdc-v11-manifest-continuity.json"
+    ]
+  },
+  "priorReceiptsChanged": false,
+  "productRuntimeChanged": false,
+  "accessOrDeploymentAuthorized": false,
+  "correctionTest": {
+    "path": "scripts/governance/platform-source-hub-foundation.test.mjs",
+    "sha256": "dadd4f9fcc5be03afee02ae51038efa48b07b3f9b2b62e9476a7b288c1d42d77",
+    "previousSha256": "189e3ee14a2e9c3fe52d53fd3404e8fca1e1ca82f120ab6ac24909b9cef09acb"
+  }
+}
