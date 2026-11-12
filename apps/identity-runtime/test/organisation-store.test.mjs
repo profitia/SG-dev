@@ -116,6 +116,21 @@ test('native organisation store commits real scoped categories and idempotent in
    assert.deepEqual(rows.map(r=>r.status),['ACCEPTED','UNKNOWN']);for(const row of rows)assert.deepEqual(row.encrypted_payload,{})
   }finally{await worker.stop()}
  })
+ await t.test('corrupt encrypted delivery is cancelled permanently instead of poisoning the queue',async()=>{
+  await owner.sendInvitations(post(),{commandId:randomUUID(),emails:['corrupt@example.test']})
+  const row=(await db.admin.query("SELECT invitation_id,encrypted_payload FROM profitia_profile.organisation_invitation_outbox WHERE status='PENDING'")).rows[0]
+  row.encrypted_payload.tag='0'.repeat(32)
+  await db.admin.query('UPDATE profitia_profile.organisation_invitation_outbox SET encrypted_payload=$1::jsonb WHERE invitation_id=$2',[JSON.stringify(row.encrypted_payload),row.invitation_id])
+  let called=0
+  const worker=createOrganisationInvitationDelivery({...common,query:common.independentQuery,issuer:cfg.issuer,client:actors.owner.client,identityOrigin:cfg.origin,allowedIdentityOrigins:[cfg.origin],autoStart:false,
+   prepare:async()=>{called++;throw Error('must never render corrupt payload')},
+   mailgun:{environment:'development',region:'eu',domain:'notify.example.test',apiKey:'synthetic_private_mailgun_key_12345',authorizedRecipients:[],from:'account@notify.example.test',senderName:'SpendGuru'},
+   fetch:async()=>{called++;throw Error('must never send corrupt payload')}})
+  try{await worker.tick();await worker.tick();assert.equal(called,0)
+   const persisted=(await db.admin.query('SELECT status,encrypted_payload FROM profitia_profile.organisation_invitation_outbox WHERE invitation_id=$1',[row.invitation_id])).rows[0]
+   assert.equal(persisted.status,'CANCELLED');assert.deepEqual(persisted.encrypted_payload,{})
+  }finally{await worker.stop()}
+ })
  await t.test('GET and a different verified account cannot consume an invitation',async()=>{
   await assert.rejects(owner.acceptInvitation(get(),{commandId:randomUUID(),proof:proofs['new@example.test']}))
   assert.deepEqual(await owner.acceptInvitation(post(),{commandId:randomUUID(),proof:proofs['new@example.test']}),{status:'INVITATION_UNAVAILABLE'})
@@ -132,9 +147,55 @@ test('native organisation store commits real scoped categories and idempotent in
   assert.equal(results.filter(r=>r.status==='fulfilled').length,1);assert.equal(results.filter(r=>r.status==='rejected'&&r.reason.status===409).length,1)
   assert.equal((await owner.snapshot(get())).draft.answers.categories[0].label,'Synthetic steel')
  })
- await t.test('inviter revocation prevents acceptance without granting or restoring a membership',async()=>{
-  await db.admin.query("UPDATE profitia_access.memberships SET status='SUSPENDED' WHERE organisation_id=$1 AND user_id=$2",[oid,userIds.owner])
-  const result=await stores.other.acceptInvitation(actors.other.request('POST'),{commandId:randomUUID(),proof:proofs['other@example.test']});assert.equal(result.status,'INVITATION_UNAVAILABLE')
-  assert.equal((await db.admin.query('SELECT count(*) FROM profitia_access.memberships WHERE organisation_id=$1 AND user_id=$2',[oid,userIds.other])).rows[0].count,'0')
+ await t.test('an account already in a different organisation keeps that membership when accepting a new invitation',async()=>{
+  const elsewhere=randomUUID()
+  await db.admin.query("INSERT INTO profitia_access.organisations(organisation_id,status) VALUES($1,'ACTIVE')",[elsewhere])
+  await db.admin.query("INSERT INTO profitia_access.memberships(organisation_id,user_id,status,source_ref,expires_at) VALUES($1,$2,'ACTIVE','test-other-membership',clock_timestamp()+interval '1 day')",[elsewhere,userIds.other])
+  const result=await stores.other.acceptInvitation(actors.other.request('POST'),{commandId:randomUUID(),proof:proofs['other@example.test']})
+  assert.equal(result.status,'ACCEPTED')
+  const memberships=(await db.admin.query('SELECT organisation_id,status FROM profitia_access.memberships WHERE user_id=$1 ORDER BY organisation_id',[userIds.other])).rows
+  assert.equal(memberships.length,2);assert(memberships.every(m=>m.status==='ACTIVE'));assert(memberships.some(m=>m.organisation_id===elsewhere))
+  assert.equal((await stores.other.snapshot(actors.other.request('GET'))).organisation.organisationId,oid)
  })
+ await t.test('inviter revocation prevents acceptance without granting or restoring a membership',async()=>{
+  await owner.sendInvitations(post(),{commandId:randomUUID(),emails:['revoked-recipient@example.test']})
+  const r=(await db.admin.query("SELECT invitation_id,encrypted_payload FROM profitia_profile.organisation_invitation_outbox WHERE status='PENDING'")).rows[0]
+  const revoked=openOrganisationInvitation(r.encrypted_payload,{key,keyId:'test-key-1',invitationId:r.invitation_id})
+  actors.member.email='revoked-recipient@example.test'
+  await db.admin.query("UPDATE profitia_access.memberships SET status='SUSPENDED' WHERE organisation_id=$1 AND user_id=$2",[oid,userIds.owner])
+  const result=await stores.member.acceptInvitation(actors.member.request('POST'),{commandId:randomUUID(),proof:revoked.email.token});assert.equal(result.status,'INVITATION_UNAVAILABLE')
+  assert.equal((await db.admin.query('SELECT count(*) FROM profitia_access.memberships WHERE organisation_id=$1 AND user_id=$2',[oid,userIds.member])).rows[0].count,'1')
+  assert.equal((await db.admin.query('SELECT status FROM profitia_profile.organisation_invitations WHERE invitation_id=$1',[r.invitation_id])).rows[0].status,'PENDING')
+ })
+})
+
+import {createOrganisationServiceConnections} from '../dist/src/organisation-store.js'
+import {createPeerOperationVerifier} from '../../../packages/platform-contracts/src/peer-operation.mjs'
+test('native registry and package peers bind original bearer, exact path, intent, result scope and no retry',async()=>{
+ const sourceOrigin='https://identity.example.test',key=randomBytes(32),uid=randomUUID(),oid=randomUUID()
+ const make=(receiverApplicationId,targetOrigin,method,path,maximumRequestBytes,requireIdempotencyKey)=>({environment:'development',callerApplicationId:'identity-runtime-development',receiverApplicationId,sourceOrigin,targetOrigin,keyId:'registration-peers-v1',key,
+  routes:[{method,path,maximumRequestBytes,requireIdempotencyKey}],internalOrigins:[]})
+ const registryPeer=make('srm-onboarding-development','https://registry.example.test','POST','/api/organisation-onboarding/company',1024,true)
+ const workspacePeer=make('package-limits-development','https://limits.example.test','GET','/v1/organisation-access',0,false)
+ const company={entityType:'COMPANY',country:'PL',nip:'1234563218',krs:'0000123456',regon:'123456789',legalName:'Synthetic peer company S.A.',address:'ul. Testowa 1, Warszawa',postalCode:'00-001'}
+ let calls=0,wrongScope=false,fail=false,intents=[]
+ const registryVerify=createPeerOperationVerifier(registryPeer),workspaceVerify=createPeerOperationVerifier(workspacePeer)
+ const connections=createOrganisationServiceConnections({registryPeer,workspacePeer,sourcePolicyRef:'test-source-policy',intentKey:randomBytes(32),transport:async request=>{
+  calls++;assert(request instanceof Request);assert.equal(request.credentials,'omit');assert.equal(request.redirect,'error');assert.equal(request.headers.get('authorization'),'Bearer synthetic-original-bearer');assert(!request.headers.has('cookie'));assert(!request.headers.has('origin'))
+  if(fail)throw Error('synthetic network uncertainty')
+  if(new URL(request.url).origin===registryPeer.targetOrigin){
+   assert.equal(await registryVerify(request),true);intents.push(request.headers.get('idempotency-key'));assert.deepEqual(await request.json(),{nip:company.nip,draftVersion:'1'})
+   return Response.json({company,sourceRef:'test-mgbi-basic',version:'snapshot-1',sourcePolicyRef:'test-source-policy',retrievedAt:new Date().toISOString(),validUntil:new Date(Date.now()+60000).toISOString()})
+  }
+  assert.equal(await workspaceVerify(request),true)
+  return Response.json({status:'READY',userId:uid,organisationId:wrongScope?randomUUID():oid,applicationId:'spendguru',expiresAt:new Date(Date.now()+5000).toISOString()})
+ }})
+ const request=new Request(sourceOrigin+'/v1/account/organisation-onboarding/company',{method:'POST',headers:{authorization:'Bearer synthetic-original-bearer',cookie:'must-not-forward=1'}})
+ const input={nip:company.nip,draftVersion:'1',context:{operation:'organisation.company.lookup',mode:'BOOTSTRAP',organisationId:null,actorKind:'HUMAN',actorId:uid}}
+ assert.equal((await connections.companySource.acquire(request,input)).company.nip,company.nip)
+ await connections.companySource.acquire(request,input);assert.equal(intents[0],intents[1])
+ assert.deepEqual(await connections.workspaceAccess.resolve(request,{userId:uid,organisationId:oid,applicationId:'spendguru'}),{status:'READY'})
+ wrongScope=true;await assert.rejects(connections.workspaceAccess.resolve(request,{userId:uid,organisationId:oid,applicationId:'spendguru'}))
+ const before=calls;fail=true;await assert.rejects(connections.companySource.acquire(request,input));assert.equal(calls,before+1)
+ await assert.rejects(connections.companySource.acquire(request,{...input,context:{...input.context,organisationId:oid}}));assert.equal(calls,before+1)
 })

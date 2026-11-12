@@ -1,3 +1,5 @@
+import {createPeerOperationSigner,type PeerOperationConfiguration} from '@profitia/platform-contracts/peer-operation'
+import {createHmac} from 'node:crypto'
 import {createHash,randomUUID} from 'node:crypto'
 import type {AccessQuery,AccessStoreBinding} from '@profitia/platform-contracts/access-store'
 import type {OperationContext} from '@profitia/platform-contracts/operation-context'
@@ -18,7 +20,7 @@ type ProviderUser={id:string;primaryEmailAddressId:string;emailAddresses:readonl
 type RegistrySnapshot=StoredCompanyRecord&{sourcePolicyRef:string;retrievedAt:string;validUntil:string}
 export interface OrganisationCompanySource{
  ready():Promise<void>
- acquire(request:Request,input:Readonly<{nip:string;context:Readonly<OperationContext>}>):Promise<RegistrySnapshot|Readonly<{status:'NOT_FOUND'|'UNSUPPORTED_COMPANY'|'UNAVAILABLE'}>>
+ acquire(request:Request,input:Readonly<{nip:string;draftVersion:string;context:Readonly<OperationContext>}>):Promise<RegistrySnapshot|Readonly<{status:'NOT_FOUND'|'UNSUPPORTED_COMPANY'|'UNAVAILABLE'}>>
 }
 export interface OrganisationWorkspaceAccess{
  ready():Promise<void>
@@ -134,7 +136,7 @@ export function createOrganisationStore(options:{
    const current=stored((await one(unit.query,'SELECT profitia_profile.organisation_lifecycle_company($1,$2::uuid) AS company',[nip,unit.context.decisionId])).company,nip)
    let selected=current
    if(!selected){
-    const acquired=await options.companySource.acquire(request,{nip,context:unit.context})
+    const acquired=await options.companySource.acquire(request,{nip,draftVersion,context:unit.context})
     if('status'in acquired)return acquired
     const company=normalizeCompanyRecord(acquired.company,nip)
     await commit(unit,'company_store',{...acquired,company})
@@ -189,4 +191,91 @@ export function createOrganisationStore(options:{
   })),
  }
  return Object.freeze(surface)
+}
+
+
+/** Fixed native peers reuse the accepted server-caller signature. A receiver
+ * must still verify the original bearer, current private context and its own
+ * Source/Package authority. No URL, identity or entitlement comes from a form. */
+export function createOrganisationServiceConnections(options:{
+ registryPeer:PeerOperationConfiguration;workspacePeer:PeerOperationConfiguration
+ sourcePolicyRef:string;intentKey:Uint8Array;transport?:typeof fetch;now?:()=>number
+}):Readonly<{companySource:OrganisationCompanySource;workspaceAccess:OrganisationWorkspaceAccess}>{
+ const registry=structuredClone(options.registryPeer),workspace=structuredClone(options.workspacePeer)
+ const sourcePath='/api/organisation-onboarding/company',accessPath='/v1/organisation-access'
+ const signRegistry=createPeerOperationSigner(registry),signWorkspace=createPeerOperationSigner(workspace),transport=options.transport??fetch,now=options.now??Date.now
+ if(registry.sourceOrigin!==workspace.sourceOrigin||registry.callerApplicationId!==workspace.callerApplicationId
+  ||registry.routes.length!==1||registry.routes[0]?.method!=='POST'||registry.routes[0]?.path!==sourcePath||registry.routes[0]?.requireIdempotencyKey!==true
+  ||registry.routes[0]?.maximumRequestBytes!==1024||workspace.routes.length!==1||workspace.routes[0]?.method!=='GET'||workspace.routes[0]?.path!==accessPath
+  ||workspace.routes[0]?.maximumRequestBytes!==0||workspace.routes[0]?.requireIdempotencyKey!==false
+  ||typeof options.sourcePolicyRef!=='string'||!/^[-A-Za-z0-9._:]{1,256}$/.test(options.sourcePolicyRef)
+  ||!(options.intentKey instanceof Uint8Array)||options.intentKey.byteLength!==32)throw Error('ORGANISATION_CONNECTIONS_CONFIGURATION_REQUIRED')
+ const intentKey=Buffer.from(options.intentKey)
+ async function bounded(response:Response):Promise<any>{
+  if(!response.ok){await response.body?.cancel();throw Error('ORGANISATION_PEER_UNAVAILABLE')}
+  const reader=response.body?.getReader();if(!reader)throw Error('ORGANISATION_PEER_UNAVAILABLE')
+  let total=0;const chunks:Uint8Array[]=[]
+  try{for(;;){const item=await reader.read();if(item.done)break;total+=item.value.byteLength;if(total>8192){await reader.cancel();throw Error('ORGANISATION_PEER_UNAVAILABLE')}chunks.push(item.value)}}
+  finally{reader.releaseLock()}
+  return JSON.parse(Buffer.concat(chunks).toString('utf8'))
+ }
+ async function send(request:Request,peer:PeerOperationConfiguration,sign:ReturnType<typeof createPeerOperationSigner>,path:string,body?:unknown,idempotency?:string){
+  const authorization=request.headers.get('authorization')
+  if(!/^Bearer [\x21-\x7e]{1,16384}$/.test(authorization??''))throw Error('VERIFIED_BEARER_REQUIRED')
+  const outgoing=await sign(new Request(peer.targetOrigin+path,{method:body===undefined?'GET':'POST',
+   headers:{authorization:authorization!,...(body===undefined?{}:{'content-type':'application/json'}),...(idempotency?{'idempotency-key':idempotency}:{})},
+   credentials:'omit',cache:'no-store',redirect:'error',signal:AbortSignal.any([request.signal,AbortSignal.timeout(10000)]),...(body===undefined?{}:{body:JSON.stringify(body)})}))
+  return bounded(await transport(outgoing))
+ }
+ async function ready(peer:PeerOperationConfiguration,path:string){
+  const response=await transport(peer.targetOrigin+path,{method:'GET',credentials:'omit',cache:'no-store',redirect:'error',signal:AbortSignal.timeout(4000)})
+  const value=await bounded(response);if(value?.ready!==true)throw Error('ORGANISATION_PEER_NOT_READY')
+ }
+ return Object.freeze({
+  companySource:Object.freeze({ready:()=>ready(registry,'/api/organisation-onboarding/ready'),async acquire(request:Request,{nip,draftVersion,context}:Parameters<OrganisationCompanySource['acquire']>[1]){
+   if(context.operation!=='organisation.company.lookup'||context.mode!=='BOOTSTRAP'||context.organisationId!==null||context.actorKind!=='HUMAN')throw Error('BOOTSTRAP_SOURCE_CONTEXT_REQUIRED')
+   const intent=createHmac('sha256',intentKey).update(JSON.stringify(['organisation-company-v1',context.actorId,nip,draftVersion])).digest('hex')
+   const value=await send(request,registry,signRegistry,sourcePath,{nip,draftVersion},intent)
+   if(value&&Object.keys(value).join(',')==='status'&&['NOT_FOUND','UNSUPPORTED_COMPANY','UNAVAILABLE'].includes(value.status))return value
+   if(!value||Object.keys(value).sort().join(',')!=='company,retrievedAt,sourcePolicyRef,sourceRef,validUntil,version'
+    ||value.sourcePolicyRef!==options.sourcePolicyRef||typeof value.sourceRef!=='string'||typeof value.version!=='string'
+    ||!Number.isFinite(Date.parse(value.retrievedAt))||Date.parse(value.retrievedAt)>now()+2000
+    ||!Number.isFinite(Date.parse(value.validUntil))||Date.parse(value.validUntil)<=now()||Date.parse(value.validUntil)-Date.parse(value.retrievedAt)>7*24*60*60*1000)throw Error('GOVERNED_COMPANY_SNAPSHOT_REQUIRED')
+   return {...value,company:normalizeCompanyRecord(value.company,nip)} as RegistrySnapshot
+  }}),
+  workspaceAccess:Object.freeze({ready:()=>ready(workspace,'/v1/organisation-access/ready'),async resolve(request:Request,input:Parameters<OrganisationWorkspaceAccess['resolve']>[1]){
+   const value=await send(request,workspace,signWorkspace,accessPath)
+   if(!value||Object.keys(value).sort().join(',')!=='applicationId,expiresAt,organisationId,status,userId'
+    ||value.userId!==input.userId||value.organisationId!==input.organisationId||value.applicationId!==input.applicationId
+    ||!['READY','PENDING_PACKAGE','UNAVAILABLE'].includes(value.status)||!Number.isFinite(Date.parse(value.expiresAt))
+    ||Date.parse(value.expiresAt)<=now()||Date.parse(value.expiresAt)>now()+30000)throw Error('CURRENT_PACKAGE_SCOPE_REQUIRED')
+   return {status:value.status} as {status:'READY'|'PENDING_PACKAGE'|'UNAVAILABLE'}
+  }})
+ })
+}
+
+
+/** Deployment opt-in only. Schema installation and peer enrolment are explicit
+ * release operations; malformed or partially configured enablement fails shut. */
+export function readOrganisationConnectionsConfiguration(env:Readonly<Record<string,string|undefined>>,configuration:RuntimeConfiguration){
+ if(env.IDENTITY_ORGANISATION_BOOTSTRAP_ENABLED!=='true')return null
+ const raw=JSON.parse(env.IDENTITY_ORGANISATION_CONNECTIONS??'null')
+ const keys=['schemaVersion','lifecycleSchemaDigest','workspaceTargetId','workspaceRouteKey','registryOrigin','registryApplicationId','registryKeyId','registryPolicyRef','limitsOrigin','limitsKeyId']
+ if(!raw||Object.getPrototypeOf(raw)!==Object.prototype||Object.keys(raw).sort().join(',')!==keys.sort().join(',')
+  ||raw.schemaVersion!=='1.0.0'||raw.lifecycleSchemaDigest!==organisationLifecycleSchemaDigest()
+  ||typeof raw.workspaceTargetId!=='string'||typeof raw.workspaceRouteKey!=='string'
+  ||!configuration.targets[raw.workspaceTargetId]?.routes[raw.workspaceRouteKey]
+  ||raw.registryApplicationId!=='srm-onboarding-development'||raw.limitsOrigin!=='https://limits-development.onrender.com'
+  ||!/^https:\/\/[a-z0-9.-]+$/.test(raw.registryOrigin??'')||raw.registryOrigin===configuration.origin
+  ||raw.registryOrigin===raw.limitsOrigin||typeof raw.registryPolicyRef!=='string'||!/^[-A-Za-z0-9._:]{1,256}$/.test(raw.registryPolicyRef)
+  ||!/^[-a-z0-9]{2,64}$/.test(raw.registryKeyId??'')||!/^[-a-z0-9]{2,64}$/.test(raw.limitsKeyId??'')
+  ||!/^[a-f0-9]{64}$/.test(env.IDENTITY_ORGANISATION_REGISTRY_PEER_KEY??'')
+  ||!/^[a-f0-9]{64}$/.test(env.IDENTITY_ORGANISATION_LIMITS_PEER_KEY??''))throw Error('ORGANISATION_CONNECTIONS_CONFIGURATION_REQUIRED')
+ const peer=(receiverApplicationId:string,targetOrigin:string,keyId:string,key:string,method:'GET'|'POST',path:string,maximumRequestBytes:number,requireIdempotencyKey:boolean):PeerOperationConfiguration=>({
+  environment:'development',callerApplicationId:configuration.applicationId,receiverApplicationId,sourceOrigin:configuration.origin,targetOrigin,keyId,key:Buffer.from(key,'hex'),
+  routes:[{method,path,maximumRequestBytes,requireIdempotencyKey}],internalOrigins:[]})
+ return Object.freeze({lifecycleSchemaDigest:raw.lifecycleSchemaDigest as string,workspaceTargetId:raw.workspaceTargetId as string,workspaceRouteKey:raw.workspaceRouteKey as string,
+  sourcePolicyRef:raw.registryPolicyRef as string,
+  registryPeer:peer(raw.registryApplicationId,raw.registryOrigin,raw.registryKeyId,env.IDENTITY_ORGANISATION_REGISTRY_PEER_KEY!,'POST','/api/organisation-onboarding/company',1024,true),
+  workspacePeer:peer('package-limits-development',raw.limitsOrigin,raw.limitsKeyId,env.IDENTITY_ORGANISATION_LIMITS_PEER_KEY!,'GET','/v1/organisation-access',0,false)})
 }

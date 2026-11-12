@@ -1,7 +1,8 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
-import {randomUUID} from 'node:crypto'
+import {randomUUID,randomBytes} from 'node:crypto'
+import {createPeerOperationSigner,createPeerOperationVerifier} from '../src/peer-operation.mjs'
 import {postgresFixture,clerkFixture} from './fixtures/identity-profile-postgres.mjs'
 import {createIdentityProvisioner} from '../src/identity-provisioning.mjs'
 import {createOrganisationLifecycleBackend,organisationLifecycleSchemaDigest} from '../src/organisation-lifecycle.mjs'
@@ -34,6 +35,32 @@ test('real PostgreSQL lifecycle requires installed policy, actual Root intent an
   });assert.equal(available,true)
  }
  for(const sql of ['SELECT * FROM profitia_profile.organisation_profiles','SELECT * FROM profitia_profile.organisation_invitations',"SELECT profitia_profile.organisation_lifecycle_context(1,'forged')","SELECT profitia_profile.organisation_lifecycle_slug('test-company',gen_random_uuid())"])await assert.rejects(db.pool.query(sql))
+ // A receiver may enrol a smaller explicit purpose; it cannot inherit the other lifecycle operations.
+ const narrow=createOrganisationLifecycleBackend({...options,application:{...options.application,profileId:'SPENDGURU_SAAS',organisationId:null,features:['organisation_admin'],operations:['organisation.onboarding.read']}})
+ await db.admin.query('UPDATE profitia_profile.organisation_lifecycle_policies SET operations=$1::jsonb',[JSON.stringify(['organisation.onboarding.read'])])
+ await narrow.ready();await assert.rejects(backend.ready())
+ assert.equal((await narrow.execute(actor.request('GET'),'organisation.onboarding.read',{},async({profile})=>({userId:profile.userId}))).userId,value.userId)
+ let extra=false
+ await assert.rejects(narrow.execute(actor.request('POST'),'organisation.slug.check',{slug:'unused-purpose'},async()=>{extra=true}),e=>e.reasonCode==='PERMISSION_DENIED');assert.equal(extra,false)
+ // Reuse the existing signed peer only for official identity input; Root still receives the real target Request.
+ const peer={environment:'development',callerApplicationId:'identity-runtime-development',receiverApplicationId:options.application.appId,
+  sourceOrigin:'https://identity.example.test',targetOrigin:'https://registry.example.test',keyId:'registration-peer-v1',key:randomBytes(32),
+  routes:[{method:'GET',path:'/v1/organisation-access',maximumRequestBytes:0,requireIdempotencyKey:false}],internalOrigins:[]}
+ if(peer.receiverApplicationId===peer.callerApplicationId)peer.callerApplicationId='registration-client'
+ actor.origin=peer.sourceOrigin
+ const peerBackend=createOrganisationLifecycleBackend({...options,identityApplication:{...options.identityApplication,authorizedParties:[peer.sourceOrigin]},
+  application:{...options.application,profileId:'SPENDGURU_SAAS',organisationId:null,features:['organisation_admin'],operations:['organisation.onboarding.read']}})
+ const incoming=new Request(peer.targetOrigin+'/v1/organisation-access',{headers:{authorization:'Bearer synthetic-peer-bearer'}})
+ let peerEffect=false
+ await assert.rejects(peerBackend.execute(incoming,'organisation.onboarding.read',{},async()=>{peerEffect=true}));assert.equal(peerEffect,false)
+ const signed=await createPeerOperationSigner(peer)(incoming);assert.equal(await createPeerOperationVerifier(peer)(signed),true)
+ assert.equal((await peerBackend.execute(signed,'organisation.onboarding.read',{},async({profile})=>({userId:profile.userId}))).userId,value.userId)
+ const copied=new Request(signed);await assert.rejects(peerBackend.execute(copied,'organisation.onboarding.read',{},async()=>{peerEffect=true}));assert.equal(peerEffect,false)
+ actor.origin='http://localhost:3600'
+ for(const operations of [[],['organisation.onboarding.read','organisation.onboarding.read'],['organisation.create']]){
+  await db.admin.query('UPDATE profitia_profile.organisation_lifecycle_policies SET operations=$1::jsonb',[JSON.stringify(operations)])
+  await assert.rejects(narrow.ready())
+ }
  await db.admin.query('UPDATE profitia_profile.organisation_lifecycle_policies SET enabled=false')
  await assert.rejects(backend.execute(actor.request('GET'),'organisation.onboarding.read',{},async()=>{effectCalls++;return {}}));assert.equal(effectCalls,1)
 })

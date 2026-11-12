@@ -1,6 +1,7 @@
 import {createHash,createHmac,createCipheriv,createDecipheriv,randomBytes,randomUUID} from 'node:crypto'
 import {readFileSync} from 'node:fs'
 import {createAccessStore} from './access-store.mjs'
+import {peerOperationIdentityRequest} from './peer-operation.mjs'
 import {createClerkIdentityAuthenticator} from './identity-provider.mjs'
 import {createProfileSql,ProfileConflict} from './identity-profile-sql.mjs'
 import {createOperationExecutor,OPERATION_CONTRACT,ORGANISATION_LIFECYCLE_OPERATIONS,OperationDenied,operationPayloadDigest} from './operation-context.mjs'
@@ -86,7 +87,8 @@ export function createOrganisationLifecycleBackend(options){
  const binding=structuredClone(options.binding),application=structuredClone(options.application),identityApplication=structuredClone(options.identityApplication)
  if(binding.service!==undefined||application?.environment!=='development'||application.profileId!=='SPENDGURU_SAAS'
   ||application.organisationId!==null||application.features?.join(',')!=='organisation_admin'
-  ||application.operations?.length!==ORGANISATION_LIFECYCLE_OPERATIONS.length||application.operations.some(op=>!ORGANISATION_LIFECYCLE_OPERATIONS.includes(op))
+  ||!Array.isArray(application.operations)||application.operations.length<1||application.operations.length>ORGANISATION_LIFECYCLE_OPERATIONS.length
+  ||new Set(application.operations).size!==application.operations.length||application.operations.some(op=>!ORGANISATION_LIFECYCLE_OPERATIONS.includes(op))
   ||identityApplication?.appId!==application.appId||identityApplication?.issuer!==application.identityIssuer
   ||identityApplication?.environment!==application.environment||identityApplication?.bearerPeerReads?.length
   ||typeof independentQuery!=='function'||typeof transact!=='function')throw TypeError('Same-receiver isolated organisation lifecycle required')
@@ -95,11 +97,12 @@ export function createOrganisationLifecycleBackend(options){
   await sql.descriptor(query)
   const {descriptor:d}=await sql.queryOne(query,'SELECT profitia_profile.organisation_lifecycle_descriptor() AS descriptor')
   if(d?.schemaDigest!==digest||!uuid.test(d?.policyId??'')||!/^[1-9][0-9]*$/.test(d?.policyVersion??'')
-   ||!Array.isArray(d.operations)||ORGANISATION_LIFECYCLE_OPERATIONS.some(op=>!d.operations.includes(op)))unavailable()
+   ||!Array.isArray(d.operations)||application.operations.some(op=>!d.operations.includes(op)))unavailable()
   return d
  }
  return Object.freeze({contract:ORGANISATION_LIFECYCLE_CONTRACT,ready:()=>descriptor(independentQuery),
   async execute(httpRequest,operation,input,effect){
+   if(!application.operations.includes(operation))throw new OperationDenied('PERMISSION_DENIED')
    const normalized=normalizeOrganisationLifecycleInput(operation,input)
    const expectedMethod=['organisation.onboarding.read','organisation.activation.read'].includes(operation)?'GET':'POST'
    if(!(httpRequest instanceof Request)||httpRequest.method!==expectedMethod||typeof effect!=='function')throw TypeError('Native current-account receiver required')
@@ -112,7 +115,7 @@ export function createOrganisationLifecycleBackend(options){
    const resourceId='current-'+operation.replaceAll('.','-'),requests=new WeakMap()
    let externalActor
    const executor=createOperationExecutor({application,organisationLifecycleSchemaDigest:digest,now,
-    authenticate:async request=>{externalActor=await authenticate(request);return externalActor},
+    authenticate:async request=>{externalActor=await authenticate(peerOperationIdentityRequest(request)??request);return externalActor},
     recordAudit:event=>store.appendAudit(independentQuery,event),
     withTransaction:async({actor,request},run)=>{
      let result,entered=false,finished=false,closed=false
@@ -150,7 +153,7 @@ export function createOrganisationLifecycleBackend(options){
        try{
         result=await run({state,transaction:session.transaction,transactionalEffects:true,outputBoundaryVersion:'organisation-lifecycle-v1',projectOutput:value=>value,
          recordOutcome:async event=>{
-          const current=await recheck(httpRequest);if(!current||current.userId!==actor.userId||current.proofRef!==actor.proofRef)throw new OperationDenied('ACCESS_BASIS_INVALID')
+          const current=await recheck(peerOperationIdentityRequest(httpRequest)??httpRequest);if(!current||current.userId!==actor.userId||current.proofRef!==actor.proofRef)throw new OperationDenied('ACCESS_BASIS_INVALID')
           await descriptor(query);await store.appendAudit(query,event,lease)
          }})
         await store.verifyScope(query,lease);finished=true;return result
@@ -165,7 +168,7 @@ export function createOrganisationLifecycleBackend(options){
    // context transaction first, then require exact equality under the real lease.
    let target=null
    if(!account.has(operation)&&!bootstrap.has(operation)){
-    const actor=await authenticate(httpRequest);if(!actor?.userId)throw new OperationDenied('UNVERIFIED_IDENTITY')
+    const actor=await authenticate(peerOperationIdentityRequest(httpRequest)??httpRequest);if(!actor?.userId)throw new OperationDenied('UNVERIFIED_IDENTITY')
     target=await transact(async({query})=>{
      const observed=await store.resolveBinding(query,identityKey),lease=await store.lockAccess(query,{actor,identityBinding:observed,organisationId:null})
      const proof=await sql.attest(query,{operation:'organisation.lifecycle.context',principal:actor.userId,expiresAt:Math.min(Date.parse(actor.expiresAt),Date.parse(lease.expiresAt))})

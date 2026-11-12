@@ -40,7 +40,7 @@ export function createOrganisationInvitationDelivery(options:{
  const settle=(claim:Claim,status:string,providerId:string|null=null)=>one(options.query,
   'SELECT profitia_profile.organisation_lifecycle_delivery_settle($1::uuid,$2::uuid,$3,$4,$5) AS settled',[claim.invitationId,claim.leaseId,claim.nonce,status,providerId])
  const processOne=async()=>{
-  let claim:Claim|null=null,started=false
+  let claim:Claim|null=null,started=false,corruptPayload=false
   try{
    await ready()
    claim=(await one(options.query,'SELECT profitia_profile.organisation_lifecycle_delivery_claim($1::uuid,$2) AS claim',[randomUUID(),randomBytes(32).toString('hex')])).claim as Claim|null
@@ -51,11 +51,13 @@ export function createOrganisationInvitationDelivery(options:{
     ||!/^[a-f0-9]{64}$/.test(c.recipientKey??'')||!/^[a-f0-9]{64}$/.test(c.tokenHash??''))throw Error('ORGANISATION_DELIVERY_UNAVAILABLE')
    if(stopped){await settle(c,'RELEASE');return}
    if(Date.parse(c.expiresAt)<=now()){await settle(c,'CANCELLED');return}
+   corruptPayload=true
    const payload=openOrganisationInvitation(c.encryptedPayload,{key,keyId:options.keyId,invitationId:c.invitationId}) as Payload
    if(!payload||Object.keys(payload).sort().join(',')!=='email,inviterUserId,recipient'||payload.inviterUserId!==c.inviterUserId
     ||organisationEmailKey(payload.recipient,proofKey)!==c.recipientKey
     ||!organisationInvitationProofMatches(payload.email?.token,c.tokenHash)
     ||Date.parse(payload.email.createdAt)!==Date.parse(c.createdAt)||Date.parse(payload.email.expiresAt)!==Date.parse(c.expiresAt))throw Error('ORGANISATION_DELIVERY_UNAVAILABLE')
+   corruptPayload=false
    // Fresh provider account observation; no invented HUMAN/session is issued.
    const user=await options.client.users.getUser(c.identity.subject)
    const observation=await createClerkAccountStatusReader({client:{users:{getUser:async()=>user}},environment:'development',issuer:options.issuer,now})(c.identity)
@@ -80,7 +82,7 @@ export function createOrganisationInvitationDelivery(options:{
    await settle(c,result.status==='accepted'?'ACCEPTED':result.status==='rejected'?'REJECTED':'UNKNOWN',result.status==='accepted'?result.providerId:null)
    if(result.status==='unknown')options.diagnostic?.('organisation-mail-unknown')
   }catch{
-   if(claim)try{await settle(claim,started?'UNKNOWN':'RELEASE')}catch{/* expired SENDING becomes UNKNOWN under durable reconciliation */}
+   if(claim)try{await settle(claim,started?'UNKNOWN':corruptPayload?'CANCELLED':'RELEASE')}catch{/* expired SENDING becomes UNKNOWN under durable reconciliation */}
    options.diagnostic?.('organisation-mail-unavailable')
   }
  }

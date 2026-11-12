@@ -68,8 +68,9 @@ BEGIN
  IF NOT FOUND OR d->>'environment'<>'development' OR d->>'fixedOrganisationId' IS NOT NULL
  THEN RAISE EXCEPTION 'Lifecycle policy unavailable' USING ERRCODE='PT403';END IF;
  SELECT schema_digest INTO dg FROM profitia_profile.organisation_lifecycle_installation WHERE singleton AND schema_version='1.0.0';
- IF dg IS NULL OR jsonb_array_length(p.operations)<>7
-  OR NOT(p.operations @> '["organisation.onboarding.read","organisation.company.lookup","organisation.slug.check","organisation.procurement.write","organisation.invitation.create","organisation.invitation.accept","organisation.activation.read"]'::jsonb)
+ IF dg IS NULL OR jsonb_array_length(p.operations) NOT BETWEEN 1 AND 7
+  OR NOT(p.operations <@ '["organisation.onboarding.read","organisation.company.lookup","organisation.slug.check","organisation.procurement.write","organisation.invitation.create","organisation.invitation.accept","organisation.activation.read"]'::jsonb)
+  OR jsonb_array_length(p.operations)<>(SELECT count(DISTINCT v) FROM jsonb_array_elements(p.operations) AS a(v))
  THEN RAISE EXCEPTION 'Lifecycle installation unavailable' USING ERRCODE='PT403';END IF;
  FOR e IN SELECT value FROM jsonb_array_elements(p.member_permissions) LOOP
   IF jsonb_typeof(e)<>'object' OR(SELECT count(*) FROM jsonb_object_keys(e))<>2
