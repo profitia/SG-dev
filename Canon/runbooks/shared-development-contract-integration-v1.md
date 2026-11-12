@@ -887,3 +887,12 @@ candidate-source coverage. This makes20 consumer source paths; all12 historical
 SG2 receipts remain immutable. Ordinary UI/test adoption remains a separate SG2
 PR after the corrected producer is accepted. No runtime, contract, SQL, grant,
 provider, retention, deployment or notification decision is made by this policy.
+
+The Oil renderer successor now preserves the accepted PR1043 Calendar consumer
+and both of its existing aggregate/week tests byte-for-byte. Its exact record
+`6afdd65e66d8a7d8ceb4ab68601ba6d1c1bfac43bbac879d01bb61c9962e7ad6`
+binds only the unchanged approved renderer, its PostgreSQL regression and the
+ECR-week verifier. Controller tests retain the original renderer tampering,
+history and widened-scope negatives. The verifier authenticates every added
+byte before exposing its additive coverage bindings; no original receipt is
+rewritten. This routine contraction stays inside the owner's approved paths.
