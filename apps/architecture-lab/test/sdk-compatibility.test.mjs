@@ -1,4 +1,5 @@
-import {recurringSourceFilesystem} from '../private-recurring-source.mjs'
+import {recurringSourcePredecessor} from '../private-recurring-source.mjs'
+import {acceptedSdkSource,sdkContinuationPredecessor} from '../../../packages/platform-contracts/test/organisation-sdk-compatibility.mjs'
 import {calendarStoragePredecessor} from '../ecr-stage03-sdk-compatibility.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
@@ -11,8 +12,11 @@ const root=new URL('../../../',import.meta.url)
 const receipt=JSON.parse(fs.readFileSync(new URL('../sdk-1.33-compatibility.json',import.meta.url)))
 const next=JSON.parse(fs.readFileSync(new URL('../sdk-1.34-compatibility.json',import.meta.url)))
 const hash=bytes=>createHash('sha256').update(bytes).digest('hex')
-const readSource=file=>fs.readFileSync(new URL(file,root))
-const recurring=recurringSourceFilesystem(root)
+const physicalSource=file=>fs.readFileSync(new URL(file,root))
+const historicalSource=(sha,p)=>execFileSync('git',['show',sha+':'+p],{cwd:root})
+const bootstrapSource=sdkContinuationPredecessor(JSON.parse(physicalSource('apps/sg-runtime/operation-integration.json')),physicalSource,historicalSource)
+const readSource=bootstrapSource?.previousBytes??physicalSource
+const recurring=recurringSourcePredecessor(readSource,historicalSource)??{manifest:null,previousBytes:readSource}
 
 test('assistant optional source closes the real SDK dependency graph and retains the immutable predecessor',async()=>{
  const historical=(sha,p)=>execFileSync('git',['show',sha+':'+p],{cwd:root})
@@ -22,7 +26,7 @@ test('assistant optional source closes the real SDK dependency graph and retains
  const remaining=new Set(Object.keys(a.sdkDigests))
  for(const name of fs.readdirSync(new URL('packages/platform-contracts/src/',root)).filter(n=>n.endsWith('.mjs'))){
   const sdk=await import(new URL('packages/platform-contracts/src/'+name,root))
-  for(const key of remaining)if(typeof sdk[key]==='function'){assert.equal(await sdk[key](),recurring.manifest?.sdkDigests[key]??JSON.parse(readSource('apps/sg-runtime/operation-integration.json')).oilAutonomousReportCompatibility?.sdkDigests[key]??a.sdkDigests[key],key);remaining.delete(key)}
+  for(const key of remaining)if(typeof sdk[key]==='function'){assert.equal(await sdk[key](),acceptedSdkSource().sdkDigests[key]??a.sdkDigests[key],key);remaining.delete(key)}
  }
  assert.equal(remaining.size,0)
  for(const target of ['packages/platform-contracts/src/assistant-usage.mjs','packages/platform-contracts/src/operation-context.mjs','packages/platform-contracts/package.json','apps/architecture-lab/assistant-m1-sdk-compatibility.json'])assert.throws(()=>assistantSdkPredecessor(p=>p===target?Buffer.concat([readSource(p),Buffer.from('UNREVIEWED')]):readSource(p),historical),target)
