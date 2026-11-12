@@ -1,4 +1,3 @@
-import {conversationThemeClientScript} from './account-visuals.js'
 /** Scripted presentation over the official Clerk resource; no local authentication authority. */
 export function createClerkConversation(sdk: any, registration: boolean, invitationTicket: string | null = null, backend: {start(draft: any): Promise<any>; verify(code:string):Promise<any>} | null = null) {
   // Opaque provider proof, never interpreted locally or written into chat state.
@@ -100,7 +99,7 @@ export function bindConversationCodeInput(input: any, currentStep: () => string,
 }
 
 /** All dynamic chat content uses textContent. Passwords and codes never become transcript data. */
-export const conversationClientScript = conversationThemeClientScript + '\n' + String.raw`
+export const conversationClientScript = String.raw`
 window.startSpendGuruConversation = function(cfg, nativeChallenge) {
   const root = document.getElementById('chat-interface');
   if (!root) { nativeChallenge(); return; }

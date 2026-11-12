@@ -1,3 +1,4 @@
+import {conversationThemeClientScript} from './account-visuals.js'
 import type { OrganisationHttpSurface } from './organisation-http.js'
 import type { OrganisationDraftSurface } from './organisation-draft.js'
 import type { RegistrationSurface } from './registration.js'
@@ -105,8 +106,8 @@ export function createHttpHandler(boundary: SessionBoundary | null, account: Acc
         checkRequest(request, boundary.configuration, true)
         return json(200, await avatar.update(request, await body(request)))
       }
-      if (url.pathname === '/v1/account' || url.pathname === '/account-client' || url.pathname.startsWith('/account/')) {
-        if (url.hash || url.pathname === '/v1/account' && url.search) return json(404, { error: 'NOT_FOUND' })
+      if (url.pathname === '/v1/account' || url.pathname === '/account-client' || url.pathname === '/account-theme' || url.pathname.startsWith('/account/')) {
+        if (url.hash || ['/v1/account','/account-theme'].includes(url.pathname) && url.search) return json(404, { error: 'NOT_FOUND' })
         if (!boundary || !account) return json(503, { error: 'IDENTITY_UNAVAILABLE' })
         if (url.pathname !== '/v1/account') {
           if (request.method !== 'GET') return json(405, { error: 'METHOD_NOT_ALLOWED' })
@@ -114,8 +115,8 @@ export function createHttpHandler(boundary: SessionBoundary | null, account: Acc
           // handshake query stays in the browser, never an identity/return input.
           if (url.origin !== boundary.configuration.origin || url.username || url.password || url.search.length > 8192) return json(403, { error: 'REQUEST_ORIGIN_REJECTED' })
           const page = /^\/account\/([a-z0-9-]+)\/([a-z0-9-]+)\/(registration|login|recovery)$/.exec(url.pathname)
-          if (url.pathname !== '/account-client' && !page) return json(404, { error: 'NOT_FOUND' })
-          return new Response(page ? accountPage(boundary.configuration, page[1]!, page[2]!, page[3]!, registration !== null, Boolean(organisationDraft && organisation?.conversation)) : accountBrowserScript,
+          if (!['/account-client','/account-theme'].includes(url.pathname) && !page) return json(404, { error: 'NOT_FOUND' })
+          return new Response(page ? accountPage(boundary.configuration, page[1]!, page[2]!, page[3]!, registration !== null, Boolean(organisationDraft && organisation?.conversation)) : url.pathname === '/account-theme' ? conversationThemeClientScript : accountBrowserScript,
             { headers: { ...headers, 'content-type': page ? 'text/html; charset=utf-8' : 'text/javascript; charset=utf-8',
               'content-security-policy': "frame-ancestors 'none'; base-uri 'none'", 'x-frame-options': 'DENY' } })
         }
