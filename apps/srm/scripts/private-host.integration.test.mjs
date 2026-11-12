@@ -1,4 +1,8 @@
-import {recurringSourceFilesystem} from '../../architecture-lab/private-recurring-source.mjs'
+import {recurringSourcePredecessor} from '../../architecture-lab/private-recurring-source.mjs'
+import {acceptedSdkSource,sdkContinuationPredecessor} from '../../../packages/platform-contracts/test/organisation-sdk-compatibility.mjs'
+// Verify the current SDK separately from immutable historical source maps.
+const sdkSourceAcceptance=acceptedSdkSource()
+const sdkCurrentSourceDigests=Object.fromEntries(Object.entries({...sdkSourceAcceptance.sourceDigests,...sdkSourceAcceptance.compatibilityTestSourceDigests}).map(([p,h])=>[p.replace(/^packages\/platform-contracts\//,''),h]))
 import {createPeerOperationSigner} from '@profitia/platform-contracts/peer-operation';
 import {readSrmPeerXRayConfiguration} from '../src/server/peer-xray.ts';
 import assert from 'node:assert/strict'
@@ -33,10 +37,10 @@ import { createSrmPrivateOperationHost } from '../src/server/private-operation-h
 import { recordSupplierInterest } from '../src/server/shared-catalog.ts'
 import { createLookup } from '../src/server/xray-repository.ts'
 import { bindOrganizationTransaction, withOrganization } from '../src/server/db.ts'
-const recurringView=recurringSourceFilesystem(new URL('../../../',import.meta.url)),recurring=recurringView.manifest
-// Preserve the immutable historical record; the independently authenticated
-// transport continuation alone supplies changed current SDK file digests.
-const recurringSdkFiles=Object.fromEntries(Object.entries({...recurring?.sourceDigests,...recurringView.transport?.manifest.sourceDigests}).filter(([p])=>p.startsWith('packages/platform-contracts/')).map(([p,h])=>[p.slice('packages/platform-contracts/'.length),h]))
+const sdkContinuationRoot=new URL('../../../',import.meta.url),sdkContinuationCurrent=p=>fs.readFileSync(new URL(p,sdkContinuationRoot)),sdkContinuationHistory=(sha,p)=>execFileSync('git',['show',sha+':'+p],{cwd:sdkContinuationRoot})
+const organisationSourceView=sdkContinuationPredecessor(JSON.parse(sdkContinuationCurrent('apps/srm/operation-integration.json')),sdkContinuationCurrent,sdkContinuationHistory,{projectKey:'SRM'})
+const recurringView=recurringSourcePredecessor(sdkContinuationCurrent,sdkContinuationHistory),recurring=recurringView?.manifest
+const recurringSdkFiles=Object.fromEntries(Object.entries({...recurring?.sourceDigests,...organisationSourceView?.record.sourceDigests,...organisationSourceView?.record.compatibilityTestSourceDigests,...recurringView?.transport?.manifest.sourceDigests,...organisationSourceView?.currentSourceDigests}).filter(([p])=>p.startsWith('packages/platform-contracts/')).map(([p,h])=>[p.slice('packages/platform-contracts/'.length),h]))
 
 const DATABASE = 'srm_private_host_test', ROLE = 'srm_private_host_runtime'
 const A = '11111111-1111-4111-8111-111111111111', B = '22222222-2222-4222-8222-222222222222'
@@ -55,8 +59,8 @@ function beforePrivateAcquisitionApplicationSource(path){
  return execFileSync('git',['show','8c5e14b0fc4815021231f6752c1073f1c191465b:apps/srm/'+path])
 }
 const sdkReceipt=JSON.parse(fs.readFileSync(new URL('../operation-integration.json',import.meta.url)))
-const currentSdkDigests={...sdkReceipt.appshellXraySourceCompatibility.sdkDigests,...sdkReceipt.settledExternalFailureRecovery?.sdkDigests,...sdkReceipt.sourceLeaseClockRecovery?.sdkDigests,...sdkReceipt.freshPostfetchRecovery?.sdkDigests,...sdkReceipt.sourceHubApiPathCompatibility?.sdkDigests,...sdkReceipt.sourceHubMarketSymbolCompatibility?.sdkDigests,...sdkReceipt.assistantM1SourceCompatibility?.sdkDigests,...sdkReceipt.oilAutonomousReportCompatibility?.sdkDigests,...recurring?.sdkDigests}
-const currentPlatformSourceDigests=manifest=>Object.fromEntries(Object.entries({...manifest.accountRecheckSourceCompatibility.sourceDigests,...manifest.krsNipSourceCompatibility?.sourceDigests,...manifest.unmeteredSourceCompatibility.sourceDigests,...manifest.formReportAdmissionAdoption.sourceDigests,...manifest.requestQuotaSourceCompatibility.sourceDigests,...manifest.nativeSqlRoundtripAdoption.sourceDigests,...manifest.diagnosticTelemetryAdoption.sourceDigests,...manifest.xrayPerformanceRecoveryV2.sourceDigests,...manifest.appshellXraySourceCompatibility.sourceDigests,...manifest.freshPerformanceRecovery.sourceDigests,...manifest.settledExternalFailureRecovery?.sourceDigests,...manifest.sourceLeaseClockRecovery?.sourceDigests,...manifest.freshPostfetchRecovery?.sourceDigests,...manifest.sourceHubApiPathCompatibility?.sourceDigests,...manifest.sourceHubMarketSymbolCompatibility?.sourceDigests,...manifest.assistantM1SourceCompatibility?.sourceDigests,...manifest.oilAutonomousReportCompatibility?.sourceDigests,...manifest.oilAutonomousReportCompatibility?.testSourceDigests,...recurringSdkFiles}).filter(([file])=>file!=='package-lock.json'&&!file.startsWith('test/')))
+const currentSdkDigests={...sdkReceipt.appshellXraySourceCompatibility.sdkDigests,...sdkReceipt.settledExternalFailureRecovery?.sdkDigests,...sdkReceipt.sourceLeaseClockRecovery?.sdkDigests,...sdkReceipt.freshPostfetchRecovery?.sdkDigests,...sdkReceipt.sourceHubApiPathCompatibility?.sdkDigests,...sdkReceipt.sourceHubMarketSymbolCompatibility?.sdkDigests,...sdkReceipt.assistantM1SourceCompatibility?.sdkDigests,...sdkReceipt.oilAutonomousReportCompatibility?.sdkDigests,...acceptedSdkSource().sdkDigests}
+const currentPlatformSourceDigests=manifest=>Object.fromEntries(Object.entries({...manifest.accountRecheckSourceCompatibility.sourceDigests,...manifest.krsNipSourceCompatibility?.sourceDigests,...manifest.unmeteredSourceCompatibility.sourceDigests,...manifest.formReportAdmissionAdoption.sourceDigests,...manifest.requestQuotaSourceCompatibility.sourceDigests,...manifest.nativeSqlRoundtripAdoption.sourceDigests,...manifest.diagnosticTelemetryAdoption.sourceDigests,...manifest.xrayPerformanceRecoveryV2.sourceDigests,...manifest.appshellXraySourceCompatibility.sourceDigests,...manifest.freshPerformanceRecovery.sourceDigests,...manifest.settledExternalFailureRecovery?.sourceDigests,...manifest.sourceLeaseClockRecovery?.sourceDigests,...manifest.freshPostfetchRecovery?.sourceDigests,...manifest.sourceHubApiPathCompatibility?.sourceDigests,...manifest.sourceHubMarketSymbolCompatibility?.sourceDigests,...manifest.assistantM1SourceCompatibility?.sourceDigests,...manifest.oilAutonomousReportCompatibility?.sourceDigests,...manifest.oilAutonomousReportCompatibility?.testSourceDigests}).filter(([file])=>file!=='package-lock.json'&&!file.startsWith('test/')).map(([file,h])=>[file,sdkCurrentSourceDigests[file]??h]))
 
 test('SRM imports the exact optional external control source without adopting a product operation', async () => {
   const sdk=await import('@profitia/platform-contracts/external-call')
@@ -1465,7 +1469,7 @@ test('SRM explicitly receives platform1.21 without implicitly adopting sensitive
  assert.equal(current.taskId,'SRM-E1-PRIVATE-SUPPLIER-CONTRACT-RECEPTION-20261019')
  assert.equal(current.platformVersion,'1.21.0');assert.equal(current.rootImplementation,'1.0.0-candidate.14')
  assert.equal(current.producer.sourceSha,'fe5b31f1390d2a9b12f7d16df7e35249c1a75402');assert.equal(current.producer.initialSourceSha,'48714e896f206b4d5b7693c163c34eba0c895c2a');assert.equal(current.producer.pullRequest,551)
- assert.equal(await sdk.operationSourceDigest(),recurring?.sdkDigests.operationSourceDigest??manifest.oilAutonomousReportCompatibility?.sdkDigests.operationSourceDigest??manifest.assistantM1SourceCompatibility.rootContract.sourceDigest)
+ assert.equal(await sdk.operationSourceDigest(),acceptedSdkSource().sdkDigests.operationSourceDigest??manifest.oilAutonomousReportCompatibility?.sdkDigests.operationSourceDigest??manifest.assistantM1SourceCompatibility.rootContract.sourceDigest)
  assert.equal(Object.keys(current.sourceDigests).length,51)
  assert.equal(manifest.delegatedNativeWorkSourceCompatibility.sourceRecordIsHistorical,true)
  const root=new URL('../',import.meta.resolve('@profitia/platform-contracts/operation-context'))
