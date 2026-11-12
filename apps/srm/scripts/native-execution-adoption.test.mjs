@@ -15,7 +15,7 @@ const organisationSourceView=sdkContinuationPredecessor(JSON.parse(sdkContinuati
 const recurringView=recurringSourcePredecessor(organisationSourceView?.previousBytes??sdkContinuationCurrent,sdkContinuationHistory)??{manifest:null,previousBytes:organisationSourceView?.previousBytes??sdkContinuationCurrent},recurring=recurringView.manifest
 const recurringSdkFiles=Object.fromEntries(Object.entries({...recurring?.sourceDigests,...organisationSourceView?.record.sourceDigests,...organisationSourceView?.record.compatibilityTestSourceDigests}).filter(([p])=>p.startsWith('packages/platform-contracts/')).map(([p,h])=>[p.slice('packages/platform-contracts/'.length),h]))
 
-const actualAppShellSource=file=>recurringView.previousBytes(file)
+const actualAppShellSource=file=>Object.hasOwn(organisationSourceView?.record.consumerSourceDigests.SRM??{},file)?sdkContinuationCurrent(file):recurringView.previousBytes(file)
 const hostReceipt=JSON.parse(actualAppShellSource('apps/sg-runtime/operation-integration.json'))
 const acceptedAppShellSource=hostReceipt.appShellFourCardCascade?assertAppShellFourCardCascade(hostReceipt,actualAppShellSource,(sha,file)=>execFileSync('git',['show',sha+':'+file])).previousBytes:actualAppShellSource
 const receipt=JSON.parse(fs.readFileSync(new URL('../operation-integration.json',import.meta.url))),a=receipt.nativeSqlRoundtripAdoption,current=receipt.xrayPerformanceRecoveryV2??receipt.diagnosticTelemetryAdoption??a
