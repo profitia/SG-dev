@@ -3,11 +3,11 @@
   "taskId": "SG2-PI-RECURRING-E2E-20261111",
   "targetEnvironment": "development",
   "scope": "PROCUREMENT_INSIGHTS_LIBRARY_AND_SOURCE_ACTION_COMPLETION",
-  "baseCandidateSha": "924f803f807f63de2505734b50883c9047e78a70",
+  "baseCandidateSha": "4a15718ecc5b11e6749285fa528e598dda79cfc4",
   "magicPathRevision": "471325033734762496",
   "sourceDigests": {
     "apps/architecture-lab/private-recurring-source.mjs": "20c4fb3c8a6627adbc0af3bfbb7222f7671f78da1b7a3d3d257955e3ff411de7",
-    "apps/architecture-lab/test/market-calendar-source.test.mjs": "16215b8832bb8c82f40854add4c7ddd86de3d4c8cc5cbd6b1b3100ef12e6bed3",
+    "apps/architecture-lab/test/market-calendar-source.test.mjs": "2c68bd444e13b16c171100fc3c2f3a786ed6cad2fc896eff4ad463b4d9feac27",
     "apps/insights-runtime/src/publication-query.mjs": "61a3b2b606af726b835a91e4592ea049bf37efaa596ce08bafae59bb74996243",
     "apps/insights-runtime/src/subscription-api.mjs": "0ded6891898033e4a5657c54bace8c56b11e9911a016c593733cd5320d14e327",
     "apps/insights-runtime/src/subscription-store.mjs": "dd159b75554c429660fc04276993fb19e02e8bc794b4d98e26e1ddfae4693a9b",
@@ -23,7 +23,7 @@
     "apps/sg-runtime/tests/porr-demo-middleware.test.ts": "5c6a2fe0721c51ed95d01df9afb8acb6a6d2885be9e2067e652cc82d1c1351d6",
     "apps/sg-runtime/tests/pci-smart-integrity.test.mjs": "0f8e27f2897dccf0d012f2fa3e136fa1d7f96df52b00a4f1bcffded15a99ea5f",
     "apps/sg-runtime/tests/procurement-insights-completion.test.mjs": "ea0b0cba039ff6555cd94f7ff9c9495a37e71e15603209efa40896a0f2d39429",
-    "apps/sg-runtime/tests/procurement-insights-completion-integrity.mjs": "62e55140182e65219e51c6925c8abd3c2590bc8df677972101f78b426eae4888",
+    "apps/sg-runtime/tests/procurement-insights-completion-integrity.mjs": "8fbceee5bd1de638ca76163c672ec7309d64543bf76d4125348b050fb3db3075",
     "apps/sg-runtime/tests/procurement-insights-shell-integrity.mjs": "007a689567e7eb179eaae1a2e24077dd7335f8b88fc8cf5b523e8dacb82e6e52",
     "apps/sg-runtime/tests/assistant-ecr-week-integrity.test.mjs": "297a0eaa12b5782d124c578d7766c9e6345e9acff65936dc8abd4c4f8bf72b41"
   },
@@ -44,7 +44,8 @@
     "apps/sg-runtime/private-recurring-source-adoption.json": "edf9d51c199251e148b39c92a3084944c1a4b8419be29175c88b6e2583df11f2",
     "apps/srm/private-recurring-source-adoption.json": "88d0252f634eface35b34adf31ac97cbf0d396fcf1fe6da452c74bdc23c7c633",
     "apps/sg-runtime/assistant-ecr-week-integration.json": "31ce8f1d7e5ca1d9c3aedf80f92e23fe0f1a93cb8f5fd5d003eb54a244859dd4",
-    "apps/economic-calendar-runtime/market-calendar-preferences-integration.json": "e3bc27ddf22b9165555c05f938a3c5d8f9f4f09334fcb7c55e760da44e9a59b6"
+    "apps/economic-calendar-runtime/market-calendar-preferences-integration.json": "e3bc27ddf22b9165555c05f938a3c5d8f9f4f09334fcb7c55e760da44e9a59b6",
+    "apps/architecture-lab/market-calendar-test-compatibility.json": "52e859d4a99bc4c8e4d986f38afea2d58e9c1fe1ee1e0eb62cc2672dbdb60078"
   },
   "authorisationChanged": false,
   "schemaChanged": false,
