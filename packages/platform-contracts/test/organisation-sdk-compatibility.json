@@ -183,7 +183,7 @@
     "apps/architecture-lab/test/sdk-compatibility.test.mjs": "66e7706c48f4831ec1b0331629bd46f25e48d15e2599a70d7472fcac1a441078",
     "apps/newsfeed-runtime/test/runtime.test.mjs": "0a1d761d740f11c676f22831adb2f2433df6c78eee8fbfeaa423f4b2b5d23e3a",
     "apps/platform-source-hub/scripts/ci-routing.mjs": "261e289ea36a9cd2ade93240d0859ae7a656454efba209da7bbbd8c6e02215d8",
-    "apps/platform-source-hub/test/ci-routing.test.mjs": "1b810218808797528ce60dff3a79a24c9a546431322f49f5f28c7935dea9d797",
+    "apps/platform-source-hub/test/ci-routing.test.mjs": "e6723fe04c18fea53b1c08b004c56e66303d9311514e6ef294a84b9bfaa4af59",
     "packages/platform-contracts/current-fresh-report/test/current-fresh-report.test.mjs": "8687139600d51ef87b553fd2461aafc5515c225ca7341229b40a03777488d4a7",
     "packages/platform-contracts/readonly-miss-report/test/readonly-miss-report.test.mjs": "edbb99d5ade23ee483587d19352602ec55353932128b523655ddd76b509fe57e",
     "packages/platform-contracts/test/private-operation-host.test.mjs": "604a1459b33a8b45ec76f3af21974459d481bc48197f9894b2d203553f62b287",

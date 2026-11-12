@@ -235,3 +235,9 @@ test('accepted Oil source and record are closed before exposing historical ECR h
  const prior=p=>historical('b80e7577c3fea1e6c555796089d2336997631996',p)
  assert.equal(hash(prior('apps/sg-runtime/market-calendar-integration.json')),'42406b5b07071408d35e39d5b9bb20d18402e52581d3c516bb08fb68b718f119')
 })
+
+test('immutable61 source profile remains verifiable after original recurring routing fixture repair',()=>{
+ const old=p=>historical('845eb9137efa96d377b8498414f0b8b08c0ce4ad',p)
+ assert.equal(hash(old(sourcePath)),'61c57570f25fe90c89a5d2bd0f27f2b228091a6bd239a72a7f1fc87e06ae36ad')
+ for(const projectKey of ['SG2','SRM'])assert(sdkContinuationPredecessor(receipt(projectKey,old),old,historical,{projectKey}))
+})
