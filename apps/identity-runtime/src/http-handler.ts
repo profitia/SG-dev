@@ -65,7 +65,7 @@ export function createHttpHandler(boundary: SessionBoundary | null, account: Acc
       }
       const conversationPath='/v1/account/organisation-onboarding/'
       const conversationRoute=url.pathname.startsWith(conversationPath)?url.pathname.slice(conversationPath.length):''
-      if (['snapshot','company','slug','categories','invitations','activation'].includes(conversationRoute)) {
+      if (['snapshot','company','slug','categories','invitations','activation','access'].includes(conversationRoute)) {
         if (url.search || url.hash) return json(404, { error: 'NOT_FOUND' })
         const read=conversationRoute==='snapshot'||conversationRoute==='activation'
         if (request.method !== (read?'GET':'POST')) return json(405, { error: 'METHOD_NOT_ALLOWED' })
@@ -75,6 +75,7 @@ export function createHttpHandler(boundary: SessionBoundary | null, account: Acc
         if (conversationRoute==='snapshot') return json(200,await view.snapshot(request))
         if (conversationRoute==='activation') return json(200,await view.activation(request))
         const input=await body(request,conversationRoute==='invitations'?16384:4096)
+        if(conversationRoute==='access'){if(!view.synchroniseAccess)return json(503,{error:'ACCESS_PROJECTION_UNAVAILABLE'});return json(200,await view.synchroniseAccess(request,input))}
         if (conversationRoute==='company') return json(200,await view.lookupCompany(request,input))
         if (conversationRoute==='slug') return json(200,await view.checkSlug(request,input))
         if (conversationRoute==='categories') return json(200,await view.savePersonalCategories(request,input))

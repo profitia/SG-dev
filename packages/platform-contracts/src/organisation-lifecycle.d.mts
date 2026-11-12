@@ -18,3 +18,5 @@ export declare function createOrganisationLifecycleBackend<T>(options:{
 }):Readonly<{contract:typeof ORGANISATION_LIFECYCLE_CONTRACT;ready():Promise<unknown>;execute<R>(request:Request,operation:OrganisationLifecycleOperation,input:unknown,effect:(unit:OrganisationLifecycleUnit)=>Promise<R>):Promise<R>}>
 
 export declare function createOrganisationLifecycleSql(options:{binding:AccessStoreBinding;issuer:string;schemaDigest:string;proofKey:Uint8Array;now?:()=>number}):Readonly<{descriptor(query:AccessQuery):Promise<any>;queryOne(query:AccessQuery,text:string,values?:unknown[]):Promise<Record<string,any>>;attest(query:AccessQuery,input:{operation:string;principal:string;issuer?:string;identityUntil?:number;expiresAt:number}):Promise<Readonly<{until:number;signature:string}>>}>
+
+export declare function organisationAccessProjectionSchemaDigest():string

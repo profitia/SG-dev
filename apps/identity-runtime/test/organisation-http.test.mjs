@@ -144,12 +144,12 @@ test('native conversation receiver refuses missing ports, foreign receivers, met
   const cfg=configuration(),base='/v1/account/organisation-onboarding/'
   let calls=0
   const value=async()=>{calls++;return {ok:true}}
-  const view={ready:async()=>{},snapshot:value,lookupCompany:value,checkSlug:value,savePersonalCategories:value,sendInvitations:value,activation:value}
+  const view={ready:async()=>{},snapshot:value,lookupCompany:value,checkSlug:value,savePersonalCategories:value,sendInvitations:value,activation:value,synchroniseAccess:value}
   const org={ready:async()=>{},complete:value,conversation:view}
   const draft={ready:async()=>{},read:value,update:value}
   const handler=createHttpHandler({configuration:cfg},{},null,null,null,null,null,null,null,draft,org)
   const missing=createHttpHandler({configuration:cfg},{},null,null,null,null,null,null,null,draft,{ready:async()=>{},complete:value})
-  for(const [path,method]of [['snapshot','GET'],['company','POST'],['slug','POST'],['categories','POST'],['invitations','POST'],['activation','GET']]){
+  for(const [path,method]of [['snapshot','GET'],['company','POST'],['slug','POST'],['categories','POST'],['invitations','POST'],['activation','GET'],['access','POST']]){
     await t.test(path,async()=>{
       const req=(m=method,suffix='',origin=cfg.origin,body='{}')=>new Request(origin+base+path+suffix,{method:m,headers:m==='POST'?{'content-type':'application/json',origin:cfg.origin}:{},...(m==='POST'?{body}:{})})
       const before=calls

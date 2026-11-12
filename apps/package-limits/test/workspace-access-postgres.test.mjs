@@ -9,7 +9,7 @@ import pg from 'pg'
 import {createPeerOperationSigner} from '../../../packages/platform-contracts/src/peer-operation.mjs'
 import {profileSchemaDigest} from '../../../packages/platform-contracts/src/user-profile.mjs'
 import {limitsSql,seedSql,identitySql} from '../scripts/install.mjs'
-import {workspaceAccessSql,workspaceIdentitySql,workspaceAccessDigest} from '../scripts/install-workspace-access.mjs'
+import {workspaceAccessSql,workspaceIdentitySql,workspaceAccessDigest,workspaceEntitlementsSql,workspaceEntitlementsDigest} from '../scripts/install-workspace-access.mjs'
 import {identityBoundary} from '../dist/auth.js'
 import {Store} from '../dist/store.js'
 import {createWorkspaceAccess} from '../dist/workspace-access.js'
@@ -51,7 +51,7 @@ test('genuine two-database commercial activation keeps operator assignments and 
  await limitsAdmin.connect();await privateAdmin.connect();t.after(()=>Promise.all([limitsAdmin.end(),privateAdmin.end()]))
  await limitsAdmin.query('CREATE EXTENSION pgcrypto');await privateAdmin.query('CREATE EXTENSION pgcrypto')
  const key=randomBytes(32),uid=randomUUID(),oid=randomUUID(),elsewhere=randomUUID(),issuer='https://unified-drum-7191.clerk.accounts.dev'
- await limitsAdmin.query('BEGIN;SET LOCAL ROLE profitia_limits_owner');await limitsAdmin.query(limitsSql);await limitsAdmin.query(seedSql);await limitsAdmin.query(workspaceAccessSql)
+ await limitsAdmin.query('BEGIN;SET LOCAL ROLE profitia_limits_owner');await limitsAdmin.query(limitsSql);await limitsAdmin.query(seedSql);await limitsAdmin.query(workspaceAccessSql);await limitsAdmin.query(workspaceEntitlementsSql);await limitsAdmin.query('INSERT INTO profitia_limits.workspace_entitlements_installation VALUES(true,$1,false)',[workspaceEntitlementsDigest])
  await limitsAdmin.query('INSERT INTO profitia_limits.workspace_access_installation(singleton,schema_digest,command_key,source_ref) VALUES(true,$1,$2,$3)',[workspaceAccessDigest,key,'synthetic-stage-i-bridge'])
  await limitsAdmin.query("INSERT INTO profitia_limits.operator_grants(user_id,enabled,source_ref)VALUES($1,true,'synthetic-operator')",[uid]);await limitsAdmin.query('COMMIT')
  const operatorKey=(await limitsAdmin.query('SELECT command_key FROM profitia_limits.installation')).rows[0].command_key
@@ -75,18 +75,20 @@ test('genuine two-database commercial activation keeps operator assignments and 
  t.after(()=>Promise.all([limits.end(),identity.end()]))
  const peer={environment:'development',callerApplicationId:'identity-runtime-development',receiverApplicationId:'package-limits-development',
   sourceOrigin:'https://identity.example.test',targetOrigin:'https://limits-development.onrender.com',keyId:'registration-limits-v1',key:randomBytes(32),
-  routes:[{method:'GET',path:'/v1/organisation-access',maximumRequestBytes:0,requireIdempotencyKey:false}],internalOrigins:[]}
+  routes:[{method:'GET',path:'/v1/organisation-access',maximumRequestBytes:0,requireIdempotencyKey:false},{method:'GET',path:'/v1/organisation-entitlements',maximumRequestBytes:0,requireIdempotencyKey:false}],internalOrigins:[]}
  let active=true
  const client={authenticateRequest:async()=>({status:'signed-in',isAuthenticated:true,toAuth:()=>({isAuthenticated:true,tokenType:'session_token',userId:'user_workspace',sessionId:'sess_workspace',actor:null,
   sessionClaims:{iss:issuer,sub:'user_workspace',sid:'sess_workspace',azp:peer.sourceOrigin,exp:Math.floor(Date.now()/1000)+60}})}),
   sessions:{getSession:async()=>({id:'sess_workspace',userId:'user_workspace',status:active?'active':'revoked',expireAt:Date.now()+60000,abandonAt:Date.now()+60000,actor:null})},
   users:{getUser:async()=>({id:'user_workspace',banned:false,locked:false,deprovisioned:false})}}
  const config={origin:peer.targetOrigin,issuer,workspace:{peer,commandKey:key}}
- const withIdentity=identityBoundary(config,identity,client),surface=createWorkspaceAccess({configuration:config.workspace,limits,identity,withIdentity})
+ const withIdentity=identityBoundary(config,identity,client),surface=createWorkspaceAccess({configuration:{...config.workspace,entitlements:true},limits,identity,withIdentity})
  const request=()=>createPeerOperationSigner(peer)(new Request(peer.targetOrigin+'/v1/organisation-access',{headers:{authorization:'Bearer synthetic-official-sdk-fixture'}}))
+ const entitlementsRequest=()=>createPeerOperationSigner(peer)(new Request(peer.targetOrigin+'/v1/organisation-entitlements',{headers:{authorization:'Bearer synthetic-official-sdk-fixture'}}))
  const who=()=>({kind:'HUMAN',actorId:uid,userId:uid,expiresAt:new Date(Date.now()+60000).toISOString()})
  const store=new Store(limits,operatorKey),write=(operation,data)=>store.transact(who(),session=>session.call(operation,{requestId:randomUUID(),data}))
- await assert.rejects(surface.ready());await limitsAdmin.query('UPDATE profitia_limits.workspace_access_installation SET enabled=true');await surface.ready()
+ await assert.rejects(surface.ready());await limitsAdmin.query('UPDATE profitia_limits.workspace_access_installation SET enabled=true');await assert.rejects(surface.ready());await limitsAdmin.query('UPDATE profitia_limits.workspace_entitlements_installation SET enabled=true');await surface.ready()
+ assert.equal((await surface.entitlements(await entitlementsRequest())).status,'INACTIVE')
  assert.equal((await surface.read(await request())).status,'PENDING_PACKAGE')
  const pkg=await write('package.create',{productId:'SPENDGURU',name:'Synthetic full package'})
  const initial=(await store.transact(who(),s=>s.call('list',{}))).packages.find(p=>p.id===pkg.package_id).versions[0]
@@ -98,6 +100,8 @@ test('genuine two-database commercial activation keeps operator assignments and 
  const terms={contractStart:today,contractEnd:end,assignmentStart:today,assignmentEnd:end,usageStart:today,usageCycle:'MONTH',usageAnchor:'CALENDAR',billingStart:today,billingEnd:end,invoiceDate:today,dueDate:today,timezone:'Europe/Warsaw',basis:'DEVELOPMENT_TEST',reference:'SYNTHETIC_ONLY',purchaseType:'MANUAL_SUBSCRIPTION'}
  const assignment=await write('assignment.create',{organisationId:oid,organisationVersion:1,packageVersionId:initial.id,effectiveFrom:today,terms,overrides:[],reason:'Synthetic operator assignment'})
  assert.equal((await surface.read(await request())).status,'PENDING_PACKAGE') // A commercial package alone cannot fake E1 projection.
+ const current=await surface.entitlements(await entitlementsRequest());assert.equal(current.status,'ACTIVE');assert.equal(current.assignmentRef,'package-assignment:'+assignment.id+':1');assert.deepEqual(current.capabilities,['SEATS']);assert.equal(current.userId,uid);assert.equal(current.organisationId,oid)
+ await assert.rejects(surface.read(await entitlementsRequest()));await assert.rejects(surface.entitlements(await request()))
  await privateAdmin.query("INSERT INTO profitia_access.product_grants(application_id,organisation_id,product,features,status,source,source_ref,expires_at)VALUES('spendguru',$1,'SPENDGURU',ARRAY['category'],'ACTIVE','EXPLICIT_OFFER',$2,clock_timestamp()+interval '1 hour')",[oid,'package-assignment:'+assignment.id+':1'])
  assert.equal((await surface.read(await request())).status,'READY')
  assert.equal((await identity.query('SELECT profitia_limits_identity_read.workspace_context($1) AS data',[uid])).rows[0].data.organisationId,oid)
@@ -107,6 +111,8 @@ test('genuine two-database commercial activation keeps operator assignments and 
  active=false;await assert.rejects(surface.read(await request()));active=true
  await write('assignment.status',{assignmentId:assignment.id,revision:assignment.revision,status:'SUSPENDED',effectiveFrom:today,reason:'Synthetic suspension'})
  assert.equal((await surface.read(await request())).status,'PENDING_PACKAGE')
+ const inactive=await surface.entitlements(await entitlementsRequest());assert.equal(inactive.status,'INACTIVE');assert.equal(inactive.assignmentRef,null);assert.equal(inactive.assignmentUntil,null);assert.deepEqual(inactive.capabilities,[])
+ await assert.rejects(limits.query("SELECT profitia_limits.workspace_entitlements($1,$2,'spendguru',1,'forged','forged')",[uid,elsewhere]))
  await assert.rejects(limits.query('SELECT * FROM profitia_limits.assignments'));await assert.rejects(identity.query('SELECT * FROM profitia_access.memberships'))
  await assert.rejects(limits.query("SELECT profitia_limits.workspace_access($1,$2,'spendguru',1,'forged','','forged')",[uid,elsewhere]))
  assert.equal((await privateAdmin.query("SELECT count(*) FROM profitia_access.product_grants WHERE organisation_id=$1",[elsewhere])).rows[0].count,'0')

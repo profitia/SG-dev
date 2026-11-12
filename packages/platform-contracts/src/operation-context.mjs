@@ -14,7 +14,7 @@ export const RECURRING_ROOT_CONTRACT=Object.freeze({...OPERATION_CONTRACT,implem
 export const ORGANISATION_BOOTSTRAP_ROOT_CONTRACT=Object.freeze({...OPERATION_CONTRACT,implementation:'1.0.0-candidate.21'})
 export const ORGANISATION_BOOTSTRAP_OPERATIONS=Object.freeze(['organisation.create'])
 export const ORGANISATION_LIFECYCLE_ROOT_CONTRACT=Object.freeze({...OPERATION_CONTRACT,implementation:'1.0.0-candidate.23'})
-export const ORGANISATION_LIFECYCLE_OPERATIONS=Object.freeze(['organisation.onboarding.read','organisation.company.lookup','organisation.slug.check','organisation.procurement.write','organisation.invitation.create','organisation.invitation.accept','organisation.activation.read'])
+export const ORGANISATION_LIFECYCLE_OPERATIONS=Object.freeze(['organisation.onboarding.read','organisation.company.lookup','organisation.slug.check','organisation.procurement.write','organisation.invitation.create','organisation.invitation.accept','organisation.activation.read','organisation.access.synchronise'])
 const denialBrand = Symbol.for('profitia.operation-context.denial.v1')
 const denialCodes = new Set(['UNSUPPORTED_CONTRACT', 'UNVERIFIED_IDENTITY', 'CONTEXT_INVALID', 'ENVIRONMENT_MISMATCH', 'APPLICATION_FEATURE_UNAVAILABLE', 'ACCESS_BASIS_INVALID', 'PERMISSION_DENIED', 'PRODUCT_UNAVAILABLE', 'RESOURCE_SCOPE_MISMATCH', 'DATA_CLASSIFICATION_UNKNOWN', 'DELEGATION_INVALID', 'DELIVERY_UNCERTAIN', 'RESOURCE_VERSION_CONFLICT', 'LIMIT_POLICY_UNAVAILABLE', 'LIMIT_EXCEEDED', 'IDEMPOTENCY_CONFLICT', 'AUDIT_UNAVAILABLE', 'POLICY_UNAVAILABLE', 'EXPLICIT_DENY'])
 
@@ -79,6 +79,7 @@ const organisationLifecycleRules=Object.freeze({
  'organisation.invitation.create':rule('organisation_admin','organisation_invitation_batch','ORGANISATION_PRIVATE','WRITE'),
  'organisation.invitation.accept':rule('organisation_admin','organisation_invitation_acceptance','ACCOUNT_PRIVATE','WRITE',null,'ACCOUNT'),
  'organisation.activation.read':rule('organisation_admin','organisation_activation','ORGANISATION_PRIVATE','READ'),
+ 'organisation.access.synchronise':rule('organisation_admin','organisation_access_projection','ORGANISATION_PRIVATE','WRITE'),
 })
 export const IMPLEMENTED_OPERATIONS = Object.freeze(Object.keys(rules).filter(operation=>!recurringOperationPolicy(operation)))
 const profiles = Object.freeze({

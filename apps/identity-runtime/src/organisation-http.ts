@@ -15,6 +15,7 @@ import { verifiedEmailClient, type accountTransactions } from './account-provisi
  * transaction/audit. Merely supplying a view cannot create an organisation. */
 export interface OrganisationConversationSurface {
   ready(): Promise<void>
+  synchroniseAccess?(request:Request,input:unknown):Promise<Readonly<{status:'SYNCHRONISED'|'PENDING_PACKAGE'|'RECONCILIATION_REQUIRED';expiresAt?:string}>>
   snapshot(request: Request): Promise<OnboardingSnapshot>
   lookupCompany(request: Request, input: unknown): ReturnType<OrganisationOnboardingApi['lookupCompany']>
   checkSlug(request: Request, input: unknown): ReturnType<OrganisationOnboardingApi['checkSlug']>

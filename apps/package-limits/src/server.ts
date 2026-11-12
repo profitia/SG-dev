@@ -70,12 +70,13 @@ export function createHandler(deps: Dependencies) {
       const url = new URL(req.url ?? "/", deps.config.origin);
       if (url.origin !== deps.config.origin)
         throw new Fault(400, "INVALID_URL");
-      if(["/v1/organisation-access","/v1/organisation-access/ready"].includes(url.pathname)){
+      if(["/v1/organisation-access","/v1/organisation-access/ready","/v1/organisation-entitlements"].includes(url.pathname)){
         if(url.search||url.hash)throw new Fault(404,"NOT_FOUND");
         if(req.method!=="GET")throw new Fault(405,"METHOD_NOT_ALLOWED");
         if(!deps.workspace)throw new Fault(503,"WORKSPACE_ACCESS_UNAVAILABLE");
         if(url.pathname.endsWith("/ready")){await deps.workspace.ready();return json(res,200,{ready:true});}
         const h=new Headers();for(const [key,value]of Object.entries(req.headers))if(value!==undefined)h.set(key,Array.isArray(value)?value.join(","):value);
+        if(url.pathname==="/v1/organisation-entitlements"){if(!deps.workspace.entitlements)throw new Fault(503,"WORKSPACE_ENTITLEMENTS_UNAVAILABLE");return json(res,200,await deps.workspace.entitlements(new Request(url,{method:"GET",headers:h})));}
         return json(res,200,await deps.workspace.read(new Request(url,{method:"GET",headers:h})));
       }
       if (req.method === "GET" && url.pathname === "/healthz") {

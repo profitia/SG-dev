@@ -83,3 +83,14 @@ test('formatted NIP uses one canonical lookup while preserving an existing chose
  assert.equal(f.calls.find(c=>c[0]==='lookup')[1].nip,'1234563218')
  assert.equal(flow.state.proposedSlug,'my-chosen-address')
 })
+
+test('current package synchronisation precedes handoff only when the server requires it',async()=>{
+ const f=fixture(complete);f.snapshot={...f.snapshot,organisation:{organisationId:'fixture-org',slug:'fixture'},categoriesRequired:false,accessProjectionRequired:true}
+ let status='PENDING_PACKAGE'
+ f.api.synchroniseAccess=async()=>{f.calls.push(['synchronise']);return {status}}
+ f.api.activation=async()=>{f.calls.push(['activation']);return {status:'READY',workspaceUrl:'https://workspace.example/dashboard'}}
+ const flow=f.flow();await flow.load();assert.equal(flow.state.step,'activation');assert.equal(flow.state.workspaceUrl,null)
+ assert.deepEqual(f.calls.map(c=>c[0]),['synchronise'])
+ status='SYNCHRONISED';await flow.checkActivation();assert.equal(flow.state.step,'ready')
+ assert.deepEqual(f.calls.map(c=>c[0]),['synchronise','synchronise','activation'])
+})

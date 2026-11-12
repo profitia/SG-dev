@@ -153,7 +153,7 @@ if (process.env.IDENTITY_RUNTIME_ENABLED === 'true') {
         transact:accountTransactions(pool),independentQuery:(sql:string,values:readonly unknown[]=[])=>pool!.query(sql,values as unknown[]),
         deploymentId:process.env.RENDER_GIT_COMMIT??'local-development',configurationVersion:createHash('sha256').update(JSON.stringify(config)).digest('hex')}
       const ports=createOrganisationServiceConnections({...connections,intentKey:Buffer.from(key!,'hex')})
-      const store=createOrganisationStore({...common,...ports,lifecycleSchemaDigest:connections.lifecycleSchemaDigest,
+      const store=createOrganisationStore({...common,...ports,...(connections.accessProjectionSchemaDigest?{accessProjectionSchemaDigest:connections.accessProjectionSchemaDigest}:{}),lifecycleSchemaDigest:connections.lifecycleSchemaDigest,
         encryptionKey:Buffer.from(process.env.IDENTITY_EMAIL_ENCRYPTION_KEY,'hex'),keyId:e.keyId,
         workspaceTargetId:connections.workspaceTargetId,workspaceRouteKey:connections.workspaceRouteKey,findRecipients:createOrganisationRecipientLookup(client)})
       organisation=createOrganisationHttpSurface({...common,bootstrapSchemaDigest:organisationBootstrapSchema,conversation:store,

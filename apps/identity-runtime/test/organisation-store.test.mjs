@@ -11,7 +11,7 @@ import {postgresFixture,clerkFixture} from '../../../packages/platform-contracts
 import {createIdentityProvisioner} from '../../../packages/platform-contracts/src/identity-provisioning.mjs'
 import {createOrganisationOnboardingDraftBackend,organisationOnboardingSchemaDigest} from '../../../packages/platform-contracts/src/organisation-profile.mjs'
 import {organisationBootstrapSchemaDigest} from '../../../packages/platform-contracts/src/organisation-bootstrap.mjs'
-import {organisationLifecycleSchemaDigest,openOrganisationInvitation,createOrganisationLifecycleBackend} from '../../../packages/platform-contracts/src/organisation-lifecycle.mjs'
+import {organisationLifecycleSchemaDigest,organisationAccessProjectionSchemaDigest,openOrganisationInvitation,createOrganisationLifecycleBackend} from '../../../packages/platform-contracts/src/organisation-lifecycle.mjs'
 import {ORGANISATION_LIFECYCLE_OPERATIONS} from '../../../packages/platform-contracts/src/operation-context.mjs'
 
 test('recipient lookup refuses partial/unverified hits, ambiguity and truncated provider responses',async()=>{
@@ -29,15 +29,18 @@ test('recipient lookup refuses partial/unverified hits, ambiguity and truncated 
 
 test('native organisation store commits real scoped categories and idempotent invitations with provider fixtures',{timeout:60000},async t=>{
  const db=await postgresFixture();t.after(()=>db.close())
- for(const name of ['007-organisation-onboarding.sql','008-organisation-create.sql','009-organisation-lifecycle.sql'])await db.admin.query(fs.readFileSync(new URL('../../../packages/platform-contracts/migrations/profile/'+name,import.meta.url),'utf8'))
+ for(const name of ['007-organisation-onboarding.sql','008-organisation-create.sql','009-organisation-lifecycle.sql','010-organisation-access-projection.sql'])await db.admin.query(fs.readFileSync(new URL('../../../packages/platform-contracts/migrations/profile/'+name,import.meta.url),'utf8'))
  await db.admin.query("INSERT INTO profitia_profile.organisation_onboarding_installation VALUES(true,'1.0.0',$1)",[organisationOnboardingSchemaDigest()])
  await db.admin.query("INSERT INTO profitia_profile.organisation_onboarding_policies VALUES('identity_b1_runtime',true)")
  await db.admin.query("INSERT INTO profitia_profile.organisation_bootstrap_installation VALUES(true,'1.0.0',$1)",[organisationBootstrapSchemaDigest()])
- const permissions=[{operation:'organisation.procurement.write',feature:'organisation_admin'},{operation:'organisation.activation.read',feature:'organisation_admin'},{operation:'organisation.invitation.create',feature:'organisation_admin'}]
+ const permissions=[{operation:'organisation.access.synchronise',feature:'organisation_admin'},{operation:'organisation.procurement.write',feature:'organisation_admin'},{operation:'organisation.activation.read',feature:'organisation_admin'},{operation:'organisation.invitation.create',feature:'organisation_admin'}]
  await db.admin.query("INSERT INTO profitia_profile.organisation_bootstrap_policies(login_role,enabled,policy_id,source_ref,expires_at,membership_expires_at,initial_permissions) VALUES('identity_b1_runtime',true,$1,'test-store-bootstrap',clock_timestamp()+interval '1 hour',clock_timestamp()+interval '1 day',$2::jsonb)",[randomUUID(),JSON.stringify(permissions)])
  await db.admin.query("INSERT INTO profitia_profile.organisation_lifecycle_installation VALUES(true,'1.0.0',$1)",[organisationLifecycleSchemaDigest()])
  await db.admin.query("INSERT INTO profitia_profile.organisation_lifecycle_policies(login_role,enabled,policy_id,source_ref,expires_at,membership_expires_at,operations,member_permissions,source_policy_ref) VALUES('identity_b1_runtime',true,$1,'test-store-lifecycle',clock_timestamp()+interval '1 hour',clock_timestamp()+interval '1 day',$2::jsonb,$3::jsonb,'test-source-policy')",[randomUUID(),JSON.stringify(ORGANISATION_LIFECYCLE_OPERATIONS),JSON.stringify(permissions.filter(p=>p.operation!=='organisation.invitation.create'))])
- const functions=(await db.admin.query("SELECT p.oid::regprocedure::text AS signature FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='profitia_profile' AND(p.proname LIKE 'organisation_lifecycle_%' OR p.proname LIKE 'organisation_bootstrap_%' OR p.proname LIKE 'organisation_onboarding_%')")).rows
+ await db.admin.query("INSERT INTO profitia_access.applications VALUES('spendguru','ACTIVE',NULL)")
+ await db.admin.query("INSERT INTO profitia_profile.organisation_access_installation VALUES(true,$1)",[organisationAccessProjectionSchemaDigest()])
+ await db.admin.query("INSERT INTO profitia_profile.organisation_access_policies VALUES('identity_b1_runtime',true,$1,1,'synthetic-native-projection',clock_timestamp()+interval '1 hour',$2::jsonb)",[randomUUID(),JSON.stringify([{capabilityId:'BENCHMARK',applicationId:'spendguru',product:'SPENDGURU',feature:'benchmark',operations:['benchmark.selection.read']}])])
+ const functions=(await db.admin.query("SELECT p.oid::regprocedure::text AS signature FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='profitia_profile' AND(p.proname LIKE 'organisation_lifecycle_%' OR p.proname LIKE 'organisation_bootstrap_%' OR p.proname LIKE 'organisation_onboarding_%' OR p.proname='organisation_access_descriptor')")).rows
  for(const {signature}of functions)await db.admin.query('GRANT EXECUTE ON FUNCTION '+signature+' TO identity_b1_runtime')
  const ids=['owner','member','suspended','other','new'],actors={},userIds={}
  for(const id of ids){
@@ -90,6 +93,23 @@ test('native organisation store commits real scoped categories and idempotent in
   const snapshot=await owner.snapshot(get());assert.equal(snapshot.organisation.organisationId,oid);assert.equal(snapshot.categoriesRequired,false);assert.equal(snapshot.procurementVersion,'1')
   assert.deepEqual(await owner.activation(get()),{status:'PENDING_PACKAGE'})
   packageReady=true;assert.deepEqual(await owner.activation(get()),{status:'READY',workspaceUrl:'https://sg2.example.test/pl/dashboard'});packageReady=false
+ })
+ await t.test('explicit enabled native projection binds the real Root, tenant and package snapshot before activation',async()=>{
+  const ref='package-assignment:'+randomUUID()+':1';let active=true,reads=0
+  const extended=createOrganisationStore({...common,client:actors.owner.client,accessProjectionSchemaDigest:organisationAccessProjectionSchemaDigest(),
+   workspaceAccess:{...common.workspaceAccess,entitlements:async(_request,input)=>{
+    await db.admin.query("BEGIN;SET LOCAL lock_timeout='200ms'");try{await db.admin.query('SELECT revision FROM profitia_access.installation WHERE singleton FOR UPDATE')}finally{await db.admin.query('ROLLBACK')}
+    reads++;assert.equal(input.userId,userIds.owner);assert.equal(input.organisationId,oid);assert.equal(input.applicationId,'spendguru')
+    return {userId:userIds.owner,organisationId:oid,applicationId:'spendguru',status:active?'ACTIVE':'INACTIVE',assignmentRef:active?ref:null,
+     capabilities:active?['BENCHMARK']:[],expiresAt:new Date(Date.now()+4000).toISOString(),assignmentUntil:active?new Date(Date.now()+60000).toISOString():null}
+   }}})
+  await extended.ready();assert.equal((await extended.snapshot(get())).accessProjectionRequired,true)
+  assert.equal((await extended.synchroniseAccess(post(),{})).status,'SYNCHRONISED');assert.equal(reads,1)
+  const grant=(await db.admin.query("SELECT source_ref,expires_at FROM profitia_access.product_grants WHERE application_id='spendguru' AND organisation_id=$1",[oid])).rows[0]
+  assert.equal(grant.source_ref,ref);assert(grant.expires_at.getTime()<=Date.now()+30000)
+  await assert.rejects(extended.synchroniseAccess(post(),{organisationId:randomUUID()}));assert.equal(reads,1)
+  active=false;assert.equal((await extended.synchroniseAccess(post(),{})).status,'PENDING_PACKAGE')
+  assert.equal((await db.admin.query("SELECT status FROM profitia_access.product_grants WHERE application_id='spendguru' AND organisation_id=$1",[oid])).rows[0].status,'REVOKED')
  })
  await t.test('personal category CAS is scoped to its user and organisation',async()=>{
   assert.deepEqual(await owner.savePersonalCategories(post(),{expectedVersion:'1',categories:[{customName:'Synthetic steel'}]}),{version:'2'})
@@ -148,12 +168,13 @@ test('native organisation store commits real scoped categories and idempotent in
   assert.equal((await db.admin.query("SELECT count(*) FROM profitia_profile.organisation_invitations WHERE status='PENDING'")).rows[0].count,'2')
  })
  await t.test('verified acceptance creates one membership and requires only personal categories',async()=>{
+  const productGrantsBefore=(await db.admin.query('SELECT * FROM profitia_access.product_grants ORDER BY application_id,organisation_id,product')).rows
   const a=actors.new,store=stores.new,input={commandId:randomUUID(),proof:proofs['new@example.test']}
   assert.deepEqual(await store.acceptInvitation(a.request('POST'),input),{status:'ACCEPTED'})
   assert.deepEqual(await store.acceptInvitation(a.request('POST'),input),{status:'ACCEPTED'})
   const snapshot=await store.snapshot(a.request('GET'));assert.equal(snapshot.organisation.organisationId,oid);assert.equal(snapshot.categoriesRequired,true);assert.equal(snapshot.procurementVersion,'0')
   assert.equal((await db.admin.query('SELECT count(*) FROM profitia_access.memberships WHERE organisation_id=$1 AND user_id=$2',[oid,userIds.new])).rows[0].count,'1')
-  assert.equal((await db.admin.query('SELECT count(*) FROM profitia_access.product_grants')).rows[0].count,'0')
+  assert.deepEqual((await db.admin.query('SELECT * FROM profitia_access.product_grants ORDER BY application_id,organisation_id,product')).rows,productGrantsBefore)
   const results=await Promise.allSettled([store.savePersonalCategories(a.request('POST'),{expectedVersion:'0',categories:[{customName:'Personal A'}]}),store.savePersonalCategories(a.request('POST'),{expectedVersion:'0',categories:[{customName:'Personal B'}]})])
   assert.equal(results.filter(r=>r.status==='fulfilled').length,1);assert.equal(results.filter(r=>r.status==='rejected'&&r.reason.status===409).length,1)
   assert.equal((await owner.snapshot(get())).draft.answers.categories[0].label,'Synthetic steel')

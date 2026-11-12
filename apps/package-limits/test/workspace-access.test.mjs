@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {randomBytes,randomUUID} from 'node:crypto'
 import {createPeerOperationSigner} from '../../../packages/platform-contracts/src/peer-operation.mjs'
-import {createWorkspaceAccess,readWorkspaceConfiguration,workspaceAccessDigest,workspaceIdentityDigest} from '../dist/workspace-access.js'
+import {createWorkspaceAccess,readWorkspaceConfiguration,workspaceAccessDigest,workspaceIdentityDigest,workspaceEntitlementsDigest} from '../dist/workspace-access.js'
 import {workspaceInstallationPlan} from '../scripts/install-workspace-access.mjs'
 const origin='https://limits-development.onrender.com',source='https://identity.example.test'
 function fixture(){
@@ -21,6 +21,9 @@ test('workspace bridge is explicit, exact-schema and distinct-key opt-in',()=>{
  const valid={LIMITS_WORKSPACE_ACCESS_ENABLED:'true',TARGET_ENVIRONMENT:'development',LIMITS_WORKSPACE_SCHEMA_DIGEST:workspaceAccessDigest,LIMITS_WORKSPACE_IDENTITY_SCHEMA_DIGEST:workspaceIdentityDigest,
  LIMITS_WORKSPACE_PEER_KEY:'a'.repeat(64),LIMITS_WORKSPACE_COMMAND_KEY:'b'.repeat(64),LIMITS_WORKSPACE_SOURCE_ORIGIN:source,LIMITS_WORKSPACE_KEY_ID:'registration-limits-v1'}
  assert.equal(readWorkspaceConfiguration(valid,origin).peer.sourceOrigin,source)
+ assert.throws(()=>readWorkspaceConfiguration({...valid,LIMITS_WORKSPACE_ENTITLEMENTS_ENABLED:'true'},origin))
+ const extended=readWorkspaceConfiguration({...valid,LIMITS_WORKSPACE_ENTITLEMENTS_ENABLED:'true',LIMITS_WORKSPACE_ENTITLEMENTS_SCHEMA_DIGEST:workspaceEntitlementsDigest},origin);assert.equal(extended.entitlements,true);assert.equal(extended.peer.routes.length,2)
+ assert.throws(()=>readWorkspaceConfiguration({LIMITS_WORKSPACE_ENTITLEMENTS_ENABLED:'true'},origin))
  for(const patch of [{TARGET_ENVIRONMENT:'production'},{LIMITS_WORKSPACE_SCHEMA_DIGEST:'0'.repeat(64)},{LIMITS_WORKSPACE_IDENTITY_SCHEMA_DIGEST:'0'.repeat(64)},{LIMITS_WORKSPACE_PEER_KEY:''},{LIMITS_WORKSPACE_SOURCE_ORIGIN:'https://evil.example/path'}])assert.throws(()=>readWorkspaceConfiguration({...valid,...patch},origin))
  assert.equal(workspaceInstallationPlan().effects.productGrantsCreated,false);assert.equal(workspaceInstallationPlan().limits.enabledByDefault,false)
 })

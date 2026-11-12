@@ -1,10 +1,10 @@
-import {createPeerOperationSigner,type PeerOperationConfiguration} from '@profitia/platform-contracts/peer-operation'
+import {createPeerOperationSigner,peerOperationIdentityRequest,type PeerOperationConfiguration} from '@profitia/platform-contracts/peer-operation'
 import {createHmac} from 'node:crypto'
 import {createHash,randomUUID} from 'node:crypto'
 import type {AccessQuery,AccessStoreBinding} from '@profitia/platform-contracts/access-store'
 import type {OperationContext} from '@profitia/platform-contracts/operation-context'
 import {ORGANISATION_LIFECYCLE_OPERATIONS} from '@profitia/platform-contracts/operation-context'
-import {createOrganisationLifecycleBackend,createOrganisationLifecycleSql,organisationLifecycleSchemaDigest,organisationEmailKey,sealOrganisationInvitation,type OrganisationLifecycleUnit} from '@profitia/platform-contracts/organisation-lifecycle'
+import {createOrganisationLifecycleBackend,createOrganisationLifecycleSql,organisationLifecycleSchemaDigest,organisationAccessProjectionSchemaDigest,organisationEmailKey,sealOrganisationInvitation,type OrganisationLifecycleUnit} from '@profitia/platform-contracts/organisation-lifecycle'
 import {createOrganisationInvitationProof,organisationInvitationTokenHash} from '@profitia/platform-contracts/organisation-invitations'
 import {normalizeCompanyRecord,normalizeCompanySelection,normalizeInvitationEmail,suggestOrganisationSlug,OrganisationProfileError} from '@profitia/platform-contracts/organisation-profile'
 import {ProfileConflict} from '@profitia/platform-contracts/user-profile'
@@ -22,7 +22,9 @@ export interface OrganisationCompanySource{
  ready():Promise<void>
  acquire(request:Request,input:Readonly<{nip:string;draftVersion:string;context:Readonly<OperationContext>}>):Promise<RegistrySnapshot|Readonly<{status:'NOT_FOUND'|'UNSUPPORTED_COMPANY'|'UNAVAILABLE'}>>
 }
+export type OrganisationPackageEntitlements=Readonly<{status:'ACTIVE'|'INACTIVE';userId:string;organisationId:string;applicationId:'spendguru';assignmentRef:string|null;capabilities:readonly string[];expiresAt:string;assignmentUntil:string|null}>
 export interface OrganisationWorkspaceAccess{
+ entitlements?(request:Request,input:Readonly<{userId:string;organisationId:string;applicationId:string}>):Promise<OrganisationPackageEntitlements>
  ready():Promise<void>
  resolve(request:Request,input:Readonly<{userId:string;organisationId:string;applicationId:string}>):Promise<Readonly<{status:'READY'|'PENDING_PACKAGE'|'UNAVAILABLE'}>>
 }
@@ -56,7 +58,7 @@ export function createOrganisationRecipientLookup(client:unknown){
 export function createOrganisationStore(options:{
  configuration:RuntimeConfiguration;client:RuntimeSdk;binding:AccessStoreBinding;schemaDigest:string;lifecycleSchemaDigest:string;proofKey:Uint8Array
  encryptionKey:Uint8Array;keyId:string;transact:ReturnType<typeof accountTransactions>;independentQuery:AccessQuery
- deploymentId:string;configurationVersion:string;companySource:OrganisationCompanySource;workspaceAccess:OrganisationWorkspaceAccess
+ accessProjectionSchemaDigest?:string;deploymentId:string;configurationVersion:string;companySource:OrganisationCompanySource;workspaceAccess:OrganisationWorkspaceAccess
  workspaceTargetId:string;workspaceRouteKey:string;findRecipients:(emails:readonly string[])=>Promise<ReadonlyMap<string,string|null>>;now?:()=>number
 }):OrganisationStore{
  const configuration=readConfiguration(options.configuration),now=options.now??Date.now,target=configuration.targets[options.workspaceTargetId]
@@ -64,12 +66,14 @@ export function createOrganisationStore(options:{
  if(options.lifecycleSchemaDigest!==organisationLifecycleSchemaDigest()||key.length!==32||proofKey.length!==32
   ||!/^[-A-Za-z0-9._:]{1,100}$/.test(options.keyId)||!target||!workspacePath||!target.origin.startsWith('https:')
   ||typeof options.findRecipients!=='function'||!options.companySource||!options.workspaceAccess)throw Error('ORGANISATION_STORE_CONFIGURATION_REQUIRED')
+ const readEntitlements=options.workspaceAccess.entitlements?.bind(options.workspaceAccess)
+ if(readEntitlements ? options.accessProjectionSchemaDigest!==organisationAccessProjectionSchemaDigest() : options.accessProjectionSchemaDigest!==undefined)throw Error('ACCESS_PROJECTION_CONFIGURATION_REQUIRED')
  const sql=createOrganisationLifecycleSql({binding:options.binding,issuer:configuration.issuer,schemaDigest:options.schemaDigest,proofKey,now})
  const backend=(request?:Request)=>createOrganisationLifecycleBackend({client:verifiedEmailClient(options.client),binding:options.binding,schemaDigest:options.schemaDigest,proofKey,
   independentQuery:options.independentQuery,now,transact:(run,limits)=>options.transact(run,limits,request?.signal),
-  identityApplication:{appId:configuration.applicationId,environment:configuration.environment,issuer:configuration.issuer,authorizedParties:[configuration.origin]},
+  identityApplication:{appId:configuration.applicationId,environment:configuration.environment,issuer:configuration.issuer,authorizedParties:[request&&peerOperationIdentityRequest(request)?new URL(peerOperationIdentityRequest(request)!.url).origin:configuration.origin]},
   application:{appId:configuration.applicationId,profileId:'SPENDGURU_SAAS',environment:configuration.environment,deploymentId:options.deploymentId,
-   configurationVersion:options.configurationVersion,identityIssuer:configuration.issuer,organisationId:null,features:['organisation_admin'],operations:[...ORGANISATION_LIFECYCLE_OPERATIONS]}})
+   configurationVersion:options.configurationVersion,identityIssuer:configuration.issuer,organisationId:null,features:['organisation_admin'],operations:ORGANISATION_LIFECYCLE_OPERATIONS.filter(op=>op!=='organisation.access.synchronise'||readEntitlements!==undefined)}})
  const one=async(query:AccessQuery,text:string,args:unknown[]=[]):Promise<Record<string,any>>=>{const rows=(await query(text,args)).rows;if(rows.length!==1)throw Error('ORGANISATION_STORE_UNAVAILABLE');return rows[0]! as Record<string,any>}
  async function checked<T>(request:Request,write:boolean,run:()=>Promise<T>):Promise<T>{
   checkRequest(request,configuration,write)
@@ -113,7 +117,22 @@ export function createOrganisationStore(options:{
  }
  backend()
  const surface:OrganisationStore={
-  async ready(){await backend().ready()},
+  async ready(){await backend().ready();if(readEntitlements){const d=(await one(options.independentQuery,'SELECT profitia_profile.organisation_access_descriptor() AS d')).d;if(d?.schemaDigest!==options.accessProjectionSchemaDigest)throw Error('ACCESS_PROJECTION_INSTALLATION_REQUIRED')}},
+  ...(readEntitlements?{synchroniseAccess:(request:Request,input:unknown)=>checked(request,true,async()=>{
+   // Finish the own-context Root transaction BEFORE the cross-service read.
+   // Never hold the global authority write fence across a remote service call.
+   const scope=await backend(request).execute(request,'organisation.access.synchronise',input,async unit=>({
+    userId:unit.context.actorId,organisationId:unit.context.organisationId!,applicationId:target.applicationId}))
+   const snapshot=await readEntitlements(request,scope)
+   return backend(request).execute(request,'organisation.access.synchronise',input,async unit=>{
+   if(unit.context.actorId!==scope.userId||unit.context.organisationId!==scope.organisationId)throw Error('ACCESS_PROJECTION_SCOPE_CHANGED')
+   await renew(unit)
+   const body=JSON.stringify(snapshot),proof=await sql.attest(unit.query,{operation:'organisation.access.synchronise.commit',principal:unit.context.actorId,
+    issuer:createHash('sha256').update(body).digest('hex'),expiresAt:Math.min(Date.parse(unit.expiresAt),Date.parse(unit.context.actor.expiresAt))})
+   const result=(await one(unit.query,'SELECT profitia_profile.organisation_lifecycle_access_project($1,$2::bigint,$3,$4::uuid) AS result',[body,proof.until,proof.signature,unit.context.decisionId])).result
+   if(!result||!['SYNCHRONISED','PENDING_PACKAGE','RECONCILIATION_REQUIRED'].includes(result.status))throw Error('ACCESS_PROJECTION_UNAVAILABLE')
+   return result as {status:'SYNCHRONISED'|'PENDING_PACKAGE'|'RECONCILIATION_REQUIRED';expiresAt?:string}
+  })})}:{}),
   snapshot:request=>checked(request,false,()=>backend(request).execute(request,'organisation.onboarding.read',{},async unit=>{
    const draft=(await one(unit.query,'SELECT profitia_profile.organisation_lifecycle_snapshot($1::uuid) AS draft',[unit.context.decisionId])).draft
    if(!draft||typeof draft.version!=='string'||!draft.answers||typeof draft.answers!=='object')throw Error('ONBOARDING_DRAFT_UNAVAILABLE')
@@ -126,6 +145,7 @@ export function createOrganisationStore(options:{
    return {draft:organisation?{...draft,answers:{...draft.answers,industry:organisation.industry,categories}}:draft,
     avatarSex:['male','female'].includes(profile.avatar_sex)?profile.avatar_sex:null,salutation:profile.name_vocative??null,company,
     organisation:organisation?{organisationId:organisation.organisationId,slug:organisation.slug}:null,
+    ...(readEntitlements?{accessProjectionRequired:true}:{}),
     ...(organisation?{categoriesRequired:categories.length===0,procurementVersion:unit.profile.procurementVersion}:{})} as OnboardingSnapshot
   })),
   lookupCompany:(request,input)=>checked(request,true,()=>backend(request).execute(request,'organisation.company.lookup',input,async unit=>{
@@ -199,17 +219,19 @@ export function createOrganisationStore(options:{
  * Source/Package authority. No URL, identity or entitlement comes from a form. */
 export function createOrganisationServiceConnections(options:{
  registryPeer:PeerOperationConfiguration;workspacePeer:PeerOperationConfiguration
- sourcePolicyRef:string;intentKey:Uint8Array;transport?:typeof fetch;now?:()=>number
+ accessProjectionSchemaDigest?:string;sourcePolicyRef:string;intentKey:Uint8Array;transport?:typeof fetch;now?:()=>number
 }):Readonly<{companySource:OrganisationCompanySource;workspaceAccess:OrganisationWorkspaceAccess}>{
  const registry=structuredClone(options.registryPeer),workspace=structuredClone(options.workspacePeer)
  const sourcePath='/api/organisation-onboarding/company',accessPath='/v1/organisation-access'
  const signRegistry=createPeerOperationSigner(registry),signWorkspace=createPeerOperationSigner(workspace),transport=options.transport??fetch,now=options.now??Date.now
  if(registry.sourceOrigin!==workspace.sourceOrigin||registry.callerApplicationId!==workspace.callerApplicationId
   ||registry.routes.length!==1||registry.routes[0]?.method!=='POST'||registry.routes[0]?.path!==sourcePath||registry.routes[0]?.requireIdempotencyKey!==true
-  ||registry.routes[0]?.maximumRequestBytes!==1024||workspace.routes.length!==1||workspace.routes[0]?.method!=='GET'||workspace.routes[0]?.path!==accessPath
+  ||registry.routes[0]?.maximumRequestBytes!==1024||workspace.routes.length!==(options.accessProjectionSchemaDigest?2:1)||workspace.routes[0]?.method!=='GET'||workspace.routes[0]?.path!==accessPath
   ||workspace.routes[0]?.maximumRequestBytes!==0||workspace.routes[0]?.requireIdempotencyKey!==false
   ||typeof options.sourcePolicyRef!=='string'||!/^[-A-Za-z0-9._:]{1,256}$/.test(options.sourcePolicyRef)
   ||!(options.intentKey instanceof Uint8Array)||options.intentKey.byteLength!==32)throw Error('ORGANISATION_CONNECTIONS_CONFIGURATION_REQUIRED')
+ if(options.accessProjectionSchemaDigest!==undefined&&(options.accessProjectionSchemaDigest!==organisationAccessProjectionSchemaDigest()
+  ||workspace.routes[1]?.method!=='GET'||workspace.routes[1]?.path!=='/v1/organisation-entitlements'||workspace.routes[1]?.maximumRequestBytes!==0||workspace.routes[1]?.requireIdempotencyKey!==false))throw Error('ACCESS_PROJECTION_CONFIGURATION_REQUIRED')
  const intentKey=Buffer.from(options.intentKey)
  async function bounded(response:Response):Promise<any>{
   if(!response.ok){await response.body?.cancel();throw Error('ORGANISATION_PEER_UNAVAILABLE')}
@@ -243,7 +265,20 @@ export function createOrganisationServiceConnections(options:{
     ||!Number.isFinite(Date.parse(value.validUntil))||Date.parse(value.validUntil)<=now()||Date.parse(value.validUntil)-Date.parse(value.retrievedAt)>7*24*60*60*1000)throw Error('GOVERNED_COMPANY_SNAPSHOT_REQUIRED')
    return {...value,company:normalizeCompanyRecord(value.company,nip)} as RegistrySnapshot
   }}),
-  workspaceAccess:Object.freeze({ready:()=>ready(workspace,'/v1/organisation-access/ready'),async resolve(request:Request,input:Parameters<OrganisationWorkspaceAccess['resolve']>[1]){
+  workspaceAccess:Object.freeze({
+   ...(options.accessProjectionSchemaDigest?{entitlements:async(request:Request,input:Parameters<OrganisationWorkspaceAccess['resolve']>[1]):Promise<OrganisationPackageEntitlements>=>{
+    const value=await send(request,workspace,signWorkspace,'/v1/organisation-entitlements')
+    if(!value||Object.keys(value).sort().join(',')!=='applicationId,assignmentRef,assignmentUntil,capabilities,expiresAt,organisationId,status,userId'
+     ||value.userId!==input.userId||value.organisationId!==input.organisationId||value.applicationId!==input.applicationId||value.applicationId!=='spendguru'
+     ||!['ACTIVE','INACTIVE'].includes(value.status)||!Array.isArray(value.capabilities)||value.capabilities.length>32||new Set(value.capabilities).size!==value.capabilities.length
+     ||value.capabilities.some((v:unknown)=>typeof v!=='string'||!['SEATS','BENCHMARK','FORECAST','REPORTS','OPENAI_ASSISTANCE','SUPPLIER_INTELLIGENCE','EXPORTS'].includes(v))
+     ||!Number.isFinite(Date.parse(value.expiresAt))||Date.parse(value.expiresAt)<=now()||Date.parse(value.expiresAt)>now()+6000
+     ||(value.status==='INACTIVE'?(value.assignmentRef!==null||value.assignmentUntil!==null||value.capabilities.length!==0)
+      :(!/^package-assignment:[a-f0-9-]{36}:[1-9][0-9]*$/.test(value.assignmentRef??'')||!value.capabilities.length||!Number.isFinite(Date.parse(value.assignmentUntil))||Date.parse(value.assignmentUntil)<=now())))
+      throw Error('CURRENT_ENTITLEMENT_SCOPE_REQUIRED')
+    return value as OrganisationPackageEntitlements
+   }}:{}),
+   ready:()=>ready(workspace,'/v1/organisation-access/ready'),async resolve(request:Request,input:Parameters<OrganisationWorkspaceAccess['resolve']>[1]){
    const value=await send(request,workspace,signWorkspace,accessPath)
    if(!value||Object.keys(value).sort().join(',')!=='applicationId,expiresAt,organisationId,status,userId'
     ||value.userId!==input.userId||value.organisationId!==input.organisationId||value.applicationId!==input.applicationId
@@ -259,6 +294,8 @@ export function createOrganisationServiceConnections(options:{
  * release operations; malformed or partially configured enablement fails shut. */
 export function readOrganisationConnectionsConfiguration(env:Readonly<Record<string,string|undefined>>,configuration:RuntimeConfiguration){
  if(env.IDENTITY_ORGANISATION_BOOTSTRAP_ENABLED!=='true')return null
+ const projection=env.IDENTITY_ORGANISATION_ACCESS_PROJECTION_ENABLED
+ if(projection!==undefined&&!['true','false'].includes(projection)||projection==='true'&&env.IDENTITY_ORGANISATION_ACCESS_PROJECTION_SCHEMA_DIGEST!==organisationAccessProjectionSchemaDigest())throw Error('ACCESS_PROJECTION_CONFIGURATION_REQUIRED')
  const raw=JSON.parse(env.IDENTITY_ORGANISATION_CONNECTIONS??'null')
  const keys=['schemaVersion','lifecycleSchemaDigest','workspaceTargetId','workspaceRouteKey','registryOrigin','registryApplicationId','registryKeyId','registryPolicyRef','limitsOrigin','limitsKeyId']
  if(!raw||Object.getPrototypeOf(raw)!==Object.prototype||Object.keys(raw).sort().join(',')!==keys.sort().join(',')
@@ -274,8 +311,9 @@ export function readOrganisationConnectionsConfiguration(env:Readonly<Record<str
  const peer=(receiverApplicationId:string,targetOrigin:string,keyId:string,key:string,method:'GET'|'POST',path:string,maximumRequestBytes:number,requireIdempotencyKey:boolean):PeerOperationConfiguration=>({
   environment:'development',callerApplicationId:configuration.applicationId,receiverApplicationId,sourceOrigin:configuration.origin,targetOrigin,keyId,key:Buffer.from(key,'hex'),
   routes:[{method,path,maximumRequestBytes,requireIdempotencyKey}],internalOrigins:[]})
- return Object.freeze({lifecycleSchemaDigest:raw.lifecycleSchemaDigest as string,workspaceTargetId:raw.workspaceTargetId as string,workspaceRouteKey:raw.workspaceRouteKey as string,
+ return Object.freeze({...(projection==='true'?{accessProjectionSchemaDigest:organisationAccessProjectionSchemaDigest()}:{}),lifecycleSchemaDigest:raw.lifecycleSchemaDigest as string,workspaceTargetId:raw.workspaceTargetId as string,workspaceRouteKey:raw.workspaceRouteKey as string,
   sourcePolicyRef:raw.registryPolicyRef as string,
   registryPeer:peer(raw.registryApplicationId,raw.registryOrigin,raw.registryKeyId,env.IDENTITY_ORGANISATION_REGISTRY_PEER_KEY!,'POST','/api/organisation-onboarding/company',1024,true),
-  workspacePeer:peer('package-limits-development',raw.limitsOrigin,raw.limitsKeyId,env.IDENTITY_ORGANISATION_LIMITS_PEER_KEY!,'GET','/v1/organisation-access',0,false)})
+  workspacePeer:{...peer('package-limits-development',raw.limitsOrigin,raw.limitsKeyId,env.IDENTITY_ORGANISATION_LIMITS_PEER_KEY!,'GET','/v1/organisation-access',0,false),
+   routes:[{method:'GET' as const,path:'/v1/organisation-access',maximumRequestBytes:0,requireIdempotencyKey:false},...(projection==='true'?[{method:'GET' as const,path:'/v1/organisation-entitlements',maximumRequestBytes:0,requireIdempotencyKey:false}]:[])]}})
 }

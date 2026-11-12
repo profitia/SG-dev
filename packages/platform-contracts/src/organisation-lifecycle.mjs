@@ -12,6 +12,7 @@ export const createOrganisationLifecycleSql=createProfileSql
 export const ORGANISATION_LIFECYCLE_CONTRACT=Object.freeze({id:'profitia.organisation-lifecycle',version:'1.0.0'})
 export const organisationLifecycleSchemaUrl=new URL('../migrations/profile/009-organisation-lifecycle.sql',import.meta.url).href
 export const organisationLifecycleSchemaDigest=()=>createHash('sha256').update(readFileSync(new URL(organisationLifecycleSchemaUrl))).digest('hex')
+export const organisationAccessProjectionSchemaDigest=()=>createHash('sha256').update(readFileSync(new URL('../migrations/profile/010-organisation-access-projection.sql',import.meta.url))).digest('hex')
 const uuid=/^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i
 const exact=(v,keys)=>v!==null&&typeof v==='object'&&Object.getPrototypeOf(v)===Object.prototype
  &&Reflect.ownKeys(v).length===keys.length&&Object.keys(v).every(k=>keys.includes(k))
@@ -27,11 +28,12 @@ const resources=Object.freeze({
  'organisation.invitation.create':['organisation_invitation_batch','ORGANISATION_PRIVATE'],
  'organisation.invitation.accept':['organisation_invitation_acceptance','ACCOUNT_PRIVATE'],
  'organisation.activation.read':['organisation_activation','ORGANISATION_PRIVATE'],
+ 'organisation.access.synchronise':['organisation_access_projection','ORGANISATION_PRIVATE'],
 })
 function version(v){return typeof v==='string'&&/^(0|[1-9][0-9]{0,18})$/.test(v)&&BigInt(v)<=9223372036854775806n}
 export function normalizeOrganisationLifecycleInput(operation,value){
  if(!ORGANISATION_LIFECYCLE_OPERATIONS.includes(operation))throw TypeError('Unsupported organisation operation')
- if(['organisation.onboarding.read','organisation.activation.read'].includes(operation)){
+ if(['organisation.onboarding.read','organisation.activation.read','organisation.access.synchronise'].includes(operation)){
   if(!exact(value,[]))throw TypeError('Empty current-account input required');return Object.freeze({})
  }
  if(operation==='organisation.company.lookup'){
@@ -126,7 +128,7 @@ export function createOrganisationLifecycleBackend(options){
        await query("SET LOCAL statement_timeout='12000ms'");await query("SET LOCAL lock_timeout='5000ms'")
        await query("SET LOCAL idle_in_transaction_session_timeout='15000ms'")
        await descriptor(query)
-       if(operation==='organisation.invitation.accept')await sql.queryOne(query,'SELECT profitia_profile.organisation_lifecycle_lock() AS locked')
+       if(['organisation.invitation.accept','organisation.access.synchronise'].includes(operation))await sql.queryOne(query,'SELECT profitia_profile.organisation_lifecycle_lock() AS locked')
        const observedBinding=await store.resolveBinding(query,identityKey)
        let lease=await store.lockAccess(query,{actor,identityBinding:observedBinding,organisationId:null})
        const contextProof=await sql.attest(query,{operation:'organisation.lifecycle.context',principal:actor.userId,expiresAt:Math.min(Date.parse(actor.expiresAt),Date.parse(lease.expiresAt))})
