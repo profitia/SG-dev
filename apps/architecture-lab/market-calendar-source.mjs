@@ -2,6 +2,7 @@
 // grant access, install the prepared owner packet or authorize a deployment.
 import assert from 'node:assert/strict'
 import {createHash} from 'node:crypto'
+import {completeFunctionalPredecessor} from './ecr-complete-functional-source.mjs'
 export const MARKET_CALENDAR_PRODUCER_RECORD='apps/economic-calendar-runtime/market-calendar-preferences-integration.json'
 export const MARKET_CALENDAR_PRODUCER_BASE='bfc4a228d9f3d583c37c5fd984c7e4da602bf75d'
 export const MARKET_CALENDAR_PRODUCER_RECORD_SHA='e3bc27ddf22b9165555c05f938a3c5d8f9f4f09334fcb7c55e760da44e9a59b6'
@@ -77,6 +78,8 @@ export function calendarTestCompatibilityCurrent(current,historical){
  return project(current,historical,a.previousSourceSha,[test,'apps/architecture-lab/market-calendar-source.mjs'],MARKET_CALENDAR_TEST_COMPATIBILITY_RECORD)
 }
 export function marketCalendarSourcePredecessor(current,historical){
+ const complete=completeFunctionalPredecessor(current,historical)
+ if(complete)return marketCalendarSourcePredecessor(complete.previousBytes,historical)
  current=calendarTestCompatibilityCurrent(current,historical)
  const consumer=readOptional(current,MARKET_CALENDAR_CONSUMER_RECORD)
  if(consumer){

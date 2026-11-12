@@ -19,10 +19,15 @@ async function body(request: Request, maximum = 4096): Promise<unknown> {
   try { return JSON.parse(Buffer.concat(chunks).toString('utf8')) } catch { throw new BoundaryError(400, 'INVALID_JSON') }
 }
 /** A missing SDK/authority is an explicit health-only application, never an operational login. */
-export function createHttpHandler(boundary: SessionBoundary | null, account: AccountSurface | null = null, avatar: AssistantAvatarSurface | null = null, email: EmailSurface | null = null, language: CommunicationLanguageSurface | null = null, registration: RegistrationSurface | null = null, embedded: ((request: Request) => Promise<Response | null>) | null = null, salutation: AccountSalutationSurface | null = null, currentE1: CurrentE1Authority | null = null) {
+export function createHttpHandler(boundary: SessionBoundary | null, account: AccountSurface | null = null, avatar: AssistantAvatarSurface | null = null, email: EmailSurface | null = null, language: CommunicationLanguageSurface | null = null, registration: RegistrationSurface | null = null, embedded: ((request: Request) => Promise<Response | null>) | null = null, salutation: AccountSalutationSurface | null = null, currentE1: CurrentE1Authority | null = null, calendarWebhook: ((request:Request)=>Promise<Response>)|null = null) {
   return async (request: Request): Promise<Response> => {
     try {
       const url = new URL(request.url)
+      if(url.pathname==='/v1/webhooks/calendar-mailgun'){
+        if(!calendarWebhook||url.search||url.hash)return json(404,{error:'NOT_FOUND'})
+        if(request.method!=='POST')return json(405,{error:'METHOD_NOT_ALLOWED'})
+        return calendarWebhook(request)
+      }
       if (url.pathname.startsWith('/v1/e1/')) {
         if (url.search || url.hash || !['/v1/e1/ready','/v1/e1/authorize','/v1/e1/source/ready','/v1/e1/source/authorize','/v1/e1/recurring/ready','/v1/e1/recurring/component-ready','/v1/e1/recurring/consent','/v1/e1/recurring/authorize'].includes(url.pathname)) return json(404,{error:'NOT_FOUND'})
         if (!boundary || !currentE1) return json(503,{error:'E1_AUTHORITY_UNAVAILABLE'})

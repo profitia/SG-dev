@@ -3,6 +3,8 @@ import { createRegistrationProvider } from './registration-provider.js'
 import { createRegistrationSurface, type RegistrationSurface } from './registration.js'
 import { createCommunicationLanguageSurface, type CommunicationLanguageSurface } from './communication-language.js'
 import {createReportEmailRuntime} from './report-email.js'
+import {createCalendarEmailRuntime} from './calendar-email.js'
+import {createCalendarMailgunWebhook} from './calendar-mailgun-webhook.js'
 import { createEmailRuntime, loadEmailRenderer, type EmailSurface } from './email-runtime.js'
 import { createClerkEmailVerifier } from './email-webhook.js'
 import { createEmailStore } from './email-store.js'
@@ -25,6 +27,10 @@ import { embeddedTargets, createEmbeddedAccountHandler, type EmbeddedAccountSurf
 import { createAccountSurface, accountTransactions, type AccountSurface } from './account-provisioning.js'
 let email: EmailSurface | null = null
 let reportEmail:ReturnType<typeof createReportEmailRuntime>|null=null
+let calendarEmail:ReturnType<typeof createCalendarEmailRuntime>|null=null
+let calendarWebhook:ReturnType<typeof createCalendarMailgunWebhook>|null=null
+let calendarPool:pg.Pool|null=null
+async function closeCalendarPool(){const p=calendarPool;calendarPool=null;await p?.end()}
 let pool: pg.Pool | null = null
 async function start() {
 let boundary: SessionBoundary | null = null
@@ -44,6 +50,7 @@ if (process.env.IDENTITY_REGISTRATION_ENABLED !== undefined && !['true','false']
 if (process.env.IDENTITY_REGISTRATION_ENABLED === 'true' && (process.env.IDENTITY_EMAIL_ENABLED !== 'true' || process.env.IDENTITY_SELF_SERVICE_ENABLED !== 'true')) throw Error('REGISTRATION_DEPENDENCIES')
 if (process.env.IDENTITY_EMAIL_ENABLED !== undefined && !['true','false'].includes(process.env.IDENTITY_EMAIL_ENABLED)) throw Error('INVALID_EMAIL_FLAG')
 if (process.env.IDENTITY_EMAIL_ENABLED === 'true' && process.env.IDENTITY_RUNTIME_ENABLED !== 'true') throw Error('EMAIL_RUNTIME_REQUIRED')
+if (process.env.IDENTITY_CALENDAR_DELIVERY_ENABLED !== undefined && !['true','false'].includes(process.env.IDENTITY_CALENDAR_DELIVERY_ENABLED)) throw Error('INVALID_CALENDAR_DELIVERY_FLAG')
 if (process.env.IDENTITY_SELF_SERVICE_ENABLED !== undefined && !['true', 'false'].includes(process.env.IDENTITY_SELF_SERVICE_ENABLED)) throw Error('INVALID_SELF_SERVICE_FLAG')
 if (process.env.IDENTITY_SELF_SERVICE_ENABLED === 'true' && process.env.IDENTITY_RUNTIME_ENABLED !== 'true') throw Error('RUNTIME_REQUIRED')
 if (process.env.IDENTITY_BINDING_RENEWAL_ENABLED !== undefined && !['true', 'false'].includes(process.env.IDENTITY_BINDING_RENEWAL_ENABLED)) throw Error('INVALID_RENEWAL_FLAG')
@@ -107,8 +114,24 @@ if (process.env.IDENTITY_RUNTIME_ENABLED === 'true') {
       const security=email,report=reportEmail
       email={...security,async ready(){await Promise.all([security.ready(),report.ready()])},async stop(){await Promise.all([security.stop(),report.stop()])}}
     }
+    if(process.env.IDENTITY_CALENDAR_DELIVERY_ENABLED==='true'){
+      if(!currentE1||!process.env.IDENTITY_CALENDAR_SCHEMA_DIGEST)throw Error('CALENDAR_DELIVERY_AUTHORITY_REQUIRED')
+      const u=new URL(process.env.IDENTITY_CALENDAR_DATABASE_URL??'')
+      if(!['postgres:','postgresql:'].includes(u.protocol)||u.hostname!=='ep-silent-lake-b9o1yr6z.c-7.eu-central-1.aws.neon.tech'||u.username!=='economic_calendar_development_delivery'||u.pathname!=='/economic_calendar_development'||!['require','verify-full'].includes(u.searchParams.get('sslmode')??''))throw Error('CALENDAR_DELIVERY_DATABASE_BINDING_REQUIRED')
+      u.searchParams.delete('sslmode');u.searchParams.delete('channel_binding')
+      calendarPool=new pg.Pool({connectionString:u.href,ssl:{rejectUnauthorized:true},max:2,connectionTimeoutMillis:3000,query_timeout:10000,idleTimeoutMillis:10000});calendarPool.on('error',()=>{})
+      const {rows:[login]}=await calendarPool.query("SELECT session_user,current_user,rolsuper,rolbypassrls,rolcreaterole,rolcreatedb,rolreplication,EXISTS(SELECT 1 FROM pg_roles o WHERE o.rolname LIKE '%\\_owner' ESCAPE '\\' AND pg_has_role(current_user,o.oid,'MEMBER')) AS owner_member FROM pg_roles WHERE rolname=current_user")
+      if(!login||login.session_user!=='economic_calendar_development_delivery'||login.current_user!==login.session_user||login.rolsuper||login.rolbypassrls||login.rolcreaterole||login.rolcreatedb||login.rolreplication||login.owner_member)throw Error('ORDINARY_CALENDAR_DELIVERY_LOGIN_REQUIRED')
+      calendarWebhook=createCalendarMailgunWebhook({query:(sql,values)=>calendarPool!.query(sql,values),signingKey:process.env.IDENTITY_CALENDAR_MAILGUN_WEBHOOK_SIGNING_KEY??'',origin:config.origin,domain:e.domain})
+      calendarEmail=createCalendarEmailRuntime({query:(sql,values)=>pool!.query(sql,values),calendarQuery:(sql,values)=>calendarPool!.query(sql,values),client,calendarSchemaDigest:process.env.IDENTITY_CALENDAR_SCHEMA_DIGEST,
+        mailgun:{environment:'development',region:e.region,domain:e.domain,apiKey:process.env.MAILGUN_SENDING_KEY,authorizedRecipients:[],from:e.from,senderName:e.senderName},diagnostic:code=>console.error('identity-email: '+code)})
+      await calendarEmail.ready()
+      const previous=email,calendar=calendarEmail
+      email={...previous,async ready(){await Promise.all([previous.ready(),calendar.ready()])},async stop(){await Promise.all([previous.stop(),calendar.stop()]);await closeCalendarPool()}}
+    }
   }
   if(process.env.IDENTITY_REPORT_DELIVERY_ENABLED==='true'&&!reportEmail)throw Error('EXISTING_EMAIL_TRANSPORT_REQUIRED')
+  if(process.env.IDENTITY_CALENDAR_DELIVERY_ENABLED==='true'&&!calendarEmail)throw Error('EXISTING_CALENDAR_EMAIL_TRANSPORT_REQUIRED')
   boundary = createSessionBoundary({ configuration: config, client, authority }); origin = config.origin
   if (process.env.IDENTITY_SELF_SERVICE_ENABLED === 'true') {
     const key = process.env.IDENTITY_PROFILE_PROOF_KEY, digest = process.env.IDENTITY_PROFILE_SCHEMA_DIGEST
@@ -141,7 +164,7 @@ if (process.env.IDENTITY_RUNTIME_ENABLED === 'true') {
     embedded = createEmbeddedAccountHandler(config, consumers)
   }
 }
-const server = createNodeServer(origin, createHttpHandler(boundary, account, avatar, email, language, registration, embedded, salutation,currentE1), email !== null); server.listen(port, process.env.HOST ?? '127.0.0.1', () => console.log('identity-runtime started; live readiness requires verified provider and authority'))
+const server = createNodeServer(origin, createHttpHandler(boundary, account, avatar, email, language, registration, embedded, salutation,currentE1,calendarWebhook), email !== null,calendarWebhook !== null); server.listen(port, process.env.HOST ?? '127.0.0.1', () => console.log('identity-runtime started; live readiness requires verified provider and authority'))
 let shuttingDown = false
 for (const signal of ['SIGINT','SIGTERM']) process.once(signal, () => {
   if (shuttingDown) return
@@ -152,4 +175,4 @@ for (const signal of ['SIGINT','SIGTERM']) process.once(signal, () => {
   server.closeIdleConnections()
 })
 }
-start().catch(async () => { console.error('identity-runtime configuration unavailable'); await Promise.all([email?.stop(),reportEmail?.stop()]); await pool?.end(); process.exitCode = 1 })
+start().catch(async () => { console.error('identity-runtime configuration unavailable'); await Promise.all([email?.stop(),reportEmail?.stop(),calendarEmail?.stop()]); await closeCalendarPool(); await pool?.end(); process.exitCode = 1 })

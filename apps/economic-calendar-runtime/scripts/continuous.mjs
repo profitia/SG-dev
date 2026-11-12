@@ -9,6 +9,7 @@ import {createContinuousRuntime} from '../src/continuous.mjs'
 import {maintainSourceAccess,monitorAccess} from '../src/access-continuity.mjs'
 
 export async function runContinuous(env=process.env){
+ if(env.ECR_NOTIFICATION_QUALIFICATION_ENABLED!==undefined&&!['true','false'].includes(env.ECR_NOTIFICATION_QUALIFICATION_ENABLED))throw Error('INVALID_NOTIFICATION_QUALIFICATION_FLAG')
  if(env.RENDER_GIT_COMMIT!==env.ECR_EXECUTION_SHA)throw Error('EXACT_SCHEDULER_RELEASE_REQUIRED')
  const c=loadConfiguration(env,'ingest'),database=createDatabase({connectionString:c.connectionString,binding:{databaseName:c.databaseName,role:c.runtimeRole}})
  const identityUrl=new URL(env.ECR_CONTINUITY_DATABASE_URL??'')
@@ -36,12 +37,18 @@ export async function runContinuous(env=process.env){
   },report:e=>console.log(JSON.stringify({...e,sourceSha:c.deploymentId}))})
   let result
   try{result=await runtime.tick()}catch{result={triggerKind:'SCHEDULED',jobs:[],failed:true,error:'ECR_CONTINUOUS_REFUSED_OR_FAILED'}}
+  if(env.ECR_NOTIFICATION_QUALIFICATION_ENABLED==='true'){
+   const {rows:[qualified]}=await database.query('SELECT economic_calendar.qualify_reminders() AS count')
+   const {rows:[health]}=await database.query('SELECT economic_calendar.notification_health() AS result')
+   console.log(JSON.stringify({event:'ecr_notification_health',environment:'development',sourceSha:c.deploymentId,remindersQueued:qualified.count,...health.result}))
+   result={...result,notificationRequired:Number(health.result?.newFailures)>0}
+  }
   if(enabled){
    const deliveryTest=env.ECR_ACCESS_MONITOR_TEST_REQUEST_ID?{id:env.ECR_ACCESS_MONITOR_TEST_REQUEST_ID,until:env.ECR_ACCESS_MONITOR_TEST_UNTIL}:null
    const monitored=await monitorAccess({database,sourceState,identityQuery:(sql,values)=>identity.query(sql,values),serviceRenewal,deliveryTest})
    for(const alert of monitored.alerts)console.log(JSON.stringify({event:'ecr_access_expiry_alert',environment:'development',sourceSha:c.deploymentId,...alert}))
    console.log(JSON.stringify({event:'ecr_access_expiry_check',sourceSha:c.deploymentId,sourceRenewal:monitored.sourceRenewal,serviceRenewal:monitored.serviceRenewal,dependenciesChecked:monitored.dependenciesChecked,newAlerts:monitored.alerts.length,resolved:monitored.resolved}))
-   result={...result,notificationRequired:monitored.alerts.length>0}
+   result={...result,notificationRequired:result.notificationRequired===true||monitored.alerts.length>0}
   }
   return result
  }finally{await sourceMonitor?.end().catch(()=>{});await identity.end().catch(()=>{});await database.close()}

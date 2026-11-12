@@ -1,5 +1,6 @@
 import {randomUUID} from 'node:crypto'
 import {CalendarError,fingerprint} from '@profitia/economic-calendar-contracts'
+import {resultScope} from './result-scope.mjs'
 
 export function scheduledCommand(template,at){
   const command=structuredClone(template.command??template),day=new Date(at).toISOString().slice(0,10)
@@ -43,7 +44,8 @@ export function createContinuousRuntime({database,synchronizer,renewAccess=async
           await fence(t,job)
           let seconds=job.interval_seconds
           if(job.command.family==='series-observations'){
-            const {rows:[next]}=await t.query("SELECT min((current_data->>'eventAt')::timestamptz+interval '30 minutes') FILTER(WHERE (current_data->>'eventAt')::timestamptz+interval '30 minutes'>clock_timestamp()) AS due,max(current_data->'reference'->>'providerValue') FILTER(WHERE (current_data->>'eventAt')::timestamptz+interval '30 minutes'<=clock_timestamp()) AS expected_period FROM economic_calendar.events WHERE provider='eia' AND current_data->'source'->>'publicationRef'='eia:wpsr'")
+            const scope=resultScope(job.command.criteria.path)
+            const {rows:[next]}=await t.query("SELECT min((current_data->>'eventAt')::timestamptz+interval '30 minutes') FILTER(WHERE (current_data->>'eventAt')::timestamptz+interval '30 minutes'>clock_timestamp()) AS due,max(current_data->'reference'->>'providerValue') FILTER(WHERE (current_data->>'eventAt')::timestamptz+interval '30 minutes'<=clock_timestamp()) AS expected_period FROM economic_calendar.events WHERE provider='eia' AND current_data->'source'->>'publicationRef'=$1",[scope.publicationRef])
             if(next.due)seconds=Math.min(seconds,Math.max(900,Math.ceil((new Date(next.due).getTime()-Date.now())/1000)))
             if(next.expected_period&&(!result.latestReferencePeriod||result.latestReferencePeriod<next.expected_period))seconds=Math.min(seconds,86400)
           }
