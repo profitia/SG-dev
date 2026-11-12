@@ -2435,6 +2435,25 @@ test('renderer successor rejects widened scope, history edits and rebound busine
 })
 
 import {PRIVATE_RECURRING_CONSENT_TRANSPORT_REVIEW,assertRecurringConsentTransportRecord} from './controlled-package-ci.mjs'
+import {PRIVATE_RECURRING_CONSUMER_TEST_REVIEW} from './controlled-package-ci.mjs'
+test('recurring consumer test continuation admits only29 exact routed files and preserves the accepted27',()=>{
+ const r=PRIVATE_RECURRING_CONSUMER_TEST_REVIEW,files=Object.entries(r.entries).map(([filename,e])=>({filename,sha:e.sha,status:e.status})),p={...pr(),number:r.prNumber,changed_files:files.length,base:{...pr().base,sha:r.baseSha},head:{...pr().head,sha:r.sourceSha,ref:r.branch}}
+ assert.equal(files.length,29)
+ assert.equal(createHash('sha256').update(JSON.stringify(r.entries)).digest('hex'),'4dc65bcc37bcc7a5fe06fb1d77bc4ca23dd7db2db67ea6847045fdf7a09f103f')
+ assert.equal(createHash('sha256').update(JSON.stringify(PRIVATE_RECURRING_CONSENT_TRANSPORT_REVIEW.entries)).digest('hex'),'b09ab1e109ba131a3d44c059d51546fc5ac6e56456eaf7472835f8bd78b1c5d7')
+ assertArchitectureFiles(p,files);assert.equal(selectCandidate(context(),p,r.sourceSha,{files}),r.sourceSha)
+ for(const f of files){assertPrivateRecurringReviewEntry(f,'100644 blob '+f.sha+'\t'+f.filename+'\0');for(const mode of ['100755','120000','160000'])rejection(()=>assertPrivateRecurringReviewEntry(f,mode+' blob '+f.sha+'\t'+f.filename+'\0'))}
+ for(const change of [f=>f.pop(),f=>f.push(f[0]),f=>f[0].sha='f'.repeat(40),f=>f[0].status='removed',f=>f[0].previous_filename='elsewhere',f=>f[0].filename='apps/srm/src/server/unreviewed.ts']){const bad=structuredClone(files);change(bad);rejection(()=>selectCandidate(context(),{...p,changed_files:bad.length},r.sourceSha,{files:bad}))}
+ for(const change of [q=>q.number=995,q=>q.head.ref='architecture/another',q=>q.head.repo.full_name='attacker/fork',q=>q.user.login='attacker',q=>q.base.ref='staging',q=>q.head.sha=sha]){const bad=structuredClone(p);change(bad);rejection(()=>selectCandidate(context(),bad,r.sourceSha,{files}))}
+})
+test('trusted consumer continuation checks15 exact sources and all20 immutable receipts without candidate execution',()=>{
+ const r=PRIVATE_RECURRING_CONSUMER_TEST_REVIEW,bytes=execFileSync('git',['show',r.sourceSha+':packages/platform-contracts/test/recurring-consent-transport-source.json'],{cwd:authorityRoot}),a=JSON.parse(bytes)
+ const options={sha256ForPath:p=>a.sourceDigests[p]??a.preservedReceipts[p],blobForPath:p=>r.entries[p]?.sha,historicalDigestForPath:(sha,p)=>{assert.equal(sha,a.baseCandidateSha);return a.preservedReceipts[p]}}
+ assert.equal(Object.keys(assertRecurringConsentTransportRecord(bytes,options).sourceDigests).length,15)
+ for(const p of Object.keys(a.sourceDigests)){rejection(()=>assertRecurringConsentTransportRecord(bytes,{...options,sha256ForPath:q=>q===p?'0'.repeat(64):options.sha256ForPath(q)}));if(r.entries[p])rejection(()=>assertRecurringConsentTransportRecord(bytes,{...options,blobForPath:q=>q===p?'0'.repeat(40):options.blobForPath(q)}))}
+ for(const p of Object.keys(a.preservedReceipts))for(const field of ['sha256ForPath','historicalDigestForPath']){const bad={...options,[field]:field==='sha256ForPath'?q=>q===p?'0'.repeat(64):options.sha256ForPath(q):(sha,q)=>q===p?'0'.repeat(64):options.historicalDigestForPath(sha,q)};rejection(()=>assertRecurringConsentTransportRecord(bytes,bad))}
+ rejection(()=>assertRecurringConsentTransportRecord(Buffer.concat([bytes,Buffer.from(' ')]),options))
+})
 function piConsentTransportFixture(){
  const r=PRIVATE_RECURRING_CONSENT_TRANSPORT_REVIEW,files=Object.entries(r.entries).map(([filename,e])=>({filename,sha:e.sha,status:e.status}))
  return {r,files,p:{...pr(),number:r.prNumber,changed_files:files.length,base:{...pr().base,sha:r.baseSha},head:{...pr().head,sha:r.sourceSha,ref:r.branch}}}
