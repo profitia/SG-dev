@@ -1,0 +1,25 @@
+{
+  "name": "SG-dev Shared Development",
+  "image": "mcr.microsoft.com/devcontainers/base:bookworm",
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": { "version": "24" },
+    "ghcr.io/devcontainers/features/python:1": { "version": "3.12" },
+    "ghcr.io/devcontainers/features/sshd:1": {}
+  },
+  "customizations": {
+    "codespaces": {
+      "repositories": {
+        "profitia/project-history-repository": { "permissions": { "contents": "write" } }
+      }
+    }
+  },
+  "postCreateCommand": "node scripts/governance/shared-codespace-bootstrap.mjs",
+  "forwardPorts": [3001, 3002, 3201, 3203, 3500],
+  "portsAttributes": {
+    "3001": { "label": "SG2 runtime", "visibility": "private" },
+    "3002": { "label": "SG2 dashboard", "visibility": "private" },
+    "3201": { "label": "SG2 PMOS", "visibility": "private" },
+    "3203": { "label": "Architecture PMOS", "visibility": "private" },
+    "3500": { "label": "Architecture Lab", "visibility": "private" }
+  }
+}
