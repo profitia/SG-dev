@@ -927,3 +927,67 @@ PROPOSED_NOT_ACTIVE / OWNER_CI_POLICY_ACCEPTANCE_PENDING. The owner commissioned
 The separate four-file policy proposal pins every path/blob/status and regular100644 mode under ASSISTANT_QUALITY_G1_REVIEW, binds PR1042, its exact internal Architecture branch and actual owner routes. A main refresh is allowed only while the five reviewed blobs/statuses/modes stay identical and the live expected SHA is revalidated. No wildcard Canon/package/workflow admission is added. Package pins, read:packages-only credentials, main-only Environment, ignore-scripts installation, token removal before candidate execution, complete source provenance and all public/controlled/resulting-main gates remain mandatory.
 
 After explicit controller-owner acceptance, obtain controlled proof for the policy bootstrap from trusted main, accept the policy only after required checks, then dispatch the same trusted-main proof for the exact current PR1042 head. Source ownership becomes effective only after G1 main acceptance and independent readback. This admission creates no QA service grant, SQL installation, data rights, resource, cost or deployment authority and does not start Stage2. See [the exact proposal and five-file manifest](../evidence/2026-11-12-assistant-quality-g1-ci-admission.md).
+
+
+### Stage I — actual registration74 composed integrity correction
+
+The resumed owner Full Autopilot mandate covers the two actual SG2-owned test corrections and corresponding test-helper digest updates without another per-hash approval. The initial PMOS estimate75 is corrected to actual74: ARCH38/SG2 22/SRM14. Current source35340e234f4a764821fef343ae617a18c6c8d3d3 retains original022 record,276 physical inputs and48 immutable accepted-main inputs. Preserve the complete old73 review/physical graph separately; current and historical exact graphs must both authenticate before any predecessor view. All prior negative controls, actual-owner routes, protected/public/resulting-main checks and independent original proofs remain mandatory. This source/CI-only correction does not itself install SQL, grant access, assign packages, call providers, send invitations or deploy. Continue the accepted Stage I business implementation independently. See the dated integrity-test CI continuation evidence.
+
+## ECR notifications and coverage — proposed closed continuation (2026-11-12)
+
+PROPOSED / OWNER_CI_APPROVAL_PENDING. The separate Architecture producer PR1063
+and SG2 consumer PR1064 are bound by their exact54 and7 source closures in the
+trusted controller. Preserve every accepted registration70, ECR-week,
+Calendar99, Oil42 and BSDC1062 guard and historical receipt. Authenticate the
+new graph before exposing a predecessor; never import candidate JavaScript
+while a registry credential is available. The exact legacy SDK1.7.1 lock bridge
+ends at the separately verified1.8 consumer adoption and opens no general path,
+package or provider exception. The concrete review, scope and actual checks
+are in [the proposed admission](../evidence/2026-11-12-ecr-complete-functional-ci-admission.md).
+
+Explicit owner acceptance of the finished policy is required before its
+trusted-main validation/admission. Then require exact producer and separate
+consumer public/controlled proofs and complete resulting-main checks before
+source integration. Runtime schema, licensing/retention, Identity/Mailgun
+purpose and credentials, release bindings, deployment and LIVE acceptance
+remain separate owner-controlled operations. This source policy grants none.
+
+### Complete Calendar — proposed historical-result continuity correction
+
+The original consolidated owner GO remains authority for the existing
+operational scope. Before installation, a real PostgreSQL regression proved
+that changing an owner retention basis could hide retained readings. The same
+54 producer and7 consumer paths now pin a minimal read/write/revocation repair
+and its full52-test regression. No new path, grant, role, cost or operation is
+added; only the migration005 digest changes in the operation plan. The six
+functional SG2 files and all38 historical receipts remain unchanged. Preserve
+accepted registration73/70, Calendar99, Oil42, ECR-week, BSDC and CIC controls.
+This actual source-pin change requires exact corrective controller acceptance;
+the original GO is not approval for new protected bytes. Fresh exact controlled,
+public and resulting-main checks remain mandatory. See the current source
+commits and plan digest in [the admission](../evidence/2026-11-12-ecr-complete-functional-ci-admission.md).
+
+The same-path successor additionally gives the existing Calendar authority test
+the established Identity PostgreSQL16 loopback Docker fallback on CI without
+native binaries. Assertions, runtime, SQL, plan and administrative scope are
+unchanged from owner-approved02c1725f. Updated seven producer blobs plus the
+consumer record are exact-pinned; the six SG2 functional blobs remain identical.
+Fresh exact-pin acceptance and the actual Ubuntu CI result remain required.
+
+### Calendar / PI accepted-peer policy composition
+
+Actual authority main537660ed independently admits the PI live corrections.
+It overlaps the Calendar policy in piCompletionCanonicalRead. The proposed
+composition authenticates complete current Calendar source, then the exact PI
+live-correction graph, then the unchanged recurring-transport predecessor.
+All54+7 Calendar pins, all12 PI pins, registration74/73/70 and38 immutable
+Calendar receipts remain unchanged. Eight focused tests PASS, including two
+actual complete Git source graphs and rejection of an unadmitted mixed graph.
+The complete original Calendar and PI test blocks are retained. No source
+code, SQL, operation-plan digest, right, role, cost or resource is changed.
+
+This is a real change to trusted projection composition, requiring exact
+controller-owner acceptance before activation. The earlier approved8c and
+C5ad proof from control97 are retained; the latter is historical after main537
+changed the controller. Fresh exact controlled/public and resulting-main
+gates remain mandatory. No deployment or mail was performed.
