@@ -768,3 +768,32 @@ main-only Environment, package pins, ignore-scripts, token removal, complete
 diff/mode/owner and exact-head/race fences remain mandatory. No business grant,
 product SQL installation, invitation delivery or deployment occurs through
 this CI-only change. Continue the parent Stage I after this bounded gate closes.
+
+## Owner-approved direct ECR source closure and bounded test repair mandate (2026-11-12)
+
+The owner explicitly accepted PR1041 including its described delegation:
+“Zatwierdzam #1041 wraz z opisanym upoważnieniem”.
+The frozen d8580cc8 documents were preserved at cc230a52 and accepted bfc4a228.
+Retain the complete owner-reviewed68 map/record8e3eb530 and the complete earlier
+b0/B5/FFE67 and both65 graphs as separate exact reviews.
+
+For completing this Stage I source acceptance only, the owner delegates
+necessary test/provenance-only corrections inside these exact68 source paths
+and the four specified policy files, without another human decision solely
+for each resulting hash. Every version must retain a complete exact closed
+map and pass actual owner, protected/public and whole resulting-main checks.
+No new source path, production SDK/native Identity/SRM runtime or UI byte,
+SQL, manifest/lock, current/historical receipt, operation, Root default,
+grant, commercial policy, provider, cost or deployment is delegated here.
+Credential/author/repository/main-only/private-pin/mode/race fences cannot change.
+This is the express narrow exception to earlier per-version decision notes;
+it grants no generic source admission and no independent deployment authority.
+
+The first delegated continuation is source04107d13bc245ee7e82feb3059291ba4d182d54a,
+record52f6fbeba63a7585d3b909ca6cb5b91c1b6b2ebdeb118975473f312acc6ba7f3, the same68 owners/statuses/modes, with63 frozen1041 blobs and
+five exact test/data successors. Actual owner commits are recorded in the
+dated acceptance packet. The direct ECR test uses its authenticated source
+frame for both source and prior receipt comparisons. SRM preserves its immutable
+AppShell reader and selects authenticated current SRM bytes only for the one
+current-source assertion. Full physical68 authentication precedes the unchanged
+three exact historical guard pins. All prior assertions and tamper cases remain.
