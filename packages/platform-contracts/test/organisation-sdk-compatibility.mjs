@@ -1,3 +1,4 @@
+import {organisationLifecycleSdkPredecessor} from './organisation-lifecycle-sdk-compatibility.mjs'
 import {recurringConsentTransportPredecessor} from './recurring-consent-transport-source.mjs'
 import {procurementInsightsCompletionPredecessor} from '../../../apps/sg-runtime/tests/procurement-insights-completion-integrity.mjs'
 import {marketCalendarSourcePredecessor,bsdcManifestContinuityCurrent} from '../../../apps/architecture-lab/market-calendar-source.mjs'
@@ -660,6 +661,8 @@ function registrationMainComposition(current,historical){
 
 export function sdkContinuationPredecessor(receipt,current,historical,{projectKey='SG2',validatePeer=true}={}){
  assert(['SG2','SRM'].includes(projectKey))
+ const lifecycle=organisationLifecycleSdkPredecessor(current,historical,{projectKey})
+ if(lifecycle){const previous=sdkContinuationPredecessor(receipt,lifecycle.previousBytes,historical,{projectKey,validatePeer});assert(previous,'complete prior SDK source closure required');return {...previous,lifecycle,currentSourceDigests:lifecycle.currentSourceDigests}}
  const frames=receipt.sdkSourceContinuations
  if(frames===undefined)return null
  const composition=registrationMainComposition(current,historical)
@@ -708,7 +711,7 @@ const historicalBytes=(sha,path)=>execFileSync('git',['show',sha+':'+path],{cwd:
 export function acceptedSdkSource(){
  const receipt=JSON.parse(currentBytes(receiptPath('SG2')))
  const continuation=sdkContinuationPredecessor(receipt,currentBytes,historicalBytes)
- if(continuation)return continuation.record
+ if(continuation)return continuation.lifecycle?.currentRecord??continuation.record
  const previous=receipt.oilAutonomousReportCompatibility??receipt.assistantM1SourceCompatibility
  assert(previous?.sdkDigests&&previous?.optionalPackageDigests,'existing accepted SDK source required')
  return {sdkDigests:previous.sdkDigests,optionalPackageDigests:previous.optionalPackageDigests}
