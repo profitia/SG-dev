@@ -9,13 +9,15 @@ import {ObservationForm} from './observation-form'
 import {NewsfeedInlineItem} from './inline-item'
 import {NewsfeedStatistics} from './statistics'
 import {ReportsWorkspace} from './reports'
+import {MarketCalendar} from './market-calendar'
+import {CalendarNavigation,CalendarIcon} from './calendar-dialogs'
 import './workspace.css'
 type View='all'|'mine'|'shared'|'organisation'|'statistics'|'history'|'notifications'
 type Notification={id:string;observationId:string;publicationId:string;createdAt:string;readAt:string|null}
 type Shares={grants:Array<{id:string;mode:'USER'|'ORG';createdAt:string}>;invitations:Array<{id:string;expiresAt:string;claimedAt:string|null}>}
 export function ProcurementInsightsWorkspace({locale,active,onReturn,onContext}:{locale:'pl'|'en';active:boolean;onReturn:()=>void;onContext?:(reference:NewsfeedReference|PublishedReportReference|null)=>void}){
  const token=useSg2SessionCredential(),router=useRouter(),params=useSearchParams(),path=`/${locale}/dashboard/procurement-insights`
- const tab=params.get('tab')==='reports'?'reports':'newsfeed',selection=params.get('observation'),runId=params.get('run'),publicationId=params.get('publication')
+ const tab=params.get('tab')==='calendar'?'calendar':params.get('tab')==='reports'?'reports':'newsfeed',selection=params.get('observation'),runId=params.get('run'),publicationId=params.get('publication')
  const rawClient=useMemo(()=>createNewsfeedClient(token??(async()=>null)),[token]),lease=useMemo(()=>({controller:new AbortController()}),[rawClient]),controller=useRef<AbortController|null>(null),mutating=useRef(false)
  const client=useMemo(()=><T,>(p:string,o:Parameters<typeof rawClient>[1]={})=>rawClient<T>(p,{...o,signal:o?.signal?AbortSignal.any([o.signal,lease.controller.signal]):lease.controller.signal}),[rawClient,lease])
  useEffect(()=>{if(lease.controller.signal.aborted)lease.controller=new AbortController();return()=>lease.controller.abort()},[lease])
@@ -71,8 +73,8 @@ export function ProcurementInsightsWorkspace({locale,active,onReturn,onContext}:
  })}
  async function revoke(id:string,kind:'SHARE'|'INVITATION'){if(!selected)return;await act(async()=>{await client('/observations/'+selected.id+'/shares?kind='+kind+'&shareId='+encodeURIComponent(id),{method:'DELETE'});setInviteLink('');setSharing(await client<Shares>('/observations/'+selected.id+'/shares'));setMessage('Cofnięto dostęp lub zaproszenie.')})}
  const labels:Record<View,string>={all:'Wszystkie informacje',mine:'Moje obserwacje',shared:'Udostępnione mi',organisation:'Obserwacje organizacji',statistics:'Statystyki',history:'Historia wyszukiwań',notifications:'Powiadomienia'}
- return <main className="pi-workspace" data-appshell-module="procurement-insights"><header className="pi-heading"><div><h1>Procurement Insights</h1><p>Monitoruj informacje i korzystaj z pogłębionych analiz rynkowych.</p></div><CanonButton canonId="SRM-C02" usage="PI:return" type="button" onClick={onReturn}>{locale==='pl'?'Wróć do biurka':'Back to dashboard'}</CanonButton></header>
-  <nav className="pi-tabs" aria-label="Procurement Insights"><button type="button" aria-current={tab==='newsfeed'?'page':undefined} onClick={()=>navigate({tab:'newsfeed'})}>Newsfeed</button><button type="button" aria-current={tab==='reports'?'page':undefined} onClick={()=>navigate({tab:'reports'})}>Raporty</button></nav>
+ return <main className="pi-workspace" data-appshell-module="procurement-insights">{tab==='calendar'&&<CalendarNavigation locale={locale} onHome={onReturn} onParent={()=>navigate({tab:'newsfeed'})}/>}<header className="pi-heading"><div><h1>Procurement Insights</h1><p>Monitoruj informacje i korzystaj z pogłębionych analiz rynkowych.</p></div><CanonButton canonId="SRM-C02" usage="PI:return" type="button" onClick={onReturn}>{locale==='pl'?'Wróć do biurka':'Back to dashboard'}</CanonButton></header>
+  <nav className="pi-tabs" aria-label="Procurement Insights"><button type="button" aria-current={tab==='newsfeed'?'page':undefined} onClick={()=>navigate({tab:'newsfeed'})}><CalendarIcon name="news"/>Newsfeed<small>Bieżące informacje</small></button><button type="button" aria-current={tab==='reports'?'page':undefined} onClick={()=>navigate({tab:'reports'})}><CalendarIcon name="report"/>Raporty<small>Pogłębione analizy</small></button><button type="button" aria-current={tab==='calendar'?'page':undefined} onClick={()=>navigate({tab:'calendar'})}><CalendarIcon/>Kalendarz rynkowy<small>Publikacje i odczyty</small></button></nav>
   <div hidden={tab!=='newsfeed'}><div className="pi-layout"><aside className="pi-sidebar"><nav aria-label="Newsfeed">{(Object.keys(labels) as View[]).map(key=><button key={key} type="button" aria-current={view===key?'page':undefined} onClick={()=>{setView(key);setMessage('');if(['all','mine','shared','organisation'].includes(key))navigate({observation:null,run:null})}}>{labels[key]}</button>)}</nav>
    <h3>Zapisane obserwacje</h3><ul>{observations.items.map(o=><li key={o.id}><button type="button" aria-current={selection===o.id?'page':undefined} onClick={()=>navigate({observation:o.id,run:null})}>{o.name}{o.status==='PAUSED'?' · Wstrzymana':''}</button></li>)}</ul>{observations.nextCursor&&<button type="button" disabled={busy} onClick={()=>void loadMore('observations')}>Pokaż kolejne obserwacje</button>}
   </aside><section className="pi-content" aria-busy={loading||busy}>
@@ -94,5 +96,6 @@ export function ProcurementInsightsWorkspace({locale,active,onReturn,onContext}:
    </>}
   </section></div></div>
   <div hidden={tab!=='reports'}><ReportsWorkspace active={active&&tab==='reports'} locale={locale} getToken={token??(async()=>null)} onContext={onContext} editionId={params.get('edition')} onEdition={id=>navigate({tab:'reports',edition:id})}/></div>
+  <div hidden={tab!=='calendar'}><MarketCalendar active={active&&tab==='calendar'} getToken={token??(async()=>null)}/></div>
  </main>
 }
