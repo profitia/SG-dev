@@ -10,13 +10,14 @@
 | Ścieżka | Canon/proposals/bsdc/ARCHITECTURE/cic-assistant-continuous-quality.md |
 | Gałąź robocza | architecture/bsdc-cic-quality-20261112 |
 | Status | WORKING / NOT_ACCEPTED |
+| Projekt rozwiązania | READY_FOR_OWNER_REVIEW / PROPOSED_NOT_ACCEPTED; kompletny projekt w §4–5, decyzja w §7 |
 | Tryb | DESIGN / BUSINESS CONSULTING |
-| Etap | D–E: rekomendacje danych QA i wykonawcy; C oraz F pozostają otwarte |
+| Etap | F — kompletna propozycja v1 przedstawiona do akceptacji; decyzja właściciela oczekiwana |
 | Utworzono / zaktualizowano | 2026-11-12 / 2026-11-12, Europe/Warsaw |
-| Rewizja | 4 |
-| Rewizja bazowa ostatniej aktualizacji | PDR 90fb09abafa8ff6886dfe14feff76d43a1cf5563; aktualne źródła governance main ce5044a6c87937da80ee2db86dbcb54522ddd491 |
+| Rewizja | 5 |
+| Rewizja bazowa ostatniej aktualizacji | PDR b27ece32e3df81751399b2153b5cd24978e4c3dd; aktualne źródła governance main 42e9d43ea846a5e6216faa18bfec8f939aac6971 |
 | Zadanie inicjalizacji | ARCH-BSDC-CIC-QUALITY-INIT-20261112 |
-| Zadanie bieżącej aktualizacji | ARCH-BSDC-CIC-QUALITY-DATA-EXECUTOR-20261112 |
+| Zadanie bieżącej aktualizacji | ARCH-BSDC-CIC-QUALITY-V1-PROPOSAL-20261112 |
 | Upoważnienie | Uruchomienie BSDC i prowadzenie jednej roboczej karty. Bez implementacji produktu, aktywacji kanonu, zasobów, płatnych przebiegów i deploymentów. |
 
 Publiczna karta zawiera opis potrzeby i stan konsultacji. Nie zawiera transkryptów, wyników odczytów prywatnych systemów, danych użytkowników/klientów, materiałów prywatnego repozytorium CIC ani sekretów. Bieżący commit zapisu potwierdza się odczytem GitHuba poza plikiem. Gałąź robocza nie oznacza przyjęcia do main ani akceptacji rozwiązania.
@@ -40,7 +41,7 @@ Wcześniejsza rozmowa obejmowała analizę architektury, porównanie możliwośc
 - A: konkretny mechanizm automatycznego uruchamiania wykonawcy, testowania, PR, dopuszczonego scalania/promocji i odzyskiwania kontroli po niepowodzeniu;
 - B: kryteria wykrywalności, fałszywych alarmów, skuteczności napraw, gotowości do autonomii i wycofania.
 
-Te wymagania są częścią potrzeby. Właściciel przyjął granicę środowiska v1 w DEC-01 oraz projektowe limity modeli w DEC-02. Pozostałe propozycje, w tym progi jakości, wybór narzędzi i zakres dopuszczonych klas, nie uzyskały jeszcze statusu zaakceptowanego kanonu.
+Te wymagania są częścią potrzeby. Właściciel przyjął granicę środowiska v1 w DEC-01 oraz projektowe limity modeli w DEC-02. Rewizja 5 scala pozostałe ustalenia w kompletną propozycję v1 (§4–5), gotową do oceny właściciela. Nie została jeszcze przyjęta ani aktywowana.
 
 ### 2.1. DEC-01 — decyzja właściciela, 12 listopada 2026
 
@@ -58,38 +59,52 @@ Preferowane jest rozszerzanie istniejących zdolności i wykorzystanie gotowych 
 
 Hosting, storage i CI pozostają do osobnego oszacowania. Potwierdzenie limitu nie uruchamia wydatków, nie zatwierdza nowego zasobu ani implementacji. Proponowany limit dwóch prób pozostaje odrębną, jeszcze nieprzyjętą regułą.
 
+### 2.3. Propozycja v1 w skrócie — nowy pakiet do akceptacji
+
+| Pytanie właściciela | Rekomendacja |
+| --- | --- |
+| Co otrzymamy? | Ocenę realnych rozmów i pełny obieg naprawy: diagnoza → test → kod/reguła → niezależne sprawdzenie → Development → sprawdzenie skutku/rollback. |
+| Co naprawia się samo? | C1: daty i zakres; C2: wierność źródłu; C3: egzekwowanie ustalonej polityki wyjątków. Inne problemy podlegają diagnozie i trafiają do ownera technicznego. |
+| Gdzie kończy się autonomia? | Brak Production, nowych uprawnień/dostawców, zmian finansowych metod, własnych bramek lub mandatu. Rutynowe naprawy do Development bez właściciela po jednorazowym dopuszczeniu. |
+| Kiedy uznamy sukces? | Najpierw pełny techniczny odbiór trzech różnych przypadków z recovery. W pilotażu cel ≥80% kwalifikujących się realnych incydentów zamkniętych bez ręcznego wykonania, zero krytycznych regresji, jawne pokrycie i próby. Pełne mianowniki w §5.5. |
+| Co dzieje się po pogorszeniu? | Stop i kontrolowany rollback własnej wersji; cel decyzji ≤5 min i sprawdzonego LKG ≤15 min później. Nigdy cofanie cudzej nowszej zmiany lub bazy danych. |
+| Dane, miejsce i koszty | Prywatny dowód do 7 dni/metadane do 90 dni; agent tylko syntetyk. Render kontroler + jednorazowa VM GitHub. Przyjęte 50 USD dotyczy modeli; zasoby i praca zespołu osobno. |
+| Co oznacza akceptacja teraz? | Przyjęcie opisanego projektu i kryteriów. Implementacja, aktywacja mandatu, dane i wydatki wymagają późniejszego osobnego upoważnienia. |
+
 ## 3. Checklista BSDC A–F
 
-| ID | Status | Ustalenie / co pozostaje |
+Status USTALONE oznacza opracowanie i sprawdzenie **propozycji projektowej**, nie akceptację właściciela, osiągnięcie wskaźnika, dopuszczenie routingu lub wdrożenie. Pełny projekt pozostaje NOT_ACCEPTED. Warunki wykonania są jawne; nie stanowią kolejnych nieopisanych funkcji v1.
+
+| ID | Status | Ustalenie / dowód |
 | --- | --- | --- |
-| A1 | USTALONE | Problem ręcznego przeglądania rozmów i zlecania napraw opisany w §1. |
-| A2 | USTALONE | Użytkownicy SpendGuru; owner biznesowy Profitia. |
-| A3 | W_TRAKCIE | Rezultat określony; progi, mianowniki i sposób pomiaru do przyjęcia. |
-| A4 | USTALONE | Priorytet: rzeczywista poprawa i naprawy, minimalny udział właściciela, racjonalny koszt. |
-| B1 | W_TRAKCIE | Kod historii/runtime/migracji potwierdzony do main 46094e56; ustalenia w §4.3 oraz aktualna macierz E1/CI w §4.4–4.7. Pozostałe istotne integracje do domknięcia. |
-| B2 | W_TRAKCIE | W §4.3 rozdzielono potwierdzony kod od niedowiedzionego stanu wdrożenia i proponowanych rozszerzeń. |
-| B3 | W_TRAKCIE | Porównano miejsca wykonania w §4.4; wybrano rekomendację integracji gotowego wykonawcy z minimalnym własnym kontrolerem. Pozostałe wybory rozwiązania do domknięcia. |
-| B4 | W_TRAKCIE | R-EXEC-01 określa miejsce wykonania i uzasadnienie; całkowity koszt, dostęp kont i końcowy wariant całego rozwiązania do domknięcia. |
-| C1 | USTALONE | Projektowy przebieg od detekcji do sprawdzonego wydania i recovery w §5.1; szczegóły podlegają konsultacji, bez autoryzacji wykonania. |
-| C2 | W_TRAKCIE | Ustalić wejścia, walidacje, wyjątki, ograniczenia prób i recovery. |
-| C3 | W_TRAKCIE | DEC-01 przyjmuje autonomię Development i wyłączenie Production. Kandydackie klasy oraz wyłączenia v1 w §5.2 nadal do przyjęcia. |
-| C4 | W_TRAKCIE | Nie zakładać nowego panelu; wpływ na stany odpowiedzi i istniejący UX sprawdzić według kanonu. |
-| C5 | USTALONE | Projektowy scenariusz odbioru i negatywne próby w §5.4; liczbowe progi jakości pozostają propozycjami. |
-| D1 | USTALONE | ARCHITECTURE prowadzi; CIC i SG2 zachowują własne odpowiedzialności. |
-| D2 | W_TRAKCIE | PDR i kandydaci rozszerzenia SG2 rozstrzygnięci; kontroler i workflow mają NO_MATCH i wymagają onboardingu. Szczegóły w §4.7. |
-| D3 | W_TRAKCIE | Drzewo obejmuje kontroler, workflow i kandydackie rozszerzenie SG2. Wyniki resolvera w §4.7; nowe lokalizacje kontrolera/workflow wymagają rejestracji. |
-| D4 | W_TRAKCIE | Kontrakty logiczne, minimalny dowód i reguły wydania w §4.1–4.7; dokładne schematy, wersje oraz dopuszczenie nowych operacji nadal otwarte. |
-| D5 | W_TRAKCIE | R-DATA-01 w §4.5 proponuje cel, dostęp SERVICE, klasy danych, retencję 7/90 dni i usunięcia. To rekomendacja; mandaty danych i przetwarzających nie zostały przyjęte. |
-| D6 | W_TRAKCIE | R-EXEC-01 wskazuje Render worker + jednorazowe GitHub VM, nadzór i recovery. Podano koszt bazowy; pełny koszt i dopuszczenia pozostają otwarte. |
-| E1 | USTALONE | Projektowa sekwencja trzech etapów rezultatowych w §5; bez uruchomienia wykonania. |
-| E2 | W_TRAKCIE | Pierwszy etap ma pełny odbiór w §5.4; szczegółowe działające elementy kolejnych etapów pozostają do domknięcia. |
-| E3 | W_TRAKCIE | Oddzielne mandaty ownerów i środowisk; obecnie wyłącznie projektowanie. |
-| E4 | W_TRAKCIE | Test przed/po, niezależna regresja, działająca wersja, przerwanie i wycofanie. |
-| E5 | W_TRAKCIE | DEC-02 obowiązuje. W §4.6 koszt bazowego kontrolera i warunek ograniczania kosztu wykonawcy; wykorzystanie baz/CI i łączny koszt do potwierdzenia. |
-| F1 | W_TRAKCIE | Potrzeby właściciela i propozycje rozdzielono; otwarte decyzje w §7. |
-| F2 | DO_USTALENIA | Projekt kanonu powstanie po domknięciu istotnych punktów A–E. |
-| F3 | DO_USTALENIA | Brak akceptacji finalnego kanonu i planu. |
-| F4 | DO_USTALENIA | Handoff do wykonania po konsultacji; bez promptu implementacyjnego obecnie. |
+| A1 | USTALONE | Potrzeba i ograniczenie pracy właściciela w §1. |
+| A2 | USTALONE | Użytkownicy SpendGuru; właściciel produktu decyduje biznesowo; owner techniczny prowadzi wyjątki. |
+| A3 | USTALONE | Definicje sukcesu technicznego, jakości i pilotażu oraz próby/niepewność w §5.5. |
+| A4 | USTALONE | Priorytet: mniej błędów i pełna pętla naprawy przy minimalnym udziale właściciela, w granicach v1. |
+| B1 | USTALONE | Minimalne discovery kodu SG2/ACG/E1, źródłowych testów i infrastruktury opisano w §4 i §6; prywatne odczyty poza publiczną kartą. |
+| B2 | USTALONE | Źródło, propozycja i niezweryfikowane wykonanie rozdzielone; żaden projektowy próg nie oznacza wyniku pomiaru. |
+| B3 | USTALONE | Reuse runtime/testów i integracja Codex; porównanie Render/GitHub/PostHog/Langfuse/OpenAI w §4.4 i §4.8. |
+| B4 | USTALONE | Rekomendowany wariant i uzasadnienie prostoty/kosztu/ryzyka w §4.4–4.8; koszty wykonania oznaczono jako estymatę. |
+| C1 | USTALONE | Wyzwalacz → dowód → diagnoza → test → poprawka → niezależne sprawdzenie → wydanie → odbiór/recovery w §5.3. |
+| C2 | USTALONE | Kontrakty w §4.8, standard wyjątków §5.2, limity i stany §5.3 oraz rollback §5.6. |
+| C3 | USTALONE | Trzy klasy C1–C3 i jawne wyłączenia w §5.1; Production poza v1. |
+| C4 | USTALONE | Read-only weryfikacja aktualnego kanonu UX i istniejącej sesji asystenta; brak nowego panelu/wzorców; granice oraz realny odbiór UX w §5.2 i §5.7. |
+| C5 | USTALONE | Pełny business DoD i próby negatywne w §5.5–5.7; samo PR/CI nie stanowi odbioru. |
+| D1 | USTALONE | ARCHITECTURE prowadzi; CIC polityka, SG2 adopcja/runtime/dane; rozdział ról QA/agent/weryfikacja/publikacja. |
+| D2 | USTALONE | Dokładne wyniki resolvera i NO_MATCH przedstawiono w §4.7; brak domniemania rejestracji lub zgody. |
+| D3 | USTALONE | Drzewo istniejących i nowych ścieżek w §4, ownerzy i konieczny onboarding w §4.7. |
+| D4 | USTALONE | Cztery wersjonowane kontrakty logiczne i granice producent–konsument w §4.8; schemat techniczny zamyka wykonawca w dopuszczonym zakresie. |
+| D5 | USTALONE | Projekt celu, praw konta/organizacji, SERVICE, minimalizacji, retencji i usunięć w §4.5; aktywacja dopiero po mandacie. |
+| D6 | USTALONE | Development, zasoby, monitoring, rezerwacje kosztu, model wykonania i recovery opisano w §4.4–4.8 oraz §5.6–5.8. |
+| E1 | USTALONE | Dwa kompletne etapy rezultatowe w §5.7, pierwszy z pełną pętlą Development. |
+| E2 | USTALONE | Dla obu etapów wskazano działające funkcje, komponenty i wyniki w §5.7. |
+| E3 | USTALONE | Przygotowanie/uruchomienie wymaga osobnego upoważnienia i właścicieli; granice dopuszczenia w §5.4 i §7. |
+| E4 | USTALONE | Weryfikacja dokładnej wersji, zamrożony holdout, negatywne próby, CI, live odbiór i rollback w §5.4–5.7. |
+| E5 | USTALONE | Budżet modeli DEC-02, koszt bazowego workera, koszty nieobjęte limitem i estymaty czasu w §5.8; bez otwartego prawa do zakupów. |
+| F1 | USTALONE | DEC-01/02 oddzielono od kompletnego nieprzyjętego pakietu §7 i warunków uruchomienia. |
+| F2 | USTALONE | Kompletny projekt kanonu v1 osadzony w tej samej Karcie (§4–5), bez aktywacji i bez nowego pliku kanonu. |
+| F3 | W_TRAKCIE | Propozycja przedstawiona do akceptacji; właściciel nie przyjął jeszcze rewizji 5. |
+| F4 | USTALONE | Jednoznaczny handoff projektowy w §8 i §5.7, bez promptu wykonawczego i bez uruchomienia execution. |
 
 ## 4. Architektura i umiejscowienie
 
@@ -205,7 +220,7 @@ Zachowywać tylko materiał faktycznie potrzebny do diagnozy, z wersjami i pocho
 
 Zaufany workflow jest pobierany z przyjętej wersji, uruchamiany tylko przez ograniczonego kontrolera i wiąże incydent, bazowy SHA, zakres plików, klasę, policyVersion, budżet i nonce. Manifest zawiera wyłącznie materiał bezpieczny do ujawnienia; wejście nie staje się instrukcją governance. Dla v1 proponuje się jeden aktywny wykonawca i jedno wydanie na repozytorium. Rozwiązanie konfliktu lub zmiana bazowego SHA wymaga ponowienia odpowiednich dowodów, nie ślepego merge.
 
-Oficjalny proxy akcji chroni klucz, ale sam nie stanowi gwarancji limitu 5 USD. **Przed autonomią potrzebny jest egzekwowalny limit wywołań modelu:** kontroler rezerwuje środki, a zaufany lokalny proces pośredniczący na VM ogranicza łączny koszt zadania i maksymalny koszt następnego żądania. Proces działa poza uprawnieniami agenta; konto agenta nie może ominąć go innym kluczem ani zmienić polityki. Cały dostęp do modeli, również próby z narzędzi i testów, podlega tej kontroli. Sprawdzenie wykonalności i zgodności wybranej wersji akcji z takim ograniczeniem jest warunkiem uruchomienia, nie potwierdzoną dziś funkcją.
+Oficjalny proxy akcji chroni klucz, ale sam nie stanowi gwarancji limitu 5 USD. **Przed autonomią potrzebny jest egzekwowalny limit wywołań modelu:** kontroler rezerwuje środki, a zaufany lokalny proces pośredniczący na VM ogranicza łączny koszt zadania i maksymalny koszt następnego żądania. Proces działa poza uprawnieniami agenta; konto agenta nie może ominąć go innym kluczem ani zmienić polityki. Cały dostęp do modeli, również próby z narzędzi i testów, podlega tej kontroli. Sprawdzenie wykonalności i zgodności wybranej wersji akcji z takim ograniczeniem jest warunkiem uruchomienia, nie potwierdzoną dziś funkcją. Jeżeli akcja nie pozwoli zachować tej granicy, na tej samej odizolowanej VM użyć CLI/SDK przez dopuszczony ograniczający proces, zamiast udostępniać nielimitowany klucz. Zmiana adaptera nie rozszerza zakresu lub budżetu.
 
 Niepewne zużycie nadal zajmuje rezerwację. Środki na ocenę skutku muszą być zabezpieczone przed wydaniem; brak budżetu na obowiązkowy odbiór blokuje publikację. DEC-02 obejmuje QA i wykonawcę łącznie. Wygaśnięcie budżetu zatrzymuje nowe płatne przebiegi, a regułowy nadzór i bezpieczne wycofanie pozostają dostępne.
 
@@ -225,68 +240,192 @@ Zmiany kontraktu dostępu i adopcja SG2 wymagają swoich exact paths i zadań w�
 
 Przed uruchomieniem trzeba wykazać: odmowę dla obcego konta/organizacji i niedopuszczonego źródła; przerwanie po revokacji; brak użycia przeterminowanego dowodu; usunięcie i bezpieczny restore; brak treści w publicznym logu/artefakcie; niewydanie tokenów DB/deploy agentowi; blokadę ominięcia limitu modelu; wznowienie na nowej VM bez duplikatu wydania. Obowiązują również negatywne próby z §5.4. To plan testów, nie wyniki wykonania.
 
-## 5. Plan i warunki odbioru — propozycja
+### 4.8. Wybór narzędzi i zamknięcie kontraktów projektu
 
-1. Pierwsza kompletna pętla dla ograniczonej klasy **na Development, zgodnie z DEC-01**: standard odpowiedzi, dowody, ocena, automatyczny start wykonawcy, poprawka, testy, PR, dopuszczone scalenie i wdrożenie oraz sprawdzenie skutku. Odbiór obejmuje także przerwanie i wycofanie. Wykonanie wymaga jeszcze przyjęcia szczegółowego mandatu i osobnego upoważnienia.
-2. Regularne działanie i kolejne klasy: grupowanie, skalibrowane oceny, niezależne zbiory, limity prób i kosztów, obsługa wyjątków; wynik mierzy spadek błędów i nawrotów.
-3. Rozszerzenie klas i ocena efektu regularnego działania v1 na Development. Production oraz inne środowiska lub konsumenci wymagają późniejszych, odrębnych decyzji; nie są ukrytym końcowym etapem v1.
+Rekomendacja v1: wykorzystać obecny stos Node/TypeScript, Postgres, źródłowe testy SG2/ACG/E1 i kontrolowany proces GitHuba; dobudować mały kontroler oraz logikę jakości właściwą SpendGuru. CIC pozostaje ownerem polityki rozmowy; źródłowy context-selection używa planAnalyticalConversation z pakietu cic-core. Nie oznacza to istniejącej adopcji całej projektowanej pętli.
 
-### 5.1. Pełny proces naprawy — projekt do konsultacji
-
-1. Ocena kwalifikuje problem na podstawie dowodu; brak danych do rozstrzygnięcia ma osobny wynik. Podobne problemy tworzą jeden incydent naprawczy.
-2. Kontroler sprawdza dopuszczoną klasę, właściciela, środowisko Development, budżet i brak aktywnej naprawy tego samego problemu.
-3. Uruchamia izolowanego wykonawcę z konkretnym przypadkiem, oczekiwaniem, bazową wersją i granicami. Treść rozmowy jest niezaufanym materiałem, nie poleceniem.
-4. Wykonawca odtwarza błąd, przygotowuje test przed/po i minimalną poprawkę. Przy nierozstrzygniętej przyczynie nie wymyśla naprawy.
-5. Niezależne sprawdzenie ocenia wynik na niezmienianych przez wykonawcę kryteriach. Zmiana bazy lub zakresu unieważnia odpowiednie dowody.
-6. Kontroler może sam scalić i wydać dokładnie sprawdzoną zmianę, jeżeli wszystkie warunki wcześniej przyjętego mandatu są spełnione. Weryfikuje również faktyczne skutki gałęzi i automatycznych wydań: scalenie nie może pośrednio uruchomić publikacji do środowiska spoza mandatu. Brak któregoś warunku blokuje promocję; agent nie rozszerza sam uprawnień.
-7. Po wydaniu kontroler sprawdza działającą wersję i nowe interakcje. Dopiero potwierdzony efekt zamyka incydent.
-8. Po awarii wznawia ten sam zapis zadania od potwierdzonego stanu. Niepewny skutek operacji najpierw uzgadnia ze stanem rzeczywistym. Proponowany limit dwóch prób oraz przyjęty limit kosztu ograniczają pętlę napraw. Wyjątek trafia z dowodami do właściwego inżyniera, a pozostałe zadania mogą trwać.
-
-Potwierdzona krytyczna regresja związana ze zmianą uruchamia wycofanie i zawieszenie kolejnych promocji jej klasy. Przy braku dowodów na bezpieczne wycofanie trzeba odciąć nową funkcję lub zastosować uzgodniony wariant bezpieczny; nie wykonywać destrukcyjnego cofania danych. Niesprawny nadzór zatrzymuje dalsze wydania.
-
-### 5.2. Zakres klas v1 — rekomendacja, nie przyjęta lista dopuszczeń
-
-Ocena jakości obejmuje różne moduły i problemy. Autonomiczna zmiana kodu powinna początkowo obejmować klasy sprawdzalne jednoznacznie: zakresy dat i warianty językowe, poprawne przenoszenie identyfikatorów/daty/jednostki ze źródła oraz zastosowanie istniejących zasad dla braku lub niedopasowania danych. Pierwszy pilot może udowodnić pełną pętlę na jednej z nich.
-
-Zmiany uprawnień, licencji i źródeł, metod obliczeń finansowych/prognoz, nieodwracalne migracje, szerokie przebudowy i modyfikacje własnych bramek pozostają poza samodzielnym wykonaniem v1. Rozpoznany problem z taką przyczyną nadal podlega diagnozie i przygotowaniu dowodów. Nie wolno maskować go lokalnym obejściem.
-
-### 5.3. Kryteria dopuszczenia — wartości do kalibracji i akceptacji
-
-| Obszar | Proponowany punkt wyjścia |
+| Opcja | Decyzja projektowa i przyczyna |
 | --- | --- |
-| Klasa deterministyczna | Wszystkie obowiązkowe przypadki krytyczne i testy graniczne poprawne; błąd wykazany przed poprawką i usunięty po niej. |
-| Wykrywanie krytycznych błędów semantycznych | >=95% wykrywalności; dolna granica 95% przedziału ufności >=90%, na niezależnie oznaczonych przypadkach. |
-| Fałszywe alarmy | <=2% poprawnych odpowiedzi błędnie oznaczonych jako wadliwe; podać próbę i niepewność. |
-| Kwalifikacja do autonomicznej naprawy | >=99% trafnych kwalifikacji, mierzone odrębnie od fałszywych alarmów i skuteczności kodowej poprawki. |
-| Wydanie | Wszystkie obowiązkowe kontrole krytyczne i dostępu spełnione; brak niedopuszczalnej regresji na niezależnym zbiorze; aktualne dowody i wykonalny recovery. |
+| PostHog | [Ma oceny kodowe i LLM oraz próbkowanie](https://posthog.com/docs/ai-evals). W v1 wykorzystać dopuszczone metadane/wyniki; nie uruchamiać domyślnego kopiowania promptów ani drugiego portfela wywołań modeli. |
+| Langfuse | [Ma eksperymenty, zbiory i bramki regresji](https://langfuse.com/docs/evaluation/overview). Dobra alternatywa, lecz nowa platforma, retencja i utrzymanie nie są warunkiem tej wersji. |
+| OpenAI Evals/Graders jako zarządzana platforma | Nie wybierać dla nowego rozwiązania. Według [deprecations](https://developers.openai.com/api/docs/deprecations#2026-06-03-evals-platform), od 31 X 2026 tylko odczyt, planowane wyłączenie dashboardu i API 30 XI 2026. Metodyka evals nadal ma zastosowanie. |
+| Modele przez Responses API + istniejący harness | Rekomendowane: oceny regułowe i typowane oceny modeli, własne kryteria prawdy oraz niezależny odbiór. Pozwala kontrolować dane i wspólny koszt bez zależności od wycofywanej platformy. |
+| Automatyczne trenowanie/fine-tuning | Poza v1. Trwała poprawa następuje przez naprawę przyczyny, wersjonowane reguły oraz regresję; nie przez niekontrolowaną zmianę wag lub globalną pamięć z rozmów. |
 
-Brak wystarczającej próby dla sędziego semantycznego ogranicza jego prawo kwalifikacji do autonomii. Nie musi blokować napraw w pełni deterministycznych, które spełniają własne bramki. Liczba udanych poprawek i czas obserwacji są dodatkowymi dowodami operacyjnymi, nie samodzielną gwarancją bezpieczeństwa. Nie przyjmuje się automatycznie wcześniej zaproponowanego progu 20 poprawek.
+[Structured Outputs](https://developers.openai.com/api/docs/guides/structured-outputs) pomaga egzekwować schemat wyniku, ale nie zapewnia prawdziwości. Trzeba obsłużyć refusal, wynik niekompletny i błąd API, a reguły biznesowe walidować samodzielnie. [Metodyka OpenAI](https://developers.openai.com/api/docs/guides/evaluation-best-practices) uzasadnia kalibrację ocen automatycznych do ocen eksperta i testy specyficzne dla zadania. Nie potrzebujemy do tego tworzenia obiektów na platformie Evals.
 
-Standard odpowiedzi: przy brakach lub sprzeczności najpierw wykonać dozwoloną próbę odzyskania właściwego kontekstu, następnie odpowiedzieć w granicach dowodów. Błąd usługi nie oznacza braku zdarzeń, niepełny kalendarz nie dowodzi pustego tygodnia, a ogólna wiedza modelu nie zastępuje aktualnego źródła. Wykryta sprzeczność blokuje publikację wadliwej odpowiedzi.
+Kontrakty logiczne v1, wersjonowane i walidowane po stronie zaufanej:
 
-### 5.4. Odbiór pierwszego kompletnego etapu
+- **QA_EVIDENCE_V1:** identyfikator interakcji, zakres konta/organizacji i prawa źródeł; czas UTC + strefa/rozpoznany okres; wersje aplikacji/modelu/instrukcji/kontekstu; potrzebny input/output i źródła; ważność, cel, koszt i status. Treść tylko prywatna.
+- **QUALITY_VERDICT_V1:** evidenceId, wersja rubric/oceniającego, PASS / FAIL / INSUFFICIENT_EVIDENCE, wymiary jakości, szkoda, kategoria przyczyny i odwołania do dowodów. Pewność modelu nie stanowi uprawnienia.
+- **REPAIR_MANIFEST_V1:** incydent/klasa, właściwy profil i repo, bazowy SHA, dokładny zakres dozwolonych plików, podpisany mandat, wersja bramek, bezpieczny syntetyk, limit prób/czasu/kosztu i identyfikator korelacji. Bez surowego payloadu QA.
+- **RELEASE_RECEIPT_V1:** exact commit i artefakt, niezależne wyniki testów, poprzednie LKG, faktyczny deploy/runtime, odbiór, okno obserwacji i stan rollback. Sam opis agenta nie jest dowodem.
 
-Próba musi pokazać bez ręcznego zlecania kolejnych kroków: wykrycie bezpiecznego przypadku w rzeczywistym przepływie Development, diagnozę, uruchomienie wykonawcy, test wykazujący błąd, poprawkę, PR, dopuszczone scalenie, wdrożenie konkretnej wersji i poprawny wynik użytkownika. Syntetyczny przypadek jest dozwolony do kontrolowanego wywołania błędu, ale sama symulacja pipeline nie zastępuje działającego odbioru.
+Nowe kontrakty nie zmieniają tożsamości ani znaczenia istniejących operacji. Dodatkowe pola producenta wymagają jawnej wersji i kompatybilnej adopcji. Dostęp QA, koszt oraz release są osobnymi uprawnieniami; odczyt danych nie przyznaje prawa do zmiany kodu.
 
-Negatywne próby obejmują: przerwanie wykonawcy i wznowienie bez duplikatu, nieudane testy bez scalenia, zmianę spoza mandatu bez promocji, wyczerpanie budżetu bez dalszych wywołań oraz potwierdzoną regresję z przywróceniem działającej wersji. Dowody nie mogą wymagać publikacji prywatnego materiału.
+## 5. Kompletny projekt kanonu rozwiązania v1 — DO AKCEPTACJI
 
-### 5.5. Ekonomia pilotażu — przyjęte limity i otwarte szacunki
+**Identyfikator:** CIC-CONTINUOUS-QUALITY-V1. **Status:** PROPOSED / NOT_OWNER_APPROVED / NOT_ACTIVE. **Źródło projektu:** ta Karta, initiativeId z metryki. §4 i §5 razem stanowią kompletną propozycję, nie kanon aktywowany w governance. Wymagania są docelowymi kryteriami, nie wynikami wykonanych testów.
 
-Zgodnie z DEC-02 przyjęto projektowo: 14 dni obserwacji po pierwszym autoryzowanym uruchomieniu, **50 USD łącznie na dodatkowe wywołania modeli dla QA, replay i wykonawcy napraw**, maksymalnie 5 USD na incydent, bez automatycznego zwiększania. Maksymalnie dwie próby pozostają propozycją. To twarde granice, nie prognoza zużycia ani obecna zgoda na wydatki.
+### 5.1. Zakres autonomii i wyłączenia
 
-Kontroler przed uruchomieniem rezerwuje koszt wobec obu limitów: całego pilotażu i incydentu. Niepewne wywołanie nadal zajmuje rezerwację do uzgodnienia; timeout, restart lub nowy identyfikator próby nie resetują kosztu incydentu. Incydent z wyczerpanym limitem przechodzi do wstrzymania kosztowego. Automatyczne przedłużenie pilotażu ani odnowienie budżetu nie są dopuszczone.
+Ocena obejmuje język, sens odpowiedzi, logikę, zgodność z pytaniem, oparcie w źródłach, aktualność i uprawnienia we wszystkich obecnych modułach. Merytoryka finansowa wymaga właściwego dowodu i kalibracji domenowej; oceniający model nie tworzy prawdy referencyjnej z własnego przekonania.
 
-Koszt hostingu, storage i CI należy oszacować osobno po wskazaniu miejsca wykonania; nowy płatny zasób wymaga odrębnego dopuszczenia. Limit 50 USD nie zezwala na takie zakupy. Normalne odpowiedzi użytkowników zachowują dotychczasowe rozliczenie; koszty doskonalenia są wykazywane osobno. Twardy limit zatrzymuje nowe płatne zadania, pozostawiając działające podstawowe odpowiedzi i tanie kontrole regułowe.
+**Dopuszczone klasy samodzielnej naprawy kodu/reguł v1:**
 
-Przy stawkach odczytanych 12 XI 2026: 1000 ocen po 3000 tokenów wejścia i 500 wyjścia na gpt-6-luna to ok. 0,55 USD; dodatkowe 100 takich ocen na gpt-6.1-sol to ok. 1,10 USD. Jest to wyłącznie ilustracja ceny tokenów bez cache i dodatkowego rozumowania, narzędzi, wielokrotnego kontekstu lub napraw. Wykonawca kodu może zużywać znacznie więcej; o wydajności budżetu przesądzą rzeczywiste pomiary. Przekroczenie limitu nie oznacza prawa do jego podniesienia.
+| Klasa | Co można naprawiać | Granica |
+| --- | --- | --- |
+| C1 — czas i zakres pytania | Rozpoznanie jawnych/relatywnych dat, strefy i granic okresu, wariantów PL/EN, dopasowanie selekcji kontekstu | Bez zmiany harmonogramu producenta, definicji wskaźnika lub wymyślania wydarzeń. |
+| C2 — wierność źródłu | Mapowanie identyfikatora, daty, jednostki, cytowania/statusu i zakresu ze źródła do odpowiedzi; odrzucenie twierdzenia sprzecznego ze źródłem | Bez zmiany wartości danych źródłowych, formuł finansowych, prognoz lub licencji. |
+| C3 — zastosowanie ustalonej polityki wyjątków | Zastosowanie zatwierdzonego zachowania dla braku/niedopasowania/sprzeczności/awarii, w tym komunikatu i walidacji publikacji | Naprawa egzekwowania reguły, nie samodzielne ustanawianie nowej polityki lub rozszerzanie dostępu. |
 
-Do ustalenia przed autonomicznym wydawaniem: wykrywalność błędów według szkody, fałszywe alarmy, trafność kwalifikacji do naprawy, regresje, progi wycofania i wymagany materiał dowodowy. Podawać definicje, mianowniki, liczebność, niepewność i osobne wyniki domen. Krytycznych błędów nie ukrywa średnia językowa. Wzrost odmów nie może udawać poprawy.
+Zmiana jest kwalifikowana do autonomii tylko wtedy, gdy mieści się w klasie **i** istnieje sprawdzalna przyczyna oraz niezależny test/inwariant. Błąd z innego modułu nadal podlega diagnozie, ale podobna nazwa klasy nie omija własności i routingu.
 
-Liczba kolejnych poprawnych napraw może być bramką operacyjną, nie gwarancją niezawodności. Niedostatek danych nie zwiększa uprawnień. Każde wydanie wymaga aktualnych dowodów i wykonalnego odzyskania. Całkowity koszt obejmie oceny, przygotowanie zmian, testy, dane i infrastrukturę. Przyjęto wyłącznie limity modeli w DEC-02; pozostałe koszty nie zostały zatwierdzone.
+Agent może przygotować minimalną poprawkę, dodać przypadki regresji i zaproponować zmianę. Zaufany kontroler może utworzyć PR, a po wszystkich bramkach scalić i wydać do Development bez każdorazowego udziału właściciela. Może też wycofać własną zmianę zgodnie z §5.6. W v1: jeden aktywny wykonawca i jedno wydanie naraz na repo; maksymalnie jedno nowe autonomiczne wydanie naprawcze w ciągu 24 godzin (rollback nie czeka na ten limit), maksymalnie dwie płatne próby naprawy na incydent, łącznie do 5 USD z replay i odbiorem. Drobne warianty tego samego błędu nie otrzymują nowych limitów.
+
+Poza samodzielnym wykonaniem: uprawnienia/E1, sekrety, dostawcy i płatne pozyskiwanie danych, migracje i dane biznesowe, finanse/metody benchmarków/prognoz/rekomendacji zakupowych, zależności i modele, całościowa zmiana promptu/persony, własny kontroler/oceniający/mandat, testy bezpieczeństwa i kryteria odbioru, routing, workflow, kanony i historyczne receipty. Te obszary mogą wymagać osobnego zadania właściwego ownera. Trwały test błędu pozostaje częścią poprawki; agent nie może usuwać lub osłabiać istniejących testów.
+
+Dokładne allowlisty plików/funkcji dla C1–C3 zostają przyjęte przy jednorazowym dopuszczeniu wykonawczym, na podstawie ścieżek §4.7. To czynność governance/bootstrap, nie prawo agenta do nadawania sobie zakresu. Prywatny kod CIC pozostaje w swoim repo/profilu i procesie; nie wolno kopiować go do publicznego PR SG-dev.
+
+### 5.2. Wspólny standard odpowiedzi CIC / Gateway / runtime
+
+CIC określa regułę, Gateway dostarcza sprawdzalny status/zakres źródła, runtime egzekwuje warunki publikacji. Nie polega się wyłącznie na ostrzeżeniu w prompcie.
+
+| Sytuacja | Docelowe zachowanie |
+| --- | --- |
+| Brak potrzebnych danych | Dozwolona próba uzyskania właściwego kontekstu; następnie jasny zakres odpowiedzi i użyteczny następny krok. Brak wartości nie staje się zerem. |
+| Dane częściowe lub stare | Wskazać zakres i datę; oddzielić potwierdzone fakty od niepewności. Niepełny kalendarz nie dowodzi pustego tygodnia. |
+| Źródło nie odpowiada pytaniu | Nie przedstawiać go jako odpowiedzi. Dla „przyszłego tygodnia” ustalić okres względem czasu pytania, a potem sprawdzić źródło. |
+| Różne źródła są sprzeczne | Przedstawić różnicę z pochodzeniem i datą. Bez arbitralnej średniej lub wyboru wygodniejszego wyniku; ustalony priorytet producenta tylko w jego kontrakcie. |
+| Pytanie niejednoznaczne | Zapytać tylko, gdy wybór istotnie zmienia wynik; przy bezpiecznym założeniu podać je wraz z zakresem. |
+| Awaria API / timeout | Nazwać niedostępność, skorzystać z dopuszczonego fallbacku; błąd pobrania nie oznacza braku zdarzeń. Nie uruchamiać samowolnie płatnego refreshu. |
+| Brak możliwości weryfikacji | Wyraźnie ograniczyć twierdzenie. Wiedza ogólna jest dozwolona do ogólnego pytania, lecz nie zastępuje aktualnych faktów z aplikacji. |
+| Sprzeczność generowanej odpowiedzi | Zablokować wadliwą treść przed publikacją; podać bezpieczną odpowiedź ograniczoną do dowodów i zapisać incydent. |
+| Nieznana sytuacja / refusal / wynik niekompletny | Zachować prawa i dane, użyć jawnego wyniku nierozstrzygalnego/bezpiecznego zakończenia. Bez wymyślania polityki lub wznowienia w nieskończoność. |
+
+Dla C1 domyślny tydzień oznacza poniedziałek–niedzielę. Okres wyznacza serwer względem czasu pytania i zweryfikowanej strefy konta albo jawnej konfiguracji aplikacji, nie zegara nocnego agenta. Gdy brak strefy może zmienić odpowiedź, należy ją doprecyzować. Przykład kontrolny: czas odniesienia 11 XI 2026 w Europe/Warsaw → następny tydzień 16–22 XI 2026; data publikacji i okres referencyjny raportu są osobnymi polami.
+
+Dla odpowiedzi opartych na danych aplikacji weryfikować obowiązkowe twierdzenia (m.in. okres, identyfikatory, wartości/jednostki, status publikacji) przed pokazaniem tekstu. W częściach C1–C2 fakty (np. lista dat i wartości) renderować z zatwierdzonych pól źródła i rozpoznanego okresu, zamiast przepisywać swobodnie wygenerowaną listę modelu. Model może objaśniać zatwierdzone fakty, ale nie nadpisuje ich innymi liczbami lub datami. To upraszcza walidację i ogranicza sprzeczność zakresu z zawartością. Przy potrzebie zbuforować taką odpowiedź do walidacji; sama zgodność JSON nie wystarcza. V1 nie dodaje automatycznej drugiej generacji do wysłania użytkownika. Zachowuje obecny model jednej płatnej generacji na zlecenie; dopuszczalne ponowne dobranie kontekstu nie może samo powodować nowego płatnego pobrania. Więcej prób generacji wymagałoby odrębnego kontraktu/kosztu.
+
+W razie wyczerpania portfela QA zostają dostępne podstawowe odpowiedzi i deterministyczne zabezpieczenia; nie przyznaje to dodatkowego prawa do płatnych ocen. Kontrola QA nie obiecuje pełnego wykrywania wszystkich subtelnych błędów przed wysyłką.
+
+**UX v1:** istniejący jeden asystent AppShell, bez panelu jakości i dodatkowego przepływu akceptacji użytkownika. Reuse istniejących stanów busy/complete/interrupted/failed oraz prezentacji źródeł. Zbuforowanie jest widoczne jako trwające przygotowanie; nie wolno wysłać wadliwego fragmentu, a potem go „poprawić” dopiskiem. Komunikaty w PL/EN, bez technicznych identyfikatorów/progów z mechanizmu QA. Zmiana widoku/tożsamości anuluje pracę zgodnie z obecną granicą. Odczytano aktualny kanon UX i sesję runtime; częściowy demonstrator nie jest pozwoleniem na nowy UI. Odbiór obejmie rzeczywisty desktop/mobile, klawiaturę i opóźnienie pierwszego poprawnego tekstu; dziś nie deklaruje się browser acceptance.
+
+### 5.3. Pętla naprawy i odzyskiwanie kontroli
+
+1. Runtime zachowuje minimalny uprawniony dowód i wykonuje tanie walidacje. Nocna partia w strefie Europe/Warsaw ocenia nowe interakcje; błąd krytyczny z walidatora trafia do kontrolera od razu. Logiczny identyfikator partii zapobiega duplikatowi przy zmianie czasu. Replay używa czasu pierwotnego pytania.
+2. Reguły obejmują wszystkie uprawnione interakcje. Modele oceniają próbkę warstwową: w pilotażu do 1000 interakcji/24h w ramach dostępnych środków; najpierw wszystkie sygnały ryzyka mieszczące się w limicie, potem losowo co najmniej 10% pozostałych, z reprezentacją modułów/PL/EN. Limit/przyczyna pominięcia i faktyczne pokrycie są raportowane. Nie przedstawiać próbki jako oceny wszystkich rozmów.
+3. Oceniający wskazuje PASS / FAIL / INSUFFICIENT_EVIDENCE, wymiary i szkodę. Drugi niezależny oceniający rozstrzyga istotne/niepewne przypadki. Model nie zamienia własnej diagnozy w dowód. Rozmowa i dokument są niezaufanymi danymi, także gdy zawierają instrukcję zmiany oceny lub wykonania komendy. Skrócenie kontekstu dla kosztu nie może usuwać istotnego dowodu i udawać pełnej oceny. Sygnał sędziego nigdy sam nie uruchamia scalenia.
+4. Kontroler grupuje według przyczyny i wersji, z zachowaniem praw konta/organizacji. Rozróżnia rozpoznanie pytania, wybór kontekstu, dane źródłowe, integrację, logikę aplikacji, instrukcję/generację i UNKNOWN. Bez odtwarzalnej przyczyny powstaje nierozstrzygnięty incydent, nie zgadywana poprawka.
+5. Dla C1–C3 sprawdza mandat, dokładne ścieżki/profil, bazę, zakres danych i budżet. Tworzy zadanie engineering z własnym identyfikatorem i wymaganym PMOS/PHR/MEMOROS według profilu. Wywołuje programowy serwerowy wykonawca przez dopuszczony workflow; nie wysyła zadania do osobistego czatu/aplikacji właściciela.
+6. Agent odtwarza błąd na bezpiecznym syntetyku, dodaje test i minimalnie naprawia przyczynę. Zaufany weryfikator sam sprawdza, że test wykazuje błąd na bazie i przechodzi po poprawce. Wymagane są także warianty językowe/brzegowe i niezmieniony holdout.
+7. Agent oddaje artefakt; nie wykonuje push, scalenia ani publikacji. Kontroler sprawdza diff, pochodzenie, sekrety i własność, tworzy PR, zbiera niezależne dowody i stosuje §5.4.
+8. Publikacja wydaje dokładny sprawdzony artefakt na Development. Kontroler uzgadnia rzeczywiste SHA/config i wykonuje autoryzowany read-only odbiór oraz obserwację. Dopiero wynik końcowy zamyka incydent; test i wzorzec przyczyny poprawiają kolejne odpowiedzi.
+9. Po awarii odzyskuje zapis stanu i identyfikator zewnętrznego joba. Najpierw ustala rzeczywisty skutek operacji. Maksymalnie dwie próby kodowe, do 30 minut każda; cancel musi zostać potwierdzony po stronie wykonawcy. Niepewny koszt zostaje zajęty. Ponowienie nie tworzy nowego incydentu/budżetu.
+
+Stany: OBSERVED → TRIAGED → REPRODUCED → PATCH_READY → VERIFIED → RELEASED → OBSERVING → CLOSED. Alternatywy: INSUFFICIENT_EVIDENCE, WAITING_INFRA, BUDGET_STOP, OUT_OF_SCOPE, ROLLED_BACK, NEEDS_TECHNICAL_REVIEW. Zmiana stanu wymaga trwałego dowodu i dzierżawy; restart nie przyznaje dodatkowej próby. Nieudane testy oznaczają najwyżej drugą próbę z ograniczonym feedbackiem. Brak infra — ograniczony backoff i uzgodnienie joba, bez ślepego ponowienia skutku.
+
+Wyjątki trafiają do wyznaczonego ownera technicznego/domenowego z reprodukcją. Nie tworzy się kolejki rutynowych zatwierdzeń dla właściciela biznesowego. Jego decyzji wymagają nowe klasy, zmiana mandatu/budżetu lub chronionego środowiska. Początkowa kalibracja przez specjalistę i okresowy audyt nie są równoznaczne z ręcznym przeglądaniem wszystkich rozmów.
+
+### 5.4. Kiedy system może sam scalić i wydać
+
+**Wszystkie warunki muszą być spełnione jednocześnie:**
+
+- C1–C3, podpisany aktualny mandat, właściwy profil/repo, dopuszczony dokładny zakres i aktualna bazowa wersja.
+- Sprawdzalna przyczyna, niezależna reprodukcja przed/po, brak prywatnego materiału w artefakcie lub publicznym PR.
+- Nienaruszone testy/kryteria, wszystkie obowiązkowe testy krytyczne i bezpieczeństwa, holdout oraz wymagane zwykłe i kontrolowane CI dla dokładnego SHA. Raport agenta nie zastępuje checków.
+- Zachowane obecne credential/source fences. Nowe receipty mogą pochodzić wyłącznie z zaufanego dopuszczonego procesu; historyczne receipty i kryteria nie są przepisywane przez naprawę.
+- Dokładnie znany wpływ merge i auto-deploy; żadna droga nie może uruchomić Production/Staging lub zmiany cudzej aplikacji.
+- Dostępny działający LKG ze zgodną konfiguracją, wyłącznik nowej funkcji i sprawdzona droga rollback bez cofania danych. Autonomiczne klasy nie obejmują migracji.
+- Rezerwacja kosztu obejmuje również obowiązkowy odbiór. Sprawne logowanie audytu, nadzór i kontrola kosztu; brak niewyjaśnionego wcześniejszego dispatchu.
+- Zajęta dzierżawa wydania, brak nowszego równoległego deploymentu; po jakiejkolwiek zmianie bazy odpowiednie dowody są unieważnione i odtwarzane.
+
+Obecne governance nie jest automatycznie zgodą na klasowe auto-merge. Pierwsze wykonanie musi przyjąć **jednorazowy ograniczony mandat automatyzacji** i dostosować dopuszczenie klas/receiptu do bieżących reguł, bez wyłączania kontroli. Dopiero taki mandat pozwala na rutynowe naprawy bez osobnego zatwierdzania każdego SHA przez właściciela. Agent nie może utworzyć go sobie na podstawie tego projektu.
+
+### 5.5. Kryteria gotowości, sukcesu i miary
+
+Poniższe liczby są **proponowanym kontraktem odbioru v1**, nie benchmarkiem rynku ani dotychczasowym wynikiem SpendGuru. Zbiory i etykiety zatwierdza kompetentny reviewer niezależny od agenta naprawy; właściciel produktu nie musi wykonywać etykietowania. Wersje i hashe zbiorów są zamrożone przed porównaniem. Rozdzielić przypadki do budowy rubryki, naprawy i chroniony holdout, także całymi rodzinami przyczyn, aby parafrazy jednego błędu nie zawyżały niezależności próby.
+
+| Obszar | Proponowane kryterium i mianownik |
+| --- | --- |
+| Obowiązkowe reguły C1–C3 | 100% przejścia krytycznych przypadków i brzegów. Co najmniej 20 przypadków na każdą klasę, PL/EN, strefy/DST/granice tygodnia, brak/sprzeczność źródła; same liczby nie zastępują pokrycia. |
+| Krytyczne błędy semantyczne | Recall = TP/(TP+FN) ≥95%, dolna granica dwustronnego 95% CI Wilsona ≥90%; niezależnie oznaczonych ≥300 krytycznie wadliwych przypadków. Wyniki osobno według domen. |
+| Fałszywe alarmy | FPR = FP/(FP+TN) ≤2%, górna granica 95% CI ≤5%, na ≥300 poprawnych przypadkach. Nie mylić FPR z udziałem błędnych alarmów w alarmach. |
+| Pokrycie i unknown | Na referencyjnie rozstrzygalnych przypadkach ≥90% ocen rozstrzygniętych. Unknown na znanym błędnym przypadku liczy się jako FN, nie znika z recall. Dodatkowo ≥60 przypadków z rzeczywiście niewystarczającym dowodem; ≥95% poprawnego wskazania nieweryfikowalności. |
+| Trafność rekomendacji kwalifikacji | Precision = TP/(TP+FP) ≥99%, dolna granica 95% CI ≥95%, na ≥100 rekomendacjach. Przy 99/100 dolna granica ok.94,55% — taka próba nie spełnia warunku. To nie zastępuje żadnej bramki wydania. |
+| Regresja przed wydaniem | ≥200 chronionych przypadków dobranych do zakresu; zero nowych krytycznych wad i zero naruszeń dostępu. Spadek odsetka poprawnych odpowiedzi ≤1 punkt procentowy i wzrost nieuzasadnionych odmów ≤2 pp; te same przypadki, jawna niepewność i niezmieniona rubryka. |
+| Zmienność generacji | Krytyczny podzbiór powtórzony 3 razy przy stałych wersjach i referencji. Niespójne lub nierozstrzygalne wyniki nie są pozytywnym dowodem do promocji. |
+| Efekt na rozpoznanej klasie | Na chronionym zestawie problemów, z ≥10 wadami wersji bazowej: co najmniej 50% względnej redukcji potwierdzonych wad, bez przesuwania ich do kategorii odmowy/unknown. Przy mniejszej bazie podać wynik absolutny, bez twierdzenia o pewnej redukcji populacyjnej. |
+| Autonomia pilotażu | ≥80% wszystkich z góry kwalifikujących się, unikalnych realnych incydentów C1–C3 zamkniętych pełną pętlą bez ręcznego wykonywania naprawy. Do oceny wyniku biznesowego ≥5 niezależnych realnych incydentów; błędy, budżet i porzucone próby pozostają w mianowniku. |
+| Czas naprawy | Dla ≥90% kwalifikujących się realnych incydentów pełny sprawdzony wynik w ≤48h od wykrycia. Raportować także opóźnienie wykrycia nocnego, nie tylko czas pisania kodu. |
+| Bezpieczeństwo i koszt | Zero naruszeń tenant/account isolation, publikacji prywatnych danych, nieuprawnionych wydań i krytycznych regresji. Maks.50 USD / pilot i 5 USD / incydent, bez automatycznej podwyżki lub resetu prób. |
+
+**Gotowość techniczna do ograniczonej autonomii Development:** przyjęty mandat i dane, egzekwowalny koszt, wymagane kontrole deterministyczne, odbiór live/recovery oraz co najmniej trzy różne kontrolowane incydenty przeprowadzone przez cały proces bez ręcznego podawania kolejnych kroków. Te próby mogą wykorzystywać syntetyczny przypadek, lecz rzeczywisty workflow, PR, merge, deploy i weryfikację, w dopuszczonym testowym zakresie.
+
+Brak kalibracji sędziego semantycznego nie blokuje mechanicznie klas C1–C3, jeśli kwalifikacja ma niezależną deterministyczną reprodukcję i komplet bramek. Do czasu spełnienia tabeli semantyczny sędzia działa jako niewiążący sygnał/diagnoza. Nie może sam odblokować naprawy ani oznaczać domeny finansowej jako sprawdzonej.
+
+**Sukces operacyjny pilotażu:** 14 dni, spełnione bezpieczeństwo/koszt, wymagany efekt na chronionych przypadkach i wyniki realnej autonomii/czasu. Wszystkie autonomiczne wydania mają zero krytycznych regresji; każda nawet drobna regresja/rollback jest osobno liczona. Dopuszczalny maksymalnie jeden skutecznie wycofany incydent niekrytyczny; ponowna wada tej samej przyczyny wstrzymuje klasę. Liczba udanych zmian nie dowodzi niezawodności i nie zwiększa mandatu.
+
+Przy <5 realnych incydentach lub za małej próbie jakości: **INSUFFICIENT_EVIDENCE**, z osobnym wynikiem odbioru technicznego; nie „100% skuteczności”. Nie wprowadzać sztucznych wad, by nabić licznik rzeczywistych napraw. Po końcu okna/budżetu nie uruchamiać nowych płatnych zadań bez odrębnego przedłużenia.
+
+Raport wykazuje oddzielnie: wszystkie interakcje, uprawnione do QA, ocenione regułowo/modelowo, pominięte, nierozstrzygalne, wszystkie potwierdzone błędy, udział C1–C3, udane/nieudane naprawy, nawroty, regresje, koszt i udział ręcznej pracy. Publikować proporcje per moduł/język/szkoda i CI; średnia jakości języka nie ukrywa błędu krytycznego. Metryki bez dostępu do niezbędnego źródła nie są miarą jego prawdziwości.
+
+### 5.6. Zatrzymanie, wycofanie i wznowienie
+
+| Sygnał | Reakcja automatyczna |
+| --- | --- |
+| Potwierdzone ujawnienie danych, błędne uprawnienie, zmiana poza mandatem lub krytyczna wada nowej odpowiedzi | Natychmiast zablokować kolejne promocje, odciąć dotkniętą zdolność i uruchomić kontrolowany rollback, jeśli wdrożona wersja jest nadal tą zmianą. Uruchomić obsługę incydentu technicznego. |
+| 3 kolejne nieudane read-only próby poprawnego działania po wdrożeniu, w odstępach ≥60 s | Wstrzymanie i rollback po potwierdzeniu, że problem dotyczy nowej wersji, a nie wspólnej awarii dostawcy. |
+| W pierwszych 30 min po wydaniu: błędy techniczne rosną o ≥5 pp względem porównywalnej bazy, na ≥20 interakcjach | Wstrzymać i sprawdzić związek z wersją; przy potwierdzeniu wycofać. Przy mniejszym ruchu decydują aktywne próby, nie losowy procent. |
+| Ponowny chroniony zestaw pokazuje >2 pp spadku lub >2 pp wzrostu nieuzasadnionych odmów | Wycofać przy niezależnym potwierdzeniu niekrytycznej regresji. Sam sporny werdykt tego samego modelu nie wystarcza. |
+| Brak audytu/kontroli kosztu/nadzoru, unknown deploy SHA lub niepewny dispatch | Zatrzymać nowe promocje i uzgodnić stan. Nie cofać zdrowej aplikacji tylko dlatego, że niedostępny jest oceniający. |
+| Brak budżetu / dwie nieudane próby / brak dowodu / uprawnienie odwołane | Zatrzymać daną naprawę; zachować dopuszczony minimalny dowód i przekazać ownerowi technicznemu. Bez pętli automatycznych PR i podnoszenia limitów. |
+| Awaria modelu/dostawcy dotykająca także LKG | Użyć ustalonego zachowania niedostępności, wstrzymać zależne zadania. Rollback kodu bez dowodu związku nie naprawia przyczyny. |
+
+Cel operacyjny: decyzja o odcięciu/promocji rollback w ≤5 minut od potwierdzonego sygnału; przywrócenie sprawdzonego LKG w ≤15 minut od tej decyzji. To SLO do przetestowania, nie obecna gwarancja Render. Przed dopuszczeniem wydania trzeba mieć wykonalną drogę i gotowy poprzedni artefakt.
+
+Rollback dotyczy własnej zmiany i własnego wydania. Sprawdzić aktualny SHA, konfigurację i dzierżawę. Jeśli pojawił się nowszy równoległy deploy, nie nadpisywać go starszą wersją: wstrzymać, zastosować dopuszczone odcięcie dotkniętej zdolności i eskalować. Nie cofać bazy, nie przepisywać main/history i nie anulować cudzych zmian. Po wycofaniu sprawdzić realny runtime i odpowiedź kontrolną.
+
+Maksymalnie jeden automatyczny rollback dla incydentu; brak oscylacji deploy/rollback. Klasa pozostaje zawieszona po potwierdzonej regresji do ponownej kwalifikacji przez niezależnego ownera technicznego, z zachowaniem przyjętego mandatu. Wznowienie po zwykłej awarii infrastruktury może wykonać kontroler po potwierdzeniu stanu i środków; nie resetuje prób. Nowe klasy lub szersze uprawnienia wymagają właściciela, nie samooceny agenta.
+
+### 5.7. Plan realizacji i pełny odbiór — po osobnej autoryzacji
+
+**Etap 1 — działająca pętla Development i gotowość zakresu C1–C3.** Rezultat: system od kontroli odpowiedzi i prywatnego dowodu do autonomicznej naprawy, PR, merge, exact-SHA deploy, odbioru i rollback. Powstają: minimum §4.8, SERVICE QA i separacja danych SG2, worker kontrolera, izolowany wykonawca z kontrolą kosztu, niezależny weryfikator/publisher, regresje i metadane. Pierwsza kompletna próba przebiega dla C1; pozostałe klasy są przygotowane do kwalifikacji według tego samego kontraktu.
+
+Miejsce: pakiet kontrolera/nowy dopuszczony workflow, rozszerzenie istniejącego runtime/Gateway i prywatnego magazynu SG2. Ownerzy: ARCHITECTURE + zadanie SG2, polityka po stronie CIC. Najpierw wymagane: onboarding tam, gdzie NO_MATCH, właściwy G1/mandat klasowej automatyzacji, legalne dane/processorzy/poświadczenia, dokładny koszt zasobów owner-only i odrębne upoważnienie wykonawcze. Estymata całego przygotowania: 15–25 dni inżynierskich + 2–4 dni review/QA/domeny, częściowo równolegle; nie zobowiązanie terminowe.
+
+Przygotowanie repo/testów/infra bez wywołań modeli może poprzedzać pilotaż. Płatne próby odbioru etapu 1 otwierają wspólne okno i ledger etapu 2; nie mają dodatkowego budżetu „przed pilotażem”. Do tego momentu trzeba przygotować wszystkie elementy wymagane dla C1–C3, aby nie zużyć 14-dniowego okna na dalsze prace podstawowe.
+
+Odbiór etapu 1:
+
+- trzy różne bezpieczne reprodukcje przyczyny z prawdziwym przepływem Development, w tym pytanie względne PL/EN i granica czasu;
+- test na bazie czerwony, po zmianie zielony, niezależna regresja i rzeczywisty poprawny wynik użytkownika;
+- przerwanie/wznowienie bez duplikatu, nieudany test bez merge, inny owner/ścieżka bez promocji, wyczerpanie łącznego i incydentowego kosztu bez dalszego POST, odczyt obcej rozmowy bez ujawnienia danych;
+- kontrolowana regresja → odcięcie/rollback LKG → live weryfikacja w SLO;
+- próba równoległego deploymentu nie może spowodować nadpisania go rollbackiem;
+- realny UI busy/źródła/odpowiedź, desktop/mobile/klawiatura; symulowany ekran nie jest dowodem. Timery, rozmowy i symulacje MagicPath nie trafiają do produktu jako integracja.
+
+**Etap 2 — regularne działanie i pomiar 14-dniowego pilotażu v1.** Rezultat: nocna ocena między modułami, dopuszczanie C1–C3 wyłącznie po ich bramkach, kalibracja sędziego, grupowanie, trwałe regresje, mierniki i obsługa wyjątków. Działa na kontrolerze/stores/workflow etapu 1; bez nowej platformy lub dashboardu. Czas: 14 dni kalendarzowych od pierwszego płatnego uruchomienia objętego tym pilotem, w tym płatne próby technicznego odbioru, nie kolejne 14 dni po ich zakończeniu. Daty dopuszczenia klas są raportowane; nie twierdzić, że później dopuszczona klasa była obserwowana przez cały okres.
+
+Odbiór etapu 2: §5.5 oraz próby wszystkich klas, aktualne prawa/koszt, ochrona przed prompt injection w rozmowie i artefakcie, usunięcie/restore, niesprawny nadzór i odmowa zmiany oceniającego przez agenta. Wynik: TECHNICAL_ACCEPTED plus PILOT_BUSINESS_PASS / FAIL / INSUFFICIENT_EVIDENCE z przyczyną. Brak wymaganej próby/efektu nie jest zamieniany na PASS. Bez automatycznego Production, rozszerzenia klas lub odnowienia budżetu.
+
+Każdy etap ma właściwe exact-path zadania, ownerów i ciągłość profilu. Jeżeli przygotowanie nie pozwala zmieścić obowiązkowych prób i obserwacji w przyjętym oknie/budżecie, plan należy dopasować przed pierwszym wydatkiem. Nie wolno ukrywać dalszych kosztów pod nazwą kalibracji, testu, retry lub kolejnej części etapu.
+
+### 5.8. Koszt, utrzymanie i ryzyka
+
+DEC-02 pozostaje nadrzędny: 50 USD łącznie, do 5 USD na incydent, brak automatycznego zwiększania/odnowienia. Proponowany podział planistyczny: do 10 USD na ocenę/kalibrację i do 40 USD na incydenty (kod, replay i odbiór razem); nigdy dwa niezależne limity 50 USD. Kontroler rezerwuje przed dispatch i uwzględnia niepewne koszty oraz wymagany odbiór. Brak technicznie egzekwowalnego kosztu agenta blokuje tę ścieżkę autonomii.
+
+Reguły deterministyczne mają pierwszeństwo; mały model jest kandydatem do przesiewu, mocniejszy do rozstrzygnięć. Konkretny model i snapshot muszą przejść kalibrację, nie są automatycznie wymieniane przez agenta. Wstępni kandydaci to gpt-6-luna / gpt-6.1-sol. Według [cennika odczytanego 12 XI 2026](https://developers.openai.com/api/docs/pricing), 1000 ocen po 3000 tokenów wejścia i 500 wyjścia to ok.0,55 USD na luna, a 100 takich ocen na sol ok.1,10 USD. To ilustracja tokenów; kodowanie, większe konteksty, narzędzia i dodatkowe próby mogą kosztować znacznie więcej.
+
+Worker od ok.7 USD/miesiąc jest oddzielnym kosztem infrastruktury, poza 50 USD. Dochodzą ewentualny przyrost bazy, transfer, GitHub compute/artifacts i praca zespołu; nie zostały zatwierdzone tą decyzją. Przy bezczynności ograniczać polling, aby nie utrzymywać niepotrzebnie aktywnego compute bazy. Dla nowych zasobów wymagany jest osobny dokładny koszt i zgoda owner-only przed utworzeniem; nie zakładać darmowego wykonania całej pętli. Łączna estymata pracy to 15–25 dni inżynierskich plus 2–4 dni review/domeny, częściowo równolegle, oraz okno obserwacji. Wycena zależy od stawek, których nie podano.
+
+Najważniejsze ryzyka: brak praw do replay lub pełnego kontekstu; skorelowane błędy modeli; zanieczyszczenie holdoutu i optymalizacja pod ocenę; mała liczba realnych incydentów; przeoczenie błędu finansowego mimo poprawnego języka; koszt agenta; niewystarczające dopuszczenie CI/mandatu; wycofanie kolidujące z innym wydaniem. Ograniczają je uprawnienia i retencja, osobny wynik unknown, niezależne etykiety/bramki, zamrożony zakres, pojedyncze wydanie i porównanie aktualnego SHA. Te środki nie zapewniają bezbłędności całej aplikacji ani samodzielnego ustanawiania wiedzy eksperckiej.
+
+Właściciel nie zatwierdza rutynowo każdego incydentu. Potrzebny jest jednak wskazany owner techniczny i dostępny reviewer domenowy dla wyjątków oraz kalibracji. W v1 nie obiecuje się całkowitego braku udziału ludzi.
 
 ## 6. Decyzje i źródła
 
-Przyjęte wymagania: cel ciągłego doskonalenia, nacisk na autonomiczne wykonanie i mierzalną gotowość, wspólny standard nietypowych sytuacji oraz minimalny udział właściciela. Polecenie uruchomienia BSDC i jedna karta nie stanowią zgody na implementację. DEC-01 przyjmuje autonomiczne naprawy i wdrożenia do Development w v1 oraz późniejsze rozpatrzenie Production; właściciel jawnie zachował tryb bez implementacji. DEC-02 przyjmuje limity modeli 50 USD / 14 dni i 5 USD / incydent bez automatycznego zwiększania. R-DATA-01 i R-EXEC-01 są autorskimi rekomendacjami, nie decyzjami właściciela. Progi jakości, liczba prób, szczegółowe klasy oraz uruchomienie nadal pozostają otwarte.
+Przyjęte wymagania: cel ciągłego doskonalenia, nacisk na autonomiczne wykonanie i mierzalną gotowość, wspólny standard nietypowych sytuacji oraz minimalny udział właściciela. Polecenie uruchomienia BSDC i jedna karta nie stanowią zgody na implementację. DEC-01 przyjmuje autonomiczne naprawy i wdrożenia do Development w v1 oraz późniejsze rozpatrzenie Production; właściciel jawnie zachował tryb bez implementacji. DEC-02 przyjmuje limity modeli 50 USD / 14 dni i 5 USD / incydent bez automatycznego zwiększania. R-DATA-01 i R-EXEC-01 wraz z kompletnym §5 stanowią spójną propozycję rewizji 5 do akceptacji. Progi, liczba prób, szczegółowe klasy i rollback są już zaproponowane konkretnie; oczekiwana jest decyzja o całym pakiecie, a nie kolejne rozpoznawanie potrzeby.
 
 Źródła publiczne:
 
@@ -296,23 +435,34 @@ Przyjęte wymagania: cel ciągłego doskonalenia, nacisk na autonomiczne wykonan
 - Źródła discovery §4.3: [historia](https://github.com/profitia/SG-dev/blob/4a15718ecc5b11e6749285fa528e598dda79cfc4/apps/sg-runtime/lib/assistant/history.ts), [runtime](https://github.com/profitia/SG-dev/blob/4a15718ecc5b11e6749285fa528e598dda79cfc4/apps/sg-runtime/lib/assistant/runtime.ts), [migracja historii](https://github.com/profitia/SG-dev/blob/4a15718ecc5b11e6749285fa528e598dda79cfc4/apps/sg-runtime/migrations/assistant/001-history.sql), [model](https://github.com/profitia/SG-dev/blob/4a15718ecc5b11e6749285fa528e598dda79cfc4/apps/sg-runtime/lib/assistant/model.ts), [przebieg rozmowy](https://github.com/profitia/SG-dev/blob/4a15718ecc5b11e6749285fa528e598dda79cfc4/apps/sg-runtime/lib/assistant/conversation.ts). Dowód kodu, bez deklaracji aktywnego wdrożenia.
 - Uzupełnienie §4.4–4.7: aktualne [operacje i granice E1](https://github.com/profitia/SG-dev/blob/46094e5654066552768264dd47027eaa18e833a4/Canon/v1.0-operation-context-and-access-contract.md), [macierz AM-45–47](https://github.com/profitia/SG-dev/blob/46094e5654066552768264dd47027eaa18e833a4/Canon/registries/operation-access-matrix-v1.json), [operation-context](https://github.com/profitia/SG-dev/blob/46094e5654066552768264dd47027eaa18e833a4/packages/platform-contracts/src/operation-context.mjs), [źródłowy workflow ACG](https://github.com/profitia/SG-dev/blob/46094e5654066552768264dd47027eaa18e833a4/.github/workflows/assistant-context-gateway-ci.yml) i [trusted CI controller](https://github.com/profitia/SG-dev/blob/46094e5654066552768264dd47027eaa18e833a4/scripts/governance/controlled-package-ci.mjs). Dowód źródła nie jest dopuszczeniem nowego runnera lub mandatu QA.
 - Oficjalne źródła technologiczne są podlinkowane przy rekomendacjach; odczyt 12 XI 2026. Nie testowano płatnym przebiegiem kont, limitów proxy, ZDR ani przydziału zasobów. Dane prywatnego odczytu infrastruktury pozostają poza publiczną kartą.
+- Źródła domknięcia v1: [context-selection i CIC planner](https://github.com/profitia/SG-dev/blob/ce5044a6c87937da80ee2db86dbcb54522ddd491/apps/sg-runtime/lib/assistant/context-selection.ts), [sesja i stany UX](https://github.com/profitia/SG-dev/blob/ce5044a6c87937da80ee2db86dbcb54522ddd491/apps/sg-runtime/components/appshell/assistant-conversation-session.ts), [aktywny kanon UX](https://github.com/profitia/SG-dev/blob/ce5044a6c87937da80ee2db86dbcb54522ddd491/docs/agent-instructions/ux-ui-design-canon.md), aktualne read-only sprawdzenie kanonu MagicPath (bez publikacji prywatnego kodu lub deklaracji live binding). Przypadek pierwotnej daty jest przykładem klasy, nie twierdzeniem, że błąd nadal istnieje w aktualnym źródle.
+- Uzupełnione oficjalne źródła: [OpenAI deprecations](https://developers.openai.com/api/docs/deprecations#2026-06-03-evals-platform), [eval methodology](https://developers.openai.com/api/docs/guides/evaluation-best-practices), [Structured Outputs](https://developers.openai.com/api/docs/guides/structured-outputs), [PostHog evals](https://posthog.com/docs/ai-evals), [Langfuse evals](https://langfuse.com/docs/evaluation/overview), odczyt 12 XI 2026. Opis możliwości nie dowodzi dostępu/aktywacji konta SpendGuru.
 - Potrzeba oraz uwagi A/B właściciela w poprzedzającej rozmowie są podstawą opisu biznesowego. Nie publikuje się rozmowy ani materiałów operacyjnych. Inna sesja kontynuuje z tej karty, bez domniemania dostępu do historii czatu.
 
-## 7. Otwarte decyzje
+## 7. Pakiet do akceptacji właściciela
 
-- Szczegółowe klasy dopuszczone do naprawy; granica Development/Production została rozstrzygnięta w DEC-01.
-- Mierzalne progi gotowości, liczebność prób i reguły wycofania.
-- Przyjęcie R-DATA-01: minimalny prywatny dowód do 7 dni i metadane do 90 dni, prawa konta/organizacji/źródeł, usunięcia, przetwarzający i lokalizacja. Wartości są propozycjami, nie zmieniają obecnej retencji.
-- Przyjęcie R-EXEC-01: Render worker + jednorazowe GitHub-hosted VM, dokładna instalacja SG2 i dopuszczenie workflow. Weryfikacja egzekwowalnego limitu modelu jest warunkiem wykonania.
-- Oszacowanie infrastruktury i odpowiedzialność za wyjątki. Limity modeli pilotażu rozstrzygnięto w DEC-02; liczba prób nadal jest propozycją.
+**Jedna decyzja projektowa do podjęcia:** przyjęcie kompletnej propozycji v1 z §4–5, w szczególności:
 
-## 8. Punkt wznowienia
+1. Trzy klasy C1–C3, granice i wyłączenia; możliwość automatycznego zlecenia, naprawy, PR, scalenia, wydania i rollback wyłącznie Development po dopuszczeniu mandatu.
+2. Standard sytuacji nietypowych, bramki promocji, definicje metryk, próby i warunki biznesowego odbioru.
+3. R-DATA-01: minimalny prywatny dowód do 7 dni, operacyjne metadane do 90 dni, uprawnienia konta/organizacji/źródeł, usunięcia i syntetyczne wejście agenta.
+4. R-EXEC-01: zaufany kontroler Render + jednorazowe GitHub-hosted VM z ograniczającym koszty dostępem do modelu; niezależna publikacja.
+5. Dwa kompletne etapy i model nadzoru: rutynowe naprawy bez właściciela, wyjątki do ownera technicznego/domenowego, rozszerzenia zakresu do właściciela.
+6. Warunki zatrzymania, wycofania oraz latched zawieszenie klasy; jedna aktywna naprawa/wydanie, dwa podejścia i brak automatycznego rozszerzenia.
 
-- Gdzie skończyliśmy: rekomendacje R-DATA-01 / R-EXEC-01, porównanie miejsc wykonania, zasady retencji/dostępu/usunięć, kontrola kosztu i aktualne rozstrzygnięcia routingu. Zapisane rekomendacje nie są implementacją ani przyjętym kanonem.
-- Ostatnie zaakceptowane decyzje: DEC-01 (autonomia Development w v1, Production później) i DEC-02 (50 USD / 14 dni, do 5 USD / incydent, bez automatycznego zwiększania). Nadal bez implementacji.
-- Następny krok: skonsultować rekomendowany mandat danych i wykonania, następnie domknąć klasy napraw, mianowniki/progi gotowości i kompletny plan do projektu kanonu.
-- Co wymaga decyzji: R-DATA-01 i R-EXEC-01 jako część finalnego projektu; koszt infrastruktury i szczegółowy mandat. Nie ponawiać pytań o DEC-01/02. Nie zakładać zgody na dane, zasoby lub uruchomienie.
-- Projekt / przyjęty kanon: BRAK — jeszcze nie przygotowano i nie zaakceptowano.
+DEC-01 i DEC-02 są już przyjęte; nie prosi się o ich ponowne potwierdzenie. Pozostały pakiet ma status **PROPOSED_NOT_ACCEPTED**. Zgoda na projekt nie jest zgodą na implementację, zakup zasobu, przetwarzanie wszystkich rozmów, merge do main lub deployment. Nie zatwierdza też nieoszacowanych kosztów pozamodelowych. Warunki konkretnej instalacji, legalne uprawnienia danych, koszt zasobów i źródłowe dopuszczenie automatyzacji muszą zostać zamknięte przed wykonaniem.
+
+PDR pozostaje jedyną Kartą inicjatywy. Po ewentualnej akceptacji można wyodrębnić kanon i przeprowadzić jego właściwą publikację/aktywację w osobno upoważnionym workflow. Obecnie kompletny projekt kanonu jest osadzony tutaj zgodnie z poleceniem właściciela; nie tworzy się drugiej karty.
+
+## 8. Punkt wznowienia i handoff projektowy
+
+- Gdzie skończyliśmy: rewizja 5 zawiera kompletną propozycję v1, pełne A–F, zakres klasowej autonomii, metryki i liczebności, standard odpowiedzi, dane, wykonawcę, koszt, dwa etapy i rollback.
+- Ostatnie przyjęte decyzje: DEC-01 (Development v1, Production później) i DEC-02 (50 USD / 14 dni, do 5 USD / incydent, bez automatycznej podwyżki). Brak przyjęcia pakietu rewizji 5.
+- Następny krok: właściciel ocenia i przyjmuje projekt z §7 lub wskazuje korektę. Nie wracać do serii pytań o elementy już objęte gotową rekomendacją.
+- Dopiero po decyzji: zapisać dokładny zakres merytorycznej akceptacji w tej Karcie; wykonanie nadal wymaga jawnego osobnego polecenia i aktywnego execution governance.
+- Handoff do przyszłej egzekucji: ta Karta i jej zaakceptowany dokładny commit; §4 drzewo, profile/route i cztery kontrakty; §5 zakres, bramki, metryki/rollback i dwa etapy. ARCHITECTURE koordynuje, SG2 wdraża swój runtime/dane, CIC własną politykę; każdy zachowuje własną ciągłość i uprawnienia. Pierwszy krok wykonawczy to dopuszczenia/bootstrap, nie uruchomienie agenta na istniejących admin credentials.
+- Zakazy obecnego kroku: kod produktu, dane/konfiguracja, kanony aktywne, rejestry, zasoby, płatne przebiegi, nowe PR-y produktu i deploymenty. Nie przygotowano promptu implementacyjnego.
+- Stan finalnego kanonu: projekt kompletny w §4–5, **nieprzyjęty i nieaktywny**; F3 oczekuje na właściciela.
 
 ## 9. Historia
 
@@ -322,3 +472,4 @@ Przyjęte wymagania: cel ciągłego doskonalenia, nacisk na autonomiczne wykonan
 | 2 | 2026-11-12 | Przyjęta DEC-01: autonomia Development w v1, Production później, brak implementacji. Rozwinięto proces, klasy, proponowane umiejscowienie, kryteria odbioru i roboczy budżet; pozostałe propozycje niezaakceptowane. |
 | 3 | 2026-11-12 | Przyjęta DEC-02: limity modeli 50 USD / 14 dni i 5 USD / incydent, bez automatycznego zwiększania. Odświeżono źródła historii/runtime; dodano wymagania dowodu odtworzenia, granice danych i projekt trwałego wykonania. Nadal bez implementacji. |
 | 4 | 2026-11-12 | Dodano R-DATA-01 i R-EXEC-01: konkretne zasady danych QA, retencja i usunięcia, Render worker + jednorazowe GitHub-hosted VM, granice poświadczeń, kontroli kosztu i odbioru. Rekomendacje niezaakceptowane; nadal bez implementacji. |
+| 5 | 2026-11-12 | Kompletna propozycja v1 do akceptacji: trzy klasy autonomii, standard wyjątków, metryki i próby, kryteria promocji, stop/rollback, dwa etapy i koszty. Domknięto checklistę projektową A–E; F3 oczekuje na właściciela. Nadal bez implementacji. |
