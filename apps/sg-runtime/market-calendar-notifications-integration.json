@@ -4,7 +4,7 @@
   "targetEnvironment": "development",
   "scope": "MARKET_CALENDAR_NOTIFICATION_CONSUMER_SOURCE",
   "previousSourceSha": "09a39f3ac3cad19b12d525168f9c719ff842e8cc",
-  "producerRecordSha256": "0236314afc4dd8e94d83bd040a116093ed387e08b44669025ff5e72f060c9ab5",
+  "producerRecordSha256": "9d81cf761fdde4bdac4d2671a791579821363d2f43c4880bbe8fc97a4cbb5648",
   "sourceDigests": {
     "apps/sg-runtime/components/procurement-insights/calendar-email-settings.tsx": "6295450f8d428efef8e89780dc40fc8584a22607000095df8213a5c9898c48ae",
     "apps/sg-runtime/components/procurement-insights/market-calendar.tsx": "f939f61217b0bf1bdef26d49e6728336ccf61f08bd51d194c638b773d2283b4a",
