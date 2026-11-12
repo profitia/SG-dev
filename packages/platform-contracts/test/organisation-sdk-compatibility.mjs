@@ -20,7 +20,7 @@ function historicalSource(reader,sha,path){
 const receiptPath=project=>'apps/'+(project==='SG2'?'sg-runtime':'srm')+'/operation-integration.json'
 const tasks={SG2:'SG2-REGISTRATION-ORGANISATION-HANDOFF-STAGE-I-20261110',SRM:'SRM-REGISTRATION-BOOTSTRAP-SDK-ADOPTION-20261111'}
 const known=Object.freeze({
- 'organisation-bootstrap-v1':Object.freeze({path:'packages/platform-contracts/test/organisation-sdk-compatibility.json',sha256:'020b9db676804688ce1758865084d2af02c42af169ede00c265432422e4d993e',successorSha256s:Object.freeze(['25fea141baf42c154f64a256d40808d548562c010e3f2fd3143657f24b15295c','ccf680f0a83b61f3944dd2823259e9487ddae5c2a7707b8d05e793241c4aae40','ffe2065f84e7a9808a74f896170588b9ff5fc66973096a15a407a7cbf006808d','b5a228db0a77f4cd7e2235506738a994fffcd741ff942e67717633d858c5b94a','b0b9ceb1799499cb2088ed8be523d6c1758573995e65ca53693b15eeaeafe698','8e3eb5304ba9f3270b8021341a7220dff29acd5bbcf6fcd8c4cb301bf7071059','7021539bfe9e003a5c93b488d741a68fd0badb367da92d26b972ea046f943107'])})
+ 'organisation-bootstrap-v1':Object.freeze({path:'packages/platform-contracts/test/organisation-sdk-compatibility.json',sha256:'020b9db676804688ce1758865084d2af02c42af169ede00c265432422e4d993e',successorSha256s:Object.freeze(['25fea141baf42c154f64a256d40808d548562c010e3f2fd3143657f24b15295c','ccf680f0a83b61f3944dd2823259e9487ddae5c2a7707b8d05e793241c4aae40','ffe2065f84e7a9808a74f896170588b9ff5fc66973096a15a407a7cbf006808d','b5a228db0a77f4cd7e2235506738a994fffcd741ff942e67717633d858c5b94a','b0b9ceb1799499cb2088ed8be523d6c1758573995e65ca53693b15eeaeafe698','8e3eb5304ba9f3270b8021341a7220dff29acd5bbcf6fcd8c4cb301bf7071059','52f6fbeba63a7585d3b909ca6cb5b91c1b6b2ebdeb118975473f312acc6ba7f3'])})
 })
 // All supplemental reviewed source bytes are verified before exposing0775.
 // These pins add no runtime authority and apply only to reconciled1.36 history.
@@ -87,7 +87,7 @@ const parallelEcrWeek=Object.freeze({recordSha256:'b0b9ceb1799499cb2088ed8be523d
 const parallelEcrWeekFrames=Object.freeze({
  'b0b9ceb1799499cb2088ed8be523d6c1758573995e65ca53693b15eeaeafe698':parallelEcrWeek,
  '8e3eb5304ba9f3270b8021341a7220dff29acd5bbcf6fcd8c4cb301bf7071059':Object.freeze({...parallelEcrWeek,recordSha256:'8e3eb5304ba9f3270b8021341a7220dff29acd5bbcf6fcd8c4cb301bf7071059',guardPins:Object.freeze({...parallelEcrWeek.guardPins,"apps/sg-runtime/tests/assistant-ecr-week-integrity.test.mjs":'0787795fdd513113107c3ee7e0b840a588f27186c5adfba92f7d8020aefda46f'})}),
- '7021539bfe9e003a5c93b488d741a68fd0badb367da92d26b972ea046f943107':Object.freeze({...parallelEcrWeek,recordSha256:'7021539bfe9e003a5c93b488d741a68fd0badb367da92d26b972ea046f943107',guardPins:Object.freeze({...parallelEcrWeek.guardPins,"apps/sg-runtime/tests/assistant-ecr-week-integrity.test.mjs":'0787795fdd513113107c3ee7e0b840a588f27186c5adfba92f7d8020aefda46f'})})
+ '52f6fbeba63a7585d3b909ca6cb5b91c1b6b2ebdeb118975473f312acc6ba7f3':Object.freeze({...parallelEcrWeek,recordSha256:'52f6fbeba63a7585d3b909ca6cb5b91c1b6b2ebdeb118975473f312acc6ba7f3',guardPins:Object.freeze({...parallelEcrWeek.guardPins,"apps/sg-runtime/tests/assistant-ecr-week-integrity.test.mjs":'0787795fdd513113107c3ee7e0b840a588f27186c5adfba92f7d8020aefda46f'})})
 })
 function verifiedParallelEcrGuards(record,current,historical,profile=parallelEcrWeek){
  const bytes=cloneBytes(current(profile.receipt));assert.equal(hash(bytes),profile.receiptSha256,'exact parallel ECR source record');
@@ -118,7 +118,7 @@ function exactKeys(value,keys,label){assert(value&&Object.getPrototypeOf(value)=
 function fileMap(value,label){assert(value&&Object.getPrototypeOf(value)===Object.prototype,label);assert(Object.keys(value).length>0,label);for(const[p,h]of Object.entries(value)){assert(/^[a-zA-Z0-9_./-]+$/.test(p)&&!p.split('/').includes('..')&&!p.startsWith('/'),label);assert(/^[a-f0-9]{64}$/.test(h),label)}}
 function cloneBytes(value){assert(value!==null&&value!==undefined,'missing source bytes');return Buffer.from(value)}
 function verifyRecord(a,current,historical,recordDigest){
- const complete=['ffe2065f84e7a9808a74f896170588b9ff5fc66973096a15a407a7cbf006808d','b5a228db0a77f4cd7e2235506738a994fffcd741ff942e67717633d858c5b94a','b0b9ceb1799499cb2088ed8be523d6c1758573995e65ca53693b15eeaeafe698','8e3eb5304ba9f3270b8021341a7220dff29acd5bbcf6fcd8c4cb301bf7071059','7021539bfe9e003a5c93b488d741a68fd0badb367da92d26b972ea046f943107'].includes(recordDigest)
+ const complete=['ffe2065f84e7a9808a74f896170588b9ff5fc66973096a15a407a7cbf006808d','b5a228db0a77f4cd7e2235506738a994fffcd741ff942e67717633d858c5b94a','b0b9ceb1799499cb2088ed8be523d6c1758573995e65ca53693b15eeaeafe698','8e3eb5304ba9f3270b8021341a7220dff29acd5bbcf6fcd8c4cb301bf7071059','52f6fbeba63a7585d3b909ca6cb5b91c1b6b2ebdeb118975473f312acc6ba7f3'].includes(recordDigest)
  exactKeys(a,recordKeys,'closed organisation SDK source record')
  assert.equal(a.schemaVersion,'1.0');assert.equal(a.acceptanceId,'organisation-bootstrap-v1')
  assert.equal(a.taskId,'ARCH-REGISTRATION-ORGANISATION-STAGE-I-20261110')

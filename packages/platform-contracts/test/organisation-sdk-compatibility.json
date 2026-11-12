@@ -263,12 +263,12 @@
       "apps/sg-runtime/tests/private-host.integration.test.mjs": "2f76d4df55adb4b1e9c391482f3372c45573955c348f5869e2048657476de955",
       "apps/sg-runtime/tests/xray-fresh-performance-adoption.test.mjs": "1bc8fa65799503d8554518aa1c55c98b4e486e2f7a451c51a97d762652fca5fe",
       "apps/sg-runtime/tests/xray-platform-compatibility.test.mjs": "d9602b68580641c217673d27124321ee2590d6cf77ec6f13d215467284cf3c73",
-      "apps/sg-runtime/tests/assistant-ecr-week-integrity.test.mjs": "592b2b7b90efa4001a00966bd2117534254c34d3065c857b76e9cc4681791ac1"
+      "apps/sg-runtime/tests/assistant-ecr-week-integrity.test.mjs": "88e9f31e12b53bdad2d0fcb5f7229ad909273f52fdc39fc8235488b2dca4a95e"
     },
     "SRM": {
       "apps/srm/app/login/porr-account.tsx": "8c9d56ac4c8487d4382a171db0de7f7328101f8f361b3d8083250ab74012a839",
       "apps/srm/scripts/diagnostic-telemetry-adoption.test.mjs": "a09194ec75871198cff53d9307425a82288584b820dba23ba1f1f18cb6455b66",
-      "apps/srm/scripts/native-execution-adoption.test.mjs": "2e063c883b9155bdc29603aec44afd716cb92688ad87c3ee3054adff681a7047",
+      "apps/srm/scripts/native-execution-adoption.test.mjs": "ab6fb2df4fcd98d37ff3a981c4bd0dd23b4e0ff22da9c51cd5c6030aa9518f21",
       "apps/srm/scripts/operation-context.test.mjs": "282792e61fdbf1fdc279d6408e4fe5dbe5e66a78f8268d947caa54a183669173",
       "apps/srm/scripts/porr-account-ui.test.mjs": "d27b744dbd0f54e0dfe7ee6986fb65dddc29c3cbe3f0da9cf2de1d5f0b2a39ac",
       "apps/srm/scripts/private-host.integration.test.mjs": "101469a1df54b7c9e1d5264d124dda9804e6a1e168a11aea9b024e984216673a",
