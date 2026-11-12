@@ -211,3 +211,14 @@ test('accepted Calendar corrective record and its physical verifier cannot be om
   assert.throws(()=>sdkContinuationPredecessor(receipt('SG2'),n=>{if(n===f)throw Object.assign(Error('Absent'),{code:'ENOENT'});return current(n)},historical),f);
  }
 });
+
+test('accepted a805 Calendar corrective69 graph remains complete at its actual immutable source',()=>{
+ const old=p=>historical('9c3d52c9f738317801f24b29e148b24127885df7',p);assert.equal(hash(old(sourcePath)),'a8050a2acde67bfc74457dd55824b074d09b26428a43bc1584f9e27916b4edd8');
+ for(const projectKey of ['SG2','SRM'])assert.deepEqual(sdkContinuationPredecessor(receipt(projectKey,old),old,historical,{projectKey}).record,JSON.parse(old(sourcePath)));
+});
+
+test('accepted Calendar consumer closes all20 physical paths and its immutable record before projection',()=>{
+ const p='apps/sg-runtime/market-calendar-integration.json',a=JSON.parse(current(p));assert.equal(hash(current(p)),'42406b5b07071408d35e39d5b9bb20d18402e52581d3c516bb08fb68b718f119');assert.equal(Object.keys(a.sourceDigests).length,20);
+ for(const f of [p,...Object.keys(a.sourceDigests)])assert.throws(()=>sdkContinuationPredecessor(receipt('SG2'),n=>n===f?Buffer.concat([current(n),Buffer.from('UNREVIEWED')]):current(n),historical),f);
+ assert.throws(()=>sdkContinuationPredecessor(receipt('SG2'),n=>{if(n===p)throw Object.assign(Error('Absent'),{code:'ENOENT'});return current(n)},historical));
+});

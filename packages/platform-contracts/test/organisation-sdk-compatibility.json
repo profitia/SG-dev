@@ -260,7 +260,7 @@
       "apps/sg-runtime/tests/native-sql-roundtrips.test.mjs": "ce45cd52dde814db21c746ac8a22902f1405295534dbcc509f4f7f9a98a195fe",
       "apps/sg-runtime/tests/operation-context.test.mjs": "6bfdde26ff7214056c84e6964b05bcbec8fe68ad20799323d53bd41feb77db77",
       "apps/sg-runtime/tests/organisation-sdk-history.test.mjs": "3661d42f176f07c377f45fa582cf9baab844d9924a2cccd2dc64a8d871827eed",
-      "apps/sg-runtime/tests/pci-smart-integrity.test.mjs": "459df4fab3bb44e257f6edbd6a711538bb76f92bb50c3c459ff0ba1b9e8d3b40",
+      "apps/sg-runtime/tests/pci-smart-integrity.test.mjs": "bf0be00f865080d442d8c366d0a72b17a6faa31356a0444d37caa23e638ec35f",
       "apps/sg-runtime/tests/private-host.integration.test.mjs": "2f76d4df55adb4b1e9c391482f3372c45573955c348f5869e2048657476de955",
       "apps/sg-runtime/tests/xray-fresh-performance-adoption.test.mjs": "1bc8fa65799503d8554518aa1c55c98b4e486e2f7a451c51a97d762652fca5fe",
       "apps/sg-runtime/tests/xray-platform-compatibility.test.mjs": "d9602b68580641c217673d27124321ee2590d6cf77ec6f13d215467284cf3c73",
