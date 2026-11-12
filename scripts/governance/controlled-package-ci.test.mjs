@@ -14,7 +14,7 @@ import {createHash} from 'node:crypto'
 import {ECR_G1_GOVERNANCE_REVIEW,assertEcrG1ReviewEntry} from './controlled-package-ci.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import {PRIVATE_RECURRING_SHELL_REVIEW,PRIVATE_RECURRING_SHELL_CURRENT_REVIEW} from './controlled-package-ci.mjs'
+import {PRIVATE_RECURRING_SHELL_REVIEW,PRIVATE_RECURRING_SHELL_CURRENT_REVIEW,PRIVATE_RECURRING_SHELL_CALENDAR_REVIEW} from './controlled-package-ci.mjs'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
@@ -2238,4 +2238,49 @@ test('trusted PI completion binds all current source bytes and the same seventee
   rejection(()=>assertPiCompletionRecord(piCurrentCompletionRecord,value))
  }
  rejection(()=>assertPiCompletionRecord(Buffer.concat([piCurrentCompletionRecord,Buffer.from(' ')]),options))
+})
+
+function piCalendarShellFixture(){
+ const r=PRIVATE_RECURRING_SHELL_CALENDAR_REVIEW,files=Object.entries(r.entries).map(([filename,e])=>({filename,sha:e.sha,status:e.status}))
+ return {r,files,p:{...pr(),number:r.prNumber,changed_files:files.length,base:{...pr().base,sha:r.baseSha},head:{...pr().head,sha:r.sourceSha,ref:r.branch}}}
+}
+test('PI completion admits exactly twenty-one owner-routed source versions and regular modes',()=>{
+ const {r,files,p}=piCalendarShellFixture();assert.equal(files.length,21);assert.equal(r.prNumber,1014)
+ assert.equal(createHash('sha256').update(JSON.stringify(r.entries)).digest('hex'),'eebdc77948a0968a7188dfab1d1e9d38b77dc5328d52e969573be21929fab27f')
+ assert.deepEqual([...new Set(Object.values(r.entries).map(e=>e.projectKey))].sort(),['ARCHITECTURE','SG2'])
+ assertArchitectureFiles(p,files);assert.equal(selectCandidate(context(),p,r.sourceSha,{files}),r.sourceSha)
+ for(const f of files){assertPrivateRecurringReviewEntry(f,'100644 blob '+f.sha+'\t'+f.filename+'\0');for(const mode of ['100755','120000','160000'])rejection(()=>assertPrivateRecurringReviewEntry(f,mode+' blob '+f.sha+'\t'+f.filename+'\0'))}
+})
+test('PI shell correction rejects changed scope, source bytes, status and borrowed owner identity',()=>{
+ const {r,files,p}=piCalendarShellFixture()
+ for(const edit of [f=>f.pop(),f=>f.push(f[0]),f=>f[0].sha='f'.repeat(40),f=>f[0].status='removed',f=>f[0].previous_filename='elsewhere',f=>f[0].filename='apps/sg-runtime/app/api/unreviewed.ts']){
+  const bad=structuredClone(files);edit(bad);rejection(()=>selectCandidate(context(),{...p,changed_files:bad.length},r.sourceSha,{files:bad}))
+ }
+ for(const edit of [q=>q.number=995,q=>q.head.ref='architecture/pi-private-recurring-20261111',q=>q.head.ref='architecture/another',q=>q.head.repo.full_name='attacker/fork',q=>q.user.login='attacker',q=>q.base.ref='staging',q=>q.head.sha=sha]){
+  const bad=structuredClone(p);edit(bad);rejection(()=>selectCandidate(context(),bad,r.sourceSha,{files}))
+ }
+})
+test('PI shell correction cannot reuse or alter any of the three accepted recurring review sets',()=>{
+ const shell=piCalendarShellFixture()
+ for(const old of [PRIVATE_RECURRING_REVIEW,PRIVATE_RECURRING_FINAL_REVIEW,PRIVATE_RECURRING_COMPLETION_REVIEW]){
+  const files=Object.entries(old.entries).map(([filename,e])=>({filename,sha:e.sha,status:e.status})),p={...pr(),number:old.prNumber,changed_files:files.length,base:{...pr().base,sha:old.baseSha},head:{...pr().head,sha:old.sourceSha,ref:old.branch}}
+  assert.equal(selectCandidate(context(),p,p.head.sha,{files}),p.head.sha)
+  rejection(()=>selectCandidate(context(),{...shell.p,changed_files:files.length},shell.r.sourceSha,{files}))
+  rejection(()=>selectCandidate(context(),{...p,changed_files:shell.files.length},p.head.sha,{files:shell.files}))
+ }
+})
+
+const piCalendarCompletionRecord=Buffer.from("{\n  \"schemaVersion\": \"1.0.0\",\n  \"taskId\": \"SG2-PI-RECURRING-E2E-20261111\",\n  \"targetEnvironment\": \"development\",\n  \"scope\": \"PROCUREMENT_INSIGHTS_LIBRARY_AND_SOURCE_ACTION_COMPLETION\",\n  \"baseCandidateSha\": \"4a15718ecc5b11e6749285fa528e598dda79cfc4\",\n  \"magicPathRevision\": \"471325033734762496\",\n  \"sourceDigests\": {\n    \"apps/architecture-lab/private-recurring-source.mjs\": \"20c4fb3c8a6627adbc0af3bfbb7222f7671f78da1b7a3d3d257955e3ff411de7\",\n    \"apps/architecture-lab/test/market-calendar-source.test.mjs\": \"2c68bd444e13b16c171100fc3c2f3a786ed6cad2fc896eff4ad463b4d9feac27\",\n    \"apps/insights-runtime/src/publication-query.mjs\": \"61a3b2b606af726b835a91e4592ea049bf37efaa596ce08bafae59bb74996243\",\n    \"apps/insights-runtime/src/subscription-api.mjs\": \"0ded6891898033e4a5657c54bace8c56b11e9911a016c593733cd5320d14e327\",\n    \"apps/insights-runtime/src/subscription-store.mjs\": \"dd159b75554c429660fc04276993fb19e02e8bc794b4d98e26e1ddfae4693a9b\",\n    \"apps/insights-runtime/tests/report-library.test.mjs\": \"f17dc930fc82e33cb9141257b0965581f5d49e56eb1d686593f7222bacd078c4\",\n    \"apps/insights-runtime/tests/subscriptions.test.mjs\": \"f3a33986059e5f985478f786c90a532b5d0ea55e87974593baeab62db17822f4\",\n    \"apps/sg-runtime/components/procurement-insights/inline-item.tsx\": \"4920e9315509d0e053ce50501cdf24ef1c5bddd306ecd1db430f51e495eb297a\",\n    \"apps/sg-runtime/components/procurement-insights/reports.tsx\": \"b888e0b328bd93898e78f526bf9a9f3eb0eef8d61265ff2ac6438b3e2ee45e3e\",\n    \"apps/sg-runtime/components/procurement-insights/workspace.css\": \"47a92d5c11f9e5d325271a7bc7cd1efe47d42e8229e3281f240b64d77a67c5dd\",\n    \"apps/sg-runtime/components/procurement-insights/workspace.tsx\": \"5df38d04b12418e58fa1d682bb4651e008abb6e28a455d090de159c9eaded384\",\n    \"apps/sg-runtime/middleware.ts\": \"d8736f570d537e5f9841f5120470f1c46a617233756c12038df0a5a9215c9179\",\n    \"apps/sg-runtime/package.json\": \"b3781339ad7260d054ebf37b6e2df4f163ce01c51c91d9bc43e99ae8c9b4aff5\",\n    \"apps/sg-runtime/procurement-insights-shell-integration.json\": \"1b1279e669e955e604c7c646482a6ce119eac5eeb09491ade78a37aa7fc133a1\",\n    \"apps/sg-runtime/tests/porr-demo-middleware.test.ts\": \"5c6a2fe0721c51ed95d01df9afb8acb6a6d2885be9e2067e652cc82d1c1351d6\",\n    \"apps/sg-runtime/tests/pci-smart-integrity.test.mjs\": \"0f8e27f2897dccf0d012f2fa3e136fa1d7f96df52b00a4f1bcffded15a99ea5f\",\n    \"apps/sg-runtime/tests/procurement-insights-completion.test.mjs\": \"ea0b0cba039ff6555cd94f7ff9c9495a37e71e15603209efa40896a0f2d39429\",\n    \"apps/sg-runtime/tests/procurement-insights-completion-integrity.mjs\": \"8fbceee5bd1de638ca76163c672ec7309d64543bf76d4125348b050fb3db3075\",\n    \"apps/sg-runtime/tests/procurement-insights-shell-integrity.mjs\": \"007a689567e7eb179eaae1a2e24077dd7335f8b88fc8cf5b523e8dacb82e6e52\",\n    \"apps/sg-runtime/tests/assistant-ecr-week-integrity.test.mjs\": \"297a0eaa12b5782d124c578d7766c9e6345e9acff65936dc8abd4c4f8bf72b41\"\n  },\n  \"preservedReceipts\": {\n    \"apps/architecture-lab/private-recurring-source.json\": \"75877d5750e07d1c8172be0af76bc5933f2eeefc22cc39747a2621b9cab24619\",\n    \"apps/sg-runtime/operation-integration.json\": \"a6bf50993c98a71aeccd349dd904baafb53b3cd653324d97bab3fc5e34ac509f\",\n    \"apps/srm/operation-integration.json\": \"1303ac82c0570ca4929f64e1620e2ec7a6bfd3809607f57eb33da621c8ecd06d\",\n    \"apps/newsfeed-runtime/operation-integration.json\": \"a8b43f4f6213806843160d4373bb62bfd9357ba03cfbc16865fb2bce266f88f1\",\n    \"apps/sg-runtime/assistant-context-integration.json\": \"d932f227977789643086b6a9eb179598a6f48071964b2d26ba82d25fceb7b2ec\",\n    \"apps/newsfeed-runtime/assistant-context-integration.json\": \"4057379e02c7b698f3f24348c40b84275d92c3a892b55e96b1c6d23175298dfc\",\n    \"apps/newsfeed-runtime/saved-searches-integration.json\": \"fcfea3ae736cfd3446dac7c70c34f6f59a723a48bdae11234706d76f01652a6c\",\n    \"apps/sg-runtime/procurement-insights-integration.json\": \"6dca06d8b0731e585925100b0578d41a61711f335940350d1ea32c296a3d7177\",\n    \"apps/sg-runtime/assistant-ecr-integration.json\": \"5814e2e5cbdf1a32d22cff3aa55de806ec34c9debdecc21ff06c4f9f887a82bc\",\n    \"apps/sg-runtime/assistant-markdown-integration.json\": \"27ff06aff8bc44592f0073732748834b7759182fa4307d901c7d63304381a38b\",\n    \"apps/sg-runtime/registration-stage-i-integration.json\": \"4a7a572e67e12ed73c523502cef4cb432009e735737df851419d80898653f414\",\n    \"apps/sg-runtime/assistant-send-arrow-integration.json\": \"62c6af6817a022c31788d801cc0eac293a24b3f25d9e529d32b1bff4908fa230\",\n    \"apps/architecture-lab/private-recurring-source-adoption.json\": \"a79c186897851acb93142949fe7aee19184cbfe68b3acdf51cbda084c00c1254\",\n    \"apps/sg-runtime/private-recurring-source-adoption.json\": \"edf9d51c199251e148b39c92a3084944c1a4b8419be29175c88b6e2583df11f2\",\n    \"apps/srm/private-recurring-source-adoption.json\": \"88d0252f634eface35b34adf31ac97cbf0d396fcf1fe6da452c74bdc23c7c633\",\n    \"apps/sg-runtime/assistant-ecr-week-integration.json\": \"31ce8f1d7e5ca1d9c3aedf80f92e23fe0f1a93cb8f5fd5d003eb54a244859dd4\",\n    \"apps/economic-calendar-runtime/market-calendar-preferences-integration.json\": \"e3bc27ddf22b9165555c05f938a3c5d8f9f4f09334fcb7c55e760da44e9a59b6\",\n    \"apps/architecture-lab/market-calendar-test-compatibility.json\": \"52e859d4a99bc4c8e4d986f38afea2d58e9c1fe1ee1e0eb62cc2672dbdb60078\"\n  },\n  \"authorisationChanged\": false,\n  \"schemaChanged\": false,\n  \"providerCallsPerformed\": false,\n  \"deploymentPerformed\": false\n}\n")
+test('trusted PI completion binds all current source bytes and the same eighteen predecessor receipts as pure data',()=>{
+ const a=JSON.parse(piCalendarCompletionRecord),options={sha256ForPath:p=>a.sourceDigests[p]??a.preservedReceipts[p],blobForPath:p=>PRIVATE_RECURRING_SHELL_CALENDAR_REVIEW.entries[p].sha,historicalDigestForPath:(sha,p)=>{assert.equal(sha,a.baseCandidateSha);return a.preservedReceipts[p]}}
+ assert.equal(Object.keys(assertPiCompletionRecord(piCalendarCompletionRecord,options).sourceDigests).length,20)
+ for(const p of Object.keys(a.sourceDigests)){
+  rejection(()=>assertPiCompletionRecord(piCalendarCompletionRecord,{...options,sha256ForPath:q=>q===p?'0'.repeat(64):options.sha256ForPath(q)}))
+  rejection(()=>assertPiCompletionRecord(piCalendarCompletionRecord,{...options,blobForPath:q=>q===p?'0'.repeat(40):options.blobForPath(q)}))
+ }
+ for(const p of Object.keys(a.preservedReceipts))for(const field of ['sha256ForPath','historicalDigestForPath']){
+  const value={...options,[field]:field==='sha256ForPath'?q=>q===p?'0'.repeat(64):options.sha256ForPath(q):(sha,q)=>q===p?'0'.repeat(64):options.historicalDigestForPath(sha,q)}
+  rejection(()=>assertPiCompletionRecord(piCalendarCompletionRecord,value))
+ }
+ rejection(()=>assertPiCompletionRecord(Buffer.concat([piCalendarCompletionRecord,Buffer.from(' ')]),options))
 })
