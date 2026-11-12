@@ -9,6 +9,9 @@ export type QualityEvidence=Readonly<{
  interpretedPeriod:Readonly<{from:string;to:string;weekStartsOn:'MONDAY'}>|null
  purpose:Readonly<{id:'ASSISTANT_QUALITY';policyVersion:string;grantId:string;validUntil:string}>
  versions:Readonly<{applicationSha:string;model:string;promptSha256:string;modelConfigurationSha256:string;cicVersion:string;gatewayVersion:string}>
+ /** Up to 64 original scopes across current context and included history.
+  * The trusted capture host proves complete coverage; every scope must still
+  * be authorised before reading/processing the whole evidence envelope. */
  sourceScopes:readonly QualitySourceScope[];modelInput:readonly Readonly<{role:'developer'|'user'|'assistant';content:string}>[]
  output:Readonly<{draft:string;delivered:string;status:'COMPLETE'|'INTERRUPTED'|'FAILED'}>;expiresAt:string
 }>

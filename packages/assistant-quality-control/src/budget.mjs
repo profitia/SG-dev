@@ -60,6 +60,12 @@ export function createQualityBudget({query,commandKey,schemaDigest,serviceId,rol
  }
  const incident=id=>require(uuid(id),'INVALID_INCIDENT')
  return Object.freeze({
+  async claimExecutor(permit,{runId,runAttempt,executorSourceSha,gateSetSha256,nonce}){
+   require(uuid(permit?.permitId)&&typeof runId==='string'&&/^[1-9][0-9]{0,19}$/.test(runId)&&runAttempt===1
+    &&typeof executorSourceSha==='string'&&/^[a-f0-9]{40}$/.test(executorSourceSha)&&digest(gateSetSha256)&&uuid(nonce))
+   const r=await call('CLAIM_EXECUTOR',{permitId:permit.permitId,runId,runAttempt,executorSourceSha,gateSetSha256,nonce})
+   require(r.status==='CLAIMED'&&r.permitId===permit.permitId&&r.runId===runId);return r
+  },
   async assertPermit(permit){
    require(uuid(permit?.permitId));const r=await call('CHECK_PERMIT',{permitId:permit.permitId});require(r.status==='ACTIVE'&&r.permitId===permit.permitId)
    return r

@@ -14,9 +14,9 @@ test('Broker bounds model/tier/cache/output and rejects project files, remote co
  }
  assert.equal(boundAgentRequest({...request(),tools:[{type:'function',name:'local_shell',parameters:{type:'object'}}]}).tools[0].type,'function')
 })
-async function exercise({limit=false,uncertain=false,missingUsage=false,wrongAuth=false,crlf=false,streamError=false}={}){
+async function exercise({limit=false,uncertain=false,missingUsage=false,wrongAuth=false,crlf=false,streamError=false,dispatchDenied=false}={}){
  const events=[];let inference=0
- const budget={assertPermit:async()=>{events.push('permit');if(limit)throw Object.assign(Error('Limit'),{code:'LIMIT_EXCEEDED'})},reserveRequest:async(_,r)=>(events.push('reserve'),{...r,status:'RESERVED'}),dispatchRequest:async()=>{events.push('dispatch')},settleRequest:async()=>{events.push('settle')},markUnknown:async(_,r)=>{events.push('unknown:'+r)}}
+ const budget={assertPermit:async()=>{events.push('permit');if(limit)throw Object.assign(Error('Limit'),{code:'LIMIT_EXCEEDED'})},reserveRequest:async(_,r)=>(events.push('reserve'),{...r,status:'RESERVED'}),dispatchRequest:async()=>{events.push('dispatch');if(dispatchDenied)throw Object.assign(Error('No dispatch'),{code:'IDEMPOTENCY_CONFLICT'})},settleRequest:async()=>{events.push('settle')},markUnknown:async(_,r)=>{events.push('unknown:'+r)},releaseUndispatched:async()=>{events.push('release-undispatched')}}
  const broker=createCostBroker({budget,permit:{permitId:randomUUID()},bearerToken:token,openaiKey:'synthetic-upstream-key-not-a-credential',fetcher:async(url,o)=>{
   assert.equal(o.redirect,'error');assert.equal(o.headers.Authorization,'Bearer synthetic-upstream-key-not-a-credential')
   if(url.endsWith('/input_tokens')){events.push('count');return Response.json({object:'response.input_tokens',input_tokens:100})}
@@ -42,6 +42,9 @@ test('OFFLINE loopback: exhausted budget or wrong local token makes zero provide
 test('OFFLINE loopback: unknown delivery or usage retains the reservation without a hidden retry',async()=>{
  const a=await exercise({uncertain:true});assert.equal(a.inference,1);assert(a.events.includes('unknown:PROVIDER_ERROR'));assert(!a.events.includes('settle'))
  const b=await exercise({missingUsage:true});assert.equal(b.inference,1);assert(b.events.includes('unknown:USAGE_UNVERIFIED'));assert(!b.events.includes('settle'))
+})
+test('OFFLINE loopback: a refused native dispatch causes no model POST and only an atomic undispatched release',async()=>{
+ const r=await exercise({dispatchDenied:true});assert.equal(r.inference,0);assert(r.events.includes('release-undispatched'));assert(!r.events.includes('settle'));assert(!r.events.some(v=>v.startsWith('unknown:')))
 })
 test('OFFLINE loopback: CRLF streams settle and provider errors never expose upstream details',async()=>{
  const good=await exercise({crlf:true});assert(good.events.includes('settle'));assert(good.text.includes('response.completed'))

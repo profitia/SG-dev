@@ -1,0 +1,61 @@
+name: Assistant quality control source
+run-name: ${{ github.event_name == 'workflow_dispatch' && format('AQC {0}', inputs.nonce) || 'AQC source checks' }}
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/assistant-quality-repair.yml'
+      - 'packages/assistant-quality-control/**'
+      - 'packages/assistant-context-contracts/src/quality.*'
+      - 'packages/assistant-context-contracts/test/quality.test.mjs'
+      - 'apps/package-limits/migrations/005-assistant-quality-usage.sql'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/assistant-quality-repair.yml'
+      - 'packages/assistant-quality-control/**'
+      - 'packages/assistant-context-contracts/src/quality.*'
+      - 'packages/assistant-context-contracts/test/quality.test.mjs'
+      - 'apps/package-limits/migrations/005-assistant-quality-usage.sql'
+  workflow_dispatch:
+    inputs:
+      mode:
+        type: choice
+        required: true
+        default: source-check
+        options: [source-check]
+      nonce:
+        type: string
+        required: true
+permissions:
+  contents: read
+
+jobs:
+  source:
+    name: AQC keyless source and native PostgreSQL
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    env:
+      AQC_TEST_POSTGRES_BIN: /usr/lib/postgresql/16/bin
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - name: Install isolated test prerequisites
+        run: sudo apt-get update -qq && sudo apt-get install -y postgresql-16 postgresql-contrib-16
+      - name: Install pinned public dependencies without lifecycle or credentials
+        working-directory: packages/assistant-quality-control
+        run: npm ci --ignore-scripts --registry https://registry.npmjs.org --userconfig /dev/null
+      - name: Test controller, broker, proof gates and native temporary databases
+        working-directory: packages/assistant-quality-control
+        run: npm test
+      - name: Test additive neutral QA contracts and existing protocol
+        working-directory: packages/assistant-context-contracts
+        run: npm test
+
+# This source checkpoint deliberately exposes no repair/publish dispatch,
+# deployment credential, data/service grant, provider key or GitHub Environment.
+# Linux executor qualification, trusted adapters and owner bootstrap remain
+# required before a repair execution mode can be introduced and activated.

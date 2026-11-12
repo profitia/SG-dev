@@ -191,7 +191,7 @@ BEGIN
   v:=v||jsonb_build_object('status',d->>'status','reason',d->>'reason');
  ELSIF action='CONTAIN' THEN
   IF v->'release' IS NULL OR v->'release'='null'::jsonb OR v->'pending' IS DISTINCT FROM 'null'::jsonb
-   OR coalesce(d->>'reason','') NOT IN('LIMIT_EXCEEDED','AUTHORITY_REVOKED','MANDATE_EXPIRED') THEN RAISE EXCEPTION 'CONTROL_RECORD_INVALID';END IF;
+   OR coalesce(d->>'reason','') NOT IN('LIMIT_EXCEEDED','AUTHORITY_REVOKED','MANDATE_EXPIRED','CONTROL_FAILURE') THEN RAISE EXCEPTION 'CONTROL_RECORD_INVALID';END IF;
   v:=v||jsonb_build_object('status','OBSERVING','classSuspended',true,'reason',d->>'reason','wakeAt',ms+60000);
  ELSE
   IF v->'pending'->>'nonce' IS DISTINCT FROM d->>'nonce' OR v->'pending' IS NULL OR v->'pending'='null'::jsonb THEN RAISE EXCEPTION 'IDEMPOTENCY_CONFLICT';END IF;

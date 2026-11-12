@@ -43,6 +43,23 @@ acceptance is claimed. It does not start nightly QA or Stage 2.
   >=200 cases, class/language and critical coverage, three critical repetitions,
   correctness/refusal gates and the required effect when >=10 baseline defects
   exist. It does not accept the agent's tests or PASS statement as authority.
+- `executor.mjs` and `provenance.mjs`: prepared Linux launcher, pinned CLI,
+  separate UID, empty capabilities/no_new_privs, cgroup, kernel egress fence and
+  upstream Codex Action socket protection. The public projection reads exact
+  committed SG-dev blobs; payloads, local .env, private packages and holdout are
+  excluded. Actual file collection rejects extra changes, links and executable
+  regression files. **Linux execution is not yet qualified**: a separate signed
+  keyless tool-loop/isolation/cancellation receipt is required before paid work.
+
+The workflow at `.github/workflows/assistant-quality-repair.yml` currently runs
+keyless source tests only, including isolated PostgreSQL. It does not expose a
+repair, promotion or deployment mode and references no secret or Environment.
+This initial source CI does not change the existing protected package controller.
+
+QA contracts are additive source modules under `assistant-context-contracts/src`.
+Existing private package metadata, export surface and context protocol 2.2.0 stay
+byte-identical. The QA evidence envelope preserves up to 64 original scopes
+across included history; this does not raise Gateway's four-source-per-turn cap.
 
 ## Local verification
 
@@ -73,7 +90,7 @@ New resources, credentials, data/service rights and the limited automation
 mandate remain owner-controlled. No private conversation or signing/provider
 key belongs in Git, agent inputs, artifacts or telemetry.
 
-The deployment entrypoint, real GitHub/Render adapters, isolated runner, trusted
+The deployment entrypoint, real GitHub/Render adapters, Linux qualification, trusted
 publisher, protected source-continuity adoption, product capture/guards and
 operational retention/restore verification remain to be completed before any
 installation, paid run or live acceptance. Operational metadata purge currently

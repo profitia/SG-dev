@@ -1,3 +1,4 @@
+import {ECR_COMPLETE_FUNCTIONAL_REVIEW,ECR_COMPLETE_FUNCTIONAL_CONSUMER_REVIEW,ECR_COMPLETE_FUNCTIONAL_PROVENANCE,assertCompleteFunctionalReviewEntry,completeFunctionalTrustedPredecessor,assertCompleteFunctionalProvenance} from './controlled-package-ci.mjs'
 import {ECR_CALENDAR_TEST_REVIEW,assertCalendarTestReviewEntry,calendarTestCompatibilityTrustedCurrent,readCalendarSourceFile} from './controlled-package-ci.mjs'
 import {ECR_MARKET_CALENDAR_REVIEW,ECR_MARKET_CALENDAR_PROVENANCE,assertEcrMarketCalendarReviewEntry,marketCalendarTrustedPredecessor} from './controlled-package-ci.mjs'
 import {NEWSFEED_SAVED_SEARCH_REVIEW,assertNewsfeedSavedSearchReviewEntry} from './controlled-package-ci.mjs'
@@ -2630,6 +2631,90 @@ test('assistant quality G1 admits only the exact reviewed five-file owner closur
  assert(!Object.keys(LOCAL_PACKAGES).some(n=>n.includes('assistant-quality')))
 })
 
+// Exact new task, separate producer and SG2 owner inputs; no runtime activation.
+test('complete Calendar delivery pins54 producer and7 consumer paths without widening older owner/credential gates',()=>{
+ for(const r of [ECR_COMPLETE_FUNCTIONAL_REVIEW,ECR_COMPLETE_FUNCTIONAL_CONSUMER_REVIEW]){
+  const files=Object.entries(r.entries).map(([filename,e])=>({filename,sha:e.sha,status:e.status})),candidate={...pr(),number:r.prNumber,changed_files:files.length,base:{...pr().base,sha:r.baseSha},head:{...pr().head,sha:r.sourceSha,ref:r.branch}}
+  assert.equal(selectCandidate(context(),candidate,r.sourceSha,{files}),r.sourceSha)
+  if(r===ECR_COMPLETE_FUNCTIONAL_REVIEW)assertArchitectureFiles(candidate,files)
+  for(const f of files){assertCompleteFunctionalReviewEntry(f,'100644 blob '+f.sha+'\t'+f.filename+'\0',r);for(const mode of ['100755','120000','160000'])rejection(()=>assertCompleteFunctionalReviewEntry(f,mode+' blob '+f.sha+'\t'+f.filename+'\0',r))}
+  for(const edit of [v=>v.pop(),v=>v.push(v[0]),v=>v[0]={...v[0],sha:'0'.repeat(40)},v=>v[0]={...v[0],status:'removed'},v=>v[0]={...v[0],filename:'apps/identity-runtime/src/unreviewed.ts'},v=>v[0]={...v[0],previous_filename:v[0].filename}]){const bad=structuredClone(files);edit(bad);rejection(()=>selectCandidate(context(),{...candidate,changed_files:bad.length},r.sourceSha,{files:bad}))}
+  for(const edit of [v=>v.number++,v=>v.head.ref='architecture/unreviewed',v=>v.head.repo.full_name='profitia/fork',v=>v.user.login='attacker',v=>v.base.ref='staging',v=>v.head.sha=sha]){const bad=structuredClone(candidate);edit(bad);rejection(()=>selectCandidate(context(),bad,r.sourceSha,{files}))}
+ }
+ assert.equal(Object.keys(ECR_COMPLETE_FUNCTIONAL_REVIEW.entries).length,54);assert.equal(Object.keys(ECR_COMPLETE_FUNCTIONAL_CONSUMER_REVIEW.entries).length,7)
+})
+function completeCalendarFixture(){
+ const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..'),p=ECR_COMPLETE_FUNCTIONAL_REVIEW,c=ECR_COMPLETE_FUNCTIONAL_CONSUMER_REVIEW,cfg=ECR_COMPLETE_FUNCTIONAL_PROVENANCE,cache=new Map()
+ const historical=(sha,p)=>{const k=sha+':'+p;if(!cache.has(k))cache.set(k,execFileSync('git',['cat-file','blob',k],{cwd:root,stdio:['ignore','pipe','pipe']}));return Buffer.from(cache.get(k))}
+ const current=consumer=>file=>{if(!consumer&&file===cfg.consumerRecord)throw Object.assign(Error('not adopted'),{code:'ENOENT'});return historical(consumer&&Object.hasOwn(c.entries,file)?c.sourceSha:p.sourceSha,file)}
+ return{root,p,c,cfg,historical,current}
+}
+test('complete Calendar verifies every real producer/consumer Git blob and all38 historical receipts before projection',()=>{
+ const f=completeCalendarFixture()
+ for(const consumer of [false,true]){
+  const read=f.current(consumer),prior=completeFunctionalTrustedPredecessor(read,f.historical),entries={...f.p.entries,...(consumer?f.c.entries:{})},receipt=JSON.parse(read(f.cfg.producerRecord))
+  assert.equal(Object.keys(receipt.preservedReceipts).length,38)
+  for(const[p,e]of Object.entries(entries)){if(e.status==='added')assert.throws(()=>prior(p),{code:'ENOENT'});else assert.deepEqual(prior(p),f.historical(f.p.baseSha,p));rejection(()=>completeFunctionalTrustedPredecessor(file=>file===p?Buffer.concat([read(file),Buffer.from('UNREVIEWED')]):read(file),f.historical))}
+  for(const p of Object.keys(receipt.preservedReceipts))rejection(()=>completeFunctionalTrustedPredecessor(file=>file===p?Buffer.concat([read(file),Buffer.from('UNREVIEWED')]):read(file),f.historical))
+  const a=structuredClone(receipt);a.sourceDigests[Object.keys(a.sourceDigests)[0]]='0'.repeat(64);rejection(()=>completeFunctionalTrustedPredecessor(p=>p===f.cfg.producerRecord?Buffer.from(JSON.stringify(a)):read(p),f.historical))
+ }
+ const foreign=Object.assign(Error('unrelated Git failure'),{status:128,stderr:"fatal: path 'other' does not exist in 'main'"});assert.throws(()=>completeFunctionalTrustedPredecessor(()=>{throw foreign},f.historical),e=>e===foreign)
+ const denied=Object.assign(Error('denied'),{code:'EACCES'});assert.throws(()=>completeFunctionalTrustedPredecessor(()=>{throw denied},f.historical),e=>e===denied)
+})
+test('complete Calendar physical authentication rejects executable and symbolic source, before any candidate code can run',()=>{
+ const f=completeCalendarFixture(),root=fs.mkdtempSync(path.join(os.tmpdir(),'calendar-complete-source-'))
+ try{
+  const record=JSON.parse(f.current(false)(f.cfg.producerRecord))
+  for(const file of [...Object.keys(f.p.entries),...Object.keys(record.preservedReceipts)]){const target=path.join(root,file);fs.mkdirSync(path.dirname(target),{recursive:true});fs.writeFileSync(target,f.current(false)(file))}
+  // Historical reads use the existing object store; the fixture never evaluates
+  // the projected product, signing or source-acquisition implementation.
+  fs.mkdirSync(path.join(root,'.git'));fs.writeFileSync(path.join(root,'.git/HEAD'),'ref: refs/heads/fixture\n');fs.writeFileSync(path.join(root,'.git/config'),'[core]\nrepositoryformatversion = 0\n');fs.mkdirSync(path.join(root,'.git/objects/info'),{recursive:true});fs.mkdirSync(path.join(root,'.git/refs/heads'),{recursive:true});fs.writeFileSync(path.join(root,'.git/objects/info/alternates'),path.join(f.root,'.git/objects')+'\n')
+  assertCompleteFunctionalProvenance(root)
+  for(const file of [f.cfg.producerRecord,f.cfg.helper,'apps/identity-runtime/src/calendar-email.ts']){const target=path.join(root,file),bytes=fs.readFileSync(target);fs.chmodSync(target,0o755);rejection(()=>assertCompleteFunctionalProvenance(root));fs.chmodSync(target,0o644);fs.unlinkSync(target);fs.symlinkSync(path.join(root,f.cfg.producerRecord),target);rejection(()=>assertCompleteFunctionalProvenance(root));fs.unlinkSync(target);fs.writeFileSync(target,bytes)}
+ }finally{fs.rmSync(root,{recursive:true,force:true})}
+})
+
+test('complete Calendar SDK bridge is confined to its exact legacy lock and reviewed1.8 producer, with independent consumer adoption',()=>{
+ const f=completeCalendarFixture(),root=fs.mkdtempSync(path.join(os.tmpdir(),'calendar-complete-sdk-'))
+ try{
+  const record=JSON.parse(f.current(false)(f.cfg.producerRecord)),read=f.current(false)
+  const write=(p,b)=>{fs.mkdirSync(path.dirname(path.join(root,p)),{recursive:true});fs.writeFileSync(path.join(root,p),b)}
+  for(const p of [...Object.keys(f.p.entries),...Object.keys(record.preservedReceipts),'apps/sg-runtime/package.json','apps/sg-runtime/package-lock.json'])write(p,read(p))
+  for(const rel of Object.values(LOCAL_PACKAGES)){const p=path.posix.normalize('apps/sg-runtime/'+rel+'/package.json');write(p,read(p))}
+  fs.mkdirSync(path.join(root,'.git/objects/info'),{recursive:true});fs.mkdirSync(path.join(root,'.git/refs/heads'),{recursive:true});fs.writeFileSync(path.join(root,'.git/HEAD'),'ref: refs/heads/fixture\n');fs.writeFileSync(path.join(root,'.git/config'),'[core]\nrepositoryformatversion = 0\n');fs.writeFileSync(path.join(root,'.git/objects/info/alternates'),path.join(f.root,'.git/objects')+'\n')
+  const lock=JSON.parse(read('apps/sg-runtime/package-lock.json'))
+  assertLocalPackageSources(root,lock,f.root,{reviewedPrivateRecurring:true})
+  for(const version of ['1.7.0','1.7.2','1.8.1']){const bad=structuredClone(lock);bad.packages['node_modules/@profitia/platform-source-hub-contracts'].version=version;rejection(()=>assertLocalPackageSources(root,bad,f.root,{reviewedPrivateRecurring:true}))}
+  for(const p of Object.keys(f.c.entries))write(p,f.current(true)(p))
+  const adopted=JSON.parse(f.current(true)('apps/sg-runtime/package-lock.json'))
+  assertLocalPackageSources(root,adopted,f.root,{reviewedPrivateRecurring:true})
+  const changed=structuredClone(adopted);changed.packages['node_modules/@profitia/platform-source-hub-contracts'].version='1.7.1';write('apps/sg-runtime/package-lock.json',JSON.stringify(changed));rejection(()=>assertLocalPackageSources(root,changed,f.root,{reviewedPrivateRecurring:true}))
+ }finally{fs.rmSync(root,{recursive:true,force:true})}
+})
+
+test('Calendar historical-read correction retains the approved operation scope, six UI sources and all prior receipts',()=>{
+ const f=completeCalendarFixture(),oldProducer='ce6c5d0f51cd670d81a17c416924a5f56a211cde',oldConsumer='4f560653f32f6cdaea08398f6356265e4e5fde34'
+ const changed=(review,old)=>Object.keys(review.entries).filter(p=>!f.historical(old,p).equals(f.historical(review.sourceSha,p))).sort()
+ assert.deepEqual(changed(f.p,oldProducer),[
+  'apps/architecture-lab/ecr-complete-functional-source.mjs',
+  'apps/economic-calendar-runtime/complete-functional-source-integration.json',
+  'apps/economic-calendar-runtime/migrations/005-expanded-results.sql',
+  'apps/economic-calendar-runtime/operations/complete-functional-owner-plan.json',
+  'apps/economic-calendar-runtime/src/result-links.mjs',
+  'apps/economic-calendar-runtime/test/expanded-results.test.mjs',
+  'apps/identity-runtime/test/calendar-authority-postgres.test.mjs'
+ ])
+ assert.deepEqual(changed(f.c,oldConsumer),[f.cfg.consumerRecord])
+ const p='apps/economic-calendar-runtime/operations/complete-functional-owner-plan.json',migration='apps/economic-calendar-runtime/migrations/005-expanded-results.sql',old=f.historical(oldProducer,p),current=f.historical(f.p.sourceSha,p),a=JSON.parse(old),b=JSON.parse(current)
+ const digest=createHash('sha256').update(f.historical(f.p.sourceSha,migration)).digest('hex')
+ assert.equal(b.sourceDigests[migration],digest)
+ assert.equal(old.toString().replace(a.sourceDigests[migration],digest),current.toString())
+ for(const record of [f.cfg.producerRecord,f.cfg.consumerRecord]){
+  const previous=JSON.parse(f.historical(record===f.cfg.producerRecord?oldProducer:oldConsumer,record)),now=JSON.parse(f.current(true)(record))
+  assert.deepEqual(now.preservedReceipts,previous.preservedReceipts)
+ }
+})
+
 function piLiveAcceptanceFixture(){
  const r=PRIVATE_RECURRING_LIVE_ACCEPTANCE_REVIEW,files=Object.entries(r.entries).map(([filename,e])=>({filename,sha:e.sha,status:e.status}))
  return{r,files,p:{...pr(),number:r.prNumber,changed_files:files.length,base:{...pr().base,sha:r.baseSha},head:{...pr().head,sha:r.sourceSha,ref:r.branch}}}
@@ -2657,3 +2742,56 @@ test('trusted live correction projection validates all current bytes and immutab
  assert.throws(()=>previous(PI_LIVE_ACCEPTANCE_PROVENANCE_PATH),{code:'ENOENT'})
  assert.deepEqual(previous('apps/sg-runtime/operation-integration.json'),current('apps/sg-runtime/operation-integration.json'))
 })
+
+test('Calendar and PI peer policies authenticate each real complete source graph and reject an unadmitted mixed graph',()=>{
+ for(const source of [ECR_COMPLETE_FUNCTIONAL_REVIEW.sourceSha,PRIVATE_RECURRING_LIVE_ACCEPTANCE_REVIEW.sourceSha]){
+  const root=fs.mkdtempSync(path.join(os.tmpdir(),'calendar-pi-peer-policy-'))
+  try{
+   execFileSync('git',['clone','--quiet','--shared','--no-checkout',authorityRoot,root],{stdio:['ignore','pipe','pipe']})
+   execFileSync('git',['checkout','--quiet','--detach',source],{cwd:root,stdio:['ignore','pipe','pipe']})
+   assert(assertPrivateRecurringProvenance(root),'complete actual source graph '+source)
+   if(source===ECR_COMPLETE_FUNCTIONAL_REVIEW.sourceSha){
+    // The two producer closures overlap. A future mixed source needs its own
+    // exact owner adoption; accepted policy coexistence cannot admit it.
+    for(const p of Object.keys(PRIVATE_RECURRING_LIVE_ACCEPTANCE_REVIEW.entries)){
+     const b=execFileSync('git',['cat-file','blob',PRIVATE_RECURRING_LIVE_ACCEPTANCE_REVIEW.sourceSha+':'+p],{cwd:authorityRoot,stdio:['ignore','pipe','pipe']})
+     fs.mkdirSync(path.dirname(path.join(root,p)),{recursive:true});fs.writeFileSync(path.join(root,p),b)
+    }
+    assert.throws(()=>assertPrivateRecurringProvenance(root),/ECR_COMPLETE_FUNCTIONAL_BYTES_REJECTED/)
+   }
+  }finally{fs.rmSync(root,{recursive:true,force:true})}
+ }
+})
+
+
+test('PI fixture continuation changes only its routing test and current receipt while preserving original source12',async()=>{
+ const c=await import('./controlled-package-ci.mjs'),r=c.PRIVATE_RECURRING_LIVE_FIXTURE_REVIEW,old=c.PRIVATE_RECURRING_LIVE_ACCEPTANCE_REVIEW;
+ assert.equal(createHash('sha256').update(JSON.stringify(old.entries)).digest('hex'),'ae3c35fc25bab49c31491330c8c7152057c2a559e68a57e58d8a7bb194149373');
+ assert.deepEqual(Object.keys(r.entries),Object.keys(old.entries));assert.equal(Object.keys(r.entries).length,12);
+ const delta=Object.keys(r.entries).filter(p=>JSON.stringify(r.entries[p])!==JSON.stringify(old.entries[p])).sort();
+ assert.deepEqual(delta,['apps/platform-source-hub/test/ci-routing.test.mjs','apps/sg-runtime/procurement-insights-live-acceptance.json']);
+ const files=Object.entries(r.entries).map(([filename,e])=>({filename,sha:e.sha,status:e.status}));
+ const p={...pr(),number:r.prNumber,changed_files:files.length,base:{...pr().base,sha:r.baseSha},head:{...pr().head,sha:r.sourceSha,ref:r.branch}};
+ assertArchitectureFiles(p,files);assert.equal(selectCandidate(context(),p,r.sourceSha,{files}),r.sourceSha);
+ for(const f of files){assertPrivateRecurringReviewEntry(f,'100644 blob '+f.sha+'\t'+f.filename+'\0');for(const mode of ['100755','120000','160000'])rejection(()=>assertPrivateRecurringReviewEntry(f,mode+' blob '+f.sha+'\t'+f.filename+'\0'))}
+ for(const edit of [f=>f.pop(),f=>f.push(f[0]),f=>f[0].sha='f'.repeat(40),f=>f[0].status='removed',f=>f[0].previous_filename='elsewhere',f=>f[0].filename='apps/sg-runtime/app/api/unreviewed.ts']){
+  const bad=structuredClone(files);edit(bad);rejection(()=>selectCandidate(context(),{...p,changed_files:bad.length},r.sourceSha,{files:bad}));
+ }
+ for(const changed of delta){const mixed=structuredClone(files);mixed.find(f=>f.filename===changed).sha=old.entries[changed].sha;rejection(()=>selectCandidate(context(),p,r.sourceSha,{files:mixed}));}
+ for(const edit of [q=>q.number=1014,q=>q.head.ref='architecture/another',q=>q.head.repo.full_name='attacker/fork',q=>q.user.login='attacker',q=>q.base.ref='staging',q=>q.head.sha=sha]){const bad=structuredClone(p);edit(bad);rejection(()=>selectCandidate(context(),bad,r.sourceSha,{files}));}
+});
+test('PI fixture projection authenticates both complete reviews and refuses mixed source and receipt bytes',async()=>{
+ const c=await import('./controlled-package-ci.mjs');
+ for(const r of [c.PRIVATE_RECURRING_LIVE_ACCEPTANCE_REVIEW,c.PRIVATE_RECURRING_LIVE_FIXTURE_REVIEW]){
+  const cache=new Map(),current=p=>{if(!cache.has(p))cache.set(p,execFileSync('git',['show',r.sourceSha+':'+p],{cwd:authorityRoot}));return cache.get(p)};
+  const bytes=current(PI_LIVE_ACCEPTANCE_PROVENANCE_PATH),a=JSON.parse(bytes),options={sha256ForPath:p=>a.sourceDigests[p]??a.preservedReceipts[p],blobForPath:p=>r.entries[p]?.sha,historicalDigestForPath:(sha,p)=>{assert.equal(sha,a.baseCandidateSha);return a.preservedReceipts[p]}};
+  assert.equal(Object.keys(assertPiLiveAcceptanceRecord(bytes,options).sourceDigests).length,11);
+  for(const p of Object.keys(a.sourceDigests))for(const field of ['sha256ForPath','blobForPath'])rejection(()=>assertPiLiveAcceptanceRecord(bytes,{...options,[field]:q=>q===p?'0'.repeat(field==='blobForPath'?40:64):options[field](q)}));
+  for(const p of Object.keys(a.preservedReceipts))for(const field of ['sha256ForPath','historicalDigestForPath'])rejection(()=>assertPiLiveAcceptanceRecord(bytes,{...options,[field]:field==='sha256ForPath'?q=>q===p?'0'.repeat(64):options[field](q):(sha,q)=>q===p?'0'.repeat(64):options[field](sha,q)}));
+  rejection(()=>assertPiLiveAcceptanceRecord(Buffer.concat([bytes,Buffer.from(' ')]),options));
+  const historical=(sha,p)=>execFileSync('git',['show',sha+':'+p],{cwd:authorityRoot}),previous=assertPiLiveAcceptanceProjection(bytes,{current,historical});
+  for(const p of ['apps/insights-runtime/src/host.mjs','apps/sg-runtime/components/procurement-insights/workspace.tsx'])assert.deepEqual(previous(p),historical(a.baseCandidateSha,p));
+  assert.throws(()=>previous(PI_LIVE_ACCEPTANCE_PROVENANCE_PATH),{code:'ENOENT'});
+ }
+ assert(c.assertPrivateRecurringProvenance(authorityRoot));
+});

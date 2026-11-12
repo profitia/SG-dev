@@ -17,6 +17,7 @@ CREATE TABLE profitia_limits.quality_installation(
  singleton boolean PRIMARY KEY DEFAULT true CHECK(singleton),
  schema_digest text NOT NULL CHECK(schema_digest='__QUALITY_USAGE_SCHEMA_DIGEST__'),
  service_id uuid NOT NULL,enabled boolean NOT NULL DEFAULT false,
+ gate_set_sha256 text NOT NULL CHECK(gate_set_sha256 ~ '^[a-f0-9]{64}$'),
  authorised_until timestamptz NOT NULL,
  pilot_started_at timestamptz,pilot_expires_at timestamptz,
  test_account_id uuid NOT NULL,test_organisation_id uuid NOT NULL,
@@ -41,6 +42,7 @@ CREATE TABLE profitia_limits.quality_attempts(
  permit_id uuid NOT NULL UNIQUE DEFAULT gen_random_uuid(),ordinal integer NOT NULL CHECK(ordinal IN(1,2)),
  created_at timestamptz NOT NULL DEFAULT clock_timestamp(),expires_at timestamptz NOT NULL,
  stopped_at timestamptz,
+ executor_run_id text,executor_run_attempt integer,executor_nonce uuid,executor_source_sha text,
  UNIQUE(incident_id,ordinal),CHECK(expires_at>created_at AND expires_at<=created_at+interval '30 minutes')
 );
 -- Expiry alone never proves that an executor stopped. The controller closes it
@@ -104,7 +106,7 @@ BEGIN
  OR (d->>'until')::bigint>floor(extract(epoch FROM clock_timestamp())*1000)+10000
  THEN RAISE EXCEPTION 'POLICY_UNAVAILABLE';END IF;
  IF session_user='profitia_limits_quality_controller' AND action NOT IN('STATUS','HOLD_INCIDENT','OPEN_ATTEMPT','CLOSE_ATTEMPT','CLOSE_INCIDENT')
- OR session_user='profitia_limits_quality_broker' AND action NOT IN('CHECK_PERMIT','RESERVE_REQUEST','DISPATCH_REQUEST','SETTLE_REQUEST','UNKNOWN_REQUEST','RELEASE_REQUEST')
+ OR session_user='profitia_limits_quality_broker' AND action NOT IN('CLAIM_EXECUTOR','CHECK_PERMIT','RESERVE_REQUEST','DISPATCH_REQUEST','SETTLE_REQUEST','UNKNOWN_REQUEST','RELEASE_REQUEST')
  OR session_user='profitia_limits_quality_capture' AND action NOT IN('RESERVE_ASSISTANT','RECONCILE_ASSISTANT')
  OR action IS NULL THEN RAISE EXCEPTION 'POLICY_UNAVAILABLE';END IF;
  expected:=ARRAY['contract','action','serviceId','schemaDigest','until']||CASE action
@@ -114,6 +116,7 @@ BEGIN
   WHEN 'CLOSE_ATTEMPT' THEN ARRAY['incidentId','attemptId','stoppedProofSha256']
   WHEN 'CLOSE_INCIDENT' THEN ARRAY['incidentId']
   WHEN 'CHECK_PERMIT' THEN ARRAY['permitId']
+  WHEN 'CLAIM_EXECUTOR' THEN ARRAY['permitId','runId','runAttempt','executorSourceSha','gateSetSha256','nonce']
   WHEN 'RESERVE_REQUEST' THEN ARRAY['permitId','requestId','inputDigest','model','pricingVersion','inputTokens','outputTokens','maximumNanoUsd']
   WHEN 'DISPATCH_REQUEST' THEN ARRAY['requestId','inputDigest']
   WHEN 'SETTLE_REQUEST' THEN ARRAY['requestId','usage']
@@ -123,7 +126,7 @@ BEGIN
  IF ARRAY(SELECT jsonb_object_keys(d) ORDER BY 1)<>ARRAY(SELECT unnest(expected) ORDER BY 1) THEN RAISE EXCEPTION 'POLICY_UNAVAILABLE';END IF;
  receipt:=jsonb_build_object('applicationId','spendguru','environment','development','projectId','lingering-thunder-05075810',
   'branchId','br-green-hall-b9s837k0','databaseName',current_database(),'runtimeRole',session_user,'schemaDigest',i.schema_digest,'serviceId',i.service_id);
- spending:=action IN('HOLD_INCIDENT','OPEN_ATTEMPT','CHECK_PERMIT','RESERVE_REQUEST','DISPATCH_REQUEST','RESERVE_ASSISTANT');
+ spending:=action IN('HOLD_INCIDENT','OPEN_ATTEMPT','CLAIM_EXECUTOR','CHECK_PERMIT','RESERVE_REQUEST','DISPATCH_REQUEST','RESERVE_ASSISTANT');
  IF spending AND (NOT i.enabled OR i.authorised_until<=clock_timestamp() OR i.pilot_expires_at<=clock_timestamp())
  THEN RAISE EXCEPTION 'LIMIT_EXCEEDED';END IF;
 
@@ -218,7 +221,7 @@ BEGIN
    receipt:=receipt||jsonb_build_object('executionId',e.execution_id);
   END IF;
  ELSE
-  IF action IN('CHECK_PERMIT','RESERVE_REQUEST') THEN
+  IF action IN('CLAIM_EXECUTOR','CHECK_PERMIT','RESERVE_REQUEST') THEN
    SELECT * INTO a FROM quality_attempts WHERE permit_id=(d->>'permitId')::uuid;
   ELSE
    SELECT * INTO r FROM quality_requests WHERE request_id=(d->>'requestId')::uuid AND attempt_id IS NOT NULL;
@@ -227,6 +230,15 @@ BEGIN
   SELECT * INTO n FROM quality_incidents WHERE incident_id=a.incident_id;
   IF a.attempt_id IS NULL OR n.incident_id IS NULL THEN RAISE EXCEPTION 'POLICY_UNAVAILABLE';END IF;
   IF spending AND (n.closed_at IS NOT NULL OR a.stopped_at IS NOT NULL OR a.expires_at<=clock_timestamp()) THEN RAISE EXCEPTION 'POLICY_UNAVAILABLE';END IF;
+  IF action='CLAIM_EXECUTOR' THEN
+   IF a.executor_run_id IS NOT NULL THEN RAISE EXCEPTION 'IDEMPOTENCY_CONFLICT';END IF;
+   IF coalesce(d->>'runId','')!~'^[1-9][0-9]{0,19}$' OR (d->>'runAttempt')::integer IS DISTINCT FROM 1
+    OR coalesce(d->>'executorSourceSha','')!~'^[a-f0-9]{40}$' OR d->>'gateSetSha256' IS DISTINCT FROM i.gate_set_sha256
+    OR (d->>'nonce')::uuid IS NULL THEN RAISE EXCEPTION 'POLICY_UNAVAILABLE';END IF;
+   UPDATE quality_attempts SET executor_run_id=d->>'runId',executor_run_attempt=1,executor_nonce=(d->>'nonce')::uuid,executor_source_sha=d->>'executorSourceSha' WHERE attempt_id=a.attempt_id;
+   RETURN receipt||jsonb_build_object('status','CLAIMED','permitId',a.permit_id,'incidentId',n.incident_id,'attemptId',a.attempt_id,'runId',d->>'runId');
+  END IF;
+  IF a.executor_run_id IS NULL THEN RAISE EXCEPTION 'POLICY_UNAVAILABLE';END IF;
   IF action='CHECK_PERMIT' THEN
    RETURN receipt||jsonb_build_object('status','ACTIVE','incidentId',n.incident_id,'attemptId',a.attempt_id,'permitId',a.permit_id,'expiresAt',a.expires_at);
   ELSIF action='RESERVE_REQUEST' THEN

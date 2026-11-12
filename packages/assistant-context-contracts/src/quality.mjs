@@ -60,7 +60,11 @@ export function readQualityEvidence(value,{now}={}){
  exact(v.versions,['applicationSha','model','promptSha256','modelConfigurationSha256','cicVersion','gatewayVersion'])
  sha(v.versions.applicationSha,40);sha(v.versions.promptSha256);sha(v.versions.modelConfigurationSha256)
  text(v.versions.model,128);version(v.versions.cicVersion);version(v.versions.gatewayVersion)
- list(v.sourceScopes,4);unique(v.sourceScopes.map(s=>s.source))
+ // A model input can include 12 prior turns in addition to the current four
+ // sources. Preserve each original organisation/reference/version scope; do
+ // not collapse historical private references into the current selection.
+ // This does not raise the Gateway's four-source-per-turn execution bound.
+ list(v.sourceScopes,64)
  for(const s of v.sourceScopes){
   exact(s,['source','organisationId','classification','sourceVersion','rightsVersion','validUntil','status','reference'])
   uuid(s.organisationId);one(s.classification,['SHARED_KNOWLEDGE','ORGANISATION_PRIVATE','USER_IN_ORGANISATION_PRIVATE'])
@@ -68,6 +72,8 @@ export function readQualityEvidence(value,{now}={}){
   text(s.rightsVersion);stamp(s.validUntil);one(s.status,CONTEXT_STATUSES)
   require(readContextReference(s.reference).source===s.source)
  }
+ unique(v.sourceScopes.map(s=>JSON.stringify([s.source,s.organisationId,s.sourceVersion,
+  Object.fromEntries(Object.entries(s.reference).sort(([a],[b])=>a.localeCompare(b)))])))
  list(v.modelInput,32,1)
  for(const m of v.modelInput){exact(m,['role','content']);one(m.role,['developer','user','assistant']);text(m.content,32768)}
  require(Buffer.byteLength(JSON.stringify(v.modelInput),'utf8')<=32768)

@@ -21,7 +21,8 @@ const check=(command,args)=>{
 async function isolatedPostgres(){
  // A new, task-owned cluster only. No URL, secret or existing cloud database
  // is accepted by this fixture. PostgreSQL binaries must already be installed.
- const bin=check('pg_config',['--bindir']),root=fs.mkdtempSync(path.join(os.tmpdir(),'aqc-pg-fixture-'))
+ const bin=process.env.AQC_TEST_POSTGRES_BIN??check('pg_config',['--bindir']);assert(path.isAbsolute(bin)&&path.resolve(bin)===bin)
+ const root=fs.mkdtempSync(path.join(os.tmpdir(),'aqc-pg-fixture-'))
  const data=path.join(root,'data'),sock=path.join(root,'socket');fs.mkdirSync(sock)
  const probe=net.createServer();await new Promise((resolve,reject)=>probe.once('error',reject).listen(0,'127.0.0.1',resolve))
  const port=probe.address().port;await new Promise(resolve=>probe.close(resolve))
@@ -50,8 +51,8 @@ test('Native Package & Limits: concurrent holds, durable unknown costs, exact ro
   await owner.query(one.replaceAll('__LIMITS_SCHEMA_DIGEST__',hash(one)))
   await owner.query(four.replaceAll('__ASSISTANT_USAGE_SCHEMA_DIGEST__',hash(four)))
   await owner.query(five.replaceAll('__QUALITY_USAGE_SCHEMA_DIGEST__',schemaDigest));await owner.query('COMMIT')
-  await owner.query(`INSERT INTO profitia_limits.quality_installation(singleton,schema_digest,service_id,enabled,authorised_until,test_account_id,test_organisation_id,source_ref)
-   VALUES(true,$1,$2,true,clock_timestamp()+interval '30 days',$3,$4,'synthetic isolated fixture only')`,[schemaDigest,serviceId,account,org])
+  await owner.query(`INSERT INTO profitia_limits.quality_installation(singleton,schema_digest,service_id,enabled,gate_set_sha256,authorised_until,test_account_id,test_organisation_id,source_ref)
+   VALUES(true,$1,$2,true,'${'c'.repeat(64)}',clock_timestamp()+interval '30 days',$3,$4,'synthetic isolated fixture only')`,[schemaDigest,serviceId,account,org])
   const clients={},keys={},pools={}
   for(const role of roles){
    const name='profitia_limits_quality_'+role,key=randomBytes(32).toString('hex');keys[role]=key;pools[role]=fixture.pool(name)
@@ -72,6 +73,10 @@ test('Native Package & Limits: concurrent holds, durable unknown costs, exact ro
   await assert.rejects(clients.controller.ensureIncident(randomUUID(),{repairClass:'C1',causeFingerprint:hash(id),acceptanceRequired:true}),{code:'IDEMPOTENCY_CONFLICT'})
   const attemptId=randomUUID(),expiresAt=new Date(Date.now()+29*60000).toISOString()
   const permit=await clients.controller.openAttempt(id,{attemptId,ordinal:1,expiresAt})
+  const binding={runId:'123',runAttempt:1,executorSourceSha:'b'.repeat(40),gateSetSha256:'c'.repeat(64),nonce:randomUUID()}
+  await assert.rejects(clients.broker.assertPermit(permit),{code:'POLICY_UNAVAILABLE'})
+  await clients.broker.claimExecutor(permit,binding)
+  await assert.rejects(clients.broker.claimExecutor(permit,binding),{code:'IDEMPOTENCY_CONFLICT'})
   const otherId=ids.find((v,i)=>v!==id&&holds[i].status==='fulfilled')
   await assert.rejects(clients.controller.openAttempt(otherId,{attemptId:randomUUID(),ordinal:1,expiresAt}),{code:'IDEMPOTENCY_CONFLICT'})
   const request={requestId:randomUUID(),inputDigest:hash('no prompt stored'),quote:quoteCodeRequest(200000)}
@@ -90,6 +95,7 @@ test('Native Package & Limits: concurrent holds, durable unknown costs, exact ro
   assert.equal(db.status,'PENDING_RECONCILIATION');assert.equal(db.maximum_nano_usd,request.quote.maximumNanoUsd)
   await clients.controller.closeAttempt(id,{attemptId,stoppedProofSha256:hash('independent termination proof')})
   const next=await clients.controller.openAttempt(id,{attemptId:randomUUID(),ordinal:2,expiresAt})
+  await clients.broker.claimExecutor(next,{...binding,runId:'124',nonce:randomUUID()})
   const q2=await clients.broker.reserveRequest(next,{requestId:randomUUID(),inputDigest:hash('second'),quote:quoteCodeRequest(10,20)})
   await clients.broker.dispatchRequest(q2)
   const usage=readCodeUsage({input_tokens:10,output_tokens:20,total_tokens:30,input_tokens_details:{cached_tokens:2,cache_write_tokens:0},output_tokens_details:{reasoning_tokens:5}},

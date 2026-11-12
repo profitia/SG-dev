@@ -35,7 +35,7 @@ export function advanceIncident(record,action,result,now){
    if(result.result==='FAIL'){retry('INDEPENDENT_VERIFICATION_FAILED');break}
    require(result.result==='PASS'&&result.baseSha===record.baseSha&&result.artifactSha256===record.patch?.artifactSha256
     &&result.baseTest==='FAIL'&&result.candidateTest==='PASS'&&result.holdoutCases>=200
-    &&result.criticalRegressions===0&&result.accessViolations===0&&result.criticalCasesPass===true&&result.criticalRepeats===3&&result.stable===true
+    &&result.criticalRegressions===0&&result.accessViolations===0&&result.unverifiableCases===0&&result.criticalCasesPass===true&&result.criticalRepeats===3&&result.stable===true
     &&Number.isFinite(result.correctnessDeltaPp)&&result.correctnessDeltaPp>=-1&&Number.isFinite(result.unjustifiedRefusalDeltaPp)&&result.unjustifiedRefusalDeltaPp<=2
     &&Number.isSafeInteger(result.scopeBeforeDefects)&&result.scopeBeforeDefects>=0&&Number.isSafeInteger(result.scopeAfterDefects)&&result.scopeAfterDefects>=0
     &&(result.scopeBeforeDefects<10||result.scopeAfterDefects*2<=result.scopeBeforeDefects)
@@ -61,12 +61,12 @@ export function advanceIncident(record,action,result,now){
     deployId:result.deployId,lastKnownGoodSha:result.lastKnownGoodSha,releasedAt:now};n.observingUntil=now+30*60000;break
   case 'VERIFY_RUNTIME':
    require(result.sourceSha===record.release?.sourceSha)
-   if(result.result==='REGRESSION_CONFIRMED'){n.status='OBSERVING';n.rollbackRequired=true;n.reason='CONFIRMED_RUNTIME_REGRESSION';break}
+   if(result.result==='REGRESSION_CONFIRMED'){n.status='OBSERVING';n.rollbackRequired=true;n.classSuspended=true;n.reason='CONFIRMED_RUNTIME_REGRESSION';break}
    if(result.result==='UNKNOWN'){n.status='RELEASED';n.wakeAt=now+60000;break}
    require(result.result==='PASS'&&result.answerVerified===true&&hash(result.proofSha256));n.status='OBSERVING';n.runtimeProof=result.proofSha256;break
   case 'OBSERVE':
    require(result.sourceSha===record.release?.sourceSha)
-   if(result.result==='REGRESSION_CONFIRMED'){n.rollbackRequired=true;n.reason='CONFIRMED_REGRESSION';break}
+   if(result.result==='REGRESSION_CONFIRMED'){n.rollbackRequired=true;n.classSuspended=true;n.reason='CONFIRMED_REGRESSION';break}
    require(['STABLE','UNKNOWN'].includes(result.result))
    if(result.result==='STABLE'&&record.runtimeProof&&now>=record.observingUntil)n.status='CLOSED'
    else{n.status='OBSERVING';n.wakeAt=now+60000}
@@ -112,6 +112,16 @@ export function createQualityController({store,actions,authorize,budget,now=Date
    // A cancellation HTTP acknowledgement is not confirmation that a job
    // stopped, or that its earlier merge/deploy had no effect.
    const result=await actions.cancel(record.pending,{record})
+   if(result.state==='CONFIRMED_STOPPED'&&result.effects==='OWN_RELEASE'&&record.pending.action==='PROMOTE'){
+    // Cancellation cannot erase an already accepted provider deployment. Adopt
+    // only independently verified own-release facts and keep free monitoring.
+    const verified=await actions.verify('PROMOTE',result.releaseResult,{record,containment:true})
+    require(verified.result==='RELEASED','CANCELLATION_EFFECT_UNVERIFIED')
+    const changed=advanceIncident(record,'PROMOTE',verified,now())
+    record=await store.complete({...identity(),nonce:record.pending.nonce,record:{...changed,status:'OBSERVING',classSuspended:true}})
+    await budget.closeIncident(id)
+    return {status:record.status,waitingFor:'FREE_SAFETY_MONITORING'}
+   }
    if(result.state==='CONFIRMED_STOPPED'&&result.effects==='NONE'){
     const changed=record.release?{...record,status:'OBSERVING',classSuspended:true,wakeAt:now()+60000,pending:null}:{...record,pending:null}
     record=await store.complete({...identity(),nonce:record.pending.nonce,record:changed})
@@ -156,9 +166,9 @@ export function createQualityController({store,actions,authorize,budget,now=Date
   }catch(error){
    // An external timeout leaves the committed intent intact for reconciliation.
    if(record.pending&&['DELIVERY_UNCERTAIN','PROVIDER_UNAVAILABLE','LEASE_LOST'].includes(error?.code))return {status:record.status,waitingFor:'RECONCILIATION'}
-   if(record.release&&!record.pending&&['LIMIT_EXCEEDED','AUTHORITY_REVOKED','MANDATE_EXPIRED'].includes(error?.code)){
+   if(record.release&&!record.pending){
     require(typeof store.contain==='function','CONTAINMENT_STORE_REQUIRED')
-    record=await store.contain({...identity(),reason:error.code})
+    record=await store.contain({...identity(),reason:['LIMIT_EXCEEDED','AUTHORITY_REVOKED','MANDATE_EXPIRED'].includes(error?.code)?error.code:'CONTROL_FAILURE'})
     return {status:record.status,waitingFor:'FREE_SAFETY_MONITORING'}
    }
    const reason=error?.code==='LIMIT_EXCEEDED'?'BUDGET_STOP':error?.code==='AUTHORITY_REVOKED'||error?.code==='MANDATE_EXPIRED'?'OUT_OF_SCOPE':'NEEDS_TECHNICAL_REVIEW'

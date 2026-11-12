@@ -37,7 +37,7 @@ test('OFFLINE proof gate independently compares baseline, candidate and paired f
  assert(!JSON.stringify(r).includes('holdout_family'),'proof does not disclose labels or inputs')
 })
 test('Self-reported PASS, green baseline, source mismatch, critical instability and access violations do not authorise release',async()=>{
- for(const mode of ['unfixed','greenBase','critical','unstable','access','decline']){
+ for(const mode of ['unfixed','greenBase','critical','unstable','access','decline','unknown']){
   const {options,runCase}=setup()
   const r=await verifyCandidate({...options,runCase:async input=>{
    const out=await runCase(input),n=input.args[0]
@@ -46,6 +46,7 @@ test('Self-reported PASS, green baseline, source mismatch, critical instability 
    if(mode==='critical'&&n===1&&input.version==='candidate')out.output=999
    if(mode==='unstable'&&n===1&&input.repeat===2&&input.version==='candidate')out.output=999
    if(mode==='access'&&n===100&&input.version==='candidate')out.accessViolation=true
+   if(mode==='unknown'&&n===100&&input.version==='candidate')out.status='FAILED'
    if(mode==='decline'&&n>=100&&n<110&&input.version==='candidate')out.output=null
    return {...out,agentSays:'PASS'}
   }})

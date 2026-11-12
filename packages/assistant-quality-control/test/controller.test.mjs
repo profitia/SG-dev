@@ -12,7 +12,7 @@ test('OFFLINE state contract requires deterministic diagnosis, independent red/g
  r=advance(r,'QUALIFY',{result:'DETERMINISTIC_FAILURE',method:'DETERMINISTIC',repairClass:'C1',causeFingerprint:h});assert.equal(r.status,'TRIAGED')
  r=advance(r,'REPRODUCE',{result:'RED',baseSha:base,proofSha256:h});assert.equal(r.status,'REPRODUCED')
  r.attemptsUsed=1;r=advance(r,'EXECUTE',{result:'PATCH',baseSha:base,patch:{artifactSha256:h,treeSha256:h}})
- const good={result:'PASS',baseSha:base,artifactSha256:h,baseTest:'FAIL',candidateTest:'PASS',holdoutCases:200,criticalRegressions:0,accessViolations:0,criticalCasesPass:true,criticalRepeats:3,stable:true,correctnessDeltaPp:0,unjustifiedRefusalDeltaPp:0,scopeBeforeDefects:0,scopeAfterDefects:0,classCounts:{C1:100,C2:50,C3:50},proofSha256:h}
+ const good={result:'PASS',baseSha:base,artifactSha256:h,baseTest:'FAIL',candidateTest:'PASS',holdoutCases:200,criticalRegressions:0,accessViolations:0,unverifiableCases:0,criticalCasesPass:true,criticalRepeats:3,stable:true,correctnessDeltaPp:0,unjustifiedRefusalDeltaPp:0,scopeBeforeDefects:0,scopeAfterDefects:0,classCounts:{C1:100,C2:50,C3:50},proofSha256:h}
  for(const change of [{baseTest:'PASS'},{holdoutCases:199},{criticalRegressions:1},{accessViolations:1},{artifactSha256:'d'.repeat(64)},{correctnessDeltaPp:-1.1},{unjustifiedRefusalDeltaPp:2.1},{criticalRepeats:2},{stable:false},{criticalCasesPass:false}])assert.throws(()=>advance(r,'VERIFY',{...good,...change}))
  r=advance(r,'VERIFY',good);assert.equal(nextAction(r,now),'PROPOSE')
  r=advance(r,'PROPOSE',{result:'PR_READY',prNumber:123,headSha:head,artifactSha256:h});assert.equal(nextAction(r,now),'CHECKS')
@@ -68,4 +68,13 @@ test('An expired paid budget preserves free monitoring of an already deployed re
  const controller=createQualityController({store,actions:{dispatch:async()=>{throw Error('No dispatch')},reconcile:async()=>{},cancel:async()=>{},verify:async()=>{}},
   authorize:async(_,options)=>{assert.equal(options.containment,true);return {manifest:{incidentId:r.id}}},budget:{ensureIncident:async()=>{throw Object.assign(Error('Expired'),{code:'LIMIT_EXCEEDED'})},closeIncident:async()=>{}},workerId:'fixture',now:()=>now})
  assert.equal((await controller.tick(r.id)).waitingFor,'FREE_SAFETY_MONITORING');assert.deepEqual(calls,['LIMIT_EXCEEDED'])
+})
+test('Cancellation adopts an independently verified own deployment instead of forgetting its effects',async()=>{
+ let r={...incident(),status:'BUDGET_STOP',pending:{action:'PROMOTE',nonce:randomUUID()}},verified=0
+ const result={result:'RELEASED',sourceSha:head,artifactSha256:h,configurationSha256:h,deployId:'fixture',lastKnownGoodSha:base,exactRuntimeVerified:true}
+ const store={claim:async()=>({record:structuredClone(r),leaseToken:'fixture'}),prepare:async()=>{throw Error('No new work')},recordExternal:async()=>{},stop:async()=>{},
+  complete:async o=>(r=o.record,r),release:async()=>{}}
+ const control=createQualityController({store,actions:{dispatch:async()=>{throw Error('No dispatch')},reconcile:async()=>{},cancel:async()=>({state:'CONFIRMED_STOPPED',effects:'OWN_RELEASE',releaseResult:result}),
+  verify:async(a,v,options)=>{assert.equal(a,'PROMOTE');assert.equal(options.containment,true);verified++;return v}},authorize:async()=>{throw Error('No new data access')},budget:{ensureIncident:async()=>{},closeIncident:async()=>{}},workerId:'fixture',now:()=>now})
+ assert.equal((await control.tick(r.id)).waitingFor,'FREE_SAFETY_MONITORING');assert.equal(verified,1);assert.equal(r.release.sourceSha,head);assert.equal(r.classSuspended,true);assert.equal(r.pending,null)
 })

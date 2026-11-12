@@ -42,6 +42,16 @@ test('QA invalid versions, zones, context references, extra source grants and ov
   const v=evidence();change(v);assert.throws(()=>readQualityEvidence(v,{now}))
  }
 })
+test('Included history retains distinct organisations, references and versions for the same source; none become a grant',()=>{
+ const v=evidence(),s=v.sourceScopes[0]
+ for(let i=0;i<5;i++)v.sourceScopes.push({...structuredClone(s),organisationId:randomUUID()})
+ v.sourceScopes.push({...structuredClone(s),sourceVersion:'c'.repeat(64)})
+ v.sourceScopes.push({...structuredClone(s),reference:{...s.reference,from:'2026-11-14T23:00:00.000Z'}})
+ assert.equal(readQualityEvidence(v,{now}).sourceScopes.length,8)
+ const duplicates=evidence();duplicates.sourceScopes.push({...structuredClone(duplicates.sourceScopes[0]),reference:Object.fromEntries(Object.entries(duplicates.sourceScopes[0].reference).reverse())})
+ assert.throws(()=>readQualityEvidence(duplicates,{now}))
+ const tooMany=evidence();tooMany.sourceScopes=Array.from({length:65},()=>({...structuredClone(s),organisationId:randomUUID()}));assert.throws(()=>readQualityEvidence(tooMany,{now}))
+})
 test('Parser refuses getters, array accessors, symbols and prototypes without executing them',()=>{
  let calls=0;const a=evidence();Object.defineProperty(a,'accountId',{get(){calls++;return randomUUID()},enumerable:true});assert.throws(()=>readQualityEvidence(a,{now}))
  const b=evidence();Object.defineProperty(b.modelInput,0,{get(){calls++;return {role:'user',content:'bad'}},enumerable:true});assert.throws(()=>readQualityEvidence(b,{now}))

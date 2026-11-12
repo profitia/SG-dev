@@ -39,7 +39,7 @@ function valueAt(value,pointer){
 function judgement(value,fixture){
  if(value?.status!=='COMPLETE')return {correct:false,refusal:false,unverifiable:true,accessViolation:value?.accessViolation===true}
  let actualDigest
- try{actualDigest=documentDigest(value.output)}catch{return {correct:false,refusal:false,unverifiable:true,accessViolation:true}}
+ try{actualDigest=documentDigest(value.output)}catch{return {correct:false,refusal:false,unverifiable:true,accessViolation:value.accessViolation===true}}
  const refused=valueAt(value.output,fixture.refusal.pointer)
  return {correct:actualDigest===documentDigest(fixture.expected),outputSha256:actualDigest,
   refusal:fixture.expectedAnswer&&fixture.refusal.values.some(v=>{try{return documentDigest(v)===documentDigest(refused)}catch{return false}}),
@@ -79,7 +79,7 @@ export async function verifyCandidate({manifest,beforeSource,afterSource,regress
   return judgement(r,fixture)
  }
  const red=await execute('base',repair),green=await execute('candidate',repair)
- const observations=[];let beforeCorrect=0,afterCorrect=0,beforeRefusals=0,afterRefusals=0,criticalRegressions=0,accessViolations=0,criticalCasesPass=true,stable=true,scopeBeforeDefects=0,scopeAfterDefects=0
+ const observations=[];let beforeCorrect=0,afterCorrect=0,beforeRefusals=0,afterRefusals=0,criticalRegressions=0,accessViolations=0,unverifiableCases=0,criticalCasesPass=true,stable=true,scopeBeforeDefects=0,scopeAfterDefects=0
  for(let repeat=1;repeat<3;repeat++){
   if(documentDigest(await execute('base',repair,repeat))!==documentDigest(red)||documentDigest(await execute('candidate',repair,repeat))!==documentDigest(green))stable=false
  }
@@ -87,6 +87,7 @@ export async function verifyCandidate({manifest,beforeSource,afterSource,regress
   const before=await execute('base',item.fixture),after=await execute('candidate',item.fixture)
   beforeCorrect+=Number(before.correct);afterCorrect+=Number(after.correct);beforeRefusals+=Number(before.refusal);afterRefusals+=Number(after.refusal)
   accessViolations+=Number(after.accessViolation);if(item.critical&&!after.correct)criticalCasesPass=false
+  unverifiableCases+=Number(before.unverifiable||after.unverifiable)
   if(item.critical&&before.correct&&!after.correct)criticalRegressions++
   if(item.fixture.repairClass===m.repairClass){scopeBeforeDefects+=Number(!before.correct);scopeAfterDefects+=Number(!after.correct)}
   if(item.critical)for(let repeat=1;repeat<3;repeat++){
@@ -98,10 +99,10 @@ export async function verifyCandidate({manifest,beforeSource,afterSource,regress
  }
  const correctnessDeltaPp=100*(afterCorrect-beforeCorrect)/pack.length,unjustifiedRefusalDeltaPp=100*(afterRefusals-beforeRefusals)/pack.length
  const passed=!red.correct&&!red.unverifiable&&green.correct&&!green.accessViolation&&criticalCasesPass&&stable
-  &&criticalRegressions===0&&accessViolations===0&&correctnessDeltaPp>=-1&&unjustifiedRefusalDeltaPp<=2
+  &&criticalRegressions===0&&accessViolations===0&&unverifiableCases===0&&correctnessDeltaPp>=-1&&unjustifiedRefusalDeltaPp<=2
   &&(scopeBeforeDefects<10||scopeAfterDefects*2<=scopeBeforeDefects)
  const body={result:passed?'PASS':'FAIL',baseSha:m.baseSha,artifactSha256,baseTest:red.correct?'PASS':red.unverifiable?'UNKNOWN':'FAIL',candidateTest:green.correct?'PASS':'FAIL',
-  holdoutCases:pack.length,classCounts:counts,criticalRegressions,accessViolations,criticalCasesPass,criticalRepeats:3,stable,
+  holdoutCases:pack.length,classCounts:counts,criticalRegressions,accessViolations,unverifiableCases,criticalCasesPass,criticalRepeats:3,stable,
   correctnessDeltaPp,unjustifiedRefusalDeltaPp,holdoutSha256:meta.sha256,rubricVersion:meta.rubricVersion,
   scopeBeforeDefects,scopeAfterDefects,
   beforeSourceSha256:source.beforeSha256,afterSourceSha256:source.afterSha256,regressionSha256:hash(regressionSource),observationsSha256:documentDigest(observations)}

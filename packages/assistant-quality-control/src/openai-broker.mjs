@@ -50,7 +50,7 @@ function requestId(permitId,digest){
  * outside the agent's user, environment, filesystem and network permissions. */
 export function createCostBroker({budget,permit,bearerToken,openaiKey,fetcher=fetch,maximumRequests=64}){
  require(typeof bearerToken==='string'&&/^[a-f0-9]{64}$/.test(bearerToken)&&typeof openaiKey==='string'&&openaiKey.length>0,'EXPLICIT_BROKER_BINDING_REQUIRED')
- for(const name of ['assertPermit','reserveRequest','dispatchRequest','settleRequest','markUnknown'])require(typeof budget?.[name]==='function','EXPLICIT_BROKER_BINDING_REQUIRED')
+ for(const name of ['assertPermit','reserveRequest','dispatchRequest','settleRequest','markUnknown','releaseUndispatched'])require(typeof budget?.[name]==='function','EXPLICIT_BROKER_BINDING_REQUIRED')
  require(typeof permit?.permitId==='string'&&Number.isSafeInteger(maximumRequests)&&maximumRequests>0&&maximumRequests<=64)
  let requests=0,running=false,closing=false
  const active=new Set(),secret=Buffer.from('Bearer '+bearerToken)
@@ -119,6 +119,11 @@ export function createCostBroker({budget,permit,bearerToken,openaiKey,fetcher=fe
     res.end()
    }catch(e){
     try{await mark(abort.signal.aborted?'CANCELLED':'PROVIDER_ERROR')}catch{/* DISPATCHED upper bound remains reserved in native Limits. */}
+    if(reservation?.status==='RESERVED'&&!dispatched){
+     // Native RELEASE succeeds only if DISPATCH did not commit. A lost
+     // dispatch acknowledgement cannot turn an unknown state into a refund.
+     try{await budget.releaseUndispatched(reservation)}catch{/* Keep the native upper bound. */}
+    }
     if(!res.headersSent){
      const status=e?.code==='AUTH_REQUIRED'?401:e?.code==='BROKER_BUSY'?429:e?.code==='REQUEST_ALREADY_ISSUED'?409
       :e?.code==='ROUTE_REJECTED'?404:['REQUEST_REJECTED','REMOTE_INPUT_REJECTED','HOSTED_TOOL_REJECTED','UNPRICED_TIER_REJECTED'].includes(e?.code)?400:503

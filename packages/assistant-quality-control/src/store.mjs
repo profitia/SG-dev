@@ -54,7 +54,7 @@ export function createQualityStore({query,commandKey,schemaDigest,serviceId,now=
   async recordExternal(o){require(uuid(o.nonce)&&typeof o.externalId==='string');return (await call('RECORD_EXTERNAL',{...identity(o),nonce:o.nonce,externalId:o.externalId})).record},
   async complete(o){require(uuid(o.nonce));return (await call('COMPLETE',{...identity(o),nonce:o.nonce,record:assertControlRecord(o.record)})).record},
   async stop(o){require(['OUT_OF_SCOPE','BUDGET_STOP','NEEDS_TECHNICAL_REVIEW'].includes(o.status)&&/^[A-Z][A-Z0-9_]{0,79}$/.test(o.reason));return (await call('STOP',{...identity(o),status:o.status,reason:o.reason})).record},
-  async contain(o){require(['LIMIT_EXCEEDED','AUTHORITY_REVOKED','MANDATE_EXPIRED'].includes(o.reason));return (await call('CONTAIN',{...identity(o),reason:o.reason})).record},
+  async contain(o){require(['LIMIT_EXCEEDED','AUTHORITY_REVOKED','MANDATE_EXPIRED','CONTROL_FAILURE'].includes(o.reason));return (await call('CONTAIN',{...identity(o),reason:o.reason})).record},
   async release({id,leaseToken}){require(uuid(id)&&uuid(leaseToken));await call('RELEASE',{id,leaseToken})},
   async purge(){await call('PURGE')},
  })
