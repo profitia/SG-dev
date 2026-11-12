@@ -39,6 +39,7 @@
       "replication": false,
       "ownerMembership": false,
       "permissions": [
+        "CONNECT economic_calendar_development",
         "USAGE economic_calendar",
         "EXECUTE notification_descriptor()",
         "EXECUTE notification_claim(uuid,text)",
@@ -60,7 +61,9 @@
       "instant": "ONE_HOUR_BEFORE",
       "dateOnly": "09:00_IN_USER_TIME_ZONE_NOT_PROVIDER_RELEASE_TIME",
       "lateCatchup": false
-    }
+    },
+    "migratorRole": "economic_calendar_development_migrator",
+    "roleCreation": "Existing neondb_owner creates only the named ordinary delivery login and grants CONNECT; existing admitted migrator installs schema, policy and function EXECUTE. No temporary ECR owner membership or expanded runtime authority."
   },
   "sourceHub": {
     "projectId": "delicate-queen-44677134",
@@ -83,11 +86,6 @@
     "cacheRetentionSeconds": 0,
     "otherConsumersChanged": false,
     "activationFlag": "SOURCE_HUB_EIA_EXPANDED_SCHEDULES_ENABLED",
-    "temporaryOwnerMembership": {
-      "operator": "neondb_owner",
-      "role": "profitia_ingestion_owner",
-      "scope": "ONE_TRANSACTION_ONLY_TWO_EXACT_CALENDAR_TRANSPORT_ROWS_RESTORE_EXACT_PRIOR_MEMBERSHIPS_BEFORE_COMMIT"
-    },
     "changedAdmissionRows": [
       "profitia_external_call.policies:76e25fdd-7d49-4852-9ef8-84c9d25eeae1",
       "profitia_external_native.policies:76e25fdd-7d49-4852-9ef8-84c9d25eeae1"
@@ -95,7 +93,9 @@
     "unchangedAdmissionRows": [
       "profitia_ingestion.sources:source-hub.eia.publication-calendar",
       "all existing grants and budgets"
-    ]
+    ],
+    "migratorRole": "source_hub_development_migrator",
+    "scopeInstallation": "One transaction using its existing SET rights for profitia_ingestion_owner and source_hub_development_owner; no new membership. Preserve both exact transport rows, scoped rights and continuity fingerprints atomically."
   },
   "storageRights": {
     "consumerApplicationId": "profitia-economic-calendar-runtime-development",
