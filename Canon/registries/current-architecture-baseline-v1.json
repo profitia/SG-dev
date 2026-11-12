@@ -1122,6 +1122,42 @@
         "ARCHITECTURE"
       ],
       "onboardingAuthorization": "G1: owner accepted the exact four surfaces in Platform Knowledge plan v1 and explicitly ordered Stage1 implementation on 2026-11-11, host 01a1c98f-af9f-7252-b4b8-d1e1d14b309a; Canon/evidence/2026-11-11-platform-knowledge-stage1-g1-onboarding.md. Source registration only; resources remain human-owner-only."
+    },
+    {
+      "id": "AQC-BASE-001",
+      "capability": "Assistant Continuous Quality",
+      "name": "Assistant Quality Control",
+      "pathPatterns": [
+        "packages/assistant-quality-control/**"
+      ],
+      "currentOwner": "Architecture Platform",
+      "currentResponsibility": "Bounded QA contracts, deterministic evaluation, durable repair state, cost reservations, isolated executor orchestration and independent release evidence; no conversation ownership or alternate Identity/E1.",
+      "baselineClassification": "ALIGNED",
+      "parentSurfaceId": null,
+      "cleanupReason": null,
+      "classificationReferenceSha": "df2214265e577ef653c35fa18a38c717ffe8905e",
+      "allowedProjectKeys": [
+        "ARCHITECTURE"
+      ],
+      "onboardingAuthorization": "G1 GRANTED: explicit owner Stage 1 execution of accepted PDR revision 8, 2026-11-12; ARCH-CIC-QUALITY-STAGE1-G1-20261112; Canon/evidence/2026-11-12-assistant-quality-stage1-g1-onboarding.md. Development source registration only; resources remain human-owner-only; no administrative data/service grant, Stage 2, Staging or Production."
+    },
+    {
+      "id": "AQC-BASE-002",
+      "capability": "Assistant Continuous Quality",
+      "name": "Assistant Quality Repair Workflow",
+      "pathPatterns": [
+        ".github/workflows/assistant-quality-repair.yml"
+      ],
+      "currentOwner": "Architecture Platform",
+      "currentResponsibility": "Credential-free source checks and separately admitted Development repair execution; candidate code never receives publication or data-store credentials. Source registration is not a runtime service grant.",
+      "baselineClassification": "ALIGNED",
+      "parentSurfaceId": null,
+      "cleanupReason": null,
+      "classificationReferenceSha": "df2214265e577ef653c35fa18a38c717ffe8905e",
+      "allowedProjectKeys": [
+        "ARCHITECTURE"
+      ],
+      "onboardingAuthorization": "G1 GRANTED: explicit owner Stage 1 execution of accepted PDR revision 8, 2026-11-12; ARCH-CIC-QUALITY-STAGE1-G1-20261112; Canon/evidence/2026-11-12-assistant-quality-stage1-g1-onboarding.md. Development source registration only; resources remain human-owner-only; no administrative data/service grant, Stage 2, Staging or Production."
     }
   ],
   "cleanupFindings": [

@@ -13,6 +13,7 @@ import {ECR_BACKEND_REVIEW,assertEcrBackendReviewEntry} from './controlled-packa
 import {createHash} from 'node:crypto'
 import {ECR_G1_GOVERNANCE_REVIEW,assertEcrG1ReviewEntry} from './controlled-package-ci.mjs'
 import test from 'node:test'
+import {PRIVATE_RECURRING_LIVE_ACCEPTANCE_REVIEW,PI_LIVE_ACCEPTANCE_PROVENANCE_PATH,assertPiLiveAcceptanceRecord,assertPiLiveAcceptanceProjection} from './controlled-package-ci.mjs'
 import assert from 'node:assert/strict'
 import {PRIVATE_RECURRING_SHELL_REVIEW,PRIVATE_RECURRING_SHELL_CURRENT_REVIEW,PRIVATE_RECURRING_SHELL_CALENDAR_REVIEW} from './controlled-package-ci.mjs'
 import fs from 'node:fs'
@@ -2541,15 +2542,17 @@ test('separate SG2 Calendar test owner composes with all69 source history and co
 })
 
 
-test('current registration73 authenticates raw SDK and parallel PI sources before historical projection',async()=>{
+test('current registration74 authenticates raw SDK and parallel PI sources before historical projection',async()=>{
  const c=await import('./controlled-package-ci.mjs'),r=c.REGISTRATION_SDK_REVIEW;
- assert.equal(Object.keys(r.entries).length,73);
+ assert.equal(Object.keys(r.entries).length,74);
+ assert.equal(Object.keys(c.REGISTRATION_SDK_MAIN73_HISTORY_REVIEW.entries).length,73);
+ assert.equal(c.REGISTRATION_SDK_MAIN73_HISTORY_REVIEW.sourceSha,'b6531e0a05d3bdda3086a1525515d662f02267b1');
  assert.equal(Object.keys(c.REGISTRATION_SDK_MAIN70_HISTORY_REVIEW.entries).length,70);
- assert.equal(r.sourceSha,'b6531e0a05d3bdda3086a1525515d662f02267b1');
+ assert.equal(r.sourceSha,'5250dfdfd9e26b0d40c15c031718288360b763af');
  const files=Object.entries(r.entries).map(([filename,e])=>({filename,sha:e.sha,status:e.status})),candidate={...pr(),number:r.prNumber,changed_files:files.length,base:{...pr().base,sha:r.baseSha},head:{...pr().head,sha:r.sourceSha,ref:r.branch}};
  assertArchitectureFiles(candidate,files);assert.equal(selectCandidate(context(),candidate,r.sourceSha,{files}),r.sourceSha);
  for(const edit of [a=>a.pop(),a=>a[0]={...a[0],sha:'f'.repeat(40)},a=>a.push({filename:'apps/identity-runtime/src/unreviewed.ts',sha:'a'.repeat(40),status:'added'})]){const bad=structuredClone(files);edit(bad);assert.throws(()=>selectCandidate(context(),{...candidate,changed_files:bad.length},r.sourceSha,{files:bad}));}
- const parent=fs.mkdtempSync(path.join(os.tmpdir(),'registration73-actual-graph-')),root=path.join(parent,'candidate');
+ const parent=fs.mkdtempSync(path.join(os.tmpdir(),'registration74-actual-graph-')),root=path.join(parent,'candidate');
  try{
   execFileSync('git',['clone','--quiet','--shared','--no-checkout',authorityRoot,root],{stdio:['ignore','pipe','pipe']});
   execFileSync('git',['checkout','--quiet','--detach',r.sourceSha],{cwd:root,stdio:['ignore','pipe','pipe']});
@@ -2563,6 +2566,8 @@ test('current registration73 authenticates raw SDK and parallel PI sources befor
    'packages/platform-contracts/test/recurring-consent-transport.test.mjs',
    'apps/sg-runtime/tests/procurement-insights-completion.test.mjs',
    'apps/sg-runtime/tests/market-calendar-integrity.test.mjs',
+   'apps/sg-runtime/tests/assistant-send-arrow-integrity.test.mjs',
+   'apps/sg-runtime/tests/porr-demo-middleware.test.ts',
    'apps/sg-runtime/operation-integration.json',
    'apps/srm/operation-integration.json',
    'apps/sg-runtime/components/procurement-insights/reports.tsx',
@@ -2582,6 +2587,15 @@ test('current registration73 authenticates raw SDK and parallel PI sources befor
   fs.chmodSync(target,0o755);assert.throws(()=>c.assertRegistrationSdkProvenance(root));fs.chmodSync(target,0o644);
   fs.unlinkSync(target);fs.symlinkSync('organisation-sdk-compatibility.json',target);assert.throws(()=>c.assertRegistrationSdkProvenance(root));
   fs.unlinkSync(target);fs.writeFileSync(target,before);
+  assert(c.assertPrivateRecurringProvenance(root));
+  // The entire accepted73 graph remains verifiable; mixed or amended graphs
+  // cannot borrow its helper as a fallback for the new physical closure.
+  execFileSync('git',['checkout','--quiet','--detach','6d56144ecd2a58c5f36c5f66548de64e42348474'],{cwd:root,stdio:['ignore','pipe','pipe']});
+  assert.equal(c.assertRegistrationSdkProvenance(root).platformVersion,'1.36.0');
+  assert(c.assertPrivateRecurringProvenance(root));
+  const oldHelper=fs.readFileSync(target),newHelper=execFileSync('git',['show',r.sourceSha+':'+file],{cwd:root});
+  fs.writeFileSync(target,newHelper);assert.throws(()=>c.assertRegistrationSdkProvenance(root));fs.writeFileSync(target,oldHelper);
+  fs.appendFileSync(target,'UNREVIEWED_73');assert.throws(()=>c.assertRegistrationSdkProvenance(root));fs.writeFileSync(target,oldHelper);
   assert(c.assertPrivateRecurringProvenance(root));
  }finally{fs.rmSync(parent,{recursive:true,force:true})}
 });
@@ -2614,4 +2628,32 @@ test('assistant quality G1 admits only the exact reviewed five-file owner closur
  }
  assert.deepEqual(PRIVATE_PACKAGES,['@profitia/advisory-widget','@profitia/cic-core','@profitia/cic-procurement'])
  assert(!Object.keys(LOCAL_PACKAGES).some(n=>n.includes('assistant-quality')))
+})
+
+function piLiveAcceptanceFixture(){
+ const r=PRIVATE_RECURRING_LIVE_ACCEPTANCE_REVIEW,files=Object.entries(r.entries).map(([filename,e])=>({filename,sha:e.sha,status:e.status}))
+ return{r,files,p:{...pr(),number:r.prNumber,changed_files:files.length,base:{...pr().base,sha:r.baseSha},head:{...pr().head,sha:r.sourceSha,ref:r.branch}}}
+}
+test('PI live corrections admit only the twelve exact routed source versions and preserve earlier reviews',()=>{
+ const {r,files,p}=piLiveAcceptanceFixture();assert.equal(files.length,12)
+ assert.equal(createHash('sha256').update(JSON.stringify(r.entries)).digest('hex'),'ae3c35fc25bab49c31491330c8c7152057c2a559e68a57e58d8a7bb194149373')
+ assertArchitectureFiles(p,files);assert.equal(selectCandidate(context(),p,r.sourceSha,{files}),r.sourceSha)
+ for(const f of files){assertPrivateRecurringReviewEntry(f,'100644 blob '+f.sha+'\t'+f.filename+'\0');for(const mode of ['100755','120000','160000'])rejection(()=>assertPrivateRecurringReviewEntry(f,mode+' blob '+f.sha+'\t'+f.filename+'\0'))}
+ for(const edit of [f=>f.pop(),f=>f.push(f[0]),f=>f[0].sha='f'.repeat(40),f=>f[0].status='removed',f=>f[0].previous_filename='elsewhere',f=>f[0].filename='apps/sg-runtime/app/api/unreviewed.ts']){
+  const bad=structuredClone(files);edit(bad);rejection(()=>selectCandidate(context(),{...p,changed_files:bad.length},r.sourceSha,{files:bad}))
+ }
+ for(const edit of [q=>q.number=1014,q=>q.head.ref='architecture/another',q=>q.head.repo.full_name='attacker/fork',q=>q.user.login='attacker',q=>q.base.ref='staging',q=>q.head.sha=sha]){const bad=structuredClone(p);edit(bad);rejection(()=>selectCandidate(context(),bad,r.sourceSha,{files}))}
+ assert.equal(createHash('sha256').update(JSON.stringify(PRIVATE_RECURRING_CONSUMER_TEST_REVIEW.entries)).digest('hex'),'4dc65bcc37bcc7a5fe06fb1d77bc4ca23dd7db2db67ea6847045fdf7a09f103f')
+})
+test('trusted live correction projection validates all current bytes and immutable history as data',()=>{
+ const r=PRIVATE_RECURRING_LIVE_ACCEPTANCE_REVIEW,cache=new Map(),current=p=>{if(!cache.has(p))cache.set(p,execFileSync('git',['show',r.sourceSha+':'+p],{cwd:authorityRoot}));return cache.get(p)}
+ const bytes=current(PI_LIVE_ACCEPTANCE_PROVENANCE_PATH),a=JSON.parse(bytes),options={sha256ForPath:p=>a.sourceDigests[p]??a.preservedReceipts[p],blobForPath:p=>r.entries[p]?.sha,historicalDigestForPath:(sha,p)=>{assert.equal(sha,a.baseCandidateSha);return a.preservedReceipts[p]}}
+ assert.equal(Object.keys(assertPiLiveAcceptanceRecord(bytes,options).sourceDigests).length,11)
+ for(const p of Object.keys(a.sourceDigests))for(const field of ['sha256ForPath','blobForPath'])rejection(()=>assertPiLiveAcceptanceRecord(bytes,{...options,[field]:q=>q===p?'0'.repeat(field==='blobForPath'?40:64):options[field](q)}))
+ for(const p of Object.keys(a.preservedReceipts))for(const field of ['sha256ForPath','historicalDigestForPath'])rejection(()=>assertPiLiveAcceptanceRecord(bytes,{...options,[field]:field==='sha256ForPath'?q=>q===p?'0'.repeat(64):options[field](q):(sha,q)=>q===p?'0'.repeat(64):options[field](sha,q)}))
+ rejection(()=>assertPiLiveAcceptanceRecord(Buffer.concat([bytes,Buffer.from(' ')]),options))
+ const historical=(sha,p)=>execFileSync('git',['show',sha+':'+p],{cwd:authorityRoot}),previous=assertPiLiveAcceptanceProjection(bytes,{current,historical})
+ assert.deepEqual(previous('apps/sg-runtime/components/procurement-insights/workspace.tsx'),historical(a.baseCandidateSha,'apps/sg-runtime/components/procurement-insights/workspace.tsx'))
+ assert.throws(()=>previous(PI_LIVE_ACCEPTANCE_PROVENANCE_PATH),{code:'ENOENT'})
+ assert.deepEqual(previous('apps/sg-runtime/operation-integration.json'),current('apps/sg-runtime/operation-integration.json'))
 })
