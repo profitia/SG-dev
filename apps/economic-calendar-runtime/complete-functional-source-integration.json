@@ -55,7 +55,8 @@
     "packages/platform-source-hub-contracts/commodities-v1.mjs": "b14dc88d75098e95d8e98948396f626c91fcc443368383b3023a80f523142fa1",
     "packages/platform-source-hub-contracts/index.d.ts": "48705dbdef36552d9df0cb313df2589b2fb28d66612b940f335fabb3ef6214cf",
     "packages/platform-source-hub-contracts/index.mjs": "e7263c5d6a06e6387f82920ac355c06af20b5846dcec55908c3f803a84ffb93d",
-    "packages/platform-source-hub-contracts/package.json": "25c3e24580bf399fd270fa3cb870708d7553bd6ba9a7af3cfbe812d4de4dab93"
+    "packages/platform-source-hub-contracts/package.json": "25c3e24580bf399fd270fa3cb870708d7553bd6ba9a7af3cfbe812d4de4dab93",
+    "scripts/governance/platform-source-hub-foundation.test.mjs": "631f8b674c373be9e65a66c79c5d6154f5bcf80513f5f7bd696881a84412682e"
   },
   "preservedReceipts": {
     "apps/architecture-lab/assistant-m1-sdk-compatibility.json": "f9bd750bd7c4af2b1123a41396cfeacac90bb1744f9abdd5331c76260872b70c",
