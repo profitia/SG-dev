@@ -928,6 +928,11 @@ The separate four-file policy proposal pins every path/blob/status and regular10
 
 After explicit controller-owner acceptance, obtain controlled proof for the policy bootstrap from trusted main, accept the policy only after required checks, then dispatch the same trusted-main proof for the exact current PR1042 head. Source ownership becomes effective only after G1 main acceptance and independent readback. This admission creates no QA service grant, SQL installation, data rights, resource, cost or deployment authority and does not start Stage2. See [the exact proposal and five-file manifest](../evidence/2026-11-12-assistant-quality-g1-ci-admission.md).
 
+
+### Stage I — actual registration74 composed integrity correction
+
+The resumed owner Full Autopilot mandate covers the two actual SG2-owned test corrections and corresponding test-helper digest updates without another per-hash approval. The initial PMOS estimate75 is corrected to actual74: ARCH38/SG2 22/SRM14. Current source35340e234f4a764821fef343ae617a18c6c8d3d3 retains original022 record,276 physical inputs and48 immutable accepted-main inputs. Preserve the complete old73 review/physical graph separately; current and historical exact graphs must both authenticate before any predecessor view. All prior negative controls, actual-owner routes, protected/public/resulting-main checks and independent original proofs remain mandatory. This source/CI-only correction does not itself install SQL, grant access, assign packages, call providers, send invitations or deploy. Continue the accepted Stage I business implementation independently. See the dated integrity-test CI continuation evidence.
+
 ## ECR notifications and coverage — proposed closed continuation (2026-11-12)
 
 PROPOSED / OWNER_CI_APPROVAL_PENDING. The separate Architecture producer PR1063

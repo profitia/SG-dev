@@ -2542,15 +2542,17 @@ test('separate SG2 Calendar test owner composes with all69 source history and co
 })
 
 
-test('current registration73 authenticates raw SDK and parallel PI sources before historical projection',async()=>{
+test('current registration74 authenticates raw SDK and parallel PI sources before historical projection',async()=>{
  const c=await import('./controlled-package-ci.mjs'),r=c.REGISTRATION_SDK_REVIEW;
- assert.equal(Object.keys(r.entries).length,73);
+ assert.equal(Object.keys(r.entries).length,74);
+ assert.equal(Object.keys(c.REGISTRATION_SDK_MAIN73_HISTORY_REVIEW.entries).length,73);
+ assert.equal(c.REGISTRATION_SDK_MAIN73_HISTORY_REVIEW.sourceSha,'b6531e0a05d3bdda3086a1525515d662f02267b1');
  assert.equal(Object.keys(c.REGISTRATION_SDK_MAIN70_HISTORY_REVIEW.entries).length,70);
- assert.equal(r.sourceSha,'b6531e0a05d3bdda3086a1525515d662f02267b1');
+ assert.equal(r.sourceSha,'5250dfdfd9e26b0d40c15c031718288360b763af');
  const files=Object.entries(r.entries).map(([filename,e])=>({filename,sha:e.sha,status:e.status})),candidate={...pr(),number:r.prNumber,changed_files:files.length,base:{...pr().base,sha:r.baseSha},head:{...pr().head,sha:r.sourceSha,ref:r.branch}};
  assertArchitectureFiles(candidate,files);assert.equal(selectCandidate(context(),candidate,r.sourceSha,{files}),r.sourceSha);
  for(const edit of [a=>a.pop(),a=>a[0]={...a[0],sha:'f'.repeat(40)},a=>a.push({filename:'apps/identity-runtime/src/unreviewed.ts',sha:'a'.repeat(40),status:'added'})]){const bad=structuredClone(files);edit(bad);assert.throws(()=>selectCandidate(context(),{...candidate,changed_files:bad.length},r.sourceSha,{files:bad}));}
- const parent=fs.mkdtempSync(path.join(os.tmpdir(),'registration73-actual-graph-')),root=path.join(parent,'candidate');
+ const parent=fs.mkdtempSync(path.join(os.tmpdir(),'registration74-actual-graph-')),root=path.join(parent,'candidate');
  try{
   execFileSync('git',['clone','--quiet','--shared','--no-checkout',authorityRoot,root],{stdio:['ignore','pipe','pipe']});
   execFileSync('git',['checkout','--quiet','--detach',r.sourceSha],{cwd:root,stdio:['ignore','pipe','pipe']});
@@ -2564,6 +2566,8 @@ test('current registration73 authenticates raw SDK and parallel PI sources befor
    'packages/platform-contracts/test/recurring-consent-transport.test.mjs',
    'apps/sg-runtime/tests/procurement-insights-completion.test.mjs',
    'apps/sg-runtime/tests/market-calendar-integrity.test.mjs',
+   'apps/sg-runtime/tests/assistant-send-arrow-integrity.test.mjs',
+   'apps/sg-runtime/tests/porr-demo-middleware.test.ts',
    'apps/sg-runtime/operation-integration.json',
    'apps/srm/operation-integration.json',
    'apps/sg-runtime/components/procurement-insights/reports.tsx',
@@ -2583,6 +2587,15 @@ test('current registration73 authenticates raw SDK and parallel PI sources befor
   fs.chmodSync(target,0o755);assert.throws(()=>c.assertRegistrationSdkProvenance(root));fs.chmodSync(target,0o644);
   fs.unlinkSync(target);fs.symlinkSync('organisation-sdk-compatibility.json',target);assert.throws(()=>c.assertRegistrationSdkProvenance(root));
   fs.unlinkSync(target);fs.writeFileSync(target,before);
+  assert(c.assertPrivateRecurringProvenance(root));
+  // The entire accepted73 graph remains verifiable; mixed or amended graphs
+  // cannot borrow its helper as a fallback for the new physical closure.
+  execFileSync('git',['checkout','--quiet','--detach','6d56144ecd2a58c5f36c5f66548de64e42348474'],{cwd:root,stdio:['ignore','pipe','pipe']});
+  assert.equal(c.assertRegistrationSdkProvenance(root).platformVersion,'1.36.0');
+  assert(c.assertPrivateRecurringProvenance(root));
+  const oldHelper=fs.readFileSync(target),newHelper=execFileSync('git',['show',r.sourceSha+':'+file],{cwd:root});
+  fs.writeFileSync(target,newHelper);assert.throws(()=>c.assertRegistrationSdkProvenance(root));fs.writeFileSync(target,oldHelper);
+  fs.appendFileSync(target,'UNREVIEWED_73');assert.throws(()=>c.assertRegistrationSdkProvenance(root));fs.writeFileSync(target,oldHelper);
   assert(c.assertPrivateRecurringProvenance(root));
  }finally{fs.rmSync(parent,{recursive:true,force:true})}
 });
