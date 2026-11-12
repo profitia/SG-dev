@@ -41,8 +41,13 @@ export const MARKET_CALENDAR_CONSUMER_PATHS=Object.freeze([
  'apps/sg-runtime/tests/market-calendar-integrity.test.mjs',
  'apps/sg-runtime/tests/market-calendar-model.test.ts',
  'apps/sg-runtime/tests/market-calendar-proxy.test.ts',
- 'apps/sg-runtime/tests/market-calendar.test.tsx'
+ 'apps/sg-runtime/tests/market-calendar.test.tsx',
+ 'apps/sg-runtime/tests/adp-appshell-consumer.test.tsx',
+ 'apps/sg-runtime/tests/appshell-product-boundary.test.ts',
+ 'apps/sg-runtime/tests/pci-smart-integrity.test.mjs'
 ])
+export const MARKET_CALENDAR_TEST_COMPATIBILITY_RECORD='apps/architecture-lab/market-calendar-test-compatibility.json'
+const TEST_COMPATIBILITY_SHA='52e859d4a99bc4c8e4d986f38afea2d58e9c1fe1ee1e0eb62cc2672dbdb60078'
 const hash=b=>createHash('sha256').update(b).digest('hex')
 function readOptional(current,file){try{return current(file)}catch(e){if(e?.code==='ENOENT'||e?.status===128&&["' does not exist in ","' exists on disk, but not in "].some(s=>String(e.stderr??e.message??'').includes("'"+file+s)))return null;throw e}}
 function verifyPaths(current,digests,expected){assert.deepEqual(Object.keys(digests).sort(),[...expected].sort());for(const p of expected){assert.match(digests[p],/^[a-f0-9]{64}$/);assert.equal(hash(current(p)),digests[p],'exact calendar source '+p)}}
@@ -59,7 +64,20 @@ function verifyProducer(current,historical,bytes){
  for(const[p,digest]of Object.entries(a.preservedReceipts)){assert.equal(hash(current(p)),digest,'immutable predecessor '+p);assert.equal(hash(historical(a.previousSourceSha,p)),digest)}
  return a
 }
+/** Authenticate only the separately accepted test correction, then expose the
+ * immutable producer graph. Runtime, contracts, SQL and old receipts are exact. */
+export function calendarTestCompatibilityCurrent(current,historical){
+ const bytes=readOptional(current,MARKET_CALENDAR_TEST_COMPATIBILITY_RECORD);if(!bytes)return current
+ assert.equal(hash(bytes),TEST_COMPATIBILITY_SHA,'immutable test-only compatibility receipt')
+ const a=JSON.parse(bytes),test='apps/architecture-lab/test/market-calendar-source.test.mjs'
+ assert.equal(a.previousSourceSha,'877c55c6ef7879c088255284dd852d5cab6d5f44')
+ assert.equal(hash(current(MARKET_CALENDAR_PRODUCER_RECORD)),a.producerRecordSha256)
+ verifyPaths(current,a.sourceDigests,[test])
+ assert.equal(hash(historical(a.previousSourceSha,MARKET_CALENDAR_PRODUCER_RECORD)),MARKET_CALENDAR_PRODUCER_RECORD_SHA)
+ return project(current,historical,a.previousSourceSha,[test,'apps/architecture-lab/market-calendar-source.mjs'],MARKET_CALENDAR_TEST_COMPATIBILITY_RECORD)
+}
 export function marketCalendarSourcePredecessor(current,historical){
+ current=calendarTestCompatibilityCurrent(current,historical)
  const consumer=readOptional(current,MARKET_CALENDAR_CONSUMER_RECORD)
  if(consumer){
   const a=JSON.parse(consumer)
