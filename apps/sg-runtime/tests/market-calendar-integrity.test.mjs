@@ -13,7 +13,7 @@ test('actual calendar consumer preserves its accepted producer, dependencies and
  assert.equal(a.manifest.producerRecordSha256,MARKET_CALENDAR_PRODUCER_RECORD_SHA)
  assert.deepEqual(a.previousBytes(MARKET_CALENDAR_PRODUCER_RECORD),current(MARKET_CALENDAR_PRODUCER_RECORD))
  for(const p of paths){
-  if(['/workspace.tsx','/workspace.css','/package.json','/middleware.ts'].some(s=>p.endsWith(s)))assert.deepEqual(a.previousBytes(p),historical(a.manifest.previousSourceSha,p))
+  if(['/workspace.tsx','/workspace.css','/package.json','/middleware.ts','/adp-appshell-consumer.test.tsx','/appshell-product-boundary.test.ts','/pci-smart-integrity.test.mjs'].some(s=>p.endsWith(s)))assert.deepEqual(a.previousBytes(p),historical(a.manifest.previousSourceSha,p))
   else assert.throws(()=>a.previousBytes(p),e=>e.status===128)
  }
  assert.throws(()=>a.previousBytes(record),e=>e.code==='ENOENT')

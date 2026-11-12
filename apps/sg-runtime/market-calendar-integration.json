@@ -3,7 +3,7 @@
   "taskId": "SG2-PROCUREMENT-MARKET-CALENDAR-20261111",
   "targetEnvironment": "development",
   "scope": "MARKET_CALENDAR_CONSUMER_SOURCE",
-  "previousSourceSha": "877c55c6ef7879c088255284dd852d5cab6d5f44",
+  "previousSourceSha": "4a15718ecc5b11e6749285fa528e598dda79cfc4",
   "producerRecordSha256": "e3bc27ddf22b9165555c05f938a3c5d8f9f4f09334fcb7c55e760da44e9a59b6",
   "sourceDigests": {
     "apps/sg-runtime/app/api/v1/market-calendar/[[...path]]/route.ts": "4ba92f85a88b8f64459fa1f7bf531f681febaf3cf36d323da310cf4de578c2b0",
@@ -19,10 +19,13 @@
     "apps/sg-runtime/middleware.ts": "d8736f570d537e5f9841f5120470f1c46a617233756c12038df0a5a9215c9179",
     "apps/sg-runtime/package.json": "d2ed74190322d0e5315212519709ca2e06a6cbfc32def8e23e64794101ee1517",
     "apps/sg-runtime/tests/market-calendar-integrity.mjs": "cb83f9f3142dbbfa7c4a3a649dc3559ff493a2402bac3abe5061d24cb5c4a8b5",
-    "apps/sg-runtime/tests/market-calendar-integrity.test.mjs": "856a5b824c40b78b0fc44d27364f4c9455d2aae1a5abd1ac537d7d93ff5a6e9e",
+    "apps/sg-runtime/tests/market-calendar-integrity.test.mjs": "6d8f0ce63dd2ca70e88b57b6eaf68e05e75077e78f3e29f0180726803aba801b",
     "apps/sg-runtime/tests/market-calendar-model.test.ts": "4e97afc70fe5e98ef1d8b547d45bc10b512cb01463aa311696aa3cd9ade3095c",
     "apps/sg-runtime/tests/market-calendar-proxy.test.ts": "e51736cfa1b6de4a3876f6b05029dedf8cabbddb9d9e7dd61c00c3c3525c45f8",
-    "apps/sg-runtime/tests/market-calendar.test.tsx": "c59b39e1831e5db5ca41c3e8439dd7229f4bb506dd7edf7027df0462547c427c"
+    "apps/sg-runtime/tests/market-calendar.test.tsx": "c59b39e1831e5db5ca41c3e8439dd7229f4bb506dd7edf7027df0462547c427c",
+    "apps/sg-runtime/tests/adp-appshell-consumer.test.tsx": "43e058159f8cd66423c0ae303573bbf9c5a6fe40e682730623a051691de7d1a1",
+    "apps/sg-runtime/tests/appshell-product-boundary.test.ts": "2d55cf801cfc658c00276b3c2646fcb548d096136c66ac637778fbf7772d8e3e",
+    "apps/sg-runtime/tests/pci-smart-integrity.test.mjs": "1f837dceece388807c2d149b8c1301e185fcc93e9ec374ef282047c83dfdda35"
   },
   "preservedReceipts": {
     "apps/sg-runtime/adp-integration.json": "9dbd4921c5262202902c3c7ae318e2296f130512fc0784840880eb42370d45fb",
