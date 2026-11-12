@@ -31,3 +31,7 @@ fs.writeFileSync(
   "dist/schema.json",
   JSON.stringify({ limitsDigest, identityDigest, dashboardDigest }),
 );
+
+const workspaceSchemas=await import('./install-workspace-access.mjs');
+const schemaPath='dist/schema.json',schemas=JSON.parse(fs.readFileSync(schemaPath,'utf8'));
+fs.writeFileSync(schemaPath,JSON.stringify({...schemas,workspaceAccessDigest:workspaceSchemas.workspaceAccessDigest,workspaceIdentityDigest:workspaceSchemas.workspaceIdentityDigest}));

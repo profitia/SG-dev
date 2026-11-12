@@ -1,3 +1,4 @@
+import {createWorkspaceAccess,type WorkspaceAccessSurface} from "./workspace-access.js";
 import http, { type IncomingMessage, type ServerResponse } from "node:http";
 import fs from "node:fs";
 import { randomUUID, createHash } from "node:crypto";
@@ -13,6 +14,7 @@ interface Dependencies {
   store: Store;
   withIdentity: WithIdentity;
   health: () => Promise<unknown>;
+  workspace?:WorkspaceAccessSurface;
 }
 function json(res: ServerResponse, status: number, data: unknown) {
   res.writeHead(status, { "Content-Type": "application/json; charset=utf-8" });
@@ -68,6 +70,14 @@ export function createHandler(deps: Dependencies) {
       const url = new URL(req.url ?? "/", deps.config.origin);
       if (url.origin !== deps.config.origin)
         throw new Fault(400, "INVALID_URL");
+      if(["/v1/organisation-access","/v1/organisation-access/ready"].includes(url.pathname)){
+        if(url.search||url.hash)throw new Fault(404,"NOT_FOUND");
+        if(req.method!=="GET")throw new Fault(405,"METHOD_NOT_ALLOWED");
+        if(!deps.workspace)throw new Fault(503,"WORKSPACE_ACCESS_UNAVAILABLE");
+        if(url.pathname.endsWith("/ready")){await deps.workspace.ready();return json(res,200,{ready:true});}
+        const h=new Headers();for(const [key,value]of Object.entries(req.headers))if(value!==undefined)h.set(key,Array.isArray(value)?value.join(","):value);
+        return json(res,200,await deps.workspace.read(new Request(url,{method:"GET",headers:h})));
+      }
       if (req.method === "GET" && url.pathname === "/healthz") {
         await deps.health();
         return json(res, 200, {
@@ -222,11 +232,15 @@ async function main() {
       throw Error("PHYSICAL_BINDING_UNAVAILABLE");
   };
   await health();
+  const withIdentity=identityBoundary(c,identity);
+  const workspace=c.workspace?createWorkspaceAccess({configuration:c.workspace,limits,identity,withIdentity}):undefined;
+  if(workspace)await workspace.ready();
   const server = http.createServer(
     createHandler({
       config: c,
       store,
-      withIdentity: identityBoundary(c, identity),
+      withIdentity,
+      ...(workspace?{workspace}:{}),
       health,
     }),
   );
