@@ -8,7 +8,7 @@ import {fileURLToPath} from 'node:url'
 import {resolveProjectProfile} from './project-profile.mjs'
 import {resolveProjectRouting} from './routing-engine.mjs'
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..')
-const base='d5bead649c3de7430c63e9fc1b64fc0b452e7a2a'
+const base='df2214265e577ef653c35fa18a38c717ffe8905e'
 const registry='Canon/registries/current-architecture-baseline-v1.json'
 const read=p=>JSON.parse(fs.readFileSync(path.join(root,p),'utf8'))
 const before=p=>JSON.parse(execFileSync('git',['show',base+':'+p],{cwd:root,encoding:'utf8'}))

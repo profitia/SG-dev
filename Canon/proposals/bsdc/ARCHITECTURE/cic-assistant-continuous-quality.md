@@ -18,7 +18,7 @@
 | Etap | F — zakończony; A–F domknięte projektowo, 28/28 USTALONE |
 | Utworzono / zaktualizowano | 2026-11-12 / 2026-11-12, Europe/Warsaw |
 | Rewizja | 9 — DEC-06: jawny start etapu 1; źródłowy onboarding i przygotowanie zależności |
-| Rewizja bazowa ostatniej aktualizacji | PDR 92dba2a44c33d90e767a651d3519542a654d548f; aktualne źródła governance main d5bead649c3de7430c63e9fc1b64fc0b452e7a2a |
+| Rewizja bazowa ostatniej aktualizacji | PDR 92dba2a44c33d90e767a651d3519542a654d548f; aktualne źródła governance main df2214265e577ef653c35fa18a38c717ffe8905e |
 | Zadanie inicjalizacji | ARCH-BSDC-CIC-QUALITY-INIT-20261112 |
 | Zadanie bieżącej aktualizacji | ARCH-CIC-QUALITY-STAGE1-G1-20261112 |
 | Upoważnienie | Jawne zlecenie etapu 1 według rewizji 8, w Full Autopilot i granicach właściwych ownerów/dopuszczeń. Po wyniku weryfikacja właściciela. Bez etapu 2; zasoby owner-only i szczególne granty zachowują własne warunki. |

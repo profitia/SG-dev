@@ -1,6 +1,6 @@
 # Assistant Continuous Quality — etap 1 i rejestracja źródeł
 
-Data: 2026-11-12, Europe/Warsaw. Profil: ARCHITECTURE / Development. Task: `ARCH-CIC-QUALITY-STAGE1-G1-20261112`. Authority przed zmianą: `d5bead649c3de7430c63e9fc1b64fc0b452e7a2a`.
+Data: 2026-11-12, Europe/Warsaw. Profil: ARCHITECTURE / Development. Task: `ARCH-CIC-QUALITY-STAGE1-G1-20261112`. Authority na starcie: `d5bead649c3de7430c63e9fc1b64fc0b452e7a2a`; przed integracją odświeżono do `df2214265e577ef653c35fa18a38c717ffe8905e`, zachowując równoległe dopuszczenie ścieżki dokumentacyjnej BSDC v1.1. Wpisy AQC używają odświeżonego main jako odniesienia klasyfikacji.
 
 ## Podstawa właścicielska
 
