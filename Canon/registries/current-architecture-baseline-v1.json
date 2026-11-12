@@ -1121,6 +1121,24 @@
         "ARCHITECTURE"
       ],
       "onboardingAuthorization": "G1: owner accepted the exact four surfaces in Platform Knowledge plan v1 and explicitly ordered Stage1 implementation on 2026-11-11, host 01a1c98f-af9f-7252-b4b8-d1e1d14b309a; Canon/evidence/2026-11-11-platform-knowledge-stage1-g1-onboarding.md. Source registration only; resources remain human-owner-only."
+    },
+    {
+      "id": "ARCH-BASE-005",
+      "capability": "Architecture Workspace",
+      "name": "Shared Development Host Configuration",
+      "pathPatterns": [
+        ".devcontainer/shared/**"
+      ],
+      "currentOwner": "Governance Source Layer",
+      "currentResponsibility": "Dedicated shared Development host bootstrap; task worktrees, per-project configuration and continuity remain isolated. Existing product-dedicated Codespaces remain unchanged.",
+      "baselineClassification": "ALIGNED",
+      "parentSurfaceId": "ARCH-BASE-003",
+      "cleanupReason": null,
+      "classificationReferenceSha": "5295a813af3dd78d71301ffa56ddac6f656c6b2f",
+      "allowedProjectKeys": [
+        "ARCHITECTURE"
+      ],
+      "onboardingAuthorization": "Explicit owner migration instruction 2026-11-12, task ARCHITECTURE-SGDEV-CODESPACES-MIGRATION-20261112: one new dedicated shared Codespace, no reuse of SRM; reuses existing Governance Source Layer owner."
     }
   ],
   "cleanupFindings": [
