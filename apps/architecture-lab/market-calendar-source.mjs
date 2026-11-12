@@ -3,8 +3,8 @@
 import assert from 'node:assert/strict'
 import {createHash} from 'node:crypto'
 export const MARKET_CALENDAR_PRODUCER_RECORD='apps/economic-calendar-runtime/market-calendar-preferences-integration.json'
-export const MARKET_CALENDAR_PRODUCER_BASE='38a9fe371e7993b47e2358d297647086ea999428'
-export const MARKET_CALENDAR_PRODUCER_RECORD_SHA='abc0833d4f58bdacfcbbf8eb89206a9aa8cdd7be20fba34a7e96c018e7ce8dd6'
+export const MARKET_CALENDAR_PRODUCER_BASE='bfc4a228d9f3d583c37c5fd984c7e4da602bf75d'
+export const MARKET_CALENDAR_PRODUCER_RECORD_SHA='e3bc27ddf22b9165555c05f938a3c5d8f9f4f09334fcb7c55e760da44e9a59b6'
 export const MARKET_CALENDAR_PRODUCER_PATHS=Object.freeze([
  'Canon/evidence/2026-11-11-procurement-insights-market-calendar-owner-approval.md',
  'Canon/registries/governance-manifest-v2.json',
