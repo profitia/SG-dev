@@ -62,8 +62,8 @@ Additionally, for completing this Stage I source acceptance only, delegate
 necessary technical corrections inside these same68 paths and the existing
 four policy paths: scripts/governance/controlled-package-ci.mjs,
 scripts/governance/controlled-package-ci.test.mjs,
-Canon/runbooks/shared-development-contract-integration-v1.md and its dated
-Canon/evidence acceptance file.
+Canon/runbooks/shared-development-contract-integration-v1.md and
+Canon/evidence/2026-11-12-registration-ecr-direct-history-ci-acceptance.md.
 
 The delegated changes may touch only tests, their provenance verifiers and
 records, exact source-map/profile constants and associated regression/evidence.
