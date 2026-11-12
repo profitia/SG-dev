@@ -15,7 +15,8 @@ const readReceipt=file=>JSON.parse(fs.readFileSync(new URL('../../../'+file,impo
 // unrelated later main-only governance commits are never part of this review.
 function recurringReviewBase(){
  const git=args=>execFileSync('git',args,{cwd:repositoryRoot,encoding:'utf8',stdio:['ignore','pipe','pipe']}).trim()
- const marker=fs.existsSync(path.join(repositoryRoot,'packages/platform-contracts/test/recurring-consent-transport-source.json'))?'packages/platform-contracts/test/recurring-consent-transport-source.json':'apps/architecture-lab/private-recurring-source.json'
+ const live=fs.existsSync(path.join(repositoryRoot,'apps/sg-runtime/procurement-insights-live-acceptance.json'))
+ const marker=live?'apps/sg-runtime/procurement-insights-live-acceptance.json':fs.existsSync(path.join(repositoryRoot,'packages/platform-contracts/test/recurring-consent-transport-source.json'))?'packages/platform-contracts/test/recurring-consent-transport-source.json':'apps/architecture-lab/private-recurring-source.json'
  let base=git(['merge-base','origin/main','HEAD'])
  for(let i=0;i<64;i++){
   try{git(['cat-file','-e',base+':'+marker])}
@@ -110,9 +111,10 @@ test('Oil consumer routing requires the complete pinned checkout; changed bytes,
 test('private recurring source routing validates the complete actual candidate before admitting each real owner',()=>{
  const a=readReceipt('apps/architecture-lab/private-recurring-source.json'),candidateSha=execFileSync('git',['rev-parse','HEAD'],{cwd:repositoryRoot,encoding:'utf8'}).trim(),baseSha=recurringReviewBase()
  const paths=reviewedRecurringConsumerPaths(repositoryRoot,{baseSha,candidateSha})
- assert.equal(paths.get('apps/sg-runtime/components/procurement-insights/reports.tsx'),'SG2')
+ const live=fs.existsSync(path.join(repositoryRoot,'apps/sg-runtime/procurement-insights-live-acceptance.json'))
+ assert.equal(paths.get('apps/sg-runtime/components/procurement-insights/'+(live?'workspace':'reports')+'.tsx'),'SG2')
  const continuation=fs.existsSync(path.join(repositoryRoot,'packages/platform-contracts/test/recurring-consent-transport-source.json'))
- const includesSrm=!continuation||readReceipt('packages/platform-contracts/test/recurring-consent-transport-source.json').reviewedPaths.includes('apps/srm/scripts/private-host.integration.test.mjs')
+ const includesSrm=!live&&(!continuation||readReceipt('packages/platform-contracts/test/recurring-consent-transport-source.json').reviewedPaths.includes('apps/srm/scripts/private-host.integration.test.mjs'))
  if(includesSrm)assert.equal(paths.get('apps/srm/scripts/private-host.integration.test.mjs'),'SRM');else assert(!paths.has('apps/srm/scripts/private-host.integration.test.mjs'))
  assert(!paths.has('apps/platform-source-hub/src/server.mjs'));assert(!paths.has('apps/srm/src/server/unreviewed.ts'))
  const called=[],changedPaths=execFileSync('git',['diff','--name-only',baseSha,candidateSha],{cwd:repositoryRoot,encoding:'utf8'}).trim().split('\n')
@@ -134,11 +136,12 @@ test('private recurring public routing refuses changed bytes, symbolic files and
   const referenced=new Set(),tracked=new Set(git(root,'ls-tree','-r','--name-only',candidateSha).split('\n'))
   const visit=value=>{if(!value||typeof value!=='object')return;for(const[k,v]of Object.entries(value)){if(/^(apps|packages|scripts|Canon)\//.test(k)&&tracked.has(k))referenced.add(k);if(typeof v==='string'&&/^(apps|packages|scripts|Canon)\//.test(v)&&tracked.has(v))referenced.add(v);visit(v)}}
   for(const f of tracked)if(/(?:-integration|-source|compatibility)\.json$/.test(f))visit(JSON.parse(fs.readFileSync(path.join(repositoryRoot,f),'utf8')))
+  const liveRecord='apps/sg-runtime/procurement-insights-live-acceptance.json';if(tracked.has(liveRecord)){referenced.add(liveRecord);visit(readReceipt(liveRecord))}
   const files=[...new Set([...canonical,...referenced,...Object.keys(a.sourceDigests),...Object.keys(a.preservedReceipts),
    'apps/architecture-lab/private-recurring-source.json','apps/architecture-lab/private-recurring-source.mjs',
    'apps/architecture-lab/private-recurring-source-adoption.json','apps/sg-runtime/private-recurring-source-adoption.json','apps/srm/private-recurring-source-adoption.json'])]
   execFileSync('git',['checkout-index','--stdin','-z'],{cwd:root,input:files.join('\0')+'\0'})
-  assert(reviewedRecurringConsumerPaths(root,{baseSha,candidateSha}).has('apps/sg-runtime/components/procurement-insights/reports.tsx'))
+  assert(reviewedRecurringConsumerPaths(root,{baseSha,candidateSha}).has('apps/sg-runtime/components/procurement-insights/'+(tracked.has(liveRecord)?'workspace':'reports')+'.tsx'))
   const p=path.join(root,'apps/newsfeed-runtime/src/worker.mjs'),bytes=fs.readFileSync(p)
   fs.appendFileSync(p,'drift');assert.throws(()=>reviewedRecurringConsumerPaths(root,{baseSha,candidateSha}));fs.writeFileSync(p,bytes)
   fs.unlinkSync(p);fs.symlinkSync(path.join(root,'apps/newsfeed-runtime/src/server.mjs'),p);assert.throws(()=>reviewedRecurringConsumerPaths(root,{baseSha,candidateSha}));fs.unlinkSync(p);fs.writeFileSync(p,bytes)

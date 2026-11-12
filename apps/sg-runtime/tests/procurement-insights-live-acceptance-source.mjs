@@ -10,7 +10,10 @@ export const PI_LIVE_ACCEPTANCE_PATHS=Object.freeze([
  'apps/sg-runtime/tests/procurement-insights-notification-navigation.test.tsx',
  'apps/sg-runtime/tests/procurement-insights-live-acceptance-source.mjs',
  'apps/sg-runtime/tests/procurement-insights-live-acceptance-source.test.mjs',
- 'packages/platform-contracts/test/recurring-consent-transport-source.mjs'
+ 'packages/platform-contracts/test/recurring-consent-transport-source.mjs',
+ 'apps/sg-runtime/tests/pci-smart-integrity.test.mjs',
+ 'apps/platform-source-hub/scripts/ci-routing.mjs',
+ 'apps/platform-source-hub/test/ci-routing.test.mjs'
 ]);
 const additions=new Set(PI_LIVE_ACCEPTANCE_PATHS.filter(p=>p.includes('host-pool-concurrency')||p.includes('notification-navigation')||p.includes('live-acceptance-source')));
 const hash=b=>createHash('sha256').update(b).digest('hex');

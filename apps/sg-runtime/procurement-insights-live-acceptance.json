@@ -10,9 +10,12 @@
     "apps/insights-runtime/tests/host-pool-concurrency.test.mjs": "2c36b4dac7019b16b7ec1044d7b6d4716b4b76640995c76fe6c1cf8367e77034",
     "apps/sg-runtime/components/procurement-insights/workspace.tsx": "28cdc0d9c8936deb4518495da4ef6f994ebdea277616f3b2187e84f53a161082",
     "apps/sg-runtime/tests/procurement-insights-notification-navigation.test.tsx": "086aff2e77e0c883744bd79298dead7ee26b83b4a872309a72a24f24026da51e",
-    "apps/sg-runtime/tests/procurement-insights-live-acceptance-source.mjs": "5cae6afd1e07b4ff89c1d0234c43fc7d534f361d04fbb771bb2e30edd7788eaa",
+    "apps/sg-runtime/tests/procurement-insights-live-acceptance-source.mjs": "23b284c7753a1f8ac542992453e2a7c7b363005c0f8ecbf39409e819daa7ce1a",
     "apps/sg-runtime/tests/procurement-insights-live-acceptance-source.test.mjs": "d8648b80451728e61750361b1a844ffdd6e6f2ea88252dc8cb9e441f881f3fe4",
-    "packages/platform-contracts/test/recurring-consent-transport-source.mjs": "6ae4905382be828aa63b4d0fcb93d4f921b67adce3dd68814ed07d0ad8d72e15"
+    "packages/platform-contracts/test/recurring-consent-transport-source.mjs": "55c3feffe5a2935fc273ef525ae6c5fda80555ddc650c514629146cf910f1db9",
+    "apps/sg-runtime/tests/pci-smart-integrity.test.mjs": "44292ac3ec5ed822daddce35d78bdb403712fa255fe7e94c9d9dc0517a32b5b6",
+    "apps/platform-source-hub/scripts/ci-routing.mjs": "a61aca6d588f00ce38f1bb9965ae6472790d31b5e6a5ad6aacfc86aacf29824f",
+    "apps/platform-source-hub/test/ci-routing.test.mjs": "6e4ce6a7c5f8ba234e343f93300e1ab3b0293cf1129f1863e5df406553ce7210"
   },
   "preservedReceipts": {
     "apps/architecture-lab/market-calendar-test-compatibility.json": "52e859d4a99bc4c8e4d986f38afea2d58e9c1fe1ee1e0eb62cc2672dbdb60078",

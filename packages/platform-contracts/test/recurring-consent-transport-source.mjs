@@ -25,7 +25,7 @@ const added=new Set(RECURRING_CONSENT_TRANSPORT_PATHS.slice(1,3));
 const hash=b=>createHash('sha256').update(b).digest('hex');
 export function recurringConsentTransportPredecessor(current,historical){
  const live=procurementInsightsLiveAcceptancePredecessor(current,historical);
- if(live)return recurringConsentTransportPredecessor(live.previousBytes,historical);
+ if(live){const accepted=recurringConsentTransportPredecessor(live.previousBytes,historical);assert(accepted);return {...accepted,live};}
  let bytes;try{bytes=current(RECURRING_CONSENT_TRANSPORT_RECORD)}catch(error){
   const text=String(error?.stderr??error?.message??'');
   if(error?.code==='ENOENT'||error?.status===128&&["' does not exist in ","' exists on disk, but not in "].some(s=>text.includes("'"+RECURRING_CONSENT_TRANSPORT_RECORD+s)))return null;
