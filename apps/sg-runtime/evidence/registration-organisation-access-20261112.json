@@ -19,10 +19,10 @@
     },
     "wholeTypecheck": "PENDING controlled dependency setup: three existing private packages, React DOM types and existing Insights workspace link are absent from this public-only fixture; new access/context type errors corrected",
     "runtimeBrowser": "NOT_RUN",
-    "provider": "FIXTURES_ONLY"
+    "provider": "FIXTURES_ONLY",
+    "assistantResourceComposition": "1/1 PASS, genuine SDK constructor and fixture store drivers"
   },
   "remaining": [
-    "Finish assistant runtime SaaS selector and shared resource lifecycle",
     "Joint exact SDK/consumer source admission and complete CI/build",
     "Development additive SQL/purpose/peer configuration and exact-SHA deployment",
     "Real Clerk/browser/MGBI/mail/tenant-isolation and manual package acceptance"
