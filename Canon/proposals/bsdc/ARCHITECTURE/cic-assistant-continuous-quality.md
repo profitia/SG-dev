@@ -11,12 +11,12 @@
 | Gałąź robocza | architecture/bsdc-cic-quality-20261112 |
 | Status | WORKING / NOT_ACCEPTED |
 | Tryb | DESIGN / BUSINESS CONSULTING |
-| Etap | C–E: doprecyzowanie funkcji, autonomii i odbioru; F przed akceptacją |
+| Etap | D–E: rekomendacje danych QA i wykonawcy; C oraz F pozostają otwarte |
 | Utworzono / zaktualizowano | 2026-11-12 / 2026-11-12, Europe/Warsaw |
-| Rewizja | 3 |
-| Rewizja bazowa ostatniej aktualizacji | PDR 7bffa4004e8002ca51f4aadc8677bc614130983c; aktualne źródła governance main 4a15718ecc5b11e6749285fa528e598dda79cfc4 |
+| Rewizja | 4 |
+| Rewizja bazowa ostatniej aktualizacji | PDR 90fb09abafa8ff6886dfe14feff76d43a1cf5563; aktualne źródła governance main 46094e5654066552768264dd47027eaa18e833a4 |
 | Zadanie inicjalizacji | ARCH-BSDC-CIC-QUALITY-INIT-20261112 |
-| Zadanie bieżącej aktualizacji | ARCH-BSDC-CIC-QUALITY-BUDGET-20261112 |
+| Zadanie bieżącej aktualizacji | ARCH-BSDC-CIC-QUALITY-DATA-EXECUTOR-20261112 |
 | Upoważnienie | Uruchomienie BSDC i prowadzenie jednej roboczej karty. Bez implementacji produktu, aktywacji kanonu, zasobów, płatnych przebiegów i deploymentów. |
 
 Publiczna karta zawiera opis potrzeby i stan konsultacji. Nie zawiera transkryptów, wyników odczytów prywatnych systemów, danych użytkowników/klientów, materiałów prywatnego repozytorium CIC ani sekretów. Bieżący commit zapisu potwierdza się odczytem GitHuba poza plikiem. Gałąź robocza nie oznacza przyjęcia do main ani akceptacji rozwiązania.
@@ -66,26 +66,26 @@ Hosting, storage i CI pozostają do osobnego oszacowania. Potwierdzenie limitu n
 | A2 | USTALONE | Użytkownicy SpendGuru; owner biznesowy Profitia. |
 | A3 | W_TRAKCIE | Rezultat określony; progi, mianowniki i sposób pomiaru do przyjęcia. |
 | A4 | USTALONE | Priorytet: rzeczywista poprawa i naprawy, minimalny udział właściciela, racjonalny koszt. |
-| B1 | W_TRAKCIE | Odświeżono publiczny kod historii, runtime, modelu i migracji do main 4a15718e; ustalenia w §4.3. Pozostałe istotne integracje do domknięcia. |
+| B1 | W_TRAKCIE | Kod historii/runtime/migracji potwierdzony do main 46094e56; ustalenia w §4.3 oraz aktualna macierz E1/CI w §4.4–4.7. Pozostałe istotne integracje do domknięcia. |
 | B2 | W_TRAKCIE | W §4.3 rozdzielono potwierdzony kod od niedowiedzionego stanu wdrożenia i proponowanych rozszerzeń. |
-| B3 | W_TRAKCIE | Porównać reuse, rozszerzenie, integrację i gotowe usługi. |
-| B4 | W_TRAKCIE | Rekomendacja z §2 wymaga domknięcia wyboru i kosztów. |
+| B3 | W_TRAKCIE | Porównano miejsca wykonania w §4.4; wybrano rekomendację integracji gotowego wykonawcy z minimalnym własnym kontrolerem. Pozostałe wybory rozwiązania do domknięcia. |
+| B4 | W_TRAKCIE | R-EXEC-01 określa miejsce wykonania i uzasadnienie; całkowity koszt, dostęp kont i końcowy wariant całego rozwiązania do domknięcia. |
 | C1 | USTALONE | Projektowy przebieg od detekcji do sprawdzonego wydania i recovery w §5.1; szczegóły podlegają konsultacji, bez autoryzacji wykonania. |
 | C2 | W_TRAKCIE | Ustalić wejścia, walidacje, wyjątki, ograniczenia prób i recovery. |
 | C3 | W_TRAKCIE | DEC-01 przyjmuje autonomię Development i wyłączenie Production. Kandydackie klasy oraz wyłączenia v1 w §5.2 nadal do przyjęcia. |
 | C4 | W_TRAKCIE | Nie zakładać nowego panelu; wpływ na stany odpowiedzi i istniejący UX sprawdzić według kanonu. |
 | C5 | USTALONE | Projektowy scenariusz odbioru i negatywne próby w §5.4; liczbowe progi jakości pozostają propozycjami. |
 | D1 | USTALONE | ARCHITECTURE prowadzi; CIC i SG2 zachowują własne odpowiedzialności. |
-| D2 | W_TRAKCIE | Ścieżka PDR dopuszczona. Dokładne przyszłe ścieżki produktu wymagają własnego resolvera. |
-| D3 | W_TRAKCIE | W §4 dodano konkretny kandydat pakietu kontrolera i workflow. Nowe ścieżki nie są zarejestrowane; nie jest to zgoda na utworzenie. |
-| D4 | W_TRAKCIE | Odpowiedzialności w §4.1, minimalny dowód odtworzenia w §4.3; formaty oraz wersje do domknięcia. |
-| D5 | W_TRAKCIE | W §4.2–4.3 granice danych, źródłowe ograniczenie do użytkownika oraz projekt osobnego dostępu QA; cel, prawa i retencja wymagają domknięcia. |
-| D6 | W_TRAKCIE | Ustalić środowiska, koszt, obserwację i bezpieczne odzyskiwanie. |
+| D2 | W_TRAKCIE | PDR i kandydaci rozszerzenia SG2 rozstrzygnięci; kontroler i workflow mają NO_MATCH i wymagają onboardingu. Szczegóły w §4.7. |
+| D3 | W_TRAKCIE | Drzewo obejmuje kontroler, workflow i kandydackie rozszerzenie SG2. Wyniki resolvera w §4.7; nowe lokalizacje kontrolera/workflow wymagają rejestracji. |
+| D4 | W_TRAKCIE | Kontrakty logiczne, minimalny dowód i reguły wydania w §4.1–4.7; dokładne schematy, wersje oraz dopuszczenie nowych operacji nadal otwarte. |
+| D5 | W_TRAKCIE | R-DATA-01 w §4.5 proponuje cel, dostęp SERVICE, klasy danych, retencję 7/90 dni i usunięcia. To rekomendacja; mandaty danych i przetwarzających nie zostały przyjęte. |
+| D6 | W_TRAKCIE | R-EXEC-01 wskazuje Render worker + jednorazowe GitHub VM, nadzór i recovery. Podano koszt bazowy; pełny koszt i dopuszczenia pozostają otwarte. |
 | E1 | USTALONE | Projektowa sekwencja trzech etapów rezultatowych w §5; bez uruchomienia wykonania. |
 | E2 | W_TRAKCIE | Pierwszy etap ma pełny odbiór w §5.4; szczegółowe działające elementy kolejnych etapów pozostają do domknięcia. |
 | E3 | W_TRAKCIE | Oddzielne mandaty ownerów i środowisk; obecnie wyłącznie projektowanie. |
 | E4 | W_TRAKCIE | Test przed/po, niezależna regresja, działająca wersja, przerwanie i wycofanie. |
-| E5 | W_TRAKCIE | Limity modeli przyjęte w DEC-02. Rzeczywiste zużycie, koszt infrastruktury i czas dojścia do wyniku wymagają oszacowania. |
+| E5 | W_TRAKCIE | DEC-02 obowiązuje. W §4.6 koszt bazowego kontrolera i warunek ograniczania kosztu wykonawcy; wykorzystanie baz/CI i łączny koszt do potwierdzenia. |
 | F1 | W_TRAKCIE | Potrzeby właściciela i propozycje rozdzielono; otwarte decyzje w §7. |
 | F2 | DO_USTALENIA | Projekt kanonu powstanie po domknięciu istotnych punktów A–E. |
 | F3 | DO_USTALENIA | Brak akceptacji finalnego kanonu i planu. |
@@ -102,7 +102,10 @@ profitia/SG-dev/                           authority: main
 ├── Canon/proposals/bsdc/ARCHITECTURE/
 │   └── cic-assistant-continuous-quality.md [ISTNIEJĄCY DOKUMENT / jedyny cel aktualizacji]
 ├── apps/sg-runtime/                      [ISTNIEJE / potencjalne ROZSZERZENIE / SG2]
-│   └── lib/assistant/                   [ISTNIEJE / dowody i kontrola publikacji]
+│   ├── lib/assistant/                   [ISTNIEJE / dowody i kontrola publikacji]
+│   │   └── quality-evidence.ts          [NOWY — PROPOZYCJA / SG Runtime / SG2]
+│   └── migrations/assistant/            [ISTNIEJE]
+│       └── 002-quality-evidence.sql     [NOWY — PROPOZYCJA / SG Runtime / SG2]
 ├── packages/
 │   ├── assistant-context-contracts/      [ISTNIEJE / INTEGRACJA / ARCHITECTURE]
 │   ├── assistant-context-gateway/        [ISTNIEJE / ROZSZERZENIE / ARCHITECTURE]
@@ -112,7 +115,7 @@ profitia/SG-dev/                           authority: main
     └── assistant-quality-repair.yml     [NOWY — PROPOZYCJA / ROUTING WYMAGA AKCEPTACJI]
 ```
 
-Źródło istniejących katalogów: publiczne drzewo SG-dev/main, odświeżone do 4a15718e. PDR rozstrzygnięty przez aktualny resolver: Governance Source Layer / ALIGNED / ARCHITECTURE ALLOWED. Nowy dokument nie zmienia klasyfikacji powierzchni.
+Źródło istniejących katalogów: publiczne drzewo SG-dev/main, odświeżone do 46094e56. PDR rozstrzygnięty przez aktualny resolver: Governance Source Layer / ALIGNED / ARCHITECTURE ALLOWED. Nowy dokument nie zmienia klasyfikacji powierzchni.
 
 Pakiet kontrolera jest konkretną propozycją do weryfikacji, nie zatwierdzoną lokalizacją. Ma sens jako mała jednostka wykonawcza z własnym stanem, ograniczeniami i recovery; nie wymaga osobnej aplikacji webowej ani panelu. ACG nadal odpowiada za kontekst, CIC za politykę rozmowy, a PMOS za historię prac inżynierskich; żaden z nich nie staje się przez podobieństwo nazwy produkcyjnym kontrolerem napraw.
 
@@ -131,7 +134,7 @@ Jeżeli prostsze rozszerzenie istniejącej legalnej lokalizacji spełni te odpow
 
 Przepływ wymaga czterech kontraktów logicznych: (1) dowód interakcji z wersjami i prawami, (2) incydent i jego kwalifikacja, (3) zadanie naprawcze z granicami i budżetem, (4) wynik sprawdzenia i wydania z możliwością odzyskania. Ich techniczne formaty nie są jeszcze zamrożone.
 
-Rekomendacja wykonawcza: uruchamiany programowo Codex w odizolowanym środowisku, niezależnie od dostępności osobistej aplikacji właściciela. SDK zapewnia programowy start i wznowienie; konkretne środowisko, tożsamość i uprawnienia wymagają osobnej weryfikacji. Publiczne CI pozostaje wolne od prywatnych rozmów i danych oraz nie otrzymuje automatycznie sekretów modeli lub wydania. Sam wybór narzędzia nie uchyla obecnych kontroli repozytorium.
+Rekomendacja wykonawcza R-EXEC-01: programowo uruchamiany Codex w jednorazowym środowisku GitHub Actions, sterowany przez zaufany kontroler Render (§4.4). Osobista aplikacja właściciela nie uczestniczy w działaniu. Oficjalne narzędzia zapewniają uruchamianie i obsługę wyniku, lecz nie zastępują polityki danych, kosztu, niezależnych testów ani mandatu wydania. Zwykłe publiczne CI nie otrzymuje domyślnie nowych sekretów lub uprawnień; nowy proces wymaga osobnego dopuszczenia.
 
 ### 4.2. Dane — projektowe granice
 
@@ -141,7 +144,7 @@ QA korzysta z odrębnego, ograniczonego celu i uprawnienia systemowego, bez pods
 
 ### 4.3. Odświeżone discovery i brakujący dowód odtworzenia
 
-Poniższe ustalenia pochodzą z publicznego kodu SG-dev/main 4a15718e, nie z odczytu rozmów lub potwierdzenia aktywnego wdrożenia.
+Poniższe ustalenia pochodzą z publicznego kodu SG-dev/main 4a15718e; w rewizji 4 potwierdzono niezmienione istotne pliki do main 46094e56. Nie są wynikiem odczytu rozmów lub potwierdzeniem aktywnego wdrożenia.
 
 | Potwierdzone w źródłach | Wniosek projektowy |
 | --- | --- |
@@ -156,11 +159,71 @@ Replay odnosi się do czasu i danych pierwotnego pytania, nie do daty nocnego za
 
 Rekomendacja danych v1: minimalny prywatny dowód, separacja organizacji i celów, brak domyślnej kopii całych rozmów w CI/telemetrii. Materiał pochodny nie przedłuża praw ani retencji źródła; usunięcie/revokacja obejmuje kolejkę, cache i dowody zawierające dane. Do trwałej regresji trafia bezpieczny syntetyczny przypadek. Pseudonimizacja identyfikatora sama nie oznacza anonimowości. Szczegółowy mandat przetwarzania pozostaje do przyjęcia.
 
-### 4.4. Najprostszy model wykonania — rekomendacja
+### 4.4. R-EXEC-01 — rekomendowane miejsce uruchamiania
 
-Kontroler może być małym zadaniem Node korzystającym z istniejącego stosu Postgres do trwałego stanu incydentów, prób i rezerwacji kosztu. Harmonogram uruchamia ocenę i wybiera gotowe zadania; odrębny izolowany wykonawca realizuje ograniczoną naprawę. Nie zakłada się nowej aplikacji webowej, Redis ani dodatkowej platformy orkiestracji jako warunku v1.
+**Rekomendacja, nie decyzja właściciela:** zaufany kontroler i prywatna ocena QA w małym **Render Background Worker, Development, Frankfurt**; wykonawca kodu na **jednorazowej wielordzeniowej VM GitHub-hosted Ubuntu**, uruchamianej przez dopuszczony workflow z autorytatywnej wersji. Wykorzystać oficjalny Codex GitHub Action, przypięty do sprawdzonej wersji, zamiast osobistej aplikacji właściciela. Dobór konkretnej konfiguracji i dostęp kont pozostają do dopuszczenia.
 
-To projekt wykorzystania stosu, nie zgoda na użycie dowolnej obecnej bazy lub usługi. Dokładne miejsce, rola, routing i dopuszczony runner pozostają do weryfikacji. Istnienie osobistej aplikacji Codex lub zwykłego publicznego CI nie jest dowodem dostępności uprawnionego wykonawcy serwerowego. Kontroler ma wznawiać zapisane zadania niezależnie od otwartego czatu właściciela.
+| Wariant | Ocena względem v1 |
+| --- | --- |
+| Render worker + GitHub-hosted VM | Rekomendowany: stały nadzór/recovery oraz odtwarzalne, jednorazowe środowisko kodu, integracja z istniejącym repozytorium i testami. |
+| Tylko nocny cron | Tańszy prosty przegląd; dodatkowego mechanizmu wymaga ciągły nadzór nad zadaniem i skutkiem wydania. |
+| Render Sandboxes | Sensowna alternatywa dla izolowanego kodu; aktualnie public beta, bez ogólnie dostępnego brokera poświadczeń i scoped API keys. Nie uzależniać od tego pierwszej wersji. |
+| Istniejący serwer aplikacji, PMOS lub komputer właściciela | Nie rekomenduje się uruchamiania tam wygenerowanego kodu. Reuse wzorców i narzędzi nie oznacza prawa użycia cudzej usługi lub danych. |
+
+[Render opisuje worker jako proces bez adresu do przyjmowania żądań](https://render.com/docs/background-workers), więc kontroler pobiera pracę i statusy z zewnętrznego trwałego stanu. To także powód, aby nie planować go jako publicznego serwera proxy. Ocena może być uruchamiana nocą, a kontroler pozostaje gotowy do recovery i monitorowania. Postgres wystarczy dla stanu incydentu, dzierżawy, prób i rezerwacji kosztu; Redis i osobna platforma orkiestracji nie są warunkiem v1.
+
+[GitHub-hosted runner wielordzeniowy jest nową VM dla joba](https://docs.github.com/en/actions/concepts/runners/github-hosted-runners). [Oficjalna akcja Codex](https://learn.chatgpt.com/docs/github-action) uruchamia CLI i proxy Responses; wymagane są ograniczenia uprawnień. Jej obecność nie dowodzi bezpiecznej konfiguracji SpendGuru. [Render Sandboxes](https://render.com/docs/sandboxes) pozostaje alternatywą po sprawdzeniu ograniczeń beta i rzeczywistych uprawnień.
+
+Kontroler, wykonawca i publikacja mają odrębne role. Wykonawca nie otrzymuje tokenów bazy, historii, E1, Render ani uprawnień do scalenia. Zwraca ograniczoną zmianę i artefakt. Kontroler sprawdza zakres i dowody; osobna zaufana faza publikuje zatwierdzoną zmianę. Candidate code nie wykonuje się w procesie z poświadczeniami instalacji/wydania, a agent nie modyfikuje własnych bramek.
+
+Nie należy traktować sesji SDK jako jedynego stanu zadania. Nowa VM może rozpocząć świeżą sesję od zatwierdzonego manifestu, bazowego SHA i zweryfikowanej poprawki. Wznowienie logicznego incydentu nie zależy od zachowania dysku runnera. Niepewny dispatch uzgadnia się po identyfikatorze korelacji i stanie GitHuba przed ponowieniem.
+
+### 4.5. R-DATA-01 — projekt zasad danych QA
+
+**Wszystkie poniższe reguły są rekomendacją do kanonu, nie nowym uprawnieniem do przetwarzania.** Cel: wykrywanie i usuwanie wad działania asystenta oraz sprawdzenie skutku zmiany. V1 nie obejmuje trenowania modeli na rozmowach, profilowania pracowników ani przenoszenia prywatnej wiedzy jednej organizacji do innych.
+
+**Warunek dopuszczenia:** aktualny cel przetwarzania, prawa konta i źródeł, dopuszczony przetwarzający oraz środowisko Development. Historia jest ACCOUNT_PRIVATE; samo członkostwo w organizacji ani zgoda administratora organizacji nie nadają prawa do wszystkich prywatnych rozmów. Wymagany jest jawny mandat także dla zakresu konta. Nie przesądza się tu prawnej podstawy ani modelu zgód — trzeba je potwierdzić z odpowiedzialnym właścicielem danych i prywatności.
+
+Aktorem QA pozostaje SERVICE. Nowy, ograniczony kontrakt odczytu/projekcji dowodów jest domyślnie wyłączony i nie może rozszerzać po cichu obecnych operacji HUMAN ani podszywać się pod użytkownika. Powiązanie obejmuje aplikację, środowisko, serviceId, cel/policyVersion, konto, organizację dla każdej prywatnej części źródła i dopuszczoną projekcję. Uprawnienia sprawdza się przed pobraniem, wysłaniem do modelu oraz publikacją wyniku; odwołanie blokuje dalsze użycie. Kolejka, cache, deduplikacja i eksport zachowują granice konta i organizacji.
+
+| Materiał | Gdzie / kto | Proponowana retencja i ograniczenia |
+| --- | --- | --- |
+| Istniejąca historia rozmów | Dotychczasowy prywatny produktowy magazyn, obecne reguły dostępu | Bez zmiany przez ten projekt. Migracja określa rolling 30 dni; aktywne wdrożenie i backupy trzeba osobno potwierdzić. |
+| Minimalny dowód QA: potrzebny fragment pytania/odpowiedzi, kontekstu i wersji | Prywatny obszar danych produktu SG2; odrębny kontrakt i rola QA | Dostęp do min(7 dni od interakcji, termin źródła, odwołanie prawa/usunięcie). Ponowienie lub aktywność rozmowy nie wydłużają terminu dowodu QA. |
+| Metadane incydentu i wydania bez treści | Prywatny zapis operacyjny kontrolera | Do 90 dni, z usuwaniem powiązań osobowych według żądania/polityki. Pseudonim lub hash nie jest automatycznie anonimowy. |
+| Przypadek regresyjny dla wykonawcy/PR | Wyłącznie bezpieczny syntetyczny opis, kod i dane testowe | Może pozostać z testem, jeśli nie zawiera danych prywatnych ani odwracalnego powiązania z rozmową. Nie wystarcza sama zamiana nazwy firmy. |
+
+Ważność dowodu jest sprawdzana przy każdym użyciu, niezależnie od sprzątania. Proponowany fizyczny purge aktywnych kopii: do 24 godzin od wygaśnięcia/usunięcia, z natychmiastowym odcięciem dostępu. Backupy mają osobny, zweryfikowany horyzont i nie służą QA; po restore trzeba zastosować rejestr usunięć przed udostępnieniem danych. Nie obiecuje się natychmiastowego usunięcia z wszystkich kopii dostawców.
+
+Zachowywać tylko materiał faktycznie potrzebny do diagnozy, z wersjami i pochodzeniem. Nie pobierać ponownie płatnych/licencjonowanych źródeł bez własnego prawa i budżetu. Zmiana aktualnych danych nie zastępuje dowodu historycznego. Brak praw lub niepełny dowód oznacza wynik nierozstrzygalny i obniża raportowane pokrycie oceny; nie oznacza poprawności odpowiedzi.
+
+**Granica wysyłki:** model oceny otrzymuje minimalny dopuszczony materiał. Wykonawca kodu dostaje wyłącznie syntetyczny przypadek i kontrakt oczekiwanego zachowania. Jeżeli bezpieczny syntetyk nie zachowuje istoty błędu albo nie można wykluczyć ujawnienia, ścieżka automatycznej publikacji nie uruchamia się. Nie przenosić surowych rozmów, wyników źródeł, PII ani sekretów do publicznych logów/artefaktów GitHuba, Sentry czy PostHog. Telemetria zawiera kody, wersje, opóźnienia i liczniki; małe kohorty i identyfikatory nadal mogą ujawniać osobę.
+
+[OpenAI Data Controls](https://developers.openai.com/api/docs/guides/your-data) rozróżnia stan aplikacji i logi bezpieczeństwa. `store:false` nie jest obietnicą zerowej retencji; domyślne logi mogą zawierać treść. ZDR wymaga przyznania i ma ograniczenia funkcji. API nie wykorzystuje danych do treningu bez opt-in. Przed przetwarzaniem należy sprawdzić konkretny projekt, poświadczenia, procesorów i wymagania lokalizacji danych; położenie workera we Frankfurcie nie gwarantuje lokalizacji całej ścieżki AI.
+
+### 4.6. Uprawnienia wykonawcze, koszt i odtwarzanie
+
+Zaufany workflow jest pobierany z przyjętej wersji, uruchamiany tylko przez ograniczonego kontrolera i wiąże incydent, bazowy SHA, zakres plików, klasę, policyVersion, budżet i nonce. Manifest zawiera wyłącznie materiał bezpieczny do ujawnienia; wejście nie staje się instrukcją governance. Dla v1 proponuje się jeden aktywny wykonawca i jedno wydanie na repozytorium. Rozwiązanie konfliktu lub zmiana bazowego SHA wymaga ponowienia odpowiednich dowodów, nie ślepego merge.
+
+Oficjalny proxy akcji chroni klucz, ale sam nie stanowi gwarancji limitu 5 USD. **Przed autonomią potrzebny jest egzekwowalny limit wywołań modelu:** kontroler rezerwuje środki, a zaufany lokalny proces pośredniczący na VM ogranicza łączny koszt zadania i maksymalny koszt następnego żądania. Proces działa poza uprawnieniami agenta; konto agenta nie może ominąć go innym kluczem ani zmienić polityki. Cały dostęp do modeli, również próby z narzędzi i testów, podlega tej kontroli. Sprawdzenie wykonalności i zgodności wybranej wersji akcji z takim ograniczeniem jest warunkiem uruchomienia, nie potwierdzoną dziś funkcją.
+
+Niepewne zużycie nadal zajmuje rezerwację. Środki na ocenę skutku muszą być zabezpieczone przed wydaniem; brak budżetu na obowiązkowy odbiór blokuje publikację. DEC-02 obejmuje QA i wykonawcę łącznie. Wygaśnięcie budżetu zatrzymuje nowe płatne przebiegi, a regułowy nadzór i bezpieczne wycofanie pozostają dostępne.
+
+Według [Render Pricing](https://render.com/pricing), odczyt 12 XI 2026, bazowy worker 0.5 CPU / 512 MB kosztuje 7 USD miesięcznie. To punkt wyjścia do wymiarowania kontrolera, bez generowania i budowania kodu na nim. Koszt ten jest **poza** zatwierdzonym limitem modeli. Zużycie bazy, transfer, storage, GitHub Actions i ewentualne zmiany planu wymagają osobnego oszacowania. Nie zakłada się zerowego kosztu całej infrastruktury ani utworzenia zasobu w tej sesji.
+
+### 4.7. Umiejscowienie danych, routing i odbiór rekomendacji
+
+Preferowane jest wydzielone rozszerzenie istniejącego prywatnego magazynu produktu SG2: osobny obszar QA, rola i wąska projekcja. Dokładną bazę/region i instalację musi potwierdzić owner SG2. Nie używać bazy PMOS, PHR ani laboratoryjnych baz ARCHITECTURE jako magazynu transkryptów. Kontroler zachowuje jedynie niezbędny stan; payload QA nie trafia do kanonu lub publicznego śladu engineering.
+
+Aktualny resolver dla main 46094e56:
+
+- `apps/sg-runtime/lib/assistant/quality-evidence.ts` i `apps/sg-runtime/migrations/assistant/002-quality-evidence.sql`: SG Runtime / ALIGNED / SG2 ALLOWED; pliki nie istnieją, wynik nie zatwierdza nowej operacji ani migracji.
+- `packages/assistant-quality-control/src/controller.mjs` i `.github/workflows/assistant-quality-repair.yml`: NO_MATCH; proponowany owner Architecture Platform, wymagany onboarding routingu przed utworzeniem.
+- Bieżący PDR: Governance Source Layer / ALIGNED / ARCHITECTURE ALLOWED.
+
+Zmiany kontraktu dostępu i adopcja SG2 wymagają swoich exact paths i zadań właściwego profilu. Podział organizacyjny nie może rozbić odbioru biznesowego: kompletny etap ma nadal sam wykryć, naprawić, zweryfikować i wydać dopuszczony przypadek do Development.
+
+Przed uruchomieniem trzeba wykazać: odmowę dla obcego konta/organizacji i niedopuszczonego źródła; przerwanie po revokacji; brak użycia przeterminowanego dowodu; usunięcie i bezpieczny restore; brak treści w publicznym logu/artefakcie; niewydanie tokenów DB/deploy agentowi; blokadę ominięcia limitu modelu; wznowienie na nowej VM bez duplikatu wydania. Obowiązują również negatywne próby z §5.4. To plan testów, nie wyniki wykonania.
 
 ## 5. Plan i warunki odbioru — propozycja
 
@@ -223,7 +286,7 @@ Liczba kolejnych poprawnych napraw może być bramką operacyjną, nie gwarancj�
 
 ## 6. Decyzje i źródła
 
-Przyjęte wymagania: cel ciągłego doskonalenia, nacisk na autonomiczne wykonanie i mierzalną gotowość, wspólny standard nietypowych sytuacji oraz minimalny udział właściciela. Polecenie uruchomienia BSDC i jedna karta nie stanowią zgody na implementację. DEC-01 przyjmuje autonomiczne naprawy i wdrożenia do Development w v1 oraz późniejsze rozpatrzenie Production; właściciel jawnie zachował tryb bez implementacji. DEC-02 przyjmuje limity modeli 50 USD / 14 dni i 5 USD / incydent bez automatycznego zwiększania. Progi jakości, liczba prób, narzędzia i szczegółowe klasy pozostają propozycjami.
+Przyjęte wymagania: cel ciągłego doskonalenia, nacisk na autonomiczne wykonanie i mierzalną gotowość, wspólny standard nietypowych sytuacji oraz minimalny udział właściciela. Polecenie uruchomienia BSDC i jedna karta nie stanowią zgody na implementację. DEC-01 przyjmuje autonomiczne naprawy i wdrożenia do Development w v1 oraz późniejsze rozpatrzenie Production; właściciel jawnie zachował tryb bez implementacji. DEC-02 przyjmuje limity modeli 50 USD / 14 dni i 5 USD / incydent bez automatycznego zwiększania. R-DATA-01 i R-EXEC-01 są autorskimi rekomendacjami, nie decyzjami właściciela. Progi jakości, liczba prób, szczegółowe klasy oraz uruchomienie nadal pozostają otwarte.
 
 Źródła publiczne:
 
@@ -231,22 +294,24 @@ Przyjęte wymagania: cel ciągłego doskonalenia, nacisk na autonomiczne wykonan
 - [Rejestr projektów](../../../registries/profitia-projects-v1.json), [routing](../../../registries/current-architecture-baseline-v1.json), [aktywny manifest](../../../registries/governance-manifest-v2.json), [AGENTS.md](../../../../AGENTS.md).
 - [Codex SDK — programowe wykonania](https://learn.chatgpt.com/docs/codex-sdk) i [cennik modeli](https://developers.openai.com/api/docs/pricing), odczyt 12 XI 2026; dostęp konta nie był testowany płatnym wywołaniem.
 - Źródła discovery §4.3: [historia](https://github.com/profitia/SG-dev/blob/4a15718ecc5b11e6749285fa528e598dda79cfc4/apps/sg-runtime/lib/assistant/history.ts), [runtime](https://github.com/profitia/SG-dev/blob/4a15718ecc5b11e6749285fa528e598dda79cfc4/apps/sg-runtime/lib/assistant/runtime.ts), [migracja historii](https://github.com/profitia/SG-dev/blob/4a15718ecc5b11e6749285fa528e598dda79cfc4/apps/sg-runtime/migrations/assistant/001-history.sql), [model](https://github.com/profitia/SG-dev/blob/4a15718ecc5b11e6749285fa528e598dda79cfc4/apps/sg-runtime/lib/assistant/model.ts), [przebieg rozmowy](https://github.com/profitia/SG-dev/blob/4a15718ecc5b11e6749285fa528e598dda79cfc4/apps/sg-runtime/lib/assistant/conversation.ts). Dowód kodu, bez deklaracji aktywnego wdrożenia.
+- Uzupełnienie §4.4–4.7: aktualne [operacje i granice E1](https://github.com/profitia/SG-dev/blob/46094e5654066552768264dd47027eaa18e833a4/Canon/v1.0-operation-context-and-access-contract.md), [macierz AM-45–47](https://github.com/profitia/SG-dev/blob/46094e5654066552768264dd47027eaa18e833a4/Canon/registries/operation-access-matrix-v1.json), [operation-context](https://github.com/profitia/SG-dev/blob/46094e5654066552768264dd47027eaa18e833a4/packages/platform-contracts/src/operation-context.mjs), [źródłowy workflow ACG](https://github.com/profitia/SG-dev/blob/46094e5654066552768264dd47027eaa18e833a4/.github/workflows/assistant-context-gateway-ci.yml) i [trusted CI controller](https://github.com/profitia/SG-dev/blob/46094e5654066552768264dd47027eaa18e833a4/scripts/governance/controlled-package-ci.mjs). Dowód źródła nie jest dopuszczeniem nowego runnera lub mandatu QA.
+- Oficjalne źródła technologiczne są podlinkowane przy rekomendacjach; odczyt 12 XI 2026. Nie testowano płatnym przebiegiem kont, limitów proxy, ZDR ani przydziału zasobów. Dane prywatnego odczytu infrastruktury pozostają poza publiczną kartą.
 - Potrzeba oraz uwagi A/B właściciela w poprzedzającej rozmowie są podstawą opisu biznesowego. Nie publikuje się rozmowy ani materiałów operacyjnych. Inna sesja kontynuuje z tej karty, bez domniemania dostępu do historii czatu.
 
 ## 7. Otwarte decyzje
 
 - Szczegółowe klasy dopuszczone do naprawy; granica Development/Production została rozstrzygnięta w DEC-01.
 - Mierzalne progi gotowości, liczebność prób i reguły wycofania.
-- Cel i zakres przetwarzania danych QA, prawa i retencja.
-- Najprostsze umiejscowienie i wybór narzędzi po aktualnej weryfikacji.
+- Przyjęcie R-DATA-01: minimalny prywatny dowód do 7 dni i metadane do 90 dni, prawa konta/organizacji/źródeł, usunięcia, przetwarzający i lokalizacja. Wartości są propozycjami, nie zmieniają obecnej retencji.
+- Przyjęcie R-EXEC-01: Render worker + jednorazowe GitHub-hosted VM, dokładna instalacja SG2 i dopuszczenie workflow. Weryfikacja egzekwowalnego limitu modelu jest warunkiem wykonania.
 - Oszacowanie infrastruktury i odpowiedzialność za wyjątki. Limity modeli pilotażu rozstrzygnięto w DEC-02; liczba prób nadal jest propozycją.
 
 ## 8. Punkt wznowienia
 
-- Gdzie skończyliśmy: zapis DEC-02, kontrola kosztu obu poziomów oraz odświeżenie źródeł historii/runtime. Określono brakujący dowód odtworzenia i proponowany model wykonania. Proces A–F pozostaje otwarty.
-- Ostatnia zaakceptowana decyzja: 50 USD łącznie / 14 dni pilotażu, do 5 USD / incydent, bez automatycznego zwiększania. DEC-01 pozostaje w mocy; nadal bez implementacji.
-- Następny krok: zweryfikować mandat i miejsce przetwarzania QA/wykonawcy, uzupełnić porównanie reuse/integracji, domknąć klasy i kryteria, następnie przygotować spójny projekt kanonu oraz plan do konsultacji.
-- Co wymaga decyzji: szczegółowy mandat danych i klas napraw oraz finalne progi odbioru. Nie ponawiać pytania o przyjęty limit. Nie uruchamiać kosztów ani nowej infrastruktury na podstawie DEC-02.
+- Gdzie skończyliśmy: rekomendacje R-DATA-01 / R-EXEC-01, porównanie miejsc wykonania, zasady retencji/dostępu/usunięć, kontrola kosztu i aktualne rozstrzygnięcia routingu. Zapisane rekomendacje nie są implementacją ani przyjętym kanonem.
+- Ostatnie zaakceptowane decyzje: DEC-01 (autonomia Development w v1, Production później) i DEC-02 (50 USD / 14 dni, do 5 USD / incydent, bez automatycznego zwiększania). Nadal bez implementacji.
+- Następny krok: skonsultować rekomendowany mandat danych i wykonania, następnie domknąć klasy napraw, mianowniki/progi gotowości i kompletny plan do projektu kanonu.
+- Co wymaga decyzji: R-DATA-01 i R-EXEC-01 jako część finalnego projektu; koszt infrastruktury i szczegółowy mandat. Nie ponawiać pytań o DEC-01/02. Nie zakładać zgody na dane, zasoby lub uruchomienie.
 - Projekt / przyjęty kanon: BRAK — jeszcze nie przygotowano i nie zaakceptowano.
 
 ## 9. Historia
@@ -256,3 +321,4 @@ Przyjęte wymagania: cel ciągłego doskonalenia, nacisk na autonomiczne wykonan
 | 1 | 2026-11-12 | Pierwsza robocza karta BSDC na podstawie wcześniejszej rozmowy; publiczny zakres biznesowy, stan A–F i punkt wznowienia. |
 | 2 | 2026-11-12 | Przyjęta DEC-01: autonomia Development w v1, Production później, brak implementacji. Rozwinięto proces, klasy, proponowane umiejscowienie, kryteria odbioru i roboczy budżet; pozostałe propozycje niezaakceptowane. |
 | 3 | 2026-11-12 | Przyjęta DEC-02: limity modeli 50 USD / 14 dni i 5 USD / incydent, bez automatycznego zwiększania. Odświeżono źródła historii/runtime; dodano wymagania dowodu odtworzenia, granice danych i projekt trwałego wykonania. Nadal bez implementacji. |
+| 4 | 2026-11-12 | Dodano R-DATA-01 i R-EXEC-01: konkretne zasady danych QA, retencja i usunięcia, Render worker + jednorazowe GitHub-hosted VM, granice poświadczeń, kontroli kosztu i odbioru. Rekomendacje niezaakceptowane; nadal bez implementacji. |

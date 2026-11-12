@@ -43,6 +43,6 @@ test('canonical dashboard and ADP are explicit children of one persistent accoun
  assert(layout.includes('<PlatformAppShellEntry'));assert(layout.includes(' dashboard'))
  for(const page of ['app/[locale]/dashboard/page.tsx','app/[locale]/dashboard/adp/page.tsx','app/[locale]/dashboard/xray/page.tsx'])assert(fs.readFileSync(path.join(root,page),'utf8').includes('return null'))
  assert(guard.includes('workspaceReady && !dashboard'));assert(guard.includes('router.replace(dashboardPath(locale))'))
- assert(middleware.includes('dashboard(?:\\/(?:adp|benchmark-finder|xray))?'));assert(!middleware.includes('dashboard.*'))
+ assert(middleware.includes('dashboard(?:\\/(?:adp|benchmark-finder|xray|procurement-insights))?'));assert(!middleware.includes('dashboard.*'))
  assert.doesNotMatch(guard,/\bgrant\s*\(|organisationId|organizationId|signUp\(|createUser|\/api\/adp/)
 })
