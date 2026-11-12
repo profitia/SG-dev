@@ -2762,3 +2762,36 @@ test('Calendar and PI peer policies authenticate each real complete source graph
   }finally{fs.rmSync(root,{recursive:true,force:true})}
  }
 })
+
+
+test('PI fixture continuation changes only its routing test and current receipt while preserving original source12',async()=>{
+ const c=await import('./controlled-package-ci.mjs'),r=c.PRIVATE_RECURRING_LIVE_FIXTURE_REVIEW,old=c.PRIVATE_RECURRING_LIVE_ACCEPTANCE_REVIEW;
+ assert.equal(createHash('sha256').update(JSON.stringify(old.entries)).digest('hex'),'ae3c35fc25bab49c31491330c8c7152057c2a559e68a57e58d8a7bb194149373');
+ assert.deepEqual(Object.keys(r.entries),Object.keys(old.entries));assert.equal(Object.keys(r.entries).length,12);
+ const delta=Object.keys(r.entries).filter(p=>JSON.stringify(r.entries[p])!==JSON.stringify(old.entries[p])).sort();
+ assert.deepEqual(delta,['apps/platform-source-hub/test/ci-routing.test.mjs','apps/sg-runtime/procurement-insights-live-acceptance.json']);
+ const files=Object.entries(r.entries).map(([filename,e])=>({filename,sha:e.sha,status:e.status}));
+ const p={...pr(),number:r.prNumber,changed_files:files.length,base:{...pr().base,sha:r.baseSha},head:{...pr().head,sha:r.sourceSha,ref:r.branch}};
+ assertArchitectureFiles(p,files);assert.equal(selectCandidate(context(),p,r.sourceSha,{files}),r.sourceSha);
+ for(const f of files){assertPrivateRecurringReviewEntry(f,'100644 blob '+f.sha+'\t'+f.filename+'\0');for(const mode of ['100755','120000','160000'])rejection(()=>assertPrivateRecurringReviewEntry(f,mode+' blob '+f.sha+'\t'+f.filename+'\0'))}
+ for(const edit of [f=>f.pop(),f=>f.push(f[0]),f=>f[0].sha='f'.repeat(40),f=>f[0].status='removed',f=>f[0].previous_filename='elsewhere',f=>f[0].filename='apps/sg-runtime/app/api/unreviewed.ts']){
+  const bad=structuredClone(files);edit(bad);rejection(()=>selectCandidate(context(),{...p,changed_files:bad.length},r.sourceSha,{files:bad}));
+ }
+ for(const changed of delta){const mixed=structuredClone(files);mixed.find(f=>f.filename===changed).sha=old.entries[changed].sha;rejection(()=>selectCandidate(context(),p,r.sourceSha,{files:mixed}));}
+ for(const edit of [q=>q.number=1014,q=>q.head.ref='architecture/another',q=>q.head.repo.full_name='attacker/fork',q=>q.user.login='attacker',q=>q.base.ref='staging',q=>q.head.sha=sha]){const bad=structuredClone(p);edit(bad);rejection(()=>selectCandidate(context(),bad,r.sourceSha,{files}));}
+});
+test('PI fixture projection authenticates both complete reviews and refuses mixed source and receipt bytes',async()=>{
+ const c=await import('./controlled-package-ci.mjs');
+ for(const r of [c.PRIVATE_RECURRING_LIVE_ACCEPTANCE_REVIEW,c.PRIVATE_RECURRING_LIVE_FIXTURE_REVIEW]){
+  const cache=new Map(),current=p=>{if(!cache.has(p))cache.set(p,execFileSync('git',['show',r.sourceSha+':'+p],{cwd:authorityRoot}));return cache.get(p)};
+  const bytes=current(PI_LIVE_ACCEPTANCE_PROVENANCE_PATH),a=JSON.parse(bytes),options={sha256ForPath:p=>a.sourceDigests[p]??a.preservedReceipts[p],blobForPath:p=>r.entries[p]?.sha,historicalDigestForPath:(sha,p)=>{assert.equal(sha,a.baseCandidateSha);return a.preservedReceipts[p]}};
+  assert.equal(Object.keys(assertPiLiveAcceptanceRecord(bytes,options).sourceDigests).length,11);
+  for(const p of Object.keys(a.sourceDigests))for(const field of ['sha256ForPath','blobForPath'])rejection(()=>assertPiLiveAcceptanceRecord(bytes,{...options,[field]:q=>q===p?'0'.repeat(field==='blobForPath'?40:64):options[field](q)}));
+  for(const p of Object.keys(a.preservedReceipts))for(const field of ['sha256ForPath','historicalDigestForPath'])rejection(()=>assertPiLiveAcceptanceRecord(bytes,{...options,[field]:field==='sha256ForPath'?q=>q===p?'0'.repeat(64):options[field](q):(sha,q)=>q===p?'0'.repeat(64):options[field](sha,q)}));
+  rejection(()=>assertPiLiveAcceptanceRecord(Buffer.concat([bytes,Buffer.from(' ')]),options));
+  const historical=(sha,p)=>execFileSync('git',['show',sha+':'+p],{cwd:authorityRoot}),previous=assertPiLiveAcceptanceProjection(bytes,{current,historical});
+  for(const p of ['apps/insights-runtime/src/host.mjs','apps/sg-runtime/components/procurement-insights/workspace.tsx'])assert.deepEqual(previous(p),historical(a.baseCandidateSha,p));
+  assert.throws(()=>previous(PI_LIVE_ACCEPTANCE_PROVENANCE_PATH),{code:'ENOENT'});
+ }
+ assert(c.assertPrivateRecurringProvenance(authorityRoot));
+});
