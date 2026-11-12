@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
 export const PI_COMPLETION_RECEIPT='apps/sg-runtime/procurement-insights-completion-integration.json';
-export const PI_COMPLETION_BASE='4a15718ecc5b11e6749285fa528e598dda79cfc4';
+export const PI_COMPLETION_BASE='46094e5654066552768264dd47027eaa18e833a4';
 export const PI_COMPLETION_PATHS=Object.freeze([
  'apps/architecture-lab/private-recurring-source.mjs',
  'apps/architecture-lab/test/market-calendar-source.test.mjs',
@@ -15,11 +15,11 @@ export const PI_COMPLETION_PATHS=Object.freeze([
  'apps/sg-runtime/components/procurement-insights/reports.tsx',
  'apps/sg-runtime/components/procurement-insights/workspace.css',
  'apps/sg-runtime/components/procurement-insights/workspace.tsx',
- 'apps/sg-runtime/middleware.ts',
  'apps/sg-runtime/package.json',
  'apps/sg-runtime/procurement-insights-shell-integration.json',
  'apps/sg-runtime/tests/porr-demo-middleware.test.ts',
  'apps/sg-runtime/tests/pci-smart-integrity.test.mjs',
+ 'apps/sg-runtime/tests/market-calendar-integrity.test.mjs',
  'apps/sg-runtime/tests/assistant-ecr-week-integrity.test.mjs',
  'apps/sg-runtime/tests/procurement-insights-completion.test.mjs',
  'apps/sg-runtime/tests/procurement-insights-completion-integrity.mjs',
@@ -41,7 +41,7 @@ export function procurementInsightsCompletionPredecessor(current,historical){
  assert.deepEqual(Object.keys(a.sourceDigests).sort(),[...PI_COMPLETION_PATHS].sort());
  for(const p of PI_COMPLETION_PATHS){assert.match(a.sourceDigests[p],/^[a-f0-9]{64}$/);assert.equal(hash(current(p)),a.sourceDigests[p],'exact PI completion source '+p);}
  const source=JSON.parse(historical(PI_COMPLETION_BASE,'apps/architecture-lab/private-recurring-source.json'));
- const preserved=['apps/architecture-lab/private-recurring-source.json',...Object.keys(source.preservedReceipts),...['apps/architecture-lab','apps/sg-runtime','apps/srm'].map(p=>p+'/private-recurring-source-adoption.json'),'apps/sg-runtime/assistant-ecr-week-integration.json','apps/economic-calendar-runtime/market-calendar-preferences-integration.json','apps/architecture-lab/market-calendar-test-compatibility.json'];
+ const preserved=['apps/architecture-lab/private-recurring-source.json',...Object.keys(source.preservedReceipts),...['apps/architecture-lab','apps/sg-runtime','apps/srm'].map(p=>p+'/private-recurring-source-adoption.json'),'apps/sg-runtime/assistant-ecr-week-integration.json','apps/economic-calendar-runtime/market-calendar-preferences-integration.json','apps/architecture-lab/market-calendar-test-compatibility.json','apps/sg-runtime/market-calendar-integration.json'];
  assert.deepEqual(Object.keys(a.preservedReceipts).sort(),preserved.sort());
  for(const [p,digest]of Object.entries(a.preservedReceipts)){assert.equal(hash(historical(PI_COMPLETION_BASE,p)),digest);assert.equal(hash(current(p)),digest,'immutable source receipt '+p);}
  const mapped=new Set(PI_COMPLETION_PATHS),cache=new Map();
