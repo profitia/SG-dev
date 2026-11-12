@@ -95,6 +95,13 @@ BEGIN
  IF uid IS NULL OR profitia_access.scope_allows(d->>'applicationId',NULL,uid) IS NOT TRUE
   OR profitia_profile.valid_attestation('organisation.lifecycle.context',uid::text,'',p_until,0,p_signature) IS NOT TRUE
  THEN RAISE EXCEPTION 'Verified own context required' USING ERRCODE='PT403';END IF;
+ -- A separately enrolled registry receiver needs the own-account proof only,
+ -- never the user's industry, categories, avatar or organisation profile.
+ IF EXISTS(SELECT 1 FROM organisation_lifecycle_policies WHERE login_role=session_user
+  AND operations='["organisation.company.lookup"]'::jsonb) THEN
+  RETURN jsonb_build_object('userId',uid,'organisationId',NULL,'organisation',NULL,'categories','[]'::jsonb,
+   'procurementVersion','0','profile',NULL,'version','1');
+ END IF;
  SELECT p.organisation_id INTO oid FROM profitia_profile.organisation_profiles p
  JOIN profitia_access.memberships m ON m.organisation_id=p.organisation_id AND m.user_id=uid
  JOIN profitia_access.organisations o ON o.organisation_id=p.organisation_id

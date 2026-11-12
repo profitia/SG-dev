@@ -61,6 +61,10 @@ test('native organisation store commits real scoped categories and idempotent in
  const stores=Object.fromEntries(ids.map(id=>[id,createOrganisationStore({...common,client:actors[id].client})]))
  const owner=stores.owner,post=()=>actors.owner.request('POST'),get=()=>actors.owner.request('GET')
  await owner.ready()
+ const degraded=createOrganisationStore({...common,client:actors.owner.client,
+  companySource:{...companySource,ready:async()=>{throw Error('synthetic registry unavailable')}},
+  workspaceAccess:{...common.workspaceAccess,ready:async()=>{throw Error('synthetic package unavailable')}}})
+ await degraded.ready() // Peer outages do not take down otherwise valid central account authentication.
  const draft=createOrganisationOnboardingDraftBackend(db.options(actors.owner))
  await draft.saveCurrentDraft(post(),{expectedVersion:'0',patch:{nip:company.nip}})
  await t.test('NIP lookup writes only a governed basic snapshot and restores the same company',async()=>{

@@ -57,6 +57,10 @@ test('real PostgreSQL lifecycle requires installed policy, actual Root intent an
  assert.equal((await peerBackend.execute(signed,'organisation.onboarding.read',{},async({profile})=>({userId:profile.userId}))).userId,value.userId)
  const copied=new Request(signed);await assert.rejects(peerBackend.execute(copied,'organisation.onboarding.read',{},async()=>{peerEffect=true}));assert.equal(peerEffect,false)
  actor.origin='http://localhost:3600'
+ await db.admin.query('UPDATE profitia_profile.organisation_lifecycle_policies SET operations=$1::jsonb',[JSON.stringify(['organisation.company.lookup'])])
+ const registry=createOrganisationLifecycleBackend({...options,application:{...options.application,profileId:'SPENDGURU_SAAS',organisationId:null,features:['organisation_admin'],operations:['organisation.company.lookup']}})
+ const minimum=await registry.execute(actor.request('POST'),'organisation.company.lookup',{nip:'1234563218',draftVersion:'0'},async({profile})=>profile)
+ assert.equal(minimum.userId,value.userId);assert.equal(minimum.profile,null);assert.equal(minimum.organisation,null);assert.deepEqual(minimum.categories,[])
  for(const operations of [[],['organisation.onboarding.read','organisation.onboarding.read'],['organisation.create']]){
   await db.admin.query('UPDATE profitia_profile.organisation_lifecycle_policies SET operations=$1::jsonb',[JSON.stringify(operations)])
   await assert.rejects(narrow.ready())

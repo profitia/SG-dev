@@ -113,7 +113,7 @@ export function createOrganisationStore(options:{
  }
  backend()
  const surface:OrganisationStore={
-  async ready(){await backend().ready();await options.companySource.ready();await options.workspaceAccess.ready()},
+  async ready(){await backend().ready()},
   snapshot:request=>checked(request,false,()=>backend(request).execute(request,'organisation.onboarding.read',{},async unit=>{
    const draft=(await one(unit.query,'SELECT profitia_profile.organisation_lifecycle_snapshot($1::uuid) AS draft',[unit.context.decisionId])).draft
    if(!draft||typeof draft.version!=='string'||!draft.answers||typeof draft.answers!=='object')throw Error('ONBOARDING_DRAFT_UNAVAILABLE')
