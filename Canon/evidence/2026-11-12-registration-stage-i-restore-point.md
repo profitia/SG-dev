@@ -165,3 +165,16 @@ Canonical225e465b-8b89-467d-92d1-7fef61b555fe to **Profitia internal, nie PORR**
 Ostatni znany przed nową implementacją Identity LKG: f78f5867064c96f4497e13bcd53c97af2da2e07a; zweryfikować ponownie przed wdrożeniem. Nowego runtime nie uruchamiano.
 
 StageII (profilowy kontekst ACG/CIC i moduł ostatnich aktywności/PHR wow), trial/płatności oraz produkcyjny wildcard DNS pozostają poza bieżącym etapem zgodnie z kanonem.
+
+## Potwierdzenie zapisu punktu przywracania
+
+Osobny task **ARCH-REGISTRATION-RESTORE-PAUSE-20261112-2310** został zapisany i zakończony wyłącznie jako punkt przywracania:
+- rejestracja PMOS: **cmwe3y9ox0000gz83iqtvdynv**;
+- conversation: **pmos-task-v2:527256789605166ba76ae217218d2c739c4db254db08292a844e0ac61b821108**;
+- archive integrity **PASS**, execution trail PRESENT / BASELINE_PRESENT, bez issues;
+- PMOS runtime/context integrity i handoff **PASS**; pending slot i advisory lock clear;
+- rodzic Etapu I i task nowego SDK pozostają running / completedAt=null; instrukcja użytkownika wstrzymuje ich wykonywanie;
+- PHR **PUBLISHED**, 5 artefaktów, commit **0ba1c93b0ddeb643ad89b9b673780ca11d00051d**;
+- [oryginalny manifest PHR](https://github.com/profitia/project-history-repository/blob/0ba1c93b0ddeb643ad89b9b673780ca11d00051d/history/2026/11/12/2026-11-12-22-18-14Z__architecture-arch-registration-restore-pause-20261112-2310/manifest.json) odczytano niezależnie z GitHuba: SUCCESS / CLOSEOUT_COMPLETE, blob09fc4bc2c49afd7c569f8f98a82fa5e3e44a2a61.
+
+SUCCESS powyżej oznacza wyłącznie zapis punktu i wstrzymanie pracy. Wdrożenie Etapu I pozostaje nieukończone. Oczekiwać na **„kontynuuj”**.
