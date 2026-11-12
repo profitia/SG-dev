@@ -1,3 +1,4 @@
+import {sdkContinuationPredecessor} from '../../../packages/platform-contracts/test/organisation-sdk-compatibility.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
@@ -9,7 +10,8 @@ const root=new URL('../../../',import.meta.url),current=p=>fs.readFileSync(new U
 const historical=(sha,p)=>{const k=sha+':'+p;if(!cache.has(k))cache.set(k,execFileSync('git',['show',k],{cwd:root,stdio:['ignore','pipe','pipe']}));return cache.get(k)}
 const hash=b=>createHash('sha256').update(b).digest('hex')
 test('ECR correction closes current source before retaining all prior receipts and recurring acceptance',()=>{
- const view=assistantEcrWeekPredecessor(current,historical,ECR_WEEK_SOURCE_SHA);assert(view)
+ const sdk=sdkContinuationPredecessor(JSON.parse(current('apps/sg-runtime/operation-integration.json')),current,historical)
+ const view=assistantEcrWeekPredecessor(sdk?.previousBytes??current,historical,ECR_WEEK_SOURCE_SHA);assert(view)
  for(const p of WEEK_RECEIPTS)assert.deepEqual(current(p),historical(WEEK_BASE,p))
  for(const p of WEEK_PATHS.filter(p=>!p.includes('assistant-ecr-week-integrity.')))assert.deepEqual(view.previousBytes(p),historical(WEEK_BASE,p))
  assert.equal(assistantEcrWeekPredecessor(view.previousBytes,historical,ECR_WEEK_SOURCE_SHA),null)

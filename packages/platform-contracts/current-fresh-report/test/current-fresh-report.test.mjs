@@ -1,4 +1,5 @@
-import {recurringSourceFilesystem} from '../../../../apps/architecture-lab/private-recurring-source.mjs'
+import {recurringSourcePredecessor} from '../../../../apps/architecture-lab/private-recurring-source.mjs'
+import {acceptedSdkSource,sdkContinuationPredecessor} from '../../test/organisation-sdk-compatibility.mjs'
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import fs from 'node:fs'
@@ -11,7 +12,9 @@ import {createCurrentFreshReportHost,CURRENT_FRESH_REPORT_CONTRACT,currentFreshR
 import {currentHumanReadSourceDigest,CURRENT_HUMAN_READ_CONTRACT} from '@profitia/platform-contracts/current-human-read'
 import {privateOperationHostSourceDigest} from '@profitia/platform-contracts/private-operation-host'
 
-const recurring=recurringSourceFilesystem(new URL('../../../../',import.meta.url))
+const sourceRoot=new URL('../../../../',import.meta.url),physicalSource=p=>fs.readFileSync(new URL(p,sourceRoot)),historicalSource=(sha,p)=>execFileSync('git',['show',sha+':'+p],{cwd:sourceRoot})
+const bootstrapSource=sdkContinuationPredecessor(JSON.parse(physicalSource('apps/sg-runtime/operation-integration.json')),physicalSource,historicalSource)
+const recurring={manifest:recurringSourcePredecessor(bootstrapSource?.previousBytes??physicalSource,historicalSource)?.manifest}
 
 function fixture(){
  const unexpected=async()=>assert.fail('No external call in constructor or rejected input')
@@ -28,8 +31,8 @@ test('additive producer has an independent fingerprint and preserves existing RE
  assert.deepEqual(CURRENT_FRESH_REPORT_CONTRACT,{id:'profitia.current-fresh-report',version:'1.0.0'})
  assert.deepEqual(CURRENT_HUMAN_READ_CONTRACT,{id:'profitia.current-human-read',version:'1.1.0'})
  const accepted=JSON.parse(fs.readFileSync(new URL('../../../../apps/srm/operation-integration.json',import.meta.url)))
- assert.equal(await currentHumanReadSourceDigest(),recurring.manifest?.sdkDigests.currentHumanReadSourceDigest??accepted.oilAutonomousReportCompatibility?.sdkDigests.currentHumanReadSourceDigest??accepted.assistantM1SourceCompatibility.sdkDigests.currentHumanReadSourceDigest)
- assert.equal(await privateOperationHostSourceDigest(),recurring.manifest?.sdkDigests.privateOperationHostSourceDigest??accepted.oilAutonomousReportCompatibility?.sdkDigests.privateOperationHostSourceDigest??accepted.assistantM1SourceCompatibility.sdkDigests.privateOperationHostSourceDigest)
+ assert.equal(await currentHumanReadSourceDigest(),acceptedSdkSource().sdkDigests.currentHumanReadSourceDigest)
+ assert.equal(await privateOperationHostSourceDigest(),acceptedSdkSource().sdkDigests.privateOperationHostSourceDigest)
  assert.match(await currentFreshReportSourceDigest(),/^[a-f0-9]{64}$/)
  assert.equal(createCurrentFreshReportHost(fixture()).hostContract,CURRENT_FRESH_REPORT_CONTRACT)
 })

@@ -17,8 +17,9 @@ export function normalizeCompanyRecord(value:unknown,expectedNip:unknown):Compan
 export function normalizeInvitationEmails(value:unknown,ownEmail:unknown):readonly string[]
 export function organisationCommandDigest(value:unknown):string
 
-export type OnboardingDraftPatch=Readonly<{nip?:string;slug?:string;industry?:Readonly<{id:ProcurementIndustryId;label?:string}>;categories?:readonly ProcurementCategoryInput[];teamRange?:'1-5'|'6-10'|'11+'}>
+export type OnboardingDraftPatch=Readonly<{nip?:string;slug?:string;companySelection?:Readonly<{sourceRef:string;version:string}>|null;industry?:Readonly<{id:ProcurementIndustryId;label?:string}>;categories?:readonly ProcurementCategoryInput[];teamRange?:'1-5'|'6-10'|'11+'}>
 export type OnboardingDraft=Readonly<{userId:string;version:string;answers:Readonly<Record<string,unknown>>}>
+export function normalizeCompanySelection(value:unknown):Readonly<{sourceRef:string;version:string}>|null
 export function normalizeOnboardingDraftPatch(value:unknown):Readonly<Record<string,unknown>>
 export const organisationOnboardingSchemaUrl:string
 export function organisationOnboardingSchemaDigest():string
