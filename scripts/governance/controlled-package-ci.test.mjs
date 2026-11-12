@@ -2030,9 +2030,9 @@ test('ECR continuation absence preserves legacy validation; forged and linked re
  }finally{fs.rmSync(root,{recursive:true,force:true})}
 })
 
-test('Market Calendar admits only its17 reviewed regular producer blobs and preserves all candidate fences',()=>{
+test('Market Calendar admits only its18 reviewed regular source blobs and preserves all candidate fences',()=>{
  const r=ECR_MARKET_CALENDAR_REVIEW,files=Object.entries(r.entries).map(([filename,e])=>({filename,sha:e.sha,status:e.status})),p={...pr(),number:r.prNumber,changed_files:files.length,base:{...pr().base,sha:r.baseSha},head:{...pr().head,sha:r.sourceSha,ref:r.branch}}
- assert.equal(files.length,17);assert.equal(r.prNumber,1018)
+ assert.equal(files.length,18);assert.equal(r.prNumber,1018)
  assertArchitectureFiles(p,files);assert.equal(selectCandidate(context(),p,r.sourceSha,{files}),r.sourceSha)
  for(const f of files){assertEcrMarketCalendarReviewEntry(f,'100644 blob '+f.sha+'\t'+f.filename+'\0');for(const mode of ['100755','120000','160000'])rejection(()=>assertEcrMarketCalendarReviewEntry(f,mode+' blob '+f.sha+'\t'+f.filename+'\0'))}
  for(const edit of [a=>a.pop(),a=>a.push(a[0]),a=>a[0]={...a[0],sha:'f'.repeat(40)},a=>a[0]={...a[0],status:'removed'},a=>a[0]={...a[0],previous_filename:a[0].filename},a=>a[0]={...a[0],filename:'apps/economic-calendar-runtime/src/unreviewed.mjs'}]){const bad=structuredClone(files);edit(bad);rejection(()=>selectCandidate(context(),{...p,changed_files:bad.length},r.sourceSha,{files:bad}))}
@@ -2058,6 +2058,50 @@ test('Market Calendar authenticates the real Git source and immutable receipts b
  const adopted=marketCalendarTrustedPredecessor(read(),historical);assert.deepEqual(adopted('apps/sg-runtime/package.json'),current('apps/sg-runtime/package.json'))
  for(const edit of [a=>a.noNotificationDelivery=false,a=>a.unknown=true,a=>a.taskId='different',a=>a.sourceDigests['apps/sg-runtime/unreviewed.ts']='0'.repeat(64),a=>delete a.sourceDigests[cfg.consumerPaths[0]],a=>a.preservedReceipts[cfg.consumerReceipts[0]]='0'.repeat(64)]){const bad=structuredClone(a);edit(bad);rejection(()=>marketCalendarTrustedPredecessor(read(bad),historical))}
  const changed={...additions,'apps/sg-runtime/package.json':Buffer.from(JSON.stringify({...JSON.parse(additions['apps/sg-runtime/package.json']),dependencies:{'@profitia/unreviewed':'1.0.0'}}))},rebound=structuredClone(a);rebound.sourceDigests['apps/sg-runtime/package.json']=createHash('sha256').update(changed['apps/sg-runtime/package.json']).digest('hex');rejection(()=>marketCalendarTrustedPredecessor(read(rebound,changed),historical))
+})
+
+// Preserve the parallel active instruction during the one-row PI adoption.
+test('Market Calendar governance refresh preserves every main document and active universal wrapper',()=>{
+ const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..'),read=(sha,p)=>JSON.parse(execFileSync('git',['cat-file','blob',sha+':'+p],{cwd:root,encoding:'utf8'}))
+ const p='Canon/registries/governance-manifest-v2.json',before=read(ECR_MARKET_CALENDAR_REVIEW.baseSha,p),after=read(ECR_MARKET_CALENDAR_REVIEW.sourceSha,p)
+ const addition=after.documents.filter(d=>!before.documents.some(b=>b.id===d.id));assert.equal(addition.length,1);assert.equal(addition[0].id,'procurement-insights-market-calendar-amendment')
+ assert.deepEqual({...after,manifestVersion:before.manifestVersion,documents:after.documents.filter(d=>d.id!==addition[0].id)},before)
+ assert.equal(after.documents.find(d=>d.id==='universal-project-execution-wrapper').status,'ACTIVE')
+})
+
+test('Market Calendar and accepted ECR weeks compose over all368 real recurring sources without weakening either closure',()=>{
+ const repositoryRoot=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..')
+ const root=fs.mkdtempSync(path.join(os.tmpdir(),'calendar-week-source-'))
+ const git=(...args)=>execFileSync('git',args,{cwd:repositoryRoot,stdio:['ignore','pipe','pipe']})
+ const source=p=>git('cat-file','blob',ECR_MARKET_CALENDAR_REVIEW.sourceSha+':'+p)
+ const recurring=JSON.parse(source(PRIVATE_RECURRING_PROVENANCE.recordPath))
+ const calendar=JSON.parse(source(ECR_MARKET_CALENDAR_PROVENANCE.recordPath))
+ const files=new Set([
+  ...Object.keys(recurring.sourceDigests),...Object.keys(recurring.preservedReceipts),
+  ...Object.keys(calendar.preservedReceipts),
+  ...Object.values(PRIVATE_RECURRING_PROVENANCE.adoptions),PRIVATE_RECURRING_PROVENANCE.recordPath,
+  ...Object.keys(ECR_MARKET_CALENDAR_REVIEW.entries),
+  ...Object.keys(ecrWeeksReview.sourceDigests),...Object.keys(ecrWeeksReview.preservedReceipts),ecrWeeksReview.recordPath
+ ])
+ try{
+  fs.writeFileSync(path.join(root,'.git'),'gitdir: '+String(git('rev-parse','--absolute-git-dir')).trim()+'\n')
+  for(const p of files){const f=path.join(root,p);fs.mkdirSync(path.dirname(f),{recursive:true});fs.writeFileSync(f,source(p),{mode:0o644})}
+  assert.equal(Object.keys(assertPrivateRecurringProvenance(root).sourceDigests).length,368)
+  // The previous physical-only week reader rejects the composed guard. The
+  // authenticated Calendar view is required, and preserves all14 week hashes.
+  rejection(()=>assistantEcrWeekSourceProjection(root))
+  for(const p of ['apps/economic-calendar-runtime/src/server.mjs','apps/sg-runtime/lib/assistant/context-selection.ts','apps/sg-runtime/operation-integration.json']){
+   const f=path.join(root,p),before=fs.readFileSync(f)
+   fs.writeFileSync(f,Buffer.concat([before,Buffer.from('UNREVIEWED')]))
+   rejection(()=>assertPrivateRecurringProvenance(root));fs.writeFileSync(f,before)
+  }
+  const executable=path.join(root,'apps/sg-runtime/tests/assistant-ecr-week-integrity.mjs')
+  fs.chmodSync(executable,0o755);rejection(()=>assertPrivateRecurringProvenance(root));fs.chmodSync(executable,0o644)
+  const linked=path.join(root,'apps/sg-runtime/lib/assistant/context-selection.ts'),bytes=fs.readFileSync(linked),outside=path.join(root,'linked-source')
+  fs.writeFileSync(outside,bytes);fs.unlinkSync(linked);fs.symlinkSync(outside,linked)
+  rejection(()=>assertPrivateRecurringProvenance(root));fs.unlinkSync(linked);fs.writeFileSync(linked,bytes)
+  assert.equal(Object.keys(assertPrivateRecurringProvenance(root).sourceDigests).length,368)
+ }finally{fs.rmSync(root,{recursive:true,force:true})}
 })
 
 test('parallel ECR reconciliation retains exact B5 scope and all old records',async()=>{
