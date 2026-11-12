@@ -69,6 +69,23 @@ test('server time selections preserve explicit dates, same-view continuation and
  const latest=selectConversationContext(turn('Najnowsze odczyty EIA'),null,org,now).references[0]
  assert.equal(latest.source,'ECONOMIC_CALENDAR');if(latest.source==='ECONOMIC_CALENDAR')assert.equal(latest.to,'2026-11-11T23:59:59.999Z')
 })
+test('calendar weeks recognise Polish inflections and unaccented prompts instead of the broad default or a prior range',()=>{
+ const first=selectConversationContext(turn('Kalendarz makro 2026-12-04 2026-12-11'),null,org,now)
+ const entry:any={source:'ECONOMIC_CALENDAR',status:'EMPTY',sourceVersion:'a'.repeat(64),data:{events:[],unresolvedSchedules:[]}}
+ const stored:any={id:randomUUID(),revision:2,turns:[{status:'COMPLETE',scopes:contextHistoryScopes(first,[entry],org)}]}
+ const next=['jakie dane makro sa zaplanowane na przyszly tydzien?','jakie dane makro są zaplanowane na przyszły tydzień?','Kalendarz makro w przyszłym tygodniu','Kalendarz makro w nastepnym tygodniu','Macro calendar next week']
+ const last=['a mozesz podsumowac wydarzenia z ubieglego tygodnia - odczyty, prognozy i reakcje rynkowe?','Kalendarz makro z ubiegłego tygodnia','Kalendarz makro za zeszły tydzień','Kalendarz makro w poprzednim tygodniu','Macro calendar last week']
+ for(const [messages,from,to]of [[next,'2026-11-16','2026-11-22'],[last,'2026-11-02','2026-11-08']] as const){
+  for(const message of messages){
+   const selected=selectConversationContext(turn(message),stored,org,now),r=selected.references.find(r=>r.source==='ECONOMIC_CALENDAR')
+   assert(r?.source==='ECONOMIC_CALENDAR',message)
+   assert.equal(r.from,from+'T00:00:00.000Z',message);assert.equal(r.to,to+'T23:59:59.999Z',message)
+   assert.deepEqual(selected.economicCalendarTime,{now:new Date(now).toISOString(),timeZone:'UTC',weekStartsOn:'MONDAY',from:r.from,to:r.to})
+  }
+ }
+ const boundary=selectConversationContext(turn('Kalendarz makro na przyszły tydzień'),null,org,Date.parse('2026-12-31T23:59:59Z')).economicCalendarTime
+ assert.equal(boundary?.from,'2027-01-04T00:00:00.000Z');assert.equal(boundary?.to,'2027-01-10T23:59:59.999Z')
+})
 test('history requires the same currently readable ECR event, observation and unresolved publication',()=>{
  const eventId='ecr_evt_'+'a'.repeat(64),observationId='ecr_obs_'+'b'.repeat(64),publicationId='ecr_pub_'+'c'.repeat(64)
  const selection=selectConversationContext(turn('Kalendarz makro 2026-11-01 2026-11-30'),null,org,now)

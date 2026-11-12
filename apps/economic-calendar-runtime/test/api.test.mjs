@@ -1,8 +1,23 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import {fixture, A, B, U, V} from './fixtures.mjs'
+import {fixture, A, B, U, V, command, sourceResponse} from './fixtures.mjs'
 import {createAuthorizer} from '../src/authorization.mjs'
-import {createRepository} from '../src/repository.mjs'
+import {createRepository, persistAcquisition} from '../src/repository.mjs'
+test('Calendar Query batches the existing shared projections under one current E1 operation, with independent cursors and no private data',async()=>{
+ const f=await fixture({seed:false})
+ try{
+  const source=sourceResponse();source.items=Array.from({length:100},(_,i)=>sourceResponse({id:'SYNTHETIC_QUERY_'+i,receipt:source.usage.receiptRef}).items[0]);source.coverage.providerReturned=100;source.coverage.matchedLocally=100;source.coverage.returned=100
+  await persistAcquisition(f.ingest,command,source)
+  const before=f.e1.transportState.calls,r=await f.api('query?limit=1')
+  assert.equal(r.status,200,JSON.stringify(r.body));assert.equal(f.e1.transportState.calls-before,2)
+  assert.deepEqual(r.body.queryContract,{id:'profitia.calendar-query',version:'1.0.0'});assert.equal(r.body.events.items.length,1)
+  assert(Array.isArray(r.body.publications.items));assert(Array.isArray(r.body.context.items));assert.equal('preferences'in r.body,false)
+  const manyBefore=f.e1.transportState.calls,many=await f.api('query?limit=100');assert.equal(many.status,200,JSON.stringify(many.body));assert.equal(many.body.events.items.length,100);assert.equal(f.e1.transportState.calls-manyBefore,2)
+  const page=await f.api('query?include=events&limit=1');assert.equal(page.status,200);assert.equal(page.body.publications,null);assert.equal(page.body.context,null)
+  for(const q of ['include=preferences','include=events,events','include=events&publicationAfter=ecr_pub_'+'a'.repeat(64),'limit=501','userId='+V])assert.equal((await f.api('query?'+q)).status,400)
+  f.e1.clerkState.sessionActive=false;assert.equal((await f.api('query')).status,403)
+ }finally{await f.close()}
+})
 test('HTTP calendar read batches current E1; repeated reads/details never acquire provider data', async () => {
   const f = await fixture()
   try {

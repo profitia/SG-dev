@@ -1,12 +1,15 @@
 // Source acceptance only. Never imported by an application runtime.
 // The reviewed current graph is verified before any immutable predecessor is read.
 import {procurementInsightsShellPredecessor} from '../sg-runtime/tests/procurement-insights-shell-integrity.mjs'
+import {assistantEcrWeekPredecessor} from '../sg-runtime/tests/assistant-ecr-week-integrity.mjs'
+export const ECR_WEEK_SOURCE_SHA='31ce8f1d7e5ca1d9c3aedf80f92e23fe0f1a93cb8f5fd5d003eb54a244859dd4'
 import assert from 'node:assert/strict'
 import {createHash} from 'node:crypto'
 import fs from 'node:fs'
 import {execFileSync} from 'node:child_process'
 import path from 'node:path'
 import {fileURLToPath} from 'node:url'
+import {marketCalendarSourcePredecessor} from './market-calendar-source.mjs'
 export const RECURRING_SOURCE_RECORD='apps/architecture-lab/private-recurring-source.json'
 export const RECURRING_SOURCE_BASE='141cc559063c43cefa991acb9260b32ac5b92615'
 const RECORD_SHA256='75877d5750e07d1c8172be0af76bc5933f2eeefc22cc39747a2621b9cab24619'
@@ -14,6 +17,9 @@ const hash=b=>createHash('sha256').update(b).digest('hex')
 const absent=error=>error?.code==='ENOENT'||error?.status===128&&["' does not exist in ","' exists on disk, but not in "].some(s=>String(error?.stderr??error?.message??'').includes("'"+RECURRING_SOURCE_RECORD+s))
 export function recurringSourcePredecessor(current,historical){
  const shell=procurementInsightsShellPredecessor(current,historical);if(shell)return recurringSourcePredecessor(shell.previousBytes,historical)
+ const calendar=marketCalendarSourcePredecessor(current,historical);if(calendar)return recurringSourcePredecessor(calendar.previousBytes,historical)
+ const successor=assistantEcrWeekPredecessor(current,historical,ECR_WEEK_SOURCE_SHA)
+ if(successor){const accepted=recurringSourcePredecessor(successor.previousBytes,historical);assert(accepted,'accepted recurring source retained');return {...accepted,successor}}
  let bytes;try{bytes=current(RECURRING_SOURCE_RECORD)}catch(error){if(absent(error))return null;throw error}
  assert.equal(hash(bytes),RECORD_SHA256,'exact reviewed recurring source record')
  const a=JSON.parse(bytes)

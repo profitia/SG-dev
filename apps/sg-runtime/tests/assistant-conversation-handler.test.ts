@@ -43,6 +43,31 @@ test('isolated BFF makes CIC demand, then authorises, persists and completes one
  assert(f.events.some(e=>e.complete?.response==='Synthetic answer'));assert(f.events.filter(e=>e==='check').length>=3)
  assert(f.inputs[0][0].role==='developer');assert(f.events.some(e=>e.plan?.[0]?.source==='BENCHMARK_CHART'))
 })
+test('calendar prompt receives the same server-resolved week as the producer query, with no model-based date inference',async t=>{
+ t.mock.method(Date,'now',()=>Date.parse('2026-11-11T12:34:56Z'))
+ const f=fixture(),references:any[]=[]
+ f.runtime.gateway.resolve=async(demand:any)=>{
+  const selected=demand.reference.references.find((r:any)=>r.source==='ECONOMIC_CALENDAR');references.push(selected)
+  return {contexts:[{source:'ECONOMIC_CALENDAR',status:'EMPTY',sourceVersion:'c'.repeat(64),selection:selected,data:{events:[],unresolvedSchedules:[]}}]}
+ }
+ const r=await f.execute({module:'appshell',reference:null,message:'jakie dane makro sa zaplanowane na przyszly tydzien?'})
+ assert.equal(r.response.status,200);assert.equal(f.generated(),1)
+ assert(references.length>=3)
+ assert(references.every(r=>r.from==='2026-11-16T00:00:00.000Z'&&r.to==='2026-11-22T23:59:59.999Z'))
+ const instructions=f.inputs[0][0].content
+ assert(instructions.includes('2026-11-11T12:34:56.000Z'));assert(instructions.includes('2026-11-16T00:00:00.000Z'));assert(instructions.includes('2026-11-22T23:59:59.999Z'))
+ assert(instructions.includes('exact inclusive calendar period'));assert(instructions.includes('market reactions are absent'))
+})
+test('admission refusal is returned as a limit error before generation without a retry or manufactured completion',async()=>{
+ const f=fixture(),original=f.runtime.run
+ f.runtime.run=async(...args:any[])=>{
+  if(args[2]?.kind==='GENERATE')throw unavailable('LIMIT_EXCEEDED')
+  return original(...args)
+ }
+ const r=await f.execute()
+ assert.equal(r.response.status,429);assert.equal(r.events[0].error,'LIMIT_EXCEEDED');assert.equal(f.generated(),0)
+ assert.equal(f.events.filter(e=>e==='interrupt').length,1);assert(!f.events.some(e=>e.complete))
+})
 test('history reuse requires current organisation and exact canonical reference; general turns remain usable',async()=>{
  const f=fixture(),saved=(message:string,scopes:any[])=>({status:'COMPLETE',message,response:message+' answer',scopes:scopes.map(s=>({...s,source:s.reference.source}))})
  const jsonbReference=Object.fromEntries(Object.entries(reference).sort(([a],[b])=>a.localeCompare(b)))

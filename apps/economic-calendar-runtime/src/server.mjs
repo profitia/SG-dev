@@ -3,7 +3,7 @@ import {performance} from 'node:perf_hooks'
 import {createSemanticRepository} from './semantics.mjs'
 import {semanticFilter,semanticId} from '../../../packages/economic-calendar-contracts/semantic.mjs'
 import {isOperationDenied, OperationDenied} from '@profitia/platform-contracts/operation-context'
-import {CalendarError, ECR_CONTRACT, calendarFilter, closedObject, eventId, publicationId, publicationFilter, fingerprint, organisationId} from '@profitia/economic-calendar-contracts'
+import {CalendarError, ECR_CONTRACT, ECR_CALENDAR_QUERY_CONTRACT, calendarFilter, closedObject, eventId, publicationId, publicationFilter, fingerprint, organisationId} from '@profitia/economic-calendar-contracts'
 const integer = value => {if (typeof value !== 'string' || !/^(0|[1-9][0-9]{0,14})$/.test(value)) throw new CalendarError('INVALID_INTEGER'); return Number(value)}
 function parameters(query, allowed) {if ([...query.keys()].some(k => !allowed.includes(k))) throw new CalendarError('UNSUPPORTED_QUERY_PARAMETER')}
 function single(query, key) {const values = query.getAll(key); if (values.length > 1) throw new CalendarError('DUPLICATE_QUERY_PARAMETER'); return values[0]}
@@ -46,7 +46,7 @@ export function createServer({configuration, authorizer, repository, report = (_
       }
       if (url.pathname === '/health' && incoming.method === 'GET') {operation = 'health'; return send(200, {status: 'ok', contract: ECR_CONTRACT, sourceSha: configuration.deploymentId})}
       if (url.pathname === '/ready' && incoming.method === 'GET') {operation = 'ready'; const ready = await repository.ready() && await authorizer.ready(); return send(ready ? 200 : 503, {ready, sourceSha: configuration.deploymentId})}
-      const match = /^\/v1\/organisations\/([^/]+)\/calendar\/(events|publications|preferences|favourites|timeline|context|knowledge|freshness|evidence)(?:\/([^/]+))?(?:\/(revisions))?$/.exec(url.pathname)
+      const match = /^\/v1\/organisations\/([^/]+)\/calendar\/(query|events|publications|preferences|favourites|timeline|context|knowledge|freshness|evidence)(?:\/([^/]+))?(?:\/(revisions))?$/.exec(url.pathname)
       if (!match) throw new CalendarError('NOT_FOUND', 404)
       const organisation = organisationId(decodeURIComponent(match[1])), collection = match[2], id = match[3] ? (collection==='publications'?publicationId:collection==='knowledge'?semanticId:eventId)(decodeURIComponent(match[3])) : null
       const history = match[4] === 'revisions', method = incoming.method ?? ''
@@ -59,8 +59,22 @@ export function createServer({configuration, authorizer, repository, report = (_
       const request = new Request(configuration.publicOrigin + url.pathname, {method, headers, signal: abort.signal})
       let expectedVersion
       if(incoming.headers['if-match']!==undefined){const match=/^"(0|[1-9][0-9]{0,14})"$/.exec(String(incoming.headers['if-match']));if(!match)throw new CalendarError('INVALID_IF_MATCH');expectedVersion=integer(match[1])}
-      let action, kind = ['events','publications','timeline','context','knowledge','freshness','evidence'].includes(collection) ? 'events' : 'preferences', write = method !== 'GET'
-      if(['timeline','context'].includes(collection)&&method==='GET'&&!id&&!history){
+      let action, kind = ['query','events','publications','timeline','context','knowledge','freshness','evidence'].includes(collection) ? 'events' : 'preferences', write = method !== 'GET'
+      if(collection==='query'&&method==='GET'&&!id&&!history){
+        parameters(url.searchParams,['include','eventAfter','publicationAfter','contextAfter','limit'])
+        const include=(single(url.searchParams,'include')??'events,publications,context').split(',')
+        if(!include.length||new Set(include).size!==include.length||include.some(k=>!['events','publications','context'].includes(k)))throw new CalendarError('INVALID_QUERY_PROJECTION')
+        const page=calendarFilter({limit:url.searchParams.has('limit')?integer(single(url.searchParams,'limit')):100})
+        const cursors={events:single(url.searchParams,'eventAfter'),publications:single(url.searchParams,'publicationAfter'),context:single(url.searchParams,'contextAfter')}
+        for(const key of ['events','publications','context'])if(cursors[key]!==undefined){if(!include.includes(key))throw new CalendarError('UNUSED_QUERY_CURSOR');(key==='publications'?publicationId:eventId)(cursors[key])}
+        operation='calendar_query'
+        // All projections share exactly one current E1 operation and transaction.
+        // Private preferences remain a separately authorised private operation.
+        action=async(_,t)=>({projection:'CALENDAR_QUERY',queryContract:ECR_CALENDAR_QUERY_CONTRACT,
+          events:include.includes('events')?await repository.listEvents(t,{limit:page.limit,...(cursors.events?{after:cursors.events}:{})}):null,
+          publications:include.includes('publications')?await repository.listPublications(t,{limit:page.limit,...(cursors.publications?{after:cursors.publications}:{})}):null,
+          context:include.includes('context')?await semantics.context(t,{limit:page.limit,...(cursors.context?{after:cursors.context}:{})}):null})
+      }else if(['timeline','context'].includes(collection)&&method==='GET'&&!id&&!history){
         parameters(url.searchParams,['targetType','targetId','from','to','asKnownAt','after','limit'])
         const criteria=semanticFilter(Object.fromEntries([...url.searchParams.keys()].map(k=>[k,k==='limit'?integer(single(url.searchParams,k)):single(url.searchParams,k)])))
         operation='semantic_'+collection;action=(_,t)=>semantics[collection](t,criteria)
@@ -93,7 +107,7 @@ export function createServer({configuration, authorizer, repository, report = (_
         operation = method === 'POST' ? 'favourite_add' : 'favourite_remove'; action = (c, t) => repository.setFavourite(t, c, id, method === 'POST',expectedVersion)
       } else throw new CalendarError('METHOD_NOT_ALLOWED', 405)
       const result = await authorizer.execute({request, organisation, kind, write, payload: {operation, inputDigest: fingerprint({path: url.pathname, query: [...url.searchParams], body: value,expectedVersion:expectedVersion??null})}}, async (c,t) => {const at=performance.now();try{await repository.assertInstalled(t);return await action(c,t)}finally{databaseOperationMs=Math.round((performance.now()-at)*100)/100}})
-      recordsReturned=Array.isArray(result.items)?result.items.length:result.event||result.publication?1:null
+      recordsReturned=collection==='query'?(result.events?.items.length??0)+(result.publications?.items.length??0):Array.isArray(result.items)?result.items.length:result.event||result.publication?1:null
       send(200, {contract: ECR_CONTRACT, ...result})
     } catch (error) {
       if (error instanceof CalendarError) send(error.status, {error: {code: error.code}})
