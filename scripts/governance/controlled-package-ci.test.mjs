@@ -2677,3 +2677,25 @@ test('complete Calendar SDK bridge is confined to its exact legacy lock and revi
   const changed=structuredClone(adopted);changed.packages['node_modules/@profitia/platform-source-hub-contracts'].version='1.7.1';write('apps/sg-runtime/package-lock.json',JSON.stringify(changed));rejection(()=>assertLocalPackageSources(root,changed,f.root,{reviewedPrivateRecurring:true}))
  }finally{fs.rmSync(root,{recursive:true,force:true})}
 })
+
+test('Calendar historical-read correction retains the approved operation scope, six UI sources and all prior receipts',()=>{
+ const f=completeCalendarFixture(),oldProducer='ce6c5d0f51cd670d81a17c416924a5f56a211cde',oldConsumer='4f560653f32f6cdaea08398f6356265e4e5fde34'
+ const changed=(review,old)=>Object.keys(review.entries).filter(p=>!f.historical(old,p).equals(f.historical(review.sourceSha,p))).sort()
+ assert.deepEqual(changed(f.p,oldProducer),[
+  'apps/architecture-lab/ecr-complete-functional-source.mjs',
+  'apps/economic-calendar-runtime/complete-functional-source-integration.json',
+  'apps/economic-calendar-runtime/migrations/005-expanded-results.sql',
+  'apps/economic-calendar-runtime/operations/complete-functional-owner-plan.json',
+  'apps/economic-calendar-runtime/src/result-links.mjs',
+  'apps/economic-calendar-runtime/test/expanded-results.test.mjs'
+ ])
+ assert.deepEqual(changed(f.c,oldConsumer),[f.cfg.consumerRecord])
+ const p='apps/economic-calendar-runtime/operations/complete-functional-owner-plan.json',migration='apps/economic-calendar-runtime/migrations/005-expanded-results.sql',old=f.historical(oldProducer,p),current=f.historical(f.p.sourceSha,p),a=JSON.parse(old),b=JSON.parse(current)
+ const digest=createHash('sha256').update(f.historical(f.p.sourceSha,migration)).digest('hex')
+ assert.equal(b.sourceDigests[migration],digest)
+ assert.equal(old.toString().replace(a.sourceDigests[migration],digest),current.toString())
+ for(const record of [f.cfg.producerRecord,f.cfg.consumerRecord]){
+  const previous=JSON.parse(f.historical(record===f.cfg.producerRecord?oldProducer:oldConsumer,record)),now=JSON.parse(f.current(true)(record))
+  assert.deepEqual(now.preservedReceipts,previous.preservedReceipts)
+ }
+})

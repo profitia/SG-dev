@@ -946,3 +946,18 @@ consumer public/controlled proofs and complete resulting-main checks before
 source integration. Runtime schema, licensing/retention, Identity/Mailgun
 purpose and credentials, release bindings, deployment and LIVE acceptance
 remain separate owner-controlled operations. This source policy grants none.
+
+### Complete Calendar — proposed historical-result continuity correction
+
+The original consolidated owner GO remains authority for the existing
+operational scope. Before installation, a real PostgreSQL regression proved
+that changing an owner retention basis could hide retained readings. The same
+54 producer and7 consumer paths now pin a minimal read/write/revocation repair
+and its full52-test regression. No new path, grant, role, cost or operation is
+added; only the migration005 digest changes in the operation plan. The six
+functional SG2 files and all38 historical receipts remain unchanged. Preserve
+accepted registration73/70, Calendar99, Oil42, ECR-week, BSDC and CIC controls.
+This actual source-pin change requires exact corrective controller acceptance;
+the original GO is not approval for new protected bytes. Fresh exact controlled,
+public and resulting-main checks remain mandatory. See the current source
+commits and plan digest in [the admission](../evidence/2026-11-12-ecr-complete-functional-ci-admission.md).
