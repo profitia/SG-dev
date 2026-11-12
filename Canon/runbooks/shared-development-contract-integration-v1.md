@@ -851,3 +851,7 @@ frame for both source and prior receipt comparisons. SRM preserves its immutable
 AppShell reader and selects authenticated current SRM bytes only for the one
 current-source assertion. Full physical68 authentication precedes the unchanged
 three exact historical guard pins. All prior assertions and tamper cases remain.
+
+### Registration1046 — bounded69 technical repair delegation
+
+Owner accepted1046 on2026-11-12 and clarified Full Autopilot: ordinary test/provenance/integration repairs needed for the accepted Stage I outcome are completed autonomously, without per-hash questions. This extends the1041 exact68 closure by only apps/architecture-lab/test/market-calendar-source.test.mjs to69 source paths and retains the same4 policy/evidence paths. Exact current source maps, actual owners, protected/public/resulting-main tests and independent proofs remain mandatory. Frozen production SDK/native runtime/UI, SQL, package manifests/locks, receipts, authority, commercial/cost/provider/deployment rules are unchanged. This is no source or runtime activation and no waiver of any failing check. Source/CI and business Development acceptance remain separate.
