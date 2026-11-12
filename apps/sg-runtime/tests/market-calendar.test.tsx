@@ -5,7 +5,7 @@ import path from 'node:path'
 import {fileURLToPath} from 'node:url'
 const app=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..'),require=createRequire(path.join(app,'package.json'))
 const {buildSync}=require('esbuild'),{JSDOM}=require('jsdom')
-const navigation=`import {useSyncExternalStore} from 'react';const listeners=new Set();const emit=()=>listeners.forEach(f=>f());const router={push(url){window.history.pushState({},'',url);emit()},replace(url){window.history.replaceState({},'',url);emit()},back(){window.history.back()},forward(){window.history.forward()}};const sub=f=>{listeners.add(f);return()=>listeners.delete(f)};export const useRouter=()=>router;export const usePathname=()=>window.location.pathname;export function useSearchParams(){return new URLSearchParams(useSyncExternalStore(sub,()=>window.location.search,()=>window.location.search))}`
+const navigation=`import {useSyncExternalStore} from 'react';const listeners=new Set();const emit=()=>listeners.forEach(f=>f());for(const method of ['pushState','replaceState']){const original=window.history[method].bind(window.history);window.history[method]=(...args)=>{original(...args);emit()}}window.addEventListener('popstate',emit);const router={push(url){window.calendarServerNavigations=(window.calendarServerNavigations??0)+1;window.history.pushState({},'',url)},replace(url){window.calendarServerNavigations=(window.calendarServerNavigations??0)+1;window.history.replaceState({},'',url)},back(){window.history.back()},forward(){window.history.forward()}};const sub=f=>{listeners.add(f);return()=>listeners.delete(f)};export const useRouter=()=>router;export const usePathname=()=>window.location.pathname;export function useSearchParams(){return new URLSearchParams(useSyncExternalStore(sub,()=>window.location.search,()=>window.location.search))}`
 // Explicit synthetic browser test. Product files contain neither fixture data
 // nor this router. Durable PostgreSQL/E1 behavior has a separate producer test.
 
@@ -43,6 +43,10 @@ test('approved calendar flow uses ECR requests for favourites, named calendars a
  try{
   await React.act(async()=>root.render(React.createElement(React.StrictMode,null,React.createElement(MarketCalendar,{active:true,getToken:token}))));await settle()
   assert.match(node.textContent,/SYNTHETIC_ONLY Raport ropy/);assert.match(node.textContent,/niezidentyfikowane wydanie/);assert(calls.length>=2&&calls.length<=4)
+  const beforeSelectionRequests=calls.length,search=node.querySelector('input[placeholder="Nazwa, surowiec, seria…"]');assert(search)
+  await React.act(async()=>{for(const value of ['r','ro','rop','ropa']){Object.getOwnPropertyDescriptor(w.HTMLInputElement.prototype,'value')!.set!.call(search,value);search.dispatchEvent(new w.Event('input',{bubbles:true}))}});await settle()
+  assert.equal(new URLSearchParams(w.location.search).get('calSearch'),'ropa');assert.equal(search.value,'ropa');assert.equal(calls.length,beforeSelectionRequests,'local selection must not reacquire data or identity');assert.equal(w.calendarServerNavigations??0,0,'search must not navigate the server AppShell')
+  await click('Wyczyść filtry');assert.equal(new URLSearchParams(w.location.search).has('calSearch'),false);assert.equal(calls.length,beforeSelectionRequests)
   const eventCard=()=>[...node.querySelectorAll('article')].find((a:any)=>a.textContent.includes('SYNTHETIC_ONLY Raport ropy'));
   await click('Dodaj do ulubionych',eventCard());assert.deepEqual(state.preferences.publicationFavourites,[pub]);assert.deepEqual(state.preferences.publicationWatches,[]);assert.deepEqual(state.preferences.watchedCountries,['PRESERVE'])
   await click('Zapisz kalendarz');await fill('Nazwa kalendarza','Mój rynek paliw');await click('Zapisz kalendarz',node.querySelector('dialog'))
@@ -51,6 +55,7 @@ test('approved calendar flow uses ECR requests for favourites, named calendars a
   await click('Otwórz');await click('Obserwuj',eventCard());assert.match(node.querySelector('dialog').textContent,/nie jest jeszcze aktywne/);await click('Zapisz preferencje');assert.equal(state.preferences.publicationWatches[0].publicationId,pub)
   await click('Obserwujesz',eventCard());await click('Wyłącz obserwowanie');assert.deepEqual(state.preferences.publicationWatches,[])
   await click('Miesiąc');assert.match(w.location.search,/calView=month/);assert(node.querySelector('.pi-cal-month'));await click('Tydzień');assert(node.querySelector('.week-layout'));await click('Lista')
+  assert.equal(w.calendarServerNavigations??0,0,'views and selections reuse the existing authenticated operation context')
   await click('Szczegóły',eventCard());await click('Odczyty');assert.match(node.querySelector('dialog').textContent,/Jeszcze bez potwierdzonego odczytu/);await click('Zamknij')
   conflict=true;await click('Usuń z ulubionych',eventCard());assert.match(node.textContent,/innej sesji/);assert.deepEqual(state.preferences.publicationFavourites,[pub]);await click('Usuń z ulubionych',eventCard());assert.deepEqual(state.preferences.publicationFavourites,[]);assert.deepEqual(state.preferences.watchedCountries,['CONCURRENT'])
   await React.act(async()=>root.render(React.createElement(MarketCalendar,{key:'new-session',active:true,getToken:token})));await settle();assert.match(node.textContent,/Rynek energii/)
