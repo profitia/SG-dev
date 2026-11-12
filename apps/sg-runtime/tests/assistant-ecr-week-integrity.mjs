@@ -46,6 +46,15 @@ export function weekScopeSource(before){
   .replace('assertSourceCoverage(changed,{','assertSourceCoverage(changed,{...week?.manifest.sourceDigests,')
 }
 export function assistantEcrWeekPredecessor(current,historical,expectedDigest){
+ const renderer=oilRendererSourcePredecessor(current,historical)
+ if(renderer){
+  const accepted=assistantEcrWeekPredecessor(renderer.previousBytes,historical,expectedDigest)
+  assert(accepted,'accepted ECR week source retained')
+  // A computed coverage view for the unchanged aggregate consumer. The original
+  // week receipt and all historical bytes remain immutable; each added byte is
+  // authenticated above before its closed binding is exposed to scope coverage.
+  return {...accepted,renderer,manifest:{...accepted.manifest,sourceDigests:{...accepted.manifest.sourceDigests,...renderer.manifest.sourceDigests,[OIL_RENDERER_RECEIPT]:hash(current(OIL_RENDERER_RECEIPT))}}}
+ }
  let bytes
  try{bytes=current(WEEK_RECEIPT)}catch(e){
   const message=String(e?.stderr??e?.message??'')
@@ -70,6 +79,38 @@ export function assistantEcrWeekPredecessor(current,historical,expectedDigest){
   if(p===WEEK_RECEIPT||ADDITIONS.has(p))throw Object.assign(Error('ECR correction absent from predecessor'),{code:'ENOENT'})
   if(!mapped.has(p))return current(p)
   if(!cache.has(p))cache.set(p,Buffer.from(historical(WEEK_BASE,p)))
+  return Buffer.from(cache.get(p))
+ }}
+}
+// Exact renderer source successor only. No runtime grant, model call or history rewrite.
+export const OIL_RENDERER_RECEIPT="apps/sg-runtime/oil-renderer-integration.json"
+export const OIL_RENDERER_BASE="bfc4a228d9f3d583c37c5fd984c7e4da602bf75d"
+export const OIL_RENDERER_PATHS=Object.freeze(["apps/insights-runtime/render/report.py", "apps/insights-runtime/tests/postgres.test.mjs", "apps/sg-runtime/tests/assistant-ecr-week-integrity.mjs"])
+export const OIL_RENDERER_PRESERVED=Object.freeze(["apps/sg-runtime/operation-integration.json", "apps/sg-runtime/assistant-context-integration.json", "apps/sg-runtime/procurement-insights-integration.json", "apps/sg-runtime/assistant-markdown-integration.json", "apps/sg-runtime/registration-stage-i-integration.json", "apps/sg-runtime/assistant-send-arrow-integration.json", "apps/sg-runtime/assistant-ecr-integration.json", "apps/sg-runtime/assistant-ecr-precision-integration.json", "apps/sg-runtime/assistant-ecr-week-integration.json", "apps/sg-runtime/private-recurring-source-adoption.json", "apps/architecture-lab/private-recurring-source.json", "apps/architecture-lab/private-recurring-source-adoption.json", "apps/srm/private-recurring-source-adoption.json", "apps/architecture-lab/sdk-1.34-compatibility.json"])
+const OIL_RENDERER_RUNTIME=Object.freeze({"apps/insights-runtime/render/report.py": "fc60502cbab052bbe90f7598b437b896bcd94c32fc6037d48203bf0e5d6456cf", "apps/insights-runtime/tests/postgres.test.mjs": "f887f544b7eced7928d41b0ed84b0e5b0ccd4b7828f7272d10f42e19a5409a47"})
+export function oilRendererSourcePredecessor(current,historical){
+ let bytes
+ try{bytes=current(OIL_RENDERER_RECEIPT)}catch(e){
+  const message=String(e?.stderr??e?.message??'')
+  if(e?.code==='ENOENT'||e?.status===128&&["' does not exist in ","' exists on disk, but not in "].some(s=>message.includes("'"+OIL_RENDERER_RECEIPT+s)))return null
+  throw e
+ }
+ const a=JSON.parse(bytes)
+ assert.deepEqual(Object.keys(a).sort(),['schemaVersion','taskId','targetEnvironment','scope','previousSourceSha','sourceDigests','preservedReceipts','authorisationChanged','schemaChanged','modelChanged','policiesChanged','providerAcquisitionAdded','deploymentPerformed','originalNarrativePreserved','humanReviewRequired'].sort())
+ assert.equal(a.schemaVersion,'1.0.0');assert.equal(a.taskId,'SG2-OIL-RENDERER-FINAL-RECOVERY-20261112')
+ assert.equal(a.targetEnvironment,'development');assert.equal(a.scope,'EXACT_RENDERER_SOURCE_SUCCESSOR');assert.equal(a.previousSourceSha,OIL_RENDERER_BASE)
+ for(const k of ['authorisationChanged','schemaChanged','modelChanged','policiesChanged','providerAcquisitionAdded','deploymentPerformed'])assert.equal(a[k],false,k)
+ assert.equal(a.originalNarrativePreserved,true);assert.equal(a.humanReviewRequired,true)
+ assert.deepEqual(Object.keys(a.sourceDigests).sort(),[...OIL_RENDERER_PATHS].sort())
+ for(const p of OIL_RENDERER_PATHS){assert.match(a.sourceDigests[p],/^[a-f0-9]{64}$/);assert.equal(hash(current(p)),a.sourceDigests[p],'exact current renderer successor '+p)}
+ for(const[p,pin]of Object.entries(OIL_RENDERER_RUNTIME))assert.equal(a.sourceDigests[p],pin,'unchanged approved renderer bytes '+p)
+ assert.deepEqual(Object.keys(a.preservedReceipts).sort(),[...OIL_RENDERER_PRESERVED].sort())
+ for(const p of OIL_RENDERER_PRESERVED){assert.equal(hash(current(p)),a.preservedReceipts[p],'immutable prior receipt '+p);assert.equal(hash(historical(OIL_RENDERER_BASE,p)),a.preservedReceipts[p],'accepted prior receipt '+p)}
+ const mapped=new Set(OIL_RENDERER_PATHS),cache=new Map()
+ return{manifest:a,previousBytes:p=>{
+  if(p===OIL_RENDERER_RECEIPT)throw Object.assign(Error('Renderer source absent from predecessor'),{code:'ENOENT'})
+  if(!mapped.has(p))return current(p)
+  if(!cache.has(p))cache.set(p,Buffer.from(historical(OIL_RENDERER_BASE,p)))
   return Buffer.from(cache.get(p))
  }}
 }
