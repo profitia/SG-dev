@@ -31,7 +31,7 @@
     "apps/identity-runtime/src/mailgun-delivery.ts": "5abcbe61d70bd2256111e580c71a5f6b96aa8a7eb337e3081f75185a7818cb1b",
     "apps/identity-runtime/src/main.ts": "08ff149a355290fa93a9fff52473c0d19e027c5c2a0ffe88f688d42dcef31305",
     "apps/identity-runtime/src/node-server.ts": "86c52f50b2d767795aa207440f64b9adcfbe0091e7a50a58f1a9a758835d23e1",
-    "apps/identity-runtime/test/calendar-authority-postgres.test.mjs": "1e696d170cc42698f656c59e0cc354cefcca9646d9fe0b1cd414878c32f7861a",
+    "apps/identity-runtime/test/calendar-authority-postgres.test.mjs": "586faf8f878e02e5ff990455d7cfcc5057891f61f4c7ff22702adc0d69264833",
     "apps/identity-runtime/test/calendar-email.test.mjs": "8a6f29e9978c5b3bef3b3ba7837e078f1699c9248d4bd634444388aef96d506b",
     "apps/identity-runtime/test/calendar-mailgun-webhook.test.mjs": "7c18ea5eb0d09853a081edb783350ba65538654fd9e30724bbdce2e5307bd229",
     "apps/newsfeed-runtime/package-lock.json": "712b73006ca5b9d2c24ea0c097cc1f84511e6a1411c8e88ef82524e2e8540e79",
