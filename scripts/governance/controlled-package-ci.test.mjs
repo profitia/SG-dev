@@ -2547,7 +2547,7 @@ test('current registration74 authenticates raw SDK and parallel PI sources befor
  assert.equal(Object.keys(c.REGISTRATION_SDK_MAIN73_HISTORY_REVIEW.entries).length,73);
  assert.equal(c.REGISTRATION_SDK_MAIN73_HISTORY_REVIEW.sourceSha,'b6531e0a05d3bdda3086a1525515d662f02267b1');
  assert.equal(Object.keys(c.REGISTRATION_SDK_MAIN70_HISTORY_REVIEW.entries).length,70);
- assert.equal(r.sourceSha,'35340e234f4a764821fef343ae617a18c6c8d3d3');
+ assert.equal(r.sourceSha,'5250dfdfd9e26b0d40c15c031718288360b763af');
  const files=Object.entries(r.entries).map(([filename,e])=>({filename,sha:e.sha,status:e.status})),candidate={...pr(),number:r.prNumber,changed_files:files.length,base:{...pr().base,sha:r.baseSha},head:{...pr().head,sha:r.sourceSha,ref:r.branch}};
  assertArchitectureFiles(candidate,files);assert.equal(selectCandidate(context(),candidate,r.sourceSha,{files}),r.sourceSha);
  for(const edit of [a=>a.pop(),a=>a[0]={...a[0],sha:'f'.repeat(40)},a=>a.push({filename:'apps/identity-runtime/src/unreviewed.ts',sha:'a'.repeat(40),status:'added'})]){const bad=structuredClone(files);edit(bad);assert.throws(()=>selectCandidate(context(),{...candidate,changed_files:bad.length},r.sourceSha,{files:bad}));}
