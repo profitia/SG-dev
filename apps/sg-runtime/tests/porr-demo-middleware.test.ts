@@ -108,7 +108,10 @@ test('PI shell source continuation preserves original receipts and rejects sourc
  const {readFileSync}=await import('node:fs'),{execFileSync}=await import('node:child_process'),root=new URL('../../../',import.meta.url)
  const current=(p:string)=>readFileSync(new URL(p,root)),historical=(sha:string,p:string)=>execFileSync('git',['show',sha+':'+p],{cwd:root})
  const view=procurementInsightsShellPredecessor(current,historical);assert(view)
- for(const p of PI_SHELL_PATHS)assert.throws(()=>procurementInsightsShellPredecessor(f=>f===p?Buffer.concat([current(f),Buffer.from('UNACCEPTED')]):current(f),historical),p)
+ // Exercise the actual accepted continuation closure, rather than the superseded four-file shell.
+ for(const p of Object.keys(view.manifest.sourceDigests))assert.throws(()=>procurementInsightsShellPredecessor(f=>f===p?Buffer.concat([current(f),Buffer.from('UNACCEPTED')]):current(f),historical),p)
+ // Middleware is already on authority main and outside this continuation's editable paths.
+ assert.deepEqual(current('apps/sg-runtime/middleware.ts'),historical('99cd4aa1591ba2fc3a387ce637f920dac74880be','apps/sg-runtime/middleware.ts'))
  for(const change of [(a:any)=>a.authorisationChanged=true,(a:any)=>a.previousSourceSha='0'.repeat(40),(a:any)=>delete a.sourceDigests[PI_SHELL_PATHS[0]],(a:any)=>a.unreviewed=true]){
   const a=JSON.parse(current(PI_SHELL_RECEIPT).toString());change(a)
   assert.throws(()=>procurementInsightsShellPredecessor(p=>p===PI_SHELL_RECEIPT?Buffer.from(JSON.stringify(a)):current(p),historical))
