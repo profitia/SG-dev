@@ -3,6 +3,7 @@ import {readFileSync} from 'node:fs';
 import {assertContext,requireThat,digest} from '@profitia/insights-contracts';
 import {parseSubscription,nextReportOccurrence} from './subscriptions.mjs';
 import {PUBLISHED_EDITION_CONTRACT} from '@profitia/insights-contracts/subscriptions';
+import {publicationQuery} from './publication-query.mjs';
 const dto=row=>({...row.definition,id:row.id,organisationId:row.organisation_id,ownerUserId:row.owner_user_id,version:Number(row.version),status:row.status,executionState:row.execution_state,nextDueAt:(row.worker_schedule_active?row.worker_next_due_at:row.next_due_at)?new Date(row.worker_schedule_active?row.worker_next_due_at:row.next_due_at).toISOString():null,createdAt:new Date(row.created_at).toISOString(),updatedAt:new Date(row.updated_at).toISOString()});
 const own=ctx=>[ctx.organisationId,ctx.actorId];
 const installedSchemaDigest=digest(readFileSync(new URL('../sql/003-report-subscriptions.sql',import.meta.url)));
@@ -22,8 +23,16 @@ export class PostgresSubscriptionStore{
  async assertInstalled(ctx){scope(ctx);return this.store.transaction(ctx.organisationId,async db=>{
   const row=(await db.query("SELECT digest FROM insights_private.subscription_migrations WHERE version='1.0.0'")).rows[0];requireThat(row?.digest===installedSchemaDigest,'SUBSCRIPTION_SCHEMA_NOT_READY',503);
  });}
- async publishedList(ctx,options={}){scope(ctx);const {limit,after}=page(options);return this.store.transaction(ctx.organisationId,async db=>{
-  const r=await db.query('SELECT *,NOT insights_private.publication_owned(organisation_id,producer_job_id) AS read_only,published_at::text AS cursor_at FROM insights_private.published_editions WHERE organisation_id=$1::uuid'+(after?' AND (published_at,producer_job_id)<($3::timestamptz,$4::uuid)':'')+' ORDER BY published_at DESC,producer_job_id DESC LIMIT $2',[ctx.organisationId,limit+1,...(after??[])]);return {items:r.rows.slice(0,limit).map(publication),nextCursor:nextCursor(r.rows,limit,'producer_job_id')};
+ async publishedList(ctx,options={}){scope(ctx);const {limit,after}=page(options),filters=publicationQuery(options);return this.store.transaction(ctx.organisationId,async db=>{
+  const values=[ctx.organisationId,limit+1],conditions=['organisation_id=$1::uuid'],bind=value=>{values.push(value);return '$'+values.length};
+  if(filters.search)conditions.push("position(lower("+bind(filters.search)+") in lower(title||' '||definition_id||' '||profile_version||' '||edition_id))>0");
+  if(filters.markets.length)conditions.push('definition_id=ANY('+bind(filters.markets)+'::text[])');
+  if(filters.fromDate)conditions.push("published_at>=("+bind(filters.fromDate)+"::date::timestamp AT TIME ZONE 'Europe/Warsaw')");
+  if(filters.throughDate)conditions.push("published_at<(("+bind(filters.throughDate)+"::date+1)::timestamp AT TIME ZONE 'Europe/Warsaw')");
+  if(filters.sharedOnly)conditions.push('NOT insights_private.publication_owned(organisation_id,producer_job_id)');
+  const ascending=filters.order==='oldest',direction=ascending?'ASC':'DESC';
+  if(after)conditions.push('(published_at,producer_job_id)'+(ascending?'>':'<')+'('+bind(after[0])+'::timestamptz,'+bind(after[1])+'::uuid)');
+  const r=await db.query('SELECT *,NOT insights_private.publication_owned(organisation_id,producer_job_id) AS read_only,published_at::text AS cursor_at FROM insights_private.published_editions WHERE '+conditions.join(' AND ')+' ORDER BY published_at '+direction+',producer_job_id '+direction+' LIMIT $2',values);return {items:r.rows.slice(0,limit).map(publication),nextCursor:nextCursor(r.rows,limit,'producer_job_id')};
  });}
  async published(ctx,jobId,{pdf=false}={}){scope(ctx);return this.store.transaction(ctx.organisationId,async db=>{
   const r=await db.query('SELECT *,NOT insights_private.publication_owned(organisation_id,producer_job_id) AS read_only FROM insights_private.published_editions WHERE organisation_id=$1::uuid AND producer_job_id=$2::uuid',[ctx.organisationId,jobId]);requireThat(r.rowCount===1,'PUBLISHED_EDITION_NOT_FOUND',404);const row=r.rows[0],kind=pdf?'pdf':'markdown',artifact=await this.store.artifact(ctx.organisationId,jobId,kind);

@@ -33,8 +33,10 @@ import { createSrmPrivateOperationHost } from '../src/server/private-operation-h
 import { recordSupplierInterest } from '../src/server/shared-catalog.ts'
 import { createLookup } from '../src/server/xray-repository.ts'
 import { bindOrganizationTransaction, withOrganization } from '../src/server/db.ts'
-const recurring=recurringSourceFilesystem(new URL('../../../',import.meta.url)).manifest
-const recurringSdkFiles=Object.fromEntries(Object.entries(recurring?.sourceDigests??{}).filter(([p])=>p.startsWith('packages/platform-contracts/')).map(([p,h])=>[p.slice('packages/platform-contracts/'.length),h]))
+const recurringView=recurringSourceFilesystem(new URL('../../../',import.meta.url)),recurring=recurringView.manifest
+// Preserve the immutable historical record; the independently authenticated
+// transport continuation alone supplies changed current SDK file digests.
+const recurringSdkFiles=Object.fromEntries(Object.entries({...recurring?.sourceDigests,...recurringView.transport?.manifest.sourceDigests}).filter(([p])=>p.startsWith('packages/platform-contracts/')).map(([p,h])=>[p.slice('packages/platform-contracts/'.length),h]))
 
 const DATABASE = 'srm_private_host_test', ROLE = 'srm_private_host_runtime'
 const A = '11111111-1111-4111-8111-111111111111', B = '22222222-2222-4222-8222-222222222222'
