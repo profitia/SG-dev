@@ -5787,7 +5787,7 @@ function piCompletionCanonicalRead(root){
  if(transport!==null)current=assertRecurringConsentTransportProjection(transport,{current:raw,historical})
  let completion=null;try{completion=current(PI_COMPLETION_PROVENANCE_PATH)}catch(error){if(error?.code!=='ENOENT')throw error}
  if(completion!==null)current=assertPiCompletionProjection(completion,{current,historical})
- return current
+ return bsdcManifestContinuityTrustedCurrent(current,historical)
 }
 function piCurrentCanonicalRead(root,withRegistration=false){
  const historical=(sha,p)=>execFileSync('git',['cat-file','blob',sha+':'+p],{cwd:root,stdio:['ignore','pipe','pipe']})
@@ -5877,7 +5877,7 @@ export const ECR_CALENDAR_TEST_REVIEW=Object.freeze({"prNumber":1044,"branch":"a
 function isPinnedCalendarTestReview(files){const r=ECR_CALENDAR_TEST_REVIEW;return Array.isArray(files)&&files.length===Object.keys(r.entries).length&&new Set(files.map(f=>f?.filename)).size===files.length&&files.every(f=>{const e=r.entries[f?.filename];return e&&e.sha===f.sha&&e.status===f.status&&!Object.hasOwn(f,'previous_filename')})}
 export function assertCalendarTestReviewEntry(file,entry){const e=ECR_CALENDAR_TEST_REVIEW.entries[file?.filename];if(!e||e.sha!==file.sha||entry!==e.mode+' blob '+file.sha+'\t'+file.filename+'\0')fail('CALENDAR_TEST_FILE_MODE_REJECTED')}
 function assertCalendarTestRoutes(files,root){for(const f of files){const e=ECR_CALENDAR_TEST_REVIEW.entries[f.filename],profile=resolveProjectProfile('ARCHITECTURE',root),routing=resolveProjectRouting({profile,targets:[f.filename],repositoryRoot:root}),r=routing.results[0];if(profile.repository.slug!==REPOSITORY||!routing.ok||routing.results.length!==1||r.resolutionStatus!=='RESOLVED'||r.highestSpecificityMatchCount!==1||r.projectBoundaryStatus!=='ALLOWED'||r.baselineClassification!=='ALIGNED'||r.currentOwner!==e.owner||r.matchedSurfaceId!==e.surfaceId)fail('CALENDAR_TEST_ROUTING_REJECTED')}}
-export function readCalendarSourceFile(root,p){const bytes=readRegistrationSdkFile(root,p);if(Object.hasOwn(ECR_CALENDAR_TEST_REVIEW.entries,p)&&fs.lstatSync(path.join(fs.realpathSync(root),p)).mode&0o111)fail('CALENDAR_TEST_FILE_MODE_REJECTED');return bytes}
+export function readCalendarSourceFile(root,p){const bytes=readRegistrationSdkFile(root,p);if((Object.hasOwn(ECR_CALENDAR_TEST_REVIEW.entries,p)||p===BSDC_MANIFEST_CONTINUITY.recordPath||p===BSDC_MANIFEST_CONTINUITY.testPath||BSDC_MANIFEST_CONTINUITY.sourcePaths.includes(p))&&fs.lstatSync(path.join(fs.realpathSync(root),p)).mode&0o111)fail('CALENDAR_TEST_FILE_MODE_REJECTED');return bytes}
 /** Closed test-only successor. Original18-path review and every receipt remain immutable. */
 export function calendarTestCompatibilityTrustedCurrent(current,historical){
  const r=ECR_CALENDAR_TEST_REVIEW,record='apps/architecture-lab/market-calendar-test-compatibility.json';let bytes
@@ -5900,7 +5900,56 @@ const calendarBlob=b=>createHash('sha1').update('blob '+b.length+'\0').update(b)
 function optionalCalendarFile(read,p){try{return read(p)}catch(e){if(e?.code==='ENOENT')return null;throw e}}
 /** Pure trusted verification. No candidate module is imported or evaluated.
  * Current source and every old receipt are checked before historical projection. */
+
+// Owner-approved, closed BSDC v1.1 documentation continuation. This trusted
+// verifier reads bytes only; it never imports or evaluates candidate code.
+export const BSDC_MANIFEST_CONTINUITY=Object.freeze({"recordPath":"Canon/evidence/2026-11-12-bsdc-v11-manifest-continuity.json","recordSha256":"92fe69f99bbda13a9971d841cc391207d9e7944ccc516a68d9cc48b7a9151160","baseSha":"df2214265e577ef653c35fa18a38c717ffe8905e","manifestPath":"Canon/registries/governance-manifest-v2.json","previousManifestSha256":"953aa8ff82c12fca85d22d04de865e1969a5e4548465766b259db0bd3ce56587","manifestSha256":"7f5498afa10f3edaf0b364ca7bf4576de5dc8100e61bc4fc2773c845b771e2a4","previousHelperSha256":"034abe33e17cd8a6247a43f14a62eba3437831bb1f0d59d851e5efc45a7abb86","helperPath":"apps/architecture-lab/market-calendar-source.mjs","sourcePaths":["AGENTS.md","Canon/registries/governance-manifest-v2.json","Canon/v1.1-business-solution-design-and-canonization-canon.md","docs/agent-instructions/bsdc-launcher-v1.1.md"],"helperSha256":"8f57073b55c1233c4573e54185e352d6400d7baa47bd5303fefb7b893b123847","testPath":"scripts/governance/platform-source-hub-foundation.test.mjs","testSha256":"dadd4f9fcc5be03afee02ae51038efa48b07b3f9b2b62e9476a7b288c1d42d77","previousTestSha256":"189e3ee14a2e9c3fe52d53fd3404e8fca1e1ca82f120ab6ac24909b9cef09acb"})
+export const BSDC_V11_DOCUMENTATION_REVIEW=Object.freeze({"prNumber":1057,"branch":"architecture/bsdc-v11-activation-20261112","approvedSourceSha":"80325d0cad8e65057952a3ffddb0ca00f51e0d35","entries":{"AGENTS.md":{"sha":"9e81d13e9931f60862f4ef5715be38fa49969715","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Governance Source Layer","surfaceId":"SG2-BASE-020"},"Canon/registries/governance-manifest-v2.json":{"sha":"1bcd303d1e03e0b6bc066678a37464d0b5f4b66b","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Governance Source Layer","surfaceId":"SG2-BASE-019"},"Canon/v1.1-business-solution-design-and-canonization-canon.md":{"sha":"80cdb2ccf8040bdc8ae12a3c7f9de098d07f7a33","status":"added","mode":"100644","projectKey":"ARCHITECTURE","owner":"Governance Source Layer","surfaceId":"SG2-BASE-019"},"docs/agent-instructions/bsdc-launcher-v1.1.md":{"sha":"c5a239c3b3b420d07ebcb057349d76c3f82e711c","status":"added","mode":"100644","projectKey":"ARCHITECTURE","owner":"Governance Source Layer","surfaceId":"GOV-DOCS-UNIVERSAL-V12-001"}}})
+export function bsdcManifestContinuityTrustedCurrent(current,historical){
+ const cfg=BSDC_MANIFEST_CONTINUITY;let bytes
+ try{bytes=current(cfg.recordPath)}catch(e){
+  if(e?.code==='ENOENT'||e?.status===128&&["' does not exist in ","' exists on disk, but not in "].some(s=>String(e.stderr??e.message??'').includes("'"+cfg.recordPath+s)))return current
+  throw e
+ }
+ if(calendarHash(bytes)!==cfg.recordSha256)fail('BSDC_MANIFEST_EVIDENCE_REJECTED')
+ const a=JSON.parse(bytes)
+ if(a.scope!=='BSDC_V11_DOCUMENTATION_MANIFEST_CONTINUITY'||a.previousSourceSha!==cfg.baseSha||a.priorReceiptsChanged!==false||a.productRuntimeChanged!==false||a.accessOrDeploymentAuthorized!==false)fail('BSDC_MANIFEST_SCOPE_REJECTED')
+ if(calendarHash(current(cfg.helperPath))!==cfg.helperSha256)fail('BSDC_MANIFEST_HELPER_REJECTED')
+ if(calendarHash(current(cfg.testPath))!==cfg.testSha256)fail('BSDC_CONTINUITY_TEST_REJECTED')
+ const previous=Buffer.from(historical(cfg.baseSha,cfg.manifestPath)),previousHelper=Buffer.from(historical(cfg.baseSha,cfg.helperPath)),previousTest=Buffer.from(historical(cfg.baseSha,cfg.testPath))
+ if(calendarHash(previous)!==cfg.previousManifestSha256||calendarHash(previousHelper)!==cfg.previousHelperSha256||calendarHash(previousTest)!==cfg.previousTestSha256)fail('BSDC_MANIFEST_HISTORY_REJECTED')
+ const actual=calendarHash(current(cfg.manifestPath))
+ if(actual===cfg.manifestSha256){
+  if(calendarKeys(a.sourceDigests)!==JSON.stringify([...cfg.sourcePaths].sort()))fail('BSDC_DOCUMENTATION_SCOPE_REJECTED')
+  for(const p of cfg.sourcePaths)if(calendarHash(current(p))!==a.sourceDigests[p])fail('BSDC_DOCUMENTATION_BYTES_REJECTED')
+ }else if(actual!==cfg.previousManifestSha256)fail('BSDC_MANIFEST_SUCCESSOR_REJECTED')
+ return p=>{
+  if(p===cfg.recordPath)throw Object.assign(Error('BSDC successor absent from predecessor'),{code:'ENOENT'})
+  if(p===cfg.manifestPath)return Buffer.from(previous)
+  if(p===cfg.helperPath)return Buffer.from(previousHelper)
+  if(p===cfg.testPath)return Buffer.from(previousTest)
+  return current(p)
+ }
+}
+function isPinnedBsdcDocumentationReview(files){
+ const entries=BSDC_V11_DOCUMENTATION_REVIEW.entries
+ return Array.isArray(files)&&files.length===Object.keys(entries).length&&new Set(files.map(f=>f?.filename)).size===files.length&&files.every(f=>{
+  const e=entries[f?.filename];return Object.hasOwn(entries,f?.filename)&&e&&e.sha===f.sha&&e.status===f.status&&!Object.hasOwn(f,'previous_filename')
+ })
+}
+export function assertBsdcDocumentationReviewEntry(file,entry){
+ const e=BSDC_V11_DOCUMENTATION_REVIEW.entries[file?.filename]
+ if(!e||file.sha!==e.sha||file.status!==e.status||entry!==e.mode+' blob '+e.sha+'\t'+file.filename+'\0')fail('BSDC_DOCUMENTATION_FILE_MODE_REJECTED')
+}
+function assertBsdcDocumentationRoutes(files,repositoryRoot){
+ for(const f of files){
+  const e=BSDC_V11_DOCUMENTATION_REVIEW.entries[f.filename],profile=resolveProjectProfile('ARCHITECTURE',repositoryRoot),route=resolveProjectRouting({profile,targets:[f.filename],repositoryRoot}),r=route.results[0]
+  if(profile.repository.slug!==REPOSITORY||!route.ok||route.results.length!==1||r.resolutionStatus!=='RESOLVED'||r.highestSpecificityMatchCount!==1||r.projectBoundaryStatus!=='ALLOWED'||r.baselineClassification!=='ALIGNED'||r.currentOwner!==e.owner||r.matchedSurfaceId!==e.surfaceId)fail('BSDC_DOCUMENTATION_ROUTING_REJECTED')
+ }
+}
+
 export function marketCalendarTrustedPredecessor(current,historical){
+ current=bsdcManifestContinuityTrustedCurrent(current,historical)
  current=calendarTestCompatibilityTrustedCurrent(current,historical)
  const cfg=ECR_MARKET_CALENDAR_PROVENANCE,review=ECR_MARKET_CALENDAR_REVIEW
  const consumer=optionalCalendarFile(current,cfg.consumerRecord)
@@ -5927,6 +5976,7 @@ export function marketCalendarTrustedPredecessor(current,historical){
 export function assertArchitectureFiles(pr, files, repositoryRoot = controlRoot()) {
   if (!Number.isInteger(pr.changed_files) || pr.changed_files < 1 || pr.changed_files > 300 || !shaPattern.test(pr.base?.sha ?? '')
     || !Array.isArray(files) || files.length !== pr.changed_files) fail('ARCHITECTURE_FILE_LIST_REQUIRED')
+  if(isPinnedBsdcDocumentationReview(files)){assertBsdcDocumentationRoutes(files,repositoryRoot);return}
   if(isPinnedCalendarTestReview(files)){assertCalendarTestRoutes(files,repositoryRoot);return}
   if(isPinnedEcrMarketCalendarReview(files)){assertEcrMarketCalendarRoutes(files,repositoryRoot);return}
   if(isPinnedPrivateRecurringReview(files)){assertPrivateRecurringRoutes(files,repositoryRoot);return}
@@ -5973,6 +6023,7 @@ export function assertArchitectureFiles(pr, files, repositoryRoot = controlRoot(
 
 export function selectCandidate(context, pr, expectedSha, {files, repositoryRoot = controlRoot()} = {}) {
   const family = candidateFamily(context, pr, expectedSha)
+  if(pr&&(pr.number===BSDC_V11_DOCUMENTATION_REVIEW.prNumber||pr.head.ref===BSDC_V11_DOCUMENTATION_REVIEW.branch||isPinnedBsdcDocumentationReview(files))){if(family!=='ARCHITECTURE'||pr.number!==BSDC_V11_DOCUMENTATION_REVIEW.prNumber||pr.head.ref!==BSDC_V11_DOCUMENTATION_REVIEW.branch||!isPinnedBsdcDocumentationReview(files))fail('BSDC_DOCUMENTATION_REVIEW_IDENTITY_REJECTED')}
   if(pr&&(pr.number===ECR_CALENDAR_TEST_REVIEW.prNumber||pr.head.ref===ECR_CALENDAR_TEST_REVIEW.branch||isPinnedCalendarTestReview(files))){if(family!=='ARCHITECTURE'||pr.number!==ECR_CALENDAR_TEST_REVIEW.prNumber||pr.head.ref!==ECR_CALENDAR_TEST_REVIEW.branch||!isPinnedCalendarTestReview(files))fail('CALENDAR_TEST_REVIEW_IDENTITY_REJECTED')}
   if(pr&&(pr.number===ECR_MARKET_CALENDAR_REVIEW.prNumber||pr.head.ref===ECR_MARKET_CALENDAR_REVIEW.branch||isPinnedEcrMarketCalendarReview(files))){if(family!=='ARCHITECTURE'||pr.number!==ECR_MARKET_CALENDAR_REVIEW.prNumber||pr.head.ref!==ECR_MARKET_CALENDAR_REVIEW.branch||!isPinnedEcrMarketCalendarReview(files))fail('ECR_MARKET_CALENDAR_REVIEW_IDENTITY_REJECTED')}
   const recurringReview=privateRecurringReview(files)
@@ -6071,6 +6122,7 @@ export function assertArchitectureCheckout(root, sha, admission, repositoryRoot 
     const entry = execFileSync('git', ['ls-tree', '-z', sha, '--', file.filename], {cwd: root, encoding: 'utf8'})
     if (file.status === 'removed') {if (entry !== '') fail('ARCHITECTURE_DIFF_MISMATCH'); continue}
     if(isPinnedAssistantQualityG1Review(admission.files))assertAssistantQualityG1ReviewEntry(file,entry)
+    if(isPinnedBsdcDocumentationReview(admission.files))assertBsdcDocumentationReviewEntry(file,entry)
     if(isPinnedCalendarTestReview(admission.files))assertCalendarTestReviewEntry(file,entry)
     if(isPinnedEcrMarketCalendarReview(admission.files))assertEcrMarketCalendarReviewEntry(file,entry)
     if(isPinnedPrivateRecurringReview(admission.files))assertPrivateRecurringReviewEntry(file,entry)
