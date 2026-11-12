@@ -5,7 +5,21 @@ import assert from 'node:assert/strict'
 import {randomUUID} from 'node:crypto'
 import {spawnSync} from 'node:child_process'
 import {createAssistantUsageStore} from '@profitia/platform-contracts/assistant-usage'
-import {createAssistantModel} from '../lib/assistant/model'
+import {createAssistantModel,adaptAssistantUsageQuery} from '../lib/assistant/model'
+
+test('native Limits denials survive Prisma wrapping without another query or exposing database text',async()=>{
+ for(const reason of ['LIMIT_EXCEEDED','IDEMPOTENCY_CONFLICT','POLICY_UNAVAILABLE']){
+  let queries=0
+  const query=adaptAssistantUsageQuery(async()=>{queries++;throw Object.assign(Error('PRIVATE_DATABASE_DETAIL'),{code:'P2010',meta:{code:'P0001',message:'ERROR: '+reason}})})
+  const usage=createAssistantUsageStore({query,schemaDigest:'a'.repeat(64),commandKey:'b'.repeat(64)})
+  await assert.rejects(()=>usage.reserve({actorId:randomUUID(),organisationId:randomUUID(),commandId:randomUUID(),decisionId:randomUUID(),input:[{role:'user',content:'Synthetic question'}],expectedPolicy:{id:randomUUID(),assignmentId:randomUUID(),assignmentRevision:1}}),(error:any)=>error.code===reason&&!error.message.includes('PRIVATE_DATABASE_DETAIL'))
+  assert.equal(queries,1)
+ }
+ for(const original of [Object.assign(Error('LIMIT_EXCEEDED'),{code:'OTHER',meta:{code:'P0001',message:'ERROR: LIMIT_EXCEEDED'}}),Object.assign(Error('unknown'),{code:'P2010',meta:{code:'42501',message:'ERROR: LIMIT_EXCEEDED'}}),Object.assign(Error('unknown'),{code:'P2010',meta:{code:'P0001',message:'ERROR: LIMIT_EXCEEDED private detail'}}),null]){
+  const query=adaptAssistantUsageQuery(async()=>{throw original})
+  await assert.rejects(()=>query('SELECT 1'),error=>error===original)
+ }
+})
 test('reading disabled assistant configuration leaves legacy provider environment initialisation lazy',()=>{
  const result=spawnSync(process.execPath,['--import','tsx','--input-type=module','-e',`
   import assert from 'node:assert/strict';

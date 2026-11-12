@@ -1,0 +1,58 @@
+{
+  "schemaVersion": "ECRMarketCalendarPrivateAccess/1",
+  "status": "PROPOSED_NOT_ACTIVATED",
+  "taskId": "ARCHITECTURE-ECR-MARKET-CALENDAR-CONSUMER-20261111",
+  "targetEnvironment": "development",
+  "identity": {
+    "projectId": "spring-bread-28217539",
+    "branchId": "br-sparkling-term-b99l107x",
+    "databaseName": "platform_private",
+    "ownerRole": "profitia_access_owner",
+    "temporaryOperatorSetRole": {
+      "operator": "neondb_owner",
+      "restoreExactMembershipsBeforeCommit": true
+    }
+  },
+  "organisationId": "225e465b-8b89-467d-92d1-7fef61b555fe",
+  "acceptanceUserId": "092c2d9f-a84b-4c18-b3d6-e172a61399b8",
+  "product": "SPENDGURU",
+  "addFeatureOnly": "personal_workspace",
+  "productApplications": [
+    "spendguru",
+    "profitia-economic-calendar-runtime-development"
+  ],
+  "preserveProductExpiry": true,
+  "permissionGrants": [
+    {
+      "grantId": "64a54c25-a59e-40cd-9209-ee0b06ec1ebd",
+      "applicationId": "profitia-economic-calendar-runtime-development",
+      "effect": "ALLOW",
+      "operation": "personal.list.read",
+      "feature": "personal_workspace",
+      "resourceId": "economic-calendar-preferences"
+    },
+    {
+      "grantId": "40519cd3-8459-4fc8-b211-fa8966bf6574",
+      "applicationId": "profitia-economic-calendar-runtime-development",
+      "effect": "ALLOW",
+      "operation": "personal.list.write",
+      "feature": "personal_workspace",
+      "resourceId": "economic-calendar-preferences"
+    }
+  ],
+  "scope": "EXISTING_OWNER_ACCEPTANCE_ONLY_NOT_A_FUTURE_MANUAL_USER_ENROLMENT_POLICY",
+  "producerPackage": "@profitia/economic-calendar-contracts@1.3.0",
+  "existingEventWireContract": "profitia.economic-calendar/1.1.0",
+  "developmentReleases": [
+    "economic-calendar-runtime-development",
+    "sg2-development-runtime"
+  ],
+  "newResources": false,
+  "newCosts": false,
+  "databaseMigration": false,
+  "serviceGrantChanged": false,
+  "sourceHubChanged": false,
+  "providerLicenceChanged": false,
+  "notificationsDelivery": false,
+  "rollback": "Restore only added feature values and revoke only two new exact private grants; preserve user data, prior grants, observations, historical receipts and current LKG releases."
+}
