@@ -470,5 +470,26 @@
     "apps/platform-source-hub/migrations/011-expanded-ecr-results.sql": "ddb153d529dfcab0db41d00bf051fb0d301ab0f432d80a51beb417aaf1916521",
     "packages/platform-contracts/current-e1-authority/migrations/015-calendar-delivery.sql": "f561b9bcd369886d3db6210d3411e626ad64cd3d2a763a0e5d8f99afd066f68e",
     "apps/economic-calendar-runtime/operations/expanded-semantic-bootstrap.json": "ca7bf3046850011ee3aa050059b3630ed6d380c0d40009d72afd44de504a289a"
+  },
+  "calendarStorageRights": {
+    "consumerApplicationId": "profitia-economic-calendar-runtime-development",
+    "provider": "eia",
+    "family": "publication-calendar",
+    "publicationRefs": [
+      "eia:wpsr",
+      "eia:steo",
+      "eia:gasdiesel",
+      "eia:heatingoilpropane"
+    ],
+    "licenceRef": "source-hub-eia-official-publication-schedules-20261109",
+    "retentionMode": "DURABLE_NO_FIXED_EXPIRY",
+    "redistribution": "PRIVATE_AUTHORISED_CONSUMER_ONLY",
+    "ownerOperations": [
+      "CAS set_calendar_consumer_storage for existing EIA row only",
+      "CAS economic_calendar.set_storage_policy for existing EIA row only"
+    ],
+    "basisRef": "OWNER_ACCEPTED_ECR_COMPLETE_FUNCTIONAL_20261112",
+    "preserveHistoricalRowsAndOtherProviders": true,
+    "sourceHubCacheRetentionSeconds": 0
   }
 }

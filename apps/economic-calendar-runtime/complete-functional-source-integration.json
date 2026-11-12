@@ -9,7 +9,7 @@
     "apps/architecture-lab/test/ecr-complete-functional-source.test.mjs": "2adb0c1cd857c475a59e1f74dc6843d0b0172868c5389876b5dfd028e2c5cfbe",
     "apps/economic-calendar-runtime/migrations/004-notifications.sql": "a4e906882a95700b1711ae4bf032a7762348b3fdfde83f18991e7c05f633ee74",
     "apps/economic-calendar-runtime/migrations/005-expanded-results.sql": "99f7c102d16c562ad9fbd92e0a5ebd67a55a51ef76f807e181f20108540e772f",
-    "apps/economic-calendar-runtime/operations/complete-functional-owner-plan.json": "d967f5bb06c02ff4c448063585644168c9c3e0c0baefcdc1e96a2e96a596cdd2",
+    "apps/economic-calendar-runtime/operations/complete-functional-owner-plan.json": "ca73dbffd599243ea5e6a3945101ba1d92cd5e4d2d943d1fb409178a1d55e1c1",
     "apps/economic-calendar-runtime/operations/expanded-semantic-bootstrap.json": "ca7bf3046850011ee3aa050059b3630ed6d380c0d40009d72afd44de504a289a",
     "apps/economic-calendar-runtime/package-lock.json": "63c0ff8d2cc497e513c58b15de320ec9dab26fcc926c902aeac047cb9ad6135e",
     "apps/economic-calendar-runtime/package.json": "bdfcd5ec3a210399e148adb3a76966837a8b2ab724e1732aebe29721c3fb2d05",
