@@ -14,7 +14,7 @@
 | Etap | D–E: rekomendacje danych QA i wykonawcy; C oraz F pozostają otwarte |
 | Utworzono / zaktualizowano | 2026-11-12 / 2026-11-12, Europe/Warsaw |
 | Rewizja | 4 |
-| Rewizja bazowa ostatniej aktualizacji | PDR 90fb09abafa8ff6886dfe14feff76d43a1cf5563; aktualne źródła governance main 46094e5654066552768264dd47027eaa18e833a4 |
+| Rewizja bazowa ostatniej aktualizacji | PDR 90fb09abafa8ff6886dfe14feff76d43a1cf5563; aktualne źródła governance main ce5044a6c87937da80ee2db86dbcb54522ddd491 |
 | Zadanie inicjalizacji | ARCH-BSDC-CIC-QUALITY-INIT-20261112 |
 | Zadanie bieżącej aktualizacji | ARCH-BSDC-CIC-QUALITY-DATA-EXECUTOR-20261112 |
 | Upoważnienie | Uruchomienie BSDC i prowadzenie jednej roboczej karty. Bez implementacji produktu, aktywacji kanonu, zasobów, płatnych przebiegów i deploymentów. |
