@@ -5577,14 +5577,13 @@ export const ASSISTANT_ECR_WEEK_REVIEW=Object.freeze({
 // SDK/ECR/Recurring checks; never execute candidate code with credentials.
 export const OIL_RENDERER_SUCCESSOR_REVIEW=Object.freeze({
   "recordPath": "apps/sg-runtime/oil-renderer-integration.json",
-  "recordSha256": "86aac15d5fd9d51fc5de3c7768ac2ef2808595575fbf00168e36eaa4d26705f5",
+  "recordSha256": "6afdd65e66d8a7d8ceb4ab68601ba6d1c1bfac43bbac879d01bb61c9962e7ad6",
   "previousSourceSha": "bfc4a228d9f3d583c37c5fd984c7e4da602bf75d",
-  "currentMainSha": "924f803f807f63de2505734b50883c9047e78a70",
+  "currentMainSha": "46094e5654066552768264dd47027eaa18e833a4",
   "sourceDigests": {
     "apps/insights-runtime/render/report.py": "fc60502cbab052bbe90f7598b437b896bcd94c32fc6037d48203bf0e5d6456cf",
     "apps/insights-runtime/tests/postgres.test.mjs": "f887f544b7eced7928d41b0ed84b0e5b0ccd4b7828f7272d10f42e19a5409a47",
-    "apps/sg-runtime/tests/assistant-ecr-week-integrity.mjs": "08454d17f56f2ad052f0d6f5d41813d58b966fa2c68528d34f747ae7b95397ad",
-    "apps/sg-runtime/tests/pci-smart-integrity.test.mjs": "b83120968a9fe9fce725f05c6083161b6b7e3a67df1a51fa7a3cf2e1071785c2"
+    "apps/sg-runtime/tests/assistant-ecr-week-integrity.mjs": "c821676bb3a38295be2c48e2dd7766a9f4a29a5c264c9e6de3ca37b2a89e585b"
   },
   "preservedReceipts": {
     "apps/sg-runtime/operation-integration.json": "a6bf50993c98a71aeccd349dd904baafb53b3cd653324d97bab3fc5e34ac509f",
