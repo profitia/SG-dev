@@ -5543,6 +5543,61 @@ export const ASSISTANT_ECR_WEEK_REVIEW=Object.freeze({
     "apps/srm/private-recurring-source-adoption.json": "88d0252f634eface35b34adf31ac97cbf0d396fcf1fe6da452c74bdc23c7c633"
   }
 })
+
+// Closed renderer successor. Validate physical bytes before all existing
+// SDK/ECR/Recurring checks; never execute candidate code with credentials.
+export const OIL_RENDERER_SUCCESSOR_REVIEW=Object.freeze({
+  "recordPath": "apps/sg-runtime/oil-renderer-integration.json",
+  "recordSha256": "ae2064ed6c8d6310b54c9eec959e92003ef58a6b4e49f68a06dc348842414b78",
+  "previousSourceSha": "bfc4a228d9f3d583c37c5fd984c7e4da602bf75d",
+  "sourceDigests": {
+    "apps/insights-runtime/render/report.py": "fc60502cbab052bbe90f7598b437b896bcd94c32fc6037d48203bf0e5d6456cf",
+    "apps/insights-runtime/tests/postgres.test.mjs": "f887f544b7eced7928d41b0ed84b0e5b0ccd4b7828f7272d10f42e19a5409a47",
+    "apps/sg-runtime/tests/assistant-ecr-week-integrity.mjs": "9b879b5723b5161506f97259c7d01eb99221b1151552cc035e5ff55c06b4fe8a",
+    "apps/sg-runtime/tests/assistant-ecr-week-integrity.test.mjs": "6995359866c64cd1d6b92b84f22ee721b36754bfbd4d072f306da95c24e213e8",
+    "apps/sg-runtime/tests/pci-smart-integrity.test.mjs": "c98b920920d1997bbbfedf3d3e99fb1f616a5101afc7440706933562417f3f06"
+  },
+  "preservedReceipts": {
+    "apps/sg-runtime/operation-integration.json": "a6bf50993c98a71aeccd349dd904baafb53b3cd653324d97bab3fc5e34ac509f",
+    "apps/sg-runtime/assistant-context-integration.json": "d932f227977789643086b6a9eb179598a6f48071964b2d26ba82d25fceb7b2ec",
+    "apps/sg-runtime/procurement-insights-integration.json": "6dca06d8b0731e585925100b0578d41a61711f335940350d1ea32c296a3d7177",
+    "apps/sg-runtime/assistant-markdown-integration.json": "27ff06aff8bc44592f0073732748834b7759182fa4307d901c7d63304381a38b",
+    "apps/sg-runtime/registration-stage-i-integration.json": "4a7a572e67e12ed73c523502cef4cb432009e735737df851419d80898653f414",
+    "apps/sg-runtime/assistant-send-arrow-integration.json": "62c6af6817a022c31788d801cc0eac293a24b3f25d9e529d32b1bff4908fa230",
+    "apps/sg-runtime/assistant-ecr-integration.json": "5814e2e5cbdf1a32d22cff3aa55de806ec34c9debdecc21ff06c4f9f887a82bc",
+    "apps/sg-runtime/assistant-ecr-precision-integration.json": "a017c2b971e3c72606847264150715c983fa9483537d26be90144a64e0377ee7",
+    "apps/sg-runtime/assistant-ecr-week-integration.json": "31ce8f1d7e5ca1d9c3aedf80f92e23fe0f1a93cb8f5fd5d003eb54a244859dd4",
+    "apps/sg-runtime/private-recurring-source-adoption.json": "edf9d51c199251e148b39c92a3084944c1a4b8419be29175c88b6e2583df11f2",
+    "apps/architecture-lab/private-recurring-source.json": "75877d5750e07d1c8172be0af76bc5933f2eeefc22cc39747a2621b9cab24619",
+    "apps/architecture-lab/private-recurring-source-adoption.json": "a79c186897851acb93142949fe7aee19184cbfe68b3acdf51cbda084c00c1254",
+    "apps/srm/private-recurring-source-adoption.json": "88d0252f634eface35b34adf31ac97cbf0d396fcf1fe6da452c74bdc23c7c633",
+    "apps/architecture-lab/sdk-1.34-compatibility.json": "458ddbf661ce1a5666260a072a03f24ac016346bdd9a9efef7f2a1d497eee403"
+  }
+})
+export function oilRendererTrustedPredecessor(current,historical){
+ const r=OIL_RENDERER_SUCCESSOR_REVIEW
+ let bytes;try{bytes=current(r.recordPath)}catch(e){if(e?.code==='ENOENT')return current;throw e}
+ if(recurringHash(bytes)!==r.recordSha256)fail('OIL_RENDERER_RECORD_REJECTED')
+ for(const[p,pin]of Object.entries(r.sourceDigests))if(recurringHash(current(p))!==pin)fail('OIL_RENDERER_SOURCE_BYTES_REJECTED')
+ for(const[p,pin]of Object.entries(r.preservedReceipts))if(recurringHash(current(p))!==pin||recurringHash(historical(r.previousSourceSha,p))!==pin)fail('OIL_RENDERER_PREDECESSOR_REJECTED')
+ const cache=new Map()
+ return p=>{
+  if(p===r.recordPath)throw Object.assign(Error('Renderer successor absent from predecessor'),{code:'ENOENT'})
+  if(!Object.hasOwn(r.sourceDigests,p))return current(p)
+  if(!cache.has(p))cache.set(p,Buffer.from(historical(r.previousSourceSha,p)))
+  return Buffer.from(cache.get(p))
+ }
+}
+export function oilRendererCanonicalRead(root){
+ const physical=p=>{
+  const bytes=readRegistrationSdkFile(root,p)
+  if(fs.lstatSync(path.join(fs.realpathSync(root),p)).mode&0o111)fail('OIL_RENDERER_FILE_MODE_REJECTED')
+  return bytes
+ }
+ const historical=(sha,p)=>execFileSync('git',['show',sha+':'+p],{cwd:root,stdio:['ignore','pipe','ignore']})
+ return oilRendererTrustedPredecessor(physical,historical)
+}
+
 export function assertAssistantEcrWeekRecord(bytes,{sourceDigestForPath,currentReceiptDigestForPath,historicalReceiptDigestForPath}){
  if(recurringHash(bytes)!==ASSISTANT_ECR_WEEK_REVIEW.recordSha256)fail('ASSISTANT_ECR_WEEK_RECORD_REJECTED')
  for(const [p,h]of Object.entries(ASSISTANT_ECR_WEEK_REVIEW.sourceDigests))
@@ -5558,7 +5613,7 @@ export function assertAssistantEcrWeekRecord(bytes,{sourceDigestForPath,currentR
 function registrationEcrWeekCanonicalRead(root,physical){
  let bytes;try{bytes=physical('packages/platform-contracts/test/organisation-sdk-compatibility.json')}catch(e){if(e?.code==='ENOENT')return null;throw e}
  if(registrationHash(bytes)!==REGISTRATION_SDK_ECR_WEEK_PROVENANCE.recordDigest)return null
- const record=assertRegistrationSdkProvenance(root),profile=REGISTRATION_SDK_ECR_WEEK_PROVENANCE
+ const record=assertRegistrationSdkProvenance(root,physical),profile=REGISTRATION_SDK_ECR_WEEK_PROVENANCE
  for(const[p,e]of Object.entries(REGISTRATION_SDK_REVIEW.entries)){
   const b=physical(p),blob=createHash('sha1').update('blob '+b.length+'\0').update(b).digest('hex')
   if(e.mode!=='100644'||blob!==e.sha)fail('REGISTRATION_SDK_SOURCE_BYTES_REJECTED')
@@ -5575,9 +5630,10 @@ function registrationEcrWeekCanonicalRead(root,physical){
 
 export function assistantEcrWeekSourceProjection(root){
  const recordPath=ASSISTANT_ECR_WEEK_REVIEW.recordPath
- let bytes;try{bytes=readRegistrationSdkFile(root,recordPath)}catch(error){if(error?.code==='ENOENT')return null;throw error}
+ const rendererRead=oilRendererCanonicalRead(root)
+ let bytes;try{bytes=rendererRead(recordPath)}catch(error){if(error?.code==='ENOENT')return null;throw error}
  const physical=p=>{
-  const bytes=readRegistrationSdkFile(root,p)
+  const bytes=rendererRead(p)
   if(fs.lstatSync(path.join(fs.realpathSync(root),p)).mode&0o111)fail('ASSISTANT_ECR_WEEK_FILE_MODE_REJECTED')
   return bytes
  }
@@ -5587,7 +5643,7 @@ export function assistantEcrWeekSourceProjection(root){
   currentReceiptDigestForPath:p=>recurringHash(read(p)),historicalReceiptDigestForPath:p=>recurringHash(historical(p))})
  const mapped=new Set(Object.keys(ASSISTANT_ECR_WEEK_REVIEW.sourceDigests)),cache=new Map()
  return p=>{
-  if(!mapped.has(p))return canonical?canonical(p):readRegistrationSdkFile(root,p)
+  if(!mapped.has(p))return read(p)
   if(!cache.has(p))cache.set(p,historical(p))
   return Buffer.from(cache.get(p))
  }
@@ -5595,7 +5651,7 @@ export function assistantEcrWeekSourceProjection(root){
 
 export function assertPrivateRecurringProvenance(root){
  const calendarHistorical=(sha,p)=>execFileSync('git',['cat-file','blob',sha+':'+p],{cwd:root,stdio:['ignore','pipe','pipe']})
- const physical=marketCalendarTrustedPredecessor(p=>readRegistrationSdkFile(root,p),calendarHistorical)
+ const physical=marketCalendarTrustedPredecessor(oilRendererCanonicalRead(root),calendarHistorical)
  let bytes;try{bytes=physical(PRIVATE_RECURRING_PROVENANCE.recordPath)}catch(error){if(error?.code==='ENOENT')return null;throw error}
  // Authenticate the complete current graph before projecting only the exact
  // reviewed registration overlay onto accepted recurring main. No candidate JS.
@@ -5958,8 +6014,8 @@ export function readRegistrationSdkFile(root,name){
   return fs.readFileSync(file)
  }
 }
-export function assertRegistrationSdkProvenance(root){
- const base=fs.realpathSync(root),read=name=>readRegistrationSdkFile(base,name)
+export function assertRegistrationSdkProvenance(root,sourceRead){
+ const base=fs.realpathSync(root),read=sourceRead??oilRendererCanonicalRead(base)
  const bytes=read('packages/platform-contracts/test/organisation-sdk-compatibility.json'),previousSourceSha=registrationSdkRecordPredecessor(bytes)
  const files={SG2:'apps/sg-runtime/operation-integration.json',SRM:'apps/srm/operation-integration.json'}
  const receipts=Object.fromEntries(Object.entries(files).map(([k,p])=>[k,JSON.parse(read(p))]))

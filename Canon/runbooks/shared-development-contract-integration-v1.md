@@ -1,5 +1,16 @@
 # Przyjmowanie wspólnych kontraktów Development
 
+## Oil renderer — exact successor scope (2026-11-12)
+
+The separate bounded owner decision is recorded in
+`Canon/evidence/2026-11-12-oil-renderer-final-source-admission.md`.
+It preserves all historical receipts and existing CI, credential, ownership and
+source-integrity controls. The exact new renderer record is authenticated
+before the unchanged SDK/ECR/Recurring checks; no candidate module is evaluated
+with installation credentials. Required normal CI, original controlled proof
+and resulting-main verification precede source adoption. Development recovery
+still requires its own current, explicit release authorization.
+
 ## ECR Market Calendar — proposed exact producer review (2026-11-11)
 
 PROPOSED / OWNER_CI_APPROVAL_PENDING. The third-tab UX approval does not
