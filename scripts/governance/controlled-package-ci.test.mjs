@@ -2687,7 +2687,8 @@ test('Calendar historical-read correction retains the approved operation scope, 
   'apps/economic-calendar-runtime/migrations/005-expanded-results.sql',
   'apps/economic-calendar-runtime/operations/complete-functional-owner-plan.json',
   'apps/economic-calendar-runtime/src/result-links.mjs',
-  'apps/economic-calendar-runtime/test/expanded-results.test.mjs'
+  'apps/economic-calendar-runtime/test/expanded-results.test.mjs',
+  'apps/identity-runtime/test/calendar-authority-postgres.test.mjs'
  ])
  assert.deepEqual(changed(f.c,oldConsumer),[f.cfg.consumerRecord])
  const p='apps/economic-calendar-runtime/operations/complete-functional-owner-plan.json',migration='apps/economic-calendar-runtime/migrations/005-expanded-results.sql',old=f.historical(oldProducer,p),current=f.historical(f.p.sourceSha,p),a=JSON.parse(old),b=JSON.parse(current)

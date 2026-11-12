@@ -51,10 +51,11 @@ policydfcf2b84; the admin scope remains approved. A real PostgreSQL regression
 reproduced loss of visibility of retained readings when the active retention
 basis changes. No LIVE rights, data or deployment were changed.
 
-Corrected producer `5d34a5a96d1cb5c0fa123e701e4bcbd0c646d5b2` changes only six
+Corrected producer `4e1c46554f8937807ca80b1449e8f637f652dc68` changes only seven
 of the same54 paths: migration005, result-links, the PostgreSQL regression,
-owner-plan digest, source record and its verifier. Corrected SG2 consumer
-`9c7c8ee22066b5b934bf0bc004bf06937732d3bb` changes only its producer-record reference;
+owner-plan digest, source record, its verifier and the portable Identity
+PostgreSQL test setup. Corrected SG2 consumer
+`a7a83eb02568299922502ed364966c831dc66e88` changes only its producer-record reference;
 all six functional UI/lock/test files remain identical. The operation plan
 differs byte-for-byte in one migration005 digest value only; no administrative
 operation, scope, role, cost or permission is added.
@@ -71,3 +72,25 @@ controller-owner acceptance before activation. Original controlled proofs
 are retained as history and do not validate this changed candidate. Preserve
 accepted registration73, CIC, BSDC and all38 prior source receipts, then require
 fresh exact controlled/public and resulting-main gates.
+
+### Portable Identity fixture successor to approved02c1725f
+
+Owner accepted02c1725f and its history repair. Public Identity session-security
+CI then proved the job lacks native PostgreSQL binaries, while existing profile
+tests use ephemeral PostgreSQL16 Docker. The one Calendar authority test now
+reuses that bounded loopback-only fallback when no native/configured fixture
+exists. It preserves every SQL/E1 assertion, fails closed and cleans up its own
+container. The application, migration005, operation plan and all six SG2
+functional files are identical to the approved history repair. Local real PG
+authority test1/1 and source integrity2/2 pass; actual Ubuntu Docker-path CI
+remains required. The updated exact pins require acceptance; the old approval
+is retained and not represented as approval of this new policy.
+
+Actual Ubuntu run43293213813 / job131444577956 confirms the fallback:
+392/392 Identity tests, lint/typecheck/build and both consumer adoptions PASS.
+The later governance step still requires acceptance of the proposed exact
+Calendar source pins; no application-security assertion was weakened. The
+previous02c1725f full controller suite is269/269 PASS. The successor changes
+only exact references and the seven-path continuity assertion; six focused
+source/routing/SDK/receipt checks PASS. Fresh full public/controlled and
+resulting-main gates remain required before activation.

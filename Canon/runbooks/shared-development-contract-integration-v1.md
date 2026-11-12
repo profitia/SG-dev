@@ -961,3 +961,10 @@ This actual source-pin change requires exact corrective controller acceptance;
 the original GO is not approval for new protected bytes. Fresh exact controlled,
 public and resulting-main checks remain mandatory. See the current source
 commits and plan digest in [the admission](../evidence/2026-11-12-ecr-complete-functional-ci-admission.md).
+
+The same-path successor additionally gives the existing Calendar authority test
+the established Identity PostgreSQL16 loopback Docker fallback on CI without
+native binaries. Assertions, runtime, SQL, plan and administrative scope are
+unchanged from owner-approved02c1725f. Updated seven producer blobs plus the
+consumer record are exact-pinned; the six SG2 functional blobs remain identical.
+Fresh exact-pin acceptance and the actual Ubuntu CI result remain required.
