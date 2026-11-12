@@ -927,3 +927,22 @@ PROPOSED_NOT_ACTIVE / OWNER_CI_POLICY_ACCEPTANCE_PENDING. The owner commissioned
 The separate four-file policy proposal pins every path/blob/status and regular100644 mode under ASSISTANT_QUALITY_G1_REVIEW, binds PR1042, its exact internal Architecture branch and actual owner routes. A main refresh is allowed only while the five reviewed blobs/statuses/modes stay identical and the live expected SHA is revalidated. No wildcard Canon/package/workflow admission is added. Package pins, read:packages-only credentials, main-only Environment, ignore-scripts installation, token removal before candidate execution, complete source provenance and all public/controlled/resulting-main gates remain mandatory.
 
 After explicit controller-owner acceptance, obtain controlled proof for the policy bootstrap from trusted main, accept the policy only after required checks, then dispatch the same trusted-main proof for the exact current PR1042 head. Source ownership becomes effective only after G1 main acceptance and independent readback. This admission creates no QA service grant, SQL installation, data rights, resource, cost or deployment authority and does not start Stage2. See [the exact proposal and five-file manifest](../evidence/2026-11-12-assistant-quality-g1-ci-admission.md).
+
+## ECR notifications and coverage — proposed closed continuation (2026-11-12)
+
+PROPOSED / OWNER_CI_APPROVAL_PENDING. The separate Architecture producer PR1063
+and SG2 consumer PR1064 are bound by their exact54 and7 source closures in the
+trusted controller. Preserve every accepted registration70, ECR-week,
+Calendar99, Oil42 and BSDC1062 guard and historical receipt. Authenticate the
+new graph before exposing a predecessor; never import candidate JavaScript
+while a registry credential is available. The exact legacy SDK1.7.1 lock bridge
+ends at the separately verified1.8 consumer adoption and opens no general path,
+package or provider exception. The concrete review, scope and actual checks
+are in [the proposed admission](../evidence/2026-11-12-ecr-complete-functional-ci-admission.md).
+
+Explicit owner acceptance of the finished policy is required before its
+trusted-main validation/admission. Then require exact producer and separate
+consumer public/controlled proofs and complete resulting-main checks before
+source integration. Runtime schema, licensing/retention, Identity/Mailgun
+purpose and credentials, release bindings, deployment and LIVE acceptance
+remain separate owner-controlled operations. This source policy grants none.
