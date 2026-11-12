@@ -1,0 +1,37 @@
+{
+  "taskId": "SG2-REGISTRATION-ORGANISATION-ACCESS-20261112",
+  "targetEnvironment": "development",
+  "status": "SOURCE_IMPLEMENTATION_CHECKPOINT_NOT_LIVE",
+  "producerSourceSha": "9cc92b4288c13fa7327b42daf01810c160c0c5d1",
+  "functionalChanges": [
+    "Empty same-origin POST BFF with two exact signed Identity routes and original Clerk bearer only",
+    "Account GET protocol unchanged; same-scope workspace renews until bounded lease expiry",
+    "Canonical organisation change, confirmed denial, session change and expiry clear old workspace and assistant scope",
+    "Explicit SPENDGURU_SAAS request-local own organisation selection across current private API wrappers; unbound dynamic default throws",
+    "Explicit current legacy member retains previous ACCOUNT_SELF shell; no product or business permission created"
+  ],
+  "validation": {
+    "focusedBoundaryContextReact": {
+      "passed": 17,
+      "failed": 0,
+      "skipped": 0,
+      "cancelled": 0
+    },
+    "wholeTypecheck": "PENDING controlled dependency setup: three existing private packages, React DOM types and existing Insights workspace link are absent from this public-only fixture; new access/context type errors corrected",
+    "runtimeBrowser": "NOT_RUN",
+    "provider": "FIXTURES_ONLY"
+  },
+  "remaining": [
+    "Finish assistant runtime SaaS selector and shared resource lifecycle",
+    "Joint exact SDK/consumer source admission and complete CI/build",
+    "Development additive SQL/purpose/peer configuration and exact-SHA deployment",
+    "Real Clerk/browser/MGBI/mail/tenant-isolation and manual package acceptance"
+  ],
+  "effects": {
+    "liveSql": false,
+    "permissionsChanged": false,
+    "providerCalls": false,
+    "mailSent": false,
+    "deployed": false
+  }
+}

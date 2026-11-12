@@ -1,3 +1,4 @@
+import {organisationContextConfiguration,createSg2OrganisationContextReader} from './organisation-context'
 import {readDiscoveryConfiguration} from '@/lib/benchmark/discovery-runtime'
 import {readAssistantConfiguration,type AssistantConfiguration,type AssistantRuntime} from '@/lib/assistant/runtime'
 import type {DiscoveryApi} from '@/lib/benchmark/discovery-api'
@@ -36,8 +37,10 @@ export function validateNativeDashboardBinding(input: unknown): NativeDashboardB
 
 export type Sg2SelectionRuntime = Readonly<{ provider: 'legacy_demo' } | {
   provider: 'clerk'; executor: OperationExecutor<Prisma.TransactionClient>; defaultOrganisationId: string
+  currentOrganisation?:(request:Request)=>Promise<Readonly<{userId:string;organisationId:string|null;expiresAt:string}>>
   benchmarkDiscovery?:()=>Promise<DiscoveryApi>
   assistant?:()=>Promise<AssistantRuntime>
+  assistantForOrganisation?:(organisationId:string)=>Promise<AssistantRuntime>
   dashboardEmbed?: NativeDashboardBinding
   supplierSummary?: Readonly<{ executor: OperationExecutor<Prisma.TransactionClient>; origin: string }>
   category?: Readonly<{ executor: OperationExecutor<Prisma.TransactionClient> }>
@@ -56,6 +59,7 @@ type PrivateConfiguration = Readonly<{
   provider: 'clerk'; databaseUrl: string; application: Application; identity: IdentityApplication
   discovery?:NonNullable<ReturnType<typeof readDiscoveryConfiguration>>
   assistant?:AssistantConfiguration
+  organisationContext?:Readonly<{schemaDigest:string}>
   binding: AccessStoreBinding; module: { id: 'benchmark'; schemaDigest: string; auditSchemaDigest: string }
   dashboardEmbed?: NativeDashboardBinding
   supplierSummary?: Readonly<{ origin: string; configurationVersion: string }>
@@ -76,6 +80,7 @@ export function readSg2PrivateSelectionConfiguration(env: EnvironmentInput = pro
   // The new private Staging/Production bindings are deliberately not invented.
   if (identity.application.environment !== 'development') unavailable()
   const target = targets.environments.development
+  const organisationContext=organisationContextConfiguration(env)
   for (const flag of ['PROFITIA_SUPPLIER_SUMMARY_ENABLED','PROFITIA_CATEGORY_ENABLED','PROFITIA_MARKET_READ_ENABLED','PROFITIA_FORECAST_READ_ENABLED','PROFITIA_DASHBOARD_EMBED_ENABLED','PROFITIA_FORECAST_REQUEST_ENABLED','PROFITIA_FORECAST_DISPATCH_ENABLED']) {
     if (env[flag] !== undefined && !['true','false'].includes(env[flag]!)) unavailable()
   }
@@ -83,7 +88,7 @@ export function readSg2PrivateSelectionConfiguration(env: EnvironmentInput = pro
   if (env.PROFITIA_OPERATION_CONFIGURATION_VERSION !== targets.configurationVersion
     || env.RENDER_SERVICE_ID !== target.serviceId || !/^[a-f0-9]{40}$/.test(env.RENDER_GIT_COMMIT ?? '')
     || (env.APP_ENV !== undefined && env.APP_ENV !== identity.application.environment)
-    || !uuid.test(env.PROFITIA_FIXED_ORGANISATION_ID ?? '')) unavailable()
+    || (!organisationContext&&!uuid.test(env.PROFITIA_FIXED_ORGANISATION_ID ?? ''))) unavailable()
   const input = env.PROFITIA_PRIVATE_DATABASE_URL
   if (!input || input !== input.trim()) unavailable()
   let url: URL
@@ -136,11 +141,11 @@ export function readSg2PrivateSelectionConfiguration(env: EnvironmentInput = pro
   }
   const discovery=readDiscoveryConfiguration(env)
   const assistant=readAssistantConfiguration(env)
-  const configuration: PrivateConfiguration = { ...(discovery?{discovery}:{}),...(assistant?{assistant}:{}), provider: 'clerk', databaseUrl: url.toString(), identity: { ...identity.application,
+  const configuration: PrivateConfiguration = { ...(organisationContext?{organisationContext}:{}), ...(discovery?{discovery}:{}),...(assistant?{assistant}:{}), provider: 'clerk', databaseUrl: url.toString(), identity: { ...identity.application,
     requestBoundary: { publicOrigins: [...identity.application.authorizedParties], internalOrigins: ['http://0.0.0.0:10000', 'https://0.0.0.0:10000', 'http://localhost:10000', 'https://localhost:10000'] } },
-    application: { appId: 'spendguru', profileId: 'PORR_SUITE', environment: 'development',
+    application: { appId: 'spendguru', profileId: organisationContext?'SPENDGURU_SAAS':'PORR_SUITE', environment: 'development',
       deploymentId: `${target.serviceId}:${env.RENDER_GIT_COMMIT}`, configurationVersion: targets.configurationVersion,
-      identityIssuer: identity.application.issuer, organisationId: env.PROFITIA_FIXED_ORGANISATION_ID!,
+      identityIssuer: identity.application.issuer, organisationId: organisationContext?null:env.PROFITIA_FIXED_ORGANISATION_ID!,
       operations: ['benchmark.selection.read', 'benchmark.selection.write'], features: ['benchmark'] },
     binding: { applicationId: 'spendguru', environment: 'development', projectId: target.projectId,
       branchId: target.branchId, databaseName: target.databaseName, role: target.runtimeRole, schemaDigest: target.accessSchemaDigest },
@@ -259,7 +264,12 @@ export function getSg2SelectionRuntime(env: EnvironmentInput = process.env): Sg2
     prisma,auditPrisma,clerk,application:config.application,identity:config.identity,binding:config.binding,market:marketRead?.analytics,forecast:forecastRead,
   });await runtime.ready();return runtime}):undefined
   const benchmarkDiscovery=config.discovery?()=>discoveryPromise??=import('@/lib/benchmark/discovery-runtime').then(({createDiscoveryRuntime})=>createDiscoveryRuntime(config.discovery!,{prisma,auditPrisma,clerk,application:config.application,identity:config.identity,binding:config.binding,module:config.module})):undefined
-  const runtime = Object.freeze({ provider: 'clerk' as const, executor, defaultOrganisationId: config.application.organisationId!,
+  const assistantForOrganisation=config.organisationContext&&config.assistant?async(organisationId:string)=>{if(!uuid.test(organisationId))unavailable();const {createSg2AssistantRuntime}=await import('@/lib/assistant/runtime');const runtime=createSg2AssistantRuntime(config.assistant!,{prisma,auditPrisma,clerk,application:{...config.application,organisationId},identity:config.identity,binding:config.binding,market:marketRead?.analytics,forecast:forecastRead});await runtime.ready();return runtime}:undefined
+  const organisationReader=config.organisationContext?createSg2OrganisationContextReader({prisma,auditPrisma,clerk,application:config.application,identity:config.identity,binding:config.binding,schemaDigest:config.organisationContext.schemaDigest}):undefined
+  const runtime = Object.freeze({ provider: 'clerk' as const, executor,
+    get defaultOrganisationId(){if(organisationReader)unavailable();return config.application.organisationId!},
+    ...(organisationReader?{currentOrganisation:(request:Request)=>organisationReader.read(request)}:{}),
+    ...(assistantForOrganisation?{assistantForOrganisation}:{}),
     ...(benchmarkDiscovery?{benchmarkDiscovery}:{}),...(assistant?{assistant}:{}),
     ...(forecastRequest ? { forecastRequest } : {}), ...(supplierSummary ? { supplierSummary } : {}), ...(category ? { category } : {}),...(marketRead?{marketRead}:{}), ...(forecastRead ? { forecastRead } : {}), ...(config.dashboardEmbed ? { dashboardEmbed: config.dashboardEmbed } : {}) })
   globalThis.__sg2PrivateSelectionRuntime__ = { key, runtime }
