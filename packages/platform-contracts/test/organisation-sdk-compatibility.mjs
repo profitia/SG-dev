@@ -1,6 +1,6 @@
 import {recurringConsentTransportPredecessor} from './recurring-consent-transport-source.mjs'
 import {procurementInsightsCompletionPredecessor} from '../../../apps/sg-runtime/tests/procurement-insights-completion-integrity.mjs'
-import {marketCalendarSourcePredecessor} from '../../../apps/architecture-lab/market-calendar-source.mjs'
+import {marketCalendarSourcePredecessor,bsdcManifestContinuityCurrent} from '../../../apps/architecture-lab/market-calendar-source.mjs'
 import {posix} from 'node:path'
 // Source acceptance and historical verification only. Never imported by a
 // product runtime or used as an identity, permission, licence or activation.
@@ -349,7 +349,7 @@ const mainComposition=Object.freeze({
     "apps/sg-runtime/tests/assistant-m2-integrity.mjs": "a9a761bd0742406f8a36c0ce5f44045d2783bfe505284e34c58057f3f204220e",
     "apps/sg-runtime/tests/assistant-m2-source-view.mjs": "37ff427f894617700e46b5bb70e1f090649c544140c3366bddba6e41d8167031",
     "apps/sg-runtime/tests/assistant-send-arrow-integrity.mjs": "04f9a2b75f9b64b400f34f39cafd35fdd1d895280c1093ec565d7370c885d6cc",
-    "apps/sg-runtime/tests/assistant-send-arrow-integrity.test.mjs": "ab23fa54b7a3abb9636c43ded0c8ea441745ef36b7ad75d32c0b7781df616443",
+    "apps/sg-runtime/tests/assistant-send-arrow-integrity.test.mjs": "54e91a6ffdf611d5cb49efefb43c42e1c08b36502b59a73c26821c9417412a00",
     "apps/sg-runtime/tests/diagnostic-telemetry-adoption.test.mjs": "d236f361ed38a9d5b18e348eca79378b7dcf921eec3eb9613bbfdaa9916d0806",
     "apps/sg-runtime/tests/market-calendar-integrity.mjs": "b1c2086196bb3b7827fb92f54014971692e239a2edc9fa3adc6bb91fedc62e61",
     "apps/sg-runtime/tests/market-calendar-integrity.test.mjs": "498c5c718c6748a02162f2fb078762e355909d4546ac9449b3903f5a51bdaf15",
@@ -358,7 +358,7 @@ const mainComposition=Object.freeze({
     "apps/sg-runtime/tests/operation-context.test.mjs": "6bfdde26ff7214056c84e6964b05bcbec8fe68ad20799323d53bd41feb77db77",
     "apps/sg-runtime/tests/organisation-sdk-history.test.mjs": "3661d42f176f07c377f45fa582cf9baab844d9924a2cccd2dc64a8d871827eed",
     "apps/sg-runtime/tests/pci-smart-integrity.test.mjs": "f630a829fd33969020d9cee324cc3a60e7a8da5efdac2d3d3e2e45446bb3b0c3",
-    "apps/sg-runtime/tests/porr-demo-middleware.test.ts": "79e186a98cf1d964330cdbe2f9c13add1b30bdf703ef865a310812d295c3d820",
+    "apps/sg-runtime/tests/porr-demo-middleware.test.ts": "0e3191fd8e47dfc88b4753db8e0cebc999b27d7838e3c4f3b386ffce25b18cfc",
     "apps/sg-runtime/tests/private-host.integration.test.mjs": "2f76d4df55adb4b1e9c391482f3372c45573955c348f5869e2048657476de955",
     "apps/sg-runtime/tests/procurement-insights-completion-integrity.mjs": "0359f3796885e91be502c39465eababadab49e489ae207cf5abde2facf449e4e",
     "apps/sg-runtime/tests/procurement-insights-completion.test.mjs": "69c235e9a74cfc780f600f93b21e359a58adaf8d938e2139858e3980976ed3ed",
@@ -558,7 +558,10 @@ const mainComposition=Object.freeze({
     "packages/platform-contracts/test/private-operation-host.test.mjs": "604a1459b33a8b45ec76f3af21974459d481bc48197f9894b2d203553f62b287",
     "packages/platform-contracts/test/recurring-consent-transport-source.json": "0c9ffe5bfd89cf2bd65cd9adc7ad241a04e7468b5821f97171f4a6c550aaba36",
     "packages/platform-contracts/test/recurring-consent-transport-source.mjs": "cdd6edb2f7018545ad60dd62b2b8fee2d46de01c7123e8a4d5f1aaac32df816d",
-    "packages/platform-contracts/test/recurring-consent-transport.test.mjs": "20bcb51d4f35e82e889eaee49c1d006f047f46452225ea708b24b40b768538c2"
+    "packages/platform-contracts/test/recurring-consent-transport.test.mjs": "20bcb51d4f35e82e889eaee49c1d006f047f46452225ea708b24b40b768538c2",
+    "apps/architecture-lab/market-calendar-source.mjs": "8f57073b55c1233c4573e54185e352d6400d7baa47bd5303fefb7b893b123847",
+    "scripts/governance/platform-source-hub-foundation.test.mjs": "dadd4f9fcc5be03afee02ae51038efa48b07b3f9b2b62e9476a7b288c1d42d77",
+    "Canon/evidence/2026-11-12-bsdc-v11-manifest-continuity.json": "92fe69f99bbda13a9971d841cc391207d9e7944ccc516a68d9cc48b7a9151160"
   },
   "acceptedMainDigests": {
     "apps/architecture-lab/market-calendar-test-compatibility.json": "52e859d4a99bc4c8e4d986f38afea2d58e9c1fe1ee1e0eb62cc2672dbdb60078",
@@ -621,6 +624,16 @@ const mainComposition=Object.freeze({
     "packages/platform-contracts/test/recurring-consent-transport-source.json",
     "packages/platform-contracts/test/recurring-consent-transport-source.mjs",
     "packages/platform-contracts/test/recurring-consent-transport.test.mjs"
+  ],
+  "acceptedContinuations": [
+    {
+      "sourceSha": "09a39f3ac3cad19b12d525168f9c719ff842e8cc",
+      "sourceDigests": {
+        "apps/architecture-lab/market-calendar-source.mjs": "8f57073b55c1233c4573e54185e352d6400d7baa47bd5303fefb7b893b123847",
+        "scripts/governance/platform-source-hub-foundation.test.mjs": "dadd4f9fcc5be03afee02ae51038efa48b07b3f9b2b62e9476a7b288c1d42d77",
+        "Canon/evidence/2026-11-12-bsdc-v11-manifest-continuity.json": "92fe69f99bbda13a9971d841cc391207d9e7944ccc516a68d9cc48b7a9151160"
+      }
+    }
   ]
 })
 
@@ -635,11 +648,13 @@ function registrationMainComposition(current,historical){
  assert.equal(hash(transportBytes),mainComposition.transportRecordSha256,'exact accepted parallel transport record');
  for(const[p,digest]of Object.entries(mainComposition.physicalDigests))assert.equal(hash(current(p)),digest,(p.startsWith('apps/sg-runtime/tests/')?'current SG2 acceptance ':'current composed registration/PI source ')+p);
  for(const[p,digest]of Object.entries(mainComposition.acceptedMainDigests))assert.equal(hash(historicalSource(historical,mainComposition.acceptedMainSha,p)),digest,'immutable accepted parallel source '+p);
+ for(const continuation of mainComposition.acceptedContinuations)for(const[p,digest]of Object.entries(continuation.sourceDigests))assert.equal(hash(historicalSource(historical,continuation.sourceSha,p)),digest,'immutable accepted continuity '+p);
+ const documentation=bsdcManifestContinuityCurrent(current,historical);
  const mainView=p=>historicalSource(historical,mainComposition.acceptedMainSha,p);
  const transport=recurringConsentTransportPredecessor(mainView,historical);assert(transport,'accepted transport closure required');
  const completion=procurementInsightsCompletionPredecessor(mainView,historical);assert(completion,'accepted PI closure required');
  const mapped=new Set(mainComposition.projectedPaths);
- const absent=new Set(mainComposition.absentFromRegistration);const registration=p=>{if(absent.has(p))throw Object.assign(Error('Parallel addition absent from registration predecessor'),{code:'ENOENT'});return mapped.has(p)?historicalSource(historical,mainComposition.registrationSourceSha,p):current(p)};
+ const absent=new Set(mainComposition.absentFromRegistration);const registration=p=>{if(absent.has(p))throw Object.assign(Error('Parallel addition absent from registration predecessor'),{code:'ENOENT'});return mapped.has(p)?historicalSource(historical,mainComposition.registrationSourceSha,p):documentation(p)};
  return {registration,transport,completion,acceptedMain:mainView,physicalDigests:mainComposition.physicalDigests};
 }
 

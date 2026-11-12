@@ -39,7 +39,7 @@ test('send-arrow source rejects amended files, rewritten receipts, expanded scop
  // Exercise the immutable canonical-icon rule inside both verified outer layers.
  assert.throws(()=>assistantSendArrowPredecessor(readerWithManifest(a,p=>p===SEND_ARROW_VIEW?changed:arrowCurrent(p)),historical),/only the canonical send icon/)
  // Current-view rebinding is rejected before any predecessor is exposed.
- if(sdk)assert.throws(()=>assistantSendArrowPredecessor(readerWithManifest(a,p=>p===SEND_ARROW_VIEW?changed:current(p)),historical),/preserved source apps\/sg-runtime\/assistant-send-arrow-integration\.json/)
+ if(sdk)assert.throws(()=>assistantSendArrowPredecessor(readerWithManifest(a,p=>p===SEND_ARROW_VIEW?changed:current(p)),historical),/(?:preserved source|current composed registration\/PI source) apps\/sg-runtime\/assistant-send-arrow-integration\.json/)
 })
 test('only an absent continuation may be skipped; unknown current and historical read errors remain fatal',()=>{
  assert.equal(assistantSendArrowPredecessor(p=>historical(SEND_ARROW_BASE,p),historical),null)
