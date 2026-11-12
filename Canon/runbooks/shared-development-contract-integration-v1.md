@@ -747,3 +747,24 @@ The source may use original983 coordinated transport only after mandatory exact
 producer/SG2/SRM tests, controlled/public proof and actual SOURCE GO. New source
 or a changed record never inherits this decision. No productSQL/grants/packages,
 provider/model/mail/DNS/runtime activation or deployment is authorized here.
+
+## Owner-approved registration and ECR-week composition — same67 (2026-11-12)
+
+Owner decision in the Stage I execution chat: “Zatwierdzam i dokończ wdrożenie.”
+This explicitly accepts PR1036 at790eb1a2 and its exact inert five-file review,
+accepted at3e703dd2. The same67 map4086004f binds prepared sourceb9779781 and
+recordb0b9ceb1;61 B5 source blobs and all165 SDK production sources remain
+unchanged. Preserve the complete approved B5/FFE67 maps, both65 maps and every
+older source/recurring/ECR review. The frozen a176cf99 patch retains all14 prior
+ECR/Market Calendar test bodies and authenticates the complete physical SDK and
+ECR source graphs before its two exactly pinned predecessor views.
+
+This four-file policy requires independent exact protected/public/governance
+and complete resulting-main acceptance. Then require the coordinated PR983
+producer and actual SG2/SRM owner source checks, exact controlled/public source
+proof and final SOURCE GO. The current chat authorizes continued Stage I
+implementation; source acceptance is not runtime readiness. Existing credential,
+main-only Environment, package pins, ignore-scripts, token removal, complete
+diff/mode/owner and exact-head/race fences remain mandatory. No business grant,
+product SQL installation, invitation delivery or deployment occurs through
+this CI-only change. Continue the parent Stage I after this bounded gate closes.
