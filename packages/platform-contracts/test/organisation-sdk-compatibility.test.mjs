@@ -218,7 +218,20 @@ test('accepted a805 Calendar corrective69 graph remains complete at its actual i
 });
 
 test('accepted Calendar consumer closes all20 physical paths and its immutable record before projection',()=>{
- const p='apps/sg-runtime/market-calendar-integration.json',a=JSON.parse(current(p));assert.equal(hash(current(p)),'42406b5b07071408d35e39d5b9bb20d18402e52581d3c516bb08fb68b718f119');assert.equal(Object.keys(a.sourceDigests).length,20);
+ const p='apps/sg-runtime/market-calendar-integration.json',a=JSON.parse(current(p));assert.equal(hash(current(p)),'b66d88e724f84d513677554e77484bc29a2021b238ce28d4b7db7492aba9903c');assert.equal(Object.keys(a.sourceDigests).length,20);
  for(const f of [p,...Object.keys(a.sourceDigests)])assert.throws(()=>sdkContinuationPredecessor(receipt('SG2'),n=>n===f?Buffer.concat([current(n),Buffer.from('UNREVIEWED')]):current(n),historical),f);
  assert.throws(()=>sdkContinuationPredecessor(receipt('SG2'),n=>{if(n===p)throw Object.assign(Error('Absent'),{code:'ENOENT'});return current(n)},historical));
 });
+
+test('immutable c26 Calendar consumer source remains accepted after navigation correction',()=>{
+ const old=p=>historical('b80e7577c3fea1e6c555796089d2336997631996',p)
+ assert.equal(hash(old(sourcePath)),'c26ca9c1c02b788bd010b315d5c522c8247fedb5b72d858eafd7780667c76bcb')
+ for(const projectKey of ['SG2','SRM'])assert(sdkContinuationPredecessor(receipt(projectKey,old),old,historical,{projectKey}))
+})
+
+test('accepted Oil source and record are closed before exposing historical ECR helpers',()=>{
+ const paths=['apps/sg-runtime/oil-renderer-integration.json','apps/insights-runtime/render/report.py','apps/insights-runtime/tests/postgres.test.mjs','apps/sg-runtime/tests/assistant-ecr-week-integrity.mjs']
+ for(const p of paths)assert.throws(()=>sdkContinuationPredecessor(receipt('SG2'),f=>f===p?Buffer.concat([current(f),Buffer.from('UNREVIEWED')]):current(f),historical,{projectKey:'SG2'}),p)
+ const prior=p=>historical('b80e7577c3fea1e6c555796089d2336997631996',p)
+ assert.equal(hash(prior('apps/sg-runtime/market-calendar-integration.json')),'42406b5b07071408d35e39d5b9bb20d18402e52581d3c516bb08fb68b718f119')
+})

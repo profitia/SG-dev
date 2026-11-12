@@ -112,3 +112,11 @@ test('schedule continuation rejects changed source, acceptance, predecessor and 
   }),target)
  }
 })
+
+test('organisation SDK authenticates the complete accepted Calendar consumer before historical producer projection',()=>{
+ assert(bootstrapSource?.calendarCurrent,'current Calendar view is required')
+ const recordPath='apps/sg-runtime/market-calendar-integration.json',calendar=JSON.parse(bootstrapSource.calendarCurrent(recordPath))
+ assert.equal(Object.keys(calendar.sourceDigests).length,20)
+ for(const[p,digest]of Object.entries(calendar.sourceDigests))assert.equal(hash(bootstrapSource.calendarCurrent(p)),digest,'current accepted Calendar consumer '+p)
+ for(const p of [recordPath,...Object.keys(calendar.sourceDigests)])assert.throws(()=>sdkContinuationPredecessor(JSON.parse(physicalSource('apps/sg-runtime/operation-integration.json')),file=>file===p?Buffer.concat([physicalSource(file),Buffer.from('UNREVIEWED')]):physicalSource(file),historicalSource),p)
+})
