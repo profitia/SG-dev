@@ -855,3 +855,23 @@ three exact historical guard pins. All prior assertions and tamper cases remain.
 ### Registration1046 — bounded69 technical repair delegation
 
 Owner accepted1046 on2026-11-12 and clarified Full Autopilot: ordinary test/provenance/integration repairs needed for the accepted Stage I outcome are completed autonomously, without per-hash questions. This extends the1041 exact68 closure by only apps/architecture-lab/test/market-calendar-source.test.mjs to69 source paths and retains the same4 policy/evidence paths. Exact current source maps, actual owners, protected/public/resulting-main tests and independent proofs remain mandatory. Frozen production SDK/native runtime/UI, SQL, package manifests/locks, receipts, authority, commercial/cost/provider/deployment rules are unchanged. This is no source or runtime activation and no waiver of any failing check. Source/CI and business Development acceptance remain separate.
+
+## Calendar producer/consumer test composition — proposed corrective (2026-11-12)
+
+Preparation only; requires a separate owner decision and all exact-head/public/main
+checks before activation. PR1044 at334273b2b5af0ad41a1489f31bc6bb56f36d3dbf
+closes exactly three Architecture test/adoption files on accepted main877c55c6.
+It preserves the original18-entry Calendar review, immutable producer recordE3,
+all registration/ECR-week controls and every previous receipt. The additive
+compatibility record52e859d4a99bc4c8e4d986f38afea2d58e9c1fe1ee1e0eb62cc2672dbdb60078
+verifies the physical test correction before projecting only that correction to
+its accepted predecessor. No candidate JavaScript is imported while credentials
+may exist. Actor, repository, branch/PR, regular-file, permission and proof fences
+remain mandatory. Executable files, symlinks and rebound source are refused.
+
+The never-accepted SG2 Calendar consumer closure additionally names three existing
+SG2 tests: ADP receiver compatibility, persistent AppShell route guarding and full
+candidate-source coverage. This makes20 consumer source paths; all12 historical
+SG2 receipts remain immutable. Ordinary UI/test adoption remains a separate SG2
+PR after the corrected producer is accepted. No runtime, contract, SQL, grant,
+provider, retention, deployment or notification decision is made by this policy.
