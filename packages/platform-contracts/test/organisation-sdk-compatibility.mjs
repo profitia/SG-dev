@@ -21,7 +21,7 @@ function historicalSource(reader,sha,path){
 const receiptPath=project=>'apps/'+(project==='SG2'?'sg-runtime':'srm')+'/operation-integration.json'
 const tasks={SG2:'SG2-REGISTRATION-ORGANISATION-HANDOFF-STAGE-I-20261110',SRM:'SRM-REGISTRATION-BOOTSTRAP-SDK-ADOPTION-20261111'}
 const known=Object.freeze({
- 'organisation-bootstrap-v1':Object.freeze({path:'packages/platform-contracts/test/organisation-sdk-compatibility.json',sha256:'020b9db676804688ce1758865084d2af02c42af169ede00c265432422e4d993e',successorSha256s:Object.freeze(['25fea141baf42c154f64a256d40808d548562c010e3f2fd3143657f24b15295c','ccf680f0a83b61f3944dd2823259e9487ddae5c2a7707b8d05e793241c4aae40','ffe2065f84e7a9808a74f896170588b9ff5fc66973096a15a407a7cbf006808d','b5a228db0a77f4cd7e2235506738a994fffcd741ff942e67717633d858c5b94a','b0b9ceb1799499cb2088ed8be523d6c1758573995e65ca53693b15eeaeafe698','8e3eb5304ba9f3270b8021341a7220dff29acd5bbcf6fcd8c4cb301bf7071059','52f6fbeba63a7585d3b909ca6cb5b91c1b6b2ebdeb118975473f312acc6ba7f3','d1274a8d5763e6ca31167ddb6796d46f542d567ac966554bc24f05eab7af2da1'])})
+ 'organisation-bootstrap-v1':Object.freeze({path:'packages/platform-contracts/test/organisation-sdk-compatibility.json',sha256:'020b9db676804688ce1758865084d2af02c42af169ede00c265432422e4d993e',successorSha256s:Object.freeze(['25fea141baf42c154f64a256d40808d548562c010e3f2fd3143657f24b15295c','ccf680f0a83b61f3944dd2823259e9487ddae5c2a7707b8d05e793241c4aae40','ffe2065f84e7a9808a74f896170588b9ff5fc66973096a15a407a7cbf006808d','b5a228db0a77f4cd7e2235506738a994fffcd741ff942e67717633d858c5b94a','b0b9ceb1799499cb2088ed8be523d6c1758573995e65ca53693b15eeaeafe698','8e3eb5304ba9f3270b8021341a7220dff29acd5bbcf6fcd8c4cb301bf7071059','52f6fbeba63a7585d3b909ca6cb5b91c1b6b2ebdeb118975473f312acc6ba7f3','49d746aad0ff4de6d0e910e2e3aaf7c53c9e4e0ab3aed9d86acd94761ec707ba'])})
 })
 // All supplemental reviewed source bytes are verified before exposing0775.
 // These pins add no runtime authority and apply only to reconciled1.36 history.
@@ -89,7 +89,7 @@ const parallelEcrWeekFrames=Object.freeze({
  'b0b9ceb1799499cb2088ed8be523d6c1758573995e65ca53693b15eeaeafe698':parallelEcrWeek,
  '8e3eb5304ba9f3270b8021341a7220dff29acd5bbcf6fcd8c4cb301bf7071059':Object.freeze({...parallelEcrWeek,recordSha256:'8e3eb5304ba9f3270b8021341a7220dff29acd5bbcf6fcd8c4cb301bf7071059',guardPins:Object.freeze({...parallelEcrWeek.guardPins,"apps/sg-runtime/tests/assistant-ecr-week-integrity.test.mjs":'0787795fdd513113107c3ee7e0b840a588f27186c5adfba92f7d8020aefda46f'})}),
  '52f6fbeba63a7585d3b909ca6cb5b91c1b6b2ebdeb118975473f312acc6ba7f3':Object.freeze({...parallelEcrWeek,recordSha256:'52f6fbeba63a7585d3b909ca6cb5b91c1b6b2ebdeb118975473f312acc6ba7f3',guardPins:Object.freeze({...parallelEcrWeek.guardPins,"apps/sg-runtime/tests/assistant-ecr-week-integrity.test.mjs":'0787795fdd513113107c3ee7e0b840a588f27186c5adfba92f7d8020aefda46f'})}),
- 'd1274a8d5763e6ca31167ddb6796d46f542d567ac966554bc24f05eab7af2da1':Object.freeze({...parallelEcrWeek,recordSha256:'d1274a8d5763e6ca31167ddb6796d46f542d567ac966554bc24f05eab7af2da1',guardPins:Object.freeze({...parallelEcrWeek.guardPins,"apps/sg-runtime/tests/assistant-ecr-week-integrity.test.mjs":'0787795fdd513113107c3ee7e0b840a588f27186c5adfba92f7d8020aefda46f'})})
+ '49d746aad0ff4de6d0e910e2e3aaf7c53c9e4e0ab3aed9d86acd94761ec707ba':Object.freeze({...parallelEcrWeek,recordSha256:'49d746aad0ff4de6d0e910e2e3aaf7c53c9e4e0ab3aed9d86acd94761ec707ba',guardPins:Object.freeze({...parallelEcrWeek.guardPins,"apps/sg-runtime/tests/assistant-ecr-week-integrity.test.mjs":'0787795fdd513113107c3ee7e0b840a588f27186c5adfba92f7d8020aefda46f'})})
 })
 function verifiedParallelEcrGuards(record,current,historical,profile=parallelEcrWeek){
  const bytes=cloneBytes(current(profile.receipt));assert.equal(hash(bytes),profile.receiptSha256,'exact parallel ECR source record');
@@ -120,21 +120,22 @@ const compatibilityTests=[
 // SDK and both receivers are authenticated first; Calendar source and every
 // preserved receipt are authenticated before any Calendar history is exposed.
 function verifiedCalendarPredecessor(record,current,historical,recordDigest){
- if(recordDigest!=='d1274a8d5763e6ca31167ddb6796d46f542d567ac966554bc24f05eab7af2da1')return current
- const source='877c55c6ef7879c088255284dd852d5cab6d5f44',pins={"apps/architecture-lab/private-recurring-source.mjs":"7cc45765fb91657a78eba8d48214886664e0648680c4cd3ea19119386e499b4d","apps/sg-runtime/tests/assistant-ecr-week-integrity.test.mjs":"e3b350ed2013c89f6d4215e9b68965685551198fd1463442b50aa0ae2e7e1d99"},cache=new Map()
+ if(recordDigest!=='49d746aad0ff4de6d0e910e2e3aaf7c53c9e4e0ab3aed9d86acd94761ec707ba')return null
+ const source='877c55c6ef7879c088255284dd852d5cab6d5f44',pins={"apps/architecture-lab/private-recurring-source.mjs":"7cc45765fb91657a78eba8d48214886664e0648680c4cd3ea19119386e499b4d","apps/sg-runtime/tests/assistant-ecr-week-integrity.test.mjs":"e3b350ed2013c89f6d4215e9b68965685551198fd1463442b50aa0ae2e7e1d99","apps/architecture-lab/test/market-calendar-source.test.mjs":"618f9e9643f17c7db385572bdd11e8b8c940504a55b0bae317094352878ca6a1"},cache=new Map()
  assert.equal(hash(current('apps/architecture-lab/market-calendar-source.mjs')),'fb08a9a2d21a59be5422a313663d5191473385a28faa8c253ffdddb166fcbfcd','accepted Calendar verifier bytes')
  for(const[p,h]of Object.entries(pins)){const b=cloneBytes(historicalSource(historical,source,p));assert.equal(hash(b),h,'actual accepted Calendar overlap '+p);cache.set(p,b)}
  let reader=p=>cache.has(p)?Buffer.from(cache.get(p)):current(p)
+ const acceptedCurrent=reader
  const first=marketCalendarSourcePredecessor(reader,historical);assert(first,'accepted Calendar source is required')
  reader=first.previousBytes
  for(let prior;(prior=marketCalendarSourcePredecessor(reader,historical));)reader=prior.previousBytes
- return reader
+ return {current:acceptedCurrent,previousBytes:reader}
 }
 function exactKeys(value,keys,label){assert(value&&Object.getPrototypeOf(value)===Object.prototype,label);assert.deepEqual(Object.keys(value).sort(),[...keys].sort(),label)}
 function fileMap(value,label){assert(value&&Object.getPrototypeOf(value)===Object.prototype,label);assert(Object.keys(value).length>0,label);for(const[p,h]of Object.entries(value)){assert(/^[a-zA-Z0-9_./-]+$/.test(p)&&!p.split('/').includes('..')&&!p.startsWith('/'),label);assert(/^[a-f0-9]{64}$/.test(h),label)}}
 function cloneBytes(value){assert(value!==null&&value!==undefined,'missing source bytes');return Buffer.from(value)}
 function verifyRecord(a,current,historical,recordDigest){
- const complete=['ffe2065f84e7a9808a74f896170588b9ff5fc66973096a15a407a7cbf006808d','b5a228db0a77f4cd7e2235506738a994fffcd741ff942e67717633d858c5b94a','b0b9ceb1799499cb2088ed8be523d6c1758573995e65ca53693b15eeaeafe698','8e3eb5304ba9f3270b8021341a7220dff29acd5bbcf6fcd8c4cb301bf7071059','52f6fbeba63a7585d3b909ca6cb5b91c1b6b2ebdeb118975473f312acc6ba7f3','d1274a8d5763e6ca31167ddb6796d46f542d567ac966554bc24f05eab7af2da1'].includes(recordDigest)
+ const complete=['ffe2065f84e7a9808a74f896170588b9ff5fc66973096a15a407a7cbf006808d','b5a228db0a77f4cd7e2235506738a994fffcd741ff942e67717633d858c5b94a','b0b9ceb1799499cb2088ed8be523d6c1758573995e65ca53693b15eeaeafe698','8e3eb5304ba9f3270b8021341a7220dff29acd5bbcf6fcd8c4cb301bf7071059','52f6fbeba63a7585d3b909ca6cb5b91c1b6b2ebdeb118975473f312acc6ba7f3','49d746aad0ff4de6d0e910e2e3aaf7c53c9e4e0ab3aed9d86acd94761ec707ba'].includes(recordDigest)
  exactKeys(a,recordKeys,'closed organisation SDK source record')
  assert.equal(a.schemaVersion,'1.0');assert.equal(a.acceptanceId,'organisation-bootstrap-v1')
  assert.equal(a.taskId,'ARCH-REGISTRATION-ORGANISATION-STAGE-I-20261110')
@@ -147,7 +148,7 @@ function verifyRecord(a,current,historical,recordDigest){
  assert.deepEqual(a.optionalOperations,['organisation.create'])
  for(const flag of ['runtimeOptedIn','sqlInstalled','permissionsChanged','providerCallsPerformed','deploymentPerformed'])assert.equal(a[flag],false,flag)
  for(const field of ['sourceDigests','compatibilityTestSourceDigests','preservedSourceDigests'])fileMap(a[field],field)
- assert.deepEqual(Object.keys(a.compatibilityTestSourceDigests).sort(),complete?[...compatibilityTests,...["apps/architecture-lab/private-recurring-source.mjs","apps/architecture-lab/test/private-recurring-source.test.mjs"]].sort():compatibilityTests,'closed compatibility test changes')
+ assert.deepEqual(Object.keys(a.compatibilityTestSourceDigests).sort(),complete?[...compatibilityTests,...["apps/architecture-lab/private-recurring-source.mjs","apps/architecture-lab/test/private-recurring-source.test.mjs"],...(recordDigest==='49d746aad0ff4de6d0e910e2e3aaf7c53c9e4e0ab3aed9d86acd94761ec707ba'?['apps/architecture-lab/test/market-calendar-source.test.mjs']:[])].sort():compatibilityTests,'closed compatibility test changes')
  for(const[p,h]of Object.entries(a.sourceDigests)){
   assert(/^packages\/platform-contracts\/(?:src\/[a-z0-9-]+\.(?:mjs|d\.mts)|migrations\/(?:access|profile)\/[a-z0-9-]+\.sql|(?:current-e1-authority\/)?[a-z0-9/.-]+|package\.json)$/.test(p)||/^packages\/platform-contracts\/(?:(?:readonly-miss-report|root-atomic-claim)\/)?README\.md$/.test(p),'SDK source path '+p)
   assert.equal(hash(current(p)),h,'current organisation SDK '+p)
@@ -199,10 +200,11 @@ export function sdkContinuationPredecessor(receipt,current,historical,{projectKe
  const mapped=new Set([...Object.keys(record.sourceDigests),...Object.keys(record.compatibilityTestSourceDigests),
   ...Object.values(record.consumerSourceDigests).flatMap(v=>Object.keys(v)),...(record.platformVersion==='1.36.0'?Object.keys(reconciledSourceOverlay):[]),file,peerFile])
  const parallelProfile=parallelEcrWeekFrames[hash(recordBytes)]
- const calendarCurrent=verifiedCalendarPredecessor(record,current,historical,hash(recordBytes))
+ const calendar=verifiedCalendarPredecessor(record,current,historical,hash(recordBytes))
+ const calendarCurrent=calendar?.previousBytes??current
  const parallel=parallelProfile?verifiedParallelEcrGuards(record,calendarCurrent,historical,parallelProfile):null
  const cache=new Map([[file,priorBytes],...(parallel??[])])
- return {record,prior,previousBytes:inputPath=>{
+ return {record,prior,...(calendar?{calendarCurrent:calendar.current}:{}),previousBytes:inputPath=>{
   const path=posix.normalize(inputPath)
   assert(!posix.isAbsolute(path)&&path!=='..'&&!path.startsWith('../'),'source path remains inside the repository')
   if(!mapped.has(path))return calendarCurrent(inputPath)
