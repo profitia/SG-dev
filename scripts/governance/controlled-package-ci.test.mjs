@@ -2035,7 +2035,7 @@ test('all three exact67 and both approved65 physical graphs reject mixed, native
  const oldOwnerBlock=readGit('f1ac06bf9724967d75d2515dcbd60578c6cd257d','Canon/evidence/2026-11-12-registration-ecr-direct-history-ci-acceptance.md').toString().split('<!-- registration-source-packet-json -->')[1].trim(),oldOwnerPacket=JSON.parse(oldOwnerBlock.slice(8,-4));
  const priorCalendarBlock=readGit('ad9f773eca6cca01dd9686ebe5217dc48d91429c','Canon/evidence/2026-11-12-registration-ecr-direct-history-ci-acceptance.md').toString().split('<!-- registration-source-packet-json -->')[1].trim(),priorCalendarPacket=JSON.parse(priorCalendarBlock.slice(8,-4));
  const oldCorrectiveBlock=readGit('995d620a0d835b72c98831fe5f7637345d0d036e','Canon/evidence/2026-11-12-registration-ecr-direct-history-ci-acceptance.md').toString().split('<!-- registration-source-packet-json -->')[1].trim(),oldCorrectivePacket=JSON.parse(oldCorrectiveBlock.slice(8,-4));
- const variants=[{label:'currentCalendar70',review:c.REGISTRATION_SDK_REVIEW,prefix:directPrefix,reg:ownerPacket.sourceRecord,extra:ownerPacket.additionalSourceTexts,helperText:ownerPacket.helperText,helperTestText:ownerPacket.helperTestText,parallel:true,ownerRepair:true,calendar:true,calendarCorrective:true,calendarConsumer:true},{label:'calendarCorrective69',review:c.REGISTRATION_SDK_CALENDAR_CORRECTIVE_HISTORY_REVIEW,prefix:directPrefix,reg:oldCorrectivePacket.sourceRecord,extra:oldCorrectivePacket.additionalSourceTexts,helperText:oldCorrectivePacket.helperText,helperTestText:oldCorrectivePacket.helperTestText,parallel:true,ownerRepair:true,calendar:true,calendarCorrective:true},{label:'calendar69',review:c.REGISTRATION_SDK_PRE_CORRECTIVE_REVIEW,prefix:directPrefix,reg:priorCalendarPacket.sourceRecord,extra:priorCalendarPacket.additionalSourceTexts,helperText:priorCalendarPacket.helperText,helperTestText:priorCalendarPacket.helperTestText,parallel:true,ownerRepair:true,calendar:true},{label:'ownerRepaired68',review:c.REGISTRATION_SDK_OWNER_HISTORY_REVIEW,prefix:directPrefix,reg:oldOwnerPacket.sourceRecord,extra:oldOwnerPacket.additionalSourceTexts,helperText:oldOwnerPacket.helperText,helperTestText:oldOwnerPacket.helperTestText,parallel:true,ownerRepair:true},{label:'directEcr68',review:c.REGISTRATION_SDK_DIRECT_ECR_REVIEW,prefix:directPrefix,reg:directPacket.sourceRecord,extra:directPacket.additionalSourceTexts,parallel:true},{label:'ecrWeek67',review:c.REGISTRATION_SDK_PARALLEL_ECR_REVIEW,prefix:composed,reg:composition.sourceRecord,extra:composition.additionalSourceTexts,parallel:true},{label:'approved1026',review:c.REGISTRATION_SDK_FIXTURE_HISTORY_REVIEW,prefix:latest,reg:packet.sourceRecord,extra:packet.additionalSourceTexts},{label:'approved1024',review:c.REGISTRATION_SDK_COMPLETE_HISTORY_REVIEW,prefix:complete,reg:completePacket.sourceRecord,extra:completePacket.additionalSourceTexts},{label:'approved1022',review:c.REGISTRATION_SDK_IDENTITY_HISTORY_REVIEW,prefix:middle,reg:JSON.parse(f.readFileSync(p.join(original,'source-record.json'))),extra:{}},{label:'approved1016',review:c.REGISTRATION_SDK_RECONCILED_REVIEW,prefix:original,reg:JSON.parse(f.readFileSync(p.join(original,'source-record.json'))),extra:{}}];
+ const variants=[{label:'currentCalendar70',review:c.REGISTRATION_SDK_MAIN70_HISTORY_REVIEW,prefix:directPrefix,reg:ownerPacket.sourceRecord,extra:ownerPacket.additionalSourceTexts,helperText:ownerPacket.helperText,helperTestText:ownerPacket.helperTestText,parallel:true,ownerRepair:true,calendar:true,calendarCorrective:true,calendarConsumer:true},{label:'calendarCorrective69',review:c.REGISTRATION_SDK_CALENDAR_CORRECTIVE_HISTORY_REVIEW,prefix:directPrefix,reg:oldCorrectivePacket.sourceRecord,extra:oldCorrectivePacket.additionalSourceTexts,helperText:oldCorrectivePacket.helperText,helperTestText:oldCorrectivePacket.helperTestText,parallel:true,ownerRepair:true,calendar:true,calendarCorrective:true},{label:'calendar69',review:c.REGISTRATION_SDK_PRE_CORRECTIVE_REVIEW,prefix:directPrefix,reg:priorCalendarPacket.sourceRecord,extra:priorCalendarPacket.additionalSourceTexts,helperText:priorCalendarPacket.helperText,helperTestText:priorCalendarPacket.helperTestText,parallel:true,ownerRepair:true,calendar:true},{label:'ownerRepaired68',review:c.REGISTRATION_SDK_OWNER_HISTORY_REVIEW,prefix:directPrefix,reg:oldOwnerPacket.sourceRecord,extra:oldOwnerPacket.additionalSourceTexts,helperText:oldOwnerPacket.helperText,helperTestText:oldOwnerPacket.helperTestText,parallel:true,ownerRepair:true},{label:'directEcr68',review:c.REGISTRATION_SDK_DIRECT_ECR_REVIEW,prefix:directPrefix,reg:directPacket.sourceRecord,extra:directPacket.additionalSourceTexts,parallel:true},{label:'ecrWeek67',review:c.REGISTRATION_SDK_PARALLEL_ECR_REVIEW,prefix:composed,reg:composition.sourceRecord,extra:composition.additionalSourceTexts,parallel:true},{label:'approved1026',review:c.REGISTRATION_SDK_FIXTURE_HISTORY_REVIEW,prefix:latest,reg:packet.sourceRecord,extra:packet.additionalSourceTexts},{label:'approved1024',review:c.REGISTRATION_SDK_COMPLETE_HISTORY_REVIEW,prefix:complete,reg:completePacket.sourceRecord,extra:completePacket.additionalSourceTexts},{label:'approved1022',review:c.REGISTRATION_SDK_IDENTITY_HISTORY_REVIEW,prefix:middle,reg:JSON.parse(f.readFileSync(p.join(original,'source-record.json'))),extra:{}},{label:'approved1016',review:c.REGISTRATION_SDK_RECONCILED_REVIEW,prefix:original,reg:JSON.parse(f.readFileSync(p.join(original,'source-record.json'))),extra:{}}];
  for(const v of variants)await t.test(v.label,()=>{
   const root=f.mkdtempSync(p.join(os.tmpdir(),'registration67-physical-'));t.after(()=>f.rmSync(root,{recursive:true,force:true}));
   const maps=[v.reg.sourceDigests,v.reg.compatibilityTestSourceDigests,v.reg.preservedSourceDigests,...Object.values(v.reg.consumerSourceDigests)],needed=new Set([...Object.keys(v.review.entries),...Object.keys(rec.sourceDigests),...Object.keys(rec.preservedReceipts),...maps.flatMap(Object.keys),'apps/architecture-lab/private-recurring-source.json',...Object.values(c.PRIVATE_RECURRING_PROVENANCE.adoptions)]);
@@ -2520,7 +2520,7 @@ test('registration closes raw current source before independent Oil history in t
 })
 
 test('separate SG2 Calendar test owner composes with all69 source history and complete physical authentication',async()=>{
- const c=await import('./controlled-package-ci.mjs'),r=c.REGISTRATION_SDK_REVIEW,prior=c.REGISTRATION_SDK_ROUTING_HISTORY_REVIEW
+ const c=await import('./controlled-package-ci.mjs'),r=c.REGISTRATION_SDK_MAIN70_HISTORY_REVIEW,prior=c.REGISTRATION_SDK_ROUTING_HISTORY_REVIEW
  assert.equal(Object.keys(r.entries).length,70)
  assert.deepEqual(Object.keys(r.entries).filter(p=>r.entries[p].sha!==prior.entries[p]?.sha).sort(),['apps/platform-source-hub/test/ci-routing.test.mjs','apps/sg-runtime/tests/market-calendar-integrity.mjs','packages/platform-contracts/test/organisation-sdk-compatibility.json','packages/platform-contracts/test/organisation-sdk-compatibility.mjs','packages/platform-contracts/test/organisation-sdk-compatibility.test.mjs'])
  assert.equal(c.REGISTRATION_SDK_ROUTING_HISTORY_PROVENANCE.recordDigest,'61c57570f25fe90c89a5d2bd0f27f2b228091a6bd239a72a7f1fc87e06ae36ad')
@@ -2540,3 +2540,44 @@ test('separate SG2 Calendar test owner composes with all69 source history and co
  }finally{fs.rmSync(parent,{recursive:true,force:true})}
 })
 
+
+test('current registration73 authenticates raw SDK and parallel PI sources before historical projection',async()=>{
+ const c=await import('./controlled-package-ci.mjs'),r=c.REGISTRATION_SDK_REVIEW;
+ assert.equal(Object.keys(r.entries).length,73);
+ assert.equal(Object.keys(c.REGISTRATION_SDK_MAIN70_HISTORY_REVIEW.entries).length,70);
+ assert.equal(r.sourceSha,'d35825a7e91284999737c3a4f750351b36e5a1a4');
+ const files=Object.entries(r.entries).map(([filename,e])=>({filename,sha:e.sha,status:e.status})),candidate={...pr(),number:r.prNumber,changed_files:files.length,base:{...pr().base,sha:r.baseSha},head:{...pr().head,sha:r.sourceSha,ref:r.branch}};
+ assertArchitectureFiles(candidate,files);assert.equal(selectCandidate(context(),candidate,r.sourceSha,{files}),r.sourceSha);
+ for(const edit of [a=>a.pop(),a=>a[0]={...a[0],sha:'f'.repeat(40)},a=>a.push({filename:'apps/identity-runtime/src/unreviewed.ts',sha:'a'.repeat(40),status:'added'})]){const bad=structuredClone(files);edit(bad);assert.throws(()=>selectCandidate(context(),{...candidate,changed_files:bad.length},r.sourceSha,{files:bad}));}
+ const parent=fs.mkdtempSync(path.join(os.tmpdir(),'registration73-actual-graph-')),root=path.join(parent,'candidate');
+ try{
+  execFileSync('git',['clone','--quiet','--shared','--no-checkout',authorityRoot,root],{stdio:['ignore','pipe','pipe']});
+  execFileSync('git',['checkout','--quiet','--detach',r.sourceSha],{cwd:root,stdio:['ignore','pipe','pipe']});
+  c.assertArchitectureCheckout(root,r.sourceSha,{kind:'ARCHITECTURE',baseSha:r.baseSha,files},authorityRoot);
+  assert.equal(c.assertRegistrationSdkProvenance(root).platformVersion,'1.36.0');
+  assert(c.assertPrivateRecurringProvenance(root));
+  for(const file of [
+   'packages/platform-contracts/src/organisation-bootstrap.mjs',
+   'packages/platform-contracts/current-e1-authority/recurring.mjs',
+   'packages/platform-contracts/test/organisation-sdk-compatibility.mjs',
+   'packages/platform-contracts/test/recurring-consent-transport.test.mjs',
+   'apps/sg-runtime/tests/procurement-insights-completion.test.mjs',
+   'apps/sg-runtime/tests/market-calendar-integrity.test.mjs',
+   'apps/sg-runtime/operation-integration.json',
+   'apps/srm/operation-integration.json',
+   'apps/sg-runtime/components/procurement-insights/reports.tsx',
+   'apps/platform-source-hub/test/ci-routing.test.mjs'
+  ]){
+   const target=path.join(root,file),before=fs.readFileSync(target);
+   fs.appendFileSync(target,'UNREVIEWED');
+   assert.throws(()=>c.assertRegistrationSdkProvenance(root),file);
+   assert.throws(()=>c.assertPrivateRecurringProvenance(root),file);
+   fs.writeFileSync(target,before);
+  }
+  const file='packages/platform-contracts/test/organisation-sdk-compatibility.mjs',target=path.join(root,file),before=fs.readFileSync(target);
+  fs.chmodSync(target,0o755);assert.throws(()=>c.assertRegistrationSdkProvenance(root));fs.chmodSync(target,0o644);
+  fs.unlinkSync(target);fs.symlinkSync('organisation-sdk-compatibility.json',target);assert.throws(()=>c.assertRegistrationSdkProvenance(root));
+  fs.unlinkSync(target);fs.writeFileSync(target,before);
+  assert(c.assertPrivateRecurringProvenance(root));
+ }finally{fs.rmSync(parent,{recursive:true,force:true})}
+});
