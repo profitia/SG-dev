@@ -76,7 +76,41 @@ export function calendarTestCompatibilityCurrent(current,historical){
  assert.equal(hash(historical(a.previousSourceSha,MARKET_CALENDAR_PRODUCER_RECORD)),MARKET_CALENDAR_PRODUCER_RECORD_SHA)
  return project(current,historical,a.previousSourceSha,[test,'apps/architecture-lab/market-calendar-source.mjs'],MARKET_CALENDAR_TEST_COMPATIBILITY_RECORD)
 }
+
+// One owner-approved BSDC documentation successor. Authenticate its exact
+// evidence and document bytes before exposing the unchanged Calendar history.
+export const BSDC_MANIFEST_CONTINUITY=Object.freeze({"recordPath":"Canon/evidence/2026-11-12-bsdc-v11-manifest-continuity.json","recordSha256":"92fe69f99bbda13a9971d841cc391207d9e7944ccc516a68d9cc48b7a9151160","baseSha":"df2214265e577ef653c35fa18a38c717ffe8905e","manifestPath":"Canon/registries/governance-manifest-v2.json","previousManifestSha256":"953aa8ff82c12fca85d22d04de865e1969a5e4548465766b259db0bd3ce56587","manifestSha256":"7f5498afa10f3edaf0b364ca7bf4576de5dc8100e61bc4fc2773c845b771e2a4","previousHelperSha256":"034abe33e17cd8a6247a43f14a62eba3437831bb1f0d59d851e5efc45a7abb86","helperPath":"apps/architecture-lab/market-calendar-source.mjs","sourcePaths":["AGENTS.md","Canon/registries/governance-manifest-v2.json","Canon/v1.1-business-solution-design-and-canonization-canon.md","docs/agent-instructions/bsdc-launcher-v1.1.md"],"testPath":"scripts/governance/platform-source-hub-foundation.test.mjs","testSha256":"dadd4f9fcc5be03afee02ae51038efa48b07b3f9b2b62e9476a7b288c1d42d77","previousTestSha256":"189e3ee14a2e9c3fe52d53fd3404e8fca1e1ca82f120ab6ac24909b9cef09acb"})
+export function bsdcManifestContinuityCurrent(current,historical){
+ const cfg=BSDC_MANIFEST_CONTINUITY,bytes=readOptional(current,cfg.recordPath)
+ if(bytes===null)return current
+ assert.equal(hash(bytes),cfg.recordSha256,'immutable BSDC manifest continuity evidence')
+ const a=JSON.parse(bytes)
+ assert.equal(a.scope,'BSDC_V11_DOCUMENTATION_MANIFEST_CONTINUITY')
+ assert.equal(a.previousSourceSha,cfg.baseSha)
+ assert.equal(a.priorReceiptsChanged,false)
+ assert.equal(a.productRuntimeChanged,false)
+ assert.equal(a.accessOrDeploymentAuthorized,false)
+ const previous=Buffer.from(historical(cfg.baseSha,cfg.manifestPath))
+ const previousHelper=Buffer.from(historical(cfg.baseSha,cfg.helperPath))
+ const previousTest=Buffer.from(historical(cfg.baseSha,cfg.testPath))
+ assert.equal(hash(current(cfg.testPath)),cfg.testSha256,'exact BSDC continuity regression')
+ assert.equal(hash(previousTest),cfg.previousTestSha256,'immutable pre-BSDC regression')
+ assert.equal(hash(previous),cfg.previousManifestSha256,'immutable pre-BSDC manifest')
+ assert.equal(hash(previousHelper),cfg.previousHelperSha256,'immutable pre-BSDC Calendar helper')
+ const actual=hash(current(cfg.manifestPath))
+ if(actual===cfg.manifestSha256)verifyPaths(current,a.sourceDigests,cfg.sourcePaths)
+ else assert.equal(actual,cfg.previousManifestSha256,'unapproved governance manifest successor')
+ return p=>{
+  if(p===cfg.recordPath)throw Object.assign(Error('BSDC successor absent from predecessor'),{code:'ENOENT'})
+  if(p===cfg.manifestPath)return Buffer.from(previous)
+  if(p===cfg.helperPath)return Buffer.from(previousHelper)
+  if(p===cfg.testPath)return Buffer.from(previousTest)
+  return current(p)
+ }
+}
+
 export function marketCalendarSourcePredecessor(current,historical){
+ current=bsdcManifestContinuityCurrent(current,historical)
  current=calendarTestCompatibilityCurrent(current,historical)
  const consumer=readOptional(current,MARKET_CALENDAR_CONSUMER_RECORD)
  if(consumer){
