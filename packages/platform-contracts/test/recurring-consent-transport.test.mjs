@@ -50,3 +50,32 @@ test('recurring consent rejects missing, wrong-scheme, whitespace and oversized 
   await t.test(label,async()=>assert.deepEqual(await attempt(authorization),{reads:0,sends:0}));
  }
 });
+
+import fs from 'node:fs';
+import {execFileSync} from 'node:child_process';
+import {fileURLToPath} from 'node:url';
+import {recurringConsentTransportPredecessor,RECURRING_CONSENT_TRANSPORT_RECORD,RECURRING_CONSENT_TRANSPORT_BASE,RECURRING_CONSENT_TRANSPORT_PATHS} from './recurring-consent-transport-source.mjs';
+const root=fileURLToPath(new URL('../../../',import.meta.url));
+const sourceBytes=p=>fs.readFileSync(new URL('../../../'+p,import.meta.url));
+const historical=(sha,p)=>execFileSync('git',['show',sha+':'+p],{cwd:root,stdio:['ignore','pipe','pipe']});
+test('consent correction authenticates its actual source graph and retains accepted predecessor bytes',()=>{
+ const accepted=recurringConsentTransportPredecessor(sourceBytes,historical);
+ assert.equal(Object.keys(accepted.manifest.sourceDigests).length,7);
+ for(const p of RECURRING_CONSENT_TRANSPORT_PATHS.filter(p=>!p.includes('/test/recurring-consent-transport'))){
+  assert.deepEqual(accepted.previousBytes(p),historical(RECURRING_CONSENT_TRANSPORT_BASE,p));
+ }
+ assert.throws(()=>accepted.previousBytes(RECURRING_CONSENT_TRANSPORT_RECORD),e=>e.code==='ENOENT');
+ assert.throws(()=>accepted.previousBytes('packages/platform-contracts/test/recurring-consent-transport.test.mjs'),e=>e.code==='ENOENT');
+});
+test('consent correction rejects source drift, altered receipts, widened flags and missing source',()=>{
+ const a=JSON.parse(sourceBytes(RECURRING_CONSENT_TRANSPORT_RECORD));
+ for(const p of [...RECURRING_CONSENT_TRANSPORT_PATHS,...Object.keys(a.preservedReceipts)]){
+  assert.throws(()=>recurringConsentTransportPredecessor(q=>q===p?Buffer.from('SYNTHETIC_TAMPER'):sourceBytes(q),historical));
+ }
+ for(const flag of ['authorisationChanged','schemaChanged','providerCallsPerformed','deploymentPerformed']){
+  const altered=JSON.stringify({...a,[flag]:true});
+  assert.throws(()=>recurringConsentTransportPredecessor(q=>q===RECURRING_CONSENT_TRANSPORT_RECORD?Buffer.from(altered):sourceBytes(q),historical));
+ }
+ assert.throws(()=>recurringConsentTransportPredecessor(q=>{if(q===RECURRING_CONSENT_TRANSPORT_PATHS[0])throw Object.assign(Error('missing'),{code:'ENOENT'});return sourceBytes(q)},historical));
+ assert.equal(recurringConsentTransportPredecessor(()=>{throw Object.assign(Error('absent'),{code:'ENOENT'})},historical),null);
+});
