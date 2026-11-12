@@ -2545,7 +2545,7 @@ test('current registration73 authenticates raw SDK and parallel PI sources befor
  const c=await import('./controlled-package-ci.mjs'),r=c.REGISTRATION_SDK_REVIEW;
  assert.equal(Object.keys(r.entries).length,73);
  assert.equal(Object.keys(c.REGISTRATION_SDK_MAIN70_HISTORY_REVIEW.entries).length,70);
- assert.equal(r.sourceSha,'d35825a7e91284999737c3a4f750351b36e5a1a4');
+ assert.equal(r.sourceSha,'b6531e0a05d3bdda3086a1525515d662f02267b1');
  const files=Object.entries(r.entries).map(([filename,e])=>({filename,sha:e.sha,status:e.status})),candidate={...pr(),number:r.prNumber,changed_files:files.length,base:{...pr().base,sha:r.baseSha},head:{...pr().head,sha:r.sourceSha,ref:r.branch}};
  assertArchitectureFiles(candidate,files);assert.equal(selectCandidate(context(),candidate,r.sourceSha,{files}),r.sourceSha);
  for(const edit of [a=>a.pop(),a=>a[0]={...a[0],sha:'f'.repeat(40)},a=>a.push({filename:'apps/identity-runtime/src/unreviewed.ts',sha:'a'.repeat(40),status:'added'})]){const bad=structuredClone(files);edit(bad);assert.throws(()=>selectCandidate(context(),{...candidate,changed_files:bad.length},r.sourceSha,{files:bad}));}
@@ -2566,7 +2566,11 @@ test('current registration73 authenticates raw SDK and parallel PI sources befor
    'apps/sg-runtime/operation-integration.json',
    'apps/srm/operation-integration.json',
    'apps/sg-runtime/components/procurement-insights/reports.tsx',
-   'apps/platform-source-hub/test/ci-routing.test.mjs'
+   'apps/platform-source-hub/test/ci-routing.test.mjs',
+   'AGENTS.md','Canon/registries/governance-manifest-v2.json','Canon/v1.1-business-solution-design-and-canonization-canon.md','docs/agent-instructions/bsdc-launcher-v1.1.md',
+   'apps/architecture-lab/market-calendar-source.mjs',
+   'scripts/governance/platform-source-hub-foundation.test.mjs',
+   'Canon/evidence/2026-11-12-bsdc-v11-manifest-continuity.json'
   ]){
    const target=path.join(root,file),before=fs.readFileSync(target);
    fs.appendFileSync(target,'UNREVIEWED');
