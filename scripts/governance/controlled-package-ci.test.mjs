@@ -2585,3 +2585,33 @@ test('current registration73 authenticates raw SDK and parallel PI sources befor
   assert(c.assertPrivateRecurringProvenance(root));
  }finally{fs.rmSync(parent,{recursive:true,force:true})}
 });
+
+
+
+test('assistant quality G1 admits only the exact reviewed five-file owner closure',async()=>{
+ const c=await import('./controlled-package-ci.mjs'),r=c.ASSISTANT_QUALITY_G1_REVIEW
+ const files=Object.entries(r.blobs).map(([filename,sha])=>({filename,sha,status:r.statuses[filename]}))
+ const candidate={...pr(),number:r.prNumber,changed_files:files.length,base:{...pr().base,sha:r.reviewedBaseSha},head:{...pr().head,ref:r.branch,sha:r.reviewedCandidateSha}}
+ assert.equal(selectCandidate(context(),candidate,candidate.head.sha,{files}),candidate.head.sha)
+ assertArchitectureFiles(candidate,files)
+ for(const edit of [f=>f.pop(),f=>f.push({...f[0],filename:'Canon/extra.md'}),f=>f[0].sha='f'.repeat(40),f=>f[0].status='removed',f=>f[0].previous_filename='Canon/old.md',f=>f[1]={...f[0]},f=>f[0].filename='packages/assistant-quality-control/src/controller.mjs']){
+  const changed=structuredClone(files);edit(changed)
+  assert.throws(()=>selectCandidate(context(),{...candidate,changed_files:changed.length},candidate.head.sha,{files:changed}))
+ }
+ for(const edit of [p=>p.number++,p=>p.head.ref='architecture/quality-copy',p=>p.head.ref='sg2/quality-copy',p=>p.user.login='other',p=>p.head.repo.full_name='profitia/fork',p=>p.state='closed']){
+  const changed=structuredClone(candidate);edit(changed)
+  assert.throws(()=>selectCandidate(context(),changed,changed.head.sha,{files}))
+ }
+ assert.throws(()=>selectCandidate(context(),candidate,'e'.repeat(40),{files}))
+ assert.throws(()=>selectCandidate({...context(),ref:'refs/pull/1042/merge'},candidate,candidate.head.sha,{files}))
+ // A fresh main merge is permitted only with exactly the same five blobs,
+ // statuses, modes and actual owner routes; expected SHA still binds live HEAD.
+ const refreshed={...candidate,head:{...candidate.head,sha:'d'.repeat(40)}}
+ assert.equal(selectCandidate(context(),refreshed,refreshed.head.sha,{files}),refreshed.head.sha)
+ for(const f of files){
+  c.assertAssistantQualityG1ReviewEntry(f,'100644 blob '+f.sha+'\t'+f.filename+'\0')
+  for(const entry of ['100755 blob '+f.sha+'\t'+f.filename+'\0','120000 blob '+f.sha+'\t'+f.filename+'\0','100644 blob '+f.sha+'\tother\0'])assert.throws(()=>c.assertAssistantQualityG1ReviewEntry(f,entry))
+ }
+ assert.deepEqual(PRIVATE_PACKAGES,['@profitia/advisory-widget','@profitia/cic-core','@profitia/cic-procurement'])
+ assert(!Object.keys(LOCAL_PACKAGES).some(n=>n.includes('assistant-quality')))
+})
