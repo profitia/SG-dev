@@ -1,5 +1,41 @@
 # Przyjmowanie wspólnych kontraktów Development
 
+## Current continuation — 2026-11-12 authority preservation
+
+PROPOSED / EXACT_OWNER_CI_AND_SG2_TEST_ADOPTION_PENDING.
+The current review supersedes9b018887 and its older standalone candidates.
+Producer PR1018 source `fc212dcc86f3b4865652cbfc8cf483ed05dad5f8` is anchored to current
+main `bfc4a228d9f3d583c37c5fd984c7e4da602bf75d`. Exactly18 source paths remain:17 owned by
+ARCHITECTURE and one existing SG2 week-compatibility test, registered under
+SG2-PROCUREMENT-MARKET-CALENDAR-20261111. The separate17-file UI consumer
+is not transported with this producer.
+
+Fifteen of18 previous source blobs remain identical. Only the active manifest,
+producer record and its helper metadata change to preserve all current BSDC
+and instruction entries plus exactly one approved PI amendment. New source
+recordSHA256 `e3bc27ddf22b9165555c05f938a3c5d8f9f4f09334fcb7c55e760da44e9a59b6`.
+Runtime/contract/SQL bytes and owner planSHA256
+`caadc0cdf9322e218db6f1f9285d52ef5fe5ceaca84f672d77fe49e8fa44a1d0` remain unchanged.
+
+Retain the complete accepted1032 registration controls, the newer approved
+ECR-week reconciliation control, all historical maps and the fourteen original
+week pins. Calendar authenticates its own complete exact source before passing
+that reader into the existing registration/week composition; physical file,
+mode, symlink, owner, complete closure and credential fences remain. This
+proposal neither executes the inert68-file Stage I repair nor borrows its
+separate bounded mandate. No generic source admission is introduced.
+
+Actual focused tests: Calendar controller4/4, producer/week6/6 and separate
+consumer integrity5/5 PASS. Prior17 functional tests and full Next build remain
+valid for identical UI bytes. Complete merged-controller226/226 PASS. Exact-head
+public/protected/resulting-main controls remain mandatory before activation.
+Historical9b protected run43115515453 succeeded against983f45a4; it is not a
+proof for this current candidate or control. All original historical archives
+and decisions remain retained. No grant installation, deployment, provider
+request, PMOS save or PHR publication has occurred.
+
+## Earlier Market Calendar preparation (historical)
+
 ## ECR Market Calendar — proposed exact producer review (2026-11-11)
 
 PROPOSED / OWNER_CI_APPROVAL_PENDING. The third-tab UX approval does not
@@ -726,6 +762,24 @@ This decision does not install product SQL, change roles/grants/packages, send
 mail, call providers/models, change DNS, activate runtime or deploy a product.
 
 
+### Market Calendar — preserve parallel active-wrapper adoption
+
+PROPOSED / CI_POLICY_APPROVAL_PENDING. PR1020 was accepted at d8665198
+after approvals87d28140/6f9ac68f and full candidate/resulting-main CI.
+Parallel PR1028 activated the universal wrapper in the shared manifest.
+Producer64d14ee171cdabcda4401b68b3fc4e56f67e8ec7 preserves the full current main manifest plus exactly
+one approved PI amendment. Only three of17 producer versions change:
+manifest, its source-record hash and helper record pin; all other14 versions,
+SQL/owner planSHA256caadc0cdf9322e218db6f1f9285d52ef5fe5ceaca84f672d77fe49e8fa44a1d0,
+runtime contracts, old receipts and consumer closure remain unchanged.
+New recordSHA2562403aac429e8958b9a5ec09184de4969da495e2fd83ec9e4debfdc9617d8ede9. Mainbase0e42f41e1151c839fd62a287d40345c3dde18903, including the separately
+accepted complete67 registration policy, remains preserved. This four-file
+continuation changes exact review/pin data and adds a real-Git preservation
+test. It requires exact owner CI acceptance and all normal current-candidate
+and resulting-main controls; no generic path, right, resource, cost, licence
+or notification operation is added. Original PMOS task identities remain.
+
+
 ## Owner-approved registration history fixture correction — same67 (2026-11-11)
 
 Owner decision in the execution chat: “Zatwierdzam korektę z PR #1026”.
@@ -768,3 +822,23 @@ main-only Environment, package pins, ignore-scripts, token removal, complete
 diff/mode/owner and exact-head/race fences remain mandatory. No business grant,
 product SQL installation, invitation delivery or deployment occurs through
 this CI-only change. Continue the parent Stage I after this bounded gate closes.
+
+## Calendar producer/consumer test composition — proposed corrective (2026-11-12)
+
+Preparation only; requires a separate owner decision and all exact-head/public/main
+checks before activation. PR1044 at334273b2b5af0ad41a1489f31bc6bb56f36d3dbf
+closes exactly three Architecture test/adoption files on accepted main877c55c6.
+It preserves the original18-entry Calendar review, immutable producer recordE3,
+all registration/ECR-week controls and every previous receipt. The additive
+compatibility record52e859d4a99bc4c8e4d986f38afea2d58e9c1fe1ee1e0eb62cc2672dbdb60078
+verifies the physical test correction before projecting only that correction to
+its accepted predecessor. No candidate JavaScript is imported while credentials
+may exist. Actor, repository, branch/PR, regular-file, permission and proof fences
+remain mandatory. Executable files, symlinks and rebound source are refused.
+
+The never-accepted SG2 Calendar consumer closure additionally names three existing
+SG2 tests: ADP receiver compatibility, persistent AppShell route guarding and full
+candidate-source coverage. This makes20 consumer source paths; all12 historical
+SG2 receipts remain immutable. Ordinary UI/test adoption remains a separate SG2
+PR after the corrected producer is accepted. No runtime, contract, SQL, grant,
+provider, retention, deployment or notification decision is made by this policy.
