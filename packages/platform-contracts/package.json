@@ -177,6 +177,11 @@
       "types": "./src/organisation-lifecycle.d.mts",
       "import": "./src/organisation-lifecycle.mjs",
       "require": "./src/organisation-lifecycle.mjs"
+    },
+    "./organisation-context": {
+      "types": "./src/organisation-context.d.mts",
+      "import": "./src/organisation-context.mjs",
+      "require": "./src/organisation-context.mjs"
     }
   },
   "scripts": {
