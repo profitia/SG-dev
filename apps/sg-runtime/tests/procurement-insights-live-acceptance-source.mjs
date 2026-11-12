@@ -8,6 +8,7 @@ export const PI_LIVE_ACCEPTANCE_PATHS=Object.freeze([
  'apps/insights-runtime/tests/host-pool-concurrency.test.mjs',
  'apps/sg-runtime/components/procurement-insights/workspace.tsx',
  'apps/sg-runtime/tests/procurement-insights-notification-navigation.test.tsx',
+ 'apps/sg-runtime/tests/procurement-insights.test.tsx',
  'apps/sg-runtime/tests/procurement-insights-live-acceptance-source.mjs',
  'apps/sg-runtime/tests/procurement-insights-live-acceptance-source.test.mjs',
  'packages/platform-contracts/test/recurring-consent-transport-source.mjs',
