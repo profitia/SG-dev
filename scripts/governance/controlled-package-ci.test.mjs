@@ -947,7 +947,7 @@ function rootAtomicClaimCandidate() {
 }
 test('atomic Root claim review is frozen and admits only the exact eleven additive producer blobs',()=>{
   const review=ROOT_ATOMIC_CLAIM_PRODUCER_REVIEW,{p,files}=rootAtomicClaimCandidate()
-  assert(Object.isFrozen(review));assert(Object.isFrozen(review.blobs));assert.equal(files.length,12)
+  assert(Object.isFrozen(review));assert(Object.isFrozen(review.blobs));assert.equal(files.length,11)
   assert.equal(review.prNumber,854);assert.equal(review.sourceSha,'3a494b5432555935168c060be5950589d550d276')
   assert.equal(review.branch,'architecture/root-atomic-claim-producer-20261101')
   assert(files.every(f=>f.status==='added' && (f.filename.startsWith('packages/platform-contracts/root-atomic-claim/')
