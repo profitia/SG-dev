@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import { randomUUID } from 'node:crypto'
 import { request as send } from 'node:http'
-import { configuration } from './fixtures.mjs'
+import { configuration, ids } from './fixtures.mjs'
 import { createOrganisationHttpSurface, readOrganisationBootstrapOptIn } from '../dist/src/organisation-http.js'
 import { accountTransactions } from '../dist/src/account-provisioning.js'
 import { createHttpHandler } from '../dist/src/http-handler.js'
@@ -166,4 +166,53 @@ test('native conversation receiver refuses missing ports, foreign receivers, met
       assert.equal(calls,before+1)
     })
   }
+})
+
+import {organisationInvitationEntryClientScript} from '../dist/src/organisation-onboarding.js'
+import {createOrganisationInvitationProof} from '../../../packages/platform-contracts/src/organisation-invitations.mjs'
+
+test('invitation GET is scanner-safe, excludes proof from HTML and precedes third-party resources',async()=>{
+ const cfg=configuration(),proof=createOrganisationInvitationProof().token
+ let accepts=0
+ const org={ready:async()=>{},complete:async()=>{},conversation:{},acceptInvitation:async(_request,input)=>{accepts++;return {status:'ACCEPTED',commandId:input.commandId}}}
+ const handler=createHttpHandler({configuration:cfg},{},null,null,null,null,null,null,null,{},org,{targetId:'sg2',routeKey:'account'})
+ const response=await handler(new Request(cfg.origin+'/invite?proof='+proof))
+ assert.equal(response.status,200);const html=await response.text()
+ assert.equal(accepts,0);assert(!html.includes(proof));assert(html.includes('"organisationInvitation":true'))
+ assert(html.indexOf('/organisation-invitation-entry')<html.indexOf('clerk.browser.js'))
+ assert.equal(response.headers.get('referrer-policy'),'no-referrer');assert.equal(response.headers.get('cache-control'),'private, no-store')
+ for(const suffix of ['?proof=bad','?proof='+proof+'&proof='+proof,'?proof='+proof+'&returnTo=https://evil.example','?ticket='+proof])
+  assert.equal((await handler(new Request(cfg.origin+'/invite'+suffix))).status,400)
+ const path='/v1/account/organisation-onboarding/invitation-accept'
+ assert.equal((await handler(new Request(cfg.origin+path))).status,405);assert.equal(accepts,0)
+ const request=new Request(cfg.origin+path,{method:'POST',headers:{origin:cfg.origin,'content-type':'application/json'},body:JSON.stringify({commandId:randomUUID(),proof})})
+ assert.equal((await handler(request)).status,200);assert.equal(accepts,1)
+ assert.equal((await handler(new Request(cfg.origin+path,{method:'POST',headers:{origin:'https://foreign.example','content-type':'application/json'},body:'{}'}))).status,403)
+ assert.equal(accepts,1)
+})
+
+function invitationPageFixture(search){
+ const proof=createOrganisationInvitationProof().token,calls=[],history=[]
+ const window={location:{href:'https://identity.example/invite'+(search??'?proof='+proof)},history:{replaceState:(...args)=>{history.push(args);window.location.href=new URL(args[2],window.location.href).href}},crypto:{randomUUID}}
+ vm.runInNewContext(organisationInvitationEntryClientScript,{window,URL,Object,Error})
+ return {window,proof,calls,history,accept:window.spendGuruAcceptOrganisationInvitation}
+}
+test('invitation browser closure strips query before any request, retains replay ID and binds successful account',async()=>{
+ const f=invitationPageFixture();assert.deepEqual(f.history,[[null,'','/invite']]);assert.equal(f.calls.length,0)
+ assert(!JSON.stringify(f.window).includes(f.proof))
+ let attempts=0,first
+ const request=async(path,method,body)=>{attempts++;assert.equal(path,'/v1/account/organisation-onboarding/invitation-accept');assert.equal(method,'POST');assert.equal(body.proof,f.proof);if(!first){first=body.commandId;throw Error('synthetic transient transport')}assert.equal(body.commandId,first);return {status:'ACCEPTED'}}
+ await assert.rejects(f.accept(request,ids.a));assert.equal((await f.accept(request,ids.a)).status,'ACCEPTED');assert.equal(attempts,2)
+ assert.equal((await f.accept(request,ids.a)).status,'ACCEPTED');assert.equal(attempts,2)
+ assert.equal((await f.accept(request,ids.b)).status,'UNAVAILABLE');assert.equal(attempts,2)
+ assert(!/localStorage|sessionStorage|document\.cookie|console\.|fetch\(/.test(organisationInvitationEntryClientScript))
+})
+test('missing or malformed invitation cannot start organisation acceptance; concurrent clicks share no second effect',async()=>{
+ for(const search of ['', '?proof=bad','?proof=sgi1_'+'x'.repeat(43)+'&extra=1']){
+  const f=invitationPageFixture(search);let called=false;assert.equal((await f.accept(async()=>{called=true},ids.a)).status,'UNAVAILABLE');assert.equal(called,false)
+ }
+ const f=invitationPageFixture();let resolve,count=0
+ const pending=f.accept(async()=>{count++;return new Promise(r=>{resolve=r})},ids.a)
+ assert.equal((await f.accept(async()=>{count++},ids.a)).status,'UNAVAILABLE');assert.equal(count,1)
+ resolve({status:'ACCEPTED'});await pending
 })

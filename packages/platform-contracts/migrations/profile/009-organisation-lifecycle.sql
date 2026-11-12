@@ -73,7 +73,7 @@ BEGIN
  THEN RAISE EXCEPTION 'Lifecycle installation unavailable' USING ERRCODE='PT403';END IF;
  FOR e IN SELECT value FROM jsonb_array_elements(p.member_permissions) LOOP
   IF jsonb_typeof(e)<>'object' OR(SELECT count(*) FROM jsonb_object_keys(e))<>2
-   OR NOT(e?'operation' AND e?'feature') OR e->>'operation'!~'^[a-z][a-z0-9_.]{1,127}$'
+   OR NOT(e?'operation' AND e?'feature') OR jsonb_typeof(e->'operation') IS DISTINCT FROM 'string' OR jsonb_typeof(e->'feature') IS DISTINCT FROM 'string' OR e->>'operation'!~'^[a-z][a-z0-9_.]{1,127}$'
    OR e->>'feature'!~'^[a-z][a-z0-9_]{1,127}$'
    OR e->>'operation' IN('organisation.create','organisation.invitation.create','identity.provision','job.execute','knowledge.ingest')
   THEN RAISE EXCEPTION 'Explicit bounded member permissions required' USING ERRCODE='PT403';END IF;
@@ -288,10 +288,12 @@ BEGIN
  uid:=profitia_profile.organisation_lifecycle_commit('organisation.invitation.accept',p_payload,p_until,p_signature,p_decision);
  d:=profitia_profile.runtime_descriptor();q:=p_payload::jsonb;
  IF jsonb_typeof(q) IS DISTINCT FROM 'object' OR(SELECT count(*) FROM jsonb_object_keys(q))<>3
-  OR NOT(q?'commandId' AND q?'tokenHash' AND q?'recipientKey') OR q->>'tokenHash'!~'^[a-f0-9]{64}$' OR q->>'recipientKey'!~'^[a-f0-9]{64}$'
+  OR NOT(q?'commandId' AND q?'tokenHash' AND q?'recipientKeys') OR q->>'tokenHash'!~'^[a-f0-9]{64}$'
+  OR jsonb_typeof(q->'recipientKeys') IS DISTINCT FROM 'array' OR jsonb_array_length(q->'recipientKeys') NOT BETWEEN 1 AND 20
+  OR EXISTS(SELECT 1 FROM jsonb_array_elements_text(q->'recipientKeys') k WHERE k!~'^[a-f0-9]{64}$')
  THEN RAISE EXCEPTION 'Verified proof and primary email required' USING ERRCODE='PT403';END IF;
  SELECT * INTO i FROM profitia_profile.organisation_invitations WHERE token_hash=q->>'tokenHash' FOR UPDATE;
- IF NOT FOUND OR i.recipient_key IS DISTINCT FROM q->>'recipientKey' THEN RETURN jsonb_build_object('status','INVITATION_UNAVAILABLE');END IF;
+ IF NOT FOUND OR NOT(q->'recipientKeys'?i.recipient_key) THEN RETURN jsonb_build_object('status','INVITATION_UNAVAILABLE');END IF;
  IF i.status='ACCEPTED' AND i.accepted_by=uid THEN
   SELECT * INTO m FROM profitia_access.memberships WHERE organisation_id=i.organisation_id AND user_id=uid;
   IF FOUND AND m.status='ACTIVE' AND m.expires_at>clock_timestamp() THEN
@@ -384,5 +386,110 @@ BEGIN
  UPDATE profitia_profile.organisation_invitation_outbox SET status=CASE WHEN p_status='RELEASE' THEN 'PENDING' ELSE p_status END,
   encrypted_payload=CASE WHEN p_status='RELEASE' THEN encrypted_payload ELSE '{}'::jsonb END,
   provider_id=p_provider,lease_id=NULL,lease_until=NULL,nonce=NULL,updated_at=clock_timestamp() WHERE invitation_id=p_invitation;
+ IF p_status IN('REJECTED','CANCELLED') THEN UPDATE profitia_profile.organisation_invitations SET status='CANCELLED' WHERE invitation_id=p_invitation AND status='PENDING';END IF;
  RETURN true;
+END $fn$;
+
+CREATE FUNCTION profitia_profile.organisation_lifecycle_snapshot(p_decision uuid) RETURNS jsonb
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,profitia_profile AS $fn$
+DECLARE uid uuid;draft jsonb;
+BEGIN
+ uid:=profitia_profile.organisation_lifecycle_require('organisation.onboarding.read',p_decision);
+ SELECT jsonb_build_object('version',version::text,'answers',answers) INTO draft FROM profitia_profile.organisation_onboarding_drafts WHERE user_id=uid;
+ RETURN coalesce(draft,jsonb_build_object('version','0','answers','{}'::jsonb));
+END $fn$;
+-- Basic public-company projection only. It does not acquire a source, reveal
+-- another organisation or read its archives; policy/freshness still apply.
+CREATE FUNCTION profitia_profile.organisation_lifecycle_stored_company(p_nip text) RETURNS jsonb
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,profitia_profile AS $fn$
+DECLARE p jsonb;result jsonb;
+BEGIN
+ p:=profitia_profile.organisation_lifecycle_descriptor();
+ IF p_nip IS NULL OR p_nip!~'^[0-9]{10}$' THEN RAISE EXCEPTION 'Invalid identifier' USING ERRCODE='PT403';END IF;
+ SELECT jsonb_build_object('company',company,'sourceRef',source_ref,'version',version) INTO result
+ FROM profitia_profile.organisation_company_snapshots WHERE nip=p_nip AND valid_until>clock_timestamp() AND source_policy_ref=p->>'sourcePolicyRef'
+ ORDER BY retrieved_at DESC,version DESC LIMIT 1;
+ RETURN result;
+END $fn$;
+CREATE FUNCTION profitia_profile.organisation_lifecycle_recipient_salutation(p_subject text,p_decision uuid) RETURNS jsonb
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,profitia_profile,profitia_access AS $fn$
+DECLARE uid uuid;result jsonb;d jsonb;
+BEGIN
+ uid:=profitia_profile.organisation_lifecycle_require('organisation.invitation.create',p_decision);
+ d:=profitia_profile.runtime_descriptor();
+ IF profitia_profile.organisation_lifecycle_inviter(nullif(current_setting('profitia.lifecycle.organisation',true),'')::uuid,uid) IS NOT TRUE
+ THEN RAISE EXCEPTION 'Invitation recipient scope required' USING ERRCODE='PT403';END IF;
+ -- This internal mail-only projection is never returned by the HTTP batch API.
+ SELECT jsonb_build_object('firstName',to_jsonb(p)->>'first_name','vocative',to_jsonb(p)->>'name_vocative','dictionaryVersion',to_jsonb(p)->>'name_dictionary_version')
+ INTO result FROM profitia_profile.user_profiles p JOIN profitia_access.external_identities e USING(user_id)
+ WHERE e.issuer=d->>'issuer' AND e.subject=p_subject;
+ RETURN result;
+END $fn$;
+
+CREATE FUNCTION profitia_profile.organisation_lifecycle_lookup_draft(p_decision uuid) RETURNS jsonb
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,profitia_profile AS $fn$
+DECLARE uid uuid;draft jsonb;
+BEGIN
+ uid:=profitia_profile.organisation_lifecycle_require('organisation.company.lookup',p_decision);
+ SELECT jsonb_build_object('version',version::text,'answers',answers,'organisationExists',
+  EXISTS(SELECT 1 FROM profitia_profile.organisation_profiles p WHERE p.country='PL' AND p.nip=d.answers->>'nip'))
+ INTO draft FROM profitia_profile.organisation_onboarding_drafts d WHERE user_id=uid;
+ RETURN draft;
+END $fn$;
+CREATE FUNCTION profitia_profile.organisation_lifecycle_company_store(p_payload text,p_until bigint,p_signature text,p_decision uuid) RETURNS jsonb
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,profitia_profile AS $fn$
+DECLARE uid uuid;q jsonb;co jsonb;p jsonb;retrieved timestamptz;until_ts timestamptz;selected_nip text;draft_nip text;
+BEGIN
+ uid:=profitia_profile.organisation_lifecycle_commit('organisation.company.lookup',p_payload,p_until,p_signature,p_decision);
+ p:=profitia_profile.organisation_lifecycle_descriptor();q:=p_payload::jsonb;co:=q->'company';
+ IF jsonb_typeof(q) IS DISTINCT FROM 'object' OR(SELECT count(*) FROM jsonb_object_keys(q))<>6
+  OR NOT(q?'company' AND q?'sourceRef' AND q?'version' AND q?'sourcePolicyRef' AND q?'retrievedAt' AND q?'validUntil')
+  OR p->>'sourcePolicyRef' IS NULL OR q->>'sourcePolicyRef' IS DISTINCT FROM p->>'sourcePolicyRef'
+  OR jsonb_typeof(q->'sourceRef') IS DISTINCT FROM 'string' OR length(q->>'sourceRef') NOT BETWEEN 1 AND 256 OR q->>'sourceRef'~'[[:cntrl:]]'
+  OR jsonb_typeof(q->'version') IS DISTINCT FROM 'string' OR length(q->>'version') NOT BETWEEN 1 AND 256 OR q->>'version'~'[[:cntrl:]]'
+  OR jsonb_typeof(co) IS DISTINCT FROM 'object' OR(SELECT count(*) FROM jsonb_object_keys(co))<>8
+  OR NOT(co?'entityType' AND co?'country' AND co?'nip' AND co?'krs' AND co?'regon' AND co?'legalName' AND co?'address' AND co?'postalCode')
+  OR co->>'entityType' IS DISTINCT FROM 'COMPANY' OR co->>'country' IS DISTINCT FROM 'PL'
+  OR co->>'nip'!~'^[0-9]{10}$' OR co->>'krs'!~'^[0-9]{10}$' OR co->>'krs'='0000000000'
+  OR co->>'regon'!~'^([0-9]{9}|[0-9]{14})$' OR co->>'postalCode'!~'^[0-9]{2}-[0-9]{3}$'
+  OR jsonb_typeof(co->'legalName') IS DISTINCT FROM 'string' OR length(co->>'legalName') NOT BETWEEN 1 AND 300
+  OR jsonb_typeof(co->'address') IS DISTINCT FROM 'string' OR length(co->>'address') NOT BETWEEN 1 AND 500
+ THEN RAISE EXCEPTION 'Governed minimal company snapshot required' USING ERRCODE='PT403';END IF;
+ retrieved:=(q->>'retrievedAt')::timestamptz;until_ts:=(q->>'validUntil')::timestamptz;selected_nip:=co->>'nip';
+ SELECT answers->>'nip' INTO draft_nip FROM profitia_profile.organisation_onboarding_drafts WHERE user_id=uid;
+ IF draft_nip IS DISTINCT FROM selected_nip OR NOT isfinite(retrieved) OR NOT isfinite(until_ts) OR retrieved>clock_timestamp()
+  OR until_ts<=clock_timestamp() OR until_ts-retrieved>interval '7 days'
+ THEN RAISE EXCEPTION 'Current licensed source selection required' USING ERRCODE='PT403';END IF;
+ INSERT INTO profitia_profile.organisation_company_snapshots(nip,source_ref,version,company,source_policy_ref,retrieved_at,valid_until)
+ VALUES(selected_nip,q->>'sourceRef',q->>'version',co,q->>'sourcePolicyRef',retrieved,until_ts)
+ ON CONFLICT(nip,source_ref,version) DO NOTHING;
+ IF NOT EXISTS(SELECT 1 FROM profitia_profile.organisation_company_snapshots c WHERE c.nip=selected_nip AND c.source_ref=q->>'sourceRef' AND c.version=q->>'version'
+  AND c.company=co AND c.source_policy_ref=q->>'sourcePolicyRef' AND c.retrieved_at=retrieved AND c.valid_until=until_ts)
+ THEN RAISE EXCEPTION 'Immutable source snapshot conflict' USING ERRCODE='PT409';END IF;
+ RETURN jsonb_build_object('stored',true);
+END $fn$;
+CREATE FUNCTION profitia_profile.organisation_lifecycle_invitation_replay(p_command uuid,p_decision uuid) RETURNS jsonb
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,profitia_profile AS $fn$
+DECLARE uid uuid;oid uuid;r profitia_profile.organisation_invitation_batches%ROWTYPE;
+BEGIN
+ uid:=profitia_profile.organisation_lifecycle_require('organisation.invitation.create',p_decision);
+ oid:=nullif(current_setting('profitia.lifecycle.organisation',true),'')::uuid;
+ SELECT * INTO r FROM profitia_profile.organisation_invitation_batches WHERE organisation_id=oid AND user_id=uid AND command_id=p_command;
+ IF NOT FOUND THEN RETURN NULL;END IF;
+ IF r.payload_digest IS DISTINCT FROM current_setting('profitia.lifecycle.digest',true) THEN RAISE EXCEPTION 'Invitation command conflict' USING ERRCODE='PT409';END IF;
+ RETURN r.receipt;
+END $fn$;
+CREATE FUNCTION profitia_profile.organisation_lifecycle_recipient_salutations(p_subjects text[],p_decision uuid) RETURNS jsonb
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,profitia_profile,profitia_access AS $fn$
+DECLARE uid uuid;d jsonb;result jsonb;
+BEGIN
+ uid:=profitia_profile.organisation_lifecycle_require('organisation.invitation.create',p_decision);d:=profitia_profile.runtime_descriptor();
+ IF p_subjects IS NULL OR cardinality(p_subjects)>20
+  OR profitia_profile.organisation_lifecycle_inviter(nullif(current_setting('profitia.lifecycle.organisation',true),'')::uuid,uid) IS NOT TRUE
+ THEN RAISE EXCEPTION 'Bound recipient salutation batch required' USING ERRCODE='PT403';END IF;
+ SELECT coalesce(jsonb_object_agg(e.subject,jsonb_build_object('firstName',to_jsonb(p)->>'first_name','vocative',to_jsonb(p)->>'name_vocative',
+  'dictionaryVersion',to_jsonb(p)->>'name_dictionary_version')),'{}'::jsonb)
+ INTO result FROM profitia_profile.user_profiles p JOIN profitia_access.external_identities e USING(user_id)
+ WHERE e.issuer=d->>'issuer' AND e.subject=ANY(p_subjects);
+ RETURN result;
 END $fn$;

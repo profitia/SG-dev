@@ -73,7 +73,7 @@ const rules = Object.freeze({
 const organisationBootstrapRules=Object.freeze({'organisation.create':rule('organisation_admin','organisation','ORGANISATION_PRIVATE','CREATE',null,'BOOTSTRAP')})
 const organisationLifecycleRules=Object.freeze({
  'organisation.onboarding.read':rule('organisation_admin','organisation_onboarding','ACCOUNT_PRIVATE','READ',null,'ACCOUNT'),
- 'organisation.company.lookup':rule('organisation_admin','organisation_bootstrap','ACCOUNT_PRIVATE','READ',null,'BOOTSTRAP'),
+ 'organisation.company.lookup':rule('organisation_admin','organisation_bootstrap','ACCOUNT_PRIVATE','WRITE',null,'BOOTSTRAP'),
  'organisation.slug.check':rule('organisation_admin','organisation_bootstrap','ACCOUNT_PRIVATE','READ',null,'BOOTSTRAP'),
  'organisation.procurement.write':rule('organisation_admin','user_procurement_profile','USER_IN_ORGANISATION_PRIVATE','WRITE'),
  'organisation.invitation.create':rule('organisation_admin','organisation_invitation_batch','ORGANISATION_PRIVATE','WRITE'),

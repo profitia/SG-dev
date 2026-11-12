@@ -2,10 +2,12 @@ import {createHash,createHmac,createCipheriv,createDecipheriv,randomBytes,random
 import {readFileSync} from 'node:fs'
 import {createAccessStore} from './access-store.mjs'
 import {createClerkIdentityAuthenticator} from './identity-provider.mjs'
-import {createProfileSql} from './identity-profile-sql.mjs'
+import {createProfileSql,ProfileConflict} from './identity-profile-sql.mjs'
 import {createOperationExecutor,OPERATION_CONTRACT,ORGANISATION_LIFECYCLE_OPERATIONS,OperationDenied,operationPayloadDigest} from './operation-context.mjs'
 import {normalizeInvitationEmail,normalizePolishNip,normalizeOrganisationSlug,normalizeProcurementCategories} from './organisation-profile.mjs'
 
+/** Existing profile SQL attestation adapter, exposed for this native lifecycle. */
+export const createOrganisationLifecycleSql=createProfileSql
 export const ORGANISATION_LIFECYCLE_CONTRACT=Object.freeze({id:'profitia.organisation-lifecycle',version:'1.0.0'})
 export const organisationLifecycleSchemaUrl=new URL('../migrations/profile/009-organisation-lifecycle.sql',import.meta.url).href
 export const organisationLifecycleSchemaDigest=()=>createHash('sha256').update(readFileSync(new URL(organisationLifecycleSchemaUrl))).digest('hex')
@@ -101,7 +103,7 @@ export function createOrganisationLifecycleBackend(options){
    const normalized=normalizeOrganisationLifecycleInput(operation,input)
    const expectedMethod=['organisation.onboarding.read','organisation.activation.read'].includes(operation)?'GET':'POST'
    if(!(httpRequest instanceof Request)||httpRequest.method!==expectedMethod||typeof effect!=='function')throw TypeError('Native current-account receiver required')
-   let identityKey,selectedOrganisationId=null
+   let identityKey,selectedOrganisationId=null,conflict=false
    const authenticate=createClerkIdentityAuthenticator({client,application:identityApplication,now,resolveBinding:async key=>{
     identityKey=structuredClone(key);return store.resolveBinding(independentQuery,key)
    }})
@@ -143,7 +145,7 @@ export function createOrganisationLifecycleBackend(options){
         permissions:[{operation,feature:'organisation_admin',resourceId}],denies:state.access.denies}
        if(bootstrap.has(operation))state.usagePolicy='ONBOARDING_POLICY'
        state.access={...state.access,expiresAt:policy.expiresAt}
-       requests.set(session.transaction,{query,context,lease,actor:externalActor,identityKey:structuredClone(identityKey)})
+       requests.set(session.transaction,{query,context,lease,actor:externalActor,identityKey:structuredClone(identityKey),expiresAt:policy.expiresAt})
        const recheck=createClerkIdentityAuthenticator({client,application:identityApplication,now,resolveBinding:key=>store.resolveBinding(query,key)})
        try{
         result=await run({state,transaction:session.transaction,transactionalEffects:true,outputBoundaryVersion:'organisation-lifecycle-v1',projectOutput:value=>value,
@@ -172,11 +174,12 @@ export function createOrganisationLifecycleBackend(options){
     },{timeoutMs:15000,maxWaitMs:5000})
     if(!uuid.test(target??''))throw new OperationDenied('PERMISSION_DENIED')
    }
-   const value=await executor.execute({contractId:OPERATION_CONTRACT.id,contractVersion:OPERATION_CONTRACT.version,operation,resourceId,organisationId:target,
+   let value;try{value=await executor.execute({contractId:OPERATION_CONTRACT.id,contractVersion:OPERATION_CONTRACT.version,operation,resourceId,organisationId:target,
     payload,...(bootstrap.has(operation)?{idempotencyKey:randomUUID()}:{}),request:httpRequest},async(context,transaction)=>{
      const unit=requests.get(transaction);if(!unit||context.organisationId!==selectedOrganisationId)unavailable()
-     return effect(Object.freeze({context,query:unit.query,profile:unit.context,actor:unit.actor,identityKey:unit.identityKey,input:normalized,products:unit.lease.state.products}))
+     try{return await effect(Object.freeze({context,query:unit.query,profile:unit.context,actor:unit.actor,identityKey:unit.identityKey,expiresAt:unit.expiresAt,input:normalized,products:unit.lease.state.products}))}catch(error){if(error instanceof ProfileConflict||error?.code==='PT409')conflict=true;throw error}
     })
+   }catch(error){if(conflict&&error?.reasonCode==='POLICY_UNAVAILABLE')throw new ProfileConflict();throw error}
    return value.value
   }
  })

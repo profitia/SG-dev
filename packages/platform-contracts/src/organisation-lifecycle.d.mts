@@ -10,9 +10,11 @@ export interface OrganisationInvitationEnvelope{keyId:string;iv:string;tag:strin
 export interface OrganisationInvitationEncryption{key:Uint8Array;keyId:string;invitationId:string}
 export declare function sealOrganisationInvitation(payload:unknown,options:OrganisationInvitationEncryption):Readonly<OrganisationInvitationEnvelope>
 export declare function openOrganisationInvitation(envelope:OrganisationInvitationEnvelope,options:OrganisationInvitationEncryption):unknown
-export interface OrganisationLifecycleUnit{context:Readonly<OperationContext>;query:AccessQuery;profile:Readonly<Record<string,any>>;actor:Readonly<Actor>;identityKey:Readonly<ExternalIdentityKey>;input:Readonly<Record<string,any>>;products:readonly ProductGrant[]}
+export interface OrganisationLifecycleUnit{context:Readonly<OperationContext>;query:AccessQuery;profile:Readonly<Record<string,any>>;actor:Readonly<Actor>;identityKey:Readonly<ExternalIdentityKey>;expiresAt:string;input:Readonly<Record<string,any>>;products:readonly ProductGrant[]}
 export declare function createOrganisationLifecycleBackend<T>(options:{
  client:ClerkIdentityClient;binding:AccessStoreBinding;application:Application;identityApplication:IdentityApplication
  independentQuery:AccessQuery;schemaDigest:string;proofKey:Uint8Array;now?:()=>number
  transact<R>(run:(session:{query:AccessQuery;transaction:T})=>Promise<R>,limits:{timeoutMs:number;maxWaitMs:number}):Promise<R>
 }):Readonly<{contract:typeof ORGANISATION_LIFECYCLE_CONTRACT;ready():Promise<unknown>;execute<R>(request:Request,operation:OrganisationLifecycleOperation,input:unknown,effect:(unit:OrganisationLifecycleUnit)=>Promise<R>):Promise<R>}>
+
+export declare function createOrganisationLifecycleSql(options:{binding:AccessStoreBinding;issuer:string;schemaDigest:string;proofKey:Uint8Array;now?:()=>number}):Readonly<{descriptor(query:AccessQuery):Promise<any>;queryOne(query:AccessQuery,text:string,values?:unknown[]):Promise<Record<string,any>>;attest(query:AccessQuery,input:{operation:string;principal:string;issuer?:string;identityUntil?:number;expiresAt:number}):Promise<Readonly<{until:number;signature:string}>>}>

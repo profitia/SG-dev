@@ -1,4 +1,6 @@
 import {conversationThemeClientScript} from './account-visuals.js'
+import {organisationInvitationEntryClientScript} from './organisation-onboarding.js'
+import {organisationInvitationTokenHash} from '@profitia/platform-contracts/organisation-invitations'
 import type { OrganisationHttpSurface } from './organisation-http.js'
 import type { OrganisationDraftSurface } from './organisation-draft.js'
 import type { RegistrationSurface } from './registration.js'
@@ -22,7 +24,7 @@ async function body(request: Request, maximum = 4096): Promise<unknown> {
   try { return JSON.parse(Buffer.concat(chunks).toString('utf8')) } catch { throw new BoundaryError(400, 'INVALID_JSON') }
 }
 /** A missing SDK/authority is an explicit health-only application, never an operational login. */
-export function createHttpHandler(boundary: SessionBoundary | null, account: AccountSurface | null = null, avatar: AssistantAvatarSurface | null = null, email: EmailSurface | null = null, language: CommunicationLanguageSurface | null = null, registration: RegistrationSurface | null = null, embedded: ((request: Request) => Promise<Response | null>) | null = null, salutation: AccountSalutationSurface | null = null, currentE1: CurrentE1Authority | null = null, organisationDraft: OrganisationDraftSurface | null = null, organisation: OrganisationHttpSurface | null = null) {
+export function createHttpHandler(boundary: SessionBoundary | null, account: AccountSurface | null = null, avatar: AssistantAvatarSurface | null = null, email: EmailSurface | null = null, language: CommunicationLanguageSurface | null = null, registration: RegistrationSurface | null = null, embedded: ((request: Request) => Promise<Response | null>) | null = null, salutation: AccountSalutationSurface | null = null, currentE1: CurrentE1Authority | null = null, organisationDraft: OrganisationDraftSurface | null = null, organisation: OrganisationHttpSurface | null = null, invitationEntry: Readonly<{targetId:string;routeKey:string}> | null = null) {
   return async (request: Request): Promise<Response> => {
     try {
       const url = new URL(request.url)
@@ -38,6 +40,28 @@ export function createHttpHandler(boundary: SessionBoundary | null, account: Acc
         if (request.headers.has('cookie') || request.headers.has('origin') || request.headers.get('content-type') !== 'application/json') return json(403,{error:'E1_REQUEST_REFUSED'})
         try {const input=await body(request,24576);return json(200,recurring?(url.pathname.endsWith('/component-ready')?await currentE1.recurringComponentReady!(request,input):url.pathname.endsWith('/consent')?await currentE1.recurringConsent!(request,input):await currentE1.authorizeRecurring!(request,input)):source?await currentE1.authorizeSource!(request,input):await currentE1.authorize(request,input))}
         catch (error) {const reason=(error as {reasonCode?:string}).reasonCode;return json(reason==='ACCESS_BASIS_INVALID'||(source||recurring)&&['UNVERIFIED_IDENTITY','IDENTITY_REQUIRED','PERMISSION_DENIED','PRODUCT_UNAVAILABLE','EXPLICIT_DENY'].includes(reason??'')?403:503,{error:'E1_AUTHORITY_REFUSED'})}
+      }
+      if(url.pathname==='/invite'||url.pathname==='/organisation-invitation-entry'){
+        if(!boundary||!account||!organisation?.conversation||!organisation.acceptInvitation||!invitationEntry)return json(503,{error:'ONBOARDING_UNAVAILABLE'});
+        if(request.method!=='GET')return json(405,{error:'METHOD_NOT_ALLOWED'});
+        if(url.origin!==boundary.configuration.origin||url.username||url.password||url.hash)return json(403,{error:'REQUEST_ORIGIN_REJECTED'});
+        if(url.pathname==='/organisation-invitation-entry'){
+          if(url.search)return json(404,{error:'NOT_FOUND'});
+          return new Response(organisationInvitationEntryClientScript,{headers:{...headers,'content-type':'text/javascript; charset=utf-8'}});
+        }
+        const keys=[...url.searchParams.keys()];
+        // A scanner can inspect the page; this never invokes acceptance or creates a membership.
+        // A query-free reload presents recovery text through the same conversation.
+        if(url.search){try{if(keys.length!==1||keys[0]!=='proof')throw Error();organisationInvitationTokenHash(url.searchParams.get('proof'));}catch{return json(400,{error:'INVALID_INVITATION_LINK'})}}
+        return new Response(accountPage(boundary.configuration,invitationEntry.targetId,invitationEntry.routeKey,'registration',registration!==null,true,true),
+          {headers:{...headers,'content-type':'text/html; charset=utf-8','content-security-policy':"frame-ancestors 'none'; base-uri 'none'",'x-frame-options':'DENY'}});
+      }
+      if(url.pathname==='/v1/account/organisation-onboarding/invitation-accept'){
+        if(url.search||url.hash)return json(404,{error:'NOT_FOUND'});
+        if(request.method!=='POST')return json(405,{error:'METHOD_NOT_ALLOWED'});
+        if(!boundary||!account||!organisation?.acceptInvitation)return json(503,{error:'ONBOARDING_UNAVAILABLE'});
+        checkRequest(request,boundary.configuration,true);
+        return json(200,await organisation.acceptInvitation(request,await body(request)));
       }
       const conversationPath='/v1/account/organisation-onboarding/'
       const conversationRoute=url.pathname.startsWith(conversationPath)?url.pathname.slice(conversationPath.length):''

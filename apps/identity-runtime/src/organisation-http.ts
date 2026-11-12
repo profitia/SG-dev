@@ -25,6 +25,7 @@ export interface OrganisationConversationSurface {
 
 export interface OrganisationHttpSurface {
   readonly conversation?: OrganisationConversationSurface
+  acceptInvitation?(request: Request, input: unknown): Promise<Readonly<{status:string}>>
   ready(): Promise<void>
   complete(request: Request, input: unknown): Promise<OrganisationCreationReceipt>
 }
@@ -46,6 +47,7 @@ export function readOrganisationBootstrapOptIn(env: Readonly<Record<string, stri
  * tenant from browser input. Atomic creation and replay stay in the shared SDK. */
 export function createOrganisationHttpSurface(options: {
   conversation?: OrganisationConversationSurface
+  acceptInvitation?: OrganisationHttpSurface['acceptInvitation']
   configuration: RuntimeConfiguration; client: RuntimeSdk
   binding: IdentityProvisioningOptions<pg.PoolClient>['binding']; schemaDigest: string; proofKey: Uint8Array
   bootstrapSchemaDigest: string; transact: ReturnType<typeof accountTransactions>; independentQuery: AccessQuery
@@ -68,6 +70,7 @@ export function createOrganisationHttpSurface(options: {
   backend()
   return Object.freeze({
     ...(options.conversation ? {conversation: options.conversation} : {}),
+    ...(options.acceptInvitation ? {acceptInvitation:options.acceptInvitation} : {}),
     async ready() { await backend().ready(); await options.conversation?.ready() },
     async complete(request: Request, input: unknown) {
       checkRequest(request, configuration, true)
