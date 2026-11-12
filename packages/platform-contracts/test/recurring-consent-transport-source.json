@@ -16,7 +16,7 @@
     "apps/sg-runtime/components/procurement-insights/market-calendar.tsx": "a712cd3acedf4e4a578aab6934e3c49e9fb35b97307bd6ef80e0c9643532bf34",
     "apps/sg-runtime/tests/market-calendar.test.tsx": "46f758d97137fd35dddaae0392049f245335653ac2bdb2c6ec5f89c3e2007482",
     "apps/platform-source-hub/scripts/ci-routing.mjs": "39da4bc9fc2045ba03163c4030ca3aaa382dd6c5b1ddf7b207b6239f02134a85",
-    "apps/platform-source-hub/test/ci-routing.test.mjs": "27271f417feb12e3711b2398c0a5b306b5533fe893b0bf82c79a2739c173d983",
+    "apps/platform-source-hub/test/ci-routing.test.mjs": "cb055b84ae1cf587bd34fcd9d8db16d0c6992f8426281680706d4682800943c8",
     "apps/sg-runtime/tests/porr-demo-middleware.test.ts": "79e186a98cf1d964330cdbe2f9c13add1b30bdf703ef865a310812d295c3d820",
     "apps/srm/scripts/private-host.integration.test.mjs": "5aa33ff01ae8e6ebadf55d4cd460a5b8b8efa39c9181e09d821507db8dab1c33",
     "apps/srm/scripts/supplier-location-admission.integration.test.mjs": "bff94cdbd24cb1eac6d5c8ad3bc9b585eeada63b3c47e3433f6f6b2b3edb2e78"
