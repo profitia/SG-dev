@@ -11,7 +11,7 @@ import {postgresFixture,clerkFixture} from '../../../packages/platform-contracts
 import {createIdentityProvisioner} from '../../../packages/platform-contracts/src/identity-provisioning.mjs'
 import {createOrganisationOnboardingDraftBackend,organisationOnboardingSchemaDigest} from '../../../packages/platform-contracts/src/organisation-profile.mjs'
 import {organisationBootstrapSchemaDigest} from '../../../packages/platform-contracts/src/organisation-bootstrap.mjs'
-import {organisationLifecycleSchemaDigest,openOrganisationInvitation} from '../../../packages/platform-contracts/src/organisation-lifecycle.mjs'
+import {organisationLifecycleSchemaDigest,openOrganisationInvitation,createOrganisationLifecycleBackend} from '../../../packages/platform-contracts/src/organisation-lifecycle.mjs'
 import {ORGANISATION_LIFECYCLE_OPERATIONS} from '../../../packages/platform-contracts/src/operation-context.mjs'
 
 test('recipient lookup refuses partial/unverified hits, ambiguity and truncated provider responses',async()=>{
@@ -67,6 +67,13 @@ test('native organisation store commits real scoped categories and idempotent in
   const found=await owner.lookupCompany(post(),{nip:company.nip,draftVersion:'1'});assert.equal(found.company.legalName,company.legalName);assert.equal(acquisitions,1)
   const again=await owner.lookupCompany(post(),{nip:company.nip,draftVersion:'1'});assert.deepEqual(again,found);assert.equal(acquisitions,1)
   const snapshot=await owner.snapshot(get());assert.equal(snapshot.organisation,null);assert.equal(snapshot.company.company.nip,company.nip)
+  const sourceReceiver=createOrganisationLifecycleBackend({...db.options(actors.owner),application:{...db.options(actors.owner).application,features:['organisation_admin'],operations:['organisation.company.lookup']}})
+  const envelope=await sourceReceiver.execute(post(),'organisation.company.lookup',{nip:company.nip,draftVersion:'1'},async unit=>
+   (await unit.query('SELECT profitia_profile.organisation_lifecycle_company_envelope($1,$2::uuid) AS value',[company.nip,unit.context.decisionId])).rows[0].value)
+  assert.deepEqual(Object.keys(envelope).sort(),['company','retrievedAt','sourcePolicyRef','sourceRef','validUntil','version'])
+  assert.equal(envelope.company.nip,company.nip);assert.equal(envelope.sourcePolicyRef,'test-source-policy')
+  await assert.rejects(db.pool.query('SELECT profitia_profile.organisation_lifecycle_company_envelope($1,gen_random_uuid())',[company.nip]))
+
  })
  const finalDraft=await draft.saveCurrentDraft(post(),{expectedVersion:'1',patch:{companySelection:{sourceRef:'synthetic-registry',version:'snapshot-1'},slug:'test-store-company',
   industry:{id:'construction'},categories:[{catalogueId:'construction.asphalt'}],teamRange:'1-5'}})

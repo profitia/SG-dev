@@ -51,3 +51,6 @@ test('Root requires lifecycle policy to bind exact actor, tenant, input, resourc
  }
  const missing=await run(s=>{delete s.lifecyclePolicy});await assert.rejects(missing.promise);assert.equal(missing.called(),false)
 })
+
+import {createRequire} from 'node:module'
+test('lifecycle uses the same public ESM and Node24 CommonJS entry as existing native consumers',()=>{const value=createRequire(import.meta.url)('@profitia/platform-contracts/organisation-lifecycle');assert.equal(typeof value.createOrganisationLifecycleBackend,'function');assert.equal(value.ORGANISATION_LIFECYCLE_CONTRACT.version,'1.0.0')})

@@ -494,3 +494,21 @@ BEGIN
  WHERE e.issuer=d->>'issuer' AND e.subject=ANY(p_subjects);
  RETURN result;
 END $fn$;
+
+-- Licensed basic-company envelope for the separately admitted native registry receiver.
+-- It carries no private archive and is available only under actual current Root lookup intent.
+CREATE FUNCTION profitia_profile.organisation_lifecycle_company_envelope(p_nip text,p_decision uuid) RETURNS jsonb
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,profitia_profile AS $fn$
+DECLARE uid uuid;p organisation_lifecycle_policies%ROWTYPE;
+BEGIN
+ uid:=organisation_lifecycle_require('organisation.company.lookup',p_decision);
+ SELECT * INTO p FROM organisation_lifecycle_policies WHERE login_role=session_user AND enabled;
+ IF NOT FOUND OR p_nip!~'^[0-9]{10}$' THEN RAISE EXCEPTION 'Current company scope required' USING ERRCODE='PT403';END IF;
+ IF NOT EXISTS(SELECT 1 FROM organisation_onboarding_drafts WHERE user_id=uid AND answers->>'nip'=p_nip)
+ THEN RAISE EXCEPTION 'Own current company draft required' USING ERRCODE='PT403';END IF;
+ RETURN(SELECT jsonb_build_object('company',company,'sourceRef',source_ref,'version',version,'sourcePolicyRef',source_policy_ref,
+  'retrievedAt',retrieved_at,'validUntil',valid_until) FROM organisation_company_snapshots
+  WHERE nip=p_nip AND source_policy_ref=p.source_policy_ref AND valid_until>clock_timestamp()
+  ORDER BY retrieved_at DESC,source_ref,version LIMIT 1);
+END $fn$;
+REVOKE ALL ON FUNCTION profitia_profile.organisation_lifecycle_company_envelope(text,uuid) FROM PUBLIC;
