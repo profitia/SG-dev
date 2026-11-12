@@ -11,6 +11,9 @@ export const RECURRING_CONSENT_TRANSPORT_PATHS=Object.freeze([
  'apps/sg-runtime/tests/procurement-insights-completion-integrity.mjs',
  'apps/sg-runtime/components/procurement-insights/workspace.css',
  'apps/sg-runtime/market-calendar-integration.json',
+ 'apps/sg-runtime/components/procurement-insights/market-calendar.css',
+ 'apps/sg-runtime/components/procurement-insights/market-calendar.tsx',
+ 'apps/sg-runtime/tests/market-calendar.test.tsx',
 ]);
 const added=new Set(RECURRING_CONSENT_TRANSPORT_PATHS.slice(1,3));
 const hash=b=>createHash('sha256').update(b).digest('hex');
