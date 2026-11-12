@@ -241,3 +241,14 @@ test('immutable61 source profile remains verifiable after original recurring rou
  assert.equal(hash(old(sourcePath)),'61c57570f25fe90c89a5d2bd0f27f2b228091a6bd239a72a7f1fc87e06ae36ad')
  for(const projectKey of ['SG2','SRM'])assert(sdkContinuationPredecessor(receipt(projectKey,old),old,historical,{projectKey}))
 })
+
+test('separate SG2 Calendar helper is authenticated before the exact accepted Calendar view and all69 history remains closed',()=>{
+ const file='apps/sg-runtime/tests/market-calendar-integrity.mjs'
+ for(const projectKey of ['SG2','SRM']){
+  assert(sdkContinuationPredecessor(receipt(projectKey),current,historical,{projectKey}))
+  assert.throws(()=>sdkContinuationPredecessor(receipt(projectKey),p=>p===file?Buffer.concat([current(p),Buffer.from('UNREVIEWED')]):current(p),historical,{projectKey}))
+ }
+ const old=p=>historical('9f6dc4176bbdd0cbe2a7cfcb2e6dd99351b02506',p)
+ assert.equal(hash(old(sourcePath)),'0174f13d576346174ab07e50bff31abcacc57400d0f8779531c8aa146994bb1f')
+ for(const projectKey of ['SG2','SRM'])assert(sdkContinuationPredecessor(receipt(projectKey,old),old,historical,{projectKey}))
+})
