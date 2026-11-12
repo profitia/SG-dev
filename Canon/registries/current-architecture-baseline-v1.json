@@ -551,10 +551,11 @@
       "capability": "Architecture Workspace",
       "name": "Architecture Development Workspace",
       "pathPatterns": [
-        ".devcontainer/architecture/**"
+        ".devcontainer/architecture/**",
+        ".devcontainer/shared/**"
       ],
       "currentOwner": "Governance Source Layer",
-      "currentResponsibility": "Architecture workspace bootstrap, isolated configuration and continuity artifacts.",
+      "currentResponsibility": "Architecture workspace and shared Development host bootstrap, isolated project configuration and continuity artifacts.",
       "baselineClassification": "ALIGNED",
       "parentSurfaceId": null,
       "cleanupReason": null,
