@@ -31,12 +31,12 @@ async function setup({eventAt=new Date(Date.now()+3600000).toISOString()}={}){
  }
  return f
 }
-async function response(path,{value='0',unitOverride=null,periodOverride=null}={}){
+async function response(path,{value='0',unitOverride=null,periodOverride=null,basis='SYNTHETIC_RESULT_RIGHTS'}={}){
  const subset=measures.filter(m=>m.data.sourceSelector.path===path),series=subset.map(m=>m.data.sourceSelector.series),receipt=randomUUID(),period=periodOverride??periods[pubFor(path)]
  const command={contractVersion:'1.4.0',provider:'eia',family:'series-observations',operation:'observations',criteria:{path,frequency:'weekly',data:['value'],facets:{series,duoarea:['NUS']},limit:1000}}
  const r=await createEiaProvider({fetchImpl:async()=>Response.json({response:{frequency:'weekly',total:String(subset.length),data:subset.map(m=>({period,series:m.data.sourceSelector.series,duoarea:'NUS',value,units:unitOverride??wireUnit[m.data.unit]}))}})}).acquire(command)
  r.usage={receiptRef:receipt,upstreamAttempts:1,cacheHit:false};r.provenance.licenceRef='SYNTHETIC_RESULTS'
- for(const i of r.items)Object.assign(i.metadata,rights(receipt,'SYNTHETIC_RESULT_RIGHTS','SYNTHETIC_RESULTS',{datasetId:path,seriesIds:series,fields:['value'],frequency:'weekly',geography:'NUS'}))
+ for(const i of r.items)Object.assign(i.metadata,rights(receipt,basis,'SYNTHETIC_RESULTS',{datasetId:path,seriesIds:series,fields:['value'],frequency:'weekly',geography:'NUS'}))
  return{command,response:r,intentDigest:fingerprint({receipt})}
 }
 const persist=(f,r)=>persistResults(f.ingest,r.command,r.response,{intentDigest:r.intentDigest})
@@ -73,5 +73,37 @@ test('enabling email before a historical backfill does not send a backlog of old
   assert.equal((await f.api('notifications',{method:'PUT',body:{expectedVersion:0,settings:{emailEnabled:true,timeZone:'Europe/Warsaw'}}})).status,200)
   await persist(f,await response('petroleum/stoc/wstk'))
   const count=await f.e1.calendar.asOwner(owner,q=>q.query('SELECT count(*)::integer AS count FROM economic_calendar.notification_outbox'));assert.equal(count.rows[0].count,0)
+ }finally{await f.close()}
+})
+
+// A new owner decision must not rewrite or hide legitimately retained history.
+test('historical result bases remain readable only inside the current active licence and series scope',async()=>{
+ const f=await setup(),path='petroleum/pri/gnd';try{
+  await persist(f,await response(path,{value:'12'}));
+  const e=(await f.api('events')).body.items.find(x=>x.source.publicationRef==='eia:gasdiesel');
+  const before=await f.e1.calendar.asOwner(owner,q=>q.query("SELECT observation_id,sequence,basis_ref,fingerprint FROM economic_calendar.result_observations WHERE dataset_id=$1 ORDER BY observation_id,sequence",[path]));
+  assert.equal(before.rowCount,2);
+  await f.e1.calendar.asOwner(owner,q=>q.query("UPDATE economic_calendar.result_storage_policies SET basis_ref='SYNTHETIC_NEW_RESULT_RIGHTS',version=version+1 WHERE dataset_id=$1",[path]));
+  const historical=await f.api('evidence/'+e.eventId);assert.equal(historical.status,200);assert.equal(historical.body.results.length,2,'prior legitimate basis stays readable after an owner rights update');
+  const unchanged=await f.e1.calendar.asOwner(owner,q=>q.query("SELECT observation_id,sequence,basis_ref,fingerprint FROM economic_calendar.result_observations WHERE dataset_id=$1 ORDER BY observation_id,sequence",[path]));
+  assert.deepEqual(unchanged.rows,before.rows,'stored provenance and facts are not rewritten');
+  await assert.rejects(f.ingest.query("INSERT INTO economic_calendar.result_observations SELECT (jsonb_populate_record(NULL::economic_calendar.result_observations,to_jsonb(o)||jsonb_build_object('observation_id',o.observation_id||'-old-basis-write'))).* FROM economic_calendar.result_observations o WHERE dataset_id=$1 LIMIT 1",[path]),{code:'42501'},'history read cannot authorize a new write under an old basis');
+  await assert.rejects(f.ingest.query('SELECT * FROM economic_calendar.result_storage_policy_history'),{code:'42501'});
+  assert.equal((await f.ingest.query("SELECT economic_calendar.result_allowed('eia',$1,$2,'SYNTHETIC_RESULTS','FORGED_BASIS') AS allowed",[path,measures.find(m=>m.data.sourceSelector.path===path).data.sourceSelector.series])).rows[0].allowed,false);
+  await persist(f,await response(path,{value:'13',basis:'SYNTHETIC_NEW_RESULT_RIGHTS'}));
+  assert.equal((await f.ingest.query('SELECT count(*)::integer AS n FROM economic_calendar.result_observations WHERE dataset_id=$1',[path])).rows[0].n,4);
+  const links=(await f.ingest.query('SELECT count(*)::integer AS n FROM economic_calendar.result_links')).rows[0].n;
+  await persist(f,await response(path,{value:'13',basis:'SYNTHETIC_NEW_RESULT_RIGHTS'}));
+  assert.equal((await f.ingest.query('SELECT count(*)::integer AS n FROM economic_calendar.result_links')).rows[0].n,links,'replayed unchanged values do not create artificial link versions');
+  await f.e1.calendar.asOwner(owner,q=>q.query("UPDATE economic_calendar.result_storage_policies SET status='REVOKED',version=version+1 WHERE dataset_id=$1",[path]));
+  assert.equal((await f.api('evidence/'+e.eventId)).body.results.length,0,'recorded historical rights never revive a revoked current scope');
+  const first=measures.find(m=>m.data.sourceSelector.path===path).data.sourceSelector.series;
+  await f.e1.calendar.asOwner(owner,q=>q.query("UPDATE economic_calendar.result_storage_policies SET status='ACTIVE',series_ids=ARRAY[$2]::text[],version=version+1 WHERE dataset_id=$1",[path,first]));
+  const visible=(await f.api('evidence/'+e.eventId)).body.results;assert(visible.length>0);assert(visible.every(x=>x.seriesId===first),'historical policy cannot re-admit an excluded series');
+  await f.e1.calendar.asOwner(owner,async q=>{
+   await q.query("UPDATE economic_calendar.result_storage_policies SET basis_ref='SYNTHETIC_RESULT_RIGHTS',status='REVOKED',version=version+1 WHERE dataset_id=$1",[path]);
+   await q.query("UPDATE economic_calendar.result_storage_policies SET basis_ref='SYNTHETIC_NEW_RESULT_RIGHTS',status='ACTIVE',series_ids=$2,version=version+1 WHERE dataset_id=$1",[path,measures.filter(m=>m.data.sourceSelector.path===path).map(m=>m.data.sourceSelector.series)]);
+  });
+  const afterBasisRevocation=(await f.api('evidence/'+e.eventId)).body.results;assert.equal(afterBasisRevocation.length,2);assert(afterBasisRevocation.every(x=>x.actual==='13'),'a revoked historical basis never revives through another active basis');
  }finally{await f.close()}
 })

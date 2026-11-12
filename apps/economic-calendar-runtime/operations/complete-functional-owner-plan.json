@@ -466,7 +466,7 @@
   ],
   "sourceDigests": {
     "apps/economic-calendar-runtime/migrations/004-notifications.sql": "a4e906882a95700b1711ae4bf032a7762348b3fdfde83f18991e7c05f633ee74",
-    "apps/economic-calendar-runtime/migrations/005-expanded-results.sql": "99f7c102d16c562ad9fbd92e0a5ebd67a55a51ef76f807e181f20108540e772f",
+    "apps/economic-calendar-runtime/migrations/005-expanded-results.sql": "8f57d75fcade1e464ed4c337c76de6350c7a672fc8cd6d9f13052fb0c26d05d8",
     "apps/platform-source-hub/migrations/011-expanded-ecr-results.sql": "ddb153d529dfcab0db41d00bf051fb0d301ab0f432d80a51beb417aaf1916521",
     "packages/platform-contracts/current-e1-authority/migrations/015-calendar-delivery.sql": "f561b9bcd369886d3db6210d3411e626ad64cd3d2a763a0e5d8f99afd066f68e",
     "apps/economic-calendar-runtime/operations/expanded-semantic-bootstrap.json": "ca7bf3046850011ee3aa050059b3630ed6d380c0d40009d72afd44de504a289a"
