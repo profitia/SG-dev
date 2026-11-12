@@ -16,7 +16,7 @@
     "packages/platform-contracts/test/recurring-consent-transport-source.mjs": "55c3feffe5a2935fc273ef525ae6c5fda80555ddc650c514629146cf910f1db9",
     "apps/sg-runtime/tests/pci-smart-integrity.test.mjs": "44292ac3ec5ed822daddce35d78bdb403712fa255fe7e94c9d9dc0517a32b5b6",
     "apps/platform-source-hub/scripts/ci-routing.mjs": "a61aca6d588f00ce38f1bb9965ae6472790d31b5e6a5ad6aacfc86aacf29824f",
-    "apps/platform-source-hub/test/ci-routing.test.mjs": "9d8d836d97bdc3984a93377e59352f812394d59ebf02963366f052dd07615918"
+    "apps/platform-source-hub/test/ci-routing.test.mjs": "3e2cd364c4064e385ea69f49a6566b072814a1a6e960333bb1c45b1f9e78fe2f"
   },
   "preservedReceipts": {
     "apps/architecture-lab/market-calendar-test-compatibility.json": "52e859d4a99bc4c8e4d986f38afea2d58e9c1fe1ee1e0eb62cc2672dbdb60078",
