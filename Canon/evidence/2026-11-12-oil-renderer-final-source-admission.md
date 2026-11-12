@@ -8,17 +8,20 @@ This source acceptance still requires normal CI, original controlled proof and
 main adoption; it is not by itself a deployment permit.
 
 The existing PR975 is reconciled onto accepted main
-`924f803f807f63de2505734b50883c9047e78a70`. The renderer and its PostgreSQL test
+`46094e5654066552768264dd47027eaa18e833a4`, retaining the separately accepted
+Calendar consumer from PR1043. The renderer and its PostgreSQL test
 retain the previously approved SHA-256 values
 `fc60502cbab052bbe90f7598b437b896bcd94c32fc6037d48203bf0e5d6456cf` and
 `f887f544b7eced7928d41b0ed84b0e5b0ccd4b7828f7272d10f42e19a5409a47`.
 
 The separate `apps/sg-runtime/oil-renderer-integration.json` record has SHA-256
-`86aac15d5fd9d51fc5de3c7768ac2ef2808595575fbf00168e36eaa4d26705f5`.
-Its four exact source digests bind those two files, the existing ECR-week
-verifier and the existing PCI candidate-coverage test. The accepted Calendar
-version of the ECR-week test remains physically unchanged; the two new successor
-regressions are in the already-authorized PCI test. Fourteen
+`6afdd65e66d8a7d8ceb4ab68601ba6d1c1bfac43bbac879d01bb61c9962e7ad6`.
+Its three exact source digests bind those two files and the existing ECR-week
+verifier. Both accepted Calendar tests, including the aggregate PCI candidate
+coverage test, remain physically unchanged. The two renderer regression cases
+are retained in the already-authorized controller test. After authenticating
+every renderer byte, the verifier exposes a computed additive coverage view to
+the unchanged aggregate; it never edits a historical manifest. Fourteen
 historical receipts, including current ECR-week, remain byte-identical.
 
 The trusted controller first validates the record, every reviewed current byte,
