@@ -6,8 +6,8 @@
   "baseCandidateSha": "0c5a6ce71127f13402a14b256745e0fb0ffd5a1d",
   "sourceDigests": {
     "packages/platform-contracts/current-e1-authority/recurring.mjs": "b1795c5b90f95b07ab0c5b3694a5cf89b219ef79d6bde599c59c1272119ea052",
-    "packages/platform-contracts/test/recurring-consent-transport.test.mjs": "584aa9260f2074d9f6e92733c5087c3ee20ff6179752b9273a575a78708007f5",
-    "packages/platform-contracts/test/recurring-consent-transport-source.mjs": "92db43f06c8a3ee97eb314bc4ae2acb388b6baf98197013e6099fce4da06f30c",
+    "packages/platform-contracts/test/recurring-consent-transport.test.mjs": "45fe37eb2d44e73705fc0612c927da53a34796abd8593335182a61f4b4dc45b4",
+    "packages/platform-contracts/test/recurring-consent-transport-source.mjs": "cdd6edb2f7018545ad60dd62b2b8fee2d46de01c7123e8a4d5f1aaac32df816d",
     "apps/architecture-lab/private-recurring-source.mjs": "f89a8527e2ffda7531a2dae4be3202b0a267e093591a8dec610cb13e114dd3a9",
     "apps/sg-runtime/tests/procurement-insights-completion-integrity.mjs": "0359f3796885e91be502c39465eababadab49e489ae207cf5abde2facf449e4e",
     "apps/sg-runtime/components/procurement-insights/workspace.css": "59b202600210bffc554d8417c05c3229ab7380ce865812e6cbc6092197edb9cd",
@@ -16,7 +16,10 @@
     "apps/sg-runtime/components/procurement-insights/market-calendar.tsx": "a712cd3acedf4e4a578aab6934e3c49e9fb35b97307bd6ef80e0c9643532bf34",
     "apps/sg-runtime/tests/market-calendar.test.tsx": "46f758d97137fd35dddaae0392049f245335653ac2bdb2c6ec5f89c3e2007482",
     "apps/platform-source-hub/scripts/ci-routing.mjs": "39da4bc9fc2045ba03163c4030ca3aaa382dd6c5b1ddf7b207b6239f02134a85",
-    "apps/platform-source-hub/test/ci-routing.test.mjs": "27271f417feb12e3711b2398c0a5b306b5533fe893b0bf82c79a2739c173d983"
+    "apps/platform-source-hub/test/ci-routing.test.mjs": "27271f417feb12e3711b2398c0a5b306b5533fe893b0bf82c79a2739c173d983",
+    "apps/sg-runtime/tests/porr-demo-middleware.test.ts": "79e186a98cf1d964330cdbe2f9c13add1b30bdf703ef865a310812d295c3d820",
+    "apps/srm/scripts/private-host.integration.test.mjs": "5aa33ff01ae8e6ebadf55d4cd460a5b8b8efa39c9181e09d821507db8dab1c33",
+    "apps/srm/scripts/supplier-location-admission.integration.test.mjs": "bff94cdbd24cb1eac6d5c8ad3bc9b585eeada63b3c47e3433f6f6b2b3edb2e78"
   },
   "preservedReceipts": {
     "apps/architecture-lab/private-recurring-source.json": "75877d5750e07d1c8172be0af76bc5933f2eeefc22cc39747a2621b9cab24619",
@@ -69,6 +72,8 @@
     "apps/sg-runtime/tests/procurement-insights-completion-integrity.mjs",
     "apps/sg-runtime/tests/procurement-insights-completion.test.mjs",
     "apps/sg-runtime/tests/procurement-insights-shell-integrity.mjs",
+    "apps/srm/scripts/private-host.integration.test.mjs",
+    "apps/srm/scripts/supplier-location-admission.integration.test.mjs",
     "packages/platform-contracts/current-e1-authority/recurring.mjs",
     "packages/platform-contracts/test/recurring-consent-transport-source.json",
     "packages/platform-contracts/test/recurring-consent-transport-source.mjs",

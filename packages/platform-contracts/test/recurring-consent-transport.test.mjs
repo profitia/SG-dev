@@ -60,7 +60,7 @@ const sourceBytes=p=>fs.readFileSync(new URL('../../../'+p,import.meta.url));
 const historical=(sha,p)=>execFileSync('git',['show',sha+':'+p],{cwd:root,stdio:['ignore','pipe','pipe']});
 test('consent correction authenticates its actual source graph and retains accepted predecessor bytes',()=>{
  const accepted=recurringConsentTransportPredecessor(sourceBytes,historical);
- assert.equal(Object.keys(accepted.manifest.sourceDigests).length,12);
+ assert.equal(Object.keys(accepted.manifest.sourceDigests).length,15);
  for(const p of RECURRING_CONSENT_TRANSPORT_PATHS.filter(p=>!p.includes('/test/recurring-consent-transport'))){
   assert.deepEqual(accepted.previousBytes(p),historical(RECURRING_CONSENT_TRANSPORT_BASE,p));
  }
