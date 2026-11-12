@@ -16,12 +16,12 @@
 | Tryb | OWNER ACCEPTANCE / DESIGN CLOSED — bez execution |
 | Etap | F — zakończony; A–F domknięte projektowo, 28/28 USTALONE |
 | Utworzono / zaktualizowano | 2026-11-12 / 2026-11-12, Europe/Warsaw |
-| Rewizja | 7 — harmonogram end-to-end: 2 etapy, 19 tasków, Full Autopilot; specyfikacja v1 bez zmian |
-| Rewizja bazowa ostatniej aktualizacji | PDR aba201dc95777dde9124cdd54841a304c714e1ba; aktualne źródła governance main 82bcb78813937331d7822a96c5319b26e788abe1 |
+| Rewizja | 8 — DEC-05: Full Autopilot w obrębie osobno zlecanych etapów; odbiór właściciela przed kolejnym etapem |
+| Rewizja bazowa ostatniej aktualizacji | PDR d0bdcf0b758eb6fed547076d0aea59e8a5437fda; aktualne źródła governance main d5bead649c3de7430c63e9fc1b64fc0b452e7a2a |
 | Zadanie inicjalizacji | ARCH-BSDC-CIC-QUALITY-INIT-20261112 |
-| Zadanie bieżącej aktualizacji | ARCH-BSDC-CIC-QUALITY-SCHEDULE-20261112 |
-| Upoważnienie | Uzupełnienie tej samej Karty o harmonogram etapów i tasków end-to-end w przyszłym Full Autopilot. Bez implementacji produktu, aktywacji kanonu, merge do main, zasobów, płatnych przebiegów i deploymentów. |
-| Harmonogram wykonania | §8.1–8.6: 2 etapy / 19 tasków; plan realizacji, wszystkie taski NIE_ROZPOCZĘTE; DEC-04 określa tryb Full Autopilot |
+| Zadanie bieżącej aktualizacji | ARCH-BSDC-CIC-QUALITY-STAGED-GO-20261112 |
+| Upoważnienie | Zapis prawa właściciela do weryfikacji po każdym etapie i osobnego zlecenia kolejnego etapu. Nadal bez uruchomienia etapu 1, implementacji produktu, aktywacji kanonu, merge do main, zasobów, płatnych przebiegów i deploymentów. |
+| Harmonogram wykonania | §8.1–8.6: 2 etapy / 19 tasków; wszystkie taski NIE_ROZPOCZĘTE; DEC-04/05: Full Autopilot w zleconym etapie, weryfikacja właściciela i osobne GO przed następnym |
 
 Publiczna karta zawiera opis potrzeby i stan konsultacji. Nie zawiera transkryptów, wyników odczytów prywatnych systemów, danych użytkowników/klientów, materiałów prywatnego repozytorium CIC ani sekretów. Bieżący commit zapisu potwierdza się odczytem GitHuba poza plikiem. Publikacja gałęzi nie oznacza przyjęcia do main ani aktywacji. Merytoryczna akceptacja rozwiązania wynika z decyzji właściciela DEC-03.
 
@@ -90,6 +90,18 @@ Hosting, storage i CI pozostają do osobnego oszacowania. Potwierdzenie limitu n
 Właściciel wymaga rozpisania realizacji na **etapy i taski end-to-end**, według zależności i wyników, a nie terminów lub estymat czasu, oraz zastosowania **Full Autopilot — Outcome First v2.0** podczas przyszłego wykonania. Rozwinięcie znajduje się w §8.1–8.6.
 
 Decyzja dotyczy formy planu i trybu późniejszej realizacji. Nie jest poleceniem implementacji ani nowym grantem operacyjnym. DEC-03 i zamrożona specyfikacja rewizji 5 zachowują moc. Przykład harmonogramu innej inicjatywy służy wyłącznie jako wzorzec układu; nie przenosi jego akceptacji, zasobów, zakresu ani upoważnień. Taski pozostają NIE_ROZPOCZĘTE.
+
+### 2.6. DEC-05 — osobno zlecane etapy i weryfikacja właściciela, 12 listopada 2026
+
+**PRZYJĘTA ZASADA WŁAŚCICIELA:** realizacja etapowa. Najpierw osobno zlecony etap 1, następnie jego weryfikacja i potwierdzenie przez właściciela, a etap 2 dopiero po odrębnym jawnym zleceniu. Właściciel zachowuje prawo weryfikacji po zakończeniu każdego etapu. Obecna decyzja ustala tryb przyszłego wykonania i **nie uruchamia jeszcze etapu 1**.
+
+- Full Autopilot v2.0 obowiązuje w granicach aktualnie zleconego etapu. Wykonawca sam prowadzi jego taski do pełnego wyniku i dowodów, naprawia usterki oraz wykonuje prawidłowo dopuszczone operacje. Rutynowe taski nie otrzymują nowych punktów akceptacji.
+- Po spełnieniu kryteriów etapu wykonawca przedstawia rezultat, dowody, ograniczenia, stan środowiska oraz wykorzystany/pozostały koszt i czas pilotażu. Właściciel może przyjąć wynik albo wskazać braki. Konieczne korekty mieszczące się w zleceniu realizuje się w tym etapie, z zachowaniem rzeczywistych limitów i uprawnień.
+- Zakończenie techniczne etapu, akceptacja jego wyniku oraz zlecenie następnego etapu są odrębnymi stanami. Sama akceptacja wyniku etapu 1 nie oznacza GO dla etapu 2, chyba że właściciel udzieli go wyraźnie w tym samym poleceniu.
+- Między etapami nie uruchamia się regularnego QA ani nowych autonomicznych napraw/wydań etapu 2. Pozostają tylko dopuszczone zabezpieczenia, deterministyczny nadzór i recovery własnego wydania. Brak kolejnego zlecenia jest zaplanowaną granicą zakresu, nie błędem wykonawcy lub techniczną blokadą do obejścia.
+- DEC-02 i §5.7 pozostają bez zmian: pierwsze płatne uruchomienie odbioru etapu 1 otwiera jedno wspólne okno 14 dni i ledger 50 USD. Oczekiwanie na ocenę właściciela nie zatrzymuje zegara, nie odnawia limitu i nie daje prawa do płatnych zadań po jego końcu. Inny model okna lub przedłużenie wymaga osobnej decyzji przed dodatkowym kosztem.
+
+DEC-05 doprecyzowuje zakres przyszłych zleceń i zastępuje wcześniejsze założenie automatycznej kontynuacji między etapami w §8. Specyfikacja §4–5, klasy C1–C3, kryteria odbioru, środowisko i granice danych pozostają bez zmian. Żadnej zgody na cały proces nie domniemywa się z Full Autopilot.
 
 ## 3. Checklista BSDC A–F
 
@@ -463,7 +475,7 @@ Przyjęte wymagania: cel ciągłego doskonalenia, nacisk na autonomiczne wykonan
 
 ## 7. Końcowy zapis akceptacji i zakończenia BSDC
 
-**BSDC: COMPLETED. Rozwiązanie v1: OWNER_APPROVED / NOT_ACTIVE.** Decyzja DEC-03 dotyczy pełnej [rewizji 5](https://github.com/profitia/SG-dev/blob/3f79f10a1e8b6df4dc9176634ee6339675df5f7a/Canon/proposals/bsdc/ARCHITECTURE/cic-assistant-continuous-quality.md), commit 3f79f10a1e8b6df4dc9176634ee6339675df5f7a, blob 695164e98b1562acb00aa937ca6003726f6ca368. W rewizji 6 zapisano akceptację i domknięcie, bez zmiany zaakceptowanej specyfikacji. Rewizja 7 dodaje harmonogram end-to-end w §8.1–8.6 i DEC-04; nie uruchamia wykonania.
+**BSDC: COMPLETED. Rozwiązanie v1: OWNER_APPROVED / NOT_ACTIVE.** Decyzja DEC-03 dotyczy pełnej [rewizji 5](https://github.com/profitia/SG-dev/blob/3f79f10a1e8b6df4dc9176634ee6339675df5f7a/Canon/proposals/bsdc/ARCHITECTURE/cic-assistant-continuous-quality.md), commit 3f79f10a1e8b6df4dc9176634ee6339675df5f7a, blob 695164e98b1562acb00aa937ca6003726f6ca368. W rewizji 6 zapisano akceptację i domknięcie, bez zmiany zaakceptowanej specyfikacji. Rewizja 7 dodaje harmonogram end-to-end w §8.1–8.6 i DEC-04; rewizja 8 zapisuje DEC-05: osobno zlecane etapy i weryfikację właściciela pomiędzy nimi. Żaden z tych zapisów nie uruchamia wykonania.
 
 Przyjęty pakiet obejmuje:
 
@@ -482,9 +494,9 @@ Nie pozostaje żadna otwarta decyzja merytoryczna do zakończenia BSDC v1. Przyg
 
 ## 8. Końcowy handoff — bez rozpoczęcia wykonania
 
-- Gdzie skończyliśmy: właściciel zaakceptował propozycję v1 z rewizji 5; decyzję zapisano jako DEC-03; A–F zakończone, 28/28 USTALONE projektowo. Rewizja 6 utrwala zamknięcie, a rewizja 7 uzupełnia harmonogram przyszłego wykonania.
+- Gdzie skończyliśmy: właściciel zaakceptował propozycję v1 z rewizji 5; decyzję zapisano jako DEC-03; A–F zakończone, 28/28 USTALONE projektowo. Rewizja 6 utrwala zamknięcie, rewizja 7 uzupełnia harmonogram, a rewizja 8 zapisuje etapowy zakres przyszłych zleceń według DEC-05.
 - Obowiązujący zakres: dokładny zaakceptowany commit 3f79f10a1e8b6df4dc9176634ee6339675df5f7a; niezmienione §4–5 tej Karty; DEC-01/02/03. Wcześniejsze robocze propozycje nie rozszerzają v1.
-- Następny krok w obecnym zleceniu: harmonogram etapów i tasków zapisany w §8.1–8.6; brak uruchomionych zadań wykonawczych. BSDC pozostaje zakończony. Dalsza realizacja Full Autopilot wymaga odrębnego, jawnego polecenia właściciela oraz właściwych dopuszczeń; nie tworzy się automatycznego zadania wdrożenia.
+- Następny krok w obecnym zleceniu: DEC-05 i harmonogram etapowy zapisane; brak uruchomionych zadań wykonawczych. BSDC pozostaje zakończony. Przyszły start wymaga jawnego zlecenia etapu 1 i właściwych dopuszczeń. Po wyniku etapu 1 następuje weryfikacja właściciela; etap 2 wymaga osobnego GO. Nie tworzy się automatycznego zadania wdrożenia.
 - Przyszłe źródła wejściowe: ta Karta z DEC-03, zamrożona rewizja 5, aktywne AGENTS/manifest/profil/routing i execution wrapper na ówczesnym main. Sprawdzić stan rzeczywisty przed mutacją; akceptowany projekt nie jest snapshotem przyszłego runtime.
 - Ownerzy: ARCHITECTURE koordynacja/kontroler/dopuszczenia; SG2 runtime, produktowe dane i adopcja; CIC polityka rozmowy. Każde repo/profil zachowuje swoje exact paths, PMOS/PHR/MEMOROS i uprawnienia. Brak zgody na kopiowanie prywatnego CIC do publicznego repo.
 - Pierwszy przyszły wynik wykonawczy: dopuszczona, ograniczona pętla etapu 1 (§5.7), z pełnym odbiorem i recovery; etap 2 to pomiar pilotażu. Handoff obejmuje zakres, kontrakty, dane, koszt, role, metryki, odbiór i rollback, a nie prompt implementacyjny.
@@ -497,7 +509,7 @@ Nie pozostaje żadna otwarta decyzja merytoryczna do zakończenia BSDC v1. Przyg
 
 **Status: PLAN REALIZACJI / NIE_ROZPOCZĘTY.** Jest to rozwinięcie wykonawcze dwóch etapów z §5.7, opracowane na prośbę właściciela po zamknięciu BSDC. Harmonogram określa kolejność, zależności, zadania, odpowiedzialność i odbiór; nie ustala terminów ani nowych estymat czasowych. Nie zmienia zamrożonej specyfikacji §4–5, progów, klas autonomii ani limitów DEC-01/02/03.
 
-Wymagany przez właściciela tryb przyszłego wykonania to **FULL AUTOPILOT — OUTCOME FIRST v2.0** (DEC-04). Publikacja harmonogramu jest dokumentacją. Nie jest zleceniem realizacji, aktywacją systemu ani dowodem ukończenia któregokolwiek zadania. Zgody dotyczące innych inicjatyw lub planów przykładowych nie są upoważnieniem dla tej inicjatywy.
+Wymagany przez właściciela tryb przyszłego wykonania to **FULL AUTOPILOT — OUTCOME FIRST v2.0 w obrębie osobno zleconego etapu** (DEC-04/05). Po każdym etapie następuje weryfikacja właściciela; kolejny etap wymaga osobnego jawnego GO. Publikacja harmonogramu jest dokumentacją. Nie jest zleceniem realizacji, aktywacją systemu ani dowodem ukończenia któregokolwiek zadania. Zgody dotyczące innych inicjatyw lub planów przykładowych nie są upoważnieniem dla tej inicjatywy.
 
 **Wiążący rezultat przyszłego wykonania:** rzeczywista interakcja SpendGuru → uprawniony prywatny dowód QA → wykrycie i diagnoza → kwalifikacja C1–C3 → samodzielne uruchomienie wykonawcy → reprodukcja i poprawka → niezależne testy → dopuszczony PR/merge → exact-SHA Development → sprawdzenie odpowiedzi i skutku → trwała regresja albo odcięcie/rollback i odzyskanie kontroli.
 
@@ -507,8 +519,8 @@ Sam monitoring, infrastruktura, wygenerowany task, gotowy PR, zielone CI lub dep
 
 Źródła wykonawcze: aktualny [Full Autopilot v2.0](../../../../docs/agent-instructions/full-autopilot-v2.md), [Universal Project Execution v1.2](../../../../docs/agent-instructions/profitia-universal-project-execution-v1.2.md), [Business Outcome Engineering v1.1](../../../../docs/agent-instructions/business-outcome-engineering-v1.1.md), aktywne profile i kanony. Dokumenty określają sposób wykonania; nie zastępują odrębnego zlecenia realizacji i szczególnych upoważnień.
 
-- Po właściwym zleceniu realizacji wykonawca prowadzi cały dopuszczony zakres jednym ciągiem: implementuje, naprawia własne błędy, testuje, integruje, przygotowuje PR, scala i wdraża tam, gdzie operacje są prawidłowo dopuszczone, oraz sprawdza realny wynik. Nie kończy na „gotowe do uruchomienia”.
-- Etapy i taski porządkują pracę. Nie są obowiązkowymi punktami ponownej akceptacji właściciela. Spełnienie zależności i wymaganych bramek pozwala przejść dalej; właściwie udzielonych zgód nie zbiera się ponownie.
+- Po właściwym zleceniu etapu wykonawca prowadzi cały dopuszczony zakres tego etapu jednym ciągiem: implementuje, naprawia własne błędy, testuje, integruje, przygotowuje PR, scala i wdraża tam, gdzie operacje są prawidłowo dopuszczone, oraz sprawdza realny wynik. Nie kończy na „gotowe do uruchomienia” i nie rozszerza zlecenia na następny etap.
+- Taski wewnątrz zleconego etapu nie wymagają rutynowej ponownej akceptacji. Granica między etapami jest świadomie ustanowionym przez właściciela punktem kontroli (DEC-05). Spełnienie zależności technicznej nie zastępuje zlecenia etapu 2; już udzielonych, aktualnych zgód wewnątrz bieżącego etapu nie zbiera się ponownie.
 - **ARCHITECTURE** prowadzi koordynację, kontroler, kontrakty i dopuszczenia swoich powierzchni. **SG2** odpowiada za host/runtime, historię, prywatne dowody, adopcję i produktowy odbiór Development. **CIC** odpowiada za politykę rozmowy i jej integrację we własnym autorytatywnym repo/profilu. Oznaczenie kilku ownerów nie daje jednemu prawa zapisu cudzych ścieżek; zależne zadania zachowują własne wymagane rejestry i ciągłość.
 - Wykonawca budujący rozwiązanie w Full Autopilot i późniejszy **agent napraw QA** mają różne mandaty. Agent QA zachowuje C1–C3, syntetyczne wejście, brak prawa zmiany sędziego, testów chronionych, własnych uprawnień i polityk promocji. Full Autopilot nie rozszerza jego mandatu.
 - Wcześnie powstaje jeden konkretny pakiet rzeczywiście brakujących czynności właścicielskich: wymagane zasoby, koszty poza modelami, instalacja/dostęp, granty i szczególne dopuszczenia. Nowe zasoby owner-only Render/GitHub/Neon tworzy właściciel według przygotowanej instrukcji. W pierwszej kolejności wykorzystuje się istniejące zasoby.
@@ -523,11 +535,11 @@ Dwa etapy biznesowe pozostają zgodne z §5.7:
 1. **Etap 1: działająca pętla Development i techniczna gotowość C1–C3.** Obejmuje taski E1-T01–E1-T13, od dopuszczeń po rzeczywisty odbiór naprawy i recovery.
 2. **Etap 2: regularna ocena, autonomiczne naprawy i wynik pilotażu v1.** Obejmuje E2-T01–E2-T06, kończy się rozliczeniem efektu, bezpieczeństwa i kosztu.
 
-Po ustaleniu kontraktów można równolegle przygotowywać dane, politykę odpowiedzi, kontroler, wykonawcę i testy — wyłącznie w dopuszczonych powierzchniach. Oczekiwanie na owner-only zasób nie blokuje niezależnych testów offline. Integracja powstaje wcześnie, a pełny odbiór wykorzystuje docelowy host, CIC/ACG, prawdziwy workflow, model i persistence.
+Po ustaleniu kontraktów można równolegle przygotowywać dane, politykę odpowiedzi, kontroler, wykonawcę i testy — wyłącznie w dopuszczonych powierzchniach i w zakresie zleconego etapu. Oczekiwanie na owner-only zasób nie blokuje niezależnych testów offline. Integracja powstaje wcześnie, a pełny odbiór wykorzystuje docelowy host, CIC/ACG, prawdziwy workflow, model i persistence.
 
-**E1-T13 otwiera wspólne okno i ledger pilotażu z E2-T01 przy pierwszym płatnym uruchomieniu.** Nie ma osobnych 14 dni lub dodatkowego budżetu po odbiorze technicznym. Przed tym momentem E1-T12 potwierdza przygotowanie całości C1–C3, referencji, kontroli kosztu i prób. Płatne przygotowanie/kalibracja nie jest wyłączane z limitu pod inną nazwą.
+**E1-T13 otwiera wspólne okno i ledger pilotażu przy pierwszym płatnym uruchomieniu.** Jest to kontrola kosztu odbioru etapu 1, nie uruchomienie etapu 2. Po osobnym GO task E2-T01 przejmuje istniejący ledger i pozostałe okno. Nie ma osobnych 14 dni lub dodatkowego budżetu po odbiorze technicznym; przerwa na ocenę właściciela nie zatrzymuje zegara. Przed tym momentem E1-T12 potwierdza przygotowanie całości C1–C3, referencji, kontroli kosztu i prób. Płatne przygotowanie/kalibracja nie jest wyłączane z limitu pod inną nazwą.
 
-Semantyczna kalibracja E2-T02 może trwać równolegle z dopuszczonymi deterministycznymi naprawami C1–C3. Nie skalibrowany sędzia pozostaje sygnałem diagnostycznym; nie nadaje prawa do wydania. Każda klasa wchodzi do regularnego działania dopiero po swoich bramkach. Raport zachowuje faktyczny moment jej dopuszczenia.
+Po weryfikacji etapu 1 przez właściciela i jawnym zleceniu etapu 2 semantyczna kalibracja E2-T02 może trwać równolegle z dopuszczonymi deterministycznymi naprawami C1–C3. Nie skalibrowany sędzia pozostaje sygnałem diagnostycznym; nie nadaje prawa do wydania. Każda klasa wchodzi do regularnego działania dopiero po swoich bramkach. Raport zachowuje faktyczny moment jej dopuszczenia.
 
 ### 8.4. Etap 1 — działająca pętla naprawcza na Development
 
@@ -535,7 +547,7 @@ W poniższych tabelach A oznacza ARCHITECTURE, S — SG2, C — CIC. Są to plan
 
 | Task i owner | Zależność | Zakres i wynik do odbioru | Status / dowód |
 | --- | --- | --- | --- |
-| **E1-T01 — uruchomienie właściwego mandatu**; A, S, C | Osobne zlecenie realizacji | Krótkie sprawdzenie aktualnego main, profili, prac równoległych, routingu i Code State. Ustalić exact paths, niezbędny onboarding/G1, mandat automatyzacji C1–C3 i reguły kontrolowanego CI. Każda dopuszczona operacja ma ownera i środowisko; NO_MATCH pozostaje blokadą danej ścieżki do prawidłowego rozstrzygnięcia. | NIE_ROZPOCZĘTY / — |
+| **E1-T01 — uruchomienie właściwego mandatu**; A, S, C | Osobne zlecenie etapu 1 | Krótkie sprawdzenie aktualnego main, profili, prac równoległych, routingu i Code State. Ustalić exact paths, niezbędny onboarding/G1, mandat automatyzacji C1–C3 i reguły kontrolowanego CI. Każda dopuszczona operacja ma ownera i środowisko; NO_MATCH pozostaje blokadą danej ścieżki do prawidłowego rozstrzygnięcia. | NIE_ROZPOCZĘTY / — |
 | **E1-T02 — kontrakty QA i granice danych**; A + S + C | E1-T01 dla właściwych powierzchni | Uszczegółowić wersjonowane kontrakty §4.8 oraz R-DATA-01: dowód, wynik oceny, zlecenie naprawy i wynik weryfikacji. Potwierdzić SERVICE QA, prawa konta/organizacji/źródeł, minimalizację, retencję i usuwanie. Odbiór: pozytywne/negatywne testy kontraktów i jednoznaczna odpowiedzialność producent–konsument. | NIE_ROZPOCZĘTY / — |
 | **E1-T03 — zasoby i bezpieczny dostęp**; A + właściwi ownerzy | E1-T01–T02; owner-only tam, gdzie wymagane | Wybrać reuse, przygotować jeden pakiet brakujących zasobów i dokładnych kosztów. Po właściwych czynnościach ownera potwierdzić Render kontrolera, GitHub VM/workflow, prywatny magazyn, tożsamości Development, role runtime/migratora i ograniczone poświadczenia. Brak sekretów w Git/telemetrii; brak prawa wykonawcy napraw do publikacji. | NIE_ROZPOCZĘTY / — |
 | **E1-T04 — referencja i plan dowodów**; A + reviewer domenowy + S/C | Kontrakty E1-T02 | Przygotować rozdzielone zbiory rubryki, napraw i chroniony holdout, etykiety niezależne od agenta oraz macierz wszystkich progów §5.5 i prób §5.7. Zamrozić wersje/hash i rodziny przyczyn; przygotować C1–C3, PL/EN, braki, sprzeczności i przypadki poza zakresem. Samo przygotowanie zbioru nie jest kalibracją lub wynikiem jakości. | NIE_ROZPOCZĘTY / — |
@@ -547,15 +559,17 @@ W poniższych tabelach A oznacza ARCHITECTURE, S — SG2, C — CIC. Są to plan
 | **E1-T10 — niezależna weryfikacja i promocja**; A + S | E1-T04, E1-T06, E1-T08–T09 | Zaufany proces sprawdza czerwony test bazowy/zielony po poprawce, chronioną regresję i obowiązkowe CI dla dokładnego SHA. Osobny publisher tworzy/przyjmuje PR i wykonuje tylko dopuszczone merge/deploy. Odbiór: nieudany test, zmiana bazy, inny owner lub naruszenie mandatu uniemożliwiają promocję; raport agenta nie jest checkiem. | NIE_ROZPOCZĘTY / — |
 | **E1-T11 — monitoring, odcięcie i rollback**; A + S | E1-T03, E1-T08; kontrakt wydania E1-T10 | Połączyć release/trace, koszty i wynik naprawy z właściwym monitoringiem. Ustalić rzeczywisty LKG lub bezpieczne przerwanie pierwszego startu; wdrożyć sygnały §5.6 i wznowienie bez resetu prób. Odbiór: rollback własnej wersji, weryfikacja runtime i brak nadpisania nowszej cudzej wersji lub cofania bazy. | NIE_ROZPOCZĘTY / — |
 | **E1-T12 — integracja i gotowość do płatnego odbioru**; A + S + C | E1-T01–T11 w zakresie potrzebnym do startu | Połączyć i uruchomić dopuszczone komponenty na Development. Testami offline/kontraktowymi sprawdzić kompletną drogę i przygotowanie wszystkich C1–C3, danych, referencji, kontroli kosztu i recovery. Potwierdzić możliwość zmieszczenia prób w 14 dniach i wspólnym limicie. Odbiór: brak brakującej podstawowej capability; mock/offline nie jest odbiorem live. | NIE_ROZPOCZĘTY / — |
-| **E1-T13 — rzeczywisty odbiór pętli i odzyskiwania**; A + S + C | E1-T12; aktualne wymagane zgody; start E2-T01 przed pierwszym płatnym requestem | W rzeczywistym Development przeprowadzić co najmniej trzy różne kontrolowane incydenty, od automatycznego wykrycia do poprawki, PR/merge/deploy i poprawnej odpowiedzi, bez ręcznego podawania kolejnych kroków. Pierwszy przebieg C1; PL/EN i granica czasu. Wykonać pełne próby negatywne, UI i recovery z §5.7, w tym SLO rollback oraz kolizję deploy. Odbiór: TECHNICAL_ACCEPTED z dowodami, odrębnie od wyniku pilotażu. | NIE_ROZPOCZĘTY / — |
+| **E1-T13 — rzeczywisty odbiór pętli i odzyskiwania**; A + S + C | E1-T12; aktualne wymagane zgody; wspólny ledger kosztu przed pierwszym płatnym requestem | W rzeczywistym Development przeprowadzić co najmniej trzy różne kontrolowane incydenty, od automatycznego wykrycia do poprawki, PR/merge/deploy i poprawnej odpowiedzi, bez ręcznego podawania kolejnych kroków. Pierwszy przebieg C1; PL/EN i granica czasu. Wykonać pełne próby negatywne, UI i recovery z §5.7, w tym SLO rollback oraz kolizję deploy. Odbiór: TECHNICAL_ACCEPTED z dowodami, odrębnie od wyniku pilotażu. | NIE_ROZPOCZĘTY / — |
 
 **Rezultat etapu 1:** ograniczony system rzeczywiście sam naprawia i weryfikuje dopuszczony błąd na Development, a po niepowodzeniu odzyskuje kontrolę. Samo E1-T12 oznacza gotowość do odbioru, nie ukończenie etapu. Testowe incydenty E1-T13 nie są liczone jako realne incydenty biznesowe pilotażu.
+
+**Granica zlecenia:** po odbiorze technicznym wykonawca przedstawia właścicielowi wynik etapu 1 i oczekuje na jego weryfikację. Nie uruchamia E2-T01–T06, nocnego QA ani regularnych napraw etapu 2. Raport obejmuje dowody całej pętli i recovery, aktualny SHA/stan środowiska, braki oraz wykorzystany i pozostały czas/budżet. Przyjęcie wyniku przez właściciela zapisuje się osobno od GO etapu 2.
 
 ### 8.5. Etap 2 — regularne doskonalenie i pełny odbiór v1
 
 | Task i owner | Zależność | Zakres i wynik do odbioru | Status / dowód |
 | --- | --- | --- | --- |
-| **E2-T01 — wspólne okno i ledger pilotażu**; A | E1-T12; bezpośrednio przed płatną częścią E1-T13 | Trwale ustalić początek 14 dni, zużycie/rezerwacje 50 USD i koszty incydentów; objąć nimi odbiór, QA, replay i wykonawcę. Odbiór: granica czasu i limit blokują nowe płatne zlecenia; nie ma ukrytego budżetu przed pilotażem ani automatycznego przedłużenia. | NIE_ROZPOCZĘTY / — |
+| **E2-T01 — wspólne okno i ledger pilotażu**; A | Weryfikacja etapu 1 i jawne GO etapu 2; ledger otwarty w E1-T13 | Przejąć już ustalony w E1-T13 początek 14 dni, zużycie/rezerwacje 50 USD i koszty incydentów; objąć nimi odbiór, QA, replay i wykonawcę. Zweryfikować pozostały czas i środki przed płatnym startem etapu 2. Nie otwierać nowego okna ani limitu. Odbiór: granica czasu i limit blokują nowe płatne zlecenia; nie ma ukrytego budżetu przed pilotażem ani automatycznego przedłużenia. | NIE_ROZPOCZĘTY / — |
 | **E2-T02 — kalibracja sędziego i pomiar pokrycia**; A + niezależny reviewer domenowy | E1-T04, E1-T07, E2-T01 | W przyjętym budżecie wykonać i rozliczyć próby §5.5, osobno według domen i braków dowodu: recall, FPR, precision kwalifikacji, UNKNOWN/pokrycie, niepewność i zmienność generacji. Odbiór: wersjonowany wynik spełnia progi albo jawnie FAIL/INSUFFICIENT_EVIDENCE. Bez pełnego dowodu semantyczna opinia pozostaje niewiążąca. | NIE_ROZPOCZĘTY / — |
 | **E2-T03 — dopuszczenie klas C1–C3 do regularnych napraw**; A + S/C + niezależny weryfikator | E1-T13 dla gotowości pętli; własne bramki każdej klasy | Potwierdzić deterministyczną reprodukcję, chronione przypadki i wszystkie warunki promocji dla każdej klasy; zapisać zakres i moment włączenia. C2/C3 przygotowane wcześniej przechodzą ten sam kontrakt co C1. Odbiór: tylko dopuszczona klasa może automatycznie wydać zmianę; brak kalibracji nie jest obchodzony samooceną, a deterministyczna ścieżka stosuje dokładnie wyjątek §5.5. | NIE_ROZPOCZĘTY / — |
 | **E2-T04 — nocna ocena i autonomiczne naprawy realnych incydentów**; A + S | E1-T13, E2-T01; E2-T03 dla naprawianej klasy | Uruchomić regularne uprawnione QA między modułami, grupowanie, diagnozę i pełną pętlę napraw bez ręcznego zlecania każdego kroku. Przypadki poza mandatem obsłużyć przez właściwego ownera technicznego. Odbiór: rzeczywiste incydenty mają cały ślad wyniku, także błędów/porzuceń; brak sztucznego zasilania mianownika i rutynowej kolejki dla właściciela produktu. | NIE_ROZPOCZĘTY / — |
@@ -570,10 +584,10 @@ Statusy tasków/etapów: NIE_ROZPOCZĘTY, W_TOKU, CZĘŚCIOWY, ZABLOKOWANY, ZAKO
 
 Wykonawca aktualizuje kolumnę status/dowód po rzeczywistym wyniku, wskazując właściwe taskId, PR/SHA, deploy, test i aktualne braki. Operacyjne dowody są w istniejących PMOS/PHR, CI i artefaktach wydania; w publicznej Karcie pozostają wyłącznie bezpieczne referencje i podsumowania. Prywatny dowód QA nie trafia do repozytorium publicznego.
 
-| Etap | Stan realizacji | Wynik odbioru | Dowód / braki |
-| --- | --- | --- | --- |
-| 1. Pętla Development i techniczna gotowość C1–C3 | NIE_ROZPOCZĘTY | DO_POTWIERDZENIA | E1-T01–T13; brak implementacji i prób live |
-| 2. Regularne doskonalenie i wynik pilotażu | NIE_ROZPOCZĘTY | DO_POTWIERDZENIA | E2-T01–T06; okno i wydatki nieuruchomione |
+| Etap | Stan realizacji | Wynik odbioru technicznego/biznesowego | Weryfikacja właściciela / zlecenie kolejnego etapu | Dowód / braki |
+| --- | --- | --- | --- | --- |
+| 1. Pętla Development i techniczna gotowość C1–C3 | NIE_ROZPOCZĘTY | DO_POTWIERDZENIA | NIE_PRZEDSTAWIONO; brak zlecenia startu etapu 1 | E1-T01–T13; brak implementacji i prób live |
+| 2. Regularne doskonalenie i wynik pilotażu | NIE_ROZPOCZĘTY | DO_POTWIERDZENIA | NIE_PRZEDSTAWIONO; brak GO etapu 2 | E2-T01–T06; okno i wydatki nieuruchomione |
 
 Końcowy odbiór nie pomija żadnego warunku zamrożonej specyfikacji. Poniższa macierz grupuje dowody, nie zastępuje pełnego §5.5–5.7.
 
@@ -592,7 +606,9 @@ Końcowy odbiór nie pomija żadnego warunku zamrożonej specyfikacji. Poniższa
 | QA-11 | Właściwe runtime, monitoring i release SHA, trwałe regresje, rzeczywisty koszt i rozliczenie wszystkich pominięć/niepowodzeń | E1-T11–T13; E2-T04–T06 | DO_POTWIERDZENIA |
 | QA-12 | Wymagane closeout każdego profilu; końcowy raport odróżnia stan kodu, CI, deploy, odbiór techniczny i biznesowy | E2-T06 | DO_POTWIERDZENIA |
 
-Przyszłe zlecenie pełnego wykonania nie powinno kończyć się po etapie 1, jeżeli etap 2 pozostaje objęty mandatem i ma dopuszczony koszt. Full Autopilot obejmuje kontynuację do końcowego wyniku albo rzeczywistej granicy uprawnień/bezpieczeństwa. Upływ 14 dni lub limit 50 USD zamyka możliwość nowych płatnych zadań; przy braku wymaganych dowodów wynik pozostaje częściowy/niepotwierdzony, bez samodzielnego przedłużania. Production, Staging, nowe klasy i odnowienie pilotażu pozostają poza tym planem.
+Zgodnie z DEC-05 wykonanie odbywa się w osobno zlecanych etapach. Full Autopilot prowadzi do pełnego wyniku bieżącego etapu albo rzeczywistej granicy uprawnień/bezpieczeństwa. Po wyniku etapu 1 następuje weryfikacja właściciela i osobna decyzja o etapie 2; oczekiwanie na nią jest zaplanowaną granicą zakresu. Nie oznacza ukończenia całego v1. Po etapie 2 również przedstawia się wynik właścicielowi. Jego akceptacja nie zastępuje brakujących dowodów ani nie zmienia INSUFFICIENT_EVIDENCE na PASS.
+
+Upływ 14 dni lub limit 50 USD zamyka możliwość nowych płatnych zadań, także podczas oczekiwania między etapami. Przed przyszłym startem etapu 2 sprawdza się pozostałe okno i środki; brak ich wystarczalności wymaga odpowiedniej decyzji przed dalszym kosztem. Nie pauzuje się zegara, nie resetuje prób i nie odnawia limitu automatycznie. Production, Staging, nowe klasy i odnowienie pilotażu pozostają poza tym planem.
 
 ## 9. Historia
 
@@ -605,3 +621,4 @@ Przyszłe zlecenie pełnego wykonania nie powinno kończyć się po etapie 1, je
 | 5 | 2026-11-12 | Kompletna propozycja v1 do akceptacji: trzy klasy autonomii, standard wyjątków, metryki i próby, kryteria promocji, stop/rollback, dwa etapy i koszty. Domknięto checklistę projektową A–E; F3 oczekuje na właściciela. Nadal bez implementacji. |
 | 6 | 2026-11-12 | DEC-03: właściciel zaakceptował pełną propozycję v1 z rewizji 5 (3f79f10a). BSDC zakończony, 28/28 USTALONE projektowo. Specyfikacja §4–5 zachowana identycznie; OWNER_APPROVED / NOT_ACTIVE / NOT_IMPLEMENTED. |
 | 7 | 2026-11-12 | DEC-04: harmonogram według etapów i tasków end-to-end w Full Autopilot. Rozpisano 2 przyjęte etapy na 19 tasków z ownerami, zależnościami, wynikami, dowodami i 12 punktami odbioru. Wszystkie taski NIE_ROZPOCZĘTE; zamrożona specyfikacja §4–5 i limity bez zmian; bez implementacji. |
+| 8 | 2026-11-12 | DEC-05: właściciel wybiera osobno zlecane etapy z własną weryfikacją po każdym. Full Autopilot wewnątrz bieżącego etapu; brak automatycznego przejścia do etapu 2. Rozdzielono odbiór, akceptację i GO; wspólne 14 dni/50 USD bez resetu lub pauzy. Specyfikacja §4–5 i 19 tasków zachowane; bez uruchomienia etapu 1 i bez implementacji. |
