@@ -3,7 +3,7 @@
   "taskId": "SG2-PI-RECURRING-E2E-20261111",
   "targetEnvironment": "development",
   "scope": "PROCUREMENT_INSIGHTS_LIBRARY_AND_SOURCE_ACTION_COMPLETION",
-  "baseCandidateSha": "46094e5654066552768264dd47027eaa18e833a4",
+  "baseCandidateSha": "42e9d43ea846a5e6216faa18bfec8f939aac6971",
   "magicPathRevision": "471325033734762496",
   "sourceDigests": {
     "apps/architecture-lab/private-recurring-source.mjs": "20c4fb3c8a6627adbc0af3bfbb7222f7671f78da1b7a3d3d257955e3ff411de7",
@@ -22,7 +22,7 @@
     "apps/sg-runtime/tests/porr-demo-middleware.test.ts": "5c6a2fe0721c51ed95d01df9afb8acb6a6d2885be9e2067e652cc82d1c1351d6",
     "apps/sg-runtime/tests/pci-smart-integrity.test.mjs": "aab40510f409559e3a023c53e069ca5c50bf1bd3bb6a5dd9f2f9e2e177f3caa7",
     "apps/sg-runtime/tests/procurement-insights-completion.test.mjs": "ea0b0cba039ff6555cd94f7ff9c9495a37e71e15603209efa40896a0f2d39429",
-    "apps/sg-runtime/tests/procurement-insights-completion-integrity.mjs": "690b822f483d18c92fd81cd923bfc1ea555d34aac8d9df5cd9a9346796b1444b",
+    "apps/sg-runtime/tests/procurement-insights-completion-integrity.mjs": "3af917f913cef82d1c548db1b3a2c4fc3d359617c59837a7dd7fd1ccca0645a3",
     "apps/sg-runtime/tests/procurement-insights-shell-integrity.mjs": "007a689567e7eb179eaae1a2e24077dd7335f8b88fc8cf5b523e8dacb82e6e52",
     "apps/sg-runtime/tests/assistant-ecr-week-integrity.test.mjs": "297a0eaa12b5782d124c578d7766c9e6345e9acff65936dc8abd4c4f8bf72b41",
     "apps/sg-runtime/tests/market-calendar-integrity.test.mjs": "09e8c1161148a0b40dd60f68ea81f5d390689cd7f3ab3ede9be89c18d3dca32d"
@@ -46,7 +46,8 @@
     "apps/sg-runtime/assistant-ecr-week-integration.json": "31ce8f1d7e5ca1d9c3aedf80f92e23fe0f1a93cb8f5fd5d003eb54a244859dd4",
     "apps/economic-calendar-runtime/market-calendar-preferences-integration.json": "e3bc27ddf22b9165555c05f938a3c5d8f9f4f09334fcb7c55e760da44e9a59b6",
     "apps/architecture-lab/market-calendar-test-compatibility.json": "52e859d4a99bc4c8e4d986f38afea2d58e9c1fe1ee1e0eb62cc2672dbdb60078",
-    "apps/sg-runtime/market-calendar-integration.json": "42406b5b07071408d35e39d5b9bb20d18402e52581d3c516bb08fb68b718f119"
+    "apps/sg-runtime/market-calendar-integration.json": "42406b5b07071408d35e39d5b9bb20d18402e52581d3c516bb08fb68b718f119",
+    "apps/sg-runtime/oil-renderer-integration.json": "6afdd65e66d8a7d8ceb4ab68601ba6d1c1bfac43bbac879d01bb61c9962e7ad6"
   },
   "authorisationChanged": false,
   "schemaChanged": false,
