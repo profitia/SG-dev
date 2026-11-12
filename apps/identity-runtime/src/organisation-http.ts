@@ -1,5 +1,6 @@
 import type { OrganisationOnboardingApi, OnboardingSnapshot } from './organisation-onboarding.js'
 import type pg from 'pg'
+import {createPeerOperationVerifier,hasVerifiedPeerOperation,type PeerOperationConfiguration} from '@profitia/platform-contracts/peer-operation'
 import { createOrganisationBootstrapBackend, organisationBootstrapSchemaDigest, type OrganisationCreationReceipt, type StoredCompanyRecord } from '@profitia/platform-contracts/organisation-bootstrap'
 import { organisationOnboardingSchemaDigest, OrganisationProfileError } from '@profitia/platform-contracts/organisation-profile'
 import { ProfileConflict } from '@profitia/platform-contracts/user-profile'
@@ -11,11 +12,18 @@ import { readConfiguration } from './config.js'
 import { checkRequest } from './session-boundary.js'
 import { verifiedEmailClient, type accountTransactions } from './account-provisioning.js'
 
+export function checkOrganisationConversationRequest(request:Request,configuration:RuntimeConfiguration,write:boolean){
+ const url=new URL(request.url)
+ if(hasVerifiedPeerOperation(request)&&url.origin===configuration.origin&&!url.search&&!url.hash
+  &&((!write&&request.method==='GET'&&url.pathname==='/v1/account/organisation-onboarding/snapshot')||(write&&request.method==='POST'&&url.pathname==='/v1/account/organisation-onboarding/access')))return
+ checkRequest(request,configuration,write)
+}
+
 /** Each port owns current verified-account authorization and its original
  * transaction/audit. Merely supplying a view cannot create an organisation. */
 export interface OrganisationConversationSurface {
   ready(): Promise<void>
-  synchroniseAccess?(request:Request,input:unknown):Promise<Readonly<{status:'SYNCHRONISED'|'PENDING_PACKAGE'|'RECONCILIATION_REQUIRED';expiresAt?:string}>>
+  synchroniseAccess?(request:Request,input:unknown):Promise<Readonly<{status:'SYNCHRONISED'|'PENDING_PACKAGE'|'RECONCILIATION_REQUIRED';expiresAt?:string;organisationId?:string}>>
   snapshot(request: Request): Promise<OnboardingSnapshot>
   lookupCompany(request: Request, input: unknown): ReturnType<OrganisationOnboardingApi['lookupCompany']>
   checkSlug(request: Request, input: unknown): ReturnType<OrganisationOnboardingApi['checkSlug']>
@@ -25,6 +33,7 @@ export interface OrganisationConversationSurface {
 }
 
 export interface OrganisationHttpSurface {
+  verifyWorkspacePeer?(request:Request):Promise<boolean>
   readonly conversation?: OrganisationConversationSurface
   acceptInvitation?(request: Request, input: unknown): Promise<Readonly<{status:string}>>
   ready(): Promise<void>
@@ -47,6 +56,7 @@ export function readOrganisationBootstrapOptIn(env: Readonly<Record<string, stri
  * port; this operation never calls a paid provider, installs a grant or selects a
  * tenant from browser input. Atomic creation and replay stay in the shared SDK. */
 export function createOrganisationHttpSurface(options: {
+  workspacePeer?:PeerOperationConfiguration
   conversation?: OrganisationConversationSurface
   acceptInvitation?: OrganisationHttpSurface['acceptInvitation']
   configuration: RuntimeConfiguration; client: RuntimeSdk
@@ -58,6 +68,10 @@ export function createOrganisationHttpSurface(options: {
   if (options.bootstrapSchemaDigest !== organisationBootstrapSchemaDigest()) throw Error('ORGANISATION_BOOTSTRAP_SCHEMA_REQUIRED')
   if (options.conversation && !['ready','snapshot','lookupCompany','checkSlug','savePersonalCategories','sendInvitations','activation'].every(key => typeof (options.conversation as unknown as Record<string, unknown>)[key] === 'function')) throw Error('ORGANISATION_CONVERSATION_PORTS_REQUIRED')
   const configuration = readConfiguration(options.configuration)
+  const workspacePeer=options.workspacePeer
+  if(workspacePeer&&(workspacePeer.targetOrigin!==configuration.origin||workspacePeer.receiverApplicationId!==configuration.applicationId
+   ||workspacePeer.routes.length!==2||workspacePeer.routes.some(r=>!((r.method==='GET'&&r.path==='/v1/account/organisation-onboarding/snapshot'&&r.maximumRequestBytes===0)||(r.method==='POST'&&r.path==='/v1/account/organisation-onboarding/access'&&r.maximumRequestBytes===2))||r.requireIdempotencyKey)))throw Error('EXACT_WORKSPACE_PEER_REQUIRED')
+  const verifyWorkspacePeer=workspacePeer?createPeerOperationVerifier(workspacePeer):undefined
   if (configuration.environment !== 'development') throw Error('ORGANISATION_BOOTSTRAP_DEVELOPMENT_ONLY')
   const backend = (request?: Request) => createOrganisationBootstrapBackend({
     client: verifiedEmailClient(options.client), binding: options.binding, schemaDigest: options.schemaDigest, proofKey: options.proofKey,
@@ -70,6 +84,7 @@ export function createOrganisationHttpSurface(options: {
   })
   backend()
   return Object.freeze({
+    ...(verifyWorkspacePeer?{verifyWorkspacePeer}:{}),
     ...(options.conversation ? {conversation: options.conversation} : {}),
     ...(options.acceptInvitation ? {acceptInvitation:options.acceptInvitation} : {}),
     async ready() { await backend().ready(); await options.conversation?.ready() },

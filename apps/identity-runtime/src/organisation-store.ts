@@ -1,6 +1,7 @@
 import {createPeerOperationSigner,peerOperationIdentityRequest,type PeerOperationConfiguration} from '@profitia/platform-contracts/peer-operation'
 import {createHmac} from 'node:crypto'
 import {createHash,randomUUID} from 'node:crypto'
+import {checkOrganisationConversationRequest} from './organisation-http.js'
 import type {AccessQuery,AccessStoreBinding} from '@profitia/platform-contracts/access-store'
 import type {OperationContext} from '@profitia/platform-contracts/operation-context'
 import {ORGANISATION_LIFECYCLE_OPERATIONS} from '@profitia/platform-contracts/operation-context'
@@ -76,7 +77,7 @@ export function createOrganisationStore(options:{
    configurationVersion:options.configurationVersion,identityIssuer:configuration.issuer,organisationId:null,features:['organisation_admin'],operations:ORGANISATION_LIFECYCLE_OPERATIONS.filter(op=>op!=='organisation.access.synchronise'||readEntitlements!==undefined)}})
  const one=async(query:AccessQuery,text:string,args:unknown[]=[]):Promise<Record<string,any>>=>{const rows=(await query(text,args)).rows;if(rows.length!==1)throw Error('ORGANISATION_STORE_UNAVAILABLE');return rows[0]! as Record<string,any>}
  async function checked<T>(request:Request,write:boolean,run:()=>Promise<T>):Promise<T>{
-  checkRequest(request,configuration,write)
+  checkOrganisationConversationRequest(request,configuration,write)
   try{return await run()}catch(error){
    if(error instanceof BoundaryError)throw error
    if(error instanceof ProfileConflict)throw new BoundaryError(409,'PROFILE_VERSION_CONFLICT')
@@ -131,7 +132,7 @@ export function createOrganisationStore(options:{
     issuer:createHash('sha256').update(body).digest('hex'),expiresAt:Math.min(Date.parse(unit.expiresAt),Date.parse(unit.context.actor.expiresAt))})
    const result=(await one(unit.query,'SELECT profitia_profile.organisation_lifecycle_access_project($1,$2::bigint,$3,$4::uuid) AS result',[body,proof.until,proof.signature,unit.context.decisionId])).result
    if(!result||!['SYNCHRONISED','PENDING_PACKAGE','RECONCILIATION_REQUIRED'].includes(result.status))throw Error('ACCESS_PROJECTION_UNAVAILABLE')
-   return result as {status:'SYNCHRONISED'|'PENDING_PACKAGE'|'RECONCILIATION_REQUIRED';expiresAt?:string}
+   return {...result,organisationId:unit.context.organisationId!} as {status:'SYNCHRONISED'|'PENDING_PACKAGE'|'RECONCILIATION_REQUIRED';expiresAt?:string;organisationId:string}
   })})}:{}),
   snapshot:request=>checked(request,false,()=>backend(request).execute(request,'organisation.onboarding.read',{},async unit=>{
    const draft=(await one(unit.query,'SELECT profitia_profile.organisation_lifecycle_snapshot($1::uuid) AS draft',[unit.context.decisionId])).draft

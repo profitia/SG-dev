@@ -1,3 +1,5 @@
+import {createHttpHandler} from '../dist/src/http-handler.js'
+import {createPeerOperationSigner} from '../../../packages/platform-contracts/src/peer-operation.mjs'
 import {createOrganisationInvitationDelivery} from '../dist/src/organisation-invitation-delivery.js'
 import test from 'node:test'
 import assert from 'node:assert/strict'
@@ -96,18 +98,34 @@ test('native organisation store commits real scoped categories and idempotent in
  })
  await t.test('explicit enabled native projection binds the real Root, tenant and package snapshot before activation',async()=>{
   const ref='package-assignment:'+randomUUID()+':1';let active=true,reads=0
-  const extended=createOrganisationStore({...common,client:actors.owner.client,accessProjectionSchemaDigest:organisationAccessProjectionSchemaDigest(),
+  const extendedOptions={...common,client:actors.owner.client,accessProjectionSchemaDigest:organisationAccessProjectionSchemaDigest(),
    workspaceAccess:{...common.workspaceAccess,entitlements:async(_request,input)=>{
     await db.admin.query("BEGIN;SET LOCAL lock_timeout='200ms'");try{await db.admin.query('SELECT revision FROM profitia_access.installation WHERE singleton FOR UPDATE')}finally{await db.admin.query('ROLLBACK')}
     reads++;assert.equal(input.userId,userIds.owner);assert.equal(input.organisationId,oid);assert.equal(input.applicationId,'spendguru')
     return {userId:userIds.owner,organisationId:oid,applicationId:'spendguru',status:active?'ACTIVE':'INACTIVE',assignmentRef:active?ref:null,
      capabilities:active?['BENCHMARK']:[],expiresAt:new Date(Date.now()+4000).toISOString(),assignmentUntil:active?new Date(Date.now()+60000).toISOString():null}
-   }}})
+   }}}
+  const extended=createOrganisationStore(extendedOptions)
   await extended.ready();assert.equal((await extended.snapshot(get())).accessProjectionRequired,true)
   assert.equal((await extended.synchroniseAccess(post(),{})).status,'SYNCHRONISED');assert.equal(reads,1)
   const grant=(await db.admin.query("SELECT source_ref,expires_at FROM profitia_access.product_grants WHERE application_id='spendguru' AND organisation_id=$1",[oid])).rows[0]
   assert.equal(grant.source_ref,ref);assert(grant.expires_at.getTime()<=Date.now()+30000)
   await assert.rejects(extended.synchroniseAccess(post(),{organisationId:randomUUID()}));assert.equal(reads,1)
+  const peerCfg={...cfg,origin:'https://identity.example.test'},peerStore=createOrganisationStore({...extendedOptions,configuration:peerCfg})
+  const peer={environment:'development',callerApplicationId:'spendguru',receiverApplicationId:cfg.applicationId,sourceOrigin:cfg.targets.sg2.origin,targetOrigin:peerCfg.origin,keyId:'sg2-identity-test-v1',key:randomBytes(32),internalOrigins:[],routes:[{method:'GET',path:'/v1/account/organisation-onboarding/snapshot',maximumRequestBytes:0,requireIdempotencyKey:false},{method:'POST',path:'/v1/account/organisation-onboarding/access',maximumRequestBytes:2,requireIdempotencyKey:false}]}
+  const surface=createOrganisationHttpSurface({...db.options(actors.owner),client:actors.owner.client,configuration:peerCfg,bootstrapSchemaDigest:organisationBootstrapSchemaDigest(),transact:accountTransactions(db.pool),deploymentId:'test-store',configurationVersion:'test-store-1',readVerifiedCompany:owner.readStoredCompany,conversation:peerStore,workspacePeer:peer})
+  const handler=createHttpHandler({configuration:peerCfg},{},null,null,null,null,null,null,null,{},surface),sign=createPeerOperationSigner(peer)
+  const request=(method,path)=>new Request(peerCfg.origin+'/v1/account/organisation-onboarding/'+path,{method,headers:{authorization:'Bearer synthetic-original-session',...(method==='POST'?{'content-type':'application/json'}:{})},...(method==='POST'?{body:'{}'}:{})})
+  const previousOrigin=actors.owner.origin;actors.owner.origin=peer.sourceOrigin
+  try{
+   assert.equal((await handler(request('GET','snapshot'))).status,401)
+   const result=await handler(await sign(request('GET','snapshot')));assert.equal(result.status,200);assert.equal((await result.json()).organisation.organisationId,oid)
+   const signed=await sign(request('POST','access')),damaged=new Request(signed,{headers:{...Object.fromEntries(signed.headers),authorization:'Bearer forged-other-session'}})
+   assert.equal((await handler(damaged)).status,403)
+   const projected=await handler(await sign(request('POST','access')));assert.equal(projected.status,200);assert.equal((await projected.json()).organisationId,oid)
+   const foreign=new Request(peerCfg.origin+'/v1/account/organisation-onboarding/invitations',{method:'POST',headers:{origin:cfg.origin,'content-type':'application/json',authorization:'Bearer synthetic-original-session','x-profitia-peer-operation':signed.headers.get('x-profitia-peer-operation')},body:'{}'})
+   assert.equal((await handler(foreign)).status,403)
+  }finally{actors.owner.origin=previousOrigin}
   active=false;assert.equal((await extended.synchroniseAccess(post(),{})).status,'PENDING_PACKAGE')
   assert.equal((await db.admin.query("SELECT status FROM profitia_access.product_grants WHERE application_id='spendguru' AND organisation_id=$1",[oid])).rows[0].status,'REVOKED')
  })

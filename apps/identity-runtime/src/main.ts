@@ -156,7 +156,14 @@ if (process.env.IDENTITY_RUNTIME_ENABLED === 'true') {
       const store=createOrganisationStore({...common,...ports,...(connections.accessProjectionSchemaDigest?{accessProjectionSchemaDigest:connections.accessProjectionSchemaDigest}:{}),lifecycleSchemaDigest:connections.lifecycleSchemaDigest,
         encryptionKey:Buffer.from(process.env.IDENTITY_EMAIL_ENCRYPTION_KEY,'hex'),keyId:e.keyId,
         workspaceTargetId:connections.workspaceTargetId,workspaceRouteKey:connections.workspaceRouteKey,findRecipients:createOrganisationRecipientLookup(client)})
+      const workspacePeerFlag=process.env.IDENTITY_ORGANISATION_WORKSPACE_PEER_ENABLED
+      if(workspacePeerFlag!==undefined&&!['true','false'].includes(workspacePeerFlag))throw Error('WORKSPACE_PEER_CONFIGURATION_REQUIRED')
+      const workspaceTarget=config.targets[connections.workspaceTargetId]
+      if(workspacePeerFlag==='true'&&(!connections.accessProjectionSchemaDigest||!workspaceTarget||!/^[a-f0-9]{64}$/.test(process.env.IDENTITY_ORGANISATION_WORKSPACE_PEER_KEY??'')||!/^[-a-z0-9]{2,64}$/.test(process.env.IDENTITY_ORGANISATION_WORKSPACE_KEY_ID??'')))throw Error('WORKSPACE_PEER_CONFIGURATION_REQUIRED')
       organisation=createOrganisationHttpSurface({...common,bootstrapSchemaDigest:organisationBootstrapSchema,conversation:store,
+        ...(workspacePeerFlag==='true'?{workspacePeer:{environment:'development' as const,callerApplicationId:'spendguru',receiverApplicationId:config.applicationId,
+          sourceOrigin:workspaceTarget!.origin,targetOrigin:config.origin,keyId:process.env.IDENTITY_ORGANISATION_WORKSPACE_KEY_ID!,key:Buffer.from(process.env.IDENTITY_ORGANISATION_WORKSPACE_PEER_KEY!,'hex'),internalOrigins:[],
+          routes:[{method:'GET' as const,path:'/v1/account/organisation-onboarding/snapshot',maximumRequestBytes:0,requireIdempotencyKey:false},{method:'POST' as const,path:'/v1/account/organisation-onboarding/access',maximumRequestBytes:2,requireIdempotencyKey:false}]}}:{}),
         readVerifiedCompany:store.readStoredCompany,acceptInvitation:store.acceptInvitation})
       await organisation.ready()
       organisationDelivery=createOrganisationInvitationDelivery({query:common.independentQuery,transact:common.transact,client,binding,issuer:config.issuer,

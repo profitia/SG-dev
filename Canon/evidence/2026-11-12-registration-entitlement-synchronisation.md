@@ -37,3 +37,10 @@ The enabled native store projection, new strict POST receiver and conversation-b
 ## Final fenced checkpoint
 
 After the complete459/459 regression, the external package read was moved outside both Root transactions: own scope is verified first and reverified at commit, with no authority lock retained across the remote call. A genuine second SQL connection acquires the authority fence during that read, proving it is free. Current unchanged leases/permissions no longer advance authority; final combined native/shared set57/57 PASS, including10 genuine projection assertions and47 native checks (7587ms), zero failures/skips/cancellations. Shortened assignment expiry forces an update and expires under actual application Root; a changed-revision forced outcome failure rolls back the entire write. Package standard suite15/15 PASS, shared lifecycle7/7 PASS, typecheck/build and installation-plan checks PASS. No live product state was changed. Full SDK/adoption/CI and Development acceptance remain outstanding.
+
+
+## AppShell peer continuation
+
+The explicit optional AppShell receiver accepts only signed GET own snapshot and POST empty access synchronisation. It reuses the existing SDK receipt WeakMap and original verified Clerk bearer; copied or damaged headers are not authority. Ordinary browser Origin/CSRF checks remain unchanged. The current organisation is returned only from the final reverified projection scope. The Limits bridge permits the existing exact-path bearer-only forwarded read only for a separately configured SG2 public origin; raw operator routes and other end-user origins remain denied.
+
+Validation: native full peer/SQL/store suite 15/15 PASS, including actual incoming signed receiver, unsigned foreign session, damaged signature, wrong route, queue and tenant regression. Combined context/Identity/Package Limits checks 47/47 PASS before this added incoming-receiver subcase; builds PASS. No live activation, SQL enrolment, provider, mail or deployment was performed.

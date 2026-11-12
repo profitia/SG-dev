@@ -1,6 +1,8 @@
+import {PEER_OPERATION_HEADER} from '@profitia/platform-contracts/peer-operation'
 import {conversationThemeClientScript} from './account-visuals.js'
 import {organisationInvitationEntryClientScript} from './organisation-onboarding.js'
 import {organisationInvitationTokenHash} from '@profitia/platform-contracts/organisation-invitations'
+import {checkOrganisationConversationRequest} from './organisation-http.js'
 import type { OrganisationHttpSurface } from './organisation-http.js'
 import type { OrganisationDraftSurface } from './organisation-draft.js'
 import type { RegistrationSurface } from './registration.js'
@@ -71,7 +73,8 @@ export function createHttpHandler(boundary: SessionBoundary | null, account: Acc
         if (request.method !== (read?'GET':'POST')) return json(405, { error: 'METHOD_NOT_ALLOWED' })
         const view=organisation?.conversation
         if (!boundary || !account || !organisationDraft || !view) return json(503, { error: 'ONBOARDING_UNAVAILABLE' })
-        checkRequest(request,boundary.configuration,!read)
+        if(request.headers.has(PEER_OPERATION_HEADER)&&(!['snapshot','access'].includes(conversationRoute)||!organisation?.verifyWorkspacePeer||!await organisation.verifyWorkspacePeer(request)))return json(403,{error:'WORKSPACE_PEER_REJECTED'})
+        checkOrganisationConversationRequest(request,boundary.configuration,!read)
         if (conversationRoute==='snapshot') return json(200,await view.snapshot(request))
         if (conversationRoute==='activation') return json(200,await view.activation(request))
         const input=await body(request,conversationRoute==='invitations'?16384:4096)

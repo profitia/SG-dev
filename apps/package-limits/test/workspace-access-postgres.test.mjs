@@ -76,9 +76,9 @@ test('genuine two-database commercial activation keeps operator assignments and 
  const peer={environment:'development',callerApplicationId:'identity-runtime-development',receiverApplicationId:'package-limits-development',
   sourceOrigin:'https://identity.example.test',targetOrigin:'https://limits-development.onrender.com',keyId:'registration-limits-v1',key:randomBytes(32),
   routes:[{method:'GET',path:'/v1/organisation-access',maximumRequestBytes:0,requireIdempotencyKey:false},{method:'GET',path:'/v1/organisation-entitlements',maximumRequestBytes:0,requireIdempotencyKey:false}],internalOrigins:[]}
- let active=true
+ let active=true,azp=peer.sourceOrigin
  const client={authenticateRequest:async()=>({status:'signed-in',isAuthenticated:true,toAuth:()=>({isAuthenticated:true,tokenType:'session_token',userId:'user_workspace',sessionId:'sess_workspace',actor:null,
-  sessionClaims:{iss:issuer,sub:'user_workspace',sid:'sess_workspace',azp:peer.sourceOrigin,exp:Math.floor(Date.now()/1000)+60}})}),
+  sessionClaims:{iss:issuer,sub:'user_workspace',sid:'sess_workspace',azp,exp:Math.floor(Date.now()/1000)+60}})}),
   sessions:{getSession:async()=>({id:'sess_workspace',userId:'user_workspace',status:active?'active':'revoked',expireAt:Date.now()+60000,abandonAt:Date.now()+60000,actor:null})},
   users:{getUser:async()=>({id:'user_workspace',banned:false,locked:false,deprovisioned:false})}}
  const config={origin:peer.targetOrigin,issuer,workspace:{peer,commandKey:key}}
@@ -100,6 +100,16 @@ test('genuine two-database commercial activation keeps operator assignments and 
  const terms={contractStart:today,contractEnd:end,assignmentStart:today,assignmentEnd:end,usageStart:today,usageCycle:'MONTH',usageAnchor:'CALENDAR',billingStart:today,billingEnd:end,invoiceDate:today,dueDate:today,timezone:'Europe/Warsaw',basis:'DEVELOPMENT_TEST',reference:'SYNTHETIC_ONLY',purchaseType:'MANUAL_SUBSCRIPTION'}
  const assignment=await write('assignment.create',{organisationId:oid,organisationVersion:1,packageVersionId:initial.id,effectiveFrom:today,terms,overrides:[],reason:'Synthetic operator assignment'})
  assert.equal((await surface.read(await request())).status,'PENDING_PACKAGE') // A commercial package alone cannot fake E1 projection.
+ const forwardedConfig={...config,workspace:{...config.workspace,entitlements:true,endUserOrigin:'https://sg2.example.test'}}
+ const forwarded=createWorkspaceAccess({configuration:forwardedConfig.workspace,limits,identity,withIdentity:identityBoundary(forwardedConfig,identity,client)})
+ azp=forwardedConfig.workspace.endUserOrigin
+ assert.equal((await forwarded.entitlements(await entitlementsRequest())).status,'ACTIVE')
+ await assert.rejects(surface.entitlements(await entitlementsRequest()))
+ await assert.rejects(forwarded.read(await request()))
+ const rawForwarded=new Request(peer.targetOrigin+'/v1/organisation-entitlements',{headers:{authorization:'Bearer synthetic-official-sdk-fixture'}})
+ await assert.rejects(forwarded.entitlements(rawForwarded))
+ azp='https://foreign.example.test';await assert.rejects(forwarded.entitlements(await entitlementsRequest()))
+ azp=peer.sourceOrigin
  const current=await surface.entitlements(await entitlementsRequest());assert.equal(current.status,'ACTIVE');assert.equal(current.assignmentRef,'package-assignment:'+assignment.id+':1');assert.deepEqual(current.capabilities,['SEATS']);assert.equal(current.userId,uid);assert.equal(current.organisationId,oid)
  await assert.rejects(surface.read(await entitlementsRequest()));await assert.rejects(surface.entitlements(await request()))
  await privateAdmin.query("INSERT INTO profitia_access.product_grants(application_id,organisation_id,product,features,status,source,source_ref,expires_at)VALUES('spendguru',$1,'SPENDGURU',ARRAY['category'],'ACTIVE','EXPLICIT_OFFER',$2,clock_timestamp()+interval '1 hour')",[oid,'package-assignment:'+assignment.id+':1'])

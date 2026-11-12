@@ -57,7 +57,8 @@ export function identityBoundary(
         appId: "package-limits-development",
         environment: "development",
         issuer: config.issuer,
-        authorizedParties: [config.origin,...(config.workspace?[config.workspace.peer.sourceOrigin]:[])],
+        authorizedParties: [config.origin,...(config.workspace?[config.workspace.peer.sourceOrigin,...(config.workspace.endUserOrigin?[config.workspace.endUserOrigin]:[])]:[])],
+        ...(config.workspace?.endUserOrigin?{bearerPeerReads:[{sourceOrigin:config.workspace.endUserOrigin,targetOrigin:config.workspace.peer.sourceOrigin,path:'/v1/organisation-entitlements'}]}:{}),
       },
       resolveBinding: async (key) => {
         sql = await pool.connect();

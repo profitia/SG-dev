@@ -7,7 +7,7 @@ import {Fault} from './domain.js'
 export const workspaceAccessDigest=createHash('sha256').update(fs.readFileSync(new URL('../migrations/005-workspace-access.sql',import.meta.url))).digest('hex')
 export const workspaceIdentityDigest=createHash('sha256').update(fs.readFileSync(new URL('../migrations/006-workspace-identity-read.sql',import.meta.url))).digest('hex')
 export const workspaceEntitlementsDigest=createHash('sha256').update(fs.readFileSync(new URL('../migrations/007-workspace-entitlements.sql',import.meta.url))).digest('hex')
-export type WorkspaceConfiguration=Readonly<{peer:PeerOperationConfiguration;commandKey:Uint8Array;entitlements?:true}>
+export type WorkspaceConfiguration=Readonly<{peer:PeerOperationConfiguration;commandKey:Uint8Array;entitlements?:true;endUserOrigin?:string}>
 export interface WorkspaceAccessSurface{ready():Promise<void>;read(request:Request):Promise<unknown>;entitlements?(request:Request):Promise<unknown>}
 export function readWorkspaceConfiguration(env:Readonly<Record<string,string|undefined>>,targetOrigin:string):WorkspaceConfiguration|undefined{
  const enabled=env.LIMITS_WORKSPACE_ACCESS_ENABLED,extended=env.LIMITS_WORKSPACE_ENTITLEMENTS_ENABLED
@@ -22,12 +22,14 @@ export function readWorkspaceConfiguration(env:Readonly<Record<string,string|und
   ||!/^https:\/\/[a-z0-9.-]+$/.test(env.LIMITS_WORKSPACE_SOURCE_ORIGIN??'')
   ||!/^[-a-z0-9]{2,64}$/.test(env.LIMITS_WORKSPACE_KEY_ID??''))throw Error('WORKSPACE_ACCESS_CONFIGURATION_REQUIRED')
  if(extended==='true'&&env.LIMITS_WORKSPACE_ENTITLEMENTS_SCHEMA_DIGEST!==workspaceEntitlementsDigest)throw Error('WORKSPACE_ENTITLEMENTS_CONFIGURATION_REQUIRED')
+ const endUserOrigin=env.LIMITS_WORKSPACE_END_USER_ORIGIN
+ if(endUserOrigin!==undefined){const u=new URL(endUserOrigin);if(extended!=='true'||u.origin!==endUserOrigin||u.protocol!=='https:'||u.username||u.password||endUserOrigin===targetOrigin||endUserOrigin===env.LIMITS_WORKSPACE_SOURCE_ORIGIN)throw Error('WORKSPACE_END_USER_ORIGIN_REQUIRED')}
  const routes:PeerOperationConfiguration['routes']=[{method:'GET',path:'/v1/organisation-access',maximumRequestBytes:0,requireIdempotencyKey:false},
   ...(extended==='true'?[{method:'GET' as const,path:'/v1/organisation-entitlements',maximumRequestBytes:0,requireIdempotencyKey:false}]:[])]
  const peer:PeerOperationConfiguration={environment:'development',callerApplicationId:'identity-runtime-development',receiverApplicationId:'package-limits-development',
   sourceOrigin:env.LIMITS_WORKSPACE_SOURCE_ORIGIN!,targetOrigin,keyId:env.LIMITS_WORKSPACE_KEY_ID!,key:Buffer.from(env.LIMITS_WORKSPACE_PEER_KEY!,'hex'),routes,internalOrigins:[]}
  createPeerOperationVerifier(peer)
- return Object.freeze({peer,commandKey:Buffer.from(env.LIMITS_WORKSPACE_COMMAND_KEY!,'hex'),...(extended==='true'?{entitlements:true as const}:{})})
+ return Object.freeze({peer,commandKey:Buffer.from(env.LIMITS_WORKSPACE_COMMAND_KEY!,'hex'),...(extended==='true'?{entitlements:true as const}:{}),...(endUserOrigin?{endUserOrigin}:{})})
 }
 export function workspaceSignature(key:Uint8Array,actor:string,organisation:string,application:string,until:number,tx:string,projectionRef:string){
  return createHmac('sha256',key).update(['workspace-access-v1','profitia_limits_runtime',actor,organisation,application,until,tx,projectionRef].join('\u001f')).digest('hex')
