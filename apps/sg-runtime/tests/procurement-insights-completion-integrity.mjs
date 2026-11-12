@@ -1,4 +1,5 @@
 // Test/build-only provenance. Never imported by a product runtime.
+import {recurringConsentTransportPredecessor} from '../../../packages/platform-contracts/test/recurring-consent-transport-source.mjs';
 import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
 export const PI_COMPLETION_RECEIPT='apps/sg-runtime/procurement-insights-completion-integration.json';
@@ -28,6 +29,8 @@ export const PI_COMPLETION_PATHS=Object.freeze([
 const added=new Set(['apps/insights-runtime/src/publication-query.mjs','apps/insights-runtime/tests/report-library.test.mjs','apps/sg-runtime/procurement-insights-shell-integration.json','apps/sg-runtime/tests/procurement-insights-completion.test.mjs','apps/sg-runtime/tests/procurement-insights-completion-integrity.mjs','apps/sg-runtime/tests/procurement-insights-shell-integrity.mjs']);
 const hash=bytes=>createHash('sha256').update(bytes).digest('hex');
 export function procurementInsightsCompletionPredecessor(current,historical){
+ const transport=recurringConsentTransportPredecessor(current,historical);
+ if(transport)return procurementInsightsCompletionPredecessor(transport.previousBytes,historical);
  let bytes;try{bytes=current(PI_COMPLETION_RECEIPT)}catch(error){
   const text=String(error?.stderr??error?.message??'');
   if(error?.code==='ENOENT'||error?.status===128&&["' does not exist in ","' exists on disk, but not in "].some(s=>text.includes("'"+PI_COMPLETION_RECEIPT+s)))return null;
