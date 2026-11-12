@@ -134,8 +134,10 @@ test('private recurring public routing refuses changed bytes, symbolic files and
   const root=path.join(temporary,'candidate');git(root,'update-ref','--no-deref','HEAD',candidateSha);git(root,'read-tree',candidateSha)
   const canonical=git(root,'ls-tree','-r','--name-only',candidateSha,'--','Canon').split('\n')
   const referenced=new Set(),tracked=new Set(git(root,'ls-tree','-r','--name-only',candidateSha).split('\n'))
-  const visit=value=>{if(!value||typeof value!=='object')return;for(const[k,v]of Object.entries(value)){if(/^(apps|packages|scripts|Canon)\//.test(k)&&tracked.has(k))referenced.add(k);if(typeof v==='string'&&/^(apps|packages|scripts|Canon)\//.test(v)&&tracked.has(v))referenced.add(v);visit(v)}}
-  for(const f of tracked)if(/(?:-integration|-source|compatibility)\.json$/.test(f))visit(JSON.parse(fs.readFileSync(path.join(repositoryRoot,f),'utf8')))
+  const visit=value=>{if(!value||typeof value!=='object')return;for(const[k,v]of Object.entries(value)){if(tracked.has(k))referenced.add(k);if(typeof v==='string'&&tracked.has(v))referenced.add(v);visit(v)}}
+  // Include tracked instruction files referenced by accepted governance evidence;
+  // copying a fixture input does not add it to the reviewed consumer diff.
+  for(const f of tracked)if(/(?:-integration|-source|compatibility)\.json$/.test(f)||/^Canon\/evidence\/.*\.json$/.test(f))visit(JSON.parse(fs.readFileSync(path.join(repositoryRoot,f),'utf8')))
   const liveRecord='apps/sg-runtime/procurement-insights-live-acceptance.json';if(tracked.has(liveRecord)){referenced.add(liveRecord);visit(readReceipt(liveRecord))}
   const files=[...new Set([...canonical,...referenced,...Object.keys(a.sourceDigests),...Object.keys(a.preservedReceipts),
    'apps/architecture-lab/private-recurring-source.json','apps/architecture-lab/private-recurring-source.mjs',
