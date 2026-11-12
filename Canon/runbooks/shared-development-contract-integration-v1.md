@@ -973,3 +973,21 @@ native binaries. Assertions, runtime, SQL, plan and administrative scope are
 unchanged from owner-approved02c1725f. Updated seven producer blobs plus the
 consumer record are exact-pinned; the six SG2 functional blobs remain identical.
 Fresh exact-pin acceptance and the actual Ubuntu CI result remain required.
+
+### Calendar / PI accepted-peer policy composition
+
+Actual authority main537660ed independently admits the PI live corrections.
+It overlaps the Calendar policy in piCompletionCanonicalRead. The proposed
+composition authenticates complete current Calendar source, then the exact PI
+live-correction graph, then the unchanged recurring-transport predecessor.
+All54+7 Calendar pins, all12 PI pins, registration74/73/70 and38 immutable
+Calendar receipts remain unchanged. Eight focused tests PASS, including two
+actual complete Git source graphs and rejection of an unadmitted mixed graph.
+The complete original Calendar and PI test blocks are retained. No source
+code, SQL, operation-plan digest, right, role, cost or resource is changed.
+
+This is a real change to trusted projection composition, requiring exact
+controller-owner acceptance before activation. The earlier approved8c and
+C5ad proof from control97 are retained; the latter is historical after main537
+changed the controller. Fresh exact controlled/public and resulting-main
+gates remain mandatory. No deployment or mail was performed.

@@ -14,6 +14,7 @@ import {ECR_BACKEND_REVIEW,assertEcrBackendReviewEntry} from './controlled-packa
 import {createHash} from 'node:crypto'
 import {ECR_G1_GOVERNANCE_REVIEW,assertEcrG1ReviewEntry} from './controlled-package-ci.mjs'
 import test from 'node:test'
+import {PRIVATE_RECURRING_LIVE_ACCEPTANCE_REVIEW,PI_LIVE_ACCEPTANCE_PROVENANCE_PATH,assertPiLiveAcceptanceRecord,assertPiLiveAcceptanceProjection} from './controlled-package-ci.mjs'
 import assert from 'node:assert/strict'
 import {PRIVATE_RECURRING_SHELL_REVIEW,PRIVATE_RECURRING_SHELL_CURRENT_REVIEW,PRIVATE_RECURRING_SHELL_CALENDAR_REVIEW} from './controlled-package-ci.mjs'
 import fs from 'node:fs'
@@ -2711,5 +2712,53 @@ test('Calendar historical-read correction retains the approved operation scope, 
  for(const record of [f.cfg.producerRecord,f.cfg.consumerRecord]){
   const previous=JSON.parse(f.historical(record===f.cfg.producerRecord?oldProducer:oldConsumer,record)),now=JSON.parse(f.current(true)(record))
   assert.deepEqual(now.preservedReceipts,previous.preservedReceipts)
+ }
+})
+
+function piLiveAcceptanceFixture(){
+ const r=PRIVATE_RECURRING_LIVE_ACCEPTANCE_REVIEW,files=Object.entries(r.entries).map(([filename,e])=>({filename,sha:e.sha,status:e.status}))
+ return{r,files,p:{...pr(),number:r.prNumber,changed_files:files.length,base:{...pr().base,sha:r.baseSha},head:{...pr().head,sha:r.sourceSha,ref:r.branch}}}
+}
+test('PI live corrections admit only the twelve exact routed source versions and preserve earlier reviews',()=>{
+ const {r,files,p}=piLiveAcceptanceFixture();assert.equal(files.length,12)
+ assert.equal(createHash('sha256').update(JSON.stringify(r.entries)).digest('hex'),'ae3c35fc25bab49c31491330c8c7152057c2a559e68a57e58d8a7bb194149373')
+ assertArchitectureFiles(p,files);assert.equal(selectCandidate(context(),p,r.sourceSha,{files}),r.sourceSha)
+ for(const f of files){assertPrivateRecurringReviewEntry(f,'100644 blob '+f.sha+'\t'+f.filename+'\0');for(const mode of ['100755','120000','160000'])rejection(()=>assertPrivateRecurringReviewEntry(f,mode+' blob '+f.sha+'\t'+f.filename+'\0'))}
+ for(const edit of [f=>f.pop(),f=>f.push(f[0]),f=>f[0].sha='f'.repeat(40),f=>f[0].status='removed',f=>f[0].previous_filename='elsewhere',f=>f[0].filename='apps/sg-runtime/app/api/unreviewed.ts']){
+  const bad=structuredClone(files);edit(bad);rejection(()=>selectCandidate(context(),{...p,changed_files:bad.length},r.sourceSha,{files:bad}))
+ }
+ for(const edit of [q=>q.number=1014,q=>q.head.ref='architecture/another',q=>q.head.repo.full_name='attacker/fork',q=>q.user.login='attacker',q=>q.base.ref='staging',q=>q.head.sha=sha]){const bad=structuredClone(p);edit(bad);rejection(()=>selectCandidate(context(),bad,r.sourceSha,{files}))}
+ assert.equal(createHash('sha256').update(JSON.stringify(PRIVATE_RECURRING_CONSUMER_TEST_REVIEW.entries)).digest('hex'),'4dc65bcc37bcc7a5fe06fb1d77bc4ca23dd7db2db67ea6847045fdf7a09f103f')
+})
+test('trusted live correction projection validates all current bytes and immutable history as data',()=>{
+ const r=PRIVATE_RECURRING_LIVE_ACCEPTANCE_REVIEW,cache=new Map(),current=p=>{if(!cache.has(p))cache.set(p,execFileSync('git',['show',r.sourceSha+':'+p],{cwd:authorityRoot}));return cache.get(p)}
+ const bytes=current(PI_LIVE_ACCEPTANCE_PROVENANCE_PATH),a=JSON.parse(bytes),options={sha256ForPath:p=>a.sourceDigests[p]??a.preservedReceipts[p],blobForPath:p=>r.entries[p]?.sha,historicalDigestForPath:(sha,p)=>{assert.equal(sha,a.baseCandidateSha);return a.preservedReceipts[p]}}
+ assert.equal(Object.keys(assertPiLiveAcceptanceRecord(bytes,options).sourceDigests).length,11)
+ for(const p of Object.keys(a.sourceDigests))for(const field of ['sha256ForPath','blobForPath'])rejection(()=>assertPiLiveAcceptanceRecord(bytes,{...options,[field]:q=>q===p?'0'.repeat(field==='blobForPath'?40:64):options[field](q)}))
+ for(const p of Object.keys(a.preservedReceipts))for(const field of ['sha256ForPath','historicalDigestForPath'])rejection(()=>assertPiLiveAcceptanceRecord(bytes,{...options,[field]:field==='sha256ForPath'?q=>q===p?'0'.repeat(64):options[field](q):(sha,q)=>q===p?'0'.repeat(64):options[field](sha,q)}))
+ rejection(()=>assertPiLiveAcceptanceRecord(Buffer.concat([bytes,Buffer.from(' ')]),options))
+ const historical=(sha,p)=>execFileSync('git',['show',sha+':'+p],{cwd:authorityRoot}),previous=assertPiLiveAcceptanceProjection(bytes,{current,historical})
+ assert.deepEqual(previous('apps/sg-runtime/components/procurement-insights/workspace.tsx'),historical(a.baseCandidateSha,'apps/sg-runtime/components/procurement-insights/workspace.tsx'))
+ assert.throws(()=>previous(PI_LIVE_ACCEPTANCE_PROVENANCE_PATH),{code:'ENOENT'})
+ assert.deepEqual(previous('apps/sg-runtime/operation-integration.json'),current('apps/sg-runtime/operation-integration.json'))
+})
+
+test('Calendar and PI peer policies authenticate each real complete source graph and reject an unadmitted mixed graph',()=>{
+ for(const source of [ECR_COMPLETE_FUNCTIONAL_REVIEW.sourceSha,PRIVATE_RECURRING_LIVE_ACCEPTANCE_REVIEW.sourceSha]){
+  const root=fs.mkdtempSync(path.join(os.tmpdir(),'calendar-pi-peer-policy-'))
+  try{
+   execFileSync('git',['clone','--quiet','--shared','--no-checkout',authorityRoot,root],{stdio:['ignore','pipe','pipe']})
+   execFileSync('git',['checkout','--quiet','--detach',source],{cwd:root,stdio:['ignore','pipe','pipe']})
+   assert(assertPrivateRecurringProvenance(root),'complete actual source graph '+source)
+   if(source===ECR_COMPLETE_FUNCTIONAL_REVIEW.sourceSha){
+    // The two producer closures overlap. A future mixed source needs its own
+    // exact owner adoption; accepted policy coexistence cannot admit it.
+    for(const p of Object.keys(PRIVATE_RECURRING_LIVE_ACCEPTANCE_REVIEW.entries)){
+     const b=execFileSync('git',['cat-file','blob',PRIVATE_RECURRING_LIVE_ACCEPTANCE_REVIEW.sourceSha+':'+p],{cwd:authorityRoot,stdio:['ignore','pipe','pipe']})
+     fs.mkdirSync(path.dirname(path.join(root,p)),{recursive:true});fs.writeFileSync(path.join(root,p),b)
+    }
+    assert.throws(()=>assertPrivateRecurringProvenance(root),/ECR_COMPLETE_FUNCTIONAL_BYTES_REJECTED/)
+   }
+  }finally{fs.rmSync(root,{recursive:true,force:true})}
  }
 })

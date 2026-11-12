@@ -94,3 +94,21 @@ previous02c1725f full controller suite is269/269 PASS. The successor changes
 only exact references and the seven-path continuity assertion; six focused
 source/routing/SDK/receipt checks PASS. Fresh full public/controlled and
 resulting-main gates remain required before activation.
+
+### Calendar / PI accepted-peer policy composition
+
+Actual authority main537660ed independently admits the PI live corrections.
+It overlaps the Calendar policy in piCompletionCanonicalRead. The proposed
+composition authenticates complete current Calendar source, then the exact PI
+live-correction graph, then the unchanged recurring-transport predecessor.
+All54+7 Calendar pins, all12 PI pins, registration74/73/70 and38 immutable
+Calendar receipts remain unchanged. Eight focused tests PASS, including two
+actual complete Git source graphs and rejection of an unadmitted mixed graph.
+The complete original Calendar and PI test blocks are retained. No source
+code, SQL, operation-plan digest, right, role, cost or resource is changed.
+
+This is a real change to trusted projection composition, requiring exact
+controller-owner acceptance before activation. The earlier approved8c and
+C5ad proof from control97 are retained; the latter is historical after main537
+changed the controller. Fresh exact controlled/public and resulting-main
+gates remain mandatory. No deployment or mail was performed.
