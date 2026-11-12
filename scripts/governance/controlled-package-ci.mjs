@@ -112,6 +112,41 @@ function isPinnedPlatformKnowledgeG1Review(files) {
       && !Object.hasOwn(f,'previous_filename'))
 }
 
+// Proposed exact five-file quality G1 review. Activation requires separate
+// controller-owner acceptance and controlled main proof; never generic QA access.
+export const ASSISTANT_QUALITY_G1_REVIEW=Object.freeze({
+  "prNumber": 1042,
+  "branch": "architecture/bsdc-cic-quality-20261112",
+  "reviewedCandidateSha": "339b948c744d0b6785550c8d1da7100dc8090906",
+  "reviewedBaseSha": "df2214265e577ef653c35fa18a38c717ffe8905e",
+  "blobs": {
+    "Canon/evidence/2026-11-12-assistant-quality-stage1-g1-onboarding.md": "88dd3b27b62db99d438a74a5d216fca2c198e346",
+    "Canon/proposals/bsdc/ARCHITECTURE/cic-assistant-continuous-quality.md": "f0c81253cd20d4f2b75f8eabf2adb47d538c20fc",
+    "Canon/registries/architecture-onboarding-v1.json": "a7602a4e5d48f834f8ed2eeb0ace791bb896e825",
+    "Canon/registries/current-architecture-baseline-v1.json": "fd2df1356f9a1260d72b3db81edac14128ba514c",
+    "scripts/governance/assistant-quality-routing.test.mjs": "bb837bbb47ad3e573a2071db9d7e92734270b4ed"
+  },
+  "statuses": {
+    "Canon/evidence/2026-11-12-assistant-quality-stage1-g1-onboarding.md": "added",
+    "Canon/proposals/bsdc/ARCHITECTURE/cic-assistant-continuous-quality.md": "added",
+    "Canon/registries/architecture-onboarding-v1.json": "modified",
+    "Canon/registries/current-architecture-baseline-v1.json": "modified",
+    "scripts/governance/assistant-quality-routing.test.mjs": "added"
+  }
+});
+function isPinnedAssistantQualityG1Review(files){
+ const r=ASSISTANT_QUALITY_G1_REVIEW;
+ return Array.isArray(files)&&files.length===Object.keys(r.blobs).length
+  &&new Set(files.map(f=>f?.filename)).size===files.length
+  &&files.every(f=>Object.hasOwn(r.blobs,f?.filename??'')&&f.sha===r.blobs[f.filename]
+   &&f.status===r.statuses[f.filename]&&!Object.hasOwn(f,'previous_filename'));
+}
+export function assertAssistantQualityG1ReviewEntry(file,entry){
+ const r=ASSISTANT_QUALITY_G1_REVIEW;
+ if(!Object.hasOwn(r.blobs,file?.filename??'')||file.sha!==r.blobs[file.filename]
+  ||entry!=='100644 blob '+file.sha+'\t'+file.filename+'\0')fail('ASSISTANT_QUALITY_G1_FILE_MODE_REJECTED');
+}
+
 // The producer class remains deliberately narrower than ARCHITECTURE ownership.
 // A separate closed KRS governance review bundle below grants no app or generic
 // workflow/tooling admission and never reads a candidate-provided allowlist.
@@ -5964,7 +5999,7 @@ export function assertArchitectureFiles(pr, files, repositoryRoot = controlRoot(
   const readonlyMissReview = isPinnedReadonlyMissReportReview(files)
   const freshFixtureReview = isPinnedFreshFixtureTeardownReview(files)
   const rootAtomicClaimReview = isPinnedRootAtomicClaimReview(files)
-  const closedReview = isPinnedPlatformKnowledgeG1Review(files) || isPinnedAcgG1Review(files) || isPinnedInsightsG1Review(files) || isPinnedEcrG1Review(files) || krsReview || isPinnedAdpGovernanceReview(files) || isPinnedLimitsG1Review(files) || isPinnedNewsfeedG1Review(files) || isPinnedSourceHubG1Review(files) || freshReportReview || payloadCaptureReview || readonlyMissReview || freshFixtureReview || rootAtomicClaimReview
+  const closedReview = isPinnedAssistantQualityG1Review(files) || isPinnedPlatformKnowledgeG1Review(files) || isPinnedAcgG1Review(files) || isPinnedInsightsG1Review(files) || isPinnedEcrG1Review(files) || krsReview || isPinnedAdpGovernanceReview(files) || isPinnedLimitsG1Review(files) || isPinnedNewsfeedG1Review(files) || isPinnedSourceHubG1Review(files) || freshReportReview || payloadCaptureReview || readonlyMissReview || freshFixtureReview || rootAtomicClaimReview
   const names = new Set()
   for (const file of files) {
     if (!(closedReview || architecturePathAllowed(file.filename))
@@ -5993,6 +6028,10 @@ export function selectCandidate(context, pr, expectedSha, {files, repositoryRoot
   if(pr&&(pr.number===ECR_MARKET_CALENDAR_REVIEW.prNumber||pr.head.ref===ECR_MARKET_CALENDAR_REVIEW.branch||isPinnedEcrMarketCalendarReview(files))){if(family!=='ARCHITECTURE'||pr.number!==ECR_MARKET_CALENDAR_REVIEW.prNumber||pr.head.ref!==ECR_MARKET_CALENDAR_REVIEW.branch||!isPinnedEcrMarketCalendarReview(files))fail('ECR_MARKET_CALENDAR_REVIEW_IDENTITY_REJECTED')}
   const recurringReview=privateRecurringReview(files)
   if(pr&&([PRIVATE_RECURRING_REVIEW,PRIVATE_RECURRING_SHELL_REVIEW].some(r=>pr.number===r.prNumber||pr.head.ref===r.branch)||recurringReview)){if(family!=='ARCHITECTURE'||!recurringReview||pr.number!==recurringReview.prNumber||pr.head.ref!==recurringReview.branch)fail('PRIVATE_RECURRING_REVIEW_IDENTITY_REJECTED')}
+  if(pr&&(pr.number===ASSISTANT_QUALITY_G1_REVIEW.prNumber||pr.head?.ref===ASSISTANT_QUALITY_G1_REVIEW.branch||isPinnedAssistantQualityG1Review(files))){
+    if(family!=='ARCHITECTURE'||pr.number!==ASSISTANT_QUALITY_G1_REVIEW.prNumber
+      ||pr.head.ref!==ASSISTANT_QUALITY_G1_REVIEW.branch||!isPinnedAssistantQualityG1Review(files))fail('ASSISTANT_QUALITY_G1_REVIEW_IDENTITY_REJECTED');
+  }
   if (pr && (pr.number===PLATFORM_KNOWLEDGE_G1_REVIEW.prNumber || pr.head?.ref===PLATFORM_KNOWLEDGE_G1_REVIEW.branch || isPinnedPlatformKnowledgeG1Review(files))) {
     if (family!=='ARCHITECTURE' || pr.number!==PLATFORM_KNOWLEDGE_G1_REVIEW.prNumber
       || pr.head.ref!==PLATFORM_KNOWLEDGE_G1_REVIEW.branch || expectedSha!==PLATFORM_KNOWLEDGE_G1_REVIEW.sourceSha
@@ -6082,6 +6121,7 @@ export function assertArchitectureCheckout(root, sha, admission, repositoryRoot 
   for (const file of admission.files) {
     const entry = execFileSync('git', ['ls-tree', '-z', sha, '--', file.filename], {cwd: root, encoding: 'utf8'})
     if (file.status === 'removed') {if (entry !== '') fail('ARCHITECTURE_DIFF_MISMATCH'); continue}
+    if(isPinnedAssistantQualityG1Review(admission.files))assertAssistantQualityG1ReviewEntry(file,entry)
     if(isPinnedBsdcDocumentationReview(admission.files))assertBsdcDocumentationReviewEntry(file,entry)
     if(isPinnedCalendarTestReview(admission.files))assertCalendarTestReviewEntry(file,entry)
     if(isPinnedEcrMarketCalendarReview(admission.files))assertEcrMarketCalendarReviewEntry(file,entry)
