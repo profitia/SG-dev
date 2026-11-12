@@ -1,5 +1,6 @@
 import type { RequestPolicy, RequestReservation, RequestReceipt } from './request-ledger.mjs'
-export type OperationId = 'organisation.create' | import('./recurring-job.mjs').RecurringJobOperation | 'insights.report.start' | 'insights.report.status' | 'insights.report.list' | 'insights.report.download' | import('./supplier-location.mjs').SupplierLocationOperation | 'assistant.converse' | 'assistant.history.read' | 'assistant.history.write' | 'account.settings.read' | 'account.settings.write' | 'knowledge.read' | 'benchmark.selection.read' | 'benchmark.selection.write' | 'category.read' | 'category.write' | 'supplier.assignment.read' | 'supplier.assignment.write' | 'forecast.read' | 'forecast.request' | 'supplier.report.refresh' | 'job.execute' | 'knowledge.ingest' | 'personal.list.read' | 'personal.list.write' | 'supplier.report.read' | 'supplier.report.project' | 'supplier.report.export' | 'supplier.private.read' | 'supplier.private.reveal' | 'supplier.private.export' | 'supplier.private.refresh' | 'benchmark.discovery.request' | 'benchmark.discovery.read'
+export type OrganisationLifecycleOperation = 'organisation.onboarding.read'|'organisation.company.lookup'|'organisation.slug.check'|'organisation.procurement.write'|'organisation.invitation.create'|'organisation.invitation.accept'|'organisation.activation.read'
+export type OperationId = OrganisationLifecycleOperation | 'organisation.create' | import('./recurring-job.mjs').RecurringJobOperation | 'insights.report.start' | 'insights.report.status' | 'insights.report.list' | 'insights.report.download' | import('./supplier-location.mjs').SupplierLocationOperation | 'assistant.converse' | 'assistant.history.read' | 'assistant.history.write' | 'account.settings.read' | 'account.settings.write' | 'knowledge.read' | 'benchmark.selection.read' | 'benchmark.selection.write' | 'category.read' | 'category.write' | 'supplier.assignment.read' | 'supplier.assignment.write' | 'forecast.read' | 'forecast.request' | 'supplier.report.refresh' | 'job.execute' | 'knowledge.ingest' | 'personal.list.read' | 'personal.list.write' | 'supplier.report.read' | 'supplier.report.project' | 'supplier.report.export' | 'supplier.private.read' | 'supplier.private.reveal' | 'supplier.private.export' | 'supplier.private.refresh' | 'benchmark.discovery.request' | 'benchmark.discovery.read'
 export type OperationOutcome = 'SUCCEEDED' | 'NO_DATA' | 'SELECTION_UNAVAILABLE'
 export type Environment = 'development' | 'staging' | 'production'
 export type Json = null | boolean | number | string | Json[] | { [key: string]: Json }
@@ -32,6 +33,7 @@ export interface ProductGrant {
 }
 export interface OperationState {
   bootstrapPolicy?:Readonly<OrganisationBootstrapPolicy>
+  lifecyclePolicy?:Readonly<OrganisationLifecyclePolicy>
   policyVersion: string; applicationId: string; environment: Environment; transactionId?:string
   access: AccessBasis; resource: Resource; products: ProductGrant[]; usagePolicy: 'NOT_APPLICABLE' | 'PRODUCT_POLICY' | 'PLATFORM_BUDGET' | 'ONBOARDING_POLICY'; requestPolicy?: Readonly<RequestPolicy>; inputs?: Resource[]
   requestContinuation?: Readonly<import('./request-continuation.mjs').RequestContinuationEvidence>
@@ -149,7 +151,8 @@ export declare function operationPayloadDigest(payload: Json): string
 export declare function operationSourceDigest(): Promise<string>
 export declare function normalizeModuleEvidence(value: unknown, options?: { now?: () => number; allowExpired?: boolean }): Readonly<ModuleEvidence>
 export declare function createOperationExecutor<Transaction>(options: {
-  application: Application; now?: () => number; organisationBootstrapSchemaDigest?:string; recurringSchemaDigest?:string; locationAdmissionSchemaDigest?:string; reportAdmissionSchemaDigest?:string; requestQuotaSchemaDigest?:string; assistantSchemaDigest?:string
+  application: Application; now?: () => number; organisationLifecycleSchemaDigest?:string
+  organisationBootstrapSchemaDigest?:string; recurringSchemaDigest?:string; locationAdmissionSchemaDigest?:string; reportAdmissionSchemaDigest?:string; requestQuotaSchemaDigest?:string; assistantSchemaDigest?:string
   authenticate(request: unknown): Promise<Actor | null>
   /** Locks authoritative state and commits effects + OUTCOME atomically; rollback on throw. */
   withTransaction<T>(binding: { actor: Readonly<Actor>; request: Readonly<BoundRequest> }, action: (session: OperationSession<Transaction>) => Promise<T>): Promise<T>
@@ -165,3 +168,7 @@ export declare const REQUEST_QUOTA_ROOT_CONTRACT:Readonly<{id:'profitia.operatio
 export interface OrganisationBootstrapPolicy {actorId:string;applicationId:string;commandId:string;environment:Environment;expiresAt:string;operation:'organisation.create';policyId:string;policyVersion:string;resourceId:'current-organisation-onboarding';schemaDigest:string;sourceRef:string;transactionId:string}
 export declare const ORGANISATION_BOOTSTRAP_ROOT_CONTRACT:Readonly<{id:'profitia.operation-context';version:'1.0.0';implementation:'1.0.0-candidate.21'}>
 export declare const ORGANISATION_BOOTSTRAP_OPERATIONS:readonly ['organisation.create']
+
+export declare const ORGANISATION_LIFECYCLE_ROOT_CONTRACT:Readonly<{id:'profitia.operation-context';version:'1.0.0';implementation:'1.0.0-candidate.23'}>
+export declare const ORGANISATION_LIFECYCLE_OPERATIONS:readonly OrganisationLifecycleOperation[]
+export interface OrganisationLifecyclePolicy{actorId:string;applicationId:string;environment:Environment;expiresAt:string;operation:OrganisationLifecycleOperation;organisationId:string|null;payloadDigest:string;policyId:string;policyVersion:string;resourceId:string;schemaDigest:string;sourceRef:string;transactionId:string}

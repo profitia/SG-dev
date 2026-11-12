@@ -172,6 +172,10 @@
       "types": "./src/organisation-invitations.d.mts",
       "import": "./src/organisation-invitations.mjs",
       "require": "./src/organisation-invitations.mjs"
+    },
+    "./organisation-lifecycle": {
+      "types": "./src/organisation-lifecycle.d.mts",
+      "import": "./src/organisation-lifecycle.mjs"
     }
   },
   "scripts": {
