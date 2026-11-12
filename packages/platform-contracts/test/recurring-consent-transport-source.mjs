@@ -14,6 +14,8 @@ export const RECURRING_CONSENT_TRANSPORT_PATHS=Object.freeze([
  'apps/sg-runtime/components/procurement-insights/market-calendar.css',
  'apps/sg-runtime/components/procurement-insights/market-calendar.tsx',
  'apps/sg-runtime/tests/market-calendar.test.tsx',
+ 'apps/platform-source-hub/scripts/ci-routing.mjs',
+ 'apps/platform-source-hub/test/ci-routing.test.mjs',
 ]);
 const added=new Set(RECURRING_CONSENT_TRANSPORT_PATHS.slice(1,3));
 const hash=b=>createHash('sha256').update(b).digest('hex');
@@ -24,14 +26,16 @@ export function recurringConsentTransportPredecessor(current,historical){
   throw error;
  }
  const a=JSON.parse(bytes);
- assert.deepEqual(Object.keys(a).sort(),['schemaVersion','taskId','targetEnvironment','scope','baseCandidateSha','sourceDigests','preservedReceipts','authorisationChanged','schemaChanged','providerCallsPerformed','deploymentPerformed'].sort());
+ assert.deepEqual(Object.keys(a).sort(),['schemaVersion','taskId','targetEnvironment','scope','baseCandidateSha','reviewBaseSha','reviewedPaths','sourceDigests','preservedReceipts','authorisationChanged','schemaChanged','providerCallsPerformed','deploymentPerformed'].sort());
  assert.equal(a.schemaVersion,'1.0.0');assert.equal(a.taskId,'ARCH-PI-RECURRING-E1-20261111');assert.equal(a.targetEnvironment,'development');
- assert.equal(a.scope,'RECURRING_CONSENT_BEARER_TRANSPORT_CORRECTION');assert.equal(a.baseCandidateSha,RECURRING_CONSENT_TRANSPORT_BASE);
+ assert.equal(a.scope,'RECURRING_CONSENT_BEARER_TRANSPORT_CORRECTION');assert.equal(a.baseCandidateSha,RECURRING_CONSENT_TRANSPORT_BASE);assert.equal(a.reviewBaseSha,'99cd4aa1591ba2fc3a387ce637f920dac74880be');
  for(const flag of ['authorisationChanged','schemaChanged','providerCallsPerformed','deploymentPerformed'])assert.equal(a[flag],false,flag);
  assert.deepEqual(Object.keys(a.sourceDigests).sort(),[...RECURRING_CONSENT_TRANSPORT_PATHS].sort());
  for(const p of RECURRING_CONSENT_TRANSPORT_PATHS){assert.match(a.sourceDigests[p],/^[a-f0-9]{64}$/);assert.equal(hash(current(p)),a.sourceDigests[p],'exact recurring consent transport source '+p);}
  const receipt='apps/sg-runtime/procurement-insights-completion-integration.json';
  const completion=JSON.parse(historical(RECURRING_CONSENT_TRANSPORT_BASE,receipt));
+ const reviewed=[...Object.keys(completion.sourceDigests),receipt,...RECURRING_CONSENT_TRANSPORT_PATHS.slice(0,3),RECURRING_CONSENT_TRANSPORT_RECORD,'apps/platform-source-hub/scripts/ci-routing.mjs','apps/platform-source-hub/test/ci-routing.test.mjs'];
+ assert.deepEqual(a.reviewedPaths.slice().sort(),[...new Set(reviewed)].sort());
  const preserved=[...Object.keys(completion.preservedReceipts).filter(p=>!RECURRING_CONSENT_TRANSPORT_PATHS.includes(p)),receipt];
  assert.deepEqual(Object.keys(a.preservedReceipts).sort(),preserved.sort());
  for(const[p,digest]of Object.entries(a.preservedReceipts)){assert.equal(hash(historical(RECURRING_CONSENT_TRANSPORT_BASE,p)),digest);assert.equal(hash(current(p)),digest,'immutable accepted receipt '+p);}
