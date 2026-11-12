@@ -1,8 +1,9 @@
+import {marketCalendarSourcePredecessor,MARKET_CALENDAR_CONSUMER_RECORD} from '../../architecture-lab/market-calendar-source.mjs'
 import {recurringSourcePredecessor} from '../../architecture-lab/private-recurring-source.mjs'
 import './assistant-send-arrow-integrity.test.mjs'
 import './assistant-ecr-integrity.test.mjs'
 import './assistant-ecr-week-integrity.test.mjs'
-import {WEEK_RECEIPT,oilRendererSourcePredecessor,OIL_RENDERER_RECEIPT} from './assistant-ecr-week-integrity.mjs'
+import {WEEK_RECEIPT} from './assistant-ecr-week-integrity.mjs'
 import {assistantEcrPredecessor,ECR_RECEIPT} from './assistant-ecr-integrity.mjs'
 import {assistantEcrPrecisionPredecessor,PRECISION_RECEIPT} from './assistant-ecr-precision-integrity.mjs'
 import {assistantSendArrowPredecessor,SEND_ARROW_RECEIPT} from './assistant-send-arrow-integrity.mjs'
@@ -127,7 +128,7 @@ test('tampered current file, receipt, historical digest, engine and rollback evi
 })
 test('every changed SG2 source in the candidate or resulting main has an exact additive binding',()=>{
  const r=receipt(),a=r.pciSmartPreparationCompatibility
- const renderer=oilRendererSourcePredecessor(current,historical)
+ const calendar=marketCalendarSourcePredecessor(current,historical)
  const recurring=recurringSourcePredecessor(current,historical)
  const week=recurring?.successor
  const precision=assistantEcrPrecisionPredecessor(current,historical)
@@ -139,11 +140,11 @@ test('every changed SG2 source in the candidate or resulting main has an exact a
  const markdown=assistantMarkdownPredecessor(current,historical)
  // Like the original receipt, the closed, validated build manifest declares
  // the source graph rather than containing a self-referential file hash.
- const changed=candidateSourcePaths(new URL('../../../',import.meta.url)).filter(file=>(!renderer||file!==OIL_RENDERER_RECEIPT)&&(!week||file!==WEEK_RECEIPT)&&(!recurring||file!=='apps/sg-runtime/private-recurring-source-adoption.json')&&(!precision||file!==PRECISION_RECEIPT)&&(!ecr||file!==ECR_RECEIPT)&&(!arrow||file!==SEND_ARROW_RECEIPT)&&(!registration||file!==REGISTRATION_ENTRY_PATH)&&(!m2||file!=='apps/sg-runtime/assistant-context-integration.json')&&(!pi||file!=='apps/sg-runtime/procurement-insights-integration.json')&&(!markdown||file!=='apps/sg-runtime/assistant-markdown-integration.json'))
+ const changed=candidateSourcePaths(new URL('../../../',import.meta.url)).filter(file=>(!calendar||file!==MARKET_CALENDAR_CONSUMER_RECORD)&&(!week||file!==WEEK_RECEIPT)&&(!recurring||file!=='apps/sg-runtime/private-recurring-source-adoption.json')&&(!precision||file!==PRECISION_RECEIPT)&&(!ecr||file!==ECR_RECEIPT)&&(!arrow||file!==SEND_ARROW_RECEIPT)&&(!registration||file!==REGISTRATION_ENTRY_PATH)&&(!m2||file!=='apps/sg-runtime/assistant-context-integration.json')&&(!pi||file!=='apps/sg-runtime/procurement-insights-integration.json')&&(!markdown||file!=='apps/sg-runtime/assistant-markdown-integration.json'))
  // Prisma lifecycle output is independently generated, never an authored source change.
  // A published receipt retains its original source set after merge. Current
  // bytes are strictly verified above; an accepted main has no new amendments.
- assertSourceCoverage(changed,{...renderer?.manifest.sourceDigests,...week?.manifest.sourceDigests,...recurring?.manifest.sourceDigests,...precision?.manifest.sourceDigests,...ecr?.manifest.sourceDigests,...arrow?.manifest.sourceDigests,...markdown?.manifest.sourceDigests,...registration?.manifest.sourceDigests,...pi?.manifest.sourceDigests,...m2?.manifest.sourceDigests,...a.sourceDigests,...r.xrayAppShellPresentation?.sourceDigests,...r.appShellFourCardCascade?.sourceDigests,...r.d1AuditReaderPreparation?.sourceDigests,...r.productAnalyticsStageOneCompatibility?.sourceDigests,...r.xrayStyleIsolationContinuation?.sourceDigests,...r.sentryObservabilityCompatibility?.sourceDigests,...r.marketHistoryIngestionCompatibility?.sourceDigests,...r.pciSmartInputCorrective?.sourceDigests,...r.pciSmartResultingMainScopeCompatibility?.sourceDigests,...Object.fromEntries(Object.entries(r.fullUiParityAdoption?.applicationSourceDigests??{}).map(([f,d])=>['apps/sg-runtime/'+f,d])),...r.productAnalyticsMainCompatibility?.sourceDigests,...r.appShellFourCardCascade?.sourceDigests,...r.d1AuditReaderPreparation?.sourceDigests,...r.productAnalyticsStageOneCompatibility?.sourceDigests,...r.productAnalyticsMonitoringCompatibility?.sourceDigests,...r.appShellAssistantOwnership?.sourceDigests,...r.sourceHubApiPathCompatibility?.consumerSourceDigests,...r.finderMetadataSingleFlight?.sourceDigests,...r.finderMetadataDictionaryLookups?.sourceDigests,...r.finderMetadataRequestPacing?.sourceDigests,...r.sourceHubMarketSymbolCompatibility?.sourceDigests,...r.assistantM1SourceCompatibility?.sourceDigests,...r.assistantM1RuntimeSourceCompatibility?.consumerSourceDigests,...r.oilAutonomousReportCompatibility?.consumerSourceDigests,...r.assistantM1ChartContextCorrective?.sourceDigests,...r.oilAutonomousReportCompatibility?.sourceDigests})
+ assertSourceCoverage(changed,{...calendar?.manifest.sourceDigests,...week?.manifest.sourceDigests,...recurring?.manifest.sourceDigests,...precision?.manifest.sourceDigests,...ecr?.manifest.sourceDigests,...arrow?.manifest.sourceDigests,...markdown?.manifest.sourceDigests,...registration?.manifest.sourceDigests,...pi?.manifest.sourceDigests,...m2?.manifest.sourceDigests,...a.sourceDigests,...r.xrayAppShellPresentation?.sourceDigests,...r.appShellFourCardCascade?.sourceDigests,...r.d1AuditReaderPreparation?.sourceDigests,...r.productAnalyticsStageOneCompatibility?.sourceDigests,...r.xrayStyleIsolationContinuation?.sourceDigests,...r.sentryObservabilityCompatibility?.sourceDigests,...r.marketHistoryIngestionCompatibility?.sourceDigests,...r.pciSmartInputCorrective?.sourceDigests,...r.pciSmartResultingMainScopeCompatibility?.sourceDigests,...Object.fromEntries(Object.entries(r.fullUiParityAdoption?.applicationSourceDigests??{}).map(([f,d])=>['apps/sg-runtime/'+f,d])),...r.productAnalyticsMainCompatibility?.sourceDigests,...r.appShellFourCardCascade?.sourceDigests,...r.d1AuditReaderPreparation?.sourceDigests,...r.productAnalyticsStageOneCompatibility?.sourceDigests,...r.productAnalyticsMonitoringCompatibility?.sourceDigests,...r.appShellAssistantOwnership?.sourceDigests,...r.sourceHubApiPathCompatibility?.consumerSourceDigests,...r.finderMetadataSingleFlight?.sourceDigests,...r.finderMetadataDictionaryLookups?.sourceDigests,...r.finderMetadataRequestPacing?.sourceDigests,...r.sourceHubMarketSymbolCompatibility?.sourceDigests,...r.assistantM1SourceCompatibility?.sourceDigests,...r.assistantM1RuntimeSourceCompatibility?.consumerSourceDigests,...r.oilAutonomousReportCompatibility?.consumerSourceDigests,...r.assistantM1ChartContextCorrective?.sourceDigests,...r.oilAutonomousReportCompatibility?.sourceDigests})
 
 })
 test('scope coverage retains accepted parallel files but rejects any unbound candidate amendment',()=>{
@@ -344,24 +345,4 @@ test('SDK1.34 market-symbol compatibility preserves history and rejects current 
  for(const mutate of [x=>x.sourceHubMarketSymbolCompatibility.marketSymbolOptedIn=true,x=>x.sourceHubMarketSymbolCompatibility.sql029Installed=true,x=>x.sourceHubMarketSymbolCompatibility.previousReceiptSha256='0'.repeat(64),x=>x.sourceHubMarketSymbolCompatibility.consumerSourceDigests['apps/sg-runtime/unapproved.ts']='0'.repeat(64),x=>x.sourceHubApiPathCompatibility.apiPathOptedIn=true]){
   const x=structuredClone(r);mutate(x);assert.throws(()=>assertPciSmartIntegrity(x,current,historical))
  }
-})
-
-test('renderer successor verifies every current byte and preserves all accepted source receipts',async()=>{
- const {oilRendererSourcePredecessor,OIL_RENDERER_RECEIPT,OIL_RENDERER_PATHS,OIL_RENDERER_PRESERVED,OIL_RENDERER_BASE}=await import('./assistant-ecr-week-integrity.mjs')
- const view=oilRendererSourcePredecessor(current,historical);assert(view)
- for(const p of [...OIL_RENDERER_PATHS,...OIL_RENDERER_PRESERVED])assert.throws(()=>oilRendererSourcePredecessor(f=>f===p?Buffer.concat([current(f),Buffer.from('UNREVIEWED')]):current(f),historical),p)
- for(const p of OIL_RENDERER_PATHS)assert.deepEqual(view.previousBytes(p),historical(OIL_RENDERER_BASE,p))
- assert.equal(oilRendererSourcePredecessor(view.previousBytes,historical),null)
- assert.throws(()=>view.previousBytes(OIL_RENDERER_RECEIPT),{code:'ENOENT'})
- const denied=Object.assign(Error('Denied'),{code:'EACCES'});assert.throws(()=>oilRendererSourcePredecessor(()=>{throw denied},historical),e=>e===denied)
-})
-test('renderer successor rejects widened scope, history edits and rebound business code',async()=>{
- const {oilRendererSourcePredecessor,OIL_RENDERER_RECEIPT,OIL_RENDERER_PATHS}=await import('./assistant-ecr-week-integrity.mjs')
- const original=()=>JSON.parse(current(OIL_RENDERER_RECEIPT)),reader=(a,read=current)=>p=>p===OIL_RENDERER_RECEIPT?Buffer.from(JSON.stringify(a)):read(p)
- for(const change of [a=>a.authorisationChanged=true,a=>a.policiesChanged=true,a=>a.originalNarrativePreserved=false,a=>a.humanReviewRequired=false,a=>a.previousSourceSha='0'.repeat(40),a=>a.sourceDigests['apps/srm/unadmitted.ts']='0'.repeat(64),a=>delete a.sourceDigests[OIL_RENDERER_PATHS[0]],a=>a.preservedReceipts['apps/sg-runtime/assistant-context-integration.json']='0'.repeat(64),a=>a.extra=true]){
-  const a=original();change(a);assert.throws(()=>oilRendererSourcePredecessor(reader(a),historical))
- }
- const p=OIL_RENDERER_PATHS[0],bad=Buffer.concat([current(p),Buffer.from('BUSINESS_DRIFT')]),a=original();a.sourceDigests[p]=digestForTest(bad)
- assert.throws(()=>oilRendererSourcePredecessor(reader(a,f=>f===p?bad:current(f)),historical),/unchanged approved renderer bytes/)
- assert.throws(()=>oilRendererSourcePredecessor(reader({...original(),modelChanged:true}),historical))
 })

@@ -47,7 +47,14 @@ export function weekScopeSource(before){
 }
 export function assistantEcrWeekPredecessor(current,historical,expectedDigest){
  const renderer=oilRendererSourcePredecessor(current,historical)
- if(renderer)return assistantEcrWeekPredecessor(renderer.previousBytes,historical,expectedDigest)
+ if(renderer){
+  const accepted=assistantEcrWeekPredecessor(renderer.previousBytes,historical,expectedDigest)
+  assert(accepted,'accepted ECR week source retained')
+  // A computed coverage view for the unchanged aggregate consumer. The original
+  // week receipt and all historical bytes remain immutable; each added byte is
+  // authenticated above before its closed binding is exposed to scope coverage.
+  return {...accepted,renderer,manifest:{...accepted.manifest,sourceDigests:{...accepted.manifest.sourceDigests,...renderer.manifest.sourceDigests,[OIL_RENDERER_RECEIPT]:hash(current(OIL_RENDERER_RECEIPT))}}}
+ }
  let bytes
  try{bytes=current(WEEK_RECEIPT)}catch(e){
   const message=String(e?.stderr??e?.message??'')
@@ -78,7 +85,7 @@ export function assistantEcrWeekPredecessor(current,historical,expectedDigest){
 // Exact renderer source successor only. No runtime grant, model call or history rewrite.
 export const OIL_RENDERER_RECEIPT="apps/sg-runtime/oil-renderer-integration.json"
 export const OIL_RENDERER_BASE="bfc4a228d9f3d583c37c5fd984c7e4da602bf75d"
-export const OIL_RENDERER_PATHS=Object.freeze(["apps/insights-runtime/render/report.py", "apps/insights-runtime/tests/postgres.test.mjs", "apps/sg-runtime/tests/assistant-ecr-week-integrity.mjs", "apps/sg-runtime/tests/pci-smart-integrity.test.mjs"])
+export const OIL_RENDERER_PATHS=Object.freeze(["apps/insights-runtime/render/report.py", "apps/insights-runtime/tests/postgres.test.mjs", "apps/sg-runtime/tests/assistant-ecr-week-integrity.mjs"])
 export const OIL_RENDERER_PRESERVED=Object.freeze(["apps/sg-runtime/operation-integration.json", "apps/sg-runtime/assistant-context-integration.json", "apps/sg-runtime/procurement-insights-integration.json", "apps/sg-runtime/assistant-markdown-integration.json", "apps/sg-runtime/registration-stage-i-integration.json", "apps/sg-runtime/assistant-send-arrow-integration.json", "apps/sg-runtime/assistant-ecr-integration.json", "apps/sg-runtime/assistant-ecr-precision-integration.json", "apps/sg-runtime/assistant-ecr-week-integration.json", "apps/sg-runtime/private-recurring-source-adoption.json", "apps/architecture-lab/private-recurring-source.json", "apps/architecture-lab/private-recurring-source-adoption.json", "apps/srm/private-recurring-source-adoption.json", "apps/architecture-lab/sdk-1.34-compatibility.json"])
 const OIL_RENDERER_RUNTIME=Object.freeze({"apps/insights-runtime/render/report.py": "fc60502cbab052bbe90f7598b437b896bcd94c32fc6037d48203bf0e5d6456cf", "apps/insights-runtime/tests/postgres.test.mjs": "f887f544b7eced7928d41b0ed84b0e5b0ccd4b7828f7272d10f42e19a5409a47"})
 export function oilRendererSourcePredecessor(current,historical){
