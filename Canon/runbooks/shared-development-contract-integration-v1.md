@@ -896,3 +896,8 @@ ECR-week verifier. Controller tests retain the original renderer tampering,
 history and widened-scope negatives. The verifier authenticates every added
 byte before exposing its additive coverage bindings; no original receipt is
 rewritten. This routine contraction stays inside the owner's approved paths.
+
+
+### Registration69 — raw SDK and accepted Oil/Calendar composition
+
+Under the owner1046 Full Autopilot delegation, retain the complete c26 consumer profile and add the exact same69-path technical successor 845eb9137efa96d377b8498414f0b8b08c0ce4ad / record 61c57570f25fe90c89a5d2bd0f27f2b228091a6bd239a72a7f1fc87e06ae36ad. Only four Architecture test/helper/record blobs change;165 production SDK files and SG2/SRM owner inputs are unchanged. Authenticate raw SDK/receiver provenance before independent Oil predecessor checks; authenticate the accepted Calendar99 complete20-source record and exact Oil42 record/source/14 receipts before exposing old ECR helpers. All original negatives and public/protected/resulting-main gates remain mandatory. This bounded technical continuation requires no renewed per-hash question and authorizes no runtime, SQL, grant, cost, provider or invitation action.
