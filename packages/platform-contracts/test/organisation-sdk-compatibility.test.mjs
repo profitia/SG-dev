@@ -182,3 +182,9 @@ test('direct ECR test is authenticated before its exactly pinned historical view
  assert.throws(()=>sdkContinuationPredecessor(receipt('SG2'),p=>p===target?Buffer.concat([current(p),Buffer.from('UNREVIEWED')]):current(p),historical),/current SG2 acceptance/);
  assert.throws(()=>sdkContinuationPredecessor(receipt('SG2'),current,(sha,p)=>sha==='38a9fe371e7993b47e2358d297647086ea999428'&&p===target?Buffer.concat([historical(sha,p),Buffer.from('FORGED_HISTORY')]):historical(sha,p)),/actual immutable parallel ECR guard/);
 });
+
+test('approved direct ECR68 graph remains authenticated at its immutable owner-reviewed source',()=>{
+ const old=p=>historical('28a97557f611055e5a3657db9e46db55137dae66',p);
+ assert.equal(hash(old(sourcePath)),'8e3eb5304ba9f3270b8021341a7220dff29acd5bbcf6fcd8c4cb301bf7071059');
+ for(const projectKey of ['SG2','SRM'])assert.deepEqual(sdkContinuationPredecessor(receipt(projectKey,old),old,historical,{projectKey}).record,JSON.parse(old(sourcePath)));
+});

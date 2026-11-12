@@ -268,7 +268,7 @@
     "SRM": {
       "apps/srm/app/login/porr-account.tsx": "8c9d56ac4c8487d4382a171db0de7f7328101f8f361b3d8083250ab74012a839",
       "apps/srm/scripts/diagnostic-telemetry-adoption.test.mjs": "a09194ec75871198cff53d9307425a82288584b820dba23ba1f1f18cb6455b66",
-      "apps/srm/scripts/native-execution-adoption.test.mjs": "0ca11dfe1f86150e9c988a424b5f53a6bf217e62deb693ef15927f11f5608687",
+      "apps/srm/scripts/native-execution-adoption.test.mjs": "2e063c883b9155bdc29603aec44afd716cb92688ad87c3ee3054adff681a7047",
       "apps/srm/scripts/operation-context.test.mjs": "282792e61fdbf1fdc279d6408e4fe5dbe5e66a78f8268d947caa54a183669173",
       "apps/srm/scripts/porr-account-ui.test.mjs": "d27b744dbd0f54e0dfe7ee6986fb65dddc29c3cbe3f0da9cf2de1d5f0b2a39ac",
       "apps/srm/scripts/private-host.integration.test.mjs": "101469a1df54b7c9e1d5264d124dda9804e6a1e168a11aea9b024e984216673a",
