@@ -2263,11 +2263,11 @@ test('renderer admission composes with the actual accepted ECR and Recurring gra
 })
 
 test('accepted Calendar consumer retains all69 ownership and immutable manifest history',async()=>{
- const c=await import('./controlled-package-ci.mjs'),r=c.REGISTRATION_SDK_REVIEW,old=c.REGISTRATION_SDK_CALENDAR_CORRECTIVE_HISTORY_REVIEW;
+ const c=await import('./controlled-package-ci.mjs'),r=c.REGISTRATION_SDK_CALENDAR_CONSUMER_HISTORY_REVIEW,old=c.REGISTRATION_SDK_CALENDAR_CORRECTIVE_HISTORY_REVIEW;
  assert.equal(Object.keys(r.entries).length,69);assert.deepEqual(Object.keys(r.entries),Object.keys(old.entries));
  assert.deepEqual(Object.keys(r.entries).filter(p=>r.entries[p].sha!==old.entries[p].sha).sort(),['apps/sg-runtime/tests/pci-smart-integrity.test.mjs','packages/platform-contracts/test/organisation-sdk-compatibility.json','packages/platform-contracts/test/organisation-sdk-compatibility.mjs','packages/platform-contracts/test/organisation-sdk-compatibility.test.mjs']);
- assert.equal(c.REGISTRATION_SDK_CALENDAR_CONSUMER_PROVENANCE.recordDigest,'c26ca9c1c02b788bd010b315d5c522c8247fedb5b72d858eafd7780667c76bcb');
- assert.deepEqual(c.REGISTRATION_SDK_CALENDAR_CONSUMER_PROVENANCE.preservedCurrentOverrides,{"apps/sg-runtime/package.json":"d2ed74190322d0e5315212519709ca2e06a6cbfc32def8e23e64794101ee1517"});
+ assert.equal(c.REGISTRATION_SDK_CALENDAR_CONSUMER_HISTORY_PROVENANCE.recordDigest,'c26ca9c1c02b788bd010b315d5c522c8247fedb5b72d858eafd7780667c76bcb');
+ assert.deepEqual(c.REGISTRATION_SDK_CALENDAR_CONSUMER_HISTORY_PROVENANCE.preservedCurrentOverrides,{"apps/sg-runtime/package.json":"d2ed74190322d0e5315212519709ca2e06a6cbfc32def8e23e64794101ee1517"});
  assert.equal(c.REGISTRATION_SDK_COMPOSED_CALENDAR_PROVENANCE.recordDigest,'a8050a2acde67bfc74457dd55824b074d09b26428a43bc1584f9e27916b4edd8');
  for(const[p,e]of Object.entries(old.entries)){const{sha:a,...before}=e,{sha:b,...after}=r.entries[p];assert.deepEqual(after,before,'unchanged owner/status/mode '+p)}
 });
@@ -2294,4 +2294,25 @@ test('renderer successor rejects widened scope, history edits and rebound busine
  const p=OIL_RENDERER_PATHS[0],bad=Buffer.concat([current(p),Buffer.from('BUSINESS_DRIFT')]),a=original();a.sourceDigests[p]=createHash('sha256').update(bad).digest('hex')
  assert.throws(()=>oilRendererSourcePredecessor(reader(a,f=>f===p?bad:current(f)),historical),/unchanged approved renderer bytes/)
  assert.throws(()=>oilRendererSourcePredecessor(reader({...original(),modelChanged:true}),historical))
+})
+
+test('registration closes raw current source before independent Oil history in the real accepted Calendar composition',async()=>{
+ const c=await import('./controlled-package-ci.mjs'),r=c.REGISTRATION_SDK_REVIEW,prior=c.REGISTRATION_SDK_CALENDAR_CONSUMER_HISTORY_REVIEW
+ assert.equal(Object.keys(r.entries).length,69)
+ assert.deepEqual(Object.keys(r.entries).filter(p=>r.entries[p].sha!==prior.entries[p].sha).sort(),['apps/architecture-lab/test/sdk-compatibility.test.mjs','packages/platform-contracts/test/organisation-sdk-compatibility.json','packages/platform-contracts/test/organisation-sdk-compatibility.mjs','packages/platform-contracts/test/organisation-sdk-compatibility.test.mjs'])
+ assert.equal(c.REGISTRATION_SDK_CALENDAR_CONSUMER_HISTORY_PROVENANCE.recordDigest,'c26ca9c1c02b788bd010b315d5c522c8247fedb5b72d858eafd7780667c76bcb')
+ const parent=fs.mkdtempSync(path.join(os.tmpdir(),'registration-oil-actual-graph-')),root=path.join(parent,'candidate')
+ try{
+  execFileSync('git',['clone','--quiet','--shared','--no-checkout',authorityRoot,root],{stdio:['ignore','pipe','pipe']})
+  execFileSync('git',['checkout','--quiet','--detach',"99cd4aa1591ba2fc3a387ce637f920dac74880be"],{cwd:root,stdio:['ignore','pipe','pipe']})
+  for(const file of Object.keys(r.entries)){
+   const bytes=execFileSync('git',['show',r.sourceSha+':'+file],{cwd:authorityRoot,stdio:['ignore','pipe','pipe']})
+   const target=path.join(root,file);fs.mkdirSync(path.dirname(target),{recursive:true});fs.writeFileSync(target,bytes)
+  }
+  assert.equal(c.assertRegistrationSdkProvenance(root).platformVersion,'1.36.0')
+  assert(c.assertPrivateRecurringProvenance(root))
+  for(const file of ['packages/platform-contracts/src/organisation-bootstrap.mjs','apps/sg-runtime/operation-integration.json','apps/sg-runtime/oil-renderer-integration.json','apps/insights-runtime/render/report.py','apps/insights-runtime/tests/postgres.test.mjs','apps/sg-runtime/tests/assistant-ecr-week-integrity.mjs','apps/sg-runtime/market-calendar-integration.json','apps/sg-runtime/components/procurement-insights/market-calendar.tsx']){
+   const target=path.join(root,file),before=fs.readFileSync(target);fs.appendFileSync(target,'UNREVIEWED');assert.throws(()=>c.assertPrivateRecurringProvenance(root),file);fs.writeFileSync(target,before)
+  }
+ }finally{fs.rmSync(parent,{recursive:true,force:true})}
 })
