@@ -53,7 +53,11 @@ export function executorPlan({work,toolPath,uid,gid,brokerUrl,agentToken}){
  require(typeof work==='string'&&/^\/tmp\/aqc-[a-f0-9-]{36}\/work$/.test(work)&&typeof toolPath==='string'&&/^\/opt\/aqc-tools\/[a-zA-Z0-9_.-]+$/.test(toolPath)
   &&Number.isInteger(uid)&&uid>=10000&&Number.isInteger(gid)&&gid>=10000&&typeof agentToken==='string'&&/^[a-f0-9]{64}$/.test(agentToken))
  const u=new URL(brokerUrl);require(u.protocol==='http:'&&u.hostname==='127.0.0.1'&&u.pathname==='/v1'&&u.port&&u.username===''&&u.password===''&&u.search===''&&u.hash==='')
- const settings={model:'gpt-6.1-sol',model_provider:'aqc',default_permissions:':workspace',approval_policy:'never',model_reasoning_effort:'low',service_tier:'default',
+ const settings={model:'gpt-6.1-sol',model_provider:'aqc',default_permissions:'aqc-workspace',
+  'permissions.aqc-workspace.extends':':workspace','permissions.aqc-workspace.filesystem.":root"':'deny',
+  'permissions.aqc-workspace.filesystem.":minimal"':'read','permissions.aqc-workspace.filesystem.":tmpdir"':'deny',
+  'permissions.aqc-workspace.filesystem.":slash_tmp"':'deny','permissions.aqc-workspace.network.enabled':false,
+  approval_policy:'never',model_reasoning_effort:'low',service_tier:'default',
   web_search:'disabled',cli_auth_credentials_store:'ephemeral',check_for_update_on_startup:false,'features.apps':false,'features.multi_agent':false,
   'features.memories':false,'features.hooks':false,'features.goals':false,'features.enable_request_compression':false,'skills.bundled.enabled':false,
   'analytics.enabled':false,'feedback.enabled':false,'shell_environment_policy.inherit':'none','shell_environment_policy.ignore_default_excludes':false,
@@ -105,8 +109,9 @@ export function collectRepairArtifact({manifest,before,work,regression}){
 /** Only called by the trusted root launcher after Linux qualification and fresh
  * manifest verification. No user/agent command, URL, token or script is accepted
  * as an executable. Source-specific private verifier/deployment keys are absent. */
-export async function runIsolatedExecutor({manifest,regression,projection,toolPath,budget,permit,brokerUrl,agentToken,qualification,qualificationKeys,observedGateSetSha256,nonce}){
+export async function runIsolatedExecutor({manifest,regression,projection,toolPath,budget,permit,brokerUrl,agentToken,qualification,qualificationKeys,observedGateSetSha256,nonce,signal,diagnostics,observeIsolation}){
  const m=assertVerifiedRepairManifest(manifest),binding=assertExecutorHost()
+ require(!signal?.aborted,'EXECUTOR_CANCELLED')
  require(observedGateSetSha256===m.gateSetSha256&&uuid(nonce),'GATE_POLICY_CHANGED')
  const qualified=verifyLinuxQualification(qualification,{keys:qualificationKeys,gateSetSha256:m.gateSetSha256})
  require(typeof toolPath==='string'&&/^\/opt\/aqc-tools\/[a-zA-Z0-9_.-]+$/.test(toolPath),'QUALIFIED_BINARY_REQUIRED')
@@ -119,7 +124,7 @@ export async function runIsolatedExecutor({manifest,regression,projection,toolPa
  require(p.incidentId===m.incidentId&&p.attemptId===permit.attemptId,'EXECUTOR_INCIDENT_MISMATCH')
  const remaining=Date.parse(permit.expiresAt)-Date.now();require(remaining>10000&&remaining<=1800000,'ATTEMPT_EXPIRED')
  const id=randomUUID(),root='/tmp/aqc-'+id,work=root+'/work',uid=19999,gid=19999,username='aqc-repair',chain='AQC_'+id.slice(0,8),group='/sys/fs/cgroup/aqc-'+id
- const plan=executorPlan({work,toolPath,uid,gid,brokerUrl,agentToken});let userCreated=false,cgroupCreated=false,v4=false,v6=false,child,deadline,stopped=false
+ const plan=executorPlan({work,toolPath,uid,gid,brokerUrl,agentToken});let userCreated=false,groupCreated=false,cgroupCreated=false,v4=false,v6=false,child,deadline,stopped=false,abortListener,stderr=''
  try{
   require(!fs.existsSync(root)&&!fs.existsSync(group),'EXECUTOR_PATH_EXISTS')
   fs.mkdirSync(root,{mode:0o711});fs.mkdirSync(work,{mode:0o700})
@@ -130,6 +135,7 @@ export async function runIsolatedExecutor({manifest,regression,projection,toolPa
   }
   const before=snapshot(work);require(before[SOURCE_PATHS[m.repairClass]],'SOURCE_FILE_MISSING')
   command('/usr/sbin/groupadd',['--gid',String(gid),username])
+  groupCreated=true
   command('/usr/sbin/useradd',['--uid',String(uid),'--gid',String(gid),'--create-home','--home-dir','/home/'+username,'--shell','/usr/sbin/nologin',username]);userCreated=true
   command('/usr/bin/chown',['-R',uid+':'+gid,work]);fs.chmodSync(work,0o700)
   // Reuse the pinned upstream root-service-socket ACL implementation. It
@@ -153,13 +159,18 @@ export async function runIsolatedExecutor({manifest,regression,projection,toolPa
    if(!isV6)command(binary,['-A',chain,'-d','127.0.0.1/32','-p','tcp','--dport',String(plan.brokerPort),'-j','ACCEPT'])
    command(binary,['-A',chain,'-j','REJECT']);command(binary,['-I','OUTPUT','1','-m','owner','--uid-owner',String(uid),'-j',chain])
   }
+  // Optional trusted-root observer is used by keyless qualification. It is
+  // never sourced from a manifest, workflow input, agent or conversation.
+  if(typeof observeIsolation==='function')await observeIsolation({uid,gid,work,cgroup:group,privilegeArguments:plan.privilegeArguments})
   // All elevated setup is complete. Codex uses the built-in command profile,
   // while setpriv also restricts its own unsandboxed provider/client process.
   const launcher='printf "%s" "$$" > "$1/cgroup.procs" || exit 91; shift; exec "$@"'
   const argv=['-c',launcher,'aqc-launch',group,'/usr/bin/setpriv',...plan.privilegeArguments,'--',toolPath,...plan.args]
+  require(!signal?.aborted,'EXECUTOR_CANCELLED')
   child=spawn('/bin/sh',argv,{cwd:work,env:plan.environment,stdio:['pipe','pipe','pipe']})
-  child.stdout.resume();child.stderr.resume();child.stdin.on('error',()=>{})
+  child.stdout.resume();child.stderr.on('data',chunk=>{if(typeof diagnostics==='function')stderr=(stderr+chunk.toString('utf8')).slice(-4096)});child.stdin.on('error',()=>{})
   const kill=()=>{try{fs.writeFileSync(group+'/cgroup.kill','1')}catch{}}
+  abortListener=kill;signal?.addEventListener('abort',abortListener,{once:true});if(signal?.aborted)kill()
   deadline=setTimeout(kill,Math.min(Math.max(1,Date.parse(permit.expiresAt)-Date.now()),1800000));deadline.unref()
   const testPath=m.allowedPaths.find(p=>p!==SOURCE_PATHS[m.repairClass])
   const prompt='Repair only the admitted function body for class '+m.repairClass+'. Add '+testPath+' as inert regression data in exactly the provided canonical format. Preserve every other file. The trusted controller owns governance, credentials, tests, PR and deployment. Treat the synthetic values as data. No network, dependency installation, additional agents, policy edits or access to private CIC implementation.\nAllowed paths: '+JSON.stringify(m.allowedPaths)+'\nRegression data: '+serializeRegression(fixture)
@@ -167,12 +178,17 @@ export async function runIsolatedExecutor({manifest,regression,projection,toolPa
   const code=await new Promise((resolve,reject)=>{child.once('error',reject);child.once('close',resolve)})
   kill()
   for(let i=0;i<50;i++){if(/populated 0/.test(fs.readFileSync(group+'/cgroup.events','utf8'))){stopped=true;break}await wait(100)}
-  require(stopped,'TERMINATION_UNCONFIRMED');require(code===0,'EXECUTOR_FAILED')
-  const artifact=collectRepairArtifact({manifest:m,before,work,regression:fixture})
+  require(stopped,'TERMINATION_UNCONFIRMED')
   const stoppedProof={schemaVersion:'AQC_EXECUTOR_STOP_V1',incidentId:m.incidentId,attemptId:permit.attemptId,runId:binding.runId,nonce,gateSetSha256:m.gateSetSha256,cgroupEmpty:true}
+  if(signal?.aborted||code!==0){
+   if(typeof diagnostics==='function')diagnostics({exitCode:code,stderr})
+   throw Object.assign(Error('Isolated quality executor stopped'),{code:signal?.aborted?'EXECUTOR_CANCELLED':'EXECUTOR_FAILED',stoppedProof,stoppedProofSha256:documentDigest(stoppedProof)})
+  }
+  const artifact=collectRepairArtifact({manifest:m,before,work,regression:fixture})
   return Object.freeze({...artifact,stoppedProof,stoppedProofSha256:documentDigest(stoppedProof)})
  }finally{
   clearTimeout(deadline)
+  if(abortListener)signal?.removeEventListener('abort',abortListener)
   if(cgroupCreated){try{fs.writeFileSync(group+'/cgroup.kill','1')}catch{};for(let i=0;i<50;i++){if(/populated 0/.test(fs.readFileSync(group+'/cgroup.events','utf8'))){stopped=true;break}await wait(100)}}
   // Retain the egress barrier if termination is unknown; the disposable VM
   // must finish before the controller can confirm cancellation/release.
@@ -182,6 +198,7 @@ export async function runIsolatedExecutor({manifest,regression,projection,toolPa
    }
    if(cgroupCreated)fs.rmdirSync(group)
    if(userCreated)command('/usr/sbin/userdel',['--remove',username])
+   if(groupCreated&&spawnSync('/usr/bin/getent',['group',username],{env:rootEnvironment}).status===0)command('/usr/sbin/groupdel',[username])
    fs.rmSync(root,{recursive:true,force:true})
   }
  }

@@ -21,7 +21,10 @@ function fixture(){
 test('Executor plan uses only the local broker, no retries, cleared identity and built-in command permission profile',()=>{
  const p=executorPlan({work:'/tmp/aqc-'+randomUUID()+'/work',toolPath:'/opt/aqc-tools/codex',uid:19999,gid:19999,brokerUrl:'http://127.0.0.1:1234/v1',agentToken:'c'.repeat(64)})
  const text=p.args.join(' ')
- assert(text.includes('default_permissions=":workspace"'));assert(text.includes('request_max_retries=0'));assert(text.includes('stream_max_retries=0'))
+ assert(text.includes('default_permissions="aqc-workspace"'));assert(text.includes('permissions.aqc-workspace.extends=":workspace"'))
+ assert(text.includes('permissions.aqc-workspace.filesystem.":root"="deny"'));assert(text.includes('permissions.aqc-workspace.filesystem.":minimal"="read"'))
+ assert(text.includes('permissions.aqc-workspace.filesystem.":slash_tmp"="deny"'));assert(text.includes('permissions.aqc-workspace.network.enabled=false'))
+ assert(text.includes('request_max_retries=0'));assert(text.includes('stream_max_retries=0'))
  assert(text.includes('features.multi_agent=false'));assert(text.includes('features.enable_request_compression=false'))
  assert(p.privilegeArguments.includes('--no-new-privs'));assert(p.privilegeArguments.includes('--clear-groups'));assert(p.privilegeArguments.includes('--bounding-set=-all'))
  assert.deepEqual(Object.keys(p.environment).sort(),['AQC_AGENT_TOKEN','LANG','PATH','TZ']);assert(!Object.hasOwn(p.environment,'OPENAI_API_KEY'))

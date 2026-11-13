@@ -22,7 +22,7 @@ on:
         type: choice
         required: true
         default: source-check
-        options: [source-check]
+        options: [source-check, keyless-qualify]
       nonce:
         type: string
         required: true
@@ -55,7 +55,61 @@ jobs:
         working-directory: packages/assistant-context-contracts
         run: npm test
 
-# This source checkpoint deliberately exposes no repair/publish dispatch,
-# deployment credential, data/service grant, provider key or GitHub Environment.
-# Linux executor qualification, trusted adapters and owner bootstrap remain
-# required before a repair execution mode can be introduced and activated.
+  qualification:
+    name: Actual keyless Linux launcher qualification
+    if: >-
+      github.event_name == 'workflow_dispatch' && inputs.mode == 'keyless-qualify' &&
+      github.ref == 'refs/heads/main' && github.actor == 'profitia' &&
+      github.triggering_actor == 'profitia' && github.run_attempt == 1
+    needs: source
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    concurrency:
+      group: aqc-keyless-qualification
+      cancel-in-progress: false
+    env:
+      AQC_NONCE: ${{ inputs.nonce }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - name: Install public pinned dependencies and disposable VM prerequisites
+        run: |
+          node -e 'if(!/^[a-f0-9-]{36}$/.test(process.env.AQC_NONCE))process.exit(1)'
+          npm ci --prefix packages/assistant-quality-control --ignore-scripts --registry https://registry.npmjs.org --userconfig /dev/null
+          sudo apt-get update -qq
+          sudo apt-get install -y acl iptables
+          sudo sysctl -w kernel.unprivileged_userns_clone=1
+          if sysctl kernel.apparmor_restrict_unprivileged_userns >/dev/null 2>&1; then sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0; fi
+      - name: Verify and install the exact public CLI and isolation helper
+        run: |
+          curl --fail --silent --show-error --location --proto '=https' --tlsv1.2 https://github.com/openai/codex/releases/download/rust-v0.167.2/codex-x86_64-unknown-linux-musl.tar.gz --output /tmp/aqc-codex.tar.gz
+          echo '8246e846c550ea21197fcc4067bc270dca895e94ea42ed6a282e6f4e0125b15f  /tmp/aqc-codex.tar.gz' | sha256sum --check --strict
+          mkdir /tmp/aqc-codex-bin
+          tar --extract --gzip --file /tmp/aqc-codex.tar.gz --directory /tmp/aqc-codex-bin
+          sudo install -d -m 0755 /opt/aqc-tools
+          sudo install -m 0755 /tmp/aqc-codex-bin/codex-x86_64-unknown-linux-musl /opt/aqc-tools/codex
+          git clone --filter=blob:none --no-checkout https://github.com/openai/codex-action.git /tmp/aqc-helper
+          git -C /tmp/aqc-helper fetch origin 13e9c17417b29e9a276f73ec6ed7fb574137d3c3
+          git -C /tmp/aqc-helper checkout --detach 13e9c17417b29e9a276f73ec6ed7fb574137d3c3
+          sudo mv /tmp/aqc-helper /opt/aqc-tools/codex-action
+          sudo chown -R root:root /opt/aqc-tools
+          sudo chmod -R go-w /opt/aqc-tools
+          /opt/aqc-tools/codex --version
+      - name: Exercise real tool loop, filesystem, kernel egress and process-tree cancellation
+        run: |
+          sudo env GITHUB_REPOSITORY="$GITHUB_REPOSITORY" GITHUB_REF="$GITHUB_REF" GITHUB_WORKFLOW_REF="$GITHUB_WORKFLOW_REF" GITHUB_EVENT_NAME="$GITHUB_EVENT_NAME" GITHUB_ACTOR="$GITHUB_ACTOR" GITHUB_TRIGGERING_ACTOR="$GITHUB_TRIGGERING_ACTOR" RUNNER_ENVIRONMENT="$RUNNER_ENVIRONMENT" RUNNER_OS="$RUNNER_OS" GITHUB_SHA="$GITHUB_SHA" GITHUB_RUN_ID="$GITHUB_RUN_ID" GITHUB_RUN_ATTEMPT="$GITHUB_RUN_ATTEMPT" AQC_NONCE="$AQC_NONCE" "$(command -v node)" packages/assistant-quality-control/src/acceptance.mjs
+          sudo chown "$(id -u):$(id -g)" /tmp/aqc-linux-observations.json
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: aqc-qualification-${{ inputs.nonce }}
+          path: /tmp/aqc-linux-observations.json
+          retention-days: 7
+          if-no-files-found: error
+
+# No repair/publish dispatch, provider key, secret or GitHub Environment.
+# Keyless qualification publishes unsigned synthetic observations only; it
+# does not install trust, activate a class, spend model budget or deploy.

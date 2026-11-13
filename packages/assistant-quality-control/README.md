@@ -51,10 +51,21 @@ acceptance is claimed. It does not start nightly QA or Stage 2.
   regression files. **Linux execution is not yet qualified**: a separate signed
   keyless tool-loop/isolation/cancellation receipt is required before paid work.
 
-The workflow at `.github/workflows/assistant-quality-repair.yml` currently runs
-keyless source tests only, including isolated PostgreSQL. It does not expose a
-repair, promotion or deployment mode and references no secret or Environment.
-This initial source CI does not change the existing protected package controller.
+The workflow at `.github/workflows/assistant-quality-repair.yml` runs keyless
+source tests, including isolated PostgreSQL. Its separate main-only
+`keyless-qualify` mode prepares a real CLI/tool-loop, filesystem, kernel egress,
+Unix service and process-tree cancellation rehearsal on a fresh hosted VM.
+It uses synthetic files, an in-memory fake cost port and a fake upstream with
+no network implementation. Ephemeral test signatures reach the actual launcher;
+they are discarded and never installed as production trust. The published result
+contains unsigned observations only. Independent run/artifact verification and
+an installed verifier are still needed to attest a successful qualification.
+No qualification PASS is claimed until that actual workflow succeeds.
+
+Commands extend the built-in workspace profile with root/tmp denial and minimal
+runtime reads. Cancellation reports a stop proof only after the entire cgroup
+is empty. The workflow exposes no repair, promotion or deployment mode, secret
+or Environment and does not change the existing protected package controller.
 
 QA contracts are additive source modules under `assistant-context-contracts/src`.
 Existing private package metadata, export surface and context protocol 2.2.0 stay
