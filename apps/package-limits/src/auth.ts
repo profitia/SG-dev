@@ -1,3 +1,4 @@
+import {peerOperationIdentityRequest} from "@profitia/platform-contracts/peer-operation";
 import { createClerkClient } from "@clerk/backend";
 import {
   createClerkIdentityAuthenticator,
@@ -9,6 +10,7 @@ import type { Config } from "./config.js";
 import { Fault } from "./domain.js";
 export interface IdentityScope {
   actor: Actor;
+  workspaceContext?():Promise<{userId:string;organisationId:string;applicationId:string;projectionRef:string}|null>;
   organisations(
     search: string,
     ids: string[] | null,
@@ -55,7 +57,8 @@ export function identityBoundary(
         appId: "package-limits-development",
         environment: "development",
         issuer: config.issuer,
-        authorizedParties: [config.origin],
+        authorizedParties: [config.origin,...(config.workspace?[config.workspace.peer.sourceOrigin,...(config.workspace.endUserOrigin?[config.workspace.endUserOrigin]:[])]:[])],
+        ...(config.workspace?.endUserOrigin?{bearerPeerReads:[{sourceOrigin:config.workspace.endUserOrigin,targetOrigin:config.workspace.peer.sourceOrigin,path:'/v1/organisation-entitlements'}]}:{}),
       },
       resolveBinding: async (key) => {
         sql = await pool.connect();
@@ -73,7 +76,7 @@ export function identityBoundary(
       },
     });
     try {
-      const actor = await authenticate(request);
+      const actor = await authenticate(config.workspace ? peerOperationIdentityRequest(request)??request : request);
       if (!actor || !sql) throw new Fault(401, "SIGN_IN_REQUIRED");
       const until = Math.min(
         Date.parse(actor.expiresAt),
@@ -88,6 +91,7 @@ export function identityBoundary(
       const connection = sql;
       const scope: IdentityScope = {
         actor: boundedActor,
+        ...(config.workspace ? {workspaceContext:async()=> (await connection.query("SELECT profitia_limits_identity_read.workspace_context($1::uuid) AS data",[boundedActor.userId])).rows[0]?.data??null} : {}),
         organisations: async (search, ids) =>
           (
             await connection.query(

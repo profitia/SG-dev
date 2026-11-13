@@ -106,8 +106,15 @@ test('Procurement Insights opens its adopted neutral shell in both locales while
 
 test('PI shell source continuation preserves original receipts and rejects source or authority tampering',async()=>{
  const {readFileSync}=await import('node:fs'),{execFileSync}=await import('node:child_process'),root=new URL('../../../',import.meta.url)
- const current=(p:string)=>readFileSync(new URL(p,root)),historical=(sha:string,p:string)=>execFileSync('git',['show',sha+':'+p],{cwd:root})
+ const physical=(p:string)=>readFileSync(new URL(p,root)),historical=(sha:string,p:string)=>execFileSync('git',['show',sha+':'+p],{cwd:root})
+ const {sdkContinuationPredecessor}=await import('../../../packages/platform-contracts/test/organisation-sdk-compatibility.mjs')
+ const registration=sdkContinuationPredecessor(JSON.parse(physical('apps/sg-runtime/operation-integration.json').toString()),physical,historical)
+ // Authenticate all current physical registration/PI bytes before reading the
+ // original accepted PI frame; immutable history is not a current-source bypass.
+ const current=registration?.composition?.acceptedMain??physical
  const view=procurementInsightsShellPredecessor(current,historical);assert(view)
+ if(registration?.composition)for(const p of [...Object.keys(view.manifest.sourceDigests),...Object.keys(view.manifest.preservedReceipts),PI_SHELL_RECEIPT])
+  assert.throws(()=>sdkContinuationPredecessor(JSON.parse(physical('apps/sg-runtime/operation-integration.json').toString()),f=>f===p?Buffer.concat([physical(f),Buffer.from('UNACCEPTED_CURRENT')]):physical(f),historical),p)
  // Exercise the actual accepted continuation closure, rather than the superseded four-file shell.
  for(const p of Object.keys(view.manifest.sourceDigests))assert.throws(()=>procurementInsightsShellPredecessor(f=>f===p?Buffer.concat([current(f),Buffer.from('UNACCEPTED')]):current(f),historical),p)
  // Middleware is already on authority main and outside this continuation's editable paths.

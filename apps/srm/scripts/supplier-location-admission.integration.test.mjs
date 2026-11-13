@@ -1,4 +1,8 @@
-import {recurringSourceFilesystem} from '../../architecture-lab/private-recurring-source.mjs'
+import {recurringSourcePredecessor} from '../../architecture-lab/private-recurring-source.mjs'
+import {acceptedSdkSource,sdkContinuationPredecessor} from '../../../packages/platform-contracts/test/organisation-sdk-compatibility.mjs'
+// Verify the current SDK separately from immutable historical source maps.
+const sdkSourceAcceptance=acceptedSdkSource()
+const sdkCurrentSourceDigests=Object.fromEntries(Object.entries({...sdkSourceAcceptance.sourceDigests,...sdkSourceAcceptance.compatibilityTestSourceDigests}).map(([p,h])=>[p.replace(/^packages\/platform-contracts\//,''),h]))
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
@@ -9,10 +13,10 @@ import {createSrmLocationAdmission,readSrmLocationAdmissionConfiguration} from '
 import {operationSourceDigest,OPERATION_CONTRACT} from '@profitia/platform-contracts/operation-context'
 import {createSupplierLocationAdmission} from '@profitia/platform-contracts/supplier-location'
 
-const recurringView=recurringSourceFilesystem(new URL('../../../',import.meta.url)),recurring=recurringView.manifest
-// Preserve the immutable historical record; the independently authenticated
-// transport and live continuations supply authenticated current SDK digests.
-const recurringSdkFiles=Object.fromEntries(Object.entries({...recurring?.sourceDigests,...recurringView.transport?.manifest.sourceDigests,...recurringView.transport?.live?.manifest.sourceDigests}).filter(([p])=>p.startsWith('packages/platform-contracts/')).map(([p,h])=>[p.slice('packages/platform-contracts/'.length),h]))
+const sdkContinuationRoot=new URL('../../../',import.meta.url),sdkContinuationCurrent=p=>fs.readFileSync(new URL(p,sdkContinuationRoot)),sdkContinuationHistory=(sha,p)=>execFileSync('git',['show',sha+':'+p],{cwd:sdkContinuationRoot})
+const organisationSourceView=sdkContinuationPredecessor(JSON.parse(sdkContinuationCurrent('apps/srm/operation-integration.json')),sdkContinuationCurrent,sdkContinuationHistory,{projectKey:'SRM'})
+const recurringView=recurringSourcePredecessor(sdkContinuationCurrent,sdkContinuationHistory),recurring=recurringView?.manifest
+const recurringSdkFiles=Object.fromEntries(Object.entries({...recurring?.sourceDigests,...organisationSourceView?.record.sourceDigests,...organisationSourceView?.record.compatibilityTestSourceDigests,...recurringView?.transport?.manifest.sourceDigests,...recurringView?.transport?.live?.manifest.sourceDigests,...organisationSourceView?.currentSourceDigests}).filter(([p])=>p.startsWith('packages/platform-contracts/')).map(([p,h])=>[p.slice('packages/platform-contracts/'.length),h]))
 
 const hash=v=>createHash('sha256').update(v).digest('hex'),receipt=JSON.parse(fs.readFileSync(new URL('../operation-integration.json',import.meta.url)))
 const accepted=receipt.p1ReceiverSourceCompatibility,key=Buffer.alloc(32,59).toString('base64')
@@ -42,14 +46,14 @@ test('new P1 receipt preserves every historical record and verifies exact curren
  for(const[k,v]of Object.entries(before))assert.deepEqual(['contract','producer'].includes(k)?accepted.previousRootAcceptance[k]:receipt[k],v,k)
  assert.equal(accepted.platformVersion,'1.25.0');assert.equal(OPERATION_CONTRACT.implementation,'1.0.0-candidate.16')
  assert.equal(accepted.optInRootImplementation,'1.0.0-candidate.17');assert.equal(accepted.optInHostVersion,'1.12.0')
- assert.equal(await operationSourceDigest(),recurring?.sdkDigests.operationSourceDigest??receipt.oilAutonomousReportCompatibility?.sdkDigests.operationSourceDigest??receipt.assistantM1SourceCompatibility.rootContract.sourceDigest)
+ assert.equal(await operationSourceDigest(),acceptedSdkSource().sdkDigests.operationSourceDigest??receipt.oilAutonomousReportCompatibility?.sdkDigests.operationSourceDigest??receipt.assistantM1SourceCompatibility.rootContract.sourceDigest)
  const root=new URL('../../../packages/platform-contracts/',import.meta.url)
  const installed=new URL('../',import.meta.resolve('@profitia/platform-contracts/supplier-location'))
  assert.equal(JSON.parse(fs.readFileSync(new URL('package.json',installed))).version,(recurring??receipt.oilAutonomousReportCompatibility??receipt.sourceHubMarketSymbolCompatibility??receipt.sourceHubApiPathCompatibility??receipt.freshPostfetchRecovery??receipt.sourceLeaseClockRecovery??receipt.settledExternalFailureRecovery??receipt.freshPerformanceRecovery).platformVersion)
  for(const[file,digest]of Object.entries(receipt.accountRecheckSourceCompatibility.sourceDigests))assert.equal(hash(execFileSync('git',['show',receipt.accountRecheckSourceCompatibility.producer.sourceSha+':packages/platform-contracts/'+file])),digest,'historical producer '+file)
- for(const[file,digest]of Object.entries({...receipt.accountRecheckSourceCompatibility.sourceDigests,...receipt.krsNipSourceCompatibility?.sourceDigests,...receipt.unmeteredSourceCompatibility.sourceDigests,...receipt.formReportAdmissionAdoption.sourceDigests,...receipt.requestQuotaSourceCompatibility.sourceDigests,...receipt.nativeSqlRoundtripAdoption.sourceDigests,...receipt.diagnosticTelemetryAdoption.sourceDigests,...receipt.xrayPerformanceRecoveryV2.sourceDigests,...receipt.appshellXraySourceCompatibility.sourceDigests,...receipt.freshPerformanceRecovery.sourceDigests,...receipt.settledExternalFailureRecovery?.sourceDigests,...receipt.sourceLeaseClockRecovery?.sourceDigests,...receipt.freshPostfetchRecovery?.sourceDigests,...receipt.sourceHubApiPathCompatibility?.sourceDigests,...receipt.sourceHubMarketSymbolCompatibility?.sourceDigests,...receipt.assistantM1SourceCompatibility?.sourceDigests,...receipt.oilAutonomousReportCompatibility?.sourceDigests,...receipt.oilAutonomousReportCompatibility?.testSourceDigests,...recurringSdkFiles})){
-  assert.equal(hash(fs.readFileSync(new URL(file,root))),digest,file)
-  if(file!=='package-lock.json'&&!file.startsWith('test/'))assert.equal(hash(fs.readFileSync(new URL(file,installed))),digest,'installed '+file)
+ for(const[file,digest]of Object.entries({...receipt.accountRecheckSourceCompatibility.sourceDigests,...receipt.krsNipSourceCompatibility?.sourceDigests,...receipt.unmeteredSourceCompatibility.sourceDigests,...receipt.formReportAdmissionAdoption.sourceDigests,...receipt.requestQuotaSourceCompatibility.sourceDigests,...receipt.nativeSqlRoundtripAdoption.sourceDigests,...receipt.diagnosticTelemetryAdoption.sourceDigests,...receipt.xrayPerformanceRecoveryV2.sourceDigests,...receipt.appshellXraySourceCompatibility.sourceDigests,...receipt.freshPerformanceRecovery.sourceDigests,...receipt.settledExternalFailureRecovery?.sourceDigests,...receipt.sourceLeaseClockRecovery?.sourceDigests,...receipt.freshPostfetchRecovery?.sourceDigests,...receipt.sourceHubApiPathCompatibility?.sourceDigests,...receipt.sourceHubMarketSymbolCompatibility?.sourceDigests,...receipt.assistantM1SourceCompatibility?.sourceDigests,...receipt.oilAutonomousReportCompatibility?.sourceDigests,...receipt.oilAutonomousReportCompatibility?.testSourceDigests})){
+  assert.equal(hash(fs.readFileSync(new URL(file,root))),sdkCurrentSourceDigests[file]??digest,file)
+  if(file!=='package-lock.json'&&!file.startsWith('test/'))assert.equal(hash(fs.readFileSync(new URL(file,installed))),sdkCurrentSourceDigests[file]??digest,'installed '+file)
  }
  for(const[file,digest]of Object.entries(accepted.applicationSourceDigests)){
   const change=receipt.krsLivePilotSourceCompatibility?.changedFiles[file];

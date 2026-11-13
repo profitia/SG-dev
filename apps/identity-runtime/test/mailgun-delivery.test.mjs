@@ -162,3 +162,19 @@ test('new-device transport accepts no action and a bounded long opaque URL witho
   ])await assert.rejects(()=>send({...msg,template}),{message:'Invalid stored template'});
   assert.equal(calls,2);
 });
+
+test('organisation invitations require independent authority and a distinct provider purpose',async()=>{
+ const {createMailgunOrganisationInvitationSender}=await import('../dist/src/mailgun-delivery.js');
+ const config={environment:'development',region:'eu',domain:'notify.example.test',apiKey:'synthetic_private_key_0123456789',authorizedRecipients:[],from:'account@notify.example.test',senderName:'SpendGuru'};
+ const message={recipient:'new.member@example.test',subject:'SpendGuru — zaproszenie',html:'<p>Masz zaproszenie do organizacji.</p>',text:'Masz zaproszenie do organizacji.'};
+ let calls=0;
+ const provider=async(url,request)=>{calls++;assert.equal(url,'https://api.eu.mailgun.net/v3/notify.example.test/messages');assert.equal(request.body.get('o:tag'),'organisation-invitation-development');assert.equal(request.body.get('o:tracking'),'no');assert.equal(request.body.get('o:tracking-clicks'),'no');return Response.json({id:'<synthetic-invitation@notify.example.test>'},{status:200});};
+ assert.throws(()=>createMailgunOrganisationInvitationSender({...config,authorizedRecipients:['new.member@example.test']},async()=>true,provider));
+ assert.throws(()=>createMailgunOrganisationInvitationSender(config,null,provider));
+ const denied=createMailgunOrganisationInvitationSender(config,async()=>false,provider);
+ assert.equal((await denied(message)).status,'rejected');assert.equal(calls,0);
+ const allowed=createMailgunOrganisationInvitationSender(config,async m=>m.recipient===message.recipient&&m.text===message.text,provider);
+ assert.equal((await allowed(message)).status,'accepted');assert.equal(calls,1);
+ assert.equal((await allowed({...message,recipient:'foreign@example.test'})).status,'rejected');assert.equal(calls,1);
+ await assert.rejects(allowed({...message,template:{name:'identity-invitation-pl-male',version:'v-'+'a'.repeat(24),variables:{}}}));assert.equal(calls,1);
+});

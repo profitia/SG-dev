@@ -1,4 +1,5 @@
 import {procurementInsightsCompletionPredecessor} from '../../sg-runtime/tests/procurement-insights-completion-integrity.mjs'
+import {sdkContinuationPredecessor} from '../../../packages/platform-contracts/test/organisation-sdk-compatibility.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
@@ -6,7 +7,10 @@ import {execFileSync} from 'node:child_process'
 import {createHash} from 'node:crypto'
 import {marketCalendarSourcePredecessor,calendarTestCompatibilityCurrent,MARKET_CALENDAR_TEST_COMPATIBILITY_RECORD,MARKET_CALENDAR_PRODUCER_PATHS,MARKET_CALENDAR_PRODUCER_RECORD,MARKET_CALENDAR_PRODUCER_BASE,MARKET_CALENDAR_PRODUCER_RECORD_SHA,MARKET_CALENDAR_CONSUMER_PATHS,MARKET_CALENDAR_CONSUMER_RECORD} from '../market-calendar-source.mjs'
 const root=new URL('../../../',import.meta.url),rawPhysical=p=>fs.readFileSync(new URL(p,root)),cache=new Map(),historical=(sha,p)=>{const k=sha+':'+p;if(!cache.has(k))cache.set(k,execFileSync('git',['show',k],{cwd:root,stdio:['ignore','pipe','pipe']}));return cache.get(k)}
-const physical=procurementInsightsCompletionPredecessor(rawPhysical,historical)?.previousBytes??rawPhysical,current=calendarTestCompatibilityCurrent(physical,historical)
+// Authenticate the complete current SDK and both receivers before Calendar history.
+const sdk=sdkContinuationPredecessor(JSON.parse(rawPhysical('apps/sg-runtime/operation-integration.json')),rawPhysical,historical)
+const physical=sdk?.calendarCurrent??procurementInsightsCompletionPredecessor(rawPhysical,historical)?.previousBytes??rawPhysical
+const current=calendarTestCompatibilityCurrent(physical,historical)
 test('calendar source is checked before a preserved historical view; all earlier architecture acceptances remain byte-identical',()=>{
  const top=marketCalendarSourcePredecessor(current,historical);assert(top)
  const producerCurrent=top.manifest.scope==='MARKET_CALENDAR_CONSUMER_SOURCE'?top.previousBytes:current

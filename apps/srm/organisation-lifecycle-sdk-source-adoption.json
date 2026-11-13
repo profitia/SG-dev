@@ -1,0 +1,10 @@
+{
+  "schemaVersion": "1.0",
+  "projectKey": "SRM",
+  "taskId": "SRM-REGISTRATION-LIFECYCLE-SDK-ADOPTION-20261112",
+  "acceptanceId": "organisation-lifecycle-sdk-1.37-development-v1",
+  "sourceRecordSha256": "3a7d291e8e6da5ebdae31571d6bb89d664ef5a4c41f32af05de0e161e7f6f7b2",
+  "platformVersion": "1.37.0",
+  "scope": "OPTIONAL_ORGANISATION_LIFECYCLE_SOURCE_ONLY",
+  "runtimeOptedIn": false
+}
