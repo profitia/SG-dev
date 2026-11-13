@@ -7,8 +7,12 @@ export declare function assistantInputBound(input:AssistantModelInput):Readonly<
 export declare function readAssistantUsage(usage:unknown,model:string):AssistantActualUsage
 export declare function takeAssistantAdmission(value:AssistantUsageAdmission,options:{inputDigest:string;now?:number}):Omit<AssistantUsageAdmission,'status'>
 export declare function assertAssistantUsageReservation(value:AssistantUsageAdmission,context:Readonly<import('./operation-context.mjs').OperationContext>):AssistantUsageAdmission
-export declare function createAssistantUsageStore(options:{query:(sql:string,values:unknown[])=>Promise<{rows:Record<string,unknown>[]}>,commandKey:string;schemaDigest:string;now?:()=>number}):Readonly<{
+export type AssistantInputCountRequest=Readonly<{actorId:string;organisationId:string;commandId:string;input:AssistantModelInput;signal?:AbortSignal}>
+export type AssistantCountedInput=Readonly<{inputTokens:number;outputTokens:2048;nanoUsd:string;inputDigest:string;expiresAt:number}>
+export type AssistantLimitDiagnostics=Readonly<{commandId:string;model:string;version:'1.0.0';scope:'PILOT'|'ASSIGNMENT';metric:string;unit:'TOKENS'|'NANO_USD';available:string;consumed:string;limit:string;required:string;inputTokens:number;outputTokens:2048}>
+export declare function createAssistantUsageStore(options:{countInputTokens?:(request:Readonly<{model:'gpt-5.6-luna';input:AssistantModelInput;signal?:AbortSignal}>)=>Promise<unknown>;onDenied?:(diagnostics:AssistantLimitDiagnostics)=>void;query:(sql:string,values:unknown[])=>Promise<{rows:Record<string,unknown>[]}>,commandKey:string;schemaDigest:string;now?:()=>number}):Readonly<{
  contract:typeof ASSISTANT_USAGE_CONTRACT
+ prepareInput(request:AssistantInputCountRequest):Promise<AssistantCountedInput>
  reserve(input:{actorId:string;organisationId:string;commandId:string;decisionId:string;input:AssistantModelInput;expectedPolicy:{id:string;assignmentId:string;assignmentRevision:number}}):Promise<AssistantUsageAdmission>
  settle(admission:AssistantUsageAdmission,result:{usage:unknown;model:string;responseId:string}):Promise<AssistantActualUsage>
  dispatch(admission:AssistantUsageAdmission):Promise<void>
