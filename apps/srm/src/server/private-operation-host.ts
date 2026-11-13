@@ -1,3 +1,5 @@
+import type {OperationInput,OperationContext} from '@profitia/platform-contracts/operation-context';
+import {prepareSrmOrganisationRegistration} from '../../db/private-store/organisation-registration.mjs';
 import targets from '../../deployment/private-runtime-targets.json';
 import {peerOperationIdentityRequest} from "@profitia/platform-contracts/peer-operation";
 import type pg from "pg";
@@ -43,18 +45,30 @@ export function createSrmPrivateOperationHost(options: Omit<HostOptions, "indepe
   if (!auditPool || pool === auditPool || !options.module || options.module.id !== 'supplier_report' || options.application.appId !== "srm"
     || identity.appId !== options.application.appId || identity.environment !== options.application.environment
     || identity.issuer !== options.application.identityIssuer) throw new TypeError("Explicit consistent SRM host and independent audit pool required");
-  return createPrivateOperationHost<PoolClient>({
+  const host=createPrivateOperationHost<PoolClient>({
     application: options.application, binding: options.binding, module: options.module, requestLedger: options.requestLedger, requestContinuation: options.requestContinuation, locationAdmission: options.locationAdmission, now,
     transactionTimeoutMs: options.transactionTimeoutMs,
     ...(options.reportAdmission?{reportAdmission:options.reportAdmission}:{}),
     readResources: options.readResources, projectOutput: options.projectOutput,
-    prepareInputs: options.prepareInputs, describeOutcome: options.describeOutcome,
+    prepareInputs: options.application.profileId==='SPENDGURU_SAAS'?async input=>{
+      await prepareSrmOrganisationRegistration(input);
+      await options.prepareInputs?.(input);
+    }:options.prepareInputs, describeOutcome: options.describeOutcome,
     createAuthenticator: ({ resolveBinding }) => {
       const authenticate = createClerkIdentityAuthenticator({ client: clerk, application: identity, resolveBinding, now });
       return bindSrmIdentity(authenticate,identity);
     },
     ...createSrmNativePgDriver(pool, auditPool),
   });
+  if(options.application.profileId!=='SPENDGURU_SAAS')return host;
+  return Object.freeze({contract:host.contract,
+    execute:<T>(input:OperationInput,action:(context:Readonly<OperationContext>,transaction:PoolClient)=>T|Promise<T>)=>
+      host.execute(input,async(context,transaction)=>{
+        await prepareSrmOrganisationRegistration({context,query:async(sql:string,values:readonly unknown[]=[])=>{
+          const result=await transaction.query(sql,[...values]);return {rows:result.rows};
+        }});
+        return await action(context,transaction);
+      })});
 }
 
 /** ID preparation only: canonical identity and current organisation binding.
