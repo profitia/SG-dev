@@ -4,7 +4,7 @@ import {createHash} from 'node:crypto'
 import {posix} from 'node:path'
 const recordPath='packages/platform-contracts/test/organisation-lifecycle-sdk-compatibility.json'
 const guardPath='packages/platform-contracts/test/organisation-lifecycle-sdk-compatibility.mjs'
-const reconciledRecordSha256='049acd3d7f50eb426668705b41117526bff4c7d9b705354f5b01c5f578f8109e'
+const reconciledRecordSha256='aece9e181ce6621d2b2fd0c1b501f73da607444dff8cdbec88d2e4315fb42e81'
 const acceptedRecordSha256='3a7d291e8e6da5ebdae31571d6bb89d664ef5a4c41f32af05de0e161e7f6f7b2'
 const previousSourceSha='b18b5eee15aab07c7ff3968cafbfd50ddd5e9b5a'
 const acceptedMainSha='68867fe8c54b8f3b2efadf512d37d8925b9657e5'
@@ -60,12 +60,12 @@ function reconciledLifecycleSource(bytes,current,historical,projectKey){
   assert.equal(r.currentSourceDigests[p],h,'main input belongs to complete current graph')
   assert.equal(hash(historicalBytes(historical,r.currentMainSha,p)),h,'actual newer main input preserved')
  }
- assert(Array.isArray(r.correctedOwnerInputs)&&r.correctedOwnerInputs.length===2,'bounded ARCHITECTURE and SRM test corrections')
- assert.deepEqual(r.correctedOwnerInputs.map(v=>v.projectKey).sort(),['ARCHITECTURE','SRM'],'one input per actual correction owner')
+ assert(Array.isArray(r.correctedOwnerInputs)&&r.correctedOwnerInputs.length===3,'bounded ARCHITECTURE, SG2 and SRM test corrections')
+ assert.deepEqual(r.correctedOwnerInputs.map(v=>v.projectKey).sort(),['ARCHITECTURE','SG2','SRM'],'one input per actual correction owner')
  const corrections={}
  for(const input of r.correctedOwnerInputs){
   equalKeys(input,['projectKey','taskId','sourceSha','sourceDigests'],'closed test correction input')
-  assert(['ARCHITECTURE','SRM'].includes(input.projectKey),'actual correction owner')
+  assert(Object.hasOwn(projects,input.projectKey),'actual correction owner')
   assert.equal(input.taskId,r.taskIds[input.projectKey]);assert(/^[a-f0-9]{40}$/.test(input.sourceSha))
   map(input.sourceDigests,'exact owned test corrections')
   for(const[p,h]of Object.entries(input.sourceDigests)){
