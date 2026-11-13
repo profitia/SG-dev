@@ -10,8 +10,8 @@ export function createCalendarProxy({organisationId,fetcher=fetch}:{organisation
  return async(request:Request):Promise<Response>=>{
   const normalized=boundary(request);if(!normalized)return json('INVALID_ORIGIN',403)
   const input=new URL(normalized.url),prefix='/api/v1/market-calendar/',suffix=input.pathname.slice(prefix.length)
-  if(input.origin!==publicOrigin||!input.pathname.startsWith(prefix)||! /^(?:(?:events|publications|evidence)\/(?:ecr_evt_|ecr_pub_)[a-f0-9]{64}(?:\/revisions)?|query|events|publications|timeline|context|knowledge|freshness|preferences|favourites)$/.test(suffix))return json('NOT_FOUND',404)
-  if(request.method!=='GET'&&!(request.method==='PUT'&&suffix==='preferences'))return json('METHOD_NOT_ALLOWED',405)
+  if(input.origin!==publicOrigin||!input.pathname.startsWith(prefix)||! /^(?:(?:events|publications|evidence)\/(?:ecr_evt_|ecr_pub_)[a-f0-9]{64}(?:\/revisions)?|query|events|publications|timeline|context|knowledge|freshness|preferences|favourites|notifications)$/.test(suffix))return json('NOT_FOUND',404)
+  if(request.method!=='GET'&&!(request.method==='PUT'&&['preferences','notifications'].includes(suffix)))return json('METHOD_NOT_ALLOWED',405)
   const bearer=normalized.headers.get('authorization')
   if(normalized.headers.has('cookie')||!/^Bearer [^\s]{1,8192}$/.test(bearer??''))return json('AUTHENTICATION_REQUIRED',401)
   if(normalized.headers.has('content-encoding'))return json('UNSUPPORTED_CONTENT_ENCODING',415)
