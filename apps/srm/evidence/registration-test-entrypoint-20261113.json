@@ -1,0 +1,15 @@
+{
+  "schemaVersion": "1.0",
+  "taskId": "SRM-REGISTRATION-TEST-ENTRYPOINT-20261113",
+  "recordedAt": "2026-11-13T06:12:04.880Z",
+  "result": "PASS",
+  "tests": 15,
+  "failed": 0,
+  "skipped": 0,
+  "preservesExistingOperationChecks": true,
+  "addsRegistrationChecksToExistingOperationCommand": true,
+  "dependenciesChanged": false,
+  "deploymentPerformed": false,
+  "liveSqlInstalled": false,
+  "providerCallsPerformed": false
+}

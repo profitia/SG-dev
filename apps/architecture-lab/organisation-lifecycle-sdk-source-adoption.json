@@ -1,0 +1,10 @@
+{
+  "schemaVersion": "1.0",
+  "projectKey": "ARCHITECTURE",
+  "taskId": "ARCHITECTURE-REGISTRATION-STAGE-I-RESUME-V2-20261113",
+  "acceptanceId": "organisation-lifecycle-sdk-1.37-test-reconciliation-20261113-v1",
+  "sourceRecordSha256": "049acd3d7f50eb426668705b41117526bff4c7d9b705354f5b01c5f578f8109e",
+  "platformVersion": "1.37.0",
+  "scope": "SOURCE_TEST_CONTINUITY_ONLY",
+  "runtimeOptedIn": false
+}

@@ -1,3 +1,4 @@
+import {bindSrmRequestRuntime} from './organisation-context'
 import type { PoolClient } from 'pg'
 import { OPERATION_CONTRACT, isOperationDenied, type OperationExecutor } from '@profitia/platform-contracts/operation-context'
 import { validRequestIdempotencyKey } from '@profitia/platform-contracts/request-ledger'
@@ -50,7 +51,7 @@ export function createOperationSupplierRequestHandler(executor: OperationExecuto
 export function createRuntimeSupplierRequestHandler(resolveRuntime: () => SrmReportRuntime = getSrmReportRuntime) {
   return async (request: Request): Promise<Response> => {
     try {
-      const runtime = resolveRuntime()
+      const runtime = await bindSrmRequestRuntime(resolveRuntime(),request)
       if (runtime.provider !== 'clerk' || !runtime.supplierRequest) return response(503)
       return await createOperationSupplierRequestHandler(runtime.supplierRequest.executor, runtime.defaultOrganisationId)(request)
     } catch { return response(503) }

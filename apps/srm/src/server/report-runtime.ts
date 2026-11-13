@@ -1,3 +1,4 @@
+import {bindSrmRequestRuntime} from './organisation-context'
 import {withSrmPeerXRay} from "./peer-xray";
 import { getSrmReportRuntime, type SrmReportRuntime } from './private-runtime'
 import { createOperationReportDataHandler } from './operation-report-data'
@@ -12,7 +13,7 @@ export function createRuntimeSrmReportHandler(
 ) {
   return withSrmPeerXRay(async (request: Request): Promise<Response> => {
     try {
-      const runtime = resolveRuntime()
+      const runtime = await bindSrmRequestRuntime(resolveRuntime(),request)
       if (runtime.provider === 'legacy_demo') return await legacy(request)
       if (runtime.provider !== 'clerk') throw new TypeError('Unsupported server runtime')
       const run = () => createOperationReportDataHandler(runtime.executor, environment, {

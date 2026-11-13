@@ -7,9 +7,9 @@ import { AppShellDashboard } from '@/components/appshell/appshell-dashboard'
 import { dashboardPath } from '@/lib/appshell/adp-navigation'
 import {productAnalytics} from '@/lib/product-analytics/adapter'
 
-type State = { key: string; status: 'loading' | 'ready' | 'failed' | 'expired' | 'signing-out' | 'logout-failed'; userId?: string; expiresAt?: string; assistantAvatar?: 'male' | 'female' | null; salutation?: { firstName: string | null; vocative: string | null; dictionaryVersion: string | null } | null }
-export function AccountLanding({ locale, completionUrl, presentation = 'account', organisationBranding, dashboard = false }: {
-  locale: 'pl' | 'en'; completionUrl: string; presentation?: 'account' | 'workspace'; organisationBranding?: 'porr' | null; dashboard?: boolean
+type State = { key: string; status: 'loading' | 'ready' | 'failed' | 'expired' | 'signing-out' | 'logout-failed'; userId?: string; expiresAt?: string; assistantAvatar?: 'male' | 'female' | null; organisationId?: string; salutation?: { firstName: string | null; vocative: string | null; dictionaryVersion: string | null } | null }
+export function AccountLanding({ locale, completionUrl, presentation = 'account', organisationBranding, dashboard = false, organisationAccess = false }: {
+  locale: 'pl' | 'en'; completionUrl: string; presentation?: 'account' | 'workspace'; organisationBranding?: 'porr' | null; dashboard?: boolean; organisationAccess?: boolean
 }) {
   const { isLoaded, isSignedIn, userId, sessionId, orgId, getToken } = useAuth(), clerk = useClerk()
   const router = useRouter()
@@ -37,11 +37,25 @@ export function AccountLanding({ locale, completionUrl, presentation = 'account'
         if (!response.ok || result.authenticated !== true || typeof result.userId !== 'string' || !(Date.parse(result.expiresAt) > Date.now())
           || ![null, 'male', 'female'].includes(result.assistantAvatar)
           || !(result.salutation === null || result.salutation && ['firstName', 'vocative'].every(field => result.salutation[field] === null || typeof result.salutation[field] === 'string'))) throw Error('ACCOUNT_UNAVAILABLE')
+        let organisationId:string|undefined
+        if(presentation==='workspace'&&organisationAccess){
+          const access=await fetch('/api/account/organisation-access',{method:'POST',headers:{Authorization:`Bearer ${credential}`,'content-type':'application/json'},body:'{}',cache:'no-store',credentials:'omit',redirect:'error',signal:controller.signal})
+          denied=access.status===401||access.status===403||access.status===409
+          const currentAccess=await access.json()
+          if(!access.ok)throw Error('ORGANISATION_ACCESS_UNAVAILABLE')
+          if(['ONBOARDING_REQUIRED','PENDING_PACKAGE','RECONCILIATION_REQUIRED'].includes(currentAccess.status)){
+            if(!controller.signal.aborted){setState({key,status:'loading'});window.location.assign(completionUrl)}
+            return
+          }
+          if(currentAccess.status!=='READY'||!/^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(currentAccess.organisationId??'')||!(Date.parse(currentAccess.expiresAt)>Date.now())||Date.parse(currentAccess.expiresAt)>Date.now()+30000)throw Error('ORGANISATION_ACCESS_UNAVAILABLE')
+          organisationId=currentAccess.organisationId
+          result.expiresAt=new Date(Math.min(Date.parse(result.expiresAt),Date.parse(currentAccess.expiresAt))).toISOString()
+        }
         if (!controller.signal.aborted) {
           productAnalytics.finish(attempt,'success')
           productAnalytics.once('verified-auth','auth_session_established',{module:'account'})
           setRefreshError(false)
-          setState({ key, status: 'ready', userId: result.userId, expiresAt: result.expiresAt, assistantAvatar: result.assistantAvatar, salutation: result.salutation })
+          setState({ key, status: 'ready', userId: result.userId, expiresAt: result.expiresAt, ...(organisationId?{organisationId}:{}), assistantAvatar: result.assistantAvatar, salutation: result.salutation })
         }
       } catch { if (!controller.signal.aborted) {
         productAnalytics.finish(attempt,'error')
@@ -54,7 +68,7 @@ export function AccountLanding({ locale, completionUrl, presentation = 'account'
       } }
     })()
     return () => controller.abort()
-  }, [isLoaded, isSignedIn, userId, sessionId, getToken, key, retry, presentation])
+  }, [isLoaded, isSignedIn, userId, sessionId, getToken, key, retry, presentation, organisationAccess, completionUrl])
   useEffect(() => {
     if (state.status !== 'ready' || !state.expiresAt) return
     // A workspace rechecks the existing backend account proof with a fresh SDK
@@ -88,7 +102,7 @@ export function AccountLanding({ locale, completionUrl, presentation = 'account'
   if (workspaceReady && !dashboard) return <p role="status">{en ? 'Opening your workspace…' : 'Otwieramy Twoje biurko…'}</p>
   if (workspaceReady && dashboard) return <>
     {refreshError && <p role="status">{en ? 'Session refresh is temporarily unavailable. Retrying; your work is retained while the current access confirmation remains valid.' : 'Odświeżenie sesji jest chwilowo niedostępne. Ponawiamy; Twoja praca pozostaje zachowana, dopóki bieżące potwierdzenie dostępu jest ważne.'}</p>}
-    <AppShellDashboard key={JSON.stringify([key, state.userId])} locale={locale} assistantCredential={getToken} assistantScope={key}
+    <AppShellDashboard key={JSON.stringify([key, state.userId, state.organisationId??null])} locale={locale} assistantCredential={getToken} assistantScope={JSON.stringify([key,state.organisationId??null])}
     assistantAvatar={state.assistantAvatar} salutation={locale === 'en' ? state.salutation?.firstName : state.salutation?.vocative}
     organisationBranding={organisationBranding} onLogout={() => void logout()} /></>
   return <section className="space-y-5" key={key}>
