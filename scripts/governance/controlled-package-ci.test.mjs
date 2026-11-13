@@ -2953,3 +2953,48 @@ test('registration lifecycle real checkout satisfies source, dependency and pred
   c.assertLocalPackageSources(root,lock,authorityRoot,{reviewedPrivateRecurring:true});
  }finally{execFileSync('git',['worktree','remove','--force',root],{cwd:authorityRoot,stdio:'pipe'});fs.rmSync(dir,{recursive:true,force:true})}
 });
+
+// Proposed bounded notification continuation: old assertions above remain intact.
+import {APPSHELL_NOTIFICATION_REVIEW,assistantNotificationsTrustedPredecessor,readNotificationPhysicalSource} from './controlled-package-ci.mjs'
+function notificationGitFixture(sha){
+ const authority=fileURLToPath(new URL('../../',import.meta.url)),dir=fs.mkdtempSync(path.join(os.tmpdir(),'notification-admission-git-'))
+ // Only immutable repository bytes are read. Candidate helpers are never imported.
+ if(spawnSync('git',['cat-file','-e',sha+'^{commit}'],{cwd:authority,stdio:'ignore'}).status!==0)execFileSync('git',['fetch','--no-tags','origin',sha],{cwd:authority,stdio:['ignore','pipe','pipe']})
+ execFileSync('git',['clone','--shared','--no-checkout',authority,dir],{stdio:['ignore','pipe','pipe']})
+ execFileSync('git',['checkout','--quiet','--detach',sha],{cwd:dir,stdio:['ignore','pipe','pipe']})
+ return {root:dir,close:()=>fs.rmSync(dir,{recursive:true,force:true})}
+}
+test('notification proposal authenticates seven current files and 26 old receipts before exact history',()=>{
+ const fixture=notificationGitFixture(APPSHELL_NOTIFICATION_REVIEW.candidateSha),root=fixture.root,cfg=APPSHELL_NOTIFICATION_REVIEW,current=p=>fs.readFileSync(path.join(root,p)),historical=(sha,p)=>execFileSync('git',['show',sha+':'+p],{cwd:root,stdio:['ignore','pipe','pipe']})
+ try{
+ const view=assistantNotificationsTrustedPredecessor(current,historical);assert(view)
+ for(const [p,e]of Object.entries(cfg.entries))if(e.status==='added')assert.throws(()=>view.previousBytes(p),{code:'ENOENT'});else assert.deepEqual(view.previousBytes(p),historical(cfg.baseSha,p))
+ for(const p of [...Object.keys(cfg.entries),...Object.keys(cfg.preservedReceipts)]){
+  assert.throws(()=>assistantNotificationsTrustedPredecessor(f=>f===p?Buffer.concat([current(f),Buffer.from('UNADMITTED')]):current(f),historical),p)
+  const missing=f=>{if(f===p)throw Object.assign(Error('Missing'),{code:'ENOENT'});return current(f)}
+  if(p===cfg.recordPath)assert.equal(assistantNotificationsTrustedPredecessor(missing,historical),null);else assert.throws(()=>assistantNotificationsTrustedPredecessor(missing,historical),p)
+ }
+ assert.throws(()=>assistantNotificationsTrustedPredecessor(current,()=>Buffer.from('WRONG_HISTORY')))
+ for(const e of [Object.assign(Error('Denied'),{code:'EACCES'}),Error('Unexpected')])assert.throws(()=>assistantNotificationsTrustedPredecessor(()=>{throw e},historical),x=>x===e)
+ assert.equal(assistantNotificationsTrustedPredecessor(()=>{throw Object.assign(Error('Absent'),{code:'ENOENT'})},historical),null)
+ // Candidate code is treated only as bytes, never evaluated by trusted admission.
+ assert(!!assertPrivateRecurringProvenance(root),'new graph composes with existing exact private-source admission')
+ const recordFile=path.join(root,cfg.recordPath),saved=fs.readFileSync(recordFile)
+ try{fs.unlinkSync(recordFile);assert.throws(()=>assertPrivateRecurringProvenance(root),'missing optional continuation cannot admit changed source')}finally{fs.writeFileSync(recordFile,saved)}
+ const malicious=Buffer.from('throw new Error("CANDIDATE_CODE_MUST_NOT_RUN")')
+ assert.throws(()=>assistantNotificationsTrustedPredecessor(p=>p.endsWith('assistant-notifications-integrity.mjs')?malicious:current(p),historical),/APPSHELL_NOTIFICATION_SOURCE_REJECTED/)
+ }finally{fixture.close()}
+})
+test('notification policy bootstrap retains original admission when the UI continuation is genuinely absent',()=>{
+ const fixture=notificationGitFixture(APPSHELL_NOTIFICATION_REVIEW.baseSha)
+ try{assert(assertPrivateRecurringProvenance(fixture.root))}finally{fixture.close()}
+})
+test('notification proposal retains raw regular-file, mode, size, realpath and symlink fences',()=>{
+ const dir=fs.mkdtempSync(path.join(os.tmpdir(),'notification-source-fences-')),p=Object.keys(APPSHELL_NOTIFICATION_REVIEW.entries)[0],f=path.join(dir,p)
+ try{
+  fs.mkdirSync(path.dirname(f),{recursive:true});fs.writeFileSync(f,'SYNTHETIC_ONLY');assert.equal(String(readNotificationPhysicalSource(dir,p)),'SYNTHETIC_ONLY')
+  fs.chmodSync(f,0o755);assert.throws(()=>readNotificationPhysicalSource(dir,p),/MODE_REJECTED/);fs.chmodSync(f,0o644)
+  fs.unlinkSync(f);fs.symlinkSync(path.join(dir,'target'),f);fs.writeFileSync(path.join(dir,'target'),'SYNTHETIC_ONLY');assert.throws(()=>readNotificationPhysicalSource(dir,p),/SOURCE_FILE_REJECTED/)
+  assert.throws(()=>readNotificationPhysicalSource(dir,'../outside'),/SOURCE_FILE_REJECTED/)
+ }finally{fs.rmSync(dir,{recursive:true,force:true})}
+})
