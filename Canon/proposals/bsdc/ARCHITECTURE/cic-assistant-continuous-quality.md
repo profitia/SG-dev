@@ -17,7 +17,7 @@
 | Tryb | EXECUTION — Full Autopilot wyłącznie etap 1; DEC-06 |
 | Etap | F — zakończony; A–F domknięte projektowo, 28/28 USTALONE |
 | Utworzono / zaktualizowano | 2026-11-12 / 2026-11-13, Europe/Warsaw |
-| Rewizja | 10 — zapis akceptacji CI, skuteczny G1 i faktyczny postęp komponentów etapu 1 |
+| Rewizja | 11 — akceptacja ograniczonej reguły CI #1076 i dalsza realizacja wyłącznie etapu 1 |
 | Rewizja bazowa ostatniej aktualizacji | PDR rewizja 9 / blob f0c81253cd20d4f2b75f8eabf2adb47d538c20fc; main 69a2cc1769d34cb6ecf1e21a552babb0006a5713. Referencja wykonawcza właściciela nadal rewizja 8. |
 | Zadanie inicjalizacji | ARCH-BSDC-CIC-QUALITY-INIT-20261112 |
 | Zadanie bieżącej aktualizacji | ARCH-CIC-QUALITY-STAGE1-CONTROL-20261112; zadania producentów i odbiorcy w §8.7 |
@@ -119,6 +119,14 @@ Właściciel odpowiedział **„Zatwierdzam propozycję #1061”** na pytanie ws
 [PR #1061](https://github.com/profitia/SG-dev/pull/1061) przyjęto jako 1e6c6e462840211d0c402ec4c8a0dd433f5c360f; kontrole dokładnego źródła i wynikowego main zakończyły się powodzeniem. Odświeżenia zachowały ten sam manifest pięciu plików oraz równoległe zmiany main. Następnie [G1 / PR #1042](https://github.com/profitia/SG-dev/pull/1042), źródło 9243d88d, przyjęto jako 69a2cc1769d34cb6ecf1e21a552babb0006a5713, również po pełnym wymaganym odbiorze źródła i main. AQC-BASE-001/002 są skutecznymi ścieżkami źródłowymi. To nadal nie jest mandat do prywatnych danych ani dowód autonomicznej naprawy w runtime.
 
 Rewizja 10 aktualizuje stan wykonania i dowody. Nie zmienia zaakceptowanej specyfikacji §4–5, 19 tasków, limitów ani osobnego GO przed etapem 2.
+
+### 2.9. DEC-08 — akceptacja ograniczonej reguły CI #1076, 13 listopada 2026
+
+Właściciel odpowiedział **„Zatwierdzam propozycję #1076”** na wniosek dotyczący dokładnej wersji `68f0fbd10946582a422d6b5b0b3dcd1a6a0b03dd`. Decyzja obejmuje wyłącznie 27 wskazanych plików źródłowych/testowych QA oraz tej samej Karty Projektu, na istniejącej gałęzi etapu 1, do 2026-11-27T23:59:59.000Z. Zachowanie zaakceptowanych zmian main nie rozszerza reguły. Pełne wymagane testy i kontrole dokładnego źródła oraz wynikowego main pozostają obowiązkowe. Zgoda nie obejmuje dostępu do rozmów, nowych zasobów, płatnych prób ani etapu 2.
+
+[PR #1076](https://github.com/profitia/SG-dev/pull/1076) został scalony jako `711c336e8c6c93cc6fa46c5b3c5a6ca6059ae393` po potwierdzeniu niezmienionego źródła i main, braku nierozstrzygniętych review oraz pozytywnych pełnych testów propozycji. Zadanie aktywacji: `ARCH-CIC-QUALITY-STAGE1-SOURCE-CI-ACTIVATE-20261113`, rejestracja `cmweoraby00005ksqzkao5orf`. Testy wynikowego main `43389855720` i governance `43389855684` są obecnie W_TOKU; ich wynik i niezależny odczyt dowodu pozostają warunkiem uznania aktywacji za zweryfikowaną.
+
+Referencja wykonawcza nadal wynosi rewizja 8; zaakceptowana specyfikacja §4–5, limity pilotażu i zakaz rozpoczęcia etapu 2 pozostają bez zmian. Ta decyzja dotyczy CI źródeł inżynierskich. Nie jest mandatem samodzielnych napraw C1–C3 ani odbiorem etapu 1.
 
 ## 3. Checklista BSDC A–F
 
@@ -629,6 +637,8 @@ Upływ 14 dni lub limit 50 USD zamyka możliwość nowych płatnych zadań, tak�
 
 ### 8.7. Stan realizacji etapu 1
 
+**Aktualizacja po DEC-08:** zgoda właściciela na #1076 została udzielona, a zaakceptowana reguła scalona w `711c336e`. Wcześniejszy zapis PENDING poniżej opisuje stan sprzed tej decyzji. Pełne kontrole wynikowego main są W_TOKU. Poprawka wykonawcy #1074 nadal wymaga własnego dokładnego dowodu i pełnych testów; kwalifikacja Linux nie ma jeszcze PASS. Nie uruchomiono modeli QA, instalacji chmurowej ani etapu 2.
+
 - **Wznowienie 2026-11-13:** właściciel polecił kontynuację wyłącznie etapu 1 od punktu przywracania `02e647a9f9b8eb283c0fee05d4991db35e5431ab`. Potwierdzono zgodność 29 plików z zapisanymi SHA-256 i drzewem `0b03054c`; niezależnie odtworzono metadane Git, zachowując poprzednie. Aktualny main `0240de8a` oraz obie istniejące rejestracje ARCHITECTURE zweryfikowane. Bez ponownego begin, zmiany zamrożonej specyfikacji lub rozszerzenia mandatu. Wersja `569c07d9` istniejącego PR #1071 przeszła wszystkie cztery zdalne kontrole: governance 43370752434, Package Limits 43370752442, AQC/PostgreSQL 43370752592 i ACG 43370752437. Przygotowano następnie osobny tryb kwalifikacji bez kluczy: rzeczywisty CLI, syntetyczny tool-loop, izolacja plików/sieci/usług lokalnych i zatrzymanie potomków. Sześć dotkniętych testów lokalnych PASS. Wykonanie Linux i niezależne potwierdzenie nadal oczekują; nie jest to dopuszczenie płatnych napraw.
 - **Źródła/main i próba Linux 2026-11-13:** PR #1071 przyjęty jako `a398fc2c`; wszystkie cztery kontrole wynikowego main PASS (AQC 43372128636, ACG 43372128628, Package Limits 43372128623, governance 43372128639). Zestaw AQC obejmuje 42 testy. Rzeczywista kwalifikacja `43372161415`, nonce `8add2a73-01cf-4d59-ae27-6fff93df4893`, potwierdziła pobranie i SHA-256 CLI 0.167.2 oraz dokładnego helpera, ale zatrzymała się na `ISOLATION_SETUP_FAILED` przed startem agenta. Brak PASS kwalifikacji i aktywacji. Przygotowano ograniczoną korektę czasu kontroli socketów oraz metadane diagnostyczne, bez pomijania jej kryteriów.
 - **Dalsza kwalifikacja i utrwalenie kontraktów:** PR #1073 (`597bf128`) przyjęty po AQC/governance PASS. Próba Linux `43372817133` pozostała FAIL: diagnostyka ujawniła `groupdel`, exit 8, w sprzątaniu niepełnej instalacji konta; nie dowodzi to pierwotnej przyczyny ani PASS izolacji. Usuwane jest maskowanie błędów, a tworzenie jednorazowej tożsamości otrzymuje kontrolę braku wcześniejszego konta/grupy i pusty prywatny home bez inicjalizacji baz logowania. Ukończony task źródeł kontraktów `ARCH-CIC-QUALITY-STAGE1-CONTRACTS-20261112` ma PMOS CLOSEOUT_COMPLETE, rejestrację completed oraz PHR `4bf2b25322fa3a9669d68864d64db54d1b48325a`; niezależne archiwum/integrity/lock/trail i zdalny readback PASS, pending/active closeout zwolnione. E1-T02 nadal wymaga adopcji rzeczywistych praw i danych w hoście.
@@ -659,3 +669,4 @@ Upływ 14 dni lub limit 50 USD zamyka możliwość nowych płatnych zadań, tak�
 | 8 | 2026-11-12 | DEC-05: właściciel wybiera osobno zlecane etapy z własną weryfikacją po każdym. Full Autopilot wewnątrz bieżącego etapu; brak automatycznego przejścia do etapu 2. Rozdzielono odbiór, akceptację i GO; wspólne 14 dni/50 USD bez resetu lub pauzy. Specyfikacja §4–5 i 19 tasków zachowane; bez uruchomienia etapu 1 i bez implementacji. |
 | 9 | 2026-11-12 | DEC-06: właściciel zleca wyłącznie etap 1 w Full Autopilot i wybiera istniejący klucz. Rozpoczęto źródłowy onboarding AQC-BASE-001/002 oraz przygotowanie zależności. Etap 1 W_TOKU; etap 2 bez zlecenia; brak zasobów, płatnych prób i odbioru live. |
 | 10 | 2026-11-12 | DEC-07: zapisano zgodę na #1061, skuteczny i zweryfikowany G1/main oraz faktyczne komponenty CIC/kontraktów/SG2. Rozpoczęto kontroler; ujawniono zależność kontynuacji dowodów źródła. Nadal brak aktywacji QA, wydatków API pilotażu, zasobów/grantów i odbioru etapu 1; bez etapu 2. Zamrożone §4–5, referencja wykonawcza rewizji 8 i limity zachowane. |
+| 11 | 2026-11-13 | DEC-08: właściciel zaakceptował dokładną propozycję #1076/68f0fbd1. Regułę scalono w 711c336e po pełnych testach źródła; kontrole wynikowego main W_TOKU. Zapis decyzji jest aktualizacją wykonawczą, bez zmiany zamrożonej specyfikacji, rewizji wykonawczej 8 i granicy etapu 1. |
