@@ -39,7 +39,9 @@ export function organisationLifecycleSdkPredecessor(current,historical,{projectK
  assert.equal(a.defaultRootImplementation,'1.0.0-candidate.16');assert.equal(a.optionalRootImplementation,'1.0.0-candidate.23')
  assert.deepEqual(a.optionalOperations,['organisation.onboarding.read','organisation.company.lookup','organisation.slug.check','organisation.procurement.write','organisation.invitation.create','organisation.invitation.accept','organisation.activation.read','organisation.access.synchronise'])
  for(const flag of ['runtimeOptedIn','sqlInstalled','permissionsChanged','providerCallsPerformed','deploymentPerformed'])assert.equal(a[flag],false,'source only '+flag)
- assert.equal(a.producer.projectKey,'ARCHITECTURE');assert.equal(a.producer.taskId,a.taskId);assert.equal(a.producer.pullRequest,983);assert(/^[a-f0-9]{40}$/.test(a.producer.sourceSha))
+ equalKeys(a.producer,['projectKey','taskId','pullRequest','sourceSha'],'closed lifecycle source producer')
+ map(a.sdkDigests,'current SDK digests');map(a.optionalPackageDigests,'optional package digests')
+ assert.equal(a.producer.projectKey,'ARCHITECTURE');assert.equal(a.producer.taskId,a.taskId);assert(Number.isSafeInteger(a.producer.pullRequest)&&a.producer.pullRequest>0,'actual lifecycle source PR');assert(/^[a-f0-9]{40}$/.test(a.producer.sourceSha))
  equalKeys(a.consumerSourceDigests,['ARCHITECTURE','SG2','SRM'],'joint current consumers')
  const all={}
  for(const[label,files]of Object.entries({sdk:a.sourceDigests,tests:a.compatibilityTestSourceDigests,...a.consumerSourceDigests,preserved:a.preservedSourceDigests})){
@@ -67,12 +69,13 @@ export function organisationLifecycleSdkPredecessor(current,historical,{projectK
   equalKeys(receipt,['schemaVersion','projectKey','taskId','acceptanceId','sourceRecordSha256','platformVersion','scope','runtimeOptedIn'],'closed '+owner+' source adoption')
   assert.deepEqual(receipt,{schemaVersion:'1.0',projectKey:owner,taskId:binding.taskId,acceptanceId:a.acceptanceId,sourceRecordSha256:acceptedRecordSha256,platformVersion:'1.37.0',scope:a.scope,runtimeOptedIn:false},'paired lifecycle receiver '+owner)
  }
- assert(Array.isArray(a.ownerInputs)&&a.ownerInputs.length>0,'actual owner inputs')
+ assert(Array.isArray(a.ownerInputs)&&a.ownerInputs.length>=3,'actual owner inputs')
+ assert.deepEqual([...new Set(a.ownerInputs.map(i=>i.projectKey))].sort(),Object.keys(projects).sort(),'all actual owner inputs')
  for(const input of a.ownerInputs){
   equalKeys(input,['projectKey','taskId','sourceSha','sourceDigests'],'closed owner input')
   assert(Object.hasOwn(projects,input.projectKey)&&typeof input.taskId==='string'&&/^[a-f0-9]{40}$/.test(input.sourceSha),'actual producer input')
   map(input.sourceDigests,'owner source input')
-  for(const[p,h]of Object.entries(input.sourceDigests))assert.equal(hash(historicalBytes(historical,input.sourceSha,p)),h,'published owner source '+p)
+  for(const[p,h]of Object.entries(input.sourceDigests)){assert.equal(all[p],h,'owner input belongs to current closed source '+p);assert.equal(hash(historicalBytes(historical,input.sourceSha,p)),h,'published owner source '+p)}
  }
  const hidden=new Set([recordPath,guardPath,...Object.values(projects).map(v=>v.path)])
  return Object.freeze({currentRecord:a,currentSourceDigests:Object.freeze(all),previousBytes:path=>{
