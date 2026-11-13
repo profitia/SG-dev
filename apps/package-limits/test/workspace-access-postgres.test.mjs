@@ -39,8 +39,14 @@ async function postgresFixture(){
 }
 
 test('genuine two-database commercial activation keeps operator assignments and current verified membership separate',{timeout:60000},async t=>{
- const db=await postgresFixture();t.after(()=>db.close())
- const control=new pg.Client({...db.config,database:'postgres'});await control.connect();t.after(()=>control.end())
+ const db=await postgresFixture(),connections=[]
+ t.after(async()=>{
+  const errors=[]
+  for(const close of connections.reverse())try{await close()}catch(error){errors.push(error)}
+  try{await db.close()}catch(error){errors.push(error)}
+  if(errors.length)throw new AggregateError(errors,'Isolated workspace fixture cleanup failed')
+ })
+ const control=new pg.Client({...db.config,database:'postgres'});connections.push(()=>control.end());await control.connect()
  await control.query('CREATE DATABASE neondb');await control.query('CREATE DATABASE platform_private')
  await control.query('CREATE ROLE profitia_access_owner NOLOGIN NOINHERIT NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE')
  await control.query('CREATE ROLE profitia_limits_owner NOLOGIN NOINHERIT NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE')
@@ -48,7 +54,7 @@ test('genuine two-database commercial activation keeps operator assignments and 
  await control.query('CREATE ROLE profitia_limits_identity_reader LOGIN NOINHERIT NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE')
  await control.query('GRANT CREATE ON DATABASE neondb TO profitia_limits_owner');await control.query('GRANT CREATE ON DATABASE platform_private TO profitia_access_owner')
  const limitsAdmin=new pg.Client({...db.config,database:'neondb'}),privateAdmin=new pg.Client({...db.config,database:'platform_private'})
- await limitsAdmin.connect();await privateAdmin.connect();t.after(()=>Promise.all([limitsAdmin.end(),privateAdmin.end()]))
+ connections.push(()=>limitsAdmin.end(),()=>privateAdmin.end());await limitsAdmin.connect();await privateAdmin.connect()
  await limitsAdmin.query('CREATE EXTENSION pgcrypto');await privateAdmin.query('CREATE EXTENSION pgcrypto')
  const key=randomBytes(32),uid=randomUUID(),oid=randomUUID(),elsewhere=randomUUID(),issuer='https://unified-drum-7191.clerk.accounts.dev'
  await limitsAdmin.query('BEGIN;SET LOCAL ROLE profitia_limits_owner');await limitsAdmin.query(limitsSql);await limitsAdmin.query(seedSql);await limitsAdmin.query(workspaceAccessSql);await limitsAdmin.query(workspaceEntitlementsSql);await limitsAdmin.query('INSERT INTO profitia_limits.workspace_entitlements_installation VALUES(true,$1,false)',[workspaceEntitlementsDigest])
@@ -72,7 +78,7 @@ test('genuine two-database commercial activation keeps operator assignments and 
  await privateAdmin.query("INSERT INTO profitia_profile.organisation_profiles(organisation_id,country,nip,slug,company,registry_ref,registry_version,industry,team_range,created_by)VALUES($1,'PL','1234563218','synthetic-workspace','{}','synthetic-basic','1','{}','{}',$2)",[oid,uid])
  await privateAdmin.query("INSERT INTO profitia_profile.organisation_user_context VALUES($1,$2)",[uid,oid])
  const limits=new pg.Pool({...db.config,database:'neondb',user:'profitia_limits_runtime',max:2}),identity=new pg.Pool({...db.config,database:'platform_private',user:'profitia_limits_identity_reader',max:2})
- t.after(()=>Promise.all([limits.end(),identity.end()]))
+ connections.push(()=>limits.end(),()=>identity.end())
  const peer={environment:'development',callerApplicationId:'identity-runtime-development',receiverApplicationId:'package-limits-development',
   sourceOrigin:'https://identity.example.test',targetOrigin:'https://limits-development.onrender.com',keyId:'registration-limits-v1',key:randomBytes(32),
   routes:[{method:'GET',path:'/v1/organisation-access',maximumRequestBytes:0,requireIdempotencyKey:false},{method:'GET',path:'/v1/organisation-entitlements',maximumRequestBytes:0,requireIdempotencyKey:false}],internalOrigins:[]}
@@ -96,7 +102,7 @@ test('genuine two-database commercial activation keeps operator assignments and 
  await write('draft.save',{versionId:initial.id,revision:initial.revision,snapshot:{name:'Synthetic full package',capabilities:['SEATS'],limits:[],price:null,currency:null}})
  const changed=(await store.transact(who(),s=>s.call('list',{}))).packages.find(p=>p.id===pkg.package_id).versions.find(v=>v.id===initial.id)
  await write('version.publish',{versionId:initial.id,revision:changed.revision})
- const today=new Date().toISOString().slice(0,10),end='2090-01-01'
+ const today=(await limitsAdmin.query("SELECT (clock_timestamp() AT TIME ZONE 'Europe/Warsaw')::date::text AS today")).rows[0].today,end='2090-01-01'
  const terms={contractStart:today,contractEnd:end,assignmentStart:today,assignmentEnd:end,usageStart:today,usageCycle:'MONTH',usageAnchor:'CALENDAR',billingStart:today,billingEnd:end,invoiceDate:today,dueDate:today,timezone:'Europe/Warsaw',basis:'DEVELOPMENT_TEST',reference:'SYNTHETIC_ONLY',purchaseType:'MANUAL_SUBSCRIPTION'}
  const assignment=await write('assignment.create',{organisationId:oid,organisationVersion:1,packageVersionId:initial.id,effectiveFrom:today,terms,overrides:[],reason:'Synthetic operator assignment'})
  assert.equal((await surface.read(await request())).status,'PENDING_PACKAGE') // A commercial package alone cannot fake E1 projection.
