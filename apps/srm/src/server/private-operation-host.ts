@@ -12,7 +12,7 @@ import {OperationDenied} from '@profitia/platform-contracts/operation-context';
 /** SDK authorized parties describe accepted user tokens, not alternate HTTP
  * ingress authorities. Only an authenticated peer receipt may adapt the SDK
  * input to SG2. A client-selected Host/URL must never select that path. */
-function bindSrmIdentity(authenticate:ReturnType<typeof createClerkIdentityAuthenticator>,identity:IdentityApplication){
+export function bindSrmIdentity(authenticate:ReturnType<typeof createClerkIdentityAuthenticator>,identity:IdentityApplication){
   const source=targets.environments.development.summaryPeerRead.sourceOrigin;
   const boundary=identity.requestBoundary&&identity.environment==='development'
     ?{...identity.requestBoundary,publicOrigins:identity.requestBoundary.publicOrigins.filter(origin=>origin!==source)}:identity.requestBoundary;
