@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict'
 import {createHash} from 'node:crypto'
 export const RESERVATION_RECORD="apps/architecture-lab/assistant-reservation-source.json"
-export const RESERVATION_BASE="3901ff157b6ae7b8906199b542be623230b4ebbe"
+export const RESERVATION_BASE="80875d8f0e9451cd9afd34e8baf2a8f6059bc064"
 export const RESERVATION_PATHS=Object.freeze([
  "apps/architecture-lab/test/market-calendar-source.test.mjs",
  "apps/architecture-lab/test/sdk-compatibility.test.mjs",
@@ -64,6 +64,7 @@ export const RESERVATION_RECEIPTS=Object.freeze([
  "apps/sg-runtime/assistant-ecr-precision-integration.json",
  "apps/sg-runtime/assistant-ecr-week-integration.json",
  "apps/sg-runtime/assistant-markdown-integration.json",
+ "apps/sg-runtime/assistant-notifications-integration.json",
  "apps/sg-runtime/assistant-send-arrow-integration.json",
  "apps/sg-runtime/development-integration.json",
  "apps/sg-runtime/market-calendar-integration.json",

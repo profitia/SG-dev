@@ -6,7 +6,7 @@
     "SG2": "SG2-ACG-EXACT-TOKEN-RESERVATION-CHATGPT-CONT-20261113"
   },
   "targetEnvironment": "development",
-  "previousSourceSha": "3901ff157b6ae7b8906199b542be623230b4ebbe",
+  "previousSourceSha": "80875d8f0e9451cd9afd34e8baf2a8f6059bc064",
   "sourceDigests": {
     "apps/architecture-lab/test/market-calendar-source.test.mjs": "db858cb922a86874a83a7b668504bc1098fc72cee66717a7caf231d196ebccb1",
     "apps/architecture-lab/test/sdk-compatibility.test.mjs": "d9358c304ac4f4f6ad287c671d742223c2d23c73f0cf8e39b578f1d34ac4a852",
@@ -31,7 +31,7 @@
     "packages/platform-contracts/readonly-miss-report/test/readonly-miss-report.test.mjs": "c797bb7ac6cca7bece2186d1c9ecc1e9c3e8aebdcc76046504edb63f681b6014",
     "packages/platform-contracts/src/assistant-usage.d.mts": "6ea477dd3b87b07accb3b185499fb4caca511c302ba5a0d815f36dc50d3cf309",
     "packages/platform-contracts/src/assistant-usage.mjs": "3487624d1c2868049cf0ae96476e225548583d1a47461e0a76c154b285762fe1",
-    "packages/platform-contracts/test/assistant-reservation-source.mjs": "cae44d2328187b82fed50e238fa109d8a48ef776101905d9b32dc94eb6c53f3b",
+    "packages/platform-contracts/test/assistant-reservation-source.mjs": "13810417ee1baee0e29776d850be5896a54f5dbdfea8251be4a8235ce151939e",
     "packages/platform-contracts/test/assistant-reservation-source.test.mjs": "57fd78548a76756ce3b1abf2e673ee0db1620d479761d4e2057543d875b1b88d",
     "packages/platform-contracts/test/assistant-usage.test.mjs": "ad0bf94d452ffa9374bc68ad8b623decc1ce54a7395f1724218dce44b12157bf",
     "packages/platform-contracts/test/private-operation-host.test.mjs": "cb7885af34cbdb8e017a40c22d0a3b712525a32b50d9e5ff90440dd7ecdc8154",
@@ -51,6 +51,7 @@
     "apps/sg-runtime/assistant-ecr-precision-integration.json": "a017c2b971e3c72606847264150715c983fa9483537d26be90144a64e0377ee7",
     "apps/sg-runtime/assistant-ecr-week-integration.json": "31ce8f1d7e5ca1d9c3aedf80f92e23fe0f1a93cb8f5fd5d003eb54a244859dd4",
     "apps/sg-runtime/assistant-markdown-integration.json": "27ff06aff8bc44592f0073732748834b7759182fa4307d901c7d63304381a38b",
+    "apps/sg-runtime/assistant-notifications-integration.json": "78d6d34fea2ab1ce18f8dd810cc9906452763e8539aedea685fccbe3881b42cb",
     "apps/sg-runtime/assistant-send-arrow-integration.json": "62c6af6817a022c31788d801cc0eac293a24b3f25d9e529d32b1bff4908fa230",
     "apps/sg-runtime/development-integration.json": "a3ed33e74582d2e0407677e090be0d82405e42a160c34afddb8fde47dff86540",
     "apps/sg-runtime/market-calendar-integration.json": "b66d88e724f84d513677554e77484bc29a2021b238ce28d4b7db7492aba9903c",
