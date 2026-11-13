@@ -112,3 +112,41 @@ controller-owner acceptance before activation. The earlier approved8c and
 C5ad proof from control97 are retained; the latter is historical after main537
 changed the controller. Fresh exact controlled/public and resulting-main
 gates remain mandatory. No deployment or mail was performed.
+
+
+## 2026-11-13 — immutable Source transport continuation (proposal)
+
+Status: PROPOSED / EXACT_SOURCE_TRANSPORT_AND_CI_GO_PENDING.
+
+Producer #1063: `896ac56ff3e1aa4918cae75ef17b1347811bd875`; exactly58 Architecture paths.
+Consumer #1064: `86eb1204ba553088dd71091e44ee7676d253c3ba`; exactly7 SG2 paths, six functional
+UI/test/lock versions unchanged from owner-approved4f560653. The new source
+projection base is the exact accepted PI source863d973d; authority main68867fe8
+and its accepted PI13, registration74/73/70, CIC, BSDC and all38 historical
+receipts remain preserved. No UI source is carried by the producer review.
+
+The previous plan0c38819c cannot update the immutable existing native policy's
+path definition. Proposed plan SHA256
+`e43b5d49abef12818956f2195f0b11225fa4aef28d4fb1f2895900f8d721be9c`
+retains the previous resources, costs, rights,15 series,4 publications, Mailgun
+purpose and release scope exactly. It adds only calendar-specific continuity012
+and the exact replacement/rollback owner recipe. Old policy rows/counters/calls
+remain retained; finite expiry, UNMETERED semantics and all unrelated scopes
+remain unchanged. Canonical Mailgun domain webhook names are clarified without
+changing the existing delivered/failed payload handling or recipients.
+
+The common PI routing assertions remain in identical order, now on the full
+isolated exact13 review; a separate test retains the frozen exact29 regression.
+Physical complete-source authentication still precedes every historical view.
+The earlier history-correction test keeps its immutable c5dc601c fixture and all
+assertions. The dependency-policy regression supplies complete-source context
+only after independent physical provenance verification. No generic exception,
+new credential scope or candidate JavaScript execution is admitted.
+
+Actual source validation: SourceHub133/133, source integrity2/2, build/typecheck
+PASS. Local proposed controller:277 cases verified (267 initial plus10 corrected
+fixture retries); actual-source full policy regression and public CI remain
+required. Synthetic fixture SHAs are not delivery candidates or owner approvals.
+Fresh exact owner acceptance, original controlled proof, public and resulting-main
+CI are mandatory before source acceptance or runtime activation. No SQL, role,
+retention, webhook, email, provider call or deployment is performed by this proposal.
