@@ -44,13 +44,12 @@ test('unverified peer requests never reach the current account, database or prov
 
 test('genuine own-account Root and signed registry receiver replay only the licensed minimum without another provider call',{timeout:60000},async t=>{
  const fs=await import('node:fs'),pg=(await import('pg')).default
- const {parsePhoneNumberWithError}=await import('libphonenumber-js/max')
  const {postgresFixture,clerkFixture}=await import('../../../../packages/platform-contracts/test/fixtures/identity-profile-postgres.mjs')
  const {createIdentityProvisioner}=await import('@profitia/platform-contracts/identity-provisioning')
  const {organisationLifecycleSchemaDigest}=await import('@profitia/platform-contracts/organisation-lifecycle')
  const {organisationOnboardingSchemaDigest}=await import('@profitia/platform-contracts/organisation-profile')
  const {organisationBootstrapSchemaDigest}=await import('@profitia/platform-contracts/organisation-bootstrap')
- const db=await postgresFixture({pg,phoneParser:parsePhoneNumberWithError});let audit:any
+ const db=await postgresFixture({pg,phoneParser:()=>assert.fail('Registry replay must not read or change a phone number')});let audit:any
  t.after(async()=>{await audit?.end();await db.close()})
  for(const name of ['007-organisation-onboarding.sql','008-organisation-create.sql','009-organisation-lifecycle.sql'])await db.admin.query(fs.readFileSync(new URL('../../../../packages/platform-contracts/migrations/profile/'+name,import.meta.url),'utf8'))
  await db.admin.query("INSERT INTO profitia_access.applications VALUES('srm-onboarding-development','ACTIVE',NULL)")
