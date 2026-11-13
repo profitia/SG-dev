@@ -129,19 +129,20 @@ test('tampered current file, receipt, historical digest, engine and rollback evi
 })
 test('every changed SG2 source in the candidate or resulting main has an exact additive binding',()=>{
  const r=receipt(),a=r.pciSmartPreparationCompatibility
- const live=procurementInsightsLiveAcceptancePredecessor(current,historical)
  const recurring=recurringSourcePredecessor(current,historical)
  const reservation=recurring?.reservation
+ const acceptedCurrent=reservation?.previousBytes??current
+ const live=procurementInsightsLiveAcceptancePredecessor(acceptedCurrent,historical)
  const week=recurring?.successor
  const completion=recurring?.completion
- const calendar=marketCalendarSourcePredecessor(completion?.previousBytes??current,historical)
- const precision=assistantEcrPrecisionPredecessor(current,historical)
- const ecr=assistantEcrPredecessor(current,historical)
- const arrow=assistantSendArrowPredecessor(current,historical)
- const registration=registrationStageOnePredecessor(current,historical)
- const m2=assistantM2Predecessor(current,historical)
- const pi=procurementInsightsPredecessor(current,historical)
- const markdown=assistantMarkdownPredecessor(current,historical)
+ const calendar=marketCalendarSourcePredecessor(completion?.previousBytes??acceptedCurrent,historical)
+ const precision=assistantEcrPrecisionPredecessor(acceptedCurrent,historical)
+ const ecr=assistantEcrPredecessor(acceptedCurrent,historical)
+ const arrow=assistantSendArrowPredecessor(acceptedCurrent,historical)
+ const registration=registrationStageOnePredecessor(acceptedCurrent,historical)
+ const m2=assistantM2Predecessor(acceptedCurrent,historical)
+ const pi=procurementInsightsPredecessor(acceptedCurrent,historical)
+ const markdown=assistantMarkdownPredecessor(acceptedCurrent,historical)
  // Like the original receipt, the closed, validated build manifest declares
  // the source graph rather than containing a self-referential file hash.
  const changed=candidateSourcePaths(new URL('../../../',import.meta.url)).filter(file=>(!live||file!==PI_LIVE_ACCEPTANCE_RECORD)&&(!calendar||file!==MARKET_CALENDAR_CONSUMER_RECORD)&&(!completion||file!=='apps/sg-runtime/procurement-insights-completion-integration.json')&&(!week||file!==WEEK_RECEIPT)&&(!recurring||file!=='apps/sg-runtime/private-recurring-source-adoption.json')&&(!precision||file!==PRECISION_RECEIPT)&&(!ecr||file!==ECR_RECEIPT)&&(!arrow||file!==SEND_ARROW_RECEIPT)&&(!registration||file!==REGISTRATION_ENTRY_PATH)&&(!m2||file!=='apps/sg-runtime/assistant-context-integration.json')&&(!pi||file!=='apps/sg-runtime/procurement-insights-integration.json')&&(!markdown||file!=='apps/sg-runtime/assistant-markdown-integration.json'))
