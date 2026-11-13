@@ -17,7 +17,12 @@ const uuid=v=>typeof v==='string'&&/^[a-f0-9-]{36}$/.test(v)
 const safePath=p=>typeof p==='string'&&/^[a-zA-Z0-9_./-]+$/.test(p)&&!p.startsWith('/')&&p.split('/').every(x=>x&&x!=='.'&&x!=='..')
 const stamp=v=>typeof v==='string'&&Number.isFinite(Date.parse(v))&&new Date(v).toISOString()===v
 const rootEnvironment=Object.freeze({PATH:'/usr/sbin:/usr/bin:/sbin:/bin',LANG:'C.UTF-8',TZ:'UTC'})
-const command=(file,args)=>{const r=spawnSync(file,args,{env:rootEnvironment,encoding:'utf8',timeout:15000,maxBuffer:65536});require(!r.error&&r.status===0,'ISOLATION_SETUP_FAILED');return r.stdout.trim()}
+const command=(file,args,timeout=15000)=>{
+ const r=spawnSync(file,args,{env:rootEnvironment,encoding:'utf8',timeout,maxBuffer:65536})
+ if(r.error||r.status!==0)throw Object.assign(Error('Executor isolation setup failed'),{code:'ISOLATION_SETUP_FAILED',
+  setup:{program:path.basename(file),operation:args[1]==='drop-sudo'?'socket-protection':path.basename(args[0]??''),exitCode:r.status,signal:r.signal,errorCode:r.error?.code??null}})
+ return r.stdout.trim()
+}
 const wait=ms=>new Promise(resolve=>setTimeout(resolve,ms))
 export function readPrivilegeState(status,uid,groups){
  const values=new Map(status.trim().split('\n').map(l=>l.split(/:\s+/)))
@@ -146,7 +151,10 @@ export async function runIsolatedExecutor({manifest,regression,projection,toolPa
   require(command('/usr/bin/git',['-C',helper,'rev-parse','HEAD'])===EXECUTOR_TOOL.isolationHelperCommit
    &&command('/usr/bin/git',['-c','core.fsmonitor=false','-c','core.hooksPath=/dev/null','-C',helper,'status','--porcelain'])==='','TRUSTED_ISOLATION_HELPER_REQUIRED')
   const identity=command('/usr/bin/setpriv',[...plan.privilegeArguments,'--',process.execPath,'-e','console.log(JSON.stringify({userId:process.getuid(),primaryGroupId:process.getgid(),supplementaryGroupIds:process.getgroups()}))'])
-  command(process.execPath,[helperEntry,'drop-sudo','--root-phase','--user',username,'--group','sudo','--runner-credentials',identity])
+  // The upstream implementation verifies every privileged /run socket using
+  // real credentials. A hosted VM can contain hundreds of them; retain the
+  // check and allow its bounded setup time rather than skipping protection.
+  command(process.execPath,[helperEntry,'drop-sudo','--root-phase','--user',username,'--group','sudo','--runner-credentials',identity],120000)
   const privileges=JSON.parse(command('/usr/bin/setpriv',[...plan.privilegeArguments,'--',process.execPath,'-e',
    'const inspect='+readPrivilegeState.toString()+';const fs=require("node:fs");console.log(JSON.stringify(inspect(fs.readFileSync("/proc/self/status","utf8"),process.getuid(),process.getgroups())))']))
   require(privileges.uid===uid&&privileges.groups.length===0&&privileges.safe===true,'PRIVILEGE_ISOLATION_FAILED')
