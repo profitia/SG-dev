@@ -182,3 +182,37 @@ test('accepted recurring transport continuation preserves its complete29 owner r
   fs.appendFileSync(p,'UNREVIEWED');assert.throws(()=>reviewedRecurringConsumerPaths(root,sourceReview));fs.writeFileSync(p,bytes);
  },{candidateSha:'82bcb78813937331d7822a96c5319b26e788abe1',baseSha:'f8f4b7f7f36357186a01ee54c7d5511c46ef5ed1',full:true});
 });
+
+const liveReviewFixture={candidateSha:'68867fe8c54b8f3b2efadf512d37d8925b9657e5',baseSha:'08792452867f486580874857b3a5aaae10de9170',full:true}
+test('accepted live notification review retains exact SG2 and SRM owner routing across later main changes',()=>{
+ withRecurringReviewFixture(({root,baseSha,candidateSha,git,readReceipt})=>{
+  const sourceReview={baseSha,candidateSha},paths=reviewedRecurringConsumerPaths(root,sourceReview)
+  assert.equal(paths.get('apps/sg-runtime/components/procurement-insights/workspace.tsx'),'SG2')
+  assert.equal(paths.get('apps/srm/scripts/supplier-location-admission.integration.test.mjs'),'SRM')
+  assert(!paths.has('apps/platform-source-hub/src/server.mjs'));assert(!paths.has('apps/srm/src/server/unreviewed.ts'))
+  for(const authoritySha of [baseSha,candidateSha,git(repositoryRoot,'rev-parse','origin/main')]){
+   git(root,'update-ref','refs/remotes/origin/main',authoritySha)
+   assert.deepEqual(reviewedRecurringConsumerPaths(root,sourceReview),paths)
+  }
+  const called=[],changedPaths=git(root,'diff','--name-only',baseSha,candidateSha).split('\n')
+  validateRouting({changedPaths,repositoryRoot:root,readReceipt,sourceReview,runGovernance:projectKey=>{called.push(projectKey);return {verdict:'PASS'}}})
+  assert.deepEqual([...new Set(called)].sort(),['ARCHITECTURE','SG2','SRM'])
+  assert.throws(()=>reviewedRecurringConsumerPaths(root))
+  assert.throws(()=>reviewedRecurringConsumerPaths(root,{baseSha,candidateSha:'a'.repeat(40)}))
+  const wrongReceipt=p=>{const r=readReceipt(p);r.sourceHubApiPathCompatibility.apiPathOptedIn=true;return r}
+  assert.throws(()=>validateRouting({changedPaths,repositoryRoot:root,readReceipt:wrongReceipt,sourceReview,runGovernance:()=>assert.fail('Altered receipt must not reach owner gate')}))
+ },liveReviewFixture)
+})
+test('accepted live routing rejects every changed current source and altered instruction input',()=>{
+ withRecurringReviewFixture(({root,baseSha,candidateSha,readReceipt})=>{
+  const sourceReview={baseSha,candidateSha}
+  assert(reviewedRecurringConsumerPaths(root,sourceReview).has('apps/sg-runtime/components/procurement-insights/workspace.tsx'))
+  const paths=[...Object.keys(readReceipt('apps/sg-runtime/procurement-insights-live-acceptance.json').sourceDigests),'AGENTS.md','docs/agent-instructions/bsdc-launcher-v1.1.md']
+  for(const p of paths){
+   const f=path.join(root,p),before=fs.readFileSync(f)
+   fs.appendFileSync(f,'UNREVIEWED_SOURCE')
+   assert.throws(()=>reviewedRecurringConsumerPaths(root,sourceReview),p)
+   fs.writeFileSync(f,before)
+  }
+ },liveReviewFixture)
+})
