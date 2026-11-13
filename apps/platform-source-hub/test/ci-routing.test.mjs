@@ -114,8 +114,9 @@ test('private recurring source routing validates the complete actual candidate b
  const live=fs.existsSync(path.join(repositoryRoot,'apps/sg-runtime/procurement-insights-live-acceptance.json'))
  assert.equal(paths.get('apps/sg-runtime/components/procurement-insights/'+(live?'workspace':'reports')+'.tsx'),'SG2')
  const continuation=fs.existsSync(path.join(repositoryRoot,'packages/platform-contracts/test/recurring-consent-transport-source.json'))
- const includesSrm=!live&&(!continuation||readReceipt('packages/platform-contracts/test/recurring-consent-transport-source.json').reviewedPaths.includes('apps/srm/scripts/private-host.integration.test.mjs'))
- if(includesSrm)assert.equal(paths.get('apps/srm/scripts/private-host.integration.test.mjs'),'SRM');else assert(!paths.has('apps/srm/scripts/private-host.integration.test.mjs'))
+ const srmPath=live?'apps/srm/scripts/supplier-location-admission.integration.test.mjs':'apps/srm/scripts/private-host.integration.test.mjs'
+ const includesSrm=live?Object.hasOwn(readReceipt('apps/sg-runtime/procurement-insights-live-acceptance.json').sourceDigests,srmPath):(!continuation||readReceipt('packages/platform-contracts/test/recurring-consent-transport-source.json').reviewedPaths.includes(srmPath))
+ if(includesSrm)assert.equal(paths.get(srmPath),'SRM');else assert(!paths.has(srmPath))
  assert(!paths.has('apps/platform-source-hub/src/server.mjs'));assert(!paths.has('apps/srm/src/server/unreviewed.ts'))
  const called=[],changedPaths=execFileSync('git',['diff','--name-only',baseSha,candidateSha],{cwd:repositoryRoot,encoding:'utf8'}).trim().split('\n')
  validateRouting({changedPaths,repositoryRoot,readReceipt,sourceReview:{baseSha,candidateSha},runGovernance:(projectKey)=>{called.push(projectKey);return {verdict:'PASS'}}})

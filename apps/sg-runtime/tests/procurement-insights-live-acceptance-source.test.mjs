@@ -8,7 +8,7 @@ const historical=(sha,p)=>{const key=sha+':'+p;if(!cache.has(key))cache.set(key,
 test('all current correction bytes precede exact immutable PI, Oil, Calendar and SDK history',()=>{
  const view=procurementInsightsLiveAcceptancePredecessor(current,historical);assert(view);
  for(const p of [...PI_LIVE_ACCEPTANCE_PATHS,...Object.keys(view.manifest.preservedReceipts)])assert.throws(()=>procurementInsightsLiveAcceptancePredecessor(f=>f===p?Buffer.concat([current(f),Buffer.from('UNACCEPTED')]):current(f),historical),p);
- for(const p of ['apps/insights-runtime/src/host.mjs','apps/sg-runtime/components/procurement-insights/workspace.tsx'])assert.deepEqual(view.previousBytes(p),historical(PI_LIVE_ACCEPTANCE_BASE,p));
+ for(const p of ['apps/insights-runtime/src/host.mjs','apps/sg-runtime/components/procurement-insights/workspace.tsx','apps/srm/scripts/supplier-location-admission.integration.test.mjs'])assert.deepEqual(view.previousBytes(p),historical(PI_LIVE_ACCEPTANCE_BASE,p));
  assert.equal(procurementInsightsLiveAcceptancePredecessor(view.previousBytes,historical),null);
 });
 test('receipt refuses widened authority, unknown metadata, source omissions and unreadable data',()=>{
