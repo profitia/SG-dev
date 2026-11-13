@@ -1010,3 +1010,29 @@ exact-source public/controlled and resulting-main CI. Existing bounded SG-only
 release permission remains separate and adds no grant, schema, secret, provider
 call, email, Oil publication or SRM deployment. No historical digest is changed
 to manufacture PASS.
+
+## CIC Stage 1 engineering-source CI — proposal (2026-11-13)
+
+**PROPOSED_ONLY / OWNER_CI_POLICY_ACCEPTANCE_PENDING.** The Stage 1 commission
+and exact five-file G1 decision #1061 do not grant generic AQC source admission.
+Automatic review rejected #1074 merge for missing full mandatory CI; the
+unchanged main controller independently rejects its three changed paths.
+
+The separate four-file proposal adds `AQC-STAGE1-SOURCE-CI-20261113`: only the
+27 exact AQC source/test and accompanying PDR paths, on the existing internal
+Stage 1 control branch, before 2026-11-27T23:59:59.000Z. At least one AQC file is
+required. Regular100644/actual-owner/ALIGNED, complete exact-head/base/Git checks,
+frozen accepted §§4–5 and the no-Stage2 header remain mandatory. No workflow,
+manifest/lock, dependency, SQL, app, shared contract or other Canon path is
+admitted. Credential scope, main-only execution and every existing review remain
+unchanged. This is engineering-source CI, not an autonomous repair-agent mandate.
+
+See [the complete proposal](../evidence/2026-11-13-assistant-quality-stage1-source-ci-admission.md).
+Owner approval of its exact version and normal full bootstrap/protected/main
+checks precede activation. It cannot self-admit. Afterwards obtain the actual
+current #1074 exact-source proof and explicitly run all required integration
+checks, because AQC path filters do not trigger that workflow automatically.
+No merge may rely only on its QA/governance checks. Verify resulting main.
+No data/service/resource, model-budget start, runtime, repair promotion,
+deployment or Stage 2 activation follows from this policy decision. Retire only
+the new class on rollback/expiry; preserve original grants and other work.
