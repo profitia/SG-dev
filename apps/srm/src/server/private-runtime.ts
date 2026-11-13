@@ -1,3 +1,4 @@
+import {organisationContextConfiguration,createSrmOrganisationContextReader} from './organisation-context'
 import {projectSrmReportDataResponse} from './report-output'
 import {readCompanySourcePolicy} from './company-source-policy'
 import nipTargets from '../../deployment/krs-nip-development.json'
@@ -34,6 +35,7 @@ import {createSrmSupplierRequestOperationHost} from './supplier-request-host'
 type EnvironmentInput = Readonly<Record<string, string | undefined>>
 export type SrmReportRuntime = Readonly<{ provider: 'legacy_demo' } | {
   provider: 'clerk'; executor: OperationExecutor<PoolClient>; defaultOrganisationId: string
+  currentOrganisation?:(request:Request)=>Promise<Readonly<{userId:string;organisationId:string|null;expiresAt:string}>>
   supplierRequest?: Readonly<{ executor: OperationExecutor<PoolClient> }>
   supplierApi?: SrmSupplierApi
   reportAdmission?:SrmReportAdmissionRuntime
@@ -44,6 +46,7 @@ export type SrmReportRuntime = Readonly<{ provider: 'legacy_demo' } | {
 }>
 export type PrivateConfiguration = Readonly<{
   provider: 'clerk'; databaseUrl: string; application: Application; identity: IdentityApplication
+  organisationContext?:Readonly<{schemaDigest:string}>
   binding: AccessStoreBinding; module: { id: 'supplier_report'; schemaDigest: string; auditSchemaDigest: string }
   supplierRequest?: Readonly<{ configurationVersion: string; baseSchemaDigest: string; externalSchemaDigest: string; commandBoundaryDigest: string }>
 }>
@@ -61,12 +64,14 @@ export function readSrmPrivateReportConfiguration(env: EnvironmentInput = proces
     return Object.freeze({ provider: 'legacy_demo' })
   }
   if (identity.application.environment !== 'development') unavailable()
+  const organisationContext=organisationContextConfiguration(env)
   const pilot=srmKrsPilotTarget(env)
+  if(organisationContext&&pilot)unavailable()
   const target = {...targets.environments.development,...(pilot?{serviceId:pilot.render.serviceId!}:{})}
   if (env.PROFITIA_OPERATION_CONFIGURATION_VERSION !== targets.configurationVersion
     || env.RENDER_SERVICE_ID !== target.serviceId || !/^[a-f0-9]{40}$/.test(env.RENDER_GIT_COMMIT ?? '')
     || (env.APP_ENV !== undefined && env.APP_ENV !== identity.application.environment)
-    || !uuid.test(env.PROFITIA_FIXED_ORGANISATION_ID ?? '')
+    || (!organisationContext&&!uuid.test(env.PROFITIA_FIXED_ORGANISATION_ID ?? ''))
     || !env.SRM_DEMO_SESSION_SECRET || env.SRM_DEMO_SESSION_SECRET.length < 32) unavailable()
   const input = env.PROFITIA_PRIVATE_DATABASE_URL
   if (!input || input !== input.trim()) unavailable()
@@ -94,12 +99,12 @@ export function readSrmPrivateReportConfiguration(env: EnvironmentInput = proces
       || !identity.application.authorizedParties.includes(peer.targetOrigin)) unavailable()
     bearerPeerReads = [...(bearerPeerReads ?? []), peer]
   }
-  const config: PrivateConfiguration = { provider: 'clerk', databaseUrl: url.toString(), identity: { ...identity.application,
+  const config: PrivateConfiguration = { ...(organisationContext?{organisationContext}:{}), provider: 'clerk', databaseUrl: url.toString(), identity: { ...identity.application,
     ...(bearerPeerReads ? { bearerPeerReads } : {}),
     requestBoundary: { publicOrigins: [...identity.application.authorizedParties], internalOrigins: ['http://0.0.0.0:10000', 'https://0.0.0.0:10000'] } },
-    application: { appId: 'srm', profileId: 'PORR_SUITE', environment: 'development',
+    application: { appId: 'srm', profileId: organisationContext?'SPENDGURU_SAAS':'PORR_SUITE', environment: 'development',
       deploymentId: `${target.serviceId}:${env.RENDER_GIT_COMMIT}`, configurationVersion: targets.configurationVersion,
-      identityIssuer: identity.application.issuer, organisationId: env.PROFITIA_FIXED_ORGANISATION_ID!,
+      identityIssuer: identity.application.issuer, organisationId: organisationContext?null:env.PROFITIA_FIXED_ORGANISATION_ID!,
       operations: ['supplier.report.read', 'supplier.report.project', 'supplier.report.export'], features: ['supplier_report'] },
     binding: { applicationId: 'srm', environment: 'development', projectId: target.projectId,
       branchId: target.branchId, databaseName: target.databaseName, role: target.runtimeRole, schemaDigest: target.accessSchemaDigest },
@@ -258,7 +263,10 @@ export function getSrmReportRuntime(env: EnvironmentInput = process.env): SrmRep
     krsName=bundle
     if(env.SRM_KRS_NIP_ENABLED==='true')krsNip=bundle.then(value=>value.nip)
   }
-  const runtime=Object.freeze({...baseRuntime,...(krsName?{krsName}:{}),...(krsNip?{krsNip}:{})})
+  const organisationReader=config.organisationContext?createSrmOrganisationContextReader({pool,auditPool,clerk,application:config.application,identity:config.identity,binding:config.binding,schemaDigest:config.organisationContext.schemaDigest}):undefined
+  const runtime=Object.freeze({...baseRuntime,...(krsName?{krsName}:{}),...(krsNip?{krsNip}:{}),
+    get defaultOrganisationId(){if(organisationReader)unavailable();return config.application.organisationId!},
+    ...(organisationReader?{currentOrganisation:(request:Request)=>organisationReader.read(request)}:{})})
   globalThis.__srmPrivateReportRuntime__ = { key, runtime }
   return runtime
 }

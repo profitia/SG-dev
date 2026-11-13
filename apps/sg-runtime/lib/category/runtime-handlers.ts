@@ -1,3 +1,4 @@
+import {bindSg2RequestRuntime} from '@/lib/platform/organisation-context'
 import type { NextRequest } from 'next/server'
 import { getSg2SelectionRuntime, type Sg2SelectionRuntime } from '@/lib/platform/private-runtime'
 import { CATEGORY_HEADERS } from './operation-contract'
@@ -9,7 +10,7 @@ export function createRuntimeCategoryCollectionHandlers(resolveRuntime: () => Sg
   legacy = createLegacyCategoryCollectionHandlers()) {
   const handle = (method: 'GET' | 'POST') => async (request: NextRequest): Promise<Response> => {
     try {
-      const runtime = resolveRuntime()
+      const runtime=await bindSg2RequestRuntime(resolveRuntime(),request)
       if (runtime.provider === 'legacy_demo') return await legacy[method](request)
       if (runtime.provider !== 'clerk' || !runtime.category) return unavailable()
       return await createOperationCategoryCollectionHandlers(runtime.category.executor, runtime.defaultOrganisationId)[method](request)
@@ -21,7 +22,7 @@ export function createRuntimeCategoryDetailHandlers(resolveRuntime: () => Sg2Sel
   legacy = createLegacyCategoryDetailHandlers()) {
   const handle = (method: 'GET' | 'PATCH') => async (request: NextRequest, route?: CategoryRouteContext): Promise<Response> => {
     try {
-      const runtime = resolveRuntime()
+      const runtime=await bindSg2RequestRuntime(resolveRuntime(),request)
       if (runtime.provider === 'legacy_demo') return await legacy[method](request, route)
       if (runtime.provider !== 'clerk' || !runtime.category) return unavailable()
       return await createOperationCategoryDetailHandlers(runtime.category.executor, runtime.defaultOrganisationId)[method](request, route)

@@ -51,21 +51,52 @@ export function readAssistantConfiguration(env:Env){
 }
 export type AssistantConfiguration=NonNullable<ReturnType<typeof readAssistantConfiguration>>
 const pooled=(input:string,schema:string)=>{const u=new URL(input);u.searchParams.set('schema',schema);u.searchParams.set('connection_limit','1');u.searchParams.set('pool_timeout','3');u.searchParams.set('connect_timeout','10');u.searchParams.set('sslaccept','strict');return u.href}
+const resourceConfigurations=new WeakMap<object,AssistantConfiguration>()
+export function createSg2AssistantResources(config:AssistantConfiguration){
+ const historyDb=new PrismaClient({datasources:{db:{url:pooled(config.historyUrl,'sg2_assistant_history')}}})
+ const usageDb=new PrismaClient({datasources:{db:{url:pooled(config.usageUrl,'profitia_limits')}}})
+ const usage=createAssistantUsageStore({query:adaptAssistantUsageQuery(queryFor(usageDb)),commandKey:config.usageKey,schemaDigest:targets.usage.schemaDigest})
+ const history=createAssistantHistory({query:queryFor(historyDb),commandKey:config.historyKey,schemaDigest:targets.history.schemaDigest})
+ const prune=()=>{void historyDb.$queryRawUnsafe('SELECT sg2_assistant_history.prune()').catch(()=>{})}
+ prune();const retention=setInterval(prune,10*60*1000);retention.unref()
+ const model=createAssistantModel(new OpenAI({apiKey:config.openaiKey,baseURL:'https://api.openai.com/v1',organization:null,project:null,maxRetries:0,timeout:60000}),usage)
+ const shared=Object.freeze({history,usage,model,
+  async ready(){
+   const h=await queryFor(historyDb)('SELECT sg2_assistant_history.descriptor() AS binding'),b=h.rows[0]?.binding as Record<string,unknown>|undefined
+   if(h.rows.length!==1||!b||b.applicationId!=='spendguru'||b.environment!=='development'||b.projectId!==targets.history.projectId
+    ||b.branchId!==targets.history.branchId||b.databaseName!=='neondb'||b.runtimeRole!==targets.history.runtimeRole||b.schemaDigest!==targets.history.schemaDigest)return unavailable()
+   const u=await queryFor(usageDb)(`SELECT current_database() AS database_name,current_user AS role,session_user AS login,
+    r.rolsuper,r.rolbypassrls,r.rolcreatedb,r.rolcreaterole,r.rolinherit,
+    pg_has_role(session_user,'profitia_limits_owner','MEMBER') AS owner_member,
+    to_regprocedure('profitia_limits.assistant_usage(text,text)') IS NOT NULL AS installed,
+    has_function_privilege(session_user,'profitia_limits.assistant_usage(text,text)','EXECUTE') AS executable
+    FROM pg_roles r WHERE r.rolname=current_user`),row=u.rows[0]
+   if(u.rows.length!==1||row.database_name!=='neondb'||row.role!==targets.usage.runtimeRole||row.login!==targets.usage.runtimeRole
+    ||['rolsuper','rolbypassrls','rolcreatedb','rolcreaterole','rolinherit','owner_member'].some(k=>row[k]!==false)||row.installed!==true||row.executable!==true)return unavailable()
+  },
+ })
+ resourceConfigurations.set(shared,config)
+ return shared
+}
+export type AssistantResources=ReturnType<typeof createSg2AssistantResources>
+
 export function createSg2AssistantRuntime(config:AssistantConfiguration,options:{
+ organisationId?:string;resources?:AssistantResources
  prisma:PrismaClient;auditPrisma:PrismaClient;clerk:ClerkIdentityClient;application:Application;identity:PublicIdentityApplication;binding:AccessStoreBinding
  market?:{executor:OperationExecutor<Prisma.TransactionClient>;series:(selection:{seriesName:string;range:BenchmarkRangePreset})=>Promise<unknown>}
  forecast?:Extract<Sg2SelectionRuntime,{provider:'clerk'}>['forecastRead']
 }){
  const {prisma,auditPrisma,clerk,identity,binding}=options
- if(options.application.environment!=='development'||options.application.appId!=='spendguru'||options.application.profileId!=='PORR_SUITE'
-  ||!options.application.organisationId||prisma===auditPrisma)return unavailable()
- const organisationId=options.application.organisationId
+ const application=options.application,saas=application.profileId==='SPENDGURU_SAAS'
+ const organisationId=saas?options.organisationId:application.organisationId
+ if(application.environment!=='development'||application.appId!=='spendguru'||!['PORR_SUITE','SPENDGURU_SAAS'].includes(application.profileId)
+  ||saas&&application.organisationId!==null||!saas&&options.organisationId!==undefined&&options.organisationId!==application.organisationId
+  ||!organisationId||!/^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(organisationId)||prisma===auditPrisma)return unavailable()
  // Reuse the existing three business + one audit connections to central E1.
  // Each new product role gets one connection and execute-only functions.
- const historyDb=new PrismaClient({datasources:{db:{url:pooled(config.historyUrl,'sg2_assistant_history')}}})
- const usageDb=new PrismaClient({datasources:{db:{url:pooled(config.usageUrl,'profitia_limits')}}})
- const usage=createAssistantUsageStore({query:adaptAssistantUsageQuery(queryFor(usageDb)),commandKey:config.usageKey,schemaDigest:targets.usage.schemaDigest})
- const history=createAssistantHistory({query:queryFor(historyDb),commandKey:config.historyKey,schemaDigest:targets.history.schemaDigest})
+ const shared=options.resources??createSg2AssistantResources(config)
+ if(resourceConfigurations.get(shared)!==config)return unavailable()
+ const {history,usage,model}=shared
  const executor=createAssistantOperationHost<Prisma.TransactionClient>({
   application:{...options.application,features:['assistant'],operations:['assistant.converse','assistant.history.read','assistant.history.write'],configurationVersion:targets.configurationVersion},binding,
   assistantSchemaDigest:targets.accessSchemaDigest,usage,independentQuery:queryFor(auditPrisma),
@@ -90,23 +121,9 @@ export function createSg2AssistantRuntime(config:AssistantConfiguration,options:
   if(!(result.value instanceof Response)||!result.value.ok)return unavailable()
   return result.value.json()
  }}),...createAssistantSourceAdapters({enabled:config.multiSource,economicCalendarEnabled:config.economicCalendar,organisationId,forecast:options.forecast,market:options.market})]})
- const prune=()=>{void historyDb.$queryRawUnsafe('SELECT sg2_assistant_history.prune()').catch(()=>{})}
- prune();const retention=setInterval(prune,10*60*1000);retention.unref()
- const model=createAssistantModel(new OpenAI({apiKey:config.openaiKey,baseURL:'https://api.openai.com/v1',organization:null,project:null,maxRetries:0,timeout:60000}),usage)
+
  return Object.freeze({organisationId,history,gateway,model,usage,
-  async ready(){
-   const h=await queryFor(historyDb)('SELECT sg2_assistant_history.descriptor() AS binding'),b=h.rows[0]?.binding as Record<string,unknown>|undefined
-   if(h.rows.length!==1||!b||b.applicationId!=='spendguru'||b.environment!=='development'||b.projectId!==targets.history.projectId
-    ||b.branchId!==targets.history.branchId||b.databaseName!=='neondb'||b.runtimeRole!==targets.history.runtimeRole||b.schemaDigest!==targets.history.schemaDigest)return unavailable()
-   const u=await queryFor(usageDb)(`SELECT current_database() AS database_name,current_user AS role,session_user AS login,
-    r.rolsuper,r.rolbypassrls,r.rolcreatedb,r.rolcreaterole,r.rolinherit,
-    pg_has_role(session_user,'profitia_limits_owner','MEMBER') AS owner_member,
-    to_regprocedure('profitia_limits.assistant_usage(text,text)') IS NOT NULL AS installed,
-    has_function_privilege(session_user,'profitia_limits.assistant_usage(text,text)','EXECUTE') AS executable
-    FROM pg_roles r WHERE r.rolname=current_user`),row=u.rows[0]
-   if(u.rows.length!==1||row.database_name!=='neondb'||row.role!==targets.usage.runtimeRole||row.login!==targets.usage.runtimeRole
-    ||['rolsuper','rolbypassrls','rolcreatedb','rolcreaterole','rolinherit','owner_member'].some(k=>row[k]!==false)||row.installed!==true||row.executable!==true)return unavailable()
-  },
+  ready:()=>shared.ready(),
   async run<T>(request:Request,operation:'assistant.converse'|'assistant.history.read'|'assistant.history.write',payload:Json,action:(context:Readonly<OperationContext>)=>Promise<T>){
    const result=await executor.execute({contractId:OPERATION_CONTRACT.id,contractVersion:OPERATION_CONTRACT.version,operation,
     organisationId:operation==='assistant.converse'?organisationId:null,resourceId:operation==='assistant.converse'?'assistant-turn':'assistant-history',payload,request},action)

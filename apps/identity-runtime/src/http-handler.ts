@@ -1,3 +1,10 @@
+import {PEER_OPERATION_HEADER} from '@profitia/platform-contracts/peer-operation'
+import {conversationThemeClientScript} from './account-visuals.js'
+import {organisationInvitationEntryClientScript} from './organisation-onboarding.js'
+import {organisationInvitationTokenHash} from '@profitia/platform-contracts/organisation-invitations'
+import {checkOrganisationConversationRequest} from './organisation-http.js'
+import type { OrganisationHttpSurface } from './organisation-http.js'
+import type { OrganisationDraftSurface } from './organisation-draft.js'
 import type { RegistrationSurface } from './registration.js'
 import type { CommunicationLanguageSurface } from './communication-language.js'
 import type { EmailSurface } from './email-runtime.js'
@@ -19,7 +26,7 @@ async function body(request: Request, maximum = 4096): Promise<unknown> {
   try { return JSON.parse(Buffer.concat(chunks).toString('utf8')) } catch { throw new BoundaryError(400, 'INVALID_JSON') }
 }
 /** A missing SDK/authority is an explicit health-only application, never an operational login. */
-export function createHttpHandler(boundary: SessionBoundary | null, account: AccountSurface | null = null, avatar: AssistantAvatarSurface | null = null, email: EmailSurface | null = null, language: CommunicationLanguageSurface | null = null, registration: RegistrationSurface | null = null, embedded: ((request: Request) => Promise<Response | null>) | null = null, salutation: AccountSalutationSurface | null = null, currentE1: CurrentE1Authority | null = null) {
+export function createHttpHandler(boundary: SessionBoundary | null, account: AccountSurface | null = null, avatar: AssistantAvatarSurface | null = null, email: EmailSurface | null = null, language: CommunicationLanguageSurface | null = null, registration: RegistrationSurface | null = null, embedded: ((request: Request) => Promise<Response | null>) | null = null, salutation: AccountSalutationSurface | null = null, currentE1: CurrentE1Authority | null = null, organisationDraft: OrganisationDraftSurface | null = null, organisation: OrganisationHttpSurface | null = null, invitationEntry: Readonly<{targetId:string;routeKey:string}> | null = null) {
   return async (request: Request): Promise<Response> => {
     try {
       const url = new URL(request.url)
@@ -35,6 +42,61 @@ export function createHttpHandler(boundary: SessionBoundary | null, account: Acc
         if (request.headers.has('cookie') || request.headers.has('origin') || request.headers.get('content-type') !== 'application/json') return json(403,{error:'E1_REQUEST_REFUSED'})
         try {const input=await body(request,24576);return json(200,recurring?(url.pathname.endsWith('/component-ready')?await currentE1.recurringComponentReady!(request,input):url.pathname.endsWith('/consent')?await currentE1.recurringConsent!(request,input):await currentE1.authorizeRecurring!(request,input)):source?await currentE1.authorizeSource!(request,input):await currentE1.authorize(request,input))}
         catch (error) {const reason=(error as {reasonCode?:string}).reasonCode;return json(reason==='ACCESS_BASIS_INVALID'||(source||recurring)&&['UNVERIFIED_IDENTITY','IDENTITY_REQUIRED','PERMISSION_DENIED','PRODUCT_UNAVAILABLE','EXPLICIT_DENY'].includes(reason??'')?403:503,{error:'E1_AUTHORITY_REFUSED'})}
+      }
+      if(url.pathname==='/invite'||url.pathname==='/organisation-invitation-entry'){
+        if(!boundary||!account||!organisation?.conversation||!organisation.acceptInvitation||!invitationEntry)return json(503,{error:'ONBOARDING_UNAVAILABLE'});
+        if(request.method!=='GET')return json(405,{error:'METHOD_NOT_ALLOWED'});
+        if(url.origin!==boundary.configuration.origin||url.username||url.password||url.hash)return json(403,{error:'REQUEST_ORIGIN_REJECTED'});
+        if(url.pathname==='/organisation-invitation-entry'){
+          if(url.search)return json(404,{error:'NOT_FOUND'});
+          return new Response(organisationInvitationEntryClientScript,{headers:{...headers,'content-type':'text/javascript; charset=utf-8'}});
+        }
+        const keys=[...url.searchParams.keys()];
+        // A scanner can inspect the page; this never invokes acceptance or creates a membership.
+        // A query-free reload presents recovery text through the same conversation.
+        if(url.search){try{if(keys.length!==1||keys[0]!=='proof')throw Error();organisationInvitationTokenHash(url.searchParams.get('proof'));}catch{return json(400,{error:'INVALID_INVITATION_LINK'})}}
+        return new Response(accountPage(boundary.configuration,invitationEntry.targetId,invitationEntry.routeKey,'registration',registration!==null,true,true),
+          {headers:{...headers,'content-type':'text/html; charset=utf-8','content-security-policy':"frame-ancestors 'none'; base-uri 'none'",'x-frame-options':'DENY'}});
+      }
+      if(url.pathname==='/v1/account/organisation-onboarding/invitation-accept'){
+        if(url.search||url.hash)return json(404,{error:'NOT_FOUND'});
+        if(request.method!=='POST')return json(405,{error:'METHOD_NOT_ALLOWED'});
+        if(!boundary||!account||!organisation?.acceptInvitation)return json(503,{error:'ONBOARDING_UNAVAILABLE'});
+        checkRequest(request,boundary.configuration,true);
+        return json(200,await organisation.acceptInvitation(request,await body(request)));
+      }
+      const conversationPath='/v1/account/organisation-onboarding/'
+      const conversationRoute=url.pathname.startsWith(conversationPath)?url.pathname.slice(conversationPath.length):''
+      if (['snapshot','company','slug','categories','invitations','activation','access'].includes(conversationRoute)) {
+        if (url.search || url.hash) return json(404, { error: 'NOT_FOUND' })
+        const read=conversationRoute==='snapshot'||conversationRoute==='activation'
+        if (request.method !== (read?'GET':'POST')) return json(405, { error: 'METHOD_NOT_ALLOWED' })
+        const view=organisation?.conversation
+        if (!boundary || !account || !organisationDraft || !view) return json(503, { error: 'ONBOARDING_UNAVAILABLE' })
+        if(request.headers.has(PEER_OPERATION_HEADER)&&(!['snapshot','access'].includes(conversationRoute)||!organisation?.verifyWorkspacePeer||!await organisation.verifyWorkspacePeer(request)))return json(403,{error:'WORKSPACE_PEER_REJECTED'})
+        checkOrganisationConversationRequest(request,boundary.configuration,!read)
+        if (conversationRoute==='snapshot') return json(200,await view.snapshot(request))
+        if (conversationRoute==='activation') return json(200,await view.activation(request))
+        const input=await body(request,conversationRoute==='invitations'?16384:4096)
+        if(conversationRoute==='access'){if(!view.synchroniseAccess)return json(503,{error:'ACCESS_PROJECTION_UNAVAILABLE'});return json(200,await view.synchroniseAccess(request,input))}
+        if (conversationRoute==='company') return json(200,await view.lookupCompany(request,input))
+        if (conversationRoute==='slug') return json(200,await view.checkSlug(request,input))
+        if (conversationRoute==='categories') return json(200,await view.savePersonalCategories(request,input))
+        return json(200,await view.sendInvitations(request,input))
+      }
+      if (url.pathname === '/v1/account/organisation-onboarding/complete') {
+        if (url.search || url.hash) return json(404, { error: 'NOT_FOUND' })
+        if (request.method !== 'POST') return json(405, { error: 'METHOD_NOT_ALLOWED' })
+        if (!boundary || !account || !organisation) return json(503, { error: 'ONBOARDING_UNAVAILABLE' })
+        checkRequest(request, boundary.configuration, true)
+        return json(200, await organisation.complete(request, await body(request)))
+      }
+      if (url.pathname === '/v1/account/organisation-onboarding') {
+        if (url.search || url.hash) return json(404, { error: 'NOT_FOUND' })
+        if (!['GET', 'POST'].includes(request.method)) return json(405, { error: 'METHOD_NOT_ALLOWED' })
+        if (!boundary || !account || !organisationDraft) return json(503, { error: 'ONBOARDING_UNAVAILABLE' })
+        checkRequest(request, boundary.configuration, request.method === 'POST')
+        return json(200, request.method === 'GET' ? await organisationDraft.read(request) : await organisationDraft.update(request, await body(request)))
       }
       if (url.pathname === '/v1/account/salutation') {
         if (url.search || url.hash) return json(404, { error: 'NOT_FOUND' })
@@ -72,8 +134,8 @@ export function createHttpHandler(boundary: SessionBoundary | null, account: Acc
         checkRequest(request, boundary.configuration, true)
         return json(200, await avatar.update(request, await body(request)))
       }
-      if (url.pathname === '/v1/account' || url.pathname === '/account-client' || url.pathname.startsWith('/account/')) {
-        if (url.hash || url.pathname === '/v1/account' && url.search) return json(404, { error: 'NOT_FOUND' })
+      if (url.pathname === '/v1/account' || url.pathname === '/account-client' || url.pathname === '/account-theme' || url.pathname.startsWith('/account/')) {
+        if (url.hash || ['/v1/account','/account-theme'].includes(url.pathname) && url.search) return json(404, { error: 'NOT_FOUND' })
         if (!boundary || !account) return json(503, { error: 'IDENTITY_UNAVAILABLE' })
         if (url.pathname !== '/v1/account') {
           if (request.method !== 'GET') return json(405, { error: 'METHOD_NOT_ALLOWED' })
@@ -81,8 +143,8 @@ export function createHttpHandler(boundary: SessionBoundary | null, account: Acc
           // handshake query stays in the browser, never an identity/return input.
           if (url.origin !== boundary.configuration.origin || url.username || url.password || url.search.length > 8192) return json(403, { error: 'REQUEST_ORIGIN_REJECTED' })
           const page = /^\/account\/([a-z0-9-]+)\/([a-z0-9-]+)\/(registration|login|recovery)$/.exec(url.pathname)
-          if (url.pathname !== '/account-client' && !page) return json(404, { error: 'NOT_FOUND' })
-          return new Response(page ? accountPage(boundary.configuration, page[1]!, page[2]!, page[3]!, registration !== null) : accountBrowserScript,
+          if (!['/account-client','/account-theme'].includes(url.pathname) && !page) return json(404, { error: 'NOT_FOUND' })
+          return new Response(page ? accountPage(boundary.configuration, page[1]!, page[2]!, page[3]!, registration !== null, Boolean(organisationDraft && organisation?.conversation)) : url.pathname === '/account-theme' ? conversationThemeClientScript : accountBrowserScript,
             { headers: { ...headers, 'content-type': page ? 'text/html; charset=utf-8' : 'text/javascript; charset=utf-8',
               'content-security-policy': "frame-ancestors 'none'; base-uri 'none'", 'x-frame-options': 'DENY' } })
         }
@@ -97,7 +159,7 @@ export function createHttpHandler(boundary: SessionBoundary | null, account: Acc
       const get = ['/healthz','/readyz','/v1/session'].includes(url.pathname)
       if (request.method !== (get ? 'GET' : 'POST')) return json(405, { error: 'METHOD_NOT_ALLOWED' })
       if (url.pathname === '/healthz') return json(200, { service: 'identity-runtime', status: 'ok' })
-      if (url.pathname === '/readyz') { const ready = Boolean(boundary && await boundary.ready() && (!email || await email.ready().then(() => true, () => false)) && (!language || await language.ready().then(() => true, () => false)) && (!registration || await registration.ready().then(() => true, () => false))); return json(ready ? 200 : 503, { ready }) }
+      if (url.pathname === '/readyz') { const ready = Boolean(boundary && await boundary.ready() && (!email || await email.ready().then(() => true, () => false)) && (!language || await language.ready().then(() => true, () => false)) && (!registration || await registration.ready().then(() => true, () => false)) && (!organisationDraft || await organisationDraft.ready().then(() => true, () => false)) && (!organisation || await organisation.ready().then(() => true, () => false))); return json(ready ? 200 : 503, { ready }) }
       if (!boundary) return json(503, { error: 'IDENTITY_UNAVAILABLE' })
       checkRequest(request, boundary.configuration, !get)
       if (url.pathname === '/v1/session') { const result = await boundary.session(request); return json(result.status === 'authenticated' ? 200 : result.status === 'unavailable' ? 503 : 401, { authenticated: result.status === 'authenticated' }) }
