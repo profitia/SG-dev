@@ -10,7 +10,7 @@
     "projectKey": "ARCHITECTURE",
     "taskId": "ARCH-REGISTRATION-LIFECYCLE-SDK-SOURCE-20261112",
     "pullRequest": 1075,
-    "sourceSha": "4047082bb87f1f27c7a28482cbeb831a71332d3e"
+    "sourceSha": "55daee7b92b80749b95e6b06c85391d6a5b771a6"
   },
   "sourceDigests": {
     "packages/platform-contracts/current-e1-authority/first-party.d.mts": "7e5aa9c6c113387532bb78fac80d5aa42cf95e5599bda64197d2f71a28be31df",
@@ -202,7 +202,7 @@
     "packages/platform-contracts/test/organisation-lifecycle-postgres.test.mjs": "e164118ccc9b07ac51966bb51186bb5ef49cd928bda8fecac3e7fdc1eb80a960",
     "packages/platform-contracts/test/organisation-lifecycle-sdk-compatibility.test.mjs": "0e522d36d31e247d878a9454ef22dc17c392b39c5e2bca54143bad01abca1c02",
     "packages/platform-contracts/test/organisation-lifecycle.test.mjs": "271d5a09f14eebd23edfe46ecc089802f65fe68b44e44217dcd3c488da5670d1",
-    "packages/platform-contracts/test/organisation-sdk-compatibility.mjs": "5e6cda3f5330c9ed0d458c5a77c003db01147e8af52c1f60ef098277d4ba0b8d",
+    "packages/platform-contracts/test/organisation-sdk-compatibility.mjs": "f0d283ef36ea853908d74cb73da0a2136cc6315dd73ad73a44de00db145bd03a",
     "packages/platform-contracts/test/private-operation-host.test.mjs": "604a1459b33a8b45ec76f3af21974459d481bc48197f9894b2d203553f62b287"
   },
   "sdkDigests": {
@@ -760,7 +760,7 @@
     {
       "projectKey": "ARCHITECTURE",
       "taskId": "ARCH-REGISTRATION-LIFECYCLE-SDK-SOURCE-20261112",
-      "sourceSha": "4047082bb87f1f27c7a28482cbeb831a71332d3e",
+      "sourceSha": "55daee7b92b80749b95e6b06c85391d6a5b771a6",
       "sourceDigests": {
         "apps/architecture-lab/private-recurring-source.mjs": "6a8297614d0f819fda50f765f39ce79bbc61f0c2f90611d3ccd9dd69ed7c459b",
         "apps/architecture-lab/test/market-calendar-source.test.mjs": "f0ad19aefa29ded610305c3b196010a911686842ea694e9bb2c10c2d30acd1d0",
@@ -982,7 +982,7 @@
         "packages/platform-contracts/test/organisation-lifecycle-postgres.test.mjs": "e164118ccc9b07ac51966bb51186bb5ef49cd928bda8fecac3e7fdc1eb80a960",
         "packages/platform-contracts/test/organisation-lifecycle-sdk-compatibility.test.mjs": "0e522d36d31e247d878a9454ef22dc17c392b39c5e2bca54143bad01abca1c02",
         "packages/platform-contracts/test/organisation-lifecycle.test.mjs": "271d5a09f14eebd23edfe46ecc089802f65fe68b44e44217dcd3c488da5670d1",
-        "packages/platform-contracts/test/organisation-sdk-compatibility.mjs": "5e6cda3f5330c9ed0d458c5a77c003db01147e8af52c1f60ef098277d4ba0b8d",
+        "packages/platform-contracts/test/organisation-sdk-compatibility.mjs": "f0d283ef36ea853908d74cb73da0a2136cc6315dd73ad73a44de00db145bd03a",
         "packages/platform-contracts/test/private-operation-host.test.mjs": "604a1459b33a8b45ec76f3af21974459d481bc48197f9894b2d203553f62b287"
       }
     },
