@@ -1010,3 +1010,19 @@ exact-source public/controlled and resulting-main CI. Existing bounded SG-only
 release permission remains separate and adds no grant, schema, secret, provider
 call, email, Oil publication or SRM deployment. No historical digest is changed
 to manufacture PASS.
+
+
+### Complete Calendar — proposed immutable transport and peer-source continuation
+
+This exact58+7 successor preserves accepted PI1072/1058 and all historical
+registration/Calendar/CIC/BSDC receipts. The native Source transport definition
+is immutable: accept the separately reviewed calendar-only012 and replacement/
+rollback recipe before activation, retaining historical counters, finite terms
+and other consumers. The original business/data/mail/resource approval remains
+unchanged; new Source owner operations and new protected exact pins require
+one consolidated explicit GO. Preserve complete current physical authentication,
+then the exact accepted PI predecessor, then older source views. Historical
+routing assertions use their full fixed reviewed checkout, never a relaxed
+partial diff. Require fresh exact controlled/public/resulting-main gates; no
+fixture commit is a release. See the exact source SHAs and operation-plan digest
+in the existing [Calendar admission](../evidence/2026-11-12-ecr-complete-functional-ci-admission.md).
