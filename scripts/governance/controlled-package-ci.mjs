@@ -1,4 +1,142 @@
 #!/usr/bin/env node
+// PROPOSAL ONLY: exact seven-file SG2 notification continuation; no generic UI admission.
+export const APPSHELL_NOTIFICATION_REVIEW=Object.freeze({
+ "recordPath": "apps/sg-runtime/assistant-notifications-integration.json",
+ "baseSha": "b6adfbc6b46c13ffe48de37872fdd530f400a615",
+ "candidateSha": "74b2010b2225b82d389e4b1803a953bb5b599128",
+ "entries": {
+  "apps/sg-runtime/components/procurement-insights/notifications.tsx": {
+   "sha256": "12b18e4ae27955b1f2f1f66f0377b36327f75c1247b26e80b64a5e8dbc144629",
+   "blob": "353ff4e2ebd4b0e1f537a441bd7684f6b1bc1020",
+   "status": "modified",
+   "mode": "100644",
+   "projectKey": "SG2",
+   "owner": "SG Runtime",
+   "surfaceId": "SG2-BASE-001",
+   "previousSha256": "f287d9be45a9c9f21be5ce76c14f9979373c86a06cf078b77ec3445e91b00676"
+  },
+  "apps/sg-runtime/tests/assistant-widget.test.tsx": {
+   "sha256": "2842d923544add9fd8e0b650f51cb38915bc0a3eca739e96d323ba4ef338512d",
+   "blob": "2a5e34d8559c15c09708c2d0f434b34abefea8d8",
+   "status": "modified",
+   "mode": "100644",
+   "projectKey": "SG2",
+   "owner": "SG Runtime",
+   "surfaceId": "SG2-BASE-001",
+   "previousSha256": "08de2e4bc3c343043aa04e221d673d8ca7b1691ec77deeb7f07af06245b088e2"
+  },
+  "apps/sg-runtime/tests/assistant-notifications-integrity.mjs": {
+   "sha256": "7d8c0ab445d1d8e9615aaf7ad170d675c6feab5665adabf36999462094e2d622",
+   "blob": "e0605d76fd93985796de0b7323063c259f2b9cac",
+   "status": "added",
+   "mode": "100644",
+   "projectKey": "SG2",
+   "owner": "SG Runtime",
+   "surfaceId": "SG2-BASE-001"
+  },
+  "apps/sg-runtime/tests/assistant-notifications-integrity.test.mjs": {
+   "sha256": "1d22944ad0e3d86082045e887ec85036a729f4d7910e8f6d793e8ec65e963da3",
+   "blob": "7342993fd24d4c035ad536a30d5099b0c8476ae8",
+   "status": "added",
+   "mode": "100644",
+   "projectKey": "SG2",
+   "owner": "SG Runtime",
+   "surfaceId": "SG2-BASE-001"
+  },
+  "apps/sg-runtime/tests/procurement-insights-live-acceptance-source.mjs": {
+   "sha256": "9a4d1698dd847d152246374d83aaa9f7f0e6fa76f80c6793ae40bd52aa3ee0d4",
+   "blob": "a7253daa039403738a10a8177872159047f6176a",
+   "status": "modified",
+   "mode": "100644",
+   "projectKey": "SG2",
+   "owner": "SG Runtime",
+   "surfaceId": "SG2-BASE-001",
+   "previousSha256": "69e7eff5b5f1cd8fda185074ccac2fcee149b937d3f720dcb95d582b753c39bb"
+  },
+  "apps/sg-runtime/tests/procurement-insights.test.tsx": {
+   "sha256": "9004b98b8181b26b63ec9d7ee1afe8099b5d25c77a4f46d70a2301cad8b0fe10",
+   "blob": "8700e67807b992d1278602ec4bd4d45b7ee94e0e",
+   "status": "modified",
+   "mode": "100644",
+   "projectKey": "SG2",
+   "owner": "SG Runtime",
+   "surfaceId": "SG2-BASE-001",
+   "previousSha256": "12d7e8fbe50fc530126e5983033e9150135e59c10c7db2b5f63eef4285446639"
+  },
+  "apps/sg-runtime/assistant-notifications-integration.json": {
+   "sha256": "78d6d34fea2ab1ce18f8dd810cc9906452763e8539aedea685fccbe3881b42cb",
+   "blob": "d70db949641fb208fdcc79b95bbee5785f1097d5",
+   "status": "added",
+   "mode": "100644",
+   "projectKey": "SG2",
+   "owner": "SG Runtime",
+   "surfaceId": "SG2-BASE-001"
+  }
+ },
+ "preservedReceipts": {
+  "apps/architecture-lab/private-recurring-source-adoption.json": "a79c186897851acb93142949fe7aee19184cbfe68b3acdf51cbda084c00c1254",
+  "apps/architecture-lab/private-recurring-source.json": "75877d5750e07d1c8172be0af76bc5933f2eeefc22cc39747a2621b9cab24619",
+  "apps/sg-runtime/adp-integration.json": "9dbd4921c5262202902c3c7ae318e2296f130512fc0784840880eb42370d45fb",
+  "apps/sg-runtime/assistant-context-integration.json": "d932f227977789643086b6a9eb179598a6f48071964b2d26ba82d25fceb7b2ec",
+  "apps/sg-runtime/assistant-ecr-integration.json": "5814e2e5cbdf1a32d22cff3aa55de806ec34c9debdecc21ff06c4f9f887a82bc",
+  "apps/sg-runtime/assistant-ecr-precision-integration.json": "a017c2b971e3c72606847264150715c983fa9483537d26be90144a64e0377ee7",
+  "apps/sg-runtime/assistant-ecr-week-integration.json": "31ce8f1d7e5ca1d9c3aedf80f92e23fe0f1a93cb8f5fd5d003eb54a244859dd4",
+  "apps/sg-runtime/assistant-markdown-integration.json": "27ff06aff8bc44592f0073732748834b7759182fa4307d901c7d63304381a38b",
+  "apps/sg-runtime/assistant-send-arrow-integration.json": "62c6af6817a022c31788d801cc0eac293a24b3f25d9e529d32b1bff4908fa230",
+  "apps/sg-runtime/development-integration.json": "a3ed33e74582d2e0407677e090be0d82405e42a160c34afddb8fde47dff86540",
+  "apps/sg-runtime/market-calendar-integration.json": "b66d88e724f84d513677554e77484bc29a2021b238ce28d4b7db7492aba9903c",
+  "apps/sg-runtime/oil-renderer-integration.json": "6afdd65e66d8a7d8ceb4ab68601ba6d1c1bfac43bbac879d01bb61c9962e7ad6",
+  "apps/sg-runtime/operation-integration.json": "a6bf50993c98a71aeccd349dd904baafb53b3cd653324d97bab3fc5e34ac509f",
+  "apps/sg-runtime/private-recurring-source-adoption.json": "edf9d51c199251e148b39c92a3084944c1a4b8419be29175c88b6e2583df11f2",
+  "apps/sg-runtime/procurement-insights-completion-integration.json": "095ab52d695419d34ed053a6961e389024067a8ab4a16a9b6bb2c379571832a0",
+  "apps/sg-runtime/procurement-insights-integration.json": "6dca06d8b0731e585925100b0578d41a61711f335940350d1ea32c296a3d7177",
+  "apps/sg-runtime/procurement-insights-live-acceptance.json": "911fac3bf6c4eacabc5db048ef622e4a00e49efa09024e9fbbf5216f7da94d6c",
+  "apps/sg-runtime/procurement-insights-shell-integration.json": "1b1279e669e955e604c7c646482a6ce119eac5eeb09491ade78a37aa7fc133a1",
+  "apps/sg-runtime/registration-stage-i-integration.json": "4a7a572e67e12ed73c523502cef4cb432009e735737df851419d80898653f414",
+  "apps/sg-runtime/xray-appshell-integration.json": "edd27f0ae420a9c7671f3cf6068fa00e237a845169ce36de719b6a52abcc6087",
+  "apps/srm/assistant-context-integration.json": "e39cc67fc7b1a9dd787365e0cea5407e11c47744f15c4f9cf83ea15eddeb2aff",
+  "apps/srm/development-integration.json": "53b67cb769000a4f4005ab10ccc0188b39074094cb38e915b16c3d6026590f57",
+  "apps/srm/operation-integration.json": "1303ac82c0570ca4929f64e1620e2ec7a6bfd3809607f57eb33da621c8ecd06d",
+  "apps/srm/private-recurring-source-adoption.json": "88d0252f634eface35b34adf31ac97cbf0d396fcf1fe6da452c74bdc23c7c633",
+  "apps/srm/xray-appshell-integration.json": "584f4b2e099966bdfc23ce9ac1bf0d408893010b40459f458c639bdd4c4b1b19",
+  "packages/platform-contracts/test/recurring-consent-transport-source.json": "0c9ffe5bfd89cf2bd65cd9adc7ad241a04e7468b5821f97171f4a6c550aaba36"
+ }
+})
+const notificationDigest=bytes=>createHash('sha256').update(bytes).digest('hex')
+export function assistantNotificationsTrustedPredecessor(current,historical){
+ const cfg=APPSHELL_NOTIFICATION_REVIEW;let record
+ try{record=current(cfg.recordPath)}catch(error){if(error?.code==='ENOENT')return null;throw error}
+ // The trusted controller pins every physical byte before exposing history.
+ for(const [p,e]of Object.entries(cfg.entries)){
+  const b=current(p),blob=createHash('sha1').update('blob '+b.length+'\0').update(b).digest('hex')
+  if(notificationDigest(b)!==e.sha256||blob!==e.blob)fail('APPSHELL_NOTIFICATION_SOURCE_REJECTED')
+ }
+ const a=JSON.parse(record)
+ if(a.previousSourceSha!==cfg.baseSha||a.taskId!=='SG2-CLOUD-APPSHELL-NOTIFICATIONS-20261113'||a.targetEnvironment!=='development'||a.scope!=='APPSHELL_NOTIFICATION_ICON')fail('APPSHELL_NOTIFICATION_IDENTITY_REJECTED')
+ const predecessors=new Map()
+ for(const [p,e]of Object.entries(cfg.entries))if(e.status==='modified'){
+  const b=historical(cfg.baseSha,p);if(notificationDigest(b)!==e.previousSha256)fail('APPSHELL_NOTIFICATION_HISTORY_REJECTED');predecessors.set(p,Buffer.from(b))
+ }
+ for(const [p,h]of Object.entries(cfg.preservedReceipts))if(notificationDigest(current(p))!==h||notificationDigest(historical(cfg.baseSha,p))!==h)fail('APPSHELL_NOTIFICATION_RECEIPT_REJECTED')
+ return {manifest:a,previousBytes:p=>{
+  const e=cfg.entries[p]
+  if(!e)return current(p)
+  if(e.status==='added')throw Object.assign(Error('Notifications absent from predecessor'),{code:'ENOENT'})
+  return Buffer.from(predecessors.get(p))
+ }}
+}
+// Raw file checks are unchanged. New current sources must additionally be non-executable.
+export function readNotificationPhysicalSource(root,name){
+ const bytes=readRegistrationSdkFile(root,name)
+ if(Object.hasOwn(APPSHELL_NOTIFICATION_REVIEW.entries,name)&&fs.lstatSync(path.join(fs.realpathSync(root),name)).mode&0o111)fail('APPSHELL_NOTIFICATION_MODE_REJECTED')
+ return bytes
+}
+export function notificationTrustedCurrent(root){
+ const current=p=>readNotificationPhysicalSource(root,p),historical=(sha,p)=>execFileSync('git',['cat-file','blob',sha+':'+p],{cwd:root,stdio:['ignore','pipe','pipe']})
+ const view=assistantNotificationsTrustedPredecessor(current,historical)
+ return view?.previousBytes??current
+}
+
 // Trusted-main CI controller. Never import candidate JavaScript while credentials exist.
 import fs from 'node:fs'
 import os from 'node:os'
@@ -5865,7 +6003,7 @@ function registrationReviewMatches(root,review,sourceRead=p=>readRegistrationSdk
 }
 /** Trusted data-only closure; no candidate module is evaluated. */
 function registrationMainCompositionRead(root,sourceRead){
- const physical=sourceRead??(p=>readRegistrationSdkFile(root,p)),lifecycle=registrationLifecycleCanonicalRead(root,physical),raw=lifecycle?.previousBytes??physical;let cfg=REGISTRATION_MAIN_COMPOSITION_PROVENANCE;
+ const physical=sourceRead??notificationTrustedCurrent(root),lifecycle=registrationLifecycleCanonicalRead(root,physical),raw=lifecycle?.previousBytes??physical;let cfg=REGISTRATION_MAIN_COMPOSITION_PROVENANCE;
  let recordBytes;try{recordBytes=raw('packages/platform-contracts/test/organisation-sdk-compatibility.json')}catch(error){if(error?.code==='ENOENT')return null;throw error}
  if(registrationHash(recordBytes)!==cfg.registrationRecordSha256)return null;
  let transportBytes;try{transportBytes=raw(RECURRING_CONSENT_TRANSPORT_PROVENANCE_PATH)}catch(error){if(error?.code==='ENOENT')return null;throw error}
@@ -5959,9 +6097,9 @@ function registrationCalendarCanonicalRead(root,physical){
 // Authenticate the exact PI continuation before the independently accepted
 // Oil/Calendar projections. All physical reads keep the accepted mode fence.
 function piCompletionCanonicalRead(root){
- const composition=registrationMainCompositionRead(root);if(composition)return composition.registration
+ const physical=notificationTrustedCurrent(root),composition=registrationMainCompositionRead(root,physical);if(composition)return composition.registration
  const historical=(sha,p)=>execFileSync('git',['cat-file','blob',sha+':'+p],{cwd:root,stdio:['ignore','pipe','pipe']})
- const raw=p=>{const bytes=readCalendarSourceFile(root,p);if(fs.lstatSync(path.join(fs.realpathSync(root),p)).mode&0o111)fail('OIL_RENDERER_FILE_MODE_REJECTED');return bytes}
+ const raw=p=>{const bytes=physical(p);if(fs.lstatSync(path.join(fs.realpathSync(root),p)).mode&0o111)fail('OIL_RENDERER_FILE_MODE_REJECTED');return bytes}
  const complete=completeFunctionalTrustedPredecessor(raw,historical)
  let current=complete,live=null;try{live=complete(PI_LIVE_ACCEPTANCE_PROVENANCE_PATH)}catch(error){if(error?.code!=='ENOENT')throw error}
  if(live!==null)current=assertPiLiveAcceptanceProjection(live,{current:complete,historical})
@@ -5977,7 +6115,7 @@ function piCurrentCanonicalRead(root,withRegistration=false){
  return oilRendererTrustedPredecessor(registration,historical)
 }
 export function assertPrivateRecurringProvenance(root){
- const composition=registrationMainCompositionRead(root),actual=composition?.lifecycle?.previousBytes??(composition?(p=>readRegistrationSdkFile(root,p)):piCompletionCanonicalRead(root))
+ const physicalSource=notificationTrustedCurrent(root),composition=registrationMainCompositionRead(root,physicalSource),actual=composition?.lifecycle?.previousBytes??(composition?physicalSource:piCompletionCanonicalRead(root))
  const calendarHistorical=(sha,p)=>execFileSync('git',['cat-file','blob',sha+':'+p],{cwd:root,stdio:['ignore','pipe','pipe']})
  const physical=marketCalendarTrustedPredecessor(piCurrentCanonicalRead(root,true),calendarHistorical)
  let bytes;try{bytes=physical(PRIVATE_RECURRING_PROVENANCE.recordPath)}catch(error){if(error?.code==='ENOENT')return null;throw error}
@@ -6500,7 +6638,7 @@ export function readRegistrationSdkFile(root,name){
 }
 export function assertRegistrationSdkProvenance(root,sourceRead){
  // Current SDK and receiver receipts are authenticated before independent extension history.
- const base=fs.realpathSync(root),physical=sourceRead??(p=>readRegistrationSdkFile(base,p)),composition=registrationMainCompositionRead(base,physical),read=composition?.registration??physical
+ const base=fs.realpathSync(root),physical=sourceRead??notificationTrustedCurrent(base),composition=registrationMainCompositionRead(base,physical),read=composition?.registration??physical
  const bytes=read('packages/platform-contracts/test/organisation-sdk-compatibility.json'),previousSourceSha=registrationSdkRecordPredecessor(bytes)
  const files={SG2:'apps/sg-runtime/operation-integration.json',SRM:'apps/srm/operation-integration.json'}
  const receipts=Object.fromEntries(Object.entries(files).map(([k,p])=>[k,JSON.parse(read(p))]))
