@@ -16,7 +16,7 @@
 | Projekt rozwiązania | OWNER_APPROVED — zamrożona specyfikacja v1 w §4–5, decyzja DEC-03; bez aktywacji kanonu wykonawczego |
 | Tryb | EXECUTION — Full Autopilot wyłącznie etap 1; DEC-06 |
 | Etap | F — zakończony; A–F domknięte projektowo, 28/28 USTALONE |
-| Utworzono / zaktualizowano | 2026-11-12 / 2026-11-12, Europe/Warsaw |
+| Utworzono / zaktualizowano | 2026-11-12 / 2026-11-13, Europe/Warsaw |
 | Rewizja | 10 — zapis akceptacji CI, skuteczny G1 i faktyczny postęp komponentów etapu 1 |
 | Rewizja bazowa ostatniej aktualizacji | PDR rewizja 9 / blob f0c81253cd20d4f2b75f8eabf2adb47d538c20fc; main 69a2cc1769d34cb6ecf1e21a552babb0006a5713. Referencja wykonawcza właściciela nadal rewizja 8. |
 | Zadanie inicjalizacji | ARCH-BSDC-CIC-QUALITY-INIT-20261112 |
@@ -629,6 +629,7 @@ Upływ 14 dni lub limit 50 USD zamyka możliwość nowych płatnych zadań, tak�
 
 ### 8.7. Stan realizacji etapu 1
 
+- **Wznowienie 2026-11-13:** właściciel polecił kontynuację wyłącznie etapu 1 od punktu przywracania `02e647a9f9b8eb283c0fee05d4991db35e5431ab`. Potwierdzono zgodność 29 plików z zapisanymi SHA-256 i drzewem `0b03054c`; niezależnie odtworzono metadane Git, zachowując poprzednie. Aktualny main `0240de8a` oraz obie istniejące rejestracje ARCHITECTURE zweryfikowane. Bez ponownego begin, zmiany zamrożonej specyfikacji lub rozszerzenia mandatu. Następna operacja: aktualizacja istniejącego PR #1071 i wymagane kontrole źródła.
 - **Mandat i granica etapu:** DEC-06; referencja wykonawcza właściciela nadal rewizja 8, commit 92dba2a4. Realizowany jest tylko etap 1. Etap 2 nie ma zlecenia; nie uruchomiono nocnej oceny rzeczywistych rozmów.
 - **E1-T01 / G1 — komponent ZAKOŃCZONY:** [PR #1042](https://github.com/profitia/SG-dev/pull/1042), źródło 9243d88d → main 69a2cc17. Niezmienione pięć blobów i regularne tryby 100644, routing i pełne zwykłe testy PASS. [Chronione wykonanie 43282535712](https://github.com/profitia/SG-dev/actions/runs/43282535712) dla dokładnego źródła i kontrolera 4381dcec: PASS; pobrany dowód zweryfikowano niezależnie, w tym SHA-256 `e2f6ec18ed620b0a99a3767ebbca0c9816d3e89336c8d518e94c5fe7e3e831f0`. [Pełne kontrole wynikowego main](https://github.com/profitia/SG-dev/actions/runs/43285371271): PASS. PMOS/PHR dla `ARCH-CIC-QUALITY-STAGE1-G1-ACCEPT-20261112` zapisane; rejestracja zadania ukończona. Nie oznacza to końca E1-T01: nadal potrzebny jest ograniczony mandat klasowej automatyzacji i dopuszczenie jej rzeczywistej ścieżki CI.
 - **DEC-07 / CI — komponent ZAKOŃCZONY:** [PR #1061](https://github.com/profitia/SG-dev/pull/1061) aktywował wyłącznie uzgodnioną regułę G1. Weryfikacja źródła, chronionego dowodu i wynikowego main PASS; `ARCH-CIC-QUALITY-STAGE1-CI-ACTIVATE-20261112` ukończone w PMOS/PHR. Ta decyzja nie jest przenoszona na przyszły kod kontrolera lub nowy pin biblioteki.
