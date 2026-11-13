@@ -1,3 +1,4 @@
+import {registrationLifecycleCanonicalRead} from './controlled-package-ci.mjs'
 import {ECR_COMPLETE_FUNCTIONAL_REVIEW,ECR_COMPLETE_FUNCTIONAL_CONSUMER_REVIEW,ECR_COMPLETE_FUNCTIONAL_PROVENANCE,assertCompleteFunctionalReviewEntry,completeFunctionalTrustedPredecessor,assertCompleteFunctionalProvenance} from './controlled-package-ci.mjs'
 import {ECR_CALENDAR_TEST_REVIEW,assertCalendarTestReviewEntry,calendarTestCompatibilityTrustedCurrent,readCalendarSourceFile} from './controlled-package-ci.mjs'
 import {ECR_MARKET_CALENDAR_REVIEW,ECR_MARKET_CALENDAR_PROVENANCE,assertEcrMarketCalendarReviewEntry,marketCalendarTrustedPredecessor} from './controlled-package-ci.mjs'
@@ -152,7 +153,7 @@ test('only the ten reviewed local names bind to their own exact paths, never a r
     rejection(() => assertManifestPolicy({dependencies: {alias: `file:${relative}`}}, authority))
   }
 })
-function currentRecurringPolicyOptions(){return {reviewedPrivateRecurring:!!assertPrivateRecurringProvenance(authorityRoot)}}
+function currentRecurringPolicyOptions(){return {reviewedPrivateRecurring:!!assertPrivateRecurringProvenance(authorityRoot),reviewedLifecycle:!!registrationLifecycleCanonicalRead(authorityRoot)}}
 function reviewedMapsFixture() {
   const manifest = JSON.parse(fs.readFileSync(path.join(authorityRoot, 'packages/maps-embed/package.json'), 'utf8'))
   const candidate = lock()
@@ -349,7 +350,7 @@ test('actual current source provenance is the exact accepted SDK digest with all
  const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..'),receipt=JSON.parse(fs.readFileSync(path.join(root,'apps/sg-runtime/operation-integration.json'),'utf8'))
  const record=assertPrivateRecurringProvenance(root),receiptBytes=fs.readFileSync(path.join(root,'apps/sg-runtime/operation-integration.json'))
  const currentSdk=await import('./controlled-package-ci.mjs')
- const contract=receipt.sdkSourceContinuations===undefined?privateRecurringProofContract(receipt,record?fs.readFileSync(path.join(root,PRIVATE_RECURRING_PROVENANCE.recordPath)):null,receiptBytes):{...adoptedOperationContract(receipt),sourceDigest:currentSdk.assertRegistrationSdkProvenance(root).sdkDigests.operationSourceDigest}
+ const contract=receipt.sdkSourceContinuations===undefined?privateRecurringProofContract(receipt,record?fs.readFileSync(path.join(root,PRIVATE_RECURRING_PROVENANCE.recordPath)):null,receiptBytes):{...adoptedOperationContract(receipt),sourceDigest:(currentSdk.assertRegistrationSdkProvenance(root).lifecycle??currentSdk.assertRegistrationSdkProvenance(root)).sdkDigests.operationSourceDigest}
  assert.equal(operationContractProvenanceDigest(root,contract,{reviewedPrivateRecurring:!!record}),contract.sourceDigest)
  const sdk=await import('../../packages/platform-contracts/src/operation-context.mjs');assert.equal(await sdk.operationSourceDigest(),contract.sourceDigest)
 })
@@ -2864,8 +2865,8 @@ test('registration lifecycle peers remain exact and cannot alter private package
   const candidate=lock();candidate.packages['node_modules/'+owner]={version,resolved:LOCAL_PACKAGES[owner],[section]:{[name]:spec}};
   if(Object.hasOwn(LOCAL_PACKAGES,owner))c.assertPackagePolicy(candidate,lock(),configuration,{reviewedLifecycle:true});
   const manifest={name:owner,version,[section]:{[name]:spec}};
-  c.assertManifestPolicy(manifest,{name:owner,version},{reviewedLifecycle:true});
-  const bad=structuredClone(manifest);bad[section][name]=spec+' || 99.0.0';rejection(()=>c.assertManifestPolicy(bad,{name:owner,version},{reviewedLifecycle:true}));
+  c.assertManifestPolicy(manifest,manifest,{reviewedLifecycle:true});
+  const bad=structuredClone(manifest);bad[section][name]=spec+' || 99.0.0';rejection(()=>c.assertManifestPolicy(bad,manifest,{reviewedLifecycle:true}));
  }
  const changed=lock();changed.packages['node_modules/@profitia/cic-core'].integrity='sha512-forged';
  rejection(()=>c.assertPackagePolicy(changed,lock(),configuration,{reviewedLifecycle:true}));

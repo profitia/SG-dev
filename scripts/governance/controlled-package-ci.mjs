@@ -6544,7 +6544,7 @@ export function assertManifestPolicy(candidate, authority, {reviewedPrivateRecur
   for (const section of ['dependencies', 'devDependencies', 'optionalDependencies', 'peerDependencies']) {
     for (const [name, spec] of Object.entries(candidate[section] ?? {})) {
       if (String(spec).includes('@profitia/')) fail('PRIVATE_PACKAGE_ALIAS_REJECTED')
-      if(reviewedLifecycle&&reviewedLifecyclePeer(candidate.name,candidate.version,section,name,spec))continue
+      if(reviewedLifecycle&&reviewedLifecyclePeer(candidate.name,candidate.version,section,name,spec)){if(authority.name!==candidate.name||authority.version!==candidate.version||authority[section]?.[name]!==spec)fail('REGISTRATION_LIFECYCLE_PEER_AUTHORITY_REJECTED');continue}
       if (Object.hasOwn(LOCAL_PACKAGES, name) && spec === `file:${LOCAL_PACKAGES[name]}`) continue
       if(reviewedCompleteFunctional&&completeFunctionalPeer(candidate.name,candidate.version,section,name,spec)){if(authority.name!==candidate.name||!['1.7.1','1.8.0'].includes(authority.version)||authority[section]?.[name]!==spec)fail('ECR_COMPLETE_FUNCTIONAL_PEER_REJECTED');continue}
       if(reviewedPrivateRecurring&&reviewedPrivateRecurringPeer(candidate.name,candidate.version,section,name,spec)){if(!reviewedPrivateRecurringAuthority(candidate,authority,section,name,spec))fail('PRIVATE_RECURRING_PEER_AUTHORITY_REJECTED');continue}
@@ -6576,7 +6576,7 @@ function reviewedEcrStage0405LegacyConsumer(root,candidateLock,name,entry,manife
 }
 
 export function assertLocalPackageSources(root, candidateLock, authorityRoot = controlRoot(), {reviewedStage2a=false,reviewedMarketSymbol=false,reviewedOilReport=false,reviewedPrivateRecurring=false}={}) {
-  const canonicalRoot = fs.realpathSync(root),lifecycle=registrationLifecycleCanonicalRead(root)
+  const canonicalRoot = fs.realpathSync(root),lifecycle=registrationLifecycleCanonicalRead(root),authorityLifecycle=fs.realpathSync(authorityRoot)===canonicalRoot?lifecycle:registrationLifecycleCanonicalRead(authorityRoot)
   const app = path.join(canonicalRoot, 'apps/sg-runtime'),complete=assertCompleteFunctionalProvenance(canonicalRoot)
   if (fs.realpathSync(app) !== app) fail('LOCAL_DEPENDENCY_REJECTED')
   for (const [key, entry] of Object.entries(candidateLock.packages ?? {})) {
@@ -6609,6 +6609,11 @@ export function assertLocalPackageSources(root, candidateLock, authorityRoot = c
       if(!reviewedOilReport||!['@profitia/insights-runtime','@profitia/insights-contracts'].includes(name)||!review||review.sha!==blob)fail('LOCAL_PACKAGE_AUTHORITY_REQUIRED');
       authority=manifest;
     }else authority=reviewedEcrLegacy?manifest:readJson(authorityFile)
+    const authorityRelative=path.relative(canonicalRoot,manifestPath).split(path.sep).join('/')
+    if(!lifecycle&&authorityLifecycle?.currentSourceDigests[authorityRelative]){
+      const previous=lifecycleOptional(authorityLifecycle.previousBytes,authorityRelative)
+      if(previous!==null&&registrationHash(fs.readFileSync(manifestPath))===registrationHash(previous))authority=JSON.parse(previous)
+    }
     if(name==='@profitia/maps-embed'){
       if(JSON.stringify(entry.peerDependencies??{})!==JSON.stringify(manifest.peerDependencies??{}))fail('LOCAL_PACKAGE_PEER_MISMATCH')
       if(reviewedMarketSymbol&&manifest.peerDependencies?.['@profitia/platform-contracts']===REVIEWED_MAPS_EMBED_PEERS['@profitia/platform-contracts']+' || 1.33.0 || 1.34.0'&&authority.peerDependencies?.['@profitia/platform-contracts']!==manifest.peerDependencies['@profitia/platform-contracts']){
