@@ -4,6 +4,7 @@ import {createHash} from 'node:crypto'
 import {posix} from 'node:path'
 const recordPath='packages/platform-contracts/test/organisation-lifecycle-sdk-compatibility.json'
 const guardPath='packages/platform-contracts/test/organisation-lifecycle-sdk-compatibility.mjs'
+const reconciledRecordSha256='1b1aba59558b5d186f721819aad3cef345b94a1dfb72a775b6855e8a5e6a9f31'
 const acceptedRecordSha256='3a7d291e8e6da5ebdae31571d6bb89d664ef5a4c41f32af05de0e161e7f6f7b2'
 const previousSourceSha='b18b5eee15aab07c7ff3968cafbfd50ddd5e9b5a'
 const acceptedMainSha='68867fe8c54b8f3b2efadf512d37d8925b9657e5'
@@ -27,10 +28,71 @@ function map(value,label){assert(value&&Object.getPrototypeOf(value)===Object.pr
 function equalKeys(value,keys,label){assert(value&&Object.getPrototypeOf(value)===Object.prototype,label);assert.deepEqual(Object.keys(value).sort(),keys.sort(),label)}
 /** Verify every current/preserved byte, both receiver adoptions and exact Git
  * predecessor bytes BEFORE offering any historical view. No permissive fallback. */
+function reconciledLifecycleSource(bytes,current,historical,projectKey){
+ assert.equal(hash(bytes),reconciledRecordSha256,'exact reconciled lifecycle source record')
+ const a=JSON.parse(bytes),r=a.sourceReconciliation
+ equalKeys(r,['schemaVersion','acceptanceId','scope','predecessorSha','predecessorRecordSha256','predecessorGuardSha256','currentMainSha','taskIds','currentSourceDigests','currentMainSourceDigests','correctedOwnerInputs'],'closed lifecycle test reconciliation')
+ assert.equal(r.schemaVersion,'1.0');assert.equal(r.acceptanceId,'organisation-lifecycle-sdk-1.37-test-reconciliation-20261113-v1')
+ assert.equal(r.scope,'SOURCE_TEST_CONTINUITY_ONLY')
+ assert.equal(r.predecessorSha,'8aee0665f20f16ae66455f8d15d336bac59711f0')
+ assert.equal(r.predecessorRecordSha256,acceptedRecordSha256)
+ assert.equal(r.predecessorGuardSha256,'bc4bbcb13dbf4a254af18814de9b6a6d1a9a5358c6d0f42a78189a32a575fa6d')
+ assert.equal(r.currentMainSha,'80875d8f0e9451cd9afd34e8baf2a8f6059bc064')
+ equalKeys(r.taskIds,Object.keys(projects),'separate current owner registrations')
+ for(const owner of Object.keys(projects))assert.equal(r.taskIds[owner],owner+'-REGISTRATION-STAGE-I-RESUME-V2-20261113')
+ map(r.currentSourceDigests,'complete reconciled physical graph')
+ const hidden=new Set([recordPath,guardPath,...Object.values(projects).map(v=>v.path)])
+ for(const[p,h]of Object.entries(r.currentSourceDigests)){
+  assert(!hidden.has(p),'no circular reconciliation hash')
+  assert.equal(hash(current(p)),h,'current reconciled lifecycle source '+p)
+ }
+ // Read immutable Git only after every current physical input authenticated.
+ const previousRecord=historicalBytes(historical,r.predecessorSha,recordPath)
+ assert.equal(hash(previousRecord),acceptedRecordSha256,'unchanged original lifecycle source record')
+ assert.equal(hash(historicalBytes(historical,r.predecessorSha,guardPath)),r.predecessorGuardSha256,'unchanged original lifecycle guard')
+ const {sourceReconciliation,...unchanged}=a,previous=JSON.parse(previousRecord)
+ assert.deepEqual(unchanged,previous,'all original fields, seven owner inputs and historical receipts remain unchanged')
+ const previousFiles={...a.sourceDigests,...a.compatibilityTestSourceDigests,...a.preservedSourceDigests,...a.consumerSourceDigests.ARCHITECTURE,...a.consumerSourceDigests.SG2,...a.consumerSourceDigests.SRM}
+ for(const p of Object.keys(previousFiles))assert(Object.hasOwn(r.currentSourceDigests,p),'complete original physical closure retained')
+ map(r.currentMainSourceDigests,'current main continuity')
+ assert.deepEqual(Object.keys(r.currentMainSourceDigests).sort(),['apps/sg-runtime/tests/procurement-insights-live-acceptance-source.mjs','apps/sg-runtime/tests/procurement-insights.test.tsx'])
+ for(const[p,h]of Object.entries(r.currentMainSourceDigests)){
+  assert.equal(r.currentSourceDigests[p],h,'main input belongs to complete current graph')
+  assert.equal(hash(historicalBytes(historical,r.currentMainSha,p)),h,'actual newer main input preserved')
+ }
+ assert(Array.isArray(r.correctedOwnerInputs)&&r.correctedOwnerInputs.length===2,'bounded ARCHITECTURE and SRM test corrections')
+ assert.deepEqual(r.correctedOwnerInputs.map(v=>v.projectKey).sort(),['ARCHITECTURE','SRM'],'one input per actual correction owner')
+ const corrections={}
+ for(const input of r.correctedOwnerInputs){
+  equalKeys(input,['projectKey','taskId','sourceSha','sourceDigests'],'closed test correction input')
+  assert(['ARCHITECTURE','SRM'].includes(input.projectKey),'actual correction owner')
+  assert.equal(input.taskId,r.taskIds[input.projectKey]);assert(/^[a-f0-9]{40}$/.test(input.sourceSha))
+  map(input.sourceDigests,'exact owned test corrections')
+  for(const[p,h]of Object.entries(input.sourceDigests)){
+   assert.equal(r.currentSourceDigests[p],h,'correction belongs to current graph')
+   assert.equal(hash(historicalBytes(historical,input.sourceSha,p)),h,'actual independent owner correction')
+   corrections[p]=h
+  }
+ }
+ const additional=['packages/platform-contracts/test/organisation-lifecycle-sdk-compatibility.test.mjs']
+ for(const[p,h]of Object.entries(r.currentSourceDigests)){
+  assert(Object.hasOwn(previousFiles,p)||Object.hasOwn(corrections,p)||additional.includes(p),'bounded added test input')
+  if(Object.hasOwn(previousFiles,p)&&previousFiles[p]!==h)assert(Object.hasOwn(corrections,p)||Object.hasOwn(r.currentMainSourceDigests,p)||additional.includes(p),'no unrelated source replacement')
+ }
+ for(const[owner,binding]of Object.entries(projects)){
+  const receipt=JSON.parse(current(binding.path))
+  assert.deepEqual(receipt,{schemaVersion:'1.0',projectKey:owner,taskId:r.taskIds[owner],acceptanceId:r.acceptanceId,sourceRecordSha256:reconciledRecordSha256,platformVersion:'1.37.0',scope:r.scope,runtimeOptedIn:false},'current paired owner reconciliation '+owner)
+ }
+ const projected=p=>hidden.has(p)||Object.hasOwn(r.currentSourceDigests,p)?historicalBytes(historical,r.predecessorSha,p):current(p)
+ const original=organisationLifecycleSdkPredecessor(projected,historical,{projectKey})
+ assert(original,'complete immutable original lifecycle graph is still mandatory')
+ return Object.freeze({...original,currentSourceDigests:Object.freeze(r.currentSourceDigests),sourceReconciliation:Object.freeze(r)})
+}
 export function organisationLifecycleSdkPredecessor(current,historical,{projectKey='SG2'}={}){
  assert(Object.hasOwn(projects,projectKey),'explicit lifecycle source owner')
  let bytes
  try{bytes=Buffer.from(current(recordPath))}catch(error){if(missing(error))return null;throw error}
+ if(hash(bytes)===reconciledRecordSha256)return reconciledLifecycleSource(bytes,current,historical,projectKey)
  assert.equal(hash(bytes),acceptedRecordSha256,'exact lifecycle SDK source record')
  const a=JSON.parse(bytes)
  equalKeys(a,['schemaVersion','acceptanceId','taskId','targetEnvironment','scope','platformVersion','previousSourceSha','producer','sourceDigests','compatibilityTestSourceDigests','sdkDigests','optionalPackageDigests','consumerSourceDigests','preservedSourceDigests','defaultRootImplementation','optionalRootImplementation','optionalOperations','runtimeOptedIn','sqlInstalled','permissionsChanged','providerCallsPerformed','deploymentPerformed','previousSourceDigests','previousAbsentPaths','ownerInputs','acceptedMainSha','acceptedMainSourceDigests','acceptedMainAbsentPaths'],'closed lifecycle source record')

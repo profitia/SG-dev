@@ -66,3 +66,23 @@ test('accepted main source substitution and false absence cannot conceal changed
  const absent=a.acceptedMainAbsentPaths[0];assert(absent)
  assert.throws(()=>organisationLifecycleSdkPredecessor(current,(sha,x)=>sha===a.acceptedMainSha&&x===absent?Buffer.from('not absent at accepted main'):historical(sha,x)))
 })
+
+// Current main and the original seven owner inputs are independent histories.
+test('reconciliation authenticates every current test byte before returning immutable source views',()=>{
+ const a=JSON.parse(current(recordPath)),r=a.sourceReconciliation
+ assert(r,'explicit closed source reconciliation')
+ for(const p of Object.keys(r.currentSourceDigests)){
+  let historyReads=0
+  assert.throws(()=>organisationLifecycleSdkPredecessor(x=>x===p?Buffer.concat([current(x),Buffer.from('changed')]):current(x),(sha,x)=>{historyReads++;return historical(sha,x)}),p)
+  assert.equal(historyReads,0,'unverified physical source must fail before predecessor access: '+p)
+ }
+ for(const p of Object.keys(r.currentMainSourceDigests))assert.deepEqual(current(p),historical(r.currentMainSha,p),'new main PI test bytes remain current')
+ assert.equal(r.correctedOwnerInputs.length,2)
+ for(const input of r.correctedOwnerInputs){
+  const p=Object.keys(input.sourceDigests)[0]
+  assert.throws(()=>organisationLifecycleSdkPredecessor(current,(sha,x)=>sha===input.sourceSha&&x===p?Buffer.from('foreign owner correction'):historical(sha,x)))
+ }
+ const original=JSON.parse(historical(r.predecessorSha,recordPath))
+ assert.equal(original.ownerInputs.length,7,'all immutable original owner inputs remain present')
+ assert.deepEqual(a.ownerInputs,original.ownerInputs)
+})

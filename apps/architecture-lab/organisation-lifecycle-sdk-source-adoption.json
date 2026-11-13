@@ -1,10 +1,10 @@
 {
   "schemaVersion": "1.0",
   "projectKey": "ARCHITECTURE",
-  "taskId": "ARCH-REGISTRATION-LIFECYCLE-SDK-SOURCE-20261112",
-  "acceptanceId": "organisation-lifecycle-sdk-1.37-development-v1",
-  "sourceRecordSha256": "3a7d291e8e6da5ebdae31571d6bb89d664ef5a4c41f32af05de0e161e7f6f7b2",
+  "taskId": "ARCHITECTURE-REGISTRATION-STAGE-I-RESUME-V2-20261113",
+  "acceptanceId": "organisation-lifecycle-sdk-1.37-test-reconciliation-20261113-v1",
+  "sourceRecordSha256": "1b1aba59558b5d186f721819aad3cef345b94a1dfb72a775b6855e8a5e6a9f31",
   "platformVersion": "1.37.0",
-  "scope": "OPTIONAL_ORGANISATION_LIFECYCLE_SOURCE_ONLY",
+  "scope": "SOURCE_TEST_CONTINUITY_ONLY",
   "runtimeOptedIn": false
 }
