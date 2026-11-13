@@ -61,7 +61,7 @@ export async function migrate(client,c){
   }
   await client.query('GRANT SELECT ON source_hub.migrations TO '+identifier(runtime));
   const migrations=[];
-  for(const version of ['002-te-news',...(c.installFirstParty===true?['004-universal-consumers']:[]),...(c.installCalendarStorage===true?['005-calendar-storage-rights']:[]),...(c.installCommodities===true?['006-commodity-providers']:[]),...(c.installMarketObservations===true?['006-market-observations']:[]),...(c.installPublicationSchedules===true?['007-publication-schedules']:[]),...(c.installCalendarConsumerStorage===true?['008-calendar-consumer-storage']:[]),...(c.installEcrResultsStorage===true?['009-ecr-results-storage']:[]),...(c.installExpandedEcrResults===true?['011-expanded-ecr-results']:[])]){
+  for(const version of ['002-te-news',...(c.installFirstParty===true?['004-universal-consumers']:[]),...(c.installCalendarStorage===true?['005-calendar-storage-rights']:[]),...(c.installCommodities===true?['006-commodity-providers']:[]),...(c.installMarketObservations===true?['006-market-observations']:[]),...(c.installPublicationSchedules===true?['007-publication-schedules']:[]),...(c.installCalendarConsumerStorage===true?['008-calendar-consumer-storage']:[]),...(c.installEcrResultsStorage===true?['009-ecr-results-storage']:[]),...(c.installExpandedEcrResults===true?['011-expanded-ecr-results','012-calendar-transport-continuity']:[])]){
    const extension=await readFile(new URL('../migrations/'+version+'.sql',import.meta.url),'utf8'),extensionDigest=hash(extension);
    const applied=await client.query('SELECT digest FROM source_hub.migrations WHERE version=$1',[version]);
    if(applied.rows.length){if(applied.rows[0].digest!==extensionDigest)throw Error('EXISTING_MIGRATION_MISMATCH');}

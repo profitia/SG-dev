@@ -82,20 +82,34 @@
     "origin": "https://www.eia.gov",
     "method": "GET",
     "sourceId": "source-hub.eia.publication-calendar",
-    "continuity": "CAS update only two exact calendar transport rows, native base_policy_version and their two continuity fingerprints; preserve original source, grants, finite leases, counters and every other fingerprint",
+    "continuity": "Calendar-only current-pair selection and exclusion of obsolete calendar native policies from renewal. Keep original010, exact old function guards, EXECUTE ACL, ordinary monitor, revocation, finite deadlines and all other source joins. Update only external/native/licence calendar fingerprints after the separately approved immutable replacement; all17 other fingerprints unchanged.",
     "cacheRetentionSeconds": 0,
     "otherConsumersChanged": false,
     "activationFlag": "SOURCE_HUB_EIA_EXPANDED_SCHEDULES_ENABLED",
     "changedAdmissionRows": [
-      "profitia_external_call.policies:76e25fdd-7d49-4852-9ef8-84c9d25eeae1",
-      "profitia_external_native.policies:76e25fdd-7d49-4852-9ef8-84c9d25eeae1"
+      "Revoke historical external/native pair:76e25fdd-7d49-4852-9ef8-84c9d25eeae1; preserve definitions/counters",
+      "Create exact replacement external/native pair:01f733b1-7fb7-4785-96ca-0d7fcb614637",
+      "CAS existing source_hub.provider_licences eia/publication-calendar source_policy_id and automatic version only",
+      "CAS three calendar continuity fingerprints only; preserve all17 others"
     ],
     "unchangedAdmissionRows": [
       "profitia_ingestion.sources:source-hub.eia.publication-calendar",
       "all existing grants and budgets"
     ],
     "migratorRole": "source_hub_development_migrator",
-    "scopeInstallation": "One transaction using its existing SET rights for profitia_ingestion_owner and source_hub_development_owner; no new membership. Preserve both exact transport rows, scoped rights and continuity fingerprints atomically."
+    "scopeInstallation": "One transaction using its existing SET rights for profitia_ingestion_owner and source_hub_development_owner; no new membership. Preserve both exact transport rows, scoped rights and continuity fingerprints atomically.",
+    "additionalMigration": "apps/platform-source-hub/migrations/012-calendar-transport-continuity.sql",
+    "transportReplacement": {
+      "oldPolicyId": "76e25fdd-7d49-4852-9ef8-84c9d25eeae1",
+      "forwardPolicyId": "01f733b1-7fb7-4785-96ca-0d7fcb614637",
+      "rollbackPolicyId": "2be45ef5-1600-4258-95bc-08e113007362",
+      "operationSql": "apps/platform-source-hub/operations/replace-ecr-calendar-transport.sql",
+      "mode": "ONE_TRANSACTION_WHOLE_ROW_CAS_NO_UNRESOLVED_CALLS",
+      "historicalRows": "Retain both old rows, immutable definitions, exact admissions/calls; revoke native before its original parent. Never reset a historical counter.",
+      "newCounter": "The mandatory zero admissions belongs only to the newly admitted UNMETERED policy; source budgets and historical counts remain untouched.",
+      "sameExpiry": "Reuse the existing finite native expiry and unchanged UNMETERED parent terms; no extension by rotation. Existing separately admitted continuity remains revocable.",
+      "rollback": "Only if own forward pair is still current: install the exact rollback pair with the original two paths and current finite expiry; retain all previous policies/counters and preserve revocation. Never edit or reactivate immutable historical definitions."
+    }
   },
   "storageRights": {
     "consumerApplicationId": "profitia-economic-calendar-runtime-development",
@@ -221,9 +235,10 @@
     "webhookUrl": "https://identity-runtime-development.onrender.com/v1/webhooks/calendar-mailgun",
     "events": [
       "delivered",
-      "failed"
+      "temporary_fail",
+      "permanent_fail"
     ],
-    "configuration": "Add this endpoint to the delivered and failed webhook sets without replacing any existing URLs; snapshot and exact rollback",
+    "configuration": "Add this endpoint to the delivered, temporary_fail and permanent_fail domain webhook sets without replacing any existing URLs; snapshot and exact rollback. These are Mailgun configuration names; failure payloads use event=failed and severity=temporary/permanent.",
     "recipientAuthority": "Current E1 calendar read plus private preferences read, verified primary Clerk email, explicit per-user opt-in and separately enabled watch type",
     "providerAcceptanceIsDelivery": false,
     "confirmedArrival": "Required real test receipt in authorised owner mailbox, distinct from provider recipient-server acceptance",
@@ -237,11 +252,12 @@
       "maximumMessages": 1,
       "operation": "Owner-only qualify_delivery_rehearsal(uuid,uuid,text,text,uuid), after UI opt-in; unchanged real retained event and mandatory current E1 delivery proof",
       "controlKey": "1c78ee05-bbf9-46f2-b120-d667281fc29d",
-      "label": "[TEST] WIADOMOŚĆ TESTOWA; no claim of a new actual result or revision",
+      "label": "[TEST] WIADOMO\u015a\u0106 TESTOWA; no claim of a new actual result or revision",
       "expiresAfterMinutes": 60,
       "globalSourceRecordsChanged": false,
       "runtimeGrantToRehearsalFunction": false
-    }
+    },
+    "officialWebhookContract": "https://documentation.mailgun.com/docs/mailgun/api-reference/send/mailgun/domain-webhooks/get-v3-domains--domain-name--webhooks--webhook-name-"
   },
   "synchronisation": {
     "cronId": "crn-dbpmfgc9v7es73fb9e30",
@@ -450,6 +466,7 @@
     "DISABLE_NEW_EMAIL_AND_QUALIFICATION_FLAGS; revoke the two new purpose policies",
     "PAUSE_ONLY_NEW_SYNC_JOBS_AND_RESTORE_UPDATED_JOB_USING_CAS",
     "RESTORE_ONLY_NEW_SOURCE_RIGHTS_PATHS_AND_CONTINUITY_FINGERPRINTS_USING_CAS",
+    "REPLACE_OWN_CURRENT_CALENDAR_TRANSPORT_WITH_EXACT_ROLLBACK_PAIR; NEVER_EDIT_OR_REACTIVATE_IMMUTABLE_HISTORICAL_DEFINITIONS",
     "RESTORE_CAPTURED_LKG_RELEASE_BINDINGS_CONFIG_AND_DEPLOYMENTS_ONLY_IF_STILL_OWNED_BY_THIS_ACTIVATION",
     "RESTORE_MAILGUN_WEBHOOK_URL_SETS_EXACTLY; preserve all other purposes",
     "DISABLE_NEW_ORDINARY_DELIVERY_LOGIN; retain audit/outbox/receipts and data; never reset delivery states or source counters"
@@ -462,14 +479,17 @@
   "currentKnownLimitations": [
     "Trading Economics economic-calendar probe through ECR SERVICE was PROVIDER_FORBIDDEN; this plan does not claim or activate macro coverage",
     "Two new EIA schedule rules retain explicit uncertainty and official holiday overrides; unknown release times are not invented",
-    "Numeric history is the current bounded provider snapshot and subsequently observed changes, never a reconstructed vintage archive"
+    "Numeric history is the current bounded provider snapshot and subsequently observed changes, never a reconstructed vintage archive",
+    "Original same-ID transport path update was rejected by the existing immutable native contract; the exact Source owner correction is required before installing012 or enabling new schedule paths."
   ],
   "sourceDigests": {
     "apps/economic-calendar-runtime/migrations/004-notifications.sql": "a4e906882a95700b1711ae4bf032a7762348b3fdfde83f18991e7c05f633ee74",
     "apps/economic-calendar-runtime/migrations/005-expanded-results.sql": "8f57d75fcade1e464ed4c337c76de6350c7a672fc8cd6d9f13052fb0c26d05d8",
     "apps/platform-source-hub/migrations/011-expanded-ecr-results.sql": "ddb153d529dfcab0db41d00bf051fb0d301ab0f432d80a51beb417aaf1916521",
     "packages/platform-contracts/current-e1-authority/migrations/015-calendar-delivery.sql": "f561b9bcd369886d3db6210d3411e626ad64cd3d2a763a0e5d8f99afd066f68e",
-    "apps/economic-calendar-runtime/operations/expanded-semantic-bootstrap.json": "ca7bf3046850011ee3aa050059b3630ed6d380c0d40009d72afd44de504a289a"
+    "apps/economic-calendar-runtime/operations/expanded-semantic-bootstrap.json": "ca7bf3046850011ee3aa050059b3630ed6d380c0d40009d72afd44de504a289a",
+    "apps/platform-source-hub/migrations/012-calendar-transport-continuity.sql": "056bc25c1cb45769645255aa17f8093308e77f257ee052ed452c4c07cb0b64d1",
+    "apps/platform-source-hub/operations/replace-ecr-calendar-transport.sql": "d217e6fd46e03341e63f2c0e587c0c68fb4ee183c3b001c8d077f6e2e144adcd"
   },
   "calendarStorageRights": {
     "consumerApplicationId": "profitia-economic-calendar-runtime-development",
@@ -491,5 +511,6 @@
     "basisRef": "OWNER_ACCEPTED_ECR_COMPLETE_FUNCTIONAL_20261112",
     "preserveHistoricalRowsAndOtherProviders": true,
     "sourceHubCacheRetentionSeconds": 0
-  }
+  },
+  "previousOwnerApprovedPlanSha256": "0c38819cd1657b7ad22e5314649b61744ac8b38d262e29730e6acde7845f0bc3"
 }
