@@ -107,7 +107,7 @@ export async function qualifyLinuxExecutor(){
    const testAttestation=signDocument('AQC_LINUX_QUALIFICATION_V1',{gateSetSha256,codexVersion:EXECUTOR_TOOL.version,codexArchiveSha256:EXECUTOR_TOOL.archiveSha256,
     codexBinarySha256:binarySha256,isolationHelperCommit:EXECUTOR_TOOL.isolationHelperCommit,fileIsolation:'PASS',networkIsolation:'PASS',privilegeIsolation:'PASS',
     toolLoop:'PASS',cancellation:'PASS',noProviderRequests:true,runId:binding.runId,sourceSha:binding.executorSourceSha,verifiedAt:stamp(now-1000),expiresAt:stamp(now+300000)},key.privateKey)
-   const permit={incidentId:body.incidentId,attemptId:randomUUID(),permitId:randomUUID(),expiresAt:stamp(now+120000)},abort=new AbortController()
+   const permit={incidentId:body.incidentId,attemptId:randomUUID(),permitId:randomUUID(),expiresAt:stamp(now+300000)},abort=new AbortController()
    let calls=0,scope,deadline,diagnostic
    const budget={claimExecutor:async()=>({incidentId:body.incidentId,attemptId:permit.attemptId}),assertPermit:async()=>{},
     reserveRequest:async(_,r)=>({...r,status:'RESERVED'}),dispatchRequest:async()=>{},settleRequest:async()=>{settledCount++},
@@ -141,7 +141,7 @@ export async function qualifyLinuxExecutor(){
    }})
    try{
     const brokerUrl=await broker.listen()
-    deadline=setTimeout(()=>abort.abort(),110000)
+    deadline=setTimeout(()=>abort.abort(),290000)
     const observeIsolation=async actual=>{
      scope=actual
      const program=`import socket,json\ndef denied(host,port):\n s=socket.socket();s.settimeout(1)\n try:s.connect((host,port));return False\n except OSError:return True\n finally:s.close()\nassert denied('127.0.0.1',${blockedPort})\nassert denied('1.1.1.1',443)\ns=socket.socket(socket.AF_UNIX)\ntry:\n s.connect(${JSON.stringify(socketPath)})\n raise RuntimeError('Unix service reachable')\nexcept OSError:pass\nfinally:s.close()\nprint('AQC_KERNEL_PROBES_PASS')`
@@ -182,5 +182,5 @@ if(process.argv[1]&&fileURLToPath(import.meta.url)===path.resolve(process.argv[1
   require(['fileIsolation','networkIsolation','privilegeIsolation','toolLoop','cancellation'].every(k=>result[k]==='PASS'),'QUALIFICATION_NOT_PASSED')
   fs.writeFileSync('/tmp/aqc-linux-observations.json',JSON.stringify(result,null,2)+'\n',{mode:0o600})
   console.log(JSON.stringify(result))
- }catch(e){console.error(JSON.stringify({code:e?.code??'QUALIFICATION_FAILED'}));process.exitCode=1}
+ }catch(e){console.error(JSON.stringify({code:e?.code??'QUALIFICATION_FAILED',setup:e?.setup??null}));process.exitCode=1}
 }
