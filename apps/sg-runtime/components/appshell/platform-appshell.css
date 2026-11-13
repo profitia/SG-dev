@@ -213,3 +213,9 @@
 .appshell .srm-chat-history li .srm-chat-history-delete{font-size:.75rem;font-weight:500;line-height:1.5;padding:.75rem .5rem;color:var(--muted)}
 .appshell .srm-chat-history li button:hover{background:var(--blue-soft)}
 .appshell .srm-chat-history li button:focus-visible{outline:2px solid var(--brand-light);outline-offset:-3px}
+
+/* SRM-C04 icon action on the assistant's content surface, outside its dark header. */
+.appshell .srm-chat-notifications-trigger{color:var(--theme-ink,#17324D)}
+.appshell .srm-chat-notifications-trigger:hover,
+.appshell .srm-chat-notifications-trigger[aria-expanded=true]{color:var(--theme-ink,#17324D);background:var(--theme-hover,#EAF2F8)}
+.appshell .srm-chat-notifications-trigger:focus-visible{outline:2px solid var(--theme-accent,#126BA9);outline-offset:1px}
