@@ -1565,10 +1565,12 @@
       "apps/sg-runtime/assistant-ecr-integration.json": "5814e2e5cbdf1a32d22cff3aa55de806ec34c9debdecc21ff06c4f9f887a82bc",
       "apps/sg-runtime/assistant-ecr-precision-integration.json": "a017c2b971e3c72606847264150715c983fa9483537d26be90144a64e0377ee7",
       "apps/sg-runtime/assistant-markdown-integration.json": "27ff06aff8bc44592f0073732748834b7759182fa4307d901c7d63304381a38b",
+      "apps/sg-runtime/assistant-notifications-integration.json": "78d6d34fea2ab1ce18f8dd810cc9906452763e8539aedea685fccbe3881b42cb",
       "apps/sg-runtime/assistant-send-arrow-integration.json": "62c6af6817a022c31788d801cc0eac293a24b3f25d9e529d32b1bff4908fa230",
       "apps/sg-runtime/components/appshell/assistant-conversation-view.tsx": "a4cd2979aa331ec67709b113784043318627c91a29cdb3dcbc886928c8c2aacd",
       "apps/sg-runtime/components/appshell/platform-appshell-entry.tsx": "356ba4ce17c458b694304d20f0bbbdf8d1e82aa9c788518c83e232b50956d78f",
       "apps/sg-runtime/components/auth/account-landing.tsx": "8f88d567a6909ffa0371bb36c3eb2c69d6c419cbd9b51ed4595674e787d261ed",
+      "apps/sg-runtime/components/procurement-insights/notifications.tsx": "12b18e4ae27955b1f2f1f66f0377b36327f75c1247b26e80b64a5e8dbc144629",
       "apps/sg-runtime/components/procurement-insights/workspace.tsx": "28cdc0d9c8936deb4518495da4ef6f994ebdea277616f3b2187e84f53a161082",
       "apps/sg-runtime/deployment/assistant-ecr-targets.json": "edc6e1632845f8aa0648dcfed3caf0fddfacc3c6a2ebc06e8c2c1b6ce4f2b8a7",
       "apps/sg-runtime/lib/assistant/conversation.ts": "f46f630534cd881798014c55646828059a58e9f06f1fdf653284ac4d20d3cdec",
@@ -1599,8 +1601,11 @@
       "apps/sg-runtime/tests/assistant-m1-integrity.mjs": "b172eab829d4b8e3b141e067d10e2effd166725b6a4aee585663c3c9c80d916c",
       "apps/sg-runtime/tests/assistant-m2-integrity.mjs": "a9a761bd0742406f8a36c0ce5f44045d2783bfe505284e34c58057f3f204220e",
       "apps/sg-runtime/tests/assistant-m2-source-view.mjs": "37ff427f894617700e46b5bb70e1f090649c544140c3366bddba6e41d8167031",
+      "apps/sg-runtime/tests/assistant-notifications-integrity.mjs": "7d8c0ab445d1d8e9615aaf7ad170d675c6feab5665adabf36999462094e2d622",
+      "apps/sg-runtime/tests/assistant-notifications-integrity.test.mjs": "1d22944ad0e3d86082045e887ec85036a729f4d7910e8f6d793e8ec65e963da3",
       "apps/sg-runtime/tests/assistant-send-arrow-integrity.mjs": "04f9a2b75f9b64b400f34f39cafd35fdd1d895280c1093ec565d7370c885d6cc",
       "apps/sg-runtime/tests/assistant-send-arrow-integrity.test.mjs": "54e91a6ffdf611d5cb49efefb43c42e1c08b36502b59a73c26821c9417412a00",
+      "apps/sg-runtime/tests/assistant-widget.test.tsx": "2842d923544add9fd8e0b650f51cb38915bc0a3eca739e96d323ba4ef338512d",
       "apps/sg-runtime/tests/diagnostic-telemetry-adoption.test.mjs": "d236f361ed38a9d5b18e348eca79378b7dcf921eec3eb9613bbfdaa9916d0806",
       "apps/sg-runtime/tests/market-calendar-integrity.mjs": "b1c2086196bb3b7827fb92f54014971692e239a2edc9fa3adc6bb91fedc62e61",
       "apps/sg-runtime/tests/native-sql-roundtrips.test.mjs": "ce45cd52dde814db21c746ac8a22902f1405295534dbcc509f4f7f9a98a195fe",
@@ -1641,7 +1646,7 @@
       "apps/srm/scripts/xray-performance-adoption.test.mjs": "8ab92e886689cbe3953e41f06e7d7c934f4e6144c2aee6fb779a18699f1171b8",
       "apps/srm/src/server/assistant-context-runtime.ts": "829d1c926a28c62bc7b8e3df44918393936a7b68eb06ef8513e8ef82a09959c8",
       "apps/srm/src/server/financial-excel-runtime.ts": "843229a2129076c8d0f40408c4d97ca35564c537ea777b1e081deb985a0315c1",
-      "apps/srm/src/server/organisation-bootstrap.test.ts": "b3823af140ba2cd902797014c6aa70ba61fbc4f0f5c1bf559fac33dc1085be01",
+      "apps/srm/src/server/organisation-bootstrap.test.ts": "e54783369ce79903339a880a626eafc380d7e58a461244d0c5a3d604fd862bde",
       "apps/srm/src/server/organisation-bootstrap.ts": "22ceccbd12af362b0ca2daa2dac73379e13cdef0ff5949eca9ae0fb968af35b0",
       "apps/srm/src/server/organisation-context.test.ts": "f6359a441c3754f0d8b3201d95b587bfbf29564243216027345ddcfd9c0a1c8e",
       "apps/srm/src/server/organisation-context.ts": "a4e5a8d4734ce673f5dbd2c77e888cc94ecb8b1ed6f27fea874b60a619f7d98b",
@@ -1839,7 +1844,7 @@
       "packages/platform-contracts/test/organisation-access-projection.test.mjs": "f5c46ace63224671ee890c7b9ad5518a739398f27de860b2df4cb0102268d4da",
       "packages/platform-contracts/test/organisation-context.test.mjs": "166b44461dcf4d04f417fbb70621a51be078dd1a35d0ef79f6fdb38e977d686b",
       "packages/platform-contracts/test/organisation-lifecycle-postgres.test.mjs": "e164118ccc9b07ac51966bb51186bb5ef49cd928bda8fecac3e7fdc1eb80a960",
-      "packages/platform-contracts/test/organisation-lifecycle-sdk-compatibility.test.mjs": "baaf895dfb6c072dac09e292e0f39a203222d17906e38733f3fc6ad6787a538d",
+      "packages/platform-contracts/test/organisation-lifecycle-sdk-compatibility.test.mjs": "b779db1e3a5513b4bc34bd8906dfaa79b22824be6d86594a25eef6c4306efe46",
       "packages/platform-contracts/test/organisation-lifecycle.test.mjs": "271d5a09f14eebd23edfe46ecc089802f65fe68b44e44217dcd3c488da5670d1",
       "packages/platform-contracts/test/organisation-sdk-compatibility.mjs": "f0d283ef36ea853908d74cb73da0a2136cc6315dd73ad73a44de00db145bd03a",
       "packages/platform-contracts/test/organisation-sdk-compatibility.test.mjs": "d2ccefe7dbf65773d28273ddd61105630ddc485ea4149fd34fd648f2ee20c143",
@@ -1847,6 +1852,11 @@
       "packages/platform-contracts/test/recurring-consent-transport-source.mjs": "04779e83bdf2c302fb19a424435caab39c0a4ba5653f258a6da23ea3310cd3a4"
     },
     "currentMainSourceDigests": {
+      "apps/sg-runtime/assistant-notifications-integration.json": "78d6d34fea2ab1ce18f8dd810cc9906452763e8539aedea685fccbe3881b42cb",
+      "apps/sg-runtime/components/procurement-insights/notifications.tsx": "12b18e4ae27955b1f2f1f66f0377b36327f75c1247b26e80b64a5e8dbc144629",
+      "apps/sg-runtime/tests/assistant-notifications-integrity.mjs": "7d8c0ab445d1d8e9615aaf7ad170d675c6feab5665adabf36999462094e2d622",
+      "apps/sg-runtime/tests/assistant-notifications-integrity.test.mjs": "1d22944ad0e3d86082045e887ec85036a729f4d7910e8f6d793e8ec65e963da3",
+      "apps/sg-runtime/tests/assistant-widget.test.tsx": "2842d923544add9fd8e0b650f51cb38915bc0a3eca739e96d323ba4ef338512d",
       "apps/sg-runtime/tests/procurement-insights-live-acceptance-source.mjs": "9a4d1698dd847d152246374d83aaa9f7f0e6fa76f80c6793ae40bd52aa3ee0d4",
       "apps/sg-runtime/tests/procurement-insights.test.tsx": "9004b98b8181b26b63ec9d7ee1afe8099b5d25c77a4f46d70a2301cad8b0fe10"
     },
@@ -1865,12 +1875,17 @@
       {
         "projectKey": "SRM",
         "taskId": "SRM-REGISTRATION-STAGE-I-RESUME-V2-20261113",
-        "sourceSha": "c24ea34e1bc43f57304c63fbf4634c138a2fed95",
+        "sourceSha": "b273b3cbde1d10c70374551e7f0488bcf9331dda",
         "sourceDigests": {
-          "apps/srm/src/server/organisation-bootstrap.test.ts": "b3823af140ba2cd902797014c6aa70ba61fbc4f0f5c1bf559fac33dc1085be01",
+          "apps/srm/src/server/organisation-bootstrap.test.ts": "e54783369ce79903339a880a626eafc380d7e58a461244d0c5a3d604fd862bde",
           "apps/srm/src/server/root-atomic-claim-adoption.test.ts": "fc9fcfff74b024378be40cbeb67887820e5b30b896f4b1045d38aac921de0c41"
         }
       }
+    ],
+    "predecessorAbsentPaths": [
+      "apps/sg-runtime/assistant-notifications-integration.json",
+      "apps/sg-runtime/tests/assistant-notifications-integrity.mjs",
+      "apps/sg-runtime/tests/assistant-notifications-integrity.test.mjs"
     ]
   }
 }

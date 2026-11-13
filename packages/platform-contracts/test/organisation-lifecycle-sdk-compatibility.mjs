@@ -4,7 +4,7 @@ import {createHash} from 'node:crypto'
 import {posix} from 'node:path'
 const recordPath='packages/platform-contracts/test/organisation-lifecycle-sdk-compatibility.json'
 const guardPath='packages/platform-contracts/test/organisation-lifecycle-sdk-compatibility.mjs'
-const reconciledRecordSha256='1b1aba59558b5d186f721819aad3cef345b94a1dfb72a775b6855e8a5e6a9f31'
+const reconciledRecordSha256='cce0785a2abfc5a3663140b623f6b7b3a64b11eba3907ad9ae7b74cbc95e5303'
 const acceptedRecordSha256='3a7d291e8e6da5ebdae31571d6bb89d664ef5a4c41f32af05de0e161e7f6f7b2'
 const previousSourceSha='b18b5eee15aab07c7ff3968cafbfd50ddd5e9b5a'
 const acceptedMainSha='68867fe8c54b8f3b2efadf512d37d8925b9657e5'
@@ -31,7 +31,7 @@ function equalKeys(value,keys,label){assert(value&&Object.getPrototypeOf(value)=
 function reconciledLifecycleSource(bytes,current,historical,projectKey){
  assert.equal(hash(bytes),reconciledRecordSha256,'exact reconciled lifecycle source record')
  const a=JSON.parse(bytes),r=a.sourceReconciliation
- equalKeys(r,['schemaVersion','acceptanceId','scope','predecessorSha','predecessorRecordSha256','predecessorGuardSha256','currentMainSha','taskIds','currentSourceDigests','currentMainSourceDigests','correctedOwnerInputs'],'closed lifecycle test reconciliation')
+ equalKeys(r,['schemaVersion','acceptanceId','scope','predecessorSha','predecessorRecordSha256','predecessorGuardSha256','currentMainSha','predecessorAbsentPaths','taskIds','currentSourceDigests','currentMainSourceDigests','correctedOwnerInputs'],'closed lifecycle test reconciliation')
  assert.equal(r.schemaVersion,'1.0');assert.equal(r.acceptanceId,'organisation-lifecycle-sdk-1.37-test-reconciliation-20261113-v1')
  assert.equal(r.scope,'SOURCE_TEST_CONTINUITY_ONLY')
  assert.equal(r.predecessorSha,'8aee0665f20f16ae66455f8d15d336bac59711f0')
@@ -55,7 +55,7 @@ function reconciledLifecycleSource(bytes,current,historical,projectKey){
  const previousFiles={...a.sourceDigests,...a.compatibilityTestSourceDigests,...a.preservedSourceDigests,...a.consumerSourceDigests.ARCHITECTURE,...a.consumerSourceDigests.SG2,...a.consumerSourceDigests.SRM}
  for(const p of Object.keys(previousFiles))assert(Object.hasOwn(r.currentSourceDigests,p),'complete original physical closure retained')
  map(r.currentMainSourceDigests,'current main continuity')
- assert.deepEqual(Object.keys(r.currentMainSourceDigests).sort(),['apps/sg-runtime/tests/procurement-insights-live-acceptance-source.mjs','apps/sg-runtime/tests/procurement-insights.test.tsx'])
+ assert.deepEqual(Object.keys(r.currentMainSourceDigests).sort(),["apps/sg-runtime/assistant-notifications-integration.json","apps/sg-runtime/components/procurement-insights/notifications.tsx","apps/sg-runtime/tests/assistant-notifications-integrity.mjs","apps/sg-runtime/tests/assistant-notifications-integrity.test.mjs","apps/sg-runtime/tests/assistant-widget.test.tsx","apps/sg-runtime/tests/procurement-insights-live-acceptance-source.mjs","apps/sg-runtime/tests/procurement-insights.test.tsx"])
  for(const[p,h]of Object.entries(r.currentMainSourceDigests)){
   assert.equal(r.currentSourceDigests[p],h,'main input belongs to complete current graph')
   assert.equal(hash(historicalBytes(historical,r.currentMainSha,p)),h,'actual newer main input preserved')
@@ -76,14 +76,17 @@ function reconciledLifecycleSource(bytes,current,historical,projectKey){
  }
  const additional=['packages/platform-contracts/test/organisation-lifecycle-sdk-compatibility.test.mjs']
  for(const[p,h]of Object.entries(r.currentSourceDigests)){
-  assert(Object.hasOwn(previousFiles,p)||Object.hasOwn(corrections,p)||additional.includes(p),'bounded added test input')
+  assert(Object.hasOwn(previousFiles,p)||Object.hasOwn(corrections,p)||Object.hasOwn(r.currentMainSourceDigests,p)||additional.includes(p),'bounded added test input')
   if(Object.hasOwn(previousFiles,p)&&previousFiles[p]!==h)assert(Object.hasOwn(corrections,p)||Object.hasOwn(r.currentMainSourceDigests,p)||additional.includes(p),'no unrelated source replacement')
  }
  for(const[owner,binding]of Object.entries(projects)){
   const receipt=JSON.parse(current(binding.path))
   assert.deepEqual(receipt,{schemaVersion:'1.0',projectKey:owner,taskId:r.taskIds[owner],acceptanceId:r.acceptanceId,sourceRecordSha256:reconciledRecordSha256,platformVersion:'1.37.0',scope:r.scope,runtimeOptedIn:false},'current paired owner reconciliation '+owner)
  }
- const projected=p=>hidden.has(p)||Object.hasOwn(r.currentSourceDigests,p)?historicalBytes(historical,r.predecessorSha,p):current(p)
+ const absentAtPredecessor=new Set(r.predecessorAbsentPaths)
+ assert.deepEqual([...absentAtPredecessor].sort(),['apps/sg-runtime/assistant-notifications-integration.json','apps/sg-runtime/tests/assistant-notifications-integrity.mjs','apps/sg-runtime/tests/assistant-notifications-integrity.test.mjs'])
+ for(const p of absentAtPredecessor){assert(Object.hasOwn(r.currentSourceDigests,p),'current main addition authenticated');let absent=false;try{historicalBytes(historical,r.predecessorSha,p)}catch(error){if(missing(error))absent=true;else throw error}assert(absent,'actual absence before main notification successor')}
+ const projected=p=>{if(absentAtPredecessor.has(p))return absent();return hidden.has(p)||Object.hasOwn(r.currentSourceDigests,p)?historicalBytes(historical,r.predecessorSha,p):current(p)}
  const original=organisationLifecycleSdkPredecessor(projected,historical,{projectKey})
  assert(original,'complete immutable original lifecycle graph is still mandatory')
  return Object.freeze({...original,currentSourceDigests:Object.freeze(r.currentSourceDigests),sourceReconciliation:Object.freeze(r)})

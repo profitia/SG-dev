@@ -77,6 +77,7 @@ test('reconciliation authenticates every current test byte before returning immu
   assert.equal(historyReads,0,'unverified physical source must fail before predecessor access: '+p)
  }
  for(const p of Object.keys(r.currentMainSourceDigests))assert.deepEqual(current(p),historical(r.currentMainSha,p),'new main PI test bytes remain current')
+ for(const p of r.predecessorAbsentPaths)assert.throws(()=>organisationLifecycleSdkPredecessor(current,historical).previousBytes(p),{code:'ENOENT'})
  assert.equal(r.correctedOwnerInputs.length,2)
  for(const input of r.correctedOwnerInputs){
   const p=Object.keys(input.sourceDigests)[0]
