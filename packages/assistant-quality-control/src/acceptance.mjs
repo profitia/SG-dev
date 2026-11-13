@@ -154,10 +154,12 @@ export async function qualifyLinuxExecutor(){
       brokerUrl,agentToken:bearerToken,qualification:testAttestation,qualificationKeys:keys,observedGateSetSha256:gateSetSha256,nonce:randomUUID(),
       signal:abort.signal,observeIsolation,diagnostics:value=>{diagnostic=value}})
     }catch(e){
-     if(phase==='cancellation'&&e.code==='EXECUTOR_CANCELLED'&&e.stoppedProof?.cgroupEmpty===true)cancelled=e
+     if(phase==='cancellation'&&e.code==='EXECUTOR_CANCELLED'&&e.stoppedProof?.cgroupEmpty===true&&!e.cleanup)cancelled=e
      else{if(diagnostic)console.error(JSON.stringify({phase,syntheticOnly:true,diagnostic}));throw e}
     }
     require(calls===2,'TOOL_LOOP_NOT_EXECUTED')
+    require(scope&&!fs.existsSync(scope.cgroup)&&!fs.existsSync(path.dirname(scope.work))&&!fs.existsSync('/home/aqc-repair')
+     &&spawnSync('/usr/bin/getent',['passwd','aqc-repair']).status===2&&spawnSync('/usr/bin/getent',['group','aqc-repair']).status===2,'EXECUTOR_CLEANUP_NOT_CONFIRMED')
     if(phase==='tool-loop'){
      require(completed?.stoppedProof.cgroupEmpty===true&&completed.body.files.length===2
       &&completed.body.files.some(f=>f.path===sourcePath&&f.content.includes('return x+1')),'ACTUAL_PATCH_NOT_COLLECTED')
@@ -182,5 +184,5 @@ if(process.argv[1]&&fileURLToPath(import.meta.url)===path.resolve(process.argv[1
   require(['fileIsolation','networkIsolation','privilegeIsolation','toolLoop','cancellation'].every(k=>result[k]==='PASS'),'QUALIFICATION_NOT_PASSED')
   fs.writeFileSync('/tmp/aqc-linux-observations.json',JSON.stringify(result,null,2)+'\n',{mode:0o600})
   console.log(JSON.stringify(result))
- }catch(e){console.error(JSON.stringify({code:e?.code??'QUALIFICATION_FAILED',setup:e?.setup??null}));process.exitCode=1}
+ }catch(e){console.error(JSON.stringify({code:e?.code??'QUALIFICATION_FAILED',setup:e?.setup??null,cleanup:e?.cleanup??null}));process.exitCode=1}
 }
