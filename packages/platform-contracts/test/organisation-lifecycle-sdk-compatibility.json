@@ -1746,6 +1746,7 @@
       "packages/platform-contracts/payload-capture/package.json": "d8670426f265f13e29c2487f3d39b7e0e235d52e56412eda3c0f0220e13da9c2",
       "packages/platform-contracts/payload-capture/src/payload-capture.d.mts": "ac8c8399b33ee143a4191530fd7a236f04b6055c437b6a38bf69a888f86d2634",
       "packages/platform-contracts/payload-capture/src/payload-capture.mjs": "7eabea213158e6193c481dcbe2721b98837cfd729ae1af3bac7d2396c950f08f",
+      "packages/platform-contracts/payload-capture/test/public-package.test.mjs": "94850fb9ff993e39a76cead74c08c50d7f66f2e19d5d57e3bf3941e14716de45",
       "packages/platform-contracts/readonly-miss-report/README.md": "1512a31ec3d2af928b1c77ea5a26e1b090f4175e614302eb94d59fb215c5ddbc",
       "packages/platform-contracts/readonly-miss-report/package-lock.json": "bcbdc1fbfabcf2094445afcf1e107ce8ebe11e39de1b01e0645b88a62310dc54",
       "packages/platform-contracts/readonly-miss-report/package.json": "2456ff92f909017d48fa39da1cce839bba226e5e609b6e7d92647d87bccf8c07",
@@ -1864,12 +1865,13 @@
       {
         "projectKey": "ARCHITECTURE",
         "taskId": "ARCHITECTURE-REGISTRATION-STAGE-I-RESUME-V2-20261113",
-        "sourceSha": "3541cc88dfa8a82e7c38dbeb41a01af02fa972b4",
+        "sourceSha": "95db650e35e078c9daca12229e19d4e4eb20ebf4",
         "sourceDigests": {
           "packages/platform-contracts/test/fixtures/identity-profile-postgres.mjs": "6d0ad7dce50bf14ab641223cd3f5b0858fe4e445aa20fc0f91eee0eea4d8e185",
           "apps/architecture-lab/test/payload-capture-publication.test.mjs": "63dfb8723345e0803185c85545939c2ee51ec6d750d6509040d3ef74050ccbf3",
           "packages/platform-contracts/root-atomic-claim/test/root-atomic-claim.test.mjs": "4c46fdea92c354ef28ecdeba03498d8063a53bb9a5b5c02754d0170713d0c1c1",
-          "packages/platform-contracts/current-fresh-report/test/current-fresh-report.test.mjs": "471951b6373127cef1b1898a2d1e8e9e7455fda08c4236716af23c34512df199"
+          "packages/platform-contracts/current-fresh-report/test/current-fresh-report.test.mjs": "471951b6373127cef1b1898a2d1e8e9e7455fda08c4236716af23c34512df199",
+          "packages/platform-contracts/payload-capture/test/public-package.test.mjs": "94850fb9ff993e39a76cead74c08c50d7f66f2e19d5d57e3bf3941e14716de45"
         }
       },
       {
