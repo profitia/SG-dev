@@ -704,7 +704,7 @@ export function sdkContinuationPredecessor(receipt,current,historical,{projectKe
  }}
 }
 const currentBytes=path=>fs.readFileSync(new URL(path,root))
-const historicalBytes=(sha,path)=>execFileSync('git',['show',sha+':'+path],{cwd:root,stdio:['ignore','pipe','ignore']})
+const historicalBytes=(sha,path)=>execFileSync('git',['show',sha+':'+path],{cwd:root,stdio:['ignore','pipe','pipe']})
 /** Exact current digests alongside immutable historical acceptance. Tests must
  * compare actual runtime fingerprint functions to this verified successor.
  */
