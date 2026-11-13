@@ -130,8 +130,8 @@ test('tampered current file, receipt, historical digest, engine and rollback evi
 })
 test('every changed SG2 source in the candidate or resulting main has an exact additive binding',()=>{
  const r=receipt(),a=r.pciSmartPreparationCompatibility
- const live=procurementInsightsLiveAcceptancePredecessor(current,historical)
  const sdk=sdkContinuationPredecessor(r,current,historical,{projectKey:'SG2'})
+ const live=procurementInsightsLiveAcceptancePredecessor(sdk?.lifecycle?.acceptedMainBytes??current,historical)
  const sdkCurrent=sdk?sdk.previousBytes:current
  const calendar=marketCalendarSourcePredecessor(sdk?.calendarCurrent??current,historical)
  const recurring=recurringSourcePredecessor(sdkCurrent,historical)
