@@ -385,7 +385,8 @@
       "apps/srm/src/server/supplier-acquisition-http.ts": "b68e5fc2dd7a268d2f66533819160b574765c37e3b28555397a2fe62183d815b",
       "apps/srm/src/server/supplier-location-geocoding-runtime.test.ts": "63ee7b29f2b8d6651be9423a2cbca17b1517a6e35c53b7c53a3b7334080c72c2",
       "apps/srm/src/server/supplier-request-handler.ts": "e891003f4107b3751fed398649568bd455886750d21b012c8864e59797c5ab36",
-      "apps/srm/src/server/xray-presentation.ts": "306dac50d8d8de714a00cf7344292824117b1235deeaa3609586a423502ba720"
+      "apps/srm/src/server/xray-presentation.ts": "306dac50d8d8de714a00cf7344292824117b1235deeaa3609586a423502ba720",
+      "apps/srm/package.json": "a32a178028dc8af16c7b2acd6b4470757fe2de0dd7598d29cb4fc14407482d7d"
     }
   },
   "preservedSourceDigests": {
@@ -704,7 +705,8 @@
     "packages/platform-contracts/test/external-call.test.mjs": "3107f59bdf15198448894f0f20f4b86fdd534028b91d1ce94a23696b346654a1",
     "packages/platform-contracts/test/operation-context.test.mjs": "f00169504167c1b208cd0b51f2f2d7927fcffed33a70480cd3980d21c44f3e80",
     "packages/platform-contracts/test/organisation-sdk-compatibility.mjs": "38bdd7b9fbb8f3592522311a6085d5704bde46f2b0f5cbd163027fe38ac9ea50",
-    "packages/platform-contracts/test/private-operation-host.test.mjs": "604a1459b33a8b45ec76f3af21974459d481bc48197f9894b2d203553f62b287"
+    "packages/platform-contracts/test/private-operation-host.test.mjs": "604a1459b33a8b45ec76f3af21974459d481bc48197f9894b2d203553f62b287",
+    "apps/srm/package.json": "f0838f1b92f1229d46a15f3c0119137eefa44aeb7e681a2f4d8926a21e37bbbf"
   },
   "previousAbsentPaths": [
     "apps/identity-runtime/scripts/install-organisation-lifecycle.mjs",
@@ -1043,7 +1045,7 @@
     {
       "projectKey": "SRM",
       "taskId": "SRM-REGISTRATION-LIFECYCLE-SDK-ADOPTION-20261112",
-      "sourceSha": "a65ce7c9f39bb21e536569ea17422b22cd22d17a",
+      "sourceSha": "497602cda3bf1bac5e78d72e0b559017711e57b5",
       "sourceDigests": {
         "apps/srm/.env.example": "0763d9607dce0358a8901b3992724a7c3936c8e3ec7e2bf9c4bf947c8a0a3af7",
         "apps/srm/app/api/organisation-onboarding/company/route.ts": "3249e9914256cdd59ac4fdd2bf2fc7e7866535d678bbbee752c640cfb550063f",
@@ -1081,7 +1083,8 @@
         "apps/srm/src/server/supplier-acquisition-http.ts": "b68e5fc2dd7a268d2f66533819160b574765c37e3b28555397a2fe62183d815b",
         "apps/srm/src/server/supplier-location-geocoding-runtime.test.ts": "63ee7b29f2b8d6651be9423a2cbca17b1517a6e35c53b7c53a3b7334080c72c2",
         "apps/srm/src/server/supplier-request-handler.ts": "e891003f4107b3751fed398649568bd455886750d21b012c8864e59797c5ab36",
-        "apps/srm/src/server/xray-presentation.ts": "306dac50d8d8de714a00cf7344292824117b1235deeaa3609586a423502ba720"
+        "apps/srm/src/server/xray-presentation.ts": "306dac50d8d8de714a00cf7344292824117b1235deeaa3609586a423502ba720",
+        "apps/srm/package.json": "a32a178028dc8af16c7b2acd6b4470757fe2de0dd7598d29cb4fc14407482d7d"
       }
     }
   ]

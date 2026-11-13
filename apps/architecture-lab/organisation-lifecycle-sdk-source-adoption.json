@@ -3,7 +3,7 @@
   "projectKey": "ARCHITECTURE",
   "taskId": "ARCH-REGISTRATION-LIFECYCLE-SDK-SOURCE-20261112",
   "acceptanceId": "organisation-lifecycle-sdk-1.37-development-v1",
-  "sourceRecordSha256": "aa3f7dbcb05e86a154fcceeaf93759ca6bff3f0707c10239de2357a0c66c599e",
+  "sourceRecordSha256": "b51159ec7ee99ad6835b7d80009103b33d27c835dac5886a12b7f469ee2ab7d4",
   "platformVersion": "1.37.0",
   "scope": "OPTIONAL_ORGANISATION_LIFECYCLE_SOURCE_ONLY",
   "runtimeOptedIn": false
