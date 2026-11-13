@@ -1,0 +1,10 @@
+{
+  "schemaVersion": "1.0",
+  "projectKey": "ARCHITECTURE",
+  "taskId": "ARCH-REGISTRATION-LIFECYCLE-SDK-SOURCE-20261112",
+  "acceptanceId": "organisation-lifecycle-sdk-1.37-development-v1",
+  "sourceRecordSha256": "bb885cd035066ac1cbf2850e6d575dbaeede0ffd9f8d2f3a03f3eb8a86d4161b",
+  "platformVersion": "1.37.0",
+  "scope": "OPTIONAL_ORGANISATION_LIFECYCLE_SOURCE_ONLY",
+  "runtimeOptedIn": false
+}

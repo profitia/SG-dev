@@ -4,7 +4,7 @@ import {createHash} from 'node:crypto'
 import {posix} from 'node:path'
 const recordPath='packages/platform-contracts/test/organisation-lifecycle-sdk-compatibility.json'
 const guardPath='packages/platform-contracts/test/organisation-lifecycle-sdk-compatibility.mjs'
-const acceptedRecordSha256='PENDING_EXACT_SOURCE_RECORD'
+const acceptedRecordSha256='bb885cd035066ac1cbf2850e6d575dbaeede0ffd9f8d2f3a03f3eb8a86d4161b'
 const previousSourceSha='b18b5eee15aab07c7ff3968cafbfd50ddd5e9b5a'
 const originalRecordPath='packages/platform-contracts/test/organisation-sdk-compatibility.json'
 const originalRecordSha256='022f0a4c774cc93856c7219518ac99d23712cd3961bab508fa0d2b25c9113ea1'
@@ -12,7 +12,7 @@ const projects={ARCHITECTURE:{path:'apps/architecture-lab/organisation-lifecycle
  SG2:{path:'apps/sg-runtime/organisation-lifecycle-sdk-source-adoption.json',taskId:'SG2-REGISTRATION-LIFECYCLE-SDK-ADOPTION-20261112'},
  SRM:{path:'apps/srm/organisation-lifecycle-sdk-source-adoption.json',taskId:'SRM-REGISTRATION-LIFECYCLE-SDK-ADOPTION-20261112'}}
 const hash=bytes=>createHash('sha256').update(bytes).digest('hex')
-const safePath=p=>typeof p==='string'&&/^[A-Za-z0-9_./-]+$/.test(p)&&!posix.isAbsolute(p)&&posix.normalize(p)===p&&!p.split('/').includes('..')
+const safePath=p=>typeof p==='string'&&[...p].every(c=>'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_./-[]()@'.includes(c))&&!posix.isAbsolute(p)&&posix.normalize(p)===p&&!p.split('/').includes('..')
 const missing=error=>error?.code==='ENOENT'||error?.status===128&&/does not exist|exists on disk/.test(String(error.stderr??error.message??''))
 const absent=()=>{throw Object.assign(Error('Absent from immutable lifecycle predecessor'),{code:'ENOENT'})}
 const historyCache=new WeakMap()
