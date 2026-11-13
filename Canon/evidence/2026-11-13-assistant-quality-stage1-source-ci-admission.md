@@ -24,6 +24,8 @@ The owner's #1061 decision remains exact five-file G1 admission. It does not
 admit the controller implementation, a new CIC dependency pin or an application
 repair. This proposal therefore requires its own explicit owner CI decision.
 
+Parallel accepted main `08792452867f486580874857b3a5aaae10de9170` is preserved in full, including the separate PI source policy and tests. This proposal does not edit its accepted review entries.
+
 ## Proposed decision
 
 Add `AQC-STAGE1-SOURCE-CI-20261113`, a finite engineering-source class:

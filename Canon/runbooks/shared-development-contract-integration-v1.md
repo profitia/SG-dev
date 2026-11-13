@@ -991,7 +991,27 @@ controller-owner acceptance before activation. The earlier approved8c and
 C5ad proof from control97 are retained; the latter is historical after main537
 changed the controller. Fresh exact controlled/public and resulting-main
 gates remain mandatory. No deployment or mail was performed.
-# CIC Stage 1 engineering-source CI — proposal (2026-11-13)
+
+
+### PI live SRM test-source continuation — proposal only
+
+PROPOSED / OWNER_CI_APPROVAL_PENDING. PR1058 now has thirteen exact source
+entries: the existing P1 adoption test reads the already authenticated live SDK
+source layer, and the live receipt/helper plus routing tests authenticate that
+physical test before restoring its unchanged historical predecessor. The
+original12-file and fixture12-file reviews remain immutable; eight source
+versions including both product runtime fixes remain identical to V3. All22
+receipts, Root contract, accepted Calendar and registration policies remain
+unchanged. The independent SRM task is SRM-PI-LIVE-SDK-CONTINUITY-20261112.
+
+Explicit owner acceptance of this exact new13-file review and three-file policy
+is required before trusted-main bootstrap/admission. Then require complete
+exact-source public/controlled and resulting-main CI. Existing bounded SG-only
+release permission remains separate and adds no grant, schema, secret, provider
+call, email, Oil publication or SRM deployment. No historical digest is changed
+to manufacture PASS.
+
+## CIC Stage 1 engineering-source CI — proposal (2026-11-13)
 
 **PROPOSED_ONLY / OWNER_CI_POLICY_ACCEPTANCE_PENDING.** The Stage 1 commission
 and exact five-file G1 decision #1061 do not grant generic AQC source admission.
