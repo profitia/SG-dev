@@ -2795,3 +2795,30 @@ test('PI fixture projection authenticates both complete reviews and refuses mixe
  }
  assert(c.assertPrivateRecurringProvenance(authorityRoot));
 });
+
+
+test('PI SRM continuation pins exactly thirteen current files without rewriting either twelve-file review',async()=>{
+ const c=await import('./controlled-package-ci.mjs'),r=c.PRIVATE_RECURRING_LIVE_SRM_REVIEW,old=c.PRIVATE_RECURRING_LIVE_FIXTURE_REVIEW;
+ assert.equal(createHash('sha256').update(JSON.stringify(old.entries)).digest('hex'),'a18b05983e4b7927ac756c36f738b5556ad67746a2cae99ddf94755174851e96');
+ assert.equal(Object.keys(r.entries).length,13);assert.equal(createHash('sha256').update(JSON.stringify(r.entries)).digest('hex'),'c7da3065f39556ea2c523906cadfd86c2855938509b7efdfb7e5ed501bfadc70');
+ assert.deepEqual(Object.keys(r.entries).filter(p=>JSON.stringify(r.entries[p])!==JSON.stringify(old.entries[p])).sort(),['apps/platform-source-hub/test/ci-routing.test.mjs','apps/sg-runtime/procurement-insights-live-acceptance.json','apps/sg-runtime/tests/procurement-insights-live-acceptance-source.mjs','apps/sg-runtime/tests/procurement-insights-live-acceptance-source.test.mjs','apps/srm/scripts/supplier-location-admission.integration.test.mjs']);
+ const files=Object.entries(r.entries).map(([filename,e])=>({filename,sha:e.sha,status:e.status}));
+ const p={...pr(),number:r.prNumber,changed_files:files.length,base:{...pr().base,sha:r.baseSha},head:{...pr().head,sha:r.sourceSha,ref:r.branch}};
+ assertArchitectureFiles(p,files);assert.equal(selectCandidate(context(),p,r.sourceSha,{files}),r.sourceSha);
+ for(const f of files){assertPrivateRecurringReviewEntry(f,'100644 blob '+f.sha+'\t'+f.filename+'\0');for(const mode of ['100755','120000','160000'])rejection(()=>assertPrivateRecurringReviewEntry(f,mode+' blob '+f.sha+'\t'+f.filename+'\0'));}
+ for(const edit of [f=>f.pop(),f=>f.push(f[0]),f=>f[0].sha='f'.repeat(40),f=>f[0].status='removed',f=>f[0].previous_filename='elsewhere',f=>f[0].filename='apps/sg-runtime/app/api/unreviewed.ts']){const bad=structuredClone(files);edit(bad);rejection(()=>selectCandidate(context(),{...p,changed_files:bad.length},r.sourceSha,{files:bad}));}
+ for(const changed of Object.keys(old.entries).filter(p=>r.entries[p].sha!==old.entries[p].sha)){const mixed=structuredClone(files);mixed.find(f=>f.filename===changed).sha=old.entries[changed].sha;rejection(()=>selectCandidate(context(),p,r.sourceSha,{files:mixed}));}
+ for(const edit of [q=>q.number=1014,q=>q.head.ref='architecture/another',q=>q.head.repo.full_name='attacker/fork',q=>q.user.login='attacker',q=>q.base.ref='staging',q=>q.head.sha=sha]){const bad=structuredClone(p);edit(bad);rejection(()=>selectCandidate(context(),bad,r.sourceSha,{files}));}
+});
+test('PI SRM projection authenticates every current source and restores the exact unchanged historical P1 test',async()=>{
+ const c=await import('./controlled-package-ci.mjs'),r=c.PRIVATE_RECURRING_LIVE_SRM_REVIEW,cache=new Map();
+ const current=p=>{if(!cache.has(p))cache.set(p,execFileSync('git',['show',r.sourceSha+':'+p],{cwd:authorityRoot}));return cache.get(p)},historical=(sha,p)=>execFileSync('git',['show',sha+':'+p],{cwd:authorityRoot});
+ const bytes=current(PI_LIVE_ACCEPTANCE_PROVENANCE_PATH),a=JSON.parse(bytes),options={sha256ForPath:p=>a.sourceDigests[p]??a.preservedReceipts[p],blobForPath:p=>r.entries[p]?.sha,historicalDigestForPath:(sha,p)=>{assert.equal(sha,a.baseCandidateSha);return a.preservedReceipts[p]}};
+ assert.equal(Object.keys(assertPiLiveAcceptanceRecord(bytes,options).sourceDigests).length,12);
+ for(const p of Object.keys(a.sourceDigests))for(const field of ['sha256ForPath','blobForPath'])rejection(()=>assertPiLiveAcceptanceRecord(bytes,{...options,[field]:q=>q===p?'0'.repeat(field==='blobForPath'?40:64):options[field](q)}));
+ for(const p of Object.keys(a.preservedReceipts))for(const field of ['sha256ForPath','historicalDigestForPath'])rejection(()=>assertPiLiveAcceptanceRecord(bytes,{...options,[field]:field==='sha256ForPath'?q=>q===p?'0'.repeat(64):options[field](q):(sha,q)=>q===p?'0'.repeat(64):options[field](sha,q)}));
+ rejection(()=>assertPiLiveAcceptanceRecord(Buffer.concat([bytes,Buffer.from(' ')]),options));
+ const previous=assertPiLiveAcceptanceProjection(bytes,{current,historical}),target='apps/srm/scripts/supplier-location-admission.integration.test.mjs';
+ assert.deepEqual(previous(target),historical(a.baseCandidateSha,target));assert.notDeepEqual(previous(target),current(target));
+ assert.throws(()=>previous(PI_LIVE_ACCEPTANCE_PROVENANCE_PATH),{code:'ENOENT'});
+});
