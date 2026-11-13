@@ -43,7 +43,12 @@ export function readAssistantConfiguration(env:Env){
  if(env.PROFITIA_ASSISTANT_ECR_CONFIGURATION_VERSION!==undefined
   &&(env.PROFITIA_ASSISTANT_ECR_CONFIGURATION_VERSION!==economicTargets.configurationVersion
    ||env.PROFITIA_ASSISTANT_M2_CONFIGURATION_VERSION!==m2Targets.configurationVersion))return unavailable()
+ const timeZone=env.PROFITIA_ASSISTANT_TIME_ZONE
+ // Trusted application configuration, never a browser header or model guess.
+ // Existing installations keep their explicit legacy UTC behaviour until set.
+ if(timeZone!==undefined){try{if(!timeZone||timeZone!==timeZone.trim())return unavailable();new Intl.DateTimeFormat('en',{timeZone}).format(0)}catch{return unavailable()}}
  return Object.freeze({historyKey:historyKey!,usageKey:usageKey!,openaiKey:env.OPENAI_API_KEY,
+  ...(timeZone!==undefined?{timeZone}:{}),
   multiSource:env.PROFITIA_ASSISTANT_M2_CONFIGURATION_VERSION===m2Targets.configurationVersion,
   economicCalendar:env.PROFITIA_ASSISTANT_ECR_CONFIGURATION_VERSION===economicTargets.configurationVersion,
   historyUrl:storeUrl(env.PROFITIA_ASSISTANT_HISTORY_DATABASE_URL,targets.history),
@@ -93,7 +98,7 @@ export function createSg2AssistantRuntime(config:AssistantConfiguration,options:
  const prune=()=>{void historyDb.$queryRawUnsafe('SELECT sg2_assistant_history.prune()').catch(()=>{})}
  prune();const retention=setInterval(prune,10*60*1000);retention.unref()
  const model=createAssistantModel(new OpenAI({apiKey:config.openaiKey,baseURL:'https://api.openai.com/v1',organization:null,project:null,maxRetries:0,timeout:60000}),usage)
- return Object.freeze({organisationId,history,gateway,model,usage,
+ return Object.freeze({organisationId,history,gateway,model,usage,timeZone:config.timeZone??'UTC',
   async ready(){
    const h=await queryFor(historyDb)('SELECT sg2_assistant_history.descriptor() AS binding'),b=h.rows[0]?.binding as Record<string,unknown>|undefined
    if(h.rows.length!==1||!b||b.applicationId!=='spendguru'||b.environment!=='development'||b.projectId!==targets.history.projectId

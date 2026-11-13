@@ -135,7 +135,7 @@ export function createAssistantHandlers(resolveRuntime:()=>Promise<AssistantRunt
     runtime=await resolveRuntime();const r=runtime
     userId=await r.run(request,'assistant.converse',{kind:'AUTHORIZE'},async c=>c.actorId);const owner=userId
     const stored=turn.conversationId?await r.run(request,'assistant.history.read',{action:'LOAD',conversationId:turn.conversationId},async c=>{sameUser(c,owner);return r.history.load(c,turn.conversationId!)}):null
-    const selection=selectConversationContext(turn,stored,r.organisationId),policy=selection.policy
+    const selection=selectConversationContext(turn,stored,r.organisationId,Date.now(),r.timeZone??'UTC'),policy=selection.policy
     const demand={plan:policy.contextPlan,reference:selection.reference,organisationId:r.organisationId,request,signal:request.signal}
     const resolveContext=(input:typeof demand)=>Sentry.startSpan({name:'assistant.context',op:'assistant.context'},async span=>{
      const result=await r.gateway.resolve(input)

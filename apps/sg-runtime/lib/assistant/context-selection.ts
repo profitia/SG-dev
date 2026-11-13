@@ -1,6 +1,7 @@
+import {calendarReference} from './calendar-period'
 import {createHash} from 'node:crypto'
 import {planAnalyticalConversation} from '@profitia/cic-core'
-import {contextReferences,contextDate,readContextReference,type ContextReference,type ContextSelection,type ChartReference,type SupplierReference,type NewsfeedReference,type EconomicCalendarReference,type PublishedReportReference} from '../../../../packages/assistant-context-contracts/src/index.mjs'
+import {contextReferences,readContextReference,type ContextReference,type ContextSelection,type ChartReference,type SupplierReference,type NewsfeedReference,type EconomicCalendarReference,type PublishedReportReference} from '../../../../packages/assistant-context-contracts/src/index.mjs'
 import type {ContextEntry} from '../../../../packages/assistant-context-gateway/src/index.mjs'
 import type {HistoryScope,StoredConversation} from './history'
 export type AssistantTurnSelection={message:string;locale:'pl'|'en';module:'appshell'|'benchmark_finder'|'xray'|'adp'|'procurement_insights';reference:ChartReference|SupplierReference|NewsfeedReference|PublishedReportReference|null}
@@ -14,39 +15,7 @@ export function referenceIdentity(r:ContextReference):string{
   case 'ECONOMIC_CALENDAR':return JSON.stringify([r.source,r.targetType,r.targetId,r.from,r.to,r.asKnownAt,r.after])
  }
 }
-function calendarReference(turn:AssistantTurnSelection,prior:ContextReference|undefined,now:number):EconomicCalendarReference|null{
- const dateHints=[...turn.message.matchAll(/(?<!\d)(\d{4}-\d{2}-\d{2}|\d{2}\.\d{2}\.\d{4})(?!\d)/g)].map(m=>m[1].includes('.')?m[1].split('.').reverse().join('-'):m[1])
- if(dateHints.length>2)return null
- const q=turn.message.toLowerCase().normalize('NFD').replace(/\p{M}/gu,'').replaceAll('ł','l')
- const upcoming=/najbliz|nadchod|przyszl|nastepn|upcoming|next|kiedy|when/.test(q),past=/ostatni|najnows|opublikowan|wynik|odczyt|ubiegl|zeszl|poprzedni|minion|latest|last|actual|result|released/.test(q)
- const day=(offset:number)=>new Date(now+offset*86400000).toISOString().slice(0,10)
- try{
-  const weekDay=(new Date(now).getUTCDay()+6)%7
-  let relative:{from:string;to:string}|undefined
-  if(/jutro|tomorrow/.test(q))relative={from:day(1),to:day(1)}
-  else if(/dzisiaj|dzis|\btoday\b/.test(q))relative={from:day(0),to:day(0)}
-  else if(/\b(?:przyszl\w*|nastepn\w*)\s+ty(?:dzien|godni\w*)\b|\bnext\s+week\b/.test(q))relative={from:day(7-weekDay),to:day(13-weekDay)}
-  else if(/\b(?:ubiegl\w*|zeszl\w*|poprzedni\w*|minion\w*|ostatni\w*)\s+ty(?:dzien|godni\w*)\b|\blast\s+week\b/.test(q))relative={from:day(-7-weekDay),to:day(-1-weekDay)}
-  else if(/tym tygodniu|this week/.test(q))relative={from:day(-weekDay),to:day(6-weekDay)}
-  else if(/najblizsz.{0,10}tydzien|najblizsz.{0,10}tygod|next seven days/.test(q))relative={from:day(0),to:day(6)}
-  else if(/tym miesiacu|this month|przyszl.{0,8}miesiac|next month/.test(q)){
-   const d=new Date(now),shift=/przyszl|next month/.test(q)?1:0
-   relative={from:new Date(Date.UTC(d.getUTCFullYear(),d.getUTCMonth()+shift,1)).toISOString().slice(0,10),to:new Date(Date.UTC(d.getUTCFullYear(),d.getUTCMonth()+shift+1,0)).toISOString().slice(0,10)}
-  }else{
-   const days=/(?<!\d)(\d{1,4})\s*(?:dni|days)(?!\p{L})/u.exec(q)
-   if(days){const n=Number(days[1]);if(!n)return null
-    relative=/\bza\s+\d|\bin\s+\d/.test(q)?{from:day(n),to:day(n)}:{from:day(past?1-n:0),to:day(past?0:n-1)}
-   }
-  }
-  if(!dateHints.length&&!upcoming&&!past&&!relative&&prior?.source==='ECONOMIC_CALENDAR')return prior
-  const chart=turn.reference?.source==='BENCHMARK_CHART'?turn.reference:null
-  const from=contextDate(dateHints[0]??relative?.from??(!upcoming&&!past&&chart?chart.from:day(upcoming?0:past?-30:-7)))
-  const to=contextDate(dateHints.at(-1)??relative?.to??(!upcoming&&!past&&chart?chart.to:day(past?0:30)))
-  return readContextReference({version:'2.1.0',source:'ECONOMIC_CALENDAR',targetType:null,targetId:null,
-   from:from+'T00:00:00.000Z',to:to+'T23:59:59.999Z',asKnownAt:null,after:null}) as EconomicCalendarReference
- }catch{return null}
-}
-export function selectConversationContext(turn:AssistantTurnSelection,stored:StoredConversation|null,organisationId:string,now=Date.now()){
+export function selectConversationContext(turn:AssistantTurnSelection,stored:StoredConversation|null,organisationId:string,now=Date.now(),timeZone='UTC'){
  const viewIdentity=createHash('sha256').update(JSON.stringify([turn.module,turn.reference===null?null:referenceIdentity(turn.reference)])).digest('hex')
  const latest=[...(stored?.turns??[])].reverse().find(t=>t.status==='COMPLETE')
  const sameView=!!latest?.scopes.length&&latest.scopes.every(s=>s.organisationId===organisationId
@@ -88,13 +57,13 @@ export function selectConversationContext(turn:AssistantTurnSelection,stored:Sto
    supplierNip:supplier?.source==='SRM_XRAY'?supplier.nip:null}))
  }
  if(policy.contextPlan.some(p=>p.source==='ECONOMIC_CALENDAR')){
-  const selected=calendarReference(turn,refs.get('ECONOMIC_CALENDAR'),now)
+  const selected=calendarReference(turn,refs.get('ECONOMIC_CALENDAR'),now,timeZone)
   if(selected)refs.set('ECONOMIC_CALENDAR',selected);else refs.delete('ECONOMIC_CALENDAR')
  }
  const references=policy.contextPlan.map(p=>refs.get(p.source)).filter((r):r is ContextReference=>!!r)
  const reference:ContextSelection|null=references.length?{version:'2.0.0',source:'CONTEXT_SELECTION',references}:null
  const calendar=references.find((r):r is EconomicCalendarReference=>r.source==='ECONOMIC_CALENDAR')
- const economicCalendarTime=calendar?Object.freeze({now:new Date(now).toISOString(),timeZone:'UTC',weekStartsOn:'MONDAY',from:calendar.from,to:calendar.to}):null
+ const economicCalendarTime=calendar?Object.freeze({now:new Date(now).toISOString(),timeZone,weekStartsOn:'MONDAY',from:calendar.from,to:calendar.to}):null
  return {policy,reference,viewIdentity,references,economicCalendarTime}
 }
 const data=(entry:ContextEntry)=>entry.data as {kys?:{status?:string;retentionUntil?:string};observations?:Array<{id:string;publications:Array<{id:string}>}>;events?:Array<{eventId:string;results:Array<{observationId:string}>}>;unresolvedSchedules?:Array<{publicationId:string}>}|undefined
