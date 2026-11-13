@@ -22,6 +22,8 @@ test('current lifecycle source validates every owner and exposes exact immutable
   const v=organisationLifecycleSdkPredecessor(current,historical,{projectKey})
   assert.equal(v.currentRecord.platformVersion,'1.37.0')
   assert.equal(v.currentRecord.previousSourceSha,a.previousSourceSha)
+  for(const p of Object.keys(a.acceptedMainSourceDigests))assert.deepEqual(v.acceptedMainBytes(p),historical(a.acceptedMainSha,p))
+  for(const p of a.acceptedMainAbsentPaths)assert.throws(()=>v.acceptedMainBytes(p),{code:'ENOENT'})
   for(const p of Object.keys(a.previousSourceDigests))assert.deepEqual(v.previousBytes(p),historical(a.previousSourceSha,p))
   for(const p of a.previousAbsentPaths)assert.throws(()=>v.previousBytes(p),{code:'ENOENT'})
  }
@@ -56,4 +58,11 @@ test('historical source substitution and false absence cannot supply a trusted p
 test('published owner source substitution is rejected independently of current bytes',()=>{
  const a=JSON.parse(current(recordPath)),owner=a.ownerInputs.find(i=>Object.keys(i.sourceDigests).length),p=Object.keys(owner.sourceDigests)[0]
  assert.throws(()=>organisationLifecycleSdkPredecessor(current,(sha,x)=>sha===owner.sourceSha&&x===p?Buffer.from('foreign owner source'):historical(sha,x)))
+})
+
+test('accepted main source substitution and false absence cannot conceal changed live PI inputs',()=>{
+ const a=JSON.parse(current(recordPath)),p=Object.keys(a.acceptedMainSourceDigests)[0]
+ assert.throws(()=>organisationLifecycleSdkPredecessor(current,(sha,x)=>sha===a.acceptedMainSha&&x===p?Buffer.from('substituted accepted main'):historical(sha,x)))
+ const absent=a.acceptedMainAbsentPaths[0];assert(absent)
+ assert.throws(()=>organisationLifecycleSdkPredecessor(current,(sha,x)=>sha===a.acceptedMainSha&&x===absent?Buffer.from('not absent at accepted main'):historical(sha,x)))
 })

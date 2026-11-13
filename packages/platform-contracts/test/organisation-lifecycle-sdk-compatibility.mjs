@@ -6,6 +6,7 @@ const recordPath='packages/platform-contracts/test/organisation-lifecycle-sdk-co
 const guardPath='packages/platform-contracts/test/organisation-lifecycle-sdk-compatibility.mjs'
 const acceptedRecordSha256='b51159ec7ee99ad6835b7d80009103b33d27c835dac5886a12b7f469ee2ab7d4'
 const previousSourceSha='b18b5eee15aab07c7ff3968cafbfd50ddd5e9b5a'
+const acceptedMainSha='68867fe8c54b8f3b2efadf512d37d8925b9657e5'
 const originalRecordPath='packages/platform-contracts/test/organisation-sdk-compatibility.json'
 const originalRecordSha256='022f0a4c774cc93856c7219518ac99d23712cd3961bab508fa0d2b25c9113ea1'
 const projects={ARCHITECTURE:{path:'apps/architecture-lab/organisation-lifecycle-sdk-source-adoption.json',taskId:'ARCH-REGISTRATION-LIFECYCLE-SDK-SOURCE-20261112'},
@@ -32,7 +33,7 @@ export function organisationLifecycleSdkPredecessor(current,historical,{projectK
  try{bytes=Buffer.from(current(recordPath))}catch(error){if(missing(error))return null;throw error}
  assert.equal(hash(bytes),acceptedRecordSha256,'exact lifecycle SDK source record')
  const a=JSON.parse(bytes)
- equalKeys(a,['schemaVersion','acceptanceId','taskId','targetEnvironment','scope','platformVersion','previousSourceSha','producer','sourceDigests','compatibilityTestSourceDigests','sdkDigests','optionalPackageDigests','consumerSourceDigests','preservedSourceDigests','defaultRootImplementation','optionalRootImplementation','optionalOperations','runtimeOptedIn','sqlInstalled','permissionsChanged','providerCallsPerformed','deploymentPerformed','previousSourceDigests','previousAbsentPaths','ownerInputs'],'closed lifecycle source record')
+ equalKeys(a,['schemaVersion','acceptanceId','taskId','targetEnvironment','scope','platformVersion','previousSourceSha','producer','sourceDigests','compatibilityTestSourceDigests','sdkDigests','optionalPackageDigests','consumerSourceDigests','preservedSourceDigests','defaultRootImplementation','optionalRootImplementation','optionalOperations','runtimeOptedIn','sqlInstalled','permissionsChanged','providerCallsPerformed','deploymentPerformed','previousSourceDigests','previousAbsentPaths','ownerInputs','acceptedMainSha','acceptedMainSourceDigests','acceptedMainAbsentPaths'],'closed lifecycle source record')
  assert.equal(a.schemaVersion,'1.0');assert.equal(a.acceptanceId,'organisation-lifecycle-sdk-1.37-development-v1')
  assert.equal(a.taskId,projects.ARCHITECTURE.taskId);assert.equal(a.targetEnvironment,'development')
  assert.equal(a.scope,'OPTIONAL_ORGANISATION_LIFECYCLE_SOURCE_ONLY');assert.equal(a.platformVersion,'1.37.0');assert.equal(a.previousSourceSha,previousSourceSha)
@@ -77,8 +78,26 @@ export function organisationLifecycleSdkPredecessor(current,historical,{projectK
   map(input.sourceDigests,'owner source input')
   for(const[p,h]of Object.entries(input.sourceDigests)){assert.equal(all[p],h,'owner input belongs to current closed source '+p);assert.equal(hash(historicalBytes(historical,input.sourceSha,p)),h,'published owner source '+p)}
  }
+ assert.equal(a.acceptedMainSha,acceptedMainSha,'exact preserved accepted PI main')
+ map(a.acceptedMainSourceDigests,'immutable accepted main source')
+ const mainCache=new Map()
+ for(const[p,h]of Object.entries(a.acceptedMainSourceDigests)){
+  const b=historicalBytes(historical,acceptedMainSha,p);assert.equal(hash(b),h,'actual accepted main source '+p);mainCache.set(p,b)
+ }
+ assert(Array.isArray(a.acceptedMainAbsentPaths)&&new Set(a.acceptedMainAbsentPaths).size===a.acceptedMainAbsentPaths.length,'closed accepted main absence set')
+ const mainAbsent=new Set(a.acceptedMainAbsentPaths)
+ for(const p of mainAbsent){
+  assert(safePath(p)&&!mainCache.has(p),'bounded disjoint accepted main absence')
+  let absentAtMain=false;try{historicalBytes(historical,acceptedMainSha,p)}catch(error){if(missing(error))absentAtMain=true;else throw error}
+  assert(absentAtMain,'actual accepted main absence '+p)
+ }
+ for(const p of Object.keys(all))assert(mainCache.has(p)||mainAbsent.has(p),'every current source has an exact accepted main predecessor or absence')
  const hidden=new Set([recordPath,guardPath,...Object.values(projects).map(v=>v.path)])
- return Object.freeze({currentRecord:a,currentSourceDigests:Object.freeze(all),previousBytes:path=>{
+ return Object.freeze({currentRecord:a,currentSourceDigests:Object.freeze(all),acceptedMainBytes:path=>{
+  assert(safePath(path),'bounded accepted main lookup')
+  if(hidden.has(path)||mainAbsent.has(path))return absent()
+  return mainCache.has(path)?Buffer.from(mainCache.get(path)):current(path)
+ },previousBytes:path=>{
   assert(safePath(path),'bounded predecessor lookup')
   if(hidden.has(path)||absentPaths.has(path))return absent()
   return cache.has(path)?Buffer.from(cache.get(path)):current(path)
