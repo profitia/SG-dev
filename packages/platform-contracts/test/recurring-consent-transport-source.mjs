@@ -1,6 +1,7 @@
 // Test-only source continuation; never imported by a product runtime.
 import {procurementInsightsLiveAcceptancePredecessor} from '../../../apps/sg-runtime/tests/procurement-insights-live-acceptance-source.mjs';
 import assert from 'node:assert/strict';
+import {completeFunctionalPredecessor} from '../../../apps/architecture-lab/ecr-complete-functional-source.mjs';
 import {createHash} from 'node:crypto';
 export const RECURRING_CONSENT_TRANSPORT_RECORD='packages/platform-contracts/test/recurring-consent-transport-source.json';
 export const RECURRING_CONSENT_TRANSPORT_BASE='0c5a6ce71127f13402a14b256745e0fb0ffd5a1d';
@@ -24,6 +25,8 @@ export const RECURRING_CONSENT_TRANSPORT_PATHS=Object.freeze([
 const added=new Set(RECURRING_CONSENT_TRANSPORT_PATHS.slice(1,3));
 const hash=b=>createHash('sha256').update(b).digest('hex');
 export function recurringConsentTransportPredecessor(current,historical){
+ const complete=completeFunctionalPredecessor(current,historical);
+ if(complete)return recurringConsentTransportPredecessor(complete.previousBytes,historical);
  const live=procurementInsightsLiveAcceptancePredecessor(current,historical);
  if(live){const accepted=recurringConsentTransportPredecessor(live.previousBytes,historical);assert(accepted);return {...accepted,live};}
  let bytes;try{bytes=current(RECURRING_CONSENT_TRANSPORT_RECORD)}catch(error){

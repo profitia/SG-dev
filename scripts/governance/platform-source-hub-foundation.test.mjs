@@ -384,7 +384,11 @@ import {bsdcManifestContinuityCurrent, BSDC_MANIFEST_CONTINUITY as bsdcLabPolicy
 import {bsdcManifestContinuityTrustedCurrent, BSDC_MANIFEST_CONTINUITY as bsdcTrustedPolicy, BSDC_V11_DOCUMENTATION_REVIEW, marketCalendarTrustedPredecessor, assertPrivateRecurringProvenance, selectCandidate, assertBsdcDocumentationReviewEntry} from './controlled-package-ci.mjs'
 const bsdcHistoryCache=new Map()
 const bsdcHistory=(sha,p)=>{const k=sha+':'+p;if(!bsdcHistoryCache.has(k))bsdcHistoryCache.set(k,execFileSync('git',['cat-file','blob',k],{cwd:root,stdio:['ignore','pipe','pipe']}));return Buffer.from(bsdcHistoryCache.get(k))}
-const bsdcPhysical=p=>fs.readFileSync(path.join(root,p))
+// The notification successor authenticates every new producer byte and all old
+// receipts before these unchanged BSDC assertions inspect their accepted view.
+import {completeFunctionalPredecessor} from '../../apps/architecture-lab/ecr-complete-functional-source.mjs'
+const bsdcPhysicalRaw=p=>fs.readFileSync(path.join(root,p))
+const bsdcPhysical=p=>(completeFunctionalPredecessor(bsdcPhysicalRaw,bsdcHistory)?.previousBytes??bsdcPhysicalRaw)(p)
 const bsdcApproved=p=>bsdcTrustedPolicy.sourcePaths.includes(p)?bsdcHistory(BSDC_V11_DOCUMENTATION_REVIEW.approvedSourceSha,p):bsdcPhysical(p)
 const bsdcFiles=()=>Object.entries(BSDC_V11_DOCUMENTATION_REVIEW.entries).map(([filename,e])=>({filename,sha:e.sha,status:e.status}))
 const bsdcContext={repository:'profitia/SG-dev',ref:'refs/heads/main',workflowRef:'profitia/SG-dev/.github/workflows/platform-contracts-ci.yml@refs/heads/main',event:'workflow_dispatch',actor:'profitia',triggeringActor:'profitia',controlSha:bsdcTrustedPolicy.baseSha}

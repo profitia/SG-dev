@@ -2,7 +2,7 @@ import {parsePublicationScheduleRequest} from '../../../../packages/platform-sou
 import {providerText,fail,day} from '../transport.mjs'
 import {schedulePayload,scheduleRecord,scheduleAnswer,correlationKey,zonedInstant} from './publication-schedules.mjs'
 export const EIA_SCHEDULE_ORIGIN='https://www.eia.gov'
-export const EIA_SCHEDULE_PATHS=Object.freeze({wpsr:'/petroleum/supply/weekly/schedule.php',steo:'/outlooks/steo/release_schedule.php'})
+export const EIA_SCHEDULE_PATHS=Object.freeze({wpsr:'/petroleum/supply/weekly/schedule.php',steo:'/outlooks/steo/release_schedule.php',gasdiesel:'/petroleum/gasdiesel/schedule.php',heatingoilpropane:'/petroleum/heatingoilpropane/schedule.php'})
 export function prepareEiaSchedule(request){const r=parsePublicationScheduleRequest(request);if(r.provider!=='eia')fail('INVALID_CONTRACT');return {request:r,url:EIA_SCHEDULE_ORIGIN+EIA_SCHEDULE_PATHS[r.criteria.publication]}}
 /** @returns {never} */
 function schema(){return fail('PROVIDER_SCHEMA_CHANGED',502)}
@@ -27,15 +27,39 @@ const weekdays=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Sat
 function clock(s){const m=/^(\d{1,2}):(\d\d)\s*([ap])\.?m\.?$/i.exec(s);if(!m||+m[1]<1||+m[1]>12||+m[2]>59)schema();return `${String(+m[1]%12+(m[3].toLowerCase()==='p'?12:0)).padStart(2,'0')}:${m[2]}`}
 /** @param {string} publication @param {string} date @param {{localTime?:string|null,endTime?:string|null,referencePeriod?:string|null,scheduleStatus?:string,exception?:{reason:string,standardDate:string}|null,standardSchedule?:{weekday:number,localTime:string,timeZone:string}|null}} options */
 function item(publication,date,{localTime=null,endTime=null,referencePeriod=null,scheduleStatus='OFFICIAL_DATED',exception=null,standardSchedule=null}={}){
- const title=publication==='wpsr'?'Weekly Petroleum Status Report':'Short-Term Energy Outlook',sourceUrl=EIA_SCHEDULE_ORIGIN+EIA_SCHEDULE_PATHS[publication],publicationRef='eia:'+publication
+ const titles={wpsr:'Weekly Petroleum Status Report',steo:'Short-Term Energy Outlook',gasdiesel:'Gasoline and Diesel Fuel Update',heatingoilpropane:'Heating Oil and Propane Update'}
+ const title=titles[publication],sourceUrl=EIA_SCHEDULE_ORIGIN+EIA_SCHEDULE_PATHS[publication],publicationRef='eia:'+publication
  return schedulePayload({title,publicationRef,correlationKey:correlationKey('eia',publicationRef+':'+(referencePeriod??date),sourceUrl),identityStatus:'OFFICIAL_PUBLICATION_DEFINITION',sourceName:'U.S. Energy Information Administration',sourceUrl,officialSource:true,
   dateOnly:date,localDateTime:localTime?date+'T'+localTime:null,scheduledAt:localTime?zonedInstant(date+'T'+localTime):null,scheduledUntil:endTime?zonedInstant(date+'T'+endTime):null,timeZone:'America/New_York',timePrecision:endTime?'TIME_WINDOW':localTime?'INSTANT':'DATE',
-  recurrence:publication==='wpsr'?'weekly':'monthly',referencePeriod,scheduleStatus,exception,standardSchedule,
+  recurrence:publication==='steo'?'monthly':'weekly',referencePeriod,scheduleStatus,exception,standardSchedule,
   qualityFlags:['SCHEDULE_NOT_RESULT','COVERAGE_NOT_EXHAUSTIVE','NO_PROVIDER_STABLE_EVENT_ID',...(scheduleStatus==='RULE_DERIVED_UNCONFIRMED'?['STANDARD_RULE_SUBJECT_TO_UNANNOUNCED_EXCEPTIONS']:[]),...(endTime?['USUAL_RELEASE_WINDOW_NOT_GUARANTEED']:[])]})
 }
 export function parseEiaSchedule(html,request){
  const parsed=parsePublicationScheduleRequest(request);if(parsed.provider!=='eia')fail('INVALID_CONTRACT')
  const c=parsed.criteria,text=clean(html)
+ if(['gasdiesel','heatingoilpropane'].includes(c.publication)){
+  const gas=c.publication==='gasdiesel',weekday=gas?2:3,daysAfterReference=gas?1:2,localTime=gas?'10:00':'13:00'
+  if(gas?(!/Gasoline and Diesel Fuel Update/.test(text)||!/prices are published around 10:00 a\.m\. Tuesday eastern time/.test(text)||!/still represent Monday's price/.test(text)):
+    (!/Heating Oil and Propane Update Schedule/.test(text)||!/October through March/.test(text)||!/1:00 p\.m\. eastern time on Wednesdays/.test(text)))schema()
+  const rows=tableRows(html,gas?['Data for:','Alternate release date','Release day','Holiday']:['Data for','Alternate release date','Release day','Release time','Holiday']),exceptions=new Map()
+  for(const row of rows){
+   const [period,release,releaseDay]=row,referencePeriod=longDay(period),date=longDay(release),standardDate=plus(referencePeriod,daysAfterReference),reason=row.at(-1)
+   const time=gas?localTime:clock(row[3])
+   if(new Date(referencePeriod).getUTCDay()!==1||releaseDay!==weekdays[new Date(date).getUTCDay()]||date<referencePeriod||Date.parse(date)-Date.parse(referencePeriod)>14*86400000||!reason||exceptions.has(standardDate))schema()
+   exceptions.set(standardDate,{date,referencePeriod,localTime:time,reason,standardDate})
+  }
+  const out=[],standardSchedule={weekday,localTime,timeZone:'America/New_York'}
+  /** @param {string} date @param {string} referencePeriod @param {string} time @param {string} status @param {{reason:string,standardDate:string}|null} [exception] */
+  const add=(date,referencePeriod,time,status,exception=null)=>{
+   if(date<c.from||date>c.to||!gas&&![1,2,3,10,11,12].includes(Number(referencePeriod.slice(5,7))))return
+   const p=item(c.publication,date,{localTime:time,referencePeriod,scheduleStatus:status,exception,standardSchedule})
+   if(gas){p.sourceTiming.typicalTime='around 10:00 a.m. eastern';p.qualityFlags.push('USUAL_RELEASE_TIME_NOT_GUARANTEED')}
+   out.push(p)
+  }
+  for(const ex of exceptions.values())add(ex.date,ex.referencePeriod,ex.localTime,gas?'RULE_DERIVED_UNCONFIRMED':'OFFICIAL_EXCEPTION',{reason:ex.reason,standardDate:ex.standardDate})
+  for(let date=c.from;date<=c.to;date=plus(date,1))if(new Date(date).getUTCDay()===weekday&&!exceptions.has(date))add(date,plus(date,-daysAfterReference),localTime,'RULE_DERIVED_UNCONFIRMED')
+  return out.sort((a,b)=>a.scheduledAt.localeCompare(b.scheduledAt))
+ }
  if(c.publication==='wpsr'){
   if(!/Weekly Petroleum Status Report Schedule/i.test(text)||!/standard release time and day of the week will be at 10:30 a\.m\. eastern time on Wednesday/i.test(text))schema()
   const rows=tableRows(html,['Data for the week ending','Alternate release date','Release day','Release time','Holiday']),exceptions=new Map()
