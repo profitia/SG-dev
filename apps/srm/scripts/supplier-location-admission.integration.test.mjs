@@ -11,8 +11,8 @@ import {createSupplierLocationAdmission} from '@profitia/platform-contracts/supp
 
 const recurringView=recurringSourceFilesystem(new URL('../../../',import.meta.url)),recurring=recurringView.manifest
 // Preserve the immutable historical record; the independently authenticated
-// transport continuation alone supplies changed current SDK file digests.
-const recurringSdkFiles=Object.fromEntries(Object.entries({...recurring?.sourceDigests,...recurringView.transport?.manifest.sourceDigests}).filter(([p])=>p.startsWith('packages/platform-contracts/')).map(([p,h])=>[p.slice('packages/platform-contracts/'.length),h]))
+// transport and live continuations supply authenticated current SDK digests.
+const recurringSdkFiles=Object.fromEntries(Object.entries({...recurring?.sourceDigests,...recurringView.transport?.manifest.sourceDigests,...recurringView.transport?.live?.manifest.sourceDigests}).filter(([p])=>p.startsWith('packages/platform-contracts/')).map(([p,h])=>[p.slice('packages/platform-contracts/'.length),h]))
 
 const hash=v=>createHash('sha256').update(v).digest('hex'),receipt=JSON.parse(fs.readFileSync(new URL('../operation-integration.json',import.meta.url)))
 const accepted=receipt.p1ReceiverSourceCompatibility,key=Buffer.alloc(32,59).toString('base64')
