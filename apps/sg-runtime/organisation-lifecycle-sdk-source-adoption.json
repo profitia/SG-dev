@@ -3,7 +3,7 @@
   "projectKey": "SG2",
   "taskId": "SG2-REGISTRATION-STAGE-I-RESUME-V2-20261113",
   "acceptanceId": "organisation-lifecycle-sdk-1.37-test-reconciliation-20261113-v1",
-  "sourceRecordSha256": "cce0785a2abfc5a3663140b623f6b7b3a64b11eba3907ad9ae7b74cbc95e5303",
+  "sourceRecordSha256": "049acd3d7f50eb426668705b41117526bff4c7d9b705354f5b01c5f578f8109e",
   "platformVersion": "1.37.0",
   "scope": "SOURCE_TEST_CONTINUITY_ONLY",
   "runtimeOptedIn": false
