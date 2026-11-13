@@ -12,8 +12,13 @@ export const RESERVATION_PATHS=Object.freeze([
  "apps/sg-runtime/lib/assistant/model.ts",
  "apps/sg-runtime/lib/assistant/runtime.ts",
  "apps/sg-runtime/tests/assistant-conversation-handler.test.ts",
+ "apps/sg-runtime/tests/assistant-ecr-week-integrity.test.mjs",
  "apps/sg-runtime/tests/assistant-model.test.ts",
+ "apps/sg-runtime/tests/diagnostic-telemetry-adoption.test.mjs",
+ "apps/sg-runtime/tests/operation-context.test.mjs",
  "apps/sg-runtime/tests/pci-smart-integrity.test.mjs",
+ "apps/sg-runtime/tests/porr-demo-middleware.test.ts",
+ "apps/sg-runtime/tests/private-host.integration.test.mjs",
  "packages/platform-contracts/current-fresh-report/test/current-fresh-report.test.mjs",
  "packages/platform-contracts/readonly-miss-report/test/readonly-miss-report.test.mjs",
  "packages/platform-contracts/src/assistant-usage.d.mts",
@@ -29,8 +34,13 @@ export const RESERVATION_SG2_PATHS=Object.freeze([
  "apps/sg-runtime/lib/assistant/model.ts",
  "apps/sg-runtime/lib/assistant/runtime.ts",
  "apps/sg-runtime/tests/assistant-conversation-handler.test.ts",
+ "apps/sg-runtime/tests/assistant-ecr-week-integrity.test.mjs",
  "apps/sg-runtime/tests/assistant-model.test.ts",
- "apps/sg-runtime/tests/pci-smart-integrity.test.mjs"
+ "apps/sg-runtime/tests/diagnostic-telemetry-adoption.test.mjs",
+ "apps/sg-runtime/tests/operation-context.test.mjs",
+ "apps/sg-runtime/tests/pci-smart-integrity.test.mjs",
+ "apps/sg-runtime/tests/porr-demo-middleware.test.ts",
+ "apps/sg-runtime/tests/private-host.integration.test.mjs"
 ])
 export const RESERVATION_RECEIPTS=Object.freeze([
  "apps/architecture-lab/assistant-m1-sdk-compatibility.json",
