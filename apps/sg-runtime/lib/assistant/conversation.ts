@@ -144,7 +144,7 @@ export function createAssistantHandlers(resolveRuntime:()=>Promise<AssistantRunt
     })
     const context=await resolveContext(demand)
     const input=modelInput(selection,turn,stored,context.contexts,r.organisationId),scopes=contextHistoryScopes(selection,context.contexts,r.organisationId)
-    await r.model.validateInput(input,request.signal)
+    await r.model.validateInput(input,{actorId:owner,organisationId:r.organisationId,commandId:turn.commandId},request.signal)
     begun=await r.run(request,'assistant.history.write',{action:'BEGIN',commandId:turn.commandId},async c=>{sameUser(c,owner);return r.history.begin(c,{conversationId:turn.conversationId,commandId:turn.commandId,message:turn.message,locale:turn.locale,scopes,expectedRevision:stored?.revision??null})})
     if(begun.status==='REPLAY')return failure(Object.assign(Error('Existing command'),{code:'INTERRUPTED'}))
     const active=begun

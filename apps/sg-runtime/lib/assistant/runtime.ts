@@ -64,7 +64,13 @@ export function createSg2AssistantRuntime(config:AssistantConfiguration,options:
  // Each new product role gets one connection and execute-only functions.
  const historyDb=new PrismaClient({datasources:{db:{url:pooled(config.historyUrl,'sg2_assistant_history')}}})
  const usageDb=new PrismaClient({datasources:{db:{url:pooled(config.usageUrl,'profitia_limits')}}})
- const usage=createAssistantUsageStore({query:adaptAssistantUsageQuery(queryFor(usageDb)),commandKey:config.usageKey,schemaDigest:targets.usage.schemaDigest})
+ const openai=new OpenAI({apiKey:config.openaiKey,baseURL:'https://api.openai.com/v1',organization:null,project:null,maxRetries:0,timeout:60000})
+ const usage=createAssistantUsageStore({query:adaptAssistantUsageQuery(queryFor(usageDb)),commandKey:config.usageKey,schemaDigest:targets.usage.schemaDigest,
+  countInputTokens:({model,input,signal})=>openai.responses.inputTokens.count({model,input:[...input],reasoning:{effort:'none'}},{signal,maxRetries:0,timeout:10000}),
+  // Expected business refusals are structured operational logs, not incidents.
+  // The shared adapter admits only closed numerical diagnostics, never input.
+  onDenied:diagnostics=>{console.info(JSON.stringify({event:'assistant.reservation.denied',...diagnostics}))},
+ })
  const history=createAssistantHistory({query:queryFor(historyDb),commandKey:config.historyKey,schemaDigest:targets.history.schemaDigest})
  const executor=createAssistantOperationHost<Prisma.TransactionClient>({
   application:{...options.application,features:['assistant'],operations:['assistant.converse','assistant.history.read','assistant.history.write'],configurationVersion:targets.configurationVersion},binding,
@@ -92,7 +98,7 @@ export function createSg2AssistantRuntime(config:AssistantConfiguration,options:
  }}),...createAssistantSourceAdapters({enabled:config.multiSource,economicCalendarEnabled:config.economicCalendar,organisationId,forecast:options.forecast,market:options.market})]})
  const prune=()=>{void historyDb.$queryRawUnsafe('SELECT sg2_assistant_history.prune()').catch(()=>{})}
  prune();const retention=setInterval(prune,10*60*1000);retention.unref()
- const model=createAssistantModel(new OpenAI({apiKey:config.openaiKey,baseURL:'https://api.openai.com/v1',organization:null,project:null,maxRetries:0,timeout:60000}),usage)
+ const model=createAssistantModel(openai,usage)
  return Object.freeze({organisationId,history,gateway,model,usage,
   async ready(){
    const h=await queryFor(historyDb)('SELECT sg2_assistant_history.descriptor() AS binding'),b=h.rows[0]?.binding as Record<string,unknown>|undefined
