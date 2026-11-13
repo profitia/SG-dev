@@ -147,6 +147,42 @@ export function assertAssistantQualityG1ReviewEntry(file,entry){
   ||entry!=='100644 blob '+file.sha+'\t'+file.filename+'\0')fail('ASSISTANT_QUALITY_G1_FILE_MODE_REJECTED');
 }
 
+// PROPOSED: separate owner acceptance is required before main activation.
+// This is a finite Stage1 engineering-source class, not the repair agent's
+// two-file mandate, an application class, a workflow or credential grant.
+export const ASSISTANT_QUALITY_STAGE1_SOURCE_REVIEW=Object.freeze({
+ id:'AQC-STAGE1-SOURCE-CI-20261113',branch:'architecture/cic-quality-stage1-control-20261112',
+ expiresAt:'2026-11-27T23:59:59.000Z',
+ pdrPath:'Canon/proposals/bsdc/ARCHITECTURE/cic-assistant-continuous-quality.md',
+ frozenSpecSha256:'ee6b3f36dd63ca3c3343de8b38fee431de49f67b895b17434b39ce332539b881',
+ paths:Object.freeze([
+  ...['controller','store','budget','manifest','source-policy','provenance','executor','verify','openai-broker','worker','github','release','cli','acceptance'].map(n=>'packages/assistant-quality-control/src/'+n+'.mjs'),
+  ...['controller','budget','manifest','source-policy','provenance','executor','verify','openai-broker','worker','provider-adapters','release','acceptance'].map(n=>'packages/assistant-quality-control/test/'+n+'.test.mjs'),
+  'Canon/proposals/bsdc/ARCHITECTURE/cic-assistant-continuous-quality.md',
+ ]),
+})
+export function isAssistantQualityStage1SourceReview(files){
+ const allowed=ASSISTANT_QUALITY_STAGE1_SOURCE_REVIEW.paths
+ return Array.isArray(files)&&files.length>0&&files.length<=allowed.length
+  &&files.some(f=>f?.filename?.startsWith('packages/assistant-quality-control/'))
+  &&new Set(files.map(f=>f?.filename)).size===files.length
+  &&files.every(f=>allowed.includes(f?.filename)&&['added','modified'].includes(f.status)
+   &&shaPattern.test(f.sha??'')&&!Object.hasOwn(f,'previous_filename'))
+}
+export function assertAssistantQualityStage1SourceWindow(now=Date.now()){
+ if(!Number.isFinite(now)||now>=Date.parse(ASSISTANT_QUALITY_STAGE1_SOURCE_REVIEW.expiresAt))fail('ASSISTANT_QUALITY_SOURCE_REVIEW_EXPIRED')
+}
+export function assertAssistantQualityStage1SourceEntry(file,entry){
+ if(!ASSISTANT_QUALITY_STAGE1_SOURCE_REVIEW.paths.includes(file?.filename)||!['added','modified'].includes(file.status)||!shaPattern.test(file.sha??'')
+  ||Object.hasOwn(file,'previous_filename')||entry!=='100644 blob '+file.sha+'\t'+file.filename+'\0')fail('ASSISTANT_QUALITY_SOURCE_FILE_MODE_REJECTED')
+}
+export function assertAssistantQualityStage1Specification(source){
+ if(typeof source!=='string'||Buffer.byteLength(source)>262144)fail('ASSISTANT_QUALITY_SPECIFICATION_REJECTED')
+ const start=source.search(/^## 4\./m),end=source.search(/^## 6\./m)
+ if(start<0||end<=start||createHash('sha256').update(source.slice(start,end)).digest('hex')!==ASSISTANT_QUALITY_STAGE1_SOURCE_REVIEW.frozenSpecSha256
+  ||!/^\| Realizacja \| ETAP 1 — (?:W_TOKU|CZĘŚCIOWY|ZABLOKOWANY|ZAKOŃCZONY); ETAP 2 — NIE_ROZPOCZĘTY \/ BRAK ZLECENIA \|$/m.test(source))fail('ASSISTANT_QUALITY_SPECIFICATION_REJECTED')
+}
+
 // The producer class remains deliberately narrower than ARCHITECTURE ownership.
 // A separate closed KRS governance review bundle below grants no app or generic
 // workflow/tooling admission and never reads a candidate-provided allowlist.
@@ -6197,7 +6233,9 @@ export function assertArchitectureFiles(pr, files, repositoryRoot = controlRoot(
   const readonlyMissReview = isPinnedReadonlyMissReportReview(files)
   const freshFixtureReview = isPinnedFreshFixtureTeardownReview(files)
   const rootAtomicClaimReview = isPinnedRootAtomicClaimReview(files)
-  const closedReview = isPinnedAssistantQualityG1Review(files) || isPinnedPlatformKnowledgeG1Review(files) || isPinnedAcgG1Review(files) || isPinnedInsightsG1Review(files) || isPinnedEcrG1Review(files) || krsReview || isPinnedAdpGovernanceReview(files) || isPinnedLimitsG1Review(files) || isPinnedNewsfeedG1Review(files) || isPinnedSourceHubG1Review(files) || freshReportReview || payloadCaptureReview || readonlyMissReview || freshFixtureReview || rootAtomicClaimReview
+  const qualitySourceReview=isAssistantQualityStage1SourceReview(files)
+  if(qualitySourceReview)assertAssistantQualityStage1SourceWindow()
+  const closedReview = qualitySourceReview || isPinnedAssistantQualityG1Review(files) || isPinnedPlatformKnowledgeG1Review(files) || isPinnedAcgG1Review(files) || isPinnedInsightsG1Review(files) || isPinnedEcrG1Review(files) || krsReview || isPinnedAdpGovernanceReview(files) || isPinnedLimitsG1Review(files) || isPinnedNewsfeedG1Review(files) || isPinnedSourceHubG1Review(files) || freshReportReview || payloadCaptureReview || readonlyMissReview || freshFixtureReview || rootAtomicClaimReview
   const names = new Set()
   for (const file of files) {
     if (!(closedReview || architecturePathAllowed(file.filename))
@@ -6222,6 +6260,11 @@ export function assertArchitectureFiles(pr, files, repositoryRoot = controlRoot(
 export function selectCandidate(context, pr, expectedSha, {files, repositoryRoot = controlRoot()} = {}) {
   const family = candidateFamily(context, pr, expectedSha)
   if(pr&&(pr.number===REGISTRATION_LIFECYCLE_REVIEW.prNumber||pr.head?.ref===REGISTRATION_LIFECYCLE_REVIEW.branch||lifecycleReviewMatches(files))){if(family!=='ARCHITECTURE'||pr.number!==REGISTRATION_LIFECYCLE_REVIEW.prNumber||pr.head.ref!==REGISTRATION_LIFECYCLE_REVIEW.branch||expectedSha!==REGISTRATION_LIFECYCLE_REVIEW.sourceSha||!lifecycleReviewMatches(files))fail('REGISTRATION_LIFECYCLE_REVIEW_IDENTITY_REJECTED')}
+
+  if(pr&&(pr.head?.ref===ASSISTANT_QUALITY_STAGE1_SOURCE_REVIEW.branch||isAssistantQualityStage1SourceReview(files))){
+   if(family!=='ARCHITECTURE'||pr.head.ref!==ASSISTANT_QUALITY_STAGE1_SOURCE_REVIEW.branch||!isAssistantQualityStage1SourceReview(files))fail('ASSISTANT_QUALITY_SOURCE_REVIEW_IDENTITY_REJECTED')
+   assertAssistantQualityStage1SourceWindow()
+  }
   if(pr&&(pr.number===BSDC_V11_DOCUMENTATION_REVIEW.prNumber||pr.head.ref===BSDC_V11_DOCUMENTATION_REVIEW.branch||isPinnedBsdcDocumentationReview(files))){if(family!=='ARCHITECTURE'||pr.number!==BSDC_V11_DOCUMENTATION_REVIEW.prNumber||pr.head.ref!==BSDC_V11_DOCUMENTATION_REVIEW.branch||!isPinnedBsdcDocumentationReview(files))fail('BSDC_DOCUMENTATION_REVIEW_IDENTITY_REJECTED')}
   for(const r of completeFunctionalReviews)if(pr&&(pr.number===r.prNumber||pr.head?.ref===r.branch||completeFunctionalMatches(files,r))){const owner=r===ECR_COMPLETE_FUNCTIONAL_REVIEW?'ARCHITECTURE':'SG2';if(family!==owner||pr.number!==r.prNumber||pr.head.ref!==r.branch||!completeFunctionalMatches(files,r))fail('ECR_COMPLETE_FUNCTIONAL_REVIEW_IDENTITY_REJECTED');assertCompleteFunctionalRoutes(files,repositoryRoot,r)}
   if(pr&&(pr.number===ECR_CALENDAR_TEST_REVIEW.prNumber||pr.head.ref===ECR_CALENDAR_TEST_REVIEW.branch||isPinnedCalendarTestReview(files))){if(family!=='ARCHITECTURE'||pr.number!==ECR_CALENDAR_TEST_REVIEW.prNumber||pr.head.ref!==ECR_CALENDAR_TEST_REVIEW.branch||!isPinnedCalendarTestReview(files))fail('CALENDAR_TEST_REVIEW_IDENTITY_REJECTED')}
@@ -6323,6 +6366,7 @@ export function assertArchitectureCheckout(root, sha, admission, repositoryRoot 
     if (file.status === 'removed') {if (entry !== '') fail('ARCHITECTURE_DIFF_MISMATCH'); continue}
     if(lifecycleReviewMatches(admission.files))assertRegistrationLifecycleReviewEntry(file,entry)
     if(isPinnedAssistantQualityG1Review(admission.files))assertAssistantQualityG1ReviewEntry(file,entry)
+    if(isAssistantQualityStage1SourceReview(admission.files))assertAssistantQualityStage1SourceEntry(file,entry)
     if(isPinnedBsdcDocumentationReview(admission.files))assertBsdcDocumentationReviewEntry(file,entry)
     if(completeFunctionalMatches(admission.files,ECR_COMPLETE_FUNCTIONAL_REVIEW))assertCompleteFunctionalReviewEntry(file,entry)
     if(isPinnedCalendarTestReview(admission.files))assertCalendarTestReviewEntry(file,entry)
@@ -6348,6 +6392,13 @@ export function assertArchitectureCheckout(root, sha, admission, repositoryRoot 
     const target = path.join(root, file.filename), stat = fs.lstatSync(target)
     if (!stat.isFile() || stat.isSymbolicLink() || stat.size > 1024 * 1024 || fs.realpathSync(target) !== target
       || execFileSync('git', ['hash-object', '--no-filters', '--', file.filename], {cwd: root, encoding: 'utf8'}).trim() !== file.sha) fail('ARCHITECTURE_CHECKOUT_REJECTED')
+  }
+  if(isAssistantQualityStage1SourceReview(admission.files)){
+   const p=ASSISTANT_QUALITY_STAGE1_SOURCE_REVIEW.pdrPath,target=path.join(root,p),stat=fs.lstatSync(target)
+   const blob=execFileSync('git',['hash-object','--no-filters','--',p],{cwd:root,encoding:'utf8'}).trim()
+   const entry=execFileSync('git',['ls-tree','-z',sha,'--',p],{cwd:root,encoding:'utf8'})
+   if(!stat.isFile()||stat.isSymbolicLink()||stat.mode&0o111||stat.size>262144||entry!=='100644 blob '+blob+'\t'+p+'\0')fail('ASSISTANT_QUALITY_SPECIFICATION_REJECTED')
+   assertAssistantQualityStage1Specification(fs.readFileSync(target,'utf8'))
   }
 }
 

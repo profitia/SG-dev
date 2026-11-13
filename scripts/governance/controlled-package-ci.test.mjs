@@ -2632,6 +2632,63 @@ test('assistant quality G1 admits only the exact reviewed five-file owner closur
  assert(!Object.keys(LOCAL_PACKAGES).some(n=>n.includes('assistant-quality')))
 })
 
+test('assistant quality Stage1 source CI class binds finite paths, identity, expiry and immutable specification',async()=>{
+ const c=await import('./controlled-package-ci.mjs'),r=c.ASSISTANT_QUALITY_STAGE1_SOURCE_REVIEW
+ assert.equal(r.paths.length,27);assert.equal(new Set(r.paths).size,27)
+ const files=[{filename:'packages/assistant-quality-control/src/executor.mjs',sha:other,status:'modified'},
+  {filename:r.pdrPath,sha:'c'.repeat(40),status:'modified'}]
+ assert(c.isAssistantQualityStage1SourceReview(files))
+ assert(!c.isAssistantQualityStage1SourceReview([files[1]]))
+ c.assertAssistantQualityStage1SourceWindow(Date.parse(r.expiresAt)-1)
+ for(const now of [Date.parse(r.expiresAt),Date.parse(r.expiresAt)+1,NaN])assert.throws(()=>c.assertAssistantQualityStage1SourceWindow(now))
+ const candidate={...pr(),number:1074,changed_files:2,base:{...pr().base,sha},head:{...pr().head,ref:r.branch}}
+ if(Date.now()<Date.parse(r.expiresAt))assert.equal(selectCandidate(context(),candidate,other,{files}),other)
+ else assert.throws(()=>selectCandidate(context(),candidate,other,{files}))
+ for(const change of [p=>p.user.login='other',p=>p.head.repo.full_name='profitia/fork',p=>p.head.ref='sg2/quality-copy',p=>p.head.ref='architecture/other',p=>p.state='closed']){
+  const changed=structuredClone(candidate);change(changed);assert.throws(()=>selectCandidate(context(),changed,other,{files}))
+ }
+ assert.throws(()=>selectCandidate(context(),candidate,'d'.repeat(40),{files}))
+ for(const filename of ['.github/workflows/assistant-quality-repair.yml','packages/assistant-quality-control/package.json',
+  'packages/assistant-quality-control/package-lock.json','packages/assistant-quality-control/migrations/001-control.sql',
+  'packages/assistant-quality-control/src/new-unreviewed.mjs','apps/package-limits/migrations/005-assistant-quality-usage.sql',
+  'apps/sg-runtime/lib/assistant/quality-response.ts','scripts/governance/controlled-package-ci.mjs','Canon/registries/current-architecture-baseline-v1.json']){
+  assert(!c.isAssistantQualityStage1SourceReview([...files,{filename,sha:other,status:'added'}]))
+ }
+ for(const change of [f=>f[0].status='removed',f=>f[0].previous_filename='old.mjs',f=>f[0].sha='main',f=>f.push({...f[0]})]){
+  const changed=structuredClone(files);change(changed);assert(!c.isAssistantQualityStage1SourceReview(changed))
+ }
+ for(const file of files){c.assertAssistantQualityStage1SourceEntry(file,'100644 blob '+file.sha+'\t'+file.filename+'\0')
+  for(const mode of ['100755','120000','160000'])assert.throws(()=>c.assertAssistantQualityStage1SourceEntry(file,mode+' blob '+file.sha+'\t'+file.filename+'\0'))}
+ const specification=fs.readFileSync(path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..',r.pdrPath),'utf8')
+ c.assertAssistantQualityStage1Specification(specification)
+ c.assertAssistantQualityStage1Specification(specification+'\nStatus evidence outside the frozen specification.\n')
+ assert.throws(()=>c.assertAssistantQualityStage1Specification(specification.replace('## 4.','## 4. CHANGED')))
+ assert.throws(()=>c.assertAssistantQualityStage1Specification(specification.replace('ETAP 2 — NIE_ROZPOCZĘTY / BRAK ZLECENIA','ETAP 2 — W_TOKU')))
+ assert.deepEqual(PRIVATE_PACKAGES,['@profitia/advisory-widget','@profitia/cic-core','@profitia/cic-procurement'])
+ assert.equal(CIC_ANALYTICAL_ECR_PIN.version,'1.6.0')
+})
+
+test('assistant quality Stage1 source checkout authenticates actual Git bytes before private installation',async()=>{
+ const c=await import('./controlled-package-ci.mjs'),r=c.ASSISTANT_QUALITY_STAGE1_SOURCE_REVIEW
+ const root=fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(),'aqc-source-ci-fixture-'))),source='packages/assistant-quality-control/src/executor.mjs'
+ const git=(...a)=>execFileSync('git',a,{cwd:root,encoding:'utf8',stdio:['ignore','pipe','pipe']}).trim()
+ try{
+  git('init','--quiet');git('config','user.name','AQC source CI fixture');git('config','user.email','fixture@example.invalid')
+  for(const [p,content]of [[source,'export const fixture=1\n'],[r.pdrPath,fs.readFileSync(path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..',r.pdrPath),'utf8')]]){
+   const file=path.join(root,p);fs.mkdirSync(path.dirname(file),{recursive:true});fs.writeFileSync(file,content)
+  }
+  git('add','.');git('commit','--quiet','-m','fixture base');const baseSha=git('rev-parse','HEAD')
+  fs.writeFileSync(path.join(root,source),'export const fixture=2\n');git('add','.');git('commit','--quiet','-m','fixture candidate')
+  const head=git('rev-parse','HEAD'),files=[{filename:source,sha:git('rev-parse','HEAD:'+source),status:'modified'}],admission={kind:'ARCHITECTURE',baseSha,files}
+  if(Date.now()>=Date.parse(r.expiresAt)){assert.throws(()=>assertArchitectureCheckout(root,head,admission));return}
+  assertArchitectureCheckout(root,head,admission)
+  fs.appendFileSync(path.join(root,source),'MUTATED');assert.throws(()=>assertArchitectureCheckout(root,head,admission));git('checkout','--',source)
+  fs.chmodSync(path.join(root,source),0o755);git('add',source);git('commit','--quiet','-m','executable candidate');assert.throws(()=>assertArchitectureCheckout(root,git('rev-parse','HEAD'),admission))
+  git('checkout','--quiet','--detach',head);const card=path.join(root,r.pdrPath),old=fs.readFileSync(card,'utf8');fs.writeFileSync(card,old.replace('## 4.','## 4. CHANGED'))
+  assert.throws(()=>assertArchitectureCheckout(root,head,admission))
+ }finally{fs.rmSync(root,{recursive:true,force:true})}
+})
+
 // Exact new task, separate producer and SG2 owner inputs; no runtime activation.
 test('complete Calendar delivery pins54 producer and7 consumer paths without widening older owner/credential gates',()=>{
  for(const r of [ECR_COMPLETE_FUNCTIONAL_REVIEW,ECR_COMPLETE_FUNCTIONAL_CONSUMER_REVIEW]){
