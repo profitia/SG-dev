@@ -1,3 +1,4 @@
+import {assistantNotificationsPredecessor,NOTIFICATIONS_RECEIPT} from './assistant-notifications-integrity.mjs';
 // Test/build-only continuation. No runtime, authorisation or deployment grant.
 import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
@@ -20,6 +21,11 @@ export const PI_LIVE_ACCEPTANCE_PATHS=Object.freeze([
 const additions=new Set(PI_LIVE_ACCEPTANCE_PATHS.filter(p=>p.includes('host-pool-concurrency')||p.includes('notification-navigation')||p.includes('live-acceptance-source')));
 const hash=b=>createHash('sha256').update(b).digest('hex');
 export function procurementInsightsLiveAcceptancePredecessor(current,historical){
+ const notifications=assistantNotificationsPredecessor(current,historical);
+ if(notifications){
+  const accepted=procurementInsightsLiveAcceptancePredecessor(notifications.previousBytes,historical);assert(accepted,'accepted PI live source retained');
+  return {...accepted,notifications,manifest:{...accepted.manifest,sourceDigests:{...accepted.manifest.sourceDigests,...notifications.manifest.sourceDigests,[NOTIFICATIONS_RECEIPT]:hash(current(NOTIFICATIONS_RECEIPT))}}};
+ }
  let bytes;try{bytes=current(PI_LIVE_ACCEPTANCE_RECORD)}catch(e){
   const text=String(e?.stderr??e?.message??'');
   if(e?.code==='ENOENT'||e?.status===128&&["' does not exist in ","' exists on disk, but not in "].some(s=>text.includes("'"+PI_LIVE_ACCEPTANCE_RECORD+s)))return null;

@@ -27,7 +27,7 @@ test('unknown fields, source widening, identity changes and rebinding cannot ble
   const a=JSON.parse(current(NOTIFICATIONS_RECEIPT));mutate(a)
   assert.throws(()=>assistantNotificationsPredecessor(p=>p===NOTIFICATIONS_RECEIPT?Buffer.from(JSON.stringify(a)):current(p),historical))
  }
- for(const p of [NOTIFICATIONS_PATHS[0],NOTIFICATIONS_PATHS[1],'apps/sg-runtime/tests/procurement-insights-completion-integrity.mjs','apps/sg-runtime/tests/procurement-insights.test.tsx',NOTIFICATIONS_PRESERVED[0]]){
+ for(const p of [NOTIFICATIONS_PATHS[0],NOTIFICATIONS_PATHS[1],'apps/sg-runtime/tests/procurement-insights-live-acceptance-source.mjs','apps/sg-runtime/tests/procurement-insights.test.tsx',NOTIFICATIONS_PRESERVED[0]]){
   const bytes=Buffer.concat([current(p),Buffer.from('REBOUND')]),a=JSON.parse(current(NOTIFICATIONS_RECEIPT));if(p in a.sourceDigests)a.sourceDigests[p]=digest(bytes);else a.preservedReceipts[p]=digest(bytes)
   assert.throws(()=>assistantNotificationsPredecessor(f=>f===NOTIFICATIONS_RECEIPT?Buffer.from(JSON.stringify(a)):f===p?bytes:current(f),historical),p)
  }

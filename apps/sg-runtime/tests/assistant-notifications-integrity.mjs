@@ -8,11 +8,12 @@ export const NOTIFICATIONS_PATHS=Object.freeze([
  "apps/sg-runtime/tests/assistant-widget.test.tsx",
  "apps/sg-runtime/tests/assistant-notifications-integrity.mjs",
  "apps/sg-runtime/tests/assistant-notifications-integrity.test.mjs",
- "apps/sg-runtime/tests/procurement-insights-completion-integrity.mjs",
+ "apps/sg-runtime/tests/procurement-insights-live-acceptance-source.mjs",
  "apps/sg-runtime/tests/procurement-insights.test.tsx"
 ])
 export const NOTIFICATIONS_PRESERVED=Object.freeze([
  "apps/architecture-lab/private-recurring-source-adoption.json",
+ "apps/architecture-lab/private-recurring-source.json",
  "apps/sg-runtime/adp-integration.json",
  "apps/sg-runtime/assistant-context-integration.json",
  "apps/sg-runtime/assistant-ecr-integration.json",
@@ -27,6 +28,7 @@ export const NOTIFICATIONS_PRESERVED=Object.freeze([
  "apps/sg-runtime/private-recurring-source-adoption.json",
  "apps/sg-runtime/procurement-insights-completion-integration.json",
  "apps/sg-runtime/procurement-insights-integration.json",
+ "apps/sg-runtime/procurement-insights-live-acceptance.json",
  "apps/sg-runtime/procurement-insights-shell-integration.json",
  "apps/sg-runtime/registration-stage-i-integration.json",
  "apps/sg-runtime/xray-appshell-integration.json",
@@ -34,14 +36,15 @@ export const NOTIFICATIONS_PRESERVED=Object.freeze([
  "apps/srm/development-integration.json",
  "apps/srm/operation-integration.json",
  "apps/srm/private-recurring-source-adoption.json",
- "apps/srm/xray-appshell-integration.json"
+ "apps/srm/xray-appshell-integration.json",
+ "packages/platform-contracts/test/recurring-consent-transport-source.json"
 ])
 const RUNTIME_PINS=Object.freeze({
  "apps/sg-runtime/components/procurement-insights/notifications.tsx": "12b18e4ae27955b1f2f1f66f0377b36327f75c1247b26e80b64a5e8dbc144629",
  "apps/sg-runtime/tests/assistant-widget.test.tsx": "2842d923544add9fd8e0b650f51cb38915bc0a3eca739e96d323ba4ef338512d"
 })
-const HOOK="apps/sg-runtime/tests/procurement-insights-completion-integrity.mjs",ENTRY="apps/sg-runtime/tests/procurement-insights.test.tsx"
-const IMPORT="import {assistantNotificationsPredecessor,NOTIFICATIONS_RECEIPT} from './assistant-notifications-integrity.mjs';\n",HEAD="export function procurementInsightsCompletionPredecessor(current,historical){\n",PREFIX=" const notifications=assistantNotificationsPredecessor(current,historical);\n if(notifications){\n  const accepted=procurementInsightsCompletionPredecessor(notifications.previousBytes,historical);assert(accepted,'accepted PI completion retained');\n  return {...accepted,notifications,manifest:{...accepted.manifest,sourceDigests:{...accepted.manifest.sourceDigests,...notifications.manifest.sourceDigests,[NOTIFICATIONS_RECEIPT]:hash(current(NOTIFICATIONS_RECEIPT))}}};\n }\n",TEST_IMPORT="import './assistant-notifications-integrity.test.mjs'\n"
+const HOOK="apps/sg-runtime/tests/procurement-insights-live-acceptance-source.mjs",ENTRY="apps/sg-runtime/tests/procurement-insights.test.tsx"
+const IMPORT="import {assistantNotificationsPredecessor,NOTIFICATIONS_RECEIPT} from './assistant-notifications-integrity.mjs';\n",HEAD="export function procurementInsightsLiveAcceptancePredecessor(current,historical){\n",PREFIX=" const notifications=assistantNotificationsPredecessor(current,historical);\n if(notifications){\n  const accepted=procurementInsightsLiveAcceptancePredecessor(notifications.previousBytes,historical);assert(accepted,'accepted PI live source retained');\n  return {...accepted,notifications,manifest:{...accepted.manifest,sourceDigests:{...accepted.manifest.sourceDigests,...notifications.manifest.sourceDigests,[NOTIFICATIONS_RECEIPT]:hash(current(NOTIFICATIONS_RECEIPT))}}};\n }\n",TEST_IMPORT="import './assistant-notifications-integrity.test.mjs'\n"
 const hash=bytes=>createHash('sha256').update(bytes).digest('hex')
 const missing=p=>Object.assign(Error('Notification continuation absent from predecessor: '+p),{code:'ENOENT'})
 export function notificationCompletionSource(before){

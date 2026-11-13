@@ -1,4 +1,3 @@
-import {assistantNotificationsPredecessor,NOTIFICATIONS_RECEIPT} from './assistant-notifications-integrity.mjs';
 // Test/build-only provenance. Never imported by a product runtime.
 import {recurringConsentTransportPredecessor} from '../../../packages/platform-contracts/test/recurring-consent-transport-source.mjs';
 import assert from 'node:assert/strict';
@@ -30,11 +29,6 @@ export const PI_COMPLETION_PATHS=Object.freeze([
 const added=new Set(['apps/insights-runtime/src/publication-query.mjs','apps/insights-runtime/tests/report-library.test.mjs','apps/sg-runtime/procurement-insights-shell-integration.json','apps/sg-runtime/tests/procurement-insights-completion.test.mjs','apps/sg-runtime/tests/procurement-insights-completion-integrity.mjs','apps/sg-runtime/tests/procurement-insights-shell-integrity.mjs']);
 const hash=bytes=>createHash('sha256').update(bytes).digest('hex');
 export function procurementInsightsCompletionPredecessor(current,historical){
- const notifications=assistantNotificationsPredecessor(current,historical);
- if(notifications){
-  const accepted=procurementInsightsCompletionPredecessor(notifications.previousBytes,historical);assert(accepted,'accepted PI completion retained');
-  return {...accepted,notifications,manifest:{...accepted.manifest,sourceDigests:{...accepted.manifest.sourceDigests,...notifications.manifest.sourceDigests,[NOTIFICATIONS_RECEIPT]:hash(current(NOTIFICATIONS_RECEIPT))}}};
- }
  const transport=recurringConsentTransportPredecessor(current,historical);
  if(transport)return procurementInsightsCompletionPredecessor(transport.previousBytes,historical);
  let bytes;try{bytes=current(PI_COMPLETION_RECEIPT)}catch(error){
