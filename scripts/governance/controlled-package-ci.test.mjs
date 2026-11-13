@@ -1,3 +1,4 @@
+import {registrationLifecycleCanonicalRead} from './controlled-package-ci.mjs'
 import {ECR_COMPLETE_FUNCTIONAL_REVIEW,ECR_COMPLETE_FUNCTIONAL_CONSUMER_REVIEW,ECR_COMPLETE_FUNCTIONAL_PROVENANCE,assertCompleteFunctionalReviewEntry,completeFunctionalTrustedPredecessor,assertCompleteFunctionalProvenance} from './controlled-package-ci.mjs'
 import {ECR_CALENDAR_TEST_REVIEW,assertCalendarTestReviewEntry,calendarTestCompatibilityTrustedCurrent,readCalendarSourceFile} from './controlled-package-ci.mjs'
 import {ECR_MARKET_CALENDAR_REVIEW,ECR_MARKET_CALENDAR_PROVENANCE,assertEcrMarketCalendarReviewEntry,marketCalendarTrustedPredecessor} from './controlled-package-ci.mjs'
@@ -152,7 +153,7 @@ test('only the ten reviewed local names bind to their own exact paths, never a r
     rejection(() => assertManifestPolicy({dependencies: {alias: `file:${relative}`}}, authority))
   }
 })
-function currentRecurringPolicyOptions(){return {reviewedPrivateRecurring:!!assertPrivateRecurringProvenance(authorityRoot)}}
+function currentRecurringPolicyOptions(){return {reviewedPrivateRecurring:!!assertPrivateRecurringProvenance(authorityRoot),reviewedLifecycle:!!registrationLifecycleCanonicalRead(authorityRoot)}}
 function reviewedMapsFixture() {
   const manifest = JSON.parse(fs.readFileSync(path.join(authorityRoot, 'packages/maps-embed/package.json'), 'utf8'))
   const candidate = lock()
@@ -349,7 +350,7 @@ test('actual current source provenance is the exact accepted SDK digest with all
  const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..'),receipt=JSON.parse(fs.readFileSync(path.join(root,'apps/sg-runtime/operation-integration.json'),'utf8'))
  const record=assertPrivateRecurringProvenance(root),receiptBytes=fs.readFileSync(path.join(root,'apps/sg-runtime/operation-integration.json'))
  const currentSdk=await import('./controlled-package-ci.mjs')
- const contract=receipt.sdkSourceContinuations===undefined?privateRecurringProofContract(receipt,record?fs.readFileSync(path.join(root,PRIVATE_RECURRING_PROVENANCE.recordPath)):null,receiptBytes):{...adoptedOperationContract(receipt),sourceDigest:currentSdk.assertRegistrationSdkProvenance(root).sdkDigests.operationSourceDigest}
+ const contract=receipt.sdkSourceContinuations===undefined?privateRecurringProofContract(receipt,record?fs.readFileSync(path.join(root,PRIVATE_RECURRING_PROVENANCE.recordPath)):null,receiptBytes):{...adoptedOperationContract(receipt),sourceDigest:(currentSdk.assertRegistrationSdkProvenance(root).lifecycle??currentSdk.assertRegistrationSdkProvenance(root)).sdkDigests.operationSourceDigest}
  assert.equal(operationContractProvenanceDigest(root,contract,{reviewedPrivateRecurring:!!record}),contract.sourceDigest)
  const sdk=await import('../../packages/platform-contracts/src/operation-context.mjs');assert.equal(await sdk.operationSourceDigest(),contract.sourceDigest)
 })
@@ -2725,7 +2726,7 @@ test('complete Calendar physical authentication rejects executable and symbolic 
   for(const file of [...Object.keys(f.p.entries),...Object.keys(record.preservedReceipts)]){const target=path.join(root,file);fs.mkdirSync(path.dirname(target),{recursive:true});fs.writeFileSync(target,f.current(false)(file))}
   // Historical reads use the existing object store; the fixture never evaluates
   // the projected product, signing or source-acquisition implementation.
-  fs.mkdirSync(path.join(root,'.git'));fs.writeFileSync(path.join(root,'.git/HEAD'),'ref: refs/heads/fixture\n');fs.writeFileSync(path.join(root,'.git/config'),'[core]\nrepositoryformatversion = 0\n');fs.mkdirSync(path.join(root,'.git/objects/info'),{recursive:true});fs.mkdirSync(path.join(root,'.git/refs/heads'),{recursive:true});fs.writeFileSync(path.join(root,'.git/objects/info/alternates'),path.join(f.root,'.git/objects')+'\n')
+  fs.mkdirSync(path.join(root,'.git'));fs.writeFileSync(path.join(root,'.git/HEAD'),'ref: refs/heads/fixture\n');fs.writeFileSync(path.join(root,'.git/config'),'[core]\nrepositoryformatversion = 0\n');fs.mkdirSync(path.join(root,'.git/objects/info'),{recursive:true});fs.mkdirSync(path.join(root,'.git/refs/heads'),{recursive:true});fs.writeFileSync(path.join(root,'.git/objects/info/alternates'),path.resolve(f.root,execFileSync('git',['rev-parse','--git-common-dir'],{cwd:f.root,encoding:'utf8'}).trim(),'objects')+'\n')
   assertCompleteFunctionalProvenance(root)
   for(const file of [f.cfg.producerRecord,f.cfg.helper,'apps/identity-runtime/src/calendar-email.ts']){const target=path.join(root,file),bytes=fs.readFileSync(target);fs.chmodSync(target,0o755);rejection(()=>assertCompleteFunctionalProvenance(root));fs.chmodSync(target,0o644);fs.unlinkSync(target);fs.symlinkSync(path.join(root,f.cfg.producerRecord),target);rejection(()=>assertCompleteFunctionalProvenance(root));fs.unlinkSync(target);fs.writeFileSync(target,bytes)}
  }finally{fs.rmSync(root,{recursive:true,force:true})}
@@ -2738,7 +2739,7 @@ test('complete Calendar SDK bridge is confined to its exact legacy lock and revi
   const write=(p,b)=>{fs.mkdirSync(path.dirname(path.join(root,p)),{recursive:true});fs.writeFileSync(path.join(root,p),b)}
   for(const p of [...Object.keys(f.p.entries),...Object.keys(record.preservedReceipts),'apps/sg-runtime/package.json','apps/sg-runtime/package-lock.json'])write(p,read(p))
   for(const rel of Object.values(LOCAL_PACKAGES)){const p=path.posix.normalize('apps/sg-runtime/'+rel+'/package.json');write(p,read(p))}
-  fs.mkdirSync(path.join(root,'.git/objects/info'),{recursive:true});fs.mkdirSync(path.join(root,'.git/refs/heads'),{recursive:true});fs.writeFileSync(path.join(root,'.git/HEAD'),'ref: refs/heads/fixture\n');fs.writeFileSync(path.join(root,'.git/config'),'[core]\nrepositoryformatversion = 0\n');fs.writeFileSync(path.join(root,'.git/objects/info/alternates'),path.join(f.root,'.git/objects')+'\n')
+  fs.mkdirSync(path.join(root,'.git/objects/info'),{recursive:true});fs.mkdirSync(path.join(root,'.git/refs/heads'),{recursive:true});fs.writeFileSync(path.join(root,'.git/HEAD'),'ref: refs/heads/fixture\n');fs.writeFileSync(path.join(root,'.git/config'),'[core]\nrepositoryformatversion = 0\n');fs.writeFileSync(path.join(root,'.git/objects/info/alternates'),path.resolve(f.root,execFileSync('git',['rev-parse','--git-common-dir'],{cwd:f.root,encoding:'utf8'}).trim(),'objects')+'\n')
   const lock=JSON.parse(read('apps/sg-runtime/package-lock.json'))
   assertLocalPackageSources(root,lock,f.root,{reviewedPrivateRecurring:true})
   for(const version of ['1.7.0','1.7.2','1.8.1']){const bad=structuredClone(lock);bad.packages['node_modules/@profitia/platform-source-hub-contracts'].version=version;rejection(()=>assertLocalPackageSources(root,bad,f.root,{reviewedPrivateRecurring:true}))}
@@ -2878,4 +2879,77 @@ test('PI SRM projection authenticates every current source and restores the exac
  const previous=assertPiLiveAcceptanceProjection(bytes,{current,historical}),target='apps/srm/scripts/supplier-location-admission.integration.test.mjs';
  assert.deepEqual(previous(target),historical(a.baseCandidateSha,target));assert.notDeepEqual(previous(target),current(target));
  assert.throws(()=>previous(PI_LIVE_ACCEPTANCE_PROVENANCE_PATH),{code:'ENOENT'});
+});
+
+test('registration lifecycle admits exactly the joint Stage I source and preserves every owner boundary',async()=>{
+ const c=await import('./controlled-package-ci.mjs'),r=c.REGISTRATION_LIFECYCLE_REVIEW;
+ assert.equal(Object.keys(r.entries).length,196);
+ assert.equal(createHash('sha256').update(JSON.stringify(r.entries)).digest('hex'),'74ad68f2f29b9d627d16380de26e352b0b326b9dd6575545a73cd0c43e231b41');
+ assert.deepEqual(Object.values(r.entries).reduce((a,e)=>(a[e.projectKey]=(a[e.projectKey]??0)+1,a),{}),{ARCHITECTURE:96,SG2:56,SRM:44});
+ const files=Object.entries(r.entries).map(([filename,e])=>({filename,sha:e.sha,status:e.status}));
+ const p={...pr(),number:r.prNumber,changed_files:files.length,base:{...pr().base,sha:r.baseSha},head:{...pr().head,sha:r.sourceSha,ref:r.branch}};
+ assertArchitectureFiles(p,files);assert.equal(selectCandidate(context(),p,r.sourceSha,{files}),r.sourceSha);
+ for(const f of files){
+  c.assertRegistrationLifecycleReviewEntry(f,'100644 blob '+f.sha+'\t'+f.filename+'\0');
+  for(const mode of ['100755','120000','160000'])rejection(()=>c.assertRegistrationLifecycleReviewEntry(f,mode+' blob '+f.sha+'\t'+f.filename+'\0'));
+ }
+ for(const edit of [f=>f.pop(),f=>f.push(f[0]),f=>f[0].sha='f'.repeat(40),f=>f[0].status='removed',f=>f[0].previous_filename='elsewhere',f=>f[0].filename='apps/sg-runtime/app/api/unreviewed.ts']){
+  const bad=structuredClone(files);edit(bad);rejection(()=>selectCandidate(context(),{...p,changed_files:bad.length},r.sourceSha,{files:bad}));
+ }
+ for(const edit of [p=>p.number=1076,p=>p.head.ref='architecture/another',p=>p.head.repo.full_name='attacker/fork',p=>p.user.login='attacker',p=>p.base.ref='staging',p=>p.head.sha=sha]){
+  const bad=structuredClone(p);edit(bad);rejection(()=>selectCandidate(context(),bad,r.sourceSha,{files}));
+ }
+});
+test('trusted registration lifecycle decoder authenticates all current bytes before either historical projection',async()=>{
+ const c=await import('./controlled-package-ci.mjs'),r=c.REGISTRATION_LIFECYCLE_REVIEW,cfg=c.REGISTRATION_LIFECYCLE_PROVENANCE,cache=new Map();
+ const current=p=>{if(!cache.has(p))cache.set(p,execFileSync('git',['show',r.sourceSha+':'+p],{cwd:authorityRoot,stdio:['ignore','pipe','pipe']}));return cache.get(p)};
+ const a=c.registrationLifecycleCanonicalRead(authorityRoot,current);
+ assert.equal(a.record.platformVersion,'1.37.0');assert.equal(Object.keys(a.currentSourceDigests).length,335);
+ for(const p of Object.keys(a.currentSourceDigests))rejection(()=>c.registrationLifecycleCanonicalRead(authorityRoot,q=>q===p?Buffer.concat([current(q),Buffer.from(' ')]):current(q)));
+ for(const p of [cfg.recordPath,cfg.guardPath])rejection(()=>c.registrationLifecycleCanonicalRead(authorityRoot,q=>q===p?Buffer.concat([current(q),Buffer.from(' ')]):current(q)));
+ for(const {path:p} of Object.values(cfg.receipts))rejection(()=>c.registrationLifecycleCanonicalRead(authorityRoot,q=>q===p?Buffer.from(JSON.stringify({...JSON.parse(current(q)),platformVersion:'1.38.0'})):current(q)));
+ for(const [reader,sha] of [[a.previousBytes,cfg.previousSourceSha],[a.acceptedMainBytes,cfg.acceptedMainSha]]){
+  assert.deepEqual(reader('packages/platform-contracts/package.json'),execFileSync('git',['show',sha+':packages/platform-contracts/package.json'],{cwd:authorityRoot}));
+  assert.throws(()=>reader(cfg.recordPath),{code:'ENOENT'});rejection(()=>reader('../outside'));
+ }
+ assert.equal(c.registrationLifecycleCanonicalRead(authorityRoot,p=>{if(p===cfg.recordPath)throw Object.assign(Error('absent'),{code:'ENOENT'});return current(p)}),null);
+ rejection(()=>c.registrationLifecycleCanonicalRead(authorityRoot,()=>{throw Object.assign(Error('unreadable'),{status:128,stderr:Buffer.from('fatal: invalid object')})}));
+});
+test('registration lifecycle peers remain exact and cannot alter private package pins',async()=>{
+ const c=await import('./controlled-package-ci.mjs');
+ for(const [key,spec] of Object.entries(c.REGISTRATION_LIFECYCLE_PEERS)){
+  const [ownerVersion,section,name]=key.split(':'),at=ownerVersion.lastIndexOf('@'),owner=ownerVersion.slice(0,at),version=ownerVersion.slice(at+1);
+  const candidate=lock();candidate.packages['node_modules/'+owner]={version,resolved:LOCAL_PACKAGES[owner],[section]:{[name]:spec}};
+  if(Object.hasOwn(LOCAL_PACKAGES,owner))c.assertPackagePolicy(candidate,lock(),configuration,{reviewedLifecycle:true});
+  const manifest={name:owner,version,[section]:{[name]:spec}};
+  c.assertManifestPolicy(manifest,manifest,{reviewedLifecycle:true});
+  const bad=structuredClone(manifest);bad[section][name]=spec+' || 99.0.0';rejection(()=>c.assertManifestPolicy(bad,manifest,{reviewedLifecycle:true}));
+ }
+ const changed=lock();changed.packages['node_modules/@profitia/cic-core'].integrity='sha512-forged';
+ rejection(()=>c.assertPackagePolicy(changed,lock(),configuration,{reviewedLifecycle:true}));
+});
+
+test('registration lifecycle controlled proof binds the current SDK digest and exact SG2 receipt',async()=>{
+ const c=await import('./controlled-package-ci.mjs'),r=c.REGISTRATION_LIFECYCLE_REVIEW,cfg=c.REGISTRATION_LIFECYCLE_PROVENANCE;
+ const read=p=>execFileSync('git',['show',r.sourceSha+':'+p],{cwd:authorityRoot,stdio:['ignore','pipe','pipe']});
+ const bytes=read(cfg.recordPath),receiptBytes=read('apps/sg-runtime/operation-integration.json'),receipt=JSON.parse(receiptBytes),a=JSON.parse(bytes);
+ const contract=c.registrationLifecycleProofContract(receipt,bytes,receiptBytes);
+ assert.equal(contract.sourceDigest,a.sdkDigests.operationSourceDigest);assert.equal(contract.implementation,'1.0.0-candidate.16');
+ assert.notEqual(contract.sourceDigest,c.adoptedOperationContract(receipt).sourceDigest);
+ rejection(()=>c.registrationLifecycleProofContract(receipt,Buffer.concat([bytes,Buffer.from(' ')]),receiptBytes));
+ rejection(()=>c.registrationLifecycleProofContract(receipt,bytes,Buffer.concat([receiptBytes,Buffer.from(' ')])));
+ assert.equal(c.registrationLifecycleProofContract(receipt,null,receiptBytes),null);
+});
+test('registration lifecycle real checkout satisfies source, dependency and predecessor controls together',async()=>{
+ const c=await import('./controlled-package-ci.mjs'),r=c.REGISTRATION_LIFECYCLE_REVIEW,dir=fs.mkdtempSync(path.join(os.tmpdir(),'registration-ci-checkout-')),root=path.join(dir,'source');
+ try{
+  execFileSync('git',['worktree','add','--detach',root,r.sourceSha],{cwd:authorityRoot,stdio:'pipe'});
+  const files=Object.entries(r.entries).map(([filename,e])=>({filename,sha:e.sha,status:e.status}));
+  c.assertArchitectureCheckout(root,r.sourceSha,{kind:'ARCHITECTURE',baseSha:r.baseSha,files},authorityRoot);
+  assert.equal(c.assertRegistrationSdkProvenance(root).lifecycle.platformVersion,'1.37.0');
+  assert(c.assertPrivateRecurringProvenance(root));
+  const lock=JSON.parse(fs.readFileSync(path.join(root,'apps/sg-runtime/package-lock.json')));
+  c.assertPackagePolicy(lock,JSON.parse(fs.readFileSync(path.join(authorityRoot,'apps/sg-runtime/package-lock.json'))),configuration,{reviewedPrivateRecurring:true,reviewedLifecycle:true});
+  c.assertLocalPackageSources(root,lock,authorityRoot,{reviewedPrivateRecurring:true});
+ }finally{execFileSync('git',['worktree','remove','--force',root],{cwd:authorityRoot,stdio:'pipe'});fs.rmSync(dir,{recursive:true,force:true})}
 });

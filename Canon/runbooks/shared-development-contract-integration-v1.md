@@ -1011,6 +1011,14 @@ release permission remains separate and adds no grant, schema, secret, provider
 call, email, Oil publication or SRM deployment. No historical digest is changed
 to manufacture PASS.
 
+### Stage I — complete organisation lifecycle source admission (2026-11-13)
+
+The owner's resumed Stage I Development Full Autopilot mandate covers this necessary technical continuation without renewed per-file/hash questions. Joint PR1075 source8aee0665f20f16ae66455f8d15d336bac59711f0 has196 exact regular100644 entries, ARCHITECTURE96/SG256/SRM44, based on accepted main68867fe8. Each owner's published inputs, paired receipts and PMOS tasks remain authoritative. Preserve all original registration74/73/70 and independent PI/Calendar/CIC/BSDC graphs.
+
+Trusted data-only inspection pins SDK1.37 record3a7d291e… and helperbc4bbcb1…, authenticates335 current inputs and all seven owner inputs, then verifies the immutable bootstrapb18 and accepted-main688 views, including proven absences. Only exact verified package manifests can admit the bounded1.37 peer changes; all registry/credential/Environment/source/mode controls remain. Current physical bytes are never replaced before verification. Exact protected/public and complete resulting-main checks precede source integration; actual current SDK digest and SG2 receipt must match the independent controlled proof.
+
+The four-file policy alone grants no SQL installation, runtime access, package assignment, provider cost, mail, DNS or deployment. Continue the separately authorised Stage I implementation through Development runtime/browser/provider acceptance and PMOS/PHR closeout. See [the exact source and validation packet](../evidence/2026-11-13-registration-lifecycle-ci-admission.md).
+
 ## CIC Stage 1 engineering-source CI — proposal (2026-11-13)
 
 **PROPOSED_ONLY / OWNER_CI_POLICY_ACCEPTANCE_PENDING.** The Stage 1 commission
