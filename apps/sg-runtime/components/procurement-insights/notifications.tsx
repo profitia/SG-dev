@@ -41,7 +41,7 @@ export function ProcurementInsightsNotifications({getToken,locale,onOpen,onOpenR
  }
  const en=locale==='en',items=[...page.items,...reports.items].sort((a,b)=>b.createdAt.localeCompare(a.createdAt))
  return <section className="srm-chat-notifications" aria-label={en?'Procurement Insights notifications':'Powiadomienia Procurement Insights'}>
-  <button className="srm-chat-tool srm-chat-notifications-trigger" type="button" aria-label={en?'Notifications':'Powiadomienia'} title={en?'Notifications':'Powiadomienia'} aria-expanded={open} onClick={()=>{setOpen(!open);if(!open)void load()}}>
+  <button className="as-secondary-button" style={{width:'2.75rem',minHeight:'2.75rem',padding:0}} type="button" aria-label={en?'Notifications':'Powiadomienia'} title={en?'Notifications':'Powiadomienia'} aria-expanded={open} onClick={()=>{setOpen(!open);if(!open)void load()}}>
    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg>
   </button>
   {open&&<div>{loading&&<p role="status">{en?'Loading…':'Wczytywanie…'}</p>}{error&&<p role="alert">{error}</p>}
