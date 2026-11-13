@@ -3,8 +3,8 @@
   "taskId": "SG2-MARKET-CALENDAR-NOTIFICATIONS-COVERAGE-20261112",
   "targetEnvironment": "development",
   "scope": "MARKET_CALENDAR_NOTIFICATION_CONSUMER_SOURCE",
-  "previousSourceSha": "09a39f3ac3cad19b12d525168f9c719ff842e8cc",
-  "producerRecordSha256": "9d81cf761fdde4bdac4d2671a791579821363d2f43c4880bbe8fc97a4cbb5648",
+  "previousSourceSha": "863d973d504597ea9f76bf36cf70aad2bf87b8eb",
+  "producerRecordSha256": "b6ccb6cd489f5931c45968be781156374faef490592852f07059738ce9f25118",
   "sourceDigests": {
     "apps/sg-runtime/components/procurement-insights/calendar-email-settings.tsx": "6295450f8d428efef8e89780dc40fc8584a22607000095df8213a5c9898c48ae",
     "apps/sg-runtime/components/procurement-insights/market-calendar.tsx": "f939f61217b0bf1bdef26d49e6728336ccf61f08bd51d194c638b773d2283b4a",
