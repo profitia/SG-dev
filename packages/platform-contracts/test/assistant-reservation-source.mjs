@@ -4,6 +4,8 @@ import {createHash} from 'node:crypto'
 export const RESERVATION_RECORD="apps/architecture-lab/assistant-reservation-source.json"
 export const RESERVATION_BASE="3901ff157b6ae7b8906199b542be623230b4ebbe"
 export const RESERVATION_PATHS=Object.freeze([
+ "apps/architecture-lab/test/market-calendar-source.test.mjs",
+ "apps/architecture-lab/test/sdk-compatibility.test.mjs",
  "apps/package-limits/migrations/006-assistant-reservation-diagnostics.sql",
  "apps/package-limits/test/database.test.mjs",
  "apps/sg-runtime/lib/assistant/conversation.ts",
@@ -12,11 +14,15 @@ export const RESERVATION_PATHS=Object.freeze([
  "apps/sg-runtime/tests/assistant-conversation-handler.test.ts",
  "apps/sg-runtime/tests/assistant-model.test.ts",
  "apps/sg-runtime/tests/pci-smart-integrity.test.mjs",
+ "packages/platform-contracts/current-fresh-report/test/current-fresh-report.test.mjs",
+ "packages/platform-contracts/readonly-miss-report/test/readonly-miss-report.test.mjs",
  "packages/platform-contracts/src/assistant-usage.d.mts",
  "packages/platform-contracts/src/assistant-usage.mjs",
  "packages/platform-contracts/test/assistant-reservation-source.mjs",
  "packages/platform-contracts/test/assistant-reservation-source.test.mjs",
- "packages/platform-contracts/test/assistant-usage.test.mjs"
+ "packages/platform-contracts/test/assistant-usage.test.mjs",
+ "packages/platform-contracts/test/private-operation-host.test.mjs",
+ "packages/platform-contracts/test/recurring-consent-transport.test.mjs"
 ])
 export const RESERVATION_SG2_PATHS=Object.freeze([
  "apps/sg-runtime/lib/assistant/conversation.ts",
@@ -68,7 +74,7 @@ export function assistantReservationPredecessor(current,historical,expectedDiges
  let bytes;try{bytes=current(RESERVATION_RECORD)}catch(e){if(absent(e))return null;throw e}
  assert.match(expectedDigest??'',/^[a-f0-9]{64}$/);assert.equal(hash(bytes),expectedDigest,'exact reviewed reservation source record')
  const a=JSON.parse(bytes)
- assert.deepEqual(Object.keys(a).sort(),['schemaVersion','scope','taskIds','targetEnvironment','previousSourceSha','sourceDigests','preservedReceipts','model','outputTokens','reservationNanoUsd','authorisationChanged','sql006Installed','pilotChanged','unknownReleased','providerAcquisitionAdded','deploymentPerformed'].sort())
+ assert.deepEqual(Object.keys(a).sort(),['schemaVersion','scope','taskIds','targetEnvironment','previousSourceSha','sourceDigests','preservedReceipts','model','outputTokens','reservationNanoUsd','authorisationChanged','sql006Installed','pilotChanged','unknownReleased','providerAcquisitionAdded','deploymentPerformed','sdkDigests','optionalPackageDigests'].sort())
  assert.equal(a.schemaVersion,'1.0.0');assert.equal(a.scope,'EXACT_ASSISTANT_TOKEN_RESERVATION_SOURCE');assert.equal(a.previousSourceSha,RESERVATION_BASE)
  assert.deepEqual(a.taskIds,{ARCHITECTURE:'ARCH-ACG-EXACT-TOKEN-RESERVATION-CHATGPT-CONT-20261113',SG2:'SG2-ACG-EXACT-TOKEN-RESERVATION-CHATGPT-CONT-20261113'})
  assert.equal(a.targetEnvironment,'development');assert.equal(a.model,'gpt-5.6-luna');assert.equal(a.outputTokens,2048)
@@ -79,6 +85,9 @@ export function assistantReservationPredecessor(current,historical,expectedDiges
  assert.deepEqual(Object.keys(a.preservedReceipts).sort(),[...RESERVATION_RECEIPTS].sort())
  for(const p of RESERVATION_RECEIPTS){assert.equal(hash(current(p)),a.preservedReceipts[p],'immutable receipt '+p);assert.equal(hash(historical(RESERVATION_BASE,p)),a.preservedReceipts[p],'accepted receipt '+p)}
  assert.equal(String(current(RESERVATION_DERIVED)),reservationArchitectureSource(String(historical(RESERVATION_BASE,RESERVATION_DERIVED)),expectedDigest),'only the closed reservation source continuation may extend the guard')
+ assert.deepEqual(Object.keys(a.sdkDigests).sort(),["accessSchemaDigest", "accessStoreSourceDigest", "additionalRequestSchemaDigest", "apiPathTransportSchemaDigest", "clerkConfigurationSourceDigest", "currentHumanReadSourceDigest", "delegatedJobSchemaDigest", "delegatedJobSourceDigest", "delegatedPrivatePhasesSchemaDigest", "diagnosticPhaseSourceDigest", "externalCallSchemaDigest", "externalCallSourceDigest", "externalRequestSchemaDigest", "identitySourceDigest", "marketSymbolTransportSchemaDigest", "modelExecutionSchemaDigest", "moduleAuditSchemaDigest", "moduleSchemaDigest", "moduleScopeSourceDigest", "nativeExternalTransportSchemaDigest", "operationSourceDigest", "peerOperationSourceDigest", "platformIngestionSchemaDigest", "platformIngestionSourceDigest", "privateOperationHostSourceDigest", "profileSchemaDigest", "publicIdentityRequestSourceDigest", "publicWebTransportSchemaDigest", "renewalSchemaDigest", "reportAdmissionSchemaDigest", "reportAdmissionSourceDigest", "requestContinuationSchemaDigest", "requestContinuationSourceDigest", "requestInspectionSchemaDigest", "requestInspectionSourceDigest", "requestLedgerSourceDigest", "requestOperationsSourceDigest", "requestQuotaSchemaDigest", "requestReservationSchemaDigest", "requestWorkSchemaDigest", "requestWorkSourceDigest", "serviceReadSchemaDigest", "supplierDelegationSchemaDigest", "supplierLocationAdmissionSchemaDigest", "supplierLocationSchemaDigest", "unmeteredSourceSchemaDigest"])
+ assert.deepEqual(Object.keys(a.optionalPackageDigests).sort(),["currentFreshReportSourceDigest", "readonlyMissReportSourceDigest", "rootAtomicClaimSourceDigest"])
+ for(const value of [...Object.values(a.sdkDigests),...Object.values(a.optionalPackageDigests)])assert.match(value,/^[a-f0-9]{64}$/)
  const mapped=new Set([...RESERVATION_PATHS,RESERVATION_DERIVED]),cache=new Map()
  return {manifest:a,previousBytes:p=>{
   if(additions.has(p))throw Object.assign(Error('Reservation source absent from predecessor'),{code:'ENOENT'})
