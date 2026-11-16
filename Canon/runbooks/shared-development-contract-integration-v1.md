@@ -1044,3 +1044,7 @@ No merge may rely only on its QA/governance checks. Verify resulting main.
 No data/service/resource, model-budget start, runtime, repair promotion,
 deployment or Stage 2 activation follows from this policy decision. Retire only
 the new class on rollback/expiry; preserve original grants and other work.
+
+## Component-independent Development execution
+
+New routine source admissions follow [the shared Development execution contract](cloud-development-execution-v1.md) and the trusted-main data registry `Canon/registries/controlled-source-admissions-v1.json`. Historical closed reviews and receipts above remain unchanged. Schema 2.0 exact-source proofs are separate from historical schema 1.0 operation-contract proofs; neither replaces required ordinary owner checks, resulting-main verification or a specific release mandate. The current controlled installation uses job-scoped `GITHUB_TOKEN` and an early exact-artifact probe, without a PAT fallback. These changes are inert until the exact standard package is approved and accepted on authority main.

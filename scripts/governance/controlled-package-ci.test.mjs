@@ -805,11 +805,15 @@ test('all new trusted routing inputs invalidate the policy fingerprint; no candi
   } finally {fs.rmSync(root, {recursive: true, force: true})}
 })
 
-test('workflow keeps main-only pinned controller, credential-free execution/proof and unchanged private installation phase', () => {
+test('workflow keeps main-only pinned controller, credential-free execution/proof and job-scoped read-only package credentials', () => {
   const source = fs.readFileSync(path.join(authorityRoot, WORKFLOW), 'utf8'), privileged = source.slice(source.indexOf('  controlled-sg2:'), source.indexOf('  environment-policy-probe:'))
   assert.match(privileged, /if: github\.ref == 'refs\/heads\/main'/)
   assert.match(privileged, /environment: architecture-development/)
-  assert.equal((privileged.match(/secrets\.SG2_PACKAGES_READ_TOKEN/g) ?? []).length, 1)
+  assert.equal((privileged.match(/secrets\.SG2_PACKAGES_READ_TOKEN/g) ?? []).length, 0)
+  assert.match(privileged,/packages: read/)
+  assert.equal((privileged.match(/NPM_TOKEN: \$\{\{ github\.token \}\}/g)??[]).length,2)
+  assert.match(privileged,/controlled-package-ci\.mjs credential-preflight/)
+  assert.match(privileged,/controlled-package-ci\.mjs assert-credential-free/)
   const execute = privileged.slice(privileged.indexOf('      - name: Run lifecycle'), privileged.indexOf('      - name: Record sanitized'))
   for (const key of ['NPM_TOKEN', 'NODE_AUTH_TOKEN', 'GH_TOKEN', 'GITHUB_TOKEN']) assert(execute.includes(`${key}: ''`))
   assert(!execute.includes('secrets.')); assert.match(privileged, /run: node control\/scripts\/governance\/controlled-package-ci.mjs proof/)

@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import {findTrustedAdmission,trustedAdmissionById,assertSourceAdmission,assertSourceCheckout,assertWorkflowPackageCredential,classifyPackageFailure,credentialFree,sourceAdmissionDigest,assertSourceValidationProof} from './development-execution.mjs'
 // PROPOSAL ONLY: exact seven-file SG2 notification continuation; no generic UI admission.
 export const APPSHELL_NOTIFICATION_REVIEW=Object.freeze({
  "recordPath": "apps/sg-runtime/assistant-notifications-integration.json",
@@ -6476,7 +6477,11 @@ export async function resolveCandidateAdmission(c, number, expectedSha, request 
   const endpoint = `repos/${REPOSITORY}/pulls/${number}`
   const pr = number ? (await request(endpoint)).data : null
   const family = candidateFamily(c, pr, expectedSha)
-  if (family !== 'ARCHITECTURE') return {sha: selectCandidate(c, pr, expectedSha)}
+  const sourceRecord = process.env.SOURCE_ADMISSION_ID
+    ? trustedAdmissionById(process.env.SOURCE_ADMISSION_ID,repositoryRoot)
+    : findTrustedAdmission(expectedSha,repositoryRoot)
+  if (sourceRecord && !pr) fail('SOURCE_ADMISSION_PR_REQUIRED')
+  if (family !== 'ARCHITECTURE' && !sourceRecord) return {sha: selectCandidate(c, pr, expectedSha)}
   if (!Number.isInteger(pr.changed_files) || pr.changed_files < 1 || pr.changed_files > 300) fail('ARCHITECTURE_FILE_LIST_REQUIRED')
   const files = []
   for (let page = 1; page <= 4; page++) {
@@ -6490,11 +6495,20 @@ export async function resolveCandidateAdmission(c, number, expectedSha, request 
   // read, then bind the complete list to the actual pinned Git tree below.
   const current = (await request(endpoint)).data
   if (candidateFamily(c, current, expectedSha) !== family || current.base.sha !== pr.base.sha || current.changed_files !== pr.changed_files) fail('CANDIDATE_CHANGED_DURING_RESOLUTION')
+  if (sourceRecord) {
+    if (current.base.sha !== c.controlSha) fail('SOURCE_AUTHORITY_ADVANCED')
+    assertSourceAdmission(sourceRecord,{repository:REPOSITORY,actor:current.user.login,candidateSha:expectedSha,currentMainSha:c.controlSha,files},repositoryRoot)
+    return {sha:expectedSha,admission:{kind:'TRUSTED_RECORD',recordId:sourceRecord.id,actor:current.user.login,baseSha:c.controlSha,files:files.map(({filename,status,sha})=>({filename,status,sha}))}}
+  }
   const sha = selectCandidate(c, current, expectedSha, {files, repositoryRoot})
   return {sha, admission: {kind: family, baseSha: pr.base.sha, files: files.map(({filename, status, sha}) => ({filename, status, sha}))}}
 }
 
 export function assertArchitectureCheckout(root, sha, admission, repositoryRoot = controlRoot()) {
+  if (admission?.kind === 'TRUSTED_RECORD') {
+    const record=trustedAdmissionById(admission.recordId,repositoryRoot)
+    return assertSourceCheckout(root,record,{sha,actor:admission.actor,controlSha:admission.baseSha,files:admission.files},repositoryRoot)
+  }
   if (!admission || admission.kind !== 'ARCHITECTURE' || !shaPattern.test(sha ?? '') || !shaPattern.test(admission.baseSha ?? '')) fail('ARCHITECTURE_CHECKOUT_REJECTED')
   assertArchitectureFiles({changed_files: admission.files?.length, base: {sha: admission.baseSha}}, admission.files, repositoryRoot)
   const changed = execFileSync('git', ['diff', '--name-only', '--no-renames', '-z', `${admission.baseSha}...${sha}`], {cwd: root, encoding: 'utf8'}).split('\0').filter(Boolean).sort()
@@ -6683,7 +6697,7 @@ export function adoptedOperationContract(receipt){
  return a.rootContract
 }
 
-export function assertPackagePolicy(candidate, authority, configuration, {reviewedPrivateRecurring=false,reviewedCompleteFunctional=false,reviewedLifecycle=false}={}) {
+export function assertPackagePolicy(candidate, authority, configuration, {reviewedPrivateRecurring=false,reviewedCompleteFunctional=false,reviewedLifecycle=false,trustedAuthorityMetadata=false}={}) {
   if (configuration !== npmrc) fail('NPM_CONFIGURATION_REJECTED')
   if (candidate.lockfileVersion !== 3 || authority.lockfileVersion !== 3) fail('LOCKFILE_VERSION_REJECTED')
   const found = new Set()
@@ -6695,11 +6709,12 @@ export function assertPackagePolicy(candidate, authority, configuration, {review
       for (const [name, spec] of Object.entries(entry[section] ?? {})) {
         if ((name.startsWith('@profitia/') && !PRIVATE_PACKAGES.includes(name) && !Object.hasOwn(LOCAL_PACKAGES, name)) || String(spec).includes('@profitia/')) fail('PRIVATE_PACKAGE_ALIAS_REJECTED')
         if (Object.hasOwn(LOCAL_PACKAGES, name) && spec !== `file:${LOCAL_PACKAGES[name]}`
+          && !(trustedAuthorityMetadata&&spec===authority.packages?.[key]?.[section]?.[name])
           && !(reviewedLifecycle&&reviewedLifecyclePeer(privateName,entry.version,section,name,spec))
-          && !reviewedReportPeer(privateName,entry.version,section,name,spec)
+          && !(!trustedAuthorityMetadata&&reviewedReportPeer(privateName,entry.version,section,name,spec))
           && !(reviewedPrivateRecurring&&reviewedPrivateRecurringPeer(privateName,entry.version,section,name,spec))
           && !(reviewedCompleteFunctional&&completeFunctionalPeer(privateName,entry.version,section,name,spec))
-          && !(key === 'node_modules/@profitia/maps-embed' && reviewedMapsPeer(privateName, entry.version, section, name, spec))) fail('LOCAL_DEPENDENCY_REJECTED')
+          && !(!trustedAuthorityMetadata && key === 'node_modules/@profitia/maps-embed' && reviewedMapsPeer(privateName, entry.version, section, name, spec))) fail('LOCAL_DEPENDENCY_REJECTED')
       }
     }
     if (privateName.startsWith('@profitia/')) {
@@ -6707,7 +6722,7 @@ export function assertPackagePolicy(candidate, authority, configuration, {review
       if (PRIVATE_PACKAGES.includes(privateName)) {
         if (key !== `node_modules/${privateName}`) fail('NESTED_PRIVATE_PACKAGE_REJECTED')
         const accepted = authority.packages?.[key]
-        const analytical=privateName==='@profitia/cic-core'&&candidate.packages?.['']?.name==='@sg/runtime'&&analyticalPins.some(pin=>candidate.packages?.['']?.dependencies?.[privateName]===pin.version&&Object.entries(pin).every(([k,v])=>entry[k]===v))
+        const analytical=!trustedAuthorityMetadata&&privateName==='@profitia/cic-core'&&candidate.packages?.['']?.name==='@sg/runtime'&&analyticalPins.some(pin=>candidate.packages?.['']?.dependencies?.[privateName]===pin.version&&Object.entries(pin).every(([k,v])=>entry[k]===v))
         if (!accepted?.integrity?.startsWith('sha512-') || !analytical&&(entry.version !== accepted.version || entry.integrity !== accepted.integrity || entry.resolved !== accepted.resolved) || entry.link) fail('PRIVATE_PACKAGE_PIN_MISMATCH')
         found.add(privateName)
       }
@@ -6728,20 +6743,21 @@ export function assertPackagePolicy(candidate, authority, configuration, {review
   if (found.size !== PRIVATE_PACKAGES.length) fail('PRIVATE_PACKAGE_SET_MISMATCH')
 }
 
-export function assertManifestPolicy(candidate, authority, {reviewedPrivateRecurring=false,reviewedCompleteFunctional=false,reviewedLifecycle=false}={}) {
+export function assertManifestPolicy(candidate, authority, {reviewedPrivateRecurring=false,reviewedCompleteFunctional=false,reviewedLifecycle=false,trustedAuthorityMetadata=false}={}) {
   if (JSON.stringify(candidate.workspaces) !== JSON.stringify(authority.workspaces) || JSON.stringify(candidate.overrides) !== JSON.stringify(authority.overrides)) fail('DEPENDENCY_POLICY_CHANGE_REQUIRES_REVIEW')
   for (const section of ['dependencies', 'devDependencies', 'optionalDependencies', 'peerDependencies']) {
     for (const [name, spec] of Object.entries(candidate[section] ?? {})) {
       if (String(spec).includes('@profitia/')) fail('PRIVATE_PACKAGE_ALIAS_REJECTED')
+      if(trustedAuthorityMetadata&&Object.hasOwn(LOCAL_PACKAGES,name)&&candidate.name===authority.name&&spec===authority[section]?.[name])continue
       if(reviewedLifecycle&&reviewedLifecyclePeer(candidate.name,candidate.version,section,name,spec)){if(authority.name!==candidate.name||authority.version!==candidate.version||authority[section]?.[name]!==spec)fail('REGISTRATION_LIFECYCLE_PEER_AUTHORITY_REJECTED');continue}
       if (Object.hasOwn(LOCAL_PACKAGES, name) && spec === `file:${LOCAL_PACKAGES[name]}`) continue
       if(reviewedCompleteFunctional&&completeFunctionalPeer(candidate.name,candidate.version,section,name,spec)){if(authority.name!==candidate.name||!['1.7.1','1.8.0'].includes(authority.version)||authority[section]?.[name]!==spec)fail('ECR_COMPLETE_FUNCTIONAL_PEER_REJECTED');continue}
       if(reviewedPrivateRecurring&&reviewedPrivateRecurringPeer(candidate.name,candidate.version,section,name,spec)){if(!reviewedPrivateRecurringAuthority(candidate,authority,section,name,spec))fail('PRIVATE_RECURRING_PEER_AUTHORITY_REJECTED');continue}
-      if(reviewedReportPeer(candidate.name,candidate.version,section,name,spec)&&authority.name===candidate.name&&authority.version===candidate.version&&authority[section]?.[name]===spec)continue
-      if (reviewedMapsPeer(candidate.name, candidate.version, section, name, spec)
+      if(!trustedAuthorityMetadata&&reviewedReportPeer(candidate.name,candidate.version,section,name,spec)&&authority.name===candidate.name&&authority.version===candidate.version&&authority[section]?.[name]===spec)continue
+      if (!trustedAuthorityMetadata&&reviewedMapsPeer(candidate.name, candidate.version, section, name, spec)
         && authority.name === candidate.name && authority.version === candidate.version
         && authority[section]?.[name] === spec) continue
-      const analytical=candidate.name==='@sg/runtime'&&section==='dependencies'&&name==='@profitia/cic-core'&&analyticalPins.some(pin=>spec===pin.version)
+      const analytical=!trustedAuthorityMetadata&&candidate.name==='@sg/runtime'&&section==='dependencies'&&name==='@profitia/cic-core'&&analyticalPins.some(pin=>spec===pin.version)
       if (name.startsWith('@profitia/') && (!PRIVATE_PACKAGES.includes(name) || !analytical&&spec !== authority[section]?.[name])) fail('PRIVATE_MANIFEST_PIN_MISMATCH')
       if (/^(?:file:|link:|workspace:)/.test(String(spec))) fail('LOCAL_DEPENDENCY_REJECTED')
     }
@@ -6824,6 +6840,7 @@ export function assertLocalPackageSources(root, candidateLock, authorityRoot = c
 }
 
 export function assertProof(proof, run, candidateSha, workflowId, {currentRunId, currentRef, completedJobs = [], expectedControlDigest = controlPolicyDigest()} = {}) {
+  if(proof?.schemaVersion==='2.0')return assertSourceValidationProof(proof,run,candidateSha,workflowId,{currentRunId,currentRef,completedJobs,expectedControlDigest})
   const sameRun = String(run.id) === String(currentRunId) && currentRef === 'refs/heads/main' && run.event === 'push' && completedJobs.some(j => j.name === 'SG2 controlled operation integration' && j.conclusion === 'success')
   if (run.workflow_id !== workflowId || run.repository?.full_name !== REPOSITORY || run.head_branch !== 'main' || !['push', 'workflow_dispatch'].includes(run.event) || run.actor?.login !== 'profitia' || (!sameRun && run.conclusion !== 'success')) fail('UNTRUSTED_VALIDATION_RUN')
   if (proof.schemaVersion !== '1.0' || proof.repository !== REPOSITORY || proof.projectKey !== 'SG2' || proof.targetEnvironment !== 'development' || proof.scope !== 'ISOLATED_API_AND_PERSISTENCE' || proof.candidateSha !== candidateSha || proof.controlSha !== run.head_sha || String(proof.runId) !== String(run.id) || proof.workflow !== WORKFLOW) fail('VALIDATION_PROVENANCE_MISMATCH')
@@ -6837,7 +6854,9 @@ function context(env = process.env) {
   return {repository: env.GITHUB_REPOSITORY, ref: env.GITHUB_REF, workflowRef: env.GITHUB_WORKFLOW_REF, event: env.GITHUB_EVENT_NAME, actor: env.GITHUB_ACTOR, triggeringActor: env.GITHUB_TRIGGERING_ACTOR, controlSha: env.GITHUB_SHA}
 }
 function controlRoot() {return path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')}
-export const CONTROL_POLICY_FILES = Object.freeze([WORKFLOW, 'scripts/governance/controlled-package-ci.mjs', 'Canon/registries/architecture-environment-topology-v1.json',
+export const CONTROL_POLICY_FILES = Object.freeze([WORKFLOW, 'scripts/governance/controlled-package-ci.mjs',
+  'scripts/governance/development-execution.mjs',
+  'Canon/registries/development-execution-profiles-v1.json', 'Canon/registries/architecture-environment-topology-v1.json',
   'scripts/governance/project-profile.mjs', 'scripts/governance/routing-engine.mjs', 'scripts/architecture-classify.mjs',
   'Canon/registries/profitia-projects-v1.json', 'Canon/registries/current-architecture-baseline-v1.json'])
 const policyFiles = CONTROL_POLICY_FILES
@@ -6914,10 +6933,36 @@ export function operationContractProvenanceDigest(root, contract, {reviewedPriva
   for (const content of contents) digest.update(content)
   return digest.digest('hex')
 }
+export function checkAdmittedPackages(root,authorityRoot=controlRoot()) {
+  const app=path.join(root,'apps/sg-runtime')
+  const candidateLock=readJson(path.join(app,'package-lock.json'))
+  const flags={trustedAuthorityMetadata:true}
+  assertPackagePolicy(candidateLock,readJson(path.join(authorityRoot,'apps/sg-runtime/package-lock.json')),fs.readFileSync(path.join(app,'.npmrc'),'utf8'),flags)
+  assertManifestPolicy(readJson(path.join(app,'package.json')),readJson(path.join(authorityRoot,'apps/sg-runtime/package.json')),flags)
+  for(const [name,relative] of Object.entries(LOCAL_PACKAGES)){
+    const directory=path.resolve(app,relative),authority=path.resolve(authorityRoot,'apps/sg-runtime',relative)
+    if(!fs.existsSync(directory)){if(candidateLock.packages?.['node_modules/'+name])fail('LOCAL_PACKAGE_SOURCE_MISSING');continue}
+    if(!directory.startsWith(fs.realpathSync(root)+path.sep)||fs.realpathSync(directory)!==directory)fail('LOCAL_DEPENDENCY_REJECTED')
+    const file=path.join(directory,'package.json')
+    if(!fs.lstatSync(file).isFile()||fs.realpathSync(file)!==file||!fs.existsSync(path.join(authority,'package.json')))fail('LOCAL_PACKAGE_AUTHORITY_REQUIRED')
+    const current=readJson(file),accepted=readJson(path.join(authority,'package.json'))
+    if(current.name!==name||current.version!==accepted.version)fail('LOCAL_PACKAGE_VERSION_MISMATCH')
+    const installed=candidateLock.packages?.['node_modules/'+name]
+    if(installed&&(installed.version!==current.version||JSON.stringify(installed.peerDependencies??{})!==JSON.stringify(current.peerDependencies??{})))fail('LOCAL_PACKAGE_LOCK_METADATA_MISMATCH')
+    for(const key of ['dependencies','devDependencies','optionalDependencies','peerDependencies','workspaces','overrides'])
+      if(JSON.stringify(current[key])!==JSON.stringify(accepted[key]))fail('LOCAL_PACKAGE_DEPENDENCY_POLICY_CHANGED')
+  }
+  return app
+}
 function checkCandidate() {
   const c = assertTrustedContext(context()), state = readJson(statePath()), root = candidateRoot()
   if (state.controlSha !== c.controlSha || state.runId !== process.env.GITHUB_RUN_ID || !shaPattern.test(state.sha) || execFileSync('git', ['rev-parse', 'HEAD'], {cwd: root, encoding: 'utf8'}).trim() !== state.sha) fail('CANDIDATE_CHECKOUT_MISMATCH')
   if (state.admission) assertArchitectureCheckout(root, state.sha, state.admission)
+  if(state.admission?.kind==='TRUSTED_RECORD'){
+    const sourceRecord=trustedAdmissionById(state.admission.recordId)
+    return {state,app:checkAdmittedPackages(root),sourceRecord,genericSource:true}
+  }
+  if(!state.admission&&state.sha===c.controlSha)return {state,app:checkAdmittedPackages(root),genericSource:true}
   const app = path.join(root, 'apps/sg-runtime'),complete=assertCompleteFunctionalProvenance(root), recurring=assertPrivateRecurringProvenance(root), reviewedPrivateRecurring=!!recurring,reviewedLifecycle=!!registrationLifecycleCanonicalRead(root)
   const candidateLock = readJson(path.join(app, 'package-lock.json'))
   assertPackagePolicy(candidateLock, readJson(path.join(controlRoot(), 'apps/sg-runtime/package-lock.json')), fs.readFileSync(path.join(app, '.npmrc'), 'utf8'),{reviewedPrivateRecurring,reviewedCompleteFunctional:!!complete,reviewedLifecycle})
@@ -6928,24 +6973,61 @@ function checkCandidate() {
   if (operationContractProvenanceDigest(root, contract,{reviewedPrivateRecurring}) !== contract.sourceDigest || JSON.stringify(readJson(path.join(app, 'operation-integration.json'))) !== JSON.stringify(state.receipt)) fail('CONTRACT_PROVENANCE_MISMATCH')
   return {state, app}
 }
+async function workflowPackageCredential() {
+  const c=assertTrustedContext(context())
+  if(process.env.PACKAGE_CREDENTIAL_MODE!=='github-token')fail('PACKAGE_CREDENTIAL_MODE_REJECTED')
+  if(execFileSync('git',['rev-parse','HEAD'],{cwd:controlRoot(),encoding:'utf8'}).trim()!==c.controlSha)fail('CONTROL_CHECKOUT_MISMATCH')
+  await assertWorkflowPackageCredential({token:process.env.NPM_TOKEN,context:c,request:api})
+  return c
+}
+function isolatedNpmEnvironment(directory) {
+  return {PATH:process.env.PATH,HOME:directory,NPM_TOKEN:process.env.NPM_TOKEN,
+    NPM_CONFIG_USERCONFIG:path.join(directory,'.npmrc'),NPM_CONFIG_GLOBALCONFIG:'/dev/null',NPM_CONFIG_CACHE:path.join(directory,'cache')}
+}
+async function credentialPreflight() {
+  const c=await workflowPackageCredential(),directory=fs.mkdtempSync(path.join(os.tmpdir(),'trusted-package-access-'))
+  try {
+    fs.writeFileSync(path.join(directory,'.npmrc'),npmrc,{mode:0o600})
+    const lock=readJson(path.join(controlRoot(),'apps/sg-runtime/package-lock.json'))
+    for(const name of PRIVATE_PACKAGES){
+      const pin=lock.packages?.['node_modules/'+name]
+      if(!pin?.integrity?.startsWith('sha512-')||!pin.version||!pin.resolved?.startsWith('https://npm.pkg.github.com/download/'+name+'/'))fail('TRUSTED_PACKAGE_PIN_REQUIRED')
+      const result=spawnSync('npm',['view',name+'@'+pin.version,'dist','--json','--registry=https://npm.pkg.github.com','--ignore-scripts','--no-audit','--no-fund'],{cwd:directory,env:isolatedNpmEnvironment(directory),encoding:'utf8',timeout:90000,maxBuffer:1048576})
+      if(result.status!==0)fail(classifyPackageFailure((result.stderr??'')+(result.stdout??'')))
+      let metadata;try{metadata=JSON.parse(result.stdout)}catch{fail('PACKAGE_METADATA_REJECTED')}
+      if(metadata.integrity!==pin.integrity||metadata.tarball!==pin.resolved)fail('PACKAGE_ARTIFACT_PIN_REJECTED')
+    }
+    fs.writeFileSync(path.join(process.env.RUNNER_TEMP,'controlled-package-access.json'),JSON.stringify({controlSha:c.controlSha,runId:process.env.GITHUB_RUN_ID,privatePackages:PRIVATE_PACKAGES,mode:'github-token'}),{mode:0o600})
+    console.log('PACKAGE_ACCESS_READY: exact trusted artifacts; no candidate execution')
+  }finally{fs.rmSync(directory,{recursive:true,force:true})}
+}
 async function install() {
   const {app} = checkCandidate()
-  const token = process.env.NPM_TOKEN
-  if (!token) fail('CONTROLLED_PACKAGE_CREDENTIAL_REQUIRED')
-  const identity = await api('user', token)
-  assertCredentialMetadata({scopes: identity.headers.get('x-oauth-scopes'), expiresAt: identity.headers.get('github-authentication-token-expiration'), login: identity.data.login})
+  const c=await workflowPackageCredential()
+  const ready=readJson(path.join(process.env.RUNNER_TEMP,'controlled-package-access.json'))
+  if(ready.controlSha!==c.controlSha||ready.runId!==process.env.GITHUB_RUN_ID||ready.mode!=='github-token'||JSON.stringify(ready.privatePackages)!==JSON.stringify(PRIVATE_PACKAGES))fail('PACKAGE_ACCESS_PREFLIGHT_REQUIRED')
   const cache = fs.mkdtempSync(path.join(os.tmpdir(), 'controlled-npm-cache-'))
   try {
     // Do not print captured npm output or upload its logs. No lifecycle code receives the token.
-    const result = spawnSync('npm', ['ci', '--install-links', '--ignore-scripts', '--no-audit', '--no-fund'], {cwd: app, env: {...process.env, NPM_CONFIG_CACHE: cache}, encoding: 'utf8', maxBuffer: 32 * 1024 * 1024})
-    if (result.status !== 0) fail('CONTROLLED_DEPENDENCY_INSTALL_FAILED')
+    fs.writeFileSync(path.join(cache,'.npmrc'),npmrc,{mode:0o600})
+    const result = spawnSync('npm', ['ci', '--install-links', '--ignore-scripts', '--no-audit', '--no-fund'], {cwd: app, env:isolatedNpmEnvironment(cache), encoding: 'utf8', maxBuffer: 32 * 1024 * 1024})
+    if (result.status !== 0) fail(classifyPackageFailure((result.stderr??'')+(result.stdout??'')))
     console.log('Clean registry installation completed with lifecycle scripts disabled')
   } finally {fs.rmSync(cache, {recursive: true, force: true})}
 }
 function proof() {
-  if (process.env.NPM_TOKEN || process.env.NODE_AUTH_TOKEN || process.env.GH_TOKEN) fail('CREDENTIAL_PRESENT_IN_EXECUTION_PHASE')
-  const {state} = checkCandidate(), directory = path.join(process.env.RUNNER_TEMP, ARTIFACT)
+  if (!credentialFree(process.env)) fail('CREDENTIAL_PRESENT_IN_EXECUTION_PHASE')
+  const {state,sourceRecord,genericSource} = checkCandidate(), directory = path.join(process.env.RUNNER_TEMP, ARTIFACT)
   fs.mkdirSync(directory, {recursive: true})
+  if(genericSource){
+    fs.writeFileSync(path.join(directory,'proof.json'),JSON.stringify({schemaVersion:'2.0',repository:REPOSITORY,workflow:WORKFLOW,
+      targetEnvironment:'development',scope:sourceRecord?'EXACT_SOURCE_VALIDATION':'AUTHORITY_MAIN_VALIDATION',candidateSha:state.sha,controlSha:state.controlSha,
+      controlPolicyDigest:controlPolicyDigest(),runId:state.runId,...(sourceRecord?{sourceAdmissionId:sourceRecord.id,
+      sourceAdmissionDigest:sourceAdmissionDigest(sourceRecord),originalSourceSha:sourceRecord.sourceSha}:{}),
+      install:'CLEAN_REGISTRY_IGNORE_SCRIPTS',credentialRemovedBeforeCandidateExecution:true,privatePackageArtifactsPublished:false,
+      tests:'PASS',typecheck:'PASS',build:'PASS',productDeploymentPerformed:false,customerIdentityAdapterVerified:false},null,2))
+    output('proof_sha',state.sha);return
+  }
   fs.writeFileSync(path.join(directory, 'proof.json'), JSON.stringify({schemaVersion: '1.0', repository: REPOSITORY, workflow: WORKFLOW, projectKey: 'SG2', targetEnvironment: 'development', scope: 'ISOLATED_API_AND_PERSISTENCE', candidateSha: state.sha, controlSha: state.controlSha, controlPolicyDigest: controlPolicyDigest(), runId: state.runId, contract: currentProofContract(candidateRoot(),state.receipt), install: 'CLEAN_REGISTRY_IGNORE_SCRIPTS', credentialRemovedBeforeCandidateExecution: true, privatePackageArtifactsPublished: false, tests: 'PASS', typecheck: 'PASS', build: 'PASS', productDeploymentPerformed: false, customerIdentityAdapterVerified: false}, null, 2))
   output('proof_sha', state.sha)
 }
@@ -6971,6 +7053,15 @@ async function verify() {
       const sourceFiles = await Promise.all(policyFiles.map(async name => Buffer.from((await api(`repos/${REPOSITORY}/contents/${name}?ref=${run.head_sha}`)).data.content, 'base64')))
       const actualControl = createHash('sha256'); for (const bytes of sourceFiles) actualControl.update(bytes)
       if (actualControl.digest('hex') !== p.controlPolicyDigest) fail('CONTROL_POLICY_PROVENANCE_MISMATCH')
+      if(p.schemaVersion==='2.0'){
+        if(p.scope==='EXACT_SOURCE_VALIDATION'){
+          const ledger=JSON.parse(Buffer.from((await api('repos/'+REPOSITORY+'/contents/Canon/registries/controlled-source-admissions-v1.json?ref='+run.head_sha)).data.content,'base64'))
+          const atExecution=ledger.schemaVersion==='1.0'&&Array.isArray(ledger.records)?ledger.records.filter(r=>r.id===p.sourceAdmissionId):[]
+          if(atExecution.length!==1||sourceAdmissionDigest(atExecution[0])!==p.sourceAdmissionDigest)fail('SOURCE_ADMISSION_EXECUTION_PROVENANCE_MISMATCH')
+        }
+        console.log('Verified exact source tests/build for '+sha+' under '+(p.sourceAdmissionId??'accepted authority main')+': https://github.com/'+REPOSITORY+'/actions/runs/'+run.id)
+        return
+      }
       const receiptBytes=Buffer.from((await api(`repos/${REPOSITORY}/contents/apps/sg-runtime/operation-integration.json?ref=${sha}`)).data.content,'base64'),sourceReceipt=JSON.parse(receiptBytes)
       let recurringRecord=null;try{recurringRecord=Buffer.from((await api(`repos/${REPOSITORY}/contents/${PRIVATE_RECURRING_PROVENANCE.recordPath}?ref=${sha}`)).data.content,'base64')}catch(error){if(error.message!=='GITHUB_API_404')throw error}
       assertReceipt(sourceReceipt)
@@ -6985,7 +7076,7 @@ async function verify() {
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   try {
-    const commands = {resolve, 'check-candidate': checkCandidate, install, proof, verify}
+    const commands = {resolve, 'check-candidate': checkCandidate, 'credential-preflight':credentialPreflight, 'assert-credential-free':()=>{if(!credentialFree(process.env))fail('CREDENTIAL_PRESENT_IN_EXECUTION_PHASE')}, install, proof, verify}
     const command = commands[process.argv[2]]
     if (!command) fail('UNKNOWN_CONTROLLED_CI_COMMAND')
     await command()
