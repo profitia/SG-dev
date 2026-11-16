@@ -1635,7 +1635,7 @@
       "apps/srm/package-lock.json": "075c6ecb86765796948b3a10886ef7eac0782eaaab4b359ddd1d6d87212582b9",
       "apps/srm/package.json": "a32a178028dc8af16c7b2acd6b4470757fe2de0dd7598d29cb4fc14407482d7d",
       "apps/srm/private-recurring-source-adoption.json": "88d0252f634eface35b34adf31ac97cbf0d396fcf1fe6da452c74bdc23c7c633",
-      "apps/srm/scripts/diagnostic-telemetry-adoption.test.mjs": "cc5944177f269f65054981a159e56aa8d924fdc03cd0653955e80583b346af68",
+      "apps/srm/scripts/diagnostic-telemetry-adoption.test.mjs": "081fd1b5307a7538e44af5c3191cc9c858d2f446eee37225680f293047bbdf60",
       "apps/srm/scripts/native-execution-adoption.test.mjs": "52f43e1ec0fdefa358a55d4e1b293d016eb4d5c7b57b87cf344ab3878290dfc0",
       "apps/srm/scripts/operation-context.test.mjs": "282792e61fdbf1fdc279d6408e4fe5dbe5e66a78f8268d947caa54a183669173",
       "apps/srm/scripts/organisation-registration.integration.test.mjs": "4c03a33324c0dc51c7903a37cf8b79fab4f891786cc902e4081016c31f7f646c",
@@ -1644,7 +1644,7 @@
       "apps/srm/scripts/request-quota-adoption.test.mjs": "4ab4acacc61780797da0993d2faa894089d5094ad5e95362dd0f2d89c5faaa49",
       "apps/srm/scripts/source-hub-sdk-compatibility.mjs": "fea4b1fe8d6804a8ecada0de4368c70bd24a11710ef3143ed1be233aac8a80d8",
       "apps/srm/scripts/supplier-location-admission.integration.test.mjs": "350fb9a18ce015f4b962f46d75cf4488341e880b82932d68e2f6930fdcbbee68",
-      "apps/srm/scripts/xray-performance-adoption.test.mjs": "2a31820af0d2e1a7a643e23ac5744dfae00b0a18a642d5a353cb6b577998c985",
+      "apps/srm/scripts/xray-performance-adoption.test.mjs": "605ea2c70d60fcace630421c0581a1e2e6433373e4c8e8e9871b1d1daf60e7e4",
       "apps/srm/src/server/assistant-context-runtime.ts": "829d1c926a28c62bc7b8e3df44918393936a7b68eb06ef8513e8ef82a09959c8",
       "apps/srm/src/server/financial-excel-runtime.ts": "843229a2129076c8d0f40408c4d97ca35564c537ea777b1e081deb985a0315c1",
       "apps/srm/src/server/organisation-bootstrap.test.ts": "e54783369ce79903339a880a626eafc380d7e58a461244d0c5a3d604fd862bde",
@@ -1891,14 +1891,14 @@
       {
         "projectKey": "SRM",
         "taskId": "SRM-REGISTRATION-STAGE-I-RESUME-V2-20261113",
-        "sourceSha": "80f80349b5e445e479d28174f5887c6fec01be57",
+        "sourceSha": "2f971955ec5d14447183c034fd408bc21ec56876",
         "sourceDigests": {
           "apps/srm/src/server/organisation-bootstrap.test.ts": "e54783369ce79903339a880a626eafc380d7e58a461244d0c5a3d604fd862bde",
           "apps/srm/src/server/root-atomic-claim-adoption.test.ts": "fc9fcfff74b024378be40cbeb67887820e5b30b896f4b1045d38aac921de0c41",
-          "apps/srm/scripts/diagnostic-telemetry-adoption.test.mjs": "cc5944177f269f65054981a159e56aa8d924fdc03cd0653955e80583b346af68",
+          "apps/srm/scripts/diagnostic-telemetry-adoption.test.mjs": "081fd1b5307a7538e44af5c3191cc9c858d2f446eee37225680f293047bbdf60",
           "apps/srm/scripts/supplier-location-admission.integration.test.mjs": "350fb9a18ce015f4b962f46d75cf4488341e880b82932d68e2f6930fdcbbee68",
           "apps/srm/scripts/private-host.integration.test.mjs": "dd24638bdef8da96686377c46867beb90814ffd17dff0e735993007ccde967ca",
-          "apps/srm/scripts/xray-performance-adoption.test.mjs": "2a31820af0d2e1a7a643e23ac5744dfae00b0a18a642d5a353cb6b577998c985"
+          "apps/srm/scripts/xray-performance-adoption.test.mjs": "605ea2c70d60fcace630421c0581a1e2e6433373e4c8e8e9871b1d1daf60e7e4"
         }
       }
     ],
