@@ -120,7 +120,7 @@ test('real Git checkout verifies reviewed source, current authority, mode, full 
  try{
   g('init');g('config','user.name','Isolated Test');g('config','user.email','isolated@example.invalid')
   const target=path.join(dir,sourcePath);fs.mkdirSync(path.dirname(target),{recursive:true})
-  fs.writeFileSync(target,'export const sample = 1\n');g('add','.');g('commit','-m','base')
+  fs.writeFileSync(target,'export const sample = 1\n');fs.writeFileSync(path.join(dir,'authority-only.txt'),'unchanged authority\n');g('add','.');g('commit','-m','base')
   const initial=g('rev-parse','HEAD')
   fs.writeFileSync(target,'export const sample = 2\n');g('add','.');g('commit','-m','candidate')
   const candidate=g('rev-parse','HEAD'),blob=g('hash-object',sourcePath)
@@ -130,7 +130,12 @@ test('real Git checkout verifies reviewed source, current authority, mode, full 
   assertSourceCheckout(dir,r,s,root)
   fs.writeFileSync(target,'dirty\n');assert.throws(()=>assertSourceCheckout(dir,r,s,root));g('checkout','--',sourcePath)
   fs.chmodSync(target,0o755);assert.throws(()=>assertSourceCheckout(dir,r,s,root));fs.chmodSync(target,0o644)
-  fs.writeFileSync(path.join(dir,'unexpected.txt'),'unreviewed');g('add','.');g('commit','-m','unreviewed')
+  fs.writeFileSync(path.join(dir,'authority-only.txt'),'unapproved authority edit\n')
+  assert.throws(()=>assertSourceCheckout(dir,r,s,root),/SOURCE_CHECKOUT_DIRTY/);g('checkout','--','authority-only.txt')
+  fs.writeFileSync(path.join(dir,'unexpected.txt'),'unreviewed')
+  assert.throws(()=>assertSourceCheckout(dir,r,s,root),/SOURCE_CHECKOUT_DIRTY/)
+  g('add','.');assert.throws(()=>assertSourceCheckout(dir,r,s,root),/SOURCE_CHECKOUT_DIRTY/)
+  g('commit','-m','unreviewed')
   assert.throws(()=>assertSourceCheckout(dir,r,{...s,sha:g('rev-parse','HEAD')},root))
  }finally{fs.rmSync(dir,{recursive:true,force:true})}
 })

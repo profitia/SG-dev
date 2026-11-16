@@ -160,6 +160,9 @@ export function assertSourceCheckout(candidateRoot, record, state, governanceRoo
       || git(base,['hash-object','--no-filters','--',entry.path]) !== entry.blob
       || Boolean(stat.mode & 0o111) !== (entry.mode === '100755')) deny('SOURCE_PHYSICAL_FILE_REJECTED')
   }
+  // Lifecycle scripts must not leave unreviewed tracked, staged or untracked
+  // source outside the admitted diff before the exact-source proof is emitted.
+  if (git(base,['status','--porcelain=v1','--untracked-files=all','--ignore-submodules=none'])) deny('SOURCE_CHECKOUT_DIRTY')
   return true
 }
 
