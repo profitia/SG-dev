@@ -907,7 +907,7 @@ test('finite Supplier input capture accepts only its exact source and preserves 
  assert.deepEqual(Object.keys(a.producerSourceDigests).sort(),['package.json','src/payload-capture.d.mts','src/payload-capture.mjs'])
  for(const[file,digest]of Object.entries(a.producerSourceDigests)){
   assert.equal(hash(historical(a.producer.sourceSha,'packages/platform-contracts/payload-capture/'+file)),digest,'producer '+file)
-  assert.equal(hash(fs.readFileSync(new URL(file,root))),(sdkCurrentSourceDigests[file]??(apiPath?.producerMetadataDigests['packages/platform-contracts/payload-capture/'+file]??digest)),'installed '+file)
+  assert.equal(hash(fs.readFileSync(new URL(file,root))),(sdkCurrentSourceDigests['payload-capture/'+file]??(apiPath?.producerMetadataDigests['packages/platform-contracts/payload-capture/'+file]??digest)),'installed '+file)
  }
  const {createRequire}=await import('node:module'),{realpathSync}=await import('node:fs')
  const own=createRequire(import.meta.url),peer=createRequire(new URL('package.json',root))
