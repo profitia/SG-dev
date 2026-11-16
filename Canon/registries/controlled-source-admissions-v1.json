@@ -1,0 +1,33 @@
+{
+  "schemaVersion": "1.0",
+  "owner": "Governance Source Layer",
+  "scope": "SOURCE_VALIDATION_ONLY",
+  "records": [
+    {
+      "id": "ARCHITECTURE:ARCH-CLOUD-DEVELOPMENT-STANDARD-CONT-20261116",
+      "status": "ACTIVE",
+      "repository": "profitia/SG-dev",
+      "actor": "profitia",
+      "taskId": "ARCH-CLOUD-DEVELOPMENT-STANDARD-CONT-20261116",
+      "targetEnvironment": "development",
+      "scope": "SOURCE_VALIDATION_ONLY",
+      "approvalRef": "owner-decision:01a1e538-b4a8-7d43-a3ca-35cf9711e157:SG-DEV-STANDARD-1087-V1",
+      "sourceSha": "75ef419444f3d7476243c656079b35e504dab81a",
+      "baseSha": "80875d8f0e9451cd9afd34e8baf2a8f6059bc064",
+      "validFrom": "2026-11-16T00:00:00.000Z",
+      "validUntil": "2026-11-23T23:59:59.000Z",
+      "files": [
+        {
+          "path": "apps/architecture-lab/docs/cloud-development-admission-pilot.md",
+          "blob": "f359291d379815c3b443792bab56d83051180a39",
+          "mode": "100644",
+          "status": "added",
+          "projectKey": "ARCHITECTURE",
+          "owner": "Architecture Platform",
+          "surfaceId": "ARCH-BASE-002"
+        }
+      ]
+    }
+  ],
+  "authority": "Accepted trusted-main data only. Candidate records never authorize themselves. Existing closed reviews and historical receipts remain unchanged."
+}

@@ -350,3 +350,7 @@ Porządkowanie lokalizacji obejmuje wspólny wrapper i jego trzy zatwierdzone do
 Właściciel wskazał docelowy model **PMOS + PHR bez MEMOROS**. W bieżącym governance `SG2` i `CIC` nadal wymagają MEMOROS dla zadań, w których stosuje się continuity, a `ARCHITECTURE` i `SRM` mają ten uczestnik wyłączony. Uproszczenie wymaga osobnego, jawnie zatwierdzonego zadania we właściwym profilu/ownerze: aktualizacji kanonu wykonania, profili i adapterów w razie potrzeby, wykonalnej implementacji PMOS i closeout, testów pozytywnych/negatywnych oraz potwierdzonej publikacji na aktywnym źródle. **Do tego czasu nie wyłączaj wymaganego uczestnika i nie deklaruj, że PHR go zastępuje.**
 
 Aneks A jest checklistą stosowania reguł, aneks B nie tworzy uprawnień ani nowych bramek. Oba aneksy są integralną częścią pliku wrappera.
+
+## Wspólny standard Development Cloud
+
+Jednym źródłem reguł mandatu, poświadczeń CI, dopuszczania źródeł, transportu, integracji, wydania i wznowienia jest [wspólny kontrakt Development](../../Canon/runbooks/cloud-development-execution-v1.md), ładowany przez CORE. Rejestr adapterów nie zmienia projektowego repozytorium, środowiska ani PMOS/MEMOROS/PHR. Standard staje się aktywny tylko po dokładnej decyzji właściciela i przyjęciu na authority main. Zmiana SG-dev nie jest dowodem wykonania lokalnej zmiany CIC.

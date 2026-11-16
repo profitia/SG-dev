@@ -14,6 +14,9 @@ on:
       - 'Canon/registries/architecture-environment-topology-v1.json'
       - '.github/workflows/platform-contracts-ci.yml'
       - 'scripts/governance/controlled-package-ci*'
+      - 'scripts/governance/development-execution*'
+      - 'Canon/registries/controlled-source-admissions-v1.json'
+      - 'Canon/registries/development-execution-profiles-v1.json'
       - 'scripts/governance/project-profile.mjs'
       - 'scripts/governance/routing-engine.mjs'
       - 'scripts/architecture-classify.mjs'
@@ -32,6 +35,9 @@ on:
       - 'Canon/registries/architecture-environment-topology-v1.json'
       - '.github/workflows/platform-contracts-ci.yml'
       - 'scripts/governance/controlled-package-ci*'
+      - 'scripts/governance/development-execution*'
+      - 'Canon/registries/controlled-source-admissions-v1.json'
+      - 'Canon/registries/development-execution-profiles-v1.json'
       - 'scripts/governance/project-profile.mjs'
       - 'scripts/governance/routing-engine.mjs'
       - 'scripts/architecture-classify.mjs'
@@ -44,6 +50,9 @@ on:
         default: integration
       candidate_pr:
         description: 'Internal SG2/SRM or bounded Architecture producer PR; empty validates exact main'
+        type: string
+      source_admission_id:
+        description: 'Optional trusted-main source admission record ID; never candidate authority'
         type: string
       expected_sha:
         description: 'Exact 40-character candidate HEAD; required for a PR'
@@ -87,7 +96,7 @@ jobs:
       - name: Test canonical and optional contracts in isolated PostgreSQL
         run: node --test packages/platform-contracts/test/*.test.mjs apps/architecture-lab/test/*.test.mjs packages/platform-contracts/current-fresh-report/test/*.test.mjs
       - name: Validate registered routing and workspace isolation
-        run: node --test scripts/governance/governance.test.mjs scripts/governance/development-workspace.test.mjs scripts/governance/controlled-package-ci.test.mjs scripts/governance/controlled-package-ci-path-coverage.test.mjs
+        run: node --test scripts/governance/governance.test.mjs scripts/governance/development-workspace.test.mjs scripts/governance/controlled-package-ci.test.mjs scripts/governance/controlled-package-ci-path-coverage.test.mjs scripts/governance/development-execution.test.mjs
 
   dashboard-source-regression:
     name: SG2 dashboard source regression
@@ -324,6 +333,7 @@ jobs:
     permissions:
       contents: read
       actions: read
+      packages: read
     services:
       postgres:
         image: postgres:16
@@ -348,11 +358,17 @@ jobs:
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: '24'
+      - name: Verify access to exact trusted package artifacts before candidate checkout
+        env:
+          PACKAGE_CREDENTIAL_MODE: github-token
+          NPM_TOKEN: ${{ github.token }}
+        run: node control/scripts/governance/controlled-package-ci.mjs credential-preflight
       - name: Verify trusted control, provider policy and immutable internal candidate
         id: resolution
         env:
           GH_TOKEN: ${{ github.token }}
           CANDIDATE_PR: ${{ inputs.candidate_pr }}
+          SOURCE_ADMISSION_ID: ${{ inputs.source_admission_id }}
           EXPECTED_SHA: ${{ inputs.expected_sha }}
         run: node control/scripts/governance/controlled-package-ci.mjs resolve
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
@@ -368,7 +384,8 @@ jobs:
       - name: Read-only credential phase; clean install with lifecycle scripts disabled
         if: steps.resolution.outputs.adopted == 'true'
         env:
-          NPM_TOKEN: ${{ secrets.SG2_PACKAGES_READ_TOKEN }}
+          PACKAGE_CREDENTIAL_MODE: github-token
+          NPM_TOKEN: ${{ github.token }}
         run: node control/scripts/governance/controlled-package-ci.mjs install
       - name: Run lifecycle, real API tests, typecheck and build after credential phase ended
         if: steps.resolution.outputs.adopted == 'true'
@@ -380,6 +397,7 @@ jobs:
           GITHUB_TOKEN: ''
           SG2_OPERATION_TEST_OWNER_URL: postgresql://architecture_test_owner:isolated_ci_only@127.0.0.1:5432/sg2_operation_test
         run: |
+          node ${{ github.workspace }}/control/scripts/governance/controlled-package-ci.mjs assert-credential-free
           npm rebuild --foreground-scripts
           npm run postinstall --if-present
           npm --prefix ../architecture-lab ci --ignore-scripts --no-audit --no-fund

@@ -9,3 +9,5 @@ PMOS and PHR are required; Memoros is disabled by this registered profile. Conti
 Shared PMOS has one source implementation and an independent private Render Development instance. Ordinary work uses its dedicated checkout, PMOS artifacts, context and PHR clone. Integrations into SG2/SRM product source are separately registered tasks of those projects, referenced by projectKey/taskId/PR/SHA. Architecture routing cannot mutate product source. Staging and Production are reserved and blocked.
 
 The target architecture canon remains a goal; activation of this development track does not implement product tenancy, authentication, organization permissions or SaaS billing. Read dated acceptance evidence before making a readiness claim.
+
+Shared Development execution inherits `Canon/runbooks/cloud-development-execution-v1.md` through CORE and selects the ARCHITECTURE adapter in `development-execution-profiles-v1.json`. This adds no resource, credential, environment or continuity authority. Existing task registrations and exact decisions remain intact.
