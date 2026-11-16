@@ -1,3 +1,7 @@
+import {readFileSync as readCurrentSdkSourceFile} from 'node:fs'
+import {execFileSync as readCurrentSdkSourceGit} from 'node:child_process'
+import {fileURLToPath as currentSdkSourceFileUrl} from 'node:url'
+import {organisationLifecycleSdkPredecessor as currentSdkLifecycleSource} from './organisation-lifecycle-sdk-compatibility.mjs'
 import {organisationLifecycleSdkPredecessor} from './organisation-lifecycle-sdk-compatibility.mjs'
 import {recurringConsentTransportPredecessor} from './recurring-consent-transport-source.mjs'
 import {procurementInsightsCompletionPredecessor} from '../../../apps/sg-runtime/tests/procurement-insights-completion-integrity.mjs'
@@ -715,4 +719,14 @@ export function acceptedSdkSource(){
  const previous=receipt.oilAutonomousReportCompatibility??receipt.assistantM1SourceCompatibility
  assert(previous?.sdkDigests&&previous?.optionalPackageDigests,'existing accepted SDK source required')
  return {sdkDigests:previous.sdkDigests,optionalPackageDigests:previous.optionalPackageDigests}
+}
+
+// Current test fingerprints remain separate from immutable accepted records.
+export function acceptedSdkCurrentSourceDigests(){
+ const root=new URL('../../../',import.meta.url)
+ const current=p=>readCurrentSdkSourceFile(new URL(p,root))
+ const historical=(sha,p)=>readCurrentSdkSourceGit('git',['show',sha+':'+p],{cwd:currentSdkSourceFileUrl(root),stdio:['ignore','pipe','pipe']})
+ const value=currentSdkLifecycleSource(current,historical,{projectKey:'SRM'})
+ if(!value)throw Error('Verified current lifecycle source required')
+ return Object.freeze({...value.currentSourceDigests})
 }

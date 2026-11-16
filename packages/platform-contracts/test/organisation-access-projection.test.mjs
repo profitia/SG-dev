@@ -12,7 +12,7 @@ import {organisationOnboardingSchemaDigest} from '../src/organisation-profile.mj
 import {organisationBootstrapSchemaDigest} from '../src/organisation-bootstrap.mjs'
 
 test('genuine Root projection grants only current own scoped package leases and preserves independent rights',{timeout:60000},async t=>{
- const db=await postgresFixture();t.after(()=>db.close())
+ const db=await postgresFixture(),runtimePools=[];t.after(async()=>{await Promise.all(runtimePools.map(pool=>pool.end()));await db.close()})
  for(const file of ['007-organisation-onboarding.sql','008-organisation-create.sql','009-organisation-lifecycle.sql','010-organisation-access-projection.sql'])await db.admin.query(fs.readFileSync(new URL('../migrations/profile/'+file,import.meta.url),'utf8'))
  for(const [table,values] of [
  ['organisation_onboarding_installation',[true,'1.0.0',organisationOnboardingSchemaDigest()]],
@@ -72,7 +72,7 @@ test('genuine Root projection grants only current own scoped package leases and 
   await db.admin.query("INSERT INTO profitia_access.runtime_bindings VALUES('spendguru_projection_runtime','spendguru','ACTIVE')")
   await db.admin.query('GRANT USAGE ON SCHEMA profitia_access TO spendguru_projection_runtime')
   await db.admin.query('GRANT EXECUTE ON FUNCTION profitia_access.runtime_descriptor(),profitia_access.identity_binding(text,text),profitia_access.lock_access(uuid,uuid,text,text,text),profitia_access.scope_allows(text,uuid,uuid),profitia_access.append_audit(jsonb) TO spendguru_projection_runtime')
-  const pool=new db.pool.constructor({...db.config,user:'spendguru_projection_runtime',max:4});t.after(()=>pool.end())
+  const pool=new db.pool.constructor({...db.config,user:'spendguru_projection_runtime',max:4});runtimePools.push(pool)
   const transact=async(run,limits)=>{
    const c=await pool.connect();let timer,closed=false
    try{await c.query('BEGIN');const result=await Promise.race([run({query:async(q,v)=>{if(closed)throw Error('closed');return c.query(q,v)},transaction:c}),

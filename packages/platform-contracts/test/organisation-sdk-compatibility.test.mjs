@@ -88,7 +88,7 @@ test('current165-file producer and both receivers precede accepted recurring mai
  }
  const lifecycleRecord=JSON.parse(current('packages/platform-contracts/test/organisation-lifecycle-sdk-compatibility.json'))
  assert.equal(lifecycleRecord.platformVersion,'1.37.0')
- assert.deepEqual(acceptedSdkSource(),lifecycleRecord)
+ assert.deepEqual(acceptedSdkSource(),JSON.parse(historical('8aee0665f20f16ae66455f8d15d336bac59711f0','packages/platform-contracts/test/organisation-lifecycle-sdk-compatibility.json')))
 })
 test('every physical SDK, recurring guard, receiver and compatibility file remains authenticated',()=>{
  const record=JSON.parse(current(sourcePath))
@@ -181,7 +181,7 @@ test('approved parallel ECR67 graph remains authenticated at its complete immuta
 test('direct ECR test is authenticated before its exactly pinned historical view',()=>{
  const target="apps/sg-runtime/tests/assistant-ecr-week-integrity.test.mjs",source=sdkContinuationPredecessor(receipt('SG2'),current,historical);
  assert.equal(hash(source.previousBytes(target)),'0787795fdd513113107c3ee7e0b840a588f27186c5adfba92f7d8020aefda46f');
- assert.throws(()=>sdkContinuationPredecessor(receipt('SG2'),p=>p===target?Buffer.concat([current(p),Buffer.from('UNREVIEWED')]):current(p),historical),new RegExp('current SG2 acceptance|current lifecycle source '+target.replaceAll('.','[.]')));
+ assert.throws(()=>sdkContinuationPredecessor(receipt('SG2'),p=>p===target?Buffer.concat([current(p),Buffer.from('UNREVIEWED')]):current(p),historical),new RegExp('current SG2 acceptance|current (?:reconciled )?lifecycle source apps/sg-runtime/tests/assistant-ecr-week-integrity[.]test[.]mjs'));
  assert.throws(()=>sdkContinuationPredecessor(receipt('SG2'),current,(sha,p)=>sha==='38a9fe371e7993b47e2358d297647086ea999428'&&p===target?Buffer.concat([historical(sha,p),Buffer.from('FORGED_HISTORY')]):historical(sha,p)),/actual immutable parallel ECR guard/);
 });
 
