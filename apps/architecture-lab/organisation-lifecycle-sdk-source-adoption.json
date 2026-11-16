@@ -3,7 +3,7 @@
   "projectKey": "ARCHITECTURE",
   "taskId": "ARCHITECTURE-REGISTRATION-STAGE-I-RESUME-V2-20261113",
   "acceptanceId": "organisation-lifecycle-sdk-1.37-test-reconciliation-20261113-v1",
-  "sourceRecordSha256": "aece9e181ce6621d2b2fd0c1b501f73da607444dff8cdbec88d2e4315fb42e81",
+  "sourceRecordSha256": "30395719a6db167264d42e1eeec32354901fe20915ebf734a785d5b6c1bf5a54",
   "platformVersion": "1.37.0",
   "scope": "SOURCE_TEST_CONTINUITY_ONLY",
   "runtimeOptedIn": false

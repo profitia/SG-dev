@@ -1635,16 +1635,16 @@
       "apps/srm/package-lock.json": "075c6ecb86765796948b3a10886ef7eac0782eaaab4b359ddd1d6d87212582b9",
       "apps/srm/package.json": "a32a178028dc8af16c7b2acd6b4470757fe2de0dd7598d29cb4fc14407482d7d",
       "apps/srm/private-recurring-source-adoption.json": "88d0252f634eface35b34adf31ac97cbf0d396fcf1fe6da452c74bdc23c7c633",
-      "apps/srm/scripts/diagnostic-telemetry-adoption.test.mjs": "a09194ec75871198cff53d9307425a82288584b820dba23ba1f1f18cb6455b66",
+      "apps/srm/scripts/diagnostic-telemetry-adoption.test.mjs": "cc5944177f269f65054981a159e56aa8d924fdc03cd0653955e80583b346af68",
       "apps/srm/scripts/native-execution-adoption.test.mjs": "52f43e1ec0fdefa358a55d4e1b293d016eb4d5c7b57b87cf344ab3878290dfc0",
       "apps/srm/scripts/operation-context.test.mjs": "282792e61fdbf1fdc279d6408e4fe5dbe5e66a78f8268d947caa54a183669173",
       "apps/srm/scripts/organisation-registration.integration.test.mjs": "4c03a33324c0dc51c7903a37cf8b79fab4f891786cc902e4081016c31f7f646c",
       "apps/srm/scripts/porr-account-ui.test.mjs": "d27b744dbd0f54e0dfe7ee6986fb65dddc29c3cbe3f0da9cf2de1d5f0b2a39ac",
-      "apps/srm/scripts/private-host.integration.test.mjs": "804e2cdafd0a0b8f4a233403df3edb8db4040110b42749cd26c8131a6f03905e",
+      "apps/srm/scripts/private-host.integration.test.mjs": "dd24638bdef8da96686377c46867beb90814ffd17dff0e735993007ccde967ca",
       "apps/srm/scripts/request-quota-adoption.test.mjs": "4ab4acacc61780797da0993d2faa894089d5094ad5e95362dd0f2d89c5faaa49",
       "apps/srm/scripts/source-hub-sdk-compatibility.mjs": "fea4b1fe8d6804a8ecada0de4368c70bd24a11710ef3143ed1be233aac8a80d8",
-      "apps/srm/scripts/supplier-location-admission.integration.test.mjs": "1633175437c60f5c6670f542bcc42554a2aa904ae5e0580786d37695dad215f0",
-      "apps/srm/scripts/xray-performance-adoption.test.mjs": "8ab92e886689cbe3953e41f06e7d7c934f4e6144c2aee6fb779a18699f1171b8",
+      "apps/srm/scripts/supplier-location-admission.integration.test.mjs": "350fb9a18ce015f4b962f46d75cf4488341e880b82932d68e2f6930fdcbbee68",
+      "apps/srm/scripts/xray-performance-adoption.test.mjs": "2a31820af0d2e1a7a643e23ac5744dfae00b0a18a642d5a353cb6b577998c985",
       "apps/srm/src/server/assistant-context-runtime.ts": "829d1c926a28c62bc7b8e3df44918393936a7b68eb06ef8513e8ef82a09959c8",
       "apps/srm/src/server/financial-excel-runtime.ts": "843229a2129076c8d0f40408c4d97ca35564c537ea777b1e081deb985a0315c1",
       "apps/srm/src/server/organisation-bootstrap.test.ts": "e54783369ce79903339a880a626eafc380d7e58a461244d0c5a3d604fd862bde",
@@ -1753,7 +1753,7 @@
       "packages/platform-contracts/readonly-miss-report/package.json": "2456ff92f909017d48fa39da1cce839bba226e5e609b6e7d92647d87bccf8c07",
       "packages/platform-contracts/readonly-miss-report/src/readonly-miss-report.d.mts": "84939e1327f7260523f39a7f82385f6285013f8013c0fd8b33675ce676418493",
       "packages/platform-contracts/readonly-miss-report/src/readonly-miss-report.mjs": "ed0337acb60b334faef60273d9913cf9c71c731fbc7ea6b2bf75f85f2e0d9b3d",
-      "packages/platform-contracts/readonly-miss-report/test/readonly-miss-report.test.mjs": "edbb99d5ade23ee483587d19352602ec55353932128b523655ddd76b509fe57e",
+      "packages/platform-contracts/readonly-miss-report/test/readonly-miss-report.test.mjs": "9038e0f5808e2edf2a04b6fa2c7b026e3e8c82c4025c2c70165add568ade921a",
       "packages/platform-contracts/root-atomic-claim/README.md": "e08d5c64e78c02d69e46e059fa0c2147e1998e53f05e9607b8cdf70ca6070224",
       "packages/platform-contracts/root-atomic-claim/migrations/001-root-atomic-claim.sql": "1c1784b3c92753ccc28f7c34af89e26f1784a632859d5dbe45a9f5f3d08f6c0d",
       "packages/platform-contracts/root-atomic-claim/package-lock.json": "e537fea8debcddf68b0b478aa3a2e9f248e4a6c08c7cf68d5a07b08df0624d78",
@@ -1843,13 +1843,13 @@
       "packages/platform-contracts/test/external-call.test.mjs": "3107f59bdf15198448894f0f20f4b86fdd534028b91d1ce94a23696b346654a1",
       "packages/platform-contracts/test/fixtures/identity-profile-postgres.mjs": "6d0ad7dce50bf14ab641223cd3f5b0858fe4e445aa20fc0f91eee0eea4d8e185",
       "packages/platform-contracts/test/operation-context.test.mjs": "f00169504167c1b208cd0b51f2f2d7927fcffed33a70480cd3980d21c44f3e80",
-      "packages/platform-contracts/test/organisation-access-projection.test.mjs": "f5c46ace63224671ee890c7b9ad5518a739398f27de860b2df4cb0102268d4da",
+      "packages/platform-contracts/test/organisation-access-projection.test.mjs": "01226b4f44ec5c95f70c735d7de4a25503bcaa2e7fb85cecd7d43ebd94588c8f",
       "packages/platform-contracts/test/organisation-context.test.mjs": "166b44461dcf4d04f417fbb70621a51be078dd1a35d0ef79f6fdb38e977d686b",
       "packages/platform-contracts/test/organisation-lifecycle-postgres.test.mjs": "e164118ccc9b07ac51966bb51186bb5ef49cd928bda8fecac3e7fdc1eb80a960",
       "packages/platform-contracts/test/organisation-lifecycle-sdk-compatibility.test.mjs": "e0d471bc4d35873b58508176fc45c895f6f075e3421cf23798132524e858fb20",
       "packages/platform-contracts/test/organisation-lifecycle.test.mjs": "271d5a09f14eebd23edfe46ecc089802f65fe68b44e44217dcd3c488da5670d1",
-      "packages/platform-contracts/test/organisation-sdk-compatibility.mjs": "f0d283ef36ea853908d74cb73da0a2136cc6315dd73ad73a44de00db145bd03a",
-      "packages/platform-contracts/test/organisation-sdk-compatibility.test.mjs": "d2ccefe7dbf65773d28273ddd61105630ddc485ea4149fd34fd648f2ee20c143",
+      "packages/platform-contracts/test/organisation-sdk-compatibility.mjs": "ddea9c134cc4d511b708fb51692e62834e59d486f2ea69a34ebd526d6aad6026",
+      "packages/platform-contracts/test/organisation-sdk-compatibility.test.mjs": "303cb151f76211173893853c6a9aa7a715beb0789a6b04d13b4fa8b21b037b8a",
       "packages/platform-contracts/test/private-operation-host.test.mjs": "604a1459b33a8b45ec76f3af21974459d481bc48197f9894b2d203553f62b287",
       "packages/platform-contracts/test/recurring-consent-transport-source.mjs": "04779e83bdf2c302fb19a424435caab39c0a4ba5653f258a6da23ea3310cd3a4"
     },
@@ -1866,14 +1866,18 @@
       {
         "projectKey": "ARCHITECTURE",
         "taskId": "ARCHITECTURE-REGISTRATION-STAGE-I-RESUME-V2-20261113",
-        "sourceSha": "bdf7a49ef5f1b44de625b8dc4f156ef83ef0770c",
+        "sourceSha": "27694dae2824f3699395e2e48f987d486c23c1f1",
         "sourceDigests": {
           "packages/platform-contracts/test/fixtures/identity-profile-postgres.mjs": "6d0ad7dce50bf14ab641223cd3f5b0858fe4e445aa20fc0f91eee0eea4d8e185",
           "apps/architecture-lab/test/payload-capture-publication.test.mjs": "63dfb8723345e0803185c85545939c2ee51ec6d750d6509040d3ef74050ccbf3",
           "packages/platform-contracts/root-atomic-claim/test/root-atomic-claim.test.mjs": "4c46fdea92c354ef28ecdeba03498d8063a53bb9a5b5c02754d0170713d0c1c1",
           "packages/platform-contracts/current-fresh-report/test/current-fresh-report.test.mjs": "471951b6373127cef1b1898a2d1e8e9e7455fda08c4236716af23c34512df199",
           "packages/platform-contracts/payload-capture/test/public-package.test.mjs": "94850fb9ff993e39a76cead74c08c50d7f66f2e19d5d57e3bf3941e14716de45",
-          "apps/package-limits/test/workspace-access-postgres.test.mjs": "4ad4260ad4797b3199b3970d9f87f9abd0a480f831488979989691a2846d08bf"
+          "apps/package-limits/test/workspace-access-postgres.test.mjs": "4ad4260ad4797b3199b3970d9f87f9abd0a480f831488979989691a2846d08bf",
+          "packages/platform-contracts/test/organisation-sdk-compatibility.mjs": "ddea9c134cc4d511b708fb51692e62834e59d486f2ea69a34ebd526d6aad6026",
+          "packages/platform-contracts/readonly-miss-report/test/readonly-miss-report.test.mjs": "9038e0f5808e2edf2a04b6fa2c7b026e3e8c82c4025c2c70165add568ade921a",
+          "packages/platform-contracts/test/organisation-sdk-compatibility.test.mjs": "303cb151f76211173893853c6a9aa7a715beb0789a6b04d13b4fa8b21b037b8a",
+          "packages/platform-contracts/test/organisation-access-projection.test.mjs": "01226b4f44ec5c95f70c735d7de4a25503bcaa2e7fb85cecd7d43ebd94588c8f"
         }
       },
       {
@@ -1887,10 +1891,14 @@
       {
         "projectKey": "SRM",
         "taskId": "SRM-REGISTRATION-STAGE-I-RESUME-V2-20261113",
-        "sourceSha": "b273b3cbde1d10c70374551e7f0488bcf9331dda",
+        "sourceSha": "80f80349b5e445e479d28174f5887c6fec01be57",
         "sourceDigests": {
           "apps/srm/src/server/organisation-bootstrap.test.ts": "e54783369ce79903339a880a626eafc380d7e58a461244d0c5a3d604fd862bde",
-          "apps/srm/src/server/root-atomic-claim-adoption.test.ts": "fc9fcfff74b024378be40cbeb67887820e5b30b896f4b1045d38aac921de0c41"
+          "apps/srm/src/server/root-atomic-claim-adoption.test.ts": "fc9fcfff74b024378be40cbeb67887820e5b30b896f4b1045d38aac921de0c41",
+          "apps/srm/scripts/diagnostic-telemetry-adoption.test.mjs": "cc5944177f269f65054981a159e56aa8d924fdc03cd0653955e80583b346af68",
+          "apps/srm/scripts/supplier-location-admission.integration.test.mjs": "350fb9a18ce015f4b962f46d75cf4488341e880b82932d68e2f6930fdcbbee68",
+          "apps/srm/scripts/private-host.integration.test.mjs": "dd24638bdef8da96686377c46867beb90814ffd17dff0e735993007ccde967ca",
+          "apps/srm/scripts/xray-performance-adoption.test.mjs": "2a31820af0d2e1a7a643e23ac5744dfae00b0a18a642d5a353cb6b577998c985"
         }
       }
     ],
