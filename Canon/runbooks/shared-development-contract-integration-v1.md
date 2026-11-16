@@ -1044,3 +1044,10 @@ No merge may rely only on its QA/governance checks. Verify resulting main.
 No data/service/resource, model-budget start, runtime, repair promotion,
 deployment or Stage 2 activation follows from this policy decision. Retire only
 the new class on rollback/expiry; preserve original grants and other work.
+
+
+### Stage I — exact test reconciliation with current AppShell main (2026-11-13)
+
+The owner's resumed Stage I Development Full Autopilot mandate covers the necessary bounded test/source-continuity corrections without another per-file/hash question. The separately owned PR1083 source5feb23d9d1615e8045c26c6cafc7fee2982d122d over accepted main80875d8f contains201 exact regular entries: ARCHITECTURE100/SG257/SRM44. Preserve the original PR1075/196-file review, original3a7d lifecycle record, immutable SDK1.36/022 record, all seven owner inputs and existing PI/Calendar/CIC/BSDC controls.
+
+Trusted data-only decoding authenticates345 current inputs, the exact helper, all three current owner receipts, all three correction inputs and seven actual current-main inputs before any predecessor view. Reconstruct the complete unchanged335-input lifecycle graph, then its original b18 and accepted688 views. Main refresh is bounded to the same201 reviewed blobs/statuses/modes/owners in the same internal PR and branch; actual head SHA plus reviewed-source/main ancestry remain required. Existing credential, package, Environment, source/mode, public/protected/resulting-main and independent original-proof gates remain. No runtime installation, grant, provider/mail spend or deployment follows from this CI policy. See [the exact201-file map and validation](../evidence/2026-11-13-registration-stage-i-resume-v2.md).

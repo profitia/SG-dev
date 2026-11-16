@@ -2998,3 +2998,43 @@ test('notification proposal retains raw regular-file, mode, size, realpath and s
   assert.throws(()=>readNotificationPhysicalSource(dir,'../outside'),/SOURCE_FILE_REJECTED/)
  }finally{fs.rmSync(dir,{recursive:true,force:true})}
 })
+
+
+test('Stage I reconciliation admits only the 201-file current owner source and keeps the original review immutable',async()=>{
+ const c=await import('./controlled-package-ci.mjs'),r=c.REGISTRATION_LIFECYCLE_TEST_REVIEW;
+ assert.equal(r.prNumber,1083);assert.equal(Object.keys(r.entries).length,201);
+ assert.equal(createHash('sha256').update(JSON.stringify(r.entries)).digest('hex'),'821273141e4d5f18b44c135d559df7c385da0cd95f82b89f40f9d63049a8d1d2');
+ assert.deepEqual(Object.values(r.entries).reduce((a,e)=>(a[e.projectKey]=(a[e.projectKey]??0)+1,a),{}),{ARCHITECTURE:100,SG2:57,SRM:44});
+ assert.equal(createHash('sha256').update(JSON.stringify(c.REGISTRATION_LIFECYCLE_REVIEW.entries)).digest('hex'),'74ad68f2f29b9d627d16380de26e352b0b326b9dd6575545a73cd0c43e231b41');
+ const files=Object.entries(r.entries).map(([filename,e])=>({filename,sha:e.sha,status:e.status}));
+ const p={...pr(),number:r.prNumber,changed_files:files.length,base:{...pr().base,sha:r.baseSha},head:{...pr().head,sha:r.sourceSha,ref:r.branch}};
+ assertArchitectureFiles(p,files);assert.equal(selectCandidate(context(),p,r.sourceSha,{files}),r.sourceSha);
+ for(const change of [{number:1075},{head:{...p.head,ref:'architecture/foreign'}},{head:{...p.head,sha:'f'.repeat(40)}}])rejection(()=>selectCandidate(context(),{...p,...change},r.sourceSha,{files}));
+ for(const modified of [files.slice(1),[...files,{filename:'apps/srm/foreign.ts',sha:'a'.repeat(40),status:'added'}],files.map((f,i)=>i?f:{...f,sha:'f'.repeat(40)}),files.map((f,i)=>i?f:{...f,previous_filename:'old.ts'})])rejection(()=>selectCandidate(context(),{...p,changed_files:modified.length},r.sourceSha,{files:modified}));
+ for(const f of files){c.assertRegistrationLifecycleReviewEntry(f,r.entries[f.filename].mode+' blob '+f.sha+'\t'+f.filename+'\0');rejection(()=>c.assertRegistrationLifecycleReviewEntry(f,'100755 blob '+f.sha+'\t'+f.filename+'\0'));}
+});
+test('trusted Stage I reconciliation authenticates all 345 physical inputs and all three current owner receipts as data',async()=>{
+ const c=await import('./controlled-package-ci.mjs'),r=c.REGISTRATION_LIFECYCLE_TEST_REVIEW,cfg=c.REGISTRATION_LIFECYCLE_PROVENANCE,cache=new Map();
+ const current=p=>{if(!cache.has(p))cache.set(p,execFileSync('git',['show',r.sourceSha+':'+p],{cwd:authorityRoot,stdio:['ignore','pipe','pipe']}));return cache.get(p)};
+ const a=c.registrationLifecycleCanonicalRead(authorityRoot,current);
+ assert.equal(a.record.platformVersion,'1.37.0');assert.equal(Object.keys(a.currentSourceDigests).length,345);assert.equal(a.record.ownerInputs.length,7);
+ for(const p of Object.keys(c.REGISTRATION_LIFECYCLE_TEST_PROVENANCE.receiptDigests))rejection(()=>c.registrationLifecycleCanonicalRead(authorityRoot,q=>q===p?Buffer.concat([current(q),Buffer.from(' ')]):current(q)));
+ for(const p of Object.keys(a.currentSourceDigests))rejection(()=>c.registrationLifecycleCanonicalRead(authorityRoot,q=>q===p?Buffer.concat([current(q),Buffer.from(' ')]):current(q)));
+ for(const p of [cfg.recordPath,cfg.guardPath])rejection(()=>c.registrationLifecycleCanonicalRead(authorityRoot,q=>q===p?Buffer.concat([current(q),Buffer.from(' ')]):current(q)));
+ for(const {path:p} of Object.values(cfg.receipts))for(const field of ['taskId','projectKey','sourceRecordSha256','scope','runtimeOptedIn'])rejection(()=>c.registrationLifecycleCanonicalRead(authorityRoot,q=>q===p?Buffer.from(JSON.stringify({...JSON.parse(current(q)),[field]:field==='runtimeOptedIn'?true:'foreign'})):current(q)));
+ for(const p of a.sourceReconciliation.predecessorAbsentPaths)assert.throws(()=>a.previousBytes(p),{code:'ENOENT'});
+ for(const p of Object.keys(a.sourceReconciliation.currentMainSourceDigests))assert.deepEqual(current(p),execFileSync('git',['show',a.sourceReconciliation.currentMainSha+':'+p],{cwd:authorityRoot}));
+ const receiptBytes=current('apps/sg-runtime/operation-integration.json'),receipt=JSON.parse(receiptBytes);
+ assert.equal(c.registrationLifecycleProofContract(receipt,current(cfg.recordPath),receiptBytes).sourceDigest,a.record.sdkDigests.operationSourceDigest);
+});
+test('Stage I reconciliation real checkout preserves exact source, package policy and legacy closure together',async()=>{
+ const c=await import('./controlled-package-ci.mjs'),r=c.REGISTRATION_LIFECYCLE_TEST_REVIEW,dir=fs.mkdtempSync(path.join(os.tmpdir(),'registration-reconciled-ci-checkout-')),root=path.join(dir,'source');
+ try{
+  execFileSync('git',['worktree','add','--detach',root,r.sourceSha],{cwd:authorityRoot,stdio:'pipe'});
+  const files=Object.entries(r.entries).map(([filename,e])=>({filename,sha:e.sha,status:e.status}));
+  c.assertArchitectureCheckout(root,r.sourceSha,{kind:'ARCHITECTURE',baseSha:r.baseSha,files},authorityRoot);
+  assert.equal(c.assertRegistrationSdkProvenance(root).lifecycle.platformVersion,'1.37.0');
+  const lock=JSON.parse(fs.readFileSync(path.join(root,'apps/sg-runtime/package-lock.json')));
+  c.assertLocalPackageSources(root,lock,authorityRoot,{reviewedPrivateRecurring:true});
+ }finally{try{execFileSync('git',['worktree','remove','--force',root],{cwd:authorityRoot,stdio:'pipe'})}catch{}fs.rmSync(dir,{recursive:true,force:true});}
+});
