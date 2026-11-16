@@ -1,3 +1,4 @@
+import {trustedPackageProbeSpec,assertTrustedPackageRegistryMetadata,assertTrustedPackedArtifact} from './controlled-package-ci.mjs'
 import {registrationLifecycleCanonicalRead} from './controlled-package-ci.mjs'
 import {ECR_COMPLETE_FUNCTIONAL_REVIEW,ECR_COMPLETE_FUNCTIONAL_CONSUMER_REVIEW,ECR_COMPLETE_FUNCTIONAL_PROVENANCE,assertCompleteFunctionalReviewEntry,completeFunctionalTrustedPredecessor,assertCompleteFunctionalProvenance} from './controlled-package-ci.mjs'
 import {ECR_CALENDAR_TEST_REVIEW,assertCalendarTestReviewEntry,calendarTestCompatibilityTrustedCurrent,readCalendarSourceFile} from './controlled-package-ci.mjs'
@@ -3001,4 +3002,33 @@ test('notification proposal retains raw regular-file, mode, size, realpath and s
   fs.unlinkSync(f);fs.symlinkSync(path.join(dir,'target'),f);fs.writeFileSync(path.join(dir,'target'),'SYNTHETIC_ONLY');assert.throws(()=>readNotificationPhysicalSource(dir,p),/SOURCE_FILE_REJECTED/)
   assert.throws(()=>readNotificationPhysicalSource(dir,'../outside'),/SOURCE_FILE_REJECTED/)
  }finally{fs.rmSync(dir,{recursive:true,force:true})}
+})
+
+test('trusted package preflight supports the actual accepted lock entries without resolved while preserving exact artifact identity',()=>{
+  const lock=JSON.parse(fs.readFileSync(path.join(authorityRoot,'apps/sg-runtime/package-lock.json'),'utf8'))
+  let withoutResolved=0
+  for(const name of PRIVATE_PACKAGES){
+    const pin=lock.packages['node_modules/'+name]
+    if(pin.resolved===undefined)withoutResolved++
+    assert.equal(trustedPackageProbeSpec(name,pin),name+'@'+pin.version)
+    const metadata={tarball:pin.resolved??'https://npm.pkg.github.com/download/'+name+'/'+pin.version+'/fixture-artifact',integrity:pin.integrity}
+    assertTrustedPackageRegistryMetadata(name,pin,metadata)
+    assertTrustedPackageRegistryMetadata(name,pin,{tarball:metadata.tarball})
+    for(const changed of [{...metadata,integrity:'sha512-changed'},{...metadata,tarball:metadata.tarball.replace('npm.pkg.github.com','other.example')},{...metadata,tarball:metadata.tarball.replace('/'+pin.version+'/','/99.99.99/')},{...metadata,tarball:metadata.tarball+'?redirect=other'},{...metadata,tarball:metadata.tarball.replace('https://','http://')}])assert.throws(()=>assertTrustedPackageRegistryMetadata(name,pin,changed))
+    if(pin.resolved)assert.throws(()=>assertTrustedPackageRegistryMetadata(name,pin,{...metadata,tarball:metadata.tarball+'changed'}))
+  }
+  assert.equal(withoutResolved,2)
+  assert.throws(()=>trustedPackageProbeSpec('@other/package',{version:'1.0.0',integrity:'sha512-x'}))
+  assert.throws(()=>trustedPackageProbeSpec(PRIVATE_PACKAGES[0],{version:'latest',integrity:'sha512-x'}))
+})
+test('trusted read-only package probe measures SHA-512 bytes and rejects substitutions and unsafe archive paths',()=>{
+  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'trusted-probe-')),bytes=Buffer.from('isolated immutable artifact fixture'),name=PRIVATE_PACKAGES[0]
+  const pin={version:'1.0.0',integrity:'sha512-'+createHash('sha512').update(bytes).digest('base64')},report={name,version:'1.0.0',filename:'fixture.tgz'}
+  try{
+    fs.writeFileSync(path.join(dir,report.filename),bytes)
+    assertTrustedPackedArtifact(dir,report,name,pin)
+    for(const changed of [{...report,name:PRIVATE_PACKAGES[1]},{...report,version:'1.0.1'},{...report,filename:'../fixture.tgz'},{...report,integrity:'sha512-changed'}])assert.throws(()=>assertTrustedPackedArtifact(dir,changed,name,pin))
+    fs.appendFileSync(path.join(dir,report.filename),'changed')
+    assert.throws(()=>assertTrustedPackedArtifact(dir,report,name,pin))
+  }finally{fs.rmSync(dir,{recursive:true,force:true})}
 })

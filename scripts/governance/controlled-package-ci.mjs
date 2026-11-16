@@ -6984,6 +6984,30 @@ function isolatedNpmEnvironment(directory) {
   return {PATH:process.env.PATH,HOME:directory,NPM_TOKEN:process.env.NPM_TOKEN,
     NPM_CONFIG_USERCONFIG:path.join(directory,'.npmrc'),NPM_CONFIG_GLOBALCONFIG:'/dev/null',NPM_CONFIG_CACHE:path.join(directory,'cache')}
 }
+export function trustedPackageProbeSpec(name,pin) {
+  if(!PRIVATE_PACKAGES.includes(name)||!pin?.integrity?.startsWith('sha512-')
+    ||typeof pin.version!=='string'||!/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/.test(pin.version))fail('TRUSTED_PACKAGE_PIN_REQUIRED')
+  return name+'@'+pin.version
+}
+export function assertTrustedPackageRegistryMetadata(name,pin,metadata) {
+  trustedPackageProbeSpec(name,pin)
+  let location,pathname
+  try{location=new URL(metadata.tarball);pathname=decodeURIComponent(location.pathname)}catch{fail('PACKAGE_ARTIFACT_PIN_REJECTED')}
+  const prefix='/download/'+name+'/'+pin.version+'/',leaf=pathname.slice(prefix.length)
+  if(location.origin!=='https://npm.pkg.github.com'||location.username||location.password||location.search||location.hash
+    ||!pathname.startsWith(prefix)||!leaf||leaf==='.'||leaf==='..'||/[\\/]/.test(leaf)
+    ||metadata.integrity!==undefined&&metadata.integrity!==pin.integrity
+    ||pin.resolved!==undefined&&metadata.tarball!==pin.resolved)fail('PACKAGE_ARTIFACT_PIN_REJECTED')
+}
+export function assertTrustedPackedArtifact(directory,report,name,pin) {
+  trustedPackageProbeSpec(name,pin)
+  if(report?.name!==name||report.version!==pin.version||typeof report.filename!=='string'
+    ||path.basename(report.filename)!==report.filename||!report.filename.endsWith('.tgz'))fail('PACKAGE_ARTIFACT_PIN_REJECTED')
+  const file=path.join(directory,report.filename),stat=fs.lstatSync(file)
+  if(!stat.isFile()||stat.isSymbolicLink()||fs.realpathSync(file)!==file
+    ||'sha512-'+createHash('sha512').update(fs.readFileSync(file)).digest('base64')!==pin.integrity
+    ||report.integrity!==undefined&&report.integrity!==pin.integrity)fail('PACKAGE_ARTIFACT_PIN_REJECTED')
+}
 async function credentialPreflight() {
   const c=await workflowPackageCredential(),directory=fs.mkdtempSync(path.join(os.tmpdir(),'trusted-package-access-'))
   try {
@@ -6991,11 +7015,18 @@ async function credentialPreflight() {
     const lock=readJson(path.join(controlRoot(),'apps/sg-runtime/package-lock.json'))
     for(const name of PRIVATE_PACKAGES){
       const pin=lock.packages?.['node_modules/'+name]
-      if(!pin?.integrity?.startsWith('sha512-')||!pin.version||!pin.resolved?.startsWith('https://npm.pkg.github.com/download/'+name+'/'))fail('TRUSTED_PACKAGE_PIN_REQUIRED')
-      const result=spawnSync('npm',['view',name+'@'+pin.version,'dist','--json','--registry=https://npm.pkg.github.com','--ignore-scripts','--no-audit','--no-fund'],{cwd:directory,env:isolatedNpmEnvironment(directory),encoding:'utf8',timeout:90000,maxBuffer:1048576})
+      const spec=trustedPackageProbeSpec(name,pin)
+      const result=spawnSync('npm',['view',spec,'dist','--json','--registry=https://npm.pkg.github.com','--ignore-scripts','--no-audit','--no-fund'],{cwd:directory,env:isolatedNpmEnvironment(directory),encoding:'utf8',timeout:90000,maxBuffer:1048576})
       if(result.status!==0)fail(classifyPackageFailure((result.stderr??'')+(result.stdout??'')))
       let metadata;try{metadata=JSON.parse(result.stdout)}catch{fail('PACKAGE_METADATA_REJECTED')}
-      if(metadata.integrity!==pin.integrity||metadata.tarball!==pin.resolved)fail('PACKAGE_ARTIFACT_PIN_REJECTED')
+      assertTrustedPackageRegistryMetadata(name,pin,metadata)
+      // Some accepted lock entries omit resolved, and registries may omit dist.integrity.
+      // Measure the exact read-only tarball bytes against the unchanged trusted SHA-512.
+      const packed=spawnSync('npm',['pack',spec,'--json','--pack-destination',directory,'--registry=https://npm.pkg.github.com','--ignore-scripts','--no-audit','--no-fund'],{cwd:directory,env:isolatedNpmEnvironment(directory),encoding:'utf8',timeout:90000,maxBuffer:1048576})
+      if(packed.status!==0)fail(classifyPackageFailure((packed.stderr??'')+(packed.stdout??'')))
+      let reports;try{reports=JSON.parse(packed.stdout)}catch{fail('PACKAGE_METADATA_REJECTED')}
+      if(!Array.isArray(reports)||reports.length!==1)fail('PACKAGE_METADATA_REJECTED')
+      assertTrustedPackedArtifact(directory,reports[0],name,pin)
     }
     fs.writeFileSync(path.join(process.env.RUNNER_TEMP,'controlled-package-access.json'),JSON.stringify({controlSha:c.controlSha,runId:process.env.GITHUB_RUN_ID,privatePackages:PRIVATE_PACKAGES,mode:'github-token'}),{mode:0o600})
     console.log('PACKAGE_ACCESS_READY: exact trusted artifacts; no candidate execution')
