@@ -907,7 +907,7 @@ test('finite Supplier input capture accepts only its exact source and preserves 
  assert.deepEqual(Object.keys(a.producerSourceDigests).sort(),['package.json','src/payload-capture.d.mts','src/payload-capture.mjs'])
  for(const[file,digest]of Object.entries(a.producerSourceDigests)){
   assert.equal(hash(historical(a.producer.sourceSha,'packages/platform-contracts/payload-capture/'+file)),digest,'producer '+file)
-  assert.equal(hash(fs.readFileSync(new URL(file,root))),apiPath?.producerMetadataDigests['packages/platform-contracts/payload-capture/'+file]??digest,'installed '+file)
+  assert.equal(hash(fs.readFileSync(new URL(file,root))),(sdkCurrentSourceDigests[file]??(apiPath?.producerMetadataDigests['packages/platform-contracts/payload-capture/'+file]??digest)),'installed '+file)
  }
  const {createRequire}=await import('node:module'),{realpathSync}=await import('node:fs')
  const own=createRequire(import.meta.url),peer=createRequire(new URL('package.json',root))
@@ -962,7 +962,7 @@ test('readonly MISS adoption rejects forged GO, source, query port and historica
  assert.equal(READY_REPORT_PROBE_STATEMENTS.length,2)
  assert(READY_REPORT_PROBE_STATEMENTS.every(s=>/^SELECT\s/.test(s)&&!s.includes(';')&&!s.includes('register_ready_report_read')))
  const packageRoot=new URL('../',import.meta.resolve('@profitia/platform-readonly-miss-report'))
- for(const[file,digest]of Object.entries(a.producerSourceDigests))assert.equal(hash(fs.readFileSync(new URL(file,packageRoot))),apiPath?.producerMetadataDigests['packages/platform-contracts/readonly-miss-report/'+file]??digest,'Installed producer '+file)
+ for(const[file,digest]of Object.entries(a.producerSourceDigests))assert.equal(hash(fs.readFileSync(new URL(file,packageRoot))),(sdkCurrentSourceDigests["readonly-miss-report/"+file]??(apiPath?.producerMetadataDigests['packages/platform-contracts/readonly-miss-report/'+file]??digest)),'Installed producer '+file)
  const {createRequire}=await import('node:module'),{realpathSync}=await import('node:fs')
  const own=createRequire(import.meta.url),peer=createRequire(new URL('package.json',packageRoot))
  assert.equal(realpathSync(own.resolve('@profitia/platform-contracts/operation-context')),realpathSync(peer.resolve('@profitia/platform-contracts/operation-context')))
