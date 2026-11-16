@@ -1,8 +1,9 @@
+import {acceptedSdkCurrentSourceDigests} from '../../../packages/platform-contracts/test/organisation-sdk-compatibility.mjs'
 import {recurringSourcePredecessor} from '../../architecture-lab/private-recurring-source.mjs'
 import {acceptedSdkSource,sdkContinuationPredecessor} from '../../../packages/platform-contracts/test/organisation-sdk-compatibility.mjs'
 // Verify the current SDK separately from immutable historical source maps.
 const sdkSourceAcceptance=acceptedSdkSource()
-const sdkCurrentSourceDigests=Object.fromEntries(Object.entries({...sdkSourceAcceptance.sourceDigests,...sdkSourceAcceptance.compatibilityTestSourceDigests}).map(([p,h])=>[p.replace(/^packages\/platform-contracts\//,''),h]))
+const sdkCurrentSourceDigests=Object.fromEntries(Object.entries({...sdkSourceAcceptance.sourceDigests,...sdkSourceAcceptance.compatibilityTestSourceDigests,...acceptedSdkCurrentSourceDigests()}).map(([p,h])=>[p.replace(/^packages\/platform-contracts\//,''),h]))
 import {createPeerOperationSigner} from '@profitia/platform-contracts/peer-operation';
 import {readSrmPeerXRayConfiguration} from '../src/server/peer-xray.ts';
 import assert from 'node:assert/strict'
@@ -1536,7 +1537,7 @@ test('public web source receipt preserves historical records and verifies every 
  assert.equal(current.taskId,'SRM-E1-SUPPLIER-EXTERNAL-ADOPTION-20261020');assert.equal(current.platformVersion,'1.23.0');assert.equal(current.rootImplementation,receipt.supplierLocationSourceCompatibility.previousRootAcceptance.contract.implementation)
  assert.equal(current.producer.projectKey,'ARCHITECTURE');assert.equal(current.producer.sourceSha,'403255c88bbf81a67e384c269e38cae848b018f1')
  const sdk=await import('@profitia/platform-contracts/external-call'),root=new URL('../',import.meta.resolve('@profitia/platform-contracts/external-call'))
- assert.equal(JSON.parse(fs.readFileSync(new URL('package.json',root))).version,(recurring??receipt.oilAutonomousReportCompatibility??receipt.sourceHubMarketSymbolCompatibility??receipt.sourceHubApiPathCompatibility??receipt.freshPostfetchRecovery??receipt.sourceLeaseClockRecovery??receipt.settledExternalFailureRecovery??receipt.freshPerformanceRecovery).platformVersion)
+ assert.equal(JSON.parse(fs.readFileSync(new URL('package.json',root))).version,acceptedSdkSource().platformVersion)
  assert.equal(await sdk.externalCallSourceDigest(),currentSdkDigests.externalCallSourceDigest)
  assert.equal(await sdk.publicWebTransportSchemaDigest(),current.sdkDigests.publicWebTransportSchemaDigest)
  assert.equal(Object.keys(current.sourceDigests).length,57)

@@ -1,8 +1,9 @@
+import {acceptedSdkCurrentSourceDigests} from '../../../packages/platform-contracts/test/organisation-sdk-compatibility.mjs'
 import {recurringSourcePredecessor} from '../../architecture-lab/private-recurring-source.mjs'
 import {acceptedSdkSource,sdkContinuationPredecessor} from '../../../packages/platform-contracts/test/organisation-sdk-compatibility.mjs'
 // Verify the current SDK separately from immutable historical source maps.
 const sdkSourceAcceptance=acceptedSdkSource()
-const sdkCurrentSourceDigests=Object.fromEntries(Object.entries({...sdkSourceAcceptance.sourceDigests,...sdkSourceAcceptance.compatibilityTestSourceDigests}).map(([p,h])=>[p.replace(/^packages\/platform-contracts\//,''),h]))
+const sdkCurrentSourceDigests=Object.fromEntries(Object.entries({...sdkSourceAcceptance.sourceDigests,...sdkSourceAcceptance.compatibilityTestSourceDigests,...acceptedSdkCurrentSourceDigests()}).map(([p,h])=>[p.replace(/^packages\/platform-contracts\//,''),h]))
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
@@ -21,7 +22,7 @@ test('diagnostic source adoption preserves complete history and verifies current
  const prior=execFileSync('git',['show',a.previousReceiptSourceSha+':apps/srm/operation-integration.json'])
  assert.equal(hash(prior),a.previousReceiptDigest);for(const[k,v]of Object.entries(JSON.parse(prior)))assert.deepEqual(receipt.oilAutonomousReportCompatibility?.previousRootAcceptance?.[k]??receipt[k],v,k)
  const root=new URL('../',import.meta.resolve('@profitia/platform-contracts/private-operation-host'))
- assert.equal(JSON.parse(fs.readFileSync(new URL('package.json',root))).version,(recurring??receipt.oilAutonomousReportCompatibility??receipt.sourceHubMarketSymbolCompatibility??receipt.sourceHubApiPathCompatibility??receipt.freshPostfetchRecovery??receipt.sourceLeaseClockRecovery??receipt.settledExternalFailureRecovery??fresh).platformVersion)
+ assert.equal(JSON.parse(fs.readFileSync(new URL('package.json',root))).version,acceptedSdkSource().platformVersion)
  for(const[file,digest]of Object.entries(a.sourceDigests)){
   assert.equal(hash(execFileSync('git',['show',a.producer.sourceSha+':packages/platform-contracts/'+file])),digest,'producer '+file)
   if(file.startsWith('src/')||file==='package.json')assert.equal(hash(fs.readFileSync(new URL(file,root))),sdkCurrentSourceDigests[file]??receipt.oilAutonomousReportCompatibility?.sourceDigests[file]??receipt.assistantM1SourceCompatibility?.sourceDigests[file]??receipt.sourceHubMarketSymbolCompatibility?.sourceDigests[file]??receipt.sourceHubApiPathCompatibility?.sourceDigests[file]??receipt.freshPostfetchRecovery?.sourceDigests[file]??receipt.sourceLeaseClockRecovery?.sourceDigests[file]??receipt.settledExternalFailureRecovery?.sourceDigests[file]??fresh.sourceDigests[file]??receipt.appshellXraySourceCompatibility.sourceDigests[file]??current.sourceDigests[file]??digest,'installed '+file)
