@@ -6866,6 +6866,62 @@ export function controlPolicyDigest(root = controlRoot()) {
   return digest.digest('hex')
 }
 function candidateRoot() {return path.resolve(process.env.CANDIDATE_ROOT ?? fail('CANDIDATE_ROOT_REQUIRED'))}
+function executionGit(root,args){return execFileSync('git',args,{cwd:root,encoding:'utf8',stdio:['ignore','pipe','pipe']}).trim()}
+export function assertPristineSourceInput(root,sha){
+  let real,head,top,status
+  try{real=fs.realpathSync(root);head=executionGit(root,['rev-parse','HEAD']);top=executionGit(root,['rev-parse','--show-toplevel']);status=executionGit(root,['status','--porcelain=v1','--untracked-files=all','--ignore-submodules=none'])}catch{fail('CANDIDATE_CHECKOUT_MISMATCH')}
+  if(real!==path.resolve(root)||top!==real||!shaPattern.test(sha??'')||head!==sha)fail('CANDIDATE_CHECKOUT_MISMATCH')
+  if(status)fail('SOURCE_CHECKOUT_DIRTY')
+  return real
+}
+export function assertExecutionCheckout(root,sourceRoot,state,runnerTemp){
+  let real,source,temp
+  try{real=fs.realpathSync(root);source=fs.realpathSync(sourceRoot);temp=fs.realpathSync(runnerTemp)}catch{fail('EXECUTION_CHECKOUT_REJECTED')}
+  if(real!==path.resolve(root)||real!==state.executionRoot||real===source
+    ||real.startsWith(source+path.sep)||source.startsWith(real+path.sep)
+    ||path.dirname(real)!==temp||!/^sg2-controlled-execution-[A-Za-z0-9]{6}$/.test(path.basename(real))
+    ||!shaPattern.test(state.sha??'')||!shaPattern.test(state.executionTreeSha??''))fail('EXECUTION_CHECKOUT_REJECTED')
+  try{
+    if(executionGit(real,['rev-parse','--show-toplevel'])!==real||executionGit(real,['rev-parse','HEAD'])!==state.sha
+      ||executionGit(real,['rev-parse','HEAD^{tree}'])!==state.executionTreeSha
+      ||executionGit(source,['rev-parse','HEAD^{tree}'])!==state.executionTreeSha)fail('EXECUTION_CHECKOUT_REJECTED')
+  }catch{fail('EXECUTION_CHECKOUT_REJECTED')}
+  return real
+}
+export function createExecutionCheckout(sourceRoot,sha,controlSha,runnerTemp){
+  const source=assertPristineSourceInput(sourceRoot,sha),temp=fs.realpathSync(runnerTemp)
+  if(!shaPattern.test(controlSha??'')||temp===source||temp.startsWith(source+path.sep))fail('EXECUTION_CHECKOUT_REJECTED')
+  const root=fs.mkdtempSync(path.join(temp,'sg2-controlled-execution-'))
+  try{
+    executionGit(temp,['clone','--shared','--no-checkout','--',source,root])
+    executionGit(root,['checkout','--detach',sha])
+    executionGit(root,['remote','set-url','origin','https://github.com/'+REPOSITORY])
+    executionGit(root,['update-ref','refs/remotes/origin/main',controlSha])
+    const state={sha,executionRoot:root,executionTreeSha:executionGit(root,['rev-parse','HEAD^{tree}'])}
+    assertExecutionCheckout(root,source,state,temp);assertPristineSourceInput(root,sha)
+    return state
+  }catch(error){fs.rmSync(root,{recursive:true,force:true});throw error}
+}
+function checkedExecutionCandidate(){
+  const original=checkCandidate();assertPristineSourceInput(candidateRoot(),original.state.sha)
+  const root=assertExecutionCheckout(process.env.EXECUTION_ROOT,candidateRoot(),original.state,process.env.RUNNER_TEMP)
+  const execution=checkCandidate(root);assertPristineSourceInput(root,execution.state.sha)
+  return execution
+}
+function prepareExecution(){
+  if(!credentialFree(process.env))fail('CREDENTIAL_PRESENT_IN_EXECUTION_PHASE')
+  const {state}=checkCandidate(),execution=createExecutionCheckout(candidateRoot(),state.sha,state.controlSha,process.env.RUNNER_TEMP)
+  Object.assign(state,execution,{executionInputVerified:false});fs.writeFileSync(statePath(),JSON.stringify(state),{mode:0o600})
+  checkCandidate(execution.executionRoot);assertPristineSourceInput(candidateRoot(),state.sha)
+  output('execution_root',execution.executionRoot)
+}
+function verifyExecutionInput(){
+  if(!credentialFree(process.env))fail('CREDENTIAL_PRESENT_IN_EXECUTION_PHASE')
+  const {state}=checkedExecutionCandidate();state.executionInputVerified=true
+  fs.writeFileSync(statePath(),JSON.stringify(state),{mode:0o600})
+  console.log('EXECUTION_INPUT_VERIFIED: exact clean checkout; package credentials absent')
+}
+
 function statePath() {return path.join(process.env.RUNNER_TEMP ?? fail('RUNNER_TEMP_REQUIRED'), 'controlled-package-resolution.json')}
 function readJson(file) {return JSON.parse(fs.readFileSync(file, 'utf8'))}
 function output(name, value) {if (!process.env.GITHUB_OUTPUT) fail('GITHUB_OUTPUT_REQUIRED'); fs.appendFileSync(process.env.GITHUB_OUTPUT, `${name}=${value}\n`)}
@@ -6954,8 +7010,8 @@ export function checkAdmittedPackages(root,authorityRoot=controlRoot()) {
   }
   return app
 }
-function checkCandidate() {
-  const c = assertTrustedContext(context()), state = readJson(statePath()), root = candidateRoot()
+function checkCandidate(root = candidateRoot()) {
+  const c = assertTrustedContext(context()), state = readJson(statePath())
   if (state.controlSha !== c.controlSha || state.runId !== process.env.GITHUB_RUN_ID || !shaPattern.test(state.sha) || execFileSync('git', ['rev-parse', 'HEAD'], {cwd: root, encoding: 'utf8'}).trim() !== state.sha) fail('CANDIDATE_CHECKOUT_MISMATCH')
   if (state.admission) assertArchitectureCheckout(root, state.sha, state.admission)
   if(state.admission?.kind==='TRUSTED_RECORD'){
@@ -7033,7 +7089,7 @@ async function credentialPreflight() {
   }finally{fs.rmSync(directory,{recursive:true,force:true})}
 }
 async function install() {
-  const {app} = checkCandidate()
+  const {app} = checkedExecutionCandidate()
   const c=await workflowPackageCredential()
   const ready=readJson(path.join(process.env.RUNNER_TEMP,'controlled-package-access.json'))
   if(ready.controlSha!==c.controlSha||ready.runId!==process.env.GITHUB_RUN_ID||ready.mode!=='github-token'||JSON.stringify(ready.privatePackages)!==JSON.stringify(PRIVATE_PACKAGES))fail('PACKAGE_ACCESS_PREFLIGHT_REQUIRED')
@@ -7049,17 +7105,22 @@ async function install() {
 function proof() {
   if (!credentialFree(process.env)) fail('CREDENTIAL_PRESENT_IN_EXECUTION_PHASE')
   const {state,sourceRecord,genericSource} = checkCandidate(), directory = path.join(process.env.RUNNER_TEMP, ARTIFACT)
+  assertPristineSourceInput(candidateRoot(),state.sha)
+  assertExecutionCheckout(process.env.EXECUTION_ROOT,candidateRoot(),state,process.env.RUNNER_TEMP)
+  if(state.executionInputVerified!==true)fail('EXECUTION_INPUT_VERIFICATION_REQUIRED')
+  const executionEvidence={executionWorkspace:'ISOLATED_GIT_CHECKOUT',executionCheckoutSha:state.sha,sourceInputVerifiedBeforeExecution:true,sourceInputVerifiedAfterExecution:true}
   fs.mkdirSync(directory, {recursive: true})
   if(genericSource){
     fs.writeFileSync(path.join(directory,'proof.json'),JSON.stringify({schemaVersion:'2.0',repository:REPOSITORY,workflow:WORKFLOW,
       targetEnvironment:'development',scope:sourceRecord?'EXACT_SOURCE_VALIDATION':'AUTHORITY_MAIN_VALIDATION',candidateSha:state.sha,controlSha:state.controlSha,
+      ...executionEvidence,
       controlPolicyDigest:controlPolicyDigest(),runId:state.runId,...(sourceRecord?{sourceAdmissionId:sourceRecord.id,
       sourceAdmissionDigest:sourceAdmissionDigest(sourceRecord),originalSourceSha:sourceRecord.sourceSha}:{}),
       install:'CLEAN_REGISTRY_IGNORE_SCRIPTS',credentialRemovedBeforeCandidateExecution:true,privatePackageArtifactsPublished:false,
       tests:'PASS',typecheck:'PASS',build:'PASS',productDeploymentPerformed:false,customerIdentityAdapterVerified:false},null,2))
     output('proof_sha',state.sha);return
   }
-  fs.writeFileSync(path.join(directory, 'proof.json'), JSON.stringify({schemaVersion: '1.0', repository: REPOSITORY, workflow: WORKFLOW, projectKey: 'SG2', targetEnvironment: 'development', scope: 'ISOLATED_API_AND_PERSISTENCE', candidateSha: state.sha, controlSha: state.controlSha, controlPolicyDigest: controlPolicyDigest(), runId: state.runId, contract: currentProofContract(candidateRoot(),state.receipt), install: 'CLEAN_REGISTRY_IGNORE_SCRIPTS', credentialRemovedBeforeCandidateExecution: true, privatePackageArtifactsPublished: false, tests: 'PASS', typecheck: 'PASS', build: 'PASS', productDeploymentPerformed: false, customerIdentityAdapterVerified: false}, null, 2))
+  fs.writeFileSync(path.join(directory, 'proof.json'), JSON.stringify({schemaVersion: '1.0', repository: REPOSITORY, workflow: WORKFLOW, projectKey: 'SG2', targetEnvironment: 'development', scope: 'ISOLATED_API_AND_PERSISTENCE', candidateSha: state.sha, controlSha: state.controlSha, ...executionEvidence, controlPolicyDigest: controlPolicyDigest(), runId: state.runId, contract: currentProofContract(candidateRoot(),state.receipt), install: 'CLEAN_REGISTRY_IGNORE_SCRIPTS', credentialRemovedBeforeCandidateExecution: true, privatePackageArtifactsPublished: false, tests: 'PASS', typecheck: 'PASS', build: 'PASS', productDeploymentPerformed: false, customerIdentityAdapterVerified: false}, null, 2))
   output('proof_sha', state.sha)
 }
 async function verify() {
@@ -7107,7 +7168,7 @@ async function verify() {
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   try {
-    const commands = {resolve, 'check-candidate': checkCandidate, 'credential-preflight':credentialPreflight, 'assert-credential-free':()=>{if(!credentialFree(process.env))fail('CREDENTIAL_PRESENT_IN_EXECUTION_PHASE')}, install, proof, verify}
+    const commands = {resolve, 'check-candidate': checkCandidate, 'prepare-execution':prepareExecution, 'check-execution-input':verifyExecutionInput, 'credential-preflight':credentialPreflight, 'assert-credential-free':()=>{if(!credentialFree(process.env))fail('CREDENTIAL_PRESENT_IN_EXECUTION_PHASE')}, install, proof, verify}
     const command = commands[process.argv[2]]
     if (!command) fail('UNKNOWN_CONTROLLED_CI_COMMAND')
     await command()
