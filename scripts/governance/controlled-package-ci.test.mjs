@@ -1,3 +1,5 @@
+import {createExecutionCheckout,assertExecutionCheckout,assertPristineSourceInput} from './controlled-package-ci.mjs'
+import {execFileSync as isolationGitExec} from 'node:child_process'
 import {trustedPackageProbeSpec,assertTrustedPackageRegistryMetadata,assertTrustedPackedArtifact} from './controlled-package-ci.mjs'
 import {registrationLifecycleCanonicalRead} from './controlled-package-ci.mjs'
 import {ECR_COMPLETE_FUNCTIONAL_REVIEW,ECR_COMPLETE_FUNCTIONAL_CONSUMER_REVIEW,ECR_COMPLETE_FUNCTIONAL_PROVENANCE,assertCompleteFunctionalReviewEntry,completeFunctionalTrustedPredecessor,assertCompleteFunctionalProvenance} from './controlled-package-ci.mjs'
@@ -3031,4 +3033,64 @@ test('trusted read-only package probe measures SHA-512 bytes and rejects substit
     fs.appendFileSync(path.join(dir,report.filename),'changed')
     assert.throws(()=>assertTrustedPackedArtifact(dir,report,name,pin))
   }finally{fs.rmSync(dir,{recursive:true,force:true})}
+})
+
+function controlledBuildIsolationFixture(){
+ const directory=fs.mkdtempSync(path.join(os.tmpdir(),'controlled-build-isolation-')),source=path.join(directory,'source'),temp=path.join(directory,'runner-temp')
+ fs.mkdirSync(source);fs.mkdirSync(temp)
+ const git=(root,args)=>isolationGitExec('git',args,{cwd:root,encoding:'utf8',stdio:['ignore','pipe','pipe']}).trim()
+ git(source,['init','-q']);fs.writeFileSync(path.join(source,'.gitignore'),'node_modules/\n.build/\n');fs.writeFileSync(path.join(source,'input.txt'),'immutable source\n')
+ git(source,['add','.']);git(source,['-c','user.name=Isolation Fixture','-c','user.email=ci@fixture.invalid','-c','commit.gpgsign=false','commit','-qm','source input'])
+ return {directory,source,temp,git,sha:git(source,['rev-parse','HEAD'])}
+}
+test('isolated execution checkout preserves clean source while real build outputs mutate its independent working files',()=>{
+ const f=controlledBuildIsolationFixture()
+ try{
+  const state=createExecutionCheckout(f.source,f.sha,f.sha,f.temp),root=state.executionRoot
+  assert.equal(assertExecutionCheckout(root,f.source,state,f.temp),root)
+  assert.equal(f.git(root,['remote','get-url','origin']),'https://github.com/profitia/SG-dev')
+  fs.writeFileSync(path.join(root,'input.txt'),'generated working file\n');fs.writeFileSync(path.join(root,'new-build-artifact.js'),'export default 1\n')
+  assert.equal(fs.readFileSync(path.join(f.source,'input.txt'),'utf8'),'immutable source\n')
+  assertPristineSourceInput(f.source,f.sha)
+  assert.throws(()=>assertPristineSourceInput(root,f.sha),/SOURCE_CHECKOUT_DIRTY/)
+  assertExecutionCheckout(root,f.source,state,f.temp)
+ }finally{fs.rmSync(f.directory,{recursive:true,force:true})}
+})
+test('isolated execution never excuses changed or extra files in the preserved source input',()=>{
+ const f=controlledBuildIsolationFixture()
+ try{
+  createExecutionCheckout(f.source,f.sha,f.sha,f.temp)
+  fs.appendFileSync(path.join(f.source,'input.txt'),'unapproved change\n')
+  assert.throws(()=>assertPristineSourceInput(f.source,f.sha),/SOURCE_CHECKOUT_DIRTY/)
+  fs.writeFileSync(path.join(f.source,'input.txt'),'immutable source\n');fs.writeFileSync(path.join(f.source,'unapproved.js'),'export default 2\n')
+  assert.throws(()=>assertPristineSourceInput(f.source,f.sha),/SOURCE_CHECKOUT_DIRTY/)
+ }finally{fs.rmSync(f.directory,{recursive:true,force:true})}
+})
+test('isolated execution rejects wrong source, nested workspace, symlink, substituted directory and changed execution HEAD',()=>{
+ const f=controlledBuildIsolationFixture()
+ try{
+  assert.throws(()=>createExecutionCheckout(f.source,'f'.repeat(40),f.sha,f.temp),/CANDIDATE_CHECKOUT_MISMATCH/)
+  assert.throws(()=>createExecutionCheckout(f.source,f.sha,f.sha,f.source),/EXECUTION_CHECKOUT_REJECTED/)
+  const state=createExecutionCheckout(f.source,f.sha,f.sha,f.temp)
+  assert.throws(()=>assertExecutionCheckout(f.source,f.source,{...state,executionRoot:f.source},f.temp),/EXECUTION_CHECKOUT_REJECTED/)
+  const link=path.join(f.directory,'execution-link');fs.symlinkSync(state.executionRoot,link,'dir')
+  assert.throws(()=>assertExecutionCheckout(link,f.source,state,f.temp),/EXECUTION_CHECKOUT_REJECTED/)
+  assert.throws(()=>assertExecutionCheckout(state.executionRoot,f.source,{...state,executionRoot:link},f.temp),/EXECUTION_CHECKOUT_REJECTED/)
+  fs.writeFileSync(path.join(state.executionRoot,'input.txt'),'different commit\n');f.git(state.executionRoot,['add','input.txt'])
+  f.git(state.executionRoot,['-c','user.name=Isolation Fixture','-c','user.email=ci@fixture.invalid','-c','commit.gpgsign=false','commit','-qm','unapproved execution commit'])
+  assert.throws(()=>assertExecutionCheckout(state.executionRoot,f.source,state,f.temp),/EXECUTION_CHECKOUT_REJECTED/)
+  assertPristineSourceInput(f.source,f.sha)
+ }finally{fs.rmSync(f.directory,{recursive:true,force:true})}
+})
+test('controlled workflow installs and executes only the isolated checkout and proves preserved source after credentials ended',()=>{
+ const workflow=fs.readFileSync(path.join(authorityRoot,'.github/workflows/platform-contracts-ci.yml'),'utf8').split('  controlled-sg2:')[1].split('  environment-policy-probe:')[0]
+ const install=workflow.split('- name: Read-only credential phase; clean install with lifecycle scripts disabled')[1].split('- name:')[0]
+ const execute=workflow.split('- name: Run lifecycle, real API tests, typecheck and build after credential phase ended')[1].split('- name:')[0]
+ const proof=workflow.split('- name: Record sanitized exact-source proof after successful execution')[1].split('- uses:')[0]
+ const output='${{ steps.execution.outputs.execution_root }}'
+ assert.ok(install.includes('EXECUTION_ROOT: '+output));assert.ok(install.includes('NPM_TOKEN: ${{ github.token }}'))
+ assert.ok(execute.includes('working-directory: '+output+'/apps/sg-runtime'));assert.ok(execute.includes('CANDIDATE_ROOT: '+output))
+ assert.equal(execute.includes('${{ github.token }}'),false);assert.ok(proof.includes('EXECUTION_ROOT: '+output))
+ const prepared=workflow.indexOf(' prepare-execution'),installed=workflow.indexOf(' install\n'),checked=workflow.indexOf(' check-execution-input'),built=workflow.indexOf('npm run build'),proved=workflow.indexOf(' proof\n')
+ assert.ok(prepared>0&&installed>prepared&&checked>installed&&built>checked&&proved>built)
 })

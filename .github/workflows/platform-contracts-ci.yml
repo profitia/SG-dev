@@ -381,16 +381,27 @@ jobs:
       - name: Validate candidate files without executing candidate code
         if: steps.resolution.outputs.adopted == 'true'
         run: node control/scripts/governance/controlled-package-ci.mjs check-candidate
+      - name: Prepare isolated mutable execution checkout from verified source
+        id: execution
+        if: steps.resolution.outputs.adopted == 'true'
+        run: node control/scripts/governance/controlled-package-ci.mjs prepare-execution
       - name: Read-only credential phase; clean install with lifecycle scripts disabled
         if: steps.resolution.outputs.adopted == 'true'
         env:
           PACKAGE_CREDENTIAL_MODE: github-token
           NPM_TOKEN: ${{ github.token }}
+          EXECUTION_ROOT: ${{ steps.execution.outputs.execution_root }}
         run: node control/scripts/governance/controlled-package-ci.mjs install
+      - name: Verify clean exact execution inputs after credential phase ended
+        if: steps.resolution.outputs.adopted == 'true'
+        env:
+          EXECUTION_ROOT: ${{ steps.execution.outputs.execution_root }}
+        run: node control/scripts/governance/controlled-package-ci.mjs check-execution-input
       - name: Run lifecycle, real API tests, typecheck and build after credential phase ended
         if: steps.resolution.outputs.adopted == 'true'
-        working-directory: candidate/apps/sg-runtime
+        working-directory: ${{ steps.execution.outputs.execution_root }}/apps/sg-runtime
         env:
+          CANDIDATE_ROOT: ${{ steps.execution.outputs.execution_root }}
           NPM_TOKEN: ''
           NODE_AUTH_TOKEN: ''
           GH_TOKEN: ''
@@ -406,6 +417,8 @@ jobs:
           npm run build
       - name: Record sanitized exact-source proof after successful execution
         if: steps.resolution.outputs.adopted == 'true'
+        env:
+          EXECUTION_ROOT: ${{ steps.execution.outputs.execution_root }}
         run: node control/scripts/governance/controlled-package-ci.mjs proof
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: steps.resolution.outputs.adopted == 'true' && success()
