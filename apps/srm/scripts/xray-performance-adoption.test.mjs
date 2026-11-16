@@ -1,8 +1,9 @@
+import {acceptedSdkCurrentSourceDigests} from '../../../packages/platform-contracts/test/organisation-sdk-compatibility.mjs'
 import {recurringSourcePredecessor} from '../../architecture-lab/private-recurring-source.mjs'
 import {acceptedSdkSource,sdkContinuationPredecessor} from '../../../packages/platform-contracts/test/organisation-sdk-compatibility.mjs'
 // Verify the current SDK separately from immutable historical source maps.
 const sdkSourceAcceptance=acceptedSdkSource()
-const sdkCurrentSourceDigests=Object.fromEntries(Object.entries({...sdkSourceAcceptance.sourceDigests,...sdkSourceAcceptance.compatibilityTestSourceDigests}).map(([p,h])=>[p.replace(/^packages\/platform-contracts\//,''),h]))
+const sdkCurrentSourceDigests=Object.fromEntries(Object.entries({...sdkSourceAcceptance.sourceDigests,...sdkSourceAcceptance.compatibilityTestSourceDigests,...acceptedSdkCurrentSourceDigests()}).map(([p,h])=>[p.replace(/^packages\/platform-contracts\//,''),h]))
 import './source-hub-market-symbol-compatibility.test.mjs'
 import {assertSourceHubApiPathCompatibility,assertOilReportSourceCompatibility} from './source-hub-sdk-compatibility.mjs'
 import {assertAppShellFourCardCascade} from '../../sg-runtime/tests/pci-smart-integrity.mjs'
@@ -181,7 +182,7 @@ test('settled provider failure adoption pins its producer and never treats Sourc
  assert.deepEqual(settled.contract,sdk.EXTERNAL_CALL_FAILURE_OBSERVATION)
  assert.equal(await sdk.externalCallSourceDigest(),acceptedSdkSource().sdkDigests.externalCallSourceDigest??actualReceipt.oilAutonomousReportCompatibility?.sdkDigests.externalCallSourceDigest??(apiPath?.sdkDigests.externalCallSourceDigest??postfetch?.sdkDigests.externalCallSourceDigest??clock?.sdkDigests.externalCallSourceDigest??settled.sdkDigests.externalCallSourceDigest))
  const root=new URL('../',import.meta.resolve('@profitia/platform-contracts/external-call'))
- assert.equal(JSON.parse(fs.readFileSync(new URL('package.json',root))).version,(apiPath??postfetch??clock??settled).platformVersion)
+ assert.equal(JSON.parse(fs.readFileSync(new URL('package.json',root))).version,acceptedSdkSource().platformVersion)
  for(const[file,digest]of Object.entries(settled.sourceDigests)){
   assert.equal(hash(historicalBlob(settled.producer.sourceSha+':packages/platform-contracts/'+file)),digest,'producer '+file)
   if(!file.startsWith('test/')&&file!=='package-lock.json')assert.equal(hash(fs.readFileSync(new URL(file,root))),sdkCurrentSourceDigests[file]??apiPath?.sourceDigests[file]??receipt.xrayAppShellPresentation?.sourceDigests?.[file]??postfetch?.sourceDigests[file]??clock?.sourceDigests[file]??digest,'installed '+file)
@@ -911,7 +912,7 @@ test('finite Supplier input capture accepts only its exact source and preserves 
  const {createRequire}=await import('node:module'),{realpathSync}=await import('node:fs')
  const own=createRequire(import.meta.url),peer=createRequire(new URL('package.json',root))
  assert.equal(realpathSync(own.resolve('@profitia/platform-contracts/operation-context')),realpathSync(peer.resolve('@profitia/platform-contracts/operation-context')))
- assert.equal(JSON.parse(fs.readFileSync(new URL('package.json',new URL('../',import.meta.resolve('@profitia/platform-contracts/operation-context'))))).version,apiPath?.platformVersion??'1.32.3')
+ assert.equal(JSON.parse(fs.readFileSync(new URL('package.json',new URL('../',import.meta.resolve('@profitia/platform-contracts/operation-context'))))).version,acceptedSdkSource().platformVersion)
  for(const mutate of [r=>r.freshPayloadCaptureAdoption.producer.sourceGo=false,r=>r.freshPayloadCaptureAdoption.platformVersion='1.33.0',r=>r.freshPayloadCaptureAdoption.currentWorkChecksPreserved=false,r=>r.freshPayloadCaptureAdoption.applicationSourceDigests['src/server/unapproved.ts']='0'.repeat(64),r=>r.freshDocumentPolicyRecovery.fullNativeCheckPreserved=false,r=>r.unapprovedReceipt={}]){
   const changed=structuredClone(receipt);mutate(changed);assert.throws(()=>assertCurrentPciIntegrity(changed,current,historical))
  }
