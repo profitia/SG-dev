@@ -190,6 +190,7 @@ test('versioned generic proof binds trusted data, real workflow, candidate and c
   const run={id:123,workflow_id:456,repository:{full_name:'profitia/SG-dev'},head_branch:'main',head_sha:base,event:'workflow_dispatch',actor:{login:'profitia'},conclusion:'success'}
   const p={schemaVersion:'2.0',repository:'profitia/SG-dev',workflow:'.github/workflows/platform-contracts-ci.yml',
     scope:'EXACT_SOURCE_VALIDATION',targetEnvironment:'development',candidateSha:head,controlSha:base,runId:'123',
+    executionWorkspace:'ISOLATED_GIT_CHECKOUT',executionCheckoutSha:head,sourceInputVerifiedBeforeExecution:true,sourceInputVerifiedAfterExecution:true,
     controlPolicyDigest:digest,sourceAdmissionId:r.id,sourceAdmissionDigest:sourceAdmissionDigest(r),originalSourceSha:head,
     credentialRemovedBeforeCandidateExecution:true,privatePackageArtifactsPublished:false,productDeploymentPerformed:false,
     customerIdentityAdapterVerified:false,install:'CLEAN_REGISTRY_IGNORE_SCRIPTS',tests:'PASS',typecheck:'PASS',build:'PASS'}
@@ -201,7 +202,9 @@ test('versioned generic proof binds trusted data, real workflow, candidate and c
   assert.throws(()=>assertSourceValidationProof(p,run,head,456,{expectedControlDigest:digest},dir))
   fs.writeFileSync(ledgerPath,JSON.stringify({schemaVersion:'1.0',records:[r]}))
   for(const delta of [{candidateSha:base},{sourceAdmissionDigest:'0'.repeat(64)},{tests:'SKIPPED'},
-    {sourceAdmissionId:'self-authorized'},{productDeploymentPerformed:true},{scope:'LIVE_PRODUCT'}]){
+    {sourceAdmissionId:'self-authorized'},{productDeploymentPerformed:true},{scope:'LIVE_PRODUCT'},
+    {executionWorkspace:undefined},{executionWorkspace:'MUTABLE_SOURCE_ROOT'},{executionCheckoutSha:base},
+    {sourceInputVerifiedBeforeExecution:false},{sourceInputVerifiedAfterExecution:false}]){
     assert.throws(()=>assertSourceValidationProof({...p,...delta},run,head,456,{expectedControlDigest:digest},dir))
   }
   for(const delta of [{actor:{login:'foreign'}},{conclusion:'failure'},{head_branch:'feature'},{head_sha:head}]){

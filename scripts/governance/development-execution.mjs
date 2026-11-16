@@ -229,6 +229,10 @@ export function assertSourceValidationProof(proof,run,candidateSha,workflowId,{e
     ||proof.workflow!=='.github/workflows/platform-contracts-ci.yml'||proof.candidateSha!==candidateSha
     ||proof.controlSha!==run.head_sha||String(proof.runId)!==String(run.id)||!/^[a-f0-9]{64}$/.test(expectedControlDigest??'')
     ||proof.controlPolicyDigest!==expectedControlDigest)deny('VALIDATION_PROVENANCE_MISMATCH')
+  if(proof.scope==='EXACT_SOURCE_VALIDATION'||Object.hasOwn(proof,'executionWorkspace')){
+    if(proof.executionWorkspace!=='ISOLATED_GIT_CHECKOUT'||proof.executionCheckoutSha!==candidateSha
+      ||proof.sourceInputVerifiedBeforeExecution!==true||proof.sourceInputVerifiedAfterExecution!==true)deny('VALIDATION_INPUT_ISOLATION_INCOMPLETE')
+  }
   if(proof.scope==='AUTHORITY_MAIN_VALIDATION'){
     if(candidateSha!==run.head_sha||proof.sourceAdmissionId!==undefined||proof.originalSourceSha!==undefined)deny('VALIDATION_PROVENANCE_MISMATCH')
   }else{
