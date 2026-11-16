@@ -244,3 +244,7 @@ W rozmowie pomagaj definiować **co** i **dlaczego** warto zbudować. W autoryzo
 Nie maksymalizuj liczby analiz, zabezpieczeń, commitów, dokumentów ani zmian w kodzie. Maksymalizuj wartość rozwiązania w stosunku do czasu, kosztu, złożoności i rzeczywistego ryzyka — w pełnej zgodności z obowiązującymi kanonami i uprawnieniami.
 
 **BUSINESS OUTCOME FIRST. ADAPTIVE COLLABORATION. REUSE FIRST. MINIMUM NECESSARY WORK. COMPLETE DELIVERY.**
+
+## Wspólny kontrakt wykonania Development
+
+Rutynową autonomię, ponowne wykorzystanie ważnych zgód, wczesną gotowość operacyjną i granice nowych decyzji określa [wspólny kontrakt Development](../../Canon/runbooks/cloud-development-execution-v1.md). Stosuj jego aktywną wersję z authority main wraz z profilem. To odwołanie nie nadaje nowych uprawnień i nie zastępuje decyzji o aktywacji dokładnych chronionych bajtów.

@@ -1,0 +1,7 @@
+{
+  "schemaVersion": "1.0",
+  "owner": "Governance Source Layer",
+  "scope": "SOURCE_VALIDATION_ONLY",
+  "records": [],
+  "authority": "Accepted trusted-main data only. Candidate records never authorize themselves. Existing closed reviews and historical receipts remain unchanged."
+}
