@@ -9,7 +9,10 @@ const HELPER='apps/sg-runtime/tests/procurement-insights-editorial-integrity.mjs
 const TEST='apps/sg-runtime/tests/procurement-insights-editorial-integrity.test.mjs'
 const COMPOSER='apps/insights-runtime/src/composer.mjs'
 const RULES='apps/insights-runtime/src/editorial.mjs'
-export const EDITORIAL_PATHS=Object.freeze([COMPOSER,RULES,HOOK,ENTRY,HELPER,TEST])
+const SRM_TEST="apps/srm/scripts/xray-performance-adoption.test.mjs"
+const SRM_HISTORY_BEFORE="const historicalBlob=spec=>{assert.match(spec,/^[a-f0-9]{40}:.+$/);if(!historicalBlobs.has(spec))historicalBlobs.set(spec,execFileSync('git',['show',spec]));return Buffer.from(historicalBlobs.get(spec))}"
+const SRM_HISTORY_AFTER="const historicalBlob=spec=>{\n const authority=spec.match(/^refs\\/remotes\\/origin\\/main:(Canon\\/registries\\/governance-manifest-(?:v2|successors-v1)\\.json)$/)\n if(authority)spec=execFileSync('git',['rev-parse','--verify','refs/remotes/origin/main^{commit}'],{encoding:'utf8'}).trim()+':'+authority[1]\n assert.match(spec,/^[a-f0-9]{40}:.+$/)\n if(!historicalBlobs.has(spec))historicalBlobs.set(spec,execFileSync('git',['show',spec]))\n return Buffer.from(historicalBlobs.get(spec))\n}"
+export const EDITORIAL_PATHS=Object.freeze([COMPOSER,RULES,HOOK,ENTRY,HELPER,TEST,SRM_TEST])
 const RUNTIME_PINS=Object.freeze({
  [COMPOSER]:'5b1638be94df5a6e5817cb3e0f3d5064b583717f43d3f665db9bfff769df7028',
  [RULES]:'64013d76c4b1ea22fa0d2696bd7521c92013e919fdfc94d57d4a5483cc34fd30',
@@ -44,6 +47,9 @@ export function procurementInsightsEditorialPredecessor(current,historical){
  const priorHook=String(historical(EDITORIAL_BASE,HOOK))
  assert.equal(String(current(HOOK)),editorialContinuationSource(priorHook),'only additive source dispatch; historical assertions remain intact')
  assert.equal(String(current(ENTRY)),TEST_IMPORT+String(historical(EDITORIAL_BASE,ENTRY)),'existing regressions plus actual editorial continuation tests')
+ const priorSrm=String(historical(EDITORIAL_BASE,SRM_TEST))
+ assert.equal(priorSrm.split(SRM_HISTORY_BEFORE).length,2,'one original immutable-only cache adapter')
+ assert.equal(String(current(SRM_TEST)),priorSrm.replace(SRM_HISTORY_BEFORE,SRM_HISTORY_AFTER),'only two trusted manifest reads resolve to immutable commits before caching')
  // The earlier accepted graph declares its receipts. Preserve all of them and
  // its own acceptance bytes; none is replaced by the new editorial receipt.
  const oldReceipt='apps/sg-runtime/assistant-notifications-integration.json'

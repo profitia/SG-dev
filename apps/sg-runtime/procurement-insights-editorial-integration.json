@@ -10,8 +10,9 @@
     "apps/insights-runtime/src/editorial.mjs": "64013d76c4b1ea22fa0d2696bd7521c92013e919fdfc94d57d4a5483cc34fd30",
     "apps/sg-runtime/tests/assistant-notifications-integrity.mjs": "e8141f9b967435ffdd5f94a48e9e0a494cf3eef167fbd6b3b7f22a350f55f3c8",
     "apps/sg-runtime/tests/assistant-notifications-integrity.test.mjs": "85c4a532704a10a0c0c3b9fba87e8b355a028e1e092479960ae2e6df830e8f1e",
-    "apps/sg-runtime/tests/procurement-insights-editorial-integrity.mjs": "7c44fe0e67c51555b746b91e6896a7a0b1734be8ed9f7d7f0a3da668ecf984b2",
-    "apps/sg-runtime/tests/procurement-insights-editorial-integrity.test.mjs": "504be3cefedd23386a5dfce13c128b0992e626468c2791642ee056f8fb3464f1"
+    "apps/sg-runtime/tests/procurement-insights-editorial-integrity.mjs": "071825800d81e25361fda653348d9b947455464d45b70d7ab8ce5b73dc06bb50",
+    "apps/sg-runtime/tests/procurement-insights-editorial-integrity.test.mjs": "b93302850ff52aa99d205c8f2cec1bd991909589976a2ef4f58aec5d69cf7f73",
+    "apps/srm/scripts/xray-performance-adoption.test.mjs": "1ac38a8692016b6b988f59de6320d85891ffede915c6f0bcff7fbaacc7586957"
   },
   "preservedReceipts": {
     "apps/architecture-lab/private-recurring-source-adoption.json": "a79c186897851acb93142949fe7aee19184cbfe68b3acdf51cbda084c00c1254",

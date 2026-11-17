@@ -32,7 +32,8 @@ test('editorial continuation rejects changed source, rewritten historical receip
 })
 test('matching replacement hashes cannot admit a different Composer, skipped regression or altered continuation',()=>{
  for(const p of ['apps/insights-runtime/src/composer.mjs','apps/insights-runtime/src/editorial.mjs',
-  'apps/sg-runtime/tests/assistant-notifications-integrity.mjs','apps/sg-runtime/tests/assistant-notifications-integrity.test.mjs']){
+  'apps/sg-runtime/tests/assistant-notifications-integrity.mjs','apps/sg-runtime/tests/assistant-notifications-integrity.test.mjs',
+  'apps/srm/scripts/xray-performance-adoption.test.mjs']){
   const bytes=Buffer.concat([current(p),Buffer.from('\n// unreviewed replacement\n')]),a=manifest();a.sourceDigests[p]=hash(bytes)
   assert.throws(()=>procurementInsightsEditorialPredecessor(withManifest(a,f=>f===p?bytes:current(f)),historical),p)
  }
