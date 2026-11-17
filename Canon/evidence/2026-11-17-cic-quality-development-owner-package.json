@@ -314,12 +314,12 @@
     "status": "OWNER_APPROVED_LIMITED_AMENDMENT_NOT_YET_MERGED",
     "previousApprovedPathCount": 23,
     "proposedPathCount": 24,
-    "additionalPath": "apps/sg-runtime/tests/procurement-insights-editorial-integrity.mjs",
+    "additionalPath": "apps/sg-runtime/tests/finder-monitor-source-integrity.mjs",
     "owner": "SG2",
     "kind": "EXACT_ADDITIVE_TEST_PROVENANCE_DISPATCH_ONLY",
-    "reason": "Actual full CI found missing aggregate CIC source coverage; the direct consent, notification and live-source entry points require CIC authentication at the earliest existing SG2 editorial predecessor. Add one exact additive hook there, retain its accepted936eaa61 predecessor and all original assertions, and preserve authenticated CIC source maps in already approved adapters. Shared platform packages and all previous receipts remain unchanged.",
+    "reason": "The accepted parallel Finder monitor layer now precedes editorial verification. Preserve the approved one-extra-adapter/24-path scope by relocating the same exact additive CIC dispatch into that existing Finder predecessor, after its narrow receipt absence/read-error handling. Restore the editorial adapter exactly to main. Authenticate the full QA closure and aggregate every bound source digest before original Finder, notification, consent and PCI checks. Retain all earlier receipts, checks and package boundaries.",
     "reviewableHostPr": 1099,
-    "reviewedHostSha": "1c959fb48a55df0a2ac3bef5498ab59ba3914adf",
+    "reviewedHostSha": "0075f0be7a090926c4608c1da6d080ce4716e95f",
     "nativeObservedRun": 44166264779,
     "controlledObservedRun": 44166373635,
     "controlledObservedJob": 134333442391,
@@ -332,8 +332,9 @@
     },
     "focusedQualification": {
       "sourceAndTamperTests": 5,
-      "trustedControllerTests": 7,
-      "result": "PASS"
+      "trustedControllerTests": 11,
+      "result": "PASS",
+      "sourceAndFinderRegressionTests": 27
     },
     "sharedPlatformPackageUnchanged": true,
     "allExistingTestsAndReceiptsRetained": true,
@@ -343,11 +344,22 @@
     "paidRepairsEnabled": false,
     "promotionEnabled": false,
     "pilotStarted": false,
-    "acceptedParallelPredecessorSha": "936eaa61087516028564c6aaad2c46912b4729f7",
+    "acceptedParallelPredecessorSha": "77369b63888c5fa66d8d8159d5e8f36a23d25c83",
     "approvedPathCount": 24,
     "approvalDate": "2026-11-17",
     "approvalResponse": "Zatwierdzam ograniczone uzupełnienie CI24",
     "proposalPr": 1159,
-    "hostConversationId": "01a1e7fb-2253-7f91-9335-270094d39784"
+    "hostConversationId": "01a1e7fb-2253-7f91-9335-270094d39784",
+    "approvalReviewedAdditionalPath": "apps/sg-runtime/tests/procurement-insights-editorial-integrity.mjs",
+    "implementationRelocation": {
+      "from": "apps/sg-runtime/tests/procurement-insights-editorial-integrity.mjs",
+      "to": "apps/sg-runtime/tests/finder-monitor-source-integrity.mjs",
+      "reason": "Accepted parallel Finder source layer on main77369b63 changes the earliest existing SG2 source boundary",
+      "sameApprovedPathCount": 24,
+      "additionalAdapters": 1,
+      "originalAdapterRestoredExactlyToMain": true,
+      "authorityRightsCostsAndRuntimeFlagsChanged": false,
+      "legacyFixtureRetainedAsReadOnlyRegression": true
+    }
   }
 }
