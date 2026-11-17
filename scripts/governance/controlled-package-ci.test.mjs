@@ -3617,6 +3617,33 @@ test('quality recurring compatibility authenticates the new common dispatch and 
  }
 })
 
+
+test('trusted shallow control binds only the provider-pinned main snapshot before candidate or package work',async()=>{
+ const fs=await import('node:fs'),os=await import('node:os'),path=await import('node:path'),cp=await import('node:child_process')
+ const workflow=fs.readFileSync(new URL('../../.github/workflows/platform-contracts-ci.yml',import.meta.url),'utf8')
+ const job=workflow.slice(workflow.indexOf('  controlled-sg2:'),workflow.indexOf('  environment-policy-probe:'))
+ const marker='      - name: Bind trusted control to the provider-pinned main snapshot'
+ const start=job.indexOf(marker);assert(start>job.indexOf('          path: control'))
+ assert(start<job.indexOf('      - name: Verify access to exact trusted package artifacts'))
+ const block=job.slice(start).split('      - uses:')[0],match=/        run: \|\n((?:          .*\n)+)/.exec(block);assert(match)
+ const script=match[1].split('\n').filter(Boolean).map(line=>line.slice(10)).join('\n')
+ const root=fs.mkdtempSync(path.join(os.tmpdir(),'aqc-trusted-snapshot-')),control=path.join(root,'control');fs.mkdirSync(control)
+ const git=args=>cp.execFileSync('git',args,{cwd:control,encoding:'utf8',stdio:['ignore','pipe','pipe']}).trim()
+ const bind=(ref,sha)=>cp.spawnSync('bash',['-c',script],{cwd:root,encoding:'utf8',env:{PATH:process.env.PATH,GIT_CONFIG_NOSYSTEM:'1',GIT_CONFIG_GLOBAL:'/dev/null',GITHUB_REF:ref,GITHUB_SHA:sha}})
+ try{
+  git(['init']);fs.writeFileSync(path.join(control,'fixture.txt'),'first')
+  git(['add','fixture.txt']);git(['-c','user.name=Synthetic fixture','-c','user.email=synthetic@example.invalid','commit','-m','first'])
+  const first=git(['rev-parse','HEAD']);git(['checkout','--detach',first])
+  assert.throws(()=>git(['rev-parse','--verify','refs/remotes/origin/main']))
+  assert.equal(bind('refs/heads/main',first).status,0);assert.equal(git(['rev-parse','refs/remotes/origin/main']),first)
+  fs.writeFileSync(path.join(control,'fixture.txt'),'second');git(['add','fixture.txt']);git(['-c','user.name=Synthetic fixture','-c','user.email=synthetic@example.invalid','commit','-m','second'])
+  const second=git(['rev-parse','HEAD'])
+  assert.notEqual(bind('refs/pull/1/merge',second).status,0);assert.equal(git(['rev-parse','refs/remotes/origin/main']),first)
+  assert.notEqual(bind('refs/heads/main',first).status,0);assert.equal(git(['rev-parse','refs/remotes/origin/main']),first)
+  assert.equal(bind('refs/heads/main',second).status,0);assert.equal(git(['rev-parse','refs/remotes/origin/main']),second)
+ }finally{fs.rmSync(root,{recursive:true,force:true})}
+})
+
 test('Finder monitor closed review authenticates original bytes and immutable source history without candidate imports',async()=>{
  const c=await import('./controlled-package-ci.mjs'),r=c.FINDER_MONITOR_SOURCE_REVIEW
  const read=(ref,p)=>execFileSync('git',['show',ref+':'+p],{cwd:new URL('../../',import.meta.url),maxBuffer:32*1024*1024,stdio:['ignore','pipe','pipe']})
