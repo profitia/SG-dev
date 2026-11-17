@@ -21,7 +21,7 @@ const history=(sha,p)=>execFileSync('git',['show',sha+':'+p],{cwd:root,stdio:['i
 const sourceManifest=history(sourceSha,cfg.manifestPath)
 const sourceDoc='Canon/v1.0-procurement-insights-narrative-and-editorial-canon.md'
 const sourceDocument=history(sourceSha,sourceDoc)
-const originalManifest=physical(cfg.manifestPath)
+const originalManifest=history('0f36f0af2add0d481a6b0a2dc1cded9d5b181949',cfg.manifestPath)
 const approvedLedger=JSON.parse(physical(ledgerPath))
 const clone=x=>structuredClone(x)
 
@@ -51,7 +51,7 @@ test('historical approved BSDC manifest remains accepted without a successor led
   if(sha===trustedRef)throw new Error('no trusted successor ledger')
   return history(sha,p)
  }
- const projection=bsdcManifestContinuityCurrent(physical,historical)
+ const projection=bsdcManifestContinuityCurrent(p=>p===cfg.manifestPath?originalManifest:physical(p),historical)
  assert.deepEqual(projection(cfg.manifestPath),history(cfg.baseSha,cfg.manifestPath))
 })
 
@@ -187,7 +187,7 @@ test('trusted controller accepts the unchanged legacy helper for its old manifes
  const oldHelper=history('0f36f0af2add0d481a6b0a2dc1cded9d5b181949',cfg.helperPath)
  const oldHash=hash(oldHelper)
  assert.equal(oldHash,'8f57073b55c1233c4573e54185e352d6400d7baa47bd5303fefb7b893b123847')
- const currentOld=p=>p===cfg.helperPath?oldHelper:physical(p)
+ const currentOld=p=>p===cfg.helperPath?oldHelper:p===cfg.manifestPath?originalManifest:physical(p)
  const projected=bsdcManifestContinuityTrustedCurrent(currentOld,history)
  assert.deepEqual(projected(cfg.manifestPath),history(cfg.baseSha,cfg.manifestPath))
  const {current,trusted}=fixture()
