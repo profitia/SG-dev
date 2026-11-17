@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
 export const KNOWLEDGE_SOURCE_RECORD='apps/architecture-lab/knowledge-source.json';
-export const KNOWLEDGE_SOURCE_RECORD_SHA256='da212951ea64919b88b641ef9645a3d08155da4c785a9c1884722d4f360ccd0b';
+export const KNOWLEDGE_SOURCE_RECORD_SHA256='4e815bd8238285419a49a0f3a0718d7356a2ad9aafba214954004acd7f5d9ca9';
 const hash=bytes=>createHash('sha256').update(bytes).digest('hex');
 export function knowledgeSourcePredecessor(current,historical){
  let bytes;try{bytes=current(KNOWLEDGE_SOURCE_RECORD);}catch(error){if(error?.code==='ENOENT')return null;throw error;}
