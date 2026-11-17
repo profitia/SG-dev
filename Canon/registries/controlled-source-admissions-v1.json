@@ -841,6 +841,130 @@
           "surfaceId": "ARCH-BASE-001"
         }
       ]
+    },
+    {
+      "id": "SG2:SG2-PI-TECHNOLOGY-E2E-20261117",
+      "status": "ACTIVE",
+      "repository": "profitia/SG-dev",
+      "actor": "profitia",
+      "taskId": "SG2-PI-TECHNOLOGY-E2E-20261117",
+      "targetEnvironment": "development",
+      "scope": "SOURCE_VALIDATION_ONLY",
+      "approvalRef": "owner-decision:01a1e7fd-01d1-7973-b3c3-8188664826c3:PI-DAD96-12-SOURCE-VALIDATION-20261117",
+      "sourceSha": "dad96a19026c1394d5b3be104d94629498acae5e",
+      "baseSha": "4508ed41b8d3300658e92a95110fb626e13d077c",
+      "validFrom": "2026-11-17T18:45:19.480Z",
+      "validUntil": "2026-11-23T22:59:00.000Z",
+      "files": [
+        {
+          "path": "apps/sg-runtime/components/procurement-insights/localization.ts",
+          "blob": "c62d02fe9a653b3b28f301990f9f5eac5eb4051f",
+          "mode": "100644",
+          "status": "added",
+          "projectKey": "SG2",
+          "owner": "SG Runtime",
+          "surfaceId": "SG2-BASE-001"
+        },
+        {
+          "path": "apps/sg-runtime/components/procurement-insights/observation-form.tsx",
+          "blob": "a79b8b8e3dfc855b5cfe48e3d6fa0ba07c835a44",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SG2",
+          "owner": "SG Runtime",
+          "surfaceId": "SG2-BASE-001"
+        },
+        {
+          "path": "apps/sg-runtime/components/procurement-insights/reports.tsx",
+          "blob": "c3eaf593d69cd9e21758cc1c83be6acf7e3702de",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SG2",
+          "owner": "SG Runtime",
+          "surfaceId": "SG2-BASE-001"
+        },
+        {
+          "path": "apps/sg-runtime/components/procurement-insights/statistics.tsx",
+          "blob": "b05a61bc719cd1d200d2d828d018973a9d9d6738",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SG2",
+          "owner": "SG Runtime",
+          "surfaceId": "SG2-BASE-001"
+        },
+        {
+          "path": "apps/sg-runtime/components/procurement-insights/workspace.tsx",
+          "blob": "46b85b2fafaee5527878852e35548a509ff85b8c",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SG2",
+          "owner": "SG Runtime",
+          "surfaceId": "SG2-BASE-001"
+        },
+        {
+          "path": "apps/sg-runtime/lib/procurement-insights/report-markdown.ts",
+          "blob": "8f355054d9d24c4868ed051aba2986d99172af17",
+          "mode": "100644",
+          "status": "added",
+          "projectKey": "SG2",
+          "owner": "SG Runtime",
+          "surfaceId": "SG2-BASE-001"
+        },
+        {
+          "path": "apps/sg-runtime/procurement-insights-e2e-continuation.json",
+          "blob": "0d01de01c6cd054dd42add564b1b41a1add010d0",
+          "mode": "100644",
+          "status": "added",
+          "projectKey": "SG2",
+          "owner": "SG Runtime",
+          "surfaceId": "SG2-BASE-001"
+        },
+        {
+          "path": "apps/sg-runtime/tests/assistant-notifications-integrity.mjs",
+          "blob": "e7892919d09ffa5c8b3ee73acd6404a99d58bf39",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SG2",
+          "owner": "SG Runtime",
+          "surfaceId": "SG2-BASE-001"
+        },
+        {
+          "path": "apps/sg-runtime/tests/procurement-insights-completion.test.mjs",
+          "blob": "3899d9335eadac290bd4c938e57342f02ee3f6bb",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SG2",
+          "owner": "SG Runtime",
+          "surfaceId": "SG2-BASE-001"
+        },
+        {
+          "path": "apps/sg-runtime/tests/procurement-insights-e2e-continuation.test.tsx",
+          "blob": "bbc222ac4c4f61b1b154e1b1004ed13d60e247f4",
+          "mode": "100644",
+          "status": "added",
+          "projectKey": "SG2",
+          "owner": "SG Runtime",
+          "surfaceId": "SG2-BASE-001"
+        },
+        {
+          "path": "apps/sg-runtime/tests/procurement-insights-notification-navigation.test.tsx",
+          "blob": "a16fca68251893573c79b958a637a6b25c385114",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SG2",
+          "owner": "SG Runtime",
+          "surfaceId": "SG2-BASE-001"
+        },
+        {
+          "path": "apps/sg-runtime/tests/procurement-insights-report-markdown.test.ts",
+          "blob": "9ff90f4f06f2684f1cdaa1e91368cb2406b10fb3",
+          "mode": "100644",
+          "status": "added",
+          "projectKey": "SG2",
+          "owner": "SG Runtime",
+          "surfaceId": "SG2-BASE-001"
+        }
+      ]
     }
   ],
   "authority": "Accepted trusted-main data only. Candidate records never authorize themselves. Existing closed reviews and historical receipts remain unchanged."

@@ -355,6 +355,13 @@ jobs:
           ref: ${{ github.sha }}
           path: control
           persist-credentials: false
+      - name: Bind trusted control to the provider-pinned main snapshot
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF" = refs/heads/main
+          test "$(git -C control rev-parse HEAD)" = "$GITHUB_SHA"
+          git -C control update-ref refs/remotes/origin/main "$GITHUB_SHA"
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: '24'
