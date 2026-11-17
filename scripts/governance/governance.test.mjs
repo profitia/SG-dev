@@ -37,6 +37,20 @@ function isolatedGovernanceRepository(t) {
   return {root, git, head}
 }
 
+// SYNTHETIC_ONLY: applicability tests own their finite Git baseline. A new
+// accepted-main commit during CI must not change these unrelated scenarios.
+function registeredPreflightFixture(t) {
+  const root=fs.mkdtempSync(path.join(os.tmpdir(),'governance-preflight-fixture-'))
+  t.after(()=>fs.rmSync(root,{recursive:true,force:true}))
+  fs.cpSync(path.join(repositoryRoot,'Canon'),path.join(root,'Canon'),{recursive:true})
+  const git=(...args)=>execFileSync('git',args,{cwd:root,encoding:'utf8',stdio:['ignore','pipe','pipe']}).trim()
+  git('init','--initial-branch=main');git('config','user.name','Synthetic fixture');git('config','user.email','synthetic@example.invalid')
+  git('remote','add','origin','https://github.com/profitia/SG-dev');git('add','Canon')
+  git('-c','core.hooksPath=/dev/null','commit','-m','Synthetic registered governance fixture')
+  git('update-ref','refs/remotes/origin/main','HEAD')
+  return {root,git}
+}
+
 const newsfeedTargets = [
   'apps/newsfeed-runtime/src/server.ts',
   'packages/newsfeed-contracts/src/index.ts',
@@ -450,7 +464,7 @@ test('SRM provider snapshot detects an unregistered Development service without 
 })
 
 test('SG2 PMOS applies only to Development and creates no Staging or Production continuity', t => {
-  const {root: fixtureRoot} = isolatedGovernanceRepository(t)
+  const {root:fixtureRoot}=registeredPreflightFixture(t)
   const input = {
     mode: 'development',
     project: 'SG2',
@@ -662,7 +676,7 @@ test('project boundary policy fails closed on missing, malformed or wildcard all
 })
 
 test('registered Architecture respects Development and owned surface boundaries', t => {
-   const {root: fixtureRoot} = isolatedGovernanceRepository(t)
+  const {root:fixtureRoot}=registeredPreflightFixture(t)
   const fixture = resolveProjectProfile('ARCHITECTURE', repositoryRoot)
   assert.equal(fixture.database.databaseName, 'architecture_pmos')
   assert.equal(fixture.database.runtimeRole, 'architecture_pmos_runtime')
@@ -809,4 +823,22 @@ test('canonical code-state gate blocks a stale candidate even in offline CI', t 
   git('checkout', '--quiet', '--detach', 'origin/main')
   fs.writeFileSync(path.join(root, 'unreviewed.txt'), 'dirty fixture')
   assert.equal(runGovernancePreflight(input).gates.CODE_STATE_GATE.status, 'BLOCKED')
+})
+
+test('synthetic preflight still rejects an actually stale code baseline and a different repository', t => {
+  const {root,git}=registeredPreflightFixture(t)
+  const input={mode:'development',project:'ARCHITECTURE',target_environment:'development',task_id:'synthetic-code-state',
+    hostConversationUnavailable:true,title:'Synthetic code state',workspace:'fixture',execution_environment:'ci',scope:'governance',
+    targets:['Canon/registries/profitia-projects-v1.json'],legacyExceptions:[],repository_root:root,
+    ci:true,offline:true,allowDirty:true,requireBegin:false,skipRuntime:true,checkEstate:false}
+  assert.equal(runGovernancePreflight(input).verdict,'PASS')
+  const previous=git('rev-parse','HEAD')
+  fs.writeFileSync(path.join(root,'SYNTHETIC_ONLY.txt'),'A later fixture source commit')
+  git('add','SYNTHETIC_ONLY.txt');git('-c','core.hooksPath=/dev/null','commit','-m','Synthetic later main')
+  git('update-ref','refs/remotes/origin/main','HEAD');git('checkout','--detach',previous)
+  const stale=runGovernancePreflight(input)
+  assert.equal(stale.gates.CODE_STATE_GATE.status,'BLOCKED');assert.equal(stale.verdict,'BLOCKED')
+  git('remote','set-url','origin','https://github.com/example/synthetic-unrelated')
+  const other=runGovernancePreflight(input)
+  assert.equal(other.gates.REPOSITORY_GATE.status,'BLOCKED');assert.equal(other.verdict,'BLOCKED')
 })
