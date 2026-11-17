@@ -26,6 +26,7 @@ test('Executor plan uses only the local broker, no retries, cleared identity and
  assert(!text.includes('filesystem.":'));assert(text.includes('permissions.aqc-workspace.network.enabled=false'))
  assert(text.includes('request_max_retries=0'));assert(text.includes('stream_max_retries=0'))
  assert(text.includes('features.multi_agent=false'));assert(text.includes('features.enable_request_compression=false'))
+ assert(text.includes('features.code_mode=false'));assert(text.includes('features.code_mode_only=false'))
  assert(p.privilegeArguments.includes('--no-new-privs'));assert(p.privilegeArguments.includes('--clear-groups'));assert(p.privilegeArguments.includes('--bounding-set=-all'))
  assert.deepEqual(Object.keys(p.environment).sort(),['AQC_AGENT_TOKEN','LANG','PATH','TZ']);assert(!Object.hasOwn(p.environment,'OPENAI_API_KEY'))
  for(const brokerUrl of ['https://api.openai.com/v1','http://localhost:1234/v1','http://127.0.0.1:1234/v1?route=other'])assert.throws(()=>executorPlan({work:'/tmp/aqc-'+randomUUID()+'/work',toolPath:'/opt/aqc-tools/codex',uid:19999,gid:19999,brokerUrl,agentToken:'c'.repeat(64)}))
