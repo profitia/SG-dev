@@ -9420,47 +9420,5 @@
       "packages/insights-contracts/index.mjs": "a93b090b7738e774890a05fbbd473807c2f24757daf090d1dcfc10f7a6bda851",
       "packages/insights-contracts/package.json": "0e6ea7929e26ffbb89645d4c8875016081899242374f3488af70fcf60cc00447"
     }
-  },
-  "verclyKysResumeRecovery": {
-    "version": "srm-kys-resume-v1",
-    "taskId": "SRM-VERCLY-RESUME-20261117",
-    "status": "SOURCE_CANDIDATE_ONLY",
-    "previousApplicationAuthority": "16fd69465162e4b37ca968c46cb901ba2b7f9f12",
-    "previousReceiptsPreserved": true,
-    "paidPostRetryAllowed": false,
-    "resumptionMethod": "GET_EXISTING_CORRELATION_ONLY",
-    "productDeploymentPerformed": false,
-    "applicationSourceDigests": {
-      "src/server/kys-cache.ts": "ae3a926b3bba71ff579a1ecbf94f059ace609061127f9957c0845cf18dbba32d",
-      "src/server/vercly-kys.ts": "7e3923350b7969aa2a6609be18face9d18415f653b48a46b21d52712d2817b1e",
-      "src/server/xray-lookup.ts": "83b6f3305a8d0dd5eb8c7069572d57ce602840256ff22633a8f76a69d1ee7be3",
-      "src/server/supplier-native-sensitive.ts": "22fc1f07956961be07a325337d0119ea185bcf2d44a8094814df3a8331d86406",
-      "src/server/supplier-native-sensitive-store.ts": "a04e94360b85e9d1e610c2bdc26fbdc743ba8c5d888ef5cc7535e47903551d2c",
-      "src/server/provider-source-transport.ts": "209a26ae4b3959de3006f9aac270e8deaf9804e5dd7a4399ac6b64d183eef5a3"
-    },
-    "previousApplicationSourceDigests": {
-      "src/server/kys-cache.ts": "21846d6161e307227e14dc62ebb71f379e4d8f3808ecd20cb8378a231f9615d2",
-      "src/server/vercly-kys.ts": "ea78105c7af4f01e55501d26a1f3669ca2dce4267d2a25be7c31dc8915e67f91",
-      "src/server/xray-lookup.ts": "69f383806d0864bf48d742b5378bdc432ab64e18f80189f614cceb46d528b2ca",
-      "src/server/supplier-native-sensitive.ts": "ea3b4a242a2539ee5a64d954833fad53966e64d9ffa909039a20c30cf9804435",
-      "src/server/supplier-native-sensitive-store.ts": "8e212f3a2c022b35820ff77f462852a78acbac821d66bee2cc7f7162fbd76f5d",
-      "src/server/provider-source-transport.ts": "3546b2c1785c5afe492eb6a364ec0d2de47844fdcae4482022828a92dcf99c94"
-    },
-    "testSourceDigests": {
-      "scripts/private-sensitive.integration.test.mjs": "68916fa99ac306c4f1ae5db16bc9feec20ce3eac1505a6e4e7afca4a8efaf097",
-      "src/server/assistant-context-runtime.test.ts": "6b2d9ddf1a18ec61d4c2e318178fcdb12ec21d4b5f300b1e19d8fe4fb62f0a05",
-      "src/server/company-source-policy.test.ts": "fe447de3f9faa861fc00e12ad7e6a0f496d8cb58dc68abc7a7d56440596301d4",
-      "src/server/full-ui-parity-adoption.test.ts": "60b1d130fba3d04e0b42ab72cb50732d9e10e00166100687fbd6a491ebaab15d",
-      "src/server/kys-cache.test.ts": "8543c0693fbff59c080dbfab5142c4cecd20fd2aa30aa1925edaa47f9ec89923",
-      "src/server/kys-orchestration.test.ts": "43c5125aa59e51e054c3653c622a58900b89ea940ef764e8a4d782a0641f1b9c",
-      "src/server/peer-read-boundary.test.ts": "db126d0ee9144c717d9c3fad0f2c418c08d566003cdcb6542c47ca7279793f5e",
-      "src/server/root-atomic-claim-adoption.test.ts": "df98877342fd56595bac0281fd1c470fb5bc79402681f07e7728fb1cc359dfd6",
-      "src/server/supplier-location-geocoding-runtime.test.ts": "5a70aa0ff48d3b3da1a7c36f7b78d22ff4bbc18a9445248637d78acda8678e7a",
-      "src/server/vercly-kys.test.ts": "01d847baa902fbd58ebe3ad6a82988666b058be09d6c3261a97b9b6b0bed725f",
-      "scripts/xray-workflow-contract.test.ts": "6c4dfb5ebeddea4a509f1c03f63188a924ab03d3caf5f91d4d556a667697f97e"
-    },
-    "testSupportSourceDigests": {
-      "scripts/kys-resume-source-view.mjs": "ecde0ad65e17b5ac547400bc2cd28522bbe4356baf761e95e4d34b2bbae1b958"
-    }
   }
 }

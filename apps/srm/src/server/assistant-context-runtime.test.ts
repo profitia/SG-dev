@@ -1,4 +1,3 @@
-import {kysResumePredecessor} from '../../scripts/kys-resume-source-view.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import type {OperationExecutor,OperationContext} from '@profitia/platform-contracts/operation-context'
@@ -15,9 +14,8 @@ const selection={nip,entityType:'COMPANY' as const,krs:null,year:2025,comparison
 test('M2 source build manifest covers every producer byte and preserves immutable earlier acceptance',async()=>{
  const {readFileSync}=await import('node:fs'),{execFileSync}=await import('node:child_process')
  const {srmAssistantM2Predecessor,SRM_ASSISTANT_M2_PATHS}=await import('../../scripts/assistant-m2-integrity.mjs')
- const root=new URL('../../../../',import.meta.url),actual=(p:string)=>readFileSync(new URL(p,root))
+ const root=new URL('../../../../',import.meta.url),current=(p:string)=>readFileSync(new URL(p,root))
  const historical=(sha:string,p:string)=>execFileSync('git',['show',sha+':'+p],{cwd:root})
- const current=kysResumePredecessor(actual,historical).previousBytes
  const view=srmAssistantM2Predecessor(current,historical);assert(view);assert.equal(view.manifest.grantsAccess,false)
  for(const path of SRM_ASSISTANT_M2_PATHS)assert.throws(()=>srmAssistantM2Predecessor(
   (p:string)=>p===path?Buffer.concat([current(p),Buffer.from('UNACCEPTED')]):current(p),historical),path)

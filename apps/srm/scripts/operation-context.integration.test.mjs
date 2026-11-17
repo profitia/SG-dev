@@ -22,7 +22,7 @@ test('SRM real report API, archive restoration and PostgreSQL transaction enforc
       const sql = fs.readFileSync(new URL(file, directory), 'utf8'); await owner.query(sql)
       await owner.query('INSERT INTO srm.schema_migrations(version,checksum_sha256) VALUES($1,$2)', [file.slice(0, -4), createHash('sha256').update(sql).digest('hex')])
     }
-    assert.equal(files.length, 18)
+    assert.equal(files.length, 19)
     await owner.query('GRANT USAGE ON SCHEMA srm TO srm_app_runtime; GRANT SELECT,INSERT,UPDATE ON srm.organizations,srm.suppliers,srm.lookup_requests,srm.provider_attempts,srm.source_snapshots,srm.section_projections,srm.financial_facts TO srm_app_runtime; REVOKE INSERT,UPDATE ON srm.organizations FROM srm_app_runtime')
     await initialiseAuthoritySchema(owner, ['srm_app_runtime'])
     const application = { appId: 'srm-isolated-operation', profileId: 'SUPPLIER_INTELLIGENCE_STANDALONE', environment: 'development', deploymentId: 'isolated-existing-srm-code', configurationVersion: 'test-v1', organisationId: null, operations: ['supplier.report.read', 'supplier.report.project'], features: ['supplier_report'] }

@@ -99,7 +99,7 @@ test('KYS factory and selection reject incomplete ports, accessors, symbols and 
 test("Vercly source continuation preserves all prior receipts and is restricted to the six KYS owners",async()=>{
  const {readFileSync}=await import("node:fs"),{execFileSync}=await import("node:child_process"),{createHash}=await import("node:crypto");
  const receipt=JSON.parse(readFileSync(new URL("../../operation-integration.json",import.meta.url),"utf8"));
- const current=receipt.verclyKysResumeRecovery;
+ const current=JSON.parse(readFileSync(new URL("../../vercly-kys-resume-integration.json",import.meta.url),"utf8"));
  const preceding=JSON.parse(execFileSync("git",["show",current.previousApplicationAuthority+":apps/srm/operation-integration.json"],{encoding:"utf8"}));
  for(const [key,value] of Object.entries(preceding))assert.deepEqual(receipt[key],value,key);
  assert.equal(current.paidPostRetryAllowed,false);assert.equal(current.resumptionMethod,"GET_EXISTING_CORRELATION_ONLY");
@@ -111,7 +111,7 @@ test("Vercly source continuation preserves all prior receipts and is restricted 
  const read=(p:string)=>readFileSync(new URL('../../../../'+p,import.meta.url));
  const historic=(sha:string,p:string)=>execFileSync('git',['show',sha+':'+p]);
  const validated=kysResumePredecessor(read,historic);assert.deepEqual(validated.prior,preceding);
- for(const changed of ['src/server/kys-cache.ts','src/server/full-ui-parity-adoption.test.ts']){
+ for(const changed of ['src/server/kys-cache.ts','src/server/peer-read-boundary.test.ts']){
   assert.throws(()=>kysResumePredecessor((p:string)=>p==='apps/srm/'+changed?Buffer.concat([read(p),Buffer.from('UNACCEPTED')]):read(p),historic));
  }
  assert.equal(hash(read('apps/srm/scripts/kys-resume-source-view.mjs')),current.testSupportSourceDigests['scripts/kys-resume-source-view.mjs']);
