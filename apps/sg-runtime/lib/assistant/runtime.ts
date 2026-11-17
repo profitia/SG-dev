@@ -11,7 +11,7 @@ import {createAssistantHistory} from './history'
 import {createAssistantModel,adaptAssistantUsageQuery} from './model'
 import {createAssistantSourceAdapters} from './sources'
 import {QUALITY_RESPONSE_VERSION} from './quality-response'
-import {QUALITY_EVIDENCE_VERSION,createAssistantQualityCapture} from './quality-evidence'
+import {QUALITY_EVIDENCE_VERSION,createAssistantQualityCapture,createQualityHistoryContainment} from './quality-evidence'
 import m2Targets from '@/deployment/assistant-m2-targets.json'
 import economicTargets from '@/deployment/assistant-ecr-targets.json'
 import type {Sg2SelectionRuntime} from '@/lib/platform/private-runtime'
@@ -94,10 +94,11 @@ export function createSg2AssistantRuntime(config:AssistantConfiguration,options:
  const qualityEvidence=qa&&evidenceDb?createAssistantQualityCapture({purposeQuery:queryFor(prisma),evidenceQuery:queryFor(evidenceDb),
   purposeKey:qa.purposeKey,evidenceKey:qa.evidenceKey,storageKey:qa.storageKey,serviceId:qa.serviceId,storageGeneration:qa.storageGeneration,accountId:config.qualityResponseAccountId!,
   purposeSchemaDigest:'1da8abda37255639bdaf0f1710184ef06e489487c66beafe4354b09c529d987d',evidenceSchemaDigest:'15d7aaa57e5db10df0bcf5c2062791fdbddd978a7ffe78880e009283f4885cb9'}):null
+ const historyContainment=createQualityHistoryContainment(queryFor(prisma))
  const guardedHistory=Object.freeze({...history,async delete(context:Readonly<OperationContext>,id:string){
   // Independent E1 tombstone is committed before deleting product history.
   // If containment fails, deletion fails visibly instead of leaving a restorable QA copy.
-  if(qualityEvidence&&context.actorId===config.qualityResponseAccountId)await qualityEvidence.invalidate(context)
+  await historyContainment.invalidate(context)
   await history.delete(context,id)
  }})
  const executor=createAssistantOperationHost<Prisma.TransactionClient>({
@@ -129,6 +130,7 @@ export function createSg2AssistantRuntime(config:AssistantConfiguration,options:
  const model=createAssistantModel(new OpenAI({apiKey:config.openaiKey,baseURL:'https://api.openai.com/v1',organization:null,project:null,maxRetries:0,timeout:60000}),usage)
  return Object.freeze({organisationId,history:guardedHistory,gateway,model,usage,qualityEvidence,qualityApplicationSha:qa?.applicationSha??null,timeZone:config.timeZone??'UTC',qualityResponseAccountId:config.qualityResponseAccountId,
   async ready(){
+   await historyContainment.ready()
    if(qualityEvidence)await qualityEvidence.ready()
    const h=await queryFor(historyDb)('SELECT sg2_assistant_history.descriptor() AS binding'),b=h.rows[0]?.binding as Record<string,unknown>|undefined
    if(h.rows.length!==1||!b||b.applicationId!=='spendguru'||b.environment!=='development'||b.projectId!==targets.history.projectId

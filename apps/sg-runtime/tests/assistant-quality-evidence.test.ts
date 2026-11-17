@@ -5,7 +5,7 @@ import {readFileSync} from 'node:fs'
 import {createHash,createHmac,randomBytes,randomUUID} from 'node:crypto'
 import pg from '../../architecture-lab/node_modules/pg/lib/index.js'
 import {assertIsolatedTestConnection} from '../../architecture-lab/src/operation-postgres-fixture.mjs'
-import {createQualityEvidenceStore,createQualityEvidencePurposeClient,createAssistantQualityCapture,type QualityEvidenceAuthority} from '../lib/assistant/quality-evidence'
+import {createQualityEvidenceStore,createQualityEvidencePurposeClient,createAssistantQualityCapture,createQualityHistoryContainment,type QualityEvidenceAuthority} from '../lib/assistant/quality-evidence'
 const hash=(s:string)=>createHash('sha256').update(s).digest('hex')
 test('native QA roles isolate encrypted controlled evidence, preserve fixed expiry, require fresh purpose and retain deletion/recovery barriers',async()=>{
  const ownerUrl=assertIsolatedTestConnection(process.env.OPERATION_FIXTURE_OWNER_URL,'sg2_operation_test','architecture_test_owner')
@@ -153,4 +153,23 @@ test('host capture composes independently enrolled authority with encrypted pers
  assert.deepEqual(operations.map(p=>p.action),['CAPTURE','CAPTURE','PUT']);assert.equal(operations[0].sourceScopes,null);assert.deepEqual(operations[1].sourceScopes,[])
  allowed=false;const count=operations.length;await assert.rejects(capture.capture(context,input));assert.equal(operations.length,count+1,'refused purpose never reaches persistence')
  await assert.rejects(capture.capture(context,{...input,accountId:randomUUID()}));assert.equal(operations.length,count+1)
+})
+
+test('history containment needs no optional QA capture configuration and rejects wrong or expired HUMAN context',async()=>{
+ const now=Date.now(),actorId=randomUUID(),decisionId=randomUUID(),context:any={applicationId:'spendguru',environment:'development',operation:'assistant.history.write',organisationId:null,actorId,decisionId,actor:{kind:'HUMAN',actorId,expiresAt:new Date(now+10000).toISOString()}}
+ let calls=0,override:Record<string,unknown>={}
+ const containment=createQualityHistoryContainment(async(sql,values)=>{
+  calls++
+  if(sql.startsWith('SELECT current_database()'))return {rows:[{database_name:'platform_private',role:'sg2_private_development_runtime',login:'sg2_private_development_runtime',installed:true}]}
+  assert.equal(sql,'SELECT profitia_assistant_quality_access.invalidate_history($1::uuid) AS result');assert.deepEqual(values,[decisionId])
+  return {rows:[{result:{applicationId:'spendguru',environment:'development',projectId:'spring-bread-28217539',branchId:'br-sparkling-term-b99l107x',databaseName:'platform_private',runtimeRole:'sg2_private_development_runtime',containmentVersion:'QUALITY_HISTORY_CONTAINMENT_V1',accountId:actorId,invalidated:true,epoch:'2',...override}}]}
+ },()=>now)
+ await containment.ready();assert.equal((await containment.invalidate(context)).invalidated,true)
+ const before=calls
+ for(const change of [{operation:'assistant.converse'},{organisationId:randomUUID()},{decisionId:'invalid'},{actorId:randomUUID()},{actor:{...context.actor,kind:'SERVICE'}},{actor:{...context.actor,expiresAt:new Date(now-1).toISOString()}}])await assert.rejects(containment.invalidate({...context,...change}))
+ assert.equal(calls,before,'invalid contexts never reach E1')
+ for(const change of [{runtimeRole:'owner'},{accountId:randomUUID()},{branchId:'foreign'},{invalidated:false},{epoch:'0'},{containmentVersion:'foreign'}]){override=change;await assert.rejects(containment.invalidate(context))}
+ await assert.rejects(createQualityHistoryContainment(async()=>({rows:[]})).ready())
+ // The composition deliberately has no command key, storage key, capture role,
+ // feature flag, selected QA account or capture service dependency.
 })

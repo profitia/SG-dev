@@ -198,3 +198,27 @@ export function createAssistantQualityCapture(options:{
   },
  })
 }
+
+/** Always installed independently of optional capture configuration. Only a fresh
+ * native HUMAN account-history intent can invalidate its own QA epoch. */
+export function createQualityHistoryContainment(query:AccessQuery,now:()=>number=Date.now){
+ return Object.freeze({
+  async ready(){
+   let rows;try{rows=(await query("SELECT current_database() AS database_name,current_user AS role,session_user AS login,coalesce(has_function_privilege(session_user,to_regprocedure('profitia_assistant_quality_access.invalidate_history(uuid)'),'EXECUTE'),false) AS installed")).rows}catch{return fail()}
+   const r=rows?.[0]
+   if(rows?.length!==1||r?.database_name!=='platform_private'||r.role!=='sg2_private_development_runtime'||r.login!==r.role||r.installed!==true)return fail()
+  },
+  async invalidate(context:Readonly<OperationContext>){
+   if(!context||context.applicationId!=='spendguru'||context.environment!=='development'||context.operation!=='assistant.history.write'
+    ||context.organisationId!==null||context.actor?.kind!=='HUMAN'||!uuid(context.actorId)||context.actor.actorId!==context.actorId
+    ||!uuid(context.decisionId)||!Number.isFinite(Date.parse(context.actor.expiresAt))||Date.parse(context.actor.expiresAt)<=now())return fail()
+   let rows;try{rows=(await query('SELECT profitia_assistant_quality_access.invalidate_history($1::uuid) AS result',[context.decisionId])).rows}catch{return fail()}
+   const r=rows?.[0]?.result as Record<string,unknown>|undefined
+   if(rows?.length!==1||!r||r.applicationId!=='spendguru'||r.environment!=='development'||r.projectId!=='spring-bread-28217539'
+    ||r.branchId!=='br-sparkling-term-b99l107x'||r.databaseName!=='platform_private'||r.runtimeRole!=='sg2_private_development_runtime'
+    ||r.containmentVersion!=='QUALITY_HISTORY_CONTAINMENT_V1'||r.accountId!==context.actorId||r.invalidated!==true
+    ||typeof r.epoch!=='string'||!/^[1-9][0-9]*$/.test(r.epoch))return fail()
+   return Object.freeze({invalidated:true as const,epoch:r.epoch})
+  },
+ })
+}
