@@ -1,3 +1,4 @@
+import '../../scripts/source-dependency-test-fixtures.test.mjs';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import type { SectionEnvelope, VerclyKysData } from '@profitia/srm-xray';
@@ -94,5 +95,3 @@ test('KYS factory and selection reject incomplete ports, accessors, symbols and 
   await assert.rejects(run('other-org', request));
   assert.deepEqual(f.calls, []);
 });
-
-
