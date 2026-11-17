@@ -7001,6 +7001,25 @@ async function api(endpoint, token = process.env.GH_TOKEN) {
   if (!response.ok) fail(`GITHUB_API_${response.status}`)
   return {data: await response.json(), headers: response.headers}
 }
+// Read only the fixed trusted policy inputs at the immutable workflow SHA.
+// GitHub Contents omits bytes above 1 MiB; authenticate the returned Git blob.
+export async function readControlPolicyFile(name,ref,readApi=api) {
+  if(!policyFiles.includes(name)||!shaPattern.test(ref??''))fail('CONTROL_POLICY_CONTENT_REJECTED')
+  const {data:metadata}=await readApi(`repos/${REPOSITORY}/contents/${name}?ref=${ref}`)
+  if(metadata?.type!=='file'||metadata.path!==name||!shaPattern.test(metadata.sha??'')
+    ||!Number.isSafeInteger(metadata.size)||metadata.size<0||metadata.size>8*1024*1024)fail('CONTROL_POLICY_CONTENT_REJECTED')
+  let encoded=metadata
+  if(metadata.encoding==='none'&&metadata.content===''&&metadata.size>1024*1024){
+    encoded=(await readApi(`repos/${REPOSITORY}/git/blobs/${metadata.sha}`)).data
+    if(encoded?.sha!==metadata.sha||encoded.size!==metadata.size)fail('CONTROL_POLICY_CONTENT_MISMATCH')
+  }
+  if(encoded?.encoding!=='base64'||typeof encoded.content!=='string')fail('CONTROL_POLICY_CONTENT_REJECTED')
+  const base64=encoded.content.replace(/\r?\n/g,''),bytes=Buffer.from(base64,'base64')
+  if(bytes.toString('base64')!==base64||bytes.length!==metadata.size)fail('CONTROL_POLICY_CONTENT_MISMATCH')
+  const blob=createHash('sha1').update('blob '+bytes.length+'\0').update(bytes).digest('hex')
+  if(blob!==metadata.sha)fail('CONTROL_POLICY_CONTENT_MISMATCH')
+  return bytes
+}
 async function checkEnvironment() {
   const registered = readJson(path.join(controlRoot(), 'Canon/registries/architecture-environment-topology-v1.json')).environments.development.github
   const endpoint = `repos/${REPOSITORY}/environments/${encodeURIComponent(registered.environmentName)}`
@@ -7213,7 +7232,7 @@ async function verify() {
       if (p.candidateSha !== sha) continue
       const jobs = String(run.id) === process.env.GITHUB_RUN_ID ? (await api(`repos/${REPOSITORY}/actions/runs/${run.id}/jobs`)).data.jobs : []
       assertProof(p, run, sha, workflow.id, {currentRunId: process.env.GITHUB_RUN_ID, currentRef: process.env.GITHUB_REF, completedJobs: jobs})
-      const sourceFiles = await Promise.all(policyFiles.map(async name => Buffer.from((await api(`repos/${REPOSITORY}/contents/${name}?ref=${run.head_sha}`)).data.content, 'base64')))
+      const sourceFiles = await Promise.all(policyFiles.map(name => readControlPolicyFile(name,run.head_sha)))
       const actualControl = createHash('sha256'); for (const bytes of sourceFiles) actualControl.update(bytes)
       if (actualControl.digest('hex') !== p.controlPolicyDigest) fail('CONTROL_POLICY_PROVENANCE_MISMATCH')
       if(p.schemaVersion==='2.0'){
