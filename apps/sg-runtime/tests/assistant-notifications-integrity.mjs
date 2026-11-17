@@ -70,7 +70,8 @@ const UI_SUCCESSOR={
     "apps/sg-runtime/tests/procurement-insights-completion.test.mjs",
     "apps/sg-runtime/tests/assistant-notifications-integrity.mjs",
     "apps/sg-runtime/lib/procurement-insights/report-markdown.ts",
-    "apps/sg-runtime/tests/procurement-insights-report-markdown.test.ts"
+    "apps/sg-runtime/tests/procurement-insights-report-markdown.test.ts",
+    "apps/sg-runtime/tests/procurement-insights-editorial-integrity.test.mjs"
   ],
   "pins": {
     "apps/sg-runtime/components/procurement-insights/workspace.tsx": "961e48f55a8ac92fc0fce9e33bdaced6bb590767cc2fae0341b28f61deaa121f",
@@ -82,7 +83,8 @@ const UI_SUCCESSOR={
     "apps/sg-runtime/tests/procurement-insights-e2e-continuation.test.tsx": "5f5bf0cb3b7124faa6bfb64b69873fb04b96679f44de293149ae63c52038693a",
     "apps/sg-runtime/tests/procurement-insights-completion.test.mjs": "9329b585b56e098f574d54a1821025b7118fc811b2c1cc9a5993e6f4dee1f760",
     "apps/sg-runtime/lib/procurement-insights/report-markdown.ts": "f5c2b040c2e0dff1e9d54b87a1a707d6f460a9802f8b41d4900af971bad902cf",
-    "apps/sg-runtime/tests/procurement-insights-report-markdown.test.ts": "09e898985bd22273272d46a8d7926211f27ecfd4d4d50a168b48db8f789a1ca5"
+    "apps/sg-runtime/tests/procurement-insights-report-markdown.test.ts": "09e898985bd22273272d46a8d7926211f27ecfd4d4d50a168b48db8f789a1ca5",
+    "apps/sg-runtime/tests/procurement-insights-editorial-integrity.test.mjs": "2b39d1d6396a8c6334d4fc2c8436604fc142edd43f7b8ec755f35f4f0c4c8b9e"
   },
   "preserved": [
     "apps/architecture-lab/private-recurring-source-adoption.json",
@@ -140,8 +142,11 @@ function sourceSuccessor(current,historical,config){
   return Buffer.from(cache.get(p));
  }};
 }
+export function procurementInsightsUiPredecessor(current,historical){
+ return sourceSuccessor(current,historical,UI_SUCCESSOR);
+}
 export function assistantNotificationsPredecessor(current,historical){
- const successor=sourceSuccessor(current,historical,UI_SUCCESSOR);
+ const successor=procurementInsightsUiPredecessor(current,historical);
  if(successor){
   const accepted=assistantNotificationsPredecessor(successor.previousBytes,historical);assert(accepted,'unchanged accepted notification predecessor');
   return {...accepted,successor,manifest:{...accepted.manifest,sourceDigests:{...accepted.manifest.sourceDigests,...successor.manifest.sourceDigests,[UI_SUCCESSOR.receipt]:hash(current(UI_SUCCESSOR.receipt))}}};

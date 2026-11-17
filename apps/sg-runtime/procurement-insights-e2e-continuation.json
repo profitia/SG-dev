@@ -13,9 +13,10 @@
     "apps/sg-runtime/tests/procurement-insights-notification-navigation.test.tsx": "cb266554ad865ba13a7b044ec4990b89959cf6d6143efc6253fb35916318f3a1",
     "apps/sg-runtime/tests/procurement-insights-e2e-continuation.test.tsx": "5f5bf0cb3b7124faa6bfb64b69873fb04b96679f44de293149ae63c52038693a",
     "apps/sg-runtime/tests/procurement-insights-completion.test.mjs": "9329b585b56e098f574d54a1821025b7118fc811b2c1cc9a5993e6f4dee1f760",
-    "apps/sg-runtime/tests/assistant-notifications-integrity.mjs": "5bbabb8465eaf4265a927545162ac1cfd7293b33d559e72b41476500693c3f29",
+    "apps/sg-runtime/tests/assistant-notifications-integrity.mjs": "2c7fb59eefc12188b296dec59a2c09ff9851d944cbaf36e5efebb0624582775d",
     "apps/sg-runtime/lib/procurement-insights/report-markdown.ts": "f5c2b040c2e0dff1e9d54b87a1a707d6f460a9802f8b41d4900af971bad902cf",
-    "apps/sg-runtime/tests/procurement-insights-report-markdown.test.ts": "09e898985bd22273272d46a8d7926211f27ecfd4d4d50a168b48db8f789a1ca5"
+    "apps/sg-runtime/tests/procurement-insights-report-markdown.test.ts": "09e898985bd22273272d46a8d7926211f27ecfd4d4d50a168b48db8f789a1ca5",
+    "apps/sg-runtime/tests/procurement-insights-editorial-integrity.test.mjs": "2b39d1d6396a8c6334d4fc2c8436604fc142edd43f7b8ec755f35f4f0c4c8b9e"
   },
   "preservedReceipts": {
     "apps/architecture-lab/private-recurring-source-adoption.json": "a79c186897851acb93142949fe7aee19184cbfe68b3acdf51cbda084c00c1254",
