@@ -1,0 +1,495 @@
+[
+  {
+    "kind": "concept",
+    "id": "ecr.concept.gasdiesel",
+    "expectedVersion": 0,
+    "status": "accepted",
+    "effectiveAt": "2026-11-12T00:00:00.000Z",
+    "data": {
+      "namePl": "Ceny detaliczne benzyny i diesla",
+      "nameEn": "Gasoline and Diesel Fuel Update",
+      "description": "Oficjalna publikacja EIA. Data referencyjna ceny jest odrębna od dnia jej opublikowania. Harmonogram nie potwierdza wyniku.",
+      "aliases": [
+        "Gasoline and Diesel Fuel Update",
+        "Ceny detaliczne benzyny i diesla"
+      ],
+      "taxonomy": [
+        "paliwa",
+        "benzyna",
+        "diesel",
+        "ceny"
+      ],
+      "geography": "USA"
+    },
+    "evidence": [
+      {
+        "ref": "https://www.eia.gov/petroleum/gasdiesel/schedule.php",
+        "reason": "Official publication or series definition; metadata evidence only, not a new LIVE observation."
+      }
+    ],
+    "curatorRef": "ARCHITECTURE-ECR-NOTIFICATIONS-COVERAGE-20261112:owner-admitted-semantic-expansion"
+  },
+  {
+    "kind": "mapping",
+    "id": "ecr.mapping.eia.gasdiesel",
+    "expectedVersion": 0,
+    "status": "accepted",
+    "effectiveAt": "2026-11-12T00:00:00.000Z",
+    "data": {
+      "provider": "eia",
+      "publicationRef": "eia:gasdiesel",
+      "conceptId": "ecr.concept.gasdiesel",
+      "certainty": "CONFIRMED",
+      "relation": "EQUIVALENT_DEFINITION",
+      "reason": "Exact official source publication identifier; edition and numerical value remain separate."
+    },
+    "evidence": [
+      {
+        "ref": "https://www.eia.gov/petroleum/gasdiesel/schedule.php",
+        "reason": "Official publication or series definition; metadata evidence only, not a new LIVE observation."
+      }
+    ],
+    "curatorRef": "ARCHITECTURE-ECR-NOTIFICATIONS-COVERAGE-20261112:owner-admitted-semantic-expansion"
+  },
+  {
+    "kind": "concept",
+    "id": "ecr.concept.heatingoilpropane",
+    "expectedVersion": 0,
+    "status": "accepted",
+    "effectiveAt": "2026-11-12T00:00:00.000Z",
+    "data": {
+      "namePl": "Ceny oleju opałowego i propanu",
+      "nameEn": "Heating Oil and Propane Update",
+      "description": "Oficjalna publikacja EIA. Data referencyjna ceny jest odrębna od dnia jej opublikowania. Harmonogram nie potwierdza wyniku.",
+      "aliases": [
+        "Heating Oil and Propane Update",
+        "Ceny oleju opałowego i propanu"
+      ],
+      "taxonomy": [
+        "olej opałowy",
+        "propan",
+        "ceny"
+      ],
+      "geography": "USA"
+    },
+    "evidence": [
+      {
+        "ref": "https://www.eia.gov/petroleum/heatingoilpropane/schedule.php",
+        "reason": "Official publication or series definition; metadata evidence only, not a new LIVE observation."
+      }
+    ],
+    "curatorRef": "ARCHITECTURE-ECR-NOTIFICATIONS-COVERAGE-20261112:owner-admitted-semantic-expansion"
+  },
+  {
+    "kind": "mapping",
+    "id": "ecr.mapping.eia.heatingoilpropane",
+    "expectedVersion": 0,
+    "status": "accepted",
+    "effectiveAt": "2026-11-12T00:00:00.000Z",
+    "data": {
+      "provider": "eia",
+      "publicationRef": "eia:heatingoilpropane",
+      "conceptId": "ecr.concept.heatingoilpropane",
+      "certainty": "CONFIRMED",
+      "relation": "EQUIVALENT_DEFINITION",
+      "reason": "Exact official source publication identifier; edition and numerical value remain separate."
+    },
+    "evidence": [
+      {
+        "ref": "https://www.eia.gov/petroleum/heatingoilpropane/schedule.php",
+        "reason": "Official publication or series definition; metadata evidence only, not a new LIVE observation."
+      }
+    ],
+    "curatorRef": "ARCHITECTURE-ECR-NOTIFICATIONS-COVERAGE-20261112:owner-admitted-semantic-expansion"
+  },
+  {
+    "kind": "measure",
+    "id": "ecr.measure.distillate-stocks",
+    "expectedVersion": 0,
+    "status": "accepted",
+    "effectiveAt": "2026-11-12T00:00:00.000Z",
+    "data": {
+      "conceptId": "ecr.concept.wpsr",
+      "namePl": "Zapasy destylatów paliwowych",
+      "nameEn": "Weekly U.S. Ending Stocks of Distillate Fuel Oil",
+      "description": "Bieżący snapshot źródła dla wskazanego okresu. Nie potwierdza wartości znanej dokładnie w chwili pierwszej publikacji; zmian ceny nie traktujemy jako udowodnionego skutku tej informacji.",
+      "unit": "Thousand Barrels",
+      "frequency": "weekly",
+      "geography": "USA",
+      "sourceSelector": {
+        "provider": "eia",
+        "path": "petroleum/stoc/wstk",
+        "series": "WDISTUS1",
+        "field": "value"
+      },
+      "valueMeaning": "CURRENT_SNAPSHOT_NOT_PUBLICATION_VINTAGE"
+    },
+    "evidence": [
+      {
+        "ref": "https://www.eia.gov/dnav/pet/hist/LeafHandler.ashx?f=W&n=PET&s=WDISTUS1",
+        "reason": "Official publication or series definition; metadata evidence only, not a new LIVE observation."
+      }
+    ],
+    "curatorRef": "ARCHITECTURE-ECR-NOTIFICATIONS-COVERAGE-20261112:owner-admitted-semantic-expansion"
+  },
+  {
+    "kind": "measure",
+    "id": "ecr.measure.jet-fuel-stocks",
+    "expectedVersion": 0,
+    "status": "accepted",
+    "effectiveAt": "2026-11-12T00:00:00.000Z",
+    "data": {
+      "conceptId": "ecr.concept.wpsr",
+      "namePl": "Zapasy paliwa lotniczego",
+      "nameEn": "Weekly U.S. Ending Stocks of Kerosene-Type Jet Fuel",
+      "description": "Bieżący snapshot źródła dla wskazanego okresu. Nie potwierdza wartości znanej dokładnie w chwili pierwszej publikacji; zmian ceny nie traktujemy jako udowodnionego skutku tej informacji.",
+      "unit": "Thousand Barrels",
+      "frequency": "weekly",
+      "geography": "USA",
+      "sourceSelector": {
+        "provider": "eia",
+        "path": "petroleum/stoc/wstk",
+        "series": "WKJSTUS1",
+        "field": "value"
+      },
+      "valueMeaning": "CURRENT_SNAPSHOT_NOT_PUBLICATION_VINTAGE"
+    },
+    "evidence": [
+      {
+        "ref": "https://www.eia.gov/dnav/pet/hist/LeafHandler.ashx?f=W&n=PET&s=WKJSTUS1",
+        "reason": "Official publication or series definition; metadata evidence only, not a new LIVE observation."
+      }
+    ],
+    "curatorRef": "ARCHITECTURE-ECR-NOTIFICATIONS-COVERAGE-20261112:owner-admitted-semantic-expansion"
+  },
+  {
+    "kind": "measure",
+    "id": "ecr.measure.propane-propylene-stocks",
+    "expectedVersion": 0,
+    "status": "accepted",
+    "effectiveAt": "2026-11-12T00:00:00.000Z",
+    "data": {
+      "conceptId": "ecr.concept.wpsr",
+      "namePl": "Zapasy propanu i propylenu bez propylenu w terminalach",
+      "nameEn": "Weekly U.S. Propane and Propylene Ending Stocks Excluding Propylene at Terminal",
+      "description": "Bieżący snapshot źródła dla wskazanego okresu. Nie potwierdza wartości znanej dokładnie w chwili pierwszej publikacji; zmian ceny nie traktujemy jako udowodnionego skutku tej informacji.",
+      "unit": "Thousand Barrels",
+      "frequency": "weekly",
+      "geography": "USA",
+      "sourceSelector": {
+        "provider": "eia",
+        "path": "petroleum/stoc/wstk",
+        "series": "WPRSTUS1",
+        "field": "value"
+      },
+      "valueMeaning": "CURRENT_SNAPSHOT_NOT_PUBLICATION_VINTAGE"
+    },
+    "evidence": [
+      {
+        "ref": "https://www.eia.gov/dnav/pet/hist/LeafHandler.ashx?f=W&n=PET&s=WPRSTUS1",
+        "reason": "Official publication or series definition; metadata evidence only, not a new LIVE observation."
+      }
+    ],
+    "curatorRef": "ARCHITECTURE-ECR-NOTIFICATIONS-COVERAGE-20261112:owner-admitted-semantic-expansion"
+  },
+  {
+    "kind": "measure",
+    "id": "ecr.measure.ethanol-stocks",
+    "expectedVersion": 0,
+    "status": "accepted",
+    "effectiveAt": "2026-11-12T00:00:00.000Z",
+    "data": {
+      "conceptId": "ecr.concept.wpsr",
+      "namePl": "Zapasy etanolu paliwowego",
+      "nameEn": "Weekly U.S. Ending Stocks of Fuel Ethanol",
+      "description": "Bieżący snapshot źródła dla wskazanego okresu. Nie potwierdza wartości znanej dokładnie w chwili pierwszej publikacji; zmian ceny nie traktujemy jako udowodnionego skutku tej informacji.",
+      "unit": "Thousand Barrels",
+      "frequency": "weekly",
+      "geography": "USA",
+      "sourceSelector": {
+        "provider": "eia",
+        "path": "petroleum/stoc/wstk",
+        "series": "W_EPOOXE_SAE_NUS_MBBL",
+        "field": "value"
+      },
+      "valueMeaning": "CURRENT_SNAPSHOT_NOT_PUBLICATION_VINTAGE"
+    },
+    "evidence": [
+      {
+        "ref": "https://www.eia.gov/dnav/pet/hist/LeafHandler.ashx?f=W&n=PET&s=W_EPOOXE_SAE_NUS_MBBL",
+        "reason": "Official publication or series definition; metadata evidence only, not a new LIVE observation."
+      }
+    ],
+    "curatorRef": "ARCHITECTURE-ECR-NOTIFICATIONS-COVERAGE-20261112:owner-admitted-semantic-expansion"
+  },
+  {
+    "kind": "measure",
+    "id": "ecr.measure.crude-production",
+    "expectedVersion": 0,
+    "status": "accepted",
+    "effectiveAt": "2026-11-12T00:00:00.000Z",
+    "data": {
+      "conceptId": "ecr.concept.wpsr",
+      "namePl": "Produkcja ropy naftowej",
+      "nameEn": "Weekly U.S. Field Production of Crude Oil",
+      "description": "Bieżący snapshot źródła dla wskazanego okresu. Nie potwierdza wartości znanej dokładnie w chwili pierwszej publikacji; zmian ceny nie traktujemy jako udowodnionego skutku tej informacji.",
+      "unit": "Thousand Barrels per Day",
+      "frequency": "weekly",
+      "geography": "USA",
+      "sourceSelector": {
+        "provider": "eia",
+        "path": "petroleum/sum/sndw",
+        "series": "WCRFPUS2",
+        "field": "value"
+      },
+      "valueMeaning": "CURRENT_SNAPSHOT_NOT_PUBLICATION_VINTAGE"
+    },
+    "evidence": [
+      {
+        "ref": "https://www.eia.gov/dnav/pet/hist/LeafHandler.ashx?f=W&n=PET&s=WCRFPUS2",
+        "reason": "Official publication or series definition; metadata evidence only, not a new LIVE observation."
+      }
+    ],
+    "curatorRef": "ARCHITECTURE-ECR-NOTIFICATIONS-COVERAGE-20261112:owner-admitted-semantic-expansion"
+  },
+  {
+    "kind": "measure",
+    "id": "ecr.measure.refinery-crude-input",
+    "expectedVersion": 0,
+    "status": "accepted",
+    "effectiveAt": "2026-11-12T00:00:00.000Z",
+    "data": {
+      "conceptId": "ecr.concept.wpsr",
+      "namePl": "Przerób ropy w rafineriach",
+      "nameEn": "Weekly U.S. Refiner Net Input of Crude Oil",
+      "description": "Bieżący snapshot źródła dla wskazanego okresu. Nie potwierdza wartości znanej dokładnie w chwili pierwszej publikacji; zmian ceny nie traktujemy jako udowodnionego skutku tej informacji.",
+      "unit": "Thousand Barrels per Day",
+      "frequency": "weekly",
+      "geography": "USA",
+      "sourceSelector": {
+        "provider": "eia",
+        "path": "petroleum/sum/sndw",
+        "series": "WCRRIUS2",
+        "field": "value"
+      },
+      "valueMeaning": "CURRENT_SNAPSHOT_NOT_PUBLICATION_VINTAGE"
+    },
+    "evidence": [
+      {
+        "ref": "https://www.eia.gov/dnav/pet/hist/LeafHandler.ashx?f=W&n=PET&s=WCRRIUS2",
+        "reason": "Official publication or series definition; metadata evidence only, not a new LIVE observation."
+      }
+    ],
+    "curatorRef": "ARCHITECTURE-ECR-NOTIFICATIONS-COVERAGE-20261112:owner-admitted-semantic-expansion"
+  },
+  {
+    "kind": "measure",
+    "id": "ecr.measure.refinery-utilisation",
+    "expectedVersion": 0,
+    "status": "accepted",
+    "effectiveAt": "2026-11-12T00:00:00.000Z",
+    "data": {
+      "conceptId": "ecr.concept.wpsr",
+      "namePl": "Wykorzystanie czynnych mocy rafinerii",
+      "nameEn": "Weekly U.S. Percent Utilization of Refinery Operable Capacity",
+      "description": "Bieżący snapshot źródła dla wskazanego okresu. Nie potwierdza wartości znanej dokładnie w chwili pierwszej publikacji; zmian ceny nie traktujemy jako udowodnionego skutku tej informacji.",
+      "unit": "Percent",
+      "frequency": "weekly",
+      "geography": "USA",
+      "sourceSelector": {
+        "provider": "eia",
+        "path": "petroleum/sum/sndw",
+        "series": "WPULEUS3",
+        "field": "value"
+      },
+      "valueMeaning": "CURRENT_SNAPSHOT_NOT_PUBLICATION_VINTAGE"
+    },
+    "evidence": [
+      {
+        "ref": "https://www.eia.gov/dnav/pet/hist/LeafHandler.ashx?f=W&n=PET&s=WPULEUS3",
+        "reason": "Official publication or series definition; metadata evidence only, not a new LIVE observation."
+      }
+    ],
+    "curatorRef": "ARCHITECTURE-ECR-NOTIFICATIONS-COVERAGE-20261112:owner-admitted-semantic-expansion"
+  },
+  {
+    "kind": "measure",
+    "id": "ecr.measure.regular-gasoline-retail-price",
+    "expectedVersion": 0,
+    "status": "accepted",
+    "effectiveAt": "2026-11-12T00:00:00.000Z",
+    "data": {
+      "conceptId": "ecr.concept.gasdiesel",
+      "namePl": "Cena detaliczna benzyny regular z podatkami",
+      "nameEn": "Weekly U.S. Regular All Formulations Retail Gasoline Prices",
+      "description": "Bieżący snapshot źródła dla wskazanego okresu. Nie potwierdza wartości znanej dokładnie w chwili pierwszej publikacji; zmian ceny nie traktujemy jako udowodnionego skutku tej informacji.",
+      "unit": "Dollars per Gallon",
+      "frequency": "weekly",
+      "geography": "USA",
+      "sourceSelector": {
+        "provider": "eia",
+        "path": "petroleum/pri/gnd",
+        "series": "EMM_EPMR_PTE_NUS_DPG",
+        "field": "value"
+      },
+      "valueMeaning": "CURRENT_SNAPSHOT_NOT_PUBLICATION_VINTAGE"
+    },
+    "evidence": [
+      {
+        "ref": "https://www.eia.gov/dnav/pet/hist/LeafHandler.ashx?f=W&n=PET&s=EMM_EPMR_PTE_NUS_DPG",
+        "reason": "Official publication or series definition; metadata evidence only, not a new LIVE observation."
+      }
+    ],
+    "curatorRef": "ARCHITECTURE-ECR-NOTIFICATIONS-COVERAGE-20261112:owner-admitted-semantic-expansion"
+  },
+  {
+    "kind": "measure",
+    "id": "ecr.measure.diesel-retail-price",
+    "expectedVersion": 0,
+    "status": "accepted",
+    "effectiveAt": "2026-11-12T00:00:00.000Z",
+    "data": {
+      "conceptId": "ecr.concept.gasdiesel",
+      "namePl": "Cena detaliczna diesla drogowego z podatkami",
+      "nameEn": "Weekly U.S. No 2 Diesel Retail Prices",
+      "description": "Bieżący snapshot źródła dla wskazanego okresu. Nie potwierdza wartości znanej dokładnie w chwili pierwszej publikacji; zmian ceny nie traktujemy jako udowodnionego skutku tej informacji.",
+      "unit": "Dollars per Gallon",
+      "frequency": "weekly",
+      "geography": "USA",
+      "sourceSelector": {
+        "provider": "eia",
+        "path": "petroleum/pri/gnd",
+        "series": "EMD_EPD2D_PTE_NUS_DPG",
+        "field": "value"
+      },
+      "valueMeaning": "CURRENT_SNAPSHOT_NOT_PUBLICATION_VINTAGE"
+    },
+    "evidence": [
+      {
+        "ref": "https://www.eia.gov/dnav/pet/hist/LeafHandler.ashx?f=W&n=PET&s=EMD_EPD2D_PTE_NUS_DPG",
+        "reason": "Official publication or series definition; metadata evidence only, not a new LIVE observation."
+      }
+    ],
+    "curatorRef": "ARCHITECTURE-ECR-NOTIFICATIONS-COVERAGE-20261112:owner-admitted-semantic-expansion"
+  },
+  {
+    "kind": "measure",
+    "id": "ecr.measure.heating-oil-residential-price",
+    "expectedVersion": 0,
+    "status": "accepted",
+    "effectiveAt": "2026-11-12T00:00:00.000Z",
+    "data": {
+      "conceptId": "ecr.concept.heatingoilpropane",
+      "namePl": "Cena detaliczna oleju opałowego bez podatków",
+      "nameEn": "Weekly U.S. No. 2 Heating Oil Residential Price",
+      "description": "Bieżący snapshot źródła dla wskazanego okresu. Nie potwierdza wartości znanej dokładnie w chwili pierwszej publikacji; zmian ceny nie traktujemy jako udowodnionego skutku tej informacji.",
+      "unit": "Dollars per Gallon",
+      "frequency": "weekly",
+      "geography": "USA",
+      "sourceSelector": {
+        "provider": "eia",
+        "path": "petroleum/pri/wfr",
+        "series": "W_EPD2F_PRS_NUS_DPG",
+        "field": "value"
+      },
+      "valueMeaning": "CURRENT_SNAPSHOT_NOT_PUBLICATION_VINTAGE"
+    },
+    "evidence": [
+      {
+        "ref": "https://www.eia.gov/dnav/pet/hist/LeafHandler.ashx?f=W&n=PET&s=W_EPD2F_PRS_NUS_DPG",
+        "reason": "Official publication or series definition; metadata evidence only, not a new LIVE observation."
+      }
+    ],
+    "curatorRef": "ARCHITECTURE-ECR-NOTIFICATIONS-COVERAGE-20261112:owner-admitted-semantic-expansion"
+  },
+  {
+    "kind": "measure",
+    "id": "ecr.measure.heating-oil-wholesale-price",
+    "expectedVersion": 0,
+    "status": "accepted",
+    "effectiveAt": "2026-11-12T00:00:00.000Z",
+    "data": {
+      "conceptId": "ecr.concept.heatingoilpropane",
+      "namePl": "Cena hurtowa oleju opałowego bez podatków",
+      "nameEn": "Weekly U.S. No. 2 Heating Oil Wholesale/Resale Price",
+      "description": "Bieżący snapshot źródła dla wskazanego okresu. Nie potwierdza wartości znanej dokładnie w chwili pierwszej publikacji; zmian ceny nie traktujemy jako udowodnionego skutku tej informacji.",
+      "unit": "Dollars per Gallon",
+      "frequency": "weekly",
+      "geography": "USA",
+      "sourceSelector": {
+        "provider": "eia",
+        "path": "petroleum/pri/wfr",
+        "series": "W_EPD2F_PWR_NUS_DPG",
+        "field": "value"
+      },
+      "valueMeaning": "CURRENT_SNAPSHOT_NOT_PUBLICATION_VINTAGE"
+    },
+    "evidence": [
+      {
+        "ref": "https://www.eia.gov/dnav/pet/hist/LeafHandler.ashx?f=W&n=PET&s=W_EPD2F_PWR_NUS_DPG",
+        "reason": "Official publication or series definition; metadata evidence only, not a new LIVE observation."
+      }
+    ],
+    "curatorRef": "ARCHITECTURE-ECR-NOTIFICATIONS-COVERAGE-20261112:owner-admitted-semantic-expansion"
+  },
+  {
+    "kind": "measure",
+    "id": "ecr.measure.propane-residential-price",
+    "expectedVersion": 0,
+    "status": "accepted",
+    "effectiveAt": "2026-11-12T00:00:00.000Z",
+    "data": {
+      "conceptId": "ecr.concept.heatingoilpropane",
+      "namePl": "Cena detaliczna propanu bez podatków",
+      "nameEn": "Weekly U.S. Propane Residential Price",
+      "description": "Bieżący snapshot źródła dla wskazanego okresu. Nie potwierdza wartości znanej dokładnie w chwili pierwszej publikacji; zmian ceny nie traktujemy jako udowodnionego skutku tej informacji.",
+      "unit": "Dollars per Gallon",
+      "frequency": "weekly",
+      "geography": "USA",
+      "sourceSelector": {
+        "provider": "eia",
+        "path": "petroleum/pri/wfr",
+        "series": "W_EPLLPA_PRS_NUS_DPG",
+        "field": "value"
+      },
+      "valueMeaning": "CURRENT_SNAPSHOT_NOT_PUBLICATION_VINTAGE"
+    },
+    "evidence": [
+      {
+        "ref": "https://www.eia.gov/dnav/pet/hist/LeafHandler.ashx?f=W&n=PET&s=W_EPLLPA_PRS_NUS_DPG",
+        "reason": "Official publication or series definition; metadata evidence only, not a new LIVE observation."
+      }
+    ],
+    "curatorRef": "ARCHITECTURE-ECR-NOTIFICATIONS-COVERAGE-20261112:owner-admitted-semantic-expansion"
+  },
+  {
+    "kind": "measure",
+    "id": "ecr.measure.propane-wholesale-price",
+    "expectedVersion": 0,
+    "status": "accepted",
+    "effectiveAt": "2026-11-12T00:00:00.000Z",
+    "data": {
+      "conceptId": "ecr.concept.heatingoilpropane",
+      "namePl": "Cena hurtowa propanu bez podatków",
+      "nameEn": "Weekly U.S. Propane Wholesale/Resale Price",
+      "description": "Bieżący snapshot źródła dla wskazanego okresu. Nie potwierdza wartości znanej dokładnie w chwili pierwszej publikacji; zmian ceny nie traktujemy jako udowodnionego skutku tej informacji.",
+      "unit": "Dollars per Gallon",
+      "frequency": "weekly",
+      "geography": "USA",
+      "sourceSelector": {
+        "provider": "eia",
+        "path": "petroleum/pri/wfr",
+        "series": "W_EPLLPA_PWR_NUS_DPG",
+        "field": "value"
+      },
+      "valueMeaning": "CURRENT_SNAPSHOT_NOT_PUBLICATION_VINTAGE"
+    },
+    "evidence": [
+      {
+        "ref": "https://www.eia.gov/dnav/pet/hist/LeafHandler.ashx?f=W&n=PET&s=W_EPLLPA_PWR_NUS_DPG",
+        "reason": "Official publication or series definition; metadata evidence only, not a new LIVE observation."
+      }
+    ],
+    "curatorRef": "ARCHITECTURE-ECR-NOTIFICATIONS-COVERAGE-20261112:owner-admitted-semantic-expansion"
+  }
+]

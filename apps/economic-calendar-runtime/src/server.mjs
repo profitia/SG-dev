@@ -1,6 +1,7 @@
 import http from 'node:http'
 import {performance} from 'node:perf_hooks'
 import {createSemanticRepository} from './semantics.mjs'
+import {createNotificationSettingsRepository} from './notification-settings.mjs'
 import {semanticFilter,semanticId} from '../../../packages/economic-calendar-contracts/semantic.mjs'
 import {isOperationDenied, OperationDenied} from '@profitia/platform-contracts/operation-context'
 import {CalendarError, ECR_CONTRACT, ECR_CALENDAR_QUERY_CONTRACT, calendarFilter, closedObject, eventId, publicationId, publicationFilter, fingerprint, organisationId} from '@profitia/economic-calendar-contracts'
@@ -27,6 +28,7 @@ async function body(request) {
 export function createServer({configuration, authorizer, repository, report = (_event) => {}}) {
   if (!authorizer?.execute || !repository?.ready) throw new TypeError('Explicit ECR runtime dependencies required')
   const semantics=createSemanticRepository(repository)
+  const notifications=createNotificationSettingsRepository()
   const server = http.createServer(async (incoming, outgoing) => {
     const started = performance.now(); let operation = 'unmatched', status = 500,recordsReturned=null,databaseOperationMs=null
     const send = (code, value) => {status = code; if(Number.isSafeInteger(value.version))outgoing.setHeader('etag','"'+value.version+'"'); outgoing.writeHead(code, {'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store', 'x-content-type-options': 'nosniff'}); outgoing.end(JSON.stringify(value))}
@@ -46,7 +48,7 @@ export function createServer({configuration, authorizer, repository, report = (_
       }
       if (url.pathname === '/health' && incoming.method === 'GET') {operation = 'health'; return send(200, {status: 'ok', contract: ECR_CONTRACT, sourceSha: configuration.deploymentId})}
       if (url.pathname === '/ready' && incoming.method === 'GET') {operation = 'ready'; const ready = await repository.ready() && await authorizer.ready(); return send(ready ? 200 : 503, {ready, sourceSha: configuration.deploymentId})}
-      const match = /^\/v1\/organisations\/([^/]+)\/calendar\/(query|events|publications|preferences|favourites|timeline|context|knowledge|freshness|evidence)(?:\/([^/]+))?(?:\/(revisions))?$/.exec(url.pathname)
+      const match = /^\/v1\/organisations\/([^/]+)\/calendar\/(query|events|publications|preferences|favourites|timeline|context|knowledge|freshness|evidence|notifications)(?:\/([^/]+))?(?:\/(revisions))?$/.exec(url.pathname)
       if (!match) throw new CalendarError('NOT_FOUND', 404)
       const organisation = organisationId(decodeURIComponent(match[1])), collection = match[2], id = match[3] ? (collection==='publications'?publicationId:collection==='knowledge'?semanticId:eventId)(decodeURIComponent(match[3])) : null
       const history = match[4] === 'revisions', method = incoming.method ?? ''
@@ -96,6 +98,10 @@ export function createServer({configuration, authorizer, repository, report = (_
         if(history){if(!id)throw new CalendarError('NOT_FOUND',404);parameters(url.searchParams,['after','limit']);const page={after:url.searchParams.has('after')?integer(single(url.searchParams,'after')):0,limit:url.searchParams.has('limit')?integer(single(url.searchParams,'limit')):100};action=(_,t)=>repository.publicationRevisions(t,id,page)}
         else if(id){parameters(url.searchParams,['asKnownAt']);action=(_,t)=>repository.publicationDetail(t,id,single(url.searchParams,'asKnownAt'))}
         else{parameters(url.searchParams,['provider','after','limit','asKnownAt']);const criteria=Object.fromEntries([...url.searchParams.keys()].map(k=>[k,k==='limit'?integer(single(url.searchParams,k)):single(url.searchParams,k)]));const f=publicationFilter(criteria);action=(_,t)=>repository.listPublications(t,f)}
+      } else if (collection === 'notifications' && !id && !history && method === 'GET') {parameters(url.searchParams, []); operation = 'notifications_read'; action = (c, t) => notifications.get(t, c)}
+      else if (collection === 'notifications' && !id && !history && method === 'PUT') {
+        parameters(url.searchParams, []); if (!closedObject(value, ['expectedVersion', 'settings']) || !Object.hasOwn(value, 'settings')) throw new CalendarError('INVALID_NOTIFICATION_UPDATE')
+        operation = 'notifications_write'; action = (c, t) => notifications.put(t, c, value.expectedVersion, value.settings)
       } else if (collection === 'preferences' && !id && !history && method === 'GET') {parameters(url.searchParams, []); operation = 'preferences_read'; action = (c, t) => repository.getPreferences(t, c)}
       else if (collection === 'preferences' && !id && !history && method === 'PUT') {
         parameters(url.searchParams, []); if (!closedObject(value, ['expectedVersion', 'preferences']) || !Object.hasOwn(value, 'preferences')) throw new CalendarError('INVALID_PREFERENCE_UPDATE')
