@@ -1,6 +1,7 @@
 import {createHash} from 'node:crypto'
 
 export const ECR_CONTRACT = Object.freeze({id: 'profitia.economic-calendar', version: '1.1.0'})
+export const ECR_CALENDAR_QUERY_CONTRACT = Object.freeze({id: 'profitia.calendar-query', version: '1.0.0'})
 export const ECR_APPLICATION = 'profitia-economic-calendar-runtime-development'
 export const ECR_EVENT_RESOURCE = 'economic-calendar-events'
 export const ECR_PREFERENCE_RESOURCE = 'economic-calendar-preferences'
@@ -60,8 +61,8 @@ export function calendarFilter(value = {}) {
   return out
 }
 export function preferences(value) {
-  if (!closedObject(value, ['watchedCountries', 'watchedIndicators', 'watchedTopics', 'savedFilters', 'display'])) refuse('UNSUPPORTED_PREFERENCE')
-  const out = {watchedCountries: selection(value.watchedCountries ?? []), watchedIndicators: selection(value.watchedIndicators ?? []), watchedTopics: [], savedFilters: [], display: {}}
+  if (!closedObject(value, ['watchedCountries', 'watchedIndicators', 'watchedTopics', 'savedFilters', 'display', 'publicationFavourites', 'publicationWatches'])) refuse('UNSUPPORTED_PREFERENCE')
+  const out = /** @type {any} */ ({watchedCountries: selection(value.watchedCountries ?? []), watchedIndicators: selection(value.watchedIndicators ?? []), watchedTopics: [], savedFilters: [], display: {}})
   if (!Array.isArray(value.watchedTopics ?? [])) refuse()
   out.watchedTopics = (value.watchedTopics ?? []).map(topic => {
     if (!closedObject(topic, ['kind', 'text']) || topic.kind !== 'LOCAL_EVENT_TEXT_CONTAINS') refuse('UNSUPPORTED_TOPIC')
@@ -70,12 +71,12 @@ export function preferences(value) {
   if (!Array.isArray(value.savedFilters ?? [])) refuse()
   const names = new Set()
   out.savedFilters = (value.savedFilters ?? []).map(saved => {
-    if (!closedObject(saved, ['name', 'filter'])) refuse()
+    if (!closedObject(saved, ['name', 'filter', 'calendar'])) refuse()
     const name = text(saved.name, 120)
     if (names.has(name)) refuse('DUPLICATE_SAVED_FILTER'); names.add(name)
     const filter = calendarFilter(saved.filter)
     if (filter.after !== undefined || filter.asKnownAt !== undefined) refuse('UNSUPPORTED_SAVED_FILTER')
-    return {name, filter}
+    return {name, filter, ...(saved.calendar === undefined ? {} : {calendar: marketCalendarSelection(saved.calendar)})}
   })
   const display = value.display ?? {}
   if (!closedObject(display, ['timeZone', 'view'])) refuse('UNSUPPORTED_DISPLAY_PREFERENCE')
@@ -84,8 +85,30 @@ export function preferences(value) {
     out.display.timeZone = display.timeZone
   }
   if (display.view !== undefined) {if (!['list', 'week', 'month'].includes(display.view)) refuse(); out.display.view = display.view}
+  // Optional additions preserve the original projection for existing consumers.
+  // A reference never grants access to publication content or starts delivery.
+  if (value.publicationFavourites !== undefined) out.publicationFavourites = selection(value.publicationFavourites).map(publicationId)
+  if (value.publicationWatches !== undefined) {
+    if (!Array.isArray(value.publicationWatches)) refuse('INVALID_PUBLICATION_WATCH')
+    const ids = new Set()
+    out.publicationWatches = value.publicationWatches.map(watch => {
+      if (!closedObject(watch, ['publicationId', 'approaching', 'results', 'changes']) || !['approaching', 'results', 'changes'].every(k => typeof watch[k] === 'boolean')
+        || !watch.approaching && !watch.results && !watch.changes) refuse('INVALID_PUBLICATION_WATCH')
+      const id = publicationId(watch.publicationId)
+      if (ids.has(id)) refuse('DUPLICATE_PUBLICATION_WATCH'); ids.add(id)
+      return {publicationId: id, approaching: watch.approaching, results: watch.results, changes: watch.changes}
+    })
+  }
   if (Buffer.byteLength(canonical(out)) > 65536) refuse('PREFERENCES_TOO_LARGE')
   return out
+}
+/** Private display/query selection, not a frozen event snapshot or global taxonomy. */
+export function marketCalendarSelection(value) {
+  if (!closedObject(value, ['q', 'targetId', 'region', 'status', 'period', 'view'])
+    || !['all', 'planned', 'published', 'revised', 'unresolved'].includes(value.status)
+    || !['next', 'recent'].includes(value.period) || !['list', 'week', 'month'].includes(value.view)
+    || typeof value.q !== 'string' || value.q.length > 256 || /[\u0000-\u001f\u007f]/.test(value.q)) refuse('INVALID_CALENDAR_SELECTION')
+  return {q: value.q, targetId: text(value.targetId), region: text(value.region), status: value.status, period: value.period, view: value.view}
 }
 const nullableText = value => value === null || typeof value === 'string' && value.length <= 16384
 const scalar = value => value === null || typeof value === 'string' && value.length <= 16384 || typeof value === 'number' && Number.isFinite(value)

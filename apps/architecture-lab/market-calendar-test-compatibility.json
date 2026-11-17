@@ -1,0 +1,13 @@
+{
+  "schemaVersion": "1.0.0",
+  "taskId": "ARCHITECTURE-ECR-MARKET-CALENDAR-CONSUMER-20261111",
+  "scope": "MARKET_CALENDAR_TEST_COMPOSITION_ONLY",
+  "targetEnvironment": "development",
+  "previousSourceSha": "877c55c6ef7879c088255284dd852d5cab6d5f44",
+  "producerRecordSha256": "e3bc27ddf22b9165555c05f938a3c5d8f9f4f09334fcb7c55e760da44e9a59b6",
+  "sourceDigests": {
+    "apps/architecture-lab/test/market-calendar-source.test.mjs": "36772de9ab30b19a07089debefcc01729abf5f125a07fd3f09eef7b5a4226edf"
+  },
+  "runtimeChanged": false,
+  "priorReceiptsChanged": false
+}

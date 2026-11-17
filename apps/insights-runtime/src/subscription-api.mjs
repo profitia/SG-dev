@@ -16,8 +16,11 @@ export function createSubscriptionApi({authority,store,profiles,onOrder,recurrin
   requireThat(u.pathname===prefix||u.pathname.startsWith(prefix+'/'),'NOT_FOUND',404);
   requireThat(/^Bearer [^\s]{1,8192}$/.test(request.headers.get('authorization')??'')&&!request.headers.has('cookie'),'AUTHENTICATION_REQUIRED',401);
   const sharing=parts[0]==='editions'&&parts.length===3&&parts[2]==='shares'&&uuid.test(parts[1]??''),accepting=parts.length===1&&parts[0]==='invitations';
-  requireThat([...u.searchParams.keys()].every(x=>(sharing&&request.method==='DELETE'?['id','kind']:['limit','cursor']).includes(x))&&[...new Set(u.searchParams.keys())].every(x=>u.searchParams.getAll(x).length===1),'INVALID_QUERY',400);
+  const publicationList=parts.length===1&&parts[0]==='editions'&&request.method==='GET';
+  const allowed=sharing&&request.method==='DELETE'?['id','kind']:publicationList?['limit','cursor','search','markets','fromDate','throughDate','order','sharedOnly']:['limit','cursor'];
+  requireThat([...u.searchParams.keys()].every(x=>allowed.includes(x))&&[...new Set(u.searchParams.keys())].every(x=>u.searchParams.getAll(x).length===1),'INVALID_QUERY',400);
   const pagination={limit:u.searchParams.has('limit')?Number(u.searchParams.get('limit')):50,cursor:u.searchParams.get('cursor')};
+  if(publicationList){requireThat(!u.searchParams.has('sharedOnly')||['true','false'].includes(u.searchParams.get('sharedOnly')),'INVALID_QUERY',400);Object.assign(pagination,{search:u.searchParams.get('search')??'',markets:u.searchParams.has('markets')?u.searchParams.get('markets').split(','):[],fromDate:u.searchParams.get('fromDate')??'',throughDate:u.searchParams.get('throughDate')??'',order:u.searchParams.get('order')??'newest',sharedOnly:u.searchParams.get('sharedOnly')==='true'});}
   const write=request.method!=='GET';requireThat(!write||!u.search||sharing&&request.method==='DELETE','INVALID_QUERY',400);
   const edition=parts[0]==='editions';if(edition)requireThat(sharing&&['GET','POST','DELETE'].includes(request.method)||request.method==='GET'&&(parts.length===1||uuid.test(parts[1]??'')&&(parts.length===2||parts.length===3&&parts[2]==='pdf')),'NOT_FOUND',404);
   const operation=accepting?OPERATIONS.list:sharing?(write?OPERATIONS.start:OPERATIONS.status):edition&&parts[1]?(parts[2]==='pdf'?OPERATIONS.download:OPERATIONS.status):write?OPERATIONS.start:OPERATIONS.list;
@@ -30,7 +33,7 @@ export function createSubscriptionApi({authority,store,profiles,onOrder,recurrin
     const input=await readBody(request);requireThat(input&&Object.keys(input).sort().join(',')==='contractVersion,mode'&&input.contractVersion==='procurement-insights.publication-sharing/1.0.0'&&['ORG','USER_LINK'].includes(input.mode),'INVALID_SHARING_COMMAND',400);return respond(await store.shares(ctx,parts[1],{mode:input.mode}),201);
    }
    if(request.method==='GET'&&parts.length===1&&parts[0]==='workspace'){
-    requireThat(!u.search,'INVALID_QUERY',400);return respond({contractVersion:SUBSCRIPTION_CONTRACT,catalog,orders:await store.list(ctx),editions:await store.publishedList(ctx)});
+    requireThat(!u.search,'INVALID_QUERY',400);return respond({contractVersion:SUBSCRIPTION_CONTRACT,catalog,orders:await store.list(ctx),editions:await store.publishedList(ctx,{limit:20})});
    }
    if(edition){
     if(parts.length===1)return respond(await store.publishedList(ctx,pagination));

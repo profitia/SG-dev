@@ -105,6 +105,31 @@ test('SYNTHETIC_ONLY: report orders use current E1, private SQL, immutable histo
  assert.equal((await api(req('/notifications/'+notices.items[0].id,{method:'PATCH'}))).status,200);assert((await(await api(req('/notifications'))).json()).items[0].readAt);
  assert.equal((await f.pools[1].query('SELECT * FROM insights_private.report_subscriptions')).rowCount,0);
  await assert.rejects(f.pools[1].query("UPDATE insights_private.subscription_versions SET definition='{}'::jsonb"));
+ await t.test('library filters run under current E1 before pagination, including literal search and sharing revocation',async()=>{
+  const localDate=new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Warsaw',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(read.publishedAt));
+  for(const suffix of ['?search=SYNTHETIC_ONLY&markets=oil-asphalt&fromDate='+localDate+'&throughDate='+localDate,'?order=oldest&limit=20'])assert.equal((await(await api(req('/editions'+suffix))).json()).items.length,1);
+  for(const suffix of ['?search=%25_','?markets=unavailable-market','?sharedOnly=true'])assert.equal((await(await api(req('/editions'+suffix))).json()).items.length,0);
+  for(const suffix of ['?fromDate=2026-02-30','?order=arbitrary','?sharedOnly=maybe','?search=a&search=b'])assert.equal((await api(req('/editions'+suffix))).status,400);
+  assert.equal((await(await api(req('/editions?search=SYNTHETIC_ONLY&order=oldest',{token:'SYNTHETIC_B'}))).json()).items.length,0);
+ });
+ await t.test('twenty-item keyset pages are complete, disjoint and ordered in both directions',async()=>{
+  const q=f.databases[1]; // Disposable fixture operator only; no runtime publication writer.
+  for(let n=0;n<20;n++){
+   const id=randomUUID();
+   await q.query("INSERT INTO insights_private.report_jobs(id,organisation_id,business_key,definition_id,period_start,period_end,revision,status,document) SELECT $2::uuid,organisation_id,$3,definition_id,period_start,period_end,revision+$4::int,'AWAITING_REVIEW',jsonb_set(jsonb_set(document,'{id}',to_jsonb($2::text)),'{editionId}',to_jsonb($2::text)) FROM insights_private.report_jobs WHERE id=$1",[jobId,id,createHash('sha256').update(id).digest('hex'),n+1]);
+   await q.query("INSERT INTO insights_private.report_artifacts(job_id,organisation_id,kind,sha256,bytes) SELECT $2::uuid,organisation_id,kind,sha256,bytes FROM insights_private.report_artifacts WHERE job_id=$1",[jobId,id]);
+   await q.query("INSERT INTO insights_private.subscription_runs(id,subscription_id,organisation_id,owner_user_id,subscription_version,slot_key,producer_job_id,status) SELECT $2::uuid,subscription_id,organisation_id,owner_user_id,subscription_version,$3,$4::uuid,status FROM insights_private.subscription_runs WHERE producer_job_id=$1",[jobId,randomUUID(),'SYNTHETIC_PAGE_'+n,id]);
+   await q.query("INSERT INTO insights_private.published_editions(producer_job_id,organisation_id,edition_id,definition_id,profile_version,title,period,as_of,published_at,approval_ref,pdf_sha256,markdown_sha256) SELECT $2::uuid,organisation_id,$2::text,definition_id,profile_version,title,period,as_of,published_at,approval_ref,pdf_sha256,markdown_sha256 FROM insights_private.published_editions WHERE producer_job_id=$1",[jobId,id]);
+  }
+  const sets=[];
+  for(const order of ['newest','oldest']){
+   const first=await(await api(req('/editions?limit=20&order='+order))).json();assert.equal(first.items.length,20);assert(first.nextCursor);
+   const last=await(await api(req('/editions?limit=20&order='+order+'&cursor='+first.nextCursor))).json();assert.equal(last.items.length,1);assert.equal(last.nextCursor,null);
+   const ids=[...first.items,...last.items].map(x=>x.producerJobId);assert.equal(new Set(ids).size,21);sets.push(ids);
+  }
+  assert.deepEqual(sets[0],sets[1].toReversed());assert.equal(producerCalls,1,'Library reads never trigger a new producer run');
+ });
+
  await f.asOwner(0,q=>q.query("UPDATE profitia_access.memberships SET status='SUSPENDED' WHERE organisation_id=$1 AND user_id=$2",[A,U]));
  assert.equal((await api(req())).status,403);
  assert.equal((await api(req('/editions/'+jobId+'/pdf'))).status,403);

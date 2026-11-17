@@ -32,7 +32,7 @@ export function createRecurringSigner(c,{now=Date.now}={}){
 }
 export function createRecurringConsentClient({fetch:send=globalThis.fetch}={}){
  return Object.freeze({async consent(query,request,command){
-  validateCommand(command);if(!(request instanceof Request)||!/^Bearer [^\\s]{1,8192}$/.test(request.headers.get('authorization')??''))deny();
+  validateCommand(command);if(!(request instanceof Request)||!/^Bearer [^\s]{1,8192}$/.test(request.headers.get('authorization')??''))deny();
   const d=(await one(query,'SELECT profitia_e1_receiver.recurring_descriptor() AS descriptor')).descriptor;if(!https(d?.authorityOrigin))fail();
   const transactionId=(await one(query,'SELECT txid_current()::text AS id')).id;
   const challenge={binding:d.binding,transactionId,nonce:randomBytes(32).toString('hex'),organisationId:command.organisationId,

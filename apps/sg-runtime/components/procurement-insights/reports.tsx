@@ -20,13 +20,15 @@ function ReportText({text}:{text:string}){
  })}</div>
 }
 export function ReportsWorkspace({active,locale,getToken,editionId=null,onEdition,onContext}:{active:boolean;locale:'pl'|'en';getToken:()=>Promise<string|null>;editionId?:string|null;onEdition?:(id:string|null)=>void;onContext?:(reference:PublishedReportReference|null)=>void}){
- const [view,setView]=useState('orders'),[profiles,setProfiles]=useState<Profile[]>([]),[orders,setOrders]=useState<Page<Order>>({items:[],nextCursor:null}),[selected,setSelected]=useState<Order|null>(null)
+ const [view,setView]=useState('library'),[profiles,setProfiles]=useState<Profile[]>([]),[orders,setOrders]=useState<Page<Order>>({items:[],nextCursor:null}),[selected,setSelected]=useState<Order|null>(null)
  const [runs,setRuns]=useState<Page<Run>>({items:[],nextCursor:null}),[published,setPublished]=useState<Page<Published>>({items:[],nextCursor:null}),[reader,setReader]=useState<Published|null>(null)
  useEffect(()=>{onContext?.(null);return()=>onContext?.(null)},[active,reader?.producerJobId,onContext])
  const [sharing,setSharing]=useState<{jobId:string;title:string;value:PublicationShares}|null>(null),[inviteLink,setInviteLink]=useState(''),[invitation,setInvitation]=useState<string|null>(null)
  const [revision,setRevision]=useState(0),[loading,setLoading]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState(''),[message,setMessage]=useState(''),[ordering,setOrdering]=useState(false),[editing,setEditing]=useState<Order|null>(null)
  const [name,setName]=useState(''),[profileKey,setProfileKey]=useState(''),[recurring,setRecurring]=useState(false),[weekday,setWeekday]=useState(2),[time,setTime]=useState('08:00')
  const [start,setStart]=useState(new Date().toLocaleDateString('en-CA')),[end,setEnd]=useState(''),[notify,setNotify]=useState(false),[email,setEmail]=useState(false),[search,setSearch]=useState('')
+ const [markets,setMarkets]=useState<string[]>([]),[fromDate,setFromDate]=useState(''),[throughDate,setThroughDate]=useState(''),[sort,setSort]=useState('newest'),[timeZone,setTimeZone]=useState('Europe/Warsaw'),[indefinite,setIndefinite]=useState(true)
+ const [libraryRequest,setLibraryRequest]=useState<{revision:number;cursor:string|null;sharedOnly:boolean;search:string;markets:string[];fromDate:string;throughDate:string;order:string}>({revision:0,cursor:null,sharedOnly:false,search:'',markets:[],fromDate:'',throughDate:'',order:'newest'}),[previousPages,setPreviousPages]=useState<Array<string|null>>([])
  const lifecycle=useMemo(()=>({controller:new AbortController()}),[getToken]),lock=useRef(false),orderKey=useRef<string|null>(null),downloadUrl=useRef<string|null>(null)
  useEffect(()=>{const match=/^#reportInvite=([a-f0-9]{64})$/.exec(window.location.hash);if(match){setInvitation(match[1]);window.history.replaceState(window.history.state,'',window.location.pathname+window.location.search)}},[])
  useEffect(()=>{if(lifecycle.controller.signal.aborted)lifecycle.controller=new AbortController();return()=>{lifecycle.controller.abort();if(downloadUrl.current)URL.revokeObjectURL(downloadUrl.current)}},[lifecycle])
@@ -51,6 +53,22 @@ export function ReportsWorkspace({active,locale,getToken,editionId=null,onEditio
   return()=>{current=false}
  },[active,selected?.id,api,revision])
  useEffect(()=>{if(!active||!editionId)return;let current=true;setReader(null);void api<Published>('/editions/'+encodeURIComponent(editionId)).then(p=>{if(current)setReader(p)}).catch(e=>{if(current&&e.name!=='AbortError')setError('Nie udało się odczytać opublikowanego wydania.')});return()=>{current=false}},[active,editionId,api])
+ useEffect(()=>{
+  if(!active||libraryRequest.revision===0)return;let current=true;setLoading(true);setError('');setPublished({items:[],nextCursor:null})
+  const query=new URLSearchParams({limit:'20',order:libraryRequest.order,sharedOnly:String(libraryRequest.sharedOnly)})
+  for(const key of ['search','fromDate','throughDate'] as const)if(libraryRequest[key])query.set(key,libraryRequest[key])
+  if(libraryRequest.markets.length)query.set('markets',libraryRequest.markets.join(','));if(libraryRequest.cursor)query.set('cursor',libraryRequest.cursor)
+  void api<Page<Published>>('/editions?'+query).then(value=>{if(current)setPublished(value)}).catch(e=>{if(current&&e.name!=='AbortError')setError('Nie udało się odczytać biblioteki raportów.')}).finally(()=>{if(current)setLoading(false)})
+  return()=>{current=false}
+ },[active,libraryRequest,api])
+ function libraryPage(cursor:string|null,sharedOnly=view==='shared'){
+  setReader(null);onEdition?.(null);setLibraryRequest(q=>({...q,revision:q.revision+1,cursor,sharedOnly}))
+ }
+ function applyLibraryFilters(){
+  if(fromDate&&throughDate&&fromDate>throughDate){setError('Data początku nie może być późniejsza od daty końca.');return}
+  setPreviousPages([]);setReader(null);setLibraryRequest(q=>({revision:q.revision+1,cursor:null,sharedOnly:view==='shared',search:search.trim(),markets,fromDate,throughDate,order:sort}))
+ }
+ function switchView(next:string){setView(next);setSelected(null);setReader(null);onEdition?.(null);setMessage('');if(['library','shared'].includes(next)){setPreviousPages([]);libraryPage(null,next==='shared')}}
  function openEdition(id:string){if(onEdition){onEdition(id);return}void act(async()=>setReader(await api<Published>('/editions/'+id)))}
  async function act(action:()=>Promise<void>){
   if(lock.current||lifecycle.controller.signal.aborted)return;lock.current=true;setBusy(true);setError('');setMessage('')
@@ -59,17 +77,17 @@ export function ReportsWorkspace({active,locale,getToken,editionId=null,onEditio
  }
  const profile=profiles.find(p=>p.definitionId+'@'+p.profileVersion===profileKey)
  function configure(order:Order|null=null){
-  if(order){setEditing(order);setName(order.name);setProfileKey(order.definitionId+'@'+order.profileVersion);setRecurring(!!order.schedule);setWeekday(order.schedule?.weekday??2);setTime(order.schedule?.localTime??'08:00');setStart(order.schedule?.startDate??new Date().toLocaleDateString('en-CA'));setEnd(order.schedule?.endDate??'');setNotify(order.notifications.assistant);setEmail(order.notifications.email)}
-  else if(!ordering){setEditing(null);setNotify(false);setEmail(false);orderKey.current=crypto.randomUUID()}
+  if(order){setEditing(order);setName(order.name);setProfileKey(order.definitionId+'@'+order.profileVersion);setRecurring(!!order.schedule);setWeekday(order.schedule?.weekday??2);setTime(order.schedule?.localTime??'08:00');setStart(order.schedule?.startDate??new Date().toLocaleDateString('en-CA'));setEnd(order.schedule?.endDate??'');setNotify(order.notifications.assistant);setEmail(order.notifications.email);setTimeZone(order.schedule?.timeZone??'Europe/Warsaw');setIndefinite(!order.schedule?.endDate)}
+  else if(!ordering){setEditing(null);setName('');setRecurring(false);setWeekday(2);setTime('08:00');setStart(new Date().toLocaleDateString('en-CA'));setEnd('');setIndefinite(true);setTimeZone('Europe/Warsaw');setNotify(false);setEmail(false);orderKey.current=crypto.randomUUID()}
   setOrdering(true);setReader(null)
  }
  async function order(){
-  if(!name.trim()||!profile||recurring&&(!start||end&&end<start)){setError('Podaj nazwę, wybierz dostępny profil i sprawdź daty.');return}
+  if(!name.trim()||!profile||recurring&&(!start||!indefinite&&(!end||end<start)||!profile.timeZones.includes(timeZone))){setError('Podaj nazwę, wybierz dostępny profil i sprawdź daty.');return}
   await act(async()=>{
    orderKey.current??=crypto.randomUUID()
    const value=await api<Order>(editing?'/'+editing.id:'',editing?'PATCH':'POST',{contractVersion:contract,name:name.trim(),definitionId:profile!.definitionId,profileVersion:profile!.profileVersion,subjectRef:editing?.subjectRef??null,
-    schedule:recurring?{frequency:'WEEKLY',weekday,localTime:time,timeZone:'Europe/Warsaw',startDate:start,endDate:end||null}:null,notifications:{assistant:notify,email},...(editing?{version:editing.version,status:editing.status}:{})},editing?undefined:orderKey.current)
-   setSelected(value);setOrdering(false);setEditing(null);orderKey.current=null;setRevision(x=>x+1);setMessage(value.executionState==='WAITING_AUTHORIZATION'?'Zapisano harmonogram. Wykonanie oczekuje na dopuszczenie.':'Zapisano zlecenie. Rzeczywisty status jest widoczny w historii.')
+    schedule:recurring?{frequency:'WEEKLY',weekday,localTime:time,timeZone,startDate:start,endDate:indefinite?null:end}:null,notifications:{assistant:notify,email},...(editing?{version:editing.version,status:editing.status}:{})},editing?undefined:orderKey.current)
+   setView(value.schedule?'cycles':'orders');setSelected(value);setOrdering(false);setEditing(null);orderKey.current=null;setRevision(x=>x+1);setMessage(value.executionState==='WAITING_AUTHORIZATION'?'Zapisano harmonogram. Wykonanie oczekuje na dopuszczenie.':'Zapisano zlecenie. Rzeczywisty status jest widoczny w historii.')
   })
  }
  async function status(next:string){if(!selected)return;await act(async()=>{
@@ -99,12 +117,13 @@ export function ReportsWorkspace({active,locale,getToken,editionId=null,onEditio
   const link=document.createElement('a');link.href=url;link.download='insights-'+edition.producerJobId+'.pdf';link.click()
   setMessage('Pobrano PDF tej samej opublikowanej wersji.');setTimeout(()=>{URL.revokeObjectURL(url);if(downloadUrl.current===url)downloadUrl.current=null},30000)
  })}
- const sections=[['orders','Moje zlecenia'],['cycles','Raporty cykliczne'],['library','Opublikowane raporty'],['archive','Archiwum'],['shared','Udostępnione mi'],['catalog','Dostępne analizy']]
- const shownOrders=orders.items.filter(o=>view==='cycles'?!!o.schedule&&o.status!=='ENDED':view==='orders'?o.status!=='ENDED':view==='archive'?o.status==='ENDED':false)
- const shownPublications=published.items.filter(p=>(view!=='shared'||p.readOnly)&&(!search||p.title.toLocaleLowerCase(locale).includes(search.toLocaleLowerCase(locale))))
- return <div className="pi-layout"><aside className="pi-sidebar"><nav aria-label="Raporty">{sections.map(([id,label])=><button key={id} type="button" aria-current={view===id?'page':undefined} onClick={()=>{setView(id);setSelected(null);setReader(null);setMessage('')}}>{label}</button>)}</nav>
+ const sections=[['library','Biblioteka raportów'],['catalog','Katalog analiz'],['orders','Zlecenia'],['cycles','Moje subskrypcje'],['shared','Udostępnione mi']]
+ const shownOrders=orders.items.filter(o=>view==='cycles'?!!o.schedule:view==='orders'?true:false)
+ const shownPublications=published.items
+ const marketOptions=[...new Map([...published.items.map(p=>[p.definitionId,p.definitionId] as const),...profiles.map(p=>[p.definitionId,p.label] as const)]).entries()]
+ return <div className="pi-layout"><aside className="pi-sidebar"><nav aria-label="Raporty">{sections.map(([id,label])=><button key={id} type="button" aria-current={view===id?'page':undefined} onClick={()=>switchView(id)}>{label}</button>)}</nav>
   <h3>Moje raporty</h3><ul>{shownOrders.map(o=><li key={o.id}><button type="button" aria-current={selected?.id===o.id?'page':undefined} onClick={()=>{setSelected(o);setReader(null)}}>{o.name}</button></li>)}</ul>
-  {orders.nextCursor&&['orders','cycles','archive'].includes(view)&&<button type="button" disabled={busy} onClick={()=>void more('orders')}>Pokaż kolejne zlecenia</button>}
+  {orders.nextCursor&&['orders','cycles'].includes(view)&&<button type="button" disabled={busy} onClick={()=>void more('orders')}>Pokaż kolejne zlecenia</button>}
  </aside><section className="pi-content" aria-busy={loading||busy}>
   <div className="pi-heading"><div><h2>Raporty</h2><p>Zamawiaj pogłębione analizy i zarządzaj regularnymi wydaniami.</p></div><CanonButton canonId="SRM-C01" usage="PI:new-report" type="button" onClick={()=>configure()}>+ Zamów raport</CanonButton></div>
   {loading&&<p role="status">Wczytywanie raportów…</p>}{error&&<p role="alert" className="pi-error">{error}</p>}{message&&<p role="status">{message}</p>}
@@ -115,17 +134,17 @@ export function ReportsWorkspace({active,locale,getToken,editionId=null,onEditio
   </section>}
   <div hidden={!ordering} className="pi-form"><h3>{editing?'Edytuj zlecenie':'Zamów raport'}</h3>
    <fieldset disabled={busy}><legend>Co analizujemy?</legend><label>Nazwa zlecenia<CanonInput canonId="SRM-C06" usage="PI:report-name" value={name} maxLength={200} onChange={e=>setName(e.target.value)}/></label>
-    <label>Dostępny profil<CanonSelect canonId="SRM-C16" usage="PI:report-profile" value={profileKey} disabled={!!editing} onChange={e=>setProfileKey(e.target.value)}><option value="">Wybierz profil</option>{profiles.map(p=><option key={p.definitionId+'@'+p.profileVersion} value={p.definitionId+'@'+p.profileVersion}>{p.label}</option>)}</CanonSelect></label>
+    <label>Dostępny profil<CanonSelect canonId="SRM-C16" usage="PI:report-profile" value={profileKey} disabled={!!editing} onChange={e=>{setProfileKey(e.target.value);const p=profiles.find(p=>p.definitionId+'@'+p.profileVersion===e.target.value);setTimeZone(p?.timeZones[0]??'Europe/Warsaw');if(!p?.cadences.includes('WEEKLY'))setRecurring(false)}}><option value="">Wybierz profil</option>{profiles.map(p=><option key={p.definitionId+'@'+p.profileVersion} value={p.definitionId+'@'+p.profileVersion}>{p.label}</option>)}</CanonSelect></label>
     {profile&&<><p>{profile.description}</p><ul>{profile.sections.map(s=><li key={s}>{s}</li>)}</ul></>}
    </fieldset>
-   <fieldset disabled={busy}><legend>Jak często?</legend><label><input type="checkbox" checked={recurring} disabled={!profile?.cadences.includes('WEEKLY')} onChange={e=>setRecurring(e.target.checked)}/> Raport cykliczny</label>
+   <fieldset disabled={busy}><legend>Jak często?</legend><p>{recurring?'Kolejne wydania według poniższego harmonogramu.':'Jednorazowe zlecenie rozpocznie się po przyjęciu zamówienia.'}</p><label><input type="checkbox" checked={recurring} disabled={!profile?.cadences.includes('WEEKLY')} onChange={e=>setRecurring(e.target.checked)}/> Raport cykliczny</label>
     {recurring&&<div className="pi-schedule-grid"><label>Dzień tygodnia<CanonSelect canonId="SRM-C16" usage="PI:report-weekday" value={weekday} onChange={e=>setWeekday(Number(e.target.value))}>{['Niedziela','Poniedziałek','Wtorek','Środa','Czwartek','Piątek','Sobota'].map((d,i)=><option key={d} value={i}>{d}</option>)}</CanonSelect></label>
-     <label>Godzina · Europe/Warsaw<CanonInput canonId="SRM-C06" usage="PI:report-time" type="time" value={time} onChange={e=>setTime(e.target.value)}/></label>
+     <label>Godzina lokalna<CanonInput canonId="SRM-C06" usage="PI:report-time" type="time" value={time} onChange={e=>setTime(e.target.value)}/></label>
      <label>Początek<CanonInput canonId="SRM-C06" usage="PI:report-start" type="date" value={start} onChange={e=>setStart(e.target.value)}/></label>
-     <label>Koniec (puste = bezterminowo)<CanonInput canonId="SRM-C06" usage="PI:report-end" type="date" value={end} onChange={e=>setEnd(e.target.value)}/></label></div>}
+     <label>Strefa czasowa<CanonSelect canonId="SRM-C16" usage="PI:report-timezone" value={timeZone} onChange={e=>setTimeZone(e.target.value)}>{(profile?.timeZones??[]).map(zone=><option key={zone}>{zone}</option>)}</CanonSelect></label><label><input type="checkbox" checked={indefinite} onChange={e=>setIndefinite(e.target.checked)}/> Bezterminowo</label><label>Data zakończenia<CanonInput canonId="SRM-C06" usage="PI:report-end" type="date" disabled={indefinite} min={start} value={end} onChange={e=>setEnd(e.target.value)}/></label></div>}
    </fieldset>
-   <fieldset disabled={busy}><legend>Dostęp i powiadomienia</legend><p>Prywatne zlecenie. Autor i organizacja wynikają z Twojego bieżącego dostępu.</p><label><input type="checkbox" checked={notify} onChange={e=>setNotify(e.target.checked)}/> Powiadomienie o opublikowanym wydaniu</label><label><input type="checkbox" checked={email} disabled={!profile?.deliveryChannels.includes('EMAIL')&&!email} onChange={e=>setEmail(e.target.checked)}/> E-mail z odnośnikiem do opublikowanego wydania</label></fieldset>
-   <div className="pi-actions"><CanonButton canonId="SRM-C01" usage="PI:order-report" type="button" disabled={busy||!profile} onClick={()=>void order()}>{editing?'Zapisz zmiany':'Zamów raport'}</CanonButton><CanonButton canonId="SRM-C02" usage="PI:cancel-report" type="button" disabled={busy} onClick={()=>setOrdering(false)}>{locale==='pl'?'Anuluj':'Cancel'}</CanonButton></div>
+   <fieldset disabled={busy}><legend>Dostęp i powiadomienia</legend><p>Prywatne zlecenie. Odbiorcą powiadomień jesteś Ty. E-mail trafi wyłącznie na zweryfikowany adres Twojego konta. Opublikowane wydanie możesz później udostępnić uprawnionym osobom.</p><label><input type="checkbox" checked={notify} onChange={e=>setNotify(e.target.checked)}/> Powiadomienie o opublikowanym wydaniu</label><label><input type="checkbox" checked={email} disabled={!profile?.deliveryChannels.includes('EMAIL')&&!email} onChange={e=>setEmail(e.target.checked)}/> E-mail z odnośnikiem do opublikowanego wydania</label></fieldset>
+   <div className="pi-actions"><CanonButton canonId="SRM-C01" usage="PI:order-report" type="button" disabled={busy||!profile} onClick={()=>void order()}>{editing?'Zapisz zmiany':'Zamów raport'}</CanonButton><CanonButton canonId="SRM-C02" usage="PI:cancel-report" type="button" disabled={busy} onClick={()=>{if(!name.trim()||window.confirm('Anulować niezapisane zmiany zlecenia?'))setOrdering(false)}}>{locale==='pl'?'Anuluj':'Cancel'}</CanonButton></div>
   </div>
   {!ordering&&selected&&<><h3>{selected.name}</h3><p>{selected.status==='PAUSED'?'Przyszłe wydania wstrzymane':selected.status==='ENDED'?'Cykl zakończony':statusLabel[!selected.schedule&&runs.items[0]?runs.items[0].status:selected.executionState]??'Status wykonania jest niedostępny'}</p>
    <p>{selected.nextDueAt?'Następny termin: '+new Date(selected.nextDueAt).toLocaleString(locale):'Brak kolejnego zaplanowanego terminu'}</p>
@@ -134,10 +153,16 @@ export function ReportsWorkspace({active,locale,getToken,editionId=null,onEditio
    {!runs.items.length&&<p>Brak przygotowanych wydań. Raport pojawi się po rzeczywistym wykonaniu i wymaganej weryfikacji.</p>}
    {runs.nextCursor&&<button type="button" disabled={busy} onClick={()=>void more('runs')}>Wcześniejsze wykonania</button>}
   </>}
-  {!ordering&&['library','archive','shared'].includes(view)&&<><label>Filtruj wczytane wydania<CanonInput canonId="SRM-C06" usage="PI:report-filter" value={search} onChange={e=>setSearch(e.target.value)}/></label>
-   {shownPublications.map(p=><article className="pi-publication" key={p.producerJobId}><div className="pi-publication-body"><h3>{p.title}</h3><p>Wydanie: {new Date(p.publishedAt).toLocaleString(locale)} · Dane na: {new Date(p.asOf).toLocaleString(locale)}</p><div className="pi-actions"><button type="button" disabled={busy} onClick={()=>openEdition(p.producerJobId)}>Czytaj raport</button><button type="button" disabled={busy} onClick={()=>void download(p)}>Pobierz PDF</button></div></div></article>)}
+  {!ordering&&['library','shared'].includes(view)&&<><form className="pi-library-filters" onSubmit={e=>{e.preventDefault();applyLibraryFilters()}}>
+   <label>Wyszukaj raport<CanonInput canonId="SRM-C06" usage="PI:report-filter" type="search" maxLength={200} value={search} onChange={e=>setSearch(e.target.value)}/></label>
+   <fieldset><legend>Rynki</legend>{marketOptions.map(([id,label])=><label key={id}><input type="checkbox" checked={markets.includes(id)} onChange={()=>setMarkets(m=>m.includes(id)?m.filter(v=>v!==id):[...m,id])}/>{label}</label>)}{!marketOptions.length&&<span>Brak dostępnych rynków.</span>}</fieldset>
+   <label>Opublikowane od<CanonInput canonId="SRM-C06" usage="PI:library-from" type="date" value={fromDate} onChange={e=>setFromDate(e.target.value)}/></label><label>Opublikowane do<CanonInput canonId="SRM-C06" usage="PI:library-to" type="date" min={fromDate} value={throughDate} onChange={e=>setThroughDate(e.target.value)}/></label>
+   <label>Kolejność<CanonSelect canonId="SRM-C16" usage="PI:library-sort" value={sort} onChange={e=>setSort(e.target.value)}><option value="newest">Od najnowszych</option><option value="oldest">Od najstarszych</option></CanonSelect></label>
+   <CanonButton canonId="SRM-C02" usage="PI:apply-library-filters" type="submit" disabled={busy||loading}>Zastosuj filtry</CanonButton><p>Daty publikacji według Europe/Warsaw. Wszystkie wydania, również historyczne, są dostępne w tej bibliotece.</p>
+  </form>
+   {shownPublications.map(p=><details className="pi-publication pi-publication-compact" key={p.producerJobId}><summary><strong>{p.title}</strong><span>{new Date(p.publishedAt).toLocaleString(locale)} · {p.period.fromDate} – {p.period.throughDate}</span></summary><div className="pi-publication-body"><p>Dane na: {new Date(p.asOf).toLocaleString(locale)}{p.readOnly?' · Udostępnione tylko do odczytu':''}</p><div className="pi-actions"><button type="button" disabled={busy} onClick={()=>openEdition(p.producerJobId)}>Czytaj raport</button><button type="button" disabled={busy} onClick={()=>void download(p)}>Pobierz PDF</button></div></div></details>)}
    {!loading&&!shownPublications.length&&<p>Nie ma opublikowanych wydań pasujących do tego widoku. Raport oczekujący na recenzję pozostaje w historii zlecenia.</p>}
-   {published.nextCursor&&<button type="button" disabled={busy} onClick={()=>void more('published')}>Wcześniejsze wydania</button>}
+   <nav className="pi-actions" aria-label="Strony biblioteki"><button type="button" disabled={busy||loading||!previousPages.length} onClick={()=>{const previous=previousPages.at(-1)??null;setPreviousPages(p=>p.slice(0,-1));libraryPage(previous)}}>Poprzednia</button><span>Strona {previousPages.length+1} · po 20 wydań</span><button type="button" disabled={busy||loading||!published.nextCursor} onClick={()=>{setPreviousPages(p=>[...p,libraryRequest.cursor]);libraryPage(published.nextCursor)}}>Następna</button></nav>
   </>}
   {!ordering&&view==='catalog'&&profiles.map(p=><article className="pi-publication" key={p.definitionId+'@'+p.profileVersion}><div className="pi-publication-body"><h3>{p.label}</h3><p>{p.description}</p><button type="button" onClick={()=>{setProfileKey(p.definitionId+'@'+p.profileVersion);configure()}}>Skonfiguruj zlecenie</button></div></article>)}
   {!ordering&&!selected&&!reader&&!loading&&!error&&['orders','cycles'].includes(view)&&<div className="pi-empty"><h3>{shownOrders.length?'Wybierz raport po lewej stronie':'Nie masz jeszcze zleceń w tym widoku'}</h3><p>Możesz zamówić raport z aktualnie dostępnego katalogu.</p></div>}

@@ -55,9 +55,9 @@ export function readInsightsConfiguration(env = process.env) {
   return c;
 }
 
-export function pgPorts(pool) {
+export function pgPorts(pool, independentPool = pool) {
   return {
-    independentQuery: pool.query.bind(pool),
+    independentQuery: independentPool.query.bind(independentPool),
     async transact(action, { timeoutMs = 15000, maxWaitMs = 3000 } = {}) {
       const client = await pool.connect();
       let expired = false;
@@ -115,10 +115,13 @@ export async function createInstalledInsightsRuntime({ env = process.env, canoni
   requireThat(typeof python === "string" && python.startsWith("/"), "DETERMINISTIC_PYTHON_REQUIRED");
   const { createCurrentE1ReportServiceHost } = await import("@profitia/platform-current-e1-authority/insights-service");
   const pools = new Map();
-  const make = key => { const p = new Pool({ connectionString: env[key], max: 2, connectionTimeoutMillis: 5000,
-    idleTimeoutMillis: 10000, application_name: "sg2-insights" }); pools.set(key,p); return p; };
+  const make = (key, suffix = "", max = 2) => { const p = new Pool({ connectionString: env[key], max, connectionTimeoutMillis: 5000,
+    idleTimeoutMillis: 10000, application_name: "sg2-insights" }); pools.set(key + suffix,p); return p; };
+  // Keep the same total ceiling of two connections per role. A transaction
+  // must not occupy the connection needed for its independent audit/authority.
+  const makePorts = key => pgPorts(make(key, ":transaction", 1), make(key, ":independent", 1));
   try {
-    const e1 = pgPorts(make("INSIGHTS_E1_DATABASE_URL"));
+    const e1 = makePorts("INSIGHTS_E1_DATABASE_URL");
     const service = createCurrentE1ReportServiceHost({ application: c.serviceApplication, binding: runtimeBinding(c.serviceBinding),
       query: e1.independentQuery, transact: e1.transact });
     const current = org => service.execute({ operation: OPERATIONS.start, organisationId: org, resourceId: "oil-asphalt", payload: null }, compactContext);
@@ -126,7 +129,7 @@ export async function createInstalledInsightsRuntime({ env = process.env, canoni
     const workerPool = pools.get("INSIGHTS_DATABASE_URL");
     const installation = (await workerPool.query("SELECT insights_private.runtime_descriptor() AS descriptor")).rows[0]?.descriptor;
     requireThat(installation && Object.entries(c.workerBinding).filter(([k])=>k!=="hosts").every(([k,v]) => installation[k] === v), "INSIGHTS_STORE_NOT_INSTALLED");
-    const receiver=pgPorts(make("INSIGHTS_RECEIVER_DATABASE_URL"));
+    const receiver=makePorts("INSIGHTS_RECEIVER_DATABASE_URL");
     const authority = {
       execute: createHumanReportAuthority({ configuration: c, receiver, store }),
       async authorizeJob(job) {
@@ -168,7 +171,7 @@ export async function createInstalledInsightsRuntime({ env = process.env, canoni
       })).value;
     const canonical = createCanonicalReads({ marketRead: input => read("knowledge.read", input, canonicalPorts.marketRead),
       forecastRead: input => read("forecast.read", input, canonicalPorts.forecastRead) });
-    const sourcePools = { composer: pgPorts(make("INSIGHTS_COMPOSER_DATABASE_URL")), counter: pgPorts(make("INSIGHTS_COUNTER_DATABASE_URL")) };
+    const sourcePools = { composer: makePorts("INSIGHTS_COMPOSER_DATABASE_URL"), counter: makePorts("INSIGHTS_COUNTER_DATABASE_URL") };
     const sourceHost = async (kind, { job, prepared, counter }) => {
       const ports = sourcePools[kind], b = runtimeBinding(c[kind + "Binding"]), model = kind === "composer";
       const body = model ? prepared.body : prepared.counterBody;

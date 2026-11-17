@@ -22,6 +22,9 @@ def local(value):
 def checked_url(value):
     if not value or not re.match(r'^https?://[^\s<>"\x00-\x1f]+$',value): return None
     return value
+def publisher_label(e):
+    value=e.get('publisher') or e.get('provider')
+    return str(value.get('name') or value.get('id') or 'Źródło') if isinstance(value,dict) else str(value or 'Źródło')
 def render(bundle,narrative,receipt,out,font,bold=None):
     render_start=time.perf_counter_ns()
     assert bundle['schemaVersion']=='ReportEvidenceBundle/OilAsphalt/0.5'
@@ -58,7 +61,7 @@ def render(bundle,narrative,receipt,out,font,bold=None):
     price_rows=[['Instrument i rynek','Notowanie / jednostka','Czas obserwacji','Zmiana zamknięć (7 dni)']]
     for e in current:
         p=e['facts'];change=p.get('weeklyChange');delta='brak porównywalnych danych' if not change else number(change['percent'])+'% ('+change['from'][:10]+' - '+change['to'][:10]+')'
-        price_rows.append([f"{p.get('label',p['symbol'])} / {p['symbol']} / {p['instrumentType']} / {p.get('referenceMarket','rynek niepotwierdzony')}",number(p['price'])+' '+p['unit']+' ('+p['currency']+')',p.get('observationDisplay',p['observationAt']),delta])
+        price_rows.append([f"{(p.get('label') or p['symbol'])} / {p['symbol']} / {p['instrumentType']} / {p.get('referenceMarket','rynek niepotwierdzony')}",number(p['price'])+' '+(p.get('unit') or 'jednostka niepotwierdzona')+' ('+(p.get('currency') or 'waluta niepotwierdzona')+')',(p.get('observationDisplay') or p['observationAt']),delta])
     if len(price_rows)==1:price_rows.append(['Aktualne instrumenty TE','brak dopuszczonego odczytu','brak danych','nie obliczano'])
     commodity_rows=[['USA - wskaźnik','Odczyt / okres','Zmiana tygodniowa']]
     short_labels={'CI01':'Ropa komercyjna bez SPR','CI02':'Zapasy destylatów','CI03':'Wykorzystanie rafinerii','CI04':'Przerób ropy','CI05':'Product Supplied: benzyna','CI06':'Product Supplied: destylaty'}
@@ -91,50 +94,45 @@ def render(bundle,narrative,receipt,out,font,bold=None):
         e=ids[ref];n=assigned[ref];url=checked_url(e.get('url'));depth=e.get('materialDepth','UNKNOWN')
         kind='; tytuł/fragment, pełny tekst niezweryfikowany' if depth in ['SNIPPET','TITLE_ONLY','TITLE_DESCRIPTION','TITLE_DESCRIPTION_METADATA','PUBLISHED_SUMMARY','UNKNOWN'] else ''
         date=(e.get('publishedAt') or e.get('facts',{}).get('observationAt') or '')[:10]
-        label=f"{n}. {e.get('publisher') or e.get('provider') or 'Źródło'}, {e.get('title') or e.get('sourceRecordRef') or ''} {date}{kind}"
+        label=f"{n}. {publisher_label(e)}, {e.get('title') or e.get('sourceRecordRef') or ''} {date}{kind}"
         return label,url
     for ref,n in assigned.items():
         label,url=footnote(ref);md.append(f'[^{n}]: {label}'+(f' [{url}]({url})' if url else ''))
-    pages=[];notes=[];w=A4[0]-88
-    for page in range(4):
-        refs=page_notes[page];ns=[]
-        for ref in refs:
-            label,url=footnote(ref);n=assigned[ref]
-            s=f'<a name="source_{n}"/>'+escape(label)+(f' <link href="{escape(url)}" color="#16556a">Źródło</link>' if url else '')
-            ns.append(Paragraph(s,note))
-        nh=sum(p.wrap(w,800)[1]+p.getSpaceAfter() for p in ns);notes.append((ns,nh))
-        content=[Paragraph('Oil & Asphalt Market Outlook' if page==0 else ['','Rynek: wydarzenia i gospodarka','Perspektywa i sygnały','Asfalt: mechanizm i decyzje'][page],title if page==0 else heading),Paragraph(escape(lead),small)]
-        if page==0:content.extend([Paragraph(escape(window),small),Paragraph('Wydanie eksperymentalne. Region, ekspozycja i formuła kontraktu nabywcy nie zostały określone.',small)])
-        for i in range(page*2,page*2+2):
-            key=KEYS[i];content.append(Paragraph(f'{i+1}. '+escape(TITLES[i]),heading));content.extend(html_rows[key])
-            if i==1:
-                table=Table([[Paragraph(escape(v),small) for v in row] for row in price_rows],colWidths=[w*.29,w*.25,w*.23,w*.23])
-                table.setStyle(TableStyle([('VALIGN',(0,0),(-1,-1),'TOP'),('BACKGROUND',(0,0),(-1,0),colors.HexColor('#e9f0f2')),('LEFTPADDING',(0,0),(-1,-1),4),('RIGHTPADDING',(0,0),(-1,-1),4),('TOPPADDING',(0,0),(-1,-1),4),('BOTTOMPADDING',(0,0),(-1,-1),4)]))
-                content.extend([table,Spacer(1,6),Paragraph('Notowania to ostatnie wartości TE; zmiany dotyczą odrębnej historii zamknięć. CFD to kontrakt różnicowy. CNY/t oznacza juany za tonę; nie jest to polska cena zakupu asfaltu.',small),Paragraph(escape(historical),small)])
-            if i==3:
-                table=Table([[Paragraph(escape(v),small) for v in row] for row in commodity_rows],colWidths=[w*.43,w*.30,w*.27])
-                table.setStyle(TableStyle([('VALIGN',(0,0),(-1,-1),'TOP'),('BACKGROUND',(0,0),(-1,0),colors.HexColor('#e9f0f2')),('LEFTPADDING',(0,0),(-1,-1),4),('RIGHTPADDING',(0,0),(-1,-1),4),('TOPPADDING',(0,0),(-1,-1),3),('BOTTOMPADDING',(0,0),(-1,-1),3)]))
-                content.extend([table,Spacer(1,5),Paragraph('EIA: tygodnie referencyjne. bbl - baryłka; bbl/d - baryłki dziennie. SPR - strategiczna rezerwa ropy USA. Daty publikacji niepotwierdzone.',small)])
-            if i==4: content.append(Paragraph(escape(positioning),small))
-        available=A4[1]-100-nh-22
-        needed=sum(p.wrap(w,available)[1]+p.getSpaceBefore()+p.getSpaceAfter() for p in content)
-        assert needed<=available-12, f'READABLE_PAGE_{page+1}_NEEDS_REBALANCING: {needed}>{available}'
-        pages.append(content)
-    pdf=out/(NAME+'.pdf');doc=BaseDocTemplate(str(pdf),pagesize=A4,leftMargin=44,rightMargin=44,topMargin=40,bottomMargin=40,title='Oil & Asphalt Market Outlook v0.5 Commodity Intelligence',author='SpendGuru / Procurement Insights')
-    templates=[]
-    for page in range(4):
-        ns,nh=notes[page];frame=Frame(44,48+nh+14,w,A4[1]-100-nh-22,leftPadding=0,rightPadding=0,topPadding=0,bottomPadding=0)
-        def footer(canvas,document,page=page,ns=ns,nh=nh):
-            canvas.saveState();canvas.setStrokeColor(colors.HexColor('#c4d5db'));canvas.line(44,45+nh+8,A4[0]-44,45+nh+8)
-            y=45+nh
-            for para in ns:
-                ph=para.wrap(w,nh+10)[1];y-=ph;para.drawOn(canvas,44,y);y-=para.getSpaceAfter()
-            canvas.setFont('OilSans',8);canvas.setFillColor(colors.HexColor('#4f6370'));canvas.drawString(44,24,'SpendGuru | ewaluacja wewnętrzna - wymagana ocena człowieka');canvas.drawRightString(A4[0]-44,24,f'{page+1}/4');canvas.restoreState()
-        templates.append(PageTemplate(id=f'page{page}',frames=[frame],onPage=footer))
-    doc.addPageTemplates(templates);flow=[]
-    for i,page in enumerate(pages):
-        if i:flow.extend([NextPageTemplate(f'page{i}'),PageBreak()])
-        flow.extend(page)
+    # Continuous pagination preserves the original narrative instead of forcing
+    # every pair of sections into one fixed-height page.
+    w=A4[0]-88
+    pdf=out/(NAME+'.pdf')
+    doc=BaseDocTemplate(str(pdf),invariant=1,pagesize=A4,leftMargin=44,rightMargin=44,topMargin=40,bottomMargin=44,title='Oil & Asphalt Market Outlook v0.5',author='SpendGuru / Procurement Insights')
+    def footer(canvas,document):
+        canvas.saveState();canvas.setStrokeColor(colors.HexColor('#c4d5db'));canvas.line(44,40,A4[0]-44,40)
+        canvas.setFont('OilSans',8);canvas.setFillColor(colors.HexColor('#4f6370'));canvas.drawString(44,24,'SpendGuru | ewaluacja wewnętrzna - wymagana ocena człowieka');canvas.drawRightString(A4[0]-44,24,f'{document.page}/4');canvas.restoreState()
+    doc.addPageTemplates([PageTemplate(id='flow',frames=[Frame(44,48,w,A4[1]-92,leftPadding=0,rightPadding=0,topPadding=0,bottomPadding=0)],onPage=footer)])
+    flow=[Paragraph('Oil & Asphalt Market Outlook',title),Paragraph(escape(lead),small),Paragraph(escape(window),small),Paragraph('Wydanie eksperymentalne. Region, ekspozycja i formuła kontraktu nabywcy nie zostały określone.',small)]
+    section_starts=[]
+    for i,key in enumerate(KEYS):
+        section_starts.append(len(flow))
+        flow.append(Paragraph(f'{i+1}. '+escape(TITLES[i]),heading));flow.extend(html_rows[key])
+        if i==1:
+            table=Table([[Paragraph(escape(v),small) for v in row] for row in price_rows],colWidths=[w*.29,w*.25,w*.23,w*.23],repeatRows=1)
+            table.setStyle(TableStyle([('VALIGN',(0,0),(-1,-1),'TOP'),('BACKGROUND',(0,0),(-1,0),colors.HexColor('#e9f0f2')),('LEFTPADDING',(0,0),(-1,-1),4),('RIGHTPADDING',(0,0),(-1,-1),4),('TOPPADDING',(0,0),(-1,-1),4),('BOTTOMPADDING',(0,0),(-1,-1),4)]))
+            flow.extend([table,Spacer(1,6),Paragraph('Notowania to ostatnie wartości TE; zmiany dotyczą odrębnej historii zamknięć. CFD to kontrakt różnicowy. CNY/t oznacza juany za tonę; nie jest to polska cena zakupu asfaltu.',small),Paragraph(escape(historical),small)])
+        if i==3:
+            table=Table([[Paragraph(escape(v),small) for v in row] for row in commodity_rows],colWidths=[w*.43,w*.30,w*.27],repeatRows=1)
+            table.setStyle(TableStyle([('VALIGN',(0,0),(-1,-1),'TOP'),('BACKGROUND',(0,0),(-1,0),colors.HexColor('#e9f0f2')),('LEFTPADDING',(0,0),(-1,-1),4),('RIGHTPADDING',(0,0),(-1,-1),4),('TOPPADDING',(0,0),(-1,-1),3),('BOTTOMPADDING',(0,0),(-1,-1),3)]))
+            flow.extend([table,Spacer(1,5),Paragraph('EIA: tygodnie referencyjne. bbl - baryłka; bbl/d - baryłki dziennie. SPR - strategiczna rezerwa ropy USA. Daty publikacji niepotwierdzone.',small)])
+        if i==4: flow.append(Paragraph(escape(positioning),small))
+    flow.append(Paragraph('Przypisy źródłowe',heading))
+    for ref,n in assigned.items():
+        e=ids[ref];url=checked_url(e.get('url'));date=(e.get('publishedAt') or e.get('facts',{}).get('observationAt') or '')[:10]
+        label=f"{n}. {publisher_label(e)}"+(f", {date}" if date else '')
+        flow.append(Paragraph(f'<a name="source_{n}"/>'+escape(label)+(f' <link href="{escape(url)}" color="#16556a">Źródło</link>' if url else '')+'; pełny opis i ograniczenia w aneksie.',note))
+    # Preserve the original four section-pair pages when every pair fits.
+    # Otherwise continuous flow accommodates the full narrative without cuts.
+    boundaries=[0]+[section_starts[i] for i in (2,4,6)]+[len(flow)]
+    available=A4[1]-92
+    heights=[sum(p.wrap(w,available)[1]+p.getSpaceBefore()+p.getSpaceAfter() for p in flow[a:b]) for a,b in zip(boundaries,boundaries[1:])]
+    if all(height<=available-12 for height in heights):
+        for index in reversed(boundaries[1:-1]): flow.insert(index,PageBreak())
     pdf_build_start=time.perf_counter_ns();doc.build(flow);pdf_build_ms=(time.perf_counter_ns()-pdf_build_start)/1e6;reader=PdfReader(str(pdf));assert len(reader.pages)==4,'FOUR_READABLE_PAGES_REQUIRED'
     assert all(abs(float(p.mediabox.width)-A4[0])<1 and abs(float(p.mediabox.height)-A4[1])<1 for p in reader.pages)
     text='\n'.join(p.extract_text() or '' for p in reader.pages);assert not re.search(r'\bEV\d+\b',text),'RAW_INTERNAL_CITATION'

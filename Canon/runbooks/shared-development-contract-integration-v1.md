@@ -1,5 +1,53 @@
 # Przyjmowanie wspólnych kontraktów Development
 
+## Oil renderer — exact successor scope (2026-11-12)
+
+The separate bounded owner decision is recorded in
+`Canon/evidence/2026-11-12-oil-renderer-final-source-admission.md`.
+It preserves all historical receipts and existing CI, credential, ownership and
+source-integrity controls. The exact new renderer record is authenticated
+before the unchanged SDK/ECR/Recurring checks; no candidate module is evaluated
+with installation credentials. Required normal CI, original controlled proof
+and resulting-main verification precede source adoption. Development recovery
+still requires its own current, explicit release authorization.
+
+
+## Current continuation — 2026-11-12 authority preservation
+
+PROPOSED / EXACT_OWNER_CI_AND_SG2_TEST_ADOPTION_PENDING.
+The current review supersedes9b018887 and its older standalone candidates.
+Producer PR1018 source `fc212dcc86f3b4865652cbfc8cf483ed05dad5f8` is anchored to current
+main `bfc4a228d9f3d583c37c5fd984c7e4da602bf75d`. Exactly18 source paths remain:17 owned by
+ARCHITECTURE and one existing SG2 week-compatibility test, registered under
+SG2-PROCUREMENT-MARKET-CALENDAR-20261111. The separate17-file UI consumer
+is not transported with this producer.
+
+Fifteen of18 previous source blobs remain identical. Only the active manifest,
+producer record and its helper metadata change to preserve all current BSDC
+and instruction entries plus exactly one approved PI amendment. New source
+recordSHA256 `e3bc27ddf22b9165555c05f938a3c5d8f9f4f09334fcb7c55e760da44e9a59b6`.
+Runtime/contract/SQL bytes and owner planSHA256
+`caadc0cdf9322e218db6f1f9285d52ef5fe5ceaca84f672d77fe49e8fa44a1d0` remain unchanged.
+
+Retain the complete accepted1032 registration controls, the newer approved
+ECR-week reconciliation control, all historical maps and the fourteen original
+week pins. Calendar authenticates its own complete exact source before passing
+that reader into the existing registration/week composition; physical file,
+mode, symlink, owner, complete closure and credential fences remain. This
+proposal neither executes the inert68-file Stage I repair nor borrows its
+separate bounded mandate. No generic source admission is introduced.
+
+Actual focused tests: Calendar controller4/4, producer/week6/6 and separate
+consumer integrity5/5 PASS. Prior17 functional tests and full Next build remain
+valid for identical UI bytes. Complete merged-controller226/226 PASS. Exact-head
+public/protected/resulting-main controls remain mandatory before activation.
+Historical9b protected run43115515453 succeeded against983f45a4; it is not a
+proof for this current candidate or control. All original historical archives
+and decisions remain retained. No grant installation, deployment, provider
+request, PMOS save or PHR publication has occurred.
+
+## Earlier Market Calendar preparation (historical)
+
 ## ECR Market Calendar — proposed exact producer review (2026-11-11)
 
 PROPOSED / OWNER_CI_APPROVAL_PENDING. The third-tab UX approval does not
@@ -726,6 +774,24 @@ This decision does not install product SQL, change roles/grants/packages, send
 mail, call providers/models, change DNS, activate runtime or deploy a product.
 
 
+### Market Calendar — preserve parallel active-wrapper adoption
+
+PROPOSED / CI_POLICY_APPROVAL_PENDING. PR1020 was accepted at d8665198
+after approvals87d28140/6f9ac68f and full candidate/resulting-main CI.
+Parallel PR1028 activated the universal wrapper in the shared manifest.
+Producer64d14ee171cdabcda4401b68b3fc4e56f67e8ec7 preserves the full current main manifest plus exactly
+one approved PI amendment. Only three of17 producer versions change:
+manifest, its source-record hash and helper record pin; all other14 versions,
+SQL/owner planSHA256caadc0cdf9322e218db6f1f9285d52ef5fe5ceaca84f672d77fe49e8fa44a1d0,
+runtime contracts, old receipts and consumer closure remain unchanged.
+New recordSHA2562403aac429e8958b9a5ec09184de4969da495e2fd83ec9e4debfdc9617d8ede9. Mainbase0e42f41e1151c839fd62a287d40345c3dde18903, including the separately
+accepted complete67 registration policy, remains preserved. This four-file
+continuation changes exact review/pin data and adds a real-Git preservation
+test. It requires exact owner CI acceptance and all normal current-candidate
+and resulting-main controls; no generic path, right, resource, cost, licence
+or notification operation is added. Original PMOS task identities remain.
+
+
 ## Owner-approved registration history fixture correction — same67 (2026-11-11)
 
 Owner decision in the execution chat: “Zatwierdzam korektę z PR #1026”.
@@ -747,3 +813,250 @@ The source may use original983 coordinated transport only after mandatory exact
 producer/SG2/SRM tests, controlled/public proof and actual SOURCE GO. New source
 or a changed record never inherits this decision. No productSQL/grants/packages,
 provider/model/mail/DNS/runtime activation or deployment is authorized here.
+
+## Owner-approved registration and ECR-week composition — same67 (2026-11-12)
+
+Owner decision in the Stage I execution chat: “Zatwierdzam i dokończ wdrożenie.”
+This explicitly accepts PR1036 at790eb1a2 and its exact inert five-file review,
+accepted at3e703dd2. The same67 map4086004f binds prepared sourceb9779781 and
+recordb0b9ceb1;61 B5 source blobs and all165 SDK production sources remain
+unchanged. Preserve the complete approved B5/FFE67 maps, both65 maps and every
+older source/recurring/ECR review. The frozen a176cf99 patch retains all14 prior
+ECR/Market Calendar test bodies and authenticates the complete physical SDK and
+ECR source graphs before its two exactly pinned predecessor views.
+
+This four-file policy requires independent exact protected/public/governance
+and complete resulting-main acceptance. Then require the coordinated PR983
+producer and actual SG2/SRM owner source checks, exact controlled/public source
+proof and final SOURCE GO. The current chat authorizes continued Stage I
+implementation; source acceptance is not runtime readiness. Existing credential,
+main-only Environment, package pins, ignore-scripts, token removal, complete
+diff/mode/owner and exact-head/race fences remain mandatory. No business grant,
+product SQL installation, invitation delivery or deployment occurs through
+this CI-only change. Continue the parent Stage I after this bounded gate closes.
+
+## Owner-approved direct ECR source closure and bounded test repair mandate (2026-11-12)
+
+The owner explicitly accepted PR1041 including its described delegation:
+“Zatwierdzam #1041 wraz z opisanym upoważnieniem”.
+The frozen d8580cc8 documents were preserved at cc230a52 and accepted bfc4a228.
+Retain the complete owner-reviewed68 map/record8e3eb530 and the complete earlier
+b0/B5/FFE67 and both65 graphs as separate exact reviews.
+
+For completing this Stage I source acceptance only, the owner delegates
+necessary test/provenance-only corrections inside these exact68 source paths
+and the four specified policy files, without another human decision solely
+for each resulting hash. Every version must retain a complete exact closed
+map and pass actual owner, protected/public and whole resulting-main checks.
+No new source path, production SDK/native Identity/SRM runtime or UI byte,
+SQL, manifest/lock, current/historical receipt, operation, Root default,
+grant, commercial policy, provider, cost or deployment is delegated here.
+Credential/author/repository/main-only/private-pin/mode/race fences cannot change.
+This is the express narrow exception to earlier per-version decision notes;
+it grants no generic source admission and no independent deployment authority.
+
+The first delegated continuation is source04107d13bc245ee7e82feb3059291ba4d182d54a,
+record52f6fbeba63a7585d3b909ca6cb5b91c1b6b2ebdeb118975473f312acc6ba7f3, the same68 owners/statuses/modes, with63 frozen1041 blobs and
+five exact test/data successors. Actual owner commits are recorded in the
+dated acceptance packet. The direct ECR test uses its authenticated source
+frame for both source and prior receipt comparisons. SRM preserves its immutable
+AppShell reader and selects authenticated current SRM bytes only for the one
+current-source assertion. Full physical68 authentication precedes the unchanged
+three exact historical guard pins. All prior assertions and tamper cases remain.
+
+### Registration1046 — bounded69 technical repair delegation
+
+Owner accepted1046 on2026-11-12 and clarified Full Autopilot: ordinary test/provenance/integration repairs needed for the accepted Stage I outcome are completed autonomously, without per-hash questions. This extends the1041 exact68 closure by only apps/architecture-lab/test/market-calendar-source.test.mjs to69 source paths and retains the same4 policy/evidence paths. Exact current source maps, actual owners, protected/public/resulting-main tests and independent proofs remain mandatory. Frozen production SDK/native runtime/UI, SQL, package manifests/locks, receipts, authority, commercial/cost/provider/deployment rules are unchanged. This is no source or runtime activation and no waiver of any failing check. Source/CI and business Development acceptance remain separate.
+
+## Calendar producer/consumer test composition — proposed corrective (2026-11-12)
+
+Preparation only; requires a separate owner decision and all exact-head/public/main
+checks before activation. PR1044 at334273b2b5af0ad41a1489f31bc6bb56f36d3dbf
+closes exactly three Architecture test/adoption files on accepted main877c55c6.
+It preserves the original18-entry Calendar review, immutable producer recordE3,
+all registration/ECR-week controls and every previous receipt. The additive
+compatibility record52e859d4a99bc4c8e4d986f38afea2d58e9c1fe1ee1e0eb62cc2672dbdb60078
+verifies the physical test correction before projecting only that correction to
+its accepted predecessor. No candidate JavaScript is imported while credentials
+may exist. Actor, repository, branch/PR, regular-file, permission and proof fences
+remain mandatory. Executable files, symlinks and rebound source are refused.
+
+The never-accepted SG2 Calendar consumer closure additionally names three existing
+SG2 tests: ADP receiver compatibility, persistent AppShell route guarding and full
+candidate-source coverage. This makes20 consumer source paths; all12 historical
+SG2 receipts remain immutable. Ordinary UI/test adoption remains a separate SG2
+PR after the corrected producer is accepted. No runtime, contract, SQL, grant,
+provider, retention, deployment or notification decision is made by this policy.
+
+The Oil renderer successor now preserves the accepted PR1043 Calendar consumer
+and both of its existing aggregate/week tests byte-for-byte. Its exact record
+`6afdd65e66d8a7d8ceb4ab68601ba6d1c1bfac43bbac879d01bb61c9962e7ad6`
+binds only the unchanged approved renderer, its PostgreSQL regression and the
+ECR-week verifier. Controller tests retain the original renderer tampering,
+history and widened-scope negatives. The verifier authenticates every added
+byte before exposing its additive coverage bindings; no original receipt is
+rewritten. This routine contraction stays inside the owner's approved paths.
+
+
+### Registration69 — raw SDK and accepted Oil/Calendar composition
+
+Under the owner1046 Full Autopilot delegation, retain the complete c26 consumer profile and add the exact same69-path technical successor 845eb9137efa96d377b8498414f0b8b08c0ce4ad / record 61c57570f25fe90c89a5d2bd0f27f2b228091a6bd239a72a7f1fc87e06ae36ad. Only four Architecture test/helper/record blobs change;165 production SDK files and SG2/SRM owner inputs are unchanged. Authenticate raw SDK/receiver provenance before independent Oil predecessor checks; authenticate the accepted Calendar99 complete20-source record and exact Oil42 record/source/14 receipts before exposing old ECR helpers. All original negatives and public/protected/resulting-main gates remain mandatory. This bounded technical continuation requires no renewed per-hash question and authorizes no runtime, SQL, grant, cost, provider or invitation action.
+
+
+### Stage I — separately routed Calendar test owner input
+
+The existing broad Stage I / Full Autopilot implementation request remains authority for necessary safe test integration work. It does not erase the1046 exact69 technical mandate: apps/sg-runtime/tests/market-calendar-integrity.mjs is separately registered toSG2 as SG2-REGISTRATION-CALENDAR-TEST-CONTEXT-20261112 (cmwdk7c410000n3bbksdg373p), source a77a7e1c8983dffa7c629182ff05490b0623b7da. The complete source review now binds70 exact paths, Architecture37/SG2 19/SRM14, source e4b15372cea245f396034105b609e877cca5fa77 / record 022f0a4c774cc93856c7219518ac99d23712cd3961bab508fa0d2b25c9113ea1. Preserve the complete accepted61/c26 and every older source review as distinct historical inputs. Authenticate all current SDK and receiver bytes before projecting the exact accepted Calendar test reader. No production SDK/runtime/UI, SQL, receipt, package/lock, authority, provider/cost or deployment changes. All actual-owner, exact controlled/public and complete resulting-main tests and independent original proofs remain required. This is routine execution inside the accepted business outcome, not a new business decision or fabricated user approval.
+
+
+### Stage I — current73 composition with independently accepted main82
+
+The owner's resumed Full Autopilot business implementation instruction covers necessary safe technical integration without renewed per-hash questions. Preserve the original1046 exact69 mandate and the full immutable70 source review; three additional test paths are independently registered to their actual ARCHITECTURE/SG2 owners and explicitly listed in the dated acceptance packet. Current source d35825a7e91284999737c3a4f750351b36e5a1a4 contains73 exact paths, ARCH38/SG2 21/SRM14, on accepted df2214265e577ef653c35fa18a38c717ffe8905e. Registration record022 remains unchanged. Authenticate all73 raw regular blobs/modes and273 physical SHA256 inputs before any historical view, then48 immutable accepted-main82 inputs, the original registration predecessor and both receivers. Preserve all independently accepted PI code and all older source reviews. Do not evaluate candidate code during the credential-bearing phase.
+
+Of the165 original SDK production paths,164 retain original5a bytes; recurring.mjs retains the independently accepted1014/main82 version. No new SDK production change is authored by this technical repair. All actual-owner, exact protected/public, whole resulting-main and independent original proof gates remain mandatory. Controller and source acceptance do not establish business runtime readiness. Continue the registered native Identity implementation through real Development deployment and browser/provider acceptance. This policy change independently authorises no product SQL installation, grant, package assignment, paid source call, invitation delivery or deployment.
+
+
+### Stage I — registration73 with activated BSDC manifest
+
+Current prepared source b6531e0a05d3bdda3086a1525515d662f02267b1 on b93881e575c92f69deeb403dbcab361b53ff66e9 retains the same73 owner-routed paths and original022 record. Preserve exact accepted continuity1062 and documentation1057. Authenticate276 physical inputs, the48 immutable PI-main inputs, the09a helper/test/evidence and all four approved documents for the activated manifest before predecessor traversal. The complete old70 fixture stays unchanged. This safe technical continuation remains covered by the owner's resumed Stage I Full Autopilot instruction; no further per-hash approval is required. All real owner, exact protected/public, whole resulting-main and independent original-proof requirements remain. Earlier69101ebe proof is historical after main advanced and is not current-head proof. No new runtime, grant, SQL installation, paid provider call, invitation delivery or deployment occurs through this policy.
+
+
+### Assistant Continuous Quality Stage1 — proposed exact G1 source admission
+
+PROPOSED_NOT_ACTIVE / OWNER_CI_POLICY_ACCEPTANCE_PENDING. The owner commissioned only Stage1 of PDR revision8 in Full Autopilot. PR1042 source339b948c744d0b6785550c8d1da7100dc8090906 contains five governance/design files, not a QA runtime. Public governance, KRS and producer checks do not replace the exact controlled SG2 proof. Trusted main currently lacks this closed five-file review; do not merge G1 without its required proof.
+
+The separate four-file policy proposal pins every path/blob/status and regular100644 mode under ASSISTANT_QUALITY_G1_REVIEW, binds PR1042, its exact internal Architecture branch and actual owner routes. A main refresh is allowed only while the five reviewed blobs/statuses/modes stay identical and the live expected SHA is revalidated. No wildcard Canon/package/workflow admission is added. Package pins, read:packages-only credentials, main-only Environment, ignore-scripts installation, token removal before candidate execution, complete source provenance and all public/controlled/resulting-main gates remain mandatory.
+
+After explicit controller-owner acceptance, obtain controlled proof for the policy bootstrap from trusted main, accept the policy only after required checks, then dispatch the same trusted-main proof for the exact current PR1042 head. Source ownership becomes effective only after G1 main acceptance and independent readback. This admission creates no QA service grant, SQL installation, data rights, resource, cost or deployment authority and does not start Stage2. See [the exact proposal and five-file manifest](../evidence/2026-11-12-assistant-quality-g1-ci-admission.md).
+
+
+### Stage I — actual registration74 composed integrity correction
+
+The resumed owner Full Autopilot mandate covers the two actual SG2-owned test corrections and corresponding test-helper digest updates without another per-hash approval. The initial PMOS estimate75 is corrected to actual74: ARCH38/SG2 22/SRM14. Current source35340e234f4a764821fef343ae617a18c6c8d3d3 retains original022 record,276 physical inputs and48 immutable accepted-main inputs. Preserve the complete old73 review/physical graph separately; current and historical exact graphs must both authenticate before any predecessor view. All prior negative controls, actual-owner routes, protected/public/resulting-main checks and independent original proofs remain mandatory. This source/CI-only correction does not itself install SQL, grant access, assign packages, call providers, send invitations or deploy. Continue the accepted Stage I business implementation independently. See the dated integrity-test CI continuation evidence.
+
+## ECR notifications and coverage — proposed closed continuation (2026-11-12)
+
+PROPOSED / OWNER_CI_APPROVAL_PENDING. The separate Architecture producer PR1063
+and SG2 consumer PR1064 are bound by their exact54 and7 source closures in the
+trusted controller. Preserve every accepted registration70, ECR-week,
+Calendar99, Oil42 and BSDC1062 guard and historical receipt. Authenticate the
+new graph before exposing a predecessor; never import candidate JavaScript
+while a registry credential is available. The exact legacy SDK1.7.1 lock bridge
+ends at the separately verified1.8 consumer adoption and opens no general path,
+package or provider exception. The concrete review, scope and actual checks
+are in [the proposed admission](../evidence/2026-11-12-ecr-complete-functional-ci-admission.md).
+
+Explicit owner acceptance of the finished policy is required before its
+trusted-main validation/admission. Then require exact producer and separate
+consumer public/controlled proofs and complete resulting-main checks before
+source integration. Runtime schema, licensing/retention, Identity/Mailgun
+purpose and credentials, release bindings, deployment and LIVE acceptance
+remain separate owner-controlled operations. This source policy grants none.
+
+### Complete Calendar — proposed historical-result continuity correction
+
+The original consolidated owner GO remains authority for the existing
+operational scope. Before installation, a real PostgreSQL regression proved
+that changing an owner retention basis could hide retained readings. The same
+54 producer and7 consumer paths now pin a minimal read/write/revocation repair
+and its full52-test regression. No new path, grant, role, cost or operation is
+added; only the migration005 digest changes in the operation plan. The six
+functional SG2 files and all38 historical receipts remain unchanged. Preserve
+accepted registration73/70, Calendar99, Oil42, ECR-week, BSDC and CIC controls.
+This actual source-pin change requires exact corrective controller acceptance;
+the original GO is not approval for new protected bytes. Fresh exact controlled,
+public and resulting-main checks remain mandatory. See the current source
+commits and plan digest in [the admission](../evidence/2026-11-12-ecr-complete-functional-ci-admission.md).
+
+The same-path successor additionally gives the existing Calendar authority test
+the established Identity PostgreSQL16 loopback Docker fallback on CI without
+native binaries. Assertions, runtime, SQL, plan and administrative scope are
+unchanged from owner-approved02c1725f. Updated seven producer blobs plus the
+consumer record are exact-pinned; the six SG2 functional blobs remain identical.
+Fresh exact-pin acceptance and the actual Ubuntu CI result remain required.
+
+### Calendar / PI accepted-peer policy composition
+
+Actual authority main537660ed independently admits the PI live corrections.
+It overlaps the Calendar policy in piCompletionCanonicalRead. The proposed
+composition authenticates complete current Calendar source, then the exact PI
+live-correction graph, then the unchanged recurring-transport predecessor.
+All54+7 Calendar pins, all12 PI pins, registration74/73/70 and38 immutable
+Calendar receipts remain unchanged. Eight focused tests PASS, including two
+actual complete Git source graphs and rejection of an unadmitted mixed graph.
+The complete original Calendar and PI test blocks are retained. No source
+code, SQL, operation-plan digest, right, role, cost or resource is changed.
+
+This is a real change to trusted projection composition, requiring exact
+controller-owner acceptance before activation. The earlier approved8c and
+C5ad proof from control97 are retained; the latter is historical after main537
+changed the controller. Fresh exact controlled/public and resulting-main
+gates remain mandatory. No deployment or mail was performed.
+
+
+### PI live SRM test-source continuation — proposal only
+
+PROPOSED / OWNER_CI_APPROVAL_PENDING. PR1058 now has thirteen exact source
+entries: the existing P1 adoption test reads the already authenticated live SDK
+source layer, and the live receipt/helper plus routing tests authenticate that
+physical test before restoring its unchanged historical predecessor. The
+original12-file and fixture12-file reviews remain immutable; eight source
+versions including both product runtime fixes remain identical to V3. All22
+receipts, Root contract, accepted Calendar and registration policies remain
+unchanged. The independent SRM task is SRM-PI-LIVE-SDK-CONTINUITY-20261112.
+
+Explicit owner acceptance of this exact new13-file review and three-file policy
+is required before trusted-main bootstrap/admission. Then require complete
+exact-source public/controlled and resulting-main CI. Existing bounded SG-only
+release permission remains separate and adds no grant, schema, secret, provider
+call, email, Oil publication or SRM deployment. No historical digest is changed
+to manufacture PASS.
+
+### Stage I — complete organisation lifecycle source admission (2026-11-13)
+
+The owner's resumed Stage I Development Full Autopilot mandate covers this necessary technical continuation without renewed per-file/hash questions. Joint PR1075 source8aee0665f20f16ae66455f8d15d336bac59711f0 has196 exact regular100644 entries, ARCHITECTURE96/SG256/SRM44, based on accepted main68867fe8. Each owner's published inputs, paired receipts and PMOS tasks remain authoritative. Preserve all original registration74/73/70 and independent PI/Calendar/CIC/BSDC graphs.
+
+Trusted data-only inspection pins SDK1.37 record3a7d291e… and helperbc4bbcb1…, authenticates335 current inputs and all seven owner inputs, then verifies the immutable bootstrapb18 and accepted-main688 views, including proven absences. Only exact verified package manifests can admit the bounded1.37 peer changes; all registry/credential/Environment/source/mode controls remain. Current physical bytes are never replaced before verification. Exact protected/public and complete resulting-main checks precede source integration; actual current SDK digest and SG2 receipt must match the independent controlled proof.
+
+The four-file policy alone grants no SQL installation, runtime access, package assignment, provider cost, mail, DNS or deployment. Continue the separately authorised Stage I implementation through Development runtime/browser/provider acceptance and PMOS/PHR closeout. See [the exact source and validation packet](../evidence/2026-11-13-registration-lifecycle-ci-admission.md).
+
+## CIC Stage 1 engineering-source CI — proposal (2026-11-13)
+
+**PROPOSED_ONLY / OWNER_CI_POLICY_ACCEPTANCE_PENDING.** The Stage 1 commission
+and exact five-file G1 decision #1061 do not grant generic AQC source admission.
+Automatic review rejected #1074 merge for missing full mandatory CI; the
+unchanged main controller independently rejects its three changed paths.
+
+The separate four-file proposal adds `AQC-STAGE1-SOURCE-CI-20261113`: only the
+27 exact AQC source/test and accompanying PDR paths, on the existing internal
+Stage 1 control branch, before 2026-11-27T23:59:59.000Z. At least one AQC file is
+required. Regular100644/actual-owner/ALIGNED, complete exact-head/base/Git checks,
+frozen accepted §§4–5 and the no-Stage2 header remain mandatory. No workflow,
+manifest/lock, dependency, SQL, app, shared contract or other Canon path is
+admitted. Credential scope, main-only execution and every existing review remain
+unchanged. This is engineering-source CI, not an autonomous repair-agent mandate.
+
+See [the complete proposal](../evidence/2026-11-13-assistant-quality-stage1-source-ci-admission.md).
+Owner approval of its exact version and normal full bootstrap/protected/main
+checks precede activation. It cannot self-admit. Afterwards obtain the actual
+current #1074 exact-source proof and explicitly run all required integration
+checks, because AQC path filters do not trigger that workflow automatically.
+No merge may rely only on its QA/governance checks. Verify resulting main.
+No data/service/resource, model-budget start, runtime, repair promotion,
+deployment or Stage 2 activation follows from this policy decision. Retire only
+the new class on rollback/expiry; preserve original grants and other work.
+
+## Component-independent Development execution
+
+New routine source admissions follow [the shared Development execution contract](cloud-development-execution-v1.md) and the trusted-main data registry `Canon/registries/controlled-source-admissions-v1.json`. Historical closed reviews and receipts above remain unchanged. Schema 2.0 exact-source proofs are separate from historical schema 1.0 operation-contract proofs; neither replaces required ordinary owner checks, resulting-main verification or a specific release mandate. The current controlled installation uses job-scoped `GITHUB_TOKEN` and an early exact-artifact probe, without a PAT fallback. These changes are inert until the exact standard package is approved and accepted on authority main.
+
+
+### Stage I — exact test reconciliation with current AppShell main (2026-11-13)
+
+The owner's resumed Stage I Development Full Autopilot mandate covers the necessary bounded test/source-continuity corrections without another per-file/hash question. The separately owned PR1083 source5feb23d9d1615e8045c26c6cafc7fee2982d122d over accepted main80875d8f contains201 exact regular entries: ARCHITECTURE100/SG257/SRM44. Preserve the original PR1075/196-file review, original3a7d lifecycle record, immutable SDK1.36/022 record, all seven owner inputs and existing PI/Calendar/CIC/BSDC controls.
+
+Trusted data-only decoding authenticates345 current inputs, the exact helper, all three current owner receipts, all three correction inputs and seven actual current-main inputs before any predecessor view. Reconstruct the complete unchanged335-input lifecycle graph, then its original b18 and accepted688 views. Main refresh is bounded to the same201 reviewed blobs/statuses/modes/owners in the same internal PR and branch; actual head SHA plus reviewed-source/main ancestry remain required. Existing credential, package, Environment, source/mode, public/protected/resulting-main and independent original-proof gates remain. No runtime installation, grant, provider/mail spend or deployment follows from this CI policy. See [the exact201-file map and validation](../evidence/2026-11-13-registration-stage-i-resume-v2.md).
+
+
+### Proposed bounded source-test continuation, 2026-11-16
+
+Unactivated proposal only: exact201-entry successor 7cc6c05600c1031daca15614a2e98b24f29c1bfe, map SHA256 3717669e57b2c1d78548a4bc75b03fcb2c6456d05609a55dd605509ee3114e49, record SHA256 555ad903f3fb64ffe9b50d5c2e6a38ef805598342aa6302ed8190225f474cbe6, guard SHA256 2046bd00d764c4f209187fd92e92e4fe7cd1156ea78741a080f2a87c8107e1fa. Retain the original196 review and approved882/5feb class unchanged. Add only this exact independently owned345-input test continuity closure and three rejection/real-checkout tests. No credentials, grants, packages, roles, providers, deployment or runtime authority change. This proposal requires explicit owner approval before application; no proposed policy function has been executed. Existing read-package credential HTTP401 remains independent.

@@ -1,4 +1,7 @@
+import './assistant-notifications-integrity.test.mjs'
 import test from 'node:test'
+import './procurement-insights-notification-navigation.test.tsx'
+import './procurement-insights-live-acceptance-source.test.mjs'
 import assert from 'node:assert/strict'
 import {createRequire} from 'node:module'
 import path from 'node:path'

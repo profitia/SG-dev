@@ -1,0 +1,35 @@
+{
+  "schemaVersion": "1.0",
+  "standard": "profitia.development-execution/v1",
+  "owner": "Governance Source Layer",
+  "inheritance": "All ACTIVE project profiles inherit the shared contract; executable transport requires their repository adapter. Project and continuity authority remains profitia-projects-v1.json.",
+  "adapters": {
+    "SG2": {
+      "sourceTransportPrefix": "sg2/",
+      "policyTransportPrefix": "sg2/",
+      "repository": "profitia/SG-dev",
+      "workflow": ".github/workflows/platform-contracts-ci.yml"
+    },
+    "ARCHITECTURE": {
+      "sourceTransportPrefix": "architecture/",
+      "policyTransportPrefix": "sg2/",
+      "repository": "profitia/SG-dev",
+      "workflow": ".github/workflows/platform-contracts-ci.yml"
+    },
+    "SRM": {
+      "sourceTransportPrefix": "srm/",
+      "policyTransportPrefix": "sg2/",
+      "repository": "profitia/SG-dev",
+      "workflow": ".github/workflows/platform-contracts-ci.yml"
+    },
+    "CIC": {
+      "sourceTransportPrefix": "cic/",
+      "policyTransportPrefix": "cic/",
+      "repository": "profitia/conversational-intelligence-core",
+      "workflow": ".github/workflows/governance-preflight.yml",
+      "packageCredentialAdoption": "ALREADY_GITHUB_TOKEN_FOR_PUBLICATION; public package CI has no private-install credential"
+    }
+  },
+  "mandates": [],
+  "authority": "Only independently accepted trusted-main records can authorize operations. A candidate, environment variable, CLI input or this empty registry creates no approval."
+}

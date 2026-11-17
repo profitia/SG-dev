@@ -47,7 +47,7 @@ test('ADP receiver compatibility preserves every accepted historical field and b
   if(receipt.sentryObservabilityCompatibility)assert.equal(manifest.dependencies['@sentry/nextjs'],'10.78.0')
   if(receipt.productAnalyticsCompatibility)assert.equal(manifest.dependencies['posthog-js'],'1.444.0')
   const beforeMiddleware=execFileSync('git',['show',current.previousReceiptSourceSha+':apps/sg-runtime/middleware.ts'],{cwd:appRoot}).toString()
-  const middleware=fs.readFileSync(path.join(appRoot,'middleware.ts'),'utf8')
+  const middleware=view.previousBytes('apps/sg-runtime/middleware.ts').toString()
   assert.equal(middleware.replace('|dashboard(?:\\/(?:adp|benchmark-finder|xray))?',''),beforeMiddleware)
 })
 test('initial model has every field, approved document text and no invented supplier/provider results', () => {

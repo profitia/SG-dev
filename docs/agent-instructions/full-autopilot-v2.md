@@ -264,3 +264,7 @@ Nie przygotowuj wielostronicowej dokumentacji, o ile nie jest odrębnym wymagany
 - `BUSINESS RESULT NOT DELIVERED → TASK NOT COMPLETE`
 
 **Pracuj do realnego rezultatu albo do autentycznej granicy uprawnień/bezpieczeństwa. Nie zatrzymuj się z powodów, które odpowiedzialny senior engineer może samodzielnie rozwiązać.**
+
+## Wspólna realizacja Development
+
+Dla obecnych i przyszłych ACTIVE profili stosuj [wspólny kontrakt Development](../../Canon/runbooks/cloud-development-execution-v1.md) z accepted authority main. Zachowuj profilową continuity i ownership. Rutynowy transport, naprawa testu i integracja w ważnym mandacie nie tworzą kolejnej decyzji biznesowej. Chroniona polityka, nowy dostęp, koszt, licencja, środowisko i istotna zmiana zakresu nadal wymagają właściwego ownera.

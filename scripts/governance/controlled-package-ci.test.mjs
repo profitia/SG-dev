@@ -1,3 +1,9 @@
+import {createExecutionCheckout,assertExecutionCheckout,assertPristineSourceInput} from './controlled-package-ci.mjs'
+import {execFileSync as isolationGitExec} from 'node:child_process'
+import {trustedPackageProbeSpec,assertTrustedPackageRegistryMetadata,assertTrustedPackedArtifact} from './controlled-package-ci.mjs'
+import {registrationLifecycleCanonicalRead} from './controlled-package-ci.mjs'
+import {ECR_COMPLETE_FUNCTIONAL_REVIEW,ECR_COMPLETE_FUNCTIONAL_CONSUMER_REVIEW,ECR_COMPLETE_FUNCTIONAL_PROVENANCE,assertCompleteFunctionalReviewEntry,completeFunctionalTrustedPredecessor,assertCompleteFunctionalProvenance} from './controlled-package-ci.mjs'
+import {ECR_CALENDAR_TEST_REVIEW,assertCalendarTestReviewEntry,calendarTestCompatibilityTrustedCurrent,readCalendarSourceFile} from './controlled-package-ci.mjs'
 import {ECR_MARKET_CALENDAR_REVIEW,ECR_MARKET_CALENDAR_PROVENANCE,assertEcrMarketCalendarReviewEntry,marketCalendarTrustedPredecessor} from './controlled-package-ci.mjs'
 import {NEWSFEED_SAVED_SEARCH_REVIEW,assertNewsfeedSavedSearchReviewEntry} from './controlled-package-ci.mjs'
 import {ECR_SOURCE_CONTINUITY_REVIEW,assertEcrSourceContinuityReviewEntry} from './controlled-package-ci.mjs'
@@ -12,7 +18,9 @@ import {ECR_BACKEND_REVIEW,assertEcrBackendReviewEntry} from './controlled-packa
 import {createHash} from 'node:crypto'
 import {ECR_G1_GOVERNANCE_REVIEW,assertEcrG1ReviewEntry} from './controlled-package-ci.mjs'
 import test from 'node:test'
+import {PRIVATE_RECURRING_LIVE_ACCEPTANCE_REVIEW,PI_LIVE_ACCEPTANCE_PROVENANCE_PATH,assertPiLiveAcceptanceRecord,assertPiLiveAcceptanceProjection} from './controlled-package-ci.mjs'
 import assert from 'node:assert/strict'
+import {PRIVATE_RECURRING_SHELL_REVIEW,PRIVATE_RECURRING_SHELL_CURRENT_REVIEW,PRIVATE_RECURRING_SHELL_CALENDAR_REVIEW} from './controlled-package-ci.mjs'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
@@ -148,7 +156,7 @@ test('only the ten reviewed local names bind to their own exact paths, never a r
     rejection(() => assertManifestPolicy({dependencies: {alias: `file:${relative}`}}, authority))
   }
 })
-function currentRecurringPolicyOptions(){return {reviewedPrivateRecurring:!!assertPrivateRecurringProvenance(authorityRoot)}}
+function currentRecurringPolicyOptions(){return {reviewedPrivateRecurring:!!assertPrivateRecurringProvenance(authorityRoot),reviewedLifecycle:!!registrationLifecycleCanonicalRead(authorityRoot)}}
 function reviewedMapsFixture() {
   const manifest = JSON.parse(fs.readFileSync(path.join(authorityRoot, 'packages/maps-embed/package.json'), 'utf8'))
   const candidate = lock()
@@ -344,7 +352,8 @@ test('regular files and bounded size are required; symlink files and parent dire
 test('actual current source provenance is the exact accepted SDK digest with all old trust rules intact',async()=>{
  const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..'),receipt=JSON.parse(fs.readFileSync(path.join(root,'apps/sg-runtime/operation-integration.json'),'utf8'))
  const record=assertPrivateRecurringProvenance(root),receiptBytes=fs.readFileSync(path.join(root,'apps/sg-runtime/operation-integration.json'))
- const contract=privateRecurringProofContract(receipt,record?fs.readFileSync(path.join(root,PRIVATE_RECURRING_PROVENANCE.recordPath)):null,receiptBytes)
+ const currentSdk=await import('./controlled-package-ci.mjs')
+ const contract=receipt.sdkSourceContinuations===undefined?privateRecurringProofContract(receipt,record?fs.readFileSync(path.join(root,PRIVATE_RECURRING_PROVENANCE.recordPath)):null,receiptBytes):{...adoptedOperationContract(receipt),sourceDigest:(currentSdk.assertRegistrationSdkProvenance(root).lifecycle??currentSdk.assertRegistrationSdkProvenance(root)).sdkDigests.operationSourceDigest}
  assert.equal(operationContractProvenanceDigest(root,contract,{reviewedPrivateRecurring:!!record}),contract.sourceDigest)
  const sdk=await import('../../packages/platform-contracts/src/operation-context.mjs');assert.equal(await sdk.operationSourceDigest(),contract.sourceDigest)
 })
@@ -799,11 +808,15 @@ test('all new trusted routing inputs invalidate the policy fingerprint; no candi
   } finally {fs.rmSync(root, {recursive: true, force: true})}
 })
 
-test('workflow keeps main-only pinned controller, credential-free execution/proof and unchanged private installation phase', () => {
+test('workflow keeps main-only pinned controller, credential-free execution/proof and job-scoped read-only package credentials', () => {
   const source = fs.readFileSync(path.join(authorityRoot, WORKFLOW), 'utf8'), privileged = source.slice(source.indexOf('  controlled-sg2:'), source.indexOf('  environment-policy-probe:'))
   assert.match(privileged, /if: github\.ref == 'refs\/heads\/main'/)
   assert.match(privileged, /environment: architecture-development/)
-  assert.equal((privileged.match(/secrets\.SG2_PACKAGES_READ_TOKEN/g) ?? []).length, 1)
+  assert.equal((privileged.match(/secrets\.SG2_PACKAGES_READ_TOKEN/g) ?? []).length, 0)
+  assert.match(privileged,/packages: read/)
+  assert.equal((privileged.match(/NPM_TOKEN: \$\{\{ github\.token \}\}/g)??[]).length,2)
+  assert.match(privileged,/controlled-package-ci\.mjs credential-preflight/)
+  assert.match(privileged,/controlled-package-ci\.mjs assert-credential-free/)
   const execute = privileged.slice(privileged.indexOf('      - name: Run lifecycle'), privileged.indexOf('      - name: Record sanitized'))
   for (const key of ['NPM_TOKEN', 'NODE_AUTH_TOKEN', 'GH_TOKEN', 'GITHUB_TOKEN']) assert(execute.includes(`${key}: ''`))
   assert(!execute.includes('secrets.')); assert.match(privileged, /run: node control\/scripts\/governance\/controlled-package-ci.mjs proof/)
@@ -1922,21 +1935,67 @@ test('complete recurring proof preserves legacy Root without claiming runtime ac
  rejection(()=>privateRecurringProofContract(r,completeRecurringBytes,Buffer.concat([b,Buffer.from('\n')])))
 })
 
+
+function piShellFixture(){
+ const r=PRIVATE_RECURRING_SHELL_REVIEW,files=Object.entries(r.entries).map(([filename,e])=>({filename,sha:e.sha,status:e.status}))
+ return{r,files,p:{...pr(),number:r.prNumber,changed_files:files.length,base:{...pr().base,sha:r.baseSha},head:{...pr().head,sha:r.sourceSha,ref:r.branch}}}
+}
+test('PI completion admits exactly eighteen owner-routed source versions and regular modes',()=>{
+ const {r,files,p}=piShellFixture();assert.equal(files.length,18);assert.equal(r.prNumber,1014)
+ assert.equal(createHash('sha256').update(JSON.stringify(r.entries)).digest('hex'),'9833b46d3daf5335c5166919be7fe40544c8f408c42ed4b809fb2d7c86176ac9')
+ assert.deepEqual([...new Set(Object.values(r.entries).map(e=>e.projectKey))].sort(),['ARCHITECTURE','SG2'])
+ assertArchitectureFiles(p,files);assert.equal(selectCandidate(context(),p,r.sourceSha,{files}),r.sourceSha)
+ for(const f of files){assertPrivateRecurringReviewEntry(f,'100644 blob '+f.sha+'\t'+f.filename+'\0');for(const mode of ['100755','120000','160000'])rejection(()=>assertPrivateRecurringReviewEntry(f,mode+' blob '+f.sha+'\t'+f.filename+'\0'))}
+})
+test('PI shell correction rejects changed scope, source bytes, status and borrowed owner identity',()=>{
+ const {r,files,p}=piShellFixture()
+ for(const edit of [f=>f.pop(),f=>f.push(f[0]),f=>f[0].sha='f'.repeat(40),f=>f[0].status='removed',f=>f[0].previous_filename='elsewhere',f=>f[0].filename='apps/sg-runtime/app/api/unreviewed.ts']){
+  const bad=structuredClone(files);edit(bad);rejection(()=>selectCandidate(context(),{...p,changed_files:bad.length},r.sourceSha,{files:bad}))
+ }
+ for(const edit of [q=>q.number=995,q=>q.head.ref='architecture/pi-private-recurring-20261111',q=>q.head.ref='architecture/another',q=>q.head.repo.full_name='attacker/fork',q=>q.user.login='attacker',q=>q.base.ref='staging',q=>q.head.sha=sha]){
+  const bad=structuredClone(p);edit(bad);rejection(()=>selectCandidate(context(),bad,r.sourceSha,{files}))
+ }
+})
+test('PI shell correction cannot reuse or alter any of the three accepted recurring review sets',()=>{
+ const shell=piShellFixture()
+ for(const old of [PRIVATE_RECURRING_REVIEW,PRIVATE_RECURRING_FINAL_REVIEW,PRIVATE_RECURRING_COMPLETION_REVIEW]){
+  const files=Object.entries(old.entries).map(([filename,e])=>({filename,sha:e.sha,status:e.status})),p={...pr(),number:old.prNumber,changed_files:files.length,base:{...pr().base,sha:old.baseSha},head:{...pr().head,sha:old.sourceSha,ref:old.branch}}
+  assert.equal(selectCandidate(context(),p,p.head.sha,{files}),p.head.sha)
+  rejection(()=>selectCandidate(context(),{...shell.p,changed_files:files.length},shell.r.sourceSha,{files}))
+  rejection(()=>selectCandidate(context(),{...p,changed_files:shell.files.length},p.head.sha,{files:shell.files}))
+ }
+})
+
+import {assertPiCompletionRecord} from './controlled-package-ci.mjs'
+const piCompletionRecord=Buffer.from("{\n  \"schemaVersion\": \"1.0.0\",\n  \"taskId\": \"SG2-PI-RECURRING-E2E-20261111\",\n  \"targetEnvironment\": \"development\",\n  \"scope\": \"PROCUREMENT_INSIGHTS_LIBRARY_AND_SOURCE_ACTION_COMPLETION\",\n  \"baseCandidateSha\": \"1ab05e295fa974cb9d92f34b5f472207c45da45c\",\n  \"magicPathRevision\": \"471325033734762496\",\n  \"sourceDigests\": {\n    \"apps/insights-runtime/src/publication-query.mjs\": \"61a3b2b606af726b835a91e4592ea049bf37efaa596ce08bafae59bb74996243\",\n    \"apps/insights-runtime/src/subscription-api.mjs\": \"0ded6891898033e4a5657c54bace8c56b11e9911a016c593733cd5320d14e327\",\n    \"apps/insights-runtime/src/subscription-store.mjs\": \"dd159b75554c429660fc04276993fb19e02e8bc794b4d98e26e1ddfae4693a9b\",\n    \"apps/insights-runtime/tests/report-library.test.mjs\": \"f17dc930fc82e33cb9141257b0965581f5d49e56eb1d686593f7222bacd078c4\",\n    \"apps/insights-runtime/tests/subscriptions.test.mjs\": \"f3a33986059e5f985478f786c90a532b5d0ea55e87974593baeab62db17822f4\",\n    \"apps/sg-runtime/components/procurement-insights/inline-item.tsx\": \"4920e9315509d0e053ce50501cdf24ef1c5bddd306ecd1db430f51e495eb297a\",\n    \"apps/sg-runtime/components/procurement-insights/reports.tsx\": \"b888e0b328bd93898e78f526bf9a9f3eb0eef8d61265ff2ac6438b3e2ee45e3e\",\n    \"apps/sg-runtime/components/procurement-insights/workspace.css\": \"47a92d5c11f9e5d325271a7bc7cd1efe47d42e8229e3281f240b64d77a67c5dd\",\n    \"apps/sg-runtime/components/procurement-insights/workspace.tsx\": \"5df38d04b12418e58fa1d682bb4651e008abb6e28a455d090de159c9eaded384\",\n    \"apps/sg-runtime/package.json\": \"b3781339ad7260d054ebf37b6e2df4f163ce01c51c91d9bc43e99ae8c9b4aff5\",\n    \"apps/sg-runtime/tests/procurement-insights-completion.test.mjs\": \"ea0b0cba039ff6555cd94f7ff9c9495a37e71e15603209efa40896a0f2d39429\",\n    \"apps/sg-runtime/tests/procurement-insights-completion-integrity.mjs\": \"2013483eefce5ab9b5ed7bc64a3c6a0b5d53e08d70e19a399da74d96dafb6e45\",\n    \"apps/sg-runtime/tests/procurement-insights-shell-integrity.mjs\": \"504b57afdcee1b2698ffc1ca11cd20d604fc9fc82e25a5a3b05d5000686df3aa\"\n  },\n  \"preservedReceipts\": {\n    \"apps/sg-runtime/procurement-insights-shell-integration.json\": \"1b1279e669e955e604c7c646482a6ce119eac5eeb09491ade78a37aa7fc133a1\",\n    \"apps/architecture-lab/private-recurring-source.json\": \"75877d5750e07d1c8172be0af76bc5933f2eeefc22cc39747a2621b9cab24619\",\n    \"apps/sg-runtime/operation-integration.json\": \"a6bf50993c98a71aeccd349dd904baafb53b3cd653324d97bab3fc5e34ac509f\",\n    \"apps/srm/operation-integration.json\": \"1303ac82c0570ca4929f64e1620e2ec7a6bfd3809607f57eb33da621c8ecd06d\",\n    \"apps/newsfeed-runtime/operation-integration.json\": \"a8b43f4f6213806843160d4373bb62bfd9357ba03cfbc16865fb2bce266f88f1\",\n    \"apps/sg-runtime/assistant-context-integration.json\": \"d932f227977789643086b6a9eb179598a6f48071964b2d26ba82d25fceb7b2ec\",\n    \"apps/newsfeed-runtime/assistant-context-integration.json\": \"4057379e02c7b698f3f24348c40b84275d92c3a892b55e96b1c6d23175298dfc\",\n    \"apps/newsfeed-runtime/saved-searches-integration.json\": \"fcfea3ae736cfd3446dac7c70c34f6f59a723a48bdae11234706d76f01652a6c\",\n    \"apps/sg-runtime/procurement-insights-integration.json\": \"6dca06d8b0731e585925100b0578d41a61711f335940350d1ea32c296a3d7177\",\n    \"apps/sg-runtime/assistant-ecr-integration.json\": \"5814e2e5cbdf1a32d22cff3aa55de806ec34c9debdecc21ff06c4f9f887a82bc\",\n    \"apps/sg-runtime/assistant-markdown-integration.json\": \"27ff06aff8bc44592f0073732748834b7759182fa4307d901c7d63304381a38b\",\n    \"apps/sg-runtime/registration-stage-i-integration.json\": \"4a7a572e67e12ed73c523502cef4cb432009e735737df851419d80898653f414\",\n    \"apps/sg-runtime/assistant-send-arrow-integration.json\": \"62c6af6817a022c31788d801cc0eac293a24b3f25d9e529d32b1bff4908fa230\",\n    \"apps/architecture-lab/private-recurring-source-adoption.json\": \"a79c186897851acb93142949fe7aee19184cbfe68b3acdf51cbda084c00c1254\",\n    \"apps/sg-runtime/private-recurring-source-adoption.json\": \"edf9d51c199251e148b39c92a3084944c1a4b8419be29175c88b6e2583df11f2\",\n    \"apps/srm/private-recurring-source-adoption.json\": \"88d0252f634eface35b34adf31ac97cbf0d396fcf1fe6da452c74bdc23c7c633\"\n  },\n  \"authorisationChanged\": false,\n  \"schemaChanged\": false,\n  \"providerCallsPerformed\": false,\n  \"deploymentPerformed\": false\n}\n")
+test('trusted PI completion binds all current source bytes and the same sixteen predecessor receipts as pure data',()=>{
+ const a=JSON.parse(piCompletionRecord),options={sha256ForPath:p=>a.sourceDigests[p]??a.preservedReceipts[p],blobForPath:p=>PRIVATE_RECURRING_SHELL_REVIEW.entries[p].sha,historicalDigestForPath:(sha,p)=>{assert.equal(sha,a.baseCandidateSha);return a.preservedReceipts[p]}}
+ assert.equal(Object.keys(assertPiCompletionRecord(piCompletionRecord,options).sourceDigests).length,13)
+ for(const p of Object.keys(a.sourceDigests)){
+  rejection(()=>assertPiCompletionRecord(piCompletionRecord,{...options,sha256ForPath:q=>q===p?'0'.repeat(64):options.sha256ForPath(q)}))
+  rejection(()=>assertPiCompletionRecord(piCompletionRecord,{...options,blobForPath:q=>q===p?'0'.repeat(40):options.blobForPath(q)}))
+ }
+ for(const p of Object.keys(a.preservedReceipts))for(const field of ['sha256ForPath','historicalDigestForPath']){
+  const value={...options,[field]:field==='sha256ForPath'?q=>q===p?'0'.repeat(64):options.sha256ForPath(q):(sha,q)=>q===p?'0'.repeat(64):options.historicalDigestForPath(sha,q)}
+  rejection(()=>assertPiCompletionRecord(piCompletionRecord,value))
+ }
+ rejection(()=>assertPiCompletionRecord(Buffer.concat([piCompletionRecord,Buffer.from(' ')]),options))
+})
 test('complete registration admission pins67 entries and preserves all old59/48/41 reviews',async()=>{
  const c=await import('./controlled-package-ci.mjs')
- assert.equal(Object.keys(c.REGISTRATION_SDK_REVIEW.entries).length,67)
+ assert.equal(Object.keys(c.REGISTRATION_SDK_FIXTURE_HISTORY_REVIEW.entries).length,67)
  assert.equal(Object.keys(c.REGISTRATION_SDK_COMPLETE_HISTORY_REVIEW.entries).length,67)
- assert.deepEqual(Object.keys(c.REGISTRATION_SDK_REVIEW.entries).filter(p=>JSON.stringify(c.REGISTRATION_SDK_REVIEW.entries[p])!==JSON.stringify(c.REGISTRATION_SDK_COMPLETE_HISTORY_REVIEW.entries[p])).sort(),["apps/architecture-lab/test/sdk-compatibility.test.mjs","apps/sg-runtime/tests/organisation-sdk-history.test.mjs","packages/platform-contracts/readonly-miss-report/test/readonly-miss-report.test.mjs","packages/platform-contracts/test/organisation-sdk-compatibility.json","packages/platform-contracts/test/organisation-sdk-compatibility.mjs","packages/platform-contracts/test/organisation-sdk-compatibility.test.mjs"])
+ assert.deepEqual(Object.keys(c.REGISTRATION_SDK_FIXTURE_HISTORY_REVIEW.entries).filter(p=>JSON.stringify(c.REGISTRATION_SDK_FIXTURE_HISTORY_REVIEW.entries[p])!==JSON.stringify(c.REGISTRATION_SDK_COMPLETE_HISTORY_REVIEW.entries[p])).sort(),["apps/architecture-lab/test/sdk-compatibility.test.mjs","apps/sg-runtime/tests/organisation-sdk-history.test.mjs","packages/platform-contracts/readonly-miss-report/test/readonly-miss-report.test.mjs","packages/platform-contracts/test/organisation-sdk-compatibility.json","packages/platform-contracts/test/organisation-sdk-compatibility.mjs","packages/platform-contracts/test/organisation-sdk-compatibility.test.mjs"])
  assert.equal(Object.keys(c.REGISTRATION_SDK_IDENTITY_HISTORY_REVIEW.entries).length,65)
  assert.equal(Object.keys(c.REGISTRATION_SDK_RECONCILED_REVIEW.entries).length,65)
- assert.deepEqual(Object.keys(c.REGISTRATION_SDK_REVIEW.entries).filter(p=>JSON.stringify(c.REGISTRATION_SDK_REVIEW.entries[p])!==JSON.stringify(c.REGISTRATION_SDK_RECONCILED_REVIEW.entries[p])).sort(),["apps/architecture-lab/private-recurring-source.mjs","apps/architecture-lab/test/private-recurring-source.test.mjs","apps/architecture-lab/test/sdk-compatibility.test.mjs","apps/sg-runtime/tests/organisation-sdk-history.test.mjs","packages/platform-contracts/readonly-miss-report/test/readonly-miss-report.test.mjs","packages/platform-contracts/test/organisation-sdk-compatibility.json","packages/platform-contracts/test/organisation-sdk-compatibility.mjs","packages/platform-contracts/test/organisation-sdk-compatibility.test.mjs"])
+ assert.deepEqual(Object.keys(c.REGISTRATION_SDK_FIXTURE_HISTORY_REVIEW.entries).filter(p=>JSON.stringify(c.REGISTRATION_SDK_FIXTURE_HISTORY_REVIEW.entries[p])!==JSON.stringify(c.REGISTRATION_SDK_RECONCILED_REVIEW.entries[p])).sort(),["apps/architecture-lab/private-recurring-source.mjs","apps/architecture-lab/test/private-recurring-source.test.mjs","apps/architecture-lab/test/sdk-compatibility.test.mjs","apps/sg-runtime/tests/organisation-sdk-history.test.mjs","packages/platform-contracts/readonly-miss-report/test/readonly-miss-report.test.mjs","packages/platform-contracts/test/organisation-sdk-compatibility.json","packages/platform-contracts/test/organisation-sdk-compatibility.mjs","packages/platform-contracts/test/organisation-sdk-compatibility.test.mjs"])
  for(const [filename,e]of Object.entries(c.REGISTRATION_SDK_RECONCILED_REVIEW.entries))c.assertRegistrationSdkReviewEntry({filename,status:e.status,sha:e.sha},e.mode+' blob '+e.sha+'\t'+filename+'\0')
  assert.equal(Object.keys(c.REGISTRATION_SDK_TEST_SOURCE_REVIEW.entries).length,59)
  assert.equal(Object.keys(c.REGISTRATION_SDK_COMPLETE_REVIEW.entries).length,59)
  assert.equal(Object.keys(c.REGISTRATION_SDK_PREVIOUS_REVIEW.entries).length,48)
  assert.equal(Object.keys(c.REGISTRATION_SDK_INITIAL_REVIEW.entries).length,41)
- assert.deepEqual(Object.fromEntries(['ARCHITECTURE','SG2','SRM'].map(p=>[p,Object.values(c.REGISTRATION_SDK_REVIEW.entries).filter(e=>e.projectKey===p).length])),{ARCHITECTURE:36,SG2:17,SRM:14})
- for(const [filename,e]of Object.entries(c.REGISTRATION_SDK_REVIEW.entries)){
+ assert.deepEqual(Object.fromEntries(['ARCHITECTURE','SG2','SRM'].map(p=>[p,Object.values(c.REGISTRATION_SDK_FIXTURE_HISTORY_REVIEW.entries).filter(e=>e.projectKey===p).length])),{ARCHITECTURE:36,SG2:17,SRM:14})
+ for(const [filename,e]of Object.entries(c.REGISTRATION_SDK_FIXTURE_HISTORY_REVIEW.entries)){
   c.assertRegistrationSdkReviewEntry({filename,status:e.status,sha:e.sha},e.mode+' blob '+e.sha+'\t'+filename+'\0')
   assert.throws(()=>c.assertRegistrationSdkReviewEntry({filename,status:e.status,sha:'0'.repeat(40)},e.mode+' blob '+e.sha+'\t'+filename+'\0'))
  }
@@ -1975,20 +2034,38 @@ test('fixture correction record keeps all source and historical boundaries close
  const maps={...r.preservedSourceDigests,...r.sourceDigests,...r.compatibilityTestSourceDigests,...r.consumerSourceDigests.SG2,...r.consumerSourceDigests.SRM},receipts={},historicalReceipts={};for(const project of ['SG2','SRM']){const p='apps/'+(project==='SG2'?'sg-runtime':'srm')+'/operation-integration.json',raw=cp.execFileSync('git',['show',r.previousSourceSha+':'+p]);historicalReceipts[project]=raw;receipts[project]={...JSON.parse(raw),sdkSourceContinuations:[{schemaVersion:'1.0',acceptanceId:'organisation-bootstrap-v1',taskId:c.REGISTRATION_SDK_PROVENANCE.bindings[project].taskId,targetEnvironment:'development',previousReceiptSha256:crypto.createHash('sha256').update(raw).digest('hex')}]};}
  assert.deepEqual(c.assertRegistrationSdkRecord(b,{digestForPath:p=>maps[p],receipts,historicalReceipts}),r);for(const target of ["apps/architecture-lab/test/sdk-compatibility.test.mjs","packages/platform-contracts/readonly-miss-report/test/readonly-miss-report.test.mjs","apps/sg-runtime/tests/organisation-sdk-history.test.mjs"])assert.throws(()=>c.assertRegistrationSdkRecord(b,{digestForPath:p=>p===target?'0'.repeat(64):maps[p],receipts,historicalReceipts}),/REGISTRATION_SDK_SOURCE_BYTES_REJECTED/);
 });
-test('both exact67 and both approved65 physical graphs reject mixed, native and recurring drift',{timeout:120000},async t=>{
+test('all three exact67 and both approved65 physical graphs reject mixed, native and recurring drift',{timeout:120000},async t=>{
  const c=await import('./controlled-package-ci.mjs'),f=await import('node:fs'),p=await import('node:path'),os=await import('node:os'),cp=await import('node:child_process');
  const repo=cp.execFileSync('git',['rev-parse','--show-toplevel'],{encoding:'utf8'}).trim(),readGit=(sha,name)=>cp.execFileSync('git',['show',sha+':'+name],{cwd:repo,stdio:['ignore','pipe','pipe']}),base='0775f8a18d2fbeca462bb0a9d654914b15c53dad';
  const original=p.join(repo,'Canon/proposals/registration-recurring-admission-20261111'),middle=p.join(repo,'Canon/proposals/registration-identity-history-successor-20261111'),complete=p.join(repo,'Canon/proposals/registration-complete-history-closure-20261111'),latest=p.join(repo,'Canon/proposals/registration-history-test-fixtures-20261111'),packet=JSON.parse(f.readFileSync(p.join(latest,'source-review.json'))),completePacket=JSON.parse(f.readFileSync(p.join(complete,'source-review.json'))),rec=JSON.parse(readGit(base,'apps/architecture-lab/private-recurring-source.json'));
  const natives=new Set(['apps/identity-runtime/src/organisation-draft.ts','apps/identity-runtime/src/main.ts','apps/identity-runtime/src/http-handler.ts','apps/identity-runtime/test/organisation-draft.test.mjs','apps/identity-runtime/README.md','Canon/evidence/2026-11-11-registration-native-draft-http.md']),owners={ARCHITECTURE:'5a963f313317d57e1946e1d7aabd28192db9c7bd',SG2:'1ea8487fe7cc40cd5a817958c8b093203233fe82',SRM:'2e087d89e6d0bf9f75a289df3e6c161ba658a922'};
- const variants=[{label:'fixture67',review:c.REGISTRATION_SDK_REVIEW,prefix:latest,reg:packet.sourceRecord,extra:packet.additionalSourceTexts},{label:'approved1024',review:c.REGISTRATION_SDK_COMPLETE_HISTORY_REVIEW,prefix:complete,reg:completePacket.sourceRecord,extra:completePacket.additionalSourceTexts},{label:'approved1022',review:c.REGISTRATION_SDK_IDENTITY_HISTORY_REVIEW,prefix:middle,reg:JSON.parse(f.readFileSync(p.join(original,'source-record.json'))),extra:{}},{label:'approved1016',review:c.REGISTRATION_SDK_RECONCILED_REVIEW,prefix:original,reg:JSON.parse(f.readFileSync(p.join(original,'source-record.json'))),extra:{}}];
+ const composed=p.join(repo,'Canon/proposals/registration-ecr-week-reconciliation-20261111'),composition=JSON.parse(f.readFileSync(p.join(composed,'source-review.json')));
+ const directPrefix=p.join(repo,'Canon/proposals/registration-ecr-direct-history-20261112'),directPacket=JSON.parse(f.readFileSync(p.join(directPrefix,'source-review.json')));
+ const ownerEvidence=f.readFileSync(p.join(repo,'Canon/evidence/2026-11-12-registration-ecr-direct-history-ci-acceptance.md'),'utf8'),ownerParts=ownerEvidence.split('<!-- registration-source-packet-json -->');assert.equal(ownerParts.length,2);const ownerBlock=ownerParts[1].trim(),fence=String.fromCharCode(96).repeat(3);assert(ownerBlock.startsWith(fence+'json\n')&&ownerBlock.endsWith('\n'+fence));const ownerPacket=JSON.parse(ownerBlock.slice(8,-4));
+ const oldOwnerBlock=readGit('f1ac06bf9724967d75d2515dcbd60578c6cd257d','Canon/evidence/2026-11-12-registration-ecr-direct-history-ci-acceptance.md').toString().split('<!-- registration-source-packet-json -->')[1].trim(),oldOwnerPacket=JSON.parse(oldOwnerBlock.slice(8,-4));
+ const priorCalendarBlock=readGit('ad9f773eca6cca01dd9686ebe5217dc48d91429c','Canon/evidence/2026-11-12-registration-ecr-direct-history-ci-acceptance.md').toString().split('<!-- registration-source-packet-json -->')[1].trim(),priorCalendarPacket=JSON.parse(priorCalendarBlock.slice(8,-4));
+ const oldCorrectiveBlock=readGit('995d620a0d835b72c98831fe5f7637345d0d036e','Canon/evidence/2026-11-12-registration-ecr-direct-history-ci-acceptance.md').toString().split('<!-- registration-source-packet-json -->')[1].trim(),oldCorrectivePacket=JSON.parse(oldCorrectiveBlock.slice(8,-4));
+ const variants=[{label:'currentCalendar70',review:c.REGISTRATION_SDK_MAIN70_HISTORY_REVIEW,prefix:directPrefix,reg:ownerPacket.sourceRecord,extra:ownerPacket.additionalSourceTexts,helperText:ownerPacket.helperText,helperTestText:ownerPacket.helperTestText,parallel:true,ownerRepair:true,calendar:true,calendarCorrective:true,calendarConsumer:true},{label:'calendarCorrective69',review:c.REGISTRATION_SDK_CALENDAR_CORRECTIVE_HISTORY_REVIEW,prefix:directPrefix,reg:oldCorrectivePacket.sourceRecord,extra:oldCorrectivePacket.additionalSourceTexts,helperText:oldCorrectivePacket.helperText,helperTestText:oldCorrectivePacket.helperTestText,parallel:true,ownerRepair:true,calendar:true,calendarCorrective:true},{label:'calendar69',review:c.REGISTRATION_SDK_PRE_CORRECTIVE_REVIEW,prefix:directPrefix,reg:priorCalendarPacket.sourceRecord,extra:priorCalendarPacket.additionalSourceTexts,helperText:priorCalendarPacket.helperText,helperTestText:priorCalendarPacket.helperTestText,parallel:true,ownerRepair:true,calendar:true},{label:'ownerRepaired68',review:c.REGISTRATION_SDK_OWNER_HISTORY_REVIEW,prefix:directPrefix,reg:oldOwnerPacket.sourceRecord,extra:oldOwnerPacket.additionalSourceTexts,helperText:oldOwnerPacket.helperText,helperTestText:oldOwnerPacket.helperTestText,parallel:true,ownerRepair:true},{label:'directEcr68',review:c.REGISTRATION_SDK_DIRECT_ECR_REVIEW,prefix:directPrefix,reg:directPacket.sourceRecord,extra:directPacket.additionalSourceTexts,parallel:true},{label:'ecrWeek67',review:c.REGISTRATION_SDK_PARALLEL_ECR_REVIEW,prefix:composed,reg:composition.sourceRecord,extra:composition.additionalSourceTexts,parallel:true},{label:'approved1026',review:c.REGISTRATION_SDK_FIXTURE_HISTORY_REVIEW,prefix:latest,reg:packet.sourceRecord,extra:packet.additionalSourceTexts},{label:'approved1024',review:c.REGISTRATION_SDK_COMPLETE_HISTORY_REVIEW,prefix:complete,reg:completePacket.sourceRecord,extra:completePacket.additionalSourceTexts},{label:'approved1022',review:c.REGISTRATION_SDK_IDENTITY_HISTORY_REVIEW,prefix:middle,reg:JSON.parse(f.readFileSync(p.join(original,'source-record.json'))),extra:{}},{label:'approved1016',review:c.REGISTRATION_SDK_RECONCILED_REVIEW,prefix:original,reg:JSON.parse(f.readFileSync(p.join(original,'source-record.json'))),extra:{}}];
  for(const v of variants)await t.test(v.label,()=>{
   const root=f.mkdtempSync(p.join(os.tmpdir(),'registration67-physical-'));t.after(()=>f.rmSync(root,{recursive:true,force:true}));
   const maps=[v.reg.sourceDigests,v.reg.compatibilityTestSourceDigests,v.reg.preservedSourceDigests,...Object.values(v.reg.consumerSourceDigests)],needed=new Set([...Object.keys(v.review.entries),...Object.keys(rec.sourceDigests),...Object.keys(rec.preservedReceipts),...maps.flatMap(Object.keys),'apps/architecture-lab/private-recurring-source.json',...Object.values(c.PRIVATE_RECURRING_PROVENANCE.adoptions)]);
-  for(const name of needed){const e=v.review.entries[name];let b;if(name==='packages/platform-contracts/test/organisation-sdk-compatibility.json')b=Buffer.from(JSON.stringify(v.reg,null,2)+'\n');else if(name==='packages/platform-contracts/test/organisation-sdk-compatibility.mjs')b=f.readFileSync(p.join(v.prefix,'organisation-sdk-compatibility.mjs.txt'));else if(name==='packages/platform-contracts/test/organisation-sdk-compatibility.test.mjs')b=f.readFileSync(p.join(v.prefix,'organisation-sdk-compatibility.test.mjs.txt'));else if(Object.hasOwn(v.extra,name))b=Buffer.from(v.extra[name]);else b=readGit(e?(natives.has(name)?'6dd651bee360d80a644f7526cf1397f60a0db461':owners[e.projectKey]):base,name);const file=p.join(root,name);f.mkdirSync(p.dirname(file),{recursive:true});f.writeFileSync(file,b);}
+  if(v.parallel)for(const name of [...Object.keys(c.ASSISTANT_ECR_WEEK_REVIEW.sourceDigests),...Object.keys(c.ASSISTANT_ECR_WEEK_REVIEW.preservedReceipts)])needed.add(name);
+  if(v.calendar){for(const name of Object.keys(c.ECR_MARKET_CALENDAR_REVIEW.entries))needed.add(name);const cal=JSON.parse(readGit(c.ECR_MARKET_CALENDAR_REVIEW.sourceSha,c.ECR_MARKET_CALENDAR_PROVENANCE.recordPath));for(const name of Object.keys(cal.preservedReceipts))needed.add(name);}
+  if(v.calendarCorrective)for(const name of Object.keys(c.ECR_CALENDAR_TEST_REVIEW.entries))needed.add(name);
+  if(v.calendarConsumer){needed.add(ownerPacket.calendarConsumer.recordPath);const a=JSON.parse(readGit(ownerPacket.calendarConsumer.sourceSha,ownerPacket.calendarConsumer.recordPath));for(const name of [...Object.keys(a.sourceDigests),...Object.keys(a.preservedReceipts)])needed.add(name)}
+  for(const name of needed){const e=v.review.entries[name];let b;if(name==='packages/platform-contracts/test/organisation-sdk-compatibility.json')b=Buffer.from(JSON.stringify(v.reg,null,2)+'\n');else if(name==='packages/platform-contracts/test/organisation-sdk-compatibility.mjs')b=v.helperText?Buffer.from(v.helperText):f.readFileSync(p.join(v.prefix,'organisation-sdk-compatibility.mjs.txt'));else if(name==='packages/platform-contracts/test/organisation-sdk-compatibility.test.mjs')b=v.helperTestText?Buffer.from(v.helperTestText):f.readFileSync(p.join(v.prefix,'organisation-sdk-compatibility.test.mjs.txt'));else if(Object.hasOwn(v.extra,name))b=Buffer.from(v.extra[name]);else if(v.calendarConsumer&&(name===ownerPacket.calendarConsumer.recordPath||c.ECR_MARKET_CALENDAR_PROVENANCE.consumerPaths.includes(name)))b=readGit(ownerPacket.calendarConsumer.sourceSha,name);else if(v.calendarCorrective&&Object.hasOwn(c.ECR_CALENDAR_TEST_REVIEW.entries,name))b=readGit(c.ECR_CALENDAR_TEST_REVIEW.sourceSha,name);else if(v.calendar&&Object.hasOwn(c.ECR_MARKET_CALENDAR_REVIEW.entries,name))b=readGit(c.ECR_MARKET_CALENDAR_REVIEW.sourceSha,name);else if(v.parallel&&!e&&Object.hasOwn(c.ASSISTANT_ECR_WEEK_REVIEW.sourceDigests,name))b=readGit('38a9fe371e7993b47e2358d297647086ea999428',name);else b=readGit(e?(natives.has(name)?'6dd651bee360d80a644f7526cf1397f60a0db461':owners[e.projectKey]):base,name);const file=p.join(root,name);f.mkdirSync(p.dirname(file),{recursive:true});f.writeFileSync(file,b);}
   const gitdir=cp.execFileSync('git',['rev-parse','--absolute-git-dir'],{cwd:repo,encoding:'utf8'}).trim();f.writeFileSync(p.join(root,'.git'),'gitdir: '+gitdir+'\n');
   assert.equal(Object.keys(c.assertRegistrationSdkProvenance(root).sourceDigests).length,165);assert.equal(Object.keys(c.assertPrivateRecurringProvenance(root).sourceDigests).length,368);
   const receipt=JSON.parse(f.readFileSync(p.join(root,'apps/sg-runtime/operation-integration.json'))),contract={...c.adoptedOperationContract(receipt),sourceDigest:v.reg.sdkDigests.operationSourceDigest};assert.equal(c.operationContractProvenanceDigest(root,contract,{reviewedPrivateRecurring:true}),v.reg.sdkDigests.operationSourceDigest);
-  const helper=p.join(root,'packages/platform-contracts/test/organisation-sdk-compatibility.mjs'),savedHelper=f.readFileSync(helper),other=variants.find(x=>x.label!==v.label);f.writeFileSync(helper,f.readFileSync(p.join(other.prefix,'organisation-sdk-compatibility.mjs.txt')));assert.throws(()=>c.assertPrivateRecurringProvenance(root),/REGISTRATION_SDK_SOURCE_BYTES_REJECTED/);f.writeFileSync(helper,savedHelper);
+  if(v.parallel){
+   for(const name of Object.keys(c.ASSISTANT_ECR_WEEK_REVIEW.sourceDigests)){const target=p.join(root,name),before=f.readFileSync(target);f.appendFileSync(target,'\nUNADMITTED_ECR');assert.throws(()=>c.assertPrivateRecurringProvenance(root),name);f.writeFileSync(target,before);}
+   const target=p.join(root,c.ASSISTANT_ECR_WEEK_REVIEW.recordPath),before=f.readFileSync(target);f.unlinkSync(target);assert.throws(()=>c.assertPrivateRecurringProvenance(root));f.writeFileSync(target,before);
+  }
+   if(v.calendarConsumer)for(const name of [ownerPacket.calendarConsumer.recordPath,...c.ECR_MARKET_CALENDAR_PROVENANCE.consumerPaths]){const target=p.join(root,name),before=f.readFileSync(target);f.appendFileSync(target,'\nUNREVIEWED_CONSUMER');assert.throws(()=>c.assertPrivateRecurringProvenance(root),name);f.writeFileSync(target,before);f.unlinkSync(target);assert.throws(()=>c.assertPrivateRecurringProvenance(root),'missing consumer: '+name);f.writeFileSync(target,before);}
+   if(v.calendarCorrective)for(const name of Object.keys(c.ECR_CALENDAR_TEST_REVIEW.entries)){const target=p.join(root,name),before=f.readFileSync(target);f.appendFileSync(target,'\nUNREVIEWED_CORRECTIVE');assert.throws(()=>c.assertPrivateRecurringProvenance(root),name);f.writeFileSync(target,before);f.unlinkSync(target);assert.throws(()=>c.assertPrivateRecurringProvenance(root),'missing corrective: '+name);f.writeFileSync(target,before);}
+   if(v.calendar)for(const name of Object.keys(c.ECR_MARKET_CALENDAR_REVIEW.entries)){const target=p.join(root,name),before=f.readFileSync(target);f.appendFileSync(target,'\nUNREVIEWED_CALENDAR');assert.throws(()=>c.assertPrivateRecurringProvenance(root),name);f.writeFileSync(target,before);f.unlinkSync(target);assert.throws(()=>c.assertPrivateRecurringProvenance(root),'missing Calendar source: '+name);f.writeFileSync(target,before);}
+   if(v.ownerRepair)for(const input of ownerPacket.ownerInputs.filter(input=>Object.hasOwn(v.review.entries,input.path))){const target=p.join(root,input.path),before=f.readFileSync(target);f.appendFileSync(target,'\nUNREVIEWED_OWNER_TEST');assert.throws(()=>c.assertPrivateRecurringProvenance(root),input.path);f.writeFileSync(target,before);f.unlinkSync(target);assert.throws(()=>c.assertPrivateRecurringProvenance(root),'missing required owner path cannot use an earlier review: '+input.path);f.writeFileSync(target,before);}
+  const helper=p.join(root,'packages/platform-contracts/test/organisation-sdk-compatibility.mjs'),savedHelper=f.readFileSync(helper),other=variants.find(x=>x.label!==v.label);f.writeFileSync(helper,other.helperText?Buffer.from(other.helperText):f.readFileSync(p.join(other.prefix,'organisation-sdk-compatibility.mjs.txt')));assert.throws(()=>c.assertPrivateRecurringProvenance(root),/REGISTRATION_SDK_SOURCE_BYTES_REJECTED/);f.writeFileSync(helper,savedHelper);
   const native=p.join(root,'apps/identity-runtime/src/http-handler.ts'),saved=f.readFileSync(native);f.appendFileSync(native,'\nUNREVIEWED');assert.throws(()=>c.assertPrivateRecurringProvenance(root),/REGISTRATION_SDK_SOURCE_BYTES_REJECTED/);f.writeFileSync(native,saved);
   const protectedPaths=new Set(maps.flatMap(Object.keys)),unmapped=Object.keys(rec.sourceDigests).find(name=>!v.review.entries[name]&&!protectedPaths.has(name));assert(unmapped);f.appendFileSync(p.join(root,unmapped),'\nUNREVIEWED');assert.throws(()=>c.assertPrivateRecurringProvenance(root),/PRIVATE_RECURRING_SOURCE_BYTES_REJECTED/);
  });
@@ -2024,9 +2101,9 @@ test('ECR continuation absence preserves legacy validation; forged and linked re
  }finally{fs.rmSync(root,{recursive:true,force:true})}
 })
 
-test('Market Calendar admits only its17 reviewed regular producer blobs and preserves all candidate fences',()=>{
+test('Market Calendar admits only its18 reviewed regular source blobs and preserves all candidate fences',()=>{
  const r=ECR_MARKET_CALENDAR_REVIEW,files=Object.entries(r.entries).map(([filename,e])=>({filename,sha:e.sha,status:e.status})),p={...pr(),number:r.prNumber,changed_files:files.length,base:{...pr().base,sha:r.baseSha},head:{...pr().head,sha:r.sourceSha,ref:r.branch}}
- assert.equal(files.length,17);assert.equal(r.prNumber,1018)
+ assert.equal(files.length,18);assert.equal(r.prNumber,1018)
  assertArchitectureFiles(p,files);assert.equal(selectCandidate(context(),p,r.sourceSha,{files}),r.sourceSha)
  for(const f of files){assertEcrMarketCalendarReviewEntry(f,'100644 blob '+f.sha+'\t'+f.filename+'\0');for(const mode of ['100755','120000','160000'])rejection(()=>assertEcrMarketCalendarReviewEntry(f,mode+' blob '+f.sha+'\t'+f.filename+'\0'))}
  for(const edit of [a=>a.pop(),a=>a.push(a[0]),a=>a[0]={...a[0],sha:'f'.repeat(40)},a=>a[0]={...a[0],status:'removed'},a=>a[0]={...a[0],previous_filename:a[0].filename},a=>a[0]={...a[0],filename:'apps/economic-calendar-runtime/src/unreviewed.mjs'}]){const bad=structuredClone(files);edit(bad);rejection(()=>selectCandidate(context(),{...p,changed_files:bad.length},r.sourceSha,{files:bad}))}
@@ -2053,3 +2130,1046 @@ test('Market Calendar authenticates the real Git source and immutable receipts b
  for(const edit of [a=>a.noNotificationDelivery=false,a=>a.unknown=true,a=>a.taskId='different',a=>a.sourceDigests['apps/sg-runtime/unreviewed.ts']='0'.repeat(64),a=>delete a.sourceDigests[cfg.consumerPaths[0]],a=>a.preservedReceipts[cfg.consumerReceipts[0]]='0'.repeat(64)]){const bad=structuredClone(a);edit(bad);rejection(()=>marketCalendarTrustedPredecessor(read(bad),historical))}
  const changed={...additions,'apps/sg-runtime/package.json':Buffer.from(JSON.stringify({...JSON.parse(additions['apps/sg-runtime/package.json']),dependencies:{'@profitia/unreviewed':'1.0.0'}}))},rebound=structuredClone(a);rebound.sourceDigests['apps/sg-runtime/package.json']=createHash('sha256').update(changed['apps/sg-runtime/package.json']).digest('hex');rejection(()=>marketCalendarTrustedPredecessor(read(rebound,changed),historical))
 })
+
+// Preserve the parallel active instruction during the one-row PI adoption.
+test('Market Calendar governance refresh preserves every main document and active universal wrapper',()=>{
+ const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..'),read=(sha,p)=>JSON.parse(execFileSync('git',['cat-file','blob',sha+':'+p],{cwd:root,encoding:'utf8'}))
+ const p='Canon/registries/governance-manifest-v2.json',before=read(ECR_MARKET_CALENDAR_REVIEW.baseSha,p),after=read(ECR_MARKET_CALENDAR_REVIEW.sourceSha,p)
+ const addition=after.documents.filter(d=>!before.documents.some(b=>b.id===d.id));assert.equal(addition.length,1);assert.equal(addition[0].id,'procurement-insights-market-calendar-amendment')
+ assert.deepEqual({...after,manifestVersion:before.manifestVersion,documents:after.documents.filter(d=>d.id!==addition[0].id)},before)
+ assert.equal(after.documents.find(d=>d.id==='universal-project-execution-wrapper').status,'ACTIVE')
+})
+
+test('Market Calendar and accepted ECR weeks compose over all368 real recurring sources without weakening either closure',()=>{
+ const repositoryRoot=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..')
+ const root=fs.mkdtempSync(path.join(os.tmpdir(),'calendar-week-source-'))
+ const git=(...args)=>execFileSync('git',args,{cwd:repositoryRoot,stdio:['ignore','pipe','pipe']})
+ const source=p=>git('cat-file','blob',ECR_MARKET_CALENDAR_REVIEW.sourceSha+':'+p)
+ const recurring=JSON.parse(source(PRIVATE_RECURRING_PROVENANCE.recordPath))
+ const calendar=JSON.parse(source(ECR_MARKET_CALENDAR_PROVENANCE.recordPath))
+ const files=new Set([
+  ...Object.keys(recurring.sourceDigests),...Object.keys(recurring.preservedReceipts),
+  ...Object.keys(calendar.preservedReceipts),
+  ...Object.values(PRIVATE_RECURRING_PROVENANCE.adoptions),PRIVATE_RECURRING_PROVENANCE.recordPath,
+  ...Object.keys(ECR_MARKET_CALENDAR_REVIEW.entries),
+  ...Object.keys(ecrWeeksReview.sourceDigests),...Object.keys(ecrWeeksReview.preservedReceipts),ecrWeeksReview.recordPath
+ ])
+ try{
+  fs.writeFileSync(path.join(root,'.git'),'gitdir: '+String(git('rev-parse','--absolute-git-dir')).trim()+'\n')
+  for(const p of files){const f=path.join(root,p);fs.mkdirSync(path.dirname(f),{recursive:true});fs.writeFileSync(f,source(p),{mode:0o644})}
+  assert.equal(Object.keys(assertPrivateRecurringProvenance(root).sourceDigests).length,368)
+  // The previous physical-only week reader rejects the composed guard. The
+  // authenticated Calendar view is required, and preserves all14 week hashes.
+  rejection(()=>assistantEcrWeekSourceProjection(root))
+  for(const p of ['apps/economic-calendar-runtime/src/server.mjs','apps/sg-runtime/lib/assistant/context-selection.ts','apps/sg-runtime/operation-integration.json']){
+   const f=path.join(root,p),before=fs.readFileSync(f)
+   fs.writeFileSync(f,Buffer.concat([before,Buffer.from('UNREVIEWED')]))
+   rejection(()=>assertPrivateRecurringProvenance(root));fs.writeFileSync(f,before)
+  }
+  const executable=path.join(root,'apps/sg-runtime/tests/assistant-ecr-week-integrity.mjs')
+  fs.chmodSync(executable,0o755);rejection(()=>assertPrivateRecurringProvenance(root));fs.chmodSync(executable,0o644)
+  const linked=path.join(root,'apps/sg-runtime/lib/assistant/context-selection.ts'),bytes=fs.readFileSync(linked),outside=path.join(root,'linked-source')
+  fs.writeFileSync(outside,bytes);fs.unlinkSync(linked);fs.symlinkSync(outside,linked)
+  rejection(()=>assertPrivateRecurringProvenance(root));fs.unlinkSync(linked);fs.writeFileSync(linked,bytes)
+  assert.equal(Object.keys(assertPrivateRecurringProvenance(root).sourceDigests).length,368)
+ }finally{fs.rmSync(root,{recursive:true,force:true})}
+})
+
+test('parallel ECR reconciliation retains exact B5 scope and all old records',async()=>{
+ const c=await import('./controlled-package-ci.mjs'),crypto=await import('node:crypto'),fs=await import('node:fs');
+ const current=c.REGISTRATION_SDK_PARALLEL_ECR_REVIEW,old=c.REGISTRATION_SDK_FIXTURE_HISTORY_REVIEW;
+ assert.equal(Object.keys(current.entries).length,67);assert.equal(Object.keys(old.entries).length,67);
+ assert.deepEqual(Object.keys(current.entries).filter(p=>current.entries[p].sha!==old.entries[p].sha).sort(),["apps/architecture-lab/private-recurring-source.mjs","apps/architecture-lab/test/private-recurring-source.test.mjs","apps/sg-runtime/tests/pci-smart-integrity.test.mjs","packages/platform-contracts/test/organisation-sdk-compatibility.json","packages/platform-contracts/test/organisation-sdk-compatibility.mjs","packages/platform-contracts/test/organisation-sdk-compatibility.test.mjs"]);
+ for(const p of Object.keys(old.entries)){const{sha:a,...before}=old.entries[p],{sha:b,...after}=current.entries[p];assert.deepEqual(after,before,'unchanged owner/status/mode '+p);}
+ const packet=JSON.parse(fs.readFileSync(new URL('../../Canon/proposals/registration-ecr-week-reconciliation-20261111/source-review.json',import.meta.url))),bytes=Buffer.from(JSON.stringify(packet.sourceRecord,null,2)+'\n');
+ assert.equal(crypto.createHash('sha256').update(bytes).digest('hex'),c.REGISTRATION_SDK_ECR_WEEK_PROVENANCE.recordDigest);
+ assert.equal(c.REGISTRATION_SDK_ECR_WEEK_PROVENANCE.parallelSourceSha,'38a9fe371e7993b47e2358d297647086ea999428');
+ assert.equal(c.REGISTRATION_SDK_FIXTURE_PROVENANCE.recordDigest,'b5a228db0a77f4cd7e2235506738a994fffcd741ff942e67717633d858c5b94a');
+ assert.equal(c.REGISTRATION_SDK_COMPLETE_HISTORY_PROVENANCE.recordDigest,'ffe2065f84e7a9808a74f896170588b9ff5fc66973096a15a407a7cbf006808d');
+});
+
+test('direct ECR history successor retains the complete approved67 and exact68 closure',async()=>{
+ const c=await import('./controlled-package-ci.mjs'),crypto=await import('node:crypto'),fs=await import('node:fs');
+ const active=c.REGISTRATION_SDK_DIRECT_ECR_REVIEW,old=c.REGISTRATION_SDK_PARALLEL_ECR_REVIEW;
+ assert.equal(Object.keys(active.entries).length,68);assert.equal(Object.keys(old.entries).length,67);
+ assert.deepEqual(Object.keys(active.entries).filter(p=>!old.entries[p]),["apps/sg-runtime/tests/assistant-ecr-week-integrity.test.mjs"]);
+ assert.equal(Object.entries(old.entries).filter(([p,e])=>e.sha===active.entries[p].sha).length,64);
+ for(const[p,e]of Object.entries(old.entries)){const{sha:a,...before}=e,{sha:b,...after}=active.entries[p];assert.deepEqual(after,before,'owner/mode/status retained '+p);}
+ const packet=JSON.parse(fs.readFileSync(new URL('../../Canon/proposals/registration-ecr-direct-history-20261112/source-review.json',import.meta.url)));
+ const bytes=Buffer.from(JSON.stringify(packet.sourceRecord,null,2)+'\n');assert.equal(crypto.createHash('sha256').update(bytes).digest('hex'),c.REGISTRATION_SDK_ECR_DIRECT_PROVENANCE.recordDigest);
+ assert.equal(c.REGISTRATION_SDK_ECR_WEEK_PROVENANCE.recordDigest,'b0b9ceb1799499cb2088ed8be523d6c1758573995e65ca53693b15eeaeafe698');
+ assert.equal(Object.keys(c.REGISTRATION_SDK_ECR_DIRECT_PROVENANCE.parallelGuardPins).length,3);
+ for(const p of Object.keys(c.REGISTRATION_SDK_ECR_WEEK_PROVENANCE.parallelGuardPins))assert.equal(c.REGISTRATION_SDK_ECR_DIRECT_PROVENANCE.parallelGuardPins[p],c.REGISTRATION_SDK_ECR_WEEK_PROVENANCE.parallelGuardPins[p]);
+});
+
+test('delegated exact68 owner repair retains every frozen source and earlier reviewed graph',async()=>{
+ const c=await import('./controlled-package-ci.mjs'),fs=await import('node:fs'),crypto=await import('node:crypto');
+ const old=c.REGISTRATION_SDK_DIRECT_ECR_REVIEW,active=c.REGISTRATION_SDK_OWNER_HISTORY_REVIEW;
+ assert.equal(Object.keys(active.entries).length,68);assert.deepEqual(Object.keys(active.entries),Object.keys(old.entries));
+ assert.deepEqual(Object.keys(active.entries).filter(p=>active.entries[p].sha!==old.entries[p].sha).sort(),["apps/sg-runtime/tests/assistant-ecr-week-integrity.test.mjs","apps/srm/scripts/native-execution-adoption.test.mjs","packages/platform-contracts/test/organisation-sdk-compatibility.json","packages/platform-contracts/test/organisation-sdk-compatibility.mjs","packages/platform-contracts/test/organisation-sdk-compatibility.test.mjs"]);
+ for(const[p,e]of Object.entries(old.entries)){const{sha:a,...before}=e,{sha:b,...after}=active.entries[p];assert.deepEqual(after,before,'unchanged ownership/status/mode '+p);}
+ assert.equal(c.REGISTRATION_SDK_OWNER_PROVENANCE.recordDigest,'52f6fbeba63a7585d3b909ca6cb5b91c1b6b2ebdeb118975473f312acc6ba7f3');
+ assert.equal(c.REGISTRATION_SDK_ECR_DIRECT_PROVENANCE.recordDigest,'8e3eb5304ba9f3270b8021341a7220dff29acd5bbcf6fcd8c4cb301bf7071059');
+ assert.deepEqual(c.REGISTRATION_SDK_OWNER_PROVENANCE.parallelGuardPins,c.REGISTRATION_SDK_ECR_DIRECT_PROVENANCE.parallelGuardPins);
+ const text=execFileSync('git',['show','f1ac06bf9724967d75d2515dcbd60578c6cd257d:Canon/evidence/2026-11-12-registration-ecr-direct-history-ci-acceptance.md'],{encoding:'utf8'}).split('<!-- registration-source-packet-json -->')[1].trim(),packet=JSON.parse(text.slice(8,-4));
+ const original=JSON.parse(fs.readFileSync(new URL('../../Canon/proposals/registration-ecr-direct-history-20261112/source-review.json',import.meta.url))).sourceRecord;
+ for(const key of Object.keys(original).filter(k=>k!=='consumerSourceDigests'))assert.deepEqual(packet.sourceRecord[key],original[key],'frozen '+key);
+ for(const project of ['SG2','SRM'])assert.deepEqual(Object.keys(packet.sourceRecord.consumerSourceDigests[project]),Object.keys(original.consumerSourceDigests[project]));
+ assert.equal(crypto.createHash('sha256').update(JSON.stringify(packet.sourceRecord,null,2)+'\n').digest('hex'),c.REGISTRATION_SDK_OWNER_PROVENANCE.recordDigest);
+});
+
+test('approved1046 adds only the Calendar proof path and preserves the exact68 history and frozen runtime',async()=>{
+ const c=await import('./controlled-package-ci.mjs'),r=c.REGISTRATION_SDK_ROUTING_HISTORY_REVIEW,old=c.REGISTRATION_SDK_OWNER_HISTORY_REVIEW;
+ assert.equal(Object.keys(r.entries).length,69);assert.equal(Object.keys(old.entries).length,68);
+ assert.deepEqual(Object.keys(r.entries).filter(p=>!Object.hasOwn(old.entries,p)),['apps/architecture-lab/test/market-calendar-source.test.mjs']);
+ assert.equal(c.REGISTRATION_SDK_CALENDAR_PROVENANCE.recordDigest,'49d746aad0ff4de6d0e910e2e3aaf7c53c9e4e0ab3aed9d86acd94761ec707ba');
+ assert.deepEqual(c.REGISTRATION_SDK_CALENDAR_PROVENANCE.parallelGuardPins,c.REGISTRATION_SDK_OWNER_PROVENANCE.parallelGuardPins);
+ assert.equal(Object.keys(c.REGISTRATION_SDK_CALENDAR_PROVENANCE.calendarGuardPins).length,3);
+ for(const[p,e]of Object.entries(old.entries)){const{sha:a,...before}=e,{sha:b,...after}=r.entries[p];assert.deepEqual(after,before,'unchanged owner/status/mode '+p)}
+ const text=fs.readFileSync(new URL('../../Canon/evidence/2026-11-12-registration-ecr-direct-history-ci-acceptance.md',import.meta.url),'utf8').split('<!-- registration-source-packet-json -->')[1].trim(),p=JSON.parse(text.slice(8,-4));
+ const original=JSON.parse(fs.readFileSync(new URL('../../Canon/proposals/registration-ecr-direct-history-20261112/source-review.json',import.meta.url))).sourceRecord;
+ for(const k of Object.keys(original).filter(k=>!['consumerSourceDigests','compatibilityTestSourceDigests'].includes(k)))assert.deepEqual(p.sourceRecord[k],original[k],'frozen '+k);
+ const files=Object.entries(r.entries).map(([filename,e])=>({filename,sha:e.sha,status:e.status})),candidate={...pr(),number:r.prNumber,changed_files:files.length,base:{...pr().base,sha:r.baseSha},head:{...pr().head,sha:r.sourceSha,ref:r.branch}};
+ assertArchitectureFiles(candidate,files);assert.equal(selectCandidate(context(),candidate,r.sourceSha,{files}),r.sourceSha);
+ for(const f of files){c.assertRegistrationSdkReviewEntry(f,'100644 blob '+f.sha+'\t'+f.filename+'\0');for(const mode of ['100755','120000','160000'])rejection(()=>c.assertRegistrationSdkReviewEntry(f,mode+' blob '+f.sha+'\t'+f.filename+'\0'));}
+ for(const edit of [a=>a.pop(),a=>a.push(a[0]),a=>a[0]={...a[0],sha:'f'.repeat(40)},a=>a.push({filename:'apps/identity-runtime/src/unreviewed.ts',sha:'a'.repeat(40),status:'added'})]){const bad=structuredClone(files);edit(bad);rejection(()=>selectCandidate(context(),{...candidate,changed_files:bad.length},r.sourceSha,{files:bad}));}
+});
+
+// The successor is preparation-only until separately accepted by the owner.
+test('Calendar test correction is restricted to its three exact Architecture files, owner and PR',()=>{
+ const r=ECR_CALENDAR_TEST_REVIEW,files=Object.entries(r.entries).map(([filename,e])=>({filename,sha:e.sha,status:e.status})),p={...pr(),number:r.prNumber,changed_files:files.length,base:{...pr().base,sha:r.baseSha},head:{...pr().head,sha:r.sourceSha,ref:r.branch}}
+ assert.equal(files.length,3);assertArchitectureFiles(p,files);assert.equal(selectCandidate(context(),p,r.sourceSha,{files}),r.sourceSha)
+ for(const f of files){assertCalendarTestReviewEntry(f,'100644 blob '+f.sha+'\t'+f.filename+'\0');for(const mode of ['100755','120000','160000'])rejection(()=>assertCalendarTestReviewEntry(f,mode+' blob '+f.sha+'\t'+f.filename+'\0'))}
+ for(const edit of [a=>a.pop(),a=>a.push(a[0]),a=>a[0]={...a[0],sha:'f'.repeat(40)},a=>a[0]={...a[0],status:'removed'},a=>a[0]={...a[0],previous_filename:a[0].filename},a=>a[0]={...a[0],filename:'apps/sg-runtime/middleware.ts'}]){const bad=structuredClone(files);edit(bad);rejection(()=>selectCandidate(context(),{...p,changed_files:bad.length},r.sourceSha,{files:bad}))}
+ for(const edit of [q=>q.number++,q=>q.head.ref='architecture/other',q=>q.head.repo.full_name='profitia/fork',q=>q.user.login='attacker',q=>q.base.ref='staging',q=>q.head.sha=sha]){const bad=structuredClone(p);edit(bad);rejection(()=>selectCandidate(context(),bad,r.sourceSha,{files}))}
+})
+test('Calendar correction authenticates real Git bytes and every current consumer source before preserving original history',()=>{
+ const r=ECR_CALENDAR_TEST_REVIEW,cfg=ECR_MARKET_CALENDAR_PROVENANCE,base=ECR_MARKET_CALENDAR_REVIEW,cache=new Map(),root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..')
+ const historical=(sha,p)=>{const key=sha+':'+p;if(!cache.has(key))cache.set(key,execFileSync('git',['cat-file','blob',key],{cwd:root,stdio:['ignore','pipe','pipe']}));return Buffer.from(cache.get(key))}
+ const missing=()=>{throw Object.assign(Error('not adopted'),{code:'ENOENT'})},current=p=>p===cfg.consumerRecord?missing():historical(r.sourceSha,p)
+ const restored=calendarTestCompatibilityTrustedCurrent(current,historical)
+ for(const[p,e]of Object.entries(r.entries))if(e.status==='added')assert.throws(()=>restored(p),e=>e.code==='ENOENT');else assert.deepEqual(restored(p),historical(r.baseSha,p))
+ assert.deepEqual(current(cfg.recordPath),historical(r.baseSha,cfg.recordPath))
+ const files=Object.fromEntries(cfg.consumerPaths.map(p=>[p,Buffer.from('SYNTHETIC_TEST_ONLY '+p)]));files['apps/sg-runtime/package.json']=current('apps/sg-runtime/package.json')
+ const hash=b=>createHash('sha256').update(b).digest('hex'),a={schemaVersion:'1.0.0',taskId:'SG2-PROCUREMENT-MARKET-CALENDAR-20261111',targetEnvironment:'development',scope:'MARKET_CALENDAR_CONSUMER_SOURCE',previousSourceSha:r.baseSha,producerRecordSha256:cfg.recordSha256,sourceDigests:Object.fromEntries(Object.entries(files).map(([p,b])=>[p,hash(b)])),preservedReceipts:Object.fromEntries(cfg.consumerReceipts.map(p=>[p,hash(current(p))])),noProviderAcquisition:true,noIndependentStore:true,noNotificationDelivery:true,activationIsSeparate:true}
+ assert.equal(cfg.consumerPaths.length,20)
+ const read=p=>p===cfg.consumerRecord?Buffer.from(JSON.stringify(a)):files[p]??current(p),prior=marketCalendarTrustedPredecessor(read,historical)
+ for(const[p,e]of Object.entries(base.entries))if(e.status==='added')assert.throws(()=>prior(p),e=>e.code==='ENOENT');else assert.deepEqual(prior(p),historical(base.baseSha,p))
+ const record=JSON.parse(current(cfg.recordPath))
+ for(const p of [...Object.keys(r.entries),...cfg.consumerPaths,...cfg.consumerReceipts,...Object.keys(base.entries),...Object.keys(record.preservedReceipts)])rejection(()=>marketCalendarTrustedPredecessor(f=>f===p?Buffer.concat([read(f),Buffer.from('tamper')]):read(f),historical))
+ const denied=Object.assign(Error('denied'),{code:'EACCES'});assert.throws(()=>calendarTestCompatibilityTrustedCurrent(()=>{throw denied},historical),e=>e===denied)
+ const foreign=Object.assign(Error('foreign Git error'),{status:128,stderr:"fatal: path 'other' does not exist in 'main'"});assert.throws(()=>calendarTestCompatibilityTrustedCurrent(()=>{throw foreign},historical),e=>e===foreign)
+ const fixture=fs.mkdtempSync(path.join(os.tmpdir(),'calendar-test-source-'))
+ try{for(const p of Object.keys(r.entries)){fs.mkdirSync(path.dirname(path.join(fixture,p)),{recursive:true});fs.writeFileSync(path.join(fixture,p),current(p))}fs.mkdirSync(path.dirname(path.join(fixture,cfg.recordPath)),{recursive:true});fs.writeFileSync(path.join(fixture,cfg.recordPath),current(cfg.recordPath));calendarTestCompatibilityTrustedCurrent(p=>readCalendarSourceFile(fixture,p),historical)
+ for(const p of Object.keys(r.entries)){const file=path.join(fixture,p),bytes=fs.readFileSync(file);fs.chmodSync(file,0o755);rejection(()=>calendarTestCompatibilityTrustedCurrent(n=>readCalendarSourceFile(fixture,n),historical));fs.chmodSync(file,0o644);fs.unlinkSync(file);fs.symlinkSync(path.join(fixture,cfg.recordPath),file);rejection(()=>calendarTestCompatibilityTrustedCurrent(n=>readCalendarSourceFile(fixture,n),historical));fs.unlinkSync(file);fs.writeFileSync(file,bytes)}
+ }finally{fs.rmSync(fixture,{recursive:true,force:true})}
+})
+
+function piCurrentShellFixture(){
+ const r=PRIVATE_RECURRING_SHELL_CURRENT_REVIEW,files=Object.entries(r.entries).map(([filename,e])=>({filename,sha:e.sha,status:e.status}))
+ return {r,files,p:{...pr(),number:r.prNumber,changed_files:files.length,base:{...pr().base,sha:r.baseSha},head:{...pr().head,sha:r.sourceSha,ref:r.branch}}}
+}
+test('PI completion admits exactly twenty-one owner-routed source versions and regular modes',()=>{
+ const {r,files,p}=piCurrentShellFixture();assert.equal(files.length,21);assert.equal(r.prNumber,1014)
+ assert.equal(createHash('sha256').update(JSON.stringify(r.entries)).digest('hex'),'2879e91d5a653714e131711893db6172789d3f56a8ef5e5dd3a9ef56f317cc01')
+ assert.deepEqual([...new Set(Object.values(r.entries).map(e=>e.projectKey))].sort(),['ARCHITECTURE','SG2'])
+ assertArchitectureFiles(p,files);assert.equal(selectCandidate(context(),p,r.sourceSha,{files}),r.sourceSha)
+ for(const f of files){assertPrivateRecurringReviewEntry(f,'100644 blob '+f.sha+'\t'+f.filename+'\0');for(const mode of ['100755','120000','160000'])rejection(()=>assertPrivateRecurringReviewEntry(f,mode+' blob '+f.sha+'\t'+f.filename+'\0'))}
+})
+test('PI shell correction rejects changed scope, source bytes, status and borrowed owner identity',()=>{
+ const {r,files,p}=piCurrentShellFixture()
+ for(const edit of [f=>f.pop(),f=>f.push(f[0]),f=>f[0].sha='f'.repeat(40),f=>f[0].status='removed',f=>f[0].previous_filename='elsewhere',f=>f[0].filename='apps/sg-runtime/app/api/unreviewed.ts']){
+  const bad=structuredClone(files);edit(bad);rejection(()=>selectCandidate(context(),{...p,changed_files:bad.length},r.sourceSha,{files:bad}))
+ }
+ for(const edit of [q=>q.number=995,q=>q.head.ref='architecture/pi-private-recurring-20261111',q=>q.head.ref='architecture/another',q=>q.head.repo.full_name='attacker/fork',q=>q.user.login='attacker',q=>q.base.ref='staging',q=>q.head.sha=sha]){
+  const bad=structuredClone(p);edit(bad);rejection(()=>selectCandidate(context(),bad,r.sourceSha,{files}))
+ }
+})
+test('PI shell correction cannot reuse or alter any of the three accepted recurring review sets',()=>{
+ const shell=piCurrentShellFixture()
+ for(const old of [PRIVATE_RECURRING_REVIEW,PRIVATE_RECURRING_FINAL_REVIEW,PRIVATE_RECURRING_COMPLETION_REVIEW]){
+  const files=Object.entries(old.entries).map(([filename,e])=>({filename,sha:e.sha,status:e.status})),p={...pr(),number:old.prNumber,changed_files:files.length,base:{...pr().base,sha:old.baseSha},head:{...pr().head,sha:old.sourceSha,ref:old.branch}}
+  assert.equal(selectCandidate(context(),p,p.head.sha,{files}),p.head.sha)
+  rejection(()=>selectCandidate(context(),{...shell.p,changed_files:files.length},shell.r.sourceSha,{files}))
+  rejection(()=>selectCandidate(context(),{...p,changed_files:shell.files.length},p.head.sha,{files:shell.files}))
+ }
+})
+
+const piCurrentCompletionRecord=Buffer.from("{\n  \"schemaVersion\": \"1.0.0\",\n  \"taskId\": \"SG2-PI-RECURRING-E2E-20261111\",\n  \"targetEnvironment\": \"development\",\n  \"scope\": \"PROCUREMENT_INSIGHTS_LIBRARY_AND_SOURCE_ACTION_COMPLETION\",\n  \"baseCandidateSha\": \"924f803f807f63de2505734b50883c9047e78a70\",\n  \"magicPathRevision\": \"471325033734762496\",\n  \"sourceDigests\": {\n    \"apps/architecture-lab/private-recurring-source.mjs\": \"20c4fb3c8a6627adbc0af3bfbb7222f7671f78da1b7a3d3d257955e3ff411de7\",\n    \"apps/architecture-lab/test/market-calendar-source.test.mjs\": \"16215b8832bb8c82f40854add4c7ddd86de3d4c8cc5cbd6b1b3100ef12e6bed3\",\n    \"apps/insights-runtime/src/publication-query.mjs\": \"61a3b2b606af726b835a91e4592ea049bf37efaa596ce08bafae59bb74996243\",\n    \"apps/insights-runtime/src/subscription-api.mjs\": \"0ded6891898033e4a5657c54bace8c56b11e9911a016c593733cd5320d14e327\",\n    \"apps/insights-runtime/src/subscription-store.mjs\": \"dd159b75554c429660fc04276993fb19e02e8bc794b4d98e26e1ddfae4693a9b\",\n    \"apps/insights-runtime/tests/report-library.test.mjs\": \"f17dc930fc82e33cb9141257b0965581f5d49e56eb1d686593f7222bacd078c4\",\n    \"apps/insights-runtime/tests/subscriptions.test.mjs\": \"f3a33986059e5f985478f786c90a532b5d0ea55e87974593baeab62db17822f4\",\n    \"apps/sg-runtime/components/procurement-insights/inline-item.tsx\": \"4920e9315509d0e053ce50501cdf24ef1c5bddd306ecd1db430f51e495eb297a\",\n    \"apps/sg-runtime/components/procurement-insights/reports.tsx\": \"b888e0b328bd93898e78f526bf9a9f3eb0eef8d61265ff2ac6438b3e2ee45e3e\",\n    \"apps/sg-runtime/components/procurement-insights/workspace.css\": \"47a92d5c11f9e5d325271a7bc7cd1efe47d42e8229e3281f240b64d77a67c5dd\",\n    \"apps/sg-runtime/components/procurement-insights/workspace.tsx\": \"5df38d04b12418e58fa1d682bb4651e008abb6e28a455d090de159c9eaded384\",\n    \"apps/sg-runtime/middleware.ts\": \"d8736f570d537e5f9841f5120470f1c46a617233756c12038df0a5a9215c9179\",\n    \"apps/sg-runtime/package.json\": \"b3781339ad7260d054ebf37b6e2df4f163ce01c51c91d9bc43e99ae8c9b4aff5\",\n    \"apps/sg-runtime/procurement-insights-shell-integration.json\": \"1b1279e669e955e604c7c646482a6ce119eac5eeb09491ade78a37aa7fc133a1\",\n    \"apps/sg-runtime/tests/porr-demo-middleware.test.ts\": \"5c6a2fe0721c51ed95d01df9afb8acb6a6d2885be9e2067e652cc82d1c1351d6\",\n    \"apps/sg-runtime/tests/pci-smart-integrity.test.mjs\": \"0f8e27f2897dccf0d012f2fa3e136fa1d7f96df52b00a4f1bcffded15a99ea5f\",\n    \"apps/sg-runtime/tests/procurement-insights-completion.test.mjs\": \"ea0b0cba039ff6555cd94f7ff9c9495a37e71e15603209efa40896a0f2d39429\",\n    \"apps/sg-runtime/tests/procurement-insights-completion-integrity.mjs\": \"62e55140182e65219e51c6925c8abd3c2590bc8df677972101f78b426eae4888\",\n    \"apps/sg-runtime/tests/procurement-insights-shell-integrity.mjs\": \"007a689567e7eb179eaae1a2e24077dd7335f8b88fc8cf5b523e8dacb82e6e52\",\n    \"apps/sg-runtime/tests/assistant-ecr-week-integrity.test.mjs\": \"297a0eaa12b5782d124c578d7766c9e6345e9acff65936dc8abd4c4f8bf72b41\"\n  },\n  \"preservedReceipts\": {\n    \"apps/architecture-lab/private-recurring-source.json\": \"75877d5750e07d1c8172be0af76bc5933f2eeefc22cc39747a2621b9cab24619\",\n    \"apps/sg-runtime/operation-integration.json\": \"a6bf50993c98a71aeccd349dd904baafb53b3cd653324d97bab3fc5e34ac509f\",\n    \"apps/srm/operation-integration.json\": \"1303ac82c0570ca4929f64e1620e2ec7a6bfd3809607f57eb33da621c8ecd06d\",\n    \"apps/newsfeed-runtime/operation-integration.json\": \"a8b43f4f6213806843160d4373bb62bfd9357ba03cfbc16865fb2bce266f88f1\",\n    \"apps/sg-runtime/assistant-context-integration.json\": \"d932f227977789643086b6a9eb179598a6f48071964b2d26ba82d25fceb7b2ec\",\n    \"apps/newsfeed-runtime/assistant-context-integration.json\": \"4057379e02c7b698f3f24348c40b84275d92c3a892b55e96b1c6d23175298dfc\",\n    \"apps/newsfeed-runtime/saved-searches-integration.json\": \"fcfea3ae736cfd3446dac7c70c34f6f59a723a48bdae11234706d76f01652a6c\",\n    \"apps/sg-runtime/procurement-insights-integration.json\": \"6dca06d8b0731e585925100b0578d41a61711f335940350d1ea32c296a3d7177\",\n    \"apps/sg-runtime/assistant-ecr-integration.json\": \"5814e2e5cbdf1a32d22cff3aa55de806ec34c9debdecc21ff06c4f9f887a82bc\",\n    \"apps/sg-runtime/assistant-markdown-integration.json\": \"27ff06aff8bc44592f0073732748834b7759182fa4307d901c7d63304381a38b\",\n    \"apps/sg-runtime/registration-stage-i-integration.json\": \"4a7a572e67e12ed73c523502cef4cb432009e735737df851419d80898653f414\",\n    \"apps/sg-runtime/assistant-send-arrow-integration.json\": \"62c6af6817a022c31788d801cc0eac293a24b3f25d9e529d32b1bff4908fa230\",\n    \"apps/architecture-lab/private-recurring-source-adoption.json\": \"a79c186897851acb93142949fe7aee19184cbfe68b3acdf51cbda084c00c1254\",\n    \"apps/sg-runtime/private-recurring-source-adoption.json\": \"edf9d51c199251e148b39c92a3084944c1a4b8419be29175c88b6e2583df11f2\",\n    \"apps/srm/private-recurring-source-adoption.json\": \"88d0252f634eface35b34adf31ac97cbf0d396fcf1fe6da452c74bdc23c7c633\",\n    \"apps/sg-runtime/assistant-ecr-week-integration.json\": \"31ce8f1d7e5ca1d9c3aedf80f92e23fe0f1a93cb8f5fd5d003eb54a244859dd4\",\n    \"apps/economic-calendar-runtime/market-calendar-preferences-integration.json\": \"e3bc27ddf22b9165555c05f938a3c5d8f9f4f09334fcb7c55e760da44e9a59b6\"\n  },\n  \"authorisationChanged\": false,\n  \"schemaChanged\": false,\n  \"providerCallsPerformed\": false,\n  \"deploymentPerformed\": false\n}\n")
+test('trusted PI completion binds all current source bytes and the same seventeen predecessor receipts as pure data',()=>{
+ const a=JSON.parse(piCurrentCompletionRecord),options={sha256ForPath:p=>a.sourceDigests[p]??a.preservedReceipts[p],blobForPath:p=>PRIVATE_RECURRING_SHELL_CURRENT_REVIEW.entries[p].sha,historicalDigestForPath:(sha,p)=>{assert.equal(sha,a.baseCandidateSha);return a.preservedReceipts[p]}}
+ assert.equal(Object.keys(assertPiCompletionRecord(piCurrentCompletionRecord,options).sourceDigests).length,20)
+ for(const p of Object.keys(a.sourceDigests)){
+  rejection(()=>assertPiCompletionRecord(piCurrentCompletionRecord,{...options,sha256ForPath:q=>q===p?'0'.repeat(64):options.sha256ForPath(q)}))
+  rejection(()=>assertPiCompletionRecord(piCurrentCompletionRecord,{...options,blobForPath:q=>q===p?'0'.repeat(40):options.blobForPath(q)}))
+ }
+ for(const p of Object.keys(a.preservedReceipts))for(const field of ['sha256ForPath','historicalDigestForPath']){
+  const value={...options,[field]:field==='sha256ForPath'?q=>q===p?'0'.repeat(64):options.sha256ForPath(q):(sha,q)=>q===p?'0'.repeat(64):options.historicalDigestForPath(sha,q)}
+  rejection(()=>assertPiCompletionRecord(piCurrentCompletionRecord,value))
+ }
+ rejection(()=>assertPiCompletionRecord(Buffer.concat([piCurrentCompletionRecord,Buffer.from(' ')]),options))
+})
+
+function piCalendarShellFixture(){
+ const r=PRIVATE_RECURRING_SHELL_CALENDAR_REVIEW,files=Object.entries(r.entries).map(([filename,e])=>({filename,sha:e.sha,status:e.status}))
+ return {r,files,p:{...pr(),number:r.prNumber,changed_files:files.length,base:{...pr().base,sha:r.baseSha},head:{...pr().head,sha:r.sourceSha,ref:r.branch}}}
+}
+test('PI completion admits exactly twenty-one owner-routed source versions and regular modes',()=>{
+ const {r,files,p}=piCalendarShellFixture();assert.equal(files.length,21);assert.equal(r.prNumber,1014)
+ assert.equal(createHash('sha256').update(JSON.stringify(r.entries)).digest('hex'),'e5472bb16f11fcc2e8e997f8b15e6568b6f6b01ddc79d90f22d57c23507d01ec')
+ assert.deepEqual([...new Set(Object.values(r.entries).map(e=>e.projectKey))].sort(),['ARCHITECTURE','SG2'])
+ assertArchitectureFiles(p,files);assert.equal(selectCandidate(context(),p,r.sourceSha,{files}),r.sourceSha)
+ for(const f of files){assertPrivateRecurringReviewEntry(f,'100644 blob '+f.sha+'\t'+f.filename+'\0');for(const mode of ['100755','120000','160000'])rejection(()=>assertPrivateRecurringReviewEntry(f,mode+' blob '+f.sha+'\t'+f.filename+'\0'))}
+})
+test('PI shell correction rejects changed scope, source bytes, status and borrowed owner identity',()=>{
+ const {r,files,p}=piCalendarShellFixture()
+ for(const edit of [f=>f.pop(),f=>f.push(f[0]),f=>f[0].sha='f'.repeat(40),f=>f[0].status='removed',f=>f[0].previous_filename='elsewhere',f=>f[0].filename='apps/sg-runtime/app/api/unreviewed.ts']){
+  const bad=structuredClone(files);edit(bad);rejection(()=>selectCandidate(context(),{...p,changed_files:bad.length},r.sourceSha,{files:bad}))
+ }
+ for(const edit of [q=>q.number=995,q=>q.head.ref='architecture/pi-private-recurring-20261111',q=>q.head.ref='architecture/another',q=>q.head.repo.full_name='attacker/fork',q=>q.user.login='attacker',q=>q.base.ref='staging',q=>q.head.sha=sha]){
+  const bad=structuredClone(p);edit(bad);rejection(()=>selectCandidate(context(),bad,r.sourceSha,{files}))
+ }
+})
+test('PI shell correction cannot reuse or alter any of the three accepted recurring review sets',()=>{
+ const shell=piCalendarShellFixture()
+ for(const old of [PRIVATE_RECURRING_REVIEW,PRIVATE_RECURRING_FINAL_REVIEW,PRIVATE_RECURRING_COMPLETION_REVIEW]){
+  const files=Object.entries(old.entries).map(([filename,e])=>({filename,sha:e.sha,status:e.status})),p={...pr(),number:old.prNumber,changed_files:files.length,base:{...pr().base,sha:old.baseSha},head:{...pr().head,sha:old.sourceSha,ref:old.branch}}
+  assert.equal(selectCandidate(context(),p,p.head.sha,{files}),p.head.sha)
+  rejection(()=>selectCandidate(context(),{...shell.p,changed_files:files.length},shell.r.sourceSha,{files}))
+  rejection(()=>selectCandidate(context(),{...p,changed_files:shell.files.length},p.head.sha,{files:shell.files}))
+ }
+})
+
+const piCalendarCompletionRecord=Buffer.from("{\n  \"schemaVersion\": \"1.0.0\",\n  \"taskId\": \"SG2-PI-RECURRING-E2E-20261111\",\n  \"targetEnvironment\": \"development\",\n  \"scope\": \"PROCUREMENT_INSIGHTS_LIBRARY_AND_SOURCE_ACTION_COMPLETION\",\n  \"baseCandidateSha\": \"42e9d43ea846a5e6216faa18bfec8f939aac6971\",\n  \"magicPathRevision\": \"471325033734762496\",\n  \"sourceDigests\": {\n    \"apps/architecture-lab/private-recurring-source.mjs\": \"20c4fb3c8a6627adbc0af3bfbb7222f7671f78da1b7a3d3d257955e3ff411de7\",\n    \"apps/architecture-lab/test/market-calendar-source.test.mjs\": \"2c68bd444e13b16c171100fc3c2f3a786ed6cad2fc896eff4ad463b4d9feac27\",\n    \"apps/insights-runtime/src/publication-query.mjs\": \"61a3b2b606af726b835a91e4592ea049bf37efaa596ce08bafae59bb74996243\",\n    \"apps/insights-runtime/src/subscription-api.mjs\": \"0ded6891898033e4a5657c54bace8c56b11e9911a016c593733cd5320d14e327\",\n    \"apps/insights-runtime/src/subscription-store.mjs\": \"dd159b75554c429660fc04276993fb19e02e8bc794b4d98e26e1ddfae4693a9b\",\n    \"apps/insights-runtime/tests/report-library.test.mjs\": \"f17dc930fc82e33cb9141257b0965581f5d49e56eb1d686593f7222bacd078c4\",\n    \"apps/insights-runtime/tests/subscriptions.test.mjs\": \"f3a33986059e5f985478f786c90a532b5d0ea55e87974593baeab62db17822f4\",\n    \"apps/sg-runtime/components/procurement-insights/inline-item.tsx\": \"4920e9315509d0e053ce50501cdf24ef1c5bddd306ecd1db430f51e495eb297a\",\n    \"apps/sg-runtime/components/procurement-insights/reports.tsx\": \"b888e0b328bd93898e78f526bf9a9f3eb0eef8d61265ff2ac6438b3e2ee45e3e\",\n    \"apps/sg-runtime/components/procurement-insights/workspace.css\": \"6a867d1642b48617f88fa8039962b7e3763bc1a686a6850860762c97e48068df\",\n    \"apps/sg-runtime/components/procurement-insights/workspace.tsx\": \"5b9c9b31b1a9a2787b639b9496cfa4b9aa021304e1734bcf2ade9a6d4341179b\",\n    \"apps/sg-runtime/package.json\": \"2c9b703fb76ae597046aa40b947adb395969a15b688d5f5a08753f2d408851f6\",\n    \"apps/sg-runtime/procurement-insights-shell-integration.json\": \"1b1279e669e955e604c7c646482a6ce119eac5eeb09491ade78a37aa7fc133a1\",\n    \"apps/sg-runtime/tests/porr-demo-middleware.test.ts\": \"5c6a2fe0721c51ed95d01df9afb8acb6a6d2885be9e2067e652cc82d1c1351d6\",\n    \"apps/sg-runtime/tests/pci-smart-integrity.test.mjs\": \"aab40510f409559e3a023c53e069ca5c50bf1bd3bb6a5dd9f2f9e2e177f3caa7\",\n    \"apps/sg-runtime/tests/procurement-insights-completion.test.mjs\": \"ea0b0cba039ff6555cd94f7ff9c9495a37e71e15603209efa40896a0f2d39429\",\n    \"apps/sg-runtime/tests/procurement-insights-completion-integrity.mjs\": \"3af917f913cef82d1c548db1b3a2c4fc3d359617c59837a7dd7fd1ccca0645a3\",\n    \"apps/sg-runtime/tests/procurement-insights-shell-integrity.mjs\": \"007a689567e7eb179eaae1a2e24077dd7335f8b88fc8cf5b523e8dacb82e6e52\",\n    \"apps/sg-runtime/tests/assistant-ecr-week-integrity.test.mjs\": \"297a0eaa12b5782d124c578d7766c9e6345e9acff65936dc8abd4c4f8bf72b41\",\n    \"apps/sg-runtime/tests/market-calendar-integrity.test.mjs\": \"09e8c1161148a0b40dd60f68ea81f5d390689cd7f3ab3ede9be89c18d3dca32d\"\n  },\n  \"preservedReceipts\": {\n    \"apps/architecture-lab/private-recurring-source.json\": \"75877d5750e07d1c8172be0af76bc5933f2eeefc22cc39747a2621b9cab24619\",\n    \"apps/sg-runtime/operation-integration.json\": \"a6bf50993c98a71aeccd349dd904baafb53b3cd653324d97bab3fc5e34ac509f\",\n    \"apps/srm/operation-integration.json\": \"1303ac82c0570ca4929f64e1620e2ec7a6bfd3809607f57eb33da621c8ecd06d\",\n    \"apps/newsfeed-runtime/operation-integration.json\": \"a8b43f4f6213806843160d4373bb62bfd9357ba03cfbc16865fb2bce266f88f1\",\n    \"apps/sg-runtime/assistant-context-integration.json\": \"d932f227977789643086b6a9eb179598a6f48071964b2d26ba82d25fceb7b2ec\",\n    \"apps/newsfeed-runtime/assistant-context-integration.json\": \"4057379e02c7b698f3f24348c40b84275d92c3a892b55e96b1c6d23175298dfc\",\n    \"apps/newsfeed-runtime/saved-searches-integration.json\": \"fcfea3ae736cfd3446dac7c70c34f6f59a723a48bdae11234706d76f01652a6c\",\n    \"apps/sg-runtime/procurement-insights-integration.json\": \"6dca06d8b0731e585925100b0578d41a61711f335940350d1ea32c296a3d7177\",\n    \"apps/sg-runtime/assistant-ecr-integration.json\": \"5814e2e5cbdf1a32d22cff3aa55de806ec34c9debdecc21ff06c4f9f887a82bc\",\n    \"apps/sg-runtime/assistant-markdown-integration.json\": \"27ff06aff8bc44592f0073732748834b7759182fa4307d901c7d63304381a38b\",\n    \"apps/sg-runtime/registration-stage-i-integration.json\": \"4a7a572e67e12ed73c523502cef4cb432009e735737df851419d80898653f414\",\n    \"apps/sg-runtime/assistant-send-arrow-integration.json\": \"62c6af6817a022c31788d801cc0eac293a24b3f25d9e529d32b1bff4908fa230\",\n    \"apps/architecture-lab/private-recurring-source-adoption.json\": \"a79c186897851acb93142949fe7aee19184cbfe68b3acdf51cbda084c00c1254\",\n    \"apps/sg-runtime/private-recurring-source-adoption.json\": \"edf9d51c199251e148b39c92a3084944c1a4b8419be29175c88b6e2583df11f2\",\n    \"apps/srm/private-recurring-source-adoption.json\": \"88d0252f634eface35b34adf31ac97cbf0d396fcf1fe6da452c74bdc23c7c633\",\n    \"apps/sg-runtime/assistant-ecr-week-integration.json\": \"31ce8f1d7e5ca1d9c3aedf80f92e23fe0f1a93cb8f5fd5d003eb54a244859dd4\",\n    \"apps/economic-calendar-runtime/market-calendar-preferences-integration.json\": \"e3bc27ddf22b9165555c05f938a3c5d8f9f4f09334fcb7c55e760da44e9a59b6\",\n    \"apps/architecture-lab/market-calendar-test-compatibility.json\": \"52e859d4a99bc4c8e4d986f38afea2d58e9c1fe1ee1e0eb62cc2672dbdb60078\",\n    \"apps/sg-runtime/market-calendar-integration.json\": \"42406b5b07071408d35e39d5b9bb20d18402e52581d3c516bb08fb68b718f119\",\n    \"apps/sg-runtime/oil-renderer-integration.json\": \"6afdd65e66d8a7d8ceb4ab68601ba6d1c1bfac43bbac879d01bb61c9962e7ad6\"\n  },\n  \"authorisationChanged\": false,\n  \"schemaChanged\": false,\n  \"providerCallsPerformed\": false,\n  \"deploymentPerformed\": false\n}\n")
+test('trusted PI completion binds all current source bytes and the same twenty predecessor receipts as pure data',()=>{
+ const a=JSON.parse(piCalendarCompletionRecord),options={sha256ForPath:p=>a.sourceDigests[p]??a.preservedReceipts[p],blobForPath:p=>PRIVATE_RECURRING_SHELL_CALENDAR_REVIEW.entries[p].sha,historicalDigestForPath:(sha,p)=>{assert.equal(sha,a.baseCandidateSha);return a.preservedReceipts[p]}}
+ assert.equal(Object.keys(assertPiCompletionRecord(piCalendarCompletionRecord,options).sourceDigests).length,20)
+ for(const p of Object.keys(a.sourceDigests)){
+  rejection(()=>assertPiCompletionRecord(piCalendarCompletionRecord,{...options,sha256ForPath:q=>q===p?'0'.repeat(64):options.sha256ForPath(q)}))
+  rejection(()=>assertPiCompletionRecord(piCalendarCompletionRecord,{...options,blobForPath:q=>q===p?'0'.repeat(40):options.blobForPath(q)}))
+ }
+ for(const p of Object.keys(a.preservedReceipts))for(const field of ['sha256ForPath','historicalDigestForPath']){
+  const value={...options,[field]:field==='sha256ForPath'?q=>q===p?'0'.repeat(64):options.sha256ForPath(q):(sha,q)=>q===p?'0'.repeat(64):options.historicalDigestForPath(sha,q)}
+  rejection(()=>assertPiCompletionRecord(piCalendarCompletionRecord,value))
+ }
+ rejection(()=>assertPiCompletionRecord(Buffer.concat([piCalendarCompletionRecord,Buffer.from(' ')]),options))
+})
+test('accepted Calendar corrective composes within the same69 paths and retains the complete prior49 graph',async()=>{
+ const c=await import('./controlled-package-ci.mjs'),active=c.REGISTRATION_SDK_CALENDAR_CORRECTIVE_HISTORY_REVIEW,prior=c.REGISTRATION_SDK_PRE_CORRECTIVE_REVIEW;
+ assert.equal(Object.keys(active.entries).length,69);assert.deepEqual(Object.keys(active.entries),Object.keys(prior.entries));
+ assert.deepEqual(Object.keys(active.entries).filter(p=>active.entries[p].sha!==prior.entries[p].sha).sort(),['apps/architecture-lab/test/market-calendar-source.test.mjs','packages/platform-contracts/test/organisation-sdk-compatibility.json','packages/platform-contracts/test/organisation-sdk-compatibility.mjs','packages/platform-contracts/test/organisation-sdk-compatibility.test.mjs']);
+ assert.equal(c.REGISTRATION_SDK_CALENDAR_PROVENANCE.recordDigest,'49d746aad0ff4de6d0e910e2e3aaf7c53c9e4e0ab3aed9d86acd94761ec707ba');
+ assert.equal(c.REGISTRATION_SDK_COMPOSED_CALENDAR_PROVENANCE.recordDigest,'a8050a2acde67bfc74457dd55824b074d09b26428a43bc1584f9e27916b4edd8');
+ assert.equal(c.REGISTRATION_SDK_COMPOSED_CALENDAR_PROVENANCE.calendarTestCompatibilityReceipt.sha256,'52e859d4a99bc4c8e4d986f38afea2d58e9c1fe1ee1e0eb62cc2672dbdb60078');
+ assert.deepEqual(c.REGISTRATION_SDK_COMPOSED_CALENDAR_PROVENANCE.parallelGuardPins,c.REGISTRATION_SDK_CALENDAR_PROVENANCE.parallelGuardPins);
+ for(const[p,e]of Object.entries(prior.entries)){const{sha:a,...before}=e,{sha:b,...after}=active.entries[p];assert.deepEqual(after,before,'same owner/status/mode '+p)}
+});
+
+import {OIL_RENDERER_SUCCESSOR_REVIEW,oilRendererTrustedPredecessor,oilRendererCanonicalRead} from './controlled-package-ci.mjs'
+const rendererSuccessorFixture={"apps/insights-runtime/render/report.py":"\"\"\"Deterministic v0.5 renderer. No provider access, calculation of Forecast or prose edits.\"\"\"\nimport argparse, hashlib, json, re, time\nfrom pathlib import Path\nfrom datetime import datetime\nfrom zoneinfo import ZoneInfo\nfrom xml.sax.saxutils import escape\nfrom reportlab.lib import colors\nfrom reportlab.lib.pagesizes import A4\nfrom reportlab.lib.styles import ParagraphStyle\nfrom reportlab.pdfbase import pdfmetrics\nfrom reportlab.pdfbase.ttfonts import TTFont\nfrom reportlab.platypus import BaseDocTemplate, PageTemplate, Frame, Paragraph, Spacer, Table, TableStyle, PageBreak, NextPageTemplate\nfrom pypdf import PdfReader\n\nKEYS=['executive','statistical','events','macro','outlook','calendar','asphalt','procurement']\nTITLES=['Najważniejsze wnioski','Brent, WTI i bitumen: notowania i prognozy historyczne','Co się wydarzyło i dlaczego','Istotne odczyty i wskaźniki rynku','Perspektywa rynku i scenariusze','Kalendarz i publikacje do potwierdzenia','Od ropy do bitumenu i asfaltu','Warunkowe wnioski zakupowe']\nNAME='OIL_ASPHALT_MARKET_OUTLOOK_v0.5_PL'\ndef number(value):\n    return 'brak danych' if value is None else f'{value:,.2f}'.replace(',',' ').replace('.',',') if isinstance(value,(int,float)) else str(value)\ndef local(value):\n    return datetime.fromisoformat(value.replace('Z','+00:00')).astimezone(ZoneInfo('Europe/Warsaw')).strftime('%d.%m.%Y, %H:%M %Z')\ndef checked_url(value):\n    if not value or not re.match(r'^https?://[^\\s<>\"\\x00-\\x1f]+$',value): return None\n    return value\ndef publisher_label(e):\n    value=e.get('publisher') or e.get('provider')\n    return str(value.get('name') or value.get('id') or 'Źródło') if isinstance(value,dict) else str(value or 'Źródło')\ndef render(bundle,narrative,receipt,out,font,bold=None):\n    render_start=time.perf_counter_ns()\n    assert bundle['schemaVersion']=='ReportEvidenceBundle/OilAsphalt/0.5'\n    assert receipt.get('profileId')==bundle['profileId'] and receipt.get('status')=='completed', 'REAL_V05_GENERATION_REQUIRED'\n    assert receipt.get('evidenceFingerprint')==bundle['fingerprint'], 'EXACT_GENERATED_EVIDENCE_REQUIRED'\n    assert set(narrative)==set(KEYS) and bundle['admissionRef']\n    out.mkdir(parents=True,exist_ok=True)\n    assert not (out/(NAME+'.pdf')).exists(), 'IMMUTABLE_OUTPUT_ALREADY_EXISTS'\n    pdfmetrics.registerFont(TTFont('OilSans',font));pdfmetrics.registerFont(TTFont('OilBold',bold or font))\n    normal=ParagraphStyle('body',fontName='OilSans',fontSize=10.4,leading=14.1,spaceAfter=7,textColor=colors.HexColor('#263745'))\n    small=ParagraphStyle('small',parent=normal,fontSize=8.5,leading=10.7,spaceAfter=3)\n    note=ParagraphStyle('note',parent=small,fontSize=8.2,leading=10,spaceAfter=2)\n    heading=ParagraphStyle('heading',parent=normal,fontName='OilBold',fontSize=12,leading=15,spaceBefore=8,spaceAfter=6,textColor=colors.HexColor('#164d59'))\n    title=ParagraphStyle('title',parent=heading,fontSize=21,leading=25,spaceBefore=0,spaceAfter=7)\n    ids={e['id']:e for e in bundle['evidence']}\n    ids['FORECAST']={'publisher':'Forecast Core / Macrobond','title':'Zamrożony eksperyment historyczny; modele i sprawdzalność w aneksie','publishedAt':None,'materialDepth':'CANONICAL_FROZEN_D0','url':None}\n    ids['METHODOLOGY']={'publisher':'SpendGuru - profil ewaluacji v0.5','title':'Brak danych o regionie, ofertach i umowie nabywcy. TE Calendar wyłączony decyzją właściciela; wymagany przegląd człowieka.','publishedAt':None,'materialDepth':'PILOT_LIMITATIONS','url':None}\n    assigned={};page_notes=[[] for _ in range(4)];html_rows={};md_rows={}\n    def reference(ref,page):\n        assert ref in ids, 'UNVERIFIED_CITATION'\n        if ref not in assigned:assigned[ref]=len(assigned)+1;page_notes[page].append(ref)\n        n=assigned[ref];return f'<super><link href=\"#source_{n}\" color=\"#16556a\">{n}</link></super>'\n    for i,key in enumerate(KEYS):\n        html_rows[key]=[];md_rows[key]=[]\n        for statement in narrative[key]:\n            text=statement['text'];assert not re.search(r'\\d|\\bEV\\d+\\b|https?://',text), 'MODEL_NUMERICAL_CLAIM'\n            assert statement['refs']\n            citations='<super>,</super>'.join(reference(ref,i//2) for ref in statement['refs'])\n            html_rows[key].append(Paragraph(escape(text)+citations,normal))\n            md_rows[key].append(text+''.join(f'[^{assigned[r]}]' for r in statement['refs']))\n    for ref,page in [('CI_STOCKS',1),('CI_REFINERY',1),('CI_SUPPLIED',1),('CI_POSITION',2)]:\n        if ref in ids: reference(ref,page)\n    current=[e for e in bundle['evidence'] if e['family']=='market-observations' and e.get('facts',{}).get('price') is not None]\n    price_rows=[['Instrument i rynek','Notowanie / jednostka','Czas obserwacji','Zmiana zamknięć (7 dni)']]\n    for e in current:\n        p=e['facts'];change=p.get('weeklyChange');delta='brak porównywalnych danych' if not change else number(change['percent'])+'% ('+change['from'][:10]+' - '+change['to'][:10]+')'\n        price_rows.append([f\"{(p.get('label') or p['symbol'])} / {p['symbol']} / {p['instrumentType']} / {p.get('referenceMarket','rynek niepotwierdzony')}\",number(p['price'])+' '+(p.get('unit') or 'jednostka niepotwierdzona')+' ('+(p.get('currency') or 'waluta niepotwierdzona')+')',(p.get('observationDisplay') or p['observationAt']),delta])\n    if len(price_rows)==1:price_rows.append(['Aktualne instrumenty TE','brak dopuszczonego odczytu','brak danych','nie obliczano'])\n    commodity_rows=[['USA - wskaźnik','Odczyt / okres','Zmiana tygodniowa']]\n    short_labels={'CI01':'Ropa komercyjna bez SPR','CI02':'Zapasy destylatów','CI03':'Wykorzystanie rafinerii','CI04':'Przerób ropy','CI05':'Product Supplied: benzyna','CI06':'Product Supplied: destylaty'}\n    for ref in ['CI_STOCKS','CI_REFINERY','CI_SUPPLIED']:\n        for row in ids.get(ref,{}).get('facts',{}).get('rows',[]):\n            percent=row['unit']=='%'\n            val=number(row['value'])+'%' if percent else f\"{row['value']/1000:,.3f}\".replace(',',' ').replace('.',',')+(' mln bbl' if row['unit']=='MBBL' else ' mln bbl/d')\n            change=(f\"{row['weeklyChange']:+.1f}\".replace('.',',')+' pkt proc.') if percent else f\"{row['weeklyChange']/1000:+.3f}\".replace('.',',')+(' mln bbl' if row['unit']=='MBBL' else ' mln bbl/d')\n            commodity_rows.append([short_labels[row['id']],val+' / '+row.get('period','okres w źródle'),change])\n    cot=ids.get('CI_POSITION',{}).get('facts',{}).get('rows',[None])[0]\n    integer=lambda v:f'{v:,}'.replace(',',' ')\n    positioning='Brak dopuszczonego, porównywalnego odczytu pozycjonowania CFTC.'\n    if cot:\n        positioning='WTI - kontrakty terminowe bez opcji, pozycje '+cot['positionDate']+' wobec '+cot['previousPositionDate']+': Managed Money netto '+integer(cot['managedMoneyNet'])+' kontraktów (zmiana '+integer(cot['netChange'])+'); Open Interest '+integer(cot['openInterest'])+'. Data publikacji: '+str(cot.get('publicationAt','niepotwierdzona'))+'.'\n    forecast=bundle['forecast'];series=forecast.get('series',[])\n    historical='Brak dopuszczonej aktualnej prognozy Forecast Core na kolejny tydzień. Nie wyliczano nowych modeli ani przedziałów.'\n    if series:\n        historical='Forecast Core: start '+series[0]['models'][0]['origin']+', cel '+series[0]['models'][0]['target']+'. Pełne wyniki, sprawdzalność i ograniczenia w aneksie. Status: '+forecast.get('status','UNKNOWN')+'.'\n    windows=bundle['windows'];lead='Asfalt drogowy | ewaluacja wewnętrzna - PARTIAL | stan wiedzy: '+local(bundle['asOf'])\n    window='Przegląd '+windows['review']['fromDate']+' - '+windows['review']['throughDate']+' (tylko do granicy wiedzy). Perspektywa '+windows['outlook']['fromDate']+' - '+windows['outlook']['throughDate']+'.'\n    md=['# Oil & Asphalt Market Outlook',lead,window,'Status eksperymentalny. Wymagany przegląd człowieka przed wykorzystaniem zewnętrznym.']\n    for i,key in enumerate(KEYS):\n        md.extend(['','## '+str(i+1)+'. '+TITLES[i],*md_rows[key]])\n        if i==1:\n            md+=['Notowania to ostatnie wartości TE; zmiany dotyczą odrębnej historii zamknięć. CFD to kontrakt różnicowy. CNY/t oznacza juany za tonę; nie jest to polska cena zakupu asfaltu.', ' | '.join(price_rows[0]),' | '.join(['---']*4),*[' | '.join(row) for row in price_rows[1:]],historical]\n        if i==3: md+=[' | '.join(commodity_rows[0]),' | '.join(['---']*3),*[' | '.join(row) for row in commodity_rows[1:]],'EIA: tygodnie referencyjne. bbl - baryłka; bbl/d - baryłki dziennie. SPR - strategiczna rezerwa ropy USA. Daty publikacji niepotwierdzone.']\n        if i==4: md.append(positioning)\n    body_characters=len('\\n'.join(md))\n    def footnote(ref):\n        e=ids[ref];n=assigned[ref];url=checked_url(e.get('url'));depth=e.get('materialDepth','UNKNOWN')\n        kind='; tytuł/fragment, pełny tekst niezweryfikowany' if depth in ['SNIPPET','TITLE_ONLY','TITLE_DESCRIPTION','TITLE_DESCRIPTION_METADATA','PUBLISHED_SUMMARY','UNKNOWN'] else ''\n        date=(e.get('publishedAt') or e.get('facts',{}).get('observationAt') or '')[:10]\n        label=f\"{n}. {publisher_label(e)}, {e.get('title') or e.get('sourceRecordRef') or ''} {date}{kind}\"\n        return label,url\n    for ref,n in assigned.items():\n        label,url=footnote(ref);md.append(f'[^{n}]: {label}'+(f' [{url}]({url})' if url else ''))\n    # Continuous pagination preserves the original narrative instead of forcing\n    # every pair of sections into one fixed-height page.\n    w=A4[0]-88\n    pdf=out/(NAME+'.pdf')\n    doc=BaseDocTemplate(str(pdf),invariant=1,pagesize=A4,leftMargin=44,rightMargin=44,topMargin=40,bottomMargin=44,title='Oil & Asphalt Market Outlook v0.5',author='SpendGuru / Procurement Insights')\n    def footer(canvas,document):\n        canvas.saveState();canvas.setStrokeColor(colors.HexColor('#c4d5db'));canvas.line(44,40,A4[0]-44,40)\n        canvas.setFont('OilSans',8);canvas.setFillColor(colors.HexColor('#4f6370'));canvas.drawString(44,24,'SpendGuru | ewaluacja wewnętrzna - wymagana ocena człowieka');canvas.drawRightString(A4[0]-44,24,f'{document.page}/4');canvas.restoreState()\n    doc.addPageTemplates([PageTemplate(id='flow',frames=[Frame(44,48,w,A4[1]-92,leftPadding=0,rightPadding=0,topPadding=0,bottomPadding=0)],onPage=footer)])\n    flow=[Paragraph('Oil & Asphalt Market Outlook',title),Paragraph(escape(lead),small),Paragraph(escape(window),small),Paragraph('Wydanie eksperymentalne. Region, ekspozycja i formuła kontraktu nabywcy nie zostały określone.',small)]\n    section_starts=[]\n    for i,key in enumerate(KEYS):\n        section_starts.append(len(flow))\n        flow.append(Paragraph(f'{i+1}. '+escape(TITLES[i]),heading));flow.extend(html_rows[key])\n        if i==1:\n            table=Table([[Paragraph(escape(v),small) for v in row] for row in price_rows],colWidths=[w*.29,w*.25,w*.23,w*.23],repeatRows=1)\n            table.setStyle(TableStyle([('VALIGN',(0,0),(-1,-1),'TOP'),('BACKGROUND',(0,0),(-1,0),colors.HexColor('#e9f0f2')),('LEFTPADDING',(0,0),(-1,-1),4),('RIGHTPADDING',(0,0),(-1,-1),4),('TOPPADDING',(0,0),(-1,-1),4),('BOTTOMPADDING',(0,0),(-1,-1),4)]))\n            flow.extend([table,Spacer(1,6),Paragraph('Notowania to ostatnie wartości TE; zmiany dotyczą odrębnej historii zamknięć. CFD to kontrakt różnicowy. CNY/t oznacza juany za tonę; nie jest to polska cena zakupu asfaltu.',small),Paragraph(escape(historical),small)])\n        if i==3:\n            table=Table([[Paragraph(escape(v),small) for v in row] for row in commodity_rows],colWidths=[w*.43,w*.30,w*.27],repeatRows=1)\n            table.setStyle(TableStyle([('VALIGN',(0,0),(-1,-1),'TOP'),('BACKGROUND',(0,0),(-1,0),colors.HexColor('#e9f0f2')),('LEFTPADDING',(0,0),(-1,-1),4),('RIGHTPADDING',(0,0),(-1,-1),4),('TOPPADDING',(0,0),(-1,-1),3),('BOTTOMPADDING',(0,0),(-1,-1),3)]))\n            flow.extend([table,Spacer(1,5),Paragraph('EIA: tygodnie referencyjne. bbl - baryłka; bbl/d - baryłki dziennie. SPR - strategiczna rezerwa ropy USA. Daty publikacji niepotwierdzone.',small)])\n        if i==4: flow.append(Paragraph(escape(positioning),small))\n    flow.append(Paragraph('Przypisy źródłowe',heading))\n    for ref,n in assigned.items():\n        e=ids[ref];url=checked_url(e.get('url'));date=(e.get('publishedAt') or e.get('facts',{}).get('observationAt') or '')[:10]\n        label=f\"{n}. {publisher_label(e)}\"+(f\", {date}\" if date else '')\n        flow.append(Paragraph(f'<a name=\"source_{n}\"/>'+escape(label)+(f' <link href=\"{escape(url)}\" color=\"#16556a\">Źródło</link>' if url else '')+'; pełny opis i ograniczenia w aneksie.',note))\n    # Preserve the original four section-pair pages when every pair fits.\n    # Otherwise continuous flow accommodates the full narrative without cuts.\n    boundaries=[0]+[section_starts[i] for i in (2,4,6)]+[len(flow)]\n    available=A4[1]-92\n    heights=[sum(p.wrap(w,available)[1]+p.getSpaceBefore()+p.getSpaceAfter() for p in flow[a:b]) for a,b in zip(boundaries,boundaries[1:])]\n    if all(height<=available-12 for height in heights):\n        for index in reversed(boundaries[1:-1]): flow.insert(index,PageBreak())\n    pdf_build_start=time.perf_counter_ns();doc.build(flow);pdf_build_ms=(time.perf_counter_ns()-pdf_build_start)/1e6;reader=PdfReader(str(pdf));assert len(reader.pages)==4,'FOUR_READABLE_PAGES_REQUIRED'\n    assert all(abs(float(p.mediabox.width)-A4[0])<1 and abs(float(p.mediabox.height)-A4[1])<1 for p in reader.pages)\n    text='\\n'.join(p.extract_text() or '' for p in reader.pages);assert not re.search(r'\\bEV\\d+\\b',text),'RAW_INTERNAL_CITATION'\n    (out/(NAME+'.md')).write_text('\\n\\n'.join(md)+'\\n')\n    appendix=['# Aneks: dane, prognozy i pochodzenie','Stan wiedzy: '+bundle['asOf'],'TE Calendar świadomie wyłączony: obecna subskrypcja go nie obejmuje.','## Aktualne dodatkowe dane TE',json.dumps(current,ensure_ascii=False,indent=2),'## Forecast Core - odniesienie historyczne',historical]\n    appendix+=['## Historyczne obserwacje TE - odrębne od najnowszego notowania',json.dumps(bundle.get('marketEvidenceHistory',[]),ensure_ascii=False,indent=2)]\n    for s in series:\n        appendix+=['### '+s['label']+' / '+s['seriesId'],'Model | Origin | Target | Punkt | n | MAE | RMSE | sMAPE','--- | --- | --- | --- | --- | --- | --- | ---']\n        for m in s['models']:\n            v=m['verification'];appendix.append(' | '.join([m['name'],m['origin'],m['target'],number(m['point']),str(v['sampleSize']),number(v['mae']),number(v['rmse']),number(v['smape'])]))\n        appendix+=['Pełne wartości bez zaokrąglenia i ostatni zweryfikowany przypadek:',json.dumps(s,ensure_ascii=False,indent=2)]\n    appendix+=['## Nowe wskaźniki EIA i CFTC',json.dumps([e for e in bundle['evidence'] if e['provider'] in ['eia','cftc']],ensure_ascii=False,indent=2),'## Kalendarz - kandydat niepublikowany jako potwierdzony termin',json.dumps(ids.get('CI_CALENDAR',{'facts':{'status':'NO_CONFIRMED_EVENTS'}})['facts'],ensure_ascii=False,indent=2)]\n    appendix+=['## Prognozy Trading Economics - odrębne horyzonty',json.dumps([e for e in bundle['evidence'] if e['family']=='external-forecasts'],ensure_ascii=False,indent=2),'## Źródła i coverage',json.dumps(bundle['evidence'],ensure_ascii=False,indent=2),json.dumps(bundle.get('coverage',{}),ensure_ascii=False,indent=2),'## Odstępstwa i prawa',json.dumps(bundle['pilotDeviations'],ensure_ascii=False,indent=2),'Retencja surowych treści providerów: zero sekund. Metadane, dozwolone projekcje i parafrazy zgodnie z licencją; brak archiwum pełnych artykułów.','Fingerprint bundle: '+bundle['fingerprint']]\n    (out/'ANEKS_DANYCH_FORECAST_I_ZRODEL.md').write_text('\\n\\n'.join(appendix)+'\\n')\n    result={'rendererTotalMs':(time.perf_counter_ns()-render_start)/1e6,'pdfBuildMs':pdf_build_ms,'status':'RENDERED_HUMAN_REVIEW_REQUIRED','pages':4,'pageSize':'A4','mainCharactersWithHeadingsAndTable':body_characters,'numberedFootnotes':len(assigned),'pdfSha256':hashlib.sha256(pdf.read_bytes()).hexdigest(),'evidenceFingerprint':bundle['fingerprint'],'asOf':bundle['asOf'],'rawModelTextEdited':False,'originalNarrativePreserved':True,'reportNarrativeEditorialChanges':'NO_AUTOMATIC_EDITORIAL_CHANGES','visualReview':'REQUIRED'}\n    (out/'RENDER_VALIDATION.json').write_text(json.dumps(result,indent=2)+'\\n');print(json.dumps(result))\nif __name__=='__main__':\n    p=argparse.ArgumentParser();p.add_argument('--bundle',required=True);p.add_argument('--narrative',required=True);p.add_argument('--receipt',required=True);p.add_argument('--output',required=True);p.add_argument('--font',required=True);p.add_argument('--bold');a=p.parse_args()\n    render(json.loads(Path(a.bundle).read_text()),json.loads(Path(a.narrative).read_text()),json.loads(Path(a.receipt).read_text()),Path(a.output),a.font,a.bold)\n","apps/insights-runtime/tests/postgres.test.mjs":"import test from \"node:test\";\nimport { spawnSync } from \"node:child_process\";\nimport { fileURLToPath } from \"node:url\";\nimport assert from \"node:assert/strict\";\nimport { randomUUID } from \"node:crypto\";\nimport { Pool } from \"pg\";\nimport { readFileSync, writeFileSync, mkdirSync } from \"node:fs\";\nimport { PostgresReportStore } from \"../src/store.mjs\";\nimport { createReportRunner } from \"../src/runner.mjs\";\nimport { createReportApi } from \"../src/api.mjs\";\nimport { createScheduler } from \"../src/scheduler.mjs\";\nimport {\n  CANON_SHA256,\n  SECTIONS,\n  ReportError,\n} from \"../../../packages/insights-contracts/index.mjs\";\nimport { qualityGate } from \"../src/composer.mjs\";\nimport { createRenderer } from \"../src/renderer.mjs\";\nimport { mkdtempSync, rmSync } from \"node:fs\";\nimport { tmpdir } from \"node:os\";\nimport { join } from \"node:path\";\nimport { createHash } from \"node:crypto\";\n\ntest(\"renderer handles incomplete vendor metadata, long unedited prose and deterministic pagination\", {skip: process.env.INSIGHTS_TEST_RENDER !== \"true\"}, () => {\n  // Controlled synthetic layout case; no provider data, model or network.\n  const dir = mkdtempSync(join(tmpdir(), \"oil-render-regression-\"));\n  try {\n    const keys = [\"executive\", \"statistical\", \"events\", \"macro\", \"outlook\", \"calendar\", \"asphalt\", \"procurement\"];\n    const phrase = \"To kontrolowany materiał do sprawdzenia układu dokumentu i zachowania pełnej treści. Nie stanowi obserwacji rynkowej ani rekomendacji zakupowej. \";\n    const evidence = Array.from({length:18}, (_,i) => ({id:\"TEST_\"+i,provider:\"test-only\",publisher:{id:\"test\",name:\"Kontrolowane źródło\"},title:\"Materiał testowy\",url:\"https://example.invalid/layout-test\",publishedAt:null,materialDepth:\"CONTROLLED_TEST_ONLY\",family:i<6?\"market-observations\":\"news\",facts:i<6?{symbol:[\"CL1:COM\",\"CO1:COM\",\"BIT:COM\"][i%3],label:null,price:10+i,currency:null,unit:i<3?\"TEST/t\":null,instrumentType:\"UNKNOWN\",referenceMarket:\"Rynek testowy\",observationAt:\"2026-11-10T08:00:00Z\",weeklyChange:null}:{} }));\n    const narrative = Object.fromEntries(keys.map((k,i)=>[k,Array.from({length:[3,4,3,3,3,3,3,4][i]},(_,j)=>({text:phrase.repeat(3),refs:[\"TEST_\"+((i*3+j)%18)]}))]));\n    const bundle={schemaVersion:\"ReportEvidenceBundle/OilAsphalt/0.5\",profileId:\"CONTROLLED_TEST_ONLY\",fingerprint:\"test-fingerprint\",admissionRef:\"TEST_NOT_LIVE\",asOf:\"2026-11-10T08:00:00Z\",evidence,forecast:{series:[]},windows:{review:{fromDate:\"2026-11-03\",throughDate:\"2026-11-09\"},outlook:{fromDate:\"2026-11-10\",throughDate:\"2026-11-16\"}},pilotDeviations:[],coverage:{}};\n    const receipt={profileId:bundle.profileId,status:\"completed\",evidenceFingerprint:bundle.fingerprint};\n    for(const[n,v]of Object.entries({bundle,narrative,receipt}))writeFileSync(join(dir,n+\".json\"),JSON.stringify(v));\n    const hashes=[];\n    for(let i=0;i<2;i++){\n      const out=join(dir,\"output-\"+i),root=fileURLToPath(new URL(\"../render/\",import.meta.url));\n      const r=spawnSync(process.env.INSIGHTS_TEST_PYTHON??\"python3\",[join(root,\"report.py\"),\"--bundle\",join(dir,\"bundle.json\"),\"--narrative\",join(dir,\"narrative.json\"),\"--receipt\",join(dir,\"receipt.json\"),\"--output\",out,\"--font\",join(root,\"fonts/DejaVuSans.ttf\"),\"--bold\",join(root,\"fonts/DejaVuSans-Bold.ttf\")],{encoding:\"utf8\",timeout:60000,env:{...process.env,PYTHONHASHSEED:\"0\",TZ:\"UTC\"}});\n      assert.equal(r.status,0,r.stderr);\n      const metadata=JSON.parse(readFileSync(join(out,\"RENDER_VALIDATION.json\")));\n      assert.equal(metadata.pages,4);assert.equal(metadata.originalNarrativePreserved,true);\n      const markdown=readFileSync(join(out,\"OIL_ASPHALT_MARKET_OUTLOOK_v0.5_PL.md\"),\"utf8\");\n      assert.ok(markdown.includes(\"waluta niepotwierdzona\"));assert.ok(markdown.includes(\"jednostka niepotwierdzona\"));\n      assert.ok(markdown.includes(\"Kontrolowane źródło\"));assert.ok(!markdown.includes(\"{'id':\"));\n      for(const statements of Object.values(narrative))for(const statement of statements)assert.ok(markdown.includes(statement.text));\n      hashes.push(createHash(\"sha256\").update(readFileSync(join(out,\"OIL_ASPHALT_MARKET_OUTLOOK_v0.5_PL.pdf\"))).digest(\"hex\"));\n    }\n    assert.equal(hashes[0],hashes[1],\"identical inputs preserve exact PDF bytes\");\n    const short=Object.fromEntries(keys.map(k=>[k,[{text:phrase,refs:[\"METHODOLOGY\"]}]]));\n    writeFileSync(join(dir,\"narrative.json\"),JSON.stringify(short));\n    const root=fileURLToPath(new URL(\"../render/\",import.meta.url)),out=join(dir,\"short-output\");\n    const r=spawnSync(process.env.INSIGHTS_TEST_PYTHON??\"python3\",[join(root,\"report.py\"),\"--bundle\",join(dir,\"bundle.json\"),\"--narrative\",join(dir,\"narrative.json\"),\"--receipt\",join(dir,\"receipt.json\"),\"--output\",out,\"--font\",join(root,\"fonts/DejaVuSans.ttf\"),\"--bold\",join(root,\"fonts/DejaVuSans-Bold.ttf\")],{encoding:\"utf8\",timeout:60000,env:{...process.env,PYTHONHASHSEED:\"0\",TZ:\"UTC\"}});\n    assert.equal(r.status,0,r.stderr);\n    assert.equal(JSON.parse(readFileSync(join(out,\"RENDER_VALIDATION.json\"))).pages,4,\"short input preserves the same four-page renderer contract\");\n\n  } finally {rmSync(dir,{recursive:true,force:true});}\n});\nconst enabled = !!process.env.INSIGHTS_TEST_DATABASE_URL;\nconst TEST_ORG = \"org-a-\" + randomUUID(),\n  REPLAY_ORG = \"offline-replay-\" + randomUUID();\nconst profile = {\n  id: \"oil-v05-autonomous-1\",\n  version: \"oil-v05-autonomous-1\",\n  environment: \"development\",\n  canonSha256: CANON_SHA256,\n  model: \"gpt-6.1-sol\",\n  budgetMicroUsd: 5000000,\n  counterReservationMicroUsd: 100000,\n  maximumInputTokens: 15000,\n  maximumOutputTokens: 16000,\n  maximumBodyBytes: 65536,\n  timeoutMs: 600000,\n  autoRetry: false,\n  store: false,\n  rawRetentionSeconds: 0,\n};\nconst now = () => \"2026-11-10T08:00:00.000Z\",\n  ctx = (org = TEST_ORG) => ({\n    environment: \"development\",\n    organisationId: org,\n    actorId: \"test-service\",\n    actorKind: \"SERVICE\",\n    decisionId: \"CONTROLLED_TEST_AUTHORITY\",\n    expiresAt: \"2099-01-01T00:00:00Z\",\n  });\nconst input = JSON.parse(\n  readFileSync(new URL(\"./fixtures/offline-report.json\", import.meta.url)),\n).command;\nfunction ports(store, { render, generate, source } = {}) {\n  const counts = { source: 0, count: 0, generate: 0, render: 0 };\n  let revoked = false;\n  const authority = {\n    async authorizeJob(j) {\n      if (revoked) throw new ReportError(\"WAITING_AUTHORIZATION\");\n      return {\n        context: ctx(j.organisationId),\n        profileId: profile.id,\n        budgetMicroUsd: 5000000,\n        expiresAt: \"2099-01-01T00:00:00Z\",\n        receiptRef: \"TEST_E1\",\n      };\n    },\n    async schedulerContext() {\n      return ctx();\n    },\n    async execute(_in, action) {\n      if (revoked) throw new ReportError(\"OPERATION_DENIED\", 403);\n      return action(ctx());\n    },\n  };\n  const composer = {\n    async prepare() {\n      return {\n        maximumCostMicroUsd: 100000,\n        counterMaximumCostMicroUsd: 100000,\n      };\n    },\n    async count() {\n      counts.count++;\n      return { receiptRef: \"TEST_COUNTER\", costMicroUsd: null };\n    },\n    async generate(j, b, p, o) {\n      counts.generate++;\n      if (generate) return generate(j, b, p, o);\n      return {\n        receiptRef: \"TEST_GENERATION\",\n        costMicroUsd: 10000,\n        status: \"completed\",\n        model: profile.model,\n        profileId: profile.id,\n        evidenceFingerprint: b.fingerprint,\n        narrative: Object.fromEntries(\n          SECTIONS.map((k) => [\n            k,\n            [\n              {\n                text: \"Kontrolowany materiał testowy. Brak potwierdzonych danych wymaga ostrożności.\",\n                refs: [\"METHODOLOGY\"],\n              },\n            ],\n          ]),\n        ),\n      };\n    },\n  };\n  const deps = {\n    store,\n    authority,\n    sources: {\n      async admitted(q) {\n        return q.id === \"te-snapshot\";\n      },\n      async acquire(q, j, o) {\n        counts.source++;\n        if (source) return source(q, j, o);\n        return {\n          receiptRef: \"TEST_HUB\",\n          costMicroUsd: 0,\n          status: \"EMPTY\",\n          projection: [],\n        };\n      },\n    },\n    canonical: {\n      async read() {\n        return {\n          market: {\n            status: \"CONTROLLED_TEST_ONLY\",\n            series: [{ seriesId: \"cl_c1_cl\", status: \"CONTROLLED_TEST_ONLY\" }],\n          },\n        };\n      },\n    },\n    composer,\n    quality: qualityGate,\n    renderer: async (...args) => {\n      counts.render++;\n      return render\n        ? render(...args)\n        : {\n            artifacts: {\n              pdf: Buffer.from(\"%PDF-1.7\\nCONTROLLED_TEST_ONLY\"),\n              markdown: \"controlled\",\n              appendix: \"controlled\",\n            },\n            metadata: { pages: 4, testOnly: true },\n          };\n    },\n    now,\n  };\n  return {\n    deps,\n    counts,\n    revoke() {\n      revoked = true;\n    },\n  };\n}\ntest(\n  \"Postgres acceptance: one job, tenant isolation, API4, scheduler, leases, recovery and uncertain costs\",\n  { skip: !enabled },\n  async (t) => {\n    const pool = new Pool({\n        connectionString: process.env.INSIGHTS_TEST_DATABASE_URL,\n        max: 8,\n      }),\n      store = new PostgresReportStore(pool);\n    t.after(() => pool.end());\n    const p = ports(\n        store,\n        process.env.INSIGHTS_TEST_RENDER === \"true\"\n          ? {\n              render: createRenderer({\n                python: process.env.INSIGHTS_TEST_PYTHON ?? \"python3\",\n              }),\n            }\n          : {},\n      ),\n      runner = createReportRunner(p.deps);\n    const jobs = await Promise.all(\n      Array.from({ length: 8 }, () =>\n        runner.start(ctx(), input, profile, \"API\"),\n      ),\n    );\n    assert.equal(new Set(jobs.map((x) => x.id)).size, 1);\n    const job = jobs[0];\n    const scheduler = createScheduler({\n      runner,\n      authority: p.deps.authority,\n      definitions: [\n        {\n          id: \"oil-asphalt\",\n          profileVersion: profile.version,\n          revision: 1,\n          schedule: {\n            enabled: true,\n            weekday: 2,\n            localTime: \"08:00\",\n            timezone: \"Europe/Warsaw\",\n            catchUp: \"LATEST_ONLY\",\n            graceMinutes: 15,\n          },\n        },\n      ],\n      profiles: { [profile.version]: profile },\n      now,\n    });\n    assert.equal((await scheduler.tick())[0].id, job.id);\n    await Promise.all([\n      runner.run(TEST_ORG, job.id),\n      runner.run(TEST_ORG, job.id),\n    ]);\n    const complete = await store.get(TEST_ORG, job.id);\n    assert.equal(complete.status, \"AWAITING_REVIEW\");\n    assert.equal(p.counts.generate, 1);\n    assert.equal(p.counts.count, 1);\n    assert.equal(await store.get(\"org-b\", job.id), null);\n    assert.equal(await store.artifact(\"org-b\", job.id), null);\n    await runner.run(TEST_ORG, job.id);\n    assert.equal(p.counts.generate, 1);\n    const api = createReportApi({\n      runner,\n      store,\n      authority: p.deps.authority,\n      profiles: { [profile.version]: profile },\n      now,\n    });\n    const req = (path, options = {}) =>\n      new Request(\"https://test.local\" + path, {\n        ...options,\n        headers: {\n          authorization: \"Bearer controlled-test-only\",\n          ...options.headers,\n        },\n      });\n    const started = await api(\n      req(\"/api/v1/insights/report-jobs\", {\n        method: \"POST\",\n        headers: { \"content-type\": \"application/json\" },\n        body: JSON.stringify(input),\n      }),\n    );\n    assert.equal(started.status, 202);\n    assert.equal((await started.json()).jobId, job.id);\n    assert.equal(\n      (await api(req(\"/api/v1/insights/report-jobs/\" + job.id))).status,\n      200,\n    );\n    assert.equal(\n      (await (await api(req(\"/api/v1/insights/report-editions\"))).json())\n        .editions[0].editionId,\n      job.id,\n    );\n    const download = await api(\n      req(\"/api/v1/insights/report-editions/\" + job.id + \"/pdf\"),\n    );\n    assert.equal(download.status, 200);\n    assert.equal((await download.text()).slice(0, 5), \"%PDF-\");\n    assert.equal(\n      (await api(req(\"/api/v1/insights/report-jobs?organisationId=org-b\")))\n        .status,\n      400,\n    );\n    p.revoke();\n    assert.equal(\n      (await api(req(\"/api/v1/insights/report-editions/\" + job.id + \"/pdf\")))\n        .status,\n      403,\n    );\n    // Process replacement after rendering fails: durable model output is reused.\n    let crash = true;\n    const p2 = ports(store, {\n        render: async () => {\n          if (crash) throw Error(\"CONTROLLED_RENDER_CRASH\");\n          return {\n            artifacts: { pdf: Buffer.from(\"%PDF-recovered\") },\n            metadata: { pages: 4 },\n          };\n        },\n      }),\n      j2 = await createReportRunner(p2.deps).start(\n        ctx(),\n        { ...input, revision: 2 },\n        profile,\n      );\n    assert.equal(\n      (await createReportRunner(p2.deps).run(TEST_ORG, j2.id)).status,\n      \"FAILED\",\n    );\n    crash = false;\n    assert.equal(\n      (await createReportRunner(p2.deps).run(TEST_ORG, j2.id)).status,\n      \"AWAITING_REVIEW\",\n    );\n    assert.equal(p2.counts.generate, 1);\n    // A generation with uncertain billing cannot be retried, even after restart.\n    const p3 = ports(store, {\n        generate: async () => {\n          throw Error(\"UNKNOWN_UPSTREAM_STATUS\");\n        },\n      }),\n      r3 = createReportRunner(p3.deps),\n      j3 = await r3.start(ctx(), { ...input, revision: 3 }, profile);\n    assert.equal(\n      (await r3.run(TEST_ORG, j3.id)).status,\n      \"RECONCILIATION_REQUIRED\",\n    );\n    await r3.run(TEST_ORG, j3.id);\n    assert.equal(p3.counts.generate, 1);\n    const unknown = await store.get(TEST_ORG, j3.id);\n    assert.equal(unknown.calls[\"openai:compose\"].costMicroUsd, null);\n    assert.equal(unknown.calls[\"openai:compose\"].reservedMicroUsd, 100000);\n    // Fenced lease: stale holder cannot checkpoint after another claim.\n    const j4 = await r3.start(ctx(), { ...input, revision: 4 }, profile),\n      lease = await store.claim(TEST_ORG, j4.id, 1);\n    await new Promise((r) => setTimeout(r, 5));\n    const replacement = await store.claim(TEST_ORG, j4.id);\n    assert.ok(replacement);\n    await assert.rejects(\n      store.checkpoint(TEST_ORG, j4.id, lease, j4),\n      (e) => e.code === \"LEASE_LOST\",\n    );\n    await store.release(TEST_ORG, j4.id, replacement);\n\n    // Real separate process exits after committed INTENT, before settlement.\n    const crashJob = await r3.start(ctx(), { ...input, revision: 5 }, profile);\n    const script = `import {Pool} from 'pg';import {PostgresReportStore} from './src/store.mjs';const p=new Pool({connectionString:process.env.INSIGHTS_TEST_DATABASE_URL});const s=new PostgresReportStore(p);const l=await s.claim(${JSON.stringify(TEST_ORG)},${JSON.stringify(crashJob.id)});const j=l.job;j.calls['openai:compose']={status:'INTENT',reservedMicroUsd:100000,costMicroUsd:null};j.status='RUNNING';await s.checkpoint(${JSON.stringify(TEST_ORG)},j.id,l,j);process.exit(77);`;\n    const killed = spawnSync(\n      process.execPath,\n      [\"--input-type=module\", \"-e\", script],\n      {\n        cwd: fileURLToPath(new URL(\"../\", import.meta.url)),\n        env: process.env,\n        encoding: \"utf8\",\n      },\n    );\n    assert.equal(killed.status, 77, killed.stderr);\n    // Advance only this isolated test lease to simulate expiry after the crash.\n    await store.transaction(TEST_ORG, (db) =>\n      db.query(\n        \"UPDATE insights_private.report_jobs SET lease_until=now()-interval '1 second' WHERE id=$1\",\n        [crashJob.id],\n      ),\n    );\n    const afterCrash = await createReportRunner(p3.deps).run(\n      TEST_ORG,\n      crashJob.id,\n    );\n    assert.equal(afterCrash.status, \"RECONCILIATION_REQUIRED\");\n    assert.equal(p3.counts.generate, 1);\n    if (process.env.INSIGHTS_TEST_RECEIPT_OUT)\n      writeFileSync(\n        process.env.INSIGHTS_TEST_RECEIPT_OUT,\n        JSON.stringify(\n          {\n            status: \"OFFLINE_POSTGRES_API_SCHEDULER_RECOVERY_PASS\",\n            jobId: job.id,\n            calls: p.counts,\n            unknownCostRetained: true,\n            tenantIsolation: true,\n            live: false,\n          },\n          null,\n          2,\n        ),\n      );\n  },\n);\ntest(\n  \"Existing immutable report replay through durable runner and API download; no live model/provider\",\n  { skip: !enabled || !process.env.INSIGHTS_REPLAY_ROOT },\n  async (t) => {\n    const pool = new Pool({\n        connectionString: process.env.INSIGHTS_TEST_DATABASE_URL,\n      }),\n      store = new PostgresReportStore(pool);\n    t.after(() => pool.end());\n    const base = process.env.INSIGHTS_REPLAY_ROOT,\n      load = (n) => JSON.parse(readFileSync(base + \"/\" + n));\n    const bundle = load(\n        \"deliverables-final-v2/OIL_COMMODITY_EVIDENCE_BUNDLE.json\",\n      ),\n      narrative = load(\"execution-live-v1/REVIEWED_NARRATIVE.json\"),\n      oldReceipt = load(\"deliverables-final-v2/OPENAI_EXECUTION_RECEIPT.json\");\n    // Test dependency substitutes frozen, licence-controlled local replay material.\n    const projection = bundle.evidence.map((e) => ({\n      ...e,\n      publishedAt: e.publishedAt ?? null,\n      availableAt: e.availableAt ?? null,\n      receiptRef: e.receiptRef ?? \"HISTORICAL_RECEIPT\",\n      licenceRef: e.licenceRef ?? \"HISTORICAL_LICENSE_REFERENCE\",\n      projectionBasisRef: \"OFFLINE_REPLAY_NO_PUBLICATION\",\n    }));\n    const renderer = createRenderer({\n        python: process.env.INSIGHTS_TEST_PYTHON ?? \"python3\",\n      }),\n      p = ports(store, {\n        source: async () => ({\n          receiptRef: \"HISTORICAL_REPLAY_ONLY\",\n          costMicroUsd: 0,\n          status: \"SUCCEEDED\",\n          projection,\n        }),\n        generate: async (j, b) => ({\n          ...oldReceipt,\n          receiptRef: oldReceipt.requestId ?? \"HISTORICAL_OPENAI_RESPONSE\",\n          costMicroUsd: 0,\n          status: \"completed\",\n          evidenceFingerprint: b.fingerprint,\n          profileId: profile.id,\n          narrative,\n          replay: true,\n        }),\n        render: renderer,\n      });\n    p.deps.now = () => bundle.asOf;\n    const runner = createReportRunner(p.deps),\n      job = await runner.start(\n        ctx(REPLAY_ORG),\n        {\n          ...input,\n          period: {\n            fromDate: bundle.windows.review.fromDate,\n            throughDate: bundle.windows.review.throughDate,\n          },\n          asOf: bundle.asOf,\n          allowPartial: true,\n          revision: 10,\n        },\n        profile,\n      );\n    const done = await runner.run(REPLAY_ORG, job.id);\n    assert.equal(done.status, \"AWAITING_REVIEW\", JSON.stringify(done.error));\n    const api = createReportApi({\n      runner,\n      store,\n      authority: { execute: async (_i, f) => f(ctx(REPLAY_ORG)) },\n      profiles: { [profile.version]: profile },\n      now,\n    });\n    const response = await api(\n      new Request(\n        \"https://test.local/api/v1/insights/report-editions/\" + job.id + \"/pdf\",\n        { headers: { authorization: \"Bearer offline-test-only\" } },\n      ),\n    );\n    assert.equal(response.status, 200);\n    const bytes = Buffer.from(await response.arrayBuffer());\n    assert.equal(bytes.subarray(0, 5).toString(), \"%PDF-\");\n    if (process.env.INSIGHTS_REPLAY_OUT) {\n      mkdirSync(process.env.INSIGHTS_REPLAY_OUT, { recursive: true });\n      writeFileSync(\n        process.env.INSIGHTS_REPLAY_OUT +\n          \"/OFFLINE_HISTORICAL_REPLAY_NOT_NEW_EDITION.pdf\",\n        bytes,\n      );\n      writeFileSync(\n        process.env.INSIGHTS_REPLAY_OUT + \"/REPLAY_RECEIPT.json\",\n        JSON.stringify(\n          {\n            jobId: job.id,\n            status: done.status,\n            historicalAsOf: bundle.asOf,\n            testOnly: true,\n            newProviderCalls: 0,\n            newModelCalls: 0,\n            pages: done.stages.render.value.pages,\n          },\n          null,\n          2,\n        ),\n      );\n    }\n  },\n);\n\n\ntest(\"receiving E1 transaction owns the job write and rolls it back on final denial\", {skip:!enabled}, async()=>{\n const pool=new Pool({connectionString:process.env.INSIGHTS_TEST_DATABASE_URL,max:2});\n const store=new PostgresReportStore(pool);\n const org=\"e1-rollback-\"+randomUUID(),c=await pool.connect();\n try{\n  await c.query(\"BEGIN\");\n  const j=await store.withClient(org,c,()=>store.start(ctx(org),input,profile,\"API\"));\n  assert(j.id);\n  await c.query(\"ROLLBACK\");\n  assert.equal(await store.get(org,j.id),null);\n  await c.query(\"BEGIN\");\n  const committed=await store.withClient(org,c,()=>store.start(ctx(org),input,profile,\"API\"));\n  await c.query(\"COMMIT\");\n  assert.equal((await store.get(org,committed.id)).id,committed.id);\n }finally{c.release();await pool.end()}\n});\n\n\ntest(\"provider rejection produces explicit PARTIAL coverage without retry or losing admitted canonical facts\", {skip:!enabled}, async()=>{\n const pool=new Pool({connectionString:process.env.INSIGHTS_TEST_DATABASE_URL,max:3});\n const store=new PostgresReportStore(pool),org=\"source-partial-\"+randomUUID();\n try{\n  const f=ports(store,{source:async()=>{throw Object.assign(Error(\"CONTROLLED_PROVIDER_DENIAL\"),{code:\"SOURCE_NOT_ENTITLED\"})}});\n  const runner=createReportRunner(f.deps),job=await runner.start(ctx(org),input,profile);\n  const done=await runner.run(org,job.id);\n  assert.equal(done.status,\"AWAITING_REVIEW\");assert.equal(done.coverage,\"PARTIAL\");\n  const attempt=done.calls['source:te-snapshot'];assert.equal(attempt.status,'FAILED_NO_RETRY');\n  assert.equal(attempt.result.receiptRef,null);assert.equal(attempt.result.usage.providerCost,'UNKNOWN_NOT_OPENAI');\n  await runner.run(org,job.id);assert.equal(f.counts.source,1);assert.equal(f.counts.generate,1);\n }finally{await pool.end()}\n});\n","apps/sg-runtime/tests/assistant-ecr-week-integrity.mjs":"// Test/build-only source continuation. Never imported by product code.\nimport assert from 'node:assert/strict'\nimport {createHash} from 'node:crypto'\nexport const WEEK_RECEIPT=\"apps/sg-runtime/assistant-ecr-week-integration.json\"\nexport const WEEK_BASE=\"b6df3533750d0278440b0a432e412731bff47a42\"\nexport const WEEK_PATHS=Object.freeze([\n \"apps/sg-runtime/components/appshell/assistant-conversation-session.ts\",\n \"apps/sg-runtime/lib/assistant/context-selection.ts\",\n \"apps/sg-runtime/lib/assistant/conversation.ts\",\n \"apps/sg-runtime/lib/assistant/model.ts\",\n \"apps/sg-runtime/lib/assistant/runtime.ts\",\n \"apps/sg-runtime/tests/assistant-conversation-handler.test.ts\",\n \"apps/sg-runtime/tests/assistant-conversation.test.ts\",\n \"apps/sg-runtime/tests/assistant-economic-calendar.test.ts\",\n \"apps/sg-runtime/tests/assistant-model.test.ts\",\n \"apps/sg-runtime/tests/pci-smart-integrity.test.mjs\",\n \"apps/sg-runtime/tests/assistant-ecr-week-integrity.mjs\",\n \"apps/sg-runtime/tests/assistant-ecr-week-integrity.test.mjs\"\n])\nexport const WEEK_RECEIPTS=Object.freeze([\n \"apps/sg-runtime/operation-integration.json\",\n \"apps/sg-runtime/assistant-context-integration.json\",\n \"apps/sg-runtime/procurement-insights-integration.json\",\n \"apps/sg-runtime/assistant-markdown-integration.json\",\n \"apps/sg-runtime/registration-stage-i-integration.json\",\n \"apps/sg-runtime/assistant-send-arrow-integration.json\",\n \"apps/sg-runtime/assistant-ecr-integration.json\",\n \"apps/sg-runtime/assistant-ecr-precision-integration.json\",\n \"apps/sg-runtime/private-recurring-source-adoption.json\",\n \"apps/architecture-lab/private-recurring-source.json\",\n \"apps/architecture-lab/private-recurring-source-adoption.json\",\n \"apps/srm/private-recurring-source-adoption.json\"\n])\nconst ARCH=\"apps/architecture-lab/private-recurring-source.mjs\",ADDITIONS=new Set([\"apps/sg-runtime/tests/assistant-ecr-week-integrity.mjs\",\"apps/sg-runtime/tests/assistant-ecr-week-integrity.test.mjs\"])\nconst hash=b=>createHash('sha256').update(b).digest('hex')\nexport function weekArchitectureSource(before,pin){\n const marker=\"import assert from 'node:assert/strict'\",entry='export function recurringSourcePredecessor(current,historical){'\n assert.equal(before.split(marker).length,2);assert.equal(before.split(entry).length,2)\n return before.replace(marker,\"import {assistantEcrWeekPredecessor} from '../sg-runtime/tests/assistant-ecr-week-integrity.mjs'\\nexport const ECR_WEEK_SOURCE_SHA='\"+pin+\"'\\n\"+marker)\n  .replace(entry,entry+\"\\n const successor=assistantEcrWeekPredecessor(current,historical,ECR_WEEK_SOURCE_SHA)\\n if(successor){const accepted=recurringSourcePredecessor(successor.previousBytes,historical);assert(accepted,'accepted recurring source retained');return {...accepted,successor}}\")\n}\nexport function weekScopeSource(before){\n return before.replace(\"import './assistant-ecr-integrity.test.mjs'\",\"import './assistant-ecr-integrity.test.mjs'\\nimport './assistant-ecr-week-integrity.test.mjs'\\nimport {WEEK_RECEIPT} from './assistant-ecr-week-integrity.mjs'\")\n  .replace(' const recurring=recurringSourcePredecessor(current,historical)',' const recurring=recurringSourcePredecessor(current,historical)\\n const week=recurring?.successor')\n  .replace(\"(!recurring||file!=='apps/sg-runtime/private-recurring-source-adoption.json')\",\"(!week||file!==WEEK_RECEIPT)&&(!recurring||file!=='apps/sg-runtime/private-recurring-source-adoption.json')\")\n  .replace('assertSourceCoverage(changed,{','assertSourceCoverage(changed,{...week?.manifest.sourceDigests,')\n}\nexport function assistantEcrWeekPredecessor(current,historical,expectedDigest){\n const renderer=oilRendererSourcePredecessor(current,historical)\n if(renderer){\n  const accepted=assistantEcrWeekPredecessor(renderer.previousBytes,historical,expectedDigest)\n  assert(accepted,'accepted ECR week source retained')\n  // A computed coverage view for the unchanged aggregate consumer. The original\n  // week receipt and all historical bytes remain immutable; each added byte is\n  // authenticated above before its closed binding is exposed to scope coverage.\n  return {...accepted,renderer,manifest:{...accepted.manifest,sourceDigests:{...accepted.manifest.sourceDigests,...renderer.manifest.sourceDigests,[OIL_RENDERER_RECEIPT]:hash(current(OIL_RENDERER_RECEIPT))}}}\n }\n let bytes\n try{bytes=current(WEEK_RECEIPT)}catch(e){\n  const message=String(e?.stderr??e?.message??'')\n  if(e?.code==='ENOENT'||e?.status===128&&[\"' does not exist in \",\"' exists on disk, but not in \"].some(s=>message.includes(\"'\"+WEEK_RECEIPT+s)))return null\n  throw e\n }\n assert.match(expectedDigest??'',/^[a-f0-9]{64}$/);assert.equal(hash(bytes),expectedDigest,'exact reviewed ECR week source record')\n const a=JSON.parse(bytes)\n assert.deepEqual(Object.keys(a).sort(),['schemaVersion','taskId','producerTaskId','targetEnvironment','scope','previousSourceSha','sourceDigests','previousReceipts','authorisationChanged','schemaChanged','modelChanged','limitsChanged','providerAcquisitionAdded','deploymentPerformed'].sort())\n assert.equal(a.schemaVersion,'1.0.0');assert.equal(a.taskId,'SG2-ACG-ECR-INCOMPLETE-20261111');assert.equal(a.producerTaskId,'ARCH-ACG-ECR-WEEK-ADOPTION-20261111')\n assert.equal(a.targetEnvironment,'development');assert.equal(a.scope,'ASSISTANT_ECR_WEEKS_AND_ADMISSION_CORRECTION');assert.equal(a.previousSourceSha,WEEK_BASE)\n for(const k of ['authorisationChanged','schemaChanged','modelChanged','limitsChanged','providerAcquisitionAdded','deploymentPerformed'])assert.equal(a[k],false,k)\n assert.deepEqual(Object.keys(a.sourceDigests).sort(),[...WEEK_PATHS].sort())\n for(const p of WEEK_PATHS)assert.equal(hash(current(p)),a.sourceDigests[p],'exact current ECR correction '+p)\n assert.deepEqual(Object.keys(a.previousReceipts).sort(),[...WEEK_RECEIPTS].sort())\n for(const p of WEEK_RECEIPTS){assert.equal(hash(current(p)),a.previousReceipts[p],'immutable receipt '+p);assert.equal(hash(historical(WEEK_BASE,p)),a.previousReceipts[p],'accepted receipt '+p)}\n assert.equal(String(current(ARCH)),weekArchitectureSource(String(historical(WEEK_BASE,ARCH)),expectedDigest),'only a bounded source continuation may extend the shared guard')\n const scope='apps/sg-runtime/tests/pci-smart-integrity.test.mjs'\n assert.equal(String(current(scope)),weekScopeSource(String(historical(WEEK_BASE,scope))),'strict candidate scope coverage retained')\n const mapped=new Set([...WEEK_PATHS,ARCH]),cache=new Map()\n return {manifest:a,previousBytes:p=>{\n  if(p===WEEK_RECEIPT||ADDITIONS.has(p))throw Object.assign(Error('ECR correction absent from predecessor'),{code:'ENOENT'})\n  if(!mapped.has(p))return current(p)\n  if(!cache.has(p))cache.set(p,Buffer.from(historical(WEEK_BASE,p)))\n  return Buffer.from(cache.get(p))\n }}\n}\n// Exact renderer source successor only. No runtime grant, model call or history rewrite.\nexport const OIL_RENDERER_RECEIPT=\"apps/sg-runtime/oil-renderer-integration.json\"\nexport const OIL_RENDERER_BASE=\"bfc4a228d9f3d583c37c5fd984c7e4da602bf75d\"\nexport const OIL_RENDERER_PATHS=Object.freeze([\"apps/insights-runtime/render/report.py\", \"apps/insights-runtime/tests/postgres.test.mjs\", \"apps/sg-runtime/tests/assistant-ecr-week-integrity.mjs\"])\nexport const OIL_RENDERER_PRESERVED=Object.freeze([\"apps/sg-runtime/operation-integration.json\", \"apps/sg-runtime/assistant-context-integration.json\", \"apps/sg-runtime/procurement-insights-integration.json\", \"apps/sg-runtime/assistant-markdown-integration.json\", \"apps/sg-runtime/registration-stage-i-integration.json\", \"apps/sg-runtime/assistant-send-arrow-integration.json\", \"apps/sg-runtime/assistant-ecr-integration.json\", \"apps/sg-runtime/assistant-ecr-precision-integration.json\", \"apps/sg-runtime/assistant-ecr-week-integration.json\", \"apps/sg-runtime/private-recurring-source-adoption.json\", \"apps/architecture-lab/private-recurring-source.json\", \"apps/architecture-lab/private-recurring-source-adoption.json\", \"apps/srm/private-recurring-source-adoption.json\", \"apps/architecture-lab/sdk-1.34-compatibility.json\"])\nconst OIL_RENDERER_RUNTIME=Object.freeze({\"apps/insights-runtime/render/report.py\": \"fc60502cbab052bbe90f7598b437b896bcd94c32fc6037d48203bf0e5d6456cf\", \"apps/insights-runtime/tests/postgres.test.mjs\": \"f887f544b7eced7928d41b0ed84b0e5b0ccd4b7828f7272d10f42e19a5409a47\"})\nexport function oilRendererSourcePredecessor(current,historical){\n let bytes\n try{bytes=current(OIL_RENDERER_RECEIPT)}catch(e){\n  const message=String(e?.stderr??e?.message??'')\n  if(e?.code==='ENOENT'||e?.status===128&&[\"' does not exist in \",\"' exists on disk, but not in \"].some(s=>message.includes(\"'\"+OIL_RENDERER_RECEIPT+s)))return null\n  throw e\n }\n const a=JSON.parse(bytes)\n assert.deepEqual(Object.keys(a).sort(),['schemaVersion','taskId','targetEnvironment','scope','previousSourceSha','sourceDigests','preservedReceipts','authorisationChanged','schemaChanged','modelChanged','policiesChanged','providerAcquisitionAdded','deploymentPerformed','originalNarrativePreserved','humanReviewRequired'].sort())\n assert.equal(a.schemaVersion,'1.0.0');assert.equal(a.taskId,'SG2-OIL-RENDERER-FINAL-RECOVERY-20261112')\n assert.equal(a.targetEnvironment,'development');assert.equal(a.scope,'EXACT_RENDERER_SOURCE_SUCCESSOR');assert.equal(a.previousSourceSha,OIL_RENDERER_BASE)\n for(const k of ['authorisationChanged','schemaChanged','modelChanged','policiesChanged','providerAcquisitionAdded','deploymentPerformed'])assert.equal(a[k],false,k)\n assert.equal(a.originalNarrativePreserved,true);assert.equal(a.humanReviewRequired,true)\n assert.deepEqual(Object.keys(a.sourceDigests).sort(),[...OIL_RENDERER_PATHS].sort())\n for(const p of OIL_RENDERER_PATHS){assert.match(a.sourceDigests[p],/^[a-f0-9]{64}$/);assert.equal(hash(current(p)),a.sourceDigests[p],'exact current renderer successor '+p)}\n for(const[p,pin]of Object.entries(OIL_RENDERER_RUNTIME))assert.equal(a.sourceDigests[p],pin,'unchanged approved renderer bytes '+p)\n assert.deepEqual(Object.keys(a.preservedReceipts).sort(),[...OIL_RENDERER_PRESERVED].sort())\n for(const p of OIL_RENDERER_PRESERVED){assert.equal(hash(current(p)),a.preservedReceipts[p],'immutable prior receipt '+p);assert.equal(hash(historical(OIL_RENDERER_BASE,p)),a.preservedReceipts[p],'accepted prior receipt '+p)}\n const mapped=new Set(OIL_RENDERER_PATHS),cache=new Map()\n return{manifest:a,previousBytes:p=>{\n  if(p===OIL_RENDERER_RECEIPT)throw Object.assign(Error('Renderer source absent from predecessor'),{code:'ENOENT'})\n  if(!mapped.has(p))return current(p)\n  if(!cache.has(p))cache.set(p,Buffer.from(historical(OIL_RENDERER_BASE,p)))\n  return Buffer.from(cache.get(p))\n }}\n}\n","apps/sg-runtime/oil-renderer-integration.json":"{\n  \"schemaVersion\": \"1.0.0\",\n  \"taskId\": \"SG2-OIL-RENDERER-FINAL-RECOVERY-20261112\",\n  \"targetEnvironment\": \"development\",\n  \"scope\": \"EXACT_RENDERER_SOURCE_SUCCESSOR\",\n  \"previousSourceSha\": \"bfc4a228d9f3d583c37c5fd984c7e4da602bf75d\",\n  \"sourceDigests\": {\n    \"apps/insights-runtime/render/report.py\": \"fc60502cbab052bbe90f7598b437b896bcd94c32fc6037d48203bf0e5d6456cf\",\n    \"apps/insights-runtime/tests/postgres.test.mjs\": \"f887f544b7eced7928d41b0ed84b0e5b0ccd4b7828f7272d10f42e19a5409a47\",\n    \"apps/sg-runtime/tests/assistant-ecr-week-integrity.mjs\": \"c821676bb3a38295be2c48e2dd7766a9f4a29a5c264c9e6de3ca37b2a89e585b\"\n  },\n  \"preservedReceipts\": {\n    \"apps/sg-runtime/operation-integration.json\": \"a6bf50993c98a71aeccd349dd904baafb53b3cd653324d97bab3fc5e34ac509f\",\n    \"apps/sg-runtime/assistant-context-integration.json\": \"d932f227977789643086b6a9eb179598a6f48071964b2d26ba82d25fceb7b2ec\",\n    \"apps/sg-runtime/procurement-insights-integration.json\": \"6dca06d8b0731e585925100b0578d41a61711f335940350d1ea32c296a3d7177\",\n    \"apps/sg-runtime/assistant-markdown-integration.json\": \"27ff06aff8bc44592f0073732748834b7759182fa4307d901c7d63304381a38b\",\n    \"apps/sg-runtime/registration-stage-i-integration.json\": \"4a7a572e67e12ed73c523502cef4cb432009e735737df851419d80898653f414\",\n    \"apps/sg-runtime/assistant-send-arrow-integration.json\": \"62c6af6817a022c31788d801cc0eac293a24b3f25d9e529d32b1bff4908fa230\",\n    \"apps/sg-runtime/assistant-ecr-integration.json\": \"5814e2e5cbdf1a32d22cff3aa55de806ec34c9debdecc21ff06c4f9f887a82bc\",\n    \"apps/sg-runtime/assistant-ecr-precision-integration.json\": \"a017c2b971e3c72606847264150715c983fa9483537d26be90144a64e0377ee7\",\n    \"apps/sg-runtime/assistant-ecr-week-integration.json\": \"31ce8f1d7e5ca1d9c3aedf80f92e23fe0f1a93cb8f5fd5d003eb54a244859dd4\",\n    \"apps/sg-runtime/private-recurring-source-adoption.json\": \"edf9d51c199251e148b39c92a3084944c1a4b8419be29175c88b6e2583df11f2\",\n    \"apps/architecture-lab/private-recurring-source.json\": \"75877d5750e07d1c8172be0af76bc5933f2eeefc22cc39747a2621b9cab24619\",\n    \"apps/architecture-lab/private-recurring-source-adoption.json\": \"a79c186897851acb93142949fe7aee19184cbfe68b3acdf51cbda084c00c1254\",\n    \"apps/srm/private-recurring-source-adoption.json\": \"88d0252f634eface35b34adf31ac97cbf0d396fcf1fe6da452c74bdc23c7c633\",\n    \"apps/architecture-lab/sdk-1.34-compatibility.json\": \"458ddbf661ce1a5666260a072a03f24ac016346bdd9a9efef7f2a1d497eee403\"\n  },\n  \"authorisationChanged\": false,\n  \"schemaChanged\": false,\n  \"modelChanged\": false,\n  \"policiesChanged\": false,\n  \"providerAcquisitionAdded\": false,\n  \"deploymentPerformed\": false,\n  \"originalNarrativePreserved\": true,\n  \"humanReviewRequired\": true\n}\n"}
+test('renderer admission validates every exact source and immutable receipt before old ECR/Recurring checks',()=>{
+ const r=OIL_RENDERER_SUCCESSOR_REVIEW,cache=new Map(),read=p=>{
+  if(Object.hasOwn(rendererSuccessorFixture,p))return Buffer.from(rendererSuccessorFixture[p])
+  if(!Object.hasOwn(r.preservedReceipts,p))throw Object.assign(Error('absent'),{code:'ENOENT'})
+  if(!cache.has(p))cache.set(p,execFileSync('git',['show',r.previousSourceSha+':'+p],{cwd:authorityRoot}))
+  return Buffer.from(cache.get(p))
+ }
+ const historical=(sha,p)=>{assert.equal(sha,r.previousSourceSha);return Object.hasOwn(r.preservedReceipts,p)?read(p):Buffer.from('immutable predecessor '+p)}
+ const prior=oilRendererTrustedPredecessor(read,historical)
+ assert.notEqual(prior,read)
+ for(const p of Object.keys(r.sourceDigests))assert.deepEqual(prior(p),historical(r.previousSourceSha,p))
+ for(const p of Object.keys(r.preservedReceipts))assert.deepEqual(prior(p),read(p))
+ assert.throws(()=>prior(r.recordPath),{code:'ENOENT'})
+ for(const p of [r.recordPath,...Object.keys(r.sourceDigests),...Object.keys(r.preservedReceipts)])rejection(()=>oilRendererTrustedPredecessor(f=>f===p?Buffer.concat([read(f),Buffer.from('unadmitted')]):read(f),historical))
+ for(const p of Object.keys(r.preservedReceipts))rejection(()=>oilRendererTrustedPredecessor(read,(sha,f)=>f===p?Buffer.from('rewritten history'):historical(sha,f)))
+ const absent=p=>{throw Object.assign(Error('absent'),{code:'ENOENT'})};assert.equal(oilRendererTrustedPredecessor(absent,historical),absent)
+ const denied=Object.assign(Error('denied'),{code:'EACCES'});assert.throws(()=>oilRendererTrustedPredecessor(()=>{throw denied},historical),e=>e===denied)
+})
+test('renderer admission refuses linked, executable, malformed and unbound current sources',()=>{
+ const root=fs.mkdtempSync(path.join(os.tmpdir(),'oil-renderer-admission-')),r=OIL_RENDERER_SUCCESSOR_REVIEW
+ const write=(p,b)=>{const file=path.join(root,p);fs.mkdirSync(path.dirname(file),{recursive:true});fs.writeFileSync(file,b)}
+ try{
+  const read=oilRendererCanonicalRead(root);assert.throws(()=>read('absent'),{code:'ENOENT'})
+  write(r.recordPath,'{}');rejection(()=>oilRendererCanonicalRead(root));fs.unlinkSync(path.join(root,r.recordPath))
+  fs.symlinkSync(path.join(root,'missing'),path.join(root,r.recordPath));rejection(()=>oilRendererCanonicalRead(root));fs.unlinkSync(path.join(root,r.recordPath))
+  write(r.recordPath,rendererSuccessorFixture[r.recordPath]);fs.chmodSync(path.join(root,r.recordPath),0o755);rejection(()=>oilRendererCanonicalRead(root));fs.chmodSync(path.join(root,r.recordPath),0o644)
+  const source=Object.keys(r.sourceDigests)[0];write(source,'not exact reviewed source');rejection(()=>oilRendererCanonicalRead(root))
+ }finally{fs.rmSync(root,{recursive:true,force:true})}
+})
+test('renderer admission composes with the actual accepted ECR and Recurring graph without replacing old checks',()=>{
+ const parent=fs.mkdtempSync(path.join(os.tmpdir(),'oil-renderer-actual-graph-')),root=path.join(parent,'candidate')
+ try{
+  execFileSync('git',['clone','--quiet','--shared','--no-checkout',authorityRoot,root],{stdio:['ignore','pipe','pipe']})
+  execFileSync('git',['checkout','--quiet','--detach',OIL_RENDERER_SUCCESSOR_REVIEW.currentMainSha],{cwd:root,stdio:['ignore','pipe','pipe']})
+  for(const[p,b]of Object.entries(rendererSuccessorFixture)){const target=path.join(root,p);fs.mkdirSync(path.dirname(target),{recursive:true});fs.writeFileSync(target,b)}
+  const accepted=assertPrivateRecurringProvenance(root);assert(accepted);assert.equal(Object.keys(accepted.sourceDigests).length,368)
+  for(const p of Object.keys(OIL_RENDERER_SUCCESSOR_REVIEW.sourceDigests)){
+   const target=path.join(root,p),before=fs.readFileSync(target);fs.appendFileSync(target,'UNREVIEWED');rejection(()=>assertPrivateRecurringProvenance(root));fs.writeFileSync(target,before)
+  }
+ }finally{fs.rmSync(parent,{recursive:true,force:true})}
+
+})
+
+test('accepted Calendar consumer retains all69 ownership and immutable manifest history',async()=>{
+ const c=await import('./controlled-package-ci.mjs'),r=c.REGISTRATION_SDK_CALENDAR_CONSUMER_HISTORY_REVIEW,old=c.REGISTRATION_SDK_CALENDAR_CORRECTIVE_HISTORY_REVIEW;
+ assert.equal(Object.keys(r.entries).length,69);assert.deepEqual(Object.keys(r.entries),Object.keys(old.entries));
+ assert.deepEqual(Object.keys(r.entries).filter(p=>r.entries[p].sha!==old.entries[p].sha).sort(),['apps/sg-runtime/tests/pci-smart-integrity.test.mjs','packages/platform-contracts/test/organisation-sdk-compatibility.json','packages/platform-contracts/test/organisation-sdk-compatibility.mjs','packages/platform-contracts/test/organisation-sdk-compatibility.test.mjs']);
+ assert.equal(c.REGISTRATION_SDK_CALENDAR_CONSUMER_HISTORY_PROVENANCE.recordDigest,'c26ca9c1c02b788bd010b315d5c522c8247fedb5b72d858eafd7780667c76bcb');
+ assert.deepEqual(c.REGISTRATION_SDK_CALENDAR_CONSUMER_HISTORY_PROVENANCE.preservedCurrentOverrides,{"apps/sg-runtime/package.json":"d2ed74190322d0e5315212519709ca2e06a6cbfc32def8e23e64794101ee1517"});
+ assert.equal(c.REGISTRATION_SDK_COMPOSED_CALENDAR_PROVENANCE.recordDigest,'a8050a2acde67bfc74457dd55824b074d09b26428a43bc1584f9e27916b4edd8');
+ for(const[p,e]of Object.entries(old.entries)){const{sha:a,...before}=e,{sha:b,...after}=r.entries[p];assert.deepEqual(after,before,'unchanged owner/status/mode '+p)}
+});
+
+// Retain the two original renderer source negatives without amending the
+// independently accepted Calendar aggregate or its historical source binding.
+const rendererSourceHistory=(sha,p)=>execFileSync('git',['show',sha+':'+p],{cwd:authorityRoot,stdio:['ignore','pipe','pipe']})
+const rendererSourceRead=p=>Object.hasOwn(rendererSuccessorFixture,p)?Buffer.from(rendererSuccessorFixture[p]):rendererSourceHistory(OIL_RENDERER_SUCCESSOR_REVIEW.previousSourceSha,p)
+test('renderer successor verifies every current byte and preserves all accepted source receipts',async()=>{
+ const {oilRendererSourcePredecessor,OIL_RENDERER_RECEIPT,OIL_RENDERER_PATHS,OIL_RENDERER_PRESERVED,OIL_RENDERER_BASE}=await import('data:text/javascript;base64,'+Buffer.from(rendererSuccessorFixture['apps/sg-runtime/tests/assistant-ecr-week-integrity.mjs']).toString('base64'))
+ const current=rendererSourceRead,historical=rendererSourceHistory;const view=oilRendererSourcePredecessor(current,historical);assert(view)
+ for(const p of [...OIL_RENDERER_PATHS,...OIL_RENDERER_PRESERVED])assert.throws(()=>oilRendererSourcePredecessor(f=>f===p?Buffer.concat([current(f),Buffer.from('UNREVIEWED')]):current(f),historical),p)
+ for(const p of OIL_RENDERER_PATHS)assert.deepEqual(view.previousBytes(p),historical(OIL_RENDERER_BASE,p))
+ assert.equal(oilRendererSourcePredecessor(view.previousBytes,historical),null)
+ assert.throws(()=>view.previousBytes(OIL_RENDERER_RECEIPT),{code:'ENOENT'})
+ const denied=Object.assign(Error('Denied'),{code:'EACCES'});assert.throws(()=>oilRendererSourcePredecessor(()=>{throw denied},historical),e=>e===denied)
+})
+test('renderer successor rejects widened scope, history edits and rebound business code',async()=>{
+ const {oilRendererSourcePredecessor,OIL_RENDERER_RECEIPT,OIL_RENDERER_PATHS}=await import('data:text/javascript;base64,'+Buffer.from(rendererSuccessorFixture['apps/sg-runtime/tests/assistant-ecr-week-integrity.mjs']).toString('base64'))
+ const current=rendererSourceRead,historical=rendererSourceHistory;const original=()=>JSON.parse(current(OIL_RENDERER_RECEIPT)),reader=(a,read=current)=>p=>p===OIL_RENDERER_RECEIPT?Buffer.from(JSON.stringify(a)):read(p)
+ for(const change of [a=>a.authorisationChanged=true,a=>a.policiesChanged=true,a=>a.originalNarrativePreserved=false,a=>a.humanReviewRequired=false,a=>a.previousSourceSha='0'.repeat(40),a=>a.sourceDigests['apps/srm/unadmitted.ts']='0'.repeat(64),a=>delete a.sourceDigests[OIL_RENDERER_PATHS[0]],a=>a.preservedReceipts['apps/sg-runtime/assistant-context-integration.json']='0'.repeat(64),a=>a.extra=true]){
+  const a=original();change(a);assert.throws(()=>oilRendererSourcePredecessor(reader(a),historical))
+ }
+ const p=OIL_RENDERER_PATHS[0],bad=Buffer.concat([current(p),Buffer.from('BUSINESS_DRIFT')]),a=original();a.sourceDigests[p]=createHash('sha256').update(bad).digest('hex')
+ assert.throws(()=>oilRendererSourcePredecessor(reader(a,f=>f===p?bad:current(f)),historical),/unchanged approved renderer bytes/)
+ assert.throws(()=>oilRendererSourcePredecessor(reader({...original(),modelChanged:true}),historical))
+})
+
+import {PRIVATE_RECURRING_CONSENT_TRANSPORT_REVIEW,assertRecurringConsentTransportRecord} from './controlled-package-ci.mjs'
+import {PRIVATE_RECURRING_CONSUMER_TEST_REVIEW} from './controlled-package-ci.mjs'
+test('recurring consumer test continuation admits only29 exact routed files and preserves the accepted27',()=>{
+ const r=PRIVATE_RECURRING_CONSUMER_TEST_REVIEW,files=Object.entries(r.entries).map(([filename,e])=>({filename,sha:e.sha,status:e.status})),p={...pr(),number:r.prNumber,changed_files:files.length,base:{...pr().base,sha:r.baseSha},head:{...pr().head,sha:r.sourceSha,ref:r.branch}}
+ assert.equal(files.length,29)
+ assert.equal(createHash('sha256').update(JSON.stringify(r.entries)).digest('hex'),'4dc65bcc37bcc7a5fe06fb1d77bc4ca23dd7db2db67ea6847045fdf7a09f103f')
+ assert.equal(createHash('sha256').update(JSON.stringify(PRIVATE_RECURRING_CONSENT_TRANSPORT_REVIEW.entries)).digest('hex'),'b09ab1e109ba131a3d44c059d51546fc5ac6e56456eaf7472835f8bd78b1c5d7')
+ assertArchitectureFiles(p,files);assert.equal(selectCandidate(context(),p,r.sourceSha,{files}),r.sourceSha)
+ for(const f of files){assertPrivateRecurringReviewEntry(f,'100644 blob '+f.sha+'\t'+f.filename+'\0');for(const mode of ['100755','120000','160000'])rejection(()=>assertPrivateRecurringReviewEntry(f,mode+' blob '+f.sha+'\t'+f.filename+'\0'))}
+ for(const change of [f=>f.pop(),f=>f.push(f[0]),f=>f[0].sha='f'.repeat(40),f=>f[0].status='removed',f=>f[0].previous_filename='elsewhere',f=>f[0].filename='apps/srm/src/server/unreviewed.ts']){const bad=structuredClone(files);change(bad);rejection(()=>selectCandidate(context(),{...p,changed_files:bad.length},r.sourceSha,{files:bad}))}
+ for(const change of [q=>q.number=995,q=>q.head.ref='architecture/another',q=>q.head.repo.full_name='attacker/fork',q=>q.user.login='attacker',q=>q.base.ref='staging',q=>q.head.sha=sha]){const bad=structuredClone(p);change(bad);rejection(()=>selectCandidate(context(),bad,r.sourceSha,{files}))}
+})
+test('trusted consumer continuation checks15 exact sources and all20 immutable receipts without candidate execution',()=>{
+ const r=PRIVATE_RECURRING_CONSUMER_TEST_REVIEW,bytes=execFileSync('git',['show',r.sourceSha+':packages/platform-contracts/test/recurring-consent-transport-source.json'],{cwd:authorityRoot}),a=JSON.parse(bytes)
+ const options={sha256ForPath:p=>a.sourceDigests[p]??a.preservedReceipts[p],blobForPath:p=>r.entries[p]?.sha,historicalDigestForPath:(sha,p)=>{assert.equal(sha,a.baseCandidateSha);return a.preservedReceipts[p]}}
+ assert.equal(Object.keys(assertRecurringConsentTransportRecord(bytes,options).sourceDigests).length,15)
+ for(const p of Object.keys(a.sourceDigests)){rejection(()=>assertRecurringConsentTransportRecord(bytes,{...options,sha256ForPath:q=>q===p?'0'.repeat(64):options.sha256ForPath(q)}));if(r.entries[p])rejection(()=>assertRecurringConsentTransportRecord(bytes,{...options,blobForPath:q=>q===p?'0'.repeat(40):options.blobForPath(q)}))}
+ for(const p of Object.keys(a.preservedReceipts))for(const field of ['sha256ForPath','historicalDigestForPath']){const bad={...options,[field]:field==='sha256ForPath'?q=>q===p?'0'.repeat(64):options.sha256ForPath(q):(sha,q)=>q===p?'0'.repeat(64):options.historicalDigestForPath(sha,q)};rejection(()=>assertRecurringConsentTransportRecord(bytes,bad))}
+ rejection(()=>assertRecurringConsentTransportRecord(Buffer.concat([bytes,Buffer.from(' ')]),options))
+})
+function piConsentTransportFixture(){
+ const r=PRIVATE_RECURRING_CONSENT_TRANSPORT_REVIEW,files=Object.entries(r.entries).map(([filename,e])=>({filename,sha:e.sha,status:e.status}))
+ return {r,files,p:{...pr(),number:r.prNumber,changed_files:files.length,base:{...pr().base,sha:r.baseSha},head:{...pr().head,sha:r.sourceSha,ref:r.branch}}}
+}
+test('recurring consent admits exactly27 routed regular source versions without widening old reviews',()=>{
+ const {r,files,p}=piConsentTransportFixture()
+ assert.equal(files.length,27)
+ assert.equal(createHash('sha256').update(JSON.stringify(r.entries)).digest('hex'),'b09ab1e109ba131a3d44c059d51546fc5ac6e56456eaf7472835f8bd78b1c5d7')
+ assertArchitectureFiles(p,files);assert.equal(selectCandidate(context(),p,r.sourceSha,{files}),r.sourceSha)
+ for(const f of files){
+  assertPrivateRecurringReviewEntry(f,'100644 blob '+f.sha+'\t'+f.filename+'\0')
+  for(const mode of ['100755','120000','160000'])rejection(()=>assertPrivateRecurringReviewEntry(f,mode+' blob '+f.sha+'\t'+f.filename+'\0'))
+ }
+ for(const old of [PRIVATE_RECURRING_REVIEW,PRIVATE_RECURRING_FINAL_REVIEW,PRIVATE_RECURRING_COMPLETION_REVIEW,PRIVATE_RECURRING_SHELL_REVIEW,PRIVATE_RECURRING_SHELL_CURRENT_REVIEW,PRIVATE_RECURRING_SHELL_CALENDAR_REVIEW]){
+  const f=Object.entries(old.entries).map(([filename,e])=>({filename,sha:e.sha,status:e.status})),q={...pr(),number:old.prNumber,changed_files:f.length,base:{...pr().base,sha:old.baseSha},head:{...pr().head,sha:old.sourceSha,ref:old.branch}}
+  assert.equal(selectCandidate(context(),q,old.sourceSha,{files:f}),old.sourceSha)
+  if(old.prNumber!==r.prNumber)rejection(()=>selectCandidate(context(),{...p,changed_files:f.length},r.sourceSha,{files:f}))
+ }
+ assert.equal(createHash('sha256').update(JSON.stringify(PRIVATE_RECURRING_SHELL_CALENDAR_REVIEW.entries)).digest('hex'),'e5472bb16f11fcc2e8e997f8b15e6568b6f6b01ddc79d90f22d57c23507d01ec')
+})
+test('recurring consent rejects changed source, scope, mode, PR and borrowed identity',()=>{
+ const {r,files,p}=piConsentTransportFixture()
+ for(const edit of [f=>f.pop(),f=>f.push(f[0]),f=>f[0].sha='f'.repeat(40),f=>f[0].status='removed',f=>f[0].previous_filename='elsewhere',f=>f[0].filename='apps/sg-runtime/app/api/unreviewed.ts']){
+  const bad=structuredClone(files);edit(bad);rejection(()=>selectCandidate(context(),{...p,changed_files:bad.length},r.sourceSha,{files:bad}))
+ }
+ for(const edit of [q=>q.number=995,q=>q.head.ref='architecture/another',q=>q.head.repo.full_name='attacker/fork',q=>q.user.login='attacker',q=>q.base.ref='staging',q=>q.head.sha=sha]){
+  const bad=structuredClone(p);edit(bad);rejection(()=>selectCandidate(context(),bad,r.sourceSha,{files}))
+ }
+})
+const piConsentTransportRecord=Buffer.from("{\n  \"schemaVersion\": \"1.0.0\",\n  \"taskId\": \"ARCH-PI-RECURRING-E1-20261111\",\n  \"targetEnvironment\": \"development\",\n  \"scope\": \"RECURRING_CONSENT_BEARER_TRANSPORT_CORRECTION\",\n  \"baseCandidateSha\": \"0c5a6ce71127f13402a14b256745e0fb0ffd5a1d\",\n  \"sourceDigests\": {\n    \"packages/platform-contracts/current-e1-authority/recurring.mjs\": \"b1795c5b90f95b07ab0c5b3694a5cf89b219ef79d6bde599c59c1272119ea052\",\n    \"packages/platform-contracts/test/recurring-consent-transport.test.mjs\": \"584aa9260f2074d9f6e92733c5087c3ee20ff6179752b9273a575a78708007f5\",\n    \"packages/platform-contracts/test/recurring-consent-transport-source.mjs\": \"92db43f06c8a3ee97eb314bc4ae2acb388b6baf98197013e6099fce4da06f30c\",\n    \"apps/architecture-lab/private-recurring-source.mjs\": \"f89a8527e2ffda7531a2dae4be3202b0a267e093591a8dec610cb13e114dd3a9\",\n    \"apps/sg-runtime/tests/procurement-insights-completion-integrity.mjs\": \"0359f3796885e91be502c39465eababadab49e489ae207cf5abde2facf449e4e\",\n    \"apps/sg-runtime/components/procurement-insights/workspace.css\": \"59b202600210bffc554d8417c05c3229ab7380ce865812e6cbc6092197edb9cd\",\n    \"apps/sg-runtime/market-calendar-integration.json\": \"b66d88e724f84d513677554e77484bc29a2021b238ce28d4b7db7492aba9903c\",\n    \"apps/sg-runtime/components/procurement-insights/market-calendar.css\": \"5c7e8db2f6eac2241ab568028a8abcb2ace7fc65fc587ad81cbf3b0b371cb4f0\",\n    \"apps/sg-runtime/components/procurement-insights/market-calendar.tsx\": \"a712cd3acedf4e4a578aab6934e3c49e9fb35b97307bd6ef80e0c9643532bf34\",\n    \"apps/sg-runtime/tests/market-calendar.test.tsx\": \"46f758d97137fd35dddaae0392049f245335653ac2bdb2c6ec5f89c3e2007482\",\n    \"apps/platform-source-hub/scripts/ci-routing.mjs\": \"39da4bc9fc2045ba03163c4030ca3aaa382dd6c5b1ddf7b207b6239f02134a85\",\n    \"apps/platform-source-hub/test/ci-routing.test.mjs\": \"27271f417feb12e3711b2398c0a5b306b5533fe893b0bf82c79a2739c173d983\"\n  },\n  \"preservedReceipts\": {\n    \"apps/architecture-lab/private-recurring-source.json\": \"75877d5750e07d1c8172be0af76bc5933f2eeefc22cc39747a2621b9cab24619\",\n    \"apps/sg-runtime/operation-integration.json\": \"a6bf50993c98a71aeccd349dd904baafb53b3cd653324d97bab3fc5e34ac509f\",\n    \"apps/srm/operation-integration.json\": \"1303ac82c0570ca4929f64e1620e2ec7a6bfd3809607f57eb33da621c8ecd06d\",\n    \"apps/newsfeed-runtime/operation-integration.json\": \"a8b43f4f6213806843160d4373bb62bfd9357ba03cfbc16865fb2bce266f88f1\",\n    \"apps/sg-runtime/assistant-context-integration.json\": \"d932f227977789643086b6a9eb179598a6f48071964b2d26ba82d25fceb7b2ec\",\n    \"apps/newsfeed-runtime/assistant-context-integration.json\": \"4057379e02c7b698f3f24348c40b84275d92c3a892b55e96b1c6d23175298dfc\",\n    \"apps/newsfeed-runtime/saved-searches-integration.json\": \"fcfea3ae736cfd3446dac7c70c34f6f59a723a48bdae11234706d76f01652a6c\",\n    \"apps/sg-runtime/procurement-insights-integration.json\": \"6dca06d8b0731e585925100b0578d41a61711f335940350d1ea32c296a3d7177\",\n    \"apps/sg-runtime/assistant-ecr-integration.json\": \"5814e2e5cbdf1a32d22cff3aa55de806ec34c9debdecc21ff06c4f9f887a82bc\",\n    \"apps/sg-runtime/assistant-markdown-integration.json\": \"27ff06aff8bc44592f0073732748834b7759182fa4307d901c7d63304381a38b\",\n    \"apps/sg-runtime/registration-stage-i-integration.json\": \"4a7a572e67e12ed73c523502cef4cb432009e735737df851419d80898653f414\",\n    \"apps/sg-runtime/assistant-send-arrow-integration.json\": \"62c6af6817a022c31788d801cc0eac293a24b3f25d9e529d32b1bff4908fa230\",\n    \"apps/architecture-lab/private-recurring-source-adoption.json\": \"a79c186897851acb93142949fe7aee19184cbfe68b3acdf51cbda084c00c1254\",\n    \"apps/sg-runtime/private-recurring-source-adoption.json\": \"edf9d51c199251e148b39c92a3084944c1a4b8419be29175c88b6e2583df11f2\",\n    \"apps/srm/private-recurring-source-adoption.json\": \"88d0252f634eface35b34adf31ac97cbf0d396fcf1fe6da452c74bdc23c7c633\",\n    \"apps/sg-runtime/assistant-ecr-week-integration.json\": \"31ce8f1d7e5ca1d9c3aedf80f92e23fe0f1a93cb8f5fd5d003eb54a244859dd4\",\n    \"apps/economic-calendar-runtime/market-calendar-preferences-integration.json\": \"e3bc27ddf22b9165555c05f938a3c5d8f9f4f09334fcb7c55e760da44e9a59b6\",\n    \"apps/architecture-lab/market-calendar-test-compatibility.json\": \"52e859d4a99bc4c8e4d986f38afea2d58e9c1fe1ee1e0eb62cc2672dbdb60078\",\n    \"apps/sg-runtime/oil-renderer-integration.json\": \"6afdd65e66d8a7d8ceb4ab68601ba6d1c1bfac43bbac879d01bb61c9962e7ad6\",\n    \"apps/sg-runtime/procurement-insights-completion-integration.json\": \"095ab52d695419d34ed053a6961e389024067a8ab4a16a9b6bb2c379571832a0\"\n  },\n  \"authorisationChanged\": false,\n  \"schemaChanged\": false,\n  \"providerCallsPerformed\": false,\n  \"deploymentPerformed\": false,\n  \"reviewBaseSha\": \"99cd4aa1591ba2fc3a387ce637f920dac74880be\",\n  \"reviewedPaths\": [\n    \"apps/architecture-lab/private-recurring-source.mjs\",\n    \"apps/architecture-lab/test/market-calendar-source.test.mjs\",\n    \"apps/insights-runtime/src/publication-query.mjs\",\n    \"apps/insights-runtime/src/subscription-api.mjs\",\n    \"apps/insights-runtime/src/subscription-store.mjs\",\n    \"apps/insights-runtime/tests/report-library.test.mjs\",\n    \"apps/insights-runtime/tests/subscriptions.test.mjs\",\n    \"apps/platform-source-hub/scripts/ci-routing.mjs\",\n    \"apps/platform-source-hub/test/ci-routing.test.mjs\",\n    \"apps/sg-runtime/components/procurement-insights/inline-item.tsx\",\n    \"apps/sg-runtime/components/procurement-insights/reports.tsx\",\n    \"apps/sg-runtime/components/procurement-insights/workspace.css\",\n    \"apps/sg-runtime/components/procurement-insights/workspace.tsx\",\n    \"apps/sg-runtime/package.json\",\n    \"apps/sg-runtime/procurement-insights-completion-integration.json\",\n    \"apps/sg-runtime/procurement-insights-shell-integration.json\",\n    \"apps/sg-runtime/tests/assistant-ecr-week-integrity.test.mjs\",\n    \"apps/sg-runtime/tests/market-calendar-integrity.test.mjs\",\n    \"apps/sg-runtime/tests/pci-smart-integrity.test.mjs\",\n    \"apps/sg-runtime/tests/porr-demo-middleware.test.ts\",\n    \"apps/sg-runtime/tests/procurement-insights-completion-integrity.mjs\",\n    \"apps/sg-runtime/tests/procurement-insights-completion.test.mjs\",\n    \"apps/sg-runtime/tests/procurement-insights-shell-integrity.mjs\",\n    \"packages/platform-contracts/current-e1-authority/recurring.mjs\",\n    \"packages/platform-contracts/test/recurring-consent-transport-source.json\",\n    \"packages/platform-contracts/test/recurring-consent-transport-source.mjs\",\n    \"packages/platform-contracts/test/recurring-consent-transport.test.mjs\"\n  ]\n}\n")
+test('trusted recurring consent validates twelve exact sources and twenty immutable receipts as data',()=>{
+ const a=JSON.parse(piConsentTransportRecord),options={sha256ForPath:p=>a.sourceDigests[p]??a.preservedReceipts[p],blobForPath:p=>PRIVATE_RECURRING_CONSENT_TRANSPORT_REVIEW.entries[p]?.sha,historicalDigestForPath:(sha,p)=>{assert.equal(sha,a.baseCandidateSha);return a.preservedReceipts[p]}}
+ assert.equal(Object.keys(assertRecurringConsentTransportRecord(piConsentTransportRecord,options).sourceDigests).length,12)
+ for(const p of Object.keys(a.sourceDigests)){
+  rejection(()=>assertRecurringConsentTransportRecord(piConsentTransportRecord,{...options,sha256ForPath:q=>q===p?'0'.repeat(64):options.sha256ForPath(q)}))
+  if(PRIVATE_RECURRING_CONSENT_TRANSPORT_REVIEW.entries[p])rejection(()=>assertRecurringConsentTransportRecord(piConsentTransportRecord,{...options,blobForPath:q=>q===p?'0'.repeat(40):options.blobForPath(q)}))
+ }
+ for(const p of Object.keys(a.preservedReceipts))for(const field of ['sha256ForPath','historicalDigestForPath']){
+  const value={...options,[field]:field==='sha256ForPath'?q=>q===p?'0'.repeat(64):options.sha256ForPath(q):(sha,q)=>q===p?'0'.repeat(64):options.historicalDigestForPath(sha,q)}
+  rejection(()=>assertRecurringConsentTransportRecord(piConsentTransportRecord,value))
+ }
+ rejection(()=>assertRecurringConsentTransportRecord(Buffer.concat([piConsentTransportRecord,Buffer.from(' ')]),options))
+})
+
+test('registration closes raw current source before independent Oil history in the real accepted Calendar composition',async()=>{
+ const c=await import('./controlled-package-ci.mjs'),r=c.REGISTRATION_SDK_ROUTING_HISTORY_REVIEW,prior=c.REGISTRATION_SDK_CALENDAR_CONSUMER_HISTORY_REVIEW
+ assert.equal(Object.keys(r.entries).length,69)
+ assert.deepEqual(Object.keys(r.entries).filter(p=>r.entries[p].sha!==prior.entries[p].sha).sort(),['apps/architecture-lab/test/sdk-compatibility.test.mjs','packages/platform-contracts/test/organisation-sdk-compatibility.json','packages/platform-contracts/test/organisation-sdk-compatibility.mjs','packages/platform-contracts/test/organisation-sdk-compatibility.test.mjs'])
+ assert.equal(c.REGISTRATION_SDK_CALENDAR_CONSUMER_HISTORY_PROVENANCE.recordDigest,'c26ca9c1c02b788bd010b315d5c522c8247fedb5b72d858eafd7780667c76bcb')
+ const parent=fs.mkdtempSync(path.join(os.tmpdir(),'registration-oil-actual-graph-')),root=path.join(parent,'candidate')
+ try{
+  execFileSync('git',['clone','--quiet','--shared','--no-checkout',authorityRoot,root],{stdio:['ignore','pipe','pipe']})
+  execFileSync('git',['checkout','--quiet','--detach',"99cd4aa1591ba2fc3a387ce637f920dac74880be"],{cwd:root,stdio:['ignore','pipe','pipe']})
+  for(const file of Object.keys(r.entries)){
+   const bytes=execFileSync('git',['show',r.sourceSha+':'+file],{cwd:authorityRoot,stdio:['ignore','pipe','pipe']})
+   const target=path.join(root,file);fs.mkdirSync(path.dirname(target),{recursive:true});fs.writeFileSync(target,bytes)
+  }
+  assert.equal(c.assertRegistrationSdkProvenance(root).platformVersion,'1.36.0')
+  assert(c.assertPrivateRecurringProvenance(root))
+  for(const file of ['packages/platform-contracts/src/organisation-bootstrap.mjs','apps/sg-runtime/operation-integration.json','apps/sg-runtime/oil-renderer-integration.json','apps/insights-runtime/render/report.py','apps/insights-runtime/tests/postgres.test.mjs','apps/sg-runtime/tests/assistant-ecr-week-integrity.mjs','apps/sg-runtime/market-calendar-integration.json','apps/sg-runtime/components/procurement-insights/market-calendar.tsx']){
+   const target=path.join(root,file),before=fs.readFileSync(target);fs.appendFileSync(target,'UNREVIEWED');assert.throws(()=>c.assertPrivateRecurringProvenance(root),file);fs.writeFileSync(target,before)
+  }
+ }finally{fs.rmSync(parent,{recursive:true,force:true})}
+})
+
+test('separate SG2 Calendar test owner composes with all69 source history and complete physical authentication',async()=>{
+ const c=await import('./controlled-package-ci.mjs'),r=c.REGISTRATION_SDK_MAIN70_HISTORY_REVIEW,prior=c.REGISTRATION_SDK_ROUTING_HISTORY_REVIEW
+ assert.equal(Object.keys(r.entries).length,70)
+ assert.deepEqual(Object.keys(r.entries).filter(p=>r.entries[p].sha!==prior.entries[p]?.sha).sort(),['apps/platform-source-hub/test/ci-routing.test.mjs','apps/sg-runtime/tests/market-calendar-integrity.mjs','packages/platform-contracts/test/organisation-sdk-compatibility.json','packages/platform-contracts/test/organisation-sdk-compatibility.mjs','packages/platform-contracts/test/organisation-sdk-compatibility.test.mjs'])
+ assert.equal(c.REGISTRATION_SDK_ROUTING_HISTORY_PROVENANCE.recordDigest,'61c57570f25fe90c89a5d2bd0f27f2b228091a6bd239a72a7f1fc87e06ae36ad')
+ const parent=fs.mkdtempSync(path.join(os.tmpdir(),'registration-oil-actual-graph-')),root=path.join(parent,'candidate')
+ try{
+  execFileSync('git',['clone','--quiet','--shared','--no-checkout',authorityRoot,root],{stdio:['ignore','pipe','pipe']})
+  execFileSync('git',['checkout','--quiet','--detach',"e654d2daf9959a8f26e4fee38220b140bfd0ddc2"],{cwd:root,stdio:['ignore','pipe','pipe']})
+  for(const file of Object.keys(r.entries)){
+   const bytes=execFileSync('git',['show',r.sourceSha+':'+file],{cwd:authorityRoot,stdio:['ignore','pipe','pipe']})
+   const target=path.join(root,file);fs.mkdirSync(path.dirname(target),{recursive:true});fs.writeFileSync(target,bytes)
+  }
+  assert.equal(c.assertRegistrationSdkProvenance(root).platformVersion,'1.36.0')
+  assert(c.assertPrivateRecurringProvenance(root))
+  for(const file of ['apps/platform-source-hub/test/ci-routing.test.mjs','apps/sg-runtime/tests/market-calendar-integrity.mjs','packages/platform-contracts/src/organisation-bootstrap.mjs','apps/sg-runtime/operation-integration.json','apps/sg-runtime/oil-renderer-integration.json','apps/insights-runtime/render/report.py','apps/insights-runtime/tests/postgres.test.mjs','apps/sg-runtime/tests/assistant-ecr-week-integrity.mjs','apps/sg-runtime/market-calendar-integration.json','apps/sg-runtime/components/procurement-insights/market-calendar.tsx']){
+   const target=path.join(root,file),before=fs.readFileSync(target);fs.appendFileSync(target,'UNREVIEWED');assert.throws(()=>c.assertPrivateRecurringProvenance(root),file);fs.writeFileSync(target,before)
+  }
+ }finally{fs.rmSync(parent,{recursive:true,force:true})}
+})
+
+
+test('current registration74 authenticates raw SDK and parallel PI sources before historical projection',async()=>{
+ const c=await import('./controlled-package-ci.mjs'),r=c.REGISTRATION_SDK_REVIEW;
+ assert.equal(Object.keys(r.entries).length,74);
+ assert.equal(Object.keys(c.REGISTRATION_SDK_MAIN73_HISTORY_REVIEW.entries).length,73);
+ assert.equal(c.REGISTRATION_SDK_MAIN73_HISTORY_REVIEW.sourceSha,'b6531e0a05d3bdda3086a1525515d662f02267b1');
+ assert.equal(Object.keys(c.REGISTRATION_SDK_MAIN70_HISTORY_REVIEW.entries).length,70);
+ assert.equal(r.sourceSha,'5250dfdfd9e26b0d40c15c031718288360b763af');
+ const files=Object.entries(r.entries).map(([filename,e])=>({filename,sha:e.sha,status:e.status})),candidate={...pr(),number:r.prNumber,changed_files:files.length,base:{...pr().base,sha:r.baseSha},head:{...pr().head,sha:r.sourceSha,ref:r.branch}};
+ assertArchitectureFiles(candidate,files);assert.equal(selectCandidate(context(),candidate,r.sourceSha,{files}),r.sourceSha);
+ for(const edit of [a=>a.pop(),a=>a[0]={...a[0],sha:'f'.repeat(40)},a=>a.push({filename:'apps/identity-runtime/src/unreviewed.ts',sha:'a'.repeat(40),status:'added'})]){const bad=structuredClone(files);edit(bad);assert.throws(()=>selectCandidate(context(),{...candidate,changed_files:bad.length},r.sourceSha,{files:bad}));}
+ const parent=fs.mkdtempSync(path.join(os.tmpdir(),'registration74-actual-graph-')),root=path.join(parent,'candidate');
+ try{
+  execFileSync('git',['clone','--quiet','--shared','--no-checkout',authorityRoot,root],{stdio:['ignore','pipe','pipe']});
+  execFileSync('git',['checkout','--quiet','--detach',r.sourceSha],{cwd:root,stdio:['ignore','pipe','pipe']});
+  c.assertArchitectureCheckout(root,r.sourceSha,{kind:'ARCHITECTURE',baseSha:r.baseSha,files},authorityRoot);
+  assert.equal(c.assertRegistrationSdkProvenance(root).platformVersion,'1.36.0');
+  assert(c.assertPrivateRecurringProvenance(root));
+  for(const file of [
+   'packages/platform-contracts/src/organisation-bootstrap.mjs',
+   'packages/platform-contracts/current-e1-authority/recurring.mjs',
+   'packages/platform-contracts/test/organisation-sdk-compatibility.mjs',
+   'packages/platform-contracts/test/recurring-consent-transport.test.mjs',
+   'apps/sg-runtime/tests/procurement-insights-completion.test.mjs',
+   'apps/sg-runtime/tests/market-calendar-integrity.test.mjs',
+   'apps/sg-runtime/tests/assistant-send-arrow-integrity.test.mjs',
+   'apps/sg-runtime/tests/porr-demo-middleware.test.ts',
+   'apps/sg-runtime/operation-integration.json',
+   'apps/srm/operation-integration.json',
+   'apps/sg-runtime/components/procurement-insights/reports.tsx',
+   'apps/platform-source-hub/test/ci-routing.test.mjs',
+   'AGENTS.md','Canon/registries/governance-manifest-v2.json','Canon/v1.1-business-solution-design-and-canonization-canon.md','docs/agent-instructions/bsdc-launcher-v1.1.md',
+   'apps/architecture-lab/market-calendar-source.mjs',
+   'scripts/governance/platform-source-hub-foundation.test.mjs',
+   'Canon/evidence/2026-11-12-bsdc-v11-manifest-continuity.json'
+  ]){
+   const target=path.join(root,file),before=fs.readFileSync(target);
+   fs.appendFileSync(target,'UNREVIEWED');
+   assert.throws(()=>c.assertRegistrationSdkProvenance(root),file);
+   assert.throws(()=>c.assertPrivateRecurringProvenance(root),file);
+   fs.writeFileSync(target,before);
+  }
+  const file='packages/platform-contracts/test/organisation-sdk-compatibility.mjs',target=path.join(root,file),before=fs.readFileSync(target);
+  fs.chmodSync(target,0o755);assert.throws(()=>c.assertRegistrationSdkProvenance(root));fs.chmodSync(target,0o644);
+  fs.unlinkSync(target);fs.symlinkSync('organisation-sdk-compatibility.json',target);assert.throws(()=>c.assertRegistrationSdkProvenance(root));
+  fs.unlinkSync(target);fs.writeFileSync(target,before);
+  assert(c.assertPrivateRecurringProvenance(root));
+  // The entire accepted73 graph remains verifiable; mixed or amended graphs
+  // cannot borrow its helper as a fallback for the new physical closure.
+  execFileSync('git',['checkout','--quiet','--detach','6d56144ecd2a58c5f36c5f66548de64e42348474'],{cwd:root,stdio:['ignore','pipe','pipe']});
+  assert.equal(c.assertRegistrationSdkProvenance(root).platformVersion,'1.36.0');
+  assert(c.assertPrivateRecurringProvenance(root));
+  const oldHelper=fs.readFileSync(target),newHelper=execFileSync('git',['show',r.sourceSha+':'+file],{cwd:root});
+  fs.writeFileSync(target,newHelper);assert.throws(()=>c.assertRegistrationSdkProvenance(root));fs.writeFileSync(target,oldHelper);
+  fs.appendFileSync(target,'UNREVIEWED_73');assert.throws(()=>c.assertRegistrationSdkProvenance(root));fs.writeFileSync(target,oldHelper);
+  assert(c.assertPrivateRecurringProvenance(root));
+ }finally{fs.rmSync(parent,{recursive:true,force:true})}
+});
+
+
+
+test('assistant quality G1 admits only the exact reviewed five-file owner closure',async()=>{
+ const c=await import('./controlled-package-ci.mjs'),r=c.ASSISTANT_QUALITY_G1_REVIEW
+ const files=Object.entries(r.blobs).map(([filename,sha])=>({filename,sha,status:r.statuses[filename]}))
+ const candidate={...pr(),number:r.prNumber,changed_files:files.length,base:{...pr().base,sha:r.reviewedBaseSha},head:{...pr().head,ref:r.branch,sha:r.reviewedCandidateSha}}
+ assert.equal(selectCandidate(context(),candidate,candidate.head.sha,{files}),candidate.head.sha)
+ assertArchitectureFiles(candidate,files)
+ for(const edit of [f=>f.pop(),f=>f.push({...f[0],filename:'Canon/extra.md'}),f=>f[0].sha='f'.repeat(40),f=>f[0].status='removed',f=>f[0].previous_filename='Canon/old.md',f=>f[1]={...f[0]},f=>f[0].filename='packages/assistant-quality-control/src/controller.mjs']){
+  const changed=structuredClone(files);edit(changed)
+  assert.throws(()=>selectCandidate(context(),{...candidate,changed_files:changed.length},candidate.head.sha,{files:changed}))
+ }
+ for(const edit of [p=>p.number++,p=>p.head.ref='architecture/quality-copy',p=>p.head.ref='sg2/quality-copy',p=>p.user.login='other',p=>p.head.repo.full_name='profitia/fork',p=>p.state='closed']){
+  const changed=structuredClone(candidate);edit(changed)
+  assert.throws(()=>selectCandidate(context(),changed,changed.head.sha,{files}))
+ }
+ assert.throws(()=>selectCandidate(context(),candidate,'e'.repeat(40),{files}))
+ assert.throws(()=>selectCandidate({...context(),ref:'refs/pull/1042/merge'},candidate,candidate.head.sha,{files}))
+ // A fresh main merge is permitted only with exactly the same five blobs,
+ // statuses, modes and actual owner routes; expected SHA still binds live HEAD.
+ const refreshed={...candidate,head:{...candidate.head,sha:'d'.repeat(40)}}
+ assert.equal(selectCandidate(context(),refreshed,refreshed.head.sha,{files}),refreshed.head.sha)
+ for(const f of files){
+  c.assertAssistantQualityG1ReviewEntry(f,'100644 blob '+f.sha+'\t'+f.filename+'\0')
+  for(const entry of ['100755 blob '+f.sha+'\t'+f.filename+'\0','120000 blob '+f.sha+'\t'+f.filename+'\0','100644 blob '+f.sha+'\tother\0'])assert.throws(()=>c.assertAssistantQualityG1ReviewEntry(f,entry))
+ }
+ assert.deepEqual(PRIVATE_PACKAGES,['@profitia/advisory-widget','@profitia/cic-core','@profitia/cic-procurement'])
+ assert(!Object.keys(LOCAL_PACKAGES).some(n=>n.includes('assistant-quality')))
+})
+
+test('assistant quality Stage1 source CI class binds finite paths, identity, expiry and immutable specification',async()=>{
+ const c=await import('./controlled-package-ci.mjs'),r=c.ASSISTANT_QUALITY_STAGE1_SOURCE_REVIEW
+ assert.equal(r.paths.length,27);assert.equal(new Set(r.paths).size,27)
+ const files=[{filename:'packages/assistant-quality-control/src/executor.mjs',sha:other,status:'modified'},
+  {filename:r.pdrPath,sha:'c'.repeat(40),status:'modified'}]
+ assert(c.isAssistantQualityStage1SourceReview(files))
+ assert(!c.isAssistantQualityStage1SourceReview([files[1]]))
+ c.assertAssistantQualityStage1SourceWindow(Date.parse(r.expiresAt)-1)
+ for(const now of [Date.parse(r.expiresAt),Date.parse(r.expiresAt)+1,NaN])assert.throws(()=>c.assertAssistantQualityStage1SourceWindow(now))
+ const candidate={...pr(),number:1074,changed_files:2,base:{...pr().base,sha},head:{...pr().head,ref:r.branch}}
+ if(Date.now()<Date.parse(r.expiresAt))assert.equal(selectCandidate(context(),candidate,other,{files}),other)
+ else assert.throws(()=>selectCandidate(context(),candidate,other,{files}))
+ for(const change of [p=>p.user.login='other',p=>p.head.repo.full_name='profitia/fork',p=>p.head.ref='sg2/quality-copy',p=>p.head.ref='architecture/other',p=>p.state='closed']){
+  const changed=structuredClone(candidate);change(changed);assert.throws(()=>selectCandidate(context(),changed,other,{files}))
+ }
+ assert.throws(()=>selectCandidate(context(),candidate,'d'.repeat(40),{files}))
+ for(const filename of ['.github/workflows/assistant-quality-repair.yml','packages/assistant-quality-control/package.json',
+  'packages/assistant-quality-control/package-lock.json','packages/assistant-quality-control/migrations/001-control.sql',
+  'packages/assistant-quality-control/src/new-unreviewed.mjs','apps/package-limits/migrations/005-assistant-quality-usage.sql',
+  'apps/sg-runtime/lib/assistant/quality-response.ts','scripts/governance/controlled-package-ci.mjs','Canon/registries/current-architecture-baseline-v1.json']){
+  assert(!c.isAssistantQualityStage1SourceReview([...files,{filename,sha:other,status:'added'}]))
+ }
+ for(const change of [f=>f[0].status='removed',f=>f[0].previous_filename='old.mjs',f=>f[0].sha='main',f=>f.push({...f[0]})]){
+  const changed=structuredClone(files);change(changed);assert(!c.isAssistantQualityStage1SourceReview(changed))
+ }
+ for(const file of files){c.assertAssistantQualityStage1SourceEntry(file,'100644 blob '+file.sha+'\t'+file.filename+'\0')
+  for(const mode of ['100755','120000','160000'])assert.throws(()=>c.assertAssistantQualityStage1SourceEntry(file,mode+' blob '+file.sha+'\t'+file.filename+'\0'))}
+ const specification=fs.readFileSync(path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..',r.pdrPath),'utf8')
+ c.assertAssistantQualityStage1Specification(specification)
+ c.assertAssistantQualityStage1Specification(specification+'\nStatus evidence outside the frozen specification.\n')
+ assert.throws(()=>c.assertAssistantQualityStage1Specification(specification.replace('## 4.','## 4. CHANGED')))
+ assert.throws(()=>c.assertAssistantQualityStage1Specification(specification.replace('ETAP 2 — NIE_ROZPOCZĘTY / BRAK ZLECENIA','ETAP 2 — W_TOKU')))
+ assert.deepEqual(PRIVATE_PACKAGES,['@profitia/advisory-widget','@profitia/cic-core','@profitia/cic-procurement'])
+ assert.equal(CIC_ANALYTICAL_ECR_PIN.version,'1.6.0')
+})
+
+test('assistant quality Stage1 source checkout authenticates actual Git bytes before private installation',async()=>{
+ const c=await import('./controlled-package-ci.mjs'),r=c.ASSISTANT_QUALITY_STAGE1_SOURCE_REVIEW
+ const root=fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(),'aqc-source-ci-fixture-'))),source='packages/assistant-quality-control/src/executor.mjs'
+ const git=(...a)=>execFileSync('git',a,{cwd:root,encoding:'utf8',stdio:['ignore','pipe','pipe']}).trim()
+ try{
+  git('init','--quiet');git('config','user.name','AQC source CI fixture');git('config','user.email','fixture@example.invalid')
+  for(const [p,content]of [[source,'export const fixture=1\n'],[r.pdrPath,fs.readFileSync(path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..',r.pdrPath),'utf8')]]){
+   const file=path.join(root,p);fs.mkdirSync(path.dirname(file),{recursive:true});fs.writeFileSync(file,content)
+  }
+  git('add','.');git('commit','--quiet','-m','fixture base');const baseSha=git('rev-parse','HEAD')
+  fs.writeFileSync(path.join(root,source),'export const fixture=2\n');git('add','.');git('commit','--quiet','-m','fixture candidate')
+  const head=git('rev-parse','HEAD'),files=[{filename:source,sha:git('rev-parse','HEAD:'+source),status:'modified'}],admission={kind:'ARCHITECTURE',baseSha,files}
+  if(Date.now()>=Date.parse(r.expiresAt)){assert.throws(()=>assertArchitectureCheckout(root,head,admission));return}
+  assertArchitectureCheckout(root,head,admission)
+  fs.appendFileSync(path.join(root,source),'MUTATED');assert.throws(()=>assertArchitectureCheckout(root,head,admission));git('checkout','--',source)
+  fs.chmodSync(path.join(root,source),0o755);git('add',source);git('commit','--quiet','-m','executable candidate');assert.throws(()=>assertArchitectureCheckout(root,git('rev-parse','HEAD'),admission))
+  git('checkout','--quiet','--detach',head);const card=path.join(root,r.pdrPath),old=fs.readFileSync(card,'utf8');fs.writeFileSync(card,old.replace('## 4.','## 4. CHANGED'))
+  assert.throws(()=>assertArchitectureCheckout(root,head,admission))
+ }finally{fs.rmSync(root,{recursive:true,force:true})}
+})
+
+// Exact new task, separate producer and SG2 owner inputs; no runtime activation.
+test('complete Calendar delivery pins54 producer and7 consumer paths without widening older owner/credential gates',()=>{
+ for(const r of [ECR_COMPLETE_FUNCTIONAL_REVIEW,ECR_COMPLETE_FUNCTIONAL_CONSUMER_REVIEW]){
+  const files=Object.entries(r.entries).map(([filename,e])=>({filename,sha:e.sha,status:e.status})),candidate={...pr(),number:r.prNumber,changed_files:files.length,base:{...pr().base,sha:r.baseSha},head:{...pr().head,sha:r.sourceSha,ref:r.branch}}
+  assert.equal(selectCandidate(context(),candidate,r.sourceSha,{files}),r.sourceSha)
+  if(r===ECR_COMPLETE_FUNCTIONAL_REVIEW)assertArchitectureFiles(candidate,files)
+  for(const f of files){assertCompleteFunctionalReviewEntry(f,'100644 blob '+f.sha+'\t'+f.filename+'\0',r);for(const mode of ['100755','120000','160000'])rejection(()=>assertCompleteFunctionalReviewEntry(f,mode+' blob '+f.sha+'\t'+f.filename+'\0',r))}
+  for(const edit of [v=>v.pop(),v=>v.push(v[0]),v=>v[0]={...v[0],sha:'0'.repeat(40)},v=>v[0]={...v[0],status:'removed'},v=>v[0]={...v[0],filename:'apps/identity-runtime/src/unreviewed.ts'},v=>v[0]={...v[0],previous_filename:v[0].filename}]){const bad=structuredClone(files);edit(bad);rejection(()=>selectCandidate(context(),{...candidate,changed_files:bad.length},r.sourceSha,{files:bad}))}
+  for(const edit of [v=>v.number++,v=>v.head.ref='architecture/unreviewed',v=>v.head.repo.full_name='profitia/fork',v=>v.user.login='attacker',v=>v.base.ref='staging',v=>v.head.sha=sha]){const bad=structuredClone(candidate);edit(bad);rejection(()=>selectCandidate(context(),bad,r.sourceSha,{files}))}
+ }
+ assert.equal(Object.keys(ECR_COMPLETE_FUNCTIONAL_REVIEW.entries).length,54);assert.equal(Object.keys(ECR_COMPLETE_FUNCTIONAL_CONSUMER_REVIEW.entries).length,7)
+})
+function completeCalendarFixture(){
+ const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..'),p=ECR_COMPLETE_FUNCTIONAL_REVIEW,c=ECR_COMPLETE_FUNCTIONAL_CONSUMER_REVIEW,cfg=ECR_COMPLETE_FUNCTIONAL_PROVENANCE,cache=new Map()
+ const historical=(sha,p)=>{const k=sha+':'+p;if(!cache.has(k))cache.set(k,execFileSync('git',['cat-file','blob',k],{cwd:root,stdio:['ignore','pipe','pipe']}));return Buffer.from(cache.get(k))}
+ const current=consumer=>file=>{if(!consumer&&file===cfg.consumerRecord)throw Object.assign(Error('not adopted'),{code:'ENOENT'});return historical(consumer&&Object.hasOwn(c.entries,file)?c.sourceSha:p.sourceSha,file)}
+ return{root,p,c,cfg,historical,current}
+}
+test('complete Calendar verifies every real producer/consumer Git blob and all38 historical receipts before projection',()=>{
+ const f=completeCalendarFixture()
+ for(const consumer of [false,true]){
+  const read=f.current(consumer),prior=completeFunctionalTrustedPredecessor(read,f.historical),entries={...f.p.entries,...(consumer?f.c.entries:{})},receipt=JSON.parse(read(f.cfg.producerRecord))
+  assert.equal(Object.keys(receipt.preservedReceipts).length,38)
+  for(const[p,e]of Object.entries(entries)){if(e.status==='added')assert.throws(()=>prior(p),{code:'ENOENT'});else assert.deepEqual(prior(p),f.historical(f.p.baseSha,p));rejection(()=>completeFunctionalTrustedPredecessor(file=>file===p?Buffer.concat([read(file),Buffer.from('UNREVIEWED')]):read(file),f.historical))}
+  for(const p of Object.keys(receipt.preservedReceipts))rejection(()=>completeFunctionalTrustedPredecessor(file=>file===p?Buffer.concat([read(file),Buffer.from('UNREVIEWED')]):read(file),f.historical))
+  const a=structuredClone(receipt);a.sourceDigests[Object.keys(a.sourceDigests)[0]]='0'.repeat(64);rejection(()=>completeFunctionalTrustedPredecessor(p=>p===f.cfg.producerRecord?Buffer.from(JSON.stringify(a)):read(p),f.historical))
+ }
+ const foreign=Object.assign(Error('unrelated Git failure'),{status:128,stderr:"fatal: path 'other' does not exist in 'main'"});assert.throws(()=>completeFunctionalTrustedPredecessor(()=>{throw foreign},f.historical),e=>e===foreign)
+ const denied=Object.assign(Error('denied'),{code:'EACCES'});assert.throws(()=>completeFunctionalTrustedPredecessor(()=>{throw denied},f.historical),e=>e===denied)
+})
+test('complete Calendar physical authentication rejects executable and symbolic source, before any candidate code can run',()=>{
+ const f=completeCalendarFixture(),root=fs.mkdtempSync(path.join(os.tmpdir(),'calendar-complete-source-'))
+ try{
+  const record=JSON.parse(f.current(false)(f.cfg.producerRecord))
+  for(const file of [...Object.keys(f.p.entries),...Object.keys(record.preservedReceipts)]){const target=path.join(root,file);fs.mkdirSync(path.dirname(target),{recursive:true});fs.writeFileSync(target,f.current(false)(file))}
+  // Historical reads use the existing object store; the fixture never evaluates
+  // the projected product, signing or source-acquisition implementation.
+  fs.mkdirSync(path.join(root,'.git'));fs.writeFileSync(path.join(root,'.git/HEAD'),'ref: refs/heads/fixture\n');fs.writeFileSync(path.join(root,'.git/config'),'[core]\nrepositoryformatversion = 0\n');fs.mkdirSync(path.join(root,'.git/objects/info'),{recursive:true});fs.mkdirSync(path.join(root,'.git/refs/heads'),{recursive:true});fs.writeFileSync(path.join(root,'.git/objects/info/alternates'),path.resolve(f.root,execFileSync('git',['rev-parse','--git-common-dir'],{cwd:f.root,encoding:'utf8'}).trim(),'objects')+'\n')
+  assertCompleteFunctionalProvenance(root)
+  for(const file of [f.cfg.producerRecord,f.cfg.helper,'apps/identity-runtime/src/calendar-email.ts']){const target=path.join(root,file),bytes=fs.readFileSync(target);fs.chmodSync(target,0o755);rejection(()=>assertCompleteFunctionalProvenance(root));fs.chmodSync(target,0o644);fs.unlinkSync(target);fs.symlinkSync(path.join(root,f.cfg.producerRecord),target);rejection(()=>assertCompleteFunctionalProvenance(root));fs.unlinkSync(target);fs.writeFileSync(target,bytes)}
+ }finally{fs.rmSync(root,{recursive:true,force:true})}
+})
+
+test('complete Calendar SDK bridge is confined to its exact legacy lock and reviewed1.8 producer, with independent consumer adoption',()=>{
+ const f=completeCalendarFixture(),root=fs.mkdtempSync(path.join(os.tmpdir(),'calendar-complete-sdk-'))
+ try{
+  const record=JSON.parse(f.current(false)(f.cfg.producerRecord)),read=f.current(false)
+  const write=(p,b)=>{fs.mkdirSync(path.dirname(path.join(root,p)),{recursive:true});fs.writeFileSync(path.join(root,p),b)}
+  for(const p of [...Object.keys(f.p.entries),...Object.keys(record.preservedReceipts),'apps/sg-runtime/package.json','apps/sg-runtime/package-lock.json'])write(p,read(p))
+  for(const rel of Object.values(LOCAL_PACKAGES)){const p=path.posix.normalize('apps/sg-runtime/'+rel+'/package.json');write(p,read(p))}
+  fs.mkdirSync(path.join(root,'.git/objects/info'),{recursive:true});fs.mkdirSync(path.join(root,'.git/refs/heads'),{recursive:true});fs.writeFileSync(path.join(root,'.git/HEAD'),'ref: refs/heads/fixture\n');fs.writeFileSync(path.join(root,'.git/config'),'[core]\nrepositoryformatversion = 0\n');fs.writeFileSync(path.join(root,'.git/objects/info/alternates'),path.resolve(f.root,execFileSync('git',['rev-parse','--git-common-dir'],{cwd:f.root,encoding:'utf8'}).trim(),'objects')+'\n')
+  const lock=JSON.parse(read('apps/sg-runtime/package-lock.json'))
+  assertLocalPackageSources(root,lock,f.root,{reviewedPrivateRecurring:true})
+  for(const version of ['1.7.0','1.7.2','1.8.1']){const bad=structuredClone(lock);bad.packages['node_modules/@profitia/platform-source-hub-contracts'].version=version;rejection(()=>assertLocalPackageSources(root,bad,f.root,{reviewedPrivateRecurring:true}))}
+  for(const p of Object.keys(f.c.entries))write(p,f.current(true)(p))
+  const adopted=JSON.parse(f.current(true)('apps/sg-runtime/package-lock.json'))
+  assertLocalPackageSources(root,adopted,f.root,{reviewedPrivateRecurring:true})
+  const changed=structuredClone(adopted);changed.packages['node_modules/@profitia/platform-source-hub-contracts'].version='1.7.1';write('apps/sg-runtime/package-lock.json',JSON.stringify(changed));rejection(()=>assertLocalPackageSources(root,changed,f.root,{reviewedPrivateRecurring:true}))
+ }finally{fs.rmSync(root,{recursive:true,force:true})}
+})
+
+test('Calendar historical-read correction retains the approved operation scope, six UI sources and all prior receipts',()=>{
+ const f=completeCalendarFixture(),oldProducer='ce6c5d0f51cd670d81a17c416924a5f56a211cde',oldConsumer='4f560653f32f6cdaea08398f6356265e4e5fde34'
+ const changed=(review,old)=>Object.keys(review.entries).filter(p=>!f.historical(old,p).equals(f.historical(review.sourceSha,p))).sort()
+ assert.deepEqual(changed(f.p,oldProducer),[
+  'apps/architecture-lab/ecr-complete-functional-source.mjs',
+  'apps/economic-calendar-runtime/complete-functional-source-integration.json',
+  'apps/economic-calendar-runtime/migrations/005-expanded-results.sql',
+  'apps/economic-calendar-runtime/operations/complete-functional-owner-plan.json',
+  'apps/economic-calendar-runtime/src/result-links.mjs',
+  'apps/economic-calendar-runtime/test/expanded-results.test.mjs',
+  'apps/identity-runtime/test/calendar-authority-postgres.test.mjs'
+ ])
+ assert.deepEqual(changed(f.c,oldConsumer),[f.cfg.consumerRecord])
+ const p='apps/economic-calendar-runtime/operations/complete-functional-owner-plan.json',migration='apps/economic-calendar-runtime/migrations/005-expanded-results.sql',old=f.historical(oldProducer,p),current=f.historical(f.p.sourceSha,p),a=JSON.parse(old),b=JSON.parse(current)
+ const digest=createHash('sha256').update(f.historical(f.p.sourceSha,migration)).digest('hex')
+ assert.equal(b.sourceDigests[migration],digest)
+ assert.equal(old.toString().replace(a.sourceDigests[migration],digest),current.toString())
+ for(const record of [f.cfg.producerRecord,f.cfg.consumerRecord]){
+  const previous=JSON.parse(f.historical(record===f.cfg.producerRecord?oldProducer:oldConsumer,record)),now=JSON.parse(f.current(true)(record))
+  assert.deepEqual(now.preservedReceipts,previous.preservedReceipts)
+ }
+})
+
+function piLiveAcceptanceFixture(){
+ const r=PRIVATE_RECURRING_LIVE_ACCEPTANCE_REVIEW,files=Object.entries(r.entries).map(([filename,e])=>({filename,sha:e.sha,status:e.status}))
+ return{r,files,p:{...pr(),number:r.prNumber,changed_files:files.length,base:{...pr().base,sha:r.baseSha},head:{...pr().head,sha:r.sourceSha,ref:r.branch}}}
+}
+test('PI live corrections admit only the twelve exact routed source versions and preserve earlier reviews',()=>{
+ const {r,files,p}=piLiveAcceptanceFixture();assert.equal(files.length,12)
+ assert.equal(createHash('sha256').update(JSON.stringify(r.entries)).digest('hex'),'ae3c35fc25bab49c31491330c8c7152057c2a559e68a57e58d8a7bb194149373')
+ assertArchitectureFiles(p,files);assert.equal(selectCandidate(context(),p,r.sourceSha,{files}),r.sourceSha)
+ for(const f of files){assertPrivateRecurringReviewEntry(f,'100644 blob '+f.sha+'\t'+f.filename+'\0');for(const mode of ['100755','120000','160000'])rejection(()=>assertPrivateRecurringReviewEntry(f,mode+' blob '+f.sha+'\t'+f.filename+'\0'))}
+ for(const edit of [f=>f.pop(),f=>f.push(f[0]),f=>f[0].sha='f'.repeat(40),f=>f[0].status='removed',f=>f[0].previous_filename='elsewhere',f=>f[0].filename='apps/sg-runtime/app/api/unreviewed.ts']){
+  const bad=structuredClone(files);edit(bad);rejection(()=>selectCandidate(context(),{...p,changed_files:bad.length},r.sourceSha,{files:bad}))
+ }
+ for(const edit of [q=>q.number=1014,q=>q.head.ref='architecture/another',q=>q.head.repo.full_name='attacker/fork',q=>q.user.login='attacker',q=>q.base.ref='staging',q=>q.head.sha=sha]){const bad=structuredClone(p);edit(bad);rejection(()=>selectCandidate(context(),bad,r.sourceSha,{files}))}
+ assert.equal(createHash('sha256').update(JSON.stringify(PRIVATE_RECURRING_CONSUMER_TEST_REVIEW.entries)).digest('hex'),'4dc65bcc37bcc7a5fe06fb1d77bc4ca23dd7db2db67ea6847045fdf7a09f103f')
+})
+test('trusted live correction projection validates all current bytes and immutable history as data',()=>{
+ const r=PRIVATE_RECURRING_LIVE_ACCEPTANCE_REVIEW,cache=new Map(),current=p=>{if(!cache.has(p))cache.set(p,execFileSync('git',['show',r.sourceSha+':'+p],{cwd:authorityRoot}));return cache.get(p)}
+ const bytes=current(PI_LIVE_ACCEPTANCE_PROVENANCE_PATH),a=JSON.parse(bytes),options={sha256ForPath:p=>a.sourceDigests[p]??a.preservedReceipts[p],blobForPath:p=>r.entries[p]?.sha,historicalDigestForPath:(sha,p)=>{assert.equal(sha,a.baseCandidateSha);return a.preservedReceipts[p]}}
+ assert.equal(Object.keys(assertPiLiveAcceptanceRecord(bytes,options).sourceDigests).length,11)
+ for(const p of Object.keys(a.sourceDigests))for(const field of ['sha256ForPath','blobForPath'])rejection(()=>assertPiLiveAcceptanceRecord(bytes,{...options,[field]:q=>q===p?'0'.repeat(field==='blobForPath'?40:64):options[field](q)}))
+ for(const p of Object.keys(a.preservedReceipts))for(const field of ['sha256ForPath','historicalDigestForPath'])rejection(()=>assertPiLiveAcceptanceRecord(bytes,{...options,[field]:field==='sha256ForPath'?q=>q===p?'0'.repeat(64):options[field](q):(sha,q)=>q===p?'0'.repeat(64):options[field](sha,q)}))
+ rejection(()=>assertPiLiveAcceptanceRecord(Buffer.concat([bytes,Buffer.from(' ')]),options))
+ const historical=(sha,p)=>execFileSync('git',['show',sha+':'+p],{cwd:authorityRoot}),previous=assertPiLiveAcceptanceProjection(bytes,{current,historical})
+ assert.deepEqual(previous('apps/sg-runtime/components/procurement-insights/workspace.tsx'),historical(a.baseCandidateSha,'apps/sg-runtime/components/procurement-insights/workspace.tsx'))
+ assert.throws(()=>previous(PI_LIVE_ACCEPTANCE_PROVENANCE_PATH),{code:'ENOENT'})
+ assert.deepEqual(previous('apps/sg-runtime/operation-integration.json'),current('apps/sg-runtime/operation-integration.json'))
+})
+
+test('Calendar and PI peer policies authenticate each real complete source graph and reject an unadmitted mixed graph',()=>{
+ for(const source of [ECR_COMPLETE_FUNCTIONAL_REVIEW.sourceSha,PRIVATE_RECURRING_LIVE_ACCEPTANCE_REVIEW.sourceSha]){
+  const root=fs.mkdtempSync(path.join(os.tmpdir(),'calendar-pi-peer-policy-'))
+  try{
+   execFileSync('git',['clone','--quiet','--shared','--no-checkout',authorityRoot,root],{stdio:['ignore','pipe','pipe']})
+   execFileSync('git',['checkout','--quiet','--detach',source],{cwd:root,stdio:['ignore','pipe','pipe']})
+   assert(assertPrivateRecurringProvenance(root),'complete actual source graph '+source)
+   if(source===ECR_COMPLETE_FUNCTIONAL_REVIEW.sourceSha){
+    // The two producer closures overlap. A future mixed source needs its own
+    // exact owner adoption; accepted policy coexistence cannot admit it.
+    for(const p of Object.keys(PRIVATE_RECURRING_LIVE_ACCEPTANCE_REVIEW.entries)){
+     const b=execFileSync('git',['cat-file','blob',PRIVATE_RECURRING_LIVE_ACCEPTANCE_REVIEW.sourceSha+':'+p],{cwd:authorityRoot,stdio:['ignore','pipe','pipe']})
+     fs.mkdirSync(path.dirname(path.join(root,p)),{recursive:true});fs.writeFileSync(path.join(root,p),b)
+    }
+    assert.throws(()=>assertPrivateRecurringProvenance(root),/ECR_COMPLETE_FUNCTIONAL_BYTES_REJECTED/)
+   }
+  }finally{fs.rmSync(root,{recursive:true,force:true})}
+ }
+})
+
+
+test('PI fixture continuation changes only its routing test and current receipt while preserving original source12',async()=>{
+ const c=await import('./controlled-package-ci.mjs'),r=c.PRIVATE_RECURRING_LIVE_FIXTURE_REVIEW,old=c.PRIVATE_RECURRING_LIVE_ACCEPTANCE_REVIEW;
+ assert.equal(createHash('sha256').update(JSON.stringify(old.entries)).digest('hex'),'ae3c35fc25bab49c31491330c8c7152057c2a559e68a57e58d8a7bb194149373');
+ assert.deepEqual(Object.keys(r.entries),Object.keys(old.entries));assert.equal(Object.keys(r.entries).length,12);
+ const delta=Object.keys(r.entries).filter(p=>JSON.stringify(r.entries[p])!==JSON.stringify(old.entries[p])).sort();
+ assert.deepEqual(delta,['apps/platform-source-hub/test/ci-routing.test.mjs','apps/sg-runtime/procurement-insights-live-acceptance.json']);
+ const files=Object.entries(r.entries).map(([filename,e])=>({filename,sha:e.sha,status:e.status}));
+ const p={...pr(),number:r.prNumber,changed_files:files.length,base:{...pr().base,sha:r.baseSha},head:{...pr().head,sha:r.sourceSha,ref:r.branch}};
+ assertArchitectureFiles(p,files);assert.equal(selectCandidate(context(),p,r.sourceSha,{files}),r.sourceSha);
+ for(const f of files){assertPrivateRecurringReviewEntry(f,'100644 blob '+f.sha+'\t'+f.filename+'\0');for(const mode of ['100755','120000','160000'])rejection(()=>assertPrivateRecurringReviewEntry(f,mode+' blob '+f.sha+'\t'+f.filename+'\0'))}
+ for(const edit of [f=>f.pop(),f=>f.push(f[0]),f=>f[0].sha='f'.repeat(40),f=>f[0].status='removed',f=>f[0].previous_filename='elsewhere',f=>f[0].filename='apps/sg-runtime/app/api/unreviewed.ts']){
+  const bad=structuredClone(files);edit(bad);rejection(()=>selectCandidate(context(),{...p,changed_files:bad.length},r.sourceSha,{files:bad}));
+ }
+ for(const changed of delta){const mixed=structuredClone(files);mixed.find(f=>f.filename===changed).sha=old.entries[changed].sha;rejection(()=>selectCandidate(context(),p,r.sourceSha,{files:mixed}));}
+ for(const edit of [q=>q.number=1014,q=>q.head.ref='architecture/another',q=>q.head.repo.full_name='attacker/fork',q=>q.user.login='attacker',q=>q.base.ref='staging',q=>q.head.sha=sha]){const bad=structuredClone(p);edit(bad);rejection(()=>selectCandidate(context(),bad,r.sourceSha,{files}));}
+});
+test('PI fixture projection authenticates both complete reviews and refuses mixed source and receipt bytes',async()=>{
+ const c=await import('./controlled-package-ci.mjs');
+ for(const r of [c.PRIVATE_RECURRING_LIVE_ACCEPTANCE_REVIEW,c.PRIVATE_RECURRING_LIVE_FIXTURE_REVIEW]){
+  const cache=new Map(),current=p=>{if(!cache.has(p))cache.set(p,execFileSync('git',['show',r.sourceSha+':'+p],{cwd:authorityRoot}));return cache.get(p)};
+  const bytes=current(PI_LIVE_ACCEPTANCE_PROVENANCE_PATH),a=JSON.parse(bytes),options={sha256ForPath:p=>a.sourceDigests[p]??a.preservedReceipts[p],blobForPath:p=>r.entries[p]?.sha,historicalDigestForPath:(sha,p)=>{assert.equal(sha,a.baseCandidateSha);return a.preservedReceipts[p]}};
+  assert.equal(Object.keys(assertPiLiveAcceptanceRecord(bytes,options).sourceDigests).length,11);
+  for(const p of Object.keys(a.sourceDigests))for(const field of ['sha256ForPath','blobForPath'])rejection(()=>assertPiLiveAcceptanceRecord(bytes,{...options,[field]:q=>q===p?'0'.repeat(field==='blobForPath'?40:64):options[field](q)}));
+  for(const p of Object.keys(a.preservedReceipts))for(const field of ['sha256ForPath','historicalDigestForPath'])rejection(()=>assertPiLiveAcceptanceRecord(bytes,{...options,[field]:field==='sha256ForPath'?q=>q===p?'0'.repeat(64):options[field](q):(sha,q)=>q===p?'0'.repeat(64):options[field](sha,q)}));
+  rejection(()=>assertPiLiveAcceptanceRecord(Buffer.concat([bytes,Buffer.from(' ')]),options));
+  const historical=(sha,p)=>execFileSync('git',['show',sha+':'+p],{cwd:authorityRoot}),previous=assertPiLiveAcceptanceProjection(bytes,{current,historical});
+  for(const p of ['apps/insights-runtime/src/host.mjs','apps/sg-runtime/components/procurement-insights/workspace.tsx'])assert.deepEqual(previous(p),historical(a.baseCandidateSha,p));
+  assert.throws(()=>previous(PI_LIVE_ACCEPTANCE_PROVENANCE_PATH),{code:'ENOENT'});
+ }
+ assert(c.assertPrivateRecurringProvenance(authorityRoot));
+});
+
+
+test('PI SRM continuation pins exactly thirteen current files without rewriting either twelve-file review',async()=>{
+ const c=await import('./controlled-package-ci.mjs'),r=c.PRIVATE_RECURRING_LIVE_SRM_REVIEW,old=c.PRIVATE_RECURRING_LIVE_FIXTURE_REVIEW;
+ assert.equal(createHash('sha256').update(JSON.stringify(old.entries)).digest('hex'),'a18b05983e4b7927ac756c36f738b5556ad67746a2cae99ddf94755174851e96');
+ assert.equal(Object.keys(r.entries).length,13);assert.equal(createHash('sha256').update(JSON.stringify(r.entries)).digest('hex'),'c7da3065f39556ea2c523906cadfd86c2855938509b7efdfb7e5ed501bfadc70');
+ assert.deepEqual(Object.keys(r.entries).filter(p=>JSON.stringify(r.entries[p])!==JSON.stringify(old.entries[p])).sort(),['apps/platform-source-hub/test/ci-routing.test.mjs','apps/sg-runtime/procurement-insights-live-acceptance.json','apps/sg-runtime/tests/procurement-insights-live-acceptance-source.mjs','apps/sg-runtime/tests/procurement-insights-live-acceptance-source.test.mjs','apps/srm/scripts/supplier-location-admission.integration.test.mjs']);
+ const files=Object.entries(r.entries).map(([filename,e])=>({filename,sha:e.sha,status:e.status}));
+ const p={...pr(),number:r.prNumber,changed_files:files.length,base:{...pr().base,sha:r.baseSha},head:{...pr().head,sha:r.sourceSha,ref:r.branch}};
+ assertArchitectureFiles(p,files);assert.equal(selectCandidate(context(),p,r.sourceSha,{files}),r.sourceSha);
+ for(const f of files){assertPrivateRecurringReviewEntry(f,'100644 blob '+f.sha+'\t'+f.filename+'\0');for(const mode of ['100755','120000','160000'])rejection(()=>assertPrivateRecurringReviewEntry(f,mode+' blob '+f.sha+'\t'+f.filename+'\0'));}
+ for(const edit of [f=>f.pop(),f=>f.push(f[0]),f=>f[0].sha='f'.repeat(40),f=>f[0].status='removed',f=>f[0].previous_filename='elsewhere',f=>f[0].filename='apps/sg-runtime/app/api/unreviewed.ts']){const bad=structuredClone(files);edit(bad);rejection(()=>selectCandidate(context(),{...p,changed_files:bad.length},r.sourceSha,{files:bad}));}
+ for(const changed of Object.keys(old.entries).filter(p=>r.entries[p].sha!==old.entries[p].sha)){const mixed=structuredClone(files);mixed.find(f=>f.filename===changed).sha=old.entries[changed].sha;rejection(()=>selectCandidate(context(),p,r.sourceSha,{files:mixed}));}
+ for(const edit of [q=>q.number=1014,q=>q.head.ref='architecture/another',q=>q.head.repo.full_name='attacker/fork',q=>q.user.login='attacker',q=>q.base.ref='staging',q=>q.head.sha=sha]){const bad=structuredClone(p);edit(bad);rejection(()=>selectCandidate(context(),bad,r.sourceSha,{files}));}
+});
+test('PI SRM projection authenticates every current source and restores the exact unchanged historical P1 test',async()=>{
+ const c=await import('./controlled-package-ci.mjs'),r=c.PRIVATE_RECURRING_LIVE_SRM_REVIEW,cache=new Map();
+ const current=p=>{if(!cache.has(p))cache.set(p,execFileSync('git',['show',r.sourceSha+':'+p],{cwd:authorityRoot}));return cache.get(p)},historical=(sha,p)=>execFileSync('git',['show',sha+':'+p],{cwd:authorityRoot});
+ const bytes=current(PI_LIVE_ACCEPTANCE_PROVENANCE_PATH),a=JSON.parse(bytes),options={sha256ForPath:p=>a.sourceDigests[p]??a.preservedReceipts[p],blobForPath:p=>r.entries[p]?.sha,historicalDigestForPath:(sha,p)=>{assert.equal(sha,a.baseCandidateSha);return a.preservedReceipts[p]}};
+ assert.equal(Object.keys(assertPiLiveAcceptanceRecord(bytes,options).sourceDigests).length,12);
+ for(const p of Object.keys(a.sourceDigests))for(const field of ['sha256ForPath','blobForPath'])rejection(()=>assertPiLiveAcceptanceRecord(bytes,{...options,[field]:q=>q===p?'0'.repeat(field==='blobForPath'?40:64):options[field](q)}));
+ for(const p of Object.keys(a.preservedReceipts))for(const field of ['sha256ForPath','historicalDigestForPath'])rejection(()=>assertPiLiveAcceptanceRecord(bytes,{...options,[field]:field==='sha256ForPath'?q=>q===p?'0'.repeat(64):options[field](q):(sha,q)=>q===p?'0'.repeat(64):options[field](sha,q)}));
+ rejection(()=>assertPiLiveAcceptanceRecord(Buffer.concat([bytes,Buffer.from(' ')]),options));
+ const previous=assertPiLiveAcceptanceProjection(bytes,{current,historical}),target='apps/srm/scripts/supplier-location-admission.integration.test.mjs';
+ assert.deepEqual(previous(target),historical(a.baseCandidateSha,target));assert.notDeepEqual(previous(target),current(target));
+ assert.throws(()=>previous(PI_LIVE_ACCEPTANCE_PROVENANCE_PATH),{code:'ENOENT'});
+});
+
+test('registration lifecycle admits exactly the joint Stage I source and preserves every owner boundary',async()=>{
+ const c=await import('./controlled-package-ci.mjs'),r=c.REGISTRATION_LIFECYCLE_REVIEW;
+ assert.equal(Object.keys(r.entries).length,196);
+ assert.equal(createHash('sha256').update(JSON.stringify(r.entries)).digest('hex'),'74ad68f2f29b9d627d16380de26e352b0b326b9dd6575545a73cd0c43e231b41');
+ assert.deepEqual(Object.values(r.entries).reduce((a,e)=>(a[e.projectKey]=(a[e.projectKey]??0)+1,a),{}),{ARCHITECTURE:96,SG2:56,SRM:44});
+ const files=Object.entries(r.entries).map(([filename,e])=>({filename,sha:e.sha,status:e.status}));
+ const p={...pr(),number:r.prNumber,changed_files:files.length,base:{...pr().base,sha:r.baseSha},head:{...pr().head,sha:r.sourceSha,ref:r.branch}};
+ assertArchitectureFiles(p,files);assert.equal(selectCandidate(context(),p,r.sourceSha,{files}),r.sourceSha);
+ for(const f of files){
+  c.assertRegistrationLifecycleReviewEntry(f,'100644 blob '+f.sha+'\t'+f.filename+'\0');
+  for(const mode of ['100755','120000','160000'])rejection(()=>c.assertRegistrationLifecycleReviewEntry(f,mode+' blob '+f.sha+'\t'+f.filename+'\0'));
+ }
+ for(const edit of [f=>f.pop(),f=>f.push(f[0]),f=>f[0].sha='f'.repeat(40),f=>f[0].status='removed',f=>f[0].previous_filename='elsewhere',f=>f[0].filename='apps/sg-runtime/app/api/unreviewed.ts']){
+  const bad=structuredClone(files);edit(bad);rejection(()=>selectCandidate(context(),{...p,changed_files:bad.length},r.sourceSha,{files:bad}));
+ }
+ for(const edit of [p=>p.number=1076,p=>p.head.ref='architecture/another',p=>p.head.repo.full_name='attacker/fork',p=>p.user.login='attacker',p=>p.base.ref='staging',p=>p.head.sha=sha]){
+  const bad=structuredClone(p);edit(bad);rejection(()=>selectCandidate(context(),bad,r.sourceSha,{files}));
+ }
+});
+test('trusted registration lifecycle decoder authenticates all current bytes before either historical projection',async()=>{
+ const c=await import('./controlled-package-ci.mjs'),r=c.REGISTRATION_LIFECYCLE_REVIEW,cfg=c.REGISTRATION_LIFECYCLE_PROVENANCE,cache=new Map();
+ const current=p=>{if(!cache.has(p))cache.set(p,execFileSync('git',['show',r.sourceSha+':'+p],{cwd:authorityRoot,stdio:['ignore','pipe','pipe']}));return cache.get(p)};
+ const a=c.registrationLifecycleCanonicalRead(authorityRoot,current);
+ assert.equal(a.record.platformVersion,'1.37.0');assert.equal(Object.keys(a.currentSourceDigests).length,335);
+ for(const p of Object.keys(a.currentSourceDigests))rejection(()=>c.registrationLifecycleCanonicalRead(authorityRoot,q=>q===p?Buffer.concat([current(q),Buffer.from(' ')]):current(q)));
+ for(const p of [cfg.recordPath,cfg.guardPath])rejection(()=>c.registrationLifecycleCanonicalRead(authorityRoot,q=>q===p?Buffer.concat([current(q),Buffer.from(' ')]):current(q)));
+ for(const {path:p} of Object.values(cfg.receipts))rejection(()=>c.registrationLifecycleCanonicalRead(authorityRoot,q=>q===p?Buffer.from(JSON.stringify({...JSON.parse(current(q)),platformVersion:'1.38.0'})):current(q)));
+ for(const [reader,sha] of [[a.previousBytes,cfg.previousSourceSha],[a.acceptedMainBytes,cfg.acceptedMainSha]]){
+  assert.deepEqual(reader('packages/platform-contracts/package.json'),execFileSync('git',['show',sha+':packages/platform-contracts/package.json'],{cwd:authorityRoot}));
+  assert.throws(()=>reader(cfg.recordPath),{code:'ENOENT'});rejection(()=>reader('../outside'));
+ }
+ assert.equal(c.registrationLifecycleCanonicalRead(authorityRoot,p=>{if(p===cfg.recordPath)throw Object.assign(Error('absent'),{code:'ENOENT'});return current(p)}),null);
+ rejection(()=>c.registrationLifecycleCanonicalRead(authorityRoot,()=>{throw Object.assign(Error('unreadable'),{status:128,stderr:Buffer.from('fatal: invalid object')})}));
+});
+test('registration lifecycle peers remain exact and cannot alter private package pins',async()=>{
+ const c=await import('./controlled-package-ci.mjs');
+ for(const [key,spec] of Object.entries(c.REGISTRATION_LIFECYCLE_PEERS)){
+  const [ownerVersion,section,name]=key.split(':'),at=ownerVersion.lastIndexOf('@'),owner=ownerVersion.slice(0,at),version=ownerVersion.slice(at+1);
+  const candidate=lock();candidate.packages['node_modules/'+owner]={version,resolved:LOCAL_PACKAGES[owner],[section]:{[name]:spec}};
+  if(Object.hasOwn(LOCAL_PACKAGES,owner))c.assertPackagePolicy(candidate,lock(),configuration,{reviewedLifecycle:true});
+  const manifest={name:owner,version,[section]:{[name]:spec}};
+  c.assertManifestPolicy(manifest,manifest,{reviewedLifecycle:true});
+  const bad=structuredClone(manifest);bad[section][name]=spec+' || 99.0.0';rejection(()=>c.assertManifestPolicy(bad,manifest,{reviewedLifecycle:true}));
+ }
+ const changed=lock();changed.packages['node_modules/@profitia/cic-core'].integrity='sha512-forged';
+ rejection(()=>c.assertPackagePolicy(changed,lock(),configuration,{reviewedLifecycle:true}));
+});
+
+test('registration lifecycle controlled proof binds the current SDK digest and exact SG2 receipt',async()=>{
+ const c=await import('./controlled-package-ci.mjs'),r=c.REGISTRATION_LIFECYCLE_REVIEW,cfg=c.REGISTRATION_LIFECYCLE_PROVENANCE;
+ const read=p=>execFileSync('git',['show',r.sourceSha+':'+p],{cwd:authorityRoot,stdio:['ignore','pipe','pipe']});
+ const bytes=read(cfg.recordPath),receiptBytes=read('apps/sg-runtime/operation-integration.json'),receipt=JSON.parse(receiptBytes),a=JSON.parse(bytes);
+ const contract=c.registrationLifecycleProofContract(receipt,bytes,receiptBytes);
+ assert.equal(contract.sourceDigest,a.sdkDigests.operationSourceDigest);assert.equal(contract.implementation,'1.0.0-candidate.16');
+ assert.notEqual(contract.sourceDigest,c.adoptedOperationContract(receipt).sourceDigest);
+ rejection(()=>c.registrationLifecycleProofContract(receipt,Buffer.concat([bytes,Buffer.from(' ')]),receiptBytes));
+ rejection(()=>c.registrationLifecycleProofContract(receipt,bytes,Buffer.concat([receiptBytes,Buffer.from(' ')])));
+ assert.equal(c.registrationLifecycleProofContract(receipt,null,receiptBytes),null);
+});
+test('registration lifecycle real checkout satisfies source, dependency and predecessor controls together',async()=>{
+ const c=await import('./controlled-package-ci.mjs'),r=c.REGISTRATION_LIFECYCLE_REVIEW,dir=fs.mkdtempSync(path.join(os.tmpdir(),'registration-ci-checkout-')),root=path.join(dir,'source');
+ try{
+  execFileSync('git',['worktree','add','--detach',root,r.sourceSha],{cwd:authorityRoot,stdio:'pipe'});
+  const files=Object.entries(r.entries).map(([filename,e])=>({filename,sha:e.sha,status:e.status}));
+  c.assertArchitectureCheckout(root,r.sourceSha,{kind:'ARCHITECTURE',baseSha:r.baseSha,files},authorityRoot);
+  assert.equal(c.assertRegistrationSdkProvenance(root).lifecycle.platformVersion,'1.37.0');
+  assert(c.assertPrivateRecurringProvenance(root));
+  const lock=JSON.parse(fs.readFileSync(path.join(root,'apps/sg-runtime/package-lock.json')));
+  c.assertPackagePolicy(lock,JSON.parse(fs.readFileSync(path.join(authorityRoot,'apps/sg-runtime/package-lock.json'))),configuration,{reviewedPrivateRecurring:true,reviewedLifecycle:true});
+  c.assertLocalPackageSources(root,lock,authorityRoot,{reviewedPrivateRecurring:true});
+ }finally{execFileSync('git',['worktree','remove','--force',root],{cwd:authorityRoot,stdio:'pipe'});fs.rmSync(dir,{recursive:true,force:true})}
+});
+
+// Proposed bounded notification continuation: old assertions above remain intact.
+import {APPSHELL_NOTIFICATION_REVIEW,assistantNotificationsTrustedPredecessor,readNotificationPhysicalSource} from './controlled-package-ci.mjs'
+function notificationGitFixture(sha){
+ const authority=fileURLToPath(new URL('../../',import.meta.url)),dir=fs.mkdtempSync(path.join(os.tmpdir(),'notification-admission-git-'))
+ // Only immutable repository bytes are read. Candidate helpers are never imported.
+ if(spawnSync('git',['cat-file','-e',sha+'^{commit}'],{cwd:authority,stdio:'ignore'}).status!==0)execFileSync('git',['fetch','--no-tags','origin',sha],{cwd:authority,stdio:['ignore','pipe','pipe']})
+ execFileSync('git',['clone','--shared','--no-checkout',authority,dir],{stdio:['ignore','pipe','pipe']})
+ execFileSync('git',['checkout','--quiet','--detach',sha],{cwd:dir,stdio:['ignore','pipe','pipe']})
+ return {root:dir,close:()=>fs.rmSync(dir,{recursive:true,force:true})}
+}
+test('notification proposal authenticates seven current files and 26 old receipts before exact history',()=>{
+ const fixture=notificationGitFixture(APPSHELL_NOTIFICATION_REVIEW.candidateSha),root=fixture.root,cfg=APPSHELL_NOTIFICATION_REVIEW,current=p=>fs.readFileSync(path.join(root,p)),historical=(sha,p)=>execFileSync('git',['show',sha+':'+p],{cwd:root,stdio:['ignore','pipe','pipe']})
+ try{
+ const view=assistantNotificationsTrustedPredecessor(current,historical);assert(view)
+ for(const [p,e]of Object.entries(cfg.entries))if(e.status==='added')assert.throws(()=>view.previousBytes(p),{code:'ENOENT'});else assert.deepEqual(view.previousBytes(p),historical(cfg.baseSha,p))
+ for(const p of [...Object.keys(cfg.entries),...Object.keys(cfg.preservedReceipts)]){
+  assert.throws(()=>assistantNotificationsTrustedPredecessor(f=>f===p?Buffer.concat([current(f),Buffer.from('UNADMITTED')]):current(f),historical),p)
+  const missing=f=>{if(f===p)throw Object.assign(Error('Missing'),{code:'ENOENT'});return current(f)}
+  if(p===cfg.recordPath)assert.equal(assistantNotificationsTrustedPredecessor(missing,historical),null);else assert.throws(()=>assistantNotificationsTrustedPredecessor(missing,historical),p)
+ }
+ assert.throws(()=>assistantNotificationsTrustedPredecessor(current,()=>Buffer.from('WRONG_HISTORY')))
+ for(const e of [Object.assign(Error('Denied'),{code:'EACCES'}),Error('Unexpected')])assert.throws(()=>assistantNotificationsTrustedPredecessor(()=>{throw e},historical),x=>x===e)
+ assert.equal(assistantNotificationsTrustedPredecessor(()=>{throw Object.assign(Error('Absent'),{code:'ENOENT'})},historical),null)
+ // Candidate code is treated only as bytes, never evaluated by trusted admission.
+ assert(!!assertPrivateRecurringProvenance(root),'new graph composes with existing exact private-source admission')
+ const recordFile=path.join(root,cfg.recordPath),saved=fs.readFileSync(recordFile)
+ try{fs.unlinkSync(recordFile);assert.throws(()=>assertPrivateRecurringProvenance(root),'missing optional continuation cannot admit changed source')}finally{fs.writeFileSync(recordFile,saved)}
+ const malicious=Buffer.from('throw new Error("CANDIDATE_CODE_MUST_NOT_RUN")')
+ assert.throws(()=>assistantNotificationsTrustedPredecessor(p=>p.endsWith('assistant-notifications-integrity.mjs')?malicious:current(p),historical),/APPSHELL_NOTIFICATION_SOURCE_REJECTED/)
+ }finally{fixture.close()}
+})
+test('notification policy bootstrap retains original admission when the UI continuation is genuinely absent',()=>{
+ const fixture=notificationGitFixture(APPSHELL_NOTIFICATION_REVIEW.baseSha)
+ try{assert(assertPrivateRecurringProvenance(fixture.root))}finally{fixture.close()}
+})
+test('notification proposal retains raw regular-file, mode, size, realpath and symlink fences',()=>{
+ const dir=fs.mkdtempSync(path.join(os.tmpdir(),'notification-source-fences-')),p=Object.keys(APPSHELL_NOTIFICATION_REVIEW.entries)[0],f=path.join(dir,p)
+ try{
+  fs.mkdirSync(path.dirname(f),{recursive:true});fs.writeFileSync(f,'SYNTHETIC_ONLY');assert.equal(String(readNotificationPhysicalSource(dir,p)),'SYNTHETIC_ONLY')
+  fs.chmodSync(f,0o755);assert.throws(()=>readNotificationPhysicalSource(dir,p),/MODE_REJECTED/);fs.chmodSync(f,0o644)
+  fs.unlinkSync(f);fs.symlinkSync(path.join(dir,'target'),f);fs.writeFileSync(path.join(dir,'target'),'SYNTHETIC_ONLY');assert.throws(()=>readNotificationPhysicalSource(dir,p),/SOURCE_FILE_REJECTED/)
+  assert.throws(()=>readNotificationPhysicalSource(dir,'../outside'),/SOURCE_FILE_REJECTED/)
+ }finally{fs.rmSync(dir,{recursive:true,force:true})}
+})
+
+test('trusted package preflight supports the actual accepted lock entries without resolved while preserving exact artifact identity',()=>{
+  const lock=JSON.parse(fs.readFileSync(path.join(authorityRoot,'apps/sg-runtime/package-lock.json'),'utf8'))
+  let withoutResolved=0
+  for(const name of PRIVATE_PACKAGES){
+    const pin=lock.packages['node_modules/'+name]
+    if(pin.resolved===undefined)withoutResolved++
+    assert.equal(trustedPackageProbeSpec(name,pin),name+'@'+pin.version)
+    const metadata={tarball:pin.resolved??'https://npm.pkg.github.com/download/'+name+'/'+pin.version+'/fixture-artifact',integrity:pin.integrity}
+    assertTrustedPackageRegistryMetadata(name,pin,metadata)
+    assertTrustedPackageRegistryMetadata(name,pin,{tarball:metadata.tarball})
+    for(const changed of [{...metadata,integrity:'sha512-changed'},{...metadata,tarball:metadata.tarball.replace('npm.pkg.github.com','other.example')},{...metadata,tarball:metadata.tarball.replace('/'+pin.version+'/','/99.99.99/')},{...metadata,tarball:metadata.tarball+'?redirect=other'},{...metadata,tarball:metadata.tarball.replace('https://','http://')}])assert.throws(()=>assertTrustedPackageRegistryMetadata(name,pin,changed))
+    if(pin.resolved)assert.throws(()=>assertTrustedPackageRegistryMetadata(name,pin,{...metadata,tarball:metadata.tarball+'changed'}))
+  }
+  assert.equal(withoutResolved,2)
+  assert.throws(()=>trustedPackageProbeSpec('@other/package',{version:'1.0.0',integrity:'sha512-x'}))
+  assert.throws(()=>trustedPackageProbeSpec(PRIVATE_PACKAGES[0],{version:'latest',integrity:'sha512-x'}))
+})
+test('trusted read-only package probe measures SHA-512 bytes and rejects substitutions and unsafe archive paths',()=>{
+  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'trusted-probe-')),bytes=Buffer.from('isolated immutable artifact fixture'),name=PRIVATE_PACKAGES[0]
+  const pin={version:'1.0.0',integrity:'sha512-'+createHash('sha512').update(bytes).digest('base64')},report={name,version:'1.0.0',filename:'fixture.tgz'}
+  try{
+    fs.writeFileSync(path.join(dir,report.filename),bytes)
+    assertTrustedPackedArtifact(dir,report,name,pin)
+    for(const changed of [{...report,name:PRIVATE_PACKAGES[1]},{...report,version:'1.0.1'},{...report,filename:'../fixture.tgz'},{...report,integrity:'sha512-changed'}])assert.throws(()=>assertTrustedPackedArtifact(dir,changed,name,pin))
+    fs.appendFileSync(path.join(dir,report.filename),'changed')
+    assert.throws(()=>assertTrustedPackedArtifact(dir,report,name,pin))
+  }finally{fs.rmSync(dir,{recursive:true,force:true})}
+})
+
+function controlledBuildIsolationFixture(){
+ const directory=fs.mkdtempSync(path.join(os.tmpdir(),'controlled-build-isolation-')),source=path.join(directory,'source'),temp=path.join(directory,'runner-temp')
+ fs.mkdirSync(source);fs.mkdirSync(temp)
+ const git=(root,args)=>isolationGitExec('git',args,{cwd:root,encoding:'utf8',stdio:['ignore','pipe','pipe']}).trim()
+ git(source,['init','-q']);fs.writeFileSync(path.join(source,'.gitignore'),'node_modules/\n.build/\n');fs.writeFileSync(path.join(source,'input.txt'),'immutable source\n')
+ git(source,['add','.']);git(source,['-c','user.name=Isolation Fixture','-c','user.email=ci@fixture.invalid','-c','commit.gpgsign=false','commit','-qm','source input'])
+ return {directory,source,temp,git,sha:git(source,['rev-parse','HEAD'])}
+}
+test('isolated execution checkout preserves clean source while real build outputs mutate its independent working files',()=>{
+ const f=controlledBuildIsolationFixture()
+ try{
+  const state=createExecutionCheckout(f.source,f.sha,f.sha,f.temp),root=state.executionRoot
+  assert.equal(assertExecutionCheckout(root,f.source,state,f.temp),root)
+  assert.equal(f.git(root,['remote','get-url','origin']),'https://github.com/profitia/SG-dev')
+  fs.writeFileSync(path.join(root,'input.txt'),'generated working file\n');fs.writeFileSync(path.join(root,'new-build-artifact.js'),'export default 1\n')
+  assert.equal(fs.readFileSync(path.join(f.source,'input.txt'),'utf8'),'immutable source\n')
+  assertPristineSourceInput(f.source,f.sha)
+  assert.throws(()=>assertPristineSourceInput(root,f.sha),/SOURCE_CHECKOUT_DIRTY/)
+  assertExecutionCheckout(root,f.source,state,f.temp)
+ }finally{fs.rmSync(f.directory,{recursive:true,force:true})}
+})
+test('isolated execution never excuses changed or extra files in the preserved source input',()=>{
+ const f=controlledBuildIsolationFixture()
+ try{
+  createExecutionCheckout(f.source,f.sha,f.sha,f.temp)
+  fs.appendFileSync(path.join(f.source,'input.txt'),'unapproved change\n')
+  assert.throws(()=>assertPristineSourceInput(f.source,f.sha),/SOURCE_CHECKOUT_DIRTY/)
+  fs.writeFileSync(path.join(f.source,'input.txt'),'immutable source\n');fs.writeFileSync(path.join(f.source,'unapproved.js'),'export default 2\n')
+  assert.throws(()=>assertPristineSourceInput(f.source,f.sha),/SOURCE_CHECKOUT_DIRTY/)
+ }finally{fs.rmSync(f.directory,{recursive:true,force:true})}
+})
+test('isolated execution rejects wrong source, nested workspace, symlink, substituted directory and changed execution HEAD',()=>{
+ const f=controlledBuildIsolationFixture()
+ try{
+  assert.throws(()=>createExecutionCheckout(f.source,'f'.repeat(40),f.sha,f.temp),/CANDIDATE_CHECKOUT_MISMATCH/)
+  assert.throws(()=>createExecutionCheckout(f.source,f.sha,f.sha,f.source),/EXECUTION_CHECKOUT_REJECTED/)
+  const state=createExecutionCheckout(f.source,f.sha,f.sha,f.temp)
+  assert.throws(()=>assertExecutionCheckout(f.source,f.source,{...state,executionRoot:f.source},f.temp),/EXECUTION_CHECKOUT_REJECTED/)
+  const link=path.join(f.directory,'execution-link');fs.symlinkSync(state.executionRoot,link,'dir')
+  assert.throws(()=>assertExecutionCheckout(link,f.source,state,f.temp),/EXECUTION_CHECKOUT_REJECTED/)
+  assert.throws(()=>assertExecutionCheckout(state.executionRoot,f.source,{...state,executionRoot:link},f.temp),/EXECUTION_CHECKOUT_REJECTED/)
+  fs.writeFileSync(path.join(state.executionRoot,'input.txt'),'different commit\n');f.git(state.executionRoot,['add','input.txt'])
+  f.git(state.executionRoot,['-c','user.name=Isolation Fixture','-c','user.email=ci@fixture.invalid','-c','commit.gpgsign=false','commit','-qm','unapproved execution commit'])
+  assert.throws(()=>assertExecutionCheckout(state.executionRoot,f.source,state,f.temp),/EXECUTION_CHECKOUT_REJECTED/)
+  assertPristineSourceInput(f.source,f.sha)
+ }finally{fs.rmSync(f.directory,{recursive:true,force:true})}
+})
+test('controlled workflow installs and executes only the isolated checkout and proves preserved source after credentials ended',()=>{
+ const workflow=fs.readFileSync(path.join(authorityRoot,'.github/workflows/platform-contracts-ci.yml'),'utf8').split('  controlled-sg2:')[1].split('  environment-policy-probe:')[0]
+ const install=workflow.split('- name: Read-only credential phase; clean install with lifecycle scripts disabled')[1].split('- name:')[0]
+ const execute=workflow.split('- name: Run lifecycle, real API tests, typecheck and build after credential phase ended')[1].split('- name:')[0]
+ const proof=workflow.split('- name: Record sanitized exact-source proof after successful execution')[1].split('- uses:')[0]
+ const output='${{ steps.execution.outputs.execution_root }}'
+ assert.ok(install.includes('EXECUTION_ROOT: '+output));assert.ok(install.includes('NPM_TOKEN: ${{ github.token }}'))
+ assert.ok(execute.includes('working-directory: '+output+'/apps/sg-runtime'));assert.ok(execute.includes('CANDIDATE_ROOT: '+output))
+ assert.equal(execute.includes('${{ github.token }}'),false);assert.ok(proof.includes('EXECUTION_ROOT: '+output))
+ const prepared=workflow.indexOf(' prepare-execution'),installed=workflow.indexOf(' install\n'),checked=workflow.indexOf(' check-execution-input'),built=workflow.indexOf('npm run build'),proved=workflow.indexOf(' proof\n')
+ assert.ok(prepared>0&&installed>prepared&&checked>installed&&built>checked&&proved>built)
+})
+
+
+test('Stage I reconciliation admits only the 201-file current owner source and keeps the original review immutable',async()=>{
+ const c=await import('./controlled-package-ci.mjs'),r=c.REGISTRATION_LIFECYCLE_TEST_REVIEW;
+ assert.equal(r.prNumber,1083);assert.equal(Object.keys(r.entries).length,201);
+ assert.equal(createHash('sha256').update(JSON.stringify(r.entries)).digest('hex'),'821273141e4d5f18b44c135d559df7c385da0cd95f82b89f40f9d63049a8d1d2');
+ assert.deepEqual(Object.values(r.entries).reduce((a,e)=>(a[e.projectKey]=(a[e.projectKey]??0)+1,a),{}),{ARCHITECTURE:100,SG2:57,SRM:44});
+ assert.equal(createHash('sha256').update(JSON.stringify(c.REGISTRATION_LIFECYCLE_REVIEW.entries)).digest('hex'),'74ad68f2f29b9d627d16380de26e352b0b326b9dd6575545a73cd0c43e231b41');
+ const files=Object.entries(r.entries).map(([filename,e])=>({filename,sha:e.sha,status:e.status}));
+ const p={...pr(),number:r.prNumber,changed_files:files.length,base:{...pr().base,sha:r.baseSha},head:{...pr().head,sha:r.sourceSha,ref:r.branch}};
+ assertArchitectureFiles(p,files);assert.equal(selectCandidate(context(),p,r.sourceSha,{files}),r.sourceSha);
+ for(const change of [{number:1075},{head:{...p.head,ref:'architecture/foreign'}},{head:{...p.head,sha:'f'.repeat(40)}}])rejection(()=>selectCandidate(context(),{...p,...change},r.sourceSha,{files}));
+ for(const modified of [files.slice(1),[...files,{filename:'apps/srm/foreign.ts',sha:'a'.repeat(40),status:'added'}],files.map((f,i)=>i?f:{...f,sha:'f'.repeat(40)}),files.map((f,i)=>i?f:{...f,previous_filename:'old.ts'})])rejection(()=>selectCandidate(context(),{...p,changed_files:modified.length},r.sourceSha,{files:modified}));
+ for(const f of files){c.assertRegistrationLifecycleReviewEntry(f,r.entries[f.filename].mode+' blob '+f.sha+'\t'+f.filename+'\0');rejection(()=>c.assertRegistrationLifecycleReviewEntry(f,'100755 blob '+f.sha+'\t'+f.filename+'\0'));}
+});
+test('trusted Stage I reconciliation authenticates all 345 physical inputs and all three current owner receipts as data',async()=>{
+ const c=await import('./controlled-package-ci.mjs'),r=c.REGISTRATION_LIFECYCLE_TEST_REVIEW,cfg=c.REGISTRATION_LIFECYCLE_PROVENANCE,cache=new Map();
+ const current=p=>{if(!cache.has(p))cache.set(p,execFileSync('git',['show',r.sourceSha+':'+p],{cwd:authorityRoot,stdio:['ignore','pipe','pipe']}));return cache.get(p)};
+ const a=c.registrationLifecycleCanonicalRead(authorityRoot,current);
+ assert.equal(a.record.platformVersion,'1.37.0');assert.equal(Object.keys(a.currentSourceDigests).length,345);assert.equal(a.record.ownerInputs.length,7);
+ for(const p of Object.keys(c.REGISTRATION_LIFECYCLE_TEST_PROVENANCE.receiptDigests))rejection(()=>c.registrationLifecycleCanonicalRead(authorityRoot,q=>q===p?Buffer.concat([current(q),Buffer.from(' ')]):current(q)));
+ for(const p of Object.keys(a.currentSourceDigests))rejection(()=>c.registrationLifecycleCanonicalRead(authorityRoot,q=>q===p?Buffer.concat([current(q),Buffer.from(' ')]):current(q)));
+ for(const p of [cfg.recordPath,cfg.guardPath])rejection(()=>c.registrationLifecycleCanonicalRead(authorityRoot,q=>q===p?Buffer.concat([current(q),Buffer.from(' ')]):current(q)));
+ for(const {path:p} of Object.values(cfg.receipts))for(const field of ['taskId','projectKey','sourceRecordSha256','scope','runtimeOptedIn'])rejection(()=>c.registrationLifecycleCanonicalRead(authorityRoot,q=>q===p?Buffer.from(JSON.stringify({...JSON.parse(current(q)),[field]:field==='runtimeOptedIn'?true:'foreign'})):current(q)));
+ for(const p of a.sourceReconciliation.predecessorAbsentPaths)assert.throws(()=>a.previousBytes(p),{code:'ENOENT'});
+ for(const p of Object.keys(a.sourceReconciliation.currentMainSourceDigests))assert.deepEqual(current(p),execFileSync('git',['show',a.sourceReconciliation.currentMainSha+':'+p],{cwd:authorityRoot}));
+ const receiptBytes=current('apps/sg-runtime/operation-integration.json'),receipt=JSON.parse(receiptBytes);
+ assert.equal(c.registrationLifecycleProofContract(receipt,current(cfg.recordPath),receiptBytes).sourceDigest,a.record.sdkDigests.operationSourceDigest);
+});
+test('Stage I reconciliation real checkout preserves exact source, package policy and legacy closure together',async()=>{
+ const c=await import('./controlled-package-ci.mjs'),r=c.REGISTRATION_LIFECYCLE_TEST_REVIEW,dir=fs.mkdtempSync(path.join(os.tmpdir(),'registration-reconciled-ci-checkout-')),root=path.join(dir,'source');
+ try{
+  execFileSync('git',['worktree','add','--detach',root,r.sourceSha],{cwd:authorityRoot,stdio:'pipe'});
+  const files=Object.entries(r.entries).map(([filename,e])=>({filename,sha:e.sha,status:e.status}));
+  c.assertArchitectureCheckout(root,r.sourceSha,{kind:'ARCHITECTURE',baseSha:r.baseSha,files},authorityRoot);
+  assert.equal(c.assertRegistrationSdkProvenance(root).lifecycle.platformVersion,'1.37.0');
+  const lock=JSON.parse(fs.readFileSync(path.join(root,'apps/sg-runtime/package-lock.json')));
+  c.assertLocalPackageSources(root,lock,authorityRoot,{reviewedPrivateRecurring:true});
+ }finally{try{execFileSync('git',['worktree','remove','--force',root],{cwd:authorityRoot,stdio:'pipe'})}catch{}fs.rmSync(dir,{recursive:true,force:true});}
+});
+
+test('Stage I corrected-source continuation admits only the 201-file current owner source and keeps the original review immutable',async()=>{
+ const c=await import('./controlled-package-ci.mjs'),r=c.REGISTRATION_LIFECYCLE_TEST_CORRECTED_REVIEW;
+ assert.equal(r.prNumber,1083);assert.equal(Object.keys(r.entries).length,201);
+ assert.equal(createHash('sha256').update(JSON.stringify(r.entries)).digest('hex'),'3717669e57b2c1d78548a4bc75b03fcb2c6456d05609a55dd605509ee3114e49');
+ assert.deepEqual(Object.values(r.entries).reduce((a,e)=>(a[e.projectKey]=(a[e.projectKey]??0)+1,a),{}),{ARCHITECTURE:100,SG2:57,SRM:44});
+ assert.equal(createHash('sha256').update(JSON.stringify(c.REGISTRATION_LIFECYCLE_REVIEW.entries)).digest('hex'),'74ad68f2f29b9d627d16380de26e352b0b326b9dd6575545a73cd0c43e231b41');
+ const files=Object.entries(r.entries).map(([filename,e])=>({filename,sha:e.sha,status:e.status}));
+ const p={...pr(),number:r.prNumber,changed_files:files.length,base:{...pr().base,sha:r.baseSha},head:{...pr().head,sha:r.sourceSha,ref:r.branch}};
+ assertArchitectureFiles(p,files);assert.equal(selectCandidate(context(),p,r.sourceSha,{files}),r.sourceSha);
+ for(const change of [{number:1075},{head:{...p.head,ref:'architecture/foreign'}},{head:{...p.head,sha:'f'.repeat(40)}}])rejection(()=>selectCandidate(context(),{...p,...change},r.sourceSha,{files}));
+ for(const modified of [files.slice(1),[...files,{filename:'apps/srm/foreign.ts',sha:'a'.repeat(40),status:'added'}],files.map((f,i)=>i?f:{...f,sha:'f'.repeat(40)}),files.map((f,i)=>i?f:{...f,previous_filename:'old.ts'})])rejection(()=>selectCandidate(context(),{...p,changed_files:modified.length},r.sourceSha,{files:modified}));
+ for(const f of files){c.assertRegistrationLifecycleReviewEntry(f,r.entries[f.filename].mode+' blob '+f.sha+'\t'+f.filename+'\0');rejection(()=>c.assertRegistrationLifecycleReviewEntry(f,'100755 blob '+f.sha+'\t'+f.filename+'\0'));}
+});
+test('trusted Stage I corrected-source continuation authenticates all 345 physical inputs and all three current owner receipts as data',async()=>{
+ const c=await import('./controlled-package-ci.mjs'),r=c.REGISTRATION_LIFECYCLE_TEST_CORRECTED_REVIEW,cfg=c.REGISTRATION_LIFECYCLE_PROVENANCE,cache=new Map();
+ const current=p=>{if(!cache.has(p))cache.set(p,execFileSync('git',['show',r.sourceSha+':'+p],{cwd:authorityRoot,stdio:['ignore','pipe','pipe']}));return cache.get(p)};
+ const a=c.registrationLifecycleCanonicalRead(authorityRoot,current);
+ assert.equal(a.record.platformVersion,'1.37.0');assert.equal(Object.keys(a.currentSourceDigests).length,345);assert.equal(a.record.ownerInputs.length,7);
+ for(const p of Object.keys(c.REGISTRATION_LIFECYCLE_TEST_CORRECTED_PROVENANCE.receiptDigests))rejection(()=>c.registrationLifecycleCanonicalRead(authorityRoot,q=>q===p?Buffer.concat([current(q),Buffer.from(' ')]):current(q)));
+ for(const p of Object.keys(a.currentSourceDigests))rejection(()=>c.registrationLifecycleCanonicalRead(authorityRoot,q=>q===p?Buffer.concat([current(q),Buffer.from(' ')]):current(q)));
+ for(const p of [cfg.recordPath,cfg.guardPath])rejection(()=>c.registrationLifecycleCanonicalRead(authorityRoot,q=>q===p?Buffer.concat([current(q),Buffer.from(' ')]):current(q)));
+ for(const {path:p} of Object.values(cfg.receipts))for(const field of ['taskId','projectKey','sourceRecordSha256','scope','runtimeOptedIn'])rejection(()=>c.registrationLifecycleCanonicalRead(authorityRoot,q=>q===p?Buffer.from(JSON.stringify({...JSON.parse(current(q)),[field]:field==='runtimeOptedIn'?true:'foreign'})):current(q)));
+ for(const p of a.sourceReconciliation.predecessorAbsentPaths)assert.throws(()=>a.previousBytes(p),{code:'ENOENT'});
+ for(const p of Object.keys(a.sourceReconciliation.currentMainSourceDigests))assert.deepEqual(current(p),execFileSync('git',['show',a.sourceReconciliation.currentMainSha+':'+p],{cwd:authorityRoot}));
+ const receiptBytes=current('apps/sg-runtime/operation-integration.json'),receipt=JSON.parse(receiptBytes);
+ assert.equal(c.registrationLifecycleProofContract(receipt,current(cfg.recordPath),receiptBytes).sourceDigest,a.record.sdkDigests.operationSourceDigest);
+});
+test('Stage I corrected-source continuation real checkout preserves exact source, package policy and legacy closure together',async()=>{
+ const c=await import('./controlled-package-ci.mjs'),r=c.REGISTRATION_LIFECYCLE_TEST_CORRECTED_REVIEW,dir=fs.mkdtempSync(path.join(os.tmpdir(),'registration-reconciled-ci-checkout-')),root=path.join(dir,'source');
+ try{
+  execFileSync('git',['worktree','add','--detach',root,r.sourceSha],{cwd:authorityRoot,stdio:'pipe'});
+  const files=Object.entries(r.entries).map(([filename,e])=>({filename,sha:e.sha,status:e.status}));
+  c.assertArchitectureCheckout(root,r.sourceSha,{kind:'ARCHITECTURE',baseSha:r.baseSha,files},authorityRoot);
+  assert.equal(c.assertRegistrationSdkProvenance(root).lifecycle.platformVersion,'1.37.0');
+  const lock=JSON.parse(fs.readFileSync(path.join(root,'apps/sg-runtime/package-lock.json')));
+  c.assertLocalPackageSources(root,lock,authorityRoot,{reviewedPrivateRecurring:true});
+ }finally{try{execFileSync('git',['worktree','remove','--force',root],{cwd:authorityRoot,stdio:'pipe'})}catch{}fs.rmSync(dir,{recursive:true,force:true});}
+});
