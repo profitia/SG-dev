@@ -1,5 +1,5 @@
 import type { RequestPolicy, RequestReservation, RequestReceipt } from './request-ledger.mjs'
-export type OperationId = import('./recurring-job.mjs').RecurringJobOperation | 'insights.report.start' | 'insights.report.status' | 'insights.report.list' | 'insights.report.download' | import('./supplier-location.mjs').SupplierLocationOperation | 'assistant.converse' | 'assistant.history.read' | 'assistant.history.write' | 'account.settings.read' | 'account.settings.write' | 'knowledge.read' | 'benchmark.selection.read' | 'benchmark.selection.write' | 'category.read' | 'category.write' | 'supplier.assignment.read' | 'supplier.assignment.write' | 'forecast.read' | 'forecast.request' | 'supplier.report.refresh' | 'job.execute' | 'knowledge.ingest' | 'personal.list.read' | 'personal.list.write' | 'supplier.report.read' | 'supplier.report.project' | 'supplier.report.export' | 'supplier.private.read' | 'supplier.private.reveal' | 'supplier.private.export' | 'supplier.private.refresh' | 'benchmark.discovery.request' | 'benchmark.discovery.read'
+export type OperationId = import('./knowledge-operations.mjs').KnowledgeOperation | import('./recurring-job.mjs').RecurringJobOperation | 'insights.report.start' | 'insights.report.status' | 'insights.report.list' | 'insights.report.download' | import('./supplier-location.mjs').SupplierLocationOperation | 'assistant.converse' | 'assistant.history.read' | 'assistant.history.write' | 'account.settings.read' | 'account.settings.write' | 'knowledge.read' | 'benchmark.selection.read' | 'benchmark.selection.write' | 'category.read' | 'category.write' | 'supplier.assignment.read' | 'supplier.assignment.write' | 'forecast.read' | 'forecast.request' | 'supplier.report.refresh' | 'job.execute' | 'knowledge.ingest' | 'personal.list.read' | 'personal.list.write' | 'supplier.report.read' | 'supplier.report.project' | 'supplier.report.export' | 'supplier.private.read' | 'supplier.private.reveal' | 'supplier.private.export' | 'supplier.private.refresh' | 'benchmark.discovery.request' | 'benchmark.discovery.read'
 export type OperationOutcome = 'SUCCEEDED' | 'NO_DATA' | 'SELECTION_UNAVAILABLE'
 export type Environment = 'development' | 'staging' | 'production'
 export type Json = null | boolean | number | string | Json[] | { [key: string]: Json }
@@ -36,6 +36,7 @@ export interface OperationState {
   requestContinuation?: Readonly<import('./request-continuation.mjs').RequestContinuationEvidence>
   requestInspection?: Readonly<import('./request-inspection.mjs').RequestInspectionEvidence>
   requestWork?: Readonly<import('./request-work.mjs').RequestWorkEvidence>
+  knowledge?:Readonly<import('./knowledge-operations.mjs').KnowledgeOperationEvidence>
   ingestion?: Readonly<IngestionPolicy>
   recurringDelegation?: Readonly<import('./recurring-job.mjs').RecurringDelegation>
   delegation?: Readonly<DelegatedJob>
@@ -73,8 +74,10 @@ export interface OperationContext {
   applicationProfile: string; occurredAt: string; operationStartedAt: string
   deploymentId: string; configurationVersion: string; environment: Environment; operation: OperationId
   actorId: string; actorKind: 'HUMAN' | 'SERVICE'; actor: Readonly<Actor>; subjectUserId: string | null
-  organisationId: string | null; mode: 'ORGANISATION' | 'ACCOUNT' | 'PLATFORM'; policyVersion: string; accessVersion: string
+  organisationId: string | null; mode: 'ORGANISATION' | 'ACCOUNT' | 'PLATFORM' | 'KNOWLEDGE_SERVICE'; policyVersion: string; accessVersion: string
   accessSourceRef: string; accessBasisType: AccessBasis['type']; feature: string; effect: 'READ' | 'WRITE' | 'EXPORT' | 'REQUEST_COMPUTE' | 'REQUEST_EXTERNAL' | 'REQUEST_MODEL' | 'EXECUTE_BOUND_OPERATION'; resourceId: string; resource: Readonly<Resource>
+  knowledgeEvidence?:Readonly<import('./knowledge-operations.mjs').KnowledgeOperationEvidence>
+  knowledgeAdministration?:boolean
   assistantReservation?:Readonly<import('./assistant-usage.mjs').AssistantUsageAdmission>
   productEvidence: ReadonlyArray<Pick<ProductGrant, 'product' | 'version' | 'sourceRef' | 'source' | 'expiresAt'> & { feature: string }>; usagePolicy: 'NOT_APPLICABLE' | 'PRODUCT_POLICY' | 'PLATFORM_BUDGET'
   platformReservation?:Readonly<{effectId:string;replay:boolean;policyId:string;policyVersion:string}>
@@ -105,6 +108,7 @@ export interface BoundRequest {
   operation: OperationId; resourceId: string; organisationId: string | null; payload: Json; payloadDigest: string; idempotencyKey?: string
 }
 export interface OperationSession<Transaction> {
+  assertKnowledgeBudget?(context:Readonly<OperationContext>):Promise<void>
   reserveAssistantUsage?(context:Readonly<OperationContext>):Promise<import('./assistant-usage.mjs').AssistantUsageAdmission>
   state: OperationState; transaction: Transaction; transactionalEffects: true; outputBoundaryVersion: string
   /** Trusted host only: fresh provider proof for the admission subject, before
@@ -148,7 +152,7 @@ export declare function operationPayloadDigest(payload: Json): string
 export declare function operationSourceDigest(): Promise<string>
 export declare function normalizeModuleEvidence(value: unknown, options?: { now?: () => number; allowExpired?: boolean }): Readonly<ModuleEvidence>
 export declare function createOperationExecutor<Transaction>(options: {
-  application: Application; now?: () => number; recurringSchemaDigest?:string; locationAdmissionSchemaDigest?:string; reportAdmissionSchemaDigest?:string; requestQuotaSchemaDigest?:string; assistantSchemaDigest?:string
+  application: Application; now?: () => number; knowledgeSchemaDigest?:string; recurringSchemaDigest?:string; locationAdmissionSchemaDigest?:string; reportAdmissionSchemaDigest?:string; requestQuotaSchemaDigest?:string; assistantSchemaDigest?:string
   authenticate(request: unknown): Promise<Actor | null>
   /** Locks authoritative state and commits effects + OUTCOME atomically; rollback on throw. */
   withTransaction<T>(binding: { actor: Readonly<Actor>; request: Readonly<BoundRequest> }, action: (session: OperationSession<Transaction>) => Promise<T>): Promise<T>
@@ -160,3 +164,5 @@ export declare const SUPPLIER_LOCATION_ROOT_CONTRACT:Readonly<{id:'profitia.oper
 export declare const REPORT_ADMISSION_ROOT_CONTRACT:Readonly<{id:'profitia.operation-context';version:'1.0.0';implementation:'1.0.0-candidate.18'}>
 
 export declare const REQUEST_QUOTA_ROOT_CONTRACT:Readonly<{id:'profitia.operation-context';version:'1.0.0';implementation:'1.0.0-candidate.19'}>
+
+export declare const KNOWLEDGE_ROOT_CONTRACT:Readonly<{id:"profitia.operation-context";version:"1.0.0";implementation:"1.0.0-candidate.23"}>

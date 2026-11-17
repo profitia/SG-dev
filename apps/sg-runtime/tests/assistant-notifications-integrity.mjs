@@ -1,3 +1,4 @@
+import {knowledgeSourcePredecessor} from '../../architecture-lab/knowledge-source.mjs';
 import {finderMonitorPredecessor,FINDER_MONITOR_RECEIPT} from './finder-monitor-source-integrity.mjs'
 import {procurementInsightsEditorialPredecessor,EDITORIAL_RECEIPT} from './procurement-insights-editorial-integrity.mjs'
 // Test/build-only exact SG2 presentation continuation. No runtime or access authority.
@@ -54,6 +55,8 @@ export function notificationCompletionSource(before){
  return IMPORT+before.replace(HEAD,HEAD+PREFIX)
 }
 export function assistantNotificationsPredecessor(current,historical){
+ const knowledge=knowledgeSourcePredecessor(current,historical);
+ if(knowledge)return assistantNotificationsPredecessor(knowledge.previousBytes,historical);
  const finderMonitor=finderMonitorPredecessor(current,historical)
  if(finderMonitor){
   const accepted=assistantNotificationsPredecessor(finderMonitor.previousBytes,historical);assert(accepted,'accepted notification source retained')
