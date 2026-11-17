@@ -10,9 +10,10 @@
     "apps/sg-runtime/scripts/monitor-benchmark-finder.mjs": "ad6cf703bd3e142ca185f5e2b1fa26e1b6665c4f7d6be707b1b37b054ee55f62",
     "apps/sg-runtime/tests/assistant-notifications-integrity.mjs": "ae8d2e1a9a043409fefab98fcec5eea27e2e17e8e4ee56a8ef4d626e65aabd40",
     "apps/sg-runtime/tests/assistant-notifications-integrity.test.mjs": "d10f72abb35b26f354e5e8fd552a8359e729b6813a79eb961aeaf0b06f4c8167",
-    "apps/sg-runtime/tests/finder-monitor-source-integrity.mjs": "9267ac0dc0b99e0bfa49066a1b085c3ac88a82b5ecd8fed6bad9f65a1ae7f621",
-    "apps/sg-runtime/tests/finder-monitor-source-integrity.test.mjs": "a6ec1d2fd304bb1ba8020e4b82fc296b92f5556bb13a121e377cbc1fe8adf9d2",
-    "apps/sg-runtime/tests/monitor-benchmark-finder.test.mjs": "8f54c9aba542d60d2cef41ec3dc546fee43ed4e656083b9b7e5b837b4f0ef47b"
+    "apps/sg-runtime/tests/finder-monitor-source-integrity.mjs": "c802bfcb6c0efba606772ba7847cbe769ee1db668ec805e71bc6c647ebd72069",
+    "apps/sg-runtime/tests/finder-monitor-source-integrity.test.mjs": "09b753e564509fd3d9114a37226bc24c6e29d07c9aca287e17ee171406281cbf",
+    "apps/sg-runtime/tests/monitor-benchmark-finder.test.mjs": "8f54c9aba542d60d2cef41ec3dc546fee43ed4e656083b9b7e5b837b4f0ef47b",
+    "apps/sg-runtime/tests/procurement-insights-editorial-integrity.mjs": "4d67bec4b83487590e80abdbf51bed308c1156873b7227ffb6030777ba67956b"
   },
   "preservedReceipts": {
     "apps/architecture-lab/private-recurring-source-adoption.json": "a79c186897851acb93142949fe7aee19184cbfe68b3acdf51cbda084c00c1254",

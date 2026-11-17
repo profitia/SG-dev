@@ -14,8 +14,9 @@ const HOOK='apps/sg-runtime/tests/assistant-notifications-integrity.mjs'
 const ENTRY='apps/sg-runtime/tests/assistant-notifications-integrity.test.mjs'
 const HELPER='apps/sg-runtime/tests/finder-monitor-source-integrity.mjs'
 const TEST='apps/sg-runtime/tests/finder-monitor-source-integrity.test.mjs'
+const EDITORIAL_HOOK='apps/sg-runtime/tests/procurement-insights-editorial-integrity.mjs'
 const PRIOR_GRAPH='apps/sg-runtime/procurement-insights-editorial-integration.json'
-export const FINDER_MONITOR_PATHS=Object.freeze([...Object.keys(FINDER_MONITOR_PINS),HOOK,ENTRY,HELPER,TEST])
+export const FINDER_MONITOR_PATHS=Object.freeze([...Object.keys(FINDER_MONITOR_PINS),HOOK,ENTRY,EDITORIAL_HOOK,HELPER,TEST])
 const IMPORT="import {finderMonitorPredecessor,FINDER_MONITOR_RECEIPT} from './finder-monitor-source-integrity.mjs'\n"
 const HEAD='export function assistantNotificationsPredecessor(current,historical){\n'
 const PREFIX=" const finderMonitor=finderMonitorPredecessor(current,historical)\n if(finderMonitor){\n  const accepted=assistantNotificationsPredecessor(finderMonitor.previousBytes,historical);assert(accepted,'accepted notification source retained')\n  return {...accepted,finderMonitor,manifest:{...accepted.manifest,sourceDigests:{...accepted.manifest.sourceDigests,...finderMonitor.manifest.sourceDigests,[FINDER_MONITOR_RECEIPT]:hash(current(FINDER_MONITOR_RECEIPT))}}}\n }\n"
@@ -25,6 +26,14 @@ const hash=bytes=>createHash('sha256').update(bytes).digest('hex')
 export function finderMonitorContinuationSource(before){
  assert.equal(before.split(HEAD).length,2,'one existing source continuation entry')
  return IMPORT+before.replace(HEAD,HEAD+PREFIX)
+}
+
+export function finderMonitorEditorialSource(before){
+ const target=' const a=JSON.parse(bytes)\n'
+ assert.equal(before.split(target).length,2,'one existing editorial parse boundary')
+ // Keep the existing narrow optional-absence and read-error handling before dispatch.
+ const dispatch=" const finderMonitor=finderMonitorPredecessor(current,historical)\n if(finderMonitor)return procurementInsightsEditorialPredecessor(finderMonitor.previousBytes,historical)\n"
+ return "import {finderMonitorPredecessor} from './finder-monitor-source-integrity.mjs'\n"+before.replace(target,dispatch+target)
 }
 
 export function finderMonitorPredecessor(current,historical){
@@ -53,6 +62,7 @@ export function finderMonitorPredecessor(current,historical){
  for(const[p,pin]of Object.entries(FINDER_MONITOR_PINS))assert.equal(a.sourceDigests[p],pin,'only the already approved monitor bytes '+p)
  assert.equal(String(current(HOOK)),finderMonitorContinuationSource(String(historical(FINDER_MONITOR_BASE,HOOK))),'only additive dispatch; every historical assertion retained')
  assert.equal(String(current(ENTRY)),TEST_IMPORT+String(historical(FINDER_MONITOR_BASE,ENTRY)),'existing regressions plus real monitor and continuation tests')
+ assert.equal(String(current(EDITORIAL_HOOK)),finderMonitorEditorialSource(String(historical(FINDER_MONITOR_BASE,EDITORIAL_HOOK))),'only validated predecessor dispatch; editorial assertions and read errors retained')
  const prior=JSON.parse(historical(FINDER_MONITOR_BASE,PRIOR_GRAPH))
  const preserved=[PRIOR_GRAPH,...Object.keys(prior.preservedReceipts)].sort()
  assert.deepEqual(Object.keys(a.preservedReceipts).sort(),preserved,'complete accepted receipt graph retained')

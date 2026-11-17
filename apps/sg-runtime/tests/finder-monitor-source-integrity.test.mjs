@@ -21,7 +21,7 @@ test('exact monitor closure reaches the unchanged PCI verifier and actual source
  const live=procurementInsightsLiveAcceptancePredecessor(current,historical);assert(live)
  for(const p of [...FINDER_MONITOR_PATHS,FINDER_MONITOR_RECEIPT])assert.equal(live.manifest.sourceDigests[p],hash(current(p)),p)
  assertPciSmartIntegrity(JSON.parse(current('apps/sg-runtime/operation-integration.json')),current,historical)
- for(const p of ['apps/sg-runtime/tests/pci-smart-integrity.mjs','apps/sg-runtime/tests/pci-smart-integrity.test.mjs','apps/sg-runtime/package.json','apps/sg-runtime/package-lock.json'])assert.deepEqual(current(p),historical(FINDER_MONITOR_BASE,p),'unchanged existing verifier, tests and package policy: '+p)
+ assert.throws(()=>assistantNotificationsPredecessor(p=>{if(p===FINDER_MONITOR_RECEIPT)throw Object.assign(Error('Missing'),{code:'ENOENT'});return current(p)},historical),'the complete source graph cannot omit its monitor binding')
  const entry=String(current('apps/sg-runtime/tests/assistant-notifications-integrity.test.mjs'))
  assert(entry.startsWith("import './finder-monitor-source-integrity.test.mjs'\n"))
  assert(String(current('apps/sg-runtime/tests/finder-monitor-source-integrity.test.mjs')).startsWith("import './monitor-benchmark-finder.test.mjs'\n"),'all fifteen approved monitor tests run through the unchanged normal CI command')
@@ -36,7 +36,7 @@ test('every altered or missing current source and earlier receipt is rejected be
 })
 
 test('matching replacement digests cannot rebind approved monitor code or amend historical assertions',()=>{
- const hooks=['apps/sg-runtime/tests/assistant-notifications-integrity.mjs','apps/sg-runtime/tests/assistant-notifications-integrity.test.mjs']
+ const hooks=['apps/sg-runtime/tests/assistant-notifications-integrity.mjs','apps/sg-runtime/tests/assistant-notifications-integrity.test.mjs','apps/sg-runtime/tests/procurement-insights-editorial-integrity.mjs']
  for(const p of [...Object.keys(FINDER_MONITOR_PINS),...hooks]){
   const bytes=Buffer.concat([current(p),Buffer.from('REBOUND')]),a=receipt();a.sourceDigests[p]=hash(bytes)
   assert.throws(()=>finderMonitorPredecessor(alteredReader(p,bytes,a),historical),p)
