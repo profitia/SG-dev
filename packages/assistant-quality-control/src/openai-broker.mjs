@@ -48,7 +48,7 @@ function requestId(permitId,digest){
 /** Root-owned loopback process on the ephemeral VM. The agent receives only
  * its scoped local bearer token. The provider key and Limits credentials stay
  * outside the agent's user, environment, filesystem and network permissions. */
-export function createCostBroker({budget,permit,bearerToken,openaiKey,fetcher=fetch,maximumRequests=64}){
+export function createCostBroker({budget,permit,bearerToken,openaiKey,fetcher=fetch,maximumRequests=64,diagnostics}){
  require(typeof bearerToken==='string'&&/^[a-f0-9]{64}$/.test(bearerToken)&&typeof openaiKey==='string'&&openaiKey.length>0,'EXPLICIT_BROKER_BINDING_REQUIRED')
  for(const name of ['assertPermit','reserveRequest','dispatchRequest','settleRequest','markUnknown','releaseUndispatched'])require(typeof budget?.[name]==='function','EXPLICIT_BROKER_BINDING_REQUIRED')
  require(typeof permit?.permitId==='string'&&Number.isSafeInteger(maximumRequests)&&maximumRequests>0&&maximumRequests<=64)
@@ -70,7 +70,20 @@ export function createCostBroker({budget,permit,bearerToken,openaiKey,fetcher=fe
     require(req.headers['content-type']?.split(';')[0]==='application/json')
     let bytes=0;const chunks=[]
     for await(const chunk of req){bytes+=chunk.length;require(bytes<=1048576,'INPUT_BOUND_EXCEEDED');chunks.push(chunk)}
-    const body=boundAgentRequest(JSON.parse(Buffer.concat(chunks).toString('utf8'))),digest=documentDigest(body)
+    const raw=JSON.parse(Buffer.concat(chunks).toString('utf8'));let body
+    try{body=boundAgentRequest(raw)}catch(error){
+     // Optional trusted keyless diagnostics contain protocol shape only. Never
+     // copy values, instructions, input content, tokens or arbitrary field names.
+     if(typeof diagnostics==='function')try{
+      const known=new Set([...fields,'context_management','client_metadata','metadata','stream_options','prompt_cache_retention','safety_identifier','temperature','top_p','background'])
+      const names=object(raw)?Object.keys(raw):[],type=t=>['function','custom','namespace','web_search','tool_search'].includes(t)?t:'OTHER'
+      diagnostics(Object.freeze({event:'AQC_BROKER_REQUEST_REJECTED',code:error?.code??'REQUEST_REJECTED',
+       fields:names.filter(n=>known.has(n)).sort(),unknownFieldCount:names.filter(n=>!known.has(n)).length,
+       toolTypes:Array.isArray(raw?.tools)?[...new Set(raw.tools.slice(0,64).map(t=>type(t?.type)))].sort():[]}))
+     }catch{/* Diagnostic delivery never grants or retries a request. */}
+     throw error
+    }
+    const digest=documentDigest(body)
     await budget.assertPermit(permit)
     const headers={'Content-Type':'application/json',Authorization:'Bearer '+openaiKey}
     const counted=await fetcher('https://api.openai.com/v1/responses/input_tokens',{method:'POST',redirect:'error',headers,body:JSON.stringify(countPayload(body)),signal:abort.signal})
