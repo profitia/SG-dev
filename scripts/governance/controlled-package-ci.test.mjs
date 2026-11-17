@@ -3231,3 +3231,36 @@ test('trusted policy content reader refuses mismatched or unavailable large Git 
   await assert.rejects(()=>readControlPolicyFile(name,sha,async endpoint=>({data:endpoint.includes('/git/blobs/')?{...correct,...change}:metadata})),/CONTROL_POLICY_CONTENT_(REJECTED|MISMATCH)/)
  await assert.rejects(()=>readControlPolicyFile(name,sha,async endpoint=>{if(endpoint.includes('/git/blobs/'))throw Error('GITHUB_API_403');return {data:metadata}}),/GITHUB_API_403/)
 })
+
+
+// Proposed finite exception for the already-open Stage1 legacy lineage. It
+// admits engineering source validation only; it cannot activate a runtime.
+test('quality Stage1 legacy continuation has a finite branch/path/window and rejects protected expansion',async()=>{
+ const c=await import('./controlled-package-ci.mjs'),r=c.ASSISTANT_QUALITY_SG2_STAGE1_REVIEW
+ assert.equal(r.paths.length,21);assert.equal(new Set(r.paths).size,21)
+ assert.deepEqual(r.branches,['sg2/cic-quality-stage1-runtime-20261112','sg2/cic-quality-host-integration-20261117'])
+ const files=r.paths.map(filename=>({filename,status:'added',sha:'a'.repeat(40)}))
+ c.assertQualityStage1SourceFiles(files,Date.parse('2026-11-17T00:00:00.000Z'))
+ for(const changed of [[],files.concat(files[0]),[...files,{filename:'.github/workflows/platform-contracts-ci.yml',status:'added',sha:'a'.repeat(40)}],
+  files.map((f,i)=>i?f:{...f,status:'removed'}),files.map((f,i)=>i?f:{...f,previous_filename:'old.ts'}),files.map((f,i)=>i?f:{...f,sha:'invalid'})])
+  rejection(()=>c.assertQualityStage1SourceFiles(changed,Date.parse('2026-11-17T00:00:00.000Z')))
+ rejection(()=>c.assertQualityStage1SourceFiles(files,Date.parse(r.expiresAt)))
+ for(const p of r.paths)assert(p.startsWith('apps/sg-runtime/'))
+ assert(!r.paths.some(p=>p.startsWith('packages/')||p.endsWith('/.npmrc')||p.includes('operation-integration')||p.includes('assistant-context-integration')))
+})
+test('quality dependency admission accepts only the measured CIC1.8 artifact and retains all prior tests and packages',async()=>{
+ const c=await import('./controlled-package-ci.mjs')
+ const authorityLock=JSON.parse(execFileSync('git',['show','4da39c3fe1fb79c913fb360fc0053ac625f40cb9:apps/sg-runtime/package-lock.json'],{cwd:authorityRoot})),authorityManifest=JSON.parse(execFileSync('git',['show','4da39c3fe1fb79c913fb360fc0053ac625f40cb9:apps/sg-runtime/package.json'],{cwd:authorityRoot}))
+ const read=(sha,file)=>JSON.parse(execFileSync('git',['show',sha+':apps/sg-runtime/'+file],{cwd:authorityRoot}))
+ const source='916e7908d06e8a7b1f8becb9ec19f2aafa1b4366',lock=read(source,'package-lock.json'),manifest=read(source,'package.json')
+ assert.equal(c.assertQualityStage1Packages(lock,manifest,authorityLock,authorityManifest,true),true)
+ assert.equal(c.assertQualityStage1Packages(read('d9413b1945d54cbbf730a3437f9b2d368095e98e','package-lock.json'),read('d9413b1945d54cbbf730a3437f9b2d368095e98e','package.json'),authorityLock,authorityManifest,false),true)
+ for(const edit of [x=>x.packages['node_modules/@profitia/cic-core'].integrity+='x',x=>x.packages['node_modules/@profitia/cic-core'].version='1.9.0',
+  x=>x.packages['node_modules/@profitia/cic-core'].resolved+='?credential=not-allowed',x=>x.packages[''].dependencies.pg='0.0.0']){
+  const x=structuredClone(lock);edit(x);rejection(()=>c.assertQualityStage1Packages(x,manifest,authorityLock,authorityManifest,true))
+ }
+ for(const edit of [x=>x.scripts['test:assistant']='true',x=>x.scripts.postinstall='curl example.invalid',x=>x.dependencies['@profitia/cic-procurement']='2.0.0']){
+  const x=structuredClone(manifest);edit(x);rejection(()=>c.assertQualityStage1Packages(lock,x,authorityLock,authorityManifest,true))
+ }
+ rejection(()=>c.assertQualityStage1Packages(lock,manifest,authorityLock,authorityManifest,false))
+})
