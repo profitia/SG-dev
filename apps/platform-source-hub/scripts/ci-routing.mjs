@@ -1,3 +1,4 @@
+import {completeFunctionalPredecessor} from '../../architecture-lab/ecr-complete-functional-source.mjs'
 import {PI_LIVE_ACCEPTANCE_RECORD} from '../../sg-runtime/tests/procurement-insights-live-acceptance-source.mjs'
 import {recurringSourcePredecessor,RECURRING_SOURCE_RECORD} from '../../architecture-lab/private-recurring-source.mjs'
 import assert from 'node:assert/strict'
@@ -149,10 +150,38 @@ export function reviewedRecurringConsumerPaths(repositoryRoot,{baseSha,candidate
  return new Map(partition.filter(p=>p.projectKey!=='ARCHITECTURE').map(p=>[p.path,p.projectKey]))
 }
 
+// Public source routing authenticates the complete current Calendar graph.
+// This does not grant controlled CI admission, runtime activation or deployment.
+export function reviewedCalendarConsumerPaths(repositoryRoot,{baseSha,candidateSha}={}){
+ const current=p=>fs.readFileSync(path.join(repositoryRoot,p))
+ const historical=(sha,p)=>execFileSync('git',['show',sha+':'+p],{cwd:repositoryRoot,stdio:['ignore','pipe','pipe']})
+ const view=completeFunctionalPredecessor(current,historical)
+ if(!view)return null
+ assert(/^[a-f0-9]{40}$/.test(baseSha??'')&&/^[a-f0-9]{40}$/.test(candidateSha??''),'Exact Calendar CI revisions required')
+ const git=args=>execFileSync('git',args,{cwd:repositoryRoot,encoding:'utf8',stdio:['ignore','pipe','pipe']}).trim()
+ assert.equal(git(['rev-parse','HEAD']),candidateSha,'Validate the actual Calendar source checkout')
+ git(['merge-base','--is-ancestor',baseSha,candidateSha])
+ const changed=git(['diff','--name-only','--no-renames',baseSha+'...'+candidateSha]).split('\n').filter(Boolean).sort()
+ const paths=Object.keys(view.currentSourceDigests)
+ if(!changed.some(p=>paths.includes(p)))return null
+ const expected=paths.filter(p=>{
+  try{return !Buffer.from(current(p)).equals(historical(baseSha,p))}
+  catch(e){if(e.status===128&&["' does not exist in ","' exists on disk, but not in "].some(t=>String(e.stderr??'').includes("'"+p+t)))return true;throw e}
+ }).sort()
+ assert.deepEqual(changed,expected,'Exact complete current Calendar diff required')
+ const {partition}=partitionChangedPaths(changed,repositoryRoot)
+ for(const p of changed){
+  const stat=fs.lstatSync(path.join(repositoryRoot,p)),tree=git(['ls-tree',candidateSha,'--',p])
+  assert(stat.isFile()&&!stat.isSymbolicLink()&&stat.size<=1024*1024,'Regular bounded Calendar source required')
+  assert(tree.startsWith('100644 blob '+git(['hash-object','--no-filters','--',p])+'\t'),'Exact regular Calendar source required')
+ }
+ return new Map(partition.filter(p=>p.projectKey!=='ARCHITECTURE').map(p=>[p.path,p.projectKey]))
+}
+
 export function validateRouting({changedPaths,repositoryRoot,readReceipt,runGovernance,sourceReview}){
  const {groups,partition}=partitionChangedPaths(changedPaths,repositoryRoot)
  const needsOil=groups.some(g=>g.projectKey!=='ARCHITECTURE'&&g.targets.some(t=>!acceptedConsumerPaths[g.projectKey]?.includes(t)&&!['apps/sg-runtime/operation-integration.json','apps/srm/operation-integration.json','apps/srm/scripts/source-hub-market-symbol-compatibility.test.mjs'].includes(t)));
- const reviewedRecurringPaths=needsOil?reviewedRecurringConsumerPaths(repositoryRoot,sourceReview):null;
+ const reviewedRecurringPaths=needsOil?(reviewedCalendarConsumerPaths(repositoryRoot,sourceReview)??reviewedRecurringConsumerPaths(repositoryRoot,sourceReview)):null;
  const reviewedOilPaths=needsOil&&!reviewedRecurringPaths?reviewedOilConsumerPaths(repositoryRoot,sourceReview):new Set();
  validateConsumerGroups(groups,readReceipt,{reviewedOilPaths,reviewedRecurringPaths:reviewedRecurringPaths??new Map()})
  return {partition,results:validateOwnerGroups({groups,runGovernance})}
