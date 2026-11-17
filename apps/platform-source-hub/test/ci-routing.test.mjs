@@ -5,7 +5,7 @@ import os from 'node:os'
 import path from 'node:path'
 import {execFileSync} from 'node:child_process'
 import {OIL_REPORT_E1_REVIEW,PRIVATE_RECURRING_LIVE_SRM_REVIEW} from '../../../scripts/governance/controlled-package-ci.mjs'
-import {assistantReservationPredecessor,RESERVATION_DERIVED} from '../../../packages/platform-contracts/test/assistant-reservation-source.mjs'
+import {assistantReservationPredecessor,RESERVATION_RECORD,RESERVATION_DERIVED} from '../../../packages/platform-contracts/test/assistant-reservation-source.mjs'
 import {fileURLToPath} from 'node:url'
 import {validateConsumerGroups,validateRouting,validationBase,reviewedOilConsumerPaths,reviewedRecurringConsumerPaths} from '../scripts/ci-routing.mjs'
 
@@ -16,7 +16,8 @@ const readReceipt=file=>JSON.parse(fs.readFileSync(new URL('../../../'+file,impo
 const sourceBytes=p=>fs.readFileSync(path.join(repositoryRoot,p))
 const sourceHistory=(sha,p)=>execFileSync('git',['show',sha+':'+p],{cwd:repositoryRoot,stdio:['ignore','pipe','pipe'],maxBuffer:16*1024*1024})
 const sourcePin=String(sourceBytes(RESERVATION_DERIVED)).match(/ASSISTANT_RESERVATION_SOURCE_SHA='([a-f0-9]{64})'/)?.[1]
-assert(assistantReservationPredecessor(sourceBytes,sourceHistory,sourcePin))
+const reservationSource=assistantReservationPredecessor(sourceBytes,sourceHistory,sourcePin)
+assert(reservationSource)
 function reviewedRecurringFixture(){
  const temporary=fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(),'hub-immutable-recurring-')))
  const root=path.join(temporary,'review'),review=PRIVATE_RECURRING_LIVE_SRM_REVIEW
@@ -160,4 +161,61 @@ test('historical recurring routing refuses changed bytes, symbolic files and add
   git(root,'add','unreviewed.txt');git(root,'-c','user.name=Isolated fixture','-c','user.email=fixture@example.invalid','commit','--quiet','-m','unreviewed addition')
   assert.throws(()=>reviewedRecurringConsumerPaths(root,{baseSha,candidateSha:git(root,'rev-parse','HEAD')}))
  }finally{fs.rmSync(temporary,{recursive:true,force:true});fixture.close()}
+})
+
+
+// Exercise the actual authenticated ACG bytes on their immutable accepted base.
+function reservationRoutingFixture(){
+ const temporary=fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(),'hub-acg-reservation-'))),root=path.join(temporary,'candidate')
+ const git=(cwd,...args)=>execFileSync('git',args,{cwd,encoding:'utf8',stdio:['ignore','pipe','pipe']}).trim()
+ const baseSha='9eae235dd7ce50d09967977e7417afabb0dbab10'
+ try{
+  git(temporary,'clone','--shared','--quiet','--no-checkout',repositoryRoot,root)
+  git(root,'checkout','--quiet','--detach',baseSha)
+  git(root,'update-ref','refs/remotes/origin/main',git(repositoryRoot,'rev-parse','origin/main'))
+  const paths=[...Object.keys(reservationSource.manifest.sourceDigests),RESERVATION_RECORD,RESERVATION_DERIVED]
+  assert.equal(paths.length,44);assert.equal(new Set(paths).size,44)
+  for(const p of paths){
+   const source=path.join(repositoryRoot,p),stat=fs.lstatSync(source);assert(stat.isFile()&&!stat.isSymbolicLink())
+   const target=path.join(root,p);fs.mkdirSync(path.dirname(target),{recursive:true});fs.writeFileSync(target,fs.readFileSync(source))
+  }
+  git(root,'add','--',...paths)
+  git(root,'-c','user.name=Isolated ACG fixture','-c','user.email=fixture@example.invalid','commit','--quiet','-m','actual authenticated ACG source fixture')
+  return {root,baseSha,candidateSha:git(root,'rev-parse','HEAD'),paths,
+   readReceipt:p=>JSON.parse(fs.readFileSync(path.join(root,p))),git:(...args)=>git(root,...args),
+   close:()=>fs.rmSync(temporary,{recursive:true,force:true})}
+ }catch(error){fs.rmSync(temporary,{recursive:true,force:true});throw error}
+}
+
+test('actual authenticated ACG reservation routing closes the complete source diff and every owner',()=>{
+ const f=reservationRoutingFixture(),{root,baseSha,candidateSha,paths}=f
+ try{
+  const review={baseSha,candidateSha},mapped=reviewedRecurringConsumerPaths(root,review)
+  assert.equal(mapped.get('apps/sg-runtime/lib/assistant/runtime.ts'),'SG2')
+  assert.equal(mapped.get('apps/srm/scripts/request-quota-adoption.test.mjs'),'SRM')
+  assert(!mapped.has('apps/platform-source-hub/scripts/ci-routing.mjs'))
+  const changedPaths=f.git('diff','--name-only',baseSha,candidateSha).split(String.fromCharCode(10))
+  assert.deepEqual(changedPaths.sort(),[...paths].sort())
+  const called=[]
+  validateRouting({changedPaths,repositoryRoot:root,readReceipt:f.readReceipt,sourceReview:review,runGovernance:projectKey=>{called.push(projectKey);return {verdict:'PASS'}}})
+  assert.deepEqual(called,['ARCHITECTURE','SG2','SRM'])
+  const alteredReceipt=p=>{const r=f.readReceipt(p);r.sourceHubApiPathCompatibility.apiPathOptedIn=true;return r}
+  assert.throws(()=>validateRouting({changedPaths,repositoryRoot:root,readReceipt:alteredReceipt,sourceReview:review,runGovernance:()=>assert.fail('Altered receipt cannot reach an owner gate')}))
+ }finally{f.close()}
+})
+
+test('ACG reservation routing refuses source drift, symbolic or executable files, wrong revisions and extra committed paths',()=>{
+ const f=reservationRoutingFixture(),{root,baseSha,candidateSha}=f,review={baseSha,candidateSha}
+ try{
+  assert(reviewedRecurringConsumerPaths(root,review))
+  assert.throws(()=>reviewedRecurringConsumerPaths(root,{baseSha,candidateSha:'a'.repeat(40)}))
+  assert.throws(()=>reviewedRecurringConsumerPaths(root,{baseSha:'c31fd80278561adec8d066392417bb057d191192',candidateSha}))
+  const target=path.join(root,'apps/platform-source-hub/scripts/ci-routing.mjs'),before=fs.readFileSync(target)
+  fs.appendFileSync(target,'unreviewed source');assert.throws(()=>reviewedRecurringConsumerPaths(root,review));fs.writeFileSync(target,before)
+  fs.chmodSync(target,0o755);assert.throws(()=>reviewedRecurringConsumerPaths(root,review));fs.chmodSync(target,0o644)
+  fs.unlinkSync(target);fs.symlinkSync(path.join(root,'apps/platform-source-hub/src/server.mjs'),target);assert.throws(()=>reviewedRecurringConsumerPaths(root,review));fs.unlinkSync(target);fs.writeFileSync(target,before)
+  fs.writeFileSync(path.join(root,'unreviewed.txt'),'not part of the authenticated ACG source')
+  f.git('add','unreviewed.txt');f.git('-c','user.name=Isolated ACG fixture','-c','user.email=fixture@example.invalid','commit','--quiet','-m','unreviewed extra source')
+  assert.throws(()=>reviewedRecurringConsumerPaths(root,{baseSha,candidateSha:f.git('rev-parse','HEAD')}))
+ }finally{f.close()}
 })

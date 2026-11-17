@@ -1,5 +1,6 @@
 import {PI_LIVE_ACCEPTANCE_RECORD} from '../../sg-runtime/tests/procurement-insights-live-acceptance-source.mjs'
 import {recurringSourcePredecessor,RECURRING_SOURCE_RECORD} from '../../architecture-lab/private-recurring-source.mjs'
+import {RESERVATION_RECORD,RESERVATION_DERIVED} from '../../../packages/platform-contracts/test/assistant-reservation-source.mjs'
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
@@ -136,7 +137,11 @@ export function reviewedRecurringConsumerPaths(repositoryRoot,{baseSha,candidate
  const live=view.transport?.live,prior=view.transport?view.transport.manifest.reviewedPaths:[...view.manifest.changedPaths,RECURRING_SOURCE_RECORD,'apps/architecture-lab/private-recurring-source.mjs',...adoptions]
  let acceptedLiveBase=false
  if(live){try{git(['merge-base','--is-ancestor',live.manifest.baseCandidateSha,baseSha]);acceptedLiveBase=true}catch(e){if(e.status!==1)throw e}}
- const expected=[...new Set([...(acceptedLiveBase?[]:prior),...(live?[...Object.keys(live.manifest.sourceDigests),PI_LIVE_ACCEPTANCE_RECORD]:[])])].sort()
+ const reservation=view.reservation?.manifest
+ if(reservation)git(['merge-base','--is-ancestor',reservation.previousSourceSha,baseSha])
+ const expected=reservation
+  ? [...new Set([...Object.keys(reservation.sourceDigests),RESERVATION_RECORD,RESERVATION_DERIVED])].sort()
+  : [...new Set([...(acceptedLiveBase?[]:prior),...(live?[...Object.keys(live.manifest.sourceDigests),PI_LIVE_ACCEPTANCE_RECORD]:[])])].sort()
  if(view.transport)git(['merge-base','--is-ancestor',view.transport.manifest.reviewBaseSha,baseSha])
  const changed=git(['diff','--name-only','--no-renames',baseSha+'...'+candidateSha]).split('\n').filter(Boolean).sort()
  assert.deepEqual(changed,expected,'Exact complete reviewed recurring diff required')
@@ -144,6 +149,7 @@ export function reviewedRecurringConsumerPaths(repositoryRoot,{baseSha,candidate
  for(const p of changed){
   const stat=fs.lstatSync(path.join(repositoryRoot,p)),tree=git(['ls-tree',candidateSha,'--',p])
   assert(stat.isFile()&&!stat.isSymbolicLink()&&stat.size<=1024*1024,'Regular bounded source required')
+  assert.equal(stat.mode&0o111,0,'Exact regular source mode required')
   assert(tree.startsWith('100644 blob '+git(['hash-object','--no-filters','--',p])+'\t'),'Exact regular reviewed source required')
  }
  return new Map(partition.filter(p=>p.projectKey!=='ARCHITECTURE').map(p=>[p.path,p.projectKey]))
