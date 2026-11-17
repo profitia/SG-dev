@@ -12,7 +12,7 @@ import {assistantSendArrowPredecessor} from './assistant-send-arrow-integrity.mj
 import {assertAssistantM1Integrity} from './assistant-m1-integrity.mjs'
 import {readM2AcceptedSource} from './assistant-m2-source-view.mjs'
 const root=fileURLToPath(new URL('../../../',import.meta.url)),current=p=>fs.readFileSync(path.join(root,p)),history=new Map()
-const historical=(sha,p)=>{const key=sha+':'+p;if(!history.has(key))history.set(key,execFileSync('git',['show',key],{cwd:root,stdio:['ignore','pipe','ignore']}));return Buffer.from(history.get(key))}
+const historical=(sha,p)=>{const key=sha+':'+p;if(!history.has(key))history.set(key,execFileSync('git',['show',key],{cwd:root,stdio:['ignore','pipe','pipe']}));return Buffer.from(history.get(key))}
 const receipt=()=>JSON.parse(current('apps/sg-runtime/operation-integration.json')),hash=b=>createHash('sha256').update(b).digest('hex')
 test('current SDK is verified before immutable arrow and M1 receipt views are exposed',()=>{
  const r=receipt(),sdk=sdkContinuationPredecessor(r,current,historical)

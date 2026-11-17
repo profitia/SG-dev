@@ -1,3 +1,4 @@
+import {knowledgeSourcePredecessor} from '../../architecture-lab/knowledge-source.mjs'
 // Test/build-only exact SG2 presentation continuation. No runtime or access authority.
 import assert from 'node:assert/strict'
 import {createHash} from 'node:crypto'
@@ -52,6 +53,8 @@ export function notificationCompletionSource(before){
  return IMPORT+before.replace(HEAD,HEAD+PREFIX)
 }
 export function assistantNotificationsPredecessor(current,historical){
+ const knowledge=knowledgeSourcePredecessor(current,historical)
+ if(knowledge)return assistantNotificationsPredecessor(knowledge.previousBytes,historical)
  let bytes
  try{bytes=current(NOTIFICATIONS_RECEIPT)}catch(error){
   const text=String(error?.stderr??error?.message??'')
