@@ -1,3 +1,4 @@
+import {kysResumePredecessor} from './kys-resume-source-view.mjs'
 import {assertAppShellFourCardCascade} from '../../sg-runtime/tests/pci-smart-integrity.mjs'
 import {srmAssistantM2Predecessor} from './assistant-m2-integrity.mjs'
 import {marketHistoryHostSourceView} from './xray-style-acceptance.mjs'
@@ -41,11 +42,12 @@ test('oversize cloned bodies return promptly without awaiting cancellation of an
 import {posix} from 'node:path';import fs from 'node:fs';import {execFileSync} from 'node:child_process';import {createHash} from 'node:crypto';
 import {peerOperationSourceDigest} from '@profitia/platform-contracts/peer-operation';
 const rawAppShellSource=(file:string)=>fs.readFileSync(new URL('../../../'+file,import.meta.url));
-const actualAppShellSource=srmAssistantM2Predecessor(rawAppShellSource,(sha:string,file:string)=>execFileSync('git',['show',sha+':'+file]))?.previousBytes??rawAppShellSource;
+const kysView=kysResumePredecessor(rawAppShellSource,(sha:string,file:string)=>execFileSync('git',['show',sha+':'+file]));
+const actualAppShellSource=srmAssistantM2Predecessor(kysView.previousBytes,(sha:string,file:string)=>execFileSync('git',['show',sha+':'+file]))?.previousBytes??kysView.previousBytes;
 const hostReceipt=JSON.parse(actualAppShellSource('apps/sg-runtime/operation-integration.json').toString());
 const acceptedAppShellSource=hostReceipt.appShellFourCardCascade?assertAppShellFourCardCascade(hostReceipt,actualAppShellSource,(sha:string,file:string)=>execFileSync('git',['show',sha+':'+file])).previousBytes:actualAppShellSource;
 const acceptedAppShellUrl=(url:URL)=>acceptedAppShellSource(posix.relative(new URL('../../../',import.meta.url).pathname,url.pathname));
-const marketHostView=marketHistoryHostSourceView((file:string)=>fs.readFileSync(new URL('../../../'+file,import.meta.url)),(sha:string,file:string)=>execFileSync('git',['show',sha+':'+file]));
+const marketHostView=marketHistoryHostSourceView(kysView.previousBytes,(sha:string,file:string)=>execFileSync('git',['show',sha+':'+file]));
 const host=JSON.parse(marketHostView.bytes.toString());
 const hostDigests=Object.fromEntries(Object.entries(host.fullUiParityAdoption?.applicationSourceDigests??{}).map(([file,digest])=>[posix.relative('apps/srm',posix.normalize('apps/sg-runtime/'+file)),digest]));
 function currentAcceptedBytes(url:URL){
@@ -58,7 +60,7 @@ function currentAcceptedBytes(url:URL){
 }
 
 test('X-Ray acceptance is additive, preserves every historical receipt and binds current public/source/consumer closures',async()=>{
- const root=new URL('../../../',import.meta.url),receipt=JSON.parse(fs.readFileSync(new URL('../operation-integration.json',import.meta.url),'utf8')),a=receipt.appshellXraySourceCompatibility;
+ const root=new URL('../../../',import.meta.url),receipt=kysView.prior,a=receipt.appshellXraySourceCompatibility;
  const hash=(v:Uint8Array)=>createHash('sha256').update(v).digest('hex');
  const prior=execFileSync('git',['show',a.previousReceiptSourceSha+':apps/srm/operation-integration.json']);assert.equal(hash(prior),a.previousReceiptDigest);
  for(const[key,value]of Object.entries(JSON.parse(prior.toString())))assert.deepEqual(receipt.oilAutonomousReportCompatibility?.previousRootAcceptance?.[key]??receipt[key],value,key);

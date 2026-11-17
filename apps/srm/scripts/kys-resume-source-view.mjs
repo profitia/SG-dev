@@ -5,7 +5,7 @@ import {createHash} from 'node:crypto'
 const RECEIPT='apps/srm/operation-integration.json'
 const BASE='16fd69465162e4b37ca968c46cb901ba2b7f9f12'
 const PRODUCTION=['src/server/kys-cache.ts','src/server/vercly-kys.ts','src/server/xray-lookup.ts','src/server/supplier-native-sensitive.ts','src/server/supplier-native-sensitive-store.ts','src/server/provider-source-transport.ts'].sort()
-const TESTS=['scripts/private-sensitive.integration.test.mjs','src/server/assistant-context-runtime.test.ts','src/server/company-source-policy.test.ts','src/server/full-ui-parity-adoption.test.ts','src/server/kys-cache.test.ts','src/server/kys-orchestration.test.ts','src/server/peer-read-boundary.test.ts','src/server/root-atomic-claim-adoption.test.ts','src/server/supplier-location-geocoding-runtime.test.ts','src/server/vercly-kys.test.ts'].sort()
+const TESTS=['scripts/xray-workflow-contract.test.ts','scripts/private-sensitive.integration.test.mjs','src/server/assistant-context-runtime.test.ts','src/server/company-source-policy.test.ts','src/server/full-ui-parity-adoption.test.ts','src/server/kys-cache.test.ts','src/server/kys-orchestration.test.ts','src/server/peer-read-boundary.test.ts','src/server/root-atomic-claim-adoption.test.ts','src/server/supplier-location-geocoding-runtime.test.ts','src/server/vercly-kys.test.ts'].sort()
 const hash=b=>createHash('sha256').update(b).digest('hex')
 export function kysResumePredecessor(current,historical){
  const complete=JSON.parse(current(RECEIPT)),a=complete.verclyKysResumeRecovery

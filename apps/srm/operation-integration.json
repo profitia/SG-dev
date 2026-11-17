@@ -9456,10 +9456,11 @@
       "src/server/peer-read-boundary.test.ts": "db126d0ee9144c717d9c3fad0f2c418c08d566003cdcb6542c47ca7279793f5e",
       "src/server/root-atomic-claim-adoption.test.ts": "df98877342fd56595bac0281fd1c470fb5bc79402681f07e7728fb1cc359dfd6",
       "src/server/supplier-location-geocoding-runtime.test.ts": "5a70aa0ff48d3b3da1a7c36f7b78d22ff4bbc18a9445248637d78acda8678e7a",
-      "src/server/vercly-kys.test.ts": "01d847baa902fbd58ebe3ad6a82988666b058be09d6c3261a97b9b6b0bed725f"
+      "src/server/vercly-kys.test.ts": "01d847baa902fbd58ebe3ad6a82988666b058be09d6c3261a97b9b6b0bed725f",
+      "scripts/xray-workflow-contract.test.ts": "6c4dfb5ebeddea4a509f1c03f63188a924ab03d3caf5f91d4d556a667697f97e"
     },
     "testSupportSourceDigests": {
-      "scripts/kys-resume-source-view.mjs": "cfeb4201dff152caecbec0acc47b7d9acebff86933c46b9bedd6aa5a2358c536"
+      "scripts/kys-resume-source-view.mjs": "ecde0ad65e17b5ac547400bc2cd28522bbe4356baf761e95e4d34b2bbae1b958"
     }
   }
 }
