@@ -3416,9 +3416,8 @@ test('exact PR1102 source validation reaches the real candidate guard without cl
  const directory=fs.mkdtempSync(path.join(os.tmpdir(),'pi-manifest-proof-')),root=path.join(directory,'candidate');
  const files=Object.entries(r.entries).map(([filename,e])=>({filename,sha:e.sha,status:e.status}));
  const controlSha=execFileSync('git',['rev-parse','HEAD'],{cwd:authorityRoot,encoding:'utf8'}).trim();
- // Keep the live control SHA distinct from the immutable historical review diff.
- const historicalBaseSha=execFileSync('git',['rev-parse',r.sourceSha+'^2'],{cwd:authorityRoot,encoding:'utf8'}).trim();
- const state={sha:r.sourceSha,controlSha,runId:'12345',admission:{kind:'ARCHITECTURE',baseSha:historicalBaseSha,files}};
+ // The frozen PR review predates its merge; retain that historical diff base.
+ const state={sha:r.sourceSha,controlSha,runId:'12345',admission:{kind:'ARCHITECTURE',baseSha:'4ac4cbab24931a0662bd5244abb6c4b0761cd7fa',files}};
  try{
   execFileSync('git',['worktree','add','--detach',root,r.sourceSha],{cwd:authorityRoot,stdio:'pipe'});
   const metadata=c.assertManifestSuccessorSourceValidation(root,state,authorityRoot);
@@ -3484,3 +3483,33 @@ test('protected source proof binds the accepted review and real execution eviden
   assert.throws(()=>c.assertProof(proof,{...run,...patch},r.sourceSha,run.workflow_id,options));
  assert.throws(()=>c.assertProof(proof,run,other,run.workflow_id,options));
 });
+
+import {editorialTrustedPredecessor as editorialSourceProjection,EDITORIAL_CANON_SOURCE_REVIEW as editorialSourceReview,assistantNotificationsTrustedPredecessor as priorNotificationProjection} from './controlled-package-ci.mjs'
+import editorialTest from 'node:test'
+import editorialAssert from 'node:assert/strict'
+import {execFileSync as editorialGit} from 'node:child_process'
+const editorialTestRoot=new URL('../../',import.meta.url),editorialHistoryCache=new Map()
+const editorialHistory=(sha,p)=>{const key=sha+':'+p;if(!editorialHistoryCache.has(key))editorialHistoryCache.set(key,editorialGit('git',['show',key],{cwd:editorialTestRoot,stdio:['ignore','pipe','pipe'],maxBuffer:8*1024*1024}));return Buffer.from(editorialHistoryCache.get(key))}
+const editorialFixture=p=>editorialHistory(editorialSourceReview.sourceSha,p)
+editorialTest('exact editorial source bytes precede unchanged trusted notification history',()=>{
+ const view=editorialSourceProjection(editorialFixture,editorialHistory);editorialAssert(view)
+ editorialAssert(priorNotificationProjection(view.previousBytes,editorialHistory))
+ for(const p of editorialSourceReview.projection){
+  if(editorialSourceReview.entries[p].status==='added')editorialAssert.throws(()=>view.previousBytes(p),e=>e.code==='ENOENT')
+  else editorialAssert.deepEqual(view.previousBytes(p),editorialHistory(editorialSourceReview.baseSha,p))
+ }
+ editorialAssert.equal(editorialSourceProjection(view.previousBytes,editorialHistory),null)
+})
+editorialTest('editorial trusted projection rejects every altered source and historical receipt',()=>{
+ for(const p of [...Object.keys(editorialSourceReview.entries),...Object.keys(editorialSourceReview.preservedReceipts)]){
+  editorialAssert.throws(()=>editorialSourceProjection(f=>f===p?Buffer.concat([editorialFixture(f),Buffer.from('tamper')]):editorialFixture(f),editorialHistory),p)
+  if(editorialSourceReview.preservedReceipts[p]||editorialSourceReview.projection.includes(p)&&editorialSourceReview.entries[p]?.status==='modified')editorialAssert.throws(()=>editorialSourceProjection(editorialFixture,(sha,f)=>f===p?Buffer.concat([editorialHistory(sha,f),Buffer.from('history tamper')]):editorialHistory(sha,f)),p)
+ }
+})
+editorialTest('editorial projection rejects rebound candidate authority and remains narrowly optional',()=>{
+ const a=JSON.parse(editorialFixture(editorialSourceReview.recordPath));a.automaticPublication=true
+ editorialAssert.throws(()=>editorialSourceProjection(p=>p===editorialSourceReview.recordPath?Buffer.from(JSON.stringify(a)):editorialFixture(p),editorialHistory))
+ editorialAssert.equal(editorialSourceProjection(()=>{throw Object.assign(Error('absent'),{code:'ENOENT'})},editorialHistory),null)
+ for(const e of [Object.assign(Error('denied'),{code:'EACCES'}),Object.assign(Error('foreign Git failure'),{status:128,stderr:"path 'other-file' does not exist in 'source'"})])editorialAssert.throws(()=>editorialSourceProjection(()=>{throw e},editorialHistory),x=>x===e)
+ editorialAssert.throws(()=>editorialSourceProjection(editorialFixture,()=>{throw Error('historical source unavailable')}))
+})
