@@ -1,6 +1,6 @@
 {
   "name": "@profitia/platform-current-e1-authority",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "private": true,
   "type": "module",
   "description": "Optional current central E1 admission and outcome contract; canonical SDK unchanged",
@@ -42,7 +42,7 @@
     "build": "node --check index.mjs && node --check recurring.mjs && node --check install-recurring.mjs && node --check knowledge.mjs && node --check install-knowledge.mjs"
   },
   "peerDependencies": {
-    "@profitia/platform-contracts": "1.37.0"
+    "@profitia/platform-contracts": "1.38.0"
   },
   "devDependencies": {
     "@profitia/platform-contracts": "file:.."

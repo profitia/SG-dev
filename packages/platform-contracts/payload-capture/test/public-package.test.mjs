@@ -1,4 +1,5 @@
 import {recurringSourceFilesystem} from '../../../../apps/architecture-lab/private-recurring-source.mjs'
+import {acceptedSdkSource} from '../../test/organisation-sdk-compatibility.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
@@ -8,19 +9,19 @@ import {fileURLToPath,pathToFileURL} from 'node:url'
 import {createRequire} from 'node:module'
 import {execFileSync} from 'node:child_process'
 
-test('packed optional capture uses one SDK1.34.0 with preserved 1.32.3 compatibility and strict readonly public types',async()=>{
+test('packed optional capture uses the exact accepted SDK with preserved 1.32.3 compatibility and strict readonly public types',async()=>{
  const pkg=fileURLToPath(new URL('../',import.meta.url)),sdk=fileURLToPath(new URL('../../',import.meta.url)),root=fileURLToPath(new URL('../../../../',import.meta.url))
- const recurring=recurringSourceFilesystem(root).manifest
+ const recurring=recurringSourceFilesystem(root).manifest,accepted=acceptedSdkSource()
  const temp=fs.mkdtempSync(path.join(os.tmpdir(),'architecture-payload-public-'))
  try{
-  assert.equal(JSON.parse(fs.readFileSync(path.join(sdk,'package.json'))).version,recurring?.platformVersion??'1.34.0')
+  assert.equal(JSON.parse(fs.readFileSync(path.join(sdk,'package.json'))).version,accepted.platformVersion??recurring?.platformVersion??'1.34.0')
   const packed=JSON.parse(execFileSync('npm',['pack','--ignore-scripts','--json','--pack-destination',temp],{cwd:pkg,encoding:'utf8',stdio:['ignore','pipe','pipe']}))[0]
   execFileSync('tar',['-xzf',path.join(temp,packed.filename),'-C',temp])
   const modules=path.join(temp,'node_modules/@profitia');fs.mkdirSync(modules,{recursive:true})
   fs.symlinkSync(sdk,path.join(modules,'platform-contracts'),'dir')
   fs.symlinkSync(path.join(temp,'package'),path.join(modules,'platform-payload-capture'),'dir')
   const manifest=JSON.parse(fs.readFileSync(path.join(temp,'package/package.json')))
-  assert.deepEqual(manifest.peerDependencies,{'@profitia/platform-contracts':recurring?'1.32.3 || 1.33.0 || 1.34.0 || 1.36.0':'1.32.3 || 1.33.0 || 1.34.0'})
+  assert.deepEqual(manifest.peerDependencies,{'@profitia/platform-contracts':accepted.platformVersion==='1.37.0'?'1.32.3 || 1.33.0 || 1.34.0 || 1.36.0 || 1.37.0':recurring?'1.32.3 || 1.33.0 || 1.34.0 || 1.36.0':'1.32.3 || 1.33.0 || 1.34.0'})
   assert.equal(manifest.dependencies,undefined)
   const require=createRequire(path.join(temp,'entry.mjs')),captureRequire=createRequire(path.join(temp,'package/package.json'))
   assert.equal(require.resolve('@profitia/platform-contracts/operation-context'),captureRequire.resolve('@profitia/platform-contracts/operation-context'))
