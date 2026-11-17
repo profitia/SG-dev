@@ -6,7 +6,7 @@ import {posix} from 'node:path'
 import {createHash} from 'node:crypto'
 import {execFileSync} from 'node:child_process'
 import {sourceDependencyTestFixtures} from './source-dependency-test-fixtures.mjs'
-const verclyView=sourceDependencyTestFixtures(p=>fs.readFileSync(new URL('../../../'+p,import.meta.url)),(sha,p)=>execFileSync('git',['show',sha+':'+p]),'SRM:SRM-VERCLY-RESUME-TESTS-20261117')
+const verclyView=sourceDependencyTestFixtures(p=>fs.readFileSync(new URL('../../../'+p,import.meta.url)),(sha,p)=>execFileSync('git',['show',sha+':'+p]),'SRM:SRM-VERCLY-RESUME-FINAL-20261117')
 const recurring=recurringSourceFilesystem(new URL('../../../',import.meta.url)).manifest
 const recurringSdkFiles=Object.fromEntries(Object.entries(recurring?.sourceDigests??{}).filter(([p])=>p.startsWith('packages/platform-contracts/')).map(([p,h])=>[p.slice('packages/platform-contracts/'.length),h]))
 

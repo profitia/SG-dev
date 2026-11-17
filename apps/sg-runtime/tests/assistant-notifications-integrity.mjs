@@ -54,7 +54,7 @@ export function notificationCompletionSource(before){
  return IMPORT+before.replace(HEAD,HEAD+PREFIX)
 }
 export function assistantNotificationsPredecessor(current,historical){
- const dependencies=sourceDependencyTestFixtures(current,historical,'SRM:SRM-VERCLY-RESUME-TESTS-20261117')
+ const dependencies=sourceDependencyTestFixtures(current,historical,'SRM:SRM-VERCLY-RESUME-FINAL-20261117')
  if(dependencies.admission)return assistantNotificationsPredecessor(dependencies.previousBytes,historical)
  const editorial=procurementInsightsEditorialPredecessor(current,historical)
  if(editorial){

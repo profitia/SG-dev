@@ -3,9 +3,12 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import {execFileSync} from 'node:child_process'
 import {createHash} from 'node:crypto'
+import {sourceDependencyTestFixtures} from '../../srm/scripts/source-dependency-test-fixtures.mjs'
 import {procurementInsightsEditorialPredecessor,EDITORIAL_RECEIPT,EDITORIAL_BASE,EDITORIAL_PATHS} from './procurement-insights-editorial-integrity.mjs'
 import {assistantM2Predecessor,oilReportSerializationPredecessor} from './assistant-m2-integrity.mjs'
-const root=new URL('../../../',import.meta.url),current=p=>fs.readFileSync(new URL(p,root))
+const root=new URL('../../../',import.meta.url)
+const verclyView=sourceDependencyTestFixtures(p=>fs.readFileSync(new URL(p,root)),(sha,p)=>execFileSync('git',['show',sha+':'+p],{cwd:root,stdio:['ignore','pipe','pipe']}),'SRM:SRM-VERCLY-RESUME-FINAL-20261117')
+const current=p=>verclyView.previousBytes(p)
 const blobs=new Map(),historical=(sha,p)=>{const key=sha+':'+p;if(!blobs.has(key))blobs.set(key,execFileSync('git',['show',key],{cwd:root,stdio:['ignore','pipe','pipe']}));return blobs.get(key)}
 const hash=b=>createHash('sha256').update(b).digest('hex')
 const manifest=()=>JSON.parse(current(EDITORIAL_RECEIPT))
