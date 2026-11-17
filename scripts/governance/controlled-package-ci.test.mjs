@@ -3355,5 +3355,5 @@ test('Calendar complete CI repair refuses any changed physical input, inaccessib
  const denied=Object.assign(Error('access denied'),{code:'EACCES'});
  assert.throws(()=>c.completeFunctionalTrustedPredecessor(p=>p===r.markerPath?(()=>{throw denied})():current(p),historical),e=>e===denied);
  const first=Object.keys(r.previous).find(p=>!r.previous[p].absent);
- assert.throws(()=>c.completeFunctionalTrustedPredecessor(current,(sha,p)=>p===first?Buffer.concat([historical(sha,p),Buffer.from(' drift')]):historical(sha,p)));
+ assert.throws(()=>c.completeFunctionalTrustedPredecessor(current,(sha,p)=>p===first?Buffer.concat([historical(sha,p),Buffer.from(' drift')]):historical(sha,p))(first));
 });
