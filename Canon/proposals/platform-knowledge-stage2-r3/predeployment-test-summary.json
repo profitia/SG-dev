@@ -1,0 +1,111 @@
+{
+  "status": "PREDEPLOYMENT_PRIVATE_TEST_EVIDENCE_NOT_REQUIRED_CI",
+  "release": "8c1e7e3fe9bfd719cce462ac21377916e791f32a",
+  "policyProposal": "acf96efbf9eea206d05c80f660777bded98d6a16",
+  "liveOperations": 0,
+  "tests": [
+    {
+      "status": "REAL_PRIVATE_SOURCE_TESTS_NOT_CONTROLLED_CI",
+      "head": "8c1e7e3fe9bfd719cce462ac21377916e791f32a",
+      "exitCode": 0,
+      "seconds": 81.85,
+      "paths": [
+        "apps/architecture-lab/test/knowledge-source.test.mjs",
+        "apps/architecture-lab/test/private-recurring-source.test.mjs",
+        "apps/architecture-lab/test/sdk-compatibility.test.mjs",
+        "apps/architecture-lab/test/payload-capture-publication.test.mjs",
+        "apps/sg-runtime/tests/procurement-insights-editorial-integrity.test.mjs",
+        "apps/sg-runtime/tests/finder-monitor-source-integrity.test.mjs",
+        "apps/platform-source-hub/test/ci-routing.test.mjs"
+      ],
+      "summary": [
+        "\u2139 tests 67",
+        "\u2139 pass 67",
+        "\u2139 fail 0",
+        "\u2139 skipped 0"
+      ],
+      "failures": [],
+      "sourceUnchanged": true,
+      "proposalControllerUsed": false
+    },
+    {
+      "status": "INACTIVE_PRIVATE_POLICY_SIMULATION_NOT_CONTROLLED_CI",
+      "sourceSha": "8c1e7e3fe9bfd719cce462ac21377916e791f32a",
+      "controllerSha256": "ab88327a434dd1582575cfc9888d0a2bad1757d86c3a3eeb60f4f85c17aaddc7",
+      "testSha256": "71b4b6748a221424d30fc96cd7fa54aebef12c899e5eb242c99def0b23fa5c41",
+      "acceptedMainPolicyInput": "1888f0f707ab382e8886f31bedb5983e1f5a1026",
+      "exitCode": 0,
+      "seconds": 497.33,
+      "paths": [
+        "scripts/governance/assistant-quality-routing.test.mjs",
+        "scripts/governance/controlled-package-ci-path-coverage.test.mjs",
+        "scripts/governance/controlled-package-ci.test.mjs",
+        "scripts/governance/development-bridge.test.mjs",
+        "scripts/governance/development-execution.test.mjs",
+        "scripts/governance/development-workspace.test.mjs",
+        "scripts/governance/ecr-routing.test.mjs",
+        "scripts/governance/governance.test.mjs",
+        "scripts/governance/identity-runtime-onboarding.test.mjs",
+        "scripts/governance/krs-registry-routing.test.mjs",
+        "scripts/governance/package-limits-routing.test.mjs",
+        "scripts/governance/platform-knowledge-ci-admission.test.mjs",
+        "scripts/governance/platform-knowledge-routing.test.mjs",
+        "scripts/governance/platform-source-hub-foundation.test.mjs",
+        "scripts/governance/sg2-staging-release.test.mjs",
+        "scripts/governance/srm-adp-routing.test.mjs",
+        "scripts/governance/srm-release-lifecycle.test.mjs",
+        "/workspaces/sgdev-tasks/platform-knowledge-stage2-technical-20261117/accepted-main-policy-v3-tools/repair-policy-proposal/repair-provenance.test.mjs",
+        "/workspaces/sgdev-tasks/platform-knowledge-stage2-technical-20261117/accepted-main-policy-v3-tools/repair-policy-proposal/knowledge-calendar-peer.test.mjs"
+      ],
+      "summary": [
+        "\u2139 tests 677",
+        "\u2139 pass 677",
+        "\u2139 fail 0",
+        "\u2139 skipped 0"
+      ],
+      "failures": [],
+      "sourceUnchanged": true,
+      "runtimeCalls": 0
+    },
+    {
+      "status": "REAL_PRIVATE_SOURCE_TESTS_NOT_CONTROLLED_CI",
+      "head": "5196726aa142ef928b59f22f26d0689a9a74eb4d",
+      "exitCode": 0,
+      "seconds": 6.65,
+      "paths": [
+        "packages/platform-contracts/test/current-e1-knowledge.test.mjs",
+        "packages/platform-contracts/test/knowledge-operations.test.mjs",
+        "packages/assistant-context-gateway/test/knowledge.test.mjs",
+        "apps/identity-runtime/test/knowledge-authority.test.mjs",
+        "packages/platform-contracts/root-atomic-claim/test/root-atomic-claim.test.mjs"
+      ],
+      "summary": [
+        "\u2139 tests 58",
+        "\u2139 pass 58",
+        "\u2139 fail 0",
+        "\u2139 skipped 0"
+      ],
+      "failures": [],
+      "sourceUnchanged": true,
+      "proposalControllerUsed": false
+    },
+    {
+      "status": "REAL_PRIVATE_SOURCE_TESTS_NOT_CONTROLLED_CI",
+      "head": "5196726aa142ef928b59f22f26d0689a9a74eb4d",
+      "exitCode": 0,
+      "seconds": 123.78,
+      "paths": [
+        "apps/sg-runtime/tests/pci-smart-integrity.test.mjs"
+      ],
+      "summary": [
+        "\u2139 tests 68",
+        "\u2139 pass 68",
+        "\u2139 fail 0",
+        "\u2139 skipped 0"
+      ],
+      "failures": [],
+      "sourceUnchanged": true,
+      "proposalControllerUsed": false
+    }
+  ]
+}
