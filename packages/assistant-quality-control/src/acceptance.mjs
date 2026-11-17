@@ -127,6 +127,7 @@ export async function qualifyLinuxExecutor(){
     markUnknown:async()=>{},releaseUndispatched:async()=>{}}
    const bearerToken=randomBytes(32).toString('hex')
    const broker=createCostBroker({budget,permit,bearerToken,openaiKey:'SYNTHETIC_NOT_A_CREDENTIAL',diagnostics:value=>console.error(JSON.stringify({phase,syntheticOnly:true,...value})),fetcher:async(url,o)=>{
+    try{
     if(url.endsWith('/input_tokens'))return Response.json({object:'response.input_tokens',input_tokens:100})
     require(url==='https://api.openai.com/v1/responses','UNEXPECTED_UPSTREAM');requestCount++;calls++
     const request=JSON.parse(o.body)
@@ -156,6 +157,11 @@ export async function qualifyLinuxExecutor(){
      item={type:'message',role:'assistant',id:'msg_aqc_keyless',content:[{type:'output_text',text:'Synthetic qualification complete'}]}
     }
     return new Response(syntheticResponseEvents(calls,item),{headers:{'content-type':'text/event-stream'}})
+    }catch(error){
+     const codes=new Set(['UNEXPECTED_UPSTREAM','BROKER_CONTRACT_FAILED','CODE_MODE_TOOL_UNAVAILABLE','UNEXPECTED_TOOL_RETRY','TOOL_OUTPUT_MISSING','COMMAND_PROBES_FAILED','NO_DESCENDANT_TO_CANCEL'])
+     console.error(JSON.stringify({event:'AQC_SYNTHETIC_UPSTREAM_REJECTED',phase,syntheticOnly:true,code:codes.has(error?.code)?error.code:'SYNTHETIC_UPSTREAM_FAILED',calls}))
+     throw error
+    }
    }})
    try{
     const brokerUrl=await broker.listen()
