@@ -24,10 +24,18 @@ export function createHttpHandler(boundary: SessionBoundary | null, account: Acc
     try {
       const url = new URL(request.url)
       if (url.pathname.startsWith('/v1/e1/')) {
-        if (url.search || url.hash || !['/v1/e1/ready','/v1/e1/authorize','/v1/e1/source/ready','/v1/e1/source/authorize','/v1/e1/recurring/ready','/v1/e1/recurring/component-ready','/v1/e1/recurring/consent','/v1/e1/recurring/authorize'].includes(url.pathname)) return json(404,{error:'NOT_FOUND'})
+        if (url.search || url.hash || !['/v1/e1/ready','/v1/e1/authorize','/v1/e1/source/ready','/v1/e1/source/authorize','/v1/e1/recurring/ready','/v1/e1/recurring/component-ready','/v1/e1/recurring/consent','/v1/e1/recurring/authorize','/v1/e1/knowledge/ready','/v1/e1/knowledge/human','/v1/e1/knowledge/worker'].includes(url.pathname)) return json(404,{error:'NOT_FOUND'})
         if (!boundary || !currentE1) return json(503,{error:'E1_AUTHORITY_UNAVAILABLE'})
         if (url.origin !== boundary.configuration.origin || url.username || url.password) return json(403,{error:'REQUEST_ORIGIN_REJECTED'})
         if (request.method !== (url.pathname.endsWith('/ready')?'GET':'POST')) return json(405,{error:'METHOD_NOT_ALLOWED'})
+        const knowledge=url.pathname.startsWith('/v1/e1/knowledge/');
+        if(knowledge){
+          if(!currentE1.knowledgeReady||!currentE1.authorizeKnowledgeHuman||!currentE1.authorizeKnowledgeWorker)return json(503,{error:'E1_AUTHORITY_UNAVAILABLE'});
+          if(url.pathname.endsWith('/ready')){const ready=await currentE1.knowledgeReady();return json(ready?200:503,{ready});}
+          if(request.headers.has('cookie')||request.headers.has('origin')||request.headers.get('content-type')!=='application/json')return json(403,{error:'E1_REQUEST_REFUSED'});
+          try{const input=await body(request,24576);return json(200,url.pathname.endsWith('/human')?await currentE1.authorizeKnowledgeHuman(request,input):await currentE1.authorizeKnowledgeWorker(request,input));}
+          catch(error){return json((error as {reasonCode?:string}).reasonCode==='ACCESS_BASIS_INVALID'?403:503,{error:'E1_AUTHORITY_REFUSED'});}
+        }
         const source=url.pathname.startsWith('/v1/e1/source/'),recurring=url.pathname.startsWith('/v1/e1/recurring/')
         if(recurring&&(!currentE1.recurringComponentReady||!currentE1.recurringReady||!currentE1.recurringConsent||!currentE1.authorizeRecurring))return json(503,{error:'E1_AUTHORITY_UNAVAILABLE'})
         if (source && (!currentE1.sourceReady || !currentE1.authorizeSource)) return json(503,{error:'E1_AUTHORITY_UNAVAILABLE'})

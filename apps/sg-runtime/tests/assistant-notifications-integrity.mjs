@@ -1,3 +1,4 @@
+import {knowledgeSourcePredecessor} from '../../architecture-lab/knowledge-source.mjs';
 import {procurementInsightsEditorialPredecessor,EDITORIAL_RECEIPT} from './procurement-insights-editorial-integrity.mjs'
 // Test/build-only exact SG2 presentation continuation. No runtime or access authority.
 import assert from 'node:assert/strict'
@@ -53,6 +54,8 @@ export function notificationCompletionSource(before){
  return IMPORT+before.replace(HEAD,HEAD+PREFIX)
 }
 export function assistantNotificationsPredecessor(current,historical){
+ const knowledge=knowledgeSourcePredecessor(current,historical);
+ if(knowledge)return assistantNotificationsPredecessor(knowledge.previousBytes,historical);
  const editorial=procurementInsightsEditorialPredecessor(current,historical)
  if(editorial){
   const accepted=assistantNotificationsPredecessor(editorial.previousBytes,historical);assert(accepted,'accepted notification source retained')
