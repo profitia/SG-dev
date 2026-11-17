@@ -4,24 +4,24 @@
   "review": {
     "prNumber": 1019,
     "branch": "architecture/platform-knowledge-stage2-engine-20261111",
-    "sourceSha": "191aad1967f4c60d585ff474e51effc77e85d8bd",
-    "baseSha": "983f45a4b60f123a1a456219590667e94718edcb",
-    "treeSha": "5649e6ccaa21cd4a80615fa2a0dd3661b1664584",
+    "sourceSha": "906d102f24d974f1a99cd3d532fec5e0c007ae18",
+    "baseSha": "765e995ca9b1eacef83a562b46e9c23876992e9b",
+    "treeSha": "dee6e1c9a41e3c7aa7281197f9528d763dab7489",
     "inputs": [
       {
         "projectKey": "ARCHITECTURE",
         "prNumber": 1019,
-        "sha": "bf29d5a52569d80af79390e477a94dacc448504f"
+        "sha": "d6a923a77a675e08a36de7470fc79804d93c2289"
       },
       {
         "projectKey": "SG2",
         "prNumber": 1033,
-        "sha": "77d85d6ba2ef0992d2cd62b6f78e17367b2c5a77"
+        "sha": "87b6326a60a7b581db280641545c2a47e8532ea6"
       },
       {
         "projectKey": "SRM",
         "prNumber": 1034,
-        "sha": "44ce434ef3f2956ee033952cb338dc836e443c26"
+        "sha": "836374fed6500310a75d9546ef5026e7c1e29593"
       }
     ],
     "entries": {
@@ -66,7 +66,7 @@
         "surfaceId": "SG2-BASE-019"
       },
       "apps/architecture-lab/knowledge-source-adoption.json": {
-        "sha": "7114c3ef829fb668c8bf2667e94003b58602625e",
+        "sha": "c7316c97681eba32d5fe091142900e370a5c9724",
         "status": "added",
         "mode": "100644",
         "projectKey": "ARCHITECTURE",
@@ -74,7 +74,7 @@
         "surfaceId": "ARCH-BASE-002"
       },
       "apps/architecture-lab/knowledge-source.json": {
-        "sha": "938143695d366223f22722d30528f06e398733b3",
+        "sha": "c028cc1d751a77cea9b39a0414ddd26d8e83c832",
         "status": "added",
         "mode": "100644",
         "projectKey": "ARCHITECTURE",
@@ -82,7 +82,7 @@
         "surfaceId": "ARCH-BASE-002"
       },
       "apps/architecture-lab/knowledge-source.mjs": {
-        "sha": "e3e5cb9c77e6c72be8f2a0438390ed589a5dabe9",
+        "sha": "5b70dc441ee95d0804e5fd8f7a9ecc239601bd83",
         "status": "added",
         "mode": "100644",
         "projectKey": "ARCHITECTURE",
@@ -90,7 +90,7 @@
         "surfaceId": "ARCH-BASE-002"
       },
       "apps/architecture-lab/private-recurring-source.mjs": {
-        "sha": "62ef82a54a13f98754b2e67c9cb3e276a2f7a732",
+        "sha": "067df2e1739c8580f8dd1eb4d3593c9626dc7be1",
         "status": "modified",
         "mode": "100644",
         "projectKey": "ARCHITECTURE",
@@ -114,7 +114,7 @@
         "surfaceId": "SG2-BASE-003"
       },
       "apps/economic-calendar-runtime/package-lock.json": {
-        "sha": "6c8765dee926c3320a7dea9c41ece4c121ddc3bc",
+        "sha": "f8511c55462dcf0a85b3d63a458228de10e1a1b8",
         "status": "modified",
         "mode": "100644",
         "projectKey": "ARCHITECTURE",
@@ -450,7 +450,7 @@
         "surfaceId": "SOURCE-HUB-BASE-001"
       },
       "apps/sg-runtime/knowledge-source-adoption.json": {
-        "sha": "3b872965a51dbe35be131bf1d84f108f2a521cef",
+        "sha": "06d81c359265e2f49b94804b00787f255eeb851f",
         "status": "added",
         "mode": "100644",
         "projectKey": "SG2",
@@ -465,8 +465,16 @@
         "owner": "SG Runtime",
         "surfaceId": "SG2-BASE-001"
       },
+      "apps/sg-runtime/tests/procurement-insights-live-acceptance-source.mjs": {
+        "projectKey": "SG2",
+        "owner": "SG Runtime",
+        "surfaceId": "SG2-BASE-001",
+        "sha": "f0f99d2a62a8b1d53899bd86f6f6b6bcb9f8099b",
+        "status": "modified",
+        "mode": "100644"
+      },
       "apps/srm/knowledge-source-adoption.json": {
-        "sha": "801362151c6c751c86c815e4085edf909210b0dc",
+        "sha": "335af8913b2d20db9fc142306ef45f181d644728",
         "status": "added",
         "mode": "100644",
         "projectKey": "SRM",
@@ -757,33 +765,16 @@
   },
   "provenance": {
     "recordPath": "apps/architecture-lab/knowledge-source.json",
-    "recordSha256": "977e0857fee4fc0a3ab9d83b2d215a0697d4e40bffd0552e6e0f990c75d74604",
-    "previousSourceSha": "38a9fe371e7993b47e2358d297647086ea999428",
+    "recordSha256": "4e815bd8238285419a49a0f3a0718d7356a2ad9aafba214954004acd7f5d9ca9",
+    "previousSourceSha": "765e995ca9b1eacef83a562b46e9c23876992e9b",
     "operationSourceDigest": "8e19bc106da0ff03f6ad2b50e9fd9c3ac9b95ebce1b55a4a18987a8311d50315",
-    "sourceFileCount": 406,
-    "helperSha256": "93c11f45af4d320e7f00a0aeb1819e795a1df20167b32294509c14676dcac4e1",
+    "sourceFileCount": 407,
+    "helperSha256": "3fac0828d75cae159e4bd82b6c8848bba20554bb2cca5100dc71fa242abc5bc2",
     "adoptions": {
       "ARCHITECTURE": "apps/architecture-lab/knowledge-source-adoption.json",
       "SG2": "apps/sg-runtime/knowledge-source-adoption.json",
       "SRM": "apps/srm/knowledge-source-adoption.json"
     }
-  },
-  "controller": {
-    "authorityMain": "983f45a4b60f123a1a456219590667e94718edcb",
-    "originalSha256": "db11261ced02c25e465b784b568e8acbce49bd626865755d7e70c5d548f9fc12",
-    "patchSha256": "661819f7aa79db2ea8abee569b4628723181e23394f59f753f91a3b2da97acb1",
-    "targetPaths": [
-      "scripts/governance/controlled-package-ci.mjs",
-      "scripts/governance/controlled-package-ci.test.mjs",
-      "scripts/governance/platform-knowledge-routing.test.mjs"
-    ],
-    "localTests": {
-      "total": 508,
-      "passed": 508,
-      "failed": 0,
-      "skipped": 0
-    },
-    "activated": false
   },
   "activation": {
     "status": "REQUIRES_SEPARATE_OWNER_GO",
@@ -797,7 +788,8 @@
       "origin": "https://identity-runtime-development.onrender.com",
       "serviceId": "srv-dbcse6jrjlhs73eib3sg",
       "lkgDeployId": "dep-dbq9bn0m7kps738pq75g",
-      "lkgSourceSha": "f78f5867064c96f4497e13bcd53c97af2da2e07a"
+      "lkgSourceSha": "f78f5867064c96f4497e13bcd53c97af2da2e07a",
+      "expectedReleaseSha": "123d4d7df165b73852724d5e09056424f4ce631a"
     },
     "knowledgeDatabase": {
       "projectId": "sparkling-sky-79692560",
@@ -838,59 +830,75 @@
         {
           "scope": "PROFITIA_SHARED",
           "operation": "document.import",
-          "bindingStandard": false
+          "bindingStandard": false,
+          "grantId": "37599555-306d-53c3-b574-ec9e03199edb"
         },
         {
           "scope": "PROFITIA_SHARED",
           "operation": "document.read",
-          "bindingStandard": false
+          "bindingStandard": false,
+          "grantId": "c99fed06-5bb7-5278-9ed5-d663e1c1b6a7"
         },
         {
           "scope": "PROFITIA_SHARED",
           "operation": "document.query",
-          "bindingStandard": false
+          "bindingStandard": false,
+          "grantId": "cd095168-466f-581e-a99c-95fbc0db6912"
         },
         {
           "scope": "PROFITIA_SHARED",
           "operation": "document.publish",
-          "bindingStandard": true
+          "bindingStandard": true,
+          "grantId": "8c2a7a71-3a21-5282-81ac-918a3a875db6"
         },
         {
           "scope": "PROFITIA_SHARED",
           "operation": "document.withdraw",
-          "bindingStandard": false
+          "bindingStandard": false,
+          "grantId": "3e514038-2d93-5f3b-9d07-b88e7a620a52"
         },
         {
           "scope": "PROFITIA_SHARED",
           "operation": "document.delete",
-          "bindingStandard": false
+          "bindingStandard": false,
+          "grantId": "0ff008ce-b3e0-554b-bf6f-7c2176e4911b"
         },
         {
           "scope": "ACCOUNT_PRIVATE",
           "operation": "document.import",
-          "bindingStandard": false
+          "bindingStandard": false,
+          "grantId": "06054739-0493-57d4-a2b0-d6518ae60eb9"
         },
         {
           "scope": "ACCOUNT_PRIVATE",
           "operation": "document.read",
-          "bindingStandard": false
+          "bindingStandard": false,
+          "grantId": "d508ce0a-9300-5f0e-b00a-d868695c84b3"
         },
         {
           "scope": "ACCOUNT_PRIVATE",
           "operation": "document.query",
-          "bindingStandard": false
+          "bindingStandard": false,
+          "grantId": "8b495488-9cf9-5104-8c46-176e3a777252"
         },
         {
           "scope": "ACCOUNT_PRIVATE",
           "operation": "document.withdraw",
-          "bindingStandard": false
+          "bindingStandard": false,
+          "grantId": "dbda47dc-8ad9-5110-ba13-f39eb5f68116"
         },
         {
           "scope": "ACCOUNT_PRIVATE",
           "operation": "document.delete",
-          "bindingStandard": false
+          "bindingStandard": false,
+          "grantId": "2e99c731-2afa-51a7-92ed-6dd4053ce619"
         }
-      ]
+      ],
+      "accountReadback": {
+        "status": "ACTIVE",
+        "version": 1,
+        "activeExternalIdentityBindings": 1
+      }
     },
     "receivers": [
       {
@@ -907,9 +915,19 @@
           "https://platform-knowledge-development-api.onrender.com"
         ],
         "expiresAt": "2026-12-11T23:59:00Z",
-        "logicalDeploymentId": "FINAL_ACCEPTED_MAIN_RELEASE_SHA_WITH_IDENTICAL_REVIEWED_PRODUCT_BYTES",
+        "logicalDeploymentId": "123d4d7df165b73852724d5e09056424f4ce631a",
         "actualRenderDeployIds": "RECORDED_SEPARATELY_AFTER_DEPLOY",
-        "knowledgeSchemaDigest": "9a049aa46804f5fea4e84cb6dcedc4be358ffd983183ac7d21129b663654e9d7"
+        "knowledgeSchemaDigest": "9a049aa46804f5fea4e84cb6dcedc4be358ffd983183ac7d21129b663654e9d7",
+        "binding": {
+          "environment": "development",
+          "applicationId": "platform-knowledge-development-api",
+          "deploymentId": "123d4d7df165b73852724d5e09056424f4ce631a",
+          "projectId": "sparkling-sky-79692560",
+          "branchId": "br-billowing-grass-b9ko5s4f",
+          "databaseName": "platform_knowledge",
+          "role": "platform_knowledge_api",
+          "knowledgeSchemaDigest": "9a049aa46804f5fea4e84cb6dcedc4be358ffd983183ac7d21129b663654e9d7"
+        }
       },
       {
         "kind": "WORKER",
@@ -925,15 +943,26 @@
           "https://platform-knowledge-development-api.onrender.com"
         ],
         "expiresAt": "2026-12-11T23:59:00Z",
-        "logicalDeploymentId": "FINAL_ACCEPTED_MAIN_RELEASE_SHA_WITH_IDENTICAL_REVIEWED_PRODUCT_BYTES",
+        "logicalDeploymentId": "123d4d7df165b73852724d5e09056424f4ce631a",
         "actualRenderDeployIds": "RECORDED_SEPARATELY_AFTER_DEPLOY",
-        "knowledgeSchemaDigest": "9a049aa46804f5fea4e84cb6dcedc4be358ffd983183ac7d21129b663654e9d7"
+        "knowledgeSchemaDigest": "9a049aa46804f5fea4e84cb6dcedc4be358ffd983183ac7d21129b663654e9d7",
+        "binding": {
+          "environment": "development",
+          "applicationId": "platform-knowledge-development-worker",
+          "deploymentId": "123d4d7df165b73852724d5e09056424f4ce631a",
+          "projectId": "sparkling-sky-79692560",
+          "branchId": "br-billowing-grass-b9ko5s4f",
+          "databaseName": "platform_knowledge",
+          "role": "platform_knowledge_worker",
+          "knowledgeSchemaDigest": "9a049aa46804f5fea4e84cb6dcedc4be358ffd983183ac7d21129b663654e9d7"
+        }
       }
     ],
     "workerKey": {
-      "keyId": "pk-development-b012c6ba858a8fc5",
-      "publicKey": "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEARIjNUHF7VMc2GGskHzIClNCKU87U+LFfzfqvbu+AynM=\n-----END PUBLIC KEY-----\n",
+      "keyId": "pk-development-7d109c436139e110",
+      "publicKey": "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEA8UqxljZGZ+eUnoY+mF/vo1fg8S+N+k5rEyxTTIYvdgw=\n-----END PUBLIC KEY-----\n",
       "privateKeyDestination": "EXISTING_RENDER_WORKER_ONLY",
+      "status": "PROPOSED_UNBOUND_NO_AUTHORITY",
       "activated": false
     },
     "resources": {
@@ -951,7 +980,233 @@
     "recoveryDecision": {
       "status": "OWNER_DECISION_REQUIRED",
       "missingEvidence": "Render git-backed image artifact digest is not exposed by observed deploy API, build logs or Dashboard. Base image digest is not application artifact digest.",
-      "proposedLimitedAlternative": "Only this Development activation: retain and verify exact provider deploy IDs, source SHA, nonsecret configuration and Dashboard rollback availability before mutation; fail closed if unavailable. Keep compatible Stage2 worker in retention-only mode after product data exists. Existing24h Neon history plus native PostgreSQL18.6/pgvector0.8.6 disposable migration tests, and an actual owner-role SQL trial rolled back before installation. No global restore and no new cloud resource."
+      "proposedLimitedAlternative": "Only this Development activation: retain and verify exact provider deploy IDs, source SHA, nonsecret configuration and Dashboard rollback availability before mutation; fail closed if unavailable. Keep compatible Stage2 worker in retention-only mode after product data exists. Existing24h Neon history plus native PostgreSQL18.6/pgvector0.8.6 disposable migration tests, and an actual owner-role SQL trial rolled back before installation. No global restore and no new cloud resource.",
+      "dashboardReadback": {
+        "observedAt": "2026-11-17",
+        "apiLive": "dep-dbq71vutlv9c73epgb2g",
+        "workerLive": "dep-dbq72f5g1s2s739m10dg",
+        "identityLive": "dep-dbq9bn0m7kps738pq75g",
+        "retainedSameFoundationApiRollback": "dep-dbq6s5mi0phs73bgeccg",
+        "retainedSameFoundationWorkerRollback": "dep-dbq6sp6i0phs73bgfpmg",
+        "retainedIdentityRollbackExample": "dep-dbpkaiek1f9s73fdeo30",
+        "limitation": "UI exposes Rollback for retained historical deployments; current LIVE version availability must be re-read after replacing it. No rollback was performed."
+      },
+      "configurationPolicy": "Change only the listed bounded keys, preserve existing credentials and unrelated fields. Re-read active deployments and authority immediately before every mutation; stop on foreign live changes. Before data, verified retained provider rollback; after data, compatible frozen Stage2 worker with processing=false keeps retention operating. No destructive schema rollback or shared database restore."
+    },
+    "decisionId": "ARCH-PK-STAGE2-TECHNICAL-GO-20261117",
+    "decisionStatus": "OWNER_GO_REQUIRED",
+    "mandateValidUntil": "2026-11-24T23:59:00Z",
+    "applications": [
+      {
+        "applicationId": "platform-knowledge-development-api",
+        "status": "ACTIVE",
+        "fixedOrganisationId": null,
+        "currentlyPresent": false
+      },
+      {
+        "applicationId": "platform-knowledge-development-worker",
+        "status": "ACTIVE",
+        "fixedOrganisationId": null,
+        "currentlyPresent": false
+      }
+    ],
+    "configuration": {
+      "api": {
+        "serviceId": "srv-dbq6n2m7bikc73dmvs8g",
+        "releaseSha": "123d4d7df165b73852724d5e09056424f4ce631a",
+        "set": {
+          "PK_PROCESSING_ENABLED": "true",
+          "PK_CLERK_PUBLISHABLE_KEY": "PUBLIC_DEVELOPMENT_KEY_FOR_unified-drum-7191.clerk.accounts.dev",
+          "PK_OPENAI_STARTUP_BUDGET_USD": "10",
+          "PK_OPENAI_DOCUMENT_LIMIT_USD": "1"
+        },
+        "database": "existing platform_knowledge_api role and current endpoint; require sslmode=verify-full; retain existing credentials",
+        "preserve": [
+          "AWS_ACCESS_KEY_ID",
+          "AWS_SECRET_ACCESS_KEY",
+          "OPENAI_API_KEY",
+          "PK_S3_BUCKET",
+          "PK_S3_ENDPOINT",
+          "SENTRY_DSN"
+        ]
+      },
+      "worker": {
+        "serviceId": "srv-dbq6njec6qcc738fjf50",
+        "releaseSha": "123d4d7df165b73852724d5e09056424f4ce631a",
+        "set": {
+          "PK_PROCESSING_ENABLED": "true",
+          "PK_E1_WORKER_KEY_ID": "pk-development-7d109c436139e110",
+          "PK_E1_WORKER_PRIVATE_KEY": "PROPOSED_UNBOUND_PRIVATE_KEY_TO_EXISTING_RENDER_WORKER_ONLY",
+          "PK_OPENAI_STARTUP_BUDGET_USD": "10",
+          "PK_OPENAI_DOCUMENT_LIMIT_USD": "1"
+        },
+        "database": "existing platform_knowledge_worker role and current endpoint; require sslmode=verify-full; retain existing credentials",
+        "preserve": [
+          "AWS_ACCESS_KEY_ID",
+          "AWS_SECRET_ACCESS_KEY",
+          "OPENAI_API_KEY",
+          "PK_S3_BUCKET",
+          "PK_S3_ENDPOINT",
+          "SENTRY_DSN"
+        ]
+      },
+      "identity": {
+        "serviceId": "srv-dbcse6jrjlhs73eib3sg",
+        "releaseSha": "123d4d7df165b73852724d5e09056424f4ce631a",
+        "set": {
+          "IDENTITY_RUNTIME_EXPECTED_SOURCE_SHA": "123d4d7df165b73852724d5e09056424f4ce631a"
+        },
+        "preserve": "all unrelated Identity settings, secrets, registrations, grants and optional routes"
+      }
+    },
+    "testingAuthority": {
+      "referenceDocuments": "Existing approved synthetic reference formats; evidence/reference-documents.json pins the actual downloaded native-CI artifact",
+      "providerBudget": "Reuse existing OpenAI allocation: total USD10; USD1 per document; no new key, plan, infrastructure or budget",
+      "negativeTests": "Missing/invalid bearer, invalid/unauthorized scopes, account-private isolation, temporary revoke/expire/restore only this packet's new grants and delegations; no changes to prior unrelated rights",
+      "recoveryTests": "Owner-role trial rolled back before each real migration; disposable test documents; fence and recover this task's jobs; no global database restore",
+      "dataDeletion": "Withdraw and delete only disposable reference sources created by this test; retain tombstones, job/audit history and costs according to the product retention rules",
+      "monitoring": "Real service/job error and API/worker telemetry; inspect Sentry in the existing project; do not count foundation synthetic events as live acceptance",
+      "cicAcg": "Actual accepted CIC knowledge.ts at c0053dcd55a3ed9f74584733627f6e9c130d4b49, actual ACG knowledge adapter at the frozen release, actual Development API; no mock service and no private package-pin replacement"
     }
-  }
+  },
+  "controller": {
+    "authorityMain": "765e995ca9b1eacef83a562b46e9c23876992e9b",
+    "policyCommit": "392136fd4b389370332cfa4284180ad66eb03115",
+    "patchSha256": "9a95d3dc70ff04ebac214bb5fd0e079934ce86522f4192d08bc1046af5994261",
+    "targetFiles": {
+      "scripts/governance/controlled-package-ci.mjs": {
+        "previousSha256": "76ab5f88c83605847cf09ef42de64a07f84274ea3d540d5508bc51e1d9c67d13",
+        "proposedSha256": "643b9363ef742224fca314a9485aef2e4ccee35be33eb5a78230438238491618"
+      },
+      "scripts/governance/controlled-package-ci.test.mjs": {
+        "previousSha256": "dd4c25f7e29483573647437c9dd18fc70e908d7aeb13332dd58c431f31cf0cbf",
+        "proposedSha256": "aa04380dbb27a51583df47dc234f096cbdbcef0eeb55f678564c0ec7e45819a8"
+      },
+      "scripts/governance/platform-knowledge-routing.test.mjs": {
+        "previousSha256": "e77eba7ffe1a41587ce4c4763efdedb5c2f6ddfbc437fc6db9d815f19ac1897c",
+        "proposedSha256": "a742682f9e12ba76f469b3c847df886ac3b936fd5f0666bb2a3d679598ea972d"
+      }
+    },
+    "localTests": {
+      "policyOnly": {
+        "total": 618,
+        "pass": 618,
+        "fail": 0,
+        "skipped": 0
+      },
+      "combinedSource": {
+        "total": 645,
+        "pass": 645,
+        "fail": 0,
+        "skipped": 0
+      }
+    },
+    "activated": false,
+    "genericCloudStandardPreserved": true,
+    "separateClosedReviewReason": "Prepared SDK changes local package versions/peers and includes product workflow/Canon, so ordinary source-admission data cannot authorize this transition. Update the existing bounded PK review against current trusted main; preserve all immutable receipts, private pins, current automatic-token preflight, isolated execution checkout and all prior owner reviews."
+  },
+  "technicalRelease": {
+    "status": "PROPOSED_NOT_PUBLISHED_NOT_APPROVED",
+    "authorityBaseSha": "765e995ca9b1eacef83a562b46e9c23876992e9b",
+    "policySha": "392136fd4b389370332cfa4284180ad66eb03115",
+    "policyTree": "0dd5f4bdd66e5dda73a4ef2656fa2d83affd7d2d",
+    "sourceCompositionSha": "906d102f24d974f1a99cd3d532fec5e0c007ae18",
+    "releaseSha": "123d4d7df165b73852724d5e09056424f4ce631a",
+    "releaseTree": "a771554b18ad7fb0e3101ea4201282f1b54548ca",
+    "inputs": {
+      "sg2": "87b6326a60a7b581db280641545c2a47e8532ea6",
+      "srm": "836374fed6500310a75d9546ef5026e7c1e29593",
+      "architecture": "d6a923a77a675e08a36de7470fc79804d93c2289"
+    },
+    "reviewedSourceFiles": 92,
+    "patchSha256": "9a95d3dc70ff04ebac214bb5fd0e079934ce86522f4192d08bc1046af5994261",
+    "policyFiles": {
+      "scripts/governance/controlled-package-ci.mjs": {
+        "previousSha256": "76ab5f88c83605847cf09ef42de64a07f84274ea3d540d5508bc51e1d9c67d13",
+        "proposedSha256": "643b9363ef742224fca314a9485aef2e4ccee35be33eb5a78230438238491618"
+      },
+      "scripts/governance/controlled-package-ci.test.mjs": {
+        "previousSha256": "dd4c25f7e29483573647437c9dd18fc70e908d7aeb13332dd58c431f31cf0cbf",
+        "proposedSha256": "aa04380dbb27a51583df47dc234f096cbdbcef0eeb55f678564c0ec7e45819a8"
+      },
+      "scripts/governance/platform-knowledge-routing.test.mjs": {
+        "previousSha256": "e77eba7ffe1a41587ce4c4763efdedb5c2f6ddfbc437fc6db9d815f19ac1897c",
+        "proposedSha256": "a742682f9e12ba76f469b3c847df886ac3b936fd5f0666bb2a3d679598ea972d"
+      }
+    },
+    "tests": {
+      "policyOnly": {
+        "total": 618,
+        "pass": 618,
+        "fail": 0,
+        "skipped": 0
+      },
+      "combinedSource": {
+        "total": 645,
+        "pass": 645,
+        "fail": 0,
+        "skipped": 0
+      }
+    }
+  },
+  "continuity": {
+    "hostConversationId": "01a1e7fb-aa2e-7501-b3d7-5f42be90cb14",
+    "tasks": {
+      "ARCHITECTURE": {
+        "taskId": "ARCH-PK-STAGE2-TECHNICAL-CONT-20261117",
+        "pmosTaskId": "cmwkbdly10000ggnmiawtu7vv"
+      },
+      "SG2": {
+        "taskId": "SG2-PK-STAGE2-TECHNICAL-CONT-20261117",
+        "pmosTaskId": "cmwkbdoxs0000ybwgqozg99mx"
+      },
+      "SRM": {
+        "taskId": "SRM-PK-STAGE2-TECHNICAL-CONT-20261117",
+        "pmosTaskId": "cmwkbds8l00006tv1ye701i02"
+      }
+    },
+    "status": "RUNNING; formal Stage2/3 completion not claimed; original task receipts unchanged"
+  },
+  "ci": {
+    "nativeEngine": {
+      "runId": 44038723098,
+      "sourceSha": "d6a923a77a675e08a36de7470fc79804d93c2289",
+      "status": "SUCCESS",
+      "postgres": "18.6",
+      "pgvector": "0.8.6",
+      "parserFormats": 10
+    },
+    "acg": {
+      "runId": 44038723012,
+      "sourceSha": "d6a923a77a675e08a36de7470fc79804d93c2289",
+      "status": "SUCCESS"
+    },
+    "fullGithubCandidate": "PENDING_OWNER_POLICY_ADMISSION; separate owner PRs are not the joint92-file candidate",
+    "localGovernance": {
+      "policyOnly": {
+        "total": 618,
+        "pass": 618,
+        "fail": 0,
+        "skipped": 0
+      },
+      "combinedSource": {
+        "total": 645,
+        "pass": 645,
+        "fail": 0,
+        "skipped": 0
+      }
+    },
+    "runtimeE2e": "NOT_EXECUTED; no paid requests or deployment"
+  },
+  "executionOrder": [
+    "Owner approves this exact packet, policy commit and exact release SHA; record actual approval reference in journal.",
+    "Publish frozen source composition 906d102f24d974f1a99cd3d532fec5e0c007ae18 to existing PR1019 using ordinary fast-forward; preserve separate owner inputs.",
+    "Publish frozen policy commit via current sg2/ policy transport. Run trusted current-main controlled proof, all required PR CI, accept policy normally, then resulting-main validation. No self-activation.",
+    "Publish frozen release SHA to PR1019 (source composition plus accepted policy). Run controlled exact-source proof and all required CI for this exact SHA; accept sources normally and require resulting-main CI PASS.",
+    "Before release, prove the exact release is accepted in authority ancestry, all relevant runtime/dependency bytes equal the accepted authority, unchanged LKG/service states, and fresh gates. If application bytes or release SHA need change, request an amended exact decision; this packet grants no arbitrary rebase/release.",
+    "Perform separate owner-role rolled-back trials, install SQL001 product, SQL015 authority and SQL016 native bindings with exact digests, enroll the two applications, two receivers and eleven finite grants only.",
+    "Configure and deploy existing Identity, Worker and API at the exact approved release, with the normal existing login panel served by API. Verify service SHA, ordinary role boundaries, readiness and real worker.",
+    "Run actual import/processing/persistence/publish/retrieval/CIC/ACG/withdraw and negative/cost/retention/recovery/monitoring acceptance with approved references; record measured facts.",
+    "Write canonical PHR and per-profile PMOS/MEMOROS closeouts for the achieved technical milestone, leaving formal Stage2 and Stage3 criteria intact."
+  ]
 }
