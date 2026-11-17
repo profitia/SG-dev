@@ -14,7 +14,7 @@ test('Broker bounds model/tier/cache/output and rejects project files, remote co
  }
  assert.equal(boundAgentRequest({...request(),tools:[{type:'function',name:'local_shell',parameters:{type:'object'}}]}).tools[0].type,'function')
 })
-async function exercise({limit=false,uncertain=false,missingUsage=false,wrongAuth=false,crlf=false,streamError=false,dispatchDenied=false}={}){
+async function exercise({limit=false,uncertain=false,missingUsage=false,wrongAuth=false,crlf=false,streamError=false,dispatchDenied=false,bodyOverride}={}){
  const events=[];let inference=0
  const budget={assertPermit:async()=>{events.push('permit');if(limit)throw Object.assign(Error('Limit'),{code:'LIMIT_EXCEEDED'})},reserveRequest:async(_,r)=>(events.push('reserve'),{...r,status:'RESERVED'}),dispatchRequest:async()=>{events.push('dispatch');if(dispatchDenied)throw Object.assign(Error('No dispatch'),{code:'IDEMPOTENCY_CONFLICT'})},settleRequest:async()=>{events.push('settle')},markUnknown:async(_,r)=>{events.push('unknown:'+r)},releaseUndispatched:async()=>{events.push('release-undispatched')}}
  const broker=createCostBroker({budget,permit:{permitId:randomUUID()},bearerToken:token,openaiKey:'synthetic-upstream-key-not-a-credential',fetcher:async(url,o)=>{
@@ -29,7 +29,7 @@ async function exercise({limit=false,uncertain=false,missingUsage=false,wrongAut
  }})
  const url=await broker.listen()
  try{
-  const r=await fetch(url+'/responses',{method:'POST',headers:{'content-type':'application/json',Authorization:'Bearer '+(wrongAuth?'b'.repeat(64):token)},body:JSON.stringify(request())});const text=await r.text()
+  const r=await fetch(url+'/responses',{method:'POST',headers:{'content-type':'application/json',Authorization:'Bearer '+(wrongAuth?'b'.repeat(64):token)},body:JSON.stringify(bodyOverride??request())});const text=await r.text()
   return {status:r.status,events,inference,text}
  }finally{await broker.close()}
 }
@@ -70,4 +70,14 @@ test('CLI local client metadata is bounded and discarded before any billable req
  const withLocal=boundAgentRequest({...request(),client_metadata:{'x-codex-session-id':'SYNTHETIC_SESSION_ONLY','x-codex-client':'synthetic'}})
  assert.deepEqual(withLocal,ordinary);assert(!JSON.stringify(withLocal).includes('SYNTHETIC_SESSION_ONLY'))
  for(const client_metadata of [[],{nested:{}},{oversized:'x'.repeat(8193)},Object.fromEntries(Array.from({length:33},(_,i)=>['field'+i,'value']))])assert.throws(()=>boundAgentRequest({...request(),client_metadata}),{code:'CLIENT_METADATA_REJECTED'})
+})
+
+test('CLI durable local tool declarations pass the real broker; hosted, rebound-role and remote frames remain refused',async()=>{
+ const frame={type:'additional_tools',role:'developer',tools:[{type:'namespace',name:'functions',tools:[{type:'custom',name:'exec',format:{type:'grammar',syntax:'lark',definition:'start: /[\\s\\S]+/'}}]}]}
+ const body={...request(),input:[frame,...request().input],client_metadata:{'x-codex-session-id':'SYNTHETIC_LOCAL'}}
+ const bounded=boundAgentRequest(body);assert.deepEqual(bounded.input[0],frame);assert(!Object.hasOwn(bounded,'client_metadata'))
+ const actual=await exercise({bodyOverride:body});assert.equal(actual.status,200);assert.equal(actual.inference,1);assert.deepEqual(actual.events,['permit','count','reserve','dispatch','post','settle'])
+ for(const change of [v=>v.tools=[{type:'web_search'}],v=>v.tools=[{type:'namespace',name:'functions',tools:[{type:'code_interpreter'}]}],v=>v.role='user',v=>v.previous_response_id='resp_remote',v=>v.file_id='file_remote']){
+  const invalid=structuredClone(frame);change(invalid);assert.throws(()=>boundAgentRequest({...request(),input:[invalid]}))
+ }
 })

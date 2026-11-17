@@ -1,9 +1,9 @@
 {
   "schemaVersion": "1.0.0",
-  "taskId": "SG2-PI-E2E-COMPLETION-20261117",
+  "taskId": "SG2-PI-TECHNOLOGY-E2E-20261117",
   "targetEnvironment": "development",
   "scope": "PI_PUBLICATION_NAVIGATION_AND_LOCALE",
-  "previousSourceSha": "df57c042e2fbd60fc14ea7f883f245ea6be8e2ee",
+  "previousSourceSha": "cc448c8428556881c01d56313fb691bf0fe80b8c",
   "sourceDigests": {
     "apps/sg-runtime/components/procurement-insights/workspace.tsx": "961e48f55a8ac92fc0fce9e33bdaced6bb590767cc2fae0341b28f61deaa121f",
     "apps/sg-runtime/components/procurement-insights/reports.tsx": "13d42a6e000e59647b12d4c7fa4877a203979385ecb8e124d92a79ea3f2d747e",
@@ -13,7 +13,7 @@
     "apps/sg-runtime/tests/procurement-insights-notification-navigation.test.tsx": "cb266554ad865ba13a7b044ec4990b89959cf6d6143efc6253fb35916318f3a1",
     "apps/sg-runtime/tests/procurement-insights-e2e-continuation.test.tsx": "e07bd91e982c47c7dd1db5a01dfbe3c71c93781f60ed0566e899ae1494ec70d6",
     "apps/sg-runtime/tests/procurement-insights-completion.test.mjs": "9329b585b56e098f574d54a1821025b7118fc811b2c1cc9a5993e6f4dee1f760",
-    "apps/sg-runtime/tests/assistant-notifications-integrity.mjs": "9b2faec86603a205b8fa66b4fa5f85f2fd90a866aa915cc3b42219a5b0cfe1a9"
+    "apps/sg-runtime/tests/assistant-notifications-integrity.mjs": "77fd900d4b2b5d7ea53dd1e8cf3cc2f2b9d4309a173996e8c8b323820242e0cf"
   },
   "preservedReceipts": {
     "apps/architecture-lab/private-recurring-source-adoption.json": "a79c186897851acb93142949fe7aee19184cbfe68b3acdf51cbda084c00c1254",
@@ -42,7 +42,8 @@
     "apps/srm/private-recurring-source-adoption.json": "88d0252f634eface35b34adf31ac97cbf0d396fcf1fe6da452c74bdc23c7c633",
     "apps/srm/xray-appshell-integration.json": "584f4b2e099966bdfc23ce9ac1bf0d408893010b40459f458c639bdd4c4b1b19",
     "packages/platform-contracts/test/recurring-consent-transport-source.json": "0c9ffe5bfd89cf2bd65cd9adc7ad241a04e7468b5821f97171f4a6c550aaba36",
-    "apps/sg-runtime/assistant-notifications-integration.json": "78d6d34fea2ab1ce18f8dd810cc9906452763e8539aedea685fccbe3881b42cb"
+    "apps/sg-runtime/assistant-notifications-integration.json": "78d6d34fea2ab1ce18f8dd810cc9906452763e8539aedea685fccbe3881b42cb",
+    "apps/sg-runtime/procurement-insights-editorial-integration.json": "a85d4f9bc91a61fe1abd8ed4516d3b64da3b24df17839a1abe52d84718cfcc17"
   },
   "authorisationChanged": false,
   "schemaChanged": false,

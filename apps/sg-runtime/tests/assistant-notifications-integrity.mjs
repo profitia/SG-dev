@@ -1,3 +1,4 @@
+import {procurementInsightsEditorialPredecessor,EDITORIAL_RECEIPT} from './procurement-insights-editorial-integrity.mjs'
 // Test/build-only exact SG2 presentation continuation. No runtime or access authority.
 import assert from 'node:assert/strict'
 import {createHash} from 'node:crypto'
@@ -55,8 +56,8 @@ export function notificationCompletionSource(before){
 // This extends the existing metadata-driven source reader; it grants no runtime rights.
 const UI_SUCCESSOR={
   "receipt": "apps/sg-runtime/procurement-insights-e2e-continuation.json",
-  "base": "df57c042e2fbd60fc14ea7f883f245ea6be8e2ee",
-  "taskId": "SG2-PI-E2E-COMPLETION-20261117",
+  "base": "cc448c8428556881c01d56313fb691bf0fe80b8c",
+  "taskId": "SG2-PI-TECHNOLOGY-E2E-20261117",
   "scope": "PI_PUBLICATION_NAVIGATION_AND_LOCALE",
   "paths": [
     "apps/sg-runtime/components/procurement-insights/workspace.tsx",
@@ -106,7 +107,8 @@ const UI_SUCCESSOR={
     "apps/srm/private-recurring-source-adoption.json",
     "apps/srm/xray-appshell-integration.json",
     "packages/platform-contracts/test/recurring-consent-transport-source.json",
-    "apps/sg-runtime/assistant-notifications-integration.json"
+    "apps/sg-runtime/assistant-notifications-integration.json",
+    "apps/sg-runtime/procurement-insights-editorial-integration.json"
   ]
 }
 function optionalReceipt(current,name){
@@ -139,6 +141,11 @@ export function assistantNotificationsPredecessor(current,historical){
  if(successor){
   const accepted=assistantNotificationsPredecessor(successor.previousBytes,historical);assert(accepted,'unchanged accepted notification predecessor');
   return {...accepted,successor,manifest:{...accepted.manifest,sourceDigests:{...accepted.manifest.sourceDigests,...successor.manifest.sourceDigests,[UI_SUCCESSOR.receipt]:hash(current(UI_SUCCESSOR.receipt))}}};
+ }
+ const editorial=procurementInsightsEditorialPredecessor(current,historical)
+ if(editorial){
+  const accepted=assistantNotificationsPredecessor(editorial.previousBytes,historical);assert(accepted,'accepted notification source retained')
+  return {...accepted,editorial,manifest:{...accepted.manifest,sourceDigests:{...accepted.manifest.sourceDigests,...editorial.manifest.sourceDigests,[EDITORIAL_RECEIPT]:hash(current(EDITORIAL_RECEIPT))}}}
  }
  let bytes
  try{bytes=current(NOTIFICATIONS_RECEIPT)}catch(error){
