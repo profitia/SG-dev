@@ -9,7 +9,7 @@ const root=fileURLToPath(new URL('../../../',import.meta.url)),peer=process.env.
 const current=p=>fs.readFileSync(path.join(RESERVATION_SG2_PATHS.includes(p)?peer:root,p))
 const historical=(sha,p)=>execFileSync('git',['show',sha+':'+p],{cwd:root,stdio:['ignore','pipe','pipe']})
 const pin=()=>String(current(RESERVATION_DERIVED)).match(/ASSISTANT_RESERVATION_SOURCE_SHA='([a-f0-9]{64})'/)?.[1]
-test('exact reservation source closes both owners and preserves every accepted receipt before predecessor projection',()=>{
+test('exact reservation source closes all three owners and preserves every accepted receipt before predecessor projection',()=>{
  const result=assistantReservationPredecessor(current,historical,pin());assert(result)
  assert.equal(result.manifest.outputTokens,2048);assert.equal(result.manifest.sql006Installed,false)
  for(const p of RESERVATION_RECEIPTS)assert.deepEqual(result.previousBytes(p),historical(RESERVATION_BASE,p))
