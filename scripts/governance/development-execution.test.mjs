@@ -1,3 +1,5 @@
+import {resolveProjectProfile} from './project-profile.mjs'
+import {resolveProjectRouting} from './routing-engine.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
@@ -322,5 +324,92 @@ test('source proposal derives actual Git blobs and routing while remaining inert
   assert.throws(()=>assertSourceAdmission(result,{repository:result.repository,actor:'profitia',candidateSha:candidate,currentMainSha:baseline,files:[{filename:sourcePath,sha:result.files[0].blob,status:'modified'}]},root,now))
   fs.mkdirSync(path.join(dir,'Canon'));fs.writeFileSync(path.join(dir,'Canon/policy.md'),'protected');g('add','.');g('commit','-m','protected')
   assert.throws(()=>proposeSourceAdmission({projectKey:'ARCHITECTURE',taskId:'UNRELATED-TASK',baseSha:baseline,sourceSha:g('rev-parse','HEAD'),repositoryRoot:dir}))
+ }finally{fs.rmSync(dir,{recursive:true,force:true})}
+})
+
+function metadataFixture(name,kind='HISTORICAL_EVIDENCE'){
+ const profile=resolveProjectProfile('SG2',root)
+ const route=resolveProjectRouting({profile,targets:[name],repositoryRoot:root}).results[0]
+ assert.equal(route?.projectBoundaryStatus,'ALLOWED')
+ assert.equal(route?.baselineClassification,'ALIGNED')
+ const r=record(),f=facts()
+ r.files=[{path:name,blob:head,status:'modified',mode:'100644',projectKey:'SG2',
+   owner:route.currentOwner,surfaceId:route.matchedSurfaceId}]
+ f.files=[{filename:name,sha:head,status:'modified'}]
+ const p={reviewedMetadata:{recordId:r.id,taskId:r.taskId,
+   entries:{[name]:{sha:head,mode:'100644',kind}}}}
+ return {r,f,p}
+}
+
+test('ordinary Source admission accepts real Next dynamic routes without admitting traversal or encoded paths',()=>{
+ for(const name of ['apps/sg-runtime/app/organisation/[slug]/page.tsx',
+ 'apps/sg-runtime/app/organisation/[...parts]/page.tsx',
+ 'apps/sg-runtime/app/organisation/[[...parts]]/page.tsx']){
+  const {r,f}=metadataFixture(name)
+  assertSourceAdmission(r,f,root,now)
+ }
+ for(const name of ['apps/../sg-runtime/app/[slug]/page.tsx','/apps/sg-runtime/[slug]',
+ 'apps/sg-runtime//[slug]/page.tsx','apps/sg-runtime/%2e%2e/[slug]/page.tsx',
+ 'apps/sg-runtime/..\\escape/[slug]/page.tsx']){
+  const r=record(),f=facts();r.files[0].path=name;f.files[0].filename=name
+  assert.throws(()=>assertSourceAdmission(r,f,root,now),/SOURCE_ADMISSION_FILES_REJECTED/)
+ }
+})
+
+test('protected metadata requires a trusted exact table, matching task and record; candidate self-approval is ignored',()=>{
+ for(const [name,kind] of [['apps/sg-runtime/operation-integration.json','HISTORICAL_EVIDENCE'],
+ ['apps/sg-runtime/.env.example','ENVIRONMENT_TEMPLATE']]){
+  const {r,f,p}=metadataFixture(name,kind)
+  assert.throws(()=>assertSourceAdmission(r,f,root,now),/SOURCE_ADMISSION_FILES_REJECTED/)
+  r.reviewedMetadata=p.reviewedMetadata
+  assert.throws(()=>assertSourceAdmission(r,f,root,now),/SOURCE_ADMISSION_FILES_REJECTED/)
+  assertSourceAdmission(r,f,root,now,p)
+  for(const edit of [
+   x=>x.reviewedMetadata.recordId='other',x=>x.reviewedMetadata.taskId='other',
+   x=>x.reviewedMetadata.entries[name].sha=base,
+   x=>x.reviewedMetadata.entries[name].mode='100755',
+   x=>x.reviewedMetadata.entries[name].kind='EXECUTABLE_POLICY',
+   x=>delete x.reviewedMetadata.entries[name]
+  ]){
+   const changed=structuredClone(p);edit(changed)
+   assert.throws(()=>assertSourceAdmission(r,f,root,now,changed),/SOURCE_ADMISSION_FILES_REJECTED/)
+  }
+  const executable=structuredClone(r);executable.files[0].mode='100755'
+  assert.throws(()=>assertSourceAdmission(executable,f,root,now,p),/SOURCE_ADMISSION_FILES_REJECTED/)
+ }
+})
+
+test('metadata review never admits policy, workflow, AGENTS, credentials or private environment files',()=>{
+ for(const name of ['Canon/registries/new-source.json','scripts/governance/source.json',
+ '.github/workflows/source.json','governance/source.json','AGENTS.md',
+ 'apps/sg-runtime/.npmrc','apps/sg-runtime/.env','apps/sg-runtime/.env.local']){
+  const r=record(),f=facts();r.files[0].path=name;f.files[0].filename=name
+  for(const kind of ['HISTORICAL_EVIDENCE','ENVIRONMENT_TEMPLATE']){
+   const p={reviewedMetadata:{recordId:r.id,taskId:r.taskId,entries:{[name]:{sha:head,mode:'100644',kind}}}}
+   assert.throws(()=>assertSourceAdmission(r,f,root,now,p),/SOURCE_ADMISSION_FILES_REJECTED/)
+  }
+ }
+})
+
+test('physical Source checkout retains Git lineage, complete diff and pristine-source checks with exact metadata review',()=>{
+ const dir=fs.mkdtempSync(path.join(os.tmpdir(),'dev-reviewed-metadata-'))
+ const g=(...args)=>execFileSync('git',args,{cwd:dir,encoding:'utf8',stdio:['ignore','pipe','pipe']}).trim()
+ const name='apps/sg-runtime/operation-integration.json'
+ try{
+  g('init');g('config','user.name','Isolated Test');g('config','user.email','isolated@example.invalid')
+  const file=path.join(dir,name);fs.mkdirSync(path.dirname(file),{recursive:true})
+  fs.writeFileSync(file,'{"synthetic":1}\n');g('add','.');g('commit','-m','base')
+  const initial=g('rev-parse','HEAD')
+  fs.writeFileSync(file,'{"synthetic":2}\n');g('add','.');g('commit','-m','candidate')
+  const candidate=g('rev-parse','HEAD'),blob=g('hash-object',name),{r,p}=metadataFixture(name)
+  r.sourceSha=candidate;r.baseSha=initial;r.files[0].blob=blob;r.validFrom='2020-01-01';r.validUntil='2099-01-01'
+  p.reviewedMetadata.entries[name].sha=blob
+  const state={sha:candidate,actor:r.actor,controlSha:initial,files:[{filename:name,sha:blob,status:'modified'}]}
+  assert.throws(()=>assertSourceCheckout(dir,r,state,root),/SOURCE_ADMISSION_FILES_REJECTED/)
+  assertSourceCheckout(dir,r,state,root,p)
+  fs.writeFileSync(file,'{"dirty":true}\n')
+  assert.throws(()=>assertSourceCheckout(dir,r,state,root,p),/SOURCE_PHYSICAL_FILE_REJECTED/)
+  g('checkout','--',name);fs.writeFileSync(path.join(dir,'extra.txt'),'unreviewed')
+  assert.throws(()=>assertSourceCheckout(dir,r,state,root,p),/SOURCE_CHECKOUT_DIRTY/)
  }finally{fs.rmSync(dir,{recursive:true,force:true})}
 })

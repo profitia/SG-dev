@@ -16,7 +16,7 @@ const sha = /^[a-f0-9]{40}$/
 const deny = code => {throw new Error(code)}
 const git = (cwd, args) => execFileSync('git', args, {cwd, encoding:'utf8', stdio:['ignore','pipe','pipe']}).trim()
 const equal = (a,b) => JSON.stringify(a) === JSON.stringify(b)
-const safePath = name => typeof name === 'string' && /^[a-zA-Z0-9_.@/-]+$/.test(name)
+const safePath = name => typeof name === 'string' && /^[a-zA-Z0-9_.@/\[\]-]+$/.test(name)
   && !name.startsWith('/') && !name.endsWith('/') && name.split('/').every(p => p && p !== '.' && p !== '..')
 const protectedPath = name => /(^|\/)AGENTS\.md$/.test(name)
   || /^(Canon\/|governance\/|scripts\/governance\/|\.github\/|\.devcontainer\/)/.test(name)
@@ -114,7 +114,18 @@ export function trustedAdmissionById(id, governanceRoot = root) {
   return record
 }
 
-export function assertSourceAdmission(record, {repository,actor,candidateSha,currentMainSha,files,repositoryRoot}, governanceRoot = root, now = Date.now()) {
+// Only the trusted controller supplies this separately reviewed table. The
+// candidate and its Source record cannot authorize protected metadata themselves.
+function permitsReviewedMetadata(record,entry,policy){
+ const reviewed=policy?.reviewedMetadata,expected=reviewed?.entries?.[entry.path]
+ if(reviewed?.recordId!==record.id||reviewed?.taskId!==record.taskId
+   ||!expected||expected.sha!==entry.blob||expected.mode!=='100644'||entry.mode!=='100644')return false
+ if(expected.kind==='HISTORICAL_EVIDENCE')return /^Canon\/evidence\/[^/]+\.md$/.test(entry.path)
+   || /^(apps|packages)\//.test(entry.path)&&/(^|\/)[^/]*(integration|compatibility|provenance|source)[^/]*\.json$/.test(entry.path)
+ return expected.kind==='ENVIRONMENT_TEMPLATE'&&/^apps\/[^/]+\/\.env\.example$/.test(entry.path)
+}
+
+export function assertSourceAdmission(record, {repository,actor,candidateSha,currentMainSha,files,repositoryRoot}, governanceRoot = root, now = Date.now(), policy = undefined) {
   if (!record || record.status !== 'ACTIVE' || record.repository !== repository || record.actor !== actor
     || record.targetEnvironment !== 'development' || record.scope !== 'SOURCE_VALIDATION_ONLY'
     || !record.taskId || !record.approvalRef || !sha.test(record.sourceSha ?? '') || !sha.test(record.baseSha ?? '')
@@ -126,7 +137,7 @@ export function assertSourceAdmission(record, {repository,actor,candidateSha,cur
   const names = new Set(), actual = new Map(files.map(f => [f.filename,f]))
   if (actual.size !== files.length) deny('SOURCE_ADMISSION_FILES_REJECTED')
   for (const entry of record.files) {
-    if (!safePath(entry.path) || protectedPath(entry.path) || names.has(entry.path)
+    if (!safePath(entry.path) || (protectedPath(entry.path) && !permitsReviewedMetadata(record,entry,policy)) || names.has(entry.path)
       || !sha.test(entry.blob ?? '') || !['100644','100755'].includes(entry.mode)
       || !['added','modified'].includes(entry.status)) deny('SOURCE_ADMISSION_FILES_REJECTED')
     names.add(entry.path)
@@ -142,10 +153,10 @@ export function assertSourceAdmission(record, {repository,actor,candidateSha,cur
   return record
 }
 
-export function assertSourceCheckout(candidateRoot, record, state, governanceRoot = root) {
+export function assertSourceCheckout(candidateRoot, record, state, governanceRoot = root, policy = undefined) {
   const base = fs.realpathSync(candidateRoot)
   if (base !== path.resolve(candidateRoot) || git(base,['rev-parse','HEAD']) !== state.sha) deny('SOURCE_CHECKOUT_REJECTED')
-  assertSourceAdmission(record,{repository:record.repository,actor:state.actor,candidateSha:state.sha,currentMainSha:state.controlSha,files:state.files},governanceRoot)
+  assertSourceAdmission(record,{repository:record.repository,actor:state.actor,candidateSha:state.sha,currentMainSha:state.controlSha,files:state.files},governanceRoot,Date.now(),policy)
   // Preserve source lineage and require current authority to be incorporated.
   for (const [ancestor,head] of [[record.sourceSha,state.sha],[record.baseSha,record.sourceSha],[state.controlSha,state.sha]]) {
     try {git(base,['merge-base','--is-ancestor',ancestor,head])} catch {deny('SOURCE_BASE_OR_LINEAGE_REJECTED')}
