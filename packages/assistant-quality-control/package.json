@@ -7,7 +7,9 @@
     "test": "node --test test/*.test.mjs"
   },
   "dependencies": {
+    "@sentry/node": "11.13.0",
     "pg": "8.23.1",
+    "posthog-node": "5.74.0",
     "typescript": "5.9.3"
   }
 }

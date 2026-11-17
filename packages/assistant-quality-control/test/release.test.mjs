@@ -117,3 +117,47 @@ test('GitHub publisher verifies internal owner, repository, base and head',async
  const g=createQualityGitHub({token:'synthetic',fetchImpl:async()=>Response.json(p)})
  await assert.rejects(()=>g.pull(3,{headSha:sha,baseSha:old}),{code:'GITHUB_PR_IDENTITY_INVALID'})
 })
+
+const qualificationNonce='12345678-1234-4234-8234-123456789abc'
+const qualificationRun=(extra={})=>({id:42,head_sha:sha,head_branch:'main',path:'.github/workflows/assistant-quality-repair.yml',event:'workflow_dispatch',run_attempt:1,
+ repository:{full_name:'profitia/SG-dev'},actor:{login:'profitia'},triggering_actor:{login:'profitia'},display_title:'AQC '+qualificationNonce,status:'in_progress',conclusion:null,...extra})
+test('qualification dispatch selects only exact current main and posts once without inventing a run ID',async()=>{
+ const calls=[];const g=createQualityGitHub({token:'synthetic',fetchImpl:async(url,o)=>{
+  calls.push({url,o});return o.method==='POST'?new Response(null,{status:204}):Response.json({object:{sha}})
+ }})
+ assert.deepEqual(await g.dispatchQualification({sourceSha:sha,nonce:qualificationNonce}),{state:'UNKNOWN',sourceSha:sha,nonce:qualificationNonce})
+ const p=calls.filter(x=>x.o.method==='POST');assert.equal(p.length,1);assert(p[0].url.endsWith('/actions/workflows/assistant-quality-repair.yml/dispatches'))
+ assert.deepEqual(JSON.parse(p[0].o.body),{ref:'main',inputs:{mode:'keyless-qualify',nonce:qualificationNonce}})
+})
+test('qualification stale base and malformed nonce never dispatch; uncertain POST is not retried',async()=>{
+ let posts=0
+ const fetchImpl=async(_url,o)=>{if(o.method==='POST'){posts++;throw Error('lost response')}return Response.json({object:{sha}})}
+ const g=createQualityGitHub({token:'synthetic',fetchImpl})
+ await assert.rejects(g.dispatchQualification({sourceSha:old,nonce:qualificationNonce}),{code:'BASE_CHANGED'})
+ await assert.rejects(g.dispatchQualification({sourceSha:sha,nonce:'invalid'}),{code:'GITHUB_INPUT_INVALID'});assert.equal(posts,0)
+ await assert.rejects(g.dispatchQualification({sourceSha:sha,nonce:qualificationNonce}),{code:'DELIVERY_UNCERTAIN'});assert.equal(posts,1)
+})
+test('cancellation checks the real run identity and distinguishes accepted cancellation from stopped executor',async()=>{
+ for(const status of ['in_progress','completed']){
+  let posts=0;const g=createQualityGitHub({token:'synthetic',fetchImpl:async(url,o)=>{
+   if(o.method==='POST'){posts++;assert(url.endsWith('/actions/runs/42/cancel'));return new Response(null,{status:202})}
+   return Response.json(qualificationRun({status,conclusion:status==='completed'?'cancelled':null}))
+  }})
+  const r=await g.cancelQualification({runId:'42',sourceSha:sha,nonce:qualificationNonce})
+  assert.equal(r.state,status==='completed'?'COMPLETE':'CANCEL_REQUESTED');assert.equal(posts,status==='completed'?0:1)
+  assert.notEqual(r.state,'CONFIRMED_STOPPED');assert.equal(r.effects,undefined)
+ }
+ for(const drift of [{head_sha:old},{run_attempt:2},{actor:{login:'other'}},{head_branch:'foreign'},{display_title:'AQC different'}]){
+  let posts=0;const g=createQualityGitHub({token:'synthetic',fetchImpl:async(_url,o)=>{if(o.method==='POST')posts++;return Response.json(qualificationRun(drift))}})
+  await assert.rejects(g.cancelQualification({runId:'42',sourceSha:sha,nonce:qualificationNonce}),{code:'WORKFLOW_PROVENANCE_MISMATCH'});assert.equal(posts,0)
+ }
+})
+test('lost dispatch response is reconciled by immutable source and nonce without another POST',async()=>{
+ let posts=0,found=false;const g=createQualityGitHub({token:'synthetic',fetchImpl:async(url,o)=>{
+  if(o.method==='POST'){posts++;found=true;throw Error('response lost')}
+  if(url.includes('/git/ref/'))return Response.json({object:{sha}})
+  return Response.json({workflow_runs:found?[qualificationRun()]:[]})
+ }})
+ await assert.rejects(g.dispatchQualification({sourceSha:sha,nonce:qualificationNonce}),{code:'DELIVERY_UNCERTAIN'})
+ assert.deepEqual(await g.findQualification({sourceSha:sha,nonce:qualificationNonce}),{state:'RUNNING',runId:'42',conclusion:null});assert.equal(posts,1)
+})
