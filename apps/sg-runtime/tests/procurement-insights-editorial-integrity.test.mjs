@@ -5,8 +5,12 @@ import {execFileSync} from 'node:child_process'
 import {createHash} from 'node:crypto'
 import {procurementInsightsEditorialPredecessor,EDITORIAL_RECEIPT,EDITORIAL_BASE,EDITORIAL_PATHS} from './procurement-insights-editorial-integrity.mjs'
 import {assistantM2Predecessor,oilReportSerializationPredecessor} from './assistant-m2-integrity.mjs'
-const root=new URL('../../../',import.meta.url),current=p=>fs.readFileSync(new URL(p,root))
+import {procurementInsightsUiPredecessor} from './assistant-notifications-integrity.mjs'
+const root=new URL('../../../',import.meta.url),physical=p=>fs.readFileSync(new URL(p,root))
 const blobs=new Map(),historical=(sha,p)=>{const key=sha+':'+p;if(!blobs.has(key))blobs.set(key,execFileSync('git',['show',key],{cwd:root,stdio:['ignore','pipe','pipe']}));return blobs.get(key)}
+// Authenticate the complete current UI correction before running this immutable editorial stage.
+// No receipt is rewritten and no historical source is presented as current runtime.
+const ui=procurementInsightsUiPredecessor(physical,historical),current=ui?.previousBytes??physical
 const hash=b=>createHash('sha256').update(b).digest('hex')
 const manifest=()=>JSON.parse(current(EDITORIAL_RECEIPT))
 const withManifest=(a,read=current)=>p=>p===EDITORIAL_RECEIPT?Buffer.from(JSON.stringify(a)):read(p)

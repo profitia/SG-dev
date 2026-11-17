@@ -52,7 +52,105 @@ export function notificationCompletionSource(before){
  assert.equal(before.split(HEAD).length,2,'one existing completion entry point')
  return IMPORT+before.replace(HEAD,HEAD+PREFIX)
 }
+// Current UI bytes are verified before unchanged historical acceptance checks.
+// This extends the existing metadata-driven source reader; it grants no runtime rights.
+const UI_SUCCESSOR={
+  "receipt": "apps/sg-runtime/procurement-insights-e2e-continuation.json",
+  "base": "cc448c8428556881c01d56313fb691bf0fe80b8c",
+  "taskId": "SG2-PI-TECHNOLOGY-E2E-20261117",
+  "scope": "PI_PUBLICATION_NAVIGATION_LOCALE_AND_READER_COMPATIBILITY",
+  "paths": [
+    "apps/sg-runtime/components/procurement-insights/workspace.tsx",
+    "apps/sg-runtime/components/procurement-insights/reports.tsx",
+    "apps/sg-runtime/components/procurement-insights/observation-form.tsx",
+    "apps/sg-runtime/components/procurement-insights/statistics.tsx",
+    "apps/sg-runtime/components/procurement-insights/localization.ts",
+    "apps/sg-runtime/tests/procurement-insights-notification-navigation.test.tsx",
+    "apps/sg-runtime/tests/procurement-insights-e2e-continuation.test.tsx",
+    "apps/sg-runtime/tests/procurement-insights-completion.test.mjs",
+    "apps/sg-runtime/tests/assistant-notifications-integrity.mjs",
+    "apps/sg-runtime/lib/procurement-insights/report-markdown.ts",
+    "apps/sg-runtime/tests/procurement-insights-report-markdown.test.ts",
+    "apps/sg-runtime/tests/procurement-insights-editorial-integrity.test.mjs"
+  ],
+  "pins": {
+    "apps/sg-runtime/components/procurement-insights/workspace.tsx": "961e48f55a8ac92fc0fce9e33bdaced6bb590767cc2fae0341b28f61deaa121f",
+    "apps/sg-runtime/components/procurement-insights/reports.tsx": "383be06467b54901a43ab081f030d4ecc2018828a2add09d1c73a8c0dc33061d",
+    "apps/sg-runtime/components/procurement-insights/observation-form.tsx": "0fc252d57e25502c2440939a5bb2ae5a7065130feb714b872f0ff4ff8c2445c5",
+    "apps/sg-runtime/components/procurement-insights/statistics.tsx": "3b822985e383f357c057763dcbbc05c89756302ae68ac3b47cc9df5829093248",
+    "apps/sg-runtime/components/procurement-insights/localization.ts": "34a9c1d254475ef98a68cf9c4b3793ab6ad2e304c4c13df659ed61584ed6619e",
+    "apps/sg-runtime/tests/procurement-insights-notification-navigation.test.tsx": "cb266554ad865ba13a7b044ec4990b89959cf6d6143efc6253fb35916318f3a1",
+    "apps/sg-runtime/tests/procurement-insights-e2e-continuation.test.tsx": "5f5bf0cb3b7124faa6bfb64b69873fb04b96679f44de293149ae63c52038693a",
+    "apps/sg-runtime/tests/procurement-insights-completion.test.mjs": "9329b585b56e098f574d54a1821025b7118fc811b2c1cc9a5993e6f4dee1f760",
+    "apps/sg-runtime/lib/procurement-insights/report-markdown.ts": "f5c2b040c2e0dff1e9d54b87a1a707d6f460a9802f8b41d4900af971bad902cf",
+    "apps/sg-runtime/tests/procurement-insights-report-markdown.test.ts": "09e898985bd22273272d46a8d7926211f27ecfd4d4d50a168b48db8f789a1ca5",
+    "apps/sg-runtime/tests/procurement-insights-editorial-integrity.test.mjs": "2b39d1d6396a8c6334d4fc2c8436604fc142edd43f7b8ec755f35f4f0c4c8b9e"
+  },
+  "preserved": [
+    "apps/architecture-lab/private-recurring-source-adoption.json",
+    "apps/architecture-lab/private-recurring-source.json",
+    "apps/sg-runtime/adp-integration.json",
+    "apps/sg-runtime/assistant-context-integration.json",
+    "apps/sg-runtime/assistant-ecr-integration.json",
+    "apps/sg-runtime/assistant-ecr-precision-integration.json",
+    "apps/sg-runtime/assistant-ecr-week-integration.json",
+    "apps/sg-runtime/assistant-markdown-integration.json",
+    "apps/sg-runtime/assistant-send-arrow-integration.json",
+    "apps/sg-runtime/development-integration.json",
+    "apps/sg-runtime/market-calendar-integration.json",
+    "apps/sg-runtime/oil-renderer-integration.json",
+    "apps/sg-runtime/operation-integration.json",
+    "apps/sg-runtime/private-recurring-source-adoption.json",
+    "apps/sg-runtime/procurement-insights-completion-integration.json",
+    "apps/sg-runtime/procurement-insights-integration.json",
+    "apps/sg-runtime/procurement-insights-live-acceptance.json",
+    "apps/sg-runtime/procurement-insights-shell-integration.json",
+    "apps/sg-runtime/registration-stage-i-integration.json",
+    "apps/sg-runtime/xray-appshell-integration.json",
+    "apps/srm/assistant-context-integration.json",
+    "apps/srm/development-integration.json",
+    "apps/srm/operation-integration.json",
+    "apps/srm/private-recurring-source-adoption.json",
+    "apps/srm/xray-appshell-integration.json",
+    "packages/platform-contracts/test/recurring-consent-transport-source.json",
+    "apps/sg-runtime/assistant-notifications-integration.json",
+    "apps/sg-runtime/procurement-insights-editorial-integration.json"
+  ]
+}
+function optionalReceipt(current,name){
+ try{return current(name)}catch(e){
+  const text=String(e?.stderr??e?.message??'');
+  if(e?.code==='ENOENT'||e?.status===128&&["' does not exist in ","' exists on disk, but not in "].some(s=>text.includes("'"+name+s)))return null;
+  throw e;
+ }
+}
+function sourceSuccessor(current,historical,config){
+ const bytes=optionalReceipt(current,config.receipt);if(bytes===null)return null;
+ const a=JSON.parse(bytes);
+ assert.deepEqual(Object.keys(a).sort(),['schemaVersion','taskId','targetEnvironment','scope','previousSourceSha','sourceDigests','preservedReceipts','authorisationChanged','schemaChanged','modelChanged','policiesChanged','providerCallsPerformed','deploymentPerformed'].sort());
+ assert.equal(a.schemaVersion,'1.0.0');assert.equal(a.taskId,config.taskId);assert.equal(a.targetEnvironment,'development');assert.equal(a.scope,config.scope);assert.equal(a.previousSourceSha,config.base);
+ for(const flag of ['authorisationChanged','schemaChanged','modelChanged','policiesChanged','providerCallsPerformed','deploymentPerformed'])assert.equal(a[flag],false,flag);
+ assert.deepEqual(Object.keys(a.sourceDigests).sort(),[...config.paths].sort());
+ for(const p of config.paths){assert.match(a.sourceDigests[p],/^[a-f0-9]{64}$/);assert.equal(hash(current(p)),a.sourceDigests[p],'current successor bytes '+p)}
+ for(const [p,pin]of Object.entries(config.pins))assert.equal(a.sourceDigests[p],pin,'fixed reviewed consumer bytes '+p);
+ assert.deepEqual(Object.keys(a.preservedReceipts).sort(),[...config.preserved].sort());
+ for(const p of config.preserved){assert.equal(hash(current(p)),a.preservedReceipts[p]);assert.equal(hash(historical(config.base,p)),a.preservedReceipts[p],'unchanged predecessor receipt '+p)}
+ const mapped=new Set(config.paths),cache=new Map();
+ return {manifest:a,previousBytes:p=>{
+  if(p===config.receipt)throw missing(p);if(!mapped.has(p))return current(p);
+  if(!cache.has(p)){try{cache.set(p,Buffer.from(historical(config.base,p)))}catch(e){const text=String(e?.stderr??e?.message??'');if(e?.code==='ENOENT'||e?.status===128&&["' does not exist in ","' exists on disk, but not in "].some(s=>text.includes("'"+p+s)))throw missing(p);throw e}}
+  return Buffer.from(cache.get(p));
+ }};
+}
+export function procurementInsightsUiPredecessor(current,historical){
+ return sourceSuccessor(current,historical,UI_SUCCESSOR);
+}
 export function assistantNotificationsPredecessor(current,historical){
+ const successor=procurementInsightsUiPredecessor(current,historical);
+ if(successor){
+  const accepted=assistantNotificationsPredecessor(successor.previousBytes,historical);assert(accepted,'unchanged accepted notification predecessor');
+  return {...accepted,successor,manifest:{...accepted.manifest,sourceDigests:{...accepted.manifest.sourceDigests,...successor.manifest.sourceDigests,[UI_SUCCESSOR.receipt]:hash(current(UI_SUCCESSOR.receipt))}}};
+ }
  const editorial=procurementInsightsEditorialPredecessor(current,historical)
  if(editorial){
   const accepted=assistantNotificationsPredecessor(editorial.previousBytes,historical);assert(accepted,'accepted notification source retained')
