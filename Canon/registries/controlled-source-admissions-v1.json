@@ -965,6 +965,49 @@
           "surfaceId": "SG2-BASE-001"
         }
       ]
+    },
+    {
+      "id": "SG2:SG2-PI-TECHNOLOGY-E2E-20261117:CIC-REPORT-INGRESS",
+      "status": "ACTIVE",
+      "repository": "profitia/SG-dev",
+      "actor": "profitia",
+      "taskId": "SG2-PI-TECHNOLOGY-E2E-20261117",
+      "targetEnvironment": "development",
+      "scope": "SOURCE_VALIDATION_ONLY",
+      "approvalRef": "owner-decision:01a1e7fd-01d1-7973-b3c3-8188664826c3:PI-CIC-INGRESS-91FDC-3-SOURCE-VALIDATION-20261117",
+      "sourceSha": "91fdc9730ef236a5924d7160a3ac3c7a12dd21e1",
+      "baseSha": "0c311a197e2f19bc35c953e34e095a1ab92c254b",
+      "validFrom": "2026-11-17T20:16:08.139263Z",
+      "validUntil": "2026-11-23T22:59:00.000Z",
+      "files": [
+        {
+          "path": "apps/sg-runtime/lib/assistant/published-report-request.ts",
+          "blob": "0b64eef8c25ee93a871e6332731662159c33da35",
+          "mode": "100644",
+          "status": "added",
+          "projectKey": "SG2",
+          "owner": "SG Runtime",
+          "surfaceId": "SG2-BASE-001"
+        },
+        {
+          "path": "apps/sg-runtime/lib/assistant/sources.ts",
+          "blob": "f6dee8faf32a4ba3699e2194ab0b7b1bfde32bed",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SG2",
+          "owner": "SG Runtime",
+          "surfaceId": "SG2-BASE-001"
+        },
+        {
+          "path": "apps/sg-runtime/tests/assistant-published-report-request.test.ts",
+          "blob": "3fd50fc65c1fcf4c776877a2ad1443e8ecef8ef0",
+          "mode": "100644",
+          "status": "added",
+          "projectKey": "SG2",
+          "owner": "SG Runtime",
+          "surfaceId": "SG2-BASE-001"
+        }
+      ]
     }
   ],
   "authority": "Accepted trusted-main data only. Candidate records never authorize themselves. Existing closed reviews and historical receipts remain unchanged."
