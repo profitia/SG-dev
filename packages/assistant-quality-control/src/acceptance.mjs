@@ -143,7 +143,10 @@ export async function qualifyLinuxExecutor(){
      const outputs=request.input.filter(i=>['function_call_output','custom_tool_call_output'].includes(i.type))
      require(outputs.length>0,'TOOL_OUTPUT_MISSING')
      const result=JSON.stringify(outputs)
-     if(phase==='tool-loop')require(result.includes('AQC_KEYLESS_TOOL_PROBES_PASS'),'COMMAND_PROBES_FAILED')
+     if(phase==='tool-loop'){
+      if(!result.includes('AQC_KEYLESS_TOOL_PROBES_PASS'))console.error(JSON.stringify({event:'AQC_SYNTHETIC_TOOL_FAILURE',syntheticOnly:true,output:result.replaceAll(bearerToken,'[REDACTED]').slice(-6000)}))
+      require(result.includes('AQC_KEYLESS_TOOL_PROBES_PASS'),'COMMAND_PROBES_FAILED')
+     }
      else{
       require(scope,'NO_DESCENDANT_TO_CANCEL')
       const marker=scope.work+'/aqc-cancellation-probe'
