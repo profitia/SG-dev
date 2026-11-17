@@ -1,0 +1,38 @@
+{
+  "schemaVersion": "1.0",
+  "repository": "profitia/SG-dev",
+  "manifestPath": "Canon/registries/governance-manifest-v2.json",
+  "successors": [
+    {
+      "id": "SG2-PI-EDITORIAL-20261117",
+      "status": "ACTIVE",
+      "scope": "APPEND_ONLY_CANON_DOCUMENTATION",
+      "approvalRef": "https://github.com/profitia/SG-dev/pull/1101",
+      "sourceSha": "1dc0c05e52e8f4b78779ec3d0e532975ed4fa354",
+      "previousSourceSha": "80325d0cad8e65057952a3ffddb0ca00f51e0d35",
+      "previousManifestSha256": "7f5498afa10f3edaf0b364ca7bf4576de5dc8100e61bc4fc2773c845b771e2a4",
+      "manifestSha256": "d8ddddd7b39b6b67ed7e4ca2b4407a47a4470497465f790a67be301ea4dcccd8",
+      "manifestVersion": "3.52.0",
+      "appendedDocuments": [
+        {
+          "id": "procurement-insights-narrative-and-editorial-canon",
+          "version": "1.0",
+          "path": "Canon/v1.0-procurement-insights-narrative-and-editorial-canon.md",
+          "status": "ACTIVE",
+          "loadOrder": 526,
+          "owner": "Governance Source Layer / Procurement Insights Product Owner",
+          "appliesTo": [
+            "SG2",
+            "ARCHITECTURE"
+          ],
+          "dependsOn": [
+            "agent-execution-canon"
+          ]
+        }
+      ],
+      "documentDigests": {
+        "Canon/v1.0-procurement-insights-narrative-and-editorial-canon.md": "666f04de2b454cb14c55c72c603659607693bb0b2ba8e7cf23f7f6f192fb67c8"
+      }
+    }
+  ]
+}
