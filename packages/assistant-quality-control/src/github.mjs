@@ -90,8 +90,14 @@ export function createQualityGitHub({token,fetchImpl=fetch,publisherEnabled=fals
    const m=assertVerifiedRepairManifest(manifest)
    require(typeof verifyIndependent==='function'&&typeof patch==='object'&&patch?.incidentId===m.incidentId
     &&patch.baseSha===m.baseSha&&patch.manifestSha256===documentDigest(m)&&patch.gateSetSha256===m.gateSetSha256
-    &&Array.isArray(patch.files)&&patch.files.length===2,'PATCH_BINDING_MISMATCH')
-   await verifyIndependent({manifest:m,patch,verification})
+    &&Array.isArray(patch.files)&&patch.files.length===2&&Buffer.byteLength(JSON.stringify(patch.files))<=32768
+    &&new Set(patch.files.map(f=>f?.path)).size===2
+    &&patch.files.every(f=>m.allowedPaths.includes(f?.path)&&typeof f.content==='string'&&hash(f.content)===f.afterSha256)
+    &&verification?.result==='PASS'&&verification.artifactSha256===documentDigest(patch)
+    &&/^[a-f0-9]{64}$/.test(verification.proofSha256??''),'PATCH_BINDING_MISMATCH')
+   const independent=await verifyIndependent({manifest:m,patch,verification})
+   require(independent?.verified===true&&independent.proofSha256===verification.proofSha256
+    &&independent.artifactSha256===verification.artifactSha256,'INDEPENDENT_PATCH_PROOF_REQUIRED')
    require(await main()===m.baseSha,'BASE_CHANGED')
    const branch='sg2/quality-control-'+m.incidentId
    const commit=await get('/git/commits/'+m.baseSha);require(sha(commit?.tree?.sha),'GITHUB_SOURCE_INVALID')
@@ -107,7 +113,7 @@ export function createQualityGitHub({token,fetchImpl=fetch,publisherEnabled=fals
    require(sha(c?.sha)&&c.tree?.sha===t.sha,'GITHUB_COMMIT_INVALID')
    require(await main()===m.baseSha,'BASE_CHANGED')
    await write('/git/refs',{ref:'refs/heads/'+branch,sha:c.sha})
-   const p=await write('/pulls',{title:'Controlled CIC '+m.repairClass+' repair',head:branch,base:'main',draft:true,
+   const p=await write('/pulls',{title:'Controlled CIC '+m.repairClass+' repair',head:branch,base:'main',draft:false,
     body:'Synthetic controlled Stage 1 repair. Independent verification '+verification.proofSha256+'. No private QA payload is included. Required exact-source CI and release gates remain mandatory.'})
    require(number(p?.number)&&p.head?.sha===c.sha,'GITHUB_PR_IDENTITY_INVALID')
    return {result:'PR_READY',prNumber:p.number,headSha:c.sha,artifactSha256:verification.artifactSha256}

@@ -34,7 +34,7 @@ export function createQualityRelease({token,fetchImpl=fetch,promotionEnabled=fal
  async function descriptor(){
   const s=await request('')
   require(s?.id===SERVICE&&s.ownerId===WORKSPACE&&s.type==='web_service'&&s.branch==='main'
-   &&s.repo==='https://github.com/profitia/SG-dev'&&s.serviceDetails?.url==='https://dev-sg2.spendguru.app','RELEASE_TARGET_MISMATCH')
+   &&s.repo==='https://github.com/profitia/SG-dev'&&s.environmentId==='evm-dap98hm0tbcc738rro10'&&s.serviceDetails?.url==='https://sg2-development-runtime.onrender.com','RELEASE_TARGET_MISMATCH')
   require(s.autoDeploy==='no','AUTOMATIC_DEPLOYMENT_NOT_DISABLED')
   return {serviceId:SERVICE,workspaceId:WORKSPACE,promotionEnabled}
  }

@@ -6,7 +6,7 @@ const sha='a'.repeat(40),old='b'.repeat(40),digest='c'.repeat(64)
 const oldId='dep-aaaaaaaaaaaaaaaaaaaa',newId='dep-bbbbbbbbbbbbbbbbbbbb',foreignId='dep-cccccccccccccccccccc'
 const live=(id=oldId,source=old,status='live')=>({id,status,commit:{id:source}})
 const service={id:'srv-dapa3tid0e5s73f8bc5g',ownerId:'tea-d7lps8rbc2fs73cn80dg',type:'web_service',branch:'main',
- repo:'https://github.com/profitia/SG-dev',autoDeploy:'no',serviceDetails:{url:'https://dev-sg2.spendguru.app'}}
+ repo:'https://github.com/profitia/SG-dev',autoDeploy:'no',environmentId:'evm-dap98hm0tbcc738rro10',serviceDetails:{url:'https://sg2-development-runtime.onrender.com'}}
 const proof=async({sourceSha})=>({verified:true,sourceSha,proofSha256:digest,configurationSha256:digest})
 function fixture({enabled=true,runtime=proof}={}){
  const calls=[];let current=live(),behavior=null
