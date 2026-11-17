@@ -53,10 +53,12 @@
       "autoDeploy": false,
       "blueprint": "packages/assistant-quality-control/render.yaml",
       "initialMode": "TECHNICAL_READINESS",
-      "placement": "Existing SG2 Development environment; verify actual environmentId before readiness claim"
+      "placement": "Create only the reviewed worker, then move that new resource into existing Development evm-dap98hm0tbcc738rro10; no adoption or reconfiguration of existing services"
     },
     "autoSync": false,
-    "existingResourcesAdopted": false
+    "existingResourcesAdopted": false,
+    "projectId": "prj-dap98ddg1s2s739ssatg",
+    "projectName": "SpendGuru 2.0 Actual"
   },
   "neon": {
     "decisionRequired": true,
@@ -169,7 +171,13 @@
       "preferredCredential": "job-scoped GITHUB_TOKEN in an independent trusted main-only job"
     },
     "renderPublisherTargetServiceId": "srv-dapa3tid0e5s73f8bc5g",
-    "runtimeCredentialProvisioningVerified": false
+    "runtimeCredentialProvisioningVerified": true,
+    "renderPublisherProvisioning": {
+      "observedAt": "2026-11-17",
+      "accountUi": "Classic API key form only; no scopes offered. Workspace settings expose no scoped key creation. No key created.",
+      "technicalDeployment": "Existing connected Render capability; no persistent publisher key needed for authorised engineering deployment",
+      "autonomousPromotion": "Remains disabled; no broad classic API key installed. A provider-scoped credential must be available and explicitly authorised before automated publishing."
+    }
   },
   "costs": {
     "modelWindowStarted": false,
@@ -192,7 +200,7 @@
     ]
   },
   "release": {
-    "decisionRequired": true,
+    "decisionRequired": false,
     "sourceSelectionDelegationRequested": false,
     "exactShaRequired": true,
     "liveLkgMustBeCaptured": true,
@@ -208,9 +216,7 @@
     "existingProductDeploymentAuthority": "Current explicit user request to achieve real Development technical readiness; record selected exact validated SHA before each release"
   },
   "requiredBeforeDecisionRequest": [
-    "Verify required runtime credential provisioning route",
-    "Obtain the reviewed Render plan",
-    "Refresh protected proposal with current main and publish the complete reviewable decision packet"
+    "Obtain the Render plan from the published proposed Blueprint; applying remains a separate owner decision"
   ],
   "safeguards": {
     "paidRepairsEnabled": false,
@@ -221,5 +227,14 @@
   },
   "deploymentPerformed": false,
   "approvalRecorded": false,
-  "localProtectedPolicyQualification": "334/334 PASS before the next parallel authority refresh"
+  "localProtectedPolicyQualification": "334/334 PASS on prior authority; refreshed full suite running after preserving Calendar PI compatibility and current main 16fd6946",
+  "linuxPrerequisite": {
+    "decisionRequired": true,
+    "workflow": ".github/workflows/assistant-quality-repair.yml",
+    "change": "Install bubblewrap from the Ubuntu distribution and verify /usr/bin/bwrap before the pinned CLI starts",
+    "observedRun": "44073369609",
+    "observedSourceSha": "16fd69465162e4b37ca968c46cb901ba2b7f9f12",
+    "failure": "The official pinned CLI archive contains only the Codex executable; system bwrap was not installed",
+    "networkFilesystemPrivilegeAndCancellationGatesUnchanged": true
+  }
 }
