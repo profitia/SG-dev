@@ -547,3 +547,83 @@ test('current SDK proof rejects changed current source and missing or altered ca
   assert.throws(()=>policy.currentSdkProofContext(f.candidate,root),/CURRENT_SDK_SOURCE_METADATA_REJECTED/)
  }finally{f.close()}
 })
+
+test('trusted SDK descriptor binds exact protected imports to one Source row and task',async()=>{
+ const policy=await import('./controlled-package-ci.mjs'),authority=fs.mkdtempSync(path.join(os.tmpdir(),'sdk-policy-authority-'))
+ const file=path.join(authority,'apps/architecture-lab/current-sdk-source.json')
+ const {r,f,p}=metadataFixture('apps/sg-runtime/operation-integration.json')
+ const descriptor={recordId:r.id,taskId:r.taskId,reviewedMetadata:p.reviewedMetadata.entries,localPackages:{}}
+ const record={schemaVersion:'1.0',scope:'CURRENT_SDK_SOURCE_INTEGRITY_ONLY',runtimeActivated:false,
+  permissionsChanged:false,providerCallsPerformed:false,deploymentPerformed:false,sourceAdmission:descriptor}
+ const write=v=>{fs.mkdirSync(path.dirname(file),{recursive:true});fs.writeFileSync(file,JSON.stringify(v))}
+ try{
+  write(record)
+  const selected=policy.currentSdkSourceAdmissionPolicy(r,authority)
+  assert.deepEqual(selected.reviewedMetadata,p.reviewedMetadata)
+  assertSourceAdmission(r,f,root,now,selected)
+  assert.equal(policy.currentSdkSourceAdmissionPolicy({...r,id:'other'},authority),undefined)
+  assert.equal(policy.currentSdkSourceAdmissionPolicy({...r,taskId:'other'},authority),undefined)
+  assert.equal(policy.currentSdkSourceAdmissionPolicy(null,authority),undefined)
+  // A Source-row claim is not an authority descriptor.
+  fs.rmSync(file);r.reviewedMetadata=p.reviewedMetadata
+  assert.equal(policy.currentSdkSourceAdmissionPolicy(r,authority),undefined)
+  assert.throws(()=>assertSourceAdmission(r,f,root,now),/SOURCE_ADMISSION_FILES_REJECTED/)
+  for(const change of [
+   v=>v.runtimeActivated=true,v=>v.sourceAdmission.extra=true,
+   v=>v.sourceAdmission.reviewedMetadata[r.files[0].path].mode='100755',
+   v=>v.sourceAdmission.reviewedMetadata[r.files[0].path].sha='bad',
+   v=>v.sourceAdmission.localPackages['unregistered']={beforeBlob:base,afterBlob:head}
+  ]){
+   const changed=structuredClone(record);change(changed);write(changed)
+   assert.throws(()=>policy.currentSdkSourceAdmissionPolicy(r,authority),/CURRENT_SDK_SOURCE_POLICY_REJECTED/)
+  }
+ }finally{fs.rmSync(authority,{recursive:true,force:true})}
+})
+
+test('trusted SDK Source selector supplies exact local manifest transitions while default guards stay strict',async()=>{
+ const policy=await import('./controlled-package-ci.mjs'),f=localManifestFixture(policy),r=record()
+ const file=path.join(f.authority,'apps/architecture-lab/current-sdk-source.json')
+ try{
+  fs.mkdirSync(path.dirname(file),{recursive:true})
+  fs.writeFileSync(file,JSON.stringify({schemaVersion:'1.0',scope:'CURRENT_SDK_SOURCE_INTEGRITY_ONLY',
+   runtimeActivated:false,permissionsChanged:false,providerCallsPerformed:false,deploymentPerformed:false,
+   sourceAdmission:{recordId:r.id,taskId:r.taskId,reviewedMetadata:{},localPackages:f.reviews}}))
+  assert.throws(()=>policy.checkAdmittedPackages(f.candidate,f.authority),/LOCAL_PACKAGE_VERSION_MISMATCH/)
+  const selected=policy.currentSdkSourceAdmissionPolicy(r,f.authority)
+  assert.doesNotThrow(()=>policy.checkAdmittedPackages(f.candidate,f.authority,selected.reviewedLocalPackages))
+  assert.equal(policy.currentSdkSourceAdmissionPolicy({...r,id:'other'},f.authority),undefined)
+  const manifest=path.join(f.candidate,'packages/platform-contracts/package.json')
+  fs.appendFileSync(manifest,' ')
+  assert.throws(()=>policy.checkAdmittedPackages(f.candidate,f.authority,selected.reviewedLocalPackages),/LOCAL_PACKAGE_TRANSITION_REJECTED/)
+ }finally{f.close()}
+})
+
+test('public Source proof revalidates protected metadata against the same trusted SDK policy',async()=>{
+ const policy=await import('./controlled-package-ci.mjs'),authority=fs.mkdtempSync(path.join(os.tmpdir(),'sdk-source-proof-'))
+ const {r,p}=metadataFixture('apps/sg-runtime/operation-integration.json')
+ const recordFile=path.join(authority,'apps/architecture-lab/current-sdk-source.json')
+ try{
+  fs.mkdirSync(path.join(authority,'Canon/registries'),{recursive:true})
+  for(const name of ['profitia-projects-v1.json','current-architecture-baseline-v1.json'])
+   fs.copyFileSync(path.join(root,'Canon/registries',name),path.join(authority,'Canon/registries',name))
+  r.validFrom='2000-01-01';r.validUntil='2099-01-01'
+  fs.writeFileSync(path.join(authority,'Canon/registries/controlled-source-admissions-v1.json'),JSON.stringify({schemaVersion:'1.0',records:[r]}))
+  fs.mkdirSync(path.dirname(recordFile),{recursive:true})
+  fs.writeFileSync(recordFile,JSON.stringify({schemaVersion:'1.0',scope:'CURRENT_SDK_SOURCE_INTEGRITY_ONLY',
+   runtimeActivated:false,permissionsChanged:false,providerCallsPerformed:false,deploymentPerformed:false,
+   sourceAdmission:{recordId:r.id,taskId:r.taskId,reviewedMetadata:p.reviewedMetadata.entries,localPackages:{}}}))
+  const digest='c'.repeat(64),run={id:123,workflow_id:456,repository:{full_name:'profitia/SG-dev'},
+   head_branch:'main',head_sha:base,event:'workflow_dispatch',actor:{login:'profitia'},conclusion:'success'}
+  const proof={schemaVersion:'2.0',repository:'profitia/SG-dev',workflow:'.github/workflows/platform-contracts-ci.yml',
+   scope:'EXACT_SOURCE_VALIDATION',targetEnvironment:'development',candidateSha:head,controlSha:base,runId:'123',
+   executionWorkspace:'ISOLATED_GIT_CHECKOUT',executionCheckoutSha:head,sourceInputVerifiedBeforeExecution:true,sourceInputVerifiedAfterExecution:true,
+   controlPolicyDigest:digest,sourceAdmissionId:r.id,sourceAdmissionDigest:sourceAdmissionDigest(r),originalSourceSha:head,
+   credentialRemovedBeforeCandidateExecution:true,privatePackageArtifactsPublished:false,productDeploymentPerformed:false,
+   customerIdentityAdapterVerified:false,install:'CLEAN_REGISTRY_IGNORE_SCRIPTS',tests:'PASS',typecheck:'PASS',build:'PASS'}
+  assert.throws(()=>assertSourceValidationProof(proof,run,head,456,{expectedControlDigest:digest},authority),/SOURCE_ADMISSION_FILES_REJECTED/)
+  const selected=policy.currentSdkSourceAdmissionPolicy(r,authority)
+  assertSourceValidationProof(proof,run,head,456,{expectedControlDigest:digest},authority,selected)
+  const changed=structuredClone(selected);changed.reviewedMetadata.taskId='foreign'
+  assert.throws(()=>assertSourceValidationProof(proof,run,head,456,{expectedControlDigest:digest},authority,changed),/SOURCE_ADMISSION_FILES_REJECTED/)
+ }finally{fs.rmSync(authority,{recursive:true,force:true})}
+})

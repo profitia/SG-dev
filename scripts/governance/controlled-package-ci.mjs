@@ -6526,6 +6526,32 @@ export function registrationLifecycleProofContract(receipt,recordBytes,receiptBy
 // knowledge source. The exact immutable record is data, never candidate code.
 // Current source metadata is read from trusted-control, never admitted by
 // candidate data or an environment variable. Older SDKs keep their old verifier.
+// Only a policy descriptor from the immutable trusted-control checkout may
+// select reviewed metadata and local manifest transitions for one Source row.
+export function currentSdkSourceAdmissionPolicy(sourceRecord,authorityRoot=controlRoot()){
+ if(!sourceRecord)return undefined
+ const file=path.join(authorityRoot,CURRENT_SDK_SOURCE_RECORD)
+ if(!fs.existsSync(file))return undefined
+ const record=readJson(file),review=record.sourceAdmission
+ if(!review||review.recordId!==sourceRecord.id||review.taskId!==sourceRecord.taskId)return undefined
+ const plain=v=>v!==null&&typeof v==='object'&&Object.getPrototypeOf(v)===Object.prototype
+ if(!plain(review)||Object.keys(review).sort().join(',')!=='localPackages,recordId,reviewedMetadata,taskId'
+  ||record.schemaVersion!=='1.0'||record.scope!=='CURRENT_SDK_SOURCE_INTEGRITY_ONLY'
+  ||!plain(review.reviewedMetadata)||!plain(review.localPackages)
+  ||Object.keys(review.reviewedMetadata).length>100||Object.keys(review.localPackages).length>20)fail('CURRENT_SDK_SOURCE_POLICY_REJECTED')
+ for(const flag of ['runtimeActivated','permissionsChanged','providerCallsPerformed','deploymentPerformed'])
+  if(record[flag]!==false)fail('CURRENT_SDK_SOURCE_POLICY_REJECTED')
+ for(const entry of Object.values(review.reviewedMetadata)){
+  if(!plain(entry)||Object.keys(entry).sort().join(',')!=='kind,mode,sha'||!shaPattern.test(entry.sha??'')
+   ||entry.mode!=='100644'||!['HISTORICAL_EVIDENCE','ENVIRONMENT_TEMPLATE'].includes(entry.kind))fail('CURRENT_SDK_SOURCE_POLICY_REJECTED')
+ }
+ for(const [name,entry]of Object.entries(review.localPackages)){
+  if(!Object.hasOwn(LOCAL_PACKAGES,name)||!plain(entry)||Object.keys(entry).sort().join(',')!=='afterBlob,beforeBlob'
+   ||!shaPattern.test(entry.beforeBlob??'')||!shaPattern.test(entry.afterBlob??'')||entry.beforeBlob===entry.afterBlob)fail('CURRENT_SDK_SOURCE_POLICY_REJECTED')
+ }
+ return {reviewedMetadata:{recordId:review.recordId,taskId:review.taskId,entries:structuredClone(review.reviewedMetadata)},
+  reviewedLocalPackages:structuredClone(review.localPackages)}
+}
 export function currentSdkProofContext(root,authorityRoot=controlRoot()){
  const manifest=path.join(root,'packages/platform-contracts/package.json')
  const recordFile=path.join(authorityRoot,CURRENT_SDK_SOURCE_RECORD)
@@ -7051,7 +7077,7 @@ export async function resolveCandidateAdmission(c, number, expectedSha, request 
   if (candidateFamily(c, current, expectedSha) !== family || current.base.sha !== pr.base.sha || current.changed_files !== pr.changed_files) fail('CANDIDATE_CHANGED_DURING_RESOLUTION')
   if (sourceRecord) {
     if (current.base.sha !== c.controlSha) fail('SOURCE_AUTHORITY_ADVANCED')
-    assertSourceAdmission(sourceRecord,{repository:REPOSITORY,actor:current.user.login,candidateSha:expectedSha,currentMainSha:c.controlSha,files},repositoryRoot)
+    assertSourceAdmission(sourceRecord,{repository:REPOSITORY,actor:current.user.login,candidateSha:expectedSha,currentMainSha:c.controlSha,files},repositoryRoot,Date.now(),currentSdkSourceAdmissionPolicy(sourceRecord,repositoryRoot))
     return {sha:expectedSha,admission:{kind:'TRUSTED_RECORD',recordId:sourceRecord.id,actor:current.user.login,baseSha:c.controlSha,files:files.map(({filename,status,sha})=>({filename,status,sha}))}}
   }
   if(qualityStage1Branch(current.head.ref)){
@@ -7068,7 +7094,7 @@ export function assertArchitectureCheckout(root, sha, admission, repositoryRoot 
   if(admission?.kind==='QUALITY_STAGE1_SG2')return assertQualityStage1Checkout(root,sha,admission)
   if (admission?.kind === 'TRUSTED_RECORD') {
     const record=trustedAdmissionById(admission.recordId,repositoryRoot)
-    return assertSourceCheckout(root,record,{sha,actor:admission.actor,controlSha:admission.baseSha,files:admission.files},repositoryRoot)
+    return assertSourceCheckout(root,record,{sha,actor:admission.actor,controlSha:admission.baseSha,files:admission.files},repositoryRoot,currentSdkSourceAdmissionPolicy(record,repositoryRoot))
   }
   if (!admission || admission.kind !== 'ARCHITECTURE' || !shaPattern.test(sha ?? '') || !shaPattern.test(admission.baseSha ?? '')) fail('ARCHITECTURE_CHECKOUT_REJECTED')
   assertArchitectureFiles({changed_files: admission.files?.length, base: {sha: admission.baseSha}}, admission.files, repositoryRoot)
@@ -7449,7 +7475,10 @@ export function assertManifestSuccessorSourceProof(proof,run,candidateSha,workfl
 
 export function assertProof(proof, run, candidateSha, workflowId, {currentRunId, currentRef, completedJobs = [], expectedControlDigest = controlPolicyDigest()} = {}) {
   if(proof?.schemaVersion==='2.0'&&proof.scope==='EXACT_PROTECTED_SOURCE_VALIDATION')return assertManifestSuccessorSourceProof(proof,run,candidateSha,workflowId,{currentRunId,currentRef,completedJobs,expectedControlDigest})
-  if(proof?.schemaVersion==='2.0')return assertSourceValidationProof(proof,run,candidateSha,workflowId,{currentRunId,currentRef,completedJobs,expectedControlDigest})
+  if(proof?.schemaVersion==='2.0'){
+   const sourceRecord=proof.scope==='EXACT_SOURCE_VALIDATION'?trustedAdmissionById(proof.sourceAdmissionId):null
+   return assertSourceValidationProof(proof,run,candidateSha,workflowId,{currentRunId,currentRef,completedJobs,expectedControlDigest},controlRoot(),currentSdkSourceAdmissionPolicy(sourceRecord))
+  }
   const sameRun = String(run.id) === String(currentRunId) && currentRef === 'refs/heads/main' && run.event === 'push' && completedJobs.some(j => j.name === 'SG2 controlled operation integration' && j.conclusion === 'success')
   if (run.workflow_id !== workflowId || run.repository?.full_name !== REPOSITORY || run.head_branch !== 'main' || !['push', 'workflow_dispatch'].includes(run.event) || run.actor?.login !== 'profitia' || (!sameRun && run.conclusion !== 'success')) fail('UNTRUSTED_VALIDATION_RUN')
   if (proof.schemaVersion !== '1.0' || proof.repository !== REPOSITORY || proof.projectKey !== 'SG2' || proof.targetEnvironment !== 'development' || proof.scope !== 'ISOLATED_API_AND_PERSISTENCE' || proof.candidateSha !== candidateSha || proof.controlSha !== run.head_sha || String(proof.runId) !== String(run.id) || proof.workflow !== WORKFLOW) fail('VALIDATION_PROVENANCE_MISMATCH')
@@ -7680,7 +7709,7 @@ function checkCandidate(root = candidateRoot()) {
   if(state.admission?.kind==='QUALITY_STAGE1_SG2')return checkQualityStage1Candidate(root,state)
   if(state.admission?.kind==='TRUSTED_RECORD'){
     const sourceRecord=trustedAdmissionById(state.admission.recordId)
-    return {state,app:checkAdmittedPackages(root),sourceRecord,genericSource:true}
+    return {state,app:checkAdmittedPackages(root,controlRoot(),currentSdkSourceAdmissionPolicy(sourceRecord)?.reviewedLocalPackages),sourceRecord,genericSource:true}
   }
   if(!state.admission&&state.sha===c.controlSha)return {state,app:checkAdmittedPackages(root),genericSource:true}
   const app = path.join(root, 'apps/sg-runtime'),complete=assertCompleteFunctionalProvenance(root), recurring=assertPrivateRecurringProvenance(root), reviewedPrivateRecurring=!!recurring,reviewedLifecycle=!!registrationLifecycleCanonicalRead(root)

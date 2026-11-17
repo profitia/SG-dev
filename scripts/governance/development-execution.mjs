@@ -233,7 +233,7 @@ export function sourceAdmissionDigest(record) {
   return createHash('sha256').update(JSON.stringify(canonical(record))).digest('hex')
 }
 
-export function assertSourceValidationProof(proof,run,candidateSha,workflowId,{expectedControlDigest,currentRunId,currentRef,completedJobs=[]}={},governanceRoot=root) {
+export function assertSourceValidationProof(proof,run,candidateSha,workflowId,{expectedControlDigest,currentRunId,currentRef,completedJobs=[]}={},governanceRoot=root,policy=undefined) {
   const sameRun=String(run.id)===String(currentRunId)&&currentRef==='refs/heads/main'&&run.event==='push'
     &&completedJobs.some(j=>j.name==='SG2 controlled operation integration'&&j.conclusion==='success')
   if(run.workflow_id!==workflowId||run.repository?.full_name!=='profitia/SG-dev'||run.head_branch!=='main'
@@ -252,7 +252,7 @@ export function assertSourceValidationProof(proof,run,candidateSha,workflowId,{e
   }else{
     const record=trustedAdmissionById(proof.sourceAdmissionId,governanceRoot)
     assertSourceAdmission(record,{repository:proof.repository,actor:run.actor.login,candidateSha,currentMainSha:proof.controlSha,
-      files:record.files.map(f=>({filename:f.path,sha:f.blob,status:f.status}))},governanceRoot)
+      files:record.files.map(f=>({filename:f.path,sha:f.blob,status:f.status}))},governanceRoot,Date.now(),policy)
     if(proof.sourceAdmissionDigest!==sourceAdmissionDigest(record)||proof.originalSourceSha!==record.sourceSha)deny('VALIDATION_INCOMPLETE')
   }
   if(proof.credentialRemovedBeforeCandidateExecution!==true||proof.privatePackageArtifactsPublished!==false
