@@ -30,10 +30,11 @@
     "scripts/staging-rollback.test.mjs": "56e1ca879d273ef7fe0642cf56096af4cf2308cccc8bee40099e34e8c01b9037",
     "src/server/kys-cache.test.ts": "8543c0693fbff59c080dbfab5142c4cecd20fd2aa30aa1925edaa47f9ec89923",
     "src/server/kys-orchestration.test.ts": "bcfa7f9c61bbca81823f9850240aba67cbb1d035398d666acf103172ddacdf9f",
-    "src/server/vercly-kys.test.ts": "01d847baa902fbd58ebe3ad6a82988666b058be09d6c3261a97b9b6b0bed725f"
+    "src/server/vercly-kys.test.ts": "01d847baa902fbd58ebe3ad6a82988666b058be09d6c3261a97b9b6b0bed725f",
+    "src/server/company-source-policy.test.ts": "fe447de3f9faa861fc00e12ad7e6a0f496d8cb58dc68abc7a7d56440596301d4"
   },
   "testSupportSourceDigests": {
-    "scripts/kys-resume-source-view.mjs": "3e49351d7345271d1af94c7d2da2a6d6c82df0c7ba50e3ac41f6b0f68097f342"
+    "scripts/kys-resume-source-view.mjs": "d986530528409dbfff12ce73670768e7fcb407d5371f782b759e0b2bd99a16aa"
   },
   "integrationAdapterDigests": {
     "apps/sg-runtime/tests/assistant-notifications-integrity.mjs": "bdcba2e8cc43d9dbe41b7cd1b55167308fe1ee6328c23c8e0982fa2dddc49dbb"
