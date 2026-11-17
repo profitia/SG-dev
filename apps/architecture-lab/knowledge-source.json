@@ -1,7 +1,7 @@
 {
   "schemaVersion": "1.0.0",
   "scope": "PLATFORM_KNOWLEDGE_SDK_SOURCE_ACCEPTANCE",
-  "previousSourceSha": "50bc5b7ab346d1b743210494082de21dd84dd64c",
+  "previousSourceSha": "765e995ca9b1eacef83a562b46e9c23876992e9b",
   "authorityMainSha": "736396e6818c34bf588896f9435abc389889ed92",
   "taskIds": {
     "ARCHITECTURE": "ARCH-PK-STAGE2-TECHNICAL-CONT-20261117",
