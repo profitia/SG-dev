@@ -11,7 +11,7 @@
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "test:runtime-build-contract": "node --test tests/runtime-build-contract.test.mjs",
-    "test:observability": "node --input-type=module -e 'import ts from \"typescript\";const config=ts.readConfigFile(\"tsconfig.json\",ts.sys.readFile);const parsed=ts.parseJsonConfigFileContent(config.config,ts.sys,\".\");const roots=[\"instrumentation.ts\",\"sentry.client.config.ts\",\"sentry.server.config.ts\",\"sentry.edge.config.ts\"];const program=ts.createProgram(roots,{...parsed.options,noEmit:true,incremental:false});const diagnostics=[...(config.error?[config.error]:[]),...parsed.errors,...ts.getPreEmitDiagnostics(program)];if(diagnostics.length){process.stderr.write(ts.formatDiagnosticsWithColorAndContext(diagnostics,{getCanonicalFileName:f=>f,getCurrentDirectory:ts.sys.getCurrentDirectory,getNewLine:()=>\"\\n\"}));process.exitCode=1;}' && node --import tsx --test tests/sentry-observability.test.ts && node --test tests/monitor-benchmark-finder.test.mjs",
+    "test:observability": "node --input-type=module -e 'import ts from \"typescript\";const config=ts.readConfigFile(\"tsconfig.json\",ts.sys.readFile);const parsed=ts.parseJsonConfigFileContent(config.config,ts.sys,\".\");const roots=[\"instrumentation.ts\",\"sentry.client.config.ts\",\"sentry.server.config.ts\",\"sentry.edge.config.ts\"];const program=ts.createProgram(roots,{...parsed.options,noEmit:true,incremental:false});const diagnostics=[...(config.error?[config.error]:[]),...parsed.errors,...ts.getPreEmitDiagnostics(program)];if(diagnostics.length){process.stderr.write(ts.formatDiagnosticsWithColorAndContext(diagnostics,{getCanonicalFileName:f=>f,getCurrentDirectory:ts.sys.getCurrentDirectory,getNewLine:()=>\"\\n\"}));process.exitCode=1;}' && node --import tsx --test tests/sentry-observability.test.ts",
     "test:advisory-widget": "node --import tsx --test tests/advisory-widget.test.ts",
     "test:market-data": "node --import tsx --test tests/market-data-service.test.ts",
     "test:forecast-library": "node --import tsx --test tests/forecast-library-service.test.ts",
@@ -39,8 +39,7 @@
     "test:assistant": "node --import tsx --test tests/assistant-markdown.test.tsx tests/assistant-economic-calendar.test.ts tests/assistant-history.test.ts tests/assistant-conversation.test.ts tests/assistant-conversation-transport.test.ts tests/assistant-conversation-handler.test.ts tests/assistant-model.test.ts tests/advisory-widget.test.ts tests/assistant-multi-source.test.ts tests/assistant-screen-context.test.ts tests/assistant-sources.test.ts && node --test tests/assistant-ecr-integrity.test.mjs tests/assistant-m1-integrity.test.mjs tests/assistant-m2-integrity.test.mjs tests/assistant-m2-source-view.test.mjs",
     "test:insights-host": "node --import tsx --test tests/insights-host.test.ts",
     "test:procurement-insights": "node --import tsx --test tests/newsfeed-proxy.test.ts tests/procurement-insights.test.tsx tests/procurement-insights-context.test.ts && node --test tests/procurement-insights-integrity.test.mjs tests/procurement-insights-completion.test.mjs && npm run test:market-calendar",
-    "test:market-calendar": "node --import tsx --test tests/market-calendar-model.test.ts tests/market-calendar-proxy.test.ts tests/market-calendar.test.tsx && node --test tests/market-calendar-integrity.test.mjs",
-    "monitor:benchmark-finder": "node scripts/monitor-benchmark-finder.mjs"
+    "test:market-calendar": "node --import tsx --test tests/market-calendar-model.test.ts tests/market-calendar-proxy.test.ts tests/market-calendar.test.tsx && node --test tests/market-calendar-integrity.test.mjs"
   },
   "dependencies": {
     "@clerk/backend": "3.25.0",
