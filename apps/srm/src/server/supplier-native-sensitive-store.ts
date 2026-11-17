@@ -104,6 +104,11 @@ export function createSrmSensitiveNativeStore(options:{work:Readonly<SupplierNat
    const check=(org:string,nip:string,entity:KysEntityType)=>{if(org!==s.organisationId||nip!==s.command.nip||entity!==entityType)return refuse()}
    const owned=(owner:string)=>{if(!lease||owner!==lease)return refuse()}
    const store:KysCacheStore={
+    resume:async(org,nip,entity,at)=>{check(org,nip,entity);if(lease)return refuse();const now=new Date(at.getTime());
+     const resumed=await run(s,'SRM_KYS_CACHE_CLAIM',{at:now.toISOString(),resume:true},pool=>createOrganisationKysCacheStore(org,pool).resume!(org,nip,entity,now));
+     if(resumed){lease=resumed.owner;armed=true}return resumed},
+    checkpoint:async(org,nip,entity,owner,correlation,at)=>{check(org,nip,entity);owned(owner);if(!armed)return refuse();const now=new Date(at.getTime());
+     await run(s,'SRM_KYS_CACHE_HOLD',{owner,correlationDigest:digest(correlation),at:now.toISOString()},pool=>createOrganisationKysCacheStore(org,pool).checkpoint!(org,nip,entity,owner,correlation,now))},
     read:async(org,nip,entity,at)=>{check(org,nip,entity);const now=new Date(at.getTime());return run(s,'SRM_KYS_CACHE_READ',{at:now.toISOString()},pool=>createOrganisationKysCacheStore(org,pool).read(org,nip,entity,now))},
     claim:async(org,nip,entity,at)=>{check(org,nip,entity);if(lease)return refuse();const now=new Date(at.getTime());lease=await run(s,'SRM_KYS_CACHE_CLAIM',{at:now.toISOString()},pool=>createOrganisationKysCacheStore(org,pool).claim(org,nip,entity,now));return lease},
     save:async(org,nip,entity,owner,envelope,snapshot)=>{check(org,nip,entity);owned(owner);if(!armed)return refuse();const body=copy(envelope)

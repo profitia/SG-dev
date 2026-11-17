@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { fetchVerclyKys } from "./vercly-kys";
+import { fetchVerclyKys, resumeVerclyKys } from "./vercly-kys";
 
 const request = { identifier: { type: "NIP" as const, value: "5272443955" } };
 
@@ -145,4 +145,49 @@ test("pending report stops at the unified deadline; POST is never retried after 
   calls = 0;
   const ambiguous = await fetchVerclyKys(request, { apiKey: "fixture", baseUrl: "https://vercly.example", fetcher: (async () => { calls++; throw new Error("connection reset"); }) as typeof fetch });
   assert.equal(ambiguous.errorCode, "VERCLY_POST_OUTCOME_UNKNOWN"); assert.equal(calls, 1);
+});
+
+
+test("resuming an accepted order performs GET only and verifies its NIP and correlation", async () => {
+  const methods: string[] = [];
+  const result = await resumeVerclyKys(request, "acceptedOrder123", {
+    apiKey: "fixture", baseUrl: "https://vercly.example",
+    fetcher: (async (url: unknown, init: RequestInit) => {
+      methods.push(init.method!);
+      assert.equal(String(url), "https://vercly.example/api/verifications/acceptedOrder123");
+      return response([{Header:{CorrelationId:"acceptedOrder123",Id:"report456"},Body:{
+        IsComplete:true,Entity:{Ids:[{Type:"VatID",Value:"PL5272443955"}]}}}]);
+    }) as typeof fetch,
+  });
+  assert.equal(result.section.status,"SUCCESS"); assert.deepEqual(methods,["GET"]);
+  assert.equal(result.providerOrderAccepted,true);
+});
+
+test("resume 404, timeout, cancellation and invalid identity never create a replacement order", async () => {
+  for (const status of [404,401,403,500]) {
+    let elapsed=0;const methods:string[]=[];
+    const result=await resumeVerclyKys(request,"acceptedOrder123",{
+      apiKey:"fixture",baseUrl:"https://vercly.example",pollTimeoutMs:4000,
+      elapsedNow:()=>elapsed,sleep:async ms=>{elapsed+=ms;},
+      fetcher:(async (_url:unknown,init:RequestInit)=>{methods.push(init.method!);return response({},status);}) as typeof fetch,
+    });
+    assert.equal(result.section.status,"ERROR");assert(methods.length>0);
+    assert(methods.every(method=>method==="GET"));assert.equal(result.correlationId,"acceptedOrder123");
+  }
+  assert.throws(()=>resumeVerclyKys(request,"../other"));
+  const controller=new AbortController();controller.abort();let calls=0;
+  const canceled=await resumeVerclyKys(request,"acceptedOrder123",{apiKey:"fixture",baseUrl:"https://vercly.example",
+    signal:controller.signal,fetcher:(async()=>{calls++;throw Error("must not send");}) as typeof fetch});
+  assert.equal(canceled.errorCode,"VERCLY_ABORTED");assert.equal(calls,0);
+});
+
+test("accepted correlation is durably checkpointed before polling and a failed checkpoint never resends POST",async()=>{
+  const events:string[]=[];
+  const result=await fetchVerclyKys(request,{apiKey:"fixture",baseUrl:"https://vercly.example",
+    fetcher:(async(_url:unknown,init:RequestInit)=>{events.push(init.method!);return response(["acceptedOrder123"]);}) as typeof fetch,
+    onOrderAccepted:async id=>{assert.equal(id,"acceptedOrder123");events.push("checkpoint");throw Error("database unavailable");},
+    sleep:async()=>{events.push("sleep");},
+  });
+  assert.deepEqual(events,["POST","checkpoint"]);assert.equal(result.providerOrderAccepted,true);
+  assert.equal(result.correlationId,"acceptedOrder123");assert.equal(result.section.status,"ERROR");
 });

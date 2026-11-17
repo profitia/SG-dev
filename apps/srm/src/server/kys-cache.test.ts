@@ -137,5 +137,41 @@ test("accepted paid order with GET failure stays held instead of releasing for a
  let holds=0,releases=0;
  await getOrFetchKys(orgA,nip,"COMPANY",async()=>({section:{...report,status:"ERROR" as const,data:null},errorCode:"HTTP_400",correlationId:"classified",providerOrderAccepted:true}),async()=>null,
  {store:{read:async()=>null,claim:async()=>"owner",renew:async()=>true,save:async()=>{},hold:async()=>{holds++;},release:async()=>{releases++;}}});
- assert.equal(holds,1);assert.equal(releases,0);
+ assert.equal(holds,2);assert.equal(releases,0);
+});
+
+
+test("an interrupted accepted order resumes by stored correlation, then becomes a cache hit with one paid POST",async()=>{
+ let lease:string|null=null, correlation:string|null=null, cached:Section|null=null, posts=0,gets=0;
+ const store={
+  read:async()=>cached,claim:async()=>{if(lease)return null;lease="first";return lease;},
+  resume:async()=>{if(!correlation)return null;lease="recovery";return {owner:lease,correlationId:correlation};},
+  checkpoint:async(_org:string,_nip:string,_entity:string,owner:string,id:string)=>{assert.equal(owner,lease);correlation=id;},
+  hold:async()=>{},renew:async()=>true,release:async()=>{throw Error("accepted order must stay held");},
+  save:async(_org:string,_nip:string,_entity:string,owner:string,section:Section)=>{assert.equal(owner,lease);cached=section;lease=null;},
+ };
+ const provider=async(options?:import("./kys-cache").KysProviderContinuation)=>{
+  if(options?.resumeCorrelationId){gets++;assert.equal(options.resumeCorrelationId,"acceptedOrder123");return {section:report,errorCode:null,correlationId:correlation,providerOrderAccepted:true};}
+  posts++;await options?.onOrderAccepted?.("acceptedOrder123");
+  return {section:{...report,status:"ERROR" as const,data:null},errorCode:"VERCLY_ABORTED",correlationId:correlation,providerOrderAccepted:true};
+ };
+ const run=()=>getOrFetchKys(orgA,nip,"COMPANY",provider,async()=>"snapshot",{store,waitMs:0});
+ assert.equal((await run()).section.status,"ERROR");assert.equal(correlation,"acceptedOrder123");
+ assert.equal((await run()).section.status,"SUCCESS");
+ assert.equal((await run()).retrievalMethod,"CACHE");
+ assert.equal(posts,1);assert.equal(gets,1);
+});
+
+test("an unknown original POST remains fenced and a failed GET never permits replacement POST",async()=>{
+ let posts=0,resumes=0,released=0;
+ const base={read:async()=>null,claim:async()=>null,save:async()=>{},hold:async()=>{},renew:async()=>true,
+  release:async()=>{released++;},resume:async()=>null as import("./kys-cache").KysContinuation|null};
+ const provider=async(options?:import("./kys-cache").KysProviderContinuation)=>{
+  if(!options?.resumeCorrelationId){posts++;throw Error("replacement POST forbidden");}
+  resumes++;return {section:{...report,status:"ERROR" as const,data:null},errorCode:"HTTP_404",correlationId:options.resumeCorrelationId,providerOrderAccepted:true};
+ };
+ await assert.rejects(getOrFetchKys(orgA,nip,"COMPANY",provider,async()=>null,{store:base,waitMs:0}),/wait timed out/);
+ const store={...base,resume:async()=>({owner:"recovery",correlationId:"acceptedOrder123"})};
+ await getOrFetchKys(orgA,nip,"COMPANY",provider,async()=>null,{store});
+ assert.equal(posts,0);assert.equal(resumes,1);assert.equal(released,0);
 });
