@@ -225,6 +225,176 @@ export const EDITORIAL_CANON_SOURCE_REVIEW=Object.freeze({
   }
 })
 // Exact byte verification of the owner-approved editorial source; no runtime grant.
+// Closed owner-approved source binding for PR1111. No runtime or generic admission grant.
+export const FINDER_MONITOR_SOURCE_REVIEW=Object.freeze({
+  "prNumber": 1111,
+  "branch": "sg2/finder-sentry-monitor-20261117",
+  "sourceSha": "a2e99e130f59a0336f9ce553549185643bfee3fc",
+  "sourceBaseSha": "0c311a197e2f19bc35c953e34e095a1ab92c254b",
+  "previousSourceSha": "6642755628be60dc0547d81f2b46f71c3a6855ee",
+  "approvedMonitorSourceSha": "f20431f0d43f8d34f3021aa4fe6ceea560837fdc",
+  "ownerApprovalRef": "owner-decision:01a19782-bad9-7c42-be7e-fd05f4a06292:FINDER-MONITOR-PCI-BINDING-20261117",
+  "recordPath": "apps/sg-runtime/finder-monitor-source-integration.json",
+  "entries": {
+    "apps/sg-runtime/finder-monitor-source-integration.json": {
+      "blob": "fd442e5db2efa67d21be42340f72ea80f3a70a5e",
+      "sha256": "22ac9484a6b5532e97ee8c522491bf1015944677e0ab7979bd0769444a1455f6",
+      "status": "added"
+    },
+    "apps/sg-runtime/scripts/monitor-benchmark-finder.mjs": {
+      "blob": "2a3d978db7dfe1532dd317a4249d143b4ac5458a",
+      "sha256": "ad6cf703bd3e142ca185f5e2b1fa26e1b6665c4f7d6be707b1b37b054ee55f62",
+      "status": "added"
+    },
+    "apps/sg-runtime/tests/assistant-notifications-integrity.mjs": {
+      "blob": "0e62a9cea5dda80c1d97ea0d57f1f20ed9333253",
+      "sha256": "ae8d2e1a9a043409fefab98fcec5eea27e2e17e8e4ee56a8ef4d626e65aabd40",
+      "status": "modified",
+      "previousSha256": "e8141f9b967435ffdd5f94a48e9e0a494cf3eef167fbd6b3b7f22a350f55f3c8"
+    },
+    "apps/sg-runtime/tests/assistant-notifications-integrity.test.mjs": {
+      "blob": "2c63a30b0c29a7562fe7e2143b3b294cb1a4295e",
+      "sha256": "d10f72abb35b26f354e5e8fd552a8359e729b6813a79eb961aeaf0b06f4c8167",
+      "status": "modified",
+      "previousSha256": "85c4a532704a10a0c0c3b9fba87e8b355a028e1e092479960ae2e6df830e8f1e"
+    },
+    "apps/sg-runtime/tests/finder-monitor-source-integrity.mjs": {
+      "blob": "a36cf73f4a942d31b2364df5a8ee013d84d1b6ec",
+      "sha256": "c802bfcb6c0efba606772ba7847cbe769ee1db668ec805e71bc6c647ebd72069",
+      "status": "added"
+    },
+    "apps/sg-runtime/tests/finder-monitor-source-integrity.test.mjs": {
+      "blob": "7ff0740b0a2c2fdbc9e343b9470dc550bced3bda",
+      "sha256": "09b753e564509fd3d9114a37226bc24c6e29d07c9aca287e17ee171406281cbf",
+      "status": "added"
+    },
+    "apps/sg-runtime/tests/monitor-benchmark-finder.test.mjs": {
+      "blob": "3bf4b09a616d1bd28493edee500a13205f7081de",
+      "sha256": "8f54c9aba542d60d2cef41ec3dc546fee43ed4e656083b9b7e5b837b4f0ef47b",
+      "status": "added"
+    },
+    "apps/sg-runtime/tests/procurement-insights-editorial-integrity.mjs": {
+      "blob": "ed85202a45aea0a48dbee00ab53da6062131060e",
+      "sha256": "4d67bec4b83487590e80abdbf51bed308c1156873b7227ffb6030777ba67956b",
+      "status": "modified",
+      "previousSha256": "071825800d81e25361fda653348d9b947455464d45b70d7ab8ce5b73dc06bb50"
+    }
+  },
+  "preservedReceipts": {
+    "apps/architecture-lab/private-recurring-source-adoption.json": "a79c186897851acb93142949fe7aee19184cbfe68b3acdf51cbda084c00c1254",
+    "apps/architecture-lab/private-recurring-source.json": "75877d5750e07d1c8172be0af76bc5933f2eeefc22cc39747a2621b9cab24619",
+    "apps/sg-runtime/adp-integration.json": "9dbd4921c5262202902c3c7ae318e2296f130512fc0784840880eb42370d45fb",
+    "apps/sg-runtime/assistant-context-integration.json": "d932f227977789643086b6a9eb179598a6f48071964b2d26ba82d25fceb7b2ec",
+    "apps/sg-runtime/assistant-ecr-integration.json": "5814e2e5cbdf1a32d22cff3aa55de806ec34c9debdecc21ff06c4f9f887a82bc",
+    "apps/sg-runtime/assistant-ecr-precision-integration.json": "a017c2b971e3c72606847264150715c983fa9483537d26be90144a64e0377ee7",
+    "apps/sg-runtime/assistant-ecr-week-integration.json": "31ce8f1d7e5ca1d9c3aedf80f92e23fe0f1a93cb8f5fd5d003eb54a244859dd4",
+    "apps/sg-runtime/assistant-markdown-integration.json": "27ff06aff8bc44592f0073732748834b7759182fa4307d901c7d63304381a38b",
+    "apps/sg-runtime/assistant-notifications-integration.json": "78d6d34fea2ab1ce18f8dd810cc9906452763e8539aedea685fccbe3881b42cb",
+    "apps/sg-runtime/assistant-send-arrow-integration.json": "62c6af6817a022c31788d801cc0eac293a24b3f25d9e529d32b1bff4908fa230",
+    "apps/sg-runtime/development-integration.json": "a3ed33e74582d2e0407677e090be0d82405e42a160c34afddb8fde47dff86540",
+    "apps/sg-runtime/market-calendar-integration.json": "b66d88e724f84d513677554e77484bc29a2021b238ce28d4b7db7492aba9903c",
+    "apps/sg-runtime/oil-renderer-integration.json": "6afdd65e66d8a7d8ceb4ab68601ba6d1c1bfac43bbac879d01bb61c9962e7ad6",
+    "apps/sg-runtime/operation-integration.json": "a6bf50993c98a71aeccd349dd904baafb53b3cd653324d97bab3fc5e34ac509f",
+    "apps/sg-runtime/private-recurring-source-adoption.json": "edf9d51c199251e148b39c92a3084944c1a4b8419be29175c88b6e2583df11f2",
+    "apps/sg-runtime/procurement-insights-completion-integration.json": "095ab52d695419d34ed053a6961e389024067a8ab4a16a9b6bb2c379571832a0",
+    "apps/sg-runtime/procurement-insights-editorial-integration.json": "a85d4f9bc91a61fe1abd8ed4516d3b64da3b24df17839a1abe52d84718cfcc17",
+    "apps/sg-runtime/procurement-insights-integration.json": "6dca06d8b0731e585925100b0578d41a61711f335940350d1ea32c296a3d7177",
+    "apps/sg-runtime/procurement-insights-live-acceptance.json": "911fac3bf6c4eacabc5db048ef622e4a00e49efa09024e9fbbf5216f7da94d6c",
+    "apps/sg-runtime/procurement-insights-shell-integration.json": "1b1279e669e955e604c7c646482a6ce119eac5eeb09491ade78a37aa7fc133a1",
+    "apps/sg-runtime/registration-stage-i-integration.json": "4a7a572e67e12ed73c523502cef4cb432009e735737df851419d80898653f414",
+    "apps/sg-runtime/xray-appshell-integration.json": "edd27f0ae420a9c7671f3cf6068fa00e237a845169ce36de719b6a52abcc6087",
+    "apps/srm/assistant-context-integration.json": "e39cc67fc7b1a9dd787365e0cea5407e11c47744f15c4f9cf83ea15eddeb2aff",
+    "apps/srm/development-integration.json": "53b67cb769000a4f4005ab10ccc0188b39074094cb38e915b16c3d6026590f57",
+    "apps/srm/operation-integration.json": "1303ac82c0570ca4929f64e1620e2ec7a6bfd3809607f57eb33da621c8ecd06d",
+    "apps/srm/private-recurring-source-adoption.json": "88d0252f634eface35b34adf31ac97cbf0d396fcf1fe6da452c74bdc23c7c633",
+    "apps/srm/xray-appshell-integration.json": "584f4b2e099966bdfc23ce9ac1bf0d408893010b40459f458c639bdd4c4b1b19",
+    "packages/platform-contracts/test/recurring-consent-transport-source.json": "0c9ffe5bfd89cf2bd65cd9adc7ad241a04e7468b5821f97171f4a6c550aaba36"
+  }
+})
+const finderMonitorReviewTarget=pr=>!!pr&&(pr.number===FINDER_MONITOR_SOURCE_REVIEW.prNumber||pr.head?.ref===FINDER_MONITOR_SOURCE_REVIEW.branch)
+
+export function finderMonitorTrustedPredecessor(current,historical){
+ const cfg=FINDER_MONITOR_SOURCE_REVIEW;let bytes
+ try{bytes=current(cfg.recordPath)}catch(error){
+  const text=String(error?.stderr??error?.message??'')
+  if(error?.code==='ENOENT'||error?.status===128&&["' does not exist in ","' exists on disk, but not in "].some(s=>text.includes("'"+cfg.recordPath+s)))return null
+  throw error
+ }
+ // Authenticate every physical source byte without importing candidate JavaScript.
+ for(const[p,e]of Object.entries(cfg.entries)){
+  const b=current(p),blob=createHash('sha1').update('blob '+b.length+'\0').update(b).digest('hex')
+  if(notificationDigest(b)!==e.sha256||blob!==e.blob)fail('FINDER_MONITOR_SOURCE_BYTES_REJECTED')
+ }
+ const a=JSON.parse(bytes)
+ if(a.schemaVersion!=='1.0'||a.taskId!=='SG2-FINDER-MONITOR-PCI-BINDING-20261117'
+  ||a.scope!=='FINDER_MONITOR_SOURCE_BINDING_ONLY'||a.targetEnvironment!=='development'
+  ||a.previousSourceSha!==cfg.previousSourceSha||a.approvedMonitorSourceSha!==cfg.approvedMonitorSourceSha
+  ||a.approvalRef!==cfg.ownerApprovalRef)fail('FINDER_MONITOR_SOURCE_IDENTITY_REJECTED')
+ for(const flag of ['authorisationChanged','schemaChanged','engineChanged','ciChecksWeakened','otherEnvironmentsChanged','runtimeActivationPerformed'])if(a[flag]!==false)fail('FINDER_MONITOR_SOURCE_AUTHORITY_REJECTED')
+ const declared=Object.keys(cfg.entries).filter(p=>p!==cfg.recordPath).sort()
+ if(JSON.stringify(Object.keys(a.sourceDigests??{}).sort())!==JSON.stringify(declared))fail('FINDER_MONITOR_SOURCE_SCOPE_REJECTED')
+ for(const p of declared)if(a.sourceDigests[p]!==cfg.entries[p].sha256)fail('FINDER_MONITOR_SOURCE_BYTES_REJECTED')
+ if(JSON.stringify(Object.keys(a.preservedReceipts??{}).sort())!==JSON.stringify(Object.keys(cfg.preservedReceipts).sort()))fail('FINDER_MONITOR_SOURCE_RECEIPT_REJECTED')
+ for(const[p,h]of Object.entries(cfg.preservedReceipts)){
+  if(a.preservedReceipts[p]!==h||notificationDigest(current(p))!==h
+   ||notificationDigest(historical(cfg.previousSourceSha,p))!==h)fail('FINDER_MONITOR_SOURCE_RECEIPT_REJECTED')
+ }
+ const predecessors=new Map()
+ for(const[p,e]of Object.entries(cfg.entries))if(e.status==='modified'){
+  const before=historical(cfg.previousSourceSha,p)
+  if(notificationDigest(before)!==e.previousSha256)fail('FINDER_MONITOR_SOURCE_HISTORY_REJECTED')
+  predecessors.set(p,Buffer.from(before))
+ }
+ return{manifest:a,previousBytes:p=>{
+  const e=cfg.entries[p]
+  if(!e)return current(p)
+  if(e.status==='added')throw Object.assign(Error('Finder monitor source absent from predecessor'),{code:'ENOENT'})
+  return Buffer.from(predecessors.get(p))
+ }}
+}
+
+export function assertFinderMonitorSourceFiles(files){
+ const expected=FINDER_MONITOR_SOURCE_REVIEW.entries
+ if(!Array.isArray(files)||files.length!==Object.keys(expected).length
+  ||new Set(files.map(f=>f.filename)).size!==files.length)fail('FINDER_MONITOR_SOURCE_FILES_REJECTED')
+ for(const f of files){const e=expected[f.filename]
+  if(!e||f.sha!==e.blob||f.status!==e.status||Object.hasOwn(f,'previous_filename'))fail('FINDER_MONITOR_SOURCE_FILES_REJECTED')
+ }
+ return true
+}
+
+export function assertFinderMonitorSourceIdentity(pr,expectedSha,files,controlSha){
+ const r=FINDER_MONITOR_SOURCE_REVIEW
+ if(pr?.number!==r.prNumber||pr.state!=='open'||pr.head?.ref!==r.branch
+  ||pr.head.sha!==expectedSha||!shaPattern.test(expectedSha??'')||pr.user?.login!=='profitia'
+  ||pr.base?.ref!=='main'||pr.base.sha!==controlSha)fail('FINDER_MONITOR_SOURCE_IDENTITY_REJECTED')
+ assertFinderMonitorSourceFiles(files)
+ return true
+}
+
+export function assertFinderMonitorSourceCheckout(root,sha,admission){
+ const cfg=FINDER_MONITOR_SOURCE_REVIEW
+ const git=(...args)=>execFileSync('git',args,{cwd:root,encoding:'utf8',stdio:['ignore','pipe','pipe'],maxBuffer:32*1024*1024}).trim()
+ if(admission?.reviewId!=='SG2-FINDER-MONITOR-PCI-BINDING-20261117'||admission.actor!=='profitia'
+  ||!shaPattern.test(sha??'')||!shaPattern.test(admission.baseSha??'')
+  ||fs.realpathSync(root)!==path.resolve(root)||git('rev-parse','HEAD')!==sha)fail('FINDER_MONITOR_SOURCE_CHECKOUT_REJECTED')
+ assertFinderMonitorSourceFiles(admission.files)
+ for(const ancestor of[cfg.approvedMonitorSourceSha,cfg.sourceSha,admission.baseSha]){
+  try{git('merge-base','--is-ancestor',ancestor,sha)}catch{fail('FINDER_MONITOR_SOURCE_ANCESTRY_REJECTED')}
+ }
+ const changed=execFileSync('git',['diff','--name-only','--no-renames','-z',admission.baseSha+'...'+sha],{cwd:root,encoding:'utf8'}).split('\0').filter(Boolean).sort()
+ if(JSON.stringify(changed)!==JSON.stringify(Object.keys(cfg.entries).sort()))fail('FINDER_MONITOR_SOURCE_DIFF_REJECTED')
+ for(const p of Object.keys(cfg.entries)){
+  const tree=execFileSync('git',['ls-tree','-z',sha,'--',p],{cwd:root,encoding:'utf8'})
+  if(tree!=='100644 blob '+cfg.entries[p].blob+'\t'+p+'\0')fail('FINDER_MONITOR_SOURCE_MODE_REJECTED')
+ }
+ const view=finderMonitorTrustedPredecessor(p=>readNotificationPhysicalSource(root,p),(ref,p)=>execFileSync('git',['show',ref+':'+p],{cwd:root,maxBuffer:32*1024*1024,stdio:['ignore','pipe','pipe']}))
+ if(!view)fail('FINDER_MONITOR_SOURCE_RECEIPT_REQUIRED')
+ if(git('status','--porcelain=v1','--untracked-files=all','--ignore-submodules=none'))fail('FINDER_MONITOR_SOURCE_DIRTY')
+ return true
+}
+
+
 export function editorialTrustedPredecessor(current,historical){
  const cfg=EDITORIAL_CANON_SOURCE_REVIEW;let record
  try{record=current(cfg.recordPath)}catch(error){
@@ -253,6 +423,7 @@ export function editorialTrustedPredecessor(current,historical){
 }
 
 export function assistantNotificationsTrustedPredecessor(current,historical,verifiedApplicationSource=null){
+ const finderMonitor=finderMonitorTrustedPredecessor(current,historical);if(finderMonitor)return assistantNotificationsTrustedPredecessor(finderMonitor.previousBytes,historical,verifiedApplicationSource)
  const editorial=editorialTrustedPredecessor(current,historical);if(editorial)return assistantNotificationsTrustedPredecessor(editorial.previousBytes,historical,verifiedApplicationSource)
  const cfg=APPSHELL_NOTIFICATION_REVIEW;let record
  try{record=current(cfg.recordPath)}catch(error){if(error?.code==='ENOENT')return null;throw error}
@@ -280,7 +451,7 @@ export function assistantNotificationsTrustedPredecessor(current,historical,veri
 // Raw file checks are unchanged. New current sources must additionally be non-executable.
 export function readNotificationPhysicalSource(root,name){
  const bytes=readRegistrationSdkFile(root,name)
- if((Object.hasOwn(APPSHELL_NOTIFICATION_REVIEW.entries,name)||Object.hasOwn(EDITORIAL_CANON_SOURCE_REVIEW.entries,name))&&fs.lstatSync(path.join(fs.realpathSync(root),name)).mode&0o111)fail('APPSHELL_NOTIFICATION_MODE_REJECTED')
+ if((Object.hasOwn(APPSHELL_NOTIFICATION_REVIEW.entries,name)||Object.hasOwn(EDITORIAL_CANON_SOURCE_REVIEW.entries,name)||Object.hasOwn(FINDER_MONITOR_SOURCE_REVIEW.entries,name))&&fs.lstatSync(path.join(fs.realpathSync(root),name)).mode&0o111)fail('APPSHELL_NOTIFICATION_MODE_REJECTED')
  return bytes
 }
 export function notificationTrustedCurrent(root){
@@ -295,6 +466,12 @@ export function notificationTrustedCurrent(root){
   if(!assistantNotificationsTrustedPredecessor(main,historical))fail('APPSHELL_NOTIFICATION_HISTORY_REJECTED')
   for(const[p,h]of Object.entries(APPSHELL_NOTIFICATION_REVIEW.preservedReceipts))if(notificationDigest(current(p))!==(lifecycle.currentSourceDigests[p]??lifecycle.currentReceiptDigests[p]??h))fail('APPSHELL_NOTIFICATION_RECEIPT_REJECTED')
   return current
+ }
+ const finderMonitor=finderMonitorTrustedPredecessor(current,historical)
+ if(finderMonitor){
+  const accepted=assistantNotificationsTrustedPredecessor(current,historical)
+  if(!accepted)fail('FINDER_MONITOR_SOURCE_HISTORY_REJECTED')
+  return accepted.previousBytes
  }
  const watched=Object.keys(APPSHELL_NOTIFICATION_REVIEW.entries).filter(p=>/\.(?:tsx?|mjs)$/.test(p))
  let verified=null
@@ -6920,6 +7097,7 @@ export function assertArchitectureFiles(pr, files, repositoryRoot = controlRoot(
 
 export function selectCandidate(context, pr, expectedSha, {files, repositoryRoot = controlRoot()} = {}) {
   const family = candidateFamily(context, pr, expectedSha)
+  if(finderMonitorReviewTarget(pr)){if(family!=='SG2')fail('FINDER_MONITOR_SOURCE_IDENTITY_REJECTED');assertFinderMonitorSourceIdentity(pr,expectedSha,files,context.controlSha)}
   if(pr&&(pr.number===MANIFEST_SUCCESSOR_1102_REVIEW.prNumber
     ||pr.head?.ref===MANIFEST_SUCCESSOR_1102_REVIEW.branch
     ||exactManifestSuccessor1102Files(files))){
@@ -7016,7 +7194,8 @@ export async function resolveCandidateAdmission(c, number, expectedSha, request 
     ? trustedAdmissionById(process.env.SOURCE_ADMISSION_ID,repositoryRoot)
     : findTrustedAdmission(expectedSha,repositoryRoot)
   if (sourceRecord && !pr) fail('SOURCE_ADMISSION_PR_REQUIRED')
-  if (family !== 'ARCHITECTURE' && !sourceRecord && !qualityStage1Branch(pr?.head?.ref)) return {sha: selectCandidate(c, pr, expectedSha)}
+  if(finderMonitorReviewTarget(pr)&&sourceRecord)fail('FINDER_MONITOR_PROTECTED_REVIEW_REQUIRED')
+  if (family !== 'ARCHITECTURE' && !sourceRecord && !qualityStage1Branch(pr?.head?.ref) && !finderMonitorReviewTarget(pr)) return {sha: selectCandidate(c, pr, expectedSha)}
   if (!Number.isInteger(pr.changed_files) || pr.changed_files < 1 || pr.changed_files > 300) fail('ARCHITECTURE_FILE_LIST_REQUIRED')
   const files = []
   for (let page = 1; page <= 4; page++) {
@@ -7030,6 +7209,10 @@ export async function resolveCandidateAdmission(c, number, expectedSha, request 
   // read, then bind the complete list to the actual pinned Git tree below.
   const current = (await request(endpoint)).data
   if (candidateFamily(c, current, expectedSha) !== family || current.base.sha !== pr.base.sha || current.changed_files !== pr.changed_files) fail('CANDIDATE_CHANGED_DURING_RESOLUTION')
+  if(finderMonitorReviewTarget(current)){
+    const selected=selectCandidate(c,current,expectedSha,{files,repositoryRoot})
+    return {sha:selected,admission:{kind:'FINDER_MONITOR_SOURCE',reviewId:'SG2-FINDER-MONITOR-PCI-BINDING-20261117',actor:current.user.login,baseSha:c.controlSha,files:files.map(({filename,status,sha})=>({filename,status,sha}))}}
+  }
   if (sourceRecord) {
     if (current.base.sha !== c.controlSha) fail('SOURCE_AUTHORITY_ADVANCED')
     assertSourceAdmission(sourceRecord,{repository:REPOSITORY,actor:current.user.login,candidateSha:expectedSha,currentMainSha:c.controlSha,files},repositoryRoot)
@@ -7046,6 +7229,7 @@ export async function resolveCandidateAdmission(c, number, expectedSha, request 
 }
 
 export function assertArchitectureCheckout(root, sha, admission, repositoryRoot = controlRoot()) {
+  if(admission?.kind==='FINDER_MONITOR_SOURCE')return assertFinderMonitorSourceCheckout(root,sha,admission)
   if(admission?.kind==='QUALITY_STAGE1_SG2')return assertQualityStage1Checkout(root,sha,admission)
   if (admission?.kind === 'TRUSTED_RECORD') {
     const record=trustedAdmissionById(admission.recordId,repositoryRoot)
