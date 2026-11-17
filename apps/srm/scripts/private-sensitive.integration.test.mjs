@@ -134,7 +134,7 @@ async function sensitiveNativeFixture(t,full=true,privateMode=false){
  const rootUrl=assertIsolatedTestConnection(process.env.SRM_OPERATION_TEST_OWNER_URL,'srm_app','architecture_test_owner')
  const root=new pg.Client({connectionString:rootUrl});await root.connect();let owner,pool,auditPool,servicePool,serviceAudit,rawService,sourcePool,sourceAudit,rawSource,corporatePool,corporateAudit,server
  const CORPORATE='srm_company_publication_runtime';let networkHits=0;let currentUser=U,failHumanOutcome=false,revokeAfterPost=false,interruptPost=false,emptyCeidg=false,failedCeidg=false,emptyMgbi=false,revokeEmptyReport=false,revokeKrsExport=false,revokeWebRead=false;const networkObservations=[]
- let syntheticOrigin
+ let syntheticOrigin, rejectKysGetOnce=false
  try{
   assert.equal((await root.query('SELECT 1 FROM pg_database WHERE datname=$1',[DATABASE])).rowCount,0,'Never adopt existing data')
   await root.query(`CREATE DATABASE ${DATABASE}`)
@@ -289,6 +289,7 @@ async function sensitiveNativeFixture(t,full=true,privateMode=false){
       const value=JSON.parse(body);assert.equal(value.length,1);assert.equal(value[0].Country,'PL')
       const id='syntheticCorrelation'+(++nextReport);reports.set(id,value[0].Id);res.end(JSON.stringify([id]));return
      }
+     if(rejectKysGetOnce){rejectKysGetOnce=false;res.statusCode=401;res.end('{}');return}
      const id=url.pathname.split('/').at(-1),nip=reports.get(id);assert(nip)
      res.end(JSON.stringify([{Header:{CorrelationId:id,Id:'synthetic-'+id},Body:{IsComplete:true,Entity:{Name:'SYNTHETIC_SENSITIVE_COMPANY',Ids:[{Type:'VatID',Value:'PL'+nip},{Type:'KRS',Value:'0000217580'},{Type:'Regon',Value:'140566233'}],Beneficiaries:{Count:1,Values:[{FullName:'SYNTHETIC_PERSON',Pesel:'12345678901',Source:'CRBR'}]},PepPositions:{Count:0}}}}]))
     }catch(error){res.statusCode=500;res.end('{}');console.error('SYNTHETIC_SENSITIVE_HTTP_FAILURE',error.message)}
@@ -829,6 +830,22 @@ async function sensitiveNativeFixture(t,full=true,privateMode=false){
    assert.equal(networkHits,before)
    const row=(await owner.query('SELECT lease_owner FROM srm.catalog_kys_reports WHERE organization_id=$1 AND nip=$2',[A,selected.command.nip])).rows[0]
    assert.equal(row.lease_owner,null)
+  })
+  await t.test('accepted native KYS failure resumes one existing order by GET under concurrent new parents',async()=>{
+   const nip='5221054994',first=selection(await parent(A,nip)),before=networkHits,postsBefore=nextReport
+   rejectKysGetOnce=true
+   const failed=await native().run(first);assert.equal(failed.status,'ERROR')
+   const held=(await owner.query('SELECT lease_owner,lease_until::text,provider_correlation_id,resume_until,report_json FROM srm.catalog_kys_reports WHERE organization_id=$1 AND nip=$2',[A,nip])).rows[0]
+   assert(held.lease_owner);assert.equal(held.lease_until,'infinity');assert(held.provider_correlation_id);assert.equal(held.resume_until,null);assert.equal(held.report_json,null)
+   assert.equal(nextReport,postsBefore+1);assert.equal(networkHits,before+2)
+   const next=selection(await parent(A,nip)),parallel=selection(await parent(A,nip))
+   const results=await Promise.all([native().run(next),native().run(parallel)])
+   assert(results.every(r=>r.status==='SUCCESS'&&r.snapshotId))
+   assert.equal(nextReport,postsBefore+1,'only the original paid POST was sent')
+   assert.equal(networkHits,before+3,'one original GET failed, one recovery GET succeeded')
+   const saved=(await owner.query('SELECT lease_owner,provider_correlation_id,resume_until,report_json FROM srm.catalog_kys_reports WHERE organization_id=$1 AND nip=$2',[A,nip])).rows[0]
+   assert.equal(saved.lease_owner,null);assert.equal(saved.provider_correlation_id,null);assert.equal(saved.resume_until,null)
+   assert.equal(saved.report_json.data.company.nip,nip)
   })
   await t.test('revocation after possible paid POST leaves the committed indefinite fence and prevents another claim',async()=>{
    const selected=selection(await parent(A,'7972088368')),before=networkHits;revokeAfterPost=true
