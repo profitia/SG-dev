@@ -1,0 +1,33 @@
+{
+  "schemaVersion": "1.0.0",
+  "taskId": "SG2-CIC-QUALITY-TECHNICAL-READY-20261117",
+  "scope": "TRUSTED_CALENDAR_PERIOD_SOURCE",
+  "targetEnvironment": "development",
+  "previousSourceSha": "765e995ca9b1eacef83a562b46e9c23876992e9b",
+  "sourceDigests": {
+    "apps/sg-runtime/lib/assistant/calendar-period.ts": "da597ba7c6eab4068398ed4dc8ca11c4712398175b18670662457a5552479f2f",
+    "apps/sg-runtime/lib/assistant/context-selection.ts": "d6ddb18b142d7a762e48535791a61ff5f9ede04c04e8789a3a07e6a92b79be24",
+    "apps/sg-runtime/lib/assistant/conversation.ts": "6374505cba5e3e65ba34cae69827c1e15231fd91408f3560eb25eca6a6324b6c",
+    "apps/sg-runtime/lib/assistant/runtime.ts": "dd5115ebe7f40110efabe67c3b55c80bd30187fcd95aaa7f0f11dd0fe2b8c35b",
+    "apps/sg-runtime/package.json": "e8be2fa5a39dc1ee14b20453b722d1512a2e03602a3192706c013c2a0db3c245",
+    "apps/sg-runtime/tests/assistant-quality.test.ts": "aa2ece58f1c316452779b249ba5e8a93c6a90c620e77e151340661c89446bcb1",
+    "apps/sg-runtime/tests/assistant-quality-integrity.mjs": "429eb4b582d0928bf6212b0c419e3da7582b2d76e7a7f2b4bf4c6f19ad02c5ca",
+    "apps/sg-runtime/tests/assistant-quality-integrity.test.mjs": "12e2f9ebc7c4d1e99102436c1a5435fdb5fda9aaa9af6265fbf6030db1f95c21",
+    "apps/sg-runtime/tests/assistant-ecr-integrity.mjs": "d42964bb21908033bdc86b4e291e2100b74b74ecb44874d767513b7eae061474",
+    "apps/sg-runtime/tests/assistant-ecr-precision-integrity.mjs": "94fbde79aadd46244b9e03fd10de8227a10331252d5c3ae271741ea5a588f793"
+  },
+  "previousReceipts": {
+    "apps/sg-runtime/operation-integration.json": "a6bf50993c98a71aeccd349dd904baafb53b3cd653324d97bab3fc5e34ac509f",
+    "apps/sg-runtime/assistant-context-integration.json": "d932f227977789643086b6a9eb179598a6f48071964b2d26ba82d25fceb7b2ec",
+    "apps/sg-runtime/assistant-ecr-integration.json": "5814e2e5cbdf1a32d22cff3aa55de806ec34c9debdecc21ff06c4f9f887a82bc",
+    "apps/sg-runtime/assistant-ecr-precision-integration.json": "a017c2b971e3c72606847264150715c983fa9483537d26be90144a64e0377ee7",
+    "apps/sg-runtime/assistant-markdown-integration.json": "27ff06aff8bc44592f0073732748834b7759182fa4307d901c7d63304381a38b",
+    "apps/sg-runtime/assistant-send-arrow-integration.json": "62c6af6817a022c31788d801cc0eac293a24b3f25d9e529d32b1bff4908fa230",
+    "apps/sg-runtime/registration-stage-i-integration.json": "4a7a572e67e12ed73c523502cef4cb432009e735737df851419d80898653f414",
+    "apps/sg-runtime/procurement-insights-integration.json": "6dca06d8b0731e585925100b0578d41a61711f335940350d1ea32c296a3d7177"
+  },
+  "runtimeActivated": false,
+  "privateDataAccessChanged": false,
+  "dependenciesChanged": false,
+  "pilotStarted": false
+}

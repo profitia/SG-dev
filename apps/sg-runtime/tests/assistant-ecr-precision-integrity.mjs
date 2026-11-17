@@ -1,3 +1,4 @@
+import {assistantQualityPredecessor} from './assistant-quality-integrity.mjs'
 import {recurringSourcePredecessor} from '../../architecture-lab/private-recurring-source.mjs'
 // Build/test-only continuation of the accepted ECR source. No runtime authority.
 import assert from 'node:assert/strict'
@@ -23,6 +24,7 @@ export const PRECISION_RECEIPTS=Object.freeze([
 ])
 const hash=b=>createHash('sha256').update(b).digest('hex')
 export function assistantEcrPrecisionPredecessor(current,historical){
+ const quality=assistantQualityPredecessor(current,historical);if(quality)return assistantEcrPrecisionPredecessor(quality.previousBytes,historical)
  const recurring=recurringSourcePredecessor(current,historical);if(recurring)return assistantEcrPrecisionPredecessor(recurring.authorityBytes,historical)
  let bytes
  try{bytes=current(PRECISION_RECEIPT)}catch(error){
