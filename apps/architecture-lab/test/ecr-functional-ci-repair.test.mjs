@@ -15,6 +15,27 @@ const current=p=>fs.readFileSync(path.join(root,p))
 const git=(cwd,...args)=>execFileSync('git',args,{cwd,encoding:'utf8',stdio:['ignore','pipe','pipe']}).trim()
 const historical=(ref,p)=>execFileSync('git',['show',ref+':'+p],{cwd:root,stdio:['ignore','pipe','pipe']})
 
+// SYNTHETIC_ONLY: isolate the exact current owner graph over its fixed review
+// base. Later accepted governance commits are not product-source changes.
+// Real CI routing still uses the actual event merge parent and exact checkout.
+function calendarRoutingFixture(){
+ const temporary=fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(),'calendar-routing-fixture-')))
+ try{
+  git(temporary,'clone','--quiet','--shared','--no-checkout',root,'source')
+  const fixture=path.join(temporary,'source'),baseSha=CALENDAR_CI_REPAIR_BASE
+  git(fixture,'update-ref','--no-deref','HEAD',baseSha);git(fixture,'read-tree',baseSha)
+  const source=completeFunctionalPredecessor(current,historical)
+  const tracked=new Set(git(fixture,'ls-tree','-r','--name-only',baseSha).split('\n'))
+  const required=new Set([...Object.keys(source.currentSourceDigests),...Object.keys(source.producer.preservedReceipts),...[...tracked].filter(p=>p.startsWith('Canon/'))])
+  execFileSync('git',['checkout-index','--stdin','-z'],{cwd:fixture,input:[...required].filter(p=>tracked.has(p)).join('\0')+'\0'})
+  for(const p of Object.keys(source.currentSourceDigests)){
+   const target=path.join(fixture,p);fs.mkdirSync(path.dirname(target),{recursive:true});fs.writeFileSync(target,current(p));git(fixture,'add','--',p)
+  }
+  git(fixture,'-c','user.name=Isolated fixture','-c','user.email=fixture@example.invalid','commit','--quiet','-m','SYNTHETIC_ONLY exact Calendar owner-source fixture')
+  return{root:fixture,baseSha,candidateSha:git(fixture,'rev-parse','HEAD'),close:()=>fs.rmSync(temporary,{recursive:true,force:true})}
+ }catch(e){fs.rmSync(temporary,{recursive:true,force:true});throw e}
+}
+
 test('Calendar full CI bridge authenticates all current inputs and retains immutable producer and consumer receipts',()=>{
  const view=completeFunctionalPredecessor(current,historical)
  assert(view.consumer)
@@ -43,26 +64,23 @@ test('SRM shared source view binds every actual SDK byte through the current Cal
  assert.equal(combined['packages/platform-contracts/test/recurring-consent-transport-source.mjs'],'4e7b07f2dafee476ca3d0fcd08b25eab6a842256a5f6f96becfc0d54599160f4')
 })
 test('Calendar routing checks the exact complete Git diff and all real owners, never an old recurring candidate',()=>{
- const candidateSha=git(root,'rev-parse','HEAD'),sourceReview={baseSha:CALENDAR_CI_REPAIR_BASE,candidateSha}
- const paths=reviewedCalendarConsumerPaths(root,sourceReview)
- assert.equal(paths.get('apps/sg-runtime/components/procurement-insights/calendar-email-settings.tsx'),'SG2')
- const changedPaths=git(root,'diff','--name-only',sourceReview.baseSha+'...'+candidateSha).split('\n')
- const called=[]
- validateRouting({changedPaths,repositoryRoot:root,readReceipt:p=>JSON.parse(current(p)),sourceReview,runGovernance:owner=>{called.push(owner);return{verdict:'PASS'}}})
- assert.deepEqual(called.sort(),['ARCHITECTURE','SG2'])
- assert.throws(()=>reviewedCalendarConsumerPaths(root))
- assert.throws(()=>reviewedCalendarConsumerPaths(root,{...sourceReview,candidateSha:'a'.repeat(40)}))
+ const fixture=calendarRoutingFixture()
+ try{
+  const sourceReview={baseSha:fixture.baseSha,candidateSha:fixture.candidateSha}
+  const paths=reviewedCalendarConsumerPaths(fixture.root,sourceReview)
+  assert.equal(paths.get('apps/sg-runtime/components/procurement-insights/calendar-email-settings.tsx'),'SG2')
+  const changedPaths=git(fixture.root,'diff','--name-only',sourceReview.baseSha+'...'+sourceReview.candidateSha).split('\n')
+  const called=[]
+  validateRouting({changedPaths,repositoryRoot:fixture.root,readReceipt:p=>JSON.parse(fs.readFileSync(path.join(fixture.root,p))),sourceReview,runGovernance:owner=>{called.push(owner);return{verdict:'PASS'}}})
+  assert.deepEqual(called.sort(),['ARCHITECTURE','SG2'])
+  assert.throws(()=>reviewedCalendarConsumerPaths(fixture.root))
+  assert.throws(()=>reviewedCalendarConsumerPaths(fixture.root,{...sourceReview,candidateSha:'a'.repeat(40)}))
+ }finally{fixture.close()}
 })
 test('Calendar routing rejects additional committed input, changed bytes, symlinks and executable Git modes',()=>{
- const temporary=fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(),'calendar-ci-repair-')))
+ const source=calendarRoutingFixture(),fixture=source.root,candidateSha=source.candidateSha
  try{
-  git(temporary,'clone','--quiet','--shared','--no-checkout',root,'fixture')
-  const fixture=path.join(temporary,'fixture'),candidateSha=git(root,'rev-parse','HEAD')
-  git(fixture,'update-ref','--no-deref','HEAD',candidateSha);git(fixture,'read-tree',candidateSha)
-  const source=completeFunctionalPredecessor(current,historical)
-  const required=new Set([...Object.keys(source.currentSourceDigests),...Object.keys(source.producer.preservedReceipts),...git(root,'ls-tree','-r','--name-only',candidateSha,'--','Canon').split('\n')])
-  execFileSync('git',['checkout-index','--stdin','-z'],{cwd:fixture,input:[...required].join('\0')+'\0'})
-  const sourceReview={baseSha:CALENDAR_CI_REPAIR_BASE,candidateSha}
+  const sourceReview={baseSha:source.baseSha,candidateSha}
   assert(reviewedCalendarConsumerPaths(fixture,sourceReview))
   const file=path.join(fixture,'apps/economic-calendar-runtime/src/results.mjs'),before=fs.readFileSync(file)
   fs.appendFileSync(file,' drift');assert.throws(()=>reviewedCalendarConsumerPaths(fixture,sourceReview));fs.writeFileSync(file,before)
@@ -74,5 +92,5 @@ test('Calendar routing rejects additional committed input, changed bytes, symlin
   fs.writeFileSync(path.join(fixture,'unreviewed-calendar.txt'),'unreviewed')
   git(fixture,'add','unreviewed-calendar.txt');git(fixture,'-c','user.name=Isolated fixture','-c','user.email=fixture@example.invalid','commit','--quiet','-m','SYNTHETIC_ONLY extra input')
   assert.throws(()=>reviewedCalendarConsumerPaths(fixture,{...sourceReview,candidateSha:git(fixture,'rev-parse','HEAD')}))
- }finally{fs.rmSync(temporary,{recursive:true,force:true})}
+ }finally{source.close()}
 })
