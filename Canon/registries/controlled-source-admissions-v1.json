@@ -4,6 +4,211 @@
   "scope": "SOURCE_VALIDATION_ONLY",
   "records": [
     {
+      "id": "SRM:SRM-VERCLY-RESUME-TESTS-20261117",
+      "status": "ACTIVE",
+      "repository": "profitia/SG-dev",
+      "actor": "profitia",
+      "taskId": "SRM-VERCLY-RESUME-TESTS-20261117",
+      "targetEnvironment": "development",
+      "scope": "SOURCE_VALIDATION_ONLY",
+      "approvalRef": "owner-request:01a1e914-b834-7633-a1d8-d92fd43f0865:vercly-resumption-repair",
+      "sourceSha": "ca165839bac5c1a871491bd1ff108afd02fb4d5a",
+      "baseSha": "707f59fcab5cdfb25a9d8a8a464d79e70a9d3c79",
+      "validFrom": "2026-11-17T16:58:26.195Z",
+      "validUntil": "2026-11-24T23:59:59.000Z",
+      "files": [
+        {
+          "path": "apps/sg-runtime/tests/assistant-notifications-integrity.mjs",
+          "blob": "7b91e3566514d5d7a0e4c3f8e486ae5dde4b63a4",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SG2",
+          "owner": "SG Runtime",
+          "surfaceId": "SG2-BASE-001"
+        },
+        {
+          "path": "apps/srm/db/migrations/0019_kys_resume.sql",
+          "blob": "89b4561b0f44e3440dcdef9449145b56342fd2be",
+          "mode": "100644",
+          "status": "added",
+          "projectKey": "SRM",
+          "owner": "SRM Runtime",
+          "surfaceId": "SG2-BASE-016"
+        },
+        {
+          "path": "apps/srm/db/private-store/035-kys-resume.sql",
+          "blob": "9621d2498a753aee3407fa8f129c0b922d6159b6",
+          "mode": "100644",
+          "status": "added",
+          "projectKey": "SRM",
+          "owner": "SRM Runtime",
+          "surfaceId": "SG2-BASE-016"
+        },
+        {
+          "path": "apps/srm/scripts/diagnostic-telemetry-adoption.test.mjs",
+          "blob": "b15281e977e8a0dca02260c01e59ad5df8636479",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SRM",
+          "owner": "SRM Runtime",
+          "surfaceId": "SG2-BASE-016"
+        },
+        {
+          "path": "apps/srm/scripts/operation-context.integration.test.mjs",
+          "blob": "6ac8547dc9c06716c1dde8ae93907b43bf7bee25",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SRM",
+          "owner": "SRM Runtime",
+          "surfaceId": "SG2-BASE-016"
+        },
+        {
+          "path": "apps/srm/scripts/private-sensitive.integration.test.mjs",
+          "blob": "1d6281020932285fe58cd287dec769befaf5a916",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SRM",
+          "owner": "SRM Runtime",
+          "surfaceId": "SG2-BASE-016"
+        },
+        {
+          "path": "apps/srm/scripts/promotion.test.mjs",
+          "blob": "5fd1f794776d09bfaca33ceb1562b1fd9042197d",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SRM",
+          "owner": "SRM Runtime",
+          "surfaceId": "SG2-BASE-016"
+        },
+        {
+          "path": "apps/srm/scripts/source-dependency-test-fixtures.mjs",
+          "blob": "fe532b6fc1b5b49f663e5bc97e37726ceccd895d",
+          "mode": "100644",
+          "status": "added",
+          "projectKey": "SRM",
+          "owner": "SRM Runtime",
+          "surfaceId": "SG2-BASE-016"
+        },
+        {
+          "path": "apps/srm/scripts/source-dependency-test-fixtures.test.mjs",
+          "blob": "24b22e43ec6723fee00598f45dd8b2329573c318",
+          "mode": "100644",
+          "status": "added",
+          "projectKey": "SRM",
+          "owner": "SRM Runtime",
+          "surfaceId": "SG2-BASE-016"
+        },
+        {
+          "path": "apps/srm/scripts/staging-rollback.test.mjs",
+          "blob": "6648da74680e5e0d5c7b8fbd8a550755e7f84dc2",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SRM",
+          "owner": "SRM Runtime",
+          "surfaceId": "SG2-BASE-016"
+        },
+        {
+          "path": "apps/srm/scripts/vercly-kys-reconcile.ts",
+          "blob": "6d68586ed9d79a2988835149496279bbb05641ff",
+          "mode": "100644",
+          "status": "added",
+          "projectKey": "SRM",
+          "owner": "SRM Runtime",
+          "surfaceId": "SG2-BASE-016"
+        },
+        {
+          "path": "apps/srm/src/server/company-source-policy.test.ts",
+          "blob": "10f0ab077c80233a72b866eefb08dfc63fcc08be",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SRM",
+          "owner": "SRM Runtime",
+          "surfaceId": "SG2-BASE-016"
+        },
+        {
+          "path": "apps/srm/src/server/kys-cache.test.ts",
+          "blob": "adcfdefb8764c788523e2dcfc6567c5f83540f0d",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SRM",
+          "owner": "SRM Runtime",
+          "surfaceId": "SG2-BASE-016"
+        },
+        {
+          "path": "apps/srm/src/server/kys-cache.ts",
+          "blob": "e51583928afb5b4827e82ed8219485308fc508be",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SRM",
+          "owner": "SRM Runtime",
+          "surfaceId": "SG2-BASE-016"
+        },
+        {
+          "path": "apps/srm/src/server/kys-orchestration.test.ts",
+          "blob": "479d0dfdf82ebcd3308b0f5a8007710ea0c52ed9",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SRM",
+          "owner": "SRM Runtime",
+          "surfaceId": "SG2-BASE-016"
+        },
+        {
+          "path": "apps/srm/src/server/provider-source-transport.ts",
+          "blob": "30ba1f294cae119b2d60af2af614149b98054878",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SRM",
+          "owner": "SRM Runtime",
+          "surfaceId": "SG2-BASE-016"
+        },
+        {
+          "path": "apps/srm/src/server/supplier-native-sensitive-store.ts",
+          "blob": "739cf157f8849581cd108556f4ce8b6efd9fcc5c",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SRM",
+          "owner": "SRM Runtime",
+          "surfaceId": "SG2-BASE-016"
+        },
+        {
+          "path": "apps/srm/src/server/supplier-native-sensitive.ts",
+          "blob": "c866e3e93cac27b71a81667f671fd97e07d055f4",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SRM",
+          "owner": "SRM Runtime",
+          "surfaceId": "SG2-BASE-016"
+        },
+        {
+          "path": "apps/srm/src/server/vercly-kys.test.ts",
+          "blob": "d2a8c33c014ffdbe52446b287a514036681f11b9",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SRM",
+          "owner": "SRM Runtime",
+          "surfaceId": "SG2-BASE-016"
+        },
+        {
+          "path": "apps/srm/src/server/vercly-kys.ts",
+          "blob": "a48c70e1a1378352b52d81b75fa07908a2227bb8",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SRM",
+          "owner": "SRM Runtime",
+          "surfaceId": "SG2-BASE-016"
+        },
+        {
+          "path": "apps/srm/src/server/xray-lookup.ts",
+          "blob": "3f1f2beb2e492e358de11d0ca43e0d39d78e5b65",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SRM",
+          "owner": "SRM Runtime",
+          "surfaceId": "SG2-BASE-016"
+        }
+      ]
+    },
+    {
       "id": "SG2:SG2-FINDER-SENTRY-MONITOR-20261117",
       "status": "ACTIVE",
       "repository": "profitia/SG-dev",
