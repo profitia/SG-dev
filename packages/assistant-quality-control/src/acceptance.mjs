@@ -133,7 +133,7 @@ export async function qualifyLinuxExecutor(){
     require(request.model===CODE_PRICING.model&&request.store===false,'BROKER_CONTRACT_FAILED')
     let item
     if(calls===1){
-     const tools=request.tools??[]
+     const tools=[...(request.tools??[]),...request.input.filter(i=>i.type==='additional_tools').flatMap(i=>i.tools)]
      const testPath=body.allowedPaths.find(p=>p!==sourcePath)
      const cmd=phase==='cancellation'?qualificationCancellationCommand():qualificationCommand({outsideRead:outside+'/readable.txt',outsideWrite:outside+'/write.txt',blockedPort,socketPath,sourcePath,regressionPath:testPath,regressionSource:serializeRegression(regression)})
      item=qualificationCodeModeCall(tools,cmd,phase)
