@@ -3280,7 +3280,7 @@ test('trusted policy content reader refuses mismatched or unavailable large Git 
 // admits engineering source validation only; it cannot activate a runtime.
 test('quality Stage1 legacy continuation has a finite branch/path/window and rejects protected expansion',async()=>{
  const c=await import('./controlled-package-ci.mjs'),r=c.ASSISTANT_QUALITY_SG2_STAGE1_REVIEW
- assert.equal(r.paths.length,22);assert.equal(new Set(r.paths).size,22)
+ assert.equal(r.paths.length,23);assert.equal(new Set(r.paths).size,23)
  assert.deepEqual(r.branches,['sg2/cic-quality-stage1-runtime-20261112','sg2/cic-quality-host-integration-20261117'])
  const files=r.paths.map(filename=>({filename,status:'added',sha:'a'.repeat(40)}))
  c.assertQualityStage1SourceFiles(files,Date.parse('2026-11-17T00:00:00.000Z'))
@@ -3288,7 +3288,7 @@ test('quality Stage1 legacy continuation has a finite branch/path/window and rej
   files.map((f,i)=>i?f:{...f,status:'removed'}),files.map((f,i)=>i?f:{...f,previous_filename:'old.ts'}),files.map((f,i)=>i?f:{...f,sha:'invalid'})])
   rejection(()=>c.assertQualityStage1SourceFiles(changed,Date.parse('2026-11-17T00:00:00.000Z')))
  rejection(()=>c.assertQualityStage1SourceFiles(files,Date.parse(r.expiresAt)))
- for(const p of r.paths)assert(p.startsWith('apps/sg-runtime/'))
+ for(const p of r.paths)assert(p.startsWith('apps/sg-runtime/')||p==='apps/architecture-lab/private-recurring-source.mjs')
  assert(!r.paths.some(p=>p.startsWith('packages/')||p.endsWith('/.npmrc')||p.includes('operation-integration')||p.includes('assistant-context-integration')))
 })
 test('quality dependency admission accepts only the measured CIC1.8 artifact and retains all prior tests and packages',async()=>{
@@ -3602,4 +3602,44 @@ test('trusted quality source composition verifies both exact closures and every 
  }
  assert.equal(trustedQualityPredecessor(()=>{throw Object.assign(Error('ABSENT'),{code:'ENOENT'})},historical),null)
  assert.throws(()=>trustedQualityPredecessor(()=>{throw Object.assign(Error('DENIED'),{code:'EACCES'})},historical),{code:'EACCES'})
+})
+
+test('quality recurring compatibility authenticates the new common dispatch and retains all old guards',async()=>{
+ const c=await import('./controlled-package-ci.mjs'),root=new URL('../../',import.meta.url),source='acbc3fec33578f0ab053573a0f59ee41149112da',cache=new Map()
+ const historical=(sha,p)=>{const key=sha+':'+p;if(!cache.has(key))cache.set(key,execFileSync('git',['cat-file','blob',key],{cwd:root,stdio:['ignore','pipe','pipe']}));return Buffer.from(cache.get(key))}
+ const current=p=>historical(source,p),common='apps/architecture-lab/private-recurring-source.mjs'
+ const view=c.qualityTrustedPredecessor(current,historical);assert(view)
+ assert.deepEqual(view.previousBytes(common),historical(c.QUALITY_HOST_BASE,common))
+ const receipt=c.QUALITY_HOST_RECEIPT
+ for(const change of [s=>s.replace('if(quality)return recurringSourcePredecessor','if(false)return recurringSourcePredecessor'),s=>s+'\n// unreviewed']){
+  const altered=Buffer.from(change(current(common).toString())),a=JSON.parse(current(receipt));a.sourceDigests[common]=createHash('sha256').update(altered).digest('hex')
+  assert.throws(()=>c.qualityTrustedPredecessor(p=>p===common?altered:p===receipt?Buffer.from(JSON.stringify(a)):current(p),historical))
+ }
+})
+
+
+test('trusted shallow control binds only the provider-pinned main snapshot before candidate or package work',async()=>{
+ const fs=await import('node:fs'),os=await import('node:os'),path=await import('node:path'),cp=await import('node:child_process')
+ const workflow=fs.readFileSync(new URL('../../.github/workflows/platform-contracts-ci.yml',import.meta.url),'utf8')
+ const job=workflow.slice(workflow.indexOf('  controlled-sg2:'),workflow.indexOf('  environment-policy-probe:'))
+ const marker='      - name: Bind trusted control to the provider-pinned main snapshot'
+ const start=job.indexOf(marker);assert(start>job.indexOf('          path: control'))
+ assert(start<job.indexOf('      - name: Verify access to exact trusted package artifacts'))
+ const block=job.slice(start).split('      - uses:')[0],match=/        run: \|\n((?:          .*\n)+)/.exec(block);assert(match)
+ const script=match[1].split('\n').filter(Boolean).map(line=>line.slice(10)).join('\n')
+ const root=fs.mkdtempSync(path.join(os.tmpdir(),'aqc-trusted-snapshot-')),control=path.join(root,'control');fs.mkdirSync(control)
+ const git=args=>cp.execFileSync('git',args,{cwd:control,encoding:'utf8',stdio:['ignore','pipe','pipe']}).trim()
+ const bind=(ref,sha)=>cp.spawnSync('bash',['-c',script],{cwd:root,encoding:'utf8',env:{PATH:process.env.PATH,GIT_CONFIG_NOSYSTEM:'1',GIT_CONFIG_GLOBAL:'/dev/null',GITHUB_REF:ref,GITHUB_SHA:sha}})
+ try{
+  git(['init']);fs.writeFileSync(path.join(control,'fixture.txt'),'first')
+  git(['add','fixture.txt']);git(['-c','user.name=Synthetic fixture','-c','user.email=synthetic@example.invalid','commit','-m','first'])
+  const first=git(['rev-parse','HEAD']);git(['checkout','--detach',first])
+  assert.throws(()=>git(['rev-parse','--verify','refs/remotes/origin/main']))
+  assert.equal(bind('refs/heads/main',first).status,0);assert.equal(git(['rev-parse','refs/remotes/origin/main']),first)
+  fs.writeFileSync(path.join(control,'fixture.txt'),'second');git(['add','fixture.txt']);git(['-c','user.name=Synthetic fixture','-c','user.email=synthetic@example.invalid','commit','-m','second'])
+  const second=git(['rev-parse','HEAD'])
+  assert.notEqual(bind('refs/pull/1/merge',second).status,0);assert.equal(git(['rev-parse','refs/remotes/origin/main']),first)
+  assert.notEqual(bind('refs/heads/main',first).status,0);assert.equal(git(['rev-parse','refs/remotes/origin/main']),first)
+  assert.equal(bind('refs/heads/main',second).status,0);assert.equal(git(['rev-parse','refs/remotes/origin/main']),second)
+ }finally{fs.rmSync(root,{recursive:true,force:true})}
 })

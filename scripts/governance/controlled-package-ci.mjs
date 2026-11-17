@@ -518,7 +518,8 @@ export const ASSISTANT_QUALITY_SG2_STAGE1_REVIEW=Object.freeze({
   "apps/sg-runtime/tests/assistant-quality-integrity.test.mjs",
   "apps/sg-runtime/tests/assistant-quality-response.test.ts",
   "apps/sg-runtime/tests/assistant-quality.test.ts",
-  "apps/sg-runtime/tests/procurement-insights-completion-integrity.mjs"
+  "apps/sg-runtime/tests/procurement-insights-completion-integrity.mjs",
+  "apps/architecture-lab/private-recurring-source.mjs"
 ]),
 })
 export const CIC_QUALITY_STAGE1_PIN=Object.freeze({version:'1.8.0',
@@ -533,7 +534,8 @@ export function assertQualityStage1SourceFiles(files,now=Date.now()){
   fail('QUALITY_STAGE1_SOURCE_SCOPE_REJECTED')
  const profile=resolveProjectProfile('SG2',controlRoot())
  for(const file of files){
-  const route=resolveProjectRouting({profile,targets:[file.filename],repositoryRoot:controlRoot()}).results[0]
+  const selected=file.filename==='apps/architecture-lab/private-recurring-source.mjs'?resolveProjectProfile('ARCHITECTURE',controlRoot()):profile
+  const route=resolveProjectRouting({profile:selected,targets:[file.filename],repositoryRoot:controlRoot()}).results[0]
   if(!route||route.resolutionStatus!=='RESOLVED'||route.highestSpecificityMatchCount!==1||route.projectBoundaryStatus!=='ALLOWED'||route.baselineClassification!=='ALIGNED')fail('QUALITY_STAGE1_SOURCE_ROUTING_REJECTED')
  }
 }
@@ -595,6 +597,10 @@ function assertQualityStage1Checkout(root,sha,admission){
   :"import {assistantQualityPredecessor} from './assistant-quality-integrity.mjs'\n"+previous.replace('export function procurementInsightsCompletionPredecessor(current,historical){',
    'export function procurementInsightsCompletionPredecessor(current,historical){\n const quality=assistantQualityPredecessor(current,historical);if(quality)return procurementInsightsCompletionPredecessor(quality.previousBytes,historical)')
  if(fs.readFileSync(path.join(root,pi),'utf8')!==expected)fail('QUALITY_STAGE1_PI_GUARD_REJECTED')
+ const common='apps/architecture-lab/private-recurring-source.mjs',prior=execFileSync('git',['show',admission.baseSha+':'+common],{cwd:root,encoding:'utf8'}),entry="export function recurringSourcePredecessor(current,historical){\n"
+ const commonExpected=admission.branch!==r.branches[1]||!admission.files.some(f=>f.filename===common)||prior.startsWith("import {assistantQualityPredecessor} from '../sg-runtime/tests/assistant-quality-integrity.mjs'")?prior
+  :"import {assistantQualityPredecessor} from '../sg-runtime/tests/assistant-quality-integrity.mjs'\n"+prior.replace(entry,entry+" const quality=assistantQualityPredecessor(current,historical);if(quality)return recurringSourcePredecessor(quality.previousBytes,historical)\n")
+ if(fs.readFileSync(path.join(root,common),'utf8')!==commonExpected)fail('QUALITY_STAGE1_RECURRING_GUARD_REJECTED')
 }
 function checkQualityStage1Candidate(root,state){
  const app=path.join(root,'apps/sg-runtime'),host=state.admission.branch===ASSISTANT_QUALITY_SG2_STAGE1_REVIEW.branches[1]
@@ -7206,7 +7212,8 @@ export const QUALITY_HOST_PATHS=Object.freeze([
  'apps/sg-runtime/tests/assistant-quality-integrity.mjs',
  'apps/sg-runtime/tests/assistant-quality-host-integrity.mjs',
  'apps/sg-runtime/tests/assistant-quality-host-integrity.test.mjs',
- 'apps/sg-runtime/tests/procurement-insights-completion-integrity.mjs'
+ 'apps/sg-runtime/tests/procurement-insights-completion-integrity.mjs',
+ 'apps/architecture-lab/private-recurring-source.mjs'
 ])
 export const QUALITY_HOST_PRESERVED=Object.freeze([
  'apps/sg-runtime/assistant-quality-integration.json',
@@ -7221,9 +7228,6 @@ export const QUALITY_HOST_PRESERVED=Object.freeze([
  'apps/sg-runtime/procurement-insights-completion-integration.json',
  'apps/sg-runtime/procurement-insights-shell-integration.json'
 ])
-export const QUALITY_CIC_PIN=Object.freeze({version:'1.8.0',
- resolved:'https://npm.pkg.github.com/download/@profitia/cic-core/1.8.0/797fccee13eb0ce11f7130793218c80d7d542d7a',
- integrity:'sha512-tuun88+cfOHFeCafBw1a8gnExgeDyWBgY7Zd9OPkKk2/Eef0YBP49vzDcXKVpFoCNJGh/CYbeR9B+M2ZXctNsg=='})
 const qualityHostPublication={repository:'profitia/conversational-intelligence-core',sourceSha:'c0053dcd55a3ed9f74584733627f6e9c130d4b49',
  runId:'43282280865',artifactId:'13973416582',artifactZipSha256:'6302e2182bee731bbb771b2c55da0a2fdbe2d023e512492f7f478a9f966616cc',
  tag:'development',latestUnchanged:'1.6.0'}
@@ -7242,8 +7246,10 @@ export function qualityTrustedHostPredecessor(current,historical){
  qualityAssert.equal(a.scope,'CONTROLLED_CIC18_HOST_AND_PRIVATE_QA_SOURCE');qualityAssert.equal(a.targetEnvironment,'development')
  qualityAssert.equal(a.previousSourceSha,QUALITY_HOST_BASE);qualityAssert.deepEqual(a.cicPublication,qualityHostPublication)
  for(const k of ['responseProtectionActivated','privateQaActivated','cloudInstallationPerformed','pilotStarted'])qualityAssert.equal(a[k],false,k)
- qualityAssert.deepEqual(Object.keys(a.sourceDigests).sort(),[...QUALITY_HOST_PATHS].sort())
- for(const p of QUALITY_HOST_PATHS){qualityAssert.match(a.sourceDigests[p],/^[a-f0-9]{64}$/);qualityAssert.equal(qualitySourceHash(current(p)),a.sourceDigests[p],'exact quality host source '+p)}
+ const common='apps/architecture-lab/private-recurring-source.mjs',hasCommon=Object.hasOwn(a.sourceDigests,common)
+ const paths=hasCommon?QUALITY_HOST_PATHS:QUALITY_HOST_PATHS.filter(p=>p!==common)
+ qualityAssert.deepEqual(Object.keys(a.sourceDigests).sort(),[...paths].sort())
+ for(const p of paths){qualityAssert.match(a.sourceDigests[p],/^[a-f0-9]{64}$/);qualityAssert.equal(qualitySourceHash(current(p)),a.sourceDigests[p],'exact quality host source '+p)}
  qualityAssert.deepEqual(Object.keys(a.previousReceipts).sort(),[...QUALITY_HOST_PRESERVED].sort())
  for(const p of QUALITY_HOST_PRESERVED){qualityAssert.equal(qualitySourceHash(current(p)),a.previousReceipts[p]);qualityAssert.equal(qualitySourceHash(historical(QUALITY_HOST_BASE,p)),a.previousReceipts[p],'immutable previous receipt '+p)}
  const manifest=JSON.parse(current('apps/sg-runtime/package.json')),before=JSON.parse(historical(QUALITY_HOST_BASE,'apps/sg-runtime/package.json'))
@@ -7252,9 +7258,12 @@ export function qualityTrustedHostPredecessor(current,historical){
  qualityAssert.deepEqual(manifest,expected,'only the published core version and exact QA tests change')
  const lock=JSON.parse(current('apps/sg-runtime/package-lock.json')),previous=JSON.parse(historical(QUALITY_HOST_BASE,'apps/sg-runtime/package-lock.json'))
  previous.packages[''].dependencies['@profitia/cic-core']='1.8.0'
- Object.assign(previous.packages['node_modules/@profitia/cic-core'],QUALITY_CIC_PIN)
+ Object.assign(previous.packages['node_modules/@profitia/cic-core'],CIC_QUALITY_STAGE1_PIN)
  qualityAssert.deepEqual(lock,previous,'no other registry, local package or dependency change')
- const mapped=new Set(QUALITY_HOST_PATHS),cache=new Map()
+ const beforeCommon=String(historical(QUALITY_HOST_BASE,common)),commonHead="export function recurringSourcePredecessor(current,historical){\n",commonImport="import {assistantQualityPredecessor} from '../sg-runtime/tests/assistant-quality-integrity.mjs'\n",commonPrefix=" const quality=assistantQualityPredecessor(current,historical);if(quality)return recurringSourcePredecessor(quality.previousBytes,historical)\n"
+ qualityAssert.equal(beforeCommon.split(commonHead).length,2,'one original recurring source entry')
+ qualityAssert.equal(String(current(common)),hasCommon?commonImport+beforeCommon.replace(commonHead,commonHead+commonPrefix):beforeCommon,'only exact additive quality dispatch precedes original recurring checks')
+ const mapped=new Set(paths),cache=new Map()
  return {manifest:a,previousBytes:p=>{
   if(p===QUALITY_HOST_RECEIPT||qualityHostAdded.has(p))throw Object.assign(Error('Quality host absent from predecessor'),{code:'ENOENT'})
   if(!mapped.has(p))return current(p)
