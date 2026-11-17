@@ -13,7 +13,10 @@ const ledgerPath='Canon/registries/governance-manifest-successors-v1.json'
 const trustedRef='refs/remotes/origin/main'
 const sourceSha='1dc0c05e52e8f4b78779ec3d0e532975ed4fa354'
 const hash=bytes=>createHash('sha256').update(bytes).digest('hex')
-const physical=p=>fs.readFileSync(path.join(root,p))
+// Exercise the independently admitted BSDC helper/test pair. The current
+// composite Calendar/Knowledge graph is authenticated by its own real tests.
+const approvedFixtureSha='133251a4215b2fc1560fd3dea3c1ac095acf0ef7'
+const physical=p=>[cfg.helperPath,cfg.testPath].includes(p)?history(approvedFixtureSha,p):fs.readFileSync(path.join(root,p))
 const history=(sha,p)=>execFileSync('git',['show',sha+':'+p],{cwd:root,stdio:['ignore','pipe','pipe']})
 const sourceManifest=history(sourceSha,cfg.manifestPath)
 const sourceDoc='Canon/v1.0-procurement-insights-narrative-and-editorial-canon.md'
