@@ -17,7 +17,7 @@ export function createQualityGitHub({token,fetchImpl=fetch,publisherEnabled=fals
  require(typeof token==='string'&&token.length>0&&typeof fetchImpl==='function'
   &&typeof publisherEnabled==='boolean'&&typeof promotionEnabled==='boolean','GITHUB_CONFIGURATION_REQUIRED')
  async function request(path,{method='GET',body}={}){
-  require(path.startsWith('/repos/'+repository+'/')&&!path.includes('..')&&!path.includes('#'))
+  require((path==='/repos/'+repository||path.startsWith('/repos/'+repository+'/'))&&!path.includes('..')&&!path.includes('#'))
   let response
   try{response=await fetchImpl('https://api.github.com'+path,{method,redirect:'error',signal:AbortSignal.timeout(15000),
    headers:{Accept:'application/vnd.github+json',Authorization:'Bearer '+token,'X-GitHub-Api-Version':'2022-11-28',
@@ -67,7 +67,7 @@ export function createQualityGitHub({token,fetchImpl=fetch,publisherEnabled=fals
  }
  return Object.freeze({
   async descriptor(){
-   const v=await request('/repos/'+repository+'/');require(v.full_name===repository&&v.permissions?.pull===true,'GITHUB_REPOSITORY_UNVERIFIED')
+   const v=await request('/repos/'+repository);require(v.full_name===repository&&v.permissions?.pull===true,'GITHUB_REPOSITORY_UNVERIFIED')
    return {repository,headSha:await main(),publisherEnabled,promotionEnabled}
   },
   main,pull,checks,
