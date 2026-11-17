@@ -32,9 +32,16 @@ test('direct consent transport entry authenticates CIC first and retains all his
 test('authenticated recurring source graph covers every actual CIC app amendment and no unknown path',async()=>{
  const {recurringSourcePredecessor}=await import('../../architecture-lab/private-recurring-source.mjs')
  const bound=recurringSourcePredecessor(current,historical).manifest.sourceDigests
- const changed=execFileSync('git',['diff','--name-only','origin/main...HEAD','--','apps/sg-runtime'],{cwd:root,encoding:'utf8'}).trim().split('\n').filter(Boolean)
+ const changed=execFileSync('git',['diff','--name-only','origin/main','--','apps/sg-runtime'],{cwd:root,encoding:'utf8'}).trim().split('\n').filter(Boolean)
  assert(changed.length>=22)
  const {createHash}=await import('node:crypto')
  for(const p of changed)assert.equal(bound[p],createHash('sha256').update(current(p)).digest('hex'),p)
  assert.equal(Object.hasOwn(bound,'apps/sg-runtime/unreviewed.ts'),false)
+})
+
+test('actual notification and live source entry points accept the authenticated CIC successor without changing their receipts',async()=>{
+ const {assistantNotificationsPredecessor}=await import('./assistant-notifications-integrity.mjs')
+ const {procurementInsightsLiveAcceptancePredecessor}=await import('./procurement-insights-live-acceptance-source.mjs')
+ assert(assistantNotificationsPredecessor(current,historical))
+ assert(procurementInsightsLiveAcceptancePredecessor(current,historical))
 })
