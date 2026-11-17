@@ -16,11 +16,11 @@
     "apps/sg-runtime/tests/assistant-quality-response.test.ts": "86a0957bcaa243ac8fbacd57db5024f4e242d99fe9bb52bed563b89a2de1f48e",
     "apps/sg-runtime/tests/assistant-quality-evidence.test.ts": "d4aaa3ae96e6879491b96ddd4d288078dc14ad4184e3e66b8e4e2a1446e3bcee",
     "apps/sg-runtime/tests/assistant-quality-integrity.mjs": "c32cf10315b35720ddd94a05c1b051da29fe7ff5baa4fb8b833844fb1d94af2d",
-    "apps/sg-runtime/tests/assistant-quality-host-integrity.mjs": "f9a860592ac33a0546cffe5439667fe9c60a3c213905cc9246ba8ee286af622c",
+    "apps/sg-runtime/tests/assistant-quality-host-integrity.mjs": "1e7a5673c8e0602a094dbb33c64c72d0dcaa31f9e6ce2151c7dd9a2aa5d604a9",
     "apps/sg-runtime/tests/assistant-quality-host-integrity.test.mjs": "a093291b1ee6efb260b46dc40988b64a2915da027200b1ccc399a1463b9e03bb",
     "apps/sg-runtime/tests/procurement-insights-completion-integrity.mjs": "00f1b475342a78ad916c03723ae2b9b268963240d101b57c17559308c48daafa",
     "apps/architecture-lab/private-recurring-source.mjs": "f0bdef098fc654693b9a2643cd7470eac5e24fb62e563e504c3ca2e0d5cb7d39",
-    "packages/platform-contracts/test/recurring-consent-transport-source.mjs": "6a1b4b1eab3110b51c5b27086762ba4e6c58ed92a07064e93238529de10535c5"
+    "apps/sg-runtime/tests/procurement-insights-live-acceptance-source.mjs": "0209741a4b170a338706736bbcd3a58a7303d4c6e2af94dfabc6881d977d9331"
   },
   "previousReceipts": {
     "apps/sg-runtime/assistant-quality-integration.json": "d37226bbb90d585b95aab383dab6fcb7d20ab8698709b50de0e1c8a58d1af2a7",

@@ -1,3 +1,4 @@
+import {assistantQualityPredecessor} from './assistant-quality-integrity.mjs'
 import {assistantNotificationsPredecessor,NOTIFICATIONS_RECEIPT} from './assistant-notifications-integrity.mjs';
 // Test/build-only continuation. No runtime, authorisation or deployment grant.
 import assert from 'node:assert/strict';
@@ -21,6 +22,7 @@ export const PI_LIVE_ACCEPTANCE_PATHS=Object.freeze([
 const additions=new Set(PI_LIVE_ACCEPTANCE_PATHS.filter(p=>p.includes('host-pool-concurrency')||p.includes('notification-navigation')||p.includes('live-acceptance-source')));
 const hash=b=>createHash('sha256').update(b).digest('hex');
 export function procurementInsightsLiveAcceptancePredecessor(current,historical){
+ const quality=assistantQualityPredecessor(current,historical);if(quality)return procurementInsightsLiveAcceptancePredecessor(quality.previousBytes,historical)
  const notifications=assistantNotificationsPredecessor(current,historical);
  if(notifications){
   const accepted=procurementInsightsLiveAcceptancePredecessor(notifications.previousBytes,historical);assert(accepted,'accepted PI live source retained');
