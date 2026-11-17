@@ -107,6 +107,14 @@ test("Vercly source continuation preserves all prior receipts and is restricted 
  const expected=["src/server/kys-cache.ts","src/server/vercly-kys.ts","src/server/xray-lookup.ts","src/server/supplier-native-sensitive.ts","src/server/supplier-native-sensitive-store.ts","src/server/provider-source-transport.ts"].sort();
  assert.deepEqual(Object.keys(current.applicationSourceDigests).sort(),expected);
  const hash=(v:Uint8Array)=>createHash("sha256").update(v).digest("hex");
+ const {kysResumePredecessor}=await import('../../scripts/kys-resume-source-view.mjs');
+ const read=(p:string)=>readFileSync(new URL('../../../../'+p,import.meta.url));
+ const historic=(sha:string,p:string)=>execFileSync('git',['show',sha+':'+p]);
+ const validated=kysResumePredecessor(read,historic);assert.deepEqual(validated.prior,preceding);
+ for(const changed of ['src/server/kys-cache.ts','src/server/full-ui-parity-adoption.test.ts']){
+  assert.throws(()=>kysResumePredecessor((p:string)=>p==='apps/srm/'+changed?Buffer.concat([read(p),Buffer.from('UNACCEPTED')]):read(p),historic));
+ }
+ assert.equal(hash(read('apps/srm/scripts/kys-resume-source-view.mjs')),current.testSupportSourceDigests['scripts/kys-resume-source-view.mjs']);
  for(const file of expected){
   assert.equal(hash(readFileSync(new URL("../../"+file,import.meta.url))),current.applicationSourceDigests[file],file);
   assert.equal(hash(execFileSync("git",["show",current.previousApplicationAuthority+":apps/srm/"+file])),current.previousApplicationSourceDigests[file],file);
