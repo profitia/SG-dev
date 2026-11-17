@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import {createHash,randomUUID} from 'node:crypto'
 import test from 'node:test'
+import {AsyncLocalStorage} from 'node:async_hooks'
 import pg from 'pg'
 import {assertIsolatedTestConnection} from '../../architecture-lab/src/operation-postgres-fixture.mjs'
 import {privateBusinessPlan} from '../db/private-store/initialize.mjs'
@@ -135,7 +136,40 @@ async function sensitiveNativeFixture(t,full=true,privateMode=false){
  const root=new pg.Client({connectionString:rootUrl});await root.connect();let owner,pool,auditPool,servicePool,serviceAudit,rawService,sourcePool,sourceAudit,rawSource,corporatePool,corporateAudit,server
  const CORPORATE='srm_company_publication_runtime';let networkHits=0;let currentUser=U,failHumanOutcome=false,revokeAfterPost=false,interruptPost=false,emptyCeidg=false,failedCeidg=false,emptyMgbi=false,revokeEmptyReport=false,revokeKrsExport=false,revokeWebRead=false;const networkObservations=[]
  let syntheticOrigin, rejectKysGetOnce=false, nextReport=0
+ const parentScope=new AsyncLocalStorage(),transactionOwners=new Map(),networkOwners=new Map(),trackedClients=new WeakSet()
+ const previousFetch=globalThis.fetch
+ const openForNetwork=async parentId=>{
+  const rows=(await owner.query("SELECT pid,usename FROM pg_stat_activity WHERE datname=$1 AND usename=ANY($2::text[])AND state IN('idle in transaction','idle in transaction (aborted)')",[DATABASE,[FOREGROUND,EXECUTOR,SOURCE,CORPORATE]])).rows
+  // An independent follower may read its cache during the leader's HTTP request.
+  // The requesting parent and every unowned transaction remain forbidden.
+  return rows.filter(row=>!parentId||!transactionOwners.has(row.pid)||transactionOwners.get(row.pid)===parentId)
+ }
+ const trackPool=selected=>selected?.on('acquire',client=>{
+  if(trackedClients.has(client))return
+  trackedClients.add(client)
+  const original=client.query.bind(client)
+  client.query=(sql,...args)=>{
+   const command=typeof sql==='string'?sql.trim().replace(/;$/,'').toUpperCase():''
+   const parentId=parentScope.getStore(),result=original(sql,...args)
+   if(!['BEGIN','COMMIT','ROLLBACK'].includes(command)||!result?.then)return result
+   return result.then(value=>{
+    if(command==='BEGIN'){if(parentId)transactionOwners.set(client.processID,parentId);else transactionOwners.delete(client.processID)}
+    else transactionOwners.delete(client.processID)
+    return value
+   })
+  }
+ })
  try{
+  globalThis.fetch=async(input,init)=>{
+   const parentId=parentScope.getStore()
+   if(!parentId)return previousFetch(input,init)
+   const url=new URL(input instanceof Request?input.url:String(input))
+   if(url.origin!==syntheticOrigin)return previousFetch(input,init)
+   const method=(init?.method??(input instanceof Request?input.method:'GET')).toUpperCase(),key=method+' '+url.pathname+url.search
+   assert(!networkOwners.has(key),'one concurrent provider attempt for an exact target')
+   networkOwners.set(key,parentId)
+   try{return await previousFetch(input,init)}finally{networkOwners.delete(key)}
+  }
   assert.equal((await root.query('SELECT 1 FROM pg_database WHERE datname=$1',[DATABASE])).rowCount,0,'Never adopt existing data')
   await root.query(`CREATE DATABASE ${DATABASE}`)
   await root.query("BEGIN;SELECT pg_advisory_xact_lock(170001,20261017)")
@@ -254,9 +288,10 @@ async function sensitiveNativeFixture(t,full=true,privateMode=false){
    server=http.createServer(async(req,res)=>{
     try{
      networkHits++
-     const open=(await owner.query("SELECT usename FROM pg_stat_activity WHERE datname=$1 AND usename=ANY($2::text[])AND state IN('idle in transaction','idle in transaction (aborted)')",[DATABASE,[FOREGROUND,EXECUTOR,SOURCE,CORPORATE]])).rows
+     const networkParent=networkOwners.get(req.method+' '+req.url)
+     const open=await openForNetwork(networkParent)
      assert.deepEqual(open,[],'No private/Source SQL transaction during real HTTP')
-     networkObservations.push({path:req.url,authorization:req.headers.authorization,openTransactions:open.length})
+     networkObservations.push({path:req.url,authorization:req.headers.authorization,openTransactions:open.length,parentId:networkParent})
      const webUrl=new URL(req.url,'http://127.0.0.1')
      if(privateMode&&webUrl.pathname==='/uncertain-web'){assert.equal(req.headers.authorization,undefined);req.socket.destroy();return}
      if(privateMode&&['/','/website-data'].includes(webUrl.pathname)){
@@ -472,6 +507,7 @@ async function sensitiveNativeFixture(t,full=true,privateMode=false){
     privateRead:{...privateHumanOptions,application:{...humanOptions.application,operations:['supplier.private.read','supplier.private.reveal','supplier.private.export']},sensitiveBoundaryDigest:hash(own('010-supplier-sensitive-work.sql')),secret:privateSecret},
     krs:{apiKey:'synthetic-native-sensitive-key',source:{...sourceOptions,providerOrigin:'https://vercly.fixture.test',syntheticOrigin,external:{...sourceProvider.external,maximumResponseBytes:24*1024*1024}}}})
   }
+  for(const selected of[pool,auditPool,servicePool,serviceAudit,sourcePool,sourceAudit,corporatePool,corporateAudit])trackPool(selected)
   let selectedA,kysA,viewA
   if(privateMode){
    await t.test('public corporate admission cannot authorize private native Work, and the private grant is never inferred',async()=>{
@@ -831,6 +867,20 @@ async function sensitiveNativeFixture(t,full=true,privateMode=false){
    const row=(await owner.query('SELECT lease_owner FROM srm.catalog_kys_reports WHERE organization_id=$1 AND nip=$2',[A,selected.command.nip])).rows[0]
    assert.equal(row.lease_owner,null)
   })
+  await t.test('concurrent HTTP boundary still refuses its own and unowned private transactions',async()=>{
+   const current=randomUUID(),other=randomUUID()
+   await parentScope.run(current,async()=>{
+    const client=await servicePool.connect()
+    try{
+     await client.query('BEGIN')
+     assert((await openForNetwork(current)).some(row=>row.pid===client.processID),'the requesting parent cannot hold SQL during HTTP')
+     assert(!(await openForNetwork(other)).some(row=>row.pid===client.processID),'an independent follower is a separate operation')
+     await rawService.query('BEGIN')
+     try{assert((await openForNetwork(other)).some(row=>row.pid===rawService.processID),'unowned SQL is never exempted')}
+     finally{await rawService.query('ROLLBACK')}
+    }finally{await client.query('ROLLBACK');client.release()}
+   })
+  })
   await t.test('accepted native KYS failure resumes one existing order by GET under concurrent new parents',async()=>{
    const nip='5221054994',first=selection(await parent(A,nip)),before=networkHits,postsBefore=nextReport
    rejectKysGetOnce=true
@@ -839,8 +889,9 @@ async function sensitiveNativeFixture(t,full=true,privateMode=false){
    assert(held.lease_owner);assert.equal(held.lease_until,'infinity');assert(held.provider_correlation_id);assert.equal(held.resume_until,null);assert.equal(held.report_json,null)
    assert.equal(nextReport,postsBefore+1);assert.equal(networkHits,before+2)
    const next=selection(await parent(A,nip)),parallel=selection(await parent(A,nip))
-   const results=await Promise.all([native().run(next),native().run(parallel)])
+   const results=await Promise.all([parentScope.run(next.requestId,()=>native().run(next)),parentScope.run(parallel.requestId,()=>native().run(parallel))])
    assert(results.every(r=>r.status==='SUCCESS'&&r.snapshotId))
+   assert([next.requestId,parallel.requestId].includes(networkObservations.at(-1).parentId),'the real recovery GET retains its requesting parent context')
    assert.equal(nextReport,postsBefore+1,'only the original paid POST was sent')
    assert.equal(networkHits,before+3,'one original GET failed, one recovery GET succeeded')
    const saved=(await owner.query('SELECT lease_owner,provider_correlation_id,resume_until,report_json FROM srm.catalog_kys_reports WHERE organization_id=$1 AND nip=$2',[A,nip])).rows[0]
@@ -878,7 +929,7 @@ async function sensitiveNativeFixture(t,full=true,privateMode=false){
     assert.equal(networkHits,before);
    }finally{clerk.users.getUser=original}
   })
- }finally{if(server)await new Promise(resolve=>server.close(resolve));await corporatePool?.end();await corporateAudit?.end();await pool?.end();await auditPool?.end();await servicePool?.end();await serviceAudit?.end();await rawService?.end();await sourcePool?.end();await sourceAudit?.end();await rawSource?.end();await owner?.end();await root.query(`DROP DATABASE IF EXISTS ${DATABASE} WITH(FORCE)`);await root.end()}
+ }finally{globalThis.fetch=previousFetch;if(server)await new Promise(resolve=>server.close(resolve));await corporatePool?.end();await corporateAudit?.end();await pool?.end();await auditPool?.end();await servicePool?.end();await serviceAudit?.end();await rawService?.end();await sourcePool?.end();await sourceAudit?.end();await rawSource?.end();await owner?.end();await root.query(`DROP DATABASE IF EXISTS ${DATABASE} WITH(FORCE)`);await root.end()}
 }
 test('real ordinary-role native KYS/JDG, private human output and refusal across access boundaries',t=>sensitiveNativeFixture(t))
 

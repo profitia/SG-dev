@@ -11,7 +11,7 @@ import {readFileSync} from 'node:fs'
 import {execFileSync} from 'node:child_process'
 import {createHash} from 'node:crypto'
 import currentReceipt from '../../operation-integration.json'
-const kysView=sourceDependencyTestFixtures((p:string)=>readFileSync(new URL('../../../../'+p,import.meta.url)),(sha:string,p:string)=>execFileSync('git',['show',sha+':'+p]),'SRM:SRM-VERCLY-RESUME-20261117')
+const kysView=sourceDependencyTestFixtures((p:string)=>readFileSync(new URL('../../../../'+p,import.meta.url)),(sha:string,p:string)=>execFileSync('git',['show',sha+':'+p]),'SRM:SRM-VERCLY-RESUME-TESTS-20261117')
 const receipt=kysView.prior as typeof currentReceipt
 
 test('MGBI recovery preserves the full prior acceptance and pins every current consumer change',()=>{
