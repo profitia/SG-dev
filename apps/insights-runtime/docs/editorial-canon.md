@@ -16,6 +16,10 @@ No factual inputs produce `INSUFFICIENT_MATERIAL`; nonempty but potentially inad
 
 For compatibility the top-level `PASS_WITH_HUMAN_REVIEW` still means structural validation permits an internal draft. It does not override `editorial.status` or permit publication. `semanticReview: HUMAN_REQUIRED`, `automaticPublication: false` and the existing independent review/publication path remain in force. The Quality Gate neither rewrites prose nor initiates another provider call.
 
+## Immutable source acceptance
+
+The SG2 test/build graph adds `procurement-insights-editorial-integration.json` and verifies the exact Composer/profile bytes before exposing their immutable predecessor to existing history checks. All twenty-seven earlier acceptance receipts stay byte-identical. The additive notification-source dispatch also carries the new closed source inventory into existing candidate coverage; it grants no runtime access, paid call, automatic publication or deployment. Regression tests reject rewritten receipts, changed sources, rebound runtime hashes, skipped existing tests and unreadable historical objects. This is source compatibility evidence, not replay of a stored report.
+
 ## Offline acceptance
 
 `tests/editorial.test.mjs` verifies actual prepared API/counter bytes, exact §6.5 and ED-question parity, approved substantive-section digest, unchanged facts/schema/reference contracts, hard failures and ED/AC regression cases. All AC-01–AC-12 have controlled examples. Oil fixtures cover conflicting supply/stocks, headline depth, missing forecast/comparison, diagnostic narration and syndication; copper/wheat examples exercise the same universal quality layer with different category mechanisms. They do not add unsupported report definitions to the public Oil API.

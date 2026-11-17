@@ -1,3 +1,4 @@
+import './procurement-insights-editorial-integrity.test.mjs'
 // SYNTHETIC_ONLY source integrity: never a runtime or Development acceptance.
 import test from 'node:test'
 import assert from 'node:assert/strict'
