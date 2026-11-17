@@ -15,11 +15,12 @@
     "apps/sg-runtime/tests/assistant-conversation-handler.test.ts": "4d9a3c19706772ec319d0ca7847e879d4d92d1fd384ebc0ed1c5f5cc60854550",
     "apps/sg-runtime/tests/assistant-quality-response.test.ts": "86a0957bcaa243ac8fbacd57db5024f4e242d99fe9bb52bed563b89a2de1f48e",
     "apps/sg-runtime/tests/assistant-quality-evidence.test.ts": "d4aaa3ae96e6879491b96ddd4d288078dc14ad4184e3e66b8e4e2a1446e3bcee",
-    "apps/sg-runtime/tests/assistant-quality-integrity.mjs": "7f8a48e36fb8ce792d673dc501b7e9629485e33739284292637c898965c02d6d",
-    "apps/sg-runtime/tests/assistant-quality-host-integrity.mjs": "4c1555fc1d39c0c9f169e092ea9c4fd3dae5f6b9f5e314a399582b4b8f91be41",
-    "apps/sg-runtime/tests/assistant-quality-host-integrity.test.mjs": "a689d4479c1b219ca5b287143b5581f0681e9979c2036ede43fb39b71d3a307b",
+    "apps/sg-runtime/tests/assistant-quality-integrity.mjs": "c32cf10315b35720ddd94a05c1b051da29fe7ff5baa4fb8b833844fb1d94af2d",
+    "apps/sg-runtime/tests/assistant-quality-host-integrity.mjs": "f9a860592ac33a0546cffe5439667fe9c60a3c213905cc9246ba8ee286af622c",
+    "apps/sg-runtime/tests/assistant-quality-host-integrity.test.mjs": "a093291b1ee6efb260b46dc40988b64a2915da027200b1ccc399a1463b9e03bb",
     "apps/sg-runtime/tests/procurement-insights-completion-integrity.mjs": "00f1b475342a78ad916c03723ae2b9b268963240d101b57c17559308c48daafa",
-    "apps/architecture-lab/private-recurring-source.mjs": "bc8d6ecc50582149b7b9321405a36f9fbc1e20fb218292212b2bdb881fa9ebe2"
+    "apps/architecture-lab/private-recurring-source.mjs": "f0bdef098fc654693b9a2643cd7470eac5e24fb62e563e504c3ca2e0d5cb7d39",
+    "packages/platform-contracts/test/recurring-consent-transport-source.mjs": "6a1b4b1eab3110b51c5b27086762ba4e6c58ed92a07064e93238529de10535c5"
   },
   "previousReceipts": {
     "apps/sg-runtime/assistant-quality-integration.json": "d37226bbb90d585b95aab383dab6fcb7d20ab8698709b50de0e1c8a58d1af2a7",

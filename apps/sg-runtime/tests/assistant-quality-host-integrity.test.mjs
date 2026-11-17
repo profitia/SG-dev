@@ -20,3 +20,21 @@ test('host source metadata cannot activate private QA, start a pilot, publish an
  assert.equal(assistantQualityHostPredecessor(()=>{throw Object.assign(Error('ABSENT'),{code:'ENOENT'})},historical),null)
  assert.throws(()=>assistantQualityHostPredecessor(()=>{throw Object.assign(Error('DENIED'),{code:'EACCES'})},historical),{code:'EACCES'})
 })
+
+test('direct consent transport entry authenticates CIC first and retains all historical transport checks',async()=>{
+ const {recurringConsentTransportPredecessor}=await import('../../../packages/platform-contracts/test/recurring-consent-transport-source.mjs')
+ const accepted=recurringConsentTransportPredecessor(current,historical);assert(accepted)
+ const p='apps/architecture-lab/private-recurring-source.mjs'
+ assert.throws(()=>recurringConsentTransportPredecessor(f=>f===p?Buffer.concat([current(f),Buffer.from('UNREVIEWED')]):current(f),historical))
+ assert.throws(()=>recurringConsentTransportPredecessor(f=>f===QUALITY_HOST_RECEIPT?Buffer.from('{}'):current(f),historical))
+})
+
+test('authenticated recurring source graph covers every actual CIC app amendment and no unknown path',async()=>{
+ const {recurringSourcePredecessor}=await import('../../architecture-lab/private-recurring-source.mjs')
+ const bound=recurringSourcePredecessor(current,historical).manifest.sourceDigests
+ const changed=execFileSync('git',['diff','--name-only','origin/main...HEAD','--','apps/sg-runtime'],{cwd:root,encoding:'utf8'}).trim().split('\n').filter(Boolean)
+ assert(changed.length>=22)
+ const {createHash}=await import('node:crypto')
+ for(const p of changed)assert.equal(bound[p],createHash('sha256').update(current(p)).digest('hex'),p)
+ assert.equal(Object.hasOwn(bound,'apps/sg-runtime/unreviewed.ts'),false)
+})

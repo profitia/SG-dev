@@ -18,7 +18,8 @@ export const QUALITY_HOST_PATHS=Object.freeze([
  'apps/sg-runtime/tests/assistant-quality-host-integrity.mjs',
  'apps/sg-runtime/tests/assistant-quality-host-integrity.test.mjs',
  'apps/sg-runtime/tests/procurement-insights-completion-integrity.mjs',
- 'apps/architecture-lab/private-recurring-source.mjs'
+ 'apps/architecture-lab/private-recurring-source.mjs',
+ 'packages/platform-contracts/test/recurring-consent-transport-source.mjs'
 ])
 export const QUALITY_HOST_PRESERVED=Object.freeze([
  'apps/sg-runtime/assistant-quality-integration.json',
@@ -55,7 +56,8 @@ export function assistantQualityHostPredecessor(current,historical){
  assert.equal(a.previousSourceSha,QUALITY_HOST_BASE);assert.deepEqual(a.cicPublication,publication)
  for(const k of ['responseProtectionActivated','privateQaActivated','cloudInstallationPerformed','pilotStarted'])assert.equal(a[k],false,k)
  const common='apps/architecture-lab/private-recurring-source.mjs',hasCommon=Object.hasOwn(a.sourceDigests,common)
- const paths=hasCommon?QUALITY_HOST_PATHS:QUALITY_HOST_PATHS.filter(p=>p!==common)
+ const transport='packages/platform-contracts/test/recurring-consent-transport-source.mjs',hasTransport=Object.hasOwn(a.sourceDigests,transport)
+ const paths=QUALITY_HOST_PATHS.filter(p=>(p!==common||hasCommon)&&(p!==transport||hasTransport))
  assert.deepEqual(Object.keys(a.sourceDigests).sort(),[...paths].sort())
  for(const p of paths){assert.match(a.sourceDigests[p],/^[a-f0-9]{64}$/);assert.equal(hash(current(p)),a.sourceDigests[p],'exact quality host source '+p)}
  assert.deepEqual(Object.keys(a.previousReceipts).sort(),[...QUALITY_HOST_PRESERVED].sort())
@@ -68,9 +70,12 @@ export function assistantQualityHostPredecessor(current,historical){
  previous.packages[''].dependencies['@profitia/cic-core']='1.8.0'
  Object.assign(previous.packages['node_modules/@profitia/cic-core'],QUALITY_CIC_PIN)
  assert.deepEqual(lock,previous,'no other registry, local package or dependency change')
- const beforeCommon=String(historical(QUALITY_HOST_BASE,common)),commonHead="export function recurringSourcePredecessor(current,historical){\n",commonImport="import {assistantQualityPredecessor} from '../sg-runtime/tests/assistant-quality-integrity.mjs'\n",commonPrefix=" const quality=assistantQualityPredecessor(current,historical);if(quality)return recurringSourcePredecessor(quality.previousBytes,historical)\n"
+ const beforeCommon=String(historical(QUALITY_HOST_BASE,common)),commonHead="export function recurringSourcePredecessor(current,historical){\n",commonImport=hasTransport?"import {assistantQualityPredecessor,QUALITY_RECEIPT} from '../sg-runtime/tests/assistant-quality-integrity.mjs'\n":"import {assistantQualityPredecessor} from '../sg-runtime/tests/assistant-quality-integrity.mjs'\n",commonPrefix=hasTransport?" const quality=assistantQualityPredecessor(current,historical);if(quality){const accepted=recurringSourcePredecessor(quality.previousBytes,historical);assert(accepted,'accepted recurring source retained');return {...accepted,quality,manifest:{...accepted.manifest,sourceDigests:{...accepted.manifest.sourceDigests,...quality.manifest.sourceDigests,[QUALITY_RECEIPT]:hash(current(QUALITY_RECEIPT))}}}}\n":" const quality=assistantQualityPredecessor(current,historical);if(quality)return recurringSourcePredecessor(quality.previousBytes,historical)\n"
  assert.equal(beforeCommon.split(commonHead).length,2,'one original recurring source entry')
  assert.equal(String(current(common)),hasCommon?commonImport+beforeCommon.replace(commonHead,commonHead+commonPrefix):beforeCommon,'only exact additive quality dispatch precedes original recurring checks')
+ const beforeTransport=String(historical(QUALITY_HOST_BASE,transport)),transportHead="export function recurringConsentTransportPredecessor(current,historical){\n",transportImport="import {assistantQualityPredecessor} from '../../../apps/sg-runtime/tests/assistant-quality-integrity.mjs'\n",transportPrefix=" const quality=assistantQualityPredecessor(current,historical);if(quality)return recurringConsentTransportPredecessor(quality.previousBytes,historical)\n"
+ assert.equal(beforeTransport.split(transportHead).length,2,'one original consent transport source entry')
+ assert.equal(String(current(transport)),hasTransport?transportImport+beforeTransport.replace(transportHead,transportHead+transportPrefix):beforeTransport,'only exact additive quality dispatch precedes original consent transport checks')
  const mapped=new Set(paths),cache=new Map()
  return {manifest:a,previousBytes:p=>{
   if(p===QUALITY_HOST_RECEIPT||added.has(p))throw Object.assign(Error('Quality host absent from predecessor'),{code:'ENOENT'})
