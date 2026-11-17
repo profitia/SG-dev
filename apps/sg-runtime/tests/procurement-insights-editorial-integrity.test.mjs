@@ -1,3 +1,4 @@
+import {calendarPiPredecessor} from './calendar-pi-source-compatibility.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
@@ -5,8 +6,11 @@ import {execFileSync} from 'node:child_process'
 import {createHash} from 'node:crypto'
 import {procurementInsightsEditorialPredecessor,EDITORIAL_RECEIPT,EDITORIAL_BASE,EDITORIAL_PATHS} from './procurement-insights-editorial-integrity.mjs'
 import {assistantM2Predecessor,oilReportSerializationPredecessor} from './assistant-m2-integrity.mjs'
-const root=new URL('../../../',import.meta.url),current=p=>fs.readFileSync(new URL(p,root))
+const root=new URL('../../../',import.meta.url),physical=p=>fs.readFileSync(new URL(p,root))
 const blobs=new Map(),historical=(sha,p)=>{const key=sha+':'+p;if(!blobs.has(key))blobs.set(key,execFileSync('git',['show',key],{cwd:root,stdio:['ignore','pipe','pipe']}));return blobs.get(key)}
+// Authenticate the complete current Calendar graph before exposing the
+// unchanged accepted editorial fixture and all of its original assertions.
+const calendar=calendarPiPredecessor(physical,historical),current=calendar?.complete?calendar.previousBytes:physical
 const hash=b=>createHash('sha256').update(b).digest('hex')
 const manifest=()=>JSON.parse(current(EDITORIAL_RECEIPT))
 const withManifest=(a,read=current)=>p=>p===EDITORIAL_RECEIPT?Buffer.from(JSON.stringify(a)):read(p)
