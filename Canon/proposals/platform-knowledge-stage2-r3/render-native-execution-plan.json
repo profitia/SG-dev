@@ -1,0 +1,63 @@
+{
+  "status": "PREPARED_NOT_EXECUTED_REQUIRES_OWNER_R3_GO",
+  "taskId": "ARCH-PK-STAGE2-TECHNICAL-CONT-20261117",
+  "release": "8c1e7e3fe9bfd719cce462ac21377916e791f32a",
+  "workspaceId": "tea-d7lps8rbc2fs73cn80dg",
+  "renderAuthenticationMethod": "EXISTING_NATIVE_OPERATOR",
+  "services": {
+    "srv-dbq6n2m7bikc73dmvs8g": {
+      "targetEnvironment": "development",
+      "name": "platform-knowledge-development-api",
+      "expectedLiveDeployId": "dep-dbq71vutlv9c73epgb2g",
+      "expectedLiveSha": "1fef8b3837c1bdd6ea9ff95dd4e976cc71cf9526",
+      "environment": {
+        "PK_PROCESSING_ENABLED": {
+          "kind": "PUBLIC_CONFIGURATION",
+          "value": "true"
+        },
+        "PK_CLERK_PUBLISHABLE_KEY": {
+          "kind": "PUBLIC_CONFIGURATION",
+          "value": "pk_test_dW5pZmllZC1kcnVtLTcxOTEuY2xlcmsuYWNjb3VudHMuZGV2JA=="
+        }
+      }
+    },
+    "srv-dbq6njec6qcc738fjf50": {
+      "targetEnvironment": "development",
+      "name": "platform-knowledge-development-worker",
+      "expectedLiveDeployId": "dep-dbq72f5g1s2s739m10dg",
+      "expectedLiveSha": "1fef8b3837c1bdd6ea9ff95dd4e976cc71cf9526",
+      "environment": {
+        "PK_PROCESSING_ENABLED": {
+          "kind": "PUBLIC_CONFIGURATION",
+          "value": "true"
+        },
+        "PK_E1_WORKER_KEY_ID": {
+          "kind": "PUBLIC_CONFIGURATION",
+          "value": "pk-development-7d109c436139e110"
+        },
+        "PK_E1_WORKER_PRIVATE_KEY": {
+          "kind": "OWNER_STAGED_WORKER_SIGNING_KEY"
+        }
+      }
+    },
+    "srv-dbcse6jrjlhs73eib3sg": {
+      "targetEnvironment": "development",
+      "name": "identity-runtime-development",
+      "expectedLiveDeployId": "dep-dbq9bn0m7kps738pq75g",
+      "expectedLiveSha": "f78f5867064c96f4497e13bcd53c97af2da2e07a",
+      "environment": {
+        "IDENTITY_CURRENT_E1_ENABLED": {
+          "kind": "PUBLIC_CONFIGURATION",
+          "value": "true"
+        }
+      }
+    }
+  },
+  "existingCredentials": "Remain at their existing provider/runtime destination; no new login/token or credential copied to Codespaces",
+  "projectSourceLocation": "GitHub Codespaces; native client is a service transport only and creates no local project files",
+  "configurationMethod": "Per-key save without deployment; separate exact-commit deployment",
+  "maximumUsd": 10,
+  "maximumDocumentUsd": 1,
+  "recoveryEnabled": true,
+  "recoveryScope": "Only own configuration/deployment journals; API/Worker save PK_PROCESSING_ENABLED=false before source rebuild of the recorded LKG; Identity exact recorded LKG; retain additive schemas, grants, audit and finance; never restore a shared database or overwrite a foreign deployment"
+}
