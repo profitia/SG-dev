@@ -135,6 +135,31 @@
       ]
     },
     {
+      "id": "ARCHITECTURE:ARCH-PI-EDITORIAL-CONTINUITY-ACCEPTANCE-20261117",
+      "status": "ACTIVE",
+      "repository": "profitia/SG-dev",
+      "actor": "profitia",
+      "taskId": "ARCH-PI-EDITORIAL-CONTINUITY-ACCEPTANCE-20261117",
+      "targetEnvironment": "development",
+      "scope": "SOURCE_VALIDATION_ONLY",
+      "approvalRef": "https://github.com/profitia/SG-dev/pull/1118",
+      "sourceSha": "6ddb514c3a99b577fa1027f71d0dc35094b91e23",
+      "baseSha": "1c82689265ef0e776100808531a8f77a83a429e7",
+      "validFrom": "2026-11-17T00:00:00Z",
+      "validUntil": "2026-11-18T00:00:00Z",
+      "files": [
+        {
+          "path": "apps/architecture-lab/test/manifest-successor-continuity.test.mjs",
+          "blob": "4eff37c11e5cfd58ebdfe7ddea418732ee333903",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "ARCHITECTURE",
+          "owner": "Architecture Platform",
+          "surfaceId": "ARCH-BASE-002"
+        }
+      ]
+    },
+    {
       "id": "ARCHITECTURE:ARCH-FINDER-AUDIT-INDEX-RECOVERY-20261117",
       "status": "ACTIVE",
       "repository": "profitia/SG-dev",
