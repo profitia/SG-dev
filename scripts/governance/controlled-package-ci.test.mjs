@@ -1,3 +1,4 @@
+import {publicProofContract} from './controlled-package-ci.mjs'
 import {PLATFORM_KNOWLEDGE_STAGE2_REVIEW,PLATFORM_KNOWLEDGE_STAGE2_PROVENANCE,assertKnowledgeStage2Entry,knowledgeStage2TrustedPredecessor,currentProofContract} from './controlled-package-ci.mjs'
 import {createExecutionCheckout,assertExecutionCheckout,assertPristineSourceInput} from './controlled-package-ci.mjs'
 import {execFileSync as isolationGitExec} from 'node:child_process'
@@ -3199,3 +3200,66 @@ test('Platform Knowledge authenticates current source and all immutable receipts
  assert.equal(Object.keys(v.manifest.sourceDigests).length,407);
  assert.equal(Object.keys({...v.manifest.preservedReceipts,...v.manifest.retainedSuccessorReceipts}).length,15);
 });
+
+
+test('trusted policy content reader verifies small immutable files without a blob fallback',async()=>{
+ const {readControlPolicyFile}=await import('./controlled-package-ci.mjs'),name=CONTROL_POLICY_FILES[0],bytes=Buffer.from('trusted policy\n')
+ const blob=createHash('sha1').update('blob '+bytes.length+'\0').update(bytes).digest('hex'),calls=[]
+ const metadata={type:'file',path:name,sha:blob,size:bytes.length,encoding:'base64',content:bytes.toString('base64')+'\n'}
+ const read=async endpoint=>{calls.push(endpoint);return {data:metadata}}
+ assert.deepEqual(await readControlPolicyFile(name,sha,read),bytes)
+ assert.deepEqual(calls,[`repos/${REPOSITORY}/contents/${name}?ref=${sha}`])
+})
+test('trusted policy content reader recovers omitted large bytes by their immutable authenticated Git blob',async()=>{
+ const {readControlPolicyFile}=await import('./controlled-package-ci.mjs'),name='scripts/governance/controlled-package-ci.mjs',bytes=Buffer.alloc(1024*1024+1,97)
+ const blob=createHash('sha1').update('blob '+bytes.length+'\0').update(bytes).digest('hex'),calls=[]
+ const metadata={type:'file',path:name,sha:blob,size:bytes.length,encoding:'none',content:''}
+ const read=async endpoint=>{calls.push(endpoint);return {data: endpoint.includes('/git/blobs/')?{sha:blob,size:bytes.length,encoding:'base64',content:bytes.toString('base64')}:metadata}}
+ assert.deepEqual(await readControlPolicyFile(name,sha,read),bytes)
+ assert.deepEqual(calls,[`repos/${REPOSITORY}/contents/${name}?ref=${sha}`,`repos/${REPOSITORY}/git/blobs/${blob}`])
+})
+test('trusted policy content reader refuses foreign paths refs metadata truncated and corrupt content',async()=>{
+ const {readControlPolicyFile}=await import('./controlled-package-ci.mjs'),name=CONTROL_POLICY_FILES[0],bytes=Buffer.from('trusted policy\n')
+ const blob=createHash('sha1').update('blob '+bytes.length+'\0').update(bytes).digest('hex')
+ const metadata={type:'file',path:name,sha:blob,size:bytes.length,encoding:'base64',content:bytes.toString('base64')}
+ for(const [n,r] of [['secrets.env',sha],[name,'main'],[name,sha+'?ref=main']])await assert.rejects(()=>readControlPolicyFile(n,r,async()=>{throw Error('unexpected API call')}),/CONTROL_POLICY_CONTENT_REJECTED/)
+ for(const change of [{type:'symlink'},{path:'foreign'},{sha:'x'.repeat(40)},{size:NaN},{size:-1},{size:8*1024*1024+1},{encoding:'none',content:''},{content:''},{content:metadata.content+'!'},{content:Buffer.from('forged policy!\n').toString('base64')},{sha:other}])
+  await assert.rejects(()=>readControlPolicyFile(name,sha,async()=>({data:{...metadata,...change}})),/CONTROL_POLICY_CONTENT_(REJECTED|MISMATCH)/)
+})
+test('trusted policy content reader refuses mismatched or unavailable large Git blobs without weaker fallback',async()=>{
+ const {readControlPolicyFile}=await import('./controlled-package-ci.mjs'),name='scripts/governance/controlled-package-ci.mjs',bytes=Buffer.alloc(1024*1024+1,97)
+ const blob=createHash('sha1').update('blob '+bytes.length+'\0').update(bytes).digest('hex')
+ const metadata={type:'file',path:name,sha:blob,size:bytes.length,encoding:'none',content:''}
+ const correct={sha:blob,size:bytes.length,encoding:'base64',content:bytes.toString('base64')}
+ for(const change of [{sha:other},{size:bytes.length-1},{encoding:'none'},{content:''},{content:Buffer.alloc(bytes.length,98).toString('base64')}])
+  await assert.rejects(()=>readControlPolicyFile(name,sha,async endpoint=>({data:endpoint.includes('/git/blobs/')?{...correct,...change}:metadata})),/CONTROL_POLICY_CONTENT_(REJECTED|MISMATCH)/)
+ await assert.rejects(()=>readControlPolicyFile(name,sha,async endpoint=>{if(endpoint.includes('/git/blobs/'))throw Error('GITHUB_API_403');return {data:metadata}}),/GITHUB_API_403/)
+})
+
+// A real accepted-owner composition proves that the independent public path
+// derives the same exact contract as the trusted producer's filesystem guard.
+test('public proof uses the exact current knowledge record and matches the real controlled source contract',()=>{
+ const dir=fs.mkdtempSync(path.join(os.tmpdir(),'pk-public-proof-')),root=path.join(dir,'source'),review=PLATFORM_KNOWLEDGE_STAGE2_REVIEW
+ try{
+  execFileSync('git',['worktree','add','--detach',root,review.sourceSha],{cwd:authorityRoot,stdio:'pipe'})
+  const receiptBytes=fs.readFileSync(path.join(root,'apps/sg-runtime/operation-integration.json')),receipt=JSON.parse(receiptBytes),recurringRecord=fs.readFileSync(path.join(root,'apps/architecture-lab/private-recurring-source.json')),knowledgeRecord=fs.readFileSync(path.join(root,PLATFORM_KNOWLEDGE_STAGE2_PROVENANCE.recordPath)),options={receiptBytes,recurringRecord,knowledgeRecord}
+  const expected=currentProofContract(root,receipt),actual=publicProofContract(receipt,options)
+  assert.deepEqual(actual,expected)
+  assert.equal(actual.sourceDigest,PLATFORM_KNOWLEDGE_STAGE2_PROVENANCE.operationSourceDigest)
+  const prior=publicProofContract(receipt,{...options,knowledgeRecord:null})
+  assert.deepEqual({...actual,sourceDigest:prior.sourceDigest},prior)
+  assert.notEqual(prior.sourceDigest,actual.sourceDigest,'the stale public recipe must not silently accept a different SDK')
+  for(const bytes of [Buffer.from('{}'),Buffer.concat([knowledgeRecord,Buffer.from('\n')]),Buffer.from(knowledgeRecord.toString().replace('SOURCE_ACCEPTANCE','SOURCE_ACCEPTANCE_FORGED'))])
+   assert.throws(()=>publicProofContract(receipt,{...options,knowledgeRecord:bytes}),/KNOWLEDGE_STAGE2_RECORD_REJECTED/)
+  const old=execFileSync('git',['show','8ffe8b2a19ebba0da5a29d23031ba41938a830d7:'+PLATFORM_KNOWLEDGE_STAGE2_PROVENANCE.recordPath],{cwd:authorityRoot,stdio:['ignore','pipe','pipe']})
+  assert.throws(()=>publicProofContract(receipt,{...options,knowledgeRecord:old}),/KNOWLEDGE_STAGE2_RECORD_REJECTED/)
+  assert.throws(()=>publicProofContract({...receipt,projectKey:'FOREIGN'},options))
+  assert.throws(()=>publicProofContract(receipt,{...options,recurringRecord:Buffer.from('{}')}))
+ }finally{execFileSync('git',['worktree','remove','--force',root],{cwd:authorityRoot,stdio:'pipe'});fs.rmSync(dir,{recursive:true,force:true})}
+})
+test('public proof absence preserves every original authority-source contract field',()=>{
+ const receiptBytes=fs.readFileSync(path.join(authorityRoot,'apps/sg-runtime/operation-integration.json')),receipt=JSON.parse(receiptBytes),recurringRecord=fs.readFileSync(path.join(authorityRoot,'apps/architecture-lab/private-recurring-source.json'))
+ const before=JSON.stringify(receipt)
+ assert.deepEqual(publicProofContract(receipt,{receiptBytes,recurringRecord}),privateRecurringProofContract(receipt,recurringRecord,receiptBytes))
+ assert.equal(JSON.stringify(receipt),before)
+})

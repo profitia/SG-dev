@@ -6260,6 +6260,16 @@ export function registrationLifecycleProofContract(receipt,recordBytes,receiptBy
  if(registrationHash(receiptBytes)!=='453a6e19d6ce19984cec14097eb535f1257a96298c9d27c868ac7ac08f50105e'||JSON.stringify(receipt)!==JSON.stringify(JSON.parse(receiptBytes)))fail('REGISTRATION_LIFECYCLE_RECEIPT_REJECTED')
  return {...adoptedOperationContract(receipt),sourceDigest:a.sdkDigests.operationSourceDigest}
 }
+// Match the independent public verifier to the already authenticated optional
+// knowledge source. The exact immutable record is data, never candidate code.
+export function publicProofContract(receipt,{receiptBytes,recurringRecord=null,lifecycleRecord=null,knowledgeRecord=null}={}){
+ assertReceipt(receipt)
+ const contract=registrationLifecycleProofContract(receipt,lifecycleRecord,receiptBytes)??privateRecurringProofContract(receipt,recurringRecord,receiptBytes)
+ if(knowledgeRecord===null)return contract
+ const cfg=PLATFORM_KNOWLEDGE_STAGE2_PROVENANCE
+ if(recurringHash(knowledgeRecord)!==cfg.recordSha256||contract.implementation!=='1.0.0-candidate.16')fail('KNOWLEDGE_STAGE2_RECORD_REJECTED')
+ return {...contract,sourceDigest:cfg.operationSourceDigest}
+}
 export function currentProofContract(root,receipt){
  const knowledge=knowledgeStage2Filesystem(root),a=assertPrivateRecurringProvenance(root)
  if(receipt?.sdkSourceContinuations!==undefined){
@@ -7027,6 +7037,25 @@ async function api(endpoint, token = process.env.GH_TOKEN) {
   if (!response.ok) fail(`GITHUB_API_${response.status}`)
   return {data: await response.json(), headers: response.headers}
 }
+// Read only the fixed trusted policy inputs at the immutable workflow SHA.
+// GitHub Contents omits bytes above 1 MiB; authenticate the returned Git blob.
+export async function readControlPolicyFile(name,ref,readApi=api) {
+  if(!policyFiles.includes(name)||!shaPattern.test(ref??''))fail('CONTROL_POLICY_CONTENT_REJECTED')
+  const {data:metadata}=await readApi(`repos/${REPOSITORY}/contents/${name}?ref=${ref}`)
+  if(metadata?.type!=='file'||metadata.path!==name||!shaPattern.test(metadata.sha??'')
+    ||!Number.isSafeInteger(metadata.size)||metadata.size<0||metadata.size>8*1024*1024)fail('CONTROL_POLICY_CONTENT_REJECTED')
+  let encoded=metadata
+  if(metadata.encoding==='none'&&metadata.content===''&&metadata.size>1024*1024){
+    encoded=(await readApi(`repos/${REPOSITORY}/git/blobs/${metadata.sha}`)).data
+    if(encoded?.sha!==metadata.sha||encoded.size!==metadata.size)fail('CONTROL_POLICY_CONTENT_MISMATCH')
+  }
+  if(encoded?.encoding!=='base64'||typeof encoded.content!=='string')fail('CONTROL_POLICY_CONTENT_REJECTED')
+  const base64=encoded.content.replace(/\r?\n/g,''),bytes=Buffer.from(base64,'base64')
+  if(bytes.toString('base64')!==base64||bytes.length!==metadata.size)fail('CONTROL_POLICY_CONTENT_MISMATCH')
+  const blob=createHash('sha1').update('blob '+bytes.length+'\0').update(bytes).digest('hex')
+  if(blob!==metadata.sha)fail('CONTROL_POLICY_CONTENT_MISMATCH')
+  return bytes
+}
 async function checkEnvironment() {
   const registered = readJson(path.join(controlRoot(), 'Canon/registries/architecture-environment-topology-v1.json')).environments.development.github
   const endpoint = `repos/${REPOSITORY}/environments/${encodeURIComponent(registered.environmentName)}`
@@ -7243,7 +7272,7 @@ async function verify() {
       if (p.candidateSha !== sha) continue
       const jobs = String(run.id) === process.env.GITHUB_RUN_ID ? (await api(`repos/${REPOSITORY}/actions/runs/${run.id}/jobs`)).data.jobs : []
       assertProof(p, run, sha, workflow.id, {currentRunId: process.env.GITHUB_RUN_ID, currentRef: process.env.GITHUB_REF, completedJobs: jobs})
-      const sourceFiles = await Promise.all(policyFiles.map(async name => Buffer.from((await api(`repos/${REPOSITORY}/contents/${name}?ref=${run.head_sha}`)).data.content, 'base64')))
+      const sourceFiles = await Promise.all(policyFiles.map(name => readControlPolicyFile(name,run.head_sha)))
       const actualControl = createHash('sha256'); for (const bytes of sourceFiles) actualControl.update(bytes)
       if (actualControl.digest('hex') !== p.controlPolicyDigest) fail('CONTROL_POLICY_PROVENANCE_MISMATCH')
       if(p.schemaVersion==='2.0'){
@@ -7259,7 +7288,8 @@ async function verify() {
       let recurringRecord=null;try{recurringRecord=Buffer.from((await api(`repos/${REPOSITORY}/contents/${PRIVATE_RECURRING_PROVENANCE.recordPath}?ref=${sha}`)).data.content,'base64')}catch(error){if(error.message!=='GITHUB_API_404')throw error}
       assertReceipt(sourceReceipt)
       let lifecycleRecord=null;try{lifecycleRecord=Buffer.from((await api(`repos/${REPOSITORY}/contents/${REGISTRATION_LIFECYCLE_PROVENANCE.recordPath}?ref=${sha}`)).data.content,'base64')}catch(error){if(error.message!=='GITHUB_API_404')throw error}
-      if (JSON.stringify(p.contract) !== JSON.stringify(registrationLifecycleProofContract(sourceReceipt,lifecycleRecord,receiptBytes)??privateRecurringProofContract(sourceReceipt,recurringRecord,receiptBytes))) fail('CONTRACT_PROVENANCE_MISMATCH')
+      let knowledgeRecord=null;try{knowledgeRecord=Buffer.from((await api(`repos/${REPOSITORY}/contents/${PLATFORM_KNOWLEDGE_STAGE2_PROVENANCE.recordPath}?ref=${sha}`)).data.content,'base64')}catch(error){if(error.message!=='GITHUB_API_404')throw error}
+      if (JSON.stringify(p.contract) !== JSON.stringify(publicProofContract(sourceReceipt,{receiptBytes,recurringRecord,lifecycleRecord,knowledgeRecord}))) fail('CONTRACT_PROVENANCE_MISMATCH')
       console.log(`Verified actual SG2 tests/build for ${sha}: https://github.com/${REPOSITORY}/actions/runs/${run.id}`)
       return
     } finally {fs.rmSync(directory, {recursive: true, force: true})}
