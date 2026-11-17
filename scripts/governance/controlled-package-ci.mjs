@@ -411,7 +411,7 @@ export function assertQualityStage1Packages(candidateLock,candidateManifest,auth
 function assertQualityStage1Checkout(root,sha,admission){
  const r=ASSISTANT_QUALITY_SG2_STAGE1_REVIEW
  assertQualityStage1SourceFiles(admission.files)
- if(!qualityStage1Branch(admission.branch)||execFileSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8'}).trim()!==sha)fail('QUALITY_STAGE1_SOURCE_IDENTITY_REJECTED')
+ if(!qualityStage1Branch(admission.branch)||admission.baseSha!==admission.controlSha||execFileSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8'}).trim()!==sha)fail('QUALITY_STAGE1_SOURCE_IDENTITY_REJECTED')
  for(const ancestor of [r.anchorSha,admission.baseSha]){
   try{execFileSync('git',['merge-base','--is-ancestor',ancestor,sha],{cwd:root,stdio:'pipe'})}catch{fail('QUALITY_STAGE1_SOURCE_ANCESTRY_REJECTED')}
  }
@@ -6718,7 +6718,7 @@ export async function resolveCandidateAdmission(c, number, expectedSha, request 
     if(family!=='SG2')fail('QUALITY_STAGE1_SOURCE_IDENTITY_REJECTED')
     assertQualityStage1SourceFiles(files)
     const sha=selectCandidate(c,current,expectedSha,{files,repositoryRoot})
-    return {sha,admission:{kind:'QUALITY_STAGE1_SG2',branch:current.head.ref,baseSha:current.base.sha,files:files.map(({filename,status,sha})=>({filename,status,sha}))}}
+    return {sha,admission:{kind:'QUALITY_STAGE1_SG2',branch:current.head.ref,baseSha:current.base.sha,controlSha:c.controlSha,files:files.map(({filename,status,sha})=>({filename,status,sha}))}}
   }
   const sha = selectCandidate(c, current, expectedSha, {files, repositoryRoot})
   return {sha, admission: {kind: family, baseSha: pr.base.sha, files: files.map(({filename, status, sha}) => ({filename, status, sha}))}}

@@ -3319,3 +3319,25 @@ test('public proof absence preserves every original authority-source contract fi
  assert.deepEqual(publicProofContract(receipt,{receiptBytes,recurringRecord}),privateRecurringProofContract(receipt,recurringRecord,receiptBytes))
  assert.equal(JSON.stringify(receipt),before)
 })
+
+
+test('quality Stage1 resolution fences the exact internal SG2 candidate and authenticates the complete file list',async()=>{
+ const c=await import('./controlled-package-ci.mjs'),source='98ee1b72e952467cd86e9eed451443e7d756f039',base='0f0547698be1ef1c85f3bf6b8752b3c16fe133d3'
+ const files=execFileSync('git',['diff','--name-status','--no-renames',base+'...'+source],{cwd:authorityRoot,encoding:'utf8'}).trim().split('\n').map(line=>{
+  const [status,filename]=line.split('\t'),entry=execFileSync('git',['ls-tree',source,'--',filename],{cwd:authorityRoot,encoding:'utf8'}).trim()
+  return {filename,status:status==='A'?'added':'modified',sha:entry.split(' ')[2].split('\t')[0]}
+ })
+ const p={...pr(),number:1099,changed_files:files.length,base:{...pr().base,sha:base},head:{...pr().head,ref:c.ASSISTANT_QUALITY_SG2_STAGE1_REVIEW.branches[1],sha:source}}
+ let reads=0;const request=async endpoint=>({data:endpoint.includes('/files?')?files:(reads++,p)})
+ const result=await c.resolveCandidateAdmission({...context(),controlSha:base},'1099',source,request,authorityRoot)
+ assert.equal(reads,2);assert.equal(result.sha,source);assert.equal(result.admission.kind,'QUALITY_STAGE1_SG2');assert.deepEqual(result.admission.files,files)
+ const changed={...p,head:{...p.head,sha:'f'.repeat(40)}}
+ await assert.rejects(()=>c.resolveCandidateAdmission({...context(),controlSha:base},'1099',source,async endpoint=>({data:endpoint.includes('/files?')?files:changed}),authorityRoot))
+ const dir=fs.mkdtempSync(path.join(os.tmpdir(),'quality-source-')),root=path.join(dir,'source');let created=false
+ try{
+  execFileSync('git',['worktree','add','--detach',root,source],{cwd:authorityRoot,stdio:'pipe'});created=true
+  c.assertArchitectureCheckout(root,source,result.admission,authorityRoot)
+  for(const change of [{branch:'sg2/foreign'},{files:files.slice(1)},{baseSha:'1'.repeat(40)}])rejection(()=>c.assertArchitectureCheckout(root,source,{...result.admission,...change},authorityRoot))
+  const target=path.join(root,'apps/sg-runtime/lib/assistant/quality-response.ts');fs.appendFileSync(target,'\n');rejection(()=>c.assertArchitectureCheckout(root,source,result.admission,authorityRoot))
+ }finally{if(created)execFileSync('git',['worktree','remove','--force',root],{cwd:authorityRoot,stdio:'pipe'});fs.rmSync(dir,{recursive:true,force:true})}
+})
