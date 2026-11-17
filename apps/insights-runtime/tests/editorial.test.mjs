@@ -105,3 +105,17 @@ test("technical validity, poor prose and insufficient material are distinct; rep
 test("input ceiling still fails closed after applying longer instruction",async()=>{
   await assert.rejects(composer.prepare({profile:{...job.profile,maximumBodyBytes:100}},bundle(fixture.cases[0])),{code:"REQUEST_TOO_LARGE"});
 });
+
+test("buyer-first validation follows the report opening, not persisted JSON key order", async()=>{
+  const c=fixture.cases[1],b=bundle(c);
+  const bad=complete(c.before),reordered=Object.fromEntries(Object.entries(bad).reverse());
+  assert.notEqual(Object.keys(reordered)[0],"executive");
+  for(const narrative of [bad,reordered]){
+    const gate=await qualityGate(job,b,{status:"completed",evidenceFingerprint:b.fingerprint,narrative});
+    const finding=gate.editorial.findings.find(f=>f.code==="DEFENSIVE_OPENING");
+    assert.deepEqual(finding.locations,[{section:"executive",index:0}]);
+  }
+  const good=complete(c.after);good.asphalt=[{text:c.before,refs:["FIXTURE_EVENT"]}];
+  const gate=await qualityGate(job,b,{status:"completed",evidenceFingerprint:b.fingerprint,narrative:Object.fromEntries(Object.entries(good).reverse())});
+  assert(!gate.editorial.findings.some(f=>f.code==="DEFENSIVE_OPENING"));
+});

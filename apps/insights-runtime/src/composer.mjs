@@ -267,7 +267,7 @@ export async function qualityGate(job, bundle, out) {
     editorialRangeAdvisory: chars < 8000 || chars > 10000,
     coverage: bundle.status,
     semanticReview: "HUMAN_REQUIRED",
-    editorial: assessEditorial(out.narrative, bundle),
+    editorial: assessEditorial(out.narrative, bundle, {openingSection:"executive"}),
     automaticPublication: false,
   };
 }

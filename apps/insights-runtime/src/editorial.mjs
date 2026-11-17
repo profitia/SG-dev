@@ -84,12 +84,12 @@ const diagnostics = /\b(?:PARTIAL_READY|NOT_AVAILABLE|RECONCILIATION_REQUIRED|CU
 /** Deterministic editorial findings are separate from semantic approval.
  * No word-frequency score, invented semantic PASS or paid review request.
  * All unproven ED criteria stay HUMAN_REQUIRED, even for fluent valid prose. */
-export function assessEditorial(narrative, bundle) {
+export function assessEditorial(narrative, bundle, {openingSection} = {}) {
   const entries = Object.entries(narrative).flatMap(([section, statements]) =>
     statements.map((s, index) => ({section, index, text:s.text})));
   const findings = [];
   const add = (criteria, code, locations) => findings.push({criteria, code, locations});
-  const first = entries[0];
+  const first = entries.find(entry => entry.section === openingSection) ?? entries[0];
   if (first && defensiveOpening.test(normalize(first.text)))
     add(["ED-01", "ED-12"], "DEFENSIVE_OPENING", [{section:first.section,index:first.index}]);
   const seen = new Map();
