@@ -1,3 +1,4 @@
+import './procurement-insights-e2e-continuation.test.tsx'
 // SYNTHETIC_ONLY: real workspace interactions with offline HTTP fixtures.
 import test from 'node:test'
 import assert from 'node:assert/strict'
