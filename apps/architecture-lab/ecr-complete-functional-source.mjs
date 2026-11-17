@@ -10,10 +10,16 @@ export const COMPLETE_FUNCTIONAL_RECEIPTS=Object.freeze(["apps/architecture-lab/
 const producerDigest="b6ccb6cd489f5931c45968be781156374faef490592852f07059738ce9f25118",consumerDigest="c595640b0e30b914cd6003795f63fd08c1afa99371c4bc2af0df7c74445804c1"
 const digest=b=>createHash('sha256').update(b).digest('hex')
 function optional(read,p){try{return read(p)}catch(e){if(e?.code==='ENOENT'||e?.status===128&&["' does not exist in ","' exists on disk, but not in "].some(s=>String(e.stderr??e.message??'').includes("'"+p+s)))return null;throw e}}
+export const CALENDAR_CI_REPAIR_BASE='52a8489b4feea867bc6c91d7bd1eed5c63e0e9ff'
+export const CALENDAR_CI_REPAIR_PATHS=Object.freeze(["apps/architecture-lab/private-recurring-source.mjs", "apps/platform-source-hub/scripts/ci-routing.mjs", "apps/architecture-lab/test/ecr-functional-ci-repair.test.mjs", "apps/sg-runtime/tests/procurement-insights-live-acceptance-source.mjs", "apps/sg-runtime/tests/calendar-pi-source-compatibility.mjs", "apps/sg-runtime/tests/calendar-pi-source-compatibility.test.mjs"])
+const calendarCiRepairPins=Object.freeze({"apps/architecture-lab/private-recurring-source.mjs": "c8b2318b7b37abf25411ba66872aab31853b4b4f47a33454983447ff7b6eb42b", "apps/platform-source-hub/scripts/ci-routing.mjs": "1a55fb4127f8fc772a4b5c107c6f5f5697ccf7a30bf4aab170c8cbb7035a14af", "apps/architecture-lab/test/ecr-functional-ci-repair.test.mjs": "a94f51c36929adf512aa92fc6b9280e21cad75b593f394562668b1ae58c73236", "apps/sg-runtime/tests/procurement-insights-live-acceptance-source.mjs": "4cd6098f0dc663e50a17b1a065d0383ad89ac4780ed1fdb903d5111193b97147", "apps/sg-runtime/tests/calendar-pi-source-compatibility.mjs": "1317fb9fcd3923e3d170afe4f4f8b5cbd636b147f88a614f17bdbefab3f1db70", "apps/sg-runtime/tests/calendar-pi-source-compatibility.test.mjs": "edc02adc723a6ab080875492ce5d78a27723c85fa0b658ddee2bf5ffa5f439e4"})
 export function completeFunctionalPredecessor(current,historical){
  const p=optional(current,COMPLETE_FUNCTIONAL_PRODUCER_RECORD),c=optional(current,COMPLETE_FUNCTIONAL_CONSUMER_RECORD)
  if(!p&&!c)return null
  assert(p,'consumer requires its exact producer')
+ // This source helper is independently pinned by trusted CI. Authenticate the
+ // complete bounded repair before returning any historical source view.
+ for(const[file,expected]of Object.entries(calendarCiRepairPins))assert.equal(digest(current(file)),expected,'exact Calendar CI repair '+file)
  const verify=(bytes,expected,task,scope,paths)=>{
   assert.equal(digest(bytes),expected,'immutable complete functional source record')
   const a=JSON.parse(bytes)
@@ -29,8 +35,13 @@ export function completeFunctionalPredecessor(current,historical){
  const consumer=c?verify(c,consumerDigest,'SG2-MARKET-CALENDAR-NOTIFICATIONS-COVERAGE-20261112','MARKET_CALENDAR_NOTIFICATION_CONSUMER_SOURCE',COMPLETE_FUNCTIONAL_CONSUMER_PATHS):null
  if(consumer)assert.equal(consumer.producerRecordSha256,producerDigest)
  const mapped=new Set([...COMPLETE_FUNCTIONAL_PRODUCER_PATHS,...(consumer?COMPLETE_FUNCTIONAL_CONSUMER_PATHS:[]),'apps/architecture-lab/ecr-complete-functional-source.mjs'])
- return{producer,consumer,previousBytes:file=>{
+ const currentSourceDigests={...producer.sourceDigests,...consumer?.sourceDigests,[COMPLETE_FUNCTIONAL_PRODUCER_RECORD]:digest(p),...(c?{[COMPLETE_FUNCTIONAL_CONSUMER_RECORD]:digest(c)}:{}),'apps/architecture-lab/ecr-complete-functional-source.mjs':digest(current('apps/architecture-lab/ecr-complete-functional-source.mjs')),...calendarCiRepairPins}
+ return{producer,consumer,currentSourceDigests,previousBytes:file=>{
   if(file===COMPLETE_FUNCTIONAL_PRODUCER_RECORD||file===COMPLETE_FUNCTIONAL_CONSUMER_RECORD)throw Object.assign(Error('Complete functional source absent from predecessor'),{code:'ENOENT'})
+  if(CALENDAR_CI_REPAIR_PATHS.includes(file)){
+   if(['apps/architecture-lab/test/ecr-functional-ci-repair.test.mjs','apps/sg-runtime/tests/calendar-pi-source-compatibility.mjs','apps/sg-runtime/tests/calendar-pi-source-compatibility.test.mjs'].includes(file))throw Object.assign(Error('Calendar CI repair absent from predecessor'),{code:'ENOENT'})
+   return historical(CALENDAR_CI_REPAIR_BASE,file)
+  }
   return mapped.has(file)?historical(COMPLETE_FUNCTIONAL_BASE,file):current(file)
  }}
 }
