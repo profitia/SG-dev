@@ -850,10 +850,10 @@
       "taskId": "SG2-PI-TECHNOLOGY-E2E-20261117",
       "targetEnvironment": "development",
       "scope": "SOURCE_VALIDATION_ONLY",
-      "approvalRef": "owner-decision:01a1e7fd-01d1-7973-b3c3-8188664826c3:PI-DAD96-12-SOURCE-VALIDATION-20261117",
-      "sourceSha": "dad96a19026c1394d5b3be104d94629498acae5e",
-      "baseSha": "4508ed41b8d3300658e92a95110fb626e13d077c",
-      "validFrom": "2026-11-17T18:45:19.480Z",
+      "approvalRef": "owner-decision:01a1e7fd-01d1-7973-b3c3-8188664826c3:PI-82558-13-SOURCE-VALIDATION-20261117",
+      "sourceSha": "82558b2c6a1c007e851fea8cf17ee97e4cdde562",
+      "baseSha": "936eaa61087516028564c6aaad2c46912b4729f7",
+      "validFrom": "2026-11-17T21:07:24.674661Z",
       "validUntil": "2026-11-23T22:59:00.000Z",
       "files": [
         {
@@ -912,7 +912,7 @@
         },
         {
           "path": "apps/sg-runtime/procurement-insights-e2e-continuation.json",
-          "blob": "0d01de01c6cd054dd42add564b1b41a1add010d0",
+          "blob": "0b167c44843dd2b373019fbde4541da34e600458",
           "mode": "100644",
           "status": "added",
           "projectKey": "SG2",
@@ -921,7 +921,7 @@
         },
         {
           "path": "apps/sg-runtime/tests/assistant-notifications-integrity.mjs",
-          "blob": "e7892919d09ffa5c8b3ee73acd6404a99d58bf39",
+          "blob": "a1f3a124b193c8a6cb5a72e1d15a9fc00d8cfbb9",
           "mode": "100644",
           "status": "modified",
           "projectKey": "SG2",
@@ -947,6 +947,15 @@
           "surfaceId": "SG2-BASE-001"
         },
         {
+          "path": "apps/sg-runtime/tests/procurement-insights-editorial-integrity.test.mjs",
+          "blob": "a3e34dfa5118a8fe175eb6109ed71975329e414d",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SG2",
+          "owner": "SG Runtime",
+          "surfaceId": "SG2-BASE-001"
+        },
+        {
           "path": "apps/sg-runtime/tests/procurement-insights-notification-navigation.test.tsx",
           "blob": "a16fca68251893573c79b958a637a6b25c385114",
           "mode": "100644",
@@ -958,49 +967,6 @@
         {
           "path": "apps/sg-runtime/tests/procurement-insights-report-markdown.test.ts",
           "blob": "9ff90f4f06f2684f1cdaa1e91368cb2406b10fb3",
-          "mode": "100644",
-          "status": "added",
-          "projectKey": "SG2",
-          "owner": "SG Runtime",
-          "surfaceId": "SG2-BASE-001"
-        }
-      ]
-    },
-    {
-      "id": "SG2:SG2-PI-TECHNOLOGY-E2E-20261117:CIC-REPORT-INGRESS",
-      "status": "ACTIVE",
-      "repository": "profitia/SG-dev",
-      "actor": "profitia",
-      "taskId": "SG2-PI-TECHNOLOGY-E2E-20261117",
-      "targetEnvironment": "development",
-      "scope": "SOURCE_VALIDATION_ONLY",
-      "approvalRef": "owner-decision:01a1e7fd-01d1-7973-b3c3-8188664826c3:PI-CIC-INGRESS-91FDC-3-SOURCE-VALIDATION-20261117",
-      "sourceSha": "91fdc9730ef236a5924d7160a3ac3c7a12dd21e1",
-      "baseSha": "0c311a197e2f19bc35c953e34e095a1ab92c254b",
-      "validFrom": "2026-11-17T20:16:08.139263Z",
-      "validUntil": "2026-11-23T22:59:00.000Z",
-      "files": [
-        {
-          "path": "apps/sg-runtime/lib/assistant/published-report-request.ts",
-          "blob": "0b64eef8c25ee93a871e6332731662159c33da35",
-          "mode": "100644",
-          "status": "added",
-          "projectKey": "SG2",
-          "owner": "SG Runtime",
-          "surfaceId": "SG2-BASE-001"
-        },
-        {
-          "path": "apps/sg-runtime/lib/assistant/sources.ts",
-          "blob": "f6dee8faf32a4ba3699e2194ab0b7b1bfde32bed",
-          "mode": "100644",
-          "status": "modified",
-          "projectKey": "SG2",
-          "owner": "SG Runtime",
-          "surfaceId": "SG2-BASE-001"
-        },
-        {
-          "path": "apps/sg-runtime/tests/assistant-published-report-request.test.ts",
-          "blob": "3fd50fc65c1fcf4c776877a2ad1443e8ecef8ef0",
           "mode": "100644",
           "status": "added",
           "projectKey": "SG2",
