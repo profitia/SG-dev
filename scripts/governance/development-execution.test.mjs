@@ -383,7 +383,11 @@ test('protected metadata requires a trusted exact table, matching task and recor
 test('metadata review never admits policy, workflow, AGENTS, credentials or private environment files',()=>{
  for(const name of ['Canon/registries/new-source.json','scripts/governance/source.json',
  '.github/workflows/source.json','governance/source.json','AGENTS.md',
- 'apps/sg-runtime/.npmrc','apps/sg-runtime/.env','apps/sg-runtime/.env.local']){
+ 'apps/sg-runtime/.npmrc','apps/sg-runtime/.env','apps/sg-runtime/.env.local',
+ 'apps/sg-runtime/.env.source.json','apps/sg-runtime/.npmrc.source.json',
+ 'apps/sg-runtime/.git/source.json','apps/sg-runtime/node_modules/source.json',
+ 'apps/sg-runtime/.pmos/source.json','apps/sg-runtime/.context/source.json',
+ 'apps/sg-runtime/AGENTS.md/source.json','apps/.git/.env.example']){
   const r=record(),f=facts();r.files[0].path=name;f.files[0].filename=name
   for(const kind of ['HISTORICAL_EVIDENCE','ENVIRONMENT_TEMPLATE']){
    const p={reviewedMetadata:{recordId:r.id,taskId:r.taskId,entries:{[name]:{sha:head,mode:'100644',kind}}}}

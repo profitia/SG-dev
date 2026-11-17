@@ -120,9 +120,12 @@ function permitsReviewedMetadata(record,entry,policy){
  const reviewed=policy?.reviewedMetadata,expected=reviewed?.entries?.[entry.path]
  if(reviewed?.recordId!==record.id||reviewed?.taskId!==record.taskId
    ||!expected||expected.sha!==entry.blob||expected.mode!=='100644'||entry.mode!=='100644')return false
- if(expected.kind==='HISTORICAL_EVIDENCE')return /^Canon\/evidence\/[^/]+\.md$/.test(entry.path)
-   || /^(apps|packages)\//.test(entry.path)&&/(^|\/)[^/]*(integration|compatibility|provenance|source)[^/]*\.json$/.test(entry.path)
- return expected.kind==='ENVIRONMENT_TEMPLATE'&&/^apps\/[^/]+\/\.env\.example$/.test(entry.path)
+ const parts=entry.path.split('/')
+ if(parts.some(part=>['.git','node_modules','.pmos','.context','AGENTS.md'].includes(part)))return false
+ if(expected.kind==='ENVIRONMENT_TEMPLATE')return /^apps\/[A-Za-z0-9_-]+\/\.env\.example$/.test(entry.path)
+ if(parts.some(part=>part.startsWith('.env')||part.startsWith('.npmrc')))return false
+ return expected.kind==='HISTORICAL_EVIDENCE'&&(/^Canon\/evidence\/[^/]+\.md$/.test(entry.path)
+   || /^(apps|packages)\//.test(entry.path)&&/(^|\/)[^/]*(integration|compatibility|provenance|source)[^/]*\.json$/.test(entry.path))
 }
 
 export function assertSourceAdmission(record, {repository,actor,candidateSha,currentMainSha,files,repositoryRoot}, governanceRoot = root, now = Date.now(), policy = undefined) {
