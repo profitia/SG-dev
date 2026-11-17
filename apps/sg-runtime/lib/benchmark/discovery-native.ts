@@ -30,7 +30,10 @@ export function createSg2DiscoveryNativeStore(options:DiscoveryNativeOptions){
   ||!['boundaryDigest','workSchemaDigest'].every(k=>/^[a-f0-9]{64}$/.test(options[k as 'boundaryDigest'|'workSchemaDigest'])))throw TypeError('Explicit native Finder work binding required')
  const {prisma,auditPrisma,now=Date.now}=options
  const fixed=structuredClone({application:options.application,binding:options.binding,job:options.job,boundaryDigest:options.boundaryDigest})
+ // Native audit/work can outlive the admission observation. Recheck the same
+ // external account at outcome through the shared host; never extend its proof.
  const host=createDelegatedNativeWorkHost<Prisma.TransactionClient>({...fixed,privateWork:{schemaDigest:options.workSchemaDigest},now,
+  revalidateExternalAccountBeforeOutcome:true,
   independentQuery:discoveryQuery(auditPrisma),readExternalAccount:createClerkAccountStatusReader({client:options.clerk,...options.accountIdentity,now}),
   transact:(work,limits)=>prisma.$transaction(tx=>work({query:discoveryQuery(tx),transaction:tx}),{timeout:limits.timeoutMs,maxWait:limits.maxWaitMs})})
  async function run<T>(input:DiscoverySelection,unitId:'SG2_DISCOVERY_READ'|'SG2_DISCOVERY_SAVE',data:Json,action:(context:Readonly<OperationContext>,tx:Prisma.TransactionClient,descriptor:Record<string,unknown>)=>Promise<T>):Promise<T>{

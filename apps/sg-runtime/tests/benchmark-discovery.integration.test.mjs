@@ -23,7 +23,7 @@ const refused=e=>e instanceof Error&&e.name==='OperationDenied'
 test('Finder uses actual ordinary native roles, durable private ownership and the one Root/job/audit contract',async t=>{
  const rootUrl=assertIsolatedTestConnection(process.env.SG2_OPERATION_TEST_OWNER_URL,'sg2_operation_test','architecture_test_owner')
  const root=new Client({connectionString:rootUrl});await root.connect();const url=new URL(rootUrl);url.pathname='/'+DATABASE
- const clients=[];let owner,created=false,externalActive=true
+ const clients=[];let owner,created=false,externalActive=true,workClockOffsetMs=0,afterWorkIntent=()=>{},accountReads=0
  try{
   assert.equal((await root.query('SELECT 1 FROM pg_database WHERE datname=$1',[DATABASE])).rowCount,0);await root.query(`CREATE DATABASE ${DATABASE}`);created=true
   await root.query("BEGIN;SET LOCAL lock_timeout='5s';SELECT pg_advisory_xact_lock(170001,20261017)")
@@ -79,7 +79,7 @@ test('Finder uses actual ordinary native roles, durable private ownership and th
   const clerk={authenticateRequest:async request=>{
    const user=request.headers.get('authorization')?.replace(/^Bearer external-/,'');const ok=[U,V].includes(user)
    return{status:ok?'signed-in':'signed-out',isAuthenticated:ok,toAuth:()=>({isAuthenticated:true,tokenType:'session_token',userId:'external-'+user,sessionId:'session-'+user,actor:null,sessionClaims:{iss:ISSUER,sub:'external-'+user,sid:'session-'+user,azp:ORIGIN,exp:Math.floor(Date.now()/1000)+3600}})}
-  },sessions:{getSession:async id=>({id,userId:id.replace('session-','external-'),status:'active',expireAt:Date.now()+3600000,abandonAt:Date.now()+3600000,actor:null})},users:{getUser:async id=>({id,banned:!externalActive,locked:false,deprovisioned:false})}}
+  },sessions:{getSession:async id=>({id,userId:id.replace('session-','external-'),status:'active',expireAt:Date.now()+3600000,abandonAt:Date.now()+3600000,actor:null})},users:{getUser:async id=>{accountReads++;return{id,banned:!externalActive,locked:false,deprovisioned:false}}}}
   const binding=role=>({applicationId:role===F?'spendguru':'spendguru-benchmark-dispatch',environment:'development',projectId:'isolated-discovery-project',branchId:'isolated-discovery-branch',databaseName:DATABASE,role,schemaDigest:hash(source(files[0]))})
   const application=operation=>({appId:'spendguru',profileId:'SPENDGURU_SAAS',environment:'development',deploymentId:'synthetic-foreground',configurationVersion:'request-v1',identityIssuer:ISSUER,organisationId:null,operations:[operation],features:['benchmark']})
   const common={prisma,auditPrisma,clerk,binding:binding(F),identity:{appId:'spendguru',environment:'development',issuer:ISSUER,authorizedParties:[ORIGIN]},module:{id:'benchmark',schemaDigest:hash(source(files[1])),auditSchemaDigest:hash(source(files[2]))},boundaryDigest:boundary}
@@ -87,7 +87,15 @@ test('Finder uses actual ordinary native roles, durable private ownership and th
   const readHost=createSg2DiscoveryReadHost({...common,application:application('benchmark.discovery.read')})
   const job={schemaDigest:hash(source('007-delegated-jobs.sql')),targetOperation:'benchmark.discovery.request',supplierSchemaDigest:hash(source('013-supplier-delegation.sql')),operationSchemaDigest:hash(source('017-additional-request-operations.sql'))}
   const persist=createDiscoveryRequestPersister(binding(F),job)
-  const work=createSg2DiscoveryNativeStore({prisma:workPrisma,auditPrisma:workAudit,clerk,binding:{...binding(W),service:{schemaDigest:hash(source('005-service-read.sql')),profileId:'PLATFORM_INTERNAL',deploymentId:'synthetic-dispatch',configurationVersion:'dispatch-v1'}},
+  // Advance only the receiver clock after a real native INTENT. The original
+  // five-second account proof expires without a wall-clock sleep or wider grant.
+  const timedWorkPrisma={...workPrisma,$transaction:(action,limits)=>workPrisma.$transaction(tx=>action(new Proxy(tx,{get(target,key,receiver){
+   if(key!=='$queryRawUnsafe')return Reflect.get(target,key,receiver)
+   return async(sql,...values)=>{const changed=await target.$queryRawUnsafe(sql,...values)
+    if(sql==='SELECT true AS recorded FROM profitia_jobs.append_audit($1::jsonb)'&&JSON.parse(values[0]).phase==='INTENT')afterWorkIntent()
+    return changed}
+  }})),limits)}
+  const work=createSg2DiscoveryNativeStore({prisma:timedWorkPrisma,auditPrisma:workAudit,clerk,now:()=>Date.now()+workClockOffsetMs,binding:{...binding(W),service:{schemaDigest:hash(source('005-service-read.sql')),profileId:'PLATFORM_INTERNAL',deploymentId:'synthetic-dispatch',configurationVersion:'dispatch-v1'}},
    application:{appId:'spendguru-benchmark-dispatch',profileId:'PLATFORM_INTERNAL',environment:'development',deploymentId:'synthetic-dispatch',configurationVersion:'dispatch-v1',identityIssuer:'urn:profitia:database-service-runtime:v1',organisationId:null,operations:['job.execute'],features:['job_execution']},job,workSchemaDigest:hash(source('016-delegated-native-work.sql')),boundaryDigest:boundary,accountIdentity:{environment:'development',issuer:ISSUER}})
   const command=readDiscoveryCommand({kind:'SEARCH',query:'private steel procurement'}),key='discovery_'+randomUUID()
   const request=(user=U)=>new Request(ORIGIN+'/api/benchmark/search',{headers:{authorization:'Bearer external-'+user}})
@@ -103,6 +111,28 @@ test('Finder uses actual ordinary native roles, durable private ownership and th
    await work.save(selected,{items:[]});const value=await work.read(selected);assert.equal(value.requestId,selected.requestId)
    assert.deepEqual(await(await read()).value.json(),{items:[]})
    await assert.rejects(work.save(selected,{items:[]}))
+  })
+  await t.test('read and save survive an expired admission observation using fresh outcome account reads',async()=>{
+   const receipt=await(await admit(U,A,'discovery_'+randomUUID())).value.json(),pending={...selected,requestId:receipt.requestId}
+   afterWorkIntent=()=>{workClockOffsetMs=6000}
+   try{
+    let before=accountReads
+    assert.equal(await work.read(pending),null);assert.equal(accountReads-before,2)
+    workClockOffsetMs=0;before=accountReads
+    await work.save(pending,{items:[]});assert.equal(accountReads-before,2)
+    workClockOffsetMs=0
+    assert.deepEqual((await work.read(pending)).data,{items:[]})
+   }finally{workClockOffsetMs=0;afterWorkIntent=()=>{}}
+  })
+  await t.test('account revocation during slow native work still rolls back the result',async()=>{
+   const receipt=await(await admit(U,A,'discovery_'+randomUUID())).value.json(),pending={...selected,requestId:receipt.requestId}
+   afterWorkIntent=()=>{workClockOffsetMs=6000;externalActive=false}
+   try{
+    const before=accountReads
+    await assert.rejects(work.save(pending,{items:[]}),refused)
+    assert.equal(accountReads-before,2)
+    assert.equal((await owner.query('SELECT count(*)::int n FROM profitia_benchmark_discovery.results WHERE request_id=$1',[pending.requestId])).rows[0].n,0)
+   }finally{externalActive=true;workClockOffsetMs=0;afterWorkIntent=()=>{}}
   })
   await t.test('another organisation and another member cannot read the same private result',async()=>{
    await assert.rejects(read(V),refused);await assert.rejects(read(U,B),refused)
