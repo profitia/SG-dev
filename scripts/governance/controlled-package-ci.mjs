@@ -105,7 +105,7 @@ export const APPSHELL_NOTIFICATION_REVIEW=Object.freeze({
 })
 const notificationDigest=bytes=>createHash('sha256').update(bytes).digest('hex')
 export const EDITORIAL_CANON_SOURCE_REVIEW=Object.freeze({
-  "sourceSha": "4350876cd17cdf076b0b8766460b3dd7ed64de5e",
+  "sourceSha": "5c304dd31ae324d8173ab5ef2fc75f3e68d7c532",
   "baseSha": "56dcedb243d5d9568e3bd9cc3e13836f4e8b24bb",
   "recordPath": "apps/sg-runtime/procurement-insights-editorial-integration.json",
   "entries": {
@@ -151,8 +151,8 @@ export const EDITORIAL_CANON_SOURCE_REVIEW=Object.freeze({
       "status": "added"
     },
     "apps/sg-runtime/procurement-insights-editorial-integration.json": {
-      "blob": "b2fb0df8027e9ff359d6ae965ae03c492fa68204",
-      "sha256": "a12fe421ae3bd4d42cb82a38a7509730918612ddf1ff3caae7552874933b1f9b",
+      "blob": "41b872172142c75550e886d10a135965ac7092ce",
+      "sha256": "a85d4f9bc91a61fe1abd8ed4516d3b64da3b24df17839a1abe52d84718cfcc17",
       "status": "added"
     },
     "apps/sg-runtime/tests/assistant-notifications-integrity.mjs": {
@@ -168,14 +168,20 @@ export const EDITORIAL_CANON_SOURCE_REVIEW=Object.freeze({
       "previousSha256": "1d22944ad0e3d86082045e887ec85036a729f4d7910e8f6d793e8ec65e963da3"
     },
     "apps/sg-runtime/tests/procurement-insights-editorial-integrity.mjs": {
-      "blob": "fec4ddee3b3d0183383f860aa6564fb6925181a0",
-      "sha256": "7c44fe0e67c51555b746b91e6896a7a0b1734be8ed9f7d7f0a3da668ecf984b2",
+      "blob": "497f465ff01c9f9325bc3a7f2f4ee44987530823",
+      "sha256": "071825800d81e25361fda653348d9b947455464d45b70d7ab8ce5b73dc06bb50",
       "status": "added"
     },
     "apps/sg-runtime/tests/procurement-insights-editorial-integrity.test.mjs": {
-      "blob": "5a46447253425b0ddf9bf25a941e666d09e45781",
-      "sha256": "504be3cefedd23386a5dfce13c128b0992e626468c2791642ee056f8fb3464f1",
+      "blob": "a4590aca205dab209ad6d89d6c320d266d150adb",
+      "sha256": "b93302850ff52aa99d205c8f2cec1bd991909589976a2ef4f58aec5d69cf7f73",
       "status": "added"
+    },
+    "apps/srm/scripts/xray-performance-adoption.test.mjs": {
+      "status": "modified",
+      "blob": "89a4b6955e1a887028039285b24d405720e9a8f0",
+      "sha256": "1ac38a8692016b6b988f59de6320d85891ffede915c6f0bcff7fbaacc7586957",
+      "previousSha256": "4e54b459d9133e6884cec4d44fd53b0b42375521da7b8bfef861bf645edd97c3"
     }
   },
   "projection": [
@@ -185,7 +191,8 @@ export const EDITORIAL_CANON_SOURCE_REVIEW=Object.freeze({
     "apps/sg-runtime/tests/assistant-notifications-integrity.test.mjs",
     "apps/sg-runtime/tests/procurement-insights-editorial-integrity.mjs",
     "apps/sg-runtime/tests/procurement-insights-editorial-integrity.test.mjs",
-    "apps/sg-runtime/procurement-insights-editorial-integration.json"
+    "apps/sg-runtime/procurement-insights-editorial-integration.json",
+    "apps/srm/scripts/xray-performance-adoption.test.mjs"
   ],
   "preservedReceipts": {
     "apps/architecture-lab/private-recurring-source-adoption.json": "a79c186897851acb93142949fe7aee19184cbfe68b3acdf51cbda084c00c1254",
