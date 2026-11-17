@@ -3,7 +3,7 @@ import {sdkSourceContext,sdkSourcePathAbsent} from '../../packages/platform-cont
 import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
 export const KNOWLEDGE_SOURCE_RECORD='apps/architecture-lab/knowledge-source.json';
-export const KNOWLEDGE_SOURCE_RECORD_SHA256='4e815bd8238285419a49a0f3a0718d7356a2ad9aafba214954004acd7f5d9ca9';
+export const KNOWLEDGE_SOURCE_RECORD_SHA256='44b5e85e201974aadc863ed3d9a5afc2f10c0224dc979bfe1cff5a13bfd73f99';
 const hash=bytes=>createHash('sha256').update(bytes).digest('hex');
 export function knowledgeSourcePredecessor(current,historical){
  const context=sdkSourceContext(current,historical)

@@ -18,3 +18,12 @@ test('unreviewed SDK, native schema, metadata, consumer or historical receipt ne
  const forbidden=Object.assign(Error('No access'),{code:'EACCES'});assert.throws(()=>knowledgeSourcePredecessor(()=>{throw forbidden;},history),e=>e===forbidden);
  assert.equal(knowledgeSourcePredecessor(()=>{throw Object.assign(Error('Missing'),{code:'ENOENT'});},history),null);
 });
+
+test('real historical absence is optional while unknown Git revisions and missing foreign paths stay fatal',()=>{
+ for(const sha of ['765e995ca9b1eacef83a562b46e9c23876992e9b','ef1d34e82ed6908a8f26103e2d6694e71374985d','fa81114d35281693604833f1b7639b3c3b829ce6','141cc559063c43cefa991acb9260b32ac5b92615'])
+  assert.equal(knowledgeSourcePredecessor(p=>history(sha,p),history),null);
+ assert.throws(()=>knowledgeSourcePredecessor(p=>history('f'.repeat(40),p),history));
+ assert.throws(()=>knowledgeSourcePredecessor(()=>history('765e995ca9b1eacef83a562b46e9c23876992e9b','foreign-unreviewed-record.json'),history));
+ const denied=Object.assign(Error("path '"+KNOWLEDGE_SOURCE_RECORD+"' does not exist in denied revision"),{code:'EACCES',status:1});
+ assert.throws(()=>knowledgeSourcePredecessor(()=>{throw denied},history),e=>e===denied);
+});

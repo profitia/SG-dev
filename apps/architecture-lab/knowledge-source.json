@@ -1,7 +1,7 @@
 {
   "schemaVersion": "1.0.0",
   "scope": "PLATFORM_KNOWLEDGE_SDK_SOURCE_ACCEPTANCE",
-  "previousSourceSha": "765e995ca9b1eacef83a562b46e9c23876992e9b",
+  "previousSourceSha": "6642755628be60dc0547d81f2b46f71c3a6855ee",
   "authorityMainSha": "736396e6818c34bf588896f9435abc389889ed92",
   "taskIds": {
     "ARCHITECTURE": "ARCH-PK-STAGE2-TECHNICAL-CONT-20261117",
@@ -15,7 +15,7 @@
   "sourceDigests": {
     "apps/architecture-lab/ecr-stage03-sdk-compatibility.mjs": "e815522724549829eef83228fc35f960371c02e3f95b9c18e3a313fdc09460ea",
     "apps/architecture-lab/private-recurring-source.mjs": "116e21f566194089c6260d38d001c70ee8eec92f9ee6f006230dc2c429878e45",
-    "apps/architecture-lab/test/knowledge-source.test.mjs": "e30edbff1e15636340dde8d2a5da5becbd1ec2b5b1990ecf739682d15bd954ce",
+    "apps/architecture-lab/test/knowledge-source.test.mjs": "0c0da6c29447c1ae40fe276ed42dda864fb5ba345c99ffd34c14de9fcdec8e37",
     "apps/architecture-lab/test/payload-capture-publication.test.mjs": "9f00a96134bbf339738793f79597b962f7c3601fc2f5e0b3e0b34d6a8af9dc01",
     "apps/architecture-lab/test/private-recurring-source.test.mjs": "a6ad661024974813fe790627ee950b6a418e26c708e89002ef4f5e82d584e6bf",
     "apps/architecture-lab/test/sdk-compatibility.test.mjs": "bea281ac57623131241bed6da66da44f2fc5aecc30b7943b76cd426b3bc128df",
@@ -46,7 +46,7 @@
     "apps/insights-runtime/tests/recurring-subscriptions.test.mjs": "a6496853f8dafca8dd8446189f1257605baa5667b586540498a83ac2e0c4ec8a",
     "apps/insights-runtime/tests/report-delivery.test.mjs": "d3192dc3b70f7a70d7c3b73127f5959e81dc0805e70380010257891ad67beb56",
     "apps/maps-runtime/package-lock.json": "6fb36cc6ee482795113ccc6be4efb150dcd080c05ef56bc2dec2c7cdbcf29002",
-    "apps/maps-runtime/test/embed.test.mjs": "3ceb34df976595f68cce156dc6f08cba199aabde7f40b7b9e7646c6d21d403fe",
+    "apps/maps-runtime/test/embed.test.mjs": "d8d92998fe3a014a8703256cb2173273ba66e9e177eb2b1aac4407f11a51ad0e",
     "apps/newsfeed-runtime/docs/private-recurring-development.pl.md": "9290a1256f2a219d50904e8595a7ecf1eb9add9fd4fc9f77b205a344bed66785",
     "apps/newsfeed-runtime/migrations/004-recurring-monitoring.sql": "f1b9aafa37d62b9e825b7f18fb6810f7e61db37fb75f435316f6975f60f84671",
     "apps/newsfeed-runtime/package-lock.json": "680a2b7f59900d9ad2a38a8473a7e3d2938463e7b0a18d71db00f8aced6b450e",
@@ -66,7 +66,7 @@
     "apps/package-limits/scripts/ci-proof.mjs": "8a382813778cf63c0d2ba10f52503157f34b95b0f5f0603cc396dead0ce75738",
     "apps/platform-knowledge-runtime/db/migrations/001-knowledge.sql": "9a049aa46804f5fea4e84cb6dcedc4be358ffd983183ac7d21129b663654e9d7",
     "apps/platform-source-hub/package-lock.json": "78ee7d0d79c2b1c08c10261eed0b7d2391ffb98e5c69827c315a957f032b61df",
-    "apps/platform-source-hub/scripts/ci-routing.mjs": "a61aca6d588f00ce38f1bb9965ae6472790d31b5e6a5ad6aacfc86aacf29824f",
+    "apps/platform-source-hub/scripts/ci-routing.mjs": "1a58770b7d6ab52bde4f737e89f3a14879cb73cc243bf0f6db9d89bce4afb226",
     "apps/platform-source-hub/test/ci-routing.test.mjs": "dc2ca06cfc0c3c21f10a4a2437e8a691e0feccb54b9fe49ea46fd4a04361b9a5",
     "apps/sg-runtime/assistant-ecr-precision-integration.json": "a017c2b971e3c72606847264150715c983fa9483537d26be90144a64e0377ee7",
     "apps/sg-runtime/components/appshell/appshell-dashboard.tsx": "2ffb4a0802136a3a5fe957e16d0f245861980eeedddd3c04b25715341962d876",
@@ -82,24 +82,26 @@
     "apps/sg-runtime/tests/assistant-ecr-integrity.mjs": "791303b7111cdf34dabaff58c7c75b1f66023046815eb3af605858392d2178ef",
     "apps/sg-runtime/tests/assistant-ecr-integrity.test.mjs": "5db092c73f9192604d7ffabcdf7d7b97f5fd80dc23c02016ada318ffe89588e5",
     "apps/sg-runtime/tests/assistant-ecr-precision-integrity.mjs": "b620bd03dfa5d065139971d3d1983564ccd2b7f1719aaa8d6b367fe9dd82ac2e",
+    "apps/sg-runtime/tests/assistant-notifications-integrity.mjs": "218b4ac7d53d6da3edf489b643c348ea4c7b85d35b2878bd3d8ee998a897e1ef",
     "apps/sg-runtime/tests/diagnostic-telemetry-adoption.test.mjs": "974e3f89049da1763a3008d4977be3e10620ad7e429dce4703b42ad9d7991400",
     "apps/sg-runtime/tests/native-sql-roundtrips.test.mjs": "1bbc3b14974d056cb7933c5bc7593e9923c0ad3a90b5bad74099fbce451563ce",
     "apps/sg-runtime/tests/operation-context.test.mjs": "fa0c85affe627adce37bd49ec666f2b2af3cd9dfb8d6ad4991e2c3d46d81db60",
-    "apps/sg-runtime/tests/pci-smart-integrity.test.mjs": "44292ac3ec5ed822daddce35d78bdb403712fa255fe7e94c9d9dc0517a32b5b6",
+    "apps/sg-runtime/tests/pci-smart-integrity.test.mjs": "faac8a7ed364605ef3851b6db9eb4a541fc76715f3885587aee0709b75458d3b",
     "apps/sg-runtime/tests/private-host.integration.test.mjs": "68d9df57c5e2ec40f1b46145ca91a8418542454db72714ebf1efaaaaf847d989",
     "apps/sg-runtime/tests/procurement-insights-context.test.ts": "158b9c86e3404ee0a4bd272f09f6cfbcce07856b49e79fc73cfd79546f186c40",
+    "apps/sg-runtime/tests/procurement-insights-editorial-integrity.test.mjs": "086861b5796e30d9273bf16635fb2efbb3d5522ff265006ac94f6c2a5fb441fa",
     "apps/sg-runtime/tests/procurement-insights-live-acceptance-source.mjs": "89a52f4b1bf7191e5a0d0d93e0057f21d1e19ca6f3a337bb75ce963e14906f6d",
     "apps/sg-runtime/tests/xray-fresh-performance-adoption.test.mjs": "fd0b67a6ccca4e593dcc44e7d73e0770bdc18d1f763de1a67db94e0e577766fa",
     "apps/srm/app/login/porr-account.tsx": "5543c1b9a1f8af3c13fb9ffbcb084d37eaca35b2b98fa694f75a9071e162e9f6",
     "apps/srm/deployment/root-atomic-claim-targets.json": "651f7896072b820febe8ac4c99341248bd1f5e96a9d586f51afd8a2f9d904da3",
-    "apps/srm/package-lock.json": "467d7d433a705c8dab9b42012206ef476eb2c7369472bab0c029bc57b6e4e327",
+    "apps/srm/package-lock.json": "075c6ecb86765796948b3a10886ef7eac0782eaaab4b359ddd1d6d87212582b9",
     "apps/srm/scripts/diagnostic-telemetry-adoption.test.mjs": "3e6289e6a949172b976fc721a2a520b5aaaa9cf47ab72b0c581f45561fad9977",
     "apps/srm/scripts/native-execution-adoption.test.mjs": "06b3acabbc37a47dbcc4dfa10b82bfd4d244b52c3157d686547fed46a5b1a5fe",
     "apps/srm/scripts/operation-context.test.mjs": "3effff6943cd25e7bb814a08c2f2a2d513ba4b6bb16aca0f4341398c5e7437c6",
     "apps/srm/scripts/private-host.integration.test.mjs": "5aa33ff01ae8e6ebadf55d4cd460a5b8b8efa39c9181e09d821507db8dab1c33",
     "apps/srm/scripts/request-quota-adoption.test.mjs": "47c1449ac419d4747ac9b315aa817b6a3b56af97037e903b3f5ae1d630972c1d",
     "apps/srm/scripts/supplier-location-admission.integration.test.mjs": "ca7e7b7e152a4efbd2b2208f9511f67a2410a5d4ce516cd6b1d73c5db4912e91",
-    "apps/srm/scripts/xray-performance-adoption.test.mjs": "4e54b459d9133e6884cec4d44fd53b0b42375521da7b8bfef861bf645edd97c3",
+    "apps/srm/scripts/xray-performance-adoption.test.mjs": "1ac38a8692016b6b988f59de6320d85891ffede915c6f0bcff7fbaacc7586957",
     "apps/srm/src/server/root-atomic-claim-adoption.test.ts": "7947f4673efe70c0a5c75fa962107b95dbfbe65bd9d4e8d98ccb2d3b61562731",
     "packages/assistant-context-contracts/package.json": "8f68635e9ad42c2a5d7b4d4b0f313def34d802a4fdfe4b7e5e0bbbf665f32aac",
     "packages/assistant-context-contracts/src/index.d.mts": "c53acdf3129cdd59bbbd2abd84902592fdcf365823feabe33a3cb3edc3246feb",
@@ -158,8 +160,8 @@
     "packages/platform-contracts/current-e1-authority/package.json": "3e44b1a1e9d36c2c6ac1256be0f549ef76bf1e56c61bf870e4683377b2eb7f6d",
     "packages/platform-contracts/current-e1-authority/recurring.d.mts": "82bc456fa8c962923ef70414e16573e974daa8f81bd54a1e51605b63c3cf00ee",
     "packages/platform-contracts/current-e1-authority/recurring.mjs": "b1795c5b90f95b07ab0c5b3694a5cf89b219ef79d6bde599c59c1272119ea052",
-    "packages/platform-contracts/current-fresh-report/package-lock.json": "a4aa3080a474d5c7190035e61cdfe0626ce90e9cc7d0a3a05db807b944e5e221",
-    "packages/platform-contracts/current-fresh-report/package.json": "60efe7d6154fa19a698db403780585e118dd7c7ab0700482592d9045f987d3ca",
+    "packages/platform-contracts/current-fresh-report/package-lock.json": "4becdfbcc630bd254e4d9c06eb440772db85f10c16f14a873f3b08a2d36c8615",
+    "packages/platform-contracts/current-fresh-report/package.json": "7c87a8b65c2c1c62438fb1d9f8b579ccecce207cc9229a368062fc79a648df22",
     "packages/platform-contracts/current-fresh-report/src/current-fresh-report.d.mts": "2da701f79cb5aaf4447239255a96169b5394f6ddd62713c19b213a240fe39a38",
     "packages/platform-contracts/current-fresh-report/src/current-fresh-report.mjs": "29c8a0fb5d048217afd25a3678c35ff03d0d5a663ba76b338a1e8117875176cb",
     "packages/platform-contracts/current-fresh-report/test/current-fresh-report-postgres.test.mjs": "fcd5cc48f7197a769cea2c4897608fccbf5d6e7298b44a7fc8928a0ad23e7a9b",
@@ -211,15 +213,15 @@
     "packages/platform-contracts/migrations/profile/007-organisation-onboarding.sql": "26860111f961553ef2c7d230c1887cc60f1bf322bceeb3624d880ddd334d044a",
     "packages/platform-contracts/package-lock.json": "be1e96de9b8e9ec5aba0c510daa186f1339f58d2f0088782808dc40a9f03e055",
     "packages/platform-contracts/package.json": "455301be8eb4ccc8240482ad777a6c295a9606d3837e9ab8235ac64703bc2cac",
-    "packages/platform-contracts/payload-capture/package.json": "fbdbe94b1e7ef3eb628bed8fbe6dfc9c7297669b211fe55b178f748b9cbd3f12",
+    "packages/platform-contracts/payload-capture/package.json": "d8670426f265f13e29c2487f3d39b7e0e235d52e56412eda3c0f0220e13da9c2",
     "packages/platform-contracts/payload-capture/src/payload-capture.d.mts": "ac8c8399b33ee143a4191530fd7a236f04b6055c437b6a38bf69a888f86d2634",
     "packages/platform-contracts/payload-capture/src/payload-capture.mjs": "7eabea213158e6193c481dcbe2721b98837cfd729ae1af3bac7d2396c950f08f",
     "packages/platform-contracts/payload-capture/test/benchmark.mjs": "423a4fb4f181ea3403c205c14acc06d34a2d8a627d3cc79183b95cc3d6a7d20a",
     "packages/platform-contracts/payload-capture/test/payload-capture.test.mjs": "73e0fd2b72245072f5a34c277f45dcfa738551880cd433908bcc4a33c1277859",
     "packages/platform-contracts/payload-capture/test/public-package.test.mjs": "2013a4dfd4d45e1b611e78f42576dabcb8ac6325f99ea2509e99d907891a3a6e",
     "packages/platform-contracts/readonly-miss-report/README.md": "1512a31ec3d2af928b1c77ea5a26e1b090f4175e614302eb94d59fb215c5ddbc",
-    "packages/platform-contracts/readonly-miss-report/package-lock.json": "bcbdc1fbfabcf2094445afcf1e107ce8ebe11e39de1b01e0645b88a62310dc54",
-    "packages/platform-contracts/readonly-miss-report/package.json": "c7952cc07a0df9794b9600fa29d4dc91414427bf16b180f1a6446ad3ce7f97d3",
+    "packages/platform-contracts/readonly-miss-report/package-lock.json": "7cc584b4543dd11e272d77c7dd4fd4cb3f88dd0228d231f795444ed970939501",
+    "packages/platform-contracts/readonly-miss-report/package.json": "2456ff92f909017d48fa39da1cce839bba226e5e609b6e7d92647d87bccf8c07",
     "packages/platform-contracts/readonly-miss-report/src/readonly-miss-report.d.mts": "84939e1327f7260523f39a7f82385f6285013f8013c0fd8b33675ce676418493",
     "packages/platform-contracts/readonly-miss-report/src/readonly-miss-report.mjs": "ed0337acb60b334faef60273d9913cf9c71c731fbc7ea6b2bf75f85f2e0d9b3d",
     "packages/platform-contracts/readonly-miss-report/test/readonly-miss-report-postgres.test.mjs": "f535c9c6c37a47dbdad5e803d9eef634dea0bff6ab072559bea7888a1b8cb96e",
@@ -227,14 +229,14 @@
     "packages/platform-contracts/readonly-miss-report/test/types/readonly-miss-report.mts": "466bbe270394957a6a8d84ed13d4dfe1ce6a833779b0d0b7781249c63e8c744e",
     "packages/platform-contracts/root-atomic-claim/README.md": "e08d5c64e78c02d69e46e059fa0c2147e1998e53f05e9607b8cdf70ca6070224",
     "packages/platform-contracts/root-atomic-claim/migrations/001-root-atomic-claim.sql": "1c1784b3c92753ccc28f7c34af89e26f1784a632859d5dbe45a9f5f3d08f6c0d",
-    "packages/platform-contracts/root-atomic-claim/package-lock.json": "e537fea8debcddf68b0b478aa3a2e9f248e4a6c08c7cf68d5a07b08df0624d78",
-    "packages/platform-contracts/root-atomic-claim/package.json": "55fd670cdc18f4a3764bfa86958af6dd7273d4cda90e0f6642a8678b9e729f82",
+    "packages/platform-contracts/root-atomic-claim/package-lock.json": "f9278c24b22ca1ff7deb61b4594f7d0369c9995070c443004a6c7df8d7ba4fb9",
+    "packages/platform-contracts/root-atomic-claim/package.json": "2f5b4707f25d5ff031d8781c0b5d2802772e87b3025169e9419cc4905846b722",
     "packages/platform-contracts/root-atomic-claim/src/root-atomic-claim.d.mts": "955b2d6076a8e5a34ac6add66920fb6d4ec27dfccd1e5308932ae9bfef1c2d75",
     "packages/platform-contracts/root-atomic-claim/src/root-atomic-claim.mjs": "fab1780877f66ba582be74bd3944649628624bfcc62754b0256275236d960398",
     "packages/platform-contracts/root-atomic-claim/test/root-atomic-claim-postgres.test.mjs": "2a5b1feb81f99061e5069857b5d92ddeb99b77d00a3a576cb3c8ccb500034b48",
     "packages/platform-contracts/root-atomic-claim/test/root-atomic-claim-types.mts": "42d33df775ba0f0b7cecd63b724bba8be7d8560ae3cb49c6869769ddac7f48fe",
     "packages/platform-contracts/root-atomic-claim/test/root-atomic-claim-types.test.mjs": "209aa97c5833d39371470bcf85ca217f9bdeb451b31bd794e2e242745ffc1bc0",
-    "packages/platform-contracts/root-atomic-claim/test/root-atomic-claim.test.mjs": "f69bebf9bf9c15fae7a73d86a0df2f3ba4a972b0325200aeb4a0b92e47ecc191",
+    "packages/platform-contracts/root-atomic-claim/test/root-atomic-claim.test.mjs": "944b9f044d1526a0d7db696f4231c4a2edb3f8880f235fbd0b3ab5fbd644930a",
     "packages/platform-contracts/src/access-store.d.mts": "90cb7cfb0aa6413382a7936cd9001d533b44de70e622c7e50fbaabee3ea54cd1",
     "packages/platform-contracts/src/access-store.mjs": "f1e6c382e4d91d8ac7f366e755ad918857c710265b6ba3b22ddfd8779e5b0934",
     "packages/platform-contracts/src/assistant-operation-host.d.mts": "32b5e76f35024cacea5a2f3814b8c9d0107054f71399ed7b24204195373531fd",
@@ -470,9 +472,9 @@
     "supplierLocationSchemaDigest": "34ec633dbf38dfffd6b3954ae79b0ef6f771d75ad8f0443882be71ca78b084e5"
   },
   "optionalPackageDigests": {
-    "currentFreshReportSourceDigest": "d1dc0f47e343167e84a6e27c99d0750510724490972fbfbd93e4394e9d702348",
-    "readonlyMissReportSourceDigest": "a72de298a078f5a41d4660fc98c7debe00bb04252c6f036fae67db9a6b940868",
-    "rootAtomicClaimSourceDigest": "b3d6f2110f41ca93cac6a949b113a8582b6407688d81df1935cd8990424b393a"
+    "currentFreshReportSourceDigest": "61d1c4ea89da2c8a50d64ca49cdba381392e6b26fd28fafa45c50e3fc54638b2",
+    "readonlyMissReportSourceDigest": "249bac8b4fb4dcfc582cf8bb9bcd49459c1bb53bcc1183a84f0c7cc92fa6cfed",
+    "rootAtomicClaimSourceDigest": "ab8cfef37eb35526ff0d2894e827ad1a22dea8750b9c9d89fbcbea2ce41b1f50"
   },
   "preservedReceipts": {
     "apps/sg-runtime/operation-integration.json": "a6bf50993c98a71aeccd349dd904baafb53b3cd653324d97bab3fc5e34ac509f",
@@ -757,6 +759,10 @@
       "previousSha256": "6578fe87b133633d18930b313ee2a9ac971dceff108809fd2bd08ff4e0fc6cd2",
       "currentSha256": "6fb36cc6ee482795113ccc6be4efb150dcd080c05ef56bc2dec2c7cdbcf29002"
     },
+    "apps/maps-runtime/test/embed.test.mjs": {
+      "previousSha256": "3ceb34df976595f68cce156dc6f08cba199aabde7f40b7b9e7646c6d21d403fe",
+      "currentSha256": "d8d92998fe3a014a8703256cb2173273ba66e9e177eb2b1aac4407f11a51ad0e"
+    },
     "apps/newsfeed-runtime/package-lock.json": {
       "previousSha256": "27f62b4c7bc232eaabee8b10d7f981e31c09772095c935074465b989e78ef0b8",
       "currentSha256": "680a2b7f59900d9ad2a38a8473a7e3d2938463e7b0a18d71db00f8aced6b450e"
@@ -769,9 +775,25 @@
       "previousSha256": "d891b1b666868ae86d72c6b5f619a935844f7700df00917235677b6df9e4fb41",
       "currentSha256": "78ee7d0d79c2b1c08c10261eed0b7d2391ffb98e5c69827c315a957f032b61df"
     },
+    "apps/platform-source-hub/scripts/ci-routing.mjs": {
+      "previousSha256": "a61aca6d588f00ce38f1bb9965ae6472790d31b5e6a5ad6aacfc86aacf29824f",
+      "currentSha256": "1a58770b7d6ab52bde4f737e89f3a14879cb73cc243bf0f6db9d89bce4afb226"
+    },
     "apps/sg-runtime/package-lock.json": {
       "previousSha256": "3a8d14447e21fa9ab879dcd0094b5d8c4401196d2db632bc39540ed66e8440de",
       "currentSha256": "eed7214c7168a891adb83f4c048a4cc14eba64c33f34e0d099b63622a1cddd99"
+    },
+    "apps/sg-runtime/tests/assistant-notifications-integrity.mjs": {
+      "previousSha256": "e8141f9b967435ffdd5f94a48e9e0a494cf3eef167fbd6b3b7f22a350f55f3c8",
+      "currentSha256": "218b4ac7d53d6da3edf489b643c348ea4c7b85d35b2878bd3d8ee998a897e1ef"
+    },
+    "apps/sg-runtime/tests/pci-smart-integrity.test.mjs": {
+      "previousSha256": "44292ac3ec5ed822daddce35d78bdb403712fa255fe7e94c9d9dc0517a32b5b6",
+      "currentSha256": "faac8a7ed364605ef3851b6db9eb4a541fc76715f3885587aee0709b75458d3b"
+    },
+    "apps/sg-runtime/tests/procurement-insights-editorial-integrity.test.mjs": {
+      "previousSha256": "b93302850ff52aa99d205c8f2cec1bd991909589976a2ef4f58aec5d69cf7f73",
+      "currentSha256": "086861b5796e30d9273bf16635fb2efbb3d5522ff265006ac94f6c2a5fb441fa"
     },
     "apps/sg-runtime/tests/procurement-insights-live-acceptance-source.mjs": {
       "previousSha256": "9a4d1698dd847d152246374d83aaa9f7f0e6fa76f80c6793ae40bd52aa3ee0d4",
@@ -779,7 +801,7 @@
     },
     "apps/srm/package-lock.json": {
       "previousSha256": "bcc3761ce046071ee79a96aa585f486064e652b9e6a7856d11a4776a97c25c1e",
-      "currentSha256": "467d7d433a705c8dab9b42012206ef476eb2c7369472bab0c029bc57b6e4e327"
+      "currentSha256": "075c6ecb86765796948b3a10886ef7eac0782eaaab4b359ddd1d6d87212582b9"
     },
     "packages/assistant-context-gateway/package.json": {
       "previousSha256": "b6e9f3e6cffdefe3be9867a659202070e2244a0bbdb166793f5882dafe02cea1",
@@ -805,6 +827,14 @@
       "previousSha256": "2542f68ab8c599784307d9d42fe3c25dfef1cae1a993ef6bec2310d1c7cded9a",
       "currentSha256": "3e44b1a1e9d36c2c6ac1256be0f549ef76bf1e56c61bf870e4683377b2eb7f6d"
     },
+    "packages/platform-contracts/current-fresh-report/package-lock.json": {
+      "previousSha256": "a4aa3080a474d5c7190035e61cdfe0626ce90e9cc7d0a3a05db807b944e5e221",
+      "currentSha256": "4becdfbcc630bd254e4d9c06eb440772db85f10c16f14a873f3b08a2d36c8615"
+    },
+    "packages/platform-contracts/current-fresh-report/package.json": {
+      "previousSha256": "60efe7d6154fa19a698db403780585e118dd7c7ab0700482592d9045f987d3ca",
+      "currentSha256": "7c87a8b65c2c1c62438fb1d9f8b579ccecce207cc9229a368062fc79a648df22"
+    },
     "packages/platform-contracts/package-lock.json": {
       "previousSha256": "79c75571d479c2519179427f433d72b328a84c7249103b61a419be42227c5a90",
       "currentSha256": "be1e96de9b8e9ec5aba0c510daa186f1339f58d2f0088782808dc40a9f03e055"
@@ -812,6 +842,30 @@
     "packages/platform-contracts/package.json": {
       "previousSha256": "b4a7e699eb4968a92133c5891549ce650c34f19c8905cabc14901dacb7a2a2ab",
       "currentSha256": "455301be8eb4ccc8240482ad777a6c295a9606d3837e9ab8235ac64703bc2cac"
+    },
+    "packages/platform-contracts/payload-capture/package.json": {
+      "previousSha256": "fbdbe94b1e7ef3eb628bed8fbe6dfc9c7297669b211fe55b178f748b9cbd3f12",
+      "currentSha256": "d8670426f265f13e29c2487f3d39b7e0e235d52e56412eda3c0f0220e13da9c2"
+    },
+    "packages/platform-contracts/readonly-miss-report/package-lock.json": {
+      "previousSha256": "bcbdc1fbfabcf2094445afcf1e107ce8ebe11e39de1b01e0645b88a62310dc54",
+      "currentSha256": "7cc584b4543dd11e272d77c7dd4fd4cb3f88dd0228d231f795444ed970939501"
+    },
+    "packages/platform-contracts/readonly-miss-report/package.json": {
+      "previousSha256": "c7952cc07a0df9794b9600fa29d4dc91414427bf16b180f1a6446ad3ce7f97d3",
+      "currentSha256": "2456ff92f909017d48fa39da1cce839bba226e5e609b6e7d92647d87bccf8c07"
+    },
+    "packages/platform-contracts/root-atomic-claim/package-lock.json": {
+      "previousSha256": "e537fea8debcddf68b0b478aa3a2e9f248e4a6c08c7cf68d5a07b08df0624d78",
+      "currentSha256": "f9278c24b22ca1ff7deb61b4594f7d0369c9995070c443004a6c7df8d7ba4fb9"
+    },
+    "packages/platform-contracts/root-atomic-claim/package.json": {
+      "previousSha256": "55fd670cdc18f4a3764bfa86958af6dd7273d4cda90e0f6642a8678b9e729f82",
+      "currentSha256": "2f5b4707f25d5ff031d8781c0b5d2802772e87b3025169e9419cc4905846b722"
+    },
+    "packages/platform-contracts/root-atomic-claim/test/root-atomic-claim.test.mjs": {
+      "previousSha256": "f69bebf9bf9c15fae7a73d86a0df2f3ba4a972b0325200aeb4a0b92e47ecc191",
+      "currentSha256": "944b9f044d1526a0d7db696f4231c4a2edb3f8880f235fbd0b3ab5fbd644930a"
     },
     "packages/platform-contracts/src/operation-context.d.mts": {
       "previousSha256": "2a127020cd3c0c2c3c170fa8eb1450a27bc3774c03815725e5454fe8e838945a",
@@ -859,10 +913,15 @@
     "apps/identity-runtime/src/node-server.ts",
     "apps/insights-runtime/package-lock.json",
     "apps/maps-runtime/package-lock.json",
+    "apps/maps-runtime/test/embed.test.mjs",
     "apps/newsfeed-runtime/package-lock.json",
     "apps/package-limits/package-lock.json",
     "apps/platform-source-hub/package-lock.json",
+    "apps/platform-source-hub/scripts/ci-routing.mjs",
     "apps/sg-runtime/package-lock.json",
+    "apps/sg-runtime/tests/assistant-notifications-integrity.mjs",
+    "apps/sg-runtime/tests/pci-smart-integrity.test.mjs",
+    "apps/sg-runtime/tests/procurement-insights-editorial-integrity.test.mjs",
     "apps/sg-runtime/tests/procurement-insights-live-acceptance-source.mjs",
     "apps/srm/package-lock.json",
     "packages/assistant-context-gateway/package.json",
@@ -871,8 +930,16 @@
     "packages/platform-contracts/current-e1-authority/index.mjs",
     "packages/platform-contracts/current-e1-authority/package-lock.json",
     "packages/platform-contracts/current-e1-authority/package.json",
+    "packages/platform-contracts/current-fresh-report/package-lock.json",
+    "packages/platform-contracts/current-fresh-report/package.json",
     "packages/platform-contracts/package-lock.json",
     "packages/platform-contracts/package.json",
+    "packages/platform-contracts/payload-capture/package.json",
+    "packages/platform-contracts/readonly-miss-report/package-lock.json",
+    "packages/platform-contracts/readonly-miss-report/package.json",
+    "packages/platform-contracts/root-atomic-claim/package-lock.json",
+    "packages/platform-contracts/root-atomic-claim/package.json",
+    "packages/platform-contracts/root-atomic-claim/test/root-atomic-claim.test.mjs",
     "packages/platform-contracts/src/operation-context.d.mts",
     "packages/platform-contracts/src/operation-context.mjs",
     "packages/platform-knowledge-contracts/README.md",
