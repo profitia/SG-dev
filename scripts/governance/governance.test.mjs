@@ -16,6 +16,20 @@ import { resolveProjectRouting, validateProjectBoundaryPolicy } from './routing-
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..')
 
+// SYNTHETIC_ONLY: applicability tests own their finite Git baseline. A new
+// accepted-main commit during CI must not change these unrelated scenarios.
+function registeredPreflightFixture(t) {
+  const root=fs.mkdtempSync(path.join(os.tmpdir(),'governance-preflight-fixture-'))
+  t.after(()=>fs.rmSync(root,{recursive:true,force:true}))
+  fs.cpSync(path.join(repositoryRoot,'Canon'),path.join(root,'Canon'),{recursive:true})
+  const git=(...args)=>execFileSync('git',args,{cwd:root,encoding:'utf8',stdio:['ignore','pipe','pipe']}).trim()
+  git('init','--initial-branch=main');git('config','user.name','Synthetic fixture');git('config','user.email','synthetic@example.invalid')
+  git('remote','add','origin','https://github.com/profitia/SG-dev');git('add','Canon')
+  git('-c','core.hooksPath=/dev/null','commit','-m','Synthetic registered governance fixture')
+  git('update-ref','refs/remotes/origin/main','HEAD')
+  return {root,git}
+}
+
 const newsfeedTargets = [
   'apps/newsfeed-runtime/src/server.ts',
   'packages/newsfeed-contracts/src/index.ts',
@@ -428,7 +442,8 @@ test('SRM provider snapshot detects an unregistered Development service without 
   assert.match(result.errors.join('\n'), /Unregistered SRM Render service/)
 })
 
-test('SG2 PMOS applies only to Development and creates no Staging or Production continuity', () => {
+test('SG2 PMOS applies only to Development and creates no Staging or Production continuity', t => {
+  const {root:fixtureRoot}=registeredPreflightFixture(t)
   const input = {
     mode: 'development',
     project: 'SG2',
@@ -441,7 +456,7 @@ test('SG2 PMOS applies only to Development and creates no Staging or Production 
     scope: 'governance-test',
     targets: ['Canon/adapters/sg2-project-adapter-v1.md'],
     legacyExceptions: [],
-    repository_root: repositoryRoot,
+    repository_root: fixtureRoot,
     json: false,
     ci: false,
     offline: true,
@@ -639,7 +654,8 @@ test('project boundary policy fails closed on missing, malformed or wildcard all
   assert.equal(validateProjectBoundaryPolicy({ surfaces: [] }).enforced, false)
 })
 
-test('registered Architecture respects Development and owned surface boundaries', () => {
+test('registered Architecture respects Development and owned surface boundaries', t => {
+  const {root:fixtureRoot}=registeredPreflightFixture(t)
   const fixture = resolveProjectProfile('ARCHITECTURE', repositoryRoot)
   assert.equal(fixture.database.databaseName, 'architecture_pmos')
   assert.equal(fixture.database.runtimeRole, 'architecture_pmos_runtime')
@@ -659,7 +675,7 @@ test('registered Architecture respects Development and owned surface boundaries'
   const preflight = runGovernancePreflight({
     mode: 'development', project: 'ARCHITECTURE', target_environment: 'development', task_id: 'synthetic-architecture-test',
     hostConversationUnavailable: true, title: 'Synthetic registered profile boundary test', workspace: 'fixture', execution_environment: 'ci', scope: 'governance',
-    targets: ['Canon/registries/profitia-projects-v1.json'], legacyExceptions: [], repository_root: repositoryRoot,
+    targets: ['Canon/registries/profitia-projects-v1.json'], legacyExceptions: [], repository_root: fixtureRoot,
     ci: true, offline: true, allowDirty: true, requireBegin: false, skipRuntime: true, checkEstate: false,
   })
   assert.equal(preflight.gates.PROJECT_PROFILE_GATE.status, 'PASS')
@@ -763,3 +779,21 @@ test('Insights G1 preserves pre-onboarding owner rows, frozen metadata and all s
   assert.deepEqual(resolveBaselinePaths({ registry: current, inputPaths: tracked, repoRoot: repositoryRoot }), resolveBaselinePaths({ registry: original, inputPaths: tracked, repoRoot: repositoryRoot }))
 })
 
+
+test('synthetic preflight still rejects an actually stale code baseline and a different repository', t => {
+  const {root,git}=registeredPreflightFixture(t)
+  const input={mode:'development',project:'ARCHITECTURE',target_environment:'development',task_id:'synthetic-code-state',
+    hostConversationUnavailable:true,title:'Synthetic code state',workspace:'fixture',execution_environment:'ci',scope:'governance',
+    targets:['Canon/registries/profitia-projects-v1.json'],legacyExceptions:[],repository_root:root,
+    ci:true,offline:true,allowDirty:true,requireBegin:false,skipRuntime:true,checkEstate:false}
+  assert.equal(runGovernancePreflight(input).verdict,'PASS')
+  const previous=git('rev-parse','HEAD')
+  fs.writeFileSync(path.join(root,'SYNTHETIC_ONLY.txt'),'A later fixture source commit')
+  git('add','SYNTHETIC_ONLY.txt');git('-c','core.hooksPath=/dev/null','commit','-m','Synthetic later main')
+  git('update-ref','refs/remotes/origin/main','HEAD');git('checkout','--detach',previous)
+  const stale=runGovernancePreflight(input)
+  assert.equal(stale.gates.CODE_STATE_GATE.status,'BLOCKED');assert.equal(stale.verdict,'BLOCKED')
+  git('remote','set-url','origin','https://github.com/example/synthetic-unrelated')
+  const other=runGovernancePreflight(input)
+  assert.equal(other.gates.REPOSITORY_GATE.status,'BLOCKED');assert.equal(other.verdict,'BLOCKED')
+})
