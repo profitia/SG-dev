@@ -62,3 +62,17 @@ test('binary format, maximum bytes, filenames, selected years and private disclo
  await assert.rejects(readPresentationBytes(new Response('12345'),4));
  validatePresentationResult('financialExcel',new TextEncoder().encode('PK123'),'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet','Financials_MSR_8521021463_20261031.xlsx');
 });
+
+test('signed cached supplier selection retains the original native request and refuses untrusted or mismatched identity',async()=>{
+ const nip='5213390341',selection={krs:'0000000001',nip,name:'Synthetic Verified Supplier',locality:null,selectionRef:'KRS:0000000001:'+ 'a'.repeat(64)};
+ let calls=0,denied=false,wrong=false;
+ const handler=withSrmPresentationPeer(async request=>{
+  assert(hasVerifiedPeerOperation(request));assert.deepEqual(await request.json(),{nip});calls++;
+  return denied?Response.json({error:'native current E1 denial'},{status:403}):Response.json({...selection,...(wrong?{nip:'5850205607'}:{})});
+ },env),path=PRESENTATION_ROUTES.registrySelection.path;
+ assert.equal((await handler(request(path,{nip}))).status,403);assert.equal(calls,0);
+ assert.equal((await handler(await sign(request(path,{nip,organisationId:'forged'})))).status,400);assert.equal(calls,0);
+ const accepted=await handler(await sign(request(path,{nip})));assert.equal(accepted.status,200);assert.deepEqual(await accepted.json(),selection);assert.equal(calls,1);
+ denied=true;const refused=await handler(await sign(request(path,{nip})));assert.equal(refused.status,403);assert.deepEqual(await refused.json(),{error:'XRAY_ACCESS_DENIED'});
+ denied=false;wrong=true;const mismatch=await handler(await sign(request(path,{nip})));assert.equal(mismatch.status,502);assert.doesNotMatch(await mismatch.text(),/Synthetic Verified Supplier|selectionRef/);
+});

@@ -24,7 +24,7 @@ const headers={'Cache-Control':'private, no-store',Vary:'Cookie, Authorization'}
 const unavailable=(status:number)=>Response.json({error:'Wyszukiwanie po nazwie jest obecnie niedostępne.'},{status,headers});
 const closed=(v:unknown,key:string):v is Record<string,string>=>!!v&&Object.getPrototypeOf(v)===Object.prototype
   &&Object.keys(v).join(',')===key&&typeof (v as Record<string,unknown>)[key]==='string';
-export function createKrsNameHttpHandler(action:'status'|'search'|'verify'|'lookup',getRuntime:()=>KrsNameHttpRuntime|null|Promise<KrsNameHttpRuntime>=getSrmKrsNameRuntime){
+export function createKrsNameHttpHandler(action:'status'|'search'|'verify'|'selection'|'lookup',getRuntime:()=>KrsNameHttpRuntime|null|Promise<KrsNameHttpRuntime>=getSrmKrsNameRuntime){
   return async(request:Request):Promise<Response>=>withSupplierTelemetry('krs_'+action,async()=>{
     if(request.method!==(action==='status'?'GET':'POST'))return unavailable(405);
     if(new URL(request.url).search)return unavailable(400);
@@ -46,6 +46,11 @@ export function createKrsNameHttpHandler(action:'status'|'search'|'verify'|'look
       if(action==='verify'){
         if(!closed(body,'krs')||!/^\d{10}$/.test(body.krs))return unavailable(400);
         return Response.json(await runtime.api.verify(request,body.krs),{headers});
+      }
+      if(action==='selection'){
+        const {nip:validNip}=await import('@profitia/krs-registry-contracts');
+        if(!closed(body,'nip')||!validNip(body.nip))return unavailable(400);
+        return Response.json(await runtime.api.selection(request,body.nip),{headers});
       }
       const key=request.headers.get('idempotency-key');
       if(!closed(body,'selectionRef')||!/^KRS:[0-9]{10}:[a-f0-9]{64}$/.test(body.selectionRef)||!validRequestIdempotencyKey(key))return unavailable(400);

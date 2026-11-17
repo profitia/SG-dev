@@ -13,7 +13,7 @@ export type PresentationCommands={
  financialExcel:{nip:string;scope:'standalone'|'consolidated';years:string[]};
  kysPdf:KysPdfSelection;krsPdf:KysPdfSelection;revealPesel:{token:string};
  webIdentity:{identifier:string;entityType:'COMPANY'|'JDG'};
- registryStatus:Record<string,never>;registrySearch:{query:string};registryVerify:{krs:string};
+ registryStatus:Record<string,never>;registrySearch:{query:string};registryVerify:{krs:string};registrySelection:{nip:string};
  locations:LocationCommand;mapReadiness:{supplierId:string};
 };
 export type PresentationOperation=keyof PresentationCommands;
@@ -26,6 +26,7 @@ export const PRESENTATION_ROUTES={
  registryStatus:{path:'/api/xray/presentation/registry-status',native:'/api/xray/krs/status',method:'GET',mime:'application/json'},
  registrySearch:{path:'/api/xray/presentation/registry-search',native:'/api/xray/krs/search',method:'POST',mime:'application/json'},
  registryVerify:{path:'/api/xray/presentation/registry-verify',native:'/api/xray/krs/verify',method:'POST',mime:'application/json'},
+ registrySelection:{path:'/api/xray/presentation/registry-selection',native:'/api/xray/krs/selection',method:'POST',mime:'application/json'},
  locations:{path:'/api/xray/presentation/locations',native:'/api/supplier-locations',method:'POST',mime:'application/json'},
  mapReadiness:{path:'/api/xray/presentation/map-readiness',native:'/api/supplier-locations',method:'POST',mime:'application/json'},
 } as const;
@@ -42,6 +43,7 @@ export function validatePresentationCommand<K extends PresentationOperation>(ope
   case 'registryStatus':requireValue(record(value,[]));return;
   case 'registrySearch':requireValue(record(value,['query'])&&typeof value.query==='string'&&value.query.trim().length>=2&&value.query.length<=150);return;
   case 'registryVerify':requireValue(record(value,['krs'])&&nip(value.krs));return;
+  case 'registrySelection':requireValue(record(value,['nip'])&&nip(value.nip));return;
   case 'revealPesel':requireValue(record(value,['token'])&&typeof value.token==='string'&&value.token.length>0&&value.token.length<=1000);return;
   case 'webIdentity':requireValue(record(value,['identifier','entityType'])&&nip(value.identifier)&&['COMPANY','JDG'].includes(String(value.entityType)));return;
   case 'financialExcel':requireValue(record(value,['nip','scope','years'])&&nip(value.nip)&&['standalone','consolidated'].includes(String(value.scope))&&Array.isArray(value.years)&&value.years.length>0&&value.years.length<=100&&new Set(value.years).size===value.years.length&&value.years.every(y=>typeof y==='string'&&/^\d{4}$/.test(y)));return;
@@ -84,6 +86,7 @@ export function validatePresentationResult(operation:PresentationOperation,bytes
  if(operation==='mapReadiness'&&(!record(v,['ready'])||v.ready!==true))throw Error('XRAY_RESPONSE_INVALID');
  if(operation==='registrySearch'&&(!record(v,['candidates','coverage'])||v.coverage!=='PROGRESSIVE'||!Array.isArray(v.candidates)||v.candidates.length>10))throw Error('XRAY_RESPONSE_INVALID');
  if(operation==='registryVerify'&&(!record(v,['krs','name','nip','locality','selectionRef'])||!nip(v.krs)||!nip(v.nip)||typeof v.name!=='string'||!v.name.trim()||v.name.length>1000||v.locality!==null&&typeof v.locality!=='string'||typeof v.selectionRef!=='string'||!/^KRS:[0-9]{10}:[a-f0-9]{64}$/.test(v.selectionRef)||input?.krs&&v.krs!==input.krs))throw Error('XRAY_RESPONSE_INVALID');
+ if(operation==='registrySelection'&&(!record(v,['krs','name','nip','locality','selectionRef'])||!nip(v.krs)||!nip(v.nip)||v.nip!==input?.nip||typeof v.name!=='string'||!v.name.trim()||v.name.length>1000||v.locality!==null&&typeof v.locality!=='string'||typeof v.selectionRef!=='string'||!new RegExp('^KRS:'+v.krs+':[a-f0-9]{64}$').test(v.selectionRef)))throw Error('XRAY_RESPONSE_INVALID');
  if(operation==='locations'&&input?.action==='READ'){
   const allowed=['supplierId','items','offset','limit','total','hasMore','collectionVersion','coverage','geocodingAvailable'];
   if(Object.keys(v).some(k=>!allowed.includes(k))||v.supplierId!==input.supplierId||!Array.isArray(v.items)||v.items.length>100||!Number.isInteger(v.total)||typeof v.hasMore!=='boolean')throw Error('XRAY_RESPONSE_INVALID');

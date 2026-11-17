@@ -80,3 +80,13 @@ test('report preparation reaches its own current HUMAN boundary only at the exac
   delete process.env.PROFITIA_AUTH_PROVIDER;assert.equal((await middleware(new NextRequest('https://srm.fixture.test/api/xray/admission',{method:'POST'}))).status,401);
  }finally{if(before===undefined)delete process.env.PROFITIA_AUTH_PROVIDER;else process.env.PROFITIA_AUTH_PROVIDER=before}
 });
+
+test('cached supplier selection entry delegates only the exact read command to current E1',async()=>{
+ const before=process.env.PROFITIA_AUTH_PROVIDER;try{
+  process.env.PROFITIA_AUTH_PROVIDER='clerk';const entry='https://srm.fixture.test/api/xray/krs/selection';
+  const accepted=await middleware(new NextRequest(entry,{method:'POST'}));assert.equal(accepted.headers.get('x-middleware-next'),'1');assert.equal(accepted.headers.get('cache-control'),'private, no-store');
+  for(const method of ['GET','PUT','PATCH','DELETE','HEAD','OPTIONS'])assert.equal((await middleware(new NextRequest(entry,{method}))).status,401,method);
+  for(const suffix of ['/extra','-extra','/'])assert.equal((await middleware(new NextRequest(entry+suffix,{method:'POST'}))).status,401,suffix);
+  delete process.env.PROFITIA_AUTH_PROVIDER;assert.equal((await middleware(new NextRequest(entry,{method:'POST'}))).status,401);
+ }finally{if(before===undefined)delete process.env.PROFITIA_AUTH_PROVIDER;else process.env.PROFITIA_AUTH_PROVIDER=before}
+});

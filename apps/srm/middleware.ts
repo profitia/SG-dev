@@ -19,6 +19,12 @@ export async function middleware(request: NextRequest) {
     Object.values(PRESENTATION_ROUTES).some(route => route.path === path && route.method === request.method)) {
     return NextResponse.next({ headers: { "Cache-Control": "private, no-store", "Vary": "Cookie, Authorization" } });
   }
+  // Cached supplier identity is a stored read. This exact POST delegates
+  // to current native E1; it cannot refresh sources or create a supplier.
+  if (path === '/api/xray/krs/selection' && request.method === 'POST'
+    && process.env.PROFITIA_AUTH_PROVIDER === 'clerk') {
+    return NextResponse.next({ headers: { 'Cache-Control': 'private, no-store', 'Vary': 'Cookie, Authorization' } });
+  }
   // The opted-in assistant reader owns bearer verification and current E1.
   // Delegate this exact stored GET only; no demo cookie or adjacent API is admitted.
   if (path === "/api/xray/assistant-context" && request.method === "GET"
