@@ -113,7 +113,7 @@ export async function qualifyLinuxExecutor(){
     reserveRequest:async(_,r)=>({...r,status:'RESERVED'}),dispatchRequest:async()=>{},settleRequest:async()=>{settledCount++},
     markUnknown:async()=>{},releaseUndispatched:async()=>{}}
    const bearerToken=randomBytes(32).toString('hex')
-   const broker=createCostBroker({budget,permit,bearerToken,openaiKey:'SYNTHETIC_NOT_A_CREDENTIAL',fetcher:async(url,o)=>{
+   const broker=createCostBroker({budget,permit,bearerToken,openaiKey:'SYNTHETIC_NOT_A_CREDENTIAL',diagnostics:value=>console.error(JSON.stringify({phase,syntheticOnly:true,...value})),fetcher:async(url,o)=>{
     if(url.endsWith('/input_tokens'))return Response.json({object:'response.input_tokens',input_tokens:100})
     require(url==='https://api.openai.com/v1/responses','UNEXPECTED_UPSTREAM');requestCount++;calls++
     const request=JSON.parse(o.body)
