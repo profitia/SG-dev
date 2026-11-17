@@ -143,9 +143,9 @@
       "targetEnvironment": "development",
       "scope": "SOURCE_VALIDATION_ONLY",
       "approvalRef": "owner-request:01a1e914-b834-7633-a1d8-d92fd43f0865:vercly-resumption-repair",
-      "sourceSha": "56c8bc5b81c595c4402136ca2ace9e71886a5202",
-      "baseSha": "4ac4cbab24931a0662bd5244abb6c4b0761cd7fa",
-      "validFrom": "2026-11-17T13:37:40.869Z",
+      "sourceSha": "1c8648a4eab2e0b72c6cf91dbaaf46fdf898f7e7",
+      "baseSha": "1c82689265ef0e776100808531a8f77a83a429e7",
+      "validFrom": "2026-11-17T14:17:03.333Z",
       "validUntil": "2026-11-24T23:59:59.000Z",
       "files": [
         {
@@ -267,7 +267,7 @@
         },
         {
           "path": "apps/srm/src/server/kys-orchestration.test.ts",
-          "blob": "54c52f2be298ce672f78d10966f23dcaf9f9de6e",
+          "blob": "479d0dfdf82ebcd3308b0f5a8007710ea0c52ed9",
           "mode": "100644",
           "status": "modified",
           "projectKey": "SRM",
