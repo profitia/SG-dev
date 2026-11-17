@@ -84,3 +84,46 @@ test('worker requires exact Development database roles, strict TLS, no model/pub
   {AQC_LIMITS_DATABASE_URL:env.AQC_LIMITS_DATABASE_URL+'&options=-csuperuser=on'}])
   assert.throws(()=>readQualityReadinessConfiguration({...env,...change}),{code:'READINESS_CONFIGURATION_INVALID',...(!['TARGET_ENVIRONMENT','AQC_PAID_REPAIRS_ENABLED','AQC_PROMOTION_ENABLED','AQC_MODE','OPENAI_API_KEY','RENDER_API_KEY','GITHUB_TOKEN','AQC_CONTROL_COMMAND_KEY'].some(k=>Object.hasOwn(change,k))?{code:'READINESS_DATABASE_BINDING_INVALID'}:{})})
 })
+
+function standbyEnvironment(){
+ return {TARGET_ENVIRONMENT:'development',AQC_MODE:'CONTROLLER_STANDBY',AQC_PAID_REPAIRS_ENABLED:'false',AQC_PROMOTION_ENABLED:'false',
+ RENDER_SERVICE_ID:'srv-aaaaaaaaaaaaaaaaaaaa',RENDER_GIT_COMMIT:'a'.repeat(40),AQC_SERVICE_UUID:'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+ AQC_CONTROL_COMMAND_KEY:'b'.repeat(64),AQC_LIMITS_COMMAND_KEY:'c'.repeat(64),
+ AQC_CONTROL_DATABASE_URL:'postgresql://sg2_assistant_quality_controller:synthetic@ep-muddy-pine-b22pdyqd.c-6.eu-central-1.aws.neon.tech/neondb?sslmode=require',
+ AQC_LIMITS_DATABASE_URL:'postgresql://profitia_limits_quality_controller:synthetic@ep-muddy-surf-b9vpyy2d.c-7.eu-central-1.aws.neon.tech/neondb?sslmode=require',
+ AQC_CONTROLLER_GITHUB_TOKEN:'github_pat_'+ 's'.repeat(60),AQC_CONTROLLER_CREDENTIAL_EXPIRES_AT:'2026-11-26T23:59:59.000Z'}
+}
+test('Controller credential has a separate explicit mode, fixed expiry bound and never enters the readiness-only configuration',async()=>{
+ const {readQualityControllerStandbyConfiguration,readQualityReadinessConfiguration}=await import('../src/cli.mjs')
+ const env=standbyEnvironment(),now=Date.parse('2026-11-17T12:00:00Z')
+ const config=readQualityControllerStandbyConfiguration(env,now);assert.equal(config.githubToken,env.AQC_CONTROLLER_GITHUB_TOKEN)
+ assert.equal(config.control.user,'sg2_assistant_quality_controller');assert.equal(config.limits.user,'profitia_limits_quality_controller')
+ assert.throws(()=>readQualityReadinessConfiguration({...env,AQC_MODE:'TECHNICAL_READINESS'}),{code:'READINESS_CONFIGURATION_INVALID'})
+ for(const change of [{AQC_MODE:'TECHNICAL_READINESS'},{AQC_CONTROLLER_GITHUB_TOKEN:'ghp_classic_synthetic'},{AQC_CONTROLLER_GITHUB_TOKEN:''},
+  {AQC_CONTROLLER_CREDENTIAL_EXPIRES_AT:'2026-11-17T00:00:00.000Z'},{AQC_CONTROLLER_CREDENTIAL_EXPIRES_AT:'2026-11-28T00:00:00.000Z'},
+  {AQC_CONTROLLER_CREDENTIAL_EXPIRES_AT:'2026-11-26'},{AQC_CONTROLLER_CREDENTIAL_EXPIRES_AT:'invalid'}])
+  assert.throws(()=>readQualityControllerStandbyConfiguration({...env,...change},now),{code:'CONTROLLER_CONFIGURATION_INVALID'})
+ for(const change of [{OPENAI_API_KEY:'synthetic'},{GITHUB_TOKEN:'synthetic'},{GH_TOKEN:'synthetic'},{RENDER_API_KEY:'synthetic'},
+  {AQC_PAID_REPAIRS_ENABLED:'true'},{AQC_PROMOTION_ENABLED:'true'}])
+  assert.throws(()=>readQualityControllerStandbyConfiguration({...env,...change},now),{code:'READINESS_CONFIGURATION_INVALID'})
+})
+test('Standby connects only disabled native stores and the exact main-only workflow; it has no dispatch or publisher side effect',async()=>{
+ const {createQualityControllerStandby}=await import('../src/cli.mjs');let reads=0,writes=0
+ const github={descriptor:async()=>{reads++;return{repository:'profitia/SG-dev',headSha:'a'.repeat(40),publisherEnabled:false,promotionEnabled:false}},
+  qualificationDescriptor:async()=>{reads++;return{path:'.github/workflows/assistant-quality-repair.yml',state:'active'}},
+  dispatchQualification:async()=>{writes++;throw Error('forbidden')},propose:async()=>{writes++;throw Error('forbidden')}}
+ const readiness={check:async()=>({status:'MONITORING_READY',paidRepairsEnabled:false,promotionEnabled:false,pilotStartedAt:null})}
+ const check=options=>createQualityControllerStandby({readiness,github,credentialExpiresAt:'2026-11-26T23:59:59.000Z',now:()=>Date.parse('2026-11-17T12:00:00Z'),...options})
+ const result=await check().check();assert.equal(result.controllerGitHub,'CONNECTED_STANDBY');assert.equal(result.promotionEnabled,false);assert.equal(reads,2);assert.equal(writes,0)
+ await assert.rejects(check({now:()=>Date.parse('2026-11-27T00:00:00Z')}).check(),{code:'CONTROLLER_CREDENTIAL_EXPIRED'});assert.equal(reads,2)
+ for(const change of [{repository:'profitia/foreign'},{publisherEnabled:true},{promotionEnabled:true},{headSha:'invalid'}]){
+  const client={...github,descriptor:async()=>({...await github.descriptor(),...change})}
+  await assert.rejects(check({github:client}).check(),{code:'CONTROLLER_GITHUB_BINDING_INVALID'})
+ }
+ await assert.rejects(check({github:{...github,qualificationDescriptor:async()=>({path:'.github/workflows/foreign.yml',state:'active'})}}).check(),{code:'CONTROLLER_GITHUB_BINDING_INVALID'})
+ await assert.rejects(check({readiness:{check:async()=>{throw Object.assign(Error('disabled state changed'),{code:'READINESS_SAFETY_STATE_INVALID'})}}}).check(),{code:'READINESS_SAFETY_STATE_INVALID'})
+ for(const change of [{status:'READY'},{paidRepairsEnabled:true},{promotionEnabled:true},{pilotStartedAt:'2026-11-17T00:00:00Z'}]){
+  await assert.rejects(check({readiness:{check:async()=>({...await readiness.check(),...change})}}).check(),{code:'CONTROLLER_SAFETY_STATE_INVALID'})
+ }
+ assert.equal(writes,0)
+})

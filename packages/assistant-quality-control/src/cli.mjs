@@ -42,11 +42,42 @@ export function readQualityReadinessConfiguration(env){
   ||!/^[a-f0-9]{40}$/.test(env.RENDER_GIT_COMMIT??'')
   ||!uuidValue(env.AQC_SERVICE_UUID)||!hash64(env.AQC_CONTROL_COMMAND_KEY)||!hash64(env.AQC_LIMITS_COMMAND_KEY)
   ||env.AQC_CONTROL_COMMAND_KEY===env.AQC_LIMITS_COMMAND_KEY
-  ||['OPENAI_API_KEY','RENDER_API_KEY','GH_TOKEN','GITHUB_TOKEN','AQC_OWNER_PRIVATE_KEY','AQC_PUBLISHER_PRIVATE_KEY'].some(k=>env[k]))unavailable('READINESS_CONFIGURATION_INVALID')
+  ||['OPENAI_API_KEY','RENDER_API_KEY','GH_TOKEN','GITHUB_TOKEN','AQC_OWNER_PRIVATE_KEY','AQC_PUBLISHER_PRIVATE_KEY','AQC_CONTROLLER_GITHUB_TOKEN','AQC_CONTROLLER_CREDENTIAL_EXPIRES_AT'].some(k=>env[k]))unavailable('READINESS_CONFIGURATION_INVALID')
  return Object.freeze({sourceSha:env.RENDER_GIT_COMMIT,renderServiceId:env.RENDER_SERVICE_ID,serviceId:env.AQC_SERVICE_UUID,
   controlKey:env.AQC_CONTROL_COMMAND_KEY,limitsKey:env.AQC_LIMITS_COMMAND_KEY,
   control:database(env.AQC_CONTROL_DATABASE_URL,'sg2_assistant_quality_controller',controlHosts),
   limits:database(env.AQC_LIMITS_DATABASE_URL,'profitia_limits_quality_controller',limitsHosts)})
+}
+/** Separate, explicit controller standby. Only the approved repository-limited
+ * fine-grained credential is admitted; it never enters the readiness-only mode,
+ * executor, publisher, model client or operational telemetry. */
+export function readQualityControllerStandbyConfiguration(env,now=Date.now()){
+ const expiry=env.AQC_CONTROLLER_CREDENTIAL_EXPIRES_AT
+ if(env.AQC_MODE!=='CONTROLLER_STANDBY'||typeof env.AQC_CONTROLLER_GITHUB_TOKEN!=='string'
+  ||!/^github_pat_[A-Za-z0-9_]{40,240}$/.test(env.AQC_CONTROLLER_GITHUB_TOKEN)
+  ||typeof expiry!=='string'||!Number.isFinite(Date.parse(expiry))||new Date(expiry).toISOString()!==expiry
+  ||!Number.isFinite(now)||Date.parse(expiry)<=now||Date.parse(expiry)>Date.parse('2026-11-27T23:59:59.000Z'))
+  unavailable('CONTROLLER_CONFIGURATION_INVALID')
+ const base=readQualityReadinessConfiguration({...env,AQC_MODE:'TECHNICAL_READINESS',
+  AQC_CONTROLLER_GITHUB_TOKEN:undefined,AQC_CONTROLLER_CREDENTIAL_EXPIRES_AT:undefined})
+ return Object.freeze({...base,githubToken:env.AQC_CONTROLLER_GITHUB_TOKEN,credentialExpiresAt:expiry})
+}
+export function createQualityControllerStandby({readiness,github,credentialExpiresAt,now=Date.now}){
+ if(typeof readiness?.check!=='function'||typeof github?.descriptor!=='function'||typeof github?.qualificationDescriptor!=='function'
+  ||typeof now!=='function'||typeof credentialExpiresAt!=='string'||!Number.isFinite(Date.parse(credentialExpiresAt))
+  ||new Date(credentialExpiresAt).toISOString()!==credentialExpiresAt||Date.parse(credentialExpiresAt)>Date.parse('2026-11-27T23:59:59.000Z'))
+  unavailable('CONTROLLER_CONFIGURATION_INVALID')
+ return Object.freeze({async check(){
+  const observed=now();if(!Number.isFinite(observed)||Date.parse(credentialExpiresAt)<=observed)unavailable('CONTROLLER_CREDENTIAL_EXPIRED')
+  const result=await readiness.check()
+  if(result?.status!=='MONITORING_READY'||result.paidRepairsEnabled!==false||result.promotionEnabled!==false||result.pilotStartedAt!==null)unavailable('CONTROLLER_SAFETY_STATE_INVALID')
+  const [repository,workflow]=await Promise.all([github.descriptor(),github.qualificationDescriptor()])
+  if(repository?.repository!=='profitia/SG-dev'||repository.publisherEnabled!==false||repository.promotionEnabled!==false
+   ||!/^[a-f0-9]{40}$/.test(repository.headSha??'')||workflow?.path!=='.github/workflows/assistant-quality-repair.yml'
+   ||workflow.state!=='active')unavailable('CONTROLLER_GITHUB_BINDING_INVALID')
+  return Object.freeze({...result,controllerGitHub:'CONNECTED_STANDBY',qualificationWorkflow:'CONNECTED_MAIN_ONLY',
+   paidRepairsEnabled:false,promotionEnabled:false,pilotStartedAt:null})
+ }})
 }
 export function createQualityReadiness({store,budget,sourceSha,serviceId,now=Date.now}){
  if(typeof store?.descriptor!=='function'||typeof budget?.status!=='function'||!/^[a-f0-9]{40}$/.test(sourceSha??'')
@@ -61,8 +92,8 @@ export function createQualityReadiness({store,budget,sourceSha,serviceId,now=Dat
    paidRepairsEnabled:false,promotionEnabled:false,pilotStartedAt:null,acceptanceRepairsCompleted:0})
  }})
 }
-async function readinessMain(){
- const config=readQualityReadinessConfiguration(process.env)
+async function readinessMain(controllerStandby=false){
+ const config=controllerStandby?readQualityControllerStandbyConfiguration(process.env):readQualityReadinessConfiguration(process.env)
  const [{default:pg},{createQualityStore},{createQualityBudget},{readFileSync},{createHash},{createQualityMonitoring}]=await Promise.all([
   import('pg'),import('./store.mjs'),import('./budget.mjs'),import('node:fs'),import('node:crypto'),import('./monitoring.mjs')])
  const digest=url=>createHash('sha256').update(readFileSync(url)).digest('hex')
@@ -77,7 +108,13 @@ async function readinessMain(){
  let poolError=false;for(const p of pools)p.on('error',()=>{poolError=true})
  const store=createQualityStore({query:(q,v)=>pools[0].query(q,v),commandKey:config.controlKey,schemaDigest:controlDigest,serviceId:config.serviceId})
  const budget=createQualityBudget({query:(q,v)=>pools[1].query(q,v),commandKey:config.limitsKey,schemaDigest:limitsDigest,serviceId:config.serviceId,role:'profitia_limits_quality_controller'})
- const readiness=createQualityReadiness({store,budget,sourceSha:config.sourceSha,serviceId:config.serviceId})
+ const nativeReadiness=createQualityReadiness({store,budget,sourceSha:config.sourceSha,serviceId:config.serviceId})
+ let readiness=nativeReadiness
+ if(controllerStandby){
+  const {createQualityGitHub}=await import('./github.mjs')
+  const github=createQualityGitHub({token:config.githubToken,publisherEnabled:false,promotionEnabled:false})
+  readiness=createQualityControllerStandby({readiness:nativeReadiness,github,credentialExpiresAt:config.credentialExpiresAt})
+ }
  const monitoring=createQualityMonitoring({env:process.env,warn:value=>console.warn(JSON.stringify(value)),onDelivery:value=>console.log(JSON.stringify({...value,sourceSha:config.sourceSha}))})
  try{
   while(!stop.signal.aborted){
@@ -101,7 +138,7 @@ async function readinessMain(){
 if(process.argv[1]){
  const {fileURLToPath}=await import('node:url'),path=await import('node:path')
  if(path.resolve(process.argv[1])===fileURLToPath(import.meta.url)){
-  try{if(process.argv.length!==3||process.argv[2]!=='readiness')unavailable('READINESS_MODE_REQUIRED');await readinessMain()}
+  try{if(process.argv.length!==3||!['readiness','controller-standby'].includes(process.argv[2]))unavailable('READINESS_MODE_REQUIRED');await readinessMain(process.argv[2]==='controller-standby')}
   catch(error){console.error(JSON.stringify({event:'aqc.technical.failure',code:/^[A-Z][A-Z0-9_]{1,79}$/.test(error?.code??'')?error.code:'READINESS_UNAVAILABLE'}));process.exitCode=1}
  }
 }
