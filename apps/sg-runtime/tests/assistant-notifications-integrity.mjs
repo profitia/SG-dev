@@ -1,4 +1,5 @@
 import {knowledgeSourcePredecessor} from '../../architecture-lab/knowledge-source.mjs'
+import {procurementInsightsEditorialPredecessor,EDITORIAL_RECEIPT} from './procurement-insights-editorial-integrity.mjs'
 // Test/build-only exact SG2 presentation continuation. No runtime or access authority.
 import assert from 'node:assert/strict'
 import {createHash} from 'node:crypto'
@@ -55,6 +56,11 @@ export function notificationCompletionSource(before){
 export function assistantNotificationsPredecessor(current,historical){
  const knowledge=knowledgeSourcePredecessor(current,historical)
  if(knowledge)return assistantNotificationsPredecessor(knowledge.previousBytes,historical)
+ const editorial=procurementInsightsEditorialPredecessor(current,historical)
+ if(editorial){
+  const accepted=assistantNotificationsPredecessor(editorial.previousBytes,historical);assert(accepted,'accepted notification source retained')
+  return {...accepted,editorial,manifest:{...accepted.manifest,sourceDigests:{...accepted.manifest.sourceDigests,...editorial.manifest.sourceDigests,[EDITORIAL_RECEIPT]:hash(current(EDITORIAL_RECEIPT))}}}
+ }
  let bytes
  try{bytes=current(NOTIFICATIONS_RECEIPT)}catch(error){
   const text=String(error?.stderr??error?.message??'')

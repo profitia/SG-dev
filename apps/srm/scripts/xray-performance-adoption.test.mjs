@@ -30,7 +30,13 @@ const hash=value=>createHash('sha256').update(value).digest('hex')
 // Only immutable full-SHA Git blobs are cached; actual candidate reads remain
 // live. Return independent buffers so negative tests cannot poison the cache.
 const historicalBlobs=new Map()
-const historicalBlob=spec=>{assert.match(spec,/^[a-f0-9]{40}:.+$/);if(!historicalBlobs.has(spec))historicalBlobs.set(spec,execFileSync('git',['show',spec]));return Buffer.from(historicalBlobs.get(spec))}
+const historicalBlob=spec=>{
+ const authority=spec.match(/^refs\/remotes\/origin\/main:(Canon\/registries\/governance-manifest-(?:v2|successors-v1)\.json)$/)
+ if(authority)spec=execFileSync('git',['rev-parse','--verify','refs/remotes/origin/main^{commit}'],{encoding:'utf8'}).trim()+':'+authority[1]
+ assert.match(spec,/^[a-f0-9]{40}:.+$/)
+ if(!historicalBlobs.has(spec))historicalBlobs.set(spec,execFileSync('git',['show',spec]))
+ return Buffer.from(historicalBlobs.get(spec))
+}
 
 // Verify all amended AppShell/test bytes before exposing the immutable predecessor
 // to the existing SRM acceptance checks. No historical assertion is removed.

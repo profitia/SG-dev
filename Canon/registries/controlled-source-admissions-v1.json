@@ -4,6 +4,40 @@
   "scope": "SOURCE_VALIDATION_ONLY",
   "records": [
     {
+      "id": "SG2:SG2-FINDER-SENTRY-MONITOR-20261117",
+      "status": "ACTIVE",
+      "repository": "profitia/SG-dev",
+      "actor": "profitia",
+      "taskId": "SG2-FINDER-SENTRY-MONITOR-20261117",
+      "targetEnvironment": "development",
+      "scope": "SOURCE_VALIDATION_ONLY",
+      "approvalRef": "owner-decision:01a19782-bad9-7c42-be7e-fd05f4a06292:FINDER-MONITOR-f20431f0-20261117",
+      "sourceSha": "f20431f0d43f8d34f3021aa4fe6ceea560837fdc",
+      "baseSha": "1c82689265ef0e776100808531a8f77a83a429e7",
+      "validFrom": "2026-11-17T14:10:38.659Z",
+      "validUntil": "2026-11-24T23:59:59.000Z",
+      "files": [
+        {
+          "path": "apps/sg-runtime/scripts/monitor-benchmark-finder.mjs",
+          "blob": "2a3d978db7dfe1532dd317a4249d143b4ac5458a",
+          "mode": "100644",
+          "status": "added",
+          "projectKey": "SG2",
+          "owner": "SG Runtime",
+          "surfaceId": "SG2-BASE-001"
+        },
+        {
+          "path": "apps/sg-runtime/tests/monitor-benchmark-finder.test.mjs",
+          "blob": "3bf4b09a616d1bd28493edee500a13205f7081de",
+          "mode": "100644",
+          "status": "added",
+          "projectKey": "SG2",
+          "owner": "SG Runtime",
+          "surfaceId": "SG2-BASE-001"
+        }
+      ]
+    },
+    {
       "id": "SRM:SRM-VERCLY-RESUME-20261117",
       "status": "ACTIVE",
       "repository": "profitia/SG-dev",
