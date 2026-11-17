@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {spawnSync} from 'node:child_process'
-import {qualificationCommand,syntheticResponseEvents,qualifyLinuxExecutor,qualificationCodeModeCall,qualificationCancellationCommand} from '../src/acceptance.mjs'
+import {qualificationCommand,syntheticResponseEvents,qualifyLinuxExecutor,qualificationCodeModeCall,qualificationCancellationCommand,qualificationProcessIdentity} from '../src/acceptance.mjs'
 import {boundAgentRequest} from '../src/openai-broker.mjs'
 import {CODE_PRICING} from '../src/budget.mjs'
 
@@ -31,4 +31,14 @@ test('Code Mode qualification uses the actual freeform namespace and a valid fix
  const script=qualificationCancellationCommand().split("<<'AQC_CANCEL_PY'\n")[1].replace(/AQC_CANCEL_PY$/,'')
  const checked=spawnSync('python3',['-c','import ast,sys;ast.parse(sys.stdin.read())'],{input:script,encoding:'utf8'})
  assert.equal(checked.status,0,checked.stderr);assert(script.includes('os.getpid()'))
+})
+
+test('Cancellation resolves the exact Python probe through the kernel PID namespace mapping, never another process',()=>{
+ const status='Name:\tpython3\nUid:\t19999\t19999\t19999\t19999\nNSpid:\t4321\t7\n'
+ assert.equal(qualificationProcessIdentity(status,'python3','4321','7'),true)
+ assert.equal(qualificationProcessIdentity(status.replace('4321\t7','4321'),'python3','4321','4321'),true)
+ for(const [s,c,h,n]of [[status,'codex','4321','7'],[status,'python3','4322','7'],[status,'python3','4321','8'],
+  [status.replace('19999','0'),'python3','4321','7'],[status.replace('NSpid:','Wrong:'),'python3','4321','7'],
+  [status+'NSpid:\t4321\t7\n','python3','4321','7'],[status,'python3','../4321','7']])
+  assert.equal(qualificationProcessIdentity(s,c,h,n),false)
 })
