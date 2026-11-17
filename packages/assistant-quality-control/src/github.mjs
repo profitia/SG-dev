@@ -1,6 +1,6 @@
 import {createHash} from 'node:crypto'
 import {assertWorkflowIdentity} from './provenance.mjs'
-import {documentDigest,assertVerifiedRepairManifest} from './manifest.mjs'
+import {documentDigest,assertVerifiedRepairManifest,verifyDocument} from './manifest.mjs'
 
 const repository='profitia/SG-dev'
 const fail=code=>{throw Object.assign(Error('Quality GitHub operation unavailable'),{code})}
@@ -136,7 +136,9 @@ export function createQualityGitHub({token,fetchImpl=fetch,publisherEnabled=fals
    const c=await write('/git/commits',{message:'[skip render] Controlled CIC repair '+m.incidentId,tree:t.sha,parents:[m.baseSha]})
    require(sha(c?.sha)&&c.tree?.sha===t.sha,'GITHUB_COMMIT_INVALID')
    require(await main()===m.baseSha,'BASE_CHANGED')
+   await verifyIndependent({manifest:m,patch,verification})
    await write('/git/refs',{ref:'refs/heads/'+branch,sha:c.sha})
+   await verifyIndependent({manifest:m,patch,verification})
    const p=await write('/pulls',{title:'Controlled CIC '+m.repairClass+' repair',head:branch,base:'main',draft:false,
     body:'Synthetic controlled Stage 1 repair. Independent verification '+verification.proofSha256+'. No private QA payload is included. Required exact-source CI and release gates remain mandatory.'})
    require(number(p?.number)&&p.head?.sha===c.sha,'GITHUB_PR_IDENTITY_INVALID')
@@ -152,10 +154,86 @@ export function createQualityGitHub({token,fetchImpl=fetch,publisherEnabled=fals
    // prevent another owner's main update between this read and the merge.
    const protection=await get('/branches/main/protection')
    require(protection?.required_status_checks?.strict===true,'STRICT_BASE_PROTECTION_REQUIRED')
+   const policy=protection.required_status_checks,serverNames=new Set([...(Array.isArray(policy.contexts)?policy.contexts:[]),...(Array.isArray(policy.checks)?policy.checks.map(c=>c?.context):[])])
+   require(Array.isArray(requiredNames)&&requiredNames.length>0&&requiredNames.every(n=>serverNames.has(n)),'STRICT_REQUIRED_CI_PROTECTION_REQUIRED')
    const result=await checks(headSha,requiredNames);require(result.result==='PASS','REQUIRED_CI_INCOMPLETE')
+   await verifyIndependent({prNumber,headSha,baseSha})
    const merged=await write('/pulls/'+prNumber+'/merge',{sha:headSha,merge_method:'merge'},'PUT')
    require(merged?.merged===true&&sha(merged.sha),'MERGE_RESULT_UNVERIFIED')
    return {sourceSha:merged.sha}
+  },
+ })
+}
+
+const publicationFields=Object.freeze(['schemaVersion','applicationId','environment','repository','action','incidentId','repairClass','baseSha',
+ 'manifestSha256','gateSetSha256','artifactSha256','verificationProofSha256','prNumber','headSha','requiredChecksSha256','nonce','observedAt','expiresAt','rawQaPayloadIncluded','result'])
+const publicationStamp=v=>typeof v==='string'&&Number.isFinite(Date.parse(v))&&new Date(v).toISOString()===v
+const publicationHash=v=>typeof v==='string'&&/^[a-f0-9]{64}$/.test(v)
+function publicationNames(names){
+ require(Array.isArray(names)&&names.length>0&&names.length<=32&&new Set(names).size===names.length
+  &&names.every(n=>typeof n==='string'&&n.length>0&&n.length<=128),'PUBLISHER_REQUIRED_CHECKS_INVALID')
+ return Object.freeze([...names])
+}
+
+/** Only the independent verifier's installed public keys can admit a proposal
+ * or merge. This carries metadata, never labels, QA input, output or a key.
+ * The durable action nonce and freshness prevent reusing a proposal receipt
+ * for merge, another incident, source, patch or list of required checks. */
+export function createQualityPublishProofVerifier({keys,readReceipt,nonce,notBefore,now=Date.now}){
+ require(keys instanceof Map&&keys.size>0&&keys.size<=4&&typeof readReceipt==='function'&&uuid(nonce)
+  &&publicationStamp(notBefore)&&typeof now==='function','PUBLISHER_VERIFIER_CONFIGURATION_REQUIRED')
+ const trustedKeys=new Map(keys)
+ return async function verifyIndependent({action,manifest,patch,verification,requiredNames,prNumber=null,headSha=null}){
+  const m=assertVerifiedRepairManifest(manifest),names=publicationNames(requiredNames);let observed=now()
+  require(['PROPOSE','MERGE'].includes(action)&&Number.isFinite(observed)&&Date.parse(m.mandate.expiresAt)>observed,'PUBLISHER_AUTHORITY_EXPIRED')
+  require(patch?.incidentId===m.incidentId&&patch.baseSha===m.baseSha&&patch.manifestSha256===documentDigest(m)
+   &&patch.gateSetSha256===m.gateSetSha256&&Buffer.byteLength(JSON.stringify(patch))<=65536
+   &&verification?.result==='PASS'&&verification.artifactSha256===documentDigest(patch)&&publicationHash(verification.proofSha256),'PUBLISHER_VERIFICATION_BINDING_INVALID')
+  require(action==='PROPOSE'?prNumber===null&&headSha===null:number(prNumber)&&sha(headSha),'PUBLISHER_PR_BINDING_INVALID')
+  const expected=Object.freeze({schemaVersion:'AQC_PUBLISH_PROOF_V1',applicationId:'spendguru',environment:'development',repository,action,
+   incidentId:m.incidentId,repairClass:m.repairClass,baseSha:m.baseSha,manifestSha256:documentDigest(m),gateSetSha256:m.gateSetSha256,
+   artifactSha256:verification.artifactSha256,verificationProofSha256:verification.proofSha256,prNumber,headSha,
+   requiredChecksSha256:documentDigest(names),nonce,rawQaPayloadIncluded:false,result:'PASS'})
+  const document=await readReceipt(expected)
+  require(document&&Object.getPrototypeOf(document)===Object.prototype&&Buffer.byteLength(JSON.stringify(document))<=8192,'INDEPENDENT_PUBLISH_PROOF_REQUIRED')
+  const body=verifyDocument(document,{kind:'AQC_PUBLISH_PROOF_V1',trustedKeys})
+  observed=now();require(Number.isFinite(observed)&&Date.parse(m.mandate.expiresAt)>observed,'PUBLISHER_AUTHORITY_EXPIRED')
+  require(body&&Object.getPrototypeOf(body)===Object.prototype&&Object.keys(body).sort().join(',')===[...publicationFields].sort().join(','),'PUBLISHER_PROOF_FIELDS_INVALID')
+  for(const[k,v]of Object.entries(expected))require(body[k]===v,'PUBLISHER_PROOF_BINDING_INVALID')
+  require(publicationStamp(body.observedAt)&&publicationStamp(body.expiresAt)&&Date.parse(body.observedAt)>=Date.parse(notBefore)
+   &&Date.parse(body.observedAt)<=observed&&Date.parse(body.expiresAt)>observed&&Date.parse(body.expiresAt)<=Date.parse(body.observedAt)+30000,'PUBLISHER_PROOF_STALE')
+  return Object.freeze({verified:true,proofSha256:verification.proofSha256,artifactSha256:verification.artifactSha256})
+ }
+}
+
+/** Fixed independent publisher composition. Callers cannot substitute a
+ * self-grade callback or shorten the installed CI list. Credentials stay
+ * outside the executor; this factory creates no key, grant or activation. */
+export function createQualityAttestedPublisher(options){
+ require(options&&typeof options==='object'&&!Object.hasOwn(options,'verifyIndependent')
+  &&!Object.hasOwn(options,'verifyProof')&&options.proofEvidence,'PUBLISHER_VERIFIER_CONFIGURATION_REQUIRED')
+ const {proofEvidence,requiredNames,...transport}=options
+ const names=publicationNames(requiredNames),verifyIndependent=createQualityPublishProofVerifier(proofEvidence)
+ const github=createQualityGitHub(transport)
+ const caller=value=>require(value&&typeof value==='object'&&!Object.hasOwn(value,'verifyIndependent')
+  &&!Object.hasOwn(value,'requiredNames')&&!Object.hasOwn(value,'verifyProof'),'PUBLISHER_CALLER_OVERRIDE_REJECTED')
+ return Object.freeze({
+  descriptor:github.descriptor,
+  checks:headSha=>github.checks(headSha,names),
+  async propose(input){
+   caller(input)
+   return github.propose({...input,verifyIndependent:claim=>verifyIndependent({...claim,action:'PROPOSE',requiredNames:names})})
+  },
+  async merge(input){
+   caller(input)
+   if(transport.promotionEnabled!==true)fail('PROMOTION_DISABLED')
+   const m=assertVerifiedRepairManifest(input.manifest)
+   return github.merge({prNumber:input.prNumber,headSha:input.headSha,baseSha:m.baseSha,requiredNames:names,
+    verifyIndependent:async()=>{
+     await verifyIndependent({...input,action:'MERGE',requiredNames:names})
+     const pr=await github.pull(input.prNumber,{headSha:input.headSha,baseSha:m.baseSha})
+     require(pr.head.ref==='sg2/quality-control-'+m.incidentId,'PUBLISHER_FOREIGN_BRANCH_REJECTED')
+    }})
   },
  })
 }
