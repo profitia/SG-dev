@@ -1,0 +1,130 @@
+{
+  "status": "PROPOSED_OWNER_CI_AMENDMENT_REQUIRED",
+  "candidateSha": "c5ba5f23a6552e29faef3109873bcbd4c2f41749",
+  "correctionMergeSha": "dffda8006299b834a463ad9b4fbecc47a769d124",
+  "authorityMain": "3dbbac199a99d89bcb98e25fe4fd55b34bb1ba6a",
+  "preservedApprovedPolicySha": "392136fd4b389370332cfa4284180ad66eb03115",
+  "reusedOwnerApprovedTransportFixSha": "e4aaecfa68d6f280d9e1009eae929e374cc3c8ef",
+  "unchangedApprovedProductReleaseSha": "123d4d7df165b73852724d5e09056424f4ce631a",
+  "unchangedSourceCompositionSha": "906d102f24d974f1a99cd3d532fec5e0c007ae18",
+  "patchSha256": "96466f56c372334e2272f54d916c365e458ad0d3890da31dd30548195bc00797",
+  "localTests": {
+    "policy": 624,
+    "combined": 651,
+    "failures": 0,
+    "skips": 0
+  },
+  "files": {
+    "scripts/governance/controlled-package-ci.mjs": {
+      "proposedSha256": "e5401a50b6fda4da3b972c3d9cb52dd8600130a51ccb359c0cd3f33ad6022719"
+    },
+    "scripts/governance/controlled-package-ci.test.mjs": {
+      "proposedSha256": "0ac7dfcf6febabbbb81eb73fa12cc2e9ceaa748c250b37de0374dfe07ee9b770"
+    }
+  },
+  "decisionId": "ARCH-PK-STAGE2-PUBLIC-PROOF-AMENDMENT-20261117",
+  "originalOwnerGo": {
+    "decisionId": "ARCH-PK-STAGE2-TECHNICAL-GO-20261117",
+    "status": "OWNER_APPROVED",
+    "source": "Explicit user response in host conversation 01a1e7fb-aa2e-7501-b3d7-5f42be90cb14",
+    "questionItemId": "request_user_input_async/call_429ca8f86e214887956a0a63cec94d7d/0",
+    "answer": "GO — zatwierdzam cały wskazany pakiet",
+    "recordedAt": "2026-11-17T07:53:35.214300+00:00",
+    "packetSha": "4153178f65cf99fe014fe02e798c130f26210353",
+    "policySha": "392136fd4b389370332cfa4284180ad66eb03115",
+    "releaseSha": "123d4d7df165b73852724d5e09056424f4ce631a",
+    "environment": "development",
+    "budgetTotalUsd": 10,
+    "budgetPerDocumentUsd": 1,
+    "approvalIncludesLimitedRecoveryAlternative": true,
+    "validUntil": "2026-11-24T23:59:00Z"
+  },
+  "approvalStatus": "OWNER_CI_AMENDMENT_REQUIRED",
+  "runtimeApprovalUnchanged": true,
+  "migrationsGrantsBudgetAndResourcesUnchanged": true,
+  "sourceRecordSha256": "4e815bd8238285419a49a0f3a0718d7356a2ad9aafba214954004acd7f5d9ca9",
+  "expectedOperationSourceDigest": "8e19bc106da0ff03f6ad2b50e9fd9c3ac9b95ebce1b55a4a18987a8311d50315",
+  "legacyPublicRecipeDigest": "1722f1604df42aec084df0ff7610240a25e687caffd58547dbed320a200676ed",
+  "requiredAuthorityDependency": {
+    "pr": 1092,
+    "sourceSha": "e4aaecfa68d6f280d9e1009eae929e374cc3c8ef",
+    "refreshedSourceSha": "6ea6b962a998e6b9b5988fb8bf368cc9aca2ee06",
+    "rule": "Reuse the separately owner-approved correction only after its proper acceptance and resulting-main checks; this amendment requests no bootstrap waiver and does not take over the other task."
+  },
+  "boundedTransport": {
+    "anchorSha": "c5ba5f23a6552e29faef3109873bcbd4c2f41749",
+    "retainAnchorAsAncestor": true,
+    "requireFreshActualExpectedShaForEveryRun": true,
+    "keepExactlyTheTwoProposedFileHashes": true,
+    "keepOriginalApprovedRoutingTestSha256": "a742682f9e12ba76f469b3c847df886ac3b936fd5f0666bb2a3d679598ea972d",
+    "allowedAuthorityPolicyChange": "Only the separately approved PR1092 content-reader fix already included in this candidate. Other protected-policy changes require reassessment.",
+    "requirePreservedUnrelatedAuthorityChanges": true,
+    "forbidOwnedRuntimeDependencyChanges": true,
+    "forbidApplicationReleaseShaChange": true,
+    "requireAllRequiredChecksPerActualHead": true,
+    "requireResultingMainCi": true,
+    "forbidForceAdminMergeOrForgedStatus": true
+  },
+  "controlledEvidence": {
+    "runId": 44043642667,
+    "headSha": "765e995ca9b1eacef83a562b46e9c23876992e9b",
+    "status": "completed",
+    "conclusion": "success",
+    "event": "workflow_dispatch",
+    "artifactId": 14311646306,
+    "artifactName": "sg2-controlled-operation-proof",
+    "artifactDigest": "sha256:e22bf68d464887496a2285c63f75ce08f76837b194e6bb3296390c8884a0762e",
+    "jobs": [
+      {
+        "id": 133903946503,
+        "name": "SRM contract adoption",
+        "conclusion": "success"
+      },
+      {
+        "id": 133903946777,
+        "name": "Architecture contract and lab",
+        "conclusion": "success"
+      },
+      {
+        "id": 133903946835,
+        "name": "SG2 controlled operation integration",
+        "conclusion": "success"
+      },
+      {
+        "id": 133903946915,
+        "name": "SG2 contract adoption",
+        "conclusion": "success"
+      },
+      {
+        "id": 133903948376,
+        "name": "Main-only environment policy probe",
+        "conclusion": "skipped"
+      },
+      {
+        "id": 133903948725,
+        "name": "SG2 dashboard source regression",
+        "conclusion": "skipped"
+      },
+      {
+        "id": 133910759223,
+        "name": "${{ matrix.project }} operation integration",
+        "conclusion": "skipped"
+      }
+    ],
+    "independentCanonicalCheck": {
+      "status": "PASS",
+      "verifier": "UNCHANGED_TRUSTED_765_assertProof",
+      "runId": 44043642667,
+      "candidateSha": "392136fd4b389370332cfa4284180ad66eb03115",
+      "controlSha": "765e995ca9b1eacef83a562b46e9c23876992e9b",
+      "controlPolicyDigest": "af5eae6d9a931fb7a25daf1fd62cc46c2fbb761b370e57ab15b21ae6931c4706",
+      "artifactArchiveSha256": "e22bf68d464887496a2285c63f75ce08f76837b194e6bb3296390c8884a0762e",
+      "meaning": "Original controlled source tests/typecheck/build independently verified; not public CI or main acceptance"
+    },
+    "candidateMeaning": "Previous approved policy commit392136fd, not this new amendment; this amendment still needs its own required CI after owner decision."
+  },
+  "testLogSha256": {
+    "public-proof-correction": "215d9f069ca04048b175b3dfee8e546e51ebf8437b3bb62f7c4d25c7fe965db5",
+    "public-proof-source-validation": "4b2e1de0857fd936e1de043e6cb88f393a8f680029a1a34174a44d71fac9cd33"
+  }
+}
