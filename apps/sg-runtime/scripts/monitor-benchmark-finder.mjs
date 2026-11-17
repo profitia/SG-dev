@@ -202,9 +202,15 @@ export async function runMonitor(env, {fetchImpl=fetch, now=Date.now, log=value=
           redirect:'error',signal:AbortSignal.timeout(10000),headers:{Origin:config.target}})
         const client=await limitedJson(response,'cleanup')
         const sessions=client.response?.sessions??[]
-        if(sessions.length===1 && /^sess_[A-Za-z0-9]+$/.test(sessions[0].id??'')
-          && sessions[0].user?.id===userId) sessionId=sessions[0].id
-        else if(sessions.length) fail('cleanup','SESSION_REVOCATION_FAILED')
+        if(sessions.length===1 && /^sess_[A-Za-z0-9]+$/.test(sessions[0].id??'')) {
+          const sessionResponse=await fetchImpl('https://api.clerk.com/v1/sessions/'+sessions[0].id,{
+            redirect:'error',signal:AbortSignal.timeout(10000),
+            headers:{Authorization:'Bearer '+config.clerkKey}})
+          const recovered=await limitedJson(sessionResponse,'cleanup')
+          if(recovered.id!==sessions[0].id || recovered.user_id!==userId)
+            fail('cleanup','SESSION_REVOCATION_FAILED')
+          sessionId=recovered.id
+        } else if(sessions.length) fail('cleanup','SESSION_REVOCATION_FAILED')
       } catch {failure??=new MonitorFailure('cleanup','SESSION_REVOCATION_FAILED')}
     }
     if(sessionId) {

@@ -34,6 +34,7 @@ function fixture(change=()=>null) {
         return json({id:'sit_monitor',token:'ticket_private_credential'})
       }
       if(u.pathname.endsWith('/revoke')) return json({id:'sess_monitor',status:'revoked'})
+      if(u.pathname==='/v1/sessions/sess_monitor') return json({id:'sess_monitor',user_id:'user_monitor'})
     }
     if(u.hostname==='monitor-test.clerk.accounts.dev') {
       assert.equal(options.headers.Origin,'https://dev-sg2.spendguru.app')
@@ -164,9 +165,19 @@ test('an incomplete sign-in revokes its unused ticket and cannot call Finder',as
 test('a lost sign-in response recovers and revokes only the isolated client session',async()=>{
   const f=fixture(({url})=>{
     if(url?.pathname==='/v1/client/sign_ins')throw new Error('lost response')
-    if(url?.pathname==='/v1/client')return Response.json({response:{sessions:[{id:'sess_monitor',user:{id:'user_monitor'}}]}})
+    if(url?.pathname==='/v1/client')return Response.json({response:{sessions:[{id:'sess_monitor'}]}})
     if(url?.pathname==='/v1/sign_in_tokens/sit_monitor/revoke')return Response.json({id:'sit_monitor',status:'revoked'})
   })
   const result=await runMonitor(env(),f)
   assert.equal(result.code,'NETWORK_FAILURE');assert.ok(revoked(f))
+})
+test('recovery never revokes a session attributed to another account',async()=>{
+  const f=fixture(({url})=>{
+    if(url?.pathname==='/v1/client/sign_ins')throw new Error('lost response')
+    if(url?.pathname==='/v1/client')return Response.json({response:{sessions:[{id:'sess_monitor'}]}})
+    if(url?.pathname==='/v1/sessions/sess_monitor')return Response.json({id:'sess_monitor',user_id:'user_other'})
+    if(url?.pathname==='/v1/sign_in_tokens/sit_monitor/revoke')return Response.json({id:'sit_monitor',status:'revoked'})
+  })
+  const result=await runMonitor(env(),f)
+  assert.equal(result.status,'error');assert.equal(revoked(f),false)
 })
