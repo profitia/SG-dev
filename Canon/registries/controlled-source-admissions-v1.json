@@ -133,6 +133,40 @@
           "surfaceId": "SG2-BASE-001"
         }
       ]
+    },
+    {
+      "id": "SG2:SG2-FINDER-MACROBOND-RECOVERY-20261117",
+      "status": "ACTIVE",
+      "repository": "profitia/SG-dev",
+      "actor": "profitia",
+      "taskId": "SG2-FINDER-MACROBOND-RECOVERY-20261117",
+      "targetEnvironment": "development",
+      "scope": "SOURCE_VALIDATION_ONLY",
+      "approvalRef": "owner-decision:01a1e92f-cd84-7a92-97d7-36d3fbc49ef0:FINDER-CI-8e8ec33e-20261117",
+      "sourceSha": "8e8ec33efe539b01cfe3b0f5a33a56b95a9f989a",
+      "baseSha": "52a8489b4feea867bc6c91d7bd1eed5c63e0e9ff",
+      "validFrom": "2026-11-17T12:06:33.592169+00:00",
+      "validUntil": "2026-11-18T22:59:00.000Z",
+      "files": [
+        {
+          "path": "apps/sg-runtime/lib/benchmark/discovery-native.ts",
+          "blob": "e5dba6c8f24650a40bed98d5cbc90392850e4e4f",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SG2",
+          "owner": "SG Runtime",
+          "surfaceId": "SG2-BASE-001"
+        },
+        {
+          "path": "apps/sg-runtime/tests/benchmark-discovery.integration.test.mjs",
+          "blob": "4d841e9d0aa17dbb8a275416df55c37de1ff5875",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SG2",
+          "owner": "SG Runtime",
+          "surfaceId": "SG2-BASE-001"
+        }
+      ]
     }
   ],
   "authority": "Accepted trusted-main data only. Candidate records never authorize themselves. Existing closed reviews and historical receipts remain unchanged."
