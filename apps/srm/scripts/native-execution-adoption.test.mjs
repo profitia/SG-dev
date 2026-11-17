@@ -1,8 +1,8 @@
 import {recurringSourcePredecessor} from '../../architecture-lab/private-recurring-source.mjs'
-import {acceptedSdkSource,sdkContinuationPredecessor} from '../../../packages/platform-contracts/test/organisation-sdk-compatibility.mjs'
+import {acceptedSdkSource,acceptedSdkCurrentSourceDigests,sdkContinuationPredecessor} from '../../../packages/platform-contracts/test/organisation-sdk-compatibility.mjs'
 // Verify the current SDK separately from immutable historical source maps.
 const sdkSourceAcceptance=acceptedSdkSource()
-const sdkCurrentSourceDigests=Object.fromEntries(Object.entries({...sdkSourceAcceptance.sourceDigests,...sdkSourceAcceptance.compatibilityTestSourceDigests}).map(([p,h])=>[p.replace(/^packages\/platform-contracts\//,''),h]))
+const sdkCurrentSourceDigests=Object.fromEntries(Object.entries({...sdkSourceAcceptance.sourceDigests,...sdkSourceAcceptance.compatibilityTestSourceDigests,...acceptedSdkCurrentSourceDigests()}).map(([p,h])=>[p.replace(/^packages\/platform-contracts\//,''),h]))
 import {assertAppShellFourCardCascade} from '../../sg-runtime/tests/pci-smart-integrity.mjs'
 import {posix} from 'node:path'
 import test from 'node:test'
