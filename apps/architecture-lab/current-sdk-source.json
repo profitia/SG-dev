@@ -1,6 +1,7 @@
 {
   "schemaVersion": "1.0",
   "scope": "CURRENT_SDK_SOURCE_INTEGRITY_ONLY",
+  "sourceSnapshotSha": "cbdf4b0ce6bfe45b5ab73514df039ddd6b6fcd8a",
   "status": "PRIVATE_PROTOTYPE_NOT_ADMITTED",
   "platformVersion": "1.38.0",
   "runtimeActivated": false,
@@ -22,11 +23,12 @@
     "Canon/evidence/2026-11-12-registration-organisation-lifecycle.md": "ce1a03897c3db31ceb0565ec7f81f368084e2ae2898e186d630eda05e708c996",
     "Canon/evidence/2026-11-12-registration-package-activation.md": "2a5551042b7c010f4195b7ad199c96020e24f619d567750b7f2332b4f52366c1",
     "Canon/evidence/2026-11-13-registration-accepted-main-source-view.md": "4098eeec93a7d9f879e5e11df521407184b9226cb160d964c9c9e04620f4c6bb",
-    "Canon/registries/governance-manifest-v2.json": "7f5498afa10f3edaf0b364ca7bf4576de5dc8100e61bc4fc2773c845b771e2a4",
+    "Canon/registries/governance-manifest-v2.json": "d8ddddd7b39b6b67ed7e4ca2b4407a47a4470497465f790a67be301ea4dcccd8",
     "Canon/registries/operation-access-matrix-v1.json": "65ff8fd99fd7631ff0ff43d5b657d90a2056f99aafa5eacc47db705c64cd667f",
     "Canon/runbooks/platform-knowledge-development-delivery-plan-v1.md": "83427d556088806bffb2a825e07c1df24b373f169f9e9bcc42667205585671ad",
     "Canon/runbooks/platform-knowledge-stage2-development-v1.md": "5b49bd399402d2a9c8f621f75ad6d125c341db0c91e82319a2cf85b31fca020f",
     "Canon/runbooks/platform-knowledge-stage2-e1-activation-v1.md": "7526d2429eadfcb0efa1ef220a480af378e1c09f85bb64696e3661abff86fb0c",
+    "Canon/v1.0-procurement-insights-narrative-and-editorial-canon.md": "666f04de2b454cb14c55c72c603659607693bb0b2ba8e7cf23f7f6f192fb67c8",
     "Canon/v1.1-business-solution-design-and-canonization-canon.md": "1e396b688b9565d0d5478867f15a6830e3392e6783422c3b337e2644d269ae9b",
     "Canon/v1.3-procurement-insights-market-calendar-amendment.md": "542e3f99196440eb2afa6fd0f69a20f5f4562a5cad978a92c160429866e1c8c5",
     "apps/architecture-lab/README.md": "5fbc49b173d4fd55aa89f19d7b5834c267d722b74ccbb12cf46c651d134fb956",
@@ -113,7 +115,7 @@
     "apps/identity-runtime/package-lock.json": "586ab232e7896f264cf8e4090a28a61e47147745fe676f4adcbe2cf4db0e1c9b",
     "apps/identity-runtime/package.json": "706de71c4fb389b5dc7a50ab0d314c4a4ab81d32135648619e1153461691efcd",
     "apps/identity-runtime/scripts/check.mjs": "163a345c15683a67995f8d9c068519de8120962a97ff7fe998d0daf3ac2c9019",
-    "apps/identity-runtime/scripts/install-organisation-lifecycle.mjs": "def1617ce7c0189f5dd7aaef09ddc97625a2556ebb135bdc8bd8a0be22d96a78",
+    "apps/identity-runtime/scripts/install-organisation-lifecycle.mjs": "6357e6d579e85add6b0342e0adf899449dd9ec71a01b83e12b50fdec38539249",
     "apps/identity-runtime/src/account-page.ts": "2174093272a80908cdb0285118b9ab1444043b5bdc3eb06878398395986a8131",
     "apps/identity-runtime/src/account-visuals.ts": "5ab9b2aad641492ee68f841c77df2cb4aed4d77b07b3bb379b013f86ed09dd66",
     "apps/identity-runtime/src/http-handler.ts": "19f3a2a9dd04f04bba497e82f330b6132de63a3471922eb83a39afe12c8d0ee6",
@@ -132,6 +134,7 @@
     "apps/identity-runtime/test/mailgun-delivery.test.mjs": "43ae89969bbbdd44ff6aa16d6b1ab46bfc0be1f5fbb8d2798108e2e7b016db0a",
     "apps/identity-runtime/test/organisation-draft.test.mjs": "128683cefed1ba9ee0dadf271a66320678a2d5babbb4f69c794e8b643a1c0328",
     "apps/identity-runtime/test/organisation-http.test.mjs": "b8d306e93a10b938955be57c4f293f6688e0132caa8f9e162a73f26f65227343",
+    "apps/identity-runtime/test/organisation-installation-plan.test.mjs": "6b1ae612c64c3bdba3ba45e61c3dc458cf4eafeb9302788c716a66a17702f9f0",
     "apps/identity-runtime/test/organisation-onboarding.test.mjs": "6fbc8c754e55bc2762bee807bce2fab2c647806965a32a45d9c504d50d2923ff",
     "apps/identity-runtime/test/organisation-service-peers.test.mjs": "ab865ebeeae95f692cea3ba7468c19a41be87a3ebf5881fe6156d7d34dbb1c1e",
     "apps/identity-runtime/test/organisation-store.test.mjs": "aa21d2cd9ca8675a851128fa9175738a48d6b67cb4b00ebcfa8b59392ca04365",
@@ -157,7 +160,8 @@
     "apps/insights-runtime/sql/005-report-delivery.sql": "3613c39df8d494a33e135b1d925131aa5cae4048e46e7c1797ba528254a16dc1",
     "apps/insights-runtime/src/api.mjs": "c4b175731bcf202ca07d3e9341d5a744be945ca81f5b92a2735aaf395f2cde4a",
     "apps/insights-runtime/src/calendar.mjs": "2d235725d7e7f6f5d096b05ac6c2edac12686e8443a72e40869f37b7512610eb",
-    "apps/insights-runtime/src/composer.mjs": "55e40fdaeb0c5fa5f6fa26688910df6d68bfab4ee8d63a7c39b43878b0652ca2",
+    "apps/insights-runtime/src/composer.mjs": "5b1638be94df5a6e5817cb3e0f3d5064b583717f43d3f665db9bfff769df7028",
+    "apps/insights-runtime/src/editorial.mjs": "64013d76c4b1ea22fa0d2696bd7521c92013e919fdfc94d57d4a5483cc34fd30",
     "apps/insights-runtime/src/evidence.mjs": "883f36fbbb0ff0f344ce5af6b201b1e43c30de0a2faaf250a8f09861f222c5f2",
     "apps/insights-runtime/src/host.d.mts": "53e6d747881808f43ca651e21350be6ca9856a6384baf6bf4617f3b248894449",
     "apps/insights-runtime/src/host.mjs": "49bbe5e459d5312fdcb2941c5767829825382c2bd9f4d4720feb5db56ac1b126",
@@ -547,6 +551,7 @@
     "apps/sg-runtime/prisma/private-store/006-benchmark-discovery.sql": "8002d50d82612a34e14a63c48e2aa8f3dd346bb2cece02dbd6bd44c441673b88",
     "apps/sg-runtime/private-recurring-source-adoption.json": "edf9d51c199251e148b39c92a3084944c1a4b8419be29175c88b6e2583df11f2",
     "apps/sg-runtime/procurement-insights-completion-integration.json": "095ab52d695419d34ed053a6961e389024067a8ab4a16a9b6bb2c379571832a0",
+    "apps/sg-runtime/procurement-insights-editorial-integration.json": "a85d4f9bc91a61fe1abd8ed4516d3b64da3b24df17839a1abe52d84718cfcc17",
     "apps/sg-runtime/procurement-insights-integration.json": "6dca06d8b0731e585925100b0578d41a61711f335940350d1ea32c296a3d7177",
     "apps/sg-runtime/procurement-insights-live-acceptance.json": "911fac3bf6c4eacabc5db048ef622e4a00e49efa09024e9fbbf5216f7da94d6c",
     "apps/sg-runtime/procurement-insights-shell-integration.json": "1b1279e669e955e604c7c646482a6ce119eac5eeb09491ade78a37aa7fc133a1",
@@ -601,8 +606,8 @@
     "apps/sg-runtime/tests/assistant-markdown.test.tsx": "b171ee8c76e92de85f6103bbb7fa9232a4f0cf2f456a4eff35853991ed624ab0",
     "apps/sg-runtime/tests/assistant-model.test.ts": "f589c834c94488e7b9d37524cd0a13515ac0ce7b8f9071a07bb11d9f3fcd7908",
     "apps/sg-runtime/tests/assistant-multi-source.test.ts": "23511479ec24e4cdf0e7b32e4dca63af3ca7cc8c6baa55a987084b24fa24f284",
-    "apps/sg-runtime/tests/assistant-notifications-integrity.mjs": "7d5c780b0edcf2fbfdce545a9f1e9ffcf95c2904aa1e5aca2de594968aad0168",
-    "apps/sg-runtime/tests/assistant-notifications-integrity.test.mjs": "e5fba2f173f7837da66ed5115f4f6033b9a2d2b9aacc2db9870108fa15e913f2",
+    "apps/sg-runtime/tests/assistant-notifications-integrity.mjs": "b38e99a3a52f8420f3d7333535ca7f82da43a23d2054977e2edef648c1a5a408",
+    "apps/sg-runtime/tests/assistant-notifications-integrity.test.mjs": "f2a4ea9345557ea6cee7a09b99e9b22e958d5b7deb6afb237354cf9b47259a82",
     "apps/sg-runtime/tests/assistant-screen-context.test.ts": "b1873b5ec51aaf2f1242f5931d6b89b65dd428ca40d789f39056aecf3a378e7e",
     "apps/sg-runtime/tests/assistant-send-arrow-integrity.mjs": "04f9a2b75f9b64b400f34f39cafd35fdd1d895280c1093ec565d7370c885d6cc",
     "apps/sg-runtime/tests/assistant-send-arrow-integrity.test.mjs": "5186ebd25bdf4cec0a274673882495f788a46374507547b0ec8576bfe76a92b8",
@@ -673,6 +678,8 @@
     "apps/sg-runtime/tests/procurement-insights-completion-integrity.mjs": "0359f3796885e91be502c39465eababadab49e489ae207cf5abde2facf449e4e",
     "apps/sg-runtime/tests/procurement-insights-completion.test.mjs": "69c235e9a74cfc780f600f93b21e359a58adaf8d938e2139858e3980976ed3ed",
     "apps/sg-runtime/tests/procurement-insights-context.test.ts": "158b9c86e3404ee0a4bd272f09f6cfbcce07856b49e79fc73cfd79546f186c40",
+    "apps/sg-runtime/tests/procurement-insights-editorial-integrity.mjs": "b2cacb32ed861a9e996576cc7a9bfb935dfd65cb98d3e40cfe5111bad03cd65f",
+    "apps/sg-runtime/tests/procurement-insights-editorial-integrity.test.mjs": "6559a2cff55c62496045da7dc1f18f1ae598aa39d5beefae1cc04e401b941983",
     "apps/sg-runtime/tests/procurement-insights-integrity.mjs": "1f0e6b9584c24d58ee266ee9bd0e04ed23374c67f4f3c032a65318830e4699b1",
     "apps/sg-runtime/tests/procurement-insights-integrity.test.mjs": "e54fc998159da6b01a76216d4d2863a74561102637bcf34cf6963e52fa02d321",
     "apps/sg-runtime/tests/procurement-insights-live-acceptance-source.mjs": "89a52f4b1bf7191e5a0d0d93e0057f21d1e19ca6f3a337bb75ce963e14906f6d",
@@ -891,7 +898,7 @@
     "apps/srm/scripts/supplier-locations.integration.test.mjs": "476e8dea869901a4981e9af16c42981dfe3c5f852369cff5ae608c55948f7f32",
     "apps/srm/scripts/task02r-build-release.mjs": "1a1010dcbe50cf3b081f0df49a0ef933b1ae8b97873adcf98b6a356c275daabf",
     "apps/srm/scripts/task02r-release-source.test.mjs": "00d20e4024b6f786ef668db49d293f417e6d2e5297d25601f8041b6d81cc6092",
-    "apps/srm/scripts/xray-performance-adoption.test.mjs": "69362264f701e637f97121535307e55640fe5ff219dcb3b67d801ef059341184",
+    "apps/srm/scripts/xray-performance-adoption.test.mjs": "8738700d037c2319617314667bd580a31571cdde7f7b6eff1c3056d1a7f73834",
     "apps/srm/scripts/xray-style-acceptance.mjs": "42b666a9b87d9e87e9ac14fce8d89f49d6dd456e0f1216a99e715e0f81e37a4e",
     "apps/srm/scripts/xray-workflow-contract.test.ts": "9d39818479a4db17a5c43073a1f0e1a6ca04c8576a5bb6512af6a520c26f5a27",
     "apps/srm/scripts/xray-workflow-react18.test.tsx": "b2a603963ee8f131d98eeb24611073f4337a6274592c7a15f1f9a1859dbcf5aa",
@@ -1657,6 +1664,10 @@
     "scripts/governance/platform-source-hub-foundation.test.mjs": "dadd4f9fcc5be03afee02ae51038efa48b07b3f9b2b62e9476a7b288c1d42d77"
   },
   "baselines": {
+    "acceptedmain": {
+      "sha": "6720adbfca6dc0f25fd82e9c20631d7676b3d743",
+      "status": "ACCEPTED_MAIN_BEFORE_CURRENT_SDK_SOURCE"
+    },
     "registration": {
       "sha": "c1a7d29ac7d35e554eb03ade3656c1f85574b6a8",
       "status": "PRIVATE_PRESERVED_STAGE_I_SOURCE"
@@ -1667,6 +1678,11 @@
     }
   },
   "coverageRecords": [
+    {
+      "baseline": "acceptedmain",
+      "path": "apps/sg-runtime/procurement-insights-editorial-integration.json",
+      "sha256": "a85d4f9bc91a61fe1abd8ed4516d3b64da3b24df17839a1abe52d84718cfcc17"
+    },
     {
       "baseline": "registration",
       "path": "packages/platform-contracts/test/organisation-lifecycle-sdk-compatibility.json",
@@ -1685,11 +1701,11 @@
   ],
   "retainedReceipts": {
     "apps/architecture-lab/assistant-m1-sdk-compatibility.json": {
-      "baseline": "registration",
+      "baseline": "acceptedmain",
       "sha256": "f9bd750bd7c4af2b1123a41396cfeacac90bb1744f9abdd5331c76260872b70c"
     },
     "apps/architecture-lab/insights-report-source-compatibility.json": {
-      "baseline": "registration",
+      "baseline": "acceptedmain",
       "sha256": "502d4bc0529427664b2a13f9a3e273b288ba7285fd85e11199bfca72e906c809"
     },
     "apps/architecture-lab/knowledge-source-adoption.json": {
@@ -1701,7 +1717,7 @@
       "sha256": "4e815bd8238285419a49a0f3a0718d7356a2ad9aafba214954004acd7f5d9ca9"
     },
     "apps/architecture-lab/market-calendar-test-compatibility.json": {
-      "baseline": "registration",
+      "baseline": "acceptedmain",
       "sha256": "52e859d4a99bc4c8e4d986f38afea2d58e9c1fe1ee1e0eb62cc2672dbdb60078"
     },
     "apps/architecture-lab/organisation-lifecycle-sdk-source-adoption.json": {
@@ -1709,83 +1725,83 @@
       "sha256": "8649c552670689c3daa53692e3ef88e2ed7d3839b6915f939364cfc6d63d9abf"
     },
     "apps/architecture-lab/private-recurring-source-adoption.json": {
-      "baseline": "registration",
+      "baseline": "acceptedmain",
       "sha256": "a79c186897851acb93142949fe7aee19184cbfe68b3acdf51cbda084c00c1254"
     },
     "apps/architecture-lab/private-recurring-source.json": {
-      "baseline": "registration",
+      "baseline": "acceptedmain",
       "sha256": "75877d5750e07d1c8172be0af76bc5933f2eeefc22cc39747a2621b9cab24619"
     },
     "apps/architecture-lab/sdk-1.33-compatibility.json": {
-      "baseline": "registration",
+      "baseline": "acceptedmain",
       "sha256": "3e3c8f43813d5c4888e206ac31433f60470eac4310abaa62bd32e1c901a0df3e"
     },
     "apps/architecture-lab/sdk-1.34-compatibility.json": {
-      "baseline": "registration",
+      "baseline": "acceptedmain",
       "sha256": "458ddbf661ce1a5666260a072a03f24ac016346bdd9a9efef7f2a1d497eee403"
     },
     "apps/economic-calendar-runtime/market-calendar-preferences-integration.json": {
-      "baseline": "registration",
+      "baseline": "acceptedmain",
       "sha256": "e3bc27ddf22b9165555c05f938a3c5d8f9f4f09334fcb7c55e760da44e9a59b6"
     },
     "apps/economic-calendar-runtime/operations/source-access-continuity-owner-plan.json": {
-      "baseline": "registration",
+      "baseline": "acceptedmain",
       "sha256": "23e4786c2fc66f4281587ba97f0d578bb30fccba8588560dc965f4022ebb9bc2"
     },
     "apps/maps-runtime/platform-integration.json": {
-      "baseline": "registration",
+      "baseline": "acceptedmain",
       "sha256": "dee4b3c6dff157fede54a44966561514fd91e8cd279f9493708fdc9f0c40c233"
     },
     "apps/newsfeed-runtime/assistant-context-integration.json": {
-      "baseline": "registration",
+      "baseline": "acceptedmain",
       "sha256": "4057379e02c7b698f3f24348c40b84275d92c3a892b55e96b1c6d23175298dfc"
     },
     "apps/newsfeed-runtime/operation-integration.json": {
-      "baseline": "registration",
+      "baseline": "acceptedmain",
       "sha256": "a8b43f4f6213806843160d4373bb62bfd9357ba03cfbc16865fb2bce266f88f1"
     },
     "apps/newsfeed-runtime/saved-searches-integration.json": {
-      "baseline": "registration",
+      "baseline": "acceptedmain",
       "sha256": "fcfea3ae736cfd3446dac7c70c34f6f59a723a48bdae11234706d76f01652a6c"
     },
     "apps/platform-source-hub/operations/publication-schedule-source-acceptance.json": {
-      "baseline": "registration",
+      "baseline": "acceptedmain",
       "sha256": "3f9a3de218368152b86cd4c4efebb831f2033256465248dcf320f362d8c0c422"
     },
     "apps/sg-runtime/adp-integration.json": {
-      "baseline": "registration",
+      "baseline": "acceptedmain",
       "sha256": "9dbd4921c5262202902c3c7ae318e2296f130512fc0784840880eb42370d45fb"
     },
     "apps/sg-runtime/assistant-context-integration.json": {
-      "baseline": "registration",
+      "baseline": "acceptedmain",
       "sha256": "d932f227977789643086b6a9eb179598a6f48071964b2d26ba82d25fceb7b2ec"
     },
     "apps/sg-runtime/assistant-ecr-integration.json": {
-      "baseline": "registration",
+      "baseline": "acceptedmain",
       "sha256": "5814e2e5cbdf1a32d22cff3aa55de806ec34c9debdecc21ff06c4f9f887a82bc"
     },
     "apps/sg-runtime/assistant-ecr-precision-integration.json": {
-      "baseline": "registration",
+      "baseline": "acceptedmain",
       "sha256": "a017c2b971e3c72606847264150715c983fa9483537d26be90144a64e0377ee7"
     },
     "apps/sg-runtime/assistant-ecr-week-integration.json": {
-      "baseline": "registration",
+      "baseline": "acceptedmain",
       "sha256": "31ce8f1d7e5ca1d9c3aedf80f92e23fe0f1a93cb8f5fd5d003eb54a244859dd4"
     },
     "apps/sg-runtime/assistant-markdown-integration.json": {
-      "baseline": "registration",
+      "baseline": "acceptedmain",
       "sha256": "27ff06aff8bc44592f0073732748834b7759182fa4307d901c7d63304381a38b"
     },
     "apps/sg-runtime/assistant-notifications-integration.json": {
-      "baseline": "registration",
+      "baseline": "acceptedmain",
       "sha256": "78d6d34fea2ab1ce18f8dd810cc9906452763e8539aedea685fccbe3881b42cb"
     },
     "apps/sg-runtime/assistant-send-arrow-integration.json": {
-      "baseline": "registration",
+      "baseline": "acceptedmain",
       "sha256": "62c6af6817a022c31788d801cc0eac293a24b3f25d9e529d32b1bff4908fa230"
     },
     "apps/sg-runtime/development-integration.json": {
-      "baseline": "registration",
+      "baseline": "acceptedmain",
       "sha256": "a3ed33e74582d2e0407677e090be0d82405e42a160c34afddb8fde47dff86540"
     },
     "apps/sg-runtime/evidence/registration-lifecycle-sdk-adoption-20261112.json": {
@@ -1797,11 +1813,11 @@
       "sha256": "f846d8ae12e92cf238394efe9ca0905e3c1588c5defea28697c99ca9f7db4888"
     },
     "apps/sg-runtime/market-calendar-integration.json": {
-      "baseline": "registration",
+      "baseline": "acceptedmain",
       "sha256": "b66d88e724f84d513677554e77484bc29a2021b238ce28d4b7db7492aba9903c"
     },
     "apps/sg-runtime/oil-renderer-integration.json": {
-      "baseline": "registration",
+      "baseline": "acceptedmain",
       "sha256": "6afdd65e66d8a7d8ceb4ab68601ba6d1c1bfac43bbac879d01bb61c9962e7ad6"
     },
     "apps/sg-runtime/operation-integration.json": {
@@ -1813,51 +1829,55 @@
       "sha256": "ca229e10c01cfc1c9889bcc9ba935c1d282163abdec7685d680e7ea96b3c5f2d"
     },
     "apps/sg-runtime/private-recurring-source-adoption.json": {
-      "baseline": "registration",
+      "baseline": "acceptedmain",
       "sha256": "edf9d51c199251e148b39c92a3084944c1a4b8419be29175c88b6e2583df11f2"
     },
     "apps/sg-runtime/procurement-insights-completion-integration.json": {
-      "baseline": "registration",
+      "baseline": "acceptedmain",
       "sha256": "095ab52d695419d34ed053a6961e389024067a8ab4a16a9b6bb2c379571832a0"
     },
+    "apps/sg-runtime/procurement-insights-editorial-integration.json": {
+      "baseline": "acceptedmain",
+      "sha256": "a85d4f9bc91a61fe1abd8ed4516d3b64da3b24df17839a1abe52d84718cfcc17"
+    },
     "apps/sg-runtime/procurement-insights-integration.json": {
-      "baseline": "registration",
+      "baseline": "acceptedmain",
       "sha256": "6dca06d8b0731e585925100b0578d41a61711f335940350d1ea32c296a3d7177"
     },
     "apps/sg-runtime/procurement-insights-shell-integration.json": {
-      "baseline": "registration",
+      "baseline": "acceptedmain",
       "sha256": "1b1279e669e955e604c7c646482a6ce119eac5eeb09491ade78a37aa7fc133a1"
     },
     "apps/sg-runtime/registration-stage-i-integration.json": {
-      "baseline": "registration",
+      "baseline": "acceptedmain",
       "sha256": "4a7a572e67e12ed73c523502cef4cb432009e735737df851419d80898653f414"
     },
     "apps/sg-runtime/scripts/denial-audit/adoption.json": {
-      "baseline": "registration",
+      "baseline": "acceptedmain",
       "sha256": "8b51bceec014eaa6c90de6566adb939bd87434cddcd703fb7c6ebd37f2aeb01b"
     },
     "apps/sg-runtime/xray-appshell-integration.json": {
-      "baseline": "registration",
+      "baseline": "acceptedmain",
       "sha256": "edd27f0ae420a9c7671f3cf6068fa00e237a845169ce36de719b6a52abcc6087"
     },
     "apps/srm/assistant-context-integration.json": {
-      "baseline": "registration",
+      "baseline": "acceptedmain",
       "sha256": "e39cc67fc7b1a9dd787365e0cea5407e11c47744f15c4f9cf83ea15eddeb2aff"
     },
     "apps/srm/deployment/location-access-release-source.json": {
-      "baseline": "registration",
+      "baseline": "acceptedmain",
       "sha256": "b3ab228a095eeab7a21556b7187682acc0fd3459216f57a6b02874bcb1c6a287"
     },
     "apps/srm/deployment/pilot2-source-recovery.json": {
-      "baseline": "registration",
+      "baseline": "acceptedmain",
       "sha256": "c5bff4cbb6daa5ccc39a52983240511d36d7b4de3c00ff409cf2b53a522b926b"
     },
     "apps/srm/deployment/task02r-release-source.json": {
-      "baseline": "registration",
+      "baseline": "acceptedmain",
       "sha256": "de27d2e5bfde61edd4779c79a2bf8209a8df327b2d68c793ffd60d5e641665dc"
     },
     "apps/srm/development-integration.json": {
-      "baseline": "registration",
+      "baseline": "acceptedmain",
       "sha256": "53b67cb769000a4f4005ab10ccc0188b39074094cb38e915b16c3d6026590f57"
     },
     "apps/srm/evidence/registration-lifecycle-sdk-adoption-20261112.json": {
@@ -1877,15 +1897,15 @@
       "sha256": "1a6099189fb7dd99b4563904641a896eaa3f0f316d75264429eadc35f4822a92"
     },
     "apps/srm/private-recurring-source-adoption.json": {
-      "baseline": "registration",
+      "baseline": "acceptedmain",
       "sha256": "88d0252f634eface35b34adf31ac97cbf0d396fcf1fe6da452c74bdc23c7c633"
     },
     "apps/srm/src/server/corporate-source-shape.json": {
-      "baseline": "registration",
+      "baseline": "acceptedmain",
       "sha256": "d9277fd858837e5e19d3fa4e1a46d41f9eeda0e8eaebb5a1957442013dbc8be8"
     },
     "apps/srm/xray-appshell-integration.json": {
-      "baseline": "registration",
+      "baseline": "acceptedmain",
       "sha256": "584f4b2e099966bdfc23ce9ac1bf0d408893010b40459f458c639bdd4c4b1b19"
     },
     "packages/platform-contracts/test/organisation-lifecycle-sdk-compatibility.json": {
@@ -1897,15 +1917,15 @@
       "sha256": "022f0a4c774cc93856c7219518ac99d23712cd3961bab508fa0d2b25c9113ea1"
     },
     "packages/platform-contracts/test/recurring-consent-transport-source.json": {
-      "baseline": "registration",
+      "baseline": "acceptedmain",
       "sha256": "0c9ffe5bfd89cf2bd65cd9adc7ad241a04e7468b5821f97171f4a6c550aaba36"
     },
     "packages/platform-knowledge-core/fixtures/legacy-office/provenance.json": {
-      "baseline": "registration",
+      "baseline": "acceptedmain",
       "sha256": "b4f8a6f8bd768b86ffa131022c479718755a13a083f7b5b3ef6ad6adec772f1e"
     },
     "packages/platform-source-hub-contracts/source-access-continuity-acceptance-v1.json": {
-      "baseline": "registration",
+      "baseline": "acceptedmain",
       "sha256": "c99323c6690d488992c445eff4e1c26fe48d81ede267b6f5f2ad4df208768540"
     }
   },
@@ -2097,6 +2117,5 @@
         "afterBlob": "ba219d23b6f5cd9c59d98de79c71ce0a4e34bdbf"
       }
     }
-  },
-  "sourceSnapshotSha": "36fa30dbd4e86fc2e72e7662799b2d9a2de525d1"
+  }
 }
