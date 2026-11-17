@@ -27,6 +27,112 @@
           "surfaceId": "ARCH-BASE-002"
         }
       ]
+    },
+    {
+      "id": "SG2:SG2-PI-E2E-COMPLETION-20261117",
+      "status": "ACTIVE",
+      "repository": "profitia/SG-dev",
+      "actor": "profitia",
+      "taskId": "SG2-PI-E2E-COMPLETION-20261117",
+      "targetEnvironment": "development",
+      "scope": "SOURCE_VALIDATION_ONLY",
+      "approvalRef": "owner-decision:01a1e7fd-01d1-7973-b3c3-8188664826c3:PI-CI-51a098cf-20261117",
+      "sourceSha": "51a098cf8a4718ddb838d27276d47f083323c357",
+      "baseSha": "df57c042e2fbd60fc14ea7f883f245ea6be8e2ee",
+      "validFrom": "2026-11-17T10:07:54.521142Z",
+      "validUntil": "2026-11-23T22:59:00.000Z",
+      "files": [
+        {
+          "path": "apps/sg-runtime/components/procurement-insights/localization.ts",
+          "blob": "c62d02fe9a653b3b28f301990f9f5eac5eb4051f",
+          "mode": "100644",
+          "status": "added",
+          "projectKey": "SG2",
+          "owner": "SG Runtime",
+          "surfaceId": "SG2-BASE-001"
+        },
+        {
+          "path": "apps/sg-runtime/components/procurement-insights/observation-form.tsx",
+          "blob": "a79b8b8e3dfc855b5cfe48e3d6fa0ba07c835a44",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SG2",
+          "owner": "SG Runtime",
+          "surfaceId": "SG2-BASE-001"
+        },
+        {
+          "path": "apps/sg-runtime/components/procurement-insights/reports.tsx",
+          "blob": "215f36b4bbde7f3e69ead8968dd7465718c120a2",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SG2",
+          "owner": "SG Runtime",
+          "surfaceId": "SG2-BASE-001"
+        },
+        {
+          "path": "apps/sg-runtime/components/procurement-insights/statistics.tsx",
+          "blob": "b05a61bc719cd1d200d2d828d018973a9d9d6738",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SG2",
+          "owner": "SG Runtime",
+          "surfaceId": "SG2-BASE-001"
+        },
+        {
+          "path": "apps/sg-runtime/components/procurement-insights/workspace.tsx",
+          "blob": "46b85b2fafaee5527878852e35548a509ff85b8c",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SG2",
+          "owner": "SG Runtime",
+          "surfaceId": "SG2-BASE-001"
+        },
+        {
+          "path": "apps/sg-runtime/procurement-insights-e2e-continuation.json",
+          "blob": "4eb9104781df7ee7e0a107f874bbd228063804f7",
+          "mode": "100644",
+          "status": "added",
+          "projectKey": "SG2",
+          "owner": "SG Runtime",
+          "surfaceId": "SG2-BASE-001"
+        },
+        {
+          "path": "apps/sg-runtime/tests/assistant-notifications-integrity.mjs",
+          "blob": "1926d47658d8e2fe553c326214640d8ffdcc11df",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SG2",
+          "owner": "SG Runtime",
+          "surfaceId": "SG2-BASE-001"
+        },
+        {
+          "path": "apps/sg-runtime/tests/procurement-insights-completion.test.mjs",
+          "blob": "3899d9335eadac290bd4c938e57342f02ee3f6bb",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SG2",
+          "owner": "SG Runtime",
+          "surfaceId": "SG2-BASE-001"
+        },
+        {
+          "path": "apps/sg-runtime/tests/procurement-insights-e2e-continuation.test.tsx",
+          "blob": "e9b797fc57a2b40760ee0e0383e05853667b9bbd",
+          "mode": "100644",
+          "status": "added",
+          "projectKey": "SG2",
+          "owner": "SG Runtime",
+          "surfaceId": "SG2-BASE-001"
+        },
+        {
+          "path": "apps/sg-runtime/tests/procurement-insights-notification-navigation.test.tsx",
+          "blob": "a16fca68251893573c79b958a637a6b25c385114",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SG2",
+          "owner": "SG Runtime",
+          "surfaceId": "SG2-BASE-001"
+        }
+      ]
     }
   ],
   "authority": "Accepted trusted-main data only. Candidate records never authorize themselves. Existing closed reviews and historical receipts remain unchanged."
