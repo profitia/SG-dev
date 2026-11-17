@@ -4,6 +4,40 @@
   "scope": "SOURCE_VALIDATION_ONLY",
   "records": [
     {
+      "id": "SG2:SG2-FINDER-SENTRY-MONITOR-20261117",
+      "status": "ACTIVE",
+      "repository": "profitia/SG-dev",
+      "actor": "profitia",
+      "taskId": "SG2-FINDER-SENTRY-MONITOR-20261117",
+      "targetEnvironment": "development",
+      "scope": "SOURCE_VALIDATION_ONLY",
+      "approvalRef": "owner-decision:01a19782-bad9-7c42-be7e-fd05f4a06292:FINDER-MONITOR-f20431f0-20261117",
+      "sourceSha": "f20431f0d43f8d34f3021aa4fe6ceea560837fdc",
+      "baseSha": "1c82689265ef0e776100808531a8f77a83a429e7",
+      "validFrom": "2026-11-17T14:10:38.659Z",
+      "validUntil": "2026-11-24T23:59:59.000Z",
+      "files": [
+        {
+          "path": "apps/sg-runtime/scripts/monitor-benchmark-finder.mjs",
+          "blob": "2a3d978db7dfe1532dd317a4249d143b4ac5458a",
+          "mode": "100644",
+          "status": "added",
+          "projectKey": "SG2",
+          "owner": "SG Runtime",
+          "surfaceId": "SG2-BASE-001"
+        },
+        {
+          "path": "apps/sg-runtime/tests/monitor-benchmark-finder.test.mjs",
+          "blob": "3bf4b09a616d1bd28493edee500a13205f7081de",
+          "mode": "100644",
+          "status": "added",
+          "projectKey": "SG2",
+          "owner": "SG Runtime",
+          "surfaceId": "SG2-BASE-001"
+        }
+      ]
+    },
+    {
       "id": "ARCHITECTURE:ARCH-CLOUD-DEVELOPMENT-STANDARD-CONT-20261116",
       "status": "ACTIVE",
       "repository": "profitia/SG-dev",
@@ -160,36 +194,36 @@
       ]
     },
     {
-      "id": "SG2:SG2-FINDER-SENTRY-MONITOR-20261117",
+      "id": "ARCHITECTURE:ARCH-FINDER-AUDIT-INDEX-RECOVERY-20261117",
       "status": "ACTIVE",
       "repository": "profitia/SG-dev",
       "actor": "profitia",
-      "taskId": "SG2-FINDER-SENTRY-MONITOR-20261117",
+      "taskId": "ARCH-FINDER-AUDIT-INDEX-RECOVERY-20261117",
       "targetEnvironment": "development",
       "scope": "SOURCE_VALIDATION_ONLY",
-      "approvalRef": "owner-decision:01a19782-bad9-7c42-be7e-fd05f4a06292:FINDER-MONITOR-f20431f0-20261117",
-      "sourceSha": "f20431f0d43f8d34f3021aa4fe6ceea560837fdc",
-      "baseSha": "1c82689265ef0e776100808531a8f77a83a429e7",
-      "validFrom": "2026-11-17T14:10:38.659Z",
-      "validUntil": "2026-11-24T23:59:59.000Z",
+      "approvalRef": "owner-decision:01a1e92f-cd84-7a92-97d7-36d3fbc49ef0:FINDER-INDEX-CI-MIGRATION-80a7d9c8-20261117",
+      "sourceSha": "80a7d9c854f510fbaabf0437051293e0faec1200",
+      "baseSha": "1f5256518645353c1bcaa316e44f01a7b89f89ac",
+      "validFrom": "2026-11-17T13:23:14.022Z",
+      "validUntil": "2026-11-18T22:59:00.000Z",
       "files": [
         {
-          "path": "apps/sg-runtime/scripts/monitor-benchmark-finder.mjs",
-          "blob": "2a3d978db7dfe1532dd317a4249d143b4ac5458a",
+          "path": "packages/platform-contracts/migrations/access/033-native-phase-audit-indexes.sql",
+          "blob": "b6f5255348ddf088c740999f1b5f1387017aee40",
           "mode": "100644",
           "status": "added",
-          "projectKey": "SG2",
-          "owner": "SG Runtime",
-          "surfaceId": "SG2-BASE-001"
+          "projectKey": "ARCHITECTURE",
+          "owner": "Architecture Platform",
+          "surfaceId": "ARCH-BASE-001"
         },
         {
-          "path": "apps/sg-runtime/tests/monitor-benchmark-finder.test.mjs",
-          "blob": "3bf4b09a616d1bd28493edee500a13205f7081de",
+          "path": "packages/platform-contracts/test/current-work-audit-index.test.mjs",
+          "blob": "d6c07ad4fca2bc2908d13bc9b10062e5b73e864a",
           "mode": "100644",
-          "status": "added",
-          "projectKey": "SG2",
-          "owner": "SG Runtime",
-          "surfaceId": "SG2-BASE-001"
+          "status": "modified",
+          "projectKey": "ARCHITECTURE",
+          "owner": "Architecture Platform",
+          "surfaceId": "ARCH-BASE-001"
         }
       ]
     }
