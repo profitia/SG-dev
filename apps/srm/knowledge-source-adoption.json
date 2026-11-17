@@ -1,0 +1,9 @@
+{
+  "schemaVersion": "1.0.0",
+  "projectKey": "SRM",
+  "taskId": "SRM-PK-STAGE2-TECHNICAL-CONT-20261117",
+  "targetEnvironment": "development",
+  "scope": "SOURCE_ONLY_NO_RUNTIME_ACTIVATION",
+  "sourceRecord": "apps/architecture-lab/knowledge-source.json",
+  "sourceRecordSha256": "4e815bd8238285419a49a0f3a0718d7356a2ad9aafba214954004acd7f5d9ca9"
+}
