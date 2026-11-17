@@ -28,6 +28,19 @@ export async function readSnapshot(client:CalendarClient,signal:AbortSignal,prev
   more:{events:events?.nextAfter??null,publications:publications?.nextAfter??null,context:context?.nextAfter??null}}
 }
 export const readPrivate=(client:CalendarClient,signal:AbortSignal)=>client<PrivateEnvelope>('preferences',{signal})
+export interface CalendarNotificationEnvelope {
+ notificationContract:'profitia.economic-calendar-notifications/1.0.0';version:number
+ settings:{emailEnabled:boolean;timeZone:string}
+ channel:{email:'AVAILABLE'|'UNAVAILABLE';recipient:'IDENTITY_VERIFIED_PRIMARY_EMAIL';providerAcceptanceIsDelivery:false}
+ delivery:Partial<Record<'PENDING'|'CLAIMED'|'SENDING'|'ACCEPTED'|'REJECTED'|'UNKNOWN'|'CANCELLED'|'DEFERRED'|'FAILED'|'DELIVERED',number>>
+}
+export function notificationEnvelope(value:unknown):CalendarNotificationEnvelope{
+ const v=value as CalendarNotificationEnvelope
+ if(v?.notificationContract!=='profitia.economic-calendar-notifications/1.0.0'||!Number.isSafeInteger(v.version)||v.version<0||typeof v.settings?.emailEnabled!=='boolean'||typeof v.settings.timeZone!=='string'
+  ||!['AVAILABLE','UNAVAILABLE'].includes(v.channel?.email)||v.channel.recipient!=='IDENTITY_VERIFIED_PRIMARY_EMAIL'||v.channel.providerAcceptanceIsDelivery!==false||!v.delivery||Array.isArray(v.delivery)||Object.entries(v.delivery).some(([k,n])=>!['PENDING','CLAIMED','SENDING','ACCEPTED','REJECTED','UNKNOWN','CANCELLED','DEFERRED','FAILED','DELIVERED'].includes(k)||!Number.isSafeInteger(n)||Number(n)<0))throw new CalendarRequestError('CALENDAR_NOTIFICATION_CONTRACT_UNAVAILABLE',503)
+ return v
+}
+export const readNotifications=async(client:CalendarClient,signal:AbortSignal)=>notificationEnvelope(await client<unknown>('notifications',{signal}))
 export function calendarErrorMessage(error:unknown){
  if(error instanceof CalendarRequestError){
   if(error.status===401)return 'Sesja wygasła. Zaloguj się ponownie w SpendGuru.'
