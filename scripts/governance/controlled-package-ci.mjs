@@ -476,6 +476,124 @@ export function assertAssistantQualityStage1Specification(source){
   ||!/^\| Realizacja \| ETAP 1 — (?:W_TOKU|CZĘŚCIOWY|ZABLOKOWANY|ZAKOŃCZONY); ETAP 2 — NIE_ROZPOCZĘTY \/ BRAK ZLECENIA \|$/m.test(source))fail('ASSISTANT_QUALITY_SPECIFICATION_REJECTED')
 }
 
+
+// PROPOSED owner decision: finite legacy Stage1 engineering continuation only.
+// This is an explicit exception for the already-open #1067 lineage, not a new
+// generic admission route or an autonomous repair/purpose/deployment mandate.
+export const ASSISTANT_QUALITY_SG2_STAGE1_REVIEW=Object.freeze({
+ id:'AQC-SG2-STAGE1-LEGACY-CONTINUATION-20261117',
+ branches:Object.freeze(['sg2/cic-quality-stage1-runtime-20261112','sg2/cic-quality-host-integration-20261117']),
+ expiresAt:'2026-11-27T23:59:59.000Z',anchorSha:'6a3bf91388bec43121dc215f18f2c42d01f61dd8',
+ paths:Object.freeze([
+  "apps/sg-runtime/assistant-quality-host-integration.json",
+  "apps/sg-runtime/assistant-quality-integration.json",
+  "apps/sg-runtime/lib/assistant/calendar-period.ts",
+  "apps/sg-runtime/lib/assistant/context-selection.ts",
+  "apps/sg-runtime/lib/assistant/conversation.ts",
+  "apps/sg-runtime/lib/assistant/quality-evidence.ts",
+  "apps/sg-runtime/lib/assistant/quality-response.ts",
+  "apps/sg-runtime/lib/assistant/runtime.ts",
+  "apps/sg-runtime/migrations/002-assistant-quality-evidence.sql",
+  "apps/sg-runtime/package-lock.json",
+  "apps/sg-runtime/package.json",
+  "apps/sg-runtime/tests/assistant-conversation-handler.test.ts",
+  "apps/sg-runtime/tests/assistant-ecr-integrity.mjs",
+  "apps/sg-runtime/tests/assistant-ecr-precision-integrity.mjs",
+  "apps/sg-runtime/tests/assistant-quality-evidence.test.ts",
+  "apps/sg-runtime/tests/assistant-quality-host-integrity.mjs",
+  "apps/sg-runtime/tests/assistant-quality-host-integrity.test.mjs",
+  "apps/sg-runtime/tests/assistant-quality-integrity.mjs",
+  "apps/sg-runtime/tests/assistant-quality-integrity.test.mjs",
+  "apps/sg-runtime/tests/assistant-quality-response.test.ts",
+  "apps/sg-runtime/tests/assistant-quality.test.ts",
+  "apps/sg-runtime/tests/procurement-insights-completion-integrity.mjs"
+]),
+})
+export const CIC_QUALITY_STAGE1_PIN=Object.freeze({version:'1.8.0',
+ resolved:'https://npm.pkg.github.com/download/@profitia/cic-core/1.8.0/797fccee13eb0ce11f7130793218c80d7d542d7a',
+ integrity:'sha512-tuun88+cfOHFeCafBw1a8gnExgeDyWBgY7Zd9OPkKk2/Eef0YBP49vzDcXKVpFoCNJGh/CYbeR9B+M2ZXctNsg=='})
+const qualityStage1Branch=ref=>ASSISTANT_QUALITY_SG2_STAGE1_REVIEW.branches.includes(ref)
+export function assertQualityStage1SourceFiles(files,now=Date.now()){
+ const r=ASSISTANT_QUALITY_SG2_STAGE1_REVIEW
+ if(!Number.isFinite(now)||now>=Date.parse(r.expiresAt))fail('QUALITY_STAGE1_SOURCE_WINDOW_EXPIRED')
+ if(!Array.isArray(files)||!files.length||files.length>r.paths.length||new Set(files.map(f=>f.filename)).size!==files.length
+  ||files.some(f=>!r.paths.includes(f.filename)||!['added','modified'].includes(f.status)||!shaPattern.test(f.sha??'')||Object.hasOwn(f,'previous_filename')))
+  fail('QUALITY_STAGE1_SOURCE_SCOPE_REJECTED')
+ const profile=resolveProjectProfile('SG2',controlRoot())
+ for(const file of files){
+  const route=resolveProjectRouting({profile,targets:[file.filename],repositoryRoot:controlRoot()}).results[0]
+  if(!route||route.resolutionStatus!=='RESOLVED'||route.highestSpecificityMatchCount!==1||route.projectBoundaryStatus!=='ALLOWED'||route.baselineClassification!=='ALIGNED')fail('QUALITY_STAGE1_SOURCE_ROUTING_REJECTED')
+ }
+}
+export function qualityStage1PackageAuthority(lock,manifest,host){
+ const expectedLock=structuredClone(lock),expectedManifest=structuredClone(manifest)
+ if(host){
+  expectedManifest.dependencies['@profitia/cic-core']=CIC_QUALITY_STAGE1_PIN.version
+  expectedLock.packages[''].dependencies['@profitia/cic-core']=CIC_QUALITY_STAGE1_PIN.version
+  expectedLock.packages['node_modules/@profitia/cic-core']={...expectedLock.packages['node_modules/@profitia/cic-core'],...CIC_QUALITY_STAGE1_PIN}
+ }
+ return {lock:expectedLock,manifest:expectedManifest}
+}
+export function assertQualityStage1Packages(candidateLock,candidateManifest,authorityLock,authorityManifest,host){
+ const expected=qualityStage1PackageAuthority(authorityLock,authorityManifest,host)
+ if(JSON.stringify(candidateLock)!==JSON.stringify(expected.lock))fail('QUALITY_STAGE1_DEPENDENCY_CHANGE_REJECTED')
+ const before=authorityManifest.scripts['test:assistant'],current=candidateManifest.scripts['test:assistant']
+ const additions=['tests/assistant-quality.test.ts','tests/assistant-quality-integrity.test.mjs',
+  ...(host?['tests/assistant-quality-response.test.ts','tests/assistant-quality-evidence.test.ts','tests/assistant-quality-host-integrity.test.mjs']:[])]
+ // Existing tests and commands are retained. Only these closed test invocations
+ // may be added; no lifecycle hook, arbitrary shell command or test removal.
+ let allowed=before
+ if(!allowed.includes('tests/assistant-quality.test.ts'))allowed=allowed.replace('tests/assistant-history.test.ts','tests/assistant-quality.test.ts tests/assistant-history.test.ts')
+ if(!allowed.includes('tests/assistant-quality-integrity.test.mjs'))allowed+=' && node --test tests/assistant-quality-integrity.test.mjs'
+ if(host&&!allowed.includes('tests/assistant-quality-response.test.ts'))allowed+=' && node --import tsx --test tests/assistant-quality-response.test.ts tests/assistant-quality-evidence.test.ts && node --test tests/assistant-quality-host-integrity.test.mjs'
+ if(current!==allowed||additions.some(name=>!current.includes(name)))fail('QUALITY_STAGE1_TEST_COMMAND_REJECTED')
+ expected.manifest.scripts['test:assistant']=allowed
+ if(JSON.stringify(candidateManifest)!==JSON.stringify(expected.manifest))fail('QUALITY_STAGE1_MANIFEST_CHANGE_REJECTED')
+ assertPackagePolicy(candidateLock,expected.lock,npmrc,{trustedAuthorityMetadata:true})
+ assertManifestPolicy(candidateManifest,expected.manifest,{trustedAuthorityMetadata:true})
+ return true
+}
+function assertQualityStage1Checkout(root,sha,admission){
+ const r=ASSISTANT_QUALITY_SG2_STAGE1_REVIEW
+ assertQualityStage1SourceFiles(admission.files)
+ if(!qualityStage1Branch(admission.branch)||admission.baseSha!==admission.controlSha||execFileSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8'}).trim()!==sha)fail('QUALITY_STAGE1_SOURCE_IDENTITY_REJECTED')
+ for(const ancestor of [r.anchorSha,admission.baseSha]){
+  try{execFileSync('git',['merge-base','--is-ancestor',ancestor,sha],{cwd:root,stdio:'pipe'})}catch{fail('QUALITY_STAGE1_SOURCE_ANCESTRY_REJECTED')}
+ }
+ const changed=execFileSync('git',['diff','--name-only','--no-renames','-z',admission.baseSha+'...'+sha],{cwd:root,encoding:'utf8'}).split('\0').filter(Boolean).sort()
+ if(JSON.stringify(changed)!==JSON.stringify(admission.files.map(f=>f.filename).sort()))fail('QUALITY_STAGE1_SOURCE_DIFF_REJECTED')
+ for(const f of admission.files){
+  const target=path.join(root,f.filename),stat=fs.lstatSync(target),entry=execFileSync('git',['ls-tree','-z',sha,'--',f.filename],{cwd:root,encoding:'utf8'})
+  if(!stat.isFile()||stat.isSymbolicLink()||stat.mode&0o111||stat.size>1024*1024||fs.realpathSync(target)!==target
+   ||entry!=='100644 blob '+f.sha+'\t'+f.filename+'\0'||execFileSync('git',['hash-object','--no-filters','--',f.filename],{cwd:root,encoding:'utf8'}).trim()!==f.sha)fail('QUALITY_STAGE1_SOURCE_BYTES_REJECTED')
+ }
+ // Old guards may receive only the two reviewed continuation bindings. Earlier
+ // receipt files and all other protected policy remain unchanged by the diff.
+ for(const [file,name]of [['assistant-ecr-integrity.mjs','assistantEcrPredecessor'],['assistant-ecr-precision-integrity.mjs','assistantEcrPrecisionPredecessor']]){
+  const rel='apps/sg-runtime/tests/'+file,previous=fs.readFileSync(path.join(controlRoot(),rel),'utf8')
+  const expected=previous.startsWith("import {assistantQualityPredecessor}")?previous
+   :"import {assistantQualityPredecessor} from './assistant-quality-integrity.mjs'\n"+previous.replace('export function '+name+'(current,historical){','export function '+name+'(current,historical){\n const quality=assistantQualityPredecessor(current,historical);if(quality)return '+name+'(quality.previousBytes,historical)')
+  if(fs.readFileSync(path.join(root,rel),'utf8')!==expected)fail('QUALITY_STAGE1_LEGACY_GUARD_REJECTED')
+ }
+ // The existing PI completion test also authenticates package.json. The host
+ // pin must preserve that historical acceptance through the same fully checked
+ // continuation, never by editing its receipt or omitting the existing test.
+ const pi='apps/sg-runtime/tests/procurement-insights-completion-integrity.mjs',previous=fs.readFileSync(path.join(controlRoot(),pi),'utf8')
+ const expected=admission.branch!==r.branches[1]||previous.startsWith("import {assistantQualityPredecessor}")?previous
+  :"import {assistantQualityPredecessor} from './assistant-quality-integrity.mjs'\n"+previous.replace('export function procurementInsightsCompletionPredecessor(current,historical){',
+   'export function procurementInsightsCompletionPredecessor(current,historical){\n const quality=assistantQualityPredecessor(current,historical);if(quality)return procurementInsightsCompletionPredecessor(quality.previousBytes,historical)')
+ if(fs.readFileSync(path.join(root,pi),'utf8')!==expected)fail('QUALITY_STAGE1_PI_GUARD_REJECTED')
+}
+function checkQualityStage1Candidate(root,state){
+ const app=path.join(root,'apps/sg-runtime'),host=state.admission.branch===ASSISTANT_QUALITY_SG2_STAGE1_REVIEW.branches[1]
+ assertQualityStage1Packages(readJson(path.join(app,'package-lock.json')),readJson(path.join(app,'package.json')),
+  readJson(path.join(controlRoot(),'apps/sg-runtime/package-lock.json')),readJson(path.join(controlRoot(),'apps/sg-runtime/package.json')),host)
+ const contract=currentProofContract(root,state.receipt)
+ if(operationContractProvenanceDigest(root,contract,{reviewedPrivateRecurring:true})!==contract.sourceDigest
+  ||JSON.stringify(readJson(path.join(app,'operation-integration.json')))!==JSON.stringify(state.receipt))fail('CONTRACT_PROVENANCE_MISMATCH')
+ return {state,app}
+}
+
 // The producer class remains deliberately narrower than ARCHITECTURE ownership.
 // A separate closed KRS governance review bundle below grants no app or generic
 // workflow/tooling admission and never reads a candidate-provided allowlist.
@@ -6917,7 +7035,7 @@ export async function resolveCandidateAdmission(c, number, expectedSha, request 
     ? trustedAdmissionById(process.env.SOURCE_ADMISSION_ID,repositoryRoot)
     : findTrustedAdmission(expectedSha,repositoryRoot)
   if (sourceRecord && !pr) fail('SOURCE_ADMISSION_PR_REQUIRED')
-  if (family !== 'ARCHITECTURE' && !sourceRecord) return {sha: selectCandidate(c, pr, expectedSha)}
+  if (family !== 'ARCHITECTURE' && !sourceRecord && !qualityStage1Branch(pr?.head?.ref)) return {sha: selectCandidate(c, pr, expectedSha)}
   if (!Number.isInteger(pr.changed_files) || pr.changed_files < 1 || pr.changed_files > 300) fail('ARCHITECTURE_FILE_LIST_REQUIRED')
   const files = []
   for (let page = 1; page <= 4; page++) {
@@ -6936,11 +7054,18 @@ export async function resolveCandidateAdmission(c, number, expectedSha, request 
     assertSourceAdmission(sourceRecord,{repository:REPOSITORY,actor:current.user.login,candidateSha:expectedSha,currentMainSha:c.controlSha,files},repositoryRoot)
     return {sha:expectedSha,admission:{kind:'TRUSTED_RECORD',recordId:sourceRecord.id,actor:current.user.login,baseSha:c.controlSha,files:files.map(({filename,status,sha})=>({filename,status,sha}))}}
   }
+  if(qualityStage1Branch(current.head.ref)){
+    if(family!=='SG2')fail('QUALITY_STAGE1_SOURCE_IDENTITY_REJECTED')
+    assertQualityStage1SourceFiles(files)
+    const sha=selectCandidate(c,current,expectedSha,{files,repositoryRoot})
+    return {sha,admission:{kind:'QUALITY_STAGE1_SG2',branch:current.head.ref,baseSha:current.base.sha,controlSha:c.controlSha,files:files.map(({filename,status,sha})=>({filename,status,sha}))}}
+  }
   const sha = selectCandidate(c, current, expectedSha, {files, repositoryRoot})
   return {sha, admission: {kind: family, baseSha: pr.base.sha, files: files.map(({filename, status, sha}) => ({filename, status, sha}))}}
 }
 
 export function assertArchitectureCheckout(root, sha, admission, repositoryRoot = controlRoot()) {
+  if(admission?.kind==='QUALITY_STAGE1_SG2')return assertQualityStage1Checkout(root,sha,admission)
   if (admission?.kind === 'TRUSTED_RECORD') {
     const record=trustedAdmissionById(admission.recordId,repositoryRoot)
     return assertSourceCheckout(root,record,{sha,actor:admission.actor,controlSha:admission.baseSha,files:admission.files},repositoryRoot)
@@ -7552,6 +7677,7 @@ function checkCandidate(root = candidateRoot()) {
     return {state,app:checkAdmittedPackages(root),protectedReview,genericSource:true}
   }
   if (state.admission) assertArchitectureCheckout(root, state.sha, state.admission)
+  if(state.admission?.kind==='QUALITY_STAGE1_SG2')return checkQualityStage1Candidate(root,state)
   if(state.admission?.kind==='TRUSTED_RECORD'){
     const sourceRecord=trustedAdmissionById(state.admission.recordId)
     return {state,app:checkAdmittedPackages(root),sourceRecord,genericSource:true}
@@ -7607,8 +7733,11 @@ async function credentialPreflight() {
   try {
     fs.writeFileSync(path.join(directory,'.npmrc'),npmrc,{mode:0o600})
     const lock=readJson(path.join(controlRoot(),'apps/sg-runtime/package-lock.json'))
-    for(const name of PRIVATE_PACKAGES){
-      const pin=lock.packages?.['node_modules/'+name]
+    // This exact additional published artifact is owner-admitted by this finite
+    // legacy engineering review; it is probed before any candidate checkout.
+    const probes=PRIVATE_PACKAGES.map(name=>({name,pin:lock.packages?.['node_modules/'+name]}))
+    if(lock.packages?.['node_modules/@profitia/cic-core']?.version!==CIC_QUALITY_STAGE1_PIN.version)probes.push({name:'@profitia/cic-core',pin:CIC_QUALITY_STAGE1_PIN})
+    for(const {name,pin} of probes){
       const spec=trustedPackageProbeSpec(name,pin)
       const result=spawnSync('npm',['view',spec,'dist','--json','--registry=https://npm.pkg.github.com','--ignore-scripts','--no-audit','--no-fund'],{cwd:directory,env:isolatedNpmEnvironment(directory),encoding:'utf8',timeout:90000,maxBuffer:1048576})
       if(result.status!==0)fail(classifyPackageFailure((result.stderr??'')+(result.stdout??'')))
