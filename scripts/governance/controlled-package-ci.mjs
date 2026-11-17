@@ -147,7 +147,10 @@ export function notificationTrustedCurrent(root){
   for(const[p,h]of Object.entries(APPSHELL_NOTIFICATION_REVIEW.preservedReceipts))if(notificationDigest(current(p))!==(lifecycle.currentSourceDigests[p]??lifecycle.currentReceiptDigests[p]??h))fail('APPSHELL_NOTIFICATION_RECEIPT_REJECTED')
   return current
  }
- const view=assistantNotificationsTrustedPredecessor(current,historical)
+ const watched=Object.keys(APPSHELL_NOTIFICATION_REVIEW.entries).filter(p=>/\.(?:tsx?|mjs)$/.test(p))
+ let verified=null
+ try{current(APPSHELL_NOTIFICATION_REVIEW.recordPath);verified=trustedApplicationContinuity(root,watched)}catch(error){if(error?.code!=='ENOENT')throw error}
+ const view=assistantNotificationsTrustedPredecessor(current,historical,verified)
  return view?.previousBytes??current
 }
 
