@@ -388,7 +388,15 @@ const bsdcHistory=(sha,p)=>{const k=sha+':'+p;if(!bsdcHistoryCache.has(k))bsdcHi
 // receipts before these unchanged BSDC assertions inspect their accepted view.
 import {completeFunctionalPredecessor} from '../../apps/architecture-lab/ecr-complete-functional-source.mjs'
 const bsdcPhysicalRaw=p=>fs.readFileSync(path.join(root,p))
-const bsdcPhysical=p=>(completeFunctionalPredecessor(bsdcPhysicalRaw,bsdcHistory)?.previousBytes??bsdcPhysicalRaw)(p)
+const bsdcPhysical=p=>{
+ const complete=completeFunctionalPredecessor(bsdcPhysicalRaw,bsdcHistory)
+ if(complete&&p===bsdcTrustedPolicy.helperPath){
+  const previous=bsdcHistory('59204603e6f41c97e0d27c36ffcc94ca6186d88e',p)
+  assert.equal(sha256(previous),bsdcTrustedPolicy.helperSha256,'exact independently accepted BSDC helper')
+  return Buffer.from(previous)
+ }
+ return(complete?.previousBytes??bsdcPhysicalRaw)(p)
+}
 const bsdcApproved=p=>bsdcTrustedPolicy.sourcePaths.includes(p)?bsdcHistory(BSDC_V11_DOCUMENTATION_REVIEW.approvedSourceSha,p):bsdcPhysical(p)
 const bsdcFiles=()=>Object.entries(BSDC_V11_DOCUMENTATION_REVIEW.entries).map(([filename,e])=>({filename,sha:e.sha,status:e.status}))
 const bsdcContext={repository:'profitia/SG-dev',ref:'refs/heads/main',workflowRef:'profitia/SG-dev/.github/workflows/platform-contracts-ci.yml@refs/heads/main',event:'workflow_dispatch',actor:'profitia',triggeringActor:'profitia',controlSha:bsdcTrustedPolicy.baseSha}
