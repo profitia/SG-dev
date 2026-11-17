@@ -3416,7 +3416,9 @@ test('exact PR1102 source validation reaches the real candidate guard without cl
  const directory=fs.mkdtempSync(path.join(os.tmpdir(),'pi-manifest-proof-')),root=path.join(directory,'candidate');
  const files=Object.entries(r.entries).map(([filename,e])=>({filename,sha:e.sha,status:e.status}));
  const controlSha=execFileSync('git',['rev-parse','HEAD'],{cwd:authorityRoot,encoding:'utf8'}).trim();
- const state={sha:r.sourceSha,controlSha,runId:'12345',admission:{kind:'ARCHITECTURE',baseSha:controlSha,files}};
+ // Keep the live control SHA distinct from the immutable historical review diff.
+ const historicalBaseSha=execFileSync('git',['rev-parse',r.sourceSha+'^2'],{cwd:authorityRoot,encoding:'utf8'}).trim();
+ const state={sha:r.sourceSha,controlSha,runId:'12345',admission:{kind:'ARCHITECTURE',baseSha:historicalBaseSha,files}};
  try{
   execFileSync('git',['worktree','add','--detach',root,r.sourceSha],{cwd:authorityRoot,stdio:'pipe'});
   const metadata=c.assertManifestSuccessorSourceValidation(root,state,authorityRoot);
