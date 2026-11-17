@@ -1,4 +1,5 @@
 import {calendarPiPredecessor} from './calendar-pi-source-compatibility.mjs'
+import {finderMonitorPredecessor,FINDER_MONITOR_RECEIPT} from './finder-monitor-source-integrity.mjs'
 import {procurementInsightsEditorialPredecessor,EDITORIAL_RECEIPT} from './procurement-insights-editorial-integrity.mjs'
 // Test/build-only exact SG2 presentation continuation. No runtime or access authority.
 import assert from 'node:assert/strict'
@@ -59,6 +60,11 @@ export function assistantNotificationsPredecessor(current,historical){
   const accepted=assistantNotificationsPredecessor(calendar.previousBytes,historical)
   assert(accepted,'accepted AppShell notification source retained')
   return {...accepted,completeFunctional:calendar.complete,manifest:{...accepted.manifest,sourceDigests:{...accepted.manifest.sourceDigests,...calendar.sourceDigests}}}
+ }
+ const finderMonitor=finderMonitorPredecessor(current,historical)
+ if(finderMonitor){
+  const accepted=assistantNotificationsPredecessor(finderMonitor.previousBytes,historical);assert(accepted,'accepted notification source retained')
+  return {...accepted,finderMonitor,manifest:{...accepted.manifest,sourceDigests:{...accepted.manifest.sourceDigests,...finderMonitor.manifest.sourceDigests,[FINDER_MONITOR_RECEIPT]:hash(current(FINDER_MONITOR_RECEIPT))}}}
  }
  const editorial=procurementInsightsEditorialPredecessor(current,historical)
  if(editorial){
