@@ -46,6 +46,9 @@ test('Calendar full CI bridge authenticates all current inputs and retains immut
  for(const p of [COMPLETE_FUNCTIONAL_PRODUCER_RECORD,COMPLETE_FUNCTIONAL_CONSUMER_RECORD,'apps/architecture-lab/test/ecr-functional-ci-repair.test.mjs','apps/sg-runtime/tests/calendar-pi-source-compatibility.mjs'])assert.throws(()=>view.previousBytes(p),e=>e.code==='ENOENT')
  const old='apps/architecture-lab/private-recurring-source.mjs'
  assert.deepEqual(view.previousBytes(old),historical(CALENDAR_CI_REPAIR_BASE,old))
+ const notification='apps/sg-runtime/tests/assistant-notifications-integrity.mjs',editorial='59204603e6f41c97e0d27c36ffcc94ca6186d88e'
+ assert.deepEqual(view.previousBytes(notification),historical(editorial,notification))
+ assert.throws(()=>completeFunctionalPredecessor(current,(s,p)=>s===editorial&&p===notification?Buffer.concat([historical(s,p),Buffer.from(' drift')]):historical(s,p)).previousBytes(notification))
 })
 test('Calendar CI source bridge rejects altered runtime, helper, record and historical bytes and propagates access failures',()=>{
  for(const p of ['apps/economic-calendar-runtime/src/results.mjs',COMPLETE_FUNCTIONAL_PRODUCER_RECORD,COMPLETE_FUNCTIONAL_CONSUMER_RECORD,...CALENDAR_CI_REPAIR_PATHS]){
