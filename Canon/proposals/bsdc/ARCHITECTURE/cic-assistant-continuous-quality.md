@@ -655,6 +655,16 @@ Upływ 14 dni lub limit 50 USD zamyka możliwość nowych płatnych zadań, tak�
 - **Dane i koszt:** nie odczytano prywatnych rozmów. Nie wykonano płatnego requestu API systemu QA, replay ani wykonawcy; wspólne okno/ledger pilotażu jeszcze nie rozpoczęte. Istniejący klucz został wybrany przez właściciela, lecz nie udostępnia się go agentowi napraw. To nie jest twierdzenie o całkowitym koszcie sesji inżynierskiej lub zwykłego CI.
 - **Odbiór:** brak TECHNICAL_ACCEPTED. Nie wykonano jeszcze trzech rzeczywistych kontrolowanych incydentów, wdrożeń napraw, odbioru UI ani prób rollback w SLO. Pozostają obowiązkowym celem etapu 1; źródła lub zielone CI ich nie zastępują.
 
+### 8.8. Kontynuacja techniczna — 17 listopada 2026
+
+Cel bieżącego zlecenia: **TECHNICAL_READY na rzeczywistym Development**, wyłącznie etap 1 według zaakceptowanej roadmapy rewizji 8. Zamrożone §4–5 pozostają bez zmian. Automatyczne płatne naprawy i autonomiczna promocja pozostają wyłączone; wspólne okno 14 dni / 50 USD nie jest uruchamiane przed gotowością do E1-T13. Etap 2 pozostaje niezlecony.
+
+- Kontynuacje profilowe: `ARCH-CIC-QUALITY-TECHNICAL-READY-20261117` i `SG2-CIC-QUALITY-TECHNICAL-READY-20261117`, host `01a1e7fb-2253-7f91-9335-270094d39784`. Odrębne kopie/profilowe PMOS; wcześniejsze rejestracje zachowane. Manifest, routing, runtime i require-begin PASS na authority `50bc5b7a`.
+- PR #1074 odświeżono normalnym włączeniem aktualnego main do `c53aa8df`; zachowano identyczne trzy oryginalne pliki poprawki. Publikacja i niezależny odczyt GitHub potwierdzone. Nowa kontrola governance `44027295154` SUCCESS. AQC `44027295146` ujawniło rzeczywistą asynchroniczną awarię zamykania testowych połączeń PostgreSQL po zakończeniu testu; naprawiono oczekiwanie na faktyczne zamknięcie socketów przed zatrzymaniem własnego klastra. Po odzyskaniu oryginalnego schedulera z prywatnego checkpointu lokalne **46/46** testów AQC, w tym rzeczywisty PostgreSQL 15.19, PASS; wymagane CI PostgreSQL16 nadal oczekuje. Nie osłabia to kryteriów wykonawcy ani kwalifikacji.
+- Aktualna próba dispatch pełnego CI zwróciła **403 Resource not accessible by integration**. To odrębny brak capability bieżącego klienta; historyczny `GITHUB_API_401` nie jest deklarowany jako nadal aktualny. Zaufany obecny main korzysta już z automatycznego tokena zadania. Nie podmieniono poświadczeń ani polityki.
+- PR #1067 włączono do odrębnego aktualnego checkoutu SG2; **22/22** deterministycznych przypadków dat/stref/DST PASS. Pełne kontrole i runtime pozostają do wykonania.
+- Codespace i oryginalny prywatny checkpoint dostępne. Nie uruchomiono nowych płatnych modeli, automatycznych napraw ani promocji, nie wykonano cloud migracji/grantów ani deploymentu. Status etapu 1 nadal **W_TOKU / NOT_TECHNICAL_ACCEPTED**; pełnych napraw odbiorowych 0/3.
+
 ## 9. Historia
 
 | Rewizja | Data | Zmiana |
