@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import {createHash,randomUUID} from 'node:crypto'
 import pg from '../../../apps/architecture-lab/node_modules/pg/lib/index.js'
+import {execFileSync} from 'node:child_process'
 import {assertIsolatedTestConnection} from '../../../apps/architecture-lab/src/operation-postgres-fixture.mjs'
 import {createClerkIdentityAuthenticator} from '../src/identity-provider.mjs'
 import {createAssistantOperationHost} from '../src/assistant-operation-host.mjs'
@@ -11,14 +12,32 @@ const U='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',V='bbbbbbbb-bbbb-4bbb-8bbb-bbbbbb
 const role='sg2_private_development_runtime',ownerRole='profitia_access_owner',password='SYNTHETIC_ONLY_NOT_A_REAL_CREDENTIAL'
 const load=p=>fs.readFileSync(new URL(p,import.meta.url),'utf8'),hash=s=>createHash('sha256').update(s).digest('hex')
 test('Permanent converse rechecks native E1, preserves limits and history, and audits the exact existing-row decision',async()=>{
- const url=assertIsolatedTestConnection(process.env.OPERATION_FIXTURE_OWNER_URL,'sg2_operation_test','architecture_test_owner')
- const admin=new pg.Client({connectionString:url});await admin.connect()
- let database,pool,created=false
+ // This suite installs SQL033. It must not race with the unchanged SQL030
+ // suite: both guards deliberately require a database named platform_private.
+ // Use an independent synthetic server, never another project/Development DB.
+ let container=null,url=process.env.ASSISTANT_PERMANENT_FIXTURE_OWNER_URL
+ if(url&&url===process.env.OPERATION_FIXTURE_OWNER_URL)throw Error('Independent permanent-access test server required')
+ if(!url){
+  container=execFileSync('docker',['run','--rm','--detach','--publish','127.0.0.1::5432',
+   '--env','POSTGRES_USER=architecture_test_owner','--env','POSTGRES_PASSWORD=SYNTHETIC_ONLY',
+   '--env','POSTGRES_DB=sg2_operation_test','postgres:16'],{encoding:'utf8',stdio:['ignore','pipe','pipe']}).trim()
+  try{
+   if(!/^[a-f0-9]{64}$/.test(container))throw Error('Synthetic fixture container identity required')
+   const address=execFileSync('docker',['port',container,'5432/tcp'],{encoding:'utf8'}).trim()
+   if(!/^127\.0\.0\.1:[0-9]+$/.test(address))throw Error('Loopback fixture required')
+   url='postgresql://architecture_test_owner:SYNTHETIC_ONLY@'+address+'/sg2_operation_test'
+   let ready=false
+   for(let attempt=0;attempt<60;attempt++){
+    const probe=new pg.Client({connectionString:url,connectionTimeoutMillis:500})
+    try{await probe.connect();ready=true;break}catch{await new Promise(resolve=>setTimeout(resolve,250))}finally{await probe.end().catch(()=>{})}
+   }
+   if(!ready)throw Error('Independent PostgreSQL fixture unavailable')
+  }catch(error){execFileSync('docker',['stop',container],{stdio:'ignore'});throw error}
+ }
+ url=assertIsolatedTestConnection(url,'sg2_operation_test','architecture_test_owner')
+ const admin=new pg.Client({connectionString:url});let database,pool,created=false
  try{
-  // Both native assistant suites own the same disposable database name.
-  // Hold a separate lock through CREATE, test execution and DROP, including
-  // the ordinary node:test parallel-file runner used by required CI.
-  await admin.query("SELECT pg_advisory_lock(hashtextextended('assistant-native-disposable-database',0))")
+  await admin.connect()
   assert.equal((await admin.query("SELECT 1 FROM pg_database WHERE datname='platform_private'")).rowCount,0,'isolated fixture must not adopt an existing database')
   await admin.query("SELECT pg_advisory_lock(hashtextextended('stage2a-test-role-setup',0))")
   try{for(const r of [ownerRole,role])if(!(await admin.query('SELECT 1 FROM pg_roles WHERE rolname=$1',[r])).rowCount)
@@ -116,6 +135,6 @@ test('Permanent converse rechecks native E1, preserves limits and history, and a
   await assert.rejects(()=>execute(),'rollback restores the actual expired pilot rather than renewing it')
   assert.equal(reserves,0,'AUTHORIZE checks never invoke a model or reserve a paid execution')
  }finally{
-  await pool?.end();await database?.end();if(created)await admin.query('DROP DATABASE platform_private WITH (FORCE)');await admin.end()
+  try{await pool?.end();await database?.end();if(created)await admin.query('DROP DATABASE platform_private WITH (FORCE)')}finally{await admin.end().catch(()=>{});if(container)execFileSync('docker',['stop',container],{stdio:'ignore'})}
  }
 })
