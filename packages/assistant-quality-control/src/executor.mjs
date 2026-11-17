@@ -12,7 +12,10 @@ export const EXECUTOR_TOOL=Object.freeze({version:'0.167.2',archiveSha256:'8246e
  isolationHelperCommit:'13e9c17417b29e9a276f73ec6ed7fb574137d3c3',
  codeModeHostArchiveUrl:'https://github.com/openai/codex/releases/download/rust-v0.167.2/codex-code-mode-host-x86_64-unknown-linux-musl.tar.gz',
  codeModeHostArchiveBytes:29080258,codeModeHostArchiveSha256:'189475a654d82ca776e08dfef22734106d3e5b2cf21da6e84ec3d974d02c39a6',
- codeModeHostBinarySha256:'007c62795a7215c27ee85486ecb95e714b33118a2d18c6d7b09b0d9793c72ff4'})
+ codeModeHostBinarySha256:'007c62795a7215c27ee85486ecb95e714b33118a2d18c6d7b09b0d9793c72ff4',
+ bwrapArchiveUrl:'https://github.com/openai/codex/releases/download/rust-v0.167.2/bwrap-x86_64-unknown-linux-musl.tar.gz',
+ bwrapArchiveBytes:261598,bwrapArchiveSha256:'03cb0d2b151648693e3817c47068773ae4b7327c19fe25eab8c61c4c2865838a',
+ bwrapBinarySha256:'7df960565a0dece99240ea4b9d0e011307817f9f3b73176c7b71fda44fe84765'})
 const fail=code=>{throw Object.assign(Error('Isolated quality executor refused'),{code})}
 const require=(v,c='EXECUTOR_INPUT_INVALID')=>{if(!v)fail(c)}
 const hash=s=>createHash('sha256').update(s).digest('hex')
@@ -53,45 +56,64 @@ export function assertCodeModeHostArchive(bytes){
   &&hash(bytes)===EXECUTOR_TOOL.codeModeHostArchiveSha256,'CODE_MODE_HOST_ARCHIVE_PIN_MISMATCH')
  return bytes
 }
-function assertCodeModeHostFile(file){
+export function assertBwrapArchive(bytes){
+ require(Buffer.isBuffer(bytes)&&bytes.length===EXECUTOR_TOOL.bwrapArchiveBytes
+  &&hash(bytes)===EXECUTOR_TOOL.bwrapArchiveSha256,'BWRAP_ARCHIVE_PIN_MISMATCH')
+ return bytes
+}
+function assertExecutorResourceFile(file,pin,code){
  const stat=fs.lstatSync(file)
  require(stat.isFile()&&!stat.isSymbolicLink()&&stat.uid===0&&(stat.mode&0o022)===0&&(stat.mode&0o111)!==0
-  &&hash(fs.readFileSync(file))===EXECUTOR_TOOL.codeModeHostBinarySha256,'CODE_MODE_HOST_BINARY_PIN_MISMATCH')
+  &&hash(fs.readFileSync(file))===pin,code)
 }
-/** Fixed official tool prerequisite, prepared by trusted root before the agent
- * exists. No caller URL, credential, package script or fallback is accepted. */
+/** Fixed official prerequisites, prepared by trusted root before the agent.
+ * No caller URL, credential, package script or isolation fallback is accepted. */
 export async function prepareExecutorTools(){
  assertExecutorHost()
- const directory='/opt/aqc-tools',target=directory+'/codex-code-mode-host',parent=fs.lstatSync(directory)
+ const directory='/opt/aqc-tools',parent=fs.lstatSync(directory)
  require(parent.isDirectory()&&!parent.isSymbolicLink()&&parent.uid===0&&(parent.mode&0o022)===0,'TRUSTED_TOOL_DIRECTORY_REQUIRED')
- if(!fs.existsSync(target)){
-  const response=await fetch(EXECUTOR_TOOL.codeModeHostArchiveUrl,{redirect:'follow',signal:AbortSignal.timeout(30000)})
-  const final=new URL(response.url)
-  require(response.ok&&final.protocol==='https:'&&['github.com','release-assets.githubusercontent.com','objects.githubusercontent.com'].includes(final.hostname)
-   &&response.body,'CODE_MODE_HOST_DOWNLOAD_FAILED')
-  let size=0;const chunks=[]
-  for await(const chunk of response.body){size+=chunk.length;require(size<=EXECUTOR_TOOL.codeModeHostArchiveBytes,'CODE_MODE_HOST_ARCHIVE_PIN_MISMATCH');chunks.push(chunk)}
-  const archive=assertCodeModeHostArchive(Buffer.concat(chunks)),temporary=fs.mkdtempSync('/tmp/aqc-code-mode-host-')
-  try{
-   const file=temporary+'/vendor.tar.gz',binary=temporary+'/host',member='codex-code-mode-host-x86_64-unknown-linux-musl'
-   fs.writeFileSync(file,archive,{mode:0o600,flag:'wx'})
-   require(command('/usr/bin/tar',['--list','--gzip','--file',file])===member,'CODE_MODE_HOST_ARCHIVE_LAYOUT_REJECTED')
-   const fd=fs.openSync(binary,'wx',0o600);let extracted
-   try{extracted=spawnSync('/usr/bin/tar',['--extract','--gzip','--to-stdout','--file',file,member],{env:rootEnvironment,timeout:15000,stdio:['ignore',fd,'ignore']})}finally{fs.closeSync(fd)}
-   require(!extracted.error&&extracted.status===0&&hash(fs.readFileSync(binary))===EXECUTOR_TOOL.codeModeHostBinarySha256,'CODE_MODE_HOST_BINARY_PIN_MISMATCH')
-   fs.copyFileSync(binary,target,fs.constants.COPYFILE_EXCL);fs.chmodSync(target,0o755)
-  }finally{fs.rmSync(temporary,{recursive:true,force:true})}
+ const resourceDirectory=directory+'/codex-resources'
+ if(!fs.existsSync(resourceDirectory))fs.mkdirSync(resourceDirectory,{mode:0o755})
+ const resource=fs.lstatSync(resourceDirectory)
+ require(resource.isDirectory()&&!resource.isSymbolicLink()&&resource.uid===0&&(resource.mode&0o022)===0,'TRUSTED_TOOL_DIRECTORY_REQUIRED')
+ const resources=[
+  {target:directory+'/codex-code-mode-host',url:EXECUTOR_TOOL.codeModeHostArchiveUrl,bytes:EXECUTOR_TOOL.codeModeHostArchiveBytes,
+   check:assertCodeModeHostArchive,pin:EXECUTOR_TOOL.codeModeHostBinarySha256,member:'codex-code-mode-host-x86_64-unknown-linux-musl',code:'CODE_MODE_HOST_BINARY_PIN_MISMATCH'},
+  {target:resourceDirectory+'/bwrap',url:EXECUTOR_TOOL.bwrapArchiveUrl,bytes:EXECUTOR_TOOL.bwrapArchiveBytes,
+   check:assertBwrapArchive,pin:EXECUTOR_TOOL.bwrapBinarySha256,member:'bwrap-x86_64-unknown-linux-musl',code:'BWRAP_BINARY_PIN_MISMATCH'},
+ ]
+ for(const spec of resources){
+  if(!fs.existsSync(spec.target)){
+   const response=await fetch(spec.url,{redirect:'follow',signal:AbortSignal.timeout(30000)})
+   const final=new URL(response.url)
+   require(response.ok&&final.protocol==='https:'&&['github.com','release-assets.githubusercontent.com','objects.githubusercontent.com'].includes(final.hostname)
+    &&response.body,'EXECUTOR_RESOURCE_DOWNLOAD_FAILED')
+   let size=0;const chunks=[]
+   for await(const chunk of response.body){size+=chunk.length;require(size<=spec.bytes,'EXECUTOR_RESOURCE_ARCHIVE_PIN_MISMATCH');chunks.push(chunk)}
+   const archive=spec.check(Buffer.concat(chunks)),temporary=fs.mkdtempSync('/tmp/aqc-vendor-resource-')
+   try{
+    const file=temporary+'/vendor.tar.gz',binary=temporary+'/binary'
+    fs.writeFileSync(file,archive,{mode:0o600,flag:'wx'})
+    require(command('/usr/bin/tar',['--list','--gzip','--file',file])===spec.member,'EXECUTOR_RESOURCE_ARCHIVE_LAYOUT_REJECTED')
+    const fd=fs.openSync(binary,'wx',0o600);let extracted
+    try{extracted=spawnSync('/usr/bin/tar',['--extract','--gzip','--to-stdout','--file',file,spec.member],{env:rootEnvironment,timeout:15000,stdio:['ignore',fd,'ignore']})}finally{fs.closeSync(fd)}
+    require(!extracted.error&&extracted.status===0&&hash(fs.readFileSync(binary))===spec.pin,spec.code)
+    fs.copyFileSync(binary,spec.target,fs.constants.COPYFILE_EXCL);fs.chmodSync(spec.target,0o755)
+   }finally{fs.rmSync(temporary,{recursive:true,force:true})}
+  }
+  assertExecutorResourceFile(spec.target,spec.pin,spec.code)
  }
- assertCodeModeHostFile(target)
- return {codeModeHostArchiveSha256:EXECUTOR_TOOL.codeModeHostArchiveSha256,codeModeHostBinarySha256:EXECUTOR_TOOL.codeModeHostBinarySha256}
+ return {codeModeHostArchiveSha256:EXECUTOR_TOOL.codeModeHostArchiveSha256,codeModeHostBinarySha256:EXECUTOR_TOOL.codeModeHostBinarySha256,
+  bwrapArchiveSha256:EXECUTOR_TOOL.bwrapArchiveSha256,bwrapBinarySha256:EXECUTOR_TOOL.bwrapBinarySha256}
 }
 
 export function verifyLinuxQualification(document,{keys,gateSetSha256,now=Date.now()}){
  const b=verifyDocument(document,{kind:'AQC_LINUX_QUALIFICATION_V1',trustedKeys:keys})
- require(Object.keys(b).sort().join(',')===['gateSetSha256','codexVersion','codexArchiveSha256','codexBinarySha256','codeModeHostArchiveSha256','codeModeHostBinarySha256','isolationHelperCommit','fileIsolation','networkIsolation','privilegeIsolation','toolLoop','cancellation','noProviderRequests','runId','sourceSha','verifiedAt','expiresAt'].sort().join(','),'LINUX_QUALIFICATION_INVALID')
+ require(Object.keys(b).sort().join(',')===['gateSetSha256','codexVersion','codexArchiveSha256','codexBinarySha256','codeModeHostArchiveSha256','codeModeHostBinarySha256','bwrapArchiveSha256','bwrapBinarySha256','isolationHelperCommit','fileIsolation','networkIsolation','privilegeIsolation','toolLoop','cancellation','noProviderRequests','runId','sourceSha','verifiedAt','expiresAt'].sort().join(','),'LINUX_QUALIFICATION_INVALID')
  require(b.gateSetSha256===gateSetSha256&&b.codexVersion===EXECUTOR_TOOL.version&&b.codexArchiveSha256===EXECUTOR_TOOL.archiveSha256
   &&/^[a-f0-9]{64}$/.test(b.codexBinarySha256)&&b.codeModeHostArchiveSha256===EXECUTOR_TOOL.codeModeHostArchiveSha256
-  &&b.codeModeHostBinarySha256===EXECUTOR_TOOL.codeModeHostBinarySha256&&b.isolationHelperCommit===EXECUTOR_TOOL.isolationHelperCommit
+  &&b.codeModeHostBinarySha256===EXECUTOR_TOOL.codeModeHostBinarySha256&&b.bwrapArchiveSha256===EXECUTOR_TOOL.bwrapArchiveSha256
+  &&b.bwrapBinarySha256===EXECUTOR_TOOL.bwrapBinarySha256&&b.isolationHelperCommit===EXECUTOR_TOOL.isolationHelperCommit
   &&['fileIsolation','networkIsolation','privilegeIsolation','toolLoop','cancellation'].every(k=>b[k]==='PASS')&&b.noProviderRequests===true
   &&/^[1-9][0-9]{0,19}$/.test(b.runId)&&/^[a-f0-9]{40}$/.test(b.sourceSha)&&stamp(b.verifiedAt)&&stamp(b.expiresAt)
   &&Date.parse(b.verifiedAt)<=now&&Date.parse(b.expiresAt)>now,'LINUX_QUALIFICATION_REQUIRED')
@@ -107,7 +129,8 @@ export function executorPlan({work,toolPath,uid,gid,brokerUrl,agentToken}){
  const u=new URL(brokerUrl);require(u.protocol==='http:'&&u.hostname==='127.0.0.1'&&u.pathname==='/v1'&&u.port&&u.username===''&&u.password===''&&u.search===''&&u.hash==='')
  const settings={model:'gpt-6.1-sol',model_provider:'aqc',default_permissions:'aqc-workspace',
   'permissions.aqc-workspace.extends':':workspace',
-  'permissions.aqc-workspace.filesystem':{':root':'deny',':minimal':'read',':tmpdir':'deny',':slash_tmp':'deny'},
+  'permissions.aqc-workspace.filesystem':{':root':'deny',':minimal':'read',':tmpdir':'deny',':slash_tmp':'deny',
+   [toolPath]:'read',[path.join(path.dirname(toolPath),'codex-code-mode-host')]:'read',[path.join(path.dirname(toolPath),'codex-resources/bwrap')]:'read'},
   'permissions.aqc-workspace.network.enabled':false,
   approval_policy:'never',model_reasoning_effort:'low',service_tier:'default',
   web_search:'disabled',cli_auth_credentials_store:'ephemeral',check_for_update_on_startup:false,'features.apps':false,'features.multi_agent':false,
@@ -179,7 +202,8 @@ export async function runIsolatedExecutor({manifest,regression,projection,toolPa
  require(typeof toolPath==='string'&&/^\/opt\/aqc-tools\/[a-zA-Z0-9_.-]+$/.test(toolPath),'QUALIFIED_BINARY_REQUIRED')
  const toolStat=fs.lstatSync(toolPath)
  require(toolStat.isFile()&&toolStat.uid===0&&(toolStat.mode&0o022)===0&&hash(fs.readFileSync(toolPath))===qualified.codexBinarySha256,'QUALIFIED_BINARY_REQUIRED')
- assertCodeModeHostFile(path.join(path.dirname(toolPath),'codex-code-mode-host'))
+ assertExecutorResourceFile(path.join(path.dirname(toolPath),'codex-code-mode-host'),EXECUTOR_TOOL.codeModeHostBinarySha256,'CODE_MODE_HOST_BINARY_PIN_MISMATCH')
+ assertExecutorResourceFile(path.join(path.dirname(toolPath),'codex-resources/bwrap'),EXECUTOR_TOOL.bwrapBinarySha256,'BWRAP_BINARY_PIN_MISMATCH')
  const fixture=readRegression(regression);require(documentDigest(fixture)===m.synthetic.sha256,'REGRESSION_CHANGED')
  const publicFiles=assertPublicProjection(projection,m)
  require(typeof budget?.claimExecutor==='function')
