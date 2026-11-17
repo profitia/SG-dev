@@ -2,7 +2,7 @@
   "schemaVersion": "1.0.0",
   "scope": "PLATFORM_KNOWLEDGE_SDK_SOURCE_ACCEPTANCE",
   "previousSourceSha": "50bc5b7ab346d1b743210494082de21dd84dd64c",
-  "authorityMainSha": "50bc5b7ab346d1b743210494082de21dd84dd64c",
+  "authorityMainSha": "736396e6818c34bf588896f9435abc389889ed92",
   "taskIds": {
     "ARCHITECTURE": "ARCH-PK-STAGE2-TECHNICAL-CONT-20261117",
     "SG2": "SG2-PK-STAGE2-TECHNICAL-CONT-20261117",
@@ -88,6 +88,7 @@
     "apps/sg-runtime/tests/pci-smart-integrity.test.mjs": "44292ac3ec5ed822daddce35d78bdb403712fa255fe7e94c9d9dc0517a32b5b6",
     "apps/sg-runtime/tests/private-host.integration.test.mjs": "68d9df57c5e2ec40f1b46145ca91a8418542454db72714ebf1efaaaaf847d989",
     "apps/sg-runtime/tests/procurement-insights-context.test.ts": "158b9c86e3404ee0a4bd272f09f6cfbcce07856b49e79fc73cfd79546f186c40",
+    "apps/sg-runtime/tests/procurement-insights-live-acceptance-source.mjs": "89a52f4b1bf7191e5a0d0d93e0057f21d1e19ca6f3a337bb75ce963e14906f6d",
     "apps/sg-runtime/tests/xray-fresh-performance-adoption.test.mjs": "fd0b67a6ccca4e593dcc44e7d73e0770bdc18d1f763de1a67db94e0e577766fa",
     "apps/srm/app/login/porr-account.tsx": "5543c1b9a1f8af3c13fb9ffbcb084d37eaca35b2b98fa694f75a9071e162e9f6",
     "apps/srm/deployment/root-atomic-claim-targets.json": "651f7896072b820febe8ac4c99341248bd1f5e96a9d586f51afd8a2f9d904da3",
@@ -772,6 +773,10 @@
       "previousSha256": "3a8d14447e21fa9ab879dcd0094b5d8c4401196d2db632bc39540ed66e8440de",
       "currentSha256": "eed7214c7168a891adb83f4c048a4cc14eba64c33f34e0d099b63622a1cddd99"
     },
+    "apps/sg-runtime/tests/procurement-insights-live-acceptance-source.mjs": {
+      "previousSha256": "9a4d1698dd847d152246374d83aaa9f7f0e6fa76f80c6793ae40bd52aa3ee0d4",
+      "currentSha256": "89a52f4b1bf7191e5a0d0d93e0057f21d1e19ca6f3a337bb75ce963e14906f6d"
+    },
     "apps/srm/package-lock.json": {
       "previousSha256": "bcc3761ce046071ee79a96aa585f486064e652b9e6a7856d11a4776a97c25c1e",
       "currentSha256": "467d7d433a705c8dab9b42012206ef476eb2c7369472bab0c029bc57b6e4e327"
@@ -858,6 +863,7 @@
     "apps/package-limits/package-lock.json",
     "apps/platform-source-hub/package-lock.json",
     "apps/sg-runtime/package-lock.json",
+    "apps/sg-runtime/tests/procurement-insights-live-acceptance-source.mjs",
     "apps/srm/package-lock.json",
     "packages/assistant-context-gateway/package.json",
     "packages/maps-embed/package.json",
