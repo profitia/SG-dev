@@ -1,4 +1,5 @@
-import {recurringSourceFilesystem} from '../../../architecture-lab/private-recurring-source.mjs'
+import {kysResumePredecessor} from '../../scripts/kys-resume-source-view.mjs'
+import {recurringSourcePredecessor} from '../../../architecture-lab/private-recurring-source.mjs'
 import {assertMarketHistoryHostContinuation} from '../../scripts/xray-style-acceptance.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
@@ -6,7 +7,9 @@ import {readFileSync} from 'node:fs'
 import {execFileSync} from 'node:child_process'
 import {createHash} from 'node:crypto'
 import {rootAtomicClaimSchemaDigest,rootAtomicClaimSourceDigest,ROOT_ATOMIC_CLAIM_CONTRACT} from '@profitia/platform-root-atomic-claim'
-const recurring=recurringSourceFilesystem(new URL('../../../../',import.meta.url)).manifest
+const kysHistorical=(sha:string,p:string)=>execFileSync('git',['show',sha+':'+p])
+const kysView=kysResumePredecessor((p:string)=>readFileSync(new URL('../../../../'+p,import.meta.url)),kysHistorical)
+const recurring=recurringSourcePredecessor(kysView.previousBytes,kysHistorical)?.manifest
 import currentRoot from '../../deployment/root-atomic-claim-targets.json'
 const root=JSON.parse(execFileSync('git',['show','36b07672f572ff7c1c81117e3f3b01fa93ec1e65:apps/srm/deployment/root-atomic-claim-targets.json'],{encoding:'utf8'})) as typeof currentRoot
 import native from '../../deployment/supplier-native-targets.json'
@@ -87,7 +90,7 @@ test('runtime construction refuses altered schema, pilot, provider or ownership 
 
 test('Root claim adoption preserves every prior receipt and pins only the reviewed consumer closure',()=>{
  const hash=(value:Uint8Array)=>createHash('sha256').update(value).digest('hex')
- const complete=JSON.parse(readFileSync(new URL('../../operation-integration.json',import.meta.url),'utf8')),current=(file:string)=>readFileSync(new URL('../../../../'+file,import.meta.url)),historical=(sha:string,file:string)=>execFileSync('git',['show',sha+':'+file]);
+ const complete=JSON.parse(kysView.previousBytes('apps/srm/operation-integration.json').toString()),current=kysView.previousBytes,historical=(sha:string,file:string)=>execFileSync('git',['show',sha+':'+file]);
  const view=complete.marketHistoryHostIntegrityContinuation?assertMarketHistoryHostContinuation(complete,current,historical):{prior:complete,previousBytes:current},receipt=view.prior,a=receipt.rootAtomicClaimAdoption
  assert(a,'Formal Root claim source and consumer acceptance must precede publication')
  assert.equal(a.producerSourceRef,root.producerSourceRef);assert.equal(a.sourceDigest,root.sourceDigest);assert.equal(a.schemaDigest,root.schemaDigest)

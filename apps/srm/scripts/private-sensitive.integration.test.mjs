@@ -134,7 +134,7 @@ async function sensitiveNativeFixture(t,full=true,privateMode=false){
  const rootUrl=assertIsolatedTestConnection(process.env.SRM_OPERATION_TEST_OWNER_URL,'srm_app','architecture_test_owner')
  const root=new pg.Client({connectionString:rootUrl});await root.connect();let owner,pool,auditPool,servicePool,serviceAudit,rawService,sourcePool,sourceAudit,rawSource,corporatePool,corporateAudit,server
  const CORPORATE='srm_company_publication_runtime';let networkHits=0;let currentUser=U,failHumanOutcome=false,revokeAfterPost=false,interruptPost=false,emptyCeidg=false,failedCeidg=false,emptyMgbi=false,revokeEmptyReport=false,revokeKrsExport=false,revokeWebRead=false;const networkObservations=[]
- let syntheticOrigin, rejectKysGetOnce=false
+ let syntheticOrigin, rejectKysGetOnce=false, nextReport=0
  try{
   assert.equal((await root.query('SELECT 1 FROM pg_database WHERE datname=$1',[DATABASE])).rowCount,0,'Never adopt existing data')
   await root.query(`CREATE DATABASE ${DATABASE}`)
@@ -250,7 +250,7 @@ async function sensitiveNativeFixture(t,full=true,privateMode=false){
   }
 
   if(full){
-   let nextReport=0;const reports=new Map()
+   const reports=new Map()
    server=http.createServer(async(req,res)=>{
     try{
      networkHits++
