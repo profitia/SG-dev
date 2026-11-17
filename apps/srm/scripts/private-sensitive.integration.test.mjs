@@ -852,11 +852,11 @@ async function sensitiveNativeFixture(t,full=true,privateMode=false){
    try{await assert.rejects(native().run(selected),refusedOrSource)}finally{
     revokeAfterPost=false;await controlled(()=>owner.query("UPDATE profitia_access.memberships SET status='ACTIVE'WHERE organisation_id=$1 AND user_id=$2",[A,U]))
    }
-   assert.equal(networkHits,before+2)
+   assert.equal(networkHits,before+1)
    const row=(await owner.query('SELECT lease_owner,lease_until::text FROM srm.catalog_kys_reports WHERE organization_id=$1 AND nip=$2',[A,selected.command.nip])).rows[0]
    assert(row.lease_owner);assert.equal(row.lease_until,'infinity')
    const next=selection(await parent(A,selected.command.nip)),store=workStore();await store.register(next)
-   assert.equal(await store.cache(next).store.claim(A,selected.command.nip,'COMPANY',new Date()),null);assert.equal(networkHits,before+2)
+   assert.equal(await store.cache(next).store.claim(A,selected.command.nip,'COMPANY',new Date()),null);assert.equal(networkHits,before+1)
   })
   await t.test('an interrupted paid HTTP request also remains fenced without a silent retry or second purchase',async()=>{
    const selected=selection(await parent(B,'5272443955')),before=networkHits;interruptPost=true
