@@ -661,7 +661,7 @@
     "apps/sg-runtime/tests/pci-live-acceptance-preview.tsx": "2dc415c41fd6cc1457c78284f5b6a45ccf8a731126f35a0e3a2e5ff239df6b93",
     "apps/sg-runtime/tests/pci-smart-browser.mjs": "d1712266a468299ba3eec3a802990ab8d13998b25d6c0dc61b0d77e0f3414453",
     "apps/sg-runtime/tests/pci-smart-integrity.mjs": "a0a93b1c84598b44fb97e2318d0943c8013c7b9cb8e220636ad3055355b66e9a",
-    "apps/sg-runtime/tests/pci-smart-integrity.test.mjs": "a50479f65549a9ecf203c6fcb43d5f7066baf9ab08b7ea7caf80b79f35b6fda1",
+    "apps/sg-runtime/tests/pci-smart-integrity.test.mjs": "59c8c52932fe1eed4584aa04b46782311bdb769eede7789b7b7483da8a54ebfc",
     "apps/sg-runtime/tests/pci-smart-operation.test.ts": "3c16084280738e724fc05dbd303bcc6a288d61b63d64533eadb1b6aeb0489757",
     "apps/sg-runtime/tests/pci-smart-preparation.test.ts": "33991aef2d2b602719c4e8b6a8c9e5828b4b93f189187af57b4ca0982b9b4d48",
     "apps/sg-runtime/tests/pci-smart-preview.mjs": "af43924176906b7c024335822681444c73643c753efd2c6b24ff995d70e9cb3a",
