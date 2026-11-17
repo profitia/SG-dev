@@ -1,4 +1,5 @@
 import {publicProofContract} from './controlled-package-ci.mjs'
+import {MANIFEST_SUCCESSOR_1102_REVIEW} from './controlled-package-ci.mjs'
 import {PLATFORM_KNOWLEDGE_STAGE2_REVIEW,PLATFORM_KNOWLEDGE_STAGE2_PROVENANCE,assertKnowledgeStage2Entry,knowledgeStage2TrustedPredecessor,currentProofContract} from './controlled-package-ci.mjs'
 import {createExecutionCheckout,assertExecutionCheckout,assertPristineSourceInput} from './controlled-package-ci.mjs'
 import {execFileSync as isolationGitExec} from 'node:child_process'
@@ -3357,3 +3358,54 @@ test('Calendar complete CI repair refuses any changed physical input, inaccessib
  const first=Object.keys(r.previous).find(p=>!r.previous[p].absent);
  assert.throws(()=>c.completeFunctionalTrustedPredecessor(current,(sha,p)=>p===first?Buffer.concat([historical(sha,p),Buffer.from(' drift')]):historical(sha,p))(first));
 });
+
+// Owner-authorized protected policy admission must use only the reviewed PR
+// identity and four exact Git blobs, with routed ownership. No source ledger.
+test('protected manifest successor admission binds PR1102 to four exact files and source SHA',()=>{
+ const r=MANIFEST_SUCCESSOR_1102_REVIEW
+ const files=Object.entries(r.entries).map(([filename,e])=>({filename,sha:e.sha,status:e.status}))
+ const proposal={...pr(),number:r.prNumber,changed_files:files.length,base:{...pr().base,sha},head:{...pr().head,ref:r.branch,sha:r.sourceSha}}
+ assert.equal(files.length,4)
+ assert.deepEqual(files.map(x=>x.filename).sort(),[
+  'Canon/registries/governance-manifest-successors-v1.json',
+  'apps/architecture-lab/market-calendar-source.mjs',
+  'apps/architecture-lab/test/manifest-successor-continuity.test.mjs',
+  'scripts/governance/controlled-package-ci.mjs'
+ ].sort())
+ assertArchitectureFiles(proposal,files)
+ assert.equal(selectCandidate(context(),proposal,r.sourceSha,{files}),r.sourceSha)
+ for(const altered of [
+  {...proposal,number:r.prNumber+1},
+  {...proposal,head:{...proposal.head,ref:'architecture/unreviewed'}},
+  {...proposal,head:{...proposal.head,sha:other}},
+  {...proposal,user:{login:'attacker'}},
+  {...proposal,base:{...proposal.base,ref:'staging'}},
+  {...proposal,head:{...proposal.head,repo:{full_name:'attacker/fork'}}},
+  {...proposal,state:'closed'},
+ ]) rejection(()=>selectCandidate(context(),altered,r.sourceSha,{files}))
+ for(const mutated of [
+  files.slice(1),
+  [...files,{filename:'scripts/governance/unrelated.mjs',sha:other,status:'added'}],
+  files.map((x,i)=>i?x:{...x,sha:other}),
+  files.map((x,i)=>i?x:{...x,status:'removed'}),
+  files.map((x,i)=>i?x:{...x,previous_filename:'old-script.mjs'}),
+  files.map((x,i)=>i?x:{...x,filename:'Canon/registries/controlled-source-admissions-v1.json'}),
+ ]){
+  const p={...proposal,changed_files:mutated.length}
+  rejection(()=>selectCandidate(context(),p,r.sourceSha,{files:mutated}))
+ }
+})
+
+test('protected manifest successor review is exact and independent of live GitHub refs',()=>{
+ const r=MANIFEST_SUCCESSOR_1102_REVIEW, entries=Object.entries(r.entries)
+ assert.equal(r.sourceSha,'133251a4215b2fc1560fd3dea3c1ac095acf0ef7')
+ assert.equal(r.prNumber,1102)
+ assert.equal(entries.length,4)
+ assert.equal(new Set(entries.map(([filename])=>filename)).size,4)
+ assert.equal(new Set(entries.map(([,e])=>e.sha)).size,4)
+ for(const [,e] of entries){
+  assert.match(e.sha,/^[a-f0-9]{40}$/)
+  assert.equal(e.mode,'100644')
+  assert(['added','modified'].includes(e.status))
+ }
+})

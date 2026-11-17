@@ -6485,9 +6485,43 @@ export function marketCalendarTrustedPredecessor(current,historical){
  return p=>{const e=review.entries[p];if(!e)return current(p);if(e.status==='added')throw Object.assign(Error('Producer source absent from predecessor'),{code:'ENOENT'});return historical(review.baseSha,p)}
 }
 
+// Independent trusted-main admission for the exact owner-approved
+// manifest-successor policy PR. This is not a generic governance-source
+// grant and never reads candidate-admission metadata from the PR.
+export const MANIFEST_SUCCESSOR_1102_REVIEW=Object.freeze({
+  prNumber:1102,
+  branch:'architecture/manifest-successor-continuity-20261117',
+  sourceSha:'133251a4215b2fc1560fd3dea3c1ac095acf0ef7',
+  entries:Object.freeze({
+    'Canon/registries/governance-manifest-successors-v1.json':Object.freeze({sha:'1cc26972a300c0df32425b4d64bcf8dc68fa75dc',status:'added',mode:'100644',owner:'Governance Source Layer',surface:'SG2-BASE-019'}),
+    'apps/architecture-lab/market-calendar-source.mjs':Object.freeze({sha:'c201cc093179c61244b641129e885c1a6cb1cec8',status:'modified',mode:'100644',owner:'Architecture Platform',surface:'ARCH-BASE-002'}),
+    'apps/architecture-lab/test/manifest-successor-continuity.test.mjs':Object.freeze({sha:'f930e3177334d5041f68f2d75092c47b73d7a418',status:'added',mode:'100644',owner:'Architecture Platform',surface:'ARCH-BASE-002'}),
+    'scripts/governance/controlled-package-ci.mjs':Object.freeze({sha:'4ecb337b703ffe5cdb657c239457378079591866',status:'modified',mode:'100644',owner:'Governance Source Layer',surface:'SG2-BASE-020'}),
+  }),
+})
+function exactManifestSuccessor1102Files(files){
+  const entries=MANIFEST_SUCCESSOR_1102_REVIEW.entries
+  return Array.isArray(files)&&files.length===Object.keys(entries).length
+    && new Set(files.map(f=>f?.filename)).size===files.length
+    && files.every(f=>{const e=entries[f?.filename];return e&&f.sha===e.sha&&f.status===e.status&&!Object.hasOwn(f,'previous_filename')})
+}
+function assertManifestSuccessor1102Routes(files,repositoryRoot){
+  const profile=resolveProjectProfile('ARCHITECTURE',repositoryRoot)
+  if(profile.repository.slug!==REPOSITORY)fail('MANIFEST_SUCCESSOR_1102_ROUTING_REJECTED')
+  const entries=MANIFEST_SUCCESSOR_1102_REVIEW.entries
+  for(const f of files){
+    const e=entries[f.filename],r=resolveProjectRouting({profile,targets:[f.filename],repositoryRoot}),item=r.results?.[0]
+    if(!r.ok||r.results.length!==1||item.resolutionStatus!=='RESOLVED'
+      ||item.highestSpecificityMatchCount!==1||item.projectBoundaryStatus!=='ALLOWED'
+      ||item.baselineClassification!=='ALIGNED'||item.currentOwner!==e.owner
+      ||item.matchedSurfaceId!==e.surface)fail('MANIFEST_SUCCESSOR_1102_ROUTING_REJECTED')
+  }
+}
+
 export function assertArchitectureFiles(pr, files, repositoryRoot = controlRoot()) {
   if (!Number.isInteger(pr.changed_files) || pr.changed_files < 1 || pr.changed_files > 300 || !shaPattern.test(pr.base?.sha ?? '')
     || !Array.isArray(files) || files.length !== pr.changed_files) fail('ARCHITECTURE_FILE_LIST_REQUIRED')
+  if(exactManifestSuccessor1102Files(files)){assertManifestSuccessor1102Routes(files,repositoryRoot);return}
   if(knowledgeStage2Review(files)){assertKnowledgeStage2Routes(files,repositoryRoot);return}
   if(lifecycleReviewMatches(files)){assertLifecycleRoutes(files,repositoryRoot);return}
   if(isPinnedBsdcDocumentationReview(files)){assertBsdcDocumentationRoutes(files,repositoryRoot);return}
@@ -6540,6 +6574,15 @@ export function assertArchitectureFiles(pr, files, repositoryRoot = controlRoot(
 
 export function selectCandidate(context, pr, expectedSha, {files, repositoryRoot = controlRoot()} = {}) {
   const family = candidateFamily(context, pr, expectedSha)
+  if(pr&&(pr.number===MANIFEST_SUCCESSOR_1102_REVIEW.prNumber
+    ||pr.head?.ref===MANIFEST_SUCCESSOR_1102_REVIEW.branch
+    ||exactManifestSuccessor1102Files(files))){
+    if(family!=='ARCHITECTURE'||pr.number!==MANIFEST_SUCCESSOR_1102_REVIEW.prNumber
+      ||pr.head.ref!==MANIFEST_SUCCESSOR_1102_REVIEW.branch
+      ||expectedSha!==MANIFEST_SUCCESSOR_1102_REVIEW.sourceSha
+      ||!exactManifestSuccessor1102Files(files))fail('MANIFEST_SUCCESSOR_1102_IDENTITY_REJECTED')
+  }
+
   if(pr&&(pr.number===PLATFORM_KNOWLEDGE_STAGE2_REVIEW.prNumber||pr.head?.ref===PLATFORM_KNOWLEDGE_STAGE2_REVIEW.branch||knowledgeStage2Review(files))){if(family!=='ARCHITECTURE'||pr.number!==PLATFORM_KNOWLEDGE_STAGE2_REVIEW.prNumber||pr.head.ref!==PLATFORM_KNOWLEDGE_STAGE2_REVIEW.branch||!knowledgeStage2Review(files))fail('KNOWLEDGE_STAGE2_REVIEW_IDENTITY_REJECTED')}
   if(pr&&([REGISTRATION_LIFECYCLE_REVIEW,REGISTRATION_LIFECYCLE_TEST_REVIEW,REGISTRATION_LIFECYCLE_TEST_CORRECTED_REVIEW].some(r=>pr.number===r.prNumber||pr.head?.ref===r.branch)||lifecycleReviewMatches(files))){const r=lifecycleReviewForFiles(files);if(family!=='ARCHITECTURE'||!r||pr.number!==r.prNumber||pr.head.ref!==r.branch||expectedSha!==pr.head.sha||r===REGISTRATION_LIFECYCLE_REVIEW&&expectedSha!==r.sourceSha)fail('REGISTRATION_LIFECYCLE_REVIEW_IDENTITY_REJECTED')}
 
@@ -6663,6 +6706,7 @@ const lifecycleReview=lifecycleReviewForFiles(admission.files);if(lifecycleRevie
   for (const file of admission.files) {
     const entry = execFileSync('git', ['ls-tree', '-z', sha, '--', file.filename], {cwd: root, encoding: 'utf8'})
     if (file.status === 'removed') {if (entry !== '') fail('ARCHITECTURE_DIFF_MISMATCH'); continue}
+    if(exactManifestSuccessor1102Files(admission.files) && entry !== MANIFEST_SUCCESSOR_1102_REVIEW.entries[file.filename].mode+' blob '+file.sha+'\t'+file.filename+'\0')fail('MANIFEST_SUCCESSOR_1102_FILE_MODE_REJECTED')
     if(knowledgeStage2Review(admission.files))assertKnowledgeStage2Entry(file,entry)
     if(lifecycleReviewMatches(admission.files))assertRegistrationLifecycleReviewEntry(file,entry)
     if(isPinnedAssistantQualityG1Review(admission.files))assertAssistantQualityG1ReviewEntry(file,entry)
@@ -6690,7 +6734,13 @@ const lifecycleReview=lifecycleReviewForFiles(admission.files);if(lifecycleRevie
     if (isPinnedPlatformKnowledgeG1Review(admission.files) && entry !== `100644 blob ${file.sha}\t${file.filename}\0`) fail('PLATFORM_KNOWLEDGE_G1_FILE_MODE_REJECTED')
     if (!['100644', '100755'].some(mode => entry === `${mode} blob ${file.sha}\t${file.filename}\0`)) fail('ARCHITECTURE_CHECKOUT_REJECTED')
     const target = path.join(root, file.filename), stat = fs.lstatSync(target)
-    if (!stat.isFile() || stat.isSymbolicLink() || stat.size > 1024 * 1024 || fs.realpathSync(target) !== target
+    // The one reviewed controller exceeds 1 MiB. Its size concession is tied
+    // to the exact four-blob pin, one path and its immutable Git blob hash.
+    // Every unrelated source retains the original 1 MiB limit.
+    const exactLargeController=exactManifestSuccessor1102Files(admission.files)
+      && file.filename==='scripts/governance/controlled-package-ci.mjs'
+    const maxSize=exactLargeController?1177620:1024*1024
+    if (!stat.isFile() || stat.isSymbolicLink() || stat.size > maxSize || fs.realpathSync(target) !== target
       || execFileSync('git', ['hash-object', '--no-filters', '--', file.filename], {cwd: root, encoding: 'utf8'}).trim() !== file.sha) fail('ARCHITECTURE_CHECKOUT_REJECTED')
   }
   if(isAssistantQualityStage1SourceReview(admission.files)){
