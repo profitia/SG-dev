@@ -486,15 +486,15 @@ test('reviewed local metadata never permits a changed private artifact, registry
 
 function currentSdkProofFixture(){
  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'dev-current-sdk-proof-')),candidate=path.join(dir,'candidate')
- const source=path.resolve(root,'../architecture-joint-sdk')
  const metadataPath='apps/architecture-lab/current-sdk-source.json'
  const bytes=fs.readFileSync(path.join(root,metadataPath)),record=JSON.parse(bytes)
- execFileSync('git',['clone','--quiet','--shared','--no-checkout',source,candidate],{stdio:['ignore','pipe','pipe']})
- for(const name of Object.keys(record.inputs)){
-  const from=path.join(source,name),to=path.join(candidate,name)
-  assert(fs.lstatSync(from).isFile()&&!fs.lstatSync(from).isSymbolicLink())
-  fs.mkdirSync(path.dirname(to),{recursive:true});fs.copyFileSync(from,to)
- }
+ // Source objects come from this repository's immutable Git history. A clean
+ // runner needs the reviewed Source branch fetched, never a sibling workspace.
+ assert.match(record.sourceSnapshotSha,/^[a-f0-9]{40}$/)
+ execFileSync('git',['cat-file','-e',record.sourceSnapshotSha+'^{commit}'],{cwd:root,stdio:['ignore','pipe','pipe']})
+ execFileSync('git',['clone','--quiet','--shared','--no-checkout',root,candidate],{stdio:['ignore','pipe','pipe']})
+ execFileSync('git',['--literal-pathspecs','checkout',record.sourceSnapshotSha,'--',...Object.keys(record.inputs)],{cwd:candidate,stdio:['ignore','pipe','pipe']})
+ for(const name of Object.keys(record.inputs))assert(fs.lstatSync(path.join(candidate,name)).isFile()&&!fs.lstatSync(path.join(candidate,name)).isSymbolicLink())
  const metadataFile=path.join(candidate,metadataPath);fs.mkdirSync(path.dirname(metadataFile),{recursive:true});fs.writeFileSync(metadataFile,bytes)
  const receiptBytes=fs.readFileSync(path.join(candidate,'apps/sg-runtime/operation-integration.json'))
  const sdkManifestBytes=fs.readFileSync(path.join(candidate,'packages/platform-contracts/package.json'))
