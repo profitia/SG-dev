@@ -7037,7 +7037,46 @@ export function assertLocalPackageSources(root, candidateLock, authorityRoot = c
   }
 }
 
+// The existing main-approved four-file review grants only this exact source.
+// Validate those physical bytes before choosing source proof instead of a
+// historical product-contract proof. Candidate JavaScript is never imported.
+export const MANIFEST_SUCCESSOR_SOURCE_REVIEW_ID='MANIFEST_SUCCESSOR_1102_REVIEW'
+export function manifestSuccessorSourceReviewDigest(){
+  return createHash('sha256').update(JSON.stringify(MANIFEST_SUCCESSOR_1102_REVIEW)).digest('hex')
+}
+export function assertManifestSuccessorSourceValidation(root,state,repositoryRoot=controlRoot()){
+  if(state?.sha!==MANIFEST_SUCCESSOR_1102_REVIEW.sourceSha||state.admission?.kind!=='ARCHITECTURE'
+    ||!exactManifestSuccessor1102Files(state.admission.files))fail('MANIFEST_SUCCESSOR_SOURCE_REVIEW_REJECTED')
+  assertPristineSourceInput(root,state.sha)
+  assertArchitectureCheckout(root,state.sha,state.admission,repositoryRoot)
+  return {protectedSourceReviewId:MANIFEST_SUCCESSOR_SOURCE_REVIEW_ID,
+    protectedSourceReviewDigest:manifestSuccessorSourceReviewDigest(),originalSourceSha:MANIFEST_SUCCESSOR_1102_REVIEW.sourceSha}
+}
+export function assertManifestSuccessorSourceProof(proof,run,candidateSha,workflowId,{currentRunId,currentRef,completedJobs=[],expectedControlDigest=controlPolicyDigest()}={}){
+  const sameRun=String(run.id)===String(currentRunId)&&currentRef==='refs/heads/main'&&run.event==='push'
+    &&completedJobs.some(j=>j.name==='SG2 controlled operation integration'&&j.conclusion==='success')
+  if(run.workflow_id!==workflowId||run.repository?.full_name!==REPOSITORY||run.head_branch!=='main'
+    ||!['push','workflow_dispatch'].includes(run.event)||run.actor?.login!=='profitia'
+    ||(!sameRun&&run.conclusion!=='success'))fail('UNTRUSTED_VALIDATION_RUN')
+  if(proof?.schemaVersion!=='2.0'||proof.scope!=='EXACT_PROTECTED_SOURCE_VALIDATION'
+    ||proof.repository!==REPOSITORY||proof.targetEnvironment!=='development'||proof.workflow!==WORKFLOW
+    ||candidateSha!==MANIFEST_SUCCESSOR_1102_REVIEW.sourceSha||proof.candidateSha!==candidateSha
+    ||proof.originalSourceSha!==candidateSha||proof.controlSha!==run.head_sha||String(proof.runId)!==String(run.id)
+    ||proof.protectedSourceReviewId!==MANIFEST_SUCCESSOR_SOURCE_REVIEW_ID
+    ||proof.protectedSourceReviewDigest!==manifestSuccessorSourceReviewDigest()
+    ||Object.hasOwn(proof,'sourceAdmissionId')||Object.hasOwn(proof,'sourceAdmissionDigest')
+    ||!shaPattern.test(proof.controlSha??''))fail('VALIDATION_PROVENANCE_MISMATCH')
+  if(proof.controlPolicyDigest!==expectedControlDigest)fail('CONTROL_POLICY_PROVENANCE_MISMATCH')
+  if(proof.executionWorkspace!=='ISOLATED_GIT_CHECKOUT'||proof.executionCheckoutSha!==candidateSha
+    ||proof.sourceInputVerifiedBeforeExecution!==true||proof.sourceInputVerifiedAfterExecution!==true)fail('VALIDATION_INPUT_ISOLATION_INCOMPLETE')
+  if(proof.credentialRemovedBeforeCandidateExecution!==true||proof.privatePackageArtifactsPublished!==false
+    ||proof.productDeploymentPerformed!==false||proof.customerIdentityAdapterVerified!==false
+    ||proof.install!=='CLEAN_REGISTRY_IGNORE_SCRIPTS'||proof.tests!=='PASS'||proof.typecheck!=='PASS'||proof.build!=='PASS')fail('VALIDATION_INCOMPLETE')
+  return proof
+}
+
 export function assertProof(proof, run, candidateSha, workflowId, {currentRunId, currentRef, completedJobs = [], expectedControlDigest = controlPolicyDigest()} = {}) {
+  if(proof?.schemaVersion==='2.0'&&proof.scope==='EXACT_PROTECTED_SOURCE_VALIDATION')return assertManifestSuccessorSourceProof(proof,run,candidateSha,workflowId,{currentRunId,currentRef,completedJobs,expectedControlDigest})
   if(proof?.schemaVersion==='2.0')return assertSourceValidationProof(proof,run,candidateSha,workflowId,{currentRunId,currentRef,completedJobs,expectedControlDigest})
   const sameRun = String(run.id) === String(currentRunId) && currentRef === 'refs/heads/main' && run.event === 'push' && completedJobs.some(j => j.name === 'SG2 controlled operation integration' && j.conclusion === 'success')
   if (run.workflow_id !== workflowId || run.repository?.full_name !== REPOSITORY || run.head_branch !== 'main' || !['push', 'workflow_dispatch'].includes(run.event) || run.actor?.login !== 'profitia' || (!sameRun && run.conclusion !== 'success')) fail('UNTRUSTED_VALIDATION_RUN')
@@ -7234,6 +7273,10 @@ export function checkAdmittedPackages(root,authorityRoot=controlRoot()) {
 function checkCandidate(root = candidateRoot()) {
   const c = assertTrustedContext(context()), state = readJson(statePath())
   if (state.controlSha !== c.controlSha || state.runId !== process.env.GITHUB_RUN_ID || !shaPattern.test(state.sha) || execFileSync('git', ['rev-parse', 'HEAD'], {cwd: root, encoding: 'utf8'}).trim() !== state.sha) fail('CANDIDATE_CHECKOUT_MISMATCH')
+  if(state.admission?.kind==='ARCHITECTURE'&&exactManifestSuccessor1102Files(state.admission.files)){
+    const protectedReview=assertManifestSuccessorSourceValidation(root,state)
+    return {state,app:checkAdmittedPackages(root),protectedReview,genericSource:true}
+  }
   if (state.admission) assertArchitectureCheckout(root, state.sha, state.admission)
   if(state.admission?.kind==='TRUSTED_RECORD'){
     const sourceRecord=trustedAdmissionById(state.admission.recordId)
@@ -7325,7 +7368,7 @@ async function install() {
 }
 function proof() {
   if (!credentialFree(process.env)) fail('CREDENTIAL_PRESENT_IN_EXECUTION_PHASE')
-  const {state,sourceRecord,genericSource} = checkCandidate(), directory = path.join(process.env.RUNNER_TEMP, ARTIFACT)
+  const {state,sourceRecord,genericSource,protectedReview} = checkCandidate(), directory = path.join(process.env.RUNNER_TEMP, ARTIFACT)
   assertPristineSourceInput(candidateRoot(),state.sha)
   assertExecutionCheckout(process.env.EXECUTION_ROOT,candidateRoot(),state,process.env.RUNNER_TEMP)
   if(state.executionInputVerified!==true)fail('EXECUTION_INPUT_VERIFICATION_REQUIRED')
@@ -7333,8 +7376,8 @@ function proof() {
   fs.mkdirSync(directory, {recursive: true})
   if(genericSource){
     fs.writeFileSync(path.join(directory,'proof.json'),JSON.stringify({schemaVersion:'2.0',repository:REPOSITORY,workflow:WORKFLOW,
-      targetEnvironment:'development',scope:sourceRecord?'EXACT_SOURCE_VALIDATION':'AUTHORITY_MAIN_VALIDATION',candidateSha:state.sha,controlSha:state.controlSha,
-      ...executionEvidence,
+      targetEnvironment:'development',scope:protectedReview?'EXACT_PROTECTED_SOURCE_VALIDATION':sourceRecord?'EXACT_SOURCE_VALIDATION':'AUTHORITY_MAIN_VALIDATION',candidateSha:state.sha,controlSha:state.controlSha,
+      ...executionEvidence,...(protectedReview??{}),
       controlPolicyDigest:controlPolicyDigest(),runId:state.runId,...(sourceRecord?{sourceAdmissionId:sourceRecord.id,
       sourceAdmissionDigest:sourceAdmissionDigest(sourceRecord),originalSourceSha:sourceRecord.sourceSha}:{}),
       install:'CLEAN_REGISTRY_IGNORE_SCRIPTS',credentialRemovedBeforeCandidateExecution:true,privatePackageArtifactsPublished:false,
@@ -7372,7 +7415,7 @@ async function verify() {
           const atExecution=ledger.schemaVersion==='1.0'&&Array.isArray(ledger.records)?ledger.records.filter(r=>r.id===p.sourceAdmissionId):[]
           if(atExecution.length!==1||sourceAdmissionDigest(atExecution[0])!==p.sourceAdmissionDigest)fail('SOURCE_ADMISSION_EXECUTION_PROVENANCE_MISMATCH')
         }
-        console.log('Verified exact source tests/build for '+sha+' under '+(p.sourceAdmissionId??'accepted authority main')+': https://github.com/'+REPOSITORY+'/actions/runs/'+run.id)
+        console.log('Verified exact source tests/build for '+sha+' under '+(p.protectedSourceReviewId??p.sourceAdmissionId??'accepted authority main')+': https://github.com/'+REPOSITORY+'/actions/runs/'+run.id)
         return
       }
       const receiptBytes=Buffer.from((await api(`repos/${REPOSITORY}/contents/apps/sg-runtime/operation-integration.json?ref=${sha}`)).data.content,'base64'),sourceReceipt=JSON.parse(receiptBytes)
