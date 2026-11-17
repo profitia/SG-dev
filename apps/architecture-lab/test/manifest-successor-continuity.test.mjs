@@ -6,6 +6,7 @@ import path from 'node:path'
 import test from 'node:test'
 import {fileURLToPath} from 'node:url'
 import {bsdcManifestContinuityCurrent,BSDC_MANIFEST_CONTINUITY as cfg} from '../market-calendar-source.mjs'
+import {bsdcManifestContinuityTrustedCurrent} from '../../../scripts/governance/controlled-package-ci.mjs'
 
 const root=fileURLToPath(new URL('../../../',import.meta.url))
 const ledgerPath='Canon/registries/governance-manifest-successors-v1.json'
@@ -136,4 +137,44 @@ test('a forged extra document or shortened approved set is rejected',()=>{
   const {current,trusted}=fixture({mutateLedger})
   assert.throws(()=>bsdcManifestContinuityCurrent(current,trusted))
  }
+})
+
+
+test('trusted controller independently admits exact main-ledger successor without evaluating candidate helper',()=>{
+ const {current,trusted}=fixture()
+ const projection=bsdcManifestContinuityTrustedCurrent(current,trusted)
+ assert.deepEqual(projection(cfg.manifestPath),history(cfg.baseSha,cfg.manifestPath))
+ assert.deepEqual(projection(sourceDoc),sourceDocument)
+})
+
+test('trusted controller continues to accept resulting-main bytes once policy is admitted',()=>{
+ const {current,trusted}=fixture({mainManifest:sourceManifest})
+ const projection=bsdcManifestContinuityTrustedCurrent(current,trusted)
+ assert.deepEqual(projection(cfg.manifestPath),history(cfg.baseSha,cfg.manifestPath))
+})
+
+test('trusted controller rejects candidate-side self admission and invalid source bytes',()=>{
+ for(const options of [
+  {trustedLedger:false,candidateLedger:JSON.stringify(approvedLedger)},
+  {manifest:Buffer.concat([sourceManifest,Buffer.from('EXTRA')])},
+  {document:Buffer.concat([sourceDocument,Buffer.from('ALTERED')])},
+  {mainManifest:Buffer.concat([originalManifest,Buffer.from('BAD_BASE')])},
+  {mutateLedger:x=>x.successors[0].status='PROPOSED'},
+  {mutateLedger:x=>x.successors[0].scope='ANY'},
+  {mutateLedger:x=>x.successors[0].documentDigests[sourceDoc]='f'.repeat(64)},
+ ]){
+  const {current,trusted}=fixture(options)
+  assert.throws(()=>bsdcManifestContinuityTrustedCurrent(current,trusted))
+ }
+})
+
+test('candidate and trusted controllers must both reject unrelated historical mutation',()=>{
+ const {current,trusted}=fixture()
+ const altered=(sha,p)=>{
+  const b=trusted(sha,p)
+  if(sha===cfg.baseSha && p===cfg.manifestPath)return Buffer.concat([b,Buffer.from('ALTERED_HISTORY')])
+  return b
+ }
+ assert.throws(()=>bsdcManifestContinuityCurrent(current,altered))
+ assert.throws(()=>bsdcManifestContinuityTrustedCurrent(current,altered))
 })
