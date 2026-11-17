@@ -52,6 +52,8 @@ jobs:
       OPERATION_FIXTURE_OWNER_URL: postgresql://architecture_test_owner:isolated_ci_only@127.0.0.1:5432/sg2_operation_test
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: '24'

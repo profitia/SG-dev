@@ -105,7 +105,7 @@ export const APPSHELL_NOTIFICATION_REVIEW=Object.freeze({
 })
 const notificationDigest=bytes=>createHash('sha256').update(bytes).digest('hex')
 export const EDITORIAL_CANON_SOURCE_REVIEW=Object.freeze({
-  "sourceSha": "4350876cd17cdf076b0b8766460b3dd7ed64de5e",
+  "sourceSha": "5c304dd31ae324d8173ab5ef2fc75f3e68d7c532",
   "baseSha": "56dcedb243d5d9568e3bd9cc3e13836f4e8b24bb",
   "recordPath": "apps/sg-runtime/procurement-insights-editorial-integration.json",
   "entries": {
@@ -151,8 +151,8 @@ export const EDITORIAL_CANON_SOURCE_REVIEW=Object.freeze({
       "status": "added"
     },
     "apps/sg-runtime/procurement-insights-editorial-integration.json": {
-      "blob": "b2fb0df8027e9ff359d6ae965ae03c492fa68204",
-      "sha256": "a12fe421ae3bd4d42cb82a38a7509730918612ddf1ff3caae7552874933b1f9b",
+      "blob": "41b872172142c75550e886d10a135965ac7092ce",
+      "sha256": "a85d4f9bc91a61fe1abd8ed4516d3b64da3b24df17839a1abe52d84718cfcc17",
       "status": "added"
     },
     "apps/sg-runtime/tests/assistant-notifications-integrity.mjs": {
@@ -168,14 +168,20 @@ export const EDITORIAL_CANON_SOURCE_REVIEW=Object.freeze({
       "previousSha256": "1d22944ad0e3d86082045e887ec85036a729f4d7910e8f6d793e8ec65e963da3"
     },
     "apps/sg-runtime/tests/procurement-insights-editorial-integrity.mjs": {
-      "blob": "fec4ddee3b3d0183383f860aa6564fb6925181a0",
-      "sha256": "7c44fe0e67c51555b746b91e6896a7a0b1734be8ed9f7d7f0a3da668ecf984b2",
+      "blob": "497f465ff01c9f9325bc3a7f2f4ee44987530823",
+      "sha256": "071825800d81e25361fda653348d9b947455464d45b70d7ab8ce5b73dc06bb50",
       "status": "added"
     },
     "apps/sg-runtime/tests/procurement-insights-editorial-integrity.test.mjs": {
-      "blob": "5a46447253425b0ddf9bf25a941e666d09e45781",
-      "sha256": "504be3cefedd23386a5dfce13c128b0992e626468c2791642ee056f8fb3464f1",
+      "blob": "a4590aca205dab209ad6d89d6c320d266d150adb",
+      "sha256": "b93302850ff52aa99d205c8f2cec1bd991909589976a2ef4f58aec5d69cf7f73",
       "status": "added"
+    },
+    "apps/srm/scripts/xray-performance-adoption.test.mjs": {
+      "status": "modified",
+      "blob": "89a4b6955e1a887028039285b24d405720e9a8f0",
+      "sha256": "1ac38a8692016b6b988f59de6320d85891ffede915c6f0bcff7fbaacc7586957",
+      "previousSha256": "4e54b459d9133e6884cec4d44fd53b0b42375521da7b8bfef861bf645edd97c3"
     }
   },
   "projection": [
@@ -185,7 +191,8 @@ export const EDITORIAL_CANON_SOURCE_REVIEW=Object.freeze({
     "apps/sg-runtime/tests/assistant-notifications-integrity.test.mjs",
     "apps/sg-runtime/tests/procurement-insights-editorial-integrity.mjs",
     "apps/sg-runtime/tests/procurement-insights-editorial-integrity.test.mjs",
-    "apps/sg-runtime/procurement-insights-editorial-integration.json"
+    "apps/sg-runtime/procurement-insights-editorial-integration.json",
+    "apps/srm/scripts/xray-performance-adoption.test.mjs"
   ],
   "preservedReceipts": {
     "apps/architecture-lab/private-recurring-source-adoption.json": "a79c186897851acb93142949fe7aee19184cbfe68b3acdf51cbda084c00c1254",
@@ -292,6 +299,7 @@ export function notificationTrustedCurrent(root){
 }
 
 // Trusted-main CI controller. Never import candidate JavaScript while credentials exist.
+import qualityAssert from 'node:assert/strict'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
@@ -7173,7 +7181,160 @@ export function assertRegistrationSdkRecord(bytes,{digestForPath,receipts,histor
  }
  return record
 }
+// Finite source-only predecessor for owner-approved PR1067/1099 and CIC1.8.
+// Trusted controller code verifies all physical current bytes and immutable
+// receipts before any projection. Candidate JavaScript is never imported.
+// Source-test continuation only; this cannot grant a QA purpose or activation.
+export const QUALITY_HOST_BASE='d9413b1945d54cbbf730a3437f9b2d368095e98e'
+export const QUALITY_HOST_RECEIPT='apps/sg-runtime/assistant-quality-host-integration.json'
+export const QUALITY_HOST_PATHS=Object.freeze([
+ 'apps/sg-runtime/lib/assistant/conversation.ts',
+ 'apps/sg-runtime/lib/assistant/runtime.ts',
+ 'apps/sg-runtime/lib/assistant/quality-response.ts',
+ 'apps/sg-runtime/lib/assistant/quality-evidence.ts',
+ 'apps/sg-runtime/migrations/002-assistant-quality-evidence.sql',
+ 'apps/sg-runtime/package.json',
+ 'apps/sg-runtime/package-lock.json',
+ 'apps/sg-runtime/tests/assistant-conversation-handler.test.ts',
+ 'apps/sg-runtime/tests/assistant-quality-response.test.ts',
+ 'apps/sg-runtime/tests/assistant-quality-evidence.test.ts',
+ 'apps/sg-runtime/tests/assistant-quality-integrity.mjs',
+ 'apps/sg-runtime/tests/assistant-quality-host-integrity.mjs',
+ 'apps/sg-runtime/tests/assistant-quality-host-integrity.test.mjs',
+ 'apps/sg-runtime/tests/procurement-insights-completion-integrity.mjs'
+])
+export const QUALITY_HOST_PRESERVED=Object.freeze([
+ 'apps/sg-runtime/assistant-quality-integration.json',
+ 'apps/sg-runtime/operation-integration.json',
+ 'apps/sg-runtime/assistant-context-integration.json',
+ 'apps/sg-runtime/assistant-ecr-integration.json',
+ 'apps/sg-runtime/assistant-ecr-precision-integration.json',
+ 'apps/sg-runtime/assistant-markdown-integration.json',
+ 'apps/sg-runtime/assistant-send-arrow-integration.json',
+ 'apps/sg-runtime/registration-stage-i-integration.json',
+ 'apps/sg-runtime/procurement-insights-integration.json',
+ 'apps/sg-runtime/procurement-insights-completion-integration.json',
+ 'apps/sg-runtime/procurement-insights-shell-integration.json'
+])
+export const QUALITY_CIC_PIN=Object.freeze({version:'1.8.0',
+ resolved:'https://npm.pkg.github.com/download/@profitia/cic-core/1.8.0/797fccee13eb0ce11f7130793218c80d7d542d7a',
+ integrity:'sha512-tuun88+cfOHFeCafBw1a8gnExgeDyWBgY7Zd9OPkKk2/Eef0YBP49vzDcXKVpFoCNJGh/CYbeR9B+M2ZXctNsg=='})
+const qualityHostPublication={repository:'profitia/conversational-intelligence-core',sourceSha:'c0053dcd55a3ed9f74584733627f6e9c130d4b49',
+ runId:'43282280865',artifactId:'13973416582',artifactZipSha256:'6302e2182bee731bbb771b2c55da0a2fdbe2d023e512492f7f478a9f966616cc',
+ tag:'development',latestUnchanged:'1.6.0'}
+const qualityHostAdded=new Set(QUALITY_HOST_PATHS.filter(p=>p.includes('/quality-response.')||p.includes('/quality-evidence.')||p.includes('/002-assistant-quality-evidence.')||p.includes('/assistant-quality-response.')||p.includes('/assistant-quality-evidence.')||p.includes('/assistant-quality-host-integrity.')))
+const qualitySourceHash=b=>createHash('sha256').update(b).digest('hex')
+export function qualityTrustedHostPredecessor(current,historical){
+ let bytes
+ try{bytes=current(QUALITY_HOST_RECEIPT)}catch(e){
+  const text=String(e?.stderr??e?.message??'')
+  if(e?.code==='ENOENT'||e?.status===128&&(text.includes("'"+QUALITY_HOST_RECEIPT+"' does not exist in ")||text.includes("'"+QUALITY_HOST_RECEIPT+"' exists on disk, but not in ")))return null
+  throw e
+ }
+ const a=JSON.parse(bytes)
+ qualityAssert.deepEqual(Object.keys(a).sort(),['schemaVersion','taskId','scope','targetEnvironment','previousSourceSha','sourceDigests','previousReceipts','cicPublication','responseProtectionActivated','privateQaActivated','cloudInstallationPerformed','pilotStarted'].sort())
+ qualityAssert.equal(a.schemaVersion,'1.0.0');qualityAssert.equal(a.taskId,'SG2-CIC-QUALITY-TECHNICAL-READY-20261117')
+ qualityAssert.equal(a.scope,'CONTROLLED_CIC18_HOST_AND_PRIVATE_QA_SOURCE');qualityAssert.equal(a.targetEnvironment,'development')
+ qualityAssert.equal(a.previousSourceSha,QUALITY_HOST_BASE);qualityAssert.deepEqual(a.cicPublication,qualityHostPublication)
+ for(const k of ['responseProtectionActivated','privateQaActivated','cloudInstallationPerformed','pilotStarted'])qualityAssert.equal(a[k],false,k)
+ qualityAssert.deepEqual(Object.keys(a.sourceDigests).sort(),[...QUALITY_HOST_PATHS].sort())
+ for(const p of QUALITY_HOST_PATHS){qualityAssert.match(a.sourceDigests[p],/^[a-f0-9]{64}$/);qualityAssert.equal(qualitySourceHash(current(p)),a.sourceDigests[p],'exact quality host source '+p)}
+ qualityAssert.deepEqual(Object.keys(a.previousReceipts).sort(),[...QUALITY_HOST_PRESERVED].sort())
+ for(const p of QUALITY_HOST_PRESERVED){qualityAssert.equal(qualitySourceHash(current(p)),a.previousReceipts[p]);qualityAssert.equal(qualitySourceHash(historical(QUALITY_HOST_BASE,p)),a.previousReceipts[p],'immutable previous receipt '+p)}
+ const manifest=JSON.parse(current('apps/sg-runtime/package.json')),before=JSON.parse(historical(QUALITY_HOST_BASE,'apps/sg-runtime/package.json'))
+ const expected=structuredClone(before);expected.dependencies['@profitia/cic-core']='1.8.0'
+ expected.scripts['test:assistant']+=' && node --import tsx --test tests/assistant-quality-response.test.ts tests/assistant-quality-evidence.test.ts && node --test tests/assistant-quality-host-integrity.test.mjs'
+ qualityAssert.deepEqual(manifest,expected,'only the published core version and exact QA tests change')
+ const lock=JSON.parse(current('apps/sg-runtime/package-lock.json')),previous=JSON.parse(historical(QUALITY_HOST_BASE,'apps/sg-runtime/package-lock.json'))
+ previous.packages[''].dependencies['@profitia/cic-core']='1.8.0'
+ Object.assign(previous.packages['node_modules/@profitia/cic-core'],QUALITY_CIC_PIN)
+ qualityAssert.deepEqual(lock,previous,'no other registry, local package or dependency change')
+ const mapped=new Set(QUALITY_HOST_PATHS),cache=new Map()
+ return {manifest:a,previousBytes:p=>{
+  if(p===QUALITY_HOST_RECEIPT||qualityHostAdded.has(p))throw Object.assign(Error('Quality host absent from predecessor'),{code:'ENOENT'})
+  if(!mapped.has(p))return current(p)
+  if(!cache.has(p))cache.set(p,Buffer.from(historical(QUALITY_HOST_BASE,p)))
+  return Buffer.from(cache.get(p))
+ }}
+}
+// Source continuation only: verifies current calendar bytes before projecting
+// the immutable earlier acceptance. It grants no source, data or release right.
+export const QUALITY_RECEIPT='apps/sg-runtime/assistant-quality-integration.json'
+export const QUALITY_BASE='765e995ca9b1eacef83a562b46e9c23876992e9b'
+export const QUALITY_PATHS=Object.freeze([
+ 'apps/sg-runtime/lib/assistant/calendar-period.ts',
+ 'apps/sg-runtime/lib/assistant/context-selection.ts',
+ 'apps/sg-runtime/lib/assistant/conversation.ts',
+ 'apps/sg-runtime/lib/assistant/runtime.ts',
+ 'apps/sg-runtime/package.json',
+ 'apps/sg-runtime/tests/assistant-quality.test.ts',
+ 'apps/sg-runtime/tests/assistant-quality-integrity.mjs',
+ 'apps/sg-runtime/tests/assistant-quality-integrity.test.mjs',
+ 'apps/sg-runtime/tests/assistant-ecr-integrity.mjs',
+ 'apps/sg-runtime/tests/assistant-ecr-precision-integrity.mjs'
+])
+export const QUALITY_RECEIPTS=Object.freeze([
+ 'apps/sg-runtime/operation-integration.json',
+ 'apps/sg-runtime/assistant-context-integration.json',
+ 'apps/sg-runtime/assistant-ecr-integration.json',
+ 'apps/sg-runtime/assistant-ecr-precision-integration.json',
+ 'apps/sg-runtime/assistant-markdown-integration.json',
+ 'apps/sg-runtime/assistant-send-arrow-integration.json',
+ 'apps/sg-runtime/registration-stage-i-integration.json',
+ 'apps/sg-runtime/procurement-insights-integration.json'
+])
+const qualityCalendarAdditions=new Set(['apps/sg-runtime/lib/assistant/calendar-period.ts','apps/sg-runtime/tests/assistant-quality.test.ts',
+ 'apps/sg-runtime/tests/assistant-quality-integrity.mjs','apps/sg-runtime/tests/assistant-quality-integrity.test.mjs'])
+
+export function qualityTrustedPredecessor(current,historical){
+ const host=qualityTrustedHostPredecessor(current,historical);if(host)return qualityTrustedPredecessor(host.previousBytes,historical)
+ let bytes
+ try{bytes=current(QUALITY_RECEIPT)}catch(e){
+  const text=String(e?.stderr??e?.message??'')
+  if(e?.code==='ENOENT'||e?.status===128&&(text.includes("'"+QUALITY_RECEIPT+"' does not exist in ")||text.includes("'"+QUALITY_RECEIPT+"' exists on disk, but not in ")))return null
+  throw e
+ }
+ const a=JSON.parse(bytes)
+ qualityAssert.deepEqual(Object.keys(a).sort(),['schemaVersion','taskId','scope','targetEnvironment','previousSourceSha','sourceDigests','previousReceipts','runtimeActivated','privateDataAccessChanged','dependenciesChanged','pilotStarted'].sort())
+ qualityAssert.equal(a.schemaVersion,'1.0.0');qualityAssert.equal(a.taskId,'SG2-CIC-QUALITY-TECHNICAL-READY-20261117')
+ qualityAssert.equal(a.scope,'TRUSTED_CALENDAR_PERIOD_SOURCE');qualityAssert.equal(a.targetEnvironment,'development');qualityAssert.equal(a.previousSourceSha,QUALITY_BASE)
+ for(const k of ['runtimeActivated','privateDataAccessChanged','dependenciesChanged','pilotStarted'])qualityAssert.equal(a[k],false,k)
+ qualityAssert.deepEqual(Object.keys(a.sourceDigests).sort(),[...QUALITY_PATHS].sort())
+ for(const p of QUALITY_PATHS){qualityAssert.match(a.sourceDigests[p],/^[a-f0-9]{64}$/);qualityAssert.equal(qualitySourceHash(current(p)),a.sourceDigests[p],'exact calendar continuation '+p)}
+ qualityAssert.deepEqual(Object.keys(a.previousReceipts).sort(),[...QUALITY_RECEIPTS].sort())
+ for(const p of QUALITY_RECEIPTS){
+  qualityAssert.equal(qualitySourceHash(current(p)),a.previousReceipts[p],'unchanged earlier receipt '+p)
+  qualityAssert.equal(qualitySourceHash(historical(QUALITY_BASE,p)),a.previousReceipts[p],'immutable previous receipt '+p)
+ }
+ qualityAssert.deepEqual(Buffer.from(current('apps/sg-runtime/package-lock.json')),Buffer.from(historical(QUALITY_BASE,'apps/sg-runtime/package-lock.json')),'no dependency artifact change')
+ const before=JSON.parse(historical(QUALITY_BASE,'apps/sg-runtime/package.json')),after=JSON.parse(current('apps/sg-runtime/package.json'))
+ const expected=structuredClone(before)
+ expected.scripts['test:assistant']=expected.scripts['test:assistant'].replace('tests/assistant-economic-calendar.test.ts ','tests/assistant-economic-calendar.test.ts tests/assistant-quality.test.ts ')+' && node --test tests/assistant-quality-integrity.test.mjs'
+ qualityAssert.deepEqual(after,expected,'only the exact quality test additions are admitted')
+ const mapped=new Set(QUALITY_PATHS),cache=new Map()
+ return {manifest:a,previousBytes:p=>{
+  if(p===QUALITY_RECEIPT||qualityCalendarAdditions.has(p))throw Object.assign(Error('Quality continuation absent from predecessor'),{code:'ENOENT'})
+  if(!mapped.has(p))return current(p)
+  if(!cache.has(p))cache.set(p,Buffer.from(historical(QUALITY_BASE,p)))
+  return Buffer.from(cache.get(p))
+ }}
+}
+
+const qualityImmutableHistory=new Map()
 export function readRegistrationSdkFile(root,name){
+ const base=fs.realpathSync(root),physical=p=>readRegistrationSdkPhysicalFile(base,p)
+ const historical=(sha,p)=>{
+  const key=base+"\0"+sha+":"+p
+  if(!qualityImmutableHistory.has(key)){
+   if(qualityImmutableHistory.size>=256)qualityImmutableHistory.clear()
+   qualityImmutableHistory.set(key,execFileSync('git',['cat-file','blob',sha+':'+p],{cwd:base,stdio:['ignore','pipe','pipe']}))
+  }
+  return Buffer.from(qualityImmutableHistory.get(key))
+ }
+ const view=qualityTrustedPredecessor(physical,historical)
+ return (view?.previousBytes??physical)(name)
+}
+function readRegistrationSdkPhysicalFile(root,name){
  const base=fs.realpathSync(root)
  {
   if(typeof name!=='string'||name.includes(String.fromCharCode(92))||path.posix.isAbsolute(name)||path.posix.normalize(name)!==name||name.startsWith('../'))fail('REGISTRATION_SDK_SOURCE_FILE_REJECTED')
