@@ -285,14 +285,69 @@
   "installationProgress": {
     "ordinaryRolesCreated": 7,
     "ordinaryRoleLoginExpiresAt": "2026-11-27T23:59:59Z",
-    "migrationsInstalled": 4,
+    "migrationsInstalled": 5,
     "installationsEnabled": false,
     "purposeGrants": 0,
     "enrolledInputs": 0,
     "modelWindowStarted": false,
     "temporaryOwnerCapabilitiesRestored": true,
     "sourceSqlDigestsVerifiedBeforeApplication": true,
-    "secretsInGitOrLogs": false
+    "secretsInGitOrLogs": false,
+    "historyContainmentMigration003PreviouslyApprovedAndInstalled": true,
+    "ordinaryQaRoleConnectionQualification": {
+      "date": "2026-11-17",
+      "result": "PASS",
+      "method": "Actual ordinary PostgreSQL login and native signed protocol; no SET ROLE impersonation",
+      "roles": [
+        "sg2_assistant_quality_authority",
+        "sg2_assistant_quality_reader",
+        "sg2_assistant_quality_capture",
+        "profitia_limits_quality_broker",
+        "profitia_limits_quality_capture"
+      ],
+      "roleMemberships": 0,
+      "connectionLimit": 3,
+      "loginExpiresAt": "2026-11-27T23:59:59.000Z",
+      "ownerPrivileges": false,
+      "rawQaContentRead": false,
+      "signedAuthorityDescriptor": "PASS_DISABLED_CONTROLLED_ACCEPTANCE",
+      "signedReaderDescriptor": "PASS_DISABLED",
+      "negativeCases": {
+        "badPurposeSignature": "REJECTED",
+        "wrongStorageGeneration": "REJECTED",
+        "readWhileQaDisabled": "REJECTED",
+        "serviceSubmittingHumanCapture": "REJECTED",
+        "badEvidenceSignature": "REJECTED"
+      },
+      "connectionRemediation": {
+        "targetDatabase": "platform_private",
+        "targetRole": "sg2_assistant_quality_authority",
+        "freshFailure": "42501_PERMISSION_DENIED_FOR_DATABASE",
+        "addedPrivilege": "CONNECT_ONLY",
+        "basis": "Previously owner-approved role/resource installation PR1104",
+        "allPreviousDatabaseAclEntriesPreserved": true,
+        "ownerMembershipAdded": false,
+        "roleCreated": false,
+        "schemaMigrationReapplied": false
+      },
+      "qaEnabled": false,
+      "purposeGrantsCreated": 0,
+      "inputsEnrolled": 0,
+      "paidPilotStarted": false
+    },
+    "referenceEngineeringCheck": {
+      "status": "DRAFT_NOT_REVIEWED_NOT_CALIBRATED",
+      "packSha256": "6f54dde5d774e664aae7575292d38d3d6895432a015039e5b9967525eb03aa2f",
+      "totalCases": 240,
+      "separatePythonOracle": {
+        "C1Checked": 70,
+        "C2Checked": 80,
+        "mismatches": 0,
+        "unverifiedCases": 90
+      },
+      "reviewerAttestationInstalled": false,
+      "providerRequestsPerformed": false
+    }
   },
   "pendingSourceCiAmendment": {
     "status": "OWNER_APPROVED_LIMITED_AMENDMENT",
@@ -314,7 +369,7 @@
     "status": "OWNER_APPROVED_LIMITED_AMENDMENT_NOT_YET_MERGED",
     "previousApprovedPathCount": 23,
     "proposedPathCount": 24,
-    "additionalPath": "apps/sg-runtime/tests/finder-monitor-source-integrity.mjs",
+    "additionalPath": "apps/sg-runtime/tests/procurement-insights-editorial-integrity.mjs",
     "owner": "SG2",
     "kind": "EXACT_ADDITIVE_TEST_PROVENANCE_DISPATCH_ONLY",
     "reason": "The accepted parallel Finder monitor layer now precedes editorial verification. Preserve the approved one-extra-adapter/24-path scope by relocating the same exact additive CIC dispatch into that existing Finder predecessor, after its narrow receipt absence/read-error handling. Restore the editorial adapter exactly to main. Authenticate the full QA closure and aggregate every bound source digest before original Finder, notification, consent and PCI checks. Retain all earlier receipts, checks and package boundaries.",
@@ -334,7 +389,8 @@
       "sourceAndTamperTests": 5,
       "trustedControllerTests": 11,
       "result": "PASS",
-      "sourceAndFinderRegressionTests": 27
+      "sourceAndFinderRegressionTests": 27,
+      "combinedControllerAndParallelPiTests": 14
     },
     "sharedPlatformPackageUnchanged": true,
     "allExistingTestsAndReceiptsRetained": true,
@@ -359,7 +415,18 @@
       "additionalAdapters": 1,
       "originalAdapterRestoredExactlyToMain": true,
       "authorityRightsCostsAndRuntimeFlagsChanged": false,
-      "legacyFixtureRetainedAsReadOnlyRegression": true
+      "legacyFixtureRetainedAsReadOnlyRegression": true,
+      "status": "PENDING_OWNER_CONFIRMATION_DO_NOT_MERGE",
+      "originalApprovalDoesNotAloneAuthoriseNewPath": true
+    },
+    "proposedEffectiveAdditionalPath": "apps/sg-runtime/tests/finder-monitor-source-integrity.mjs",
+    "qualifiedPolicyHead": "b80ba63f7588f7b814dc6fc013122919ffa87d77",
+    "qualifiedNativeTests": {
+      "contracts": 2081,
+      "governance": 430,
+      "result": "PASS",
+      "runId": 44188358466,
+      "exactHeadOnly": true
     }
   }
 }
