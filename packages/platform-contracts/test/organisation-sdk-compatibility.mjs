@@ -1,3 +1,4 @@
+import {sdkSourceContext,currentSdkSourceContext} from './sdk-source-context.mjs'
 import {readFileSync as readCurrentSdkSourceFile} from 'node:fs'
 import {execFileSync as readCurrentSdkSourceGit} from 'node:child_process'
 import {fileURLToPath as currentSdkSourceFileUrl} from 'node:url'
@@ -665,6 +666,14 @@ function registrationMainComposition(current,historical){
 
 export function sdkContinuationPredecessor(receipt,current,historical,{projectKey='SG2',validatePeer=true}={}){
  assert(['SG2','SRM'].includes(projectKey))
+ const context=sdkSourceContext(current,historical)
+ if(context){
+  assert.deepEqual(receipt,JSON.parse(current(receiptPath(projectKey))),'physical current receipt required')
+  const view=context.baseline('registration')
+  const previous=sdkContinuationPredecessor(JSON.parse(view(receiptPath(projectKey))),view,historical,{projectKey,validatePeer})
+  assert(previous,'complete immutable registration source required')
+  return {...previous,currentSourceDigests:context.currentSourceDigests,currentSdkContext:context}
+ }
  const lifecycle=organisationLifecycleSdkPredecessor(current,historical,{projectKey})
  if(lifecycle){const previous=sdkContinuationPredecessor(receipt,lifecycle.previousBytes,historical,{projectKey,validatePeer});assert(previous,'complete prior SDK source closure required');return {...previous,lifecycle,currentSourceDigests:lifecycle.currentSourceDigests}}
  const frames=receipt.sdkSourceContinuations
@@ -713,6 +722,8 @@ const historicalBytes=(sha,path)=>execFileSync('git',['show',sha+':'+path],{cwd:
  * compare actual runtime fingerprint functions to this verified successor.
  */
 export function acceptedSdkSource(){
+ const context=currentSdkSourceContext()
+ if(context)return {scope:'CURRENT_SDK_SOURCE_INTEGRITY_ONLY',...context.metadata,currentSourceDigests:context.currentSourceDigests}
  const receipt=JSON.parse(currentBytes(receiptPath('SG2')))
  const continuation=sdkContinuationPredecessor(receipt,currentBytes,historicalBytes)
  if(continuation)return continuation.lifecycle?.currentRecord??continuation.record
@@ -723,6 +734,8 @@ export function acceptedSdkSource(){
 
 // Current test fingerprints remain separate from immutable accepted records.
 export function acceptedSdkCurrentSourceDigests(){
+ const context=currentSdkSourceContext()
+ if(context)return context.currentSourceDigests
  const root=new URL('../../../',import.meta.url)
  const current=p=>readCurrentSdkSourceFile(new URL(p,root))
  const historical=(sha,p)=>readCurrentSdkSourceGit('git',['show',sha+':'+p],{cwd:currentSdkSourceFileUrl(root),stdio:['ignore','pipe','pipe']})

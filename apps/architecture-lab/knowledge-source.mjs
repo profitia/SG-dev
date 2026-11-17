@@ -1,3 +1,4 @@
+import {sdkSourceContext,sdkSourcePathAbsent} from '../../packages/platform-contracts/test/sdk-source-context.mjs'
 // Closed source-compatibility review only; never imported by product runtime.
 import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
@@ -5,7 +6,13 @@ export const KNOWLEDGE_SOURCE_RECORD='apps/architecture-lab/knowledge-source.jso
 export const KNOWLEDGE_SOURCE_RECORD_SHA256='4e815bd8238285419a49a0f3a0718d7356a2ad9aafba214954004acd7f5d9ca9';
 const hash=bytes=>createHash('sha256').update(bytes).digest('hex');
 export function knowledgeSourcePredecessor(current,historical){
- let bytes;try{bytes=current(KNOWLEDGE_SOURCE_RECORD);}catch(error){if(error?.code==='ENOENT')return null;throw error;}
+ const context=sdkSourceContext(current,historical)
+ if(context){
+  const previous=knowledgeSourcePredecessor(context.baseline('knowledge'),historical)
+  assert(previous,'complete immutable Knowledge source required')
+  return {...previous,currentSourceDigests:context.currentSourceDigests,currentSdkContext:context}
+ }
+ let bytes;try{bytes=current(KNOWLEDGE_SOURCE_RECORD);}catch(error){if(sdkSourcePathAbsent(error,KNOWLEDGE_SOURCE_RECORD))return null;throw error;}
  assert.equal(hash(bytes),KNOWLEDGE_SOURCE_RECORD_SHA256,'exact reviewed Platform Knowledge source record');
  const a=JSON.parse(bytes);
  assert.equal(a.schemaVersion,'1.0.0');assert.equal(a.scope,'PLATFORM_KNOWLEDGE_SDK_SOURCE_ACCEPTANCE');

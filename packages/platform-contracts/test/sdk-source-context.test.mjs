@@ -60,3 +60,23 @@ test('an older SDK keeps its own unchanged verifier and never receives this curr
  assert.equal(f.run(),null);assert.equal(f.reads(),0)
  assert.equal(sdkSourceContext(()=>{throw Object.assign(Error('missing record'),{code:'ENOENT'})},()=>assert.fail()),null)
 })
+
+test('full immutable Git views preserve absence as ENOENT without falling back to another tree',()=>{
+ const missing='apps/example/absent-source.json'
+ for(const message of ["' does not exist in ","' exists on disk, but not in "]){
+  const f=fixture(),seen=[]
+  const value=sdkSourceContext(f.raw,(sha,p)=>{
+   if(p===missing){seen.push(sha);throw Object.assign(Error('missing Git path'),{status:128,stderr:"fatal: path '"+p+message+"'"+sha+"'"})}
+   return f.old(sha,p)
+  })
+  assert.throws(()=>value.baseline('first')(missing),error=>error.code==='ENOENT')
+  assert.deepEqual(seen,['a'.repeat(40)])
+ }
+})
+test('other Git failures remain errors and cannot masquerade as an absent predecessor path',()=>{
+ const f=fixture(),missing='apps/example/absent-source.json'
+ const failure=Object.assign(Error('bad immutable object'),{status:128,stderr:'fatal: bad object'})
+ const value=sdkSourceContext(f.raw,(sha,p)=>{if(p===missing)throw failure;return f.old(sha,p)})
+ assert.throws(()=>value.baseline('first')(missing),error=>error===failure)
+ assert.throws(()=>value.baseline('first')('../outside'))
+})

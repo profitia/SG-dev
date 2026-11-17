@@ -12,7 +12,7 @@ const hash=bytes=>createHash('sha256').update(bytes).digest('hex')
 const plain=v=>v!==null&&typeof v==='object'&&Object.getPrototypeOf(v)===Object.prototype
 const sourcePath=p=>typeof p==='string'&&p.length<=1024&&/^[A-Za-z0-9_.@/\[\]-]+$/.test(p)
  &&!p.startsWith('/')&&p.split('/').every(x=>x&&x!=='.'&&x!=='..'&&!['.git','node_modules','.pmos','.context','.env','.env.local'].includes(x))
-const absent=(error,p)=>error?.code==='ENOENT'||error?.status===128&&[
+export const sdkSourcePathAbsent=(error,p)=>error?.code==='ENOENT'||error?.status===128&&[
  "'"+p+"' does not exist in ","'"+p+"' exists on disk, but not in ",
 ].some(s=>String(error?.stderr??error?.message??'').includes(s))
 const freeze=v=>{if(v&&typeof v==='object'){for(const x of Object.values(v))freeze(x);Object.freeze(v)}return v}
@@ -30,7 +30,7 @@ function coveredPaths(value,result=new Set()){
 export function sdkSourceContext(current,historical,{recordPath=CURRENT_SDK_SOURCE_RECORD}={}){
  assert.equal(typeof current,'function');assert.equal(typeof historical,'function');assert(sourcePath(recordPath))
  let bytes
- try{bytes=Buffer.from(current(recordPath))}catch(error){if(absent(error,recordPath))return null;throw error}
+ try{bytes=Buffer.from(current(recordPath))}catch(error){if(sdkSourcePathAbsent(error,recordPath))return null;throw error}
  assert(bytes.length<=2*1024*1024,'bounded current SDK source metadata')
  const r=JSON.parse(bytes.toString('utf8'))
  assert(plain(r)&&r.schemaVersion==='1.0'&&r.scope==='CURRENT_SDK_SOURCE_INTEGRITY_ONLY','source integrity scope only')
@@ -54,7 +54,14 @@ export function sdkSourceContext(current,historical,{recordPath=CURRENT_SDK_SOUR
   return p=>{
    assert(sourcePath(p),'historical path stays inside the repository')
    const key=sha+':'+p
-   if(!cache.has(key))cache.set(key,Buffer.from(historical(sha,p)))
+   if(!cache.has(key)){
+    try{cache.set(key,Buffer.from(historical(sha,p)))}catch(error){
+     // A full Git view retains real absence; older filesystem-reader contracts
+     // receive ENOENT, while invalid objects or other Git failures stay errors.
+     if(sdkSourcePathAbsent(error,p))throw Object.assign(Error('Historical source path absent: '+p),{code:'ENOENT'})
+     throw error
+    }
+   }
    return Buffer.from(cache.get(key))
   }
  }

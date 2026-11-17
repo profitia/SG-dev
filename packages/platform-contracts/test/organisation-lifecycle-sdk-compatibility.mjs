@@ -1,3 +1,4 @@
+import {sdkSourceContext} from './sdk-source-context.mjs'
 /** Exact source acceptance only. Never used by product identity or E1. */
 import assert from 'node:assert/strict'
 import {createHash} from 'node:crypto'
@@ -93,6 +94,12 @@ function reconciledLifecycleSource(bytes,current,historical,projectKey){
 }
 export function organisationLifecycleSdkPredecessor(current,historical,{projectKey='SG2'}={}){
  assert(Object.hasOwn(projects,projectKey),'explicit lifecycle source owner')
+ const context=sdkSourceContext(current,historical)
+ if(context){
+  const previous=organisationLifecycleSdkPredecessor(context.baseline('registration'),historical,{projectKey})
+  assert(previous,'complete immutable organisation lifecycle source required')
+  return {...previous,currentSourceDigests:context.currentSourceDigests,currentSdkContext:context}
+ }
  let bytes
  try{bytes=Buffer.from(current(recordPath))}catch(error){if(missing(error))return null;throw error}
  if(hash(bytes)===reconciledRecordSha256)return reconciledLifecycleSource(bytes,current,historical,projectKey)
