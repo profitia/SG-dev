@@ -67,6 +67,16 @@ print('AQC_KEYLESS_TOOL_PROBES_PASS')
  return "/usr/bin/python3 - <<'AQC_KEYLESS_PY'\n"+program+'AQC_KEYLESS_PY'
 }
 
+export function qualificationProcessIdentity(status,comm,hostPid,namespacePid){
+ const pid=p=>typeof p==='string'&&/^[1-9][0-9]{0,9}$/.test(p)
+ if(typeof status!=='string'||comm!=='python3'||!pid(hostPid)||!pid(namespacePid))return false
+ const lines=status.split('\n'),names=lines.filter(l=>l.startsWith('NSpid:')),uids=lines.filter(l=>l.startsWith('Uid:'))
+ if(names.length!==1||uids.length!==1)return false
+ const ids=names[0].slice(6).trim().split(/\s+/),users=uids[0].slice(4).trim().split(/\s+/)
+ return ids.length>=1&&ids.length<=32&&ids.every(pid)&&ids[0]===hostPid&&ids.at(-1)===namespacePid
+  &&users.length===4&&users.every(v=>v==='19999')
+}
+
 export function qualificationCancellationCommand(){
  return "/usr/bin/python3 - <<'AQC_CANCEL_PY'\nimport os,pathlib,time\npathlib.Path('aqc-cancellation-probe').write_text(str(os.getpid()))\ntime.sleep(100)\nAQC_CANCEL_PY"
 }
@@ -143,22 +153,31 @@ export async function qualifyLinuxExecutor(){
      const outputs=request.input.filter(i=>['function_call_output','custom_tool_call_output'].includes(i.type))
      require(outputs.length>0,'TOOL_OUTPUT_MISSING')
      const result=JSON.stringify(outputs)
-     if(phase==='tool-loop')require(result.includes('AQC_KEYLESS_TOOL_PROBES_PASS'),'COMMAND_PROBES_FAILED')
+     if(phase==='tool-loop'){
+      if(!result.includes('AQC_KEYLESS_TOOL_PROBES_PASS'))console.error(JSON.stringify({event:'AQC_SYNTHETIC_TOOL_FAILURE',syntheticOnly:true,output:result.replaceAll(bearerToken,'[REDACTED]').slice(-6000)}))
+      require(result.includes('AQC_KEYLESS_TOOL_PROBES_PASS'),'COMMAND_PROBES_FAILED')
+     }
      else{
       require(scope,'NO_DESCENDANT_TO_CANCEL')
       const marker=scope.work+'/aqc-cancellation-probe'
       for(let i=0;i<200&&!fs.existsSync(marker);i++)await new Promise(resolve=>setTimeout(resolve,25))
-      require(fs.existsSync(marker),'NO_DESCENDANT_TO_CANCEL')
-      const pid=fs.readFileSync(marker,'utf8').trim()
-      require(/^[1-9][0-9]{0,9}$/.test(pid)&&fs.readFileSync(scope.cgroup+'/cgroup.procs','utf8').trim().split('\n').includes(pid)
-       &&fs.readFileSync('/proc/'+pid+'/comm','utf8').trim()==='python3','NO_DESCENDANT_TO_CANCEL')
+      require(fs.existsSync(marker),'CANCELLATION_MARKER_MISSING')
+      const namespacePid=fs.readFileSync(marker,'utf8').trim()
+      const candidates=fs.readFileSync(scope.cgroup+'/cgroup.procs','utf8').trim().split('\n').filter(hostPid=>{
+       if(!/^[1-9][0-9]{0,9}$/.test(hostPid))return false
+       try{return qualificationProcessIdentity(fs.readFileSync('/proc/'+hostPid+'/status','utf8'),
+        fs.readFileSync('/proc/'+hostPid+'/comm','utf8').trim(),hostPid,namespacePid)}catch{return false}
+      })
+      require(candidates.length===1,'CANCELLATION_DESCENDANT_UNVERIFIED')
+      // The host PID was resolved only inside this executor's native cgroup,
+      // using the kernel's namespace mapping and the fixed Python probe UID.
       abort.abort()
      }
      item={type:'message',role:'assistant',id:'msg_aqc_keyless',content:[{type:'output_text',text:'Synthetic qualification complete'}]}
     }
     return new Response(syntheticResponseEvents(calls,item),{headers:{'content-type':'text/event-stream'}})
     }catch(error){
-     const codes=new Set(['UNEXPECTED_UPSTREAM','BROKER_CONTRACT_FAILED','CODE_MODE_TOOL_UNAVAILABLE','UNEXPECTED_TOOL_RETRY','TOOL_OUTPUT_MISSING','COMMAND_PROBES_FAILED','NO_DESCENDANT_TO_CANCEL'])
+     const codes=new Set(['UNEXPECTED_UPSTREAM','BROKER_CONTRACT_FAILED','CODE_MODE_TOOL_UNAVAILABLE','UNEXPECTED_TOOL_RETRY','TOOL_OUTPUT_MISSING','COMMAND_PROBES_FAILED','NO_DESCENDANT_TO_CANCEL','CANCELLATION_MARKER_MISSING','CANCELLATION_DESCENDANT_UNVERIFIED'])
      console.error(JSON.stringify({event:'AQC_SYNTHETIC_UPSTREAM_REJECTED',phase,syntheticOnly:true,code:codes.has(error?.code)?error.code:'SYNTHETIC_UPSTREAM_FAILED',calls}))
      throw error
     }
