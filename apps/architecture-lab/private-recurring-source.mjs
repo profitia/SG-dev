@@ -1,5 +1,6 @@
 // Source acceptance only. Never imported by an application runtime.
 // The reviewed current graph is verified before any immutable predecessor is read.
+import {knowledgeSourcePredecessor} from './knowledge-source.mjs'
 import {recurringConsentTransportPredecessor} from '../../packages/platform-contracts/test/recurring-consent-transport-source.mjs'
 import {procurementInsightsShellPredecessor} from '../sg-runtime/tests/procurement-insights-shell-integrity.mjs'
 import {assistantEcrWeekPredecessor} from '../sg-runtime/tests/assistant-ecr-week-integrity.mjs'
@@ -17,6 +18,8 @@ const RECORD_SHA256='75877d5750e07d1c8172be0af76bc5933f2eeefc22cc39747a2621b9cab
 const hash=b=>createHash('sha256').update(b).digest('hex')
 const absent=error=>error?.code==='ENOENT'||error?.status===128&&["' does not exist in ","' exists on disk, but not in "].some(s=>String(error?.stderr??error?.message??'').includes("'"+RECURRING_SOURCE_RECORD+s))
 export function recurringSourcePredecessor(current,historical){
+ const knowledge=knowledgeSourcePredecessor(current,historical)
+ if(knowledge){const accepted=recurringSourcePredecessor(knowledge.previousBytes,historical);assert(accepted,'accepted source chain retained');return {...accepted,manifest:knowledge.manifest,predecessorManifest:accepted.manifest,knowledge}}
  const transport=recurringConsentTransportPredecessor(current,historical);if(transport){const accepted=recurringSourcePredecessor(transport.previousBytes,historical);return {...accepted,transport}}
  const shell=procurementInsightsShellPredecessor(current,historical);if(shell){const accepted=recurringSourcePredecessor(shell.previousBytes,historical);return {...accepted,completion:shell}}
  const calendar=marketCalendarSourcePredecessor(current,historical);if(calendar)return recurringSourcePredecessor(calendar.previousBytes,historical)
