@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import {findTrustedAdmission,trustedAdmissionById,assertSourceAdmission,assertSourceCheckout,assertWorkflowPackageCredential,classifyPackageFailure,credentialFree,sourceAdmissionDigest,assertSourceValidationProof} from './development-execution.mjs'
+import {trustedApplicationContinuity,findTrustedAdmission,trustedAdmissionById,assertSourceAdmission,assertSourceCheckout,assertWorkflowPackageCredential,classifyPackageFailure,credentialFree,sourceAdmissionDigest,assertSourceValidationProof} from './development-execution.mjs'
 // PROPOSAL ONLY: exact seven-file SG2 notification continuation; no generic UI admission.
 export const APPSHELL_NOTIFICATION_REVIEW=Object.freeze({
  "recordPath": "apps/sg-runtime/assistant-notifications-integration.json",
@@ -252,14 +252,16 @@ export function editorialTrustedPredecessor(current,historical){
  }}
 }
 
-export function assistantNotificationsTrustedPredecessor(current,historical){
- const editorial=editorialTrustedPredecessor(current,historical);if(editorial)return assistantNotificationsTrustedPredecessor(editorial.previousBytes,historical)
+export function assistantNotificationsTrustedPredecessor(current,historical,verifiedApplicationSource=null){
+ const editorial=editorialTrustedPredecessor(current,historical);if(editorial)return assistantNotificationsTrustedPredecessor(editorial.previousBytes,historical,verifiedApplicationSource)
  const cfg=APPSHELL_NOTIFICATION_REVIEW;let record
  try{record=current(cfg.recordPath)}catch(error){if(error?.code==='ENOENT')return null;throw error}
  // The trusted controller pins every physical byte before exposing history.
  for(const [p,e]of Object.entries(cfg.entries)){
   const b=current(p),blob=createHash('sha1').update('blob '+b.length+'\0').update(b).digest('hex')
-  if(notificationDigest(b)!==e.sha256||blob!==e.blob)fail('APPSHELL_NOTIFICATION_SOURCE_REJECTED')
+  if(notificationDigest(b)!==e.sha256||blob!==e.blob){
+    if(!/\.(?:tsx?|mjs)$/.test(p)||!verifiedApplicationSource||!Buffer.from(b).equals(verifiedApplicationSource(p)))fail('APPSHELL_NOTIFICATION_SOURCE_REJECTED')
+   }
  }
  const a=JSON.parse(record)
  if(a.previousSourceSha!==cfg.baseSha||a.taskId!=='SG2-CLOUD-APPSHELL-NOTIFICATIONS-20261113'||a.targetEnvironment!=='development'||a.scope!=='APPSHELL_NOTIFICATION_ICON')fail('APPSHELL_NOTIFICATION_IDENTITY_REJECTED')
@@ -294,7 +296,10 @@ export function notificationTrustedCurrent(root){
   for(const[p,h]of Object.entries(APPSHELL_NOTIFICATION_REVIEW.preservedReceipts))if(notificationDigest(current(p))!==(lifecycle.currentSourceDigests[p]??lifecycle.currentReceiptDigests[p]??h))fail('APPSHELL_NOTIFICATION_RECEIPT_REJECTED')
   return current
  }
- const view=assistantNotificationsTrustedPredecessor(current,historical)
+ const watched=Object.keys(APPSHELL_NOTIFICATION_REVIEW.entries).filter(p=>/\.(?:tsx?|mjs)$/.test(p))
+ let verified=null
+ try{current(APPSHELL_NOTIFICATION_REVIEW.recordPath);verified=trustedApplicationContinuity(root,watched)}catch(error){if(error?.code!=='ENOENT')throw error}
+ const view=assistantNotificationsTrustedPredecessor(current,historical,verified)
  return view?.previousBytes??current
 }
 
