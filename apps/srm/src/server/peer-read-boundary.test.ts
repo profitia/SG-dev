@@ -39,8 +39,23 @@ test('SRM peer identity is disabled until the exact deployment-owned version is 
 })
 test('SRM explicitly accepts the exact peer producer and preserves all preceding receipts and source fingerprints', async () => {
  const actualAppShellSource=(file:string)=>readFileSync(new URL('../../../../'+file,import.meta.url))
+ const currentSrmReceipt=JSON.parse(actualAppShellSource('apps/srm/operation-integration.json').toString())
+ const continuation=currentSrmReceipt.verclyKysResumeRecovery
+ // The unchanged host is verified against its exact SRM predecessor. Separately,
+ // the current SRM source digests below and KYS regression validate this delta.
+ const hostPredecessorSource=(file:string)=>{
+  if(!continuation)return actualAppShellSource(file)
+  if(file==='apps/srm/operation-integration.json'){
+   const old=execFileSync('git',['show',continuation.previousApplicationAuthority+':'+file])
+   const {verclyKysResumeRecovery,...preserved}=currentSrmReceipt;assert.deepEqual(preserved,JSON.parse(old.toString()))
+   return old
+  }
+  const relative=file.startsWith('apps/srm/')?file.slice('apps/srm/'.length):''
+  if(Object.hasOwn(continuation.applicationSourceDigests,relative)||Object.hasOwn(continuation.testSourceDigests,relative))return execFileSync('git',['show',continuation.previousApplicationAuthority+':'+file])
+  return actualAppShellSource(file)
+ }
  const hostReceipt=JSON.parse(actualAppShellSource('apps/sg-runtime/operation-integration.json').toString())
- const acceptedAppShellSource=hostReceipt.appShellFourCardCascade?assertAppShellFourCardCascade(hostReceipt,actualAppShellSource,(sha:string,file:string)=>execFileSync('git',['show',sha+':'+file])).previousBytes:actualAppShellSource
+ const acceptedAppShellSource=hostReceipt.appShellFourCardCascade?assertAppShellFourCardCascade(hostReceipt,hostPredecessorSource,(sha:string,file:string)=>execFileSync('git',['show',sha+':'+file])).previousBytes:actualAppShellSource
   const receipt = JSON.parse(readFileSync(new URL('../../operation-integration.json', import.meta.url), 'utf8'))
   const accepted = receipt.peerReadIdentityAdoption, hash = (bytes: Uint8Array) => createHash('sha256').update(bytes).digest('hex')
   assert.equal(accepted.producer.sourceSha, '9a226aef8dc36949b13999dbeba046dc1cf62a29')
@@ -154,10 +169,11 @@ test('SRM explicitly accepts the exact peer producer and preserves all preceding
   for(const[file,digest]of Object.entries(consumer.fullUiParityAdoption?.applicationSourceDigests??{}))currentDigests[posix.relative('apps/srm',posix.normalize('apps/sg-runtime/'+file))]=digest as string;
   Object.assign(currentDigests,receipt.pciSmartInputIntegrityContinuation?.applicationSourceDigests,receipt.pciSmartInputIntegrityContinuation?.consumerSourceDigests,receipt.freshPreparationRecovery?.applicationSourceDigests,receipt.xrayStyleIsolationConsumerAcceptance?.applicationSourceDigests,receipt.xrayStyleIsolationConsumerAcceptance?.consumerSourceDigests,receipt.mgbiResponseEnvelopeRecovery?.applicationSourceDigests,receipt.sentryHostIntegrityContinuation?.applicationSourceDigests,receipt.sentryHostIntegrityContinuation?.consumerSourceDigests);
   Object.assign(currentDigests,receipt.rootAtomicClaimAdoption?.applicationSourceDigests,receipt.marketHistoryHostIntegrityContinuation?.applicationSourceDigests);
-  const marketHostView=marketHistoryHostSourceView((file:string)=>readFileSync(new URL('../../../../'+file,import.meta.url)),(sha:string,file:string)=>execFileSync('git',['show',sha+':'+file]));Object.assign(currentDigests,marketHostView.consumerDigests);
+  const marketHostView=marketHistoryHostSourceView(hostPredecessorSource,(sha:string,file:string)=>execFileSync('git',['show',sha+':'+file]));Object.assign(currentDigests,marketHostView.consumerDigests);
   Object.assign(currentDigests,receipt.productAnalyticsRootClaimTestContinuation?.applicationSourceDigests,receipt.productAnalyticsHostIntegrityContinuation?.consumerSourceDigests);
   Object.assign(currentDigests,receipt.productAnalyticsMainHostCompatibility?.applicationSourceDigests,receipt.productAnalyticsMainHostCompatibility?.consumerSourceDigests);
   Object.assign(currentDigests,Object.fromEntries(Object.entries(receipt.xrayAppShellPresentation?.sourceDigests??{}).map(([file,digest])=>[posix.relative('apps/srm',file),digest])));
-  for(const [file,digest]of Object.entries(currentDigests))if(file!=='../sg-runtime/operation-integration.json')assert.equal(hash(acceptedAppShellSource(requirePath(file))),digest,file)
+  Object.assign(currentDigests,receipt.verclyKysResumeRecovery?.applicationSourceDigests,receipt.verclyKysResumeRecovery?.testSourceDigests);
+  for(const [file,digest]of Object.entries(currentDigests))if(file!=='../sg-runtime/operation-integration.json')assert.equal(hash((continuation?.applicationSourceDigests[file]||continuation?.testSourceDigests[file])?actualAppShellSource(requirePath(file)):acceptedAppShellSource(requirePath(file))),digest,file)
   assert.equal(accepted.defaultPeerReadEnabled, false); assert.equal(accepted.productDeploymentPerformed, false)
 })

@@ -7,21 +7,23 @@ ALTER TABLE srm.catalog_kys_reports
 ALTER TABLE srm.catalog_kys_reports ADD CONSTRAINT kys_resume_requires_order
  CHECK(resume_until IS NULL OR (provider_correlation_id IS NOT NULL AND lease_owner IS NOT NULL AND lease_until='infinity'::timestamptz));
 
-CREATE OR REPLACE FUNCTION srm.guard_sensitive_supplier_write(p_table text,p_op text,n jsonb,o jsonb) RETURNS boolean
-LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,pg_temp AS $fn$
-DECLARE d jsonb;u text;v jsonb;org uuid;req uuid;sid uuid;section text;row_snapshot srm.source_snapshots%ROWTYPE;BEGIN
- v:=CASE WHEN p_op='DELETE' THEN o ELSE n END;
- IF v IS NULL OR p_op IS NULL OR p_op NOT IN('INSERT','UPDATE','DELETE') THEN RETURN false;END IF;
- org:=(v->>'organization_id')::uuid;d:=srm.current_supplier_work(org);
- IF d IS NULL OR d->>'sensitiveWork' IS DISTINCT FROM 'true' OR d->>'accessMode'<>'WRITE' THEN RETURN false;END IF;
- IF d->>'section' IS NOT NULL AND v->>'section' IS NOT NULL AND d->>'section' IS DISTINCT FROM v->>'section' THEN RETURN false;END IF;
- IF p_table IN('lookup_requests','catalog_kys_reports') AND d->>'entityType' IS NOT NULL AND d->>'entityType' IS DISTINCT FROM v->>'entity_type' THEN RETURN false;END IF;
- u:=d->>'unitId';req:=(d->>'requestId')::uuid;
- IF p_op='UPDATE' AND (n->>'organization_id') IS DISTINCT FROM (o->>'organization_id') THEN RETURN false;END IF;
+-- Replace only the KYS cache branch of the exact accepted guard. Preserve the
+-- installed version's remaining JDG/private acquisition rules byte for byte.
+DO $kys_resume$
+DECLARE definition text; original text; start_at integer; end_at integer;
+BEGIN
+ SELECT prosrc,pg_get_functiondef(oid) INTO original,definition FROM pg_proc
+  WHERE oid='srm.guard_sensitive_supplier_write(text,text,jsonb,jsonb)'::regprocedure;
+ IF md5(original) NOT IN ('1e8bce5fad3e4e1d6feac5de4596fc3f','292e772752029a76bd0f12a6d6fcf4e6') THEN
+  RAISE EXCEPTION 'Accepted sensitive guard source required'; END IF;
+ start_at:=strpos(definition,' IF p_table=''catalog_kys_reports'' THEN');
+ end_at:=strpos(substr(definition,start_at),' IF p_op=''DELETE'' THEN')+start_at-1;
+ IF start_at<1 OR end_at<=start_at THEN RAISE EXCEPTION 'Sensitive cache branch not found'; END IF;
+ definition:=substr(definition,1,start_at-1)||$cache_branch$
  IF p_table='catalog_kys_reports' THEN
   IF p_op='DELETE' OR srm.sensitive_cache_scope(org,v->>'nip',v->>'entity_type',(v->>'retrieved_at')::timestamptz,(v->>'retention_until')::timestamptz,'WRITE') IS NOT TRUE THEN RETURN false;END IF;
   IF p_op='UPDATE' AND (n-ARRAY['report_json','report_sha256','retrieved_at','retention_until','source_organization_id','source_snapshot_id','lease_owner','lease_until','updated_at','provider_correlation_id','resume_until'])
-   IS DISTINCT FROM(o-ARRAY['report_json','report_sha256','retrieved_at','retention_until','source_organization_id','source_snapshot_id','lease_owner','lease_until','updated_at']) THEN RETURN false;END IF;
+   IS DISTINCT FROM(o-ARRAY['report_json','report_sha256','retrieved_at','retention_until','source_organization_id','source_snapshot_id','lease_owner','lease_until','updated_at','provider_correlation_id','resume_until']) THEN RETURN false;END IF;
   IF u='SRM_KYS_CACHE_CLAIM' THEN
    IF p_op='UPDATE' AND o->>'lease_until'='infinity' AND o->>'provider_correlation_id' ~ '^[A-Za-z0-9_-]{8,100}$'
     AND(o->>'resume_until' IS NULL OR(o->>'resume_until')::timestamptz<=clock_timestamp()) THEN
@@ -57,34 +59,6 @@ DECLARE d jsonb;u text;v jsonb;org uuid;req uuid;sid uuid;section text;row_snaps
    AND(n-ARRAY['report_json','report_sha256'])=(o-ARRAY['report_json','report_sha256']);END IF;
   RETURN false;
  END IF;
- IF p_op='DELETE' THEN
-  IF u<>'SRM_SENSITIVE_PURGE' THEN RETURN false;END IF;
-  IF p_table='source_snapshots' THEN RETURN v->>'data_class' IN('KYS_PERSONAL','JDG_REGISTRY') AND(v->>'retention_until')::timestamptz<=clock_timestamp();
-  ELSIF p_table='section_projections' THEN RETURN srm.sensitive_supplier_row(p_table,org,(v->>'id')::uuid,(v->>'snapshot_id')::uuid,(v->>'supplier_id')::uuid,NULL,v->>'section','DELETE');END IF;
-  RETURN false;
- ELSIF p_table='suppliers' THEN RETURN u='SRM_SENSITIVE_REGISTER' AND n->>'nip'=d->>'nip'
-  AND(p_op='INSERT' OR(n-'updated_at')=(o-'updated_at'));
- ELSIF p_table='lookup_requests' THEN RETURN p_op='INSERT' AND u='SRM_SENSITIVE_REGISTER' AND n->>'id'=req::text
-  AND n->>'identifier_type'='NIP' AND n->>'identifier'=d->>'nip' AND n->>'entity_type' IN('COMPANY','JDG')
-  AND EXISTS(SELECT 1 FROM srm.suppliers z WHERE z.organization_id=org AND z.id=(n->>'supplier_id')::uuid AND z.nip=d->>'nip');
- ELSIF p_table='provider_attempts' THEN RETURN srm.sensitive_supplier_row(p_table,org,(n->>'id')::uuid,(n->>'request_id')::uuid,NULL,NULL,n->>'section','WRITE')
-  AND(p_op='INSERT' OR(n-ARRAY['status','completed_at','correlation_id','provider_record_id','error_code'])=(o-ARRAY['status','completed_at','correlation_id','provider_record_id','error_code']));
- END IF;
- IF p_op<>'INSERT' OR p_table NOT IN('source_snapshots','section_projections') THEN RETURN false;END IF;
- section:=n->>'section';IF section NOT IN('kys','jdg') THEN RETURN false;END IF;
- IF p_table='source_snapshots' THEN
-  RETURN srm.sensitive_supplier_row(p_table,org,(n->>'id')::uuid,(n->>'attempt_id')::uuid,(n->>'supplier_id')::uuid,NULL,section,'WRITE')
-   AND n->>'data_class'=CASE section WHEN 'kys' THEN 'KYS_PERSONAL' ELSE 'JDG_REGISTRY' END
-   AND isfinite((n->>'retrieved_at')::timestamptz) AND isfinite((n->>'retention_until')::timestamptz)
-   AND(n->>'retention_until')::timestamptz>(n->>'retrieved_at')::timestamptz
-   AND(n->>'retention_until')::timestamptz<=(n->>'retrieved_at')::timestamptz+CASE section WHEN 'kys' THEN interval '7 days' ELSE interval '30 days' END;
- END IF;
- SELECT * INTO row_snapshot FROM srm.source_snapshots z WHERE z.organization_id=org AND z.id=(n->>'snapshot_id')::uuid AND z.supplier_id=(n->>'supplier_id')::uuid;
- IF NOT FOUND OR row_snapshot.section<>section OR jsonb_typeof(n->'private_envelope') IS DISTINCT FROM 'object' THEN RETURN false;END IF;
- RETURN srm.sensitive_supplier_row(p_table,org,(n->>'id')::uuid,(n->>'snapshot_id')::uuid,(n->>'supplier_id')::uuid,NULL,section,'WRITE')
-  AND n->'private_envelope'->'data'=n->'data_json'
-  AND n->'private_envelope'->'source'->>'provider'=CASE section WHEN 'kys' THEN 'VERCLY' ELSE 'CEIDG' END
-  AND(n->'private_envelope'->'source'->>'recordId') IS NOT DISTINCT FROM row_snapshot.source_record_id
-  AND(n->'private_envelope'->>'retrievedAt')::timestamptz=row_snapshot.retrieved_at;
-EXCEPTION WHEN invalid_text_representation OR datetime_field_overflow THEN RETURN false;
-END $fn$;
+$cache_branch$||substr(definition,end_at);
+ EXECUTE definition;
+END $kys_resume$;

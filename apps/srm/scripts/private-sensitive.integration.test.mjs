@@ -381,6 +381,7 @@ async function sensitiveNativeFixture(t,full=true,privateMode=false){
    for(const org of[A,B])for(const operation of['supplier.private.read','supplier.private.reveal','supplier.private.export'])await owner.query("INSERT INTO profitia_access.permission_grants(grant_id,application_id,organisation_id,user_id,effect,operation,feature) VALUES($1,'srm',$2,$3,'ALLOW',$4,'supplier_report')",[randomUUID(),org,U,operation])
    await owner.query('RESET ROLE;COMMIT')
   }catch(e){await owner.query('ROLLBACK');throw e}
+  await owner.query(own('035-kys-resume.sql'))
   await assert.rejects(owner.query(own('006-delegated-supplier-business.sql')),e=>e.code==='42501')
   await assert.rejects(owner.query(own('007-supplier-private-inspection.sql')),e=>e.code==='42501')
   await owner.query('INSERT INTO srm.organizations(id,slug) VALUES($1,$2)',[B,'synthetic-service-org-1'])
