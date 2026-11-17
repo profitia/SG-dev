@@ -64,7 +64,7 @@ test('binary format, maximum bytes, filenames, selected years and private disclo
 });
 
 test('signed cached supplier selection retains the original native request and refuses untrusted or mismatched identity',async()=>{
- const nip='5213390341',selection={krs:'0000000001',nip,name:'Synthetic Verified Supplier',locality:null,selectionRef:'KRS:0000000001:'+ 'a'.repeat(64)};
+ const nip='5213390341',selection={krs:'0000000001',nip,name:'Synthetic Verified Supplier',locality:null,selectionRef:'a'.repeat(64)};
  let calls=0,denied=false,wrong=false;
  const handler=withSrmPresentationPeer(async request=>{
   assert(hasVerifiedPeerOperation(request));assert.deepEqual(await request.json(),{nip});calls++;

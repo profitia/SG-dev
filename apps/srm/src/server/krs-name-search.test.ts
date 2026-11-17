@@ -1,8 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import type {CompanySnapshot,VerifiedIdentityV1} from '@profitia/krs-registry-contracts';
-import {OperationDenied} from '@profitia/platform-contracts/operation-context';
-import {createKrsNameSearch,refreshCatalogSelection,existingCatalogSelection,type AcceptedKrsSelection,type KrsNamePorts} from './krs-name-search';
+import {createKrsNameSearch,refreshCatalogSelection,type AcceptedKrsSelection,type KrsNamePorts} from './krs-name-search';
 import {mapMgbiFinancialRecords} from './mgbi-financial';
 import {reconcileKrsFinancial} from './krs-financial';
 import {createSupplierSearchGateway} from '../modules/xray/supplier-search-gateway';
@@ -161,41 +160,4 @@ test('unavailable or revoked continuity makes zero paid Financial calls and pres
  const f=await fixture();f.ports.registry.history=async()=>{throw Error('KRS_CONTINUITY_UNVERIFIED')};
  const r=await createKrsNameSearch(f.ports).lookup(f.request,f.selected.snapshot.evidenceRef,'fixture-history-denied-001');
  assert.equal(f.calls.acquire,0);assert.equal(f.calls.publish,0);assert.ok(r.result.card.general.data);assert.equal(r.result.card.financial.data,null);
-});
-
-test('cached supplier identity read returns the accepted selection with zero acquisition or verification',async()=>{
- const f=await fixture();let reads=0;
- f.ports.registry.readExistingByNip=async(request,value)=>{assert.equal(request,f.request);assert.equal(value,nip);reads++;return f.selected};
- const value=await createKrsNameSearch(f.ports).selection(f.request,nip);
- assert.deepEqual(value,{krs,nip,name:f.selected.identity.identity.officialName,locality:null,selectionRef:f.selected.identity.evidenceRef});
- assert.equal(reads,1);assert.deepEqual(f.calls,{acquire:0,publish:0,verify:0,search:0});
-});
-for(const mode of ['missing-port','revoked','different-nip','different-krs','stale','forged'] as const)
-test('cached supplier identity read refuses '+mode+' without refresh or financial fallback',async()=>{
- const f=await fixture();
- if(mode!=='missing-port')f.ports.registry.readExistingByNip=async()=>{if(mode==='revoked')throw new OperationDenied('ACCESS_BASIS_INVALID');return f.selected};
- if(mode==='different-nip')f.selected.identity.identity.nip='5850205607';
- if(mode==='different-krs')f.selected.identity.selectedKrs='0000000002';
- if(mode==='stale')f.ports={...f.ports,now:()=>time+300001};
- if(mode==='forged')f.selected.identity.evidenceDigest='b'.repeat(64);
- await assert.rejects(()=>createKrsNameSearch(f.ports).selection(f.request,nip));
- assert.deepEqual(f.calls,{acquire:0,publish:0,verify:0,search:0});
-});
-test('cached supplier identity read rejects malformed or invalid NIP before protected discovery',async()=>{
- const f=await fixture();let reads=0;f.ports.registry.readExistingByNip=async()=>{reads++;return f.selected};
- for(const value of ['',nip+'0','1234567890','PL'+nip])await assert.rejects(()=>createKrsNameSearch(f.ports).selection(f.request,value));
- assert.equal(reads,0);assert.deepEqual(f.calls,{acquire:0,publish:0,verify:0,search:0});
-});
-
-for(const mode of ['authorized','missing','ambiguous','revoked-catalog','revoked-selected','different-nip'] as const)
-test('stored catalog identity link rejects unsafe resolution: '+mode,async()=>{
- const f=await fixture();let catalogReads=0,selectedReads=0;
- const ports={authorize:async()=>{if(mode==='revoked-catalog')throw new OperationDenied('ACCESS_BASIS_INVALID')},
-  candidates:async(value:string)=>{assert.equal(value,nip);catalogReads++;return mode==='missing'?[]:mode==='ambiguous'?[krs,'0000000002']:[krs]},
-  selected:async(request:Request,value:string)=>{assert.equal(request,f.request);assert.equal(value,krs);selectedReads++;if(mode==='revoked-selected')throw new OperationDenied('ACCESS_BASIS_INVALID');return mode==='different-nip'?{...f.selected,identity:{...f.selected.identity,identity:{...f.selected.identity.identity,nip:'5850205607'}}}:f.selected}};
- if(mode==='authorized')assert.equal(await existingCatalogSelection(f.request,nip,ports),f.selected);
- else await assert.rejects(()=>existingCatalogSelection(f.request,nip,ports));
- assert.equal(catalogReads,mode==='revoked-catalog'?0:1);
- assert.equal(selectedReads,['authorized','revoked-selected','different-nip'].includes(mode)?1:0);
- assert.deepEqual(f.calls,{acquire:0,publish:0,verify:0,search:0});
 });

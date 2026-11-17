@@ -27,19 +27,6 @@ export async function refreshCatalogSelection(request:Request,krs:string,ports:{
     throw new OperationDenied('RESOURCE_SCOPE_MISMATCH');
   return ports.selected(request,krs);
 }
-/** Read existing catalog linkage only, bracketed by the existing protected
- * catalog and exact selected-company boundaries. Never an acquisition path. */
-export async function existingCatalogSelection(request:Request,nip:string,ports:{
- authorize(request:Request):Promise<unknown>;candidates(nip:string):Promise<string[]>;
- selected(request:Request,krs:string):Promise<AcceptedKrsSelection>;
-}):Promise<AcceptedKrsSelection>{
- request.signal.throwIfAborted();await ports.authorize(request);
- const candidates=await ports.candidates(nip);
- if(candidates.length!==1)throw new OperationDenied('RESOURCE_SCOPE_MISMATCH');
- const selected=await ports.selected(request,candidates[0]!);
- if(selected.identity.identity.nip!==nip)throw new OperationDenied('RESOURCE_SCOPE_MISMATCH');
- request.signal.throwIfAborted();return selected;
-}
 /** These ports are supplied by accepted native E1 hosts, never HTTP/body authority.
  * Reads require current identity/membership/product, protected projection and outcome audit.
  * verify performs a real admitted CURRENT retrieval/publication, not a timestamp rewrite. */
@@ -47,8 +34,6 @@ export type KrsNamePorts=Readonly<{
   registry:{search(request:Request,query:string):Promise<readonly SupplierCandidate[]>;
     history?(request:Request,identity:VerifiedIdentityV1):Promise<KrsContinuityResult|undefined>;
     verify(request:Request,krs:string):Promise<AcceptedKrsSelection>;
-    /** Existing protected identity only: no refresh, acquisition or fallback. */
-    readExistingByNip?(request:Request,nip:string):Promise<AcceptedKrsSelection>;
     readSelection(request:Request,evidenceRef:string):Promise<AcceptedKrsSelection>};
   financial:{acquire(request:Request,identity:VerifiedIdentityV1,key:string,general?:SectionEnvelope<GeneralCompanyData>):Promise<MgbiFinancialResult & {workPending?:true}>;
     publishEligible(request:Request,identity:VerifiedIdentityV1,result:MgbiFinancialResult):Promise<SupplierReportData|null>};
@@ -78,17 +63,6 @@ export function createKrsNameSearch(ports:KrsNamePorts){
       if(selected.identity.selectedKrs!==krs)throw Error('KRS_SELECTION_MISMATCH');
       await diagnosticRun('MAPPING',()=>krsGeneral(selected.snapshot,selected.identity,now()));
       return {krs,name:selected.identity.identity.officialName,nip:selected.identity.identity.nip,
-        locality:selected.snapshot.address?.city??null,selectionRef:selected.identity.evidenceRef};
-    },
-    async selection(request:Request,nip:string):Promise<SupplierSelection>{
-      const {nip:validNip}=await import('@profitia/krs-registry-contracts');
-      if(!validNip(nip))throw Error('INVALID_REQUEST');
-      if(!registry.readExistingByNip)throw new OperationDenied('POLICY_UNAVAILABLE');
-      const selected=await registry.readExistingByNip(request,nip);
-      if(selected.identity.identity.nip!==nip||selected.identity.selectedKrs!==selected.snapshot.canonicalKrs)
-        throw new OperationDenied('RESOURCE_SCOPE_MISMATCH');
-      await diagnosticRun('MAPPING',()=>krsGeneral(selected.snapshot,selected.identity,now()));
-      return {krs:selected.identity.selectedKrs,name:selected.identity.identity.officialName,nip,
         locality:selected.snapshot.address?.city??null,selectionRef:selected.identity.evidenceRef};
     },
     async lookup(request:Request,selectionRef:string,key:string){

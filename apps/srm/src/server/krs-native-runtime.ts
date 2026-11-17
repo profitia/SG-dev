@@ -1,5 +1,5 @@
 import {createKrsNipCompany} from './krs-nip-runtime'
-import {refreshCatalogSelection,existingCatalogSelection} from './krs-name-search'
+import {refreshCatalogSelection} from './krs-name-search'
 import {krsContinuity,type KrsContinuityResult} from './krs-continuity'
 import type {VerifiedIdentityV1} from '@profitia/krs-registry-contracts'
 import {krsGeneral} from './krs-general'
@@ -48,8 +48,7 @@ export async function createSrmKrsNativeRuntime(config:PrivateConfiguration,pool
  if(!target||!runtime.supplierApi||config.application.organisationId!==runtime.defaultOrganisationId)return deny()
  const [{createNativeRegistryAccess,createNativeRegistrySource},{Catalog}]=await Promise.all([
   import('@profitia/krs-registry-runtime/native'),import('@profitia/krs-registry-runtime/catalog')])
- const catalog=new Catalog(pools.catalog)
- const registry=createNativeRegistryAccess({catalog,organisationId:runtime.defaultOrganisationId,
+ const registry=createNativeRegistryAccess({catalog:new Catalog(pools.catalog),organisationId:runtime.defaultOrganisationId,
   host:{application:{...config.application,operations:['supplier.report.read']},binding:config.binding,module:config.module,
    ...(reportAdmissionConfiguration()?{reportAdmission:reportAdmissionConfiguration()}:{}),
    ...createSrmNativePgDriver(pools.pool,pools.auditPool),createAuthenticator:({resolveBinding})=>{
@@ -71,11 +70,6 @@ export async function createSrmKrsNativeRuntime(config:PrivateConfiguration,pool
  const nameRuntime=createKrsNameHttpRuntime({registry:{
   search:async(request,query)=>(await registry.search(request,query)).candidates.map(c=>({krs:c.krs,name:c.officialName??'',nip:c.nip,locality:c.locality})),
   verify:(request,krs)=>verifyCompany(request,krs),
-  readExistingByNip:(request,nip)=>existingCatalogSelection(request,nip,{
-   authorize:request=>registry.search(request,'__'),
-   candidates:nip=>catalog.byNip(nip),
-   selected:(request,krs)=>registry.selected(request,krs),
-  }),
   readSelection:(request,reference)=>measureSupplierStage('KRS_AUTHORITY_CHECK',()=>registry.accepted(request,reference)),
   history:(request,identity)=>historyFor(request,identity),
  },financial:{
