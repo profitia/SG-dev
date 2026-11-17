@@ -216,7 +216,7 @@ export async function runXrayKysLookup(organizationId: string, request: XrayLook
   await atLookupStage("retention_cleanup", () => Promise.all([purgeExpiredKysPersonal(organizationId), purgeExpiredSharedKys(organizationId)]), "kys");
   const lookup = await atLookupStage("lookup_registration", () => createLookup(organizationId, request.identifier, entityType));
   const result = await getOrFetchKys(organizationId, request.identifier.value, entityType,
-    () => atLookupStage("provider_retrieval", () => fetchVerclyKys({ identifier: request.identifier }, { signal }), "kys"),
+    (continuation) => atLookupStage("provider_retrieval", () => fetchVerclyKys({ identifier: request.identifier }, { signal, ...continuation }), "kys"),
     (section, errorCode, correlationId, method) =>
       persistSection(organizationId, lookup, "kys", section, errorCode, [], correlationId, undefined, method),
     { signal },
