@@ -14,6 +14,14 @@ function input(v,depth=0){
  if(Array.isArray(v)){require(v.length<=10000);v.forEach(x=>input(x,depth+1));return}
  if(v===null||typeof v!=='object')return
  require(object(v))
+ // CLI0.167.2 carries local tool declarations as durable history entries.
+ // Validate their complete finite shape separately from conversation content;
+ // hosted tool types and remote-reference fields are still rejected.
+ if(v.type==='additional_tools'){
+  require(Object.keys(v).every(k=>['type','id','role','tools'].includes(k))&&['system','developer'].includes(v.role)
+   &&(v.id===undefined||typeof v.id==='string'&&/^[A-Za-z0-9_-]{1,128}$/.test(v.id)),'REMOTE_INPUT_REJECTED')
+  localTools(v.tools);return
+ }
  if(v.type!==undefined)require(localInputTypes.has(v.type),'REMOTE_INPUT_REJECTED')
  for(const [key,value]of Object.entries(v)){require(!linkedKeys.has(key),'REMOTE_INPUT_REJECTED');input(value,depth+1)}
 }
@@ -86,7 +94,8 @@ export function createCostBroker({budget,permit,bearerToken,openaiKey,fetcher=fe
       const names=object(raw)?Object.keys(raw):[],type=t=>['function','custom','namespace','web_search','tool_search'].includes(t)?t:'OTHER'
       diagnostics(Object.freeze({event:'AQC_BROKER_REQUEST_REJECTED',code:error?.code??'REQUEST_REJECTED',
        fields:names.filter(n=>known.has(n)).sort(),unknownFieldCount:names.filter(n=>!known.has(n)).length,
-       toolTypes:Array.isArray(raw?.tools)?[...new Set(raw.tools.slice(0,64).map(t=>type(t?.type)))].sort():[]}))
+       toolTypes:Array.isArray(raw?.tools)?[...new Set(raw.tools.slice(0,64).map(t=>type(t?.type)))].sort():[],
+       inputTypes:Array.isArray(raw?.input)?[...new Set(raw.input.slice(0,10000).map(i=>localInputTypes.has(i?.type)||['additional_tools','configuration_update','compaction_trigger','context_compaction','compaction'].includes(i?.type)?i.type:'OTHER'))].sort():[]}))
      }catch{/* Diagnostic delivery never grants or retries a request. */}
      throw error
     }
