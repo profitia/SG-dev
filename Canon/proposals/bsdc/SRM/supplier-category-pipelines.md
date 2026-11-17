@@ -14,7 +14,9 @@
 | Repozytorium / authority | profitia/SG-dev / main |
 | Docelowy plik | Canon/proposals/bsdc/SRM/supplier-category-pipelines.md |
 | Status projektu | WORKING / NOT_ACCEPTED |
-| Status trwałości | GITHUB — robocza gałąź `sg2/bsdc-srm-supplier-category-pipelines-20261117`; niezależny odczyt wymagany po zapisie |
+| Gałąź robocza / przegląd dokumentacji | `sg2/bsdc-srm-supplier-category-pipelines-20261117` / [Draft PR #1123](https://github.com/profitia/SG-dev/pull/1123) |
+| Pierwsza odczytana rewizja Karty | Commit `64418eb0eec57a65aa517f6fcc0e2de6adc85ec7`, blob `65ba6e07c68c47bbe8cd8c9c103e976cd83aa143`; bieżąca rewizja wynika z historii GitHub |
+| Status trwałości | GITHUB / PERSISTED — pierwszy zapis potwierdzony niezależnym odczytem |
 | Bieżący obszar BSDC | A–C: potrzeba i reguły pierwszej wersji; B/D rozpoczęte |
 | Utworzono / zaktualizowano | 2026-11-17 / 2026-11-17, Europe/Warsaw |
 | Zweryfikowane authority main przed pierwszym zapisem | f005e19c454093fb749a466713b4f343027cb065 |
@@ -58,7 +60,7 @@ Współpraca, aktywności, dokumenty i umowy, oceny, X-Ray i Newsfeed nie mają 
 
 - **Pipeline kategorii:** użytkownik najpierw tworzy pipeline, następnie dodaje dostawców i przyporządkowuje ich do poszczególnych etapów. To jest przyjęte flow. Właściciel nie rozstrzygnął osobno technicznej synchronizacji kategorii na karcie. Rekomendacja do pokazania w finalnych widokach: bez wymagania osobnej wcześniejszej wizyty na karcie; powiązanie kategorii powinno być spójne i jawne przy dodawaniu do procesu.
 - **Duplikat po NIP-ie:** po wpisaniu NIP-u istniejącego dostawcy użytkownik otrzymuje dodatkowy ekran/stan: „Ta firma istnieje, ten dostawca istnieje w bazie” oraz link do istniejącej Karty Dostawcy. Nie powstaje nowy rekord. Wyszukiwanie i link działają wyłącznie w dozwolonym kontekście organizacji i nie ujawniają danych innych organizacji. Zasady dla firm bez NIP-u pozostają otwarte.
-- **Użytkownicy:** każdy zalogowany użytkownik SpendGuru ma dostęp do funkcjonalności i dodawania/usuwania dostawców, pipeline’ów i kategorii **w obrębie własnej organizacji**. Właściciel dodatkowo potwierdził: „cały czas utrzymujemy zasadę multi-tenant i izolacji organizacji w bazie danych”. Jest to obowiązująca reguła danych, zapytań, modyfikacji, powiązań, walidacji duplikatów i autoryzacji.
+- **Użytkownicy:** każdy zalogowany użytkownik SpendGuru ma dostęp do funkcjonalności i dodawania/usuwania dostawców, pipeline’ów i kategorii **w obrębie własnej organizacji**. Właściciel dodatkowo potwierdził: „cały czas utrzymujemy zasadę multi-tenant i izolacji organizacji w bazie danych”. Jest to obowiązująca reguła danych, zapytań, modyfikacji, powiązań, walidacji duplikatów i autoryzacji. Projekt musi uwzględnić zabezpieczenia na poziomie bazy oraz testy uniemożliwiające powiązanie dostawcy, procesu, etapu lub kategorii z cudzą organizacją; sama filtracja interfejsu nie jest wystarczającym dowodem izolacji.
 - **ADP i obszary dodatkowe:** statusy, aktualność i szczegóły zakresu zostaną doprecyzowane na konkretnych finalnych widokach. Jest to odroczenie decyzji, a nie domyślne włączenie całej makiety do v1.
 - **Środowisko i odbiór:** Development; odpowiedzialny użytkownik `tomasz@profitia.pl`.
 - **Przechowywanie dokumentacji:** Karta, decyzje i dowody mają być na GitHubie we właściwych miejscach. Wcześniejsza lokalna Karta i tymczasowa kopia repozytorium zostały usunięte z komputera użytkownika. Nie tworzyć kolejnych lokalnych dokumentów ani równoległej roadmapy.
@@ -320,7 +322,8 @@ Kontrole przeprowadzono w istniejącym Codespace SRM, na izolowanym aktualnym ch
 - Zakres zadania: `documentation`, `taskId=SRM-BSDC-SUPPLIER-CATEGORY-20261117`; wyłącznie ten jeden PDR. Nie uruchomiono etapu E1/E2 ani operacji produktowych.
 - Plan transportu dokumentacyjnego odczytano z aktualnego `development-execution.mjs`. Użyta gałąź ma wymagany prefiks `sg2/`; nazwa gałęzi nie zmienia profilu prowadzącego SRM ani ownership.
 - Centralny plik: `Canon/proposals/bsdc/SRM/supplier-category-pipelines.md` na gałęzi `sg2/bsdc-srm-supplier-category-pipelines-20261117`. Jest to roboczy dokument inicjatywy, nie aktywacja kanonu rozwiązania ani dowód przyjęcia do main.
-- Weryfikacja zapisu odbywa się niezależnym odczytem GitHub. Bieżący commit wynika z historii tego pliku; brak zaakceptowanego commitu projektu/roadmapy.
+- Pierwszy zapis potwierdzono niezależnym odczytem GitHub i porównaniem całej treści: commit `64418eb0eec57a65aa517f6fcc0e2de6adc85ec7`, blob `65ba6e07c68c47bbe8cd8c9c103e976cd83aa143`. Bieżący commit wynika z historii tego pliku; brak zaakceptowanego commitu projektu/roadmapy.
+- Utworzono [Draft PR #1123](https://github.com/profitia/SG-dev/pull/1123) zawierający jeden plik dokumentacyjny. PR pozostaje roboczy; nie deklaruje się przyjęcia do main ani spełnienia przyszłych bramek merge/release.
 - PMOS/PHR są systemami dowodowymi zadania; ich finalny zapis odwołuje się do tego taskId i rzeczywistej rewizji PDR. Dokumentacja i dowody publikowane są na GitHubie; lokalna Karta i tymczasowy checkout na komputerze użytkownika zostały usunięte.
 
 Poprzedni `PERSISTENCE_BLOCKED` dotyczył stanu przed uruchomieniem właściwego środowiska i zamknięciem jego bramek. Nie jest bieżącym statusem tej zapisanej Karty.
