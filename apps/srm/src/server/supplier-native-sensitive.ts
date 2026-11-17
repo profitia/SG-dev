@@ -67,10 +67,11 @@ export function createSrmNativeSensitiveLookup(options:Options){
    operationKey=operationPayloadDigest({version:SENSITIVE_NATIVE_COMPOSITION_VERSION,section,entityType,nip,sourceEffectId:admitted.sourceRequest.effectId})
    return lookup
   }
-  const sourceTransport=()=>{
+  const sourceTransport=(resumeCorrelationId?:string)=>{
    if(!lookup||!operationKey)return refuse()
    return transport??=createSrmProviderSourceTransport({provider:section==='jdg'?'CEIDG':'VERCLY',providerOrigin,nip:selected.command.nip,operationKey,
     application:fixed.application,binding:fixed.binding,external:fixed.external,syntheticOrigin:fixed.syntheticOrigin,pool,auditPool,now,
+    ...(resumeCorrelationId?{resumeCorrelationId}:{}),
     headers:section==='jdg'?{authorization:'Bearer '+apiKey,accept:'application/json'}:{authorization:'Bearer '+apiKey,'content-type':'application/json'}})
   }
   if(section==='jdg'){
@@ -98,19 +99,19 @@ export function createSrmNativeSensitiveLookup(options:Options){
    },
    fetchVerclyKys:async(request,args)=>{
     scope(selected.organisationId,request.identifier.value)
-    if(request.identifier.type!=='NIP'||!args||Object.keys(args).some(k=>k!=='signal'))return refuse()
-    if(args.signal?.aborted){await cache.releaseUnsent();throw new ExternalCallUnavailable('NOT_SENT')}
+    if(request.identifier.type!=='NIP'||!args||Object.keys(args).some(k=>!['signal','resumeCorrelationId','onOrderAccepted'].includes(k)))return refuse()
+    if(args.signal?.aborted){if(!args.resumeCorrelationId)await cache.releaseUnsent();throw new ExternalCallUnavailable('NOT_SENT')}
     // Commit the existing uncertainty fence BEFORE the first possible paid POST.
     // Native renewal preserves it until a successful cache save clears the lease.
-    await cache.arm();let invoked=false
+    if(!args.resumeCorrelationId)await cache.arm();let invoked=false
     try{
      if(args.signal?.aborted)throw new ExternalCallUnavailable('NOT_SENT')
-     const fetcher:typeof fetch=(...values)=>{invoked=true;return sourceTransport().fetcher(...values)}
-     const result=await guardOriginalProviderCall(fetcher,guarded=>fetchVerclyKys(request,{apiKey,baseUrl:providerOrigin,fetcher:guarded,signal:args.signal,now:clock}))
+     const fetcher:typeof fetch=(...values)=>{invoked=true;return sourceTransport(args.resumeCorrelationId).fetcher(...values)}
+     const result=await guardOriginalProviderCall(fetcher,guarded=>fetchVerclyKys(request,{apiKey,baseUrl:providerOrigin,fetcher:guarded,signal:args.signal,now:clock,resumeCorrelationId:args.resumeCorrelationId,onOrderAccepted:args.onOrderAccepted}))
      if(!invoked&&args.signal?.aborted)throw new ExternalCallUnavailable('NOT_SENT')
      return result
     }catch(error){
-     if(error instanceof ExternalCallUnavailable&&error.certainty==='NOT_SENT')await cache.releaseUnsent().catch(()=>{})
+     if(!args.resumeCorrelationId&&error instanceof ExternalCallUnavailable&&error.certainty==='NOT_SENT')await cache.releaseUnsent().catch(()=>{})
      throw error
     }
    },

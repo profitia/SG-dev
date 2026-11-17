@@ -364,7 +364,7 @@ async function runKysLookup(ports: Readonly<XrayKysPorts>, organizationId: strin
   await atLookupStage("retention_cleanup", () => Promise.all([ports.purgeExpiredKysPersonal(organizationId), ports.purgeExpiredSharedKys(organizationId)]), "kys");
   const lookup = await atLookupStage("lookup_registration", () => ports.createLookup(organizationId, request.identifier, entityType));
   const result = await ports.getOrFetchKys(organizationId, request.identifier.value, entityType,
-    () => atLookupStage("provider_retrieval", () => ports.fetchVerclyKys({ identifier: request.identifier }, { signal }), "kys"),
+    (continuation) => atLookupStage("provider_retrieval", () => ports.fetchVerclyKys({ identifier: request.identifier }, { signal, ...continuation }), "kys"),
     (section, errorCode, correlationId, method) =>
       ports.persistSection(organizationId, lookup, "kys", section, errorCode, [], correlationId, undefined, method),
     { signal },
