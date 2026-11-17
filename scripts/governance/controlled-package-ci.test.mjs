@@ -3416,7 +3416,8 @@ test('exact PR1102 source validation reaches the real candidate guard without cl
  const directory=fs.mkdtempSync(path.join(os.tmpdir(),'pi-manifest-proof-')),root=path.join(directory,'candidate');
  const files=Object.entries(r.entries).map(([filename,e])=>({filename,sha:e.sha,status:e.status}));
  const controlSha=execFileSync('git',['rev-parse','HEAD'],{cwd:authorityRoot,encoding:'utf8'}).trim();
- const state={sha:r.sourceSha,controlSha,runId:'12345',admission:{kind:'ARCHITECTURE',baseSha:controlSha,files}};
+ // Historical candidate diff stays pinned to its actual pre-merge authority; control identity remains current.
+ const state={sha:r.sourceSha,controlSha,runId:'12345',admission:{kind:'ARCHITECTURE',baseSha:'16fd69465162e4b37ca968c46cb901ba2b7f9f12',files}};
  try{
   execFileSync('git',['worktree','add','--detach',root,r.sourceSha],{cwd:authorityRoot,stdio:'pipe'});
   const metadata=c.assertManifestSuccessorSourceValidation(root,state,authorityRoot);
