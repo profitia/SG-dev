@@ -1,0 +1,297 @@
+{
+  "schemaVersion": "1.0",
+  "id": "CIC-E1-DEVELOPMENT-OWNER-PACKAGE-20261117",
+  "status": "OWNER_APPROVED_IMPLEMENTATION_IN_PROGRESS",
+  "project": "CIC Assistant Continuous Quality",
+  "stage": "E1",
+  "executionRoadmapRevision": 8,
+  "frozenSpecificationSha256": "ee6b3f36dd63ca3c3343de8b38fee431de49f67b895b17434b39ce332539b881",
+  "scope": "Development technical integration and infrastructure only",
+  "sourceCi": {
+    "decisionRequired": true,
+    "kind": "FINITE_LEGACY_STAGE1_EXCEPTION",
+    "reason": "Already-open PR1067 and its dependent host adoption require closed legacy source continuity and the measured CIC1.8 artifact. Current generic ordinary records exclude the two new receipts; this proposal explicitly requires owner acceptance rather than silently claiming ordinary-record authority.",
+    "reviewId": "AQC-SG2-STAGE1-LEGACY-CONTINUATION-20261117",
+    "branches": [
+      "sg2/cic-quality-stage1-runtime-20261112",
+      "sg2/cic-quality-host-integration-20261117"
+    ],
+    "pathsCount": 22,
+    "expiresAt": "2026-11-27T23:59:59.000Z",
+    "sourceValidationOnly": true,
+    "credentialMode": "AUTOMATIC_GITHUB_TOKEN_READ_ONLY",
+    "privatePackageNamesUnchanged": true,
+    "cicPublication": {
+      "repository": "profitia/conversational-intelligence-core",
+      "sourceSha": "c0053dcd55a3ed9f74584733627f6e9c130d4b49",
+      "workflowRun": 43282280865,
+      "artifactId": 13973416582,
+      "artifactZipSha256": "6302e2182bee731bbb771b2c55da0a2fdbe2d023e512492f7f478a9f966616cc",
+      "version": "1.8.0",
+      "integrity": "sha512-tuun88+cfOHFeCafBw1a8gnExgeDyWBgY7Zd9OPkKk2/Eef0YBP49vzDcXKVpFoCNJGh/CYbeR9B+M2ZXctNsg=="
+    },
+    "allExistingTestsRetained": true,
+    "exactSourceAndResultingMainCiRequired": true,
+    "compatibilityAdjustment": {
+      "originalReviewedPathCount": 21,
+      "additionalPath": "apps/sg-runtime/tests/procurement-insights-completion-integrity.mjs",
+      "kind": "TEST_PROVENANCE_CONTINUATION_ONLY",
+      "reason": "Preserve the existing PI completion receipt and its unchanged test when the approved CIC1.8 host package manifest is adopted",
+      "nativeRuntimeAccessPermissionsCostsChanged": false,
+      "guardChangeRestrictedToExactAdditiveBinding": true
+    }
+  },
+  "render": {
+    "decisionRequired": true,
+    "workspaceId": "tea-d7lps8rbc2fs73cn80dg",
+    "environmentId": "evm-dap98hm0tbcc738rro10",
+    "existingProductServiceId": "srv-dapa3tid0e5s73f8bc5g",
+    "newWorker": {
+      "name": "sg2-assistant-quality-development",
+      "type": "worker",
+      "runtime": "node",
+      "nodeVersion": "24.22.3",
+      "region": "frankfurt",
+      "plan": "0.5c-512mb",
+      "instances": 1,
+      "monthlyListUsd": 7,
+      "publicInbound": false,
+      "redis": false,
+      "disk": false,
+      "autoDeploy": false,
+      "blueprint": "packages/assistant-quality-control/render.yaml",
+      "initialMode": "TECHNICAL_READINESS",
+      "placement": "Create only the reviewed worker, then move that new resource into existing Development evm-dap98hm0tbcc738rro10; no adoption or reconfiguration of existing services"
+    },
+    "autoSync": false,
+    "existingResourcesAdopted": false,
+    "projectId": "prj-dap98ddg1s2s739ssatg",
+    "projectName": "SpendGuru 2.0 Actual",
+    "reviewedPlan": {
+      "blueprintId": "exs-dbu3ppou01pc73djagd0",
+      "syncId": "exe-dbu3pq0u01pc73djagqg",
+      "sourceSha": "cbe641d825b9a64aa09a61274189429a433ab90a",
+      "planningOutcome": "planned",
+      "actions": [
+        "CreateService: sg2-assistant-quality-development-yr67"
+      ],
+      "existingResourceChanges": 0,
+      "dashboardUrl": "https://dashboard.render.com/blueprint/exs-dbu3ppou01pc73djagd0/sync/exe-dbu3pq0u01pc73djagqg",
+      "applied": true
+    },
+    "actualWorker": {
+      "serviceId": "srv-dbu4ak0ae00c73eaabcg",
+      "name": "sg2-assistant-quality-development-yr67",
+      "environmentId": "evm-dap98hm0tbcc738rro10",
+      "deploymentId": "dep-dbu4akgae00c73eaacvg",
+      "sourceSha": "52a8489b4feea867bc6c91d7bd1eed5c63e0e9ff",
+      "state": "live",
+      "heartbeat": "MONITORING_READY",
+      "observedAt": "2026-11-17T12:16:37.004Z",
+      "paidRepairsEnabled": false,
+      "promotionEnabled": false,
+      "pilotStartedAt": null
+    }
+  },
+  "neon": {
+    "decisionRequired": true,
+    "newProject": false,
+    "newPersistentBranch": false,
+    "computeConfigurationChanged": false,
+    "targets": [
+      {
+        "projectId": "autumn-waterfall-65938876",
+        "branchId": "br-dry-hall-b294222f",
+        "databaseName": "neondb",
+        "ownerRole": "sg2_assistant_history_owner",
+        "roles": [
+          "sg2_assistant_quality_controller",
+          "sg2_assistant_quality_capture",
+          "sg2_assistant_quality_reader"
+        ]
+      },
+      {
+        "projectId": "lingering-thunder-05075810",
+        "branchId": "br-green-hall-b9s837k0",
+        "databaseName": "neondb",
+        "ownerRole": "profitia_limits_owner",
+        "roles": [
+          "profitia_limits_quality_controller",
+          "profitia_limits_quality_broker",
+          "profitia_limits_quality_capture"
+        ]
+      }
+    ],
+    "rolePolicy": {
+      "login": true,
+      "inherit": false,
+      "superuser": false,
+      "bypassRls": false,
+      "createRole": false,
+      "createDb": false,
+      "memberships": [],
+      "rawTableAccess": false,
+      "executeOnly": true
+    },
+    "migrations": [
+      {
+        "path": "packages/assistant-quality-control/migrations/001-control.sql",
+        "sha256": "441d69030e00dd180bf9768b9bd87f35723bf0545dd0323103c2cea3c80f72e8",
+        "initialEnabled": false
+      },
+      {
+        "path": "apps/package-limits/migrations/005-assistant-quality-usage.sql",
+        "sha256": "6bb638678f2ef7308d9a782e34c833493faa9d99c52213a92f983a39ba483766",
+        "initialEnabled": false
+      },
+      {
+        "path": "apps/sg-runtime/migrations/002-assistant-quality-evidence.sql",
+        "sha256": "15d7aaa57e5db10df0bcf5c2062791fdbddd978a7ffe78880e009283f4885cb9",
+        "initialEnabled": false,
+        "sourcePr": 1099
+      }
+    ],
+    "databaseRestore": false,
+    "dropExistingData": false
+  },
+  "qaPurpose": {
+    "decisionRequired": true,
+    "installationProposalComplete": true,
+    "centralProjectId": "spring-bread-28217539",
+    "centralBranchId": "br-sparkling-term-b99l107x",
+    "centralDatabase": "platform_private",
+    "accountSelector": "EXISTING_CONTROLLED_ASSISTANT_DEVELOPMENT_ACCOUNT_PRIVATE_REFERENCE",
+    "actor": "SERVICE",
+    "purpose": "ASSISTANT_QUALITY",
+    "technicalTests": "SYNTHETIC_AND_NEW_EXPLICITLY_CONTROLLED_ONLY",
+    "historicalRealConversations": false,
+    "regularQa": false,
+    "maximumRetentionHours": 168,
+    "earliestInputBoundsRetention": true,
+    "sourceRightsFresh": true,
+    "restoredDeletedDataMustRemainUnavailable": true,
+    "activationBeforeFreshCanonicalAuthority": false,
+    "sourceMigration": "packages/assistant-quality-control/migrations/002-quality-purpose.sql",
+    "schemaSha256": "1da8abda37255639bdaf0f1710184ef06e489487c66beafe4354b09c529d987d",
+    "ordinaryRuntimeRole": "sg2_assistant_quality_authority",
+    "nativeQualification": "64/64 AQC on disposable PostgreSQL15.19 plus final native purpose test PASS for exact enrolled-scope resolution, mismatch rejection and deletion after QA disabled/revoked",
+    "hostClientQualification": "controlled transport unit PASS; runtime capture/delete wiring remains in progress",
+    "inputEnrollment": "Only independently enrolled controlled model-input hashes and source scopes; native authority resolves the enrolled metadata before capture. No historical real-conversation permission."
+  },
+  "credentials": {
+    "decisionRequired": true,
+    "generateOrdinaryRolePasswordsAndSeparateHmacEncryptionKeys": true,
+    "storeOnlyInApprovedPrivateServiceSecretSlots": true,
+    "exposeValuesInGitOrLogs": false,
+    "executorReceivesDeploymentCredentials": false,
+    "controllerReceivesPublisherCredentials": false,
+    "publisherIndependent": true,
+    "ownerSigningKeyInExecutor": false,
+    "githubControllerRequiredScope": {
+      "repository": "profitia/SG-dev",
+      "contents": "read",
+      "actions": "write",
+      "metadata": "read",
+      "preferredCredential": "fine-grained token for profitia, only SG-dev, expires no later than 2026-11-27"
+    },
+    "githubPublisherRequiredScope": {
+      "repository": "profitia/SG-dev",
+      "contents": "write",
+      "pullRequests": "write",
+      "actions": "read",
+      "checks": "read",
+      "metadata": "read",
+      "preferredCredential": "job-scoped GITHUB_TOKEN in an independent trusted main-only job"
+    },
+    "renderPublisherTargetServiceId": "srv-dapa3tid0e5s73f8bc5g",
+    "runtimeCredentialProvisioningVerified": true,
+    "renderPublisherProvisioning": {
+      "observedAt": "2026-11-17",
+      "accountUi": "Classic API key form only; no scopes offered. Workspace settings expose no scoped key creation. No key created.",
+      "technicalDeployment": "Existing connected Render capability; no persistent publisher key needed for authorised engineering deployment",
+      "autonomousPromotion": "Remains disabled; no broad classic API key installed. A provider-scoped credential must be available and explicitly authorised before automated publishing."
+    }
+  },
+  "costs": {
+    "modelWindowStarted": false,
+    "modelBudgetUsd": 50,
+    "modelWindowDays": 14,
+    "modelIncidentCeilingUsd": 5,
+    "modelClockMayStartOnlyWhenE1T13Ready": true,
+    "newWorkerListUsdPerMonth": 7,
+    "existingNeonPlan": "scale_v3",
+    "neonComputeListUsdPerCuHour": 0.222,
+    "existingNeonBoundsCu": [
+      0.25,
+      8
+    ],
+    "additionalInfrastructureCeilingProposedUsd": 20,
+    "ceilingScope": "Additional Stage1 infrastructure through 2026-11-27; existing project baseline excluded; incremental usage estimate is not a provider-enforced hard cap.",
+    "pricingReferences": [
+      "https://render.com/pricing.md",
+      "https://neon.com/pricing"
+    ]
+  },
+  "release": {
+    "decisionRequired": false,
+    "sourceSelectionDelegationRequested": false,
+    "exactShaRequired": true,
+    "liveLkgMustBeCaptured": true,
+    "approvedResourceIds": [
+      "srv-dapa3tid0e5s73f8bc5g",
+      "NEW_WORKER_ID_AFTER_OWNER_APPROVED_CREATION"
+    ],
+    "noForeignRollback": true,
+    "noDatabaseRollback": true,
+    "allCurrentMainChangesRetained": true,
+    "releaseOnlyAfterFreshExactSourceAndResultingMainCi": true,
+    "existingBindingRenewal": "Only existing SG2 deployment_id/source_ref references, exact current version CAS; preserve rights/status/expiry and restore temporary owner SET capability",
+    "existingProductDeploymentAuthority": "Current explicit user request to achieve real Development technical readiness; record selected exact validated SHA before each release"
+  },
+  "requiredBeforeDecisionRequest": [],
+  "safeguards": {
+    "paidRepairsEnabled": false,
+    "promotionEnabled": false,
+    "pilotStarted": false,
+    "stage2Authorised": false,
+    "fullE1AcceptanceClaimed": false
+  },
+  "deploymentPerformed": true,
+  "approvalRecorded": true,
+  "localProtectedPolicyQualification": "336/336 PASS after preserving all current Calendar PI and Platform Knowledge changes on authority 16fd6946; the subsequent 52a8489b owner-admission data was incorporated unchanged",
+  "linuxPrerequisite": {
+    "decisionRequired": true,
+    "workflow": ".github/workflows/assistant-quality-repair.yml",
+    "change": "Install bubblewrap from the Ubuntu distribution and verify /usr/bin/bwrap before the pinned CLI starts",
+    "observedRun": "44073369609",
+    "observedSourceSha": "16fd69465162e4b37ca968c46cb901ba2b7f9f12",
+    "failure": "The official pinned CLI archive contains only the Codex executable; system bwrap was not installed",
+    "networkFilesystemPrivilegeAndCancellationGatesUnchanged": true
+  },
+  "ownerApproval": {
+    "date": "2026-11-17",
+    "hostConversationId": "01a1e7fb-2253-7f91-9335-270094d39784",
+    "response": "Zatwierdzam ca\u0142y opisany pakiet owner-only",
+    "proposalPr": 1104,
+    "reviewedPlanSyncId": "exe-dbu3pq0u01pc73djagqg",
+    "excluded": [
+      "Stage2",
+      "paid repairs activation",
+      "autonomous promotion",
+      "model pilot clock before E1-T13",
+      "broad classic Render API key"
+    ]
+  },
+  "installationProgress": {
+    "ordinaryRolesCreated": 7,
+    "ordinaryRoleLoginExpiresAt": "2026-11-27T23:59:59Z",
+    "migrationsInstalled": 4,
+    "installationsEnabled": false,
+    "purposeGrants": 0,
+    "enrolledInputs": 0,
+    "modelWindowStarted": false,
+    "temporaryOwnerCapabilitiesRestored": true,
+    "sourceSqlDigestsVerifiedBeforeApplication": true,
+    "secretsInGitOrLogs": false
+  }
+}
