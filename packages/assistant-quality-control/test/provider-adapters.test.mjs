@@ -257,6 +257,8 @@ test('Native canonical QA purpose: ordinary SERVICE, enrolled controlled inputs,
   fields.decisionId=await freshIntent()
   const capture=await command('sg2_private_development_runtime','CAPTURE',fields)
   assert.equal(capture.actorKind,'HUMAN');assert.equal(capture.actorId,user);assert.equal(capture.purpose.grantId,grant);assert.equal(capture.inputSha256,input)
+  const prepared=await command('sg2_private_development_runtime','CAPTURE',{...fields,sourceScopes:null});assert.deepEqual(prepared.sourceScopes,[])
+  await assert.rejects(command('sg2_private_development_runtime','CAPTURE',{...fields,sourceScopes:[{unreviewed:true}]}))
   const replay=await command('sg2_private_development_runtime','CAPTURE',fields)
   assert.deepEqual({...replay,validUntil:capture.validUntil},capture);assert(replay.validUntil>=capture.validUntil&&replay.validUntil<=Date.now()+30000)
   const demand={accountId:user,evidenceId:evidence,sourceScopes:null}
@@ -279,6 +281,8 @@ test('Native canonical QA purpose: ordinary SERVICE, enrolled controlled inputs,
   // binding remains tombstoned in this independent database and is unusable.
   await assert.rejects(command('sg2_assistant_quality_authority','READ',demand))
   await owner.query("UPDATE profitia_assistant_quality_access.purpose_grants SET enabled=false WHERE grant_id=$1",[grant]);await assert.rejects(command('sg2_assistant_quality_authority','READ',demand))
+  await owner.query('UPDATE profitia_assistant_quality_access.installation SET enabled=false')
+  assert.equal((await command('sg2_private_development_runtime','INVALIDATE',{accountId:user,decisionId:await freshIntent()})).invalidated,true,'user deletion remains possible after QA is disabled or revoked')
   const audit=(await owner.query("SELECT count(*)::int AS n FROM profitia_access.security_events WHERE event->>'actorKind'='SERVICE' AND event->>'reasonCode'='QUALITY_PURPOSE_AUTHORISED'")).rows[0].n
   assert(audit>0,'SERVICE purpose decisions use the canonical metadata audit writer')
  }finally{await fixture.close()}

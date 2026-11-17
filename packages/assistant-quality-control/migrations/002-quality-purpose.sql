@@ -139,7 +139,7 @@ BEGIN
  eid:=(command->>'evidenceId')::uuid;
  IF op='CAPTURE' THEN
   SELECT * INTO f FROM accepted_inputs WHERE grant_id=g.grant_id AND input_sha256=command->>'inputSha256' AND enabled FOR SHARE;
-  IF NOT FOUND OR f.source_scopes IS DISTINCT FROM command->'sourceScopes' THEN RAISE EXCEPTION 'QUALITY_PURPOSE_UNAVAILABLE';END IF;
+  IF NOT FOUND OR command->'sourceScopes'<>'null'::jsonb AND f.source_scopes IS DISTINCT FROM command->'sourceScopes' THEN RAISE EXCEPTION 'QUALITY_PURPOSE_UNAVAILABLE';END IF;
   occurred:=(command->>'occurredAt')::timestamptz;earliest:=(command->>'earliestInputAt')::timestamptz;
   IF NOT isfinite(occurred) OR NOT isfinite(earliest) OR occurred>clock_timestamp() OR earliest>occurred OR earliest<e.not_before
   OR EXISTS(SELECT FROM jsonb_array_elements(f.source_scopes) s WHERE s->>'organisationId'<>g.organisation_id::text

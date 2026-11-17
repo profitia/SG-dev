@@ -139,11 +139,11 @@
     "restoredDeletedDataMustRemainUnavailable": true,
     "activationBeforeFreshCanonicalAuthority": false,
     "sourceMigration": "packages/assistant-quality-control/migrations/002-quality-purpose.sql",
-    "schemaSha256": "d9e0af36ce5fb651d764b5aa07c947d302e99cd7329f0aa95c5c045dde2764ae",
+    "schemaSha256": "1da8abda37255639bdaf0f1710184ef06e489487c66beafe4354b09c529d987d",
     "ordinaryRuntimeRole": "sg2_assistant_quality_authority",
-    "nativeQualification": "64/64 AQC tests including actual disposable PostgreSQL15.19 purpose, source-input whitelist, fresh HUMAN audit fence, SERVICE role and deletion-epoch recovery",
+    "nativeQualification": "64/64 AQC on disposable PostgreSQL15.19 plus final native purpose test PASS for exact enrolled-scope resolution, mismatch rejection and deletion after QA disabled/revoked",
     "hostClientQualification": "controlled transport unit PASS; runtime capture/delete wiring remains in progress",
-    "inputEnrollment": "Only independently enrolled controlled model-input hashes; no historical real-conversation permission"
+    "inputEnrollment": "Only independently enrolled controlled model-input hashes and source scopes; native authority resolves the enrolled metadata before capture. No historical real-conversation permission."
   },
   "credentials": {
     "decisionRequired": true,
@@ -227,7 +227,7 @@
   },
   "deploymentPerformed": false,
   "approvalRecorded": false,
-  "localProtectedPolicyQualification": "334/334 PASS on prior authority; refreshed full suite running after preserving Calendar PI compatibility and current main 16fd6946",
+  "localProtectedPolicyQualification": "336/336 PASS after preserving all current Calendar PI and Platform Knowledge changes on authority 16fd6946; the subsequent 52a8489b owner-admission data was incorporated unchanged",
   "linuxPrerequisite": {
     "decisionRequired": true,
     "workflow": ".github/workflows/assistant-quality-repair.yml",
