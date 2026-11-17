@@ -15,6 +15,10 @@ test('Assistant host uses current native E1 account, membership, pilot and SQL l
  const admin=new pg.Client({connectionString:url});await admin.connect()
  let database,pool,created=false
  try{
+  // Both native assistant suites own the same disposable database name.
+  // Hold a separate lock through CREATE, test execution and DROP, including
+  // the ordinary node:test parallel-file runner used by required CI.
+  await admin.query("SELECT pg_advisory_lock(hashtextextended('assistant-native-disposable-database',0))")
   assert.equal((await admin.query("SELECT 1 FROM pg_database WHERE datname='platform_private'")).rowCount,0,'isolated fixture must not adopt an existing database')
   await admin.query("SELECT pg_advisory_lock(hashtextextended('stage2a-test-role-setup',0))")
   try{for(const r of [ownerRole,role])if(!(await admin.query('SELECT 1 FROM pg_roles WHERE rolname=$1',[r])).rowCount)
