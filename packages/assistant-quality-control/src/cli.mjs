@@ -63,8 +63,8 @@ export function createQualityReadiness({store,budget,sourceSha,serviceId,now=Dat
 }
 async function readinessMain(){
  const config=readQualityReadinessConfiguration(process.env)
- const [{default:pg},{createQualityStore},{createQualityBudget},{readFileSync},{createHash}]=await Promise.all([
-  import('pg'),import('./store.mjs'),import('./budget.mjs'),import('node:fs'),import('node:crypto')])
+ const [{default:pg},{createQualityStore},{createQualityBudget},{readFileSync},{createHash},{createQualityMonitoring}]=await Promise.all([
+  import('pg'),import('./store.mjs'),import('./budget.mjs'),import('node:fs'),import('node:crypto'),import('./monitoring.mjs')])
  const digest=url=>createHash('sha256').update(readFileSync(url)).digest('hex')
  const controlDigest=digest(new URL('../migrations/001-control.sql',import.meta.url))
  const limitsDigest=digest(new URL('../../../apps/package-limits/migrations/005-assistant-quality-usage.sql',import.meta.url))
@@ -78,10 +78,12 @@ async function readinessMain(){
  const store=createQualityStore({query:(q,v)=>pools[0].query(q,v),commandKey:config.controlKey,schemaDigest:controlDigest,serviceId:config.serviceId})
  const budget=createQualityBudget({query:(q,v)=>pools[1].query(q,v),commandKey:config.limitsKey,schemaDigest:limitsDigest,serviceId:config.serviceId,role:'profitia_limits_quality_controller'})
  const readiness=createQualityReadiness({store,budget,sourceSha:config.sourceSha,serviceId:config.serviceId})
+ const monitoring=createQualityMonitoring({env:process.env,warn:value=>console.warn(JSON.stringify(value)),onDelivery:value=>console.log(JSON.stringify({...value,sourceSha:config.sourceSha}))})
  try{
   while(!stop.signal.aborted){
    if(poolError)unavailable('READINESS_PROVIDER_UNAVAILABLE')
    const result=await readiness.check()
+   monitoring.heartbeat(result)
    console.log(JSON.stringify({event:'aqc.technical.heartbeat',...result,renderServiceId:config.renderServiceId}))
    // This is technical monitoring only. It is not the regular QA schedule.
    await new Promise(resolve=>{
@@ -90,9 +92,10 @@ async function readinessMain(){
     if(stop.signal.aborted)finish()
    })
   }
- }finally{
+ }catch(error){monitoring.failure(error?.code);throw error}finally{
   process.removeListener('SIGTERM',abort);process.removeListener('SIGINT',abort)
   await Promise.all(pools.map(p=>p.end()))
+  await monitoring.shutdown()
  }
 }
 if(process.argv[1]){

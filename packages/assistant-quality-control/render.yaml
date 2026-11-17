@@ -36,3 +36,9 @@ services:
         sync: false
       - key: AQC_LIMITS_COMMAND_KEY
         sync: false
+      - key: AQC_POSTHOG_PROJECT_TOKEN
+        sync: false
+      - key: AQC_POSTHOG_HOST
+        sync: false
+      - key: AQC_SENTRY_DSN
+        sync: false
