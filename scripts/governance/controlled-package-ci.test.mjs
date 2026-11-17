@@ -3259,6 +3259,34 @@ test('trusted policy content reader refuses mismatched or unavailable large Git 
  await assert.rejects(()=>readControlPolicyFile(name,sha,async endpoint=>{if(endpoint.includes('/git/blobs/'))throw Error('GITHUB_API_403');return {data:metadata}}),/GITHUB_API_403/)
 })
 
+
+test('Calendar PI compatibility preserves original58+7 and admits only the exact three-file SG2 repair',async()=>{
+ const c=await import('./controlled-package-ci.mjs'),r=c.ECR_COMPLETE_FUNCTIONAL_PI_REVIEW,cfg=c.ECR_COMPLETE_FUNCTIONAL_PI_COMPAT;
+ assert.equal(Object.keys(r.entries).length,61);assert.equal(Object.keys(cfg.entries).length,3);
+ for(const[p,e]of Object.entries(c.ECR_COMPLETE_FUNCTIONAL_REVIEW.entries))assert.deepEqual(r.entries[p],e);
+ assert(Object.values(cfg.entries).every(e=>e.projectKey==='SG2'&&e.owner==='SG Runtime'&&e.surfaceId==='SG2-BASE-001'));
+ const files=Object.entries(r.entries).map(([filename,e])=>({filename,sha:e.sha,status:e.status}));
+ const p={...pr(),number:r.prNumber,changed_files:files.length,base:{...pr().base,sha:r.baseSha},head:{...pr().head,sha:r.sourceSha,ref:r.branch}};
+ assertArchitectureFiles(p,files);assert.equal(selectCandidate(context(),p,r.sourceSha,{files}),r.sourceSha);
+ for(const changed of [files.slice(1),[...files,{filename:'apps/sg-runtime/unapproved.ts',sha:'a'.repeat(40),status:'added'}],files.map((f,i)=>i?f:{...f,sha:'f'.repeat(40)}),files.map((f,i)=>i?f:{...f,previous_filename:'old.ts'})])rejection(()=>selectCandidate(context(),{...p,changed_files:changed.length},r.sourceSha,{files:changed}));
+ for(const f of files){c.assertCompleteFunctionalReviewEntry(f,r.entries[f.filename].mode+' blob '+f.sha+'\t'+f.filename+'\0',r);rejection(()=>c.assertCompleteFunctionalReviewEntry(f,'100755 blob '+f.sha+'\t'+f.filename+'\0',r));}
+ for(const change of [{number:1096},{head:{...p.head,ref:'sg2/foreign'}},{head:{...p.head,sha:'f'.repeat(40)}}])rejection(()=>selectCandidate(context(),{...p,...change},r.sourceSha,{files}));
+});
+test('Calendar PI repair authenticates physical producer, bridge and immutable history before any old view',async()=>{
+ const c=await import('./controlled-package-ci.mjs'),cfg=c.ECR_COMPLETE_FUNCTIONAL_PI_COMPAT;
+ const historical=(sha,p)=>isolationGitExec('git',['show',sha+':'+p],{cwd:authorityRoot,stdio:['ignore','pipe','pipe']});
+ const current=p=>historical(cfg.sourceSha,p),previous=c.completeFunctionalPiTrustedCurrent(current,historical);
+ assert.deepEqual(previous(cfg.hookPath),historical(cfg.baseSha,cfg.hookPath));
+ for(const[p,e]of Object.entries(cfg.entries)){
+  rejection(()=>c.completeFunctionalPiTrustedCurrent(f=>f===p?Buffer.concat([current(f),Buffer.from('UNACCEPTED')]):current(f),historical));
+  if(e.status==='added')assert.throws(()=>previous(p),{code:'ENOENT'});
+ }
+ for(const p of Object.keys(c.ECR_COMPLETE_FUNCTIONAL_REVIEW.entries))rejection(()=>c.completeFunctionalPiTrustedCurrent(f=>f===p?Buffer.concat([current(f),Buffer.from('UNACCEPTED')]):current(f),historical));
+ rejection(()=>c.completeFunctionalPiTrustedCurrent(current,(sha,p)=>p===cfg.hookPath?Buffer.concat([historical(sha,p),Buffer.from('UNACCEPTED')]):historical(sha,p)));
+ rejection(()=>c.completeFunctionalPiTrustedCurrent(p=>{if(p===c.ECR_COMPLETE_FUNCTIONAL_PROVENANCE.producerRecord)throw Object.assign(Error('absent'),{code:'ENOENT'});return current(p)},historical));
+ assert.throws(()=>c.completeFunctionalPiTrustedCurrent(()=>{throw Object.assign(Error('denied'),{code:'EACCES'})},historical),{code:'EACCES'});
+});
+
 // A real accepted-owner composition proves that the independent public path
 // derives the same exact contract as the trusted producer's filesystem guard.
 test('public proof uses the exact current knowledge record and matches the real controlled source contract',()=>{
