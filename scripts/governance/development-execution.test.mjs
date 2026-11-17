@@ -483,3 +483,67 @@ test('reviewed local metadata never permits a changed private artifact, registry
   finally{f.close()}
  }
 })
+
+function currentSdkProofFixture(){
+ const dir=fs.mkdtempSync(path.join(os.tmpdir(),'dev-current-sdk-proof-')),candidate=path.join(dir,'candidate')
+ const source=path.resolve(root,'../architecture-joint-sdk')
+ const metadataPath='apps/architecture-lab/current-sdk-source.json'
+ const bytes=fs.readFileSync(path.join(root,metadataPath)),record=JSON.parse(bytes)
+ execFileSync('git',['clone','--quiet','--shared','--no-checkout',source,candidate],{stdio:['ignore','pipe','pipe']})
+ for(const name of Object.keys(record.inputs)){
+  const from=path.join(source,name),to=path.join(candidate,name)
+  assert(fs.lstatSync(from).isFile()&&!fs.lstatSync(from).isSymbolicLink())
+  fs.mkdirSync(path.dirname(to),{recursive:true});fs.copyFileSync(from,to)
+ }
+ const metadataFile=path.join(candidate,metadataPath);fs.mkdirSync(path.dirname(metadataFile),{recursive:true});fs.writeFileSync(metadataFile,bytes)
+ const receiptBytes=fs.readFileSync(path.join(candidate,'apps/sg-runtime/operation-integration.json'))
+ const sdkManifestBytes=fs.readFileSync(path.join(candidate,'packages/platform-contracts/package.json'))
+ return{dir,candidate,bytes,record,metadataFile,receiptBytes,sdkManifestBytes,receipt:JSON.parse(receiptBytes),
+  close:()=>fs.rmSync(dir,{recursive:true,force:true})}
+}
+
+test('current SDK proof uses trusted physical metadata and keeps default Root16 in controlled and public contracts',async()=>{
+ const policy=await import('./controlled-package-ci.mjs'),f=currentSdkProofFixture()
+ try{
+  const context=policy.currentSdkProofContext(f.candidate,root)
+  assert.equal(context.record.platformVersion,'1.38.0')
+  const expected=policy.currentProofContract(f.candidate,f.receipt,root)
+  assert.equal(expected.implementation,'1.0.0-candidate.16')
+  assert.equal(expected.sourceDigest,f.record.metadata.sdkDigests.operationSourceDigest)
+  assert.deepEqual(policy.publicProofContract(f.receipt,{receiptBytes:f.receiptBytes,sdkManifestBytes:f.sdkManifestBytes,
+   currentSdkRecord:f.bytes,authorityRoot:root}),expected)
+  for(const flag of ['runtimeActivated','permissionsChanged','providerCallsPerformed','deploymentPerformed'])assert.equal(context.record[flag],false)
+ }finally{f.close()}
+})
+
+test('public proof cannot replace trusted metadata, change the exact SDK manifest or activate another Root',async()=>{
+ const policy=await import('./controlled-package-ci.mjs'),f=currentSdkProofFixture()
+ try{
+  const args={receiptBytes:f.receiptBytes,sdkManifestBytes:f.sdkManifestBytes,currentSdkRecord:f.bytes,authorityRoot:root}
+  for(const delta of [
+   {currentSdkRecord:null},{currentSdkRecord:Buffer.concat([f.bytes,Buffer.from(' ')])},
+   {sdkManifestBytes:Buffer.concat([f.sdkManifestBytes,Buffer.from(' ')])}
+  ])assert.throws(()=>policy.publicProofContract(f.receipt,{...args,...delta}),/CURRENT_SDK_SOURCE_METADATA_REJECTED/)
+  for(const edit of [
+   r=>r.runtimeActivated=true,r=>r.permissionsChanged=true,
+   r=>r.scope='RUNTIME_ACTIVATION',r=>r.metadata.defaultRootImplementation='1.0.0-candidate.24',
+   r=>r.metadata.sdkDigests.operationSourceDigest='unverified'
+  ]){
+   const record=structuredClone(f.record);edit(record)
+   assert.throws(()=>policy.currentSdkMetadataProofContract(f.receipt,record))
+  }
+ }finally{f.close()}
+})
+
+test('current SDK proof rejects changed current source and missing or altered candidate metadata',async()=>{
+ const policy=await import('./controlled-package-ci.mjs'),f=currentSdkProofFixture()
+ try{
+  const file=path.join(f.candidate,'packages/platform-contracts/src/organisation-context.mjs'),before=fs.readFileSync(file)
+  fs.appendFileSync(file,'\n// altered')
+  assert.throws(()=>policy.currentProofContract(f.candidate,f.receipt,root),/current SDK source/)
+  fs.writeFileSync(file,before);fs.appendFileSync(f.metadataFile,' ')
+  assert.throws(()=>policy.currentSdkProofContext(f.candidate,root),/CURRENT_SDK_SOURCE_METADATA_REJECTED/)
+  fs.unlinkSync(f.metadataFile)
+  assert.throws(()=>policy.currentSdkProofContext(f.candidate,root),/CURRENT_SDK_SOURCE_METADATA_REJECTED/)
+ }finally{f.close()}
+})

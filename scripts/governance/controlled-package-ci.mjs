@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import {sdkSourceContext,CURRENT_SDK_SOURCE_RECORD} from '../../packages/platform-contracts/test/sdk-source-context.mjs'
 import {findTrustedAdmission,trustedAdmissionById,assertSourceAdmission,assertSourceCheckout,assertWorkflowPackageCredential,classifyPackageFailure,credentialFree,sourceAdmissionDigest,assertSourceValidationProof} from './development-execution.mjs'
 // PROPOSAL ONLY: exact seven-file SG2 notification continuation; no generic UI admission.
 export const APPSHELL_NOTIFICATION_REVIEW=Object.freeze({
@@ -6405,15 +6406,52 @@ export function registrationLifecycleProofContract(receipt,recordBytes,receiptBy
 }
 // Match the independent public verifier to the already authenticated optional
 // knowledge source. The exact immutable record is data, never candidate code.
-export function publicProofContract(receipt,{receiptBytes,recurringRecord=null,lifecycleRecord=null,knowledgeRecord=null}={}){
+// Current source metadata is read from trusted-control, never admitted by
+// candidate data or an environment variable. Older SDKs keep their old verifier.
+export function currentSdkProofContext(root,authorityRoot=controlRoot()){
+ const manifest=path.join(root,'packages/platform-contracts/package.json')
+ const recordFile=path.join(authorityRoot,CURRENT_SDK_SOURCE_RECORD)
+ if(!fs.existsSync(manifest)||!fs.existsSync(recordFile))return null
+ const trustedBytes=fs.readFileSync(recordFile),record=JSON.parse(trustedBytes.toString('utf8'))
+ if(readJson(manifest).version!==record.platformVersion)return null
+ const candidateRecord=path.join(root,CURRENT_SDK_SOURCE_RECORD)
+ if(!fs.existsSync(candidateRecord)||!fs.readFileSync(candidateRecord).equals(trustedBytes))fail('CURRENT_SDK_SOURCE_METADATA_REJECTED')
+ return sdkSourceContext(p=>p===CURRENT_SDK_SOURCE_RECORD?trustedBytes:fs.readFileSync(path.join(root,p)),
+  (sha,p)=>execFileSync('git',['show',sha+':'+p],{cwd:root,maxBuffer:16*1024*1024,stdio:['ignore','pipe','pipe']}))
+}
+export function currentSdkMetadataProofContract(receipt,record){
  assertReceipt(receipt)
+ if(record?.schemaVersion!=='1.0'||record.scope!=='CURRENT_SDK_SOURCE_INTEGRITY_ONLY'
+  ||!record.metadata||record.platformVersion!==record.metadata.platformVersion
+  ||['runtimeActivated','permissionsChanged','providerCallsPerformed','deploymentPerformed'].some(flag=>record[flag]!==false)
+  ||!/^[a-f0-9]{64}$/.test(record.metadata.sdkDigests?.operationSourceDigest??''))fail('CURRENT_SDK_SOURCE_METADATA_REJECTED')
+ const contract=adoptedOperationContract(receipt)
+ if(contract.implementation!=='1.0.0-candidate.16'||record.metadata.defaultRootImplementation!==contract.implementation)fail('CURRENT_SDK_SOURCE_CONTRACT_REJECTED')
+ return {...contract,sourceDigest:record.metadata.sdkDigests.operationSourceDigest}
+}
+function currentSdkPublicProofContract(receipt,{sdkManifestBytes,currentSdkRecord,authorityRoot}){
+ const trustedFile=path.join(authorityRoot,CURRENT_SDK_SOURCE_RECORD)
+ if(sdkManifestBytes===null||!fs.existsSync(trustedFile))return null
+ const trusted=fs.readFileSync(trustedFile),record=JSON.parse(trusted.toString('utf8'))
+ const manifest=JSON.parse(Buffer.from(sdkManifestBytes).toString('utf8'))
+ if(manifest.version!==record.platformVersion)return null
+ if(currentSdkRecord===null||!Buffer.from(currentSdkRecord).equals(trusted)
+  ||registrationHash(sdkManifestBytes)!==record.inputs?.['packages/platform-contracts/package.json'])fail('CURRENT_SDK_SOURCE_METADATA_REJECTED')
+ return currentSdkMetadataProofContract(receipt,record)
+}
+export function publicProofContract(receipt,{receiptBytes,recurringRecord=null,lifecycleRecord=null,knowledgeRecord=null,sdkManifestBytes=null,currentSdkRecord=null,authorityRoot=controlRoot()}={}){
+ assertReceipt(receipt)
+ const current=currentSdkPublicProofContract(receipt,{sdkManifestBytes,currentSdkRecord,authorityRoot})
+ if(current)return current
  const contract=registrationLifecycleProofContract(receipt,lifecycleRecord,receiptBytes)??privateRecurringProofContract(receipt,recurringRecord,receiptBytes)
  if(knowledgeRecord===null)return contract
  const cfg=PLATFORM_KNOWLEDGE_STAGE2_PROVENANCE
  if(recurringHash(knowledgeRecord)!==cfg.recordSha256||contract.implementation!=='1.0.0-candidate.16')fail('KNOWLEDGE_STAGE2_RECORD_REJECTED')
  return {...contract,sourceDigest:cfg.operationSourceDigest}
 }
-export function currentProofContract(root,receipt){
+export function currentProofContract(root,receipt,authorityRoot=controlRoot()){
+ const current=currentSdkProofContext(root,authorityRoot)
+ if(current)return currentSdkMetadataProofContract(receipt??readJson(path.join(root,'apps/sg-runtime/operation-integration.json')),current.record)
  const knowledge=knowledgeStage2Filesystem(root),a=assertPrivateRecurringProvenance(root)
  if(receipt?.sdkSourceContinuations!==undefined){
   const record=assertRegistrationSdkProvenance(root)
@@ -7304,7 +7342,8 @@ export const CONTROL_POLICY_FILES = Object.freeze([WORKFLOW, 'scripts/governance
   'scripts/governance/development-execution.mjs',
   'Canon/registries/development-execution-profiles-v1.json', 'Canon/registries/architecture-environment-topology-v1.json',
   'scripts/governance/project-profile.mjs', 'scripts/governance/routing-engine.mjs', 'scripts/architecture-classify.mjs',
-  'Canon/registries/profitia-projects-v1.json', 'Canon/registries/current-architecture-baseline-v1.json'])
+  'Canon/registries/profitia-projects-v1.json', 'Canon/registries/current-architecture-baseline-v1.json',
+  'packages/platform-contracts/test/sdk-source-context.mjs', CURRENT_SDK_SOURCE_RECORD])
 const policyFiles = CONTROL_POLICY_FILES
 export function controlPolicyDigest(root = controlRoot()) {
   const digest = createHash('sha256')
@@ -7658,7 +7697,9 @@ async function verify() {
       assertReceipt(sourceReceipt)
       let lifecycleRecord=null;try{lifecycleRecord=Buffer.from((await api(`repos/${REPOSITORY}/contents/${REGISTRATION_LIFECYCLE_PROVENANCE.recordPath}?ref=${sha}`)).data.content,'base64')}catch(error){if(error.message!=='GITHUB_API_404')throw error}
       let knowledgeRecord=null;try{knowledgeRecord=Buffer.from((await api(`repos/${REPOSITORY}/contents/${PLATFORM_KNOWLEDGE_STAGE2_PROVENANCE.recordPath}?ref=${sha}`)).data.content,'base64')}catch(error){if(error.message!=='GITHUB_API_404')throw error}
-      if (JSON.stringify(p.contract) !== JSON.stringify(publicProofContract(sourceReceipt,{receiptBytes,recurringRecord,lifecycleRecord,knowledgeRecord}))) fail('CONTRACT_PROVENANCE_MISMATCH')
+      const sdkManifestBytes=Buffer.from((await api(`repos/${REPOSITORY}/contents/packages/platform-contracts/package.json?ref=${sha}`)).data.content,'base64')
+      let currentSdkRecord=null;try{currentSdkRecord=Buffer.from((await api(`repos/${REPOSITORY}/contents/${CURRENT_SDK_SOURCE_RECORD}?ref=${sha}`)).data.content,'base64')}catch(error){if(error.message!=='GITHUB_API_404')throw error}
+      if (JSON.stringify(p.contract) !== JSON.stringify(publicProofContract(sourceReceipt,{receiptBytes,recurringRecord,lifecycleRecord,knowledgeRecord,sdkManifestBytes,currentSdkRecord}))) fail('CONTRACT_PROVENANCE_MISMATCH')
       console.log(`Verified actual SG2 tests/build for ${sha}: https://github.com/${REPOSITORY}/actions/runs/${run.id}`)
       return
     } finally {fs.rmSync(directory, {recursive: true, force: true})}
