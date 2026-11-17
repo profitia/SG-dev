@@ -32,9 +32,17 @@ async function isolatedPostgres(){
   check(path.join(bin,'pg_ctl'),['-D',data,'-l',path.join(root,'server.log'),'-o',`-h 127.0.0.1 -p ${port} -k ${sock}`,'-w','start']);started=true
   const url=new URL(`postgresql://aqc_fixture_owner@127.0.0.1:${port}/postgres`)
   const admin=new pg.Pool({connectionString:url.toString()});await admin.query('CREATE DATABASE neondb');await admin.end();url.pathname='/neondb'
-  const pools=[]
-  const pool=role=>{const u=new URL(url);u.username=role;const p=new pg.Pool({connectionString:u.toString(),max:role==='aqc_fixture_owner'?1:8});pools.push(p);return p}
-  return {pool,async close(){await Promise.all(pools.map(p=>p.end()));check(path.join(bin,'pg_ctl'),['-D',data,'-w','stop','-m','fast']);started=false;fs.rmSync(root,{recursive:true,force:true})}}
+  const pools=[],connections=new Set()
+  const pool=role=>{const u=new URL(url);u.username=role;const p=new pg.Pool({connectionString:u.toString(),max:role==='aqc_fixture_owner'?1:8})
+   p.on('connect',client=>{const stream=client.connection.stream;connections.add(stream);stream.once('close',()=>connections.delete(stream))})
+   pools.push(p);return p}
+  return {pool,async close(){
+   await Promise.all(pools.map(p=>p.end()))
+   // Pool.end schedules idle Client.end calls. Wait for actual socket closure
+   // before stopping the owned server; otherwise shutdown can emit a late 57P01.
+   await Promise.all([...connections].map(stream=>stream.closed?undefined:new Promise(resolve=>stream.once('close',resolve))))
+   check(path.join(bin,'pg_ctl'),['-D',data,'-w','stop','-m','fast']);started=false;fs.rmSync(root,{recursive:true,force:true})
+  }}
  }catch(error){if(started)check(path.join(bin,'pg_ctl'),['-D',data,'-w','stop','-m','fast']);fs.rmSync(root,{recursive:true,force:true});throw error}
 }
 
