@@ -47,3 +47,40 @@ test('The poll is bounded and abortable and requires an explicit shutdown signal
  assert.deepEqual(await worker.run({signal:stop.signal}),{status:'STOPPED'});assert.equal(calls,1);assert.equal(pauses,1)
  for(const pollMs of [0,999,30001,NaN])assert.throws(()=>createQualityWorker({store,controller,pollMs}),{code:'WORKER_CONFIGURATION_REQUIRED'})
 })
+
+test('technical worker exposes connected disabled stores without opening the model ledger',async()=>{
+ const {createQualityReadiness}=await import('../src/cli.mjs')
+ let calls=0
+ const readiness=createQualityReadiness({store:{descriptor:async()=>{calls++;return{enabled:false}}},
+  budget:{status:async()=>{calls++;return{status:'DISABLED',pilotStartedAt:null,pilotExpiresAt:null,maximumNanoUsd:'50000000000',committedNanoUsd:'0'}}},
+  sourceSha:'a'.repeat(40),serviceId:'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',now:()=>Date.parse('2026-11-17T08:00:00Z')})
+ const r=await readiness.check();assert.equal(r.status,'MONITORING_READY');assert.equal(r.paidRepairsEnabled,false)
+ assert.equal(r.promotionEnabled,false);assert.equal(r.pilotStartedAt,null);assert.equal(calls,2)
+})
+test('technical readiness cannot reset an existing pilot, allow spending or accept enabled stores',async()=>{
+ const {createQualityReadiness}=await import('../src/cli.mjs')
+ for(const change of [{control:true},{status:'ENABLED'},{pilotStartedAt:'2026-11-17T08:00:00Z'},{pilotExpiresAt:'2026-12-01T08:00:00Z'},{committedNanoUsd:'1'},{maximumNanoUsd:'100000000000'}]){
+  const readiness=createQualityReadiness({store:{descriptor:async()=>({enabled:change.control??false})},
+   budget:{status:async()=>({status:'DISABLED',pilotStartedAt:null,pilotExpiresAt:null,maximumNanoUsd:'50000000000',committedNanoUsd:'0',...change})},
+   sourceSha:'a'.repeat(40),serviceId:'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'})
+  await assert.rejects(()=>readiness.check(),{code:'READINESS_SAFETY_STATE_INVALID'})
+ }
+})
+test('worker requires exact Development database roles, strict TLS, no model/publisher key and disabled switches',async()=>{
+ const {readQualityReadinessConfiguration}=await import('../src/cli.mjs')
+ const env={TARGET_ENVIRONMENT:'development',AQC_MODE:'TECHNICAL_READINESS',AQC_PAID_REPAIRS_ENABLED:'false',AQC_PROMOTION_ENABLED:'false',
+  RENDER_SERVICE_ID:'srv-aaaaaaaaaaaaaaaaaaaa',RENDER_GIT_COMMIT:'a'.repeat(40),AQC_SERVICE_UUID:'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',
+  AQC_CONTROL_COMMAND_KEY:'b'.repeat(64),AQC_LIMITS_COMMAND_KEY:'c'.repeat(64),
+  AQC_CONTROL_DATABASE_URL:'postgresql://sg2_assistant_quality_controller:synthetic@ep-muddy-pine-b22pdyqd.c-6.eu-central-1.aws.neon.tech/neondb?sslmode=require',
+  AQC_LIMITS_DATABASE_URL:'postgresql://profitia_limits_quality_controller:synthetic@ep-muddy-surf-b9vpyy2d.c-7.eu-central-1.aws.neon.tech/neondb?sslmode=require'}
+ const c=readQualityReadinessConfiguration(env)
+ assert.equal(c.control.ssl.rejectUnauthorized,true);assert.equal(c.control.user,'sg2_assistant_quality_controller')
+ assert.equal(c.limits.user,'profitia_limits_quality_controller')
+ for(const change of [{TARGET_ENVIRONMENT:'production'},{AQC_PAID_REPAIRS_ENABLED:'true'},{AQC_PROMOTION_ENABLED:'true'},{AQC_MODE:'repair'},
+  {OPENAI_API_KEY:'synthetic'},{RENDER_API_KEY:'synthetic'},{GITHUB_TOKEN:'synthetic'},
+  {AQC_CONTROL_COMMAND_KEY:env.AQC_LIMITS_COMMAND_KEY},{AQC_CONTROL_DATABASE_URL:env.AQC_CONTROL_DATABASE_URL.replace('sg2_assistant_quality_controller','sg2_assistant_history_owner')},
+  {AQC_CONTROL_DATABASE_URL:env.AQC_CONTROL_DATABASE_URL.replace('ep-muddy-pine-b22pdyqd.c-6.eu-central-1.aws.neon.tech','example.test')},
+  {AQC_CONTROL_DATABASE_URL:env.AQC_CONTROL_DATABASE_URL.replace('sslmode=require','sslmode=disable')},
+  {AQC_LIMITS_DATABASE_URL:env.AQC_LIMITS_DATABASE_URL+'&options=-csuperuser=on'}])
+  assert.throws(()=>readQualityReadinessConfiguration({...env,...change}),{code:'READINESS_CONFIGURATION_INVALID',...(!['TARGET_ENVIRONMENT','AQC_PAID_REPAIRS_ENABLED','AQC_PROMOTION_ENABLED','AQC_MODE','OPENAI_API_KEY','RENDER_API_KEY','GITHUB_TOKEN','AQC_CONTROL_COMMAND_KEY'].some(k=>Object.hasOwn(change,k))?{code:'READINESS_DATABASE_BINDING_INVALID'}:{})})
+})
