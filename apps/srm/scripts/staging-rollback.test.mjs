@@ -10,10 +10,12 @@ import {operations} from '../../../scripts/governance/srm-release-lifecycle.mjs'
 import {createProvider,manifestFrom} from './staging-lifecycle.mjs';
 // Synthetic provider fixture; immutable source/migration bytes come from Git.
 const oldSha=contract.rollback.compatibilityEdges[0].runtimeSha;
+// Preserve the original reviewed 16-to-18 edge; SQL019 is a separate new edge.
+const prepareHistoricalRollbackPlan=(state,sha)=>prepareRollbackPlan(state,sha,ledgerManifest().slice(0,18));
 const journal={schemaVersion:'1.0',projectKey:'SRM',targetEnvironment:'staging',generation:10,release:{phase:'VERIFIED',approvalId:'synthetic-before',owner:'github-run:1',sourceProof:{sha:oldSha}},baseline:{sha:oldSha,deployId:'dep-synthetic',restorePoint:{status:'VERIFIED',candidateSha:'4f2b9b3797f6210e6c1af98af6a69abfd9c48391',sha:oldSha,serviceId:'srv-db496b3tqb8s73eh5sfg',deployId:'dep-synthetic',artifact:{sourceSha:oldSha,algorithm:'sha256-sorted-path-type-content-v1',digest:'a'.repeat(64),jobId:'job-synthetic'},configuration:{fingerprint:'b'.repeat(64),algorithm:'sha256-selected-service-config-and-sorted-resolved-env-pairs-v1',unchangedAfterMeasurement:true},database:{projectId:contract.neon.projectId,databaseName:'srm_app',sourceBranchId:contract.neon.branchId,recoveryBranchId:'br-backup',restoreRehearsalBranchId:'br-rehearsal',restoreRehearsalParentId:'br-backup',restoreRehearsalVerified:true,parentLsn:'0/ABCD',automaticSchemaOrDataRollbackAllowed:false,inventories:{migrations:ledgerManifest().slice(0,16)}}}}};
 const example=()=>{const s=structuredClone(journal);s.baseline.restorePoint.verifiedAt=new Date().toISOString();return s;};
 test('recorded LKG binds full schema and exact reviewed additive edge',()=>{
-  const s=example(),p=prepareRollbackPlan(s,s.baseline.restorePoint.candidateSha);
+  const s=example(),p=prepareHistoricalRollbackPlan(s,s.baseline.restorePoint.candidateSha);
   assert.equal(assertRestorePoint(p,contract),true);
   assert.equal(assertRuntimeSchema(runtimeMigrations(p.restorePoint.sha),p.schemaMigrations,p.restorePoint.sha),true);
 });
@@ -30,9 +32,9 @@ for(const [label,mutate] of [
   ['unknown schema',p=>p.schemaMigrations.push({version:'0019_unsafe',checksum:'f'.repeat(64)})],
   ['checksum drift',p=>p.schemaMigrations[0].checksum='e'.repeat(64)],
   ['candidate drift',p=>p.candidateSha='e'.repeat(40)],
-])test('LKG gate rejects '+label,()=>{const s=example(),p=prepareRollbackPlan(s,s.baseline.restorePoint.candidateSha);mutate(p);assert.throws(()=>assertRestorePoint(p,contract));});
+])test('LKG gate rejects '+label,()=>{const s=example(),p=prepareHistoricalRollbackPlan(s,s.baseline.restorePoint.candidateSha);mutate(p);assert.throws(()=>assertRestorePoint(p,contract));});
 test('arbitrary old runtime SHA does not acquire a schema-prefix exception',()=>{
-  const p=prepareRollbackPlan(example(),journal.baseline.restorePoint.candidateSha);
+  const p=prepareHistoricalRollbackPlan(example(),journal.baseline.restorePoint.candidateSha);
   assert.throws(()=>assertRuntimeSchema(p.schemaMigrations.slice(0,16),p.schemaMigrations,'f'.repeat(40)),/reviewed/);
   const altered=structuredClone(p.schemaMigrations);altered[16].checksum='f'.repeat(64);
   assert.throws(()=>assertRuntimeSchema(p.schemaMigrations.slice(0,16),altered,p.restorePoint.sha),/reviewed/);
@@ -54,8 +56,8 @@ test('configuration fingerprint detects secret drift without publishing secrets'
   assert.match(a,/^[a-f0-9]{64}$/);assert.notEqual(a,configurationFingerprint({id:'srv-fixture'},{KEY:'changed'}));
 });
 function retainedProviderFixture(response='live') {
-  const plan=prepareRollbackPlan(example(),journal.baseline.restorePoint.candidateSha),sha=plan.restorePoint.sha;
-  const m={...manifestFrom({repositoryId:contract.repositoryId,approvedMainAncestor:true,ciPassed:true},sha),rollbackPlan:plan};
+  const plan=prepareHistoricalRollbackPlan(example(),journal.baseline.restorePoint.candidateSha),sha=plan.restorePoint.sha;
+  const m={...manifestFrom({repositoryId:contract.repositoryId,approvedMainAncestor:true,ciPassed:true},sha),rollbackPlan:plan,migrations:plan.schemaMigrations};
   const a={schemaVersion:'2.0',projectKey:'SRM',targetEnvironment:'staging',stagingDeploymentAuthorized:true,stagingMutationsAllowed:true,productionMutationsAllowed:false,manifest:m,releaseSha:sha,manifestDigest:digest(m),repository:contract.repository,repositoryId:contract.repositoryId,renderWorkspaceId:contract.render.workspaceId,renderProjectId:contract.render.projectId,renderEnvironmentId:contract.render.environmentId,neonProjectId:contract.neon.projectId,neonBranchId:contract.neon.branchId,neonEndpointId:contract.neon.endpointId,databaseName:'srm_app',approvalId:'synthetic-rollback',approvedBy:'synthetic',costOwner:'synthetic',expiresAt:new Date(Date.now()+3600000).toISOString(),operations,mode:'rollback',rollbackSchemaCompatible:true,budget:{renderPlan:contract.render.plan,renderInstances:1,renderMonthlyComputeUsd:7,neonMaxCu:8,neonExistingEndpointOnly:true,providerEntitlementsAccepted:true,storageEgressBuildCostsAccepted:true,maxDeploymentAttempts:3}};
   const srv={id:plan.restorePoint.serviceId,name:contract.render.serviceName,ownerId:contract.render.workspaceId,environmentId:contract.render.environmentId,repo:'https://github.com/'+contract.repository,autoDeployTrigger:'off',branch:'main',rootDir:'',type:'web_service',suspended:'not_suspended',serviceDetails:{region:contract.render.region,plan:contract.render.plan,runtime:'node',numInstances:1,healthCheckPath:contract.render.healthCheckPath,previews:{generation:'off'},envSpecificDetails:{buildCommand:contract.render.buildCommand,startCommand:contract.render.startCommand}}};
   const calls=[],rows=[{deploy:{id:'dep-old',status:'deactivated',commit:{id:sha}}},{deploy:{id:'dep-current',status:'live',commit:{id:plan.candidateSha}}}];let fences=0,acknowledgement;
@@ -131,7 +133,7 @@ test('isolated PostgreSQL: historical LKG persistence code survives full additiv
     const old=vm.runInNewContext('(()=>{const fail=(ok,m)=>{if(!ok)throw Error(m)};'+helper[0]+match[0].replace('export ','')+';return runPersistenceProbe})()',{digest});
     await c.query('SET ROLE srm_app_runtime');await old(c,org,'synthetic-old-runtime',true);await c.query('RESET ROLE');
     const rows=await c.query('SELECT * FROM srm.lookup_requests ORDER BY id');
-    await runMigrations(c);assert.equal((await c.query('SELECT count(*)::int n FROM srm.schema_migrations')).rows[0].n,18);
+    await runMigrations(c);assert.equal((await c.query('SELECT count(*)::int n FROM srm.schema_migrations')).rows[0].n,19);
     assert.deepEqual((await c.query('SELECT * FROM srm.lookup_requests ORDER BY id')).rows,rows.rows);
     await c.query('SET ROLE srm_app_runtime');await old(c,org,'synthetic-old-runtime');await old(c,org,'synthetic-post-upgrade',true);await c.query('RESET ROLE');
     assert.equal((await c.query('SELECT count(*)::int n FROM srm.lookup_requests')).rows[0].n,2);

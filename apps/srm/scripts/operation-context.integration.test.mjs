@@ -22,7 +22,7 @@ test('SRM real report API, archive restoration and PostgreSQL transaction enforc
       const sql = fs.readFileSync(new URL(file, directory), 'utf8'); await owner.query(sql)
       await owner.query('INSERT INTO srm.schema_migrations(version,checksum_sha256) VALUES($1,$2)', [file.slice(0, -4), createHash('sha256').update(sql).digest('hex')])
     }
-    assert.equal(files.length, 18)
+    assert.equal(files.length, 19)
     await owner.query('GRANT USAGE ON SCHEMA srm TO srm_app_runtime; GRANT SELECT,INSERT,UPDATE ON srm.organizations,srm.suppliers,srm.lookup_requests,srm.provider_attempts,srm.source_snapshots,srm.section_projections,srm.financial_facts TO srm_app_runtime; REVOKE INSERT,UPDATE ON srm.organizations FROM srm_app_runtime')
     await initialiseAuthoritySchema(owner, ['srm_app_runtime'])
     const application = { appId: 'srm-isolated-operation', profileId: 'SUPPLIER_INTELLIGENCE_STANDALONE', environment: 'development', deploymentId: 'isolated-existing-srm-code', configurationVersion: 'test-v1', organisationId: null, operations: ['supplier.report.read', 'supplier.report.project'], features: ['supplier_report'] }
@@ -117,9 +117,11 @@ test('SRM real report API, archive restoration and PostgreSQL transaction enforc
         await assert.rejects(withOrganization(O.b, async () => { throw Error('foreign action must never execute') }, pool), /organization mismatch/)
       } finally { await owner.query('ROLLBACK') }
     })
-    await t.test('default demo boundary remains separate and ordinary app migrations are unchanged', async () => {
+    await t.test('default demo boundary remains separate with the additive KYS continuation migration', async () => {
       const { reportDataHandler } = await import('../src/server/report-data.ts'); const response = await reportDataHandler(undefined, { TARGET_ENVIRONMENT: 'development', SRM_DEVELOPMENT_ORGANIZATION_ID: O.a })(request())
-      assert.equal(response.status, 401); assert.equal((await owner.query('SELECT count(*)::int AS n FROM srm.schema_migrations')).rows[0].n, 18)
+      assert.equal(response.status, 401); assert.equal((await owner.query('SELECT count(*)::int AS n FROM srm.schema_migrations')).rows[0].n, 19)
+      const continuation=(await owner.query("SELECT attname,attnotnull FROM pg_attribute WHERE attrelid='srm.catalog_kys_reports'::regclass AND attname=ANY($1::text[]) AND NOT attisdropped",[['provider_correlation_id','resume_until']])).rows
+      assert.equal(continuation.length,2);assert(continuation.every(column=>!column.attnotnull))
       assert.equal((await owner.query("SELECT count(*)::int AS n FROM operation_test.audit WHERE event->>'phase'='OUTCOME'")).rows[0].n > 0, true)
       for (const { event } of (await owner.query('SELECT event FROM operation_test.audit')).rows) {
         assert(Number.isFinite(Date.parse(event.occurredAt))); assert.equal(event.contractId, 'profitia.operation-context')

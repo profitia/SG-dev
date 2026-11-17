@@ -1,3 +1,4 @@
+import '../../scripts/source-dependency-test-fixtures.test.mjs';
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import type { SectionEnvelope, VerclyKysData } from '@profitia/srm-xray';
@@ -19,7 +20,7 @@ function fixture() {
     read: async (o, n, e) => { assert.equal(o, org); assert.equal(n, nip); return cache.get(`${o}:${n}:${e}`) ?? null; },
     claim: async () => held ? null : 'synthetic-lease',
     renew: async () => true,
-    save: async (o, n, e, _lease, value) => { cache.set(`${o}:${n}:${e}`, value); },
+    save: async (o, n, e, _lease, value) => { held = false; cache.set(`${o}:${n}:${e}`, value); },
     hold: async () => { held = true; }, release: async () => {},
   };
   const ports: XrayKysPorts = {
