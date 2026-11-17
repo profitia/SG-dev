@@ -80,6 +80,72 @@ export function calendarTestCompatibilityCurrent(current,historical){
 // One owner-approved BSDC documentation successor. Authenticate its exact
 // evidence and document bytes before exposing the unchanged Calendar history.
 export const BSDC_MANIFEST_CONTINUITY=Object.freeze({"recordPath":"Canon/evidence/2026-11-12-bsdc-v11-manifest-continuity.json","recordSha256":"92fe69f99bbda13a9971d841cc391207d9e7944ccc516a68d9cc48b7a9151160","baseSha":"df2214265e577ef653c35fa18a38c717ffe8905e","manifestPath":"Canon/registries/governance-manifest-v2.json","previousManifestSha256":"953aa8ff82c12fca85d22d04de865e1969a5e4548465766b259db0bd3ce56587","manifestSha256":"7f5498afa10f3edaf0b364ca7bf4576de5dc8100e61bc4fc2773c845b771e2a4","previousHelperSha256":"034abe33e17cd8a6247a43f14a62eba3437831bb1f0d59d851e5efc45a7abb86","helperPath":"apps/architecture-lab/market-calendar-source.mjs","sourcePaths":["AGENTS.md","Canon/registries/governance-manifest-v2.json","Canon/v1.1-business-solution-design-and-canonization-canon.md","docs/agent-instructions/bsdc-launcher-v1.1.md"],"testPath":"scripts/governance/platform-source-hub-foundation.test.mjs","testSha256":"dadd4f9fcc5be03afee02ae51038efa48b07b3f9b2b62e9476a7b288c1d42d77","previousTestSha256":"189e3ee14a2e9c3fe52d53fd3404e8fca1e1ca82f120ab6ac24909b9cef09acb"})
+
+// A manifest successor is admitted only by an exact record already present in
+// authority main. PR-local edits to the record cannot authorize themselves.
+// The historical BSDC source and Calendar receipts remain immutable.
+const MANIFEST_SUCCESSOR_LEDGER='Canon/registries/governance-manifest-successors-v1.json'
+const TRUSTED_MANIFEST_AUTHORITY='refs/remotes/origin/main'
+function approvedManifestSuccessor(current,historical,cfg,receipt,actual){
+ const authorityBytes=Buffer.from(historical(TRUSTED_MANIFEST_AUTHORITY,MANIFEST_SUCCESSOR_LEDGER))
+ const trustedMainManifest=Buffer.from(historical(TRUSTED_MANIFEST_AUTHORITY,cfg.manifestPath))
+ const ledger=JSON.parse(authorityBytes.toString('utf8'))
+ assert.deepEqual(Object.keys(ledger).sort(),['schemaVersion','repository','manifestPath','successors'].sort())
+ assert.equal(ledger.schemaVersion,'1.0')
+ assert.equal(ledger.repository,'profitia/SG-dev')
+ assert.equal(ledger.manifestPath,cfg.manifestPath)
+ assert(Array.isArray(ledger.successors) && ledger.successors.length>0 && ledger.successors.length<=100)
+ const unique=new Set(ledger.successors.map(x=>x.manifestSha256))
+ assert.equal(unique.size,ledger.successors.length,'duplicate manifest successor grant')
+ const selected=ledger.successors.filter(x=>x.manifestSha256===actual)
+ assert.equal(selected.length,1,'unapproved governance manifest successor')
+ const grant=selected[0]
+ assert.deepEqual(Object.keys(grant).sort(),[
+  'id','status','scope','approvalRef','sourceSha','previousSourceSha',
+  'previousManifestSha256','manifestSha256','manifestVersion',
+  'appendedDocuments','documentDigests'
+ ].sort())
+ assert.match(grant.id,/^[A-Z][A-Z0-9-]{4,100}$/)
+ assert.equal(grant.status,'ACTIVE')
+ assert.equal(grant.scope,'APPEND_ONLY_CANON_DOCUMENTATION')
+ assert.match(grant.approvalRef,/^https:\/\/github\.com\/profitia\/SG-dev\/pull\/[0-9]+$/)
+ for(const sha of [grant.sourceSha,grant.previousSourceSha])assert.match(sha,/^[a-f0-9]{40}$/)
+ for(const sha of [grant.manifestSha256,grant.previousManifestSha256])assert.match(sha,/^[a-f0-9]{64}$/)
+ assert(grant.previousManifestSha256===hash(trustedMainManifest) ||
+  grant.manifestSha256===hash(trustedMainManifest),
+ 'manifest successor is not based on current authority main')
+ const previous=Buffer.from(historical(grant.previousSourceSha,cfg.manifestPath))
+ const successor=Buffer.from(historical(grant.sourceSha,cfg.manifestPath))
+ assert.equal(hash(previous),grant.previousManifestSha256,'immutable predecessor manifest')
+ assert.equal(hash(successor),grant.manifestSha256,'immutable reviewed successor manifest')
+ const before=JSON.parse(previous.toString('utf8')),after=JSON.parse(successor.toString('utf8'))
+ const {manifestVersion:oldVersion,documents:oldDocs,...oldMeta}=before
+ const {manifestVersion:newVersion,documents:newDocs,...newMeta}=after
+ assert.deepEqual(newMeta,oldMeta,'manifest successor cannot alter governance metadata')
+ assert.equal(newVersion,grant.manifestVersion)
+ assert.notEqual(newVersion,oldVersion,'manifest successor must advance version')
+ assert(Array.isArray(oldDocs) && Array.isArray(newDocs) && Array.isArray(grant.appendedDocuments))
+ assert(grant.appendedDocuments.length>=1 && grant.appendedDocuments.length<=20)
+ assert.deepEqual(newDocs.slice(0,oldDocs.length),oldDocs,'existing manifest entries are immutable')
+ assert.deepEqual(newDocs.slice(oldDocs.length),grant.appendedDocuments,'only owner-admitted documents may append')
+ const paths=grant.appendedDocuments.map(d=>d.path)
+ assert.equal(new Set(paths).size,paths.length,'duplicate successor document path')
+ assert.deepEqual(Object.keys(grant.documentDigests).sort(),[...paths].sort())
+ for(const p of paths){
+  assert.match(p,/^(?:Canon|docs\/agent-instructions)\/[A-Za-z0-9._/-]+$/)
+  assert(!p.includes('..') && !p.includes('//'),'unsafe document path')
+  const expected=grant.documentDigests[p]
+  assert.match(expected,/^[a-f0-9]{64}$/)
+  assert.equal(hash(historical(grant.sourceSha,p)),expected,'immutable approved document '+p)
+  assert.equal(hash(current(p)),expected,'current approved document '+p)
+ }
+ // Confirm original BSDC acceptance against its immutable reviewed source,
+ // not a mutable current manifest. Then use the same unmodified history graph.
+ const bsdcManifest=Buffer.from(historical(receipt.approvedDocumentationSourceSha,cfg.manifestPath))
+ assert.equal(hash(bsdcManifest),cfg.manifestSha256,'immutable BSDC successor')
+ verifyPaths(p=>p===cfg.manifestPath?bsdcManifest:current(p),receipt.sourceDigests,cfg.sourcePaths)
+}
+
 export function bsdcManifestContinuityCurrent(current,historical){
  const cfg=BSDC_MANIFEST_CONTINUITY,bytes=readOptional(current,cfg.recordPath)
  if(bytes===null)return current
@@ -99,7 +165,7 @@ export function bsdcManifestContinuityCurrent(current,historical){
  assert.equal(hash(previousHelper),cfg.previousHelperSha256,'immutable pre-BSDC Calendar helper')
  const actual=hash(current(cfg.manifestPath))
  if(actual===cfg.manifestSha256)verifyPaths(current,a.sourceDigests,cfg.sourcePaths)
- else assert.equal(actual,cfg.previousManifestSha256,'unapproved governance manifest successor')
+ else if(actual!==cfg.previousManifestSha256)approvedManifestSuccessor(current,historical,cfg,a,actual)
  return p=>{
   if(p===cfg.recordPath)throw Object.assign(Error('BSDC successor absent from predecessor'),{code:'ENOENT'})
   if(p===cfg.manifestPath)return Buffer.from(previous)
