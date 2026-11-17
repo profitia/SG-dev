@@ -12,12 +12,22 @@ export function createApplication({authorizer,repository,savedSearches=null,sour
    if(!savedSearches)throw new SourceHubError('NOT_FOUND',404);
    const query=Object.fromEntries(u.searchParams);if([...new Set(u.searchParams.keys())].some(k=>u.searchParams.getAll(k).length!==1))throw new SourceHubError('INVALID_QUERY');
    const id=parts[2];if(id&&!uuid.test(id))throw new SourceHubError('NOT_FOUND',404);
-   const args={request,organisationId:request.headers.get('x-profitia-organisation-id'),resourceId:id??'newsfeed-observations',write:request.method!=='GET'};
+   const args={request,organisationId:request.headers.get('x-profitia-organisation-id'),resourceId:id??'newsfeed-observations',write:request.method!=='GET'&&!(parts[1]==='invitations'&&parts.length===2&&request.method==='POST')};
    const execute=(action,payload=null)=>authorizer.execute({...args,payload},action);
    const page=()=>({limit:query.limit===undefined?50:Number(query.limit),cursor:query.cursor??null});
    const only=(...allowed)=>{if(Object.keys(query).some(k=>!allowed.includes(k)))throw new SourceHubError('INVALID_QUERY');};
    const json=async()=>{if(request.headers.get('content-type')!=='application/json'||request.headers.has('content-encoding'))throw new SourceHubError('JSON_REQUIRED',415);return request.clone().json().catch(()=>{throw new SourceHubError('INVALID_JSON');});};
-   if(parts[1]==='invitations'&&parts.length===2&&request.method==='POST'){only();const body=await json();return Response.json(await execute((c,t)=>savedSearches.claimInvitation(t,c,body),body));}
+   if(parts[1]==='invitations'&&parts.length===2&&request.method==='POST'){
+    only();const body=await json();
+    // The only consumer mutation is accepting an existing owner-issued token.
+    // The new SQL validates a READ proof. An unpatched database retains its
+    // original WRITE requirement until the controlled migration is installed.
+    const claim=await execute(async(c,t)=>{
+     const ready=(await t.query("SELECT EXISTS(SELECT 1 FROM newsfeed.saved_search_migrations WHERE version='1.2.1-reader-invitation') AS enabled")).rows[0]?.enabled;
+     return ready?{legacy:false,value:await savedSearches.claimInvitation(t,c,body)}:{legacy:true};
+    },body);
+    return Response.json(claim.legacy?await authorizer.execute({...args,write:true,payload:body},(c,t)=>savedSearches.claimInvitation(t,c,body)):claim.value);
+   }
    if(parts[1]==='feed'&&parts.length===2&&request.method==='GET'){only('limit','cursor','q');return Response.json(await execute((c,t)=>savedSearches.feed(t,c,{...page(),q:query.q??''})));}
    if(parts[1]==='notifications'){
     only('limit','cursor');
