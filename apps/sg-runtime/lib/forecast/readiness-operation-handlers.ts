@@ -1,3 +1,4 @@
+import {bindSg2RequestRuntime} from '@/lib/platform/organisation-context'
 import type { NextRequest, NextResponse } from 'next/server'
 import type { Prisma } from '@prisma/client'
 import { OPERATION_CONTRACT, isOperationDenied, type OperationExecutor } from '@profitia/platform-contracts/operation-context'
@@ -55,7 +56,7 @@ export function createRuntimeForecastReadinessHandler(kind: ForecastReadinessKin
         return privateApiResponse(cognitionError('INTERNAL_SERVICE_AUTH_UNAVAILABLE',
           'Internal forecast service authentication is not configured for this mode.', 403))
       }
-      const runtime = resolveRuntime()
+      const runtime=await bindSg2RequestRuntime(resolveRuntime(),request)
       if (runtime.provider === 'legacy_demo') return await legacy(request)
       const readiness = runtime.provider === 'clerk' ? runtime.forecastRead?.readiness : undefined
       if (!readiness) return privateApiResponse(cognitionError('OPERATION_DENIED', 'Operation unavailable.', 503))
