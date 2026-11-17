@@ -1,6 +1,7 @@
 // Test/build-only exact SG2 presentation continuation. No runtime or access authority.
 import assert from 'node:assert/strict'
 import {createHash} from 'node:crypto'
+import {sourceDependencyTestFixtures} from '../../srm/scripts/source-dependency-test-fixtures.mjs'
 export const NOTIFICATIONS_RECEIPT="apps/sg-runtime/assistant-notifications-integration.json"
 export const NOTIFICATIONS_BASE="b6adfbc6b46c13ffe48de37872fdd530f400a615"
 export const NOTIFICATIONS_PATHS=Object.freeze([
@@ -52,6 +53,8 @@ export function notificationCompletionSource(before){
  return IMPORT+before.replace(HEAD,HEAD+PREFIX)
 }
 export function assistantNotificationsPredecessor(current,historical){
+ const dependencies=sourceDependencyTestFixtures(current,historical,'SRM:SRM-VERCLY-RESUME-20261117')
+ if(dependencies.admission)return assistantNotificationsPredecessor(dependencies.previousBytes,historical)
  let bytes
  try{bytes=current(NOTIFICATIONS_RECEIPT)}catch(error){
   const text=String(error?.stderr??error?.message??'')
