@@ -5,7 +5,7 @@ import {readFileSync} from 'node:fs'
 import {createHash,createHmac,randomBytes,randomUUID} from 'node:crypto'
 import pg from '../../architecture-lab/node_modules/pg/lib/index.js'
 import {assertIsolatedTestConnection} from '../../architecture-lab/src/operation-postgres-fixture.mjs'
-import {createQualityEvidenceStore,type QualityEvidenceAuthority} from '../lib/assistant/quality-evidence'
+import {createQualityEvidenceStore,createQualityEvidencePurposeClient,createAssistantQualityCapture,type QualityEvidenceAuthority} from '../lib/assistant/quality-evidence'
 const hash=(s:string)=>createHash('sha256').update(s).digest('hex')
 test('native QA roles isolate encrypted controlled evidence, preserve fixed expiry, require fresh purpose and retain deletion/recovery barriers',async()=>{
  const ownerUrl=assertIsolatedTestConnection(process.env.OPERATION_FIXTURE_OWNER_URL,'sg2_operation_test','architecture_test_owner')
@@ -92,4 +92,65 @@ test('native QA roles isolate encrypted controlled evidence, preserve fixed expi
   for(const role of [readerRole,captureRole,historyRole,owner])await admin.query('DROP ROLE IF EXISTS '+role)
   await admin.end()
  }
+})
+
+
+test('canonical QA purpose client binds the native role, exact input digest, current HUMAN decision and metadata-only HMAC',async()=>{
+ const now=Date.now(),accountId=randomUUID(),serviceId=randomUUID(),storageGeneration=randomUUID(),evidenceId=randomUUID(),grantId=randomUUID(),schemaDigest='a'.repeat(64),commandKey=randomBytes(32).toString('hex')
+ const context:any={applicationId:'spendguru',environment:'development',operation:'assistant.history.write',organisationId:null,decisionId:randomUUID(),actorId:accountId,actor:{kind:'HUMAN',actorId:accountId,expiresAt:new Date(now+30000).toISOString()}}
+ const demand:any={action:'CAPTURE',accountId,evidenceId,inputSha256:hash('controlled public model input'),sourceScopes:[],occurredAt:new Date(now-100).toISOString(),earliestInputAt:new Date(now-200).toISOString()}
+ let calls=0,override:Record<string,unknown>={}
+ const factory=(role:'sg2_private_development_runtime'|'sg2_assistant_quality_authority')=>createQualityEvidencePurposeClient({commandKey,schemaDigest,serviceId,storageGeneration,role,now:()=>now,
+  query:async(sql,values)=>{
+   calls++;assert.equal(sql,'SELECT profitia_assistant_quality_access.apply($1::text,$2::text) AS result')
+   const body=String(values?.[0]);assert.equal(values?.[1],createHmac('sha256',Buffer.from(commandKey,'hex')).update(body).digest('hex'))
+   assert(!body.includes('controlled public model input'),'the native authority receives the input hash, never the prompt')
+   const p=JSON.parse(body);assert.equal(p.serviceId,serviceId);assert.equal(p.storageGeneration,storageGeneration)
+   const result={applicationId:'spendguru',environment:'development',projectId:'spring-bread-28217539',branchId:'br-sparkling-term-b99l107x',databaseName:'platform_private',runtimeRole:role,schemaDigest,serviceId,storageGeneration,dataMode:'CONTROLLED_ACCEPTANCE',
+    operation:p.action==='CAPTURE'?'assistant.quality.capture':'assistant.quality.read',actorKind:p.action==='CAPTURE'?'HUMAN':'SERVICE',actorId:p.action==='CAPTURE'?accountId:serviceId,accountId,
+    purpose:{id:'ASSISTANT_QUALITY',policyVersion:'1.0.0',grantId,validUntil:new Date(now+3600000).toISOString()},validUntil:now+10000,sourceScopes:[],inputSha256:demand.inputSha256,expiresAt:new Date(now+3600000).toISOString(),invalidated:true,epoch:'2',...override}
+   return {rows:[{result}]}
+  }})
+ const capture=factory('sg2_private_development_runtime'),read=factory('sg2_assistant_quality_authority')
+ assert.equal((await capture.authorize(demand,context)).actorId,accountId)
+ assert.equal((await read.authorize({action:'READ',accountId,evidenceId})).actorId,serviceId)
+ const before=calls
+ for(const changed of [{actorId:randomUUID()},{organisationId:randomUUID()},{decisionId:'invalid'},{actor:{...context.actor,kind:'SERVICE'}},{actor:{...context.actor,expiresAt:new Date(now-1).toISOString()}}])
+  await assert.rejects(capture.authorize(demand,{...context,...changed}))
+ await assert.rejects(capture.authorize({...demand,inputSha256:undefined},context))
+ await assert.rejects(read.authorize(demand,context));await assert.rejects(read.authorize({action:'READ',accountId,evidenceId},context))
+ await assert.rejects(read.invalidate(context));assert.equal(calls,before,'invalid identities never query the authority')
+ assert.equal((await capture.invalidate(context)).invalidated,true)
+ for(const changed of [{runtimeRole:'owner'},{storageGeneration:randomUUID()},{branchId:'foreign'},{serviceId:randomUUID()},{dataMode:'ALL_REAL_HISTORY'},
+  {inputSha256:'b'.repeat(64)},{expiresAt:'invalid'},{validUntil:now+30001},{purpose:{id:'ASSISTANT_QUALITY',policyVersion:'1.0.0',grantId,validUntil:'invalid'}}]){
+  override=changed;await assert.rejects(capture.authorize(demand,context))
+ }
+})
+
+test('host capture composes independently enrolled authority with encrypted persistence and never accepts caller-supplied rights',async()=>{
+ const now=Date.now(),accountId=randomUUID(),interactionId=randomUUID(),serviceId=randomUUID(),storageGeneration=randomUUID(),grantId=randomUUID()
+ const purposeKey=randomBytes(32).toString('hex'),evidenceKey=randomBytes(32).toString('hex'),storageKey=randomBytes(32).toString('hex')
+ const context:any={applicationId:'spendguru',environment:'development',operation:'assistant.history.write',organisationId:null,decisionId:randomUUID(),actorId:accountId,actor:{kind:'HUMAN',actorId:accountId,expiresAt:new Date(now+30000).toISOString()}}
+ const modelInput=[{role:'user' as const,content:'CONTROLLED_COMPOSITION_PRIVATE_INPUT'}],inputHash=hash(JSON.stringify(modelInput)),purposeDigest='a'.repeat(64),evidenceDigest='b'.repeat(64)
+ const operations:any[]=[],purpose={id:'ASSISTANT_QUALITY',policyVersion:'1.0.0',grantId,validUntil:new Date(now+3600000).toISOString()}
+ let allowed=true
+ const capture=createAssistantQualityCapture({accountId,serviceId,storageGeneration,purposeKey,evidenceKey,storageKey,purposeSchemaDigest:purposeDigest,evidenceSchemaDigest:evidenceDigest,now:()=>now,
+  purposeQuery:async(sql,values)=>{
+   const body=String(values?.[0]),p=JSON.parse(body);assert.equal(values?.[1],createHmac('sha256',Buffer.from(purposeKey,'hex')).update(body).digest('hex'))
+   assert(!body.includes('CONTROLLED_COMPOSITION_PRIVATE_INPUT'));assert.equal(p.inputSha256,inputHash);assert.equal(p.decisionId,context.decisionId);operations.push(p)
+   if(!allowed)throw Error('Synthetic authority refused')
+   return{rows:[{result:{applicationId:'spendguru',environment:'development',projectId:'spring-bread-28217539',branchId:'br-sparkling-term-b99l107x',databaseName:'platform_private',runtimeRole:'sg2_private_development_runtime',schemaDigest:purposeDigest,serviceId,storageGeneration,dataMode:'CONTROLLED_ACCEPTANCE',
+    operation:'assistant.quality.capture',actorKind:'HUMAN',actorId:accountId,accountId,purpose,validUntil:now+10000,sourceScopes:[],inputSha256:inputHash,expiresAt:new Date(now+3500000).toISOString()}}]}
+  },
+  evidenceQuery:async(sql,values)=>{
+   const body=String(values?.[0]),p=JSON.parse(body);assert.equal(values?.[1],createHmac('sha256',Buffer.from(evidenceKey,'hex')).update(body).digest('hex'))
+   assert(!body.includes('CONTROLLED_COMPOSITION_PRIVATE_'));assert.equal(p.action,'PUT');assert(p.sealed?.ciphertext);operations.push(p)
+   return{rows:[{result:{applicationId:'spendguru',environment:'development',projectId:'autumn-waterfall-65938876',branchId:'br-dry-hall-b294222f',databaseName:'neondb',runtimeRole:'sg2_assistant_quality_capture',schemaDigest:evidenceDigest,serviceId,storageGeneration,stored:true}}]}
+  }})
+ const input:any={accountId,interactionId,occurredAt:new Date(now-100).toISOString(),earliestInputAt:new Date(now-200).toISOString(),timeZone:'Europe/Warsaw',interpretedPeriod:null,
+  versions:{applicationSha:'a'.repeat(40),model:'CONTROLLED_FIXTURE',promptSha256:'b'.repeat(64),modelConfigurationSha256:'c'.repeat(64),cicVersion:'1.8.0',gatewayVersion:'2.2.0'},modelInput,output:{draft:'CONTROLLED_COMPOSITION_PRIVATE_DRAFT',delivered:'CONTROLLED_COMPOSITION_PRIVATE_DELIVERED',status:'COMPLETE'}}
+ const result=await capture.capture(context,input);assert.equal(result.evidenceId,interactionId)
+ assert.deepEqual(operations.map(p=>p.action),['CAPTURE','CAPTURE','PUT']);assert.equal(operations[0].sourceScopes,null);assert.deepEqual(operations[1].sourceScopes,[])
+ allowed=false;const count=operations.length;await assert.rejects(capture.capture(context,input));assert.equal(operations.length,count+1,'refused purpose never reaches persistence')
+ await assert.rejects(capture.capture(context,{...input,accountId:randomUUID()}));assert.equal(operations.length,count+1)
 })

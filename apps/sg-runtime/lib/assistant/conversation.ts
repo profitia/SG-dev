@@ -1,3 +1,6 @@
+import {createHash} from 'node:crypto'
+import {assistantInputBound,ASSISTANT_PRICING} from '@profitia/platform-contracts/assistant-usage'
+import gatewayPackage from '../../../../packages/assistant-context-gateway/package.json'
 import {isOperationDenied,type OperationContext,type Json} from '@profitia/platform-contracts/operation-context'
 import * as Sentry from '@sentry/nextjs'
 import {readContextSelection} from '../../../../packages/assistant-context-contracts/src/index.mjs'
@@ -8,6 +11,7 @@ import type {HistoryScope,StoredConversation,StoredTurn} from './history'
 import {selectConversationContext,referenceIdentity,contextHistoryScopes,contextSatisfiesScope,type AssistantTurnSelection} from './context-selection'
 import {withinPciIdentityScope as withinIdentityVerificationPhase} from '@/lib/platform/pci-identity-scope'
 import {prepareAssistantQualityResponse} from './quality-response'
+const sha256=(v:unknown)=>createHash('sha256').update(typeof v==='string'?v:JSON.stringify(v)).digest('hex')
 const headers={'Cache-Control':'private, no-store',Vary:'Cookie, Authorization','X-Content-Type-Options':'nosniff'}
 const uuid=(v:unknown):v is string=>typeof v==='string'&&/^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(v)
 const record=(v:unknown):v is Record<string,unknown>=>!!v&&typeof v==='object'&&!Array.isArray(v)
@@ -136,7 +140,8 @@ export function createAssistantHandlers(resolveRuntime:()=>Promise<AssistantRunt
     runtime=await resolveRuntime();const r=runtime
     userId=await r.run(request,'assistant.converse',{kind:'AUTHORIZE'},async c=>c.actorId);const owner=userId
     const stored=turn.conversationId?await r.run(request,'assistant.history.read',{action:'LOAD',conversationId:turn.conversationId},async c=>{sameUser(c,owner);return r.history.load(c,turn.conversationId!)}):null
-    const selection=selectConversationContext(turn,stored,r.organisationId,Date.now(),r.timeZone??'UTC'),policy=selection.policy
+    const occurred=Date.now(),occurredAt=new Date(occurred).toISOString()
+    const selection=selectConversationContext(turn,stored,r.organisationId,occurred,r.timeZone??'UTC'),policy=selection.policy
     const demand={plan:policy.contextPlan,reference:selection.reference,organisationId:r.organisationId,request,signal:request.signal}
     const resolveContext=(input:typeof demand)=>Sentry.startSpan({name:'assistant.context',op:'assistant.context'},async span=>{
      const result=await r.gateway.resolve(input)
@@ -177,6 +182,24 @@ export function createAssistantHandlers(resolveRuntime:()=>Promise<AssistantRunt
        await guard()
        await r.run(request,'assistant.history.write',{action:'COMPLETE',commandId:turn.commandId},async c=>{sameUser(c,owner);await r.history.complete(c,{conversationId:active.conversationId,commandId:turn.commandId,response,sources});return null})
        if(quality){await guard(false);emit({type:'delta',text:response})}
+       // Capture server-published output only. Native E1 accepts solely an
+       // independently enrolled controlled input and rechecks the real HUMAN
+       // decision; arbitrary source rights or historical QA are never inferred.
+       if(quality&&r.qualityEvidence&&r.qualityApplicationSha&&!closed&&!signal.aborted){
+        try{await r.run(request,'assistant.history.write',{action:'QUALITY_EVIDENCE',commandId:turn.commandId},async c=>{
+         sameUser(c,owner)
+         const earliest=Math.min(occurred,...(stored?.turns??[]).map(t=>Date.parse(t.createdAt)))
+         const bound=assistantInputBound(input),time=selection.economicCalendarTime
+         await r.qualityEvidence!.capture(c,{accountId:owner,interactionId:turn.commandId,occurredAt,earliestInputAt:new Date(earliest).toISOString(),timeZone:r.timeZone??'UTC',
+          interpretedPeriod:time?{from:time.from,to:time.to,weekStartsOn:'MONDAY'}:null,
+          versions:{applicationSha:r.qualityApplicationSha!,model:admitted?ASSISTANT_PRICING.model:'NONE_DETERMINISTIC',
+           promptSha256:sha256(input.filter(m=>m.role==='developer')),
+           modelConfigurationSha256:sha256({model:ASSISTANT_PRICING.model,stream:true,store:false,max_output_tokens:bound.outputTokens,reasoning:{effort:'none'},service_tier:'default',prompt_cache_options:{mode:'explicit',ttl:'30m'},maxRetries:0,tools:[]}),
+           cicVersion:'1.8.0',gatewayVersion:gatewayPackage.version},modelInput:[...input],output:{draft,delivered:response,status:'COMPLETE'}})
+         return null
+        })}catch{observe(Object.assign(Error('Controlled QA evidence unavailable'),{code:'UNAVAILABLE'}),'conversation')}
+       }
+       if(quality)await guard(false)
        emit({type:'completed',sources})
       }catch(error){
        observe(error,'conversation');emit({type:'error',code:code(error)})

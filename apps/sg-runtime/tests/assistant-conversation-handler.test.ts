@@ -153,3 +153,30 @@ test('quality configuration for another account never changes the admitted accou
  const f=fixture();f.runtime.qualityResponseAccountId=foreign
  const r=await f.execute();assert(r.events.some((e:any)=>e.type==='delta'&&e.text==='Synthetic answer'))
 })
+
+test('controlled QA capture follows server publication with the exact draft/input/period and fresh operation context',async t=>{
+ t.mock.method(Date,'now',()=>Date.parse('2026-11-17T10:30:00.000Z'))
+ const f=fixture(),captured:any[]=[];f.runtime.qualityResponseAccountId=user;f.runtime.qualityApplicationSha='a'.repeat(40);f.runtime.timeZone='Europe/Warsaw'
+ const commandId=randomUUID()
+ f.runtime.qualityEvidence={capture:async(context:any,evidence:any)=>{captured.push({context,evidence});f.events.push('quality-capture')}}
+ f.runtime.model.generate=async(options:any)=>{await options.beforeDispatch();await options.publish('UNVERIFIED_DRAFT');return 'UNVERIFIED_DRAFT'}
+ const r=await f.execute({commandId}),e=captured[0]?.evidence
+ assert.equal(captured.length,1);assert.equal(captured[0].context.actorId,user)
+ assert.equal(e.interactionId,commandId);assert.equal(e.accountId,user);assert.equal(e.occurredAt,'2026-11-17T10:30:00.000Z')
+ assert.equal(e.earliestInputAt,e.occurredAt);assert.equal(e.timeZone,'Europe/Warsaw');assert.equal(e.interpretedPeriod,null)
+ assert.deepEqual(e.modelInput,f.inputs[0]);assert.equal(e.output.draft,'UNVERIFIED_DRAFT')
+ assert.equal(e.output.delivered,r.events.find((v:any)=>v.type==='delta').text);assert.equal(e.output.status,'COMPLETE')
+ assert.equal(e.versions.applicationSha,'a'.repeat(40));assert.equal(e.versions.cicVersion,'1.8.0')
+ assert.match(e.versions.promptSha256,/^[a-f0-9]{64}$/);assert.match(e.versions.modelConfigurationSha256,/^[a-f0-9]{64}$/)
+ assert(f.events.findIndex(x=>x.complete)<f.events.indexOf('quality-capture'))
+ assert.equal(f.calls.filter(c=>c.payload?.action==='QUALITY_EVIDENCE').length,1)
+})
+test('revoked controlled output creates no QA completion; an unadmitted QA input cannot trigger a model retry',async()=>{
+ const f=fixture(),captured:any[]=[];f.runtime.qualityResponseAccountId=user;f.runtime.qualityApplicationSha='a'.repeat(40)
+ f.runtime.qualityEvidence={capture:async(...v:any[])=>{captured.push(v);throw unavailable('UNAVAILABLE')}}
+ let calls=0
+ f.runtime.model.generate=async(options:any)=>{calls++;await options.beforeDispatch();return 'UNVERIFIED_DRAFT'}
+ let r=await f.execute();assert.equal(calls,1);assert.equal(captured.length,1);assert(r.events.some((v:any)=>v.type==='completed'))
+ f.runtime.model.generate=async(options:any)=>{calls++;await options.beforeDispatch();f.revoked();return 'NEVER_DELIVERED'}
+ r=await f.execute();assert.equal(captured.length,1);assert(!r.events.some((v:any)=>v.type==='completed'))
+})

@@ -5,19 +5,20 @@
   "targetEnvironment": "development",
   "previousSourceSha": "d9413b1945d54cbbf730a3437f9b2d368095e98e",
   "sourceDigests": {
-    "apps/sg-runtime/lib/assistant/conversation.ts": "94fd3c99fce55d3d32f103a0ffbb050428ec535f1c8f7d086959bbf18706cf6d",
-    "apps/sg-runtime/lib/assistant/runtime.ts": "a4555e7916d679e64e9b20616ca603919f8b5c89bc82e9372f714698979b4654",
+    "apps/sg-runtime/lib/assistant/conversation.ts": "5f707bf6d5e72bdf478c55ea68993777763beaadd32b4947cf192b3bdab47cb5",
+    "apps/sg-runtime/lib/assistant/runtime.ts": "829cb34d445b3c5e19f73653379210379f88541c988c94dae4ea2da46d6e8578",
     "apps/sg-runtime/lib/assistant/quality-response.ts": "7b77d2872ac0876cb6f1139eb91f1b1b76afa4e255a698e6c9509333baf0307f",
-    "apps/sg-runtime/lib/assistant/quality-evidence.ts": "4cd3b7e790eb964d39f2ce2b5eb2151d139cfa2ac1166e3b4ef7878e31a788ab",
+    "apps/sg-runtime/lib/assistant/quality-evidence.ts": "ad497e29ee3b9007fc0605d2a450c7467f8a5ceb79a05ecdf147e958370e096b",
     "apps/sg-runtime/migrations/002-assistant-quality-evidence.sql": "15d7aaa57e5db10df0bcf5c2062791fdbddd978a7ffe78880e009283f4885cb9",
     "apps/sg-runtime/package.json": "59a702bc3904f413a9f01ea2e25f6e62f2ee3ea0245c73083f06bde067d1539a",
     "apps/sg-runtime/package-lock.json": "a460f41129fa8ce154565133ce879e40f5a84374d8203e0ff6316457b6739be5",
-    "apps/sg-runtime/tests/assistant-conversation-handler.test.ts": "9702a7359c0c3030ceaf664245ec1981e787404e2330547b92a0035ae0465d13",
+    "apps/sg-runtime/tests/assistant-conversation-handler.test.ts": "4d9a3c19706772ec319d0ca7847e879d4d92d1fd384ebc0ed1c5f5cc60854550",
     "apps/sg-runtime/tests/assistant-quality-response.test.ts": "86a0957bcaa243ac8fbacd57db5024f4e242d99fe9bb52bed563b89a2de1f48e",
-    "apps/sg-runtime/tests/assistant-quality-evidence.test.ts": "5cb869eea43d6c2e8d3438d271e828664f0b524cc994156510db4d235d8615bc",
+    "apps/sg-runtime/tests/assistant-quality-evidence.test.ts": "e4c82cace460e9c66236982cae87449abc2ba9f9da68a22b3d78dc9082143268",
     "apps/sg-runtime/tests/assistant-quality-integrity.mjs": "7f8a48e36fb8ce792d673dc501b7e9629485e33739284292637c898965c02d6d",
-    "apps/sg-runtime/tests/assistant-quality-host-integrity.mjs": "7190b9b61516651f604f795e193a33c4e4fe72a280b4599cda58d7330e2494e8",
-    "apps/sg-runtime/tests/assistant-quality-host-integrity.test.mjs": "a689d4479c1b219ca5b287143b5581f0681e9979c2036ede43fb39b71d3a307b"
+    "apps/sg-runtime/tests/assistant-quality-host-integrity.mjs": "f5213243dcfde37b6e3c31a349a90de7c6c97ed410b0b751d8ad7cc2ec36b1e3",
+    "apps/sg-runtime/tests/assistant-quality-host-integrity.test.mjs": "a689d4479c1b219ca5b287143b5581f0681e9979c2036ede43fb39b71d3a307b",
+    "apps/sg-runtime/tests/procurement-insights-completion-integrity.mjs": "00f1b475342a78ad916c03723ae2b9b268963240d101b57c17559308c48daafa"
   },
   "previousReceipts": {
     "apps/sg-runtime/assistant-quality-integration.json": "d37226bbb90d585b95aab383dab6fcb7d20ab8698709b50de0e1c8a58d1af2a7",
@@ -28,7 +29,9 @@
     "apps/sg-runtime/assistant-markdown-integration.json": "27ff06aff8bc44592f0073732748834b7759182fa4307d901c7d63304381a38b",
     "apps/sg-runtime/assistant-send-arrow-integration.json": "62c6af6817a022c31788d801cc0eac293a24b3f25d9e529d32b1bff4908fa230",
     "apps/sg-runtime/registration-stage-i-integration.json": "4a7a572e67e12ed73c523502cef4cb432009e735737df851419d80898653f414",
-    "apps/sg-runtime/procurement-insights-integration.json": "6dca06d8b0731e585925100b0578d41a61711f335940350d1ea32c296a3d7177"
+    "apps/sg-runtime/procurement-insights-integration.json": "6dca06d8b0731e585925100b0578d41a61711f335940350d1ea32c296a3d7177",
+    "apps/sg-runtime/procurement-insights-completion-integration.json": "095ab52d695419d34ed053a6961e389024067a8ab4a16a9b6bb2c379571832a0",
+    "apps/sg-runtime/procurement-insights-shell-integration.json": "1b1279e669e955e604c7c646482a6ce119eac5eeb09491ade78a37aa7fc133a1"
   },
   "cicPublication": {
     "repository": "profitia/conversational-intelligence-core",

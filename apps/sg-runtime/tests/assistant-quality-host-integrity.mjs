@@ -16,7 +16,8 @@ export const QUALITY_HOST_PATHS=Object.freeze([
  'apps/sg-runtime/tests/assistant-quality-evidence.test.ts',
  'apps/sg-runtime/tests/assistant-quality-integrity.mjs',
  'apps/sg-runtime/tests/assistant-quality-host-integrity.mjs',
- 'apps/sg-runtime/tests/assistant-quality-host-integrity.test.mjs'
+ 'apps/sg-runtime/tests/assistant-quality-host-integrity.test.mjs',
+ 'apps/sg-runtime/tests/procurement-insights-completion-integrity.mjs'
 ])
 export const QUALITY_HOST_PRESERVED=Object.freeze([
  'apps/sg-runtime/assistant-quality-integration.json',
@@ -27,7 +28,9 @@ export const QUALITY_HOST_PRESERVED=Object.freeze([
  'apps/sg-runtime/assistant-markdown-integration.json',
  'apps/sg-runtime/assistant-send-arrow-integration.json',
  'apps/sg-runtime/registration-stage-i-integration.json',
- 'apps/sg-runtime/procurement-insights-integration.json'
+ 'apps/sg-runtime/procurement-insights-integration.json',
+ 'apps/sg-runtime/procurement-insights-completion-integration.json',
+ 'apps/sg-runtime/procurement-insights-shell-integration.json'
 ])
 export const QUALITY_CIC_PIN=Object.freeze({version:'1.8.0',
  resolved:'https://npm.pkg.github.com/download/@profitia/cic-core/1.8.0/797fccee13eb0ce11f7130793218c80d7d542d7a',
