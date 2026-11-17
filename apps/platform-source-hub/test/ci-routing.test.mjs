@@ -174,7 +174,7 @@ function reservationRoutingFixture(){
   git(root,'checkout','--quiet','--detach',baseSha)
   git(root,'update-ref','refs/remotes/origin/main',git(repositoryRoot,'rev-parse','origin/main'))
   const paths=[...Object.keys(reservationSource.manifest.sourceDigests),RESERVATION_RECORD,RESERVATION_DERIVED]
-  assert.equal(paths.length,45);assert.equal(new Set(paths).size,45)
+  assert.equal(paths.length,46);assert.equal(new Set(paths).size,46)
   for(const p of paths){
    const source=path.join(repositoryRoot,p),stat=fs.lstatSync(source);assert(stat.isFile()&&!stat.isSymbolicLink())
    const target=path.join(root,p);fs.mkdirSync(path.dirname(target),{recursive:true});fs.writeFileSync(target,fs.readFileSync(source))
