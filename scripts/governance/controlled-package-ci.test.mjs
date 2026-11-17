@@ -3280,7 +3280,7 @@ test('trusted policy content reader refuses mismatched or unavailable large Git 
 // admits engineering source validation only; it cannot activate a runtime.
 test('quality Stage1 legacy continuation has a finite branch/path/window and rejects protected expansion',async()=>{
  const c=await import('./controlled-package-ci.mjs'),r=c.ASSISTANT_QUALITY_SG2_STAGE1_REVIEW
- assert.equal(r.paths.length,22);assert.equal(new Set(r.paths).size,22)
+ assert.equal(r.paths.length,23);assert.equal(new Set(r.paths).size,23)
  assert.deepEqual(r.branches,['sg2/cic-quality-stage1-runtime-20261112','sg2/cic-quality-host-integration-20261117'])
  const files=r.paths.map(filename=>({filename,status:'added',sha:'a'.repeat(40)}))
  c.assertQualityStage1SourceFiles(files,Date.parse('2026-11-17T00:00:00.000Z'))
@@ -3288,7 +3288,7 @@ test('quality Stage1 legacy continuation has a finite branch/path/window and rej
   files.map((f,i)=>i?f:{...f,status:'removed'}),files.map((f,i)=>i?f:{...f,previous_filename:'old.ts'}),files.map((f,i)=>i?f:{...f,sha:'invalid'})])
   rejection(()=>c.assertQualityStage1SourceFiles(changed,Date.parse('2026-11-17T00:00:00.000Z')))
  rejection(()=>c.assertQualityStage1SourceFiles(files,Date.parse(r.expiresAt)))
- for(const p of r.paths)assert(p.startsWith('apps/sg-runtime/'))
+ for(const p of r.paths)assert(p.startsWith('apps/sg-runtime/')||p==='apps/architecture-lab/private-recurring-source.mjs')
  assert(!r.paths.some(p=>p.startsWith('packages/')||p.endsWith('/.npmrc')||p.includes('operation-integration')||p.includes('assistant-context-integration')))
 })
 test('quality dependency admission accepts only the measured CIC1.8 artifact and retains all prior tests and packages',async()=>{
@@ -3589,7 +3589,7 @@ editorialTest('editorial projection rejects rebound candidate authority and rema
 // Independent immutable public host fixture; never import its JavaScript.
 import {qualityTrustedPredecessor as trustedQualityPredecessor,QUALITY_HOST_PATHS as trustedQualityHostPaths,QUALITY_HOST_PRESERVED as trustedQualityPreserved} from './controlled-package-ci.mjs'
 test('trusted quality source composition verifies both exact closures and every preserved receipt before historical projection',()=>{
- const source='8db344d25655054a8e702e7dfb540df9e3199a36',cache=new Map(),root=new URL('../../',import.meta.url)
+ const source='a23c9124f39590c740c418cd320e72b549f54770',cache=new Map(),root=new URL('../../',import.meta.url)
  const historical=(sha,p)=>{const key=sha+':'+p;if(!cache.has(key))cache.set(key,execFileSync('git',['cat-file','blob',key],{cwd:root,stdio:['ignore','pipe','pipe']}));return Buffer.from(cache.get(key))}
  const current=p=>historical(source,p),view=trustedQualityPredecessor(current,historical)
  assert(view)
@@ -3602,4 +3602,17 @@ test('trusted quality source composition verifies both exact closures and every 
  }
  assert.equal(trustedQualityPredecessor(()=>{throw Object.assign(Error('ABSENT'),{code:'ENOENT'})},historical),null)
  assert.throws(()=>trustedQualityPredecessor(()=>{throw Object.assign(Error('DENIED'),{code:'EACCES'})},historical),{code:'EACCES'})
+})
+
+test('quality recurring compatibility authenticates the new common dispatch and retains all old guards',async()=>{
+ const c=await import('./controlled-package-ci.mjs'),root=new URL('../../',import.meta.url),source='acbc3fec33578f0ab053573a0f59ee41149112da',cache=new Map()
+ const historical=(sha,p)=>{const key=sha+':'+p;if(!cache.has(key))cache.set(key,execFileSync('git',['cat-file','blob',key],{cwd:root,stdio:['ignore','pipe','pipe']}));return Buffer.from(cache.get(key))}
+ const current=p=>historical(source,p),common='apps/architecture-lab/private-recurring-source.mjs'
+ const view=c.qualityTrustedPredecessor(current,historical);assert(view)
+ assert.deepEqual(view.previousBytes(common),historical(c.QUALITY_HOST_BASE,common))
+ const receipt=c.QUALITY_HOST_RECEIPT
+ for(const change of [s=>s.replace('if(quality)return recurringSourcePredecessor','if(false)return recurringSourcePredecessor'),s=>s+'\n// unreviewed']){
+  const altered=Buffer.from(change(current(common).toString())),a=JSON.parse(current(receipt));a.sourceDigests[common]=createHash('sha256').update(altered).digest('hex')
+  assert.throws(()=>c.qualityTrustedPredecessor(p=>p===common?altered:p===receipt?Buffer.from(JSON.stringify(a)):current(p),historical))
+ }
 })
