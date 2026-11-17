@@ -1,0 +1,44 @@
+# Stage1 technical bootstrap only. Applying the reviewed plan requires owner approval.
+# No model, publisher, owner-signing, private QA or registry credential belongs here.
+previews:
+  generation: off
+services:
+  - type: worker
+    name: sg2-assistant-quality-development
+    runtime: node
+    repo: https://github.com/profitia/SG-dev
+    branch: main
+    region: frankfurt
+    plan: 0.5c-512mb
+    numInstances: 1
+    autoDeployTrigger: off
+    maxShutdownDelaySeconds: 30
+    buildCommand: npm --prefix packages/assistant-quality-control ci --ignore-scripts --no-audit --no-fund
+    startCommand: node packages/assistant-quality-control/src/cli.mjs readiness
+    envVars:
+      - key: NODE_VERSION
+        value: 24.22.3
+      - key: TARGET_ENVIRONMENT
+        value: development
+      - key: AQC_MODE
+        value: TECHNICAL_READINESS
+      - key: AQC_PAID_REPAIRS_ENABLED
+        value: "false"
+      - key: AQC_PROMOTION_ENABLED
+        value: "false"
+      - key: AQC_SERVICE_UUID
+        sync: false
+      - key: AQC_CONTROL_DATABASE_URL
+        sync: false
+      - key: AQC_LIMITS_DATABASE_URL
+        sync: false
+      - key: AQC_CONTROL_COMMAND_KEY
+        sync: false
+      - key: AQC_LIMITS_COMMAND_KEY
+        sync: false
+      - key: AQC_POSTHOG_PROJECT_TOKEN
+        sync: false
+      - key: AQC_POSTHOG_HOST
+        sync: false
+      - key: AQC_SENTRY_DSN
+        sync: false

@@ -50,3 +50,24 @@ test('OFFLINE loopback: CRLF streams settle and provider errors never expose ups
  const good=await exercise({crlf:true});assert(good.events.includes('settle'));assert(good.text.includes('response.completed'))
  const bad=await exercise({streamError:true});assert(!bad.text.includes('synthetic-sensitive-provider-detail'));assert(bad.text.includes('AQC_UPSTREAM_ERROR'));assert(bad.events.includes('unknown:STREAM_INCOMPLETE'))
 })
+
+test('keyless rejected-request diagnostics expose only finite protocol shape, never input or unknown keys/values',async()=>{
+ const seen=[];let upstream=0
+ const budget={assertPermit:async()=>{},reserveRequest:async()=>{},dispatchRequest:async()=>{},settleRequest:async()=>{},markUnknown:async()=>{},releaseUndispatched:async()=>{}}
+ const broker=createCostBroker({budget,permit:{permitId:randomUUID()},bearerToken:token,openaiKey:'synthetic-only',diagnostics:v=>seen.push(v),fetcher:async()=>{upstream++;throw Error('unexpected')}})
+ const url=await broker.listen()
+ try{
+  const body={...request(),client_metadata:{secret:'SYNTHETIC_PRIVATE_VALUE'},synthetic_private_key:'SYNTHETIC_PRIVATE_VALUE',tools:[{type:'web_search'}]}
+  const response=await fetch(url+'/responses',{method:'POST',headers:{'content-type':'application/json',Authorization:'Bearer '+token},body:JSON.stringify(body)})
+  assert.equal(response.status,400);assert.equal(upstream,0);assert.equal(seen.length,1)
+  assert.equal(seen[0].unknownFieldCount,1);assert(seen[0].fields.includes('client_metadata'));assert.deepEqual(seen[0].toolTypes,['web_search'])
+  assert(!JSON.stringify(seen).includes('SYNTHETIC_PRIVATE_VALUE'));assert(!JSON.stringify(seen).includes('synthetic_private_key'));assert(!JSON.stringify(seen).includes('Synthetic coding fixture'));assert(!JSON.stringify(seen).includes(token))
+ }finally{await broker.close()}
+})
+
+test('CLI local client metadata is bounded and discarded before any billable request identity or provider payload',()=>{
+ const ordinary=boundAgentRequest(request())
+ const withLocal=boundAgentRequest({...request(),client_metadata:{'x-codex-session-id':'SYNTHETIC_SESSION_ONLY','x-codex-client':'synthetic'}})
+ assert.deepEqual(withLocal,ordinary);assert(!JSON.stringify(withLocal).includes('SYNTHETIC_SESSION_ONLY'))
+ for(const client_metadata of [[],{nested:{}},{oversized:'x'.repeat(8193)},Object.fromEntries(Array.from({length:33},(_,i)=>['field'+i,'value']))])assert.throws(()=>boundAgentRequest({...request(),client_metadata}),{code:'CLIENT_METADATA_REJECTED'})
+})
