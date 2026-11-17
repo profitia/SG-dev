@@ -120,3 +120,36 @@ test('history question previews retain current context redaction and final ident
  assert.equal(response.status,403);assert(!body.includes('FOREIGN_PREVIEW_SECRET'));assert(!body.includes(title))
  assert.equal(f.generated(),0)
 })
+
+test('controlled CIC1.8 protection buffers the model draft and renders only source facts before a single completion',async()=>{
+ const f=fixture();f.runtime.qualityResponseAccountId=user
+ f.runtime.model.generate=async(options:any)=>{await options.beforeDispatch();await options.publish('UNVERIFIED_MODEL_SECRET 999 EUR');return 'UNVERIFIED_MODEL_SECRET 999 EUR'}
+ const r=await f.execute()
+ const text=JSON.stringify(r.events)
+ assert.equal(r.response.status,200);assert(!text.includes('UNVERIFIED_MODEL_SECRET'));assert(!text.includes('999'))
+ assert(text.includes('EUR'));assert.equal(r.events.filter((e:any)=>e.type==='delta').length,1)
+ const stored=f.events.find(e=>e.complete)?.complete.response
+ assert(stored.includes('EUR'));assert(!stored.includes('UNVERIFIED_MODEL_SECRET'))
+ assert.equal(f.calls.filter(c=>c.payload?.kind==='GENERATE').length,1)
+})
+test('controlled empty/denied source produces an explicit limitation with no paid admission or model request',async()=>{
+ for(const status of ['EMPTY','DENIED','UNAVAILABLE']){
+  const f=fixture();f.runtime.qualityResponseAccountId=user
+  f.runtime.gateway.resolve=async()=>({contexts:[{source:'BENCHMARK_CHART',status,sourceVersion:reference.fingerprint,selection:reference,data:{value:'UNAVAILABLE_PRIVATE_SECRET'}}]})
+  const r=await f.execute(),text=JSON.stringify(r.events)
+  assert.equal(r.response.status,200);assert.equal(f.generated(),0)
+  assert.equal(f.calls.some(c=>c.payload?.kind==='GENERATE'),false)
+  assert(!text.includes('UNAVAILABLE_PRIVATE_SECRET'));assert(text.includes(status));assert(r.events.some((e:any)=>e.type==='completed'))
+ }
+})
+test('controlled source revocation after buffered generation prevents both delivery and a manufactured completion',async()=>{
+ const f=fixture();f.runtime.qualityResponseAccountId=user
+ f.runtime.model.generate=async(options:any)=>{await options.beforeDispatch();await options.publish('NEVER_VISIBLE');f.revoked();return 'NEVER_VISIBLE'}
+ const r=await f.execute()
+ assert.equal(r.events.some((e:any)=>e.type==='delta'||e.type==='completed'),false)
+ assert.equal(r.events.at(-1).code,'DENIED');assert(!f.events.some(e=>e.complete))
+})
+test('quality configuration for another account never changes the admitted account response path',async()=>{
+ const f=fixture();f.runtime.qualityResponseAccountId=foreign
+ const r=await f.execute();assert(r.events.some((e:any)=>e.type==='delta'&&e.text==='Synthetic answer'))
+})

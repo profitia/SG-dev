@@ -10,6 +10,7 @@ import {createAssistantContextGateway,createBenchmarkContextAdapter} from '../..
 import {createAssistantHistory} from './history'
 import {createAssistantModel,adaptAssistantUsageQuery} from './model'
 import {createAssistantSourceAdapters} from './sources'
+import {QUALITY_RESPONSE_VERSION} from './quality-response'
 import m2Targets from '@/deployment/assistant-m2-targets.json'
 import economicTargets from '@/deployment/assistant-ecr-targets.json'
 import type {Sg2SelectionRuntime} from '@/lib/platform/private-runtime'
@@ -47,7 +48,12 @@ export function readAssistantConfiguration(env:Env){
  // Trusted application configuration, never a browser header or model guess.
  // Existing installations keep their explicit legacy UTC behaviour until set.
  if(timeZone!==undefined){try{if(!timeZone||timeZone!==timeZone.trim())return unavailable();new Intl.DateTimeFormat('en',{timeZone}).format(0)}catch{return unavailable()}}
+ const qualityVersion=env.PROFITIA_ASSISTANT_QUALITY_RESPONSE_VERSION,qualityAccount=env.PROFITIA_ASSISTANT_QUALITY_ACCOUNT_ID
+ if(qualityVersion!==undefined&&(qualityVersion!==QUALITY_RESPONSE_VERSION||timeZone===undefined
+  ||!/^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(qualityAccount??''))
+  ||qualityVersion===undefined&&qualityAccount!==undefined)return unavailable()
  return Object.freeze({historyKey:historyKey!,usageKey:usageKey!,openaiKey:env.OPENAI_API_KEY,
+  qualityResponseAccountId:qualityVersion===QUALITY_RESPONSE_VERSION?qualityAccount!:null,
   ...(timeZone!==undefined?{timeZone}:{}),
   multiSource:env.PROFITIA_ASSISTANT_M2_CONFIGURATION_VERSION===m2Targets.configurationVersion,
   economicCalendar:env.PROFITIA_ASSISTANT_ECR_CONFIGURATION_VERSION===economicTargets.configurationVersion,
@@ -98,7 +104,7 @@ export function createSg2AssistantRuntime(config:AssistantConfiguration,options:
  const prune=()=>{void historyDb.$queryRawUnsafe('SELECT sg2_assistant_history.prune()').catch(()=>{})}
  prune();const retention=setInterval(prune,10*60*1000);retention.unref()
  const model=createAssistantModel(new OpenAI({apiKey:config.openaiKey,baseURL:'https://api.openai.com/v1',organization:null,project:null,maxRetries:0,timeout:60000}),usage)
- return Object.freeze({organisationId,history,gateway,model,usage,timeZone:config.timeZone??'UTC',
+ return Object.freeze({organisationId,history,gateway,model,usage,timeZone:config.timeZone??'UTC',qualityResponseAccountId:config.qualityResponseAccountId,
   async ready(){
    const h=await queryFor(historyDb)('SELECT sg2_assistant_history.descriptor() AS binding'),b=h.rows[0]?.binding as Record<string,unknown>|undefined
    if(h.rows.length!==1||!b||b.applicationId!=='spendguru'||b.environment!=='development'||b.projectId!==targets.history.projectId

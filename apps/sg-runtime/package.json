@@ -47,7 +47,7 @@
     "@clerk/react": "6.17.8",
     "@prisma/client": "^5.22.0",
     "@profitia/advisory-widget": "1.0.0",
-    "@profitia/cic-core": "1.6.0",
+    "@profitia/cic-core": "1.8.0",
     "@profitia/cic-procurement": "1.1.1",
     "@profitia/platform-contracts": "file:../../packages/platform-contracts",
     "@profitia/sg2-price-change-index-ui": "file:../../packages/sg2-price-change-index-ui",

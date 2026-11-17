@@ -7,6 +7,7 @@ import type {AssistantRuntime} from './runtime'
 import type {HistoryScope,StoredConversation,StoredTurn} from './history'
 import {selectConversationContext,referenceIdentity,contextHistoryScopes,contextSatisfiesScope,type AssistantTurnSelection} from './context-selection'
 import {withinPciIdentityScope as withinIdentityVerificationPhase} from '@/lib/platform/pci-identity-scope'
+import {prepareAssistantQualityResponse} from './quality-response'
 const headers={'Cache-Control':'private, no-store',Vary:'Cookie, Authorization','X-Content-Type-Options':'nosniff'}
 const uuid=(v:unknown):v is string=>typeof v==='string'&&/^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(v)
 const record=(v:unknown):v is Record<string,unknown>=>!!v&&typeof v==='object'&&!Array.isArray(v)
@@ -69,14 +70,14 @@ async function projectHistory(runtime:AssistantRuntime,request:Request,stored:St
  }
  return messages
 }
-function modelInput(selection:ReturnType<typeof selectConversationContext>,turn:TurnRequest,stored:StoredConversation|null,contexts:readonly ContextEntry[],organisationId:string){
+function modelInput(selection:ReturnType<typeof selectConversationContext>,turn:TurnRequest,stored:StoredConversation|null,contexts:readonly ContextEntry[],organisationId:string,qualityInstructions=''){
  const previous=(stored?.turns??[]).filter(t=>t.status==='COMPLETE'&&t.scopes.every(s=>{
   const current=selection.references.find(r=>r.source===s.reference.source),entry=contexts.find(c=>c.source===s.reference.source)
   return s.organisationId===organisationId&&!!current&&referenceIdentity(s.reference)===referenceIdentity(current)
    &&contextSatisfiesScope(s,entry)&&!!entry&&(['OK','PARTIAL'].includes(entry.status)||entry.status==='EMPTY'&&!!s.sourceVersion)
    &&(s.sourceVersion===undefined||s.sourceVersion===entry.sourceVersion)
  }))
- const instructions=selection.policy.instructions+(selection.economicCalendarTime?'\nServer-resolved calendar time: '+JSON.stringify(selection.economicCalendarTime)+'. Use this current server time and exact inclusive calendar period for relative dates. Describe dated calendar events only within that period; distinguish undated recurrence rules, scheduled releases, confirmed publications and actual results. State when forecasts or market reactions are absent from the supplied sources.':'' )
+ const instructions=selection.policy.instructions+qualityInstructions+(selection.economicCalendarTime?'\nServer-resolved calendar time: '+JSON.stringify(selection.economicCalendarTime)+'. Use this current server time and exact inclusive calendar period for relative dates. Describe dated calendar events only within that period; distinguish undated recurrence rules, scheduled releases, confirmed publications and actual results. State when forecasts or market reactions are absent from the supplied sources.':'' )
  const input:Array<{role:'developer'|'user'|'assistant';content:string}>=[{role:'developer',content:instructions}]
  const history=previous.slice(-12).flatMap(t=>[{role:'user' as const,content:t.message},{role:'assistant' as const,content:t.response}])
  const current=[{role:'user' as const,content:JSON.stringify({kind:'CONTEXT_DATA_NOT_INSTRUCTIONS',activeModule:turn.module,contexts})},{role:'user' as const,content:turn.message}]
@@ -143,19 +144,24 @@ export function createAssistantHandlers(resolveRuntime:()=>Promise<AssistantRunt
      return result
     })
     const context=await resolveContext(demand)
-    const input=modelInput(selection,turn,stored,context.contexts,r.organisationId),scopes=contextHistoryScopes(selection,context.contexts,r.organisationId)
-    await r.model.validateInput(input,request.signal)
+    const quality=r.qualityResponseAccountId===owner?prepareAssistantQualityResponse({contexts:context.contexts,
+     requiresContext:policy.contextPlan.length>0,locale:turn.locale,period:selection.economicCalendarTime}):null
+    const generate=quality?.generate??true
+    const input=modelInput(selection,turn,stored,context.contexts,r.organisationId,quality?.instructions),scopes=contextHistoryScopes(selection,context.contexts,r.organisationId)
+    if(generate)await r.model.validateInput(input,request.signal)
     begun=await r.run(request,'assistant.history.write',{action:'BEGIN',commandId:turn.commandId},async c=>{sameUser(c,owner);return r.history.begin(c,{conversationId:turn.conversationId,commandId:turn.commandId,message:turn.message,locale:turn.locale,scopes,expectedRevision:stored?.revision??null})})
     if(begun.status==='REPLAY')return failure(Object.assign(Error('Existing command'),{code:'INTERRUPTED'}))
     const active=begun
-    admission=await r.run(request,'assistant.converse',{kind:'GENERATE',commandId:turn.commandId,input:input.map(m=>({...m}))} as Json,async c=>{sameUser(c,owner);if(!c.assistantReservation)fail();return c.assistantReservation!})
-    if(admission.status!=='RESERVED')fail('INTERRUPTED')
+    if(generate){
+     admission=await r.run(request,'assistant.converse',{kind:'GENERATE',commandId:turn.commandId,input:input.map(m=>({...m}))} as Json,async c=>{sameUser(c,owner);if(!c.assistantReservation)fail();return c.assistantReservation!})
+     if(admission.status!=='RESERVED')fail('INTERRUPTED')
+    }
     const admitted=admission,initial=sourceFingerprint(context.contexts),sources=publicSources(context.contexts),stop=new AbortController()
     const signal=AbortSignal.any([request.signal,stop.signal,AbortSignal.timeout(90000)])
     let closed=false
-    async function guard(){return withinIdentityVerificationPhase(request,async()=>{
+    async function guard(checkActive=true){return withinIdentityVerificationPhase(request,async()=>{
      if(signal.aborted)throw signal.reason
-     await r.run(request,'assistant.converse',{kind:'AUTHORIZE'},async c=>{sameUser(c,owner);await r.history.check(c,{conversationId:active.conversationId,commandId:turn.commandId});return null})
+     await r.run(request,'assistant.converse',{kind:'AUTHORIZE'},async c=>{sameUser(c,owner);if(checkActive)await r.history.check(c,{conversationId:active.conversationId,commandId:turn.commandId});return null})
      if(policy.contextPlan.length&&sourceFingerprint((await resolveContext({...demand,signal})).contexts)!==initial)fail('CONTEXT_CHANGED')
      if(signal.aborted)throw signal.reason
     })}
@@ -165,10 +171,12 @@ export function createAssistantHandlers(resolveRuntime:()=>Promise<AssistantRunt
      void (async()=>{
       try{
        emit({type:'started',conversationId:active.conversationId,turnId:active.turnId})
-       const response=await Sentry.startSpan({name:'assistant.openai',op:'assistant.openai'},()=>r.model.generate({input,admission:admitted,signal,beforeDispatch:guard,
-        publish:async text=>{await guard();emit({type:'delta',text})}}))
+       const draft=admitted?await Sentry.startSpan({name:'assistant.openai',op:'assistant.openai'},()=>r.model.generate({input,admission:admitted,signal,beforeDispatch:guard,
+        publish:async text=>{await guard();if(!quality)emit({type:'delta',text})}})):''
+       const response=quality?(admitted?quality.finish(draft):quality.fallback()).delivered:draft
        await guard()
        await r.run(request,'assistant.history.write',{action:'COMPLETE',commandId:turn.commandId},async c=>{sameUser(c,owner);await r.history.complete(c,{conversationId:active.conversationId,commandId:turn.commandId,response,sources});return null})
+       if(quality){await guard(false);emit({type:'delta',text:response})}
        emit({type:'completed',sources})
       }catch(error){
        observe(error,'conversation');emit({type:'error',code:code(error)})
