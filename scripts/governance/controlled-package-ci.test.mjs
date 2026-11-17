@@ -3280,7 +3280,7 @@ test('trusted policy content reader refuses mismatched or unavailable large Git 
 // admits engineering source validation only; it cannot activate a runtime.
 test('quality Stage1 legacy continuation has a finite branch/path/window and rejects protected expansion',async()=>{
  const c=await import('./controlled-package-ci.mjs'),r=c.ASSISTANT_QUALITY_SG2_STAGE1_REVIEW
- assert.equal(r.paths.length,23);assert.equal(new Set(r.paths).size,23)
+ assert.equal(r.paths.length,24);assert.equal(new Set(r.paths).size,24)
  assert.deepEqual(r.branches,['sg2/cic-quality-stage1-runtime-20261112','sg2/cic-quality-host-integration-20261117'])
  const files=r.paths.map(filename=>({filename,status:'added',sha:'a'.repeat(40)}))
  c.assertQualityStage1SourceFiles(files,Date.parse('2026-11-17T00:00:00.000Z'))
@@ -3594,7 +3594,7 @@ test('trusted quality source composition verifies both exact closures and every 
  const current=p=>historical(source,p),view=trustedQualityPredecessor(current,historical)
  assert(view)
  assert.deepEqual(view.previousBytes('apps/sg-runtime/package.json'),historical('765e995ca9b1eacef83a562b46e9c23876992e9b','apps/sg-runtime/package.json'))
- for(const p of [...trustedQualityHostPaths,...trustedQualityPreserved])assert.throws(()=>trustedQualityPredecessor(f=>f===p?Buffer.concat([current(f),Buffer.from('UNREVIEWED')]):current(f),historical),p)
+ for(const p of [...trustedQualityHostPaths.filter(p=>p!=='apps/sg-runtime/tests/procurement-insights-editorial-integrity.mjs'),...trustedQualityPreserved])assert.throws(()=>trustedQualityPredecessor(f=>f===p?Buffer.concat([current(f),Buffer.from('UNREVIEWED')]):current(f),historical),p)
  const receipt='apps/sg-runtime/assistant-quality-host-integration.json'
  for(const mutate of [a=>a.privateQaActivated=true,a=>a.pilotStarted=true,a=>a.cicPublication.sourceSha='0'.repeat(40),a=>a.sourceDigests['apps/srm/foreign.ts']='0'.repeat(64)]){
   const changed=JSON.parse(current(receipt));mutate(changed)
@@ -3718,4 +3718,17 @@ test('Finder monitor optional absence is exact and cannot swallow malformed, unr
  const current=p=>execFileSync('git',['show',r.sourceSha+':'+p],{cwd:new URL('../../',import.meta.url),maxBuffer:32*1024*1024,stdio:['ignore','pipe','pipe']})
  for(const error of [Object.assign(Error('Denied'),{code:'EACCES'}),Object.assign(Error('Git'),{status:128,stderr:"fatal: path 'other.json' does not exist in 'history'"})])assert.throws(()=>c.finderMonitorTrustedPredecessor(()=>{throw error},()=>Buffer.alloc(0)),e=>e===error)
  assert.throws(()=>c.finderMonitorTrustedPredecessor(p=>p===r.recordPath?Buffer.from('{'):current(p),()=>Buffer.alloc(0)))
+})
+
+test('CI24 trusted source verifies the complete new host closure without executing candidate code',()=>{
+ const source='1c959fb48a55df0a2ac3bef5498ab59ba3914adf',base='f78738e8bfdc286532be863a53a9d2a6018092a9',root=new URL('../../',import.meta.url),cache=new Map()
+ const historical=(sha,p)=>{const k=sha+':'+p;if(!cache.has(k))cache.set(k,execFileSync('git',['cat-file','blob',k],{cwd:root,stdio:['ignore','pipe','pipe'],maxBuffer:4194304}));return Buffer.from(cache.get(k))}
+ const current=p=>historical(source,p),view=trustedQualityPredecessor(current,historical);assert(view)
+ const bound={...view.manifest.sourceDigests,['apps/sg-runtime/assistant-quality-integration.json']:createHash('sha256').update(current('apps/sg-runtime/assistant-quality-integration.json')).digest('hex')}
+ const paths=execFileSync('git',['diff','--name-only',base+'...'+source,'--','apps/sg-runtime'],{cwd:root,encoding:'utf8'}).trim().split('\n').filter(Boolean)
+ assert.equal(paths.length,23)
+ for(const p of paths)assert.equal(bound[p],createHash('sha256').update(current(p)).digest('hex'),p)
+ for(const p of trustedQualityHostPaths)assert.throws(()=>trustedQualityPredecessor(f=>f===p?Buffer.concat([current(f),Buffer.from('UNREVIEWED')]):current(f),historical),p)
+ const hook='apps/sg-runtime/tests/procurement-insights-editorial-integrity.mjs',receipt='apps/sg-runtime/assistant-quality-host-integration.json'
+ assert.throws(()=>trustedQualityPredecessor(p=>{if(p===receipt){const a=JSON.parse(current(p));a.sourceDigests[hook]='0'.repeat(64);return Buffer.from(JSON.stringify(a))}return current(p)},historical))
 })

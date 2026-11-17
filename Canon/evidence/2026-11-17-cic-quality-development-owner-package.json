@@ -309,5 +309,40 @@
     "proposalPr": 1136,
     "hostConversationId": "01a1e7fb-2253-7f91-9335-270094d39784",
     "approvedPathCount": 23
+  },
+  "proposedSourceCi24Amendment": {
+    "status": "PROPOSED_OWNER_DECISION_PENDING",
+    "previousApprovedPathCount": 23,
+    "proposedPathCount": 24,
+    "additionalPath": "apps/sg-runtime/tests/procurement-insights-editorial-integrity.mjs",
+    "owner": "SG2",
+    "kind": "EXACT_ADDITIVE_TEST_PROVENANCE_DISPATCH_ONLY",
+    "reason": "Actual full CI found missing aggregate CIC source coverage; the direct consent, notification and live-source entry points require CIC authentication at the earliest existing SG2 editorial predecessor. Add one exact additive hook there, retain its accepted936eaa61 predecessor and all original assertions, and preserve authenticated CIC source maps in already approved adapters. Shared platform packages and all previous receipts remain unchanged.",
+    "reviewableHostPr": 1099,
+    "reviewedHostSha": "1c959fb48a55df0a2ac3bef5498ab59ba3914adf",
+    "nativeObservedRun": 44166264779,
+    "controlledObservedRun": 44166373635,
+    "controlledObservedJob": 134333442391,
+    "controlledTestResult": {
+      "total": 1381,
+      "passed": 1380,
+      "failed": 1,
+      "failure": "EXACT_SOURCE_COVERAGE_MISSING",
+      "countedAsPass": false
+    },
+    "focusedQualification": {
+      "sourceAndTamperTests": 5,
+      "trustedControllerTests": 7,
+      "result": "PASS"
+    },
+    "sharedPlatformPackageUnchanged": true,
+    "allExistingTestsAndReceiptsRetained": true,
+    "sourceValidationOnly": true,
+    "existingBranchesExpiryPackagePinsAndActorUnchanged": true,
+    "runtimeAccessPermissionsCostsChanged": false,
+    "paidRepairsEnabled": false,
+    "promotionEnabled": false,
+    "pilotStarted": false,
+    "acceptedParallelPredecessorSha": "936eaa61087516028564c6aaad2c46912b4729f7"
   }
 }
