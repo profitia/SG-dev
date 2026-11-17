@@ -1,7 +1,7 @@
 {
   "schemaVersion": "1.0",
   "id": "CIC-E1-DEVELOPMENT-OWNER-PACKAGE-20261117",
-  "status": "PROPOSED_NOT_AUTHORISED",
+  "status": "OWNER_APPROVED_NOT_APPLIED",
   "project": "CIC Assistant Continuous Quality",
   "stage": "E1",
   "executionRoadmapRevision": 8,
@@ -236,7 +236,7 @@
     "fullE1AcceptanceClaimed": false
   },
   "deploymentPerformed": false,
-  "approvalRecorded": false,
+  "approvalRecorded": true,
   "localProtectedPolicyQualification": "336/336 PASS after preserving all current Calendar PI and Platform Knowledge changes on authority 16fd6946; the subsequent 52a8489b owner-admission data was incorporated unchanged",
   "linuxPrerequisite": {
     "decisionRequired": true,
@@ -246,5 +246,31 @@
     "observedSourceSha": "16fd69465162e4b37ca968c46cb901ba2b7f9f12",
     "failure": "The official pinned CLI archive contains only the Codex executable; system bwrap was not installed",
     "networkFilesystemPrivilegeAndCancellationGatesUnchanged": true
+  },
+  "ownerApproval": {
+    "date": "2026-11-17",
+    "hostConversationId": "01a1e7fb-2253-7f91-9335-270094d39784",
+    "response": "Zatwierdzam ca\u0142y opisany pakiet owner-only",
+    "proposalPr": 1104,
+    "reviewedPlanSyncId": "exe-dbu3pq0u01pc73djagqg",
+    "excluded": [
+      "Stage2",
+      "paid repairs activation",
+      "autonomous promotion",
+      "model pilot clock before E1-T13",
+      "broad classic Render API key"
+    ]
+  },
+  "installationProgress": {
+    "ordinaryRolesCreated": 7,
+    "ordinaryRoleLoginExpiresAt": "2026-11-27T23:59:59Z",
+    "migrationsInstalled": 4,
+    "installationsEnabled": false,
+    "purposeGrants": 0,
+    "enrolledInputs": 0,
+    "modelWindowStarted": false,
+    "temporaryOwnerCapabilitiesRestored": true,
+    "sourceSqlDigestsVerifiedBeforeApplication": true,
+    "secretsInGitOrLogs": false
   }
 }
