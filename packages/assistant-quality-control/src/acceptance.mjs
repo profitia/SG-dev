@@ -4,7 +4,7 @@ import {fileURLToPath} from 'node:url'
 import {createServer} from 'node:net'
 import {spawnSync} from 'node:child_process'
 import {createHash,generateKeyPairSync,randomBytes,randomUUID} from 'node:crypto'
-import {EXECUTOR_TOOL,assertExecutorHost,runIsolatedExecutor} from './executor.mjs'
+import {EXECUTOR_TOOL,assertExecutorHost,runIsolatedExecutor,prepareExecutorTools} from './executor.mjs'
 import {documentDigest,publicKeyId,signDocument,verifyBoundManifest,SOURCE_PATHS} from './manifest.mjs'
 import {ownerMandateBody,repairManifestBody} from './cli.mjs'
 import {createPublicProjection} from './provenance.mjs'
@@ -67,6 +67,18 @@ print('AQC_KEYLESS_TOOL_PROBES_PASS')
  return "/usr/bin/python3 - <<'AQC_KEYLESS_PY'\n"+program+'AQC_KEYLESS_PY'
 }
 
+export function qualificationCancellationCommand(){
+ return "/usr/bin/python3 - <<'AQC_CANCEL_PY'\nimport os,pathlib,time\npathlib.Path('aqc-cancellation-probe').write_text(str(os.getpid()))\ntime.sleep(100)\nAQC_CANCEL_PY"
+}
+export function qualificationCodeModeCall(tools,cmd,phase){
+ require(Array.isArray(tools)&&tools.length<=64&&typeof cmd==='string'&&Buffer.byteLength(cmd)<=16384&&['tool-loop','cancellation'].includes(phase),'CODE_MODE_TOOL_UNAVAILABLE')
+ const choices=tools.flatMap(t=>t?.type==='custom'&&t.name==='exec'?[{}]
+  :t?.type==='namespace'&&t.name==='functions'&&t.tools?.some(s=>s.type==='custom'&&s.name==='exec')?[{namespace:t.name}]:[])
+ require(choices.length===1,'CODE_MODE_TOOL_UNAVAILABLE')
+ return {type:'custom_tool_call',call_id:'aqc_keyless_'+phase,name:'exec',...choices[0],
+  input:'const result = await tools.exec_command('+JSON.stringify({cmd,login:false,yield_time_ms:phase==='cancellation'?100:10000,max_output_tokens:1000})+'); text(result);'}
+}
+
 /** Qualification exercises the actual launcher with ephemeral TEST keys and a
  * fake in-memory cost port/upstream. They are never installed as trusted keys,
  * never published, and cannot authorise a real repair or a paid request.
@@ -78,6 +90,7 @@ export async function qualifyLinuxExecutor(){
  require(!['OPENAI_API_KEY','RENDER_API_KEY','DATABASE_URL','GITHUB_TOKEN'].some(k=>process.env[k]),'KEYLESS_ENVIRONMENT_REQUIRED')
  const toolPath='/opt/aqc-tools/codex',binarySha256=hash(fs.readFileSync(toolPath)),gateSetSha256=qualificationPolicyDigest(packageRoot)
  require(run(toolPath,['--version']).includes(EXECUTOR_TOOL.version),'CODEX_VERSION_MISMATCH')
+ const codeModeHost=await prepareExecutorTools()
  const root='/root/aqc-qualification-'+randomUUID(),repo=root+'/repository',socketPath='/run/aqc-qualification-'+randomUUID()+'.sock'
  fs.mkdirSync(repo,{recursive:true,mode:0o700})
  const outside='/home/aqc-qualification-'+randomUUID();fs.mkdirSync(outside,{mode:0o777});fs.chmodSync(outside,0o777)
@@ -105,7 +118,7 @@ export async function qualifyLinuxExecutor(){
    // Explicit TEST input to reach the boundary; this is not an attestation of
    // successful qualification and is discarded with the ephemeral private key.
    const testAttestation=signDocument('AQC_LINUX_QUALIFICATION_V1',{gateSetSha256,codexVersion:EXECUTOR_TOOL.version,codexArchiveSha256:EXECUTOR_TOOL.archiveSha256,
-    codexBinarySha256:binarySha256,isolationHelperCommit:EXECUTOR_TOOL.isolationHelperCommit,fileIsolation:'PASS',networkIsolation:'PASS',privilegeIsolation:'PASS',
+    codexBinarySha256:binarySha256,...codeModeHost,isolationHelperCommit:EXECUTOR_TOOL.isolationHelperCommit,fileIsolation:'PASS',networkIsolation:'PASS',privilegeIsolation:'PASS',
     toolLoop:'PASS',cancellation:'PASS',noProviderRequests:true,runId:binding.runId,sourceSha:binding.executorSourceSha,verifiedAt:stamp(now-1000),expiresAt:stamp(now+300000)},key.privateKey)
    const permit={incidentId:body.incidentId,attemptId:randomUUID(),permitId:randomUUID(),expiresAt:stamp(now+300000)},abort=new AbortController()
    let calls=0,scope,deadline,diagnostic
@@ -120,19 +133,24 @@ export async function qualifyLinuxExecutor(){
     require(request.model===CODE_PRICING.model&&request.store===false,'BROKER_CONTRACT_FAILED')
     let item
     if(calls===1){
-     const tools=request.tools??[]
-     require(tools.some(t=>t.name==='exec_command'||t.type==='namespace'&&t.tools?.some(s=>s.name==='exec_command')),'COMMAND_TOOL_UNAVAILABLE')
+     const tools=[...(request.tools??[]),...request.input.filter(i=>i.type==='additional_tools').flatMap(i=>i.tools)]
      const testPath=body.allowedPaths.find(p=>p!==sourcePath)
-     const cmd=phase==='cancellation'?'/usr/bin/python3 -c "import time;time.sleep(100)"':qualificationCommand({outsideRead:outside+'/readable.txt',outsideWrite:outside+'/write.txt',blockedPort,socketPath,sourcePath,regressionPath:testPath,regressionSource:serializeRegression(regression)})
-     item={type:'function_call',call_id:'aqc_keyless_'+phase,name:'exec_command',arguments:JSON.stringify({cmd,login:false,yield_time_ms:phase==='cancellation'?100:10000,max_output_tokens:1000})}
+     const cmd=phase==='cancellation'?qualificationCancellationCommand():qualificationCommand({outsideRead:outside+'/readable.txt',outsideWrite:outside+'/write.txt',blockedPort,socketPath,sourcePath,regressionPath:testPath,regressionSource:serializeRegression(regression)})
+     item=qualificationCodeModeCall(tools,cmd,phase)
     }else{
      require(calls===2,'UNEXPECTED_TOOL_RETRY')
-     const outputs=request.input.filter(i=>i.type==='function_call_output')
+     const outputs=request.input.filter(i=>['function_call_output','custom_tool_call_output'].includes(i.type))
      require(outputs.length>0,'TOOL_OUTPUT_MISSING')
      const result=JSON.stringify(outputs)
      if(phase==='tool-loop')require(result.includes('AQC_KEYLESS_TOOL_PROBES_PASS'),'COMMAND_PROBES_FAILED')
      else{
-      require(scope&&fs.readFileSync(scope.cgroup+'/cgroup.procs','utf8').trim().split('\n').length>=2,'NO_DESCENDANT_TO_CANCEL')
+      require(scope,'NO_DESCENDANT_TO_CANCEL')
+      const marker=scope.work+'/aqc-cancellation-probe'
+      for(let i=0;i<200&&!fs.existsSync(marker);i++)await new Promise(resolve=>setTimeout(resolve,25))
+      require(fs.existsSync(marker),'NO_DESCENDANT_TO_CANCEL')
+      const pid=fs.readFileSync(marker,'utf8').trim()
+      require(/^[1-9][0-9]{0,9}$/.test(pid)&&fs.readFileSync(scope.cgroup+'/cgroup.procs','utf8').trim().split('\n').includes(pid)
+       &&fs.readFileSync('/proc/'+pid+'/comm','utf8').trim()==='python3','NO_DESCENDANT_TO_CANCEL')
       abort.abort()
      }
      item={type:'message',role:'assistant',id:'msg_aqc_keyless',content:[{type:'output_text',text:'Synthetic qualification complete'}]}
@@ -168,7 +186,7 @@ export async function qualifyLinuxExecutor(){
    }finally{clearTimeout(deadline);await broker.close()}
   }
   return {schemaVersion:'AQC_LINUX_OBSERVATIONS_V1',gateSetSha256,codexVersion:EXECUTOR_TOOL.version,codexArchiveSha256:EXECUTOR_TOOL.archiveSha256,
-   codexBinarySha256:binarySha256,isolationHelperCommit:EXECUTOR_TOOL.isolationHelperCommit,fileIsolation:toolLoopVerified?'PASS':'FAIL',
+   codexBinarySha256:binarySha256,...codeModeHost,isolationHelperCommit:EXECUTOR_TOOL.isolationHelperCommit,fileIsolation:toolLoopVerified?'PASS':'FAIL',
    networkIsolation:kernelNetworkVerified&&otherPortReached===0&&socketsReached===0?'PASS':'FAIL',privilegeIsolation:toolLoopVerified?'PASS':'FAIL',
    toolLoop:toolLoopVerified?'PASS':'FAIL',cancellation:cancellationVerified?'PASS':'FAIL',noProviderRequests:true,requestCount,settledCount,
    runId:binding.runId,sourceSha:binding.executorSourceSha,nonce:process.env.AQC_NONCE,verifiedAt:stamp(Date.now()),testKeysInstalled:false,realCostAuthorityUsed:false}
