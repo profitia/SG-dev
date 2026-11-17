@@ -3276,6 +3276,37 @@ test('trusted policy content reader refuses mismatched or unavailable large Git 
 })
 
 
+// Proposed finite exception for the already-open Stage1 legacy lineage. It
+// admits engineering source validation only; it cannot activate a runtime.
+test('quality Stage1 legacy continuation has a finite branch/path/window and rejects protected expansion',async()=>{
+ const c=await import('./controlled-package-ci.mjs'),r=c.ASSISTANT_QUALITY_SG2_STAGE1_REVIEW
+ assert.equal(r.paths.length,22);assert.equal(new Set(r.paths).size,22)
+ assert.deepEqual(r.branches,['sg2/cic-quality-stage1-runtime-20261112','sg2/cic-quality-host-integration-20261117'])
+ const files=r.paths.map(filename=>({filename,status:'added',sha:'a'.repeat(40)}))
+ c.assertQualityStage1SourceFiles(files,Date.parse('2026-11-17T00:00:00.000Z'))
+ for(const changed of [[],files.concat(files[0]),[...files,{filename:'.github/workflows/platform-contracts-ci.yml',status:'added',sha:'a'.repeat(40)}],
+  files.map((f,i)=>i?f:{...f,status:'removed'}),files.map((f,i)=>i?f:{...f,previous_filename:'old.ts'}),files.map((f,i)=>i?f:{...f,sha:'invalid'})])
+  rejection(()=>c.assertQualityStage1SourceFiles(changed,Date.parse('2026-11-17T00:00:00.000Z')))
+ rejection(()=>c.assertQualityStage1SourceFiles(files,Date.parse(r.expiresAt)))
+ for(const p of r.paths)assert(p.startsWith('apps/sg-runtime/'))
+ assert(!r.paths.some(p=>p.startsWith('packages/')||p.endsWith('/.npmrc')||p.includes('operation-integration')||p.includes('assistant-context-integration')))
+})
+test('quality dependency admission accepts only the measured CIC1.8 artifact and retains all prior tests and packages',async()=>{
+ const c=await import('./controlled-package-ci.mjs')
+ const authorityLock=JSON.parse(execFileSync('git',['show','4da39c3fe1fb79c913fb360fc0053ac625f40cb9:apps/sg-runtime/package-lock.json'],{cwd:authorityRoot})),authorityManifest=JSON.parse(execFileSync('git',['show','4da39c3fe1fb79c913fb360fc0053ac625f40cb9:apps/sg-runtime/package.json'],{cwd:authorityRoot}))
+ const read=(sha,file)=>JSON.parse(execFileSync('git',['show',sha+':apps/sg-runtime/'+file],{cwd:authorityRoot}))
+ const source='916e7908d06e8a7b1f8becb9ec19f2aafa1b4366',lock=read(source,'package-lock.json'),manifest=read(source,'package.json')
+ assert.equal(c.assertQualityStage1Packages(lock,manifest,authorityLock,authorityManifest,true),true)
+ assert.equal(c.assertQualityStage1Packages(read('d9413b1945d54cbbf730a3437f9b2d368095e98e','package-lock.json'),read('d9413b1945d54cbbf730a3437f9b2d368095e98e','package.json'),authorityLock,authorityManifest,false),true)
+ for(const edit of [x=>x.packages['node_modules/@profitia/cic-core'].integrity+='x',x=>x.packages['node_modules/@profitia/cic-core'].version='1.9.0',
+  x=>x.packages['node_modules/@profitia/cic-core'].resolved+='?credential=not-allowed',x=>x.packages[''].dependencies.pg='0.0.0']){
+  const x=structuredClone(lock);edit(x);rejection(()=>c.assertQualityStage1Packages(x,manifest,authorityLock,authorityManifest,true))
+ }
+ for(const edit of [x=>x.scripts['test:assistant']='true',x=>x.scripts.postinstall='curl example.invalid',x=>x.dependencies['@profitia/cic-procurement']='2.0.0']){
+  const x=structuredClone(manifest);edit(x);rejection(()=>c.assertQualityStage1Packages(lock,x,authorityLock,authorityManifest,true))
+ }
+ rejection(()=>c.assertQualityStage1Packages(lock,manifest,authorityLock,authorityManifest,false))
+})
 test('Calendar PI compatibility preserves original58+7 and admits only the exact three-file SG2 repair',async()=>{
  const c=await import('./controlled-package-ci.mjs'),r=c.ECR_COMPLETE_FUNCTIONAL_PI_REVIEW,cfg=c.ECR_COMPLETE_FUNCTIONAL_PI_COMPAT;
  assert.equal(Object.keys(r.entries).length,61);assert.equal(Object.keys(cfg.entries).length,3);
@@ -3331,6 +3362,29 @@ test('public proof absence preserves every original authority-source contract fi
  assert.equal(JSON.stringify(receipt),before)
 })
 
+
+test('quality Stage1 resolution fences the exact internal SG2 candidate and authenticates the complete file list',async()=>{
+ const c=await import('./controlled-package-ci.mjs'),source='529ce28a57120b0eee28b225736a9aeb922b06de',base='08621a1335c56dd8f72a3e4f4864de947da8eee7'
+ const files=execFileSync('git',['diff','--name-status','--no-renames',base+'...'+source],{cwd:authorityRoot,encoding:'utf8'}).trim().split('\n').map(line=>{
+  const [status,filename]=line.split('\t'),entry=execFileSync('git',['ls-tree',source,'--',filename],{cwd:authorityRoot,encoding:'utf8'}).trim()
+  return {filename,status:status==='A'?'added':'modified',sha:entry.split(' ')[2].split('\t')[0]}
+ })
+ const p={...pr(),number:1099,changed_files:files.length,base:{...pr().base,sha:base},head:{...pr().head,ref:c.ASSISTANT_QUALITY_SG2_STAGE1_REVIEW.branches[1],sha:source}}
+ let reads=0;const request=async endpoint=>({data:endpoint.includes('/files?')?files:(reads++,p)})
+ const result=await c.resolveCandidateAdmission({...context(),controlSha:base},'1099',source,request,authorityRoot)
+ assert.equal(reads,2);assert.equal(result.sha,source);assert.equal(result.admission.kind,'QUALITY_STAGE1_SG2');assert.deepEqual(result.admission.files,files)
+ const changed={...p,head:{...p.head,sha:'f'.repeat(40)}}
+ await assert.rejects(()=>c.resolveCandidateAdmission({...context(),controlSha:base},'1099',source,async endpoint=>({data:endpoint.includes('/files?')?files:changed}),authorityRoot))
+ const dir=fs.mkdtempSync(path.join(os.tmpdir(),'quality-source-')),root=path.join(dir,'source');let created=false
+ try{
+  execFileSync('git',['worktree','add','--detach',root,source],{cwd:authorityRoot,stdio:'pipe'});created=true
+  c.assertArchitectureCheckout(root,source,result.admission,authorityRoot)
+  for(const change of [{branch:'sg2/foreign'},{files:files.slice(1)},{baseSha:'1'.repeat(40)}])rejection(()=>c.assertArchitectureCheckout(root,source,{...result.admission,...change},authorityRoot))
+  const target=path.join(root,'apps/sg-runtime/lib/assistant/quality-response.ts');fs.appendFileSync(target,'\n');rejection(()=>c.assertArchitectureCheckout(root,source,result.admission,authorityRoot))
+ }finally{if(created)execFileSync('git',['worktree','remove','--force',root],{cwd:authorityRoot,stdio:'pipe'});fs.rmSync(dir,{recursive:true,force:true})}
+})
+// The closed Calendar fixture authenticates its71 exact reviewed blobs.
+// Its3-file regression commit is not a complete physical candidate tree.
 // Exact bounded successor for the existing Calendar review. No candidate code
 // runs while its source, modes, routes, receipts and history are authenticated.
 test('Calendar complete CI repair keeps original reviews and authenticates the fixed combined owner inputs as data',async()=>{
@@ -3339,7 +3393,7 @@ test('Calendar complete CI repair keeps original reviews and authenticates the f
  for(const[p,e]of Object.entries(c.ECR_COMPLETE_FUNCTIONAL_REVIEW.entries))if(p!==c.ECR_COMPLETE_FUNCTIONAL_PROVENANCE.helper)assert.deepEqual(p==='apps/architecture-lab/market-calendar-source.mjs'?{...r.entries[p],sha:r.previous[p].blob}:r.entries[p],e);
  assert.equal(r.entries['apps/architecture-lab/market-calendar-source.mjs'].sha,'c764168fa7d99e0320d1365cd813c01949f58623');
  for(const[p,e]of Object.entries(c.ECR_COMPLETE_FUNCTIONAL_CONSUMER_REVIEW.entries))assert.deepEqual(r.entries[p],e);
- const current=p=>execFileSync('git',['show',r.sourceSha+':'+p],{cwd:authorityRoot,stdio:['ignore','pipe','pipe']});
+ const current=p=>execFileSync('git',(r.entries[p]?['cat-file','blob',r.entries[p].sha]:['show',r.baseSha+':'+p]),{cwd:authorityRoot,stdio:['ignore','pipe','pipe']});
  const historical=(sha,p)=>execFileSync('git',['show',sha+':'+p],{cwd:authorityRoot,stdio:['ignore','pipe','pipe']});
  const before=c.completeFunctionalTrustedPredecessor(current,historical);
  const sdk='packages/platform-source-hub-contracts/package.json';
@@ -3351,7 +3405,7 @@ test('Calendar complete CI repair keeps original reviews and authenticates the f
 });
 test('Calendar complete CI repair refuses any changed physical input, inaccessible file or substituted predecessor',async()=>{
  const c=await import('./controlled-package-ci.mjs'),r=c.ECR_COMPLETE_FUNCTIONAL_CI_REPAIR,cache=new Map();
- const current=p=>{if(!cache.has(p))cache.set(p,execFileSync('git',['show',r.sourceSha+':'+p],{cwd:authorityRoot,stdio:['ignore','pipe','pipe']}));return cache.get(p)};
+ const current=p=>{if(!cache.has(p))cache.set(p,execFileSync('git',(r.entries[p]?['cat-file','blob',r.entries[p].sha]:['show',r.baseSha+':'+p]),{cwd:authorityRoot,stdio:['ignore','pipe','pipe']}));return cache.get(p)};
  const historical=(sha,p)=>execFileSync('git',['show',sha+':'+p],{cwd:authorityRoot,stdio:['ignore','pipe','pipe']});
  for(const p of Object.keys(r.entries))assert.throws(()=>c.completeFunctionalTrustedPredecessor(f=>f===p?Buffer.concat([current(f),Buffer.from(' drift')]):current(f),historical),p);
  const denied=Object.assign(Error('access denied'),{code:'EACCES'});
