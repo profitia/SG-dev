@@ -3719,3 +3719,42 @@ test('Finder monitor optional absence is exact and cannot swallow malformed, unr
  for(const error of [Object.assign(Error('Denied'),{code:'EACCES'}),Object.assign(Error('Git'),{status:128,stderr:"fatal: path 'other.json' does not exist in 'history'"})])assert.throws(()=>c.finderMonitorTrustedPredecessor(()=>{throw error},()=>Buffer.alloc(0)),e=>e===error)
  assert.throws(()=>c.finderMonitorTrustedPredecessor(p=>p===r.recordPath?Buffer.from('{'):current(p),()=>Buffer.alloc(0)))
 })
+
+// Immutable version-only package source; no candidate JavaScript is imported.
+import {EDITORIAL_PACKAGE_SOURCE_REVIEW as packageSourceReview,editorialTrustedPredecessor as packageSourceProjection,assistantNotificationsTrustedPredecessor as packageNotificationProjection,readNotificationPhysicalSource as packagePhysicalRead} from './controlled-package-ci.mjs'
+import packageTest from 'node:test'
+import packageAssert from 'node:assert/strict'
+import packageFs from 'node:fs'
+import packageOs from 'node:os'
+import packagePath from 'node:path'
+import {execFileSync as packageGit} from 'node:child_process'
+const packageTestRoot=new URL('../../',import.meta.url),packageHistoryCache=new Map()
+const packageHistory=(sha,p)=>{const key=sha+':'+p;if(!packageHistoryCache.has(key))packageHistoryCache.set(key,packageGit('git',['show',key],{cwd:packageTestRoot,stdio:['ignore','pipe','pipe'],maxBuffer:8*1024*1024}));return Buffer.from(packageHistoryCache.get(key))}
+const packageFixture=p=>packageHistory(packageSourceReview.sourceSha,p)
+packageTest('editorial package exact nine-file continuation preserves all28 receipts and accepted narrative history',()=>{
+ const view=packageSourceProjection(packageFixture,packageHistory);packageAssert(view)
+ packageAssert.equal(Object.keys(packageSourceReview.entries).length,9)
+ packageAssert.equal(Object.keys(packageSourceReview.preservedReceipts).length,28)
+ packageAssert.equal(view.manifest.packageVersionBefore,'1.2.0');packageAssert.equal(view.manifest.packageVersionAfter,'1.2.1')
+ for(const p of packageSourceReview.projection){
+  if(packageSourceReview.entries[p].status==='added')packageAssert.throws(()=>view.previousBytes(p),e=>e.code==='ENOENT')
+  else {const before=packageHistory(packageSourceReview.baseSha,p);packageAssert.deepEqual(view.previousBytes(p),before);const copy=view.previousBytes(p);copy[0]^=1;packageAssert.deepEqual(view.previousBytes(p),before)}
+ }
+ for(const[p]of Object.entries(packageSourceReview.preservedReceipts))packageAssert.deepEqual(view.previousBytes(p),packageFixture(p))
+ const narrative=packageSourceProjection(view.previousBytes,packageHistory);packageAssert(narrative)
+ packageAssert.equal(narrative.manifest.scope,'PROCUREMENT_INSIGHTS_EDITORIAL_PROFILE_V1')
+ packageAssert(packageNotificationProjection(narrative.previousBytes,packageHistory))
+})
+packageTest('editorial package refuses every altered current byte, old byte and all28 immutable receipts',()=>{
+ for(const p of [...Object.keys(packageSourceReview.entries),...Object.keys(packageSourceReview.preservedReceipts)]){
+  packageAssert.throws(()=>packageSourceProjection(f=>f===p?Buffer.concat([packageFixture(f),Buffer.from('unreviewed')]):packageFixture(f),packageHistory),p)
+  if(packageSourceReview.preservedReceipts[p]||packageSourceReview.entries[p]?.status==='modified')packageAssert.throws(()=>packageSourceProjection(packageFixture,(sha,f)=>f===p?Buffer.concat([packageHistory(sha,f),Buffer.from('history tamper')]):packageHistory(sha,f)),p)
+ }
+ packageAssert.equal(packageSourceProjection(()=>{throw Object.assign(Error('absent'),{code:'ENOENT'})},packageHistory),null)
+ for(const error of [Object.assign(Error('denied'),{code:'EACCES'}),Object.assign(Error('unrelated git failure'),{status:128,stderr:"path 'foreign' does not exist in 'source'"})])packageAssert.throws(()=>packageSourceProjection(()=>{throw error},packageHistory),e=>e===error)
+ packageAssert.throws(()=>packageSourceProjection(packageFixture,()=>{throw Error('unavailable predecessor')}))
+})
+packageTest('editorial package physical source refuses executable files and links',()=>{
+ const root=packageFs.mkdtempSync(packagePath.join(packageOs.tmpdir(),'editorial-package-mode-')),p='apps/sg-runtime/tests/procurement-insights-editorial-package-integrity.mjs',file=packagePath.join(root,p)
+ try{packageFs.mkdirSync(packagePath.dirname(file),{recursive:true});const b=packageFixture(p);packageFs.writeFileSync(file,b,{mode:0o644});packageAssert.deepEqual(packagePhysicalRead(root,p),b);packageFs.chmodSync(file,0o755);packageAssert.throws(()=>packagePhysicalRead(root,p),/MODE_REJECTED/);packageFs.chmodSync(file,0o644);packageFs.renameSync(file,file+'.original');packageFs.symlinkSync(file+'.original',file);packageAssert.throws(()=>packagePhysicalRead(root,p));}finally{packageFs.rmSync(root,{recursive:true,force:true})}
+})
