@@ -271,7 +271,7 @@
   "ownerApproval": {
     "date": "2026-11-17",
     "hostConversationId": "01a1e7fb-2253-7f91-9335-270094d39784",
-    "response": "Zatwierdzam ca\u0142y opisany pakiet owner-only",
+    "response": "Zatwierdzam cały opisany pakiet owner-only",
     "proposalPr": 1104,
     "reviewedPlanSyncId": "exe-dbu3pq0u01pc73djagqg",
     "excluded": [
@@ -293,5 +293,16 @@
     "temporaryOwnerCapabilitiesRestored": true,
     "sourceSqlDigestsVerifiedBeforeApplication": true,
     "secretsInGitOrLogs": false
+  },
+  "pendingSourceCiAmendment": {
+    "status": "OWNER_DECISION_REQUIRED_BEFORE_MAIN_ACTIVATION",
+    "previousApprovedPathCount": 22,
+    "proposedPathCount": 23,
+    "additionalPath": "apps/architecture-lab/private-recurring-source.mjs",
+    "owner": "ARCHITECTURE",
+    "kind": "EXACT_ADDITIVE_TEST_PROVENANCE_DISPATCH_ONLY",
+    "reason": "Five actual execution failures in run44125118727: recurring source checks read the changed PI completion hook before authenticating the approved quality continuation. Verify full quality closure first, then preserve every original recurring check and receipt.",
+    "runtimeAccessPermissionsCostsChanged": false,
+    "existingBranchesExpiryPackagePinsAndActorUnchanged": true
   }
 }
