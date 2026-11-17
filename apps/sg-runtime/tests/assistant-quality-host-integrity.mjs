@@ -17,7 +17,8 @@ export const QUALITY_HOST_PATHS=Object.freeze([
  'apps/sg-runtime/tests/assistant-quality-integrity.mjs',
  'apps/sg-runtime/tests/assistant-quality-host-integrity.mjs',
  'apps/sg-runtime/tests/assistant-quality-host-integrity.test.mjs',
- 'apps/sg-runtime/tests/procurement-insights-completion-integrity.mjs'
+ 'apps/sg-runtime/tests/procurement-insights-completion-integrity.mjs',
+ 'apps/architecture-lab/private-recurring-source.mjs'
 ])
 export const QUALITY_HOST_PRESERVED=Object.freeze([
  'apps/sg-runtime/assistant-quality-integration.json',
@@ -53,8 +54,10 @@ export function assistantQualityHostPredecessor(current,historical){
  assert.equal(a.scope,'CONTROLLED_CIC18_HOST_AND_PRIVATE_QA_SOURCE');assert.equal(a.targetEnvironment,'development')
  assert.equal(a.previousSourceSha,QUALITY_HOST_BASE);assert.deepEqual(a.cicPublication,publication)
  for(const k of ['responseProtectionActivated','privateQaActivated','cloudInstallationPerformed','pilotStarted'])assert.equal(a[k],false,k)
- assert.deepEqual(Object.keys(a.sourceDigests).sort(),[...QUALITY_HOST_PATHS].sort())
- for(const p of QUALITY_HOST_PATHS){assert.match(a.sourceDigests[p],/^[a-f0-9]{64}$/);assert.equal(hash(current(p)),a.sourceDigests[p],'exact quality host source '+p)}
+ const common='apps/architecture-lab/private-recurring-source.mjs',hasCommon=Object.hasOwn(a.sourceDigests,common)
+ const paths=hasCommon?QUALITY_HOST_PATHS:QUALITY_HOST_PATHS.filter(p=>p!==common)
+ assert.deepEqual(Object.keys(a.sourceDigests).sort(),[...paths].sort())
+ for(const p of paths){assert.match(a.sourceDigests[p],/^[a-f0-9]{64}$/);assert.equal(hash(current(p)),a.sourceDigests[p],'exact quality host source '+p)}
  assert.deepEqual(Object.keys(a.previousReceipts).sort(),[...QUALITY_HOST_PRESERVED].sort())
  for(const p of QUALITY_HOST_PRESERVED){assert.equal(hash(current(p)),a.previousReceipts[p]);assert.equal(hash(historical(QUALITY_HOST_BASE,p)),a.previousReceipts[p],'immutable previous receipt '+p)}
  const manifest=JSON.parse(current('apps/sg-runtime/package.json')),before=JSON.parse(historical(QUALITY_HOST_BASE,'apps/sg-runtime/package.json'))
@@ -65,7 +68,10 @@ export function assistantQualityHostPredecessor(current,historical){
  previous.packages[''].dependencies['@profitia/cic-core']='1.8.0'
  Object.assign(previous.packages['node_modules/@profitia/cic-core'],QUALITY_CIC_PIN)
  assert.deepEqual(lock,previous,'no other registry, local package or dependency change')
- const mapped=new Set(QUALITY_HOST_PATHS),cache=new Map()
+ const beforeCommon=String(historical(QUALITY_HOST_BASE,common)),commonHead="export function recurringSourcePredecessor(current,historical){\n",commonImport="import {assistantQualityPredecessor} from '../sg-runtime/tests/assistant-quality-integrity.mjs'\n",commonPrefix=" const quality=assistantQualityPredecessor(current,historical);if(quality)return recurringSourcePredecessor(quality.previousBytes,historical)\n"
+ assert.equal(beforeCommon.split(commonHead).length,2,'one original recurring source entry')
+ assert.equal(String(current(common)),hasCommon?commonImport+beforeCommon.replace(commonHead,commonHead+commonPrefix):beforeCommon,'only exact additive quality dispatch precedes original recurring checks')
+ const mapped=new Set(paths),cache=new Map()
  return {manifest:a,previousBytes:p=>{
   if(p===QUALITY_HOST_RECEIPT||added.has(p))throw Object.assign(Error('Quality host absent from predecessor'),{code:'ENOENT'})
   if(!mapped.has(p))return current(p)
