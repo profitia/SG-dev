@@ -1,0 +1,32 @@
+{
+  "status": "PREPARED_NOT_EXECUTED_REQUIRES_OWNER_R3_GO",
+  "release": "8c1e7e3fe9bfd719cce462ac21377916e791f32a",
+  "taskId": "ARCH-PK-STAGE2-TECHNICAL-CONT-20261117",
+  "grantId": "cd095168-466f-581e-a99c-95fbc0db6912",
+  "userId": "092c2d9f-a84b-4c18-b3d6-e172a61399b8",
+  "scope": "PROFITIA_SHARED",
+  "operation": "document.query",
+  "effect": "ALLOW",
+  "usePurpose": "PROFITIA_INTERNAL",
+  "expiresAt": "2026-12-11T23:59:00Z",
+  "versions": [
+    1,
+    2,
+    3
+  ],
+  "statuses": [
+    "ACTIVE",
+    "REVOKED",
+    "ACTIVE"
+  ],
+  "maximumRounds": 1,
+  "centralOwnerTransactionLimitSharedWithOriginalDecision": 24,
+  "ownPrivilegesOnly": true,
+  "foreignGrantsOrMembershipsChanged": false,
+  "providerOwnerEdgeChanged": false,
+  "temporaryOwnerSetRestoredBeforeEveryCommit": true,
+  "sameOrdinaryClerkSessionAndCachedQuery": true,
+  "requiredActualResult": "Allowed with sources -> own query grant revoked -> same session/request denied403 without paid call -> grant restored ACTIVE at monotonic version3 -> allowed with sources",
+  "originalOwnerSqlSha256": "75ee6a624e34685735b1e0762aaef783d9177a1db05bb25d7a34ca600bd48a37",
+  "reviewedOwnerSqlSha256": "a9835ad9cf171f6de1ee966c434448ea90f103f181395b096f1489fde71a16cd"
+}
