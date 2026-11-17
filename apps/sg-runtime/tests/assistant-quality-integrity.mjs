@@ -1,3 +1,4 @@
+import {assistantQualityHostPredecessor} from './assistant-quality-host-integrity.mjs'
 // Source continuation only: verifies current calendar bytes before projecting
 // the immutable earlier acceptance. It grants no source, data or release right.
 import assert from 'node:assert/strict'
@@ -30,6 +31,7 @@ const additions=new Set(['apps/sg-runtime/lib/assistant/calendar-period.ts','app
  'apps/sg-runtime/tests/assistant-quality-integrity.mjs','apps/sg-runtime/tests/assistant-quality-integrity.test.mjs'])
 const hash=b=>createHash('sha256').update(b).digest('hex')
 export function assistantQualityPredecessor(current,historical){
+ const host=assistantQualityHostPredecessor(current,historical);if(host)return assistantQualityPredecessor(host.previousBytes,historical)
  let bytes
  try{bytes=current(QUALITY_RECEIPT)}catch(e){
   const text=String(e?.stderr??e?.message??'')
