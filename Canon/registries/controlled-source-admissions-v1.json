@@ -143,11 +143,20 @@
       "targetEnvironment": "development",
       "scope": "SOURCE_VALIDATION_ONLY",
       "approvalRef": "owner-request:01a1e914-b834-7633-a1d8-d92fd43f0865:vercly-resumption-repair",
-      "sourceSha": "74ce079502f73011fd29ea6a9be066fe94d3cc54",
-      "baseSha": "08621a1335c56dd8f72a3e4f4864de947da8eee7",
-      "validFrom": "2026-11-17T13:27:28.407993+00:00",
+      "sourceSha": "24216ec957474057af9ce93663c64ac7c073e6c8",
+      "baseSha": "4ac4cbab24931a0662bd5244abb6c4b0761cd7fa",
+      "validFrom": "2026-11-17T13:33:30.219Z",
       "validUntil": "2026-11-24T23:59:59.000Z",
       "files": [
+        {
+          "path": "apps/sg-runtime/tests/assistant-notifications-integrity.mjs",
+          "blob": "14c44af6ef6a187914895644f2cc761133fb9310",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SG2",
+          "owner": "SG Runtime",
+          "surfaceId": "SG2-BASE-001"
+        },
         {
           "path": "apps/srm/db/migrations/0019_kys_resume.sql",
           "blob": "89b4561b0f44e3440dcdef9449145b56342fd2be",
@@ -194,6 +203,24 @@
           "surfaceId": "SG2-BASE-016"
         },
         {
+          "path": "apps/srm/scripts/source-dependency-test-fixtures.mjs",
+          "blob": "1f18742d56268712967c203697f8a3cf2a2b1ded",
+          "mode": "100644",
+          "status": "added",
+          "projectKey": "SRM",
+          "owner": "SRM Runtime",
+          "surfaceId": "SG2-BASE-016"
+        },
+        {
+          "path": "apps/srm/scripts/source-dependency-test-fixtures.test.mjs",
+          "blob": "54911f293f4df0ad6c9e383ab9ac1616c20eb6ca",
+          "mode": "100644",
+          "status": "added",
+          "projectKey": "SRM",
+          "owner": "SRM Runtime",
+          "surfaceId": "SG2-BASE-016"
+        },
+        {
           "path": "apps/srm/scripts/staging-rollback.test.mjs",
           "blob": "6648da74680e5e0d5c7b8fbd8a550755e7f84dc2",
           "mode": "100644",
@@ -213,7 +240,7 @@
         },
         {
           "path": "apps/srm/src/server/company-source-policy.test.ts",
-          "blob": "c2cea8bb47a08425970c3cae825837a00ae5f920",
+          "blob": "a239513df439c59877e15abd3af574f5302a227d",
           "mode": "100644",
           "status": "modified",
           "projectKey": "SRM",
