@@ -1,3 +1,4 @@
+import {bindSrmRequestRuntime} from './organisation-context'
 import type { OperationExecutor } from '@profitia/platform-contracts/operation-context'
 import { OPERATION_CONTRACT, isOperationDenied } from '@profitia/platform-contracts/operation-context'
 import type { PoolClient } from 'pg'
@@ -51,7 +52,7 @@ export function createRuntimeSharedFinancialHandler(resolveRuntime: () => SrmRep
   return async (request: Request): Promise<Response> => {
     if (!/^Bearer [^\s]{1,8192}$/.test(request.headers.get('authorization') ?? '')) return respond(401)
     try {
-      const runtime = resolveRuntime()
+      const runtime = await bindSrmRequestRuntime(resolveRuntime(),request)
       if (runtime.provider !== 'clerk') return respond(503)
       return await createOperationSharedFinancialHandler(runtime.executor, runtime.defaultOrganisationId, env)(request)
     } catch { return respond(503) }

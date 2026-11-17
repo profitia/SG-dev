@@ -1,3 +1,4 @@
+import {bindSrmRequestRuntime} from './organisation-context'
 import {OPERATION_CONTRACT,isOperationDenied,type OperationExecutor} from '@profitia/platform-contracts/operation-context'
 import {projectSupplierAssistantSummary,readSupplierAssistantSelection,type AssistantKysRead} from '@profitia/srm-xray/assistant-summary'
 import type {PoolClient} from 'pg'
@@ -65,7 +66,7 @@ export function createSrmAssistantContextHandler(options:Options,env:Readonly<Re
 export function createRuntimeSrmAssistantContextHandler(){
  return async(request:Request)=>{
   if(process.env.PROFITIA_ASSISTANT_CONTEXT_PEER_READ_VERSION!==SRM_ASSISTANT_READ_VERSION)return respond(503)
-  try{const runtime=getSrmReportRuntime();if(runtime.provider!=='clerk')return respond(503)
+  try{const runtime=await bindSrmRequestRuntime(getSrmReportRuntime(),request);if(runtime.provider!=='clerk')return respond(503)
    return await createSrmAssistantContextHandler({executor:runtime.executor,defaultOrganisationId:runtime.defaultOrganisationId,api:runtime.supplierApi},process.env)(request)
   }catch{return respond(503)}
  }
