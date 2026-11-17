@@ -1,6 +1,8 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import {createQualityRelease} from '../src/release.mjs'
+import {createQualityRelease,createQualityRuntimeProbeVerifier,createQualityAttestedRelease} from '../src/release.mjs'
+import {generateKeyPairSync,randomUUID} from 'node:crypto'
+import {signDocument,publicKeyId} from '../src/manifest.mjs'
 import {createQualityGitHub} from '../src/github.mjs'
 const sha='a'.repeat(40),old='b'.repeat(40),digest='c'.repeat(64)
 const oldId='dep-aaaaaaaaaaaaaaaaaaaa',newId='dep-bbbbbbbbbbbbbbbbbbbb',foreignId='dep-cccccccccccccccccccc'
@@ -160,4 +162,40 @@ test('lost dispatch response is reconciled by immutable source and nonce without
  }})
  await assert.rejects(g.dispatchQualification({sourceSha:sha,nonce:qualificationNonce}),{code:'DELIVERY_UNCERTAIN'})
  assert.deepEqual(await g.findQualification({sourceSha:sha,nonce:qualificationNonce}),{state:'RUNNING',runId:'42',conclusion:null});assert.equal(posts,1)
+})
+
+test('Independent publisher runtime adapter binds actual service/SHA/deployment, durable nonce and fresh signed E1/answer metadata',async()=>{
+ const key=generateKeyPairSync('ed25519'),keys=new Map([[publicKeyId(key.publicKey),key.publicKey]]),nonce=randomUUID()
+ const now=Date.parse('2026-11-17T18:00:00.000Z'),stamp=n=>new Date(n).toISOString(),requested={serviceId:service.id,sourceSha:sha,deployId:newId}
+ const body={schemaVersion:'AQC_RUNTIME_PROBE_V1',applicationId:'spendguru',environment:'development',...requested,nonce,
+  observedAt:stamp(now-1000),expiresAt:stamp(now+10000),canonicalE1Verified:true,answerVerified:true,sourceBindingVerified:true,
+  rawQaPayloadIncluded:false,proofInputsSha256:digest}
+ const sign=b=>signDocument('AQC_RUNTIME_PROBE_V1',b,key.privateKey)
+ let reads=0
+ const make=document=>createQualityRuntimeProbeVerifier({keys,nonce,notBefore:stamp(now-5000),now:()=>now,readReceipt:async expected=>{
+  reads++;assert.deepEqual(expected,{...requested,nonce});return document
+ }})
+ const valid=await make(sign(body))(requested);assert.equal(valid.verified,true);assert.equal(valid.sourceSha,sha);assert.match(valid.proofSha256,/^[a-f0-9]{64}$/);assert.equal(reads,1)
+ for(const change of [{serviceId:'srv-foreign'},{sourceSha:old},{deployId:oldId},{nonce:randomUUID()},{environment:'production'},
+  {applicationId:'foreign'},{observedAt:stamp(now+1)},{observedAt:stamp(now-6000)},{expiresAt:stamp(now)},{expiresAt:stamp(now+60000)},
+  {canonicalE1Verified:false},{answerVerified:false},{sourceBindingVerified:false},{rawQaPayloadIncluded:true},
+  {proofInputsSha256:'invalid'},{rawConversation:'synthetic forbidden extra field'}])
+  await assert.rejects(make(sign({...body,...change}))(requested))
+ const forged=structuredClone(sign(body));forged.body.sourceSha=old;await assert.rejects(make(forged)(requested))
+ await assert.rejects(make({verified:true,...requested})(requested))
+ assert.deepEqual(await make(null)(requested),{verified:false,sourceSha:sha,deployId:newId})
+ const before=reads;await assert.rejects(make(sign(body))({...requested,serviceId:'srv-foreign'}),{code:'RUNTIME_PROBE_TARGET_INVALID'});assert.equal(reads,before)
+ const other=generateKeyPairSync('ed25519'),later=make(signDocument('AQC_RUNTIME_PROBE_V1',body,other.privateKey))
+ keys.set(publicKeyId(other.publicKey),other.publicKey)
+ await assert.rejects(later(requested));keys.delete(publicKeyId(other.publicKey))
+ assert.throws(()=>createQualityRuntimeProbeVerifier({keys:new Map(),nonce,notBefore:stamp(now-5000),readReceipt:async()=>sign(body)}),{code:'RUNTIME_VERIFIER_CONFIGURATION_REQUIRED'})
+})
+test('Independent publisher composition refuses a substituted self-grade and stays mutation-disabled before provider access',async()=>{
+ const key=generateKeyPairSync('ed25519'),keys=new Map([[publicKeyId(key.publicKey),key.publicKey]]);let calls=0,reads=0
+ const runtimeEvidence={keys,nonce:randomUUID(),notBefore:'2026-11-17T00:00:00.000Z',readReceipt:async()=>{reads++;return null}}
+ const options={token:'synthetic',fetchImpl:async()=>{calls++;throw Error('forbidden')},runtimeEvidence}
+ assert.throws(()=>createQualityAttestedRelease({...options,verifyRuntime:async()=>({verified:true})}),{code:'RUNTIME_VERIFIER_CONFIGURATION_REQUIRED'})
+ const client=createQualityAttestedRelease(options)
+ await assert.rejects(client.deploy({}),{code:'PROMOTION_DISABLED'});await assert.rejects(client.rollback({}),{code:'PROMOTION_DISABLED'})
+ assert.equal(calls,0);assert.equal(reads,0)
 })
