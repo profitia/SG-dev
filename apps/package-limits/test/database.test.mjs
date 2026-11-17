@@ -803,6 +803,52 @@ test("Assistant M1 real SQL roles, atomic admission, actual settlement and uncer
     const races=await Promise.allSettled([call(command()),call(command())]);
     assert.equal(races.filter(r=>r.status==='fulfilled').length,1);assert.equal(races.filter(r=>r.status==='rejected').length,1);
     assert.equal(races.find(r=>r.status==='rejected').reason.message,'LIMIT_EXCEEDED');
+
+    // Incremental diagnostic migration preserves the base installation and all
+    // outstanding obligations. All writes below remain in the loopback fixture.
+    const uncertainBefore=(await f.owner.query("SELECT to_jsonb(e) AS value FROM profitia_limits.assistant_executions e WHERE status='PENDING_RECONCILIATION' ORDER BY execution_id")).rows;
+    const aclBefore=(await f.owner.query("SELECT p.proowner,p.proacl::text,p.prosecdef,p.proconfig FROM pg_proc p WHERE p.oid='profitia_limits.assistant_usage(text,text)'::regprocedure")).rows[0];
+    const change=readFileSync(new URL('../migrations/006-assistant-reservation-diagnostics.sql',import.meta.url),'utf8');
+    const migration=await f.owner.connect();
+    try{await migration.query('BEGIN');await migration.query('SET LOCAL ROLE profitia_limits_owner');await migration.query(change);await migration.query('COMMIT')}
+    catch(error){await migration.query('ROLLBACK');throw error}finally{migration.release()}
+    assert.deepEqual((await f.owner.query("SELECT p.proowner,p.proacl::text,p.prosecdef,p.proconfig FROM pg_proc p WHERE p.oid='profitia_limits.assistant_usage(text,text)'::regprocedure")).rows[0],aclBefore);
+    const effective=async(monthly=false)=>(await f.owner.query(`SELECT coalesce(sum(CASE WHEN status='SETTLED' THEN (usage->>'totalTokens')::numeric ELSE input_bound+output_bound END),0)::text AS tokens,coalesce(sum(CASE WHEN status='SETTLED' THEN (usage->>'nanoUsd')::numeric ELSE reserved_nano_usd END),0)::text AS cost FROM profitia_limits.assistant_executions WHERE status<>'RELEASED' ${monthly?"AND (status<>'SETTLED' OR created_at >= date_trunc('month',clock_timestamp() AT TIME ZONE 'Europe/Warsaw') AT TIME ZONE 'Europe/Warsaw')":''}`)).rows[0];
+    const global=await effective(),monthly=await effective(true),exact=()=>({...command(),inputTokens:5211,nanoUsd:String(5211*500+2048*1200)});
+    const pilotDenied=await call(exact());
+    assert.equal(pilotDenied.status,'DENIED');assert.equal(pilotDenied.reason,'LIMIT_EXCEEDED');
+    assert.equal(pilotDenied.diagnostics.scope,'PILOT');assert.equal(pilotDenied.diagnostics.metric,'OPENAI_TOTAL_TOKENS');
+    assert.equal(pilotDenied.diagnostics.available,'0');assert.equal(pilotDenied.diagnostics.required,'7259');
+    await f.owner.query('UPDATE profitia_limits.assistant_installation SET maximum_tokens=200000');
+    const override=async value=>f.owner.query("UPDATE profitia_limits.assignments SET payload=jsonb_set(payload,'{overrides}',$1) WHERE id=$2",[JSON.stringify([limit('OPENAI_TOTAL_TOKENS',String(value))]),assigned.id]);
+    await override(Number(monthly.tokens)+26777);
+    const large={...command(),inputTokens:28042,nanoUsd:String(28042*500+2048*1200)},countBefore=(await f.owner.query('SELECT count(*)::int AS n FROM profitia_limits.assistant_executions')).rows[0].n;
+    const refused=await call(large);
+    assert.equal(refused.status,'DENIED');assert.equal(refused.diagnostics.scope,'ASSIGNMENT');
+    assert.equal(refused.diagnostics.available,'26777');assert.equal(refused.diagnostics.required,'30090');
+    assert.equal(refused.diagnostics.inputTokens,28042);assert.equal(refused.diagnostics.outputTokens,2048);
+    assert.equal(refused.diagnostics.unit,'TOKENS');assert.equal(refused.diagnostics.metric,'OPENAI_TOTAL_TOKENS');
+    assert.equal((await f.owner.query('SELECT count(*)::int AS n FROM profitia_limits.assistant_executions')).rows[0].n,countBefore);
+    const small=exact(),accepted=await call(small);
+    assert.equal(accepted.status,'RESERVED');assert.equal((await call(small)).status,'REPLAY');
+    await call({action:'RELEASE',executionId:accepted.executionId,commandId:small.commandId});
+    // A separate pilot cost constraint remains binding and explicitly named.
+    await f.owner.query('UPDATE profitia_limits.assistant_installation SET maximum_nano_usd=$1',[Number(global.cost)+Number(small.nanoUsd)-1]);
+    const costly=await call(exact());assert.equal(costly.status,'DENIED');
+    assert.equal(costly.diagnostics.scope,'PILOT');assert.equal(costly.diagnostics.metric,'OPENAI_API_COST_USD');
+    assert.equal(costly.diagnostics.unit,'NANO_USD');assert.equal(costly.diagnostics.required,small.nanoUsd);
+    assert.equal(costly.diagnostics.available,String(Number(small.nanoUsd)-1));
+    await f.owner.query('UPDATE profitia_limits.assistant_installation SET maximum_nano_usd=5000000000');
+    // Both concurrent exact requests cannot consume the last single allowance.
+    await override(Number(monthly.tokens)+7259);
+    const pair=await Promise.all([call(exact()),call(exact())]);
+    assert.equal(pair.filter(r=>r.status==='RESERVED').length,1);assert.equal(pair.filter(r=>r.status==='DENIED').length,1);
+    assert.equal(pair.find(r=>r.status==='DENIED').diagnostics.available,'0');
+    assert.deepEqual((await f.owner.query("SELECT to_jsonb(e) AS value FROM profitia_limits.assistant_executions e WHERE status='PENDING_RECONCILIATION' ORDER BY execution_id")).rows,uncertainBefore);
+    const replayMigration=await f.owner.connect();
+    try{await replayMigration.query('BEGIN');await replayMigration.query('SET LOCAL ROLE profitia_limits_owner');await assert.rejects(replayMigration.query(change),/ASSISTANT_PREVIOUS_FUNCTION_REQUIRED/)}
+    finally{await replayMigration.query('ROLLBACK');replayMigration.release()}
+
     await f.owner.query('UPDATE profitia_limits.assistant_policy SET enabled=false,version=version+1');
     await assert.rejects(call(command()));
     await assert.rejects(f.owner.query("UPDATE profitia_limits.assistant_usage_events SET metadata='{}'"),e=>e.code==='42501');

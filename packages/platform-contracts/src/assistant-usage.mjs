@@ -62,9 +62,54 @@ export function assertAssistantUsageReservation(value,context){
  return value
 }
 
-export function createAssistantUsageStore({query,commandKey,schemaDigest,now=Date.now}){
+
+/** Only closed numerical diagnostics from the bound native receipt may reach
+ * operational logs. Never forward provider/database text or private input. */
+function readLimitDiagnostics(d,bound){
+ if(!d||typeof d!=='object'||Array.isArray(d)
+  ||Object.keys(d).sort().join(',')!=='available,consumed,inputTokens,limit,metric,outputTokens,required,scope,unit,version'
+  ||d.version!=='1.0.0'||!['PILOT','ASSIGNMENT'].includes(d.scope)
+  ||!['OPENAI_INPUT_TOKENS','OPENAI_OUTPUT_TOKENS','OPENAI_TOTAL_TOKENS','OPENAI_API_COST_USD','OPENAI_CACHED_TOKENS','OPENAI_REASONING_TOKENS','OPENAI_CACHE_WRITE_TOKENS'].includes(d.metric)
+  ||d.unit!==(d.metric==='OPENAI_API_COST_USD'?'NANO_USD':'TOKENS')
+  ||d.inputTokens!==bound.inputTokens||d.outputTokens!==2048
+  ||['available','consumed','limit','required'].some(k=>typeof d[k]!=='string'||!/^\d{1,30}(?:\.\d{1,9})?$/.test(d[k])))return null
+ return {version:d.version,scope:d.scope,metric:d.metric,unit:d.unit,available:d.available,consumed:d.consumed,limit:d.limit,
+  required:d.required,inputTokens:d.inputTokens,outputTokens:d.outputTokens}
+}
+
+export function createAssistantUsageStore({query,commandKey,schemaDigest,countInputTokens,onDenied,now=Date.now}){
  if(typeof query!=='function'||typeof now!=='function'||typeof commandKey!=='string'||!sha.test(commandKey)||!sha.test(schemaDigest))throw TypeError('Explicit Assistant usage binding required')
- const key=Buffer.from(commandKey,'hex')
+ if(countInputTokens!==undefined&&typeof countInputTokens!=='function'||onDenied!==undefined&&typeof onDenied!=='function')throw TypeError('Trusted Assistant counter/diagnostic callback required')
+ const key=Buffer.from(commandKey,'hex'),prepared=new Map(),counting=new Set()
+ const sameScope=(a,b)=>a.actorId===b.actorId&&a.organisationId===b.organisationId&&a.commandId===b.commandId
+ // These records are minted only by the configured server counter. Neither
+ // request JSON nor E1's canonicalised payload can provide a token count.
+ async function prepareInput({actorId,organisationId,commandId,input,signal}){
+  if(typeof countInputTokens!=='function'||![actorId,organisationId,commandId].every(v=>uuid.test(v??'')))fail()
+  const scope={actorId,organisationId,commandId},envelope=assistantInputBound(input),time=now()
+  for(const [id,value] of prepared)if(value.expiresAt<=time)prepared.delete(id)
+  const prior=prepared.get(commandId)
+  if(prior){
+   if(prior.used||!sameScope(prior.scope,scope)||prior.bound.inputDigest!==envelope.inputDigest)fail('IDEMPOTENCY_CONFLICT')
+   return Object.freeze({...prior.bound,expiresAt:prior.expiresAt})
+  }
+  if(prepared.size+counting.size>=64||counting.has(commandId))fail('IDEMPOTENCY_CONFLICT')
+  counting.add(commandId)
+  try{
+   signal?.throwIfAborted()
+   const snapshot=Object.freeze(input.map(m=>Object.freeze({role:m.role,content:m.content})))
+   const result=await countInputTokens(Object.freeze({model:ASSISTANT_PRICING.model,input:snapshot,signal}))
+   signal?.throwIfAborted()
+   if(result?.object!=='response.input_tokens'||!Number.isSafeInteger(result.input_tokens)||result.input_tokens<1
+    ||result.input_tokens>envelope.inputTokens)fail('LIMIT_EXCEEDED')
+   if(assistantInputBound(input).inputDigest!==envelope.inputDigest)fail('IDEMPOTENCY_CONFLICT')
+   const bound=Object.freeze({inputDigest:envelope.inputDigest,inputTokens:result.input_tokens,outputTokens:2048,
+    nanoUsd:(BigInt(result.input_tokens)*500n+2048n*1200n).toString()})
+   const value={scope,bound,model:ASSISTANT_PRICING.model,expiresAt:now()+25000,used:false}
+   prepared.set(commandId,value)
+   return Object.freeze({...bound,expiresAt:value.expiresAt})
+  }finally{counting.delete(commandId)}
+ }
  async function call(command){
   const body=JSON.stringify({...command,contract:ASSISTANT_USAGE_CONTRACT.version,schemaDigest,until:now()+10000})
   const proof=createHmac('sha256',key).update(body).digest('hex')
@@ -79,15 +124,29 @@ export function createAssistantUsageStore({query,commandKey,schemaDigest,now=Dat
    ||r.databaseName!=='neondb'||r.runtimeRole!=='profitia_limits_assistant_runtime'||r.schemaDigest!==schemaDigest)fail()
   return r
  }
- return Object.freeze({contract:ASSISTANT_USAGE_CONTRACT,
+ return Object.freeze({contract:ASSISTANT_USAGE_CONTRACT,prepareInput,
   async reserve({actorId,organisationId,commandId,decisionId,input,expectedPolicy}){
    if(![actorId,organisationId,commandId,decisionId].every(v=>uuid.test(v??'')))fail()
    if(!expectedPolicy||![expectedPolicy.id,expectedPolicy.assignmentId].every(v=>uuid.test(v??''))
     ||!Number.isSafeInteger(expectedPolicy.assignmentRevision)||expectedPolicy.assignmentRevision<1)fail()
-   const bound=assistantInputBound(input)
+   const envelope=assistantInputBound(input)
+   let bound=envelope
+   // Compatibility for existing, explicitly unadopted consumers only. SG2
+   // always configures the counter; its failures never fall back to bytes.
+   if(countInputTokens){
+    const value=prepared.get(commandId)
+    if(!value||value.used||value.expiresAt<=now()||value.model!==ASSISTANT_PRICING.model
+     ||!sameScope(value.scope,{actorId,organisationId,commandId})||value.bound.inputDigest!==envelope.inputDigest)fail('IDEMPOTENCY_CONFLICT')
+    value.used=true;bound=value.bound
+   }
    const r=await call({action:'RESERVE',actorId,organisationId,commandId,decisionId,model:ASSISTANT_PRICING.model,pricingVersion:ASSISTANT_PRICING.version,
     inputDigest:bound.inputDigest,inputTokens:bound.inputTokens,outputTokens:bound.outputTokens,nanoUsd:bound.nanoUsd,
     policyId:expectedPolicy.id,assignmentId:expectedPolicy.assignmentId,assignmentRevision:expectedPolicy.assignmentRevision})
+   if(r.status==='DENIED'&&r.reason==='LIMIT_EXCEEDED'){
+    const d=readLimitDiagnostics(r.diagnostics,bound)
+    if(d&&onDenied){try{onDenied(immutable({commandId,model:ASSISTANT_PRICING.model,...d}))}catch{/* Diagnostics cannot change admission. */}}
+    fail('LIMIT_EXCEEDED')
+   }
    if(!uuid.test(r.executionId??'')||r.commandId!==commandId||r.actorId!==actorId||r.organisationId!==organisationId
     ||r.inputDigest!==bound.inputDigest||!['RESERVED','REPLAY'].includes(r.status))fail()
    const publicValue=Object.freeze({executionId:r.executionId,commandId,inputDigest:bound.inputDigest,inputTokens:bound.inputTokens,
