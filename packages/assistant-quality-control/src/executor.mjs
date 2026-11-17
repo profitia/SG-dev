@@ -9,7 +9,10 @@ import {assertPublicProjection} from './provenance.mjs'
 
 export const EXECUTOR_TOOL=Object.freeze({version:'0.167.2',archiveSha256:'8246e846c550ea21197fcc4067bc270dca895e94ea42ed6a282e6f4e0125b15f',
  archiveUrl:'https://github.com/openai/codex/releases/download/rust-v0.167.2/codex-x86_64-unknown-linux-musl.tar.gz',
- isolationHelperCommit:'13e9c17417b29e9a276f73ec6ed7fb574137d3c3'})
+ isolationHelperCommit:'13e9c17417b29e9a276f73ec6ed7fb574137d3c3',
+ codeModeHostArchiveUrl:'https://github.com/openai/codex/releases/download/rust-v0.167.2/codex-code-mode-host-x86_64-unknown-linux-musl.tar.gz',
+ codeModeHostArchiveBytes:29080258,codeModeHostArchiveSha256:'189475a654d82ca776e08dfef22734106d3e5b2cf21da6e84ec3d974d02c39a6',
+ codeModeHostBinarySha256:'007c62795a7215c27ee85486ecb95e714b33118a2d18c6d7b09b0d9793c72ff4'})
 const fail=code=>{throw Object.assign(Error('Isolated quality executor refused'),{code})}
 const require=(v,c='EXECUTOR_INPUT_INVALID')=>{if(!v)fail(c)}
 const hash=s=>createHash('sha256').update(s).digest('hex')
@@ -45,11 +48,50 @@ export function assertExecutorHost(environment=process.env){
  return {runId:environment.GITHUB_RUN_ID,runAttempt:1,executorSourceSha:environment.GITHUB_SHA}
 }
 
+export function assertCodeModeHostArchive(bytes){
+ require(Buffer.isBuffer(bytes)&&bytes.length===EXECUTOR_TOOL.codeModeHostArchiveBytes
+  &&hash(bytes)===EXECUTOR_TOOL.codeModeHostArchiveSha256,'CODE_MODE_HOST_ARCHIVE_PIN_MISMATCH')
+ return bytes
+}
+function assertCodeModeHostFile(file){
+ const stat=fs.lstatSync(file)
+ require(stat.isFile()&&!stat.isSymbolicLink()&&stat.uid===0&&(stat.mode&0o022)===0&&(stat.mode&0o111)!==0
+  &&hash(fs.readFileSync(file))===EXECUTOR_TOOL.codeModeHostBinarySha256,'CODE_MODE_HOST_BINARY_PIN_MISMATCH')
+}
+/** Fixed official tool prerequisite, prepared by trusted root before the agent
+ * exists. No caller URL, credential, package script or fallback is accepted. */
+export async function prepareExecutorTools(){
+ assertExecutorHost()
+ const directory='/opt/aqc-tools',target=directory+'/codex-code-mode-host',parent=fs.lstatSync(directory)
+ require(parent.isDirectory()&&!parent.isSymbolicLink()&&parent.uid===0&&(parent.mode&0o022)===0,'TRUSTED_TOOL_DIRECTORY_REQUIRED')
+ if(!fs.existsSync(target)){
+  const response=await fetch(EXECUTOR_TOOL.codeModeHostArchiveUrl,{redirect:'follow',signal:AbortSignal.timeout(30000)})
+  const final=new URL(response.url)
+  require(response.ok&&final.protocol==='https:'&&['github.com','release-assets.githubusercontent.com','objects.githubusercontent.com'].includes(final.hostname)
+   &&response.body,'CODE_MODE_HOST_DOWNLOAD_FAILED')
+  let size=0;const chunks=[]
+  for await(const chunk of response.body){size+=chunk.length;require(size<=EXECUTOR_TOOL.codeModeHostArchiveBytes,'CODE_MODE_HOST_ARCHIVE_PIN_MISMATCH');chunks.push(chunk)}
+  const archive=assertCodeModeHostArchive(Buffer.concat(chunks)),temporary=fs.mkdtempSync('/tmp/aqc-code-mode-host-')
+  try{
+   const file=temporary+'/vendor.tar.gz',binary=temporary+'/host',member='codex-code-mode-host-x86_64-unknown-linux-musl'
+   fs.writeFileSync(file,archive,{mode:0o600,flag:'wx'})
+   require(command('/usr/bin/tar',['--list','--gzip','--file',file])===member,'CODE_MODE_HOST_ARCHIVE_LAYOUT_REJECTED')
+   const fd=fs.openSync(binary,'wx',0o600);let extracted
+   try{extracted=spawnSync('/usr/bin/tar',['--extract','--gzip','--to-stdout','--file',file,member],{env:rootEnvironment,timeout:15000,stdio:['ignore',fd,'ignore']})}finally{fs.closeSync(fd)}
+   require(!extracted.error&&extracted.status===0&&hash(fs.readFileSync(binary))===EXECUTOR_TOOL.codeModeHostBinarySha256,'CODE_MODE_HOST_BINARY_PIN_MISMATCH')
+   fs.copyFileSync(binary,target,fs.constants.COPYFILE_EXCL);fs.chmodSync(target,0o755)
+  }finally{fs.rmSync(temporary,{recursive:true,force:true})}
+ }
+ assertCodeModeHostFile(target)
+ return {codeModeHostArchiveSha256:EXECUTOR_TOOL.codeModeHostArchiveSha256,codeModeHostBinarySha256:EXECUTOR_TOOL.codeModeHostBinarySha256}
+}
+
 export function verifyLinuxQualification(document,{keys,gateSetSha256,now=Date.now()}){
  const b=verifyDocument(document,{kind:'AQC_LINUX_QUALIFICATION_V1',trustedKeys:keys})
- require(Object.keys(b).sort().join(',')===['gateSetSha256','codexVersion','codexArchiveSha256','codexBinarySha256','isolationHelperCommit','fileIsolation','networkIsolation','privilegeIsolation','toolLoop','cancellation','noProviderRequests','runId','sourceSha','verifiedAt','expiresAt'].sort().join(','),'LINUX_QUALIFICATION_INVALID')
+ require(Object.keys(b).sort().join(',')===['gateSetSha256','codexVersion','codexArchiveSha256','codexBinarySha256','codeModeHostArchiveSha256','codeModeHostBinarySha256','isolationHelperCommit','fileIsolation','networkIsolation','privilegeIsolation','toolLoop','cancellation','noProviderRequests','runId','sourceSha','verifiedAt','expiresAt'].sort().join(','),'LINUX_QUALIFICATION_INVALID')
  require(b.gateSetSha256===gateSetSha256&&b.codexVersion===EXECUTOR_TOOL.version&&b.codexArchiveSha256===EXECUTOR_TOOL.archiveSha256
-  &&/^[a-f0-9]{64}$/.test(b.codexBinarySha256)&&b.isolationHelperCommit===EXECUTOR_TOOL.isolationHelperCommit
+  &&/^[a-f0-9]{64}$/.test(b.codexBinarySha256)&&b.codeModeHostArchiveSha256===EXECUTOR_TOOL.codeModeHostArchiveSha256
+  &&b.codeModeHostBinarySha256===EXECUTOR_TOOL.codeModeHostBinarySha256&&b.isolationHelperCommit===EXECUTOR_TOOL.isolationHelperCommit
   &&['fileIsolation','networkIsolation','privilegeIsolation','toolLoop','cancellation'].every(k=>b[k]==='PASS')&&b.noProviderRequests===true
   &&/^[1-9][0-9]{0,19}$/.test(b.runId)&&/^[a-f0-9]{40}$/.test(b.sourceSha)&&stamp(b.verifiedAt)&&stamp(b.expiresAt)
   &&Date.parse(b.verifiedAt)<=now&&Date.parse(b.expiresAt)>now,'LINUX_QUALIFICATION_REQUIRED')
@@ -69,7 +111,9 @@ export function executorPlan({work,toolPath,uid,gid,brokerUrl,agentToken}){
   'permissions.aqc-workspace.network.enabled':false,
   approval_policy:'never',model_reasoning_effort:'low',service_tier:'default',
   web_search:'disabled',cli_auth_credentials_store:'ephemeral',check_for_update_on_startup:false,'features.apps':false,'features.multi_agent':false,
-  'features.memories':false,'features.hooks':false,'features.goals':false,'features.enable_request_compression':false,'skills.bundled.enabled':false,
+  'features.memories':false,'features.hooks':false,'features.goals':false,'features.enable_request_compression':false,
+  'features.code_mode':true,'features.code_mode_only':true,
+  'features.code_mode_host.enabled':true,'features.code_mode_host.disable_in_process_fallback':true,'features.incremental_tools':false,'skills.bundled.enabled':false,
   'analytics.enabled':false,'feedback.enabled':false,'shell_environment_policy.inherit':'none','shell_environment_policy.ignore_default_excludes':false,
   'model_providers.aqc.name':'SpendGuru bounded QA','model_providers.aqc.base_url':brokerUrl,'model_providers.aqc.env_key':'AQC_AGENT_TOKEN',
   'model_providers.aqc.wire_api':'responses','model_providers.aqc.requires_openai_auth':false,'model_providers.aqc.supports_websockets':false,
@@ -135,6 +179,7 @@ export async function runIsolatedExecutor({manifest,regression,projection,toolPa
  require(typeof toolPath==='string'&&/^\/opt\/aqc-tools\/[a-zA-Z0-9_.-]+$/.test(toolPath),'QUALIFIED_BINARY_REQUIRED')
  const toolStat=fs.lstatSync(toolPath)
  require(toolStat.isFile()&&toolStat.uid===0&&(toolStat.mode&0o022)===0&&hash(fs.readFileSync(toolPath))===qualified.codexBinarySha256,'QUALIFIED_BINARY_REQUIRED')
+ assertCodeModeHostFile(path.join(path.dirname(toolPath),'codex-code-mode-host'))
  const fixture=readRegression(regression);require(documentDigest(fixture)===m.synthetic.sha256,'REGRESSION_CHANGED')
  const publicFiles=assertPublicProjection(projection,m)
  require(typeof budget?.claimExecutor==='function')
