@@ -8,6 +8,7 @@ import path from 'node:path'
 export const RESERVATION_RECORD="apps/architecture-lab/assistant-reservation-source.json"
 export const RESERVATION_BASE="c31fd80278561adec8d066392417bb057d191192"
 export const RESERVATION_PATHS=Object.freeze([
+ "apps/newsfeed-runtime/test/runtime.test.mjs",
  "scripts/governance/controlled-package-ci.test.mjs",
  "apps/architecture-lab/test/manifest-successor-continuity.test.mjs",
  "apps/platform-source-hub/test/ci-routing.test.mjs",
@@ -166,7 +167,7 @@ export async function createAcgLegacyRecurringFixture(sourceRoot) {
     const authoritySha = String(git(['rev-parse', '--verify', 'refs/remotes/origin/main^{commit}'])).trim()
     execFileSync('git', ['update-ref', 'refs/remotes/origin/main', authoritySha], {cwd: root, stdio: ['ignore', 'pipe', 'pipe']})
     const paths = [RESERVATION_RECORD, ...RESERVATION_PATHS, RESERVATION_DERIVED]
-    assert.equal(new Set(paths).size, 42, 'closed reservation fixture inventory')
+    assert.equal(new Set(paths).size, 43, 'closed reservation fixture inventory')
     for (const relative of paths) {
       assert(!path.isAbsolute(relative) && !relative.split('/').includes('..'))
       const file = path.join(root, relative)
