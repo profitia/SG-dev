@@ -3383,6 +3383,8 @@ test('quality Stage1 resolution fences the exact internal SG2 candidate and auth
   const target=path.join(root,'apps/sg-runtime/lib/assistant/quality-response.ts');fs.appendFileSync(target,'\n');rejection(()=>c.assertArchitectureCheckout(root,source,result.admission,authorityRoot))
  }finally{if(created)execFileSync('git',['worktree','remove','--force',root],{cwd:authorityRoot,stdio:'pipe'});fs.rmSync(dir,{recursive:true,force:true})}
 })
+// The closed Calendar fixture authenticates its71 exact reviewed blobs.
+// Its3-file regression commit is not a complete physical candidate tree.
 // Exact bounded successor for the existing Calendar review. No candidate code
 // runs while its source, modes, routes, receipts and history are authenticated.
 test('Calendar complete CI repair keeps original reviews and authenticates the fixed combined owner inputs as data',async()=>{
@@ -3390,7 +3392,7 @@ test('Calendar complete CI repair keeps original reviews and authenticates the f
  assert.equal(Object.keys(r.entries).length,71);
  for(const[p,e]of Object.entries(c.ECR_COMPLETE_FUNCTIONAL_REVIEW.entries))if(p!==c.ECR_COMPLETE_FUNCTIONAL_PROVENANCE.helper)assert.deepEqual(r.entries[p],e);
  for(const[p,e]of Object.entries(c.ECR_COMPLETE_FUNCTIONAL_CONSUMER_REVIEW.entries))assert.deepEqual(r.entries[p],e);
- const current=p=>execFileSync('git',['show',r.sourceSha+':'+p],{cwd:authorityRoot,stdio:['ignore','pipe','pipe']});
+ const current=p=>execFileSync('git',(r.entries[p]?['cat-file','blob',r.entries[p].sha]:['show',r.baseSha+':'+p]),{cwd:authorityRoot,stdio:['ignore','pipe','pipe']});
  const historical=(sha,p)=>execFileSync('git',['show',sha+':'+p],{cwd:authorityRoot,stdio:['ignore','pipe','pipe']});
  const before=c.completeFunctionalTrustedPredecessor(current,historical);
  const sdk='packages/platform-source-hub-contracts/package.json';
@@ -3402,7 +3404,7 @@ test('Calendar complete CI repair keeps original reviews and authenticates the f
 });
 test('Calendar complete CI repair refuses any changed physical input, inaccessible file or substituted predecessor',async()=>{
  const c=await import('./controlled-package-ci.mjs'),r=c.ECR_COMPLETE_FUNCTIONAL_CI_REPAIR,cache=new Map();
- const current=p=>{if(!cache.has(p))cache.set(p,execFileSync('git',['show',r.sourceSha+':'+p],{cwd:authorityRoot,stdio:['ignore','pipe','pipe']}));return cache.get(p)};
+ const current=p=>{if(!cache.has(p))cache.set(p,execFileSync('git',(r.entries[p]?['cat-file','blob',r.entries[p].sha]:['show',r.baseSha+':'+p]),{cwd:authorityRoot,stdio:['ignore','pipe','pipe']}));return cache.get(p)};
  const historical=(sha,p)=>execFileSync('git',['show',sha+':'+p],{cwd:authorityRoot,stdio:['ignore','pipe','pipe']});
  for(const p of Object.keys(r.entries))assert.throws(()=>c.completeFunctionalTrustedPredecessor(f=>f===p?Buffer.concat([current(f),Buffer.from(' drift')]):current(f),historical),p);
  const denied=Object.assign(Error('access denied'),{code:'EACCES'});
