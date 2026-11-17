@@ -22,7 +22,7 @@ test('Executor plan uses only the local broker, no retries, cleared identity and
  const p=executorPlan({work:'/tmp/aqc-'+randomUUID()+'/work',toolPath:'/opt/aqc-tools/codex',uid:19999,gid:19999,brokerUrl:'http://127.0.0.1:1234/v1',agentToken:'c'.repeat(64)})
  const text=p.args.join(' ')
  assert(text.includes('default_permissions="aqc-workspace"'));assert(text.includes('permissions.aqc-workspace.extends=":workspace"'))
- assert(text.includes('permissions.aqc-workspace.filesystem={":root" = "deny", ":minimal" = "read", ":tmpdir" = "deny", ":slash_tmp" = "deny"}'))
+ assert(text.includes('permissions.aqc-workspace.filesystem={":root" = "deny", ":minimal" = "read", ":tmpdir" = "deny", ":slash_tmp" = "deny", "/opt/aqc-tools/codex" = "read", "/opt/aqc-tools/codex-code-mode-host" = "read", "/opt/aqc-tools/codex-resources/bwrap" = "read"}'))
  assert(!text.includes('filesystem.":'));assert(text.includes('permissions.aqc-workspace.network.enabled=false'))
  assert(text.includes('request_max_retries=0'));assert(text.includes('stream_max_retries=0'))
  assert(text.includes('features.multi_agent=false'));assert(text.includes('features.enable_request_compression=false'))
