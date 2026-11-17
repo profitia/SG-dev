@@ -180,6 +180,51 @@ export function assertSourceCheckout(candidateRoot, record, state, governanceRoo
   return true
 }
 
+// Historical application-source compatibility, not a grant or source proof.
+// Only a trusted caller's fetched main supplies authority; candidate metadata
+// and candidate JavaScript are never evaluated to establish it.
+export function trustedApplicationContinuity(candidateRoot, watchedPaths, {authorityRoot=root,governanceRoot=root}={}) {
+  const paths=[...new Set(watchedPaths)]
+  if(paths.length!==watchedPaths.length || paths.some(p=>!p.startsWith('apps/')||!safePath(p)||protectedPath(p)||!/\.(?:tsx?|mjs)$/.test(p))) deny('APPLICATION_CONTINUITY_PATH_REJECTED')
+  const remote=git(authorityRoot,['remote','get-url','origin'])
+  if(!['https://github.com/profitia/SG-dev','https://github.com/profitia/SG-dev.git','git@github.com:profitia/SG-dev.git'].includes(remote))deny('APPLICATION_CONTINUITY_AUTHORITY_REQUIRED')
+  const controlSha=git(authorityRoot,['rev-parse','refs/remotes/origin/main'])
+  if(!sha.test(controlSha))deny('APPLICATION_CONTINUITY_AUTHORITY_REQUIRED')
+  const readGit=(repo,ref,p)=>execFileSync('git',['cat-file','blob',ref+':'+p],{cwd:repo,stdio:['ignore','pipe','pipe'],maxBuffer:2*1024*1024})
+  const authority=p=>{const entry=git(authorityRoot,['ls-tree',controlSha,'--',p]);if(!entry)return null;if(!entry.startsWith('100644 blob '))deny('APPLICATION_CONTINUITY_AUTHORITY_MODE_REJECTED');return readGit(authorityRoot,controlSha,p)}
+  const physical=p=>{
+    const base=fs.realpathSync(candidateRoot),target=path.join(base,p),stat=fs.lstatSync(target)
+    if(!stat.isFile()||stat.isSymbolicLink()||fs.realpathSync(target)!==target||stat.size>1024*1024||stat.mode&0o111)deny('APPLICATION_CONTINUITY_PHYSICAL_REJECTED')
+    return fs.readFileSync(target)
+  }
+  const bytes=new Map(paths.map(p=>[p,physical(p)]))
+  const sameAsAuthority=p=>{const b=authority(p);return b!==null&&bytes.get(p).equals(b)}
+  const reader=()=>p=>{if(!bytes.has(p))deny('APPLICATION_CONTINUITY_PATH_REJECTED');return Buffer.from(bytes.get(p))}
+  // Already accepted main source is authenticated against its actual Git bytes,
+  // independently of a past, temporary admission. Immutable receipt checks in
+  // the historical reader still run unchanged.
+  if(paths.every(sameAsAuthority))return reader()
+  const ledgerBytes=authority(ADMISSIONS_PATH)
+  if(!ledgerBytes)return null
+  if(ledgerBytes.length>1024*1024)deny('SOURCE_ADMISSION_STORE_REJECTED')
+  const ledger=JSON.parse(ledgerBytes.toString('utf8'))
+  if(ledger.schemaVersion!=='1.0'||!Array.isArray(ledger.records)||ledger.records.some(r=>!r?.id)
+    ||new Set(ledger.records.map(r=>r.id)).size!==ledger.records.length)deny('SOURCE_ADMISSION_STORE_REJECTED')
+  const matches=ledger.records.filter(r=>Array.isArray(r.files)&&r.files.some(f=>paths.includes(f.path))&&r.files.every(f=>{
+    if(!safePath(f.path))return false
+    try{const b=physical(f.path);return createHash('sha1').update('blob '+b.length+'\0').update(b).digest('hex')===f.blob}catch{return false}
+  }))
+  if(matches.length>1)deny('APPLICATION_CONTINUITY_CONFLICT')
+  if(!matches.length)return null
+  const record=matches[0],candidateSha=git(candidateRoot,['rev-parse','HEAD'])
+  assertSourceAdmission(record,{repository:'profitia/SG-dev',actor:'profitia',candidateSha,currentMainSha:controlSha,
+    files:record.files.map(f=>({filename:f.path,sha:f.blob,status:f.status}))},governanceRoot)
+  assertSourceCheckout(candidateRoot,record,{sha:candidateSha,controlSha,actor:'profitia',
+    files:record.files.map(f=>({filename:f.path,sha:f.blob,status:f.status}))},governanceRoot)
+  for(const name of paths)if(!record.files.some(f=>f.path===name)&&!sameAsAuthority(name))deny('APPLICATION_CONTINUITY_BYTES_REJECTED')
+  return reader()
+}
+
 // Mandate data is authoritative only when loaded from the independently accepted
 // control-plane record. These pure comparisons alone never install permissions.
 export function assertOperationWithinMandate(mandate, operation, now = Date.now()) {

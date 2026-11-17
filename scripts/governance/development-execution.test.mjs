@@ -627,3 +627,94 @@ test('public Source proof revalidates protected metadata against the same truste
   assert.throws(()=>assertSourceValidationProof(proof,run,head,456,{expectedControlDigest:digest},authority,changed),/SOURCE_ADMISSION_FILES_REJECTED/)
  }finally{fs.rmSync(authority,{recursive:true,force:true})}
 })
+
+import {trustedApplicationContinuity} from './development-execution.mjs'
+import {resolveProjectProfile as continuityProfile} from './project-profile.mjs'
+import {resolveProjectRouting as continuityRoute} from './routing-engine.mjs'
+
+const continuityPath='apps/sg-runtime/components/procurement-insights/continuity-fixture.tsx'
+function continuityFixture(changeRecord=r=>r,{candidateLedger=false}={}) {
+ const dir=fs.mkdtempSync(path.join(os.tmpdir(),'application-continuity-'))
+ const g=(...a)=>execFileSync('git',a,{cwd:dir,encoding:'utf8',stdio:['ignore','pipe','pipe']}).trim()
+ const write=(p,s)=>{const f=path.join(dir,p);fs.mkdirSync(path.dirname(f),{recursive:true});fs.writeFileSync(f,s)}
+ g('init','-b','main');g('config','user.name','Synthetic fixture');g('config','user.email','synthetic@example.invalid')
+ g('remote','add','origin','https://github.com/profitia/SG-dev')
+ write(continuityPath,'export const sample=1\n');write('unchanged.txt','immutable\n');g('add','.');g('commit','-m','synthetic base')
+ const initial=g('rev-parse','HEAD');g('checkout','-b','candidate')
+ write(continuityPath,'export const sample=2\n');g('add','.');g('commit','-m','synthetic reviewed source')
+ const original=g('rev-parse','HEAD'),blob=g('hash-object',continuityPath)
+ const route=continuityRoute({profile:continuityProfile('SG2',root),targets:[continuityPath],repositoryRoot:root}).results[0]
+ const r=changeRecord({...record(),id:'SYNTHETIC_APPLICATION_REVIEW',sourceSha:original,baseSha:initial,
+  validFrom:'2000-01-01T00:00:00Z',validUntil:'2099-01-01T00:00:00Z',
+  files:[{path:continuityPath,blob,status:'modified',mode:'100644',projectKey:'SG2',owner:route.currentOwner,surfaceId:route.matchedSurfaceId}]})
+ g('checkout','main');write('Canon/registries/controlled-source-admissions-v1.json',JSON.stringify({schemaVersion:'1.0',records:candidateLedger?[]:[r]}))
+ g('add','.');g('commit','-m','synthetic independent authority')
+ const authority=g('rev-parse','HEAD');g('update-ref','refs/remotes/origin/main',authority)
+ g('checkout','candidate');g('merge','--no-edit','main')
+ const check=()=>trustedApplicationContinuity(dir,[continuityPath],{authorityRoot:dir,governanceRoot:root})
+ return {dir,g,write,r,initial,original,authority,check,close:()=>fs.rmSync(dir,{recursive:true,force:true})}
+}
+
+test('historical application compatibility authenticates fetched authority or a complete independently admitted real Git candidate',()=>{
+ const f=continuityFixture()
+ try {
+  const read=f.check();assert.equal(read(continuityPath).toString(),'export const sample=2\n')
+  const b=read(continuityPath);b.fill(0);assert.equal(read(continuityPath).toString(),'export const sample=2\n','read returns defensive byte copies')
+  assert.throws(()=>read('unchanged.txt'),/APPLICATION_CONTINUITY_PATH_REJECTED/)
+  f.g('checkout','main');assert.equal(f.check()(continuityPath).toString(),'export const sample=1\n')
+ }finally{f.close()}
+})
+
+for(const [name,edit,pattern]of [
+ ['expiry',r=>({...r,validUntil:'2001-01-01T00:00:00Z'}),/SOURCE_ADMISSION_EXPIRED/],
+ ['revocation',r=>({...r,status:'REVOKED'}),/SOURCE_ADMISSION_IDENTITY_REJECTED/],
+ ['missing owner decision',r=>({...r,approvalRef:null}),/SOURCE_ADMISSION_IDENTITY_REJECTED/],
+ ['wrong owner',r=>({...r,files:r.files.map(x=>({...x,owner:'unapproved'}))}),/SOURCE_ADMISSION_ROUTING_REJECTED/],
+ ['wrong surface',r=>({...r,files:r.files.map(x=>({...x,surfaceId:'unapproved'}))}),/SOURCE_ADMISSION_ROUTING_REJECTED/],
+ ['wrong Git base',r=>({...r,baseSha:'f'.repeat(40)}),/SOURCE_BASE_OR_LINEAGE_REJECTED/]
+])test('historical source compatibility rejects '+name,()=>{
+ const f=continuityFixture(edit);try{assert.throws(f.check,pattern)}finally{f.close()}
+})
+
+test('a candidate cannot supply its own ledger or replace its trusted main decision',()=>{
+ const f=continuityFixture(r=>r,{candidateLedger:true})
+ try{
+  f.write('Canon/registries/controlled-source-admissions-v1.json',JSON.stringify({schemaVersion:'1.0',records:[f.r]}))
+  f.g('add','.');f.g('commit','-m','synthetic self approval')
+  assert.equal(f.check(),null)
+ }finally{f.close()}
+})
+
+for(const [name,mutate]of [
+ ['changed bytes',f=>f.write(continuityPath,'unreviewed\n')],
+ ['changed executable mode',f=>fs.chmodSync(path.join(f.dir,continuityPath),0o755)],
+ ['omitted source',f=>fs.unlinkSync(path.join(f.dir,continuityPath))],
+ ['symlink',f=>{fs.unlinkSync(path.join(f.dir,continuityPath));fs.symlinkSync(path.join(f.dir,'unchanged.txt'),path.join(f.dir,continuityPath))}],
+ ['additional untracked source',f=>f.write('unexpected.ts','unreviewed\n')],
+ ['tracked authority edit',f=>f.write('unchanged.txt','changed\n')],
+ ['staged authority edit',f=>{f.write('unchanged.txt','changed\n');f.g('add','unchanged.txt')}],
+ ['extra committed source',f=>{f.write('unexpected.ts','unreviewed\n');f.g('add','.');f.g('commit','-m','synthetic extra source')}],
+ ['candidate receipt modification',f=>f.write('apps/sg-runtime/assistant-notifications-integration.json','unreviewed receipt\n')]
+])test('historical compatibility fails closed on '+name,()=>{
+ const f=continuityFixture()
+ try{mutate(f);let result=null;try{result=f.check()}catch{return}assert.equal(result,null)}finally{f.close()}
+})
+
+test('accepted actual main bytes do not borrow an expired source-validation mandate',()=>{
+ const f=continuityFixture(r=>({...r,validUntil:'2001-01-01T00:00:00Z'}))
+ try{
+  assert.throws(f.check,/SOURCE_ADMISSION_EXPIRED/)
+  f.g('checkout','main');f.g('merge','--no-edit','candidate')
+  f.g('update-ref','refs/remotes/origin/main',f.g('rev-parse','HEAD'))
+  assert.equal(f.check()(continuityPath).toString(),'export const sample=2\n','fresh independently accepted main is its own source authority')
+ }finally{f.close()}
+})
+
+test('compatibility never authorises receipt, SQL, workflow, package or contract paths',()=>{
+ const f=continuityFixture()
+ try{for(const p of ['Canon/registries/controlled-source-admissions-v1.json','.github/workflows/platform-contracts-ci.yml',
+  'apps/sg-runtime/assistant-notifications-integration.json','apps/sg-runtime/package.json',
+  'packages/platform-contracts/src/operation-context.mjs','apps/insights-runtime/sql/003-report-subscriptions.sql'])
+  assert.throws(()=>trustedApplicationContinuity(f.dir,[p],{authorityRoot:f.dir,governanceRoot:root}),/APPLICATION_CONTINUITY_PATH_REJECTED/)
+ }finally{f.close()}
+})
