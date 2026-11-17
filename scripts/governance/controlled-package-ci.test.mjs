@@ -2958,8 +2958,21 @@ test('registration lifecycle controlled proof binds the current SDK digest and e
  rejection(()=>c.registrationLifecycleProofContract(receipt,bytes,Buffer.concat([receiptBytes,Buffer.from(' ')])));
  assert.equal(c.registrationLifecycleProofContract(receipt,null,receiptBytes),null);
 });
+// These historical positive fixtures compare against their accepted
+// pre-Calendar authority snapshot, never the later 1.8.0 source graph.
+// The physical current graph must first satisfy the full trusted verifier.
+function calendarPolicyFixtureAuthority(c){
+ if(!fs.existsSync(path.join(authorityRoot,c.ECR_COMPLETE_FUNCTIONAL_PROVENANCE.producerRecord)))return{root:authorityRoot,close(){}};
+ assert(c.assertCompleteFunctionalProvenance(authorityRoot));
+ const directory=fs.mkdtempSync(path.join(os.tmpdir(),'calendar-policy-authority-')),root=path.join(directory,'source');
+ try{
+  execFileSync('git',['worktree','add','--detach',root,c.ECR_COMPLETE_FUNCTIONAL_CI_REPAIR.baseSha],{cwd:authorityRoot,stdio:'pipe'});
+  return{root,close(){execFileSync('git',['worktree','remove','--force',root],{cwd:authorityRoot,stdio:'pipe'});fs.rmSync(directory,{recursive:true,force:true})}};
+ }catch(e){fs.rmSync(directory,{recursive:true,force:true});throw e}
+}
 test('registration lifecycle real checkout satisfies source, dependency and predecessor controls together',async()=>{
  const c=await import('./controlled-package-ci.mjs'),r=c.REGISTRATION_LIFECYCLE_REVIEW,dir=fs.mkdtempSync(path.join(os.tmpdir(),'registration-ci-checkout-')),root=path.join(dir,'source');
+ const dependencyAuthority=calendarPolicyFixtureAuthority(c);
  try{
   execFileSync('git',['worktree','add','--detach',root,r.sourceSha],{cwd:authorityRoot,stdio:'pipe'});
   const files=Object.entries(r.entries).map(([filename,e])=>({filename,sha:e.sha,status:e.status}));
@@ -2967,9 +2980,9 @@ test('registration lifecycle real checkout satisfies source, dependency and pred
   assert.equal(c.assertRegistrationSdkProvenance(root).lifecycle.platformVersion,'1.37.0');
   assert(c.assertPrivateRecurringProvenance(root));
   const lock=JSON.parse(fs.readFileSync(path.join(root,'apps/sg-runtime/package-lock.json')));
-  c.assertPackagePolicy(lock,JSON.parse(fs.readFileSync(path.join(authorityRoot,'apps/sg-runtime/package-lock.json'))),configuration,{reviewedPrivateRecurring:true,reviewedLifecycle:true});
-  c.assertLocalPackageSources(root,lock,authorityRoot,{reviewedPrivateRecurring:true});
- }finally{execFileSync('git',['worktree','remove','--force',root],{cwd:authorityRoot,stdio:'pipe'});fs.rmSync(dir,{recursive:true,force:true})}
+  c.assertPackagePolicy(lock,JSON.parse(fs.readFileSync(path.join(dependencyAuthority.root,'apps/sg-runtime/package-lock.json'))),configuration,{reviewedPrivateRecurring:true,reviewedLifecycle:true});
+  c.assertLocalPackageSources(root,lock,dependencyAuthority.root,{reviewedPrivateRecurring:true});
+ }finally{dependencyAuthority.close();execFileSync('git',['worktree','remove','--force',root],{cwd:authorityRoot,stdio:'pipe'});fs.rmSync(dir,{recursive:true,force:true})}
 });
 
 // Proposed bounded notification continuation: old assertions above remain intact.
@@ -3150,14 +3163,15 @@ test('trusted Stage I reconciliation authenticates all 345 physical inputs and a
 });
 test('Stage I reconciliation real checkout preserves exact source, package policy and legacy closure together',async()=>{
  const c=await import('./controlled-package-ci.mjs'),r=c.REGISTRATION_LIFECYCLE_TEST_REVIEW,dir=fs.mkdtempSync(path.join(os.tmpdir(),'registration-reconciled-ci-checkout-')),root=path.join(dir,'source');
+ const dependencyAuthority=calendarPolicyFixtureAuthority(c);
  try{
   execFileSync('git',['worktree','add','--detach',root,r.sourceSha],{cwd:authorityRoot,stdio:'pipe'});
   const files=Object.entries(r.entries).map(([filename,e])=>({filename,sha:e.sha,status:e.status}));
   c.assertArchitectureCheckout(root,r.sourceSha,{kind:'ARCHITECTURE',baseSha:r.baseSha,files},authorityRoot);
   assert.equal(c.assertRegistrationSdkProvenance(root).lifecycle.platformVersion,'1.37.0');
   const lock=JSON.parse(fs.readFileSync(path.join(root,'apps/sg-runtime/package-lock.json')));
-  c.assertLocalPackageSources(root,lock,authorityRoot,{reviewedPrivateRecurring:true});
- }finally{try{execFileSync('git',['worktree','remove','--force',root],{cwd:authorityRoot,stdio:'pipe'})}catch{}fs.rmSync(dir,{recursive:true,force:true});}
+  c.assertLocalPackageSources(root,lock,dependencyAuthority.root,{reviewedPrivateRecurring:true});
+ }finally{dependencyAuthority.close();try{execFileSync('git',['worktree','remove','--force',root],{cwd:authorityRoot,stdio:'pipe'})}catch{}fs.rmSync(dir,{recursive:true,force:true});}
 });
 
 test('Stage I corrected-source continuation admits only the 201-file current owner source and keeps the original review immutable',async()=>{
@@ -3189,14 +3203,15 @@ test('trusted Stage I corrected-source continuation authenticates all 345 physic
 });
 test('Stage I corrected-source continuation real checkout preserves exact source, package policy and legacy closure together',async()=>{
  const c=await import('./controlled-package-ci.mjs'),r=c.REGISTRATION_LIFECYCLE_TEST_CORRECTED_REVIEW,dir=fs.mkdtempSync(path.join(os.tmpdir(),'registration-reconciled-ci-checkout-')),root=path.join(dir,'source');
+ const dependencyAuthority=calendarPolicyFixtureAuthority(c);
  try{
   execFileSync('git',['worktree','add','--detach',root,r.sourceSha],{cwd:authorityRoot,stdio:'pipe'});
   const files=Object.entries(r.entries).map(([filename,e])=>({filename,sha:e.sha,status:e.status}));
   c.assertArchitectureCheckout(root,r.sourceSha,{kind:'ARCHITECTURE',baseSha:r.baseSha,files},authorityRoot);
   assert.equal(c.assertRegistrationSdkProvenance(root).lifecycle.platformVersion,'1.37.0');
   const lock=JSON.parse(fs.readFileSync(path.join(root,'apps/sg-runtime/package-lock.json')));
-  c.assertLocalPackageSources(root,lock,authorityRoot,{reviewedPrivateRecurring:true});
- }finally{try{execFileSync('git',['worktree','remove','--force',root],{cwd:authorityRoot,stdio:'pipe'})}catch{}fs.rmSync(dir,{recursive:true,force:true});}
+  c.assertLocalPackageSources(root,lock,dependencyAuthority.root,{reviewedPrivateRecurring:true});
+ }finally{dependencyAuthority.close();try{execFileSync('git',['worktree','remove','--force',root],{cwd:authorityRoot,stdio:'pipe'})}catch{}fs.rmSync(dir,{recursive:true,force:true});}
 });
 
 // The optional knowledge layer is authenticated as inert data, before any
@@ -3314,3 +3329,31 @@ test('public proof absence preserves every original authority-source contract fi
  assert.deepEqual(publicProofContract(receipt,{receiptBytes,recurringRecord}),privateRecurringProofContract(receipt,recurringRecord,receiptBytes))
  assert.equal(JSON.stringify(receipt),before)
 })
+
+// Exact bounded successor for the existing Calendar review. No candidate code
+// runs while its source, modes, routes, receipts and history are authenticated.
+test('Calendar complete CI repair keeps original reviews and authenticates the fixed combined owner inputs as data',async()=>{
+ const c=await import('./controlled-package-ci.mjs'),r=c.ECR_COMPLETE_FUNCTIONAL_CI_REPAIR;
+ assert.equal(Object.keys(r.entries).length,71);
+ for(const[p,e]of Object.entries(c.ECR_COMPLETE_FUNCTIONAL_REVIEW.entries))if(p!==c.ECR_COMPLETE_FUNCTIONAL_PROVENANCE.helper)assert.deepEqual(r.entries[p],e);
+ for(const[p,e]of Object.entries(c.ECR_COMPLETE_FUNCTIONAL_CONSUMER_REVIEW.entries))assert.deepEqual(r.entries[p],e);
+ const current=p=>execFileSync('git',['show',r.sourceSha+':'+p],{cwd:authorityRoot,stdio:['ignore','pipe','pipe']});
+ const historical=(sha,p)=>execFileSync('git',['show',sha+':'+p],{cwd:authorityRoot,stdio:['ignore','pipe','pipe']});
+ const before=c.completeFunctionalTrustedPredecessor(current,historical);
+ const sdk='packages/platform-source-hub-contracts/package.json';
+ assert.deepEqual(before(sdk),historical(c.ECR_COMPLETE_FUNCTIONAL_REVIEW.baseSha,sdk));
+ const files=Object.entries(r.entries).map(([filename,e])=>({filename,sha:e.sha,status:e.status}));
+ const pr={number:r.prNumber,head:{ref:r.branch},base:{sha:r.baseSha},changed_files:files.length};
+ c.assertArchitectureFiles(pr,files,authorityRoot);
+ assert.throws(()=>c.assertArchitectureFiles({...pr,changed_files:files.length+1},[...files,{filename:'apps/srm/src/extra.ts',sha:'a'.repeat(40),status:'added'}],authorityRoot));
+});
+test('Calendar complete CI repair refuses any changed physical input, inaccessible file or substituted predecessor',async()=>{
+ const c=await import('./controlled-package-ci.mjs'),r=c.ECR_COMPLETE_FUNCTIONAL_CI_REPAIR,cache=new Map();
+ const current=p=>{if(!cache.has(p))cache.set(p,execFileSync('git',['show',r.sourceSha+':'+p],{cwd:authorityRoot,stdio:['ignore','pipe','pipe']}));return cache.get(p)};
+ const historical=(sha,p)=>execFileSync('git',['show',sha+':'+p],{cwd:authorityRoot,stdio:['ignore','pipe','pipe']});
+ for(const p of Object.keys(r.entries))assert.throws(()=>c.completeFunctionalTrustedPredecessor(f=>f===p?Buffer.concat([current(f),Buffer.from(' drift')]):current(f),historical),p);
+ const denied=Object.assign(Error('access denied'),{code:'EACCES'});
+ assert.throws(()=>c.completeFunctionalTrustedPredecessor(p=>p===r.markerPath?(()=>{throw denied})():current(p),historical),e=>e===denied);
+ const first=Object.keys(r.previous).find(p=>!r.previous[p].absent);
+ assert.throws(()=>c.completeFunctionalTrustedPredecessor(current,(sha,p)=>p===first?Buffer.concat([historical(sha,p),Buffer.from(' drift')]):historical(sha,p)));
+});
