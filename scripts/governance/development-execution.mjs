@@ -23,6 +23,18 @@ const protectedPath = name => /(^|\/)AGENTS\.md$/.test(name)
   || /(^|\/)[^/]*(integration|compatibility|provenance|source)[^/]*\.json$/.test(name)
   || /(^|\/)(\.npmrc|\.env[^/]*|development-integration\.json|operation-integration\.json)$/.test(name)
 
+// PROPOSED closed source-only exception. Inert until this policy is independently
+// owner-accepted on authority main and a separately approved ACTIVE ledger record
+// exists. No historical receipt or general source JSON admission is granted.
+export const ASSISTANT_RESERVATION_SOURCE_ADMISSION = Object.freeze({"admissionId":"ARCHITECTURE:ARCH-ACG-M1M2-COMPLETION-20261117","sourceSha":"97853df58a6a3822a50f64e0207fc0bbb1abbd92","baseSha":"56dcedb243d5d9568e3bd9cc3e13836f4e8b24bb","filesSha256":"57fe9306801087210f4170e1d556253727ea9ef89bb4700134488fda75e0cb2c","newSourceRecord":"apps/architecture-lab/assistant-reservation-source.json"})
+function exactNewReservationSourceRecord(record, entry) {
+  const pin=ASSISTANT_RESERVATION_SOURCE_ADMISSION
+  return entry.path===pin.newSourceRecord && entry.status==='added' && entry.mode==='100644'
+    && entry.projectKey==='ARCHITECTURE' && record.id===pin.admissionId
+    && record.sourceSha===pin.sourceSha && record.baseSha===pin.baseSha
+    && createHash('sha256').update(JSON.stringify(record.files)).digest('hex')===pin.filesSha256
+}
+
 export function executionProfile(projectKey, governanceRoot = root) {
   const profile = resolveProjectProfile(projectKey, governanceRoot)
   const registry = JSON.parse(fs.readFileSync(path.join(governanceRoot, EXECUTION_PROFILES_PATH), 'utf8'))
@@ -126,7 +138,7 @@ export function assertSourceAdmission(record, {repository,actor,candidateSha,cur
   const names = new Set(), actual = new Map(files.map(f => [f.filename,f]))
   if (actual.size !== files.length) deny('SOURCE_ADMISSION_FILES_REJECTED')
   for (const entry of record.files) {
-    if (!safePath(entry.path) || protectedPath(entry.path) || names.has(entry.path)
+    if (!safePath(entry.path) || (protectedPath(entry.path) && !exactNewReservationSourceRecord(record,entry)) || names.has(entry.path)
       || !sha.test(entry.blob ?? '') || !['100644','100755'].includes(entry.mode)
       || !['added','modified'].includes(entry.status)) deny('SOURCE_ADMISSION_FILES_REJECTED')
     names.add(entry.path)
