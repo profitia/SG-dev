@@ -3616,3 +3616,106 @@ test('quality recurring compatibility authenticates the new common dispatch and 
   assert.throws(()=>c.qualityTrustedPredecessor(p=>p===common?altered:p===receipt?Buffer.from(JSON.stringify(a)):current(p),historical))
  }
 })
+
+
+test('trusted shallow control binds only the provider-pinned main snapshot before candidate or package work',async()=>{
+ const fs=await import('node:fs'),os=await import('node:os'),path=await import('node:path'),cp=await import('node:child_process')
+ const workflow=fs.readFileSync(new URL('../../.github/workflows/platform-contracts-ci.yml',import.meta.url),'utf8')
+ const job=workflow.slice(workflow.indexOf('  controlled-sg2:'),workflow.indexOf('  environment-policy-probe:'))
+ const marker='      - name: Bind trusted control to the provider-pinned main snapshot'
+ const start=job.indexOf(marker);assert(start>job.indexOf('          path: control'))
+ assert(start<job.indexOf('      - name: Verify access to exact trusted package artifacts'))
+ const block=job.slice(start).split('      - uses:')[0],match=/        run: \|\n((?:          .*\n)+)/.exec(block);assert(match)
+ const script=match[1].split('\n').filter(Boolean).map(line=>line.slice(10)).join('\n')
+ const root=fs.mkdtempSync(path.join(os.tmpdir(),'aqc-trusted-snapshot-')),control=path.join(root,'control');fs.mkdirSync(control)
+ const git=args=>cp.execFileSync('git',args,{cwd:control,encoding:'utf8',stdio:['ignore','pipe','pipe']}).trim()
+ const bind=(ref,sha)=>cp.spawnSync('bash',['-c',script],{cwd:root,encoding:'utf8',env:{PATH:process.env.PATH,GIT_CONFIG_NOSYSTEM:'1',GIT_CONFIG_GLOBAL:'/dev/null',GITHUB_REF:ref,GITHUB_SHA:sha}})
+ try{
+  git(['init']);fs.writeFileSync(path.join(control,'fixture.txt'),'first')
+  git(['add','fixture.txt']);git(['-c','user.name=Synthetic fixture','-c','user.email=synthetic@example.invalid','commit','-m','first'])
+  const first=git(['rev-parse','HEAD']);git(['checkout','--detach',first])
+  assert.throws(()=>git(['rev-parse','--verify','refs/remotes/origin/main']))
+  assert.equal(bind('refs/heads/main',first).status,0);assert.equal(git(['rev-parse','refs/remotes/origin/main']),first)
+  fs.writeFileSync(path.join(control,'fixture.txt'),'second');git(['add','fixture.txt']);git(['-c','user.name=Synthetic fixture','-c','user.email=synthetic@example.invalid','commit','-m','second'])
+  const second=git(['rev-parse','HEAD'])
+  assert.notEqual(bind('refs/pull/1/merge',second).status,0);assert.equal(git(['rev-parse','refs/remotes/origin/main']),first)
+  assert.notEqual(bind('refs/heads/main',first).status,0);assert.equal(git(['rev-parse','refs/remotes/origin/main']),first)
+  assert.equal(bind('refs/heads/main',second).status,0);assert.equal(git(['rev-parse','refs/remotes/origin/main']),second)
+ }finally{fs.rmSync(root,{recursive:true,force:true})}
+})
+
+test('Finder monitor closed review authenticates original bytes and immutable source history without candidate imports',async()=>{
+ const c=await import('./controlled-package-ci.mjs'),r=c.FINDER_MONITOR_SOURCE_REVIEW
+ const read=(ref,p)=>execFileSync('git',['show',ref+':'+p],{cwd:new URL('../../',import.meta.url),maxBuffer:32*1024*1024,stdio:['ignore','pipe','pipe']})
+ const current=p=>read(r.sourceSha,p),historical=(ref,p)=>read(ref,p)
+ const view=c.finderMonitorTrustedPredecessor(current,historical);assert(view)
+ for(const[p,e]of Object.entries(r.entries)){
+  if(e.status==='modified')assert.deepEqual(view.previousBytes(p),historical(r.previousSourceSha,p),p)
+  else assert.throws(()=>view.previousBytes(p),{code:'ENOENT'})
+  assert.throws(()=>c.finderMonitorTrustedPredecessor(f=>f===p?Buffer.concat([current(f),Buffer.from('TAMPER')]):current(f),historical),p)
+ }
+ for(const p of Object.keys(r.preservedReceipts)){
+  assert.deepEqual(view.previousBytes(p),historical(r.previousSourceSha,p),p)
+  assert.throws(()=>c.finderMonitorTrustedPredecessor(f=>f===p?Buffer.concat([current(f),Buffer.from('REWRITE')]):current(f),historical),p)
+ }
+ assert.throws(()=>c.finderMonitorTrustedPredecessor(current,(ref,p)=>Buffer.concat([historical(ref,p),Buffer.from('FALSE_HISTORY')])))
+ const old=c.assistantNotificationsTrustedPredecessor(current,historical);assert(old,'existing notification/editorial assertions remain reachable')
+})
+
+test('Finder monitor review rejects changed inventories, identities, source rebinding and foreign source records',async()=>{
+ const c=await import('./controlled-package-ci.mjs'),r=c.FINDER_MONITOR_SOURCE_REVIEW
+ const files=Object.entries(r.entries).map(([filename,e])=>({filename,sha:e.blob,status:e.status}))
+ const pr={number:1111,state:'open',user:{login:'profitia'},head:{ref:r.branch,sha:r.sourceSha},base:{ref:'main',sha:r.sourceBaseSha}}
+ assert.equal(c.assertFinderMonitorSourceIdentity(pr,r.sourceSha,files,r.sourceBaseSha),true)
+ for(const changed of [files.slice(1),[...files,{filename:'apps/sg-runtime/unapproved.mjs',sha:'0'.repeat(40),status:'added'}],files.map((f,i)=>i?f:{...f,sha:'0'.repeat(40)}),files.map((f,i)=>i?f:{...f,status:'removed'}),files.map((f,i)=>i?f:{...f,previous_filename:'another.mjs'})])assert.throws(()=>c.assertFinderMonitorSourceFiles(changed))
+ for(const mutate of [p=>p.number++,p=>p.state='closed',p=>p.user.login='other',p=>p.head.ref='sg2/unrelated',p=>p.head.sha='0'.repeat(40),p=>p.base.sha='0'.repeat(40),p=>p.base.ref='staging']){
+  const p=structuredClone(pr);mutate(p);assert.throws(()=>c.assertFinderMonitorSourceIdentity(p,r.sourceSha,files,r.sourceBaseSha))
+ }
+})
+
+test('Finder monitor physical checkout and the genuine trusted reader reject modes, symlinks, dirt and wrong lineage',async()=>{
+ const c=await import('./controlled-package-ci.mjs'),r=c.FINDER_MONITOR_SOURCE_REVIEW
+ const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'finder-monitor-closed-review-')),root=path.join(tmp,'source')
+ const repo=new URL('../../',import.meta.url),git=(...args)=>execFileSync('git',args,{cwd:root,encoding:'utf8',stdio:['ignore','pipe','pipe'],maxBuffer:32*1024*1024})
+ try{
+  execFileSync('git',['clone','--shared','--no-checkout','--',String(fileURLToPath(repo)),root],{stdio:['ignore','pipe','pipe']})
+  git('checkout','--detach',r.sourceSha);git('update-ref','refs/remotes/origin/main',r.sourceBaseSha)
+  const admission={kind:'FINDER_MONITOR_SOURCE',reviewId:'SG2-FINDER-MONITOR-PCI-BINDING-20261117',actor:'profitia',baseSha:r.sourceBaseSha,files:Object.entries(r.entries).map(([filename,e])=>({filename,sha:e.blob,status:e.status}))}
+  assert.equal(c.assertFinderMonitorSourceCheckout(root,r.sourceSha,admission),true)
+  const reader=c.notificationTrustedCurrent(root)
+  assert.deepEqual(reader('apps/sg-runtime/components/procurement-insights/notifications.tsx'),gitBuffer('b6adfbc6b46c13ffe48de37872fdd530f400a615','apps/sg-runtime/components/procurement-insights/notifications.tsx'))
+  function gitBuffer(ref,p){return execFileSync('git',['show',ref+':'+p],{cwd:root,stdio:['ignore','pipe','pipe'],maxBuffer:32*1024*1024})}
+  const p='apps/sg-runtime/scripts/monitor-benchmark-finder.mjs',target=path.join(root,p),before=fs.readFileSync(target)
+  fs.chmodSync(target,0o755);assert.throws(()=>c.assertFinderMonitorSourceCheckout(root,r.sourceSha,admission));fs.chmodSync(target,0o644)
+  const alternate=path.join(tmp,'same-bytes.mjs');fs.writeFileSync(alternate,before);fs.unlinkSync(target);fs.symlinkSync(alternate,target)
+  assert.throws(()=>c.assertFinderMonitorSourceCheckout(root,r.sourceSha,admission));fs.unlinkSync(target);fs.writeFileSync(target,before,{mode:0o644})
+  fs.writeFileSync(path.join(root,'unexpected-source.mjs'),'unreviewed');assert.throws(()=>c.assertFinderMonitorSourceCheckout(root,r.sourceSha,admission));fs.unlinkSync(path.join(root,'unexpected-source.mjs'))
+  assert.throws(()=>c.assertFinderMonitorSourceCheckout(root,r.sourceSha,{...admission,baseSha:'0'.repeat(40)}))
+ }finally{fs.rmSync(tmp,{recursive:true,force:true})}
+})
+
+test('Finder monitor resolution fences the exact PR and cannot reuse the ordinary two-file admission',async()=>{
+ const c=await import('./controlled-package-ci.mjs'),r=c.FINDER_MONITOR_SOURCE_REVIEW
+ const files=Object.entries(r.entries).map(([filename,e])=>({filename,sha:e.blob,status:e.status}))
+ const candidate={number:1111,state:'open',changed_files:files.length,user:{login:'profitia'},head:{ref:r.branch,sha:r.sourceSha,repo:{full_name:REPOSITORY}},base:{ref:'main',sha:r.sourceBaseSha,repo:{full_name:REPOSITORY}}}
+ const ctx={...context(),controlSha:r.sourceBaseSha},endpoint='repos/'+REPOSITORY+'/pulls/1111'
+ const request=async name=>{if(name===endpoint)return{data:structuredClone(candidate)};if(name===endpoint+'/files?per_page=100&page=1')return{data:files};throw Error('Unexpected fixture endpoint')}
+ const before=process.env.SOURCE_ADMISSION_ID
+ try{
+  delete process.env.SOURCE_ADMISSION_ID
+  const resolved=await c.resolveCandidateAdmission(ctx,'1111',r.sourceSha,request)
+  assert.equal(resolved.sha,r.sourceSha);assert.equal(resolved.admission.kind,'FINDER_MONITOR_SOURCE')
+  assert.equal(resolved.admission.reviewId,'SG2-FINDER-MONITOR-PCI-BINDING-20261117')
+  assert.deepEqual(resolved.admission.files,files)
+  process.env.SOURCE_ADMISSION_ID='SG2:SG2-FINDER-SENTRY-MONITOR-20261117'
+  await assert.rejects(()=>c.resolveCandidateAdmission(ctx,'1111',r.sourceSha,request),/FINDER_MONITOR_PROTECTED_REVIEW_REQUIRED/)
+ }finally{if(before===undefined)delete process.env.SOURCE_ADMISSION_ID;else process.env.SOURCE_ADMISSION_ID=before}
+})
+
+test('Finder monitor optional absence is exact and cannot swallow malformed, unreadable or unrelated history failures',async()=>{
+ const c=await import('./controlled-package-ci.mjs'),r=c.FINDER_MONITOR_SOURCE_REVIEW
+ assert.equal(c.finderMonitorTrustedPredecessor(()=>{throw Object.assign(Error('Absent'),{code:'ENOENT'})},()=>Buffer.alloc(0)),null)
+ const current=p=>execFileSync('git',['show',r.sourceSha+':'+p],{cwd:new URL('../../',import.meta.url),maxBuffer:32*1024*1024,stdio:['ignore','pipe','pipe']})
+ for(const error of [Object.assign(Error('Denied'),{code:'EACCES'}),Object.assign(Error('Git'),{status:128,stderr:"fatal: path 'other.json' does not exist in 'history'"})])assert.throws(()=>c.finderMonitorTrustedPredecessor(()=>{throw error},()=>Buffer.alloc(0)),e=>e===error)
+ assert.throws(()=>c.finderMonitorTrustedPredecessor(p=>p===r.recordPath?Buffer.from('{'):current(p),()=>Buffer.alloc(0)))
+})
