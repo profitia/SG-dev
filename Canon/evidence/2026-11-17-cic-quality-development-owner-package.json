@@ -58,7 +58,19 @@
     "autoSync": false,
     "existingResourcesAdopted": false,
     "projectId": "prj-dap98ddg1s2s739ssatg",
-    "projectName": "SpendGuru 2.0 Actual"
+    "projectName": "SpendGuru 2.0 Actual",
+    "reviewedPlan": {
+      "blueprintId": "exs-dbu3ppou01pc73djagd0",
+      "syncId": "exe-dbu3pq0u01pc73djagqg",
+      "sourceSha": "cbe641d825b9a64aa09a61274189429a433ab90a",
+      "planningOutcome": "planned",
+      "actions": [
+        "CreateService: sg2-assistant-quality-development-yr67"
+      ],
+      "existingResourceChanges": 0,
+      "dashboardUrl": "https://dashboard.render.com/blueprint/exs-dbu3ppou01pc73djagd0/sync/exe-dbu3pq0u01pc73djagqg",
+      "applied": false
+    }
   },
   "neon": {
     "decisionRequired": true,
@@ -215,9 +227,7 @@
     "existingBindingRenewal": "Only existing SG2 deployment_id/source_ref references, exact current version CAS; preserve rights/status/expiry and restore temporary owner SET capability",
     "existingProductDeploymentAuthority": "Current explicit user request to achieve real Development technical readiness; record selected exact validated SHA before each release"
   },
-  "requiredBeforeDecisionRequest": [
-    "Obtain the Render plan from the published proposed Blueprint; applying remains a separate owner decision"
-  ],
+  "requiredBeforeDecisionRequest": [],
   "safeguards": {
     "paidRepairsEnabled": false,
     "promotionEnabled": false,
