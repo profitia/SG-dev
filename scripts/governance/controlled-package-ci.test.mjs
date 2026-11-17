@@ -3,6 +3,7 @@ import {execFileSync as isolationGitExec} from 'node:child_process'
 import {trustedPackageProbeSpec,assertTrustedPackageRegistryMetadata,assertTrustedPackedArtifact} from './controlled-package-ci.mjs'
 import {registrationLifecycleCanonicalRead} from './controlled-package-ci.mjs'
 import {ECR_COMPLETE_FUNCTIONAL_REVIEW,ECR_COMPLETE_FUNCTIONAL_CONSUMER_REVIEW,ECR_COMPLETE_FUNCTIONAL_PROVENANCE,assertCompleteFunctionalReviewEntry,completeFunctionalTrustedPredecessor,assertCompleteFunctionalProvenance} from './controlled-package-ci.mjs'
+import {PRIVATE_RECURRING_LIVE_SRM_REVIEW} from './controlled-package-ci.mjs'
 import {ECR_CALENDAR_TEST_REVIEW,assertCalendarTestReviewEntry,calendarTestCompatibilityTrustedCurrent,readCalendarSourceFile} from './controlled-package-ci.mjs'
 import {ECR_MARKET_CALENDAR_REVIEW,ECR_MARKET_CALENDAR_PROVENANCE,assertEcrMarketCalendarReviewEntry,marketCalendarTrustedPredecessor} from './controlled-package-ci.mjs'
 import {NEWSFEED_SAVED_SEARCH_REVIEW,assertNewsfeedSavedSearchReviewEntry} from './controlled-package-ci.mjs'
@@ -156,7 +157,7 @@ test('only the ten reviewed local names bind to their own exact paths, never a r
     rejection(() => assertManifestPolicy({dependencies: {alias: `file:${relative}`}}, authority))
   }
 })
-function currentRecurringPolicyOptions(){return {reviewedPrivateRecurring:!!assertPrivateRecurringProvenance(authorityRoot),reviewedLifecycle:!!registrationLifecycleCanonicalRead(authorityRoot)}}
+function currentRecurringPolicyOptions(){return {reviewedPrivateRecurring:!!assertPrivateRecurringProvenance(authorityRoot),reviewedLifecycle:!!registrationLifecycleCanonicalRead(authorityRoot),reviewedCompleteFunctional:!!assertCompleteFunctionalProvenance(authorityRoot)}}
 function reviewedMapsFixture() {
   const manifest = JSON.parse(fs.readFileSync(path.join(authorityRoot, 'packages/maps-embed/package.json'), 'utf8'))
   const candidate = lock()
@@ -2697,7 +2698,7 @@ test('assistant quality Stage1 source checkout authenticates actual Git bytes be
 })
 
 // Exact new task, separate producer and SG2 owner inputs; no runtime activation.
-test('complete Calendar delivery pins54 producer and7 consumer paths without widening older owner/credential gates',()=>{
+test('complete Calendar delivery pins58 producer and7 consumer paths without widening older owner/credential gates',()=>{
  for(const r of [ECR_COMPLETE_FUNCTIONAL_REVIEW,ECR_COMPLETE_FUNCTIONAL_CONSUMER_REVIEW]){
   const files=Object.entries(r.entries).map(([filename,e])=>({filename,sha:e.sha,status:e.status})),candidate={...pr(),number:r.prNumber,changed_files:files.length,base:{...pr().base,sha:r.baseSha},head:{...pr().head,sha:r.sourceSha,ref:r.branch}}
   assert.equal(selectCandidate(context(),candidate,r.sourceSha,{files}),r.sourceSha)
@@ -2706,7 +2707,7 @@ test('complete Calendar delivery pins54 producer and7 consumer paths without wid
   for(const edit of [v=>v.pop(),v=>v.push(v[0]),v=>v[0]={...v[0],sha:'0'.repeat(40)},v=>v[0]={...v[0],status:'removed'},v=>v[0]={...v[0],filename:'apps/identity-runtime/src/unreviewed.ts'},v=>v[0]={...v[0],previous_filename:v[0].filename}]){const bad=structuredClone(files);edit(bad);rejection(()=>selectCandidate(context(),{...candidate,changed_files:bad.length},r.sourceSha,{files:bad}))}
   for(const edit of [v=>v.number++,v=>v.head.ref='architecture/unreviewed',v=>v.head.repo.full_name='profitia/fork',v=>v.user.login='attacker',v=>v.base.ref='staging',v=>v.head.sha=sha]){const bad=structuredClone(candidate);edit(bad);rejection(()=>selectCandidate(context(),bad,r.sourceSha,{files}))}
  }
- assert.equal(Object.keys(ECR_COMPLETE_FUNCTIONAL_REVIEW.entries).length,54);assert.equal(Object.keys(ECR_COMPLETE_FUNCTIONAL_CONSUMER_REVIEW.entries).length,7)
+ assert.equal(Object.keys(ECR_COMPLETE_FUNCTIONAL_REVIEW.entries).length,58);assert.equal(Object.keys(ECR_COMPLETE_FUNCTIONAL_CONSUMER_REVIEW.entries).length,7)
 })
 function completeCalendarFixture(){
  const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..'),p=ECR_COMPLETE_FUNCTIONAL_REVIEW,c=ECR_COMPLETE_FUNCTIONAL_CONSUMER_REVIEW,cfg=ECR_COMPLETE_FUNCTIONAL_PROVENANCE,cache=new Map()
@@ -2757,8 +2758,16 @@ test('complete Calendar SDK bridge is confined to its exact legacy lock and revi
  }finally{fs.rmSync(root,{recursive:true,force:true})}
 })
 
+// Preserve the accepted historical correction's exact fixture and assertions.
+// A later transport continuation does not rewrite what that decision accepted.
+function historicalCompleteCalendarFixture(){
+ const f=completeCalendarFixture(),policy=f.historical('c5dc601c224c4902967ae6427672aeb82e94fb8f','scripts/governance/controlled-package-ci.mjs').toString()
+ const record=name=>JSON.parse(policy.match(new RegExp('^export const '+name+'=Object.freeze\\((.*)\\)$','m'))[1])
+ const p=record('ECR_COMPLETE_FUNCTIONAL_REVIEW'),c=record('ECR_COMPLETE_FUNCTIONAL_CONSUMER_REVIEW'),cfg=record('ECR_COMPLETE_FUNCTIONAL_PROVENANCE')
+ return{...f,p,c,cfg,current:consumer=>file=>f.historical(consumer&&Object.hasOwn(c.entries,file)?c.sourceSha:p.sourceSha,file)}
+}
 test('Calendar historical-read correction retains the approved operation scope, six UI sources and all prior receipts',()=>{
- const f=completeCalendarFixture(),oldProducer='ce6c5d0f51cd670d81a17c416924a5f56a211cde',oldConsumer='4f560653f32f6cdaea08398f6356265e4e5fde34'
+ const f=historicalCompleteCalendarFixture(),oldProducer='ce6c5d0f51cd670d81a17c416924a5f56a211cde',oldConsumer='4f560653f32f6cdaea08398f6356265e4e5fde34'
  const changed=(review,old)=>Object.keys(review.entries).filter(p=>!f.historical(old,p).equals(f.historical(review.sourceSha,p))).sort()
  assert.deepEqual(changed(f.p,oldProducer),[
   'apps/architecture-lab/ecr-complete-functional-source.mjs',
@@ -3093,6 +3102,20 @@ test('controlled workflow installs and executes only the isolated checkout and p
  assert.equal(execute.includes('${{ github.token }}'),false);assert.ok(proof.includes('EXECUTION_ROOT: '+output))
  const prepared=workflow.indexOf(' prepare-execution'),installed=workflow.indexOf(' install\n'),checked=workflow.indexOf(' check-execution-input'),built=workflow.indexOf('npm run build'),proved=workflow.indexOf(' proof\n')
  assert.ok(prepared>0&&installed>prepared&&checked>installed&&built>checked&&proved>built)
+
+})
+
+test('Calendar transport continuation preserves all unrelated accepted source bytes, peer controls and operational scopes',()=>{
+ const f=completeCalendarFixture(),previous='4e1c46554f8937807ca80b1449e8f637f652dc68',policy=f.historical('c5dc601c224c4902967ae6427672aeb82e94fb8f','scripts/governance/controlled-package-ci.mjs').toString(),old=JSON.parse(policy.match(/^export const ECR_COMPLETE_FUNCTIONAL_REVIEW=Object.freeze\((.*)\)$/m)[1])
+ const changed=new Set(['apps/architecture-lab/ecr-complete-functional-source.mjs','apps/economic-calendar-runtime/complete-functional-source-integration.json','apps/economic-calendar-runtime/operations/complete-functional-owner-plan.json','apps/platform-source-hub/scripts/migrate.mjs','apps/platform-source-hub/src/repository.mjs','apps/platform-source-hub/test/ci-routing.test.mjs','packages/platform-contracts/test/recurring-consent-transport-source.mjs'])
+ for(const p of Object.keys(old.entries))if(!changed.has(p))assert.deepEqual(f.historical(f.p.sourceSha,p),f.historical(previous,p),p)
+ const added=Object.keys(f.p.entries).filter(p=>!Object.hasOwn(old.entries,p)).sort()
+ assert.deepEqual(added,['apps/platform-source-hub/migrations/012-calendar-transport-continuity.sql','apps/platform-source-hub/operations/replace-ecr-calendar-transport.sql','apps/platform-source-hub/test/calendar-transport-continuity.test.mjs','apps/platform-source-hub/test/historical-recurring-routing.test.mjs'])
+ const plan='apps/economic-calendar-runtime/operations/complete-functional-owner-plan.json',a=JSON.parse(f.historical(previous,plan)),b=JSON.parse(f.historical(f.p.sourceSha,plan))
+ for(const k of ['store','storageRights','calendarStorageRights','curation','identity','synchronisation','releases','sg2ReleaseBindings','newInfrastructure','newPaidSubscription','newProviderCredentials','stagingProduction'])assert.deepEqual(b[k],a[k],k)
+ assert.equal(b.previousOwnerApprovedPlanSha256,createHash('sha256').update(f.historical(previous,plan)).digest('hex'))
+ for(const p of Object.keys(f.c.entries).filter(p=>p!==f.cfg.consumerRecord))assert.deepEqual(f.historical(f.c.sourceSha,p),f.historical('4f560653f32f6cdaea08398f6356265e4e5fde34',p),p)
+ assert.equal(createHash('sha256').update(JSON.stringify(PRIVATE_RECURRING_LIVE_SRM_REVIEW.entries)).digest('hex'),'c7da3065f39556ea2c523906cadfd86c2855938509b7efdfb7e5ed501bfadc70')
 })
 
 
@@ -3173,3 +3196,38 @@ test('Stage I corrected-source continuation real checkout preserves exact source
   c.assertLocalPackageSources(root,lock,authorityRoot,{reviewedPrivateRecurring:true});
  }finally{try{execFileSync('git',['worktree','remove','--force',root],{cwd:authorityRoot,stdio:'pipe'})}catch{}fs.rmSync(dir,{recursive:true,force:true});}
 });
+
+
+test('trusted policy content reader verifies small immutable files without a blob fallback',async()=>{
+ const {readControlPolicyFile}=await import('./controlled-package-ci.mjs'),name=CONTROL_POLICY_FILES[0],bytes=Buffer.from('trusted policy\n')
+ const blob=createHash('sha1').update('blob '+bytes.length+'\0').update(bytes).digest('hex'),calls=[]
+ const metadata={type:'file',path:name,sha:blob,size:bytes.length,encoding:'base64',content:bytes.toString('base64')+'\n'}
+ const read=async endpoint=>{calls.push(endpoint);return {data:metadata}}
+ assert.deepEqual(await readControlPolicyFile(name,sha,read),bytes)
+ assert.deepEqual(calls,[`repos/${REPOSITORY}/contents/${name}?ref=${sha}`])
+})
+test('trusted policy content reader recovers omitted large bytes by their immutable authenticated Git blob',async()=>{
+ const {readControlPolicyFile}=await import('./controlled-package-ci.mjs'),name='scripts/governance/controlled-package-ci.mjs',bytes=Buffer.alloc(1024*1024+1,97)
+ const blob=createHash('sha1').update('blob '+bytes.length+'\0').update(bytes).digest('hex'),calls=[]
+ const metadata={type:'file',path:name,sha:blob,size:bytes.length,encoding:'none',content:''}
+ const read=async endpoint=>{calls.push(endpoint);return {data: endpoint.includes('/git/blobs/')?{sha:blob,size:bytes.length,encoding:'base64',content:bytes.toString('base64')}:metadata}}
+ assert.deepEqual(await readControlPolicyFile(name,sha,read),bytes)
+ assert.deepEqual(calls,[`repos/${REPOSITORY}/contents/${name}?ref=${sha}`,`repos/${REPOSITORY}/git/blobs/${blob}`])
+})
+test('trusted policy content reader refuses foreign paths refs metadata truncated and corrupt content',async()=>{
+ const {readControlPolicyFile}=await import('./controlled-package-ci.mjs'),name=CONTROL_POLICY_FILES[0],bytes=Buffer.from('trusted policy\n')
+ const blob=createHash('sha1').update('blob '+bytes.length+'\0').update(bytes).digest('hex')
+ const metadata={type:'file',path:name,sha:blob,size:bytes.length,encoding:'base64',content:bytes.toString('base64')}
+ for(const [n,r] of [['secrets.env',sha],[name,'main'],[name,sha+'?ref=main']])await assert.rejects(()=>readControlPolicyFile(n,r,async()=>{throw Error('unexpected API call')}),/CONTROL_POLICY_CONTENT_REJECTED/)
+ for(const change of [{type:'symlink'},{path:'foreign'},{sha:'x'.repeat(40)},{size:NaN},{size:-1},{size:8*1024*1024+1},{encoding:'none',content:''},{content:''},{content:metadata.content+'!'},{content:Buffer.from('forged policy!\n').toString('base64')},{sha:other}])
+  await assert.rejects(()=>readControlPolicyFile(name,sha,async()=>({data:{...metadata,...change}})),/CONTROL_POLICY_CONTENT_(REJECTED|MISMATCH)/)
+})
+test('trusted policy content reader refuses mismatched or unavailable large Git blobs without weaker fallback',async()=>{
+ const {readControlPolicyFile}=await import('./controlled-package-ci.mjs'),name='scripts/governance/controlled-package-ci.mjs',bytes=Buffer.alloc(1024*1024+1,97)
+ const blob=createHash('sha1').update('blob '+bytes.length+'\0').update(bytes).digest('hex')
+ const metadata={type:'file',path:name,sha:blob,size:bytes.length,encoding:'none',content:''}
+ const correct={sha:blob,size:bytes.length,encoding:'base64',content:bytes.toString('base64')}
+ for(const change of [{sha:other},{size:bytes.length-1},{encoding:'none'},{content:''},{content:Buffer.alloc(bytes.length,98).toString('base64')}])
+  await assert.rejects(()=>readControlPolicyFile(name,sha,async endpoint=>({data:endpoint.includes('/git/blobs/')?{...correct,...change}:metadata})),/CONTROL_POLICY_CONTENT_(REJECTED|MISMATCH)/)
+ await assert.rejects(()=>readControlPolicyFile(name,sha,async endpoint=>{if(endpoint.includes('/git/blobs/'))throw Error('GITHUB_API_403');return {data:metadata}}),/GITHUB_API_403/)
+})

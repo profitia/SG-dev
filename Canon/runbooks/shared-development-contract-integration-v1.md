@@ -1060,3 +1060,59 @@ Trusted data-only decoding authenticates345 current inputs, the exact helper, al
 ### Proposed bounded source-test continuation, 2026-11-16
 
 Unactivated proposal only: exact201-entry successor 7cc6c05600c1031daca15614a2e98b24f29c1bfe, map SHA256 3717669e57b2c1d78548a4bc75b03fcb2c6456d05609a55dd605509ee3114e49, record SHA256 555ad903f3fb64ffe9b50d5c2e6a38ef805598342aa6302ed8190225f474cbe6, guard SHA256 2046bd00d764c4f209187fd92e92e4fe7cd1156ea78741a080f2a87c8107e1fa. Retain the original196 review and approved882/5feb class unchanged. Add only this exact independently owned345-input test continuity closure and three rejection/real-checkout tests. No credentials, grants, packages, roles, providers, deployment or runtime authority change. This proposal requires explicit owner approval before application; no proposed policy function has been executed. Existing read-package credential HTTP401 remains independent.
+
+### Complete Calendar — proposed immutable transport and peer-source continuation
+
+This exact58+7 successor preserves accepted PI1072/1058 and all historical
+registration/Calendar/CIC/BSDC receipts. The native Source transport definition
+is immutable: accept the separately reviewed calendar-only012 and replacement/
+rollback recipe before activation, retaining historical counters, finite terms
+and other consumers. The original business/data/mail/resource approval remains
+unchanged; new Source owner operations and new protected exact pins require
+one consolidated explicit GO. Preserve complete current physical authentication,
+then the exact accepted PI predecessor, then older source views. Historical
+routing assertions use their full fixed reviewed checkout, never a relaxed
+partial diff. Require fresh exact controlled/public/resulting-main gates; no
+fixture commit is a release. See the exact source SHAs and operation-plan digest
+in the existing [Calendar admission](../evidence/2026-11-12-ecr-complete-functional-ci-admission.md).
+
+## 2026-11-13 — ChatGPT Calendar continuation on accepted main3901 (proposal only)
+
+Status: PROPOSED_NOT_ACTIVE / EXACT_COMPOSED_POLICY_OWNER_ACCEPTANCE_PENDING.
+
+This isolated four-file proposal composes the owner-approved Calendar policy
+e198907e68d2d4a51b1e537980cd668924f47542 with accepted authority
+3901ff157b6ae7b8906199b542be623230b4ebbe. Preserve the independently accepted
+Stage I196/335 lifecycle graph, AppShell notification seven-file source and26
+receipts, PI/CIC/AQC/BSDC and every historical Calendar receipt. All96 unrelated
+exported policies retain their exact accepted-main bytes; the three Calendar
+review/provenance constants retain their exact e198 bytes and closed58/7 maps.
+
+The test composition keeps the Stage I and AppShell cases, adds the approved
+Calendar transport-continuity case, and authenticates both lifecycle and Calendar
+options in the existing dependency fixture. The approved54-to58 test update
+retains the immutable old54 history and adds no generic source admission.
+
+Actual local validation: first full run282/287 because the fresh host lacked the
+exact896ac56f/86eb1204 Git objects; those failures are retained. After fetching
+only the two pinned sources, one complete rerun is287/287 PASS, zero skipped.
+No assertion or credential/source/owner/mode fence was weakened. This is local
+controller evidence, not a controlled GitHub proof or LIVE product acceptance.
+
+The existing operational plan remains SHA256
+e43b5d49abef12818956f2195f0b11225fa4aef28d4fb1f2895900f8d721be9c.
+No product source, SQL installation, grant, secret, provider call, mail or
+deployment is changed by this proposal. New composed protected bytes require
+their own exact owner decision; the earlier e198 approval remains historical
+authority for its identical scope and is not rewritten as this decision.
+
+Canonical continuation tasks: ARCHITECTURE-CALENDAR-CHATGPT-CI-20261113,
+ARCHITECTURE-CALENDAR-CHATGPT-PRODUCER-20261113 and
+SG2-CALENDAR-CHATGPT-CONSUMER-20261113. Actual ChatGPT hostConversationId:
+6af72cc0-5190-83eb-9fa4-7c2d9855d407. Each passed its own canonical begin and
+require-begin preflight; predecessor registrations remain unchanged.
+
+After exact policy acceptance: publish only the selected policy transport,
+obtain its fresh current-main controlled/public/governance and resulting-main
+proof, then independently validate/adopt producer1063 and consumer1064. Never
+merge both1077 and1080. Runtime, real data and inbox acceptance remain separate.
