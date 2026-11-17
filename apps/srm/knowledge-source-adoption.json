@@ -5,5 +5,5 @@
   "targetEnvironment": "development",
   "scope": "SOURCE_ONLY_NO_RUNTIME_ACTIVATION",
   "sourceRecord": "apps/architecture-lab/knowledge-source.json",
-  "sourceRecordSha256": "24836803afe280a7da4bc1a58fdda266fe72f2de95afdbbc7841af5a05cfcf95"
+  "sourceRecordSha256": "44b5e85e201974aadc863ed3d9a5afc2f10c0224dc979bfe1cff5a13bfd73f99"
 }
