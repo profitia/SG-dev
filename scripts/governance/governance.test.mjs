@@ -16,6 +16,27 @@ import { resolveProjectRouting, validateProjectBoundaryPolicy } from './routing-
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..')
 
+// Positive unit cases own their Git state. A PR head can correctly be behind
+// the live authority branch; that unrelated fact must not decide PMOS tests.
+// Never alter refs in the actual repository or weaken the production gate.
+function isolatedGovernanceRepository(t) {
+  const root = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'governance-code-state-')))
+  t.after(() => fs.rmSync(root, {recursive: true, force: true}))
+  const git = (...args) => execFileSync('git', args, {cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe']}).trim()
+  const registry = 'Canon/registries/current-architecture-baseline-v1.json'
+  fs.mkdirSync(path.dirname(path.join(root, registry)), {recursive: true})
+  fs.copyFileSync(path.join(repositoryRoot, registry), path.join(root, registry))
+  git('init', '--quiet', '--initial-branch=main')
+  git('config', 'user.name', 'Isolated governance fixture')
+  git('config', 'user.email', 'governance-fixture@example.invalid')
+  git('remote', 'add', 'origin', 'https://github.com/profitia/SG-dev.git')
+  git('add', '--', registry)
+  git('-c', 'commit.gpgsign=false', 'commit', '--quiet', '-m', 'Synthetic registered routing fixture')
+  const head = git('rev-parse', 'HEAD')
+  git('update-ref', 'refs/remotes/origin/main', head)
+  return {root, git, head}
+}
+
 const newsfeedTargets = [
   'apps/newsfeed-runtime/src/server.ts',
   'packages/newsfeed-contracts/src/index.ts',
@@ -428,7 +449,8 @@ test('SRM provider snapshot detects an unregistered Development service without 
   assert.match(result.errors.join('\n'), /Unregistered SRM Render service/)
 })
 
-test('SG2 PMOS applies only to Development and creates no Staging or Production continuity', () => {
+test('SG2 PMOS applies only to Development and creates no Staging or Production continuity', t => {
+  const {root: fixtureRoot} = isolatedGovernanceRepository(t)
   const input = {
     mode: 'development',
     project: 'SG2',
@@ -441,7 +463,7 @@ test('SG2 PMOS applies only to Development and creates no Staging or Production 
     scope: 'governance-test',
     targets: ['Canon/adapters/sg2-project-adapter-v1.md'],
     legacyExceptions: [],
-    repository_root: repositoryRoot,
+    repository_root: fixtureRoot,
     json: false,
     ci: false,
     offline: true,
@@ -639,7 +661,8 @@ test('project boundary policy fails closed on missing, malformed or wildcard all
   assert.equal(validateProjectBoundaryPolicy({ surfaces: [] }).enforced, false)
 })
 
-test('registered Architecture respects Development and owned surface boundaries', () => {
+test('registered Architecture respects Development and owned surface boundaries', t => {
+   const {root: fixtureRoot} = isolatedGovernanceRepository(t)
   const fixture = resolveProjectProfile('ARCHITECTURE', repositoryRoot)
   assert.equal(fixture.database.databaseName, 'architecture_pmos')
   assert.equal(fixture.database.runtimeRole, 'architecture_pmos_runtime')
@@ -659,7 +682,7 @@ test('registered Architecture respects Development and owned surface boundaries'
   const preflight = runGovernancePreflight({
     mode: 'development', project: 'ARCHITECTURE', target_environment: 'development', task_id: 'synthetic-architecture-test',
     hostConversationUnavailable: true, title: 'Synthetic registered profile boundary test', workspace: 'fixture', execution_environment: 'ci', scope: 'governance',
-    targets: ['Canon/registries/profitia-projects-v1.json'], legacyExceptions: [], repository_root: repositoryRoot,
+    targets: ['Canon/registries/profitia-projects-v1.json'], legacyExceptions: [], repository_root: fixtureRoot,
     ci: true, offline: true, allowDirty: true, requireBegin: false, skipRuntime: true, checkEstate: false,
   })
   assert.equal(preflight.gates.PROJECT_PROFILE_GATE.status, 'PASS')
@@ -763,3 +786,27 @@ test('Insights G1 preserves pre-onboarding owner rows, frozen metadata and all s
   assert.deepEqual(resolveBaselinePaths({ registry: current, inputPaths: tracked, repoRoot: repositoryRoot }), resolveBaselinePaths({ registry: original, inputPaths: tracked, repoRoot: repositoryRoot }))
 })
 
+
+
+test('canonical code-state gate blocks a stale candidate even in offline CI', t => {
+  const {root, git, head} = isolatedGovernanceRepository(t)
+  const input = {
+    mode: 'development', project: 'ARCHITECTURE', target_environment: 'development',
+    task_id: 'synthetic-code-state-negative', hostConversationUnavailable: true,
+    title: 'Synthetic stale-source negative control', workspace: 'fixture',
+    execution_environment: 'ci', scope: 'governance',
+    targets: ['Canon/registries/profitia-projects-v1.json'], legacyExceptions: [],
+    repository_root: root, ci: true, offline: true, allowDirty: false,
+    requireBegin: false, skipRuntime: true, checkEstate: false,
+  }
+  assert.equal(runGovernancePreflight(input).verdict, 'PASS')
+  git('-c', 'commit.gpgsign=false', 'commit', '--quiet', '--allow-empty', '-m', 'Advanced synthetic main')
+  git('update-ref', 'refs/remotes/origin/main', git('rev-parse', 'HEAD'))
+  git('checkout', '--quiet', '--detach', head)
+  const stale = runGovernancePreflight(input)
+  assert.equal(stale.gates.CODE_STATE_GATE.status, 'BLOCKED')
+  assert.equal(stale.verdict, 'BLOCKED')
+  git('checkout', '--quiet', '--detach', 'origin/main')
+  fs.writeFileSync(path.join(root, 'unreviewed.txt'), 'dirty fixture')
+  assert.equal(runGovernancePreflight(input).gates.CODE_STATE_GATE.status, 'BLOCKED')
+})

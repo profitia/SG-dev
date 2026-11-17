@@ -2,10 +2,27 @@
 import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
 export const KNOWLEDGE_SOURCE_RECORD='apps/architecture-lab/knowledge-source.json';
-export const KNOWLEDGE_SOURCE_RECORD_SHA256='4e815bd8238285419a49a0f3a0718d7356a2ad9aafba214954004acd7f5d9ca9';
+export const KNOWLEDGE_SOURCE_RECORD_SHA256='454f9aeee7ed98a3c4ea6daafce4ceb62db0099856d7d5e053e10f7cd6d8749d';
 const hash=bytes=>createHash('sha256').update(bytes).digest('hex');
+// Historical readers use Git's exact missing-path diagnostic rather than the
+// filesystem ENOENT. Unknown revisions, foreign paths and access errors remain
+// fatal; only this optional record can be genuinely absent from its predecessor.
+const absent=(error,historical)=>{
+ if(error?.code==='ENOENT')return true;
+ if(error?.status!==128)return false;
+ const diagnostic=String(error.stderr??'').trim();
+ const prefix="fatal: path '"+KNOWLEDGE_SOURCE_RECORD+"' ";
+ if(!diagnostic.startsWith(prefix))return false;
+ const match=/^(?:does not exist in|exists on disk, but not in) '([a-f0-9]{40})'$/.exec(diagnostic.slice(prefix.length));
+ if(!match)return false;
+ // Git can print the same missing-path text for an unknown object. Verify a
+ // real historical source at that revision before classifying absence.
+ const witness=historical(match[1],'AGENTS.md');
+ assert((Buffer.isBuffer(witness)||typeof witness==='string')&&witness.length>0,'readable historical revision required');
+ return true;
+};
 export function knowledgeSourcePredecessor(current,historical){
- let bytes;try{bytes=current(KNOWLEDGE_SOURCE_RECORD);}catch(error){if(error?.code==='ENOENT')return null;throw error;}
+ let bytes;try{bytes=current(KNOWLEDGE_SOURCE_RECORD);}catch(error){if(absent(error,historical))return null;throw error;}
  assert.equal(hash(bytes),KNOWLEDGE_SOURCE_RECORD_SHA256,'exact reviewed Platform Knowledge source record');
  const a=JSON.parse(bytes);
  assert.equal(a.schemaVersion,'1.0.0');assert.equal(a.scope,'PLATFORM_KNOWLEDGE_SDK_SOURCE_ACCEPTANCE');
