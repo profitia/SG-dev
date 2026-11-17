@@ -12,16 +12,23 @@ const hash=bytes=>createHash('sha256').update(bytes).digest('hex')
 const plain=v=>v!==null&&typeof v==='object'&&Object.getPrototypeOf(v)===Object.prototype
 const sourcePath=p=>typeof p==='string'&&p.length<=1024&&/^[A-Za-z0-9_.@/\[\]-]+$/.test(p)
  &&!p.startsWith('/')&&p.split('/').every(x=>x&&x!=='.'&&x!=='..'&&!['.git','node_modules','.pmos','.context','.env','.env.local'].includes(x))
-export const sdkSourcePathAbsent=(error,p)=>error?.code==='ENOENT'||error?.status===128&&[
- "'"+p+"' does not exist in ","'"+p+"' exists on disk, but not in ",
-].some(s=>String(error?.stderr??error?.message??'').includes(s))
+export function sdkSourcePathAbsent(error,p,historical){
+ if(error?.code==='ENOENT')return true
+ if(error?.status!==128||typeof historical!=='function')return false
+ const message=String(error.stderr??'').trim()
+ const prefix=["fatal: path '"+p+"' does not exist in '","fatal: path '"+p+"' exists on disk, but not in '"].find(value=>message.startsWith(value))
+ if(!prefix)return false
+ const match=/^([a-f0-9]{40})'$/.exec(message.slice(prefix.length))
+ if(!match)return false
+ try{return Buffer.from(historical(match[1],'AGENTS.md')).toString('utf8').trim().length>0}catch{return false}
+}
 const freeze=v=>{if(v&&typeof v==='object'){for(const x of Object.values(v))freeze(x);Object.freeze(v)}return v}
-function coveredPaths(value,result=new Set()){
+export function sourceDigestPaths(value,result=new Set()){
  if(plain(value))for(const [key,item]of Object.entries(value)){
-  if(key.includes('/')&&sourcePath(key)&&typeof item==='string'&&sha256.test(item))result.add(key)
-  else if(item&&typeof item==='object')coveredPaths(item,result)
+  if((key.includes('/')||/^(?:\.[A-Za-z][A-Za-z0-9_.-]*|[A-Za-z0-9_.-]+\.[A-Za-z][A-Za-z0-9_-]*|Dockerfile|Makefile|LICENSE|NOTICE|Procfile)$/.test(key))&&sourcePath(key)&&typeof item==='string'&&sha256.test(item))result.add(key)
+  else if(item&&typeof item==='object')sourceDigestPaths(item,result)
  }
- else if(Array.isArray(value))for(const item of value)coveredPaths(item,result)
+ else if(Array.isArray(value))for(const item of value)sourceDigestPaths(item,result)
  return result
 }
 /** Verify all current physical inputs first. Historical evidence is then read
@@ -30,7 +37,7 @@ function coveredPaths(value,result=new Set()){
 export function sdkSourceContext(current,historical,{recordPath=CURRENT_SDK_SOURCE_RECORD}={}){
  assert.equal(typeof current,'function');assert.equal(typeof historical,'function');assert(sourcePath(recordPath))
  let bytes
- try{bytes=Buffer.from(current(recordPath))}catch(error){if(sdkSourcePathAbsent(error,recordPath))return null;throw error}
+ try{bytes=Buffer.from(current(recordPath))}catch(error){if(sdkSourcePathAbsent(error,recordPath,historical))return null;throw error}
  assert(bytes.length<=2*1024*1024,'bounded current SDK source metadata')
  const r=JSON.parse(bytes.toString('utf8'))
  assert(plain(r)&&r.schemaVersion==='1.0'&&r.scope==='CURRENT_SDK_SOURCE_INTEGRITY_ONLY','source integrity scope only')
@@ -58,7 +65,7 @@ export function sdkSourceContext(current,historical,{recordPath=CURRENT_SDK_SOUR
     try{cache.set(key,Buffer.from(historical(sha,p)))}catch(error){
      // A full Git view retains real absence; older filesystem-reader contracts
      // receive ENOENT, while invalid objects or other Git failures stay errors.
-     if(sdkSourcePathAbsent(error,p))throw Object.assign(Error('Historical source path absent: '+p),{code:'ENOENT'})
+     if(sdkSourcePathAbsent(error,p,historical))throw Object.assign(Error('Historical source path absent: '+p),{code:'ENOENT'})
      throw error
     }
    }
@@ -70,7 +77,7 @@ export function sdkSourceContext(current,historical,{recordPath=CURRENT_SDK_SOUR
   assert(plain(ref)&&sourcePath(ref.path)&&sha256.test(ref.sha256),'closed predecessor coverage')
   const previous=baseline(ref.baseline)(ref.path)
   assert.equal(hash(previous),ref.sha256,'immutable predecessor source record '+ref.path)
-  for(const p of coveredPaths(JSON.parse(previous.toString('utf8'))))assert(sha256.test(r.inputs[p]??''),'retained physical source coverage '+p)
+  for(const p of sourceDigestPaths(JSON.parse(previous.toString('utf8'))))assert(sha256.test(r.inputs[p]??''),'retained physical source coverage '+p)
  }
  assert(plain(r.retainedReceipts),'explicit retained historical evidence')
  for(const [p,e]of Object.entries(r.retainedReceipts)){

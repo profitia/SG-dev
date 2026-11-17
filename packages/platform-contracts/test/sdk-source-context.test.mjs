@@ -6,9 +6,9 @@ const hash=x=>createHash('sha256').update(x).digest('hex')
 const manifest='packages/platform-contracts/package.json',code='packages/platform-contracts/src/operation-context.mjs'
 const extra='apps/example/app/[locale]/layout.tsx',receipt='apps/example/operation-integration.json',coverage='apps/example/source-record.json'
 function fixture(){
- const oldReceipt='{"accepted":"original"}',oldCoverage=JSON.stringify({sourceDigests:{[manifest]:hash('old manifest'),[code]:hash('old code'),[extra]:hash('old view')}})
- const current=new Map([[manifest,JSON.stringify({version:'1.38.0'})],[code,'new actual code'],[extra,'new actual view'],[receipt,oldReceipt]])
- const historical=new Map([['a'.repeat(40)+':'+coverage,oldCoverage],['a'.repeat(40)+':'+receipt,oldReceipt],
+ const oldReceipt='{"accepted":"original"}',oldCoverage=JSON.stringify({sourceDigests:{[manifest]:hash('old manifest'),[code]:hash('old code'),[extra]:hash('old view'),'AGENTS.md':hash('old agents')}})
+ const current=new Map([[manifest,JSON.stringify({version:'1.38.0'})],[code,'new actual code'],[extra,'new actual view'],[receipt,oldReceipt],['AGENTS.md','new actual root instructions']])
+ const historical=new Map([['a'.repeat(40)+':'+coverage,oldCoverage],['a'.repeat(40)+':'+receipt,oldReceipt],['a'.repeat(40)+':AGENTS.md','old agents'],['b'.repeat(40)+':AGENTS.md','second known tree'],
   ['a'.repeat(40)+':'+code,'old code'],['b'.repeat(40)+':'+code,'independent accepted code']])
  const record={schemaVersion:'1.0',scope:'CURRENT_SDK_SOURCE_INTEGRITY_ONLY',platformVersion:'1.38.0',
   runtimeActivated:false,permissionsChanged:false,providerCallsPerformed:false,deploymentPerformed:false,
@@ -79,4 +79,20 @@ test('other Git failures remain errors and cannot masquerade as an absent predec
  const value=sdkSourceContext(f.raw,(sha,p)=>{if(p===missing)throw failure;return f.old(sha,p)})
  assert.throws(()=>value.baseline('first')(missing),error=>error===failure)
  assert.throws(()=>value.baseline('first')('../outside'))
+})
+
+test('root instruction files cannot disappear from the current physical closure',()=>{
+ const f=fixture();delete f.record.inputs['AGENTS.md']
+ assert.throws(f.run,/retained physical source coverage AGENTS.md/)
+})
+test('a missing-path message from an unknown full SHA cannot be accepted as genuine Git absence',()=>{
+ const f=fixture(),missing='apps/example/absent-source.json',unknown='c'.repeat(40)
+ f.record.baselines.unknown={sha:unknown}
+ const failure=Object.assign(Error('unknown historical object'),{status:128,
+  stderr:"fatal: path '"+missing+"' exists on disk, but not in '"+unknown+"'"})
+ const value=sdkSourceContext(f.raw,(sha,p)=>{
+  if(sha===unknown&&p===missing)throw failure
+  return f.old(sha,p)
+ })
+ assert.throws(()=>value.baseline('unknown')(missing),error=>error===failure)
 })

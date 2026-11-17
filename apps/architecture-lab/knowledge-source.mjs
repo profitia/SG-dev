@@ -12,7 +12,7 @@ export function knowledgeSourcePredecessor(current,historical){
   assert(previous,'complete immutable Knowledge source required')
   return {...previous,currentSourceDigests:context.currentSourceDigests,currentSdkContext:context}
  }
- let bytes;try{bytes=current(KNOWLEDGE_SOURCE_RECORD);}catch(error){if(sdkSourcePathAbsent(error,KNOWLEDGE_SOURCE_RECORD))return null;throw error;}
+ let bytes;try{bytes=current(KNOWLEDGE_SOURCE_RECORD);}catch(error){if(sdkSourcePathAbsent(error,KNOWLEDGE_SOURCE_RECORD,historical))return null;throw error;}
  assert.equal(hash(bytes),KNOWLEDGE_SOURCE_RECORD_SHA256,'exact reviewed Platform Knowledge source record');
  const a=JSON.parse(bytes);
  assert.equal(a.schemaVersion,'1.0.0');assert.equal(a.scope,'PLATFORM_KNOWLEDGE_SDK_SOURCE_ACCEPTANCE');
