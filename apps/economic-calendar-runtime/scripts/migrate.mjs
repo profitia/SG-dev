@@ -59,6 +59,14 @@ export async function migrate(client, configuration) {
     const {rows:[knowledge]}=await client.query("SELECT to_jsonb(i)->>'semantic_schema_digest' AS digest FROM economic_calendar.installation i WHERE singleton")
     if(knowledge?.digest){if(knowledge.digest!==semanticDigest)throw new Error('EXISTING_SEMANTIC_SCHEMA_MISMATCH')}
     else{await client.query(semantic);await client.query('UPDATE economic_calendar.installation SET semantic_schema_digest=$1 WHERE singleton',[semanticDigest])}
+    const notifications=await readFile(new URL('../migrations/004-notifications.sql',import.meta.url),'utf8'),notificationDigest=digest(notifications)
+    const {rows:[delivery]}=await client.query("SELECT to_jsonb(i)->>'notification_schema_digest' AS digest FROM economic_calendar.installation i WHERE singleton")
+    if(delivery?.digest){if(delivery.digest!==notificationDigest)throw new Error('EXISTING_NOTIFICATION_SCHEMA_MISMATCH')}
+    else{await client.query(notifications);await client.query('UPDATE economic_calendar.installation SET notification_schema_digest=$1 WHERE singleton',[notificationDigest])}
+    const expanded=await readFile(new URL('../migrations/005-expanded-results.sql',import.meta.url),'utf8'),expandedDigest=digest(expanded)
+    const {rows:[resultScope]}=await client.query("SELECT to_jsonb(i)->>'expanded_results_schema_digest' AS digest FROM economic_calendar.installation i WHERE singleton")
+    if(resultScope?.digest){if(resultScope.digest!==expandedDigest)throw new Error('EXISTING_EXPANDED_RESULT_SCHEMA_MISMATCH')}
+    else{await client.query(expanded);await client.query('UPDATE economic_calendar.installation SET expanded_results_schema_digest=$1 WHERE singleton',[expandedDigest])}
     await client.query('COMMIT')
     return {status: 'INSTALLED_OR_VERIFIED', schemaDigest: digest(schema), receiverBaseDigest: digest(receiver), calendarReceiverDigest: digest(calendar), enrollment: 'SEPARATE_OWNER_ACTION_REQUIRED'}
   } catch (error) {await client.query('ROLLBACK'); throw error}
