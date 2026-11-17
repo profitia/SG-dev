@@ -1,3 +1,5 @@
+import {assistantReservationPredecessor} from '../../../packages/platform-contracts/test/assistant-reservation-source.mjs'
+import {ASSISTANT_RESERVATION_SOURCE_SHA} from '../../architecture-lab/private-recurring-source.mjs'
 // SYNTHETIC_ONLY: browser interaction regression, never a Development acceptance result.
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -42,7 +44,8 @@ test('report form persists the admitted schedule and self-recipient preferences 
 
 test('current completion source and all immutable predecessors must match before historical checks are exposed',async()=>{
  const {readFileSync}=await import('node:fs'),{execFileSync}=await import('node:child_process'),{procurementInsightsCompletionPredecessor,PI_COMPLETION_PATHS,PI_COMPLETION_RECEIPT}=await import('./procurement-insights-completion-integrity.mjs');
- const current=p=>readFileSync(root+'../../'+p),cache=new Map(),historical=(sha,p)=>{const key=sha+':'+p;if(!cache.has(key))cache.set(key,execFileSync('git',['show',key],{cwd:root,stdio:['ignore','pipe','pipe']}));return cache.get(key)};
+ const physical=p=>readFileSync(root+'../../'+p),cache=new Map(),historical=(sha,p)=>{const key=sha+':'+p;if(!cache.has(key))cache.set(key,execFileSync('git',['show',key],{cwd:root,stdio:['ignore','pipe','pipe']}));return cache.get(key)};
+ const reservation=assistantReservationPredecessor(physical,historical,ASSISTANT_RESERVATION_SOURCE_SHA),current=reservation?.previousBytes??physical;
  const view=procurementInsightsCompletionPredecessor(current,historical);assert(view);
  for(const p of [...PI_COMPLETION_PATHS,...Object.keys(view.manifest.preservedReceipts)])assert.throws(()=>procurementInsightsCompletionPredecessor(f=>f===p?Buffer.concat([current(f),Buffer.from('UNACCEPTED')]):current(f),historical),p);
  for(const flag of ['schemaChanged','authorisationChanged','deploymentPerformed']){const a=JSON.parse(current(PI_COMPLETION_RECEIPT));a[flag]=true;assert.throws(()=>procurementInsightsCompletionPredecessor(p=>p===PI_COMPLETION_RECEIPT?Buffer.from(JSON.stringify(a)):current(p),historical));}
