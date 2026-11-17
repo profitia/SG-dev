@@ -129,7 +129,8 @@ export function executorPlan({work,toolPath,uid,gid,brokerUrl,agentToken}){
  const u=new URL(brokerUrl);require(u.protocol==='http:'&&u.hostname==='127.0.0.1'&&u.pathname==='/v1'&&u.port&&u.username===''&&u.password===''&&u.search===''&&u.hash==='')
  const settings={model:'gpt-6.1-sol',model_provider:'aqc',default_permissions:'aqc-workspace',
   'permissions.aqc-workspace.extends':':workspace',
-  'permissions.aqc-workspace.filesystem':{':root':'deny',':minimal':'read',':tmpdir':'deny',':slash_tmp':'deny'},
+  'permissions.aqc-workspace.filesystem':{':root':'deny',':minimal':'read',':tmpdir':'deny',':slash_tmp':'deny',
+   [toolPath]:'read',[path.join(path.dirname(toolPath),'codex-code-mode-host')]:'read',[path.join(path.dirname(toolPath),'codex-resources/bwrap')]:'read'},
   'permissions.aqc-workspace.network.enabled':false,
   approval_policy:'never',model_reasoning_effort:'low',service_tier:'default',
   web_search:'disabled',cli_auth_credentials_store:'ephemeral',check_for_update_on_startup:false,'features.apps':false,'features.multi_agent':false,
