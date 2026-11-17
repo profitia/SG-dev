@@ -6419,8 +6419,67 @@ function optionalCalendarFile(read,p){try{return read(p)}catch(e){if(e?.code==='
 
 // Owner-approved, closed BSDC v1.1 documentation continuation. This trusted
 // verifier reads bytes only; it never imports or evaluates candidate code.
-export const BSDC_MANIFEST_CONTINUITY=Object.freeze({"recordPath":"Canon/evidence/2026-11-12-bsdc-v11-manifest-continuity.json","recordSha256":"92fe69f99bbda13a9971d841cc391207d9e7944ccc516a68d9cc48b7a9151160","baseSha":"df2214265e577ef653c35fa18a38c717ffe8905e","manifestPath":"Canon/registries/governance-manifest-v2.json","previousManifestSha256":"953aa8ff82c12fca85d22d04de865e1969a5e4548465766b259db0bd3ce56587","manifestSha256":"7f5498afa10f3edaf0b364ca7bf4576de5dc8100e61bc4fc2773c845b771e2a4","previousHelperSha256":"034abe33e17cd8a6247a43f14a62eba3437831bb1f0d59d851e5efc45a7abb86","helperPath":"apps/architecture-lab/market-calendar-source.mjs","sourcePaths":["AGENTS.md","Canon/registries/governance-manifest-v2.json","Canon/v1.1-business-solution-design-and-canonization-canon.md","docs/agent-instructions/bsdc-launcher-v1.1.md"],"helperSha256":"8f57073b55c1233c4573e54185e352d6400d7baa47bd5303fefb7b893b123847","testPath":"scripts/governance/platform-source-hub-foundation.test.mjs","testSha256":"dadd4f9fcc5be03afee02ae51038efa48b07b3f9b2b62e9476a7b288c1d42d77","previousTestSha256":"189e3ee14a2e9c3fe52d53fd3404e8fca1e1ca82f120ab6ac24909b9cef09acb"})
+export const BSDC_MANIFEST_CONTINUITY=Object.freeze({"recordPath":"Canon/evidence/2026-11-12-bsdc-v11-manifest-continuity.json","recordSha256":"92fe69f99bbda13a9971d841cc391207d9e7944ccc516a68d9cc48b7a9151160","baseSha":"df2214265e577ef653c35fa18a38c717ffe8905e","manifestPath":"Canon/registries/governance-manifest-v2.json","previousManifestSha256":"953aa8ff82c12fca85d22d04de865e1969a5e4548465766b259db0bd3ce56587","manifestSha256":"7f5498afa10f3edaf0b364ca7bf4576de5dc8100e61bc4fc2773c845b771e2a4","previousHelperSha256":"034abe33e17cd8a6247a43f14a62eba3437831bb1f0d59d851e5efc45a7abb86","helperPath":"apps/architecture-lab/market-calendar-source.mjs","sourcePaths":["AGENTS.md","Canon/registries/governance-manifest-v2.json","Canon/v1.1-business-solution-design-and-canonization-canon.md","docs/agent-instructions/bsdc-launcher-v1.1.md"],"helperSha256":"fc0f6dfb58548d2d520919f93032180ae8f64bf478db61b288aa372718a435fa","testPath":"scripts/governance/platform-source-hub-foundation.test.mjs","testSha256":"dadd4f9fcc5be03afee02ae51038efa48b07b3f9b2b62e9476a7b288c1d42d77","previousTestSha256":"189e3ee14a2e9c3fe52d53fd3404e8fca1e1ca82f120ab6ac24909b9cef09acb"})
 export const BSDC_V11_DOCUMENTATION_REVIEW=Object.freeze({"prNumber":1057,"branch":"architecture/bsdc-v11-activation-20261112","approvedSourceSha":"80325d0cad8e65057952a3ffddb0ca00f51e0d35","entries":{"AGENTS.md":{"sha":"9e81d13e9931f60862f4ef5715be38fa49969715","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Governance Source Layer","surfaceId":"SG2-BASE-020"},"Canon/registries/governance-manifest-v2.json":{"sha":"1bcd303d1e03e0b6bc066678a37464d0b5f4b66b","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Governance Source Layer","surfaceId":"SG2-BASE-019"},"Canon/v1.1-business-solution-design-and-canonization-canon.md":{"sha":"80cdb2ccf8040bdc8ae12a3c7f9de098d07f7a33","status":"added","mode":"100644","projectKey":"ARCHITECTURE","owner":"Governance Source Layer","surfaceId":"SG2-BASE-019"},"docs/agent-instructions/bsdc-launcher-v1.1.md":{"sha":"c5a239c3b3b420d07ebcb057349d76c3f82e711c","status":"added","mode":"100644","projectKey":"ARCHITECTURE","owner":"Governance Source Layer","surfaceId":"GOV-DOCS-UNIVERSAL-V12-001"}}})
+
+// Independent, byte-only validation from accepted authority main. Never
+// import the candidate lab helper or read a candidate-side grant.
+const TRUSTED_MANIFEST_LEDGER='Canon/registries/governance-manifest-successors-v1.json'
+const TRUSTED_MANIFEST_MAIN='refs/remotes/origin/main'
+function trustedManifestSuccessorAdmission(current,historical,cfg,receipt,actual){
+ const ledger=JSON.parse(Buffer.from(historical(TRUSTED_MANIFEST_MAIN,TRUSTED_MANIFEST_LEDGER)).toString('utf8'))
+ const main=Buffer.from(historical(TRUSTED_MANIFEST_MAIN,cfg.manifestPath))
+ if(calendarKeys(ledger)!==JSON.stringify(['schemaVersion','repository','manifestPath','successors'].sort()) ||
+  ledger.schemaVersion!=='1.0'||ledger.repository!==REPOSITORY||ledger.manifestPath!==cfg.manifestPath ||
+  !Array.isArray(ledger.successors)||ledger.successors.length<1||ledger.successors.length>100)fail('MANIFEST_SUCCESSOR_LEDGER_REJECTED')
+ const shas=ledger.successors.map(row=>row?.manifestSha256)
+ if(new Set(shas).size!==shas.length)fail('MANIFEST_SUCCESSOR_DUPLICATE_REJECTED')
+ const matches=ledger.successors.filter(row=>row?.manifestSha256===actual)
+ if(matches.length!==1)fail('MANIFEST_SUCCESSOR_NOT_APPROVED_ON_MAIN')
+ const grant=matches[0]
+ if(calendarKeys(grant)!==JSON.stringify([
+  'id','status','scope','approvalRef','sourceSha','previousSourceSha',
+  'previousManifestSha256','manifestSha256','manifestVersion',
+  'appendedDocuments','documentDigests'
+ ].sort())||!/^([A-Z][A-Z0-9-]{4,100})$/.test(grant.id)||
+ grant.status!=='ACTIVE'||grant.scope!=='APPEND_ONLY_CANON_DOCUMENTATION'||
+ !/^https:\/\/github\.com\/profitia\/SG-dev\/pull\/[0-9]+$/.test(grant.approvalRef)||
+ ![grant.sourceSha,grant.previousSourceSha].every(x=>typeof x==='string'&&/^[a-f0-9]{40}$/.test(x))||
+ ![grant.manifestSha256,grant.previousManifestSha256].every(x=>typeof x==='string'&&/^[a-f0-9]{64}$/.test(x)))
+ fail('MANIFEST_SUCCESSOR_SCOPE_REJECTED')
+ if(grant.previousManifestSha256!==calendarHash(main)&&grant.manifestSha256!==calendarHash(main))
+ fail('MANIFEST_SUCCESSOR_AUTHORITY_BASE_REJECTED')
+ const before=Buffer.from(historical(grant.previousSourceSha,cfg.manifestPath))
+ const after=Buffer.from(historical(grant.sourceSha,cfg.manifestPath))
+ if(calendarHash(before)!==grant.previousManifestSha256||calendarHash(after)!==grant.manifestSha256)
+ fail('MANIFEST_SUCCESSOR_IMMUTABLE_BYTES_REJECTED')
+ const previous=JSON.parse(before),successor=JSON.parse(after)
+ const {manifestVersion:oldVersion,documents:oldDocs,...oldMeta}=previous
+ const {manifestVersion:newVersion,documents:newDocs,...newMeta}=successor
+ if(calendarKeys(oldMeta)!==calendarKeys(newMeta)||Object.keys(oldMeta).some(k=>JSON.stringify(oldMeta[k])!==JSON.stringify(newMeta[k]))||
+  newVersion!==grant.manifestVersion||newVersion===oldVersion||
+  !Array.isArray(oldDocs)||!Array.isArray(newDocs)||!Array.isArray(grant.appendedDocuments)||
+  grant.appendedDocuments.length<1||grant.appendedDocuments.length>20||
+  JSON.stringify(newDocs.slice(0,oldDocs.length))!==JSON.stringify(oldDocs)||
+  JSON.stringify(newDocs.slice(oldDocs.length))!==JSON.stringify(grant.appendedDocuments))
+ fail('MANIFEST_SUCCESSOR_APPEND_ONLY_REJECTED')
+ const files=grant.appendedDocuments.map(d=>d.path)
+ if(new Set(files).size!==files.length||calendarKeys(grant.documentDigests)!==JSON.stringify([...files].sort()))
+ fail('MANIFEST_SUCCESSOR_DOCUMENT_SCOPE_REJECTED')
+ for(const p of files){
+  const expected=grant.documentDigests[p]
+  if(!/^(?:Canon|docs\/agent-instructions)\/[A-Za-z0-9._/-]+$/.test(p)||p.includes('..')||p.includes('//')||
+   typeof expected!=='string'||!/^[a-f0-9]{64}$/.test(expected)||
+   calendarHash(historical(grant.sourceSha,p))!==expected||calendarHash(current(p))!==expected)
+  fail('MANIFEST_SUCCESSOR_DOCUMENT_BYTES_REJECTED')
+ }
+ const accepted=Buffer.from(historical(receipt.approvedDocumentationSourceSha,cfg.manifestPath))
+ if(calendarHash(accepted)!==cfg.manifestSha256||
+  calendarKeys(receipt.sourceDigests)!==JSON.stringify([...cfg.sourcePaths].sort())||
+  cfg.sourcePaths.some(p=>calendarHash(p===cfg.manifestPath?accepted:current(p))!==receipt.sourceDigests[p]))
+ fail('MANIFEST_SUCCESSOR_BSDC_HISTORY_REJECTED')
+}
+
 export function bsdcManifestContinuityTrustedCurrent(current,historical){
  const cfg=BSDC_MANIFEST_CONTINUITY;let bytes
  try{bytes=current(cfg.recordPath)}catch(e){
@@ -6430,7 +6489,12 @@ export function bsdcManifestContinuityTrustedCurrent(current,historical){
  if(calendarHash(bytes)!==cfg.recordSha256)fail('BSDC_MANIFEST_EVIDENCE_REJECTED')
  const a=JSON.parse(bytes)
  if(a.scope!=='BSDC_V11_DOCUMENTATION_MANIFEST_CONTINUITY'||a.previousSourceSha!==cfg.baseSha||a.priorReceiptsChanged!==false||a.productRuntimeChanged!==false||a.accessOrDeploymentAuthorized!==false)fail('BSDC_MANIFEST_SCOPE_REJECTED')
- if(calendarHash(current(cfg.helperPath))!==cfg.helperSha256)fail('BSDC_MANIFEST_HELPER_REJECTED')
+ // The closed historical BSDC/Calendar graph used the earlier exact helper.
+ // Current and historical callers must stay valid; neither helper is an
+ // authorization for an otherwise unadmitted future manifest.
+ const helperHash=calendarHash(current(cfg.helperPath))
+ const historicalHelperSha='8f57073b55c1233c4573e54185e352d6400d7baa47bd5303fefb7b893b123847'
+ if(helperHash!==cfg.helperSha256&&helperHash!==historicalHelperSha)fail('BSDC_MANIFEST_HELPER_REJECTED')
  if(calendarHash(current(cfg.testPath))!==cfg.testSha256)fail('BSDC_CONTINUITY_TEST_REJECTED')
  const previous=Buffer.from(historical(cfg.baseSha,cfg.manifestPath)),previousHelper=Buffer.from(historical(cfg.baseSha,cfg.helperPath)),previousTest=Buffer.from(historical(cfg.baseSha,cfg.testPath))
  if(calendarHash(previous)!==cfg.previousManifestSha256||calendarHash(previousHelper)!==cfg.previousHelperSha256||calendarHash(previousTest)!==cfg.previousTestSha256)fail('BSDC_MANIFEST_HISTORY_REJECTED')
@@ -6438,7 +6502,10 @@ export function bsdcManifestContinuityTrustedCurrent(current,historical){
  if(actual===cfg.manifestSha256){
   if(calendarKeys(a.sourceDigests)!==JSON.stringify([...cfg.sourcePaths].sort()))fail('BSDC_DOCUMENTATION_SCOPE_REJECTED')
   for(const p of cfg.sourcePaths)if(calendarHash(current(p))!==a.sourceDigests[p])fail('BSDC_DOCUMENTATION_BYTES_REJECTED')
- }else if(actual!==cfg.previousManifestSha256)fail('BSDC_MANIFEST_SUCCESSOR_REJECTED')
+ }else if(actual!==cfg.previousManifestSha256){
+  if(helperHash!==cfg.helperSha256)fail('MANIFEST_SUCCESSOR_HELPER_REJECTED')
+  trustedManifestSuccessorAdmission(current,historical,cfg,a,actual)
+ }
  return p=>{
   if(p===cfg.recordPath)throw Object.assign(Error('BSDC successor absent from predecessor'),{code:'ENOENT'})
   if(p===cfg.manifestPath)return Buffer.from(previous)
