@@ -24,9 +24,14 @@ const command=(file,args,timeout=15000)=>{
  return r.stdout.trim()
 }
 const wait=ms=>new Promise(resolve=>setTimeout(resolve,ms))
-export function readPrivilegeState(status,uid,groups){
+export function readPrivilegeState(status,uid,groups,gid){
  const values=new Map(status.trim().split('\n').map(l=>l.split(/:\s+/)))
- return {uid,groups,safe:['CapInh','CapPrm','CapEff','CapBnd','CapAmb'].every(k=>/^0+$/.test(values.get(k)??''))&&values.get('NoNewPrivs')==='1'}
+ // Node always includes the effective GID in getgroups(), even when Linux
+ // supplementary groups are empty. Check the kernel list independently.
+ const emptyKernelGroups=values.has('Groups')&&(values.get('Groups')??'').trim()===''
+ return {uid,gid,groups,emptyKernelGroups,safe:Number.isSafeInteger(uid)&&uid>0&&Number.isSafeInteger(gid)&&gid>0
+  &&Array.isArray(groups)&&groups.length===1&&groups[0]===gid&&emptyKernelGroups
+  &&['CapInh','CapPrm','CapEff','CapBnd','CapAmb'].every(k=>/^0+$/.test(values.get(k)??''))&&values.get('NoNewPrivs')==='1'}
 }
 
 export function assertExecutorHost(environment=process.env){
@@ -129,9 +134,12 @@ export async function runIsolatedExecutor({manifest,regression,projection,toolPa
  require(p.incidentId===m.incidentId&&p.attemptId===permit.attemptId,'EXECUTOR_INCIDENT_MISMATCH')
  const remaining=Date.parse(permit.expiresAt)-Date.now();require(remaining>10000&&remaining<=1800000,'ATTEMPT_EXPIRED')
  const id=randomUUID(),root='/tmp/aqc-'+id,work=root+'/work',uid=19999,gid=19999,username='aqc-repair',chain='AQC_'+id.slice(0,8),group='/sys/fs/cgroup/aqc-'+id
- const plan=executorPlan({work,toolPath,uid,gid,brokerUrl,agentToken});let userCreated=false,groupCreated=false,cgroupCreated=false,v4=false,v6=false,child,deadline,stopped=false,abortListener,stderr=''
+ const plan=executorPlan({work,toolPath,uid,gid,brokerUrl,agentToken});let userCreated=false,groupCreated=false,cgroupCreated=false,v4=false,v6=false,child,deadline,stopped=false,abortListener,stderr='',primaryFailure
  try{
   require(!fs.existsSync(root)&&!fs.existsSync(group),'EXECUTOR_PATH_EXISTS')
+  for(const [database,key]of [['passwd',username],['passwd',String(uid)],['group',username],['group',String(gid)]]){
+   require(spawnSync('/usr/bin/getent',[database,key],{env:rootEnvironment,timeout:15000}).status===2,'EXECUTOR_IDENTITY_EXISTS')
+  }
   fs.mkdirSync(root,{mode:0o711});fs.mkdirSync(work,{mode:0o700})
   for(const [relative,content]of Object.entries(publicFiles)){
    require(safePath(relative)&&!/(?:^|\/)(?:\.git|\.codex|\.env[^/]*|node_modules|assistant-quality-control)(?:\/|$)/.test(relative)
@@ -141,7 +149,11 @@ export async function runIsolatedExecutor({manifest,regression,projection,toolPa
   const before=snapshot(work);require(before[SOURCE_PATHS[m.repairClass]],'SOURCE_FILE_MISSING')
   command('/usr/sbin/groupadd',['--gid',String(gid),username])
   groupCreated=true
-  command('/usr/sbin/useradd',['--uid',String(uid),'--gid',String(gid),'--create-home','--home-dir','/home/'+username,'--shell','/usr/sbin/nologin',username]);userCreated=true
+  // Do not initialise sparse login databases or run home-directory copy hooks
+  // for this one-shot service identity. Its empty private home is created here.
+  userCreated=true
+  command('/usr/sbin/useradd',['--system','--no-log-init','--no-create-home','--uid',String(uid),'--gid',String(gid),'--home-dir','/home/'+username,'--shell','/usr/sbin/nologin',username])
+  require(!fs.existsSync('/home/'+username),'EXECUTOR_HOME_EXISTS');fs.mkdirSync('/home/'+username,{mode:0o700});fs.chownSync('/home/'+username,uid,gid)
   command('/usr/bin/chown',['-R',uid+':'+gid,work]);fs.chmodSync(work,0o700)
   // Reuse the pinned upstream root-service-socket ACL implementation. It
   // checks the actual new account and kernel denial, without joining runner,
@@ -156,8 +168,8 @@ export async function runIsolatedExecutor({manifest,regression,projection,toolPa
   // check and allow its bounded setup time rather than skipping protection.
   command(process.execPath,[helperEntry,'drop-sudo','--root-phase','--user',username,'--group','sudo','--runner-credentials',identity],120000)
   const privileges=JSON.parse(command('/usr/bin/setpriv',[...plan.privilegeArguments,'--',process.execPath,'-e',
-   'const inspect='+readPrivilegeState.toString()+';const fs=require("node:fs");console.log(JSON.stringify(inspect(fs.readFileSync("/proc/self/status","utf8"),process.getuid(),process.getgroups())))']))
-  require(privileges.uid===uid&&privileges.groups.length===0&&privileges.safe===true,'PRIVILEGE_ISOLATION_FAILED')
+   'const inspect='+readPrivilegeState.toString()+';const fs=require("node:fs");console.log(JSON.stringify(inspect(fs.readFileSync("/proc/self/status","utf8"),process.getuid(),process.getgroups(),process.getgid())))']))
+  require(privileges.uid===uid&&privileges.gid===gid&&privileges.emptyKernelGroups===true&&privileges.safe===true,'PRIVILEGE_ISOLATION_FAILED')
   require(fs.readFileSync('/sys/fs/cgroup/cgroup.controllers','utf8').includes('memory'),'CGROUP_V2_REQUIRED')
   fs.mkdirSync(group);cgroupCreated=true
   fs.writeFileSync(group+'/memory.max','2147483648');fs.writeFileSync(group+'/pids.max','128');fs.writeFileSync(group+'/cpu.max','200000 100000')
@@ -194,7 +206,8 @@ export async function runIsolatedExecutor({manifest,regression,projection,toolPa
   }
   const artifact=collectRepairArtifact({manifest:m,before,work,regression:fixture})
   return Object.freeze({...artifact,stoppedProof,stoppedProofSha256:documentDigest(stoppedProof)})
- }finally{
+ }catch(error){primaryFailure=error;throw error}finally{
+  try{
   clearTimeout(deadline)
   if(abortListener)signal?.removeEventListener('abort',abortListener)
   if(cgroupCreated){try{fs.writeFileSync(group+'/cgroup.kill','1')}catch{};for(let i=0;i<50;i++){if(/populated 0/.test(fs.readFileSync(group+'/cgroup.events','utf8'))){stopped=true;break}await wait(100)}}
@@ -205,9 +218,21 @@ export async function runIsolatedExecutor({manifest,regression,projection,toolPa
     spawnSync(binary,['-D','OUTPUT','-m','owner','--uid-owner',String(uid),'-j',chain],{env:rootEnvironment});spawnSync(binary,['-F',chain],{env:rootEnvironment});spawnSync(binary,['-X',chain],{env:rootEnvironment})
    }
    if(cgroupCreated)fs.rmdirSync(group)
-   if(userCreated)command('/usr/sbin/userdel',['--remove',username])
+   if(userCreated){
+    const account=spawnSync('/usr/bin/getent',['passwd',username],{env:rootEnvironment,encoding:'utf8'})
+    if(account.status===0){
+     const fields=account.stdout.trim().split(':');require(fields[2]===String(uid)&&fields[3]===String(gid),'EXECUTOR_CLEANUP_IDENTITY_MISMATCH')
+     command('/usr/sbin/userdel',[username]);fs.rmSync('/home/'+username,{recursive:true,force:true})
+    }
+   }
    if(groupCreated&&spawnSync('/usr/bin/getent',['group',username],{env:rootEnvironment}).status===0)command('/usr/sbin/groupdel',[username])
    fs.rmSync(root,{recursive:true,force:true})
+  }
+  }catch(cleanupError){
+   // Preserve the real setup/execution failure; a failed cleanup is separate
+   // evidence and never permission to start another process in this VM.
+   if(primaryFailure)primaryFailure.cleanup={code:cleanupError?.code??'CLEANUP_FAILED',setup:cleanupError?.setup??null}
+   else throw cleanupError
   }
  }
 }
