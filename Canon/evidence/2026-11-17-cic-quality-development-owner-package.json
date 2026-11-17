@@ -1,7 +1,7 @@
 {
   "schemaVersion": "1.0",
   "id": "CIC-E1-DEVELOPMENT-OWNER-PACKAGE-20261117",
-  "status": "OWNER_APPROVED_NOT_APPLIED",
+  "status": "OWNER_APPROVED_IMPLEMENTATION_IN_PROGRESS",
   "project": "CIC Assistant Continuous Quality",
   "stage": "E1",
   "executionRoadmapRevision": 8,
@@ -16,7 +16,7 @@
       "sg2/cic-quality-stage1-runtime-20261112",
       "sg2/cic-quality-host-integration-20261117"
     ],
-    "pathsCount": 21,
+    "pathsCount": 22,
     "expiresAt": "2026-11-27T23:59:59.000Z",
     "sourceValidationOnly": true,
     "credentialMode": "AUTOMATIC_GITHUB_TOKEN_READ_ONLY",
@@ -31,7 +31,15 @@
       "integrity": "sha512-tuun88+cfOHFeCafBw1a8gnExgeDyWBgY7Zd9OPkKk2/Eef0YBP49vzDcXKVpFoCNJGh/CYbeR9B+M2ZXctNsg=="
     },
     "allExistingTestsRetained": true,
-    "exactSourceAndResultingMainCiRequired": true
+    "exactSourceAndResultingMainCiRequired": true,
+    "compatibilityAdjustment": {
+      "originalReviewedPathCount": 21,
+      "additionalPath": "apps/sg-runtime/tests/procurement-insights-completion-integrity.mjs",
+      "kind": "TEST_PROVENANCE_CONTINUATION_ONLY",
+      "reason": "Preserve the existing PI completion receipt and its unchanged test when the approved CIC1.8 host package manifest is adopted",
+      "nativeRuntimeAccessPermissionsCostsChanged": false,
+      "guardChangeRestrictedToExactAdditiveBinding": true
+    }
   },
   "render": {
     "decisionRequired": true,
@@ -69,7 +77,20 @@
       ],
       "existingResourceChanges": 0,
       "dashboardUrl": "https://dashboard.render.com/blueprint/exs-dbu3ppou01pc73djagd0/sync/exe-dbu3pq0u01pc73djagqg",
-      "applied": false
+      "applied": true
+    },
+    "actualWorker": {
+      "serviceId": "srv-dbu4ak0ae00c73eaabcg",
+      "name": "sg2-assistant-quality-development-yr67",
+      "environmentId": "evm-dap98hm0tbcc738rro10",
+      "deploymentId": "dep-dbu4akgae00c73eaacvg",
+      "sourceSha": "52a8489b4feea867bc6c91d7bd1eed5c63e0e9ff",
+      "state": "live",
+      "heartbeat": "MONITORING_READY",
+      "observedAt": "2026-11-17T12:16:37.004Z",
+      "paidRepairsEnabled": false,
+      "promotionEnabled": false,
+      "pilotStartedAt": null
     }
   },
   "neon": {
@@ -235,7 +256,7 @@
     "stage2Authorised": false,
     "fullE1AcceptanceClaimed": false
   },
-  "deploymentPerformed": false,
+  "deploymentPerformed": true,
   "approvalRecorded": true,
   "localProtectedPolicyQualification": "336/336 PASS after preserving all current Calendar PI and Platform Knowledge changes on authority 16fd6946; the subsequent 52a8489b owner-admission data was incorporated unchanged",
   "linuxPrerequisite": {

@@ -236,7 +236,7 @@ test('Native canonical QA purpose: ordinary SERVICE, enrolled controlled inputs,
   for(const role of Object.keys(keys))await owner.query("INSERT INTO profitia_access.runtime_bindings VALUES($1,'spendguru','ACTIVE')",[role])
   await owner.query("INSERT INTO profitia_access.memberships(organisation_id,user_id,status,source_ref,expires_at)VALUES($1,$2,'ACTIVE','controlled local fixture',clock_timestamp()+interval '1 day')",[org,user])
   await owner.query("INSERT INTO profitia_access.product_grants(application_id,organisation_id,product,features,status,source,source_ref,expires_at)VALUES('spendguru',$1,'SPENDGURU',ARRAY['assistant'],'ACTIVE','EXPLICIT_OFFER','controlled local fixture',clock_timestamp()+interval '1 day')",[org])
-  await owner.query('BEGIN;SET LOCAL ROLE profitia_access_owner');await owner.query(sql.replaceAll('__QUALITY_PURPOSE_SCHEMA_DIGEST__',digest));await owner.query('COMMIT')
+  await owner.query('BEGIN;SET LOCAL ROLE profitia_access_owner');await owner.query(sql.replaceAll('__QUALITY_PURPOSE_SCHEMA_DIGEST__',digest));await owner.query(fs.readFileSync(new URL('../migrations/003-quality-history-containment.sql',import.meta.url),'utf8'));await owner.query('COMMIT')
   await owner.query('GRANT USAGE ON SCHEMA profitia_access TO sg2_private_development_runtime;GRANT EXECUTE ON FUNCTION profitia_access.runtime_descriptor(),profitia_access.append_audit(jsonb) TO sg2_private_development_runtime')
   await owner.query('INSERT INTO profitia_assistant_quality_access.installation VALUES(true,$1,$2,false,\'controlled local fixture\')',[digest,generation])
   for(const [role,key]of Object.entries(keys))await owner.query('INSERT INTO profitia_assistant_quality_access.credentials VALUES($1,$2,decode($3,\'hex\'))',[role,service,key])
@@ -275,14 +275,24 @@ test('Native canonical QA purpose: ordinary SERVICE, enrolled controlled inputs,
   await assert.rejects(command('sg2_private_development_runtime','CAPTURE',{...fields,evidenceId:randomUUID()}),'old HUMAN decision is fenced by canonical revision')
   const stale=await freshIntent();await owner.query("UPDATE profitia_access.security_events SET recorded_at=clock_timestamp()-interval '31 seconds' WHERE decision_id=$1",[stale])
   await assert.rejects(command('sg2_private_development_runtime','INVALIDATE',{accountId:user,decisionId:stale}))
-  const decisionId=await freshIntent(),erase=await command('sg2_private_development_runtime','INVALIDATE',{accountId:user,decisionId})
-  assert.equal(erase.invalidated,true);assert.deepEqual(await command('sg2_private_development_runtime','INVALIDATE',{accountId:user,decisionId}),erase)
+  await assert.rejects(reader.query('SELECT profitia_assistant_quality_access.invalidate_history($1::uuid)',[await freshIntent()]),e=>e.code==='42501')
+  await assert.rejects(runtime.query('SELECT profitia_assistant_quality_access.invalidate_history($1::uuid)',[stale]))
+  const eraseNative=async did=>(await runtime.query('SELECT profitia_assistant_quality_access.invalidate_history($1::uuid) AS result',[did])).rows[0].result
+  const decisionId=await freshIntent(),erase=await eraseNative(decisionId)
+  assert.equal(erase.invalidated,true);assert.equal(erase.accountId,user);assert.equal(erase.containmentVersion,'QUALITY_HISTORY_CONTAINMENT_V1')
+  assert.deepEqual(await eraseNative(decisionId),erase)
   // The old encrypted product row/descriptor could now be restored. Its E1
   // binding remains tombstoned in this independent database and is unusable.
   await assert.rejects(command('sg2_assistant_quality_authority','READ',demand))
   await owner.query("UPDATE profitia_assistant_quality_access.purpose_grants SET enabled=false WHERE grant_id=$1",[grant]);await assert.rejects(command('sg2_assistant_quality_authority','READ',demand))
   await owner.query('UPDATE profitia_assistant_quality_access.installation SET enabled=false')
-  assert.equal((await command('sg2_private_development_runtime','INVALIDATE',{accountId:user,decisionId:await freshIntent()})).invalidated,true,'user deletion remains possible after QA is disabled or revoked')
+  const offErase=await eraseNative(await freshIntent())
+  assert.equal(offErase.invalidated,true,'deletion needs no capture configuration even after QA disable/revocation')
+  assert.equal(BigInt(offErase.epoch),BigInt(erase.epoch)+1n)
+  await owner.query('UPDATE profitia_assistant_quality_access.installation SET enabled=true')
+  await owner.query('UPDATE profitia_assistant_quality_access.purpose_grants SET enabled=true WHERE grant_id=$1',[grant])
+  await assert.rejects(command('sg2_assistant_quality_authority','READ',demand),'restoring the earlier encrypted product row cannot undo independent containment')
+  await assert.rejects(eraseNative(decisionId),'old intent is fenced after authority revision')
   const audit=(await owner.query("SELECT count(*)::int AS n FROM profitia_access.security_events WHERE event->>'actorKind'='SERVICE' AND event->>'reasonCode'='QUALITY_PURPOSE_AUTHORISED'")).rows[0].n
   assert(audit>0,'SERVICE purpose decisions use the canonical metadata audit writer')
  }finally{await fixture.close()}

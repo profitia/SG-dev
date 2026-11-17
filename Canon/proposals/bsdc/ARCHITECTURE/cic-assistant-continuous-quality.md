@@ -11,16 +11,16 @@
 | Gałąź robocza | architecture/cic-quality-stage1-control-20261112 |
 | Status BSDC / projektu | COMPLETED / OWNER_APPROVED |
 | Realizacja | ETAP 1 — W_TOKU; ETAP 2 — NIE_ROZPOCZĘTY / BRAK ZLECENIA |
-| Aktywacja rozwiązania | NOT_ACTIVE / IMPLEMENTACJA_CZĘŚCIOWA; brak odbioru runtime |
+| Aktywacja rozwiązania | WORKER_LIVE / MONITORING_READY; integracja hosta i TECHNICAL_READY całego projektu W_TOKU; odbiór E1 0/3 |
 | Zaakceptowana propozycja | Rewizja 5; commit 3f79f10a1e8b6df4dc9176634ee6339675df5f7a; blob 695164e98b1562acb00aa937ca6003726f6ca368 |
 | Projekt rozwiązania | OWNER_APPROVED — zamrożona specyfikacja v1 w §4–5, decyzja DEC-03; bez aktywacji kanonu wykonawczego |
 | Tryb | EXECUTION — Full Autopilot wyłącznie etap 1; DEC-06 |
 | Etap | F — zakończony; A–F domknięte projektowo, 28/28 USTALONE |
-| Utworzono / zaktualizowano | 2026-11-12 / 2026-11-13, Europe/Warsaw |
-| Rewizja | 11 — akceptacja ograniczonej reguły CI #1076 i dalsza realizacja wyłącznie etapu 1 |
+| Utworzono / zaktualizowano | 2026-11-12 / 2026-11-17, Europe/Warsaw |
+| Rewizja | 12 — DEC-09, faktyczny worker Development i instalacja zabezpieczeń etapu 1; odbiór E1 nadal otwarty |
 | Rewizja bazowa ostatniej aktualizacji | PDR rewizja 9 / blob f0c81253cd20d4f2b75f8eabf2adb47d538c20fc; main 69a2cc1769d34cb6ecf1e21a552babb0006a5713. Referencja wykonawcza właściciela nadal rewizja 8. |
 | Zadanie inicjalizacji | ARCH-BSDC-CIC-QUALITY-INIT-20261112 |
-| Zadanie bieżącej aktualizacji | ARCH-CIC-QUALITY-STAGE1-CONTROL-20261112; zadania producentów i odbiorcy w §8.7 |
+| Zadanie bieżącej aktualizacji | ARCH-CIC-QUALITY-TECHNICAL-READY-20261117 / SG2-CIC-QUALITY-TECHNICAL-READY-20261117; zadania producentów i odbiorcy w §8.7 |
 | Upoważnienie | Jawne zlecenie etapu 1 według rewizji 8, w Full Autopilot i granicach właściwych ownerów/dopuszczeń. Po wyniku weryfikacja właściciela. Bez etapu 2; zasoby owner-only i szczególne granty zachowują własne warunki. |
 | Harmonogram wykonania | §8.1–8.6: 2 etapy / 19 tasków; realizowany tylko etap 1; DEC-05/06: weryfikacja właściciela i osobne GO przed etapem 2 |
 
@@ -690,6 +690,11 @@ Cel bieżącego zlecenia: **TECHNICAL_READY na rzeczywistym Development**, wył�
 
 - **Instalacja Neon — faktyczny Development:** utworzono siedem zwykłych ról LOGIN, NOINHERIT/NOBYPASSRLS/NOCREATEROLE/NOCREATEDB, bez członkostwa w rolach właścicielskich, z wygaśnięciem 27 listopada. Cztery dokładnie zmierzone migracje zostały transakcyjnie zainstalowane w istniejących magazynach produktu, Limits i canonical E1; nowe instalacje pozostają disabled, wpisów purpose/input 0, pilot_started_at/pilot_expires_at NULL. Hasła i oddzielne klucze powstały wewnątrz bazy i nie trafiły do rozmowy, Git lub artefaktów. Tymczasowe SET/CREATE potrzebne do instalacji cofnięto do wcześniejszych wartości; odczyt potwierdził brak SET/USAGE właścicieli oraz brak CREATE na bazie. Dwie próby instalatora zakończone błędem przygotowania zapytań/nazwy kolumny były transakcyjnie przerwane przed skutecznym ponowieniem; nie wykonano restore danych. Uruchomienie workera i hosta nadal oczekuje na bramki źródła/CI.
 
+- **Worker — rzeczywiste wydanie infrastruktury:** `srv-dbu4ak0ae00c73eaabcg`, deploy `dep-dbu4akgae00c73eaacvg`, SHA `52a8489b4feea867bc6c91d7bd1eed5c63e0e9ff`, live od 12:16:35Z, przypisany do właściwego `evm-dap98hm0tbcc738rro10`. Wcześniej pełny main `44078947306` SUCCESS; oryginalny artifact `14327585911`, ZIP SHA-256 `779e4092766205434bb3c5906e80891ce4917bf054a703f2a014dbaba7406a62`, niezależne kanoniczne proof i wszystkie immutable control bytes PASS. Heartbeat 12:16:37Z potwierdza `MONITORING_READY`, `CONNECTED_DISABLED` dla control/Limits, zerowy committed koszt i NULL zegara pilotażu; paidRepairs/promotion false. Ten wynik nie zastępuje TECHNICAL_READY całego projektu ani trzech napraw odbiorowych.
+- **Zachowanie równoległych projektów:** pełny proof pierwszego head PR1104 `59f4abe6` / `44079579011` PASS, artifact `14326623392` ZIP SHA-256 `4f49adeac539fd8f0fe6706ae7188645c56d9d76f30787c00afbc631035cd68c` niezależnie zweryfikowany, lecz main został następnie zmieniony przez osobne PR1107. Nie pożyczamy starszego proof nowej wersji. Jednocześnie pełna lokalna kontrola poprzedników hosta ujawniła, że istniejący test PI wiąże wcześniejszy package.json. Zamiast zmieniać stary receipt lub wyłączyć test, dodano wyłącznie dokładny testowy binding tej samej zweryfikowanej kontynuacji. To 22. ścieżka testowa, bez nowego runtime, dostępu, pakietu lub kosztu; fizyczny guard dopuszcza tylko identyczny stary plik plus ten import i wywołanie. Wszystkie poprzednie receipty pozostają identyczne. Wymagane odświeżenie aktualnego main i świeże CI obejmie poprawkę.
+
+- **Dalsza weryfikacja techniczna / 17 listopada:** worker potwierdził także heartbeat 13:16:37Z z tym samym SHA i wyłączonymi bramkami. Host PR1099 opublikowano jako 529ce28a57120b0eee28b225736a9aeb922b06de, z zachowaniem main 08621a13 i równoległych PR1107/1109. Nie oznacza to wdrożenia hosta. Dodano uzupełniającą migrację 003-quality-history-containment.sql (SHA-256 bc839c71ea0e84e9377e9b6ba5ab2a79dfdf4a3d0fbfd4b32cef77d0375543bf): ten sam istniejący HUMAN runtime może wyłącznie unieważnić QA własnej historii na podstawie świeżej decyzji E1, niezależnie od opcjonalnych ustawień capture; bez nowej roli, odczytu, grantu QA, kosztu lub aktywacji. Pierwszych czterech zainstalowanych migracji nie zmieniono. Nowy SQL przeszedł rzeczywisty izolowany PostgreSQL wraz z odmową SERVICE/starej decyzji, idempotencją i odmową odczytu odtworzonej starej kopii; testy hosta QA 4/4 PASS. Migracja uzupełniająca na tym zapisie jest przygotowana i przetestowana, jeszcze nie zainstalowana. Stara zgoda dotyczyła czterech migracji; poprawka zabezpiecza tę samą dozwoloną operację unieważnienia, nie jest zapisem nowej decyzji właściciela. Płatne naprawy, autonomiczna promocja i zegar pilotażu pozostają wyłączone; TECHNICAL_READY i pełny E1 nie są ogłaszane.
+
 ## 9. Historia
 
 | Rewizja | Data | Zmiana |
@@ -705,3 +710,4 @@ Cel bieżącego zlecenia: **TECHNICAL_READY na rzeczywistym Development**, wył�
 | 9 | 2026-11-12 | DEC-06: właściciel zleca wyłącznie etap 1 w Full Autopilot i wybiera istniejący klucz. Rozpoczęto źródłowy onboarding AQC-BASE-001/002 oraz przygotowanie zależności. Etap 1 W_TOKU; etap 2 bez zlecenia; brak zasobów, płatnych prób i odbioru live. |
 | 10 | 2026-11-12 | DEC-07: zapisano zgodę na #1061, skuteczny i zweryfikowany G1/main oraz faktyczne komponenty CIC/kontraktów/SG2. Rozpoczęto kontroler; ujawniono zależność kontynuacji dowodów źródła. Nadal brak aktywacji QA, wydatków API pilotażu, zasobów/grantów i odbioru etapu 1; bez etapu 2. Zamrożone §4–5, referencja wykonawcza rewizji 8 i limity zachowane. |
 | 11 | 2026-11-13 | DEC-08: właściciel zaakceptował dokładną propozycję #1076/68f0fbd1. Regułę scalono w 711c336e po pełnych testach źródła; kontrole wynikowego main W_TOKU. Zapis decyzji jest aktualizacją wykonawczą, bez zmiany zamrożonej specyfikacji, rewizji wykonawczej 8 i granicy etapu 1. |
+| 12 | 2026-11-17 | DEC-09 i faktyczny worker Development, cztery instalacje Neon, siedem ograniczonych ról; bez zmian §4–5 i referencji roadmapy 8. Integracja CIC1.8/host, Linux i uzupełniająca ochrona usunięcia nadal w toku; E1 0/3, etap 2 bez zlecenia. |
