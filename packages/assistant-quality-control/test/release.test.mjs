@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import {createQualityRelease,createQualityRuntimeProbeVerifier,createQualityAttestedRelease} from '../src/release.mjs'
 import {generateKeyPairSync,randomUUID} from 'node:crypto'
 import {signDocument,publicKeyId} from '../src/manifest.mjs'
-import {createQualityGitHub} from '../src/github.mjs'
+import {createQualityGitHub,createQualityAttestedPublisher} from '../src/github.mjs'
 const sha='a'.repeat(40),old='b'.repeat(40),digest='c'.repeat(64)
 const oldId='dep-aaaaaaaaaaaaaaaaaaaa',newId='dep-bbbbbbbbbbbbbbbbbbbb',foreignId='dep-cccccccccccccccccccc'
 const live=(id=oldId,source=old,status='live')=>({id,status,commit:{id:source}})
@@ -198,4 +198,135 @@ test('Independent publisher composition refuses a substituted self-grade and sta
  const client=createQualityAttestedRelease(options)
  await assert.rejects(client.deploy({}),{code:'PROMOTION_DISABLED'});await assert.rejects(client.rollback({}),{code:'PROMOTION_DISABLED'})
  assert.equal(calls,0);assert.equal(reads,0)
+})
+
+
+async function publicationFixture({enabled=true,promote=true}={}){
+ const {documentDigest,verifyBoundManifest}=await import('../src/manifest.mjs')
+ const {ownerMandateBody,repairManifestBody}=await import('../src/cli.mjs')
+ const {serializeRegression}=await import('../src/verify.mjs')
+ const {createHash}=await import('node:crypto')
+ const owner=generateKeyPairSync('ed25519'),verifier=generateKeyPairSync('ed25519'),keyMap=new Map([[publicKeyId(verifier.publicKey),verifier.publicKey]])
+ const origin=Date.parse('2026-11-17T18:00:00.000Z'),stamp=v=>new Date(v).toISOString(),state={clock:origin,reads:0,document:null,drift:null,protection:{required_status_checks:{strict:true,contexts:['required','independent']}}}
+ const nonce=randomUUID(),names=['required','independent'],installed=[...names],gate='d'.repeat(64),incidentId=randomUUID()
+ const mandate=signDocument('AQC_EXECUTION_MANDATE_V1',ownerMandateBody({id:randomUUID(),issuedAt:stamp(origin-1000),expiresAt:stamp(origin+300000),targetServiceId:service.id,gateSetSha256:gate}),owner.privateKey)
+ const regression={schemaVersion:'AQC_REGRESSION_V1',repairClass:'C1',caseFamily:'publisher_unit_fixture',locale:'en',args:[1],expected:2,expectedAnswer:true,refusal:{pointer:'',values:[null]}}
+ const body=repairManifestBody({mandate,incidentId,correlationId:randomUUID(),baseSha:old,repairClass:'C1',exportReceiptId:randomUUID(),fixtureSha256:documentDigest(regression)})
+ const exported=signDocument('AQC_SYNTHETIC_EXPORT_V1',{id:body.synthetic.exportReceiptId,fixtureId:body.synthetic.fixtureId,sha256:body.synthetic.sha256,scope:'CONTROLLED_ACCEPTANCE',incidentId,repairClass:'C1',issuedAt:stamp(origin-1000),expiresAt:stamp(origin+300000),rawQaPayloadIncluded:false},verifier.privateKey)
+ const manifest=verifyBoundManifest(body,{mandate,fixtureExport:exported,ownerKeys:new Map([[publicKeyId(owner.publicKey),owner.publicKey]]),verifierKeys:keyMap,now:origin,expectedBaseSha:old,expectedServiceId:service.id,expectedGateSetSha256:gate})
+ const content='export function controlledFixture(v:number){return v+1}\n',regressionSource=serializeRegression(regression),hash=v=>createHash('sha256').update(v).digest('hex')
+ const patch={schemaVersion:'AQC_PATCH_V1',incidentId,baseSha:old,gateSetSha256:gate,manifestSha256:documentDigest(manifest),files:[
+  {path:manifest.allowedPaths[0],beforeSha256:'e'.repeat(64),afterSha256:hash(content),content},
+  {path:manifest.allowedPaths[1],beforeSha256:null,afterSha256:hash(regressionSource),content:regressionSource}]}
+ const verification={result:'PASS',artifactSha256:documentDigest(patch),proofSha256:'f'.repeat(64)},calls=[],requests=[]
+ const pr=()=>({number:43,state:'open',head:{repo:{full_name:'profitia/SG-dev'},ref:'sg2/quality-control-'+incidentId,sha},base:{repo:{full_name:'profitia/SG-dev'},ref:'main',sha:old},user:{login:'profitia'}})
+ const fetchImpl=async(url,options)=>{
+  calls.push({url,options});if(state.drift)await state.drift(url,options)
+  const suffix=url.slice('https://api.github.com/repos/profitia/SG-dev'.length)
+  if(suffix==='/git/ref/heads/main')return Response.json({object:{sha:old}})
+  if(suffix==='/git/commits/'+old)return Response.json({tree:{sha:'d'.repeat(40)}})
+  if(suffix==='/git/blobs')return Response.json({sha:'e'.repeat(40)})
+  if(suffix==='/git/trees')return Response.json({sha:'f'.repeat(40)})
+  if(suffix==='/git/commits')return Response.json({sha,tree:{sha:'f'.repeat(40)}})
+  if(suffix==='/git/refs')return Response.json({})
+  if(suffix==='/pulls')return Response.json({number:43,head:{sha}})
+  if(suffix==='/pulls/43')return Response.json(state.pr??pr())
+  if(suffix==='/branches/main/protection')return Response.json(state.protection)
+  if(suffix.startsWith('/commits/'+sha+'/check-runs?'))return Response.json({check_runs:installed.map((name,i)=>({id:i+1,name,head_sha:sha,status:'completed',conclusion:'success',app:{slug:'github-actions'}})),total_count:installed.length})
+  if(suffix==='/pulls/43/merge')return Response.json({merged:true,sha:'f'.repeat(40)})
+  throw Error('Unexpected synthetic provider request')
+ }
+ const document=(expected,change={},key=verifier.privateKey)=>signDocument('AQC_PUBLISH_PROOF_V1',{...expected,observedAt:stamp(origin-1000),expiresAt:stamp(origin+10000),...change},key)
+ const evidence={keys:keyMap,nonce,notBefore:stamp(origin-5000),now:()=>state.clock,readReceipt:async expected=>{
+  state.reads++;requests.push(expected);return typeof state.document==='function'?state.document(expected):state.document??document(expected)
+ }}
+ const client=createQualityAttestedPublisher({token:'synthetic',publisherEnabled:enabled,promotionEnabled:promote,fetchImpl,proofEvidence:evidence,requiredNames:names})
+ return {client,state,calls,requests,manifest,patch,verification,names,installed,keyMap,document,evidence,origin,stamp,pr,verifier,documentDigest,
+  proposal:()=>({manifest,patch,verification}),merge:()=>({manifest,patch,verification,prNumber:43,headSha:sha})}
+}
+
+test('attested GitHub publisher requires a fresh signed independent proof and rechecks it before visible publication',async()=>{
+ const f=await publicationFixture(),result=await f.client.propose(f.proposal())
+ assert.equal(result.result,'PR_READY');assert.equal(result.prNumber,43);assert.equal(result.headSha,sha)
+ assert.equal(result.artifactSha256,f.verification.artifactSha256);assert.equal(f.state.reads,3)
+ for(const request of f.requests){
+  assert.equal(request.action,'PROPOSE');assert.equal(request.prNumber,null);assert.equal(request.headSha,null)
+  assert.equal(request.rawQaPayloadIncluded,false);assert.equal(request.requiredChecksSha256,f.documentDigest(f.installed))
+  assert.equal(request.manifestSha256,f.documentDigest(f.manifest));assert.equal(Object.hasOwn(request,'patch'),false)
+ }
+ assert.equal(f.calls.filter(c=>c.url.endsWith('/git/refs')).length,1)
+ assert.equal(f.calls.filter(c=>c.url.endsWith('/pulls')).length,1)
+})
+test('attested publisher refuses every wrong signed source, action, nonce, scope, verdict or undeclared private field before HTTP',async()=>{
+ const changes=[
+  {action:'MERGE'},{incidentId:randomUUID()},{repairClass:'C2'},{baseSha:sha},{manifestSha256:'0'.repeat(64)},
+  {gateSetSha256:'0'.repeat(64)},{artifactSha256:'0'.repeat(64)},{verificationProofSha256:'0'.repeat(64)},
+  {nonce:randomUUID()},{requiredChecksSha256:'0'.repeat(64)},{repository:'profitia/foreign'},{environment:'production'},
+  {applicationId:'foreign'},{result:'FAIL'},{rawQaPayloadIncluded:true},{prNumber:43},{headSha:sha},{rawConversation:'forbidden synthetic extra'}]
+ for(const change of changes){
+  const f=await publicationFixture();f.state.document=expected=>f.document(expected,change)
+  await assert.rejects(f.client.propose(f.proposal()));assert.equal(f.calls.length,0,JSON.stringify(change))
+ }
+})
+test('attested publisher cannot trust unsigned self-grades, caller overrides or a key added after installation',async()=>{
+ const f=await publicationFixture()
+ for(const input of [{...f.proposal(),verifyIndependent:async()=>({verified:true})},{...f.proposal(),requiredNames:['weaker']},{...f.proposal(),verifyProof:()=>true}])
+  await assert.rejects(f.client.propose(input),{code:'PUBLISHER_CALLER_OVERRIDE_REJECTED'})
+ f.state.document={verified:true,result:'PASS'};await assert.rejects(f.client.propose(f.proposal()))
+ const attacker=generateKeyPairSync('ed25519');f.keyMap.set(publicKeyId(attacker.publicKey),attacker.publicKey)
+ f.state.document=expected=>f.document(expected,{},attacker.privateKey)
+ await assert.rejects(f.client.propose(f.proposal()),{code:'SIGNER_UNKNOWN'})
+ assert.equal(f.calls.length,0)
+})
+test('publisher proof expiry and unverified cloned manifests fail before provider access',async()=>{
+ for(const change of [{observedAt:'2026-11-17T18:00:00.001Z'},{observedAt:'2026-11-17T17:59:54.000Z'},{expiresAt:'2026-11-17T18:00:00.000Z'},{expiresAt:'2026-11-17T18:01:00.000Z'}]){
+  const f=await publicationFixture();f.state.document=expected=>f.document(expected,change)
+  await assert.rejects(f.client.propose(f.proposal()),{code:'PUBLISHER_PROOF_STALE'});assert.equal(f.calls.length,0)
+ }
+ const f=await publicationFixture()
+ await assert.rejects(f.client.propose({...f.proposal(),manifest:structuredClone(f.manifest)}),{code:'VERIFIED_MANIFEST_REQUIRED'})
+ assert.equal(f.calls.length,0)
+})
+test('publisher rereads the clock after independent receipt transport and rejects authority expiry during it',async()=>{
+ const f=await publicationFixture()
+ f.state.document=expected=>{f.state.clock+=5;return f.document(expected,{observedAt:f.stamp(f.state.clock-1),expiresAt:f.stamp(f.state.clock+10000)})}
+ assert.equal((await f.client.propose(f.proposal())).result,'PR_READY')
+ const expired=await publicationFixture()
+ expired.state.document=expected=>{expired.state.clock+=300001;return expired.document(expected)}
+ await assert.rejects(expired.client.propose(expired.proposal()),{code:'PUBLISHER_AUTHORITY_EXPIRED'})
+ assert.equal(expired.calls.length,0)
+})
+test('publication stops before branch creation if its independent proof expires during Git object preparation',async()=>{
+ const f=await publicationFixture()
+ f.state.drift=async url=>{if(url.endsWith('/git/commits'))f.state.clock+=11000}
+ await assert.rejects(f.client.propose(f.proposal()),{code:'PUBLISHER_PROOF_STALE'})
+ assert.equal(f.calls.some(c=>c.url.endsWith('/git/refs')||c.url.endsWith('/pulls')),false)
+})
+test('attested merge binds the owned incident branch and every installed CI check at the server',async()=>{
+ const f=await publicationFixture();f.names.splice(0,f.names.length,'weaker')
+ const result=await f.client.merge(f.merge());assert.equal(result.sourceSha,'f'.repeat(40));assert.equal(f.state.reads,2)
+ assert.equal(f.calls.filter(c=>c.options.method==='PUT').length,1)
+ for(const request of f.requests){assert.equal(request.action,'MERGE');assert.equal(request.headSha,sha);assert.equal(request.prNumber,43);assert.equal(request.requiredChecksSha256,f.documentDigest(f.installed))}
+ for(const policy of [{strict:false,contexts:f.installed},{strict:true,contexts:['required']},{strict:true,contexts:[]} ]){
+  const denied=await publicationFixture();denied.state.protection={required_status_checks:policy}
+  await assert.rejects(denied.client.merge(denied.merge()));assert.equal(denied.calls.some(c=>c.options.method==='PUT'),false)
+ }
+ const throughChecks=await publicationFixture();throughChecks.state.protection={required_status_checks:{strict:true,checks:throughChecks.installed.map(context=>({context,app_id:15368}))}}
+ assert((await throughChecks.client.merge(throughChecks.merge())).sourceSha)
+})
+test('attested merge cannot reuse proposal proof or promote a foreign branch and rechecks proof after CI reads',async()=>{
+ for(const drift of ['proposal','foreign','expiry']){
+  const f=await publicationFixture()
+  if(drift==='proposal')f.state.document=expected=>f.document(expected,{action:'PROPOSE',prNumber:null,headSha:null})
+  if(drift==='foreign')f.state.pr={...f.pr(),head:{...f.pr().head,ref:'sg2/another-owner'}}
+  if(drift==='expiry')f.state.drift=async url=>{if(url.includes('/check-runs?'))f.state.clock+=11000}
+  await assert.rejects(f.client.merge(f.merge()));assert.equal(f.calls.some(c=>c.options.method==='PUT'),false)
+ }
+})
+test('independent publisher defaults remain disabled before receipt reads or HTTP',async()=>{
+ const f=await publicationFixture({enabled:false,promote:false})
+ await assert.rejects(f.client.propose({}),{code:'PUBLISHER_DISABLED'})
+ await assert.rejects(f.client.merge({}),{code:'PROMOTION_DISABLED'})
+ assert.equal(f.state.reads,0);assert.equal(f.calls.length,0)
+ assert.throws(()=>createQualityAttestedPublisher({token:'synthetic',proofEvidence:f.evidence,requiredNames:[],verifyIndependent:()=>true}),{code:'PUBLISHER_VERIFIER_CONFIGURATION_REQUIRED'})
 })
