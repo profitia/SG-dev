@@ -24,9 +24,14 @@ const command=(file,args,timeout=15000)=>{
  return r.stdout.trim()
 }
 const wait=ms=>new Promise(resolve=>setTimeout(resolve,ms))
-export function readPrivilegeState(status,uid,groups){
+export function readPrivilegeState(status,uid,groups,gid){
  const values=new Map(status.trim().split('\n').map(l=>l.split(/:\s+/)))
- return {uid,groups,safe:['CapInh','CapPrm','CapEff','CapBnd','CapAmb'].every(k=>/^0+$/.test(values.get(k)??''))&&values.get('NoNewPrivs')==='1'}
+ // Node always includes the effective GID in getgroups(), even when Linux
+ // supplementary groups are empty. Check the kernel list independently.
+ const emptyKernelGroups=values.has('Groups')&&(values.get('Groups')??'').trim()===''
+ return {uid,gid,groups,emptyKernelGroups,safe:Number.isSafeInteger(uid)&&uid>0&&Number.isSafeInteger(gid)&&gid>0
+  &&Array.isArray(groups)&&groups.length===1&&groups[0]===gid&&emptyKernelGroups
+  &&['CapInh','CapPrm','CapEff','CapBnd','CapAmb'].every(k=>/^0+$/.test(values.get(k)??''))&&values.get('NoNewPrivs')==='1'}
 }
 
 export function assertExecutorHost(environment=process.env){
@@ -163,8 +168,8 @@ export async function runIsolatedExecutor({manifest,regression,projection,toolPa
   // check and allow its bounded setup time rather than skipping protection.
   command(process.execPath,[helperEntry,'drop-sudo','--root-phase','--user',username,'--group','sudo','--runner-credentials',identity],120000)
   const privileges=JSON.parse(command('/usr/bin/setpriv',[...plan.privilegeArguments,'--',process.execPath,'-e',
-   'const inspect='+readPrivilegeState.toString()+';const fs=require("node:fs");console.log(JSON.stringify(inspect(fs.readFileSync("/proc/self/status","utf8"),process.getuid(),process.getgroups())))']))
-  require(privileges.uid===uid&&privileges.groups.length===0&&privileges.safe===true,'PRIVILEGE_ISOLATION_FAILED')
+   'const inspect='+readPrivilegeState.toString()+';const fs=require("node:fs");console.log(JSON.stringify(inspect(fs.readFileSync("/proc/self/status","utf8"),process.getuid(),process.getgroups(),process.getgid())))']))
+  require(privileges.uid===uid&&privileges.gid===gid&&privileges.emptyKernelGroups===true&&privileges.safe===true,'PRIVILEGE_ISOLATION_FAILED')
   require(fs.readFileSync('/sys/fs/cgroup/cgroup.controllers','utf8').includes('memory'),'CGROUP_V2_REQUIRED')
   fs.mkdirSync(group);cgroupCreated=true
   fs.writeFileSync(group+'/memory.max','2147483648');fs.writeFileSync(group+'/pids.max','128');fs.writeFileSync(group+'/cpu.max','200000 100000')

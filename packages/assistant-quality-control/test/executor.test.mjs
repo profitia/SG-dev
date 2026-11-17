@@ -31,10 +31,17 @@ test('Executor plan uses only the local broker, no retries, cleared identity and
  for(const brokerUrl of ['https://api.openai.com/v1','http://localhost:1234/v1','http://127.0.0.1:1234/v1?route=other'])assert.throws(()=>executorPlan({work:'/tmp/aqc-'+randomUUID()+'/work',toolPath:'/opt/aqc-tools/codex',uid:19999,gid:19999,brokerUrl,agentToken:'c'.repeat(64)}))
 })
 test('Privilege check requires empty capabilities/no_new_privs; host entry rejects missing trusted workflow identity',()=>{
- const status='CapInh:\t00000000\nCapPrm:\t00000000\nCapEff:\t00000000\nCapBnd:\t00000000\nCapAmb:\t00000000\nNoNewPrivs:\t1\n'
- assert.equal(readPrivilegeState(status,19999,[]).safe,true)
- assert.equal(readPrivilegeState(status.replace('CapBnd:\t00000000','CapBnd:\t00000001'),19999,[]).safe,false)
- assert.equal(readPrivilegeState(status.replace('NoNewPrivs:\t1','NoNewPrivs:\t0'),19999,[]).safe,false)
+ const status='Groups:\t\nCapInh:\t00000000\nCapPrm:\t00000000\nCapEff:\t00000000\nCapBnd:\t00000000\nCapAmb:\t00000000\nNoNewPrivs:\t1\n'
+ const inspect=(value,groups=[19999],gid=19999,uid=19999)=>readPrivilegeState(value,uid,groups,gid)
+ assert.equal(inspect(status).safe,true)
+ assert.equal(inspect(status.replace('CapBnd:\t00000000','CapBnd:\t00000001')).safe,false)
+ assert.equal(inspect(status.replace('NoNewPrivs:\t1','NoNewPrivs:\t0')).safe,false)
+ assert.equal(inspect(status.replace('Groups:\t','Groups:\t27 ')).safe,false)
+ assert.equal(inspect(status.replace('Groups:\t\n','')).safe,false)
+ assert.equal(inspect(status,[19999,27]).safe,false)
+ assert.equal(inspect(status,[]).safe,false)
+ assert.equal(inspect(status,[0],0).safe,false)
+ assert.equal(inspect(status,[19999],19999,0).safe,false)
  assert.throws(()=>assertExecutorHost({}),{code:process.platform==='linux'&&process.getuid?.()===0?'TRUSTED_EPHEMERAL_WORKFLOW_REQUIRED':'LINUX_ROOT_REQUIRED'})
 })
 test('Paid execution requires signed actual Linux qualification bound to exact tool and policy',()=>{
