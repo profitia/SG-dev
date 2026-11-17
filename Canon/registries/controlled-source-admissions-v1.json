@@ -133,6 +133,40 @@
           "surfaceId": "SG2-BASE-001"
         }
       ]
+    },
+    {
+      "id": "ARCHITECTURE:ARCH-FINDER-AUDIT-INDEX-RECOVERY-20261117",
+      "status": "ACTIVE",
+      "repository": "profitia/SG-dev",
+      "actor": "profitia",
+      "taskId": "ARCH-FINDER-AUDIT-INDEX-RECOVERY-20261117",
+      "targetEnvironment": "development",
+      "scope": "SOURCE_VALIDATION_ONLY",
+      "approvalRef": "owner-decision:01a1e92f-cd84-7a92-97d7-36d3fbc49ef0:FINDER-INDEX-CI-MIGRATION-80a7d9c8-20261117",
+      "sourceSha": "80a7d9c854f510fbaabf0437051293e0faec1200",
+      "baseSha": "1f5256518645353c1bcaa316e44f01a7b89f89ac",
+      "validFrom": "2026-11-17T13:23:14.022Z",
+      "validUntil": "2026-11-18T22:59:00.000Z",
+      "files": [
+        {
+          "path": "packages/platform-contracts/migrations/access/033-native-phase-audit-indexes.sql",
+          "blob": "b6f5255348ddf088c740999f1b5f1387017aee40",
+          "mode": "100644",
+          "status": "added",
+          "projectKey": "ARCHITECTURE",
+          "owner": "Architecture Platform",
+          "surfaceId": "ARCH-BASE-001"
+        },
+        {
+          "path": "packages/platform-contracts/test/current-work-audit-index.test.mjs",
+          "blob": "d6c07ad4fca2bc2908d13bc9b10062e5b73e864a",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "ARCHITECTURE",
+          "owner": "Architecture Platform",
+          "surfaceId": "ARCH-BASE-001"
+        }
+      ]
     }
   ],
   "authority": "Accepted trusted-main data only. Candidate records never authorize themselves. Existing closed reviews and historical receipts remain unchanged."
