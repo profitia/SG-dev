@@ -1,7 +1,7 @@
 {
   "schemaVersion": "1.0",
   "scope": "CURRENT_SDK_SOURCE_INTEGRITY_ONLY",
-  "sourceSnapshotSha": "cbdf4b0ce6bfe45b5ab73514df039ddd6b6fcd8a",
+  "sourceSnapshotSha": "aa21a82912563808f0fd3a618e027f4a3806275d",
   "status": "PRIVATE_PROTOTYPE_NOT_ADMITTED",
   "platformVersion": "1.38.0",
   "runtimeActivated": false,
@@ -41,9 +41,9 @@
     "apps/architecture-lab/docs/insights-report-e1.md": "8ef32ff0139ff379d2da1012840764dae43d56cf545d9e98524a1307d2bf54b7",
     "apps/architecture-lab/ecr-stage03-sdk-compatibility.mjs": "e815522724549829eef83228fc35f960371c02e3f95b9c18e3a313fdc09460ea",
     "apps/architecture-lab/insights-report-source-compatibility.json": "502d4bc0529427664b2a13f9a3e273b288ba7285fd85e11199bfca72e906c809",
-    "apps/architecture-lab/knowledge-source-adoption.json": "7dc971d5a26c3c15af3e591d0561c141fa3dfee7f136045446ca91fb2bae5536",
-    "apps/architecture-lab/knowledge-source.json": "4e815bd8238285419a49a0f3a0718d7356a2ad9aafba214954004acd7f5d9ca9",
-    "apps/architecture-lab/knowledge-source.mjs": "ebf87742046a83159816208209809b2d165ff43cc795c4c659fd4361d6ce9669",
+    "apps/architecture-lab/knowledge-source-adoption.json": "f75efdbdffff04e2ddb729383cfa527bb9f9bbfaefce9e8b729451f196712fc0",
+    "apps/architecture-lab/knowledge-source.json": "44b5e85e201974aadc863ed3d9a5afc2f10c0224dc979bfe1cff5a13bfd73f99",
+    "apps/architecture-lab/knowledge-source.mjs": "4d8740a53818a70181bd90302c5e6df7ad8aa75b2971ee235e83a9bb3d848610",
     "apps/architecture-lab/market-calendar-source.mjs": "fc0f6dfb58548d2d520919f93032180ae8f64bf478db61b288aa372718a435fa",
     "apps/architecture-lab/market-calendar-test-compatibility.json": "52e859d4a99bc4c8e4d986f38afea2d58e9c1fe1ee1e0eb62cc2672dbdb60078",
     "apps/architecture-lab/organisation-lifecycle-sdk-source-adoption.json": "8649c552670689c3daa53692e3ef88e2ed7d3839b6915f939364cfc6d63d9abf",
@@ -57,7 +57,7 @@
     "apps/architecture-lab/sdk-1.34-compatibility.json": "458ddbf661ce1a5666260a072a03f24ac016346bdd9a9efef7f2a1d497eee403",
     "apps/architecture-lab/settled-external-failure-acceptance.json": "012a8223acd389ff655abdd61c2b8f436647955563ad9ad88a618bc7676a30bb",
     "apps/architecture-lab/test/insights-e1.test.mjs": "76466e01007c0bf2b7340685e9fbeff9eac787aa2cb8b7a663a328f3a7802d3e",
-    "apps/architecture-lab/test/knowledge-source.test.mjs": "f8af051d6d511a76eb43f185caa616d5cb6f5fb01f8bd0fee48b12397620a861",
+    "apps/architecture-lab/test/knowledge-source.test.mjs": "5b2d3bebe4d0568f84ed68de86eb0025506555698619bd4e85243c3907d124ac",
     "apps/architecture-lab/test/market-calendar-source.test.mjs": "f0ad19aefa29ded610305c3b196010a911686842ea694e9bb2c10c2d30acd1d0",
     "apps/architecture-lab/test/payload-capture-publication.test.mjs": "63dfb8723345e0803185c85545939c2ee51ec6d750d6509040d3ef74050ccbf3",
     "apps/architecture-lab/test/private-recurring-source.test.mjs": "af7e93f69c80cdef1bd9e277693d3b3b9ab8083d8e8d56afee2061aa7a26cd47",
@@ -420,7 +420,7 @@
     "apps/sg-runtime/evidence/registration-lifecycle-sdk-adoption-20261112.json": "1f7a761f91bbd4648854f680843ed131fa02155195ef5a8c07d5cc0fed06dd93",
     "apps/sg-runtime/evidence/registration-organisation-access-20261112.json": "6ed5e728146d600e2f7842e761dd60cd1fbf1046dc3c21b8418dd9f2a421b1d9",
     "apps/sg-runtime/instrumentation.ts": "a68b34152c49d1f2b404b7a25c11901bfd7274cf5b685791decdc46deca567e8",
-    "apps/sg-runtime/knowledge-source-adoption.json": "f846d8ae12e92cf238394efe9ca0905e3c1588c5defea28697c99ca9f7db4888",
+    "apps/sg-runtime/knowledge-source-adoption.json": "aec29f9d34a14993d720bec7a9b097c3e13fd22bbd53a5ec7ec34190f2f37b35",
     "apps/sg-runtime/lib/appshell/adp-local-model.ts": "fcd2694f8a068b5608b72b7c1e43f60e9c0a99f95a7f512f7256c03723bc7016",
     "apps/sg-runtime/lib/appshell/adp-navigation.ts": "b0d159a530bd1f4075cfad3aecfef02de4b95680c1d1c32d9a3b0f86cf315706",
     "apps/sg-runtime/lib/appshell/xray-full-transport.ts": "9d030208706df73a4ab3a8761cd9054a03b135502141e2060156b96488c6f76b",
@@ -814,7 +814,7 @@
     "apps/srm/evidence/registration-lifecycle-sdk-adoption-20261112.json": "ea53474d309cbbc0888bfae3e095a93d9a3cb86c3104e517152050fd2b829176",
     "apps/srm/evidence/registration-organisation-domain-projection-20261113.json": "c99ecf42d947b64a8c1fc4ff0071bd9683d11293de49a68200e82a130eee7dfe",
     "apps/srm/evidence/registration-test-entrypoint-20261113.json": "473baaffb62ef58ea485660def793b5de4c9dcff582ae78f434022fd558be665",
-    "apps/srm/knowledge-source-adoption.json": "e3d7b1ae37aefb561725cd2757e35e17931a4a6a5f087810aa3ec2ee4a46d9f9",
+    "apps/srm/knowledge-source-adoption.json": "df22e2c8d29335117a369a7f554ddc8ff37c0ccefb0bbde831f9f637885ad50b",
     "apps/srm/middleware.test.ts": "ad613f838733aa46e61a30566d4c2399be688016a54c5b0c7863f87a35bf1eb3",
     "apps/srm/middleware.ts": "cc36f20a698da6a95bcd2d7df587b2501baf9d5562b10e534d0d3d1a3d86f3a2",
     "apps/srm/next.config.ts": "fecfda484a4f964e42ec35eab5b5658deff9f35da0ac0a69e3a5b4777fa3cc61",
@@ -1665,7 +1665,7 @@
   },
   "baselines": {
     "acceptedmain": {
-      "sha": "6720adbfca6dc0f25fd82e9c20631d7676b3d743",
+      "sha": "9eae235dd7ce50d09967977e7417afabb0dbab10",
       "status": "ACCEPTED_MAIN_BEFORE_CURRENT_SDK_SOURCE"
     },
     "registration": {
@@ -1673,7 +1673,7 @@
       "status": "PRIVATE_PRESERVED_STAGE_I_SOURCE"
     },
     "knowledge": {
-      "sha": "123d4d7df165b73852724d5e09056424f4ce631a",
+      "sha": "15f154e809f6f596e412424d154a871a0cc82609",
       "status": "PROVISIONAL_NOT_FINAL_ACCEPTED_PK_SOURCE"
     }
   },
@@ -1696,7 +1696,7 @@
     {
       "baseline": "knowledge",
       "path": "apps/architecture-lab/knowledge-source.json",
-      "sha256": "4e815bd8238285419a49a0f3a0718d7356a2ad9aafba214954004acd7f5d9ca9"
+      "sha256": "44b5e85e201974aadc863ed3d9a5afc2f10c0224dc979bfe1cff5a13bfd73f99"
     }
   ],
   "retainedReceipts": {
@@ -1710,11 +1710,11 @@
     },
     "apps/architecture-lab/knowledge-source-adoption.json": {
       "baseline": "knowledge",
-      "sha256": "7dc971d5a26c3c15af3e591d0561c141fa3dfee7f136045446ca91fb2bae5536"
+      "sha256": "f75efdbdffff04e2ddb729383cfa527bb9f9bbfaefce9e8b729451f196712fc0"
     },
     "apps/architecture-lab/knowledge-source.json": {
       "baseline": "knowledge",
-      "sha256": "4e815bd8238285419a49a0f3a0718d7356a2ad9aafba214954004acd7f5d9ca9"
+      "sha256": "44b5e85e201974aadc863ed3d9a5afc2f10c0224dc979bfe1cff5a13bfd73f99"
     },
     "apps/architecture-lab/market-calendar-test-compatibility.json": {
       "baseline": "acceptedmain",
@@ -1810,7 +1810,7 @@
     },
     "apps/sg-runtime/knowledge-source-adoption.json": {
       "baseline": "knowledge",
-      "sha256": "f846d8ae12e92cf238394efe9ca0905e3c1588c5defea28697c99ca9f7db4888"
+      "sha256": "aec29f9d34a14993d720bec7a9b097c3e13fd22bbd53a5ec7ec34190f2f37b35"
     },
     "apps/sg-runtime/market-calendar-integration.json": {
       "baseline": "acceptedmain",
@@ -1886,7 +1886,7 @@
     },
     "apps/srm/knowledge-source-adoption.json": {
       "baseline": "knowledge",
-      "sha256": "e3d7b1ae37aefb561725cd2757e35e17931a4a6a5f087810aa3ec2ee4a46d9f9"
+      "sha256": "df22e2c8d29335117a369a7f554ddc8ff37c0ccefb0bbde831f9f637885ad50b"
     },
     "apps/srm/operation-integration.json": {
       "baseline": "registration",
