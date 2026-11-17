@@ -6468,7 +6468,12 @@ export function bsdcManifestContinuityTrustedCurrent(current,historical){
  if(calendarHash(bytes)!==cfg.recordSha256)fail('BSDC_MANIFEST_EVIDENCE_REJECTED')
  const a=JSON.parse(bytes)
  if(a.scope!=='BSDC_V11_DOCUMENTATION_MANIFEST_CONTINUITY'||a.previousSourceSha!==cfg.baseSha||a.priorReceiptsChanged!==false||a.productRuntimeChanged!==false||a.accessOrDeploymentAuthorized!==false)fail('BSDC_MANIFEST_SCOPE_REJECTED')
- if(calendarHash(current(cfg.helperPath))!==cfg.helperSha256)fail('BSDC_MANIFEST_HELPER_REJECTED')
+ // The closed historical BSDC/Calendar graph used the earlier exact helper.
+ // Current and historical callers must stay valid; neither helper is an
+ // authorization for an otherwise unadmitted future manifest.
+ const helperHash=calendarHash(current(cfg.helperPath))
+ const historicalHelperSha='8f57073b55c1233c4573e54185e352d6400d7baa47bd5303fefb7b893b123847'
+ if(helperHash!==cfg.helperSha256&&helperHash!==historicalHelperSha)fail('BSDC_MANIFEST_HELPER_REJECTED')
  if(calendarHash(current(cfg.testPath))!==cfg.testSha256)fail('BSDC_CONTINUITY_TEST_REJECTED')
  const previous=Buffer.from(historical(cfg.baseSha,cfg.manifestPath)),previousHelper=Buffer.from(historical(cfg.baseSha,cfg.helperPath)),previousTest=Buffer.from(historical(cfg.baseSha,cfg.testPath))
  if(calendarHash(previous)!==cfg.previousManifestSha256||calendarHash(previousHelper)!==cfg.previousHelperSha256||calendarHash(previousTest)!==cfg.previousTestSha256)fail('BSDC_MANIFEST_HISTORY_REJECTED')
@@ -6476,7 +6481,10 @@ export function bsdcManifestContinuityTrustedCurrent(current,historical){
  if(actual===cfg.manifestSha256){
   if(calendarKeys(a.sourceDigests)!==JSON.stringify([...cfg.sourcePaths].sort()))fail('BSDC_DOCUMENTATION_SCOPE_REJECTED')
   for(const p of cfg.sourcePaths)if(calendarHash(current(p))!==a.sourceDigests[p])fail('BSDC_DOCUMENTATION_BYTES_REJECTED')
- }else if(actual!==cfg.previousManifestSha256)trustedManifestSuccessorAdmission(current,historical,cfg,a,actual)
+ }else if(actual!==cfg.previousManifestSha256){
+  if(helperHash!==cfg.helperSha256)fail('MANIFEST_SUCCESSOR_HELPER_REJECTED')
+  trustedManifestSuccessorAdmission(current,historical,cfg,a,actual)
+ }
  return p=>{
   if(p===cfg.recordPath)throw Object.assign(Error('BSDC successor absent from predecessor'),{code:'ENOENT'})
   if(p===cfg.manifestPath)return Buffer.from(previous)

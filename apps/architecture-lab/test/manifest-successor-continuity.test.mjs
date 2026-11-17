@@ -178,3 +178,16 @@ test('candidate and trusted controllers must both reject unrelated historical mu
  assert.throws(()=>bsdcManifestContinuityCurrent(current,altered))
  assert.throws(()=>bsdcManifestContinuityTrustedCurrent(current,altered))
 })
+
+
+test('trusted controller accepts the unchanged legacy helper for its old manifest only',()=>{
+ const oldHelper=history('0f36f0af2add0d481a6b0a2dc1cded9d5b181949',cfg.helperPath)
+ const oldHash=hash(oldHelper)
+ assert.equal(oldHash,'8f57073b55c1233c4573e54185e352d6400d7baa47bd5303fefb7b893b123847')
+ const currentOld=p=>p===cfg.helperPath?oldHelper:physical(p)
+ const projected=bsdcManifestContinuityTrustedCurrent(currentOld,history)
+ assert.deepEqual(projected(cfg.manifestPath),history(cfg.baseSha,cfg.manifestPath))
+ const {current,trusted}=fixture()
+ const oldOnNew=p=>p===cfg.helperPath?oldHelper:current(p)
+ assert.throws(()=>bsdcManifestContinuityTrustedCurrent(oldOnNew,trusted),/MANIFEST_SUCCESSOR_HELPER_REJECTED/)
+})
