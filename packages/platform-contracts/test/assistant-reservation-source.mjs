@@ -1,9 +1,14 @@
 // Test/build-only closed source continuation. Never imported by a runtime.
 import assert from 'node:assert/strict'
 import {createHash} from 'node:crypto'
+import {execFileSync} from 'node:child_process'
+import fs from 'node:fs'
+import os from 'node:os'
+import path from 'node:path'
 export const RESERVATION_RECORD="apps/architecture-lab/assistant-reservation-source.json"
-export const RESERVATION_BASE="80875d8f0e9451cd9afd34e8baf2a8f6059bc064"
+export const RESERVATION_BASE="c31fd80278561adec8d066392417bb057d191192"
 export const RESERVATION_PATHS=Object.freeze([
+ "scripts/governance/platform-source-hub-foundation.test.mjs",
  "apps/architecture-lab/test/market-calendar-source.test.mjs",
  "apps/architecture-lab/test/sdk-compatibility.test.mjs",
  "apps/package-limits/migrations/006-assistant-reservation-diagnostics.sql",
@@ -122,4 +127,59 @@ export function assistantReservationPredecessor(current,historical,expectedDiges
   if(!cache.has(p))cache.set(p,Buffer.from(historical(RESERVATION_BASE,p)))
   return Buffer.from(cache.get(p))
  }}
+}
+
+// Offline legacy unit-test input only; not a controller or runtime adoption.
+export async function createAcgLegacyRecurringFixture(sourceRoot) {
+  const recordPath = 'apps/architecture-lab/assistant-reservation-source.json'
+  try {
+    const stat = fs.lstatSync(path.join(sourceRoot, recordPath))
+    assert(stat.isFile() && !stat.isSymbolicLink(), 'regular reservation source record')
+  } catch (error) {
+    if (error.code === 'ENOENT') return {root: sourceRoot, sourceRoot, projected: false, close() {}}
+    throw error
+  }
+  const read = relative => {
+    assert(!path.isAbsolute(relative) && !relative.split('/').includes('..'))
+    const file = path.join(sourceRoot, relative)
+    assert(fs.lstatSync(file).isFile() && !fs.lstatSync(file).isSymbolicLink(), 'regular fixture source ' + relative)
+    return fs.readFileSync(file)
+  }
+  const git = args => execFileSync('git', args, {cwd: sourceRoot, stdio: ['ignore', 'pipe', 'pipe'], maxBuffer: 16 * 1024 * 1024})
+  const historical = (sha, relative) => git(['show', sha + ':' + relative])
+  const pin = String(read(RESERVATION_DERIVED)).match(/ASSISTANT_RESERVATION_SOURCE_SHA='([a-f0-9]{64})'/)?.[1]
+  // Authenticate every current source and preserved receipt before creating any
+  // historical input. Malformed present records must never select the old root.
+  const view = assistantReservationPredecessor(read, historical, pin)
+  assert(view, 'present source record requires authenticated predecessor')
+  const sourceSha = String(git(['rev-parse', 'HEAD'])).trim()
+  const temporary = fs.mkdtempSync(path.join(os.tmpdir(), 'acg-legacy-recurring-test-'))
+  const root = path.join(temporary, 'fixture')
+  const close = () => fs.rmSync(temporary, {recursive: true, force: true})
+  try {
+    execFileSync('git', ['clone', '--shared', '--quiet', '--no-checkout', sourceRoot, root], {stdio: ['ignore', 'pipe', 'pipe']})
+    execFileSync('git', ['checkout', '--quiet', '--detach', sourceSha], {cwd: root, stdio: ['ignore', 'pipe', 'pipe']})
+    // Preserve the real observed authority ref in this local test clone.
+    const authoritySha = String(git(['rev-parse', '--verify', 'refs/remotes/origin/main^{commit}'])).trim()
+    execFileSync('git', ['update-ref', 'refs/remotes/origin/main', authoritySha], {cwd: root, stdio: ['ignore', 'pipe', 'pipe']})
+    const paths = [RESERVATION_RECORD, ...RESERVATION_PATHS, RESERVATION_DERIVED]
+    assert.equal(new Set(paths).size, 39, 'closed reservation fixture inventory')
+    for (const relative of paths) {
+      assert(!path.isAbsolute(relative) && !relative.split('/').includes('..'))
+      const file = path.join(root, relative)
+      try {
+        const bytes = view.previousBytes(relative)
+        fs.mkdirSync(path.dirname(file), {recursive: true})
+        fs.writeFileSync(file, bytes)
+        fs.chmodSync(file, 0o644)
+      } catch (error) {
+        if (error.code !== 'ENOENT') throw error
+        fs.rmSync(file, {force: true})
+      }
+    }
+    return {root, sourceRoot, projected: true, sourceSha, sourceRecord: view.manifest, close}
+  } catch (error) {
+    close()
+    throw error
+  }
 }
