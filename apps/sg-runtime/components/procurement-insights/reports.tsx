@@ -1,5 +1,6 @@
 'use client'
 import {procurementText} from './localization'
+import {normalizeLegacyReportTables} from '../../lib/procurement-insights/report-markdown'
 import type {PublishedReportReference} from '../../../../packages/assistant-context-contracts/src/index.mjs'
 import React,{useEffect,useMemo,useRef,useState} from 'react'
 import {CanonButton,CanonInput,CanonSelect} from '@profitia/srm-xray'
@@ -8,7 +9,7 @@ type Page<T>={items:T[];nextCursor:string|null}
 type Run={id:string;producerJobId:string|null;status:string;createdAt:string;emailDelivery?:string|null}
 const contract='procurement-insights.subscription/1.0.0'
 function ReportText({text}:{text:string}){
- return <div className="pi-report-text">{text.split(/\n\s*\n/).map((block,i)=>{
+ return <div className="pi-report-text">{normalizeLegacyReportTables(text).split(/\n\s*\n/).map((block,i)=>{
   const heading=/^(#{1,4}) (.+)$/.exec(block)
   if(heading)return heading[1].length<3?<h3 key={i}>{heading[2]}</h3>:<h4 key={i}>{heading[2]}</h4>
   const lines=block.split('\n')

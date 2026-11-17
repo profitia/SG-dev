@@ -58,7 +58,7 @@ const UI_SUCCESSOR={
   "receipt": "apps/sg-runtime/procurement-insights-e2e-continuation.json",
   "base": "cc448c8428556881c01d56313fb691bf0fe80b8c",
   "taskId": "SG2-PI-TECHNOLOGY-E2E-20261117",
-  "scope": "PI_PUBLICATION_NAVIGATION_AND_LOCALE",
+  "scope": "PI_PUBLICATION_NAVIGATION_LOCALE_AND_READER_COMPATIBILITY",
   "paths": [
     "apps/sg-runtime/components/procurement-insights/workspace.tsx",
     "apps/sg-runtime/components/procurement-insights/reports.tsx",
@@ -68,17 +68,21 @@ const UI_SUCCESSOR={
     "apps/sg-runtime/tests/procurement-insights-notification-navigation.test.tsx",
     "apps/sg-runtime/tests/procurement-insights-e2e-continuation.test.tsx",
     "apps/sg-runtime/tests/procurement-insights-completion.test.mjs",
-    "apps/sg-runtime/tests/assistant-notifications-integrity.mjs"
+    "apps/sg-runtime/tests/assistant-notifications-integrity.mjs",
+    "apps/sg-runtime/lib/procurement-insights/report-markdown.ts",
+    "apps/sg-runtime/tests/procurement-insights-report-markdown.test.ts"
   ],
   "pins": {
     "apps/sg-runtime/components/procurement-insights/workspace.tsx": "961e48f55a8ac92fc0fce9e33bdaced6bb590767cc2fae0341b28f61deaa121f",
-    "apps/sg-runtime/components/procurement-insights/reports.tsx": "13d42a6e000e59647b12d4c7fa4877a203979385ecb8e124d92a79ea3f2d747e",
+    "apps/sg-runtime/components/procurement-insights/reports.tsx": "383be06467b54901a43ab081f030d4ecc2018828a2add09d1c73a8c0dc33061d",
     "apps/sg-runtime/components/procurement-insights/observation-form.tsx": "0fc252d57e25502c2440939a5bb2ae5a7065130feb714b872f0ff4ff8c2445c5",
     "apps/sg-runtime/components/procurement-insights/statistics.tsx": "3b822985e383f357c057763dcbbc05c89756302ae68ac3b47cc9df5829093248",
     "apps/sg-runtime/components/procurement-insights/localization.ts": "34a9c1d254475ef98a68cf9c4b3793ab6ad2e304c4c13df659ed61584ed6619e",
     "apps/sg-runtime/tests/procurement-insights-notification-navigation.test.tsx": "cb266554ad865ba13a7b044ec4990b89959cf6d6143efc6253fb35916318f3a1",
-    "apps/sg-runtime/tests/procurement-insights-e2e-continuation.test.tsx": "e07bd91e982c47c7dd1db5a01dfbe3c71c93781f60ed0566e899ae1494ec70d6",
-    "apps/sg-runtime/tests/procurement-insights-completion.test.mjs": "9329b585b56e098f574d54a1821025b7118fc811b2c1cc9a5993e6f4dee1f760"
+    "apps/sg-runtime/tests/procurement-insights-e2e-continuation.test.tsx": "5f5bf0cb3b7124faa6bfb64b69873fb04b96679f44de293149ae63c52038693a",
+    "apps/sg-runtime/tests/procurement-insights-completion.test.mjs": "9329b585b56e098f574d54a1821025b7118fc811b2c1cc9a5993e6f4dee1f760",
+    "apps/sg-runtime/lib/procurement-insights/report-markdown.ts": "f5c2b040c2e0dff1e9d54b87a1a707d6f460a9802f8b41d4900af971bad902cf",
+    "apps/sg-runtime/tests/procurement-insights-report-markdown.test.ts": "09e898985bd22273272d46a8d7926211f27ecfd4d4d50a168b48db8f789a1ca5"
   },
   "preserved": [
     "apps/architecture-lab/private-recurring-source-adoption.json",

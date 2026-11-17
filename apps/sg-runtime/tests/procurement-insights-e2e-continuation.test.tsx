@@ -66,3 +66,25 @@ test('current UI closure rejects missing or altered source, widened scope and re
   const altered=JSON.parse(JSON.stringify(a));mutate(altered);assert.throws(()=>assistantNotificationsPredecessor((p:string)=>p===receipt?Buffer.from(JSON.stringify(altered)):current(p),historical))
  }
 })
+
+test('published legacy tables use the existing semantic reader without changing the selected version',async()=>{
+ const markdown='## SYNTHETIC_SECTION\n\nNarrative before.\n\n| Indicator | Reading |\n\n| --- | ---: |\n\n| SYNTHETIC_A | 12 |\n\n| SYNTHETIC_B | 8 |\n\nNarrative after.\n\n| Scenario | Direction |\n\n| --- | --- |\n\n| SYNTHETIC_CASE | <img src=x onerror=alert(1)> |'
+ const edition={producerJobId:publication,title:'SYNTHETIC_PUBLISHED_REPORT',publishedAt:'2026-11-17T08:00:00Z',asOf:'2026-11-16T08:00:00Z',pdfSha256:'a'.repeat(64),markdownSha256:'b'.repeat(64),markdown,readOnly:true}
+ const selections:unknown[]=[],calls:string[]=[]
+ const b=await mount('ReportsWorkspace','reports',{active:true,locale:'en',getToken:async()=>'SYNTHETIC_ONLY',editionId:publication,onContext:(reference:unknown)=>selections.push(reference)},async(url,options)=>{
+  calls.push(url);assert.equal(options.method,'GET')
+  if(url.endsWith('/workspace'))return Response.json({catalog:[],orders:empty,editions:empty})
+  assert(url.endsWith('/editions/'+publication));return Response.json(edition)
+ })
+ try{
+  const reader=b.node.querySelector('.pi-report-reader');assert(reader)
+  const tables=[...reader.querySelectorAll('.pi-table-scroll table')];assert.equal(tables.length,2)
+  assert.deepEqual([...tables[0].querySelectorAll('th')].map((e:any)=>e.textContent),['Indicator','Reading'])
+  assert.deepEqual([...tables[0].querySelectorAll('tbody tr')].map((e:any)=>e.textContent),['SYNTHETIC_A12','SYNTHETIC_B8'])
+  assert.match(tables[1].textContent,/SYNTHETIC_CASE/);assert.equal(reader.querySelectorAll('img,script').length,0)
+  assert.match(reader.textContent,/Narrative before/);assert.match(reader.textContent,/Narrative after/)
+  const before=calls.length;await b.click('Select this version for assistant');assert.equal(calls.length,before,'selection performs no acquisition or AI call')
+  assert.deepEqual(JSON.parse(JSON.stringify(selections.at(-1))),{version:'2.1.0',source:'PUBLISHED_REPORT',producerJobId:publication,pdfSha256:edition.pdfSha256,markdownSha256:edition.markdownSha256})
+  assert.equal(edition.markdown,markdown,'published content and digests remain unchanged')
+ }finally{await b.close()}
+})
