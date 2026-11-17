@@ -18,7 +18,8 @@ const check=(command,args)=>{
  if(r.error||r.status!==0)throw Error('Isolated PostgreSQL fixture command failed: '+command+' '+(r.error?.code??r.stderr?.slice(-1000)))
  return r.stdout.trim()
 }
-async function isolatedPostgres(){
+async function isolatedPostgres(databaseName='neondb'){
+ assert(['neondb','platform_private'].includes(databaseName))
  // A new, task-owned cluster only. No URL, secret or existing cloud database
  // is accepted by this fixture. PostgreSQL binaries must already be installed.
  const bin=process.env.AQC_TEST_POSTGRES_BIN??check('pg_config',['--bindir']);assert(path.isAbsolute(bin)&&path.resolve(bin)===bin)
@@ -31,7 +32,7 @@ async function isolatedPostgres(){
   check(path.join(bin,'initdb'),['-D',data,'-U','aqc_fixture_owner','--auth-local=trust','--auth-host=trust','--encoding=UTF8','--no-locale'])
   check(path.join(bin,'pg_ctl'),['-D',data,'-l',path.join(root,'server.log'),'-o',`-h 127.0.0.1 -p ${port} -k ${sock}`,'-w','start']);started=true
   const url=new URL(`postgresql://aqc_fixture_owner@127.0.0.1:${port}/postgres`)
-  const admin=new pg.Pool({connectionString:url.toString()});await admin.query('CREATE DATABASE neondb');await admin.end();url.pathname='/neondb'
+  const admin=new pg.Pool({connectionString:url.toString()});await admin.query('CREATE DATABASE '+databaseName);await admin.end();url.pathname='/'+databaseName
   const pools=[],connections=new Set()
   const pool=role=>{const u=new URL(url);u.username=role;const p=new pg.Pool({connectionString:u.toString(),max:role==='aqc_fixture_owner'?1:8})
    p.on('connect',client=>{const stream=client.connection.stream;connections.add(stream);stream.once('close',()=>connections.delete(stream))})
@@ -210,5 +211,89 @@ test('Native controller store: competing workers, restart reconciliation, stale 
   assert.equal(contained.status,'OBSERVING');assert.equal(contained.classSuspended,true)
   await store.release({id:otherId,leaseToken:lease.leaseToken})
   const newId=randomUUID();await assert.rejects(store.create({id:newId,repairClass:'C2',causeFingerprint:hash(newId),baseSha}),{code:'CLASS_SUSPENDED'})
+ }finally{await fixture.close()}
+})
+
+
+test('Native canonical QA purpose: ordinary SERVICE, enrolled controlled inputs, fresh HUMAN proof, revocation and product-restore denial',async()=>{
+ const fixture=await isolatedPostgres('platform_private')
+ try{
+  const owner=fixture.pool('aqc_fixture_owner'),runtime=fixture.pool('sg2_private_development_runtime'),reader=fixture.pool('sg2_assistant_quality_authority')
+  const user=randomUUID(),org=randomUUID(),service=randomUUID(),generation=randomUUID(),grant=randomUUID(),evidence=randomUUID(),input=hash('public controlled synthetic fixture only')
+  const keys={sg2_private_development_runtime:randomBytes(32).toString('hex'),sg2_assistant_quality_authority:randomBytes(32).toString('hex')}
+  const core=fs.readFileSync(new URL('../../platform-contracts/migrations/access/001-internal-access.sql',import.meta.url),'utf8')
+  const sql=fs.readFileSync(new URL('../migrations/002-quality-purpose.sql',import.meta.url),'utf8'),digest=hash(sql)
+  await owner.query(`CREATE EXTENSION pgcrypto;CREATE ROLE profitia_access_owner NOLOGIN NOINHERIT NOSUPERUSER NOBYPASSRLS;
+   CREATE ROLE sg2_private_development_runtime LOGIN NOINHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS;
+   CREATE ROLE sg2_assistant_quality_authority LOGIN NOINHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS;
+   GRANT CREATE ON DATABASE platform_private TO profitia_access_owner;BEGIN;SET LOCAL ROLE profitia_access_owner;`)
+  await owner.query(core);await owner.query('COMMIT')
+  await owner.query(`INSERT INTO profitia_access.installation(singleton,schema_version,schema_digest,environment,project_id,branch_id,database_name)
+   VALUES(true,'1.0.0',$1,'development','spring-bread-28217539','br-sparkling-term-b99l107x','platform_private')`,['a'.repeat(64)])
+  await owner.query('INSERT INTO profitia_access.accounts(user_id,status)VALUES($1,\'ACTIVE\');',[user])
+  await owner.query('INSERT INTO profitia_access.organisations(organisation_id,status)VALUES($1,\'ACTIVE\')',[org])
+  await owner.query("INSERT INTO profitia_access.applications(application_id,status,fixed_organisation_id)VALUES('spendguru','ACTIVE',$1)",[org])
+  for(const role of Object.keys(keys))await owner.query("INSERT INTO profitia_access.runtime_bindings VALUES($1,'spendguru','ACTIVE')",[role])
+  await owner.query("INSERT INTO profitia_access.memberships(organisation_id,user_id,status,source_ref,expires_at)VALUES($1,$2,'ACTIVE','controlled local fixture',clock_timestamp()+interval '1 day')",[org,user])
+  await owner.query("INSERT INTO profitia_access.product_grants(application_id,organisation_id,product,features,status,source,source_ref,expires_at)VALUES('spendguru',$1,'SPENDGURU',ARRAY['assistant'],'ACTIVE','EXPLICIT_OFFER','controlled local fixture',clock_timestamp()+interval '1 day')",[org])
+  await owner.query('BEGIN;SET LOCAL ROLE profitia_access_owner');await owner.query(sql.replaceAll('__QUALITY_PURPOSE_SCHEMA_DIGEST__',digest));await owner.query(fs.readFileSync(new URL('../migrations/003-quality-history-containment.sql',import.meta.url),'utf8'));await owner.query('COMMIT')
+  await owner.query('GRANT USAGE ON SCHEMA profitia_access TO sg2_private_development_runtime;GRANT EXECUTE ON FUNCTION profitia_access.runtime_descriptor(),profitia_access.append_audit(jsonb) TO sg2_private_development_runtime')
+  await owner.query('INSERT INTO profitia_assistant_quality_access.installation VALUES(true,$1,$2,false,\'controlled local fixture\')',[digest,generation])
+  for(const [role,key]of Object.entries(keys))await owner.query('INSERT INTO profitia_assistant_quality_access.credentials VALUES($1,$2,decode($3,\'hex\'))',[role,service,key])
+  await owner.query("INSERT INTO profitia_assistant_quality_access.purpose_grants(grant_id,service_id,account_id,organisation_id,enabled,created_at,expires_at,data_mode,source_ref)VALUES($1,$2,$3,$4,true,clock_timestamp()-interval '1 minute',clock_timestamp()+interval '1 hour','CONTROLLED_ACCEPTANCE','public local fixture')",[grant,service,user,org])
+  await owner.query("INSERT INTO profitia_assistant_quality_access.accepted_inputs VALUES($1,$2,true,'[]','public synthetic source')",[grant,input])
+  const command=async(role,action,fields={},overrides={})=>{
+   const body=JSON.stringify({contract:'QualityPurposeAuthority/1.0.0',action,schemaDigest:digest,storageGeneration:generation,serviceId:service,until:Date.now()+10000,...fields,...overrides})
+   const proof=createHmac('sha256',Buffer.from(keys[role],'hex')).update(body).digest('hex')
+   return (await (role==='sg2_private_development_runtime'?runtime:reader).query('SELECT profitia_assistant_quality_access.apply($1,$2) AS result',[body,proof])).rows[0].result
+  }
+  const freshIntent=async()=>{
+   const did=randomUUID(),d=(await runtime.query('SELECT profitia_access.runtime_descriptor() AS d')).rows[0].d
+   await runtime.query('SELECT profitia_access.append_audit($1::jsonb)',[JSON.stringify({decisionId:did,applicationId:'spendguru',environment:'development',phase:'INTENT',decision:'ALLOW',reasonCode:'ALLOWED',actorId:user,actorKind:'HUMAN',operation:'assistant.history.write',policyVersion:'access-v1:'+d.revision,identityIssuer:'https://fixture.invalid',identityProofRef:'controlled_fixture_only'})]);return did
+  }
+  const at=Date.now(),fields={accountId:user,evidenceId:evidence,inputSha256:input,sourceScopes:[],occurredAt:new Date(at-100).toISOString(),earliestInputAt:new Date(at-1000).toISOString(),decisionId:await freshIntent()}
+  await assert.rejects(command('sg2_private_development_runtime','CAPTURE',fields))
+  await owner.query('UPDATE profitia_assistant_quality_access.installation SET enabled=true')
+  fields.decisionId=await freshIntent()
+  const capture=await command('sg2_private_development_runtime','CAPTURE',fields)
+  assert.equal(capture.actorKind,'HUMAN');assert.equal(capture.actorId,user);assert.equal(capture.purpose.grantId,grant);assert.equal(capture.inputSha256,input)
+  const prepared=await command('sg2_private_development_runtime','CAPTURE',{...fields,sourceScopes:null});assert.deepEqual(prepared.sourceScopes,[])
+  await assert.rejects(command('sg2_private_development_runtime','CAPTURE',{...fields,sourceScopes:[{unreviewed:true}]}))
+  const replay=await command('sg2_private_development_runtime','CAPTURE',fields)
+  assert.deepEqual({...replay,validUntil:capture.validUntil},capture);assert(replay.validUntil>=capture.validUntil&&replay.validUntil<=Date.now()+30000)
+  const demand={accountId:user,evidenceId:evidence,sourceScopes:null}
+  const allowed=await command('sg2_assistant_quality_authority','READ',demand)
+  assert.equal(allowed.actorKind,'SERVICE');assert.equal(allowed.actorId,service);assert.equal(allowed.accountId,user)
+  for(const fields of [{...demand,accountId:randomUUID()},{...demand,evidenceId:randomUUID()}])await assert.rejects(command('sg2_assistant_quality_authority','READ',fields))
+  await assert.rejects(command('sg2_private_development_runtime','READ',demand));await assert.rejects(command('sg2_assistant_quality_authority','CAPTURE',fields))
+  await assert.rejects(command('sg2_assistant_quality_authority','READ',demand,{storageGeneration:randomUUID()}))
+  await assert.rejects(command('sg2_private_development_runtime','CAPTURE',{...fields,evidenceId:randomUUID(),inputSha256:hash('unreviewed private input')}))
+  await assert.rejects(reader.query('SELECT * FROM profitia_assistant_quality_access.purpose_grants'))
+  await assert.rejects(reader.query('SET ROLE profitia_access_owner'))
+  await owner.query("UPDATE profitia_assistant_quality_access.accepted_inputs SET enabled=false WHERE grant_id=$1",[grant]);await assert.rejects(command('sg2_assistant_quality_authority','READ',demand))
+  await owner.query("UPDATE profitia_assistant_quality_access.accepted_inputs SET enabled=true WHERE grant_id=$1",[grant])
+  await assert.rejects(command('sg2_private_development_runtime','CAPTURE',{...fields,evidenceId:randomUUID()}),'old HUMAN decision is fenced by canonical revision')
+  const stale=await freshIntent();await owner.query("UPDATE profitia_access.security_events SET recorded_at=clock_timestamp()-interval '31 seconds' WHERE decision_id=$1",[stale])
+  await assert.rejects(command('sg2_private_development_runtime','INVALIDATE',{accountId:user,decisionId:stale}))
+  await assert.rejects(reader.query('SELECT profitia_assistant_quality_access.invalidate_history($1::uuid)',[await freshIntent()]),e=>e.code==='42501')
+  await assert.rejects(runtime.query('SELECT profitia_assistant_quality_access.invalidate_history($1::uuid)',[stale]))
+  const eraseNative=async did=>(await runtime.query('SELECT profitia_assistant_quality_access.invalidate_history($1::uuid) AS result',[did])).rows[0].result
+  const decisionId=await freshIntent(),erase=await eraseNative(decisionId)
+  assert.equal(erase.invalidated,true);assert.equal(erase.accountId,user);assert.equal(erase.containmentVersion,'QUALITY_HISTORY_CONTAINMENT_V1')
+  assert.deepEqual(await eraseNative(decisionId),erase)
+  // The old encrypted product row/descriptor could now be restored. Its E1
+  // binding remains tombstoned in this independent database and is unusable.
+  await assert.rejects(command('sg2_assistant_quality_authority','READ',demand))
+  await owner.query("UPDATE profitia_assistant_quality_access.purpose_grants SET enabled=false WHERE grant_id=$1",[grant]);await assert.rejects(command('sg2_assistant_quality_authority','READ',demand))
+  await owner.query('UPDATE profitia_assistant_quality_access.installation SET enabled=false')
+  const offErase=await eraseNative(await freshIntent())
+  assert.equal(offErase.invalidated,true,'deletion needs no capture configuration even after QA disable/revocation')
+  assert.equal(BigInt(offErase.epoch),BigInt(erase.epoch)+1n)
+  await owner.query('UPDATE profitia_assistant_quality_access.installation SET enabled=true')
+  await owner.query('UPDATE profitia_assistant_quality_access.purpose_grants SET enabled=true WHERE grant_id=$1',[grant])
+  await assert.rejects(command('sg2_assistant_quality_authority','READ',demand),'restoring the earlier encrypted product row cannot undo independent containment')
+  await assert.rejects(eraseNative(decisionId),'old intent is fenced after authority revision')
+  const audit=(await owner.query("SELECT count(*)::int AS n FROM profitia_access.security_events WHERE event->>'actorKind'='SERVICE' AND event->>'reasonCode'='QUALITY_PURPOSE_AUTHORISED'")).rows[0].n
+  assert(audit>0,'SERVICE purpose decisions use the canonical metadata audit writer')
  }finally{await fixture.close()}
 })
