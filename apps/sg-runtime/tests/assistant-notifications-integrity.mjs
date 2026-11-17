@@ -1,7 +1,6 @@
 // Test/build-only exact SG2 presentation continuation. No runtime or access authority.
 import assert from 'node:assert/strict'
 import {createHash} from 'node:crypto'
-import {kysResumePredecessor} from '../../srm/scripts/kys-resume-source-view.mjs'
 export const NOTIFICATIONS_RECEIPT="apps/sg-runtime/assistant-notifications-integration.json"
 export const NOTIFICATIONS_BASE="b6adfbc6b46c13ffe48de37872fdd530f400a615"
 export const NOTIFICATIONS_PATHS=Object.freeze([
@@ -53,8 +52,6 @@ export function notificationCompletionSource(before){
  return IMPORT+before.replace(HEAD,HEAD+PREFIX)
 }
 export function assistantNotificationsPredecessor(current,historical){
- const kys=kysResumePredecessor(current,historical)
- if(kys.adoption)return assistantNotificationsPredecessor(kys.previousBytes,historical)
  let bytes
  try{bytes=current(NOTIFICATIONS_RECEIPT)}catch(error){
   const text=String(error?.stderr??error?.message??'')
