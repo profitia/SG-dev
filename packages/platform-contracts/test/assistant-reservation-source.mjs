@@ -23,6 +23,8 @@ export const RESERVATION_PATHS=Object.freeze([
  "apps/sg-runtime/tests/procurement-insights-completion.test.mjs",
  "apps/sg-runtime/tests/procurement-insights-live-acceptance-source.test.mjs",
  "apps/sg-runtime/tests/xray-fresh-performance-adoption.test.mjs",
+ "apps/srm/scripts/xray-performance-adoption.test.mjs",
+ "apps/srm/src/server/root-atomic-claim-adoption.test.ts",
  "packages/platform-contracts/current-fresh-report/test/current-fresh-report.test.mjs",
  "packages/platform-contracts/readonly-miss-report/test/readonly-miss-report.test.mjs",
  "packages/platform-contracts/src/assistant-usage.d.mts",
@@ -95,7 +97,7 @@ export function assistantReservationPredecessor(current,historical,expectedDiges
  const a=JSON.parse(bytes)
  assert.deepEqual(Object.keys(a).sort(),['schemaVersion','scope','taskIds','targetEnvironment','previousSourceSha','sourceDigests','preservedReceipts','model','outputTokens','reservationNanoUsd','authorisationChanged','sql006Installed','pilotChanged','unknownReleased','providerAcquisitionAdded','deploymentPerformed','sdkDigests','optionalPackageDigests'].sort())
  assert.equal(a.schemaVersion,'1.0.0');assert.equal(a.scope,'EXACT_ASSISTANT_TOKEN_RESERVATION_SOURCE');assert.equal(a.previousSourceSha,RESERVATION_BASE)
- assert.deepEqual(a.taskIds,{ARCHITECTURE:'ARCH-ACG-EXACT-TOKEN-RESERVATION-CHATGPT-CONT-20261113',SG2:'SG2-ACG-EXACT-TOKEN-RESERVATION-CHATGPT-CONT-20261113'})
+ assert.deepEqual(a.taskIds,{ARCHITECTURE:'ARCH-ACG-EXACT-TOKEN-RESERVATION-CHATGPT-CONT-20261113',SG2:'SG2-ACG-EXACT-TOKEN-RESERVATION-CHATGPT-CONT-20261113',SRM:'SRM-ACG-M1M2-COMPLETION-20261117'})
  assert.equal(a.targetEnvironment,'development');assert.equal(a.model,'gpt-5.6-luna');assert.equal(a.outputTokens,2048)
  assert.deepEqual(a.reservationNanoUsd,{input:500,output:1200})
  for(const flag of ['authorisationChanged','sql006Installed','pilotChanged','unknownReleased','providerAcquisitionAdded','deploymentPerformed'])assert.equal(a[flag],false,flag)
