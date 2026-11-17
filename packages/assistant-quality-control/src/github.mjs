@@ -6,7 +6,7 @@ const repository='profitia/SG-dev'
 const fail=code=>{throw Object.assign(Error('Quality GitHub operation unavailable'),{code})}
 const require=(v,c='GITHUB_INPUT_INVALID')=>{if(!v)fail(c)}
 const sha=v=>typeof v==='string'&&/^[a-f0-9]{40}$/.test(v)
-const uuid=v=>typeof v==='string'&&/^[a-f0-9-]{36}$/.test(v)
+const uuid=v=>typeof v==='string'&&/^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(v)
 const number=v=>Number.isSafeInteger(v)&&v>0
 const hash=v=>createHash('sha256').update(v).digest('hex')
 
@@ -27,7 +27,7 @@ export function createQualityGitHub({token,fetchImpl=fetch,publisherEnabled=fals
   if(response.status===403)fail('PERMISSION_REJECTED')
   if(response.status===404)fail('RESOURCE_OR_ACCESS_UNVERIFIED')
   if(!response.ok)fail(method==='GET'?'PROVIDER_UNAVAILABLE':response.status>=500?'DELIVERY_UNCERTAIN':'PROVIDER_REJECTED')
-  if(response.status===204)return null
+  if(response.status===204||response.status===202&&method==='POST'&&/^\/repos\/profitia\/SG-dev\/actions\/runs\/[1-9][0-9]{0,19}\/cancel$/.test(path))return null
   const text=await response.text();require(Buffer.byteLength(text)<=2097152,'GITHUB_RESPONSE_TOO_LARGE')
   try{return JSON.parse(text)}catch{fail('GITHUB_RESPONSE_INVALID')}
  }
@@ -71,6 +71,24 @@ export function createQualityGitHub({token,fetchImpl=fetch,publisherEnabled=fals
    return {repository,headSha:await main(),publisherEnabled,promotionEnabled}
   },
   main,pull,checks,
+  async dispatchQualification({sourceSha,nonce}){
+   require(sha(sourceSha)&&uuid(nonce));
+   require(await main()===sourceSha,'BASE_CHANGED');
+   await write('/actions/workflows/assistant-quality-repair.yml/dispatches',{ref:'main',inputs:{mode:'keyless-qualify',nonce}});
+   // GitHub returns no run ID for a dispatch. The durable caller must reconcile
+   // this exact nonce/source; a lost response never permits a second POST.
+   return {state:'UNKNOWN',sourceSha,nonce};
+  },
+  async cancelQualification({runId,sourceSha,nonce}){
+   require(/^[1-9][0-9]{0,19}$/.test(runId)&&sha(sourceSha)&&uuid(nonce));
+   const run=assertWorkflowIdentity(await get('/actions/runs/'+runId),{runId,sourceSha,nonce});
+   if(run.status==='completed')return {state:'COMPLETE',runId,conclusion:run.conclusion};
+   await write('/actions/runs/'+runId+'/cancel',undefined);
+   // Provider cancellation is not a cgroup-empty/cleanup receipt and does not
+   // close a native budget attempt or declare an executor stopped.
+   return {state:'CANCEL_REQUESTED',runId};
+  },
+
   async qualification({runId,sourceSha,nonce}){
    require(/^[1-9][0-9]{0,19}$/.test(runId))
    return assertWorkflowIdentity(await get('/actions/runs/'+runId),{runId,sourceSha,nonce,completed:true})
