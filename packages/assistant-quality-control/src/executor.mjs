@@ -142,7 +142,7 @@ export async function runIsolatedExecutor({manifest,regression,projection,toolPa
  require(p.incidentId===m.incidentId&&p.attemptId===permit.attemptId,'EXECUTOR_INCIDENT_MISMATCH')
  const remaining=Date.parse(permit.expiresAt)-Date.now();require(remaining>10000&&remaining<=1800000,'ATTEMPT_EXPIRED')
  const id=randomUUID(),root='/tmp/aqc-'+id,work=root+'/work',uid=19999,gid=19999,username='aqc-repair',chain='AQC_'+id.slice(0,8),group='/sys/fs/cgroup/aqc-'+id
- const plan=executorPlan({work,toolPath,uid,gid,brokerUrl,agentToken});let userCreated=false,groupCreated=false,cgroupCreated=false,v4=false,v6=false,child,deadline,stopped=false,abortListener,stderr='',primaryFailure
+ const plan=executorPlan({work,toolPath,uid,gid,brokerUrl,agentToken});let userCreated=false,groupCreated=false,cgroupCreated=false,v4=false,v6=false,child,deadline,stopped=false,abortListener,stdout='',stderr='',primaryFailure
  try{
   require(!fs.existsSync(root)&&!fs.existsSync(group),'EXECUTOR_PATH_EXISTS')
   for(const [database,key]of [['passwd',username],['passwd',String(uid)],['group',username],['group',String(gid)]]){
@@ -196,7 +196,11 @@ export async function runIsolatedExecutor({manifest,regression,projection,toolPa
   const argv=['-c',launcher,'aqc-launch',group,'/usr/bin/setpriv',...plan.privilegeArguments,'--',toolPath,...plan.args]
   require(!signal?.aborted,'EXECUTOR_CANCELLED')
   child=spawn('/bin/sh',argv,{cwd:work,env:plan.environment,stdio:['pipe','pipe','pipe']})
-  child.stdout.resume();child.stderr.on('data',chunk=>{if(typeof diagnostics==='function')stderr=(stderr+chunk.toString('utf8')).slice(-4096)});child.stdin.on('error',()=>{})
+  // The CLI reports startup/tool-loop failures as JSON on stdout. Retain a
+  // bounded tail only for a trusted diagnostic callback; normal execution
+  // discards both streams and never emits agent output to telemetry.
+  child.stdout.on('data',chunk=>{if(typeof diagnostics==='function')stdout=(stdout+chunk.toString('utf8')).slice(-4096)})
+  child.stderr.on('data',chunk=>{if(typeof diagnostics==='function')stderr=(stderr+chunk.toString('utf8')).slice(-4096)});child.stdin.on('error',()=>{})
   const kill=()=>{try{fs.writeFileSync(group+'/cgroup.kill','1')}catch{}}
   abortListener=kill;signal?.addEventListener('abort',abortListener,{once:true});if(signal?.aborted)kill()
   deadline=setTimeout(kill,Math.min(Math.max(1,Date.parse(permit.expiresAt)-Date.now()),1800000));deadline.unref()
@@ -209,7 +213,7 @@ export async function runIsolatedExecutor({manifest,regression,projection,toolPa
   require(stopped,'TERMINATION_UNCONFIRMED')
   const stoppedProof={schemaVersion:'AQC_EXECUTOR_STOP_V1',incidentId:m.incidentId,attemptId:permit.attemptId,runId:binding.runId,nonce,gateSetSha256:m.gateSetSha256,cgroupEmpty:true}
   if(signal?.aborted||code!==0){
-   if(typeof diagnostics==='function')diagnostics({exitCode:code,stderr})
+   if(typeof diagnostics==='function')diagnostics({exitCode:code,stdout:stdout.replaceAll(agentToken,'[scoped-token]'),stderr:stderr.replaceAll(agentToken,'[scoped-token]')})
    throw Object.assign(Error('Isolated quality executor stopped'),{code:signal?.aborted?'EXECUTOR_CANCELLED':'EXECUTOR_FAILED',stoppedProof,stoppedProofSha256:documentDigest(stoppedProof)})
   }
   const artifact=collectRepairArtifact({manifest:m,before,work,regression:fixture})
