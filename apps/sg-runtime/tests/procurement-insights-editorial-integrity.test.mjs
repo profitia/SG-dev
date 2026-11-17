@@ -12,7 +12,8 @@ const manifest=()=>JSON.parse(current(EDITORIAL_RECEIPT))
 const withManifest=(a,read=current)=>p=>p===EDITORIAL_RECEIPT?Buffer.from(JSON.stringify(a)):read(p)
 test('editorial source continuation authenticates the new profile and retains all prior report/assistant acceptance',()=>{
  const view=procurementInsightsEditorialPredecessor(current,historical);assert(view)
- for(const p of Object.keys(view.manifest.preservedReceipts))assert.deepEqual(current(p),historical(EDITORIAL_BASE,p))
+ const acceptedCurrent=view.currentSdkContext?.baseline('acceptedmain')??current
+ for(const p of Object.keys(view.manifest.preservedReceipts))assert.deepEqual(acceptedCurrent(p),historical(EDITORIAL_BASE,p))
  assert.deepEqual(view.previousBytes('apps/insights-runtime/src/composer.mjs'),historical(EDITORIAL_BASE,'apps/insights-runtime/src/composer.mjs'))
  assert.equal(procurementInsightsEditorialPredecessor(view.previousBytes,historical),null)
  for(const p of [EDITORIAL_RECEIPT,'apps/insights-runtime/src/editorial.mjs','apps/sg-runtime/tests/procurement-insights-editorial-integrity.mjs'])assert.throws(()=>view.previousBytes(p),e=>e.code==='ENOENT')
