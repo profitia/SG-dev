@@ -3,18 +3,19 @@
   "taskId": "SG2-PI-EDITORIAL-PACKAGE-CACHE-20261117",
   "targetEnvironment": "development",
   "scope": "EDITORIAL_LOCAL_PACKAGE_VERSION_ONLY",
-  "previousSourceSha": "59204603e6f41c97e0d27c36ffcc94ca6186d88e",
+  "previousSourceSha": "1888f0f707ab382e8886f31bedb5983e1f5a1026",
   "packageVersionBefore": "1.2.0",
   "packageVersionAfter": "1.2.1",
   "sourceDigests": {
-    "apps/insights-runtime/package.json": "3c808d5f95a79c05dc5f3e9df5c8f673d81b976aa5080d53d8a794369bb6daee",
     "apps/insights-runtime/package-lock.json": "7fee17b48adac4c45bac59f6839219c9fa5a259b953e85086283e4ade26922f1",
+    "apps/insights-runtime/package.json": "3c808d5f95a79c05dc5f3e9df5c8f673d81b976aa5080d53d8a794369bb6daee",
     "apps/sg-runtime/package-lock.json": "8f16009d546597485348731465749c67c24097366711cf60dc1f7cb50bb4e2ac",
-    "apps/sg-runtime/tests/assistant-notifications-integrity.mjs": "d97fcef0e14995c41402ac2e5aa23363ad848223a2a31551f37c90c6fcd16a1c",
-    "apps/sg-runtime/tests/assistant-notifications-integrity.test.mjs": "7cfa3c5f7e1b9a0c798cff6c10c3842c0ac7a4d434cad3e9ef5c82109ce18793",
-    "apps/sg-runtime/tests/procurement-insights-editorial-package-integrity.mjs": "f5e748f7b78a78aee439b3bc6f77d124cef534a29f039ba5452dec2b4667512b",
-    "apps/sg-runtime/tests/procurement-insights-editorial-package-integrity.test.mjs": "810a82ddaeefb973bb201927b60182be4e53e8c6d8fc9296fc623a3545d0ca37",
-    "apps/sg-runtime/tests/procurement-insights-editorial-integrity.test.mjs": "8139c81cb8551d9ffa2042ff3f8d0dcf83ebec94ffa02023d3ddd16d40dcfab1"
+    "apps/sg-runtime/tests/assistant-notifications-integrity.mjs": "aabc9d7957ddb0216f9ef82a5d505019b6fc11ba18c980f3ecbfd5a979fc4b10",
+    "apps/sg-runtime/tests/assistant-notifications-integrity.test.mjs": "3b6782c6b6b3958ba7357bac010ae90359a1dc0d4b60a7e9a9a97c26bed43285",
+    "apps/sg-runtime/tests/finder-monitor-source-integrity.test.mjs": "18481a9d778ae152df8949faad2a04820aaf7e510c905cbe191cd14a4fa3ddce",
+    "apps/sg-runtime/tests/procurement-insights-editorial-integrity.test.mjs": "8139c81cb8551d9ffa2042ff3f8d0dcf83ebec94ffa02023d3ddd16d40dcfab1",
+    "apps/sg-runtime/tests/procurement-insights-editorial-package-integrity.mjs": "45fcbf1edc6a66bfa5223b17fdb421959b78d40ae290fa7629003340ed5f11d4",
+    "apps/sg-runtime/tests/procurement-insights-editorial-package-integrity.test.mjs": "7c6b7378c25649e820872bebb40d9db5996214ec162ca3573b0e0ecd2f37c1be"
   },
   "preservedReceipts": {
     "apps/architecture-lab/private-recurring-source-adoption.json": "a79c186897851acb93142949fe7aee19184cbfe68b3acdf51cbda084c00c1254",
@@ -44,7 +45,8 @@
     "apps/srm/operation-integration.json": "1303ac82c0570ca4929f64e1620e2ec7a6bfd3809607f57eb33da621c8ecd06d",
     "apps/srm/private-recurring-source-adoption.json": "88d0252f634eface35b34adf31ac97cbf0d396fcf1fe6da452c74bdc23c7c633",
     "apps/srm/xray-appshell-integration.json": "584f4b2e099966bdfc23ce9ac1bf0d408893010b40459f458c639bdd4c4b1b19",
-    "packages/platform-contracts/test/recurring-consent-transport-source.json": "0c9ffe5bfd89cf2bd65cd9adc7ad241a04e7468b5821f97171f4a6c550aaba36"
+    "packages/platform-contracts/test/recurring-consent-transport-source.json": "0c9ffe5bfd89cf2bd65cd9adc7ad241a04e7468b5821f97171f4a6c550aaba36",
+    "apps/sg-runtime/finder-monitor-source-integration.json": "22ac9484a6b5532e97ee8c522491bf1015944677e0ab7979bd0769444a1455f6"
   },
   "authorisationChanged": false,
   "schemaChanged": false,

@@ -2,14 +2,16 @@
 import assert from 'node:assert/strict'
 import {createHash} from 'node:crypto'
 export const EDITORIAL_PACKAGE_RECEIPT='apps/sg-runtime/procurement-insights-editorial-package-integration.json'
-export const EDITORIAL_PACKAGE_BASE='59204603e6f41c97e0d27c36ffcc94ca6186d88e'
+export const EDITORIAL_PACKAGE_BASE='1888f0f707ab382e8886f31bedb5983e1f5a1026'
 const META=['apps/insights-runtime/package.json','apps/insights-runtime/package-lock.json','apps/sg-runtime/package-lock.json']
 const HOOK='apps/sg-runtime/tests/assistant-notifications-integrity.mjs'
 const ENTRY='apps/sg-runtime/tests/assistant-notifications-integrity.test.mjs'
 const HELPER='apps/sg-runtime/tests/procurement-insights-editorial-package-integrity.mjs'
 const TEST='apps/sg-runtime/tests/procurement-insights-editorial-package-integrity.test.mjs'
 const LEGACY_TEST='apps/sg-runtime/tests/procurement-insights-editorial-integrity.test.mjs'
-export const EDITORIAL_PACKAGE_PATHS=Object.freeze([...META,HOOK,ENTRY,HELPER,TEST,LEGACY_TEST])
+const FINDER_TEST='apps/sg-runtime/tests/finder-monitor-source-integrity.test.mjs'
+const FINDER_RECEIPT='apps/sg-runtime/finder-monitor-source-integration.json'
+export const EDITORIAL_PACKAGE_PATHS=Object.freeze([...META,HOOK,ENTRY,HELPER,TEST,LEGACY_TEST,FINDER_TEST])
 const hash=b=>createHash('sha256').update(b).digest('hex')
 const HEAD='export function assistantNotificationsPredecessor(current,historical){\n'
 const IMPORT="import {procurementInsightsEditorialPackagePredecessor,EDITORIAL_PACKAGE_RECEIPT} from './procurement-insights-editorial-package-integrity.mjs'\n"
@@ -23,6 +25,13 @@ export function editorialPackageHistoricalTestSource(before){
  const ending="return blobs.get(key)}\n"
  assert.equal(before.split(read).length,2);assert.equal(before.split(ending).length,2)
  return "import {procurementInsightsEditorialPackagePredecessor} from './procurement-insights-editorial-package-integrity.mjs'\n"+before.replace(read,read.replace('current=','physicalCurrent=')).replace(ending,ending+"const current=procurementInsightsEditorialPackagePredecessor(physicalCurrent,historical)?.previousBytes??physicalCurrent\n")
+}
+export function editorialPackageFinderHistoricalTestSource(before){
+ const first="import './monitor-benchmark-finder.test.mjs'\n"
+ const read="const root=new URL('../../../',import.meta.url),current=p=>readFileSync(new URL(p,root)),cache=new Map()"
+ const ending="return Buffer.from(cache.get(key))}\n"
+ assert.equal(before.split(first).length,2);assert.equal(before.split(read).length,2);assert.equal(before.split(ending).length,2)
+ return before.replace(first,first+"import {procurementInsightsEditorialPackagePredecessor} from './procurement-insights-editorial-package-integrity.mjs'\n").replace(read,read.replace('current=','physicalCurrent=')).replace(ending,ending+"const current=procurementInsightsEditorialPackagePredecessor(physicalCurrent,historical)?.previousBytes??physicalCurrent\n")
 }
 function versionOnly(current,historical,p){
  const before=JSON.parse(historical(EDITORIAL_PACKAGE_BASE,p)),after=JSON.parse(current(p))
@@ -51,10 +60,11 @@ export function procurementInsightsEditorialPackagePredecessor(current,historica
  assert.equal(String(current(HOOK)),editorialPackageContinuationSource(String(historical(EDITORIAL_PACKAGE_BASE,HOOK))),'only additive package dispatch')
  assert.equal(String(current(ENTRY)),"import './procurement-insights-editorial-package-integrity.test.mjs'\n"+String(historical(EDITORIAL_PACKAGE_BASE,ENTRY)),'retain every prior test')
  assert.equal(String(current(LEGACY_TEST)),editorialPackageHistoricalTestSource(String(historical(EDITORIAL_PACKAGE_BASE,LEGACY_TEST))),'only authenticated predecessor fixture; all editorial assertions retained')
+ assert.equal(String(current(FINDER_TEST)),editorialPackageFinderHistoricalTestSource(String(historical(EDITORIAL_PACKAGE_BASE,FINDER_TEST))),'all approved Finder assertions retained on authenticated predecessor')
  const priorReceipt='apps/sg-runtime/procurement-insights-editorial-integration.json'
  const prior=JSON.parse(historical(EDITORIAL_PACKAGE_BASE,priorReceipt))
- const preserved=[priorReceipt,...Object.keys(prior.preservedReceipts)].sort()
- assert.deepEqual(Object.keys(a.preservedReceipts).sort(),preserved,'preserve all28 earlier receipts')
+ const preserved=[priorReceipt,...Object.keys(prior.preservedReceipts),FINDER_RECEIPT].sort()
+ assert.deepEqual(Object.keys(a.preservedReceipts).sort(),preserved,'preserve all29 earlier receipts')
  for(const p of preserved){assert.equal(hash(current(p)),a.preservedReceipts[p]);assert.equal(hash(historical(EDITORIAL_PACKAGE_BASE,p)),a.preservedReceipts[p])}
  const mapped=new Set(EDITORIAL_PACKAGE_PATHS),added=new Set([EDITORIAL_PACKAGE_RECEIPT,HELPER,TEST]),cache=new Map()
  return{manifest:a,previousBytes:p=>{

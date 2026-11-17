@@ -225,11 +225,290 @@ export const EDITORIAL_CANON_SOURCE_REVIEW=Object.freeze({
   }
 })
 // Exact byte verification of the owner-approved editorial source; no runtime grant.
+// Closed owner-approved source binding for PR1111. No runtime or generic admission grant.
+export const FINDER_MONITOR_SOURCE_REVIEW=Object.freeze({
+  "prNumber": 1111,
+  "branch": "sg2/finder-sentry-monitor-20261117",
+  "sourceSha": "a2e99e130f59a0336f9ce553549185643bfee3fc",
+  "sourceBaseSha": "0c311a197e2f19bc35c953e34e095a1ab92c254b",
+  "previousSourceSha": "6642755628be60dc0547d81f2b46f71c3a6855ee",
+  "approvedMonitorSourceSha": "f20431f0d43f8d34f3021aa4fe6ceea560837fdc",
+  "ownerApprovalRef": "owner-decision:01a19782-bad9-7c42-be7e-fd05f4a06292:FINDER-MONITOR-PCI-BINDING-20261117",
+  "recordPath": "apps/sg-runtime/finder-monitor-source-integration.json",
+  "entries": {
+    "apps/sg-runtime/finder-monitor-source-integration.json": {
+      "blob": "fd442e5db2efa67d21be42340f72ea80f3a70a5e",
+      "sha256": "22ac9484a6b5532e97ee8c522491bf1015944677e0ab7979bd0769444a1455f6",
+      "status": "added"
+    },
+    "apps/sg-runtime/scripts/monitor-benchmark-finder.mjs": {
+      "blob": "2a3d978db7dfe1532dd317a4249d143b4ac5458a",
+      "sha256": "ad6cf703bd3e142ca185f5e2b1fa26e1b6665c4f7d6be707b1b37b054ee55f62",
+      "status": "added"
+    },
+    "apps/sg-runtime/tests/assistant-notifications-integrity.mjs": {
+      "blob": "0e62a9cea5dda80c1d97ea0d57f1f20ed9333253",
+      "sha256": "ae8d2e1a9a043409fefab98fcec5eea27e2e17e8e4ee56a8ef4d626e65aabd40",
+      "status": "modified",
+      "previousSha256": "e8141f9b967435ffdd5f94a48e9e0a494cf3eef167fbd6b3b7f22a350f55f3c8"
+    },
+    "apps/sg-runtime/tests/assistant-notifications-integrity.test.mjs": {
+      "blob": "2c63a30b0c29a7562fe7e2143b3b294cb1a4295e",
+      "sha256": "d10f72abb35b26f354e5e8fd552a8359e729b6813a79eb961aeaf0b06f4c8167",
+      "status": "modified",
+      "previousSha256": "85c4a532704a10a0c0c3b9fba87e8b355a028e1e092479960ae2e6df830e8f1e"
+    },
+    "apps/sg-runtime/tests/finder-monitor-source-integrity.mjs": {
+      "blob": "a36cf73f4a942d31b2364df5a8ee013d84d1b6ec",
+      "sha256": "c802bfcb6c0efba606772ba7847cbe769ee1db668ec805e71bc6c647ebd72069",
+      "status": "added"
+    },
+    "apps/sg-runtime/tests/finder-monitor-source-integrity.test.mjs": {
+      "blob": "7ff0740b0a2c2fdbc9e343b9470dc550bced3bda",
+      "sha256": "09b753e564509fd3d9114a37226bc24c6e29d07c9aca287e17ee171406281cbf",
+      "status": "added"
+    },
+    "apps/sg-runtime/tests/monitor-benchmark-finder.test.mjs": {
+      "blob": "3bf4b09a616d1bd28493edee500a13205f7081de",
+      "sha256": "8f54c9aba542d60d2cef41ec3dc546fee43ed4e656083b9b7e5b837b4f0ef47b",
+      "status": "added"
+    },
+    "apps/sg-runtime/tests/procurement-insights-editorial-integrity.mjs": {
+      "blob": "ed85202a45aea0a48dbee00ab53da6062131060e",
+      "sha256": "4d67bec4b83487590e80abdbf51bed308c1156873b7227ffb6030777ba67956b",
+      "status": "modified",
+      "previousSha256": "071825800d81e25361fda653348d9b947455464d45b70d7ab8ce5b73dc06bb50"
+    }
+  },
+  "preservedReceipts": {
+    "apps/architecture-lab/private-recurring-source-adoption.json": "a79c186897851acb93142949fe7aee19184cbfe68b3acdf51cbda084c00c1254",
+    "apps/architecture-lab/private-recurring-source.json": "75877d5750e07d1c8172be0af76bc5933f2eeefc22cc39747a2621b9cab24619",
+    "apps/sg-runtime/adp-integration.json": "9dbd4921c5262202902c3c7ae318e2296f130512fc0784840880eb42370d45fb",
+    "apps/sg-runtime/assistant-context-integration.json": "d932f227977789643086b6a9eb179598a6f48071964b2d26ba82d25fceb7b2ec",
+    "apps/sg-runtime/assistant-ecr-integration.json": "5814e2e5cbdf1a32d22cff3aa55de806ec34c9debdecc21ff06c4f9f887a82bc",
+    "apps/sg-runtime/assistant-ecr-precision-integration.json": "a017c2b971e3c72606847264150715c983fa9483537d26be90144a64e0377ee7",
+    "apps/sg-runtime/assistant-ecr-week-integration.json": "31ce8f1d7e5ca1d9c3aedf80f92e23fe0f1a93cb8f5fd5d003eb54a244859dd4",
+    "apps/sg-runtime/assistant-markdown-integration.json": "27ff06aff8bc44592f0073732748834b7759182fa4307d901c7d63304381a38b",
+    "apps/sg-runtime/assistant-notifications-integration.json": "78d6d34fea2ab1ce18f8dd810cc9906452763e8539aedea685fccbe3881b42cb",
+    "apps/sg-runtime/assistant-send-arrow-integration.json": "62c6af6817a022c31788d801cc0eac293a24b3f25d9e529d32b1bff4908fa230",
+    "apps/sg-runtime/development-integration.json": "a3ed33e74582d2e0407677e090be0d82405e42a160c34afddb8fde47dff86540",
+    "apps/sg-runtime/market-calendar-integration.json": "b66d88e724f84d513677554e77484bc29a2021b238ce28d4b7db7492aba9903c",
+    "apps/sg-runtime/oil-renderer-integration.json": "6afdd65e66d8a7d8ceb4ab68601ba6d1c1bfac43bbac879d01bb61c9962e7ad6",
+    "apps/sg-runtime/operation-integration.json": "a6bf50993c98a71aeccd349dd904baafb53b3cd653324d97bab3fc5e34ac509f",
+    "apps/sg-runtime/private-recurring-source-adoption.json": "edf9d51c199251e148b39c92a3084944c1a4b8419be29175c88b6e2583df11f2",
+    "apps/sg-runtime/procurement-insights-completion-integration.json": "095ab52d695419d34ed053a6961e389024067a8ab4a16a9b6bb2c379571832a0",
+    "apps/sg-runtime/procurement-insights-editorial-integration.json": "a85d4f9bc91a61fe1abd8ed4516d3b64da3b24df17839a1abe52d84718cfcc17",
+    "apps/sg-runtime/procurement-insights-integration.json": "6dca06d8b0731e585925100b0578d41a61711f335940350d1ea32c296a3d7177",
+    "apps/sg-runtime/procurement-insights-live-acceptance.json": "911fac3bf6c4eacabc5db048ef622e4a00e49efa09024e9fbbf5216f7da94d6c",
+    "apps/sg-runtime/procurement-insights-shell-integration.json": "1b1279e669e955e604c7c646482a6ce119eac5eeb09491ade78a37aa7fc133a1",
+    "apps/sg-runtime/registration-stage-i-integration.json": "4a7a572e67e12ed73c523502cef4cb432009e735737df851419d80898653f414",
+    "apps/sg-runtime/xray-appshell-integration.json": "edd27f0ae420a9c7671f3cf6068fa00e237a845169ce36de719b6a52abcc6087",
+    "apps/srm/assistant-context-integration.json": "e39cc67fc7b1a9dd787365e0cea5407e11c47744f15c4f9cf83ea15eddeb2aff",
+    "apps/srm/development-integration.json": "53b67cb769000a4f4005ab10ccc0188b39074094cb38e915b16c3d6026590f57",
+    "apps/srm/operation-integration.json": "1303ac82c0570ca4929f64e1620e2ec7a6bfd3809607f57eb33da621c8ecd06d",
+    "apps/srm/private-recurring-source-adoption.json": "88d0252f634eface35b34adf31ac97cbf0d396fcf1fe6da452c74bdc23c7c633",
+    "apps/srm/xray-appshell-integration.json": "584f4b2e099966bdfc23ce9ac1bf0d408893010b40459f458c639bdd4c4b1b19",
+    "packages/platform-contracts/test/recurring-consent-transport-source.json": "0c9ffe5bfd89cf2bd65cd9adc7ad241a04e7468b5821f97171f4a6c550aaba36"
+  }
+})
+const finderMonitorReviewTarget=pr=>!!pr&&(pr.number===FINDER_MONITOR_SOURCE_REVIEW.prNumber||pr.head?.ref===FINDER_MONITOR_SOURCE_REVIEW.branch)
+
+export function finderMonitorTrustedPredecessor(current,historical){
+ const cfg=FINDER_MONITOR_SOURCE_REVIEW;let bytes
+ try{bytes=current(cfg.recordPath)}catch(error){
+  const text=String(error?.stderr??error?.message??'')
+  if(error?.code==='ENOENT'||error?.status===128&&["' does not exist in ","' exists on disk, but not in "].some(s=>text.includes("'"+cfg.recordPath+s)))return null
+  throw error
+ }
+ // Authenticate every physical source byte without importing candidate JavaScript.
+ for(const[p,e]of Object.entries(cfg.entries)){
+  const b=current(p),blob=createHash('sha1').update('blob '+b.length+'\0').update(b).digest('hex')
+  if(notificationDigest(b)!==e.sha256||blob!==e.blob)fail('FINDER_MONITOR_SOURCE_BYTES_REJECTED')
+ }
+ const a=JSON.parse(bytes)
+ if(a.schemaVersion!=='1.0'||a.taskId!=='SG2-FINDER-MONITOR-PCI-BINDING-20261117'
+  ||a.scope!=='FINDER_MONITOR_SOURCE_BINDING_ONLY'||a.targetEnvironment!=='development'
+  ||a.previousSourceSha!==cfg.previousSourceSha||a.approvedMonitorSourceSha!==cfg.approvedMonitorSourceSha
+  ||a.approvalRef!==cfg.ownerApprovalRef)fail('FINDER_MONITOR_SOURCE_IDENTITY_REJECTED')
+ for(const flag of ['authorisationChanged','schemaChanged','engineChanged','ciChecksWeakened','otherEnvironmentsChanged','runtimeActivationPerformed'])if(a[flag]!==false)fail('FINDER_MONITOR_SOURCE_AUTHORITY_REJECTED')
+ const declared=Object.keys(cfg.entries).filter(p=>p!==cfg.recordPath).sort()
+ if(JSON.stringify(Object.keys(a.sourceDigests??{}).sort())!==JSON.stringify(declared))fail('FINDER_MONITOR_SOURCE_SCOPE_REJECTED')
+ for(const p of declared)if(a.sourceDigests[p]!==cfg.entries[p].sha256)fail('FINDER_MONITOR_SOURCE_BYTES_REJECTED')
+ if(JSON.stringify(Object.keys(a.preservedReceipts??{}).sort())!==JSON.stringify(Object.keys(cfg.preservedReceipts).sort()))fail('FINDER_MONITOR_SOURCE_RECEIPT_REJECTED')
+ for(const[p,h]of Object.entries(cfg.preservedReceipts)){
+  if(a.preservedReceipts[p]!==h||notificationDigest(current(p))!==h
+   ||notificationDigest(historical(cfg.previousSourceSha,p))!==h)fail('FINDER_MONITOR_SOURCE_RECEIPT_REJECTED')
+ }
+ const predecessors=new Map()
+ for(const[p,e]of Object.entries(cfg.entries))if(e.status==='modified'){
+  const before=historical(cfg.previousSourceSha,p)
+  if(notificationDigest(before)!==e.previousSha256)fail('FINDER_MONITOR_SOURCE_HISTORY_REJECTED')
+  predecessors.set(p,Buffer.from(before))
+ }
+ return{manifest:a,previousBytes:p=>{
+  const e=cfg.entries[p]
+  if(!e)return current(p)
+  if(e.status==='added')throw Object.assign(Error('Finder monitor source absent from predecessor'),{code:'ENOENT'})
+  return Buffer.from(predecessors.get(p))
+ }}
+}
+
+export function assertFinderMonitorSourceFiles(files){
+ const expected=FINDER_MONITOR_SOURCE_REVIEW.entries
+ if(!Array.isArray(files)||files.length!==Object.keys(expected).length
+  ||new Set(files.map(f=>f.filename)).size!==files.length)fail('FINDER_MONITOR_SOURCE_FILES_REJECTED')
+ for(const f of files){const e=expected[f.filename]
+  if(!e||f.sha!==e.blob||f.status!==e.status||Object.hasOwn(f,'previous_filename'))fail('FINDER_MONITOR_SOURCE_FILES_REJECTED')
+ }
+ return true
+}
+
+export function assertFinderMonitorSourceIdentity(pr,expectedSha,files,controlSha){
+ const r=FINDER_MONITOR_SOURCE_REVIEW
+ if(pr?.number!==r.prNumber||pr.state!=='open'||pr.head?.ref!==r.branch
+  ||pr.head.sha!==expectedSha||!shaPattern.test(expectedSha??'')||pr.user?.login!=='profitia'
+  ||pr.base?.ref!=='main'||pr.base.sha!==controlSha)fail('FINDER_MONITOR_SOURCE_IDENTITY_REJECTED')
+ assertFinderMonitorSourceFiles(files)
+ return true
+}
+
+export function assertFinderMonitorSourceCheckout(root,sha,admission){
+ const cfg=FINDER_MONITOR_SOURCE_REVIEW
+ const git=(...args)=>execFileSync('git',args,{cwd:root,encoding:'utf8',stdio:['ignore','pipe','pipe'],maxBuffer:32*1024*1024}).trim()
+ if(admission?.reviewId!=='SG2-FINDER-MONITOR-PCI-BINDING-20261117'||admission.actor!=='profitia'
+  ||!shaPattern.test(sha??'')||!shaPattern.test(admission.baseSha??'')
+  ||fs.realpathSync(root)!==path.resolve(root)||git('rev-parse','HEAD')!==sha)fail('FINDER_MONITOR_SOURCE_CHECKOUT_REJECTED')
+ assertFinderMonitorSourceFiles(admission.files)
+ for(const ancestor of[cfg.approvedMonitorSourceSha,cfg.sourceSha,admission.baseSha]){
+  try{git('merge-base','--is-ancestor',ancestor,sha)}catch{fail('FINDER_MONITOR_SOURCE_ANCESTRY_REJECTED')}
+ }
+ const changed=execFileSync('git',['diff','--name-only','--no-renames','-z',admission.baseSha+'...'+sha],{cwd:root,encoding:'utf8'}).split('\0').filter(Boolean).sort()
+ if(JSON.stringify(changed)!==JSON.stringify(Object.keys(cfg.entries).sort()))fail('FINDER_MONITOR_SOURCE_DIFF_REJECTED')
+ for(const p of Object.keys(cfg.entries)){
+  const tree=execFileSync('git',['ls-tree','-z',sha,'--',p],{cwd:root,encoding:'utf8'})
+  if(tree!=='100644 blob '+cfg.entries[p].blob+'\t'+p+'\0')fail('FINDER_MONITOR_SOURCE_MODE_REJECTED')
+ }
+ const view=finderMonitorTrustedPredecessor(p=>readNotificationPhysicalSource(root,p),(ref,p)=>execFileSync('git',['show',ref+':'+p],{cwd:root,maxBuffer:32*1024*1024,stdio:['ignore','pipe','pipe']}))
+ if(!view)fail('FINDER_MONITOR_SOURCE_RECEIPT_REQUIRED')
+ if(git('status','--porcelain=v1','--untracked-files=all','--ignore-submodules=none'))fail('FINDER_MONITOR_SOURCE_DIRTY')
+ return true
+}
+
+
+// Exact version-only package continuation; every current byte precedes historical projection.
+export const EDITORIAL_PACKAGE_SOURCE_REVIEW=Object.freeze({
+  "sourceSha": "71d4556c41549b62d78f3cdde1c21444a2d85e85",
+  "baseSha": "59204603e6f41c97e0d27c36ffcc94ca6186d88e",
+  "recordPath": "apps/sg-runtime/procurement-insights-editorial-package-integration.json",
+  "entries": {
+    "apps/insights-runtime/package-lock.json": {
+      "sha256": "7fee17b48adac4c45bac59f6839219c9fa5a259b953e85086283e4ade26922f1",
+      "blob": "60fdb3eebd230883917c9c1190644ed70ab0d352",
+      "status": "modified",
+      "mode": "100644",
+      "previousSha256": "16bbc3a57330366915628ed058d4c20c0001fc1fc924da92fb99f4f615e47f69"
+    },
+    "apps/insights-runtime/package.json": {
+      "sha256": "3c808d5f95a79c05dc5f3e9df5c8f673d81b976aa5080d53d8a794369bb6daee",
+      "blob": "48b862c7b341cc2e1be83ca061e9ca383a13a9df",
+      "status": "modified",
+      "mode": "100644",
+      "previousSha256": "46c7e91de9411a3ed4ba8749ca2fb643b405d8f6ea777eb1f59e62cd087d1ccd"
+    },
+    "apps/sg-runtime/package-lock.json": {
+      "sha256": "8f16009d546597485348731465749c67c24097366711cf60dc1f7cb50bb4e2ac",
+      "blob": "39c635a1e79dd997c4ca20e7ac8c79e691d926b9",
+      "status": "modified",
+      "mode": "100644",
+      "previousSha256": "3a8d14447e21fa9ab879dcd0094b5d8c4401196d2db632bc39540ed66e8440de"
+    },
+    "apps/sg-runtime/procurement-insights-editorial-package-integration.json": {
+      "sha256": "5fbf75514cd4a1022c00283799c3f2f4c60bd0c8a025ca0dcf80ca54d0128584",
+      "blob": "f300b39410f8361f2332a8bc9c3e96ed75a34c81",
+      "status": "added",
+      "mode": "100644"
+    },
+    "apps/sg-runtime/tests/assistant-notifications-integrity.mjs": {
+      "sha256": "d97fcef0e14995c41402ac2e5aa23363ad848223a2a31551f37c90c6fcd16a1c",
+      "blob": "ca16c3aa799bb31fe74635ca95cc79762f5cae54",
+      "status": "modified",
+      "mode": "100644",
+      "previousSha256": "e8141f9b967435ffdd5f94a48e9e0a494cf3eef167fbd6b3b7f22a350f55f3c8"
+    },
+    "apps/sg-runtime/tests/assistant-notifications-integrity.test.mjs": {
+      "sha256": "7cfa3c5f7e1b9a0c798cff6c10c3842c0ac7a4d434cad3e9ef5c82109ce18793",
+      "blob": "b626b9a8daad52720d6cc9a71f4e92d802e045be",
+      "status": "modified",
+      "mode": "100644",
+      "previousSha256": "85c4a532704a10a0c0c3b9fba87e8b355a028e1e092479960ae2e6df830e8f1e"
+    },
+    "apps/sg-runtime/tests/procurement-insights-editorial-integrity.test.mjs": {
+      "sha256": "8139c81cb8551d9ffa2042ff3f8d0dcf83ebec94ffa02023d3ddd16d40dcfab1",
+      "blob": "d30292d0e105a9183b56c749da3677948176a43a",
+      "status": "modified",
+      "mode": "100644",
+      "previousSha256": "b93302850ff52aa99d205c8f2cec1bd991909589976a2ef4f58aec5d69cf7f73"
+    },
+    "apps/sg-runtime/tests/procurement-insights-editorial-package-integrity.mjs": {
+      "sha256": "f5e748f7b78a78aee439b3bc6f77d124cef534a29f039ba5452dec2b4667512b",
+      "blob": "1aa8af311c70be0a55a3a855e1d2d79504b8c259",
+      "status": "added",
+      "mode": "100644"
+    },
+    "apps/sg-runtime/tests/procurement-insights-editorial-package-integrity.test.mjs": {
+      "sha256": "810a82ddaeefb973bb201927b60182be4e53e8c6d8fc9296fc623a3545d0ca37",
+      "blob": "e64bb6272cdbc862163c5acedc3d8350f20ef35b",
+      "status": "added",
+      "mode": "100644"
+    }
+  },
+  "projection": [
+    "apps/insights-runtime/package-lock.json",
+    "apps/insights-runtime/package.json",
+    "apps/sg-runtime/package-lock.json",
+    "apps/sg-runtime/procurement-insights-editorial-package-integration.json",
+    "apps/sg-runtime/tests/assistant-notifications-integrity.mjs",
+    "apps/sg-runtime/tests/assistant-notifications-integrity.test.mjs",
+    "apps/sg-runtime/tests/procurement-insights-editorial-integrity.test.mjs",
+    "apps/sg-runtime/tests/procurement-insights-editorial-package-integrity.mjs",
+    "apps/sg-runtime/tests/procurement-insights-editorial-package-integrity.test.mjs"
+  ],
+  "preservedReceipts": {
+    "apps/architecture-lab/private-recurring-source-adoption.json": "a79c186897851acb93142949fe7aee19184cbfe68b3acdf51cbda084c00c1254",
+    "apps/architecture-lab/private-recurring-source.json": "75877d5750e07d1c8172be0af76bc5933f2eeefc22cc39747a2621b9cab24619",
+    "apps/sg-runtime/adp-integration.json": "9dbd4921c5262202902c3c7ae318e2296f130512fc0784840880eb42370d45fb",
+    "apps/sg-runtime/assistant-context-integration.json": "d932f227977789643086b6a9eb179598a6f48071964b2d26ba82d25fceb7b2ec",
+    "apps/sg-runtime/assistant-ecr-integration.json": "5814e2e5cbdf1a32d22cff3aa55de806ec34c9debdecc21ff06c4f9f887a82bc",
+    "apps/sg-runtime/assistant-ecr-precision-integration.json": "a017c2b971e3c72606847264150715c983fa9483537d26be90144a64e0377ee7",
+    "apps/sg-runtime/assistant-ecr-week-integration.json": "31ce8f1d7e5ca1d9c3aedf80f92e23fe0f1a93cb8f5fd5d003eb54a244859dd4",
+    "apps/sg-runtime/assistant-markdown-integration.json": "27ff06aff8bc44592f0073732748834b7759182fa4307d901c7d63304381a38b",
+    "apps/sg-runtime/assistant-notifications-integration.json": "78d6d34fea2ab1ce18f8dd810cc9906452763e8539aedea685fccbe3881b42cb",
+    "apps/sg-runtime/assistant-send-arrow-integration.json": "62c6af6817a022c31788d801cc0eac293a24b3f25d9e529d32b1bff4908fa230",
+    "apps/sg-runtime/development-integration.json": "a3ed33e74582d2e0407677e090be0d82405e42a160c34afddb8fde47dff86540",
+    "apps/sg-runtime/market-calendar-integration.json": "b66d88e724f84d513677554e77484bc29a2021b238ce28d4b7db7492aba9903c",
+    "apps/sg-runtime/oil-renderer-integration.json": "6afdd65e66d8a7d8ceb4ab68601ba6d1c1bfac43bbac879d01bb61c9962e7ad6",
+    "apps/sg-runtime/operation-integration.json": "a6bf50993c98a71aeccd349dd904baafb53b3cd653324d97bab3fc5e34ac509f",
+    "apps/sg-runtime/private-recurring-source-adoption.json": "edf9d51c199251e148b39c92a3084944c1a4b8419be29175c88b6e2583df11f2",
+    "apps/sg-runtime/procurement-insights-completion-integration.json": "095ab52d695419d34ed053a6961e389024067a8ab4a16a9b6bb2c379571832a0",
+    "apps/sg-runtime/procurement-insights-editorial-integration.json": "a85d4f9bc91a61fe1abd8ed4516d3b64da3b24df17839a1abe52d84718cfcc17",
+    "apps/sg-runtime/procurement-insights-integration.json": "6dca06d8b0731e585925100b0578d41a61711f335940350d1ea32c296a3d7177",
+    "apps/sg-runtime/procurement-insights-live-acceptance.json": "911fac3bf6c4eacabc5db048ef622e4a00e49efa09024e9fbbf5216f7da94d6c",
+    "apps/sg-runtime/procurement-insights-shell-integration.json": "1b1279e669e955e604c7c646482a6ce119eac5eeb09491ade78a37aa7fc133a1",
+    "apps/sg-runtime/registration-stage-i-integration.json": "4a7a572e67e12ed73c523502cef4cb432009e735737df851419d80898653f414",
+    "apps/sg-runtime/xray-appshell-integration.json": "edd27f0ae420a9c7671f3cf6068fa00e237a845169ce36de719b6a52abcc6087",
+    "apps/srm/assistant-context-integration.json": "e39cc67fc7b1a9dd787365e0cea5407e11c47744f15c4f9cf83ea15eddeb2aff",
+    "apps/srm/development-integration.json": "53b67cb769000a4f4005ab10ccc0188b39074094cb38e915b16c3d6026590f57",
+    "apps/srm/operation-integration.json": "1303ac82c0570ca4929f64e1620e2ec7a6bfd3809607f57eb33da621c8ecd06d",
+    "apps/srm/private-recurring-source-adoption.json": "88d0252f634eface35b34adf31ac97cbf0d396fcf1fe6da452c74bdc23c7c633",
+    "apps/srm/xray-appshell-integration.json": "584f4b2e099966bdfc23ce9ac1bf0d408893010b40459f458c639bdd4c4b1b19",
+    "packages/platform-contracts/test/recurring-consent-transport-source.json": "0c9ffe5bfd89cf2bd65cd9adc7ad241a04e7468b5821f97171f4a6c550aaba36"
+  }
+})
 export function editorialTrustedPredecessor(current,historical){
- const cfg=EDITORIAL_CANON_SOURCE_REVIEW;let record
+ for(const cfg of [EDITORIAL_PACKAGE_SOURCE_REVIEW,EDITORIAL_CANON_SOURCE_REVIEW]){let record
  try{record=current(cfg.recordPath)}catch(error){
   const message=String(error?.stderr??error?.message??'')
-  if(error?.code==='ENOENT'||error?.status===128&&["' does not exist in ","' exists on disk, but not in "].some(s=>message.includes("'"+cfg.recordPath+s)))return null
+  if(error?.code==='ENOENT'||error?.status===128&&["' does not exist in ","' exists on disk, but not in "].some(s=>message.includes("'"+cfg.recordPath+s)))continue
   throw error
  }
  for(const[p,e]of Object.entries(cfg.entries)){
@@ -237,8 +516,9 @@ export function editorialTrustedPredecessor(current,historical){
   if(notificationDigest(b)!==e.sha256||blob!==e.blob)fail('EDITORIAL_SOURCE_BYTES_REJECTED')
  }
  const a=JSON.parse(record)
- if(a.previousSourceSha!==cfg.baseSha||a.scope!=='PROCUREMENT_INSIGHTS_EDITORIAL_PROFILE_V1'||a.taskId!=='SG2-PI-EDITORIAL-CONTINUATION-20261117'||a.targetEnvironment!=='development')fail('EDITORIAL_SOURCE_IDENTITY_REJECTED')
- for(const flag of ['authorisationChanged','schemaChanged','modelChanged','providerCallsPerformed','historicalReportsChanged','automaticPublication'])if(a[flag]!==false)fail('EDITORIAL_SOURCE_AUTHORITY_REJECTED')
+ const packageReview=cfg===EDITORIAL_PACKAGE_SOURCE_REVIEW
+ if(a.previousSourceSha!==cfg.baseSha||a.scope!==(packageReview?'EDITORIAL_LOCAL_PACKAGE_VERSION_ONLY':'PROCUREMENT_INSIGHTS_EDITORIAL_PROFILE_V1')||a.taskId!==(packageReview?'SG2-PI-EDITORIAL-PACKAGE-CACHE-20261117':'SG2-PI-EDITORIAL-CONTINUATION-20261117')||a.targetEnvironment!=='development'||packageReview&&(a.packageVersionBefore!=='1.2.0'||a.packageVersionAfter!=='1.2.1'))fail('EDITORIAL_SOURCE_IDENTITY_REJECTED')
+ for(const flag of ['authorisationChanged','schemaChanged','modelChanged','providerCallsPerformed','historicalReportsChanged','automaticPublication',...(packageReview?['runtimeCodeChanged','dependenciesChanged']:[])])if(a[flag]!==false)fail('EDITORIAL_SOURCE_AUTHORITY_REJECTED')
  const predecessors=new Map()
  for(const p of cfg.projection){const e=cfg.entries[p];if(e.status==='modified'){
   const b=historical(cfg.baseSha,p);if(notificationDigest(b)!==e.previousSha256)fail('EDITORIAL_SOURCE_HISTORY_REJECTED');predecessors.set(p,Buffer.from(b))
@@ -250,9 +530,11 @@ export function editorialTrustedPredecessor(current,historical){
   if(e.status==='added')throw Object.assign(Error('Editorial source absent from predecessor'),{code:'ENOENT'})
   return Buffer.from(predecessors.get(p))
  }}
+ }
+ return null
 }
-
 export function assistantNotificationsTrustedPredecessor(current,historical,verifiedApplicationSource=null){
+ const finderMonitor=finderMonitorTrustedPredecessor(current,historical);if(finderMonitor)return assistantNotificationsTrustedPredecessor(finderMonitor.previousBytes,historical,verifiedApplicationSource)
  const editorial=editorialTrustedPredecessor(current,historical);if(editorial)return assistantNotificationsTrustedPredecessor(editorial.previousBytes,historical,verifiedApplicationSource)
  const cfg=APPSHELL_NOTIFICATION_REVIEW;let record
  try{record=current(cfg.recordPath)}catch(error){if(error?.code==='ENOENT')return null;throw error}
@@ -280,7 +562,7 @@ export function assistantNotificationsTrustedPredecessor(current,historical,veri
 // Raw file checks are unchanged. New current sources must additionally be non-executable.
 export function readNotificationPhysicalSource(root,name){
  const bytes=readRegistrationSdkFile(root,name)
- if((Object.hasOwn(APPSHELL_NOTIFICATION_REVIEW.entries,name)||Object.hasOwn(EDITORIAL_CANON_SOURCE_REVIEW.entries,name))&&fs.lstatSync(path.join(fs.realpathSync(root),name)).mode&0o111)fail('APPSHELL_NOTIFICATION_MODE_REJECTED')
+ if((Object.hasOwn(APPSHELL_NOTIFICATION_REVIEW.entries,name)||Object.hasOwn(EDITORIAL_CANON_SOURCE_REVIEW.entries,name)||Object.hasOwn(EDITORIAL_PACKAGE_SOURCE_REVIEW.entries,name)||Object.hasOwn(FINDER_MONITOR_SOURCE_REVIEW.entries,name))&&fs.lstatSync(path.join(fs.realpathSync(root),name)).mode&0o111)fail('APPSHELL_NOTIFICATION_MODE_REJECTED')
  return bytes
 }
 export function notificationTrustedCurrent(root){
@@ -295,6 +577,12 @@ export function notificationTrustedCurrent(root){
   if(!assistantNotificationsTrustedPredecessor(main,historical))fail('APPSHELL_NOTIFICATION_HISTORY_REJECTED')
   for(const[p,h]of Object.entries(APPSHELL_NOTIFICATION_REVIEW.preservedReceipts))if(notificationDigest(current(p))!==(lifecycle.currentSourceDigests[p]??lifecycle.currentReceiptDigests[p]??h))fail('APPSHELL_NOTIFICATION_RECEIPT_REJECTED')
   return current
+ }
+ const finderMonitor=finderMonitorTrustedPredecessor(current,historical)
+ if(finderMonitor){
+  const accepted=assistantNotificationsTrustedPredecessor(current,historical)
+  if(!accepted)fail('FINDER_MONITOR_SOURCE_HISTORY_REJECTED')
+  return accepted.previousBytes
  }
  const watched=Object.keys(APPSHELL_NOTIFICATION_REVIEW.entries).filter(p=>/\.(?:tsx?|mjs)$/.test(p))
  let verified=null
@@ -6589,7 +6877,7 @@ export const ECR_COMPLETE_FUNCTIONAL_PROVENANCE=Object.freeze({"producerRecord":
 // Original58+7 reviews and all receipts remain immutable; no runtime authority.
 export const ECR_COMPLETE_FUNCTIONAL_PI_COMPAT=Object.freeze({"baseSha":"df57c042e2fbd60fc14ea7f883f245ea6be8e2ee","sourceSha":"f9307b4423861230747d25a50e81bfefd540a739","hookPath":"apps/sg-runtime/tests/procurement-insights-live-acceptance-source.mjs","hookPreviousSha256":"9a4d1698dd847d152246374d83aaa9f7f0e6fa76f80c6793ae40bd52aa3ee0d4","helperPath":"apps/sg-runtime/tests/calendar-pi-source-compatibility.mjs","entries":{"apps/sg-runtime/tests/procurement-insights-live-acceptance-source.mjs":{"sha":"dd0d384946b767b27dca5b77ded8ba38c5831483","status":"modified","mode":"100644","projectKey":"SG2","owner":"SG Runtime","surfaceId":"SG2-BASE-001"},"apps/sg-runtime/tests/calendar-pi-source-compatibility.mjs":{"sha":"b1bb1efb973e73572f44d8fa291771c5156693c0","status":"added","mode":"100644","projectKey":"SG2","owner":"SG Runtime","surfaceId":"SG2-BASE-001"},"apps/sg-runtime/tests/calendar-pi-source-compatibility.test.mjs":{"sha":"f2d258bcf0f3610c3f6d9c21e24d62ed61ae33ac","status":"added","mode":"100644","projectKey":"SG2","owner":"SG Runtime","surfaceId":"SG2-BASE-001"}}})
 export const ECR_COMPLETE_FUNCTIONAL_PI_REVIEW=Object.freeze({...ECR_COMPLETE_FUNCTIONAL_REVIEW,sourceSha:ECR_COMPLETE_FUNCTIONAL_PI_COMPAT.sourceSha,entries:{...ECR_COMPLETE_FUNCTIONAL_REVIEW.entries,...ECR_COMPLETE_FUNCTIONAL_PI_COMPAT.entries}})
-export const ECR_COMPLETE_FUNCTIONAL_CI_REPAIR=Object.freeze({"prNumber":1063,"branch":"architecture/ecr-complete-functional-20261112","sourceSha":"7ca13b976cca575fed42f8cf9ad507baa3e9cf89","baseSha":"52a8489b4feea867bc6c91d7bd1eed5c63e0e9ff","markerPath":"apps/architecture-lab/test/ecr-functional-ci-repair.test.mjs","entries":{"apps/architecture-lab/ecr-complete-functional-source.mjs":{"sha":"c46acb4a32d183258e547268b526a5e9be9566aa","status":"added","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ARCH-BASE-002"},"apps/architecture-lab/market-calendar-source.mjs":{"sha":"c764168fa7d99e0320d1365cd813c01949f58623","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ARCH-BASE-002"},"apps/architecture-lab/test/ecr-complete-functional-source.test.mjs":{"sha":"1d31c0e94ee5eec230131ef8c8e33330e453b484","status":"added","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ARCH-BASE-002"},"apps/economic-calendar-runtime/complete-functional-source-integration.json":{"sha":"c5dffc09a77debddd10a069b2d9a4408d22255c7","status":"added","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ECR-BASE-001"},"apps/economic-calendar-runtime/migrations/004-notifications.sql":{"sha":"0fa29943213774125c09ead3fc17e48351a41ac3","status":"added","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ECR-BASE-001"},"apps/economic-calendar-runtime/migrations/005-expanded-results.sql":{"sha":"f82e77f832b8c65c2f403041509d43c323fb98b1","status":"added","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ECR-BASE-001"},"apps/economic-calendar-runtime/operations/complete-functional-owner-plan.json":{"sha":"730efd39075c8b29d3962b58729a4096b4e48594","status":"added","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ECR-BASE-001"},"apps/economic-calendar-runtime/operations/expanded-semantic-bootstrap.json":{"sha":"2ee1f04174f229b1d6d129aa179b88de8604e115","status":"added","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ECR-BASE-001"},"apps/economic-calendar-runtime/package-lock.json":{"sha":"93414434e29f02ad9601338f52c36b8097d6c038","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ECR-BASE-001"},"apps/economic-calendar-runtime/package.json":{"sha":"4a624714e84c91d73fd3818995723bf8ec60032f","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ECR-BASE-001"},"apps/economic-calendar-runtime/scripts/continuous.mjs":{"sha":"7c5441e89b606054e1c103c5aa3adf42188235db","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ECR-BASE-001"},"apps/economic-calendar-runtime/scripts/migrate.mjs":{"sha":"0d5d8f4d2519143c83a8fb650edca8d99d1a3e1d","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ECR-BASE-001"},"apps/economic-calendar-runtime/src/continuous.mjs":{"sha":"a34fcf8b48ef7a9c01384fcc8bd97bf836015491","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ECR-BASE-001"},"apps/economic-calendar-runtime/src/notification-settings.mjs":{"sha":"36d3c75fb6cc1eea6018a0904b71d672ef6ad7e6","status":"added","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ECR-BASE-001"},"apps/economic-calendar-runtime/src/repository.mjs":{"sha":"359b7fe043ad52082007c7496243f884c5ad3f00","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ECR-BASE-001"},"apps/economic-calendar-runtime/src/result-links.mjs":{"sha":"52127a5876a41b7e311e0cf1cdc3744e7086c599","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ECR-BASE-001"},"apps/economic-calendar-runtime/src/result-scope.mjs":{"sha":"929eec0fed4a0b745171d4e956f84cd50f94d560","status":"added","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ECR-BASE-001"},"apps/economic-calendar-runtime/src/results.mjs":{"sha":"0aacc0992c6c33903a3f342d1f35ce3ca13e93a8","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ECR-BASE-001"},"apps/economic-calendar-runtime/src/server.mjs":{"sha":"890c7d6663809885fc1c77e1aedcc27a2735ee25","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ECR-BASE-001"},"apps/economic-calendar-runtime/src/source-service.mjs":{"sha":"4328bc18c9b2859a11f010027a11977ed138731b","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ECR-BASE-001"},"apps/economic-calendar-runtime/test/expanded-results.test.mjs":{"sha":"31d5542649789ab60e6c4278098087430634f241","status":"added","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ECR-BASE-001"},"apps/economic-calendar-runtime/test/notification-storage.test.mjs":{"sha":"2e4a5cb872c4f411b79aedaba7e1c9c75e178469","status":"added","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ECR-BASE-001"},"apps/identity-runtime/src/calendar-email.ts":{"sha":"69304f52b88c552df6e6a06c39aa0a7dd22483b6","status":"added","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"IDENTITY-BASE-001"},"apps/identity-runtime/src/calendar-mailgun-webhook.ts":{"sha":"516ab9cf2402c9ed9606eefa852ae1431b3d7c35","status":"added","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"IDENTITY-BASE-001"},"apps/identity-runtime/src/http-handler.ts":{"sha":"98e1fb69c69c6aaba5398aa80907f2fdc5e532e3","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"IDENTITY-BASE-001"},"apps/identity-runtime/src/mailgun-delivery.ts":{"sha":"50ffe026e5e8b8abece8f247c662b3f93cfc3adc","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"IDENTITY-BASE-001"},"apps/identity-runtime/src/main.ts":{"sha":"77c5f2f5114ab487893fd44bb81508bd19f519db","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"IDENTITY-BASE-001"},"apps/identity-runtime/src/node-server.ts":{"sha":"e1e7e36dc4540cc5050fe724042ce0dbadfd0e28","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"IDENTITY-BASE-001"},"apps/identity-runtime/test/calendar-authority-postgres.test.mjs":{"sha":"254bd0bf5c6799ee47bdaac8205e3ccb59288211","status":"added","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"IDENTITY-BASE-001"},"apps/identity-runtime/test/calendar-email.test.mjs":{"sha":"e58584f7add171dfbd69c3ad2ad2793e30250e77","status":"added","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"IDENTITY-BASE-001"},"apps/identity-runtime/test/calendar-mailgun-webhook.test.mjs":{"sha":"c9192365c900c381aea2c378133361ae2b9641f4","status":"added","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"IDENTITY-BASE-001"},"apps/newsfeed-runtime/package-lock.json":{"sha":"421a98321899a580efa49ef64f8d9b8766267988","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"NEWSFEED-BASE-001"},"apps/platform-source-hub/migrations/011-expanded-ecr-results.sql":{"sha":"601acea1b2e34cd854adb3ead43edce149dfcbd4","status":"added","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"SOURCE-HUB-BASE-001"},"apps/platform-source-hub/migrations/012-calendar-transport-continuity.sql":{"sha":"64105cd434163f0fc03ffbfb2c24f17f28624277","status":"added","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"SOURCE-HUB-BASE-001"},"apps/platform-source-hub/operations/replace-ecr-calendar-transport.sql":{"sha":"5507fd925085454ced622fabdb11089cfa080631","status":"added","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"SOURCE-HUB-BASE-001"},"apps/platform-source-hub/package-lock.json":{"sha":"2aa8e1d96bfad00550bfe383550b27618f4e4477","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"SOURCE-HUB-BASE-001"},"apps/platform-source-hub/scripts/migrate.mjs":{"sha":"a890f358fa39d7fab3098ab7b604e430a9eb30ef","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"SOURCE-HUB-BASE-001"},"apps/platform-source-hub/src/admission.mjs":{"sha":"b8fcdb2e0965000389941fee6b2b1ef531ca1793","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"SOURCE-HUB-BASE-001"},"apps/platform-source-hub/src/capabilities.mjs":{"sha":"0fe22e4322937991581ce6f762cbbaa4c387bb6f","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"SOURCE-HUB-BASE-001"},"apps/platform-source-hub/src/config.mjs":{"sha":"a85fa3c852bf66fb1450d84c4d57d67af0c1525c","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"SOURCE-HUB-BASE-001"},"apps/platform-source-hub/src/providers/eia-schedules.mjs":{"sha":"1f979bcd2bdf44360476652b364da385dbdaa17c","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"SOURCE-HUB-BASE-001"},"apps/platform-source-hub/src/repository.mjs":{"sha":"204175069756a8d38b5dcfb7833424560dbe6f0c","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"SOURCE-HUB-BASE-001"},"apps/platform-source-hub/test/calendar-transport-continuity.test.mjs":{"sha":"9e29ca9c5de10aa034815c7766701abea0e9f804","status":"added","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"SOURCE-HUB-BASE-001"},"apps/platform-source-hub/test/ci-routing.test.mjs":{"sha":"363d3d28c4bc330589c6d250ea9a4f6ef137519c","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"SOURCE-HUB-BASE-001"},"apps/platform-source-hub/test/expanded-eia-calendar.test.mjs":{"sha":"61f5be1c91a51d4d0c3043b874fb132888dcb342","status":"added","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"SOURCE-HUB-BASE-001"},"apps/platform-source-hub/test/historical-recurring-routing.test.mjs":{"sha":"bb670410523b35072ce8596daa3e6b14ef4d11f6","status":"added","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"SOURCE-HUB-BASE-001"},"packages/economic-calendar-contracts/index.mjs":{"sha":"791e8360cd438481a6cf0056d4cd404f82a7d811","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ECR-BASE-002"},"packages/economic-calendar-contracts/notifications.d.mts":{"sha":"caf3de86e2b559b545ddb8d985839a8a4d6f6e98","status":"added","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ECR-BASE-002"},"packages/economic-calendar-contracts/notifications.mjs":{"sha":"a91351ba7e3d093a2c880c6525e00d0ee0b965b2","status":"added","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ECR-BASE-002"},"packages/economic-calendar-contracts/package.json":{"sha":"9a68460982f4e9e49cb2c639a5e8a79e041ead53","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ECR-BASE-002"},"packages/platform-contracts/current-e1-authority/migrations/015-calendar-delivery.sql":{"sha":"54c1403c4402408a0399e3ec0fd5140d332d1c76","status":"added","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ARCH-BASE-001"},"packages/platform-contracts/test/recurring-consent-transport-source.mjs":{"sha":"6bebcb9cfb56b7264fac2c20a2cedbfc8fb8fe82","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ARCH-BASE-001"},"packages/platform-source-hub-contracts/commodities-v1.d.mts":{"sha":"fc9737c453b47b2ea57f197fc963d8c0bb6a5701","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"SOURCE-HUB-BASE-002"},"packages/platform-source-hub-contracts/commodities-v1.mjs":{"sha":"10f8e944a076b63ffa40dbff7f336c4c9a3acf07","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"SOURCE-HUB-BASE-002"},"packages/platform-source-hub-contracts/index.d.ts":{"sha":"7eea21de54a9ba6acfcb6b518ba6ccabe7163db1","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"SOURCE-HUB-BASE-002"},"packages/platform-source-hub-contracts/index.mjs":{"sha":"ad75c498ea14ca7e71c97f1b9c96bb0d28763f17","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"SOURCE-HUB-BASE-002"},"packages/platform-source-hub-contracts/package.json":{"sha":"7c0c89573d77a86e32f851f283ac94605d56ed54","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"SOURCE-HUB-BASE-002"},"scripts/governance/platform-source-hub-foundation.test.mjs":{"status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Governance Source Layer","surfaceId":"SG2-BASE-020","sha":"c743a01d67f3b5536ac683439ea6a9576838eea3"},"apps/sg-runtime/components/procurement-insights/calendar-email-settings.tsx":{"sha":"8b35768fc507a7a0ec914e96b00ac14f4396b9e6","status":"added","mode":"100644","projectKey":"SG2","owner":"SG Runtime","surfaceId":"SG2-BASE-001"},"apps/sg-runtime/components/procurement-insights/market-calendar.tsx":{"sha":"35b862e97b4e0d55d7331e0860c5d26e7ba1b02a","status":"modified","mode":"100644","projectKey":"SG2","owner":"SG Runtime","surfaceId":"SG2-BASE-001"},"apps/sg-runtime/lib/market-calendar/client.ts":{"sha":"8f69b91b2a74ce4b272ce5e8da1b9d0fa8f91d1f","status":"modified","mode":"100644","projectKey":"SG2","owner":"SG Runtime","surfaceId":"SG2-BASE-001"},"apps/sg-runtime/lib/market-calendar/runtime.ts":{"sha":"66f905b14e590faeb665e111aad88da0a228eff3","status":"modified","mode":"100644","projectKey":"SG2","owner":"SG Runtime","surfaceId":"SG2-BASE-001"},"apps/sg-runtime/market-calendar-notifications-integration.json":{"sha":"c1db738ee35a06b5fa71ff48f491a40818fd5cfe","status":"added","mode":"100644","projectKey":"SG2","owner":"SG Runtime","surfaceId":"SG2-BASE-001"},"apps/sg-runtime/package-lock.json":{"sha":"dd287b6a4181dbd84ac6144fd9000a35627d77ed","status":"modified","mode":"100644","projectKey":"SG2","owner":"SG Runtime","surfaceId":"SG2-BASE-001"},"apps/sg-runtime/tests/market-calendar-notifications.test.tsx":{"sha":"feaffbbd7fd1f41ae3abca3f782bae1b31fd5d52","status":"added","mode":"100644","projectKey":"SG2","owner":"SG Runtime","surfaceId":"SG2-BASE-001"},"apps/sg-runtime/tests/procurement-insights-live-acceptance-source.mjs":{"sha":"dd0d384946b767b27dca5b77ded8ba38c5831483","status":"modified","mode":"100644","projectKey":"SG2","owner":"SG Runtime","surfaceId":"SG2-BASE-001"},"apps/sg-runtime/tests/calendar-pi-source-compatibility.mjs":{"sha":"ae489a7207f19449c8e576ac5df5cd82ac27955e","status":"added","mode":"100644","projectKey":"SG2","owner":"SG Runtime","surfaceId":"SG2-BASE-001"},"apps/sg-runtime/tests/calendar-pi-source-compatibility.test.mjs":{"sha":"f2d258bcf0f3610c3f6d9c21e24d62ed61ae33ac","status":"added","mode":"100644","projectKey":"SG2","owner":"SG Runtime","surfaceId":"SG2-BASE-001"},"apps/architecture-lab/private-recurring-source.mjs":{"sha":"54ee19110f2af0974ca33622eddbf2209584f541","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ARCH-BASE-002"},"apps/platform-source-hub/scripts/ci-routing.mjs":{"sha":"7aa74eb7533e3217f539466f74d2310d64e985ea","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"SOURCE-HUB-BASE-001"},"apps/architecture-lab/test/ecr-functional-ci-repair.test.mjs":{"sha":"c9b3443eb7685e8adbae9fac0996880ee6b4ede8","status":"added","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ARCH-BASE-002"},"apps/sg-runtime/tests/assistant-notifications-integrity.mjs":{"sha":"5e05c18a00e80700b57e873c5e8368714fdb1ae8","status":"modified","mode":"100644","projectKey":"SG2","owner":"SG Runtime","surfaceId":"SG2-BASE-001"},"apps/architecture-lab/test/manifest-successor-continuity.test.mjs":{"status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ARCH-BASE-002","sha":"baa92e1b9de796a9f34098f7640f586146aa753e"}},"previous":{"apps/architecture-lab/private-recurring-source.mjs":{"sha":"52a8489b4feea867bc6c91d7bd1eed5c63e0e9ff","blob":"84083d9df1ae6f7a3aa979ea553bd9932c6028e4"},"apps/platform-source-hub/scripts/ci-routing.mjs":{"sha":"52a8489b4feea867bc6c91d7bd1eed5c63e0e9ff","blob":"173603de7daec55dd1d83423de47b55c5e1fb90b"},"apps/architecture-lab/test/ecr-functional-ci-repair.test.mjs":{"absent":true},"apps/architecture-lab/ecr-complete-functional-source.mjs":{"sha":"896ac56ff3e1aa4918cae75ef17b1347811bd875","blob":"29a34afa7b2a3cf8ca615ae00049661b7454ea5d"},"apps/sg-runtime/tests/calendar-pi-source-compatibility.mjs":{"sha":"f9307b4423861230747d25a50e81bfefd540a739","blob":"b1bb1efb973e73572f44d8fa291771c5156693c0"},"apps/sg-runtime/tests/assistant-notifications-integrity.mjs":{"sha":"08621a1335c56dd8f72a3e4f4864de947da8eee7","blob":"e0605d76fd93985796de0b7323063c259f2b9cac"},"apps/architecture-lab/market-calendar-source.mjs":{"sha":"896ac56ff3e1aa4918cae75ef17b1347811bd875","blob":"3340af300e8868ff4226586128794450d64c2cca"},"apps/architecture-lab/test/manifest-successor-continuity.test.mjs":{"sha":"d7327f5fc7c733a12e5132112b05705f83159dbf","blob":"4eff37c11e5cfd58ebdfe7ddea418732ee333903"}}})
+export const ECR_COMPLETE_FUNCTIONAL_CI_REPAIR=Object.freeze({"prNumber":1063,"branch":"architecture/ecr-complete-functional-20261112","sourceSha":"1f84fbba89dfc3e139c7d63afa69f19f7512182e","baseSha":"52a8489b4feea867bc6c91d7bd1eed5c63e0e9ff","markerPath":"apps/architecture-lab/test/ecr-functional-ci-repair.test.mjs","entries":{"apps/architecture-lab/ecr-complete-functional-source.mjs":{"sha":"2136efe9d2f5292ab3ae5e5ec2b94f8fdf97fc79","status":"added","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ARCH-BASE-002"},"apps/architecture-lab/market-calendar-source.mjs":{"sha":"c764168fa7d99e0320d1365cd813c01949f58623","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ARCH-BASE-002"},"apps/architecture-lab/test/ecr-complete-functional-source.test.mjs":{"sha":"1d31c0e94ee5eec230131ef8c8e33330e453b484","status":"added","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ARCH-BASE-002"},"apps/economic-calendar-runtime/complete-functional-source-integration.json":{"sha":"c5dffc09a77debddd10a069b2d9a4408d22255c7","status":"added","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ECR-BASE-001"},"apps/economic-calendar-runtime/migrations/004-notifications.sql":{"sha":"0fa29943213774125c09ead3fc17e48351a41ac3","status":"added","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ECR-BASE-001"},"apps/economic-calendar-runtime/migrations/005-expanded-results.sql":{"sha":"f82e77f832b8c65c2f403041509d43c323fb98b1","status":"added","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ECR-BASE-001"},"apps/economic-calendar-runtime/operations/complete-functional-owner-plan.json":{"sha":"730efd39075c8b29d3962b58729a4096b4e48594","status":"added","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ECR-BASE-001"},"apps/economic-calendar-runtime/operations/expanded-semantic-bootstrap.json":{"sha":"2ee1f04174f229b1d6d129aa179b88de8604e115","status":"added","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ECR-BASE-001"},"apps/economic-calendar-runtime/package-lock.json":{"sha":"93414434e29f02ad9601338f52c36b8097d6c038","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ECR-BASE-001"},"apps/economic-calendar-runtime/package.json":{"sha":"4a624714e84c91d73fd3818995723bf8ec60032f","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ECR-BASE-001"},"apps/economic-calendar-runtime/scripts/continuous.mjs":{"sha":"7c5441e89b606054e1c103c5aa3adf42188235db","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ECR-BASE-001"},"apps/economic-calendar-runtime/scripts/migrate.mjs":{"sha":"0d5d8f4d2519143c83a8fb650edca8d99d1a3e1d","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ECR-BASE-001"},"apps/economic-calendar-runtime/src/continuous.mjs":{"sha":"a34fcf8b48ef7a9c01384fcc8bd97bf836015491","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ECR-BASE-001"},"apps/economic-calendar-runtime/src/notification-settings.mjs":{"sha":"36d3c75fb6cc1eea6018a0904b71d672ef6ad7e6","status":"added","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ECR-BASE-001"},"apps/economic-calendar-runtime/src/repository.mjs":{"sha":"359b7fe043ad52082007c7496243f884c5ad3f00","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ECR-BASE-001"},"apps/economic-calendar-runtime/src/result-links.mjs":{"sha":"52127a5876a41b7e311e0cf1cdc3744e7086c599","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ECR-BASE-001"},"apps/economic-calendar-runtime/src/result-scope.mjs":{"sha":"929eec0fed4a0b745171d4e956f84cd50f94d560","status":"added","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ECR-BASE-001"},"apps/economic-calendar-runtime/src/results.mjs":{"sha":"0aacc0992c6c33903a3f342d1f35ce3ca13e93a8","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ECR-BASE-001"},"apps/economic-calendar-runtime/src/server.mjs":{"sha":"890c7d6663809885fc1c77e1aedcc27a2735ee25","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ECR-BASE-001"},"apps/economic-calendar-runtime/src/source-service.mjs":{"sha":"4328bc18c9b2859a11f010027a11977ed138731b","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ECR-BASE-001"},"apps/economic-calendar-runtime/test/expanded-results.test.mjs":{"sha":"31d5542649789ab60e6c4278098087430634f241","status":"added","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ECR-BASE-001"},"apps/economic-calendar-runtime/test/notification-storage.test.mjs":{"sha":"2e4a5cb872c4f411b79aedaba7e1c9c75e178469","status":"added","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ECR-BASE-001"},"apps/identity-runtime/src/calendar-email.ts":{"sha":"69304f52b88c552df6e6a06c39aa0a7dd22483b6","status":"added","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"IDENTITY-BASE-001"},"apps/identity-runtime/src/calendar-mailgun-webhook.ts":{"sha":"516ab9cf2402c9ed9606eefa852ae1431b3d7c35","status":"added","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"IDENTITY-BASE-001"},"apps/identity-runtime/src/http-handler.ts":{"sha":"98e1fb69c69c6aaba5398aa80907f2fdc5e532e3","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"IDENTITY-BASE-001"},"apps/identity-runtime/src/mailgun-delivery.ts":{"sha":"50ffe026e5e8b8abece8f247c662b3f93cfc3adc","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"IDENTITY-BASE-001"},"apps/identity-runtime/src/main.ts":{"sha":"77c5f2f5114ab487893fd44bb81508bd19f519db","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"IDENTITY-BASE-001"},"apps/identity-runtime/src/node-server.ts":{"sha":"e1e7e36dc4540cc5050fe724042ce0dbadfd0e28","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"IDENTITY-BASE-001"},"apps/identity-runtime/test/calendar-authority-postgres.test.mjs":{"sha":"254bd0bf5c6799ee47bdaac8205e3ccb59288211","status":"added","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"IDENTITY-BASE-001"},"apps/identity-runtime/test/calendar-email.test.mjs":{"sha":"e58584f7add171dfbd69c3ad2ad2793e30250e77","status":"added","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"IDENTITY-BASE-001"},"apps/identity-runtime/test/calendar-mailgun-webhook.test.mjs":{"sha":"c9192365c900c381aea2c378133361ae2b9641f4","status":"added","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"IDENTITY-BASE-001"},"apps/newsfeed-runtime/package-lock.json":{"sha":"421a98321899a580efa49ef64f8d9b8766267988","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"NEWSFEED-BASE-001"},"apps/platform-source-hub/migrations/011-expanded-ecr-results.sql":{"sha":"601acea1b2e34cd854adb3ead43edce149dfcbd4","status":"added","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"SOURCE-HUB-BASE-001"},"apps/platform-source-hub/migrations/012-calendar-transport-continuity.sql":{"sha":"64105cd434163f0fc03ffbfb2c24f17f28624277","status":"added","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"SOURCE-HUB-BASE-001"},"apps/platform-source-hub/operations/replace-ecr-calendar-transport.sql":{"sha":"5507fd925085454ced622fabdb11089cfa080631","status":"added","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"SOURCE-HUB-BASE-001"},"apps/platform-source-hub/package-lock.json":{"sha":"2aa8e1d96bfad00550bfe383550b27618f4e4477","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"SOURCE-HUB-BASE-001"},"apps/platform-source-hub/scripts/migrate.mjs":{"sha":"a890f358fa39d7fab3098ab7b604e430a9eb30ef","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"SOURCE-HUB-BASE-001"},"apps/platform-source-hub/src/admission.mjs":{"sha":"b8fcdb2e0965000389941fee6b2b1ef531ca1793","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"SOURCE-HUB-BASE-001"},"apps/platform-source-hub/src/capabilities.mjs":{"sha":"0fe22e4322937991581ce6f762cbbaa4c387bb6f","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"SOURCE-HUB-BASE-001"},"apps/platform-source-hub/src/config.mjs":{"sha":"a85fa3c852bf66fb1450d84c4d57d67af0c1525c","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"SOURCE-HUB-BASE-001"},"apps/platform-source-hub/src/providers/eia-schedules.mjs":{"sha":"1f979bcd2bdf44360476652b364da385dbdaa17c","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"SOURCE-HUB-BASE-001"},"apps/platform-source-hub/src/repository.mjs":{"sha":"204175069756a8d38b5dcfb7833424560dbe6f0c","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"SOURCE-HUB-BASE-001"},"apps/platform-source-hub/test/calendar-transport-continuity.test.mjs":{"sha":"9e29ca9c5de10aa034815c7766701abea0e9f804","status":"added","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"SOURCE-HUB-BASE-001"},"apps/platform-source-hub/test/ci-routing.test.mjs":{"sha":"363d3d28c4bc330589c6d250ea9a4f6ef137519c","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"SOURCE-HUB-BASE-001"},"apps/platform-source-hub/test/expanded-eia-calendar.test.mjs":{"sha":"61f5be1c91a51d4d0c3043b874fb132888dcb342","status":"added","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"SOURCE-HUB-BASE-001"},"apps/platform-source-hub/test/historical-recurring-routing.test.mjs":{"sha":"bb670410523b35072ce8596daa3e6b14ef4d11f6","status":"added","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"SOURCE-HUB-BASE-001"},"packages/economic-calendar-contracts/index.mjs":{"sha":"791e8360cd438481a6cf0056d4cd404f82a7d811","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ECR-BASE-002"},"packages/economic-calendar-contracts/notifications.d.mts":{"sha":"caf3de86e2b559b545ddb8d985839a8a4d6f6e98","status":"added","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ECR-BASE-002"},"packages/economic-calendar-contracts/notifications.mjs":{"sha":"a91351ba7e3d093a2c880c6525e00d0ee0b965b2","status":"added","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ECR-BASE-002"},"packages/economic-calendar-contracts/package.json":{"sha":"9a68460982f4e9e49cb2c639a5e8a79e041ead53","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ECR-BASE-002"},"packages/platform-contracts/current-e1-authority/migrations/015-calendar-delivery.sql":{"sha":"54c1403c4402408a0399e3ec0fd5140d332d1c76","status":"added","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ARCH-BASE-001"},"packages/platform-contracts/test/recurring-consent-transport-source.mjs":{"sha":"6bebcb9cfb56b7264fac2c20a2cedbfc8fb8fe82","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ARCH-BASE-001"},"packages/platform-source-hub-contracts/commodities-v1.d.mts":{"sha":"fc9737c453b47b2ea57f197fc963d8c0bb6a5701","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"SOURCE-HUB-BASE-002"},"packages/platform-source-hub-contracts/commodities-v1.mjs":{"sha":"10f8e944a076b63ffa40dbff7f336c4c9a3acf07","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"SOURCE-HUB-BASE-002"},"packages/platform-source-hub-contracts/index.d.ts":{"sha":"7eea21de54a9ba6acfcb6b518ba6ccabe7163db1","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"SOURCE-HUB-BASE-002"},"packages/platform-source-hub-contracts/index.mjs":{"sha":"ad75c498ea14ca7e71c97f1b9c96bb0d28763f17","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"SOURCE-HUB-BASE-002"},"packages/platform-source-hub-contracts/package.json":{"sha":"7c0c89573d77a86e32f851f283ac94605d56ed54","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"SOURCE-HUB-BASE-002"},"scripts/governance/platform-source-hub-foundation.test.mjs":{"status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Governance Source Layer","surfaceId":"SG2-BASE-020","sha":"c743a01d67f3b5536ac683439ea6a9576838eea3"},"apps/sg-runtime/components/procurement-insights/calendar-email-settings.tsx":{"sha":"8b35768fc507a7a0ec914e96b00ac14f4396b9e6","status":"added","mode":"100644","projectKey":"SG2","owner":"SG Runtime","surfaceId":"SG2-BASE-001"},"apps/sg-runtime/components/procurement-insights/market-calendar.tsx":{"sha":"35b862e97b4e0d55d7331e0860c5d26e7ba1b02a","status":"modified","mode":"100644","projectKey":"SG2","owner":"SG Runtime","surfaceId":"SG2-BASE-001"},"apps/sg-runtime/lib/market-calendar/client.ts":{"sha":"8f69b91b2a74ce4b272ce5e8da1b9d0fa8f91d1f","status":"modified","mode":"100644","projectKey":"SG2","owner":"SG Runtime","surfaceId":"SG2-BASE-001"},"apps/sg-runtime/lib/market-calendar/runtime.ts":{"sha":"66f905b14e590faeb665e111aad88da0a228eff3","status":"modified","mode":"100644","projectKey":"SG2","owner":"SG Runtime","surfaceId":"SG2-BASE-001"},"apps/sg-runtime/market-calendar-notifications-integration.json":{"sha":"c1db738ee35a06b5fa71ff48f491a40818fd5cfe","status":"added","mode":"100644","projectKey":"SG2","owner":"SG Runtime","surfaceId":"SG2-BASE-001"},"apps/sg-runtime/package-lock.json":{"sha":"dd287b6a4181dbd84ac6144fd9000a35627d77ed","status":"modified","mode":"100644","projectKey":"SG2","owner":"SG Runtime","surfaceId":"SG2-BASE-001"},"apps/sg-runtime/tests/market-calendar-notifications.test.tsx":{"sha":"feaffbbd7fd1f41ae3abca3f782bae1b31fd5d52","status":"added","mode":"100644","projectKey":"SG2","owner":"SG Runtime","surfaceId":"SG2-BASE-001"},"apps/sg-runtime/tests/procurement-insights-live-acceptance-source.mjs":{"sha":"dd0d384946b767b27dca5b77ded8ba38c5831483","status":"modified","mode":"100644","projectKey":"SG2","owner":"SG Runtime","surfaceId":"SG2-BASE-001"},"apps/sg-runtime/tests/calendar-pi-source-compatibility.mjs":{"sha":"ae489a7207f19449c8e576ac5df5cd82ac27955e","status":"added","mode":"100644","projectKey":"SG2","owner":"SG Runtime","surfaceId":"SG2-BASE-001"},"apps/sg-runtime/tests/calendar-pi-source-compatibility.test.mjs":{"sha":"f2d258bcf0f3610c3f6d9c21e24d62ed61ae33ac","status":"added","mode":"100644","projectKey":"SG2","owner":"SG Runtime","surfaceId":"SG2-BASE-001"},"apps/architecture-lab/private-recurring-source.mjs":{"sha":"54ee19110f2af0974ca33622eddbf2209584f541","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ARCH-BASE-002"},"apps/platform-source-hub/scripts/ci-routing.mjs":{"sha":"7aa74eb7533e3217f539466f74d2310d64e985ea","status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"SOURCE-HUB-BASE-001"},"apps/architecture-lab/test/ecr-functional-ci-repair.test.mjs":{"sha":"ac9cb7f216e8ec20e7d58733d83b9efa22ae810f","status":"added","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ARCH-BASE-002"},"apps/sg-runtime/tests/assistant-notifications-integrity.mjs":{"sha":"1c497b42131881beab967fb8ac7d09543f837574","status":"modified","mode":"100644","projectKey":"SG2","owner":"SG Runtime","surfaceId":"SG2-BASE-001"},"apps/architecture-lab/test/manifest-successor-continuity.test.mjs":{"status":"modified","mode":"100644","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ARCH-BASE-002","sha":"baa92e1b9de796a9f34098f7640f586146aa753e"},"apps/sg-runtime/tests/procurement-insights-editorial-integrity.test.mjs":{"sha":"cc56c10ee82d82ae2bc9fb05ed56e1e564f52ae5","status":"modified","mode":"100644","projectKey":"SG2","owner":"SG Runtime","surfaceId":"SG2-BASE-001"}},"previous":{"apps/architecture-lab/private-recurring-source.mjs":{"sha":"52a8489b4feea867bc6c91d7bd1eed5c63e0e9ff","blob":"84083d9df1ae6f7a3aa979ea553bd9932c6028e4"},"apps/platform-source-hub/scripts/ci-routing.mjs":{"sha":"52a8489b4feea867bc6c91d7bd1eed5c63e0e9ff","blob":"173603de7daec55dd1d83423de47b55c5e1fb90b"},"apps/architecture-lab/test/ecr-functional-ci-repair.test.mjs":{"absent":true},"apps/architecture-lab/ecr-complete-functional-source.mjs":{"sha":"896ac56ff3e1aa4918cae75ef17b1347811bd875","blob":"29a34afa7b2a3cf8ca615ae00049661b7454ea5d"},"apps/sg-runtime/tests/calendar-pi-source-compatibility.mjs":{"sha":"f9307b4423861230747d25a50e81bfefd540a739","blob":"b1bb1efb973e73572f44d8fa291771c5156693c0"},"apps/sg-runtime/tests/assistant-notifications-integrity.mjs":{"sha":"59204603e6f41c97e0d27c36ffcc94ca6186d88e","blob":"02ef9e12a2a670bf899df87d2468d0610bb0261f"},"apps/architecture-lab/market-calendar-source.mjs":{"sha":"896ac56ff3e1aa4918cae75ef17b1347811bd875","blob":"3340af300e8868ff4226586128794450d64c2cca"},"apps/architecture-lab/test/manifest-successor-continuity.test.mjs":{"sha":"d7327f5fc7c733a12e5132112b05705f83159dbf","blob":"4eff37c11e5cfd58ebdfe7ddea418732ee333903"},"apps/sg-runtime/tests/procurement-insights-editorial-integrity.test.mjs":{"sha":"59204603e6f41c97e0d27c36ffcc94ca6186d88e","blob":"a4590aca205dab209ad6d89d6c320d266d150adb"}}})
 const completeFunctionalReviews=[ECR_COMPLETE_FUNCTIONAL_REVIEW,ECR_COMPLETE_FUNCTIONAL_CONSUMER_REVIEW,ECR_COMPLETE_FUNCTIONAL_PI_REVIEW,ECR_COMPLETE_FUNCTIONAL_CI_REPAIR]
 const completeFunctionalMatches=(files,r)=>Array.isArray(files)&&files.length===Object.keys(r.entries).length&&new Set(files.map(f=>f?.filename)).size===files.length&&files.every(f=>{const e=r.entries[f?.filename];return e&&e.sha===f.sha&&e.status===f.status&&!Object.hasOwn(f,'previous_filename')})
 export function assertCompleteFunctionalReviewEntry(file,entry,review=ECR_COMPLETE_FUNCTIONAL_REVIEW){const e=review.entries[file?.filename];if(!e||e.sha!==file.sha||entry!==e.mode+' blob '+file.sha+'\t'+file.filename+'\0')fail('ECR_COMPLETE_FUNCTIONAL_FILE_MODE_REJECTED')}
@@ -6920,6 +7208,7 @@ export function assertArchitectureFiles(pr, files, repositoryRoot = controlRoot(
 
 export function selectCandidate(context, pr, expectedSha, {files, repositoryRoot = controlRoot()} = {}) {
   const family = candidateFamily(context, pr, expectedSha)
+  if(finderMonitorReviewTarget(pr)){if(family!=='SG2')fail('FINDER_MONITOR_SOURCE_IDENTITY_REJECTED');assertFinderMonitorSourceIdentity(pr,expectedSha,files,context.controlSha)}
   if(pr&&(pr.number===MANIFEST_SUCCESSOR_1102_REVIEW.prNumber
     ||pr.head?.ref===MANIFEST_SUCCESSOR_1102_REVIEW.branch
     ||exactManifestSuccessor1102Files(files))){
@@ -7016,7 +7305,8 @@ export async function resolveCandidateAdmission(c, number, expectedSha, request 
     ? trustedAdmissionById(process.env.SOURCE_ADMISSION_ID,repositoryRoot)
     : findTrustedAdmission(expectedSha,repositoryRoot)
   if (sourceRecord && !pr) fail('SOURCE_ADMISSION_PR_REQUIRED')
-  if (family !== 'ARCHITECTURE' && !sourceRecord && !qualityStage1Branch(pr?.head?.ref)) return {sha: selectCandidate(c, pr, expectedSha)}
+  if(finderMonitorReviewTarget(pr)&&sourceRecord)fail('FINDER_MONITOR_PROTECTED_REVIEW_REQUIRED')
+  if (family !== 'ARCHITECTURE' && !sourceRecord && !qualityStage1Branch(pr?.head?.ref) && !finderMonitorReviewTarget(pr)) return {sha: selectCandidate(c, pr, expectedSha)}
   if (!Number.isInteger(pr.changed_files) || pr.changed_files < 1 || pr.changed_files > 300) fail('ARCHITECTURE_FILE_LIST_REQUIRED')
   const files = []
   for (let page = 1; page <= 4; page++) {
@@ -7030,6 +7320,10 @@ export async function resolveCandidateAdmission(c, number, expectedSha, request 
   // read, then bind the complete list to the actual pinned Git tree below.
   const current = (await request(endpoint)).data
   if (candidateFamily(c, current, expectedSha) !== family || current.base.sha !== pr.base.sha || current.changed_files !== pr.changed_files) fail('CANDIDATE_CHANGED_DURING_RESOLUTION')
+  if(finderMonitorReviewTarget(current)){
+    const selected=selectCandidate(c,current,expectedSha,{files,repositoryRoot})
+    return {sha:selected,admission:{kind:'FINDER_MONITOR_SOURCE',reviewId:'SG2-FINDER-MONITOR-PCI-BINDING-20261117',actor:current.user.login,baseSha:c.controlSha,files:files.map(({filename,status,sha})=>({filename,status,sha}))}}
+  }
   if (sourceRecord) {
     if (current.base.sha !== c.controlSha) fail('SOURCE_AUTHORITY_ADVANCED')
     assertSourceAdmission(sourceRecord,{repository:REPOSITORY,actor:current.user.login,candidateSha:expectedSha,currentMainSha:c.controlSha,files},repositoryRoot)
@@ -7046,6 +7340,7 @@ export async function resolveCandidateAdmission(c, number, expectedSha, request 
 }
 
 export function assertArchitectureCheckout(root, sha, admission, repositoryRoot = controlRoot()) {
+  if(admission?.kind==='FINDER_MONITOR_SOURCE')return assertFinderMonitorSourceCheckout(root,sha,admission)
   if(admission?.kind==='QUALITY_STAGE1_SG2')return assertQualityStage1Checkout(root,sha,admission)
   if (admission?.kind === 'TRUSTED_RECORD') {
     const record=trustedAdmissionById(admission.recordId,repositoryRoot)

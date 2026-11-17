@@ -10,9 +10,9 @@ const root=fileURLToPath(new URL('../../../',import.meta.url))
 const historical=(sha,p)=>execFileSync('git',['show',sha+':'+p],{cwd:root})
 const current=p=>fs.readFileSync(path.join(root,p))
 const hash=b=>createHash('sha256').update(b).digest('hex')
-test('editorial package continuation verifies version-only metadata and all28 immutable receipts',()=>{
+test('editorial package continuation verifies version-only metadata and all29 immutable receipts',()=>{
  const v=procurementInsightsEditorialPackagePredecessor(current,historical)
- assert.equal(v.manifest.packageVersionAfter,'1.2.1');assert.equal(Object.keys(v.manifest.preservedReceipts).length,28)
+ assert.equal(v.manifest.packageVersionAfter,'1.2.1');assert.equal(Object.keys(v.manifest.preservedReceipts).length,29)
  for(const p of EDITORIAL_PACKAGE_PATHS.filter(p=>!p.includes('editorial-package-integrity'))){
   assert.deepEqual(v.previousBytes(p),historical(EDITORIAL_PACKAGE_BASE,p));const mutable=v.previousBytes(p);mutable.fill(0);assert.deepEqual(v.previousBytes(p),historical(EDITORIAL_PACKAGE_BASE,p))
  }
