@@ -311,7 +311,7 @@
     "approvedPathCount": 23
   },
   "proposedSourceCi24Amendment": {
-    "status": "PROPOSED_OWNER_DECISION_PENDING",
+    "status": "OWNER_APPROVED_LIMITED_AMENDMENT_NOT_YET_MERGED",
     "previousApprovedPathCount": 23,
     "proposedPathCount": 24,
     "additionalPath": "apps/sg-runtime/tests/procurement-insights-editorial-integrity.mjs",
@@ -343,6 +343,11 @@
     "paidRepairsEnabled": false,
     "promotionEnabled": false,
     "pilotStarted": false,
-    "acceptedParallelPredecessorSha": "936eaa61087516028564c6aaad2c46912b4729f7"
+    "acceptedParallelPredecessorSha": "936eaa61087516028564c6aaad2c46912b4729f7",
+    "approvedPathCount": 24,
+    "approvalDate": "2026-11-17",
+    "approvalResponse": "Zatwierdzam ograniczone uzupełnienie CI24",
+    "proposalPr": 1159,
+    "hostConversationId": "01a1e7fb-2253-7f91-9335-270094d39784"
   }
 }
