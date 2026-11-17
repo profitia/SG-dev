@@ -3463,3 +3463,76 @@ test('protected manifest successor review is exact and independent of live GitHu
   assert(['added','modified'].includes(e.status))
  }
 })
+
+
+test('exact PR1102 source validation reaches the real candidate guard without claiming historical product acceptance',async()=>{
+ const c=await import('./controlled-package-ci.mjs'),r=c.MANIFEST_SUCCESSOR_1102_REVIEW;
+ const directory=fs.mkdtempSync(path.join(os.tmpdir(),'pi-manifest-proof-')),root=path.join(directory,'candidate');
+ const files=Object.entries(r.entries).map(([filename,e])=>({filename,sha:e.sha,status:e.status}));
+ const controlSha=execFileSync('git',['rev-parse','HEAD'],{cwd:authorityRoot,encoding:'utf8'}).trim();
+ const state={sha:r.sourceSha,controlSha,runId:'12345',admission:{kind:'ARCHITECTURE',baseSha:controlSha,files}};
+ try{
+  execFileSync('git',['worktree','add','--detach',root,r.sourceSha],{cwd:authorityRoot,stdio:'pipe'});
+  const metadata=c.assertManifestSuccessorSourceValidation(root,state,authorityRoot);
+  assert.deepEqual(metadata,{protectedSourceReviewId:c.MANIFEST_SUCCESSOR_SOURCE_REVIEW_ID,
+   protectedSourceReviewDigest:c.manifestSuccessorSourceReviewDigest(),originalSourceSha:r.sourceSha});
+  fs.writeFileSync(path.join(directory,'controlled-package-resolution.json'),JSON.stringify(state));
+  const env={...process.env,GH_TOKEN:'',GITHUB_TOKEN:'',NPM_TOKEN:'',NODE_AUTH_TOKEN:'',SG2_PACKAGES_READ_TOKEN:'',
+   GITHUB_REPOSITORY:'profitia/SG-dev',GITHUB_REF:'refs/heads/main',
+   GITHUB_WORKFLOW_REF:'profitia/SG-dev/.github/workflows/platform-contracts-ci.yml@refs/heads/main',
+   GITHUB_EVENT_NAME:'workflow_dispatch',GITHUB_ACTOR:'profitia',GITHUB_TRIGGERING_ACTOR:'profitia',
+   GITHUB_SHA:controlSha,GITHUB_RUN_ID:state.runId,RUNNER_TEMP:directory,CANDIDATE_ROOT:root};
+  // This exact CLI failed BSDC_MANIFEST_HELPER_REJECTED in run44088013484.
+  // It reads pinned candidate data only; no candidate JS or credentials run.
+  const result=spawnSync(process.execPath,['scripts/governance/controlled-package-ci.mjs','check-candidate'],
+   {cwd:authorityRoot,env,encoding:'utf8'});
+  assert.equal(result.status,0,result.stderr);
+  for(const changed of [{...state,sha:other},{...state,admission:{...state.admission,kind:'TRUSTED_RECORD'}},
+   {...state,admission:{...state.admission,files:files.slice(1)}},
+   {...state,admission:{...state.admission,files:files.map((f,i)=>i?f:{...f,sha:other})}}])
+   assert.throws(()=>c.assertManifestSuccessorSourceValidation(root,changed,authorityRoot));
+  const target=path.join(root,'apps/architecture-lab/market-calendar-source.mjs'),original=fs.readFileSync(target);
+  fs.appendFileSync(target,'\nUNREVIEWED');
+  assert.throws(()=>c.assertManifestSuccessorSourceValidation(root,state,authorityRoot));
+  fs.writeFileSync(target,original);
+  assert.deepEqual(c.assertManifestSuccessorSourceValidation(root,state,authorityRoot),metadata);
+ }finally{
+  execFileSync('git',['worktree','remove','--force',root],{cwd:authorityRoot,stdio:'pipe'});
+  fs.rmSync(directory,{recursive:true,force:true});
+ }
+});
+
+test('protected source proof binds the accepted review and real execution evidence, never authority-main or legacy contract claims',async()=>{
+ const c=await import('./controlled-package-ci.mjs'),r=c.MANIFEST_SUCCESSOR_1102_REVIEW;
+ const run={id:12345,head_sha:'1'.repeat(40),head_branch:'main',event:'workflow_dispatch',
+  workflow_id:6789,repository:{full_name:'profitia/SG-dev'},actor:{login:'profitia'},conclusion:'success'};
+ const proof={schemaVersion:'2.0',repository:'profitia/SG-dev',workflow:'.github/workflows/platform-contracts-ci.yml',
+  targetEnvironment:'development',scope:'EXACT_PROTECTED_SOURCE_VALIDATION',candidateSha:r.sourceSha,
+  controlSha:run.head_sha,runId:run.id,controlPolicyDigest:'c'.repeat(64),
+  protectedSourceReviewId:c.MANIFEST_SUCCESSOR_SOURCE_REVIEW_ID,
+  protectedSourceReviewDigest:c.manifestSuccessorSourceReviewDigest(),originalSourceSha:r.sourceSha,
+  executionWorkspace:'ISOLATED_GIT_CHECKOUT',executionCheckoutSha:r.sourceSha,
+  sourceInputVerifiedBeforeExecution:true,sourceInputVerifiedAfterExecution:true,
+  install:'CLEAN_REGISTRY_IGNORE_SCRIPTS',credentialRemovedBeforeCandidateExecution:true,
+  privatePackageArtifactsPublished:false,tests:'PASS',typecheck:'PASS',build:'PASS',
+  productDeploymentPerformed:false,customerIdentityAdapterVerified:false};
+ const options={expectedControlDigest:proof.controlPolicyDigest};
+ assert.equal(c.assertProof(proof,run,r.sourceSha,run.workflow_id,options),proof);
+ assert.equal(proof.contract,undefined);
+ for(const patch of [
+  {protectedSourceReviewId:'UNREVIEWED'},{protectedSourceReviewDigest:'a'.repeat(64)},
+  {originalSourceSha:other},{candidateSha:other},{controlSha:other},{runId:54321},
+  {scope:'AUTHORITY_MAIN_VALIDATION'},{scope:'EXACT_SOURCE_VALIDATION'},
+  {targetEnvironment:'production'},{sourceAdmissionId:'candidate-owned'},
+  {sourceAdmissionDigest:'a'.repeat(64)},{controlPolicyDigest:'a'.repeat(64)},
+  {executionWorkspace:'SHARED'},{executionCheckoutSha:other},
+  {sourceInputVerifiedBeforeExecution:false},{sourceInputVerifiedAfterExecution:false},
+  {credentialRemovedBeforeCandidateExecution:false},{privatePackageArtifactsPublished:true},
+  {tests:'FAIL'},{typecheck:'FAIL'},{build:'FAIL'},
+  {productDeploymentPerformed:true},{customerIdentityAdapterVerified:true},
+ ])assert.throws(()=>c.assertProof({...proof,...patch},run,r.sourceSha,run.workflow_id,options),JSON.stringify(patch));
+ for(const patch of [{conclusion:'failure'},{head_branch:'candidate'},{head_sha:other},
+  {actor:{login:'attacker'}},{repository:{full_name:'attacker/fork'}},{event:'pull_request'}])
+  assert.throws(()=>c.assertProof(proof,{...run,...patch},r.sourceSha,run.workflow_id,options));
+ assert.throws(()=>c.assertProof(proof,run,other,run.workflow_id,options));
+});
