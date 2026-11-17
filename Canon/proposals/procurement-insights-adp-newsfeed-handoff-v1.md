@@ -1,6 +1,7 @@
 # ADP → Newsfeed: minimalne przekazanie zweryfikowanego dostawcy v1
 
-Status: **PROPOSED — DO DECYZJI WŁAŚCICIELA; NIEAKTYWNE**.
+Status: **OWNER_APPROVED — WŁĄCZONY PRZEZ §8 KANONU ADP; ODBIÓR LIVE NIEPOTWIERDZONY**.
+Decyzja właściciela SRM i SG2: 17 listopada 2026; zaakceptowany zakres `f0ca90181cffd6200eae33a221c68a1b001cb785` w PR #1156.
 Środowisko: SG2 Development. Zadanie: `ARCH-PI-ADP-NEWSFEED-CONTRACT-20261117`.
 
 ## Rezultat użytkownika
