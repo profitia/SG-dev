@@ -297,3 +297,30 @@ test('Native canonical QA purpose: ordinary SERVICE, enrolled controlled inputs,
   assert(audit>0,'SERVICE purpose decisions use the canonical metadata audit writer')
  }finally{await fixture.close()}
 })
+
+test('Controller workflow descriptor reads only the fixed qualification workflow and rejects substituted or inactive workflows',async()=>{
+ const {createQualityGitHub}=await import('../src/github.mjs')
+ for(const replacement of [null,{path:'.github/workflows/foreign.yml'},{state:'disabled_manually'},{id:0}]){
+  const calls=[],client=createQualityGitHub({token:'synthetic',fetchImpl:async(url,options)=>{
+   calls.push({url,method:options.method});return Response.json({id:123,path:'.github/workflows/assistant-quality-repair.yml',state:'active',...replacement})
+  }})
+  if(replacement)await assert.rejects(client.qualificationDescriptor(),{code:'GITHUB_WORKFLOW_BINDING_INVALID'})
+  else assert.deepEqual(await client.qualificationDescriptor(),{workflowId:'123',path:'.github/workflows/assistant-quality-repair.yml',state:'active'})
+  assert.deepEqual(calls,[{url:'https://api.github.com/repos/profitia/SG-dev/actions/workflows/assistant-quality-repair.yml',method:'GET'}])
+ }
+})
+
+
+test('Controller repository descriptor uses the actual canonical GitHub root endpoint without a trailing slash',async()=>{
+ const {createQualityGitHub}=await import('../src/github.mjs'),calls=[],headSha='b'.repeat(40)
+ const client=createQualityGitHub({token:'synthetic',fetchImpl:async(url,options)=>{
+  calls.push({url,method:options.method})
+  if(url==='https://api.github.com/repos/profitia/SG-dev')return Response.json({full_name:'profitia/SG-dev',permissions:{pull:true}})
+  if(url==='https://api.github.com/repos/profitia/SG-dev/git/ref/heads/main')return Response.json({object:{sha:headSha}})
+  return Response.json({message:'Not Found'},{status:404})
+ }})
+ assert.deepEqual(await client.descriptor(),{repository:'profitia/SG-dev',headSha,publisherEnabled:false,promotionEnabled:false})
+ assert.deepEqual(calls,[{url:'https://api.github.com/repos/profitia/SG-dev',method:'GET'},{url:'https://api.github.com/repos/profitia/SG-dev/git/ref/heads/main',method:'GET'}])
+ const foreign=createQualityGitHub({token:'synthetic',fetchImpl:async()=>Response.json({full_name:'profitia/foreign',permissions:{pull:true}})})
+ await assert.rejects(foreign.descriptor(),{code:'GITHUB_REPOSITORY_UNVERIFIED'})
+})

@@ -4,211 +4,58 @@
   "scope": "SOURCE_VALIDATION_ONLY",
   "records": [
     {
-      "id": "ARCHITECTURE:ARCH-ACG-M1M2-COMPLETION-20261117",
+      "id": "SRM:SRM-VERCLY-RESUME-FINAL-20261117",
       "status": "ACTIVE",
       "repository": "profitia/SG-dev",
       "actor": "profitia",
-      "taskId": "ARCH-ACG-M1M2-COMPLETION-20261117",
+      "taskId": "SRM-VERCLY-RESUME-TESTS-20261117",
       "targetEnvironment": "development",
       "scope": "SOURCE_VALIDATION_ONLY",
-      "approvalRef": "https://github.com/profitia/project-history-repository/blob/75d346ab2ef0f0c2fc193054c4ab818601de42cf/reports/2026/11/17/ARCHITECTURE/ARCH-ACG-M1M2-CI-ADMISSION-20261117/OWNER-DECISION-20261117.md",
-      "sourceSha": "97853df58a6a3822a50f64e0207fc0bbb1abbd92",
-      "baseSha": "56dcedb243d5d9568e3bd9cc3e13836f4e8b24bb",
-      "validFrom": "2026-11-17T14:39:02Z",
-      "validUntil": "2026-11-19T14:39:02Z",
+      "approvalRef": "owner-request:01a1e914-b834-7633-a1d8-d92fd43f0865:vercly-resumption-repair",
+      "sourceSha": "40b70045a377a0c8be8e257780d2a588529706ca",
+      "baseSha": "4508ed41b8d3300658e92a95110fb626e13d077c",
+      "validFrom": "2026-11-17T18:02:24.711Z",
+      "validUntil": "2026-11-24T23:59:59.000Z",
       "files": [
         {
-          "path": "apps/architecture-lab/assistant-reservation-source.json",
-          "blob": "8d7bcf8966f26f62eaa5d4499382a286fbc45ff5",
+          "path": "apps/sg-runtime/tests/assistant-notifications-integrity.mjs",
+          "blob": "0abf95c28a6f5bd9009f92d0716c6c1eeb653d69",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SG2",
+          "owner": "SG Runtime",
+          "surfaceId": "SG2-BASE-001"
+        },
+        {
+          "path": "apps/sg-runtime/tests/procurement-insights-editorial-integrity.test.mjs",
+          "blob": "8dfe935e2e678d71b16dadea31cd77515866a1bd",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SG2",
+          "owner": "SG Runtime",
+          "surfaceId": "SG2-BASE-001"
+        },
+        {
+          "path": "apps/srm/db/migrations/0019_kys_resume.sql",
+          "blob": "89b4561b0f44e3440dcdef9449145b56342fd2be",
           "mode": "100644",
           "status": "added",
-          "projectKey": "ARCHITECTURE",
-          "owner": "Architecture Platform",
-          "surfaceId": "ARCH-BASE-002"
+          "projectKey": "SRM",
+          "owner": "SRM Runtime",
+          "surfaceId": "SG2-BASE-016"
         },
         {
-          "path": "apps/architecture-lab/private-recurring-source.mjs",
-          "blob": "028efb927bf0f0ee7233a360157349cbcc1e2c7c",
-          "mode": "100644",
-          "status": "modified",
-          "projectKey": "ARCHITECTURE",
-          "owner": "Architecture Platform",
-          "surfaceId": "ARCH-BASE-002"
-        },
-        {
-          "path": "apps/architecture-lab/test/market-calendar-source.test.mjs",
-          "blob": "2838e60d52f755e21dba0f4b00903304cd242dc4",
-          "mode": "100644",
-          "status": "modified",
-          "projectKey": "ARCHITECTURE",
-          "owner": "Architecture Platform",
-          "surfaceId": "ARCH-BASE-002"
-        },
-        {
-          "path": "apps/architecture-lab/test/sdk-compatibility.test.mjs",
-          "blob": "bff15c73d68558a2035562a7b406c3ad16499871",
-          "mode": "100644",
-          "status": "modified",
-          "projectKey": "ARCHITECTURE",
-          "owner": "Architecture Platform",
-          "surfaceId": "ARCH-BASE-002"
-        },
-        {
-          "path": "apps/package-limits/migrations/006-assistant-reservation-diagnostics.sql",
-          "blob": "582d49c91be12663b3daf77061c64e2db0b1cf3b",
+          "path": "apps/srm/db/private-store/035-kys-resume.sql",
+          "blob": "9621d2498a753aee3407fa8f129c0b922d6159b6",
           "mode": "100644",
           "status": "added",
-          "projectKey": "ARCHITECTURE",
-          "owner": "Architecture Platform",
-          "surfaceId": "LIMITS-BASE-001"
-        },
-        {
-          "path": "apps/package-limits/test/database.test.mjs",
-          "blob": "24887cc4294c2a14d60a94159b97d125fe4be046",
-          "mode": "100644",
-          "status": "modified",
-          "projectKey": "ARCHITECTURE",
-          "owner": "Architecture Platform",
-          "surfaceId": "LIMITS-BASE-001"
-        },
-        {
-          "path": "apps/sg-runtime/lib/assistant/conversation.ts",
-          "blob": "a2cb781736ea7014450ea968a4cb4dd65066fd40",
-          "mode": "100644",
-          "status": "modified",
-          "projectKey": "SG2",
-          "owner": "SG Runtime",
-          "surfaceId": "SG2-BASE-001"
-        },
-        {
-          "path": "apps/sg-runtime/lib/assistant/model.ts",
-          "blob": "514d3df4b47c38cd8cafd776d366ba7310cd83ef",
-          "mode": "100644",
-          "status": "modified",
-          "projectKey": "SG2",
-          "owner": "SG Runtime",
-          "surfaceId": "SG2-BASE-001"
-        },
-        {
-          "path": "apps/sg-runtime/lib/assistant/runtime.ts",
-          "blob": "88cda9802aa0b14617720ed7b17db7b4164d5767",
-          "mode": "100644",
-          "status": "modified",
-          "projectKey": "SG2",
-          "owner": "SG Runtime",
-          "surfaceId": "SG2-BASE-001"
-        },
-        {
-          "path": "apps/sg-runtime/tests/assistant-conversation-handler.test.ts",
-          "blob": "93eda325b65dbf097e8a52e40bea7b05f6400b3a",
-          "mode": "100644",
-          "status": "modified",
-          "projectKey": "SG2",
-          "owner": "SG Runtime",
-          "surfaceId": "SG2-BASE-001"
-        },
-        {
-          "path": "apps/sg-runtime/tests/assistant-ecr-week-integrity.test.mjs",
-          "blob": "7905d1891ec77bc69e07763c5bfa22c45d65f58d",
-          "mode": "100644",
-          "status": "modified",
-          "projectKey": "SG2",
-          "owner": "SG Runtime",
-          "surfaceId": "SG2-BASE-001"
-        },
-        {
-          "path": "apps/sg-runtime/tests/assistant-model.test.ts",
-          "blob": "ee853da80969ab76bdc02b7901ad1e1bc7089674",
-          "mode": "100644",
-          "status": "modified",
-          "projectKey": "SG2",
-          "owner": "SG Runtime",
-          "surfaceId": "SG2-BASE-001"
-        },
-        {
-          "path": "apps/sg-runtime/tests/diagnostic-telemetry-adoption.test.mjs",
-          "blob": "4c47911446870bc8f036595ee901845b170fb6e5",
-          "mode": "100644",
-          "status": "modified",
-          "projectKey": "SG2",
-          "owner": "SG Runtime",
-          "surfaceId": "SG2-BASE-001"
-        },
-        {
-          "path": "apps/sg-runtime/tests/market-calendar-integrity.test.mjs",
-          "blob": "3ea7b69685ba6d72686f25b485fbd4d265e1e7df",
-          "mode": "100644",
-          "status": "modified",
-          "projectKey": "SG2",
-          "owner": "SG Runtime",
-          "surfaceId": "SG2-BASE-001"
-        },
-        {
-          "path": "apps/sg-runtime/tests/operation-context.test.mjs",
-          "blob": "df6a3de6003bcbf7891f1b64df0b3618a655acd3",
-          "mode": "100644",
-          "status": "modified",
-          "projectKey": "SG2",
-          "owner": "SG Runtime",
-          "surfaceId": "SG2-BASE-001"
-        },
-        {
-          "path": "apps/sg-runtime/tests/pci-smart-integrity.test.mjs",
-          "blob": "dc12a2b45eee9162189e32a136655c08b24ec698",
-          "mode": "100644",
-          "status": "modified",
-          "projectKey": "SG2",
-          "owner": "SG Runtime",
-          "surfaceId": "SG2-BASE-001"
-        },
-        {
-          "path": "apps/sg-runtime/tests/porr-demo-middleware.test.ts",
-          "blob": "1e8ca6daeb1556d0b42a43b5958d1547fb4a7191",
-          "mode": "100644",
-          "status": "modified",
-          "projectKey": "SG2",
-          "owner": "SG Runtime",
-          "surfaceId": "SG2-BASE-001"
-        },
-        {
-          "path": "apps/sg-runtime/tests/private-host.integration.test.mjs",
-          "blob": "62f0c6a25a25824e03abe30975adab521f11d6f3",
-          "mode": "100644",
-          "status": "modified",
-          "projectKey": "SG2",
-          "owner": "SG Runtime",
-          "surfaceId": "SG2-BASE-001"
-        },
-        {
-          "path": "apps/sg-runtime/tests/procurement-insights-completion.test.mjs",
-          "blob": "44bf99607822c22914a519533f10a4eda5ccdb38",
-          "mode": "100644",
-          "status": "modified",
-          "projectKey": "SG2",
-          "owner": "SG Runtime",
-          "surfaceId": "SG2-BASE-001"
-        },
-        {
-          "path": "apps/sg-runtime/tests/procurement-insights-live-acceptance-source.test.mjs",
-          "blob": "678db1a73f631c2060a549a5a22d3e1fec76bf3d",
-          "mode": "100644",
-          "status": "modified",
-          "projectKey": "SG2",
-          "owner": "SG Runtime",
-          "surfaceId": "SG2-BASE-001"
-        },
-        {
-          "path": "apps/sg-runtime/tests/xray-fresh-performance-adoption.test.mjs",
-          "blob": "ef9f9af804a6f832c20e1de7e2aa88f6f39068e5",
-          "mode": "100644",
-          "status": "modified",
-          "projectKey": "SG2",
-          "owner": "SG Runtime",
-          "surfaceId": "SG2-BASE-001"
+          "projectKey": "SRM",
+          "owner": "SRM Runtime",
+          "surfaceId": "SG2-BASE-016"
         },
         {
           "path": "apps/srm/scripts/diagnostic-telemetry-adoption.test.mjs",
-          "blob": "1fadc475cbc78cab4e9c0cd79c3b0c67eaea1994",
+          "blob": "c5c7a55463beafc84f1d61f634fe53140996598f",
           "mode": "100644",
           "status": "modified",
           "projectKey": "SRM",
@@ -216,8 +63,8 @@
           "surfaceId": "SG2-BASE-016"
         },
         {
-          "path": "apps/srm/scripts/native-execution-adoption.test.mjs",
-          "blob": "997a89829319d309a995b0e45687a32592fb5a30",
+          "path": "apps/srm/scripts/operation-context.integration.test.mjs",
+          "blob": "6ac8547dc9c06716c1dde8ae93907b43bf7bee25",
           "mode": "100644",
           "status": "modified",
           "projectKey": "SRM",
@@ -225,8 +72,8 @@
           "surfaceId": "SG2-BASE-016"
         },
         {
-          "path": "apps/srm/scripts/operation-context.test.mjs",
-          "blob": "bf88f2fc7ae073f58a52c4fc58e92398742e80c1",
+          "path": "apps/srm/scripts/private-sensitive.integration.test.mjs",
+          "blob": "1d6281020932285fe58cd287dec769befaf5a916",
           "mode": "100644",
           "status": "modified",
           "projectKey": "SRM",
@@ -234,8 +81,8 @@
           "surfaceId": "SG2-BASE-016"
         },
         {
-          "path": "apps/srm/scripts/private-host.integration.test.mjs",
-          "blob": "e66267247831533b54cef7366ed77da7d9daf173",
+          "path": "apps/srm/scripts/promotion.test.mjs",
+          "blob": "5fd1f794776d09bfaca33ceb1562b1fd9042197d",
           "mode": "100644",
           "status": "modified",
           "projectKey": "SRM",
@@ -243,121 +90,130 @@
           "surfaceId": "SG2-BASE-016"
         },
         {
-          "path": "apps/srm/scripts/request-quota-adoption.test.mjs",
-          "blob": "7c442fe12340ff5cd8cd7830085e4fabd07b715e",
-          "mode": "100644",
-          "status": "modified",
-          "projectKey": "SRM",
-          "owner": "SRM Runtime",
-          "surfaceId": "SG2-BASE-016"
-        },
-        {
-          "path": "apps/srm/scripts/supplier-location-admission.integration.test.mjs",
-          "blob": "4f417b8cd4bba33773f38865e910014b7adc054d",
-          "mode": "100644",
-          "status": "modified",
-          "projectKey": "SRM",
-          "owner": "SRM Runtime",
-          "surfaceId": "SG2-BASE-016"
-        },
-        {
-          "path": "apps/srm/scripts/xray-performance-adoption.test.mjs",
-          "blob": "c6e81048b4292b048c77dffdccbe49dd7ceedf9e",
-          "mode": "100644",
-          "status": "modified",
-          "projectKey": "SRM",
-          "owner": "SRM Runtime",
-          "surfaceId": "SG2-BASE-016"
-        },
-        {
-          "path": "apps/srm/src/server/root-atomic-claim-adoption.test.ts",
-          "blob": "99bf0c3bb83e731f37d6c36bee3d430cee094931",
-          "mode": "100644",
-          "status": "modified",
-          "projectKey": "SRM",
-          "owner": "SRM Runtime",
-          "surfaceId": "SG2-BASE-016"
-        },
-        {
-          "path": "packages/platform-contracts/current-fresh-report/test/current-fresh-report.test.mjs",
-          "blob": "ee338b06485c73dc917f6c1c5498d57527f6bda8",
-          "mode": "100644",
-          "status": "modified",
-          "projectKey": "ARCHITECTURE",
-          "owner": "Architecture Platform",
-          "surfaceId": "ARCH-BASE-001"
-        },
-        {
-          "path": "packages/platform-contracts/readonly-miss-report/test/readonly-miss-report.test.mjs",
-          "blob": "5f1d87555bf7d699000d0ecf1185a3005e00e6f1",
-          "mode": "100644",
-          "status": "modified",
-          "projectKey": "ARCHITECTURE",
-          "owner": "Architecture Platform",
-          "surfaceId": "ARCH-BASE-001"
-        },
-        {
-          "path": "packages/platform-contracts/src/assistant-usage.d.mts",
-          "blob": "892420ff3e7ff709bf3696d06272cea889427378",
-          "mode": "100644",
-          "status": "modified",
-          "projectKey": "ARCHITECTURE",
-          "owner": "Architecture Platform",
-          "surfaceId": "ARCH-BASE-001"
-        },
-        {
-          "path": "packages/platform-contracts/src/assistant-usage.mjs",
-          "blob": "f44757eac744e0e9d83cb90c932879594f98dfea",
-          "mode": "100644",
-          "status": "modified",
-          "projectKey": "ARCHITECTURE",
-          "owner": "Architecture Platform",
-          "surfaceId": "ARCH-BASE-001"
-        },
-        {
-          "path": "packages/platform-contracts/test/assistant-reservation-source.mjs",
-          "blob": "e4a736a0d2dcc15f7ec5a471db599e4680ee2716",
+          "path": "apps/srm/scripts/source-dependency-test-fixtures.mjs",
+          "blob": "fe532b6fc1b5b49f663e5bc97e37726ceccd895d",
           "mode": "100644",
           "status": "added",
-          "projectKey": "ARCHITECTURE",
-          "owner": "Architecture Platform",
-          "surfaceId": "ARCH-BASE-001"
+          "projectKey": "SRM",
+          "owner": "SRM Runtime",
+          "surfaceId": "SG2-BASE-016"
         },
         {
-          "path": "packages/platform-contracts/test/assistant-reservation-source.test.mjs",
-          "blob": "12f14bb522501e4b0dffa33f2e20dff6aa04d849",
+          "path": "apps/srm/scripts/source-dependency-test-fixtures.test.mjs",
+          "blob": "24b22e43ec6723fee00598f45dd8b2329573c318",
           "mode": "100644",
           "status": "added",
-          "projectKey": "ARCHITECTURE",
-          "owner": "Architecture Platform",
-          "surfaceId": "ARCH-BASE-001"
+          "projectKey": "SRM",
+          "owner": "SRM Runtime",
+          "surfaceId": "SG2-BASE-016"
         },
         {
-          "path": "packages/platform-contracts/test/assistant-usage.test.mjs",
-          "blob": "aa3c83dded41ed761120f73fb86da3d8fdb22e47",
+          "path": "apps/srm/scripts/staging-rollback.test.mjs",
+          "blob": "6648da74680e5e0d5c7b8fbd8a550755e7f84dc2",
           "mode": "100644",
           "status": "modified",
-          "projectKey": "ARCHITECTURE",
-          "owner": "Architecture Platform",
-          "surfaceId": "ARCH-BASE-001"
+          "projectKey": "SRM",
+          "owner": "SRM Runtime",
+          "surfaceId": "SG2-BASE-016"
         },
         {
-          "path": "packages/platform-contracts/test/private-operation-host.test.mjs",
-          "blob": "1a99d4e04f37ee7c1ae883faa3f332c7d3202879",
+          "path": "apps/srm/scripts/vercly-kys-reconcile.ts",
+          "blob": "6d68586ed9d79a2988835149496279bbb05641ff",
           "mode": "100644",
-          "status": "modified",
-          "projectKey": "ARCHITECTURE",
-          "owner": "Architecture Platform",
-          "surfaceId": "ARCH-BASE-001"
+          "status": "added",
+          "projectKey": "SRM",
+          "owner": "SRM Runtime",
+          "surfaceId": "SG2-BASE-016"
         },
         {
-          "path": "packages/platform-contracts/test/recurring-consent-transport.test.mjs",
-          "blob": "2772fa919985b6149f3c0d77f79a477f1b3191ae",
+          "path": "apps/srm/src/server/company-source-policy.test.ts",
+          "blob": "2daf58927053c1eec25c3532b9e31bb0ad70a3f2",
           "mode": "100644",
           "status": "modified",
-          "projectKey": "ARCHITECTURE",
-          "owner": "Architecture Platform",
-          "surfaceId": "ARCH-BASE-001"
+          "projectKey": "SRM",
+          "owner": "SRM Runtime",
+          "surfaceId": "SG2-BASE-016"
+        },
+        {
+          "path": "apps/srm/src/server/kys-cache.test.ts",
+          "blob": "adcfdefb8764c788523e2dcfc6567c5f83540f0d",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SRM",
+          "owner": "SRM Runtime",
+          "surfaceId": "SG2-BASE-016"
+        },
+        {
+          "path": "apps/srm/src/server/kys-cache.ts",
+          "blob": "e51583928afb5b4827e82ed8219485308fc508be",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SRM",
+          "owner": "SRM Runtime",
+          "surfaceId": "SG2-BASE-016"
+        },
+        {
+          "path": "apps/srm/src/server/kys-orchestration.test.ts",
+          "blob": "479d0dfdf82ebcd3308b0f5a8007710ea0c52ed9",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SRM",
+          "owner": "SRM Runtime",
+          "surfaceId": "SG2-BASE-016"
+        },
+        {
+          "path": "apps/srm/src/server/provider-source-transport.ts",
+          "blob": "30ba1f294cae119b2d60af2af614149b98054878",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SRM",
+          "owner": "SRM Runtime",
+          "surfaceId": "SG2-BASE-016"
+        },
+        {
+          "path": "apps/srm/src/server/supplier-native-sensitive-store.ts",
+          "blob": "739cf157f8849581cd108556f4ce8b6efd9fcc5c",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SRM",
+          "owner": "SRM Runtime",
+          "surfaceId": "SG2-BASE-016"
+        },
+        {
+          "path": "apps/srm/src/server/supplier-native-sensitive.ts",
+          "blob": "c866e3e93cac27b71a81667f671fd97e07d055f4",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SRM",
+          "owner": "SRM Runtime",
+          "surfaceId": "SG2-BASE-016"
+        },
+        {
+          "path": "apps/srm/src/server/vercly-kys.test.ts",
+          "blob": "d2a8c33c014ffdbe52446b287a514036681f11b9",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SRM",
+          "owner": "SRM Runtime",
+          "surfaceId": "SG2-BASE-016"
+        },
+        {
+          "path": "apps/srm/src/server/vercly-kys.ts",
+          "blob": "a48c70e1a1378352b52d81b75fa07908a2227bb8",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SRM",
+          "owner": "SRM Runtime",
+          "surfaceId": "SG2-BASE-016"
+        },
+        {
+          "path": "apps/srm/src/server/xray-lookup.ts",
+          "blob": "3f1f2beb2e492e358de11d0ca43e0d39d78e5b65",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SRM",
+          "owner": "SRM Runtime",
+          "surfaceId": "SG2-BASE-016"
         }
       ]
     },
@@ -978,6 +834,364 @@
         {
           "path": "packages/platform-contracts/test/current-work-audit-index.test.mjs",
           "blob": "d6c07ad4fca2bc2908d13bc9b10062e5b73e864a",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "ARCHITECTURE",
+          "owner": "Architecture Platform",
+          "surfaceId": "ARCH-BASE-001"
+        }
+      ]
+    },
+    {
+      "id": "ARCHITECTURE:ARCH-ACG-M1M2-COMPLETION-20261117",
+      "status": "ACTIVE",
+      "repository": "profitia/SG-dev",
+      "actor": "profitia",
+      "taskId": "ARCH-ACG-M1M2-COMPLETION-20261117",
+      "targetEnvironment": "development",
+      "scope": "SOURCE_VALIDATION_ONLY",
+      "approvalRef": "https://github.com/profitia/project-history-repository/blob/75d346ab2ef0f0c2fc193054c4ab818601de42cf/reports/2026/11/17/ARCHITECTURE/ARCH-ACG-M1M2-CI-ADMISSION-20261117/OWNER-DECISION-20261117.md",
+      "sourceSha": "97853df58a6a3822a50f64e0207fc0bbb1abbd92",
+      "baseSha": "56dcedb243d5d9568e3bd9cc3e13836f4e8b24bb",
+      "validFrom": "2026-11-17T14:39:02Z",
+      "validUntil": "2026-11-19T14:39:02Z",
+      "files": [
+        {
+          "path": "apps/architecture-lab/assistant-reservation-source.json",
+          "blob": "8d7bcf8966f26f62eaa5d4499382a286fbc45ff5",
+          "mode": "100644",
+          "status": "added",
+          "projectKey": "ARCHITECTURE",
+          "owner": "Architecture Platform",
+          "surfaceId": "ARCH-BASE-002"
+        },
+        {
+          "path": "apps/architecture-lab/private-recurring-source.mjs",
+          "blob": "028efb927bf0f0ee7233a360157349cbcc1e2c7c",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "ARCHITECTURE",
+          "owner": "Architecture Platform",
+          "surfaceId": "ARCH-BASE-002"
+        },
+        {
+          "path": "apps/architecture-lab/test/market-calendar-source.test.mjs",
+          "blob": "2838e60d52f755e21dba0f4b00903304cd242dc4",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "ARCHITECTURE",
+          "owner": "Architecture Platform",
+          "surfaceId": "ARCH-BASE-002"
+        },
+        {
+          "path": "apps/architecture-lab/test/sdk-compatibility.test.mjs",
+          "blob": "bff15c73d68558a2035562a7b406c3ad16499871",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "ARCHITECTURE",
+          "owner": "Architecture Platform",
+          "surfaceId": "ARCH-BASE-002"
+        },
+        {
+          "path": "apps/package-limits/migrations/006-assistant-reservation-diagnostics.sql",
+          "blob": "582d49c91be12663b3daf77061c64e2db0b1cf3b",
+          "mode": "100644",
+          "status": "added",
+          "projectKey": "ARCHITECTURE",
+          "owner": "Architecture Platform",
+          "surfaceId": "LIMITS-BASE-001"
+        },
+        {
+          "path": "apps/package-limits/test/database.test.mjs",
+          "blob": "24887cc4294c2a14d60a94159b97d125fe4be046",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "ARCHITECTURE",
+          "owner": "Architecture Platform",
+          "surfaceId": "LIMITS-BASE-001"
+        },
+        {
+          "path": "apps/sg-runtime/lib/assistant/conversation.ts",
+          "blob": "a2cb781736ea7014450ea968a4cb4dd65066fd40",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SG2",
+          "owner": "SG Runtime",
+          "surfaceId": "SG2-BASE-001"
+        },
+        {
+          "path": "apps/sg-runtime/lib/assistant/model.ts",
+          "blob": "514d3df4b47c38cd8cafd776d366ba7310cd83ef",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SG2",
+          "owner": "SG Runtime",
+          "surfaceId": "SG2-BASE-001"
+        },
+        {
+          "path": "apps/sg-runtime/lib/assistant/runtime.ts",
+          "blob": "88cda9802aa0b14617720ed7b17db7b4164d5767",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SG2",
+          "owner": "SG Runtime",
+          "surfaceId": "SG2-BASE-001"
+        },
+        {
+          "path": "apps/sg-runtime/tests/assistant-conversation-handler.test.ts",
+          "blob": "93eda325b65dbf097e8a52e40bea7b05f6400b3a",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SG2",
+          "owner": "SG Runtime",
+          "surfaceId": "SG2-BASE-001"
+        },
+        {
+          "path": "apps/sg-runtime/tests/assistant-ecr-week-integrity.test.mjs",
+          "blob": "7905d1891ec77bc69e07763c5bfa22c45d65f58d",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SG2",
+          "owner": "SG Runtime",
+          "surfaceId": "SG2-BASE-001"
+        },
+        {
+          "path": "apps/sg-runtime/tests/assistant-model.test.ts",
+          "blob": "ee853da80969ab76bdc02b7901ad1e1bc7089674",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SG2",
+          "owner": "SG Runtime",
+          "surfaceId": "SG2-BASE-001"
+        },
+        {
+          "path": "apps/sg-runtime/tests/diagnostic-telemetry-adoption.test.mjs",
+          "blob": "4c47911446870bc8f036595ee901845b170fb6e5",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SG2",
+          "owner": "SG Runtime",
+          "surfaceId": "SG2-BASE-001"
+        },
+        {
+          "path": "apps/sg-runtime/tests/market-calendar-integrity.test.mjs",
+          "blob": "3ea7b69685ba6d72686f25b485fbd4d265e1e7df",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SG2",
+          "owner": "SG Runtime",
+          "surfaceId": "SG2-BASE-001"
+        },
+        {
+          "path": "apps/sg-runtime/tests/operation-context.test.mjs",
+          "blob": "df6a3de6003bcbf7891f1b64df0b3618a655acd3",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SG2",
+          "owner": "SG Runtime",
+          "surfaceId": "SG2-BASE-001"
+        },
+        {
+          "path": "apps/sg-runtime/tests/pci-smart-integrity.test.mjs",
+          "blob": "dc12a2b45eee9162189e32a136655c08b24ec698",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SG2",
+          "owner": "SG Runtime",
+          "surfaceId": "SG2-BASE-001"
+        },
+        {
+          "path": "apps/sg-runtime/tests/porr-demo-middleware.test.ts",
+          "blob": "1e8ca6daeb1556d0b42a43b5958d1547fb4a7191",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SG2",
+          "owner": "SG Runtime",
+          "surfaceId": "SG2-BASE-001"
+        },
+        {
+          "path": "apps/sg-runtime/tests/private-host.integration.test.mjs",
+          "blob": "62f0c6a25a25824e03abe30975adab521f11d6f3",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SG2",
+          "owner": "SG Runtime",
+          "surfaceId": "SG2-BASE-001"
+        },
+        {
+          "path": "apps/sg-runtime/tests/procurement-insights-completion.test.mjs",
+          "blob": "44bf99607822c22914a519533f10a4eda5ccdb38",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SG2",
+          "owner": "SG Runtime",
+          "surfaceId": "SG2-BASE-001"
+        },
+        {
+          "path": "apps/sg-runtime/tests/procurement-insights-live-acceptance-source.test.mjs",
+          "blob": "678db1a73f631c2060a549a5a22d3e1fec76bf3d",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SG2",
+          "owner": "SG Runtime",
+          "surfaceId": "SG2-BASE-001"
+        },
+        {
+          "path": "apps/sg-runtime/tests/xray-fresh-performance-adoption.test.mjs",
+          "blob": "ef9f9af804a6f832c20e1de7e2aa88f6f39068e5",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SG2",
+          "owner": "SG Runtime",
+          "surfaceId": "SG2-BASE-001"
+        },
+        {
+          "path": "apps/srm/scripts/diagnostic-telemetry-adoption.test.mjs",
+          "blob": "1fadc475cbc78cab4e9c0cd79c3b0c67eaea1994",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SRM",
+          "owner": "SRM Runtime",
+          "surfaceId": "SG2-BASE-016"
+        },
+        {
+          "path": "apps/srm/scripts/native-execution-adoption.test.mjs",
+          "blob": "997a89829319d309a995b0e45687a32592fb5a30",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SRM",
+          "owner": "SRM Runtime",
+          "surfaceId": "SG2-BASE-016"
+        },
+        {
+          "path": "apps/srm/scripts/operation-context.test.mjs",
+          "blob": "bf88f2fc7ae073f58a52c4fc58e92398742e80c1",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SRM",
+          "owner": "SRM Runtime",
+          "surfaceId": "SG2-BASE-016"
+        },
+        {
+          "path": "apps/srm/scripts/private-host.integration.test.mjs",
+          "blob": "e66267247831533b54cef7366ed77da7d9daf173",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SRM",
+          "owner": "SRM Runtime",
+          "surfaceId": "SG2-BASE-016"
+        },
+        {
+          "path": "apps/srm/scripts/request-quota-adoption.test.mjs",
+          "blob": "7c442fe12340ff5cd8cd7830085e4fabd07b715e",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SRM",
+          "owner": "SRM Runtime",
+          "surfaceId": "SG2-BASE-016"
+        },
+        {
+          "path": "apps/srm/scripts/supplier-location-admission.integration.test.mjs",
+          "blob": "4f417b8cd4bba33773f38865e910014b7adc054d",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SRM",
+          "owner": "SRM Runtime",
+          "surfaceId": "SG2-BASE-016"
+        },
+        {
+          "path": "apps/srm/scripts/xray-performance-adoption.test.mjs",
+          "blob": "c6e81048b4292b048c77dffdccbe49dd7ceedf9e",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SRM",
+          "owner": "SRM Runtime",
+          "surfaceId": "SG2-BASE-016"
+        },
+        {
+          "path": "apps/srm/src/server/root-atomic-claim-adoption.test.ts",
+          "blob": "99bf0c3bb83e731f37d6c36bee3d430cee094931",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SRM",
+          "owner": "SRM Runtime",
+          "surfaceId": "SG2-BASE-016"
+        },
+        {
+          "path": "packages/platform-contracts/current-fresh-report/test/current-fresh-report.test.mjs",
+          "blob": "ee338b06485c73dc917f6c1c5498d57527f6bda8",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "ARCHITECTURE",
+          "owner": "Architecture Platform",
+          "surfaceId": "ARCH-BASE-001"
+        },
+        {
+          "path": "packages/platform-contracts/readonly-miss-report/test/readonly-miss-report.test.mjs",
+          "blob": "5f1d87555bf7d699000d0ecf1185a3005e00e6f1",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "ARCHITECTURE",
+          "owner": "Architecture Platform",
+          "surfaceId": "ARCH-BASE-001"
+        },
+        {
+          "path": "packages/platform-contracts/src/assistant-usage.d.mts",
+          "blob": "892420ff3e7ff709bf3696d06272cea889427378",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "ARCHITECTURE",
+          "owner": "Architecture Platform",
+          "surfaceId": "ARCH-BASE-001"
+        },
+        {
+          "path": "packages/platform-contracts/src/assistant-usage.mjs",
+          "blob": "f44757eac744e0e9d83cb90c932879594f98dfea",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "ARCHITECTURE",
+          "owner": "Architecture Platform",
+          "surfaceId": "ARCH-BASE-001"
+        },
+        {
+          "path": "packages/platform-contracts/test/assistant-reservation-source.mjs",
+          "blob": "e4a736a0d2dcc15f7ec5a471db599e4680ee2716",
+          "mode": "100644",
+          "status": "added",
+          "projectKey": "ARCHITECTURE",
+          "owner": "Architecture Platform",
+          "surfaceId": "ARCH-BASE-001"
+        },
+        {
+          "path": "packages/platform-contracts/test/assistant-reservation-source.test.mjs",
+          "blob": "12f14bb522501e4b0dffa33f2e20dff6aa04d849",
+          "mode": "100644",
+          "status": "added",
+          "projectKey": "ARCHITECTURE",
+          "owner": "Architecture Platform",
+          "surfaceId": "ARCH-BASE-001"
+        },
+        {
+          "path": "packages/platform-contracts/test/assistant-usage.test.mjs",
+          "blob": "aa3c83dded41ed761120f73fb86da3d8fdb22e47",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "ARCHITECTURE",
+          "owner": "Architecture Platform",
+          "surfaceId": "ARCH-BASE-001"
+        },
+        {
+          "path": "packages/platform-contracts/test/private-operation-host.test.mjs",
+          "blob": "1a99d4e04f37ee7c1ae883faa3f332c7d3202879",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "ARCHITECTURE",
+          "owner": "Architecture Platform",
+          "surfaceId": "ARCH-BASE-001"
+        },
+        {
+          "path": "packages/platform-contracts/test/recurring-consent-transport.test.mjs",
+          "blob": "2772fa919985b6149f3c0d77f79a477f1b3191ae",
           "mode": "100644",
           "status": "modified",
           "projectKey": "ARCHITECTURE",

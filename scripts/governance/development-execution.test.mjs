@@ -325,6 +325,97 @@ test('source proposal derives actual Git blobs and routing while remaining inert
  }finally{fs.rmSync(dir,{recursive:true,force:true})}
 })
 
+import {trustedApplicationContinuity} from './development-execution.mjs'
+import {resolveProjectProfile as continuityProfile} from './project-profile.mjs'
+import {resolveProjectRouting as continuityRoute} from './routing-engine.mjs'
+
+const continuityPath='apps/sg-runtime/components/procurement-insights/continuity-fixture.tsx'
+function continuityFixture(changeRecord=r=>r,{candidateLedger=false}={}) {
+ const dir=fs.mkdtempSync(path.join(os.tmpdir(),'application-continuity-'))
+ const g=(...a)=>execFileSync('git',a,{cwd:dir,encoding:'utf8',stdio:['ignore','pipe','pipe']}).trim()
+ const write=(p,s)=>{const f=path.join(dir,p);fs.mkdirSync(path.dirname(f),{recursive:true});fs.writeFileSync(f,s)}
+ g('init','-b','main');g('config','user.name','Synthetic fixture');g('config','user.email','synthetic@example.invalid')
+ g('remote','add','origin','https://github.com/profitia/SG-dev')
+ write(continuityPath,'export const sample=1\n');write('unchanged.txt','immutable\n');g('add','.');g('commit','-m','synthetic base')
+ const initial=g('rev-parse','HEAD');g('checkout','-b','candidate')
+ write(continuityPath,'export const sample=2\n');g('add','.');g('commit','-m','synthetic reviewed source')
+ const original=g('rev-parse','HEAD'),blob=g('hash-object',continuityPath)
+ const route=continuityRoute({profile:continuityProfile('SG2',root),targets:[continuityPath],repositoryRoot:root}).results[0]
+ const r=changeRecord({...record(),id:'SYNTHETIC_APPLICATION_REVIEW',sourceSha:original,baseSha:initial,
+  validFrom:'2000-01-01T00:00:00Z',validUntil:'2099-01-01T00:00:00Z',
+  files:[{path:continuityPath,blob,status:'modified',mode:'100644',projectKey:'SG2',owner:route.currentOwner,surfaceId:route.matchedSurfaceId}]})
+ g('checkout','main');write('Canon/registries/controlled-source-admissions-v1.json',JSON.stringify({schemaVersion:'1.0',records:candidateLedger?[]:[r]}))
+ g('add','.');g('commit','-m','synthetic independent authority')
+ const authority=g('rev-parse','HEAD');g('update-ref','refs/remotes/origin/main',authority)
+ g('checkout','candidate');g('merge','--no-edit','main')
+ const check=()=>trustedApplicationContinuity(dir,[continuityPath],{authorityRoot:dir,governanceRoot:root})
+ return {dir,g,write,r,initial,original,authority,check,close:()=>fs.rmSync(dir,{recursive:true,force:true})}
+}
+
+test('historical application compatibility authenticates fetched authority or a complete independently admitted real Git candidate',()=>{
+ const f=continuityFixture()
+ try {
+  const read=f.check();assert.equal(read(continuityPath).toString(),'export const sample=2\n')
+  const b=read(continuityPath);b.fill(0);assert.equal(read(continuityPath).toString(),'export const sample=2\n','read returns defensive byte copies')
+  assert.throws(()=>read('unchanged.txt'),/APPLICATION_CONTINUITY_PATH_REJECTED/)
+  f.g('checkout','main');assert.equal(f.check()(continuityPath).toString(),'export const sample=1\n')
+ }finally{f.close()}
+})
+
+for(const [name,edit,pattern]of [
+ ['expiry',r=>({...r,validUntil:'2001-01-01T00:00:00Z'}),/SOURCE_ADMISSION_EXPIRED/],
+ ['revocation',r=>({...r,status:'REVOKED'}),/SOURCE_ADMISSION_IDENTITY_REJECTED/],
+ ['missing owner decision',r=>({...r,approvalRef:null}),/SOURCE_ADMISSION_IDENTITY_REJECTED/],
+ ['wrong owner',r=>({...r,files:r.files.map(x=>({...x,owner:'unapproved'}))}),/SOURCE_ADMISSION_ROUTING_REJECTED/],
+ ['wrong surface',r=>({...r,files:r.files.map(x=>({...x,surfaceId:'unapproved'}))}),/SOURCE_ADMISSION_ROUTING_REJECTED/],
+ ['wrong Git base',r=>({...r,baseSha:'f'.repeat(40)}),/SOURCE_BASE_OR_LINEAGE_REJECTED/]
+])test('historical source compatibility rejects '+name,()=>{
+ const f=continuityFixture(edit);try{assert.throws(f.check,pattern)}finally{f.close()}
+})
+
+test('a candidate cannot supply its own ledger or replace its trusted main decision',()=>{
+ const f=continuityFixture(r=>r,{candidateLedger:true})
+ try{
+  f.write('Canon/registries/controlled-source-admissions-v1.json',JSON.stringify({schemaVersion:'1.0',records:[f.r]}))
+  f.g('add','.');f.g('commit','-m','synthetic self approval')
+  assert.equal(f.check(),null)
+ }finally{f.close()}
+})
+
+for(const [name,mutate]of [
+ ['changed bytes',f=>f.write(continuityPath,'unreviewed\n')],
+ ['changed executable mode',f=>fs.chmodSync(path.join(f.dir,continuityPath),0o755)],
+ ['omitted source',f=>fs.unlinkSync(path.join(f.dir,continuityPath))],
+ ['symlink',f=>{fs.unlinkSync(path.join(f.dir,continuityPath));fs.symlinkSync(path.join(f.dir,'unchanged.txt'),path.join(f.dir,continuityPath))}],
+ ['additional untracked source',f=>f.write('unexpected.ts','unreviewed\n')],
+ ['tracked authority edit',f=>f.write('unchanged.txt','changed\n')],
+ ['staged authority edit',f=>{f.write('unchanged.txt','changed\n');f.g('add','unchanged.txt')}],
+ ['extra committed source',f=>{f.write('unexpected.ts','unreviewed\n');f.g('add','.');f.g('commit','-m','synthetic extra source')}],
+ ['candidate receipt modification',f=>f.write('apps/sg-runtime/assistant-notifications-integration.json','unreviewed receipt\n')]
+])test('historical compatibility fails closed on '+name,()=>{
+ const f=continuityFixture()
+ try{mutate(f);let result=null;try{result=f.check()}catch{return}assert.equal(result,null)}finally{f.close()}
+})
+
+test('accepted actual main bytes do not borrow an expired source-validation mandate',()=>{
+ const f=continuityFixture(r=>({...r,validUntil:'2001-01-01T00:00:00Z'}))
+ try{
+  assert.throws(f.check,/SOURCE_ADMISSION_EXPIRED/)
+  f.g('checkout','main');f.g('merge','--no-edit','candidate')
+  f.g('update-ref','refs/remotes/origin/main',f.g('rev-parse','HEAD'))
+  assert.equal(f.check()(continuityPath).toString(),'export const sample=2\n','fresh independently accepted main is its own source authority')
+ }finally{f.close()}
+})
+
+test('compatibility never authorises receipt, SQL, workflow, package or contract paths',()=>{
+ const f=continuityFixture()
+ try{for(const p of ['Canon/registries/controlled-source-admissions-v1.json','.github/workflows/platform-contracts-ci.yml',
+  'apps/sg-runtime/assistant-notifications-integration.json','apps/sg-runtime/package.json',
+  'packages/platform-contracts/src/operation-context.mjs','apps/insights-runtime/sql/003-report-subscriptions.sql'])
+  assert.throws(()=>trustedApplicationContinuity(f.dir,[p],{authorityRoot:f.dir,governanceRoot:root}),/APPLICATION_CONTINUITY_PATH_REJECTED/)
+ }finally{f.close()}
+})
+
 const reservationAdmissionFixture={"id":"ARCHITECTURE:ARCH-ACG-M1M2-COMPLETION-20261117","status":"PROPOSED","repository":"profitia/SG-dev","actor":null,"taskId":"ARCH-ACG-M1M2-COMPLETION-20261117","targetEnvironment":"development","scope":"SOURCE_VALIDATION_ONLY","approvalRef":null,"sourceSha":"97853df58a6a3822a50f64e0207fc0bbb1abbd92","baseSha":"56dcedb243d5d9568e3bd9cc3e13836f4e8b24bb","validFrom":null,"validUntil":null,"files":[{"path":"apps/architecture-lab/assistant-reservation-source.json","blob":"8d7bcf8966f26f62eaa5d4499382a286fbc45ff5","mode":"100644","status":"added","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ARCH-BASE-002"},{"path":"apps/architecture-lab/private-recurring-source.mjs","blob":"028efb927bf0f0ee7233a360157349cbcc1e2c7c","mode":"100644","status":"modified","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ARCH-BASE-002"},{"path":"apps/architecture-lab/test/market-calendar-source.test.mjs","blob":"2838e60d52f755e21dba0f4b00903304cd242dc4","mode":"100644","status":"modified","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ARCH-BASE-002"},{"path":"apps/architecture-lab/test/sdk-compatibility.test.mjs","blob":"bff15c73d68558a2035562a7b406c3ad16499871","mode":"100644","status":"modified","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ARCH-BASE-002"},{"path":"apps/package-limits/migrations/006-assistant-reservation-diagnostics.sql","blob":"582d49c91be12663b3daf77061c64e2db0b1cf3b","mode":"100644","status":"added","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"LIMITS-BASE-001"},{"path":"apps/package-limits/test/database.test.mjs","blob":"24887cc4294c2a14d60a94159b97d125fe4be046","mode":"100644","status":"modified","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"LIMITS-BASE-001"},{"path":"apps/sg-runtime/lib/assistant/conversation.ts","blob":"a2cb781736ea7014450ea968a4cb4dd65066fd40","mode":"100644","status":"modified","projectKey":"SG2","owner":"SG Runtime","surfaceId":"SG2-BASE-001"},{"path":"apps/sg-runtime/lib/assistant/model.ts","blob":"514d3df4b47c38cd8cafd776d366ba7310cd83ef","mode":"100644","status":"modified","projectKey":"SG2","owner":"SG Runtime","surfaceId":"SG2-BASE-001"},{"path":"apps/sg-runtime/lib/assistant/runtime.ts","blob":"88cda9802aa0b14617720ed7b17db7b4164d5767","mode":"100644","status":"modified","projectKey":"SG2","owner":"SG Runtime","surfaceId":"SG2-BASE-001"},{"path":"apps/sg-runtime/tests/assistant-conversation-handler.test.ts","blob":"93eda325b65dbf097e8a52e40bea7b05f6400b3a","mode":"100644","status":"modified","projectKey":"SG2","owner":"SG Runtime","surfaceId":"SG2-BASE-001"},{"path":"apps/sg-runtime/tests/assistant-ecr-week-integrity.test.mjs","blob":"7905d1891ec77bc69e07763c5bfa22c45d65f58d","mode":"100644","status":"modified","projectKey":"SG2","owner":"SG Runtime","surfaceId":"SG2-BASE-001"},{"path":"apps/sg-runtime/tests/assistant-model.test.ts","blob":"ee853da80969ab76bdc02b7901ad1e1bc7089674","mode":"100644","status":"modified","projectKey":"SG2","owner":"SG Runtime","surfaceId":"SG2-BASE-001"},{"path":"apps/sg-runtime/tests/diagnostic-telemetry-adoption.test.mjs","blob":"4c47911446870bc8f036595ee901845b170fb6e5","mode":"100644","status":"modified","projectKey":"SG2","owner":"SG Runtime","surfaceId":"SG2-BASE-001"},{"path":"apps/sg-runtime/tests/market-calendar-integrity.test.mjs","blob":"3ea7b69685ba6d72686f25b485fbd4d265e1e7df","mode":"100644","status":"modified","projectKey":"SG2","owner":"SG Runtime","surfaceId":"SG2-BASE-001"},{"path":"apps/sg-runtime/tests/operation-context.test.mjs","blob":"df6a3de6003bcbf7891f1b64df0b3618a655acd3","mode":"100644","status":"modified","projectKey":"SG2","owner":"SG Runtime","surfaceId":"SG2-BASE-001"},{"path":"apps/sg-runtime/tests/pci-smart-integrity.test.mjs","blob":"dc12a2b45eee9162189e32a136655c08b24ec698","mode":"100644","status":"modified","projectKey":"SG2","owner":"SG Runtime","surfaceId":"SG2-BASE-001"},{"path":"apps/sg-runtime/tests/porr-demo-middleware.test.ts","blob":"1e8ca6daeb1556d0b42a43b5958d1547fb4a7191","mode":"100644","status":"modified","projectKey":"SG2","owner":"SG Runtime","surfaceId":"SG2-BASE-001"},{"path":"apps/sg-runtime/tests/private-host.integration.test.mjs","blob":"62f0c6a25a25824e03abe30975adab521f11d6f3","mode":"100644","status":"modified","projectKey":"SG2","owner":"SG Runtime","surfaceId":"SG2-BASE-001"},{"path":"apps/sg-runtime/tests/procurement-insights-completion.test.mjs","blob":"44bf99607822c22914a519533f10a4eda5ccdb38","mode":"100644","status":"modified","projectKey":"SG2","owner":"SG Runtime","surfaceId":"SG2-BASE-001"},{"path":"apps/sg-runtime/tests/procurement-insights-live-acceptance-source.test.mjs","blob":"678db1a73f631c2060a549a5a22d3e1fec76bf3d","mode":"100644","status":"modified","projectKey":"SG2","owner":"SG Runtime","surfaceId":"SG2-BASE-001"},{"path":"apps/sg-runtime/tests/xray-fresh-performance-adoption.test.mjs","blob":"ef9f9af804a6f832c20e1de7e2aa88f6f39068e5","mode":"100644","status":"modified","projectKey":"SG2","owner":"SG Runtime","surfaceId":"SG2-BASE-001"},{"path":"apps/srm/scripts/diagnostic-telemetry-adoption.test.mjs","blob":"1fadc475cbc78cab4e9c0cd79c3b0c67eaea1994","mode":"100644","status":"modified","projectKey":"SRM","owner":"SRM Runtime","surfaceId":"SG2-BASE-016"},{"path":"apps/srm/scripts/native-execution-adoption.test.mjs","blob":"997a89829319d309a995b0e45687a32592fb5a30","mode":"100644","status":"modified","projectKey":"SRM","owner":"SRM Runtime","surfaceId":"SG2-BASE-016"},{"path":"apps/srm/scripts/operation-context.test.mjs","blob":"bf88f2fc7ae073f58a52c4fc58e92398742e80c1","mode":"100644","status":"modified","projectKey":"SRM","owner":"SRM Runtime","surfaceId":"SG2-BASE-016"},{"path":"apps/srm/scripts/private-host.integration.test.mjs","blob":"e66267247831533b54cef7366ed77da7d9daf173","mode":"100644","status":"modified","projectKey":"SRM","owner":"SRM Runtime","surfaceId":"SG2-BASE-016"},{"path":"apps/srm/scripts/request-quota-adoption.test.mjs","blob":"7c442fe12340ff5cd8cd7830085e4fabd07b715e","mode":"100644","status":"modified","projectKey":"SRM","owner":"SRM Runtime","surfaceId":"SG2-BASE-016"},{"path":"apps/srm/scripts/supplier-location-admission.integration.test.mjs","blob":"4f417b8cd4bba33773f38865e910014b7adc054d","mode":"100644","status":"modified","projectKey":"SRM","owner":"SRM Runtime","surfaceId":"SG2-BASE-016"},{"path":"apps/srm/scripts/xray-performance-adoption.test.mjs","blob":"c6e81048b4292b048c77dffdccbe49dd7ceedf9e","mode":"100644","status":"modified","projectKey":"SRM","owner":"SRM Runtime","surfaceId":"SG2-BASE-016"},{"path":"apps/srm/src/server/root-atomic-claim-adoption.test.ts","blob":"99bf0c3bb83e731f37d6c36bee3d430cee094931","mode":"100644","status":"modified","projectKey":"SRM","owner":"SRM Runtime","surfaceId":"SG2-BASE-016"},{"path":"packages/platform-contracts/current-fresh-report/test/current-fresh-report.test.mjs","blob":"ee338b06485c73dc917f6c1c5498d57527f6bda8","mode":"100644","status":"modified","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ARCH-BASE-001"},{"path":"packages/platform-contracts/readonly-miss-report/test/readonly-miss-report.test.mjs","blob":"5f1d87555bf7d699000d0ecf1185a3005e00e6f1","mode":"100644","status":"modified","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ARCH-BASE-001"},{"path":"packages/platform-contracts/src/assistant-usage.d.mts","blob":"892420ff3e7ff709bf3696d06272cea889427378","mode":"100644","status":"modified","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ARCH-BASE-001"},{"path":"packages/platform-contracts/src/assistant-usage.mjs","blob":"f44757eac744e0e9d83cb90c932879594f98dfea","mode":"100644","status":"modified","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ARCH-BASE-001"},{"path":"packages/platform-contracts/test/assistant-reservation-source.mjs","blob":"e4a736a0d2dcc15f7ec5a471db599e4680ee2716","mode":"100644","status":"added","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ARCH-BASE-001"},{"path":"packages/platform-contracts/test/assistant-reservation-source.test.mjs","blob":"12f14bb522501e4b0dffa33f2e20dff6aa04d849","mode":"100644","status":"added","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ARCH-BASE-001"},{"path":"packages/platform-contracts/test/assistant-usage.test.mjs","blob":"aa3c83dded41ed761120f73fb86da3d8fdb22e47","mode":"100644","status":"modified","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ARCH-BASE-001"},{"path":"packages/platform-contracts/test/private-operation-host.test.mjs","blob":"1a99d4e04f37ee7c1ae883faa3f332c7d3202879","mode":"100644","status":"modified","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ARCH-BASE-001"},{"path":"packages/platform-contracts/test/recurring-consent-transport.test.mjs","blob":"2772fa919985b6149f3c0d77f79a477f1b3191ae","mode":"100644","status":"modified","projectKey":"ARCHITECTURE","owner":"Architecture Platform","surfaceId":"ARCH-BASE-001"}]}
 
 // A new source record may be validated only as part of this complete, independently
