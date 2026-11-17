@@ -104,7 +104,149 @@ export const APPSHELL_NOTIFICATION_REVIEW=Object.freeze({
  }
 })
 const notificationDigest=bytes=>createHash('sha256').update(bytes).digest('hex')
+export const EDITORIAL_CANON_SOURCE_REVIEW=Object.freeze({
+  "sourceSha": "4350876cd17cdf076b0b8766460b3dd7ed64de5e",
+  "baseSha": "56dcedb243d5d9568e3bd9cc3e13836f4e8b24bb",
+  "recordPath": "apps/sg-runtime/procurement-insights-editorial-integration.json",
+  "entries": {
+    "Canon/evidence/2026-11-17-procurement-insights-editorial-canon-adoption.md": {
+      "blob": "f37e06f4a0f1c2547dda9e93c55b5bb4ac334f0d",
+      "sha256": "4535940a6800c73f39db5ab19df0d10eb3acf9f27c478f98d67fcb6140a1d51d",
+      "status": "added"
+    },
+    "Canon/registries/governance-manifest-v2.json": {
+      "blob": "839aabdc2d0b52497b0b9422c2af473cb592331e",
+      "sha256": "d8ddddd7b39b6b67ed7e4ca2b4407a47a4470497465f790a67be301ea4dcccd8",
+      "status": "modified"
+    },
+    "Canon/v1.0-procurement-insights-narrative-and-editorial-canon.md": {
+      "blob": "df5dabe1d6b544b3f5c501c47f507e151dfd3551",
+      "sha256": "666f04de2b454cb14c55c72c603659607693bb0b2ba8e7cf23f7f6f192fb67c8",
+      "status": "added"
+    },
+    "apps/insights-runtime/docs/editorial-canon.md": {
+      "blob": "fa763bc3082179b5086ad2fafcf71d917e33806c",
+      "sha256": "0654d0d717e041a856b1ad03d4f4a00af8271a7208941e14a7fcbb890db0f2b2",
+      "status": "added"
+    },
+    "apps/insights-runtime/src/composer.mjs": {
+      "blob": "5c945bf4536252e07818314ddb55d0323cd1c344",
+      "sha256": "5b1638be94df5a6e5817cb3e0f3d5064b583717f43d3f665db9bfff769df7028",
+      "status": "modified",
+      "previousSha256": "55e40fdaeb0c5fa5f6fa26688910df6d68bfab4ee8d63a7c39b43878b0652ca2"
+    },
+    "apps/insights-runtime/src/editorial.mjs": {
+      "blob": "5dfbd21008650a899e77e9688997e08b28803aa4",
+      "sha256": "64013d76c4b1ea22fa0d2696bd7521c92013e919fdfc94d57d4a5483cc34fd30",
+      "status": "added"
+    },
+    "apps/insights-runtime/tests/editorial.test.mjs": {
+      "blob": "182e3a20096cfe052ea215c71f72164d89c827c5",
+      "sha256": "8a7c5d4522657b8cd5a37a39fe25329e016037ff21dbbb923bff112e457ebdb0",
+      "status": "added"
+    },
+    "apps/insights-runtime/tests/fixtures/editorial.json": {
+      "blob": "18492419be3aeaca90246d20cad163fba9b4aac3",
+      "sha256": "877d1db822d4e55a69c780a92ea46b679789648d9da37c639ee9483b61019354",
+      "status": "added"
+    },
+    "apps/sg-runtime/procurement-insights-editorial-integration.json": {
+      "blob": "b2fb0df8027e9ff359d6ae965ae03c492fa68204",
+      "sha256": "a12fe421ae3bd4d42cb82a38a7509730918612ddf1ff3caae7552874933b1f9b",
+      "status": "added"
+    },
+    "apps/sg-runtime/tests/assistant-notifications-integrity.mjs": {
+      "blob": "02ef9e12a2a670bf899df87d2468d0610bb0261f",
+      "sha256": "e8141f9b967435ffdd5f94a48e9e0a494cf3eef167fbd6b3b7f22a350f55f3c8",
+      "status": "modified",
+      "previousSha256": "7d8c0ab445d1d8e9615aaf7ad170d675c6feab5665adabf36999462094e2d622"
+    },
+    "apps/sg-runtime/tests/assistant-notifications-integrity.test.mjs": {
+      "blob": "f57171cfa51f8aa9790ff2051682eadefd75ff04",
+      "sha256": "85c4a532704a10a0c0c3b9fba87e8b355a028e1e092479960ae2e6df830e8f1e",
+      "status": "modified",
+      "previousSha256": "1d22944ad0e3d86082045e887ec85036a729f4d7910e8f6d793e8ec65e963da3"
+    },
+    "apps/sg-runtime/tests/procurement-insights-editorial-integrity.mjs": {
+      "blob": "fec4ddee3b3d0183383f860aa6564fb6925181a0",
+      "sha256": "7c44fe0e67c51555b746b91e6896a7a0b1734be8ed9f7d7f0a3da668ecf984b2",
+      "status": "added"
+    },
+    "apps/sg-runtime/tests/procurement-insights-editorial-integrity.test.mjs": {
+      "blob": "5a46447253425b0ddf9bf25a941e666d09e45781",
+      "sha256": "504be3cefedd23386a5dfce13c128b0992e626468c2791642ee056f8fb3464f1",
+      "status": "added"
+    }
+  },
+  "projection": [
+    "apps/insights-runtime/src/composer.mjs",
+    "apps/insights-runtime/src/editorial.mjs",
+    "apps/sg-runtime/tests/assistant-notifications-integrity.mjs",
+    "apps/sg-runtime/tests/assistant-notifications-integrity.test.mjs",
+    "apps/sg-runtime/tests/procurement-insights-editorial-integrity.mjs",
+    "apps/sg-runtime/tests/procurement-insights-editorial-integrity.test.mjs",
+    "apps/sg-runtime/procurement-insights-editorial-integration.json"
+  ],
+  "preservedReceipts": {
+    "apps/architecture-lab/private-recurring-source-adoption.json": "a79c186897851acb93142949fe7aee19184cbfe68b3acdf51cbda084c00c1254",
+    "apps/architecture-lab/private-recurring-source.json": "75877d5750e07d1c8172be0af76bc5933f2eeefc22cc39747a2621b9cab24619",
+    "apps/sg-runtime/adp-integration.json": "9dbd4921c5262202902c3c7ae318e2296f130512fc0784840880eb42370d45fb",
+    "apps/sg-runtime/assistant-context-integration.json": "d932f227977789643086b6a9eb179598a6f48071964b2d26ba82d25fceb7b2ec",
+    "apps/sg-runtime/assistant-ecr-integration.json": "5814e2e5cbdf1a32d22cff3aa55de806ec34c9debdecc21ff06c4f9f887a82bc",
+    "apps/sg-runtime/assistant-ecr-precision-integration.json": "a017c2b971e3c72606847264150715c983fa9483537d26be90144a64e0377ee7",
+    "apps/sg-runtime/assistant-ecr-week-integration.json": "31ce8f1d7e5ca1d9c3aedf80f92e23fe0f1a93cb8f5fd5d003eb54a244859dd4",
+    "apps/sg-runtime/assistant-markdown-integration.json": "27ff06aff8bc44592f0073732748834b7759182fa4307d901c7d63304381a38b",
+    "apps/sg-runtime/assistant-notifications-integration.json": "78d6d34fea2ab1ce18f8dd810cc9906452763e8539aedea685fccbe3881b42cb",
+    "apps/sg-runtime/assistant-send-arrow-integration.json": "62c6af6817a022c31788d801cc0eac293a24b3f25d9e529d32b1bff4908fa230",
+    "apps/sg-runtime/development-integration.json": "a3ed33e74582d2e0407677e090be0d82405e42a160c34afddb8fde47dff86540",
+    "apps/sg-runtime/market-calendar-integration.json": "b66d88e724f84d513677554e77484bc29a2021b238ce28d4b7db7492aba9903c",
+    "apps/sg-runtime/oil-renderer-integration.json": "6afdd65e66d8a7d8ceb4ab68601ba6d1c1bfac43bbac879d01bb61c9962e7ad6",
+    "apps/sg-runtime/operation-integration.json": "a6bf50993c98a71aeccd349dd904baafb53b3cd653324d97bab3fc5e34ac509f",
+    "apps/sg-runtime/private-recurring-source-adoption.json": "edf9d51c199251e148b39c92a3084944c1a4b8419be29175c88b6e2583df11f2",
+    "apps/sg-runtime/procurement-insights-completion-integration.json": "095ab52d695419d34ed053a6961e389024067a8ab4a16a9b6bb2c379571832a0",
+    "apps/sg-runtime/procurement-insights-integration.json": "6dca06d8b0731e585925100b0578d41a61711f335940350d1ea32c296a3d7177",
+    "apps/sg-runtime/procurement-insights-live-acceptance.json": "911fac3bf6c4eacabc5db048ef622e4a00e49efa09024e9fbbf5216f7da94d6c",
+    "apps/sg-runtime/procurement-insights-shell-integration.json": "1b1279e669e955e604c7c646482a6ce119eac5eeb09491ade78a37aa7fc133a1",
+    "apps/sg-runtime/registration-stage-i-integration.json": "4a7a572e67e12ed73c523502cef4cb432009e735737df851419d80898653f414",
+    "apps/sg-runtime/xray-appshell-integration.json": "edd27f0ae420a9c7671f3cf6068fa00e237a845169ce36de719b6a52abcc6087",
+    "apps/srm/assistant-context-integration.json": "e39cc67fc7b1a9dd787365e0cea5407e11c47744f15c4f9cf83ea15eddeb2aff",
+    "apps/srm/development-integration.json": "53b67cb769000a4f4005ab10ccc0188b39074094cb38e915b16c3d6026590f57",
+    "apps/srm/operation-integration.json": "1303ac82c0570ca4929f64e1620e2ec7a6bfd3809607f57eb33da621c8ecd06d",
+    "apps/srm/private-recurring-source-adoption.json": "88d0252f634eface35b34adf31ac97cbf0d396fcf1fe6da452c74bdc23c7c633",
+    "apps/srm/xray-appshell-integration.json": "584f4b2e099966bdfc23ce9ac1bf0d408893010b40459f458c639bdd4c4b1b19",
+    "packages/platform-contracts/test/recurring-consent-transport-source.json": "0c9ffe5bfd89cf2bd65cd9adc7ad241a04e7468b5821f97171f4a6c550aaba36"
+  }
+})
+// Exact byte verification of the owner-approved editorial source; no runtime grant.
+export function editorialTrustedPredecessor(current,historical){
+ const cfg=EDITORIAL_CANON_SOURCE_REVIEW;let record
+ try{record=current(cfg.recordPath)}catch(error){
+  const message=String(error?.stderr??error?.message??'')
+  if(error?.code==='ENOENT'||error?.status===128&&["' does not exist in ","' exists on disk, but not in "].some(s=>message.includes("'"+cfg.recordPath+s)))return null
+  throw error
+ }
+ for(const[p,e]of Object.entries(cfg.entries)){
+  const b=current(p),blob=createHash('sha1').update('blob '+b.length+'\0').update(b).digest('hex')
+  if(notificationDigest(b)!==e.sha256||blob!==e.blob)fail('EDITORIAL_SOURCE_BYTES_REJECTED')
+ }
+ const a=JSON.parse(record)
+ if(a.previousSourceSha!==cfg.baseSha||a.scope!=='PROCUREMENT_INSIGHTS_EDITORIAL_PROFILE_V1'||a.taskId!=='SG2-PI-EDITORIAL-CONTINUATION-20261117'||a.targetEnvironment!=='development')fail('EDITORIAL_SOURCE_IDENTITY_REJECTED')
+ for(const flag of ['authorisationChanged','schemaChanged','modelChanged','providerCallsPerformed','historicalReportsChanged','automaticPublication'])if(a[flag]!==false)fail('EDITORIAL_SOURCE_AUTHORITY_REJECTED')
+ const predecessors=new Map()
+ for(const p of cfg.projection){const e=cfg.entries[p];if(e.status==='modified'){
+  const b=historical(cfg.baseSha,p);if(notificationDigest(b)!==e.previousSha256)fail('EDITORIAL_SOURCE_HISTORY_REJECTED');predecessors.set(p,Buffer.from(b))
+ }}
+ for(const[p,h]of Object.entries(cfg.preservedReceipts))if(notificationDigest(current(p))!==h||notificationDigest(historical(cfg.baseSha,p))!==h)fail('EDITORIAL_SOURCE_RECEIPT_REJECTED')
+ return {manifest:a,previousBytes:p=>{
+  if(!cfg.projection.includes(p))return current(p)
+  const e=cfg.entries[p]
+  if(e.status==='added')throw Object.assign(Error('Editorial source absent from predecessor'),{code:'ENOENT'})
+  return Buffer.from(predecessors.get(p))
+ }}
+}
+
 export function assistantNotificationsTrustedPredecessor(current,historical){
+ const editorial=editorialTrustedPredecessor(current,historical);if(editorial)return assistantNotificationsTrustedPredecessor(editorial.previousBytes,historical)
  const cfg=APPSHELL_NOTIFICATION_REVIEW;let record
  try{record=current(cfg.recordPath)}catch(error){if(error?.code==='ENOENT')return null;throw error}
  // The trusted controller pins every physical byte before exposing history.
@@ -129,7 +271,7 @@ export function assistantNotificationsTrustedPredecessor(current,historical){
 // Raw file checks are unchanged. New current sources must additionally be non-executable.
 export function readNotificationPhysicalSource(root,name){
  const bytes=readRegistrationSdkFile(root,name)
- if(Object.hasOwn(APPSHELL_NOTIFICATION_REVIEW.entries,name)&&fs.lstatSync(path.join(fs.realpathSync(root),name)).mode&0o111)fail('APPSHELL_NOTIFICATION_MODE_REJECTED')
+ if((Object.hasOwn(APPSHELL_NOTIFICATION_REVIEW.entries,name)||Object.hasOwn(EDITORIAL_CANON_SOURCE_REVIEW.entries,name))&&fs.lstatSync(path.join(fs.realpathSync(root),name)).mode&0o111)fail('APPSHELL_NOTIFICATION_MODE_REJECTED')
  return bytes
 }
 export function notificationTrustedCurrent(root){
@@ -331,6 +473,124 @@ export function assertAssistantQualityStage1Specification(source){
  const start=source.search(/^## 4\./m),end=source.search(/^## 6\./m)
  if(start<0||end<=start||createHash('sha256').update(source.slice(start,end)).digest('hex')!==ASSISTANT_QUALITY_STAGE1_SOURCE_REVIEW.frozenSpecSha256
   ||!/^\| Realizacja \| ETAP 1 — (?:W_TOKU|CZĘŚCIOWY|ZABLOKOWANY|ZAKOŃCZONY); ETAP 2 — NIE_ROZPOCZĘTY \/ BRAK ZLECENIA \|$/m.test(source))fail('ASSISTANT_QUALITY_SPECIFICATION_REJECTED')
+}
+
+
+// PROPOSED owner decision: finite legacy Stage1 engineering continuation only.
+// This is an explicit exception for the already-open #1067 lineage, not a new
+// generic admission route or an autonomous repair/purpose/deployment mandate.
+export const ASSISTANT_QUALITY_SG2_STAGE1_REVIEW=Object.freeze({
+ id:'AQC-SG2-STAGE1-LEGACY-CONTINUATION-20261117',
+ branches:Object.freeze(['sg2/cic-quality-stage1-runtime-20261112','sg2/cic-quality-host-integration-20261117']),
+ expiresAt:'2026-11-27T23:59:59.000Z',anchorSha:'6a3bf91388bec43121dc215f18f2c42d01f61dd8',
+ paths:Object.freeze([
+  "apps/sg-runtime/assistant-quality-host-integration.json",
+  "apps/sg-runtime/assistant-quality-integration.json",
+  "apps/sg-runtime/lib/assistant/calendar-period.ts",
+  "apps/sg-runtime/lib/assistant/context-selection.ts",
+  "apps/sg-runtime/lib/assistant/conversation.ts",
+  "apps/sg-runtime/lib/assistant/quality-evidence.ts",
+  "apps/sg-runtime/lib/assistant/quality-response.ts",
+  "apps/sg-runtime/lib/assistant/runtime.ts",
+  "apps/sg-runtime/migrations/002-assistant-quality-evidence.sql",
+  "apps/sg-runtime/package-lock.json",
+  "apps/sg-runtime/package.json",
+  "apps/sg-runtime/tests/assistant-conversation-handler.test.ts",
+  "apps/sg-runtime/tests/assistant-ecr-integrity.mjs",
+  "apps/sg-runtime/tests/assistant-ecr-precision-integrity.mjs",
+  "apps/sg-runtime/tests/assistant-quality-evidence.test.ts",
+  "apps/sg-runtime/tests/assistant-quality-host-integrity.mjs",
+  "apps/sg-runtime/tests/assistant-quality-host-integrity.test.mjs",
+  "apps/sg-runtime/tests/assistant-quality-integrity.mjs",
+  "apps/sg-runtime/tests/assistant-quality-integrity.test.mjs",
+  "apps/sg-runtime/tests/assistant-quality-response.test.ts",
+  "apps/sg-runtime/tests/assistant-quality.test.ts",
+  "apps/sg-runtime/tests/procurement-insights-completion-integrity.mjs"
+]),
+})
+export const CIC_QUALITY_STAGE1_PIN=Object.freeze({version:'1.8.0',
+ resolved:'https://npm.pkg.github.com/download/@profitia/cic-core/1.8.0/797fccee13eb0ce11f7130793218c80d7d542d7a',
+ integrity:'sha512-tuun88+cfOHFeCafBw1a8gnExgeDyWBgY7Zd9OPkKk2/Eef0YBP49vzDcXKVpFoCNJGh/CYbeR9B+M2ZXctNsg=='})
+const qualityStage1Branch=ref=>ASSISTANT_QUALITY_SG2_STAGE1_REVIEW.branches.includes(ref)
+export function assertQualityStage1SourceFiles(files,now=Date.now()){
+ const r=ASSISTANT_QUALITY_SG2_STAGE1_REVIEW
+ if(!Number.isFinite(now)||now>=Date.parse(r.expiresAt))fail('QUALITY_STAGE1_SOURCE_WINDOW_EXPIRED')
+ if(!Array.isArray(files)||!files.length||files.length>r.paths.length||new Set(files.map(f=>f.filename)).size!==files.length
+  ||files.some(f=>!r.paths.includes(f.filename)||!['added','modified'].includes(f.status)||!shaPattern.test(f.sha??'')||Object.hasOwn(f,'previous_filename')))
+  fail('QUALITY_STAGE1_SOURCE_SCOPE_REJECTED')
+ const profile=resolveProjectProfile('SG2',controlRoot())
+ for(const file of files){
+  const route=resolveProjectRouting({profile,targets:[file.filename],repositoryRoot:controlRoot()}).results[0]
+  if(!route||route.resolutionStatus!=='RESOLVED'||route.highestSpecificityMatchCount!==1||route.projectBoundaryStatus!=='ALLOWED'||route.baselineClassification!=='ALIGNED')fail('QUALITY_STAGE1_SOURCE_ROUTING_REJECTED')
+ }
+}
+export function qualityStage1PackageAuthority(lock,manifest,host){
+ const expectedLock=structuredClone(lock),expectedManifest=structuredClone(manifest)
+ if(host){
+  expectedManifest.dependencies['@profitia/cic-core']=CIC_QUALITY_STAGE1_PIN.version
+  expectedLock.packages[''].dependencies['@profitia/cic-core']=CIC_QUALITY_STAGE1_PIN.version
+  expectedLock.packages['node_modules/@profitia/cic-core']={...expectedLock.packages['node_modules/@profitia/cic-core'],...CIC_QUALITY_STAGE1_PIN}
+ }
+ return {lock:expectedLock,manifest:expectedManifest}
+}
+export function assertQualityStage1Packages(candidateLock,candidateManifest,authorityLock,authorityManifest,host){
+ const expected=qualityStage1PackageAuthority(authorityLock,authorityManifest,host)
+ if(JSON.stringify(candidateLock)!==JSON.stringify(expected.lock))fail('QUALITY_STAGE1_DEPENDENCY_CHANGE_REJECTED')
+ const before=authorityManifest.scripts['test:assistant'],current=candidateManifest.scripts['test:assistant']
+ const additions=['tests/assistant-quality.test.ts','tests/assistant-quality-integrity.test.mjs',
+  ...(host?['tests/assistant-quality-response.test.ts','tests/assistant-quality-evidence.test.ts','tests/assistant-quality-host-integrity.test.mjs']:[])]
+ // Existing tests and commands are retained. Only these closed test invocations
+ // may be added; no lifecycle hook, arbitrary shell command or test removal.
+ let allowed=before
+ if(!allowed.includes('tests/assistant-quality.test.ts'))allowed=allowed.replace('tests/assistant-history.test.ts','tests/assistant-quality.test.ts tests/assistant-history.test.ts')
+ if(!allowed.includes('tests/assistant-quality-integrity.test.mjs'))allowed+=' && node --test tests/assistant-quality-integrity.test.mjs'
+ if(host&&!allowed.includes('tests/assistant-quality-response.test.ts'))allowed+=' && node --import tsx --test tests/assistant-quality-response.test.ts tests/assistant-quality-evidence.test.ts && node --test tests/assistant-quality-host-integrity.test.mjs'
+ if(current!==allowed||additions.some(name=>!current.includes(name)))fail('QUALITY_STAGE1_TEST_COMMAND_REJECTED')
+ expected.manifest.scripts['test:assistant']=allowed
+ if(JSON.stringify(candidateManifest)!==JSON.stringify(expected.manifest))fail('QUALITY_STAGE1_MANIFEST_CHANGE_REJECTED')
+ assertPackagePolicy(candidateLock,expected.lock,npmrc,{trustedAuthorityMetadata:true})
+ assertManifestPolicy(candidateManifest,expected.manifest,{trustedAuthorityMetadata:true})
+ return true
+}
+function assertQualityStage1Checkout(root,sha,admission){
+ const r=ASSISTANT_QUALITY_SG2_STAGE1_REVIEW
+ assertQualityStage1SourceFiles(admission.files)
+ if(!qualityStage1Branch(admission.branch)||admission.baseSha!==admission.controlSha||execFileSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8'}).trim()!==sha)fail('QUALITY_STAGE1_SOURCE_IDENTITY_REJECTED')
+ for(const ancestor of [r.anchorSha,admission.baseSha]){
+  try{execFileSync('git',['merge-base','--is-ancestor',ancestor,sha],{cwd:root,stdio:'pipe'})}catch{fail('QUALITY_STAGE1_SOURCE_ANCESTRY_REJECTED')}
+ }
+ const changed=execFileSync('git',['diff','--name-only','--no-renames','-z',admission.baseSha+'...'+sha],{cwd:root,encoding:'utf8'}).split('\0').filter(Boolean).sort()
+ if(JSON.stringify(changed)!==JSON.stringify(admission.files.map(f=>f.filename).sort()))fail('QUALITY_STAGE1_SOURCE_DIFF_REJECTED')
+ for(const f of admission.files){
+  const target=path.join(root,f.filename),stat=fs.lstatSync(target),entry=execFileSync('git',['ls-tree','-z',sha,'--',f.filename],{cwd:root,encoding:'utf8'})
+  if(!stat.isFile()||stat.isSymbolicLink()||stat.mode&0o111||stat.size>1024*1024||fs.realpathSync(target)!==target
+   ||entry!=='100644 blob '+f.sha+'\t'+f.filename+'\0'||execFileSync('git',['hash-object','--no-filters','--',f.filename],{cwd:root,encoding:'utf8'}).trim()!==f.sha)fail('QUALITY_STAGE1_SOURCE_BYTES_REJECTED')
+ }
+ // Old guards may receive only the two reviewed continuation bindings. Earlier
+ // receipt files and all other protected policy remain unchanged by the diff.
+ for(const [file,name]of [['assistant-ecr-integrity.mjs','assistantEcrPredecessor'],['assistant-ecr-precision-integrity.mjs','assistantEcrPrecisionPredecessor']]){
+  const rel='apps/sg-runtime/tests/'+file,previous=fs.readFileSync(path.join(controlRoot(),rel),'utf8')
+  const expected=previous.startsWith("import {assistantQualityPredecessor}")?previous
+   :"import {assistantQualityPredecessor} from './assistant-quality-integrity.mjs'\n"+previous.replace('export function '+name+'(current,historical){','export function '+name+'(current,historical){\n const quality=assistantQualityPredecessor(current,historical);if(quality)return '+name+'(quality.previousBytes,historical)')
+  if(fs.readFileSync(path.join(root,rel),'utf8')!==expected)fail('QUALITY_STAGE1_LEGACY_GUARD_REJECTED')
+ }
+ // The existing PI completion test also authenticates package.json. The host
+ // pin must preserve that historical acceptance through the same fully checked
+ // continuation, never by editing its receipt or omitting the existing test.
+ const pi='apps/sg-runtime/tests/procurement-insights-completion-integrity.mjs',previous=fs.readFileSync(path.join(controlRoot(),pi),'utf8')
+ const expected=admission.branch!==r.branches[1]||previous.startsWith("import {assistantQualityPredecessor}")?previous
+  :"import {assistantQualityPredecessor} from './assistant-quality-integrity.mjs'\n"+previous.replace('export function procurementInsightsCompletionPredecessor(current,historical){',
+   'export function procurementInsightsCompletionPredecessor(current,historical){\n const quality=assistantQualityPredecessor(current,historical);if(quality)return procurementInsightsCompletionPredecessor(quality.previousBytes,historical)')
+ if(fs.readFileSync(path.join(root,pi),'utf8')!==expected)fail('QUALITY_STAGE1_PI_GUARD_REJECTED')
+}
+function checkQualityStage1Candidate(root,state){
+ const app=path.join(root,'apps/sg-runtime'),host=state.admission.branch===ASSISTANT_QUALITY_SG2_STAGE1_REVIEW.branches[1]
+ assertQualityStage1Packages(readJson(path.join(app,'package-lock.json')),readJson(path.join(app,'package.json')),
+  readJson(path.join(controlRoot(),'apps/sg-runtime/package-lock.json')),readJson(path.join(controlRoot(),'apps/sg-runtime/package.json')),host)
+ const contract=currentProofContract(root,state.receipt)
+ if(operationContractProvenanceDigest(root,contract,{reviewedPrivateRecurring:true})!==contract.sourceDigest
+  ||JSON.stringify(readJson(path.join(app,'operation-integration.json')))!==JSON.stringify(state.receipt))fail('CONTRACT_PROVENANCE_MISMATCH')
+ return {state,app}
 }
 
 // The producer class remains deliberately narrower than ARCHITECTURE ownership.
@@ -6737,7 +6997,7 @@ export async function resolveCandidateAdmission(c, number, expectedSha, request 
     ? trustedAdmissionById(process.env.SOURCE_ADMISSION_ID,repositoryRoot)
     : findTrustedAdmission(expectedSha,repositoryRoot)
   if (sourceRecord && !pr) fail('SOURCE_ADMISSION_PR_REQUIRED')
-  if (family !== 'ARCHITECTURE' && !sourceRecord) return {sha: selectCandidate(c, pr, expectedSha)}
+  if (family !== 'ARCHITECTURE' && !sourceRecord && !qualityStage1Branch(pr?.head?.ref)) return {sha: selectCandidate(c, pr, expectedSha)}
   if (!Number.isInteger(pr.changed_files) || pr.changed_files < 1 || pr.changed_files > 300) fail('ARCHITECTURE_FILE_LIST_REQUIRED')
   const files = []
   for (let page = 1; page <= 4; page++) {
@@ -6756,11 +7016,18 @@ export async function resolveCandidateAdmission(c, number, expectedSha, request 
     assertSourceAdmission(sourceRecord,{repository:REPOSITORY,actor:current.user.login,candidateSha:expectedSha,currentMainSha:c.controlSha,files},repositoryRoot)
     return {sha:expectedSha,admission:{kind:'TRUSTED_RECORD',recordId:sourceRecord.id,actor:current.user.login,baseSha:c.controlSha,files:files.map(({filename,status,sha})=>({filename,status,sha}))}}
   }
+  if(qualityStage1Branch(current.head.ref)){
+    if(family!=='SG2')fail('QUALITY_STAGE1_SOURCE_IDENTITY_REJECTED')
+    assertQualityStage1SourceFiles(files)
+    const sha=selectCandidate(c,current,expectedSha,{files,repositoryRoot})
+    return {sha,admission:{kind:'QUALITY_STAGE1_SG2',branch:current.head.ref,baseSha:current.base.sha,controlSha:c.controlSha,files:files.map(({filename,status,sha})=>({filename,status,sha}))}}
+  }
   const sha = selectCandidate(c, current, expectedSha, {files, repositoryRoot})
   return {sha, admission: {kind: family, baseSha: pr.base.sha, files: files.map(({filename, status, sha}) => ({filename, status, sha}))}}
 }
 
 export function assertArchitectureCheckout(root, sha, admission, repositoryRoot = controlRoot()) {
+  if(admission?.kind==='QUALITY_STAGE1_SG2')return assertQualityStage1Checkout(root,sha,admission)
   if (admission?.kind === 'TRUSTED_RECORD') {
     const record=trustedAdmissionById(admission.recordId,repositoryRoot)
     return assertSourceCheckout(root,record,{sha,actor:admission.actor,controlSha:admission.baseSha,files:admission.files},repositoryRoot)
@@ -7345,6 +7612,7 @@ function checkCandidate(root = candidateRoot()) {
     return {state,app:checkAdmittedPackages(root),protectedReview,genericSource:true}
   }
   if (state.admission) assertArchitectureCheckout(root, state.sha, state.admission)
+  if(state.admission?.kind==='QUALITY_STAGE1_SG2')return checkQualityStage1Candidate(root,state)
   if(state.admission?.kind==='TRUSTED_RECORD'){
     const sourceRecord=trustedAdmissionById(state.admission.recordId)
     return {state,app:checkAdmittedPackages(root),sourceRecord,genericSource:true}
@@ -7400,8 +7668,11 @@ async function credentialPreflight() {
   try {
     fs.writeFileSync(path.join(directory,'.npmrc'),npmrc,{mode:0o600})
     const lock=readJson(path.join(controlRoot(),'apps/sg-runtime/package-lock.json'))
-    for(const name of PRIVATE_PACKAGES){
-      const pin=lock.packages?.['node_modules/'+name]
+    // This exact additional published artifact is owner-admitted by this finite
+    // legacy engineering review; it is probed before any candidate checkout.
+    const probes=PRIVATE_PACKAGES.map(name=>({name,pin:lock.packages?.['node_modules/'+name]}))
+    if(lock.packages?.['node_modules/@profitia/cic-core']?.version!==CIC_QUALITY_STAGE1_PIN.version)probes.push({name:'@profitia/cic-core',pin:CIC_QUALITY_STAGE1_PIN})
+    for(const {name,pin} of probes){
       const spec=trustedPackageProbeSpec(name,pin)
       const result=spawnSync('npm',['view',spec,'dist','--json','--registry=https://npm.pkg.github.com','--ignore-scripts','--no-audit','--no-fund'],{cwd:directory,env:isolatedNpmEnvironment(directory),encoding:'utf8',timeout:90000,maxBuffer:1048576})
       if(result.status!==0)fail(classifyPackageFailure((result.stderr??'')+(result.stdout??'')))
