@@ -3389,8 +3389,9 @@ test('quality Stage1 resolution fences the exact internal SG2 candidate and auth
 // runs while its source, modes, routes, receipts and history are authenticated.
 test('Calendar complete CI repair keeps original reviews and authenticates the fixed combined owner inputs as data',async()=>{
  const c=await import('./controlled-package-ci.mjs'),r=c.ECR_COMPLETE_FUNCTIONAL_CI_REPAIR;
- assert.equal(Object.keys(r.entries).length,71);
- for(const[p,e]of Object.entries(c.ECR_COMPLETE_FUNCTIONAL_REVIEW.entries))if(p!==c.ECR_COMPLETE_FUNCTIONAL_PROVENANCE.helper)assert.deepEqual(r.entries[p],e);
+ assert.equal(Object.keys(r.entries).length,73);
+ for(const[p,e]of Object.entries(c.ECR_COMPLETE_FUNCTIONAL_REVIEW.entries))if(p!==c.ECR_COMPLETE_FUNCTIONAL_PROVENANCE.helper)assert.deepEqual(p==='apps/architecture-lab/market-calendar-source.mjs'?{...r.entries[p],sha:r.previous[p].blob}:r.entries[p],e);
+ assert.equal(r.entries['apps/architecture-lab/market-calendar-source.mjs'].sha,'c764168fa7d99e0320d1365cd813c01949f58623');
  for(const[p,e]of Object.entries(c.ECR_COMPLETE_FUNCTIONAL_CONSUMER_REVIEW.entries))assert.deepEqual(r.entries[p],e);
  const current=p=>execFileSync('git',(r.entries[p]?['cat-file','blob',r.entries[p].sha]:['show',r.baseSha+':'+p]),{cwd:authorityRoot,stdio:['ignore','pipe','pipe']});
  const historical=(sha,p)=>execFileSync('git',['show',sha+':'+p],{cwd:authorityRoot,stdio:['ignore','pipe','pipe']});
@@ -3467,14 +3468,30 @@ test('protected manifest successor review is exact and independent of live GitHu
 
 test('exact PR1102 source validation reaches the real candidate guard without claiming historical product acceptance',async()=>{
  const c=await import('./controlled-package-ci.mjs'),r=c.MANIFEST_SUCCESSOR_1102_REVIEW;
- const directory=fs.mkdtempSync(path.join(os.tmpdir(),'pi-manifest-proof-')),root=path.join(directory,'candidate');
+ const directory=fs.mkdtempSync(path.join(os.tmpdir(),'pi-manifest-proof-')),root=path.join(directory,'candidate'),control=path.join(directory,'control');
  const files=Object.entries(r.entries).map(([filename,e])=>({filename,sha:e.sha,status:e.status}));
- const controlSha=execFileSync('git',['rev-parse','HEAD'],{cwd:authorityRoot,encoding:'utf8'}).trim();
- // The frozen PR review predates its merge; retain that historical diff base.
- const state={sha:r.sourceSha,controlSha,runId:'12345',admission:{kind:'ARCHITECTURE',baseSha:'4ac4cbab24931a0662bd5244abb6c4b0761cd7fa',files}};
+ const baseSha='4ac4cbab24931a0662bd5244abb6c4b0761cd7fa';
+ const git=(cwd,...args)=>execFileSync('git',args,{cwd,encoding:'utf8',stdio:['ignore','pipe','pipe']}).trim();
  try{
+  // SYNTHETIC_ONLY: the real current trusted controller runs over the exact
+  // dependency context in which this immutable historical source was reviewed.
+  // New SDK metadata has separate current-source tests and is never relaxed.
+  git(authorityRoot,'clone','--quiet','--shared','--no-checkout',authorityRoot,control);
+  git(control,'checkout','--quiet','--detach',baseSha);
+  git(control,'remote','set-url','origin','https://github.com/profitia/SG-dev');
+  for(const file of CONTROL_POLICY_FILES){const target=path.join(control,file);fs.mkdirSync(path.dirname(target),{recursive:true});fs.copyFileSync(path.join(authorityRoot,file),target);}
+  for(const file of CONTROL_POLICY_FILES)assert.deepEqual(fs.readFileSync(path.join(control,file)),fs.readFileSync(path.join(authorityRoot,file)));
+  git(control,'add','--',...CONTROL_POLICY_FILES);
+  git(control,'-c','user.name=Isolated fixture','-c','user.email=fixture@example.invalid','commit','--quiet','--allow-empty','-m','SYNTHETIC_ONLY current controller and immutable historical dependency context');
+  const controlSha=git(control,'rev-parse','HEAD');
+  const state={sha:r.sourceSha,controlSha,runId:'12345',admission:{kind:'ARCHITECTURE',baseSha,files}};
   execFileSync('git',['worktree','add','--detach',root,r.sourceSha],{cwd:authorityRoot,stdio:'pipe'});
-  const metadata=c.assertManifestSuccessorSourceValidation(root,state,authorityRoot);
+  // A historical positive never grants an old source access to a newer SDK.
+  const packageFile='packages/platform-source-hub-contracts/package.json';
+  const actualVersion=JSON.parse(fs.readFileSync(path.join(authorityRoot,packageFile),'utf8')).version;
+  const historicalVersion=JSON.parse(fs.readFileSync(path.join(control,packageFile),'utf8')).version;
+  if(actualVersion!==historicalVersion)assert.throws(()=>c.checkAdmittedPackages(root,authorityRoot),/LOCAL_PACKAGE_VERSION_MISMATCH|LOCAL_DEPENDENCY_REJECTED/);
+  const metadata=c.assertManifestSuccessorSourceValidation(root,state,control);
   assert.deepEqual(metadata,{protectedSourceReviewId:c.MANIFEST_SUCCESSOR_SOURCE_REVIEW_ID,
    protectedSourceReviewDigest:c.manifestSuccessorSourceReviewDigest(),originalSourceSha:r.sourceSha});
   fs.writeFileSync(path.join(directory,'controlled-package-resolution.json'),JSON.stringify(state));
@@ -3483,22 +3500,23 @@ test('exact PR1102 source validation reaches the real candidate guard without cl
    GITHUB_WORKFLOW_REF:'profitia/SG-dev/.github/workflows/platform-contracts-ci.yml@refs/heads/main',
    GITHUB_EVENT_NAME:'workflow_dispatch',GITHUB_ACTOR:'profitia',GITHUB_TRIGGERING_ACTOR:'profitia',
    GITHUB_SHA:controlSha,GITHUB_RUN_ID:state.runId,RUNNER_TEMP:directory,CANDIDATE_ROOT:root};
-  // This exact CLI failed BSDC_MANIFEST_HELPER_REJECTED in run44088013484.
-  // It reads pinned candidate data only; no candidate JS or credentials run.
+  // Invoke actual check-candidate; no candidate JavaScript or credential runs.
   const result=spawnSync(process.execPath,['scripts/governance/controlled-package-ci.mjs','check-candidate'],
-   {cwd:authorityRoot,env,encoding:'utf8'});
+   {cwd:control,env,encoding:'utf8'});
   assert.equal(result.status,0,result.stderr);
-  for(const changed of [{...state,sha:other},{...state,admission:{...state.admission,kind:'TRUSTED_RECORD'}},
+  for(const changed of [{...state,sha:other},{...state,admission:{...state.admission,baseSha:r.sourceSha}},
+   {...state,admission:{...state.admission,kind:'TRUSTED_RECORD'}},
    {...state,admission:{...state.admission,files:files.slice(1)}},
    {...state,admission:{...state.admission,files:files.map((f,i)=>i?f:{...f,sha:other})}}])
-   assert.throws(()=>c.assertManifestSuccessorSourceValidation(root,changed,authorityRoot));
+   assert.throws(()=>c.assertManifestSuccessorSourceValidation(root,changed,control));
   const target=path.join(root,'apps/architecture-lab/market-calendar-source.mjs'),original=fs.readFileSync(target);
   fs.appendFileSync(target,'\nUNREVIEWED');
-  assert.throws(()=>c.assertManifestSuccessorSourceValidation(root,state,authorityRoot));
+  assert.throws(()=>c.assertManifestSuccessorSourceValidation(root,state,control));
   fs.writeFileSync(target,original);
-  assert.deepEqual(c.assertManifestSuccessorSourceValidation(root,state,authorityRoot),metadata);
+  assert.deepEqual(c.assertManifestSuccessorSourceValidation(root,state,control),metadata);
+  assert.equal(git(control,'status','--porcelain','--untracked-files=all'),'');
  }finally{
-  execFileSync('git',['worktree','remove','--force',root],{cwd:authorityRoot,stdio:'pipe'});
+  if(fs.existsSync(root))execFileSync('git',['worktree','remove','--force',root],{cwd:authorityRoot,stdio:'pipe'});
   fs.rmSync(directory,{recursive:true,force:true});
  }
 });
