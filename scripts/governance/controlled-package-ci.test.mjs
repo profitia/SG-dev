@@ -1,3 +1,5 @@
+import {publicProofContract} from './controlled-package-ci.mjs'
+import {PLATFORM_KNOWLEDGE_STAGE2_REVIEW,PLATFORM_KNOWLEDGE_STAGE2_PROVENANCE,assertKnowledgeStage2Entry,knowledgeStage2TrustedPredecessor,currentProofContract} from './controlled-package-ci.mjs'
 import {createExecutionCheckout,assertExecutionCheckout,assertPristineSourceInput} from './controlled-package-ci.mjs'
 import {execFileSync as isolationGitExec} from 'node:child_process'
 import {trustedPackageProbeSpec,assertTrustedPackageRegistryMetadata,assertTrustedPackedArtifact} from './controlled-package-ci.mjs'
@@ -354,7 +356,7 @@ test('actual current source provenance is the exact accepted SDK digest with all
  const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..'),receipt=JSON.parse(fs.readFileSync(path.join(root,'apps/sg-runtime/operation-integration.json'),'utf8'))
  const record=assertPrivateRecurringProvenance(root),receiptBytes=fs.readFileSync(path.join(root,'apps/sg-runtime/operation-integration.json'))
  const currentSdk=await import('./controlled-package-ci.mjs')
- const contract=receipt.sdkSourceContinuations===undefined?privateRecurringProofContract(receipt,record?fs.readFileSync(path.join(root,PRIVATE_RECURRING_PROVENANCE.recordPath)):null,receiptBytes):{...adoptedOperationContract(receipt),sourceDigest:(currentSdk.assertRegistrationSdkProvenance(root).lifecycle??currentSdk.assertRegistrationSdkProvenance(root)).sdkDigests.operationSourceDigest}
+ const contract=currentProofContract(root,receipt)
  assert.equal(operationContractProvenanceDigest(root,contract,{reviewedPrivateRecurring:!!record}),contract.sourceDigest)
  const sdk=await import('../../packages/platform-contracts/src/operation-context.mjs');assert.equal(await sdk.operationSourceDigest(),contract.sourceDigest)
 })
@@ -3197,6 +3199,31 @@ test('Stage I corrected-source continuation real checkout preserves exact source
  }finally{try{execFileSync('git',['worktree','remove','--force',root],{cwd:authorityRoot,stdio:'pipe'})}catch{}fs.rmSync(dir,{recursive:true,force:true});}
 });
 
+// The optional knowledge layer is authenticated as inert data, before any
+// previous source graph is projected. No candidate module is imported.
+test('Platform Knowledge exact owner inputs preserve all candidate and regular-file fences',()=>{
+ const r=PLATFORM_KNOWLEDGE_STAGE2_REVIEW,files=Object.entries(r.entries).map(([filename,e])=>({filename,sha:e.sha,status:e.status}));
+ const p={...architecturePr(files.length),number:r.prNumber,head:{...architecturePr().head,ref:r.branch}};
+ assert.equal(selectCandidate(context(),p,other,{files}),other);
+ for(const f of files){const e=r.entries[f.filename];assertKnowledgeStage2Entry(f,e.mode+' blob '+f.sha+'\t'+f.filename+'\0');for(const mode of ['100755','120000','160000'])assert.throws(()=>assertKnowledgeStage2Entry(f,mode+' blob '+f.sha+'\t'+f.filename+'\0'));}
+ for(const mutate of [p=>p.number++,p=>p.head.ref='architecture/another',p=>p.base.ref='staging',p=>p.user.login='foreign',p=>p.head.repo.full_name='foreign/fork']){const v=structuredClone(p);mutate(v);assert.throws(()=>selectCandidate(context(),v,other,{files}));}
+ for(const mutate of [f=>f.pop(),f=>f.push(f[0]),f=>f[0].sha='0'.repeat(40),f=>f[0].status='removed',f=>f[0].previous_filename='unexpected']){const v=structuredClone(files);mutate(v);assert.throws(()=>selectCandidate(context(),p,other,{files:v}));}
+});
+test('Platform Knowledge authenticates current source and all immutable receipts before its accepted predecessor',()=>{
+ const root=authorityRoot,cache=new Map(),history=(sha,p)=>{const k=sha+':'+p;if(!cache.has(k))cache.set(k,execFileSync('git',['show',k],{cwd:root,stdio:['ignore','pipe','ignore']}));return cache.get(k);};
+ const read=p=>fs.existsSync(path.join(root,PLATFORM_KNOWLEDGE_STAGE2_PROVENANCE.recordPath))?fs.readFileSync(path.join(root,p)):history(PLATFORM_KNOWLEDGE_STAGE2_REVIEW.sourceSha,p);
+ const v=knowledgeStage2TrustedPredecessor(read,history);assert(v);assert.equal(v.manifest.sdkDigests.operationSourceDigest,PLATFORM_KNOWLEDGE_STAGE2_PROVENANCE.operationSourceDigest);
+ for(const p of Object.keys(v.manifest.replacements))assert.deepEqual(v.previousBytes(p),history(v.manifest.previousSourceSha,p));
+ for(const p of v.manifest.knowledgeAddedPaths)assert.throws(()=>v.previousBytes(p),{code:'ENOENT'});
+ for(const p of ['packages/platform-contracts/src/knowledge-operations.mjs','packages/platform-contracts/current-e1-authority/migrations/015-knowledge-authority.sql','apps/sg-runtime/package-lock.json','apps/srm/knowledge-source-adoption.json','apps/sg-runtime/operation-integration.json','apps/architecture-lab/knowledge-source.mjs',PLATFORM_KNOWLEDGE_STAGE2_PROVENANCE.recordPath])assert.throws(()=>knowledgeStage2TrustedPredecessor(f=>f===p?Buffer.concat([read(f),Buffer.from('UNREVIEWED')]):read(f),history));
+ assert.equal(knowledgeStage2TrustedPredecessor(()=>{throw Object.assign(Error('Absent'),{code:'ENOENT'});},history),null);
+ const denied=Object.assign(Error('Denied'),{code:'EACCES'});assert.throws(()=>knowledgeStage2TrustedPredecessor(()=>{throw denied;},history),e=>e===denied);
+ // Actual accepted-source verification remains in the current-source SDK test above.
+ // This fixture independently authenticates every proposed byte even before admission.
+ assert.equal(Object.keys(v.manifest.sourceDigests).length,407);
+ assert.equal(Object.keys({...v.manifest.preservedReceipts,...v.manifest.retainedSuccessorReceipts}).length,15);
+});
+
 
 test('trusted policy content reader verifies small immutable files without a blob fallback',async()=>{
  const {readControlPolicyFile}=await import('./controlled-package-ci.mjs'),name=CONTROL_POLICY_FILES[0],bytes=Buffer.from('trusted policy\n')
@@ -3230,4 +3257,60 @@ test('trusted policy content reader refuses mismatched or unavailable large Git 
  for(const change of [{sha:other},{size:bytes.length-1},{encoding:'none'},{content:''},{content:Buffer.alloc(bytes.length,98).toString('base64')}])
   await assert.rejects(()=>readControlPolicyFile(name,sha,async endpoint=>({data:endpoint.includes('/git/blobs/')?{...correct,...change}:metadata})),/CONTROL_POLICY_CONTENT_(REJECTED|MISMATCH)/)
  await assert.rejects(()=>readControlPolicyFile(name,sha,async endpoint=>{if(endpoint.includes('/git/blobs/'))throw Error('GITHUB_API_403');return {data:metadata}}),/GITHUB_API_403/)
+})
+
+
+test('Calendar PI compatibility preserves original58+7 and admits only the exact three-file SG2 repair',async()=>{
+ const c=await import('./controlled-package-ci.mjs'),r=c.ECR_COMPLETE_FUNCTIONAL_PI_REVIEW,cfg=c.ECR_COMPLETE_FUNCTIONAL_PI_COMPAT;
+ assert.equal(Object.keys(r.entries).length,61);assert.equal(Object.keys(cfg.entries).length,3);
+ for(const[p,e]of Object.entries(c.ECR_COMPLETE_FUNCTIONAL_REVIEW.entries))assert.deepEqual(r.entries[p],e);
+ assert(Object.values(cfg.entries).every(e=>e.projectKey==='SG2'&&e.owner==='SG Runtime'&&e.surfaceId==='SG2-BASE-001'));
+ const files=Object.entries(r.entries).map(([filename,e])=>({filename,sha:e.sha,status:e.status}));
+ const p={...pr(),number:r.prNumber,changed_files:files.length,base:{...pr().base,sha:r.baseSha},head:{...pr().head,sha:r.sourceSha,ref:r.branch}};
+ assertArchitectureFiles(p,files);assert.equal(selectCandidate(context(),p,r.sourceSha,{files}),r.sourceSha);
+ for(const changed of [files.slice(1),[...files,{filename:'apps/sg-runtime/unapproved.ts',sha:'a'.repeat(40),status:'added'}],files.map((f,i)=>i?f:{...f,sha:'f'.repeat(40)}),files.map((f,i)=>i?f:{...f,previous_filename:'old.ts'})])rejection(()=>selectCandidate(context(),{...p,changed_files:changed.length},r.sourceSha,{files:changed}));
+ for(const f of files){c.assertCompleteFunctionalReviewEntry(f,r.entries[f.filename].mode+' blob '+f.sha+'\t'+f.filename+'\0',r);rejection(()=>c.assertCompleteFunctionalReviewEntry(f,'100755 blob '+f.sha+'\t'+f.filename+'\0',r));}
+ for(const change of [{number:1096},{head:{...p.head,ref:'sg2/foreign'}},{head:{...p.head,sha:'f'.repeat(40)}}])rejection(()=>selectCandidate(context(),{...p,...change},r.sourceSha,{files}));
+});
+test('Calendar PI repair authenticates physical producer, bridge and immutable history before any old view',async()=>{
+ const c=await import('./controlled-package-ci.mjs'),cfg=c.ECR_COMPLETE_FUNCTIONAL_PI_COMPAT;
+ const historical=(sha,p)=>isolationGitExec('git',['show',sha+':'+p],{cwd:authorityRoot,stdio:['ignore','pipe','pipe']});
+ const current=p=>historical(cfg.sourceSha,p),previous=c.completeFunctionalPiTrustedCurrent(current,historical);
+ assert.deepEqual(previous(cfg.hookPath),historical(cfg.baseSha,cfg.hookPath));
+ for(const[p,e]of Object.entries(cfg.entries)){
+  rejection(()=>c.completeFunctionalPiTrustedCurrent(f=>f===p?Buffer.concat([current(f),Buffer.from('UNACCEPTED')]):current(f),historical));
+  if(e.status==='added')assert.throws(()=>previous(p),{code:'ENOENT'});
+ }
+ for(const p of Object.keys(c.ECR_COMPLETE_FUNCTIONAL_REVIEW.entries))rejection(()=>c.completeFunctionalPiTrustedCurrent(f=>f===p?Buffer.concat([current(f),Buffer.from('UNACCEPTED')]):current(f),historical));
+ rejection(()=>c.completeFunctionalPiTrustedCurrent(current,(sha,p)=>p===cfg.hookPath?Buffer.concat([historical(sha,p),Buffer.from('UNACCEPTED')]):historical(sha,p)));
+ rejection(()=>c.completeFunctionalPiTrustedCurrent(p=>{if(p===c.ECR_COMPLETE_FUNCTIONAL_PROVENANCE.producerRecord)throw Object.assign(Error('absent'),{code:'ENOENT'});return current(p)},historical));
+ assert.throws(()=>c.completeFunctionalPiTrustedCurrent(()=>{throw Object.assign(Error('denied'),{code:'EACCES'})},historical),{code:'EACCES'});
+});
+
+// A real accepted-owner composition proves that the independent public path
+// derives the same exact contract as the trusted producer's filesystem guard.
+test('public proof uses the exact current knowledge record and matches the real controlled source contract',()=>{
+ const dir=fs.mkdtempSync(path.join(os.tmpdir(),'pk-public-proof-')),root=path.join(dir,'source'),review=PLATFORM_KNOWLEDGE_STAGE2_REVIEW
+ try{
+  execFileSync('git',['worktree','add','--detach',root,review.sourceSha],{cwd:authorityRoot,stdio:'pipe'})
+  const receiptBytes=fs.readFileSync(path.join(root,'apps/sg-runtime/operation-integration.json')),receipt=JSON.parse(receiptBytes),recurringRecord=fs.readFileSync(path.join(root,'apps/architecture-lab/private-recurring-source.json')),knowledgeRecord=fs.readFileSync(path.join(root,PLATFORM_KNOWLEDGE_STAGE2_PROVENANCE.recordPath)),options={receiptBytes,recurringRecord,knowledgeRecord}
+  const expected=currentProofContract(root,receipt),actual=publicProofContract(receipt,options)
+  assert.deepEqual(actual,expected)
+  assert.equal(actual.sourceDigest,PLATFORM_KNOWLEDGE_STAGE2_PROVENANCE.operationSourceDigest)
+  const prior=publicProofContract(receipt,{...options,knowledgeRecord:null})
+  assert.deepEqual({...actual,sourceDigest:prior.sourceDigest},prior)
+  assert.notEqual(prior.sourceDigest,actual.sourceDigest,'the stale public recipe must not silently accept a different SDK')
+  for(const bytes of [Buffer.from('{}'),Buffer.concat([knowledgeRecord,Buffer.from('\n')]),Buffer.from(knowledgeRecord.toString().replace('SOURCE_ACCEPTANCE','SOURCE_ACCEPTANCE_FORGED'))])
+   assert.throws(()=>publicProofContract(receipt,{...options,knowledgeRecord:bytes}),/KNOWLEDGE_STAGE2_RECORD_REJECTED/)
+  const old=execFileSync('git',['show','8ffe8b2a19ebba0da5a29d23031ba41938a830d7:'+PLATFORM_KNOWLEDGE_STAGE2_PROVENANCE.recordPath],{cwd:authorityRoot,stdio:['ignore','pipe','pipe']})
+  assert.throws(()=>publicProofContract(receipt,{...options,knowledgeRecord:old}),/KNOWLEDGE_STAGE2_RECORD_REJECTED/)
+  assert.throws(()=>publicProofContract({...receipt,projectKey:'FOREIGN'},options))
+  assert.throws(()=>publicProofContract(receipt,{...options,recurringRecord:Buffer.from('{}')}))
+ }finally{execFileSync('git',['worktree','remove','--force',root],{cwd:authorityRoot,stdio:'pipe'});fs.rmSync(dir,{recursive:true,force:true})}
+})
+test('public proof absence preserves every original authority-source contract field',()=>{
+ const receiptBytes=fs.readFileSync(path.join(authorityRoot,'apps/sg-runtime/operation-integration.json')),receipt=JSON.parse(receiptBytes),recurringRecord=fs.readFileSync(path.join(authorityRoot,'apps/architecture-lab/private-recurring-source.json'))
+ const before=JSON.stringify(receipt)
+ assert.deepEqual(publicProofContract(receipt,{receiptBytes,recurringRecord}),privateRecurringProofContract(receipt,recurringRecord,receiptBytes))
+ assert.equal(JSON.stringify(receipt),before)
 })
