@@ -64,3 +64,10 @@ test('keyless rejected-request diagnostics expose only finite protocol shape, ne
   assert(!JSON.stringify(seen).includes('SYNTHETIC_PRIVATE_VALUE'));assert(!JSON.stringify(seen).includes('synthetic_private_key'));assert(!JSON.stringify(seen).includes('Synthetic coding fixture'));assert(!JSON.stringify(seen).includes(token))
  }finally{await broker.close()}
 })
+
+test('CLI local client metadata is bounded and discarded before any billable request identity or provider payload',()=>{
+ const ordinary=boundAgentRequest(request())
+ const withLocal=boundAgentRequest({...request(),client_metadata:{'x-codex-session-id':'SYNTHETIC_SESSION_ONLY','x-codex-client':'synthetic'}})
+ assert.deepEqual(withLocal,ordinary);assert(!JSON.stringify(withLocal).includes('SYNTHETIC_SESSION_ONLY'))
+ for(const client_metadata of [[],{nested:{}},{oversized:'x'.repeat(8193)},Object.fromEntries(Array.from({length:33},(_,i)=>['field'+i,'value']))])assert.throws(()=>boundAgentRequest({...request(),client_metadata}),{code:'CLIENT_METADATA_REJECTED'})
+})
