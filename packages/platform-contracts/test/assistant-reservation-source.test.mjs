@@ -13,7 +13,7 @@ test('exact reservation source closes all three owners and preserves every accep
  const result=assistantReservationPredecessor(current,historical,pin());assert(result)
  assert.equal(result.manifest.outputTokens,2048);assert.equal(result.manifest.sql006Installed,false)
  for(const p of RESERVATION_RECEIPTS)assert.deepEqual(result.previousBytes(p),historical(RESERVATION_BASE,p))
- for(const p of RESERVATION_PATHS.filter(p=>!p.endsWith('assistant-reservation-source.mjs')&&!p.endsWith('assistant-reservation-source.test.mjs')&&!p.endsWith('006-assistant-reservation-diagnostics.sql')))assert.deepEqual(result.previousBytes(p),historical(RESERVATION_BASE,p))
+ for(const p of RESERVATION_PATHS.filter(p=>!p.endsWith('assistant-reservation-source.mjs')&&!p.endsWith('assistant-reservation-source.test.mjs')&&!p.endsWith('006-assistant-reservation-diagnostics.sql')))assert.deepEqual(result.previousBytes(p),historical(p==="apps/sg-runtime/tests/procurement-insights-editorial-integrity.mjs"?"52c5edbf282d68af1c6fb6e0c9f0f06c7a89ac50":RESERVATION_BASE,p))
  assert.throws(()=>result.previousBytes(RESERVATION_RECORD),{code:'ENOENT'})
 })
 test('every changed producer, consumer, SQL, helper and derived source byte is authenticated before projection',()=>{
@@ -28,4 +28,12 @@ test('missing record is unadopted while unreadable or malformed present records 
  assert.equal(assistantReservationPredecessor(p=>{if(p===RESERVATION_RECORD)throw Object.assign(Error('absent'),{code:'ENOENT'});return current(p)},historical,pin()),null)
  assert.throws(()=>assistantReservationPredecessor(p=>{if(p===RESERVATION_RECORD)throw Object.assign(Error('denied'),{code:'EACCES'});return current(p)},historical,pin()))
  assert.throws(()=>assistantReservationPredecessor(p=>p===RESERVATION_RECORD?Buffer.from('{}'):current(p),historical,pin()))
+})
+
+test('editorial predecessor preserves the accepted Finder helper and rejects historical byte drift',()=>{
+ const p="apps/sg-runtime/tests/procurement-insights-editorial-integrity.mjs",reference="52c5edbf282d68af1c6fb6e0c9f0f06c7a89ac50"
+ const result=assistantReservationPredecessor(current,historical,pin());assert(result)
+ assert.deepEqual(result.previousBytes(p),historical(reference,p))
+ const altered=assistantReservationPredecessor(current,(sha,name)=>sha===reference&&name===p?Buffer.concat([historical(sha,name),Buffer.from('tamper')]):historical(sha,name),pin())
+ assert.throws(()=>altered.previousBytes(p),/exact accepted Finder editorial predecessor/)
 })

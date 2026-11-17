@@ -8,6 +8,7 @@ import path from 'node:path'
 export const RESERVATION_RECORD="apps/architecture-lab/assistant-reservation-source.json"
 export const RESERVATION_BASE="c31fd80278561adec8d066392417bb057d191192"
 export const RESERVATION_PATHS=Object.freeze([
+ "apps/sg-runtime/tests/procurement-insights-editorial-integrity.mjs",
  "apps/platform-source-hub/scripts/ci-routing.mjs",
  "apps/newsfeed-runtime/test/runtime.test.mjs",
  "scripts/governance/controlled-package-ci.test.mjs",
@@ -52,6 +53,7 @@ export const RESERVATION_PATHS=Object.freeze([
  "packages/platform-contracts/test/recurring-consent-transport.test.mjs"
 ])
 export const RESERVATION_SG2_PATHS=Object.freeze([
+ "apps/sg-runtime/tests/procurement-insights-editorial-integrity.mjs",
  "apps/sg-runtime/lib/assistant/conversation.ts",
  "apps/sg-runtime/lib/assistant/model.ts",
  "apps/sg-runtime/lib/assistant/runtime.ts",
@@ -129,7 +131,12 @@ export function assistantReservationPredecessor(current,historical,expectedDiges
  return {manifest:a,previousBytes:p=>{
   if(additions.has(p))throw Object.assign(Error('Reservation source absent from predecessor'),{code:'ENOENT'})
   if(!mapped.has(p))return current(p)
-  if(!cache.has(p))cache.set(p,Buffer.from(historical(RESERVATION_BASE,p)))
+  if(!cache.has(p)){
+   const reference=p==="apps/sg-runtime/tests/procurement-insights-editorial-integrity.mjs"?"52c5edbf282d68af1c6fb6e0c9f0f06c7a89ac50":RESERVATION_BASE
+   const before=Buffer.from(historical(reference,p))
+   if(p==="apps/sg-runtime/tests/procurement-insights-editorial-integrity.mjs")assert.equal(hash(before),"4d67bec4b83487590e80abdbf51bed308c1156873b7227ffb6030777ba67956b",'exact accepted Finder editorial predecessor')
+   cache.set(p,before)
+  }
   return Buffer.from(cache.get(p))
  }}
 }
@@ -168,7 +175,7 @@ export async function createAcgLegacyRecurringFixture(sourceRoot) {
     const authoritySha = String(git(['rev-parse', '--verify', 'refs/remotes/origin/main^{commit}'])).trim()
     execFileSync('git', ['update-ref', 'refs/remotes/origin/main', authoritySha], {cwd: root, stdio: ['ignore', 'pipe', 'pipe']})
     const paths = [RESERVATION_RECORD, ...RESERVATION_PATHS, RESERVATION_DERIVED]
-    assert.equal(new Set(paths).size, 44, 'closed reservation fixture inventory')
+    assert.equal(new Set(paths).size, 45, 'closed reservation fixture inventory')
     for (const relative of paths) {
       assert(!path.isAbsolute(relative) && !relative.split('/').includes('..'))
       const file = path.join(root, relative)

@@ -168,13 +168,13 @@ test('historical recurring routing refuses changed bytes, symbolic files and add
 function reservationRoutingFixture(){
  const temporary=fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(),'hub-acg-reservation-'))),root=path.join(temporary,'candidate')
  const git=(cwd,...args)=>execFileSync('git',args,{cwd,encoding:'utf8',stdio:['ignore','pipe','pipe']}).trim()
- const baseSha='9eae235dd7ce50d09967977e7417afabb0dbab10'
+ const baseSha='1888f0f707ab382e8886f31bedb5983e1f5a1026'
  try{
   git(temporary,'clone','--shared','--quiet','--no-checkout',repositoryRoot,root)
   git(root,'checkout','--quiet','--detach',baseSha)
   git(root,'update-ref','refs/remotes/origin/main',git(repositoryRoot,'rev-parse','origin/main'))
   const paths=[...Object.keys(reservationSource.manifest.sourceDigests),RESERVATION_RECORD,RESERVATION_DERIVED]
-  assert.equal(paths.length,44);assert.equal(new Set(paths).size,44)
+  assert.equal(paths.length,45);assert.equal(new Set(paths).size,45)
   for(const p of paths){
    const source=path.join(repositoryRoot,p),stat=fs.lstatSync(source);assert(stat.isFile()&&!stat.isSymbolicLink())
    const target=path.join(root,p);fs.mkdirSync(path.dirname(target),{recursive:true});fs.writeFileSync(target,fs.readFileSync(source))
