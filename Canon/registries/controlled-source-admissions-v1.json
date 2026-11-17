@@ -4,162 +4,6 @@
   "scope": "SOURCE_VALIDATION_ONLY",
   "records": [
     {
-      "id": "ARCHITECTURE:ARCH-CLOUD-DEVELOPMENT-STANDARD-CONT-20261116",
-      "status": "ACTIVE",
-      "repository": "profitia/SG-dev",
-      "actor": "profitia",
-      "taskId": "ARCH-CLOUD-DEVELOPMENT-STANDARD-CONT-20261116",
-      "targetEnvironment": "development",
-      "scope": "SOURCE_VALIDATION_ONLY",
-      "approvalRef": "owner-decision:01a1e538-b4a8-7d43-a3ca-35cf9711e157:SG-DEV-STANDARD-1087-V1",
-      "sourceSha": "75ef419444f3d7476243c656079b35e504dab81a",
-      "baseSha": "80875d8f0e9451cd9afd34e8baf2a8f6059bc064",
-      "validFrom": "2026-11-16T00:00:00.000Z",
-      "validUntil": "2026-11-23T23:59:59.000Z",
-      "files": [
-        {
-          "path": "apps/architecture-lab/docs/cloud-development-admission-pilot.md",
-          "blob": "f359291d379815c3b443792bab56d83051180a39",
-          "mode": "100644",
-          "status": "added",
-          "projectKey": "ARCHITECTURE",
-          "owner": "Architecture Platform",
-          "surfaceId": "ARCH-BASE-002"
-        }
-      ]
-    },
-    {
-      "id": "SG2:SG2-PI-E2E-COMPLETION-20261117",
-      "status": "ACTIVE",
-      "repository": "profitia/SG-dev",
-      "actor": "profitia",
-      "taskId": "SG2-PI-E2E-COMPLETION-20261117",
-      "targetEnvironment": "development",
-      "scope": "SOURCE_VALIDATION_ONLY",
-      "approvalRef": "owner-decision:01a1e7fd-01d1-7973-b3c3-8188664826c3:PI-CI-51a098cf-20261117",
-      "sourceSha": "51a098cf8a4718ddb838d27276d47f083323c357",
-      "baseSha": "df57c042e2fbd60fc14ea7f883f245ea6be8e2ee",
-      "validFrom": "2026-11-17T10:07:54.521142Z",
-      "validUntil": "2026-11-23T22:59:00.000Z",
-      "files": [
-        {
-          "path": "apps/sg-runtime/components/procurement-insights/localization.ts",
-          "blob": "c62d02fe9a653b3b28f301990f9f5eac5eb4051f",
-          "mode": "100644",
-          "status": "added",
-          "projectKey": "SG2",
-          "owner": "SG Runtime",
-          "surfaceId": "SG2-BASE-001"
-        },
-        {
-          "path": "apps/sg-runtime/components/procurement-insights/observation-form.tsx",
-          "blob": "a79b8b8e3dfc855b5cfe48e3d6fa0ba07c835a44",
-          "mode": "100644",
-          "status": "modified",
-          "projectKey": "SG2",
-          "owner": "SG Runtime",
-          "surfaceId": "SG2-BASE-001"
-        },
-        {
-          "path": "apps/sg-runtime/components/procurement-insights/reports.tsx",
-          "blob": "215f36b4bbde7f3e69ead8968dd7465718c120a2",
-          "mode": "100644",
-          "status": "modified",
-          "projectKey": "SG2",
-          "owner": "SG Runtime",
-          "surfaceId": "SG2-BASE-001"
-        },
-        {
-          "path": "apps/sg-runtime/components/procurement-insights/statistics.tsx",
-          "blob": "b05a61bc719cd1d200d2d828d018973a9d9d6738",
-          "mode": "100644",
-          "status": "modified",
-          "projectKey": "SG2",
-          "owner": "SG Runtime",
-          "surfaceId": "SG2-BASE-001"
-        },
-        {
-          "path": "apps/sg-runtime/components/procurement-insights/workspace.tsx",
-          "blob": "46b85b2fafaee5527878852e35548a509ff85b8c",
-          "mode": "100644",
-          "status": "modified",
-          "projectKey": "SG2",
-          "owner": "SG Runtime",
-          "surfaceId": "SG2-BASE-001"
-        },
-        {
-          "path": "apps/sg-runtime/procurement-insights-e2e-continuation.json",
-          "blob": "4eb9104781df7ee7e0a107f874bbd228063804f7",
-          "mode": "100644",
-          "status": "added",
-          "projectKey": "SG2",
-          "owner": "SG Runtime",
-          "surfaceId": "SG2-BASE-001"
-        },
-        {
-          "path": "apps/sg-runtime/tests/assistant-notifications-integrity.mjs",
-          "blob": "1926d47658d8e2fe553c326214640d8ffdcc11df",
-          "mode": "100644",
-          "status": "modified",
-          "projectKey": "SG2",
-          "owner": "SG Runtime",
-          "surfaceId": "SG2-BASE-001"
-        },
-        {
-          "path": "apps/sg-runtime/tests/procurement-insights-completion.test.mjs",
-          "blob": "3899d9335eadac290bd4c938e57342f02ee3f6bb",
-          "mode": "100644",
-          "status": "modified",
-          "projectKey": "SG2",
-          "owner": "SG Runtime",
-          "surfaceId": "SG2-BASE-001"
-        },
-        {
-          "path": "apps/sg-runtime/tests/procurement-insights-e2e-continuation.test.tsx",
-          "blob": "e9b797fc57a2b40760ee0e0383e05853667b9bbd",
-          "mode": "100644",
-          "status": "added",
-          "projectKey": "SG2",
-          "owner": "SG Runtime",
-          "surfaceId": "SG2-BASE-001"
-        },
-        {
-          "path": "apps/sg-runtime/tests/procurement-insights-notification-navigation.test.tsx",
-          "blob": "a16fca68251893573c79b958a637a6b25c385114",
-          "mode": "100644",
-          "status": "modified",
-          "projectKey": "SG2",
-          "owner": "SG Runtime",
-          "surfaceId": "SG2-BASE-001"
-        }
-      ]
-    },
-    {
-      "id": "ARCHITECTURE:ARCH-PI-EDITORIAL-CONTINUITY-ACCEPTANCE-20261117",
-      "status": "ACTIVE",
-      "repository": "profitia/SG-dev",
-      "actor": "profitia",
-      "taskId": "ARCH-PI-EDITORIAL-CONTINUITY-ACCEPTANCE-20261117",
-      "targetEnvironment": "development",
-      "scope": "SOURCE_VALIDATION_ONLY",
-      "approvalRef": "https://github.com/profitia/SG-dev/pull/1118",
-      "sourceSha": "6ddb514c3a99b577fa1027f71d0dc35094b91e23",
-      "baseSha": "1c82689265ef0e776100808531a8f77a83a429e7",
-      "validFrom": "2026-11-17T00:00:00Z",
-      "validUntil": "2026-11-18T00:00:00Z",
-      "files": [
-        {
-          "path": "apps/architecture-lab/test/manifest-successor-continuity.test.mjs",
-          "blob": "4eff37c11e5cfd58ebdfe7ddea418732ee333903",
-          "mode": "100644",
-          "status": "modified",
-          "projectKey": "ARCHITECTURE",
-          "owner": "Architecture Platform",
-          "surfaceId": "ARCH-BASE-002"
-        }
-      ]
-    },
-    {
       "id": "SRM:SRM-VERCLY-RESUME-20261117",
       "status": "ACTIVE",
       "repository": "profitia/SG-dev",
@@ -352,6 +196,196 @@
           "projectKey": "SRM",
           "owner": "SRM Runtime",
           "surfaceId": "SG2-BASE-016"
+        }
+      ]
+    },
+    {
+      "id": "ARCHITECTURE:ARCH-CLOUD-DEVELOPMENT-STANDARD-CONT-20261116",
+      "status": "ACTIVE",
+      "repository": "profitia/SG-dev",
+      "actor": "profitia",
+      "taskId": "ARCH-CLOUD-DEVELOPMENT-STANDARD-CONT-20261116",
+      "targetEnvironment": "development",
+      "scope": "SOURCE_VALIDATION_ONLY",
+      "approvalRef": "owner-decision:01a1e538-b4a8-7d43-a3ca-35cf9711e157:SG-DEV-STANDARD-1087-V1",
+      "sourceSha": "75ef419444f3d7476243c656079b35e504dab81a",
+      "baseSha": "80875d8f0e9451cd9afd34e8baf2a8f6059bc064",
+      "validFrom": "2026-11-16T00:00:00.000Z",
+      "validUntil": "2026-11-23T23:59:59.000Z",
+      "files": [
+        {
+          "path": "apps/architecture-lab/docs/cloud-development-admission-pilot.md",
+          "blob": "f359291d379815c3b443792bab56d83051180a39",
+          "mode": "100644",
+          "status": "added",
+          "projectKey": "ARCHITECTURE",
+          "owner": "Architecture Platform",
+          "surfaceId": "ARCH-BASE-002"
+        }
+      ]
+    },
+    {
+      "id": "SG2:SG2-PI-E2E-COMPLETION-20261117",
+      "status": "ACTIVE",
+      "repository": "profitia/SG-dev",
+      "actor": "profitia",
+      "taskId": "SG2-PI-E2E-COMPLETION-20261117",
+      "targetEnvironment": "development",
+      "scope": "SOURCE_VALIDATION_ONLY",
+      "approvalRef": "owner-decision:01a1e7fd-01d1-7973-b3c3-8188664826c3:PI-CI-51a098cf-20261117",
+      "sourceSha": "51a098cf8a4718ddb838d27276d47f083323c357",
+      "baseSha": "df57c042e2fbd60fc14ea7f883f245ea6be8e2ee",
+      "validFrom": "2026-11-17T10:07:54.521142Z",
+      "validUntil": "2026-11-23T22:59:00.000Z",
+      "files": [
+        {
+          "path": "apps/sg-runtime/components/procurement-insights/localization.ts",
+          "blob": "c62d02fe9a653b3b28f301990f9f5eac5eb4051f",
+          "mode": "100644",
+          "status": "added",
+          "projectKey": "SG2",
+          "owner": "SG Runtime",
+          "surfaceId": "SG2-BASE-001"
+        },
+        {
+          "path": "apps/sg-runtime/components/procurement-insights/observation-form.tsx",
+          "blob": "a79b8b8e3dfc855b5cfe48e3d6fa0ba07c835a44",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SG2",
+          "owner": "SG Runtime",
+          "surfaceId": "SG2-BASE-001"
+        },
+        {
+          "path": "apps/sg-runtime/components/procurement-insights/reports.tsx",
+          "blob": "215f36b4bbde7f3e69ead8968dd7465718c120a2",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SG2",
+          "owner": "SG Runtime",
+          "surfaceId": "SG2-BASE-001"
+        },
+        {
+          "path": "apps/sg-runtime/components/procurement-insights/statistics.tsx",
+          "blob": "b05a61bc719cd1d200d2d828d018973a9d9d6738",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SG2",
+          "owner": "SG Runtime",
+          "surfaceId": "SG2-BASE-001"
+        },
+        {
+          "path": "apps/sg-runtime/components/procurement-insights/workspace.tsx",
+          "blob": "46b85b2fafaee5527878852e35548a509ff85b8c",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SG2",
+          "owner": "SG Runtime",
+          "surfaceId": "SG2-BASE-001"
+        },
+        {
+          "path": "apps/sg-runtime/procurement-insights-e2e-continuation.json",
+          "blob": "4eb9104781df7ee7e0a107f874bbd228063804f7",
+          "mode": "100644",
+          "status": "added",
+          "projectKey": "SG2",
+          "owner": "SG Runtime",
+          "surfaceId": "SG2-BASE-001"
+        },
+        {
+          "path": "apps/sg-runtime/tests/assistant-notifications-integrity.mjs",
+          "blob": "1926d47658d8e2fe553c326214640d8ffdcc11df",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SG2",
+          "owner": "SG Runtime",
+          "surfaceId": "SG2-BASE-001"
+        },
+        {
+          "path": "apps/sg-runtime/tests/procurement-insights-completion.test.mjs",
+          "blob": "3899d9335eadac290bd4c938e57342f02ee3f6bb",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SG2",
+          "owner": "SG Runtime",
+          "surfaceId": "SG2-BASE-001"
+        },
+        {
+          "path": "apps/sg-runtime/tests/procurement-insights-e2e-continuation.test.tsx",
+          "blob": "e9b797fc57a2b40760ee0e0383e05853667b9bbd",
+          "mode": "100644",
+          "status": "added",
+          "projectKey": "SG2",
+          "owner": "SG Runtime",
+          "surfaceId": "SG2-BASE-001"
+        },
+        {
+          "path": "apps/sg-runtime/tests/procurement-insights-notification-navigation.test.tsx",
+          "blob": "a16fca68251893573c79b958a637a6b25c385114",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SG2",
+          "owner": "SG Runtime",
+          "surfaceId": "SG2-BASE-001"
+        }
+      ]
+    },
+    {
+      "id": "ARCHITECTURE:ARCH-PI-EDITORIAL-CONTINUITY-ACCEPTANCE-20261117",
+      "status": "ACTIVE",
+      "repository": "profitia/SG-dev",
+      "actor": "profitia",
+      "taskId": "ARCH-PI-EDITORIAL-CONTINUITY-ACCEPTANCE-20261117",
+      "targetEnvironment": "development",
+      "scope": "SOURCE_VALIDATION_ONLY",
+      "approvalRef": "https://github.com/profitia/SG-dev/pull/1118",
+      "sourceSha": "6ddb514c3a99b577fa1027f71d0dc35094b91e23",
+      "baseSha": "1c82689265ef0e776100808531a8f77a83a429e7",
+      "validFrom": "2026-11-17T00:00:00Z",
+      "validUntil": "2026-11-18T00:00:00Z",
+      "files": [
+        {
+          "path": "apps/architecture-lab/test/manifest-successor-continuity.test.mjs",
+          "blob": "4eff37c11e5cfd58ebdfe7ddea418732ee333903",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "ARCHITECTURE",
+          "owner": "Architecture Platform",
+          "surfaceId": "ARCH-BASE-002"
+        }
+      ]
+    },
+    {
+      "id": "ARCHITECTURE:ARCH-FINDER-AUDIT-INDEX-RECOVERY-20261117",
+      "status": "ACTIVE",
+      "repository": "profitia/SG-dev",
+      "actor": "profitia",
+      "taskId": "ARCH-FINDER-AUDIT-INDEX-RECOVERY-20261117",
+      "targetEnvironment": "development",
+      "scope": "SOURCE_VALIDATION_ONLY",
+      "approvalRef": "owner-decision:01a1e92f-cd84-7a92-97d7-36d3fbc49ef0:FINDER-INDEX-CI-MIGRATION-80a7d9c8-20261117",
+      "sourceSha": "80a7d9c854f510fbaabf0437051293e0faec1200",
+      "baseSha": "1f5256518645353c1bcaa316e44f01a7b89f89ac",
+      "validFrom": "2026-11-17T13:23:14.022Z",
+      "validUntil": "2026-11-18T22:59:00.000Z",
+      "files": [
+        {
+          "path": "packages/platform-contracts/migrations/access/033-native-phase-audit-indexes.sql",
+          "blob": "b6f5255348ddf088c740999f1b5f1387017aee40",
+          "mode": "100644",
+          "status": "added",
+          "projectKey": "ARCHITECTURE",
+          "owner": "Architecture Platform",
+          "surfaceId": "ARCH-BASE-001"
+        },
+        {
+          "path": "packages/platform-contracts/test/current-work-audit-index.test.mjs",
+          "blob": "d6c07ad4fca2bc2908d13bc9b10062e5b73e864a",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "ARCHITECTURE",
+          "owner": "Architecture Platform",
+          "surfaceId": "ARCH-BASE-001"
         }
       ]
     }
