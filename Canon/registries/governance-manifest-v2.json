@@ -1,6 +1,6 @@
 {
   "schemaVersion": "2.0",
-  "manifestVersion": "3.51.1",
+  "manifestVersion": "3.52.0",
   "owner": "Profitia Governance",
   "entrypoint": "AGENTS.md",
   "preflight": "scripts/governance/governance-preflight.mjs",
@@ -1654,6 +1654,21 @@
         "full-autopilot-outcome-first"
       ],
       "supersededBy": "business-solution-design-and-canonization-launcher"
+    },
+    {
+      "id": "procurement-insights-narrative-and-editorial-canon",
+      "version": "1.0",
+      "path": "Canon/v1.0-procurement-insights-narrative-and-editorial-canon.md",
+      "status": "ACTIVE",
+      "loadOrder": 526,
+      "owner": "Governance Source Layer / Procurement Insights Product Owner",
+      "appliesTo": [
+        "SG2",
+        "ARCHITECTURE"
+      ],
+      "dependsOn": [
+        "agent-execution-canon"
+      ]
     }
   ]
 }
