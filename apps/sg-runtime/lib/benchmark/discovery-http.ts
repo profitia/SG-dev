@@ -1,8 +1,9 @@
+import {bindSg2RequestRuntime} from '@/lib/platform/organisation-context'
 import {readPresentationJson} from '@profitia/platform-contracts/embedded-read-channel'
 import {discoveryUuid,readDiscoveryCommand,type DiscoveryCommand} from './discovery-operation'
 import {discoveryFailure,type DiscoveryApi} from './discovery-api'
 
-export type DiscoveryRuntime=Readonly<{provider:'legacy_demo'}|{provider:'clerk';defaultOrganisationId:string;benchmarkDiscovery?:()=>Promise<DiscoveryApi>}>
+export type DiscoveryRuntime=Readonly<{provider:'legacy_demo'}|{provider:'clerk';defaultOrganisationId:string;currentOrganisation?:(request:Request)=>Promise<{organisationId:string|null}>;benchmarkDiscovery?:()=>Promise<DiscoveryApi>}>
 type Method='GET'|'POST'
 type Legacy=(request:Request,context?:{params:{metadataKey:string}})=>Promise<Response>
 const paths={SEARCH:'/api/benchmark/search',METADATA:'/api/benchmark/metadata',CONTEXT:'/api/benchmark/context',AI_SEARCH:'/api/benchmark/ai-search'} as const
@@ -27,7 +28,7 @@ export function createDiscoveryHttpHandler(kind:DiscoveryCommand['kind'],method:
   const expected=kind==='METADATA_VALUES'?/^\/api\/benchmark\/metadata\/[^/]+\/values$/.test(url.pathname):url.pathname===paths[kind]
   if(!expected||url.href.length>24000||url.hash)return invalid()
   try{
-   const runtime=resolveRuntime()
+   const runtime=await bindSg2RequestRuntime(resolveRuntime(),request)
    if(runtime.provider==='legacy_demo')return await legacy(request,context)
    if(runtime.provider!=='clerk'||!runtime.benchmarkDiscovery)return discoveryFailure()
    // These GETs can purchase provider work. A browser automatically sending a

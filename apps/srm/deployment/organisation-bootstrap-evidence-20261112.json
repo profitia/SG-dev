@@ -1,0 +1,42 @@
+{
+  "schemaVersion": "1.0.0",
+  "status": "IN_PROGRESS_PREPARED_NOT_DEPLOYED",
+  "taskId": "SRM-REGISTRATION-COMPANY-BOOTSTRAP-20261112",
+  "registrationId": "cmwdv4i2h0000uiae77760jgn",
+  "conversationId": "pmos-task-v2:bc69c6483156fe6881208855d8e756ba8e6b5da20d79e24d5bcfbfd011e2e9f0",
+  "mandate": "Owner-resumed Stage I Development Full Autopilot; no renewed ordinary technical approval questions.",
+  "implemented": [
+    "Reuse original MGBI General parser, pagination and continuity mapping; only the eight company-registration fields escape.",
+    "Dedicated srm.provider.mgbi-onboarding Source purpose and wp-record-only path; original provider interfaces, financial/MSR paths and controls preserved.",
+    "Signed peer before official Clerk/current verified primary email, own draft and same actual receiver Root transaction.",
+    "Separately configured ordinary registry role and licensed minimal snapshot; durable governed cache before HTTP response, no private archives or source credential copy.",
+    "Current Source admission required for paid attempts; no transport retry or raw-fetch fallback.",
+    "Existing SRM process and exact Development opt-in/configuration; no startup DDL or new service."
+  ],
+  "verification": {
+    "newGatewayAndPolicyTests": "5/5 PASS, no skips/cancellations; includes genuine PostgreSQL, signed peer, current account/draft, cache replay, revocation and missing source refusal.",
+    "originalProviderIntegration": "25/25 PASS, no skips/cancellations; actual disposable PostgreSQL16, ordinary Source role and loopback HTTP, original General/Financial/paginator/Vercly/CEIDG/MSR, current revocation, budgets, uncertainty and audit rollback.",
+    "scopedTypecheck": "PASS for gateway, two Next routes, both tests and transitive server imports under the existing strict/Bundler/allowJs settings. Full SRM build/whole owner CI pending.",
+    "logs": [
+      "registration-srm-bootstrap-genuine-v2.log",
+      "registration-srm-original-source-genuine.log",
+      "registration-srm-bootstrap-types-v4.log"
+    ]
+  },
+  "notPerformed": [
+    "Real MGBI/provider call",
+    "Live SQL or source/permission/key enrolment",
+    "Mail sending",
+    "Development deployment",
+    "Parent Stage I closeout"
+  ],
+  "remaining": [
+    "Final shared SDK and receiver acceptance/whole CI",
+    "Explicit current platform source budget/licence and exact purpose role/key enrolment",
+    "Real Development source/browser acceptance and LKG rollback verification"
+  ],
+  "limitations": [
+    "A result paid for but not retained because its authorised transaction fails remains unavailable for governed reconciliation; no automatic reacquisition.",
+    "Synthetic provider/Clerk fixtures and loopback HTTP are not a real provider or browser acceptance."
+  ]
+}

@@ -1,3 +1,4 @@
+import {sdkContinuationPredecessor} from '../../../../packages/platform-contracts/test/organisation-sdk-compatibility.mjs'
 import {assertAppShellFourCardCascade} from '../../../sg-runtime/tests/pci-smart-integrity.mjs'
 import {marketHistoryHostSourceView} from '../../scripts/xray-style-acceptance.mjs'
 import assert from 'node:assert/strict'
@@ -43,7 +44,9 @@ test('the protected same-origin route accepts IDs only and cannot become a publi
 
 test('geocoding adoption preserves all previous receipts and pins the exact unchanged Maps producer',async()=>{
  const {readFileSync}=await import('node:fs'),{execFileSync}=await import('node:child_process'),{createHash}=await import('node:crypto')
- const actualAppShellSource=(file:string)=>readFileSync(new URL('../../../../'+file,import.meta.url))
+ const physicalAppShellSource=(file:string)=>readFileSync(new URL('../../../../'+file,import.meta.url))
+ const sdk=sdkContinuationPredecessor(JSON.parse(physicalAppShellSource('apps/sg-runtime/operation-integration.json').toString()),physicalAppShellSource,(sha:string,file:string)=>execFileSync('git',['show',sha+':'+file]),{projectKey:'SG2'})
+ const actualAppShellSource=(file:string)=>sdk?sdk.previousBytes(file):physicalAppShellSource(file)
  const hostReceipt=JSON.parse(actualAppShellSource('apps/sg-runtime/operation-integration.json').toString())
  const acceptedAppShellSource=hostReceipt.appShellFourCardCascade?assertAppShellFourCardCascade(hostReceipt,actualAppShellSource,(sha:string,file:string)=>execFileSync('git',['show',sha+':'+file])).previousBytes:actualAppShellSource
  const receipt=JSON.parse(readFileSync(new URL('../../operation-integration.json',import.meta.url),'utf8')),a=receipt.supplierMapGeocodingActivation

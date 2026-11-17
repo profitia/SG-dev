@@ -1,3 +1,7 @@
+import {createOrganisationHttpSurface,readOrganisationBootstrapOptIn,type OrganisationHttpSurface} from './organisation-http.js'
+import {createOrganisationStore,createOrganisationRecipientLookup,createOrganisationServiceConnections,readOrganisationConnectionsConfiguration} from './organisation-store.js'
+import {createOrganisationInvitationDelivery} from './organisation-invitation-delivery.js'
+import { createOrganisationDraftSurface, readOrganisationDraftOptIn, type OrganisationDraftSurface } from './organisation-draft.js'
 import { createRegistrationStore, registrationSchemaDigest, type RegistrationStore } from './registration-store.js'
 import { createRegistrationProvider } from './registration-provider.js'
 import { createRegistrationSurface, type RegistrationSurface } from './registration.js'
@@ -26,6 +30,7 @@ import { createAccountSurface, accountTransactions, type AccountSurface } from '
 let email: EmailSurface | null = null
 let reportEmail:ReturnType<typeof createReportEmailRuntime>|null=null
 let pool: pg.Pool | null = null
+let organisationDelivery:ReturnType<typeof createOrganisationInvitationDelivery>|null=null
 async function start() {
 let boundary: SessionBoundary | null = null
 let account: AccountSurface | null = null
@@ -36,6 +41,13 @@ let registration: RegistrationSurface | null = null
 let registrationStore: RegistrationStore | null = null
 let embedded: ReturnType<typeof createEmbeddedAccountHandler> | null = null
 let currentE1:CurrentE1Authority|null=null
+let organisationDraft:OrganisationDraftSurface|null=null
+let organisation:OrganisationHttpSurface|null=null
+let invitationEntry:Readonly<{targetId:string;routeKey:string}>|null=null
+let emailConfiguration:Record<string,any>|null=null
+const organisationDraftSchema = readOrganisationDraftOptIn(process.env)
+const organisationBootstrapSchema=readOrganisationBootstrapOptIn(process.env)
+if(organisationBootstrapSchema!==null&&process.env.IDENTITY_EMAIL_ENABLED!=='true')throw Error('ORGANISATION_EMAIL_DEPENDENCY_REQUIRED')
 if (process.env.IDENTITY_CURRENT_E1_ENABLED !== undefined && !['true','false'].includes(process.env.IDENTITY_CURRENT_E1_ENABLED)) throw Error('INVALID_CURRENT_E1_FLAG')
 if (process.env.IDENTITY_CURRENT_E1_ENABLED==='true' && process.env.IDENTITY_RUNTIME_ENABLED!=='true') throw Error('CURRENT_E1_RUNTIME_REQUIRED')
 const embeddedInput: unknown = JSON.parse(process.env.IDENTITY_EMBEDDED_TARGETS ?? '[]')
@@ -72,6 +84,7 @@ if (process.env.IDENTITY_RUNTIME_ENABLED === 'true') {
     const e = JSON.parse(process.env.IDENTITY_EMAIL_CONFIGURATION ?? 'null')
     if (!e || Object.keys(e).sort().join(',') !== ['instanceId','serviceId','schemaDigest','keyId','region','domain','from','senderName','appName','recipientPolicy','authorizedRecipients','allowedInvitationOrigins'].sort().join(',')
       || !Array.isArray(e.authorizedRecipients) || !Array.isArray(e.allowedInvitationOrigins)) throw Error('EMAIL_CONFIGURATION_REQUIRED')
+    emailConfiguration=e
     const proof = process.env.IDENTITY_EMAIL_PROOF_KEY, encryption = process.env.IDENTITY_EMAIL_ENCRYPTION_KEY
     if (!/^[a-f0-9]{64}$/.test(proof ?? '') || !/^[a-f0-9]{64}$/.test(encryption ?? '') || !process.env.MAILGUN_SENDING_KEY || !process.env.CLERK_EMAIL_SIGNING_SECRET) throw Error('EMAIL_SECRETS_REQUIRED')
     const transaction = accountTransactions(pool)
@@ -127,6 +140,40 @@ if (process.env.IDENTITY_RUNTIME_ENABLED === 'true') {
       transact: accountTransactions(pool), independentQuery: (sql, values) => pool!.query(sql, values as unknown[]),
       deploymentId: process.env.RENDER_GIT_COMMIT ?? 'local-development', configurationVersion: createHash('sha256').update(JSON.stringify(config)).digest('hex') })
     await language.ready()
+    if (organisationDraftSchema !== null) {
+      organisationDraft = createOrganisationDraftSurface({configuration:config,client,binding,schemaDigest:digest!,proofKey:Buffer.from(key!,'hex'),
+        onboardingSchemaDigest:organisationDraftSchema,transact:accountTransactions(pool),independentQuery:(sql,values)=>pool!.query(sql,values as unknown[]),
+        deploymentId:process.env.RENDER_GIT_COMMIT ?? 'local-development',configurationVersion:createHash('sha256').update(JSON.stringify(config)).digest('hex')})
+      await organisationDraft.ready()
+    }
+    if(organisationBootstrapSchema!==null){
+      const connections=readOrganisationConnectionsConfiguration(process.env,config),e=emailConfiguration
+      if(!connections||!organisationDraft||!email||!e||!process.env.IDENTITY_EMAIL_ENCRYPTION_KEY)throw Error('ORGANISATION_DEPENDENCIES_REQUIRED')
+      const common={configuration:config,client,binding,schemaDigest:digest!,proofKey:Buffer.from(key!,'hex'),
+        transact:accountTransactions(pool),independentQuery:(sql:string,values:readonly unknown[]=[])=>pool!.query(sql,values as unknown[]),
+        deploymentId:process.env.RENDER_GIT_COMMIT??'local-development',configurationVersion:createHash('sha256').update(JSON.stringify(config)).digest('hex')}
+      const ports=createOrganisationServiceConnections({...connections,intentKey:Buffer.from(key!,'hex')})
+      const store=createOrganisationStore({...common,...ports,...(connections.accessProjectionSchemaDigest?{accessProjectionSchemaDigest:connections.accessProjectionSchemaDigest}:{}),lifecycleSchemaDigest:connections.lifecycleSchemaDigest,
+        encryptionKey:Buffer.from(process.env.IDENTITY_EMAIL_ENCRYPTION_KEY,'hex'),keyId:e.keyId,
+        workspaceTargetId:connections.workspaceTargetId,workspaceRouteKey:connections.workspaceRouteKey,findRecipients:createOrganisationRecipientLookup(client)})
+      const workspacePeerFlag=process.env.IDENTITY_ORGANISATION_WORKSPACE_PEER_ENABLED
+      if(workspacePeerFlag!==undefined&&!['true','false'].includes(workspacePeerFlag))throw Error('WORKSPACE_PEER_CONFIGURATION_REQUIRED')
+      const workspaceTarget=config.targets[connections.workspaceTargetId]
+      if(workspacePeerFlag==='true'&&(!connections.accessProjectionSchemaDigest||!workspaceTarget||!/^[a-f0-9]{64}$/.test(process.env.IDENTITY_ORGANISATION_WORKSPACE_PEER_KEY??'')||!/^[-a-z0-9]{2,64}$/.test(process.env.IDENTITY_ORGANISATION_WORKSPACE_KEY_ID??'')))throw Error('WORKSPACE_PEER_CONFIGURATION_REQUIRED')
+      organisation=createOrganisationHttpSurface({...common,bootstrapSchemaDigest:organisationBootstrapSchema,conversation:store,
+        ...(workspacePeerFlag==='true'?{workspacePeer:{environment:'development' as const,callerApplicationId:'spendguru',receiverApplicationId:config.applicationId,
+          sourceOrigin:workspaceTarget!.origin,targetOrigin:config.origin,keyId:process.env.IDENTITY_ORGANISATION_WORKSPACE_KEY_ID!,key:Buffer.from(process.env.IDENTITY_ORGANISATION_WORKSPACE_PEER_KEY!,'hex'),internalOrigins:[],
+          routes:[{method:'GET' as const,path:'/v1/account/organisation-onboarding/snapshot',maximumRequestBytes:0,requireIdempotencyKey:false},{method:'POST' as const,path:'/v1/account/organisation-onboarding/access',maximumRequestBytes:2,requireIdempotencyKey:false}]}}:{}),
+        readVerifiedCompany:store.readStoredCompany,acceptInvitation:store.acceptInvitation})
+      await organisation.ready()
+      organisationDelivery=createOrganisationInvitationDelivery({query:common.independentQuery,transact:common.transact,client,binding,issuer:config.issuer,
+        schemaDigest:digest!,proofKey:Buffer.from(key!,'hex'),encryptionKey:Buffer.from(process.env.IDENTITY_EMAIL_ENCRYPTION_KEY,'hex'),keyId:e.keyId,
+        identityOrigin:config.origin,allowedIdentityOrigins:[config.origin],mailgun:{environment:'development',region:e.region,domain:e.domain,
+          apiKey:process.env.MAILGUN_SENDING_KEY!,authorizedRecipients:[],from:e.from,senderName:e.senderName},
+        diagnostic:code=>console.error('identity-email: '+code)})
+      await organisationDelivery.ready()
+      invitationEntry={targetId:connections.workspaceTargetId,routeKey:connections.workspaceRouteKey}
+    }
     const consumers = new Map<string, EmbeddedAccountSurface>()
     for (const targetId of embeddedTargets(config, embeddedInput)) {
       if (!registration || !registrationStore) throw Error('EMBEDDED_REGISTRATION_REQUIRED')
@@ -141,15 +188,15 @@ if (process.env.IDENTITY_RUNTIME_ENABLED === 'true') {
     embedded = createEmbeddedAccountHandler(config, consumers)
   }
 }
-const server = createNodeServer(origin, createHttpHandler(boundary, account, avatar, email, language, registration, embedded, salutation,currentE1), email !== null); server.listen(port, process.env.HOST ?? '127.0.0.1', () => console.log('identity-runtime started; live readiness requires verified provider and authority'))
+const server = createNodeServer(origin, createHttpHandler(boundary, account, avatar, email, language, registration, embedded, salutation,currentE1,organisationDraft,organisation,invitationEntry), email !== null); server.listen(port, process.env.HOST ?? '127.0.0.1', () => console.log('identity-runtime started; live readiness requires verified provider and authority'))
 let shuttingDown = false
 for (const signal of ['SIGINT','SIGTERM']) process.once(signal, () => {
   if (shuttingDown) return
   shuttingDown = true
   // Stop queue intake immediately, before waiting for existing HTTP connections.
-  const emailStopped = email?.stop()
+  const emailStopped = Promise.all([email?.stop(),organisationDelivery?.stop()])
   server.close(() => { void (async () => { await emailStopped; await pool?.end(); process.exit(0) })() })
   server.closeIdleConnections()
 })
 }
-start().catch(async () => { console.error('identity-runtime configuration unavailable'); await Promise.all([email?.stop(),reportEmail?.stop()]); await pool?.end(); process.exitCode = 1 })
+start().catch(async () => { console.error('identity-runtime configuration unavailable'); await Promise.all([email?.stop(),reportEmail?.stop(),organisationDelivery?.stop()]); await pool?.end(); process.exitCode = 1 })

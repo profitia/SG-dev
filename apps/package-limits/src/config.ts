@@ -1,3 +1,4 @@
+import {readWorkspaceConfiguration,type WorkspaceConfiguration} from "./workspace-access.js";
 import fs from "node:fs";
 import { fileURLToPath } from "node:url";
 import type { PoolConfig } from "pg";
@@ -8,6 +9,7 @@ export const binding = JSON.parse(
   ),
 );
 export interface Config {
+  workspace?: WorkspaceConfiguration;
   origin: string;
   issuer: string;
   publishableKey: string;
@@ -95,6 +97,7 @@ export function configuration(env: NodeJS.ProcessEnv = process.env): Config {
   if (!Number.isInteger(port) || port < 1 || port > 65535)
     throw Error("INVALID_PORT");
   return {
+    ...(readWorkspaceConfiguration(env,binding.origin) ? {workspace:readWorkspaceConfiguration(env,binding.origin)!} : {}),
     origin: binding.origin,
     issuer,
     publishableKey: pk,

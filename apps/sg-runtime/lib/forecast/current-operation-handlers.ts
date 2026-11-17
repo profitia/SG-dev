@@ -1,3 +1,4 @@
+import {bindSg2RequestRuntime} from '@/lib/platform/organisation-context'
 import { type NextRequest, type NextResponse } from 'next/server'
 import type { Prisma } from '@prisma/client'
 import { OPERATION_CONTRACT, isOperationDenied, type OperationExecutor } from '@profitia/platform-contracts/operation-context'
@@ -59,7 +60,7 @@ export function createRuntimeForecastCurrentHandler(
 ) {
   return async (request: NextRequest): Promise<NextResponse> => {
     try {
-      const runtime = resolveRuntime()
+      const runtime=await bindSg2RequestRuntime(resolveRuntime(),request)
       if (runtime.provider === 'legacy_demo') return await legacy(request)
       const forecast = runtime.provider === 'clerk' ? runtime.forecastRead : undefined
       if (runtime.provider !== 'clerk' || !forecast) return privateApiResponse(cognitionError('OPERATION_DENIED', 'Operation unavailable.', 503))

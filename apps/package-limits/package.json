@@ -10,8 +10,8 @@
     "typecheck": "tsc --noEmit",
     "build": "node scripts/build.mjs",
     "start": "node dist/server.js",
-    "test": "node --test test/domain.test.mjs test/identity.test.mjs test/api.test.mjs",
-    "test:database": "node --test --test-concurrency=1 test/database.test.mjs",
+    "test": "node --test test/domain.test.mjs test/identity.test.mjs test/api.test.mjs test/workspace-access.test.mjs",
+    "test:database": "node --test --test-concurrency=1 test/database.test.mjs test/workspace-access-postgres.test.mjs",
     "ci:proof": "node scripts/ci-proof.mjs",
     "install:plan": "node scripts/install.mjs"
   },
