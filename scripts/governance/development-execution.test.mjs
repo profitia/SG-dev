@@ -1,3 +1,4 @@
+import {createHash} from 'node:crypto'
 import {resolveProjectProfile} from './project-profile.mjs'
 import {resolveProjectRouting} from './routing-engine.mjs'
 import test from 'node:test'
@@ -412,4 +413,69 @@ test('physical Source checkout retains Git lineage, complete diff and pristine-s
   g('checkout','--',name);fs.writeFileSync(path.join(dir,'extra.txt'),'unreviewed')
   assert.throws(()=>assertSourceCheckout(dir,r,state,root,p),/SOURCE_CHECKOUT_DIRTY/)
  }finally{fs.rmSync(dir,{recursive:true,force:true})}
+})
+
+function localManifestFixture(policy){
+ const dir=fs.mkdtempSync(path.join(os.tmpdir(),'dev-local-manifests-'))
+ const candidate=path.join(dir,'candidate'),authority=path.join(dir,'authority')
+ const manifestPaths=Object.values(policy.LOCAL_PACKAGES).map(rel=>path.relative(root,path.resolve(root,'apps/sg-runtime',rel,'package.json')))
+ const paths=['apps/sg-runtime/package.json','apps/sg-runtime/package-lock.json','apps/sg-runtime/.npmrc',...manifestPaths]
+ for(const targetRoot of [candidate,authority])for(const name of paths){
+  const from=path.join(root,name);if(!fs.existsSync(from))continue
+  const to=path.join(targetRoot,name);fs.mkdirSync(path.dirname(to),{recursive:true});fs.copyFileSync(from,to)
+ }
+ const blob=bytes=>createHash('sha1').update('blob '+bytes.length+'\0').update(bytes).digest('hex')
+ const reviews={},lockFile=path.join(candidate,'apps/sg-runtime/package-lock.json')
+ const lock=JSON.parse(fs.readFileSync(lockFile,'utf8'))
+ for(const [name,version]of [['@profitia/platform-contracts','1.38.0'],['@profitia/platform-current-e1-authority','1.4.1']]){
+  const relative=path.relative(root,path.resolve(root,'apps/sg-runtime',policy.LOCAL_PACKAGES[name],'package.json'))
+  const file=path.join(candidate,relative),before=fs.readFileSync(path.join(authority,relative)),manifest=JSON.parse(before)
+  manifest.version=version
+  if(name==='@profitia/platform-current-e1-authority')manifest.peerDependencies={'@profitia/platform-contracts':'1.37.0 || 1.38.0'}
+  const after=Buffer.from(JSON.stringify(manifest,null,2)+'\n');fs.writeFileSync(file,after)
+  reviews[name]={beforeBlob:blob(before),afterBlob:blob(after)}
+  const metadata=lock.packages['node_modules/'+name];metadata.version=version
+  if(manifest.peerDependencies===undefined)delete metadata.peerDependencies
+  else metadata.peerDependencies=manifest.peerDependencies
+ }
+ fs.writeFileSync(lockFile,JSON.stringify(lock,null,2)+'\n')
+ return {dir,candidate,authority,reviews,lockFile,blob,
+  close:()=>fs.rmSync(dir,{recursive:true,force:true})}
+}
+
+test('local package upgrades require separately reviewed complete before/after manifests and exact lock metadata',async()=>{
+ const policy=await import('./controlled-package-ci.mjs'),f=localManifestFixture(policy)
+ try{
+  assert.throws(()=>policy.checkAdmittedPackages(f.candidate,f.authority))
+  assert.equal(policy.checkAdmittedPackages(f.candidate,f.authority,f.reviews),path.join(f.candidate,'apps/sg-runtime'))
+  for(const edit of [
+   r=>r['@profitia/platform-contracts'].beforeBlob=base,
+   r=>r['@profitia/platform-contracts'].afterBlob=head,
+   r=>r['@profitia/platform-contracts'].unchecked=true,
+   r=>delete r['@profitia/platform-contracts'],
+   r=>r['@profitia/unregistered-package']={beforeBlob:base,afterBlob:head}
+  ]){
+   const changed=structuredClone(f.reviews);edit(changed)
+   assert.throws(()=>policy.checkAdmittedPackages(f.candidate,f.authority,changed))
+  }
+  const lock=JSON.parse(fs.readFileSync(f.lockFile,'utf8'))
+  lock.packages['node_modules/@profitia/platform-current-e1-authority'].peerDependencies['@profitia/platform-contracts']='*'
+  fs.writeFileSync(f.lockFile,JSON.stringify(lock))
+  assert.throws(()=>policy.checkAdmittedPackages(f.candidate,f.authority,f.reviews),/LOCAL_PACKAGE_LOCK_METADATA_MISMATCH/)
+ }finally{f.close()}
+})
+
+test('reviewed local metadata never permits a changed private artifact, registry configuration or source manifest',async()=>{
+ const policy=await import('./controlled-package-ci.mjs')
+ for(const edit of [
+  f=>{const lock=JSON.parse(fs.readFileSync(f.lockFile,'utf8'));lock.packages['node_modules/'+policy.PRIVATE_PACKAGES[0]].integrity='sha512-unapproved';fs.writeFileSync(f.lockFile,JSON.stringify(lock))},
+  f=>fs.appendFileSync(path.join(f.candidate,'apps/sg-runtime/.npmrc'),'registry=https://attacker.invalid\n'),
+  f=>fs.appendFileSync(path.join(f.candidate,'packages/platform-contracts/package.json'),' '),
+  f=>{const file=path.join(f.candidate,'packages/platform-contracts/package.json');const m=JSON.parse(fs.readFileSync(file,'utf8'));m.scripts.postinstall='unapproved';fs.writeFileSync(file,JSON.stringify(m))},
+  f=>{const file=path.join(f.authority,'packages/platform-contracts/package.json');fs.appendFileSync(file,' ')}
+ ]){
+  const f=localManifestFixture(policy)
+  try{edit(f);assert.throws(()=>policy.checkAdmittedPackages(f.candidate,f.authority,f.reviews))}
+  finally{f.close()}
+ }
 })

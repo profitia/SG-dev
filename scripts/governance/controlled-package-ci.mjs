@@ -7194,25 +7194,51 @@ export function operationContractProvenanceDigest(root, contract, {reviewedPriva
   for (const content of contents) digest.update(content)
   return digest.digest('hex')
 }
-export function checkAdmittedPackages(root,authorityRoot=controlRoot()) {
-  const app=path.join(root,'apps/sg-runtime')
+export function checkAdmittedPackages(root,authorityRoot=controlRoot(),reviewedLocalPackages=undefined) {
+  const app=path.join(root,'apps/sg-runtime'),authorityApp=path.join(authorityRoot,'apps/sg-runtime')
   const candidateLock=readJson(path.join(app,'package-lock.json'))
-  const flags={trustedAuthorityMetadata:true}
-  assertPackagePolicy(candidateLock,readJson(path.join(authorityRoot,'apps/sg-runtime/package-lock.json')),fs.readFileSync(path.join(app,'.npmrc'),'utf8'),flags)
-  assertManifestPolicy(readJson(path.join(app,'package.json')),readJson(path.join(authorityRoot,'apps/sg-runtime/package.json')),flags)
+  const authorityLock=readJson(path.join(authorityApp,'package-lock.json'))
+  // This optional table is supplied only by trusted-control policy. A candidate
+  // Source record, lockfile or environment variable cannot approve a transition.
+  if(reviewedLocalPackages!==undefined&&(!reviewedLocalPackages||Object.getPrototypeOf(reviewedLocalPackages)!==Object.prototype))fail('LOCAL_PACKAGE_TRANSITION_REJECTED')
+  const transitions=reviewedLocalPackages??{},used=new Set()
+  for(const name of Object.keys(transitions))if(!Object.hasOwn(LOCAL_PACKAGES,name))fail('LOCAL_PACKAGE_TRANSITION_REJECTED')
   for(const [name,relative] of Object.entries(LOCAL_PACKAGES)){
-    const directory=path.resolve(app,relative),authority=path.resolve(authorityRoot,'apps/sg-runtime',relative)
-    if(!fs.existsSync(directory)){if(candidateLock.packages?.['node_modules/'+name])fail('LOCAL_PACKAGE_SOURCE_MISSING');continue}
+    const directory=path.resolve(app,relative),authority=path.resolve(authorityApp,relative)
+    if(!fs.existsSync(directory)){if(candidateLock.packages?.['node_modules/'+name]||Object.hasOwn(transitions,name))fail('LOCAL_PACKAGE_SOURCE_MISSING');continue}
     if(!directory.startsWith(fs.realpathSync(root)+path.sep)||fs.realpathSync(directory)!==directory)fail('LOCAL_DEPENDENCY_REJECTED')
-    const file=path.join(directory,'package.json')
-    if(!fs.lstatSync(file).isFile()||fs.realpathSync(file)!==file||!fs.existsSync(path.join(authority,'package.json')))fail('LOCAL_PACKAGE_AUTHORITY_REQUIRED')
-    const current=readJson(file),accepted=readJson(path.join(authority,'package.json'))
+    const file=path.join(directory,'package.json'),acceptedFile=path.join(authority,'package.json')
+    if(!fs.lstatSync(file).isFile()||fs.realpathSync(file)!==file||!fs.existsSync(acceptedFile)
+      ||!fs.lstatSync(acceptedFile).isFile()||fs.realpathSync(acceptedFile)!==acceptedFile)fail('LOCAL_PACKAGE_AUTHORITY_REQUIRED')
+    const currentBytes=fs.readFileSync(file),acceptedBytes=fs.readFileSync(acceptedFile)
+    const current=JSON.parse(currentBytes.toString('utf8'))
+    let accepted=JSON.parse(acceptedBytes.toString('utf8'))
+    if(Object.hasOwn(transitions,name)){
+      const review=transitions[name]
+      if(!review||Object.keys(review).sort().join(',')!=='afterBlob,beforeBlob'
+        ||!shaPattern.test(review.beforeBlob??'')||!shaPattern.test(review.afterBlob??'')
+        ||review.beforeBlob===review.afterBlob||calendarBlob(acceptedBytes)!==review.beforeBlob
+        ||calendarBlob(currentBytes)!==review.afterBlob||accepted.name!==name||current.name!==name)fail('LOCAL_PACKAGE_TRANSITION_REJECTED')
+      used.add(name);accepted=current
+      const metadata=authorityLock.packages?.['node_modules/'+name]
+      if(metadata){
+        // Replace only the exact reviewed local metadata. Registry artifacts,
+        // private pins, resolved paths and all other authority entries stay intact.
+        metadata.version=current.version
+        if(current.peerDependencies===undefined)delete metadata.peerDependencies
+        else metadata.peerDependencies=structuredClone(current.peerDependencies)
+      }
+    }
     if(current.name!==name||current.version!==accepted.version)fail('LOCAL_PACKAGE_VERSION_MISMATCH')
     const installed=candidateLock.packages?.['node_modules/'+name]
     if(installed&&(installed.version!==current.version||JSON.stringify(installed.peerDependencies??{})!==JSON.stringify(current.peerDependencies??{})))fail('LOCAL_PACKAGE_LOCK_METADATA_MISMATCH')
     for(const key of ['dependencies','devDependencies','optionalDependencies','peerDependencies','workspaces','overrides'])
       if(JSON.stringify(current[key])!==JSON.stringify(accepted[key]))fail('LOCAL_PACKAGE_DEPENDENCY_POLICY_CHANGED')
   }
+  if(used.size!==Object.keys(transitions).length)fail('LOCAL_PACKAGE_TRANSITION_REJECTED')
+  const flags={trustedAuthorityMetadata:true}
+  assertPackagePolicy(candidateLock,authorityLock,fs.readFileSync(path.join(app,'.npmrc'),'utf8'),flags)
+  assertManifestPolicy(readJson(path.join(app,'package.json')),readJson(path.join(authorityApp,'package.json')),flags)
   return app
 }
 function checkCandidate(root = candidateRoot()) {
