@@ -5,9 +5,12 @@ business and execution scope is the single
 [Project Design Record](../../Canon/proposals/bsdc/ARCHITECTURE/cic-assistant-continuous-quality.md),
 specification revision 5 and commissioned Stage 1 against revision 8.
 
-This source checkpoint is **partial and inactive**. No worker, cloud executor,
-application integration, independent OS execution, live release or Stage 1
-acceptance is claimed. It does not start nightly QA or Stage 2.
+Stage1 technical implementation is **partial**. The monitoring worker is live
+on Development with both native stores connected and disabled, as recorded in
+the Project Design Record. Host integration, qualified execution and independent
+publishing remain under implementation; neither project TECHNICAL_READY nor
+Stage1 acceptance is claimed. Paid repairs, promotion and the pilot clock remain
+off. This does not start nightly QA or Stage2.
 
 ## Implemented foundation
 
@@ -87,9 +90,10 @@ the actual SQL, concurrency, leases, RLS, cost holds and settlement transitions.
 
 ## Installation boundary
 
-Both migrations are source plans. No installation row or credential is seeded.
-The existing database owners must separately install the exact reviewed SQL and
-ordinary roles through the authorised bootstrap. Replace the literal
+The authorised Development bootstrap and its exact installation evidence are
+recorded in the Project Design Record and PR1104. Source migrations seed no
+installation row or credential. Ordinary roles and installed disabled bindings
+were provisioned separately by the authorised owners. Replace the literal
 `__QUALITY_CONTROL_SCHEMA_DIGEST__` / `__QUALITY_USAGE_SCHEMA_DIGEST__` with the
 SHA-256 of the original corresponding source, before substitution.
 
@@ -101,9 +105,36 @@ New resources, credentials, data/service rights and the limited automation
 mandate remain owner-controlled. No private conversation or signing/provider
 key belongs in Git, agent inputs, artifacts or telemetry.
 
-The deployment entrypoint, real GitHub/Render adapters, Linux qualification, trusted
-publisher, protected source-continuity adoption, product capture/guards and
-operational retention/restore verification remain to be completed before any
-installation, paid run or live acceptance. Operational metadata purge currently
+The monitoring entrypoint and bounded GitHub/Render clients exist. The GitHub
+client can dispatch exact-main qualification once and reconcile a lost reply or
+request cancellation without asserting that an executor stopped. Deployment
+job composition, Linux qualification, independent publisher credentials and
+coordination, accepted product integration, and live recovery verification
+remain required before paid work or full technical/Stage1 acceptance. Operational metadata purge currently
 only handles reconciled terminal incidents; expiry/reconciliation of retained
 pending intents is a remaining retention gate, not an active 90-day guarantee.
+
+## Bounded operational monitoring
+
+The optional worker clients use the existing SpendGuru PostHog project329829
+and Sentry sg-porr project4512356940120144, with the approved Development client
+configuration. Set AQC_POSTHOG_PROJECT_TOKEN, AQC_POSTHOG_HOST and AQC_SENTRY_DSN
+in the worker's private environment; no actual value belongs in Git.
+
+Only source SHA, time, fixed service binding, disabled-store state, closed error
+codes and disabled payment/promotion/pilot switches are exported. PostHog
+receives a technical heartbeat with person-profile processing and GeoIP off;
+Sentry receives one startup readiness event and bounded failure events. There
+is no conversation/QA payload, user identifier, raw exception or SQL export.
+The Sentry client has no global instrumentation, integrations, tracing, profiling,
+logs or automatic AI/MCP/request/database content collection; beforeSend rebuilds
+only internally registered primitive metadata and discards SDK enrichments.
+Missing/failed telemetry never relaxes the native safety checks or blocks work.
+
+The clients are configured once per process, have bounded queues and requests,
+and shutdown is bounded to one second. A configured SDK is not delivery proof:
+actual Development ingestion must be checked after the new source is deployed.
+This telemetry does not perform regular quality evaluation or start Stage2.
+
+References: https://posthog.com/docs/libraries/node and
+https://docs.sentry.io/platforms/javascript/guides/node/configuration/options/.
