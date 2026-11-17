@@ -3,8 +3,6 @@ import os from 'node:os'
 import path from 'node:path'
 import { spawnSync } from 'node:child_process'
 import { createHash, randomBytes } from 'node:crypto'
-import pg from '../../../../apps/architecture-lab/node_modules/pg/lib/index.js'
-import { parsePhoneNumberWithError } from 'libphonenumber-js/max'
 import { profileSchemaDigest } from '../../src/user-profile.mjs'
 
 export function clerkFixture(subject = 'user_synthetic_a') {
@@ -19,7 +17,11 @@ export function clerkFixture(subject = 'user_synthetic_a') {
   return f
 }
 
-export async function postgresFixture() {
+export async function postgresFixture({pg: suppliedPg, phoneParser: suppliedPhoneParser} = {}) {
+  // Each consumer supplies its own public test dependencies. Historical producer
+  // callers retain their existing defaults without loading another app at import.
+  const pg = suppliedPg ?? (await import('../../../../apps/architecture-lab/node_modules/pg/lib/index.js')).default
+  const parsePhoneNumberWithError = suppliedPhoneParser ?? (await import('libphonenumber-js/max')).parsePhoneNumberWithError
   let directory, container, operator
   const bin = process.env.B1_PG_BIN || (fs.existsSync('/opt/homebrew/opt/postgresql@16/bin/initdb') ? '/opt/homebrew/opt/postgresql@16/bin' : '/usr/lib/postgresql/16/bin')
   if (fs.existsSync(path.join(bin,'initdb'))) {

@@ -1,3 +1,4 @@
+import {sdkContinuationPredecessor} from './organisation-sdk-compatibility.mjs';
 // SYNTHETIC_ONLY: transport syntax only; no session or consent is fabricated.
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -56,10 +57,13 @@ import {execFileSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
 import {recurringConsentTransportPredecessor,RECURRING_CONSENT_TRANSPORT_RECORD,RECURRING_CONSENT_TRANSPORT_BASE,RECURRING_CONSENT_TRANSPORT_PATHS} from './recurring-consent-transport-source.mjs';
 const root=fileURLToPath(new URL('../../../',import.meta.url));
-const sourceBytes=p=>fs.readFileSync(new URL('../../../'+p,import.meta.url));
+const physicalSourceBytes=p=>fs.readFileSync(new URL('../../../'+p,import.meta.url));
 const historical=(sha,p)=>execFileSync('git',['show',sha+':'+p],{cwd:root,stdio:['ignore','pipe','pipe']});
+const registration=sdkContinuationPredecessor(JSON.parse(physicalSourceBytes('apps/sg-runtime/operation-integration.json')),physicalSourceBytes,historical);
+const sourceBytes=registration?.composition?.acceptedMain??physicalSourceBytes;
 test('consent correction authenticates its actual source graph and retains accepted predecessor bytes',()=>{
  const accepted=recurringConsentTransportPredecessor(sourceBytes,historical);
+ if(registration?.composition)for(const target of ['packages/platform-contracts/src/operation-context.mjs','apps/architecture-lab/private-recurring-source.mjs','apps/sg-runtime/operation-integration.json','apps/srm/operation-integration.json']){const changed=p=>p===target?Buffer.concat([physicalSourceBytes(p),Buffer.from('UNREVIEWED')]):physicalSourceBytes(p);assert.throws(()=>sdkContinuationPredecessor(JSON.parse(changed('apps/sg-runtime/operation-integration.json')),changed,historical),target);}
  assert.equal(Object.keys(accepted.manifest.sourceDigests).length,15);
  for(const p of RECURRING_CONSENT_TRANSPORT_PATHS.filter(p=>!p.includes('/test/recurring-consent-transport'))){
   assert.deepEqual(accepted.previousBytes(p),historical(RECURRING_CONSENT_TRANSPORT_BASE,p));

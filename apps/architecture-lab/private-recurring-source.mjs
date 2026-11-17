@@ -1,10 +1,11 @@
-// Source acceptance only. Never imported by an application runtime.
-// The reviewed current graph is verified before any immutable predecessor is read.
 import {recurringConsentTransportPredecessor} from '../../packages/platform-contracts/test/recurring-consent-transport-source.mjs'
 import {procurementInsightsShellPredecessor} from '../sg-runtime/tests/procurement-insights-shell-integrity.mjs'
+// Source acceptance only. Never imported by an application runtime.
+// The reviewed current graph is verified before any immutable predecessor is read.
 import {assistantEcrWeekPredecessor} from '../sg-runtime/tests/assistant-ecr-week-integrity.mjs'
 export const ECR_WEEK_SOURCE_SHA='31ce8f1d7e5ca1d9c3aedf80f92e23fe0f1a93cb8f5fd5d003eb54a244859dd4'
 import assert from 'node:assert/strict'
+import {sdkContinuationPredecessor} from '../../packages/platform-contracts/test/organisation-sdk-compatibility.mjs'
 import {createHash} from 'node:crypto'
 import fs from 'node:fs'
 import {execFileSync} from 'node:child_process'
@@ -17,13 +18,23 @@ const RECORD_SHA256='75877d5750e07d1c8172be0af76bc5933f2eeefc22cc39747a2621b9cab
 const hash=b=>createHash('sha256').update(b).digest('hex')
 const absent=error=>error?.code==='ENOENT'||error?.status===128&&["' does not exist in ","' exists on disk, but not in "].some(s=>String(error?.stderr??error?.message??'').includes("'"+RECURRING_SOURCE_RECORD+s))
 export function recurringSourcePredecessor(current,historical){
+ let bytes;try{bytes=current(RECURRING_SOURCE_RECORD)}catch(error){if(absent(error))return null;throw error}
+ assert.equal(hash(bytes),RECORD_SHA256,'exact reviewed recurring source record')
+ // Current registration is authenticated before either historical graph is exposed.
+ // An already-layered caller has no SDK frame, so it cannot be projected twice.
+ const receipt=JSON.parse(current('apps/sg-runtime/operation-integration.json'))
+ if(receipt.sdkSourceContinuations!==undefined){
+  const sdk=sdkContinuationPredecessor(receipt,current,historical)
+  assert(sdk,'reviewed registration continuation required')
+  const accepted=recurringSourcePredecessor(sdk.previousBytes,historical);return {...accepted,...(sdk.composition?{transport:sdk.composition.transport,completion:sdk.composition.completion}:{})}
+ }
  const transport=recurringConsentTransportPredecessor(current,historical);if(transport){const accepted=recurringSourcePredecessor(transport.previousBytes,historical);return {...accepted,transport}}
  const shell=procurementInsightsShellPredecessor(current,historical);if(shell){const accepted=recurringSourcePredecessor(shell.previousBytes,historical);return {...accepted,completion:shell}}
  const calendar=marketCalendarSourcePredecessor(current,historical);if(calendar)return recurringSourcePredecessor(calendar.previousBytes,historical)
+ // The verified SDK view retains the separately accepted ECR week frame.
+ // Authenticate that frame after SDK closure, before recurring history.
  const successor=assistantEcrWeekPredecessor(current,historical,ECR_WEEK_SOURCE_SHA)
  if(successor){const accepted=recurringSourcePredecessor(successor.previousBytes,historical);assert(accepted,'accepted recurring source retained');return {...accepted,successor}}
- let bytes;try{bytes=current(RECURRING_SOURCE_RECORD)}catch(error){if(absent(error))return null;throw error}
- assert.equal(hash(bytes),RECORD_SHA256,'exact reviewed recurring source record')
  const a=JSON.parse(bytes)
  assert.equal(a.schemaVersion,'1.0.0');assert.equal(a.scope,'PRIVATE_RECURRING_SOURCE_ACCEPTANCE');assert.equal(a.previousSourceSha,RECURRING_SOURCE_BASE)
  assert.equal(a.platformVersion,'1.36.0');assert.equal(a.legacyImplementation,'1.0.0-candidate.16');assert.equal(a.optionalImplementation,'1.0.0-candidate.22')

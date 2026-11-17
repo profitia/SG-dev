@@ -44,17 +44,23 @@ export function createMailgunReportSender(config: Omit<TransactionalMailgunConfi
   if (typeof authorize !== 'function' || config.authorizedRecipients.length !== 0) throw Error('REPORT_RECIPIENT_AUTHORITY_REQUIRED')
   return createSender(config, fetcher, config, authorize)
 }
-function createSender(config: SandboxMailgunConfig, fetcher: typeof fetch, transactional: TransactionalMailgunConfig | null, reportAuthorization: ((message: SandboxMessage) => Promise<boolean>) | null = null) {
+/** Organisation invitations require their own durable outbox authority. Clerk
+ * webhook or report-delivery admission cannot authorise these recipients. */
+export function createMailgunOrganisationInvitationSender(config: Omit<TransactionalMailgunConfig,'recipientPolicy'>, authorize: (message: SandboxMessage) => Promise<boolean>, fetcher: typeof fetch = fetch) {
+  if (typeof authorize !== 'function' || config.authorizedRecipients.length !== 0) throw Error('ORGANISATION_INVITATION_AUTHORITY_REQUIRED')
+  return createSender(config, fetcher, config, authorize, 'organisation-invitation')
+}
+function createSender(config: SandboxMailgunConfig, fetcher: typeof fetch, transactional: TransactionalMailgunConfig | null, reportAuthorization: ((message: SandboxMessage) => Promise<boolean>) | null = null, productPurpose: 'report-published' | 'organisation-invitation' = 'report-published') {
   if (config.environment !== 'development' || !['us', 'eu'].includes(config.region) ||
     !(transactional ? /^(?!sandbox)[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)+$/.test(config.domain) : /^sandbox[a-f0-9]{32}\.mailgun\.org$/.test(config.domain)) ||
     typeof config.apiKey !== 'string' || !/^[A-Za-z0-9_-]{20,256}$/.test(config.apiKey)) {
     throw new Error('Invalid sandbox configuration');
   }
   const recipients = new Set(config.authorizedRecipients.map(mailbox));
-  const policy = reportAuthorization ? 'admitted-report' : transactional?.recipientPolicy ?? 'allowlist';
-  if (!['allowlist','signed-clerk','admitted-report'].includes(policy)
+  const policy = reportAuthorization ? productPurpose === 'organisation-invitation' ? 'admitted-organisation-invitation' : 'admitted-report' : transactional?.recipientPolicy ?? 'allowlist';
+  if (!['allowlist','signed-clerk','admitted-report','admitted-organisation-invitation'].includes(policy)
     || policy === 'allowlist' && (recipients.size < 1 || recipients.size > 5)
-    || ['signed-clerk','admitted-report'].includes(policy) && recipients.size !== 0) throw new Error('Invalid recipient policy');
+    || ['signed-clerk','admitted-report','admitted-organisation-invitation'].includes(policy) && recipients.size !== 0) throw new Error('Invalid recipient policy');
   const timeout = config.timeoutMs ?? 15000;
   if (!Number.isInteger(timeout) || timeout < 10 || timeout > 30000) throw new Error('Invalid send timeout');
   const endpoint = `https://${config.region === 'eu' ? 'api.eu.mailgun.net' : 'api.mailgun.net'}/v3/${config.domain}/messages`;
@@ -98,7 +104,7 @@ function createSender(config: SandboxMailgunConfig, fetcher: typeof fetch, trans
     for (const [key, value] of Object.entries({
       from, to: recipient, subject: message.subject, html: message.html, text: message.text,
       'o:tracking': 'no', 'o:tracking-clicks': 'no', 'o:tracking-opens': 'no',
-      'o:require-tls': 'yes', 'o:skip-verification': 'no', 'o:tag': reportAuthorization ? 'report-published-development' : transactional ? 'identity-transactional-development' : 'avatar-sandbox',
+      'o:require-tls': 'yes', 'o:skip-verification': 'no', 'o:tag': reportAuthorization ? productPurpose+'-development' : transactional ? 'identity-transactional-development' : 'avatar-sandbox',
     })) form.set(key, value);
     if (message.template) {
       const t=message.template, keys=Object.keys(t.variables).sort().join(',');

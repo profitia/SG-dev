@@ -1,14 +1,16 @@
 // SYNTHETIC_ONLY. This checks source provenance, never runtime authority.
 import test from 'node:test';
+import {sdkContinuationPredecessor} from '../../../packages/platform-contracts/test/organisation-sdk-compatibility.mjs';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {execFileSync} from 'node:child_process';
-import {recurringSourcePredecessor,RECURRING_SOURCE_RECORD,RECURRING_SOURCE_BASE} from '../private-recurring-source.mjs';
+import {recurringSourcePredecessor,recurringSourceFilesystem,RECURRING_SOURCE_RECORD,RECURRING_SOURCE_BASE} from '../private-recurring-source.mjs';
 const root=new URL('../../../',import.meta.url),current=p=>readFileSync(new URL(p,root));
 const cache=new Map(),history=(sha,p)=>{const key=sha+':'+p;if(!cache.has(key))cache.set(key,execFileSync('git',['show',key],{cwd:root,stdio:['ignore','pipe','pipe']}));return cache.get(key)};
 test('current recurring source is closed before the complete immutable predecessor can be used',()=>{
  const view=recurringSourcePredecessor(current,history);assert(view);
- for(const p of Object.keys(view.manifest.preservedReceipts))assert.deepEqual(current(p),history(RECURRING_SOURCE_BASE,p));
+ const sdk=sdkContinuationPredecessor(JSON.parse(current('apps/sg-runtime/operation-integration.json')),current,history),accepted=sdk?.previousBytes??current;
+ for(const p of Object.keys(view.manifest.preservedReceipts))assert.deepEqual(accepted(p),history(RECURRING_SOURCE_BASE,p));
  for(const p of view.manifest.changedPaths.filter(p=>!view.manifest.addedPaths.includes(p)))assert.deepEqual(view.previousBytes(p),history(RECURRING_SOURCE_BASE,p),p);
  for(const p of [...view.manifest.addedPaths,RECURRING_SOURCE_RECORD])assert.throws(()=>view.previousBytes(p),{code:'ENOENT'});
  assert.equal(recurringSourcePredecessor(view.previousBytes,history),null);
@@ -37,4 +39,31 @@ test('parallel accepted ECR precision stays current and separately reviewable in
   assert(Object.hasOwn(view.manifest.sourceDigests,p),'parallel current source is explicitly bound');
   assert.throws(()=>recurringSourcePredecessor(f=>f===p?Buffer.concat([current(f),Buffer.from('UNACCEPTED')]):current(f),history),p);
  }
+});
+
+test('direct and filesystem APIs both validate the current registration before returning recurring history',()=>{
+ const view=recurringSourcePredecessor(current,history),physical=recurringSourceFilesystem(root);
+ assert.deepEqual(physical.manifest,view.manifest);
+ const record=JSON.parse(current('packages/platform-contracts/test/organisation-sdk-compatibility.json'));
+ const targets=new Set([...Object.keys(record.sourceDigests),...Object.keys(record.compatibilityTestSourceDigests),'apps/identity-runtime/src/http-handler.ts','packages/platform-contracts/test/organisation-onboarding-postgres.test.mjs','packages/platform-contracts/test/organisation-profile.test.mjs']);
+ for(const target of targets)assert.throws(()=>recurringSourcePredecessor(p=>p===target?Buffer.concat([current(p),Buffer.from('\nUNREVIEWED')]):current(p),history),target);
+});
+test('an explicitly layered caller and direct current source expose the same exact predecessor',()=>{
+ const sdk=sdkContinuationPredecessor(JSON.parse(current('apps/sg-runtime/operation-integration.json')),current,history);assert(sdk);
+ const direct=recurringSourcePredecessor(current,history),layered=recurringSourcePredecessor(sdk.previousBytes,history);assert.deepEqual(direct.manifest,layered.manifest);
+ for(const p of direct.manifest.changedPaths.filter(p=>!direct.manifest.addedPaths.includes(p)))assert.deepEqual(direct.previousBytes(p),layered.previousBytes(p),p);
+ assert.equal(recurringSourcePredecessor(direct.previousBytes,history),null);
+});
+
+test('accepted ECR weeks and registration are closed before recurring history is exposed',()=>{
+ const view=recurringSourcePredecessor(current,history);assert(view?.successor);
+ assert.deepEqual(view.successor.manifest,JSON.parse(current('apps/sg-runtime/assistant-ecr-week-integration.json')));
+ const sdk=sdkContinuationPredecessor(JSON.parse(current('apps/sg-runtime/operation-integration.json')),current,history);assert(sdk);
+ for(const p of ["apps/architecture-lab/private-recurring-source.mjs","apps/sg-runtime/tests/pci-smart-integrity.test.mjs"])assert.deepEqual(sdk.previousBytes(p),history('38a9fe371e7993b47e2358d297647086ea999428',p),'actual separately accepted ECR predecessor '+p);
+ const layered=recurringSourcePredecessor(sdk.previousBytes,history);assert.deepEqual(view.manifest,layered.manifest);assert.deepEqual(view.successor.manifest,layered.successor.manifest);
+});
+test('parallel current ECR code and its immutable guard history cannot be hidden by SDK projection',()=>{
+ const w=JSON.parse(current('apps/sg-runtime/assistant-ecr-week-integration.json'));
+ for(const p of [...Object.keys(w.sourceDigests),'apps/sg-runtime/assistant-ecr-week-integration.json'])assert.throws(()=>recurringSourcePredecessor(f=>f===p?Buffer.concat([current(f),Buffer.from('\nUNACCEPTED_ECR')]):current(f),history),p);
+ for(const p of ["apps/architecture-lab/private-recurring-source.mjs","apps/sg-runtime/tests/pci-smart-integrity.test.mjs"])assert.throws(()=>recurringSourcePredecessor(current,(sha,f)=>sha==='38a9fe371e7993b47e2358d297647086ea999428'&&f===p?Buffer.concat([history(sha,f),Buffer.from('\nFORGED_ECR_HISTORY')]):history(sha,f)),p);
 });

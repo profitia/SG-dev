@@ -1,3 +1,4 @@
+import {bindSg2RequestRuntime} from '@/lib/platform/organisation-context'
 import type { Prisma } from '@prisma/client'
 import { type NextRequest, NextResponse } from 'next/server'
 import { OPERATION_CONTRACT, isOperationDenied, type OperationExecutor } from '@profitia/platform-contracts/operation-context'
@@ -43,7 +44,7 @@ export function createOperationForecastRequestHandler(executor: OperationExecuto
 export function createRuntimeForecastRequestHandler(resolveRuntime: () => Sg2SelectionRuntime = getSg2SelectionRuntime) {
   return async (request: NextRequest): Promise<NextResponse> => {
     try {
-      const runtime = resolveRuntime()
+      const runtime=await bindSg2RequestRuntime(resolveRuntime(),request)
       if (runtime.provider !== 'clerk' || !runtime.forecastRequest) return respond(503)
       const expected=request.headers.get('x-profitia-forecast-command')
       if(expected!==null&&expected!==FORECAST_REQUEST_COMMAND_CONTRACT)return respond(400,'VALIDATION_ERROR')

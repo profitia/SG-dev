@@ -1,0 +1,28 @@
+{
+  "schemaVersion": "1.0",
+  "taskId": "SRM-REGISTRATION-LIFECYCLE-SDK-ADOPTION-20261112",
+  "recordedAt": "2026-11-13T05:23:25.116Z",
+  "scope": "SOURCE_IMPLEMENTATION_PENDING_JOINT_ACCEPTANCE",
+  "baseSha": "2d3f8edc8a119b28a54bfbce972dc28a7dcfac6f",
+  "changes": [
+    "Reuse SDK011 own-account reader and actual native pg/Clerk identity boundary",
+    "Request-local SRM organisation selection across report, export, supplier, locations and assistant paths",
+    "Preserve fixed configuration and fail closed on missing current membership",
+    "Keep independent business Root authorization",
+    "SDK1.37 source peer/lock adoption; exact joint source receipt pending"
+  ],
+  "checks": {
+    "typecheck": "PASS with actual accepted KRS sources compiled in isolated install",
+    "functionalRegression": {
+      "passed": 27,
+      "total": 28,
+      "remaining": "One source-integrity guard intentionally refuses the unfinished joint lifecycle source closure"
+    },
+    "newIsolationTests": 4
+  },
+  "runtimeOptedIn": false,
+  "sqlInstalled": false,
+  "permissionsChanged": false,
+  "providerCallsPerformed": false,
+  "deploymentPerformed": false
+}

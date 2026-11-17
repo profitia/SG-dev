@@ -133,16 +133,25 @@ export function organisationCommandDigest(value){
  return createHash('sha256').update(encode(value)).digest('hex')
 }
 
+export function normalizeCompanySelection(value){
+ if(value===null)return null
+ if(!exact(value,['sourceRef','version'])||Object.values(value).some(v=>typeof v!=='string'||v.length<1||v.length>256||/[\u0000-\u001f\u007f]|gh[pousr]_|sk_(?:live|test)_|postgres(?:ql)?:\/\/|Bearer\s/i.test(v)))fail('INVALID_COMPANY_SELECTION')
+ return freeze({sourceRef:value.sourceRef,version:value.version})
+}
+
 export function normalizeOnboardingDraftPatch(value){
- if(!closed(value)||Object.keys(value).length===0||Object.keys(value).some(k=>!['nip','slug','industry','categories','teamRange'].includes(k)))fail('INVALID_ONBOARDING_DRAFT')
+ if(!closed(value)||Object.keys(value).length===0||Object.keys(value).some(k=>!['nip','slug','industry','categories','teamRange','companySelection'].includes(k)))fail('INVALID_ONBOARDING_DRAFT')
  const out={}
  for(const [key,item]of Object.entries(value)){
   if(key==='nip')out.nip=normalizePolishNip(item)
   else if(key==='slug')out.slug=normalizeOrganisationSlug(item)
   else if(key==='industry')out.industry=normalizeIndustry(item)
   else if(key==='categories')out.categories=normalizeProcurementCategories(item)
+  else if(key==='companySelection')out.companySelection=normalizeCompanySelection(item)
   else out.teamRange=normalizeTeamRange(item)
  }
+ // Changing NIP invalidates the previous data confirmation in the same save.
+ if(Object.hasOwn(out,'nip')&&!Object.hasOwn(value,'companySelection'))out.companySelection=null
  return freeze(out)
 }
 export const organisationOnboardingSchemaUrl=new URL('../migrations/profile/007-organisation-onboarding.sql',import.meta.url).href

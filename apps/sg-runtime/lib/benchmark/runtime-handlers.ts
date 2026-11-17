@@ -1,3 +1,4 @@
+import {bindSg2RequestRuntime} from '@/lib/platform/organisation-context'
 import type { NextRequest } from 'next/server'
 import { cognitionError } from '@/lib/api/middleware'
 import { getSg2SelectionRuntime, type Sg2SelectionRuntime } from '@/lib/platform/private-runtime'
@@ -12,7 +13,7 @@ export function createRuntimeBenchmarkSelectionHandlers(
 ) {
   const handle = (method: 'GET' | 'POST') => async (request: NextRequest) => {
     try {
-      const runtime = resolveRuntime()
+      const runtime=await bindSg2RequestRuntime(resolveRuntime(),request)
       if (runtime.provider === 'legacy_demo') return await legacy[method](request)
       if (runtime.provider !== 'clerk') throw new TypeError('Unsupported server runtime')
       const response = await createOperationBenchmarkSelectionHandlers(runtime.executor, {

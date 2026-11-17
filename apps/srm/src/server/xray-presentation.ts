@@ -1,3 +1,4 @@
+import {bindSrmRequestRuntime} from './organisation-context'
 import {createSrmSupplierOperationHandler} from './supplier-acquisition-http';
 import {getSrmReportRuntime} from './private-runtime';
 import {createRuntimeSrmFinancialExcelHandler} from './financial-excel-runtime';
@@ -11,7 +12,7 @@ const unavailable=async()=>Response.json({error:'XRAY_UNAVAILABLE'},{status:503}
 export const handleXRayPresentation=withSrmPresentationPeer(async(request,operation)=>{
  if(operation==='financialExcel')return createRuntimeSrmFinancialExcelHandler(getSrmReportRuntime,unavailable)(request);
  if(operation==='registryStatus'||operation==='registrySearch'||operation==='registryVerify')return createKrsNameHttpHandler(operation==='registryStatus'?'status':operation==='registrySearch'?'search':'verify')(request);
- const runtime=getSrmReportRuntime();
+ const runtime=await bindSrmRequestRuntime(getSrmReportRuntime(),request);
  if(runtime.provider!=='clerk')return unavailable();
  if(operation==='locations')return runtime.locations?createSupplierLocationHandler(runtime.locations,runtime.defaultOrganisationId,runtime.locationGeocoding)(request):unavailable();
  if(operation==='mapReadiness'){

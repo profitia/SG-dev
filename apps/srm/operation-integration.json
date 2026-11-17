@@ -9420,5 +9420,14 @@
       "packages/insights-contracts/index.mjs": "a93b090b7738e774890a05fbbd473807c2f24757daf090d1dcfc10f7a6bda851",
       "packages/insights-contracts/package.json": "0e6ea7929e26ffbb89645d4c8875016081899242374f3488af70fcf60cc00447"
     }
-  }
+  },
+  "sdkSourceContinuations": [
+    {
+      "schemaVersion": "1.0",
+      "acceptanceId": "organisation-bootstrap-v1",
+      "taskId": "SRM-REGISTRATION-BOOTSTRAP-SDK-ADOPTION-20261111",
+      "targetEnvironment": "development",
+      "previousReceiptSha256": "1303ac82c0570ca4929f64e1620e2ec7a6bfd3809607f57eb33da621c8ecd06d"
+    }
+  ]
 }

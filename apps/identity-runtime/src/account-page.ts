@@ -1,3 +1,4 @@
+import { organisationOnboardingMarkup, organisationOnboardingStyles, organisationOnboardingClientScript } from './organisation-onboarding.js'
 import { browserCommunicationLanguage } from './communication-language.js'
 import type { RuntimeConfiguration } from './contracts.js'
 import { resolveReturnRoute } from './return-routes.js'
@@ -8,19 +9,19 @@ import { conversationAssets, conversationStyles, conversationMarkup } from './ac
 // Official browser SDK/UI, exact public registry versions verified 2026-10-22.
 const sdkVersion = '6.40.0', uiVersion = '1.41.1'
 const escape = (s: string) => s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!)
-export function accountPage(configuration: RuntimeConfiguration, targetId: string, routeKey: string, flow: string, backendRegistration = false): string {
+export function accountPage(configuration: RuntimeConfiguration, targetId: string, routeKey: string, flow: string, backendRegistration = false, organisationOnboarding = false, organisationInvitation = false): string {
   const route = resolveReturnRoute(configuration, { targetId, routeKey, flow })
   const en = routeKey.endsWith('-en'), frontend = new URL(configuration.issuer).origin
   const base = configuration.origin + '/account/' + targetId + '/' + routeKey
-  const data = JSON.stringify({ returnTo: route.returnTo, en, flow, backendRegistration, avatars: conversationAssets,
+  const data = JSON.stringify({ returnTo: route.returnTo, en, flow, backendRegistration, organisationOnboarding, organisationInvitation, avatars: conversationAssets,
     signInUrl: base + '/login', signUpUrl: base + '/registration',
     allowedRedirectOrigins: [...new Set([configuration.origin, ...Object.values(configuration.targets).map(t => t.origin)])],
     localization: en ? enUS : plPL }).replace(/</g, '\\u003c')
-  return `<!doctype html><html lang="${en ? 'en' : 'pl'}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>SpendGuru — ${en ? 'Your account' : 'Twoje konto'}</title><style>${conversationStyles}</style></head><body class="srm-ui sg-v2">${conversationMarkup(en, flow === 'registration', base + '/login', base + '/registration')}<script id="account-config" type="application/json">${data}</script><script defer crossorigin="anonymous" src="${escape(frontend)}/npm/@clerk/ui@${uiVersion}/dist/ui.browser.js"></script><script defer crossorigin="anonymous" data-clerk-publishable-key="${escape(configuration.publishableKey)}" src="${escape(frontend)}/npm/@clerk/clerk-js@${sdkVersion}/dist/clerk.browser.js"></script><script defer src="/account-client"></script></body></html>`
+  return `<!doctype html><html lang="${en ? 'en' : 'pl'}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="referrer" content="no-referrer">${organisationInvitation ? '<script src="/organisation-invitation-entry"></script>' : ''}<title>SpendGuru — ${en ? 'Your account' : 'Twoje konto'}</title><style>${conversationStyles}${organisationOnboarding ? organisationOnboardingStyles : ""}</style></head><body class="srm-ui sg-v2">${conversationMarkup(en, flow === 'registration', base + '/login', base + '/registration')}${organisationOnboarding ? organisationOnboardingMarkup(en) : ''}<script id="account-config" type="application/json">${data}</script><script defer src="/account-theme"></script><script defer crossorigin="anonymous" src="${escape(frontend)}/npm/@clerk/ui@${uiVersion}/dist/ui.browser.js"></script><script defer crossorigin="anonymous" data-clerk-publishable-key="${escape(configuration.publishableKey)}" src="${escape(frontend)}/npm/@clerk/clerk-js@${sdkVersion}/dist/clerk.browser.js"></script><script defer src="/account-client"></script></body></html>`
 }
 
 /** No passwords/codes, JWT interpretation or permission UI; only a bounded avatar presentation hint persists. */
-export const accountBrowserScript = 'const browserCommunicationLanguage = ' + browserCommunicationLanguage.toString() + ';\n' + 'const createClerkConversation = ' + createClerkConversation.toString() + ';\n' + 'const bindConversationCodeInput = ' + bindConversationCodeInput.toString() + ';\n' + conversationClientScript + String.raw`
+export const accountBrowserScript = organisationOnboardingClientScript + '\n' + 'const browserCommunicationLanguage = ' + browserCommunicationLanguage.toString() + ';\n' + 'const createClerkConversation = ' + createClerkConversation.toString() + ';\n' + 'const bindConversationCodeInput = ' + bindConversationCodeInput.toString() + ';\n' + conversationClientScript + String.raw`
 window.addEventListener('load', async () => {
   const cfg = JSON.parse(document.getElementById('account-config').textContent);
   const status = document.getElementById('status'), retry = document.getElementById('retry');
@@ -33,7 +34,7 @@ window.addEventListener('load', async () => {
     active = key; const current = ++generation; if (controller) controller.abort();
     controller = new AbortController(); retry.hidden = true; logout.hidden = !session;
     if (mounted) { if (cfg.flow === 'registration') window.Clerk.unmountSignUp(signIn); else window.Clerk.unmountSignIn(signIn); mounted = false; } signIn.replaceChildren();
-    if (!session) { status.textContent = cfg.en ? 'Let’s start with a conversation.' : 'Zacznijmy od rozmowy.';
+    if (!session) { if(cfg.organisationOnboarding){const onboarding=document.getElementById('organisation-onboarding');if(onboarding)onboarding.hidden=true;document.body.classList.remove('onb-root');status.hidden=false;} status.textContent = cfg.en ? 'Let’s start with a conversation.' : 'Zacznijmy od rozmowy.';
       const options = { routing: 'hash', signInUrl: cfg.signInUrl, signUpUrl: cfg.signUpUrl,
         forceRedirectUrl: window.location.origin + window.location.pathname,
         signInForceRedirectUrl: window.location.origin + window.location.pathname, signUpForceRedirectUrl: window.location.origin + window.location.pathname };
@@ -87,6 +88,33 @@ window.addEventListener('load', async () => {
 
       if (!(Date.parse(result.expiresAt) > Date.now())) throw Error('ACCOUNT_EXPIRED');
       if (current !== generation || window.Clerk.session?.id !== key) return;
+      if (cfg.organisationOnboarding) {
+        const identityRequest = async (path, method, body) => {
+          if (current !== generation || window.Clerk.session?.id !== key) throw new DOMException('Account changed','AbortError');
+          const fresh = await window.Clerk.session.getToken({skipCache:true});
+          if (!fresh || current !== generation || window.Clerk.session?.id !== key) throw new DOMException('Account changed','AbortError');
+          const response = await fetch(path,{method,credentials:'omit',cache:'no-store',redirect:'error',signal:controller.signal,
+            headers:{'Content-Type':'application/json',Authorization:'Bearer '+fresh},...(body===undefined?{}:{body:JSON.stringify(body)})});
+          const value=await response.json();
+          if (current !== generation || window.Clerk.session?.id !== key) throw new DOMException('Account changed','AbortError');
+          if (!response.ok) throw Object.assign(Error('ONBOARDING_UNAVAILABLE'),{code:value.error});
+          return value;
+        };
+        if(cfg.organisationInvitation){
+          if(typeof window.spendGuruAcceptOrganisationInvitation!=='function')throw Error('INVITATION_UNAVAILABLE');
+          const invitation=await window.spendGuruAcceptOrganisationInvitation(identityRequest,result.userId);
+          if(!['ACCEPTED','ALREADY_MEMBER'].includes(invitation.status)){
+            status.hidden=false;status.textContent=cfg.en?'This invitation cannot be accepted with this account. Check the email address or ask for a new invitation.':'Nie możesz przyjąć tego zaproszenia na tym koncie. Sprawdź adres e-mail lub poproś o nowe zaproszenie.';retry.hidden=false;return;
+          }
+        }
+        await window.startSpendGuruOrganisation(cfg,identityRequest,workspaceUrl=>{
+          if (current !== generation || window.Clerk.session?.id !== key) throw new DOMException('Account changed','AbortError');
+          const destination=new URL(workspaceUrl);
+          if (destination.protocol!=='https:' || destination.username || destination.password || !cfg.allowedRedirectOrigins.includes(destination.origin)) throw Error('WORKSPACE_URL_REFUSED');
+          window.location.replace(destination.href);
+        },preference?.avatarSex);
+        return;
+      }
       window.location.replace(cfg.returnTo);
     } catch (error) { if (current === generation && error.name !== 'AbortError') unavailable(); }
   }

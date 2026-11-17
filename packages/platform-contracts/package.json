@@ -1,6 +1,6 @@
 {
   "name": "@profitia/platform-contracts",
-  "version": "1.36.0",
+  "version": "1.37.0",
   "private": true,
   "type": "module",
   "description": "Governed Development integration contracts; project identity is not tenant identity",
@@ -157,11 +157,36 @@
       "types": "./src/recurring-job.d.mts",
       "import": "./src/recurring-job.mjs",
       "require": "./src/recurring-job.mjs"
+    },
+    "./organisation-profile": {
+      "types": "./src/organisation-profile.d.mts",
+      "import": "./src/organisation-profile.mjs",
+      "require": "./src/organisation-profile.mjs"
+    },
+    "./organisation-bootstrap": {
+      "types": "./src/organisation-bootstrap.d.mts",
+      "import": "./src/organisation-bootstrap.mjs",
+      "require": "./src/organisation-bootstrap.mjs"
+    },
+    "./organisation-invitations": {
+      "types": "./src/organisation-invitations.d.mts",
+      "import": "./src/organisation-invitations.mjs",
+      "require": "./src/organisation-invitations.mjs"
+    },
+    "./organisation-lifecycle": {
+      "types": "./src/organisation-lifecycle.d.mts",
+      "import": "./src/organisation-lifecycle.mjs",
+      "require": "./src/organisation-lifecycle.mjs"
+    },
+    "./organisation-context": {
+      "types": "./src/organisation-context.d.mts",
+      "import": "./src/organisation-context.mjs",
+      "require": "./src/organisation-context.mjs"
     }
   },
   "scripts": {
     "test": "node --test test/*.test.mjs",
-    "build": "node --check src/development-context.mjs && node --check src/operation-context.mjs && node --check src/identity-provider.mjs && node --check src/access-store.mjs && node --check src/private-operation-host.mjs && node --check src/module-scope.mjs && node --check src/clerk-configuration.mjs && node --check src/embedded-read-channel.mjs && node --check src/request-ledger.mjs && node --check src/delegated-job.mjs && node --check src/platform-ingestion.mjs && node --check src/embedded-channel-core.mjs && node --check src/embedded-command-channel.mjs && node --check src/external-call.mjs && node --check src/request-continuation.mjs && node --check src/native-external-transport.mjs && node --check src/request-inspection.mjs && node --check src/request-work.mjs && node --check src/request-operations.mjs && node --check src/public-web-transport.mjs && node --check src/public-request.mjs && node --check src/supplier-location.mjs && node --check src/identity-provisioning.mjs && node --check src/user-profile.mjs && node --check src/identity-profile-sql.mjs && node --check src/identity-renewal.mjs && node --check src/diagnostic-phase.mjs && node --check src/current-human-read.mjs && node --check src/assistant-operation-host.mjs && node --check src/assistant-usage.mjs && node --check src/recurring-job.mjs"
+    "build": "node --check src/development-context.mjs && node --check src/operation-context.mjs && node --check src/identity-provider.mjs && node --check src/access-store.mjs && node --check src/private-operation-host.mjs && node --check src/module-scope.mjs && node --check src/clerk-configuration.mjs && node --check src/embedded-read-channel.mjs && node --check src/request-ledger.mjs && node --check src/delegated-job.mjs && node --check src/platform-ingestion.mjs && node --check src/embedded-channel-core.mjs && node --check src/embedded-command-channel.mjs && node --check src/external-call.mjs && node --check src/request-continuation.mjs && node --check src/native-external-transport.mjs && node --check src/request-inspection.mjs && node --check src/request-work.mjs && node --check src/request-operations.mjs && node --check src/public-web-transport.mjs && node --check src/public-request.mjs && node --check src/supplier-location.mjs && node --check src/identity-provisioning.mjs && node --check src/user-profile.mjs && node --check src/identity-profile-sql.mjs && node --check src/identity-renewal.mjs && node --check src/diagnostic-phase.mjs && node --check src/current-human-read.mjs && node --check src/assistant-operation-host.mjs && node --check src/assistant-usage.mjs && node --check src/recurring-job.mjs && node --check src/organisation-profile.mjs && node --check src/organisation-bootstrap.mjs && node --check src/organisation-invitations.mjs && node --check src/organisation-lifecycle.mjs"
   },
   "dependencies": {
     "ipaddr.js": "2.2.0"

@@ -1,3 +1,4 @@
+import {acceptedSdkSource} from '../../../packages/platform-contracts/test/organisation-sdk-compatibility.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
@@ -23,7 +24,7 @@ test('SRM-required additive platform1.30 compatibility retains all SG2 history a
  assert.deepEqual(a.sdkDigests,receipt.diagnosticTelemetryAdoption.sdkDigests)
  for(const module of ['operation-context','private-operation-host','access-store','request-ledger','delegated-job','request-continuation','request-inspection','request-work','request-operations','external-call','supplier-location','report-admission','platform-ingestion','diagnostic-phase']){
   const sdk=await import('@profitia/platform-contracts/'+module)
-  for(const[name,digest]of Object.entries(a.sdkDigests))if(typeof sdk[name]==='function')assert.equal(await sdk[name](),digest,name)
+  for(const[name,digest]of Object.entries(a.sdkDigests))if(typeof sdk[name]==='function')assert.equal(await sdk[name](),acceptedSdkSource().sdkDigests[name]??digest,name)
  }
  for(const flag of ['currentHumanReadOptedIn','sharedSqlInstalled','sg2FeatureChanged','providerConfigurationChanged','runtimeDeploymentPerformed'])assert.equal(a[flag],false,flag)
 })

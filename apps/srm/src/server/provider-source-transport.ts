@@ -8,7 +8,7 @@ import { createSrmNativePgDriver } from './native-pg-driver'
 import { readSupplierRequest } from './supplier-request-operation'
 import {createSafePublicFetch, publicUrl, type PublicFetch} from '@profitia/platform-contracts/public-web-transport'
 
-export type SrmProvider = 'MGBI' | 'VERCLY' | 'VERCLY_KRS' | 'CEIDG' | 'MGBI_MSR_API' | 'MGBI_MSR_STORAGE'
+export type SrmProvider = 'MGBI' | 'MGBI_ONBOARDING' | 'VERCLY' | 'VERCLY_KRS' | 'CEIDG' | 'MGBI_MSR_API' | 'MGBI_MSR_STORAGE'
 type SourceOptions = Parameters<typeof createPlatformIngestionHost<PoolClient>>[0]
 type Command = Readonly<{ url: string; method: 'GET' | 'POST'; body: string | null }>
 const paths = ['/v1/models/pl-krs-wp-record/records', '/v1/models/pl-krs-rdf-record/records'] as const
@@ -17,12 +17,14 @@ const MSR_RECORDS = '/v1/models/pl-krs-rdf-record/records/'
 export const SRM_MSR_STORAGE_ORIGIN = 'https://mgbi-prod-krs-rdf-main-content-files.s3.amazonaws.com'
 const refuse = (): never => { throw new ExternalCallUnavailable('NOT_SENT') }
 const sources = {
-  MGBI: 'srm.provider.mgbi', VERCLY: 'srm.provider.vercly', VERCLY_KRS:'srm.provider.vercly', CEIDG: 'srm.provider.ceidg',
+  MGBI: 'srm.provider.mgbi', MGBI_ONBOARDING:'srm.provider.mgbi-onboarding', VERCLY: 'srm.provider.vercly', VERCLY_KRS:'srm.provider.vercly', CEIDG: 'srm.provider.ceidg',
   MGBI_MSR_API: 'srm.provider.mgbi', MGBI_MSR_STORAGE: 'srm.provider.mgbi',
 } as const
 export function srmProviderSourcePolicy(provider: SrmProvider) {
   if (!Object.hasOwn(sources, provider)) throw new TypeError('Explicit SRM source required')
-  const pathRules: NativePathRule[] = provider === 'MGBI'
+  const pathRules: NativePathRule[] = provider === 'MGBI_ONBOARDING'
+    ? [{method:'GET',path:paths[0],requestFormat:'NONE'}]
+    : provider === 'MGBI'
     ? paths.map(path => ({ method: 'GET', path, requestFormat: 'NONE' }))
     : provider === 'MGBI_MSR_API' ? [{ method: 'GET', path: MSR_LIMITS, requestFormat: 'NONE' },
         { method: 'GET', prefix: MSR_RECORDS, parameter: 'HEX24', suffix: '/files/main_document_uri', requestFormat: 'NONE' }]
@@ -33,7 +35,7 @@ export function srmProviderSourcePolicy(provider: SrmProvider) {
         { method: 'GET', prefix: '/api/verifications/', parameter: 'OPAQUE', suffix: '', requestFormat: 'NONE' }]
   return {
     source: { id: sources[provider], payloadSchema: 'external-call-control-v1', qualityVersion: 'srm-source-control-v1', classificationVersion: 'technical-source-control-v1' },
-    resourceId: provider === 'VERCLY_KRS'?'srm-provider:vercly-krs':provider === 'MGBI_MSR_API' ? 'srm-provider:mgbi-files-api'
+    resourceId: provider === 'MGBI_ONBOARDING'?'srm-provider:mgbi-onboarding':provider === 'VERCLY_KRS'?'srm-provider:vercly-krs':provider === 'MGBI_MSR_API' ? 'srm-provider:mgbi-files-api'
       : provider === 'MGBI_MSR_STORAGE' ? 'srm-provider:mgbi-files-storage' : `srm-provider:${provider.toLowerCase()}`,
     pathRules,
     basePathRules: provider==='VERCLY_KRS'?[{method:'GET' as const,path:'/api/krs'}]:provider === 'VERCLY' ? [{ method: 'POST' as const, path: '/api/verifications' }, { method: 'GET' as const, path: '/api/verifications' }]
@@ -73,7 +75,7 @@ function createProviderSourceTransport(options: ProviderSourceOptions) {
   try { configured = new URL(providerOrigin); network = new URL(options.syntheticOrigin ?? providerOrigin) } catch { throw new TypeError('Fixed provider origin required') }
   if (typeof window !== 'undefined' || !/^[a-f0-9]{64}$/.test(operationKey)
     || configured.origin !== providerOrigin || configured.protocol !== 'https:'
-    || ['MGBI','MGBI_MSR_API'].includes(provider) && providerOrigin !== 'https://api.mgbi.pl'
+    || ['MGBI','MGBI_ONBOARDING','MGBI_MSR_API'].includes(provider) && providerOrigin !== 'https://api.mgbi.pl'
     || credentialFree && providerOrigin !== SRM_MSR_STORAGE_ORIGIN
     || provider === 'MGBI_MSR_API' && !/^[a-f0-9]{24}$/.test(recordId ?? '')
     || provider !== 'MGBI_MSR_API' && recordId !== undefined
@@ -110,8 +112,8 @@ function createProviderSourceTransport(options: ProviderSourceOptions) {
         || ![MSR_LIMITS,MSR_RECORDS + recordId + '/files/main_document_uri'].includes(url.pathname)) return refuse()
     } else if (credentialFree) {
       if (c.method !== 'GET' || c.url !== allowedStorageUrl!()) return refuse()
-    } else if (provider === 'MGBI') {
-      if (c.method !== 'GET' || !paths.includes(url.pathname as typeof paths[number])
+    } else if (provider === 'MGBI'||provider==='MGBI_ONBOARDING') {
+      if (c.method !== 'GET' || !paths.includes(url.pathname as typeof paths[number]) || provider==='MGBI_ONBOARDING'&&url.pathname!==paths[0]
         || keys.some(key => !['identifiers.pl_nip', 'page', 'per_page'].includes(key))
         || url.searchParams.get('identifiers.pl_nip') !== nip
         || !/^(?:[1-9]|[1-9][0-9]|100)$/.test(url.searchParams.get('page') ?? '')
@@ -164,7 +166,7 @@ function createProviderSourceTransport(options: ProviderSourceOptions) {
       if (command.method === 'POST') { if (postAttempted) return refuse(); postAttempted = true }
       else if (correlation === null || url.pathname !== `/api/verifications/${correlation}`) return refuse()
     }
-    if (provider === 'MGBI') {
+    if (provider === 'MGBI'||provider==='MGBI_ONBOARDING') {
       const page = Number(url.searchParams.get('page'))
       if (page !== (nextPage.get(url.pathname) ?? 1)) return refuse()
       nextPage.set(url.pathname, page + 1)
@@ -174,7 +176,7 @@ function createProviderSourceTransport(options: ProviderSourceOptions) {
     const intentKey = createHmac('sha256', Buffer.from(operationKey, 'hex')).update(JSON.stringify({ sourceId: policy.source.id, ordinal: ordinal++ })).digest('hex')
     busy = true
     try {
-      const diagnosticProvider=provider==='MGBI'?(url.pathname===paths[1]?'MGBI_FINANCIAL_SOURCE':'MGBI_GENERAL_SOURCE')
+      const diagnosticProvider=provider==='MGBI'||provider==='MGBI_ONBOARDING'?(url.pathname===paths[1]?'MGBI_FINANCIAL_SOURCE':'MGBI_GENERAL_SOURCE')
         :provider==='MGBI_MSR_API'?'MSR_API_SOURCE':provider==='MGBI_MSR_STORAGE'?'MSR_STORAGE_SOURCE':provider==='CEIDG'?'CEIDG_SOURCE':'VERCLY_SOURCE'
       const response = externalNativeResponse(await diagnosticRun(diagnosticProvider,()=>host.execute({ command, intentKey }, { signal: init.signal ?? undefined }),{join:'SERIAL'}))
       if (provider === 'MGBI_MSR_API' && url.pathname === MSR_LIMITS) msrLimitsSeen = response.ok
@@ -200,6 +202,14 @@ export function createSrmProviderSourceTransport(options:Omit<ProviderSourceOpti
   'provider'|'recordId'|'allowedStorageUrl'|'krsReference'> & {provider:'MGBI'|'VERCLY'|'CEIDG'}) {
   if (!['MGBI','VERCLY','CEIDG'].includes(options?.provider)) throw TypeError('Explicit original provider required')
   return createProviderSourceTransport(options)
+}
+
+/** Onboarding uses its own explicitly enrolled platform Source budget and
+ * only the original General record endpoint. Existing KRS/financial callers
+ * cannot select this purpose through their public provider argument. */
+export function createSrmOrganisationBootstrapSourceTransport(options:Omit<ProviderSourceOptions,
+ 'provider'|'providerOrigin'|'recordId'|'allowedStorageUrl'|'krsReference'>){
+ return createProviderSourceTransport({...options,provider:'MGBI_ONBOARDING',providerOrigin:'https://api.mgbi.pl'})
 }
 
 /** Closed single download. Neither an order nor an arbitrary Vercly path.

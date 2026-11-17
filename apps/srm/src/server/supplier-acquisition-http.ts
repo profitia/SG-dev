@@ -1,3 +1,4 @@
+import {bindSrmRequestRuntime} from './organisation-context'
 import {withSrmPeerXRay} from "./peer-xray";
 import {isOperationDenied} from '@profitia/platform-contracts/operation-context'
 import {validRequestIdempotencyKey} from '@profitia/platform-contracts/request-ledger'
@@ -108,7 +109,7 @@ export function createSrmSupplierOperationHandler(route:Route,api:SrmSupplierApi
 export function createRuntimeSupplierOperationHandler(route:Route,legacy:(request:Request)=>Promise<Response>,resolve:()=>SrmReportRuntime=getSrmReportRuntime){
  return withSrmPeerXRay(async(request:Request):Promise<Response>=>withSupplierTelemetry(route,async()=>{
   try{
-   const runtime=resolve()
+   const runtime=await bindSrmRequestRuntime(resolve(),request)
    if(runtime.provider==='legacy_demo')return await legacy(request)
    if(runtime.provider!=='clerk')return response(503)
    if(!runtime.supplierApi)return response(503)
