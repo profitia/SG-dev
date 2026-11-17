@@ -968,21 +968,21 @@
     },
     {
       "id": "ARCHITECTURE:ARCH-ACG-M1M2-COMPLETION-20261117",
-      "status": "ACTIVE",
+      "status": "PROPOSED",
       "repository": "profitia/SG-dev",
-      "actor": "profitia",
+      "actor": null,
       "taskId": "ARCH-ACG-M1M2-COMPLETION-20261117",
       "targetEnvironment": "development",
       "scope": "SOURCE_VALIDATION_ONLY",
-      "approvalRef": "https://github.com/profitia/project-history-repository/blob/75d346ab2ef0f0c2fc193054c4ab818601de42cf/reports/2026/11/17/ARCHITECTURE/ARCH-ACG-M1M2-CI-ADMISSION-20261117/OWNER-DECISION-20261117.md",
-      "sourceSha": "97853df58a6a3822a50f64e0207fc0bbb1abbd92",
-      "baseSha": "56dcedb243d5d9568e3bd9cc3e13836f4e8b24bb",
-      "validFrom": "2026-11-17T14:39:02Z",
-      "validUntil": "2026-11-19T14:39:02Z",
+      "approvalRef": null,
+      "sourceSha": "1ee9f10b332820e2ab18fdb0d6ddef4ba612b739",
+      "baseSha": "2878140d707d4d6c896934252262fd9e4827eb4b",
+      "validFrom": null,
+      "validUntil": null,
       "files": [
         {
           "path": "apps/architecture-lab/assistant-reservation-source.json",
-          "blob": "8d7bcf8966f26f62eaa5d4499382a286fbc45ff5",
+          "blob": "fdefe32f072a8c8e00682295b58d70f761af9c94",
           "mode": "100644",
           "status": "added",
           "projectKey": "ARCHITECTURE",
@@ -991,7 +991,16 @@
         },
         {
           "path": "apps/architecture-lab/private-recurring-source.mjs",
-          "blob": "028efb927bf0f0ee7233a360157349cbcc1e2c7c",
+          "blob": "e9b32f4ac26c51099bf85d4b1825e73d5e730c8e",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "ARCHITECTURE",
+          "owner": "Architecture Platform",
+          "surfaceId": "ARCH-BASE-002"
+        },
+        {
+          "path": "apps/architecture-lab/test/manifest-successor-continuity.test.mjs",
+          "blob": "cfebb23547c329dae3734bfb0c6db233de4b1617",
           "mode": "100644",
           "status": "modified",
           "projectKey": "ARCHITECTURE",
@@ -1017,6 +1026,15 @@
           "surfaceId": "ARCH-BASE-002"
         },
         {
+          "path": "apps/newsfeed-runtime/test/runtime.test.mjs",
+          "blob": "633a9c0ed68a66ef2a2837dd4a7f21baf4ca0ab8",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "ARCHITECTURE",
+          "owner": "Architecture Platform",
+          "surfaceId": "NEWSFEED-BASE-001"
+        },
+        {
           "path": "apps/package-limits/migrations/006-assistant-reservation-diagnostics.sql",
           "blob": "582d49c91be12663b3daf77061c64e2db0b1cf3b",
           "mode": "100644",
@@ -1033,6 +1051,24 @@
           "projectKey": "ARCHITECTURE",
           "owner": "Architecture Platform",
           "surfaceId": "LIMITS-BASE-001"
+        },
+        {
+          "path": "apps/platform-source-hub/scripts/ci-routing.mjs",
+          "blob": "4febe3cde6cfbaea19f2337e7770ca8ce12a2188",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "ARCHITECTURE",
+          "owner": "Architecture Platform",
+          "surfaceId": "SOURCE-HUB-BASE-001"
+        },
+        {
+          "path": "apps/platform-source-hub/test/ci-routing.test.mjs",
+          "blob": "6271420d7849ab96c5ca044201e43586e108b1c9",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "ARCHITECTURE",
+          "owner": "Architecture Platform",
+          "surfaceId": "SOURCE-HUB-BASE-001"
         },
         {
           "path": "apps/sg-runtime/lib/assistant/conversation.ts",
@@ -1225,7 +1261,7 @@
         },
         {
           "path": "apps/srm/scripts/xray-performance-adoption.test.mjs",
-          "blob": "c6e81048b4292b048c77dffdccbe49dd7ceedf9e",
+          "blob": "46e536e43f2571d4b60820b82613f3ffb4985348",
           "mode": "100644",
           "status": "modified",
           "projectKey": "SRM",
@@ -1279,7 +1315,7 @@
         },
         {
           "path": "packages/platform-contracts/test/assistant-reservation-source.mjs",
-          "blob": "e4a736a0d2dcc15f7ec5a471db599e4680ee2716",
+          "blob": "ab70bf54aa274d8619ade09bd8adb2b9ae6acdf9",
           "mode": "100644",
           "status": "added",
           "projectKey": "ARCHITECTURE",
@@ -1321,6 +1357,24 @@
           "projectKey": "ARCHITECTURE",
           "owner": "Architecture Platform",
           "surfaceId": "ARCH-BASE-001"
+        },
+        {
+          "path": "scripts/governance/controlled-package-ci.test.mjs",
+          "blob": "a6d1526748f6a11c8110e8eaae907005c9e0938b",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "ARCHITECTURE",
+          "owner": "Governance Source Layer",
+          "surfaceId": "SG2-BASE-020"
+        },
+        {
+          "path": "scripts/governance/platform-source-hub-foundation.test.mjs",
+          "blob": "8a3444f1093e062b4f995feeed2c82946212ac2e",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "ARCHITECTURE",
+          "owner": "Governance Source Layer",
+          "surfaceId": "SG2-BASE-020"
         }
       ]
     }

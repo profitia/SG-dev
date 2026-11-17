@@ -26,10 +26,19 @@ const protectedPath = name => /(^|\/)AGENTS\.md$/.test(name)
 // PROPOSED closed source-only exception. Inert until this policy is independently
 // owner-accepted on authority main and a separately approved ACTIVE ledger record
 // exists. No historical receipt or general source JSON admission is granted.
-export const ASSISTANT_RESERVATION_SOURCE_ADMISSION = Object.freeze({"admissionId":"ARCHITECTURE:ARCH-ACG-M1M2-COMPLETION-20261117","sourceSha":"97853df58a6a3822a50f64e0207fc0bbb1abbd92","baseSha":"56dcedb243d5d9568e3bd9cc3e13836f4e8b24bb","filesSha256":"57fe9306801087210f4170e1d556253727ea9ef89bb4700134488fda75e0cb2c","newSourceRecord":"apps/architecture-lab/assistant-reservation-source.json"})
-function exactNewReservationSourceRecord(record, entry) {
+export const ASSISTANT_RESERVATION_SOURCE_ADMISSION = Object.freeze({
+  admissionId:"ARCHITECTURE:ARCH-ACG-M1M2-COMPLETION-20261117",
+  sourceSha:"1ee9f10b332820e2ab18fdb0d6ddef4ba612b739",
+  baseSha:"2878140d707d4d6c896934252262fd9e4827eb4b",
+  filesSha256:"64e3a155ac4011a9329268bfab19a900dc04acd483e36ca70b3876a64edd3284",
+  newSourceRecord:"apps/architecture-lab/assistant-reservation-source.json",
+  protectedTests:Object.freeze(["scripts/governance/controlled-package-ci.test.mjs","scripts/governance/platform-source-hub-foundation.test.mjs"])
+})
+function exactReservationSourceEntry(record, entry) {
   const pin=ASSISTANT_RESERVATION_SOURCE_ADMISSION
-  return entry.path===pin.newSourceRecord && entry.status==='added' && entry.mode==='100644'
+  const admittedPath=(entry.path===pin.newSourceRecord && entry.status==='added')
+    || (pin.protectedTests.includes(entry.path) && entry.status==='modified')
+  return admittedPath && entry.mode==='100644'
     && entry.projectKey==='ARCHITECTURE' && record.id===pin.admissionId
     && record.sourceSha===pin.sourceSha && record.baseSha===pin.baseSha
     && createHash('sha256').update(JSON.stringify(record.files)).digest('hex')===pin.filesSha256
@@ -138,7 +147,7 @@ export function assertSourceAdmission(record, {repository,actor,candidateSha,cur
   const names = new Set(), actual = new Map(files.map(f => [f.filename,f]))
   if (actual.size !== files.length) deny('SOURCE_ADMISSION_FILES_REJECTED')
   for (const entry of record.files) {
-    if (!safePath(entry.path) || (protectedPath(entry.path) && !exactNewReservationSourceRecord(record,entry)) || names.has(entry.path)
+    if (!safePath(entry.path) || (protectedPath(entry.path) && !exactReservationSourceEntry(record,entry)) || names.has(entry.path)
       || !sha.test(entry.blob ?? '') || !['100644','100755'].includes(entry.mode)
       || !['added','modified'].includes(entry.status)) deny('SOURCE_ADMISSION_FILES_REJECTED')
     names.add(entry.path)
