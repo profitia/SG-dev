@@ -20,7 +20,9 @@ export function sourceDependencyTestFixtures(current,historical,id){
  const a=matches[0];assert.equal(a.status,'ACTIVE');assert.equal(a.repository,'profitia/SG-dev')
  assert.equal(a.actor,'profitia');assert.equal(a.targetEnvironment,'development');assert.equal(a.scope,'SOURCE_VALIDATION_ONLY')
  assert(a.approvalRef&&a.taskId);assert.match(a.sourceSha,/^[a-f0-9]{40}$/);assert.match(a.baseSha,/^[a-f0-9]{40}$/)
- assert(Date.parse(a.validFrom)<=Date.now()&&Date.parse(a.validUntil)>Date.now(),'current source validation window')
+ // The controller enforces live admission expiry. Historical test fixtures remain usable after acceptance.
+ const from=Date.parse(a.validFrom),until=Date.parse(a.validUntil)
+ assert(Number.isFinite(from)&&Number.isFinite(until)&&until>from,'recorded source validation window')
  assert(Array.isArray(a.files)&&a.files.length>0&&a.files.length<=300)
  const entries=new Map()
  for(const f of a.files){
