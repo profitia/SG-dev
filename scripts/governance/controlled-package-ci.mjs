@@ -104,7 +104,149 @@ export const APPSHELL_NOTIFICATION_REVIEW=Object.freeze({
  }
 })
 const notificationDigest=bytes=>createHash('sha256').update(bytes).digest('hex')
+export const EDITORIAL_CANON_SOURCE_REVIEW=Object.freeze({
+  "sourceSha": "4350876cd17cdf076b0b8766460b3dd7ed64de5e",
+  "baseSha": "56dcedb243d5d9568e3bd9cc3e13836f4e8b24bb",
+  "recordPath": "apps/sg-runtime/procurement-insights-editorial-integration.json",
+  "entries": {
+    "Canon/evidence/2026-11-17-procurement-insights-editorial-canon-adoption.md": {
+      "blob": "f37e06f4a0f1c2547dda9e93c55b5bb4ac334f0d",
+      "sha256": "4535940a6800c73f39db5ab19df0d10eb3acf9f27c478f98d67fcb6140a1d51d",
+      "status": "added"
+    },
+    "Canon/registries/governance-manifest-v2.json": {
+      "blob": "839aabdc2d0b52497b0b9422c2af473cb592331e",
+      "sha256": "d8ddddd7b39b6b67ed7e4ca2b4407a47a4470497465f790a67be301ea4dcccd8",
+      "status": "modified"
+    },
+    "Canon/v1.0-procurement-insights-narrative-and-editorial-canon.md": {
+      "blob": "df5dabe1d6b544b3f5c501c47f507e151dfd3551",
+      "sha256": "666f04de2b454cb14c55c72c603659607693bb0b2ba8e7cf23f7f6f192fb67c8",
+      "status": "added"
+    },
+    "apps/insights-runtime/docs/editorial-canon.md": {
+      "blob": "fa763bc3082179b5086ad2fafcf71d917e33806c",
+      "sha256": "0654d0d717e041a856b1ad03d4f4a00af8271a7208941e14a7fcbb890db0f2b2",
+      "status": "added"
+    },
+    "apps/insights-runtime/src/composer.mjs": {
+      "blob": "5c945bf4536252e07818314ddb55d0323cd1c344",
+      "sha256": "5b1638be94df5a6e5817cb3e0f3d5064b583717f43d3f665db9bfff769df7028",
+      "status": "modified",
+      "previousSha256": "55e40fdaeb0c5fa5f6fa26688910df6d68bfab4ee8d63a7c39b43878b0652ca2"
+    },
+    "apps/insights-runtime/src/editorial.mjs": {
+      "blob": "5dfbd21008650a899e77e9688997e08b28803aa4",
+      "sha256": "64013d76c4b1ea22fa0d2696bd7521c92013e919fdfc94d57d4a5483cc34fd30",
+      "status": "added"
+    },
+    "apps/insights-runtime/tests/editorial.test.mjs": {
+      "blob": "182e3a20096cfe052ea215c71f72164d89c827c5",
+      "sha256": "8a7c5d4522657b8cd5a37a39fe25329e016037ff21dbbb923bff112e457ebdb0",
+      "status": "added"
+    },
+    "apps/insights-runtime/tests/fixtures/editorial.json": {
+      "blob": "18492419be3aeaca90246d20cad163fba9b4aac3",
+      "sha256": "877d1db822d4e55a69c780a92ea46b679789648d9da37c639ee9483b61019354",
+      "status": "added"
+    },
+    "apps/sg-runtime/procurement-insights-editorial-integration.json": {
+      "blob": "b2fb0df8027e9ff359d6ae965ae03c492fa68204",
+      "sha256": "a12fe421ae3bd4d42cb82a38a7509730918612ddf1ff3caae7552874933b1f9b",
+      "status": "added"
+    },
+    "apps/sg-runtime/tests/assistant-notifications-integrity.mjs": {
+      "blob": "02ef9e12a2a670bf899df87d2468d0610bb0261f",
+      "sha256": "e8141f9b967435ffdd5f94a48e9e0a494cf3eef167fbd6b3b7f22a350f55f3c8",
+      "status": "modified",
+      "previousSha256": "7d8c0ab445d1d8e9615aaf7ad170d675c6feab5665adabf36999462094e2d622"
+    },
+    "apps/sg-runtime/tests/assistant-notifications-integrity.test.mjs": {
+      "blob": "f57171cfa51f8aa9790ff2051682eadefd75ff04",
+      "sha256": "85c4a532704a10a0c0c3b9fba87e8b355a028e1e092479960ae2e6df830e8f1e",
+      "status": "modified",
+      "previousSha256": "1d22944ad0e3d86082045e887ec85036a729f4d7910e8f6d793e8ec65e963da3"
+    },
+    "apps/sg-runtime/tests/procurement-insights-editorial-integrity.mjs": {
+      "blob": "fec4ddee3b3d0183383f860aa6564fb6925181a0",
+      "sha256": "7c44fe0e67c51555b746b91e6896a7a0b1734be8ed9f7d7f0a3da668ecf984b2",
+      "status": "added"
+    },
+    "apps/sg-runtime/tests/procurement-insights-editorial-integrity.test.mjs": {
+      "blob": "5a46447253425b0ddf9bf25a941e666d09e45781",
+      "sha256": "504be3cefedd23386a5dfce13c128b0992e626468c2791642ee056f8fb3464f1",
+      "status": "added"
+    }
+  },
+  "projection": [
+    "apps/insights-runtime/src/composer.mjs",
+    "apps/insights-runtime/src/editorial.mjs",
+    "apps/sg-runtime/tests/assistant-notifications-integrity.mjs",
+    "apps/sg-runtime/tests/assistant-notifications-integrity.test.mjs",
+    "apps/sg-runtime/tests/procurement-insights-editorial-integrity.mjs",
+    "apps/sg-runtime/tests/procurement-insights-editorial-integrity.test.mjs",
+    "apps/sg-runtime/procurement-insights-editorial-integration.json"
+  ],
+  "preservedReceipts": {
+    "apps/architecture-lab/private-recurring-source-adoption.json": "a79c186897851acb93142949fe7aee19184cbfe68b3acdf51cbda084c00c1254",
+    "apps/architecture-lab/private-recurring-source.json": "75877d5750e07d1c8172be0af76bc5933f2eeefc22cc39747a2621b9cab24619",
+    "apps/sg-runtime/adp-integration.json": "9dbd4921c5262202902c3c7ae318e2296f130512fc0784840880eb42370d45fb",
+    "apps/sg-runtime/assistant-context-integration.json": "d932f227977789643086b6a9eb179598a6f48071964b2d26ba82d25fceb7b2ec",
+    "apps/sg-runtime/assistant-ecr-integration.json": "5814e2e5cbdf1a32d22cff3aa55de806ec34c9debdecc21ff06c4f9f887a82bc",
+    "apps/sg-runtime/assistant-ecr-precision-integration.json": "a017c2b971e3c72606847264150715c983fa9483537d26be90144a64e0377ee7",
+    "apps/sg-runtime/assistant-ecr-week-integration.json": "31ce8f1d7e5ca1d9c3aedf80f92e23fe0f1a93cb8f5fd5d003eb54a244859dd4",
+    "apps/sg-runtime/assistant-markdown-integration.json": "27ff06aff8bc44592f0073732748834b7759182fa4307d901c7d63304381a38b",
+    "apps/sg-runtime/assistant-notifications-integration.json": "78d6d34fea2ab1ce18f8dd810cc9906452763e8539aedea685fccbe3881b42cb",
+    "apps/sg-runtime/assistant-send-arrow-integration.json": "62c6af6817a022c31788d801cc0eac293a24b3f25d9e529d32b1bff4908fa230",
+    "apps/sg-runtime/development-integration.json": "a3ed33e74582d2e0407677e090be0d82405e42a160c34afddb8fde47dff86540",
+    "apps/sg-runtime/market-calendar-integration.json": "b66d88e724f84d513677554e77484bc29a2021b238ce28d4b7db7492aba9903c",
+    "apps/sg-runtime/oil-renderer-integration.json": "6afdd65e66d8a7d8ceb4ab68601ba6d1c1bfac43bbac879d01bb61c9962e7ad6",
+    "apps/sg-runtime/operation-integration.json": "a6bf50993c98a71aeccd349dd904baafb53b3cd653324d97bab3fc5e34ac509f",
+    "apps/sg-runtime/private-recurring-source-adoption.json": "edf9d51c199251e148b39c92a3084944c1a4b8419be29175c88b6e2583df11f2",
+    "apps/sg-runtime/procurement-insights-completion-integration.json": "095ab52d695419d34ed053a6961e389024067a8ab4a16a9b6bb2c379571832a0",
+    "apps/sg-runtime/procurement-insights-integration.json": "6dca06d8b0731e585925100b0578d41a61711f335940350d1ea32c296a3d7177",
+    "apps/sg-runtime/procurement-insights-live-acceptance.json": "911fac3bf6c4eacabc5db048ef622e4a00e49efa09024e9fbbf5216f7da94d6c",
+    "apps/sg-runtime/procurement-insights-shell-integration.json": "1b1279e669e955e604c7c646482a6ce119eac5eeb09491ade78a37aa7fc133a1",
+    "apps/sg-runtime/registration-stage-i-integration.json": "4a7a572e67e12ed73c523502cef4cb432009e735737df851419d80898653f414",
+    "apps/sg-runtime/xray-appshell-integration.json": "edd27f0ae420a9c7671f3cf6068fa00e237a845169ce36de719b6a52abcc6087",
+    "apps/srm/assistant-context-integration.json": "e39cc67fc7b1a9dd787365e0cea5407e11c47744f15c4f9cf83ea15eddeb2aff",
+    "apps/srm/development-integration.json": "53b67cb769000a4f4005ab10ccc0188b39074094cb38e915b16c3d6026590f57",
+    "apps/srm/operation-integration.json": "1303ac82c0570ca4929f64e1620e2ec7a6bfd3809607f57eb33da621c8ecd06d",
+    "apps/srm/private-recurring-source-adoption.json": "88d0252f634eface35b34adf31ac97cbf0d396fcf1fe6da452c74bdc23c7c633",
+    "apps/srm/xray-appshell-integration.json": "584f4b2e099966bdfc23ce9ac1bf0d408893010b40459f458c639bdd4c4b1b19",
+    "packages/platform-contracts/test/recurring-consent-transport-source.json": "0c9ffe5bfd89cf2bd65cd9adc7ad241a04e7468b5821f97171f4a6c550aaba36"
+  }
+})
+// Exact byte verification of the owner-approved editorial source; no runtime grant.
+export function editorialTrustedPredecessor(current,historical){
+ const cfg=EDITORIAL_CANON_SOURCE_REVIEW;let record
+ try{record=current(cfg.recordPath)}catch(error){
+  const message=String(error?.stderr??error?.message??'')
+  if(error?.code==='ENOENT'||error?.status===128&&["' does not exist in ","' exists on disk, but not in "].some(s=>message.includes("'"+cfg.recordPath+s)))return null
+  throw error
+ }
+ for(const[p,e]of Object.entries(cfg.entries)){
+  const b=current(p),blob=createHash('sha1').update('blob '+b.length+'\0').update(b).digest('hex')
+  if(notificationDigest(b)!==e.sha256||blob!==e.blob)fail('EDITORIAL_SOURCE_BYTES_REJECTED')
+ }
+ const a=JSON.parse(record)
+ if(a.previousSourceSha!==cfg.baseSha||a.scope!=='PROCUREMENT_INSIGHTS_EDITORIAL_PROFILE_V1'||a.taskId!=='SG2-PI-EDITORIAL-CONTINUATION-20261117'||a.targetEnvironment!=='development')fail('EDITORIAL_SOURCE_IDENTITY_REJECTED')
+ for(const flag of ['authorisationChanged','schemaChanged','modelChanged','providerCallsPerformed','historicalReportsChanged','automaticPublication'])if(a[flag]!==false)fail('EDITORIAL_SOURCE_AUTHORITY_REJECTED')
+ const predecessors=new Map()
+ for(const p of cfg.projection){const e=cfg.entries[p];if(e.status==='modified'){
+  const b=historical(cfg.baseSha,p);if(notificationDigest(b)!==e.previousSha256)fail('EDITORIAL_SOURCE_HISTORY_REJECTED');predecessors.set(p,Buffer.from(b))
+ }}
+ for(const[p,h]of Object.entries(cfg.preservedReceipts))if(notificationDigest(current(p))!==h||notificationDigest(historical(cfg.baseSha,p))!==h)fail('EDITORIAL_SOURCE_RECEIPT_REJECTED')
+ return {manifest:a,previousBytes:p=>{
+  if(!cfg.projection.includes(p))return current(p)
+  const e=cfg.entries[p]
+  if(e.status==='added')throw Object.assign(Error('Editorial source absent from predecessor'),{code:'ENOENT'})
+  return Buffer.from(predecessors.get(p))
+ }}
+}
+
 export function assistantNotificationsTrustedPredecessor(current,historical){
+ const editorial=editorialTrustedPredecessor(current,historical);if(editorial)return assistantNotificationsTrustedPredecessor(editorial.previousBytes,historical)
  const cfg=APPSHELL_NOTIFICATION_REVIEW;let record
  try{record=current(cfg.recordPath)}catch(error){if(error?.code==='ENOENT')return null;throw error}
  // The trusted controller pins every physical byte before exposing history.
@@ -129,7 +271,7 @@ export function assistantNotificationsTrustedPredecessor(current,historical){
 // Raw file checks are unchanged. New current sources must additionally be non-executable.
 export function readNotificationPhysicalSource(root,name){
  const bytes=readRegistrationSdkFile(root,name)
- if(Object.hasOwn(APPSHELL_NOTIFICATION_REVIEW.entries,name)&&fs.lstatSync(path.join(fs.realpathSync(root),name)).mode&0o111)fail('APPSHELL_NOTIFICATION_MODE_REJECTED')
+ if((Object.hasOwn(APPSHELL_NOTIFICATION_REVIEW.entries,name)||Object.hasOwn(EDITORIAL_CANON_SOURCE_REVIEW.entries,name))&&fs.lstatSync(path.join(fs.realpathSync(root),name)).mode&0o111)fail('APPSHELL_NOTIFICATION_MODE_REJECTED')
  return bytes
 }
 export function notificationTrustedCurrent(root){
