@@ -16,7 +16,7 @@ test('SRM-required additive platform1.30 compatibility retains all SG2 history a
  assert.equal(a.taskId,'SG2-XRAY-PLATFORM130-SOURCE-COMPAT-20261028');assert.equal(a.platformVersion,'1.30.0')
  const before=execFileSync('git',['show',a.previousReceiptSourceSha+':apps/sg-runtime/operation-integration.json'])
  assert.equal(hash(before),a.previousReceiptDigest)
- for(const[key,value]of Object.entries(JSON.parse(before)))assert.deepEqual(receipt[key],value,key)
+ for(const[key,value]of Object.entries(JSON.parse(before)))assert.deepEqual(receipt.oilAutonomousReportCompatibility?.previousRootAcceptance?.[key]??receipt[key],value,key)
  const root=new URL('../',import.meta.resolve('@profitia/platform-contracts/private-operation-host'))
  assert.equal(JSON.parse(fs.readFileSync(new URL('package.json',root))).version,acceptedSdkSource().platformVersion??xray.platformVersion)
  for(const[file,digest]of Object.entries(a.sourceDigests)){

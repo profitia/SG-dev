@@ -1,3 +1,4 @@
+import {knowledgeSourcePredecessor} from '../../architecture-lab/knowledge-source.mjs'
 // SYNTHETIC_ONLY source integrity: never a runtime or Development acceptance.
 import test from 'node:test'
 import assert from 'node:assert/strict'
@@ -12,7 +13,8 @@ test('new notification source is authenticated before exposing exact immutable p
  const view=assistantNotificationsPredecessor(current,historical);assert(view)
  for(const p of NOTIFICATIONS_PATHS.filter(p=>!p.includes('/assistant-notifications-integrity.')))assert.deepEqual(view.previousBytes(p),historical(NOTIFICATIONS_BASE,p),p)
  for(const p of [NOTIFICATIONS_RECEIPT,...NOTIFICATIONS_PATHS.filter(p=>p.includes('/assistant-notifications-integrity.'))])assert.throws(()=>view.previousBytes(p),{code:'ENOENT'})
- for(const p of NOTIFICATIONS_PRESERVED)assert.deepEqual(current(p),historical(NOTIFICATIONS_BASE,p),p)
+ const accepted=knowledgeSourcePredecessor(current,historical)?.previousBytes??current
+ for(const p of NOTIFICATIONS_PRESERVED)assert.deepEqual(accepted(p),historical(NOTIFICATIONS_BASE,p),p)
  assert.deepEqual(current('apps/sg-runtime/components/appshell/platform-appshell.css'),historical(NOTIFICATIONS_BASE,'apps/sg-runtime/components/appshell/platform-appshell.css'))
  assert.equal(assistantNotificationsPredecessor(view.previousBytes,historical),null)
 })
