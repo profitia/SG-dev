@@ -42,6 +42,8 @@ test('authenticated recurring source graph covers every actual CIC app amendment
 test('actual notification and live source entry points accept the authenticated CIC successor without changing their receipts',async()=>{
  const {assistantNotificationsPredecessor}=await import('./assistant-notifications-integrity.mjs')
  const {procurementInsightsLiveAcceptancePredecessor}=await import('./procurement-insights-live-acceptance-source.mjs')
+ const {finderMonitorPredecessor}=await import('./finder-monitor-source-integrity.mjs')
+ assert(finderMonitorPredecessor(current,historical))
  assert(assistantNotificationsPredecessor(current,historical))
  assert(procurementInsightsLiveAcceptancePredecessor(current,historical))
 })

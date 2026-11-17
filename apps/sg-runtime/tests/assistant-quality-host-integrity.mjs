@@ -19,7 +19,7 @@ export const QUALITY_HOST_PATHS=Object.freeze([
  'apps/sg-runtime/tests/assistant-quality-host-integrity.test.mjs',
  'apps/sg-runtime/tests/procurement-insights-completion-integrity.mjs',
  'apps/architecture-lab/private-recurring-source.mjs',
- 'apps/sg-runtime/tests/procurement-insights-editorial-integrity.mjs'
+ 'apps/sg-runtime/tests/finder-monitor-source-integrity.mjs'
 ])
 export const QUALITY_HOST_PRESERVED=Object.freeze([
  'apps/sg-runtime/assistant-quality-integration.json',
@@ -56,8 +56,12 @@ export function assistantQualityHostPredecessor(current,historical){
  assert.equal(a.previousSourceSha,QUALITY_HOST_BASE);assert.deepEqual(a.cicPublication,publication)
  for(const k of ['responseProtectionActivated','privateQaActivated','cloudInstallationPerformed','pilotStarted'])assert.equal(a[k],false,k)
  const common='apps/architecture-lab/private-recurring-source.mjs',hasCommon=Object.hasOwn(a.sourceDigests,common)
- const transport='apps/sg-runtime/tests/procurement-insights-editorial-integrity.mjs',hasTransport=Object.hasOwn(a.sourceDigests,transport)
- const paths=QUALITY_HOST_PATHS.filter(p=>(p!==common||hasCommon)&&(p!==transport||hasTransport))
+ const legacyTransport='apps/sg-runtime/tests/procurement-insights-editorial-integrity.mjs',finderTransport='apps/sg-runtime/tests/finder-monitor-source-integrity.mjs'
+ const hasLegacyTransport=Object.hasOwn(a.sourceDigests,legacyTransport),hasFinderTransport=Object.hasOwn(a.sourceDigests,finderTransport)
+ assert(!(hasLegacyTransport&&hasFinderTransport),'one closed CI24 transport profile')
+ const hasTransport=hasLegacyTransport||hasFinderTransport,transport=hasFinderTransport?finderTransport:legacyTransport
+ const paths=QUALITY_HOST_PATHS.filter(p=>(p!==common||hasCommon)&&(p!==finderTransport||hasFinderTransport))
+ if(hasLegacyTransport)paths.push(legacyTransport)
  assert.deepEqual(Object.keys(a.sourceDigests).sort(),[...paths].sort())
  for(const p of paths){assert.match(a.sourceDigests[p],/^[a-f0-9]{64}$/);assert.equal(hash(current(p)),a.sourceDigests[p],'exact quality host source '+p)}
  assert.deepEqual(Object.keys(a.previousReceipts).sort(),[...QUALITY_HOST_PRESERVED].sort())
@@ -73,16 +77,21 @@ export function assistantQualityHostPredecessor(current,historical){
  const beforeCommon=String(historical(QUALITY_HOST_BASE,common)),commonHead="export function recurringSourcePredecessor(current,historical){\n",commonImport=hasTransport?"import {assistantQualityPredecessor,QUALITY_RECEIPT} from '../sg-runtime/tests/assistant-quality-integrity.mjs'\n":"import {assistantQualityPredecessor} from '../sg-runtime/tests/assistant-quality-integrity.mjs'\n",commonPrefix=hasTransport?" const quality=assistantQualityPredecessor(current,historical);if(quality){const accepted=recurringSourcePredecessor(quality.previousBytes,historical);assert(accepted,'accepted recurring source retained');return {...accepted,quality,manifest:{...accepted.manifest,sourceDigests:{...accepted.manifest.sourceDigests,...quality.manifest.sourceDigests,[QUALITY_RECEIPT]:hash(current(QUALITY_RECEIPT))}}}}\n":" const quality=assistantQualityPredecessor(current,historical);if(quality)return recurringSourcePredecessor(quality.previousBytes,historical)\n"
  assert.equal(beforeCommon.split(commonHead).length,2,'one original recurring source entry')
  assert.equal(String(current(common)),hasCommon?commonImport+beforeCommon.replace(commonHead,commonHead+commonPrefix):beforeCommon,'only exact additive quality dispatch precedes original recurring checks')
- if(hasTransport){
+ if(hasLegacyTransport){
  const beforeTransport=String(historical('936eaa61087516028564c6aaad2c46912b4729f7',transport)),transportHead="export function procurementInsightsEditorialPredecessor(current,historical){\n",transportImport="import {assistantQualityPredecessor} from './assistant-quality-integrity.mjs'\n",transportPrefix=" const quality=assistantQualityPredecessor(current,historical);if(quality)return procurementInsightsEditorialPredecessor(quality.previousBytes,historical)\n"
  assert.equal(beforeTransport.split(transportHead).length,2,'one original PI editorial acceptance source entry')
  assert.equal(String(current(transport)),hasTransport?transportImport+beforeTransport.replace(transportHead,transportHead+transportPrefix):beforeTransport,'only exact additive quality dispatch precedes original PI editorial acceptance checks')
+ }
+ if(hasFinderTransport){
+ const beforeTransport=String(historical('77369b63888c5fa66d8d8159d5e8f36a23d25c83',finderTransport)),transportBoundary=" const a=JSON.parse(bytes)\n",transportImport="import {assistantQualityPredecessor,QUALITY_RECEIPT} from './assistant-quality-integrity.mjs'\n",transportPrefix=" const quality=assistantQualityPredecessor(current,historical)\n if(quality){\n  const accepted=finderMonitorPredecessor(quality.previousBytes,historical);assert(accepted,'accepted Finder monitor source retained')\n  return {...accepted,quality,manifest:{...accepted.manifest,sourceDigests:{...accepted.manifest.sourceDigests,...quality.manifest.sourceDigests,[QUALITY_RECEIPT]:hash(current(QUALITY_RECEIPT))}}}\n }\n"
+ assert.equal(beforeTransport.split(transportBoundary).length,2,'one original Finder monitor parse boundary')
+ assert.equal(String(current(finderTransport)),transportImport+beforeTransport.replace(transportBoundary,transportPrefix+transportBoundary),'only exact additive quality dispatch follows original Finder absence and read-error handling')
  }
  const mapped=new Set(paths),cache=new Map()
  return {manifest:a,previousBytes:p=>{
   if(p===QUALITY_HOST_RECEIPT||added.has(p))throw Object.assign(Error('Quality host absent from predecessor'),{code:'ENOENT'})
   if(!mapped.has(p))return current(p)
-  if(!cache.has(p))cache.set(p,Buffer.from(historical(p===transport?'936eaa61087516028564c6aaad2c46912b4729f7':QUALITY_HOST_BASE,p)))
+  if(!cache.has(p))cache.set(p,Buffer.from(historical(p===finderTransport?'77369b63888c5fa66d8d8159d5e8f36a23d25c83':p===legacyTransport?'936eaa61087516028564c6aaad2c46912b4729f7':QUALITY_HOST_BASE,p)))
   return Buffer.from(cache.get(p))
  }}
 }

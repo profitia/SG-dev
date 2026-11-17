@@ -1,4 +1,4 @@
-import {assistantQualityPredecessor} from './assistant-quality-integrity.mjs'
+import {finderMonitorPredecessor} from './finder-monitor-source-integrity.mjs'
 // Test/build-only continuation for the approved editorial profile. No runtime grant.
 import assert from 'node:assert/strict'
 import {createHash} from 'node:crypto'
@@ -30,13 +30,14 @@ export function editorialContinuationSource(before){
  return IMPORT+before.replace(HEAD,HEAD+PREFIX)
 }
 export function procurementInsightsEditorialPredecessor(current,historical){
- const quality=assistantQualityPredecessor(current,historical);if(quality)return procurementInsightsEditorialPredecessor(quality.previousBytes,historical)
  let bytes
  try{bytes=current(EDITORIAL_RECEIPT)}catch(error){
   const text=String(error?.stderr??error?.message??'')
   if(error?.code==='ENOENT'||error?.status===128&&["' does not exist in ","' exists on disk, but not in "].some(s=>text.includes("'"+EDITORIAL_RECEIPT+s)))return null
   throw error
  }
+ const finderMonitor=finderMonitorPredecessor(current,historical)
+ if(finderMonitor)return procurementInsightsEditorialPredecessor(finderMonitor.previousBytes,historical)
  const a=JSON.parse(bytes)
  assert.deepEqual(Object.keys(a).sort(),['schemaVersion','taskId','targetEnvironment','scope','previousSourceSha','canonSha256','sourceDigests','preservedReceipts','authorisationChanged','schemaChanged','modelChanged','providerCallsPerformed','historicalReportsChanged','automaticPublication'].sort())
  assert.equal(a.schemaVersion,'1.0');assert.equal(a.taskId,'SG2-PI-EDITORIAL-CONTINUATION-20261117')
