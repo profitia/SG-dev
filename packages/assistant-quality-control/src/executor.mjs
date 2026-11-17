@@ -64,9 +64,9 @@ export function executorPlan({work,toolPath,uid,gid,brokerUrl,agentToken}){
   &&Number.isInteger(uid)&&uid>=10000&&Number.isInteger(gid)&&gid>=10000&&typeof agentToken==='string'&&/^[a-f0-9]{64}$/.test(agentToken))
  const u=new URL(brokerUrl);require(u.protocol==='http:'&&u.hostname==='127.0.0.1'&&u.pathname==='/v1'&&u.port&&u.username===''&&u.password===''&&u.search===''&&u.hash==='')
  const settings={model:'gpt-6.1-sol',model_provider:'aqc',default_permissions:'aqc-workspace',
-  'permissions.aqc-workspace.extends':':workspace','permissions.aqc-workspace.filesystem.":root"':'deny',
-  'permissions.aqc-workspace.filesystem.":minimal"':'read','permissions.aqc-workspace.filesystem.":tmpdir"':'deny',
-  'permissions.aqc-workspace.filesystem.":slash_tmp"':'deny','permissions.aqc-workspace.network.enabled':false,
+  'permissions.aqc-workspace.extends':':workspace',
+  'permissions.aqc-workspace.filesystem':{':root':'deny',':minimal':'read',':tmpdir':'deny',':slash_tmp':'deny'},
+  'permissions.aqc-workspace.network.enabled':false,
   approval_policy:'never',model_reasoning_effort:'low',service_tier:'default',
   web_search:'disabled',cli_auth_credentials_store:'ephemeral',check_for_update_on_startup:false,'features.apps':false,'features.multi_agent':false,
   'features.memories':false,'features.hooks':false,'features.goals':false,'features.enable_request_compression':false,'skills.bundled.enabled':false,
@@ -75,7 +75,15 @@ export function executorPlan({work,toolPath,uid,gid,brokerUrl,agentToken}){
   'model_providers.aqc.wire_api':'responses','model_providers.aqc.requires_openai_auth':false,'model_providers.aqc.supports_websockets':false,
   'model_providers.aqc.request_max_retries':0,'model_providers.aqc.stream_max_retries':0,'model_providers.aqc.stream_idle_timeout_ms':80000}
  const args=['exec','--strict-config','--ephemeral','--ignore-user-config','--ignore-rules','--skip-git-repo-check','--json','--cd',work]
- for(const [key,value]of Object.entries(settings))args.push('-c',key+'='+JSON.stringify(value))
+ // CLI dotted-key overrides split path components literally. Supply the
+ // special-path map as one TOML inline table so quotes remain TOML syntax,
+ // rather than becoming part of a path such as `":minimal"`.
+ for(const [key,value]of Object.entries(settings)){
+  const literal=key==='permissions.aqc-workspace.filesystem'
+   ?'{'+Object.entries(value).map(([name,access])=>JSON.stringify(name)+' = '+JSON.stringify(access)).join(', ')+'}'
+   :JSON.stringify(value)
+  args.push('-c',key+'='+literal)
+ }
  args.push('-')
  return Object.freeze({args:Object.freeze(args),uid,gid,brokerPort:Number(u.port),environment:Object.freeze({...rootEnvironment,AQC_AGENT_TOKEN:agentToken}),
   privilegeArguments:Object.freeze([`--reuid=${uid}`,`--regid=${gid}`,'--clear-groups','--no-new-privs','--bounding-set=-all','--inh-caps=-all','--ambient-caps=-all'])})
