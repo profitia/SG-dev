@@ -26,7 +26,8 @@
   "testSourceDigests": {
     "scripts/operation-context.integration.test.mjs": "fcd8b15b05ac37bb6a4fa702313dc952371b04f2c6aeec5d1618d1ec8d535aaa",
     "scripts/private-sensitive.integration.test.mjs": "68916fa99ac306c4f1ae5db16bc9feec20ce3eac1505a6e4e7afca4a8efaf097",
-    "scripts/staging-rollback.test.mjs": "60b70009916987bf66d68003a0d8415c18a424bd1c3f2b74b655fefc71e870be",
+    "scripts/promotion.test.mjs": "d5a9525b8819cbc97aab040fb8faae26a0715ca87b85e70d22601061ef48718d",
+    "scripts/staging-rollback.test.mjs": "56e1ca879d273ef7fe0642cf56096af4cf2308cccc8bee40099e34e8c01b9037",
     "src/server/kys-cache.test.ts": "8543c0693fbff59c080dbfab5142c4cecd20fd2aa30aa1925edaa47f9ec89923",
     "src/server/kys-orchestration.test.ts": "553ad204fba123b6a9e675257f24e0882c797ac63fd23a3c9d3a727b99d8005e",
     "src/server/peer-read-boundary.test.ts": "7a06154ff734c527cf5fb0723add4d9a02878050bc1155c4bdb897b055e0a697",
@@ -34,6 +35,6 @@
     "src/server/vercly-kys.test.ts": "01d847baa902fbd58ebe3ad6a82988666b058be09d6c3261a97b9b6b0bed725f"
   },
   "testSupportSourceDigests": {
-    "scripts/kys-resume-source-view.mjs": "4e7ba0b1a12f438387dcde585f316940457309021f5449e9a5398fca285bd4a6"
+    "scripts/kys-resume-source-view.mjs": "9581c2dcb238cfb46530652c60fb5d354a5609bfd9b69f6f8fdf8dcd8d946915"
   }
 }

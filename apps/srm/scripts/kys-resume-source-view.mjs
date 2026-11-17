@@ -4,7 +4,7 @@ import {createHash} from 'node:crypto'
 const RECEIPT='apps/srm/operation-integration.json',ADOPTION='apps/srm/vercly-kys-resume-integration.json'
 const BASE='16fd69465162e4b37ca968c46cb901ba2b7f9f12'
 const PRODUCTION=["src/server/kys-cache.ts", "src/server/provider-source-transport.ts", "src/server/supplier-native-sensitive-store.ts", "src/server/supplier-native-sensitive.ts", "src/server/vercly-kys.ts", "src/server/xray-lookup.ts"]
-const TESTS=["scripts/operation-context.integration.test.mjs", "scripts/private-sensitive.integration.test.mjs", "scripts/staging-rollback.test.mjs", "src/server/kys-cache.test.ts", "src/server/kys-orchestration.test.ts", "src/server/peer-read-boundary.test.ts", "src/server/supplier-location-geocoding-runtime.test.ts", "src/server/vercly-kys.test.ts"]
+const TESTS=["scripts/operation-context.integration.test.mjs", "scripts/private-sensitive.integration.test.mjs", "scripts/promotion.test.mjs", "scripts/staging-rollback.test.mjs", "src/server/kys-cache.test.ts", "src/server/kys-orchestration.test.ts", "src/server/peer-read-boundary.test.ts", "src/server/supplier-location-geocoding-runtime.test.ts", "src/server/vercly-kys.test.ts"]
 const hash=b=>createHash('sha256').update(b).digest('hex')
 export function kysResumePredecessor(current,historical){
  const root=Buffer.from(current(RECEIPT)),complete=JSON.parse(root);let bytes
