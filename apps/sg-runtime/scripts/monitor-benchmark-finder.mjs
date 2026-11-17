@@ -31,8 +31,13 @@ export function readConfiguration(env) {
     || dsn.password || dsn.port || dsn.search || dsn.hash)
     fail('configuration','SENTRY_CONFIGURATION_INVALID')
   if (!/^[a-f0-9]{40}$/.test(env.RENDER_GIT_COMMIT ?? '')) fail('configuration','RELEASE_INVALID')
+  let issuer
+  try { issuer = new URL(env.PROFITIA_CLERK_ISSUER) } catch { fail('configuration','CLERK_ISSUER_INVALID') }
+  if (issuer.protocol!=='https:' || !/^[a-z0-9-]+\.clerk\.accounts\.dev$/.test(issuer.hostname)
+    || issuer.port || issuer.username || issuer.password || issuer.pathname!=='/' || issuer.search || issuer.hash)
+    fail('configuration','CLERK_ISSUER_INVALID')
   return Object.freeze({dsn, release:env.RENDER_GIT_COMMIT, target:TARGET, email:ACCOUNT,
-    clerkKey:env.PROFITIA_CLERK_SECRET_KEY})
+    clerkKey:env.PROFITIA_CLERK_SECRET_KEY, issuer:issuer.origin})
 }
 
 export function idempotencyKey(stage, body, now) {
@@ -71,7 +76,8 @@ async function limitedJson(response,stage) {
 export async function runMonitor(env, {fetchImpl=fetch, now=Date.now, log=value=>console.log(JSON.stringify(value))}={}) {
   const config=readConfiguration(env)
   const started=now(), traceId=id(), rootSpan=id().slice(0,16), checkInId=id()
-  const spans=[]; let sessionId, requestCount=0, failure=null, telemetryFailed=false
+  const spans=[]; let sessionId, userId, devBrowserToken, ticket, ticketRedeemed=false,
+    requestCount=0, failure=null, telemetryFailed=false
   const endToEnd=AbortSignal.timeout(120000)
   async function jsonRequest(stage,url,options={}) {
     requestCount++
@@ -113,11 +119,23 @@ export async function runMonitor(env, {fetchImpl=fetch, now=Date.now, log=value=
       checkin_margin:10,max_runtime:3,failure_issue_threshold:1,recovery_threshold:1}}:{duration:(now()-started)/1000})})
   const clerk=(stage,path,body)=>jsonRequest(stage,'https://api.clerk.com/v1'+path,{
     ...(body?{method:'POST',body:JSON.stringify(body)}:{}),
-    headers:{Authorization:'Bearer '+config.clerkKey,...(body?{'Content-Type':'application/json'}:{})}})
+    headers:{Authorization:'Bearer '+config.clerkKey,'Clerk-API-Version':'2026-08-20',
+      ...(body?{'Content-Type':'application/json'}:{})}})
+  const frontend=(path,body)=>jsonRequest('session',config.issuer+path
+    +'?__dev_session='+encodeURIComponent(devBrowserToken)+'&__clerk_api_version=2026-08-20',{
+      method:'POST',body:new URLSearchParams(body).toString(),
+      headers:{Origin:config.target,'Content-Type':'application/x-www-form-urlencoded'}})
   async function finder(stage,path,body) {
     // Refresh the official short-lived JWT for each operation; never retry provider work.
-    const token=await clerk('session','/sessions/'+sessionId+'/tokens',{})
+    const token=await frontend('/v1/client/sessions/'+sessionId+'/tokens',{})
     if(typeof token.jwt!=='string'||token.jwt.length>8192) fail('session','SESSION_TOKEN_INVALID')
+    let claims
+    try { claims=JSON.parse(Buffer.from(token.jwt.split('.')[1],'base64url').toString('utf8')) }
+    catch { fail('session','SESSION_TOKEN_INVALID') }
+    // E1 still verifies signature and fresh session status. Never relax its azp check.
+    if(claims.iss!==config.issuer || claims.azp!==config.target || claims.sub!==userId
+      || claims.sid!==sessionId || !(claims.exp>now()/1000) || claims.exp>now()/1000+300)
+      fail('session','SESSION_BINDING_INVALID')
     return step(stage,spanId=>jsonRequest(stage,config.target+path,{
       ...(body?{method:'POST',body:JSON.stringify(body)}:{}),
       headers:{Authorization:'Bearer '+token.jwt,
@@ -136,11 +154,23 @@ export async function runMonitor(env, {fetchImpl=fetch, now=Date.now, log=value=
     if(!/^user_[A-Za-z0-9]+$/.test(user.id??'')||user.banned||user.locked||user.two_factor_enabled
       ||!user.email_addresses?.some(e=>e.email_address===config.email&&e.verification?.status==='verified'))
       fail('account','ACCOUNT_NOT_ELIGIBLE')
-    // Official Clerk testing endpoint, available only in Development instances.
-    const session=await step('session',()=>clerk('session','/sessions',{user_id:user.id}))
-    if(!/^sess_[A-Za-z0-9]+$/.test(session.id??'')) fail('session','SESSION_INVALID')
-    sessionId=session.id
-    if(session.user_id!==user.id||session.status!=='active') fail('session','SESSION_INVALID')
+    userId=user.id
+    await step('session',async()=>{
+      // Own isolated Development client; no password or persistent user token.
+      const browser=await jsonRequest('session',config.issuer+'/v1/dev_browser',{
+        method:'POST',headers:{Origin:config.target}})
+      if(typeof browser.token!=='string'||browser.token.length>8192) fail('session','CLIENT_INVALID')
+      devBrowserToken=browser.token
+      ticket=await clerk('session','/sign_in_tokens',{
+        user_id:userId,expires_in_seconds:60,honor_lockout:true})
+      if(!/^sit_[A-Za-z0-9]+$/.test(ticket.id??'')||typeof ticket.token!=='string'||ticket.token.length>8192)
+        fail('session','SIGN_IN_TICKET_INVALID')
+      const signIn=await frontend('/v1/client/sign_ins',{strategy:'ticket',ticket:ticket.token})
+      if(/^sess_[A-Za-z0-9]+$/.test(signIn.response?.created_session_id??''))
+        sessionId=signIn.response.created_session_id
+      ticketRedeemed=signIn.response?.status==='complete'
+      if(!sessionId||!ticketRedeemed) fail('session','SESSION_INCOMPLETE')
+    })
     const metadata=await finder('metadata','/api/benchmark/metadata')
     if(!validItems(metadata)||!metadata.items.every(item=>typeof item.key==='string')) fail('metadata','METADATA_UNAVAILABLE')
     const search=await finder('search','/api/benchmark/search?q=WTI&limit=3')
@@ -164,6 +194,19 @@ export async function runMonitor(env, {fetchImpl=fetch, now=Date.now, log=value=
   } catch(error) {
     failure=error instanceof MonitorFailure?error:new MonitorFailure('monitoring','INTERNAL_FAILURE')
   } finally {
+    // If a sign-in response was lost, inspect only this run's isolated client for cleanup.
+    if(ticket && !sessionId && devBrowserToken) {
+      try {
+        const response=await fetchImpl(config.issuer+'/v1/client?__dev_session='
+          +encodeURIComponent(devBrowserToken)+'&__clerk_api_version=2026-08-20',{
+          redirect:'error',signal:AbortSignal.timeout(10000),headers:{Origin:config.target}})
+        const client=await limitedJson(response,'cleanup')
+        const sessions=client.response?.sessions??[]
+        if(sessions.length===1 && /^sess_[A-Za-z0-9]+$/.test(sessions[0].id??'')
+          && sessions[0].user?.id===userId) sessionId=sessions[0].id
+        else if(sessions.length) fail('cleanup','SESSION_REVOCATION_FAILED')
+      } catch {failure??=new MonitorFailure('cleanup','SESSION_REVOCATION_FAILED')}
+    }
     if(sessionId) {
       try {
         // Independent cleanup timeout still runs if the probe's overall deadline expired.
@@ -173,6 +216,15 @@ export async function runMonitor(env, {fetchImpl=fetch, now=Date.now, log=value=
         const revoked=await limitedJson(response,'cleanup')
         if(revoked.id!==sessionId||revoked.status!=='revoked') fail('cleanup','SESSION_REVOCATION_FAILED')
       } catch {failure??=new MonitorFailure('cleanup','SESSION_REVOCATION_FAILED')}
+    }
+    if(ticket && !ticketRedeemed && /^sit_[A-Za-z0-9]+$/.test(ticket.id??'')) {
+      try {
+        const response=await fetchImpl('https://api.clerk.com/v1/sign_in_tokens/'+ticket.id+'/revoke',{
+          method:'POST',redirect:'error',signal:AbortSignal.timeout(10000),
+          headers:{Authorization:'Bearer '+config.clerkKey,'Content-Type':'application/json'},body:'{}'})
+        const revoked=await limitedJson(response,'cleanup')
+        if(revoked.id!==ticket.id||revoked.status!=='revoked') fail('cleanup','TICKET_REVOCATION_FAILED')
+      } catch {failure??=new MonitorFailure('cleanup','TICKET_REVOCATION_FAILED')}
     }
   }
   // Only allowlisted technical fields leave this process. No JWT, account, payload or provider results.
