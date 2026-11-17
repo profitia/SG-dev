@@ -78,9 +78,10 @@ export function AppShellDashboard(props: {
           <BenchmarkFinderClient locale={props.locale} active={benchmarkActive} assistantOwner="host" headerOwner="host" hostTheme={theme} onAssistantContextChange={onBenchmarkContext}/>
         </div></Sg2ModuleSession>}
       </section>
-      <section hidden={!active} data-appshell-module="adp">{opened || active ? <AdpModuleHost locale={props.locale} theme={theme} active={active}
+      <section hidden={!active} data-appshell-module="adp">{opened || active ? <AdpModuleHost key={props.assistantScope??'anonymous'} locale={props.locale} theme={theme} active={active}
       organizationDisplayName={props.organisationBranding === 'porr' ? 'PORR' : 'SpendGuru'} navigation={navigation}
       onNavigate={next => router.push(adpPath(props.locale, next), {scroll: false})}
+      onNewsfeed={({name,nip})=>{setInsightsOpened(true);const context=new URLSearchParams({supplierNip:nip,supplierName:name});router.push(insightsPath+'?'+context.toString())}}
       onReturn={() => router.push(dashboardPath(props.locale))} /> : null}</section>
     </>} />
 }

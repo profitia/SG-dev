@@ -2,10 +2,12 @@
 import React,{useState} from 'react'
 import {CanonButton,CanonInput,CanonSelect,CanonSummary} from '@profitia/srm-xray'
 import type {Observation} from '@/lib/newsfeed/client'
+import {supplierObservationSeed,type SupplierContext} from '@/lib/procurement-insights/supplier-context'
 const queryFor=(phrases:string[])=>phrases.map(x=>'"'+x.replace(/["\\]/g,'\\$&')+'"').join(' OR ')
-export function ObservationForm({initial,onSave,onCancel,busy,locale}:{initial:Observation|null;onSave:(body:Record<string,unknown>,search:boolean)=>Promise<void>;onCancel:()=>void;busy:boolean;locale:'pl'|'en'}){
- const [name,setName]=useState(initial?.name??''),[phrases,setPhrases]=useState(initial?.phrases??[]),[term,setTerm]=useState(''),[error,setError]=useState('')
- const [kind,setKind]=useState(initial?.subjectKind??'topic'),[query,setQuery]=useState(initial&&initial.request.criteria.text!==queryFor(initial.phrases)?String(initial.request.criteria.text??''):'')
+export function ObservationForm({initial,supplier,onSave,onCancel,busy,locale}:{initial:Observation|null;supplier?:SupplierContext;onSave:(body:Record<string,unknown>,search:boolean)=>Promise<void>;onCancel:()=>void;busy:boolean;locale:'pl'|'en'}){
+ const seed=supplier?supplierObservationSeed(supplier):null
+ const [name,setName]=useState(initial?.name??seed?.name??''),[phrases,setPhrases]=useState(initial?.phrases??seed?.phrases??[]),[term,setTerm]=useState(''),[error,setError]=useState('')
+ const [kind,setKind]=useState(initial?.subjectKind??(supplier?'company':'topic')),[query,setQuery]=useState(initial&&initial.request.criteria.text!==queryFor(initial.phrases)?String(initial.request.criteria.text??''):'')
  const [language,setLanguage]=useState(String(initial?.request.criteria.language??'')),[country,setCountry]=useState(String(initial?.request.criteria.country??'')),[freshness,setFreshness]=useState(String(initial?.request.criteria.freshness??''))
  const [recurring,setRecurring]=useState(!!initial?.schedule),[frequency,setFrequency]=useState(initial?.schedule?.frequency??'DAILY'),[time,setTime]=useState(initial?.schedule?.localTime??'08:00')
  const [timeZone,setTimeZone]=useState(initial?.schedule?.timeZone??'Europe/Warsaw'),[start,setStart]=useState(initial?.schedule?.startDate??new Date().toLocaleDateString('en-CA')),[end,setEnd]=useState(initial?.schedule?.endDate??'')
@@ -17,7 +19,7 @@ export function ObservationForm({initial,onSave,onCancel,busy,locale}:{initial:O
   if(text.length>600){setError('Skróć zapytanie wyszukiwania do 600 znaków.');return}
   if(recurring&&(!start||end&&end<start||!time)){setError('Sprawdź początek, koniec i godzinę harmonogramu.');return}
   try{new Intl.DateTimeFormat('pl',{timeZone}).format()}catch{setError('Wybierz poprawną strefę czasową.');return}
-  setError('');await onSave({contractVersion:'1.2.0',name:name.trim(),subjectKind:kind,subject:initial?.subject??name.trim(),phrases,
+  setError('');await onSave({contractVersion:'1.2.0',name:name.trim(),subjectKind:kind,subject:initial?.subject??(supplier&&kind==='company'?supplier.nip:name.trim()),phrases,
    request:{contractVersion:'1.0.0',family:'news-discovery',provider:'brave',operation:'search',criteria:{text,...(language?{language}:{}),...(country?{country}:{}),...(freshness?{freshness}:{})}},
    schedule:recurring?{frequency,timeZone,localTime:time,startDate:start,endDate:end||null,...(frequency==='WEEKLY'?{weekdays:[weekday]}:{}),...(frequency==='MONTHLY'?{monthDay}:{})}:null,
    notifications,...(initial?{version:initial.version,status:initial.status}:{})},search)

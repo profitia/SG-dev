@@ -6,6 +6,7 @@ import {CanonButton,CanonInput,CanonSelect} from '@profitia/srm-xray'
 import {useSg2SessionCredential} from '@/components/auth/session-boundary'
 import {createNewsfeedClient,newsfeedErrorMessage,NewsfeedError,type Observation,type Publication,type Run,type Page,type Statistics} from '@/lib/newsfeed/client'
 import {ObservationForm} from './observation-form'
+import {loadSupplierContext,supplierNameMatches,type SupplierContext} from '@/lib/procurement-insights/supplier-context'
 import {NewsfeedInlineItem} from './inline-item'
 import {NewsfeedStatistics} from './statistics'
 import {ReportsWorkspace} from './reports'
@@ -24,8 +25,22 @@ export function ProcurementInsightsWorkspace({locale,active,onReturn,onContext}:
  const [view,setView]=useState<View>('all'),[observations,setObservations]=useState<Page<Observation>>({items:[],nextCursor:null}),[selected,setSelected]=useState<Observation|null>(null)
  const [publications,setPublications]=useState<Page<Publication>>({items:[],nextCursor:null}),[history,setHistory]=useState<Page<Run>>({items:[],nextCursor:null}),[notices,setNotices]=useState<Page<Notification>>({items:[],nextCursor:null})
  const [statistics,setStatistics]=useState<Statistics|null>(null),[weeks,setWeeks]=useState('4'),[dateBasis,setDateBasis]=useState('publishedAt'),[revision,setRevision]=useState(0)
- const [form,setForm]=useState<{initial:Observation|null}|null>(null),[busy,setBusy]=useState(false),[loading,setLoading]=useState(false),[error,setError]=useState(''),[message,setMessage]=useState(''),[text,setText]=useState(''),[filterText,setFilterText]=useState('')
+ const [form,setForm]=useState<{initial:Observation|null;supplier?:SupplierContext}|null>(null),[busy,setBusy]=useState(false),[loading,setLoading]=useState(false),[error,setError]=useState(''),[message,setMessage]=useState(''),[text,setText]=useState(''),[filterText,setFilterText]=useState('')
  const [sharing,setSharing]=useState<Shares|null>(null),[inviteLink,setInviteLink]=useState(''),[invitation,setInvitation]=useState<string|null>(null),[contextObservation,setContextObservation]=useState<string|null>(null),[contextResource,setContextResource]=useState('observation')
+ const supplierNip=params.get('supplierNip'),supplierName=params.get('supplierName')
+ const [supplier,setSupplier]=useState<SupplierContext|null>(null),[supplierLoading,setSupplierLoading]=useState(false),[supplierError,setSupplierError]=useState('')
+ const supplierUnavailable=locale==='pl'?'Nie można potwierdzić dostawcy lub bieżącego dostępu. Wybierz wcześniej zweryfikowanego dostawcę w X-Ray i sprawdź jego nazwę oraz NIP.':'The supplier or current access could not be confirmed. Select a previously verified supplier in X-Ray and check its name and tax number.'
+ useEffect(()=>{
+  setSupplier(null);setSupplierError('');setSupplierLoading(false);setForm(current=>current?.supplier?null:current)
+  if(!active||tab!=='newsfeed'||!supplierNip)return
+  if(!token||!/^\d{10}$/.test(supplierNip)||(supplierName?.length??0)>1000){setSupplierError(supplierUnavailable);return}
+  const c=new AbortController();setSupplierLoading(true)
+  void loadSupplierContext(token,supplierNip,c.signal).then(value=>{
+   if(supplierName&&!supplierNameMatches(supplierName,value.name))throw Error('SUPPLIER_SELECTION_MISMATCH')
+   if(!c.signal.aborted)setSupplier(value)
+  }).catch(()=>{if(!c.signal.aborted)setSupplierError(supplierUnavailable)}).finally(()=>{if(!c.signal.aborted)setSupplierLoading(false)})
+  return()=>c.abort()
+ },[active,tab,token,supplierNip,supplierName,supplierUnavailable])
  const forgetDenied=useCallback((error:unknown)=>{
   if(!(error instanceof NewsfeedError)||![401,403,404].includes(error.status))return
   setObservations({items:[],nextCursor:null});setSelected(null);setPublications({items:[],nextCursor:null});setHistory({items:[],nextCursor:null});setNotices({items:[],nextCursor:null});setStatistics(null);setSharing(null);setInviteLink('');setForm(null);setContextObservation(null);onContext?.(null)
@@ -59,6 +74,10 @@ export function ProcurementInsightsWorkspace({locale,active,onReturn,onContext}:
   setPublications(result.publications);setMessage(result.publications.items.length?'Zapisano wyniki nowego sprawdzenia.':'Sprawdzenie zakończone. Nie znaleziono nowych publikacji.');setView('mine');navigate({observation:o.id,run:result.run.id})
  }
  async function save(body:Record<string,unknown>,search:boolean){await act(async()=>{
+  if(form?.supplier){try{
+   const current=await loadSupplierContext(token??(async()=>null),form.supplier.nip,lease.controller.signal)
+   if(current.selectionRef!==form.supplier.selectionRef||current.name!==form.supplier.name)throw Error('SUPPLIER_SELECTION_CHANGED')
+  }catch(error){setSupplier(null);setForm(null);setSupplierError(supplierUnavailable);throw error}}
   const o=await client<Observation>('/observations'+(form?.initial?'/'+form.initial.id:''),{method:form?.initial?'PATCH':'POST',body});setForm(null);setSelected(o);setMessage('Obserwacja została zapisana.');navigate({observation:o.id,run:null});setRevision(x=>x+1);if(search)await discover(o)
  })}
  async function loadMore(kind:'publications'|'history'|'observations'){
@@ -81,10 +100,18 @@ export function ProcurementInsightsWorkspace({locale,active,onReturn,onContext}:
   <div hidden={tab!=='newsfeed'}><div className="pi-layout"><aside className="pi-sidebar"><nav aria-label="Newsfeed">{(Object.keys(labels) as View[]).map(key=><button key={key} type="button" aria-current={view===key?'page':undefined} onClick={()=>{setView(key);setMessage('');if(['all','mine','shared','organisation'].includes(key))navigate({observation:null,run:null});else navigate({publication:null})}}>{labels[key]}</button>)}</nav>
    <h3>Zapisane obserwacje</h3><ul>{observations.items.map(o=><li key={o.id}><button type="button" aria-current={selection===o.id?'page':undefined} onClick={()=>navigate({observation:o.id,run:null})}>{o.name}{o.status==='PAUSED'?' · Wstrzymana':''}</button></li>)}</ul>{observations.nextCursor&&<button type="button" disabled={busy} onClick={()=>void loadMore('observations')}>Pokaż kolejne obserwacje</button>}
   </aside><section className="pi-content" aria-busy={loading||busy}>
-   <div className="pi-heading"><div><h2>{selected?.name??labels[view]}</h2><p>Bądź na bieżąco z firmami, rynkami i tematami, które obserwujesz.</p></div><CanonButton canonId="SRM-C01" usage="PI:new-observation" type="button" onClick={()=>setForm({initial:null})}>+ Nowa obserwacja</CanonButton></div>
+   {supplierNip&&<section className="pi-form" aria-label={locale==='pl'?'Kontekst dostawcy z ADP':'Supplier context from ADP'}>
+    {supplierLoading&&<p role="status">{locale==='pl'?'Potwierdzanie dostawcy i dostępu…':'Confirming the supplier and current access…'}</p>}
+    {supplierError&&<p role="alert">{supplierError}</p>}
+    {supplier&&<><h3>{supplier.name}</h3><p className="pi-note">NIP: {supplier.nip} · {locale==='pl'?'Tożsamość potwierdzona przez SRM':'Identity confirmed by SRM'}</p>
+     <p>{locale==='pl'?'Wybierz istniejącą obserwację lub utwórz nową. Wyszukiwanie uruchamiasz samodzielnie.':'Select an existing observation or create a new one. You decide when to search.'}</p>
+     {observations.items.filter(o=>o.subjectKind==='company'&&o.subject===supplier.nip).map(o=><CanonButton key={o.id} canonId="SRM-C02" usage="PI:supplier-existing-observation" type="button" onClick={()=>{setView('mine');navigate({observation:o.id,run:null})}}>{locale==='pl'?'Otwórz obserwację: ':'Open observation: '}{o.name}</CanonButton>)}
+    </>}
+   </section>}
+   <div className="pi-heading"><div><h2>{selected?.name??labels[view]}</h2><p>Bądź na bieżąco z firmami, rynkami i tematami, które obserwujesz.</p></div><CanonButton canonId="SRM-C01" usage="PI:new-observation" type="button" onClick={()=>setForm({initial:null,...(supplier?{supplier}:{})})}>+ Nowa obserwacja</CanonButton></div>
    {loading&&<p role="status">Wczytywanie zapisanych informacji…</p>}{error&&<p className="pi-error" role="alert">{error}</p>}{message&&<p role="status">{message}</p>}
    {invitation&&<section className="pi-form"><h3>Zaproszenie do obserwacji</h3><p>Po przyjęciu uzyskasz dostęp tylko do odczytu w Twojej organizacji.</p><div className="pi-actions"><CanonButton canonId="SRM-C01" usage="PI:accept-share" type="button" disabled={busy} onClick={()=>void act(async()=>{const o=await client<Observation>('/invitations',{method:'POST',body:{token:invitation}});setInvitation(null);setView('shared');navigate({observation:o.id,run:null});setRevision(x=>x+1)})}>Przyjmij zaproszenie</CanonButton><button type="button" onClick={()=>setInvitation(null)}>Odrzuć</button></div></section>}
-   {form?<ObservationForm key={form.initial?.id??'new'} initial={form.initial} locale={locale} busy={busy} onSave={save} onCancel={()=>setForm(null)}/>:<>
+   {form?<ObservationForm key={form.initial?.id??form.supplier?.selectionRef??'new'} initial={form.initial} supplier={form.supplier} locale={locale} busy={busy} onSave={save} onCancel={()=>setForm(null)}/>:<>
     {selected&&<><p className="pi-note">{selected.status==='PAUSED'?'Obserwacja wstrzymana':selected.schedule?selected.monitoringState==='ACTIVE'?'Monitoring aktywny':'Monitoring oczekuje na uruchomienie':'Wyszukiwanie jednorazowe'} · {selected.phrases.join(' · ')}</p>
      <div className="pi-actions">{!selected.readOnly&&<CanonButton canonId="SRM-C01" usage="PI:discover" type="button" disabled={busy||selected.status!=='ACTIVE'} onClick={()=>void act(()=>discover(selected))}>Sprawdź nowe artykuły</CanonButton>}<CanonButton canonId="SRM-C02" usage="PI:replay" type="button" onClick={()=>{navigate({run:null});setRevision(x=>x+1)}}>Odtwórz Newsfeed</CanonButton>{!selected.readOnly&&<><CanonButton canonId="SRM-C02" usage="PI:edit" type="button" onClick={()=>setForm({initial:selected})}>Edytuj</CanonButton><CanonButton canonId="SRM-C02" usage="PI:share" type="button" disabled={busy} onClick={()=>void openSharing()}>Udostępnij</CanonButton><CanonButton canonId="SRM-C02" usage="PI:pause" type="button" disabled={busy} onClick={()=>void act(async()=>{await client('/observations/'+selected.id,{method:'PATCH',body:{contractVersion:'1.2.0',version:selected.version,status:selected.status==='ACTIVE'?'PAUSED':'ACTIVE'}});setRevision(x=>x+1)})}>{selected.status==='ACTIVE'?'Wstrzymaj':'Wznów'}</CanonButton><CanonButton canonId="SRM-C02" usage="PI:delete" type="button" disabled={busy} onClick={()=>{if(window.confirm('Usunąć tę obserwację i jej historię?'))void act(async()=>{await client('/observations/'+selected.id,{method:'DELETE'});navigate({observation:null,run:null});setRevision(x=>x+1)})}}>Usuń</CanonButton></>}{selected.readOnly&&<><span>Dostęp tylko do odczytu</span><label><input type="checkbox" checked={selected.notifications} disabled={busy} onChange={e=>{const enabled=e.target.checked;void act(async()=>{await client('/observations/'+selected.id+'/notifications',{method:'PATCH',body:{enabled}});setRevision(x=>x+1)})}}/> Powiadamiaj mnie o nowych publikacjach</label></>}</div>
      {sharing&&!selected.readOnly&&<section className="pi-form"><h3>Udostępnij obserwację</h3><p>Odbiorcy czytają tę obserwację i jej zapisaną historię. Nie mogą zmieniać kryteriów ani uruchamiać wyszukiwania.</p><div className="pi-actions"><button type="button" disabled={busy} onClick={()=>void grant('USER_LINK')}>Utwórz zaproszenie dla jednej osoby</button><button type="button" disabled={busy} onClick={()=>void grant('ORG')}>Udostępnij organizacji</button><button type="button" onClick={()=>{setSharing(null);setInviteLink('')}}>Zamknij</button></div>{inviteLink&&<><p>Link może przyjąć pierwsza zalogowana osoba z Twojej organizacji, która go otrzyma. Przekaż go prywatnie wybranej osobie; działa raz, przez 24 godziny.</p><label>Link zaproszenia<CanonInput canonId="SRM-C06" usage="PI:invitation-link" readOnly value={inviteLink} onFocus={e=>e.target.select()}/></label></>}

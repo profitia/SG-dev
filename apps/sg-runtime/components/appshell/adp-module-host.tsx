@@ -10,6 +10,7 @@ import {applyScopedAdpEvent, createLocalAdpContext, createLocalAdpModel} from '@
 type Props = {
   locale: 'pl' | 'en'; theme: AdpTheme; active: boolean; organizationDisplayName: string
   navigation: AdpNavigation; onNavigate: (navigation: AdpNavigation) => void; onReturn: () => void
+  onNewsfeed?: (supplier: {name: string; nip: string}) => void
 }
 
 class MountBoundary extends React.Component<{locale: 'pl' | 'en'; onReturn: () => void; children: React.ReactNode}, {failed: boolean}> {
@@ -27,7 +28,14 @@ class MountBoundary extends React.Component<{locale: 'pl' | 'en'; onReturn: () =
 export function AdpModuleHost(props: Props) {
   const instanceId = useId(), currentInstance = useRef(instanceId)
   const [model, setModel] = useState(() => createLocalAdpModel(props.organizationDisplayName))
+  const [handoffError,setHandoffError]=useState('')
   const context = useRef(createLocalAdpContext(props.locale))
+  function onNavigate(next:AdpNavigation){
+    if(next.view!=='newsfeed'||!props.onNewsfeed){props.onNavigate(next);return}
+    const name=model.form.values.name?.trim()??'',nip=(model.form.values.nip??'').replace(/[\s-]/g,'')
+    if(!name||!/^\d{10}$/.test(nip)){setHandoffError(props.locale==='pl'?'Podaj nazwę i NIP wcześniej zweryfikowanego dostawcy.':'Enter the name and tax number of a previously verified supplier.');return}
+    setHandoffError('');props.onNewsfeed({name,nip})
+  }
   const analyticsReady=useSyncExternalStore(productAnalytics.subscribe,productAnalytics.isReady,productAnalytics.serverReady)
   const {view,section,dataArea}=props.navigation
   useEffect(()=>{
@@ -43,7 +51,8 @@ export function AdpModuleHost(props: Props) {
     setModel(previous => applyScopedAdpEvent(currentInstance.current, incomingInstance, previous, event, context.current))
   }
   return <MountBoundary locale={props.locale} onReturn={onReturn}>
+    {handoffError&&<p className="as-module-error" role="alert">{handoffError}</p>}
     <AdpWorkspace contractVersion={ADP_UI_CONTRACT_VERSION} instanceId={instanceId} locale={props.locale} theme={props.theme}
-      model={model} navigation={props.navigation} active={props.active} onNavigate={props.onNavigate} onReturn={onReturn} onLocalEvent={onLocalEvent}/>
+      model={model} navigation={props.navigation} active={props.active} onNavigate={onNavigate} onReturn={onReturn} onLocalEvent={onLocalEvent}/>
   </MountBoundary>
 }
