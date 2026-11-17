@@ -23,7 +23,7 @@
     "apps/architecture-lab/private-recurring-source.mjs": "116e21f566194089c6260d38d001c70ee8eec92f9ee6f006230dc2c429878e45",
     "apps/architecture-lab/test/knowledge-source.test.mjs": "85c1518598ee9387e884c743279ea9fd9c10f80c4e117f1494aab27a1c064c66",
     "apps/architecture-lab/test/payload-capture-publication.test.mjs": "9f00a96134bbf339738793f79597b962f7c3601fc2f5e0b3e0b34d6a8af9dc01",
-    "apps/architecture-lab/test/private-recurring-source.test.mjs": "a6ad661024974813fe790627ee950b6a418e26c708e89002ef4f5e82d584e6bf",
+    "apps/architecture-lab/test/private-recurring-source.test.mjs": "7fee49755879e8b6115de844d15fba6c0a42ea5b8a2f5b7fe11dcfcd39c72ded",
     "apps/architecture-lab/test/sdk-compatibility.test.mjs": "bea281ac57623131241bed6da66da44f2fc5aecc30b7943b76cd426b3bc128df",
     "apps/dashboard-preview/package-lock.json": "5d7939e22d4848e8036735d79aa8b293feb00c559c87f21e848ef38ee9f2c49a",
     "apps/economic-calendar-runtime/package-lock.json": "146d04da52449db14a32b2d506bef16882a0682983eb52445fac9b68c310c308",
@@ -109,7 +109,7 @@
     "apps/platform-knowledge-runtime/test/security.test.mjs": "428253cd6a9e836d84ed2b32ef5b689ce647a3757a34a5cbea64c9652e28fd08",
     "apps/platform-source-hub/package-lock.json": "78ee7d0d79c2b1c08c10261eed0b7d2391ffb98e5c69827c315a957f032b61df",
     "apps/platform-source-hub/scripts/ci-routing.mjs": "eb3a963872a5069ffea6caf93294b11b1f9310f351a03154e7507849757995bf",
-    "apps/platform-source-hub/test/ci-routing.test.mjs": "dc2ca06cfc0c3c21f10a4a2437e8a691e0feccb54b9fe49ea46fd4a04361b9a5",
+    "apps/platform-source-hub/test/ci-routing.test.mjs": "15829bc74bd6c2a39c95d7241b1c20258d226f8c481fbef8e8c663309707353f",
     "apps/sg-runtime/assistant-ecr-precision-integration.json": "a017c2b971e3c72606847264150715c983fa9483537d26be90144a64e0377ee7",
     "apps/sg-runtime/components/appshell/appshell-dashboard.tsx": "2ffb4a0802136a3a5fe957e16d0f245861980eeedddd3c04b25715341962d876",
     "apps/sg-runtime/components/appshell/assistant-conversation-transport.ts": "9c7ad4826a74ebc226f18b922f2484e2561692f3f27ecae8f9736cce9ce3e055",
@@ -266,7 +266,7 @@
     "packages/platform-contracts/payload-capture/src/payload-capture.mjs": "7eabea213158e6193c481dcbe2721b98837cfd729ae1af3bac7d2396c950f08f",
     "packages/platform-contracts/payload-capture/test/benchmark.mjs": "423a4fb4f181ea3403c205c14acc06d34a2d8a627d3cc79183b95cc3d6a7d20a",
     "packages/platform-contracts/payload-capture/test/payload-capture.test.mjs": "73e0fd2b72245072f5a34c277f45dcfa738551880cd433908bcc4a33c1277859",
-    "packages/platform-contracts/payload-capture/test/public-package.test.mjs": "2013a4dfd4d45e1b611e78f42576dabcb8ac6325f99ea2509e99d907891a3a6e",
+    "packages/platform-contracts/payload-capture/test/public-package.test.mjs": "53818cefb0662b4014feedc450a67ba9bd45bd757e04e3c1cd25708b2809778f",
     "packages/platform-contracts/readonly-miss-report/README.md": "1512a31ec3d2af928b1c77ea5a26e1b090f4175e614302eb94d59fb215c5ddbc",
     "packages/platform-contracts/readonly-miss-report/package-lock.json": "7cc584b4543dd11e272d77c7dd4fd4cb3f88dd0228d231f795444ed970939501",
     "packages/platform-contracts/readonly-miss-report/package.json": "2456ff92f909017d48fa39da1cce839bba226e5e609b6e7d92647d87bccf8c07",
@@ -809,6 +809,10 @@
       "previousSha256": "f89a8527e2ffda7531a2dae4be3202b0a267e093591a8dec610cb13e114dd3a9",
       "currentSha256": "116e21f566194089c6260d38d001c70ee8eec92f9ee6f006230dc2c429878e45"
     },
+    "apps/architecture-lab/test/private-recurring-source.test.mjs": {
+      "previousSha256": "a6ad661024974813fe790627ee950b6a418e26c708e89002ef4f5e82d584e6bf",
+      "currentSha256": "7fee49755879e8b6115de844d15fba6c0a42ea5b8a2f5b7fe11dcfcd39c72ded"
+    },
     "apps/dashboard-preview/package-lock.json": {
       "previousSha256": "f1fb7f4fea64f1b2da75c11dbec927d87f376b76bf4d95190a72dd3e93600ad5",
       "currentSha256": "5d7939e22d4848e8036735d79aa8b293feb00c559c87f21e848ef38ee9f2c49a"
@@ -917,6 +921,10 @@
       "previousSha256": "a61aca6d588f00ce38f1bb9965ae6472790d31b5e6a5ad6aacfc86aacf29824f",
       "currentSha256": "eb3a963872a5069ffea6caf93294b11b1f9310f351a03154e7507849757995bf"
     },
+    "apps/platform-source-hub/test/ci-routing.test.mjs": {
+      "previousSha256": "dc2ca06cfc0c3c21f10a4a2437e8a691e0feccb54b9fe49ea46fd4a04361b9a5",
+      "currentSha256": "15829bc74bd6c2a39c95d7241b1c20258d226f8c481fbef8e8c663309707353f"
+    },
     "apps/sg-runtime/package-lock.json": {
       "previousSha256": "3a8d14447e21fa9ab879dcd0094b5d8c4401196d2db632bc39540ed66e8440de",
       "currentSha256": "eed7214c7168a891adb83f4c048a4cc14eba64c33f34e0d099b63622a1cddd99"
@@ -989,6 +997,10 @@
       "previousSha256": "fbdbe94b1e7ef3eb628bed8fbe6dfc9c7297669b211fe55b178f748b9cbd3f12",
       "currentSha256": "d8670426f265f13e29c2487f3d39b7e0e235d52e56412eda3c0f0220e13da9c2"
     },
+    "packages/platform-contracts/payload-capture/test/public-package.test.mjs": {
+      "previousSha256": "2013a4dfd4d45e1b611e78f42576dabcb8ac6325f99ea2509e99d907891a3a6e",
+      "currentSha256": "53818cefb0662b4014feedc450a67ba9bd45bd757e04e3c1cd25708b2809778f"
+    },
     "packages/platform-contracts/readonly-miss-report/package-lock.json": {
       "previousSha256": "bcbdc1fbfabcf2094445afcf1e107ce8ebe11e39de1b01e0645b88a62310dc54",
       "currentSha256": "7cc584b4543dd11e272d77c7dd4fd4cb3f88dd0228d231f795444ed970939501"
@@ -1055,6 +1067,7 @@
     ".github/workflows/platform-knowledge-ci.yml",
     "Canon/runbooks/platform-knowledge-development-delivery-plan-v1.md",
     "apps/architecture-lab/private-recurring-source.mjs",
+    "apps/architecture-lab/test/private-recurring-source.test.mjs",
     "apps/dashboard-preview/package-lock.json",
     "apps/economic-calendar-runtime/package-lock.json",
     "apps/identity-runtime/package-lock.json",
@@ -1082,6 +1095,7 @@
     "apps/platform-knowledge-runtime/src/worker.mjs",
     "apps/platform-source-hub/package-lock.json",
     "apps/platform-source-hub/scripts/ci-routing.mjs",
+    "apps/platform-source-hub/test/ci-routing.test.mjs",
     "apps/sg-runtime/package-lock.json",
     "apps/sg-runtime/tests/assistant-notifications-integrity.mjs",
     "apps/sg-runtime/tests/finder-monitor-source-integrity.test.mjs",
@@ -1100,6 +1114,7 @@
     "packages/platform-contracts/package-lock.json",
     "packages/platform-contracts/package.json",
     "packages/platform-contracts/payload-capture/package.json",
+    "packages/platform-contracts/payload-capture/test/public-package.test.mjs",
     "packages/platform-contracts/readonly-miss-report/package-lock.json",
     "packages/platform-contracts/readonly-miss-report/package.json",
     "packages/platform-contracts/root-atomic-claim/package-lock.json",
