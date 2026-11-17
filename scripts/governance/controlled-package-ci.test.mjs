@@ -3589,7 +3589,7 @@ editorialTest('editorial projection rejects rebound candidate authority and rema
 // Independent immutable public host fixture; never import its JavaScript.
 import {qualityTrustedPredecessor as trustedQualityPredecessor,QUALITY_HOST_PATHS as trustedQualityHostPaths,QUALITY_HOST_PRESERVED as trustedQualityPreserved} from './controlled-package-ci.mjs'
 test('trusted quality source composition verifies both exact closures and every preserved receipt before historical projection',()=>{
- const source='8db344d25655054a8e702e7dfb540df9e3199a36',cache=new Map(),root=new URL('../../',import.meta.url)
+ const source='a23c9124f39590c740c418cd320e72b549f54770',cache=new Map(),root=new URL('../../',import.meta.url)
  const historical=(sha,p)=>{const key=sha+':'+p;if(!cache.has(key))cache.set(key,execFileSync('git',['cat-file','blob',key],{cwd:root,stdio:['ignore','pipe','pipe']}));return Buffer.from(cache.get(key))}
  const current=p=>historical(source,p),view=trustedQualityPredecessor(current,historical)
  assert(view)

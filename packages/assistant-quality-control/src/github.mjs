@@ -71,6 +71,12 @@ export function createQualityGitHub({token,fetchImpl=fetch,publisherEnabled=fals
    return {repository,headSha:await main(),publisherEnabled,promotionEnabled}
   },
   main,pull,checks,
+  async qualificationDescriptor(){
+   const workflow=await get('/actions/workflows/assistant-quality-repair.yml')
+   require(number(workflow?.id)&&workflow.path==='.github/workflows/assistant-quality-repair.yml'
+    &&workflow.state==='active','GITHUB_WORKFLOW_BINDING_INVALID')
+   return Object.freeze({workflowId:String(workflow.id),path:workflow.path,state:'active'})
+  },
   async dispatchQualification({sourceSha,nonce}){
    require(sha(sourceSha)&&uuid(nonce));
    require(await main()===sourceSha,'BASE_CHANGED');
