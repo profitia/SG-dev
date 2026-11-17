@@ -111,7 +111,11 @@ test("Vercly source continuation preserves all prior receipts and is restricted 
  const read=(p:string)=>readFileSync(new URL('../../../../'+p,import.meta.url));
  const historic=(sha:string,p:string)=>execFileSync('git',['show',sha+':'+p]);
  const validated=kysResumePredecessor(read,historic);assert.deepEqual(validated.prior,preceding);
- for(const changed of ['src/server/kys-cache.ts','src/server/peer-read-boundary.test.ts']){
+ const adapter='apps/sg-runtime/tests/assistant-notifications-integrity.mjs';
+ assert.throws(()=>kysResumePredecessor((p:string)=>p===adapter?Buffer.concat([read(p),Buffer.from('UNACCEPTED')]):read(p),historic));
+ assert.throws(()=>validated.previousBytes('apps/srm/vercly-kys-resume-integration.json'),{code:'ENOENT'});
+ assert.equal(kysResumePredecessor(validated.previousBytes,historic).adoption,undefined);
+ for(const changed of ['src/server/kys-cache.ts','src/server/kys-cache.test.ts']){
   assert.throws(()=>kysResumePredecessor((p:string)=>p==='apps/srm/'+changed?Buffer.concat([read(p),Buffer.from('UNACCEPTED')]):read(p),historic));
  }
  assert.equal(hash(read('apps/srm/scripts/kys-resume-source-view.mjs')),current.testSupportSourceDigests['scripts/kys-resume-source-view.mjs']);
