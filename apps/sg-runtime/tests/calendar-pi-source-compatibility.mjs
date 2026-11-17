@@ -28,7 +28,7 @@ export function calendarPiPredecessor(current,historical){
  const complete=completeFunctionalPredecessor(current,historical);
  const sourceDigests=Object.fromEntries(CALENDAR_PI_PATHS.map(p=>[p,hash(current(p))]));
  if(complete){
-  Object.assign(sourceDigests,complete.producer.sourceDigests,complete.consumer?.sourceDigests);
+  Object.assign(sourceDigests,complete.currentSourceDigests??{...complete.producer.sourceDigests,...complete.consumer?.sourceDigests});
   sourceDigests[COMPLETE_FUNCTIONAL_PRODUCER_RECORD]=hash(current(COMPLETE_FUNCTIONAL_PRODUCER_RECORD));
   if(complete.consumer)sourceDigests[COMPLETE_FUNCTIONAL_CONSUMER_RECORD]=hash(current(COMPLETE_FUNCTIONAL_CONSUMER_RECORD));
  }
