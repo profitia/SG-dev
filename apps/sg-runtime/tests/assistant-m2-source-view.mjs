@@ -21,7 +21,7 @@ export function readM2AcceptedSource(input,encoding){
  if(sdk&&installed>=0){
   assert(relative.startsWith('apps/sg-runtime/'),'Installed SDK belongs to the SG2 source view')
   repositoryPath='packages/platform-contracts/'+relative.slice(installed+marker.length)
-  const expected=sdk.record.sourceDigests[repositoryPath]
+  const expected=(sdk.currentSourceDigests??sdk.record.sourceDigests)[repositoryPath]
   assert(expected,'Installed SDK file is in the verified current source graph')
   assert.equal(createHash('sha256').update(fs.readFileSync(absolute)).digest('hex'),expected,'Actual installed SDK source must match the verified current graph')
  }
