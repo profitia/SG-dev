@@ -1048,3 +1048,15 @@ the new class on rollback/expiry; preserve original grants and other work.
 ## Component-independent Development execution
 
 New routine source admissions follow [the shared Development execution contract](cloud-development-execution-v1.md) and the trusted-main data registry `Canon/registries/controlled-source-admissions-v1.json`. Historical closed reviews and receipts above remain unchanged. Schema 2.0 exact-source proofs are separate from historical schema 1.0 operation-contract proofs; neither replaces required ordinary owner checks, resulting-main verification or a specific release mandate. The current controlled installation uses job-scoped `GITHUB_TOKEN` and an early exact-artifact probe, without a PAT fallback. These changes are inert until the exact standard package is approved and accepted on authority main.
+
+
+### Stage I — exact test reconciliation with current AppShell main (2026-11-13)
+
+The owner's resumed Stage I Development Full Autopilot mandate covers the necessary bounded test/source-continuity corrections without another per-file/hash question. The separately owned PR1083 source5feb23d9d1615e8045c26c6cafc7fee2982d122d over accepted main80875d8f contains201 exact regular entries: ARCHITECTURE100/SG257/SRM44. Preserve the original PR1075/196-file review, original3a7d lifecycle record, immutable SDK1.36/022 record, all seven owner inputs and existing PI/Calendar/CIC/BSDC controls.
+
+Trusted data-only decoding authenticates345 current inputs, the exact helper, all three current owner receipts, all three correction inputs and seven actual current-main inputs before any predecessor view. Reconstruct the complete unchanged335-input lifecycle graph, then its original b18 and accepted688 views. Main refresh is bounded to the same201 reviewed blobs/statuses/modes/owners in the same internal PR and branch; actual head SHA plus reviewed-source/main ancestry remain required. Existing credential, package, Environment, source/mode, public/protected/resulting-main and independent original-proof gates remain. No runtime installation, grant, provider/mail spend or deployment follows from this CI policy. See [the exact201-file map and validation](../evidence/2026-11-13-registration-stage-i-resume-v2.md).
+
+
+### Proposed bounded source-test continuation, 2026-11-16
+
+Unactivated proposal only: exact201-entry successor 7cc6c05600c1031daca15614a2e98b24f29c1bfe, map SHA256 3717669e57b2c1d78548a4bc75b03fcb2c6456d05609a55dd605509ee3114e49, record SHA256 555ad903f3fb64ffe9b50d5c2e6a38ef805598342aa6302ed8190225f474cbe6, guard SHA256 2046bd00d764c4f209187fd92e92e4fe7cd1156ea78741a080f2a87c8107e1fa. Retain the original196 review and approved882/5feb class unchanged. Add only this exact independently owned345-input test continuity closure and three rejection/real-checkout tests. No credentials, grants, packages, roles, providers, deployment or runtime authority change. This proposal requires explicit owner approval before application; no proposed policy function has been executed. Existing read-package credential HTTP401 remains independent.
