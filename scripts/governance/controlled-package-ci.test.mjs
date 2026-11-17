@@ -3585,3 +3585,21 @@ editorialTest('editorial projection rejects rebound candidate authority and rema
  for(const e of [Object.assign(Error('denied'),{code:'EACCES'}),Object.assign(Error('foreign Git failure'),{status:128,stderr:"path 'other-file' does not exist in 'source'"})])editorialAssert.throws(()=>editorialSourceProjection(()=>{throw e},editorialHistory),x=>x===e)
  editorialAssert.throws(()=>editorialSourceProjection(editorialFixture,()=>{throw Error('historical source unavailable')}))
 })
+
+// Independent immutable public host fixture; never import its JavaScript.
+import {qualityTrustedPredecessor as trustedQualityPredecessor,QUALITY_HOST_PATHS as trustedQualityHostPaths,QUALITY_HOST_PRESERVED as trustedQualityPreserved} from './controlled-package-ci.mjs'
+test('trusted quality source composition verifies both exact closures and every preserved receipt before historical projection',()=>{
+ const source='8db344d25655054a8e702e7dfb540df9e3199a36',cache=new Map(),root=new URL('../../',import.meta.url)
+ const historical=(sha,p)=>{const key=sha+':'+p;if(!cache.has(key))cache.set(key,execFileSync('git',['cat-file','blob',key],{cwd:root,stdio:['ignore','pipe','pipe']}));return Buffer.from(cache.get(key))}
+ const current=p=>historical(source,p),view=trustedQualityPredecessor(current,historical)
+ assert(view)
+ assert.deepEqual(view.previousBytes('apps/sg-runtime/package.json'),historical('765e995ca9b1eacef83a562b46e9c23876992e9b','apps/sg-runtime/package.json'))
+ for(const p of [...trustedQualityHostPaths,...trustedQualityPreserved])assert.throws(()=>trustedQualityPredecessor(f=>f===p?Buffer.concat([current(f),Buffer.from('UNREVIEWED')]):current(f),historical),p)
+ const receipt='apps/sg-runtime/assistant-quality-host-integration.json'
+ for(const mutate of [a=>a.privateQaActivated=true,a=>a.pilotStarted=true,a=>a.cicPublication.sourceSha='0'.repeat(40),a=>a.sourceDigests['apps/srm/foreign.ts']='0'.repeat(64)]){
+  const changed=JSON.parse(current(receipt));mutate(changed)
+  assert.throws(()=>trustedQualityPredecessor(p=>p===receipt?Buffer.from(JSON.stringify(changed)):current(p),historical))
+ }
+ assert.equal(trustedQualityPredecessor(()=>{throw Object.assign(Error('ABSENT'),{code:'ENOENT'})},historical),null)
+ assert.throws(()=>trustedQualityPredecessor(()=>{throw Object.assign(Error('DENIED'),{code:'EACCES'})},historical),{code:'EACCES'})
+})
