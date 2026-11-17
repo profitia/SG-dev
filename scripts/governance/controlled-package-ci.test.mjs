@@ -3335,7 +3335,7 @@ test('public proof absence preserves every original authority-source contract fi
 // runs while its source, modes, routes, receipts and history are authenticated.
 test('Calendar complete CI repair keeps original reviews and authenticates the fixed combined owner inputs as data',async()=>{
  const c=await import('./controlled-package-ci.mjs'),r=c.ECR_COMPLETE_FUNCTIONAL_CI_REPAIR;
- assert.equal(Object.keys(r.entries).length,72);
+ assert.equal(Object.keys(r.entries).length,73);
  for(const[p,e]of Object.entries(c.ECR_COMPLETE_FUNCTIONAL_REVIEW.entries))if(p!==c.ECR_COMPLETE_FUNCTIONAL_PROVENANCE.helper)assert.deepEqual(r.entries[p],e);
  for(const[p,e]of Object.entries(c.ECR_COMPLETE_FUNCTIONAL_CONSUMER_REVIEW.entries))assert.deepEqual(r.entries[p],e);
  const current=p=>execFileSync('git',['show',r.sourceSha+':'+p],{cwd:authorityRoot,stdio:['ignore','pipe','pipe']});
@@ -3434,7 +3434,8 @@ test('exact PR1102 source validation reaches the real candidate guard without cl
   const result=spawnSync(process.execPath,['scripts/governance/controlled-package-ci.mjs','check-candidate'],
    {cwd:authorityRoot,env,encoding:'utf8'});
   assert.equal(result.status,0,result.stderr);
-  for(const changed of [{...state,sha:other},{...state,admission:{...state.admission,kind:'TRUSTED_RECORD'}},
+  for(const changed of [{...state,sha:other},{...state,admission:{...state.admission,baseSha:r.sourceSha}},
+    {...state,admission:{...state.admission,kind:'TRUSTED_RECORD'}},
    {...state,admission:{...state.admission,files:files.slice(1)}},
    {...state,admission:{...state.admission,files:files.map((f,i)=>i?f:{...f,sha:other})}}])
    assert.throws(()=>c.assertManifestSuccessorSourceValidation(root,changed,authorityRoot));
