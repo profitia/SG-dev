@@ -1,4 +1,3 @@
-import {readM2AcceptedSource} from './assistant-m2-source-view.mjs'
 import {acceptedSdkSource,acceptedSdkCurrentSourceDigests,sdkContinuationPredecessor} from '../../../packages/platform-contracts/test/organisation-sdk-compatibility.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
@@ -23,8 +22,20 @@ test('SRM-required additive platform1.30 compatibility retains all SG2 history a
   assert.equal(hash(execFileSync('git',['show',a.producer.sourceSha+':packages/platform-contracts/'+file])),digest,'producer '+file)
   if(file!=='package-lock.json')assert.equal(hash(fs.readFileSync(new URL(file,root))),currentSdkFiles['packages/platform-contracts/'+file]??xray.sourceDigests[file]??digest,'installed '+file)
  }
- for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(Object.hasOwn(xray.applicationSourceDigests,file)?execFileSync('git',['show',xray.previousReceiptSourceSha+':'+posix.normalize('apps/sg-runtime/'+file)]):readM2AcceptedSource(new URL('../'+file,import.meta.url))),digest,'historical '+file)
- for(const[file,digest]of Object.entries(xray.applicationSourceDigests))assert.equal(hash(readM2AcceptedSource(new URL('../'+file,import.meta.url))),digest,file)
+ // The already accepted Fresh frame pins a whole immutable tree containing
+ // this exact X-Ray receipt. Current physical files are authenticated separately.
+ const fresh=receipt.freshPerformanceRecovery
+ const frozenReceipt=historical(fresh.previousReceiptSourceSha,'apps/sg-runtime/operation-integration.json')
+ assert.equal(hash(frozenReceipt),fresh.previousReceiptDigest)
+ assert.deepEqual(JSON.parse(frozenReceipt).appshellXraySourceCompatibility,xray)
+ const xrayAcceptedSource=p=>historical(fresh.previousReceiptSourceSha,p)
+ if(source?.currentSdkContext)for(const file of new Set([...Object.keys(a.applicationSourceDigests),...Object.keys(xray.applicationSourceDigests)])){
+  const p=posix.normalize('apps/sg-runtime/'+file),expected=source.currentSourceDigests[p]
+  assert(expected,'current X-Ray physical coverage '+p)
+  assert.equal(hash(current(p)),expected,'current X-Ray physical source '+p)
+ }
+ for(const[file,digest]of Object.entries(a.applicationSourceDigests))assert.equal(hash(Object.hasOwn(xray.applicationSourceDigests,file)?execFileSync('git',['show',xray.previousReceiptSourceSha+':'+posix.normalize('apps/sg-runtime/'+file)]):xrayAcceptedSource(posix.normalize('apps/sg-runtime/'+file))),digest,'historical '+file)
+ for(const[file,digest]of Object.entries(xray.applicationSourceDigests))assert.equal(hash(xrayAcceptedSource(posix.normalize('apps/sg-runtime/'+file))),digest,file)
  assert.deepEqual(a.sdkDigests,receipt.diagnosticTelemetryAdoption.sdkDigests)
  for(const module of ['operation-context','private-operation-host','access-store','request-ledger','delegated-job','request-continuation','request-inspection','request-work','request-operations','external-call','supplier-location','report-admission','platform-ingestion','diagnostic-phase']){
   const sdk=await import('@profitia/platform-contracts/'+module)
