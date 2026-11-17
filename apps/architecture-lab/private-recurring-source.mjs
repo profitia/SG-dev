@@ -1,3 +1,4 @@
+import {sdkSourceContext} from '../../packages/platform-contracts/test/sdk-source-context.mjs'
 // Source acceptance only. Never imported by an application runtime.
 // The reviewed current graph is verified before any immutable predecessor is read.
 import {knowledgeSourcePredecessor} from './knowledge-source.mjs'
@@ -21,6 +22,16 @@ const RECORD_SHA256='75877d5750e07d1c8172be0af76bc5933f2eeefc22cc39747a2621b9cab
 const hash=b=>createHash('sha256').update(b).digest('hex')
 const absent=error=>error?.code==='ENOENT'||error?.status===128&&["' does not exist in ","' exists on disk, but not in "].some(s=>String(error?.stderr??error?.message??'').includes("'"+RECURRING_SOURCE_RECORD+s))
 export function recurringSourcePredecessor(current,historical){
+ const context=sdkSourceContext(current,historical)
+ if(context){
+  const view=context.baseline('registration')
+  const sdk=sdkContinuationPredecessor(JSON.parse(view('apps/sg-runtime/operation-integration.json')),view,historical)
+  assert(sdk,'complete immutable registration source required')
+  const accepted=recurringSourcePredecessor(sdk.previousBytes,historical)
+  assert(accepted,'complete immutable recurring source required')
+  return {...accepted,...(sdk.composition?{transport:sdk.composition.transport,completion:sdk.composition.completion}:{}),
+   currentSdkContext:context,knowledge:knowledgeSourcePredecessor(current,historical)}
+ }
  const knowledge=knowledgeSourcePredecessor(current,historical)
  if(knowledge){const accepted=recurringSourcePredecessor(knowledge.previousBytes,historical);assert(accepted,'accepted source chain retained');return {...accepted,manifest:knowledge.manifest,predecessorManifest:accepted.manifest,knowledge}}
  let bytes;try{bytes=current(RECURRING_SOURCE_RECORD)}catch(error){if(absent(error))return null;throw error}
