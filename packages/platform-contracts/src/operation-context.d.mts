@@ -161,4 +161,4 @@ export declare const REPORT_ADMISSION_ROOT_CONTRACT:Readonly<{id:'profitia.opera
 
 export declare const REQUEST_QUOTA_ROOT_CONTRACT:Readonly<{id:'profitia.operation-context';version:'1.0.0';implementation:'1.0.0-candidate.19'}>
 
-export declare const BENCHMARK_QUOTA_ROOT_CONTRACT:Readonly<{id:'profitia.operation-context';version:'1.0.0';implementation:'1.0.0-candidate.23'}>
+export declare const BENCHMARK_QUOTA_ROOT_CONTRACT:Readonly<{id:'profitia.operation-context';version:'1.0.0';implementation:'1.0.0-candidate.25'}>

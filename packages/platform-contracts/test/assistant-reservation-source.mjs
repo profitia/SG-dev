@@ -1,5 +1,5 @@
 import {benchmarkUnmeteredPredecessor} from './benchmark-unmetered-source.mjs'
-export const BENCHMARK_UNMETERED_SOURCE_SHA='37459bf37b599a45865d1f72323c48182822d06b18391f5b97e0d80d2b657a71'
+export const BENCHMARK_UNMETERED_SOURCE_SHA='42c5683bb5f39643dbc27c2016f6ca92106c163b2c2bcfdd1384d50d68ea09c6'
 // Test/build-only closed source continuation. Never imported by a runtime.
 import assert from 'node:assert/strict'
 import {createHash} from 'node:crypto'

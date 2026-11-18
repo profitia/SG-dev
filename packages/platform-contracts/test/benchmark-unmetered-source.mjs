@@ -42,7 +42,8 @@ export const BENCHMARK_CONSUMER_PATHS=Object.freeze([
  "apps/sg-runtime/scripts/verify-finder-development-bindings.mjs",
  "apps/sg-runtime/tests/benchmark-discovery-unmetered-private.integration.test.mjs",
  "apps/sg-runtime/tests/benchmark-discovery-unmetered.integration.test.mjs",
- "apps/sg-runtime/tests/finder-development-bindings.test.mjs"
+ "apps/sg-runtime/tests/finder-development-bindings.test.mjs",
+ "apps/sg-runtime/tests/operation-context.test.mjs"
 ])
 export const BENCHMARK_RECEIPTS=Object.freeze([
  "apps/architecture-lab/assistant-m1-sdk-compatibility.json",
@@ -85,9 +86,9 @@ export function benchmarkAssistantSource(before,pin){
 }
 function reviewedConsumer(current,historical,input){
  assert.deepEqual(Object.keys(input).sort(),['projectKey','taskId','sourceSha','baseSha','sourceDigests','predecessorDigests'].sort())
- assert.equal(input.projectKey,'SG2');assert.equal(input.taskId,'SG2-FINDER-PERMANENT-UNMETERED-20261118');assert.equal(input.sourceSha,"cba7412bca5e2cbbdab2d573ec394c9adf55fec3");assert.equal(input.baseSha,BENCHMARK_BASE)
+ assert.equal(input.projectKey,'SG2');assert.equal(input.taskId,'SG2-FINDER-PERMANENT-UNMETERED-20261118');assert.equal(input.sourceSha,"e0a2a3943cd6dd268f294aee41564e461213fa42");assert.equal(input.baseSha,BENCHMARK_BASE)
  assert.deepEqual(Object.keys(input.sourceDigests).sort(),[...BENCHMARK_CONSUMER_PATHS].sort())
- assert.deepEqual(Object.keys(input.predecessorDigests).sort(),["apps/sg-runtime/deployment/benchmark-discovery-targets.json","apps/sg-runtime/instrumentation.ts","apps/sg-runtime/lib/benchmark/discovery-api.ts","apps/sg-runtime/lib/benchmark/discovery-host.ts","apps/sg-runtime/lib/benchmark/discovery-runtime.ts","apps/sg-runtime/lib/benchmark/discovery-source.ts","apps/sg-runtime/lib/benchmark/errors.ts","apps/sg-runtime/lib/benchmark/macrobond.ts","apps/sg-runtime/package.json","apps/sg-runtime/scripts/verify-finder-development-bindings.mjs","apps/sg-runtime/tests/finder-development-bindings.test.mjs"])
+ assert.deepEqual(Object.keys(input.predecessorDigests).sort(),["apps/sg-runtime/deployment/benchmark-discovery-targets.json","apps/sg-runtime/instrumentation.ts","apps/sg-runtime/lib/benchmark/discovery-api.ts","apps/sg-runtime/lib/benchmark/discovery-host.ts","apps/sg-runtime/lib/benchmark/discovery-runtime.ts","apps/sg-runtime/lib/benchmark/discovery-source.ts","apps/sg-runtime/lib/benchmark/errors.ts","apps/sg-runtime/lib/benchmark/macrobond.ts","apps/sg-runtime/package.json","apps/sg-runtime/scripts/verify-finder-development-bindings.mjs","apps/sg-runtime/tests/finder-development-bindings.test.mjs","apps/sg-runtime/tests/operation-context.test.mjs"])
  const targets=JSON.parse(current('apps/sg-runtime/deployment/benchmark-discovery-targets.json'))
  if(targets.requestQuotaMode===undefined)return null
  assert.equal(targets.requestQuotaMode,'UNMETERED','only the exact reviewed consumer selects this continuation')

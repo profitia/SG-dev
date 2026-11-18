@@ -666,7 +666,7 @@ SQL028 deliberately targets the new disabled SQL001/008/009/012 Source Hub insta
 ### Explicit unmetered Benchmark Finder requests and Source continuity
 
 SQL034 is an optional SQL027 successor for `benchmark.discovery.request`: quota
-schema 1.1.0, Root candidate.23 and private host 1.16.0. SQL027 and its supplier
+schema 1.1.0, Root candidate.25 and private host 1.16.0. SQL027 and its supplier
 opt-in remain unchanged. Consumers explicitly supply `benchmarkQuotaSchemaDigest`
 (the SHA-256 of SQL034); the supplier `quotaSchemaDigest` cannot enable discovery.
 The benchmark opt-in accepts UNMETERED only. Existing physical windows/capacities

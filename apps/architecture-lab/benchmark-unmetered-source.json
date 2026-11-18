@@ -5,12 +5,12 @@
   "targetEnvironment": "development",
   "previousSourceSha": "53691e907e4cc9b7fbf683c91bbebf41299e9ccc",
   "sourceDigests": {
-    "packages/platform-contracts/README.md": "0f572c45273f3aa55297bbb0862dbc3dd15aa1b8912a4df494fd17fa00ce5842",
+    "packages/platform-contracts/README.md": "7a94ef973a6147aab8fa45720acece26fb6ff7b2ec08f9cf5b7359daedeb4b32",
     "packages/platform-contracts/migrations/access/034-unmetered-benchmark-requests.sql": "4bdd9163a13fcc9096ac2976729335f00b629a37e2abe067ff036b03750d7f5c",
     "packages/platform-contracts/migrations/access/035-source-technical-continuity.sql": "2a6dd51ec854e94fc8e846abec9023c22c3e4328c5e42a1ec2be4f7fe12b78ca",
     "packages/platform-contracts/src/external-call.mjs": "e57a729d392924ca0f9a739535338db15ca1b199996b0cf797670a04cf770337",
-    "packages/platform-contracts/src/operation-context.d.mts": "da342d4b0a97e0ea6b3e18a0e4955e2b34e20ed48561dc1e05db885c8b8ec22b",
-    "packages/platform-contracts/src/operation-context.mjs": "f68667b1ddf7cba8507f30983320f5a89b3da96be9589ed9d3b310b84138b7fc",
+    "packages/platform-contracts/src/operation-context.d.mts": "1a5403880cc44728def0689afba687eb6bb14d013e897168e190b461113057d5",
+    "packages/platform-contracts/src/operation-context.mjs": "eab582ea5f2734849d37942acae1a1bbc61d0e3b9abf4386b251e3e9f193c8b9",
     "packages/platform-contracts/src/platform-ingestion.d.mts": "0dbb68e23450b845854322611fa0afa4dfbfe252d64486a8fb1e250e880634dc",
     "packages/platform-contracts/src/platform-ingestion.mjs": "d78263bf2e04c388ed89969f079598fffa14e71b4aa1ccc43587177b95a5b2d6",
     "packages/platform-contracts/src/private-operation-host.d.mts": "11a99dd0b3fc2e696a420aa3ea5d330c775ef0311f055202745231813e37e31d",
@@ -19,7 +19,7 @@
     "packages/platform-contracts/src/request-ledger.mjs": "9719d776329c4aadc0acc6fc3b05bfc21c66f4f246590de5f0525ee8d50937a0",
     "packages/platform-contracts/test/source-technical-continuity.integration.test.mjs": "3a26a550ba7571468bd6704aa3892263deb1ccd413000f46eeb769540666430b",
     "packages/platform-contracts/test/unmetered-benchmark-requests.integration.test.mjs": "89c287233bf737abf40c10747b85824c778c8238cc9fdbef157fc81a709b25c4",
-    "packages/platform-contracts/test/benchmark-unmetered-source.mjs": "1648e1a753b24b0a92d0f20fd9273881366b0e1fc320108d6d8b6ba44441c696",
+    "packages/platform-contracts/test/benchmark-unmetered-source.mjs": "16d51a7a23eaf18fd645d5bc16f9134d63c89041395316a8cd9338fdeb7de773",
     "packages/platform-contracts/test/benchmark-unmetered-source.test.mjs": "c7c8adde507e01577bc6cbc2b335cf2df2777196180213dbbe4d4ccad3aa72ce",
     "packages/platform-contracts/test/assistant-reservation-source.test.mjs": "3e195eab030542507d3dd9db5b8b1f209a2fac534824d4961f32b10fd039480c",
     "apps/architecture-lab/test/sdk-compatibility.test.mjs": "361d3720f4831e181884bb7ff853702ff2f90e9a1a0001fcd554df0b21b7d498",
@@ -81,7 +81,7 @@
     "moduleAuditSchemaDigest": "af296074b8b4dab2f952e1d2e0553e17d6567f480152870d151dc36c9302e6ac",
     "serviceReadSchemaDigest": "f7757dc5805b3759959505fa852715e70d207e94bf5d85827db3d52b0a5d0d49",
     "clerkConfigurationSourceDigest": "b3bdad865a16cbf677db1dd7450f594870abca30f8a252bd4d361d2387417246",
-    "currentHumanReadSourceDigest": "a07a1d6d204d891cbd05ca4d2c592cec9f790913ef1a79028412b1a1cb8b480b",
+    "currentHumanReadSourceDigest": "0357966b4d4f4c226e59991f71e5d831974e43edc32d0bcc45f786f724b57d55",
     "delegatedJobSchemaDigest": "6a12132efab396e6e647e15d1a9711d0a1bacaaab4482639178acd0258d518cb",
     "delegatedJobSourceDigest": "f1716c095d24d872145e3045f9ef05ccce53a214e9fee1d16fc32738ec9315bb",
     "supplierDelegationSchemaDigest": "cd12f9b88397da88241499548b8a5977d0aca830ad83c53a1bcf146265503555",
@@ -98,7 +98,7 @@
     "modelExecutionSchemaDigest": "1d4b6af7900b44f3d6a311bdcef85280d1b5c968ca67128e0e641e9adb8d253c",
     "moduleSchemaDigest": "c4ea1883af310934b1e83dfcf936ba15dfc32a3f4be206c752efe2d69a55b9ed",
     "moduleScopeSourceDigest": "1a37a9c5ccb19515baf343a122b3c9a9e246c18995b421854c4a0ef7b4211bf8",
-    "operationSourceDigest": "48a5c1e997d279501d28b72c4383795e65d2b0e8425654fbbb542e20fd2be882",
+    "operationSourceDigest": "c8744867bfc84dfa7c06e7e6e69bf74d8796cc918ea16fd3d8bb2941a722fe93",
     "peerOperationSourceDigest": "adf348cf4424f36d0c2b96acca56a4087e2bb02a4107708788e559c1fcf5d6a7",
     "platformIngestionSchemaDigest": "14d46ec280e624d79930833b022a46866864557cecbf2e3b55b1a1143fb9d66b",
     "platformIngestionSourceDigest": "3dabdaa40ade5de40dfbf8c5c15c1a215d2a1e939bce7b545a3a551826f677b6",
@@ -124,14 +124,14 @@
     "supplierLocationSchemaDigest": "34ec633dbf38dfffd6b3954ae79b0ef6f771d75ad8f0443882be71ca78b084e5"
   },
   "optionalPackageDigests": {
-    "currentFreshReportSourceDigest": "39293261b70f119499a4526be2e9419437fe9e6241eeb716eb7c406eaa55d1b7",
-    "readonlyMissReportSourceDigest": "3523658d1b3ab31a84402f0a1f7f6e204106f3263a119dab2fa59fed1643cef2",
-    "rootAtomicClaimSourceDigest": "2fec08d2f2061302d50c29ed9c51d0732852d873ffc90c321b819c92806f8f31"
+    "currentFreshReportSourceDigest": "9ddf248f4fed2b408168256fea8ff5aec3b821d9dd5a36c200e2fbd3d38bca2e",
+    "readonlyMissReportSourceDigest": "01bd83f94bc7a02bc8f861a1827c480fd40b496e7402e3293caee6307c7ca371",
+    "rootAtomicClaimSourceDigest": "6a9a49bd7eabd68e36152167473fe606313c8b82aa11988f654187a170b74511"
   },
   "consumerInput": {
     "projectKey": "SG2",
     "taskId": "SG2-FINDER-PERMANENT-UNMETERED-20261118",
-    "sourceSha": "cba7412bca5e2cbbdab2d573ec394c9adf55fec3",
+    "sourceSha": "e0a2a3943cd6dd268f294aee41564e461213fa42",
     "baseSha": "53691e907e4cc9b7fbf683c91bbebf41299e9ccc",
     "sourceDigests": {
       "apps/sg-runtime/deployment/benchmark-discovery-targets.json": "55ff9b745e756a47d5f0333a5d4025a78b0c2b2bf2d112f70a20c6925c94e757",
@@ -147,7 +147,8 @@
       "apps/sg-runtime/scripts/verify-finder-development-bindings.mjs": "e3abfb57f09b1522420822c36e93337a7f857a13bde0f01d9671557be737df2f",
       "apps/sg-runtime/tests/benchmark-discovery-unmetered-private.integration.test.mjs": "0a38afd4b93924ec61dbd3d819d3d1d1eec408473a478512457902f93910c2bc",
       "apps/sg-runtime/tests/benchmark-discovery-unmetered.integration.test.mjs": "9916c67b72f7ce5ba69a88fc5746a7a720b4ab25effff3a602ed34ae59e84ea0",
-      "apps/sg-runtime/tests/finder-development-bindings.test.mjs": "316708116db3b3bff8db0aa5bcb28bad6e80745c0f8786efaeb378c68c78da32"
+      "apps/sg-runtime/tests/finder-development-bindings.test.mjs": "316708116db3b3bff8db0aa5bcb28bad6e80745c0f8786efaeb378c68c78da32",
+      "apps/sg-runtime/tests/operation-context.test.mjs": "104ea92c68feaaca88357903597a779cf0158637d170a4ec2284fc5047f7cc40"
     },
     "predecessorDigests": {
       "apps/sg-runtime/deployment/benchmark-discovery-targets.json": "9e54dd216f83fab38e77ba1d05f597cd9fa57276415d81e613b74af5a3e78c14",
@@ -160,7 +161,8 @@
       "apps/sg-runtime/lib/benchmark/macrobond.ts": "1ff94d36d552c78999269db168f0f94750f657bc324e0724f100c7ee3506dbe5",
       "apps/sg-runtime/package.json": "2c9b703fb76ae597046aa40b947adb395969a15b688d5f5a08753f2d408851f6",
       "apps/sg-runtime/scripts/verify-finder-development-bindings.mjs": "9f8059008e35e899ec73098d4ff696f8688a1e161d2d73fd3d19b78b6668d263",
-      "apps/sg-runtime/tests/finder-development-bindings.test.mjs": "1cb1ee2be83ce5d356af773d896668de10fb26a1103b8503d4fca92447f97dc0"
+      "apps/sg-runtime/tests/finder-development-bindings.test.mjs": "1cb1ee2be83ce5d356af773d896668de10fb26a1103b8503d4fca92447f97dc0",
+      "apps/sg-runtime/tests/operation-context.test.mjs": "30cb374ebba63c53071622473dc5bbcbc0f94bfb197bc5985f1fe0e1f2bb9aa3"
     }
   }
 }
