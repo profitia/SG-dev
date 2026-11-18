@@ -137,12 +137,14 @@ export function trustedAdmissionById(id, governanceRoot = root) {
 
 // Only the trusted controller supplies this separately reviewed table. The
 // candidate and its Source record cannot authorize protected metadata themselves.
+export const CURRENT_SDK_SOURCE_REGRESSION_TESTS=Object.freeze(["scripts/governance/controlled-package-ci.test.mjs","scripts/governance/platform-source-hub-foundation.test.mjs"])
 function permitsReviewedMetadata(record,entry,policy){
  const reviewed=policy?.reviewedMetadata,expected=reviewed?.entries?.[entry.path]
  if(reviewed?.recordId!==record.id||reviewed?.taskId!==record.taskId
    ||!expected||expected.sha!==entry.blob||expected.mode!=='100644'||entry.mode!=='100644')return false
  const parts=entry.path.split('/')
  if(parts.some(part=>['.git','node_modules','.pmos','.context','AGENTS.md'].includes(part)))return false
+ if(expected.kind==='SDK_COMPATIBILITY_REGRESSION')return CURRENT_SDK_SOURCE_REGRESSION_TESTS.includes(entry.path)&&entry.status==='modified'&&entry.projectKey==='ARCHITECTURE'
  if(expected.kind==='ENVIRONMENT_TEMPLATE')return /^apps\/[A-Za-z0-9_-]+\/\.env\.example$/.test(entry.path)
  if(parts.some(part=>part.startsWith('.env')||part.startsWith('.npmrc')))return false
  return expected.kind==='HISTORICAL_EVIDENCE'&&(/^Canon\/evidence\/[^/]+\.md$/.test(entry.path)

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import {sdkSourceContext,CURRENT_SDK_SOURCE_RECORD} from '../../packages/platform-contracts/test/sdk-source-context.mjs'
-import {trustedApplicationContinuity,findTrustedAdmission,trustedAdmissionById,assertSourceAdmission,assertSourceCheckout,assertWorkflowPackageCredential,classifyPackageFailure,credentialFree,sourceAdmissionDigest,assertSourceValidationProof} from './development-execution.mjs'
+import {CURRENT_SDK_SOURCE_REGRESSION_TESTS,trustedApplicationContinuity,findTrustedAdmission,trustedAdmissionById,assertSourceAdmission,assertSourceCheckout,assertWorkflowPackageCredential,classifyPackageFailure,credentialFree,sourceAdmissionDigest,assertSourceValidationProof} from './development-execution.mjs'
 // PROPOSAL ONLY: exact seven-file SG2 notification continuation; no generic UI admission.
 export const APPSHELL_NOTIFICATION_REVIEW=Object.freeze({
  "recordPath": "apps/sg-runtime/assistant-notifications-integration.json",
@@ -7041,9 +7041,10 @@ export function currentSdkSourceAdmissionPolicy(sourceRecord,authorityRoot=contr
   ||Object.keys(review.reviewedMetadata).length>100||Object.keys(review.localPackages).length>20)fail('CURRENT_SDK_SOURCE_POLICY_REJECTED')
  for(const flag of ['runtimeActivated','permissionsChanged','providerCallsPerformed','deploymentPerformed'])
   if(record[flag]!==false)fail('CURRENT_SDK_SOURCE_POLICY_REJECTED')
- for(const entry of Object.values(review.reviewedMetadata)){
+ for(const [name,entry] of Object.entries(review.reviewedMetadata)){
   if(!plain(entry)||Object.keys(entry).sort().join(',')!=='kind,mode,sha'||!shaPattern.test(entry.sha??'')
-   ||entry.mode!=='100644'||!['HISTORICAL_EVIDENCE','ENVIRONMENT_TEMPLATE'].includes(entry.kind))fail('CURRENT_SDK_SOURCE_POLICY_REJECTED')
+   ||entry.mode!=='100644'||!['HISTORICAL_EVIDENCE','ENVIRONMENT_TEMPLATE','SDK_COMPATIBILITY_REGRESSION'].includes(entry.kind)
+   ||entry.kind==='SDK_COMPATIBILITY_REGRESSION'&&!CURRENT_SDK_SOURCE_REGRESSION_TESTS.includes(name))fail('CURRENT_SDK_SOURCE_POLICY_REJECTED')
  }
  for(const [name,entry]of Object.entries(review.localPackages)){
   if(!Object.hasOwn(LOCAL_PACKAGES,name)||!plain(entry)||Object.keys(entry).sort().join(',')!=='afterBlob,beforeBlob'

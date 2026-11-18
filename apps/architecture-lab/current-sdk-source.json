@@ -2110,6 +2110,16 @@
         "sha": "56bc3a56206000e881c2cdeab01ccc8c1d8a040d",
         "mode": "100644",
         "kind": "HISTORICAL_EVIDENCE"
+      },
+      "scripts/governance/controlled-package-ci.test.mjs": {
+        "sha": "f9e2225eb830cdeb43dab9a244e00eccf1933020",
+        "mode": "100644",
+        "kind": "SDK_COMPATIBILITY_REGRESSION"
+      },
+      "scripts/governance/platform-source-hub-foundation.test.mjs": {
+        "sha": "1972973f709934feee2dcba6908cc22d18d34063",
+        "mode": "100644",
+        "kind": "SDK_COMPATIBILITY_REGRESSION"
       }
     },
     "localPackages": {

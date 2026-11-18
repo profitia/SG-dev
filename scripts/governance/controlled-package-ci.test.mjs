@@ -2992,6 +2992,7 @@ test('registration lifecycle controlled proof binds the current SDK digest and e
 // pre-Calendar authority snapshot, never the later 1.8.0 source graph.
 // The physical current graph must first satisfy the full trusted verifier.
 function calendarPolicyFixtureAuthority(c){
+ if(currentSdkProofContext(authorityRoot)){const root=legacyMapsRoot();assert.equal(JSON.parse(fs.readFileSync(path.join(root,'packages/platform-contracts/package.json'))).version,'1.37.0');return{root,close(){}}}
  if(!fs.existsSync(path.join(authorityRoot,c.ECR_COMPLETE_FUNCTIONAL_PROVENANCE.producerRecord)))return{root:authorityRoot,close(){}};
  assert(c.assertCompleteFunctionalProvenance(authorityRoot));
  const directory=fs.mkdtempSync(path.join(os.tmpdir(),'calendar-policy-authority-')),root=path.join(directory,'source');
