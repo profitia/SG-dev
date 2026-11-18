@@ -1,5 +1,5 @@
 import {createHmac} from 'node:crypto'
-import {TERMINAL_STATES} from './controller.mjs'
+import {TERMINAL_STATES,readQualityJobBinding} from './controller.mjs'
 
 const fail=code=>{throw Object.assign(Error('Quality control store unavailable'),{code})}
 const require=(v,c='CONTROL_RECORD_INVALID')=>{if(!v)fail(c)}
@@ -31,17 +31,40 @@ export function assertControlRecord(r){
 export function createQualityStore({query,commandKey,schemaDigest,serviceId,now=Date.now}){
  require(typeof query==='function'&&typeof now==='function'&&hash(commandKey)&&hash(schemaDigest)&&uuid(serviceId),'EXPLICIT_STORE_BINDING_REQUIRED')
  const key=Buffer.from(commandKey,'hex')
- async function call(action,payload={}){
+ async function call(action,payload={},externalBinding){
   const json=JSON.stringify({contract:'QualityControlStore/1.0.0',action,...payload,serviceId,schemaDigest,until:now()+10000})
   require(Buffer.byteLength(json)<=32768)
+  const proof=body=>createHmac('sha256',key).update(body).digest('hex')
+  let sql='SELECT sg2_assistant_quality_control.apply($1::text,$2::text) AS result',parameters=[json,proof(json)]
+  if(externalBinding!==undefined){
+   require(action==='PREPARE','JOB_BINDING_INVALID')
+   readQualityJobBinding(externalBinding,{nonce:payload.nonce,action:payload.actionName})
+   const binding=JSON.stringify({contract:'QualityControlStore/1.0.0',action:'RECORD_EXTERNAL',
+    id:payload.id,leaseToken:payload.leaseToken,revision:payload.revision+1,nonce:payload.nonce,externalId:externalBinding,
+    serviceId,schemaDigest,until:now()+10000})
+   // Both authenticated writes use the existing role/function in ONE native
+   // statement. Failure of the second write rolls back the intent and attempt.
+   // MATERIALIZED evaluates PREPARE once; a release-window WAIT does not bind.
+   sql="WITH prepared AS MATERIALIZED (SELECT sg2_assistant_quality_control.apply($1::text,$2::text) AS result) SELECT CASE WHEN prepared.result ? 'waitUntil' THEN prepared.result ELSE sg2_assistant_quality_control.apply($3::text,$4::text) END AS result FROM prepared"
+   parameters=[json,proof(json),binding,proof(binding)]
+  }
   let r
-  try{r=(await query('SELECT sg2_assistant_quality_control.apply($1::text,$2::text) AS result',[json,createHmac('sha256',key).update(json).digest('hex')])).rows}
-  catch(e){fail(e?.code==='P0001'&&['LEASE_LOST','IDEMPOTENCY_CONFLICT','ATTEMPTS_EXHAUSTED','ROLLBACK_ALREADY_ATTEMPTED','CONTROL_RECORD_INVALID','CLASS_SUSPENDED'].includes(e.message)?e.message:'CONTROL_STORE_UNAVAILABLE')}
+  try{r=(await query(sql,parameters)).rows}
+  catch(e){
+   if(e?.code==='P0001'&&['LEASE_LOST','IDEMPOTENCY_CONFLICT','ATTEMPTS_EXHAUSTED','ROLLBACK_ALREADY_ATTEMPTED','CONTROL_RECORD_INVALID','CLASS_SUSPENDED'].includes(e.message))fail(e.message)
+   // A transport failure cannot establish whether the atomic statement committed.
+   // A database SQLSTATE proves a rejected statement; no dispatch follows either.
+   if(externalBinding!==undefined&&e?.code!=='P0001'&&!/^(?:22|23|25|28|40|42)[0-9A-Z]{3}$/.test(e?.code??''))fail('DELIVERY_UNCERTAIN')
+   fail('CONTROL_STORE_UNAVAILABLE')
+  }
   const v=r?.[0]?.result
   require(r?.length===1&&v?.applicationId==='spendguru'&&v.environment==='development'&&v.projectId==='autumn-waterfall-65938876'
    &&v.branchId==='br-dry-hall-b294222f'&&v.databaseName==='neondb'&&v.runtimeRole==='sg2_assistant_quality_controller'
    &&v.schemaDigest===schemaDigest&&v.serviceId===serviceId,'STORE_BINDING_MISMATCH')
   if(v.record)assertControlRecord(v.record)
+  if(externalBinding!==undefined&&!v.waitUntil)require(v.record?.pending?.externalId===externalBinding
+   &&v.record.pending.nonce===payload.nonce&&v.record.pending.action===payload.actionName
+   &&v.record.revision===payload.revision+2,'JOB_BINDING_NOT_COMMITTED')
   return v
  }
  const identity=o=>{require(uuid(o.id)&&uuid(o.leaseToken)&&integer(o.revision)&&o.revision>0);return {id:o.id,leaseToken:o.leaseToken,revision:o.revision}}
@@ -50,7 +73,7 @@ export function createQualityStore({query,commandKey,schemaDigest,serviceId,now=
   async create({id,repairClass,causeFingerprint,baseSha}){return (await call('CREATE',{record:assertControlRecord({id,revision:1,status:'OBSERVED',repairClass,causeFingerprint,baseSha,attemptsUsed:0,rollbacksUsed:0,pending:null,wakeAt:0})})).record},
   async listDue(){const r=await call('LIST_DUE');require(Array.isArray(r.ids)&&r.ids.length<=20&&r.ids.every(uuid));return r.ids},
   async claim({id,workerId,leaseMs}){require(uuid(id)&&leaseMs===30000&&/^[a-zA-Z0-9_.:-]{1,128}$/.test(workerId));const r=await call('CLAIM',{id,workerId,leaseMs});if(r.status==='BUSY')return null;require(uuid(r.leaseToken));return {record:r.record,leaseToken:r.leaseToken}},
-  async prepare(o){require(uuid(o.nonce)&&o.consumeAttempt===(o.action==='EXECUTE')&&o.consumeRollback===(o.action==='ROLLBACK')&&o.enforceReleaseWindow===(o.action==='PROMOTE'));return call('PREPARE',{...identity(o),actionName:o.action,nonce:o.nonce})},
+  async prepare(o){require(uuid(o.nonce)&&o.consumeAttempt===(o.action==='EXECUTE')&&o.consumeRollback===(o.action==='ROLLBACK')&&o.enforceReleaseWindow===(o.action==='PROMOTE'));return call('PREPARE',{...identity(o),actionName:o.action,nonce:o.nonce},o.externalId)},
   async recordExternal(o){require(uuid(o.nonce)&&typeof o.externalId==='string');return (await call('RECORD_EXTERNAL',{...identity(o),nonce:o.nonce,externalId:o.externalId})).record},
   async complete(o){require(uuid(o.nonce));return (await call('COMPLETE',{...identity(o),nonce:o.nonce,record:assertControlRecord(o.record)})).record},
   async stop(o){require(['OUT_OF_SCOPE','BUDGET_STOP','NEEDS_TECHNICAL_REVIEW'].includes(o.status)&&/^[A-Z][A-Z0-9_]{0,79}$/.test(o.reason));return (await call('STOP',{...identity(o),status:o.status,reason:o.reason})).record},

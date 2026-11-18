@@ -1,4 +1,6 @@
 import {knowledgeSourcePredecessor} from '../../architecture-lab/knowledge-source.mjs'
+import {procurementInsightsEditorialPackagePredecessor,EDITORIAL_PACKAGE_RECEIPT} from './procurement-insights-editorial-package-integrity.mjs'
+import {finderMonitorPredecessor,FINDER_MONITOR_RECEIPT} from './finder-monitor-source-integrity.mjs'
 import {procurementInsightsEditorialPredecessor,EDITORIAL_RECEIPT} from './procurement-insights-editorial-integrity.mjs'
 // Test/build-only exact SG2 presentation continuation. No runtime or access authority.
 import assert from 'node:assert/strict'
@@ -56,6 +58,16 @@ export function notificationCompletionSource(before){
 export function assistantNotificationsPredecessor(current,historical){
  const knowledge=knowledgeSourcePredecessor(current,historical)
  if(knowledge)return assistantNotificationsPredecessor(knowledge.previousBytes,historical)
+ const packaged=procurementInsightsEditorialPackagePredecessor(current,historical)
+ if(packaged){
+  const accepted=assistantNotificationsPredecessor(packaged.previousBytes,historical);assert(accepted,'accepted editorial source retained')
+  return {...accepted,editorialPackage:packaged,manifest:{...accepted.manifest,sourceDigests:{...accepted.manifest.sourceDigests,...packaged.manifest.sourceDigests,[EDITORIAL_PACKAGE_RECEIPT]:hash(current(EDITORIAL_PACKAGE_RECEIPT))}}}
+ }
+ const finderMonitor=finderMonitorPredecessor(current,historical)
+ if(finderMonitor){
+  const accepted=assistantNotificationsPredecessor(finderMonitor.previousBytes,historical);assert(accepted,'accepted notification source retained')
+  return {...accepted,finderMonitor,manifest:{...accepted.manifest,sourceDigests:{...accepted.manifest.sourceDigests,...finderMonitor.manifest.sourceDigests,[FINDER_MONITOR_RECEIPT]:hash(current(FINDER_MONITOR_RECEIPT))}}}
+ }
  const editorial=procurementInsightsEditorialPredecessor(current,historical)
  if(editorial){
   const accepted=assistantNotificationsPredecessor(editorial.previousBytes,historical);assert(accepted,'accepted notification source retained')
