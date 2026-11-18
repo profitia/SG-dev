@@ -79,6 +79,6 @@ export function createQualityStore({query,commandKey,schemaDigest,serviceId,now=
   async stop(o){require(['OUT_OF_SCOPE','BUDGET_STOP','NEEDS_TECHNICAL_REVIEW'].includes(o.status)&&/^[A-Z][A-Z0-9_]{0,79}$/.test(o.reason));return (await call('STOP',{...identity(o),status:o.status,reason:o.reason})).record},
   async contain(o){require(['LIMIT_EXCEEDED','AUTHORITY_REVOKED','MANDATE_EXPIRED','CONTROL_FAILURE'].includes(o.reason));return (await call('CONTAIN',{...identity(o),reason:o.reason})).record},
   async release({id,leaseToken}){require(uuid(id)&&uuid(leaseToken));await call('RELEASE',{id,leaseToken})},
-  async purge(){await call('PURGE')},
+  async purge(){const result=await call('PURGE');require(result.status==='PURGED','CONTROL_RETENTION_UNAVAILABLE');return Object.freeze({status:'PURGED'})},
  })
 }
