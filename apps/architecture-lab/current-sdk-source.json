@@ -1,7 +1,7 @@
 {
   "schemaVersion": "1.0",
   "scope": "CURRENT_SDK_SOURCE_INTEGRITY_ONLY",
-  "sourceSnapshotSha": "9a5b9e83c20bdf70c15181872adff88995036c9e",
+  "sourceSnapshotSha": "f5e9832345a9ccb969ad141291324889abf08ced",
   "status": "PRIVATE_PROTOTYPE_NOT_ADMITTED",
   "platformVersion": "1.38.0",
   "runtimeActivated": false,
@@ -1674,11 +1674,11 @@
     "packages/srm-xray/src/workflow.ts": "67cd3c601d32b17d86865b62459d073013698d40d5840ae0ae5bee18a08336d2",
     "packages/srm-xray/tsconfig.json": "11849720cf7010564984d2489e26ba1ba98cc4c263edb5e019a01ca81aadb4d9",
     "scripts/governance/controlled-package-ci.mjs": "fc9bf7405b9752d0ea17e0c4fe92c39c8de071df77546f2a7bc9af66ae1b3f71",
-    "scripts/governance/controlled-package-ci.test.mjs": "7c1f3f84b8b61b57e8ec57a01d738a83e05b78d04dee8e529083bd7c1712abc2",
-    "scripts/governance/development-execution.mjs": "6c643db5c0675cfd284f28e8674f90338007352033de75b3241fb38c29161d8a",
-    "scripts/governance/development-execution.test.mjs": "2a99bf92bba03778c856871d8570c6285e6f833849864a19d70c91c22dcd38bf",
+    "scripts/governance/controlled-package-ci.test.mjs": "e1712ed2c9130954957e833199de76a9330a21fb2dd04e3fc395295b78c23e4c",
+    "scripts/governance/development-execution.mjs": "f5d834c844552044f2eda1ce214725d4a19f7395d279290949450ef73cabb4b3",
+    "scripts/governance/development-execution.test.mjs": "720b86f2054dac212c9ddaa4a4db5a0f2aa5d1d34e2eae4d2c85c7a9e9dd2fd3",
     "scripts/governance/governance.test.mjs": "ef28078504fda6d844f63b5dd3d7687465f37b3d16064dff581ae392765909da",
-    "scripts/governance/platform-source-hub-foundation.test.mjs": "6126ad319bb57a4fcd448b88787d51597877415094b14392780beb04b5447cf8"
+    "scripts/governance/platform-source-hub-foundation.test.mjs": "95b3d5a0b8f030215bf597b0daee1d52fcef2bc36ec7aaba373dcdbffd775513"
   },
   "baselines": {
     "acceptedmain": {
@@ -1686,7 +1686,7 @@
       "status": "IMMUTABLE_ACCEPTED_EDITORIAL_SOURCE_BEFORE_CURRENT_SDK"
     },
     "authority": {
-      "sha": "5f3f91beaa6c32d9528c3c6d3e233808540d1532",
+      "sha": "275f2637fabf84cf53a16009092194d64773494f",
       "status": "ACCEPTED_BRANCH_BASE_FOR_PRIVATE_SOURCE_PREPARATION"
     },
     "registration": {
