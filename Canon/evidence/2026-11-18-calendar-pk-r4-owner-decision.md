@@ -13,6 +13,8 @@ Po przyjęciu PI1.2.1 i uzgodnieniu kolejności z PK R4 potrzebna jest jedna dok
 | Wymagane źródło PK R4 | 617ae48d975e241e1df7d6b051ce586e0d5074bd |
 | Rzeczywisty main przy przygotowaniu | 74c4e7f16bdb5d6b09aea289dc0d44ac1b0cdde7 |
 
+Przed publikacją main odświeżono do **3109989f6a2c6378b3eddfb84cf99d1a199d1f1e**: polityka PK R4 została już przyjęta w [PR1180](https://github.com/profitia/SG-dev/pull/1180), a jej rzeczywiste drzewo jest identyczne z neutralną bazą własnego diffu CI. Przyjęcie źródła PK617 nadal pozostaje osobnym warunkiem.
+
 Jeden pakiet obejmuje pełny [diff źródła82 plików](../proposals/calendar-pk-r4-20261118/source.patch), [własny diff dwóch plików CI](../proposals/calendar-pk-r4-20261118/policy.patch), [blob/status/mode/ownership](../proposals/calendar-pk-r4-20261118/closed-source-review.json), [pochodzenie i sumy patchy](../proposals/calendar-pk-r4-20261118/source-input-provenance.json), [testy](../proposals/calendar-pk-r4-20261118/predeployment-test-summary.json) i [procedurę adopcji](../proposals/calendar-pk-r4-20261118/normal-adoption-plan.json). Prywatne inputy nie są jeszcze opublikowanym kodem ani aktywną polityką; pełne proponowane bajty są w załącznikach.
 
 Zakres własny to **66 ścieżek ARCHITECTURE i16 SG2, bez nowych zmian SRM**. Graf562 źródeł uwierzytelnia niezmieniony Cal69 i PK617/PI przed odczytem właściwego historycznego poprzednika. Oryginalne58+7 przeglądy,75-plikowy input69 i historyczne potwierdzenia pozostają. Wspólny adapter Identity zachowuje oba zestawy endpointów i ograniczeń. Wszystkie oryginalne asercje zostają; jedna historyczna asercja protokołu używa dokładnego Cal69, a bieżący kandydat własnego pełnego sprawdzenia.
