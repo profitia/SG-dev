@@ -1907,5 +1907,157 @@
     "technicalReady": false,
     "fullE1Acceptance": false,
     "stage2Started": false
+  },
+  "latestSourceAndRuntime20261119": {
+    "status": "WORKER_LIVE_STANDBY_NOT_PROJECT_TECHNICAL_READY",
+    "deploy": {
+      "commit": {
+        "createdAt": "2026-11-18T23:12:59Z",
+        "id": "a1566879bd6f43c6d6654b0bed76448af48dad9e",
+        "message": "[skip render] Integrate bounded native CIC patch transport with operational gates disabled\n\nStage 1 Full Autopilot source integration: read-only fixed GitHub artifact GETs; no new dispatch, authority, workflow, secret, SQL or activation. Native job 135204578274 / run 44418386277 verified 231 CIC and 12 QA tests, no skips/failures, tested tree 7ff55fc22919c142f13a706bfc0f7a116bc1ee83 exactly equals candidate. Current a9b83db0 parallel main full run 44414248940 SUCCESS retained. Paid repairs/promotion/window remain disabled. Actual resulting-main and Linux qualification still required before worker rollout."
+      },
+      "createdAt": "2026-11-18T23:21:21.42248Z",
+      "finishedAt": "2026-11-18T23:22:03.369134Z",
+      "id": "dep-dbv35setlv9c73flrjv0",
+      "startedAt": "2026-11-18T23:21:21.420381Z",
+      "status": "live",
+      "trigger": "api",
+      "updatedAt": "2026-11-18T23:22:03.369321Z"
+    },
+    "instance": "pd7bb",
+    "heartbeat": {
+      "event": "aqc.technical.heartbeat",
+      "schemaVersion": "AQC_TECHNICAL_READINESS_V1",
+      "status": "MONITORING_READY",
+      "sourceSha": "a1566879bd6f43c6d6654b0bed76448af48dad9e",
+      "observedAt": "2026-11-18T23:22:05.545Z",
+      "controlStore": "CONNECTED_DISABLED",
+      "nativeLimits": "CONNECTED_DISABLED",
+      "paidRepairsEnabled": false,
+      "promotionEnabled": false,
+      "pilotStartedAt": null,
+      "acceptanceRepairsCompleted": 0,
+      "controllerGitHub": "CONNECTED_STANDBY",
+      "qualificationWorkflow": "CONNECTED_MAIN_ONLY",
+      "renderServiceId": "srv-dbu4ak0ae00c73eaabcg",
+      "providerTimestamp": "2026-11-18T23:22:06.290751965Z"
+    },
+    "rolePreflight": {
+      "event": "aqc.technical.qa.role_preflight",
+      "schemaVersion": "AQC_QA_ROLE_PREFLIGHT_V1",
+      "status": "QA_ROLES_VERIFIED",
+      "qaAuthority": "CONNECTED_ORDINARY_ROLE",
+      "qaEvidence": "CONNECTED_ORDINARY_ROLE",
+      "rawQaReadPerformed": false,
+      "permissionMutationPerformed": false,
+      "checkoutMetadataPresent": true,
+      "gitExecutableAvailable": true,
+      "gitHeadMatchesSource": true,
+      "hostQaCodecPresent": false,
+      "nodeMajorSupported": true,
+      "sourceSha": "a1566879bd6f43c6d6654b0bed76448af48dad9e",
+      "observedAt": "2026-11-18T23:22:05.545Z",
+      "providerTimestamp": "2026-11-18T23:22:06.281810792Z"
+    },
+    "retention": {
+      "event": "aqc.technical.metadata_retention",
+      "schemaVersion": "AQC_CONTROL_METADATA_RETENTION_V1",
+      "status": "PURGE_CONFIRMED",
+      "purgePerformed": true,
+      "scope": "CONTROL_METADATA_ONLY",
+      "retentionDays": 90,
+      "observedAt": "2026-11-18T23:22:06.197Z",
+      "sourceSha": "a1566879bd6f43c6d6654b0bed76448af48dad9e",
+      "providerTimestamp": "2026-11-18T23:22:06.197762636Z"
+    },
+    "sentry": {
+      "event": "aqc.monitoring.delivery",
+      "provider": "sentry",
+      "status": "ACCEPTED",
+      "httpStatus": 200,
+      "sourceSha": "a1566879bd6f43c6d6654b0bed76448af48dad9e",
+      "providerTimestamp": "2026-11-18T23:22:06.350761696Z"
+    },
+    "sourceChecks": {
+      "sourceRun": 44418386277,
+      "sourceJob": 135204578274,
+      "resultingMainRun": 44418782006,
+      "resultingMainJob": 135205942010,
+      "packagePass": 231,
+      "qaPass": 12,
+      "fail": 0,
+      "skip": 0
+    },
+    "linux": {
+      "runId": 44418912396,
+      "jobId": 135206865056,
+      "artifactId": 14480711736,
+      "archiveSha256": "a9d05d271f69ba98139d058ea3021ae38d0a8740afc67ab886cae4a8fcb823a1",
+      "observations": {
+        "schemaVersion": "AQC_LINUX_OBSERVATIONS_V1",
+        "gateSetSha256": "b410fd60b890cbaeb83210520eaff387f8669a1270e1cf4e766096c5c8d6c024",
+        "codexVersion": "0.167.2",
+        "codexArchiveSha256": "8246e846c550ea21197fcc4067bc270dca895e94ea42ed6a282e6f4e0125b15f",
+        "codexBinarySha256": "a9672d0fa0dd8fcf8cad136fa0d056b914bc046f5ac3d78f4a5cf390655af56b",
+        "codeModeHostArchiveSha256": "189475a654d82ca776e08dfef22734106d3e5b2cf21da6e84ec3d974d02c39a6",
+        "codeModeHostBinarySha256": "007c62795a7215c27ee85486ecb95e714b33118a2d18c6d7b09b0d9793c72ff4",
+        "bwrapArchiveSha256": "03cb0d2b151648693e3817c47068773ae4b7327c19fe25eab8c61c4c2865838a",
+        "bwrapBinarySha256": "7df960565a0dece99240ea4b9d0e011307817f9f3b73176c7b71fda44fe84765",
+        "isolationHelperCommit": "13e9c17417b29e9a276f73ec6ed7fb574137d3c3",
+        "fileIsolation": "PASS",
+        "networkIsolation": "PASS",
+        "privilegeIsolation": "PASS",
+        "toolLoop": "PASS",
+        "cancellation": "PASS",
+        "noProviderRequests": true,
+        "requestCount": 4,
+        "settledCount": 4,
+        "runId": "44418912396",
+        "sourceSha": "a1566879bd6f43c6d6654b0bed76448af48dad9e",
+        "nonce": "55d497c2-4608-40e4-be42-88e2698551be",
+        "verifiedAt": "2026-11-18T23:16:30.976Z",
+        "testKeysInstalled": false,
+        "realCostAuthorityUsed": false,
+        "independentVerifier": {
+          "status": "PASS",
+          "classes": [
+            "C1",
+            "C2",
+            "C3"
+          ],
+          "typedResults": 6,
+          "fileIsolation": "PASS",
+          "networkIsolation": "PASS",
+          "privilegeIsolation": "PASS",
+          "timeout": "PASS",
+          "cancellation": "PASS",
+          "cgroupEmpty": true,
+          "nodeSha256": "904a6d3484241d466989f9df9ba3aab822b1496191bdb28230eb491a55c32a52",
+          "noProviderRequests": true,
+          "rawQaPayloadIncluded": false,
+          "testKeysInstalled": false
+        }
+      },
+      "productionTrustInstalled": false,
+      "fullPrivateCic18Qualification": false
+    },
+    "lastKnownGood": {
+      "sourceSha": "b1cda8c4fde31557aac6e89851d6d9293ec768ea",
+      "deployId": "dep-dbv16ut6e07s73adjnt0"
+    },
+    "preservedMain": "cef950e36229175af6284daadd1023ce131c566c",
+    "wholeAqcTreeAtReleaseAndCurrentMain": "a4dd7091ef66f582e37869299398a2bd729fc937",
+    "host": {
+      "sourceSha": "d5eb40a061dd24c5ea65f9f373682179458cb589",
+      "deployId": "dep-dbul4gdckfvc73chhgk0"
+    },
+    "technicalReady": false,
+    "e1Repairs": 0,
+    "paidRepairs": false,
+    "promotion": false,
+    "pilotStarted": false,
+    "stage2Started": false,
+    "b29Approved": false,
+    "recordedAt": "2026-11-18 23:24:23 UTC"
   }
 }
