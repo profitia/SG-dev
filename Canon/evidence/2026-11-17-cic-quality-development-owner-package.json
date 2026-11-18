@@ -8,7 +8,7 @@
   "frozenSpecificationSha256": "ee6b3f36dd63ca3c3343de8b38fee431de49f67b895b17434b39ce332539b881",
   "scope": "Development technical integration and infrastructure only",
   "sourceCi": {
-    "decisionRequired": true,
+    "decisionRequired": false,
     "kind": "FINITE_LEGACY_STAGE1_EXCEPTION",
     "reason": "Already-open PR1067 and its dependent host adoption require closed legacy source continuity and the measured CIC1.8 artifact. Current generic ordinary records exclude the two new receipts; this proposal explicitly requires owner acceptance rather than silently claiming ordinary-record authority.",
     "reviewId": "AQC-SG2-STAGE1-LEGACY-CONTINUATION-20261117",
@@ -16,7 +16,7 @@
       "sg2/cic-quality-stage1-runtime-20261112",
       "sg2/cic-quality-host-integration-20261117"
     ],
-    "pathsCount": 22,
+    "pathsCount": 24,
     "expiresAt": "2026-11-27T23:59:59.000Z",
     "sourceValidationOnly": true,
     "credentialMode": "AUTOMATIC_GITHUB_TOKEN_READ_ONLY",
@@ -39,7 +39,9 @@
       "reason": "Preserve the existing PI completion receipt and its unchanged test when the approved CIC1.8 host package manifest is adopted",
       "nativeRuntimeAccessPermissionsCostsChanged": false,
       "guardChangeRestrictedToExactAdditiveBinding": true
-    }
+    },
+    "originalInfrastructurePackagePathCount": 22,
+    "effectiveAdditionalAdapterPath": "apps/sg-runtime/tests/finder-monitor-source-integrity.mjs"
   },
   "render": {
     "decisionRequired": true,
@@ -212,7 +214,7 @@
       "autonomousPromotion": "Remains disabled; no broad classic API key installed. A provider-scoped credential must be available and explicitly authorised before automated publishing."
     },
     "qaRoleWorkerRecipientConfirmation": {
-      "status": "PENDING_EXPLICIT_OWNER_CONFIRMATION_AFTER_AUTOMATIC_REVIEW_REJECTION",
+      "status": "OWNER_APPROVED_AND_APPLIED",
       "serviceId": "srv-dbu4ak0ae00c73eaabcg",
       "workspaceId": "tea-d7lps8rbc2fs73cn80dg",
       "settings": [
@@ -229,7 +231,11 @@
       "newCost": false,
       "qaHmacOrStorageKeyIncluded": false,
       "rejectedWriteApplied": false,
-      "noAlternativeSecretTransferAttempted": true
+      "noAlternativeSecretTransferAttempted": true,
+      "approvalDate": "2026-11-18",
+      "approvalResponse": "Zatwierdzam te dwa połączenia w tym workerze",
+      "subsequentExplicitlyApprovedWriteApplied": true,
+      "valuesPublished": false
     }
   },
   "costs": {
@@ -448,17 +454,23 @@
       "controlledResult": "IN_PROGRESS",
       "newActualLinuxQualificationRequired": false,
       "previousGateSetProofNotApplicableToChangedInputs": true,
-      "actualPinnedCicArchivePositiveParsing": "PENDING",
+      "actualPinnedCicArchivePositiveParsing": "PASS_EXACT_PUBLISHED_BYTES_26403_BYTES_22_FILES",
       "operationalJobsConnected": false,
       "latestQualifiedRun": 44231983517,
       "originalPinnedCicFetchRoute": "EXISTING_MAIN_ONLY_CONTROLLED_SG2_CREDENTIAL_PREFLIGHT_GITHUB_TOKEN_PACKAGES_READ",
-      "originalPinnedCicPositiveArchiveParserProof": "PENDING_EXACT_ORIGINAL_ARCHIVE"
+      "originalPinnedCicPositiveArchiveParserProof": "PASS",
+      "originalArchiveReproductionUsedRegistryCredential": false,
+      "newParserSourcePr": 1173,
+      "newLinuxRequiredForParserSource": false,
+      "newParserSourcePrStatus": "CLOSED_WITHOUT_MERGE_EXISTING_QUALIFIED_VERIFIER_REUSED",
+      "existingQualifiedPolicyInputsUnchanged": true,
+      "existingVerifierBlob": "30b38c9cea867909624308817cea281463b23571"
     },
     "currentRuntimeObservation": {
-      "workerSourceSha": "d4bc54fddd1118d6e3050ba64e5ed41054e093d9",
-      "workerDeployId": "dep-dbuj95u7bikc73a4hvpg",
-      "workerLiveAt": "2026-11-18T05:16:49.127269Z",
-      "workerHeartbeatAt": "2026-11-18T05:16:51.208Z",
+      "workerSourceSha": "816663e1330a0547f06d7595dbb43a642046da55",
+      "workerDeployId": "dep-dbujv208v5cc739bcrqg",
+      "workerLiveAt": "2026-11-18T06:03:28.179650Z",
+      "workerHeartbeatAt": "2026-11-18T06:03:33.100Z",
       "workerStatus": "MONITORING_READY",
       "controllerGitHub": "CONNECTED_STANDBY",
       "qualificationWorkflow": "CONNECTED_MAIN_ONLY",
@@ -472,9 +484,9 @@
       "pilotStartedAt": null,
       "acceptanceRepairsCompleted": 0,
       "technicalReady": false,
-      "latestObservedAt": "2026-11-18T05:16:51.208Z",
-      "newAdapterSourceDeployed": true,
-      "operationalJobsEnabled": false
+      "qaAuthority": "CONNECTED_ORDINARY_ROLE",
+      "qaEvidence": "CONNECTED_ORDINARY_ROLE",
+      "rawQaReadPerformed": false
     },
     "linuxQualification20261118": {
       "sourceSha": "8067b0e0a87762f769035bd3fdf70bec69fe443a",
@@ -560,7 +572,7 @@
         "canonicalCodecSha256": "fc5c9b4d03422d10df729e991748b23f2c0d7f3528c9c6d083cc2feaed989a71"
       },
       "canonicalHostCodecReused": true,
-      "renderGitAvailabilityVerified": false,
+      "renderGitAvailabilityVerified": true,
       "deployed": false,
       "sourceDeployed": true
     },
@@ -626,13 +638,13 @@
       "positiveAttestorFullHoldoutQualified": false
     },
     "hostMainRefresh": {
-      "localSha": "fd807d2f7e38ba3f6216d7857be71577ca822412",
-      "mainPreserved": "4b8742f9c3459c8b1f6ffc30b147f91549156a3b",
+      "localSha": "02b4c7390307b5e32dde1a5ec56aea1b845191c9",
+      "mainPreserved": "816663e1330a0547f06d7595dbb43a642046da55",
       "nativeSg2Targets": 23,
-      "preflight": "PASS",
+      "preflight": "PENDING_FRESH_SG2_PREFLIGHT",
       "publicSourceUpdated": false,
       "deployed": false,
-      "ci24PathApproval": "PENDING"
+      "ci24PathApproval": "OWNER_APPROVED_20261118"
     },
     "workerQaRoleSourceDeployment20261118": {
       "workerSourceSha": "d4bc54fddd1118d6e3050ba64e5ed41054e093d9",
@@ -675,7 +687,7 @@
       "linuxPolicyInputsUnchanged": 11
     },
     "qaRoleCatalogQualification20261118": {
-      "status": "ACTUAL_NEON_ORDINARY_LOGIN_PASS_RENDER_SETTING_PENDING",
+      "status": "ACTUAL_NEON_AND_RENDER_ORDINARY_LOGIN_PASS",
       "sourcePr": 1171,
       "roles": [
         "sg2_assistant_quality_authority",
@@ -701,8 +713,8 @@
       "directQaSchemaTableAccess": false,
       "qaRowsRead": false,
       "permissionMutation": false,
-      "hostCodecAvailabilityOnRender": "NOT_YET_OBSERVED",
-      "renderGitAvailability": "NOT_YET_OBSERVED"
+      "hostCodecAvailabilityOnRender": "ABSENT_UNTIL_HOST1099_MERGE",
+      "renderGitAvailability": "CONFIRMED"
     },
     "publisherActiveRules": {
       "pr": 1170,
@@ -750,6 +762,131 @@
       "liveQaCaptured": false,
       "providerRequests": 0,
       "e1Acceptance": false
+    },
+    "workerQaRolesActivated20261118": {
+      "workerSourceSha": "816663e1330a0547f06d7595dbb43a642046da55",
+      "workerDeployId": "dep-dbujv208v5cc739bcrqg",
+      "workerLiveAt": "2026-11-18T06:03:28.179650Z",
+      "workerHeartbeatAt": "2026-11-18T06:03:33.100Z",
+      "workerStatus": "MONITORING_READY",
+      "controllerGitHub": "CONNECTED_STANDBY",
+      "qualificationWorkflow": "CONNECTED_MAIN_ONLY",
+      "controlStore": "CONNECTED_DISABLED",
+      "nativeLimits": "CONNECTED_DISABLED",
+      "hostSourceSha": "80875d8f0e9451cd9afd34e8baf2a8f6059bc064",
+      "hostDeployId": "dep-dbuab359fdbs73e5m5hg",
+      "hostCic18Deployed": false,
+      "paidRepairsEnabled": false,
+      "promotionEnabled": false,
+      "pilotStartedAt": null,
+      "acceptanceRepairsCompleted": 0,
+      "technicalReady": false,
+      "qaAuthority": "CONNECTED_ORDINARY_ROLE",
+      "qaEvidence": "CONNECTED_ORDINARY_ROLE",
+      "rawQaReadPerformed": false,
+      "serviceId": "srv-dbu4ak0ae00c73eaabcg",
+      "workspaceId": "tea-d7lps8rbc2fs73cn80dg",
+      "instance": "5h5n6",
+      "settingsApplied": [
+        "AQC_QA_ROLE_PREFLIGHT_VERSION",
+        "AQC_QA_PURPOSE_DATABASE_URL",
+        "AQC_QA_EVIDENCE_DATABASE_URL"
+      ],
+      "trigger": "RENDER_AUTOMATIC_DEPLOY_AFTER_EXPLICITLY_APPROVED_ENV_UPDATE",
+      "additionalDeployPostSent": false,
+      "autoDeploy": false,
+      "lkgSourceSha": "d4bc54fddd1118d6e3050ba64e5ed41054e093d9",
+      "lkgDeployId": "dep-dbuj95u7bikc73a4hvpg",
+      "runtimeClosureByteIdenticalToQualifiedD4": true,
+      "sentryAcceptedHttpStatus": 200,
+      "posthogProjectId": 329829,
+      "posthogActualHeartbeatAt": "2026-11-18T06:03:33.884Z",
+      "newResource": false,
+      "newCost": false,
+      "newPermission": false,
+      "permissionMutationPerformed": false,
+      "checkoutMetadataPresent": true,
+      "gitExecutableAvailable": true,
+      "gitHeadMatchesSource": true,
+      "hostQaCodecPresent": false,
+      "nodeMajorSupported": true
+    },
+    "originalCicArchiveQualification20261118": {
+      "schemaVersion": "CICExactPublishedArchiveParserProof/1",
+      "sourceCommit": "c0053dcd55a3ed9f74584733627f6e9c130d4b49",
+      "sourceTree": "76f411d48f585c55dbdf1dda96f09a532e074af5",
+      "originalPublicationRun": 43282280865,
+      "originalPublicationJob": 131406426702,
+      "originalPublicationArtifact": 13973416582,
+      "immutableSourceBlobsVerified": 10,
+      "reproductionCompiler": "5.9.3",
+      "reproductionNode": "24.22.3",
+      "reproductionNpm": "11.19.1",
+      "archiveBytes": 26403,
+      "archiveSha1": "797fccee13eb0ce11f7130793218c80d7d542d7a",
+      "archiveIntegrity": "sha512-tuun88+cfOHFeCafBw1a8gnExgeDyWBgY7Zd9OPkKk2/Eef0YBP49vzDcXKVpFoCNJGh/CYbeR9B+M2ZXctNsg==",
+      "exactAcceptedSri": true,
+      "parser": {
+        "schemaVersion": "AQC_CIC_ARCHIVE_V1",
+        "status": "VERIFIED",
+        "packageName": "@profitia/cic-core",
+        "version": "1.8.0",
+        "fileCount": 22,
+        "dependencies": 0,
+        "privateCodeExecuted": false
+      },
+      "method": "IMMUTABLE_SOURCE_REPRODUCTION_EXACT_PUBLISHED_BYTES_THEN_REAL_PARSER",
+      "privateRegistryCredentialUsed": false,
+      "privatePackageCodeExecuted": false,
+      "privateSourcePublished": false,
+      "realProviderRequests": 0,
+      "businessReferenceReviewOrAttestation": false,
+      "fullLinuxCicBundleQualification": false
+    },
+    "actualHostCicInertBundleAssembly20261118": {
+      "schemaVersion": "CICActualHostInertBundleAssembly/1",
+      "hostSourceSha": "02b4c7390307b5e32dde1a5ec56aea1b845191c9",
+      "originalPublishedSriMatched": true,
+      "results": [
+        {
+          "repairClass": "C1",
+          "status": "PASS_INERT_BUNDLE_ASSEMBLY",
+          "primary": "calendar",
+          "cicFiles": 22,
+          "totalFiles": 32,
+          "bundleSha256": "fb81e9724bc5e5a646e97448806270359999f9c643f83aab7e2eb17fe3dae056"
+        },
+        {
+          "repairClass": "C2",
+          "status": "PASS_INERT_BUNDLE_ASSEMBLY",
+          "primary": "quality",
+          "cicFiles": 22,
+          "totalFiles": 32,
+          "bundleSha256": "f6ad93d4da2908d3c547d6b8640f796270400b228c80d8c8ba75cc0c7ac00dd0"
+        },
+        {
+          "repairClass": "C3",
+          "status": "PASS_INERT_BUNDLE_ASSEMBLY",
+          "primary": "quality",
+          "cicFiles": 22,
+          "totalFiles": 32,
+          "bundleSha256": "ca9598077010ad139a4dbd1aed15ee137a267cdfee39a519340572e93cf7416b"
+        }
+      ],
+      "candidateModification": "COMMENT_ONLY_ASSEMBLY_PROBE_NOT_A_REPAIR",
+      "ephemeralEngineeringManifestKeysOnly": true,
+      "businessReferencePackCreated": false,
+      "referenceLabelSigned": false,
+      "productionTrustInstalled": false,
+      "privatePackageCodeExecuted": false,
+      "osVerifierInvoked": false,
+      "realProviderRequests": 0,
+      "rawQaRead": false,
+      "e1Acceptance": false,
+      "verifierSourceSha": "816663e1330a0547f06d7595dbb43a642046da55",
+      "verifierBlob": "30b38c9cea867909624308817cea281463b23571",
+      "existingQualifiedVerifierUsed": true,
+      "newInspectorOrCiHookRequired": false
     }
   },
   "pendingSourceCiAmendment": {
@@ -769,10 +906,10 @@
     "approvedPathCount": 23
   },
   "proposedSourceCi24Amendment": {
-    "status": "OWNER_APPROVED_LIMITED_AMENDMENT_NOT_YET_MERGED",
+    "status": "OWNER_APPROVED_LIMITED_AMENDMENT_CURRENT_MAIN_CI_PENDING",
     "previousApprovedPathCount": 23,
     "proposedPathCount": 24,
-    "additionalPath": "apps/sg-runtime/tests/procurement-insights-editorial-integrity.mjs",
+    "additionalPath": "apps/sg-runtime/tests/finder-monitor-source-integrity.mjs",
     "owner": "SG2",
     "kind": "EXACT_ADDITIVE_TEST_PROVENANCE_DISPATCH_ONLY",
     "reason": "The accepted parallel Finder monitor layer now precedes editorial verification. Preserve the approved one-extra-adapter/24-path scope by relocating the same exact additive CIC dispatch into that existing Finder predecessor, after its narrow receipt absence/read-error handling. Restore the editorial adapter exactly to main. Authenticate the full QA closure and aggregate every bound source digest before original Finder, notification, consent and PCI checks. Retain all earlier receipts, checks and package boundaries.",
@@ -819,8 +956,10 @@
       "originalAdapterRestoredExactlyToMain": true,
       "authorityRightsCostsAndRuntimeFlagsChanged": false,
       "legacyFixtureRetainedAsReadOnlyRegression": true,
-      "status": "PENDING_OWNER_CONFIRMATION_DO_NOT_MERGE",
-      "originalApprovalDoesNotAloneAuthoriseNewPath": true
+      "status": "OWNER_APPROVED",
+      "originalApprovalDoesNotAloneAuthoriseNewPath": true,
+      "separateOwnerConfirmation": true,
+      "confirmationResponse": "Zatwierdzam przeniesienie adaptera w CI24"
     },
     "proposedEffectiveAdditionalPath": "apps/sg-runtime/tests/finder-monitor-source-integrity.mjs",
     "qualifiedPolicyHead": "b80ba63f7588f7b814dc6fc013122919ffa87d77",
@@ -830,6 +969,9 @@
       "result": "PASS",
       "runId": 44188358466,
       "exactHeadOnly": true
-    }
+    },
+    "relocationApprovalReviewedAdditionalPath": "apps/sg-runtime/tests/finder-monitor-source-integrity.mjs",
+    "relocationApprovalDate": "2026-11-18",
+    "relocationApprovalResponse": "Zatwierdzam przeniesienie adaptera w CI24"
   }
 }
