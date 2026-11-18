@@ -580,7 +580,7 @@
     "packages/platform-source-hub-contracts/package.json": "f72f71d5e0e3e0d7992e612f55d410de66dc03f0b27d25b51ca20fcd173c2969",
     "packages/platform-source-hub-contracts/semantic-continuous-acceptance-v1.json": "f63364c997dacdb779da861685a93faa27d7b8bca84a75c6d277c9c188ccea76",
     "packages/platform-source-hub-contracts/source-access-continuity-acceptance-v1.json": "c99323c6690d488992c445eff4e1c26fe48d81ede267b6f5f2ad4df208768540",
-    "scripts/governance/controlled-package-ci.test.mjs": "192df24f4196f18c9db1ba7f8c0b1b4fc12e9f36833cf37abc1609f6c5f774a7",
+    "scripts/governance/controlled-package-ci.test.mjs": "94abb2ccd420cccf618fab7aa7b6f698399aa8f99179b8ef8fbf6a6f90c75189",
     "scripts/governance/governance.test.mjs": "ef28078504fda6d844f63b5dd3d7687465f37b3d16064dff581ae392765909da",
     "scripts/governance/platform-source-hub-foundation.test.mjs": "065ce5dc7d7718e14ecfe6779670728687305950a52f56f1f9a0f046728df479"
   },
@@ -1084,7 +1084,7 @@
           "previousSha256": "25c3e24580bf399fd270fa3cb870708d7553bd6ba9a7af3cfbe812d4de4dab93"
         },
         "scripts/governance/controlled-package-ci.test.mjs": {
-          "currentSha256": "192df24f4196f18c9db1ba7f8c0b1b4fc12e9f36833cf37abc1609f6c5f774a7",
+          "currentSha256": "94abb2ccd420cccf618fab7aa7b6f698399aa8f99179b8ef8fbf6a6f90c75189",
           "previousSha256": "9d5ba43d3522921b179dff3552dedd7255bbfaa533baf5fb36ea12455ae0831d"
         },
         "scripts/governance/governance.test.mjs": {
@@ -1325,7 +1325,7 @@
           "previousSha256": "9d381bc7ae98c480e1ee1bfdbdaa062225c28bb44634822933ef934724f791a7"
         },
         "scripts/governance/controlled-package-ci.test.mjs": {
-          "currentSha256": "192df24f4196f18c9db1ba7f8c0b1b4fc12e9f36833cf37abc1609f6c5f774a7",
+          "currentSha256": "94abb2ccd420cccf618fab7aa7b6f698399aa8f99179b8ef8fbf6a6f90c75189",
           "previousSha256": "0142eb57b511bef865e3f7231b82c8678e0390604ac656be8e72dbe05c7e5443"
         },
         "scripts/governance/platform-source-hub-foundation.test.mjs": {

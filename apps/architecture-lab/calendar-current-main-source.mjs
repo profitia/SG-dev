@@ -7,7 +7,7 @@ import os from 'node:os'
 import {fileURLToPath} from 'node:url'
 import {execFileSync} from 'node:child_process'
 export const CALENDAR_CURRENT_MAIN_RECORD='apps/architecture-lab/calendar-current-main-source.json'
-export const CALENDAR_CURRENT_MAIN_RECORD_SHA256='52b3fe8ab2895b7415a9f24a92e2da053ea0640e732a2e4e12338dc15ce88091'
+export const CALENDAR_CURRENT_MAIN_RECORD_SHA256='2da0eae2b9c705a74902e3a8c830d9d6b49c0e88356ce4f07a1ecb4a384357c0'
 const hash=bytes=>createHash('sha256').update(bytes).digest('hex')
 const absent=(error,historical)=>{
  if(error?.code==='ENOENT')return true

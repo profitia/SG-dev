@@ -2734,7 +2734,7 @@ test('complete Calendar delivery pins58 producer and7 consumer paths without wid
  assert.equal(Object.keys(ECR_COMPLETE_FUNCTIONAL_REVIEW.entries).length,58);assert.equal(Object.keys(ECR_COMPLETE_FUNCTIONAL_CONSUMER_REVIEW.entries).length,7)
 })
 function completeCalendarFixture(){
- const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..'),p=ECR_COMPLETE_FUNCTIONAL_REVIEW,c=ECR_COMPLETE_FUNCTIONAL_CONSUMER_REVIEW,cfg=ECR_COMPLETE_FUNCTIONAL_PROVENANCE,cache=new Map()
+ const root=authorityRoot,p=ECR_COMPLETE_FUNCTIONAL_REVIEW,c=ECR_COMPLETE_FUNCTIONAL_CONSUMER_REVIEW,cfg=ECR_COMPLETE_FUNCTIONAL_PROVENANCE,cache=new Map()
  const historical=(sha,p)=>{const k=sha+':'+p;if(!cache.has(k))cache.set(k,execFileSync('git',['cat-file','blob',k],{cwd:root,stdio:['ignore','pipe','pipe']}));return Buffer.from(cache.get(k))}
  const current=consumer=>file=>{if(!consumer&&file===cfg.consumerRecord)throw Object.assign(Error('not adopted'),{code:'ENOENT'});return historical(consumer&&Object.hasOwn(c.entries,file)?c.sourceSha:p.sourceSha,file)}
  return{root,p,c,cfg,historical,current}
