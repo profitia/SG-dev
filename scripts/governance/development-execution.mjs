@@ -23,6 +23,43 @@ const protectedPath = name => /(^|\/)AGENTS\.md$/.test(name)
   || /(^|\/)[^/]*(integration|compatibility|provenance|source)[^/]*\.json$/.test(name)
   || /(^|\/)(\.npmrc|\.env[^/]*|development-integration\.json|operation-integration\.json)$/.test(name)
 
+// PROPOSED closed source-only exception. Inert until this policy is independently
+// owner-accepted on authority main and a separately approved ACTIVE ledger record
+// exists. No historical receipt or general source JSON admission is granted.
+export const ASSISTANT_RESERVATION_SOURCE_ADMISSION = Object.freeze({
+  admissionId:"ARCHITECTURE:ARCH-ACG-M1M2-COMPLETION-20261117",
+  sourceSha:"03eb7c82853ecac617544d81abc61e1350af383b",
+  baseSha:"5f3f91beaa6c32d9528c3c6d3e233808540d1532",
+  filesSha256:"b5db217b00c4d18c5063c2d292470d74452c15aa241fc03bf5ebe3684a6054fb",
+  newSourceRecord:"apps/architecture-lab/assistant-reservation-source.json",
+  protectedTests:Object.freeze(["scripts/governance/controlled-package-ci.test.mjs","scripts/governance/platform-source-hub-foundation.test.mjs"])
+})
+function exactReservationSourceEntry(record, entry) {
+  const pin=ASSISTANT_RESERVATION_SOURCE_ADMISSION
+  const admittedPath=(entry.path===pin.newSourceRecord && entry.status==='added')
+    || (pin.protectedTests.includes(entry.path) && entry.status==='modified')
+  return admittedPath && entry.mode==='100644'
+    && entry.projectKey==='ARCHITECTURE' && record.id===pin.admissionId
+    && record.sourceSha===pin.sourceSha && record.baseSha===pin.baseSha
+    && createHash('sha256').update(JSON.stringify(record.files)).digest('hex')===pin.filesSha256
+}
+
+// Inert proposal: one closed producer record; requires owner acceptance on trusted main.
+export const BENCHMARK_UNMETERED_SOURCE_ADMISSION=Object.freeze({
+  "admissionId": "ARCHITECTURE:ARCH-FINDER-UNMETERED-CONTRACT-20261118",
+  "sourceSha": "7edf89c07502bc331f5d4966c961f7eb1058b51a",
+  "baseSha": "a34dcdfc2b4e9c83e0112435a344d586d8c51d16",
+  "filesSha256": "ad693889254ed13974d5b10f2b79c1fd8d5cc9d11b23296f7f84e82bf3e89519",
+  "newSourceRecord": "apps/architecture-lab/benchmark-unmetered-source.json"
+})
+export function exactBenchmarkSourceEntry(record,entry){
+ const pin=BENCHMARK_UNMETERED_SOURCE_ADMISSION
+ return entry.path===pin.newSourceRecord && entry.status==='added' && entry.mode==='100644'
+  && entry.projectKey==='ARCHITECTURE' && record.id===pin.admissionId
+  && record.sourceSha===pin.sourceSha && record.baseSha===pin.baseSha
+  && createHash('sha256').update(JSON.stringify(record.files)).digest('hex')===pin.filesSha256
+}
+
 export function executionProfile(projectKey, governanceRoot = root) {
   const profile = resolveProjectProfile(projectKey, governanceRoot)
   const registry = JSON.parse(fs.readFileSync(path.join(governanceRoot, EXECUTION_PROFILES_PATH), 'utf8'))
@@ -126,7 +163,7 @@ export function assertSourceAdmission(record, {repository,actor,candidateSha,cur
   const names = new Set(), actual = new Map(files.map(f => [f.filename,f]))
   if (actual.size !== files.length) deny('SOURCE_ADMISSION_FILES_REJECTED')
   for (const entry of record.files) {
-    if (!safePath(entry.path) || protectedPath(entry.path) || names.has(entry.path)
+    if (!safePath(entry.path) || (protectedPath(entry.path) && !exactReservationSourceEntry(record,entry) && !exactBenchmarkSourceEntry(record,entry)) || names.has(entry.path)
       || !sha.test(entry.blob ?? '') || !['100644','100755'].includes(entry.mode)
       || !['added','modified'].includes(entry.status)) deny('SOURCE_ADMISSION_FILES_REJECTED')
     names.add(entry.path)

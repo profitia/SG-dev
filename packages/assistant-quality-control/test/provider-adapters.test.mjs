@@ -399,3 +399,142 @@ test('Atomic store classifies broken pipe and connection shutdown as uncertain d
   await assert.rejects(store.prepare(input),{code:['42501','40001','P0001'].includes(code)?'CONTROL_STORE_UNAVAILABLE':'DELIVERY_UNCERTAIN'})
  }
 })
+
+test('Native GitHub job publisher: exact bot identity is accepted for its controlled repair branch',async()=>{
+ const {createQualityGitHub}=await import('../src/github.mjs')
+ const baseSha='a'.repeat(40),headSha='b'.repeat(40),incidentId='e657791f-0922-47b6-aead-2abf21f21602'
+ const pr={number:37,state:'open',user:{login:'github-actions[bot]',id:41898282,type:'Bot'},
+  head:{ref:'sg2/quality-control-'+incidentId,sha:headSha,repo:{full_name:'profitia/SG-dev'}},
+  base:{ref:'main',sha:baseSha,repo:{full_name:'profitia/SG-dev'}}}
+ const calls=[],client=createQualityGitHub({token:'synthetic',fetchImpl:async(url,options)=>{
+  calls.push({url,method:options.method});return Response.json(pr)
+ }})
+ assert.deepEqual(await client.pull(37,{headSha,baseSha}),pr)
+ assert.deepEqual(calls,[{url:'https://api.github.com/repos/profitia/SG-dev/pulls/37',method:'GET'}])
+ const human={...pr,user:{login:'profitia'},head:{...pr.head,ref:'sg2/cic-quality-stage1-runtime-20261112'}}
+ const existing=createQualityGitHub({token:'synthetic',fetchImpl:async()=>Response.json(human)})
+ assert.deepEqual(await existing.pull(37,{headSha,baseSha}),human,'existing owner source transport is retained')
+})
+
+test('Native GitHub job publisher: impersonation, foreign source and stale PR identity remain rejected',async()=>{
+ const {createQualityGitHub}=await import('../src/github.mjs')
+ const baseSha='a'.repeat(40),headSha='b'.repeat(40)
+ const pr={number:37,state:'open',user:{login:'github-actions[bot]',id:41898282,type:'Bot'},
+  head:{ref:'sg2/quality-control-e657791f-0922-47b6-aead-2abf21f21602',sha:headSha,repo:{full_name:'profitia/SG-dev'}},
+  base:{ref:'main',sha:baseSha,repo:{full_name:'profitia/SG-dev'}}}
+ const mutations=[
+  p=>{p.user.id++},p=>{delete p.user.id},p=>{p.user.type='User'},p=>{p.user.login='foreign-actions[bot]'},
+  p=>{p.head.ref='sg2/unrelated'},p=>{p.head.ref+='-foreign'},p=>{p.head.ref='sg2/quality-control-not-a-uuid'},
+  p=>{p.head.repo.full_name='profitia/foreign'},p=>{p.base.repo.full_name='profitia/foreign'},
+  p=>{p.base.ref='production'},p=>{p.state='closed'},p=>{p.number=38},
+ ]
+ for(const mutate of mutations){
+  const value=structuredClone(pr);mutate(value)
+  const client=createQualityGitHub({token:'synthetic',fetchImpl:async()=>Response.json(value)})
+  await assert.rejects(client.pull(37,{headSha,baseSha}),{code:'GITHUB_PR_IDENTITY_INVALID'})
+ }
+ const client=createQualityGitHub({token:'synthetic',fetchImpl:async()=>Response.json(pr)})
+ await assert.rejects(client.pull(37,{headSha:'c'.repeat(40),baseSha}),{code:'PR_HEAD_CHANGED'})
+ await assert.rejects(client.pull(37,{headSha,baseSha:'c'.repeat(40)}),{code:'PR_BASE_CHANGED'})
+})
+
+test('Native GitHub job publisher: recognizing an author never enables proposal or promotion',async()=>{
+ const {createQualityGitHub}=await import('../src/github.mjs')
+ let requests=0
+ const client=createQualityGitHub({token:'synthetic',fetchImpl:async()=>{requests++;throw Error('must not request')}})
+ await assert.rejects(client.propose({}),{code:'PUBLISHER_DISABLED'})
+ await assert.rejects(client.merge({}),{code:'PROMOTION_DISABLED'})
+ assert.equal(requests,0)
+})
+
+import {prepareQualityHostDeploymentConfiguration} from '../src/release.mjs'
+const piVersionFixture=base=>({
+ environment:'development',enabled:true,authorityDecisionRef:'PUBLIC_SYNTHETIC_PRIVATE_CONFIGURATION_MARKER',
+ receiverApplication:{environment:'development',deploymentId:base},serviceApplication:{environment:'development',deploymentId:base},
+ readApplication:{environment:'development',deploymentId:base},sourceApplication:{environment:'development',deploymentId:base},
+ serviceBinding:{role:'sg2_insights_report_development_e1',service:{deploymentId:base}},
+ composerBinding:{role:'sg2_insights_report_development_composer',deploymentId:base},
+ counterBinding:{role:'sg2_insights_report_development_counter',deploymentId:base},
+ profiles:{synthetic:{version:'retained'}},openai:{projectId:'PUBLIC_SYNTHETIC_ONLY',keySha256:'e'.repeat(64)},
+ projections:[{basisRef:'PUBLIC_SYNTHETIC_UNCHANGED',expiresAt:'2026-11-24T00:00:00.000Z'}]
+})
+const preparePiVersion=(configuration,extra={})=>prepareQualityHostDeploymentConfiguration({
+ configuration,serviceId:'srv-dapa3tid0e5s73f8bc5g',environment:'development',fromSourceSha:'a'.repeat(40),toSourceSha:'b'.repeat(40),...extra
+})
+test('PI release preparation changes exactly seven version leaves and ordinary serialization exports no private configuration',()=>{
+ const original=piVersionFixture('a'.repeat(40)),input=JSON.stringify(original,null,2),plan=preparePiVersion(input)
+ const expected=structuredClone(original)
+ for(const p of plan.changedPaths){const keys=p.split('.'),last=keys.pop();let o=expected;for(const k of keys)o=o[k];o[last]='b'.repeat(40)}
+ assert.deepEqual(JSON.parse(plan.value),expected)
+ assert.equal(input,JSON.stringify(original,null,2),'input is never mutated')
+ assert.equal(plan.changedPaths.length,7);assert(Object.isFrozen(plan)&&Object.isFrozen(plan.changedPaths))
+ assert(!JSON.stringify(plan).includes(original.authorityDecisionRef),'ordinary logs contain metadata only')
+ assert(!Object.keys(plan).includes('value'));assert.notEqual(plan.beforeSha256,plan.afterSha256)
+})
+test('PI release preparation refuses every missing or mixed-base leaf and an eighth deployment binding',()=>{
+ const base=piVersionFixture('a'.repeat(40)),plan=preparePiVersion(JSON.stringify(base))
+ for(const p of plan.changedPaths)for(const mode of ['missing','foreign']){
+  const c=structuredClone(base),keys=p.split('.'),last=keys.pop();let o=c;for(const k of keys)o=o[k]
+  if(mode==='missing')delete o[last];else o[last]='c'.repeat(40)
+  assert.throws(()=>preparePiVersion(JSON.stringify(c)),e=>/^HOST_CONFIGURATION_/.test(e.code),p+' '+mode)
+ }
+ const c=structuredClone(base);c.parallel={deploymentId:'a'.repeat(40)}
+ assert.throws(()=>preparePiVersion(JSON.stringify(c)),{code:'HOST_CONFIGURATION_TOPOLOGY_CHANGED'})
+})
+test('PI release preparation never accepts another environment, service or source and never repeats private input in errors',()=>{
+ const marker='PRIVATE_SYNTHETIC_MARKER_NEVER_LOG',base=piVersionFixture('a'.repeat(40)),input=JSON.stringify(base)
+ for(const extra of [{serviceId:'srv-foreign'},{environment:'staging'},{fromSourceSha:'invalid'},{toSourceSha:'a'.repeat(40)},{toSourceSha:'B'.repeat(40)}])
+  assert.throws(()=>preparePiVersion(input,extra),{code:'HOST_CONFIGURATION_INVALID'})
+ for(const c of [null,[],{...base,environment:'production'},{...base,enabled:false},{...base,readApplication:{...base.readApplication,environment:'staging'}}])
+  assert.throws(()=>preparePiVersion(JSON.stringify(c)),{code:'HOST_CONFIGURATION_INVALID'})
+ for(const input of [marker,'{"private":"'+marker,' '.repeat(131073)]){
+  assert.throws(()=>preparePiVersion(input),e=>e.code==='HOST_CONFIGURATION_INVALID'&&!String(e).includes(marker))
+ }
+})
+
+test('Native retention while disabled removes only expired terminal metadata and preserves pending work, active incidents, locks and class suspension',async()=>{
+ const fixture=await isolatedPostgres()
+ try{
+  const owner=fixture.pool('aqc_fixture_owner'),serviceId=randomUUID(),key=randomBytes(32).toString('hex')
+  const history=fs.readFileSync(new URL('../../../apps/sg-runtime/migrations/assistant/001-history.sql',import.meta.url),'utf8')
+  const source=fs.readFileSync(new URL('../migrations/001-control.sql',import.meta.url),'utf8'),digest=hash(source)
+  await owner.query('CREATE EXTENSION pgcrypto; CREATE ROLE sg2_assistant_history_owner NOLOGIN NOINHERIT; CREATE ROLE sg2_assistant_history_runtime LOGIN NOINHERIT; CREATE ROLE sg2_assistant_quality_controller LOGIN NOINHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS; GRANT CREATE ON DATABASE neondb TO sg2_assistant_history_owner')
+  await owner.query('BEGIN; SET LOCAL ROLE sg2_assistant_history_owner')
+  await owner.query(history.replaceAll('__ASSISTANT_HISTORY_SCHEMA_DIGEST__',hash(history)))
+  await owner.query(`INSERT INTO sg2_assistant_history.installation VALUES(true,$1,'development','spendguru','autumn-waterfall-65938876','br-dry-hall-b294222f',decode($2,'hex'),$3,'synthetic local only')`,[hash(history),key,randomUUID()])
+  await owner.query(source.replaceAll('__QUALITY_CONTROL_SCHEMA_DIGEST__',digest));await owner.query('COMMIT')
+  await owner.query(`INSERT INTO sg2_assistant_quality_control.installation VALUES(true,$1,$2,decode($3,'hex'),false,'synthetic local only')`,[digest,serviceId,key])
+  const runtime=fixture.pool('sg2_assistant_quality_controller'),store=createQualityStore({query:(q,p)=>runtime.query(q,p),commandKey:key,schemaDigest:digest,serviceId})
+  const rows=[]
+  async function seed(label,status,pending,expired=true){
+   const id=randomUUID(),record={id,revision:1,status,repairClass:'C1',causeFingerprint:hash(label),baseSha:'a'.repeat(40),attemptsUsed:2,rollbacksUsed:0,pending,wakeAt:0}
+   await owner.query(`INSERT INTO sg2_assistant_quality_control.incidents(id,record,created_at,expires_at)
+    VALUES($1,$2,clock_timestamp()-interval '91 days',clock_timestamp()+($3::text)::interval)`,[id,JSON.stringify(record),expired?'-1 day':'1 day'])
+   await owner.query(`INSERT INTO sg2_assistant_quality_control.events(incident_id,revision,action,status,recorded_at)VALUES($1,1,'FIXTURE',$2,clock_timestamp()-interval '91 days')`,[id,status])
+   rows.push({id,record});return id
+  }
+  const removed=[]
+  for(const status of ['CLOSED','INSUFFICIENT_EVIDENCE','OUT_OF_SCOPE','BUDGET_STOP','ROLLED_BACK','NEEDS_TECHNICAL_REVIEW'])removed.push(await seed(status,status,null))
+  const fresh=await seed('fresh','CLOSED',null,false)
+  const pending=await seed('pending','NEEDS_TECHNICAL_REVIEW',{action:'EXECUTE',nonce:randomUUID(),externalId:'synthetic-provider-id'})
+  const active=await seed('active','OBSERVING',null),locked=await seed('locked','CLOSED',null)
+  await owner.query(`UPDATE sg2_assistant_quality_control.repository_lock SET incident_id=$1,lease_token=$2,worker_id='synthetic',lease_until=clock_timestamp()+interval '30 seconds',last_release_at=clock_timestamp()-interval '1 hour'`,[locked,randomUUID()])
+  await owner.query("INSERT INTO sg2_assistant_quality_control.class_suspensions(repair_class)VALUES('C1')")
+  const beforeLock=(await owner.query('SELECT * FROM sg2_assistant_quality_control.repository_lock')).rows
+  const beforeRecords=(await owner.query('SELECT id,record FROM sg2_assistant_quality_control.incidents WHERE id=ANY($1::uuid[]) ORDER BY id',[[fresh,pending,active,locked]])).rows
+  assert.equal((await store.descriptor()).enabled,false)
+  assert.deepEqual(await store.purge(),{status:'PURGED'})
+  const after=(await owner.query('SELECT id FROM sg2_assistant_quality_control.incidents ORDER BY id')).rows.map(r=>r.id)
+  assert.deepEqual(after,[fresh,pending,active,locked].sort())
+  assert.deepEqual((await owner.query('SELECT incident_id FROM sg2_assistant_quality_control.events ORDER BY incident_id')).rows.map(r=>r.incident_id),after)
+  assert.deepEqual((await owner.query('SELECT * FROM sg2_assistant_quality_control.repository_lock')).rows,beforeLock)
+  assert.deepEqual((await owner.query('SELECT id,record FROM sg2_assistant_quality_control.incidents ORDER BY id')).rows,beforeRecords)
+  assert.equal((await owner.query('SELECT count(*)::integer AS count FROM sg2_assistant_quality_control.class_suspensions')).rows[0].count,1)
+  assert.equal((await store.descriptor()).enabled,false)
+  await assert.rejects(store.create({id:randomUUID(),repairClass:'C2',causeFingerprint:hash('cannot-enable'),baseSha:'a'.repeat(40)}))
+  assert.deepEqual(await store.purge(),{status:'PURGED'},'restarting the timer is idempotent')
+  assert.deepEqual((await owner.query('SELECT id FROM sg2_assistant_quality_control.incidents ORDER BY id')).rows.map(r=>r.id),after)
+  await assert.rejects(runtime.query('SELECT * FROM sg2_assistant_quality_control.incidents'),e=>e.code==='42501')
+  await assert.rejects(runtime.query('SET ROLE sg2_assistant_history_owner'),e=>e.code==='42501')
+ }finally{await fixture.close()}
+})

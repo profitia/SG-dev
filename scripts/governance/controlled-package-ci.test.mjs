@@ -1,3 +1,8 @@
+import {PLATFORM_KNOWLEDGE_STAGE2_ACG_COMPOSITION_PROVENANCE} from './controlled-package-ci.mjs'
+import {PLATFORM_KNOWLEDGE_STAGE2_SRM_TARGET_PROVENANCE} from './controlled-package-ci.mjs';
+import {PLATFORM_KNOWLEDGE_STAGE2_PI_COMPOSITION_PROVENANCE} from './controlled-package-ci.mjs';
+import {tmpdir as knowledgePolicyTmpdir} from 'node:os';
+import {PLATFORM_KNOWLEDGE_STAGE2_REPAIR_PROVENANCE} from './controlled-package-ci.mjs'
 import {publicProofContract} from './controlled-package-ci.mjs'
 import {MANIFEST_SUCCESSOR_1102_REVIEW} from './controlled-package-ci.mjs'
 import {PLATFORM_KNOWLEDGE_STAGE2_REVIEW,PLATFORM_KNOWLEDGE_STAGE2_PROVENANCE,assertKnowledgeStage2Entry,knowledgeStage2TrustedPredecessor,currentProofContract} from './controlled-package-ci.mjs'
@@ -28,7 +33,8 @@ import {PRIVATE_RECURRING_SHELL_REVIEW,PRIVATE_RECURRING_SHELL_CURRENT_REVIEW,PR
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
-import {fileURLToPath} from 'node:url'
+import {fileURLToPath, pathToFileURL} from 'node:url'
+import {createAcgLegacyRecurringFixture} from '../../packages/platform-contracts/test/assistant-reservation-source.mjs'
 import {spawnSync, execFileSync} from 'node:child_process'
 import {SOURCE_HUB_UNIVERSAL_FIRST_PARTY_REVIEW,assertUniversalFirstPartyReviewEntry,SOURCE_HUB_CURRENT_E1_REVIEW,assertCurrentE1ReviewEntry,SOURCE_HUB_STAGE2A_REVIEW, assertTrustedContext, assertEnvironment, selectCandidate, assertArchitectureFiles, resolveCandidateAdmission, assertArchitectureCheckout, CONTROL_POLICY_FILES, assertCredentialMetadata, assertReceipt, assertPackagePolicy, assertManifestPolicy, assertLocalPackageSources, assertProof, controlPolicyDigest, operationContractProvenanceDigest, REPOSITORY, WORKFLOW, PRIVATE_PACKAGES, LOCAL_PACKAGES, CONTROLLED_CANDIDATE_PREFIXES, KRS_GOVERNANCE_REVIEW_FILES, ADP_GOVERNANCE_REVIEW, LIMITS_G1_GOVERNANCE_REVIEW, FRESH_REPORT_PRODUCER_REVIEW, PAYLOAD_CAPTURE_PRODUCER_REVIEW, READONLY_MISS_REPORT_PRODUCER_REVIEW, FRESH_FIXTURE_TEARDOWN_REVIEW, ROOT_ATOMIC_CLAIM_PRODUCER_REVIEW} from './controlled-package-ci.mjs'
 
@@ -38,6 +44,8 @@ const pr = () => ({state: 'open', user: {login: 'profitia'}, base: {ref: 'main',
 const configuration = '@profitia:registry=https://npm.pkg.github.com\n//npm.pkg.github.com/:_authToken=${NPM_TOKEN}\n'
 const lock = () => ({lockfileVersion: 3, packages: Object.fromEntries(PRIVATE_PACKAGES.map(name => [`node_modules/${name}`, {version: '1.0.0', integrity: 'sha512-approved'}]))})
 const rejection = fn => assert.throws(fn)
+const legacyRecurringFixture = await createAcgLegacyRecurringFixture(path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..'))
+test.after(() => legacyRecurringFixture.close())
 
 test('ECR admits only its exact published CIC artifact for SG2 while preserving the independent M1 and M2 pins',()=>{
  const authority=lock()
@@ -160,7 +168,14 @@ test('only the ten reviewed local names bind to their own exact paths, never a r
     rejection(() => assertManifestPolicy({dependencies: {alias: `file:${relative}`}}, authority))
   }
 })
-function currentRecurringPolicyOptions(){return {reviewedPrivateRecurring:!!assertPrivateRecurringProvenance(authorityRoot),reviewedLifecycle:!!registrationLifecycleCanonicalRead(authorityRoot),reviewedCompleteFunctional:!!assertCompleteFunctionalProvenance(authorityRoot)}}
+function currentKnowledgeForPolicyTests(){
+ const record=path.join(authorityRoot,PLATFORM_KNOWLEDGE_STAGE2_PROVENANCE.recordPath);
+ if(!fs.existsSync(record))return null;
+ const cache=new Map(),history=(sha,p)=>{const key=sha+':'+p;if(!cache.has(key))cache.set(key,execFileSync('git',['show',key],{cwd:authorityRoot,stdio:['ignore','pipe','pipe']}));return cache.get(key)};
+ return knowledgeStage2TrustedPredecessor(p=>fs.readFileSync(path.join(authorityRoot,p)),history);
+}
+function currentRecurringPolicyRoot(){return currentKnowledgeForPolicyTests()?authorityRoot:legacyRecurringFixture.root}
+function currentRecurringPolicyOptions(){const root=currentRecurringPolicyRoot();return {reviewedPrivateRecurring:!!assertPrivateRecurringProvenance(root),reviewedLifecycle:!!registrationLifecycleCanonicalRead(root),reviewedCompleteFunctional:!!assertCompleteFunctionalProvenance(root)}}
 function reviewedMapsFixture() {
   const manifest = JSON.parse(fs.readFileSync(path.join(authorityRoot, 'packages/maps-embed/package.json'), 'utf8'))
   const candidate = lock()
@@ -197,7 +212,7 @@ test('existing MapsEmbed peers require exact reviewed owner, version, section an
 test('Maps lock peer exception is confined to the exact top-level installed entry and never admits app or nested peers', () => {
   const {candidate} = reviewedMapsFixture(),options=currentRecurringPolicyOptions()
   assertPackagePolicy(candidate, lock(), configuration,options)
-  assertLocalPackageSources(authorityRoot, candidate, authorityRoot,options)
+  assertLocalPackageSources(currentRecurringPolicyRoot(), candidate, currentRecurringPolicyRoot(),options)
   for (const mutate of [
     l => l.packages['node_modules/@profitia/maps-embed'].version = '0.1.3',
     l => l.packages['node_modules/@profitia/maps-embed'].peerDependencies['@profitia/maps-contracts'] = '^0.1.0',
@@ -246,8 +261,8 @@ for (const name of Object.keys(LOCAL_PACKAGES)) test(`actual local source ${name
     rejection(() => assertLocalPackageSources(candidateRoot, candidate, authorityRoot))
   } finally {fs.rmSync(temporary, {recursive: true, force: true})}
 })
-test('actual current SG2 dependency policy remains valid and admits only the reviewed local module addition', () => {
-  const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
+test('accepted legacy SG2 dependency policy fixture admits only the reviewed local module addition', () => {
+  const root = legacyRecurringFixture.root
   const authority = JSON.parse(fs.readFileSync(path.join(root, 'apps/sg-runtime/package-lock.json'), 'utf8'))
   const manifest = JSON.parse(fs.readFileSync(path.join(root, 'apps/sg-runtime/package.json'), 'utf8'))
   const options=currentRecurringPolicyOptions()
@@ -353,13 +368,12 @@ test('regular files and bounded size are required; symlink files and parent dire
  const f=sourceLayoutFixture(),outside=fs.mkdtempSync(path.join(os.tmpdir(),'untrusted-contract-source-'))
  try{const file=f.file('src/request-operations.mjs');fs.unlinkSync(file);fs.writeFileSync(path.join(outside,'private-file'),'synthetic outside marker');fs.symlinkSync(path.join(outside,'private-file'),file);assert.throws(()=>operationContractProvenanceDigest(f.root,f.contract),/CONTRACT_SOURCE_FILE_REJECTED/);fs.unlinkSync(file);fs.writeFileSync(file,'a'.repeat(1024*1024+1));assert.throws(()=>operationContractProvenanceDigest(f.root,f.contract),/CONTRACT_SOURCE_FILE_REJECTED/);fs.writeFileSync(file,'small');const src=f.file('src');fs.renameSync(src,path.join(outside,'src'));fs.symlinkSync(path.join(outside,'src'),src,'dir');assert.throws(()=>operationContractProvenanceDigest(f.root,f.contract),/CONTRACT_SOURCE_FILE_REJECTED/)}finally{f.close();fs.rmSync(outside,{recursive:true,force:true})}
 })
-test('actual current source provenance is the exact accepted SDK digest with all old trust rules intact',async()=>{
- const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..'),receipt=JSON.parse(fs.readFileSync(path.join(root,'apps/sg-runtime/operation-integration.json'),'utf8'))
+test('authenticated legacy source fixture retains its exact accepted SDK digest and all old trust rules',async()=>{
+ const root=legacyRecurringFixture.root,receipt=JSON.parse(fs.readFileSync(path.join(root,'apps/sg-runtime/operation-integration.json'),'utf8'))
  const record=assertPrivateRecurringProvenance(root),receiptBytes=fs.readFileSync(path.join(root,'apps/sg-runtime/operation-integration.json'))
- const currentSdk=await import('./controlled-package-ci.mjs')
  const contract=currentProofContract(root,receipt)
  assert.equal(operationContractProvenanceDigest(root,contract,{reviewedPrivateRecurring:!!record}),contract.sourceDigest)
- const sdk=await import('../../packages/platform-contracts/src/operation-context.mjs');assert.equal(await sdk.operationSourceDigest(),contract.sourceDigest)
+ const sdk=await import(pathToFileURL(path.join(root,'packages/platform-contracts/src/operation-context.mjs')));assert.equal(await sdk.operationSourceDigest(),contract.sourceDigest)
 })
 
 for(const patch of[{id:'untrusted.contract'},{version:'9.0.0'},{sourceDigest:'invalid'},{paths:['../../outside']},{implementation:'1.0.0-candidate.14'}])test('source identity refuses malformed metadata or a downgrade '+JSON.stringify(patch),()=>{
@@ -2870,7 +2884,7 @@ test('PI fixture projection authenticates both complete reviews and refuses mixe
   for(const p of ['apps/insights-runtime/src/host.mjs','apps/sg-runtime/components/procurement-insights/workspace.tsx'])assert.deepEqual(previous(p),historical(a.baseCandidateSha,p));
   assert.throws(()=>previous(PI_LIVE_ACCEPTANCE_PROVENANCE_PATH),{code:'ENOENT'});
  }
- assert(c.assertPrivateRecurringProvenance(authorityRoot));
+ assert(c.assertPrivateRecurringProvenance(legacyRecurringFixture.root));
 });
 
 
@@ -3228,7 +3242,7 @@ test('Platform Knowledge exact owner inputs preserve all candidate and regular-f
 test('Platform Knowledge authenticates current source and all immutable receipts before its accepted predecessor',()=>{
  const root=authorityRoot,cache=new Map(),history=(sha,p)=>{const k=sha+':'+p;if(!cache.has(k))cache.set(k,execFileSync('git',['show',k],{cwd:root,stdio:['ignore','pipe','ignore']}));return cache.get(k);};
  const read=p=>fs.existsSync(path.join(root,PLATFORM_KNOWLEDGE_STAGE2_PROVENANCE.recordPath))?fs.readFileSync(path.join(root,p)):history(PLATFORM_KNOWLEDGE_STAGE2_REVIEW.sourceSha,p);
- const v=knowledgeStage2TrustedPredecessor(read,history);assert(v);assert.equal(v.manifest.sdkDigests.operationSourceDigest,PLATFORM_KNOWLEDGE_STAGE2_PROVENANCE.operationSourceDigest);
+ const v=knowledgeStage2TrustedPredecessor(read,history);assert(v);const cfg=[PLATFORM_KNOWLEDGE_STAGE2_PROVENANCE,PLATFORM_KNOWLEDGE_STAGE2_REPAIR_PROVENANCE,PLATFORM_KNOWLEDGE_STAGE2_PI_COMPOSITION_PROVENANCE,PLATFORM_KNOWLEDGE_STAGE2_SRM_TARGET_PROVENANCE,PLATFORM_KNOWLEDGE_STAGE2_ACG_COMPOSITION_PROVENANCE].find(p=>p.recordSha256===createHash('sha256').update(read(p.recordPath)).digest('hex'));assert(cfg);assert.equal(v.manifest.sdkDigests.operationSourceDigest,cfg.operationSourceDigest);
  for(const p of Object.keys(v.manifest.replacements))assert.deepEqual(v.previousBytes(p),history(v.manifest.previousSourceSha,p));
  for(const p of v.manifest.knowledgeAddedPaths)assert.throws(()=>v.previousBytes(p),{code:'ENOENT'});
  for(const p of ['packages/platform-contracts/src/knowledge-operations.mjs','packages/platform-contracts/current-e1-authority/migrations/015-knowledge-authority.sql','apps/sg-runtime/package-lock.json','apps/srm/knowledge-source-adoption.json','apps/sg-runtime/operation-integration.json','apps/architecture-lab/knowledge-source.mjs',PLATFORM_KNOWLEDGE_STAGE2_PROVENANCE.recordPath])assert.throws(()=>knowledgeStage2TrustedPredecessor(f=>f===p?Buffer.concat([read(f),Buffer.from('UNREVIEWED')]):read(f),history));
@@ -3236,8 +3250,8 @@ test('Platform Knowledge authenticates current source and all immutable receipts
  const denied=Object.assign(Error('Denied'),{code:'EACCES'});assert.throws(()=>knowledgeStage2TrustedPredecessor(()=>{throw denied;},history),e=>e===denied);
  // Actual accepted-source verification remains in the current-source SDK test above.
  // This fixture independently authenticates every proposed byte even before admission.
- assert.equal(Object.keys(v.manifest.sourceDigests).length,407);
- assert.equal(Object.keys({...v.manifest.preservedReceipts,...v.manifest.retainedSuccessorReceipts}).length,15);
+ assert.equal(Object.keys(v.manifest.sourceDigests).length,cfg.sourceFileCount);
+ assert.equal(Object.keys({...v.manifest.preservedReceipts,...v.manifest.retainedSuccessorReceipts}).length,cfg===PLATFORM_KNOWLEDGE_STAGE2_PROVENANCE?15:cfg.receiptFileCount);
 });
 
 
@@ -3604,6 +3618,20 @@ test('trusted quality source composition verifies both exact closures and every 
  assert.throws(()=>trustedQualityPredecessor(()=>{throw Object.assign(Error('DENIED'),{code:'EACCES'})},historical),{code:'EACCES'})
 })
 
+// A historical unit input cannot establish adoption of the current SDK.
+test('actual ACG reservation source remains authenticated separately from the legacy fixture',async()=>{
+ assert.equal(legacyRecurringFixture.sourceRoot,authorityRoot)
+ assert(legacyRecurringFixture.projected)
+ assert.notEqual(legacyRecurringFixture.root,authorityRoot)
+ assert.equal(legacyRecurringFixture.sourceRecord.scope,'EXACT_ASSISTANT_TOKEN_RESERVATION_SOURCE')
+ const knowledge=currentKnowledgeForPolicyTests()
+ if(knowledge)assert(assertPrivateRecurringProvenance(authorityRoot));else assert.throws(()=>assertPrivateRecurringProvenance(authorityRoot),/PI_LIVE_ACCEPTANCE_SOURCE_REJECTED|EDITORIAL_SOURCE_BYTES_REJECTED|FINDER_MONITOR_SOURCE_BYTES_REJECTED/)
+ const sdk=await import('../../packages/platform-contracts/src/operation-context.mjs')
+ assert.equal(await sdk.operationSourceDigest(),knowledge?.manifest.sdkDigests.operationSourceDigest??legacyRecurringFixture.sourceRecord.sdkDigests.operationSourceDigest)
+ const legacyReceipt=JSON.parse(fs.readFileSync(path.join(legacyRecurringFixture.root,'apps/sg-runtime/operation-integration.json'),'utf8'))
+ assert.notEqual(await sdk.operationSourceDigest(),currentProofContract(legacyRecurringFixture.root,legacyReceipt).sourceDigest)
+})
+
 test('quality recurring compatibility authenticates the new common dispatch and retains all old guards',async()=>{
  const c=await import('./controlled-package-ci.mjs'),root=new URL('../../',import.meta.url),source='acbc3fec33578f0ab053573a0f59ee41149112da',cache=new Map()
  const historical=(sha,p)=>{const key=sha+':'+p;if(!cache.has(key))cache.set(key,execFileSync('git',['cat-file','blob',key],{cwd:root,stdio:['ignore','pipe','pipe']}));return Buffer.from(cache.get(key))}
@@ -3823,8 +3851,16 @@ compositionTest('editorial composition successor preserves ten exact inputs, all
   else {const b=compositionHistory(compositionReview.baseSha,p);compositionAssert.deepEqual(view.previousBytes(p),b);view.previousBytes(p).fill(0);compositionAssert.deepEqual(view.previousBytes(p),b)}
  }
  compositionAssert(compositionControl.assistantNotificationsTrustedPredecessor(compositionFixture,compositionHistory))
- const contract=compositionControl.currentProofContract(compositionFileURLToPath(compositionRoot),JSON.parse(compositionFixture('apps/sg-runtime/operation-integration.json')))
- compositionAssert.equal(contract.sourceDigest,'1722f1604df42aec084df0ff7610240a25e687caffd58547dbed320a200676ed')
+ // Bind this historical PI assertion to its actual immutable source, independently of later SDK cohorts.
+ const temporary=fs.realpathSync(fs.mkdtempSync(path.join(knowledgePolicyTmpdir(),'editorial-composition-contract-'))),checkout=path.join(temporary,'source')
+ try{
+  compositionGit('git',['clone','--quiet','--shared','--no-checkout','--',compositionFileURLToPath(compositionRoot),checkout],{stdio:['ignore','pipe','pipe']})
+  compositionGit('git',['checkout','--quiet','--detach',compositionReview.sourceSha],{cwd:checkout,stdio:['ignore','pipe','pipe']})
+  // Synthetic-only reference to the actual accepted authority; never a provider admission or CI proof.
+  compositionGit('git',['update-ref','refs/remotes/origin/main','67b81304e08d400aef5872839e24de39b8af8093'],{cwd:checkout,stdio:['ignore','pipe','pipe']})
+  const contract=compositionControl.currentProofContract(checkout,JSON.parse(compositionFixture('apps/sg-runtime/operation-integration.json')))
+  compositionAssert.equal(contract.sourceDigest,'1722f1604df42aec084df0ff7610240a25e687caffd58547dbed320a200676ed')
+ }finally{fs.rmSync(temporary,{recursive:true,force:true})}
 })
 compositionTest('editorial composition successor refuses every changed current/history byte and all29 prior receipts',()=>{
  for(const p of [...Object.keys(compositionReview.entries),...Object.keys(compositionReview.preservedReceipts)]){
@@ -3875,4 +3911,91 @@ test('Calendar BSDC composition preserves accepted helper and authenticates each
  assert.throws(()=>c.completeFunctionalTrustedPredecessor(current,broken)(b.helperPath),/ECR_COMPLETE_FUNCTIONAL_BSDC_HISTORY_REJECTED/);
  const target='scripts/governance/platform-source-hub-foundation.test.mjs';
  assert.throws(()=>c.completeFunctionalTrustedPredecessor(p=>p===target?Buffer.concat([current(p),Buffer.from(' drift')]):current(p),historical));
+});
+
+// Exact corrected inputs remain a closed review; no additional peer or private pin rule.
+test('Knowledge repaired checkout authenticates every current source and refuses partial, changed and nonregular review inputs',async()=>{
+ const c=await import('./controlled-package-ci.mjs'),r=c.PLATFORM_KNOWLEDGE_STAGE2_REPAIR_REVIEW;
+ const os=await import('node:os'),temporary=fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(),'knowledge-exact-reviewed-checkout-')));
+ const env={...process.env,GIT_CONFIG_NOSYSTEM:'1',GIT_CONFIG_GLOBAL:'/dev/null'};
+ const git=(cwd,args)=>execFileSync('git',['-c','core.hooksPath=/dev/null',...args],{cwd,env,encoding:'utf8',stdio:['ignore','pipe','pipe']}).trim();
+ try{
+  git(temporary,['clone','--quiet','--shared','--no-checkout',authorityRoot,'source']);
+  const checkoutRoot=path.join(temporary,'source');git(checkoutRoot,['checkout','--quiet','--detach',r.sourceSha]);
+  git(checkoutRoot,['merge-base','--is-ancestor',r.baseSha,r.sourceSha]);
+  // Synthetic-only accepted-base ledger; actual current-main admission is separate.
+  git(checkoutRoot,['update-ref','refs/remotes/origin/main',r.baseSha]);
+ const files=Object.entries(r.entries).map(([filename,e])=>({filename,sha:e.sha,status:e.status}));
+ assert.deepEqual(new Set(Object.values(r.entries).map(e=>e.projectKey)),new Set(['ARCHITECTURE','SG2','SRM']));
+ c.assertArchitectureCheckout(checkoutRoot,r.sourceSha,{kind:'ARCHITECTURE',baseSha:r.baseSha,files},authorityRoot);
+ assert.throws(()=>c.assertArchitectureCheckout(checkoutRoot,r.sourceSha,{kind:'ARCHITECTURE',baseSha:r.baseSha,files:files.slice(1)},authorityRoot));
+ const altered=files.map((f,i)=>i===0?{...f,sha:'0'.repeat(40)}:f);
+ assert.throws(()=>c.assertArchitectureCheckout(checkoutRoot,r.sourceSha,{kind:'ARCHITECTURE',baseSha:r.baseSha,files:altered},authorityRoot));
+ const file=files.find(f=>f.filename==='apps/architecture-lab/knowledge-source.json');assert(file);
+ c.assertKnowledgeStage2Entry(file,'100644 blob '+file.sha+'\t'+file.filename+'\0',r);
+ assert.throws(()=>c.assertKnowledgeStage2Entry(file,'100755 blob '+file.sha+'\t'+file.filename+'\0',r));
+ assert.throws(()=>c.assertKnowledgeStage2Entry({...file,filename:'apps/sg-runtime/unapproved.ts'},'100644 blob '+file.sha+'\tapps/sg-runtime/unapproved.ts\0',r));
+ const cache=new Map(),history=(sha,p)=>{const k=sha+':'+p;if(!cache.has(k))cache.set(k,execFileSync('git',['show',k],{cwd:checkoutRoot,stdio:['ignore','pipe','pipe']}));return cache.get(k)};
+ const read=p=>fs.readFileSync(path.join(checkoutRoot,p));assert(c.knowledgeStage2TrustedPredecessor(read,history));
+ for(const target of ['packages/platform-contracts/payload-capture/test/public-package.test.mjs','apps/platform-source-hub/test/ci-routing.test.mjs','apps/architecture-lab/test/private-recurring-source.test.mjs','apps/sg-runtime/finder-monitor-source-integration.json'])
+  assert.throws(()=>c.knowledgeStage2TrustedPredecessor(p=>p===target?Buffer.concat([read(p),Buffer.from('UNAPPROVED')]):read(p),history),target);
+ }finally{fs.rmSync(temporary,{recursive:true,force:true})}
+});
+
+// Exact corrected inputs remain a closed review; no additional peer or private pin rule.
+test('Knowledge PI composition authenticates the complete accepted package cohort and rejects source or receipt drift',async()=>{
+ const c=await import('./controlled-package-ci.mjs'),r=c.PLATFORM_KNOWLEDGE_STAGE2_PI_COMPOSITION_REVIEW;
+ const os=await import('node:os'),temporary=fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(),'knowledge-pi-composition-checkout-')));
+ const env={...process.env,GIT_CONFIG_NOSYSTEM:'1',GIT_CONFIG_GLOBAL:'/dev/null'};
+ const git=(cwd,args)=>execFileSync('git',['-c','core.hooksPath=/dev/null',...args],{cwd,env,encoding:'utf8',stdio:['ignore','pipe','pipe']}).trim();
+ try{
+  git(temporary,['clone','--quiet','--shared','--no-checkout',authorityRoot,'source']);
+  const checkoutRoot=path.join(temporary,'source');git(checkoutRoot,['checkout','--quiet','--detach',r.sourceSha]);
+  git(checkoutRoot,['merge-base','--is-ancestor',r.baseSha,r.sourceSha]);
+  // Synthetic-only accepted-base ledger; actual current-main admission is separate.
+  git(checkoutRoot,['update-ref','refs/remotes/origin/main',r.baseSha]);
+ const files=Object.entries(r.entries).map(([filename,e])=>({filename,sha:e.sha,status:e.status}));
+ assert.deepEqual(new Set(Object.values(r.entries).map(e=>e.projectKey)),new Set(['ARCHITECTURE','SG2','SRM']));
+ c.assertArchitectureCheckout(checkoutRoot,r.sourceSha,{kind:'ARCHITECTURE',baseSha:r.baseSha,files},authorityRoot);
+ assert.throws(()=>c.assertArchitectureCheckout(checkoutRoot,r.sourceSha,{kind:'ARCHITECTURE',baseSha:r.baseSha,files:files.slice(1)},authorityRoot));
+ const altered=files.map((f,i)=>i===0?{...f,sha:'0'.repeat(40)}:f);
+ assert.throws(()=>c.assertArchitectureCheckout(checkoutRoot,r.sourceSha,{kind:'ARCHITECTURE',baseSha:r.baseSha,files:altered},authorityRoot));
+ const file=files.find(f=>f.filename==='apps/architecture-lab/knowledge-source.json');assert(file);
+ c.assertKnowledgeStage2Entry(file,'100644 blob '+file.sha+'\t'+file.filename+'\0',r);
+ assert.throws(()=>c.assertKnowledgeStage2Entry(file,'100755 blob '+file.sha+'\t'+file.filename+'\0',r));
+ assert.throws(()=>c.assertKnowledgeStage2Entry({...file,filename:'apps/sg-runtime/unapproved.ts'},'100644 blob '+file.sha+'\tapps/sg-runtime/unapproved.ts\0',r));
+ const cache=new Map(),history=(sha,p)=>{const k=sha+':'+p;if(!cache.has(k))cache.set(k,execFileSync('git',['show',k],{cwd:checkoutRoot,stdio:['ignore','pipe','pipe']}));return cache.get(k)};
+ const read=p=>fs.readFileSync(path.join(checkoutRoot,p));assert(c.knowledgeStage2TrustedPredecessor(read,history));
+ for(const target of ['apps/insights-runtime/package.json','apps/insights-runtime/package-lock.json','apps/sg-runtime/package-lock.json','apps/sg-runtime/procurement-insights-editorial-package-integration.json','apps/sg-runtime/tests/procurement-insights-editorial-package-integrity.mjs','apps/sg-runtime/tests/procurement-insights-editorial-package-integrity.test.mjs','packages/platform-contracts/payload-capture/test/public-package.test.mjs','apps/platform-source-hub/test/ci-routing.test.mjs','apps/architecture-lab/test/private-recurring-source.test.mjs','apps/sg-runtime/finder-monitor-source-integration.json'])
+  assert.throws(()=>c.knowledgeStage2TrustedPredecessor(p=>p===target?Buffer.concat([read(p),Buffer.from('UNAPPROVED')]):read(p),history),target);
+ }finally{fs.rmSync(temporary,{recursive:true,force:true})}
+});
+
+// Exact corrected inputs remain a closed review; no additional peer or private pin rule.
+test('Knowledge SRM Root correction admits the exact repaired target and rejects partial, substituted or historical source',async()=>{
+ const c=await import('./controlled-package-ci.mjs'),r=c.PLATFORM_KNOWLEDGE_STAGE2_SRM_TARGET_REVIEW;
+ const os=await import('node:os'),temporary=fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(),'knowledge-srm-root-target-checkout-')));
+ const env={...process.env,GIT_CONFIG_NOSYSTEM:'1',GIT_CONFIG_GLOBAL:'/dev/null'};
+ const git=(cwd,args)=>execFileSync('git',['-c','core.hooksPath=/dev/null',...args],{cwd,env,encoding:'utf8',stdio:['ignore','pipe','pipe']}).trim();
+ try{
+  git(temporary,['clone','--quiet','--shared','--no-checkout',authorityRoot,'source']);
+  const checkoutRoot=path.join(temporary,'source');git(checkoutRoot,['checkout','--quiet','--detach',r.sourceSha]);
+  git(checkoutRoot,['merge-base','--is-ancestor',r.baseSha,r.sourceSha]);
+  // Synthetic-only accepted-base ledger; actual current-main admission is separate.
+  git(checkoutRoot,['update-ref','refs/remotes/origin/main',r.baseSha]);
+ const files=Object.entries(r.entries).map(([filename,e])=>({filename,sha:e.sha,status:e.status}));
+ assert.deepEqual(new Set(Object.values(r.entries).map(e=>e.projectKey)),new Set(['ARCHITECTURE','SG2','SRM']));
+ c.assertArchitectureCheckout(checkoutRoot,r.sourceSha,{kind:'ARCHITECTURE',baseSha:r.baseSha,files},authorityRoot);
+ assert.throws(()=>c.assertArchitectureCheckout(checkoutRoot,r.sourceSha,{kind:'ARCHITECTURE',baseSha:r.baseSha,files:files.slice(1)},authorityRoot));
+ const altered=files.map((f,i)=>i===0?{...f,sha:'0'.repeat(40)}:f);
+ assert.throws(()=>c.assertArchitectureCheckout(checkoutRoot,r.sourceSha,{kind:'ARCHITECTURE',baseSha:r.baseSha,files:altered},authorityRoot));
+ const file=files.find(f=>f.filename==='apps/architecture-lab/knowledge-source.json');assert(file);
+ c.assertKnowledgeStage2Entry(file,'100644 blob '+file.sha+'\t'+file.filename+'\0',r);
+ assert.throws(()=>c.assertKnowledgeStage2Entry(file,'100755 blob '+file.sha+'\t'+file.filename+'\0',r));
+ assert.throws(()=>c.assertKnowledgeStage2Entry({...file,filename:'apps/sg-runtime/unapproved.ts'},'100644 blob '+file.sha+'\tapps/sg-runtime/unapproved.ts\0',r));
+ const cache=new Map(),history=(sha,p)=>{const k=sha+':'+p;if(!cache.has(k))cache.set(k,execFileSync('git',['show',k],{cwd:checkoutRoot,stdio:['ignore','pipe','pipe']}));return cache.get(k)};
+ const read=p=>fs.readFileSync(path.join(checkoutRoot,p));assert(c.knowledgeStage2TrustedPredecessor(read,history));
+ for(const target of ['apps/srm/deployment/root-atomic-claim-targets.json','apps/insights-runtime/package.json','apps/insights-runtime/package-lock.json','apps/sg-runtime/package-lock.json','apps/sg-runtime/procurement-insights-editorial-package-integration.json','apps/sg-runtime/tests/procurement-insights-editorial-package-integrity.mjs','apps/sg-runtime/tests/procurement-insights-editorial-package-integrity.test.mjs','packages/platform-contracts/payload-capture/test/public-package.test.mjs','apps/platform-source-hub/test/ci-routing.test.mjs','apps/architecture-lab/test/private-recurring-source.test.mjs','apps/sg-runtime/finder-monitor-source-integration.json'])
+  assert.throws(()=>c.knowledgeStage2TrustedPredecessor(p=>p===target?Buffer.concat([read(p),Buffer.from('UNAPPROVED')]):read(p),history),target);
+ }finally{fs.rmSync(temporary,{recursive:true,force:true})}
 });
