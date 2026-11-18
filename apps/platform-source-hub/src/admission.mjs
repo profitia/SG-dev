@@ -26,10 +26,11 @@ export const COMMODITY_SOURCE_DEFINITIONS=Object.freeze({
  'commodities-sh:publication-calendar':{origin:'https://api.commodities.sh',paths:['/v1/calendar']}
 });
 export const PUBLICATION_SCHEDULE_SOURCE_DEFINITIONS=Object.freeze({
- 'eia:publication-calendar':{origin:EIA_SCHEDULE_ORIGIN,paths:Object.values(EIA_SCHEDULE_PATHS)}
+ 'eia:publication-calendar':{origin:EIA_SCHEDULE_ORIGIN,paths:[EIA_SCHEDULE_PATHS.wpsr,EIA_SCHEDULE_PATHS.steo]}
 });
-export function sourceDefinition(provider,family,{includeMarketForecasts=false}={}){
- const d=SOURCE_DEFINITIONS[provider+':'+family]??COMMODITY_SOURCE_DEFINITIONS[provider+':'+family]??PUBLICATION_SCHEDULE_SOURCE_DEFINITIONS[provider+':'+family]??OPTIONAL_SOURCE_DEFINITIONS[provider+':'+family];if(!d)throw new SourceHubError('UNSUPPORTED_FAMILY');
+export function sourceDefinition(provider,family,{includeMarketForecasts=false,includeExpandedSchedules=false}={}){
+ const definition=SOURCE_DEFINITIONS[provider+':'+family]??COMMODITY_SOURCE_DEFINITIONS[provider+':'+family]??PUBLICATION_SCHEDULE_SOURCE_DEFINITIONS[provider+':'+family]??OPTIONAL_SOURCE_DEFINITIONS[provider+':'+family];if(!definition)throw new SourceHubError('UNSUPPORTED_FAMILY');
+ const d=provider==='eia'&&family==='publication-calendar'&&includeExpandedSchedules?{...definition,paths:Object.values(EIA_SCHEDULE_PATHS)}:definition;
  return {...d,sourceId:'source-hub.'+provider+'.'+family,resourceId:'api.'+provider+'.'+family,
   pathRules:('basePaths' in d?d.basePaths:d.paths).map(path=>({method:'GET',path})),nativePathRules:[...d.paths.map(path=>({method:'GET',path,requestFormat:'NONE'})),...(includeMarketForecasts&&'marketPaths' in d?d.marketPaths:[]).map(path=>({method:'GET',path,requestFormat:'NONE'})),...('prefix' in d&&d.prefix?[{method:'GET',prefix:d.prefix,suffix:'suffix' in d?d.suffix:'',parameter:'API_PATH',requestFormat:'NONE'}]:[]),...('marketSymbolPrefixes' in d?d.marketSymbolPrefixes.map(prefix=>({method:'GET',prefix,suffix:'',parameter:'MARKET_SYMBOL',requestFormat:'NONE'})):[])]};
 }
@@ -39,7 +40,7 @@ export async function createAdmission(configuration,database){
  /** @type {import('@profitia/platform-contracts/operation-context').Application} */
  const application={appId:configuration.applicationId,profileId:'PLATFORM_INTERNAL',deploymentId:configuration.deploymentId,configurationVersion:configuration.configurationVersion,environment:configuration.environment,identityIssuer:'urn:profitia:database-service-runtime:v1',organisationId:null,features:['knowledge_ingestion'],operations:['knowledge.ingest']};
  async function assertCurrent(provider,family,licence){
-  const d=sourceDefinition(provider,family,{includeMarketForecasts:licence.allow_market_forecasts===true});
+  const d=sourceDefinition(provider,family,{includeMarketForecasts:licence.allow_market_forecasts===true,includeExpandedSchedules:configuration.eiaExpandedSchedulesEnabled===true});
   if(licence.source_id!==d.sourceId||licence.resource_id!==d.resourceId)throw new SourceHubError('SOURCE_BINDING_MISMATCH',503);
   const check=await database.query('SELECT profitia_external_native.descriptor($1,$2) AS descriptor',[d.sourceId,d.resourceId]).catch(()=>({rows:[]}));
   if(check.rows.length!==1||check.rows[0].descriptor?.policyId!==licence.source_policy_id)throw new SourceHubError('SOURCE_ADMISSION_REQUIRED',503);

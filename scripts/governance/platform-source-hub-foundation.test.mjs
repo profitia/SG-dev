@@ -384,7 +384,19 @@ import {bsdcManifestContinuityCurrent, BSDC_MANIFEST_CONTINUITY as bsdcLabPolicy
 import {bsdcManifestContinuityTrustedCurrent, BSDC_MANIFEST_CONTINUITY as bsdcTrustedPolicy, BSDC_V11_DOCUMENTATION_REVIEW, marketCalendarTrustedPredecessor, assertPrivateRecurringProvenance, selectCandidate, assertBsdcDocumentationReviewEntry} from './controlled-package-ci.mjs'
 const bsdcHistoryCache=new Map()
 const bsdcHistory=(sha,p)=>{const k=sha+':'+p;if(!bsdcHistoryCache.has(k))bsdcHistoryCache.set(k,execFileSync('git',['cat-file','blob',k],{cwd:root,stdio:['ignore','pipe','pipe']}));return Buffer.from(bsdcHistoryCache.get(k))}
-const bsdcPhysical=p=>fs.readFileSync(path.join(root,p))
+// The notification successor authenticates every new producer byte and all old
+// receipts before these unchanged BSDC assertions inspect their accepted view.
+import {completeFunctionalPredecessor} from '../../apps/architecture-lab/ecr-complete-functional-source.mjs'
+const bsdcPhysicalRaw=p=>fs.readFileSync(path.join(root,p))
+const bsdcPhysical=p=>{
+ const complete=completeFunctionalPredecessor(bsdcPhysicalRaw,bsdcHistory)
+ if(complete&&p===bsdcTrustedPolicy.helperPath){
+  const previous=bsdcHistory('59204603e6f41c97e0d27c36ffcc94ca6186d88e',p)
+  assert.equal(sha256(previous),bsdcTrustedPolicy.helperSha256,'exact independently accepted BSDC helper')
+  return Buffer.from(previous)
+ }
+ return(complete?.previousBytes??bsdcPhysicalRaw)(p)
+}
 const bsdcApproved=p=>bsdcTrustedPolicy.sourcePaths.includes(p)?bsdcHistory(BSDC_V11_DOCUMENTATION_REVIEW.approvedSourceSha,p):bsdcPhysical(p)
 const bsdcFiles=()=>Object.entries(BSDC_V11_DOCUMENTATION_REVIEW.entries).map(([filename,e])=>({filename,sha:e.sha,status:e.status}))
 const bsdcContext={repository:'profitia/SG-dev',ref:'refs/heads/main',workflowRef:'profitia/SG-dev/.github/workflows/platform-contracts-ci.yml@refs/heads/main',event:'workflow_dispatch',actor:'profitia',triggeringActor:'profitia',controlSha:bsdcTrustedPolicy.baseSha}
@@ -402,7 +414,14 @@ test('BSDC continuity bootstrap preserves the old manifest and every original Ca
   assert.throws(()=>view(bsdcTrustedPolicy.recordPath),{code:'ENOENT'})
  }
  assert(calendarPredecessor(bsdcPhysical).record)
- assert(assertPrivateRecurringProvenance(root))
+ // This one assertion concerns the immutable historical Cal69 protocol.
+ // The current combined source has its separate protected schema2 validation.
+ const legacy=fs.mkdtempSync(path.join(os.tmpdir(),'calendar-legacy-protocol-')),checkout=path.join(legacy,'source')
+ try{
+  execFileSync('git',['clone','--quiet','--shared','--no-checkout',root,checkout],{stdio:['ignore','pipe','pipe']})
+  execFileSync('git',['checkout','--quiet','--detach','69d02834e863a51506aa4f50fbeb20f7fda3575b'],{cwd:checkout,stdio:['ignore','pipe','pipe']})
+  assert(assertPrivateRecurringProvenance(checkout))
+ }finally{fs.rmSync(legacy,{recursive:true,force:true})}
 })
 
 test('BSDC activation authenticates exactly the approved four documents before old source traversal',()=>{

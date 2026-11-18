@@ -10,7 +10,7 @@ export interface SandboxMailgunConfig {
 export interface InlineImage { filename: string; bytes: Uint8Array }
 export interface StoredEmailTemplate {name:string; version:string; variables:Record<string,string>}
 export interface EmailContent { template?:StoredEmailTemplate; subject: string; html: string; text: string; inline?: readonly InlineImage[] }
-export interface SandboxMessage extends EmailContent { recipient: string }
+export interface SandboxMessage extends EmailContent { recipient: string; calendarDelivery?: {id:string; leaseId:string} }
 export type Submission =
   | { status: 'accepted'; providerId: string }
   | { status: 'rejected'; code: 'provider_rejected' }
@@ -44,7 +44,12 @@ export function createMailgunReportSender(config: Omit<TransactionalMailgunConfi
   if (typeof authorize !== 'function' || config.authorizedRecipients.length !== 0) throw Error('REPORT_RECIPIENT_AUTHORITY_REQUIRED')
   return createSender(config, fetcher, config, authorize)
 }
-function createSender(config: SandboxMailgunConfig, fetcher: typeof fetch, transactional: TransactionalMailgunConfig | null, reportAuthorization: ((message: SandboxMessage) => Promise<boolean>) | null = null) {
+/** Calendar admission is checked by its own current E1 and ECR outbox ports. */
+export function createMailgunCalendarSender(config: Omit<TransactionalMailgunConfig,'recipientPolicy'>, authorize: (message: SandboxMessage) => Promise<boolean>, fetcher: typeof fetch = fetch) {
+  if (typeof authorize !== 'function' || config.authorizedRecipients.length !== 0) throw Error('CALENDAR_RECIPIENT_AUTHORITY_REQUIRED')
+  return createSender(config, fetcher, config, authorize, 'calendar')
+}
+function createSender(config: SandboxMailgunConfig, fetcher: typeof fetch, transactional: TransactionalMailgunConfig | null, reportAuthorization: ((message: SandboxMessage) => Promise<boolean>) | null = null, admittedPurpose: 'report' | 'calendar' = 'report') {
   if (config.environment !== 'development' || !['us', 'eu'].includes(config.region) ||
     !(transactional ? /^(?!sandbox)[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)+$/.test(config.domain) : /^sandbox[a-f0-9]{32}\.mailgun\.org$/.test(config.domain)) ||
     typeof config.apiKey !== 'string' || !/^[A-Za-z0-9_-]{20,256}$/.test(config.apiKey)) {
@@ -65,6 +70,10 @@ function createSender(config: SandboxMailgunConfig, fetcher: typeof fetch, trans
 
   return async (message: SandboxMessage): Promise<Submission> => {
     const recipient = mailbox(message.recipient);
+    const correlation=message.calendarDelivery;
+    const uuid=/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/;
+    if(correlation && (!reportAuthorization || admittedPurpose!=='calendar' || Object.keys(correlation).sort().join(',')!=='id,leaseId' || !uuid.test(correlation.id) || !uuid.test(correlation.leaseId))) throw Error('CALENDAR_CORRELATION_REFUSED');
+    if(reportAuthorization && admittedPurpose==='calendar' && !correlation)throw Error('CALENDAR_CORRELATION_REQUIRED');
     if (policy === 'allowlist' && !recipients.has(recipient)) throw new Error('Recipient not enabled for sandbox');
     if (typeof message.subject !== 'string' || (!transactional && !message.subject.startsWith('[TEST SANDBOX] ')) ||
       message.subject.length > 200 || /[\r\n\x00-\x1f\x7f]/.test(message.subject) ||
@@ -98,8 +107,11 @@ function createSender(config: SandboxMailgunConfig, fetcher: typeof fetch, trans
     for (const [key, value] of Object.entries({
       from, to: recipient, subject: message.subject, html: message.html, text: message.text,
       'o:tracking': 'no', 'o:tracking-clicks': 'no', 'o:tracking-opens': 'no',
-      'o:require-tls': 'yes', 'o:skip-verification': 'no', 'o:tag': reportAuthorization ? 'report-published-development' : transactional ? 'identity-transactional-development' : 'avatar-sandbox',
+      'o:require-tls': 'yes', 'o:skip-verification': 'no', 'o:tag': reportAuthorization ? admittedPurpose === 'calendar' ? 'calendar-notification-development' : 'report-published-development' : transactional ? 'identity-transactional-development' : 'avatar-sandbox',
     })) form.set(key, value);
+    // Opaque attempt identifiers only. Mailgun also includes these variables in
+    // the delivered message; no user, organisation or recipient metadata belongs here.
+    if(correlation){form.set('v:calendar_delivery_id',correlation.id);form.set('v:calendar_lease_id',correlation.leaseId)}
     if (message.template) {
       const t=message.template, keys=Object.keys(t.variables).sort().join(',');
       const newDevice = /^identity-new-device-sign-in-(pl|en)-(male|female|neutral)$/.test(t.name);
