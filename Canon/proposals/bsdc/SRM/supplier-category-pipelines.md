@@ -1,7 +1,7 @@
 # Karta Projektu BSDC — Supplier & Category Pipelines
 
-> **Rewizja projektowa 2 — pakiet do łącznej akceptacji rozwiązania i całej roadmapy E1–E2.**
-> **WORKING / NOT_ACCEPTED.** Zdefiniowanie projektu, przyjęcie decyzji biznesowych oraz zakończenie zadania dokumentacyjnego nie oznaczają akceptacji całości ani uruchomienia etapu wykonawczego.
+> **Rewizja projektowa 2 — projekt rozwiązania i cała roadmapa E1–E2 zaakceptowane łącznie przez właściciela 2026-11-18.**
+> **OWNER_APPROVED — zamrożona baza: [f75529c](https://github.com/profitia/SG-dev/blob/f75529c590c5dd4611223c949e5956e34d101e22/Canon/proposals/bsdc/SRM/supplier-category-pipelines.md).** Niniejsza aktualizacja zapisuje decyzję i statusy, bez zmiany zaakceptowanego projektu ani warunków odbioru. **BRAK mandatu wykonawczego; E1 i E2 NIE_ROZPOCZĘTE.**
 > Jedna inicjatywa → jedna Karta z projektem, roadmapą, rejestrem i punktem wznowienia. Dokumentacja i dowody na GitHubie; bez lokalnych dokumentów na komputerze użytkownika.
 
 | Pole | Wartość |
@@ -14,20 +14,21 @@
 | Repozytorium authority / branch authority | profitia/SG-dev / main |
 | Jedyny plik Karty | Canon/proposals/bsdc/SRM/supplier-category-pipelines.md |
 | Gałąź robocza / przegląd | sg2/bsdc-srm-supplier-category-pipelines-20261117 / [PR #1123](https://github.com/profitia/SG-dev/pull/1123), Draft |
-| Status / gotowość przeglądu | WORKING / NOT_ACCEPTED / READY_FOR_JOINT_REVIEW |
-| Utworzono / aktualizacja | 2026-11-17 / 2026-11-17, Europe/Warsaw |
+| Status / gotowość przeglądu | OWNER_APPROVED / projekt i cała roadmapa zaakceptowane łącznie; baza zamrożona |
+| Utworzono / aktualizacja | 2026-11-17 / 2026-11-18, Europe/Warsaw |
 | Zweryfikowany main discovery | f8a422fe88cc0a6166a6401c7238803ec5c44761 |
 | Odczytana poprzednia rewizja Karty | Commit 6bca96beddfc5f6129b079fa053cacb8ef90c6c7, blob 4d1baeb039884c9b618fce4fbf3fd92d84821e9b |
 | Właściciel decyzji i odbioru | tomasz@profitia.pl |
 | Środowisko etapów i końcowego odbioru | Development |
 | Dane odbiorowe | Reprezentatywne, syntetyczne dane dwóch organizacji; brak poufnej treści ADP i dokumentów PORR |
-| Tryb / mandat wykonawczy produktu | DESIGN / BUSINESS CONSULTING; BRAK mandatu E1 i E2 |
+| Tryb / mandat wykonawczy produktu | Akceptacja merytoryczna zapisana; BRAK mandatu E1 i E2 |
 | taskId wznowienia dokumentacyjnego | SRM-BSDC-SCP-DESIGN-R2-20261117 |
 | PMOS begin wznowienia | cmwkubpfb00003rd0mtq3an92; srm_pmos; pełny require-begin PASS |
 | Tożsamość czatu | hostConversationId niedostępny, jawne null w begin; nie wywnioskowano identyfikatora z katalogu |
-| Akceptacja rozwiązania i roadmapy | OCZEKIWANA — brak zaakceptowanego commitu obu części |
+| taskId zapisu akceptacji / PMOS begin | SRM-BSDC-SCP-ACCEPTANCE-20261118 / cmwlos97u00008es52fzj1twi; wyłącznie dokumentacja |
+| Akceptacja rozwiązania i roadmapy | DEC-21, 2026-11-18, właściciel w bieżącym wątku (owner Karty: tomasz@profitia.pl); obie części łącznie; commit [f75529c590c5dd4611223c949e5956e34d101e22](https://github.com/profitia/SG-dev/blob/f75529c590c5dd4611223c949e5956e34d101e22/Canon/proposals/bsdc/SRM/supplier-category-pipelines.md), blob 31d655e4ce8ce2422ec39b54c054a313eb433d11 |
 
-**Znaczenie statusów checklisty:** USTALONE oznacza opisany i uzasadniony punkt projektu do przeglądu. Rekomendacje są jawnie odróżnione od decyzji właściciela. Nie oznacza to istniejącej implementacji, gotowego dostępu, instalacji schematu ani akceptacji właściciela całego pakietu. F3 pozostaje W_TRAKCIE do jego decyzji względem dokładnej rewizji.
+**Znaczenie statusów checklisty:** USTALONE oznacza opisany i uzasadniony punkt projektu. Łączną akceptację projektu i całej roadmapy, obejmującą REC-01–08, dokumentuje DEC-21 względem dokładnej rewizji; F3 ma USTALONE. Wszystkie 29 kryteriów dotyczy kompletności BSDC. Nie oznacza to istniejącej implementacji, gotowego dostępu, instalacji schematu ani odbioru funkcji.
 
 ## 1. Projekt rozwiązania — potrzeba, zakres i reguły
 
@@ -228,10 +229,10 @@ Nie wyprowadza się logiki procesu do MagicPath, do przeglądarki ani do SG2. Ni
 | E6 | Roadmapa i rejestr w tej Karcie | USTALONE | §5 zawiera FINAL-*, wszystkie etapy/taski, ownerów, środowiska, DoD, dowody, zależności, osobne mandaty i statusy. Brak osobnego planu. |
 | F1 | Decyzje i niepewności | USTALONE | Rejestr §6; nowsze decyzje jawnie zastępują dawne otwarte opcje. Braki live i rekomendacje nie są ukryte. |
 | F2 | Spójny pakiet A–E | USTALONE | Projekt zachowuje istniejące granice; nowe operacje i kontrakty opisane jako wymagające przyszłego przyjęcia. Nie rozszerza po cichu presentation-only 1.0.0. |
-| F3 | Łączna akceptacja i rewizja | W_TRAKCIE | Ta rewizja przedstawia kompletny projekt i roadmapę do łącznej akceptacji. Brak decyzji właściciela i zamrożonego commitu obu części. |
+| F3 | Łączna akceptacja i rewizja | USTALONE | DEC-21: 2026-11-18 właściciel zaakceptował łącznie projekt rozwiązania i całą roadmapę E1–E2 z rewizji f75529c590c5dd4611223c949e5956e34d101e22; zamrożona baza obu części, bez startu etapów. |
 | F4 | Handoff do etapów | USTALONE | §8: źródła, E1-T01–T05/E2-T01–T03, brak mandatów, aktualizacja jednej Karty, rozliczenie/STOP i aktywne wrappery. |
 
-**Stan A–F: A=USTALONE, B=USTALONE, C=USTALONE, D=USTALONE, E=USTALONE, F=W_TRAKCIE (F3). 28 kryteriów opisanych jako USTALONE, 1 oczekuje decyzji właściciela.** Odbiór funkcji i wykonanie roadmapy nadal nie zostały rozpoczęte.
+**Stan A–F: A=USTALONE, B=USTALONE, C=USTALONE, D=USTALONE, E=USTALONE, F=USTALONE. Wszystkie 29/29 kryteriów BSDC ma status USTALONE.** Projekt i cała roadmapa zostały zaakceptowane łącznie (DEC-21). Odbiór funkcji i wykonanie roadmapy nadal nie zostały rozpoczęte.
 
 ## 4. Architektura, model danych i kontrakt SRM–SG2
 
@@ -484,11 +485,11 @@ Dowody muszą rozróżniać: test źródłowy/integracyjny, autoryzowany API liv
 
 ### 5.4. Rejestr realizacji etapów i tasków
 
-Bieżący mandat produktu: **BRAK**. Ostatnia czynność: wznowienie i przygotowanie projektu/roadmapy do przeglądu w tym samym PR #1123. Zakończenie dokumentacji nie jest rozliczeniem E1. Dyspozycja startu E1/E2: **BRAK**.
+Bieżący mandat produktu: **BRAK**. Ostatnia czynność: zapis łącznej akceptacji projektu i całej roadmapy z rewizji f75529c, 2026-11-18 (DEC-21), w tej samej Karcie i PR #1123. Akceptacja i zapis dokumentacyjny nie są wykonaniem ani rozliczeniem E1. Dyspozycja startu E1/E2: **BRAK**; obowiązuje polecenie właściciela: „Nie uruchamiaj jeszcze żadnego etapu.”
 
 | ID | Status | Początek / koniec | Wykonawczy taskId / owner / środowisko | PR / SHA / CI / deploy / test / odbiór | Braki i następny krok |
 | --- | --- | --- | --- | --- | --- |
-| E1 | NIE_ROZPOCZĘTY | — | Do nadania / SRM prowadzi / Development | — | Akceptacja łączna i osobny start E1, właściwe dopuszczenia. |
+| E1 | NIE_ROZPOCZĘTY | — | Do nadania / SRM prowadzi / Development | — | Akceptacja łączna zapisana (DEC-21). Oczekiwanie na osobny start E1 i właściwe dopuszczenia. |
 | E1-T01 | NIE_ROZPOCZĘTY | — | Do nadania / SRM / Development | — | Przyjęta rewizja kontraktu i modelu. |
 | E1-T02 | NIE_ROZPOCZĘTY | — | Do nadania / ARCHITECTURE / Development | — | Właściwe operacje, zasoby, źródła, instalacje i mandaty. |
 | E1-T03 | NIE_ROZPOCZĘTY | — | Do nadania / SRM / Development | — | T01/T02, migracja i niezmienniki DB. |
@@ -529,7 +530,7 @@ Każdy wykonawca uzupełnia wiersz po istotnym wyniku/zmianie: faktyczne daty, t
 | DEC-02 | Jeden rekord firmy, jeden typ procesów „Dostawcy” z ograniczeniem i wiele niezależnych procesów kategorii. Uściślone przez DEC-15 do zero/jednego aktywnego przypisania. |
 | DEC-03 | Flow makiety zaakceptowane, dopuszczalne niewielkie korekty widoków. Nie jest zgodą na dane demo i dodatkowe moduły. |
 | DEC-04 | SRM prowadzi, SG2 odpowiada za AppShell; ARCHITECTURE zachowuje wspólne kontrakty i własne dopuszczenia. Potwierdzone w bieżącym zleceniu. |
-| DEC-05 | Brak akceptacji całego rozwiązania/roadmapy i brak mandatów E1/E2. Nadal obowiązuje do konkretnych nowych decyzji. |
+| DEC-05 | Historyczny brak akceptacji całego rozwiązania/roadmapy zastąpiony przez DEC-21. Brak mandatów E1/E2 nadal obowiązuje; właściciel jawnie polecił nie uruchamiać etapów. |
 | DEC-06 | Tworzenie pipeline’u przed doborem firm i etapów. Dawna otwarta opcja synchronizacji kategorii została zamknięta przez DEC-14. |
 | DEC-07 | Duplikat NIP prowadzi do istniejącej karty. Dawny pomysł dodatkowego ekranu zastępuje DEC-13: stan w tym samym formularzu i CTA zależne od kontekstu. |
 | DEC-08 | Jednakowe możliwości uprawnionych członków we własnej organizacji i izolacja multi-tenant w bazie. Uściślone przez DEC-17, bez znoszenia autoryzacji operacji. |
@@ -551,7 +552,7 @@ Każdy wykonawca uzupełnia wiersz po istotnym wyniku/zmianie: faktyczne daty, t
 | DEC-19 | E1: kontrakt SRM, trwały zapis i drugi użytkownik tej samej org plus osobna odmowa obcej. E2: pełny scenariusz AppShell. Development, reprezentatywne dane testowe, ten sam odbierający. Opis poufnych treści ma odnieść się do wcześniejszej propozycji wydzielenia PORR. |
 | DEC-20 | Właściciel zlecił domknięcie projektu w tej samej Karcie/PR1123, aktualizację 29 kryteriów, kontraktu, roadmapy i FINAL-02/04/08 oraz przedstawienie całego pakietu do łącznej akceptacji. To nie zlecenie realizacji etapów. |
 
-### 6.3. Rekomendacje zawarte w bazie do akceptacji
+### 6.3. Rekomendacje objęte zaakceptowaną bazą
 
 | ID | Rekomendacja / zakres łącznej akceptacji |
 | --- | --- |
@@ -564,13 +565,25 @@ Każdy wykonawca uzupełnia wiersz po istotnym wyniku/zmianie: faktyczne daty, t
 | REC-07 | Kontrakt domain 1.0.0 i nowy publiczny UI 2.0.0, jawne operacje i ograniczony peer; bez cichej zmiany kontraktu presentation-only 1.0.0. |
 | REC-08 | Zabezpieczenia CAS, idempotencja i bounded transakcje z FORCE RLS/FK/unikatami oraz sanitizowanymi dowodami; jednakowe prawa członków realizowane przez jawnie przyjęte operacje, bez wildcardu. |
 
-Akceptacja całego projektu i roadmapy ma objąć te rekomendacje, zakres ADP UNKNOWN, granicę danych testowych Development i wyłączenia. Nie zakłada się, że zostały zaakceptowane samym wcześniejszym flow albo odpowiedzią o multi-tenant.
+DEC-21 obejmuje REC-01–08, zakres ADP UNKNOWN, granicę danych testowych Development i wyłączenia w bazie f75529c590c5dd4611223c949e5956e34d101e22. Wynika to z łącznej akceptacji całego projektu i roadmapy 2026-11-18, odrębnej od wcześniejszego przyjęcia flow i odpowiedzi o multi-tenant.
+
+### 6.4. Łączna akceptacja właściciela — DEC-21, 2026-11-18
+
+| Pole | Zapis decyzji |
+| --- | --- |
+| Aktor / data | Właściciel w bieżącym wątku (owner Karty: tomasz@profitia.pl); 2026-11-18, Europe/Warsaw. |
+| Dosłowna dyspozycja | „Akceptuję łącznie projekt rozwiązania i całą roadmapę E1–E2 z Karty w rewizji f75529c. Zapisz akceptację w tej samej Karcie i PR #1123. Nie uruchamiaj jeszcze żadnego etapu.” |
+| Zaakceptowana rewizja | [f75529c590c5dd4611223c949e5956e34d101e22](https://github.com/profitia/SG-dev/blob/f75529c590c5dd4611223c949e5956e34d101e22/Canon/proposals/bsdc/SRM/supplier-category-pipelines.md); blob 31d655e4ce8ce2422ec39b54c054a313eb433d11. Przed zapisem potwierdzono zgodność najnowszej Karty w PR #1123 z tą rewizją. |
+| Przedmiot / wynik | OWNER_APPROVED: łącznie projekt rozwiązania (§1–4) i cała roadmapa E1–E2 (§5), w tym pięć tasków E1, trzy taski E2, zależności, ownerzy, środowiska, task/stage/final Business DoD, FINAL-01–10, sposób rozliczenia, rekomendacje REC-01–08 (§6.3) i granice zakresu. |
+| Freeze | Baza merytoryczna obu części pozostaje wskazanym commitem. Aktualizacja statusów, dowodów i punktu wznowienia nie zmienia zakresu, kontraktu, kolejności zależności ani DoD. Zmiana merytoryczna wymaga właściwej nowej decyzji. |
+| Granice zgody | Wyłącznie zapis akceptacji w tej samej Karcie i PR #1123. **Nie uruchomiono E1, E2 ani żadnego ich taska czy przygotowania wykonawczego.** Akceptacja nie upoważnia do implementacji, migracji, zasobów, merge, deploymentu ani automatycznej publikacji/aktywacji normatywnego kanonu. |
+| Rejestr / wznowienie | F3 i wszystkie A–F USTALONE. E1, E2 i wszystkie taski NIE_ROZPOCZĘTE. Oczekiwanie na osobne, wyraźne polecenie właściciela dotyczące konkretnego etapu. |
 
 ## 7. Otwarte zależności, realne ryzyka i granice twierdzeń
 
 ### 7.1. Brak ukrytych decyzji zakresowych
 
-Na potrzeby **zdefiniowanego odbioru v1 Development na danych testowych** projekt nie wymaga kolejnej decyzji przed przedstawieniem do łącznej akceptacji. Właściciel ma rozstrzygnąć cały pakiet, w tym jawne rekomendacje REC-01–08. Brak potwierdzonego źródła ADP jest obsługiwanym stanem produktu, nie ukrytym zadaniem integracyjnym.
+Na potrzeby **zdefiniowanego odbioru v1 Development na danych testowych** cały projekt i roadmapa, w tym jawne rekomendacje REC-01–08, zostały zaakceptowane przez właściciela (DEC-21). Brak potwierdzonego źródła ADP jest obsługiwanym stanem produktu, nie ukrytym zadaniem integracyjnym. Nie ma mandatu do uruchomienia etapów.
 
 Następujące zmiany wymagałyby ponownej decyzji, bo zmieniają zakres/bezpieczeństwo/odbiór:
 - wymaganie rzeczywiście zasilanego CURRENT/MISSING dla realnych dokumentów zamiast dopuszczonego UNKNOWN przy braku źródła;
@@ -593,36 +606,40 @@ Następujące zmiany wymagałyby ponownej decyzji, bo zmieniają zakres/bezpiecz
 
 Inicjalizacja tej samej Karty: task SRM-BSDC-SUPPLIER-CATEGORY-20261117, commit dokumentacji 6bca96beddfc5f6129b079fa053cacb8ef90c6c7; [historia i closeout na GitHubie](https://github.com/profitia/project-history-repository/blob/c962d6899e6f72938d16f1bc701017353cbb31d5/history/2026/11/17/2026-11-17-14-40-35Z__srm-srm-bsdc-supplier-category-20261117/manifest.json).
 
-Bieżące wznowienie: SRM-BSDC-SCP-DESIGN-R2-20261117; PMOS begin cmwkubpfb00003rd0mtq3an92; conversationId pmos-task-v2:98c2caa21f32994194ee326c25e6bf4875edacf2517cb426794e69b766626d17; host niedostępny jawnie. Manifest, project/repository/target/code state/routing/runtime i require-begin przeszły PASS przed mutacją.
+Wznowienie projektowe 2026-11-17: SRM-BSDC-SCP-DESIGN-R2-20261117; PMOS begin cmwkubpfb00003rd0mtq3an92; conversationId pmos-task-v2:98c2caa21f32994194ee326c25e6bf4875edacf2517cb426794e69b766626d17; host niedostępny jawnie. Manifest, project/repository/target/code state/routing/runtime i require-begin przeszły PASS przed mutacją.
 
-Kontrola bezpośrednio przed publikacją: main 0adddc61c9955e68ac3e300012a337f125df8bc2, pełny require-begin PASS. Równoległe zmiany od snapshotu discovery dotyczyły innych zadań i rejestru dopuszczeń; nie zmieniały sprawdzonych granic domeny ani routingu tej Karty.
+Kontrola przed publikacją rewizji projektowej 2 (2026-11-17): main 0adddc61c9955e68ac3e300012a337f125df8bc2, pełny require-begin PASS. Równoległe zmiany od snapshotu discovery dotyczyły innych zadań i rejestru dopuszczeń; nie zmieniały sprawdzonych granic domeny ani routingu tej Karty.
 
-Mutacja dotyczy wyłącznie jednego PDR w istniejącym PR #1123. Nowy commit będzie zweryfikowany niezależnym odczytem GitHub; jego identyfikator jest źródłem rewizji do akceptacji. PMOS/PHR wznowienia są rozliczeniem **zadania dokumentacyjnego**, nie wykonaniem E1. Bieżąca historia pliku i PR są źródłem najnowszego SHA; nie wstawia się do treści samoodnoszącego się, wyliczonego z góry commitu.
+Zaakceptowana rewizja projektowa 2: f75529c590c5dd4611223c949e5956e34d101e22. Zapis akceptacji 2026-11-18: task SRM-BSDC-SCP-ACCEPTANCE-20261118; PMOS begin cmwlos97u00008es52fzj1twi; conversationId pmos-task-v2:a36fb1c929ff2d0527288c0ea2fbe5229ecfe387326b39b7d93286d0d6de46cd; host niedostępny, jawne null. Kontrola przed mutacją: main d4bc54fddd1118d6e3050ba64e5ed41054e093d9, manifest 81 aktywnych dokumentów oraz project/repository/target/code state/routing/runtime i require-begin PASS.
+
+Aktualizacja dotyczy wyłącznie decyzji, statusów i punktu wznowienia w jednym PDR oraz metadanych istniejącego PR #1123. PMOS/PHR są rozliczeniem **zadania dokumentacyjnego**, nie wykonaniem E1. Bieżąca historia pliku i PR wskazują commit zapisu akceptacji; ten commit nie zastępuje zamrożonej bazy f75529c590c5dd4611223c949e5956e34d101e22. Nie wstawia się do treści samoodnoszącego się, wyliczonego z góry commitu. PR pozostaje Draft; nie dokonano merge ani aktywacji.
 
 ## 8. Łączna akceptacja, freeze i punkt wznowienia
 
-### 8.1. Przedmiot decyzji właściciela
+### 8.1. Zapisana akceptacja i zamrożona baza
 
-Do akceptacji przedstawiono **łącznie**:
+Właściciel **2026-11-18 zaakceptował łącznie** projekt rozwiązania i całą roadmapę E1–E2 z Karty w rewizji [f75529c590c5dd4611223c949e5956e34d101e22](https://github.com/profitia/SG-dev/blob/f75529c590c5dd4611223c949e5956e34d101e22/Canon/proposals/bsdc/SRM/supplier-category-pipelines.md); pełny zapis aktora, dyspozycji, zakresu i granic zgody: DEC-21 (§6.4).
+
+Akceptacja obejmuje:
+
 1. projekt rozwiązania z §1–4, w tym reguły cyklu życia, dostęp, źródło/UNKNOWN ADP, kontrakt i granicę PORR;
-2. całą roadmapę E1–E2 z §5: pięć tasków E1, trzy taski E2, ich DoD, zależności, ownerów/środowiska, FINAL-01–10, sposób rozliczenia i osobne mandaty.
+2. całą roadmapę E1–E2 z §5: pięć tasków E1, trzy taski E2, ich DoD, zależności, ownerów/środowiska, FINAL-01–10, sposób rozliczenia i osobne mandaty;
+3. rekomendacje REC-01–08 i jawne wyłączenia zawarte w tej bazie.
 
-Decyzja musi wskazać dokładny commit tej Karty. Wzorzec odpowiedzi: **Akceptuję projekt rozwiązania oraz całą roadmapę E1–E2 z Karty BSDC-20261117-SUPPLIER-CATEGORY-PIPELINES w rewizji <zweryfikowany commit>.** Samo przyjęcie części nie przyjmuje po cichu drugiej części.
+F3 ma USTALONE z dowodem decyzji względem konkretnej rewizji. Projekt i bazowy plan pozostają odtwarzalne z zaakceptowanego commitu. Późniejsze statusy/dowody/receipts aktualizuje się w tej samej Karcie, bez zmiany zakresu i DoD; zmiany merytoryczne wymagają właściwej nowej decyzji. Publikacja ewentualnego aktywnego normatywnego rozszerzenia podlega właściwemu governance; nie jest automatycznym skutkiem akceptacji Karty.
 
-Po akceptacji należy zapisać aktora, datę, zakres obu części, dokładny zaakceptowany commit i granice zgody w tym samym pliku; F3 otrzymuje USTALONE dopiero z tym dowodem. Zamrożony projekt i bazowy plan pozostają odtwarzalne z tego commitu. Późniejsze statusy/dowody/receipts aktualizuje się dalej, bez zmiany zakresu i DoD. Publikacja ewentualnego aktywnego normatywnego rozszerzenia podlega właściwemu governance; nie jest automatycznym skutkiem akceptacji roboczej Karty.
-
-**Akceptacja projektu i roadmapy nie uruchamia implementacji.** Osobny przyszły start E1 obejmuje tylko dopuszczone taski E1; po rozliczeniu STOP. E2 wymaga nowego wyraźnego polecenia. Same CI, merge, wydanie czy zakończenie taska nie zastępują kolejnego mandatu.
+**Dyspozycja właściciela: „Nie uruchamiaj jeszcze żadnego etapu.”** E1 i E2 oraz wszystkie ich taski pozostają NIE_ROZPOCZĘTE. Brak zgody na ich przygotowania wykonawcze. Osobny przyszły start E1 obejmie tylko dopuszczone taski E1; po rozliczeniu STOP. E2 wymaga nowego wyraźnego polecenia. Same CI, merge, wydanie czy zakończenie taska nie zastępują kolejnego mandatu.
 
 ### 8.2. Punkt wznowienia
 
-- Najnowsza centralna Karta: ten sam plik/gałąź w PR #1123. Przed wznowieniem zawsze odczytać aktualny GitHub, SHA/blob, decyzję właściciela i rejestr. Nie tworzyć drugiej Karty.
-- Gdzie skończono: rewizja projektowa 2 przygotowana do wspólnego przeglądu; decyzje DEC-12–20 wprowadzone, kompletne §1–5 i rekomendacje REC-01–08.
-- Stan checklisty: A–E USTALONE, F W_TRAKCIE wyłącznie z powodu oczekiwanej decyzji F3.
-- Ostatnia przyjęta decyzja: wymagania biznesowe z bieżącego polecenia. Projekt i roadmapa **niezaakceptowane** do decyzji o konkretnym commicie.
+- Najnowsza centralna Karta: ten sam plik/gałąź w PR #1123. Przed wznowieniem odczytać aktualny GitHub, SHA/blob, decyzję właściciela i rejestr. Nie tworzyć drugiej Karty. Aktualny commit statusowy nie zastępuje bazy merytorycznej f75529c590c5dd4611223c949e5956e34d101e22.
+- Gdzie skończono: zapisano łączną akceptację rewizji projektowej 2 i całej roadmapy; §1–5 oraz REC-01–08 przyjęte bez zmiany treści projektu i DoD.
+- Stan checklisty: A–F USTALONE, wszystkie 29/29 kryteriów BSDC; nie jest to odbiór działającej funkcji.
+- Ostatnia przyjęta decyzja: DEC-21, 2026-11-18, owner Karty tomasz@profitia.pl, akceptacja obu części w rewizji f75529c590c5dd4611223c949e5956e34d101e22 i jawne polecenie nieuruchamiania etapów.
 - Aktywny mandat wykonawczy produktu / ostatni wykonany etap: BRAK. E1 i E2 oraz wszystkie ich taski NIE_ROZPOCZĘTE.
-- Następny krok: łączna akceptacja albo konkretne uwagi właściciela. Przy zmianie merytorycznej zaktualizować tę samą Kartę i ponownie wskazać rewizję całego pakietu.
-- Po akceptacji, dopiero po osobnym zleceniu: rozpocząć E1-T01, prowadzić wszystkie dozwolone taski E1 z własnymi taskId i profilami. Nowe wspólne operacje w ARCHITECTURE mają osobny task/PMOS/PHR, SG2 zachowuje własny lifecycle przy E2.
-- Stosować aktywny Business Outcome Engineering v1.1, Universal Project Execution v1.2, Full Autopilot v2.0 oraz aktualne AGENTS/manifest/profil/routing/środowisko. Nie kopiować procedur ani poświadczeń między projektami.
+- Następny krok: **oczekiwać na osobne, wyraźne polecenie właściciela**, np. „URUCHOM ETAP E1”. Do tego czasu nie rozpoczynać tasków ani przygotowań wykonawczych E1/E2.
+- Dopiero po osobnym zleceniu E1: prowadzić dopuszczone E1-T01–T05 z własnymi taskId i profilami. Nowe wspólne operacje w ARCHITECTURE mają osobny task/PMOS/PHR. Po rozliczeniu E1 STOP; SG2 zachowuje własny lifecycle przy osobno zleconym E2.
+- Stosować aktywny Business Outcome Engineering v1.1, Universal Project Execution v1.2, Full Autopilot v2.0 oraz aktualne AGENTS/manifest/profil/routing/środowisko w granicach faktycznie udzielonego mandatu. Nie kopiować procedur ani poświadczeń między projektami.
 - Karta jest jedynym planem i rejestrem inicjatywy; PMOS/PHR pozostają dowodami. Dokumentów i dowodów nie przechowywać lokalnie na komputerze użytkownika.
 
 ### 8.3. Źródła i granice odniesień
