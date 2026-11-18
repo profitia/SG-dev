@@ -1,0 +1,218 @@
+{
+  "kind": "INACTIVE_POLICY_COMPATIBILITY_PROPOSAL",
+  "sha": "05db10a7eb520731393b544e28bc0b429eb2c33f",
+  "approvedPolicy": "44c3517fb79b61371ece06802ba33c35de4c0bff",
+  "approvedSource": "e1728a034e40e0a7004cff7b61bbe79094b145a6",
+  "main": "efc1290378507e947cbf9ad0bcfc1e4a71086bb6",
+  "source83Unchanged": true,
+  "raw579Unchanged": true,
+  "workflowControllerIdentical": true,
+  "onlyNewOwnedBytes": "scripts/governance/controlled-package-ci-path-coverage.test.mjs",
+  "newTestExtensionBytes": 2310,
+  "newTestExtensionSha256": "63b1cf71226fa1cc37f5c254be553a9c872c3260339941b90e81b1ac584d610b",
+  "productMutations": false,
+  "policyFiles": [
+    {
+      "path": ".github/workflows/platform-contracts-ci.yml",
+      "mode": "100644",
+      "blob": "be88dadcc37e609f0b23d95a22239bd5fbb88e6a",
+      "sha256": "61b402ded4e114c53223af02200a53b63affaef3b25efdbe20b2838dee594c1f",
+      "bytes": 22055,
+      "status": "modified",
+      "sameAsApproved44": true
+    },
+    {
+      "path": "scripts/governance/controlled-package-ci-path-coverage.test.mjs",
+      "mode": "100644",
+      "blob": "deb1b45f17c3dc7543c004b9de93dcaa792cad25",
+      "sha256": "5fb8e856a90ef6cd75cbb80642de88167a358f0bcd4d3d86358908bc4c6bb236",
+      "bytes": 49952,
+      "status": "modified",
+      "sameAsApproved44": false
+    },
+    {
+      "path": "scripts/governance/controlled-package-ci.mjs",
+      "mode": "100644",
+      "blob": "3f47d65d065ae0fd271216fa0bb13b629021993d",
+      "sha256": "5501dd3d64aa0d7b0a8b9ed3176cd1fd70e21728af9f816dab719d61f3a9e0fa",
+      "bytes": 1446552,
+      "status": "modified",
+      "sameAsApproved44": true
+    }
+  ],
+  "controlPolicyFiles": [
+    ".github/workflows/platform-contracts-ci.yml",
+    "scripts/governance/controlled-package-ci.mjs",
+    "scripts/governance/development-execution.mjs",
+    "Canon/registries/development-execution-profiles-v1.json",
+    "Canon/registries/architecture-environment-topology-v1.json",
+    "scripts/governance/project-profile.mjs",
+    "scripts/governance/routing-engine.mjs",
+    "scripts/architecture-classify.mjs",
+    "Canon/registries/profitia-projects-v1.json",
+    "Canon/registries/current-architecture-baseline-v1.json",
+    "packages/platform-contracts/test/sdk-source-context.mjs",
+    "apps/architecture-lab/current-sdk-source.json"
+  ],
+  "controlPolicyDigest": "831bdb54ccea2d6467810dc6defd1a8b94dc29a1290cbaddd589a8df0eefdd8a",
+  "acceptedMainPolicyDigest": "a1953841ed284bec973f1a3947253bb972ae6e0c30d7737c3696774827887fe0",
+  "previousActualControlDigest": "d337cf25ffef0b1aebbcd5f7a153a1baf623b758f8a0eecc578d30b4b95961e8",
+  "previous496ControlDigest": "d337cf25ffef0b1aebbcd5f7a153a1baf623b758f8a0eecc578d30b4b95961e8",
+  "generatedAt": "2026-11-18T22:07:45.781095+00:00",
+  "validationKind": "PRIVATE_PROPOSAL_VALIDATION_NOT_ORIGINAL_CONTROLLED_CI",
+  "focused": {
+    "sha": "05db10a7eb520731393b544e28bc0b429eb2c33f",
+    "command": [
+      "node",
+      "--test",
+      "scripts/governance/controlled-package-ci-path-coverage.test.mjs"
+    ],
+    "exit": 0,
+    "summary": [
+      "ℹ tests 26",
+      "ℹ pass 26",
+      "ℹ fail 0",
+      "ℹ skipped 0"
+    ]
+  },
+  "joint": {
+    "kind": "PRIVATE_JOINT_VALIDATION_NOT_CANONICAL_CI",
+    "sha": "d5dc3d9eccd6d3d0b91cb574467c0cab709c6c94",
+    "policy": "05db10a7eb520731393b544e28bc0b429eb2c33f",
+    "source": "e1728a034e40e0a7004cff7b61bbe79094b145a6",
+    "main": "efc1290378507e947cbf9ad0bcfc1e4a71086bb6",
+    "command": [
+      "node",
+      "--test",
+      "--test-concurrency=2",
+      "scripts/governance/assistant-quality-routing.test.mjs",
+      "scripts/governance/controlled-package-ci-path-coverage.test.mjs",
+      "scripts/governance/controlled-package-ci.test.mjs",
+      "scripts/governance/development-bridge.test.mjs",
+      "scripts/governance/development-execution.test.mjs",
+      "scripts/governance/development-workspace.test.mjs",
+      "scripts/governance/ecr-routing.test.mjs",
+      "scripts/governance/finder-unmetered-ci-admission.test.mjs",
+      "scripts/governance/governance.test.mjs",
+      "scripts/governance/identity-runtime-onboarding.test.mjs",
+      "scripts/governance/krs-registry-routing.test.mjs",
+      "scripts/governance/package-limits-routing.test.mjs",
+      "scripts/governance/platform-knowledge-ci-admission.test.mjs",
+      "scripts/governance/platform-knowledge-routing.test.mjs",
+      "scripts/governance/platform-source-hub-foundation.test.mjs",
+      "scripts/governance/sg2-staging-release.test.mjs",
+      "scripts/governance/srm-adp-routing.test.mjs",
+      "scripts/governance/srm-release-lifecycle.test.mjs"
+    ],
+    "startedAt": "2026-11-18T21:56:18.499118+00:00",
+    "state": "FINISHED",
+    "restoreBranch": "architecture/calendar-ci-efc-compat-proposal-20261118",
+    "exit": 0,
+    "finishedAt": "2026-11-18T22:06:48.970205+00:00",
+    "summary": [
+      "ℹ tests 716",
+      "ℹ pass 716",
+      "ℹ fail 0",
+      "ℹ skipped 0"
+    ],
+    "failures": [],
+    "dirty": "",
+    "headAfter": "d5dc3d9eccd6d3d0b91cb574467c0cab709c6c94"
+  },
+  "authentication": {
+    "kind": "PRIVATE_PROPOSAL_AUTHENTICATION_NOT_CANONICAL_CI",
+    "sha": "d5dc3d9eccd6d3d0b91cb574467c0cab709c6c94",
+    "source": "e1728a034e40e0a7004cff7b61bbe79094b145a6",
+    "admissionBase": "05db10a7eb520731393b544e28bc0b429eb2c33f",
+    "admissionBaseNotYetAcceptedMain": true,
+    "actualPackageAuthority": "efc1290378507e947cbf9ad0bcfc1e4a71086bb6",
+    "protectedSource": {
+      "protectedSourceReviewId": "calendar-complete-functional-pk-r6-ci-history-repair-exact-source-20261118",
+      "protectedSourceReviewDigest": "72909a92c4e9395790702cb00850e8cc04b7dcb89d59b6576afa51bc218982c6",
+      "originalSourceSha": "e1728a034e40e0a7004cff7b61bbe79094b145a6"
+    },
+    "controlPolicyFiles": [
+      ".github/workflows/platform-contracts-ci.yml",
+      "scripts/governance/controlled-package-ci.mjs",
+      "scripts/governance/development-execution.mjs",
+      "Canon/registries/development-execution-profiles-v1.json",
+      "Canon/registries/architecture-environment-topology-v1.json",
+      "scripts/governance/project-profile.mjs",
+      "scripts/governance/routing-engine.mjs",
+      "scripts/architecture-classify.mjs",
+      "Canon/registries/profitia-projects-v1.json",
+      "Canon/registries/current-architecture-baseline-v1.json",
+      "packages/platform-contracts/test/sdk-source-context.mjs",
+      "apps/architecture-lab/current-sdk-source.json"
+    ],
+    "controlPolicyDigest": "831bdb54ccea2d6467810dc6defd1a8b94dc29a1290cbaddd589a8df0eefdd8a",
+    "result": "PASS",
+    "productMutation": false
+  },
+  "preservedInputError": {
+    "kind": "PRIVATE_DIAGNOSTIC_INPUT_ERROR",
+    "error": "ARCHITECTURE_DIFF_MISMATCH",
+    "candidate": "d5dc3d9eccd6d3d0b91cb574467c0cab709c6c94",
+    "incorrectAdmissionBase": "c4965a445867601275cbb75dc4de993123414ba2",
+    "reason": "Provided83 source entries with historical pre-policy base, whose real diff also contains policy and parallel accepted changes; repeat with actual policy parent05db. No code changed."
+  },
+  "previousExactPublicRuns": {
+    "currentAsOf": "2026-11-18T21:55:28.064745+00:00",
+    "candidate": "fd80475942364c7848c8cf52c2a2dfcb061eef55",
+    "records": {
+      "44402996407": {
+        "id": 44402996407,
+        "head_sha": "0523b664a4846c99885c7debfa7b5035025b9b3f",
+        "head_branch": "main",
+        "event": "workflow_dispatch",
+        "status": "completed",
+        "conclusion": "failure",
+        "run_attempt": 1,
+        "html_url": "https://github.com/profitia/SG-dev/actions/runs/44402996407",
+        "workflow_id": 383640662
+      },
+      "44403013144": {
+        "id": 44403013144,
+        "head_sha": "fd80475942364c7848c8cf52c2a2dfcb061eef55",
+        "head_branch": "sg2/calendar-pk-r6-ci-adoption-20261118",
+        "event": "pull_request",
+        "status": "completed",
+        "conclusion": "failure",
+        "run_attempt": 1,
+        "html_url": "https://github.com/profitia/SG-dev/actions/runs/44403013144",
+        "workflow_id": 383640662
+      },
+      "44403013430": {
+        "id": 44403013430,
+        "head_sha": "fd80475942364c7848c8cf52c2a2dfcb061eef55",
+        "head_branch": "sg2/calendar-pk-r6-ci-adoption-20261118",
+        "event": "pull_request",
+        "status": "completed",
+        "conclusion": "success",
+        "run_attempt": 1,
+        "html_url": "https://github.com/profitia/SG-dev/actions/runs/44403013430",
+        "workflow_id": 362561378
+      },
+      "135150727247": {
+        "bytes": 218830,
+        "sha256": "8d417ccc2c05603b6824d1ea738bb6076e1fc56bae37906aab9776b998bfb848",
+        "matches": [
+          "2026-11-18T21:36:07.3302257Z CONTROLLED_CI_FAILED_CLOSED"
+        ]
+      },
+      "135150772099": {
+        "bytes": 215638,
+        "sha256": "c366ea82b4b58d913226caa7347a027568fa29a1436cd7db2c63ab2ee330b70b",
+        "matches": [
+          "2026-11-18T21:36:49.8213234Z CONTROLLED_VALIDATION_REQUIRED_FOR_EXACT_SHA"
+        ]
+      }
+    },
+    "notCanonicalProof": true
+  },
+  "requiredNewExactPublicCi": "NOT_YET_RUN_FOR_THIS_INACTIVE_PROPOSAL",
+  "ownerDecisionStatus": "PENDING",
+  "productDeploymentPerformed": false,
+  "emailSubmitted": false,
+  "canonicalControlledProofPresent": false
+}

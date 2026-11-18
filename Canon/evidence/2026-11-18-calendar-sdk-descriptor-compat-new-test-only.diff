@@ -1,0 +1,38 @@
+diff --git a/scripts/governance/controlled-package-ci-path-coverage.test.mjs b/scripts/governance/controlled-package-ci-path-coverage.test.mjs
+index 8bac8858..deb1b45f 100644
+--- a/scripts/governance/controlled-package-ci-path-coverage.test.mjs
++++ b/scripts/governance/controlled-package-ci-path-coverage.test.mjs
+@@ -574,3 +574,33 @@ test('controlled authority checkout retains pinned main and full validation hist
+  assert.match(job,/permissions:\n      contents: read\n      actions: read\n      packages: read/)
+  assert.doesNotMatch(job,/packages: write|contents: write/)
+ })
++
++
++test('actual trusted SDK descriptor admits only installed local packages and retains optional source integrity',async()=>{
++ const policy=await import('./controlled-package-ci.mjs')
++ const actual=JSON.parse(fs.readFileSync(path.join(root,'apps/architecture-lab/current-sdk-source.json'),'utf8'))
++ const selector={id:actual.sourceAdmission.recordId,taskId:actual.sourceAdmission.taskId}
++ const selected=policy.currentSdkSourceAdmissionPolicy(selector,root)
++ assert.deepEqual(Object.keys(selected.reviewedLocalPackages).sort(),[
++  '@profitia/maps-embed','@profitia/platform-contracts','@profitia/platform-current-e1-authority','@profitia/platform-source-hub-contracts'
++ ].sort())
++ assert.deepEqual(selected.reviewedMetadata.entries['apps/architecture-lab/benchmark-unmetered-source.json'],{sha:'4c165bf726fdd3196e158603cb12c43f4ecde890',mode:'100644',kind:'HISTORICAL_EVIDENCE'},'frozen Finder producer record requires its exact protected-metadata entry')
++ const sourceOnly={
++  '@profitia/platform-current-fresh-report':'packages/platform-contracts/current-fresh-report/package.json',
++  '@profitia/platform-payload-capture':'packages/platform-contracts/payload-capture/package.json',
++  '@profitia/platform-readonly-miss-report':'packages/platform-contracts/readonly-miss-report/package.json',
++  '@profitia/platform-root-atomic-claim':'packages/platform-contracts/root-atomic-claim/package.json'
++ }
++ const authority=fs.mkdtempSync(path.join(os.tmpdir(),'sdk-real-descriptor-')),file=path.join(authority,'apps/architecture-lab/current-sdk-source.json')
++ try{
++  fs.mkdirSync(path.dirname(file),{recursive:true})
++  for(const [name,manifest]of Object.entries(sourceOnly)){
++   assert.match(actual.inputs[manifest],/^[a-f0-9]{64}$/,'optional manifest remains authenticated physical source')
++   assert.equal(Object.hasOwn(selected.reviewedLocalPackages,name),false,'source integrity is not install authority')
++   const changed=structuredClone(actual)
++   changed.sourceAdmission.localPackages[name]=structuredClone(actual.sourceAdmission.localPackages['@profitia/platform-contracts'])
++   fs.writeFileSync(file,JSON.stringify(changed))
++   assert.throws(()=>policy.currentSdkSourceAdmissionPolicy(selector,authority),/CURRENT_SDK_SOURCE_POLICY_REJECTED/)
++  }
++ }finally{fs.rmSync(authority,{recursive:true,force:true})}
++})

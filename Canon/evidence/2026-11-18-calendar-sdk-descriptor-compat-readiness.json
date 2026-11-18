@@ -1,0 +1,210 @@
+{
+  "kind": "READINESS_NOT_BUSINESS_ACCEPTANCE",
+  "deployments": {
+    "readAt": "2026-11-18T22:00:06.529Z",
+    "resources": [
+      {
+        "serviceId": "srv-dbpfpm3bc2fs73a2t740",
+        "deploys": [
+          {
+            "id": "dep-dbqmo22fngtc73839rt0",
+            "status": "live",
+            "sha": "877c55c6ef7879c088255284dd852d5cab6d5f44",
+            "createdAt": "2026-11-12T07:34:32.717328Z",
+            "finishedAt": "2026-11-12T07:35:19.98355Z"
+          },
+          {
+            "id": "dep-dbpm8gt6e07s73de5qtg",
+            "status": "deactivated",
+            "sha": "22ad6f867b9bf30c8f01b326c003ea37fdd11f25",
+            "createdAt": "2026-11-10T18:36:52.08228Z",
+            "finishedAt": "2026-11-10T18:37:45.751259Z"
+          },
+          {
+            "id": "dep-dbpfpmrbc2fs73a2t920",
+            "status": "deactivated",
+            "sha": "515c19bb39279d9fd7da73d45f8850235bbc774d",
+            "createdAt": "2026-11-10T11:15:39.909059Z",
+            "finishedAt": "2026-11-10T11:16:51.760486Z"
+          }
+        ]
+      },
+      {
+        "serviceId": "srv-dbllmk0n74is73c2eptg",
+        "deploys": [
+          {
+            "id": "dep-dbpm8gp5efls73dkomhg",
+            "status": "live",
+            "sha": "22ad6f867b9bf30c8f01b326c003ea37fdd11f25",
+            "createdAt": "2026-11-10T18:36:51.193864Z",
+            "finishedAt": "2026-11-10T18:37:56.165673Z"
+          },
+          {
+            "id": "dep-dbpfd3nctcqc73arashg",
+            "status": "deactivated",
+            "sha": "1baa0744a4415e44543ec954fcdf72ac8d63e0f6",
+            "createdAt": "2026-11-10T10:48:46.876201Z",
+            "finishedAt": "2026-11-10T10:51:02.42518Z"
+          },
+          {
+            "id": "dep-dbpfd1142hec73cg9q6g",
+            "status": "deactivated",
+            "sha": "8d88d22a55bc7401debf15333534b6cb1461a453",
+            "createdAt": "2026-11-10T10:48:36.667632Z",
+            "finishedAt": "2026-11-10T10:49:38.397784Z"
+          }
+        ]
+      },
+      {
+        "serviceId": "srv-dbcse6jrjlhs73eib3sg",
+        "deploys": [
+          {
+            "id": "dep-dbuvqq2fngtc73a0jvd0",
+            "status": "live",
+            "sha": "cfa76c865083b43d14408f4bbfa27b2287c03972",
+            "createdAt": "2026-11-18T19:32:56.414815Z",
+            "finishedAt": "2026-11-18T19:33:46.514493Z"
+          },
+          {
+            "id": "dep-dbq9bn0m7kps738pq75g",
+            "status": "deactivated",
+            "sha": "f78f5867064c96f4497e13bcd53c97af2da2e07a",
+            "createdAt": "2026-11-11T16:20:44.556552Z",
+            "finishedAt": "2026-11-11T16:21:48.246283Z"
+          },
+          {
+            "id": "dep-dbq955om7kps738p7jq0",
+            "status": "build_failed",
+            "sha": "0775f8a18d2fbeca462bb0a9d654914b15c53dad",
+            "createdAt": "2026-11-11T16:06:47.189043Z",
+            "finishedAt": "2026-11-11T16:07:05.809998Z"
+          }
+        ]
+      },
+      {
+        "serviceId": "srv-dapa3tid0e5s73f8bc5g",
+        "deploys": [
+          {
+            "id": "dep-dbul4gdckfvc73chhgk0",
+            "status": "live",
+            "sha": "d5eb40a061dd24c5ea65f9f373682179458cb589",
+            "createdAt": "2026-11-18T07:22:41.350741Z",
+            "finishedAt": "2026-11-18T07:25:14.924162Z"
+          },
+          {
+            "id": "dep-dbuab359fdbs73e5m5hg",
+            "status": "deactivated",
+            "sha": "80875d8f0e9451cd9afd34e8baf2a8f6059bc064",
+            "createdAt": "2026-11-17T19:05:48.635338Z",
+            "finishedAt": "2026-11-17T19:06:54.680936Z"
+          },
+          {
+            "id": "dep-dbua2ju7bikc73celr3g",
+            "status": "deactivated",
+            "sha": "59204603e6f41c97e0d27c36ffcc94ca6186d88e",
+            "createdAt": "2026-11-17T18:47:43.975094Z",
+            "finishedAt": "2026-11-17T18:51:04.746385Z"
+          }
+        ]
+      },
+      {
+        "serviceId": "crn-dbpmfgc9v7es73fb9e30",
+        "deploys": [
+          {
+            "id": "dep-dbpqv4ou01pc738ujbqg",
+            "status": "live",
+            "sha": "b4cb5b7f7a731c2d845b569d21f09b88d84b3d8d",
+            "createdAt": "2026-11-10T23:58:11.797462Z",
+            "finishedAt": "2026-11-10T23:58:39.584084Z"
+          },
+          {
+            "id": "dep-dbpqtpqfngtc73873pc0",
+            "status": "deactivated",
+            "sha": "b4cb5b7f7a731c2d845b569d21f09b88d84b3d8d",
+            "createdAt": "2026-11-10T23:55:19.906743Z",
+            "finishedAt": "2026-11-10T23:55:46.957719Z"
+          },
+          {
+            "id": "dep-dbpmfgs9v7es73fb9fh0",
+            "status": "deactivated",
+            "sha": "22ad6f867b9bf30c8f01b326c003ea37fdd11f25",
+            "createdAt": "2026-11-10T18:51:47.736258Z",
+            "finishedAt": "2026-11-10T18:52:11.550253Z"
+          }
+        ]
+      }
+    ]
+  },
+  "existingExecutorPrivatePackages": {
+    "time": "2026-11-18T21:57:02.222Z",
+    "service": "srv-dapa3tid0e5s73f8bc5g",
+    "sha": "d5eb40a061dd24c5ea65f9f373682179458cb589",
+    "packages": [
+      {
+        "name": "@profitia/advisory-widget",
+        "version": "1.0.0",
+        "status": "EXACT_ARCHIVE_READ_PASS",
+        "bytes": 13880,
+        "integrityMatch": true
+      },
+      {
+        "name": "@profitia/cic-core",
+        "version": "1.6.0",
+        "status": "EXACT_ARCHIVE_READ_PASS",
+        "bytes": 20360,
+        "integrityMatch": true
+      },
+      {
+        "name": "@profitia/cic-procurement",
+        "version": "1.1.1",
+        "status": "EXACT_ARCHIVE_READ_PASS",
+        "bytes": 6783,
+        "integrityMatch": true
+      }
+    ],
+    "allExact": true,
+    "temporaryDirectory": "/tmp/calendar-existing-build-read-6vqZ72",
+    "temporaryDirectoryRemoved": true,
+    "scriptsExecuted": false,
+    "credentialsPrinted": false,
+    "productMutation": false
+  },
+  "productMutations": false,
+  "providerAcquisitionPerformed": false,
+  "emailSubmitted": false,
+  "businessStatus": "IN_PROGRESS",
+  "pmosPhrBusinessClosed": false,
+  "mailgun": {
+    "region": "EU",
+    "domain": "spendguru.app",
+    "authenticatedPanel": true,
+    "signingKeyAvailableInPrivateExecutionProfile": true,
+    "webhookConfigured": false,
+    "testMessageSent": false
+  },
+  "coordination": {
+    "existingAuthorizedPeer": {
+      "title": "Platform Knowledge MEMOROS",
+      "threadId": "01a1e7fb-aa2e-7501-b3d7-5f42be90cb14"
+    },
+    "requestedPeers": [
+      {
+        "title": "Logowanie i rejestracja",
+        "threadId": "01a1e7fb-f280-7613-ae37-1715de129f24"
+      },
+      {
+        "title": "Auto-Audyt CIC",
+        "threadId": "01a1e7fb-2253-7f91-9335-270094d39784"
+      },
+      {
+        "title": "Procurement Insights",
+        "threadId": "01a1e7fd-01d1-7973-b3c3-8188664826c3"
+      },
+      {
+        "title": "Napraw wyszukiwanie Macrobond",
+        "threadId": "01a1e92f-cd84-7a92-97d7-36d3fbc49ef0"
+      }
+    ],
+    "newPeerMessagesSent": false
+  }
+}
