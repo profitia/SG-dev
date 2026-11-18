@@ -143,7 +143,7 @@ Statusy: NIE_ROZPOCZĘTY, W_TOKU, CZĘŚCIOWY, ZABLOKOWANY, ZAKOŃCZONY. ZABLOKO
 | Etap | Status aktualny | Początek / koniec | Dowody taskId / PR / SHA / deploy / test | Rzeczywiste braki |
 |---|---|---|---|---|
 | 1. Przygotowanie realizacji i integracji | ZAKOŃCZONY | 2026-11-11 / 2026-11-11 | PR #999, #1000, #1002, #1004, #1005; ARCH-PK-STAGE1-DEVELOPMENT-ACTIVATION-20261111; [readiness i rzeczywiste wdrożenia](../evidence/2026-11-11-platform-knowledge-stage1-development-readiness.md) | Brak blokady do rozpoczęcia etapu2. Implementacja CIC/ACG/E1/Identity/SG2 i silnika pozostaje rozpisaną pracą etapów2–3; FOUNDATION_ONLY nie przetwarza dokumentów |
-| 2. Biblioteka wiedzy na Development | NIE_ROZPOCZĘTY | — / — | — | Implementacja i uruchomienie do wykonania |
+| 2. Biblioteka wiedzy na Development | W_TOKU | — / — | — | Implementacja i uruchomienie do wykonania |
 | 3. Pełne wykorzystanie w SpendGuru | NIE_ROZPOCZĘTY | — / — | — | Integracja i cały odbiór Development do wykonania |
 
 Wykonawca aktualizuje rejestr po rzeczywistych wynikach, bez ponownej akceptacji planu. Operacyjne dowody pozostają w istniejących PMOS/PHR, CI i artefaktach wydania; tabela odsyła do nich zamiast tworzyć konkurencyjną historię. Sama publikacja tego dokumentu nie realizuje żadnego etapu wdrożeniowego. Właściciel zlecił rozpoczęcie etapu pierwszego 11 listopada 2026 r.; stan przy pierwotnej publikacji w nagłówku pozostaje historyczny, a bieżący postęp wskazuje tabela.
