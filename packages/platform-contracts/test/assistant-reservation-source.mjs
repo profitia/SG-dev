@@ -1,5 +1,5 @@
 import {benchmarkUnmeteredPredecessor} from './benchmark-unmetered-source.mjs'
-export const BENCHMARK_UNMETERED_SOURCE_SHA='dca6498a793804dd0249580ff53e8cec61ebbc6e6894a172518e22a8854e675e'
+export const BENCHMARK_UNMETERED_SOURCE_SHA='07cfed31bd24dd9cf8d15db12b42b812fe649d61ba03d7a3a7413930f20605c0'
 // Test/build-only closed source continuation. Never imported by a runtime.
 import assert from 'node:assert/strict'
 import {createHash} from 'node:crypto'
@@ -115,7 +115,7 @@ export function reservationArchitectureSource(before,pin){
 }
 export function assistantReservationPredecessor(current,historical,expectedDigest){
  const benchmark=benchmarkUnmeteredPredecessor(current,historical,BENCHMARK_UNMETERED_SOURCE_SHA)
- if(benchmark){const accepted=assistantReservationPredecessor(benchmark.previousBytes,historical,expectedDigest);return accepted?{...accepted,benchmark,acceptedManifest:accepted.manifest,manifest:{...accepted.manifest,...benchmark.manifest,sourceDigests:{...accepted.manifest.sourceDigests,...benchmark.manifest.sourceDigests,['packages/platform-contracts/test/assistant-reservation-source.mjs']:hash(current('packages/platform-contracts/test/assistant-reservation-source.mjs'))}}}:null}
+ if(benchmark){const accepted=assistantReservationPredecessor(benchmark.previousBytes,historical,expectedDigest);return accepted?{...accepted,benchmark,acceptedManifest:accepted.manifest,manifest:{...accepted.manifest,...benchmark.manifest,sourceDigests:{...accepted.manifest.sourceDigests,...benchmark.manifest.sourceDigests,...benchmark.consumerSourceDigests,['packages/platform-contracts/test/assistant-reservation-source.mjs']:hash(current('packages/platform-contracts/test/assistant-reservation-source.mjs'))}}}:null}
  let bytes;try{bytes=current(RESERVATION_RECORD)}catch(e){if(absent(e))return null;throw e}
  assert.match(expectedDigest??'',/^[a-f0-9]{64}$/);assert.equal(hash(bytes),expectedDigest,'exact reviewed reservation source record')
  const a=JSON.parse(bytes)
@@ -181,7 +181,7 @@ export async function createAcgLegacyRecurringFixture(sourceRoot) {
     // Preserve the real observed authority ref in this local test clone.
     const authoritySha = String(git(['rev-parse', '--verify', 'refs/remotes/origin/main^{commit}'])).trim()
     execFileSync('git', ['update-ref', 'refs/remotes/origin/main', authoritySha], {cwd: root, stdio: ['ignore', 'pipe', 'pipe']})
-    const paths = [...new Set([RESERVATION_RECORD, ...RESERVATION_PATHS, RESERVATION_DERIVED, ...(view.benchmark ? ['apps/architecture-lab/benchmark-unmetered-source.json', ...Object.keys(view.benchmark.manifest.sourceDigests)] : [])])]
+    const paths = [...new Set([RESERVATION_RECORD, ...RESERVATION_PATHS, RESERVATION_DERIVED, ...(view.benchmark ? ['apps/architecture-lab/benchmark-unmetered-source.json', ...Object.keys(view.benchmark.manifest.sourceDigests), ...Object.keys(view.benchmark.consumerSourceDigests)] : [])])]
     assert.equal(new Set([RESERVATION_RECORD, ...RESERVATION_PATHS, RESERVATION_DERIVED]).size, 46, 'closed reservation fixture inventory')
     for (const relative of paths) {
       assert(!path.isAbsolute(relative) && !relative.split('/').includes('..'))

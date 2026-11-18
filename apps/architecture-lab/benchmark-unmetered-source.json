@@ -19,13 +19,14 @@
     "packages/platform-contracts/src/request-ledger.mjs": "9719d776329c4aadc0acc6fc3b05bfc21c66f4f246590de5f0525ee8d50937a0",
     "packages/platform-contracts/test/source-technical-continuity.integration.test.mjs": "3a26a550ba7571468bd6704aa3892263deb1ccd413000f46eeb769540666430b",
     "packages/platform-contracts/test/unmetered-benchmark-requests.integration.test.mjs": "89c287233bf737abf40c10747b85824c778c8238cc9fdbef157fc81a709b25c4",
-    "packages/platform-contracts/test/benchmark-unmetered-source.mjs": "34c2ccf0c1f25e6d71e016c9c44cb4fa85a820a0e2a1f428947dc5d7bd11f625",
-    "packages/platform-contracts/test/benchmark-unmetered-source.test.mjs": "a51c54aa8a69651ed80805f782f00ad4b13581f66a45a46c436bdc855257dc17",
+    "packages/platform-contracts/test/benchmark-unmetered-source.mjs": "ed4f8b11408e8c08706b2508d66abc3ad8d7f78ea2c2067f5b49914343edaa03",
+    "packages/platform-contracts/test/benchmark-unmetered-source.test.mjs": "08e2a917626c2c4f483623430fd390bcbeb349dd270164caa16a12b38e00a27a",
     "packages/platform-contracts/test/assistant-reservation-source.test.mjs": "3e195eab030542507d3dd9db5b8b1f209a2fac534824d4961f32b10fd039480c",
     "apps/architecture-lab/test/sdk-compatibility.test.mjs": "361d3720f4831e181884bb7ff853702ff2f90e9a1a0001fcd554df0b21b7d498",
     "packages/platform-contracts/current-fresh-report/test/current-fresh-report.test.mjs": "209b7aa8b0dcc3bf615d7206c16900f926cc5b994417f8eb9a7bc683d382927f",
     "packages/platform-contracts/readonly-miss-report/test/readonly-miss-report.test.mjs": "13caa5f2e7e26bd1c0141b1ce0a144dbcfc343c7581c379e5d1f4b0633457b6c",
-    "packages/platform-contracts/test/private-operation-host.test.mjs": "bb94f7cb64bbeb3c673790810c2f6b345ee729df4d6d929b165b3ad5d0dbbccd"
+    "packages/platform-contracts/test/private-operation-host.test.mjs": "bb94f7cb64bbeb3c673790810c2f6b345ee729df4d6d929b165b3ad5d0dbbccd",
+    "apps/architecture-lab/private-recurring-source.mjs": "7016acd18cca100b5af23ee0086eb6b20f6b4f419546055d164eed1dc4288faa"
   },
   "predecessorDigests": {
     "packages/platform-contracts/README.md": "36e013b6f6692566004e152020d3d43b38a4567680b5dd0b53677edc519bc1e7",
@@ -42,7 +43,8 @@
     "apps/architecture-lab/test/sdk-compatibility.test.mjs": "d9358c304ac4f4f6ad287c671d742223c2d23c73f0cf8e39b578f1d34ac4a852",
     "packages/platform-contracts/current-fresh-report/test/current-fresh-report.test.mjs": "a5d3ae26681a6d321dd627afafc6f7c5f3a5eb99147763c3f3f95e64696af430",
     "packages/platform-contracts/readonly-miss-report/test/readonly-miss-report.test.mjs": "c797bb7ac6cca7bece2186d1c9ecc1e9c3e8aebdcc76046504edb63f681b6014",
-    "packages/platform-contracts/test/private-operation-host.test.mjs": "cb7885af34cbdb8e017a40c22d0a3b712525a32b50d9e5ff90440dd7ecdc8154"
+    "packages/platform-contracts/test/private-operation-host.test.mjs": "cb7885af34cbdb8e017a40c22d0a3b712525a32b50d9e5ff90440dd7ecdc8154",
+    "apps/architecture-lab/private-recurring-source.mjs": "ad033fcc089438230477cffce824b36b36d191711d634e272e75eca997aff22e"
   },
   "preservedReceipts": {
     "apps/architecture-lab/assistant-m1-sdk-compatibility.json": "f9bd750bd7c4af2b1123a41396cfeacac90bb1744f9abdd5331c76260872b70c",
@@ -125,5 +127,40 @@
     "currentFreshReportSourceDigest": "39293261b70f119499a4526be2e9419437fe9e6241eeb716eb7c406eaa55d1b7",
     "readonlyMissReportSourceDigest": "3523658d1b3ab31a84402f0a1f7f6e204106f3263a119dab2fa59fed1643cef2",
     "rootAtomicClaimSourceDigest": "2fec08d2f2061302d50c29ed9c51d0732852d873ffc90c321b819c92806f8f31"
+  },
+  "consumerInput": {
+    "projectKey": "SG2",
+    "taskId": "SG2-FINDER-PERMANENT-UNMETERED-20261118",
+    "sourceSha": "cba7412bca5e2cbbdab2d573ec394c9adf55fec3",
+    "baseSha": "53691e907e4cc9b7fbf683c91bbebf41299e9ccc",
+    "sourceDigests": {
+      "apps/sg-runtime/deployment/benchmark-discovery-targets.json": "55ff9b745e756a47d5f0333a5d4025a78b0c2b2bf2d112f70a20c6925c94e757",
+      "apps/sg-runtime/instrumentation.ts": "58169086a18e6077385f6d93ce6a7ae535b8ece29f24b524c81034174b36baf2",
+      "apps/sg-runtime/lib/benchmark/discovery-api.ts": "bea336ac70c169af32dfaed30ec24e7a615a6b3784144bb09351929b861b22bd",
+      "apps/sg-runtime/lib/benchmark/discovery-continuity.ts": "e779d35debc48a99f8d7dd660e484b78df9121bb1ecb0cc28e6fe6395b268101",
+      "apps/sg-runtime/lib/benchmark/discovery-host.ts": "8e56ec65ab911a5480ecd54e43d4161d6714180a7c8c2b10833f371f6b018693",
+      "apps/sg-runtime/lib/benchmark/discovery-runtime.ts": "6f999c91e375ad51ff4364557a6f6e864f9f7279b996fefe085fe59817e81cb5",
+      "apps/sg-runtime/lib/benchmark/discovery-source.ts": "7f408695ef3c1dd6b61af61adf9abded82fab8899925124dbfaaf0aff292a916",
+      "apps/sg-runtime/lib/benchmark/errors.ts": "ccb0d070645a88bf4a54cf45a3ba11acdc9703fccab636eb40fd9aec4c3ec572",
+      "apps/sg-runtime/lib/benchmark/macrobond.ts": "69dbf8da906ac8239141ae8ec2ab159c3a2616b5832ab2fac10b1467848efb80",
+      "apps/sg-runtime/package.json": "e34966dd2db8c65693795e7b77e71d34cd45444a83bab8ce98b6f266313f2261",
+      "apps/sg-runtime/scripts/verify-finder-development-bindings.mjs": "e3abfb57f09b1522420822c36e93337a7f857a13bde0f01d9671557be737df2f",
+      "apps/sg-runtime/tests/benchmark-discovery-unmetered-private.integration.test.mjs": "0a38afd4b93924ec61dbd3d819d3d1d1eec408473a478512457902f93910c2bc",
+      "apps/sg-runtime/tests/benchmark-discovery-unmetered.integration.test.mjs": "9916c67b72f7ce5ba69a88fc5746a7a720b4ab25effff3a602ed34ae59e84ea0",
+      "apps/sg-runtime/tests/finder-development-bindings.test.mjs": "316708116db3b3bff8db0aa5bcb28bad6e80745c0f8786efaeb378c68c78da32"
+    },
+    "predecessorDigests": {
+      "apps/sg-runtime/deployment/benchmark-discovery-targets.json": "9e54dd216f83fab38e77ba1d05f597cd9fa57276415d81e613b74af5a3e78c14",
+      "apps/sg-runtime/instrumentation.ts": "a68b34152c49d1f2b404b7a25c11901bfd7274cf5b685791decdc46deca567e8",
+      "apps/sg-runtime/lib/benchmark/discovery-api.ts": "118147f429937fab4f9c7751d61be406157ef97b57922a96bd325679d2af26ba",
+      "apps/sg-runtime/lib/benchmark/discovery-host.ts": "5da2a33763af1558ff168eb67bbf374e678266b4cc52c07f0c2c6b31a7f74651",
+      "apps/sg-runtime/lib/benchmark/discovery-runtime.ts": "ec23415c0f441765f4bf85bb137323a27c2329e7e7522a07527d791f2c75519a",
+      "apps/sg-runtime/lib/benchmark/discovery-source.ts": "b06a3959e1163d33f58592acf18ed324f860324aba9e31ae35bd479dac5197d1",
+      "apps/sg-runtime/lib/benchmark/errors.ts": "cc4966bedc32163417b10d5e20ee58b0785fe80e30b6a4d1c1ca4a3c6dc635e7",
+      "apps/sg-runtime/lib/benchmark/macrobond.ts": "1ff94d36d552c78999269db168f0f94750f657bc324e0724f100c7ee3506dbe5",
+      "apps/sg-runtime/package.json": "2c9b703fb76ae597046aa40b947adb395969a15b688d5f5a08753f2d408851f6",
+      "apps/sg-runtime/scripts/verify-finder-development-bindings.mjs": "9f8059008e35e899ec73098d4ff696f8688a1e161d2d73fd3d19b78b6668d263",
+      "apps/sg-runtime/tests/finder-development-bindings.test.mjs": "1cb1ee2be83ce5d356af773d896668de10fb26a1103b8503d4fca92447f97dc0"
+    }
   }
 }

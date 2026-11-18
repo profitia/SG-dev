@@ -61,5 +61,9 @@ export function recurringSourceFilesystem(root){
  const cwd=root instanceof URL?fileURLToPath(root):root
  const current=p=>fs.readFileSync(path.join(cwd,p))
  const historical=(sha,p)=>execFileSync('git',['show',sha+':'+p],{cwd})
- return recurringSourcePredecessor(current,historical)??{manifest:null,previousBytes:current}
+ const view=recurringSourcePredecessor(current,historical)??{manifest:null,previousBytes:current}
+ const benchmark=view.reservation?.benchmark
+ if(!benchmark)return view
+ // Derived current SDK view; the original accepted manifest stays explicit.
+ return {...view,acceptedManifest:view.manifest,manifest:{...view.manifest,scope:'CURRENT_ACCEPTED_SDK_SOURCE_VIEW',currentContinuation:benchmark.manifest,sourceDigests:{...view.manifest.sourceDigests,...view.reservation.manifest.sourceDigests},sdkDigests:{...view.manifest.sdkDigests,...benchmark.manifest.sdkDigests},optionalPackageDigests:{...view.manifest.optionalPackageDigests,...benchmark.manifest.optionalPackageDigests}}}
 }
