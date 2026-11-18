@@ -1,3 +1,4 @@
+import {bindSg2RequestRuntime} from '@/lib/platform/organisation-context'
 import { NextRequest, type NextResponse } from 'next/server'
 import { z } from 'zod'
 import { OPERATION_CONTRACT } from '@profitia/platform-contracts/operation-context'
@@ -27,7 +28,7 @@ export function createRuntimeAnalyticsEligibilityHandler(resolveRuntime: () => S
     const parsed = selection.safeParse(Object.fromEntries(query))
     if (!parsed.success) return refuse(400)
     try {
-      const runtime = resolveRuntime()
+      const runtime=await bindSg2RequestRuntime(resolveRuntime(),request)
       if (runtime.provider !== 'clerk' || !runtime.marketRead?.analytics || !runtime.dashboardEmbed) return refuse(503)
       const binding = validateNativeDashboardBinding(runtime.dashboardEmbed)
       const sourceUrl = new URL('/api/benchmark/analytics-series', request.url)

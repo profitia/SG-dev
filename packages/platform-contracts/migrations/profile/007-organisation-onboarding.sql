@@ -71,10 +71,14 @@ BEGIN
  uid:=profitia_profile.organisation_onboarding_current_user(true);
  IF p_expected IS NULL OR p_expected<0 OR p_expected>=9223372036854775807
   OR jsonb_typeof(p_patch) IS DISTINCT FROM 'object' OR p_patch='{}'::jsonb OR octet_length(p_patch::text)>16384
-  OR EXISTS(SELECT 1 FROM jsonb_object_keys(p_patch) k WHERE k NOT IN('nip','slug','industry','categories','teamRange'))
+  OR EXISTS(SELECT 1 FROM jsonb_object_keys(p_patch) k WHERE k NOT IN('nip','slug','industry','categories','teamRange','companySelection'))
  THEN RAISE EXCEPTION 'Invalid onboarding draft' USING ERRCODE='PT403'; END IF;
  FOR e IN SELECT key,value FROM jsonb_each(p_patch) LOOP
-  IF e.key='nip' AND(jsonb_typeof(e.value)<>'string' OR e.value#>>'{}' !~ '^[0-9]{10}$')
+  IF e.key='companySelection' AND e.value<>'null'::jsonb AND(jsonb_typeof(e.value) IS DISTINCT FROM 'object'
+    OR(SELECT count(*) FROM jsonb_object_keys(e.value))<>2 OR NOT(e.value?'sourceRef' AND e.value?'version')
+    OR jsonb_typeof(e.value->'sourceRef') IS DISTINCT FROM 'string' OR length(e.value->>'sourceRef') NOT BETWEEN 1 AND 256 OR e.value->>'sourceRef'~'[[:cntrl:]]'
+    OR jsonb_typeof(e.value->'version') IS DISTINCT FROM 'string' OR length(e.value->>'version') NOT BETWEEN 1 AND 256 OR e.value->>'version'~'[[:cntrl:]]')
+   OR e.key='nip' AND(jsonb_typeof(e.value)<>'string' OR e.value#>>'{}' !~ '^[0-9]{10}$')
    OR e.key='slug' AND(jsonb_typeof(e.value)<>'string' OR length(e.value#>>'{}') NOT BETWEEN 3 AND 48 OR e.value#>>'{}' !~ '^[a-z0-9][a-z0-9-]+[a-z0-9]$')
    OR e.key='industry' AND(jsonb_typeof(e.value)<>'object' OR (e.value->>'id') IS NULL OR (e.value->>'id') NOT IN('construction','manufacturing','food','other')
      OR e.value->>'source' IS DISTINCT FROM 'USER' OR jsonb_typeof(e.value->'label') IS DISTINCT FROM 'string'
@@ -97,6 +101,7 @@ BEGIN
    END LOOP;
   END IF;
  END LOOP;
+ IF p_patch?'nip' AND NOT p_patch?'companySelection' THEN p_patch:=p_patch||'{"companySelection":null}'::jsonb; END IF;
  SELECT version INTO old_version FROM profitia_profile.organisation_onboarding_drafts WHERE user_id=uid FOR UPDATE;
  IF NOT FOUND THEN
   IF p_expected<>0 THEN RAISE EXCEPTION 'Draft version conflict' USING ERRCODE='PT409'; END IF;
@@ -107,7 +112,10 @@ BEGIN
   IF n<>1 THEN RAISE EXCEPTION 'Draft version conflict' USING ERRCODE='PT409'; END IF;
  ELSE
   IF old_version<>p_expected THEN RAISE EXCEPTION 'Draft version conflict' USING ERRCODE='PT409'; END IF;
-  UPDATE profitia_profile.organisation_onboarding_drafts SET answers=answers||p_patch WHERE user_id=uid AND version=p_expected;
+  UPDATE profitia_profile.organisation_onboarding_drafts SET answers=
+   (CASE WHEN p_patch?'nip' AND answers->>'nip' IS DISTINCT FROM p_patch->>'nip'
+     THEN answers-ARRAY['companySelection','slug','industry','categories','teamRange'] ELSE answers END)||p_patch
+   WHERE user_id=uid AND version=p_expected;
   GET DIAGNOSTICS n=ROW_COUNT;
   IF n<>1 THEN RAISE EXCEPTION 'Draft version conflict' USING ERRCODE='PT409'; END IF;
  END IF;

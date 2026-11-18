@@ -43,13 +43,6 @@ function AccountConversation({ identityOrigin, mode, onLogin, onBusy }: { identi
   const { isLoaded, isSignedIn, sessionId } = useAuth();
   const receipt = useRef<Receipt | null>(null), history = useRef<HTMLDivElement>(null), input = useRef<HTMLInputElement>(null);
   const mounted = useRef(true), operation = useRef(false);
-  const [messages, setMessages] = useState<Message[]>([{ text: prompts.avatar }]);
-  const [answer, setAnswer] = useState(''), [error, setError] = useState(''), [submitting, setBusy] = useState(false), [finalizing, setFinalizing] = useState(false);
-  const busy = submitting || finalizing;
-  const [step, setStep] = useState('avatar'), [avatar, setAvatar] = useState<'male'|'female'>('female');
-  const [native, setNative] = useState(false), [ready, setReady] = useState(false), [retry, setRetry] = useState(0), [resendLocked, setResendLocked] = useState(false);
-  const [recovery] = useState(() => createPasswordRecovery(clerk));
-  const [confirmation, setConfirmation] = useState(''), [passwordChanged, setPasswordChanged] = useState(false);
   const request = useCallback(async (path: string, body: unknown, headers: Record<string,string> = {}, signal?: AbortSignal) => {
     const result = await fetch(`${identityOrigin}/v1/embedded/srm/${path}`, { method: 'POST', credentials: 'omit', cache: 'no-store', redirect: 'error',
       signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(30000)]) : AbortSignal.timeout(30000), headers: { 'Content-Type':'application/json', ...headers }, body: JSON.stringify(body) });
@@ -60,6 +53,21 @@ function AccountConversation({ identityOrigin, mode, onLogin, onBusy }: { identi
       receipt.current = result.status === 'code' ? { attemptId: result.attemptId, token: result.token } : null; return result; },
     verify: code => { if (!receipt.current) throw Error('REGISTRATION_REQUIRED'); return request('registration/verify', { ...receipt.current, code }); }
   }));
+  const [messages, setMessages] = useState<Message[]>([{ text: prompts[model.state.step] }]);
+  const [answer, setAnswer] = useState(''), [error, setError] = useState(''), [submitting, setBusy] = useState(false), [finalizing, setFinalizing] = useState(false);
+  const busy = submitting || finalizing;
+  const [step, setStep] = useState<string>(model.state.step), [avatar, setAvatar] = useState<'male'|'female'>('female');
+  const [native, setNative] = useState(false), [ready, setReady] = useState(false), [retry, setRetry] = useState(0), [resendLocked, setResendLocked] = useState(false);
+  const [recovery] = useState(() => createPasswordRecovery(clerk));
+  const [confirmation, setConfirmation] = useState(''), [passwordChanged, setPasswordChanged] = useState(false);
+  // Presentation-only, host-scoped hint. Verified account data takes precedence.
+  const rememberAvatar = (value: 'male'|'female') => {
+    try { document.cookie = 'sg_avatar_v1='+value+'; Max-Age=31536000; Path=/; SameSite=Lax'+(window.location.protocol==='https:'?'; Secure':''); } catch {}
+  };
+  useEffect(() => {
+    try { const value=document.cookie.match(/(?:^|;\s*)sg_avatar_v1=(male|female)(?:;|$)/)?.[1];
+      if(value==='male'||value==='female'){setAvatar(value);model.state.avatarSex=value;} } catch {}
+  }, [model]);
   useEffect(() => { mounted.current = true; return () => { mounted.current = false; receipt.current = null; recovery.clear(); }; }, [recovery]);
   useEffect(() => { onBusy(busy); }, [busy, onBusy]);
   useEffect(() => { if (!resendLocked) return; const timer = setTimeout(() => setResendLocked(false), 30000); return () => clearTimeout(timer); }, [resendLocked]);
@@ -77,7 +85,7 @@ function AccountConversation({ identityOrigin, mode, onLogin, onBusy }: { identi
       const result = await request('account', {}, { Authorization: `Bearer ${token}`, ...(receipt.current ? { 'X-Registration-Receipt': receipt.current.token } : {}) }, controller.signal);
       if (controller.signal.aborted || clerk.session?.id !== expectedSession) return;
       if (result.authenticated !== true || typeof result.userId !== 'string' || !Number.isFinite(Date.parse(result.expiresAt)) || Date.parse(result.expiresAt) <= Date.now()) throw Error('ACCOUNT_UNAVAILABLE');
-      if (result.assistantAvatar === 'male' || result.assistantAvatar === 'female') setAvatar(result.assistantAvatar);
+      if (result.assistantAvatar === 'male' || result.assistantAvatar === 'female') { setAvatar(result.assistantAvatar); model.state.avatarSex=result.assistantAvatar; rememberAvatar(result.assistantAvatar); }
       receipt.current = null; setReady(true); setStep('done'); setNative(false);
     })().catch(e => { if (!controller.signal.aborted) setError(friendlyError(e)); }).finally(() => { if (!controller.signal.aborted) setFinalizing(false); });
     return () => controller.abort();
@@ -102,7 +110,7 @@ function AccountConversation({ identityOrigin, mode, onLogin, onBusy }: { identi
         && !clerk.client.signIn.supportedFirstFactors?.some(f => f.strategy === 'password')
         && clerk.client.signIn.supportedFirstFactors?.some(f => f.strategy === 'email_code')) next = 'password_unavailable';
       if (!mounted.current) return;
-      if (previous === 'avatar') setAvatar(value as 'male'|'female');
+      if (previous === 'avatar') { setAvatar(value as 'male'|'female'); rememberAvatar(value as 'male'|'female'); }
       const shown = ['code','reset_code'].includes(previous) ? '••••••' : ['password','new_password'].includes(previous) ? '••••••••' : previous === 'avatar' ? (value === 'male' ? 'Awatar męski' : 'Awatar żeński') : previous === 'method' ? (value === 'password' ? 'Hasło' : 'Kod e-mail') : value;
       setMessages(current => [...current, { text: shown, user: true }, ...(prompts[next] ? [{ text: prompts[next] }] : [])]);
       setAnswer(''); setStep(next); if (next === 'code') setResendLocked(true);
@@ -139,9 +147,9 @@ function AccountConversation({ identityOrigin, mode, onLogin, onBusy }: { identi
   }
   const isCode = ['code','reset_code'].includes(step), isPassword = ['password','new_password'].includes(step);
   const formStep = ['name','surname','email','code','password','reset_code','new_password'].includes(step) && !isSignedIn;
-  const progress = step === 'avatar' ? 0 : ['code','challenge','done','reset_code','new_password'].includes(step) ? 2 : 1;
+  const progress = ['code','challenge','done','reset_code','new_password'].includes(step) ? (mode==='registration'?2:1) : step === 'avatar' ? 0 : mode==='registration'?1:0;
   return <div className="porr-auth-slot">
-    <ol className="porr-progress" aria-label="Etapy">{['Twój rozmówca', mode === 'registration' ? 'Podstawowe dane' : 'Dane logowania', 'Potwierdzenie e-maila'].map((label,i)=><li key={label} aria-current={i === progress ? 'step' : undefined} className={i <= progress ? 'reached' : ''}><span>{i+1}</span><b>{label}</b></li>)}</ol>
+    <ol className="porr-progress" aria-label="Etapy">{(mode==='registration'?['Twój rozmówca','Podstawowe dane','Potwierdzenie e-maila']:['Dane logowania','Potwierdzenie']).map((label,i)=><li key={label} aria-current={i === progress ? 'step' : undefined} className={i <= progress ? 'reached' : ''}><span>{i+1}</span><b>{label}</b></li>)}</ol>
     <section className="porr-chat" aria-label={mode === 'registration' ? 'Rejestracja konta' : 'Logowanie'}>
       <header className="porr-chat-header"><Avatar sex={avatar}/><div><strong>SpendGuru</strong><p>{busy ? 'Chwila, sprawdzam…' : 'Twój rozmówca · online'}</p></div>
         {!isSignedIn && <button className="porr-icon" title="Zacznij od nowa" aria-label="Zacznij od nowa" disabled={busy} onClick={()=>window.location.reload()}><Icon name="restart"/></button>}
@@ -162,12 +170,17 @@ function AccountConversation({ identityOrigin, mode, onLogin, onBusy }: { identi
       {!ready && !native && <footer className="porr-composer">
         {formStep ? <form onSubmit={(e: FormEvent)=>{e.preventDefault();void submit(answer);}}>
           <label className="porr-sr-only" htmlFor="porr-answer">{isCode ? 'Kod weryfikacyjny' : step==='new_password' ? 'Nowe hasło' : step === 'password' ? 'Hasło' : step === 'email' ? 'Adres e-mail' : step === 'name' ? 'Imię' : 'Nazwisko'}</label>
-          <div className="porr-inputs"><input ref={input} id="porr-answer" name={step} type={isPassword?'password':step==='email'?'email':'text'} inputMode={isCode?'numeric':undefined} autoComplete={isCode?'one-time-code':step==='name'?'given-name':step==='surname'?'family-name':step==='new_password'?'new-password':step==='password'?'current-password':'email'} className={isCode?'porr-otp':''} maxLength={isCode?6:isPassword?1024:320} pattern={isCode?'[0-9]{6}':undefined} placeholder={isCode?'0 0 0 0 0 0':isPassword?'Wpisz hasło…':'Wpisz odpowiedź…'} value={answer} onChange={e=>setAnswer(isCode?e.target.value.replace(/\D/g,''):e.target.value)} disabled={busy} required/>
+          <div className="porr-inputs"><input ref={input} id="porr-answer" name={step} type={isPassword?'password':step==='email'?'email':'text'} inputMode={isCode?'numeric':undefined} autoComplete={isCode?'one-time-code':step==='name'?'given-name':step==='surname'?'family-name':step==='new_password'?'new-password':step==='password'?'current-password':'email'} className={isCode?'porr-otp':''} maxLength={isCode?6:isPassword?1024:320} pattern={isCode?'[0-9]{6}':undefined} placeholder={isCode?'0 0 0 0 0 0':isPassword?'Wpisz hasło…':'Wpisz odpowiedź…'} value={answer} onChange={e=>{
+            const value=isCode?e.target.value.replace(/\D/g,'').slice(0,6):e.target.value;
+            setAnswer(value);
+            if(isCode && /^\d{6}$/.test(value)) void submit(value);
+          }} disabled={busy} required/>
           {step==='new_password' && <><label className="porr-sr-only" htmlFor="porr-confirm">Powtórz nowe hasło</label><input id="porr-confirm" type="password" autoComplete="new-password" maxLength={1024} placeholder="Powtórz nowe hasło…" value={confirmation} onChange={e=>setConfirmation(e.target.value)} disabled={busy} required/></>}</div>
           <button className="porr-send" disabled={busy || !answer.trim()} aria-label={isCode?'Potwierdź kod':step==='new_password'?'Zmień hasło':'Wyślij odpowiedź'}><Icon name="send"/></button>
         </form> : <p className="porr-idle">{!isLoaded?'Ładowanie bezpiecznego formularza…':isSignedIn?'Potwierdzanie konta…':'Wybierz odpowiedź powyżej.'}</p>}
         {step==='code' && !isSignedIn && <button className="porr-text-button" disabled={busy || resendLocked} onClick={()=>void resend()}>{resendLocked?'Ponowna wysyłka za chwilę':'Wyślij kod ponownie'}</button>}
         {mode==='login' && !isSignedIn && <>
+          {['email','code'].includes(step) && <button type="button" className="porr-text-button" disabled={busy} onClick={()=>void switchMethod()}>Zmień metodę logowania</button>}
           {step==='password' && <div className="porr-recovery-actions"><button className="porr-text-button" disabled={busy} onClick={()=>void startRecovery()}>Nie pamiętam hasła</button><button className="porr-text-button" disabled={busy} onClick={()=>void switchMethod(true)}>Zaloguj się kodem e-mail</button></div>}
           {step==='reset_code' && <button className="porr-text-button" disabled={busy || resendLocked} onClick={()=>void startRecovery()}>{resendLocked?'Ponowna wysyłka za chwilę':'Wyślij kod ponownie'}</button>}
           {['reset_code','new_password'].includes(step) && <button className="porr-text-button" disabled={busy} onClick={()=>void switchMethod()}>Wróć do wyboru metody</button>}

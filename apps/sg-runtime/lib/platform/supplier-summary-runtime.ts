@@ -1,3 +1,4 @@
+import {bindSg2RequestRuntime} from '@/lib/platform/organisation-context'
 import type { Prisma } from '@prisma/client'
 import { OPERATION_CONTRACT, isOperationDenied, type OperationExecutor } from '@profitia/platform-contracts/operation-context'
 import { getSg2SelectionRuntime, type Sg2SelectionRuntime } from './private-runtime'
@@ -47,7 +48,7 @@ export function createRuntimeSupplierSummaryHandler(resolveRuntime: () => Sg2Sel
     if (request.method !== 'GET') { const denied = response(405); denied.headers.set('Allow', 'GET'); return denied }
     if (!/^Bearer [^\s]{1,8192}$/.test(request.headers.get('authorization') ?? '')) return response(401)
     try {
-      const runtime = resolveRuntime()
+      const runtime=await bindSg2RequestRuntime(resolveRuntime(),request)
       if (runtime.provider !== 'clerk' || !runtime.supplierSummary) return response(503)
       return await createOperationSupplierSummaryHandler(runtime.supplierSummary.executor, runtime.defaultOrganisationId,
         { origin: runtime.supplierSummary.origin })(request)
