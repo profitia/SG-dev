@@ -335,6 +335,16 @@ for(const profile of ['canonical','product']){
    const call=(operation,from,to,restore=null,until=new Date(Date.now()+5*60000).toISOString())=>
     publisher.query('SELECT '+schema+'.quality_deployment_cas($1::uuid,$2::text,$3::text,$4::uuid,$5::timestamptz) AS result',[operation,from,to,restore,until])
    const from='b'.repeat(40),to='c'.repeat(40),operation=randomUUID()
+    const status=async id=>(await publisher.query('SELECT '+schema+'.quality_deployment_cas_status($1::uuid) AS result',[id??null])).rows[0].result
+    const initial=await status()
+    assert.deepEqual(Object.keys(initial).sort(),['schemaVersion','applicationId','environment','profile','currentSourceSha','bindingsFresh','publishingEnabled','recoveryEnabled','authorisedUntil','operation','rawQaReadPerformed','permissionMutationPerformed'].sort())
+    assert.equal(initial.schemaVersion,'AQC_PUBLISHER_CAS_STATUS_V1');assert.equal(initial.profile,profile)
+    assert.equal(initial.currentSourceSha,from);assert.equal(initial.bindingsFresh,true)
+    assert.equal(initial.publishingEnabled,false);assert.equal(initial.recoveryEnabled,true);assert.equal(initial.operation,null)
+    assert.equal(initial.rawQaReadPerformed,false);assert.equal(initial.permissionMutationPerformed,false)
+    await assert.rejects(x.admin.query('SELECT '+schema+'.quality_deployment_cas_status(NULL)'),e=>e.message==='AQC_CAS_BINDING_REJECTED')
+    assert.deepEqual(await x.state(),before,'metadata status performs no write')
+
    await assert.rejects(publisher.query('SELECT * FROM '+x.table),e=>e.code==='42501')
    await assert.rejects(publisher.query('SELECT * FROM '+schema+'.quality_deployment_cas_policy'),e=>e.code==='42501')
    await assert.rejects(publisher.query('SET ROLE '+x.owner),e=>e.code==='42501')
@@ -346,6 +356,10 @@ for(const profile of ['canonical','product']){
    await assert.rejects(call(randomUUID(),'d'.repeat(40),to),e=>e.message==='AQC_CAS_BASE_CHANGED')
    const applied=(await call(operation,from,to)).rows[0].result
    assert.equal(applied.status,'APPLIED');assert.equal(applied.updatedBindings,3);assert.equal(applied.rawQaReadPerformed,false)
+    const ownStatus=await status(operation)
+    assert.equal(ownStatus.currentSourceSha,to);assert.deepEqual(ownStatus.operation,{operationId:operation,fromSourceSha:from,toSourceSha:to,restoreOf:null})
+    assert.equal((await status(randomUUID())).operation,null)
+
    const advanced=await x.state()
    assert.deepEqual(advanced.membership,before.membership)
    for(const row of advanced.rows){
@@ -360,6 +374,8 @@ for(const profile of ['canonical','product']){
    // A concurrent foreign version is preserved, even for a real previous operation.
    await x.admin.query('UPDATE '+x.table+' SET deployment_id=$1 WHERE login_role=$2',['FOREIGN_VERSION',x.roles[0]])
    const foreign=await x.state()
+    assert.equal((await status(operation)).currentSourceSha,null,'split or foreign versions never report a uniform source')
+
    await assert.rejects(call(randomUUID(),to,from,operation),e=>e.message==='AQC_CAS_RECOVERY_REJECTED')
    assert.deepEqual(await x.state(),foreign)
    await x.admin.query('UPDATE '+x.table+' SET deployment_id=$1 WHERE login_role=$2',['srv-dapa3tid0e5s73f8bc5g:'+to,x.roles[0]])
@@ -367,6 +383,9 @@ for(const profile of ['canonical','product']){
    if(profile==='canonical')await x.admin.query("UPDATE profitia_e1_authority.source_components SET status='REVOKED',expires_at=clock_timestamp()-interval '1 hour'")
    await x.admin.query('UPDATE '+schema+'.quality_deployment_cas_policy SET enabled=false')
    const revoked=await x.state(),recovery=randomUUID()
+    assert.equal((await status(operation)).bindingsFresh,false)
+    assert.equal((await status(operation)).publishingEnabled,false)
+
    const restored=(await call(recovery,to,from,operation)).rows[0].result;assert.equal(restored.status,'RESTORED')
    const after=await x.state()
    assert.deepEqual(after.membership,before.membership)
