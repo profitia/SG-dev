@@ -127,3 +127,60 @@ test('Standby connects only disabled native stores and the exact main-only workf
  }
  assert.equal(writes,0)
 })
+
+
+function qaRoleEnvironment(){
+ return {...standbyEnvironment(),AQC_QA_ROLE_PREFLIGHT_VERSION:'1.0.0',
+  AQC_QA_PURPOSE_DATABASE_URL:'postgresql://sg2_assistant_quality_authority:synthetic@ep-late-heart-b9mxo8oi-pooler.c-7.eu-central-1.aws.neon.tech/platform_private?sslmode=require',
+  AQC_QA_EVIDENCE_DATABASE_URL:'postgresql://sg2_assistant_quality_reader:synthetic@ep-muddy-pine-b22pdyqd-pooler.c-6.eu-central-1.aws.neon.tech/neondb?sslmode=require'}
+}
+function qaRoleRow(kind){
+ return {database_name:kind==='purpose'?'platform_private':'neondb',role:kind==='purpose'?'sg2_assistant_quality_authority':'sg2_assistant_quality_reader',
+  login:kind==='purpose'?'sg2_assistant_quality_authority':'sg2_assistant_quality_reader',rolsuper:false,rolbypassrls:false,rolcreatedb:false,
+  rolcreaterole:false,rolinherit:false,rolreplication:false,rolcanlogin:true,rolconnlimit:3,rolvaliduntil:'2026-11-27T23:00:00.000Z',
+  owner_member:false,schema_usage:true,schema_create:false,installed:true,schema_tables:3,direct_table_access:false}
+}
+test('QA role preflight opts into exact ordinary roles and databases with strict TLS and no QA content key',async()=>{
+ const {readQualityQaRolePreflightConfiguration}=await import('../src/cli.mjs'),env=qaRoleEnvironment()
+ assert.equal(readQualityQaRolePreflightConfiguration(standbyEnvironment()),null)
+ const v=readQualityQaRolePreflightConfiguration(env)
+ assert.equal(v.purpose.database,'platform_private');assert.equal(v.evidence.database,'neondb')
+ assert.equal(v.purpose.ssl.rejectUnauthorized,true);assert.equal(v.evidence.user,'sg2_assistant_quality_reader')
+ const bound=readQualityQaRolePreflightConfiguration({...env,AQC_QA_PURPOSE_DATABASE_URL:env.AQC_QA_PURPOSE_DATABASE_URL+'&channel_binding=require',
+  AQC_QA_EVIDENCE_DATABASE_URL:env.AQC_QA_EVIDENCE_DATABASE_URL+'&channel_binding=require'})
+ assert.equal(bound.purpose.enableChannelBinding,true);assert.equal(bound.evidence.enableChannelBinding,true)
+ assert.equal(bound.purpose.ssl.rejectUnauthorized,true)
+ for(const change of [{TARGET_ENVIRONMENT:'production'},{AQC_PROMOTION_ENABLED:'true'},{AQC_PAID_REPAIRS_ENABLED:'true'},
+  {AQC_QA_ROLE_PREFLIGHT_VERSION:undefined},{AQC_QA_ROLE_PREFLIGHT_VERSION:'unknown'},{AQC_QA_EVIDENCE_DATABASE_URL:''},
+  {AQC_QA_PURPOSE_COMMAND_KEY:'synthetic'},{AQC_QA_STORAGE_KEY:'synthetic'},
+  {AQC_QA_PURPOSE_DATABASE_URL:env.AQC_QA_PURPOSE_DATABASE_URL.replace('/platform_private','/neondb')},
+  {AQC_QA_EVIDENCE_DATABASE_URL:env.AQC_QA_EVIDENCE_DATABASE_URL.replace('quality_reader','history_owner')},
+  {AQC_QA_EVIDENCE_DATABASE_URL:env.AQC_QA_EVIDENCE_DATABASE_URL.replace('sslmode=require','sslmode=disable')},
+  {AQC_QA_EVIDENCE_DATABASE_URL:env.AQC_QA_EVIDENCE_DATABASE_URL+'&options=-csuperuser=on'}])
+  assert.throws(()=>readQualityQaRolePreflightConfiguration({...env,...change}))
+})
+test('QA role preflight performs only two fixed catalog SELECTs and never returns credentials or a QA payload',async()=>{
+ const {createQualityQaRolePreflight,qualityQaRolePreflightQuery}=await import('../src/cli.mjs'),calls=[]
+ const query=kind=>async sql=>{calls.push({kind,sql});return{rows:[qaRoleRow(kind)]}}
+ const result=await createQualityQaRolePreflight({purposeQuery:query('purpose'),evidenceQuery:query('evidence'),now:()=>Date.parse('2026-11-18T04:00:00Z')}).check()
+ assert.equal(result.status,'QA_ROLES_VERIFIED');assert.equal(result.rawQaReadPerformed,false);assert.equal(result.permissionMutationPerformed,false)
+ assert.equal(calls.length,2);assert(calls.every(c=>c.sql.startsWith('SELECT ')&&!c.sql.includes(';')))
+ assert.equal(calls[0].sql,qualityQaRolePreflightQuery('purpose'));assert.equal(calls[1].sql,qualityQaRolePreflightQuery('evidence'))
+ assert.equal(Object.keys(result).sort().join(','),'permissionMutationPerformed,qaAuthority,qaEvidence,rawQaReadPerformed,schemaVersion,status')
+ assert.throws(()=>qualityQaRolePreflightQuery('__proto__'))
+})
+test('QA role preflight rejects privilege, ownership, schema, expiry and connection drift, and sanitizes provider failures',async()=>{
+ const {createQualityQaRolePreflight}=await import('../src/cli.mjs'),now=()=>Date.parse('2026-11-18T04:00:00Z')
+ const changes=['rolsuper','rolbypassrls','rolcreatedb','rolcreaterole','rolinherit','rolreplication','owner_member','schema_create','direct_table_access']
+  .map(key=>({[key]:true}))
+ changes.push({role:'neondb_owner'},{login:'neondb_owner'},{database_name:'foreign'},{rolcanlogin:false},{rolconnlimit:4},
+  {schema_usage:false},{installed:false},{schema_tables:0},{rolvaliduntil:null},{rolvaliduntil:'2026-11-18T04:00:00Z'},
+  {rolvaliduntil:'2026-11-28T00:00:00Z'},{rolsuper:undefined})
+ for(const change of changes){
+  const probe=createQualityQaRolePreflight({purposeQuery:async()=>({rows:[{...qaRoleRow('purpose'),...change}]}),
+   evidenceQuery:async()=>({rows:[qaRoleRow('evidence')]}),now})
+  await assert.rejects(probe.check(),{code:'QA_ROLE_PREFLIGHT_BINDING_INVALID'})
+ }
+ const failed=createQualityQaRolePreflight({purposeQuery:async()=>{throw Error('synthetic-password-must-not-escape')},evidenceQuery:async()=>({rows:[]}),now})
+ await assert.rejects(failed.check(),e=>e.code==='QA_ROLE_PREFLIGHT_UNAVAILABLE'&&!e.message.includes('synthetic-password'))
+})
