@@ -898,3 +898,71 @@ test('lost dispatch reply survives a controller process restart and completes th
  assert.equal(second.status,'TRIAGED');assert.equal(record.pending,null);assert.equal(completed,1)
  assert.equal(f.calls.filter(c=>c.method==='POST').length,1)
 })
+
+test('EXECUTE carries only a native permit bound to the committed incident and nonce; other phases reject it',async()=>{
+ const {qualityControllerJobInputs}=await import('../src/github.mjs'),f=await controllerJobFixture({action:'EXECUTE'})
+ const permit={incidentId:f.manifest.incidentId,attemptId:f.externalId.split(':')[2],permitId:randomUUID(),ordinal:1,
+  expiresAt:new Date(f.clock.clock+60000).toISOString()}
+ const inputs=qualityControllerJobInputs({manifest:f.manifest,externalId:f.externalId,permit})
+ assert.equal(Object.keys(inputs).length,9);assert.equal(inputs.permit_id,permit.permitId)
+ assert.equal(inputs.permit_expires_at,permit.expiresAt);assert(!JSON.stringify(inputs).includes('regression'))
+ for(const change of [p=>p.incidentId=randomUUID(),p=>p.attemptId=randomUUID(),p=>p.permitId='foreign',p=>p.ordinal=3,
+  p=>p.expiresAt='invalid',p=>p.expiresAt=f.manifest.mandate.issuedAt,p=>p.expiresAt=new Date(Date.parse(f.manifest.mandate.expiresAt)+1).toISOString(),
+  p=>p.command='forbidden']){
+  const candidate={...permit};change(candidate)
+  assert.throws(()=>qualityControllerJobInputs({manifest:f.manifest,externalId:f.externalId,permit:candidate}),{code:'CONTROLLER_JOB_PERMIT_INVALID'})
+ }
+ assert.throws(()=>qualityControllerJobInputs({manifest:f.manifest,externalId:f.externalId}),{code:'CONTROLLER_JOB_PERMIT_INVALID'})
+ const free=await controllerJobFixture()
+ assert.throws(()=>qualityControllerJobInputs({manifest:free.manifest,externalId:free.externalId,permit}),{code:'CONTROLLER_JOB_PERMIT_INVALID'})
+ assert.equal(f.calls.length,0)
+})
+test('enabled EXECUTE dispatch requires a current permit before provider access and posts its exact metadata once',async()=>{
+ const f=await controllerJobFixture({action:'EXECUTE',paidRepairsEnabled:true})
+ const permit={incidentId:f.manifest.incidentId,attemptId:f.externalId.split(':')[2],permitId:randomUUID(),ordinal:1,
+  expiresAt:new Date(f.clock.clock+60000).toISOString()}
+ for(const value of [undefined,{...permit,expiresAt:new Date(f.clock.clock-1).toISOString()}]){
+  await assert.rejects(f.client.dispatchControllerJob({manifest:f.manifest,externalId:f.externalId,permit:value}),{code:'CONTROLLER_JOB_PERMIT_INVALID'})
+ }
+ assert.equal(f.calls.length,0)
+ await f.client.dispatchControllerJob({manifest:f.manifest,externalId:f.externalId,permit})
+ const posts=f.calls.filter(c=>c.method==='POST');assert.equal(posts.length,1)
+ const payload=JSON.parse(posts[0].body);assert.equal(payload.inputs.permit_id,permit.permitId);assert.equal(Object.keys(payload.inputs).length,9)
+})
+test('controller opens the committed EXECUTE ordinal with a fixed reproduction expiry only under its explicit paid gate',async()=>{
+ const {createQualityControllerJobActions}=await import('../src/github.mjs')
+ const f=await controllerJobFixture({action:'EXECUTE',paidRepairsEnabled:true}),signed=await signedControllerResultFixture()
+ const github={...f.client,descriptor:async()=>({headSha:sha})},nonce=f.externalId.split(':')[2],opened=[]
+ const record={id:f.manifest.incidentId,baseSha:f.manifest.baseSha,repairClass:f.manifest.repairClass,attemptsUsed:1,wakeAt:f.clock.clock-1000,
+  pending:{action:'EXECUTE',nonce,externalId:f.externalId}}
+ const authority={manifest:f.manifest},permitId=randomUUID()
+ const budget={openAttempt:async(id,value)=>{opened.push({id,...value});return {incidentId:id,...value,permitId}}}
+ const disabled=createQualityControllerJobActions({github,keysByRole:signed.keys,budget,now:()=>f.clock.clock})
+ await assert.rejects(disabled.bind('EXECUTE',{record,nonce,authority}),{code:'PAID_REPAIRS_DISABLED'})
+ await assert.rejects(disabled.dispatch('EXECUTE',{record,intent:record.pending,authority}),{code:'PAID_REPAIRS_DISABLED'})
+ assert.equal(opened.length,0);assert.equal(f.calls.length,0)
+ const actions=createQualityControllerJobActions({github,keysByRole:signed.keys,budget,paidRepairsEnabled:true,now:()=>f.clock.clock})
+ await actions.dispatch('EXECUTE',{record,intent:record.pending,authority})
+ assert.equal(opened.length,1);assert.equal(opened[0].attemptId,nonce);assert.equal(opened[0].ordinal,1)
+ assert.equal(opened[0].expiresAt,f.manifest.mandate.expiresAt)
+ assert.equal(JSON.parse(f.calls.find(c=>c.method==='POST').body).inputs.permit_id,permitId)
+ // A new process only reconciles an existing intent; it never opens or dispatches another attempt.
+ const restarted=createQualityControllerJobActions({github,keysByRole:signed.keys,budget,paidRepairsEnabled:true,now:()=>f.clock.clock})
+ assert.equal((await restarted.reconcile(record.pending,{record,authority})).state,'UNKNOWN')
+ assert.equal(opened.length,1);assert.equal(f.calls.filter(c=>c.method==='POST').length,1)
+})
+test('stale reproduction foreign ordinal or uncertain native permit cannot cause a model or GitHub dispatch',async()=>{
+ const {createQualityControllerJobActions}=await import('../src/github.mjs'),signed=await signedControllerResultFixture()
+ for(const kind of ['stale','ordinal','foreign-native','lost-native-reply']){
+  const f=await controllerJobFixture({action:'EXECUTE',paidRepairsEnabled:true}),nonce=f.externalId.split(':')[2];let calls=0
+  const record={id:f.manifest.incidentId,baseSha:f.manifest.baseSha,repairClass:f.manifest.repairClass,attemptsUsed:1,wakeAt:f.clock.clock-1000,
+   pending:{action:'EXECUTE',nonce,externalId:f.externalId}}
+  if(kind==='stale')record.wakeAt=f.clock.clock-1800001
+  if(kind==='ordinal')record.attemptsUsed=3
+  const budget={openAttempt:async(id,value)=>{calls++;if(kind==='lost-native-reply')throw Object.assign(Error('native result unknown'),{code:'POLICY_UNAVAILABLE'})
+   return {incidentId:kind==='foreign-native'?randomUUID():id,...value,permitId:randomUUID()}}}
+  const actions=createQualityControllerJobActions({github:{...f.client,descriptor:async()=>({headSha:sha})},keysByRole:signed.keys,budget,paidRepairsEnabled:true,now:()=>f.clock.clock})
+  await assert.rejects(actions.dispatch('EXECUTE',{record,intent:record.pending,authority:{manifest:f.manifest}}))
+  assert.equal(f.calls.length,0);assert.equal(calls,['stale','ordinal'].includes(kind)?0:1)
+ }
+})

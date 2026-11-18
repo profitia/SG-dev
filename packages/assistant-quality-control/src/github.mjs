@@ -162,15 +162,17 @@ export function createQualityGitHub({token,fetchImpl=fetch,publisherEnabled=fals
   /** A qualified workflow digest is installed separately; existing source and
    * keyless qualification jobs cannot silently become operational dispatch. */
   controllerJobDescriptor,
-  async dispatchControllerJob({manifest,externalId}){
+  async dispatchControllerJob({manifest,externalId,permit}){
    if(!controllerJobsEnabled)fail('CONTROLLER_JOBS_DISABLED')
-   const inputs=qualityControllerJobInputs({manifest,externalId}),binding=controllerJobBinding(externalId)
+   const binding=controllerJobBinding(externalId)
    const m=assertVerifiedRepairManifest(manifest),at=now()
    require(Number.isFinite(at),'CONTROLLER_JOB_CLOCK_INVALID')
    if(!['ROLLBACK','VERIFY_RUNTIME','OBSERVE'].includes(binding.action))require(Date.parse(m.mandate.issuedAt)<=at&&Date.parse(m.mandate.expiresAt)>at,'CONTROLLER_JOB_AUTHORITY_EXPIRED')
    if(binding.action==='EXECUTE'&&!paidRepairsEnabled)fail('PAID_REPAIRS_DISABLED')
    if(binding.action==='PROPOSE'&&!publisherEnabled)fail('PUBLISHER_DISABLED')
    if(binding.action==='PROMOTE'&&!promotionEnabled)fail('PROMOTION_DISABLED')
+   const inputs=qualityControllerJobInputs({manifest,externalId,permit})
+   if(binding.action==='EXECUTE')require(Date.parse(permit.expiresAt)>at&&Date.parse(permit.expiresAt)<=at+1800000,'CONTROLLER_JOB_PERMIT_INVALID')
    require(await main()===binding.controlSourceSha,'BASE_CHANGED')
    await controllerJobDescriptor({sourceSha:binding.controlSourceSha})
    require(await main()===binding.controlSourceSha,'BASE_CHANGED')
@@ -492,11 +494,20 @@ const controllerJobBinding=value=>{
 }
 /** Metadata only. The signed manifest remains outside workflow input and the
  * executor must separately claim its native permit before any paid request. */
-export function qualityControllerJobInputs({manifest,externalId}){
+export function qualityControllerJobInputs({manifest,externalId,permit}){
  const m=assertVerifiedRepairManifest(manifest),binding=controllerJobBinding(externalId)
- return Object.freeze({mode:'controller-job',action:binding.action,nonce:binding.nonce,
+ const input={mode:'controller-job',action:binding.action,nonce:binding.nonce,
   control_source_sha:binding.controlSourceSha,incident_id:m.incidentId,
-  manifest_sha256:documentDigest(m),base_sha:m.baseSha})
+  manifest_sha256:documentDigest(m),base_sha:m.baseSha}
+ if(binding.action==='EXECUTE'){
+  const id=v=>typeof v==='string'&&/^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(v)
+  require(controllerPlain(permit)&&Object.keys(permit).sort().join(',')===['incidentId','attemptId','permitId','ordinal','expiresAt'].sort().join(',')
+   &&permit.incidentId===m.incidentId&&permit.attemptId===binding.nonce&&id(permit.permitId)&&[1,2].includes(permit.ordinal)
+   &&typeof permit.expiresAt==='string'&&Number.isFinite(Date.parse(permit.expiresAt))
+   &&Date.parse(permit.expiresAt)>Date.parse(m.mandate.issuedAt)&&Date.parse(permit.expiresAt)<=Date.parse(m.mandate.expiresAt),'CONTROLLER_JOB_PERMIT_INVALID')
+  input.permit_id=permit.permitId;input.permit_expires_at=new Date(permit.expiresAt).toISOString()
+ }else require(permit===undefined,'CONTROLLER_JOB_PERMIT_INVALID')
+ return Object.freeze(input)
 }
 export function assertQualityControllerJobIdentity(run,{externalId,workflowId,runId}){
  const b=controllerJobBinding(externalId)
@@ -642,9 +653,10 @@ function controllerResultArchive(bytes){
  * adapter's artifact read and is revalidated against the current authority.
  * Cancellation deliberately retains the durable intent until independent
  * isolation/effect receipts are installed; an HTTP acknowledgement is no proof. */
-export function createQualityControllerJobActions({github,keysByRole,now=Date.now}){
+export function createQualityControllerJobActions({github,keysByRole,budget=null,paidRepairsEnabled=false,now=Date.now}){
  const methods=['descriptor','controllerJobDescriptor','dispatchControllerJob','findControllerJob','controllerJobResult','cancelControllerJob']
- require(methods.every(k=>typeof github?.[k]==='function')&&typeof now==='function','CONTROLLER_ACTIONS_CONFIGURATION_REQUIRED')
+ require(methods.every(k=>typeof github?.[k]==='function')&&typeof now==='function'&&typeof paidRepairsEnabled==='boolean'
+  &&(!paidRepairsEnabled||typeof budget?.openAttempt==='function'),'CONTROLLER_ACTIONS_CONFIGURATION_REQUIRED')
  require(keysByRole instanceof Map&&keysByRole.size===3,'CONTROLLER_JOB_RESULT_TRUST_REQUIRED')
  const trusted=new Map(),keyIds=new Set()
  for(const role of ['EXECUTOR_SUPERVISOR','INDEPENDENT_VERIFIER','INDEPENDENT_PUBLISHER']){
@@ -670,6 +682,7 @@ export function createQualityControllerJobActions({github,keysByRole,now=Date.no
  return Object.freeze({
   async bind(action,{record,nonce,authority}){
    authorityFor(record,authority,action)
+   if(action==='EXECUTE'&&!paidRepairsEnabled)fail('PAID_REPAIRS_DISABLED')
    const source=await github.descriptor()
    require(sha(source?.headSha),'GITHUB_SOURCE_INVALID')
    const externalId='aqc-job:'+source.headSha+':'+nonce+':'+action
@@ -681,7 +694,20 @@ export function createQualityControllerJobActions({github,keysByRole,now=Date.no
   async dispatch(action,{record,intent,authority}){
    require(intent===record.pending,'CONTROLLER_JOB_RESULT_BINDING_INVALID')
    const manifest=authorityFor(record,authority,action,intent?.externalId)
-   const sent=await github.dispatchControllerJob({manifest,externalId:intent.externalId})
+   let permit
+   if(action==='EXECUTE'){
+    if(!paidRepairsEnabled)fail('PAID_REPAIRS_DISABLED')
+    const at=now(),start=record.wakeAt,expiresAt=Math.min(start+1800000,Date.parse(manifest.mandate.expiresAt))
+    require(Number.isFinite(at)&&Number.isSafeInteger(start)&&start>0&&start<=at&&expiresAt>at
+     &&Date.parse(manifest.mandate.issuedAt)<=at&&[1,2].includes(record.attemptsUsed),'CONTROLLER_JOB_PERMIT_INVALID')
+    // REPRODUCE committed wakeAt before this PREPARE. Reconciliation/restart
+    // never extends it or creates a second attempt; only first model dispatch
+    // can start the native paid pilot clock.
+    permit=await budget.openAttempt(manifest.incidentId,{attemptId:intent.nonce,ordinal:record.attemptsUsed,expiresAt:new Date(expiresAt).toISOString()})
+    require(permit?.incidentId===manifest.incidentId&&permit.attemptId===intent.nonce
+     &&permit.ordinal===record.attemptsUsed&&Date.parse(permit.expiresAt)===expiresAt,'CONTROLLER_JOB_PERMIT_INVALID')
+   }
+   const sent=await github.dispatchControllerJob({manifest,externalId:intent.externalId,...(permit===undefined?{}:{permit})})
    require(sent?.externalId===intent.externalId&&sent.state==='UNKNOWN'&&sent.resultVerified===false,'CONTROLLER_JOB_DISPATCH_INVALID')
    return Object.freeze({externalId:intent.externalId})
   },

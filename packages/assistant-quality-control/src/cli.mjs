@@ -1,4 +1,4 @@
-import {SOURCE_PATHS,documentDigest} from './manifest.mjs'
+import {SOURCE_PATHS,documentDigest,assertVerifiedRepairManifest} from './manifest.mjs'
 import {createHash as controlledReadHash} from 'node:crypto'
 
 /** Prepare reviewable unsigned metadata. These builders create no signature,
@@ -67,19 +67,63 @@ export async function prepareQualityControllerJobContext({registry,incidentId,ba
  const freeze=v=>{if(v&&typeof v==='object'){Object.values(v).forEach(freeze);Object.freeze(v)}return v}
  return freeze(selected)
 }
-/** Job inputs remain exactly seven IDs/digests. No command, context payload,
+/** Job inputs carry seven IDs/digests, plus two native permit fields for EXECUTE. No command, context payload,
  * case, secret or private QA is accepted through workflow_dispatch. Native run
  * identity must separately pass assertQualityControllerJobIdentity. */
 export async function readQualityControllerJobContext({inputs,...options}){
  const {readQualityJobBinding}=await import('./controller.mjs')
  if(!inputs||Object.getPrototypeOf(inputs)!==Object.prototype
-  ||Object.keys(inputs).sort().join(',')!==['mode','action','nonce','control_source_sha','incident_id','manifest_sha256','base_sha'].sort().join(',')
+  ||Object.keys(inputs).sort().join(',')!==['mode','action','nonce','control_source_sha','incident_id','manifest_sha256','base_sha',
+    ...(inputs.action==='EXECUTE'?['permit_id','permit_expires_at']:[])].sort().join(',')
   ||inputs.mode!=='controller-job'||!hash64(inputs.manifest_sha256))unavailable('JOB_CONTEXT_INPUT_INVALID')
  const externalId='aqc-job:'+inputs.control_source_sha+':'+inputs.nonce+':'+inputs.action
  readQualityJobBinding(externalId,{nonce:inputs.nonce,action:inputs.action})
  const context=await prepareQualityControllerJobContext({...options,incidentId:inputs.incident_id,baseSha:inputs.base_sha})
  if(documentDigest(context.manifest)!==inputs.manifest_sha256)unavailable('JOB_CONTEXT_MANIFEST_MISMATCH')
- return Object.freeze({...context,externalId})
+ let permit
+ if(inputs.action==='EXECUTE'){
+  const expiry=Date.parse(inputs.permit_expires_at),at=options.now??Date.now()
+  if(!uuidValue(inputs.permit_id)||typeof inputs.permit_expires_at!=='string'||!Number.isFinite(expiry)
+   ||new Date(expiry).toISOString()!==inputs.permit_expires_at||expiry<=at||expiry>at+1800000
+   ||expiry>Date.parse(context.manifest.mandate.expiresAt))unavailable('JOB_CONTEXT_PERMIT_INVALID')
+  permit=Object.freeze({incidentId:context.manifest.incidentId,attemptId:inputs.nonce,permitId:inputs.permit_id,expiresAt:inputs.permit_expires_at})
+ }
+ return Object.freeze({...context,externalId,...(permit===undefined?{}:{permit})})
+}
+
+/** Trusted supervisor adapter, never invoked by standby. Workflow metadata is
+ * not native budget authority: claim once, then compare the database expiry and
+ * incident/attempt before exposing the budget to the isolated executor/broker. */
+export function createQualityExecutorJobBudget({context,budget,now=Date.now}){
+ const m=assertVerifiedRepairManifest(context?.manifest),permit=context?.permit
+ if(typeof budget?.claimExecutor!=='function'||typeof budget?.assertPermit!=='function'||typeof now!=='function')
+  unavailable('JOB_EXECUTOR_BUDGET_REQUIRED')
+ const binding=context?.externalId?.split(':')
+ if(binding?.length!==4||binding[0]!=='aqc-job'||!/^[a-f0-9]{40}$/.test(binding[1])||binding[3]!=='EXECUTE'||binding[2]!==permit?.attemptId
+  ||!Object.isFrozen(permit)||!uuidValue(permit?.attemptId)||!uuidValue(permit?.permitId)||permit.incidentId!==m.incidentId)unavailable('JOB_EXECUTOR_PERMIT_INVALID')
+ const fresh=()=>{
+  const at=now(),expiry=Date.parse(permit.expiresAt)
+  if(!Number.isFinite(at)||!Number.isFinite(expiry)||expiry<=at||expiry>at+1800000
+   ||Date.parse(m.mandate.issuedAt)>at||Date.parse(m.mandate.expiresAt)<=at||expiry>Date.parse(m.mandate.expiresAt))
+   unavailable('JOB_EXECUTOR_PERMIT_INVALID')
+ }
+ const check=async p=>{
+  if(p!==permit)unavailable('JOB_EXECUTOR_PERMIT_INVALID')
+  fresh()
+  const r=await budget.assertPermit(permit)
+  if(r?.status!=='ACTIVE'||r.incidentId!==m.incidentId||r.attemptId!==permit.attemptId||r.permitId!==permit.permitId
+   ||Date.parse(r.expiresAt)!==Date.parse(permit.expiresAt))unavailable('JOB_EXECUTOR_NATIVE_PERMIT_MISMATCH')
+  fresh();return r
+ }
+ return Object.freeze({...budget,assertPermit:check,async claimExecutor(p,identity){
+  if(p!==permit||identity?.nonce!==permit.attemptId||identity.executorSourceSha!==binding[1]
+   ||identity.gateSetSha256!==m.gateSetSha256||identity.runAttempt!==1)unavailable('JOB_EXECUTOR_PERMIT_INVALID')
+  fresh()
+  const r=await budget.claimExecutor(permit,identity)
+  if(r?.status!=='CLAIMED'||r.incidentId!==m.incidentId||r.attemptId!==permit.attemptId||r.permitId!==permit.permitId
+   ||r.runId!==identity.runId)unavailable('JOB_EXECUTOR_NATIVE_PERMIT_MISMATCH')
+  await check(permit);return r
+ }})
 }
 
 const unavailable=code=>{throw Object.assign(Error('Quality readiness unavailable'),{code})}

@@ -384,7 +384,8 @@ test('controlled context loader rejects changed base digest raw workflow payload
  const f=await controlledJobContextsFixture(),{prepareQualityControllerJobContext:prepare,readQualityControllerJobContext:read}=await import('../src/cli.mjs')
  const {qualityControllerJobInputs}=await import('../src/github.mjs'),{qualityJobBinding}=await import('../src/controller.mjs')
  const context=await prepare(f.options),externalId=qualityJobBinding({controlSourceSha:'a'.repeat(40),nonce:randomUUID(),action:'EXECUTE'})
- const inputs=qualityControllerJobInputs({manifest:context.manifest,externalId})
+ const permit={incidentId:context.manifest.incidentId,attemptId:externalId.split(':')[2],permitId:randomUUID(),ordinal:1,expiresAt:new Date(f.options.now+60000).toISOString()}
+ const inputs=qualityControllerJobInputs({manifest:context.manifest,externalId,permit})
  for(const changes of [{base_sha:'d'.repeat(40)},{manifest_sha256:'0'.repeat(64)},{incident_id:randomUUID()},{mode:'keyless-qualify'},
   {action:'RUN_COMMAND'},{nonce:'foreign'},{control_source_sha:'not-a-sha'},{rawQa:'forbidden'},{command:'forbidden'}])
   await assert.rejects(read({...f.options,inputs:{...inputs,...changes}}))
@@ -402,4 +403,51 @@ test('controlled context parsing is bounded, rejects getters without invoking th
  const prepared=await prepare(f.options)
  f.registry.fixtures[0].regression.args[0].caseNumber=99
  assert.equal(prepared.regression.args[0].caseNumber,0)
+})
+
+async function controlledExecutorPermitFixture(){
+ const f=await controlledJobContextsFixture()
+ const {prepareQualityControllerJobContext:prepare,readQualityControllerJobContext:read}=await import('../src/cli.mjs')
+ const {qualityControllerJobInputs}=await import('../src/github.mjs'),{qualityJobBinding}=await import('../src/controller.mjs')
+ const control=await prepare(f.options),externalId=qualityJobBinding({controlSourceSha:'a'.repeat(40),nonce:randomUUID(),action:'EXECUTE'})
+ const permit={incidentId:control.manifest.incidentId,attemptId:externalId.split(':')[2],permitId:randomUUID(),ordinal:1,expiresAt:new Date(f.options.now+60000).toISOString()}
+ const inputs=qualityControllerJobInputs({manifest:control.manifest,externalId,permit}),context=await read({...f.options,inputs})
+ const identity={runId:'701',runAttempt:1,executorSourceSha:'a'.repeat(40),gateSetSha256:control.manifest.gateSetSha256,nonce:permit.attemptId}
+ return {...f,inputs,context,identity,permit}
+}
+test('native executor permit metadata is bounded to EXECUTE without carrying a command or signed context through workflow inputs',async()=>{
+ const f=await controlledExecutorPermitFixture(),{readQualityControllerJobContext:read}=await import('../src/cli.mjs')
+ assert.equal(Object.keys(f.inputs).length,9);assert.equal(Object.isFrozen(f.context.permit),true)
+ for(const change of [{permit_id:'foreign'},{permit_expires_at:'invalid'},{permit_expires_at:new Date(f.options.now-1).toISOString()},
+  {permit_expires_at:new Date(f.options.now+1800001).toISOString()},{action:'QUALIFY'}]){
+  await assert.rejects(read({...f.options,inputs:{...f.inputs,...change}}))
+ }
+ const missing={...f.inputs};delete missing.permit_id;await assert.rejects(read({...f.options,inputs:missing}))
+})
+test('executor supervisor claims once and checks the actual native incident attempt and expiry before exposing a permit',async()=>{
+ const f=await controlledExecutorPermitFixture(),{createQualityExecutorJobBudget:create}=await import('../src/cli.mjs'),calls=[]
+ const native={...f.context.permit,status:'ACTIVE'}
+ const budget={claimExecutor:async(p,i)=>{calls.push('CLAIM');return {...native,status:'CLAIMED',runId:i.runId}},
+  assertPermit:async()=>{calls.push('CHECK');return native}}
+ const supervised=create({context:f.context,budget,now:()=>f.options.now})
+ const result=await supervised.claimExecutor(f.context.permit,f.identity)
+ assert.equal(result.incidentId,f.context.manifest.incidentId);assert.deepEqual(calls,['CLAIM','CHECK'])
+ assert.equal((await supervised.assertPermit(f.context.permit)).expiresAt,native.expiresAt)
+ for(const field of ['incidentId','attemptId','permitId','expiresAt']){
+  const altered={...native,[field]:field==='expiresAt'?new Date(f.options.now+120000).toISOString():randomUUID()}
+  const bad=create({context:f.context,budget:{...budget,assertPermit:async()=>altered},now:()=>f.options.now})
+  await assert.rejects(bad.claimExecutor(f.context.permit,f.identity),{code:'JOB_EXECUTOR_NATIVE_PERMIT_MISMATCH'})
+ }
+})
+test('unverified context swapped permit expired authority and foreign job identity refuse before native budget access',async()=>{
+ const f=await controlledExecutorPermitFixture(),{createQualityExecutorJobBudget:create}=await import('../src/cli.mjs');let calls=0
+ const budget={claimExecutor:async()=>{calls++;throw Error('must not call')},assertPermit:async()=>{calls++;throw Error('must not call')}}
+ assert.throws(()=>create({context:{...f.context,manifest:structuredClone(f.context.manifest)},budget}))
+ const supervised=create({context:f.context,budget,now:()=>f.options.now})
+ await assert.rejects(supervised.claimExecutor({...f.context.permit},f.identity),{code:'JOB_EXECUTOR_PERMIT_INVALID'})
+ for(const change of [{nonce:randomUUID()},{executorSourceSha:'b'.repeat(40)},{gateSetSha256:'d'.repeat(64)},{runAttempt:2}])
+  await assert.rejects(supervised.claimExecutor(f.context.permit,{...f.identity,...change}),{code:'JOB_EXECUTOR_PERMIT_INVALID'})
+ const expired=create({context:f.context,budget,now:()=>f.options.now+60001})
+ await assert.rejects(expired.claimExecutor(f.context.permit,f.identity),{code:'JOB_EXECUTOR_PERMIT_INVALID'})
+ assert.equal(calls,0)
 })
