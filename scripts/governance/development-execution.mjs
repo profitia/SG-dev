@@ -44,6 +44,22 @@ function exactReservationSourceEntry(record, entry) {
     && createHash('sha256').update(JSON.stringify(record.files)).digest('hex')===pin.filesSha256
 }
 
+// Inert proposal: one closed producer record; requires owner acceptance on trusted main.
+export const BENCHMARK_UNMETERED_SOURCE_ADMISSION=Object.freeze({
+  "admissionId": "ARCHITECTURE:ARCH-FINDER-UNMETERED-CONTRACT-20261118",
+  "sourceSha": "7edf89c07502bc331f5d4966c961f7eb1058b51a",
+  "baseSha": "a34dcdfc2b4e9c83e0112435a344d586d8c51d16",
+  "filesSha256": "ad693889254ed13974d5b10f2b79c1fd8d5cc9d11b23296f7f84e82bf3e89519",
+  "newSourceRecord": "apps/architecture-lab/benchmark-unmetered-source.json"
+})
+export function exactBenchmarkSourceEntry(record,entry){
+ const pin=BENCHMARK_UNMETERED_SOURCE_ADMISSION
+ return entry.path===pin.newSourceRecord && entry.status==='added' && entry.mode==='100644'
+  && entry.projectKey==='ARCHITECTURE' && record.id===pin.admissionId
+  && record.sourceSha===pin.sourceSha && record.baseSha===pin.baseSha
+  && createHash('sha256').update(JSON.stringify(record.files)).digest('hex')===pin.filesSha256
+}
+
 export function executionProfile(projectKey, governanceRoot = root) {
   const profile = resolveProjectProfile(projectKey, governanceRoot)
   const registry = JSON.parse(fs.readFileSync(path.join(governanceRoot, EXECUTION_PROFILES_PATH), 'utf8'))
@@ -147,7 +163,7 @@ export function assertSourceAdmission(record, {repository,actor,candidateSha,cur
   const names = new Set(), actual = new Map(files.map(f => [f.filename,f]))
   if (actual.size !== files.length) deny('SOURCE_ADMISSION_FILES_REJECTED')
   for (const entry of record.files) {
-    if (!safePath(entry.path) || (protectedPath(entry.path) && !exactReservationSourceEntry(record,entry)) || names.has(entry.path)
+    if (!safePath(entry.path) || (protectedPath(entry.path) && !exactReservationSourceEntry(record,entry) && !exactBenchmarkSourceEntry(record,entry)) || names.has(entry.path)
       || !sha.test(entry.blob ?? '') || !['100644','100755'].includes(entry.mode)
       || !['added','modified'].includes(entry.status)) deny('SOURCE_ADMISSION_FILES_REJECTED')
     names.add(entry.path)
