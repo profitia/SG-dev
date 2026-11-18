@@ -202,3 +202,32 @@ test('current AppShell assistant sources are verified before historical receiver
  const receipt=JSON.parse(fs.readFileSync(new URL('../operation-integration.json',import.meta.url),'utf8'))
  assertAppShellAssistantOwnership(receipt,f=>fs.readFileSync(new URL('../../../'+f,import.meta.url)),(sha,f)=>execFileSync('git',['show',sha+':'+f]))
 })
+
+
+test('expired binding is recovered with one exact bearer-only POST and no account provisioning', async () => {
+  const calls: string[] = []
+  const transport: typeof fetch = async (url, options) => {
+    const path = new URL(String(url)).pathname; calls.push(path)
+    if (path === '/v1/account') return json({}, 401)
+    if (path === '/v1/account/renew') {
+      assert.equal(options?.method, 'POST'); assert.equal(options?.body, '{}')
+      assert.deepEqual(options?.headers, { authorization: 'Bearer synthetic_fixture_only', 'content-type': 'application/json' })
+      assert.equal(options?.credentials, 'omit'); return json(result())
+    }
+    return json(avatarPath(url) ? preference() : salutation())
+  }
+  const response = await readSelfServiceAccount(request({ cookie: 'never_forward_me', 'x-user-id': userB }), { env: env(), transport })
+  assert.equal(response.status, 200); assert.equal((await response.json()).userId, userA)
+  assert.deepEqual(calls, ['/v1/account','/v1/account/renew','/v1/account/assistant-avatar','/v1/account/salutation'])
+})
+test('near-expiry refresh cannot switch accounts and renewal denial is never hidden', async () => {
+  for (const variant of ['success','different-user','denied','unavailable'] as const) {
+    let renewals = 0
+    const transport: typeof fetch = async url => {
+      if (String(url).endsWith('/v1/account/renew')) { renewals++;return variant === 'denied' ? json({},403) : variant === 'unavailable' ? json({},503) : json(result(variant === 'different-user' ? userB : userA)) }
+      return json(avatarPath(url) ? preference() : salutationPath(url) ? salutation() : { ...result(), expiresAt: new Date(Date.now()+10000).toISOString() })
+    }
+    const response = await readSelfServiceAccount(request(), { env: env(), transport })
+    assert.equal(response.status, variant === 'success' ? 200 : variant === 'denied' ? 403 : 503);assert.equal(renewals,1)
+  }
+})
