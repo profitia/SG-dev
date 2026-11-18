@@ -47,13 +47,13 @@ export function srmSdkSourceHistories(current,paths){
  }))
  return store.records.filter(r=>/^[a-f0-9]{40}$/.test(r.baseSha??'')&&Array.isArray(r.files)).map(r=>({baseSha:r.baseSha,paths:r.files.filter(f=>paths.includes(f.path)&&blobs.get(f.path)===f.blob).map(f=>f.path)})).filter(r=>r.paths.length)
 }
-// Reconstruct a prior application view only after the canonical admission reader
+// Reconstruct a prior application and shared X-Ray view only after the canonical admission reader
 // authenticates the complete physical source. This selects history, never grants it.
-export function srmAdmittedApplicationPredecessors(current,historical){
+export function srmAdmittedSourcePredecessors(current,historical){
  const root=fileURLToPath(new URL('../../../',import.meta.url)),options={cwd:root,env:{PATH:process.env.PATH,GIT_NO_LAZY_FETCH:'1'},encoding:'utf8',timeout:30000,maxBuffer:1024*1024}
  const store=JSON.parse(execFileSync('git',['cat-file','blob','origin/main:Canon/registries/controlled-source-admissions-v1.json'],options))
  assert(store.schemaVersion==='1.0'&&Array.isArray(store.records),'trusted application history metadata required')
- const eligible=p=>typeof p==='string'&&p.startsWith('apps/srm/')&&/^[A-Za-z0-9_.@/-]+$/.test(p)&&p.split('/').every(v=>v&&v!=='.'&&v!=='..')&&/\.(?:tsx?|mjs)$/.test(p)
+ const eligible=p=>typeof p==='string'&&(p.startsWith('apps/srm/')||p.startsWith('packages/srm-xray/'))&&/^[A-Za-z0-9_.@/-]+$/.test(p)&&p.split('/').every(v=>v&&v!=='.'&&v!=='..')&&/\.(?:tsx?|mjs)$/.test(p)
  const matches=store.records.filter(r=>/^[a-f0-9]{40}$/.test(r.baseSha??'')&&Array.isArray(r.files)&&r.files.some(f=>eligible(f.path))&&r.files.every(f=>{
   if(typeof f.path!=='string'||!/^[A-Za-z0-9_.@/-]+$/.test(f.path)||f.path.split('/').some(v=>!v||v==='.'||v==='..'))return false
   try{return execFileSync('git',['hash-object','--no-filters','--',f.path],options).trim()===f.blob}catch{return false}
