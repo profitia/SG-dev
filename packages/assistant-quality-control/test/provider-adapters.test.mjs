@@ -446,3 +446,48 @@ test('Native GitHub job publisher: recognizing an author never enables proposal 
  await assert.rejects(client.merge({}),{code:'PROMOTION_DISABLED'})
  assert.equal(requests,0)
 })
+
+import {prepareQualityHostDeploymentConfiguration} from '../src/release.mjs'
+const piVersionFixture=base=>({
+ environment:'development',enabled:true,authorityDecisionRef:'PUBLIC_SYNTHETIC_PRIVATE_CONFIGURATION_MARKER',
+ receiverApplication:{environment:'development',deploymentId:base},serviceApplication:{environment:'development',deploymentId:base},
+ readApplication:{environment:'development',deploymentId:base},sourceApplication:{environment:'development',deploymentId:base},
+ serviceBinding:{role:'sg2_insights_report_development_e1',service:{deploymentId:base}},
+ composerBinding:{role:'sg2_insights_report_development_composer',deploymentId:base},
+ counterBinding:{role:'sg2_insights_report_development_counter',deploymentId:base},
+ profiles:{synthetic:{version:'retained'}},openai:{projectId:'PUBLIC_SYNTHETIC_ONLY',keySha256:'e'.repeat(64)},
+ projections:[{basisRef:'PUBLIC_SYNTHETIC_UNCHANGED',expiresAt:'2026-11-24T00:00:00.000Z'}]
+})
+const preparePiVersion=(configuration,extra={})=>prepareQualityHostDeploymentConfiguration({
+ configuration,serviceId:'srv-dapa3tid0e5s73f8bc5g',environment:'development',fromSourceSha:'a'.repeat(40),toSourceSha:'b'.repeat(40),...extra
+})
+test('PI release preparation changes exactly seven version leaves and ordinary serialization exports no private configuration',()=>{
+ const original=piVersionFixture('a'.repeat(40)),input=JSON.stringify(original,null,2),plan=preparePiVersion(input)
+ const expected=structuredClone(original)
+ for(const p of plan.changedPaths){const keys=p.split('.'),last=keys.pop();let o=expected;for(const k of keys)o=o[k];o[last]='b'.repeat(40)}
+ assert.deepEqual(JSON.parse(plan.value),expected)
+ assert.equal(input,JSON.stringify(original,null,2),'input is never mutated')
+ assert.equal(plan.changedPaths.length,7);assert(Object.isFrozen(plan)&&Object.isFrozen(plan.changedPaths))
+ assert(!JSON.stringify(plan).includes(original.authorityDecisionRef),'ordinary logs contain metadata only')
+ assert(!Object.keys(plan).includes('value'));assert.notEqual(plan.beforeSha256,plan.afterSha256)
+})
+test('PI release preparation refuses every missing or mixed-base leaf and an eighth deployment binding',()=>{
+ const base=piVersionFixture('a'.repeat(40)),plan=preparePiVersion(JSON.stringify(base))
+ for(const p of plan.changedPaths)for(const mode of ['missing','foreign']){
+  const c=structuredClone(base),keys=p.split('.'),last=keys.pop();let o=c;for(const k of keys)o=o[k]
+  if(mode==='missing')delete o[last];else o[last]='c'.repeat(40)
+  assert.throws(()=>preparePiVersion(JSON.stringify(c)),e=>/^HOST_CONFIGURATION_/.test(e.code),p+' '+mode)
+ }
+ const c=structuredClone(base);c.parallel={deploymentId:'a'.repeat(40)}
+ assert.throws(()=>preparePiVersion(JSON.stringify(c)),{code:'HOST_CONFIGURATION_TOPOLOGY_CHANGED'})
+})
+test('PI release preparation never accepts another environment, service or source and never repeats private input in errors',()=>{
+ const marker='PRIVATE_SYNTHETIC_MARKER_NEVER_LOG',base=piVersionFixture('a'.repeat(40)),input=JSON.stringify(base)
+ for(const extra of [{serviceId:'srv-foreign'},{environment:'staging'},{fromSourceSha:'invalid'},{toSourceSha:'a'.repeat(40)},{toSourceSha:'B'.repeat(40)}])
+  assert.throws(()=>preparePiVersion(input,extra),{code:'HOST_CONFIGURATION_INVALID'})
+ for(const c of [null,[],{...base,environment:'production'},{...base,enabled:false},{...base,readApplication:{...base.readApplication,environment:'staging'}}])
+  assert.throws(()=>preparePiVersion(JSON.stringify(c)),{code:'HOST_CONFIGURATION_INVALID'})
+ for(const input of [marker,'{"private":"'+marker,' '.repeat(131073)]){
+  assert.throws(()=>preparePiVersion(input),e=>e.code==='HOST_CONFIGURATION_INVALID'&&!String(e).includes(marker))
+ }
+})

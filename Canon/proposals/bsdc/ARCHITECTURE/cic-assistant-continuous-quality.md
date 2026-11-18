@@ -17,7 +17,7 @@
 | Tryb | EXECUTION — Full Autopilot wyłącznie etap 1; DEC-06 |
 | Etap | F — zakończony; A–F domknięte projektowo, 28/28 USTALONE |
 | Utworzono / zaktualizowano | 2026-11-12 / 2026-11-18, Europe/Warsaw |
-| Rewizja | 27 — wynikowe main1179 w pełni PASS; przygotowane ograniczony czytnik QA i natywna tożsamość publishera,132 testy PASS; własne nowe CI wymagane, brak aktywacji; host/TECHNICAL_READY w toku; §4–5 i roadmapa8 bez zmian |
+| Rewizja | 28 — kwalifikacja hosta583ea4f na main2040 w toku; potwierdzone dwie korekty testów; ograniczone przygotowanie7pól PI i rejestr rzeczywistej blokady odczytu; TECHNICAL_READY w toku; §4–5/roadmapa8 bez zmian |
 | Rewizja bazowa ostatniej aktualizacji | PDR rewizja 9 / blob f0c81253cd20d4f2b75f8eabf2adb47d538c20fc; main 69a2cc1769d34cb6ecf1e21a552babb0006a5713. Referencja wykonawcza właściciela nadal rewizja 8. |
 | Zadanie inicjalizacji | ARCH-BSDC-CIC-QUALITY-INIT-20261112 |
 | Zadanie bieżącej aktualizacji | ARCH-CIC-QUALITY-TECHNICAL-READY-20261117 / SG2-CIC-QUALITY-TECHNICAL-READY-20261117; zadania producentów i odbiorcy w §8.7 |
@@ -912,3 +912,63 @@ Kontrolowany odczyt wykorzystuje istniejącą fabrykę createQualityPrivateEvide
 Przygotowano prywatny, NIEPODPISANY materiał do niezależnego przeglądu niezmienionego kandydata240: canonical SHA2566f54dde5d774e664aae7575292d38d3d6895432a015039e5b9967525eb03aa2f; ZIP38467B SHA2560cda67ee622e5a1c5732fbf8b339477031baf6b8a98e1bcd1e79a33f678b3390. Wszystkie240 decyzji niezależnego reviewera pozostają puste, także dla150 przypadków zgodnych z osobnym inżynierskim oraclem.90 nadal nieweryfikowanych przypadków zachowuje jawne uwagi. Nie utworzono podpisu, klucza prywatnego lub trust; nie przyjęto holdoutu. Materiał i etykiety nie są publikowane ani przekazywane wykonawcy napraw.
 
 Host1099, rzeczywiste kontrolowane capture/read, operacyjne job wiring/publisher, niezależna referencja/trust i recovery pozostają otwarte. Nie zmienia to specyfikacji rewizji5 ani roadmapy8. §4–5 SHA256ee6b3f36dd63ca3c3343de8b38fee431de49f67b895b17434b39ce332539b881 bez zmian. TECHNICAL_READY całości NIEOSIĄGNIĘTE, E1 0/3, paid/promotionOFF,14dni/50USD NIEURUCHOMIONE, Stage2 NIE_ROZPOCZĘTY.
+
+### Uzupełnienie techniczne — 18 listopada 2026, rewizja 28
+
+Integracja hosta PR1099 ma bieżący kandydat583ea4f780c6a7675e7fde85c33fa7039438eedb, tree9474bdbf8c99cf3f1a3442494e0738037e3ed6a4, na zaakceptowanym main2040e9e7430fd6b164f8726e3f92d3654b804e44. Zachowano24 własne ścieżki i trzy przyjęte pliki równoległej polityki CI46. Wcześniejsze controlled44281466867 ujawniło nazwę testowego połączenia; poprawiona próba32/32 przeszła w controlled44285276467. Ten drugi run ujawnił porównanie working tree obejmujące generowany Prisma index.d.ts. Poprawka porównuje committed origin/main...HEAD i zawsze niezależnie uwierzytelnia komplet23 ścieżek aplikacji CIC także na wynikowym main.34/34 kontroli źródła PASS,0 skip. Jednorazowa kopia Git potwierdziła6/6 przy symulowanym wynikowym main i niezatwierdzonym dryfcie wygenerowanego pliku; nowy niepowiązany committed plik źródłowy został odrzucony. To próby źródła, nie wynik provider main. Lokalna przygotowawcza instalacja nie zawiera tsc, więc nie przedstawia się jej jako kompilacji. Nowe pełne controlled44289725944 i natywne44289650702 pozostają obowiązkowe; następnie wymagane są dokładne CI źródła i wynikowego main przed wydaniem.
+
+Publiczny source1181:8a97a5cc7d248b67c0bb98630b54e5171dfe46b3 przeszedł własne CI44278471765:132/132 AQC oraz12/12 neutralnych kontraktów,0 fail/skip, i governance44278471718. Przygotowana dalsza kontynuacja dodaje do istniejącego release.mjs wyłącznie czystą funkcję przygotowania siedmiu istniejących deploymentId w chronionej konfiguracji PI. Nie odczytuje ani nie zapisuje chmury, nie przyznaje uprawnień i nie jest atomowym CAS po stronie Render. Wymaga zgodnej bazy, dokładnego Development/service, niezmienionej topologii siedmiu pól i zachowuje pozostałe parametry. Prywatny wynik nie jest enumerowany przy zwykłej serializacji logu. Trzy kontrtesty syntetyczne PASS: zachowanie innych parametrów i brak wartości w logu, odrzucenie każdej brakującej/mieszanej bazy/ósmego bindingu, obcego celu/środowiska i ujawniających błędów. Pełne lokalne testy kontynuacji135/135 AQC i12/12 neutralnych kontraktów PASS,0 fail/skip/cancelled. Odpowiadający bieżącym11 plikom gate Linux pozostaje9726269f7c8799b71bec64af314deceffbd81bef3eda82c2ff5ceb6d3eb3b8b5. Nowe exact-source/resulting-main CI nadal wymagane.11 wejść zaakceptowanej kwalifikacji Linux bez zmian.
+
+Rzeczywiste powiązania aktualnego hosta ustalono odczytem metadanych: dwa runtime_bindings profitia_services oraz komponent Source w platform_private; trzy role profitia_ingestion w neondb (Finder Source, PI Composer, PI Counter). Wszystkie sześć wiąże obecne d5eb40a0; statusy, terminy i prawa nie zostały zmienione. Stary niezależny market-history binding nie jest elementem odnowienia. Przyjęta kolejność PK/CIC nie stanowi globalnego HOLD: po wykryciu rzeczywistego błędu R4 PK przygotowuje R5 i nie blokuje kwalifikacji CIC. Przed scaleniem i realnym release trzeba ponownie uzgodnić faktycznie przyjęty baseline i krótkie okno; cudza propozycja nie staje się zgodą.
+
+Automatyczna kontrola zatwierdzeń odrzuciła odczyt prywatnego INSIGHTS_CONFIGURATION_JSON w istniejącym sg2-development-runtime, mimo filtrowania do pól wersji. Nie odczytano wartości innym kanałem, nie wykonano zapisu; pole ponownie ukryto. Do jednego konkretnego pakietu decyzji owner-only pozostają ten dokładny odczyt i aktualizacja wyłącznie siedmiu pól wersji po CI oraz odrębne dopuszczenie trzech istniejących kluczy QA w dokładnym workerze i zamkniętej konfiguracji dwóch nowych przypadków. Szerszy klasyczny Render key pozostaje poza zgodą. Operacyjne job wiring, właściwy ograniczony publisher, niezależna referencja/trust i serwerowe bramki wymagają dalszego przygotowania; nie są aktywowane samym opisem pakietu. Żaden sekret lub prywatna konfiguracja nie trafiają do tej karty.
+
+Worker na816663e1/dep-dbujv208v5cc739bcrqg nadal rzeczywiście działa. Heartbeat10:48:50.098Z potwierdza MONITORING_READY, oba magazyny CONNECTED_DISABLED, GitHub CONNECTED_STANDBY, workflow CONNECTED_MAIN_ONLY, paid=false,promotion=false,pilot=null,E1 0/3. Host pozostaje d5eb40a0/dep-dbul4gdckfvc73chhgk0; nie wykonano kolejnego deploymentu, capture ani odczytu QA. TECHNICAL_READY całości NIEOSIĄGNIĘTE. Specyfikacja5, roadmapa8 i frozen §4–5 SHA256ee6b3f36dd63ca3c3343de8b38fee431de49f67b895b17434b39ce332539b881 bez zmian;14dni/50USD NIEURUCHOMIONE, etap2 NIE_ROZPOCZĘTY.
+
+#### Pakiet B28 — dokładni odbiorcy istniejącej konfiguracji; decyzja właściciela jeszcze NIEUDZIELONA
+
+Wszystkie operacje po wymaganych CI i świeżym LIVE/LKG; tylko PROFITIA WORKSPACE/Development. Ten zapis jest reviewable zakresem przyszłej decyzji, nie zgodą. Żaden punkt nie uruchamia paid repairs, autonomicznej promocji, pilota lub etapu2. Nie tworzy nowej roli, migracji, zasobu, poświadczenia providera lub dodatkowego budżetu. Odrębne przyszłe dopuszczenie właściwego publishera/CI/trust nadal musi mieć własną konkretną implementację i komplet dowodów.
+
+1. Istniejący host sg2-development-runtime/srv-dapa3tid0e5s73f8bc5g: odczyt prywatnej wartości INSIGHTS_CONFIGURATION_JSON w pamięci uprawnionego procesu i aktualizacja wyłącznie poniższych siedmiu deploymentId do sprawdzonego SHA. Konfiguracja obejmuje prywatne powiązania operacyjne; nie wolno jej opublikować, wyeksportować do PR/PHR/logów ani skopiować kluczy PI do CIC. Wymagana zgodność obecnej bazy i topologii; pozostałe parametry, modele, produkty, providerzy, prawa i terminy zachowane. Istniejące sześć SourceRefs odnawiane zgodnie z ich dotychczasowym dopuszczeniem, bez rozszerzania dostępu.
+
+| Dokładna ścieżka w INSIGHTS_CONFIGURATION_JSON |
+| --- |
+| receiverApplication.deploymentId |
+| serviceApplication.deploymentId |
+| readApplication.deploymentId |
+| sourceApplication.deploymentId |
+| serviceBinding.service.deploymentId |
+| composerBinding.deploymentId |
+| counterBinding.deploymentId |
+
+2. Ten sam host: zapis tylko dziesięciu przygotowanych ustawień, z użyciem wcześniej utworzonych ograniczonych połączeń/kluczy QA; merge, bez zastępowania reszty środowiska. To dopuszcza capture dwóch nowych kontrolowanych wejść we wcześniej zatwierdzonym, ograniczonym celu, nie historię. Wartości poufne pozostają w prywatnym Render.
+
+| Dokładna nazwa | Źródło/ograniczenie wartości |
+| --- | --- |
+| PROFITIA_ASSISTANT_QUALITY_RESPONSE_VERSION | przyjęta wersja ochrony odpowiedzi |
+| PROFITIA_ASSISTANT_QUALITY_ACCOUNT_ID | to samo, jedno zatwierdzone konto kontrolowane; ID niepublikowane |
+| PROFITIA_ASSISTANT_TIME_ZONE | Europe/Warsaw |
+| PROFITIA_ASSISTANT_QUALITY_EVIDENCE_VERSION | przyjęta wersja dowodu QA |
+| PROFITIA_ASSISTANT_QUALITY_EVIDENCE_DATABASE_URL | istniejąca zwykła rola sg2_assistant_quality_capture w neondb |
+| PROFITIA_ASSISTANT_QUALITY_PURPOSE_KEY | wcześniej utworzony purpose_host_key |
+| PROFITIA_ASSISTANT_QUALITY_EVIDENCE_KEY | wcześniej utworzony evidence_capture_key |
+| PROFITIA_ASSISTANT_QUALITY_STORAGE_KEY | wcześniej utworzony evidence_storage_key |
+| PROFITIA_ASSISTANT_QUALITY_SERVICE_UUID | istniejący, przyjęty serviceId CIC |
+| PROFITIA_ASSISTANT_QUALITY_STORAGE_GENERATION | istniejąca, przyjęta generacja magazynu |
+
+3. Istniejący worker sg2-assistant-quality-development-yr67/srv-dbu4ak0ae00c73eaabcg: po rzeczywistym native capture zapis poniższych dziesięciu ustawień ograniczonego czytnika. Dwa zwykłe role-URL są już osobno zatwierdzone i zainstalowane; nie zmienia się ich odbiorcy. Trzy poniższe klucze dadzą temu workerowi możliwość odszyfrowania i uwierzytelnienia odczytu, dlatego ten konkretny odbiorca wymaga jawnej decyzji. Native uprawnienie SERVICE, wejściowe hashe, konto i daty nadal ograniczają go wyłącznie do dwóch nowych przypadków PL/EN, bez treści w logach/telemetrii. Brak regularnego QA, modelu i naprawy.
+
+| Dokładna nazwa | Źródło/ograniczenie wartości |
+| --- | --- |
+| AQC_QA_CONTROLLED_READ_VERSION | 1.0.0 |
+| AQC_QA_CONTROLLED_ACCOUNT_ID | to samo jedno konto kontrolowane |
+| AQC_QA_CONTROLLED_CASES | dokładnie dwa nowe evidenceId/inputSha256/locale PL/EN, bez tekstu |
+| AQC_QA_CONTROLLED_NOT_BEFORE | świeża granica przed powstaniem tych dwóch dowodów |
+| AQC_QA_CONTROLLED_UNTIL | nie więcej niż168h i nie później niż2026-11-27T23:59:59.000Z |
+| AQC_QA_HOST_SOURCE_SHA | dokładny, rzeczywiście wdrożony i przyjęty SHA hosta |
+| AQC_QA_STORAGE_GENERATION | ta sama istniejąca generacja magazynu |
+| AQC_QA_PURPOSE_COMMAND_KEY | istniejący purpose_authority_key dla zwykłej roli QA authority |
+| AQC_QA_EVIDENCE_COMMAND_KEY | istniejący evidence_reader_key dla zwykłej roli QA reader |
+| AQC_QA_STORAGE_KEY | istniejący evidence_storage_key; wyłącznie prywatny worker |
+
+Terminy native grants i połączeń nie są przedłużane przez ponowienie/aktywność. B28 nie obejmuje klasycznego szerokiego klucza Render, klucza OpenAI, produkcyjnych kluczy owner/reviewer/verifier/publisher ani samopodpisania referencji. Pełne trzy naprawy odbiorowe i E1-T13 nadal nie są uruchomione.
