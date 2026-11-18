@@ -1,3 +1,5 @@
+import {assistantReservationPredecessor} from '../../../packages/platform-contracts/test/assistant-reservation-source.mjs'
+import {ASSISTANT_RESERVATION_SOURCE_SHA} from '../../architecture-lab/private-recurring-source.mjs'
 import {procurementInsightsCompletionPredecessor} from './procurement-insights-completion-integrity.mjs'
 import {marketCalendarSourcePredecessor} from '../../architecture-lab/market-calendar-source.mjs'
 import test from 'node:test'
@@ -10,7 +12,8 @@ import {recurringSourcePredecessor,ECR_WEEK_SOURCE_SHA} from '../../architecture
 const root=new URL('../../../',import.meta.url),rawCurrent=p=>fs.readFileSync(new URL(p,root)),cache=new Map()
 const historical=(sha,p)=>{const k=sha+':'+p;if(!cache.has(k))cache.set(k,execFileSync('git',['show',k],{cwd:root,stdio:['ignore','pipe','pipe']}));return cache.get(k)}
 // Verify the exact later adoption before exercising the immutable week source.
-let current=procurementInsightsCompletionPredecessor(rawCurrent,historical)?.previousBytes??rawCurrent
+const reservation=assistantReservationPredecessor(rawCurrent,historical,ASSISTANT_RESERVATION_SOURCE_SHA),acceptedCurrent=reservation?.previousBytes??rawCurrent
+let current=procurementInsightsCompletionPredecessor(acceptedCurrent,historical)?.previousBytes??acceptedCurrent
 for(let prior;(prior=marketCalendarSourcePredecessor(current,historical));)current=prior.previousBytes
 const hash=b=>createHash('sha256').update(b).digest('hex')
 test('ECR correction closes current source before retaining all prior receipts and recurring acceptance',()=>{

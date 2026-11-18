@@ -28,7 +28,8 @@ import {PRIVATE_RECURRING_SHELL_REVIEW,PRIVATE_RECURRING_SHELL_CURRENT_REVIEW,PR
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
-import {fileURLToPath} from 'node:url'
+import {fileURLToPath, pathToFileURL} from 'node:url'
+import {createAcgLegacyRecurringFixture} from '../../packages/platform-contracts/test/assistant-reservation-source.mjs'
 import {spawnSync, execFileSync} from 'node:child_process'
 import {SOURCE_HUB_UNIVERSAL_FIRST_PARTY_REVIEW,assertUniversalFirstPartyReviewEntry,SOURCE_HUB_CURRENT_E1_REVIEW,assertCurrentE1ReviewEntry,SOURCE_HUB_STAGE2A_REVIEW, assertTrustedContext, assertEnvironment, selectCandidate, assertArchitectureFiles, resolveCandidateAdmission, assertArchitectureCheckout, CONTROL_POLICY_FILES, assertCredentialMetadata, assertReceipt, assertPackagePolicy, assertManifestPolicy, assertLocalPackageSources, assertProof, controlPolicyDigest, operationContractProvenanceDigest, REPOSITORY, WORKFLOW, PRIVATE_PACKAGES, LOCAL_PACKAGES, CONTROLLED_CANDIDATE_PREFIXES, KRS_GOVERNANCE_REVIEW_FILES, ADP_GOVERNANCE_REVIEW, LIMITS_G1_GOVERNANCE_REVIEW, FRESH_REPORT_PRODUCER_REVIEW, PAYLOAD_CAPTURE_PRODUCER_REVIEW, READONLY_MISS_REPORT_PRODUCER_REVIEW, FRESH_FIXTURE_TEARDOWN_REVIEW, ROOT_ATOMIC_CLAIM_PRODUCER_REVIEW} from './controlled-package-ci.mjs'
 
@@ -38,6 +39,8 @@ const pr = () => ({state: 'open', user: {login: 'profitia'}, base: {ref: 'main',
 const configuration = '@profitia:registry=https://npm.pkg.github.com\n//npm.pkg.github.com/:_authToken=${NPM_TOKEN}\n'
 const lock = () => ({lockfileVersion: 3, packages: Object.fromEntries(PRIVATE_PACKAGES.map(name => [`node_modules/${name}`, {version: '1.0.0', integrity: 'sha512-approved'}]))})
 const rejection = fn => assert.throws(fn)
+const legacyRecurringFixture = await createAcgLegacyRecurringFixture(path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..'))
+test.after(() => legacyRecurringFixture.close())
 
 test('ECR admits only its exact published CIC artifact for SG2 while preserving the independent M1 and M2 pins',()=>{
  const authority=lock()
@@ -160,7 +163,7 @@ test('only the ten reviewed local names bind to their own exact paths, never a r
     rejection(() => assertManifestPolicy({dependencies: {alias: `file:${relative}`}}, authority))
   }
 })
-function currentRecurringPolicyOptions(){return {reviewedPrivateRecurring:!!assertPrivateRecurringProvenance(authorityRoot),reviewedLifecycle:!!registrationLifecycleCanonicalRead(authorityRoot),reviewedCompleteFunctional:!!assertCompleteFunctionalProvenance(authorityRoot)}}
+function currentRecurringPolicyOptions(){const root=legacyRecurringFixture.root;return {reviewedPrivateRecurring:!!assertPrivateRecurringProvenance(root),reviewedLifecycle:!!registrationLifecycleCanonicalRead(root),reviewedCompleteFunctional:!!assertCompleteFunctionalProvenance(root)}}
 function reviewedMapsFixture() {
   const manifest = JSON.parse(fs.readFileSync(path.join(authorityRoot, 'packages/maps-embed/package.json'), 'utf8'))
   const candidate = lock()
@@ -197,7 +200,7 @@ test('existing MapsEmbed peers require exact reviewed owner, version, section an
 test('Maps lock peer exception is confined to the exact top-level installed entry and never admits app or nested peers', () => {
   const {candidate} = reviewedMapsFixture(),options=currentRecurringPolicyOptions()
   assertPackagePolicy(candidate, lock(), configuration,options)
-  assertLocalPackageSources(authorityRoot, candidate, authorityRoot,options)
+  assertLocalPackageSources(legacyRecurringFixture.root, candidate, legacyRecurringFixture.root,options)
   for (const mutate of [
     l => l.packages['node_modules/@profitia/maps-embed'].version = '0.1.3',
     l => l.packages['node_modules/@profitia/maps-embed'].peerDependencies['@profitia/maps-contracts'] = '^0.1.0',
@@ -246,8 +249,8 @@ for (const name of Object.keys(LOCAL_PACKAGES)) test(`actual local source ${name
     rejection(() => assertLocalPackageSources(candidateRoot, candidate, authorityRoot))
   } finally {fs.rmSync(temporary, {recursive: true, force: true})}
 })
-test('actual current SG2 dependency policy remains valid and admits only the reviewed local module addition', () => {
-  const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
+test('accepted legacy SG2 dependency policy fixture admits only the reviewed local module addition', () => {
+  const root = legacyRecurringFixture.root
   const authority = JSON.parse(fs.readFileSync(path.join(root, 'apps/sg-runtime/package-lock.json'), 'utf8'))
   const manifest = JSON.parse(fs.readFileSync(path.join(root, 'apps/sg-runtime/package.json'), 'utf8'))
   const options=currentRecurringPolicyOptions()
@@ -353,13 +356,12 @@ test('regular files and bounded size are required; symlink files and parent dire
  const f=sourceLayoutFixture(),outside=fs.mkdtempSync(path.join(os.tmpdir(),'untrusted-contract-source-'))
  try{const file=f.file('src/request-operations.mjs');fs.unlinkSync(file);fs.writeFileSync(path.join(outside,'private-file'),'synthetic outside marker');fs.symlinkSync(path.join(outside,'private-file'),file);assert.throws(()=>operationContractProvenanceDigest(f.root,f.contract),/CONTRACT_SOURCE_FILE_REJECTED/);fs.unlinkSync(file);fs.writeFileSync(file,'a'.repeat(1024*1024+1));assert.throws(()=>operationContractProvenanceDigest(f.root,f.contract),/CONTRACT_SOURCE_FILE_REJECTED/);fs.writeFileSync(file,'small');const src=f.file('src');fs.renameSync(src,path.join(outside,'src'));fs.symlinkSync(path.join(outside,'src'),src,'dir');assert.throws(()=>operationContractProvenanceDigest(f.root,f.contract),/CONTRACT_SOURCE_FILE_REJECTED/)}finally{f.close();fs.rmSync(outside,{recursive:true,force:true})}
 })
-test('actual current source provenance is the exact accepted SDK digest with all old trust rules intact',async()=>{
- const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..'),receipt=JSON.parse(fs.readFileSync(path.join(root,'apps/sg-runtime/operation-integration.json'),'utf8'))
+test('authenticated legacy source fixture retains its exact accepted SDK digest and all old trust rules',async()=>{
+ const root=legacyRecurringFixture.root,receipt=JSON.parse(fs.readFileSync(path.join(root,'apps/sg-runtime/operation-integration.json'),'utf8'))
  const record=assertPrivateRecurringProvenance(root),receiptBytes=fs.readFileSync(path.join(root,'apps/sg-runtime/operation-integration.json'))
- const currentSdk=await import('./controlled-package-ci.mjs')
  const contract=currentProofContract(root,receipt)
  assert.equal(operationContractProvenanceDigest(root,contract,{reviewedPrivateRecurring:!!record}),contract.sourceDigest)
- const sdk=await import('../../packages/platform-contracts/src/operation-context.mjs');assert.equal(await sdk.operationSourceDigest(),contract.sourceDigest)
+ const sdk=await import(pathToFileURL(path.join(root,'packages/platform-contracts/src/operation-context.mjs')));assert.equal(await sdk.operationSourceDigest(),contract.sourceDigest)
 })
 
 for(const patch of[{id:'untrusted.contract'},{version:'9.0.0'},{sourceDigest:'invalid'},{paths:['../../outside']},{implementation:'1.0.0-candidate.14'}])test('source identity refuses malformed metadata or a downgrade '+JSON.stringify(patch),()=>{
@@ -2870,7 +2872,7 @@ test('PI fixture projection authenticates both complete reviews and refuses mixe
   for(const p of ['apps/insights-runtime/src/host.mjs','apps/sg-runtime/components/procurement-insights/workspace.tsx'])assert.deepEqual(previous(p),historical(a.baseCandidateSha,p));
   assert.throws(()=>previous(PI_LIVE_ACCEPTANCE_PROVENANCE_PATH),{code:'ENOENT'});
  }
- assert(c.assertPrivateRecurringProvenance(authorityRoot));
+ assert(c.assertPrivateRecurringProvenance(legacyRecurringFixture.root));
 });
 
 
@@ -3602,6 +3604,19 @@ test('trusted quality source composition verifies both exact closures and every 
  }
  assert.equal(trustedQualityPredecessor(()=>{throw Object.assign(Error('ABSENT'),{code:'ENOENT'})},historical),null)
  assert.throws(()=>trustedQualityPredecessor(()=>{throw Object.assign(Error('DENIED'),{code:'EACCES'})},historical),{code:'EACCES'})
+})
+
+// A historical unit input cannot establish adoption of the current SDK.
+test('actual ACG reservation source remains authenticated separately from the legacy fixture',async()=>{
+ assert.equal(legacyRecurringFixture.sourceRoot,authorityRoot)
+ assert(legacyRecurringFixture.projected)
+ assert.notEqual(legacyRecurringFixture.root,authorityRoot)
+ assert.equal(legacyRecurringFixture.sourceRecord.scope,'EXACT_ASSISTANT_TOKEN_RESERVATION_SOURCE')
+ assert.throws(()=>assertPrivateRecurringProvenance(authorityRoot),/PI_LIVE_ACCEPTANCE_SOURCE_REJECTED|EDITORIAL_SOURCE_BYTES_REJECTED/)
+ const sdk=await import('../../packages/platform-contracts/src/operation-context.mjs')
+ assert.equal(await sdk.operationSourceDigest(),legacyRecurringFixture.sourceRecord.sdkDigests.operationSourceDigest)
+ const legacyReceipt=JSON.parse(fs.readFileSync(path.join(legacyRecurringFixture.root,'apps/sg-runtime/operation-integration.json'),'utf8'))
+ assert.notEqual(await sdk.operationSourceDigest(),currentProofContract(legacyRecurringFixture.root,legacyReceipt).sourceDigest)
 })
 
 test('quality recurring compatibility authenticates the new common dispatch and retains all old guards',async()=>{

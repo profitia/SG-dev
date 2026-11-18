@@ -5,15 +5,19 @@ import fs from 'node:fs'
 import path from 'node:path'
 import test from 'node:test'
 import {fileURLToPath} from 'node:url'
+import {createAcgLegacyRecurringFixture} from '../../../packages/platform-contracts/test/assistant-reservation-source.mjs'
 import {bsdcManifestContinuityCurrent,BSDC_MANIFEST_CONTINUITY as cfg} from '../market-calendar-source.mjs'
 import {bsdcManifestContinuityTrustedCurrent} from '../../../scripts/governance/controlled-package-ci.mjs'
 
 const root=fileURLToPath(new URL('../../../',import.meta.url))
+const legacyFixture=await createAcgLegacyRecurringFixture(root)
+test.after(()=>legacyFixture.close())
 const ledgerPath='Canon/registries/governance-manifest-successors-v1.json'
 const trustedRef='refs/remotes/origin/main'
 const sourceSha='1dc0c05e52e8f4b78779ec3d0e532975ed4fa354'
 const hash=bytes=>createHash('sha256').update(bytes).digest('hex')
-const physical=p=>fs.readFileSync(path.join(root,p))
+// Historical BSDC assertions consume their complete authenticated pre-ACG input.
+const physical=p=>fs.readFileSync(path.join(legacyFixture.root,p))
 const history=(sha,p)=>execFileSync('git',['show',sha+':'+p],{cwd:root,stdio:['ignore','pipe','pipe']})
 const sourceManifest=history(sourceSha,cfg.manifestPath)
 const sourceDoc='Canon/v1.0-procurement-insights-narrative-and-editorial-canon.md'

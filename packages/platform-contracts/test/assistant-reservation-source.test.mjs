@@ -1,0 +1,56 @@
+import test from 'node:test'
+import assert from 'node:assert/strict'
+import fs from 'node:fs'
+import path from 'node:path'
+import {fileURLToPath} from 'node:url'
+import {execFileSync} from 'node:child_process'
+import {assistantReservationPredecessor,RESERVATION_BASE,RESERVATION_RECORD,RESERVATION_PATHS,RESERVATION_RECEIPTS,RESERVATION_SG2_PATHS,RESERVATION_DERIVED} from './assistant-reservation-source.mjs'
+const root=fileURLToPath(new URL('../../../',import.meta.url)),peer=process.env.ACG_SOURCE_PEER_ROOT??root
+const current=p=>fs.readFileSync(path.join(RESERVATION_SG2_PATHS.includes(p)?peer:root,p))
+const historical=(sha,p)=>execFileSync('git',['show',sha+':'+p],{cwd:root,stdio:['ignore','pipe','pipe']})
+const pin=()=>String(current(RESERVATION_DERIVED)).match(/ASSISTANT_RESERVATION_SOURCE_SHA='([a-f0-9]{64})'/)?.[1]
+test('exact reservation source closes all three owners and preserves every accepted receipt before predecessor projection',()=>{
+ const result=assistantReservationPredecessor(current,historical,pin());assert(result)
+ assert.equal(result.manifest.outputTokens,2048);assert.equal(result.manifest.sql006Installed,false)
+ for(const p of RESERVATION_RECEIPTS)assert.deepEqual(result.previousBytes(p),historical(RESERVATION_BASE,p))
+ for(const p of RESERVATION_PATHS.filter(p=>!p.endsWith('assistant-reservation-source.mjs')&&!p.endsWith('assistant-reservation-source.test.mjs')&&!p.endsWith('006-assistant-reservation-diagnostics.sql')))assert.deepEqual(result.previousBytes(p),historical((p==="apps/sg-runtime/tests/procurement-insights-editorial-integrity.mjs"||p==="apps/sg-runtime/tests/finder-monitor-source-integrity.mjs")?"52c5edbf282d68af1c6fb6e0c9f0f06c7a89ac50":RESERVATION_BASE,p))
+ assert.throws(()=>result.previousBytes(RESERVATION_RECORD),{code:'ENOENT'})
+})
+test('every changed producer, consumer, SQL, helper and derived source byte is authenticated before projection',()=>{
+ for(const p of [...RESERVATION_PATHS,RESERVATION_DERIVED,RESERVATION_RECORD])assert.throws(()=>assistantReservationPredecessor(f=>f===p?Buffer.concat([current(f),Buffer.from('tamper')]):current(f),historical,pin()),p)
+})
+test('earlier receipts and historical source may not be rewritten, omitted or replaced by a new pin',()=>{
+ for(const p of RESERVATION_RECEIPTS)assert.throws(()=>assistantReservationPredecessor(f=>f===p?Buffer.concat([current(f),Buffer.from('tamper')]):current(f),historical,pin()),p)
+ assert.throws(()=>assistantReservationPredecessor(current,(sha,p)=>Buffer.concat([historical(sha,p),Buffer.from('tamper')]),pin()))
+ assert.throws(()=>assistantReservationPredecessor(current,historical,'0'.repeat(64)))
+})
+test('missing record is unadopted while unreadable or malformed present records fail closed',()=>{
+ assert.equal(assistantReservationPredecessor(p=>{if(p===RESERVATION_RECORD)throw Object.assign(Error('absent'),{code:'ENOENT'});return current(p)},historical,pin()),null)
+ assert.throws(()=>assistantReservationPredecessor(p=>{if(p===RESERVATION_RECORD)throw Object.assign(Error('denied'),{code:'EACCES'});return current(p)},historical,pin()))
+ assert.throws(()=>assistantReservationPredecessor(p=>p===RESERVATION_RECORD?Buffer.from('{}'):current(p),historical,pin()))
+})
+
+test('editorial predecessor preserves the accepted Finder helper and rejects historical byte drift',()=>{
+ const p="apps/sg-runtime/tests/procurement-insights-editorial-integrity.mjs",reference="52c5edbf282d68af1c6fb6e0c9f0f06c7a89ac50"
+ const result=assistantReservationPredecessor(current,historical,pin());assert(result)
+ assert.deepEqual(result.previousBytes(p),historical(reference,p))
+ const altered=assistantReservationPredecessor(current,(sha,name)=>sha===reference&&name===p?Buffer.concat([historical(sha,name),Buffer.from('tamper')]):historical(sha,name),pin())
+ assert.throws(()=>altered.previousBytes(p),/exact accepted Finder editorial predecessor/)
+})
+
+test('Finder reader predecessor preserves its accepted bytes and rejects historical drift',()=>{
+ const p="apps/sg-runtime/tests/finder-monitor-source-integrity.mjs",reference="52c5edbf282d68af1c6fb6e0c9f0f06c7a89ac50"
+ const result=assistantReservationPredecessor(current,historical,pin());assert(result)
+ assert.deepEqual(result.previousBytes(p),historical(reference,p))
+ const altered=assistantReservationPredecessor(current,(sha,name)=>sha===reference&&name===p?Buffer.concat([historical(sha,name),Buffer.from('tamper')]):historical(sha,name),pin())
+ assert.throws(()=>altered.previousBytes(p),/exact accepted Finder reader predecessor/)
+})
+test('Finder current-source aggregate authenticates the complete ACG composition before unchanged monitor checks',async()=>{
+ const {finderMonitorPredecessor}=await import('../../../apps/sg-runtime/tests/finder-monitor-source-integrity.mjs')
+ const {createHash}=await import('node:crypto')
+ const view=finderMonitorPredecessor(current,historical);assert(view?.reservation)
+ const all=[...RESERVATION_PATHS,RESERVATION_RECORD,RESERVATION_DERIVED];assert.equal(new Set(all).size,46)
+ for(const p of all)assert.equal(view.manifest.sourceDigests[p],createHash('sha256').update(current(p)).digest('hex'),p)
+ assert.throws(()=>view.previousBytes("apps/sg-runtime/tests/finder-monitor-source-integrity.mjs"),{code:'ENOENT'})
+ for(const p of ["apps/sg-runtime/tests/finder-monitor-source-integrity.mjs","apps/sg-runtime/tests/procurement-insights-editorial-integrity.mjs",RESERVATION_RECORD,RESERVATION_DERIVED])assert.throws(()=>finderMonitorPredecessor(f=>f===p?Buffer.concat([current(f),Buffer.from('tamper')]):current(f),historical),p)
+})

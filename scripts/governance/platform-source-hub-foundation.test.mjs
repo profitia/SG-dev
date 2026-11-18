@@ -10,6 +10,7 @@ import os from 'node:os'
 import path from 'node:path'
 import test from 'node:test'
 import { fileURLToPath } from 'node:url'
+import {createAcgLegacyRecurringFixture} from '../../packages/platform-contracts/test/assistant-reservation-source.mjs'
 import { resolveProjectProfile } from './project-profile.mjs'
 import { resolveProjectRouting } from './routing-engine.mjs'
 import { validateGovernanceManifest } from './validate-governance-manifest.mjs'
@@ -17,6 +18,8 @@ import { resolveEnvironmentProfile } from './environment-profile.mjs'
 import {assistantSdkPredecessor} from '../../apps/architecture-lab/assistant-m1-sdk-compatibility.mjs'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
+const legacyRecurringFixture = await createAcgLegacyRecurringFixture(root)
+test.after(() => legacyRecurringFixture.close())
 const approved = 'b40564130fe7b6ced4d7df233dd6749653846114'
 const read = p => fs.readFileSync(path.join(root, p), 'utf8')
 const json = p => JSON.parse(read(p))
@@ -384,7 +387,8 @@ import {bsdcManifestContinuityCurrent, BSDC_MANIFEST_CONTINUITY as bsdcLabPolicy
 import {bsdcManifestContinuityTrustedCurrent, BSDC_MANIFEST_CONTINUITY as bsdcTrustedPolicy, BSDC_V11_DOCUMENTATION_REVIEW, marketCalendarTrustedPredecessor, assertPrivateRecurringProvenance, selectCandidate, assertBsdcDocumentationReviewEntry} from './controlled-package-ci.mjs'
 const bsdcHistoryCache=new Map()
 const bsdcHistory=(sha,p)=>{const k=sha+':'+p;if(!bsdcHistoryCache.has(k))bsdcHistoryCache.set(k,execFileSync('git',['cat-file','blob',k],{cwd:root,stdio:['ignore','pipe','pipe']}));return Buffer.from(bsdcHistoryCache.get(k))}
-const bsdcPhysical=p=>fs.readFileSync(path.join(root,p))
+// BSDC assertions retain the complete authenticated pre-ACG input, including this test.
+const bsdcPhysical=p=>fs.readFileSync(path.join(legacyRecurringFixture.root,p))
 const bsdcApproved=p=>bsdcTrustedPolicy.sourcePaths.includes(p)?bsdcHistory(BSDC_V11_DOCUMENTATION_REVIEW.approvedSourceSha,p):bsdcPhysical(p)
 const bsdcFiles=()=>Object.entries(BSDC_V11_DOCUMENTATION_REVIEW.entries).map(([filename,e])=>({filename,sha:e.sha,status:e.status}))
 const bsdcContext={repository:'profitia/SG-dev',ref:'refs/heads/main',workflowRef:'profitia/SG-dev/.github/workflows/platform-contracts-ci.yml@refs/heads/main',event:'workflow_dispatch',actor:'profitia',triggeringActor:'profitia',controlSha:bsdcTrustedPolicy.baseSha}
@@ -402,7 +406,7 @@ test('BSDC continuity bootstrap preserves the old manifest and every original Ca
   assert.throws(()=>view(bsdcTrustedPolicy.recordPath),{code:'ENOENT'})
  }
  assert(calendarPredecessor(bsdcPhysical).record)
- assert(assertPrivateRecurringProvenance(root))
+ assert(assertPrivateRecurringProvenance(legacyRecurringFixture.root))
 })
 
 test('BSDC activation authenticates exactly the approved four documents before old source traversal',()=>{
