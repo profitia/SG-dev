@@ -4,7 +4,6 @@ import fs from 'node:fs'
 import {pathToFileURL} from 'node:url'
 import {execFileSync} from 'node:child_process'
 import {gunzipSync} from 'node:zlib'
-import ts from 'typescript'
 import {documentDigest,verifyDocument,signDocument,assertVerifiedRepairManifest,SOURCE_PATHS} from './manifest.mjs'
 import {advanceIncident} from './controller.mjs'
 
@@ -140,6 +139,15 @@ function cicFiles(archive){
  require(p?.name==='@profitia/cic-core'&&p.version==='1.8.0'&&Object.keys(p.dependencies??{}).length===0&&files['node_modules/@profitia/cic-core/dist/index.js'],'VERIFIER_CIC_ARTIFACT_REQUIRED')
  return files
 }
+/** Read-only original-package qualification for trusted main CI before any
+ * candidate checkout. Shares the verifier's exact SRI/parser and returns only
+ * bounded package metadata; never imports or executes private package code. */
+export function inspectQualityCicArchive(archive){
+ const files=cicFiles(archive)
+ return Object.freeze({schemaVersion:'AQC_CIC_ARCHIVE_V1',status:'VERIFIED',
+  packageName:'@profitia/cic-core',version:'1.8.0',fileCount:Object.keys(files).length,
+  dependencies:0,privateCodeExecuted:false})
+}
 /** Assemble inert source from the signed base Git objects and bounded patch.
  * No checkout import, package script, filesystem dependency tree or QA label
  * enters the child. Private CIC bytes must match its exact accepted tarball. */
@@ -162,6 +170,7 @@ export async function prepareQualityVerificationBundle({manifest,repositoryRoot,
  require(documentDigest(regression)===m.synthetic.sha256&&regression.repairClass===m.repairClass,'REPAIR_FIXTURE_MISMATCH')
  const {assertRepairSource}=await import('./source-policy.mjs')
  const source=assertRepairSource({before,after:repaired.content,path:sourcePath,repairClass:m.repairClass})
+ const {default:ts}=await import('typescript')
  const sources={calendar:read(SOURCE_PATHS.C1),quality:read(SOURCE_PATHS.C2)},files={},primary=m.repairClass==='C1'?'calendar':'quality'
  let needsCic=false
  for(const version of ['base','candidate'])for(const [name,original]of Object.entries(sources)){

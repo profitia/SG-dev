@@ -8155,6 +8155,14 @@ async function credentialPreflight() {
       let reports;try{reports=JSON.parse(packed.stdout)}catch{fail('PACKAGE_METADATA_REJECTED')}
       if(!Array.isArray(reports)||reports.length!==1)fail('PACKAGE_METADATA_REJECTED')
       assertTrustedPackedArtifact(directory,reports[0],name,pin)
+      if(name==='@profitia/cic-core'&&pin.version===CIC_QUALITY_STAGE1_PIN.version){
+        // Trusted main module only; no TypeScript dependency, candidate module,
+        // package lifecycle or private package source is executed here.
+        const {inspectQualityCicArchive}=await import('../../packages/assistant-quality-control/src/verify.mjs')
+        const proof=inspectQualityCicArchive(fs.readFileSync(path.join(directory,reports[0].filename)))
+        if(proof.fileCount!==21)fail('VERIFIER_CIC_ARCHIVE_SHAPE_REJECTED')
+        console.log('CIC_ORIGINAL_ARCHIVE_VERIFIED: '+JSON.stringify(proof))
+      }
     }
     fs.writeFileSync(path.join(process.env.RUNNER_TEMP,'controlled-package-access.json'),JSON.stringify({controlSha:c.controlSha,runId:process.env.GITHUB_RUN_ID,privatePackages:PRIVATE_PACKAGES,mode:'github-token'}),{mode:0o600})
     console.log('PACKAGE_ACCESS_READY: exact trusted artifacts; no candidate execution')

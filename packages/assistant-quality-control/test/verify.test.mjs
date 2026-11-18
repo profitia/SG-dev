@@ -133,6 +133,22 @@ test('Concrete verifier rejects source/patch substitution, executable regression
  }finally{c.close()}
 })
 
+test('Original CIC parser imports without dependencies and rejects unpinned bytes without execution',()=>{
+ const root=fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(),'aqc-archive-import-')))
+ try{
+  const copy=(from,to)=>{const target=path.join(root,to);fs.mkdirSync(path.dirname(target),{recursive:true});fs.copyFileSync(new URL(from,import.meta.url),target)}
+  for(const name of ['verify.mjs','controller.mjs','manifest.mjs'])copy('../src/'+name,'packages/assistant-quality-control/src/'+name)
+  const contracts=new URL('../../assistant-context-contracts/src/',import.meta.url)
+  for(const name of fs.readdirSync(contracts))if(name.endsWith('.mjs'))copy('../../assistant-context-contracts/src/'+name,'packages/assistant-context-contracts/src/'+name)
+  const script="import assert from 'node:assert/strict';import {inspectQualityCicArchive} from './packages/assistant-quality-control/src/verify.mjs';"+
+   "for(const input of [undefined,new Uint8Array([1]),Buffer.from('not the accepted original archive'),Buffer.alloc(2097153)])"+
+   "assert.throws(()=>inspectQualityCicArchive(input),{code:'VERIFIER_CIC_ARTIFACT_REQUIRED'});console.log('INERT_ORIGINAL_ARCHIVE_IMPORT_PASS')"
+  const output=execFileSync(process.execPath,['--input-type=module','-e',script],{
+   cwd:root,encoding:'utf8',timeout:15000,env:{PATH:'/usr/bin:/bin',LANG:'C.UTF-8',NPM_CONFIG_USERCONFIG:'/dev/null',NPM_CONFIG_GLOBALCONFIG:'/dev/null'}})
+  assert.equal(output.trim(),'INERT_ORIGINAL_ARCHIVE_IMPORT_PASS')
+ }finally{fs.rmSync(root,{recursive:true,force:true})}
+})
+
 function privateReaderFixture(){
  const root=fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(),'aqc-private-reader-')))
  const put=(p,s)=>{const f=path.join(root,p);fs.mkdirSync(path.dirname(f),{recursive:true});fs.writeFileSync(f,s)}
