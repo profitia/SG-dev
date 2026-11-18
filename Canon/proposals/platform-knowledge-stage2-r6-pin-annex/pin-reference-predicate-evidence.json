@@ -1,0 +1,64 @@
+{
+  "status": "STATIC_PREDICATE_CHECKS_PASS_NOT_RUNTIME",
+  "checks": 7,
+  "cases": [
+    {
+      "case": "approved R6 exact reference",
+      "expected": true,
+      "actual": true,
+      "status": "PASS"
+    },
+    {
+      "case": "prior R5 reference",
+      "expected": false,
+      "actual": false,
+      "status": "PASS"
+    },
+    {
+      "case": "wrong R6 review SHA",
+      "expected": false,
+      "actual": false,
+      "status": "PASS"
+    },
+    {
+      "case": "foreign repository",
+      "expected": false,
+      "actual": false,
+      "status": "PASS"
+    },
+    {
+      "case": "non-TLS URL",
+      "expected": false,
+      "actual": false,
+      "status": "PASS"
+    },
+    {
+      "case": "query suffix",
+      "expected": false,
+      "actual": false,
+      "status": "PASS"
+    },
+    {
+      "case": "wrong document",
+      "expected": false,
+      "actual": false,
+      "status": "PASS"
+    }
+  ],
+  "originalReviewedTemplateSha256": "5cdd3b68e97c310f6e038d2cb3cd27d7d19eb2a76a3c12a8c8626df56d04e024",
+  "correctedTemplateSha256": "345e381f85f3ecddaf6f35f0ade155b90689ba9af4ee44689e426b2c9f80b0af",
+  "changedLines": 1,
+  "changedLineNumber": 14,
+  "oldTemplateRejectsActualApprovedR6Reference": true,
+  "otherTemplateBytesIdentical": true,
+  "renderingRule": "Only the existing __PK_DEPLOYED_SOURCE_SHA__ marker, and only after the approved R6 actual CI/admission/resulting-main selection",
+  "sourceSha": "cfa76c865083b43d14408f4bbfa27b2287c03972",
+  "acceptedMainSha": "2f77dcd19a5ba0bb4dd4c30ed375f4c1d3213586",
+  "sourceCi": "13/13 PASS",
+  "controlledRunId": 44365374661,
+  "resultingMainCi": "PENDING",
+  "providerCalls": 0,
+  "providerWrites": 0,
+  "pinIntentCreated": false,
+  "observedAt": "2026-11-18T18:53:11.766120+00:00"
+}
