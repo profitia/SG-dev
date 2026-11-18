@@ -1,4 +1,4 @@
-import {knowledgeSourcePredecessor} from '../../architecture-lab/knowledge-source.mjs'
+import {knowledgeSourcePredecessor} from '../../architecture-lab/knowledge-source.mjs';
 import {procurementInsightsEditorialPackagePredecessor,EDITORIAL_PACKAGE_RECEIPT} from './procurement-insights-editorial-package-integrity.mjs'
 import {finderMonitorPredecessor,FINDER_MONITOR_RECEIPT} from './finder-monitor-source-integrity.mjs'
 import {procurementInsightsEditorialPredecessor,EDITORIAL_RECEIPT} from './procurement-insights-editorial-integrity.mjs'
@@ -56,8 +56,8 @@ export function notificationCompletionSource(before){
  return IMPORT+before.replace(HEAD,HEAD+PREFIX)
 }
 export function assistantNotificationsPredecessor(current,historical){
- const knowledge=knowledgeSourcePredecessor(current,historical)
- if(knowledge)return assistantNotificationsPredecessor(knowledge.previousBytes,historical)
+ const knowledge=knowledgeSourcePredecessor(current,historical);
+ if(knowledge)return assistantNotificationsPredecessor(knowledge.previousBytes,historical);
  const packaged=procurementInsightsEditorialPackagePredecessor(current,historical)
  if(packaged){
   const accepted=assistantNotificationsPredecessor(packaged.previousBytes,historical);assert(accepted,'accepted editorial source retained')

@@ -1,10 +1,27 @@
-import {sdkSourceContext,sdkSourcePathAbsent} from '../../packages/platform-contracts/test/sdk-source-context.mjs'
+import {sdkSourceContext} from '../../packages/platform-contracts/test/sdk-source-context.mjs'
 // Closed source-compatibility review only; never imported by product runtime.
 import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
 export const KNOWLEDGE_SOURCE_RECORD='apps/architecture-lab/knowledge-source.json';
-export const KNOWLEDGE_SOURCE_RECORD_SHA256='44b5e85e201974aadc863ed3d9a5afc2f10c0224dc979bfe1cff5a13bfd73f99';
+export const KNOWLEDGE_SOURCE_RECORD_SHA256='f48b0959976c01562f92669dacfc83829b31c8013af70ecd041a94bc3f39be6c';
 const hash=bytes=>createHash('sha256').update(bytes).digest('hex');
+// Historical readers use Git's exact missing-path diagnostic rather than the
+// filesystem ENOENT. Unknown revisions, foreign paths and access errors remain
+// fatal; only this optional record can be genuinely absent from its predecessor.
+const absent=(error,historical)=>{
+ if(error?.code==='ENOENT')return true;
+ if(error?.status!==128)return false;
+ const diagnostic=String(error.stderr??'').trim();
+ const prefix="fatal: path '"+KNOWLEDGE_SOURCE_RECORD+"' ";
+ if(!diagnostic.startsWith(prefix))return false;
+ const match=/^(?:does not exist in|exists on disk, but not in) '([a-f0-9]{40})'$/.exec(diagnostic.slice(prefix.length));
+ if(!match)return false;
+ // Git can print the same missing-path text for an unknown object. Verify a
+ // real historical source at that revision before classifying absence.
+ const witness=historical(match[1],'AGENTS.md');
+ assert((Buffer.isBuffer(witness)||typeof witness==='string')&&witness.length>0,'readable historical revision required');
+ return true;
+};
 export function knowledgeSourcePredecessor(current,historical){
  const context=sdkSourceContext(current,historical)
  if(context){
@@ -12,7 +29,7 @@ export function knowledgeSourcePredecessor(current,historical){
   assert(previous,'complete immutable Knowledge source required')
   return {...previous,currentSourceDigests:context.currentSourceDigests,currentSdkContext:context}
  }
- let bytes;try{bytes=current(KNOWLEDGE_SOURCE_RECORD);}catch(error){if(sdkSourcePathAbsent(error,KNOWLEDGE_SOURCE_RECORD,historical))return null;throw error;}
+ let bytes;try{bytes=current(KNOWLEDGE_SOURCE_RECORD);}catch(error){if(absent(error,historical))return null;throw error;}
  assert.equal(hash(bytes),KNOWLEDGE_SOURCE_RECORD_SHA256,'exact reviewed Platform Knowledge source record');
  const a=JSON.parse(bytes);
  assert.equal(a.schemaVersion,'1.0.0');assert.equal(a.scope,'PLATFORM_KNOWLEDGE_SDK_SOURCE_ACCEPTANCE');
