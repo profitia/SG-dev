@@ -20,7 +20,7 @@ const run=(file,args)=>{
  require(!r.error&&r.status===0,'QUALIFICATION_PREREQUISITE_FAILED');return r.stdout.trim()
 }
 const policyFiles=['src/executor.mjs','src/acceptance.mjs','src/manifest.mjs','src/provenance.mjs','src/source-policy.mjs',
- 'src/budget.mjs','src/openai-broker.mjs','src/verify.mjs','package.json','package-lock.json']
+ 'src/budget.mjs','src/openai-broker.mjs','src/verify.mjs','src/controller.mjs','package.json','package-lock.json']
 export function qualificationPolicyDigest(packageRoot){
  return documentDigest(policyFiles.map(p=>({path:p,sha256:hash(fs.readFileSync(path.join(packageRoot,p)))})))
 }

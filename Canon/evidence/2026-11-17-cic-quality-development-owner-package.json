@@ -447,7 +447,9 @@
       "promotionEnabled": false,
       "pilotStartedAt": null,
       "acceptanceRepairsCompleted": 0,
-      "technicalReady": false
+      "technicalReady": false,
+      "latestObservedAt": "2026-11-18T03:40:23.919Z",
+      "newAdapterSourceDeployed": false
     },
     "linuxQualification20261118": {
       "sourceSha": "8067b0e0a87762f769035bd3fdf70bec69fe443a",
@@ -517,6 +519,93 @@
       "autoDeploy": false,
       "lkgSourceSha": "0c311a197e2f19bc35c953e34e095a1ab92c254b",
       "lkgDeployId": "dep-dbuabmjm8hqs73f8hdfg"
+    },
+    "privateQaReaderAdapter": {
+      "sourceSha": "297549e0aa7845ede9d5008bf729aa36f71d743f",
+      "mergedMainSha": "4b8742f9c3459c8b1f6ffc30b147f91549156a3b",
+      "pr": 1168,
+      "sourceCiRunId": 44229848894,
+      "aqcTests": 116,
+      "neutralContracts": 12,
+      "nativeHostInterop": {
+        "status": "PASS",
+        "cases": 12,
+        "localPostgres": true,
+        "developmentDataUsed": false,
+        "canonicalCodecSha256": "fc5c9b4d03422d10df729e991748b23f2c0d7f3528c9c6d083cc2feaed989a71"
+      },
+      "canonicalHostCodecReused": true,
+      "renderGitAvailabilityVerified": false,
+      "deployed": false
+    },
+    "verifierAttestor": {
+      "sourceMainSha": "4b8742f9c3459c8b1f6ffc30b147f91549156a3b",
+      "closedOsResultProvenance": true,
+      "metadataOnly": true,
+      "positiveFullHoldoutQualification": false,
+      "extraSyntheticQualificationFixture": "BLOCKED_AUTO_REVIEW_NOT_APPLIED",
+      "approvalRequiredBeforeRetry": true,
+      "productionTrustInstalled": false,
+      "businessReferenceAccepted": false
+    },
+    "publisherPatchBinding": {
+      "sourceMainSha": "4b8742f9c3459c8b1f6ffc30b147f91549156a3b",
+      "immutableCommitDiff": true,
+      "exactTwoPaths": true,
+      "exactBaseHeadBlobBytes": true,
+      "ordinaryModesOnly": true,
+      "oneParentBase": true,
+      "inputSnapshot": true,
+      "prIdentityReread": true,
+      "promotionEnabled": false,
+      "deployed": false
+    },
+    "verifierPolicyDependency": {
+      "pr": 1169,
+      "sourceSha": "6ef4a8daf3c117402ba5981854dd731bce738441",
+      "mergedMainSha": "114e0975085c834bb9a9b529d972ba05b77ed992",
+      "sourceCiRunId": 44231634503,
+      "resultingMainCiRunId": 44231864025,
+      "aqcTests": 117,
+      "neutralContracts": 12,
+      "skipped": 0,
+      "policyFiles": 11,
+      "controllerDependencyIncluded": true,
+      "withheldFixtureAdded": false
+    },
+    "linuxQualification20261118Latest": {
+      "sourceSha": "114e0975085c834bb9a9b529d972ba05b77ed992",
+      "runId": 44231983517,
+      "artifactId": 14395631625,
+      "zipSha256": "31704dc3bb7a813dd9301492c22e681538ff8ea9faed8e8ff887cd8eeac4ded0",
+      "gateSetSha256": "9726269f7c8799b71bec64af314deceffbd81bef3eda82c2ff5ceb6d3eb3b8b5",
+      "status": "INDEPENDENTLY_VERIFIED",
+      "policyFilesVerified": 11,
+      "providerIdentityVerified": true,
+      "artifactExpiresAt": "2026-11-25T03:41:03Z",
+      "realProviderRequests": 0,
+      "productionQualificationTrustInstalled": false,
+      "independentVerifier": {
+        "classes": [
+          "C1",
+          "C2",
+          "C3"
+        ],
+        "typedResults": 6,
+        "timeout": "PASS",
+        "cancellation": "PASS",
+        "cgroupEmpty": true
+      },
+      "positiveAttestorFullHoldoutQualified": false
+    },
+    "hostMainRefresh": {
+      "localSha": "fd807d2f7e38ba3f6216d7857be71577ca822412",
+      "mainPreserved": "4b8742f9c3459c8b1f6ffc30b147f91549156a3b",
+      "nativeSg2Targets": 23,
+      "preflight": "PASS",
+      "publicSourceUpdated": false,
+      "deployed": false,
+      "ci24PathApproval": "PENDING"
     }
   },
   "pendingSourceCiAmendment": {
