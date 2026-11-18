@@ -62,7 +62,7 @@ test('public Knowledge routing authenticates a real complete checkout without an
 test('current SRM Root target authenticates the actual optional producer while its prior target remains immutable',async()=>{
  const {rootAtomicClaimSourceDigest}=await import('../../../packages/platform-contracts/root-atomic-claim/src/root-atomic-claim.mjs');
  const file='apps/srm/deployment/root-atomic-claim-targets.json',view=knowledgeSourcePredecessor(read,history),current=JSON.parse(read(file));
- assert.equal(current.sourceDigest,await rootAtomicClaimSourceDigest());assert.equal(current.sourceDigest,view.manifest.optionalPackageDigests.rootAtomicClaimSourceDigest);
+ assert.equal(current.sourceDigest,await rootAtomicClaimSourceDigest());assert.equal(current.sourceDigest,(view.currentSdkContext?.record.metadata??view.manifest).optionalPackageDigests.rootAtomicClaimSourceDigest);
  const previous=JSON.parse(view.previousBytes(file));assert.equal(previous.sourceDigest,'b3d6f2110f41ca93cac6a949b113a8582b6407688d81df1935cd8990424b393a');
  const {sourceDigest:now,...currentMetadata}=current,{sourceDigest:then,...previousMetadata}=previous;assert.notEqual(now,then);assert.deepEqual(currentMetadata,previousMetadata);
  assert.deepEqual(view.previousBytes(file),history(view.manifest.previousSourceSha,file));
