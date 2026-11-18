@@ -61,7 +61,8 @@ export function srmAdmittedApplicationPredecessors(current,historical){
  assert(matches.length<=1,'ambiguous application source history')
  const record=matches[0],previous=new Map();if(!record)return previous
  for(const f of record.files.filter(f=>eligible(f.path))){
-  const bytes=Buffer.from(current(f.path)),blob=createHash('sha1').update('blob '+bytes.length+String.fromCharCode(0)).update(bytes).digest('hex')
+  let bytes;try{bytes=Buffer.from(current(f.path))}catch{continue} // Files added later are absent from a valid older view.
+  const blob=createHash('sha1').update('blob '+bytes.length+String.fromCharCode(0)).update(bytes).digest('hex')
   if(blob!==f.blob)continue // An earlier validated reader may already project this file.
   if(!execFileSync('git',['ls-tree',record.baseSha,'--',f.path],options).trim())continue
   const before=historical(record.baseSha,f.path)
