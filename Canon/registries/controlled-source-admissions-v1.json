@@ -1974,6 +1974,94 @@
           "surfaceId": "SG2-BASE-001"
         }
       ]
+    },
+    {
+      "id": "ARCHITECTURE:ARCH-PK-STAGE2-TECHNICAL-CONT-20261117",
+      "status": "ACTIVE",
+      "repository": "profitia/SG-dev",
+      "actor": "profitia",
+      "taskId": "ARCH-PK-STAGE2-TECHNICAL-CONT-20261117",
+      "targetEnvironment": "development",
+      "scope": "SOURCE_VALIDATION_ONLY",
+      "approvalRef": "https://github.com/profitia/SG-dev/blob/92a2bf7f83d52f86c771822a10fcab18f9416824/Canon/evidence/2026-11-18-platform-knowledge-r7-runtime-repair.md",
+      "sourceSha": "445b35ef278b957d02d6477bc90a534a288ac052",
+      "baseSha": "c4965a445867601275cbb75dc4de993123414ba2",
+      "validFrom": "2026-11-18T21:14:02.081073+00:00",
+      "validUntil": "2026-11-24T23:59:00Z",
+      "files": [
+        {
+          "path": "apps/platform-knowledge-runtime/db/migrations/002-worker-audit-retention.sql",
+          "blob": "ee3b598c33ec19225529c8a8b71cade608a8c28e",
+          "mode": "100644",
+          "status": "added",
+          "projectKey": "ARCHITECTURE",
+          "owner": "Architecture Platform",
+          "surfaceId": "PK-BASE-001"
+        },
+        {
+          "path": "apps/platform-knowledge-runtime/src/database.mjs",
+          "blob": "48015c76aedb6a25fc4c5b48efaa02e7b15cff9c",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "ARCHITECTURE",
+          "owner": "Architecture Platform",
+          "surfaceId": "PK-BASE-001"
+        },
+        {
+          "path": "apps/platform-knowledge-runtime/src/extraction.mjs",
+          "blob": "32fc44383136e2af645fd148a96190c887946108",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "ARCHITECTURE",
+          "owner": "Architecture Platform",
+          "surfaceId": "PK-BASE-001"
+        },
+        {
+          "path": "apps/platform-knowledge-runtime/src/knowledge.mjs",
+          "blob": "686cf4158296cf631c130cd96a92c88132c5eab8",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "ARCHITECTURE",
+          "owner": "Architecture Platform",
+          "surfaceId": "PK-BASE-001"
+        },
+        {
+          "path": "apps/platform-knowledge-runtime/src/processing.mjs",
+          "blob": "1d248ec6932eaedef9d19c2a12388e8697db5892",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "ARCHITECTURE",
+          "owner": "Architecture Platform",
+          "surfaceId": "PK-BASE-001"
+        },
+        {
+          "path": "apps/platform-knowledge-runtime/src/server.mjs",
+          "blob": "a14ad4871b094e81ad52fec0094326f6b6f6106c",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "ARCHITECTURE",
+          "owner": "Architecture Platform",
+          "surfaceId": "PK-BASE-001"
+        },
+        {
+          "path": "apps/platform-knowledge-runtime/test/database.test.mjs",
+          "blob": "32d3631c0d45560e2c8c33a2798cca31178a997d",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "ARCHITECTURE",
+          "owner": "Architecture Platform",
+          "surfaceId": "PK-BASE-001"
+        },
+        {
+          "path": "apps/platform-knowledge-runtime/test/runtime-acceptance.test.mjs",
+          "blob": "e17b574c3436376ecf582518bc6f1d0bbdb09400",
+          "mode": "100644",
+          "status": "added",
+          "projectKey": "ARCHITECTURE",
+          "owner": "Architecture Platform",
+          "surfaceId": "PK-BASE-001"
+        }
+      ]
     }
   ],
   "authority": "Accepted trusted-main data only. Candidate records never authorize themselves. Existing closed reviews and historical receipts remain unchanged."
