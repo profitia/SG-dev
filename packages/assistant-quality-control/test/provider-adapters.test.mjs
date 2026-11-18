@@ -324,3 +324,78 @@ test('Controller repository descriptor uses the actual canonical GitHub root end
  const foreign=createQualityGitHub({token:'synthetic',fetchImpl:async()=>Response.json({full_name:'profitia/foreign',permissions:{pull:true}})})
  await assert.rejects(foreign.descriptor(),{code:'GITHUB_REPOSITORY_UNVERIFIED'})
 })
+
+test('Native atomic job binding: rollback on second-write failure, lost commit reply, restart and unchanged release window',async()=>{
+ const fixture=await isolatedPostgres()
+ try{
+  const {qualityJobBinding,readQualityJobBinding}=await import('../src/controller.mjs')
+  const owner=fixture.pool('aqc_fixture_owner'),serviceId=randomUUID(),key=randomBytes(32).toString('hex')
+  const history=fs.readFileSync(new URL('../../../apps/sg-runtime/migrations/assistant/001-history.sql',import.meta.url),'utf8')
+  const source=fs.readFileSync(new URL('../migrations/001-control.sql',import.meta.url),'utf8'),schemaDigest=hash(source)
+  await owner.query('CREATE EXTENSION pgcrypto;CREATE ROLE sg2_assistant_history_owner NOLOGIN NOINHERIT;CREATE ROLE sg2_assistant_history_runtime LOGIN NOINHERIT;CREATE ROLE sg2_assistant_quality_controller LOGIN NOINHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS;GRANT CREATE ON DATABASE neondb TO sg2_assistant_history_owner')
+  await owner.query('BEGIN;SET LOCAL ROLE sg2_assistant_history_owner')
+  await owner.query(history.replaceAll('__ASSISTANT_HISTORY_SCHEMA_DIGEST__',hash(history)))
+  await owner.query("INSERT INTO sg2_assistant_history.installation VALUES(true,$1,'development','spendguru','autumn-waterfall-65938876','br-dry-hall-b294222f',decode($2,'hex'),$3,'synthetic fixture')",[hash(history),key,randomUUID()])
+  await owner.query(source.replaceAll('__QUALITY_CONTROL_SCHEMA_DIGEST__',schemaDigest));await owner.query('COMMIT')
+  await owner.query("INSERT INTO sg2_assistant_quality_control.installation VALUES(true,$1,$2,decode($3,'hex'),true,'synthetic fixture')",[schemaDigest,serviceId,key])
+  const runtime=fixture.pool('sg2_assistant_quality_controller'),options={query:(q,p)=>runtime.query(q,p),commandKey:key,schemaDigest,serviceId}
+  const store=createQualityStore(options),id=randomUUID(),baseSha='a'.repeat(40),controlSourceSha='b'.repeat(40)
+  await store.create({id,repairClass:'C1',causeFingerprint:hash(id),baseSha})
+  let lease=await store.claim({id,workerId:'prepare-fixture',leaseMs:30000}),record=lease.record
+  const identity=()=>({id,leaseToken:lease.leaseToken,revision:record.revision})
+  for(const action of ['QUALIFY','REPRODUCE']){
+   record=(await store.prepare({...identity(),action,nonce:randomUUID(),consumeAttempt:false,consumeRollback:false,enforceReleaseWindow:false})).record
+   const result=action==='QUALIFY'?{result:'DETERMINISTIC_FAILURE',method:'DETERMINISTIC',repairClass:'C1',causeFingerprint:hash(id)}:{result:'RED',baseSha,proofSha256:hash('synthetic red')}
+   record=await store.complete({...identity(),nonce:record.pending.nonce,record:advanceIncident(record,action,result,Date.now())})
+  }
+  const nonce=randomUUID(),binding=qualityJobBinding({controlSourceSha,nonce,action:'EXECUTE'}),before=record.revision
+  const bad=createQualityStore({...options,query:(q,p)=>runtime.query(q,p.length===4?[p[0],p[1],p[2],'0'.repeat(64)]:p)})
+  await assert.rejects(bad.prepare({...identity(),action:'EXECUTE',nonce,externalId:binding,consumeAttempt:true,consumeRollback:false,enforceReleaseWindow:false}),{code:'CONTROL_STORE_UNAVAILABLE'})
+  const rolled=(await owner.query('SELECT record FROM sg2_assistant_quality_control.incidents WHERE id=$1',[id])).rows[0].record
+  assert.equal(rolled.pending,null);assert.equal(rolled.revision,before);assert.equal(rolled.attemptsUsed,0)
+  assert.equal((await owner.query("SELECT count(*)::int AS n FROM sg2_assistant_quality_control.events WHERE incident_id=$1 AND action='PREPARE'",[id])).rows[0].n,2)
+  await store.release({id,leaseToken:lease.leaseToken})
+  let lost=false,dispatched=0,reconciled=0
+  const lostReplyStore=createQualityStore({...options,query:async(q,p)=>{
+   const result=await runtime.query(q,p)
+   if(p.length===4&&!lost){lost=true;throw Object.assign(Error('Synthetic transport loss after commit'),{code:'ECONNRESET'})}
+   return result
+  }})
+  const actions={bind:async(action,{nonce})=>qualityJobBinding({controlSourceSha,nonce,action}),
+   dispatch:async()=>{dispatched++;throw Error('No dispatch after uncertain prepare')},
+   reconcile:async intent=>{assert.equal(readQualityJobBinding(intent.externalId,intent).controlSourceSha,controlSourceSha);reconciled++;return {state:'UNKNOWN'}},
+   cancel:async()=>({state:'UNKNOWN',effects:'UNKNOWN'}),verify:async()=>{throw Error('No result')}}
+  const control={store:lostReplyStore,actions,authorize:async r=>({manifest:{incidentId:r.id}}),budget:{ensureIncident:async()=>{},closeIncident:async()=>{}},workerId:'lost-reply'}
+  assert.equal((await createQualityController(control).tick(id)).waitingFor,'RECONCILIATION')
+  const committed=(await owner.query('SELECT record FROM sg2_assistant_quality_control.incidents WHERE id=$1',[id])).rows[0].record
+  assert.equal(committed.revision,before+2);assert.equal(committed.attemptsUsed,1)
+  assert.equal(readQualityJobBinding(committed.pending.externalId,committed.pending).controlSourceSha,controlSourceSha)
+  assert.equal((await createQualityController({...control,store:createQualityStore(options),actions:{...actions,bind:async()=>{throw Error('Cannot bind current main during restart')}}}).tick(id)).waitingFor,'UNKNOWN')
+  assert.equal(dispatched,0);assert.equal(reconciled,1)
+  lease=await store.claim({id,workerId:'binding-immutability',leaseMs:30000});record=lease.record
+  await assert.rejects(store.recordExternal({...identity(),nonce:record.pending.nonce,externalId:qualityJobBinding({controlSourceSha:'c'.repeat(40),nonce:record.pending.nonce,action:'EXECUTE'})}),{code:'IDEMPOTENCY_CONFLICT'})
+  await store.release({id,leaseToken:lease.leaseToken})
+  await assert.rejects(runtime.query('SELECT * FROM sg2_assistant_quality_control.incidents'),e=>e.code==='42501')
+  // Only the isolated fixture owner seeds a release-window record. The native
+  // adapter must keep PREPARE's WAIT and must not execute RECORD_EXTERNAL.
+  await owner.query('UPDATE sg2_assistant_quality_control.repository_lock SET incident_id=NULL,lease_token=NULL,lease_until=NULL,last_release_at=clock_timestamp()')
+  const waitId=randomUUID();await store.create({id:waitId,repairClass:'C2',causeFingerprint:hash(waitId),baseSha})
+  await owner.query("UPDATE sg2_assistant_quality_control.incidents SET record=record||$2::jsonb WHERE id=$1",[waitId,JSON.stringify({status:'VERIFIED',pr:{number:123,headSha:'d'.repeat(40)},checks:{headSha:'d'.repeat(40),proofSha256:hash('synthetic ci')}})])
+  const waiting=await store.claim({id:waitId,workerId:'release-window',leaseMs:30000}),waitNonce=randomUUID()
+  const wait=await store.prepare({id:waitId,leaseToken:waiting.leaseToken,revision:waiting.record.revision,action:'PROMOTE',nonce:waitNonce,externalId:qualityJobBinding({controlSourceSha,nonce:waitNonce,action:'PROMOTE'}),consumeAttempt:false,consumeRollback:false,enforceReleaseWindow:true})
+  assert(wait.waitUntil>Date.now()+23*3600000)
+  const unchanged=(await owner.query('SELECT record FROM sg2_assistant_quality_control.incidents WHERE id=$1',[waitId])).rows[0].record
+  assert.equal(unchanged.revision,1);assert.equal(unchanged.pending,null)
+  await store.release({id:waitId,leaseToken:waiting.leaseToken})
+ }finally{await fixture.close()}
+})
+
+test('Atomic store classifies broken pipe and connection shutdown as uncertain delivery, not proof of rollback',async()=>{
+ const {qualityJobBinding}=await import('../src/controller.mjs')
+ const id=randomUUID(),nonce=randomUUID(),input={id,leaseToken:randomUUID(),revision:1,action:'EXECUTE',nonce,
+  externalId:qualityJobBinding({controlSourceSha:'a'.repeat(40),nonce,action:'EXECUTE'}),consumeAttempt:true,consumeRollback:false,enforceReleaseWindow:false}
+ for(const code of ['ECONNRESET','EPIPE','08006','57P01','42501','40001','P0001']){
+  const store=createQualityStore({query:async()=>{throw Object.assign(Error('Synthetic transport/statement failure'),{code})},commandKey:'a'.repeat(64),schemaDigest:'b'.repeat(64),serviceId:randomUUID()})
+  await assert.rejects(store.prepare(input),{code:['42501','40001','P0001'].includes(code)?'CONTROL_STORE_UNAVAILABLE':'DELIVERY_UNCERTAIN'})
+ }
+})

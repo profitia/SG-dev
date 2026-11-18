@@ -43,7 +43,18 @@ test('actual notification and live source entry points accept the authenticated 
  const {assistantNotificationsPredecessor}=await import('./assistant-notifications-integrity.mjs')
  const {procurementInsightsLiveAcceptancePredecessor}=await import('./procurement-insights-live-acceptance-source.mjs')
  const {finderMonitorPredecessor}=await import('./finder-monitor-source-integrity.mjs')
- assert(finderMonitorPredecessor(current,historical))
+ const {procurementInsightsEditorialPackagePredecessor}=await import('./procurement-insights-editorial-package-integrity.mjs')
+ const composed=procurementInsightsEditorialPackagePredecessor(current,historical);assert(composed)
+ assert(finderMonitorPredecessor(composed.previousBytes,historical))
  assert(assistantNotificationsPredecessor(current,historical))
  assert(procurementInsightsLiveAcceptancePredecessor(current,historical))
+})
+
+test('accepted editorial F metadata, helper and all prior receipts remain independently authenticated with CIC',async()=>{
+ const {procurementInsightsEditorialPackagePredecessor}=await import('./procurement-insights-editorial-package-integrity.mjs')
+ const receipt='apps/sg-runtime/procurement-insights-editorial-package-integration.json'
+ const a=JSON.parse(current(receipt))
+ for(const p of [receipt,...Object.keys(a.sourceDigests),...Object.keys(a.preservedReceipts)])assert.throws(()=>procurementInsightsEditorialPackagePredecessor(f=>f===p?Buffer.concat([current(f),Buffer.from('UNREVIEWED')]):current(f),historical),p)
+ const lock='apps/sg-runtime/package-lock.json',bad=JSON.parse(current(lock));bad.packages['node_modules/@profitia/insights-runtime'].version='1.2.2'
+ assert.throws(()=>procurementInsightsEditorialPackagePredecessor(p=>p===lock?Buffer.from(JSON.stringify(bad)):current(p),historical))
 })

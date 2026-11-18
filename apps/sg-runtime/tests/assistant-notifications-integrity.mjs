@@ -1,3 +1,4 @@
+import {procurementInsightsEditorialPackagePredecessor,EDITORIAL_PACKAGE_RECEIPT} from './procurement-insights-editorial-package-integrity.mjs'
 import {finderMonitorPredecessor,FINDER_MONITOR_RECEIPT} from './finder-monitor-source-integrity.mjs'
 import {procurementInsightsEditorialPredecessor,EDITORIAL_RECEIPT} from './procurement-insights-editorial-integrity.mjs'
 // Test/build-only exact SG2 presentation continuation. No runtime or access authority.
@@ -54,6 +55,11 @@ export function notificationCompletionSource(before){
  return IMPORT+before.replace(HEAD,HEAD+PREFIX)
 }
 export function assistantNotificationsPredecessor(current,historical){
+ const packaged=procurementInsightsEditorialPackagePredecessor(current,historical)
+ if(packaged){
+  const accepted=assistantNotificationsPredecessor(packaged.previousBytes,historical);assert(accepted,'accepted editorial source retained')
+  return {...accepted,editorialPackage:packaged,manifest:{...accepted.manifest,sourceDigests:{...accepted.manifest.sourceDigests,...packaged.manifest.sourceDigests,[EDITORIAL_PACKAGE_RECEIPT]:hash(current(EDITORIAL_PACKAGE_RECEIPT))}}}
+ }
  const finderMonitor=finderMonitorPredecessor(current,historical)
  if(finderMonitor){
   const accepted=assistantNotificationsPredecessor(finderMonitor.previousBytes,historical);assert(accepted,'accepted notification source retained')
