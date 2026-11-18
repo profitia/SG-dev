@@ -1,3 +1,5 @@
+import {delimiter} from 'node:path'
+import './procurement-insights-e2e-continuation.test.tsx'
 // SYNTHETIC_ONLY: real workspace interactions with offline HTTP fixtures.
 import test from 'node:test'
 import assert from 'node:assert/strict'
@@ -9,7 +11,7 @@ test('an assistant publication link opens its saved article from notifications, 
  const observation='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',publication='bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'
  const dom=new JSDOM('<div id="root"></div>',{url:'https://example.test/pl/dashboard/procurement-insights?observation='+observation,runScripts:'outside-only'}),w=dom.window as any
  w.MessageChannel=class{port1={onmessage:null as null|(()=>void)};port2={postMessage:()=>setImmediate(()=>this.port1.onmessage?.())}}
- w.AbortController=AbortController;w.AbortSignal=AbortSignal
+ w.AbortController=AbortController;w.AbortSignal=AbortSignal;w.TextEncoder=TextEncoder;w.TextDecoder=TextDecoder;w.Headers=Headers;w.Request=Request;w.Response=Response
  const calls:string[]=[],empty={items:[],nextCursor:null},item={id:publication,kind:'WEB_PAGE',headline:'SYNTHETIC_SAVED_ARTICLE',url:'https://example.test/article',publishedAt:null,detectedAt:'2026-11-12T15:12:11Z',excerpt:null,excerptStatus:'NOT_RETAINED'}
  const o={id:observation,name:'SYNTHETIC_OBSERVATION',phrases:['oil'],status:'PAUSED',readOnly:true,schedule:null,notifications:false,version:1}
  w.fetch=async(url:string,options:RequestInit)=>{
@@ -21,7 +23,7 @@ test('an assistant publication link opens its saved article from notifications, 
   if(path.endsWith('/statistics'))return Response.json({status:'NO_HISTORY',days:[],phrases:[],total:0,undated:0})
   throw Error('UNEXPECTED_NETWORK '+path)
  }
- const built=await build({stdin:{contents:`import React from 'react';import {createRoot} from 'react-dom/client';import {ProcurementInsightsWorkspace} from './components/procurement-insights/workspace';window.fixture={React,createRoot,Component:ProcurementInsightsWorkspace};`,resolveDir:app,loader:'tsx'},bundle:true,platform:'browser',format:'iife',write:false,loader:{'.css':'empty'},define:{'process.env.NODE_ENV':'"development"'},plugins:[{name:'offline-session-router',setup(b:any){
+ const built=await build({nodePaths:(process.env.NODE_PATH??'').split(delimiter).filter(Boolean),stdin:{contents:`import React from 'react';import {createRoot} from 'react-dom/client';import {ProcurementInsightsWorkspace} from './components/procurement-insights/workspace';window.fixture={React,createRoot,Component:ProcurementInsightsWorkspace};`,resolveDir:app,loader:'tsx'},bundle:true,platform:'browser',format:'iife',write:false,loader:{'.css':'empty'},define:{'process.env.NODE_ENV':'"development"'},plugins:[{name:'actual-react-runtime',setup(b:any){b.onResolve({filter:/^react(?:-dom)?(?:\/.*)?$/},(a:any)=>({path:require.resolve(a.path)}))}},{name:'offline-session-router',setup(b:any){
   b.onResolve({filter:/^next\/navigation$/},()=>({path:'router',namespace:'offline'}))
   b.onResolve({filter:/session-boundary$/},()=>({path:'session',namespace:'offline'}))
   b.onLoad({filter:/.*/,namespace:'offline'},(args:any)=>({contents:args.path==='router'?`let search,params;export function useSearchParams(){if(search!==window.location.search){search=window.location.search;params=new URLSearchParams(search)}return params}export const useRouter=()=>window.router;export const usePathname=()=>window.location.pathname;`:`const getToken=async()=>'SYNTHETIC_ONLY';export const useSg2SessionCredential=()=>getToken;`}))

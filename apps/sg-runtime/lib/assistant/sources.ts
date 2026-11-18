@@ -1,3 +1,4 @@
+import {createPublishedReportReadRequest} from './published-report-request'
 import type {Prisma} from '@prisma/client'
 import {OPERATION_CONTRACT,OperationDenied,type OperationExecutor} from '@profitia/platform-contracts/operation-context'
 import {readPresentationJson} from '@profitia/platform-contracts/embedded-read-channel'
@@ -108,7 +109,7 @@ export function createAssistantSourceAdapters(options:Options){
    if(!options.enabled||organisationId!==options.organisationId||!(request instanceof Request)||signal?.aborted)return unavailable()
    const authorization=request.headers.get('authorization');if(!authorization||!/^Bearer [^\s]{1,8192}$/.test(authorization))throw new OperationDenied('UNVERIFIED_IDENTITY')
    const {reportSubscriptionsHttp}=await import('@/lib/insights/subscriptions')
-   const response=await reportSubscriptionsHttp(new Request(new URL('/api/v1/insights/subscriptions/editions/'+selection.producerJobId,request.url),{headers:{authorization},signal:AbortSignal.any([request.signal,...(signal?[signal]:[]),AbortSignal.timeout(15000)])}))
+   const response=await reportSubscriptionsHttp(createPublishedReportReadRequest(request,selection.producerJobId,signal))
    if(response.status!==200){await response.body?.cancel();throw new OperationDenied([401,403,404].includes(response.status)?'PERMISSION_DENIED':'POLICY_UNAVAILABLE')}
    if(response.headers.get('cache-control')!=='private, no-store'||response.headers.has('set-cookie'))return unavailable()
    return readPresentationJson(response,2*1024*1024)
