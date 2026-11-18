@@ -1,3 +1,4 @@
+import {assistantQualityPredecessor,QUALITY_RECEIPT} from '../../../apps/sg-runtime/tests/assistant-quality-integrity.mjs'
 // Test/build-only closed source continuation. Never imported by a runtime.
 import assert from 'node:assert/strict'
 import {createHash} from 'node:crypto'
@@ -111,7 +112,7 @@ export function reservationArchitectureSource(before,pin){
  return before.replace(marker,"import {assistantReservationPredecessor} from '../../packages/platform-contracts/test/assistant-reservation-source.mjs'\nexport const ASSISTANT_RESERVATION_SOURCE_SHA='"+pin+"'\n"+marker)
   .replace(entry,entry+"\n const reservation=assistantReservationPredecessor(current,historical,ASSISTANT_RESERVATION_SOURCE_SHA)\n if(reservation){const accepted=recurringSourcePredecessor(reservation.previousBytes,historical);assert(accepted,'all accepted predecessors retained');return {...accepted,reservation}}")
 }
-export function assistantReservationPredecessor(current,historical,expectedDigest){
+function originalReservationPredecessor(current,historical,expectedDigest){
  let bytes;try{bytes=current(RESERVATION_RECORD)}catch(e){if(absent(e))return null;throw e}
  assert.match(expectedDigest??'',/^[a-f0-9]{64}$/);assert.equal(hash(bytes),expectedDigest,'exact reviewed reservation source record')
  const a=JSON.parse(bytes)
@@ -197,4 +198,20 @@ export async function createAcgLegacyRecurringFixture(sourceRoot) {
     close()
     throw error
   }
+}
+
+/** Authenticate the complete admitted CIC successor before projecting the
+ * unchanged accepted ACG source. Original source/receipt checks remain intact;
+ * the returned aggregate names actual current bytes, not rewritten receipts. */
+export function assistantReservationPredecessor(current,historical,expectedDigest){
+ try{current(RESERVATION_RECORD)}catch(e){if(absent(e))return null;throw e}
+ const quality=assistantQualityPredecessor(current,historical)
+ if(quality?.compositionPreviousBytes){
+  const accepted=originalReservationPredecessor(quality.compositionPreviousBytes,historical,expectedDigest)
+  assert(accepted,'accepted ACG predecessor required')
+  return {...accepted,quality,historicalReservation:accepted,
+   manifest:{...accepted.manifest,sourceDigests:{...accepted.manifest.sourceDigests,...quality.manifest.sourceDigests,
+    [QUALITY_RECEIPT]:hash(current(QUALITY_RECEIPT))}}}
+ }
+ return originalReservationPredecessor(current,historical,expectedDigest)
 }
