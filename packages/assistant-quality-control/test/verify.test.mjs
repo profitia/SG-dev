@@ -101,6 +101,7 @@ test('Concrete verifier compiles exact Git objects and bounded patch without loa
   assert(Object.isFrozen(b)&&Object.isFrozen(b.files)&&Object.isFrozen(b.sourceSha256))
   assert.throws(()=>assertQualityVerificationBundle(structuredClone(b)),{code:'VERIFIED_SOURCE_BUNDLE_REQUIRED'})
   await assert.rejects(createQualityIsolatedCaseRunner({bundle:b,observedGateSetSha256:'f'.repeat(64)}),{code:'GATE_POLICY_CHANGED'})
+  await assert.rejects(createQualityIsolatedCaseRunner({bundle:b,observedGateSetSha256:gate,diagnostics:'agent PASS'}),{code:'VERIFIER_DIAGNOSTICS_INVALID'})
   const runner=await createQualityIsolatedCaseRunner({bundle:b,observedGateSetSha256:gate})
   await assert.rejects(runner.runCase({version:'candidate',sourceSha256:'f'.repeat(64),repairClass:'C1',args:[0],repeat:0}),{code:'VERIFIER_CASE_BINDING_INVALID'})
   await assert.rejects(runner.runCase({version:'candidate',sourceSha256:b.sourceSha256.candidate,repairClass:'C1',args:[0],repeat:3}),{code:'VERIFIER_CASE_BINDING_INVALID'})

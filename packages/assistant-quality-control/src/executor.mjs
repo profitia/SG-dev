@@ -323,33 +323,40 @@ export async function runIsolatedExecutor({manifest,regression,projection,toolPa
  * mounted or inherited. Descriptor 3 carries typed values only to the parent;
  * candidate stdout/stderr cannot become a validation result. */
 function verificationChild(){
+ let stage='INITIALISE'
  const fail=()=>{throw Error('Independent execution unavailable')}
  ;(async()=>{
   const fs=await import('node:fs'),net=await import('node:net'),crypto=await import('node:crypto')
   let input='';for await(const chunk of process.stdin){input+=chunk;if(Buffer.byteLength(input)>20000)fail()}
   const r=JSON.parse(input),meta=JSON.parse(fs.readFileSync('/aqc/app/meta.json','utf8'))
+  stage='PRIVILEGE_CHECK'
   const status=fs.readFileSync('/proc/self/status','utf8'),get=k=>status.split('\n').find(l=>l.startsWith(k+':'))?.split(':')[1]?.trim()
   if(process.getuid()!==19998||process.getgid()!==19998||get('Groups')!==''||get('NoNewPrivs')!=='1'
    ||!['CapInh','CapPrm','CapEff','CapBnd','CapAmb'].every(k=>/^0+$/.test(get(k)??''))
    ||Object.keys(process.env).some(k=>!['PATH','LANG','TZ','PWD'].includes(k)))fail()
+  stage='FILESYSTEM_PROBE'
   const denied=fn=>{try{fn()}catch{return}fail()}
   denied(()=>fs.readFileSync(r.outsideRead));denied(()=>fs.writeFileSync(r.outsideWrite,'unexpected'))
   const blocked=options=>new Promise((resolve,reject)=>{
    const s=net.createConnection(options);s.setTimeout(200);s.once('connect',()=>{s.destroy();reject(Error('Network reachable'))})
    s.once('error',()=>resolve());s.once('timeout',()=>{s.destroy();reject(Error('Network isolation unverified'))})
   })
+  stage='NETWORK_PROBE'
   await blocked({host:'127.0.0.1',port:r.blockedPort});await blocked({host:'1.1.1.1',port:443});await blocked({path:r.socketPath})
+  stage='SOURCE_DIGEST_CHECK'
   const digest=x=>crypto.createHash('sha256').update(x).digest('hex')
   for(const [relative,pin]of Object.entries(meta.files))if(digest(fs.readFileSync('/aqc/app/'+relative))!==pin)fail()
   const sourceSha256=digest(fs.readFileSync('/aqc/app/'+r.version+'/'+meta.primary+'.ts'))
   if(sourceSha256!==r.sourceSha256)fail()
   const name=r.repairClass==='C1'?'calendar':'quality',entry={C1:'calendarReference',C2:'renderGroundedFacts',C3:'applyQualityPolicy'}[r.repairClass]
+  stage='MODULE_LOAD'
   const module=await import('/aqc/app/'+r.version+'/'+name+'.mjs')
+  stage='EXECUTION'
   fs.writeSync(3,'AQC_CASE_READY\n')
   const output=await module[entry](...r.args),value=JSON.stringify({status:'COMPLETE',sourceSha256,output,isolation:'PASS'})
   if(output===undefined||Buffer.byteLength(value)>32768)fail()
   fs.writeSync(3,value);process.exitCode=0
- })().catch(()=>{process.exitCode=1})
+ })().catch(async()=>{try{const fs=await import('node:fs');fs.writeSync(3,JSON.stringify({status:'FAILED',stage}))}catch{}process.exitCode=1})
 }
 export function verificationIsolationPlan({root,group,nodePath}){
  require(typeof root==='string'&&/^\/tmp\/aqc-verification-[a-f0-9-]{36}$/.test(root)
@@ -383,10 +390,12 @@ export async function runIsolatedVerificationCase({bundle,version,repairClass,ar
  assertExecutorResourceFile(bwrap,EXECUTOR_TOOL.bwrapBinarySha256,'BWRAP_BINARY_PIN_MISMATCH')
  const toolRoot=fs.lstatSync('/opt/aqc-tools');require(toolRoot.isDirectory()&&!toolRoot.isSymbolicLink()&&toolRoot.uid===0&&(toolRoot.mode&0o022)===0,'TRUSTED_TOOL_DIRECTORY_REQUIRED')
  const nodePath='/opt/aqc-tools/verifier-node',nodeHash=hash(fs.readFileSync(process.execPath))
- if(!fs.existsSync(nodePath)){fs.copyFileSync(process.execPath,nodePath,fs.constants.COPYFILE_EXCL);fs.chmodSync(nodePath,0o755)}
+ // libuv copyFile preserves source ownership; the setup-node binary belongs
+ // to the runner. Only a newly created trusted copy is adopted by root.
+ if(!fs.existsSync(nodePath)){fs.copyFileSync(process.execPath,nodePath,fs.constants.COPYFILE_EXCL);fs.chownSync(nodePath,0,0);fs.chmodSync(nodePath,0o755)}
  assertExecutorResourceFile(nodePath,nodeHash,'VERIFIER_NODE_BINDING_INVALID')
  const id=randomUUID(),root='/tmp/aqc-verification-'+id,group='/sys/fs/cgroup/aqc-verify-'+id,caseRoot=root+'/case'
- let groupCreated=false,child,deadline,abortListener,stopped=false,portHits=0,socketHits=0,timedOut=false,cancelled=false,data='',overflow=false,observerFailed=false,started=false,primaryFailure
+ let groupCreated=false,child,deadline,abortListener,stopped=false,portHits=0,socketHits=0,timedOut=false,cancelled=false,data='',overflow=false,observerFailed=false,started=false,stderr='',primaryFailure
  const unix=createServer(s=>{socketHits++;s.destroy()}),tcp=createServer(s=>{portHits++;s.destroy()})
  const kill=()=>{if(groupCreated)try{fs.writeFileSync(group+'/cgroup.kill','1')}catch{}}
  try{
@@ -411,8 +420,9 @@ export async function runIsolatedVerificationCase({bundle,version,repairClass,ar
   const seal=dir=>{for(const name of fs.readdirSync(dir)){const f=path.join(dir,name);if(fs.lstatSync(f).isDirectory())seal(f);else fs.chmodSync(f,0o444)}fs.chmodSync(dir,0o755)};seal(caseRoot);fs.chmodSync(root+'/outside/read.txt',0o644)
   const plan=verificationIsolationPlan({root,group,nodePath})
   require(!signal?.aborted,'VERIFIER_CANCELLED')
-  child=spawn(plan.file,plan.args,{cwd:caseRoot,env:rootEnvironment,stdio:['pipe','ignore','ignore','pipe']})
+  child=spawn(plan.file,plan.args,{cwd:caseRoot,env:rootEnvironment,stdio:['pipe','ignore','pipe','pipe']})
   child.stdin.on('error',()=>{})
+  child.stderr.on('data',chunk=>{if(typeof diagnostics==='function')stderr=(stderr+chunk.toString('utf8')).slice(-1024)})
   child.stdio[3].on('data',chunk=>{data+=chunk.toString('utf8');if(!started&&data.startsWith('AQC_CASE_READY\n')){started=true;data=data.slice(15);try{if(typeof observeIsolation==='function')require(observeIsolation({phase:'VERIFIER_STARTED',cgroup:group,root})===undefined,'VERIFIER_OBSERVER_INVALID')}catch{observerFailed=true;kill()}}if(Buffer.byteLength(data)>32768){overflow=true;data='';kill()}})
   abortListener=()=>{cancelled=true;kill()};signal?.addEventListener('abort',abortListener,{once:true});if(signal?.aborted)abortListener()
   deadline=setTimeout(()=>{timedOut=true;kill()},2000);deadline.unref()
@@ -426,7 +436,15 @@ export async function runIsolatedVerificationCase({bundle,version,repairClass,ar
    &&fs.readFileSync(root+'/outside/read.txt','utf8')==='synthetic verifier canary','VERIFIER_ISOLATION_FAILED')
   if(cancelled||signal?.aborted)fail('VERIFIER_CANCELLED')
   require(!observerFailed,'VERIFIER_OBSERVER_INVALID')
-  if(typeof diagnostics==='function')diagnostics({exitCode:exit,timedOut,started,overflow})
+  if(typeof diagnostics==='function'){
+   let stage=started?'EXECUTION':'UNCLASSIFIED'
+   try{const value=JSON.parse(data);if(Object.keys(value).sort().join(',')==='stage,status'&&value.status==='FAILED'
+    &&['INITIALISE','PRIVILEGE_CHECK','FILESYSTEM_PROBE','NETWORK_PROBE','SOURCE_DIGEST_CHECK','MODULE_LOAD','EXECUTION'].includes(value.stage))stage=value.stage}catch{}
+   const setupCode=/bwrap:.*(namespace|unshare)/i.test(stderr)?'BWRAP_NAMESPACE':/bwrap:.*(uid|gid) map/i.test(stderr)?'BWRAP_IDENTITY_MAP'
+    :/bwrap:.*(mount|bind)/i.test(stderr)?'BWRAP_FILESYSTEM':/bwrap:.*execvp/i.test(stderr)?'BWRAP_EXECUTABLE'
+    :/bwrap:.*(unknown|invalid).*option/i.test(stderr)?'BWRAP_PROFILE':'UNCLASSIFIED'
+   diagnostics({exitCode:exit,timedOut,started,overflow,stage,setupCode})
+  }
   if(timedOut||exit!==0||overflow||!started)return Object.freeze({status:'FAILED',sourceSha256:b.sourceSha256[version],reason:timedOut?'TIMEOUT':'EXECUTION_FAILED'})
   require(Date.parse(b.expiresAt)>Date.now(),'VERIFIER_CASE_BINDING_INVALID')
   let result;try{result=JSON.parse(data)}catch{fail('VERIFIER_PROTOCOL_INVALID')}

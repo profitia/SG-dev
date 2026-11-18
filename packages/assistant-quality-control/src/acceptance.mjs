@@ -261,7 +261,7 @@ export async function qualifyIndependentVerifier({gateSetSha256,binarySha256,cod
    const patch={schemaVersion:'AQC_PATCH_V1',incidentId:body.incidentId,baseSha,gateSetSha256,manifestSha256:documentDigest(manifest),files}
    return prepareQualityVerificationBundle({manifest,repositoryRoot:repo,artifact:{body:patch,artifactSha256:documentDigest(patch)}})
   }
-  const bundle=await makeBundle(after),runner=await createQualityIsolatedCaseRunner({bundle,qualification,qualificationKeys:keys,observedGateSetSha256:gateSetSha256})
+  const bundle=await makeBundle(after),diagnostics=value=>console.error(JSON.stringify({event:'AQC_SYNTHETIC_VERIFIER_DIAGNOSTIC',syntheticOnly:true,...value})),runner=await createQualityIsolatedCaseRunner({bundle,qualification,qualificationKeys:keys,observedGateSetSha256:gateSetSha256,diagnostics})
   let typedResults=0
   for(const version of ['base','candidate'])for(const repairClass of ['C1','C2','C3']){
    const result=await runner.runCase({version,repairClass,sourceSha256:bundle.sourceSha256[version],args:[2],repeat:0})
@@ -270,7 +270,7 @@ export async function qualifyIndependentVerifier({gateSetSha256,binarySha256,cod
   }
   const endless=await makeBundle('export function calendarReference(x:number){while(true){}}\n')
   let timeoutScope,cancelScope,cancelled=false
-  const common={bundle:endless,version:'candidate',repairClass:'C1',args:[1],qualification,qualificationKeys:keys,observedGateSetSha256:gateSetSha256}
+  const common={bundle:endless,version:'candidate',repairClass:'C1',args:[1],qualification,qualificationKeys:keys,observedGateSetSha256:gateSetSha256,diagnostics}
   const timed=await runIsolatedVerificationCase({...common,observeIsolation:value=>{timeoutScope=value}})
   require(timed.status==='FAILED'&&timed.reason==='TIMEOUT'&&timeoutScope&&!fs.existsSync(timeoutScope.cgroup)&&!fs.existsSync(timeoutScope.root),'VERIFIER_TIMEOUT_RECOVERY_FAILED')
   const abort=new AbortController()

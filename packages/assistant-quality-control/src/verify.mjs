@@ -195,8 +195,9 @@ export async function prepareQualityVerificationBundle({manifest,repositoryRoot,
 }
 /** Installed verifier composition; the repair agent supplies neither runCase
  * nor an executable test. Expected values remain in verifyCandidate's parent. */
-export async function createQualityIsolatedCaseRunner({bundle,qualification,qualificationKeys,observedGateSetSha256,signal}){
+export async function createQualityIsolatedCaseRunner({bundle,qualification,qualificationKeys,observedGateSetSha256,signal,diagnostics}){
  const b=assertQualityVerificationBundle(bundle)
+ require(diagnostics===undefined||typeof diagnostics==='function','VERIFIER_DIAGNOSTICS_INVALID')
  require(observedGateSetSha256===b.gateSetSha256,'GATE_POLICY_CHANGED')
  const {runIsolatedVerificationCase}=await import('./executor.mjs')
  return Object.freeze({async runCase(input){
@@ -204,6 +205,6 @@ export async function createQualityIsolatedCaseRunner({bundle,qualification,qual
   require(['base','candidate'].includes(input.version)&&input.sourceSha256===b.sourceSha256[input.version]&&['C1','C2','C3'].includes(input.repairClass)
    &&Array.isArray(input.args)&&input.args.length<=4&&Number.isInteger(input.repeat)&&input.repeat>=0&&input.repeat<=2,'VERIFIER_CASE_BINDING_INVALID')
   documentDigest(input.args);require(Buffer.byteLength(JSON.stringify(input.args))<=16384,'VERIFIER_CASE_BINDING_INVALID')
-  return runIsolatedVerificationCase({bundle:b,version:input.version,repairClass:input.repairClass,args:structuredClone(input.args),qualification,qualificationKeys,observedGateSetSha256,signal})
+  return runIsolatedVerificationCase({bundle:b,version:input.version,repairClass:input.repairClass,args:structuredClone(input.args),qualification,qualificationKeys,observedGateSetSha256,signal,diagnostics})
  }})
 }
