@@ -1189,14 +1189,14 @@
       "targetEnvironment": "development",
       "scope": "SOURCE_VALIDATION_ONLY",
       "approvalRef": null,
-      "sourceSha": "f0d0eafd69e144bcb234c230b6a762f2c2b7e0c3",
-      "baseSha": "74c4e7f16bdb5d6b09aea289dc0d44ac1b0cdde7",
+      "sourceSha": "817d20e2e9fea8698ab5f9f5a8f5e553787d5c72",
+      "baseSha": "3109989f6a2c6378b3eddfb84cf99d1a199d1f1e",
       "validFrom": null,
       "validUntil": null,
       "files": [
         {
           "path": "apps/architecture-lab/assistant-reservation-source.json",
-          "blob": "c895393187a01570255a46d58fdad330e76105ba",
+          "blob": "8acb84dc86e6c84ccd1ac68319b311f7b375e343",
           "mode": "100644",
           "status": "added",
           "projectKey": "ARCHITECTURE",
@@ -1205,7 +1205,7 @@
         },
         {
           "path": "apps/architecture-lab/private-recurring-source.mjs",
-          "blob": "4e432afef744b6f1983c2e58991b3f1fa1dd7518",
+          "blob": "38e65559374e92fab860f17384d7fdab1032e84e",
           "mode": "100644",
           "status": "modified",
           "projectKey": "ARCHITECTURE",
@@ -1277,7 +1277,7 @@
         },
         {
           "path": "apps/platform-source-hub/test/ci-routing.test.mjs",
-          "blob": "cfd47cacc1c55571d282072614fe7f9761c46074",
+          "blob": "d3130eea1d6af47bfd4502a45eef9facac79e1dc",
           "mode": "100644",
           "status": "modified",
           "projectKey": "ARCHITECTURE",
@@ -1592,7 +1592,7 @@
         },
         {
           "path": "scripts/governance/controlled-package-ci.test.mjs",
-          "blob": "55f017914b61c4274d4952cc70a4880f5cd8adab",
+          "blob": "f3cfaca82cf438c846c392dbe6a5c3355777bfe2",
           "mode": "100644",
           "status": "modified",
           "projectKey": "ARCHITECTURE",
