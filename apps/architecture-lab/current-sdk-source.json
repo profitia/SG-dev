@@ -2174,22 +2174,6 @@
         "beforeBlob": "33d3e034c26e80045ed39f6583cfec2e3c219dd3",
         "afterBlob": "fe793b7a91770216b02ac7bb73ac6fb43cc37912"
       },
-      "@profitia/platform-current-fresh-report": {
-        "beforeBlob": "9eda2227de6ca68328d9472315643c8e9ec6f4de",
-        "afterBlob": "dad5396a425b232590ed030e3605baa97aa3ede8"
-      },
-      "@profitia/platform-payload-capture": {
-        "beforeBlob": "31d3074d01a9371d5ace69aa378aa50369e6084f",
-        "afterBlob": "f5640d14a36dcf942cee075627681179629ce590"
-      },
-      "@profitia/platform-readonly-miss-report": {
-        "beforeBlob": "4f3c406aac43228f4f5885b55df5ed90d9452acb",
-        "afterBlob": "58a919548c70ac5a72ae78507eb09ba511dff167"
-      },
-      "@profitia/platform-root-atomic-claim": {
-        "beforeBlob": "bd32f36baa64e9b2f7f2070196a7e3aa401f6e86",
-        "afterBlob": "84b828354e54cfbe9f1ea1276c9c2d5179600a02"
-      },
       "@profitia/platform-source-hub-contracts": {
         "beforeBlob": "3c1405dbedccfb72249026fe94c28ee6b357dab4",
         "afterBlob": "7347bdc0f358ae39b56528ef7edf63f7473c2c31"
