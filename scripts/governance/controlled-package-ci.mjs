@@ -1031,7 +1031,7 @@ function assertQualityStage1Checkout(root,sha,admission){
  // Old guards may receive only the two reviewed continuation bindings. Earlier
  // receipt files and all other protected policy remain unchanged by the diff.
  for(const [file,name]of [['assistant-ecr-integrity.mjs','assistantEcrPredecessor'],['assistant-ecr-precision-integrity.mjs','assistantEcrPrecisionPredecessor']]){
-  const rel='apps/sg-runtime/tests/'+file,previous=fs.readFileSync(path.join(controlRoot(),rel),'utf8')
+  const rel='apps/sg-runtime/tests/'+file,previous=execFileSync('git',['show',admission.controlSha+':'+rel],{cwd:root,encoding:'utf8',stdio:['ignore','pipe','pipe']})
   const expected=previous.startsWith("import {assistantQualityPredecessor}")?previous
    :"import {assistantQualityPredecessor} from './assistant-quality-integrity.mjs'\n"+previous.replace('export function '+name+'(current,historical){','export function '+name+'(current,historical){\n const quality=assistantQualityPredecessor(current,historical);if(quality)return '+name+'(quality.previousBytes,historical)')
   if(fs.readFileSync(path.join(root,rel),'utf8')!==expected)fail('QUALITY_STAGE1_LEGACY_GUARD_REJECTED')
@@ -1039,7 +1039,7 @@ function assertQualityStage1Checkout(root,sha,admission){
  // The existing PI completion test also authenticates package.json. The host
  // pin must preserve that historical acceptance through the same fully checked
  // continuation, never by editing its receipt or omitting the existing test.
- const pi='apps/sg-runtime/tests/procurement-insights-completion-integrity.mjs',previous=fs.readFileSync(path.join(controlRoot(),pi),'utf8')
+ const pi='apps/sg-runtime/tests/procurement-insights-completion-integrity.mjs',previous=execFileSync('git',['show',admission.controlSha+':'+pi],{cwd:root,encoding:'utf8',stdio:['ignore','pipe','pipe']})
  const expected=admission.branch!==r.branches[1]||previous.startsWith("import {assistantQualityPredecessor}")?previous
   :"import {assistantQualityPredecessor} from './assistant-quality-integrity.mjs'\n"+previous.replace('export function procurementInsightsCompletionPredecessor(current,historical){',
    'export function procurementInsightsCompletionPredecessor(current,historical){\n const quality=assistantQualityPredecessor(current,historical);if(quality)return procurementInsightsCompletionPredecessor(quality.previousBytes,historical)')
@@ -5673,6 +5673,8 @@ function registrationLifecycleTestCanonicalRead(root,raw,bytes){
  return Object.freeze({...prior,currentSourceDigests:Object.freeze(r.currentSourceDigests),currentReceiptDigests:cfg.receiptDigests,sourceReconciliation:Object.freeze(r)})
 }
 export function registrationLifecycleCanonicalRead(root,sourceRead){
+ const sdk=sourceRead?trustedCurrentSdkContext(sourceRead,(sha,p)=>lifecycleHistory(root,sha,p)):currentSdkProofContext(root)
+ if(sdk)return registrationLifecycleCanonicalRead(root,sdk.baseline('registration'))
  const cfg=REGISTRATION_LIFECYCLE_PROVENANCE,raw=sourceRead??(p=>readRegistrationSdkFile(root,p)),bytes=lifecycleOptional(raw,cfg.recordPath)
  if(bytes===null)return null
  if([REGISTRATION_LIFECYCLE_TEST_PROVENANCE,REGISTRATION_LIFECYCLE_TEST_CORRECTED_PROVENANCE].some(value=>registrationHash(bytes)===value.recordSha256))return registrationLifecycleTestCanonicalRead(root,raw,bytes)
@@ -6608,6 +6610,8 @@ function assertKnowledgeStage2Routes(files,repositoryRoot){
 }
 export function assertKnowledgeStage2Entry(file,entry,review=PLATFORM_KNOWLEDGE_STAGE2_REVIEW){const e=review.entries[file?.filename];if(!e||e.sha!==file.sha||entry!==e.mode+' blob '+file.sha+'\t'+file.filename+'\0')fail('KNOWLEDGE_STAGE2_FILE_MODE_REJECTED');}
 export function knowledgeStage2TrustedPredecessor(current,historical){
+ const sdk=trustedCurrentSdkContext(current,historical)
+ if(sdk)return knowledgeStage2TrustedPredecessor(sdk.baseline('knowledge'),historical)
  let bytes;try{bytes=current(PLATFORM_KNOWLEDGE_STAGE2_PROVENANCE.recordPath);}catch(error){if(error?.code==='ENOENT')return null;throw error;}const cfg=knowledgeStage2Provenance(bytes);
  if(recurringHash(bytes)!==cfg.recordSha256||recurringHash(current('apps/architecture-lab/knowledge-source.mjs'))!==cfg.helperSha256)fail('KNOWLEDGE_STAGE2_RECORD_REJECTED');
  const a=JSON.parse(bytes);if(a.scope!=='PLATFORM_KNOWLEDGE_SDK_SOURCE_ACCEPTANCE'||a.platformVersion!=='1.37.0'||a.optionalImplementation!=='1.0.0-candidate.23'||a.legacyImplementation!=='1.0.0-candidate.16'||a.previousSourceSha!==cfg.previousSourceSha||Object.keys(a.sourceDigests).length!==cfg.sourceFileCount||a.sdkDigests.operationSourceDigest!==cfg.operationSourceDigest||['runtimeActivated','newGrantsInstalled','providerCallsPerformed','deploymentPerformed'].some(k=>a[k]!==false))fail('KNOWLEDGE_STAGE2_RECORD_REJECTED');
@@ -6619,7 +6623,7 @@ export function knowledgeStage2TrustedPredecessor(current,historical){
  for(const[p,r]of Object.entries(a.replacements))if(r.currentSha256!==a.sourceDigests[p]||recurringHash(historical(a.previousSourceSha,p))!==r.previousSha256)fail('KNOWLEDGE_STAGE2_PREDECESSOR_REJECTED');
  return{manifest:a,previousBytes:p=>{if(p===cfg.recordPath||Object.values(cfg.adoptions).includes(p)||added.has(p))throw Object.assign(Error('Absent from knowledge predecessor'),{code:'ENOENT'});if(!changed.has(p))return current(p);if(!cache.has(p))cache.set(p,historical(a.previousSourceSha,p));return Buffer.from(cache.get(p));}};
 }
-function knowledgeStage2Filesystem(root){const read=p=>{const b=readRegistrationSdkFile(root,p);if(fs.lstatSync(path.join(fs.realpathSync(root),p)).mode&0o111)fail('KNOWLEDGE_STAGE2_FILE_MODE_REJECTED');return b;};return knowledgeStage2TrustedPredecessor(read,(sha,p)=>execFileSync('git',['show',sha+':'+p],{cwd:root,stdio:['ignore','pipe','ignore']}));}
+function knowledgeStage2Filesystem(root){const sdk=currentSdkProofContext(root);if(sdk)return knowledgeStage2TrustedPredecessor(sdk.baseline('knowledge'),(sha,p)=>lifecycleHistory(root,sha,p));const read=p=>{const b=readRegistrationSdkFile(root,p);if(fs.lstatSync(path.join(fs.realpathSync(root),p)).mode&0o111)fail('KNOWLEDGE_STAGE2_FILE_MODE_REJECTED');return b;};return knowledgeStage2TrustedPredecessor(read,(sha,p)=>execFileSync('git',['show',sha+':'+p],{cwd:root,stdio:['ignore','pipe','ignore']}));}
 
 function privateRecurringReview(files){
  return [PRIVATE_RECURRING_REVIEW,PRIVATE_RECURRING_FINAL_REVIEW,PRIVATE_RECURRING_COMPLETION_REVIEW,PRIVATE_RECURRING_SHELL_REVIEW,PRIVATE_RECURRING_SHELL_CURRENT_REVIEW,PRIVATE_RECURRING_SHELL_CALENDAR_REVIEW,PRIVATE_RECURRING_CONSENT_TRANSPORT_REVIEW,PRIVATE_RECURRING_CONSUMER_TEST_REVIEW,PRIVATE_RECURRING_LIVE_ACCEPTANCE_REVIEW,PRIVATE_RECURRING_LIVE_FIXTURE_REVIEW,PRIVATE_RECURRING_LIVE_SRM_REVIEW].find(r=>Array.isArray(files)&&files.length===Object.keys(r.entries).length&&new Set(files.map(f=>f?.filename)).size===files.length&&files.every(f=>Object.hasOwn(r.entries,f?.filename)&&r.entries[f.filename].sha===f.sha&&r.entries[f.filename].status===f.status&&!Object.hasOwn(f,'previous_filename')))
@@ -7047,6 +7051,19 @@ export function currentSdkSourceAdmissionPolicy(sourceRecord,authorityRoot=contr
  }
  return {reviewedMetadata:{recordId:review.recordId,taskId:review.taskId,entries:structuredClone(review.reviewedMetadata)},
   reviewedLocalPackages:structuredClone(review.localPackages)}
+}
+// Current candidate bytes must match the independently trusted descriptor before
+// exposing an entire immutable legacy tree. Candidate metadata cannot select it.
+function trustedCurrentSdkContext(current,historical){
+ const trustedFile=path.join(controlRoot(),CURRENT_SDK_SOURCE_RECORD)
+ if(!fs.existsSync(trustedFile))return null
+ const trustedBytes=fs.readFileSync(trustedFile),record=JSON.parse(trustedBytes.toString('utf8'))
+ let manifest
+ try{manifest=JSON.parse(current('packages/platform-contracts/package.json'))}catch(error){if(error?.code==='ENOENT')return null;throw error}
+ if(manifest.version!==record.platformVersion)return null
+ const bytes=Buffer.from(current(CURRENT_SDK_SOURCE_RECORD))
+ if(!bytes.equals(trustedBytes))fail('CURRENT_SDK_SOURCE_METADATA_REJECTED')
+ return sdkSourceContext(p=>p===CURRENT_SDK_SOURCE_RECORD?trustedBytes:current(p),historical)
 }
 export function currentSdkProofContext(root,authorityRoot=controlRoot()){
  const manifest=path.join(root,'packages/platform-contracts/package.json')

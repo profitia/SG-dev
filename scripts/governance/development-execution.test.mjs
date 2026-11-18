@@ -424,9 +424,11 @@ function localManifestFixture(policy){
  const candidate=path.join(dir,'candidate'),authority=path.join(dir,'authority')
  const manifestPaths=Object.values(policy.LOCAL_PACKAGES).map(rel=>path.relative(root,path.resolve(root,'apps/sg-runtime',rel,'package.json')))
  const paths=['apps/sg-runtime/package.json','apps/sg-runtime/package-lock.json','apps/sg-runtime/.npmrc',...manifestPaths]
+  // Use one real complete pre-upgrade cohort even when this suite runs on1.38.
+  const baseline=policy.PLATFORM_KNOWLEDGE_STAGE2_SRM_TARGET_REVIEW.sourceSha
  for(const targetRoot of [candidate,authority])for(const name of paths){
   const from=path.join(root,name);if(!fs.existsSync(from))continue
-  const to=path.join(targetRoot,name);fs.mkdirSync(path.dirname(to),{recursive:true});fs.copyFileSync(from,to)
+  const to=path.join(targetRoot,name);fs.mkdirSync(path.dirname(to),{recursive:true});fs.writeFileSync(to,execFileSync('git',['show',baseline+':'+name],{cwd:root,stdio:['ignore','pipe','pipe']}))
  }
  const blob=bytes=>createHash('sha1').update('blob '+bytes.length+'\0').update(bytes).digest('hex')
  const reviews={},lockFile=path.join(candidate,'apps/sg-runtime/package-lock.json')
@@ -434,7 +436,8 @@ function localManifestFixture(policy){
  for(const [name,version]of [['@profitia/platform-contracts','1.38.0'],['@profitia/platform-current-e1-authority','1.4.1']]){
   const relative=path.relative(root,path.resolve(root,'apps/sg-runtime',policy.LOCAL_PACKAGES[name],'package.json'))
   const file=path.join(candidate,relative),before=fs.readFileSync(path.join(authority,relative)),manifest=JSON.parse(before)
-  manifest.version=version
+  assert.notEqual(manifest.version,version,'fixture starts before the requested upgrade')
+   manifest.version=version
   if(name==='@profitia/platform-current-e1-authority')manifest.peerDependencies={'@profitia/platform-contracts':'1.37.0 || 1.38.0'}
   const after=Buffer.from(JSON.stringify(manifest,null,2)+'\n');fs.writeFileSync(file,after)
   reviews[name]={beforeBlob:blob(before),afterBlob:blob(after)}

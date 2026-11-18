@@ -18,7 +18,8 @@ import {assistantSdkPredecessor} from '../../apps/architecture-lab/assistant-m1-
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
 const approved = 'b40564130fe7b6ced4d7df233dd6749653846114'
-const read = p => fs.readFileSync(path.join(root, p), 'utf8')
+const readBytes = p => fs.readFileSync(path.join(root, p))
+const read = p => readBytes(p).toString('utf8')
 const json = p => JSON.parse(read(p))
 const git = args => execFileSync('git', args, { cwd: root, encoding: 'utf8' }).trim()
 const priorText = p => execFileSync('git', ['show', approved + ':' + p], { cwd: root, encoding: 'utf8' })
@@ -28,9 +29,9 @@ const sha256 = bytes => createHash('sha256').update(bytes).digest('hex')
 // return copies; physical candidate reads and injected negative cases stay fresh.
 const sourceHistoryCache=new Map()
 function sourceHistoryBytes(sha,p){const k=sha+':'+p;if(!sourceHistoryCache.has(k))sourceHistoryCache.set(k,execFileSync('git',['cat-file','blob',k],{cwd:root,stdio:['ignore','pipe','pipe']}));return Buffer.from(sourceHistoryCache.get(k))}
-function calendarPredecessor(readCurrent=read){return calendarStoragePredecessor(readCurrent,sourceHistoryBytes,(base,head)=>git(['diff','--name-only',base,head]).split('\n'))}
-function durableStorageAcceptance(readCurrent=read){return calendarPredecessor(readCurrent).record}
-function scheduleSourceAcceptance(readCurrent=read){
+function calendarPredecessor(readCurrent=readBytes){return calendarStoragePredecessor(readCurrent,sourceHistoryBytes,(base,head)=>git(['diff','--name-only',base,head]).split('\n'))}
+function durableStorageAcceptance(readCurrent=readBytes){return calendarPredecessor(readCurrent).record}
+function scheduleSourceAcceptance(readCurrent=readBytes){
  readCurrent=calendarPredecessor(readCurrent).previousBytes
  if(JSON.parse(readCurrent('packages/platform-source-hub-contracts/package.json')).version!=='1.5.0')return null
  const file='apps/platform-source-hub/operations/publication-schedule-source-acceptance.json',bytes=readCurrent(file)
@@ -343,14 +344,14 @@ test('opt-in schedule producer pins its complete new closure while preserving ev
 })
 test('schedule acceptance rejects altered new source, new metadata and historical receipt without changing fixtures on disk',()=>{
  for(const target of ['apps/platform-source-hub/src/providers/eia-schedules.mjs','apps/platform-source-hub/operations/publication-schedule-source-acceptance.json','apps/architecture-lab/sdk-1.34-compatibility.json']){
-  assert.throws(()=>scheduleSourceAcceptance(p=>read(p)+(p===target?'\nUNACCEPTED_CHANGE':'')),target)
+  assert.throws(()=>scheduleSourceAcceptance(p=>Buffer.concat([readBytes(p),Buffer.from(p===target?'\nUNACCEPTED_CHANGE':'')])),target)
  }
 })
 
 test('Stage03 pins both producer and consumer and rejects altered licence, contract, SQL or historical receipt',()=>{
  assert(durableStorageAcceptance())
  for(const target of ['apps/economic-calendar-runtime/migrations/002-multi-source-calendar.sql','apps/economic-calendar-runtime/operations/stage03-owner-plan.json','packages/platform-source-hub-contracts/commodities-v1.mjs','apps/platform-source-hub/operations/publication-schedule-source-acceptance.json']){
-  assert.throws(()=>durableStorageAcceptance(p=>read(p)+(p===target?'\nUNACCEPTED_CHANGE':'')),target)
+  assert.throws(()=>durableStorageAcceptance(p=>Buffer.concat([readBytes(p),Buffer.from(p===target?'\nUNACCEPTED_CHANGE':'')])),target)
  }
 })
 
@@ -361,7 +362,7 @@ test('Stage04–05 acceptance rejects modified new source and immutable history 
  assert.equal(record.hubContractsVersion,'1.7.0')
  assert(durableStorageAcceptance())
  for(const target of ['apps/platform-source-hub/src/providers/eia.mjs','apps/economic-calendar-runtime/src/semantics.mjs','packages/platform-contracts/current-e1-authority/migrations/010-ecr-service-continuity.sql','packages/platform-source-hub-contracts/semantic-continuous-acceptance-v1.json','packages/platform-source-hub-contracts/calendar-storage-acceptance-v1.json']){
-  assert.throws(()=>calendarPredecessor(p=>read(p)+(p===target?'\nUNACCEPTED_CHANGE':'')),target)
+  assert.throws(()=>calendarPredecessor(p=>Buffer.concat([readBytes(p),Buffer.from(p===target?'\nUNACCEPTED_CHANGE':'')])),target)
  }
 })
 
@@ -372,9 +373,9 @@ test('source access continuity pins every new source and retains immutable produ
  assert.equal(record.hubContractsVersion,'1.7.0');assert.equal(record.ecrContractVersion,'1.2.0')
  assert.equal(record.liveAcceptance,false);assert(durableStorageAcceptance())
  for(const target of [...Object.keys(record.sourceFiles),file,...Object.keys(record.preservedReceipts)]){
-  assert.throws(()=>calendarPredecessor(p=>read(p)+(p===target?'\nUNACCEPTED_CHANGE':'')),target)
+  assert.throws(()=>calendarPredecessor(p=>Buffer.concat([readBytes(p),Buffer.from(p===target?'\nUNACCEPTED_CHANGE':'')])),target)
  }
- assert.throws(()=>calendarPredecessor(p=>{if(p===file)throw Object.assign(Error('missing continuity receipt'),{code:'ENOENT'});return read(p)}))
+ assert.throws(()=>calendarPredecessor(p=>{if(p===file)throw Object.assign(Error('missing continuity receipt'),{code:'ENOENT'});return readBytes(p)}))
 })
 
 
@@ -385,7 +386,8 @@ import {bsdcManifestContinuityTrustedCurrent, BSDC_MANIFEST_CONTINUITY as bsdcTr
 const bsdcHistoryCache=new Map()
 const bsdcHistory=(sha,p)=>{const k=sha+':'+p;if(!bsdcHistoryCache.has(k))bsdcHistoryCache.set(k,execFileSync('git',['cat-file','blob',k],{cwd:root,stdio:['ignore','pipe','pipe']}));return Buffer.from(bsdcHistoryCache.get(k))}
 const bsdcPhysical=p=>fs.readFileSync(path.join(root,p))
-const bsdcApproved=p=>bsdcTrustedPolicy.sourcePaths.includes(p)?bsdcHistory(BSDC_V11_DOCUMENTATION_REVIEW.approvedSourceSha,p):bsdcPhysical(p)
+// The four-document acceptance fixture uses its whole real historical base.
+const bsdcApproved=p=>bsdcTrustedPolicy.sourcePaths.includes(p)?bsdcHistory(BSDC_V11_DOCUMENTATION_REVIEW.approvedSourceSha,p):bsdcHistory(bsdcTrustedPolicy.baseSha,p)
 const bsdcFiles=()=>Object.entries(BSDC_V11_DOCUMENTATION_REVIEW.entries).map(([filename,e])=>({filename,sha:e.sha,status:e.status}))
 const bsdcContext={repository:'profitia/SG-dev',ref:'refs/heads/main',workflowRef:'profitia/SG-dev/.github/workflows/platform-contracts-ci.yml@refs/heads/main',event:'workflow_dispatch',actor:'profitia',triggeringActor:'profitia',controlSha:bsdcTrustedPolicy.baseSha}
 const bsdcPr=()=>({number:1057,state:'open',base:{ref:'main',repo:{full_name:'profitia/SG-dev'},sha:bsdcTrustedPolicy.baseSha},head:{ref:BSDC_V11_DOCUMENTATION_REVIEW.branch,repo:{full_name:'profitia/SG-dev'},sha:BSDC_V11_DOCUMENTATION_REVIEW.approvedSourceSha},user:{login:'profitia'},changed_files:4})
