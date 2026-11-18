@@ -330,25 +330,25 @@ import {resolveProjectProfile as continuityProfile} from './project-profile.mjs'
 import {resolveProjectRouting as continuityRoute} from './routing-engine.mjs'
 
 const continuityPath='apps/sg-runtime/components/procurement-insights/continuity-fixture.tsx'
-function continuityFixture(changeRecord=r=>r,{candidateLedger=false}={}) {
+function continuityFixture(changeRecord=r=>r,{candidateLedger=false,trackedPath=continuityPath,extras={}}={}) {
  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'application-continuity-'))
  const g=(...a)=>execFileSync('git',a,{cwd:dir,encoding:'utf8',stdio:['ignore','pipe','pipe']}).trim()
  const write=(p,s)=>{const f=path.join(dir,p);fs.mkdirSync(path.dirname(f),{recursive:true});fs.writeFileSync(f,s)}
  g('init','-b','main');g('config','user.name','Synthetic fixture');g('config','user.email','synthetic@example.invalid')
  g('remote','add','origin','https://github.com/profitia/SG-dev')
- write(continuityPath,'export const sample=1\n');write('unchanged.txt','immutable\n');g('add','.');g('commit','-m','synthetic base')
+ write(trackedPath,'export const sample=1\n');write('unchanged.txt','immutable\n');for(const[p,bytes]of Object.entries(extras))write(p,bytes);g('add','.');g('commit','-m','synthetic base')
  const initial=g('rev-parse','HEAD');g('checkout','-b','candidate')
- write(continuityPath,'export const sample=2\n');g('add','.');g('commit','-m','synthetic reviewed source')
- const original=g('rev-parse','HEAD'),blob=g('hash-object',continuityPath)
- const route=continuityRoute({profile:continuityProfile('SG2',root),targets:[continuityPath],repositoryRoot:root}).results[0]
+ write(trackedPath,'export const sample=2\n');g('add','.');g('commit','-m','synthetic reviewed source')
+ const original=g('rev-parse','HEAD'),blob=g('hash-object',trackedPath)
+ const route=continuityRoute({profile:continuityProfile('SG2',root),targets:[trackedPath],repositoryRoot:root}).results[0]
  const r=changeRecord({...record(),id:'SYNTHETIC_APPLICATION_REVIEW',sourceSha:original,baseSha:initial,
   validFrom:'2000-01-01T00:00:00Z',validUntil:'2099-01-01T00:00:00Z',
-  files:[{path:continuityPath,blob,status:'modified',mode:'100644',projectKey:'SG2',owner:route.currentOwner,surfaceId:route.matchedSurfaceId}]})
+  files:[{path:trackedPath,blob,status:'modified',mode:'100644',projectKey:'SG2',owner:route.currentOwner,surfaceId:route.matchedSurfaceId}]})
  g('checkout','main');write('Canon/registries/controlled-source-admissions-v1.json',JSON.stringify({schemaVersion:'1.0',records:candidateLedger?[]:[r]}))
  g('add','.');g('commit','-m','synthetic independent authority')
  const authority=g('rev-parse','HEAD');g('update-ref','refs/remotes/origin/main',authority)
  g('checkout','candidate');g('merge','--no-edit','main')
- const check=()=>trustedApplicationContinuity(dir,[continuityPath],{authorityRoot:dir,governanceRoot:root})
+ const check=()=>trustedApplicationContinuity(dir,[trackedPath],{authorityRoot:dir,governanceRoot:root})
  return {dir,g,write,r,initial,original,authority,check,close:()=>fs.rmSync(dir,{recursive:true,force:true})}
 }
 
@@ -413,5 +413,77 @@ test('compatibility never authorises receipt, SQL, workflow, package or contract
   'apps/sg-runtime/assistant-notifications-integration.json','apps/sg-runtime/package.json',
   'packages/platform-contracts/src/operation-context.mjs','apps/insights-runtime/sql/003-report-subscriptions.sql'])
   assert.throws(()=>trustedApplicationContinuity(f.dir,[p],{authorityRoot:f.dir,governanceRoot:root}),/APPLICATION_CONTINUITY_PATH_REJECTED/)
+ }finally{f.close()}
+})
+
+
+const literalReportRoute='apps/sg-runtime/app/api/v1/insights/[...report]/route.ts'
+const reportRouteDecoy='apps/sg-runtime/app/api/v1/insights/r/route.ts'
+const literalRouteFixture=()=>continuityFixture(r=>r,{trackedPath:literalReportRoute,extras:{[reportRouteDecoy]:'export const decoy=true\n'}})
+
+test('the one literal report route binds its own Git blob, full checkout and accepted authority despite a glob-shaped decoy',async()=>{
+ const {proposeSourceAdmission}=await import('./development-execution.mjs')
+ const f=literalRouteFixture()
+ try{
+  const proposed=proposeSourceAdmission({projectKey:'SG2',taskId:'SYNTHETIC_LITERAL_ROUTE',sourceSha:f.original,baseSha:f.initial,repositoryRoot:f.dir})
+  assert.equal(proposed.status,'PROPOSED');assert.equal(proposed.approvalRef,null)
+  assert.equal(proposed.files.length,1);assert.equal(proposed.files[0].path,literalReportRoute)
+  assert.equal(proposed.files[0].blob,f.g('hash-object',literalReportRoute))
+  assert.notEqual(proposed.files[0].blob,f.g('hash-object',reportRouteDecoy))
+  const state={sha:f.g('rev-parse','HEAD'),controlSha:f.authority,actor:'profitia',files:f.r.files.map(x=>({filename:x.path,sha:x.blob,status:x.status}))}
+  assert.throws(()=>assertSourceAdmission(proposed,{repository:proposed.repository,actor:'profitia',candidateSha:f.original,currentMainSha:f.authority,files:state.files},root),/SOURCE_ADMISSION_IDENTITY_REJECTED/)
+  assertSourceCheckout(f.dir,f.r,state,root)
+  const read=f.check();assert.equal(read(literalReportRoute).toString(),'export const sample=2\n')
+  assert.throws(()=>read(reportRouteDecoy),/APPLICATION_CONTINUITY_PATH_REJECTED/)
+  f.g('checkout','main');assert.equal(f.check()(literalReportRoute).toString(),'export const sample=1\n')
+ }finally{f.close()}
+})
+
+test('the literal route exception rejects neighbouring bracket names, suffixes, case changes and traversal',()=>{
+ const names=[literalReportRoute.replace('[...report]','[report]'),literalReportRoute.replace('[...report]','[...reports]'),
+  literalReportRoute.replace('[...report]','[...Report]'),literalReportRoute.replace('[...report]','x[...report]'),
+  literalReportRoute+'.bak',literalReportRoute+'/',literalReportRoute+'/extra','/'+literalReportRoute,
+  literalReportRoute.replace('/insights/','/insights/../'),literalReportRoute.replace('/insights/','/insights//'),
+  literalReportRoute.replace('/insights/','/insights/'+String.fromCharCode(92)),literalReportRoute+String.fromCharCode(0)]
+ for(const name of names){
+  const r=record(),f=facts();r.files[0]={...r.files[0],path:name,projectKey:'SG2'};f.files[0].filename=name
+  assert.throws(()=>assertSourceAdmission(r,f,root,now),/SOURCE_ADMISSION_FILES_REJECTED/,name)
+ }
+})
+
+test('real Git proposals cannot extend the literal exception to another bracketed Next route',async()=>{
+ const {proposeSourceAdmission}=await import('./development-execution.mjs')
+ const f=continuityFixture(r=>r,{trackedPath:literalReportRoute.replace('[...report]','[report]')})
+ try{assert.throws(()=>proposeSourceAdmission({projectKey:'SG2',taskId:'SYNTHETIC_OTHER_ROUTE',sourceSha:f.original,baseSha:f.initial,repositoryRoot:f.dir}),/SOURCE_PROPOSAL_PROTECTED_OR_UNSUPPORTED_PATH/)}finally{f.close()}
+})
+
+test('the decoy blob cannot replace the literal route in an otherwise internally matching admission',()=>{
+ const f=literalRouteFixture()
+ try{
+  const r=structuredClone(f.r);r.files[0].blob=f.g('hash-object',reportRouteDecoy)
+  const state={sha:f.g('rev-parse','HEAD'),controlSha:f.authority,actor:'profitia',files:r.files.map(x=>({filename:x.path,sha:x.blob,status:x.status}))}
+  assert.throws(()=>assertSourceCheckout(f.dir,r,state,root),/SOURCE_PHYSICAL_FILE_REJECTED/)
+ }finally{f.close()}
+})
+
+for(const [name,mutate]of[
+ ['changed bytes',f=>f.write(literalReportRoute,'unreviewed\n')],
+ ['executable mode',f=>fs.chmodSync(path.join(f.dir,literalReportRoute),0o755)],
+ ['symlink',f=>{fs.unlinkSync(path.join(f.dir,literalReportRoute));fs.symlinkSync(path.join(f.dir,'unchanged.txt'),path.join(f.dir,literalReportRoute))}]
+])test('literal route preserves physical source refusal: '+name,()=>{
+ const f=literalRouteFixture();try{mutate(f);if(name==='changed bytes')assert.equal(f.check(),null);else assert.throws(f.check)}finally{f.close()}
+})
+
+for(const mode of['executable','symlink'])test('a regular decoy cannot hide '+mode+' mode in the actual authority route',()=>{
+ const f=literalRouteFixture()
+ try{
+  f.g('checkout','main')
+  if(mode==='executable')fs.chmodSync(path.join(f.dir,literalReportRoute),0o755)
+  else{fs.unlinkSync(path.join(f.dir,literalReportRoute));fs.symlinkSync('unchanged.txt',path.join(f.dir,literalReportRoute))}
+  f.g('--literal-pathspecs','add','--',literalReportRoute);f.g('commit','-m','synthetic invalid authority mode')
+  f.g('update-ref','refs/remotes/origin/main',f.g('rev-parse','HEAD'))
+  if(mode==='executable')fs.chmodSync(path.join(f.dir,literalReportRoute),0o644)
+  else{fs.unlinkSync(path.join(f.dir,literalReportRoute));f.write(literalReportRoute,'unchanged.txt')}
+  assert.throws(f.check,/APPLICATION_CONTINUITY_AUTHORITY_MODE_REJECTED/)
  }finally{f.close()}
 })
