@@ -63,14 +63,6 @@ test('Finder UNMETERED uses actual E1 Source, local provider, audited counters, 
     await owner.query("INSERT INTO profitia_external_native.policies(policy_id,base_policy_version,path_rules,redirect_origins,maximum_response_bytes,credential_mode,completion_mode,status,expires_at,source_ref) VALUES($1,$4,$2::jsonb,'[]'::jsonb,4000000,$3,'ADMITTED_ATTEMPT_CURRENT_SETTLEMENT','ACTIVE',now()+interval '30 minutes','SYNTHETIC_ONLY')",[policy,JSON.stringify(p.pathRules),p.credentialMode,provider==='MACROBOND_TOKEN'?2:1])
    }
    await owner.query("UPDATE profitia_ingestion.runtime_bindings SET status='ACTIVE' WHERE login_role=$1",[ROLE]);
-   for(const provider of ['MACROBOND_TOKEN','MACROBOND_API']){const sid=finderSourcePolicy(provider).source.id;
-    await owner.query("UPDATE profitia_ingestion.budgets SET quota_mode='UNMETERED',capacity=NULL,window_start=NULL,window_end=NULL,expires_at=NULL WHERE source_id=$1",[sid]);
-    await owner.query("UPDATE profitia_external_call.policies SET quota_mode='UNMETERED',capacity=NULL,window_start=NULL,window_end=NULL,expires_at=NULL WHERE source_id=$1",[sid]);
-    await owner.query("UPDATE profitia_external_native.policies n SET base_policy_version=p.version FROM profitia_external_call.policies p WHERE n.policy_id=p.policy_id AND p.source_id=$1",[sid]);
-   }
-   const sourceIds=['sg2.provider.macrobond_token','sg2.provider.macrobond_api'];
-   const controls=(await owner.query('SELECT profitia_ingestion.continuity_controls($1,$2,$3) value',[ROLE,'spendguru-benchmark-source',sourceIds])).rows[0].value;
-   await owner.query("INSERT INTO profitia_source_continuity.policies VALUES($1,'spendguru-benchmark-source',$2,'ACTIVE',$3,$4,now()+interval '30 minutes')",[ROLE,sourceIds,'owner-decision:sha256:'+'a'.repeat(64),Object.fromEntries(controls.map(c=>[c.id,c.fingerprint]))]);
    await owner.query(`GRANT EXECUTE ON FUNCTION profitia_ingestion.maintain_source_technical_access(text) TO ${ROLE}`);
    await owner.query(`GRANT USAGE ON SCHEMA profitia_ingestion,profitia_external_call,profitia_external_native TO ${ROLE};GRANT EXECUTE ON FUNCTION profitia_ingestion.runtime_descriptor(),profitia_ingestion.current_state(text,text),profitia_ingestion.lock_ingestion(text,text,text),profitia_ingestion.scope_allows(text,text),profitia_ingestion.reserve(text,text,text,text,uuid),profitia_ingestion.complete(uuid,uuid),profitia_ingestion.receipt(text,text,text,text),profitia_ingestion.append_audit(jsonb),profitia_external_call.descriptor(text,text),profitia_external_call.apply_control(uuid,uuid,text),profitia_external_call.read_status(uuid,text,text),profitia_external_native.descriptor(text,text) TO ${ROLE}`)
   })
@@ -78,10 +70,19 @@ test('Finder UNMETERED uses actual E1 Source, local provider, audited counters, 
   prisma=new PrismaClient({datasources:{db:{url:runtimeUrl.toString()}}});auditPrisma=new PrismaClient({datasources:{db:{url:runtimeUrl.toString()}}})
   const base={prisma,auditPrisma,application:{appId:'spendguru-benchmark-source',profileId:'PLATFORM_INTERNAL',environment:'development',deploymentId:'synthetic-finder',configurationVersion:'source-v1',identityIssuer:'urn:profitia:database-service-runtime:v1',organisationId:null,features:['knowledge_ingestion'],operations:['knowledge.ingest']},
    binding:{applicationId:'spendguru-benchmark-source',environment:'development',projectId:'isolated-finder-source',branchId:'isolated-finder-branch',databaseName:DATABASE,role:ROLE,schemaDigest:hash(rootSql),unmeteredSchemaDigest:hash(source('024-unmetered-public-sources.sql')),deploymentId:'synthetic-finder',configurationVersion:'source-v1'},external:{configurationVersion:'finder-http-v1',schemaDigest:hash(callSql),nativeSchemaDigest:hash(nativeSql)},credentials,syntheticOrigin:origin}
-  const create=operationKey=>createFinderSourceTransport({...base,now:()=>clock+Date.now()-clockAnchor,operationKey:operationKey??randomBytes(32).toString('hex')})
+  const create=(operationKey,legacy=false)=>createFinderSourceTransport({...base,binding:{...base.binding,...(legacy?{}:{requiredQuotaMode:'UNMETERED'})},now:()=>clock+Date.now()-clockAnchor,operationKey:operationKey??randomBytes(32).toString('hex')})
   const token=t=>t.macrobond('https://apiauth.macrobondfinancial.com/mbauth/connect/token',{method:'POST',headers:{'content-type':'application/x-www-form-urlencoded'},body:new URLSearchParams({grant_type:'client_credentials',client_id:credentials.macrobondClientId,client_secret:credentials.macrobondClientSecret})})
   const api=t=>t.macrobond('https://api.macrobondfinancial.com/v1/series/fetchentities',{method:'POST',headers:{authorization:'Bearer fixture-returned-access','content-type':'application/json'},body:JSON.stringify([{name:'PRIVATE_FIXTURE_QUERY'}])})
   const ai=t=>t.openai('https://api.openai.com/v1/responses',{method:'POST',headers:{authorization:'Bearer '+credentials.openAiKey,'content-type':'application/json','x-stainless-runtime':'node'},body:JSON.stringify({model:credentials.openAiModel,store:false,input:'PRIVATE_FIXTURE_AI_PROMPT'})})
+  clock=Date.parse((await owner.query('SELECT clock_timestamp() value')).rows[0].value);clockAnchor=Date.now()
+  await t.test('controlled owner activation preserves an exhausted 50-token policy and all earlier accounting',async()=>{
+   const untouched=hits;await assert.rejects(token(create()),unavailable);assert.equal(hits,untouched);
+   for(let i=0;i<50;i++)assert.equal((await token(create(undefined,true))).status,200);const beforeHits=hits;await assert.rejects(token(create(undefined,true)),unavailable);assert.equal(hits,beforeHits);
+   const counts=async()=>(await owner.query("SELECT source_id,admitted_count::text n FROM profitia_external_call.policies WHERE status='ACTIVE' ORDER BY source_id")).rows;const before=await counts();
+   await controlled(async()=>{const ids=['sg2.provider.macrobond_token','sg2.provider.macrobond_api'];const rows=(await owner.query('SELECT profitia_ingestion.continuity_controls($1,$2,$3) value',[ROLE,'spendguru-benchmark-source',ids])).rows[0].value;const version=(await owner.query('SELECT version FROM profitia_ingestion.runtime_bindings WHERE login_role=$1',[ROLE])).rows[0].version;
+    assert.equal((await owner.query('SELECT profitia_ingestion.activate_unmetered_sources($1,$2,$3,$4,$5,$6) value',[ROLE,'spendguru-benchmark-source',ids,'owner-decision:sha256:'+'a'.repeat(64),Object.fromEntries(rows.map(r=>[r.id,String(r.definition.version)])),version])).rows[0].value.status,'ACTIVATED');});
+   assert.deepEqual(await counts(),before);assert.equal(before.find(p=>p.source_id==='sg2.provider.macrobond_token').n,'50');
+  })
   await t.test('renewal keeps both Macrobond sources usable beyond the old technical deadline',async()=>{
    const result=(await prisma.$queryRawUnsafe('SELECT profitia_ingestion.maintain_source_technical_access($1) AS value',hash(source('035-source-technical-continuity.sql'))))[0].value
    assert.equal(result.status,'RENEWED');assert.ok(Date.parse(result.leaseUntil)>Date.parse('2026-11-19T00:00:00Z'))

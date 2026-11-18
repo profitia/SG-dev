@@ -105,3 +105,5 @@ test('the documented Render entrypoint verifies before starting the unchanged ap
 test('redeploy refuses missing, changed or finite Macrobond pools',async()=>{
  for(const fault of ['missing','finite','digest'])await assert.rejects(verify(async binding=>{const row=descriptor(binding);if(binding.name==='source'){if(fault==='missing')row.quotas=[];if(fault==='finite')row.quotas[0]={quotaMode:'METERED',capacity:1000};if(fault==='digest')row.identity.unmeteredSchemaDigest='f'.repeat(64)}return row}),e=>e.code==='UNMETERED_POLICY_UNAVAILABLE')
 })
+
+test('revoked Source acquisition does not prevent unrelated app startup; the Source engine still denies it',async()=>{assert.equal((await verify(async binding=>{const row=descriptor(binding);if(binding.name==='source')row.quotas=[null,null,null,null];return row})).status,'READY')})

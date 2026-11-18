@@ -25,6 +25,6 @@ export function startFinderSourceContinuity():Promise<void>{
    try{if(await check()==='DEFERRED_ACTIVE_SOURCE_CALL')next=60000}catch{next=60000;console.error(JSON.stringify({event:'FINDER_SOURCE_TECHNICAL_LEASE',status:'BLOCKED'}))}
    schedule(next)
   },delay);timer.unref()}
-  try{const status=await check();schedule(status==='DEFERRED_ACTIVE_SOURCE_CALL'?60000:3600000)}catch(error){await prisma.$disconnect();started=undefined;throw error}
+  try{const status=await check();schedule(status==='DEFERRED_ACTIVE_SOURCE_CALL'?60000:3600000)}catch{console.error(JSON.stringify({event:'FINDER_SOURCE_TECHNICAL_LEASE',status:'BLOCKED'}));schedule(60000)}
  })()
 }

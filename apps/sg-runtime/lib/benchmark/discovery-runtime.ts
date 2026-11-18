@@ -75,7 +75,7 @@ export async function createDiscoveryRuntime(config:NonNullable<ReturnType<typeo
   accountIdentity:{environment:'development',issuer:human.identity.issuer}})
  const sourceApp=service(targets.source.applicationId,targets.source.runtimeConfigurationVersion,['knowledge.ingest'],['knowledge_ingestion'])
  const sourceBinding={applicationId:sourceApp.appId,environment:'development' as const,projectId:targets.source.projectId,branchId:targets.source.branchId,
-  databaseName:targets.source.databaseName,role:targets.source.runtimeRole,schemaDigest:targets.source.sourceSqlDigest,unmeteredSchemaDigest:targets.source.unmeteredSqlDigest,
+  databaseName:targets.source.databaseName,role:targets.source.runtimeRole,schemaDigest:targets.source.sourceSqlDigest,unmeteredSchemaDigest:targets.source.unmeteredSqlDigest,requiredQuotaMode:'UNMETERED' as const,
   deploymentId:sourceApp.deploymentId,configurationVersion:sourceApp.configurationVersion}
  const loadMetadataClient=createDiscoveryMetadataLoader(metadataPrisma,{...targets.metadataRead,role:targets.metadataRead.runtimeRole})
  return createSg2DiscoveryApi({requestHost,readHost,persist:createDiscoveryRequestPersister(human.binding,job),work,
