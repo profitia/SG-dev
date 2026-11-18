@@ -582,7 +582,7 @@
     "packages/platform-source-hub-contracts/source-access-continuity-acceptance-v1.json": "c99323c6690d488992c445eff4e1c26fe48d81ede267b6f5f2ad4df208768540",
     "scripts/governance/controlled-package-ci.test.mjs": "0142eb57b511bef865e3f7231b82c8678e0390604ac656be8e72dbe05c7e5443",
     "scripts/governance/governance.test.mjs": "ef28078504fda6d844f63b5dd3d7687465f37b3d16064dff581ae392765909da",
-    "scripts/governance/platform-source-hub-foundation.test.mjs": "c72e72245db1f87572cbba9c02526c989bc69a321dbec2f89fe1be524d874ef2"
+    "scripts/governance/platform-source-hub-foundation.test.mjs": "065ce5dc7d7718e14ecfe6779670728687305950a52f56f1f9a0f046728df479"
   },
   "views": {
     "calendar": {
@@ -1092,7 +1092,7 @@
           "previousSha256": "6406f5bc0db472045faab88c44bfe7a7d307ef1acb81b2c053852c0800c31846"
         },
         "scripts/governance/platform-source-hub-foundation.test.mjs": {
-          "currentSha256": "c72e72245db1f87572cbba9c02526c989bc69a321dbec2f89fe1be524d874ef2",
+          "currentSha256": "065ce5dc7d7718e14ecfe6779670728687305950a52f56f1f9a0f046728df479",
           "previousSha256": "812bd89b6e89ecd092a12618d2e70f0f9576bb74bf15b0acaa73c66c693a986f"
         }
       }
@@ -1325,7 +1325,7 @@
           "previousSha256": "9d381bc7ae98c480e1ee1bfdbdaa062225c28bb44634822933ef934724f791a7"
         },
         "scripts/governance/platform-source-hub-foundation.test.mjs": {
-          "currentSha256": "c72e72245db1f87572cbba9c02526c989bc69a321dbec2f89fe1be524d874ef2",
+          "currentSha256": "065ce5dc7d7718e14ecfe6779670728687305950a52f56f1f9a0f046728df479",
           "previousSha256": "206af0119029fc2ffabfd93b06d206e0eb9936c8b8b7467cddeda3fe2b240c10"
         }
       }

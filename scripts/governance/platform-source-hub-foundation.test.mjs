@@ -416,6 +416,7 @@ test('BSDC continuity bootstrap preserves the old manifest and every original Ca
  try{
   execFileSync('git',['clone','--quiet','--shared','--no-checkout',root,calendarCheckout],{stdio:['ignore','pipe','pipe']})
   execFileSync('git',['checkout','--quiet','--detach','69d02834e863a51506aa4f50fbeb20f7fda3575b'],{cwd:calendarCheckout,stdio:['ignore','pipe','pipe']})
+  execFileSync('git',['update-ref','refs/remotes/origin/main',git(['rev-parse','--verify','refs/remotes/origin/main^{commit}'])],{cwd:calendarCheckout,stdio:['ignore','pipe','pipe']})
   assert(assertPrivateRecurringProvenance(calendarCheckout))
  }finally{fs.rmSync(calendarLegacy,{recursive:true,force:true})}
 
