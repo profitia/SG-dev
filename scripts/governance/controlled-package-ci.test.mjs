@@ -2,7 +2,7 @@ import {PLATFORM_KNOWLEDGE_STAGE2_SRM_TARGET_PROVENANCE} from './controlled-pack
 import {PLATFORM_KNOWLEDGE_STAGE2_PI_COMPOSITION_PROVENANCE} from './controlled-package-ci.mjs';
 import {tmpdir as knowledgePolicyTmpdir} from 'node:os';
 import {PLATFORM_KNOWLEDGE_STAGE2_REPAIR_PROVENANCE} from './controlled-package-ci.mjs'
-import {publicProofContract} from './controlled-package-ci.mjs'
+import {publicProofContract,currentSdkProofContext} from './controlled-package-ci.mjs'
 import {MANIFEST_SUCCESSOR_1102_REVIEW} from './controlled-package-ci.mjs'
 import {PLATFORM_KNOWLEDGE_STAGE2_REVIEW,PLATFORM_KNOWLEDGE_STAGE2_PROVENANCE,assertKnowledgeStage2Entry,knowledgeStage2TrustedPredecessor,currentProofContract} from './controlled-package-ci.mjs'
 import {createExecutionCheckout,assertExecutionCheckout,assertPristineSourceInput} from './controlled-package-ci.mjs'
@@ -3360,7 +3360,8 @@ test('public proof uses the exact current knowledge record and matches the real 
  }finally{execFileSync('git',['worktree','remove','--force',root],{cwd:authorityRoot,stdio:'pipe'});fs.rmSync(dir,{recursive:true,force:true})}
 })
 test('public proof absence preserves every original authority-source contract field',()=>{
- const receiptBytes=fs.readFileSync(path.join(authorityRoot,'apps/sg-runtime/operation-integration.json')),receipt=JSON.parse(receiptBytes),recurringRecord=fs.readFileSync(path.join(authorityRoot,'apps/architecture-lab/private-recurring-source.json'))
+ const c=currentSdkProofContext(authorityRoot),read=c?c.baseline('authority'):p=>fs.readFileSync(path.join(authorityRoot,p))
+ const receiptBytes=read('apps/sg-runtime/operation-integration.json'),receipt=JSON.parse(receiptBytes),recurringRecord=read('apps/architecture-lab/private-recurring-source.json')
  const before=JSON.stringify(receipt)
  assert.deepEqual(publicProofContract(receipt,{receiptBytes,recurringRecord}),privateRecurringProofContract(receipt,recurringRecord,receiptBytes))
  assert.equal(JSON.stringify(receipt),before)
