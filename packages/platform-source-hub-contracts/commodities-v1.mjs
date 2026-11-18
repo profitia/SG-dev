@@ -3,7 +3,8 @@ export const COMMODITY_CONTRACT_VERSION='1.1.0'
 export const PUBLICATION_SCHEDULE_CONTRACT_VERSION='1.2.0'
 export const DURABLE_SCHEDULE_CONTRACT_VERSION='1.3.0'
 export const DURABLE_RESULT_CONTRACT_VERSION='1.4.0'
-const scheduleVersion=v=>[PUBLICATION_SCHEDULE_CONTRACT_VERSION,DURABLE_SCHEDULE_CONTRACT_VERSION].includes(v)
+export const EXPANDED_SCHEDULE_CONTRACT_VERSION='1.5.0'
+const scheduleVersion=v=>[PUBLICATION_SCHEDULE_CONTRACT_VERSION,DURABLE_SCHEDULE_CONTRACT_VERSION,EXPANDED_SCHEDULE_CONTRACT_VERSION].includes(v)
 export const COMMODITY_FAMILIES=Object.freeze(['data-catalog','series-observations','positioning-observations','publication-calendar'])
 export const COMMODITY_PROVIDERS=Object.freeze({eia:['data-catalog','series-observations'],cftc:['data-catalog','positioning-observations'],'commodities-sh':['data-catalog','publication-calendar']})
 const plain=v=>v!==null&&Object.getPrototypeOf(v)===Object.prototype
@@ -45,12 +46,13 @@ export function parseCommodityRequest(v){
 }
 export function parsePublicationScheduleRequest(v){
  if(!closed(v,['contractVersion','provider','family','operation','criteria'])||!scheduleVersion(v.contractVersion)||!['eia','commodities-sh'].includes(v.provider)||v.family!=='publication-calendar'||v.operation!=='calendar')fail()
+ if(v.contractVersion===EXPANDED_SCHEDULE_CONTRACT_VERSION&&v.provider!=='eia')fail('UNSUPPORTED_EXPANDED_SCHEDULE_PROVIDER')
  const c=v.criteria
  if(!closed(c,v.provider==='eia'?['publication','from','to','limit']:['limit']))fail('UNSUPPORTED_CRITERIA')
  if(c.limit!==undefined&&(!Number.isSafeInteger(c.limit)||c.limit<1||c.limit>1000))fail('INVALID_CRITERIA')
  if(v.provider==='eia'){
   const day=s=>typeof s==='string'&&/^\d{4}-\d\d-\d\d$/.test(s)&&Number.isFinite(Date.parse(s))&&new Date(s).toISOString().slice(0,10)===s
-  if(!['wpsr','steo'].includes(c.publication)||!day(c.from)||!day(c.to)||c.from>c.to||(Date.parse(c.to)-Date.parse(c.from))/86400000>366)fail('INVALID_CRITERIA')
+  if(!(v.contractVersion===EXPANDED_SCHEDULE_CONTRACT_VERSION?['wpsr','steo','gasdiesel','heatingoilpropane']:['wpsr','steo']).includes(c.publication)||!day(c.from)||!day(c.to)||c.from>c.to||(Date.parse(c.to)-Date.parse(c.from))/86400000>366)fail('INVALID_CRITERIA')
  }
  return structuredClone(v)
 }
@@ -95,13 +97,13 @@ export function assertCommodityResponse(v,expected){
       ||p.datasetId!==scope.datasetId||!scope.seriesIds.includes(p.dimensions?.series)||p.dimensions?.duoarea!==scope.geography
       ||!Array.isArray(p.measures)||p.measures.some(x=>!scope.fields.includes(x.field))||p.revisionStatus!=='PROVIDER_CURRENT_SNAPSHOT_NOT_VINTAGE')reject()
    }
-   else if(expected.contractVersion===DURABLE_SCHEDULE_CONTRACT_VERSION){if(!validScheduleStorageRights(m.consumerStorage))reject()}
+   else if([DURABLE_SCHEDULE_CONTRACT_VERSION,EXPANDED_SCHEDULE_CONTRACT_VERSION].includes(expected.contractVersion)){if(!validScheduleStorageRights(m.consumerStorage))reject()}
    else if(m.consumerStorage!==undefined)reject()
    if(v.family==='series-observations'&&(!text(p.datasetId)||!text(p.referencePeriod)||!text(p.frequency)||!plain(p.dimensions)||!Array.isArray(p.measures)||!p.measures.length||p.measures.some(x=>!text(x.field)||!scalar(x.value)||!(x.unit===null||text(x.unit)))||!time(p.observedAt)||!time(p.publishedAt)))reject()
    if(v.family==='positioning-observations'&&(!text(p.datasetId)||!text(p.reportDate)||!text(p.contractCode)||!plain(p.columns)||!Object.values(p.columns).every(scalar)||p.uniqueness!=='NOT_ASSERTED'||p.publicationAt!==null||p.unitBasis!=='PROVIDER_COLUMN_DEFINITION_REQUIRED'))reject()
    if(v.family==='publication-calendar'){
     if(scheduleVersion(expected.contractVersion)){
-     if(expected.contractVersion===DURABLE_SCHEDULE_CONTRACT_VERSION&&!closed(p,['kind','scheduleId','title','publicationRef','correlationKey','identityStatus','scheduledAt','scheduledUntil','dateOnly','localDateTime','timeZone','timePrecision','recurrence','referencePeriod','releaseStatus','scheduleStatus','sourceName','sourceUrl','officialSource','sourceUpdatedAt','lastVerifiedAt','standardSchedule','exception','sourceTiming','qualityFlags','actual','previous','forecast','publishedAt']))reject()
+     if([DURABLE_SCHEDULE_CONTRACT_VERSION,EXPANDED_SCHEDULE_CONTRACT_VERSION].includes(expected.contractVersion)&&!closed(p,['kind','scheduleId','title','publicationRef','correlationKey','identityStatus','scheduledAt','scheduledUntil','dateOnly','localDateTime','timeZone','timePrecision','recurrence','referencePeriod','releaseStatus','scheduleStatus','sourceName','sourceUrl','officialSource','sourceUpdatedAt','lastVerifiedAt','standardSchedule','exception','sourceTiming','qualityFlags','actual','previous','forecast','publishedAt']))reject()
      assertPublicationSchedule(p,reject)
     }
     else if(!text(p.scheduleId)||!text(p.title)||!time(p.scheduledAt)||!(p.dateOnly===null||text(p.dateOnly))||!(p.recurrence===null||text(p.recurrence))||p.kind!=='PUBLICATION_SCHEDULE'||p.releaseStatus!=='PROVIDER_SCHEDULE_ONLY')reject()

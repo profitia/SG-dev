@@ -169,7 +169,7 @@ export function publicationFilter(value={}){
  */
 export function publicationScheduleObservation(item){
  const p=item?.payload,m=item?.metadata,r=m?.consumerStorage
- if(!closedObject(p,['kind','scheduleId','title','publicationRef','correlationKey','identityStatus','scheduledAt','scheduledUntil','dateOnly','localDateTime','timeZone','timePrecision','recurrence','referencePeriod','releaseStatus','scheduleStatus','sourceName','sourceUrl','officialSource','sourceUpdatedAt','lastVerifiedAt','standardSchedule','exception','sourceTiming','qualityFlags','actual','previous','forecast','publishedAt'])||!m||m.contractVersion!=='1.3.0'||m.contractFamily!=='publication-calendar'||m.apiFamily!=='publication-calendar'
+ if(!closedObject(p,['kind','scheduleId','title','publicationRef','correlationKey','identityStatus','scheduledAt','scheduledUntil','dateOnly','localDateTime','timeZone','timePrecision','recurrence','referencePeriod','releaseStatus','scheduleStatus','sourceName','sourceUrl','officialSource','sourceUpdatedAt','lastVerifiedAt','standardSchedule','exception','sourceTiming','qualityFlags','actual','previous','forecast','publishedAt'])||!m||!['1.3.0','1.5.0'].includes(m.contractVersion)||m.contractFamily!=='publication-calendar'||m.apiFamily!=='publication-calendar'
   ||!['eia','commodities-sh'].includes(m.providerId)||p.kind!=='PUBLICATION_SCHEDULE'||p.releaseStatus!=='PROVIDER_SCHEDULE_ONLY'
   ||typeof p.publicationRef!=='string'||!p.publicationRef.length||p.publicationRef.length>256||typeof p.title!=='string'||!p.title.length
   ||!uuidPattern.test(m.usageReceiptRef??'')||!/^[a-f0-9]{64}$/.test(m.contentFingerprint??'')||!nullableText(p.referencePeriod)

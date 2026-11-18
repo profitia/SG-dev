@@ -407,6 +407,14 @@ test('BSDC continuity bootstrap preserves the old manifest and every original Ca
  }
  assert(calendarPredecessor(bsdcPhysical).record)
  assert(assertPrivateRecurringProvenance(legacyRecurringFixture.root))
+ // Also retain the separately authenticated original Calendar69 protocol assertion.
+ const calendarLegacy=fs.mkdtempSync(path.join(os.tmpdir(),'calendar-legacy-protocol-')),calendarCheckout=path.join(calendarLegacy,'source')
+ try{
+  execFileSync('git',['clone','--quiet','--shared','--no-checkout',root,calendarCheckout],{stdio:['ignore','pipe','pipe']})
+  execFileSync('git',['checkout','--quiet','--detach','69d02834e863a51506aa4f50fbeb20f7fda3575b'],{cwd:calendarCheckout,stdio:['ignore','pipe','pipe']})
+  assert(assertPrivateRecurringProvenance(calendarCheckout))
+ }finally{fs.rmSync(calendarLegacy,{recursive:true,force:true})}
+
 })
 
 test('BSDC activation authenticates exactly the approved four documents before old source traversal',()=>{

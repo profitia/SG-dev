@@ -1,0 +1,516 @@
+{
+  "schemaVersion": "EcrCompleteFunctionalOwnerActivation/1",
+  "status": "PROPOSED_NOT_ACTIVATED",
+  "taskId": "ARCHITECTURE-ECR-NOTIFICATIONS-COVERAGE-20261112",
+  "consumerTaskId": "SG2-MARKET-CALENDAR-NOTIFICATIONS-COVERAGE-20261112",
+  "repository": "profitia/SG-dev",
+  "environment": "development",
+  "applicationId": "profitia-economic-calendar-runtime-development",
+  "organisationId": "225e465b-8b89-467d-92d1-7fef61b555fe",
+  "contracts": {
+    "ecrPackage": "1.4.0",
+    "sourceHubPackage": "1.8.0",
+    "calendarProtocol": "1.5.0",
+    "previousCalendarProtocolsPreserved": [
+      "1.1.0",
+      "1.3.0"
+    ],
+    "numericProtocolUnchanged": "1.4.0",
+    "notificationProtocol": "profitia.economic-calendar-notifications/1.0.0",
+    "privateRegistryPackagesChanged": false
+  },
+  "store": {
+    "projectId": "delicate-sun-40631596",
+    "branchId": "br-withered-scene-b9p8s85h",
+    "databaseName": "economic_calendar_development",
+    "migrations": [
+      "apps/economic-calendar-runtime/migrations/004-notifications.sql",
+      "apps/economic-calendar-runtime/migrations/005-expanded-results.sql"
+    ],
+    "existingRoleSeparationPreserved": true,
+    "newOrdinaryRole": {
+      "name": "economic_calendar_development_delivery",
+      "login": true,
+      "inherit": false,
+      "superuser": false,
+      "bypassRls": false,
+      "createRole": false,
+      "createDb": false,
+      "replication": false,
+      "ownerMembership": false,
+      "permissions": [
+        "CONNECT economic_calendar_development",
+        "USAGE economic_calendar",
+        "EXECUTE notification_descriptor()",
+        "EXECUTE notification_claim(uuid,text)",
+        "EXECUTE notification_gate(uuid)",
+        "EXECUTE notification_begin(uuid,uuid,text,text)",
+        "EXECUTE notification_settle(uuid,uuid,text,text)",
+        "EXECUTE notification_provider_event(jsonb)"
+      ],
+      "directTableAccess": false,
+      "credential": "RANDOM_PROTECTED_OUTSIDE_GIT_AND_IDENTITY_RENDER_SECRET_ONLY"
+    },
+    "existingIngestAdditionalExecute": [
+      "qualify_reminders()",
+      "notification_health()"
+    ],
+    "privateData": "Per-user and organisation settings/outbox with forced RLS; no recipient email directory in ECR",
+    "emailPurposeExpiry": "Finite admission ending at the earlier of activation+30days and current ECR parent product/receiver validity; never extend an existing product or source grant",
+    "reminderPolicy": {
+      "instant": "ONE_HOUR_BEFORE",
+      "dateOnly": "09:00_IN_USER_TIME_ZONE_NOT_PROVIDER_RELEASE_TIME",
+      "lateCatchup": false
+    },
+    "migratorRole": "economic_calendar_development_migrator",
+    "roleCreation": "Existing neondb_owner creates only the named ordinary delivery login and grants CONNECT; existing admitted migrator installs schema, policy and function EXECUTE. No temporary ECR owner membership or expanded runtime authority."
+  },
+  "sourceHub": {
+    "projectId": "delicate-queen-44677134",
+    "branchId": "br-orange-salad-ba2llks7",
+    "databaseName": "neondb",
+    "serviceId": "srv-dbllmk0n74is73c2eptg",
+    "migration": "apps/platform-source-hub/migrations/011-expanded-ecr-results.sql",
+    "newExactSchedulePaths": [
+      "/petroleum/gasdiesel/schedule.php",
+      "/petroleum/heatingoilpropane/schedule.php"
+    ],
+    "preservedSchedulePaths": [
+      "/petroleum/supply/weekly/schedule.php",
+      "/outlooks/steo/release_schedule.php"
+    ],
+    "origin": "https://www.eia.gov",
+    "method": "GET",
+    "sourceId": "source-hub.eia.publication-calendar",
+    "continuity": "Calendar-only current-pair selection and exclusion of obsolete calendar native policies from renewal. Keep original010, exact old function guards, EXECUTE ACL, ordinary monitor, revocation, finite deadlines and all other source joins. Update only external/native/licence calendar fingerprints after the separately approved immutable replacement; all17 other fingerprints unchanged.",
+    "cacheRetentionSeconds": 0,
+    "otherConsumersChanged": false,
+    "activationFlag": "SOURCE_HUB_EIA_EXPANDED_SCHEDULES_ENABLED",
+    "changedAdmissionRows": [
+      "Revoke historical external/native pair:76e25fdd-7d49-4852-9ef8-84c9d25eeae1; preserve definitions/counters",
+      "Create exact replacement external/native pair:01f733b1-7fb7-4785-96ca-0d7fcb614637",
+      "CAS existing source_hub.provider_licences eia/publication-calendar source_policy_id and automatic version only",
+      "CAS three calendar continuity fingerprints only; preserve all17 others"
+    ],
+    "unchangedAdmissionRows": [
+      "profitia_ingestion.sources:source-hub.eia.publication-calendar",
+      "all existing grants and budgets"
+    ],
+    "migratorRole": "source_hub_development_migrator",
+    "scopeInstallation": "One transaction using its existing SET rights for profitia_ingestion_owner and source_hub_development_owner; no new membership. Preserve both exact transport rows, scoped rights and continuity fingerprints atomically.",
+    "additionalMigration": "apps/platform-source-hub/migrations/012-calendar-transport-continuity.sql",
+    "transportReplacement": {
+      "oldPolicyId": "76e25fdd-7d49-4852-9ef8-84c9d25eeae1",
+      "forwardPolicyId": "01f733b1-7fb7-4785-96ca-0d7fcb614637",
+      "rollbackPolicyId": "2be45ef5-1600-4258-95bc-08e113007362",
+      "operationSql": "apps/platform-source-hub/operations/replace-ecr-calendar-transport.sql",
+      "mode": "ONE_TRANSACTION_WHOLE_ROW_CAS_NO_UNRESOLVED_CALLS",
+      "historicalRows": "Retain both old rows, immutable definitions, exact admissions/calls; revoke native before its original parent. Never reset a historical counter.",
+      "newCounter": "The mandatory zero admissions belongs only to the newly admitted UNMETERED policy; source budgets and historical counts remain untouched.",
+      "sameExpiry": "Reuse the existing finite native expiry and unchanged UNMETERED parent terms; no extension by rotation. Existing separately admitted continuity remains revocable.",
+      "rollback": "Only if own forward pair is still current: install the exact rollback pair with the original two paths and current finite expiry; retain all previous policies/counters and preserve revocation. Never edit or reactivate immutable historical definitions."
+    }
+  },
+  "storageRights": {
+    "consumerApplicationId": "profitia-economic-calendar-runtime-development",
+    "provider": "eia",
+    "family": "series-observations",
+    "datasets": [
+      {
+        "datasetId": "petroleum/stoc/wstk",
+        "seriesIds": [
+          "WCESTUS1",
+          "WGTSTUS1",
+          "WDISTUS1",
+          "WKJSTUS1",
+          "WPRSTUS1",
+          "W_EPOOXE_SAE_NUS_MBBL"
+        ],
+        "fields": [
+          "value"
+        ],
+        "frequency": "weekly",
+        "geography": "NUS"
+      },
+      {
+        "datasetId": "petroleum/sum/sndw",
+        "seriesIds": [
+          "WCRFPUS2",
+          "WCRRIUS2",
+          "WPULEUS3"
+        ],
+        "fields": [
+          "value"
+        ],
+        "frequency": "weekly",
+        "geography": "NUS"
+      },
+      {
+        "datasetId": "petroleum/pri/gnd",
+        "seriesIds": [
+          "EMM_EPMR_PTE_NUS_DPG",
+          "EMD_EPD2D_PTE_NUS_DPG"
+        ],
+        "fields": [
+          "value"
+        ],
+        "frequency": "weekly",
+        "geography": "NUS"
+      },
+      {
+        "datasetId": "petroleum/pri/wfr",
+        "seriesIds": [
+          "W_EPD2F_PRS_NUS_DPG",
+          "W_EPD2F_PWR_NUS_DPG",
+          "W_EPLLPA_PRS_NUS_DPG",
+          "W_EPLLPA_PWR_NUS_DPG"
+        ],
+        "fields": [
+          "value"
+        ],
+        "frequency": "weekly",
+        "geography": "NUS"
+      }
+    ],
+    "totalSeries": 15,
+    "previousSeries": 2,
+    "retentionMode": "DURABLE_NO_FIXED_EXPIRY",
+    "redistribution": "PRIVATE_AUTHORISED_CONSUMER_ONLY",
+    "emailProjection": "Only current entitled account, explicit opt-in and verified primary mailbox; no mailing lists or public redistribution",
+    "globalSourceHubRetentionUnchanged": true,
+    "ownerOnlyWrites": [
+      "source_hub.result_consumer_storage",
+      "economic_calendar.result_storage_policies"
+    ],
+    "licenceRef": "source-hub-commodity-eia-series-observations-20261106",
+    "basisRef": "OWNER_ACCEPTED_ECR_COMPLETE_FUNCTIONAL_20261112",
+    "noNewPaidEndpoint": true
+  },
+  "curation": {
+    "path": "apps/economic-calendar-runtime/operations/expanded-semantic-bootstrap.json",
+    "entries": 17,
+    "concepts": 2,
+    "mappings": 2,
+    "measures": 13,
+    "historicalEntriesUnchanged": true
+  },
+  "identity": {
+    "projectId": "spring-bread-28217539",
+    "branchId": "br-sparkling-term-b99l107x",
+    "databaseName": "platform_private",
+    "runtimeRole": "identity_b1_runtime",
+    "serviceId": "srv-dbcse6jrjlhs73eib3sg",
+    "migration": "packages/platform-contracts/current-e1-authority/migrations/015-calendar-delivery.sql",
+    "purpose": "ECONOMIC_CALENDAR_NOTIFICATION_DELIVERY_ONLY",
+    "appOrigin": "https://dev-sg2.spendguru.app",
+    "additionalExecute": [
+      "calendar_delivery_descriptor()",
+      "calendar_delivery_identity(jsonb)",
+      "calendar_delivery_proof(jsonb,jsonb,text)",
+      "calendar_delivery_verify(jsonb)"
+    ],
+    "newProductOrUserOrServiceGrantRows": 0,
+    "currentAccountObservation": "One verified Clerk user observation per attempted mail; current E1 before HTTP, no permanent ALLOW cache",
+    "temporaryOwnerMembership": {
+      "operator": "neondb_owner",
+      "owner": "profitia_access_owner",
+      "scope": "ONE_TRANSACTION_RESTORE_EXACT_PRIOR_MEMBERSHIPS_BEFORE_COMMIT"
+    },
+    "protectedConfig": [
+      "IDENTITY_CALENDAR_DATABASE_URL",
+      "IDENTITY_CALENDAR_MAILGUN_WEBHOOK_SIGNING_KEY"
+    ],
+    "publicConfig": [
+      "IDENTITY_CALENDAR_DELIVERY_ENABLED",
+      "IDENTITY_CALENDAR_SCHEMA_DIGEST",
+      "IDENTITY_RUNTIME_EXPECTED_SOURCE_SHA"
+    ]
+  },
+  "mail": {
+    "provider": "Existing Mailgun transport in Identity",
+    "newAccountOrDomainOrSubscription": false,
+    "sender": "Existing admitted Identity sender and domain; unchanged",
+    "purposeTag": "calendar-notification-development",
+    "httpWebhookSigningKey": "Reuse existing account HTTP webhook signing key only; never substitute a sending/API key or rotate keys",
+    "webhookUrl": "https://identity-runtime-development.onrender.com/v1/webhooks/calendar-mailgun",
+    "events": [
+      "delivered",
+      "temporary_fail",
+      "permanent_fail"
+    ],
+    "configuration": "Add this endpoint to the delivered, temporary_fail and permanent_fail domain webhook sets without replacing any existing URLs; snapshot and exact rollback. These are Mailgun configuration names; failure payloads use event=failed and severity=temporary/permanent.",
+    "recipientAuthority": "Current E1 calendar read plus private preferences read, verified primary Clerk email, explicit per-user opt-in and separately enabled watch type",
+    "providerAcceptanceIsDelivery": false,
+    "confirmedArrival": "Required real test receipt in authorised owner mailbox, distinct from provider recipient-server acceptance",
+    "unknownSubmission": "No automatic resend; signed callback can reconcile outcome",
+    "metadata": "Opaque delivery UUID and lease UUID only, no user/org/email",
+    "testMode650IsDelivery": false,
+    "noMassMail": true,
+    "cost": "Reuse current plan; no purchase, upgrade or paid provider endpoint authorised. Usage-dependent mail/compute within existing limits; stop before a new paid obligation.",
+    "acceptanceRehearsal": {
+      "ownerUserId": "092c2d9f-a84b-4c18-b3d6-e172a61399b8",
+      "maximumMessages": 1,
+      "operation": "Owner-only qualify_delivery_rehearsal(uuid,uuid,text,text,uuid), after UI opt-in; unchanged real retained event and mandatory current E1 delivery proof",
+      "controlKey": "1c78ee05-bbf9-46f2-b120-d667281fc29d",
+      "label": "[TEST] WIADOMO\u015a\u0106 TESTOWA; no claim of a new actual result or revision",
+      "expiresAfterMinutes": 60,
+      "globalSourceRecordsChanged": false,
+      "runtimeGrantToRehearsalFunction": false
+    },
+    "officialWebhookContract": "https://documentation.mailgun.com/docs/mailgun/api-reference/send/mailgun/domain-webhooks/get-v3-domains--domain-name--webhooks--webhook-name-"
+  },
+  "synchronisation": {
+    "cronId": "crn-dbpmfgc9v7es73fb9e30",
+    "scheduleUtc": "*/15 * * * *",
+    "plan": "0.5c-512mb",
+    "newService": false,
+    "qualificationFlag": "ECR_NOTIFICATION_QUALIFICATION_ENABLED",
+    "preserveMonitoring": true,
+    "scheduleWindow": "35days past to330days future, inherited bounded window",
+    "observationsWindowDays": 21,
+    "perResponseLimit": 500,
+    "newJobs": [
+      {
+        "jobId": "eia-gasdiesel-schedule",
+        "provider": "eia",
+        "grantId": "e7de5248-bfba-4a6c-b1c4-8bd987cab70c",
+        "intervalSeconds": 86400,
+        "commandTemplate": {
+          "window": true,
+          "command": {
+            "contractVersion": "1.5.0",
+            "provider": "eia",
+            "family": "publication-calendar",
+            "operation": "calendar",
+            "criteria": {
+              "publication": "gasdiesel",
+              "from": "2026-11-12",
+              "to": "2027-11-12",
+              "limit": 1000
+            }
+          }
+        }
+      },
+      {
+        "jobId": "eia-heatingoilpropane-schedule",
+        "provider": "eia",
+        "grantId": "e7de5248-bfba-4a6c-b1c4-8bd987cab70c",
+        "intervalSeconds": 86400,
+        "commandTemplate": {
+          "window": true,
+          "command": {
+            "contractVersion": "1.5.0",
+            "provider": "eia",
+            "family": "publication-calendar",
+            "operation": "calendar",
+            "criteria": {
+              "publication": "heatingoilpropane",
+              "from": "2026-11-12",
+              "to": "2027-11-12",
+              "limit": 1000
+            }
+          }
+        }
+      },
+      {
+        "jobId": "eia-wpsr-supply-results",
+        "provider": "eia",
+        "grantId": "914144b8-e50e-4ed1-871d-82cf2820c36d",
+        "intervalSeconds": 604800,
+        "commandTemplate": {
+          "window": true,
+          "command": {
+            "contractVersion": "1.4.0",
+            "provider": "eia",
+            "family": "series-observations",
+            "operation": "observations",
+            "criteria": {
+              "path": "petroleum/sum/sndw",
+              "frequency": "weekly",
+              "data": [
+                "value"
+              ],
+              "facets": {
+                "series": [
+                  "WCRFPUS2",
+                  "WCRRIUS2",
+                  "WPULEUS3"
+                ],
+                "duoarea": [
+                  "NUS"
+                ]
+              },
+              "limit": 500
+            }
+          }
+        },
+        "resultCadence": "NEXT_MATCHING_PUBLICATION_PLUS_30_MINUTES_OR_DAILY_IF_PROVIDER_LAGS"
+      },
+      {
+        "jobId": "eia-gasdiesel-results",
+        "provider": "eia",
+        "grantId": "914144b8-e50e-4ed1-871d-82cf2820c36d",
+        "intervalSeconds": 604800,
+        "commandTemplate": {
+          "window": true,
+          "command": {
+            "contractVersion": "1.4.0",
+            "provider": "eia",
+            "family": "series-observations",
+            "operation": "observations",
+            "criteria": {
+              "path": "petroleum/pri/gnd",
+              "frequency": "weekly",
+              "data": [
+                "value"
+              ],
+              "facets": {
+                "series": [
+                  "EMM_EPMR_PTE_NUS_DPG",
+                  "EMD_EPD2D_PTE_NUS_DPG"
+                ],
+                "duoarea": [
+                  "NUS"
+                ]
+              },
+              "limit": 500
+            }
+          }
+        },
+        "resultCadence": "NEXT_MATCHING_PUBLICATION_PLUS_30_MINUTES_OR_DAILY_IF_PROVIDER_LAGS"
+      },
+      {
+        "jobId": "eia-heatingoilpropane-results",
+        "provider": "eia",
+        "grantId": "914144b8-e50e-4ed1-871d-82cf2820c36d",
+        "intervalSeconds": 604800,
+        "commandTemplate": {
+          "window": true,
+          "command": {
+            "contractVersion": "1.4.0",
+            "provider": "eia",
+            "family": "series-observations",
+            "operation": "observations",
+            "criteria": {
+              "path": "petroleum/pri/wfr",
+              "frequency": "weekly",
+              "data": [
+                "value"
+              ],
+              "facets": {
+                "series": [
+                  "W_EPD2F_PRS_NUS_DPG",
+                  "W_EPD2F_PWR_NUS_DPG",
+                  "W_EPLLPA_PRS_NUS_DPG",
+                  "W_EPLLPA_PWR_NUS_DPG"
+                ],
+                "duoarea": [
+                  "NUS"
+                ]
+              },
+              "limit": 500
+            }
+          }
+        },
+        "resultCadence": "NEXT_MATCHING_PUBLICATION_PLUS_30_MINUTES_OR_DAILY_IF_PROVIDER_LAGS"
+      }
+    ],
+    "updatedExistingJobs": [
+      "eia-wpsr-results: six exact stock series only"
+    ],
+    "newScheduler": false,
+    "maxJobsPerTick": 8,
+    "ordinaryBrowsingUpstreamCalls": 0
+  },
+  "releases": {
+    "exactAcceptedMainOnly": true,
+    "serviceIds": {
+      "ECR": "srv-dbpfpm3bc2fs73a2t740",
+      "SourceHub": "srv-dbllmk0n74is73c2eptg",
+      "Identity": "srv-dbcse6jrjlhs73eib3sg",
+      "SG2": "srv-dapa3tid0e5s73f8bc5g",
+      "existingCron": "crn-dbpmfgc9v7es73fb9e30"
+    },
+    "plansUnchanged": true,
+    "autoDeployOffPreserved": true,
+    "lastKnownGood": "Capture fresh service/deploy/config and all current exact release-binding rows before any activation; compare-and-swap every touched row. Never roll back a newer parallel release."
+  },
+  "sg2ReleaseBindings": {
+    "identityRoles": [
+      "sg2_benchmark_dispatch_development_runtime"
+    ],
+    "sourceRoles": [
+      "sg2_benchmark_source_development_runtime"
+    ],
+    "reports": "Preserve six existing admitted Reports references and eight public release configuration fields; change only release/decision reference and increasing versions; retain grants, counters, terms and all work orders",
+    "temporaryOwnerMemberships": [
+      "profitia_access_owner",
+      "profitia_ingestion_owner"
+    ],
+    "restoreMembershipsBeforeCommit": true,
+    "newBindingOrGrant": false
+  },
+  "activationOrder": [
+    "REQUIRED_EXACT_POLICY_SOURCE_PUBLIC_AND_RESULTING_MAIN_GATES",
+    "CAPTURE_LKG_AND_CAS_SNAPSHOTS",
+    "INSTALL_ADDITIVE_MIGRATIONS_AND_OWNER_SCOPED_RIGHTS_WITHOUT_SENDING",
+    "INSTALL_17_CURATED_ENTRIES_AND_ADMITTED_SYNC_JOBS",
+    "CREATE_ORDINARY_DELIVERY_ROLE_AND_INSTALL_TWO_PURPOSE_POLICIES",
+    "CONFIGURE_EXISTING_MAILGUN_SIGNED_WEBHOOKS_WITHOUT_REPLACING_EXISTING_ROUTES",
+    "CONTROLLED_SOURCEHUB_ECR_IDENTITY_CRON_SG2_RELEASE_AND_READINESS",
+    "ENABLE_ONLY_APPROVED_FLAGS_AND_EXPLICIT_OWNER_TEST_OPT_IN",
+    "REAL_SOURCE_READ_WRITE_READBACK_AND_SINGLE_RECIPIENT_EMAIL_ACCEPTANCE",
+    "REPLAY_DISABLE_REVOCATION_REGRESSION_AND_PMOS_PHR"
+  ],
+  "rollback": [
+    "DISABLE_NEW_EMAIL_AND_QUALIFICATION_FLAGS; revoke the two new purpose policies",
+    "PAUSE_ONLY_NEW_SYNC_JOBS_AND_RESTORE_UPDATED_JOB_USING_CAS",
+    "RESTORE_ONLY_NEW_SOURCE_RIGHTS_PATHS_AND_CONTINUITY_FINGERPRINTS_USING_CAS",
+    "REPLACE_OWN_CURRENT_CALENDAR_TRANSPORT_WITH_EXACT_ROLLBACK_PAIR; NEVER_EDIT_OR_REACTIVATE_IMMUTABLE_HISTORICAL_DEFINITIONS",
+    "RESTORE_CAPTURED_LKG_RELEASE_BINDINGS_CONFIG_AND_DEPLOYMENTS_ONLY_IF_STILL_OWNED_BY_THIS_ACTIVATION",
+    "RESTORE_MAILGUN_WEBHOOK_URL_SETS_EXACTLY; preserve all other purposes",
+    "DISABLE_NEW_ORDINARY_DELIVERY_LOGIN; retain audit/outbox/receipts and data; never reset delivery states or source counters"
+  ],
+  "newInfrastructure": false,
+  "newPaidSubscription": false,
+  "newProviderCredentials": false,
+  "stagingProduction": false,
+  "runtimeActivationByThisDocument": false,
+  "currentKnownLimitations": [
+    "Trading Economics economic-calendar probe through ECR SERVICE was PROVIDER_FORBIDDEN; this plan does not claim or activate macro coverage",
+    "Two new EIA schedule rules retain explicit uncertainty and official holiday overrides; unknown release times are not invented",
+    "Numeric history is the current bounded provider snapshot and subsequently observed changes, never a reconstructed vintage archive",
+    "Original same-ID transport path update was rejected by the existing immutable native contract; the exact Source owner correction is required before installing012 or enabling new schedule paths."
+  ],
+  "sourceDigests": {
+    "apps/economic-calendar-runtime/migrations/004-notifications.sql": "a4e906882a95700b1711ae4bf032a7762348b3fdfde83f18991e7c05f633ee74",
+    "apps/economic-calendar-runtime/migrations/005-expanded-results.sql": "8f57d75fcade1e464ed4c337c76de6350c7a672fc8cd6d9f13052fb0c26d05d8",
+    "apps/platform-source-hub/migrations/011-expanded-ecr-results.sql": "ddb153d529dfcab0db41d00bf051fb0d301ab0f432d80a51beb417aaf1916521",
+    "packages/platform-contracts/current-e1-authority/migrations/015-calendar-delivery.sql": "f561b9bcd369886d3db6210d3411e626ad64cd3d2a763a0e5d8f99afd066f68e",
+    "apps/economic-calendar-runtime/operations/expanded-semantic-bootstrap.json": "ca7bf3046850011ee3aa050059b3630ed6d380c0d40009d72afd44de504a289a",
+    "apps/platform-source-hub/migrations/012-calendar-transport-continuity.sql": "056bc25c1cb45769645255aa17f8093308e77f257ee052ed452c4c07cb0b64d1",
+    "apps/platform-source-hub/operations/replace-ecr-calendar-transport.sql": "d217e6fd46e03341e63f2c0e587c0c68fb4ee183c3b001c8d077f6e2e144adcd"
+  },
+  "calendarStorageRights": {
+    "consumerApplicationId": "profitia-economic-calendar-runtime-development",
+    "provider": "eia",
+    "family": "publication-calendar",
+    "publicationRefs": [
+      "eia:wpsr",
+      "eia:steo",
+      "eia:gasdiesel",
+      "eia:heatingoilpropane"
+    ],
+    "licenceRef": "source-hub-eia-official-publication-schedules-20261109",
+    "retentionMode": "DURABLE_NO_FIXED_EXPIRY",
+    "redistribution": "PRIVATE_AUTHORISED_CONSUMER_ONLY",
+    "ownerOperations": [
+      "CAS set_calendar_consumer_storage for existing EIA row only",
+      "CAS economic_calendar.set_storage_policy for existing EIA row only"
+    ],
+    "basisRef": "OWNER_ACCEPTED_ECR_COMPLETE_FUNCTIONAL_20261112",
+    "preserveHistoricalRowsAndOtherProviders": true,
+    "sourceHubCacheRetentionSeconds": 0
+  },
+  "previousOwnerApprovedPlanSha256": "0c38819cd1657b7ad22e5314649b61744ac8b38d262e29730e6acde7845f0bc3"
+}
