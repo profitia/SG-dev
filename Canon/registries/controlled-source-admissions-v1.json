@@ -850,10 +850,10 @@
       "taskId": "SG2-PI-TECHNOLOGY-E2E-20261117",
       "targetEnvironment": "development",
       "scope": "SOURCE_VALIDATION_ONLY",
-      "approvalRef": "owner-decision:01a1e7fd-01d1-7973-b3c3-8188664826c3:PI-DAD96-12-SOURCE-VALIDATION-20261117",
-      "sourceSha": "dad96a19026c1394d5b3be104d94629498acae5e",
-      "baseSha": "4508ed41b8d3300658e92a95110fb626e13d077c",
-      "validFrom": "2026-11-17T18:45:19.480Z",
+      "approvalRef": "owner-decision:01a1e7fd-01d1-7973-b3c3-8188664826c3:PI-82558-13-SOURCE-VALIDATION-20261117",
+      "sourceSha": "82558b2c6a1c007e851fea8cf17ee97e4cdde562",
+      "baseSha": "936eaa61087516028564c6aaad2c46912b4729f7",
+      "validFrom": "2026-11-17T21:07:24.674661Z",
       "validUntil": "2026-11-23T22:59:00.000Z",
       "files": [
         {
@@ -912,7 +912,7 @@
         },
         {
           "path": "apps/sg-runtime/procurement-insights-e2e-continuation.json",
-          "blob": "0d01de01c6cd054dd42add564b1b41a1add010d0",
+          "blob": "0b167c44843dd2b373019fbde4541da34e600458",
           "mode": "100644",
           "status": "added",
           "projectKey": "SG2",
@@ -921,7 +921,7 @@
         },
         {
           "path": "apps/sg-runtime/tests/assistant-notifications-integrity.mjs",
-          "blob": "e7892919d09ffa5c8b3ee73acd6404a99d58bf39",
+          "blob": "a1f3a124b193c8a6cb5a72e1d15a9fc00d8cfbb9",
           "mode": "100644",
           "status": "modified",
           "projectKey": "SG2",
@@ -942,6 +942,15 @@
           "blob": "bbc222ac4c4f61b1b154e1b1004ed13d60e247f4",
           "mode": "100644",
           "status": "added",
+          "projectKey": "SG2",
+          "owner": "SG Runtime",
+          "surfaceId": "SG2-BASE-001"
+        },
+        {
+          "path": "apps/sg-runtime/tests/procurement-insights-editorial-integrity.test.mjs",
+          "blob": "a3e34dfa5118a8fe175eb6109ed71975329e414d",
+          "mode": "100644",
+          "status": "modified",
           "projectKey": "SG2",
           "owner": "SG Runtime",
           "surfaceId": "SG2-BASE-001"
