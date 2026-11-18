@@ -1,0 +1,50 @@
+{
+  "status": "PROPOSED_NOT_ACTIVE",
+  "sourceSha": "073808bd1d7129f80734a0494204033a9b656687",
+  "policySha": "c4248d8803f0e60623ace8b59a491a5e84c533fc",
+  "preserveAllEarlierApprovals": true,
+  "approvalRequestedFor": "Exact source and protected policy deltas, including unchanged assertion historical-fixture correction; normal integration preserving complete own diff, upstream ownership and mandatory exact-candidate proof.",
+  "prerequisites": [
+    {
+      "owner": "Platform Knowledge",
+      "source": "2706f13a5fb37a45daf4aea7be5e9d88ee7e4024",
+      "policy": "b3838a8bdf80ceb3b36a478ba264e79c7be8a036",
+      "mustBeActuallyAcceptedBeforeCalendarPolicyAdoption": true,
+      "mayUseNormalIdenticalByteTransportRefresh": true,
+      "calendarSourceMergeRequiresRuntimeWindowHandoff": true,
+      "condition": "PK460 actual-main graph remains unchanged during their migration/activation/E2E/recovery; coordinate a concrete completed handoff before Calendar source merge."
+    }
+  ],
+  "sequence": [
+    "Refresh actual main, read applicable active instructions and project PMOS state, preserve active finite CI46 record and all accepted parallel changes. Coordinate a concrete short integration window; no indefinite global hold.",
+    "After Calendar owner approval publish only the exact original proposed source input history on an inactive branch so trusted CI can authenticate Git objects; this is not source acceptance or activation.",
+    "Refresh policy onto actual main using ordinary merge with exact source/policy ancestry. Verify the entire own two-file policy delta equals the reviewed full-index patch; any changed own bytes or broader rules need a new proper decision.",
+    "Open/update an internal policy PR; run approved validate-sg2 from trusted main for its exact current HEAD. Independently verify the original artifact ZIP, whole-run success, exact SHA, current ten policy files and all source/execution before/after checks. Complete every required public owner CI.",
+    "Normal expected-head merge policy; independently validate resulting main and original proof with current policy. No earlier PASS substitutes for this exact release of the policy.",
+    "After actual PK source acceptance AND coordinated completion/handoff of its migration/activation/E2E window, refresh the complete ECR/SG2 source containing original PR1063/1064 inputs, exact0738 and accepted PK correction. Preserve all82 own path/blob/status/mode/ownership entries and the whole diff. Use original PR1063 producer branch identity unless canon admits an unchanged alternative.",
+    "Run current trusted-main controlled CI for the exact complete source HEAD, verify original artifact and every mandatory public owner check, normal expected-head merge, then validate resulting main with the actual accepted policy.",
+    "Read the five current Development deployments, configuration versions, retained rollback builds, database migration compatibility and six Reports/Finder binding metadata with whole-row CAS. Preserve newly accepted parallel runtime as Last Known Good.",
+    "Obtain the separately required concrete exact accepted-main release GO after fresh full LKG. Use only the existing frozen operations plan and named Development resources. Do not infer an unknown future release SHA from this compatibility decision.",
+    "Execute approved additive migrations, curation, finite scoped policies and ordinary delivery role, secure Mailgun configuration and three signed webhook routes; deploy the five exact-SHA resources and activate only permitted Calendar flags.",
+    "Accept LIVE: all15 real EIA series and4 official schedules through SourceHub/ECR/SG2, browser user flow, one labeled opt-in email to the agreed verified mailbox, signed DELIVERED plus actual receipt, no duplicate on replay and no sends after opt-out/revocation.",
+    "Only after factual acceptance record deployed SHA, deployment IDs, original CI and live evidence; close the correct producer/consumer PMOS and independent PHR/MEMOROS requirements with publication and readback."
+  ],
+  "sourceRefreshConditions": {
+    "keepExactOriginalSourceInAncestry": true,
+    "includeCurrentAuthorityMain": true,
+    "entireOwnReviewedDiffIdentical": true,
+    "noRewriteHistoricalReceipts": true,
+    "noForcePushOrOurMergeForForeignSource": true,
+    "newAttemptRequiresNewExactCandidateProof": true,
+    "changedOwnSourceOrPolicyOutsideApprovalRequiresDecision": true
+  },
+  "productScopeUnchanged": {
+    "EIA_series": 15,
+    "officialSchedules": 4,
+    "realEmailCountMax": 1,
+    "targetEnvironment": "development",
+    "newStageOrProductionScope": false
+  },
+  "releaseGoProvidedByThisPacket": false,
+  "runtimeActivationByDocument": false
+}

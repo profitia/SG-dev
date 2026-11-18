@@ -1,0 +1,145 @@
+{
+  "status": "PRIVATE_PREDEPLOYMENT_PASS_NOT_CANONICAL_GITHUB_CI",
+  "sourceSha": "073808bd1d7129f80734a0494204033a9b656687",
+  "policySha": "c4248d8803f0e60623ace8b59a491a5e84c533fc",
+  "fullController": [
+    {
+      "label": "policy-context",
+      "root": "/tmp/calendar-final-r5-fixture-v3-policy-context-immutable-validation-20261118",
+      "sha": "c4248d8803f0e60623ace8b59a491a5e84c533fc",
+      "tree": "04d96e0dd665b083fb1170c1552f24109ecf4d07",
+      "source": "073808bd1d7129f80734a0494204033a9b656687",
+      "policy": "c4248d8803f0e60623ace8b59a491a5e84c533fc",
+      "exit": 0,
+      "inputUnchanged": true,
+      "headAfter": "c4248d8803f0e60623ace8b59a491a5e84c533fc",
+      "treeAfter": "04d96e0dd665b083fb1170c1552f24109ecf4d07",
+      "dirty": "",
+      "summary": [
+        "\u2139 tests 348",
+        "\u2139 pass 348",
+        "\u2139 fail 0",
+        "\u2139 skipped 0"
+      ],
+      "failures": []
+    },
+    {
+      "label": "source-context",
+      "root": "/tmp/calendar-final-r5-fixture-v3-source-context-immutable-validation-20261118",
+      "sha": "7ff23244b7db5c7e7e119c001d905a5249cf956b",
+      "tree": "5812000603d8dac58a06c74b7fea2ad6ab9b037e",
+      "source": "073808bd1d7129f80734a0494204033a9b656687",
+      "policy": "c4248d8803f0e60623ace8b59a491a5e84c533fc",
+      "exit": 0,
+      "inputUnchanged": true,
+      "headAfter": "7ff23244b7db5c7e7e119c001d905a5249cf956b",
+      "treeAfter": "5812000603d8dac58a06c74b7fea2ad6ab9b037e",
+      "dirty": "",
+      "summary": [
+        "\u2139 tests 348",
+        "\u2139 pass 348",
+        "\u2139 fail 0",
+        "\u2139 skipped 0"
+      ],
+      "failures": []
+    }
+  ],
+  "sourceIntegrity": {
+    "exit": 0,
+    "source": "073808bd1d7129f80734a0494204033a9b656687",
+    "headAfter": "073808bd1d7129f80734a0494204033a9b656687",
+    "treeAfter": "04f3c607b0552cf9d9a45784b53bad2302e75906",
+    "inputUnchanged": true,
+    "dirty": "",
+    "files": 24,
+    "summary": [
+      "\u2139 tests 282",
+      "\u2139 pass 282",
+      "\u2139 fail 0",
+      "\u2139 skipped 0"
+    ],
+    "failures": [],
+    "deferredToActualOwnerCi": {
+      "apps/sg-runtime/tests/pci-smart-integrity.test.mjs": "Canonical SG2 TS/private dependency runner required; no CLI substitute claimed",
+      "apps/sg-runtime/tests/private-host.integration.test.mjs": "Canonical SG2 private Prisma dependency runner required; no local full owner claim",
+      "scripts/governance/platform-source-hub-foundation.test.mjs": "Requires final matching PK controlled policy; R4 correctly rejects new PK record"
+    }
+  },
+  "remaining16GovernanceFilesIncludingSourceHubFoundation": {
+    "exit": 0,
+    "head": "7ff23244b7db5c7e7e119c001d905a5249cf956b",
+    "tree": "5812000603d8dac58a06c74b7fea2ad6ab9b037e",
+    "files": [
+      "scripts/governance/assistant-quality-routing.test.mjs",
+      "scripts/governance/controlled-package-ci-path-coverage.test.mjs",
+      "scripts/governance/development-bridge.test.mjs",
+      "scripts/governance/development-execution.test.mjs",
+      "scripts/governance/development-workspace.test.mjs",
+      "scripts/governance/ecr-routing.test.mjs",
+      "scripts/governance/governance.test.mjs",
+      "scripts/governance/identity-runtime-onboarding.test.mjs",
+      "scripts/governance/krs-registry-routing.test.mjs",
+      "scripts/governance/package-limits-routing.test.mjs",
+      "scripts/governance/platform-knowledge-ci-admission.test.mjs",
+      "scripts/governance/platform-knowledge-routing.test.mjs",
+      "scripts/governance/platform-source-hub-foundation.test.mjs",
+      "scripts/governance/sg2-staging-release.test.mjs",
+      "scripts/governance/srm-adp-routing.test.mjs",
+      "scripts/governance/srm-release-lifecycle.test.mjs"
+    ],
+    "inputUnchanged": true,
+    "summary": [
+      "\u2139 tests 347",
+      "\u2139 pass 347",
+      "\u2139 fail 0",
+      "\u2139 skipped 0"
+    ],
+    "failures": []
+  },
+  "logsSha256": {
+    "owner1161-final-r5-fixture-v3-policy-context-controller.log": "df6008bf1d2f181c1c06c8edc96435ab1d7efa288ed66f52fbc0b7c73b78eb91",
+    "owner1161-final-r5-fixture-v3-source-context-controller.log": "b5850e420048fc42a992b900022fdeaa1c79707dcea0d96e813a635379e34422",
+    "owner1161-pk2706-source0738-immutable-validation.log": "32c5fae298b17956f47a25da99e14ded4d9937d4e531fc78fdcf98655a89f05a",
+    "owner1161-final-r5-fixture-v3-other-governance.log": "d71231cc711cbe5ad1c1e265698802d4af013a5783dbc8cf4319cf0105cc4652"
+  },
+  "privateTestsNotUniqueAggregate": true,
+  "earlierAttemptsPreserved": [
+    {
+      "input": "482127d0039875b17cb8daf42eecc98d44bbe60a",
+      "result": "347PASS1FAIL0SKIP",
+      "cause": "One remaining legacy Maps test read used actual combined root; finalc424 binds the exact accepted fixture, without changing assertions."
+    },
+    {
+      "input": "4dc20a032d92b33103659ec86f17edc103d75f0f",
+      "context": "policy",
+      "result": "348PASS0FAIL0SKIP"
+    },
+    {
+      "input": "ced07165809339f60fa71adebe663f963945c55e",
+      "context": "combined before historical-fixture correction",
+      "result": "338PASS10FAIL0SKIP",
+      "cause": "Legacy-only current-root calls rejected later composed Calendar record; unchanged input and refusal retained."
+    },
+    {
+      "result": "One mutable-source local run was invalidated when its input was merged before completion; retained INVALIDATED, never used as PASS or regression proof."
+    }
+  ],
+  "historicalFunctionalRegression": {
+    "source": "80e151c1317fba7d7cb3a75c2d81b2afad7e7f17",
+    "database": "PostgreSQL16.16, separate fresh synthetic clusters",
+    "ECR_passed": 52,
+    "Identity_passed": 393,
+    "SourceHub_passed": 139,
+    "threeBuilds": "PASS",
+    "limitation": "Earlier original-source evidence only; never substitutes current exact GitHub jobs."
+  },
+  "stillMandatory": [
+    "Full current exact trusted-main CI and original artifacts for policy and source",
+    "All public owner CI including native SG2 private dependency/TS runner",
+    "Resulting-main proof",
+    "Exact accepted-main release GO after full fresh LKG",
+    "Real Development activation,15/4 data,email,negative acceptance,PMOS/PHR"
+  ],
+  "productMutationsPerformed": false,
+  "observedAt": "2026-11-18T11:59:54.954694+00:00"
+}

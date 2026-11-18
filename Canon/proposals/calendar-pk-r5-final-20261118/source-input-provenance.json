@@ -1,0 +1,63 @@
+{
+  "status": "PROPOSED_NOT_ACTIVE",
+  "targetEnvironment": "development",
+  "sourceSha": "073808bd1d7129f80734a0494204033a9b656687",
+  "sourceTree": "04f3c607b0552cf9d9a45784b53bad2302e75906",
+  "policySha": "c4248d8803f0e60623ace8b59a491a5e84c533fc",
+  "policyTree": "04d96e0dd665b083fb1170c1552f24109ecf4d07",
+  "originalApprovedSource": "80e151c1317fba7d7cb3a75c2d81b2afad7e7f17",
+  "originalApprovedPolicy": "615be4788ad5784eb79e44e30139100ecebb4646",
+  "originalCompleteFunctionalInput": "69d02834e863a51506aa4f50fbeb20f7fda3575b",
+  "upstreamPkSource": "2706f13a5fb37a45daf4aea7be5e9d88ee7e4024",
+  "upstreamPkPolicy": "b3838a8bdf80ceb3b36a478ba264e79c7be8a036",
+  "actualMainObserved": "dc0e78339c39359ff187346b7a323c29863365c6",
+  "ownSourcePathCount": 82,
+  "projectOwnership": {
+    "ARCHITECTURE": 66,
+    "SG2": 16,
+    "SRM": 0
+  },
+  "combinedCurrentGraphSourcePaths": 562,
+  "changedOwnPathsSince80": [
+    {
+      "path": "apps/architecture-lab/calendar-current-main-source.json",
+      "approved80Blob": "5328e24c42076178d125f504ea5173846d0982e7",
+      "proposed0738Blob": "f2a766dde39d5f7511ae3a3e1636641a16a2abef"
+    },
+    {
+      "path": "apps/architecture-lab/calendar-current-main-source.mjs",
+      "approved80Blob": "ea9d97d7f5bb871230d7b0b25c0763db12ef7743",
+      "proposed0738Blob": "290a475b195eec1e2c2004be954ca000dcdb01b7"
+    },
+    {
+      "path": "apps/architecture-lab/knowledge-source.mjs",
+      "approved80Blob": "c260038908014e90deed5cec87d19fb9205cdea3",
+      "proposed0738Blob": "2c32439c34a408c32b4254ffe2ed9072a2ad38e6"
+    },
+    {
+      "path": "apps/architecture-lab/private-recurring-source.mjs",
+      "approved80Blob": "11bab266307dae2fe784c084e3fbfc990e4a991c",
+      "proposed0738Blob": "66d0208858cee84caeeb3d994dea293b46c74acc"
+    },
+    {
+      "path": "apps/architecture-lab/test/calendar-current-main-source.test.mjs",
+      "approved80Blob": "2608e12fc9a2df2131026062adec12bd8cb78e4a",
+      "proposed0738Blob": "c4f81b6d6477c094f097ce8f2178aee31a4060e5"
+    },
+    {
+      "path": "apps/architecture-lab/test/knowledge-source.test.mjs",
+      "approved80Blob": "f24dc4da8e1deb00ecb7b819a0d660949d69a69e",
+      "proposed0738Blob": "df8dbbdc5bee1878c893c6d88ea846fc7d214204"
+    }
+  ],
+  "functionalPlan": {
+    "path": "apps/economic-calendar-runtime/operations/complete-functional-owner-plan.json",
+    "sha256": "e43b5d49abef12818956f2195f0b11225fa4aef28d4fb1f2895900f8d721be9c",
+    "unchanged": true,
+    "exactAcceptedMainOnly": true
+  },
+  "functionalRuntimeAndSqlChangesBeyondApproved80": false,
+  "allOriginalReviewsAndReceiptsPreserved": true,
+  "privatePredeploymentOnly": true,
+  "normalTransportRefreshAllowedOnlyWithIdenticalWholeOwnDiffAndFreshExactCi": true
+}
