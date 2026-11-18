@@ -1609,6 +1609,371 @@
           "surfaceId": "SG2-BASE-020"
         }
       ]
+    },
+    {
+      "id": "ARCHITECTURE:ARCH-FINDER-UNMETERED-CONTRACT-20261118",
+      "status": "ACTIVE",
+      "repository": "profitia/SG-dev",
+      "actor": "profitia",
+      "taskId": "ARCH-FINDER-UNMETERED-CONTRACT-20261118",
+      "targetEnvironment": "development",
+      "scope": "SOURCE_VALIDATION_ONLY",
+      "approvalRef": "owner:chat:01a1e92f-cd84-7a92-97d7-36d3fbc49ef0:20261118:finder-ci-approved-7edf89c0-cba7412b",
+      "sourceSha": "7edf89c07502bc331f5d4966c961f7eb1058b51a",
+      "baseSha": "a34dcdfc2b4e9c83e0112435a344d586d8c51d16",
+      "validFrom": "2026-11-18T14:46:57.368Z",
+      "validUntil": "2026-11-19T22:59:00.000Z",
+      "files": [
+        {
+          "path": "apps/architecture-lab/benchmark-unmetered-source.json",
+          "blob": "1995ff7a85556d980f8add3d72d41e109a319bbe",
+          "mode": "100644",
+          "status": "added",
+          "projectKey": "ARCHITECTURE",
+          "owner": "Architecture Platform",
+          "surfaceId": "ARCH-BASE-002"
+        },
+        {
+          "path": "apps/architecture-lab/test/sdk-compatibility.test.mjs",
+          "blob": "3a0cd271d255cd5bba395f50d6328c4b6f10d378",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "ARCHITECTURE",
+          "owner": "Architecture Platform",
+          "surfaceId": "ARCH-BASE-002"
+        },
+        {
+          "path": "packages/platform-contracts/README.md",
+          "blob": "fca4046621d6788ab5729a07738d8876b7bc9596",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "ARCHITECTURE",
+          "owner": "Architecture Platform",
+          "surfaceId": "ARCH-BASE-001"
+        },
+        {
+          "path": "packages/platform-contracts/current-fresh-report/test/current-fresh-report.test.mjs",
+          "blob": "d697c78a79a36cacf5c8045d84939952dc24d668",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "ARCHITECTURE",
+          "owner": "Architecture Platform",
+          "surfaceId": "ARCH-BASE-001"
+        },
+        {
+          "path": "packages/platform-contracts/migrations/access/034-unmetered-benchmark-requests.sql",
+          "blob": "78029433d8e6634b29837e3bc3c41c5ea25879e7",
+          "mode": "100644",
+          "status": "added",
+          "projectKey": "ARCHITECTURE",
+          "owner": "Architecture Platform",
+          "surfaceId": "ARCH-BASE-001"
+        },
+        {
+          "path": "packages/platform-contracts/migrations/access/035-source-technical-continuity.sql",
+          "blob": "112162e2d516326e2615ef7d07eee46d3c702875",
+          "mode": "100644",
+          "status": "added",
+          "projectKey": "ARCHITECTURE",
+          "owner": "Architecture Platform",
+          "surfaceId": "ARCH-BASE-001"
+        },
+        {
+          "path": "packages/platform-contracts/readonly-miss-report/test/readonly-miss-report.test.mjs",
+          "blob": "85e07cc53e5b7c1bc8f258ad32023e9bfd4a581e",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "ARCHITECTURE",
+          "owner": "Architecture Platform",
+          "surfaceId": "ARCH-BASE-001"
+        },
+        {
+          "path": "packages/platform-contracts/src/external-call.mjs",
+          "blob": "0adbcbc84466ca0484a458816d243b5f28973288",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "ARCHITECTURE",
+          "owner": "Architecture Platform",
+          "surfaceId": "ARCH-BASE-001"
+        },
+        {
+          "path": "packages/platform-contracts/src/operation-context.d.mts",
+          "blob": "6807cafb88bafb322dd104d43a96f0188c765a41",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "ARCHITECTURE",
+          "owner": "Architecture Platform",
+          "surfaceId": "ARCH-BASE-001"
+        },
+        {
+          "path": "packages/platform-contracts/src/operation-context.mjs",
+          "blob": "1856e05d3af0d2510fb000e41128fd9e14e194f9",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "ARCHITECTURE",
+          "owner": "Architecture Platform",
+          "surfaceId": "ARCH-BASE-001"
+        },
+        {
+          "path": "packages/platform-contracts/src/platform-ingestion.d.mts",
+          "blob": "0a26da96ad40279edd0d82f024cb09fd29d5504a",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "ARCHITECTURE",
+          "owner": "Architecture Platform",
+          "surfaceId": "ARCH-BASE-001"
+        },
+        {
+          "path": "packages/platform-contracts/src/platform-ingestion.mjs",
+          "blob": "9d56480b553ce6b11a35d165fadd3bdd96554807",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "ARCHITECTURE",
+          "owner": "Architecture Platform",
+          "surfaceId": "ARCH-BASE-001"
+        },
+        {
+          "path": "packages/platform-contracts/src/private-operation-host.d.mts",
+          "blob": "114b2eb958ea2177632eaa22802ec78f3ecdc068",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "ARCHITECTURE",
+          "owner": "Architecture Platform",
+          "surfaceId": "ARCH-BASE-001"
+        },
+        {
+          "path": "packages/platform-contracts/src/private-operation-host.mjs",
+          "blob": "c5db72d7c73b809cbe21d7d9fc57f6dd1741fa10",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "ARCHITECTURE",
+          "owner": "Architecture Platform",
+          "surfaceId": "ARCH-BASE-001"
+        },
+        {
+          "path": "packages/platform-contracts/src/request-ledger.d.mts",
+          "blob": "0063c25585f39a757121dc8e84a9a1ff454bd719",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "ARCHITECTURE",
+          "owner": "Architecture Platform",
+          "surfaceId": "ARCH-BASE-001"
+        },
+        {
+          "path": "packages/platform-contracts/src/request-ledger.mjs",
+          "blob": "df49251e17d7ccd0e99d88e1c383fb5b3f2767fd",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "ARCHITECTURE",
+          "owner": "Architecture Platform",
+          "surfaceId": "ARCH-BASE-001"
+        },
+        {
+          "path": "packages/platform-contracts/test/assistant-reservation-source.mjs",
+          "blob": "969b4dbf33a79e05371605cf485d222d372d4b06",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "ARCHITECTURE",
+          "owner": "Architecture Platform",
+          "surfaceId": "ARCH-BASE-001"
+        },
+        {
+          "path": "packages/platform-contracts/test/assistant-reservation-source.test.mjs",
+          "blob": "39165f91eb171f435f9c2678c2c0b60f3ac8b982",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "ARCHITECTURE",
+          "owner": "Architecture Platform",
+          "surfaceId": "ARCH-BASE-001"
+        },
+        {
+          "path": "packages/platform-contracts/test/benchmark-unmetered-source.mjs",
+          "blob": "5508b0ecd5b3c2afb15b612ee0f6fe4857969991",
+          "mode": "100644",
+          "status": "added",
+          "projectKey": "ARCHITECTURE",
+          "owner": "Architecture Platform",
+          "surfaceId": "ARCH-BASE-001"
+        },
+        {
+          "path": "packages/platform-contracts/test/benchmark-unmetered-source.test.mjs",
+          "blob": "d9884e1c3b58c6d715a5f1c07989c23e92d91b4c",
+          "mode": "100644",
+          "status": "added",
+          "projectKey": "ARCHITECTURE",
+          "owner": "Architecture Platform",
+          "surfaceId": "ARCH-BASE-001"
+        },
+        {
+          "path": "packages/platform-contracts/test/private-operation-host.test.mjs",
+          "blob": "b79ce3d64361fcbfd80a4d387648437d45a7dee3",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "ARCHITECTURE",
+          "owner": "Architecture Platform",
+          "surfaceId": "ARCH-BASE-001"
+        },
+        {
+          "path": "packages/platform-contracts/test/source-technical-continuity.integration.test.mjs",
+          "blob": "594e37922d1ef42bafb510fe713a609a8744ecbd",
+          "mode": "100644",
+          "status": "added",
+          "projectKey": "ARCHITECTURE",
+          "owner": "Architecture Platform",
+          "surfaceId": "ARCH-BASE-001"
+        },
+        {
+          "path": "packages/platform-contracts/test/unmetered-benchmark-requests.integration.test.mjs",
+          "blob": "c829743e2e31f8f306df2f2b8a3459e5e9f58e08",
+          "mode": "100644",
+          "status": "added",
+          "projectKey": "ARCHITECTURE",
+          "owner": "Architecture Platform",
+          "surfaceId": "ARCH-BASE-001"
+        }
+      ]
+    },
+    {
+      "id": "SG2:SG2-FINDER-PERMANENT-UNMETERED-20261118",
+      "status": "ACTIVE",
+      "repository": "profitia/SG-dev",
+      "actor": "profitia",
+      "taskId": "SG2-FINDER-PERMANENT-UNMETERED-20261118",
+      "targetEnvironment": "development",
+      "scope": "SOURCE_VALIDATION_ONLY",
+      "approvalRef": "owner:chat:01a1e92f-cd84-7a92-97d7-36d3fbc49ef0:20261118:finder-ci-approved-7edf89c0-cba7412b",
+      "sourceSha": "cba7412bca5e2cbbdab2d573ec394c9adf55fec3",
+      "baseSha": "53691e907e4cc9b7fbf683c91bbebf41299e9ccc",
+      "validFrom": "2026-11-18T14:46:57.370Z",
+      "validUntil": "2026-11-19T22:59:00.000Z",
+      "files": [
+        {
+          "path": "apps/sg-runtime/deployment/benchmark-discovery-targets.json",
+          "blob": "898e3742590767d14a6059530e4062a624a942f6",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SG2",
+          "owner": "SG Runtime",
+          "surfaceId": "SG2-BASE-001"
+        },
+        {
+          "path": "apps/sg-runtime/instrumentation.ts",
+          "blob": "67d35dddf29d07233bdfa6056b1b685db3f687e2",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SG2",
+          "owner": "SG Runtime",
+          "surfaceId": "SG2-BASE-001"
+        },
+        {
+          "path": "apps/sg-runtime/lib/benchmark/discovery-api.ts",
+          "blob": "91caab27e703ddd7d4f555fd41b10f6dcad91934",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SG2",
+          "owner": "SG Runtime",
+          "surfaceId": "SG2-BASE-001"
+        },
+        {
+          "path": "apps/sg-runtime/lib/benchmark/discovery-continuity.ts",
+          "blob": "58f7af4c5bb6a8040763b2940660b1346797bf85",
+          "mode": "100644",
+          "status": "added",
+          "projectKey": "SG2",
+          "owner": "SG Runtime",
+          "surfaceId": "SG2-BASE-001"
+        },
+        {
+          "path": "apps/sg-runtime/lib/benchmark/discovery-host.ts",
+          "blob": "f91f25b5a9d9617817c7719015911adf41adeb06",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SG2",
+          "owner": "SG Runtime",
+          "surfaceId": "SG2-BASE-001"
+        },
+        {
+          "path": "apps/sg-runtime/lib/benchmark/discovery-runtime.ts",
+          "blob": "e6156b9f8af5642b2d3fc612c54ceb7ddf09bb94",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SG2",
+          "owner": "SG Runtime",
+          "surfaceId": "SG2-BASE-001"
+        },
+        {
+          "path": "apps/sg-runtime/lib/benchmark/discovery-source.ts",
+          "blob": "f9b205cbd1b6e9639d69258f23e2d498c306b81d",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SG2",
+          "owner": "SG Runtime",
+          "surfaceId": "SG2-BASE-001"
+        },
+        {
+          "path": "apps/sg-runtime/lib/benchmark/errors.ts",
+          "blob": "14243a2eed321078b24bbabf38b58a3ab860c295",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SG2",
+          "owner": "SG Runtime",
+          "surfaceId": "SG2-BASE-001"
+        },
+        {
+          "path": "apps/sg-runtime/lib/benchmark/macrobond.ts",
+          "blob": "739053fa42dfea276a248340981509cf8647272c",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SG2",
+          "owner": "SG Runtime",
+          "surfaceId": "SG2-BASE-001"
+        },
+        {
+          "path": "apps/sg-runtime/package.json",
+          "blob": "374d6bf36df0c8626c564b76b0fb7b0de0a1759e",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SG2",
+          "owner": "SG Runtime",
+          "surfaceId": "SG2-BASE-001"
+        },
+        {
+          "path": "apps/sg-runtime/scripts/verify-finder-development-bindings.mjs",
+          "blob": "6fe7f42864930fa8ea24a61e0e2c6154feba4b63",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SG2",
+          "owner": "SG Runtime",
+          "surfaceId": "SG2-BASE-001"
+        },
+        {
+          "path": "apps/sg-runtime/tests/benchmark-discovery-unmetered-private.integration.test.mjs",
+          "blob": "6320ee591da5fa47126c4837097cf11ef49c3aea",
+          "mode": "100644",
+          "status": "added",
+          "projectKey": "SG2",
+          "owner": "SG Runtime",
+          "surfaceId": "SG2-BASE-001"
+        },
+        {
+          "path": "apps/sg-runtime/tests/benchmark-discovery-unmetered.integration.test.mjs",
+          "blob": "a612d2f07d0a5d573bdc7b04006ca640c6dccc50",
+          "mode": "100644",
+          "status": "added",
+          "projectKey": "SG2",
+          "owner": "SG Runtime",
+          "surfaceId": "SG2-BASE-001"
+        },
+        {
+          "path": "apps/sg-runtime/tests/finder-development-bindings.test.mjs",
+          "blob": "c5b86a01427313bf4f19742c13a826fb7f283125",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SG2",
+          "owner": "SG Runtime",
+          "surfaceId": "SG2-BASE-001"
+        }
+      ]
     }
   ],
   "authority": "Accepted trusted-main data only. Candidate records never authorize themselves. Existing closed reviews and historical receipts remain unchanged."
