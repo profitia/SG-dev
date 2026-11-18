@@ -22,20 +22,20 @@ export function adaptAssistantUsageQuery(query:AccessQuery):AccessQuery{
 /** Exactly one generation, no automatic retry, tools, remote conversation,
  * response storage or variable private-content cache write. */
 export function createAssistantModel(client:OpenAI,usage:Usage){
- const prepared=new WeakMap<object,{digest:string;expiresAt:number}>()
+ const prepared=new WeakMap<object,{digest:string;expiresAt:number;commandId:string;inputTokens:number;model:string}>()
  return Object.freeze({
-  async validateInput(input:Input,signal:AbortSignal){
-   const bound=assistantInputBound(input)
-   const counted=await client.responses.inputTokens.count({model:ASSISTANT_PRICING.model,input:[...input],reasoning:{effort:'none'}},{signal,maxRetries:0,timeout:10000})
-   if(counted.object!=='response.input_tokens'||!Number.isSafeInteger(counted.input_tokens)||counted.input_tokens<1||counted.input_tokens>bound.inputTokens)return fail('LIMIT_EXCEEDED')
-   prepared.set(input,{digest:bound.inputDigest,expiresAt:Date.now()+25000})
-   return bound
+  async validateInput(input:Input,scope:{actorId:string;organisationId:string;commandId:string},signal:AbortSignal){
+   const counted=await usage.prepareInput({...scope,input,signal})
+   prepared.set(input,{digest:counted.inputDigest,expiresAt:counted.expiresAt,commandId:scope.commandId,inputTokens:counted.inputTokens,model:ASSISTANT_PRICING.model})
+   return counted
   },
   async generate(options:{input:Input;admission:AssistantUsageAdmission;signal:AbortSignal;beforeDispatch:()=>Promise<void>;publish:(delta:string)=>Promise<void>}){
    let dispatched=false,taken=false,settled=false,usageUnverified=false,responseText=''
    try{
     const bound=assistantInputBound(options.input),checked=prepared.get(options.input)
-    if(!checked||checked.digest!==bound.inputDigest||checked.expiresAt<=Date.now())return fail()
+    if(!checked||checked.digest!==bound.inputDigest||checked.expiresAt<=Date.now()
+     ||checked.commandId!==options.admission.commandId||checked.model!==options.admission.model
+     ||checked.inputTokens!==options.admission.inputTokens||options.admission.outputTokens!==2048)return fail()
     prepared.delete(options.input)
     const input=options.input.map(m=>Object.freeze({...m}))
     await options.beforeDispatch()
