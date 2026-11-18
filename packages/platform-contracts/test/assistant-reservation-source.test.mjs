@@ -1,3 +1,4 @@
+import {knowledgeSourcePredecessor} from '../../../apps/architecture-lab/knowledge-source.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
@@ -6,8 +7,9 @@ import {fileURLToPath} from 'node:url'
 import {execFileSync} from 'node:child_process'
 import {assistantReservationPredecessor,RESERVATION_BASE,RESERVATION_RECORD,RESERVATION_PATHS,RESERVATION_RECEIPTS,RESERVATION_SG2_PATHS,RESERVATION_DERIVED} from './assistant-reservation-source.mjs'
 const root=fileURLToPath(new URL('../../../',import.meta.url)),peer=process.env.ACG_SOURCE_PEER_ROOT??root
-const current=p=>fs.readFileSync(path.join(RESERVATION_SG2_PATHS.includes(p)?peer:root,p))
+const physical=p=>fs.readFileSync(path.join(RESERVATION_SG2_PATHS.includes(p)?peer:root,p))
 const historical=(sha,p)=>execFileSync('git',['show',sha+':'+p],{cwd:root,stdio:['ignore','pipe','pipe']})
+const knowledge=knowledgeSourcePredecessor(physical,historical),current=knowledge?.previousBytes??physical
 const pin=()=>String(current(RESERVATION_DERIVED)).match(/ASSISTANT_RESERVATION_SOURCE_SHA='([a-f0-9]{64})'/)?.[1]
 test('exact reservation source closes all three owners and preserves every accepted receipt before predecessor projection',()=>{
  const result=assistantReservationPredecessor(current,historical,pin());assert(result)
