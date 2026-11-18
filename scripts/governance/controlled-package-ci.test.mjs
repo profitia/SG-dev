@@ -1,3 +1,4 @@
+import {PLATFORM_KNOWLEDGE_STAGE2_ACG_COMPOSITION_PROVENANCE} from './controlled-package-ci.mjs'
 import {PLATFORM_KNOWLEDGE_STAGE2_SRM_TARGET_PROVENANCE} from './controlled-package-ci.mjs';
 import {PLATFORM_KNOWLEDGE_STAGE2_PI_COMPOSITION_PROVENANCE} from './controlled-package-ci.mjs';
 import {tmpdir as knowledgePolicyTmpdir} from 'node:os';
@@ -167,6 +168,13 @@ test('only the ten reviewed local names bind to their own exact paths, never a r
     rejection(() => assertManifestPolicy({dependencies: {alias: `file:${relative}`}}, authority))
   }
 })
+function currentKnowledgeForPolicyTests(){
+ const record=path.join(authorityRoot,PLATFORM_KNOWLEDGE_STAGE2_PROVENANCE.recordPath);
+ if(!fs.existsSync(record))return null;
+ const cache=new Map(),history=(sha,p)=>{const key=sha+':'+p;if(!cache.has(key))cache.set(key,execFileSync('git',['show',key],{cwd:authorityRoot,stdio:['ignore','pipe','pipe']}));return cache.get(key)};
+ return knowledgeStage2TrustedPredecessor(p=>fs.readFileSync(path.join(authorityRoot,p)),history);
+}
+function currentRecurringPolicyRoot(){return currentKnowledgeForPolicyTests()?authorityRoot:legacyRecurringFixture.root}
 function currentRecurringPolicyOptions(root=legacyRecurringFixture.root){return {reviewedPrivateRecurring:!!assertPrivateRecurringProvenance(root),reviewedLifecycle:!!registrationLifecycleCanonicalRead(root),reviewedCompleteFunctional:!!assertCompleteFunctionalProvenance(root)}}
 // The old Maps peer exceptions retain their complete reviewed1.37 source.
 // Current1.38 uses the distinct trusted-source admission path below.
@@ -3260,7 +3268,7 @@ test('Platform Knowledge exact owner inputs preserve all candidate and regular-f
 test('Platform Knowledge authenticates current source and all immutable receipts before its accepted predecessor',()=>{
  const root=authorityRoot,cache=new Map(),history=(sha,p)=>{const k=sha+':'+p;if(!cache.has(k))cache.set(k,execFileSync('git',['show',k],{cwd:root,stdio:['ignore','pipe','ignore']}));return cache.get(k);};
  const read=p=>fs.existsSync(path.join(root,PLATFORM_KNOWLEDGE_STAGE2_PROVENANCE.recordPath))?fs.readFileSync(path.join(root,p)):history(PLATFORM_KNOWLEDGE_STAGE2_REVIEW.sourceSha,p);
- const v=knowledgeStage2TrustedPredecessor(read,history);assert(v);const cfg=[PLATFORM_KNOWLEDGE_STAGE2_PROVENANCE,PLATFORM_KNOWLEDGE_STAGE2_REPAIR_PROVENANCE,PLATFORM_KNOWLEDGE_STAGE2_PI_COMPOSITION_PROVENANCE,PLATFORM_KNOWLEDGE_STAGE2_SRM_TARGET_PROVENANCE].find(p=>p.recordSha256===createHash('sha256').update(read(p.recordPath)).digest('hex'));assert(cfg);assert.equal(v.manifest.sdkDigests.operationSourceDigest,cfg.operationSourceDigest);
+ const v=knowledgeStage2TrustedPredecessor(read,history);assert(v);const cfg=[PLATFORM_KNOWLEDGE_STAGE2_PROVENANCE,PLATFORM_KNOWLEDGE_STAGE2_REPAIR_PROVENANCE,PLATFORM_KNOWLEDGE_STAGE2_PI_COMPOSITION_PROVENANCE,PLATFORM_KNOWLEDGE_STAGE2_SRM_TARGET_PROVENANCE,PLATFORM_KNOWLEDGE_STAGE2_ACG_COMPOSITION_PROVENANCE].find(p=>p.recordSha256===createHash('sha256').update(read(p.recordPath)).digest('hex'));assert(cfg);assert.equal(v.manifest.sdkDigests.operationSourceDigest,cfg.operationSourceDigest);
  for(const p of Object.keys(v.manifest.replacements))assert.deepEqual(v.previousBytes(p),history(v.manifest.previousSourceSha,p));
  for(const p of v.manifest.knowledgeAddedPaths)assert.throws(()=>v.previousBytes(p),{code:'ENOENT'});
  for(const p of ['packages/platform-contracts/src/knowledge-operations.mjs','packages/platform-contracts/current-e1-authority/migrations/015-knowledge-authority.sql','apps/sg-runtime/package-lock.json','apps/srm/knowledge-source-adoption.json','apps/sg-runtime/operation-integration.json','apps/architecture-lab/knowledge-source.mjs',PLATFORM_KNOWLEDGE_STAGE2_PROVENANCE.recordPath])assert.throws(()=>knowledgeStage2TrustedPredecessor(f=>f===p?Buffer.concat([read(f),Buffer.from('UNREVIEWED')]):read(f),history));
@@ -3649,9 +3657,13 @@ const legacySdk=await import(pathToFileURL(path.join(legacyRecurringFixture.acce
 assert.equal(await legacySdk.operationSourceDigest(),legacyRecurringFixture.sourceRecord.sdkDigests.operationSourceDigest)
 const sdk=await import('../../packages/platform-contracts/src/operation-context.mjs')
 const currentContext=currentSdkProofContext(authorityRoot)
+const currentKnowledge=currentContext?null:currentKnowledgeForPolicyTests()
 if(currentContext){
   assertPrivateRecurringProvenance(authorityRoot)
   assert.equal(await sdk.operationSourceDigest(),currentContext.metadata.sdkDigests.operationSourceDigest)
+}else if(currentKnowledge){
+  assert(assertPrivateRecurringProvenance(authorityRoot))
+  assert.equal(await sdk.operationSourceDigest(),currentKnowledge.manifest.sdkDigests.operationSourceDigest)
 }else{
   assert.throws(()=>assertPrivateRecurringProvenance(authorityRoot),/PI_LIVE_ACCEPTANCE_SOURCE_REJECTED|EDITORIAL_SOURCE_BYTES_REJECTED|FINDER_MONITOR_SOURCE_BYTES_REJECTED/)
   assert.equal(await sdk.operationSourceDigest(),legacyRecurringFixture.sourceRecord.sdkDigests.operationSourceDigest)

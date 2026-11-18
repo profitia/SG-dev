@@ -1,4 +1,5 @@
 import {sdkSourceContext} from '../../../packages/platform-contracts/test/sdk-source-context.mjs'
+import {knowledgeSourcePredecessor} from '../../architecture-lab/knowledge-source.mjs'
 import {assistantReservationPredecessor,RESERVATION_DERIVED} from '../../../packages/platform-contracts/test/assistant-reservation-source.mjs'
 import {finderMonitorPredecessor} from './finder-monitor-source-integrity.mjs'
 // Test/build-only continuation for the approved editorial profile. No runtime grant.
@@ -46,7 +47,7 @@ export function procurementInsightsEditorialPredecessor(current,historical){
  }
  // Authenticate the complete current ACG composition before legacy source checks.
  const reservationPin=String(current(RESERVATION_DERIVED)).match(/ASSISTANT_RESERVATION_SOURCE_SHA='([a-f0-9]{64})'/)?.[1]
- const reservation=assistantReservationPredecessor(current,historical,reservationPin)
+ const reservation=assistantReservationPredecessor(knowledgeSourcePredecessor(current,historical)?.previousBytes??current,historical,reservationPin)
  if(reservation){
   const accepted=procurementInsightsEditorialPredecessor(reservation.previousBytes,historical)
   assert(accepted,'accepted editorial predecessor retained')
