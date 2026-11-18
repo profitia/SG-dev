@@ -168,7 +168,7 @@ test('historical recurring routing refuses changed bytes, symbolic files and add
 function reservationRoutingFixture(){
  const temporary=fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(),'hub-acg-reservation-'))),root=path.join(temporary,'candidate')
  const git=(cwd,...args)=>execFileSync('git',args,{cwd,encoding:'utf8',stdio:['ignore','pipe','pipe']}).trim()
- const baseSha='0a56b29bde15fa5bed2d5ab67cd12757bec0c92a'
+ const baseSha='74c4e7f16bdb5d6b09aea289dc0d44ac1b0cdde7'
  try{
   git(temporary,'clone','--shared','--quiet','--no-checkout',repositoryRoot,root)
   git(root,'checkout','--quiet','--detach',baseSha)
