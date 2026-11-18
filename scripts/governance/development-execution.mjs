@@ -16,7 +16,8 @@ const sha = /^[a-f0-9]{40}$/
 const deny = code => {throw new Error(code)}
 const git = (cwd, args) => execFileSync('git', args, {cwd, encoding:'utf8', stdio:['ignore','pipe','pipe']}).trim()
 const equal = (a,b) => JSON.stringify(a) === JSON.stringify(b)
-const safePath = name => typeof name === 'string' && /^[a-zA-Z0-9_.@/-]+$/.test(name)
+const safePath = name => typeof name === 'string'
+  && (/^[a-zA-Z0-9_.@/-]+$/.test(name) || name === 'apps/sg-runtime/app/api/v1/insights/[...report]/route.ts')
   && !name.startsWith('/') && !name.endsWith('/') && name.split('/').every(p => p && p !== '.' && p !== '..')
 const protectedPath = name => /(^|\/)AGENTS\.md$/.test(name)
   || /^(Canon\/|governance\/|scripts\/governance\/|\.github\/|\.devcontainer\/)/.test(name)
@@ -154,7 +155,7 @@ export function assertSourceCheckout(candidateRoot, record, state, governanceRoo
   if (!equal(changed,record.files.map(f=>f.path).sort())) deny('SOURCE_DIFF_REJECTED')
   for (const entry of record.files) {
     const target = path.join(base,entry.path), stat = fs.lstatSync(target)
-    const tree = git(base,['ls-tree',state.sha,'--',entry.path])
+    const tree = git(base,['--literal-pathspecs','ls-tree',state.sha,'--',entry.path])
     if (!stat.isFile() || stat.isSymbolicLink() || fs.realpathSync(target) !== target || stat.size > 1024*1024
       || tree !== entry.mode+' blob '+entry.blob+'\t'+entry.path
       || git(base,['hash-object','--no-filters','--',entry.path]) !== entry.blob
@@ -177,7 +178,7 @@ export function trustedApplicationContinuity(candidateRoot, watchedPaths, {autho
   const controlSha=git(authorityRoot,['rev-parse','refs/remotes/origin/main'])
   if(!sha.test(controlSha))deny('APPLICATION_CONTINUITY_AUTHORITY_REQUIRED')
   const readGit=(repo,ref,p)=>execFileSync('git',['cat-file','blob',ref+':'+p],{cwd:repo,stdio:['ignore','pipe','pipe'],maxBuffer:2*1024*1024})
-  const authority=p=>{const entry=git(authorityRoot,['ls-tree',controlSha,'--',p]);if(!entry)return null;if(!entry.startsWith('100644 blob '))deny('APPLICATION_CONTINUITY_AUTHORITY_MODE_REJECTED');return readGit(authorityRoot,controlSha,p)}
+  const authority=p=>{const entry=git(authorityRoot,['--literal-pathspecs','ls-tree',controlSha,'--',p]);if(!entry)return null;if(!entry.startsWith('100644 blob '))deny('APPLICATION_CONTINUITY_AUTHORITY_MODE_REJECTED');return readGit(authorityRoot,controlSha,p)}
   const physical=p=>{
     const base=fs.realpathSync(candidateRoot),target=path.join(base,p),stat=fs.lstatSync(target)
     if(!stat.isFile()||stat.isSymbolicLink()||fs.realpathSync(target)!==target||stat.size>1024*1024||stat.mode&0o111)deny('APPLICATION_CONTINUITY_PHYSICAL_REJECTED')
@@ -305,7 +306,7 @@ export function proposeSourceAdmission({projectKey,taskId,sourceSha,baseSha,repo
   const files=rows.map(line=>{
     const [status,name,...rest]=line.split('\t')
     if(rest.length||!['A','M'].includes(status)||!safePath(name)||protectedPath(name))deny('SOURCE_PROPOSAL_PROTECTED_OR_UNSUPPORTED_PATH')
-    const tree=git(checkout,['ls-tree',sourceSha,'--',name]),m=/^(100644|100755) blob ([a-f0-9]{40})\t(.+)$/.exec(tree)
+    const tree=git(checkout,['--literal-pathspecs','ls-tree',sourceSha,'--',name]),m=/^(100644|100755) blob ([a-f0-9]{40})\t(.+)$/.exec(tree)
     if(!m||m[3]!==name)deny('SOURCE_PROPOSAL_FILE_MODE_REJECTED')
     const route=resolveProjectRouting({profile,targets:[name],repositoryRoot:governanceRoot}).results[0]
     if(!route||route.resolutionStatus!=='RESOLVED'||route.projectBoundaryStatus!=='ALLOWED'||route.highestSpecificityMatchCount!==1||route.baselineClassification!=='ALIGNED')deny('SOURCE_PROPOSAL_ROUTING_REJECTED')
