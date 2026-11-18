@@ -1,5 +1,5 @@
 import {benchmarkUnmeteredPredecessor} from './benchmark-unmetered-source.mjs'
-export const BENCHMARK_UNMETERED_SOURCE_SHA='2edde10c3df9c1868c7550981282d857c141677545b2dea2bb113b0119cadc67'
+export const BENCHMARK_UNMETERED_SOURCE_SHA='dca6498a793804dd0249580ff53e8cec61ebbc6e6894a172518e22a8854e675e'
 // Test/build-only closed source continuation. Never imported by a runtime.
 import assert from 'node:assert/strict'
 import {createHash} from 'node:crypto'
@@ -181,8 +181,8 @@ export async function createAcgLegacyRecurringFixture(sourceRoot) {
     // Preserve the real observed authority ref in this local test clone.
     const authoritySha = String(git(['rev-parse', '--verify', 'refs/remotes/origin/main^{commit}'])).trim()
     execFileSync('git', ['update-ref', 'refs/remotes/origin/main', authoritySha], {cwd: root, stdio: ['ignore', 'pipe', 'pipe']})
-    const paths = [RESERVATION_RECORD, ...RESERVATION_PATHS, RESERVATION_DERIVED]
-    assert.equal(new Set(paths).size, 46, 'closed reservation fixture inventory')
+    const paths = [...new Set([RESERVATION_RECORD, ...RESERVATION_PATHS, RESERVATION_DERIVED, ...(view.benchmark ? ['apps/architecture-lab/benchmark-unmetered-source.json', ...Object.keys(view.benchmark.manifest.sourceDigests)] : [])])]
+    assert.equal(new Set([RESERVATION_RECORD, ...RESERVATION_PATHS, RESERVATION_DERIVED]).size, 46, 'closed reservation fixture inventory')
     for (const relative of paths) {
       assert(!path.isAbsolute(relative) && !relative.split('/').includes('..'))
       const file = path.join(root, relative)

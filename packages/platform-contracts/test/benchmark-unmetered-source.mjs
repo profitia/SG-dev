@@ -63,6 +63,8 @@ export function benchmarkAssistantSource(before,pin){
  const entry='export function assistantReservationPredecessor(current,historical,expectedDigest){'
  assert.equal(before.split(entry).length,2)
  return "import {benchmarkUnmeteredPredecessor} from './benchmark-unmetered-source.mjs'\nexport const BENCHMARK_UNMETERED_SOURCE_SHA='"+pin+"'\n"+before.replace(entry,entry+"\n const benchmark=benchmarkUnmeteredPredecessor(current,historical,BENCHMARK_UNMETERED_SOURCE_SHA)\n if(benchmark){const accepted=assistantReservationPredecessor(benchmark.previousBytes,historical,expectedDigest);return accepted?{...accepted,benchmark,acceptedManifest:accepted.manifest,manifest:{...accepted.manifest,...benchmark.manifest,sourceDigests:{...accepted.manifest.sourceDigests,...benchmark.manifest.sourceDigests,['packages/platform-contracts/test/assistant-reservation-source.mjs']:hash(current('packages/platform-contracts/test/assistant-reservation-source.mjs'))}}}:null}")
+  .replace('const paths = [RESERVATION_RECORD, ...RESERVATION_PATHS, RESERVATION_DERIVED]',"const paths = [...new Set([RESERVATION_RECORD, ...RESERVATION_PATHS, RESERVATION_DERIVED, ...(view.benchmark ? ['apps/architecture-lab/benchmark-unmetered-source.json', ...Object.keys(view.benchmark.manifest.sourceDigests)] : [])])]")
+  .replace("assert.equal(new Set(paths).size, 46, 'closed reservation fixture inventory')","assert.equal(new Set([RESERVATION_RECORD, ...RESERVATION_PATHS, RESERVATION_DERIVED]).size, 46, 'closed reservation fixture inventory')")
 }
 export function benchmarkUnmeteredPredecessor(current,historical,pin){
  let bytes;try{bytes=current(BENCHMARK_RECORD)}catch(e){if(absent(e))return null;throw e}
