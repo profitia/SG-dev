@@ -60,11 +60,24 @@ test('public Knowledge routing authenticates a real complete checkout without an
 });
 
 test('current SRM Root target authenticates the actual optional producer while its prior target remains immutable',async()=>{
- const {rootAtomicClaimSourceDigest}=await import('../../../packages/platform-contracts/root-atomic-claim/src/root-atomic-claim.mjs');
- const file='apps/srm/deployment/root-atomic-claim-targets.json',view=knowledgeSourcePredecessor(read,history),current=JSON.parse(read(file));
- assert.equal(current.sourceDigest,await rootAtomicClaimSourceDigest());assert.equal(current.sourceDigest,(view.currentSdkContext?.record.metadata??view.manifest).optionalPackageDigests.rootAtomicClaimSourceDigest);
- const previous=JSON.parse(view.previousBytes(file));assert.equal(previous.sourceDigest,'b3d6f2110f41ca93cac6a949b113a8582b6407688d81df1935cd8990424b393a');
- const {sourceDigest:now,...currentMetadata}=current,{sourceDigest:then,...previousMetadata}=previous;assert.notEqual(now,then);assert.deepEqual(currentMetadata,previousMetadata);
- assert.deepEqual(view.previousBytes(file),history(view.manifest.previousSourceSha,file));
- assert.throws(()=>knowledgeSourcePredecessor(p=>p===file?view.previousBytes(file):read(p),history),'historically valid target must not substitute the current producer');
+ const fs=await import('node:fs'),os=await import('node:os'),path=await import('node:path'),{pathToFileURL}=await import('node:url');
+ const fixture=fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(),'knowledge-real-root-producer-')));
+ try{
+  // Actual canonical package bytes, isolated from each workflow's install layout.
+  // No registry, replacement implementation, provider credential or source mutation.
+  const sdk=path.join(fixture,'packages/platform-contracts');fs.mkdirSync(path.dirname(sdk),{recursive:true});
+  fs.cpSync(new URL('packages/platform-contracts',root),sdk,{recursive:true,filter:p=>!['node_modules','.git','dist'].includes(path.basename(p))});
+  const namespace=path.join(fixture,'node_modules/@profitia');fs.mkdirSync(namespace,{recursive:true});
+  fs.symlinkSync(sdk,path.join(namespace,'platform-contracts'),'dir');
+  fs.symlinkSync(path.join(sdk,'readonly-miss-report'),path.join(namespace,'platform-readonly-miss-report'),'dir');
+  const modulePath=path.join(sdk,'root-atomic-claim/src/root-atomic-claim.mjs');
+  assert.deepEqual(fs.readFileSync(modulePath),read('packages/platform-contracts/root-atomic-claim/src/root-atomic-claim.mjs'));
+  const {rootAtomicClaimSourceDigest}=await import(pathToFileURL(modulePath).href);
+  const file='apps/srm/deployment/root-atomic-claim-targets.json',view=knowledgeSourcePredecessor(read,history),current=JSON.parse(read(file));
+  assert.equal(current.sourceDigest,await rootAtomicClaimSourceDigest());assert.equal(current.sourceDigest,(view.currentSdkContext?.record.metadata??view.manifest).optionalPackageDigests.rootAtomicClaimSourceDigest);
+  const previous=JSON.parse(view.previousBytes(file));assert.equal(previous.sourceDigest,'b3d6f2110f41ca93cac6a949b113a8582b6407688d81df1935cd8990424b393a');
+  const {sourceDigest:now,...currentMetadata}=current,{sourceDigest:then,...previousMetadata}=previous;assert.notEqual(now,then);assert.deepEqual(currentMetadata,previousMetadata);
+  assert.deepEqual(view.previousBytes(file),history(view.manifest.previousSourceSha,file));
+  assert.throws(()=>knowledgeSourcePredecessor(p=>p===file?view.previousBytes(file):read(p),history),'historically valid target must not substitute the current producer');
+ }finally{fs.rmSync(fixture,{recursive:true,force:true});}
 });

@@ -3,7 +3,7 @@ import {sdkSourceContext} from '../../packages/platform-contracts/test/sdk-sourc
 import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
 export const KNOWLEDGE_SOURCE_RECORD='apps/architecture-lab/knowledge-source.json';
-export const KNOWLEDGE_SOURCE_RECORD_SHA256='a60eafee25b7f4ab0463c9b53cd2ed11aa60ec42d20a22936a53f8665fc88df7';
+export const KNOWLEDGE_SOURCE_RECORD_SHA256='3517b86c8a86a2cab3bb0e9be98c464a7278d136b43c61ab8cd869f67ece4c62';
 const hash=bytes=>createHash('sha256').update(bytes).digest('hex');
 // Historical readers use Git's exact missing-path diagnostic rather than the
 // filesystem ENOENT. Unknown revisions, foreign paths and access errors remain
