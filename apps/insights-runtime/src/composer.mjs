@@ -1,4 +1,5 @@
 import { editorialInstruction, assessEditorial, EDITORIAL_PROFILE } from "./editorial.mjs";
+import { canonicalMarketCitations } from "./citations.mjs";
 import {
   externalCallEvidence,
   externalNativeResponse,
@@ -236,6 +237,7 @@ export async function qualityGate(job, bundle, out) {
   );
   const ids = new Set([
     ...bundle.evidence.map((e) => e.id),
+    ...canonicalMarketCitations(bundle).entries.map((entry) => entry.ref),
     "FORECAST",
     "METHODOLOGY",
   ]);

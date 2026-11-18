@@ -1,5 +1,5 @@
 """Deterministic v0.5 renderer. No provider access, calculation of Forecast or prose edits."""
-import argparse, hashlib, json, re, time
+import argparse, hashlib, json, math, re, time
 from pathlib import Path
 from datetime import datetime
 from zoneinfo import ZoneInfo
@@ -25,7 +25,40 @@ def checked_url(value):
 def publisher_label(e):
     value=e.get('publisher') or e.get('provider')
     return str(value.get('name') or value.get('id') or 'Źródło') if isinstance(value,dict) else str(value or 'Źródło')
-def render(bundle,narrative,receipt,out,font,bold=None):
+def verified_market_sources(bundle,catalog):
+    if catalog is None: return {}
+    assert isinstance(catalog,dict) and set(catalog)=={'schemaVersion','evidenceFingerprint','entries'}, 'UNVERIFIED_CITATION'
+    assert catalog['schemaVersion']=='CanonicalMarketCitations/1.0' and catalog['evidenceFingerprint']==bundle['fingerprint'], 'UNVERIFIED_CITATION'
+    assert isinstance(catalog['entries'],list), 'UNVERIFIED_CITATION'
+    text=lambda value:isinstance(value,str) and bool(value) and value.strip()==value and not re.search(r'[\x00-\x1f\x7f]',value)
+    def valid(s):
+        if not all(text(s.get(k)) for k in ['receiptRef','seriesId','label','provider']): return False
+        if type(s.get('value')) not in (int,float) or not math.isfinite(s['value']): return False
+        date=s.get('observationDate')
+        if not isinstance(date,str) or not re.fullmatch(r'\d{4}-\d{2}-\d{2}',date): return False
+        try:
+            return datetime.fromisoformat(date).date().isoformat()==date and date<=bundle['asOf'][:10]
+        except ValueError: return False
+    reserved={e['id'] for e in bundle['evidence']}|{'FORECAST','METHODOLOGY'}
+    resolved={}
+    for entry in catalog['entries']:
+        assert isinstance(entry,dict) and set(entry)=={'ref','series'}, 'UNVERIFIED_CITATION'
+        ref=entry['ref']
+        assert text(ref) and ref not in reserved and ref not in resolved, 'UNVERIFIED_CITATION'
+        rows=[{k:v for k,v in s.items() if k!='history'} for s in bundle.get('market',{}).get('series',[]) if s.get('receiptRef')==ref]
+        assert rows and all(valid(s) for s in rows), 'UNVERIFIED_CITATION'
+        unique={}
+        for s in rows:
+            assert s['seriesId'] not in unique or unique[s['seriesId']]==s, 'UNVERIFIED_CITATION'
+            unique[s['seriesId']]=s
+        rows=list(unique.values())
+        assert entry['series']==rows, 'UNVERIFIED_CITATION'
+        provider=' / '.join(dict.fromkeys(s['provider'] for s in rows))
+        title='Kanoniczne odczyty rynku: '+'; '.join(s['label']+', obserwacja '+s['observationDate'] for s in rows)
+        resolved[ref]={'id':ref,'provider':provider,'publisher':provider,'title':title,'publishedAt':None,'url':None,'materialDepth':'CANONICAL_MARKET_READ','facts':{'series':rows}}
+    return resolved
+
+def render(bundle,narrative,receipt,out,font,bold=None,market_citations=None):
     render_start=time.perf_counter_ns()
     assert bundle['schemaVersion']=='ReportEvidenceBundle/OilAsphalt/0.5'
     assert receipt.get('profileId')==bundle['profileId'] and receipt.get('status')=='completed', 'REAL_V05_GENERATION_REQUIRED'
@@ -42,6 +75,8 @@ def render(bundle,narrative,receipt,out,font,bold=None):
     ids={e['id']:e for e in bundle['evidence']}
     ids['FORECAST']={'publisher':'Forecast Core / Macrobond','title':'Zamrożony eksperyment historyczny; modele i sprawdzalność w aneksie','publishedAt':None,'materialDepth':'CANONICAL_FROZEN_D0','url':None}
     ids['METHODOLOGY']={'publisher':'SpendGuru - profil ewaluacji v0.5','title':'Brak danych o regionie, ofertach i umowie nabywcy. TE Calendar wyłączony decyzją właściciela; wymagany przegląd człowieka.','publishedAt':None,'materialDepth':'PILOT_LIMITATIONS','url':None}
+    market_sources=verified_market_sources(bundle,market_citations)
+    ids.update(market_sources)
     assigned={};page_notes=[[] for _ in range(4)];html_rows={};md_rows={}
     def reference(ref,page):
         assert ref in ids, 'UNVERIFIED_CITATION'
@@ -138,6 +173,7 @@ def render(bundle,narrative,receipt,out,font,bold=None):
     text='\n'.join(p.extract_text() or '' for p in reader.pages);assert not re.search(r'\bEV\d+\b',text),'RAW_INTERNAL_CITATION'
     (out/(NAME+'.md')).write_text('\n\n'.join(md)+'\n')
     appendix=['# Aneks: dane, prognozy i pochodzenie','Stan wiedzy: '+bundle['asOf'],'TE Calendar świadomie wyłączony: obecna subskrypcja go nie obejmuje.','## Aktualne dodatkowe dane TE',json.dumps(current,ensure_ascii=False,indent=2),'## Forecast Core - odniesienie historyczne',historical]
+    if market_sources: appendix+=['## Kanoniczne odczyty rynku i pochodzenie odwołań',json.dumps(market_citations,ensure_ascii=False,indent=2)]
     appendix+=['## Historyczne obserwacje TE - odrębne od najnowszego notowania',json.dumps(bundle.get('marketEvidenceHistory',[]),ensure_ascii=False,indent=2)]
     for s in series:
         appendix+=['### '+s['label']+' / '+s['seriesId'],'Model | Origin | Target | Punkt | n | MAE | RMSE | sMAPE','--- | --- | --- | --- | --- | --- | --- | ---']
@@ -150,5 +186,5 @@ def render(bundle,narrative,receipt,out,font,bold=None):
     result={'rendererTotalMs':(time.perf_counter_ns()-render_start)/1e6,'pdfBuildMs':pdf_build_ms,'status':'RENDERED_HUMAN_REVIEW_REQUIRED','pages':4,'pageSize':'A4','mainCharactersWithHeadingsAndTable':body_characters,'numberedFootnotes':len(assigned),'pdfSha256':hashlib.sha256(pdf.read_bytes()).hexdigest(),'evidenceFingerprint':bundle['fingerprint'],'asOf':bundle['asOf'],'rawModelTextEdited':False,'originalNarrativePreserved':True,'reportNarrativeEditorialChanges':'NO_AUTOMATIC_EDITORIAL_CHANGES','visualReview':'REQUIRED'}
     (out/'RENDER_VALIDATION.json').write_text(json.dumps(result,indent=2)+'\n');print(json.dumps(result))
 if __name__=='__main__':
-    p=argparse.ArgumentParser();p.add_argument('--bundle',required=True);p.add_argument('--narrative',required=True);p.add_argument('--receipt',required=True);p.add_argument('--output',required=True);p.add_argument('--font',required=True);p.add_argument('--bold');a=p.parse_args()
-    render(json.loads(Path(a.bundle).read_text()),json.loads(Path(a.narrative).read_text()),json.loads(Path(a.receipt).read_text()),Path(a.output),a.font,a.bold)
+    p=argparse.ArgumentParser();p.add_argument('--bundle',required=True);p.add_argument('--narrative',required=True);p.add_argument('--receipt',required=True);p.add_argument('--market-citations');p.add_argument('--output',required=True);p.add_argument('--font',required=True);p.add_argument('--bold');a=p.parse_args()
+    render(json.loads(Path(a.bundle).read_text()),json.loads(Path(a.narrative).read_text()),json.loads(Path(a.receipt).read_text()),Path(a.output),a.font,a.bold,market_citations=json.loads(Path(a.market_citations).read_text()) if a.market_citations else None)
