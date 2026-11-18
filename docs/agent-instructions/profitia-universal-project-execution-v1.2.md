@@ -11,7 +11,7 @@
 **Akceptacja właściciela:** właściciel zatwierdził wcześniejszą wersję v1.1 dnia 11 listopada 2026 r., następnie publikację v1.2 bez aktywacji. Odrębnym poleceniem „aktywuj wrapper” z 11 listopada 2026 r. zatwierdził aktywację niniejszego dokumentu dla SG2, ARCHITECTURE i SRM. Obowiązujące kanony, profile, uprawnienia i polityki continuity zachowują pierwszeństwo; aktywacja nie wyłącza MEMOROS ani nie upoważnia do zmian aplikacji lub środowisk.
 **Aktywne źródło:** [profitia/SG-dev · main · Universal Wrapper v1.2](https://github.com/profitia/SG-dev/blob/main/docs/agent-instructions/profitia-universal-project-execution-v1.2.md), ładowane przez `AGENTS.md` i aktywny manifest. Wszystkie cztery obowiązujące instrukcje znajdują się w `docs/agent-instructions` na `main`; dotychczasowa gałąź biblioteki jest punktem zgodności i odsyła do tych źródeł.
 **Zakres stosowania:** `SG2`, `ARCHITECTURE`, `SRM`. Business Outcome Engineering v1.1 obowiązuje w obu trybach: konsultacji i wykonania; Full Autopilot v2.0 pozostaje standardem pomocniczym wykonania. CIC zachowuje odrębne źródło instrukcji i nie jest aktywowany przez tę zmianę.
-**Zatwierdzone wersje odniesień na main:** [Business Outcome Engineering v1.1](./business-outcome-engineering-v1.1.md), [Full Autopilot v2.0](./full-autopilot-v2.md) i [UX/UI Design Canon — warunkowo](./ux-ui-design-canon.md). Ich treść zachowuje zatwierdzony snapshot `0fe00d579b31ad72bb45724e7080afc94a262be1`; obowiązujące pliki są rejestrowane i sprawdzane przez aktywny manifest. Odwołania archiwalne dokumentują pochodzenie i nie tworzą drugiego źródła bieżących instrukcji.
+**Zatwierdzone wersje odniesień na main:** [Business Outcome Engineering v1.1](./business-outcome-engineering-v1.1.md), [Full Autopilot v2.0](./full-autopilot-v2.md) i [UX/UI Design Canon — warunkowo](./ux-ui-design-canon.md). Historycznie przyjęty snapshot tych dokumentów miał SHA `0fe00d579b31ad72bb45724e7080afc94a262be1`. Następne aktualizacje dokładnych bajtów wymagają właściwego przyjęcia; obowiązujące wersje wskazuje aktualny manifest i authority main. Odwołania archiwalne dokumentują pochodzenie i nie tworzą drugiego źródła bieżących instrukcji.
 
 > **Zasada nadrzędna:** Osiągnij i zweryfikuj cały zaakceptowany rezultat biznesowy, stosując **rzeczywistą konfigurację wybranego projektu**. Myśl autonomicznie; wykonuj autonomicznie tylko dopuszczone operacje. Nie twórz nowego governance ani nie obchodź istniejącego.
 
@@ -82,6 +82,7 @@ Przed każdą zarządzaną operacją wykonaj odpowiednie bramki z profilu, `AGEN
 4. Wykonaj właściwą walidację manifestu i **pełny wymagany fail-closed preflight**, raportując niezależne gate'y z aktywnego kanonu; nie zastępuj jednego testu ogólnym `PASS`.
 5. Najpierw ustal `PMOS_APPLICABILITY` według **profilu + `TARGET_ENVIRONMENT`**. Wyłącznie gdy PMOS jest wymagany, zweryfikuj jego projekt Neon, bazę, endpoint i rolę wskazaną przez profil; samo zgodne `databaseName` nie wystarcza. Gdy nie obowiązuje, nie otwieraj połączenia continuity tylko po to, aby „zaliczyć” check.
 6. Uwzględnij LKG i aktywne współbieżne wdrożenia/migracje w zakresie zadania. Użyj izolowanego branch/worktree, zachowaj cudze zmiany.
+7. Rozpoznaj własne i współdzielone lokalne środowiska zadania, unikaj zbędnych pełnych kopii, lecz nie zastępuj wymaganej izolacji samym współużyciem. Powiązanie zasobu z `projectKey`/`taskId` prowadź w istniejącym stanie zadania; nie kwalifikuj cudzych lub nieustalonych katalogów do usunięcia. Stosuj Canon v3 §10.8.
 
 Obowiązkowe kontrole zachowaj. Poza nimi stosuj **minimum necessary work**: żadnych ponawianych pełnych audytów, jeśli świeży i zakresowo właściwy dowód już istnieje.
 
@@ -301,6 +302,22 @@ Status `SUCCESS` wymaga łącznie:
 Raport końcowy: `SUCCESS / PARTIAL / BLOCKED`, wynik dla użytkownika, profil i środowisko, istotne PR/merge/SHA/deploy, wynik testu rzeczywistego kontra syntetycznego, routing/Code State (gdy dotyczy), monitoring, koszt (jeśli mierzony), `PMOS_APPLICABILITY`, adekwatne potwierdzenia continuity **albo** release, i rzeczywiste ograniczenia. Nie myl zakończonej dokumentacji lub CI PASS z ukończoną funkcjonalnością.
 
 ---
+
+
+### 14.1. Workspace Resource Lifecycle — lokalne zasoby zadania
+
+**WORKSPACE_RESOURCE_LIFECYCLE — 2026-11-18.** Obowiązuje Canon v3 §10.8; termin `Cleanup finding` w §4 nadal oznacza ustalenie architektoniczne Code State, a nie usuwanie plików.
+
+- **Przed i w trakcie zadania:** preferuj ponowne użycie, jeśli jest bezpieczne, oraz minimalną prawidłową izolację. Identyfikuj własne zasoby w istniejącym stanie zadania/wznowienia, z `projectKey`, `taskId`, kanoniczną ścieżką, rodzajem i statusem. Nie jest wymagany nowy centralny rejestr; techniczne metadane lokalne są dozwolone, jeżeli realnie potrzebne.
+- **Kwalifikacja:** rozróżnij `ACTIVE`, `RECOVERY_REQUIRED`, `RETAINED`, `UNKNOWN_OWNER`, `OWNED_DISPOSABLE`. Nie uznawaj katalogu za zbędny wyłącznie na podstawie nazwy, wieku, wyniku `git status`, braku procesu, statusu PR lub `prunable`; sprawdź także pliki `ignored`, nieopublikowane commity, lease, współbieżność, retencję i recovery.
+- **Główny workspace:** nie usuwaj ani nie rekonfiguruj jego katalogu głównego. Dopuszczalne są dokładnie wskazane, własne i odtwarzalne podkatalogi tymczasowe, po wszystkich kontrolach; nie należy tego traktować jako ogólnego prawa do czyszczenia zawartości workspace.
+- **Dowody i kopie:** chroń obowiązkowe lokalne archiwa PMOS/PHR, pending, journale, receipts, LKG, audyty i pliki niezbędne do wznowienia. Techniczne kopie nieobjęte retencją mogą być usunięte jedynie po osobnym wykazaniu redundancji i odtwarzalności. Zdalna publikacja nie stanowi automatycznej zgody na usunięcie lokalnej historii PMOS.
+- **Przed finalnym PMOS closeout:** po utrwaleniu wyników i weryfikacji wykonaj bezpieczne sprzątanie własnych zasobów niewymaganych do końcowej publikacji i wznowienia. Zamieść faktyczny wynik w zwykłym dowodzie zadania przekazywanym do PMOS/PHR. Nie zmieniaj kanonicznej sekwencji `pmos:save`.
+- **Po ukończonym closeout:** gdy pozostaje do usunięcia końcowy worktree lub inny zasób wymagany do zamknięcia, dopuszczalny jest ograniczony epilog w tym samym mandacie. Nie wywołuj nowego `pmos:begin`, nie zmieniaj zamkniętych dowodów, nie uruchamiaj następnego etapu; opisz wynik wyłącznie w końcowym komunikacie lub istniejącym lokalnym śladzie.
+- **Autonomia i wyjątki:** sprawdzony cleanup własnych `OWNED_DISPOSABLE` jest czynnością rutynową bez mikrozgód w ważnym mandacie. Przy `UNKNOWN_OWNER` i niejednoznacznym stanie pozostaw zasób z krótkim `RETAINED`/`REVIEW_REQUIRED` — nie generuj automatycznego pytania. `PARTIAL`, `BLOCKED`, nieudany PMOS/PHR i recovery chronią wszystko potrzebne do wznowienia. STOP pomiędzy etapami BSDC pozostaje wiążący tam, gdzie stosuje się BSDC.
+- **Raport i DoD:** podaj `CLEANED / RETAINED / REVIEW_REQUIRED / NOT_APPLICABLE`, zwolnione bajty tylko gdy zmierzone, oraz rzeczywisty wyjątek. Jeśli celem jest sprzątanie, wynik musi spełniać DoD odzyskania przestrzeni. Jeśli to higiena innego zadania, bezpiecznie zachowany zasób nie jest automatycznie porażką biznesową.
+
+Ta klauzula nie instaluje żadnego narzędzia ani hooka; implementacja i rzeczywiste uruchomienie pozostają odrębnym zakresem.
 
 ## 15. Granice przyszłej standaryzacji
 
