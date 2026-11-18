@@ -160,7 +160,7 @@ test('Benchmark presentation renews the current receiver closure without rewriti
       ?execFileSync('git',['show',receipt.assistantM1ChartContextCorrective.previousReceiptSourceSha+':'+posix.normalize('apps/sg-runtime/'+path)])
       :receipt.assistantM1RuntimeSourceCompatibility?.consumerSourceDigests[posix.normalize('apps/sg-runtime/'+path)]
       ?execFileSync('git',['show',receipt.assistantM1RuntimeSourceCompatibility.previousReceiptSourceSha+':'+posix.normalize('apps/sg-runtime/'+path)])
-      :fs.readFileSync(new URL('../'+path,import.meta.url))
+      :readM2AcceptedSource(new URL('../'+path,import.meta.url))
     const observed = createHash('sha256').update(bytes).digest('hex')
     assert.equal(observed, digest, path)
     assert.notEqual(createHash('sha256').update('changed-content').digest('hex'), digest, path)
@@ -207,7 +207,7 @@ test('Benchmark presentation renews the current receiver closure without rewriti
         ?execFileSync('git',['show',receipt.integratedBuyerJourneySourceCompatibility.previousReceiptSourceSha+':'+file])
         :receipt.appshellXraySourceCompatibility.changedApplicationFiles.includes(file.replace('apps/sg-runtime/',''))
         ?execFileSync('git',['show',receipt.appshellXraySourceCompatibility.previousReceiptSourceSha+':'+file])
-        :receipt.bqlPciFirstSourceCompatibility?.sourceDigests[file]?execFileSync('git',['show',receipt.bqlPciFirstSourceCompatibility.previousReceiptSourceSha+':'+file]):receipt.xrayAppShellPresentation?.sourceDigests[file]?execFileSync('git',['show',receipt.xrayAppShellPresentation.previousReceiptSourceSha+':'+file]):receipt.productAnalyticsMainCompatibility?.sourceDigests[file]?execFileSync('git',['show',receipt.productAnalyticsMainCompatibility.sharedBaselineSourceSha+':'+file]):receipt.marketHistoryIngestionCompatibility?.sourceDigests[file]?execFileSync('git',['show',receipt.marketHistoryIngestionCompatibility.previousReceiptSourceSha+':'+file]):corrective?.sourceDigests[file]?acceptedM1Bytes:fs.readFileSync(new URL(file,repository))
+        :receipt.bqlPciFirstSourceCompatibility?.sourceDigests[file]?execFileSync('git',['show',receipt.bqlPciFirstSourceCompatibility.previousReceiptSourceSha+':'+file]):receipt.xrayAppShellPresentation?.sourceDigests[file]?execFileSync('git',['show',receipt.xrayAppShellPresentation.previousReceiptSourceSha+':'+file]):receipt.productAnalyticsMainCompatibility?.sourceDigests[file]?execFileSync('git',['show',receipt.productAnalyticsMainCompatibility.sharedBaselineSourceSha+':'+file]):receipt.marketHistoryIngestionCompatibility?.sourceDigests[file]?execFileSync('git',['show',receipt.marketHistoryIngestionCompatibility.previousReceiptSourceSha+':'+file]):corrective?.sourceDigests[file]?acceptedM1Bytes:readM2AcceptedSource(new URL(file,repository))
       assert.deepEqual(observed,execFileSync('git',['show',current.previousReceiptSourceSha+':'+file]),'Unchanged protected source: '+file)
     }
   }
