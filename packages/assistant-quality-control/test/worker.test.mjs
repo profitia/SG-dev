@@ -275,3 +275,35 @@ test('controlled QA shutdown stops before the next private read and never report
  assert.equal(result.status,'CONTROLLED_QA_READ_STOPPED');assert.equal(result.casesVerified,1);assert.equal(g.reads(),1)
  assert.deepEqual(await p.check({signal:during.signal}),result);assert.equal(g.reads(),1)
 })
+
+test('operational metadata retention is single-flight, bounded to six hours, and handles a backward clock without changing native expiry',async()=>{
+ const {createQualityMetadataRetention}=await import('../src/worker.mjs')
+ let at=Date.parse('2026-11-18T00:00:00Z'),calls=0,finish
+ const pending=new Promise(resolve=>{finish=resolve})
+ const retention=createQualityMetadataRetention({store:{purge:async()=>{calls++;await pending;return {status:'PURGED'}}},now:()=>at})
+ const a=retention.check(),b=retention.check();assert.equal(calls,1);finish()
+ const result=await a;assert.deepEqual(await b,result);assert.equal(result.status,'PURGE_CONFIRMED')
+ assert.equal(result.scope,'CONTROL_METADATA_ONLY');assert.equal(result.retentionDays,90);assert(Object.isFrozen(result))
+ assert.deepEqual(await retention.check(),{status:'NOT_DUE',purgePerformed:false});assert.equal(calls,1)
+ at+=6*60*60*1000-1;assert.equal((await retention.check()).status,'NOT_DUE');assert.equal(calls,1)
+ at++;assert.equal((await retention.check()).status,'PURGE_CONFIRMED');assert.equal(calls,2)
+ at-=24*60*60*1000;assert.equal((await retention.check()).status,'PURGE_CONFIRMED');assert.equal(calls,3)
+})
+test('retention failure or an unconfirmed native receipt stops the worker without leaking provider details or retrying in memory',async()=>{
+ const {createQualityMetadataRetention}=await import('../src/worker.mjs')
+ for(const result of ['throw','unconfirmed']){
+  let calls=0
+  const retention=createQualityMetadataRetention({store:{purge:async()=>{calls++;if(result==='throw')throw Error('PRIVATE_DATABASE_DETAIL');return {status:'WAIT'}}}})
+  for(let i=0;i<2;i++)await assert.rejects(retention.check(),e=>e.code==='CONTROL_RETENTION_UNAVAILABLE'&&!e.message.includes('PRIVATE_DATABASE_DETAIL'))
+  assert.equal(calls,1)
+ }
+})
+test('shutdown and invalid retention configuration cannot begin a native purge',async()=>{
+ const {createQualityMetadataRetention}=await import('../src/worker.mjs')
+ const stop=new AbortController();stop.abort();let calls=0
+ const store={purge:async()=>{calls++;return {status:'PURGED'}}}
+ assert.deepEqual(await createQualityMetadataRetention({store}).check({signal:stop.signal}),{status:'STOPPING',purgePerformed:false})
+ for(const now of [()=>NaN,()=>-1])await assert.rejects(createQualityMetadataRetention({store,now}).check(),{code:'CONTROL_RETENTION_CLOCK_INVALID'})
+ for(const options of [{},{store:{}},{store,now:null}])assert.throws(()=>createQualityMetadataRetention(options),{code:'CONTROL_RETENTION_CONFIGURATION_REQUIRED'})
+ assert.equal(calls,0)
+})
