@@ -1,3 +1,5 @@
+import {benchmarkUnmeteredPredecessor} from './benchmark-unmetered-source.mjs'
+export const BENCHMARK_UNMETERED_SOURCE_SHA='adf062924b5174d441028454536f18cf030e1b651940916085e04a143c02c551'
 // Test/build-only closed source continuation. Never imported by a runtime.
 import assert from 'node:assert/strict'
 import {createHash} from 'node:crypto'
@@ -112,6 +114,8 @@ export function reservationArchitectureSource(before,pin){
   .replace(entry,entry+"\n const reservation=assistantReservationPredecessor(current,historical,ASSISTANT_RESERVATION_SOURCE_SHA)\n if(reservation){const accepted=recurringSourcePredecessor(reservation.previousBytes,historical);assert(accepted,'all accepted predecessors retained');return {...accepted,reservation}}")
 }
 export function assistantReservationPredecessor(current,historical,expectedDigest){
+ const benchmark=benchmarkUnmeteredPredecessor(current,historical,BENCHMARK_UNMETERED_SOURCE_SHA)
+ if(benchmark){const accepted=assistantReservationPredecessor(benchmark.previousBytes,historical,expectedDigest);return accepted?{...accepted,benchmark}:null}
  let bytes;try{bytes=current(RESERVATION_RECORD)}catch(e){if(absent(e))return null;throw e}
  assert.match(expectedDigest??'',/^[a-f0-9]{64}$/);assert.equal(hash(bytes),expectedDigest,'exact reviewed reservation source record')
  const a=JSON.parse(bytes)
