@@ -414,7 +414,14 @@ test('BSDC continuity bootstrap preserves the old manifest and every original Ca
   assert.throws(()=>view(bsdcTrustedPolicy.recordPath),{code:'ENOENT'})
  }
  assert(calendarPredecessor(bsdcPhysical).record)
- assert(assertPrivateRecurringProvenance(root))
+ // This one assertion concerns the immutable historical Cal69 protocol.
+ // The current combined source has its separate protected schema2 validation.
+ const legacy=fs.mkdtempSync(path.join(os.tmpdir(),'calendar-legacy-protocol-')),checkout=path.join(legacy,'source')
+ try{
+  execFileSync('git',['clone','--quiet','--shared','--no-checkout',root,checkout],{stdio:['ignore','pipe','pipe']})
+  execFileSync('git',['checkout','--quiet','--detach','69d02834e863a51506aa4f50fbeb20f7fda3575b'],{cwd:checkout,stdio:['ignore','pipe','pipe']})
+  assert(assertPrivateRecurringProvenance(checkout))
+ }finally{fs.rmSync(legacy,{recursive:true,force:true})}
 })
 
 test('BSDC activation authenticates exactly the approved four documents before old source traversal',()=>{

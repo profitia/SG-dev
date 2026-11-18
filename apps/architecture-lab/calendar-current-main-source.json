@@ -565,7 +565,7 @@
     "packages/platform-source-hub-contracts/semantic-continuous-acceptance-v1.json": "f63364c997dacdb779da861685a93faa27d7b8bca84a75c6d277c9c188ccea76",
     "packages/platform-source-hub-contracts/source-access-continuity-acceptance-v1.json": "c99323c6690d488992c445eff4e1c26fe48d81ede267b6f5f2ad4df208768540",
     "scripts/governance/governance.test.mjs": "ef28078504fda6d844f63b5dd3d7687465f37b3d16064dff581ae392765909da",
-    "scripts/governance/platform-source-hub-foundation.test.mjs": "812bd89b6e89ecd092a12618d2e70f0f9576bb74bf15b0acaa73c66c693a986f"
+    "scripts/governance/platform-source-hub-foundation.test.mjs": "7d058ee5da870ad6661ccb5625d1124e228cda7bcee0846e3870a195d96c003a"
   },
   "views": {
     "calendar": {
@@ -858,6 +858,10 @@
         "scripts/governance/governance.test.mjs": {
           "currentSha256": "ef28078504fda6d844f63b5dd3d7687465f37b3d16064dff581ae392765909da",
           "previousSha256": "6406f5bc0db472045faab88c44bfe7a7d307ef1acb81b2c053852c0800c31846"
+        },
+        "scripts/governance/platform-source-hub-foundation.test.mjs": {
+          "currentSha256": "7d058ee5da870ad6661ccb5625d1124e228cda7bcee0846e3870a195d96c003a",
+          "previousSha256": "812bd89b6e89ecd092a12618d2e70f0f9576bb74bf15b0acaa73c66c693a986f"
         }
       },
       "addedPaths": [
@@ -1108,7 +1112,7 @@
           "previousSha256": "9d381bc7ae98c480e1ee1bfdbdaa062225c28bb44634822933ef934724f791a7"
         },
         "scripts/governance/platform-source-hub-foundation.test.mjs": {
-          "currentSha256": "812bd89b6e89ecd092a12618d2e70f0f9576bb74bf15b0acaa73c66c693a986f",
+          "currentSha256": "7d058ee5da870ad6661ccb5625d1124e228cda7bcee0846e3870a195d96c003a",
           "previousSha256": "dadd4f9fcc5be03afee02ae51038efa48b07b3f9b2b62e9476a7b288c1d42d77"
         }
       },
