@@ -96,3 +96,11 @@ test('self-refreshed current source hashes cannot admit another library, test co
    e=>e?.code==='ERR_ASSERTION'&&String(e.message).includes('current admitted CIC'),path)
  }
 })
+
+test('finite CIC projection retains unrelated current inputs and their native access errors',()=>{
+ const p='apps/architecture-lab/knowledge-source.json',bytes=Buffer.from('current unrelated input')
+ const view=assistantQualityHostPredecessor(f=>f===p?bytes:current(f),historical)
+ for(const read of [view.previousBytes,view.legacyPreviousBytes,view.compositionPreviousBytes])assert.deepEqual(read(p),bytes)
+ const denied=assistantQualityHostPredecessor(f=>{if(f===p)throw Object.assign(Error('DENIED'),{code:'EACCES'});return current(f)},historical)
+ for(const read of [denied.previousBytes,denied.legacyPreviousBytes,denied.compositionPreviousBytes])assert.throws(()=>read(p),{code:'EACCES'})
+})

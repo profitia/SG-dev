@@ -171,5 +171,14 @@ function composedQualityHost(current,historical,a){
  const reservation=assistantReservationPredecessor(compositionPreviousBytes,historical,RESERVATION_PIN);assert(reservation,'all accepted ACG checks retained')
  const expectedCommon="import {assistantQualityPredecessor,QUALITY_RECEIPT} from '../sg-runtime/tests/assistant-quality-integrity.mjs'\n"+String(historical(COMPOSITION_BASE,'apps/architecture-lab/private-recurring-source.mjs')).replace("export function recurringSourcePredecessor(current,historical){\n","export function recurringSourcePredecessor(current,historical){\n const quality=assistantQualityPredecessor(current,historical);if(quality){const accepted=recurringSourcePredecessor(quality.compositionPreviousBytes??quality.previousBytes,historical);assert(accepted,'accepted recurring source retained');return {...accepted,quality,manifest:{...accepted.manifest,sourceDigests:{...accepted.manifest.sourceDigests,...quality.manifest.sourceDigests,[QUALITY_RECEIPT]:hash(current(QUALITY_RECEIPT))}}}}\n")
  assert.equal(String(current('apps/architecture-lab/private-recurring-source.mjs')),expectedCommon,'only exact additive composition dispatch before accepted ACG')
- return {...legacy,manifest:a,compositionPreviousBytes,acceptedComposition:true}
+ const retainCurrent=reader=>p=>{
+  if(!mapped.has(p))return current(p)
+  try{return reader(p)}catch(e){
+   const text=String(e?.stderr??e?.message??'')
+   if(e?.status===128&&(text.includes("'"+p+"' does not exist in ")||text.includes("'"+p+"' exists on disk, but not in ")))throw Object.assign(Error('CIC addition absent from component predecessor'),{code:'ENOENT'})
+   throw e
+  }
+ }
+ return {...legacy,manifest:a,previousBytes:retainCurrent(legacy.previousBytes),
+  legacyPreviousBytes:retainCurrent(legacy.legacyPreviousBytes??legacy.previousBytes),compositionPreviousBytes,acceptedComposition:true}
 }
