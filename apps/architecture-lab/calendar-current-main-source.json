@@ -872,6 +872,8 @@
         "Canon/evidence/2026-11-11-platform-knowledge-stage2-development.md",
         "Canon/runbooks/platform-knowledge-stage2-development-v1.md",
         "Canon/runbooks/platform-knowledge-stage2-e1-activation-v1.md",
+        "apps/architecture-lab/calendar-current-main-source.json",
+        "apps/architecture-lab/calendar-current-main-source.mjs",
         "apps/architecture-lab/knowledge-source-adoption.json",
         "apps/architecture-lab/knowledge-source.json",
         "apps/architecture-lab/knowledge-source.mjs",
@@ -1119,6 +1121,8 @@
         }
       },
       "addedPaths": [
+        "apps/architecture-lab/calendar-current-main-source.json",
+        "apps/architecture-lab/calendar-current-main-source.mjs",
         "apps/architecture-lab/ecr-complete-functional-source.mjs",
         "apps/architecture-lab/test/calendar-current-main-source.test.mjs",
         "apps/architecture-lab/test/ecr-complete-functional-source.test.mjs",
