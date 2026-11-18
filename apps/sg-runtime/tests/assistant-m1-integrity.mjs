@@ -1,3 +1,4 @@
+import {sdkContinuationPredecessor} from '../../../packages/platform-contracts/test/organisation-sdk-compatibility.mjs'
 import {assertOilReportSourceCompatibility} from '../../srm/scripts/source-hub-sdk-compatibility.mjs'
 import {assistantM2Predecessor} from './assistant-m2-integrity.mjs'
 // Test-only receiver continuation. Never imported by a product runtime.
@@ -98,6 +99,8 @@ export function assertAssistantM1ChartCorrective(receipt,current,historical){
  return {prior,previousBytes:p=>ASSISTANT_M1_CHART_CORRECTIVE_PATHS.includes(p)||p===file?Buffer.from(historical(a.previousReceiptSourceSha,p)):current(p)}
 }
 export function assertAssistantM1Integrity(receipt,current,historical){
+ const sdk=sdkContinuationPredecessor(receipt,current,historical,{projectKey:'SG2'})
+ if(sdk)return assertAssistantM1Integrity(sdk.prior,sdk.previousBytes,historical)
  const m2=assistantM2Predecessor(current,historical);if(m2)return assertAssistantM1Integrity(receipt,m2.previousBytes,historical)
  if(receipt.oilAutonomousReportCompatibility){const n=assertOilReportSourceCompatibility(receipt,current,historical,{projectKey:'SG2'});return assertAssistantM1Integrity(n.prior,n.previousBytes,historical)}
  if(receipt.assistantM1ChartContextCorrective){const n=assertAssistantM1ChartCorrective(receipt,current,historical);return assertAssistantM1Integrity(n.prior,n.previousBytes,historical)}

@@ -92,3 +92,11 @@ test('valid pending invitation prevents duplicate mail; expired links can be rep
  assert.deepEqual(result.items.map(i=>i.status),['ALREADY_INVITED','READY','MEMBERSHIP_REQUIRES_REVIEW','MEMBERSHIP_REQUIRES_REVIEW'])
  assert.deepEqual(result.readyEmails,['expired@example.test'])
 })
+
+test('company selection confirms an observed record version; changing NIP clears that confirmation',()=>{
+ const selected={sourceRef:'synthetic-stored-registry',version:'snapshot-1'}
+ assert.deepEqual(normalizeOnboardingDraftPatch({companySelection:selected}),{companySelection:selected})
+ assert.deepEqual(normalizeOnboardingDraftPatch({nip:'PL1234563218'}),{nip:'1234563218',companySelection:null})
+ for(const value of [{...selected,organisationId:'foreign'},{sourceRef:'',version:'1'},{sourceRef:'safe',version:'bad\nversion'}])
+  reject(()=>normalizeOnboardingDraftPatch({companySelection:value}),'INVALID_COMPANY_SELECTION')
+})

@@ -1,4 +1,5 @@
 import {recurringSourcePredecessor} from '../../architecture-lab/private-recurring-source.mjs'
+import {acceptedSdkSource,sdkContinuationPredecessor} from '../../../packages/platform-contracts/test/organisation-sdk-compatibility.mjs'
 import {readM2AcceptedSource} from './assistant-m2-source-view.mjs'
 import {assistantM2Predecessor} from './assistant-m2-integrity.mjs'
 import {assistantEcrPredecessor,ECR_ADDITIONS} from './assistant-ecr-integrity.mjs'
@@ -11,8 +12,10 @@ import {posix} from 'node:path'
 import { OPERATION_CONTRACT, operationSourceDigest } from '@profitia/platform-contracts/operation-context'
 import { operationSourceDigest as sourceDigest } from '../../../packages/platform-contracts/src/operation-context.mjs'
 const receipt = JSON.parse(fs.readFileSync(new URL('../operation-integration.json', import.meta.url)))
-const recurring=recurringSourcePredecessor(p=>fs.readFileSync(new URL('../../../'+p,import.meta.url)),(sha,p)=>execFileSync('git',['show',sha+':'+p],{cwd:new URL('../../../',import.meta.url)}))
-const reservation=recurring?.reservation?.manifest,knowledge=recurring?.knowledge?.manifest
+const sdkContinuationRoot=new URL('../../../',import.meta.url),sdkContinuationCurrent=p=>fs.readFileSync(new URL(p,sdkContinuationRoot)),sdkContinuationHistory=(sha,p)=>execFileSync('git',['show',sha+':'+p],{cwd:sdkContinuationRoot})
+const organisationSourceView=sdkContinuationPredecessor(JSON.parse(sdkContinuationCurrent('apps/sg-runtime/operation-integration.json')),sdkContinuationCurrent,sdkContinuationHistory)
+const recurring=recurringSourcePredecessor(organisationSourceView?.previousBytes??sdkContinuationCurrent,sdkContinuationHistory)
+const reservation=recurringSourcePredecessor(sdkContinuationCurrent,sdkContinuationHistory)?.reservation?.manifest
 test('explicit consumer binds exact implemented contract and installed/source digest without enabling live deployment', async () => {
   const current=receipt.oilAutonomousReportCompatibility??receipt.assistantM1SourceCompatibility,contract=receipt.oilAutonomousReportCompatibility?receipt.contract:current.rootContract,producer=receipt.oilAutonomousReportCompatibility?current.producer:current.rootProducer
   assert.equal(receipt.projectKey, 'SG2')
@@ -20,7 +23,7 @@ test('explicit consumer binds exact implemented contract and installed/source di
   assert.equal(contract.id, OPERATION_CONTRACT.id)
   assert.equal(contract.version, OPERATION_CONTRACT.version)
   assert.equal(contract.implementation, OPERATION_CONTRACT.implementation)
-  assert.equal(knowledge?.sdkDigests.operationSourceDigest??reservation?.sdkDigests.operationSourceDigest??recurring?.manifest.sdkDigests.operationSourceDigest??contract.sourceDigest, await operationSourceDigest())
+  assert.equal(acceptedSdkSource().sdkDigests.operationSourceDigest, await operationSourceDigest())
   assert.equal(await operationSourceDigest(), await sourceDigest())
   assert.equal(receipt.liveRouteUsesContract, false)
   assert.equal(receipt.automaticProductDeployment, false)
@@ -56,7 +59,7 @@ test('candidate16 acceptance preserves the exact previous receipts and has no ru
     assert.equal(createHash('sha256').update(previousBytes).digest('hex'),digest,record+':'+path)
   }
   const sdkModules={'operation-context':['operationSourceDigest'],'private-operation-host':['privateOperationHostSourceDigest'],'request-ledger':['requestLedgerSourceDigest','externalRequestSchemaDigest'],'delegated-job':['delegatedJobSourceDigest'],'request-continuation':['requestContinuationSourceDigest'],'request-inspection':['requestInspectionSourceDigest'],'request-work':['requestWorkSourceDigest'],'request-operations':['requestOperationsSourceDigest','additionalRequestSchemaDigest'],'external-call':['externalCallSourceDigest','publicWebTransportSchemaDigest'],'supplier-location':['supplierLocationSchemaDigest']}
-  for(const[module,names]of Object.entries(sdkModules)){const sdk=await import('@profitia/platform-contracts/'+module);for(const name of names)assert.equal(await sdk[name](),(knowledge?.sdkDigests[name]??reservation?.sdkDigests[name]??recurring?.manifest.sdkDigests[name]??receipt.oilAutonomousReportCompatibility?.sdkDigests[name]??receipt.assistantM1SourceCompatibility?.sdkDigests[name]??receipt.sourceHubMarketSymbolCompatibility?.sdkDigests[name]??receipt.sourceHubApiPathCompatibility?.sdkDigests[name]??receipt.freshPostfetchCompatibility?.sdkDigests[name]??receipt.sourceLeaseClockCompatibility?.sdkDigests[name]??receipt.settledExternalFailureCompatibility?.sdkDigests[name]??receipt.diagnosticTelemetryAdoption.sdkDigests[name]),name)}
+  for(const[module,names]of Object.entries(sdkModules)){const sdk=await import('@profitia/platform-contracts/'+module);for(const name of names)assert.equal(await sdk[name](),(acceptedSdkSource().sdkDigests[name]??receipt.oilAutonomousReportCompatibility?.sdkDigests[name]??receipt.assistantM1SourceCompatibility?.sdkDigests[name]??receipt.sourceHubMarketSymbolCompatibility?.sdkDigests[name]??receipt.sourceHubApiPathCompatibility?.sdkDigests[name]??receipt.freshPostfetchCompatibility?.sdkDigests[name]??receipt.sourceLeaseClockCompatibility?.sdkDigests[name]??receipt.settledExternalFailureCompatibility?.sdkDigests[name]??receipt.diagnosticTelemetryAdoption.sdkDigests[name]),name)}
   assert.equal(accepted.sdkDigests.supplierLocationSchemaDigest,'34ec633dbf38dfffd6b3954ae79b0ef6f771d75ad8f0443882be71ca78b084e5')
 })
 
@@ -160,7 +163,7 @@ test('Benchmark presentation renews the current receiver closure without rewriti
       ?execFileSync('git',['show',receipt.assistantM1ChartContextCorrective.previousReceiptSourceSha+':'+posix.normalize('apps/sg-runtime/'+path)])
       :receipt.assistantM1RuntimeSourceCompatibility?.consumerSourceDigests[posix.normalize('apps/sg-runtime/'+path)]
       ?execFileSync('git',['show',receipt.assistantM1RuntimeSourceCompatibility.previousReceiptSourceSha+':'+posix.normalize('apps/sg-runtime/'+path)])
-      :fs.readFileSync(new URL('../'+path,import.meta.url))
+      :readM2AcceptedSource(new URL('../'+path,import.meta.url))
     const observed = createHash('sha256').update(bytes).digest('hex')
     assert.equal(observed, digest, path)
     assert.notEqual(createHash('sha256').update('changed-content').digest('hex'), digest, path)
@@ -207,7 +210,7 @@ test('Benchmark presentation renews the current receiver closure without rewriti
         ?execFileSync('git',['show',receipt.integratedBuyerJourneySourceCompatibility.previousReceiptSourceSha+':'+file])
         :receipt.appshellXraySourceCompatibility.changedApplicationFiles.includes(file.replace('apps/sg-runtime/',''))
         ?execFileSync('git',['show',receipt.appshellXraySourceCompatibility.previousReceiptSourceSha+':'+file])
-        :receipt.bqlPciFirstSourceCompatibility?.sourceDigests[file]?execFileSync('git',['show',receipt.bqlPciFirstSourceCompatibility.previousReceiptSourceSha+':'+file]):receipt.xrayAppShellPresentation?.sourceDigests[file]?execFileSync('git',['show',receipt.xrayAppShellPresentation.previousReceiptSourceSha+':'+file]):receipt.productAnalyticsMainCompatibility?.sourceDigests[file]?execFileSync('git',['show',receipt.productAnalyticsMainCompatibility.sharedBaselineSourceSha+':'+file]):receipt.marketHistoryIngestionCompatibility?.sourceDigests[file]?execFileSync('git',['show',receipt.marketHistoryIngestionCompatibility.previousReceiptSourceSha+':'+file]):corrective?.sourceDigests[file]?acceptedM1Bytes:fs.readFileSync(new URL(file,repository))
+        :receipt.bqlPciFirstSourceCompatibility?.sourceDigests[file]?execFileSync('git',['show',receipt.bqlPciFirstSourceCompatibility.previousReceiptSourceSha+':'+file]):receipt.xrayAppShellPresentation?.sourceDigests[file]?execFileSync('git',['show',receipt.xrayAppShellPresentation.previousReceiptSourceSha+':'+file]):receipt.productAnalyticsMainCompatibility?.sourceDigests[file]?execFileSync('git',['show',receipt.productAnalyticsMainCompatibility.sharedBaselineSourceSha+':'+file]):receipt.marketHistoryIngestionCompatibility?.sourceDigests[file]?execFileSync('git',['show',receipt.marketHistoryIngestionCompatibility.previousReceiptSourceSha+':'+file]):corrective?.sourceDigests[file]?acceptedM1Bytes:readM2AcceptedSource(new URL(file,repository))
       assert.deepEqual(observed,execFileSync('git',['show',current.previousReceiptSourceSha+':'+file]),'Unchanged protected source: '+file)
     }
   }
