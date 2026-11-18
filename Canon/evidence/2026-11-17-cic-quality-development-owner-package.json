@@ -233,7 +233,7 @@
       "rejectedWriteApplied": false,
       "noAlternativeSecretTransferAttempted": true,
       "approvalDate": "2026-11-18",
-      "approvalResponse": "Zatwierdzam te dwa po\u0142\u0105czenia w tym workerze",
+      "approvalResponse": "Zatwierdzam te dwa połączenia w tym workerze",
       "subsequentExplicitlyApprovedWriteApplied": true,
       "valuesPublished": false
     }
@@ -297,7 +297,7 @@
   "ownerApproval": {
     "date": "2026-11-17",
     "hostConversationId": "01a1e7fb-2253-7f91-9335-270094d39784",
-    "response": "Zatwierdzam ca\u0142y opisany pakiet owner-only",
+    "response": "Zatwierdzam cały opisany pakiet owner-only",
     "proposalPr": 1104,
     "reviewedPlanSyncId": "exe-dbu3pq0u01pc73djagqg",
     "excluded": [
@@ -900,7 +900,7 @@
     "runtimeAccessPermissionsCostsChanged": false,
     "existingBranchesExpiryPackagePinsAndActorUnchanged": true,
     "approvalDate": "2026-11-17",
-    "approvalResponse": "Zatwierdzam to ograniczone uzupe\u0142nienie CI",
+    "approvalResponse": "Zatwierdzam to ograniczone uzupełnienie CI",
     "proposalPr": 1136,
     "hostConversationId": "01a1e7fb-2253-7f91-9335-270094d39784",
     "approvedPathCount": 23
@@ -943,7 +943,7 @@
     "acceptedParallelPredecessorSha": "77369b63888c5fa66d8d8159d5e8f36a23d25c83",
     "approvedPathCount": 24,
     "approvalDate": "2026-11-17",
-    "approvalResponse": "Zatwierdzam ograniczone uzupe\u0142nienie CI24",
+    "approvalResponse": "Zatwierdzam ograniczone uzupełnienie CI24",
     "proposalPr": 1159,
     "hostConversationId": "01a1e7fb-2253-7f91-9335-270094d39784",
     "approvalReviewedAdditionalPath": "apps/sg-runtime/tests/procurement-insights-editorial-integrity.mjs",
@@ -1021,7 +1021,7 @@
     "previousFinderApprovalNotReusedForNewPath": true,
     "approvedPrecedingPolicyMain": "67b81304e08d400aef5872839e24de39b8af8093",
     "approvalDate": "2026-11-18",
-    "approvalResponse": "Zatwierdzam t\u0119 zamian\u0119 adaptera CI24",
+    "approvalResponse": "Zatwierdzam tę zamianę adaptera CI24",
     "approvalPr": 1179,
     "hostConversationId": "01a1e7fb-2253-7f91-9335-270094d39784",
     "approvedPathCount": 24
@@ -1107,5 +1107,110 @@
     "onlyExistingSixDeploymentReferences": true,
     "noNewOwnerTransactionExecuted": true,
     "newPersistentRoleOrDataGrantAuthorityNotInferred": true
+  },
+  "proposedCi27AcceptedKnowledgeComposition": {
+    "schemaVersion": "AQC_INERT_REVIEW_PROPOSAL_V1",
+    "status": "INERT_NOT_APPLIED_NOT_EXECUTED_NOT_QUALIFIED",
+    "sourceHead": "fef229b89fc69eda584a88fdb62925f509baab67",
+    "acceptedMain": "2f77dcd19a5ba0bb4dd4c30ed375f4c1d3213586",
+    "patchSha256": "863498ee18b2b1a65405250ed4162e90c304634634109ce57e2ff530824d44ad",
+    "ciProfile": {
+      "previousOwnerApprovedCount": 24,
+      "proposedCount": 27,
+      "newPaths": [
+        "packages/platform-contracts/test/assistant-reservation-source.mjs",
+        "apps/architecture-lab/knowledge-source.mjs",
+        "apps/architecture-lab/test/knowledge-source.test.mjs"
+      ],
+      "original24PathsUnchanged": true
+    },
+    "changedReviewFiles": [
+      {
+        "path": "apps/architecture-lab/test/knowledge-source.test.mjs",
+        "beforeSha256": "5868aa0b4563ebd12238660c5f9a1baab5df05051ddd8346e38fdc6218522777",
+        "proposedSha256": "df766e101aab6efc2848682cca624dcb8a728290912f1d531e856bfb1079c4f8"
+      },
+      {
+        "path": "apps/sg-runtime/tests/assistant-quality-host-integrity.mjs",
+        "beforeSha256": "363a08509817b5473340aa18ef7eeb67dfa1af7ce1d2b5fd50dd1c39162e69ab",
+        "proposedSha256": "3052ccd6360b9a7fd9bd326683a69ee9e2a7b44f93eae0932ca85c3c47e004d7"
+      },
+      {
+        "path": "packages/platform-contracts/test/assistant-reservation-source.mjs",
+        "beforeSha256": "b90adb4793374602e38caf9d463d2561a122f146c3240da81f5b1667cd11e9d6",
+        "proposedSha256": "0a45aced74c9f83d54ee28e819c7a68a4a2ce263a6b564f6514caf891d7ef7ce"
+      },
+      {
+        "path": "apps/sg-runtime/tests/procurement-insights-editorial-package-integrity.mjs",
+        "beforeSha256": "cd18207aa99ab90adb60e7ebafcecfa4065a98a2e9a0459e42ab7844d2d85050",
+        "proposedSha256": "8d04bf7ccb45cba30eb0e9d5fb032db2e04e039337674b9d198df6525bf257b1"
+      },
+      {
+        "path": "apps/sg-runtime/tests/assistant-quality-host-integrity.test.mjs",
+        "beforeSha256": "7b3cf9c181ca31aa90a3315086f58fbc49a0c5393f4864a125bf0efa6d310960",
+        "proposedSha256": "97a7897676b21657afaea2cfccefdc581004aab6b2b1f23943ee6a3ea1673eff"
+      },
+      {
+        "path": "apps/sg-runtime/assistant-quality-host-integration.json",
+        "beforeSha256": "d635468aeaf2a424ca25748e5565a202588ae3f068fc1a70528782d9241f7110",
+        "proposedSha256": "c83d9aab364c2d1cea389e002d228398ef67ff34ac9191ca5900ea0b6de04d01"
+      }
+    ],
+    "staticChecks": {
+      "acceptedKnowledgeTestBodiesByteIdentical": true,
+      "originalEditorialParseBodyByteIdentical": true,
+      "originalCicReceiptsUnchanged": true,
+      "unmodifiedSourceAttestations": 14,
+      "proposedOwnedAttestationsOnly": 5,
+      "patchExecuted": false,
+      "sourceFilesWritten": false
+    },
+    "currentActualQualification": {
+      "pass": 20,
+      "fail": 5,
+      "skip": 0,
+      "log": "ci26-pk-host-strict-predecessor-tests-20261118.log"
+    },
+    "requiredBeforeActivation": [
+      "explicit owner admission of the three additional paths and exact compatibility logic",
+      "pure trusted-controller validation without candidate execution",
+      "all original legacy and PK tests preserved",
+      "exact-source and resulting-main CI",
+      "shared host ordering release",
+      "real Development deployment and controlled QA"
+    ],
+    "paidRepairsEnabled": false,
+    "promotionEnabled": false,
+    "pilotStarted": false,
+    "stage2Authorised": false,
+    "proposalPr": 1197,
+    "hostPr": 1099,
+    "supersedesUnapprovedProposal": "CI25",
+    "reviewedCurrentMain": "608efe22d4a994d4cdbfcddc111c0dfd4732d698",
+    "patchFormat": "unified diff stored as inert review data only",
+    "proposedPatch": "--- a/apps/architecture-lab/test/knowledge-source.test.mjs\n+++ b/apps/architecture-lab/test/knowledge-source.test.mjs\n@@ -1,9 +1,12 @@\n+import {assistantQualityPredecessor} from '../../sg-runtime/tests/assistant-quality-integrity.mjs';\n import test from 'node:test';import assert from 'node:assert/strict';\n import {readFileSync} from 'node:fs';import {execFileSync} from 'node:child_process';\n import {knowledgeSourcePredecessor,KNOWLEDGE_SOURCE_RECORD,KNOWLEDGE_SOURCE_RECORD_SHA256} from '../knowledge-source.mjs';\n import {operationSourceDigest,OPERATION_CONTRACT,KNOWLEDGE_ROOT_CONTRACT} from '../../../packages/platform-contracts/src/operation-context.mjs';\n-const root=new URL('../../../',import.meta.url),read=p=>readFileSync(new URL(p,root));\n+const root=new URL('../../../',import.meta.url),physical=p=>readFileSync(new URL(p,root));\n const cache=new Map(),history=(sha,p)=>{const key=sha+':'+p;if(!cache.has(key))cache.set(key,execFileSync('git',['show',key],{cwd:root,stdio:['ignore','pipe','pipe']}));return cache.get(key);};\n+// Authenticate the complete current CIC graph before the unchanged accepted PK fixture.\n+const quality=assistantQualityPredecessor(physical,history),read=quality?.compositionPreviousBytes??physical;\n test('closed knowledge SDK successor binds real current digest and immutable predecessor without runtime activation',async()=>{\n  const view=knowledgeSourcePredecessor(read,history);assert(view);assert.equal(view.manifest.sdkDigests.operationSourceDigest,await operationSourceDigest());\n  assert.equal(OPERATION_CONTRACT.implementation,'1.0.0-candidate.16');assert.equal(KNOWLEDGE_ROOT_CONTRACT.implementation,'1.0.0-candidate.23');\n--- a/apps/sg-runtime/tests/assistant-quality-host-integrity.mjs\n+++ b/apps/sg-runtime/tests/assistant-quality-host-integrity.mjs\n@@ -23,7 +23,8 @@\n  'apps/architecture-lab/private-recurring-source.mjs',\n  'apps/sg-runtime/tests/procurement-insights-editorial-package-integrity.mjs',\n  'packages/platform-contracts/test/assistant-reservation-source.mjs',\n- 'apps/architecture-lab/knowledge-source.mjs'\n+ 'apps/architecture-lab/knowledge-source.mjs',\n+ 'apps/architecture-lab/test/knowledge-source.test.mjs'\n ])\n export const QUALITY_HOST_PRESERVED=Object.freeze([\n  'apps/sg-runtime/assistant-quality-integration.json',\n@@ -67,7 +68,7 @@\n  const hasLegacyTransport=Object.hasOwn(a.sourceDigests,legacyTransport),hasFinderTransport=Object.hasOwn(a.sourceDigests,finderTransport)\n  assert([hasLegacyTransport,hasFinderTransport,hasPackageTransport].filter(Boolean).length<=1,'one closed CI24 transport profile')\n  const hasTransport=hasLegacyTransport||hasFinderTransport||hasPackageTransport,transport=hasPackageTransport?packageTransport:hasFinderTransport?finderTransport:legacyTransport\n- const paths=QUALITY_HOST_PATHS.filter(p=>p!=='packages/platform-contracts/test/assistant-reservation-source.mjs'&&p!=='apps/architecture-lab/knowledge-source.mjs'&&(p!==common||hasCommon)&&(p!==packageTransport||hasPackageTransport))\n+ const paths=QUALITY_HOST_PATHS.filter(p=>p!=='packages/platform-contracts/test/assistant-reservation-source.mjs'&&p!=='apps/architecture-lab/knowledge-source.mjs'&&p!=='apps/architecture-lab/test/knowledge-source.test.mjs'&&(p!==common||hasCommon)&&(p!==packageTransport||hasPackageTransport))\n  if(hasFinderTransport)paths.push(finderTransport)\n  if(hasLegacyTransport)paths.push(legacyTransport)\n  assert.deepEqual(Object.keys(a.sourceDigests).sort(),[...paths].sort())\n@@ -124,8 +125,8 @@\n  assert.deepEqual(Object.keys(a).sort(),[...Object.keys(prior),'acceptedComposition'].sort())\n  for(const k of Object.keys(prior).filter(k=>k!=='sourceDigests'))assert.deepEqual(a[k],prior[k],'immutable component metadata '+k)\n  assert.deepEqual(a.acceptedComposition,{sourceSha:COMPOSITION_BASE,componentSourceSha:COMPONENT_BASE,reservationRecordSha256:RESERVATION_PIN})\n- assert.deepEqual(Object.keys(a.sourceDigests).sort(),QUALITY_HOST_PATHS.filter(p=>p!=='apps/architecture-lab/knowledge-source.mjs').sort(),'closed CI25 source inventory')\n- for(const p of QUALITY_HOST_PATHS.filter(p=>p!=='apps/architecture-lab/knowledge-source.mjs')){assert.match(a.sourceDigests[p],/^[a-f0-9]{64}$/);assert.equal(hash(current(p)),a.sourceDigests[p],'exact composed CIC source '+p)}\n+ assert.deepEqual(Object.keys(a.sourceDigests).sort(),QUALITY_HOST_PATHS.filter(p=>p!=='apps/architecture-lab/knowledge-source.mjs'&&p!=='apps/architecture-lab/test/knowledge-source.test.mjs').sort(),'closed CI25 source inventory')\n+ for(const p of QUALITY_HOST_PATHS.filter(p=>p!=='apps/architecture-lab/knowledge-source.mjs'&&p!=='apps/architecture-lab/test/knowledge-source.test.mjs')){assert.match(a.sourceDigests[p],/^[a-f0-9]{64}$/);assert.equal(hash(current(p)),a.sourceDigests[p],'exact composed CIC source '+p)}\n  for(const p of QUALITY_HOST_PRESERVED){assert.equal(hash(current(p)),a.previousReceipts[p]);assert.equal(hash(historical(QUALITY_HOST_BASE,p)),a.previousReceipts[p])}\n \n  const packagePath='apps/sg-runtime/package.json',lockPath='apps/sg-runtime/package-lock.json'\n@@ -196,7 +197,7 @@\n  for(const k of Object.keys(prior).filter(k=>k!=='sourceDigests'))assert.deepEqual(a[k],prior[k],'immutable original CIC component '+k)\n  assert.deepEqual(a.acceptedComposition,{sourceSha:KNOWLEDGE_COMPOSITION_BASE,componentSourceSha:COMPONENT_BASE,\n   reservationRecordSha256:RESERVATION_PIN,knowledgeRecordSha256:KNOWLEDGE_PIN})\n- assert.deepEqual(Object.keys(a.sourceDigests).sort(),[...QUALITY_HOST_PATHS].sort(),'closed CI26 source inventory')\n+ assert.deepEqual(Object.keys(a.sourceDigests).sort(),[...QUALITY_HOST_PATHS].sort(),'closed CI27 source inventory')\n  for(const p of QUALITY_HOST_PATHS){assert.match(a.sourceDigests[p],/^[a-f0-9]{64}$/);assert.equal(hash(current(p)),a.sourceDigests[p],'exact CIC and Knowledge composition '+p)}\n  for(const p of QUALITY_HOST_PRESERVED){assert.equal(hash(current(p)),a.previousReceipts[p]);assert.equal(hash(historical(QUALITY_HOST_BASE,p)),a.previousReceipts[p])}\n  const packagePath='apps/sg-runtime/package.json',lockPath='apps/sg-runtime/package-lock.json'\n@@ -207,11 +208,11 @@\n  expectedPackage.scripts['test:assistant']=script.replace(marker,marker+'tests/assistant-quality.test.ts ')\n   +' && node --test tests/assistant-quality-integrity.test.mjs'\n   +' && node --import tsx --test tests/assistant-quality-response.test.ts tests/assistant-quality-evidence.test.ts && node --test tests/assistant-quality-host-integrity.test.mjs'\n- assert.deepEqual(JSON.parse(current(packagePath)),expectedPackage,'only exact CIC pin and QA commands on accepted Knowledge manifest')\n+ assert.deepEqual(JSON.parse(current(packagePath)),expectedPackage,'current admitted CIC manifest permits only its exact core pin and QA tests')\n  const expectedLock=JSON.parse(historical(KNOWLEDGE_COMPOSITION_BASE,lockPath))\n  expectedLock.packages[''].dependencies['@profitia/cic-core']='1.8.0'\n  Object.assign(expectedLock.packages['node_modules/@profitia/cic-core'],QUALITY_CIC_PIN)\n- assert.deepEqual(JSON.parse(current(lockPath)),expectedLock,'accepted Knowledge SDK and all unrelated dependency bytes retained')\n+ assert.deepEqual(JSON.parse(current(lockPath)),expectedLock,'current admitted CIC lock permits only the exact published core artifact')\n  const legacy=assistantQualityHostPredecessor(p=>Buffer.from(historical(COMPONENT_BASE,p)),historical)\n  assert(legacy,'complete original CIC component retained')\n  const mapped=new Set([...QUALITY_HOST_PATHS,...QUALITY_HOST_PRESERVED,QUALITY_HOST_RECEIPT,\n@@ -246,7 +247,14 @@\n  assert.equal(String(current(common)),\"import {assistantQualityPredecessor,QUALITY_RECEIPT} from '../sg-runtime/tests/assistant-quality-integrity.mjs'\\n\"+beforeCommon.replace(entry,entry+prefix),'only additive CIC dispatch before complete Knowledge chain')\n  const transport='apps/sg-runtime/tests/procurement-insights-editorial-package-integrity.mjs',oldTransport=String(historical(COMPONENT_BASE,transport))\n  assert.equal(oldTransport.split('quality.previousBytes').length,2)\n- assert.equal(String(current(transport)),oldTransport.replace('quality.previousBytes','quality.compositionPreviousBytes??quality.previousBytes'),'all original editorial checks retained')\n+ const expectedTransport=oldTransport.replace('quality.previousBytes','quality.host?.editorialPreviousBytes??quality.compositionPreviousBytes??quality.previousBytes').replace(\"sourceDigests:{...accepted.manifest.sourceDigests,...quality.manifest.sourceDigests,\",\"sourceDigests:{...Object.fromEntries(Object.entries(accepted.manifest.sourceDigests).map(([p,digest])=>[p,quality.host?.knowledgeManifest?.sourceDigests[p]??digest])),...quality.manifest.sourceDigests,\")\n+ assert.equal(String(current(transport)),expectedTransport,'all original editorial checks retained')\n+ const knowledgeTest='apps/architecture-lab/test/knowledge-source.test.mjs'\n+ const acceptedTest=String(historical(KNOWLEDGE_COMPOSITION_BASE,knowledgeTest))\n+ const testReader=\"const root=new URL('../../../',import.meta.url),read=p=>readFileSync(new URL(p,root));\",testHistory=\"const cache=new Map(),history=(sha,p)=>{const key=sha+':'+p;if(!cache.has(key))cache.set(key,execFileSync('git',['show',key],{cwd:root,stdio:['ignore','pipe','pipe']}));return cache.get(key);};\"\n+ assert.equal(acceptedTest.split(testReader).length,2);assert.equal(acceptedTest.split(testHistory).length,2)\n+ const expectedTest=\"import {assistantQualityPredecessor} from '../../sg-runtime/tests/assistant-quality-integrity.mjs';\\n\"+acceptedTest.replace(testReader,testReader.replace(',read=',',physical=')).replace(testHistory,testHistory+\"\\n// Authenticate the complete current CIC graph before the unchanged accepted PK fixture.\\nconst quality=assistantQualityPredecessor(physical,history),read=quality?.compositionPreviousBytes??physical;\")\n+ assert.equal(String(current(knowledgeTest)),expectedTest,'exact additive fixture adapter; every accepted Knowledge assertion unchanged')\n  const packageReceipt='apps/sg-runtime/procurement-insights-editorial-package-integration.json',packaged=JSON.parse(current(packageReceipt))\n  assert.deepEqual(Buffer.from(current(packageReceipt)),Buffer.from(historical(KNOWLEDGE_COMPOSITION_BASE,packageReceipt)))\n  for(const [p,digest]of Object.entries(packaged.sourceDigests)){\n@@ -268,5 +276,5 @@\n   }\n  }\n  return {...legacy,manifest:a,previousBytes:retainCurrent(legacy.previousBytes),legacyPreviousBytes:retainCurrent(legacy.legacyPreviousBytes??legacy.previousBytes),\n-  compositionPreviousBytes,reservationPreviousBytes:knowledge.previousBytes,acceptedComposition:true,knowledgeComposition:true}\n+  compositionPreviousBytes,reservationPreviousBytes:knowledge.previousBytes,editorialPreviousBytes:knowledge.previousBytes,knowledgeManifest:knowledge.manifest,acceptedComposition:true,knowledgeComposition:true}\n }\n--- a/packages/platform-contracts/test/assistant-reservation-source.mjs\n+++ b/packages/platform-contracts/test/assistant-reservation-source.mjs\n@@ -223,7 +223,7 @@\n   const accepted=originalReservationPredecessor(quality.host?.reservationPreviousBytes??quality.compositionPreviousBytes,historical,expectedDigest)\n   assert(accepted,'accepted ACG predecessor required')\n   return {...accepted,quality,historicalReservation:accepted,\n-   manifest:{...accepted.manifest,sourceDigests:{...accepted.manifest.sourceDigests,...quality.manifest.sourceDigests,\n+   manifest:{...accepted.manifest,sourceDigests:{...Object.fromEntries(Object.entries(accepted.manifest.sourceDigests).map(([p,digest])=>[p,quality.host?.knowledgeManifest?.sourceDigests[p]??digest])),...quality.manifest.sourceDigests,\n     [QUALITY_RECEIPT]:hash(current(QUALITY_RECEIPT))}}}\n  }\n  return originalReservationPredecessor(current,historical,expectedDigest)\n--- a/apps/sg-runtime/tests/procurement-insights-editorial-package-integrity.mjs\n+++ b/apps/sg-runtime/tests/procurement-insights-editorial-package-integrity.mjs\n@@ -51,8 +51,8 @@\n  }\n  const quality=assistantQualityPredecessor(current,historical)\n  if(quality){\n-  const accepted=procurementInsightsEditorialPackagePredecessor(quality.compositionPreviousBytes??quality.previousBytes,historical);assert(accepted,'accepted editorial package source retained')\n-  return {...accepted,quality,manifest:{...accepted.manifest,sourceDigests:{...accepted.manifest.sourceDigests,...quality.manifest.sourceDigests,[QUALITY_RECEIPT]:hash(current(QUALITY_RECEIPT))}}}\n+  const accepted=procurementInsightsEditorialPackagePredecessor(quality.host?.editorialPreviousBytes??quality.compositionPreviousBytes??quality.previousBytes,historical);assert(accepted,'accepted editorial package source retained')\n+  return {...accepted,quality,manifest:{...accepted.manifest,sourceDigests:{...Object.fromEntries(Object.entries(accepted.manifest.sourceDigests).map(([p,digest])=>[p,quality.host?.knowledgeManifest?.sourceDigests[p]??digest])),...quality.manifest.sourceDigests,[QUALITY_RECEIPT]:hash(current(QUALITY_RECEIPT))}}}\n  }\n  const a=JSON.parse(bytes)\n  assert.deepEqual(Object.keys(a).sort(),['schemaVersion','taskId','targetEnvironment','scope','previousSourceSha','packageVersionBefore','packageVersionAfter','sourceDigests','preservedReceipts','authorisationChanged','schemaChanged','runtimeCodeChanged','dependenciesChanged','modelChanged','providerCallsPerformed','historicalReportsChanged','automaticPublication'].sort())\n--- a/apps/sg-runtime/tests/assistant-quality-host-integrity.test.mjs\n+++ b/apps/sg-runtime/tests/assistant-quality-host-integrity.test.mjs\n@@ -64,7 +64,7 @@\n  assert.throws(()=>procurementInsightsEditorialPackagePredecessor(p=>p===lock?Buffer.from(JSON.stringify(bad)):current(p),historical))\n })\n \n-test('CI25 composition authenticates current ACG and CIC independently before retaining both frozen predecessor chains',async()=>{\n+test('CI27 composition authenticates current ACG and CIC independently before retaining both frozen predecessor chains',async()=>{\n  const {assistantReservationPredecessor,RESERVATION_PATHS,RESERVATION_RECORD,RESERVATION_DERIVED}=await import('../../../packages/platform-contracts/test/assistant-reservation-source.mjs')\n  const pin='bfa9287d9a0a17ef0a935ddc2c0f66c46b42d6c415b2b1fda0d237d2e38fc8b8'\n  const v=assistantReservationPredecessor(current,historical,pin);assert(v?.quality?.host?.acceptedComposition)\n@@ -98,7 +98,7 @@\n })\n \n test('finite CIC projection retains unrelated current inputs and their native access errors',()=>{\n- const p='apps/architecture-lab/knowledge-source.json',bytes=Buffer.from('current unrelated input')\n+ const p='Canon/evidence/aqc-unrelated-current-canary.json',bytes=Buffer.from('current unrelated input')\n  const view=assistantQualityHostPredecessor(f=>f===p?bytes:current(f),historical)\n  for(const read of [view.previousBytes,view.legacyPreviousBytes,view.compositionPreviousBytes])assert.deepEqual(read(p),bytes)\n  const denied=assistantQualityHostPredecessor(f=>{if(f===p)throw Object.assign(Error('DENIED'),{code:'EACCES'});return current(f)},historical)\n--- a/apps/sg-runtime/assistant-quality-host-integration.json\n+++ b/apps/sg-runtime/assistant-quality-host-integration.json\n@@ -16,13 +16,14 @@\n     \"apps/sg-runtime/tests/assistant-quality-response.test.ts\": \"86a0957bcaa243ac8fbacd57db5024f4e242d99fe9bb52bed563b89a2de1f48e\",\n     \"apps/sg-runtime/tests/assistant-quality-evidence.test.ts\": \"a301ae44ece516a83afba433d82dcf0e5a2f68272ff04194b677fbec433274bf\",\n     \"apps/sg-runtime/tests/assistant-quality-integrity.mjs\": \"43a1682cf58f5d42f7339f752901f536d85ff941cef5b1c7778c052f55ee649b\",\n-    \"apps/sg-runtime/tests/assistant-quality-host-integrity.mjs\": \"363a08509817b5473340aa18ef7eeb67dfa1af7ce1d2b5fd50dd1c39162e69ab\",\n-    \"apps/sg-runtime/tests/assistant-quality-host-integrity.test.mjs\": \"7b3cf9c181ca31aa90a3315086f58fbc49a0c5393f4864a125bf0efa6d310960\",\n+    \"apps/sg-runtime/tests/assistant-quality-host-integrity.mjs\": \"3052ccd6360b9a7fd9bd326683a69ee9e2a7b44f93eae0932ca85c3c47e004d7\",\n+    \"apps/sg-runtime/tests/assistant-quality-host-integrity.test.mjs\": \"97a7897676b21657afaea2cfccefdc581004aab6b2b1f23943ee6a3ea1673eff\",\n     \"apps/sg-runtime/tests/procurement-insights-completion-integrity.mjs\": \"00f1b475342a78ad916c03723ae2b9b268963240d101b57c17559308c48daafa\",\n     \"apps/architecture-lab/private-recurring-source.mjs\": \"34c555f971140e197880e2ff3ddf7c1696112d2744374b238a3f3315c8fbbcf4\",\n-    \"apps/sg-runtime/tests/procurement-insights-editorial-package-integrity.mjs\": \"cd18207aa99ab90adb60e7ebafcecfa4065a98a2e9a0459e42ab7844d2d85050\",\n-    \"packages/platform-contracts/test/assistant-reservation-source.mjs\": \"b90adb4793374602e38caf9d463d2561a122f146c3240da81f5b1667cd11e9d6\",\n-    \"apps/architecture-lab/knowledge-source.mjs\": \"4ff6c2d4740764a62c10315f6ffd848460c90a59c0a6483232efde603f891838\"\n+    \"apps/sg-runtime/tests/procurement-insights-editorial-package-integrity.mjs\": \"8d04bf7ccb45cba30eb0e9d5fb032db2e04e039337674b9d198df6525bf257b1\",\n+    \"packages/platform-contracts/test/assistant-reservation-source.mjs\": \"0a45aced74c9f83d54ee28e819c7a68a4a2ce263a6b564f6514caf891d7ef7ce\",\n+    \"apps/architecture-lab/knowledge-source.mjs\": \"4ff6c2d4740764a62c10315f6ffd848460c90a59c0a6483232efde603f891838\",\n+    \"apps/architecture-lab/test/knowledge-source.test.mjs\": \"df766e101aab6efc2848682cca624dcb8a728290912f1d531e856bfb1079c4f8\"\n   },\n   \"previousReceipts\": {\n     \"apps/sg-runtime/assistant-quality-integration.json\": \"d37226bbb90d585b95aab383dab6fcb7d20ab8698709b50de0e1c8a58d1af2a7\",\n",
+    "automaticApprovalRejections": {
+      "broadHistoricalProjection": {
+        "applied": false,
+        "reason": "Potential weakening of immutable predecessor controls and refreshing source attestations after failing tests"
+      },
+      "multiAdapterContinuation": {
+        "applied": false,
+        "reason": "Security-sensitive changes to multiple adapters, fixture projection and five source attestations need exact owner review"
+      }
+    },
+    "noAdditionalAuthorityClaimed": true,
+    "limitedRenderAccess": {
+      "currentDashboardForm": "CLASSIC_KEY_ONLY",
+      "classicKeyExcludedByExistingOwnerApproval": true,
+      "newKeyCreated": false,
+      "scopedAvailabilityUnconfirmed": true
+    },
+    "existingOwnerApprovalsRemainValid": [
+      "PR1104 bounded infrastructure and original migrations/roles",
+      "approved CI24 profile and editorial package adapter relocation",
+      "B28 exact host/worker settings and controlled PL/EN QA",
+      "six existing deployment-reference CAS and exact temporary membership restoration"
+    ]
   }
 }

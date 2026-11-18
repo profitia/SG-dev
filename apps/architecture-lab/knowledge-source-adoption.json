@@ -1,0 +1,9 @@
+{
+  "schemaVersion": "1.0.0",
+  "projectKey": "ARCHITECTURE",
+  "taskId": "ARCH-PK-STAGE2-TECHNICAL-CONT-20261117",
+  "targetEnvironment": "development",
+  "scope": "SOURCE_ONLY_NO_RUNTIME_ACTIVATION",
+  "sourceRecord": "apps/architecture-lab/knowledge-source.json",
+  "sourceRecordSha256": "7bde334dda3ec7068d3cb532ccd8a94f3477cea707abe250431ee16c3b044bf4"
+}
