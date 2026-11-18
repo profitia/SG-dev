@@ -1,7 +1,7 @@
 {
   "schemaVersion": "1.0",
   "scope": "CURRENT_SDK_SOURCE_INTEGRITY_ONLY",
-  "sourceSnapshotSha": "f5d9fcf5158965ad14d3e1c2c2e31962a8427934",
+  "sourceSnapshotSha": "7e690071c8c73ed87b986d6061566346dbd8b515",
   "status": "PRIVATE_PROTOTYPE_NOT_ADMITTED",
   "platformVersion": "1.38.0",
   "runtimeActivated": false,
@@ -645,7 +645,7 @@
     "apps/sg-runtime/tests/cci-node-integration.test.ts": "b0bd9389860766e61b2edbe520859c677849d38dffb8f4426f3e28c6530a066f",
     "apps/sg-runtime/tests/diagnostic-telemetry-adoption.test.mjs": "5db33d14c8a0b0f669c05e9685f2f0bd7c7390b10df75fa1e2cda1aa6514dc65",
     "apps/sg-runtime/tests/finder-development-bindings.test.mjs": "1cb1ee2be83ce5d356af773d896668de10fb26a1103b8503d4fca92447f97dc0",
-    "apps/sg-runtime/tests/finder-monitor-source-integrity.mjs": "7b83dbb818bb03e3acf364b67e7bb62d1ad883747b7c4df6f98538cca3d9f6e3",
+    "apps/sg-runtime/tests/finder-monitor-source-integrity.mjs": "2f6af7fee2bc7e2fff084703f2735b5bf109274cb69a973c752bd413ae597085",
     "apps/sg-runtime/tests/finder-monitor-source-integrity.test.mjs": "89219a3388ff5b630013623328dbb4083767786c5256b42a327f0b9d4b446749",
     "apps/sg-runtime/tests/fixtures/benchmark-discovery-hosts.mjs": "69e66aa4d0af9b2410488a0a878d41c2c05471594800f585948f96b08bcf839a",
     "apps/sg-runtime/tests/forecast-import-boundary.test.mjs": "cd758c5b0cee99e6f44bb9c63962433e99e38d07db8f36a7f051f9d268e6ea0d",
@@ -694,7 +694,7 @@
     "apps/sg-runtime/tests/procurement-insights-context.test.ts": "158b9c86e3404ee0a4bd272f09f6cfbcce07856b49e79fc73cfd79546f186c40",
     "apps/sg-runtime/tests/procurement-insights-editorial-integrity.mjs": "b5f9fb26ad38648ae257a484042765270406cbb65a1be04a82e43a707cb80bad",
     "apps/sg-runtime/tests/procurement-insights-editorial-integrity.test.mjs": "774152fc7ba6628c22ddea788f861bdd00a7b3dcc963c918c79dfa53a695ea15",
-    "apps/sg-runtime/tests/procurement-insights-editorial-package-integrity.mjs": "45fcbf1edc6a66bfa5223b17fdb421959b78d40ae290fa7629003340ed5f11d4",
+    "apps/sg-runtime/tests/procurement-insights-editorial-package-integrity.mjs": "993c554cebf7b100334399542ebc203740c087e6895a71948f5fb42f295897f8",
     "apps/sg-runtime/tests/procurement-insights-editorial-package-integrity.test.mjs": "a13c7e2990c430ef69410108b4ab4e666c8892467af8e5ee9efbe4c56202f7ca",
     "apps/sg-runtime/tests/procurement-insights-integrity.mjs": "1f0e6b9584c24d58ee266ee9bd0e04ed23374c67f4f3c032a65318830e4699b1",
     "apps/sg-runtime/tests/procurement-insights-integrity.test.mjs": "e54fc998159da6b01a76216d4d2863a74561102637bcf34cf6963e52fa02d321",
@@ -1346,7 +1346,7 @@
     "packages/platform-contracts/test/assistant-native-postgres.test.mjs": "d156c0ea4fc007dc72efa4a915d2caa18a78328063aa0e2b0808314ca5c32eff",
     "packages/platform-contracts/test/assistant-operation-host.test.mjs": "0f5c1d9bac739379b41f7837bbcdc61c50962d7f5fa6360359e2f6b6e9321ff8",
     "packages/platform-contracts/test/assistant-reservation-source.mjs": "b775fb86603840a3385631a13b3c87c81939a1735df938ef9d22d23b0ccadab3",
-    "packages/platform-contracts/test/assistant-reservation-source.test.mjs": "69b3abd2139ff03126c5730495909342798a270e57b9be6cb41c942902dc2fa5",
+    "packages/platform-contracts/test/assistant-reservation-source.test.mjs": "a9bda46221e445c9ad9eebf4bb51d82ca209b63c884e3b88faecc98cb306d214",
     "packages/platform-contracts/test/assistant-usage.test.mjs": "ad0bf94d452ffa9374bc68ad8b623decc1ce54a7395f1724218dce44b12157bf",
     "packages/platform-contracts/test/calendar-current-e1.test.mjs": "175e4dd3bd5afcf69782d793d89ba996a25b6928c20fcae6ac1836663e229609",
     "packages/platform-contracts/test/clerk-configuration.test.mjs": "6eddf61a7da3095032922ab1998c55fa9f5bc071b98199a22a130544619fd2c8",
@@ -1692,7 +1692,7 @@
       "status": "IMMUTABLE_ACCEPTED_EDITORIAL_SOURCE_BEFORE_CURRENT_SDK"
     },
     "authority": {
-      "sha": "53691e907e4cc9b7fbf683c91bbebf41299e9ccc",
+      "sha": "a34dcdfc2b4e9c83e0112435a344d586d8c51d16",
       "status": "ACCEPTED_BRANCH_BASE_FOR_PRIVATE_SOURCE_PREPARATION"
     },
     "registration": {
