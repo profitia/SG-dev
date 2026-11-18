@@ -17,7 +17,7 @@
 | Tryb | EXECUTION — Full Autopilot wyłącznie etap 1; DEC-06 |
 | Etap | F — zakończony; A–F domknięte projektowo, 28/28 USTALONE |
 | Utworzono / zaktualizowano | 2026-11-12 / 2026-11-18, Europe/Warsaw |
-| Rewizja | 23 — CI24 Finder i odbiorca połączeń zatwierdzone; worker816 LIVE/QA_ROLES_VERIFIED; oryginalne bajty CIC1.8 i inert C1–C3 PASS; host/pełne CI w toku; §4–5 i roadmapa8 bez zmian |
+| Rewizja | 24 — pełny kontrolowany CI1178 PASS; kompozycja CIC+PI F 38+18 PASS; relokacja jednego adaptera CI24 do oceny, bez aktywacji; host/TECHNICAL_READY całości w toku; §4–5 i roadmapa8 bez zmian |
 | Rewizja bazowa ostatniej aktualizacji | PDR rewizja 9 / blob f0c81253cd20d4f2b75f8eabf2adb47d538c20fc; main 69a2cc1769d34cb6ecf1e21a552babb0006a5713. Referencja wykonawcza właściciela nadal rewizja 8. |
 | Zadanie inicjalizacji | ARCH-BSDC-CIC-QUALITY-INIT-20261112 |
 | Zadanie bieżącej aktualizacji | ARCH-CIC-QUALITY-TECHNICAL-READY-20261117 / SG2-CIC-QUALITY-TECHNICAL-READY-20261117; zadania producentów i odbiorcy w §8.7 |
@@ -863,3 +863,18 @@ Własne gałęzie odświeżono zwykłym merge main816, zachowując równoległy1
 Pozostają rzeczywiste bramki całości: host/CIC1.8 i kontrolowane QA live, operacyjne job wiring, niezależna przyjęta referencja i trust, właściwe poświadczenie niezależnego publishera, serwerowe CI/koordynacja kolizji i recovery. Ponowiony odczyt formularza Render nadal nie pokazał wyboru zakresów; formularz zamknięto bez utworzenia klucza. Nie używa się szerokiego klasycznego tokenu. Odrzucona wcześniej fikstura self-signing holdoutu pozostaje NIEZASTOSOWANA; biznesowy pakiet240 nadal nieprzyjęty. Pozostałe naprawdę potrzebne decyzje są przygotowywane wspólnie, bez nowych praw przez domniemanie.
 
 Frozen §4–5 zachowane bajtowo, SHA256ee6b3f36dd63ca3c3343de8b38fee431de49f67b895b17434b39ce332539b881; roadmapa8 bez zmian. TECHNICAL_READY całego projektu nadal nieosiągnięte, E1 0/3, paid/promotionOFF,14dni/50USD nieuruchomione, etap2 NIE_ROZPOCZĘTY.
+
+
+### Kontynuacja wykonania — 18 listopada 2026, rewizja 24
+
+Prawidłowa kontynuacja CI24 to [PR1178](https://github.com/profitia/SG-dev/pull/1178), źródło ea0e49ffb18ea1e5b4334d0153682298b93a961a, kanoniczny transport ARCHITECTURE policy → sg2/, bez zmiany ownera. Cztery zatwierdzone bloby zachowano dokładnie. PR1159 zamknięto bez merge. Zaufany main d5eb40a061dd24c5ea65f9f373682179458cb589 uruchomił [44255228937](https://github.com/profitia/SG-dev/actions/runs/44255228937): pełne SG2 API/persistence/typecheck/build PASS. Oryginalny artefakt14406334193,781 bajtów, ZIP SHA256 c1871b9c6727987b3d10f98ca1d438da2ff1b37148fae1b6d2e16deb0a7cdd0d, niezależnie odczytany, wiąże exact source i kontrolę wejścia przed/po wykonaniu. Bieżący PR otrzymał ponowienie tylko wcześniejszego proof-check; jego wynik oraz wynikowe main pozostają obowiązkowe. Native źródło:2081 kontraktów i433 governance PASS. Sam ten wynik nie obejmuje jeszcze pełnego hosta1099.
+
+Po przyjęciu równoległego PI F bieżący host1099 wymaga rzeczywistej kompozycji, zamiast cofnięcia wspólnego lockfile. Siedem lokalnych testów odmówiło poprawnie: nowy zewnętrzny package predecessor czyta plik przed dotychczasowym hookiem Findera. Przygotowana propozycja [ce20210f](https://github.com/profitia/SG-dev/commit/ce20210fd3ea4c78529504ecc526709697c183f3), tree95b10789f6008ed7994325e5918ec9cf2143590b, zachowuje F i24 zmienione ścieżki. Finder adapter wraca dokładnie do main, a jeden dodatkowy adapter przechodzi do istniejącego apps/sg-runtime/tests/procurement-insights-editorial-package-integrity.mjs. Wszystkie oryginalne asercje F oraz29 wcześniejszych receipts pozostają. Akceptowane wersje pozostają CIC1.8.0 i PI1.2.1; inna zależność jest odrzucana.
+
+Faktyczne wyniki propozycji:38/38 host/Finder/PI oraz18/18 niezależnych kontrtestów kontrolera, zero błędów/pominięć. Pierwsza próba kontrolera wykryła niezgodność agregacji wspólnego adaptera; została poprawiona i cały związany zestaw przeszedł. Pełny lokalny kontroler:340/340 PASS, zero błędów/pominięć. Świeże pełne CI finalnego SHA i wynikowego main pozostają obowiązkowe.
+
+Nowa ścieżka nie jest jeszcze dopuszczona. Wcześniejsza jawna zgoda właściciela na Finder nie jest traktowana jako zgoda na inny plik. Niniejsza propozycja zamienia wyłącznie jeden adapter, liczba pozostaje24. Nie zmienia runtime, danych, ról, kosztów, scope pakietów ani wcześniejszych potwierdzeń. Publikacja źródła do przeglądu nie oznacza aktywacji CI, merge hosta lub wdrożenia. Przygotowanie nie rozpoczyna Stage2 ani regularnego QA.
+
+Współdzielony Development host ma osobne aktywne okno wdrożenia PI F; CIC1099 nie będzie się z nim nakładać. Przed własnym wdrożeniem wymagany jest świeży odczyt rzeczywistego LIVE, przyjętej kohorty i SourceRef/deployment CAS. Worker CIC i jego zatwierdzone połączenia pozostają niezależne. Wszystkie11 wejść kwalifikowanej polityki Linux są nadal niezmienione. Płatne naprawy i promocja OFF, jedno okno14dni/50USD nierozpoczęte, E1 0/3, TECHNICAL_READY całości nieosiągnięte, etap2 NIE_ROZPOCZĘTY.
+
+PR1178 przyjęto normalnie jako main67b81304e08d400aef5872839e24de39b8af8093 po wszystkich wymaganych kontrolach źródła. Powtórzony proof-check job134645963138 potwierdził oryginalny run44255228937. Wynikowe main44258934610 nadal W_TOKU; nie zastępuje go wcześniejszy wynik źródła.

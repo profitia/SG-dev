@@ -973,5 +973,51 @@
     "relocationApprovalReviewedAdditionalPath": "apps/sg-runtime/tests/finder-monitor-source-integrity.mjs",
     "relocationApprovalDate": "2026-11-18",
     "relocationApprovalResponse": "Zatwierdzam przeniesienie adaptera w CI24"
+  },
+  "proposedCi24EditorialComposition": {
+    "status": "OWNER_DECISION_REQUIRED_NOT_ACTIVATED",
+    "previousApprovedPathCount": 24,
+    "proposedPathCount": 24,
+    "from": "apps/sg-runtime/tests/finder-monitor-source-integrity.mjs",
+    "to": "apps/sg-runtime/tests/procurement-insights-editorial-package-integrity.mjs",
+    "reason": "Accepted PI F moved package metadata authentication outside the earlier Finder entry; seven actual host source tests reject the combined lock before the previous CIC dispatch. Preserve the accepted PI/Finder graph by relocating the same one additional adapter to the existing outer package predecessor.",
+    "acceptedParallelSourceSha": "d5eb40a061dd24c5ea65f9f373682179458cb589",
+    "preservedPackageSourceSha": "6b22adbf7fb19d35a66c9ba637383a02224db136",
+    "reviewableSourceSha": "ce20210fd3ea4c78529504ecc526709697c183f3",
+    "reviewableSourceTree": "95b10789f6008ed7994325e5918ec9cf2143590b",
+    "finderAdapterRestoredExactlyToMain": true,
+    "editorialReceiptUnchanged": true,
+    "earlierReceiptsPreserved": 29,
+    "onlyAcceptedPins": {
+      "cic": "1.8.0",
+      "editorialPackage": "1.2.1"
+    },
+    "hostFocusedTests": {
+      "total": 38,
+      "pass": 38,
+      "fail": 0,
+      "skip": 0
+    },
+    "trustedControllerFocusedTests": {
+      "total": 18,
+      "pass": 18,
+      "fail": 0,
+      "skip": 0
+    },
+    "fullControllerTests": {
+      "total": 340,
+      "pass": 340,
+      "fail": 0,
+      "skip": 0
+    },
+    "allExistingChecksAndHistoricalProfilesRetained": true,
+    "exactHeadAndResultingMainCiRequired": true,
+    "newAccessRolesResourcesCosts": false,
+    "runtimeActivationPerformed": false,
+    "paidRepairsEnabled": false,
+    "promotionEnabled": false,
+    "pilotStarted": false,
+    "previousFinderApprovalNotReusedForNewPath": true,
+    "approvedPrecedingPolicyMain": "67b81304e08d400aef5872839e24de39b8af8093"
   }
 }
