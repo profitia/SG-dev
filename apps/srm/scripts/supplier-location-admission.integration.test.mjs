@@ -9,10 +9,10 @@ import {createSrmLocationAdmission,readSrmLocationAdmissionConfiguration} from '
 import {operationSourceDigest,OPERATION_CONTRACT} from '@profitia/platform-contracts/operation-context'
 import {createSupplierLocationAdmission} from '@profitia/platform-contracts/supplier-location'
 
-const recurringView=recurringSourceFilesystem(new URL('../../../',import.meta.url)),recurring=recurringView.manifest
+const recurringView=recurringSourceFilesystem(new URL('../../../',import.meta.url)),recurring=recurringView.manifest,reservation=recurringView.reservation?.manifest
 // Preserve the immutable historical record; the independently authenticated
 // transport and live continuations supply authenticated current SDK digests.
-const recurringSdkFiles=Object.fromEntries(Object.entries({...recurring?.sourceDigests,...recurringView.transport?.manifest.sourceDigests,...recurringView.transport?.live?.manifest.sourceDigests}).filter(([p])=>p.startsWith('packages/platform-contracts/')).map(([p,h])=>[p.slice('packages/platform-contracts/'.length),h]))
+const recurringSdkFiles=Object.fromEntries(Object.entries({...recurring?.sourceDigests,...recurringView.transport?.manifest.sourceDigests,...recurringView.transport?.live?.manifest.sourceDigests,...reservation?.sourceDigests}).filter(([p])=>p.startsWith('packages/platform-contracts/')).map(([p,h])=>[p.slice('packages/platform-contracts/'.length),h]))
 
 const hash=v=>createHash('sha256').update(v).digest('hex'),receipt=JSON.parse(fs.readFileSync(new URL('../operation-integration.json',import.meta.url)))
 const accepted=receipt.p1ReceiverSourceCompatibility,key=Buffer.alloc(32,59).toString('base64')
@@ -42,7 +42,7 @@ test('new P1 receipt preserves every historical record and verifies exact curren
  for(const[k,v]of Object.entries(before))assert.deepEqual(['contract','producer'].includes(k)?accepted.previousRootAcceptance[k]:receipt[k],v,k)
  assert.equal(accepted.platformVersion,'1.25.0');assert.equal(OPERATION_CONTRACT.implementation,'1.0.0-candidate.16')
  assert.equal(accepted.optInRootImplementation,'1.0.0-candidate.17');assert.equal(accepted.optInHostVersion,'1.12.0')
- assert.equal(await operationSourceDigest(),recurring?.sdkDigests.operationSourceDigest??receipt.oilAutonomousReportCompatibility?.sdkDigests.operationSourceDigest??receipt.assistantM1SourceCompatibility.rootContract.sourceDigest)
+ assert.equal(await operationSourceDigest(),reservation?.sdkDigests.operationSourceDigest??recurring?.sdkDigests.operationSourceDigest??receipt.oilAutonomousReportCompatibility?.sdkDigests.operationSourceDigest??receipt.assistantM1SourceCompatibility.rootContract.sourceDigest)
  const root=new URL('../../../packages/platform-contracts/',import.meta.url)
  const installed=new URL('../',import.meta.resolve('@profitia/platform-contracts/supplier-location'))
  assert.equal(JSON.parse(fs.readFileSync(new URL('package.json',installed))).version,(recurring??receipt.oilAutonomousReportCompatibility??receipt.sourceHubMarketSymbolCompatibility??receipt.sourceHubApiPathCompatibility??receipt.freshPostfetchRecovery??receipt.sourceLeaseClockRecovery??receipt.settledExternalFailureRecovery??receipt.freshPerformanceRecovery).platformVersion)
