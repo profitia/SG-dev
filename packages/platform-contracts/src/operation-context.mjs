@@ -196,12 +196,13 @@ function productAvailable(state, product, feature, config, ceiling, now) {
 }
 
 const computeUuid = /^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i
-function computePolicy(value, context, now, quotaSchemaDigest) {
+function computePolicy(value, context, now, supplierQuotaDigest, benchmarkQuotaDigest) {
+  const quotaSchemaDigest=context.operation==='benchmark.discovery.request'?benchmarkQuotaDigest:supplierQuotaDigest
   let policy
   try { policy = freeze(structuredClone(value)) } catch { deny('LIMIT_POLICY_UNAVAILABLE') }
   const unmetered=policy?.quotaMode==='UNMETERED'
   const quotaValid=unmetered
-    ? ['supplier.report.refresh','supplier.private.refresh'].includes(context.operation)&&/^[a-f0-9]{64}$/.test(quotaSchemaDigest??'')
+    ? ['supplier.report.refresh','supplier.private.refresh','benchmark.discovery.request'].includes(context.operation)&&/^[a-f0-9]{64}$/.test(quotaSchemaDigest??'')
       &&policy.quotaSchemaDigest===quotaSchemaDigest&&policy.capacity===null&&policy.windowStart===null&&policy.windowEnd===null&&policy.expiresAt===null
     : (policy?.quotaMode===undefined||policy.quotaMode==='FIXED')&&Number.isSafeInteger(policy?.capacity)&&policy.capacity>=1&&policy.capacity<=1000000
       &&policy.used<=policy.capacity&&Date.parse(policy.windowStart)<=now&&validUntil(policy.windowEnd,now)
@@ -317,15 +318,16 @@ function ingestionReservation(value,policy){
 /** All authority callbacks are server-owned. No context/role/ALLOW from HTTP is accepted. */
 export function createOperationExecutor(options) {
   if(options.recurringSchemaDigest!==undefined&&(!/^[a-f0-9]{64}$/.test(options.recurringSchemaDigest)
-    ||['assistantSchemaDigest','requestQuotaSchemaDigest','locationAdmissionSchemaDigest','reportAdmissionSchemaDigest'].some(k=>options[k]!==undefined)))throw TypeError('Explicit isolated private-recurring schema adoption required')
+    ||['assistantSchemaDigest','requestQuotaSchemaDigest','requestBenchmarkQuotaSchemaDigest','locationAdmissionSchemaDigest','reportAdmissionSchemaDigest'].some(k=>options[k]!==undefined)))throw TypeError('Explicit isolated private-recurring schema adoption required')
   if(options.recurringSchemaDigest!==undefined&&(options.application?.environment!=='development'||!options.application?.operations?.length||options.application.operations.some(op=>!recurringOperationPolicy(op))))throw TypeError('Isolated Development recurring operations required')
   if(options.application?.operations?.some(op=>recurringOperationPolicy(op))&&options.recurringSchemaDigest===undefined)throw TypeError('Private recurring operations require explicit schema adoption')
   if(options.assistantSchemaDigest!==undefined&&(!/^[a-f0-9]{64}$/.test(options.assistantSchemaDigest)
-    ||['requestQuotaSchemaDigest','locationAdmissionSchemaDigest','reportAdmissionSchemaDigest'].some(k=>options[k]!==undefined)))throw TypeError('Explicit isolated Assistant schema adoption required')
+    ||['requestQuotaSchemaDigest','requestBenchmarkQuotaSchemaDigest','locationAdmissionSchemaDigest','reportAdmissionSchemaDigest'].some(k=>options[k]!==undefined)))throw TypeError('Explicit isolated Assistant schema adoption required')
   if(options.requestQuotaSchemaDigest!==undefined&&!/^[a-f0-9]{64}$/.test(options.requestQuotaSchemaDigest))throw TypeError('Explicit accepted SQL027 digest required')
   if(options.locationAdmissionSchemaDigest!==undefined&&!/^[a-f0-9]{64}$/.test(options.locationAdmissionSchemaDigest))throw TypeError('Explicit accepted SQL020 digest required')
   if(options.reportAdmissionSchemaDigest!==undefined&&(!/^[a-f0-9]{64}$/.test(options.reportAdmissionSchemaDigest)||options.locationAdmissionSchemaDigest!==undefined))throw TypeError('Explicit accepted SQL025 digest required')
-  const executionContract=options.recurringSchemaDigest!==undefined?RECURRING_ROOT_CONTRACT:options.assistantSchemaDigest!==undefined?ASSISTANT_ROOT_CONTRACT:options.requestQuotaSchemaDigest!==undefined?REQUEST_QUOTA_ROOT_CONTRACT:options.reportAdmissionSchemaDigest!==undefined?REPORT_ADMISSION_ROOT_CONTRACT:options.locationAdmissionSchemaDigest===undefined?OPERATION_CONTRACT:SUPPLIER_LOCATION_ROOT_CONTRACT
+  if(options.requestBenchmarkQuotaSchemaDigest!==undefined&&!/^[a-f0-9]{64}$/.test(options.requestBenchmarkQuotaSchemaDigest))throw TypeError('Explicit accepted SQL034 digest required')
+  const executionContract=options.recurringSchemaDigest!==undefined?RECURRING_ROOT_CONTRACT:options.assistantSchemaDigest!==undefined?ASSISTANT_ROOT_CONTRACT:options.requestBenchmarkQuotaSchemaDigest!==undefined||options.requestQuotaSchemaDigest!==undefined?REQUEST_QUOTA_ROOT_CONTRACT:options.reportAdmissionSchemaDigest!==undefined?REPORT_ADMISSION_ROOT_CONTRACT:options.locationAdmissionSchemaDigest===undefined?OPERATION_CONTRACT:SUPPLIER_LOCATION_ROOT_CONTRACT
   const { authenticate, withTransaction, recordAudit, now = Date.now } = options
   const config = freeze(structuredClone(options.application))
   const ceiling = Object.hasOwn(profiles, config.profileId) ? profiles[config.profileId] : null
@@ -475,7 +477,7 @@ export function createOperationExecutor(options) {
           // Ordinary reads/writes explicitly have NOT_APPLICABLE usage policy.
           // Export preparation is scoped private SQL, not paid refresh, global
           // ingestion or private request admission with an omitted limit.
-          const requestPolicy = compute ? computePolicy(state.requestPolicy, context, now(), options.requestQuotaSchemaDigest) : null
+          const requestPolicy = compute ? computePolicy(state.requestPolicy, context, now(), options.requestQuotaSchemaDigest, options.requestBenchmarkQuotaSchemaDigest) : null
           if (assistant?state.usagePolicy!=='PRODUCT_POLICY'||typeof session.reserveAssistantUsage!=='function':platform?state.usagePolicy!=='PLATFORM_BUDGET'||typeof session.reserveIngestion!=='function'||typeof session.completeIngestion!=='function': compute ? state.usagePolicy !== 'PRODUCT_POLICY' || typeof session.reserveUsage !== 'function' || typeof session.completeRequest !== 'function'
             : state.usagePolicy !== 'NOT_APPLICABLE') deny('LIMIT_POLICY_UNAVAILABLE')
           if (session.transactionalEffects !== true || session.outputBoundaryVersion !== state.resource.projectionVersion) deny('POLICY_UNAVAILABLE')
@@ -596,7 +598,7 @@ export function createOperationExecutor(options) {
           if (compute) {
             if (!computeReceipt(value, reservation.requestId)) deny('POLICY_UNAVAILABLE')
             if (reservation.status === 'NEW') await session.completeRequest(bound, value)
-            computePolicy(requestPolicy, context, now(), options.requestQuotaSchemaDigest)
+            computePolicy(requestPolicy, context, now(), options.requestQuotaSchemaDigest, options.requestBenchmarkQuotaSchemaDigest)
           }
           const output = await session.projectOutput(value, bound)
           if (privateSupplierOperations.has(request.operation)) {
@@ -620,7 +622,7 @@ export function createOperationExecutor(options) {
           if (selected.feature === 'supplier_workspace') productAvailable(state, productEvidence[0].product, selected.feature, config, ceiling, now())
           if (selected.dataClass === 'USER_IN_ORGANISATION_PRIVATE' && !recurringOperationPolicy(request.operation)) for (const requirement of state.resource.contentRequirements) productAvailable(state, requirement.product, requirement.feature, config, ceiling, now())
           if (moduleEvidence) normalizeModuleEvidence(moduleEvidence, { now })
-          if (compute) computePolicy(requestPolicy, context, now(), options.requestQuotaSchemaDigest)
+          if (compute) computePolicy(requestPolicy, context, now(), options.requestQuotaSchemaDigest, options.requestBenchmarkQuotaSchemaDigest)
           if (delegated) { if(recurringOperationPolicy(request.operation)) recurringJob(outcomeState,identity,request,config,now(),options.recurringSchemaDigest); else delegatedJob(outcomeState,identity,request,config,now(),options.reportAdmissionSchemaDigest) }
           if(platform)ingestionPolicy(platformPolicy,context,request,now())
           try { await session.recordOutcome(stamp({ ...audit, phase: 'OUTCOME', decision: 'ALLOW', reasonCode: outcome })) }

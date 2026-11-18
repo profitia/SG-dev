@@ -14,7 +14,7 @@ export declare function createPrivateOperationHost<Transaction>(options: {
   /** Optional, deployment-owned module boundary. Requires SQL002 + accepted SQL003 and the extra descriptor ACL. */
   module?: { id: ModuleId; schemaDigest: string; auditSchemaDigest: string }
   /** AM20 uses SQL006; bounded HUMAN AM23 additionally requires accepted SQL010. No remote dispatch. */
-  requestLedger?: { schemaDigest: string; externalSchemaDigest?: string; operationSchemaDigest?: string; locationSchemaDigest?:string; quotaSchemaDigest?:string }
+  requestLedger?: { schemaDigest: string; externalSchemaDigest?: string; operationSchemaDigest?: string; locationSchemaDigest?:string; quotaSchemaDigest?:string;benchmarkQuotaSchemaDigest?:string }
   /** Optional explicit current-authorised PRIVATE_SQL_PHASE of an accepted AM23 parent; never remote execution. */
   requestContinuation?: import('./request-continuation.mjs').RequestContinuationBinding
   /** Fresh authoritative reads and independently committed INTENT/DENY/FAILURE. */
