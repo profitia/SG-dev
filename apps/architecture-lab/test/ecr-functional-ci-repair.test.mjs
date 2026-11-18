@@ -1,3 +1,4 @@
+import {calendarCurrentMainPredecessor} from '../calendar-current-main-source.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
@@ -11,9 +12,10 @@ import {recurringSourceFilesystem} from '../private-recurring-source.mjs'
 import {reviewedCalendarConsumerPaths,validateRouting} from '../../platform-source-hub/scripts/ci-routing.mjs'
 const root=fileURLToPath(new URL('../../../',import.meta.url))
 const sha=b=>createHash('sha256').update(b).digest('hex')
-const current=p=>fs.readFileSync(path.join(root,p))
+const physical=p=>fs.readFileSync(path.join(root,p))
 const git=(cwd,...args)=>execFileSync('git',args,{cwd,encoding:'utf8',stdio:['ignore','pipe','pipe']}).trim()
 const historical=(ref,p)=>execFileSync('git',['show',ref+':'+p],{cwd:root,stdio:['ignore','pipe','pipe']})
+const current=calendarCurrentMainPredecessor(physical,historical)?.calendarBytes??physical
 
 // SYNTHETIC_ONLY: isolate the exact current owner graph over its fixed review
 // base. Later accepted governance commits are not product-source changes.

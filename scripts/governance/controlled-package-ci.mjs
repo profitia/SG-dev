@@ -395,11 +395,120 @@ export function assertFinderMonitorSourceCheckout(root,sha,admission){
 }
 
 
+// Exact version-only package continuation; every current byte precedes historical projection.
+export const EDITORIAL_PACKAGE_SOURCE_REVIEW=Object.freeze({
+  "sourceSha": "71d4556c41549b62d78f3cdde1c21444a2d85e85",
+  "baseSha": "59204603e6f41c97e0d27c36ffcc94ca6186d88e",
+  "recordPath": "apps/sg-runtime/procurement-insights-editorial-package-integration.json",
+  "entries": {
+    "apps/insights-runtime/package-lock.json": {
+      "sha256": "7fee17b48adac4c45bac59f6839219c9fa5a259b953e85086283e4ade26922f1",
+      "blob": "60fdb3eebd230883917c9c1190644ed70ab0d352",
+      "status": "modified",
+      "mode": "100644",
+      "previousSha256": "16bbc3a57330366915628ed058d4c20c0001fc1fc924da92fb99f4f615e47f69"
+    },
+    "apps/insights-runtime/package.json": {
+      "sha256": "3c808d5f95a79c05dc5f3e9df5c8f673d81b976aa5080d53d8a794369bb6daee",
+      "blob": "48b862c7b341cc2e1be83ca061e9ca383a13a9df",
+      "status": "modified",
+      "mode": "100644",
+      "previousSha256": "46c7e91de9411a3ed4ba8749ca2fb643b405d8f6ea777eb1f59e62cd087d1ccd"
+    },
+    "apps/sg-runtime/package-lock.json": {
+      "sha256": "8f16009d546597485348731465749c67c24097366711cf60dc1f7cb50bb4e2ac",
+      "blob": "39c635a1e79dd997c4ca20e7ac8c79e691d926b9",
+      "status": "modified",
+      "mode": "100644",
+      "previousSha256": "3a8d14447e21fa9ab879dcd0094b5d8c4401196d2db632bc39540ed66e8440de"
+    },
+    "apps/sg-runtime/procurement-insights-editorial-package-integration.json": {
+      "sha256": "5fbf75514cd4a1022c00283799c3f2f4c60bd0c8a025ca0dcf80ca54d0128584",
+      "blob": "f300b39410f8361f2332a8bc9c3e96ed75a34c81",
+      "status": "added",
+      "mode": "100644"
+    },
+    "apps/sg-runtime/tests/assistant-notifications-integrity.mjs": {
+      "sha256": "d97fcef0e14995c41402ac2e5aa23363ad848223a2a31551f37c90c6fcd16a1c",
+      "blob": "ca16c3aa799bb31fe74635ca95cc79762f5cae54",
+      "status": "modified",
+      "mode": "100644",
+      "previousSha256": "e8141f9b967435ffdd5f94a48e9e0a494cf3eef167fbd6b3b7f22a350f55f3c8"
+    },
+    "apps/sg-runtime/tests/assistant-notifications-integrity.test.mjs": {
+      "sha256": "7cfa3c5f7e1b9a0c798cff6c10c3842c0ac7a4d434cad3e9ef5c82109ce18793",
+      "blob": "b626b9a8daad52720d6cc9a71f4e92d802e045be",
+      "status": "modified",
+      "mode": "100644",
+      "previousSha256": "85c4a532704a10a0c0c3b9fba87e8b355a028e1e092479960ae2e6df830e8f1e"
+    },
+    "apps/sg-runtime/tests/procurement-insights-editorial-integrity.test.mjs": {
+      "sha256": "8139c81cb8551d9ffa2042ff3f8d0dcf83ebec94ffa02023d3ddd16d40dcfab1",
+      "blob": "d30292d0e105a9183b56c749da3677948176a43a",
+      "status": "modified",
+      "mode": "100644",
+      "previousSha256": "b93302850ff52aa99d205c8f2cec1bd991909589976a2ef4f58aec5d69cf7f73"
+    },
+    "apps/sg-runtime/tests/procurement-insights-editorial-package-integrity.mjs": {
+      "sha256": "f5e748f7b78a78aee439b3bc6f77d124cef534a29f039ba5452dec2b4667512b",
+      "blob": "1aa8af311c70be0a55a3a855e1d2d79504b8c259",
+      "status": "added",
+      "mode": "100644"
+    },
+    "apps/sg-runtime/tests/procurement-insights-editorial-package-integrity.test.mjs": {
+      "sha256": "810a82ddaeefb973bb201927b60182be4e53e8c6d8fc9296fc623a3545d0ca37",
+      "blob": "e64bb6272cdbc862163c5acedc3d8350f20ef35b",
+      "status": "added",
+      "mode": "100644"
+    }
+  },
+  "projection": [
+    "apps/insights-runtime/package-lock.json",
+    "apps/insights-runtime/package.json",
+    "apps/sg-runtime/package-lock.json",
+    "apps/sg-runtime/procurement-insights-editorial-package-integration.json",
+    "apps/sg-runtime/tests/assistant-notifications-integrity.mjs",
+    "apps/sg-runtime/tests/assistant-notifications-integrity.test.mjs",
+    "apps/sg-runtime/tests/procurement-insights-editorial-integrity.test.mjs",
+    "apps/sg-runtime/tests/procurement-insights-editorial-package-integrity.mjs",
+    "apps/sg-runtime/tests/procurement-insights-editorial-package-integrity.test.mjs"
+  ],
+  "preservedReceipts": {
+    "apps/architecture-lab/private-recurring-source-adoption.json": "a79c186897851acb93142949fe7aee19184cbfe68b3acdf51cbda084c00c1254",
+    "apps/architecture-lab/private-recurring-source.json": "75877d5750e07d1c8172be0af76bc5933f2eeefc22cc39747a2621b9cab24619",
+    "apps/sg-runtime/adp-integration.json": "9dbd4921c5262202902c3c7ae318e2296f130512fc0784840880eb42370d45fb",
+    "apps/sg-runtime/assistant-context-integration.json": "d932f227977789643086b6a9eb179598a6f48071964b2d26ba82d25fceb7b2ec",
+    "apps/sg-runtime/assistant-ecr-integration.json": "5814e2e5cbdf1a32d22cff3aa55de806ec34c9debdecc21ff06c4f9f887a82bc",
+    "apps/sg-runtime/assistant-ecr-precision-integration.json": "a017c2b971e3c72606847264150715c983fa9483537d26be90144a64e0377ee7",
+    "apps/sg-runtime/assistant-ecr-week-integration.json": "31ce8f1d7e5ca1d9c3aedf80f92e23fe0f1a93cb8f5fd5d003eb54a244859dd4",
+    "apps/sg-runtime/assistant-markdown-integration.json": "27ff06aff8bc44592f0073732748834b7759182fa4307d901c7d63304381a38b",
+    "apps/sg-runtime/assistant-notifications-integration.json": "78d6d34fea2ab1ce18f8dd810cc9906452763e8539aedea685fccbe3881b42cb",
+    "apps/sg-runtime/assistant-send-arrow-integration.json": "62c6af6817a022c31788d801cc0eac293a24b3f25d9e529d32b1bff4908fa230",
+    "apps/sg-runtime/development-integration.json": "a3ed33e74582d2e0407677e090be0d82405e42a160c34afddb8fde47dff86540",
+    "apps/sg-runtime/market-calendar-integration.json": "b66d88e724f84d513677554e77484bc29a2021b238ce28d4b7db7492aba9903c",
+    "apps/sg-runtime/oil-renderer-integration.json": "6afdd65e66d8a7d8ceb4ab68601ba6d1c1bfac43bbac879d01bb61c9962e7ad6",
+    "apps/sg-runtime/operation-integration.json": "a6bf50993c98a71aeccd349dd904baafb53b3cd653324d97bab3fc5e34ac509f",
+    "apps/sg-runtime/private-recurring-source-adoption.json": "edf9d51c199251e148b39c92a3084944c1a4b8419be29175c88b6e2583df11f2",
+    "apps/sg-runtime/procurement-insights-completion-integration.json": "095ab52d695419d34ed053a6961e389024067a8ab4a16a9b6bb2c379571832a0",
+    "apps/sg-runtime/procurement-insights-editorial-integration.json": "a85d4f9bc91a61fe1abd8ed4516d3b64da3b24df17839a1abe52d84718cfcc17",
+    "apps/sg-runtime/procurement-insights-integration.json": "6dca06d8b0731e585925100b0578d41a61711f335940350d1ea32c296a3d7177",
+    "apps/sg-runtime/procurement-insights-live-acceptance.json": "911fac3bf6c4eacabc5db048ef622e4a00e49efa09024e9fbbf5216f7da94d6c",
+    "apps/sg-runtime/procurement-insights-shell-integration.json": "1b1279e669e955e604c7c646482a6ce119eac5eeb09491ade78a37aa7fc133a1",
+    "apps/sg-runtime/registration-stage-i-integration.json": "4a7a572e67e12ed73c523502cef4cb432009e735737df851419d80898653f414",
+    "apps/sg-runtime/xray-appshell-integration.json": "edd27f0ae420a9c7671f3cf6068fa00e237a845169ce36de719b6a52abcc6087",
+    "apps/srm/assistant-context-integration.json": "e39cc67fc7b1a9dd787365e0cea5407e11c47744f15c4f9cf83ea15eddeb2aff",
+    "apps/srm/development-integration.json": "53b67cb769000a4f4005ab10ccc0188b39074094cb38e915b16c3d6026590f57",
+    "apps/srm/operation-integration.json": "1303ac82c0570ca4929f64e1620e2ec7a6bfd3809607f57eb33da621c8ecd06d",
+    "apps/srm/private-recurring-source-adoption.json": "88d0252f634eface35b34adf31ac97cbf0d396fcf1fe6da452c74bdc23c7c633",
+    "apps/srm/xray-appshell-integration.json": "584f4b2e099966bdfc23ce9ac1bf0d408893010b40459f458c639bdd4c4b1b19",
+    "packages/platform-contracts/test/recurring-consent-transport-source.json": "0c9ffe5bfd89cf2bd65cd9adc7ad241a04e7468b5821f97171f4a6c550aaba36"
+  }
+})
 export function editorialTrustedPredecessor(current,historical){
- const cfg=EDITORIAL_CANON_SOURCE_REVIEW;let record
+ for(const cfg of [EDITORIAL_PACKAGE_SOURCE_REVIEW,EDITORIAL_CANON_SOURCE_REVIEW]){let record
  try{record=current(cfg.recordPath)}catch(error){
   const message=String(error?.stderr??error?.message??'')
-  if(error?.code==='ENOENT'||error?.status===128&&["' does not exist in ","' exists on disk, but not in "].some(s=>message.includes("'"+cfg.recordPath+s)))return null
+  if(error?.code==='ENOENT'||error?.status===128&&["' does not exist in ","' exists on disk, but not in "].some(s=>message.includes("'"+cfg.recordPath+s)))continue
   throw error
  }
  for(const[p,e]of Object.entries(cfg.entries)){
@@ -407,8 +516,9 @@ export function editorialTrustedPredecessor(current,historical){
   if(notificationDigest(b)!==e.sha256||blob!==e.blob)fail('EDITORIAL_SOURCE_BYTES_REJECTED')
  }
  const a=JSON.parse(record)
- if(a.previousSourceSha!==cfg.baseSha||a.scope!=='PROCUREMENT_INSIGHTS_EDITORIAL_PROFILE_V1'||a.taskId!=='SG2-PI-EDITORIAL-CONTINUATION-20261117'||a.targetEnvironment!=='development')fail('EDITORIAL_SOURCE_IDENTITY_REJECTED')
- for(const flag of ['authorisationChanged','schemaChanged','modelChanged','providerCallsPerformed','historicalReportsChanged','automaticPublication'])if(a[flag]!==false)fail('EDITORIAL_SOURCE_AUTHORITY_REJECTED')
+ const packageReview=cfg===EDITORIAL_PACKAGE_SOURCE_REVIEW
+ if(a.previousSourceSha!==cfg.baseSha||a.scope!==(packageReview?'EDITORIAL_LOCAL_PACKAGE_VERSION_ONLY':'PROCUREMENT_INSIGHTS_EDITORIAL_PROFILE_V1')||a.taskId!==(packageReview?'SG2-PI-EDITORIAL-PACKAGE-CACHE-20261117':'SG2-PI-EDITORIAL-CONTINUATION-20261117')||a.targetEnvironment!=='development'||packageReview&&(a.packageVersionBefore!=='1.2.0'||a.packageVersionAfter!=='1.2.1'))fail('EDITORIAL_SOURCE_IDENTITY_REJECTED')
+ for(const flag of ['authorisationChanged','schemaChanged','modelChanged','providerCallsPerformed','historicalReportsChanged','automaticPublication',...(packageReview?['runtimeCodeChanged','dependenciesChanged']:[])])if(a[flag]!==false)fail('EDITORIAL_SOURCE_AUTHORITY_REJECTED')
  const predecessors=new Map()
  for(const p of cfg.projection){const e=cfg.entries[p];if(e.status==='modified'){
   const b=historical(cfg.baseSha,p);if(notificationDigest(b)!==e.previousSha256)fail('EDITORIAL_SOURCE_HISTORY_REJECTED');predecessors.set(p,Buffer.from(b))
@@ -420,9 +530,156 @@ export function editorialTrustedPredecessor(current,historical){
   if(e.status==='added')throw Object.assign(Error('Editorial source absent from predecessor'),{code:'ENOENT'})
   return Buffer.from(predecessors.get(p))
  }}
+ }
+ return null
 }
-
+// Closed successor composition: preserve the accepted package71 review and current Finder history.
+export const EDITORIAL_PACKAGE_COMPOSITION_REVIEW=Object.freeze({
+  "sourceSha": "6b22adbf7fb19d35a66c9ba637383a02224db136",
+  "baseSha": "1888f0f707ab382e8886f31bedb5983e1f5a1026",
+  "recordPath": "apps/sg-runtime/procurement-insights-editorial-package-integration.json",
+  "entries": {
+    "apps/insights-runtime/package-lock.json": {
+      "sha256": "7fee17b48adac4c45bac59f6839219c9fa5a259b953e85086283e4ade26922f1",
+      "blob": "60fdb3eebd230883917c9c1190644ed70ab0d352",
+      "status": "modified",
+      "mode": "100644",
+      "previousSha256": "16bbc3a57330366915628ed058d4c20c0001fc1fc924da92fb99f4f615e47f69"
+    },
+    "apps/insights-runtime/package.json": {
+      "sha256": "3c808d5f95a79c05dc5f3e9df5c8f673d81b976aa5080d53d8a794369bb6daee",
+      "blob": "48b862c7b341cc2e1be83ca061e9ca383a13a9df",
+      "status": "modified",
+      "mode": "100644",
+      "previousSha256": "46c7e91de9411a3ed4ba8749ca2fb643b405d8f6ea777eb1f59e62cd087d1ccd"
+    },
+    "apps/sg-runtime/package-lock.json": {
+      "sha256": "8f16009d546597485348731465749c67c24097366711cf60dc1f7cb50bb4e2ac",
+      "blob": "39c635a1e79dd997c4ca20e7ac8c79e691d926b9",
+      "status": "modified",
+      "mode": "100644",
+      "previousSha256": "3a8d14447e21fa9ab879dcd0094b5d8c4401196d2db632bc39540ed66e8440de"
+    },
+    "apps/sg-runtime/procurement-insights-editorial-package-integration.json": {
+      "sha256": "2b245ca360fe06d34e5ee8914df4e8f281eb005f79f6be86007c424c307a363e",
+      "blob": "1c99eef5d05ecd58a24b7f1b78babacb8181b224",
+      "status": "added",
+      "mode": "100644"
+    },
+    "apps/sg-runtime/tests/assistant-notifications-integrity.mjs": {
+      "sha256": "aabc9d7957ddb0216f9ef82a5d505019b6fc11ba18c980f3ecbfd5a979fc4b10",
+      "blob": "3bddbf49947cf92071036c095d9423863fce3625",
+      "status": "modified",
+      "mode": "100644",
+      "previousSha256": "ae8d2e1a9a043409fefab98fcec5eea27e2e17e8e4ee56a8ef4d626e65aabd40"
+    },
+    "apps/sg-runtime/tests/assistant-notifications-integrity.test.mjs": {
+      "sha256": "3b6782c6b6b3958ba7357bac010ae90359a1dc0d4b60a7e9a9a97c26bed43285",
+      "blob": "547c4987dbb413c52e1482f9c19bce700ec53689",
+      "status": "modified",
+      "mode": "100644",
+      "previousSha256": "d10f72abb35b26f354e5e8fd552a8359e729b6813a79eb961aeaf0b06f4c8167"
+    },
+    "apps/sg-runtime/tests/finder-monitor-source-integrity.test.mjs": {
+      "sha256": "18481a9d778ae152df8949faad2a04820aaf7e510c905cbe191cd14a4fa3ddce",
+      "blob": "dc44ac72cd3603b463ff5e898eafbc134c4b4df8",
+      "status": "modified",
+      "mode": "100644",
+      "previousSha256": "09b753e564509fd3d9114a37226bc24c6e29d07c9aca287e17ee171406281cbf"
+    },
+    "apps/sg-runtime/tests/procurement-insights-editorial-integrity.test.mjs": {
+      "sha256": "8139c81cb8551d9ffa2042ff3f8d0dcf83ebec94ffa02023d3ddd16d40dcfab1",
+      "blob": "d30292d0e105a9183b56c749da3677948176a43a",
+      "status": "modified",
+      "mode": "100644",
+      "previousSha256": "b93302850ff52aa99d205c8f2cec1bd991909589976a2ef4f58aec5d69cf7f73"
+    },
+    "apps/sg-runtime/tests/procurement-insights-editorial-package-integrity.mjs": {
+      "sha256": "45fcbf1edc6a66bfa5223b17fdb421959b78d40ae290fa7629003340ed5f11d4",
+      "blob": "7fd2ad79c3b86857a0b36d726ea95ac1c8c1db0f",
+      "status": "added",
+      "mode": "100644"
+    },
+    "apps/sg-runtime/tests/procurement-insights-editorial-package-integrity.test.mjs": {
+      "sha256": "7c6b7378c25649e820872bebb40d9db5996214ec162ca3573b0e0ecd2f37c1be",
+      "blob": "1231e6a21073c198b6ccf6ecd09ed7f2e371c4ca",
+      "status": "added",
+      "mode": "100644"
+    }
+  },
+  "projection": [
+    "apps/insights-runtime/package-lock.json",
+    "apps/insights-runtime/package.json",
+    "apps/sg-runtime/package-lock.json",
+    "apps/sg-runtime/procurement-insights-editorial-package-integration.json",
+    "apps/sg-runtime/tests/assistant-notifications-integrity.mjs",
+    "apps/sg-runtime/tests/assistant-notifications-integrity.test.mjs",
+    "apps/sg-runtime/tests/finder-monitor-source-integrity.test.mjs",
+    "apps/sg-runtime/tests/procurement-insights-editorial-integrity.test.mjs",
+    "apps/sg-runtime/tests/procurement-insights-editorial-package-integrity.mjs",
+    "apps/sg-runtime/tests/procurement-insights-editorial-package-integrity.test.mjs"
+  ],
+  "preservedReceipts": {
+    "apps/architecture-lab/private-recurring-source-adoption.json": "a79c186897851acb93142949fe7aee19184cbfe68b3acdf51cbda084c00c1254",
+    "apps/architecture-lab/private-recurring-source.json": "75877d5750e07d1c8172be0af76bc5933f2eeefc22cc39747a2621b9cab24619",
+    "apps/sg-runtime/adp-integration.json": "9dbd4921c5262202902c3c7ae318e2296f130512fc0784840880eb42370d45fb",
+    "apps/sg-runtime/assistant-context-integration.json": "d932f227977789643086b6a9eb179598a6f48071964b2d26ba82d25fceb7b2ec",
+    "apps/sg-runtime/assistant-ecr-integration.json": "5814e2e5cbdf1a32d22cff3aa55de806ec34c9debdecc21ff06c4f9f887a82bc",
+    "apps/sg-runtime/assistant-ecr-precision-integration.json": "a017c2b971e3c72606847264150715c983fa9483537d26be90144a64e0377ee7",
+    "apps/sg-runtime/assistant-ecr-week-integration.json": "31ce8f1d7e5ca1d9c3aedf80f92e23fe0f1a93cb8f5fd5d003eb54a244859dd4",
+    "apps/sg-runtime/assistant-markdown-integration.json": "27ff06aff8bc44592f0073732748834b7759182fa4307d901c7d63304381a38b",
+    "apps/sg-runtime/assistant-notifications-integration.json": "78d6d34fea2ab1ce18f8dd810cc9906452763e8539aedea685fccbe3881b42cb",
+    "apps/sg-runtime/assistant-send-arrow-integration.json": "62c6af6817a022c31788d801cc0eac293a24b3f25d9e529d32b1bff4908fa230",
+    "apps/sg-runtime/development-integration.json": "a3ed33e74582d2e0407677e090be0d82405e42a160c34afddb8fde47dff86540",
+    "apps/sg-runtime/market-calendar-integration.json": "b66d88e724f84d513677554e77484bc29a2021b238ce28d4b7db7492aba9903c",
+    "apps/sg-runtime/oil-renderer-integration.json": "6afdd65e66d8a7d8ceb4ab68601ba6d1c1bfac43bbac879d01bb61c9962e7ad6",
+    "apps/sg-runtime/operation-integration.json": "a6bf50993c98a71aeccd349dd904baafb53b3cd653324d97bab3fc5e34ac509f",
+    "apps/sg-runtime/private-recurring-source-adoption.json": "edf9d51c199251e148b39c92a3084944c1a4b8419be29175c88b6e2583df11f2",
+    "apps/sg-runtime/procurement-insights-completion-integration.json": "095ab52d695419d34ed053a6961e389024067a8ab4a16a9b6bb2c379571832a0",
+    "apps/sg-runtime/procurement-insights-editorial-integration.json": "a85d4f9bc91a61fe1abd8ed4516d3b64da3b24df17839a1abe52d84718cfcc17",
+    "apps/sg-runtime/procurement-insights-integration.json": "6dca06d8b0731e585925100b0578d41a61711f335940350d1ea32c296a3d7177",
+    "apps/sg-runtime/procurement-insights-live-acceptance.json": "911fac3bf6c4eacabc5db048ef622e4a00e49efa09024e9fbbf5216f7da94d6c",
+    "apps/sg-runtime/procurement-insights-shell-integration.json": "1b1279e669e955e604c7c646482a6ce119eac5eeb09491ade78a37aa7fc133a1",
+    "apps/sg-runtime/registration-stage-i-integration.json": "4a7a572e67e12ed73c523502cef4cb432009e735737df851419d80898653f414",
+    "apps/sg-runtime/xray-appshell-integration.json": "edd27f0ae420a9c7671f3cf6068fa00e237a845169ce36de719b6a52abcc6087",
+    "apps/srm/assistant-context-integration.json": "e39cc67fc7b1a9dd787365e0cea5407e11c47744f15c4f9cf83ea15eddeb2aff",
+    "apps/srm/development-integration.json": "53b67cb769000a4f4005ab10ccc0188b39074094cb38e915b16c3d6026590f57",
+    "apps/srm/operation-integration.json": "1303ac82c0570ca4929f64e1620e2ec7a6bfd3809607f57eb33da621c8ecd06d",
+    "apps/srm/private-recurring-source-adoption.json": "88d0252f634eface35b34adf31ac97cbf0d396fcf1fe6da452c74bdc23c7c633",
+    "apps/srm/xray-appshell-integration.json": "584f4b2e099966bdfc23ce9ac1bf0d408893010b40459f458c639bdd4c4b1b19",
+    "packages/platform-contracts/test/recurring-consent-transport-source.json": "0c9ffe5bfd89cf2bd65cd9adc7ad241a04e7468b5821f97171f4a6c550aaba36",
+    "apps/sg-runtime/finder-monitor-source-integration.json": "22ac9484a6b5532e97ee8c522491bf1015944677e0ab7979bd0769444a1455f6"
+  }
+})
+export function editorialPackageCompositionTrustedPredecessor(current,historical){
+ const cfg=EDITORIAL_PACKAGE_COMPOSITION_REVIEW;let record
+ try{record=current(cfg.recordPath)}catch(error){
+  const message=String(error?.stderr??error?.message??'')
+  if(error?.code==='ENOENT'||error?.status===128&&["' does not exist in ","' exists on disk, but not in "].some(s=>message.includes("'"+cfg.recordPath+s)))return null
+  throw error
+ }
+ // Only the exact previously admitted receipt delegates to the unchanged old review.
+ if(notificationDigest(record)===EDITORIAL_PACKAGE_SOURCE_REVIEW.entries[cfg.recordPath].sha256)return null
+ for(const[p,e]of Object.entries(cfg.entries)){
+  const b=current(p),blob=createHash('sha1').update('blob '+b.length+'\0').update(b).digest('hex')
+  if(notificationDigest(b)!==e.sha256||blob!==e.blob)fail('EDITORIAL_PACKAGE_COMPOSITION_SOURCE_REJECTED')
+ }
+ const a=JSON.parse(record)
+ if(a.schemaVersion!=='1.0'||a.previousSourceSha!==cfg.baseSha||a.scope!=='EDITORIAL_LOCAL_PACKAGE_VERSION_ONLY'||a.taskId!=='SG2-PI-EDITORIAL-PACKAGE-CACHE-20261117'||a.targetEnvironment!=='development'||a.packageVersionBefore!=='1.2.0'||a.packageVersionAfter!=='1.2.1')fail('EDITORIAL_PACKAGE_COMPOSITION_IDENTITY_REJECTED')
+ for(const flag of ['authorisationChanged','schemaChanged','runtimeCodeChanged','dependenciesChanged','modelChanged','providerCallsPerformed','historicalReportsChanged','automaticPublication'])if(a[flag]!==false)fail('EDITORIAL_PACKAGE_COMPOSITION_AUTHORITY_REJECTED')
+ const predecessors=new Map()
+ for(const[p,e]of Object.entries(cfg.entries))if(e.status==='modified'){
+  const b=historical(cfg.baseSha,p);if(notificationDigest(b)!==e.previousSha256)fail('EDITORIAL_PACKAGE_COMPOSITION_HISTORY_REJECTED');predecessors.set(p,Buffer.from(b))
+ }
+ for(const[p,h]of Object.entries(cfg.preservedReceipts))if(notificationDigest(current(p))!==h||notificationDigest(historical(cfg.baseSha,p))!==h)fail('EDITORIAL_PACKAGE_COMPOSITION_RECEIPT_REJECTED')
+ return {manifest:a,previousBytes:p=>{
+  const e=cfg.entries[p];if(!e)return current(p)
+  if(e.status==='added')throw Object.assign(Error('Package successor absent from predecessor'),{code:'ENOENT'})
+  return Buffer.from(predecessors.get(p))
+ }}
+}
 export function assistantNotificationsTrustedPredecessor(current,historical,verifiedApplicationSource=null){
+ const packageComposition=editorialPackageCompositionTrustedPredecessor(current,historical);if(packageComposition)return assistantNotificationsTrustedPredecessor(packageComposition.previousBytes,historical,verifiedApplicationSource)
  const finderMonitor=finderMonitorTrustedPredecessor(current,historical);if(finderMonitor)return assistantNotificationsTrustedPredecessor(finderMonitor.previousBytes,historical,verifiedApplicationSource)
  const editorial=editorialTrustedPredecessor(current,historical);if(editorial)return assistantNotificationsTrustedPredecessor(editorial.previousBytes,historical,verifiedApplicationSource)
  const cfg=APPSHELL_NOTIFICATION_REVIEW;let record
@@ -451,7 +708,7 @@ export function assistantNotificationsTrustedPredecessor(current,historical,veri
 // Raw file checks are unchanged. New current sources must additionally be non-executable.
 export function readNotificationPhysicalSource(root,name){
  const bytes=readRegistrationSdkFile(root,name)
- if((Object.hasOwn(APPSHELL_NOTIFICATION_REVIEW.entries,name)||Object.hasOwn(EDITORIAL_CANON_SOURCE_REVIEW.entries,name)||Object.hasOwn(FINDER_MONITOR_SOURCE_REVIEW.entries,name))&&fs.lstatSync(path.join(fs.realpathSync(root),name)).mode&0o111)fail('APPSHELL_NOTIFICATION_MODE_REJECTED')
+ if((Object.hasOwn(APPSHELL_NOTIFICATION_REVIEW.entries,name)||Object.hasOwn(EDITORIAL_CANON_SOURCE_REVIEW.entries,name)||Object.hasOwn(EDITORIAL_PACKAGE_SOURCE_REVIEW.entries,name)||Object.hasOwn(EDITORIAL_PACKAGE_COMPOSITION_REVIEW.entries,name)||Object.hasOwn(FINDER_MONITOR_SOURCE_REVIEW.entries,name))&&fs.lstatSync(path.join(fs.realpathSync(root),name)).mode&0o111)fail('APPSHELL_NOTIFICATION_MODE_REJECTED')
  return bytes
 }
 export function notificationTrustedCurrent(root){
@@ -466,6 +723,12 @@ export function notificationTrustedCurrent(root){
   if(!assistantNotificationsTrustedPredecessor(main,historical))fail('APPSHELL_NOTIFICATION_HISTORY_REJECTED')
   for(const[p,h]of Object.entries(APPSHELL_NOTIFICATION_REVIEW.preservedReceipts))if(notificationDigest(current(p))!==(lifecycle.currentSourceDigests[p]??lifecycle.currentReceiptDigests[p]??h))fail('APPSHELL_NOTIFICATION_RECEIPT_REJECTED')
   return current
+ }
+ const packageComposition=editorialPackageCompositionTrustedPredecessor(current,historical)
+ if(packageComposition){
+  const accepted=assistantNotificationsTrustedPredecessor(current,historical)
+  if(!accepted)fail('EDITORIAL_PACKAGE_COMPOSITION_HISTORY_REJECTED')
+  return accepted.previousBytes
  }
  const finderMonitor=finderMonitorTrustedPredecessor(current,historical)
  if(finderMonitor){

@@ -1,5 +1,6 @@
 import './monitor-benchmark-finder.test.mjs'
 import {completeFunctionalPredecessor} from '../../architecture-lab/ecr-complete-functional-source.mjs'
+import {procurementInsightsEditorialPackagePredecessor} from './procurement-insights-editorial-package-integrity.mjs'
 // Source validation only. Real Render execution and Sentry delivery are separate acceptance.
 import test from 'node:test'
 import assert from 'node:assert/strict'
@@ -10,9 +11,9 @@ import {finderMonitorPredecessor,FINDER_MONITOR_RECEIPT,FINDER_MONITOR_BASE,FIND
 import {assistantNotificationsPredecessor} from './assistant-notifications-integrity.mjs'
 import {procurementInsightsLiveAcceptancePredecessor} from './procurement-insights-live-acceptance-source.mjs'
 import {assertPciSmartIntegrity} from './pci-smart-integrity.mjs'
-const root=new URL('../../../',import.meta.url),rawCurrent=p=>readFileSync(new URL(p,root)),cache=new Map()
-const current=p=>(completeFunctionalPredecessor(rawCurrent,historical)?.previousBytes??rawCurrent)(p)
+const root=new URL('../../../',import.meta.url),physicalCurrent=p=>readFileSync(new URL(p,root)),cache=new Map()
 const historical=(sha,p)=>{const key=sha+':'+p;if(!cache.has(key))cache.set(key,execFileSync('git',['show',key],{cwd:root,stdio:['ignore','pipe','pipe'],maxBuffer:32*1024*1024}));return Buffer.from(cache.get(key))}
+const calendar=completeFunctionalPredecessor(physicalCurrent,historical),packaged=calendar?null:procurementInsightsEditorialPackagePredecessor(physicalCurrent,historical),current=calendar?.previousBytes??packaged?.previousBytes??physicalCurrent
 const hash=b=>createHash('sha256').update(b).digest('hex')
 const receipt=()=>JSON.parse(current(FINDER_MONITOR_RECEIPT))
 const alteredReader=(p,bytes,a)=>f=>f===FINDER_MONITOR_RECEIPT?Buffer.from(JSON.stringify(a)):f===p?bytes:current(f)

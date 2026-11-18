@@ -1,11 +1,13 @@
+import {calendarCurrentMainPredecessor} from '../../architecture-lab/calendar-current-main-source.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {execFileSync} from 'node:child_process';
 import {calendarPiPredecessor,calendarPiCompletionSource,CALENDAR_PI_BASE,CALENDAR_PI_HOOK,CALENDAR_PI_PATHS} from './calendar-pi-source-compatibility.mjs';
 import {COMPLETE_FUNCTIONAL_PRODUCER_PATHS,COMPLETE_FUNCTIONAL_CONSUMER_PATHS,COMPLETE_FUNCTIONAL_PRODUCER_RECORD,COMPLETE_FUNCTIONAL_CONSUMER_RECORD} from '../../architecture-lab/ecr-complete-functional-source.mjs';
-const root=new URL('../../../',import.meta.url),current=p=>readFileSync(new URL(p,root)),cache=new Map();
+const root=new URL('../../../',import.meta.url),physical=p=>readFileSync(new URL(p,root)),cache=new Map();
 const historical=(sha,p)=>{const k=sha+':'+p;if(!cache.has(k))cache.set(k,execFileSync('git',['show',k],{cwd:root,stdio:['ignore','pipe','pipe']}));return cache.get(k)};
+const current=calendarCurrentMainPredecessor(physical,historical)?.calendarBytes??physical;
 test('Calendar PI bridge authenticates all new source before restoring the unchanged PI hook',()=>{
  const view=calendarPiPredecessor(current,historical);assert(view);assert(view.complete);
  assert.deepEqual(view.previousBytes(CALENDAR_PI_HOOK),historical(CALENDAR_PI_BASE,CALENDAR_PI_HOOK));

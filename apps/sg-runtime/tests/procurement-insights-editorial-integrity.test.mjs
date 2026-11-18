@@ -1,4 +1,5 @@
 import {calendarPiPredecessor} from './calendar-pi-source-compatibility.mjs'
+import {procurementInsightsEditorialPackagePredecessor} from './procurement-insights-editorial-package-integrity.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
@@ -10,7 +11,7 @@ const root=new URL('../../../',import.meta.url),physical=p=>fs.readFileSync(new 
 const blobs=new Map(),historical=(sha,p)=>{const key=sha+':'+p;if(!blobs.has(key))blobs.set(key,execFileSync('git',['show',key],{cwd:root,stdio:['ignore','pipe','pipe']}));return blobs.get(key)}
 // Authenticate the complete current Calendar graph before exposing the
 // unchanged accepted editorial fixture and all of its original assertions.
-const calendar=calendarPiPredecessor(physical,historical),current=calendar?.complete?calendar.previousBytes:physical
+const calendar=calendarPiPredecessor(physical,historical),packaged=calendar?.complete?null:procurementInsightsEditorialPackagePredecessor(physical,historical),current=calendar?.complete?calendar.previousBytes:packaged?.previousBytes??physical
 const hash=b=>createHash('sha256').update(b).digest('hex')
 const manifest=()=>JSON.parse(current(EDITORIAL_RECEIPT))
 const withManifest=(a,read=current)=>p=>p===EDITORIAL_RECEIPT?Buffer.from(JSON.stringify(a)):read(p)

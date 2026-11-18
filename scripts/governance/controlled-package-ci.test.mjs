@@ -3719,3 +3719,78 @@ test('Finder monitor optional absence is exact and cannot swallow malformed, unr
  for(const error of [Object.assign(Error('Denied'),{code:'EACCES'}),Object.assign(Error('Git'),{status:128,stderr:"fatal: path 'other.json' does not exist in 'history'"})])assert.throws(()=>c.finderMonitorTrustedPredecessor(()=>{throw error},()=>Buffer.alloc(0)),e=>e===error)
  assert.throws(()=>c.finderMonitorTrustedPredecessor(p=>p===r.recordPath?Buffer.from('{'):current(p),()=>Buffer.alloc(0)))
 })
+
+// Immutable version-only package source; no candidate JavaScript is imported.
+import {EDITORIAL_PACKAGE_SOURCE_REVIEW as packageSourceReview,editorialTrustedPredecessor as packageSourceProjection,assistantNotificationsTrustedPredecessor as packageNotificationProjection,readNotificationPhysicalSource as packagePhysicalRead} from './controlled-package-ci.mjs'
+import packageTest from 'node:test'
+import packageAssert from 'node:assert/strict'
+import packageFs from 'node:fs'
+import packageOs from 'node:os'
+import packagePath from 'node:path'
+import {execFileSync as packageGit} from 'node:child_process'
+const packageTestRoot=new URL('../../',import.meta.url),packageHistoryCache=new Map()
+const packageHistory=(sha,p)=>{const key=sha+':'+p;if(!packageHistoryCache.has(key))packageHistoryCache.set(key,packageGit('git',['show',key],{cwd:packageTestRoot,stdio:['ignore','pipe','pipe'],maxBuffer:8*1024*1024}));return Buffer.from(packageHistoryCache.get(key))}
+const packageFixture=p=>packageHistory(packageSourceReview.sourceSha,p)
+packageTest('editorial package exact nine-file continuation preserves all28 receipts and accepted narrative history',()=>{
+ const view=packageSourceProjection(packageFixture,packageHistory);packageAssert(view)
+ packageAssert.equal(Object.keys(packageSourceReview.entries).length,9)
+ packageAssert.equal(Object.keys(packageSourceReview.preservedReceipts).length,28)
+ packageAssert.equal(view.manifest.packageVersionBefore,'1.2.0');packageAssert.equal(view.manifest.packageVersionAfter,'1.2.1')
+ for(const p of packageSourceReview.projection){
+  if(packageSourceReview.entries[p].status==='added')packageAssert.throws(()=>view.previousBytes(p),e=>e.code==='ENOENT')
+  else {const before=packageHistory(packageSourceReview.baseSha,p);packageAssert.deepEqual(view.previousBytes(p),before);const copy=view.previousBytes(p);copy[0]^=1;packageAssert.deepEqual(view.previousBytes(p),before)}
+ }
+ for(const[p]of Object.entries(packageSourceReview.preservedReceipts))packageAssert.deepEqual(view.previousBytes(p),packageFixture(p))
+ const narrative=packageSourceProjection(view.previousBytes,packageHistory);packageAssert(narrative)
+ packageAssert.equal(narrative.manifest.scope,'PROCUREMENT_INSIGHTS_EDITORIAL_PROFILE_V1')
+ packageAssert(packageNotificationProjection(narrative.previousBytes,packageHistory))
+})
+packageTest('editorial package refuses every altered current byte, old byte and all28 immutable receipts',()=>{
+ for(const p of [...Object.keys(packageSourceReview.entries),...Object.keys(packageSourceReview.preservedReceipts)]){
+  packageAssert.throws(()=>packageSourceProjection(f=>f===p?Buffer.concat([packageFixture(f),Buffer.from('unreviewed')]):packageFixture(f),packageHistory),p)
+  if(packageSourceReview.preservedReceipts[p]||packageSourceReview.entries[p]?.status==='modified')packageAssert.throws(()=>packageSourceProjection(packageFixture,(sha,f)=>f===p?Buffer.concat([packageHistory(sha,f),Buffer.from('history tamper')]):packageHistory(sha,f)),p)
+ }
+ packageAssert.equal(packageSourceProjection(()=>{throw Object.assign(Error('absent'),{code:'ENOENT'})},packageHistory),null)
+ for(const error of [Object.assign(Error('denied'),{code:'EACCES'}),Object.assign(Error('unrelated git failure'),{status:128,stderr:"path 'foreign' does not exist in 'source'"})])packageAssert.throws(()=>packageSourceProjection(()=>{throw error},packageHistory),e=>e===error)
+ packageAssert.throws(()=>packageSourceProjection(packageFixture,()=>{throw Error('unavailable predecessor')}))
+})
+packageTest('editorial package physical source refuses executable files and links',()=>{
+ const root=packageFs.mkdtempSync(packagePath.join(packageOs.tmpdir(),'editorial-package-mode-')),p='apps/sg-runtime/tests/procurement-insights-editorial-package-integrity.mjs',file=packagePath.join(root,p)
+ try{packageFs.mkdirSync(packagePath.dirname(file),{recursive:true});const b=packageFixture(p);packageFs.writeFileSync(file,b,{mode:0o644});packageAssert.deepEqual(packagePhysicalRead(root,p),b);packageFs.chmodSync(file,0o755);packageAssert.throws(()=>packagePhysicalRead(root,p),/MODE_REJECTED/);packageFs.chmodSync(file,0o644);packageFs.renameSync(file,file+'.original');packageFs.symlinkSync(file+'.original',file);packageAssert.throws(()=>packagePhysicalRead(root,p));}finally{packageFs.rmSync(root,{recursive:true,force:true})}
+})
+
+// Exact package/Finder successor; the older nine-file review remains immutable.
+import * as compositionControl from './controlled-package-ci.mjs'
+import compositionTest from 'node:test'
+import compositionAssert from 'node:assert/strict'
+import {execFileSync as compositionGit} from 'node:child_process'
+import {fileURLToPath as compositionFileURLToPath} from 'node:url'
+const compositionReview=compositionControl.EDITORIAL_PACKAGE_COMPOSITION_REVIEW,compositionRoot=new URL('../../',import.meta.url),compositionCache=new Map()
+const compositionHistory=(sha,p)=>{const key=sha+':'+p;if(!compositionCache.has(key))compositionCache.set(key,compositionGit('git',['show',key],{cwd:compositionRoot,stdio:['ignore','pipe','pipe'],maxBuffer:32*1024*1024}));return Buffer.from(compositionCache.get(key))}
+const compositionFixture=p=>compositionHistory(compositionReview.sourceSha,p)
+compositionTest('editorial composition successor preserves ten exact inputs, all29 receipts and the actual operation contract',()=>{
+ const view=compositionControl.editorialPackageCompositionTrustedPredecessor(compositionFixture,compositionHistory);compositionAssert(view)
+ compositionAssert.equal(Object.keys(compositionReview.entries).length,10);compositionAssert.equal(Object.keys(compositionReview.preservedReceipts).length,29)
+ for(const[p,e]of Object.entries(compositionReview.entries)){
+  if(e.status==='added')compositionAssert.throws(()=>view.previousBytes(p),x=>x.code==='ENOENT')
+  else {const b=compositionHistory(compositionReview.baseSha,p);compositionAssert.deepEqual(view.previousBytes(p),b);view.previousBytes(p).fill(0);compositionAssert.deepEqual(view.previousBytes(p),b)}
+ }
+ compositionAssert(compositionControl.assistantNotificationsTrustedPredecessor(compositionFixture,compositionHistory))
+ const contract=compositionControl.currentProofContract(compositionFileURLToPath(compositionRoot),JSON.parse(compositionFixture('apps/sg-runtime/operation-integration.json')))
+ compositionAssert.equal(contract.sourceDigest,'1722f1604df42aec084df0ff7610240a25e687caffd58547dbed320a200676ed')
+})
+compositionTest('editorial composition successor refuses every changed current/history byte and all29 prior receipts',()=>{
+ for(const p of [...Object.keys(compositionReview.entries),...Object.keys(compositionReview.preservedReceipts)]){
+  compositionAssert.throws(()=>compositionControl.editorialPackageCompositionTrustedPredecessor(f=>f===p?Buffer.concat([compositionFixture(f),Buffer.from('UNREVIEWED')]):compositionFixture(f),compositionHistory),p)
+  if(compositionReview.preservedReceipts[p]||compositionReview.entries[p]?.status==='modified')compositionAssert.throws(()=>compositionControl.editorialPackageCompositionTrustedPredecessor(compositionFixture,(sha,f)=>f===p?Buffer.concat([compositionHistory(sha,f),Buffer.from('UNREVIEWED_HISTORY')]):compositionHistory(sha,f)),p)
+ }
+ compositionAssert.throws(()=>compositionControl.editorialPackageCompositionTrustedPredecessor(compositionFixture,()=>{throw Error('HISTORY_UNAVAILABLE')}))
+})
+compositionTest('editorial composition successor delegates only the exact old receipt and never unknown, rebound or unreadable input',()=>{
+ const old=p=>compositionHistory(compositionControl.EDITORIAL_PACKAGE_SOURCE_REVIEW.sourceSha,p)
+ compositionAssert.equal(compositionControl.editorialPackageCompositionTrustedPredecessor(old,compositionHistory),null);compositionAssert(compositionControl.assistantNotificationsTrustedPredecessor(old,compositionHistory))
+ const changed=JSON.parse(compositionFixture(compositionReview.recordPath));changed.previousSourceSha=compositionControl.EDITORIAL_PACKAGE_SOURCE_REVIEW.baseSha
+ compositionAssert.throws(()=>compositionControl.assistantNotificationsTrustedPredecessor(p=>p===compositionReview.recordPath?Buffer.from(JSON.stringify(changed)):compositionFixture(p),compositionHistory))
+ compositionAssert.equal(compositionControl.editorialPackageCompositionTrustedPredecessor(()=>{throw Object.assign(Error('absent'),{code:'ENOENT'})},compositionHistory),null)
+ for(const error of [Object.assign(Error('DENIED'),{code:'EACCES'}),Object.assign(Error('FOREIGN_GIT_FAILURE'),{status:128,stderr:"path 'foreign' does not exist in 'source'"})])compositionAssert.throws(()=>compositionControl.editorialPackageCompositionTrustedPredecessor(()=>{throw error},compositionHistory),x=>x===error)
+})
