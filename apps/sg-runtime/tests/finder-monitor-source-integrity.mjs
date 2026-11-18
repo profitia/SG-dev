@@ -1,3 +1,4 @@
+import {sdkSourceContext,CURRENT_SDK_SOURCE_RECORD,sdkSourcePathAbsent} from '../../../packages/platform-contracts/test/sdk-source-context.mjs'
 import {knowledgeSourcePredecessor} from '../../architecture-lab/knowledge-source.mjs'
 import {procurementInsightsEditorialPackagePredecessor,EDITORIAL_PACKAGE_RECEIPT} from './procurement-insights-editorial-package-integrity.mjs'
 import {assistantReservationPredecessor,RESERVATION_RECORD,RESERVATION_DERIVED} from '../../../packages/platform-contracts/test/assistant-reservation-source.mjs'
@@ -40,13 +41,30 @@ export function finderMonitorEditorialSource(before){
 }
 
 export function finderMonitorPredecessor(current,historical){
- let bytes
- try{bytes=current(FINDER_MONITOR_RECEIPT)}catch(error){
-  const text=String(error?.stderr??error?.message??'')
-  const missingGit=error?.status===128&&["' does not exist in ","' exists on disk, but not in "].some(s=>text.includes("'"+FINDER_MONITOR_RECEIPT+s))
-  if(error?.code==='ENOENT'||missingGit)return null
-  throw error
+const ownReceiptAbsent=error=>{
+ const text=String(error?.stderr??error?.message??'')
+ return error?.code==='ENOENT'||(error?.status===128&&["' does not exist in ","' exists on disk, but not in "].some(s=>text.includes("'"+FINDER_MONITOR_RECEIPT+s)))
+}
+let bytes
+try{bytes=current(FINDER_MONITOR_RECEIPT)}catch(error){
+ if(!ownReceiptAbsent(error))throw error
+ // Preserve the original optional receipt contract. An adopted SDK must still
+ // authenticate its whole physical graph, including this retained receipt.
+ let metadata
+ try{metadata=current(CURRENT_SDK_SOURCE_RECORD)}catch(probeError){
+  if(ownReceiptAbsent(probeError)||sdkSourcePathAbsent(probeError,CURRENT_SDK_SOURCE_RECORD,historical))return null
+  throw probeError
  }
+ const adopted=sdkSourceContext(p=>p===CURRENT_SDK_SOURCE_RECORD?metadata:current(p),historical)
+ assert.equal(adopted,null,'adopted SDK requires its retained Finder receipt')
+ return null
+}
+const context=sdkSourceContext(current,historical)
+if(context){
+ const accepted=finderMonitorPredecessor(context.baseline('authority'),historical)
+ assert(accepted,'complete immutable accepted Finder source required')
+ return {...accepted,currentSdkContext:context,currentSourceDigests:context.currentSourceDigests}
+}
  // Authenticate the complete ACG graph before the original Finder source closure.
  const reservationPin=String(current(RESERVATION_DERIVED)).match(/ASSISTANT_RESERVATION_SOURCE_SHA='([a-f0-9]{64})'/)?.[1]
  const reservation=assistantReservationPredecessor(knowledgeSourcePredecessor(current,historical)?.previousBytes??current,historical,reservationPin)
