@@ -491,3 +491,50 @@ test('PI release preparation never accepts another environment, service or sourc
   assert.throws(()=>preparePiVersion(input),e=>e.code==='HOST_CONFIGURATION_INVALID'&&!String(e).includes(marker))
  }
 })
+
+test('Native retention while disabled removes only expired terminal metadata and preserves pending work, active incidents, locks and class suspension',async()=>{
+ const fixture=await isolatedPostgres()
+ try{
+  const owner=fixture.pool('aqc_fixture_owner'),serviceId=randomUUID(),key=randomBytes(32).toString('hex')
+  const history=fs.readFileSync(new URL('../../../apps/sg-runtime/migrations/assistant/001-history.sql',import.meta.url),'utf8')
+  const source=fs.readFileSync(new URL('../migrations/001-control.sql',import.meta.url),'utf8'),digest=hash(source)
+  await owner.query('CREATE EXTENSION pgcrypto; CREATE ROLE sg2_assistant_history_owner NOLOGIN NOINHERIT; CREATE ROLE sg2_assistant_history_runtime LOGIN NOINHERIT; CREATE ROLE sg2_assistant_quality_controller LOGIN NOINHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS; GRANT CREATE ON DATABASE neondb TO sg2_assistant_history_owner')
+  await owner.query('BEGIN; SET LOCAL ROLE sg2_assistant_history_owner')
+  await owner.query(history.replaceAll('__ASSISTANT_HISTORY_SCHEMA_DIGEST__',hash(history)))
+  await owner.query(`INSERT INTO sg2_assistant_history.installation VALUES(true,$1,'development','spendguru','autumn-waterfall-65938876','br-dry-hall-b294222f',decode($2,'hex'),$3,'synthetic local only')`,[hash(history),key,randomUUID()])
+  await owner.query(source.replaceAll('__QUALITY_CONTROL_SCHEMA_DIGEST__',digest));await owner.query('COMMIT')
+  await owner.query(`INSERT INTO sg2_assistant_quality_control.installation VALUES(true,$1,$2,decode($3,'hex'),false,'synthetic local only')`,[digest,serviceId,key])
+  const runtime=fixture.pool('sg2_assistant_quality_controller'),store=createQualityStore({query:(q,p)=>runtime.query(q,p),commandKey:key,schemaDigest:digest,serviceId})
+  const rows=[]
+  async function seed(label,status,pending,expired=true){
+   const id=randomUUID(),record={id,revision:1,status,repairClass:'C1',causeFingerprint:hash(label),baseSha:'a'.repeat(40),attemptsUsed:2,rollbacksUsed:0,pending,wakeAt:0}
+   await owner.query(`INSERT INTO sg2_assistant_quality_control.incidents(id,record,created_at,expires_at)
+    VALUES($1,$2,clock_timestamp()-interval '91 days',clock_timestamp()+($3::text)::interval)`,[id,JSON.stringify(record),expired?'-1 day':'1 day'])
+   await owner.query(`INSERT INTO sg2_assistant_quality_control.events(incident_id,revision,action,status,recorded_at)VALUES($1,1,'FIXTURE',$2,clock_timestamp()-interval '91 days')`,[id,status])
+   rows.push({id,record});return id
+  }
+  const removed=[]
+  for(const status of ['CLOSED','INSUFFICIENT_EVIDENCE','OUT_OF_SCOPE','BUDGET_STOP','ROLLED_BACK','NEEDS_TECHNICAL_REVIEW'])removed.push(await seed(status,status,null))
+  const fresh=await seed('fresh','CLOSED',null,false)
+  const pending=await seed('pending','NEEDS_TECHNICAL_REVIEW',{action:'EXECUTE',nonce:randomUUID(),externalId:'synthetic-provider-id'})
+  const active=await seed('active','OBSERVING',null),locked=await seed('locked','CLOSED',null)
+  await owner.query(`UPDATE sg2_assistant_quality_control.repository_lock SET incident_id=$1,lease_token=$2,worker_id='synthetic',lease_until=clock_timestamp()+interval '30 seconds',last_release_at=clock_timestamp()-interval '1 hour'`,[locked,randomUUID()])
+  await owner.query("INSERT INTO sg2_assistant_quality_control.class_suspensions(repair_class)VALUES('C1')")
+  const beforeLock=(await owner.query('SELECT * FROM sg2_assistant_quality_control.repository_lock')).rows
+  const beforeRecords=(await owner.query('SELECT id,record FROM sg2_assistant_quality_control.incidents WHERE id=ANY($1::uuid[]) ORDER BY id',[[fresh,pending,active,locked]])).rows
+  assert.equal((await store.descriptor()).enabled,false)
+  assert.deepEqual(await store.purge(),{status:'PURGED'})
+  const after=(await owner.query('SELECT id FROM sg2_assistant_quality_control.incidents ORDER BY id')).rows.map(r=>r.id)
+  assert.deepEqual(after,[fresh,pending,active,locked].sort())
+  assert.deepEqual((await owner.query('SELECT incident_id FROM sg2_assistant_quality_control.events ORDER BY incident_id')).rows.map(r=>r.incident_id),after)
+  assert.deepEqual((await owner.query('SELECT * FROM sg2_assistant_quality_control.repository_lock')).rows,beforeLock)
+  assert.deepEqual((await owner.query('SELECT id,record FROM sg2_assistant_quality_control.incidents ORDER BY id')).rows,beforeRecords)
+  assert.equal((await owner.query('SELECT count(*)::integer AS count FROM sg2_assistant_quality_control.class_suspensions')).rows[0].count,1)
+  assert.equal((await store.descriptor()).enabled,false)
+  await assert.rejects(store.create({id:randomUUID(),repairClass:'C2',causeFingerprint:hash('cannot-enable'),baseSha:'a'.repeat(40)}))
+  assert.deepEqual(await store.purge(),{status:'PURGED'},'restarting the timer is idempotent')
+  assert.deepEqual((await owner.query('SELECT id FROM sg2_assistant_quality_control.incidents ORDER BY id')).rows.map(r=>r.id),after)
+  await assert.rejects(runtime.query('SELECT * FROM sg2_assistant_quality_control.incidents'),e=>e.code==='42501')
+  await assert.rejects(runtime.query('SET ROLE sg2_assistant_history_owner'),e=>e.code==='42501')
+ }finally{await fixture.close()}
+})
