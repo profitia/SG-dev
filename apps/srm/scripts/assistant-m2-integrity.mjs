@@ -1,5 +1,5 @@
 import {fileURLToPath} from 'node:url'
-import {trustedApplicationContinuity} from '../../../scripts/governance/development-execution.mjs'
+import {execFileSync} from 'node:child_process'
 // Test/build-only source continuation. Never imported by a product runtime.
 import assert from 'node:assert/strict'
 import {createHash} from 'node:crypto'
@@ -46,8 +46,15 @@ export function srmAssistantM2Predecessor(current,historical){
   // An independently admitted current producer may follow the frozen M2 source.
   // Authenticate physical bytes before retaining the immutable historical view.
   const watched=SRM_ASSISTANT_M2_PATHS.filter(p=>p.startsWith('apps/')&&/\.(?:tsx?|mjs)$/.test(p))
-  ordinary??=trustedApplicationContinuity(fileURLToPath(new URL('../../../',import.meta.url)),watched)
-  assert(ordinary&&watched.includes(p)&&actual.equals(ordinary(p)),'current M2 producer '+p)
+  if(ordinary===undefined){
+   const root=fileURLToPath(new URL('../../../',import.meta.url))
+   // Native ESM keeps the existing synchronous history readers compatible with
+   // the authority module's asynchronous CLI dependencies. Source digests only;
+   // no credentials, provider environment, policy copy or real grant is supplied.
+   const program="import {pathToFileURL} from 'node:url';import {createHash} from 'node:crypto';const root=process.argv[1],paths=JSON.parse(process.argv[2]);const {trustedApplicationContinuity}=await import(new URL('scripts/governance/development-execution.mjs',pathToFileURL(root+'/')));const read=trustedApplicationContinuity(root,paths);process.stdout.write(JSON.stringify(read?Object.fromEntries(paths.map(p=>[p,createHash('sha256').update(read(p)).digest('hex')])):null));"
+   ordinary=JSON.parse(execFileSync(process.execPath,['--input-type=module','-e',program,root,JSON.stringify(watched)],{cwd:root,env:{PATH:process.env.PATH,GIT_NO_LAZY_FETCH:'1'},encoding:'utf8',timeout:30000,maxBuffer:1024*1024}))
+  }
+  assert(ordinary&&watched.includes(p)&&hash(actual)===ordinary[p],'current M2 producer '+p)
  }
  const receipt='apps/srm/operation-integration.json',prior=Buffer.from(historical(a.previousSourceSha,receipt))
  assert.deepEqual(Buffer.from(current(receipt)),prior,'all historical SRM/M1/Oil acceptance bytes remain immutable')
