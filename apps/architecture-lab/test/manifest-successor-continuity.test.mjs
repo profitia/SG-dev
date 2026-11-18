@@ -1,3 +1,4 @@
+import {createCalendarAcceptedMainTestFixture} from '../calendar-current-main-source.mjs'
 import assert from 'node:assert/strict'
 import {createHash} from 'node:crypto'
 import {execFileSync} from 'node:child_process'
@@ -10,7 +11,9 @@ import {bsdcManifestContinuityCurrent,BSDC_MANIFEST_CONTINUITY as cfg} from '../
 import {bsdcManifestContinuityTrustedCurrent} from '../../../scripts/governance/controlled-package-ci.mjs'
 
 const root=fileURLToPath(new URL('../../../',import.meta.url))
-const legacyFixture=await createAcgLegacyRecurringFixture(root)
+const calendarAcceptedInput=createCalendarAcceptedMainTestFixture(root)
+test.after(()=>calendarAcceptedInput.close())
+const legacyFixture=await createAcgLegacyRecurringFixture(calendarAcceptedInput.root)
 test.after(()=>legacyFixture.close())
 const ledgerPath='Canon/registries/governance-manifest-successors-v1.json'
 const trustedRef='refs/remotes/origin/main'

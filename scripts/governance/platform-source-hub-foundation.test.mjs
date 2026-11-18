@@ -1,3 +1,4 @@
+import {createCalendarAcceptedMainTestFixture} from '../../apps/architecture-lab/calendar-current-main-source.mjs'
 import {recurringSourcePredecessor} from '../../apps/architecture-lab/private-recurring-source.mjs'
 import {calendarStoragePredecessor} from '../../apps/architecture-lab/ecr-stage03-sdk-compatibility.mjs'
 import assert from 'node:assert/strict'
@@ -18,7 +19,9 @@ import { resolveEnvironmentProfile } from './environment-profile.mjs'
 import {assistantSdkPredecessor} from '../../apps/architecture-lab/assistant-m1-sdk-compatibility.mjs'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
-const legacyRecurringFixture = await createAcgLegacyRecurringFixture(root)
+const calendarAcceptedInput=createCalendarAcceptedMainTestFixture(root)
+test.after(()=>calendarAcceptedInput.close())
+const legacyRecurringFixture=await createAcgLegacyRecurringFixture(calendarAcceptedInput.root)
 test.after(() => legacyRecurringFixture.close())
 const approved = 'b40564130fe7b6ced4d7df233dd6749653846114'
 const read = p => fs.readFileSync(path.join(root, p), 'utf8')

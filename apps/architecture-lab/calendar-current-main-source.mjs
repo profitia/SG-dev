@@ -1,8 +1,13 @@
 // Isolated proposal: closed build/test source compatibility, never runtime authority.
 import assert from 'node:assert/strict'
 import {createHash} from 'node:crypto'
+import fs from 'node:fs'
+import path from 'node:path'
+import os from 'node:os'
+import {fileURLToPath} from 'node:url'
+import {execFileSync} from 'node:child_process'
 export const CALENDAR_CURRENT_MAIN_RECORD='apps/architecture-lab/calendar-current-main-source.json'
-export const CALENDAR_CURRENT_MAIN_RECORD_SHA256='e5c1dadfca103ddf50d1735788df8cac9fedd514362b9c514f0eeb376f33f00c'
+export const CALENDAR_CURRENT_MAIN_RECORD_SHA256='97266901fe2d2ff8e1ac7e4dd83cf263633f43cdc83228753b40342cf5574a1c'
 const hash=bytes=>createHash('sha256').update(bytes).digest('hex')
 const absent=(error,historical)=>{
  if(error?.code==='ENOENT')return true
@@ -40,4 +45,26 @@ export function calendarCurrentMainPredecessor(current,historical){
   }
  }
  return{manifest:a,sourceDigests:{...a.sourceDigests,[CALENDAR_CURRENT_MAIN_RECORD]:hash(bytes),['apps/architecture-lab/calendar-current-main-source.mjs']:hash(current('apps/architecture-lab/calendar-current-main-source.mjs'))},calendarBytes:readers.calendar,acceptedMainBytes:readers.acceptedMain}
+}
+
+// Historical test suites need a complete clean input, not a partial overlay that
+// leaves later Calendar records visible in an earlier ACG/Knowledge fixture.
+// Authenticate every current graph byte before making this closed local clone.
+export function createCalendarAcceptedMainTestFixture(sourceRoot){
+ const source=sourceRoot instanceof URL?fileURLToPath(sourceRoot):path.resolve(sourceRoot)
+ const git=(cwd,args)=>execFileSync('git',['-c','core.hooksPath=/dev/null',...args],{cwd,stdio:['ignore','pipe','pipe']})
+ const current=p=>fs.readFileSync(path.join(source,p)),historical=(sha,p)=>git(source,['cat-file','blob',sha+':'+p])
+ const joint=calendarCurrentMainPredecessor(current,historical)
+ if(!joint)return {root:source,close(){}}
+ const temporary=fs.mkdtempSync(path.join(os.tmpdir(),'calendar-accepted-input-test-')),root=path.join(temporary,'source')
+ const close=()=>fs.rmSync(temporary,{recursive:true,force:true})
+ try{
+  git(source,['clone','--quiet','--shared','--no-checkout','--',source,root])
+  git(root,['checkout','--quiet','--detach',joint.manifest.acceptedMainSha])
+  assert.equal(String(git(root,['rev-parse','HEAD'])).trim(),joint.manifest.acceptedMainSha)
+  assert.equal(String(git(root,['status','--porcelain'])),'')
+  const authority=String(git(source,['rev-parse','--verify','refs/remotes/origin/main^{commit}'])).trim()
+  git(root,['update-ref','refs/remotes/origin/main',authority])
+  return {root,close}
+ }catch(error){close();throw error}
 }
