@@ -2197,6 +2197,94 @@
           "surfaceId": "SG2-BASE-001"
         }
       ]
+    },
+    {
+      "id": "SG2:SG2-PI-CITATION-SOURCE-PUBLICATION-20261118",
+      "status": "ACTIVE",
+      "repository": "profitia/SG-dev",
+      "actor": "profitia",
+      "taskId": "SG2-PI-CITATION-SOURCE-PUBLICATION-20261118",
+      "targetEnvironment": "development",
+      "scope": "SOURCE_VALIDATION_ONLY",
+      "approvalRef": "OWNER:call_3eee97a64e9f453f82e93e598f348948:20261118:OIL8",
+      "sourceSha": "cda1f12c3d729c71030031439e94510e356789d6",
+      "baseSha": "608efe22d4a994d4cdbfcddc111c0dfd4732d698",
+      "validFrom": "2026-11-18T19:27:48.135012+00:00",
+      "validUntil": "2026-11-23T22:59:00.000Z",
+      "files": [
+        {
+          "path": "apps/insights-runtime/package-lock.json",
+          "blob": "67a3cd0d2efbcd4621f1099a18cf45b07d7a5f66",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SG2",
+          "owner": "Insights Domain",
+          "surfaceId": "INSIGHTS-BASE-001"
+        },
+        {
+          "path": "apps/insights-runtime/package.json",
+          "blob": "3a530e74bec5eb1b55d6dd9a7e5d083dcd5b0373",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SG2",
+          "owner": "Insights Domain",
+          "surfaceId": "INSIGHTS-BASE-001"
+        },
+        {
+          "path": "apps/insights-runtime/render/report.py",
+          "blob": "4bf317a5f44d5505531b4bbb6181d4028b5ebe56",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SG2",
+          "owner": "Insights Domain",
+          "surfaceId": "INSIGHTS-BASE-001"
+        },
+        {
+          "path": "apps/insights-runtime/src/citations.mjs",
+          "blob": "d5d23ef089eebf0e48175a7997ae7b822ee94da0",
+          "mode": "100644",
+          "status": "added",
+          "projectKey": "SG2",
+          "owner": "Insights Domain",
+          "surfaceId": "INSIGHTS-BASE-001"
+        },
+        {
+          "path": "apps/insights-runtime/src/composer.mjs",
+          "blob": "1a143010cfaa6b4a8a4518e6b8a851a0ba9b50f4",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SG2",
+          "owner": "Insights Domain",
+          "surfaceId": "INSIGHTS-BASE-001"
+        },
+        {
+          "path": "apps/insights-runtime/src/renderer.mjs",
+          "blob": "61e6a7d6f4dc8bd51bcdfe75eb937851b4138168",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SG2",
+          "owner": "Insights Domain",
+          "surfaceId": "INSIGHTS-BASE-001"
+        },
+        {
+          "path": "apps/insights-runtime/tests/citations.test.mjs",
+          "blob": "7bac2ac47922d95deb0f97827b5f254cfb1240ea",
+          "mode": "100644",
+          "status": "added",
+          "projectKey": "SG2",
+          "owner": "Insights Domain",
+          "surfaceId": "INSIGHTS-BASE-001"
+        },
+        {
+          "path": "apps/sg-runtime/package-lock.json",
+          "blob": "ccc6582bf002d43871eb6e0944b25d46bb3f3f7b",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SG2",
+          "owner": "SG Runtime",
+          "surfaceId": "SG2-BASE-001"
+        }
+      ]
     }
   ],
   "authority": "Accepted trusted-main data only. Candidate records never authorize themselves. Existing closed reviews and historical receipts remain unchanged."
