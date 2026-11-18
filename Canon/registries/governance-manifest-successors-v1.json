@@ -33,6 +33,46 @@
       "documentDigests": {
         "Canon/v1.0-procurement-insights-narrative-and-editorial-canon.md": "666f04de2b454cb14c55c72c603659607693bb0b2ba8e7cf23f7f6f192fb67c8"
       }
+    },
+    {
+      "id": "ARCH-ACG-CIC-PHASED-CANON-20261118",
+      "status": "ACTIVE",
+      "scope": "APPEND_ONLY_CANON_DOCUMENTATION",
+      "approvalRef": "https://github.com/profitia/SG-dev/pull/1195",
+      "sourceSha": "be51c2d0cdfba0504197898db4c981197202e918",
+      "previousSourceSha": "a03956b6752227a7a14e44887feabd50a0ad1054",
+      "previousManifestSha256": "d8ddddd7b39b6b67ed7e4ca2b4407a47a4470497465f790a67be301ea4dcccd8",
+      "manifestSha256": "a9c3746dcad97acca504354c3a0a10d02409be65f28f435cb034d1ca5b8fd96d",
+      "manifestVersion": "3.53.0",
+      "appendedDocuments": [
+        {
+          "id": "acg-cic-phased-live-and-kys-risk-context-amendment",
+          "version": "1.0",
+          "path": "Canon/v1.0-acg-cic-phased-live-and-kys-risk-context-amendment.md",
+          "status": "ACTIVE",
+          "loadOrder": 580,
+          "owner": "Governance Source Layer",
+          "appliesTo": [
+            "SG2",
+            "SRM",
+            "ARCHITECTURE",
+            "CIC"
+          ],
+          "dependsOn": [
+            "agent-execution-canon",
+            "repository-routing",
+            "architecture-baseline",
+            "operation-context-and-access-contract",
+            "operation-access-matrix",
+            "platform-appshell-business-and-architecture-canon",
+            "profitia-package-and-limits-management",
+            "platform-knowledge-business-and-architecture-canon"
+          ]
+        }
+      ],
+      "documentDigests": {
+        "Canon/v1.0-acg-cic-phased-live-and-kys-risk-context-amendment.md": "2423fcffa7b438224028acf201196b7448eefc6803b26cda375e16c9594deb21"
+      }
     }
   ]
 }
