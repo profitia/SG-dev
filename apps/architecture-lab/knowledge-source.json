@@ -21,7 +21,7 @@
     "Canon/runbooks/platform-knowledge-stage2-e1-activation-v1.md": "7526d2429eadfcb0efa1ef220a480af378e1c09f85bb64696e3661abff86fb0c",
     "apps/architecture-lab/ecr-stage03-sdk-compatibility.mjs": "e815522724549829eef83228fc35f960371c02e3f95b9c18e3a313fdc09460ea",
     "apps/architecture-lab/private-recurring-source.mjs": "116e21f566194089c6260d38d001c70ee8eec92f9ee6f006230dc2c429878e45",
-    "apps/architecture-lab/test/knowledge-source.test.mjs": "6d6ac5e227957817e8a93053010f4a2ea7136a5823cb681f666d768737c3ac07",
+    "apps/architecture-lab/test/knowledge-source.test.mjs": "24d2787f1a79f7fd83a3d8c4b71116429bf1f729595ccbf932fa2e1d41f12037",
     "apps/architecture-lab/test/payload-capture-publication.test.mjs": "9f00a96134bbf339738793f79597b962f7c3601fc2f5e0b3e0b34d6a8af9dc01",
     "apps/architecture-lab/test/private-recurring-source.test.mjs": "7fee49755879e8b6115de844d15fba6c0a42ea5b8a2f5b7fe11dcfcd39c72ded",
     "apps/architecture-lab/test/sdk-compatibility.test.mjs": "bea281ac57623131241bed6da66da44f2fc5aecc30b7943b76cd426b3bc128df",
@@ -143,7 +143,7 @@
     "apps/sg-runtime/tests/procurement-insights-live-acceptance-source.mjs": "89a52f4b1bf7191e5a0d0d93e0057f21d1e19ca6f3a337bb75ce963e14906f6d",
     "apps/sg-runtime/tests/xray-fresh-performance-adoption.test.mjs": "fd0b67a6ccca4e593dcc44e7d73e0770bdc18d1f763de1a67db94e0e577766fa",
     "apps/srm/app/login/porr-account.tsx": "5543c1b9a1f8af3c13fb9ffbcb084d37eaca35b2b98fa694f75a9071e162e9f6",
-    "apps/srm/deployment/root-atomic-claim-targets.json": "651f7896072b820febe8ac4c99341248bd1f5e96a9d586f51afd8a2f9d904da3",
+    "apps/srm/deployment/root-atomic-claim-targets.json": "cad41a55f47323aecba39c2faf9e63d631b8ad99d05265222e7213c6f73432be",
     "apps/srm/package-lock.json": "075c6ecb86765796948b3a10886ef7eac0782eaaab4b359ddd1d6d87212582b9",
     "apps/srm/scripts/diagnostic-telemetry-adoption.test.mjs": "3e6289e6a949172b976fc721a2a520b5aaaa9cf47ab72b0c581f45561fad9977",
     "apps/srm/scripts/native-execution-adoption.test.mjs": "06b3acabbc37a47dbcc4dfa10b82bfd4d244b52c3157d686547fed46a5b1a5fe",
@@ -956,6 +956,10 @@
       "previousSha256": "9a4d1698dd847d152246374d83aaa9f7f0e6fa76f80c6793ae40bd52aa3ee0d4",
       "currentSha256": "89a52f4b1bf7191e5a0d0d93e0057f21d1e19ca6f3a337bb75ce963e14906f6d"
     },
+    "apps/srm/deployment/root-atomic-claim-targets.json": {
+      "previousSha256": "651f7896072b820febe8ac4c99341248bd1f5e96a9d586f51afd8a2f9d904da3",
+      "currentSha256": "cad41a55f47323aecba39c2faf9e63d631b8ad99d05265222e7213c6f73432be"
+    },
     "apps/srm/package-lock.json": {
       "previousSha256": "bcc3761ce046071ee79a96aa585f486064e652b9e6a7856d11a4776a97c25c1e",
       "currentSha256": "075c6ecb86765796948b3a10886ef7eac0782eaaab4b359ddd1d6d87212582b9"
@@ -1110,6 +1114,7 @@
     "apps/sg-runtime/tests/procurement-insights-editorial-integrity.test.mjs",
     "apps/sg-runtime/tests/procurement-insights-editorial-package-integrity.test.mjs",
     "apps/sg-runtime/tests/procurement-insights-live-acceptance-source.mjs",
+    "apps/srm/deployment/root-atomic-claim-targets.json",
     "apps/srm/package-lock.json",
     "packages/assistant-context-gateway/package.json",
     "packages/maps-embed/package.json",
