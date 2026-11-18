@@ -120,3 +120,13 @@ test('history question previews retain current context redaction and final ident
  assert.equal(response.status,403);assert(!body.includes('FOREIGN_PREVIEW_SECRET'));assert(!body.includes(title))
  assert.equal(f.generated(),0)
 })
+
+test('count preparation receives only server-resolved actor and organisation with the exact turn command',async()=>{
+ const f=fixture(),calls:any[]=[]
+ f.runtime.model.validateInput=async(input:any,scope:any,signal:AbortSignal)=>{calls.push({input,scope,signal})}
+ const r=await f.execute()
+ assert.equal(r.response.status,200);assert.equal(calls.length,1)
+ const generation=f.calls.find(c=>c.payload?.kind==='GENERATE').payload
+ assert.deepEqual(calls[0].scope,{actorId:user,organisationId:org,commandId:generation.commandId})
+ assert.deepEqual(calls[0].input,generation.input);assert(calls[0].signal instanceof AbortSignal)
+})

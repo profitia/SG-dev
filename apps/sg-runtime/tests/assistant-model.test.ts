@@ -34,7 +34,9 @@ test('reading disabled assistant configuration leaves legacy provider environmen
 const input=()=>[{role:'user' as const,content:'SYNTHETIC question'}]
 function fixture(events?:()=>AsyncIterable<unknown>){
  const commands:any[]=[],posts:any[]=[],executionId=randomUUID(),schemaDigest='a'.repeat(64)
- const usage=createAssistantUsageStore({schemaDigest,commandKey:'b'.repeat(64),query:async(_sql,values)=>{
+ const usage=createAssistantUsageStore({schemaDigest,commandKey:'b'.repeat(64),
+  countInputTokens:({model,input,signal})=>client.responses.inputTokens.count({model,input:[...input],reasoning:{effort:'none'}},{signal,maxRetries:0,timeout:10000}),
+  query:async(_sql,values)=>{
   const d=JSON.parse(String(values[0]));commands.push(d)
   return {rows:[{result:{...d,environment:'development',applicationId:'spendguru',projectId:'lingering-thunder-05075810',branchId:'br-green-hall-b9s837k0',databaseName:'neondb',runtimeRole:'profitia_limits_assistant_runtime',schemaDigest,executionId,
    expiresAt:new Date(Date.now()+20000).toISOString(),status:({RESERVE:'RESERVED',DISPATCH:'DISPATCHED',SETTLE:'SETTLED',RELEASE:'RELEASED',PENDING:'PENDING_RECONCILIATION'} as Record<string,string>)[d.action]}}]}
@@ -48,8 +50,9 @@ function fixture(events?:()=>AsyncIterable<unknown>){
  }}}
  const model=createAssistantModel(client,usage),signal=new AbortController()
  const prepare=async(value=input())=>{
-  await model.validateInput(value,signal.signal)
-  const admission=await usage.reserve({actorId:randomUUID(),organisationId:randomUUID(),commandId:randomUUID(),decisionId:randomUUID(),input:value,
+  const scope={actorId:randomUUID(),organisationId:randomUUID(),commandId:randomUUID()}
+  await model.validateInput(value,scope,signal.signal)
+  const admission=await usage.reserve({...scope,decisionId:randomUUID(),input:value,
    expectedPolicy:{id:randomUUID(),assignmentId:randomUUID(),assignmentRevision:1}})
   return {value,admission}
  }
@@ -64,6 +67,7 @@ test('isolated model protocol streams text and records actual usage once after d
  assert.equal(body.reasoning.effort,'none');assert.equal(body.prompt_cache_options.mode,'explicit');assert.equal(body.service_tier,'default')
  assert.equal(body.tools,undefined);assert.equal(body.previous_response_id,undefined);assert.equal(options.maxRetries,0)
  assert.equal(options.headers['X-Client-Request-Id'],f.executionId)
+ assert.equal(f.commands[0].inputTokens,20);assert.equal(f.commands[0].outputTokens,2048);
  assert.equal(f.commands[2].usage.totalTokens,26);assert.equal(f.commands[2].usage.nanoUsd,'11200')
  await assert.rejects(()=>f.model.generate({input:value,admission,signal:f.signal.signal,beforeDispatch:async()=>{},publish:async()=>{}}))
  assert.equal(f.posts.length,1,'a reused generation cannot create a second provider POST')
@@ -95,5 +99,23 @@ test('a changed counted input or an oversized provider count refuses before gene
  await assert.rejects(()=>f.model.generate({input:value,admission,signal:f.signal.signal,beforeDispatch:async()=>{},publish:async()=>{}}))
  assert.equal(f.posts.length,0);assert.deepEqual(f.commands.map(c=>c.action),['RESERVE','RELEASE'])
  const g=fixture();g.client.responses.inputTokens.count=async()=>({object:'response.input_tokens',input_tokens:1000000})
- await assert.rejects(()=>g.model.validateInput(input(),g.signal.signal));assert.equal(g.posts.length,0);assert.equal(g.commands.length,0)
+ await assert.rejects(()=>g.model.validateInput(input(),{actorId:randomUUID(),organisationId:randomUUID(),commandId:randomUUID()},g.signal.signal));assert.equal(g.posts.length,0);assert.equal(g.commands.length,0)
+})
+
+test('provider count uses the same model, text and reasoning setting as generation without retry',async()=>{
+ const f=fixture(),counts:any[]=[]
+ f.client.responses.inputTokens.count=async(body:any,options:any)=>{counts.push({body,options});return{object:'response.input_tokens',input_tokens:20}}
+ const {value,admission}=await f.prepare()
+ await f.model.generate({input:value,admission,signal:f.signal.signal,beforeDispatch:async()=>{},publish:async()=>{}})
+ assert.equal(counts.length,1);assert.equal(f.posts.length,1)
+ assert.deepEqual(counts[0].body.input,f.posts[0].body.input);assert.equal(counts[0].body.model,f.posts[0].body.model)
+ assert.equal(counts[0].body.reasoning.effort,f.posts[0].body.reasoning.effort);assert.equal(counts[0].options.maxRetries,0)
+ assert.equal(counts[0].options.timeout,10000);assert.equal(f.commands[0].inputTokens,20)
+})
+test('a counted input cannot generate under another operation or a changed count/model receipt',async()=>{
+ for(const patch of [{commandId:randomUUID()},{inputTokens:1},{model:'different-model'},{outputTokens:1024}]){
+  const f=fixture(),{value,admission}=await f.prepare()
+  await assert.rejects(()=>f.model.generate({input:value,admission:{...admission,...patch} as any,signal:f.signal.signal,beforeDispatch:async()=>{},publish:async()=>{}}))
+  assert.equal(f.posts.length,0)
+ }
 })
