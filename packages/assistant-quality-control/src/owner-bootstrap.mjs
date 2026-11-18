@@ -197,7 +197,7 @@ export function prepareQualityControlledQaTransaction(options,now=Date.now()){
  * atomic membership-restoration envelope; no SQL callback/path is accepted. */
 export function prepareQualityPublisherCasInstallation(options,now=Date.now()){
  exact(options,['profile','expectedMembership','decisionSha','expiresAt'])
- const sources={"canonical":{"file":"004-publisher-canonical.sql","role":"aqc_development_canonical_publisher","sha256":"326dd8aac38e36c50f50d82d009fa5e569e20b205f6474131d63aa87fde4a96f"},"product":{"file":"005-publisher-product.sql","role":"aqc_development_product_publisher","sha256":"e2dd3818137f2992f7fe785d61785a8d1e82880bfd98ba2f76eddaab1ad5442d"}}
+ const sources={"canonical":{"file":"004-publisher-canonical.sql","role":"aqc_development_canonical_publisher","sha256":"5c4b926f473ce2f6efb2135c12a220d3d26839184123fdcce1461e0baa005632"},"product":{"file":"005-publisher-product.sql","role":"aqc_development_product_publisher","sha256":"9b309f09f1c99e2c6213816a048903791fa8a86ea2cbecf11c8d01854c66114d"}}
  const spec=sources[options.profile];require(spec)
  const body=readFileSync(new URL('../migrations/'+spec.file,import.meta.url),'utf8')
  require(createHash('sha256').update(body).digest('hex')===spec.sha256)
