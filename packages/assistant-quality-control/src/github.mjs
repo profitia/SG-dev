@@ -1,6 +1,6 @@
 import {createHash} from 'node:crypto'
-import {assertWorkflowIdentity} from './provenance.mjs'
-import {documentDigest,assertVerifiedRepairManifest,verifyDocument} from './manifest.mjs'
+import {assertWorkflowIdentity,readPatchBody} from './provenance.mjs'
+import {documentDigest,assertVerifiedRepairManifest,verifyDocument,SOURCE_PATHS} from './manifest.mjs'
 
 const repository='profitia/SG-dev'
 const fail=code=>{throw Object.assign(Error('Quality GitHub operation unavailable'),{code})}
@@ -65,12 +65,48 @@ export function createQualityGitHub({token,fetchImpl=fetch,publisherEnabled=fals
   }
   fail('GITHUB_CHECKS_INCOMPLETE')
  }
+ async function strictProtection(requiredNames){
+  require(Array.isArray(requiredNames)&&requiredNames.length>0&&requiredNames.length<=32
+   &&new Set(requiredNames).size===requiredNames.length
+   &&requiredNames.every(n=>typeof n==='string'&&n.length>0&&n.length<=128),'GITHUB_REQUIRED_CHECKS_INVALID')
+  const rules=[]
+  for(let page=1;page<=5;page++){
+   const current=await get('/rules/branches/main?per_page=100&page='+page)
+   require(Array.isArray(current)&&current.length<=100&&current.every(r=>r&&typeof r==='object'&&typeof r.type==='string'),'GITHUB_RULES_INVALID')
+   rules.push(...current)
+   if(current.length<100)break
+   require(page<5,'GITHUB_RULES_INCOMPLETE')
+  }
+  const modern=rules.filter(r=>r.type==='required_status_checks')
+  if(modern.length){
+   for(const rule of modern)require(rule.parameters&&typeof rule.parameters.strict_required_status_checks_policy==='boolean'
+    &&Array.isArray(rule.parameters.required_status_checks)&&rule.parameters.required_status_checks.length<=100
+    &&rule.parameters.required_status_checks.every(c=>typeof c?.context==='string'&&c.context.length>0&&c.context.length<=128
+     &&(c.integration_id===null||number(c.integration_id))),'GITHUB_RULES_INVALID')
+   const strict=modern.filter(r=>r.parameters.strict_required_status_checks_policy)
+   require(strict.length>0,'STRICT_BASE_PROTECTION_REQUIRED')
+   // Metadata-readable active rules are sufficient; the publisher does not
+   // need an administration credential. Its required contexts must be bound
+   // to the real GitHub Actions app, not an arbitrary status producer.
+   require(requiredNames.every(name=>strict.some(r=>r.parameters.required_status_checks
+    .some(c=>c.context===name&&c.integration_id===15368))),'STRICT_REQUIRED_CI_PROTECTION_REQUIRED')
+   return Object.freeze({source:'ACTIVE_RULESETS',strict:true})
+  }
+  // Existing classic protection remains supported. An unreadable or malformed
+  // active rules response never falls back to a less restrictive interpretation.
+  const protection=await get('/branches/main/protection')
+  require(protection?.required_status_checks?.strict===true,'STRICT_BASE_PROTECTION_REQUIRED')
+  const policy=protection.required_status_checks,serverNames=new Set([...(Array.isArray(policy.contexts)?policy.contexts:[]),
+   ...(Array.isArray(policy.checks)?policy.checks.map(c=>c?.context):[])])
+  require(requiredNames.every(n=>serverNames.has(n)),'STRICT_REQUIRED_CI_PROTECTION_REQUIRED')
+  return Object.freeze({source:'CLASSIC_PROTECTION',strict:true})
+ }
  return Object.freeze({
   async descriptor(){
    const v=await request('/repos/'+repository);require(v.full_name===repository&&v.permissions?.pull===true,'GITHUB_REPOSITORY_UNVERIFIED')
    return {repository,headSha:await main(),publisherEnabled,promotionEnabled}
   },
-  main,pull,checks,
+  main,pull,checks,protection:strictProtection,
   async qualificationDescriptor(){
    const workflow=await get('/actions/workflows/assistant-quality-repair.yml')
    require(number(workflow?.id)&&workflow.path==='.github/workflows/assistant-quality-repair.yml'
@@ -108,6 +144,82 @@ export function createQualityGitHub({token,fetchImpl=fetch,publisherEnabled=fals
    if(!matching.length)return {state:'UNKNOWN'}
    const r=assertWorkflowIdentity(matching[0],{runId:String(matching[0].id),sourceSha,nonce})
    return {state:r.status==='completed'?'COMPLETE':'RUNNING',runId:String(r.id),conclusion:r.conclusion}
+  },
+  async inspectPatchBinding({manifest,patch,verification,prNumber,headSha}){
+   const m=assertVerifiedRepairManifest(manifest),patchJson=JSON.stringify(patch)
+   require(typeof patchJson==='string'&&Buffer.byteLength(patchJson)<=65536,'PATCH_BINDING_MISMATCH')
+   const artifactSha256=documentDigest(JSON.parse(patchJson))
+   require(sha(headSha)&&headSha!==m.baseSha&&verification?.result==='PASS'
+    &&verification.artifactSha256===artifactSha256&&/^[a-f0-9]{64}$/.test(verification.proofSha256??''),'PATCH_BINDING_MISMATCH')
+   const p=await pull(prNumber,{headSha,baseSha:m.baseSha})
+   require(p.head.ref==='sg2/quality-control-'+m.incidentId,'PUBLISHER_FOREIGN_BRANCH_REJECTED')
+   require(p.changed_files===2,'PUBLISHER_PATCH_FILES_INVALID')
+   const files=await get('/pulls/'+prNumber+'/files?per_page=100&page=1')
+   const validFiles=list=>Array.isArray(list)&&list.length===2&&new Set(list.map(f=>f?.filename)).size===2
+    &&list.every(f=>m.allowedPaths.includes(f?.filename)&&sha(f.sha)&&!Object.hasOwn(f,'previous_filename')
+     &&f.status===(f.filename===SOURCE_PATHS[m.repairClass]?'modified':'added'))
+   require(validFiles(files),'PUBLISHER_PATCH_FILES_INVALID')
+   // Unlike the mutable pull-files endpoint, this commit ID is immutable.
+   // Its only parent is the admitted base and its complete diff has two files.
+   const comparison=await get('/commits/'+headSha+'?per_page=100&page=1')
+   require(comparison?.sha===headSha&&Array.isArray(comparison.parents)&&comparison.parents.length===1
+    &&comparison.parents[0]?.sha===m.baseSha&&sha(comparison.commit?.tree?.sha)
+    &&validFiles(comparison.files)&&comparison.files.every(f=>files.some(p=>p.filename===f.filename&&p.sha===f.sha&&p.status===f.status)),
+    'PUBLISHER_PATCH_COMPARISON_INVALID')
+   const base=await get('/git/commits/'+m.baseSha),head=await get('/git/commits/'+headSha)
+   require(base?.sha===m.baseSha&&head?.sha===headSha&&sha(base.tree?.sha)&&sha(head.tree?.sha)
+    &&Array.isArray(head.parents)&&head.parents.length===1&&head.parents[0]?.sha===m.baseSha
+    &&comparison.commit.tree.sha===head.tree.sha,'PUBLISHER_PATCH_ANCESTRY_INVALID')
+   const cache=new Map()
+   async function entry(root,path){
+    const parts=path.split('/');let tree=root
+    for(let i=0;i<parts.length;i++){
+     let value=cache.get(tree)
+     if(!value){
+      value=await get('/git/trees/'+tree)
+      require(value?.sha===tree&&value.truncated===false&&Array.isArray(value.tree)&&value.tree.length<=10000
+       &&new Set(value.tree.map(x=>x?.path)).size===value.tree.length
+       &&value.tree.every(x=>typeof x?.path==='string'&&x.path.length>0&&!x.path.includes('/')
+        &&x.path!=='.'&&x.path!=='..'&&sha(x.sha)),'PUBLISHER_GIT_TREE_INVALID')
+      cache.set(tree,value)
+     }
+     const found=value.tree.find(x=>x.path===parts[i]);if(!found)return null
+     if(i===parts.length-1){
+      require(found.mode==='100644'&&found.type==='blob','PUBLISHER_PATCH_MODE_INVALID')
+      return found
+     }
+     require(found.mode==='040000'&&found.type==='tree','PUBLISHER_PATCH_MODE_INVALID');tree=found.sha
+    }
+   }
+   async function blob(id){
+    const v=await get('/git/blobs/'+id)
+    require(v?.sha===id&&v.encoding==='base64'&&Number.isSafeInteger(v.size)&&v.size>=0&&v.size<=32768
+     &&typeof v.content==='string'&&v.content.length<=45000
+     &&/^[A-Za-z0-9+/=\r\n]*$/.test(v.content),'PUBLISHER_GIT_BLOB_INVALID')
+    const bytes=Buffer.from(v.content,'base64'),content=bytes.toString('utf8')
+    require(bytes.length===v.size&&v.content.replace(/[\r\n]/g,'')===bytes.toString('base64')&&Buffer.from(content,'utf8').equals(bytes)
+     &&createHash('sha1').update('blob '+bytes.length+'\0').update(bytes).digest('hex')===id,'PUBLISHER_GIT_BLOB_INVALID')
+    return content
+   }
+   const source=await entry(base.tree.sha,SOURCE_PATHS[m.repairClass])
+   require(source,'PATCH_BASE_MISMATCH')
+   const beforeSource=await blob(source.sha),checked=readPatchBody(patchJson,{manifest:m,beforeSource})
+   const observed=[]
+   for(const file of checked.files){
+    const previous=await entry(base.tree.sha,file.path),current=await entry(head.tree.sha,file.path)
+    require(file.path===SOURCE_PATHS[m.repairClass]?previous?.sha===source.sha:previous===null,'PATCH_BASE_MISMATCH')
+    require(current&&current.sha===files.find(f=>f.filename===file.path)?.sha,'PUBLISHER_PATCH_BLOB_MISMATCH')
+    const content=await blob(current.sha)
+    require(content===file.content&&hash(content)===file.afterSha256,'PUBLISHER_PATCH_BLOB_MISMATCH')
+    observed.push({path:file.path,blobSha:current.sha,mode:current.mode,sha256:hash(content)})
+   }
+   // Recheck the PR after all provider reads. Its immutable head and base
+   // must still name exactly the inspected objects.
+   const currentPull=await pull(prNumber,{headSha,baseSha:m.baseSha})
+   require(currentPull.head.ref===p.head.ref&&currentPull.changed_files===2,'PUBLISHER_PATCH_FILES_INVALID')
+   const proof={repository,incidentId:m.incidentId,baseSha:m.baseSha,headSha,prNumber,artifactSha256,files:observed}
+   return Object.freeze({result:'PASS',sourceBound:true,headSha,artifactSha256,
+    patchBindingSha256:documentDigest(proof)})
   },
   async propose({manifest,patch,verification,verifyIndependent}){
    if(!publisherEnabled)fail('PUBLISHER_DISABLED')
@@ -152,10 +264,7 @@ export function createQualityGitHub({token,fetchImpl=fetch,publisherEnabled=fals
    require(await main()===baseSha,'BASE_CHANGED')
    // The server must enforce the base race too. A pre-merge GET alone cannot
    // prevent another owner's main update between this read and the merge.
-   const protection=await get('/branches/main/protection')
-   require(protection?.required_status_checks?.strict===true,'STRICT_BASE_PROTECTION_REQUIRED')
-   const policy=protection.required_status_checks,serverNames=new Set([...(Array.isArray(policy.contexts)?policy.contexts:[]),...(Array.isArray(policy.checks)?policy.checks.map(c=>c?.context):[])])
-   require(Array.isArray(requiredNames)&&requiredNames.length>0&&requiredNames.every(n=>serverNames.has(n)),'STRICT_REQUIRED_CI_PROTECTION_REQUIRED')
+   await strictProtection(requiredNames)
    const result=await checks(headSha,requiredNames);require(result.result==='PASS','REQUIRED_CI_INCOMPLETE')
    await verifyIndependent({prNumber,headSha,baseSha})
    const merged=await write('/pulls/'+prNumber+'/merge',{sha:headSha,merge_method:'merge'},'PUT')
@@ -231,8 +340,7 @@ export function createQualityAttestedPublisher(options){
    return github.merge({prNumber:input.prNumber,headSha:input.headSha,baseSha:m.baseSha,requiredNames:names,
     verifyIndependent:async()=>{
      await verifyIndependent({...input,action:'MERGE',requiredNames:names})
-     const pr=await github.pull(input.prNumber,{headSha:input.headSha,baseSha:m.baseSha})
-     require(pr.head.ref==='sg2/quality-control-'+m.incidentId,'PUBLISHER_FOREIGN_BRANCH_REJECTED')
+     await github.inspectPatchBinding(input)
     }})
   },
  })

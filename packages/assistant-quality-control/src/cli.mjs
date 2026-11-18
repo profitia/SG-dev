@@ -22,16 +22,90 @@ const hash64=v=>typeof v==='string'&&/^[a-f0-9]{64}$/.test(v)
 const uuidValue=v=>typeof v==='string'&&/^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(v)
 const controlHosts=['ep-muddy-pine-b22pdyqd.c-6.eu-central-1.aws.neon.tech','ep-muddy-pine-b22pdyqd-pooler.c-6.eu-central-1.aws.neon.tech']
 const limitsHosts=['ep-muddy-surf-b9vpyy2d.c-7.eu-central-1.aws.neon.tech','ep-muddy-surf-b9vpyy2d-pooler.c-7.eu-central-1.aws.neon.tech']
-function database(value,role,hosts){
+function database(value,role,hosts,databaseName='neondb'){
  try{
   const u=new URL(value)
   if(!['postgres:','postgresql:'].includes(u.protocol)||!hosts.includes(u.hostname)||u.port&&u.port!=='5432'
-   ||decodeURIComponent(u.username)!==role||!u.password||u.pathname!=='/neondb'||u.hash
+   ||decodeURIComponent(u.username)!==role||!u.password||u.pathname!=='/'+databaseName||u.hash
    ||[...u.searchParams.keys()].some(k=>!['sslmode','channel_binding'].includes(k))||u.searchParams.getAll('sslmode').length!==1||u.searchParams.get('sslmode')!=='require'
    ||u.searchParams.getAll('channel_binding').length>1||u.searchParams.has('channel_binding')&&u.searchParams.get('channel_binding')!=='require')throw Error()
   // Construct pg options explicitly: a URL parser cannot override strict TLS.
-  return Object.freeze({host:u.hostname,port:5432,user:role,password:decodeURIComponent(u.password),database:'neondb',ssl:Object.freeze({rejectUnauthorized:true})})
+  return Object.freeze({host:u.hostname,port:5432,user:role,password:decodeURIComponent(u.password),database:databaseName,ssl:Object.freeze({rejectUnauthorized:true}),
+   ...(u.searchParams.get('channel_binding')==='require'?{enableChannelBinding:true}:{})})
  }catch{unavailable('READINESS_DATABASE_BINDING_INVALID')}
+}
+const qaRoleBindings=Object.freeze({
+ purpose:Object.freeze({role:'sg2_assistant_quality_authority',database:'platform_private',schema:'profitia_assistant_quality_access',
+  owner:'profitia_access_owner',hosts:['ep-late-heart-b9mxo8oi.c-7.eu-central-1.aws.neon.tech','ep-late-heart-b9mxo8oi-pooler.c-7.eu-central-1.aws.neon.tech']}),
+ evidence:Object.freeze({role:'sg2_assistant_quality_reader',database:'neondb',schema:'sg2_assistant_quality_evidence',
+  owner:'sg2_assistant_history_owner',hosts:controlHosts}),
+})
+/** Approved ordinary role connections only. No QA HMAC/storage key or data
+ * reader is admitted in this preflight; it cannot issue a grant or GET QA. */
+export function readQualityQaRolePreflightConfiguration(env){
+ const names=['AQC_QA_ROLE_PREFLIGHT_VERSION','AQC_QA_PURPOSE_DATABASE_URL','AQC_QA_EVIDENCE_DATABASE_URL']
+ const forbidden=['AQC_QA_PURPOSE_COMMAND_KEY','AQC_QA_EVIDENCE_COMMAND_KEY','AQC_QA_STORAGE_KEY']
+ if(forbidden.some(k=>env[k]))unavailable('QA_ROLE_PREFLIGHT_CONFIGURATION_INVALID')
+ if(names.every(k=>env[k]===undefined))return null
+ if(env.TARGET_ENVIRONMENT!=='development'||!['TECHNICAL_READINESS','CONTROLLER_STANDBY'].includes(env.AQC_MODE)
+  ||env.AQC_PAID_REPAIRS_ENABLED!=='false'||env.AQC_PROMOTION_ENABLED!=='false'||env.AQC_QA_ROLE_PREFLIGHT_VERSION!=='1.0.0'
+  ||names.some(k=>typeof env[k]!=='string'||!env[k]))unavailable('QA_ROLE_PREFLIGHT_CONFIGURATION_INVALID')
+ return Object.freeze({
+  purpose:database(env.AQC_QA_PURPOSE_DATABASE_URL,qaRoleBindings.purpose.role,qaRoleBindings.purpose.hosts,qaRoleBindings.purpose.database),
+  evidence:database(env.AQC_QA_EVIDENCE_DATABASE_URL,qaRoleBindings.evidence.role,qaRoleBindings.evidence.hosts,qaRoleBindings.evidence.database),
+ })
+}
+export function qualityQaRolePreflightQuery(kind){
+ if(!Object.hasOwn(qaRoleBindings,kind))unavailable('QA_ROLE_PREFLIGHT_CONFIGURATION_INVALID')
+ const b=qaRoleBindings[kind]
+ return "SELECT current_database() AS database_name,current_user AS role,session_user AS login,"+
+  "r.rolsuper,r.rolbypassrls,r.rolcreatedb,r.rolcreaterole,r.rolinherit,r.rolreplication,r.rolcanlogin,r.rolconnlimit,r.rolvaliduntil,"+
+  "pg_has_role(session_user,'"+b.owner+"','MEMBER') AS owner_member,"+
+  "has_schema_privilege(session_user,'"+b.schema+"','USAGE') AS schema_usage,"+
+  "has_schema_privilege(session_user,'"+b.schema+"','CREATE') AS schema_create,"+
+  "coalesce(has_function_privilege(session_user,to_regprocedure('"+b.schema+".apply(text,text)'),'EXECUTE'),false) AS installed,"+
+  "(SELECT count(*)::int FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='"+b.schema+"' AND c.relkind IN('r','p')) AS schema_tables,"+
+  "coalesce((SELECT bool_or(has_table_privilege(session_user,c.oid,'SELECT') OR has_table_privilege(session_user,c.oid,'INSERT') "+
+  "OR has_table_privilege(session_user,c.oid,'UPDATE') OR has_table_privilege(session_user,c.oid,'DELETE')) "+
+  "FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='"+b.schema+"' AND c.relkind IN('r','p')),false) AS direct_table_access "+
+  "FROM pg_roles r WHERE r.rolname=current_user"
+}
+export function createQualityQaRolePreflight({purposeQuery,evidenceQuery,now=Date.now}){
+ if(typeof purposeQuery!=='function'||typeof evidenceQuery!=='function'||typeof now!=='function')unavailable('QA_ROLE_PREFLIGHT_CONFIGURATION_INVALID')
+ return Object.freeze({async check(){
+  const at=now();if(!Number.isFinite(at))unavailable('QA_ROLE_PREFLIGHT_BINDING_INVALID')
+  for(const [kind,query]of [['purpose',purposeQuery],['evidence',evidenceQuery]]){
+   let rows;try{rows=(await query(qualityQaRolePreflightQuery(kind))).rows}catch{unavailable('QA_ROLE_PREFLIGHT_UNAVAILABLE')}
+   const v=rows?.[0],b=qaRoleBindings[kind],expiry=v?.rolvaliduntil instanceof Date?v.rolvaliduntil.getTime():
+    typeof v?.rolvaliduntil==='string'?Date.parse(v.rolvaliduntil):NaN
+   if(rows?.length!==1||v.database_name!==b.database||v.role!==b.role||v.login!==b.role
+    ||['rolsuper','rolbypassrls','rolcreatedb','rolcreaterole','rolinherit','rolreplication','owner_member','schema_create','direct_table_access'].some(k=>v[k]!==false)
+    ||v.rolcanlogin!==true||v.rolconnlimit!==3||v.schema_usage!==true||v.installed!==true
+    ||!Number.isInteger(v.schema_tables)||v.schema_tables<1||!Number.isFinite(expiry)||expiry<=at
+    ||expiry>Date.parse('2026-11-27T23:59:59.000Z'))unavailable('QA_ROLE_PREFLIGHT_BINDING_INVALID')
+  }
+  return Object.freeze({schemaVersion:'AQC_QA_ROLE_PREFLIGHT_V1',status:'QA_ROLES_VERIFIED',
+   qaAuthority:'CONNECTED_ORDINARY_ROLE',qaEvidence:'CONNECTED_ORDINARY_ROLE',
+   rawQaReadPerformed:false,permissionMutationPerformed:false})
+ }})
+}
+/** Public deployment-source capability only: never environment values, remote
+ * URLs, credentials, a directory listing or private QA content. */
+export async function qualityWorkerSourceCapabilities(sourceSha){
+ if(!/^[a-f0-9]{40}$/.test(sourceSha??''))unavailable('READINESS_CONFIGURATION_INVALID')
+ const [fs,{fileURLToPath},{spawnSync}]=await Promise.all([import('node:fs'),import('node:url'),import('node:child_process')])
+ const root=fileURLToPath(new URL('../../../',import.meta.url))
+ const ordinary=(path,fileOnly=false)=>{try{const s=fs.lstatSync(path);return !s.isSymbolicLink()&&(s.isFile()||!fileOnly&&s.isDirectory())}catch{return false}}
+ const checkout=ordinary(root+'/.git'),hostCodec=ordinary(root+'/apps/sg-runtime/lib/assistant/quality-evidence.ts',true)
+ let gitExecutable=false,gitHeadMatches=false
+ try{fs.accessSync('/usr/bin/git',fs.constants.X_OK);gitExecutable=true}catch{}
+ if(checkout&&gitExecutable){
+  try{const v=spawnSync('/usr/bin/git',['-C',root,'rev-parse','HEAD'],{encoding:'utf8',timeout:3000,maxBuffer:1024,
+   env:{PATH:'/usr/bin:/bin',GIT_CONFIG_NOSYSTEM:'1',GIT_CONFIG_GLOBAL:'/dev/null'}})
+   gitHeadMatches=v.status===0&&v.stdout.trim()===sourceSha}catch{}
+ }
+ return Object.freeze({checkoutMetadataPresent:checkout,gitExecutableAvailable:gitExecutable,gitHeadMatchesSource:gitHeadMatches,
+  hostQaCodecPresent:hostCodec,nodeMajorSupported:Number(process.versions.node.split('.')[0])>=24})
 }
 /** This process has no repair/publish mode or model credential. Installation
  * status probes do not reserve spend, start the pilot or dispatch an executor. */
@@ -94,6 +168,7 @@ export function createQualityReadiness({store,budget,sourceSha,serviceId,now=Dat
 }
 async function readinessMain(controllerStandby=false){
  const config=controllerStandby?readQualityControllerStandbyConfiguration(process.env):readQualityReadinessConfiguration(process.env)
+ const qaConfig=readQualityQaRolePreflightConfiguration(process.env)
  const [{default:pg},{createQualityStore},{createQualityBudget},{readFileSync},{createHash},{createQualityMonitoring}]=await Promise.all([
   import('pg'),import('./store.mjs'),import('./budget.mjs'),import('node:fs'),import('node:crypto'),import('./monitoring.mjs')])
  const digest=url=>createHash('sha256').update(readFileSync(url)).digest('hex')
@@ -101,6 +176,9 @@ async function readinessMain(controllerStandby=false){
  const limitsDigest=digest(new URL('../../../apps/package-limits/migrations/005-assistant-quality-usage.sql',import.meta.url))
  const pools=[new pg.Pool({...config.control,max:1,connectionTimeoutMillis:8000,idleTimeoutMillis:10000,statement_timeout:5000,query_timeout:8000,allowExitOnIdle:true}),
   new pg.Pool({...config.limits,max:1,connectionTimeoutMillis:8000,idleTimeoutMillis:10000,statement_timeout:5000,query_timeout:8000,allowExitOnIdle:true})]
+ if(qaConfig)for(const database of [qaConfig.purpose,qaConfig.evidence])pools.push(new pg.Pool({...database,
+  max:1,connectionTimeoutMillis:8000,idleTimeoutMillis:10000,statement_timeout:5000,query_timeout:8000,allowExitOnIdle:true}))
+ const qaPreflight=qaConfig?createQualityQaRolePreflight({purposeQuery:q=>pools[2].query(q),evidenceQuery:q=>pools[3].query(q)}):null
  const stop=new AbortController(),abort=()=>stop.abort()
  process.once('SIGTERM',abort);process.once('SIGINT',abort)
  // Capture transport failures as metadata only; node-postgres must not emit an
@@ -120,6 +198,10 @@ async function readinessMain(controllerStandby=false){
   while(!stop.signal.aborted){
    if(poolError)unavailable('READINESS_PROVIDER_UNAVAILABLE')
    const result=await readiness.check()
+   if(qaPreflight){
+    const qa=await qaPreflight.check(),source=await qualityWorkerSourceCapabilities(config.sourceSha)
+    console.log(JSON.stringify({event:'aqc.technical.qa.role_preflight',...qa,...source,sourceSha:config.sourceSha,observedAt:result.observedAt}))
+   }
    monitoring.heartbeat(result)
    console.log(JSON.stringify({event:'aqc.technical.heartbeat',...result,renderServiceId:config.renderServiceId}))
    // This is technical monitoring only. It is not the regular QA schedule.

@@ -132,3 +132,107 @@ test('Concrete verifier rejects source/patch substitution, executable regression
   }
  }finally{c.close()}
 })
+
+function privateReaderFixture(){
+ const root=fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(),'aqc-private-reader-')))
+ const put=(p,s)=>{const f=path.join(root,p);fs.mkdirSync(path.dirname(f),{recursive:true});fs.writeFileSync(f,s)}
+ // A unit composition fixture, not the real SG2 cipher, database, E1 decision
+ // or a private QA record. Native/host interoperability has its separate gate.
+ const codec="import {checked} from '../../../../packages/assistant-context-contracts/src/quality.mjs'\n"+
+  "export function createQualityEvidencePurposeClient(o:{query:Function;role:string}){checked(o.role==='sg2_assistant_quality_authority');return {descriptor:()=>o.query('purpose',['DESCRIPTOR',o.role]),authorize:d=>o.query('purpose',['READ',o.role,d.accountId,d.evidenceId])}}\n"+
+  "export function createQualityEvidenceStore(o:{query:Function;role:string;authorize:Function}){checked(o.role==='sg2_assistant_quality_reader');return {descriptor:()=>o.query('evidence',['DESCRIPTOR',o.role]),async read(accountId:string,evidenceId:string){await o.authorize({action:'READ',accountId,evidenceId});const v=await o.query('evidence',['GET',o.role,accountId,evidenceId]);await o.authorize({action:'READ',accountId,evidenceId});return v}}}\n"
+ put('apps/sg-runtime/lib/assistant/quality-evidence.ts',codec)
+ put('apps/sg-runtime/package.json','{"type":"module"}\n')
+ put('packages/assistant-context-contracts/src/quality.mjs',"export const checked=v=>{if(!v)throw Error('Incorrect fixed role')}\n")
+ const git=(...args)=>execFileSync('git',['-C',root,...args],{encoding:'utf8',stdio:['ignore','pipe','pipe']}).trim()
+ git('init','--quiet');git('remote','add','origin','https://github.com/profitia/SG-dev');git('add','.')
+ git('-c','user.name=AQC fixture','-c','user.email=aqc@example.invalid','commit','--quiet','-m','Trusted private reader composition fixture')
+ let enabled=false;const calls=[]
+ const query=async(role,p)=>{calls.push([role,...p]);return p[0]==='DESCRIPTOR'?{enabled}:{privateSyntheticFixture:true}}
+ const options={repositoryRoot:root,sourceSha:git('rev-parse','HEAD'),hostCodecSha256:hashCase(codec),
+  purposeQuery:(q,p)=>query(q,p),evidenceQuery:(q,p)=>query(q,p),purposeKey:'a'.repeat(64),evidenceKey:'b'.repeat(64),storageKey:'c'.repeat(64),
+  purposeSchemaDigest:'d'.repeat(64),evidenceSchemaDigest:'e'.repeat(64),serviceId:randomUUID(),storageGeneration:randomUUID(),accountId:randomUUID()}
+ return {root,options,calls,git,setEnabled:v=>{enabled=v},close:()=>fs.rmSync(root,{recursive:true,force:true})}
+}
+test('Private verifier composes only the pinned canonical SG2 reader and purpose clients, with one fixed account and no writer port',async()=>{
+ const {createQualityPrivateEvidenceReader}=await import('../src/verify.mjs'),f=privateReaderFixture()
+ try{
+  const r=await createQualityPrivateEvidenceReader(f.options),ready=await r.ready()
+  assert.equal(ready.purposeAuthority,'CONNECTED_DISABLED');assert.equal(ready.evidenceStore,'CONNECTED_DISABLED')
+  assert.equal(r.capture,undefined);assert.equal(r.purge,undefined);assert.equal(r.invalidate,undefined);assert.equal(r.authorize,undefined)
+  const accountId=f.options.accountId;f.options.accountId=randomUUID();f.options.sourceSha='0'.repeat(40)
+  const id=randomUUID();assert.deepEqual(await r.read(id),{privateSyntheticFixture:true})
+  assert.deepEqual(f.calls.slice(-3),[
+   ['purpose','READ','sg2_assistant_quality_authority',accountId,id],
+   ['evidence','GET','sg2_assistant_quality_reader',accountId,id],
+   ['purpose','READ','sg2_assistant_quality_authority',accountId,id]])
+  const count=f.calls.length
+  await assert.rejects(r.read({accountId:randomUUID(),evidenceId:id}),{code:'QA_READER_INPUT_INVALID'})
+  assert.equal(f.calls.length,count)
+  f.setEnabled(true);await assert.rejects(r.ready(),{code:'QA_READER_READINESS_STATE_INVALID'})
+ }finally{f.close()}
+})
+test('Private reader rejects substituted source, dependency bytes, host hash, foreign repository and caller authority override before any credentialed call',async()=>{
+ const {createQualityPrivateEvidenceReader}=await import('../src/verify.mjs')
+ for(const mode of ['codec','contract','hash','source','origin','symlink','override','sameKey']){
+  const f=privateReaderFixture()
+  try{
+   const options={...f.options},host=path.join(f.root,'apps/sg-runtime/lib/assistant/quality-evidence.ts')
+   if(mode==='codec')fs.appendFileSync(host,"\nthrow Error('untrusted candidate must never load')\n")
+   if(mode==='contract')fs.appendFileSync(path.join(f.root,'packages/assistant-context-contracts/src/quality.mjs'),"\nthrow Error('untrusted dependency must never load')\n")
+   if(mode==='hash')options.hostCodecSha256='f'.repeat(64)
+   if(mode==='source')options.sourceSha='0'.repeat(40)
+   if(mode==='origin')f.git('remote','set-url','origin','https://example.invalid/foreign')
+   if(mode==='symlink'){fs.renameSync(host,host+'.real');fs.symlinkSync(host+'.real',host)}
+   if(mode==='override')options.authorize=()=>({allowed:true})
+   if(mode==='sameKey')options.storageKey=options.evidenceKey
+   await assert.rejects(createQualityPrivateEvidenceReader(options),{code:mode==='override'?'VERIFICATION_INPUT_INVALID':mode==='sameKey'?'QA_READER_CONFIGURATION_INVALID':'QA_READER_SOURCE_UNAVAILABLE'})
+   assert.equal(f.calls.length,0,mode)
+  }finally{f.close()}
+ }
+})
+
+test('Independent attestor cannot sign an agent self-grade or the general verifier with a substituted execution callback',async()=>{
+ const {createQualityVerificationAttestor,verifyQualityCandidateInIsolation}=await import('../src/verify.mjs')
+ const {options,runCase}=setup(),reported=await verifyCandidate({...options,runCase})
+ const signer=createQualityVerificationAttestor({privateKey:reviewer.privateKey})
+ for(const value of [reported,structuredClone(reported),{result:'PASS'},null])
+  assert.throws(()=>signer.attest(value),{code:'REAL_ISOLATED_VERIFICATION_REQUIRED'})
+ assert.throws(()=>createQualityVerificationAttestor({privateKey:reviewer.publicKey}),{code:'VERIFICATION_SIGNER_REQUIRED'})
+ await assert.rejects(verifyQualityCandidateInIsolation({...options,runCase}),{code:'VERIFICATION_INPUT_INVALID'})
+})
+async function verificationReceiptFixture(){
+ // This is a decoder protocol fixture signed by a fresh test key. It is not
+ // an attestable OS result, a business reference pack or an installed trust key.
+ const {options,runCase}=setup(),verification=await verifyCandidate({...options,runCase}),m=options.manifest,nonce=randomUUID(),controlSourceSha='e'.repeat(40),runId='123'
+ const body={schemaVersion:'AQC_VERIFICATION_RESULT_V1',applicationId:'spendguru',environment:'development',repository:'profitia/SG-dev',
+  incidentId:m.incidentId,repairClass:m.repairClass,baseSha:m.baseSha,manifestSha256:documentDigest(m),gateSetSha256:m.gateSetSha256,
+  artifactSha256:verification.artifactSha256,verification,nonce,controlSourceSha,runId,runAttempt:1,observedAt:stamp(now),expiresAt:stamp(now+60000),rawQaPayloadIncluded:false}
+ const context={keys:keys(reviewer),manifest:m,nonce,controlSourceSha,runId,notBefore:stamp(now-1000),now}
+ return {body,context,document:signDocument('AQC_VERIFICATION_RESULT_V1',body,reviewer.privateKey)}
+}
+test('Signed verification decoder binds exact provider source/run/nonce, immutable manifest, expiry and signer without exposing private cases',async()=>{
+ const {readQualityVerificationResult}=await import('../src/verify.mjs'),f=await verificationReceiptFixture()
+ const result=readQualityVerificationResult(f.document,f.context)
+ assert.equal(result.result,'PASS');assert.equal(result.proofSha256,f.body.verification.proofSha256);assert(Object.isFrozen(result.classCounts))
+ assert(!JSON.stringify(f.document).includes('holdout_family_'))
+ assert.throws(()=>readQualityVerificationResult(f.document,{...f.context,keys:keys(owner)}),{code:'SIGNER_UNKNOWN'})
+ assert.throws(()=>readQualityVerificationResult(f.document,{...f.context,manifest:structuredClone(f.context.manifest)}),{code:'VERIFIED_MANIFEST_REQUIRED'})
+ for(const change of [{incidentId:randomUUID()},{controlSourceSha:'f'.repeat(40)},{runId:'124'},{runAttempt:2},{nonce:randomUUID()},{rawQaPayloadIncluded:true},{artifactSha256:'d'.repeat(64)},{debug:'SYNTHETIC_DISALLOWED_FIELD'}]){
+  const bad=signDocument('AQC_VERIFICATION_RESULT_V1',{...f.body,...change},reviewer.privateKey)
+  assert.throws(()=>readQualityVerificationResult(bad,f.context))
+ }
+ for(const change of [{expiresAt:stamp(now-1)},{observedAt:stamp(now+1)},{expiresAt:stamp(now+30*60000+1)}])
+  assert.throws(()=>readQualityVerificationResult(signDocument('AQC_VERIFICATION_RESULT_V1',{...f.body,...change},reviewer.privateKey),f.context),{code:'VERIFICATION_RECEIPT_STALE'})
+})
+test('A valid signature cannot replace mandatory VERIFY thresholds or smuggle extra private proof fields',async()=>{
+ const {readQualityVerificationResult}=await import('../src/verify.mjs'),f=await verificationReceiptFixture()
+ for(const change of [{holdoutCases:199},{criticalRegressions:1},{accessViolations:1},{criticalCasesPass:false},{stable:false},{criticalRepeats:2},{baseTest:'PASS'},{correctnessDeltaPp:-1.1},{unjustifiedRefusalDeltaPp:2.1},{classCounts:{C1:1,C2:100,C3:99}},{rawQuestion:'SYNTHETIC_DISALLOWED_FIELD'}]){
+  const value={...f.body.verification,...change},withoutProof={...value};delete withoutProof.proofSha256
+  value.proofSha256=documentDigest(withoutProof)
+  const bad=signDocument('AQC_VERIFICATION_RESULT_V1',{...f.body,verification:value},reviewer.privateKey)
+  assert.throws(()=>readQualityVerificationResult(bad,f.context))
+ }
+ const corrupt=structuredClone(f.body);corrupt.verification.proofSha256='0'.repeat(64)
+ assert.throws(()=>readQualityVerificationResult(signDocument('AQC_VERIFICATION_RESULT_V1',corrupt,reviewer.privateKey),f.context),{code:'VERIFICATION_RECEIPT_DIGEST_INVALID'})
+})
