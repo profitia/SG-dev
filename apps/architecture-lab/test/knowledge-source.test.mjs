@@ -13,7 +13,7 @@ test('closed knowledge SDK successor binds real current digest and immutable pre
  assert.match(KNOWLEDGE_SOURCE_RECORD_SHA256,/^[a-f0-9]{64}$/);
 });
 test('unreviewed SDK, native schema, metadata, consumer or historical receipt never gets a projected predecessor',()=>{
- const paths=['apps/insights-runtime/package.json','apps/sg-runtime/procurement-insights-editorial-package-integration.json','apps/sg-runtime/tests/procurement-insights-editorial-package-integrity.mjs','apps/sg-runtime/tests/procurement-insights-editorial-package-integrity.test.mjs','packages/platform-contracts/src/operation-context.mjs','packages/platform-contracts/src/knowledge-operations.mjs','packages/platform-contracts/current-e1-authority/migrations/015-knowledge-authority.sql','packages/platform-source-hub-contracts/package.json','packages/maps-embed/package.json','apps/identity-runtime/package-lock.json','apps/sg-runtime/package-lock.json','apps/srm/package-lock.json','apps/sg-runtime/operation-integration.json','apps/sg-runtime/tests/finder-monitor-source-integrity.test.mjs','apps/sg-runtime/scripts/monitor-benchmark-finder.mjs','apps/sg-runtime/finder-monitor-source-integration.json','apps/sg-runtime/knowledge-source-adoption.json',KNOWLEDGE_SOURCE_RECORD];
+ const paths=['apps/srm/deployment/root-atomic-claim-targets.json','apps/insights-runtime/package.json','apps/sg-runtime/procurement-insights-editorial-package-integration.json','apps/sg-runtime/tests/procurement-insights-editorial-package-integrity.mjs','apps/sg-runtime/tests/procurement-insights-editorial-package-integrity.test.mjs','packages/platform-contracts/src/operation-context.mjs','packages/platform-contracts/src/knowledge-operations.mjs','packages/platform-contracts/current-e1-authority/migrations/015-knowledge-authority.sql','packages/platform-source-hub-contracts/package.json','packages/maps-embed/package.json','apps/identity-runtime/package-lock.json','apps/sg-runtime/package-lock.json','apps/srm/package-lock.json','apps/sg-runtime/operation-integration.json','apps/sg-runtime/tests/finder-monitor-source-integrity.test.mjs','apps/sg-runtime/scripts/monitor-benchmark-finder.mjs','apps/sg-runtime/finder-monitor-source-integration.json','apps/sg-runtime/knowledge-source-adoption.json',KNOWLEDGE_SOURCE_RECORD];
  for(const p of paths)assert.throws(()=>knowledgeSourcePredecessor(f=>f===p?Buffer.concat([read(f),Buffer.from('UNREVIEWED')]):read(f),history),p);
  const forbidden=Object.assign(Error('No access'),{code:'EACCES'});assert.throws(()=>knowledgeSourcePredecessor(()=>{throw forbidden;},history),e=>e===forbidden);
  assert.equal(knowledgeSourcePredecessor(()=>{throw Object.assign(Error('Missing'),{code:'ENOENT'});},history),null);
@@ -57,4 +57,14 @@ test('public Knowledge routing authenticates a real complete checkout without an
   git(fixture,'reset','--quiet','--hard',head);fs.writeFileSync(path.join(fixture,'foreign-unreviewed.txt'),'SYNTHETIC_ONLY');git(fixture,'add','foreign-unreviewed.txt');git(fixture,'-c','user.name=Synthetic fixture','-c','user.email=synthetic@example.invalid','commit','--quiet','-m','SYNTHETIC_ONLY extra input');
   assert.throws(()=>reviewedKnowledgeConsumerPaths(fixture,{...review,candidateSha:git(fixture,'rev-parse','HEAD')}));
  }finally{fs.rmSync(temporary,{recursive:true,force:true});}
+});
+
+test('current SRM Root target authenticates the actual optional producer while its prior target remains immutable',async()=>{
+ const {rootAtomicClaimSourceDigest}=await import('../../../packages/platform-contracts/root-atomic-claim/src/root-atomic-claim.mjs');
+ const file='apps/srm/deployment/root-atomic-claim-targets.json',view=knowledgeSourcePredecessor(read,history),current=JSON.parse(read(file));
+ assert.equal(current.sourceDigest,await rootAtomicClaimSourceDigest());assert.equal(current.sourceDigest,view.manifest.optionalPackageDigests.rootAtomicClaimSourceDigest);
+ const previous=JSON.parse(view.previousBytes(file));assert.equal(previous.sourceDigest,'b3d6f2110f41ca93cac6a949b113a8582b6407688d81df1935cd8990424b393a');
+ const {sourceDigest:now,...currentMetadata}=current,{sourceDigest:then,...previousMetadata}=previous;assert.notEqual(now,then);assert.deepEqual(currentMetadata,previousMetadata);
+ assert.deepEqual(view.previousBytes(file),history(view.manifest.previousSourceSha,file));
+ assert.throws(()=>knowledgeSourcePredecessor(p=>p===file?view.previousBytes(file):read(p),history),'historically valid target must not substitute the current producer');
 });
