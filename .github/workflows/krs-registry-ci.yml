@@ -15,6 +15,9 @@ jobs:
     name: KRS contracts, isolated catalog, security and artifact
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: source
     services:
       postgres:
         image: postgres:16
@@ -30,25 +33,37 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 0
           persist-credentials: false
+          path: source
+      # Source builds stay on the exact submitted head. Governance independently
+      # checks the real GitHub validation merge in a sibling clean checkout.
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+          path: validation
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: '24.15.0'
       - name: Clean contracts install, typecheck, build and tests
-        working-directory: packages/krs-registry-contracts
+        working-directory: source/packages/krs-registry-contracts
         run: npm ci --ignore-scripts --no-audit --no-fund && npm run typecheck && npm run build && npm test
       - name: Clean runtime install, boundary, typecheck, build and offline tests
-        working-directory: apps/krs-registry-runtime
+        working-directory: source/apps/krs-registry-runtime
         run: npm ci --install-links --ignore-scripts --no-audit --no-fund && npm run lint && npm run typecheck && npm run build && npm test
       - name: Real disposable PostgreSQL and synthetic performance
-        working-directory: apps/krs-registry-runtime
+        working-directory: source/apps/krs-registry-runtime
         env:
           KRS_FIXTURE_OWNER_URL: postgresql://krs_test_owner:isolated_ci_only@127.0.0.1:5432/krs_registry_test
         run: npm run test:postgres
       - name: Preserve existing consumer contracts and governance
         run: npm --prefix apps/sg-runtime run test:platform-contract && npm --prefix apps/srm run test:platform-contract && node scripts/governance/validate-governance-manifest.mjs
       - name: Reproducible artifact and exact candidate routing
-        working-directory: apps/krs-registry-runtime
+        working-directory: source/apps/krs-registry-runtime
         env:
+          GOVERNANCE_CONTEXT_ROOT: ${{ github.workspace }}/validation
+          CI_ROUTING_VALIDATION: ${{ github.sha }}
+          CI_ROUTING_EVENT: ${{ github.event_name }}
           CANDIDATE_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
           VALIDATION_BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
         run: npm run artifact && cp dist/artifact-proof.json dist/first-artifact-proof.json && npm run artifact && cmp dist/first-artifact-proof.json dist/artifact-proof.json && npm run ci:proof
@@ -57,10 +72,10 @@ jobs:
         with:
           name: krs-registry-source-${{ github.event.pull_request.head.sha || github.sha }}
           path: |
-            apps/krs-registry-runtime/dist/*proof.json
-            apps/krs-registry-runtime/dist/postgres-evidence.json
-            apps/krs-registry-runtime/dist/release-manifest.json
-            apps/krs-registry-runtime/dist/krs-registry-runtime.zip
+            source/apps/krs-registry-runtime/dist/*proof.json
+            source/apps/krs-registry-runtime/dist/postgres-evidence.json
+            source/apps/krs-registry-runtime/dist/release-manifest.json
+            source/apps/krs-registry-runtime/dist/krs-registry-runtime.zip
           if-no-files-found: error
           retention-days: 30
   governance-regression:
@@ -76,4 +91,4 @@ jobs:
         with:
           node-version: '24.15.0'
       - name: Preserve all existing governance assertions
-        run: node --test scripts/governance/governance.test.mjs scripts/governance/development-workspace.test.mjs scripts/governance/krs-registry-routing.test.mjs
+        run: node --test scripts/governance/governance.test.mjs scripts/governance/development-workspace.test.mjs scripts/governance/krs-registry-routing.test.mjs apps/krs-registry-runtime/test/ci-routing.test.mjs

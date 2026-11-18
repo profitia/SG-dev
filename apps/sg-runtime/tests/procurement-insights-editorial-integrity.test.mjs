@@ -1,3 +1,4 @@
+import {knowledgeSourcePredecessor} from '../../architecture-lab/knowledge-source.mjs';
 import {procurementInsightsEditorialPackagePredecessor} from './procurement-insights-editorial-package-integrity.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
@@ -8,7 +9,8 @@ import {procurementInsightsEditorialPredecessor,EDITORIAL_RECEIPT,EDITORIAL_BASE
 import {assistantM2Predecessor,oilReportSerializationPredecessor} from './assistant-m2-integrity.mjs'
 const root=new URL('../../../',import.meta.url),physicalCurrent=p=>fs.readFileSync(new URL(p,root))
 const blobs=new Map(),historical=(sha,p)=>{const key=sha+':'+p;if(!blobs.has(key))blobs.set(key,execFileSync('git',['show',key],{cwd:root,stdio:['ignore','pipe','pipe']}));return blobs.get(key)}
-const current=procurementInsightsEditorialPackagePredecessor(physicalCurrent,historical)?.previousBytes??physicalCurrent
+const knowledge=knowledgeSourcePredecessor(physicalCurrent,historical),beforePackage=knowledge?.previousBytes??physicalCurrent
+const current=procurementInsightsEditorialPackagePredecessor(beforePackage,historical)?.previousBytes??beforePackage
 const hash=b=>createHash('sha256').update(b).digest('hex')
 const manifest=()=>JSON.parse(current(EDITORIAL_RECEIPT))
 const withManifest=(a,read=current)=>p=>p===EDITORIAL_RECEIPT?Buffer.from(JSON.stringify(a)):read(p)
