@@ -108,8 +108,8 @@ export async function processJob({pool,storage,provider,authorizeJob,job,signal,
    const phrase=(sample.text_content.match(/[\p{L}\p{N}][\p{L}\p{N}_-]*/gu)??[]).slice(0,6).join(' ');
    const lexical=phrase?(await db.query(`SELECT id FROM platform_knowledge.chunks WHERE generation_id=$1
     AND search_text@@plainto_tsquery('simple',$2) LIMIT 1`,[job.generation_id,phrase])).rowCount:0;
-   const nearest=(await db.query(`SELECT embedding <=> $2::public.vector AS distance FROM platform_knowledge.chunks
-    WHERE generation_id=$1 AND embedding IS NOT NULL ORDER BY embedding <=> $2::public.vector LIMIT 1`,[job.generation_id,sample.embedding])).rows[0];
+   const nearest=(await db.query(`SELECT embedding OPERATOR(public.<=>) $2::public.vector AS distance FROM platform_knowledge.chunks
+    WHERE generation_id=$1 AND embedding IS NOT NULL ORDER BY embedding OPERATOR(public.<=>) $2::public.vector LIMIT 1`,[job.generation_id,sample.embedding])).rows[0];
    if(!lexical||!nearest||!Number.isFinite(Number(nearest.distance))||Number(nearest.distance)>0.00001)throw new Fault(422,'GENERATION_RETRIEVAL_SMOKE_FAILED');
   }
   const partial=generation.coverage.failedUnitIds.length>0;

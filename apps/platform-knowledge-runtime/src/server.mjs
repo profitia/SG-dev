@@ -42,7 +42,7 @@ export function createServer({database,telemetry,config=null,authority=null,libr
      res.setHeader('Content-Type',url.pathname==='/'?'text/html; charset=utf-8':'text/javascript; charset=utf-8');
      res.setHeader('Referrer-Policy','no-referrer');
      const clerkHost=config.clerkFrontendOrigin;
-     res.setHeader('Content-Security-Policy',`default-src 'none'; script-src 'self' ${clerkHost??''}; style-src 'self' 'unsafe-inline'; connect-src 'self' ${clerkHost??''}; img-src 'self' https://img.clerk.com data:; font-src 'self' data:; frame-src ${clerkHost??"'none'"}; base-uri 'none'; frame-ancestors 'none'; form-action 'self'`);
+     res.setHeader('Content-Security-Policy',`default-src 'none'; script-src 'self' ${clerkHost??''} https://challenges.cloudflare.com https://*.protect.clerk.com; style-src 'self' 'unsafe-inline'; connect-src 'self' ${clerkHost??''} https://*.protect.clerk.com:*; img-src 'self' https://img.clerk.com data:; font-src 'self' data:; worker-src 'self' blob:; frame-src ${clerkHost??''} https://challenges.cloudflare.com https://*.protect.clerk.com; base-uri 'none'; frame-ancestors 'none'; form-action 'self'`);
      res.writeHead(200);return res.end(url.pathname==='/'?adminPage(config):adminScript);
     }
     if(!authority||!library||!provider)throw new Fault(503,'ENGINE_NOT_CONFIGURED');
