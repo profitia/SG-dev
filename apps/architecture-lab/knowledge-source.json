@@ -21,7 +21,7 @@
     "Canon/runbooks/platform-knowledge-stage2-e1-activation-v1.md": "7526d2429eadfcb0efa1ef220a480af378e1c09f85bb64696e3661abff86fb0c",
     "apps/architecture-lab/ecr-stage03-sdk-compatibility.mjs": "e815522724549829eef83228fc35f960371c02e3f95b9c18e3a313fdc09460ea",
     "apps/architecture-lab/private-recurring-source.mjs": "116e21f566194089c6260d38d001c70ee8eec92f9ee6f006230dc2c429878e45",
-    "apps/architecture-lab/test/knowledge-source.test.mjs": "24d2787f1a79f7fd83a3d8c4b71116429bf1f729595ccbf932fa2e1d41f12037",
+    "apps/architecture-lab/test/knowledge-source.test.mjs": "5020fd75a8d300a22b80998faa4cc4435eb692cc181d436e578c7e8a28730e50",
     "apps/architecture-lab/test/payload-capture-publication.test.mjs": "9f00a96134bbf339738793f79597b962f7c3601fc2f5e0b3e0b34d6a8af9dc01",
     "apps/architecture-lab/test/private-recurring-source.test.mjs": "7fee49755879e8b6115de844d15fba6c0a42ea5b8a2f5b7fe11dcfcd39c72ded",
     "apps/architecture-lab/test/sdk-compatibility.test.mjs": "bea281ac57623131241bed6da66da44f2fc5aecc30b7943b76cd426b3bc128df",

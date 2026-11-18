@@ -53,13 +53,13 @@ test('closed predecessor buffers cannot mutate shared cached history',()=>{
  const view=calendarCurrentMainPredecessor(current,historical),p=Object.keys(view.manifest.views.calendar.replacements)[0],before=view.calendarBytes(p),original=Buffer.from(before);before.fill(0);assert.deepEqual(view.calendarBytes(p),original)
 })
 test('corrected PK Root target stays exact and the previous SRM digest is rejected before history',()=>{
- const p='apps/srm/deployment/root-atomic-claim-targets.json',expected=historical('8abd146e99de993d2ffd97d3767dee722d6e5ce4',p),previous=historical('617ae48d975e241e1df7d6b051ce586e0d5074bd',p)
+ const p='apps/srm/deployment/root-atomic-claim-targets.json',expected=historical('2706f13a5fb37a45daf4aea7be5e9d88ee7e4024',p),previous=historical('617ae48d975e241e1df7d6b051ce586e0d5074bd',p)
  assert.deepEqual(current(p),expected);assert.notDeepEqual(previous,expected)
- const view=calendarCurrentMainPredecessor(current,historical);assert.equal(view.manifest.acceptedMainSha,'8abd146e99de993d2ffd97d3767dee722d6e5ce4');assert.deepEqual(view.acceptedMainBytes(p),expected)
+ const view=calendarCurrentMainPredecessor(current,historical);assert.equal(view.manifest.acceptedMainSha,'2706f13a5fb37a45daf4aea7be5e9d88ee7e4024');assert.deepEqual(view.acceptedMainBytes(p),expected)
  let calls=0;assert.throws(()=>calendarCurrentMainPredecessor(f=>f===p?previous:current(f),()=>{calls++;throw Error('HISTORY_MUST_NOT_BE_REACHED')}));assert.equal(calls,0)
 })
 test('current joint SDK metadata remains the actual PK producer while Cal receipts and transport stay unchanged',()=>{
- const view=recurringSourceFilesystem(root),pk=JSON.parse(historical('8abd146e99de993d2ffd97d3767dee722d6e5ce4','apps/architecture-lab/knowledge-source.json'))
+ const view=recurringSourceFilesystem(root),pk=JSON.parse(historical('2706f13a5fb37a45daf4aea7be5e9d88ee7e4024','apps/architecture-lab/knowledge-source.json'))
  assert.deepEqual(view.manifest,pk);assert.equal(view.manifest.platformVersion,JSON.parse(current('packages/platform-contracts/package.json')).version)
  assert.equal(view.predecessorManifest.platformVersion,'1.36.0');assert(view.complete);assert(view.transport.live)
  assert.deepEqual(current('apps/economic-calendar-runtime/complete-functional-source-integration.json'),historical('69d02834e863a51506aa4f50fbeb20f7fda3575b','apps/economic-calendar-runtime/complete-functional-source-integration.json'))

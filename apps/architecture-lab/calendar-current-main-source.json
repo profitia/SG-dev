@@ -2,7 +2,7 @@
   "schemaVersion": "1.0.0",
   "scope": "CALENDAR_CURRENT_MAIN_EXACT_SOURCE_COMPATIBILITY",
   "calendarInputSha": "69d02834e863a51506aa4f50fbeb20f7fda3575b",
-  "acceptedMainSha": "8abd146e99de993d2ffd97d3767dee722d6e5ce4",
+  "acceptedMainSha": "2706f13a5fb37a45daf4aea7be5e9d88ee7e4024",
   "sourceDigests": {
     ".github/workflows/krs-registry-ci.yml": "25498e2272d290013f0a93651699c38e475688109efda6a1b05c8911d7aef9f9",
     ".github/workflows/platform-knowledge-ci.yml": "81d307634428957ec0336692928e51afe3296354f617eb20d0e82b7f174386d8",
@@ -14,9 +14,9 @@
     "apps/architecture-lab/ecr-complete-functional-source.mjs": "f52e42f32aab2775fdc87a2f0a8876631de6ff8559ba2f32c873b7f8517ab666",
     "apps/architecture-lab/ecr-stage03-sdk-compatibility.mjs": "e815522724549829eef83228fc35f960371c02e3f95b9c18e3a313fdc09460ea",
     "apps/architecture-lab/insights-report-source-compatibility.json": "502d4bc0529427664b2a13f9a3e273b288ba7285fd85e11199bfca72e906c809",
-    "apps/architecture-lab/knowledge-source-adoption.json": "2d7f776fd1c5cdafed017c020e94b484c11a15bc034af8c4a09a788fbfdd9647",
-    "apps/architecture-lab/knowledge-source.json": "a60eafee25b7f4ab0463c9b53cd2ed11aa60ec42d20a22936a53f8665fc88df7",
-    "apps/architecture-lab/knowledge-source.mjs": "71c92a8f49f4784c4ace2a0388586828f1b0576dfb6993ed7857eec62968d22f",
+    "apps/architecture-lab/knowledge-source-adoption.json": "acf1f0cb1daadc3400cccc4cf5cb19f0f9e6e3fc7bb916a3cbd4df3b773c834f",
+    "apps/architecture-lab/knowledge-source.json": "3517b86c8a86a2cab3bb0e9be98c464a7278d136b43c61ab8cd869f67ece4c62",
+    "apps/architecture-lab/knowledge-source.mjs": "33d99cff25dc6fc33c42891fcaa35601e68f65faef91d883b2bc3c541258ea66",
     "apps/architecture-lab/market-calendar-source.mjs": "a5bb86512718f31935cd4e023a664624641b615990e5d3318f671687bfde60e7",
     "apps/architecture-lab/market-calendar-test-compatibility.json": "52e859d4a99bc4c8e4d986f38afea2d58e9c1fe1ee1e0eb62cc2672dbdb60078",
     "apps/architecture-lab/private-recurring-source-adoption.json": "a79c186897851acb93142949fe7aee19184cbfe68b3acdf51cbda084c00c1254",
@@ -24,10 +24,10 @@
     "apps/architecture-lab/private-recurring-source.mjs": "a60f8eda8283438b5929d00f89250fc69534db31d9e80de7090584ec8f49d460",
     "apps/architecture-lab/sdk-1.33-compatibility.json": "3e3c8f43813d5c4888e206ac31433f60470eac4310abaa62bd32e1c901a0df3e",
     "apps/architecture-lab/sdk-1.34-compatibility.json": "458ddbf661ce1a5666260a072a03f24ac016346bdd9a9efef7f2a1d497eee403",
-    "apps/architecture-lab/test/calendar-current-main-source.test.mjs": "238d6657aa6c16a9395f38236e821045f3820526b521af87efd9663ba3fb8897",
+    "apps/architecture-lab/test/calendar-current-main-source.test.mjs": "2a18f17e8e5eb7334afbe00da021c29230cdbe31fd7b3ee8e0a119000b542fb3",
     "apps/architecture-lab/test/ecr-complete-functional-source.test.mjs": "2adb0c1cd857c475a59e1f74dc6843d0b0172868c5389876b5dfd028e2c5cfbe",
     "apps/architecture-lab/test/ecr-functional-ci-repair.test.mjs": "b49301d95456e9fbf6e82108bad2915b2f5b038562a320633359a38e06206f31",
-    "apps/architecture-lab/test/knowledge-source.test.mjs": "5e483884c87ab35322c2f11a1f40b89019aeeb36101c794b84addc6b6ad96907",
+    "apps/architecture-lab/test/knowledge-source.test.mjs": "d142e50de2d99248dd6048a2ed6d816aa863f19701ffb1d548425e6418c437d3",
     "apps/architecture-lab/test/manifest-successor-continuity.test.mjs": "e589c6a2a24bf8a91b8d3354b8d1b668a1964014b54e6ee6ebe495f6a2894e0b",
     "apps/architecture-lab/test/payload-capture-publication.test.mjs": "9f00a96134bbf339738793f79597b962f7c3601fc2f5e0b3e0b34d6a8af9dc01",
     "apps/architecture-lab/test/private-recurring-source.test.mjs": "7fee49755879e8b6115de844d15fba6c0a42ea5b8a2f5b7fe11dcfcd39c72ded",
@@ -174,7 +174,7 @@
     "apps/sg-runtime/components/procurement-insights/workspace.tsx": "28cdc0d9c8936deb4518495da4ef6f994ebdea277616f3b2187e84f53a161082",
     "apps/sg-runtime/development-integration.json": "a3ed33e74582d2e0407677e090be0d82405e42a160c34afddb8fde47dff86540",
     "apps/sg-runtime/finder-monitor-source-integration.json": "22ac9484a6b5532e97ee8c522491bf1015944677e0ab7979bd0769444a1455f6",
-    "apps/sg-runtime/knowledge-source-adoption.json": "5ab828e524486ab3a84d685465f88ec7cd7f534a4cd4b39023068ae9bc661790",
+    "apps/sg-runtime/knowledge-source-adoption.json": "02075b5f8b0ec7ec855a8c4ed1df53535de2ccde66930d2407e5ad6a76241aef",
     "apps/sg-runtime/lib/assistant/context-selection.ts": "8a8f4e995f2cf3f739d8182905e436675cb4ddd0d9b9240146c2d6b6cd917ab2",
     "apps/sg-runtime/lib/assistant/conversation.ts": "04fdf8afb4571a9acac826d0ffe1f6061813216c6b262ce5b571769eb40aed5d",
     "apps/sg-runtime/lib/assistant/sources.ts": "507b28a52743412d10cb12962b867879cf629fcbd284648326ed5ea617124310",
@@ -226,7 +226,7 @@
     "apps/srm/deployment/root-atomic-claim-targets.json": "cad41a55f47323aecba39c2faf9e63d631b8ad99d05265222e7213c6f73432be",
     "apps/srm/deployment/task02r-release-source.json": "de27d2e5bfde61edd4779c79a2bf8209a8df327b2d68c793ffd60d5e641665dc",
     "apps/srm/development-integration.json": "53b67cb769000a4f4005ab10ccc0188b39074094cb38e915b16c3d6026590f57",
-    "apps/srm/knowledge-source-adoption.json": "48151dbacd58b558fd01a7114f810bf414c936169a8d9c866590c7673046e6b4",
+    "apps/srm/knowledge-source-adoption.json": "c5bc662841b2b9c34355c1c0352220b2a09d8440ff563261450304c45a815cd6",
     "apps/srm/operation-integration.json": "1303ac82c0570ca4929f64e1620e2ec7a6bfd3809607f57eb33da621c8ecd06d",
     "apps/srm/package-lock.json": "075c6ecb86765796948b3a10886ef7eac0782eaaab4b359ddd1d6d87212582b9",
     "apps/srm/private-recurring-source-adoption.json": "88d0252f634eface35b34adf31ac97cbf0d396fcf1fe6da452c74bdc23c7c633",
@@ -925,11 +925,11 @@
       ]
     },
     "acceptedMain": {
-      "sourceSha": "8abd146e99de993d2ffd97d3767dee722d6e5ce4",
+      "sourceSha": "2706f13a5fb37a45daf4aea7be5e9d88ee7e4024",
       "replacements": {
         "apps/architecture-lab/knowledge-source.mjs": {
-          "currentSha256": "71c92a8f49f4784c4ace2a0388586828f1b0576dfb6993ed7857eec62968d22f",
-          "previousSha256": "23afa4416f329772b3043c4f84281186a3a90a0787a0e180543e3e362218c66e"
+          "currentSha256": "33d99cff25dc6fc33c42891fcaa35601e68f65faef91d883b2bc3c541258ea66",
+          "previousSha256": "a10351fa23857a9299c11f2c7bf66c85ae571e29a30a98f4fedcd619bfeb8b10"
         },
         "apps/architecture-lab/market-calendar-source.mjs": {
           "currentSha256": "a5bb86512718f31935cd4e023a664624641b615990e5d3318f671687bfde60e7",
@@ -940,8 +940,8 @@
           "previousSha256": "116e21f566194089c6260d38d001c70ee8eec92f9ee6f006230dc2c429878e45"
         },
         "apps/architecture-lab/test/knowledge-source.test.mjs": {
-          "currentSha256": "5e483884c87ab35322c2f11a1f40b89019aeeb36101c794b84addc6b6ad96907",
-          "previousSha256": "24d2787f1a79f7fd83a3d8c4b71116429bf1f729595ccbf932fa2e1d41f12037"
+          "currentSha256": "d142e50de2d99248dd6048a2ed6d816aa863f19701ffb1d548425e6418c437d3",
+          "previousSha256": "5020fd75a8d300a22b80998faa4cc4435eb692cc181d436e578c7e8a28730e50"
         },
         "apps/architecture-lab/test/manifest-successor-continuity.test.mjs": {
           "currentSha256": "e589c6a2a24bf8a91b8d3354b8d1b668a1964014b54e6ee6ebe495f6a2894e0b",
