@@ -1,3 +1,4 @@
+import {sdkSourceContext} from '../../../packages/platform-contracts/test/sdk-source-context.mjs'
 import {procurementInsightsEditorialPackagePredecessor,EDITORIAL_PACKAGE_RECEIPT} from './procurement-insights-editorial-package-integrity.mjs'
 import {assistantReservationPredecessor,RESERVATION_RECORD,RESERVATION_DERIVED} from '../../../packages/platform-contracts/test/assistant-reservation-source.mjs'
 // Test/build-only binding of the two owner-approved monitor sources. No runtime grant.
@@ -39,6 +40,13 @@ export function finderMonitorEditorialSource(before){
 }
 
 export function finderMonitorPredecessor(current,historical){
+ const context=sdkSourceContext(current,historical)
+ if(context){
+  const accepted=finderMonitorPredecessor(context.baseline('authority'),historical)
+  assert(accepted,'complete immutable accepted Finder source required')
+  return {...accepted,currentSdkContext:context,currentSourceDigests:context.currentSourceDigests}
+ }
+
  let bytes
  try{bytes=current(FINDER_MONITOR_RECEIPT)}catch(error){
   const text=String(error?.stderr??error?.message??'')
