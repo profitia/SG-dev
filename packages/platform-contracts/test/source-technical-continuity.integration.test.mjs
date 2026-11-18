@@ -27,15 +27,13 @@ test('SQL035 renews only current revocable technical authority and preserves unm
    for(const sid of sources){
     await owner.query("INSERT INTO profitia_ingestion.sources VALUES($1,'STORED_SQL_TRANSACTION','SHARED_KNOWLEDGE','external-call-control-v1','fixture','fixture','source-receipt-v1','ACTIVE',1,'SYNTHETIC_ONLY',now()+interval '1 hour')",[sid])
     await owner.query("INSERT INTO profitia_ingestion.grants VALUES($1,$2,$3,'resource:'||$3,'ALLOW','ACTIVE',1,'SYNTHETIC_ONLY',now()+interval '1 hour')",[randomUUID(),ROLE,sid])
-    await owner.query("INSERT INTO profitia_ingestion.budgets(policy_id,application_id,source_id,unit,capacity,window_start,window_end,expires_at,status,source_ref,quota_mode,consumed_count) VALUES($1,'fixture-source',$2,'SOURCE_TRANSACTION',NULL,NULL,NULL,NULL,'ACTIVE','SYNTHETIC_ONLY','UNMETERED',1501)",[randomUUID(),sid])
+    await owner.query("INSERT INTO profitia_ingestion.budgets(policy_id,application_id,source_id,unit,capacity,window_start,window_end,expires_at,status,source_ref,quota_mode,consumed_count) VALUES($1,'fixture-source',$2,'SOURCE_TRANSACTION',2000,now(),now()+interval '1 hour',now()+interval '1 hour','ACTIVE','SYNTHETIC_ONLY','METERED',1501)",[randomUUID(),sid])
     const id=randomUUID();await owner.query("INSERT INTO profitia_external_call.policies(policy_id,login_role,source_id,resource_id,configuration_version,origin,transport,path_rules,maximum_request_bytes,maximum_response_bytes,timeout_ms,unit,capacity,window_start,window_end,expires_at,status,source_ref) VALUES($1,$2,$3,'resource:'||$3,'fixture-http','https://provider.fixture.test','HTTPS','[{\"method\":\"GET\",\"path\":\"/data\"}]',1024,4096,1000,'UPSTREAM_ATTEMPT_ADMISSION',50,now(),now()+interval '1 hour',now()+interval '1 hour','ACTIVE','SYNTHETIC_ONLY')",[id,ROLE,sid])
     await owner.query("INSERT INTO profitia_external_native.policies VALUES($1,1,'[{\"method\":\"GET\",\"path\":\"/data\",\"requestFormat\":\"NONE\"}]','[]',4096,'NONE','ADMITTED_ATTEMPT_CURRENT_SETTLEMENT','ACTIVE',1,now()+interval '1 hour','SYNTHETIC_ONLY')",[id])
-    await owner.query("UPDATE profitia_external_call.policies SET quota_mode='UNMETERED',capacity=NULL,window_start=NULL,window_end=NULL,expires_at=NULL WHERE policy_id=$1",[id])
-    await owner.query("UPDATE profitia_external_native.policies SET base_policy_version=2 WHERE policy_id=$1",[id])
    }
    const controls=(await owner.query('SELECT profitia_ingestion.continuity_controls($1,$2,$3) value',[ROLE,'fixture-source',sources])).rows[0].value
-   const fingerprints=Object.fromEntries(controls.map(c=>[c.id,c.fingerprint]))
-   await owner.query("INSERT INTO profitia_source_continuity.policies VALUES($1,'fixture-source',$2,'ACTIVE',$3,$4,now()+interval '1 hour')",[ROLE,sources,'owner-decision:sha256:'+'a'.repeat(64),fingerprints])
+   const versions=Object.fromEntries(controls.map(c=>[c.id,String(c.definition.version)]));
+   const activated=(await owner.query('SELECT profitia_ingestion.activate_unmetered_sources($1,$2,$3,$4,$5,$6) value',[ROLE,'fixture-source',sources,'owner-decision:sha256:'+'a'.repeat(64),versions,1])).rows[0].value;assert.equal(activated.status,'ACTIVATED');
    await owner.query(`GRANT USAGE ON SCHEMA profitia_ingestion TO ${ROLE};GRANT EXECUTE ON FUNCTION profitia_ingestion.runtime_descriptor(),profitia_ingestion.maintain_source_technical_access(text) TO ${ROLE}`)
   })
   const runtimeUrl=new URL(url);runtimeUrl.username=ROLE;runtimeUrl.password='isolated_ci_only';runtime=new Client({connectionString:runtimeUrl.toString()});await runtime.connect()
@@ -46,7 +44,7 @@ test('SQL035 renews only current revocable technical authority and preserves unm
    const before=(await owner.query('SELECT policy_id,consumed_count,version FROM profitia_ingestion.budgets ORDER BY policy_id')).rows
    const r=await maintain();assert.equal(r.status,'RENEWED');assert.ok(Date.parse(r.leaseUntil)>Date.now()+29*86400000)
    assert.deepEqual((await owner.query('SELECT policy_id,consumed_count,version FROM profitia_ingestion.budgets ORDER BY policy_id')).rows,before)
-   assert.equal((await maintain()).status,'CURRENT');assert.equal((await owner.query('SELECT count(*)::int n FROM profitia_source_continuity.events')).rows[0].n,1)
+   assert.equal((await maintain()).status,'CURRENT');assert.equal((await owner.query('SELECT count(*)::int n FROM profitia_source_continuity.events')).rows[0].n,2)
    assert.equal((await owner.query('SELECT bool_and(n.base_policy_version=e.version) ok FROM profitia_external_call.policies e JOIN profitia_external_native.policies n USING(policy_id)')).rows[0].ok,true)
   })
   await t.test('renewal cannot revive a revoked source, grant or owner basis',async()=>{

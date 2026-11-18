@@ -135,3 +135,21 @@ BEGIN
 END $fn$;
 REVOKE ALL ON profitia_requests.benchmark_quota_installation,profitia_requests.benchmark_quota_defaults FROM PUBLIC;
 REVOKE ALL ON FUNCTION profitia_requests.benchmark_quota_runtime_descriptor(),profitia_requests.benchmark_quota_policy(text,uuid,uuid,text),profitia_requests.benchmark_quota_reserve(text,uuid,uuid,text,text,text,text,uuid,uuid,bigint),profitia_requests.benchmark_quota_accept(text,uuid,uuid) FROM PUBLIC;
+-- Controlled owner installation for existing and subsequently entitled orgs.
+-- Version review is complete; history and counts remain in the same ledger.
+CREATE FUNCTION profitia_requests.activate_benchmark_unmetered(p_app text,p_basis text,p_versions jsonb) RETURNS jsonb
+LANGUAGE plpgsql SET search_path=pg_catalog,pg_temp AS $fn$
+DECLARE versions jsonb;basis text;
+BEGIN
+ IF current_user<>'profitia_access_owner' OR p_app IS NULL OR p_basis IS NULL OR p_basis!~'^owner-decision:sha256:[a-f0-9]{64}$' OR jsonb_typeof(p_versions) IS DISTINCT FROM 'object' THEN RAISE EXCEPTION 'Explicit controlled benchmark owner decision required' USING ERRCODE='42501';END IF;
+ LOCK TABLE profitia_requests.policies IN SHARE ROW EXCLUSIVE MODE;
+ SELECT coalesce(jsonb_object_agg(policy_id::text,version::text),'{}'::jsonb) INTO versions FROM profitia_requests.policies WHERE application_id=p_app AND operation='benchmark.discovery.request' AND status='ACTIVE';
+ IF versions IS DISTINCT FROM p_versions THEN RAISE EXCEPTION 'Benchmark policies changed since owner review' USING ERRCODE='40001';END IF;
+ SELECT source_ref INTO basis FROM profitia_requests.benchmark_quota_defaults WHERE application_id=p_app AND status='ACTIVE';
+ IF FOUND AND basis<>p_basis THEN RAISE EXCEPTION 'Existing benchmark owner default must be preserved' USING ERRCODE='42501';END IF;
+ IF EXISTS(SELECT 1 FROM profitia_requests.benchmark_quota_defaults WHERE application_id=p_app AND status='REVOKED') THEN RAISE EXCEPTION 'Benchmark owner default was revoked' USING ERRCODE='42501';END IF;
+ INSERT INTO profitia_requests.benchmark_quota_defaults VALUES(p_app,'ACTIVE',p_basis) ON CONFLICT DO NOTHING;
+ UPDATE profitia_requests.policies SET quota_mode='UNMETERED',version=version+1,source_ref=p_basis WHERE application_id=p_app AND operation='benchmark.discovery.request' AND status='ACTIVE' AND quota_mode='FIXED';
+ RETURN jsonb_build_object('status','ACTIVE','quotaMode','UNMETERED');
+END $fn$;
+REVOKE ALL ON FUNCTION profitia_requests.activate_benchmark_unmetered(text,text,jsonb) FROM PUBLIC;

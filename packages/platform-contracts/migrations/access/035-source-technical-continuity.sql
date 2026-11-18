@@ -28,7 +28,7 @@ CREATE FUNCTION profitia_ingestion.continuity_controls(p_role name,p_app text,p_
  UNION ALL SELECT 'budget:'||s.id,b.status,b.expires_at,to_jsonb(b) FROM unnest(p_sources)s(id) LEFT JOIN profitia_ingestion.budgets b ON b.source_id=s.id AND b.application_id=p_app AND b.status='ACTIVE'
  UNION ALL SELECT 'external:'||s.id,b.status,b.expires_at,to_jsonb(b) FROM unnest(p_sources)s(id) LEFT JOIN profitia_external_call.policies b ON b.source_id=s.id AND b.login_role=p_role AND b.status='ACTIVE'
  UNION ALL SELECT 'native:'||s.id,b.status,b.expires_at,to_jsonb(b) FROM unnest(p_sources)s(id) LEFT JOIN profitia_external_call.policies e ON e.source_id=s.id AND e.login_role=p_role AND e.status='ACTIVE' LEFT JOIN profitia_external_native.policies b USING(policy_id)
- ) SELECT coalesce(jsonb_agg(jsonb_build_object('id',id,'status',coalesce(status,'MISSING'),'expiresAt',expires_at,'fingerprint',profitia_ingestion.continuity_fingerprint(v)) ORDER BY id),'[]'::jsonb) FROM records
+ ) SELECT coalesce(jsonb_agg(jsonb_build_object('id',id,'status',coalesce(status,'MISSING'),'expiresAt',expires_at,'fingerprint',profitia_ingestion.continuity_fingerprint(v),'definition',v-'proof_key') ORDER BY id),'[]'::jsonb) FROM records
 $fn$;
 -- Keep historical UNKNOWN attempts and their charges. Only a still-reachable
 -- plan or an attempt within the transport's bounded lifetime prevents renewal.
@@ -69,7 +69,7 @@ BEGIN
  UPDATE profitia_ingestion.grants SET expires_at=deadline WHERE login_role=session_user AND source_id=ANY(p.source_ids) AND effect='ALLOW' AND status='ACTIVE' AND expires_at<deadline;
  UPDATE profitia_external_native.policies SET expires_at=deadline WHERE policy_id IN(SELECT policy_id FROM profitia_external_call.policies WHERE login_role=session_user AND source_id=ANY(p.source_ids) AND status='ACTIVE') AND status='ACTIVE' AND expires_at<deadline;
  UPDATE profitia_source_continuity.policies SET lease_until=deadline WHERE login_role=session_user;
- INSERT INTO profitia_source_continuity.events(login_role,owner_basis,previous_lease_until,lease_until,controls) VALUES(session_user,p.owner_basis,p.lease_until,deadline,controls);
+ INSERT INTO profitia_source_continuity.events(login_role,owner_basis,previous_lease_until,lease_until,controls) VALUES(session_user,p.owner_basis,p.lease_until,deadline,jsonb_build_object('kind','TECHNICAL_LEASE_RENEWAL','previous',controls,'current',profitia_ingestion.continuity_controls(p.login_role,p.application_id,p.source_ids)));
  RETURN jsonb_build_object('status','RENEWED','leaseUntil',deadline);
 END $fn$;
 -- Rebind a native policy to an owner-updated UNMETERED parent without losing
@@ -95,3 +95,41 @@ REVOKE ALL ON profitia_source_continuity.installation,profitia_source_continuity
 REVOKE ALL ON FUNCTION profitia_ingestion.continuity_fingerprint(jsonb),profitia_ingestion.continuity_controls(name,text,text[]),profitia_ingestion.maintain_source_technical_access(text),profitia_ingestion.continuity_immutable() FROM PUBLIC;
 
 REVOKE ALL ON FUNCTION profitia_ingestion.active_external_calls() FROM PUBLIC;
+-- Repeatable owner installation. It changes quota mode, never counters, rights,
+-- endpoints or an expired/revoked authority. Ordinary redeploy does not refill.
+CREATE FUNCTION profitia_ingestion.activate_unmetered_sources(p_role name,p_app text,p_sources text[],p_basis text,p_versions jsonb,p_binding_version bigint) RETURNS jsonb
+LANGUAGE plpgsql SET search_path=pg_catalog,pg_temp AS $fn$
+DECLARE b profitia_ingestion.runtime_bindings%ROWTYPE;p profitia_source_continuity.policies%ROWTYPE;before_controls jsonb;after_controls jsonb;item jsonb;deadline timestamptz;fingerprints jsonb;
+BEGIN
+ IF current_user<>'profitia_ingestion_owner' OR p_basis IS NULL OR p_sources IS NULL OR p_basis!~'^owner-decision:sha256:[a-f0-9]{64}$' OR cardinality(p_sources) NOT BETWEEN 1 AND 32 OR cardinality(p_sources)<>(SELECT count(DISTINCT v) FROM unnest(p_sources)v) OR jsonb_typeof(p_versions) IS DISTINCT FROM 'object' THEN RAISE EXCEPTION 'Explicit controlled owner activation required' USING ERRCODE='42501';END IF;
+ LOCK TABLE profitia_external_call.calls IN SHARE ROW EXCLUSIVE MODE NOWAIT;
+ IF profitia_ingestion.active_external_calls() THEN RAISE EXCEPTION 'Current Source calls must settle before activation' USING ERRCODE='55P03';END IF;
+ SELECT * INTO b FROM profitia_ingestion.runtime_bindings WHERE login_role=p_role FOR UPDATE;
+ IF b.status IS DISTINCT FROM 'ACTIVE' OR b.application_id IS DISTINCT FROM p_app OR b.version IS DISTINCT FROM p_binding_version OR b.expires_at<=clock_timestamp() THEN RAISE EXCEPTION 'Exact active Source binding required' USING ERRCODE='42501';END IF;
+ PERFORM 1 FROM profitia_ingestion.sources WHERE source_id=ANY(p_sources) ORDER BY source_id FOR SHARE;
+ PERFORM 1 FROM profitia_ingestion.grants WHERE login_role=p_role AND source_id=ANY(p_sources) ORDER BY grant_id FOR SHARE;
+ PERFORM 1 FROM profitia_ingestion.budgets WHERE application_id=p_app AND source_id=ANY(p_sources) ORDER BY policy_id FOR UPDATE;
+ PERFORM 1 FROM profitia_external_call.policies WHERE login_role=p_role AND source_id=ANY(p_sources) ORDER BY policy_id FOR UPDATE;
+ PERFORM 1 FROM profitia_external_native.policies WHERE policy_id IN(SELECT policy_id FROM profitia_external_call.policies WHERE login_role=p_role AND source_id=ANY(p_sources)) ORDER BY policy_id FOR UPDATE;
+ before_controls:=profitia_ingestion.continuity_controls(p_role,p_app,p_sources);
+ IF jsonb_array_length(before_controls)<>5*cardinality(p_sources) OR (SELECT count(*) FROM jsonb_object_keys(p_versions))<>jsonb_array_length(before_controls) THEN RAISE EXCEPTION 'Complete exact Source activation review required' USING ERRCODE='42501';END IF;
+ FOR item IN SELECT value FROM jsonb_array_elements(before_controls) LOOP
+  IF item->>'status'<>'ACTIVE' OR item->'definition'->>'version' IS DISTINCT FROM p_versions->>(item->>'id') OR(item->>'expiresAt' IS NOT NULL AND(item->>'expiresAt')::timestamptz<=clock_timestamp()) THEN RAISE EXCEPTION 'Source authority changed, revoked or expired' USING ERRCODE='42501';END IF;
+ END LOOP;
+ IF EXISTS(SELECT 1 FROM profitia_ingestion.grants WHERE login_role=p_role AND source_id=ANY(p_sources) AND effect='DENY' AND status='ACTIVE' AND expires_at>clock_timestamp()) THEN RAISE EXCEPTION 'Explicit Source DENY' USING ERRCODE='42501';END IF;
+ SELECT * INTO p FROM profitia_source_continuity.policies WHERE login_role=p_role FOR UPDATE;
+ IF FOUND THEN
+  IF p.status<>'ACTIVE' OR p.application_id<>p_app OR p.owner_basis<>p_basis OR NOT(p.source_ids@>p_sources AND p_sources@>p.source_ids) THEN RAISE EXCEPTION 'Existing Source owner decision must be preserved' USING ERRCODE='42501';END IF;
+  FOR item IN SELECT value FROM jsonb_array_elements(before_controls) LOOP IF item->>'fingerprint' IS DISTINCT FROM p.expected_fingerprints->>(item->>'id') THEN RAISE EXCEPTION 'Existing Source owner scope drift' USING ERRCODE='42501';END IF;END LOOP;
+  RETURN jsonb_build_object('status','ALREADY_ACTIVE');
+ END IF;
+ UPDATE profitia_ingestion.budgets SET quota_mode='UNMETERED',capacity=NULL,window_start=NULL,window_end=NULL,expires_at=NULL,source_ref=p_basis WHERE application_id=p_app AND source_id=ANY(p_sources) AND status='ACTIVE' AND quota_mode<>'UNMETERED';
+ UPDATE profitia_external_call.policies SET quota_mode='UNMETERED',capacity=NULL,window_start=NULL,window_end=NULL,expires_at=NULL,source_ref=CASE WHEN transport='LOCAL_SYNTHETIC_HTTP' THEN source_ref ELSE p_basis END WHERE login_role=p_role AND source_id=ANY(p_sources) AND status='ACTIVE' AND quota_mode<>'UNMETERED';
+ UPDATE profitia_external_native.policies n SET base_policy_version=e.version FROM profitia_external_call.policies e WHERE n.policy_id=e.policy_id AND e.login_role=p_role AND e.source_id=ANY(p_sources) AND e.status='ACTIVE' AND n.base_policy_version<>e.version;
+ after_controls:=profitia_ingestion.continuity_controls(p_role,p_app,p_sources);
+ SELECT jsonb_object_agg(value->>'id',value->'fingerprint'),min((value->>'expiresAt')::timestamptz) INTO fingerprints,deadline FROM jsonb_array_elements(after_controls);
+ INSERT INTO profitia_source_continuity.policies VALUES(p_role,p_app,p_sources,'ACTIVE',p_basis,fingerprints,deadline);
+ INSERT INTO profitia_source_continuity.events(login_role,owner_basis,previous_lease_until,lease_until,controls) VALUES(p_role,p_basis,deadline,deadline,jsonb_build_object('kind','OWNER_UNMETERED_ACTIVATION','previous',before_controls,'current',after_controls));
+ RETURN jsonb_build_object('status','ACTIVATED','leaseUntil',deadline);
+END $fn$;
+REVOKE ALL ON FUNCTION profitia_ingestion.activate_unmetered_sources(name,text,text[],text,jsonb,bigint) FROM PUBLIC;

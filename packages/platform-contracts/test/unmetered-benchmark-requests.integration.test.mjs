@@ -113,7 +113,8 @@ test('SQL034 keeps actual request history and current E1 authority with explicit
   })
   await t.test('a newly entitled organisation receives the same owner UNMETERED default without a search pool',async()=>{
    const org=randomUUID();await controlled(async()=>{
-    await owner.query("INSERT INTO profitia_requests.benchmark_quota_defaults VALUES('consumer','ACTIVE','OWNER_UNMETERED_DEFAULT_FIXTURE')");
+    const versions=(await owner.query("SELECT jsonb_object_agg(policy_id::text,version::text) value FROM profitia_requests.policies WHERE application_id='consumer' AND operation='benchmark.discovery.request' AND status='ACTIVE'")).rows[0].value;
+    await owner.query('SELECT profitia_requests.activate_benchmark_unmetered($1,$2,$3)',['consumer','owner-decision:sha256:'+'b'.repeat(64),versions]);
     await owner.query("INSERT INTO profitia_access.organisations VALUES($1,'ACTIVE')",[org]);
     await owner.query("INSERT INTO profitia_access.memberships(organisation_id,user_id,status,source_ref,expires_at) VALUES($1,$2,'ACTIVE','SYNTHETIC',$3)",[org,V,future()]);
     await owner.query("INSERT INTO profitia_access.product_grants(application_id,organisation_id,product,features,status,source,source_ref,expires_at) VALUES('consumer',$1,'SPENDGURU',ARRAY['benchmark'],'ACTIVE','EXPLICIT_OFFER','SYNTHETIC',$2)",[org,future()]);
@@ -122,6 +123,13 @@ test('SQL034 keeps actual request history and current E1 authority with explicit
    const f=fixture('benchmark.discovery.request',{subject:'fixture-user-v'});await f.execute(undefined,org);await f.execute(undefined,org);
    const row=(await owner.query('SELECT quota_mode,accepted_count::text n FROM profitia_requests.policies WHERE organisation_id=$1',[org])).rows[0];assert.deepEqual(row,{quota_mode:'UNMETERED',n:'2'});
    await assert.rejects(fixture('benchmark.discovery.request').execute(undefined,org),isOperationDenied);
+  })
+  await t.test('a verified member without benchmark permission cannot spend an unmetered request',async()=>{
+   const deniedUser=randomUUID();await controlled(async()=>{
+    await owner.query("INSERT INTO profitia_access.accounts VALUES($1,'ACTIVE')",[deniedUser]);
+    await owner.query("INSERT INTO profitia_access.external_identities(binding_id,issuer,subject,user_id,status,source_ref,expires_at) VALUES($1,$2,'fixture-without-benchmark',$3,'ACTIVE','SYNTHETIC',$4)",[randomUUID(),ISSUER,deniedUser,future()]);
+    await owner.query("INSERT INTO profitia_access.memberships(organisation_id,user_id,status,source_ref,expires_at) VALUES($1,$2,'ACTIVE','SYNTHETIC',$3)",[A,deniedUser,future()]);
+   });const before=await count(policies[A+'benchmark.discovery.request']);await assert.rejects(fixture('benchmark.discovery.request',{subject:'fixture-without-benchmark'}).execute(),isOperationDenied);assert.deepEqual(await count(policies[A+'benchmark.discovery.request']),before);
   })
   await t.test('quota mode cannot be applied to forecast; ordinary SQL cannot change modes or remove history',async()=>{
    await assert.rejects(controlled(()=>owner.query("INSERT INTO profitia_requests.policies(policy_id,application_id,organisation_id,operation,status,source_ref,window_start,window_end,expires_at,capacity,quota_mode) VALUES($1,'consumer',$2,'forecast.request','ACTIVE','FORGED',now(),now()+interval '1 hour',now()+interval '1 hour',1,'UNMETERED')",[randomUUID(),A])),e=>e.code==='23514')
