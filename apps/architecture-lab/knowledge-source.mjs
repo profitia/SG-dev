@@ -4,6 +4,13 @@ import {createHash} from 'node:crypto';
 export const KNOWLEDGE_SOURCE_RECORD='apps/architecture-lab/knowledge-source.json';
 export const KNOWLEDGE_SOURCE_RECORD_SHA256='7bde334dda3ec7068d3cb532ccd8a94f3477cea707abe250431ee16c3b044bf4';
 const hash=bytes=>createHash('sha256').update(bytes).digest('hex');
+
+import {fileURLToPath} from 'node:url';
+import {createCurrentSourceVerifier as createKnowledgeCurrentSourceVerifier,reviewedProducerLocalPackages as knowledgeReviewedLocalPackages} from '../../scripts/governance/development-execution.mjs';
+import {sdkSourceContext} from '../../packages/platform-contracts/test/sdk-source-context.mjs';
+export {createKnowledgeCurrentSourceVerifier,knowledgeReviewedLocalPackages};
+const moduleRoot=fileURLToPath(new URL('../../',import.meta.url));
+
 // Historical readers use Git's exact missing-path diagnostic rather than the
 // filesystem ENOENT. Unknown revisions, foreign paths and access errors remain
 // fatal; only this optional record can be genuinely absent from its predecessor.
@@ -21,7 +28,13 @@ const absent=(error,historical)=>{
  assert((Buffer.isBuffer(witness)||typeof witness==='string')&&witness.length>0,'readable historical revision required');
  return true;
 };
-export function knowledgeSourcePredecessor(current,historical){
+export function knowledgeSourcePredecessor(current,historical,{sourceRoot=moduleRoot,authorityRoot=sourceRoot,governanceRoot=moduleRoot}={}){
+ const context=sdkSourceContext(current,historical,{sourceRoot,authorityRoot,governanceRoot});
+ if(context){
+  const previous=knowledgeSourcePredecessor(context.baseline('knowledge'),historical,{sourceRoot,authorityRoot,governanceRoot});
+  assert(previous,'complete immutable Knowledge source required');
+  return {...previous,currentSourceDigests:context.currentSourceDigests,currentSdkContext:context};
+ }
  let bytes;try{bytes=current(KNOWLEDGE_SOURCE_RECORD);}catch(error){if(absent(error,historical))return null;throw error;}
  assert.equal(hash(bytes),KNOWLEDGE_SOURCE_RECORD_SHA256,'exact reviewed Platform Knowledge source record');
  const a=JSON.parse(bytes);
@@ -31,7 +44,14 @@ export function knowledgeSourcePredecessor(current,historical){
  for(const flag of ['runtimeActivated','newGrantsInstalled','providerCallsPerformed','deploymentPerformed'])assert.equal(a[flag],false,flag);
  assert.equal(hash(current(a.predecessorRecord)),a.predecessorRecordSha256,'immutable recurring record');
  const prior=JSON.parse(current(a.predecessorRecord));
- for(const [p,h]of Object.entries(a.sourceDigests))assert.equal(hash(current(p)),h,'current knowledge source '+p);
+ const refreshed=new Set();let verify;
+ for(const [p,h]of Object.entries(a.sourceDigests)){
+  const actual=Buffer.from(current(p));
+  if(hash(actual)!==h){
+   verify??=createKnowledgeCurrentSourceVerifier(sourceRoot,Object.keys(a.sourceDigests),{authorityRoot,governanceRoot});
+   verify(p,actual);refreshed.add(p);
+  }
+ }
  for(const [p,h]of Object.entries({...a.preservedReceipts,...a.retainedSuccessorReceipts})){
   assert.equal(hash(current(p)),h,'immutable receipt '+p);assert.equal(hash(historical(a.previousSourceSha,p)),h,'previous receipt '+p);
  }
@@ -51,8 +71,12 @@ export function knowledgeSourcePredecessor(current,historical){
  for(const p of Object.keys(prior.sourceDigests))assert.match(a.sourceDigests[p]??'',/^[a-f0-9]{64}$/,'retained source '+p);
  return{manifest:a,previousBytes:p=>{
   if(p===KNOWLEDGE_SOURCE_RECORD||p.endsWith('/knowledge-source-adoption.json')||added.has(p))throw Object.assign(Error('Absent from knowledge predecessor'),{code:'ENOENT'});
-  if(!changed.has(p))return current(p);
-  if(!cache.has(p))cache.set(p,Buffer.from(historical(a.previousSourceSha,p)));
+  if(!changed.has(p)&&!refreshed.has(p))return current(p);
+  if(!cache.has(p)){
+   const priorBytes=Buffer.from(historical(a.previousSourceSha,p));
+   assert.equal(hash(priorBytes),a.replacements[p]?.previousSha256??a.sourceDigests[p],'authenticated historical Knowledge source '+p);
+   cache.set(p,priorBytes);
+  }
   return Buffer.from(cache.get(p));
  }};
 }

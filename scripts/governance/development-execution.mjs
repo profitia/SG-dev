@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // Shared Development policy primitives. The existing PMOS and release executors
 // retain their lifecycle; these checks never create grants or execute releases.
+import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import path from 'node:path'
 import {execFileSync} from 'node:child_process'
@@ -207,7 +208,7 @@ export function assertSourceCheckout(candidateRoot, record, state, governanceRoo
   if (!equal(changed,record.files.map(f=>f.path).sort())) deny('SOURCE_DIFF_REJECTED')
   for (const entry of record.files) {
     const target = path.join(base,entry.path), stat = fs.lstatSync(target)
-    const tree = git(base,['ls-tree',state.sha,'--',entry.path])
+    const tree = git(base,['--literal-pathspecs','ls-tree',state.sha,'--',entry.path])
     if (!stat.isFile() || stat.isSymbolicLink() || fs.realpathSync(target) !== target || stat.size > 1024*1024
       || tree !== entry.mode+' blob '+entry.blob+'\t'+entry.path
       || git(base,['hash-object','--no-filters','--',entry.path]) !== entry.blob
@@ -230,7 +231,7 @@ export function trustedApplicationContinuity(candidateRoot, watchedPaths, {autho
   const controlSha=git(authorityRoot,['rev-parse','refs/remotes/origin/main'])
   if(!sha.test(controlSha))deny('APPLICATION_CONTINUITY_AUTHORITY_REQUIRED')
   const readGit=(repo,ref,p)=>execFileSync('git',['cat-file','blob',ref+':'+p],{cwd:repo,stdio:['ignore','pipe','pipe'],maxBuffer:2*1024*1024})
-  const authority=p=>{const entry=git(authorityRoot,['ls-tree',controlSha,'--',p]);if(!entry)return null;if(!entry.startsWith('100644 blob '))deny('APPLICATION_CONTINUITY_AUTHORITY_MODE_REJECTED');return readGit(authorityRoot,controlSha,p)}
+  const authority=p=>{const entry=git(authorityRoot,['--literal-pathspecs','ls-tree',controlSha,'--',p]);if(!entry)return null;if(!entry.startsWith('100644 blob '))deny('APPLICATION_CONTINUITY_AUTHORITY_MODE_REJECTED');return readGit(authorityRoot,controlSha,p)}
   const physical=p=>{
     const base=fs.realpathSync(candidateRoot),target=path.join(base,p),stat=fs.lstatSync(target)
     if(!stat.isFile()||stat.isSymbolicLink()||fs.realpathSync(target)!==target||stat.size>1024*1024||stat.mode&0o111)deny('APPLICATION_CONTINUITY_PHYSICAL_REJECTED')
@@ -358,7 +359,7 @@ export function proposeSourceAdmission({projectKey,taskId,sourceSha,baseSha,repo
   const files=rows.map(line=>{
     const [status,name,...rest]=line.split('\t')
     if(rest.length||!['A','M'].includes(status)||!safePath(name)||protectedPath(name))deny('SOURCE_PROPOSAL_PROTECTED_OR_UNSUPPORTED_PATH')
-    const tree=git(checkout,['ls-tree',sourceSha,'--',name]),m=/^(100644|100755) blob ([a-f0-9]{40})\t(.+)$/.exec(tree)
+    const tree=git(checkout,['--literal-pathspecs','ls-tree',sourceSha,'--',name]),m=/^(100644|100755) blob ([a-f0-9]{40})\t(.+)$/.exec(tree)
     if(!m||m[3]!==name)deny('SOURCE_PROPOSAL_FILE_MODE_REJECTED')
     const route=resolveProjectRouting({profile,targets:[name],repositoryRoot:governanceRoot}).results[0]
     if(!route||route.resolutionStatus!=='RESOLVED'||route.projectBoundaryStatus!=='ALLOWED'||route.highestSpecificityMatchCount!==1||route.baselineClassification!=='ALIGNED')deny('SOURCE_PROPOSAL_ROUTING_REJECTED')
@@ -378,3 +379,90 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
     console.log(JSON.stringify(result,null,2))
   } catch(error) {console.error(error.message?.match(/^[A-Z_]+$/)?error.message:'EXECUTION_PREFLIGHT_FAILED_CLOSED');process.exitCode=1}
 }
+
+// Shared source-only continuity; immutable historical receipts remain unchanged.
+const currentInputBlob=bytes=>createHash('sha1').update('blob '+bytes.length+'\0').update(bytes).digest('hex');
+const piSourceReview=Object.freeze({"id":"SG2:SG2-PI-CITATION-SOURCE-PUBLICATION-20261118","sourceSha":"cda1f12c3d729c71030031439e94510e356789d6","files":{"apps/insights-runtime/package-lock.json":"67a3cd0d2efbcd4621f1099a18cf45b07d7a5f66","apps/insights-runtime/package.json":"3a530e74bec5eb1b55d6dd9a7e5d083dcd5b0373","apps/insights-runtime/render/report.py":"4bf317a5f44d5505531b4bbb6181d4028b5ebe56","apps/insights-runtime/src/citations.mjs":"d5d23ef089eebf0e48175a7997ae7b822ee94da0","apps/insights-runtime/src/composer.mjs":"1a143010cfaa6b4a8a4518e6b8a851a0ba9b50f4","apps/insights-runtime/src/renderer.mjs":"61e6a7d6f4dc8bd51bcdfe75eb937851b4138168","apps/insights-runtime/tests/citations.test.mjs":"7bac2ac47922d95deb0f97827b5f254cfb1240ea","apps/sg-runtime/package-lock.json":"ccc6582bf002d43871eb6e0944b25d46bb3f3f7b"},"json":{"apps/insights-runtime/package-lock.json":{"beforeBlob":"c2a79eb45fdd579c118be40f5013d082e6498bec","afterBlob":"67a3cd0d2efbcd4621f1099a18cf45b07d7a5f66"},"apps/insights-runtime/package.json":{"beforeBlob":"48b862c7b341cc2e1be83ca061e9ca383a13a9df","afterBlob":"3a530e74bec5eb1b55d6dd9a7e5d083dcd5b0373"},"apps/sg-runtime/package-lock.json":{"beforeBlob":"c2eff79187fa52914ff476ddfab5bb4574b938d9","afterBlob":"ccc6582bf002d43871eb6e0944b25d46bb3f3f7b"}}});
+const piReviewedPackages=Object.freeze({'@profitia/insights-runtime':Object.freeze({
+ beforeBlob:piSourceReview.json['apps/insights-runtime/package.json'].beforeBlob,
+ afterBlob:piSourceReview.json['apps/insights-runtime/package.json'].afterBlob,
+})});
+function isReviewedInsightsContinuation(record){
+ return record?.id===piSourceReview.id&&record.sourceSha===piSourceReview.sourceSha
+  &&record.scope==='SOURCE_VALIDATION_ONLY'&&record.status==='ACTIVE'&&record.actor==='profitia'
+  &&Array.isArray(record.files)&&record.files.length===Object.keys(piSourceReview.files).length
+   &&new Set(record.files.map(f=>f.path)).size===record.files.length
+  &&record.files.every(f=>f.mode==='100644'&&piSourceReview.files[f.path]===f.blob);
+}
+// A candidate record never supplies this policy table. It is a closed, separately
+// reviewed transition for the existing producer; registry/private pins stay intact.
+export function reviewedProducerLocalPackages(record){return isReviewedInsightsContinuation(record)?piReviewedPackages:undefined;}
+
+/** Authenticates actual current input before a frozen compatibility view is exposed.
+ * This runs only in source review/test tooling, never in product runtime.
+ */
+export function createCurrentSourceVerifier(sourceRoot, watchedPaths, {authorityRoot=sourceRoot,governanceRoot=root}={}){
+ const base=fs.realpathSync(sourceRoot),authority=fs.realpathSync(authorityRoot);
+ const allowed=new Set(watchedPaths),approved=new Map();
+ assert.equal(allowed.size,watchedPaths.length,'unique watched Knowledge inputs');
+ const git=(cwd,args)=>execFileSync('git',args,{cwd,encoding:'utf8',stdio:['ignore','pipe','pipe'],maxBuffer:3*1024*1024}).trim();
+ const remote=git(authority,['remote','get-url','origin']);
+ assert(['https://github.com/profitia/SG-dev','https://github.com/profitia/SG-dev.git','git@github.com:profitia/SG-dev.git'].includes(remote),'independent Knowledge source authority');
+ const controlSha=git(authority,['rev-parse','refs/remotes/origin/main']);
+ assert.match(controlSha,/^[a-f0-9]{40}$/);
+ const readAt=(cwd,sha,p)=>execFileSync('git',['cat-file','blob',sha+':'+p],{cwd,stdio:['ignore','pipe','pipe'],maxBuffer:3*1024*1024});
+  const physical=p=>{
+   assert(typeof p==='string'&&!p.startsWith('/')&&!p.includes('\\')&&p.split('/').every(v=>v&&v!=='.'&&v!=='..'),'canonical current Knowledge path');
+   const target=path.join(base,p),stat=fs.lstatSync(target);
+   assert(stat.isFile()&&!stat.isSymbolicLink()&&fs.realpathSync(target)===target&&stat.size<=2*1024*1024&&!(stat.mode&0o111),'physical current Knowledge input '+p);
+   return fs.readFileSync(target);
+  };
+ const trusted=p=>{
+  const entry=git(authority,['--literal-pathspecs','ls-tree',controlSha,'--',p]);
+  if(!entry)return null;
+  assert.match(entry,new RegExp('^100644 blob [a-f0-9]{40}\\t'),'regular trusted Knowledge source '+p);
+  assert.equal(entry.split('\t')[1],p,'literal trusted Knowledge path');
+  return readAt(authority,controlSha,p);
+ };
+ let records;
+ const ledger=()=>{
+  if(!records){
+   const bytes=trusted(ADMISSIONS_PATH);assert(bytes&&bytes.length<=1024*1024,'trusted Knowledge admission ledger');
+   const value=JSON.parse(bytes);assert.equal(value.schemaVersion,'1.0');assert(Array.isArray(value.records));
+   assert(value.records.every(r=>r&&typeof r.id==='string'&&r.id),'nonempty admission IDs');
+    assert.equal(new Set(value.records.map(r=>r.id)).size,value.records.length,'unique admission IDs');
+   records=value.records;
+  }
+  return records;
+ };
+ return(p,claimed)=>{
+  assert(allowed.has(p),'unwatched Knowledge source');
+  const actual=physical(p);assert(Buffer.from(claimed).equals(actual),'current Knowledge callback must match physical input '+p);
+  const accepted=trusted(p);
+  // Accepted actual main does not borrow an expired, historical CI mandate.
+  if(accepted&&actual.equals(accepted))return Buffer.from(actual);
+  let record=approved.get(p);
+  if(!record){
+   const matches=ledger().filter(r=>Array.isArray(r.files)&&r.files.some(f=>f.path===p)&&r.files.every(f=>{
+    try{return currentInputBlob(physical(f.path))===f.blob;}catch{return false;}
+   }));
+   assert.equal(matches.length,1,'one complete current Knowledge source admission for '+p);
+   record=matches[0];
+   const sha=git(base,['rev-parse','HEAD']);
+   assertSourceCheckout(base,record,{sha,controlSha,actor:'profitia',files:record.files.map(f=>({filename:f.path,sha:f.blob,status:f.status}))},governanceRoot);
+   // The original owner-reviewed commit binds every refreshed postimage too.
+   for(const f of record.files){
+    const entry=git(base,['--literal-pathspecs','ls-tree',record.sourceSha,'--',f.path]);
+    assert.equal(entry,f.mode+' blob '+f.blob+'\t'+f.path,'original admitted Knowledge postimage '+f.path);
+    approved.set(f.path,record);
+   }
+  }
+  assert.equal(currentInputBlob(actual),record.files.find(f=>f.path===p)?.blob,'current admitted Knowledge postimage '+p);
+  if(p.endsWith('.json')){
+   const pin=piSourceReview.json[p];
+   assert(isReviewedInsightsContinuation(record)&&pin&&accepted&&currentInputBlob(accepted)===pin.beforeBlob&&currentInputBlob(actual)===pin.afterBlob,'separately reviewed local producer metadata '+p);
+  }
+  return Buffer.from(actual);
+ };
+}
+
