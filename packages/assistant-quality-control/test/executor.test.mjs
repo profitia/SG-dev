@@ -1,3 +1,4 @@
+import {verificationIsolationPlan} from '../src/executor.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
@@ -75,4 +76,13 @@ test('Standalone Code Mode host is pinned and cannot be prepared by an untrusted
 test('Bundled bubblewrap uses the same official CLI release and refuses missing or forged resource bytes',()=>{
  assert.equal(new URL(EXECUTOR_TOOL.bwrapArchiveUrl).hostname,'github.com');assert(EXECUTOR_TOOL.bwrapArchiveUrl.includes('/rust-v0.167.2/'))
  for(const bytes of [Buffer.alloc(0),Buffer.alloc(EXECUTOR_TOOL.bwrapArchiveBytes),Buffer.alloc(EXECUTOR_TOOL.bwrapArchiveBytes+1)])assert.throws(()=>assertBwrapArchive(bytes),{code:'BWRAP_ARCHIVE_PIN_MISMATCH'})
+})
+
+test('Independent verifier uses fail-closed kernel namespaces, readonly source, empty credentials and bounded identity',()=>{
+ const root='/tmp/aqc-verification-11111111-1111-4111-8111-111111111111',group='/sys/fs/cgroup/aqc-verify-11111111-1111-4111-8111-111111111111'
+ const p=verificationIsolationPlan({root,group,nodePath:'/opt/aqc-tools/verifier-node'}),a=p.args
+ for(const s of ['--unshare-user','--unshare-pid','--unshare-net','--unshare-ipc','--unshare-cgroup','--disable-userns','--assert-userns-disabled','--die-with-parent','--clearenv','--no-new-privs','--clear-groups','--bounding-set=-all','--inh-caps=-all','--ambient-caps=-all','--max-old-space-size=64'])assert(a.includes(s),s)
+ assert(!a.some(v=>v.includes('--unshare-user-try')||v.includes('--share-net')||v.includes('broker')||v.includes('DATABASE_URL')||v.includes('OPENAI_API_KEY')))
+ assert(a.includes(root+'/case'));assert(!a.includes('/home')&&!a.includes('/root')&&!a.includes('/workspaces'))
+ for(const change of [{root:root+'/../x'},{group:group+'\nwhoami'},{nodePath:'/usr/bin/node'}])assert.throws(()=>verificationIsolationPlan({root,group,nodePath:'/opt/aqc-tools/verifier-node',...change}),{code:'VERIFIER_PLAN_INVALID'})
 })
