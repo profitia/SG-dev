@@ -85,7 +85,7 @@ export function createQualityQaRolePreflight({purposeQuery,evidenceQuery,now=Dat
     ||expiry>Date.parse('2026-11-27T23:59:59.000Z'))unavailable('QA_ROLE_PREFLIGHT_BINDING_INVALID')
   }
   return Object.freeze({schemaVersion:'AQC_QA_ROLE_PREFLIGHT_V1',status:'QA_ROLES_VERIFIED',
-   qaAuthority:'CONNECTED_READ_ONLY_ROLE',qaEvidence:'CONNECTED_READ_ONLY_ROLE',
+   qaAuthority:'CONNECTED_ORDINARY_ROLE',qaEvidence:'CONNECTED_ORDINARY_ROLE',
    rawQaReadPerformed:false,permissionMutationPerformed:false})
  }})
 }
