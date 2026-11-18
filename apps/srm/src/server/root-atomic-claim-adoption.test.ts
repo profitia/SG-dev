@@ -43,7 +43,8 @@ test('optional Root claim target pins the exact producer and existing main Devel
  const receipt=JSON.parse(readFileSync(new URL('../../operation-integration.json',import.meta.url),'utf8'))
  // Current Oil acceptance is checked separately; retain the complete M1
  // receipt for historical validation instead of comparing it to new bytes.
- assert.equal(currentRoot.sourceDigest,recurring?.optionalPackageDigests.rootAtomicClaimSourceDigest??(receipt.oilAutonomousReportCompatibility??receipt.assistantM1SourceCompatibility).optionalPackageDigests.rootAtomicClaimSourceDigest)
+ const currentSdk=acceptedSdkSource()
+ assert.equal(currentRoot.sourceDigest,currentSdk.platformVersion==='1.38.0'?currentSdk.optionalPackageDigests.rootAtomicClaimSourceDigest:recurring?.optionalPackageDigests.rootAtomicClaimSourceDigest??(receipt.oilAutonomousReportCompatibility??receipt.assistantM1SourceCompatibility).optionalPackageDigests.rootAtomicClaimSourceDigest)
  assert.equal(acceptedSdkSource().optionalPackageDigests.rootAtomicClaimSourceDigest,await rootAtomicClaimSourceDigest())
  const {sourceDigest,...currentMetadata}=currentRoot;const {sourceDigest:previousDigest,...previousMetadata}=root;assert.deepEqual(currentMetadata,previousMetadata)
  assert.equal(root.producerPullRequest,854);assert.equal(root.producerSourceRef,'3a494b5432555935168c060be5950589d550d276')
@@ -52,6 +53,17 @@ test('optional Root claim target pins the exact producer and existing main Devel
  assert.equal(root.activationVariable,'PROFITIA_ROOT_ATOMIC_CLAIM_ENABLED');assert.equal(root.enabledByDefault,false)
  assert.equal(root.formalSourceAcceptanceRequired,true);assert.equal(root.cloudInstallationRequiresSeparateApproval,true)
 })
+test('current SDK receiver refuses replacing its producer pin with the immutable historical Root target',()=>{
+ const target='apps/srm/deployment/root-atomic-claim-targets.json'
+ const currentSdk=acceptedSdkSource()
+ assert.equal(currentSdk.platformVersion,'1.38.0')
+ assert.notEqual(currentRoot.sourceDigest,root.sourceDigest)
+ const receipt=JSON.parse(sdkContinuationCurrent('apps/srm/operation-integration.json').toString('utf8'))
+ assert.throws(()=>sdkContinuationPredecessor(receipt,
+  (file:string)=>file===target?sdkContinuationHistory('36b07672f572ff7c1c81117e3f3b01fa93ec1e65',file):sdkContinuationCurrent(file),
+  sdkContinuationHistory,{projectKey:'SRM'}),/current SDK source apps\/srm\/deployment\/root-atomic-claim-targets\.json/)
+})
+
 test('ordinary READY and FRESH configuration remains unchanged until an explicit server-side opt-in',()=>{
  const f=fixture(),before=f.read()
  assert.equal(before.rootAtomicClaimSchemaDigest,undefined)
