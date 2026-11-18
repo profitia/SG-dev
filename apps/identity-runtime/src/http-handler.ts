@@ -106,6 +106,15 @@ export function createHttpHandler(boundary: SessionBoundary | null, account: Acc
         checkRequest(request, boundary.configuration, request.method === 'POST')
         return json(200, request.method === 'GET' ? await organisationDraft.read(request) : await organisationDraft.update(request, await body(request)))
       }
+      if (url.pathname === '/v1/account/renew') {
+        if (url.search || url.hash) return json(404, { error: 'NOT_FOUND' })
+        if (!boundary || !account) return json(503, { error: 'IDENTITY_UNAVAILABLE' })
+        if (request.method !== 'POST') return json(405, { error: 'METHOD_NOT_ALLOWED' })
+        if (request.headers.has('origin') || request.headers.has('cookie') || request.headers.get('content-type') !== 'application/json') return json(403, { error: 'ACCOUNT_RENEWAL_REFUSED' })
+        const input = await body(request)
+        if (!input || typeof input !== 'object' || Array.isArray(input) || Object.keys(input).length) return json(400, { error: 'EMPTY_OBJECT_REQUIRED' })
+        return json(200, await account.renew(request))
+      }
       if (url.pathname === '/v1/account/salutation') {
         if (url.search || url.hash) return json(404, { error: 'NOT_FOUND' })
         if (request.method !== 'GET') return json(405, { error: 'METHOD_NOT_ALLOWED' })

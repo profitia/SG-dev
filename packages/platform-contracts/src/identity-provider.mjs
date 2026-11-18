@@ -63,6 +63,8 @@ export function createClerkIdentityAuthenticator({ client, application, resolveB
   if (!text(config?.appId) || !['development', 'staging', 'production'].includes(config.environment) || !exactOrigin(config.issuer) || !config.issuer.startsWith('https://') || !Array.isArray(config.authorizedParties) || !config.authorizedParties.length || config.authorizedParties.some(value => !exactOrigin(value))) throw new TypeError('Explicit application, environment, issuer and exact authorized origins are required')
   if (config.environment !== 'development' && (new URL(config.issuer).hostname.endsWith('.accounts.dev') || config.authorizedParties.some(value => !value.startsWith('https://')))) throw new TypeError('Development identity configuration cannot be used for a release environment')
   config.bearerPeerReads = peerReadPolicies(config.bearerPeerReads, config.authorizedParties)
+  config.bearerPeerRenewals = peerReadPolicies(config.bearerPeerRenewals, config.authorizedParties)
+  if (config.bearerPeerRenewals.some(rule => rule.path !== '/v1/account/renew')) throw new TypeError('Peer renewal is limited to the existing-account renewal endpoint')
   Object.freeze(config.authorizedParties); Object.freeze(config)
 
   return async function authenticate(request) {
@@ -75,7 +77,14 @@ export function createClerkIdentityAuthenticator({ client, application, resolveB
       && !request.headers.has('cookie') && !request.headers.has('origin')
       && /^Bearer [\x21-\x7e]{1,16384}$/i.test(request.headers.get('authorization') ?? '')
       ? config.bearerPeerReads.filter(rule => rule.targetOrigin === origin && rule.path === url.pathname) : []
-    const identityRequest = peerReads.length ? new Request(request.url, { method: 'GET', headers: new Headers(request.headers), signal: request.signal }) : request
+    // A separate explicit POST policy grants only identity admission to renewal.
+    // It does not reuse GET admission or provision an account.
+    const peerRenewals = request.method === 'POST' && !url.search && !url.hash
+      && !request.headers.has('cookie') && !request.headers.has('origin')
+      && /^Bearer [\x21-\x7e]{1,16384}$/i.test(request.headers.get('authorization') ?? '')
+      ? config.bearerPeerRenewals.filter(rule => rule.targetOrigin === origin && rule.path === url.pathname) : []
+    const admittedPeers = [...peerReads, ...peerRenewals]
+    const identityRequest = admittedPeers.length ? new Request(request.url, { method: request.method, headers: new Headers(request.headers), signal: request.signal }) : request
     // A browser cookie alone does not authorize a cross-site mutation. Bearer
     // tokens are verified by the SDK; no custom JWT or cookie protocol lives here.
     if (!['GET', 'HEAD', 'OPTIONS'].includes(request.method) && !request.headers.has('origin') && !/^Bearer\s+\S+$/i.test(request.headers.get('authorization') ?? '')) return null
@@ -85,7 +94,7 @@ export function createClerkIdentityAuthenticator({ client, application, resolveB
       if (state?.status !== 'signed-in' || state.isAuthenticated !== true || typeof state.toAuth !== 'function') return null
       auth = state.toAuth()
       const claims = auth?.sessionClaims
-      if (auth?.isAuthenticated !== true || auth.tokenType !== 'session_token' || !text(auth.userId) || !text(auth.sessionId) || claims?.iss !== config.issuer || claims.sub !== auth.userId || claims.sid !== auth.sessionId || !config.authorizedParties.includes(claims.azp) || (claims.azp !== origin && !peerReads.some(rule => rule.sourceOrigin === claims.azp)) || claims.act != null || auth.actor != null || !Number.isSafeInteger(claims.exp) || claims.exp * 1000 <= now()) return null
+      if (auth?.isAuthenticated !== true || auth.tokenType !== 'session_token' || !text(auth.userId) || !text(auth.sessionId) || claims?.iss !== config.issuer || claims.sub !== auth.userId || claims.sid !== auth.sessionId || !config.authorizedParties.includes(claims.azp) || (claims.azp !== origin && !admittedPeers.some(rule => rule.sourceOrigin === claims.azp)) || claims.act != null || auth.actor != null || !Number.isSafeInteger(claims.exp) || claims.exp * 1000 <= now()) return null
       // JWT signature/expiry alone does not prove that a session or account is
       // still active. Do not cache these authority reads or return stale ALLOW.
       userId = auth.userId; sessionId = auth.sessionId; tokenExpiresAt = claims.exp * 1000
