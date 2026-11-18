@@ -1,3 +1,6 @@
+import {knowledgeSourcePredecessor} from '../../architecture-lab/knowledge-source.mjs'
+import {procurementInsightsEditorialPackagePredecessor,EDITORIAL_PACKAGE_RECEIPT} from './procurement-insights-editorial-package-integrity.mjs'
+import {assistantReservationPredecessor,RESERVATION_RECORD,RESERVATION_DERIVED} from '../../../packages/platform-contracts/test/assistant-reservation-source.mjs'
 // Test/build-only binding of the two owner-approved monitor sources. No runtime grant.
 import assert from 'node:assert/strict'
 import {createHash} from 'node:crypto'
@@ -43,6 +46,18 @@ export function finderMonitorPredecessor(current,historical){
   const missingGit=error?.status===128&&["' does not exist in ","' exists on disk, but not in "].some(s=>text.includes("'"+FINDER_MONITOR_RECEIPT+s))
   if(error?.code==='ENOENT'||missingGit)return null
   throw error
+ }
+ // Authenticate the complete ACG graph before the original Finder source closure.
+ const reservationPin=String(current(RESERVATION_DERIVED)).match(/ASSISTANT_RESERVATION_SOURCE_SHA='([a-f0-9]{64})'/)?.[1]
+ const reservation=assistantReservationPredecessor(knowledgeSourcePredecessor(current,historical)?.previousBytes??current,historical,reservationPin)
+ if(reservation){
+  const packaged=procurementInsightsEditorialPackagePredecessor(reservation.previousBytes,historical)
+  const accepted=finderMonitorPredecessor(packaged?.previousBytes??reservation.previousBytes,historical)
+  assert(accepted,'accepted Finder predecessor retained')
+  const packageDigests=packaged?{...packaged.manifest.sourceDigests,[EDITORIAL_PACKAGE_RECEIPT]:createHash('sha256').update(current(EDITORIAL_PACKAGE_RECEIPT)).digest('hex')}:{}
+  return {...accepted,reservation,...(packaged?{editorialPackage:packaged}:{}),manifest:{...accepted.manifest,sourceDigests:{...accepted.manifest.sourceDigests,...packageDigests,...reservation.manifest.sourceDigests,
+   [RESERVATION_RECORD]:createHash('sha256').update(current(RESERVATION_RECORD)).digest('hex'),
+   [RESERVATION_DERIVED]:createHash('sha256').update(current(RESERVATION_DERIVED)).digest('hex')}}}
  }
  const a=JSON.parse(bytes)
  assert.deepEqual(Object.keys(a).sort(),['schemaVersion','taskId','targetEnvironment','scope','previousSourceSha','approvedMonitorSourceSha','approvalRef','sourceDigests','preservedReceipts','authorisationChanged','schemaChanged','engineChanged','ciChecksWeakened','otherEnvironmentsChanged','runtimeActivationPerformed'].sort())

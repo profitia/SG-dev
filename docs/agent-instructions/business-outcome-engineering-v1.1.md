@@ -163,6 +163,9 @@ Preferuj aktualne, zaufane dane i dozwolone cache/receipts. W Clerk/E1 wykorzyst
 
 Nie buduj rozbudowanej optymalizacji bez dowodu, że istnieje istotny koszt lub narzut.
 
+
+**WORKSPACE_RESOURCE_LIFECYCLE — 2026-11-18:** uwzględniaj także zużycie lokalnego dysku, koszty pełnych kopii repozytoriów, worktrees i build/test cache. Preferuj brak powielania oraz prawidłowe ponowne wykorzystanie przed późniejszym sprzątaniem. Nie redukuj kosztu kosztem wymaganego odseparowania, retencji, audytu lub możliwości recovery. Szczegóły wykonawcze wyznacza aktywny Canon v3 §10.8; konsultacja sama w sobie nie jest mandatem do usuwania.
+
 **Zasada: ELIMINATE UNNECESSARY WORK BEFORE OPTIMIZING NECESSARY WORK.**
 
 ## 9. Respektuj kanony bez zbędnej przebudowy
@@ -201,6 +204,9 @@ Zakładaj, że inne procesy mogą pracować nad wspólnym kodem, PR-ami, bazą, 
 - Rozwiązuj rutynowe konflikty autonomicznie i respektuj obowiązujące mechanizmy koordynacji.
 - Nie zakładaj dostępu do prywatnych sesji innych agentów; korzystaj z rzeczywiście dostępnych referencji i dowodów.
 
+
+**Zasoby lokalne innych zadań:** cudzy workspace, checkout, worktree lub plik ignorowany przez Git nie staje się wolny tylko dlatego, że nie widać procesu albo PR został zamknięty. Usuwaj wyłącznie jednoznacznie własne, sprawdzone `OWNED_DISPOSABLE`; przy `UNKNOWN_OWNER` pozostaw zasób, nie wymuszając rutynowego pytania do właściciela. Stosuj Canon v3 §10.8.
+
 **Zasada: COORDINATE SHARED RESOURCES — KEEP INDEPENDENT WORK MOVING.**
 
 ## 12. Kończ po spełnieniu właściwych kryteriów sukcesu
@@ -217,6 +223,9 @@ Zakładaj, że inne procesy mogą pracować nad wspólnym kodem, PR-ami, bazą, 
 7. Czy pozostają rzeczywiste, istotne ograniczenia?
 
 Nie deklaruj BUSINESS SUCCESS tylko dlatego, że wykonano commit, PR, CI, deployment lub raport. Jednocześnie nie kontynuuj pracy po spełnieniu kryteriów w celu realizacji niepowiązanych ulepszeń.
+
+
+**Rozliczenie środowiska:** własne, zbędne zasoby podlegają bezpiecznemu sprzątaniu w granicach mandatu — przed closeout, a gdy konieczne, w jego ograniczonym epilogu. Zachowaj obowiązkowe dowody i recovery, nie otwieraj ponownie zamkniętych wpisów. Jeśli cleanup jest jedynie higieną wykonania, pozostawienie chronionego katalogu samo nie unieważnia wyniku biznesowego; jeśli odzyskanie miejsca jest celem, obowiązuje rzeczywisty DoD tego celu.
 
 **Zasada: STOP WHEN THE BUSINESS OUTCOME IS VERIFIED — NOT BEFORE, NOT LONG AFTER.**
 

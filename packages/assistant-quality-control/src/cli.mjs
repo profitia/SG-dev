@@ -270,6 +270,8 @@ async function readinessMain(controllerStandby=false){
  let poolError=false;for(const p of pools)p.on('error',()=>{poolError=true})
  const store=createQualityStore({query:(q,v)=>pools[0].query(q,v),commandKey:config.controlKey,schemaDigest:controlDigest,serviceId:config.serviceId})
  const budget=createQualityBudget({query:(q,v)=>pools[1].query(q,v),commandKey:config.limitsKey,schemaDigest:limitsDigest,serviceId:config.serviceId,role:'profitia_limits_quality_controller'})
+ const {createQualityMetadataRetention}=await import('./worker.mjs')
+ const retention=createQualityMetadataRetention({store})
  const nativeReadiness=createQualityReadiness({store,budget,sourceSha:config.sourceSha,serviceId:config.serviceId})
  let readiness=nativeReadiness
  if(controllerStandby){
@@ -297,6 +299,8 @@ async function readinessMain(controllerStandby=false){
   while(!stop.signal.aborted){
    if(poolError)unavailable('READINESS_PROVIDER_UNAVAILABLE')
    const result=await readiness.check()
+   const retained=await retention.check({signal:stop.signal})
+   if(retained.purgePerformed)console.log(JSON.stringify({event:'aqc.technical.metadata_retention',...retained,sourceSha:config.sourceSha}))
    if(qaPreflight){
     const qa=await qaPreflight.check(),source=await qualityWorkerSourceCapabilities(config.sourceSha)
     console.log(JSON.stringify({event:'aqc.technical.qa.role_preflight',...qa,...source,sourceSha:config.sourceSha,observedAt:result.observedAt}))
