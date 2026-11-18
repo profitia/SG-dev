@@ -148,7 +148,7 @@ export function assistantReservationPredecessor(current,historical,expectedDiges
 }
 
 // Offline legacy unit-test input only; not a controller or runtime adoption.
-export async function createAcgLegacyRecurringFixture(sourceRoot) {
+export async function createAcgLegacyRecurringFixture(sourceRoot, {baselineSha} = {}) {
   const recordPath = 'apps/architecture-lab/assistant-reservation-source.json'
   try {
     const stat = fs.lstatSync(path.join(sourceRoot, recordPath))
@@ -171,22 +171,35 @@ export async function createAcgLegacyRecurringFixture(sourceRoot) {
   const view = assistantReservationPredecessor(read, historical, pin)
   assert(view, 'present source record requires authenticated predecessor')
   const sourceSha = String(git(['rev-parse', 'HEAD'])).trim()
+const fixtureBaseSha = baselineSha ?? sourceSha
+assert(/^[a-f0-9]{40}$/.test(fixtureBaseSha), 'immutable complete fixture base')
+git(['merge-base', '--is-ancestor', fixtureBaseSha, sourceSha])
+const baseRead = relative => historical(fixtureBaseSha, relative)
+// Use one complete accepted cohort, never overlay legacy ACG paths onto a
+// newer SDK or Knowledge graph. Current source authentication remains above.
+const fixtureView = baselineSha ? assistantReservationPredecessor(baseRead, historical,
+  String(baseRead(RESERVATION_DERIVED)).match(/ASSISTANT_RESERVATION_SOURCE_SHA='([a-f0-9]{64})'/)?.[1]) : view
+assert(fixtureView, 'complete accepted reservation fixture')
+assert.deepEqual(baseRead(RESERVATION_RECORD), read(RESERVATION_RECORD), 'same immutable accepted reservation receipt')
   const temporary = fs.mkdtempSync(path.join(os.tmpdir(), 'acg-legacy-recurring-test-'))
   const root = path.join(temporary, 'fixture')
+  const acceptedRoot = path.join(temporary, 'accepted')
   const close = () => fs.rmSync(temporary, {recursive: true, force: true})
   try {
-    execFileSync('git', ['clone', '--shared', '--quiet', '--no-checkout', sourceRoot, root], {stdio: ['ignore', 'pipe', 'pipe']})
-    execFileSync('git', ['checkout', '--quiet', '--detach', sourceSha], {cwd: root, stdio: ['ignore', 'pipe', 'pipe']})
-    // Preserve the real observed authority ref in this local test clone.
     const authoritySha = String(git(['rev-parse', '--verify', 'refs/remotes/origin/main^{commit}'])).trim()
-    execFileSync('git', ['update-ref', 'refs/remotes/origin/main', authoritySha], {cwd: root, stdio: ['ignore', 'pipe', 'pipe']})
+    for (const target of [acceptedRoot, root]) {
+      execFileSync('git', ['clone', '--shared', '--quiet', '--no-checkout', sourceRoot, target], {stdio: ['ignore', 'pipe', 'pipe']})
+      execFileSync('git', ['checkout', '--quiet', '--detach', fixtureBaseSha], {cwd: target, stdio: ['ignore', 'pipe', 'pipe']})
+      // Preserve the real observed authority ref in each offline test clone.
+      execFileSync('git', ['update-ref', 'refs/remotes/origin/main', authoritySha], {cwd: target, stdio: ['ignore', 'pipe', 'pipe']})
+    }
     const paths = [RESERVATION_RECORD, ...RESERVATION_PATHS, RESERVATION_DERIVED]
     assert.equal(new Set(paths).size, 46, 'closed reservation fixture inventory')
     for (const relative of paths) {
       assert(!path.isAbsolute(relative) && !relative.split('/').includes('..'))
       const file = path.join(root, relative)
       try {
-        const bytes = view.previousBytes(relative)
+        const bytes = fixtureView.previousBytes(relative)
         fs.mkdirSync(path.dirname(file), {recursive: true})
         fs.writeFileSync(file, bytes)
         fs.chmodSync(file, 0o644)
@@ -195,7 +208,7 @@ export async function createAcgLegacyRecurringFixture(sourceRoot) {
         fs.rmSync(file, {force: true})
       }
     }
-    return {root, sourceRoot, projected: true, sourceSha, sourceRecord: view.manifest, close}
+    return {root, acceptedRoot, sourceRoot, projected: true, sourceSha, fixtureBaseSha, sourceRecord: view.manifest, close}
   } catch (error) {
     close()
     throw error

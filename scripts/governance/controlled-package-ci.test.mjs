@@ -43,7 +43,7 @@ const pr = () => ({state: 'open', user: {login: 'profitia'}, base: {ref: 'main',
 const configuration = '@profitia:registry=https://npm.pkg.github.com\n//npm.pkg.github.com/:_authToken=${NPM_TOKEN}\n'
 const lock = () => ({lockfileVersion: 3, packages: Object.fromEntries(PRIVATE_PACKAGES.map(name => [`node_modules/${name}`, {version: '1.0.0', integrity: 'sha512-approved'}]))})
 const rejection = fn => assert.throws(fn)
-const legacyRecurringFixture = await createAcgLegacyRecurringFixture(path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..'))
+const legacyRecurringFixture = await createAcgLegacyRecurringFixture(path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..'), {baselineSha:'53691e907e4cc9b7fbf683c91bbebf41299e9ccc'})
 test.after(() => legacyRecurringFixture.close())
 
 test('ECR admits only its exact published CIC artifact for SG2 while preserving the independent M1 and M2 pins',()=>{
@@ -3643,9 +3643,19 @@ test('actual ACG reservation source remains authenticated separately from the le
  assert(legacyRecurringFixture.projected)
  assert.notEqual(legacyRecurringFixture.root,authorityRoot)
  assert.equal(legacyRecurringFixture.sourceRecord.scope,'EXACT_ASSISTANT_TOKEN_RESERVATION_SOURCE')
- assert.throws(()=>assertPrivateRecurringProvenance(authorityRoot),/PI_LIVE_ACCEPTANCE_SOURCE_REJECTED|EDITORIAL_SOURCE_BYTES_REJECTED|FINDER_MONITOR_SOURCE_BYTES_REJECTED/)
- const sdk=await import('../../packages/platform-contracts/src/operation-context.mjs')
- assert.equal(await sdk.operationSourceDigest(),legacyRecurringFixture.sourceRecord.sdkDigests.operationSourceDigest)
+const legacyControl=await import(pathToFileURL(path.join(legacyRecurringFixture.acceptedRoot,'scripts/governance/controlled-package-ci.mjs')).href)
+assert.throws(()=>legacyControl.assertPrivateRecurringProvenance(legacyRecurringFixture.acceptedRoot),/PI_LIVE_ACCEPTANCE_SOURCE_REJECTED|EDITORIAL_SOURCE_BYTES_REJECTED|FINDER_MONITOR_SOURCE_BYTES_REJECTED/)
+const legacySdk=await import(pathToFileURL(path.join(legacyRecurringFixture.acceptedRoot,'packages/platform-contracts/src/operation-context.mjs')).href)
+assert.equal(await legacySdk.operationSourceDigest(),legacyRecurringFixture.sourceRecord.sdkDigests.operationSourceDigest)
+const sdk=await import('../../packages/platform-contracts/src/operation-context.mjs')
+const currentContext=currentSdkProofContext(authorityRoot)
+if(currentContext){
+  assertPrivateRecurringProvenance(authorityRoot)
+  assert.equal(await sdk.operationSourceDigest(),currentContext.metadata.sdkDigests.operationSourceDigest)
+}else{
+  assert.throws(()=>assertPrivateRecurringProvenance(authorityRoot),/PI_LIVE_ACCEPTANCE_SOURCE_REJECTED|EDITORIAL_SOURCE_BYTES_REJECTED|FINDER_MONITOR_SOURCE_BYTES_REJECTED/)
+  assert.equal(await sdk.operationSourceDigest(),legacyRecurringFixture.sourceRecord.sdkDigests.operationSourceDigest)
+}
  const legacyReceipt=JSON.parse(fs.readFileSync(path.join(legacyRecurringFixture.root,'apps/sg-runtime/operation-integration.json'),'utf8'))
  assert.notEqual(await sdk.operationSourceDigest(),currentProofContract(legacyRecurringFixture.root,legacyReceipt).sourceDigest)
 })

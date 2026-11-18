@@ -18,7 +18,7 @@ import { resolveEnvironmentProfile } from './environment-profile.mjs'
 import {assistantSdkPredecessor} from '../../apps/architecture-lab/assistant-m1-sdk-compatibility.mjs'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
-const legacyRecurringFixture = await createAcgLegacyRecurringFixture(root)
+const legacyRecurringFixture = await createAcgLegacyRecurringFixture(root, {baselineSha:'53691e907e4cc9b7fbf683c91bbebf41299e9ccc'})
 test.after(() => legacyRecurringFixture.close())
 const approved = 'b40564130fe7b6ced4d7df233dd6749653846114'
 const readBytes = p => fs.readFileSync(path.join(root, p))
