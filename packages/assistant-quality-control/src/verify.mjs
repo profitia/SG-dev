@@ -1,9 +1,12 @@
 import {createHash} from 'node:crypto'
 import path from 'node:path'
+import fs from 'node:fs'
+import {pathToFileURL} from 'node:url'
 import {execFileSync} from 'node:child_process'
 import {gunzipSync} from 'node:zlib'
 import ts from 'typescript'
-import {documentDigest,verifyDocument,assertVerifiedRepairManifest,SOURCE_PATHS} from './manifest.mjs'
+import {documentDigest,verifyDocument,signDocument,assertVerifiedRepairManifest,SOURCE_PATHS} from './manifest.mjs'
+import {advanceIncident} from './controller.mjs'
 
 const fail=code=>{throw Object.assign(Error('Independent quality verification refused'),{code})}
 const require=(v,c='VERIFICATION_INPUT_INVALID')=>{if(!v)fail(c)}
@@ -207,4 +210,150 @@ export async function createQualityIsolatedCaseRunner({bundle,qualification,qual
   documentDigest(input.args);require(Buffer.byteLength(JSON.stringify(input.args))<=16384,'VERIFIER_CASE_BINDING_INVALID')
   return runIsolatedVerificationCase({bundle:b,version:input.version,repairClass:input.repairClass,args:structuredClone(input.args),qualification,qualificationKeys,observedGateSetSha256,signal,diagnostics})
  }})
+}
+
+
+/** Private verifier composition reuses SG2's one canonical purpose/encryption
+ * adapter. Only an independently established trusted main SHA and installed
+ * host-code hash are accepted here, never a patch, agent module or import URL.
+ * Read-only Git bytes and working files must match before any credential is
+ * handed to that module. Controller/executor processes must not call this port. */
+export async function createQualityPrivateEvidenceReader(options){
+ const keys=['repositoryRoot','sourceSha','hostCodecSha256','purposeQuery','evidenceQuery','purposeKey','evidenceKey','storageKey',
+  'purposeSchemaDigest','evidenceSchemaDigest','serviceId','storageGeneration','accountId']
+ exact(options,Object.hasOwn(options??{},'now')?[...keys,'now']:keys)
+ const uuid=v=>typeof v==='string'&&/^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(v)
+ const o=Object.freeze({...options}),now=o.now??Date.now
+ require(typeof o.repositoryRoot==='string'&&path.isAbsolute(o.repositoryRoot)&&/^[a-f0-9]{40}$/.test(o.sourceSha??'')
+  &&digest(o.hostCodecSha256)&&typeof o.purposeQuery==='function'&&typeof o.evidenceQuery==='function'&&typeof now==='function'
+  &&[o.purposeKey,o.evidenceKey,o.storageKey,o.purposeSchemaDigest,o.evidenceSchemaDigest].every(digest)
+  &&new Set([o.purposeKey,o.evidenceKey,o.storageKey]).size===3&&[o.serviceId,o.storageGeneration,o.accountId].every(uuid)
+  &&Number(process.versions.node.split('.')[0])>=24,'QA_READER_CONFIGURATION_INVALID')
+ const host='apps/sg-runtime/lib/assistant/quality-evidence.ts',contracts='packages/assistant-context-contracts/src'
+ let module
+ try{
+  require(fs.realpathSync(o.repositoryRoot)===path.resolve(o.repositoryRoot),'QA_READER_SOURCE_INVALID')
+  const git=args=>execFileSync('/usr/bin/git',['--no-replace-objects','-c','core.fsmonitor=false','-c','core.hooksPath=/dev/null','-C',o.repositoryRoot,...args],
+   {timeout:15000,maxBuffer:2097152,env:{PATH:'/usr/bin:/bin',LANG:'C.UTF-8',GIT_CONFIG_NOSYSTEM:'1',GIT_CONFIG_GLOBAL:'/dev/null',GIT_OPTIONAL_LOCKS:'0'},stdio:['ignore','pipe','pipe']})
+  require(['https://github.com/profitia/SG-dev','https://github.com/profitia/SG-dev.git'].includes(git(['config','--get','remote.origin.url']).toString().trim())
+   &&git(['rev-parse','HEAD']).toString().trim()===o.sourceSha,'QA_READER_SOURCE_INVALID')
+  const graph=git(['ls-tree','-r','--name-only',o.sourceSha,contracts]).toString().trim().split('\n').filter(p=>p.endsWith('.mjs'))
+  require(graph.length>0&&graph.length<=64&&graph.includes(contracts+'/quality.mjs'),'QA_READER_SOURCE_INVALID')
+  for(const relative of [host,'apps/sg-runtime/package.json',...graph]){
+   require(relative===host||relative==='apps/sg-runtime/package.json'||relative.startsWith(contracts+'/')
+    &&/^[a-zA-Z0-9_./-]+$/.test(relative)&&!relative.split('/').some(p=>p==='.'||p==='..'),'QA_READER_SOURCE_INVALID')
+   const file=path.join(o.repositoryRoot,relative),bytes=git(['show',o.sourceSha+':'+relative])
+   require(fs.realpathSync(file)===file&&fs.lstatSync(file).isFile()&&fs.readFileSync(file).equals(bytes),'QA_READER_SOURCE_INVALID')
+   if(relative===host)require(hash(bytes)===o.hostCodecSha256,'QA_READER_SOURCE_INVALID')
+  }
+  // Native Node24 strips type-only imports; this loads only the trusted SG2
+  // codec, never any generated source. The whole neutral import graph is pinned.
+  module=await import(pathToFileURL(path.join(o.repositoryRoot,host)).href+'?aqc_source='+o.sourceSha+'&codec='+o.hostCodecSha256)
+  require(typeof module.createQualityEvidencePurposeClient==='function'&&typeof module.createQualityEvidenceStore==='function','QA_READER_SOURCE_INVALID')
+ }catch{fail('QA_READER_SOURCE_UNAVAILABLE')}
+ const purpose=module.createQualityEvidencePurposeClient({query:o.purposeQuery,commandKey:o.purposeKey,schemaDigest:o.purposeSchemaDigest,
+  serviceId:o.serviceId,storageGeneration:o.storageGeneration,role:'sg2_assistant_quality_authority',now})
+ const evidence=module.createQualityEvidenceStore({query:o.evidenceQuery,commandKey:o.evidenceKey,storageKey:o.storageKey,
+  schemaDigest:o.evidenceSchemaDigest,serviceId:o.serviceId,storageGeneration:o.storageGeneration,role:'sg2_assistant_quality_reader',
+  authorize:demand=>purpose.authorize(demand),now})
+ return Object.freeze({
+  async ready(){
+   const [a,b]=await Promise.all([purpose.descriptor(),evidence.descriptor()])
+   require(a.enabled===false&&b.enabled===false,'QA_READER_READINESS_STATE_INVALID')
+   return Object.freeze({schemaVersion:'AQC_PRIVATE_READER_READINESS_V1',sourceSha:o.sourceSha,hostCodecSha256:o.hostCodecSha256,
+    purposeAuthority:'CONNECTED_DISABLED',evidenceStore:'CONNECTED_DISABLED'})
+  },
+  async read(evidenceId){
+   require(uuid(evidenceId),'QA_READER_INPUT_INVALID')
+   // SG2's canonical reader performs current native authority checks both
+   // before decryption and after validating the exact original input/scopes.
+   // This private value never enters an executor, public proof or telemetry.
+   try{return await evidence.read(o.accountId,evidenceId)}catch{fail('QA_READER_UNAVAILABLE')}
+  },
+ })
+}
+
+
+const isolatedVerificationResults=new WeakMap()
+const verificationFields=Object.freeze(['result','baseSha','artifactSha256','baseTest','candidateTest','holdoutCases','classCounts',
+ 'criticalRegressions','accessViolations','unverifiableCases','criticalCasesPass','criticalRepeats','stable','correctnessDeltaPp',
+ 'unjustifiedRefusalDeltaPp','holdoutSha256','rubricVersion','scopeBeforeDefects','scopeAfterDefects','beforeSourceSha256',
+ 'afterSourceSha256','regressionSha256','observationsSha256','proofSha256'])
+function verificationMetadata(value,manifest,at){
+ const m=assertVerifiedRepairManifest(manifest);exact(value,verificationFields)
+ require(['PASS','FAIL'].includes(value.result)&&value.baseSha===m.baseSha
+  &&['PASS','FAIL','UNKNOWN'].includes(value.baseTest)&&['PASS','FAIL'].includes(value.candidateTest)
+  &&['artifactSha256','holdoutSha256','beforeSourceSha256','afterSourceSha256','regressionSha256','observationsSha256','proofSha256'].every(k=>digest(value[k]))
+  &&code(value.rubricVersion)&&['criticalCasesPass','stable'].every(k=>typeof value[k]==='boolean'),'VERIFICATION_RECEIPT_INVALID')
+ exact(value.classCounts,['C1','C2','C3'])
+ require(Object.values(value.classCounts).every(v=>integer(v)&&v<=512)
+  &&['holdoutCases','criticalRegressions','accessViolations','unverifiableCases','criticalRepeats','scopeBeforeDefects','scopeAfterDefects'].every(k=>integer(value[k])&&value[k]<=512)
+  &&['correctnessDeltaPp','unjustifiedRefusalDeltaPp'].every(k=>Number.isFinite(value[k])&&Math.abs(value[k])<=100),'VERIFICATION_RECEIPT_INVALID')
+ const {proofSha256,...body}=value
+ require(documentDigest(body)===proofSha256,'VERIFICATION_RECEIPT_DIGEST_INVALID')
+ // Reuse the controller's authoritative complete VERIFY transition; a signed
+ // PASS does not replace any holdout, critical, stability or access threshold.
+ advanceIncident({status:'PATCH_READY',attemptsUsed:1,repairClass:m.repairClass,baseSha:m.baseSha,
+  patch:{artifactSha256:value.artifactSha256},pending:{action:'VERIFY'}},'VERIFY',value,at)
+ return value
+}
+/** Only this closed composition produces an attestable result. Neither an
+ * agent TAP report nor verifyCandidate with a caller execution callback gets
+ * this capability. Reference labels stay in the trusted parent process. */
+export async function verifyQualityCandidateInIsolation(options){
+ const fields=['manifest','repositoryRoot','artifact','cicArchive','pack','packAttestation','reviewerKeys','qualification','qualificationKeys','observedGateSetSha256','nonce']
+ exact(options,Object.hasOwn(options??{},'signal')?[...fields,'signal']:fields)
+ const o=Object.freeze({...options}),m=assertVerifiedRepairManifest(o.manifest)
+ require(typeof o.nonce==='string'&&/^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(o.nonce)
+  &&o.reviewerKeys instanceof Map&&o.qualificationKeys instanceof Map,'VERIFICATION_JOB_BINDING_INVALID')
+ const {assertExecutorHost}=await import('./executor.mjs'),binding=assertExecutorHost()
+ const reference=verifyDocument(o.packAttestation,{kind:'AQC_REFERENCE_PACK_V1',trustedKeys:new Map(o.reviewerKeys)})
+ documentDigest(o.pack)
+ // A stable private snapshot cannot be relabelled while children are running.
+ const pack=structuredClone(o.pack),freeze=v=>{if(v&&typeof v==='object'){Object.values(v).forEach(freeze);Object.freeze(v)}return v};freeze(pack)
+ const began=Date.now(),until=Math.min(Date.parse(m.mandate.expiresAt),Date.parse(reference.expiresAt),began+30*60000)
+ require(Number.isFinite(until)&&until>began,'VERIFICATION_AUTHORITY_EXPIRED')
+ const bundle=await prepareQualityVerificationBundle({manifest:m,repositoryRoot:o.repositoryRoot,artifact:o.artifact,cicArchive:o.cicArchive})
+ const runner=await createQualityIsolatedCaseRunner({bundle,qualification:o.qualification,qualificationKeys:new Map(o.qualificationKeys),
+  observedGateSetSha256:o.observedGateSetSha256,signal:o.signal})
+ const test=o.artifact.body.files.find(f=>f.path!==SOURCE_PATHS[m.repairClass])
+ const result=await verifyCandidate({manifest:m,beforeSource:bundle.files['base/'+bundle.primary+'.ts'],afterSource:bundle.files['candidate/'+bundle.primary+'.ts'],
+  regressionSource:test.content,pack,packAttestation:o.packAttestation,reviewerKeys:new Map(o.reviewerKeys),gateSetSha256:o.observedGateSetSha256,
+  runCase:runner.runCase,artifactSha256:o.artifact.artifactSha256,now:began})
+ const at=Date.now();require(at<until,'VERIFICATION_AUTHORITY_EXPIRED');verificationMetadata(result,m,at)
+ const value=Object.freeze({...result,classCounts:Object.freeze({...result.classCounts})})
+ isolatedVerificationResults.set(value,Object.freeze({manifest:m,nonce:o.nonce,controlSourceSha:binding.executorSourceSha,runId:binding.runId,
+  observedAt:new Date(at).toISOString(),expiresAt:new Date(until).toISOString()}))
+ return value
+}
+/** The independent verifier's private key never enters the executor or publisher.
+ * The signer accepts only a capability minted after actual isolated execution. */
+export function createQualityVerificationAttestor(options){
+ exact(options,['privateKey'])
+ const privateKey=options.privateKey
+ require(privateKey?.type==='private'&&privateKey.asymmetricKeyType==='ed25519','VERIFICATION_SIGNER_REQUIRED')
+ return Object.freeze({attest(value){
+  const c=isolatedVerificationResults.get(value);require(c,'REAL_ISOLATED_VERIFICATION_REQUIRED')
+  const m=c.manifest,at=Date.now()
+  require(at<Date.parse(c.expiresAt)&&at<Date.parse(m.mandate.expiresAt),'VERIFICATION_AUTHORITY_EXPIRED')
+  verificationMetadata(value,m,at)
+  return signDocument('AQC_VERIFICATION_RESULT_V1',{schemaVersion:'AQC_VERIFICATION_RESULT_V1',applicationId:'spendguru',environment:'development',
+   repository:'profitia/SG-dev',incidentId:m.incidentId,repairClass:m.repairClass,baseSha:m.baseSha,manifestSha256:documentDigest(m),gateSetSha256:m.gateSetSha256,
+   artifactSha256:value.artifactSha256,verification:value,nonce:c.nonce,controlSourceSha:c.controlSourceSha,runId:c.runId,runAttempt:1,
+   observedAt:c.observedAt,expiresAt:c.expiresAt,rawQaPayloadIncluded:false},privateKey)
+ }})
+}
+export function readQualityVerificationResult(document,{keys,manifest,nonce,controlSourceSha,runId,notBefore,now=Date.now()}){
+ const m=assertVerifiedRepairManifest(manifest),b=verifyDocument(document,{kind:'AQC_VERIFICATION_RESULT_V1',trustedKeys:keys})
+ exact(b,['schemaVersion','applicationId','environment','repository','incidentId','repairClass','baseSha','manifestSha256','gateSetSha256','artifactSha256',
+  'verification','nonce','controlSourceSha','runId','runAttempt','observedAt','expiresAt','rawQaPayloadIncluded'])
+ require(b.schemaVersion==='AQC_VERIFICATION_RESULT_V1'&&b.applicationId==='spendguru'&&b.environment==='development'&&b.repository==='profitia/SG-dev'
+  &&b.incidentId===m.incidentId&&b.repairClass===m.repairClass&&b.baseSha===m.baseSha&&b.manifestSha256===documentDigest(m)&&b.gateSetSha256===m.gateSetSha256
+  &&typeof nonce==='string'&&/^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(nonce)&&b.nonce===nonce&&/^[a-f0-9]{40}$/.test(controlSourceSha??'')&&b.controlSourceSha===controlSourceSha
+  &&/^[1-9][0-9]{0,19}$/.test(runId??'')&&b.runId===runId&&b.runAttempt===1&&b.rawQaPayloadIncluded===false
+  &&b.artifactSha256===b.verification?.artifactSha256,'VERIFICATION_RECEIPT_BINDING_INVALID')
+ require(Number.isFinite(now)&&stamp(notBefore)&&stamp(b.observedAt)&&stamp(b.expiresAt)
+  &&Date.parse(b.observedAt)>=Date.parse(notBefore)&&Date.parse(b.observedAt)<=now&&Date.parse(b.expiresAt)>now
+  &&Date.parse(b.expiresAt)<=Date.parse(b.observedAt)+30*60000&&Date.parse(b.expiresAt)<=Date.parse(m.mandate.expiresAt),'VERIFICATION_RECEIPT_STALE')
+ return verificationMetadata(b.verification,m,now)
 }
