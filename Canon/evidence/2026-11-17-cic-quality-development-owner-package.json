@@ -41,7 +41,7 @@
       "guardChangeRestrictedToExactAdditiveBinding": true
     },
     "originalInfrastructurePackagePathCount": 22,
-    "effectiveAdditionalAdapterPath": "apps/sg-runtime/tests/finder-monitor-source-integrity.mjs"
+    "effectiveAdditionalAdapterPath": "apps/sg-runtime/tests/procurement-insights-editorial-package-integrity.mjs"
   },
   "render": {
     "decisionRequired": true,
@@ -906,7 +906,7 @@
     "approvedPathCount": 23
   },
   "proposedSourceCi24Amendment": {
-    "status": "OWNER_APPROVED_LIMITED_AMENDMENT_CURRENT_MAIN_CI_PENDING",
+    "status": "OWNER_APPROVED_HISTORICAL_FINDER_PROFILE",
     "previousApprovedPathCount": 23,
     "proposedPathCount": 24,
     "additionalPath": "apps/sg-runtime/tests/finder-monitor-source-integrity.mjs",
@@ -972,10 +972,11 @@
     },
     "relocationApprovalReviewedAdditionalPath": "apps/sg-runtime/tests/finder-monitor-source-integrity.mjs",
     "relocationApprovalDate": "2026-11-18",
-    "relocationApprovalResponse": "Zatwierdzam przeniesienie adaptera w CI24"
+    "relocationApprovalResponse": "Zatwierdzam przeniesienie adaptera w CI24",
+    "supersededTransportBy": "proposedCi24EditorialComposition"
   },
   "proposedCi24EditorialComposition": {
-    "status": "OWNER_DECISION_REQUIRED_NOT_ACTIVATED",
+    "status": "OWNER_APPROVED_EXACT_HEAD_CI_PENDING",
     "previousApprovedPathCount": 24,
     "proposedPathCount": 24,
     "from": "apps/sg-runtime/tests/finder-monitor-source-integrity.mjs",
@@ -1018,6 +1019,11 @@
     "promotionEnabled": false,
     "pilotStarted": false,
     "previousFinderApprovalNotReusedForNewPath": true,
-    "approvedPrecedingPolicyMain": "67b81304e08d400aef5872839e24de39b8af8093"
+    "approvedPrecedingPolicyMain": "67b81304e08d400aef5872839e24de39b8af8093",
+    "approvalDate": "2026-11-18",
+    "approvalResponse": "Zatwierdzam tę zamianę adaptera CI24",
+    "approvalPr": 1179,
+    "hostConversationId": "01a1e7fb-2253-7f91-9335-270094d39784",
+    "approvedPathCount": 24
   }
 }
