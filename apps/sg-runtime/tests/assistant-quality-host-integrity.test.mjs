@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import {execFileSync} from 'node:child_process'
 import {assistantQualityHostPredecessor,QUALITY_HOST_PATHS,QUALITY_HOST_PRESERVED,QUALITY_HOST_RECEIPT,QUALITY_HOST_BASE} from './assistant-quality-host-integrity.mjs'
+import {QUALITY_PATHS,QUALITY_RECEIPT} from './assistant-quality-integrity.mjs'
 const root=new URL('../../../',import.meta.url),current=p=>readFileSync(new URL(p,root))
 const historical=(sha,p)=>execFileSync('git',['show',sha+':'+p],{cwd:root,stdio:['ignore','pipe','pipe']})
 test('CIC1.8 host continuation binds every current file, actual package artifact and immutable earlier source receipt',()=>{
@@ -32,10 +33,14 @@ test('direct consent transport entry authenticates CIC first and retains all his
 test('authenticated recurring source graph covers every actual CIC app amendment and no unknown path',async()=>{
  const {recurringSourcePredecessor}=await import('../../architecture-lab/private-recurring-source.mjs')
  const bound=recurringSourcePredecessor(current,historical).manifest.sourceDigests
- const changed=execFileSync('git',['diff','--name-only','origin/main','--','apps/sg-runtime'],{cwd:root,encoding:'utf8'}).trim().split('\n').filter(Boolean)
- assert(changed.length>=22)
+ const changed=execFileSync('git',['diff','--name-only','origin/main...HEAD','--','apps/sg-runtime'],{cwd:root,encoding:'utf8'}).trim().split('\n').filter(Boolean)
+ // Compare committed candidate source, excluding reproducible Prisma outputs
+ // changed by lifecycle installation. On resulting main the PR diff is empty;
+ // every closed CIC path must still be independently authenticated.
+ const admitted=[...new Set([...QUALITY_PATHS,...QUALITY_HOST_PATHS,QUALITY_RECEIPT,QUALITY_HOST_RECEIPT].filter(p=>p.startsWith('apps/sg-runtime/')))]
+ assert.equal(admitted.length,23,'the complete closed CIC app inventory')
  const {createHash}=await import('node:crypto')
- for(const p of changed)assert.equal(bound[p],createHash('sha256').update(current(p)).digest('hex'),p)
+ for(const p of new Set([...admitted,...changed]))assert.equal(bound[p],createHash('sha256').update(current(p)).digest('hex'),p)
  assert.equal(Object.hasOwn(bound,'apps/sg-runtime/unreviewed.ts'),false)
 })
 

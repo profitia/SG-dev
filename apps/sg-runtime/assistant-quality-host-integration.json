@@ -17,7 +17,7 @@
     "apps/sg-runtime/tests/assistant-quality-evidence.test.ts": "a301ae44ece516a83afba433d82dcf0e5a2f68272ff04194b677fbec433274bf",
     "apps/sg-runtime/tests/assistant-quality-integrity.mjs": "05b7ac0b711c8abd39d21e300ea60c2f0403450ee3e80e83a0f6a1cec1d177df",
     "apps/sg-runtime/tests/assistant-quality-host-integrity.mjs": "57ca69000bb4fc32ca1ea5e4c0c9ef7611bdc05ec7e0983bc3ff644b29685bf9",
-    "apps/sg-runtime/tests/assistant-quality-host-integrity.test.mjs": "e051a76d38a89deb62f415b6cf6d7b00a170ceb403b7c9cccf6dfccbf21bdcc2",
+    "apps/sg-runtime/tests/assistant-quality-host-integrity.test.mjs": "9d1f4cb90d71ea03f62e439bb0a70a404e3e345a16116202e67c570475599b31",
     "apps/sg-runtime/tests/procurement-insights-completion-integrity.mjs": "00f1b475342a78ad916c03723ae2b9b268963240d101b57c17559308c48daafa",
     "apps/architecture-lab/private-recurring-source.mjs": "f0bdef098fc654693b9a2643cd7470eac5e24fb62e563e504c3ca2e0d5cb7d39",
     "apps/sg-runtime/tests/procurement-insights-editorial-package-integrity.mjs": "756db5efd4018d1dd61b5f4b026f332349450dadbc92fdc0778e694f3d9d5bab"
