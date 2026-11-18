@@ -47,6 +47,32 @@ export function srmSdkSourceHistories(current,paths){
  }))
  return store.records.filter(r=>/^[a-f0-9]{40}$/.test(r.baseSha??'')&&Array.isArray(r.files)).map(r=>({baseSha:r.baseSha,paths:r.files.filter(f=>paths.includes(f.path)&&blobs.get(f.path)===f.blob).map(f=>f.path)})).filter(r=>r.paths.length)
 }
+// Reconstruct a prior application view only after the canonical admission reader
+// authenticates the complete physical source. This selects history, never grants it.
+export function srmAdmittedApplicationPredecessors(current,historical){
+ const root=fileURLToPath(new URL('../../../',import.meta.url)),options={cwd:root,env:{PATH:process.env.PATH,GIT_NO_LAZY_FETCH:'1'},encoding:'utf8',timeout:30000,maxBuffer:1024*1024}
+ const store=JSON.parse(execFileSync('git',['cat-file','blob','origin/main:Canon/registries/controlled-source-admissions-v1.json'],options))
+ assert(store.schemaVersion==='1.0'&&Array.isArray(store.records),'trusted application history metadata required')
+ const eligible=p=>typeof p==='string'&&p.startsWith('apps/srm/')&&/^[A-Za-z0-9_.@/-]+$/.test(p)&&p.split('/').every(v=>v&&v!=='.'&&v!=='..')&&/\.(?:tsx?|mjs)$/.test(p)
+ const matches=store.records.filter(r=>/^[a-f0-9]{40}$/.test(r.baseSha??'')&&Array.isArray(r.files)&&r.files.some(f=>eligible(f.path))&&r.files.every(f=>{
+  if(typeof f.path!=='string'||!/^[A-Za-z0-9_.@/-]+$/.test(f.path)||f.path.split('/').some(v=>!v||v==='.'||v==='..'))return false
+  try{return execFileSync('git',['hash-object','--no-filters','--',f.path],options).trim()===f.blob}catch{return false}
+ }))
+ assert(matches.length<=1,'ambiguous application source history')
+ const record=matches[0],previous=new Map();if(!record)return previous
+ for(const f of record.files.filter(f=>eligible(f.path))){
+  const bytes=Buffer.from(current(f.path)),blob=createHash('sha1').update('blob '+bytes.length+String.fromCharCode(0)).update(bytes).digest('hex')
+  if(blob!==f.blob)continue // An earlier validated reader may already project this file.
+  if(!execFileSync('git',['ls-tree',record.baseSha,'--',f.path],options).trim())continue
+  const before=historical(record.baseSha,f.path)
+  if(hash(bytes)!==hash(before))previous.set(f.path,Buffer.from(before))
+ }
+ if(previous.size){
+  const digests=authenticatedSrmSourceDigests([...previous.keys()])
+  for(const p of previous.keys())assert.equal(hash(current(p)),digests[p],'independently admitted application source '+p)
+ }
+ return previous
+}
 export function assertSrmHistoricalAnchor(value,file,fields){
  assert(['apps/srm/assistant-context-integration.json','apps/srm/operation-integration.json','apps/sg-runtime/operation-integration.json'].includes(file),'existing immutable consumer receipt only')
  const root=fileURLToPath(new URL('../../../',import.meta.url))
