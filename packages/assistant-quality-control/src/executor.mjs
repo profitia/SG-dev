@@ -1,9 +1,10 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import {spawn,spawnSync} from 'node:child_process'
+import {createServer} from 'node:net'
 import {randomUUID,createHash} from 'node:crypto'
 import {assertVerifiedRepairManifest,documentDigest,verifyDocument,SOURCE_PATHS} from './manifest.mjs'
-import {readRegression,readRegressionSource,serializeRegression} from './verify.mjs'
+import {readRegression,readRegressionSource,serializeRegression,assertQualityVerificationBundle} from './verify.mjs'
 import {assertRepairSource} from './source-policy.mjs'
 import {assertPublicProjection} from './provenance.mjs'
 
@@ -315,5 +316,129 @@ export async function runIsolatedExecutor({manifest,regression,projection,toolPa
    if(primaryFailure)primaryFailure.cleanup={code:cleanupError?.code??'CLEANUP_FAILED',setup:cleanupError?.setup??null}
    else throw cleanupError
   }
+ }
+}
+
+/** Fixed child program. No expected value, rubric, private QA record or key is
+ * mounted or inherited. Descriptor 3 carries typed values only to the parent;
+ * candidate stdout/stderr cannot become a validation result. */
+function verificationChild(){
+ const fail=()=>{throw Error('Independent execution unavailable')}
+ ;(async()=>{
+  const fs=await import('node:fs'),net=await import('node:net'),crypto=await import('node:crypto')
+  let input='';for await(const chunk of process.stdin){input+=chunk;if(Buffer.byteLength(input)>20000)fail()}
+  const r=JSON.parse(input),meta=JSON.parse(fs.readFileSync('/aqc/app/meta.json','utf8'))
+  const status=fs.readFileSync('/proc/self/status','utf8'),get=k=>status.split('\n').find(l=>l.startsWith(k+':'))?.split(':')[1]?.trim()
+  if(process.getuid()!==19998||process.getgid()!==19998||get('Groups')!==''||get('NoNewPrivs')!=='1'
+   ||!['CapInh','CapPrm','CapEff','CapBnd','CapAmb'].every(k=>/^0+$/.test(get(k)??''))
+   ||Object.keys(process.env).some(k=>!['PATH','LANG','TZ','PWD'].includes(k)))fail()
+  const denied=fn=>{try{fn()}catch{return}fail()}
+  denied(()=>fs.readFileSync(r.outsideRead));denied(()=>fs.writeFileSync(r.outsideWrite,'unexpected'))
+  const blocked=options=>new Promise((resolve,reject)=>{
+   const s=net.createConnection(options);s.setTimeout(200);s.once('connect',()=>{s.destroy();reject(Error('Network reachable'))})
+   s.once('error',()=>resolve());s.once('timeout',()=>{s.destroy();reject(Error('Network isolation unverified'))})
+  })
+  await blocked({host:'127.0.0.1',port:r.blockedPort});await blocked({host:'1.1.1.1',port:443});await blocked({path:r.socketPath})
+  const digest=x=>crypto.createHash('sha256').update(x).digest('hex')
+  for(const [relative,pin]of Object.entries(meta.files))if(digest(fs.readFileSync('/aqc/app/'+relative))!==pin)fail()
+  const sourceSha256=digest(fs.readFileSync('/aqc/app/'+r.version+'/'+meta.primary+'.ts'))
+  if(sourceSha256!==r.sourceSha256)fail()
+  const name=r.repairClass==='C1'?'calendar':'quality',entry={C1:'calendarReference',C2:'renderGroundedFacts',C3:'applyQualityPolicy'}[r.repairClass]
+  const module=await import('/aqc/app/'+r.version+'/'+name+'.mjs')
+  fs.writeSync(3,'AQC_CASE_READY\n')
+  const output=await module[entry](...r.args),value=JSON.stringify({status:'COMPLETE',sourceSha256,output,isolation:'PASS'})
+  if(output===undefined||Buffer.byteLength(value)>32768)fail()
+  fs.writeSync(3,value);process.exitCode=0
+ })().catch(()=>{process.exitCode=1})
+}
+export function verificationIsolationPlan({root,group,nodePath}){
+ require(typeof root==='string'&&/^\/tmp\/aqc-verification-[a-f0-9-]{36}$/.test(root)
+  &&typeof group==='string'&&/^\/sys\/fs\/cgroup\/aqc-verify-[a-f0-9-]{36}$/.test(group)
+  &&nodePath==='/opt/aqc-tools/verifier-node','VERIFIER_PLAN_INVALID')
+ const bwrap='/opt/aqc-tools/codex-resources/bwrap'
+ const args=['--unshare-user','--unshare-ipc','--unshare-pid','--unshare-net','--unshare-uts','--unshare-cgroup',
+  '--uid','19998','--gid','19998','--disable-userns','--assert-userns-disabled','--die-with-parent','--new-session','--cap-drop','ALL',
+  '--clearenv','--setenv','PATH','/usr/bin:/bin','--setenv','LANG','C.UTF-8','--setenv','TZ','UTC',
+  '--ro-bind','/usr','/usr','--ro-bind','/lib','/lib']
+ for(const dir of ['/lib64','/bin'])if(fs.existsSync(dir))args.push('--ro-bind',dir,dir)
+ if(fs.existsSync('/etc/ld.so.cache'))args.push('--ro-bind','/etc/ld.so.cache','/etc/ld.so.cache')
+ args.push('--proc','/proc','--dev','/dev','--tmpfs','/tmp','--ro-bind',root+'/case','/aqc/app',
+  '--ro-bind',nodePath,'/aqc/node','--chdir','/aqc/app','--remount-ro','/','--',
+  '/aqc/node','--max-old-space-size=64','--disable-proto=throw','/aqc/app/runner.mjs')
+ const launcher='printf "%s" "$$" > "$1/cgroup.procs" || exit 91; shift; exec "$@"'
+ return Object.freeze({file:'/bin/sh',args:Object.freeze(['-c',launcher,'aqc-verify-launch',group,'/usr/bin/setpriv',
+  '--reuid=19998','--regid=19998','--clear-groups','--no-new-privs','--bounding-set=-all','--inh-caps=-all','--ambient-caps=-all','--',bwrap,...args])})
+}
+/** Separate no-model verifier process, with kernel namespaces and bounded
+ * resources. This port never receives a broker URL or executor/publisher key. */
+export async function runIsolatedVerificationCase({bundle,version,repairClass,args,qualification,qualificationKeys,observedGateSetSha256,signal,observeIsolation,diagnostics}){
+ const b=assertQualityVerificationBundle(bundle);assertExecutorHost()
+ require(observedGateSetSha256===b.gateSetSha256,'GATE_POLICY_CHANGED')
+ verifyLinuxQualification(qualification,{keys:qualificationKeys,gateSetSha256:b.gateSetSha256})
+ require(['base','candidate'].includes(version)&&['C1','C2','C3'].includes(repairClass)&&Array.isArray(args)&&args.length<=4
+  &&Date.parse(b.expiresAt)>Date.now(),'VERIFIER_CASE_BINDING_INVALID')
+ documentDigest(args);require(Buffer.byteLength(JSON.stringify(args))<=16384,'VERIFIER_CASE_BINDING_INVALID')
+ require(!signal?.aborted,'VERIFIER_CANCELLED')
+ const bwrap='/opt/aqc-tools/codex-resources/bwrap'
+ assertExecutorResourceFile(bwrap,EXECUTOR_TOOL.bwrapBinarySha256,'BWRAP_BINARY_PIN_MISMATCH')
+ const toolRoot=fs.lstatSync('/opt/aqc-tools');require(toolRoot.isDirectory()&&!toolRoot.isSymbolicLink()&&toolRoot.uid===0&&(toolRoot.mode&0o022)===0,'TRUSTED_TOOL_DIRECTORY_REQUIRED')
+ const nodePath='/opt/aqc-tools/verifier-node',nodeHash=hash(fs.readFileSync(process.execPath))
+ if(!fs.existsSync(nodePath)){fs.copyFileSync(process.execPath,nodePath,fs.constants.COPYFILE_EXCL);fs.chmodSync(nodePath,0o755)}
+ assertExecutorResourceFile(nodePath,nodeHash,'VERIFIER_NODE_BINDING_INVALID')
+ const id=randomUUID(),root='/tmp/aqc-verification-'+id,group='/sys/fs/cgroup/aqc-verify-'+id,caseRoot=root+'/case'
+ let groupCreated=false,child,deadline,abortListener,stopped=false,portHits=0,socketHits=0,timedOut=false,cancelled=false,data='',overflow=false,observerFailed=false,started=false,primaryFailure
+ const unix=createServer(s=>{socketHits++;s.destroy()}),tcp=createServer(s=>{portHits++;s.destroy()})
+ const kill=()=>{if(groupCreated)try{fs.writeFileSync(group+'/cgroup.kill','1')}catch{}}
+ try{
+  require(!fs.existsSync(root)&&!fs.existsSync(group),'VERIFIER_PATH_EXISTS')
+  fs.mkdirSync(root,{mode:0o755});fs.chmodSync(root,0o755);fs.mkdirSync(caseRoot,{mode:0o755});fs.chmodSync(caseRoot,0o755)
+  for(const [relative,content]of Object.entries(b.files)){
+   require(safePath(relative)&&typeof content==='string'&&Buffer.byteLength(content)<=1048576,'VERIFIER_BUNDLE_LIMIT')
+   const file=path.join(caseRoot,relative);fs.mkdirSync(path.dirname(file),{recursive:true,mode:0o755});fs.writeFileSync(file,content,{flag:'wx',mode:0o444})
+  }
+  const meta={primary:b.primary,files:Object.fromEntries(Object.entries(b.files).map(([p,s])=>[p,hash(s)]))}
+  fs.writeFileSync(caseRoot+'/meta.json',JSON.stringify(meta),{flag:'wx',mode:0o444})
+  fs.writeFileSync(caseRoot+'/runner.mjs','('+verificationChild.toString()+')();\n',{flag:'wx',mode:0o444})
+  fs.mkdirSync(root+'/outside',{mode:0o777});fs.chmodSync(root+'/outside',0o777)
+  fs.writeFileSync(root+'/outside/read.txt','synthetic verifier canary',{mode:0o644})
+  const socketPath=root+'/outside/socket'
+  await new Promise((resolve,reject)=>{unix.once('error',reject);unix.listen(socketPath,resolve)});fs.chmodSync(socketPath,0o666)
+  await new Promise((resolve,reject)=>{tcp.once('error',reject);tcp.listen(0,'127.0.0.1',resolve)})
+  require(fs.readFileSync('/sys/fs/cgroup/cgroup.controllers','utf8').includes('memory'),'CGROUP_V2_REQUIRED')
+  fs.mkdirSync(group);groupCreated=true
+  fs.writeFileSync(group+'/memory.max','268435456');fs.writeFileSync(group+'/memory.swap.max','0')
+  fs.writeFileSync(group+'/pids.max','32');fs.writeFileSync(group+'/cpu.max','100000 100000')
+  const seal=dir=>{for(const name of fs.readdirSync(dir)){const f=path.join(dir,name);if(fs.lstatSync(f).isDirectory())seal(f);else fs.chmodSync(f,0o444)}fs.chmodSync(dir,0o755)};seal(caseRoot);fs.chmodSync(root+'/outside/read.txt',0o644)
+  const plan=verificationIsolationPlan({root,group,nodePath})
+  require(!signal?.aborted,'VERIFIER_CANCELLED')
+  child=spawn(plan.file,plan.args,{cwd:caseRoot,env:rootEnvironment,stdio:['pipe','ignore','ignore','pipe']})
+  child.stdin.on('error',()=>{})
+  child.stdio[3].on('data',chunk=>{data+=chunk.toString('utf8');if(!started&&data.startsWith('AQC_CASE_READY\n')){started=true;data=data.slice(15);try{if(typeof observeIsolation==='function')require(observeIsolation({phase:'VERIFIER_STARTED',cgroup:group,root})===undefined,'VERIFIER_OBSERVER_INVALID')}catch{observerFailed=true;kill()}}if(Buffer.byteLength(data)>32768){overflow=true;data='';kill()}})
+  abortListener=()=>{cancelled=true;kill()};signal?.addEventListener('abort',abortListener,{once:true});if(signal?.aborted)abortListener()
+  deadline=setTimeout(()=>{timedOut=true;kill()},2000);deadline.unref()
+  child.stdin.end(JSON.stringify({version,repairClass,args,sourceSha256:b.sourceSha256[version],outsideRead:root+'/outside/read.txt',
+   outsideWrite:root+'/outside/write.txt',socketPath,blockedPort:tcp.address().port}))
+  const exit=await new Promise((resolve,reject)=>{child.once('error',reject);child.once('close',resolve)})
+  clearTimeout(deadline);kill()
+  for(let i=0;i<50;i++){if(/populated 0/.test(fs.readFileSync(group+'/cgroup.events','utf8'))){stopped=true;break}await wait(100)}
+  require(stopped,'VERIFIER_TERMINATION_UNCONFIRMED')
+  require(portHits===0&&socketHits===0&&!fs.existsSync(root+'/outside/write.txt')
+   &&fs.readFileSync(root+'/outside/read.txt','utf8')==='synthetic verifier canary','VERIFIER_ISOLATION_FAILED')
+  if(cancelled||signal?.aborted)fail('VERIFIER_CANCELLED')
+  require(!observerFailed,'VERIFIER_OBSERVER_INVALID')
+  if(typeof diagnostics==='function')diagnostics({exitCode:exit,timedOut,started,overflow})
+  if(timedOut||exit!==0||overflow||!started)return Object.freeze({status:'FAILED',sourceSha256:b.sourceSha256[version],reason:timedOut?'TIMEOUT':'EXECUTION_FAILED'})
+  require(Date.parse(b.expiresAt)>Date.now(),'VERIFIER_CASE_BINDING_INVALID')
+  let result;try{result=JSON.parse(data)}catch{fail('VERIFIER_PROTOCOL_INVALID')}
+  require(Object.keys(result).sort().join(',')===['status','sourceSha256','output','isolation'].sort().join(',')
+   &&result.status==='COMPLETE'&&result.isolation==='PASS'&&result.sourceSha256===b.sourceSha256[version],'VERIFIER_PROTOCOL_INVALID')
+  documentDigest(result.output)
+  return Object.freeze({status:'COMPLETE',sourceSha256:result.sourceSha256,output:result.output})
+ }catch(error){primaryFailure=error;throw error}finally{
+  clearTimeout(deadline);if(abortListener)signal?.removeEventListener('abort',abortListener);kill()
+  await Promise.all([unix.listening?new Promise(resolve=>unix.close(resolve)):Promise.resolve(),tcp.listening?new Promise(resolve=>tcp.close(resolve)):Promise.resolve()])
+  if(groupCreated)for(let i=0;i<50;i++){if(/populated 0/.test(fs.readFileSync(group+'/cgroup.events','utf8'))){stopped=true;break}await wait(100)}
+  if(!child||stopped){if(groupCreated)fs.rmdirSync(group);fs.rmSync(root,{recursive:true,force:true})}
+  else{const error=Object.assign(Error('Verifier termination unconfirmed'),{code:'VERIFIER_TERMINATION_UNCONFIRMED'});if(primaryFailure)primaryFailure.cleanup={code:error.code};else throw error}
  }
 }
