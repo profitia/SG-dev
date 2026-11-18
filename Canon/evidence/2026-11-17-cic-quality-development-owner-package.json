@@ -1081,7 +1081,8 @@
         "fail": 0,
         "skipped": 0
       },
-      "completeRepeat": "IN_PROGRESS"
+      "completeRepeat": "PASS_345_OF_345_ZERO_FAILURE_SKIP",
+      "qualifiedControllerBlob": "6a22fe9b9c70a18b83fc7783286d23201d49864a"
     },
     "exactSourceAndResultingMainCiRequired": true,
     "currentTrustedMainCannotExecuteUnadmittedPolicyCandidate": true,
@@ -1092,7 +1093,9 @@
     "promotionEnabled": false,
     "pilotStarted": false,
     "frozenSpecificationSha256": "ee6b3f36dd63ca3c3343de8b38fee431de49f67b895b17434b39ce332539b881",
-    "stage2Authorised": false
+    "stage2Authorised": false,
+    "policyProposalPr": 1197,
+    "preservedDocumentationMain": "037c15fdc3c4edce163a3811e2e7e7e6b0b7435b"
   },
   "ownerScopeHistoryRecheck20261118": {
     "initialProposalSha": "4a5d16fbd4fa276f3f54d4c029ab36c797e9a548",
