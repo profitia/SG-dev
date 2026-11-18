@@ -1,4 +1,5 @@
-import {recurringSourceFilesystem} from '../../../architecture-lab/private-recurring-source.mjs'
+import {recurringSourcePredecessor} from '../../../architecture-lab/private-recurring-source.mjs'
+import {acceptedSdkSource,sdkContinuationPredecessor} from '../../../../packages/platform-contracts/test/organisation-sdk-compatibility.mjs'
 import {assertMarketHistoryHostContinuation} from '../../scripts/xray-style-acceptance.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
@@ -6,7 +7,10 @@ import {readFileSync} from 'node:fs'
 import {execFileSync} from 'node:child_process'
 import {createHash} from 'node:crypto'
 import {rootAtomicClaimSchemaDigest,rootAtomicClaimSourceDigest,ROOT_ATOMIC_CLAIM_CONTRACT} from '@profitia/platform-root-atomic-claim'
-const recurringView=recurringSourceFilesystem(new URL('../../../../',import.meta.url)),recurring=recurringView.manifest,reservation=recurringView.reservation?.manifest
+const sdkContinuationRoot=new URL('../../../../',import.meta.url),sdkContinuationCurrent=(p:string)=>readFileSync(new URL(p,sdkContinuationRoot)),sdkContinuationHistory=(sha:string,p:string)=>execFileSync('git',['show',sha+':'+p],{cwd:sdkContinuationRoot})
+const organisationSourceView=sdkContinuationPredecessor(JSON.parse(sdkContinuationCurrent('apps/srm/operation-integration.json').toString('utf8')),sdkContinuationCurrent,sdkContinuationHistory,{projectKey:'SRM'})
+const recurring=recurringSourcePredecessor(organisationSourceView?.previousBytes??sdkContinuationCurrent,sdkContinuationHistory)?.manifest
+const reservation=recurringSourcePredecessor(sdkContinuationCurrent,sdkContinuationHistory)?.reservation?.manifest
 import currentRoot from '../../deployment/root-atomic-claim-targets.json'
 const root=JSON.parse(execFileSync('git',['show','36b07672f572ff7c1c81117e3f3b01fa93ec1e65:apps/srm/deployment/root-atomic-claim-targets.json'],{encoding:'utf8'})) as typeof currentRoot
 import native from '../../deployment/supplier-native-targets.json'
@@ -40,10 +44,9 @@ test('optional Root claim target pins the exact producer and existing main Devel
  const receipt=JSON.parse(readFileSync(new URL('../../operation-integration.json',import.meta.url),'utf8'))
  // Current Oil acceptance is checked separately; retain the complete M1
  // receipt for historical validation instead of comparing it to new bytes.
- assert.equal(currentRoot.sourceDigest,recurring?.optionalPackageDigests.rootAtomicClaimSourceDigest??(receipt.oilAutonomousReportCompatibility??receipt.assistantM1SourceCompatibility).optionalPackageDigests.rootAtomicClaimSourceDigest)
- // The original deployment target remains historical; the authenticated source
- // continuation separately binds the installed successor without activation.
- assert.equal(recurringView.knowledge?.manifest.optionalPackageDigests.rootAtomicClaimSourceDigest??reservation?.optionalPackageDigests.rootAtomicClaimSourceDigest??currentRoot.sourceDigest,await rootAtomicClaimSourceDigest())
+ const currentSdk=acceptedSdkSource()
+ assert.equal(currentRoot.sourceDigest,currentSdk.platformVersion==='1.38.0'?currentSdk.optionalPackageDigests.rootAtomicClaimSourceDigest:recurring?.optionalPackageDigests.rootAtomicClaimSourceDigest??(receipt.oilAutonomousReportCompatibility??receipt.assistantM1SourceCompatibility).optionalPackageDigests.rootAtomicClaimSourceDigest)
+ assert.equal(acceptedSdkSource().optionalPackageDigests.rootAtomicClaimSourceDigest,await rootAtomicClaimSourceDigest())
  const {sourceDigest,...currentMetadata}=currentRoot;const {sourceDigest:previousDigest,...previousMetadata}=root;assert.deepEqual(currentMetadata,previousMetadata)
  assert.equal(root.producerPullRequest,854);assert.equal(root.producerSourceRef,'3a494b5432555935168c060be5950589d550d276')
  for(const key of ['environment','serviceId','projectId','branchId','databaseName'] as const)assert.equal(root[key],native[key])
@@ -51,6 +54,17 @@ test('optional Root claim target pins the exact producer and existing main Devel
  assert.equal(root.activationVariable,'PROFITIA_ROOT_ATOMIC_CLAIM_ENABLED');assert.equal(root.enabledByDefault,false)
  assert.equal(root.formalSourceAcceptanceRequired,true);assert.equal(root.cloudInstallationRequiresSeparateApproval,true)
 })
+test('current SDK receiver refuses replacing its producer pin with the immutable historical Root target',()=>{
+ const target='apps/srm/deployment/root-atomic-claim-targets.json'
+ const currentSdk=acceptedSdkSource()
+ assert.equal(currentSdk.platformVersion,'1.38.0')
+ assert.notEqual(currentRoot.sourceDigest,root.sourceDigest)
+ const receipt=JSON.parse(sdkContinuationCurrent('apps/srm/operation-integration.json').toString('utf8'))
+ assert.throws(()=>sdkContinuationPredecessor(receipt,
+  (file:string)=>file===target?sdkContinuationHistory('36b07672f572ff7c1c81117e3f3b01fa93ec1e65',file):sdkContinuationCurrent(file),
+  sdkContinuationHistory,{projectKey:'SRM'}),/current SDK source apps\/srm\/deployment\/root-atomic-claim-targets\.json/)
+})
+
 test('ordinary READY and FRESH configuration remains unchanged until an explicit server-side opt-in',()=>{
  const f=fixture(),before=f.read()
  assert.equal(before.rootAtomicClaimSchemaDigest,undefined)
@@ -120,5 +134,5 @@ test('Root claim adoption preserves every prior receipt and pins only the review
  assert.equal(pkg.dependencies['@profitia/platform-root-atomic-claim'],'file:../../packages/platform-contracts/root-atomic-claim')
  const dependencies={...pkg.dependencies};delete dependencies['@profitia/platform-root-atomic-claim']
  assert.deepEqual(dependencies,previousPackage.dependencies)
- assert.equal(JSON.parse(readFileSync(new URL('../../node_modules/@profitia/platform-contracts/package.json',import.meta.url),'utf8')).version,recurring?.platformVersion??complete.sourceHubMarketSymbolCompatibility?.platformVersion??complete.sourceHubApiPathCompatibility?.platformVersion??'1.32.3')
+ assert.equal(JSON.parse(readFileSync(new URL('../../node_modules/@profitia/platform-contracts/package.json',import.meta.url),'utf8')).version,acceptedSdkSource().platformVersion??organisationSourceView?.lifecycle?.currentRecord.platformVersion??recurring?.platformVersion??complete.sourceHubMarketSymbolCompatibility?.platformVersion??complete.sourceHubApiPathCompatibility?.platformVersion??'1.32.3')
 })

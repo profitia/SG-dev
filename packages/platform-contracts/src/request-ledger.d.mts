@@ -15,7 +15,7 @@ export interface RequestReceipt {readonly requestId:string;readonly status:'ACCE
 export type RequestReservation = Readonly<{status:'NEW';requestId:string;policyId:string;policyVersion:string;transactionId:string}>
   | Readonly<{status:'REPLAY';requestId:string;policyId:string;policyVersion:string;transactionId:string;value:RequestReceipt}>
 export declare function validRequestIdempotencyKey(value:unknown):value is string
-export declare function createRequestLedger(options:{binding:AccessStoreBinding;schemaDigest:string;now?:()=>number;locationAdmission?:import('./supplier-location.mjs').SupplierLocationAdmissionOptions}&({operation?:'forecast.request';externalSchemaDigest?:never;operationSchemaDigest?:never;locationSchemaDigest?:never;quotaSchemaDigest?:never}|{operation:'supplier.report.refresh';externalSchemaDigest:string;operationSchemaDigest?:never;locationSchemaDigest?:never;quotaSchemaDigest?:string}|{operation:'supplier.private.refresh';externalSchemaDigest:string;operationSchemaDigest:string;locationSchemaDigest?:never;quotaSchemaDigest?:string}|{operation:'benchmark.discovery.request';externalSchemaDigest:string;operationSchemaDigest:string;locationSchemaDigest?:never;quotaSchemaDigest?:never}|{operation:import('./request-operations.mjs').LocationRequestOperation;externalSchemaDigest:string;operationSchemaDigest:string;locationSchemaDigest:string;quotaSchemaDigest?:never})):Readonly<{
+export declare function createRequestLedger(options:{binding:AccessStoreBinding;schemaDigest:string;now?:()=>number;locationAdmission?:import('./supplier-location.mjs').SupplierLocationAdmissionOptions}&({operation?:'forecast.request';externalSchemaDigest?:never;operationSchemaDigest?:never;locationSchemaDigest?:never;quotaSchemaDigest?:never}|{operation:'supplier.report.refresh';externalSchemaDigest:string;operationSchemaDigest?:never;locationSchemaDigest?:never;quotaSchemaDigest?:string}|{operation:'supplier.private.refresh';externalSchemaDigest:string;operationSchemaDigest:string;locationSchemaDigest?:never;quotaSchemaDigest?:string}|{operation:'benchmark.discovery.request';externalSchemaDigest:string;operationSchemaDigest:string;locationSchemaDigest?:never;quotaSchemaDigest?:never;benchmarkQuotaSchemaDigest?:string}|{operation:import('./request-operations.mjs').LocationRequestOperation;externalSchemaDigest:string;operationSchemaDigest:string;locationSchemaDigest:string;quotaSchemaDigest?:never})):Readonly<{
   contract:typeof REQUEST_LEDGER_CONTRACT
   loadPolicy(query:AccessQuery,input:{actor:Readonly<Actor>;request:Readonly<BoundRequest>;resource?:Readonly<import('./operation-context.mjs').Resource>}):Promise<Readonly<RequestPolicy>>
   reserve(query:AccessQuery,policy:Readonly<RequestPolicy>,context:Readonly<OperationContext>):Promise<RequestReservation>
@@ -28,3 +28,6 @@ export declare function externalRequestSchemaDigest():Promise<string>
 
 export declare const requestQuotaSchemaUrl:string
 export declare function requestQuotaSchemaDigest():Promise<string>
+
+export declare const benchmarkRequestQuotaSchemaUrl:string
+export declare function benchmarkRequestQuotaSchemaDigest():Promise<string>

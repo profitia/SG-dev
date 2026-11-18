@@ -1,3 +1,4 @@
+import {bindSg2RequestRuntime} from '@/lib/platform/organisation-context'
 import { type NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import type { Prisma } from '@prisma/client';
@@ -59,7 +60,7 @@ export function createOperationBenchmarkPreviewHandler(executor: OperationExecut
 export function createRuntimeBenchmarkPreviewHandler(resolveRuntime: () => Sg2SelectionRuntime = getSg2SelectionRuntime, legacy = createLegacyBenchmarkPreviewHandler()) {
     return async (request: NextRequest): Promise<NextResponse> => {
         try {
-            const runtime = resolveRuntime();
+            const runtime=await bindSg2RequestRuntime(resolveRuntime(),request);
             if (runtime.provider === 'legacy_demo')
                 return await legacy(request);
             if (runtime.provider !== 'clerk' || !runtime.marketRead)
