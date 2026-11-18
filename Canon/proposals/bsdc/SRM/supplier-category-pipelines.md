@@ -1,7 +1,7 @@
 # Karta Projektu BSDC — Supplier & Category Pipelines
 
 > **Rewizja projektowa 2 — projekt rozwiązania i cała roadmapa E1–E2 zaakceptowane łącznie przez właściciela 2026-11-18.**
-> **OWNER_APPROVED — zamrożona baza: [f75529c](https://github.com/profitia/SG-dev/blob/f75529c590c5dd4611223c949e5956e34d101e22/Canon/proposals/bsdc/SRM/supplier-category-pipelines.md).** Niniejsza aktualizacja zapisuje decyzję i statusy, bez zmiany zaakceptowanego projektu ani warunków odbioru. **BRAK mandatu wykonawczego; E1 i E2 NIE_ROZPOCZĘTE.**
+> **OWNER_APPROVED — zamrożona baza: [f75529c](https://github.com/profitia/SG-dev/blob/f75529c590c5dd4611223c949e5956e34d101e22/Canon/proposals/bsdc/SRM/supplier-category-pipelines.md).** Aktualizacje publikacyjne dotyczą wyłącznie metadanych, statusów i punktu wznowienia; zaakceptowany projekt i warunki odbioru pozostają bez zmian. **BRAK mandatu wykonawczego; E1 i E2 NIE_ROZPOCZĘTE.**
 > Jedna inicjatywa → jedna Karta z projektem, roadmapą, rejestrem i punktem wznowienia. Dokumentacja i dowody na GitHubie; bez lokalnych dokumentów na komputerze użytkownika.
 
 | Pole | Wartość |
@@ -13,8 +13,8 @@
 | Producent wspólnych kontraktów dostępu | ARCHITECTURE / Architecture Platform; wyłącznie własne powierzchnie, oddzielne taski |
 | Repozytorium authority / branch authority | profitia/SG-dev / main |
 | Jedyny plik Karty | Canon/proposals/bsdc/SRM/supplier-category-pipelines.md |
-| Gałąź robocza / przegląd | sg2/bsdc-srm-supplier-category-pipelines-20261117 / [PR #1123](https://github.com/profitia/SG-dev/pull/1123), Draft |
-| Status / gotowość przeglądu | OWNER_APPROVED / projekt i cała roadmapa zaakceptowane łącznie; baza zamrożona |
+| Publikacja / ścieżka przyjęcia | [Karta na authority main](https://github.com/profitia/SG-dev/blob/main/Canon/proposals/bsdc/SRM/supplier-category-pipelines.md) przez [PR #1123](https://github.com/profitia/SG-dev/pull/1123); gałąź sg2/bsdc-srm-supplier-category-pipelines-20261117 |
+| Status / publikacja | OWNER_APPROVED; **PUBLISHED dla rewizji przyjętej na main** przez PR #1123; przed scaleniem gałęzi PR: PUBLICATION_PENDING. Publikacja PDR nie aktywuje normatywnego kanonu ani produktu. |
 | Utworzono / aktualizacja | 2026-11-17 / 2026-11-18, Europe/Warsaw |
 | Zweryfikowany main discovery | f8a422fe88cc0a6166a6401c7238803ec5c44761 |
 | Odczytana poprzednia rewizja Karty | Commit 6bca96beddfc5f6129b079fa053cacb8ef90c6c7, blob 4d1baeb039884c9b618fce4fbf3fd92d84821e9b |
@@ -26,6 +26,7 @@
 | PMOS begin wznowienia | cmwkubpfb00003rd0mtq3an92; srm_pmos; pełny require-begin PASS |
 | Tożsamość czatu | hostConversationId niedostępny, jawne null w begin; nie wywnioskowano identyfikatora z katalogu |
 | taskId zapisu akceptacji / PMOS begin | SRM-BSDC-SCP-ACCEPTANCE-20261118 / cmwlos97u00008es52fzj1twi; wyłącznie dokumentacja |
+| taskId publikacji / PMOS begin | SRM-BSDC-SCP-PUBLICATION-20261118 / cmwm2edsf0000p5j78wv5o2rn; wyłącznie publikacja dokumentacji na main, bez E1/E2 |
 | Akceptacja rozwiązania i roadmapy | DEC-21, 2026-11-18, właściciel w bieżącym wątku (owner Karty: tomasz@profitia.pl); obie części łącznie; commit [f75529c590c5dd4611223c949e5956e34d101e22](https://github.com/profitia/SG-dev/blob/f75529c590c5dd4611223c949e5956e34d101e22/Canon/proposals/bsdc/SRM/supplier-category-pipelines.md), blob 31d655e4ce8ce2422ec39b54c054a313eb433d11 |
 
 **Znaczenie statusów checklisty:** USTALONE oznacza opisany i uzasadniony punkt projektu. Łączną akceptację projektu i całej roadmapy, obejmującą REC-01–08, dokumentuje DEC-21 względem dokładnej rewizji; F3 ma USTALONE. Wszystkie 29 kryteriów dotyczy kompletności BSDC. Nie oznacza to istniejącej implementacji, gotowego dostępu, instalacji schematu ani odbioru funkcji.
@@ -612,7 +613,13 @@ Kontrola przed publikacją rewizji projektowej 2 (2026-11-17): main 0adddc61c995
 
 Zaakceptowana rewizja projektowa 2: f75529c590c5dd4611223c949e5956e34d101e22. Zapis akceptacji 2026-11-18: task SRM-BSDC-SCP-ACCEPTANCE-20261118; PMOS begin cmwlos97u00008es52fzj1twi; conversationId pmos-task-v2:a36fb1c929ff2d0527288c0ea2fbe5229ecfe387326b39b7d93286d0d6de46cd; host niedostępny, jawne null. Kontrola przed mutacją: main d4bc54fddd1118d6e3050ba64e5ed41054e093d9, manifest 81 aktywnych dokumentów oraz project/repository/target/code state/routing/runtime i require-begin PASS.
 
-Aktualizacja dotyczy wyłącznie decyzji, statusów i punktu wznowienia w jednym PDR oraz metadanych istniejącego PR #1123. PMOS/PHR są rozliczeniem **zadania dokumentacyjnego**, nie wykonaniem E1. Bieżąca historia pliku i PR wskazują commit zapisu akceptacji; ten commit nie zastępuje zamrożonej bazy f75529c590c5dd4611223c949e5956e34d101e22. Nie wstawia się do treści samoodnoszącego się, wyliczonego z góry commitu. PR pozostaje Draft; nie dokonano merge ani aktywacji.
+Aktualizacja dotyczy wyłącznie decyzji, statusów i punktu wznowienia w jednym PDR oraz metadanych istniejącego PR #1123. PMOS/PHR są rozliczeniem **zadania dokumentacyjnego**, nie wykonaniem E1. Zapis akceptacji jest odtwarzalny z commitu [092045191f960f63170d38c8ef7085c97ef85fee](https://github.com/profitia/SG-dev/blob/092045191f960f63170d38c8ef7085c97ef85fee/Canon/proposals/bsdc/SRM/supplier-category-pipelines.md); nie zastępuje zamrożonej bazy f75529c590c5dd4611223c949e5956e34d101e22. W tamtym zadaniu PR pozostawał Draft, bez merge ani aktywacji.
+
+**Publikacja dokumentacji — zlecenie 2026-11-18:** właściciel osobno upoważnił do wymaganych kontroli, oznaczenia PR #1123 jako gotowego do przeglądu i ręcznego scalenia po spełnieniu warunków przyjęcia. Mandat obejmuje wyłącznie publikację tej samej Karty na main, metadane/statusy/punkt wznowienia oraz dokumentacyjny closeout. Nie obejmuje E1, E2 ani pracy w MagicPath.
+
+Task publikacji: SRM-BSDC-SCP-PUBLICATION-20261118; PMOS begin cmwm2edsf0000p5j78wv5o2rn; conversationId pmos-task-v2:1447a3c129a676074d2b1aaa0ff8f6cfa7d5c14f985e91b51acd3dc9b7dbfe48; host niedostępny, jawne null. Manifest, projekt, repozytorium, środowisko, code state, routing, runtime i require-begin PASS na main 5f3f91beaa6c32d9528c3c6d3e233808540d1532. Transport SRM/policy wymaga manifest/routing/require-begin, CI dokładnego PR head i wynikowego main. Publikacja jest skuteczna po MERGED PR #1123, pozytywnych wymaganych kontrolach i niezależnym odczycie Karty z main; sam zapis gałęzi nie wystarcza.
+
+Rzeczywisty commit scalenia i kontrole są wskazane w [PR #1123](https://github.com/profitia/SG-dev/pull/1123), historii main oraz profilowym closeout PMOS/PHR zadania publikacji. Nie wstawia się do Karty samoodnoszącego się, wyliczonego z góry commitu ani nie deklaruje wyniku kontroli przed jego otrzymaniem. Publikacja PDR nie aktywuje normatywnego kanonu, kontraktu, uprawnień ani produktu.
 
 ## 8. Łączna akceptacja, freeze i punkt wznowienia
 
@@ -632,12 +639,12 @@ F3 ma USTALONE z dowodem decyzji względem konkretnej rewizji. Projekt i bazowy 
 
 ### 8.2. Punkt wznowienia
 
-- Najnowsza centralna Karta: ten sam plik/gałąź w PR #1123. Przed wznowieniem odczytać aktualny GitHub, SHA/blob, decyzję właściciela i rejestr. Nie tworzyć drugiej Karty. Aktualny commit statusowy nie zastępuje bazy merytorycznej f75529c590c5dd4611223c949e5956e34d101e22.
-- Gdzie skończono: zapisano łączną akceptację rewizji projektowej 2 i całej roadmapy; §1–5 oraz REC-01–08 przyjęte bez zmiany treści projektu i DoD.
+- Najnowsza centralna Karta po publikacji: [ten sam plik na main](https://github.com/profitia/SG-dev/blob/main/Canon/proposals/bsdc/SRM/supplier-category-pipelines.md); przyjęcie przez PR #1123. Przed wznowieniem odczytać aktualny GitHub, SHA/blob, decyzję właściciela i rejestr. Nie tworzyć drugiej Karty. Commit publikacji/statusów nie zastępuje bazy merytorycznej f75529c590c5dd4611223c949e5956e34d101e22.
+- Gdzie skończono: łączna akceptacja rewizji projektowej 2 i całej roadmapy pozostaje zapisana jako DEC-21; bieżący mandat dotyczy publikacji dokumentacyjnej przez PR #1123. Jej ukończenie potwierdzają MERGED, kontrole dokładnego head i wynikowego main, odczyt pliku z main oraz dokumentacyjny closeout. §1–6, w tym projekt, roadmapa, rejestr etapów, REC-01–08 i DEC-21, pozostają bez zmian.
 - Stan checklisty: A–F USTALONE, wszystkie 29/29 kryteriów BSDC; nie jest to odbiór działającej funkcji.
 - Ostatnia przyjęta decyzja: DEC-21, 2026-11-18, owner Karty tomasz@profitia.pl, akceptacja obu części w rewizji f75529c590c5dd4611223c949e5956e34d101e22 i jawne polecenie nieuruchamiania etapów.
 - Aktywny mandat wykonawczy produktu / ostatni wykonany etap: BRAK. E1 i E2 oraz wszystkie ich taski NIE_ROZPOCZĘTE.
-- Następny krok: **oczekiwać na osobne, wyraźne polecenie właściciela**, np. „URUCHOM ETAP E1”. Do tego czasu nie rozpoczynać tasków ani przygotowań wykonawczych E1/E2.
+- Następny krok po publikacji: **wspólne zaprojektowanie w MagicPath brakujących zdarzeń, interakcji i stanów ekranów — wyłącznie na podstawie osobnego zlecenia właściciela**. Bieżący mandat nie uruchamia tej pracy ani E1/E2. Start któregokolwiek etapu i jego przygotowań wykonawczych nadal wymaga osobnej, wyraźnej dyspozycji właściciela.
 - Dopiero po osobnym zleceniu E1: prowadzić dopuszczone E1-T01–T05 z własnymi taskId i profilami. Nowe wspólne operacje w ARCHITECTURE mają osobny task/PMOS/PHR. Po rozliczeniu E1 STOP; SG2 zachowuje własny lifecycle przy osobno zleconym E2.
 - Stosować aktywny Business Outcome Engineering v1.1, Universal Project Execution v1.2, Full Autopilot v2.0 oraz aktualne AGENTS/manifest/profil/routing/środowisko w granicach faktycznie udzielonego mandatu. Nie kopiować procedur ani poświadczeń między projektami.
 - Karta jest jedynym planem i rejestrem inicjatywy; PMOS/PHR pozostają dowodami. Dokumentów i dowodów nie przechowywać lokalnie na komputerze użytkownika.
