@@ -2163,6 +2163,11 @@
         "sha": "c6fd6b3608a2cd4e5d170737b660076871359c0d",
         "mode": "100644",
         "kind": "SDK_COMPATIBILITY_REGRESSION"
+      },
+      "apps/architecture-lab/benchmark-unmetered-source.json": {
+        "sha": "4c165bf726fdd3196e158603cb12c43f4ecde890",
+        "mode": "100644",
+        "kind": "HISTORICAL_EVIDENCE"
       }
     },
     "localPackages": {
