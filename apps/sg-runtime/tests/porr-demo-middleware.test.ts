@@ -1,3 +1,5 @@
+import {assistantReservationPredecessor} from '../../../packages/platform-contracts/test/assistant-reservation-source.mjs'
+import {ASSISTANT_RESERVATION_SOURCE_SHA} from '../../architecture-lab/private-recurring-source.mjs'
 import {readM2AcceptedSource} from './assistant-m2-source-view.mjs'
 import assert from 'node:assert/strict'
 import test, { before } from 'node:test'
@@ -106,7 +108,8 @@ test('Procurement Insights opens its adopted neutral shell in both locales while
 
 test('PI shell source continuation preserves original receipts and rejects source or authority tampering',async()=>{
  const {readFileSync}=await import('node:fs'),{execFileSync}=await import('node:child_process'),root=new URL('../../../',import.meta.url)
- const current=(p:string)=>readFileSync(new URL(p,root)),historical=(sha:string,p:string)=>execFileSync('git',['show',sha+':'+p],{cwd:root})
+ const physical=(p:string)=>readFileSync(new URL(p,root)),historical=(sha:string,p:string)=>execFileSync('git',['show',sha+':'+p],{cwd:root})
+ const reservation=assistantReservationPredecessor(physical,historical,ASSISTANT_RESERVATION_SOURCE_SHA),current=reservation?.previousBytes??physical
  const view=procurementInsightsShellPredecessor(current,historical);assert(view)
  // Exercise the actual accepted continuation closure, rather than the superseded four-file shell.
  for(const p of Object.keys(view.manifest.sourceDigests))assert.throws(()=>procurementInsightsShellPredecessor(f=>f===p?Buffer.concat([current(f),Buffer.from('UNACCEPTED')]):current(f),historical),p)
