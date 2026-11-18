@@ -48,7 +48,8 @@ const rejection = fn => assert.throws(fn)
 // The complete physical Calendar graph is authenticated before historical PK/ACG tests.
 // Their original assertions use the complete immutable accepted input; current
 // Calendar source/proof checks remain in controlled-package-ci-path-coverage.
-const calendarAcceptedInput=createCalendarAcceptedMainTestFixture(path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..'))
+const currentAuthorityRoot=path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
+const calendarAcceptedInput=createCalendarAcceptedMainTestFixture(currentAuthorityRoot)
 test.after(()=>calendarAcceptedInput.close())
 const authorityRoot=calendarAcceptedInput.root
 const legacyRecurringFixture = await createAcgLegacyRecurringFixture(authorityRoot)
@@ -827,7 +828,7 @@ test('Architecture Git checkout rejects symlink source even when API blob SHA ma
 test('all new trusted routing inputs invalidate the policy fingerprint; no candidate source is executed to hash them', () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-policy-fingerprint-'))
   try {
-    for (const name of CONTROL_POLICY_FILES) {fs.mkdirSync(path.dirname(path.join(root, name)), {recursive: true}); fs.copyFileSync(path.join(authorityRoot, name), path.join(root, name))}
+    for (const name of CONTROL_POLICY_FILES) {fs.mkdirSync(path.dirname(path.join(root, name)), {recursive: true}); fs.copyFileSync(path.join(currentAuthorityRoot, name), path.join(root, name))}
     const before = controlPolicyDigest(root)
     for (const name of CONTROL_POLICY_FILES) {const file = path.join(root, name), original = fs.readFileSync(file); fs.appendFileSync(file, '\n'); assert.notEqual(controlPolicyDigest(root), before, name); fs.writeFileSync(file, original)}
   } finally {fs.rmSync(root, {recursive: true, force: true})}
@@ -3500,8 +3501,8 @@ test('exact PR1102 source validation reaches the real candidate guard without cl
   git(authorityRoot,'clone','--quiet','--shared','--no-checkout',authorityRoot,control);
   git(control,'checkout','--quiet','--detach',baseSha);
   git(control,'remote','set-url','origin','https://github.com/profitia/SG-dev');
-  for(const file of CONTROL_POLICY_FILES){const target=path.join(control,file);fs.mkdirSync(path.dirname(target),{recursive:true});fs.copyFileSync(path.join(authorityRoot,file),target);}
-  for(const file of CONTROL_POLICY_FILES)assert.deepEqual(fs.readFileSync(path.join(control,file)),fs.readFileSync(path.join(authorityRoot,file)));
+  for(const file of CONTROL_POLICY_FILES){const target=path.join(control,file);fs.mkdirSync(path.dirname(target),{recursive:true});fs.copyFileSync(path.join(currentAuthorityRoot,file),target);}
+  for(const file of CONTROL_POLICY_FILES)assert.deepEqual(fs.readFileSync(path.join(control,file)),fs.readFileSync(path.join(currentAuthorityRoot,file)));
   git(control,'add','--',...CONTROL_POLICY_FILES);
   git(control,'-c','user.name=Isolated fixture','-c','user.email=fixture@example.invalid','commit','--quiet','--allow-empty','-m','SYNTHETIC_ONLY current controller and immutable historical dependency context');
   const controlSha=git(control,'rev-parse','HEAD');
