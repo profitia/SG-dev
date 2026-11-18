@@ -3389,8 +3389,8 @@ test('quality Stage1 resolution fences the exact internal SG2 candidate and auth
 // runs while its source, modes, routes, receipts and history are authenticated.
 test('Calendar complete CI repair keeps original reviews and authenticates the fixed combined owner inputs as data',async()=>{
  const c=await import('./controlled-package-ci.mjs'),r=c.ECR_COMPLETE_FUNCTIONAL_CI_REPAIR;
- assert.equal(Object.keys(r.entries).length,74);
- for(const[p,e]of Object.entries(c.ECR_COMPLETE_FUNCTIONAL_REVIEW.entries))if(p!==c.ECR_COMPLETE_FUNCTIONAL_PROVENANCE.helper)assert.deepEqual(p==='apps/architecture-lab/market-calendar-source.mjs'?{...r.entries[p],sha:r.previous[p].blob}:r.entries[p],e);
+ assert.equal(Object.keys(r.entries).length,75);
+ for(const[p,e]of Object.entries(c.ECR_COMPLETE_FUNCTIONAL_REVIEW.entries))if(p!==c.ECR_COMPLETE_FUNCTIONAL_PROVENANCE.helper)assert.deepEqual(['apps/architecture-lab/market-calendar-source.mjs','scripts/governance/platform-source-hub-foundation.test.mjs'].includes(p)?{...r.entries[p],sha:r.previous[p].blob}:r.entries[p],e);
  assert.equal(r.entries['apps/architecture-lab/market-calendar-source.mjs'].sha,'c764168fa7d99e0320d1365cd813c01949f58623');
  for(const[p,e]of Object.entries(c.ECR_COMPLETE_FUNCTIONAL_CONSUMER_REVIEW.entries))assert.deepEqual(r.entries[p],e);
  const current=p=>execFileSync('git',(r.entries[p]?['cat-file','blob',r.entries[p].sha]:['show',r.sourceSha+':'+p]),{cwd:authorityRoot,stdio:['ignore','pipe','pipe']});
@@ -3858,3 +3858,21 @@ test('CI24 exact CIC and accepted editorial F composition authenticates every so
  const legacy=c.qualityTrustedPredecessor(current,historical)
  assert.deepEqual(legacy.previousBytes('apps/sg-runtime/package-lock.json'),historical('6b22adbf7fb19d35a66c9ba637383a02224db136','apps/sg-runtime/package-lock.json'))
 })
+
+// Full-source authentication precedes independent main-ledger manifest validation.
+test('Calendar BSDC composition preserves accepted helper and authenticates each manifest successor',async()=>{
+ const c=await import('./controlled-package-ci.mjs'),r=c.ECR_COMPLETE_FUNCTIONAL_CI_REPAIR,b=c.BSDC_MANIFEST_CONTINUITY,cache=new Map();
+ const historical=(sha,p)=>{const k=sha+':'+p;if(!cache.has(k))cache.set(k,execFileSync('git',['cat-file','blob',k],{cwd:authorityRoot,stdio:['ignore','pipe','pipe']}));return Buffer.from(cache.get(k))};
+ const current=p=>r.entries[p]?execFileSync('git',['cat-file','blob',r.entries[p].sha],{cwd:authorityRoot,stdio:['ignore','pipe','pipe']}):historical(r.sourceSha,p);
+ const prior=c.completeFunctionalTrustedPredecessor(current,historical);
+ assert.equal(createHash('sha256').update(prior(b.helperPath)).digest('hex'),b.helperSha256);
+ const view=c.bsdcManifestContinuityTrustedCurrent(prior,historical);
+ assert.deepEqual(view(b.manifestPath),historical(b.baseSha,b.manifestPath));
+ assert.deepEqual(view(b.helperPath),historical(b.baseSha,b.helperPath));
+ const changed=p=>p===b.manifestPath?Buffer.concat([current(p),Buffer.from(' ')]):current(p);
+ assert.throws(()=>c.bsdcManifestContinuityTrustedCurrent(c.completeFunctionalTrustedPredecessor(changed,historical),historical));
+ const broken=(sha,p)=>sha==='59204603e6f41c97e0d27c36ffcc94ca6186d88e'&&p===b.helperPath?Buffer.concat([historical(sha,p),Buffer.from(' drift')]):historical(sha,p);
+ assert.throws(()=>c.completeFunctionalTrustedPredecessor(current,broken)(b.helperPath),/ECR_COMPLETE_FUNCTIONAL_BSDC_HISTORY_REJECTED/);
+ const target='scripts/governance/platform-source-hub-foundation.test.mjs';
+ assert.throws(()=>c.completeFunctionalTrustedPredecessor(p=>p===target?Buffer.concat([current(p),Buffer.from(' drift')]):current(p),historical));
+});
