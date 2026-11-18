@@ -1,0 +1,163 @@
+{
+  "scope": "PRIVATE_DIAGNOSIS_AND_ORIGINAL_PUBLIC_FAILURE_REFERENCES",
+  "originalRun": 44382232260,
+  "originalJob": 135077347443,
+  "originalCandidate": "3d275ff6457607270e1ea0b77e60dacf61013f84",
+  "originalControl": "608efe22d4a994d4cdbfcddc111c0dfd4732d698",
+  "originalRunConclusion": "failure",
+  "failedStep": "Validate candidate files without executing candidate code",
+  "installAndCandidateExecution": "SKIPPED",
+  "controlledProofArtifact": "ABSENT",
+  "ordinaryArtifactsAreNotControlledProof": [
+    14464153354,
+    14463223711
+  ],
+  "diagnostics": {
+    "owner1161-r6-policy1206-exact-shallow-diagnostic.json": {
+      "scope": "DIAGNOSTIC_ONLY_NO_CANONICAL_PROOF",
+      "candidate": "3d275ff6457607270e1ea0b77e60dacf61013f84",
+      "control": "608efe22d4a994d4cdbfcddc111c0dfd4732d698",
+      "steps": [
+        {
+          "name": "assertCompleteFunctionalProvenance",
+          "result": "PASS"
+        },
+        {
+          "name": "assertPrivateRecurringProvenance",
+          "result": "PASS"
+        },
+        {
+          "name": "registrationLifecycleCanonicalRead",
+          "result": "PASS"
+        },
+        {
+          "name": "assertLocalPackageSources",
+          "result": "FAIL",
+          "message": "Command failed: git show 03eb7c82853ecac617544d81abc61e1350af383b:apps/sg-runtime/operation-integration.json",
+          "stack": "Error: Command failed: git show 03eb7c82853ecac617544d81abc61e1350af383b:apps/sg-runtime/operation-integration.json\n    at genericNodeError (node:internal/errors:986:15)\n    at wrappedFn (node:internal/errors:540:14)\n    at checkExecSyncError (node:child_process:943:11)\n    at execFileSync (node:child_process:979:15)\n    at file:///tmp/calendar-r6-trusted608-shallow-diagnostic-20261118/scripts/governance/controlled-package-ci.mjs:6780:269\n    at knowledgeStage2TrustedPredecessor (file:///tmp/calendar-r6-trusted608-shallow-diagnostic-20261118/scripts/governance/controlled-package-ci.mjs:6619:139)\n    at knowledgeStage2LegacyPredecessor (file:///tmp/calendar-r6-trusted608-shallow-diagnostic-20261118/scripts/governance/controlled-package-ci.mjs:6773:10)\n    at knowledgeStage2Filesystem (file:///tmp/calendar-r6-trusted608-shallow-diagnostic-20261118/scripts/governance/controlled-package-ci.mjs:6780:222)\n    at Module.assertLocalPackageSources (file:///tmp/calendar-r6-trusted608-shallow-diagnostic-20261118/scripts/governance/controlled-package-ci.mjs:8176:137)\n    at file:///home/vscode/[eval1]:3:314"
+        }
+      ]
+    },
+    "owner1161-r6-policy1206-original3d-history-only-diagnostic.json": {
+      "scope": "DIAGNOSTIC_ONLY_NO_CANONICAL_PROOF",
+      "candidateSha": "3d275ff6457607270e1ea0b77e60dacf61013f84",
+      "controlSha": "608efe22d4a994d4cdbfcddc111c0dfd4732d698",
+      "fix": "AUTHENTIC_GIT_HISTORY_ONLY",
+      "result": "PASS",
+      "contractMatches": true
+    },
+    "owner1161-r6-ci-history-joint-full-result.json": {
+      "kind": "PRIVATE_JOINT_VALIDATION_NOT_CANONICAL_CI",
+      "sha": "cdf406726e9209a40416da12a8d461cad5aa6a93",
+      "policy": "3f381ac13a5c57aa45d4cc139cd89292793d776c",
+      "source": "76937d89dded7a4b23d46e048495282cdce153fc",
+      "approvedSource": "3b078cf760901c810acd27618f781e027e0d6af5",
+      "source83PostimagesUnchanged": true,
+      "policy3PostimagesUnchanged": true,
+      "command": [
+        "node",
+        "--test",
+        "--test-concurrency=2",
+        "scripts/governance/assistant-quality-routing.test.mjs",
+        "scripts/governance/controlled-package-ci-path-coverage.test.mjs",
+        "scripts/governance/controlled-package-ci.test.mjs",
+        "scripts/governance/development-bridge.test.mjs",
+        "scripts/governance/development-execution.test.mjs",
+        "scripts/governance/development-workspace.test.mjs",
+        "scripts/governance/ecr-routing.test.mjs",
+        "scripts/governance/finder-unmetered-ci-admission.test.mjs",
+        "scripts/governance/governance.test.mjs",
+        "scripts/governance/identity-runtime-onboarding.test.mjs",
+        "scripts/governance/krs-registry-routing.test.mjs",
+        "scripts/governance/package-limits-routing.test.mjs",
+        "scripts/governance/platform-knowledge-ci-admission.test.mjs",
+        "scripts/governance/platform-knowledge-routing.test.mjs",
+        "scripts/governance/platform-source-hub-foundation.test.mjs",
+        "scripts/governance/sg2-staging-release.test.mjs",
+        "scripts/governance/srm-adp-routing.test.mjs",
+        "scripts/governance/srm-release-lifecycle.test.mjs"
+      ],
+      "startedAt": "2026-11-18T20:14:48.976277+00:00",
+      "state": "FINISHED",
+      "restoreBranch": "architecture/calendar-r6-ci-history-recovery-proposal-20261118",
+      "finishedAt": "2026-11-18T20:25:15.879684+00:00",
+      "exit": 1,
+      "summary": [
+        "\u2139 tests 715",
+        "\u2139 pass 713",
+        "\u2139 fail 2",
+        "\u2139 skipped 0"
+      ],
+      "failures": [
+        "\u2716 all new trusted routing inputs invalidate the policy fingerprint; no candidate source is executed to hash them (4.676361ms)",
+        "\u2716 exact PR1102 source validation reaches the real candidate guard without claiming historical product acceptance (1776.406938ms)",
+        "\u2716 failing tests:",
+        "\u2716 all new trusted routing inputs invalidate the policy fingerprint; no candidate source is executed to hash them (4.676361ms)",
+        "\u2716 exact PR1102 source validation reaches the real candidate guard without claiming historical product acceptance (1776.406938ms)"
+      ],
+      "dirty": "",
+      "headAfter": "cdf406726e9209a40416da12a8d461cad5aa6a93"
+    },
+    "owner1161-r6-history-final-source-full-result.json": {
+      "kind": "PRIVATE_SOURCE_VALIDATION_NOT_CANONICAL_CI",
+      "sha": "e1728a034e40e0a7004cff7b61bbe79094b145a6",
+      "command": [
+        "node",
+        "--test",
+        "--test-concurrency=2",
+        "apps/architecture-lab/test/calendar-current-main-source.test.mjs",
+        "apps/architecture-lab/test/ecr-complete-functional-source.test.mjs",
+        "apps/architecture-lab/test/ecr-functional-ci-repair.test.mjs",
+        "apps/architecture-lab/test/knowledge-source.test.mjs",
+        "apps/architecture-lab/test/manifest-successor-continuity.test.mjs",
+        "apps/architecture-lab/test/market-calendar-source.test.mjs",
+        "apps/architecture-lab/test/payload-capture-publication.test.mjs",
+        "apps/architecture-lab/test/private-recurring-source.test.mjs",
+        "apps/architecture-lab/test/sdk-compatibility.test.mjs",
+        "apps/platform-source-hub/test/ci-routing.test.mjs",
+        "apps/platform-source-hub/test/historical-recurring-routing.test.mjs",
+        "apps/sg-runtime/tests/assistant-ecr-week-integrity.test.mjs",
+        "apps/sg-runtime/tests/assistant-notifications-integrity.test.mjs",
+        "apps/sg-runtime/tests/calendar-pi-source-compatibility.test.mjs",
+        "apps/sg-runtime/tests/diagnostic-telemetry-adoption.test.mjs",
+        "apps/sg-runtime/tests/finder-monitor-source-integrity.test.mjs",
+        "apps/sg-runtime/tests/native-sql-roundtrips.test.mjs",
+        "apps/sg-runtime/tests/operation-context.test.mjs",
+        "apps/sg-runtime/tests/procurement-insights-editorial-integrity.test.mjs",
+        "apps/sg-runtime/tests/procurement-insights-editorial-package-integrity.test.mjs",
+        "apps/sg-runtime/tests/procurement-insights-live-acceptance-source.test.mjs",
+        "apps/sg-runtime/tests/xray-fresh-performance-adoption.test.mjs",
+        "packages/platform-contracts/test/private-operation-host.test.mjs",
+        "packages/platform-contracts/test/recurring-consent-transport.test.mjs",
+        "scripts/governance/platform-source-hub-foundation.test.mjs"
+      ],
+      "startedAt": "2026-11-18T20:31:20.911424+00:00",
+      "state": "FINISHED",
+      "exit": 1,
+      "finishedAt": "2026-11-18T20:34:54.716989+00:00",
+      "summary": [
+        "\u2139 tests 271",
+        "\u2139 pass 265",
+        "\u2139 fail 6",
+        "\u2139 skipped 0"
+      ],
+      "failures": [
+        "\u2716 packed optional capture uses one SDK1.34.0 with preserved 1.32.3 compatibility and strict readonly public types (7737.208609ms)",
+        "\u2716 diagnostic source adoption preserves complete history and verifies current producer/consumer bytes (22.203899ms)",
+        "\u2716 native SQL adoption preserves complete prior acceptance and pins the exact reviewed producer (21.721299ms)",
+        "\u2716 apps/sg-runtime/tests/operation-context.test.mjs (58.768741ms)",
+        "\u2716 apps/sg-runtime/tests/xray-fresh-performance-adoption.test.mjs (65.109516ms)",
+        "\u2716 packages/platform-contracts/test/recurring-consent-transport.test.mjs (58.592733ms)",
+        "\u2716 failing tests:",
+        "\u2716 packed optional capture uses one SDK1.34.0 with preserved 1.32.3 compatibility and strict readonly public types (7737.208609ms)",
+        "\u2716 diagnostic source adoption preserves complete history and verifies current producer/consumer bytes (22.203899ms)",
+        "\u2716 native SQL adoption preserves complete prior acceptance and pins the exact reviewed producer (21.721299ms)",
+        "\u2716 apps/sg-runtime/tests/operation-context.test.mjs (58.768741ms)",
+        "\u2716 apps/sg-runtime/tests/xray-fresh-performance-adoption.test.mjs (65.109516ms)",
+        "\u2716 packages/platform-contracts/test/recurring-consent-transport.test.mjs (58.592733ms)"
+      ],
+      "dirty": "",
+      "headAfter": "e1728a034e40e0a7004cff7b61bbe79094b145a6"
+    }
+  }
+}

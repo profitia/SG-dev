@@ -1,0 +1,78 @@
+diff --git a/apps/architecture-lab/calendar-current-main-source.json b/apps/architecture-lab/calendar-current-main-source.json
+index a5f3dbd..4bcbc90 100644
+--- a/apps/architecture-lab/calendar-current-main-source.json
++++ b/apps/architecture-lab/calendar-current-main-source.json
+@@ -580,7 +580,7 @@
+     "packages/platform-source-hub-contracts/package.json": "f72f71d5e0e3e0d7992e612f55d410de66dc03f0b27d25b51ca20fcd173c2969",
+     "packages/platform-source-hub-contracts/semantic-continuous-acceptance-v1.json": "f63364c997dacdb779da861685a93faa27d7b8bca84a75c6d277c9c188ccea76",
+     "packages/platform-source-hub-contracts/source-access-continuity-acceptance-v1.json": "c99323c6690d488992c445eff4e1c26fe48d81ede267b6f5f2ad4df208768540",
+-    "scripts/governance/controlled-package-ci.test.mjs": "94abb2ccd420cccf618fab7aa7b6f698399aa8f99179b8ef8fbf6a6f90c75189",
++    "scripts/governance/controlled-package-ci.test.mjs": "419aa1e9f6b69000967b7b47032304e63039395846fa326ebca8cbc0c9a9c504",
+     "scripts/governance/governance.test.mjs": "ef28078504fda6d844f63b5dd3d7687465f37b3d16064dff581ae392765909da",
+     "scripts/governance/platform-source-hub-foundation.test.mjs": "065ce5dc7d7718e14ecfe6779670728687305950a52f56f1f9a0f046728df479"
+   },
+@@ -1084,7 +1084,7 @@
+           "previousSha256": "25c3e24580bf399fd270fa3cb870708d7553bd6ba9a7af3cfbe812d4de4dab93"
+         },
+         "scripts/governance/controlled-package-ci.test.mjs": {
+-          "currentSha256": "94abb2ccd420cccf618fab7aa7b6f698399aa8f99179b8ef8fbf6a6f90c75189",
++          "currentSha256": "419aa1e9f6b69000967b7b47032304e63039395846fa326ebca8cbc0c9a9c504",
+           "previousSha256": "9d5ba43d3522921b179dff3552dedd7255bbfaa533baf5fb36ea12455ae0831d"
+         },
+         "scripts/governance/governance.test.mjs": {
+@@ -1325,7 +1325,7 @@
+           "previousSha256": "9d381bc7ae98c480e1ee1bfdbdaa062225c28bb44634822933ef934724f791a7"
+         },
+         "scripts/governance/controlled-package-ci.test.mjs": {
+-          "currentSha256": "94abb2ccd420cccf618fab7aa7b6f698399aa8f99179b8ef8fbf6a6f90c75189",
++          "currentSha256": "419aa1e9f6b69000967b7b47032304e63039395846fa326ebca8cbc0c9a9c504",
+           "previousSha256": "0142eb57b511bef865e3f7231b82c8678e0390604ac656be8e72dbe05c7e5443"
+         },
+         "scripts/governance/platform-source-hub-foundation.test.mjs": {
+diff --git a/apps/architecture-lab/calendar-current-main-source.mjs b/apps/architecture-lab/calendar-current-main-source.mjs
+index ebd87c0..aadba8c 100644
+--- a/apps/architecture-lab/calendar-current-main-source.mjs
++++ b/apps/architecture-lab/calendar-current-main-source.mjs
+@@ -7,7 +7,7 @@ import os from 'node:os'
+ import {fileURLToPath} from 'node:url'
+ import {execFileSync} from 'node:child_process'
+ export const CALENDAR_CURRENT_MAIN_RECORD='apps/architecture-lab/calendar-current-main-source.json'
+-export const CALENDAR_CURRENT_MAIN_RECORD_SHA256='2da0eae2b9c705a74902e3a8c830d9d6b49c0e88356ce4f07a1ecb4a384357c0'
++export const CALENDAR_CURRENT_MAIN_RECORD_SHA256='fd19db8d1ce630401a84c57f08c83884869ad4b8a6c0250feb729e9a194c3c35'
+ const hash=bytes=>createHash('sha256').update(bytes).digest('hex')
+ const absent=(error,historical)=>{
+  if(error?.code==='ENOENT')return true
+diff --git a/scripts/governance/controlled-package-ci.test.mjs b/scripts/governance/controlled-package-ci.test.mjs
+index 978005d..e161f86 100644
+--- a/scripts/governance/controlled-package-ci.test.mjs
++++ b/scripts/governance/controlled-package-ci.test.mjs
+@@ -48,7 +48,8 @@ const rejection = fn => assert.throws(fn)
+ // The complete physical Calendar graph is authenticated before historical PK/ACG tests.
+ // Their original assertions use the complete immutable accepted input; current
+ // Calendar source/proof checks remain in controlled-package-ci-path-coverage.
+-const calendarAcceptedInput=createCalendarAcceptedMainTestFixture(path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..'))
++const currentAuthorityRoot=path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
++const calendarAcceptedInput=createCalendarAcceptedMainTestFixture(currentAuthorityRoot)
+ test.after(()=>calendarAcceptedInput.close())
+ const authorityRoot=calendarAcceptedInput.root
+ const legacyRecurringFixture = await createAcgLegacyRecurringFixture(authorityRoot)
+@@ -827,7 +828,7 @@ test('Architecture Git checkout rejects symlink source even when API blob SHA ma
+ test('all new trusted routing inputs invalidate the policy fingerprint; no candidate source is executed to hash them', () => {
+   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'architecture-policy-fingerprint-'))
+   try {
+-    for (const name of CONTROL_POLICY_FILES) {fs.mkdirSync(path.dirname(path.join(root, name)), {recursive: true}); fs.copyFileSync(path.join(authorityRoot, name), path.join(root, name))}
++    for (const name of CONTROL_POLICY_FILES) {fs.mkdirSync(path.dirname(path.join(root, name)), {recursive: true}); fs.copyFileSync(path.join(currentAuthorityRoot, name), path.join(root, name))}
+     const before = controlPolicyDigest(root)
+     for (const name of CONTROL_POLICY_FILES) {const file = path.join(root, name), original = fs.readFileSync(file); fs.appendFileSync(file, '\n'); assert.notEqual(controlPolicyDigest(root), before, name); fs.writeFileSync(file, original)}
+   } finally {fs.rmSync(root, {recursive: true, force: true})}
+@@ -3500,8 +3501,8 @@ test('exact PR1102 source validation reaches the real candidate guard without cl
+   git(authorityRoot,'clone','--quiet','--shared','--no-checkout',authorityRoot,control);
+   git(control,'checkout','--quiet','--detach',baseSha);
+   git(control,'remote','set-url','origin','https://github.com/profitia/SG-dev');
+-  for(const file of CONTROL_POLICY_FILES){const target=path.join(control,file);fs.mkdirSync(path.dirname(target),{recursive:true});fs.copyFileSync(path.join(authorityRoot,file),target);}
+-  for(const file of CONTROL_POLICY_FILES)assert.deepEqual(fs.readFileSync(path.join(control,file)),fs.readFileSync(path.join(authorityRoot,file)));
++  for(const file of CONTROL_POLICY_FILES){const target=path.join(control,file);fs.mkdirSync(path.dirname(target),{recursive:true});fs.copyFileSync(path.join(currentAuthorityRoot,file),target);}
++  for(const file of CONTROL_POLICY_FILES)assert.deepEqual(fs.readFileSync(path.join(control,file)),fs.readFileSync(path.join(currentAuthorityRoot,file)));
+   git(control,'add','--',...CONTROL_POLICY_FILES);
+   git(control,'-c','user.name=Isolated fixture','-c','user.email=fixture@example.invalid','commit','--quiet','--allow-empty','-m','SYNTHETIC_ONLY current controller and immutable historical dependency context');
+   const controlSha=git(control,'rev-parse','HEAD');

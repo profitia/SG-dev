@@ -1,0 +1,1200 @@
+{
+  "status": "INACTIVE_OWNER_DECISION_PROPOSALS",
+  "source": "e1728a034e40e0a7004cff7b61bbe79094b145a6",
+  "policy": "44c3517fb79b61371ece06802ba33c35de4c0bff",
+  "base": "c4965a445867601275cbb75dc4de993123414ba2",
+  "previousApprovedSource": "3b078cf760901c810acd27618f781e027e0d6af5",
+  "unchangedSourcePostimages": 80,
+  "changedSourcePostimages": [
+    "apps/architecture-lab/calendar-current-main-source.json",
+    "apps/architecture-lab/calendar-current-main-source.mjs",
+    "scripts/governance/controlled-package-ci.test.mjs"
+  ],
+  "bundleSha256": "007b7a97d88e7138e3cf2a8d90969c3f9757e2378d7736932091b1d8688656c2",
+  "sourceFiles": [
+    {
+      "path": "apps/architecture-lab/calendar-current-main-source.json",
+      "mode": "100644",
+      "blob": "4bcbc90d008c328fa89f394b5ec6635d61358cda",
+      "sha256": "fd19db8d1ce630401a84c57f08c83884869ad4b8a6c0250feb729e9a194c3c35",
+      "status": "added",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-002"
+    },
+    {
+      "path": "apps/architecture-lab/calendar-current-main-source.mjs",
+      "mode": "100644",
+      "blob": "aadba8cfd1d5ec958c74d43066111835c4cd24d3",
+      "sha256": "1696eb7be3b751a2bf5333bc2d7157579959229d6d78ccc96ed09a4791b94043",
+      "status": "added",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-002"
+    },
+    {
+      "path": "apps/architecture-lab/ecr-complete-functional-source.mjs",
+      "mode": "100644",
+      "blob": "2394817d1ace058db2666e4e945f156c76fc77a3",
+      "sha256": "f52e42f32aab2775fdc87a2f0a8876631de6ff8559ba2f32c873b7f8517ab666",
+      "status": "added",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-002"
+    },
+    {
+      "path": "apps/architecture-lab/knowledge-source.mjs",
+      "mode": "100644",
+      "blob": "8c6b701d883ae872d3b1569d14dd2e188197fab7",
+      "sha256": "e18b45a2597cb1491e92d0fd7f9fa508847be110e7831a0ef759d4b3368db8ed",
+      "status": "modified",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-002"
+    },
+    {
+      "path": "apps/architecture-lab/market-calendar-source.mjs",
+      "mode": "100644",
+      "blob": "c764168fa7d99e0320d1365cd813c01949f58623",
+      "sha256": "a5bb86512718f31935cd4e023a664624641b615990e5d3318f671687bfde60e7",
+      "status": "modified",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-002"
+    },
+    {
+      "path": "apps/architecture-lab/private-recurring-source.mjs",
+      "mode": "100644",
+      "blob": "bf8b35e281ad622215b2269438d3b0b8281afaa5",
+      "sha256": "888925307888d70c99a61d865f2aaddb7cc98c1f2cd567e862b13267e5f8ae54",
+      "status": "modified",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-002"
+    },
+    {
+      "path": "apps/architecture-lab/test/calendar-current-main-source.test.mjs",
+      "mode": "100644",
+      "blob": "4d6717139f2eab8779134d5b8bda742de96742ea",
+      "sha256": "e7c3da394f49247014cd2b880eca12b06252bcc787fdba6330309fdf497a8ab7",
+      "status": "added",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-002"
+    },
+    {
+      "path": "apps/architecture-lab/test/ecr-complete-functional-source.test.mjs",
+      "mode": "100644",
+      "blob": "1d31c0e94ee5eec230131ef8c8e33330e453b484",
+      "sha256": "2adb0c1cd857c475a59e1f74dc6843d0b0172868c5389876b5dfd028e2c5cfbe",
+      "status": "added",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-002"
+    },
+    {
+      "path": "apps/architecture-lab/test/ecr-functional-ci-repair.test.mjs",
+      "mode": "100644",
+      "blob": "06b32171b75c47822d77c3498b1664feda7626f4",
+      "sha256": "b49301d95456e9fbf6e82108bad2915b2f5b038562a320633359a38e06206f31",
+      "status": "added",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-002"
+    },
+    {
+      "path": "apps/architecture-lab/test/knowledge-source.test.mjs",
+      "mode": "100644",
+      "blob": "cb7eb3f23afd5fd4865e9938cea471371ba3f5dc",
+      "sha256": "cd030f4a2f1f161c22cebf186e13cb33904c82c1d278c162901cac82b1c241e0",
+      "status": "modified",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-002"
+    },
+    {
+      "path": "apps/architecture-lab/test/manifest-successor-continuity.test.mjs",
+      "mode": "100644",
+      "blob": "91473144de47a7f78d2fbe9aa96d83d39906569e",
+      "sha256": "bffaf05a4355581f5ca2d430ff06d1624a794d2890ecafc3679cb3f55a91363f",
+      "status": "modified",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-002"
+    },
+    {
+      "path": "apps/economic-calendar-runtime/complete-functional-source-integration.json",
+      "mode": "100644",
+      "blob": "c5dffc09a77debddd10a069b2d9a4408d22255c7",
+      "sha256": "b6ccb6cd489f5931c45968be781156374faef490592852f07059738ce9f25118",
+      "status": "added",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ECR-BASE-001"
+    },
+    {
+      "path": "apps/economic-calendar-runtime/migrations/004-notifications.sql",
+      "mode": "100644",
+      "blob": "0fa29943213774125c09ead3fc17e48351a41ac3",
+      "sha256": "a4e906882a95700b1711ae4bf032a7762348b3fdfde83f18991e7c05f633ee74",
+      "status": "added",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ECR-BASE-001"
+    },
+    {
+      "path": "apps/economic-calendar-runtime/migrations/005-expanded-results.sql",
+      "mode": "100644",
+      "blob": "f82e77f832b8c65c2f403041509d43c323fb98b1",
+      "sha256": "8f57d75fcade1e464ed4c337c76de6350c7a672fc8cd6d9f13052fb0c26d05d8",
+      "status": "added",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ECR-BASE-001"
+    },
+    {
+      "path": "apps/economic-calendar-runtime/operations/complete-functional-owner-plan.json",
+      "mode": "100644",
+      "blob": "730efd39075c8b29d3962b58729a4096b4e48594",
+      "sha256": "e43b5d49abef12818956f2195f0b11225fa4aef28d4fb1f2895900f8d721be9c",
+      "status": "added",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ECR-BASE-001"
+    },
+    {
+      "path": "apps/economic-calendar-runtime/operations/expanded-semantic-bootstrap.json",
+      "mode": "100644",
+      "blob": "2ee1f04174f229b1d6d129aa179b88de8604e115",
+      "sha256": "ca7bf3046850011ee3aa050059b3630ed6d380c0d40009d72afd44de504a289a",
+      "status": "added",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ECR-BASE-001"
+    },
+    {
+      "path": "apps/economic-calendar-runtime/package-lock.json",
+      "mode": "100644",
+      "blob": "0923b13384ef6497dfe7e93164ff2779180f5478",
+      "sha256": "a7508ba650b248c06bec9ef50cadac50c7c9c916408a4c1df94ae5e771f3e478",
+      "status": "modified",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ECR-BASE-001"
+    },
+    {
+      "path": "apps/economic-calendar-runtime/package.json",
+      "mode": "100644",
+      "blob": "4a624714e84c91d73fd3818995723bf8ec60032f",
+      "sha256": "bdfcd5ec3a210399e148adb3a76966837a8b2ab724e1732aebe29721c3fb2d05",
+      "status": "modified",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ECR-BASE-001"
+    },
+    {
+      "path": "apps/economic-calendar-runtime/scripts/continuous.mjs",
+      "mode": "100644",
+      "blob": "7c5441e89b606054e1c103c5aa3adf42188235db",
+      "sha256": "a808f2901bfa094c65fba163f2f0c8ecaac72591993de3daacaa771c6cca4429",
+      "status": "modified",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ECR-BASE-001"
+    },
+    {
+      "path": "apps/economic-calendar-runtime/scripts/migrate.mjs",
+      "mode": "100644",
+      "blob": "0d5d8f4d2519143c83a8fb650edca8d99d1a3e1d",
+      "sha256": "fa4a464a165b6d9a99928f2fdac46b7b0598559dc670fa2ccf23938c49642304",
+      "status": "modified",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ECR-BASE-001"
+    },
+    {
+      "path": "apps/economic-calendar-runtime/src/continuous.mjs",
+      "mode": "100644",
+      "blob": "a34fcf8b48ef7a9c01384fcc8bd97bf836015491",
+      "sha256": "02d1eeb0600003410534fd10846d1031b35f03f6f6e2257c75bcaf7694580a5d",
+      "status": "modified",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ECR-BASE-001"
+    },
+    {
+      "path": "apps/economic-calendar-runtime/src/notification-settings.mjs",
+      "mode": "100644",
+      "blob": "36d3c75fb6cc1eea6018a0904b71d672ef6ad7e6",
+      "sha256": "5ac013bd27c93b996b913cd2f23af3f5e900282d0aca88a95f87a086aab3e4da",
+      "status": "added",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ECR-BASE-001"
+    },
+    {
+      "path": "apps/economic-calendar-runtime/src/repository.mjs",
+      "mode": "100644",
+      "blob": "359b7fe043ad52082007c7496243f884c5ad3f00",
+      "sha256": "843285649956eaa46bd0c1696309c6d4b72604783c737edfa94c5b3b8ff2a45f",
+      "status": "modified",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ECR-BASE-001"
+    },
+    {
+      "path": "apps/economic-calendar-runtime/src/result-links.mjs",
+      "mode": "100644",
+      "blob": "52127a5876a41b7e311e0cf1cdc3744e7086c599",
+      "sha256": "c6df252064f7d40aae8781e60b9aff05c1658011b59286fe7d11e72d759f5d72",
+      "status": "modified",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ECR-BASE-001"
+    },
+    {
+      "path": "apps/economic-calendar-runtime/src/result-scope.mjs",
+      "mode": "100644",
+      "blob": "929eec0fed4a0b745171d4e956f84cd50f94d560",
+      "sha256": "73b5663d18899f26884eab3f7e7dac2e0cd370ea32a27107ea6abefd456cba4a",
+      "status": "added",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ECR-BASE-001"
+    },
+    {
+      "path": "apps/economic-calendar-runtime/src/results.mjs",
+      "mode": "100644",
+      "blob": "0aacc0992c6c33903a3f342d1f35ce3ca13e93a8",
+      "sha256": "8b6b88c6b0ce04f7aaa9fc4a23de6ab400a3dd24f21e014824e55b68045e6333",
+      "status": "modified",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ECR-BASE-001"
+    },
+    {
+      "path": "apps/economic-calendar-runtime/src/server.mjs",
+      "mode": "100644",
+      "blob": "890c7d6663809885fc1c77e1aedcc27a2735ee25",
+      "sha256": "c1b651c1ca6ede3ce01dca4671bc316b628194ce43f9e6cb7727117384c1ab72",
+      "status": "modified",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ECR-BASE-001"
+    },
+    {
+      "path": "apps/economic-calendar-runtime/src/source-service.mjs",
+      "mode": "100644",
+      "blob": "4328bc18c9b2859a11f010027a11977ed138731b",
+      "sha256": "7b432bcfa731ad9f9b177322552c4e7925fb80526db82f35595106fbfaa831fa",
+      "status": "modified",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ECR-BASE-001"
+    },
+    {
+      "path": "apps/economic-calendar-runtime/test/expanded-results.test.mjs",
+      "mode": "100644",
+      "blob": "31d5542649789ab60e6c4278098087430634f241",
+      "sha256": "652e3fdb7f4a86e4eb91742e2a9849580b1613a12d5166b609ee99c5c241115a",
+      "status": "added",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ECR-BASE-001"
+    },
+    {
+      "path": "apps/economic-calendar-runtime/test/notification-storage.test.mjs",
+      "mode": "100644",
+      "blob": "2e4a5cb872c4f411b79aedaba7e1c9c75e178469",
+      "sha256": "f63391d96768d0370297d83a28a4811125c4cc144796073a1fa66d16f82eeed6",
+      "status": "added",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ECR-BASE-001"
+    },
+    {
+      "path": "apps/identity-runtime/src/calendar-email.ts",
+      "mode": "100644",
+      "blob": "69304f52b88c552df6e6a06c39aa0a7dd22483b6",
+      "sha256": "c6cbb7eb86fc824e5444ac5e9a84baa4ff4dd47533732750caea583202617310",
+      "status": "added",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "IDENTITY-BASE-001"
+    },
+    {
+      "path": "apps/identity-runtime/src/calendar-mailgun-webhook.ts",
+      "mode": "100644",
+      "blob": "516ab9cf2402c9ed9606eefa852ae1431b3d7c35",
+      "sha256": "ffef5b1e84991abcca515ffded323fc9b8f14ed108763cbc27ade7b441d8a269",
+      "status": "added",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "IDENTITY-BASE-001"
+    },
+    {
+      "path": "apps/identity-runtime/src/http-handler.ts",
+      "mode": "100644",
+      "blob": "18a33db6423b6fb3c84770171c877141c71c639f",
+      "sha256": "1a8f671a60932df95a09753d1acc4c1b8acfc0b927970624bda8152bd1c695fd",
+      "status": "modified",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "IDENTITY-BASE-001"
+    },
+    {
+      "path": "apps/identity-runtime/src/mailgun-delivery.ts",
+      "mode": "100644",
+      "blob": "50ffe026e5e8b8abece8f247c662b3f93cfc3adc",
+      "sha256": "5abcbe61d70bd2256111e580c71a5f6b96aa8a7eb337e3081f75185a7818cb1b",
+      "status": "modified",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "IDENTITY-BASE-001"
+    },
+    {
+      "path": "apps/identity-runtime/src/main.ts",
+      "mode": "100644",
+      "blob": "77c5f2f5114ab487893fd44bb81508bd19f519db",
+      "sha256": "08ff149a355290fa93a9fff52473c0d19e027c5c2a0ffe88f688d42dcef31305",
+      "status": "modified",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "IDENTITY-BASE-001"
+    },
+    {
+      "path": "apps/identity-runtime/src/node-server.ts",
+      "mode": "100644",
+      "blob": "707ad973a9ae5853091268adbeccbe2849fa2507",
+      "sha256": "493ec8c15be29b1920e3ff1fb948d3c9c98f61680b9997b809c5de63caaaf632",
+      "status": "modified",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "IDENTITY-BASE-001"
+    },
+    {
+      "path": "apps/identity-runtime/test/calendar-authority-postgres.test.mjs",
+      "mode": "100644",
+      "blob": "254bd0bf5c6799ee47bdaac8205e3ccb59288211",
+      "sha256": "586faf8f878e02e5ff990455d7cfcc5057891f61f4c7ff22702adc0d69264833",
+      "status": "added",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "IDENTITY-BASE-001"
+    },
+    {
+      "path": "apps/identity-runtime/test/calendar-email.test.mjs",
+      "mode": "100644",
+      "blob": "e58584f7add171dfbd69c3ad2ad2793e30250e77",
+      "sha256": "8a6f29e9978c5b3bef3b3ba7837e078f1699c9248d4bd634444388aef96d506b",
+      "status": "added",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "IDENTITY-BASE-001"
+    },
+    {
+      "path": "apps/identity-runtime/test/calendar-mailgun-webhook.test.mjs",
+      "mode": "100644",
+      "blob": "c9192365c900c381aea2c378133361ae2b9641f4",
+      "sha256": "7c18ea5eb0d09853a081edb783350ba65538654fd9e30724bbdce2e5307bd229",
+      "status": "added",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "IDENTITY-BASE-001"
+    },
+    {
+      "path": "apps/insights-runtime/package-lock.json",
+      "mode": "100644",
+      "blob": "42a7793ffb9e742cb2bb260ea66c4942cf47742e",
+      "sha256": "c05321193d39da3c4e58f7e37c0178ae9c60142644407085ab9badbe29c04c28",
+      "status": "modified",
+      "projectKey": "SG2",
+      "owner": "Insights Domain",
+      "surfaceId": "INSIGHTS-BASE-001"
+    },
+    {
+      "path": "apps/newsfeed-runtime/package-lock.json",
+      "mode": "100644",
+      "blob": "b1e0ef5cc27011930b4d4b61e208137e2f5a9f2b",
+      "sha256": "c17609c57aa3498fbcd7cdf53b46ad7ff8f2277fc11958de321ed54c9fbf8096",
+      "status": "modified",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "NEWSFEED-BASE-001"
+    },
+    {
+      "path": "apps/platform-source-hub/migrations/011-expanded-ecr-results.sql",
+      "mode": "100644",
+      "blob": "601acea1b2e34cd854adb3ead43edce149dfcbd4",
+      "sha256": "ddb153d529dfcab0db41d00bf051fb0d301ab0f432d80a51beb417aaf1916521",
+      "status": "added",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-001"
+    },
+    {
+      "path": "apps/platform-source-hub/migrations/012-calendar-transport-continuity.sql",
+      "mode": "100644",
+      "blob": "64105cd434163f0fc03ffbfb2c24f17f28624277",
+      "sha256": "056bc25c1cb45769645255aa17f8093308e77f257ee052ed452c4c07cb0b64d1",
+      "status": "added",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-001"
+    },
+    {
+      "path": "apps/platform-source-hub/operations/replace-ecr-calendar-transport.sql",
+      "mode": "100644",
+      "blob": "5507fd925085454ced622fabdb11089cfa080631",
+      "sha256": "d217e6fd46e03341e63f2c0e587c0c68fb4ee183c3b001c8d077f6e2e144adcd",
+      "status": "added",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-001"
+    },
+    {
+      "path": "apps/platform-source-hub/package-lock.json",
+      "mode": "100644",
+      "blob": "1cfed80c9759c497c5e37be3f5c07b86cbdb0843",
+      "sha256": "8ac52195d7a62ace2c34b7c9f684eb2fb5b921a56cab9e00fad4c82cac2771c3",
+      "status": "modified",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-001"
+    },
+    {
+      "path": "apps/platform-source-hub/scripts/ci-routing.mjs",
+      "mode": "100644",
+      "blob": "36bbbf508a29995c0c19ea7619ef834544fc3c03",
+      "sha256": "6184059990c6fd0ddc2cff9920b17b9c241d70915309009a5d1c3ddbff4d5053",
+      "status": "modified",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-001"
+    },
+    {
+      "path": "apps/platform-source-hub/scripts/migrate.mjs",
+      "mode": "100644",
+      "blob": "a890f358fa39d7fab3098ab7b604e430a9eb30ef",
+      "sha256": "1220a1cffc3a26cdfc64d263a1edbc0ff1a6009ca1499413db233d228a538e39",
+      "status": "modified",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-001"
+    },
+    {
+      "path": "apps/platform-source-hub/src/admission.mjs",
+      "mode": "100644",
+      "blob": "b8fcdb2e0965000389941fee6b2b1ef531ca1793",
+      "sha256": "61b50821e785f85112392119990c3ffaaf60f9a6d4e4dc3dda7ccd374bc87d4a",
+      "status": "modified",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-001"
+    },
+    {
+      "path": "apps/platform-source-hub/src/capabilities.mjs",
+      "mode": "100644",
+      "blob": "0fe22e4322937991581ce6f762cbbaa4c387bb6f",
+      "sha256": "161e9bdb5eebc31373de583f6cbc2cc7a915820eaebed9bfe7a10fe80ae56349",
+      "status": "modified",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-001"
+    },
+    {
+      "path": "apps/platform-source-hub/src/config.mjs",
+      "mode": "100644",
+      "blob": "a85fa3c852bf66fb1450d84c4d57d67af0c1525c",
+      "sha256": "c6fce5a6beb7e03432ae8dce1bcb1e5c16d8786c7ac8e0061997d480d81f4323",
+      "status": "modified",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-001"
+    },
+    {
+      "path": "apps/platform-source-hub/src/providers/eia-schedules.mjs",
+      "mode": "100644",
+      "blob": "1f979bcd2bdf44360476652b364da385dbdaa17c",
+      "sha256": "9f8fd9d979ac1c01e08db78e0a7f58fdde5ff297df8b3d0528400513ad6625ff",
+      "status": "modified",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-001"
+    },
+    {
+      "path": "apps/platform-source-hub/src/repository.mjs",
+      "mode": "100644",
+      "blob": "204175069756a8d38b5dcfb7833424560dbe6f0c",
+      "sha256": "b7fd53e1401f1322bbd705b40b6c431b6b0163b3d1202bb88d8f72671cea0c18",
+      "status": "modified",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-001"
+    },
+    {
+      "path": "apps/platform-source-hub/test/calendar-transport-continuity.test.mjs",
+      "mode": "100644",
+      "blob": "9e29ca9c5de10aa034815c7766701abea0e9f804",
+      "sha256": "c2fe21d3e992f8d025f804d89eff0d36582f33c06c78c1c41bd482d4c577a2f6",
+      "status": "added",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-001"
+    },
+    {
+      "path": "apps/platform-source-hub/test/expanded-eia-calendar.test.mjs",
+      "mode": "100644",
+      "blob": "61f5be1c91a51d4d0c3043b874fb132888dcb342",
+      "sha256": "1fa03c400e26d82d2d00c654af9ead8143876e628b5c4f2912d33b2ead08a33b",
+      "status": "added",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-001"
+    },
+    {
+      "path": "apps/platform-source-hub/test/historical-recurring-routing.test.mjs",
+      "mode": "100644",
+      "blob": "bb670410523b35072ce8596daa3e6b14ef4d11f6",
+      "sha256": "fe00b5419ee0886a76c414310fe0b7ae631ed55d66b113236c085a8918714f8e",
+      "status": "added",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-001"
+    },
+    {
+      "path": "apps/sg-runtime/components/procurement-insights/calendar-email-settings.tsx",
+      "mode": "100644",
+      "blob": "8b35768fc507a7a0ec914e96b00ac14f4396b9e6",
+      "sha256": "6295450f8d428efef8e89780dc40fc8584a22607000095df8213a5c9898c48ae",
+      "status": "added",
+      "projectKey": "SG2",
+      "owner": "SG Runtime",
+      "surfaceId": "SG2-BASE-001"
+    },
+    {
+      "path": "apps/sg-runtime/components/procurement-insights/market-calendar.tsx",
+      "mode": "100644",
+      "blob": "35b862e97b4e0d55d7331e0860c5d26e7ba1b02a",
+      "sha256": "f939f61217b0bf1bdef26d49e6728336ccf61f08bd51d194c638b773d2283b4a",
+      "status": "modified",
+      "projectKey": "SG2",
+      "owner": "SG Runtime",
+      "surfaceId": "SG2-BASE-001"
+    },
+    {
+      "path": "apps/sg-runtime/lib/market-calendar/client.ts",
+      "mode": "100644",
+      "blob": "8f69b91b2a74ce4b272ce5e8da1b9d0fa8f91d1f",
+      "sha256": "88ae1bcc8c5bad86f0b3bececf826f4d39b49f17530b910fcc90a384edcbb80d",
+      "status": "modified",
+      "projectKey": "SG2",
+      "owner": "SG Runtime",
+      "surfaceId": "SG2-BASE-001"
+    },
+    {
+      "path": "apps/sg-runtime/lib/market-calendar/runtime.ts",
+      "mode": "100644",
+      "blob": "66f905b14e590faeb665e111aad88da0a228eff3",
+      "sha256": "21171c0cd10e2b56afd7262fe25a7e7bbb5b94fcadb9cf9bd1ca6fd7dfc59598",
+      "status": "modified",
+      "projectKey": "SG2",
+      "owner": "SG Runtime",
+      "surfaceId": "SG2-BASE-001"
+    },
+    {
+      "path": "apps/sg-runtime/market-calendar-notifications-integration.json",
+      "mode": "100644",
+      "blob": "c1db738ee35a06b5fa71ff48f491a40818fd5cfe",
+      "sha256": "c595640b0e30b914cd6003795f63fd08c1afa99371c4bc2af0df7c74445804c1",
+      "status": "added",
+      "projectKey": "SG2",
+      "owner": "SG Runtime",
+      "surfaceId": "SG2-BASE-001"
+    },
+    {
+      "path": "apps/sg-runtime/package-lock.json",
+      "mode": "100644",
+      "blob": "712901cf3b91a2b62814da90134f62a908b8438a",
+      "sha256": "a4fd8313cb2da774dd6a725d5d977e886a1dcb2c2ab0ddc163868bd8d1b3d5ec",
+      "status": "modified",
+      "projectKey": "SG2",
+      "owner": "SG Runtime",
+      "surfaceId": "SG2-BASE-001"
+    },
+    {
+      "path": "apps/sg-runtime/tests/assistant-notifications-integrity.mjs",
+      "mode": "100644",
+      "blob": "725fa83f11be85491f6c02951e058defdbff471a",
+      "sha256": "64976c997b075f424d71dbf934a79f33b2d484564a1d28710d159a2eaf225180",
+      "status": "modified",
+      "projectKey": "SG2",
+      "owner": "SG Runtime",
+      "surfaceId": "SG2-BASE-001"
+    },
+    {
+      "path": "apps/sg-runtime/tests/calendar-pi-source-compatibility.mjs",
+      "mode": "100644",
+      "blob": "d5567c2c8853dc19cb6d04a08479a182655531bc",
+      "sha256": "824cb3009ba76f9399f288b0ff70e196beff0e61d1a6787d658ef38415ebf1d6",
+      "status": "added",
+      "projectKey": "SG2",
+      "owner": "SG Runtime",
+      "surfaceId": "SG2-BASE-001"
+    },
+    {
+      "path": "apps/sg-runtime/tests/calendar-pi-source-compatibility.test.mjs",
+      "mode": "100644",
+      "blob": "35caa9150ff6cc9a9327f05eda1560acea4d8a0d",
+      "sha256": "ae25ecb0134ca77d3a8176d9b9e7f28b37b5b14866586563364f2e61671d211f",
+      "status": "added",
+      "projectKey": "SG2",
+      "owner": "SG Runtime",
+      "surfaceId": "SG2-BASE-001"
+    },
+    {
+      "path": "apps/sg-runtime/tests/finder-monitor-source-integrity.test.mjs",
+      "mode": "100644",
+      "blob": "e9c49087230919908d1e8999f7a249b58792855f",
+      "sha256": "57969d3e2a7bb3b8b462d45d3b1c3a69644bd1e3f78ba8c732b329bf1e4143a9",
+      "status": "modified",
+      "projectKey": "SG2",
+      "owner": "SG Runtime",
+      "surfaceId": "SG2-BASE-001"
+    },
+    {
+      "path": "apps/sg-runtime/tests/market-calendar-notifications.test.tsx",
+      "mode": "100644",
+      "blob": "feaffbbd7fd1f41ae3abca3f782bae1b31fd5d52",
+      "sha256": "1cee5d6c55705db199ec944af9bba70f433b8cc571690d8b604522158cb5e9f3",
+      "status": "added",
+      "projectKey": "SG2",
+      "owner": "SG Runtime",
+      "surfaceId": "SG2-BASE-001"
+    },
+    {
+      "path": "apps/sg-runtime/tests/procurement-insights-editorial-integrity.test.mjs",
+      "mode": "100644",
+      "blob": "de4c9e523695d951aadf81b9b04f8667c5f4c7f6",
+      "sha256": "a52c23679e89db9b1b10f31aa7b723b2fcfcdd56891f17ed257ea6388c59b801",
+      "status": "modified",
+      "projectKey": "SG2",
+      "owner": "SG Runtime",
+      "surfaceId": "SG2-BASE-001"
+    },
+    {
+      "path": "apps/sg-runtime/tests/procurement-insights-editorial-package-integrity.mjs",
+      "mode": "100644",
+      "blob": "96e20f9e9c43df216a94b24ae04f286337c4e187",
+      "sha256": "f506c4ec565b2b754be735fbba0367c70c77e1475e0d6e74dbd52a59dec66659",
+      "status": "modified",
+      "projectKey": "SG2",
+      "owner": "SG Runtime",
+      "surfaceId": "SG2-BASE-001"
+    },
+    {
+      "path": "apps/sg-runtime/tests/procurement-insights-editorial-package-integrity.test.mjs",
+      "mode": "100644",
+      "blob": "aada441ba81dfcd0c008fe0328c3c18dfa4b784a",
+      "sha256": "ab3dba31eede662811f56acd359feba12733410967b6c04a603afac250a899ef",
+      "status": "modified",
+      "projectKey": "SG2",
+      "owner": "SG Runtime",
+      "surfaceId": "SG2-BASE-001"
+    },
+    {
+      "path": "apps/sg-runtime/tests/procurement-insights-live-acceptance-source.mjs",
+      "mode": "100644",
+      "blob": "232188f243ace9a962a9c55638a2ea610b6f41c4",
+      "sha256": "e0b97a9fc903eb3e9574d8fcb16085b5f0667029d80221ef4e81b65b4d58b2dc",
+      "status": "modified",
+      "projectKey": "SG2",
+      "owner": "SG Runtime",
+      "surfaceId": "SG2-BASE-001"
+    },
+    {
+      "path": "packages/economic-calendar-contracts/index.mjs",
+      "mode": "100644",
+      "blob": "791e8360cd438481a6cf0056d4cd404f82a7d811",
+      "sha256": "2c0c9374f15f818a8f11dc935592cad2b5da06f63f445ba82802e4f84038f6c1",
+      "status": "modified",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ECR-BASE-002"
+    },
+    {
+      "path": "packages/economic-calendar-contracts/notifications.d.mts",
+      "mode": "100644",
+      "blob": "caf3de86e2b559b545ddb8d985839a8a4d6f6e98",
+      "sha256": "e7ae9f8e6ac3fd60349c852f7b39b8eeec7b1fe675fae8a649d8724eafa40671",
+      "status": "added",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ECR-BASE-002"
+    },
+    {
+      "path": "packages/economic-calendar-contracts/notifications.mjs",
+      "mode": "100644",
+      "blob": "a91351ba7e3d093a2c880c6525e00d0ee0b965b2",
+      "sha256": "ea7fffe4e6f78d074e47b8690c577df9d876076cf189c2ef9e53c4dcc9c6bb6b",
+      "status": "added",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ECR-BASE-002"
+    },
+    {
+      "path": "packages/economic-calendar-contracts/package.json",
+      "mode": "100644",
+      "blob": "9a68460982f4e9e49cb2c639a5e8a79e041ead53",
+      "sha256": "5dfc7884dd64a22639e2f3939260e3aaf94a9d85e05322e0d0a129afb2c39b88",
+      "status": "modified",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ECR-BASE-002"
+    },
+    {
+      "path": "packages/platform-contracts/current-e1-authority/migrations/015-calendar-delivery.sql",
+      "mode": "100644",
+      "blob": "54c1403c4402408a0399e3ec0fd5140d332d1c76",
+      "sha256": "f561b9bcd369886d3db6210d3411e626ad64cd3d2a763a0e5d8f99afd066f68e",
+      "status": "added",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    {
+      "path": "packages/platform-contracts/test/recurring-consent-transport-source.mjs",
+      "mode": "100644",
+      "blob": "6bebcb9cfb56b7264fac2c20a2cedbfc8fb8fe82",
+      "sha256": "4e7b07f2dafee476ca3d0fcd08b25eab6a842256a5f6f96becfc0d54599160f4",
+      "status": "modified",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "ARCH-BASE-001"
+    },
+    {
+      "path": "packages/platform-source-hub-contracts/commodities-v1.d.mts",
+      "mode": "100644",
+      "blob": "fc9737c453b47b2ea57f197fc963d8c0bb6a5701",
+      "sha256": "9f00c5aa3259bb13ce4ad5cbaeb34a2290ce5aec76eb3feeae9697beb2803739",
+      "status": "modified",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-002"
+    },
+    {
+      "path": "packages/platform-source-hub-contracts/commodities-v1.mjs",
+      "mode": "100644",
+      "blob": "10f8e944a076b63ffa40dbff7f336c4c9a3acf07",
+      "sha256": "b14dc88d75098e95d8e98948396f626c91fcc443368383b3023a80f523142fa1",
+      "status": "modified",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-002"
+    },
+    {
+      "path": "packages/platform-source-hub-contracts/index.d.ts",
+      "mode": "100644",
+      "blob": "7eea21de54a9ba6acfcb6b518ba6ccabe7163db1",
+      "sha256": "48705dbdef36552d9df0cb313df2589b2fb28d66612b940f335fabb3ef6214cf",
+      "status": "modified",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-002"
+    },
+    {
+      "path": "packages/platform-source-hub-contracts/index.mjs",
+      "mode": "100644",
+      "blob": "ad75c498ea14ca7e71c97f1b9c96bb0d28763f17",
+      "sha256": "e7263c5d6a06e6387f82920ac355c06af20b5846dcec55908c3f803a84ffb93d",
+      "status": "modified",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-002"
+    },
+    {
+      "path": "packages/platform-source-hub-contracts/package.json",
+      "mode": "100644",
+      "blob": "2080f1d380f72af4f55c385acee20c453d58b4df",
+      "sha256": "f72f71d5e0e3e0d7992e612f55d410de66dc03f0b27d25b51ca20fcd173c2969",
+      "status": "modified",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Architecture Platform",
+      "surfaceId": "SOURCE-HUB-BASE-002"
+    },
+    {
+      "path": "scripts/governance/controlled-package-ci.test.mjs",
+      "mode": "100644",
+      "blob": "e161f869193bc49ffaad728ace9e7bd1c7c58e31",
+      "sha256": "419aa1e9f6b69000967b7b47032304e63039395846fa326ebca8cbc0c9a9c504",
+      "status": "modified",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Governance Source Layer",
+      "surfaceId": "SG2-BASE-020"
+    },
+    {
+      "path": "scripts/governance/platform-source-hub-foundation.test.mjs",
+      "mode": "100644",
+      "blob": "e4851175ab35b52b7414249f825c3098461b05fe",
+      "sha256": "065ce5dc7d7718e14ecfe6779670728687305950a52f56f1f9a0f046728df479",
+      "status": "modified",
+      "projectKey": "ARCHITECTURE",
+      "owner": "Governance Source Layer",
+      "surfaceId": "SG2-BASE-020"
+    }
+  ],
+  "policyFiles": [
+    {
+      "path": ".github/workflows/platform-contracts-ci.yml",
+      "mode": "100644",
+      "blob": "be88dadcc37e609f0b23d95a22239bd5fbb88e6a",
+      "sha256": "61b402ded4e114c53223af02200a53b63affaef3b25efdbe20b2838dee594c1f"
+    },
+    {
+      "path": "scripts/governance/controlled-package-ci-path-coverage.test.mjs",
+      "mode": "100644",
+      "blob": "8bac885860aec1f4217fb08bf0f11ad108b40257",
+      "sha256": "a97bb2c7321c881233f85cd9aa8994415e20a74eab9a298e28cd59ca72abb614"
+    },
+    {
+      "path": "scripts/governance/controlled-package-ci.mjs",
+      "mode": "100644",
+      "blob": "3f47d65d065ae0fd271216fa0bb13b629021993d",
+      "sha256": "5501dd3d64aa0d7b0a8b9ed3176cd1fd70e21728af9f816dab719d61f3a9e0fa"
+    }
+  ],
+  "generatedAt": "2026-11-18T20:44:28.444029+00:00",
+  "validationKind": "PRIVATE_REVIEW_EVIDENCE_NOT_ORIGINAL_CONTROLLED_CI",
+  "evidence": {
+    "records": {
+      "owner1161-r6-history-final-source-full-attempt2-result.json": {
+        "kind": "PRIVATE_SOURCE_VALIDATION_NOT_CANONICAL_CI",
+        "sha": "e1728a034e40e0a7004cff7b61bbe79094b145a6",
+        "command": [
+          "node",
+          "--test",
+          "--test-concurrency=2",
+          "apps/architecture-lab/test/calendar-current-main-source.test.mjs",
+          "apps/architecture-lab/test/ecr-complete-functional-source.test.mjs",
+          "apps/architecture-lab/test/ecr-functional-ci-repair.test.mjs",
+          "apps/architecture-lab/test/knowledge-source.test.mjs",
+          "apps/architecture-lab/test/manifest-successor-continuity.test.mjs",
+          "apps/architecture-lab/test/market-calendar-source.test.mjs",
+          "apps/architecture-lab/test/payload-capture-publication.test.mjs",
+          "apps/architecture-lab/test/private-recurring-source.test.mjs",
+          "apps/architecture-lab/test/sdk-compatibility.test.mjs",
+          "apps/platform-source-hub/test/ci-routing.test.mjs",
+          "apps/platform-source-hub/test/historical-recurring-routing.test.mjs",
+          "apps/sg-runtime/tests/assistant-ecr-week-integrity.test.mjs",
+          "apps/sg-runtime/tests/assistant-notifications-integrity.test.mjs",
+          "apps/sg-runtime/tests/calendar-pi-source-compatibility.test.mjs",
+          "apps/sg-runtime/tests/diagnostic-telemetry-adoption.test.mjs",
+          "apps/sg-runtime/tests/finder-monitor-source-integrity.test.mjs",
+          "apps/sg-runtime/tests/native-sql-roundtrips.test.mjs",
+          "apps/sg-runtime/tests/operation-context.test.mjs",
+          "apps/sg-runtime/tests/procurement-insights-editorial-integrity.test.mjs",
+          "apps/sg-runtime/tests/procurement-insights-editorial-package-integrity.test.mjs",
+          "apps/sg-runtime/tests/procurement-insights-live-acceptance-source.test.mjs",
+          "apps/sg-runtime/tests/xray-fresh-performance-adoption.test.mjs",
+          "packages/platform-contracts/test/private-operation-host.test.mjs",
+          "packages/platform-contracts/test/recurring-consent-transport.test.mjs",
+          "scripts/governance/platform-source-hub-foundation.test.mjs"
+        ],
+        "startedAt": "2026-11-18T20:36:04.264260+00:00",
+        "state": "FINISHED",
+        "priorAttempt": "owner1161-r6-history-final-source-full-result.json",
+        "priorFailure": "MISSING_EXISTING_PUBLIC_TYPESCRIPT_AND_OWN_LOCAL_PLATFORM_CONTRACTS_MODULES",
+        "sourceChangedBetweenAttempts": false,
+        "exit": 0,
+        "finishedAt": "2026-11-18T20:43:37.192325+00:00",
+        "summary": [
+          "\u2139 tests 308",
+          "\u2139 pass 308",
+          "\u2139 fail 0",
+          "\u2139 skipped 0"
+        ],
+        "failures": [],
+        "dirty": "",
+        "headAfter": "e1728a034e40e0a7004cff7b61bbe79094b145a6"
+      },
+      "owner1161-r6-history-final-joint-full-result.json": {
+        "kind": "PRIVATE_JOINT_VALIDATION_NOT_CANONICAL_CI",
+        "sha": "d7c6651c242fb982226bcfd8ee00542908eb20fa",
+        "policy": "44c3517fb79b61371ece06802ba33c35de4c0bff",
+        "source": "e1728a034e40e0a7004cff7b61bbe79094b145a6",
+        "command": [
+          "node",
+          "--test",
+          "--test-concurrency=2",
+          "scripts/governance/assistant-quality-routing.test.mjs",
+          "scripts/governance/controlled-package-ci-path-coverage.test.mjs",
+          "scripts/governance/controlled-package-ci.test.mjs",
+          "scripts/governance/development-bridge.test.mjs",
+          "scripts/governance/development-execution.test.mjs",
+          "scripts/governance/development-workspace.test.mjs",
+          "scripts/governance/ecr-routing.test.mjs",
+          "scripts/governance/finder-unmetered-ci-admission.test.mjs",
+          "scripts/governance/governance.test.mjs",
+          "scripts/governance/identity-runtime-onboarding.test.mjs",
+          "scripts/governance/krs-registry-routing.test.mjs",
+          "scripts/governance/package-limits-routing.test.mjs",
+          "scripts/governance/platform-knowledge-ci-admission.test.mjs",
+          "scripts/governance/platform-knowledge-routing.test.mjs",
+          "scripts/governance/platform-source-hub-foundation.test.mjs",
+          "scripts/governance/sg2-staging-release.test.mjs",
+          "scripts/governance/srm-adp-routing.test.mjs",
+          "scripts/governance/srm-release-lifecycle.test.mjs"
+        ],
+        "startedAt": "2026-11-18T20:31:48.152303+00:00",
+        "state": "FINISHED",
+        "restoreBranch": "architecture/calendar-r6-ci-history-final-proposal-20261118",
+        "exit": 0,
+        "finishedAt": "2026-11-18T20:43:22.859423+00:00",
+        "summary": [
+          "\u2139 tests 715",
+          "\u2139 pass 715",
+          "\u2139 fail 0",
+          "\u2139 skipped 0"
+        ],
+        "failures": [],
+        "dirty": "",
+        "headAfter": "d7c6651c242fb982226bcfd8ee00542908eb20fa"
+      },
+      "owner1161-r6-history-final-actual-authentication.json": {
+        "kind": "PRIVATE_FINAL_PROPOSAL_AUTHENTICATION_NOT_CANONICAL_CI",
+        "candidate": "d7c6651c242fb982226bcfd8ee00542908eb20fa",
+        "policy": "44c3517fb79b61371ece06802ba33c35de4c0bff",
+        "source": "e1728a034e40e0a7004cff7b61bbe79094b145a6",
+        "authority": "c4965a445867601275cbb75dc4de993123414ba2",
+        "controlFiles": [
+          ".github/workflows/platform-contracts-ci.yml",
+          "scripts/governance/controlled-package-ci.mjs",
+          "scripts/governance/development-execution.mjs",
+          "Canon/registries/development-execution-profiles-v1.json",
+          "Canon/registries/architecture-environment-topology-v1.json",
+          "scripts/governance/project-profile.mjs",
+          "scripts/governance/routing-engine.mjs",
+          "scripts/architecture-classify.mjs",
+          "Canon/registries/profitia-projects-v1.json",
+          "Canon/registries/current-architecture-baseline-v1.json",
+          "packages/platform-contracts/test/sdk-source-context.mjs",
+          "apps/architecture-lab/current-sdk-source.json"
+        ],
+        "controlPolicyDigest": "b6c0179396e6d2976e82519e1ca3a809a6079f1fca62a09f2422b53bffb6d6ba",
+        "steps": [
+          "EXACT_83_PHYSICAL_BYTES_MODES_DIFF_LINEAGE_PASS",
+          "PRIVATE_PINS_LOCAL_BOUNDARIES_AND_EXACT_CALENDAR_PACKAGE_TRANSITION_PASS"
+        ],
+        "protectedSource": {
+          "protectedSourceReviewId": "calendar-complete-functional-pk-r6-ci-history-repair-exact-source-20261118",
+          "protectedSourceReviewDigest": "72909a92c4e9395790702cb00850e8cc04b7dcb89d59b6576afa51bc218982c6",
+          "originalSourceSha": "e1728a034e40e0a7004cff7b61bbe79094b145a6"
+        },
+        "result": "PASS"
+      },
+      "owner1161-r6-policy1206-exact-shallow-diagnostic.json": {
+        "scope": "DIAGNOSTIC_ONLY_NO_CANONICAL_PROOF",
+        "candidate": "3d275ff6457607270e1ea0b77e60dacf61013f84",
+        "control": "608efe22d4a994d4cdbfcddc111c0dfd4732d698",
+        "steps": [
+          {
+            "name": "assertCompleteFunctionalProvenance",
+            "result": "PASS"
+          },
+          {
+            "name": "assertPrivateRecurringProvenance",
+            "result": "PASS"
+          },
+          {
+            "name": "registrationLifecycleCanonicalRead",
+            "result": "PASS"
+          },
+          {
+            "name": "assertLocalPackageSources",
+            "result": "FAIL",
+            "message": "Command failed: git show 03eb7c82853ecac617544d81abc61e1350af383b:apps/sg-runtime/operation-integration.json",
+            "stack": "Error: Command failed: git show 03eb7c82853ecac617544d81abc61e1350af383b:apps/sg-runtime/operation-integration.json\n    at genericNodeError (node:internal/errors:986:15)\n    at wrappedFn (node:internal/errors:540:14)\n    at checkExecSyncError (node:child_process:943:11)\n    at execFileSync (node:child_process:979:15)\n    at file:///tmp/calendar-r6-trusted608-shallow-diagnostic-20261118/scripts/governance/controlled-package-ci.mjs:6780:269\n    at knowledgeStage2TrustedPredecessor (file:///tmp/calendar-r6-trusted608-shallow-diagnostic-20261118/scripts/governance/controlled-package-ci.mjs:6619:139)\n    at knowledgeStage2LegacyPredecessor (file:///tmp/calendar-r6-trusted608-shallow-diagnostic-20261118/scripts/governance/controlled-package-ci.mjs:6773:10)\n    at knowledgeStage2Filesystem (file:///tmp/calendar-r6-trusted608-shallow-diagnostic-20261118/scripts/governance/controlled-package-ci.mjs:6780:222)\n    at Module.assertLocalPackageSources (file:///tmp/calendar-r6-trusted608-shallow-diagnostic-20261118/scripts/governance/controlled-package-ci.mjs:8176:137)\n    at file:///home/vscode/[eval1]:3:314"
+          }
+        ]
+      },
+      "owner1161-r6-policy1206-original3d-history-only-diagnostic.json": {
+        "scope": "DIAGNOSTIC_ONLY_NO_CANONICAL_PROOF",
+        "candidateSha": "3d275ff6457607270e1ea0b77e60dacf61013f84",
+        "controlSha": "608efe22d4a994d4cdbfcddc111c0dfd4732d698",
+        "fix": "AUTHENTIC_GIT_HISTORY_ONLY",
+        "result": "PASS",
+        "contractMatches": true
+      },
+      "owner1161-r6-ci-history-joint-full-result.json": {
+        "kind": "PRIVATE_JOINT_VALIDATION_NOT_CANONICAL_CI",
+        "sha": "cdf406726e9209a40416da12a8d461cad5aa6a93",
+        "policy": "3f381ac13a5c57aa45d4cc139cd89292793d776c",
+        "source": "76937d89dded7a4b23d46e048495282cdce153fc",
+        "approvedSource": "3b078cf760901c810acd27618f781e027e0d6af5",
+        "source83PostimagesUnchanged": true,
+        "policy3PostimagesUnchanged": true,
+        "command": [
+          "node",
+          "--test",
+          "--test-concurrency=2",
+          "scripts/governance/assistant-quality-routing.test.mjs",
+          "scripts/governance/controlled-package-ci-path-coverage.test.mjs",
+          "scripts/governance/controlled-package-ci.test.mjs",
+          "scripts/governance/development-bridge.test.mjs",
+          "scripts/governance/development-execution.test.mjs",
+          "scripts/governance/development-workspace.test.mjs",
+          "scripts/governance/ecr-routing.test.mjs",
+          "scripts/governance/finder-unmetered-ci-admission.test.mjs",
+          "scripts/governance/governance.test.mjs",
+          "scripts/governance/identity-runtime-onboarding.test.mjs",
+          "scripts/governance/krs-registry-routing.test.mjs",
+          "scripts/governance/package-limits-routing.test.mjs",
+          "scripts/governance/platform-knowledge-ci-admission.test.mjs",
+          "scripts/governance/platform-knowledge-routing.test.mjs",
+          "scripts/governance/platform-source-hub-foundation.test.mjs",
+          "scripts/governance/sg2-staging-release.test.mjs",
+          "scripts/governance/srm-adp-routing.test.mjs",
+          "scripts/governance/srm-release-lifecycle.test.mjs"
+        ],
+        "startedAt": "2026-11-18T20:14:48.976277+00:00",
+        "state": "FINISHED",
+        "restoreBranch": "architecture/calendar-r6-ci-history-recovery-proposal-20261118",
+        "finishedAt": "2026-11-18T20:25:15.879684+00:00",
+        "exit": 1,
+        "summary": [
+          "\u2139 tests 715",
+          "\u2139 pass 713",
+          "\u2139 fail 2",
+          "\u2139 skipped 0"
+        ],
+        "failures": [
+          "\u2716 all new trusted routing inputs invalidate the policy fingerprint; no candidate source is executed to hash them (4.676361ms)",
+          "\u2716 exact PR1102 source validation reaches the real candidate guard without claiming historical product acceptance (1776.406938ms)",
+          "\u2716 failing tests:",
+          "\u2716 all new trusted routing inputs invalidate the policy fingerprint; no candidate source is executed to hash them (4.676361ms)",
+          "\u2716 exact PR1102 source validation reaches the real candidate guard without claiming historical product acceptance (1776.406938ms)"
+        ],
+        "dirty": "",
+        "headAfter": "cdf406726e9209a40416da12a8d461cad5aa6a93"
+      },
+      "owner1161-r6-history-final-source-full-result.json": {
+        "kind": "PRIVATE_SOURCE_VALIDATION_NOT_CANONICAL_CI",
+        "sha": "e1728a034e40e0a7004cff7b61bbe79094b145a6",
+        "command": [
+          "node",
+          "--test",
+          "--test-concurrency=2",
+          "apps/architecture-lab/test/calendar-current-main-source.test.mjs",
+          "apps/architecture-lab/test/ecr-complete-functional-source.test.mjs",
+          "apps/architecture-lab/test/ecr-functional-ci-repair.test.mjs",
+          "apps/architecture-lab/test/knowledge-source.test.mjs",
+          "apps/architecture-lab/test/manifest-successor-continuity.test.mjs",
+          "apps/architecture-lab/test/market-calendar-source.test.mjs",
+          "apps/architecture-lab/test/payload-capture-publication.test.mjs",
+          "apps/architecture-lab/test/private-recurring-source.test.mjs",
+          "apps/architecture-lab/test/sdk-compatibility.test.mjs",
+          "apps/platform-source-hub/test/ci-routing.test.mjs",
+          "apps/platform-source-hub/test/historical-recurring-routing.test.mjs",
+          "apps/sg-runtime/tests/assistant-ecr-week-integrity.test.mjs",
+          "apps/sg-runtime/tests/assistant-notifications-integrity.test.mjs",
+          "apps/sg-runtime/tests/calendar-pi-source-compatibility.test.mjs",
+          "apps/sg-runtime/tests/diagnostic-telemetry-adoption.test.mjs",
+          "apps/sg-runtime/tests/finder-monitor-source-integrity.test.mjs",
+          "apps/sg-runtime/tests/native-sql-roundtrips.test.mjs",
+          "apps/sg-runtime/tests/operation-context.test.mjs",
+          "apps/sg-runtime/tests/procurement-insights-editorial-integrity.test.mjs",
+          "apps/sg-runtime/tests/procurement-insights-editorial-package-integrity.test.mjs",
+          "apps/sg-runtime/tests/procurement-insights-live-acceptance-source.test.mjs",
+          "apps/sg-runtime/tests/xray-fresh-performance-adoption.test.mjs",
+          "packages/platform-contracts/test/private-operation-host.test.mjs",
+          "packages/platform-contracts/test/recurring-consent-transport.test.mjs",
+          "scripts/governance/platform-source-hub-foundation.test.mjs"
+        ],
+        "startedAt": "2026-11-18T20:31:20.911424+00:00",
+        "state": "FINISHED",
+        "exit": 1,
+        "finishedAt": "2026-11-18T20:34:54.716989+00:00",
+        "summary": [
+          "\u2139 tests 271",
+          "\u2139 pass 265",
+          "\u2139 fail 6",
+          "\u2139 skipped 0"
+        ],
+        "failures": [
+          "\u2716 packed optional capture uses one SDK1.34.0 with preserved 1.32.3 compatibility and strict readonly public types (7737.208609ms)",
+          "\u2716 diagnostic source adoption preserves complete history and verifies current producer/consumer bytes (22.203899ms)",
+          "\u2716 native SQL adoption preserves complete prior acceptance and pins the exact reviewed producer (21.721299ms)",
+          "\u2716 apps/sg-runtime/tests/operation-context.test.mjs (58.768741ms)",
+          "\u2716 apps/sg-runtime/tests/xray-fresh-performance-adoption.test.mjs (65.109516ms)",
+          "\u2716 packages/platform-contracts/test/recurring-consent-transport.test.mjs (58.592733ms)",
+          "\u2716 failing tests:",
+          "\u2716 packed optional capture uses one SDK1.34.0 with preserved 1.32.3 compatibility and strict readonly public types (7737.208609ms)",
+          "\u2716 diagnostic source adoption preserves complete history and verifies current producer/consumer bytes (22.203899ms)",
+          "\u2716 native SQL adoption preserves complete prior acceptance and pins the exact reviewed producer (21.721299ms)",
+          "\u2716 apps/sg-runtime/tests/operation-context.test.mjs (58.768741ms)",
+          "\u2716 apps/sg-runtime/tests/xray-fresh-performance-adoption.test.mjs (65.109516ms)",
+          "\u2716 packages/platform-contracts/test/recurring-consent-transport.test.mjs (58.592733ms)"
+        ],
+        "dirty": "",
+        "headAfter": "e1728a034e40e0a7004cff7b61bbe79094b145a6"
+      }
+    },
+    "logs": {
+      "owner1161-r6-history-final-source-full-attempt2.tap": {
+        "sha256": "6eb32663e6aad5629a2e3814ef7dab58c9138fe0b6beb3c3a1a9f95651c6cf5e",
+        "bytes": 32137,
+        "counts": {
+          "tests": 308,
+          "pass": 308,
+          "fail": 0,
+          "skipped": 0
+        }
+      },
+      "owner1161-r6-history-final-joint-full.tap": {
+        "sha256": "fe42f98e2b3e8ee019188b45d2088b3b8712bf149ecd132fd55669e1d025a538",
+        "bytes": 71927,
+        "counts": {
+          "tests": 715,
+          "pass": 715,
+          "fail": 0,
+          "skipped": 0
+        }
+      },
+      "owner1161-r6-ci-history-final-focused.tap": {
+        "sha256": "a601b72cb0ced8f7c397d170d76aad205dc23d09255372711124dd68b2c2165a",
+        "bytes": 3218,
+        "counts": {
+          "tests": 25,
+          "pass": 25,
+          "fail": 0,
+          "skipped": 0
+        }
+      },
+      "owner1161-r6-history-source-filtered-regressions.tap": {
+        "sha256": "e68aa63af88103335f0b7f66e8af7a8130a5bce4d4319130dde07d7d397c717e",
+        "bytes": 377,
+        "counts": {
+          "tests": 2,
+          "pass": 2,
+          "fail": 0,
+          "skipped": 0
+        }
+      },
+      "owner1161-r6-history-source-closure-focused.tap": {
+        "sha256": "576d7c9777b23878b54e1974b3e3e366c4ad9072d59a02461bb6ab50c6200b12",
+        "bytes": 1330,
+        "counts": {
+          "tests": 11,
+          "pass": 11,
+          "fail": 0,
+          "skipped": 0
+        }
+      }
+    },
+    "freshRemoteMain": "c4965a445867601275cbb75dc4de993123414ba2"
+  },
+  "canonicalControlledProofPresent": false,
+  "productDeploymentPerformed": false,
+  "providerCallsPerformed": false,
+  "emailSubmitted": false
+}
