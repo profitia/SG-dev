@@ -16,6 +16,19 @@ export const RECURRING_SOURCE_BASE='141cc559063c43cefa991acb9260b32ac5b92615'
 const RECORD_SHA256='75877d5750e07d1c8172be0af76bc5933f2eeefc22cc39747a2621b9cab24619'
 const hash=b=>createHash('sha256').update(b).digest('hex')
 const absent=error=>error?.code==='ENOENT'||error?.status===128&&["' does not exist in ","' exists on disk, but not in "].some(s=>String(error?.stderr??error?.message??'').includes("'"+RECURRING_SOURCE_RECORD+s))
+
+// Only the registered application's ordinary source may use current admission.
+// Immutable source records, platform SDK bytes and receipts retain exact hashes.
+function admittedApplicationSourceDigests(current,paths){
+ if(!paths.length)return new Map()
+ const root=fileURLToPath(new URL('../../',import.meta.url))
+ const program="import fs from 'node:fs';import{pathToFileURL}from'node:url';import{createHash}from'node:crypto';const root=process.argv[1],paths=JSON.parse(process.argv[2]);const{trustedApplicationContinuity}=await import(new URL('scripts/governance/development-execution.mjs',pathToFileURL(root+'/')));const read=trustedApplicationContinuity(root,paths);process.stdout.write(read?JSON.stringify(Object.fromEntries(paths.map(p=>[p,createHash('sha256').update(read(p)).digest('hex')]))):'null')"
+ const result=JSON.parse(execFileSync(process.execPath,['--input-type=module','-e',program,root,JSON.stringify(paths)],{cwd:root,env:{PATH:process.env.PATH,GIT_NO_LAZY_FETCH:'1'},stdio:['ignore','pipe','pipe'],encoding:'utf8',timeout:30000,maxBuffer:1024*1024}))
+ const digests=new Map(Object.entries(result??{}))
+ for(const[p,h]of digests)assert.equal(hash(current(p)),h,'independently admitted application source '+p)
+ return digests
+}
+
 export function recurringSourcePredecessor(current,historical){
  const transport=recurringConsentTransportPredecessor(current,historical);if(transport){const accepted=recurringSourcePredecessor(transport.previousBytes,historical);return {...accepted,transport}}
  const shell=procurementInsightsShellPredecessor(current,historical);if(shell){const accepted=recurringSourcePredecessor(shell.previousBytes,historical);return {...accepted,completion:shell}}
@@ -29,7 +42,10 @@ export function recurringSourcePredecessor(current,historical){
  assert.equal(a.platformVersion,'1.36.0');assert.equal(a.legacyImplementation,'1.0.0-candidate.16');assert.equal(a.optionalImplementation,'1.0.0-candidate.22')
  assert.deepEqual(a.taskIds,{ARCHITECTURE:'ARCH-PI-RECURRING-E1-20261111',SG2:'SG2-PI-RECURRING-E2E-20261111',SRM:'SRM-PI-RECURRING-SDK-20261111'})
  for(const flag of ['runtimeActivated','newGrantsInstalled','providerCallsPerformed','deploymentPerformed'])assert.equal(a[flag],false,flag)
- for(const[p,h]of Object.entries(a.sourceDigests))assert.equal(hash(current(p)),h,'current recurring source '+p)
+ const ordinary=p=>/^apps\/(?:newsfeed-runtime|sg-runtime|srm)\/.+\.(?:tsx?|mjs)$/.test(p)
+ const changed=Object.entries(a.sourceDigests).filter(([p,h])=>ordinary(p)&&hash(current(p))!==h).map(([p])=>p)
+ const admitted=admittedApplicationSourceDigests(current,changed)
+ for(const[p,h]of Object.entries(a.sourceDigests))assert.equal(hash(current(p)),admitted.get(p)??h,'current recurring source '+p)
  for(const[p,h]of Object.entries(a.preservedReceipts)){
   assert.equal(hash(current(p)),h,'immutable receipt '+p);assert.equal(hash(historical(RECURRING_SOURCE_BASE,p)),h,'original receipt '+p)
  }
