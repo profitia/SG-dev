@@ -210,6 +210,26 @@
       "accountUi": "Classic API key form only; no scopes offered. Workspace settings expose no scoped key creation. No key created.",
       "technicalDeployment": "Existing connected Render capability; no persistent publisher key needed for authorised engineering deployment",
       "autonomousPromotion": "Remains disabled; no broad classic API key installed. A provider-scoped credential must be available and explicitly authorised before automated publishing."
+    },
+    "qaRoleWorkerRecipientConfirmation": {
+      "status": "PENDING_EXPLICIT_OWNER_CONFIRMATION_AFTER_AUTOMATIC_REVIEW_REJECTION",
+      "serviceId": "srv-dbu4ak0ae00c73eaabcg",
+      "workspaceId": "tea-d7lps8rbc2fs73cn80dg",
+      "settings": [
+        "AQC_QA_ROLE_PREFLIGHT_VERSION",
+        "AQC_QA_PURPOSE_DATABASE_URL",
+        "AQC_QA_EVIDENCE_DATABASE_URL"
+      ],
+      "roles": [
+        "sg2_assistant_quality_authority",
+        "sg2_assistant_quality_reader"
+      ],
+      "existingOrdinaryRolesOnly": true,
+      "newRights": false,
+      "newCost": false,
+      "qaHmacOrStorageKeyIncluded": false,
+      "rejectedWriteApplied": false,
+      "noAlternativeSecretTransferAttempted": true
     }
   },
   "costs": {
@@ -418,7 +438,7 @@
       "keysOrPublisherCredentialsInstalled": false
     },
     "isolatedVerificationSource": {
-      "status": "SOURCE_PROPOSAL_EXACT_CI_RUNNING_NEW_LINUX_REQUIRED",
+      "status": "SOURCE_DEPLOYED_LINUX_POLICY_VERIFIED_OPERATIONAL_POSITIVE_GATES_PENDING",
       "pullRequest": 1164,
       "sourceSha": "6c5664696b73644384e22e5045c66a52f1519989",
       "nativeRun": "44205108713",
@@ -426,18 +446,22 @@
       "neutralContractsPassed": 12,
       "controlledRun": "44205261143",
       "controlledResult": "IN_PROGRESS",
-      "newActualLinuxQualificationRequired": true,
+      "newActualLinuxQualificationRequired": false,
       "previousGateSetProofNotApplicableToChangedInputs": true,
       "actualPinnedCicArchivePositiveParsing": "PENDING",
-      "operationalJobsConnected": false
+      "operationalJobsConnected": false,
+      "latestQualifiedRun": 44231983517,
+      "originalPinnedCicFetchRoute": "EXISTING_MAIN_ONLY_CONTROLLED_SG2_CREDENTIAL_PREFLIGHT_GITHUB_TOKEN_PACKAGES_READ",
+      "originalPinnedCicPositiveArchiveParserProof": "PENDING_EXACT_ORIGINAL_ARCHIVE"
     },
     "currentRuntimeObservation": {
-      "workerSourceSha": "8067b0e0a87762f769035bd3fdf70bec69fe443a",
-      "workerDeployId": "dep-dbufslmk1f9s73a4v2rg",
-      "workerLiveAt": "2026-11-18T01:25:14.318353Z",
-      "workerHeartbeatAt": "2026-11-18T01:40:17.707Z",
+      "workerSourceSha": "d4bc54fddd1118d6e3050ba64e5ed41054e093d9",
+      "workerDeployId": "dep-dbuj95u7bikc73a4hvpg",
+      "workerLiveAt": "2026-11-18T05:16:49.127269Z",
+      "workerHeartbeatAt": "2026-11-18T05:16:51.208Z",
       "workerStatus": "MONITORING_READY",
       "controllerGitHub": "CONNECTED_STANDBY",
+      "qualificationWorkflow": "CONNECTED_MAIN_ONLY",
       "controlStore": "CONNECTED_DISABLED",
       "nativeLimits": "CONNECTED_DISABLED",
       "hostSourceSha": "80875d8f0e9451cd9afd34e8baf2a8f6059bc064",
@@ -448,8 +472,9 @@
       "pilotStartedAt": null,
       "acceptanceRepairsCompleted": 0,
       "technicalReady": false,
-      "latestObservedAt": "2026-11-18T03:40:23.919Z",
-      "newAdapterSourceDeployed": false
+      "latestObservedAt": "2026-11-18T05:16:51.208Z",
+      "newAdapterSourceDeployed": true,
+      "operationalJobsEnabled": false
     },
     "linuxQualification20261118": {
       "sourceSha": "8067b0e0a87762f769035bd3fdf70bec69fe443a",
@@ -536,7 +561,8 @@
       },
       "canonicalHostCodecReused": true,
       "renderGitAvailabilityVerified": false,
-      "deployed": false
+      "deployed": false,
+      "sourceDeployed": true
     },
     "verifierAttestor": {
       "sourceMainSha": "4b8742f9c3459c8b1f6ffc30b147f91549156a3b",
@@ -558,7 +584,8 @@
       "inputSnapshot": true,
       "prIdentityReread": true,
       "promotionEnabled": false,
-      "deployed": false
+      "deployed": false,
+      "sourceDeployed": true
     },
     "verifierPolicyDependency": {
       "pr": 1169,
@@ -606,6 +633,123 @@
       "publicSourceUpdated": false,
       "deployed": false,
       "ci24PathApproval": "PENDING"
+    },
+    "workerQaRoleSourceDeployment20261118": {
+      "workerSourceSha": "d4bc54fddd1118d6e3050ba64e5ed41054e093d9",
+      "workerDeployId": "dep-dbuj95u7bikc73a4hvpg",
+      "workerLiveAt": "2026-11-18T05:16:49.127269Z",
+      "workerHeartbeatAt": "2026-11-18T05:16:51.208Z",
+      "workerStatus": "MONITORING_READY",
+      "controllerGitHub": "CONNECTED_STANDBY",
+      "qualificationWorkflow": "CONNECTED_MAIN_ONLY",
+      "controlStore": "CONNECTED_DISABLED",
+      "nativeLimits": "CONNECTED_DISABLED",
+      "hostSourceSha": "80875d8f0e9451cd9afd34e8baf2a8f6059bc064",
+      "hostDeployId": "dep-dbuab359fdbs73e5m5hg",
+      "hostCic18Deployed": false,
+      "paidRepairsEnabled": false,
+      "promotionEnabled": false,
+      "pilotStartedAt": null,
+      "acceptanceRepairsCompleted": 0,
+      "technicalReady": false,
+      "latestObservedAt": "2026-11-18T05:16:51.208Z",
+      "newAdapterSourceDeployed": true,
+      "operationalJobsEnabled": false,
+      "serviceId": "srv-dbu4ak0ae00c73eaabcg",
+      "sourcePr": 1171,
+      "sourceSha": "d6cbabfe8d83b2b771e2ff2803d5fe58083d81d8",
+      "sourceCiRun": 44241880884,
+      "resultingMainCiRun": 44242765052,
+      "aqcTests": 123,
+      "neutralContracts": 12,
+      "skippedTests": 0,
+      "sentryAcceptedHttpStatus": 200,
+      "posthogProjectId": 329829,
+      "posthogActualHeartbeatAt": "2026-11-18T05:16:51.906Z",
+      "autoDeploy": false,
+      "lkgSourceSha": "8067b0e0a87762f769035bd3fdf70bec69fe443a",
+      "lkgDeployId": "dep-dbufslmk1f9s73a4v2rg",
+      "newRoleUrlsApplied": false,
+      "qaRolePreflightActive": false,
+      "productionTrustInstalled": false,
+      "linuxPolicyInputsUnchanged": 11
+    },
+    "qaRoleCatalogQualification20261118": {
+      "status": "ACTUAL_NEON_ORDINARY_LOGIN_PASS_RENDER_SETTING_PENDING",
+      "sourcePr": 1171,
+      "roles": [
+        "sg2_assistant_quality_authority",
+        "sg2_assistant_quality_reader"
+      ],
+      "databases": [
+        "platform_private",
+        "neondb"
+      ],
+      "currentRoleEqualsSessionLogin": true,
+      "superuser": false,
+      "bypassRls": false,
+      "createDb": false,
+      "createRole": false,
+      "inherit": false,
+      "replication": false,
+      "ownerMembership": false,
+      "connectionLimit": 3,
+      "expiresAt": "2026-11-27T23:59:59.000Z",
+      "schemaUsage": true,
+      "schemaCreate": false,
+      "installedApplyExecute": true,
+      "directQaSchemaTableAccess": false,
+      "qaRowsRead": false,
+      "permissionMutation": false,
+      "hostCodecAvailabilityOnRender": "NOT_YET_OBSERVED",
+      "renderGitAvailability": "NOT_YET_OBSERVED"
+    },
+    "publisherActiveRules": {
+      "pr": 1170,
+      "sourceSha": "b77d18fc6ac34f41e7ea28f5db09281fc896a657",
+      "mergeSha": "8012fbac28a2ca6a4d0786088693066996ab3974",
+      "sourceCiRun": 44237503374,
+      "resultingMainCiRun": 44238046164,
+      "aqcTests": 120,
+      "neutralContracts": 12,
+      "metadataReadOnly": true,
+      "newAdminCredential": false,
+      "requiredStrictPolicySupported": true,
+      "githubActionsAppId": 15368,
+      "actualMainRequiredStatusRulePresent": false,
+      "rulesChanged": false,
+      "sourceDeployed": true,
+      "promotionEnabled": false
+    },
+    "controlledInputPreparation20261118": {
+      "status": "OFFLINE_CANDIDATES_PREPARED_NOT_ENROLLED",
+      "locales": [
+        "pl",
+        "en"
+      ],
+      "realHostConversationHandlerUsed": true,
+      "syntheticRuntimeFixtureUsed": true,
+      "modelInputMessages": 3,
+      "sourcePlanItems": 0,
+      "providerRequestTrap": "PASS_ZERO_REAL_REQUESTS",
+      "modelInputsStableAcrossTwoServerDates": true,
+      "foreignCohortWouldEnterLegacyGeneration": "NEGATIVE_TRAP_CONFIRMED_NO_PROVIDER_REQUEST",
+      "nativeCurrentHumanIdentity": {
+        "status": "MATCH_CONFIRMED_BY_FRESH_NATIVE_INTENT_AUDIT",
+        "readOnlyNonexistentHistoryRequest": true,
+        "observedAt": "2026-11-18T04:21:17.554Z",
+        "actorKind": "HUMAN",
+        "decision": "ALLOW",
+        "reason": "AUTHORIZED",
+        "sourceSha": "80875d8f0e9451cd9afd34e8baf2a8f6059bc064",
+        "realHistoryRead": false,
+        "grantCreated": false,
+        "revalidateBeforeLivePrompt": true
+      },
+      "nativeInputsEnrolled": 0,
+      "liveQaCaptured": false,
+      "providerRequests": 0,
+      "e1Acceptance": false
     }
   },
   "pendingSourceCiAmendment": {

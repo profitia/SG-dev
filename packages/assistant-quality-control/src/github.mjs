@@ -65,12 +65,48 @@ export function createQualityGitHub({token,fetchImpl=fetch,publisherEnabled=fals
   }
   fail('GITHUB_CHECKS_INCOMPLETE')
  }
+ async function strictProtection(requiredNames){
+  require(Array.isArray(requiredNames)&&requiredNames.length>0&&requiredNames.length<=32
+   &&new Set(requiredNames).size===requiredNames.length
+   &&requiredNames.every(n=>typeof n==='string'&&n.length>0&&n.length<=128),'GITHUB_REQUIRED_CHECKS_INVALID')
+  const rules=[]
+  for(let page=1;page<=5;page++){
+   const current=await get('/rules/branches/main?per_page=100&page='+page)
+   require(Array.isArray(current)&&current.length<=100&&current.every(r=>r&&typeof r==='object'&&typeof r.type==='string'),'GITHUB_RULES_INVALID')
+   rules.push(...current)
+   if(current.length<100)break
+   require(page<5,'GITHUB_RULES_INCOMPLETE')
+  }
+  const modern=rules.filter(r=>r.type==='required_status_checks')
+  if(modern.length){
+   for(const rule of modern)require(rule.parameters&&typeof rule.parameters.strict_required_status_checks_policy==='boolean'
+    &&Array.isArray(rule.parameters.required_status_checks)&&rule.parameters.required_status_checks.length<=100
+    &&rule.parameters.required_status_checks.every(c=>typeof c?.context==='string'&&c.context.length>0&&c.context.length<=128
+     &&(c.integration_id===null||number(c.integration_id))),'GITHUB_RULES_INVALID')
+   const strict=modern.filter(r=>r.parameters.strict_required_status_checks_policy)
+   require(strict.length>0,'STRICT_BASE_PROTECTION_REQUIRED')
+   // Metadata-readable active rules are sufficient; the publisher does not
+   // need an administration credential. Its required contexts must be bound
+   // to the real GitHub Actions app, not an arbitrary status producer.
+   require(requiredNames.every(name=>strict.some(r=>r.parameters.required_status_checks
+    .some(c=>c.context===name&&c.integration_id===15368))),'STRICT_REQUIRED_CI_PROTECTION_REQUIRED')
+   return Object.freeze({source:'ACTIVE_RULESETS',strict:true})
+  }
+  // Existing classic protection remains supported. An unreadable or malformed
+  // active rules response never falls back to a less restrictive interpretation.
+  const protection=await get('/branches/main/protection')
+  require(protection?.required_status_checks?.strict===true,'STRICT_BASE_PROTECTION_REQUIRED')
+  const policy=protection.required_status_checks,serverNames=new Set([...(Array.isArray(policy.contexts)?policy.contexts:[]),
+   ...(Array.isArray(policy.checks)?policy.checks.map(c=>c?.context):[])])
+  require(requiredNames.every(n=>serverNames.has(n)),'STRICT_REQUIRED_CI_PROTECTION_REQUIRED')
+  return Object.freeze({source:'CLASSIC_PROTECTION',strict:true})
+ }
  return Object.freeze({
   async descriptor(){
    const v=await request('/repos/'+repository);require(v.full_name===repository&&v.permissions?.pull===true,'GITHUB_REPOSITORY_UNVERIFIED')
    return {repository,headSha:await main(),publisherEnabled,promotionEnabled}
   },
-  main,pull,checks,
+  main,pull,checks,protection:strictProtection,
   async qualificationDescriptor(){
    const workflow=await get('/actions/workflows/assistant-quality-repair.yml')
    require(number(workflow?.id)&&workflow.path==='.github/workflows/assistant-quality-repair.yml'
@@ -228,10 +264,7 @@ export function createQualityGitHub({token,fetchImpl=fetch,publisherEnabled=fals
    require(await main()===baseSha,'BASE_CHANGED')
    // The server must enforce the base race too. A pre-merge GET alone cannot
    // prevent another owner's main update between this read and the merge.
-   const protection=await get('/branches/main/protection')
-   require(protection?.required_status_checks?.strict===true,'STRICT_BASE_PROTECTION_REQUIRED')
-   const policy=protection.required_status_checks,serverNames=new Set([...(Array.isArray(policy.contexts)?policy.contexts:[]),...(Array.isArray(policy.checks)?policy.checks.map(c=>c?.context):[])])
-   require(Array.isArray(requiredNames)&&requiredNames.length>0&&requiredNames.every(n=>serverNames.has(n)),'STRICT_REQUIRED_CI_PROTECTION_REQUIRED')
+   await strictProtection(requiredNames)
    const result=await checks(headSha,requiredNames);require(result.result==='PASS','REQUIRED_CI_INCOMPLETE')
    await verifyIndependent({prNumber,headSha,baseSha})
    const merged=await write('/pulls/'+prNumber+'/merge',{sha:headSha,merge_method:'merge'},'PUT')
