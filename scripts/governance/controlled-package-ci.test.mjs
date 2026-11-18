@@ -3612,7 +3612,7 @@ test('actual ACG reservation source remains authenticated separately from the le
  assert(legacyRecurringFixture.projected)
  assert.notEqual(legacyRecurringFixture.root,authorityRoot)
  assert.equal(legacyRecurringFixture.sourceRecord.scope,'EXACT_ASSISTANT_TOKEN_RESERVATION_SOURCE')
- assert.throws(()=>assertPrivateRecurringProvenance(authorityRoot),/PI_LIVE_ACCEPTANCE_SOURCE_REJECTED|EDITORIAL_SOURCE_BYTES_REJECTED/)
+ assert.throws(()=>assertPrivateRecurringProvenance(authorityRoot),/PI_LIVE_ACCEPTANCE_SOURCE_REJECTED|EDITORIAL_SOURCE_BYTES_REJECTED|FINDER_MONITOR_SOURCE_BYTES_REJECTED/)
  const sdk=await import('../../packages/platform-contracts/src/operation-context.mjs')
  assert.equal(await sdk.operationSourceDigest(),legacyRecurringFixture.sourceRecord.sdkDigests.operationSourceDigest)
  const legacyReceipt=JSON.parse(fs.readFileSync(path.join(legacyRecurringFixture.root,'apps/sg-runtime/operation-integration.json'),'utf8'))
@@ -3838,7 +3838,8 @@ compositionTest('editorial composition successor preserves ten exact inputs, all
   else {const b=compositionHistory(compositionReview.baseSha,p);compositionAssert.deepEqual(view.previousBytes(p),b);view.previousBytes(p).fill(0);compositionAssert.deepEqual(view.previousBytes(p),b)}
  }
  compositionAssert(compositionControl.assistantNotificationsTrustedPredecessor(compositionFixture,compositionHistory))
- const contract=compositionControl.currentProofContract(compositionFileURLToPath(compositionRoot),JSON.parse(compositionFixture('apps/sg-runtime/operation-integration.json')))
+ // The previous accepted contract uses authenticated historical input; current ACG source is checked separately above.
+ const contract=compositionControl.currentProofContract(legacyRecurringFixture.root,JSON.parse(compositionFixture('apps/sg-runtime/operation-integration.json')))
  compositionAssert.equal(contract.sourceDigest,'1722f1604df42aec084df0ff7610240a25e687caffd58547dbed320a200676ed')
 })
 compositionTest('editorial composition successor refuses every changed current/history byte and all29 prior receipts',()=>{

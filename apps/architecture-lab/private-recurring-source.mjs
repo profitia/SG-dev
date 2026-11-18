@@ -5,7 +5,7 @@ import {procurementInsightsShellPredecessor} from '../sg-runtime/tests/procureme
 import {assistantEcrWeekPredecessor} from '../sg-runtime/tests/assistant-ecr-week-integrity.mjs'
 export const ECR_WEEK_SOURCE_SHA='31ce8f1d7e5ca1d9c3aedf80f92e23fe0f1a93cb8f5fd5d003eb54a244859dd4'
 import {assistantReservationPredecessor} from '../../packages/platform-contracts/test/assistant-reservation-source.mjs'
-export const ASSISTANT_RESERVATION_SOURCE_SHA='c1b344748a64cf1f0a4fec549156cef741c315d6d202bb1d228c7c38caf7375f'
+export const ASSISTANT_RESERVATION_SOURCE_SHA='0aae97724b197eb5ca4820533546360073b888a58c042d0a1798caa554a22c4d'
 import assert from 'node:assert/strict'
 import {createHash} from 'node:crypto'
 import fs from 'node:fs'

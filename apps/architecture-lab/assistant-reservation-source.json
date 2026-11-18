@@ -46,7 +46,7 @@
     "packages/platform-contracts/test/private-operation-host.test.mjs": "cb7885af34cbdb8e017a40c22d0a3b712525a32b50d9e5ff90440dd7ecdc8154",
     "packages/platform-contracts/test/recurring-consent-transport.test.mjs": "ecbb9ab10a646b9f7ac91ba25f2bd1f23907a0e5186a213d835a1243a7ff8db6",
     "scripts/governance/platform-source-hub-foundation.test.mjs": "206af0119029fc2ffabfd93b06d206e0eb9936c8b8b7467cddeda3fe2b240c10",
-    "scripts/governance/controlled-package-ci.test.mjs": "de77f56a6de187740f328100472ee806b7dd26e4e362effda4507037d9cd8573",
+    "scripts/governance/controlled-package-ci.test.mjs": "8574b0c99b007a222839d5f966b119e758546a8646be0945f3959260616ff622",
     "apps/architecture-lab/test/manifest-successor-continuity.test.mjs": "15de435a6ec35e36fb0fe3357f04f8300335824730186f26cf0b48f2e4b21b72",
     "apps/platform-source-hub/test/ci-routing.test.mjs": "d9ff7047faf37928ed860fefa40f3899c653ac0c90b8543346a5e7dc99d551b4",
     "apps/newsfeed-runtime/test/runtime.test.mjs": "e8c6b2f6566db171e182ad63ce5cb07a019658816bdaf1a499659fe8419cd079",
