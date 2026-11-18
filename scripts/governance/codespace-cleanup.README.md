@@ -1,7 +1,7 @@
 # Codespace cleanup — Stage 02 manual tool
 
-**Project:** ARCHITECTURE; implementation surface: `scripts/governance/**` (`SG2-BASE-020`, Governance Source Layer).  
-**Status:** manual CLI implementation only; **no lifecycle hook, cron, automatic resource registration, autonomous cleanup, PMOS/PHR write or real-Codespace activation**.  
+**Project:** ARCHITECTURE; implementation surface: `scripts/governance/**` (`SG2-BASE-020`, Governance Source Layer).
+**Status:** manual CLI implementation only; **no lifecycle hook, cron, automatic resource registration, autonomous cleanup, PMOS/PHR write or real-Codespace activation**.
 **Normative authority:** accepted `Canon/v3.0-profitia-agent-execution-canon.md` §10.8; this README does not introduce separate cleanup policy.
 
 ## What it does
@@ -106,7 +106,8 @@ The unique `allocationId` is a matching technical identifier, **not an authoriza
 - Candidate must reside strictly below a canonical, non-symlinked, non-protected scope root. The inventory and lock must reside outside the candidate.
 - Ephemeral-directory deletion rejects any tracked source files and nested protected names/symlinks/special file types. Inside another Git checkout is rejected.
 - Worktree deletion requires a registered, unlocked, unprunable worktree sharing the exact Git common directory and origin with the verified source repo. It rejects all tracked modifications and all ignored/untracked files other than its unique owner marker; `HEAD` must be ancestor of local `origin/main` and local `origin/main` must exactly match live remote `main`. If remote verification is unavailable or stale, it retains the worktree. It uses `git worktree remove` **without force**.
-- Explicit task-state quiescence attestation is required; on Linux the CLI additionally checks same-UID `/proc` process CWDs and open FDs. This is not a substitute for a lifecycle-issued exclusive task lease, which is part of Stage 03.
+- Explicit task-state quiescence attestation is required; on Linux the CLI additionally checks same-UID `/proc` process CWDs and open FDs. **Restricted `/proc` (EACCES/EPERM) remains `REVIEW_REQUIRED`, never a proof of inactivity and never a deletion permit.** The implementation checks retention/Git/content guards first, so known protected/dirty resources retain their expected reason even when `/proc` is restricted. This is not a substitute for a lifecycle-issued exclusive task lease, which is part of Stage 03.
+- Unit tests enumerate a fixture-owned process table and read actual cwd/fd links for fixture child processes, independent of unrelated Codespaces processes. A regression test injects EACCES and verifies `audit` and `clean` both refuse deletion. **Positive synthetic tests do not establish that clean can delete in a Codespace with incomplete `/proc` visibility.** An actual attempt remains blocked until an independently trustworthy process-isolation proof or sufficient inspection capability is available; a relaxed/ignored `/proc` error is not an acceptable workaround.
 - A cooperative state lock blocks another instance of this tool; an orphaned lock fails closed (manual reconciliation; no automatic stale lock eviction).
 - Status `RETAINED` is safe when expected (phase mismatch, active process, interrupted continuity); `REVIEW_REQUIRED` indicates ambiguity; `UNKNOWN_OWNER` is never a deletion candidate.
 - The CLI never reads credentials, calls GitHub write APIs, modifies PMOS or PHR, runs `git fetch`, hooks, schedulers or migrations.

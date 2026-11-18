@@ -12,6 +12,14 @@ function git(cwd, ...args) {
   return r.stdout.trim()
 }
 function fixture(t) {
+  // A unit test must not depend on visibility of unrelated host processes.
+  // Codespaces can deny same-UID /proc reads for unrelated editor/services.
+  // Scope the synthetic process table to our own process plus fixture children;
+  // the implementation is unchanged and reads the real cwd/fd links for each.
+  const hostProcessTable = fs.readdirSync.bind(fs)
+  const visiblePids = new Set([String(process.pid)])
+  t.mock.method(fs, 'readdirSync', (directory, ...args) =>
+    directory === '/proc' ? [...visiblePids] : hostProcessTable(directory, ...args))
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'cs-cleanup-test-'))
   t.after(() => fs.rmSync(root, { recursive: true, force: true }))
   const bare = path.join(root, 'remote.git')
@@ -51,7 +59,8 @@ function fixture(t) {
   save()
   const audit = (other={}) => executeCleanup({ ...base, stateFile, ...other })
   const clean = (other={}) => audit({ command: 'clean', confirmClean: taskId, ...other })
-  return { root, source, scope, bare, base, state, stateFile, save, resource, audit, clean }
+  const watchPid = pid => visiblePids.add(String(pid))
+  return { root, source, scope, bare, base, state, stateFile, save, resource, audit, clean, watchPid }
 }
 
 test('audit without inventory does not infer ownership from directory name or age', (t) => {
@@ -258,6 +267,7 @@ test('running same-user process with cwd inside candidate prevents cleanup',asyn
   const { spawn } = await import('node:child_process')
   const child=spawn(process.execPath,['-e','process.stdout.write("ready\\n");setInterval(()=>{},5000)'],{cwd:c.path,stdio:['ignore','pipe','pipe']})
   t.after(()=>child.kill('SIGKILL'))
+  f.watchPid(child.pid)
   await new Promise((resolve,reject)=>{child.stdout.once('data',resolve);child.once('error',reject)})
   assert.equal(f.clean().summary.RETAINED,1)
   assert.equal(fs.existsSync(c.path),true)
@@ -269,7 +279,65 @@ test('running same-user process holding open file inside candidate prevents clea
   const { spawn } = await import('node:child_process')
   const child=spawn(process.execPath,['-e','const fs=require("fs");fs.openSync(process.argv[1],"r");process.stdout.write("ready\\n");setInterval(()=>{},5000)',target],{cwd:f.root,stdio:['ignore','pipe','pipe']})
   t.after(()=>child.kill('SIGKILL'))
+  f.watchPid(child.pid)
   await new Promise((resolve,reject)=>{child.stdout.once('data',resolve);child.once('error',reject)})
   assert.equal(f.clean().summary.RETAINED,1)
   assert.equal(fs.existsSync(c.path),true)
+})
+
+
+test('inaccessible same-UID proc cwd fails closed without deleting an otherwise eligible cache', t => {
+  const f = fixture(t)
+  const c = f.resource('private-cache')
+  fs.writeFileSync(path.join(c.path, 'artifact'), 'must survive')
+  const readlink = fs.readlinkSync.bind(fs)
+  const blocked = `/proc/${process.pid}/cwd`
+  t.mock.method(fs, 'readlinkSync', (target, ...args) => {
+    if (target === blocked) {
+      const error = new Error('permission denied in restricted Codespace /proc')
+      error.code = 'EACCES'
+      throw error
+    }
+    return readlink(target, ...args)
+  })
+  const audit = f.audit()
+  assert.equal(audit.summary.REVIEW_REQUIRED, 1)
+  assert.match(audit.results[0].reason, /Unable to inspect same-user process cwd/)
+  assert.equal(f.clean().summary.REVIEW_REQUIRED, 1)
+  assert.equal(fs.existsSync(path.join(c.path, 'artifact')), true)
+})
+
+
+test('known RETAINED authorization is not masked by unreadable unrelated proc entries', t => {
+  const f = fixture(t)
+  const c = f.resource('unreleased-cache')
+  fs.writeFileSync(path.join(c.path, 'artifact'), 'retained')
+  f.state.resources[0].authorization.noActiveConsumers = false
+  f.save()
+  const readlink = fs.readlinkSync.bind(fs)
+  t.mock.method(fs, 'readlinkSync', (target, ...args) => {
+    if (target === `/proc/${process.pid}/cwd`) {
+      const e = new Error('restricted proc read'); e.code = 'EACCES'; throw e
+    }
+    return readlink(target, ...args)
+  })
+  assert.equal(f.audit().summary.RETAINED, 1)
+  assert.equal(f.clean().summary.RETAINED, 1)
+  assert.equal(fs.existsSync(c.path), true)
+})
+
+test('protected files remain REVIEW_REQUIRED even when process telemetry is unreadable', t => {
+  const f = fixture(t)
+  const c = f.resource('protected-cache')
+  fs.mkdirSync(path.join(c.path, '.pmos'))
+  const readlink = fs.readlinkSync.bind(fs)
+  t.mock.method(fs, 'readlinkSync', (target, ...args) => {
+    if (target === `/proc/${process.pid}/cwd`) {
+      const e = new Error('restricted proc read'); e.code = 'EACCES'; throw e
+    }
+    return readlink(target, ...args)
+  })
+  assert.equal(f.audit().summary.REVIEW_REQUIRED, 1)
+  assert.match(f.clean().results[0].reason, /Protected content under candidate/)
+  assert.equal(fs.existsSync(path.join(c.path, '.pmos')), true)
 })

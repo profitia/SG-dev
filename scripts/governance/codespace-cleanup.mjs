@@ -150,33 +150,38 @@ function walkDirectory(root, { allowGitFile = false, skipProtected = false, maxE
   return { items, logicalBytes, allocatedBytes }
 }
 function assertNoLiveLocalConsumer(target) {
-  // Best-effort OS observation, in addition to the explicit task quiescence attestation.
-  // Linux exposes same-UID cwd and fd ownership through /proc. Other hosts still
-  // require the explicit task-level confirmation; never infer from age alone.
+  // Additional OS evidence, never a fail-open replacement for task quiescence.
+  // Some Codespaces deny ptrace-style inspection of otherwise same-UID /proc
+  // entries (EACCES/EPERM). We cannot prove those processes are unrelated, so
+  // preserve REVIEW_REQUIRED instead of treating incomplete visibility as idle.
+  // Unit fixtures model the process table explicitly; production checks /proc.
   if (process.platform !== 'linux' || !fs.existsSync('/proc')) return
   const uid = process.getuid?.()
   let inspectedFds = 0
   for (const pid of fs.readdirSync('/proc').filter(s => /^[0-9]+$/.test(s))) {
     const root = path.join('/proc', pid)
     let st
-    try { st = fs.statSync(root) } catch (e) { if (e.code === 'ENOENT') continue; throw e }
+    try { st = fs.statSync(root) } catch (e) {
+      if (e.code === 'ENOENT' || e.code === 'ESRCH') continue
+      deny(`Unable to inspect process identity (${e.code ?? 'unknown'}); process usage is unverified`)
+    }
     if (uid !== undefined && st.uid !== uid) continue
     for (const ref of [path.join(root, 'cwd'), path.join(root, 'root')]) {
       // The process root is usually '/' and cannot itself establish activity.
       if (ref.endsWith('/root')) continue
       let location
       try { location = fs.readlinkSync(ref) }
-      catch (e) { if (e.code === 'ENOENT' || e.code === 'ESRCH') continue; deny('Unable to inspect same-user process cwd') }
+      catch (e) { if (e.code === 'ENOENT' || e.code === 'ESRCH') continue; deny(`Unable to inspect same-user process cwd (${e.code ?? 'unknown'}); process usage is unverified`) }
       if (sameOrInside(location.replace(/ \(deleted\)$/, ''), target)) deny('Active local process has cwd within candidate', 'RETAINED')
     }
     let fds
     try { fds = fs.readdirSync(path.join(root, 'fd')) }
-    catch (e) { if (e.code === 'ENOENT' || e.code === 'ESRCH') continue; deny('Unable to inspect same-user open file descriptors') }
+    catch (e) { if (e.code === 'ENOENT' || e.code === 'ESRCH') continue; deny(`Unable to inspect same-user open file descriptors (${e.code ?? 'unknown'}); process usage is unverified`) }
     for (const fd of fds) {
       if (++inspectedFds > 30_000) deny('Process verification limit exceeded')
       let dest
       try { dest = fs.readlinkSync(path.join(root, 'fd', fd)) }
-      catch (e) { if (e.code === 'ENOENT' || e.code === 'ESRCH') continue; deny('Unable to inspect same-user open file') }
+      catch (e) { if (e.code === 'ENOENT' || e.code === 'ESRCH') continue; deny(`Unable to inspect same-user open file (${e.code ?? 'unknown'}); process usage is unverified`) }
       if (sameOrInside(dest.replace(/ \(deleted\)$/, ''), target)) deny('Active local process holds an open file within candidate', 'RETAINED')
     }
   }
@@ -251,9 +256,12 @@ function checkResource(resource, state, args, source) {
     // Do not touch source repository's .git, product sources or a PHR clone.
     const marker = checkMarker(resource, state, scopeRoot)
     validateAuthorization(resource, state, phase)
+    // Run deterministic retention/Git/content guards first. Restricted /proc
+    // visibility must not mask a known RETAINED reason, but any candidate that
+    // otherwise qualifies still fails closed if process observation is partial.
+    const size = resource.kind === 'git-worktree' ? checkGitWorktree(resource, sourceRoot, state, source) : checkCache(resource, state, sourceRoot)
     assertNoLiveLocalConsumer(resource.path)
     const snapshot = fs.lstatSync(resource.path)
-    const size = resource.kind === 'git-worktree' ? checkGitWorktree(resource, sourceRoot, state, source) : checkCache(resource, state, sourceRoot)
     result.status = 'OWNED_DISPOSABLE'
     result.measurement = { logicalBytes: size.logicalBytes, allocatedBytes: size.allocatedBytes, entries: size.items }
     result.expectedIdentity = { dev: snapshot.dev, ino: snapshot.ino }
