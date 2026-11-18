@@ -23,3 +23,22 @@ test('separate pilots, unconfigured native runtime and current E1 denials fail c
  assert.equal((await createCachedSupplierIdentityHttpHandler(()=>({provider:'legacy_demo'}),env)(request())).status,503)
  assert.equal((await createCachedSupplierIdentityHttpHandler(getter,env)(request())).status,403)
 })
+
+// Security regressions for current-source continuation; frozen M2 fixtures stay intact.
+test('immutable M2 digest cannot be substituted by an admitted current source',async()=>{
+ const {readFileSync}=await import('node:fs'),{execFileSync}=await import('node:child_process')
+ const {srmAssistantM2Predecessor,SRM_ASSISTANT_M2_PATHS}=await import('../../scripts/assistant-m2-integrity.mjs')
+ const root=new URL('../../../../',import.meta.url),file='apps/srm/assistant-context-integration.json'
+ const current=(p:string)=>readFileSync(new URL(p,root)),historical=(sha:string,p:string)=>execFileSync('git',['cat-file','blob',sha+':'+p],{cwd:root})
+ assert(srmAssistantM2Predecessor(current,historical))
+ const changed=JSON.parse(current(file).toString());changed.sourceDigests[SRM_ASSISTANT_M2_PATHS[0]]='0'.repeat(64)
+ assert.throws(()=>srmAssistantM2Predecessor((p:string)=>p===file?Buffer.from(JSON.stringify(changed)):current(p),historical),/unchanged authority-main receipt values/)
+})
+test('current X-Ray source projection rejects callback substitution despite an admitted checkout',async()=>{
+ const {readFileSync}=await import('node:fs'),{execFileSync}=await import('node:child_process')
+ const {assertXrayAppShellPresentation}=await import('../../scripts/xray-style-acceptance.mjs')
+ const root=new URL('../../../../',import.meta.url),current=(p:string)=>readFileSync(new URL(p,root)),historical=(sha:string,p:string)=>execFileSync('git',['cat-file','blob',sha+':'+p],{cwd:root})
+ const receipt=JSON.parse(current('apps/srm/operation-integration.json').toString()),changed='packages/srm-xray/src/full-report-operations.ts'
+ assert.doesNotThrow(()=>assertXrayAppShellPresentation(receipt,current,historical))
+ assert.throws(()=>assertXrayAppShellPresentation(receipt,(p:string)=>p===changed?Buffer.concat([current(p),Buffer.from('UNACCEPTED')]):current(p),historical),/independently admitted current public X-Ray variant/)
+})
