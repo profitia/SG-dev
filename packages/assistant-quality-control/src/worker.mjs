@@ -59,3 +59,32 @@ export function createQualityWorker({store,controller,pollMs=5000,wait=pause,onE
   },
  })
 }
+
+/** The native store owns the 90-day expiry and preserves unresolved work and
+ * the repository lock. This timer has no query, row, age or role override.
+ * It starts no incident, provider request, paid clock or QA operation. */
+export function createQualityMetadataRetention({store,now=Date.now}={}){
+ if(typeof store?.purge!=='function'||typeof now!=='function')fail('CONTROL_RETENTION_CONFIGURATION_REQUIRED')
+ const interval=6*60*60*1000
+ let lastConfirmed=null,inFlight=null,failed=false
+ return Object.freeze({async check({signal}={}){
+  if(signal?.aborted)return Object.freeze({status:'STOPPING',purgePerformed:false})
+  if(failed)fail('CONTROL_RETENTION_UNAVAILABLE')
+  const at=now()
+  if(!Number.isFinite(at)||at<0)fail('CONTROL_RETENTION_CLOCK_INVALID')
+  if(inFlight)return inFlight
+  if(lastConfirmed!==null&&at>=lastConfirmed&&at-lastConfirmed<interval)
+   return Object.freeze({status:'NOT_DUE',purgePerformed:false})
+  inFlight=(async()=>{
+   try{
+    const result=await store.purge(),completed=now()
+    if(result?.status!=='PURGED'||!Number.isFinite(completed)||completed<0)fail('CONTROL_RETENTION_UNAVAILABLE')
+    lastConfirmed=completed
+    return Object.freeze({schemaVersion:'AQC_CONTROL_METADATA_RETENTION_V1',status:'PURGE_CONFIRMED',purgePerformed:true,
+     scope:'CONTROL_METADATA_ONLY',retentionDays:90,observedAt:new Date(completed).toISOString()})
+   }catch{failed=true;fail('CONTROL_RETENTION_UNAVAILABLE')}
+   finally{inFlight=null}
+  })()
+  return inFlight
+ }})
+}
