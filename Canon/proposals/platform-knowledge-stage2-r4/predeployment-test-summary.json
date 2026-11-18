@@ -1,0 +1,124 @@
+{
+  "status": "PREDEPLOYMENT_EVIDENCE_NOT_GITHUB_CI_NOT_LIVE",
+  "release": "617ae48d975e241e1df7d6b051ce586e0d5074bd",
+  "sourceBase": "d5eb40a061dd24c5ea65f9f373682179458cb589",
+  "policyProposal": "233f288261a587f112b05f7dd6d9a4ec7df0ead2",
+  "policyBase": "67b81304e08d400aef5872839e24de39b8af8093",
+  "mainAtPublicationPreparation": "0a56b29bde15fa5bed2d5ab67cd12757bec0c92a",
+  "closedSourceFiles": 115,
+  "owners": {
+    "ARCHITECTURE": 100,
+    "SG2": 10,
+    "SRM": 5
+  },
+  "knowledgeRecordSha256": "f48b0959976c01562f92669dacfc83829b31c8013af70ecd041a94bc3f39be6c",
+  "currentSourceFiles": 460,
+  "unchangedHistoricalReceipts": 33,
+  "sourceIntegrityTests": {
+    "passed": 68,
+    "failed": 0,
+    "skipped": 0,
+    "executionHeadBeforeSigning": "d5eb40a061dd24c5ea65f9f373682179458cb589",
+    "frozenSourceBytes": "617ae48d975e241e1df7d6b051ce586e0d5074bd"
+  },
+  "sdkCoreAcgTests": {
+    "passed": 38,
+    "failed": 0,
+    "skipped": 0
+  },
+  "focusedPolicyCorrections": {
+    "passed": 10,
+    "failed": 0,
+    "skipped": 0
+  },
+  "fullPrivatePolicy": {
+    "status": "INACTIVE_PRIVATE_POLICY_SIMULATION_NOT_CONTROLLED_CI",
+    "sourceSha": "617ae48d975e241e1df7d6b051ce586e0d5074bd",
+    "files": {
+      "controlled-package-ci.mjs": "5a5ea7ea9c091e44ecf410ec1792cbfa71bda986e2b5342a8ee8ab9aa6db86fb",
+      "controlled-package-ci.test.mjs": "08e8bdd602d56a14406f9d474c205bc0f8552069df52094dcaf69a936c8f5177"
+    },
+    "acceptedMainPolicyInput": "67b81304e08d400aef5872839e24de39b8af8093",
+    "exitCode": 0,
+    "seconds": 642.64,
+    "paths": [
+      "scripts/governance/assistant-quality-routing.test.mjs",
+      "scripts/governance/controlled-package-ci-path-coverage.test.mjs",
+      "scripts/governance/controlled-package-ci.test.mjs",
+      "scripts/governance/development-bridge.test.mjs",
+      "scripts/governance/development-execution.test.mjs",
+      "scripts/governance/development-workspace.test.mjs",
+      "scripts/governance/ecr-routing.test.mjs",
+      "scripts/governance/governance.test.mjs",
+      "scripts/governance/identity-runtime-onboarding.test.mjs",
+      "scripts/governance/krs-registry-routing.test.mjs",
+      "scripts/governance/package-limits-routing.test.mjs",
+      "scripts/governance/platform-knowledge-ci-admission.test.mjs",
+      "scripts/governance/platform-knowledge-routing.test.mjs",
+      "scripts/governance/platform-source-hub-foundation.test.mjs",
+      "scripts/governance/sg2-staging-release.test.mjs",
+      "scripts/governance/srm-adp-routing.test.mjs",
+      "scripts/governance/srm-release-lifecycle.test.mjs",
+      "/workspaces/sgdev-tasks/platform-knowledge-stage2-technical-20261117/accepted-main-tools/r4-policy-review/repair-provenance.test.mjs",
+      "/workspaces/sgdev-tasks/platform-knowledge-stage2-technical-20261117/accepted-main-tools/r4-policy-review/knowledge-calendar-peer.test.mjs"
+    ],
+    "summary": [
+      "ℹ tests 684",
+      "ℹ pass 684",
+      "ℹ fail 0",
+      "ℹ skipped 0"
+    ],
+    "failures": [],
+    "sourceUnchanged": true,
+    "runtimeCalls": 0
+  },
+  "firstPrivateRunPreserved": {
+    "tests": 681,
+    "passed": 677,
+    "failed": 4,
+    "skipped": 0,
+    "sourceUnchanged": true,
+    "replacedHistoricalEvidence": false,
+    "causes": [
+      "Two obsolete private finite-peer fixtures",
+      "Test selector lacked the new exact Knowledge provenance",
+      "PI contract fixture used the global SDK instead of its immutable source"
+    ]
+  },
+  "originalRuntimeEvidence": {
+    "sourceSha": "5196726aa142ef928b59f22f26d0689a9a74eb4d",
+    "postgresE1RootAcg": {
+      "passed": 58,
+      "failed": 0,
+      "skipped": 0
+    },
+    "pci": {
+      "passed": 68,
+      "failed": 0,
+      "skipped": 0
+    },
+    "notClaimedAsExactReleaseTests": true,
+    "runtimeAndMigrationDirectoriesUnchangedFromR3": true
+  },
+  "nativeExistingSessionTransport": {
+    "status": "READ_ONLY_EXISTING_NATIVE_TRANSPORT_VERIFIED",
+    "observedAt": "2026-11-18T07:56:20.891387+00:00",
+    "bootstrapSha256": "463edcdb3008c0ea786eacb08209a10fec4f52423ba25300890b39619460b44b",
+    "relaySha256": "3c2876367196e1a4e957a9849f3d576f87fde7273877c8627ab2d8e913dde340",
+    "serviceId": "srv-dbq6n2m7bikc73dmvs8g",
+    "workspaceId": "tea-d7lps8rbc2fs73cn80dg",
+    "liveDeployId": "dep-dbq71vutlv9c73epgb2g",
+    "liveSha": "1fef8b3837c1bdd6ea9ff95dd4e976cc71cf9526",
+    "activeDeploys": [],
+    "newAuthentication": false,
+    "credentialDisplayed": false,
+    "runtimeMutations": 0
+  },
+  "requiredGithubCi": "PENDING",
+  "sourceAdmission": "PENDING",
+  "migrationsPerformed": 0,
+  "grantsOrBindingsInstalled": 0,
+  "deploymentsPerformed": 0,
+  "paidProviderCalls": 0,
+  "importsPerformed": 0
+}
