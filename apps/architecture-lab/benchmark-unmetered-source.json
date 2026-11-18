@@ -19,14 +19,14 @@
     "packages/platform-contracts/src/request-ledger.mjs": "9719d776329c4aadc0acc6fc3b05bfc21c66f4f246590de5f0525ee8d50937a0",
     "packages/platform-contracts/test/source-technical-continuity.integration.test.mjs": "3a26a550ba7571468bd6704aa3892263deb1ccd413000f46eeb769540666430b",
     "packages/platform-contracts/test/unmetered-benchmark-requests.integration.test.mjs": "89c287233bf737abf40c10747b85824c778c8238cc9fdbef157fc81a709b25c4",
-    "packages/platform-contracts/test/benchmark-unmetered-source.mjs": "ed4f8b11408e8c08706b2508d66abc3ad8d7f78ea2c2067f5b49914343edaa03",
-    "packages/platform-contracts/test/benchmark-unmetered-source.test.mjs": "08e2a917626c2c4f483623430fd390bcbeb349dd270164caa16a12b38e00a27a",
+    "packages/platform-contracts/test/benchmark-unmetered-source.mjs": "1648e1a753b24b0a92d0f20fd9273881366b0e1fc320108d6d8b6ba44441c696",
+    "packages/platform-contracts/test/benchmark-unmetered-source.test.mjs": "c7c8adde507e01577bc6cbc2b335cf2df2777196180213dbbe4d4ccad3aa72ce",
     "packages/platform-contracts/test/assistant-reservation-source.test.mjs": "3e195eab030542507d3dd9db5b8b1f209a2fac534824d4961f32b10fd039480c",
     "apps/architecture-lab/test/sdk-compatibility.test.mjs": "361d3720f4831e181884bb7ff853702ff2f90e9a1a0001fcd554df0b21b7d498",
     "packages/platform-contracts/current-fresh-report/test/current-fresh-report.test.mjs": "209b7aa8b0dcc3bf615d7206c16900f926cc5b994417f8eb9a7bc683d382927f",
     "packages/platform-contracts/readonly-miss-report/test/readonly-miss-report.test.mjs": "13caa5f2e7e26bd1c0141b1ce0a144dbcfc343c7581c379e5d1f4b0633457b6c",
     "packages/platform-contracts/test/private-operation-host.test.mjs": "bb94f7cb64bbeb3c673790810c2f6b345ee729df4d6d929b165b3ad5d0dbbccd",
-    "apps/architecture-lab/private-recurring-source.mjs": "7016acd18cca100b5af23ee0086eb6b20f6b4f419546055d164eed1dc4288faa"
+    "apps/architecture-lab/private-recurring-source.mjs": "057ef5fcc899bc4524bdb95d3f60b8df8531f09fbde6cc5f26b1eda6b45a1f6a"
   },
   "predecessorDigests": {
     "packages/platform-contracts/README.md": "36e013b6f6692566004e152020d3d43b38a4567680b5dd0b53677edc519bc1e7",

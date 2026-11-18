@@ -115,7 +115,7 @@ export function benchmarkUnmeteredPredecessor(current,historical,pin){
  for(const value of [...Object.values(a.sdkDigests),...Object.values(a.optionalPackageDigests)])assert.match(value,/^[a-f0-9]{64}$/)
  const consumer=reviewedConsumer(current,historical,a.consumerInput)
  const mapped=new Set(BENCHMARK_PATHS)
- return {manifest:a,consumerSourceDigests:consumer?.sourceDigests??{},previousBytes:p=>{
+ return {manifest:a,consumerSourceDigests:consumer?.sourceDigests??{},addedPaths:[BENCHMARK_RECORD,...BENCHMARK_PATHS.filter(p=>!(p in a.predecessorDigests)),...(consumer?BENCHMARK_CONSUMER_PATHS.filter(p=>!(p in consumer.predecessorDigests)):[])],previousBytes:p=>{
   if(consumer&&BENCHMARK_CONSUMER_PATHS.includes(p)){if(!(p in consumer.predecessorDigests))throw Object.assign(Error('Finder consumer absent from predecessor'),{code:'ENOENT'});return Buffer.from(historical(consumer.baseSha,p))}
   if(p===BENCHMARK_RECORD||mapped.has(p)&&!(p in a.predecessorDigests))throw Object.assign(Error('Benchmark source absent from predecessor'),{code:'ENOENT'})
   if(p===BENCHMARK_DERIVED||mapped.has(p))return Buffer.from(historical(BENCHMARK_BASE,p))

@@ -20,7 +20,7 @@ const hash=b=>createHash('sha256').update(b).digest('hex')
 const absent=error=>error?.code==='ENOENT'||error?.status===128&&["' does not exist in ","' exists on disk, but not in "].some(s=>String(error?.stderr??error?.message??'').includes("'"+RECURRING_SOURCE_RECORD+s))
 export function recurringSourcePredecessor(current,historical){
  const reservation=assistantReservationPredecessor(current,historical,ASSISTANT_RESERVATION_SOURCE_SHA)
- if(reservation){const accepted=recurringSourcePredecessor(reservation.previousBytes,historical);assert(accepted,'all accepted predecessors retained');return {...accepted,reservation}}
+ if(reservation){const accepted=recurringSourcePredecessor(reservation.previousBytes,historical);assert(accepted,'all accepted predecessors retained');const b=reservation.benchmark;if(!b)return {...accepted,reservation};return {...accepted,reservation,acceptedManifest:accepted.acceptedManifest??accepted.manifest,manifest:{...accepted.manifest,currentContinuation:b.manifest,sourceDigests:{...accepted.manifest.sourceDigests,...reservation.manifest.sourceDigests},sdkDigests:{...accepted.manifest.sdkDigests,...b.manifest.sdkDigests},optionalPackageDigests:{...accepted.manifest.optionalPackageDigests,...b.manifest.optionalPackageDigests},addedPaths:[...new Set([...accepted.manifest.addedPaths,...b.addedPaths])]}}}
  const transport=recurringConsentTransportPredecessor(current,historical);if(transport){const accepted=recurringSourcePredecessor(transport.previousBytes,historical);return {...accepted,transport}}
  const shell=procurementInsightsShellPredecessor(current,historical);if(shell){const accepted=recurringSourcePredecessor(shell.previousBytes,historical);return {...accepted,completion:shell}}
  const calendar=marketCalendarSourcePredecessor(current,historical);if(calendar)return recurringSourcePredecessor(calendar.previousBytes,historical)
@@ -65,5 +65,5 @@ export function recurringSourceFilesystem(root){
  const benchmark=view.reservation?.benchmark
  if(!benchmark)return view
  // Derived current SDK view; the original accepted manifest stays explicit.
- return {...view,acceptedManifest:view.manifest,manifest:{...view.manifest,scope:'CURRENT_ACCEPTED_SDK_SOURCE_VIEW',currentContinuation:benchmark.manifest,sourceDigests:{...view.manifest.sourceDigests,...view.reservation.manifest.sourceDigests},sdkDigests:{...view.manifest.sdkDigests,...benchmark.manifest.sdkDigests},optionalPackageDigests:{...view.manifest.optionalPackageDigests,...benchmark.manifest.optionalPackageDigests}}}
+ return {...view,acceptedManifest:view.acceptedManifest??view.manifest,manifest:{...view.manifest,scope:'CURRENT_ACCEPTED_SDK_SOURCE_VIEW',currentContinuation:benchmark.manifest,sourceDigests:{...view.manifest.sourceDigests,...view.reservation.manifest.sourceDigests},sdkDigests:{...view.manifest.sdkDigests,...benchmark.manifest.sdkDigests},optionalPackageDigests:{...view.manifest.optionalPackageDigests,...benchmark.manifest.optionalPackageDigests}}}
 }
