@@ -1,7 +1,7 @@
 {
   "schemaVersion": "1.0",
   "scope": "CURRENT_SDK_SOURCE_INTEGRITY_ONLY",
-  "sourceSnapshotSha": "738e41c5d515e0246ce5e4da6c6e5e0b113ed85c",
+  "sourceSnapshotSha": "7d82afc6217e2b5b8772fdbd95ce18a891f310d3",
   "status": "PRIVATE_PROTOTYPE_NOT_ADMITTED",
   "platformVersion": "1.38.0",
   "runtimeActivated": false,
@@ -1693,7 +1693,7 @@
     "packages/srm-xray/src/workflow.css": "b9b807de8e1c43af7263376a70ad81c2be94cb5d236dbbcbd99f690be66415e9",
     "packages/srm-xray/src/workflow.ts": "67cd3c601d32b17d86865b62459d073013698d40d5840ae0ae5bee18a08336d2",
     "packages/srm-xray/tsconfig.json": "11849720cf7010564984d2489e26ba1ba98cc4c263edb5e019a01ca81aadb4d9",
-    "scripts/governance/controlled-package-ci-path-coverage.test.mjs": "93d0fee519607eeb1fde4f6f63ca001599bbd7b0575bd4583954659aa784143e",
+    "scripts/governance/controlled-package-ci-path-coverage.test.mjs": "093037924164c3120d1f06870d2ddbedc19a52fb1ab3b112fa8e1eff0059022c",
     "scripts/governance/controlled-package-ci.mjs": "e0ce6dd1a2a5bb29d8309a639e2d0936e9b76eadbf9f0942de860c16bc96e085",
     "scripts/governance/controlled-package-ci.test.mjs": "7f7cbbd4119673de7286e3cd85862440100b5016f0fef72b0e7b7cc60cdffbea",
     "scripts/governance/development-execution.mjs": "9fd9a11c305b9169605e7343cdfe90f6e55c886c912aca0781d7ff0a87cb7a0c",
