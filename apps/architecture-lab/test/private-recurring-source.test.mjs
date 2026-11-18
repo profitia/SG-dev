@@ -1,11 +1,13 @@
+import {knowledgeSourcePredecessor} from '../knowledge-source.mjs';
 // SYNTHETIC_ONLY. This checks source provenance, never runtime authority.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {execFileSync} from 'node:child_process';
 import {recurringSourcePredecessor,RECURRING_SOURCE_RECORD,RECURRING_SOURCE_BASE} from '../private-recurring-source.mjs';
-const root=new URL('../../../',import.meta.url),current=p=>readFileSync(new URL(p,root));
+const root=new URL('../../../',import.meta.url),physical=p=>readFileSync(new URL(p,root));
 const cache=new Map(),history=(sha,p)=>{const key=sha+':'+p;if(!cache.has(key))cache.set(key,execFileSync('git',['show',key],{cwd:root,stdio:['ignore','pipe','pipe']}));return cache.get(key)};
+const knowledge=knowledgeSourcePredecessor(physical,history),current=knowledge?.previousBytes??physical;
 test('current recurring source is closed before the complete immutable predecessor can be used',()=>{
  const view=recurringSourcePredecessor(current,history);assert(view);
  for(const p of Object.keys(view.manifest.preservedReceipts))assert.deepEqual(current(p),history(RECURRING_SOURCE_BASE,p));
