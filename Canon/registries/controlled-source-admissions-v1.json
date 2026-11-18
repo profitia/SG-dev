@@ -1189,14 +1189,14 @@
       "targetEnvironment": "development",
       "scope": "SOURCE_VALIDATION_ONLY",
       "approvalRef": null,
-      "sourceSha": "bc770956e6f66f84862291e64707922b46ddbc36",
-      "baseSha": "1888f0f707ab382e8886f31bedb5983e1f5a1026",
+      "sourceSha": "ac1f1c4384a9fd0299ec7e579aabb30aba062ba4",
+      "baseSha": "0a56b29bde15fa5bed2d5ab67cd12757bec0c92a",
       "validFrom": null,
       "validUntil": null,
       "files": [
         {
           "path": "apps/architecture-lab/assistant-reservation-source.json",
-          "blob": "279762cb0546653605f110e904efa22552ecd2a0",
+          "blob": "f4f115e8893dc2bf36dea881f332f5a8d6ea0d27",
           "mode": "100644",
           "status": "added",
           "projectKey": "ARCHITECTURE",
@@ -1205,7 +1205,7 @@
         },
         {
           "path": "apps/architecture-lab/private-recurring-source.mjs",
-          "blob": "6eb5af6227f3bf06ca6b117b439d2e5bdbe90df0",
+          "blob": "24be0bd42b421e253135844b6a0fe206ca72c684",
           "mode": "100644",
           "status": "modified",
           "projectKey": "ARCHITECTURE",
@@ -1277,7 +1277,7 @@
         },
         {
           "path": "apps/platform-source-hub/test/ci-routing.test.mjs",
-          "blob": "56c9a972f519ee94e85aaa0a5f1967a68d1c7fdc",
+          "blob": "e53d0f992c4af41cd0e280c395432be8ed047f98",
           "mode": "100644",
           "status": "modified",
           "projectKey": "ARCHITECTURE",
@@ -1349,7 +1349,7 @@
         },
         {
           "path": "apps/sg-runtime/tests/finder-monitor-source-integrity.mjs",
-          "blob": "b851ebe976dac7944b4c6fc77d9b2ed2bdb757f0",
+          "blob": "c1401b28f33a2397c731907d78b1b05c184d09e3",
           "mode": "100644",
           "status": "modified",
           "projectKey": "SG2",
@@ -1556,7 +1556,7 @@
         },
         {
           "path": "packages/platform-contracts/test/assistant-reservation-source.test.mjs",
-          "blob": "45ddf012ce9cdb28c20c4e2fdb3ca56bccf3078a",
+          "blob": "53e8f50ce81457c8234eea06062f3a502c999631",
           "mode": "100644",
           "status": "added",
           "projectKey": "ARCHITECTURE",
@@ -1592,7 +1592,7 @@
         },
         {
           "path": "scripts/governance/controlled-package-ci.test.mjs",
-          "blob": "13e68e5e3be18063b413dde7d5b33c5272a0fd9a",
+          "blob": "9c0990c03483e89d8a89e6bc2ab6455037194fa2",
           "mode": "100644",
           "status": "modified",
           "projectKey": "ARCHITECTURE",
