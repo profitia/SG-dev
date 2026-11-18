@@ -214,17 +214,48 @@ async function publicationFixture({enabled=true,promote=true}={}){
  const body=repairManifestBody({mandate,incidentId,correlationId:randomUUID(),baseSha:old,repairClass:'C1',exportReceiptId:randomUUID(),fixtureSha256:documentDigest(regression)})
  const exported=signDocument('AQC_SYNTHETIC_EXPORT_V1',{id:body.synthetic.exportReceiptId,fixtureId:body.synthetic.fixtureId,sha256:body.synthetic.sha256,scope:'CONTROLLED_ACCEPTANCE',incidentId,repairClass:'C1',issuedAt:stamp(origin-1000),expiresAt:stamp(origin+300000),rawQaPayloadIncluded:false},verifier.privateKey)
  const manifest=verifyBoundManifest(body,{mandate,fixtureExport:exported,ownerKeys:new Map([[publicKeyId(owner.publicKey),owner.publicKey]]),verifierKeys:keyMap,now:origin,expectedBaseSha:old,expectedServiceId:service.id,expectedGateSetSha256:gate})
- const content='export function controlledFixture(v:number){return v+1}\n',regressionSource=serializeRegression(regression),hash=v=>createHash('sha256').update(v).digest('hex')
+ const beforeSource='export function controlledFixture(v:number){return v}\n',content='export function controlledFixture(v:number){return v+1}\n',regressionSource=serializeRegression(regression),hash=v=>createHash('sha256').update(v).digest('hex')
  const patch={schemaVersion:'AQC_PATCH_V1',incidentId,baseSha:old,gateSetSha256:gate,manifestSha256:documentDigest(manifest),files:[
-  {path:manifest.allowedPaths[0],beforeSha256:'e'.repeat(64),afterSha256:hash(content),content},
+  {path:manifest.allowedPaths[0],beforeSha256:hash(beforeSource),afterSha256:hash(content),content},
   {path:manifest.allowedPaths[1],beforeSha256:null,afterSha256:hash(regressionSource),content:regressionSource}]}
  const verification={result:'PASS',artifactSha256:documentDigest(patch),proofSha256:'f'.repeat(64)},calls=[],requests=[]
- const pr=()=>({number:43,state:'open',head:{repo:{full_name:'profitia/SG-dev'},ref:'sg2/quality-control-'+incidentId,sha},base:{repo:{full_name:'profitia/SG-dev'},ref:'main',sha:old},user:{login:'profitia'}})
+ const gitBlobs=new Map(),gitTrees=new Map()
+ const addBlob=content=>{
+  const bytes=Buffer.from(content),id=createHash('sha1').update('blob '+bytes.length+'\0').update(bytes).digest('hex')
+  gitBlobs.set(id,{sha:id,encoding:'base64',size:bytes.length,content:bytes.toString('base64')});return id
+ }
+ const buildTree=files=>{
+  const root={}
+  for(const [path,content]of files){const parts=path.split('/');let node=root
+   for(const part of parts.slice(0,-1))node=node[part]??=(Object.create(null))
+   node[parts.at(-1)]={content}
+  }
+  function visit(node){
+   const tree=Object.entries(node).map(([path,value])=>Object.hasOwn(value,'content')
+    ?{path,mode:'100644',type:'blob',sha:addBlob(value.content)}
+    :{path,mode:'040000',type:'tree',sha:visit(value)})
+   const id=createHash('sha1').update(JSON.stringify(tree)).digest('hex')
+   gitTrees.set(id,{sha:id,truncated:false,tree});return id
+  }
+  return visit(root)
+ }
+ state.binding={baseTree:buildTree([[manifest.allowedPaths[0],beforeSource]]),
+  headTree:buildTree(patch.files.map(f=>[f.path,f.content])),parents:[{sha:old}],
+  files:patch.files.map(f=>({filename:f.path,status:f.path===manifest.allowedPaths[0]?'modified':'added',sha:addBlob(f.content)})),
+  blobs:gitBlobs,trees:gitTrees}
+ const pr=()=>({number:43,state:'open',changed_files:2,head:{repo:{full_name:'profitia/SG-dev'},ref:'sg2/quality-control-'+incidentId,sha},base:{repo:{full_name:'profitia/SG-dev'},ref:'main',sha:old},user:{login:'profitia'}})
  const fetchImpl=async(url,options)=>{
   calls.push({url,options});if(state.drift)await state.drift(url,options)
   const suffix=url.slice('https://api.github.com/repos/profitia/SG-dev'.length)
   if(suffix==='/git/ref/heads/main')return Response.json({object:{sha:old}})
-  if(suffix==='/git/commits/'+old)return Response.json({tree:{sha:'d'.repeat(40)}})
+  if(suffix==='/git/commits/'+old)return Response.json({sha:old,tree:{sha:state.binding.baseTree}})
+  if(suffix==='/git/commits/'+sha)return Response.json({sha,tree:{sha:state.binding.headTree},parents:state.binding.parents})
+  if(suffix==='/pulls/43/files?per_page=100&page=1')return Response.json(state.binding.files)
+  if(suffix==='/commits/'+sha+'?per_page=100&page=1')return Response.json(state.binding.comparison??{
+   sha,parents:[{sha:old}],commit:{tree:{sha:state.binding.headTree}},files:state.binding.files})
+
+  if(suffix.startsWith('/git/trees/'))return Response.json(gitTrees.get(suffix.slice('/git/trees/'.length)))
+  if(suffix.startsWith('/git/blobs/'))return Response.json(gitBlobs.get(suffix.slice('/git/blobs/'.length)))
   if(suffix==='/git/blobs')return Response.json({sha:'e'.repeat(40)})
   if(suffix==='/git/trees')return Response.json({sha:'f'.repeat(40)})
   if(suffix==='/git/commits')return Response.json({sha,tree:{sha:'f'.repeat(40)}})
@@ -241,7 +272,7 @@ async function publicationFixture({enabled=true,promote=true}={}){
   state.reads++;requests.push(expected);return typeof state.document==='function'?state.document(expected):state.document??document(expected)
  }}
  const client=createQualityAttestedPublisher({token:'synthetic',publisherEnabled:enabled,promotionEnabled:promote,fetchImpl,proofEvidence:evidence,requiredNames:names})
- return {client,state,calls,requests,manifest,patch,verification,names,installed,keyMap,document,evidence,origin,stamp,pr,verifier,documentDigest,
+ return {client,inspector:createQualityGitHub({token:'synthetic',fetchImpl}),buildTree,state,calls,requests,manifest,patch,verification,names,installed,keyMap,document,evidence,origin,stamp,pr,verifier,documentDigest,
   proposal:()=>({manifest,patch,verification}),merge:()=>({manifest,patch,verification,prNumber:43,headSha:sha})}
 }
 
@@ -329,4 +360,78 @@ test('independent publisher defaults remain disabled before receipt reads or HTT
  await assert.rejects(f.client.merge({}),{code:'PROMOTION_DISABLED'})
  assert.equal(f.state.reads,0);assert.equal(f.calls.length,0)
  assert.throws(()=>createQualityAttestedPublisher({token:'synthetic',proofEvidence:f.evidence,requiredNames:[],verifyIndependent:()=>true}),{code:'PUBLISHER_VERIFIER_CONFIGURATION_REQUIRED'})
+})
+
+
+test('independent publisher binds exact PR bytes, ordinary modes and one base parent using read-only provider requests',async()=>{
+ const f=await publicationFixture(),proof=await f.inspector.inspectPatchBinding(f.merge())
+ assert.equal(proof.result,'PASS');assert.equal(proof.sourceBound,true);assert.equal(proof.headSha,sha)
+ assert.equal(proof.artifactSha256,f.verification.artifactSha256);assert.match(proof.patchBindingSha256,/^[a-f0-9]{64}$/)
+ assert(f.calls.length>5);assert(f.calls.every(c=>c.options.method==='GET'))
+ assert.equal(JSON.stringify(proof).includes('controlledFixture'),false)
+})
+test('independent publisher rejects extra paths, renames, foreign ancestry and mismatched provider blob identity',async()=>{
+ const changes=[
+  f=>{f.state.pr={...f.pr(),changed_files:3}},
+  f=>{f.state.binding.files.push({...f.state.binding.files[0],filename:'foreign/path.ts'})},
+  f=>{f.state.binding.files[0].previous_filename='foreign/path.ts'},
+  f=>{f.state.binding.files[0].status='added'},
+  f=>{f.state.binding.parents=[{sha:old},{sha:'c'.repeat(40)}]},
+  f=>{f.state.binding.parents=[{sha:'c'.repeat(40)}]},
+  f=>{f.state.binding.files[0].sha='c'.repeat(40)},
+  f=>{f.state.binding.trees.get(f.state.binding.headTree).truncated=true},
+  f=>{f.state.binding.baseTree=f.state.binding.headTree},
+ ]
+ for(const change of changes){
+  const f=await publicationFixture();change(f)
+  await assert.rejects(f.inspector.inspectPatchBinding(f.merge()))
+  assert(f.calls.every(c=>c.options.method==='GET'))
+ }
+})
+test('independent publisher refuses symlinks, executable modes, altered bytes and an existing regression path before promotion',async()=>{
+ for(const variant of ['symlink','executable','directory','bytes','preexisting-regression']){
+  const f=await publicationFixture(),binding=f.state.binding
+  const find=(tree,path)=>{
+   const parts=path.split('/');let current=binding.trees.get(tree),found
+   for(const part of parts){found=current.tree.find(x=>x.path===part);if(found.type==='tree')current=binding.trees.get(found.sha)}
+   return found
+  }
+  const source=find(binding.headTree,f.manifest.allowedPaths[0])
+  if(variant==='symlink')source.mode='120000'
+  if(variant==='executable')source.mode='100755'
+  if(variant==='directory'){source.mode='040000';source.type='tree'}
+  if(variant==='bytes')binding.blobs.get(source.sha).content=Buffer.from('altered bytes').toString('base64')
+  if(variant==='preexisting-regression')binding.baseTree=f.buildTree([
+   [f.manifest.allowedPaths[0],'export function controlledFixture(v:number){return v}\n'],
+   [f.manifest.allowedPaths[1],f.patch.files[1].content]])
+  await assert.rejects(f.client.merge(f.merge()))
+  assert.equal(f.calls.some(c=>c.options.method==='PUT'),false,variant)
+ }
+})
+test('independent publisher rechecks PR identity after immutable object inspection',async()=>{
+ const f=await publicationFixture();let reads=0
+ f.state.drift=async url=>{if(url.endsWith('/pulls/43')&&++reads===2)f.state.pr={...f.pr(),head:{...f.pr().head,sha:'c'.repeat(40)}}}
+ await assert.rejects(f.inspector.inspectPatchBinding(f.merge()),{code:'PR_HEAD_CHANGED'})
+ assert(f.calls.every(c=>c.options.method==='GET'))
+})
+
+test('independent publisher snapshots the approved patch before asynchronous provider reads',async()=>{
+ const f=await publicationFixture(),artifact=f.verification.artifactSha256;let changed=false
+ f.state.drift=async()=>{if(!changed){changed=true;f.patch.files[0].content='changed after inspection started';f.verification.artifactSha256='0'.repeat(64)}}
+ const proof=await f.inspector.inspectPatchBinding(f.merge())
+ assert.equal(proof.artifactSha256,artifact);assert.equal(proof.sourceBound,true)
+ assert(f.calls.every(c=>c.options.method==='GET'))
+})
+
+test('independent publisher checks the immutable commit diff rather than trusting mutable PR file counts',async()=>{
+ for(const variant of ['extra-file','wrong-blob','wrong-base','extra-commit']){
+  const f=await publicationFixture(),comparison={sha,parents:[{sha:old}],commit:{tree:{sha:f.state.binding.headTree}},files:structuredClone(f.state.binding.files)}
+  if(variant==='extra-file')comparison.files.push({...comparison.files[0],filename:'unadmitted/path.ts'})
+  if(variant==='wrong-blob')comparison.files[0].sha='c'.repeat(40)
+  if(variant==='wrong-base')comparison.parents[0].sha='c'.repeat(40)
+  if(variant==='extra-commit')comparison.parents.push({sha:'c'.repeat(40)})
+  f.state.binding.comparison=comparison
+  await assert.rejects(f.inspector.inspectPatchBinding(f.merge()),{code:'PUBLISHER_PATCH_COMPARISON_INVALID'})
+  assert(f.calls.every(c=>c.options.method==='GET'))
+ }
 })
