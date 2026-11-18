@@ -1182,17 +1182,17 @@
     },
     {
       "id": "ARCHITECTURE:ARCH-ACG-M1M2-COMPLETION-20261117",
-      "status": "PROPOSED",
+      "status": "ACTIVE",
       "repository": "profitia/SG-dev",
-      "actor": null,
+      "actor": "profitia",
       "taskId": "ARCH-ACG-M1M2-COMPLETION-20261117",
       "targetEnvironment": "development",
       "scope": "SOURCE_VALIDATION_ONLY",
-      "approvalRef": null,
+      "approvalRef": "https://github.com/profitia/SG-dev/commit/2040e9e7430fd6b164f8726e3f92d3654b804e44",
       "sourceSha": "817d20e2e9fea8698ab5f9f5a8f5e553787d5c72",
       "baseSha": "3109989f6a2c6378b3eddfb84cf99d1a199d1f1e",
-      "validFrom": null,
-      "validUntil": null,
+      "validFrom": "2026-11-18T10:37:41Z",
+      "validUntil": "2026-11-19T14:39:02Z",
       "files": [
         {
           "path": "apps/architecture-lab/assistant-reservation-source.json",
