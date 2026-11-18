@@ -68,7 +68,8 @@ export function assertSourceHubMarketSymbolCompatibility(receipt,current,histori
  assert.deepEqual(Object.keys(a.producerMetadataDigests).sort(),MARKET_SYMBOL_METADATA_PATHS);
  assert.deepEqual(a.sdkDigests,MARKET_SYMBOL_SDK_DIGESTS);assert.deepEqual(a.optionalPackageDigests,MARKET_SYMBOL_OPTIONAL_DIGESTS);
  assertSrmHistoricalSources(current,a.consumerSourceDigests,'current compatibility closure',{value:a.consumerSourceDigests,file,fields:['sourceHubMarketSymbolCompatibility','consumerSourceDigests']});
- for(const[p,h]of Object.entries({...a.peerSourceDigests,...a.producerMetadataDigests}))assert.equal(hash(current(p)),h,'current compatibility closure '+p);
+ assertSrmHistoricalSources(current,a.peerSourceDigests??{},'current peer compatibility closure',{value:a.peerSourceDigests,file,fields:['sourceHubMarketSymbolCompatibility','peerSourceDigests']});
+ assertSrmHistoricalSources(current,a.producerMetadataDigests??{},'current producer metadata closure',{value:a.producerMetadataDigests,file,fields:['sourceHubMarketSymbolCompatibility','producerMetadataDigests']});
  for(const [p,h]of Object.entries(a.sourceDigests))assert.equal(hash(current('packages/platform-contracts/'+p)),h,'current SDK closure '+p);
  assert.deepEqual(a.applicationSourceDigests,Object.fromEntries(Object.entries({...a.consumerSourceDigests,...a.peerSourceDigests}).map(([p,h])=>[posix.relative('apps/'+app,p),h])));
  for(const flag of ['marketSymbolOptedIn','sql029Installed','businessLogicChanged','uiChanged','authorizationChanged','sourceBindingsChanged','providerCallsPerformed','deploymentPerformed'])assert.equal(a[flag],false,flag);

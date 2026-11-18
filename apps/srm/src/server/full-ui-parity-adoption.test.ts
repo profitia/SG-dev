@@ -1,5 +1,5 @@
 import {assertSourceHubApiPathCompatibility} from '../../scripts/source-hub-sdk-compatibility.mjs';
-import {assertStyleConsumerAcceptance,assertSentryHostContinuation,assertMarketHistoryHostContinuation} from '../../scripts/xray-style-acceptance.mjs';
+import {assertStyleConsumerAcceptance,assertSentryHostContinuation,assertMarketHistoryHostContinuation,assertXrayAppShellPresentation} from '../../scripts/xray-style-acceptance.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -121,3 +121,10 @@ test('full UI adoption rejects receipt rewriting, public UI drift and financial 
  }
  assert.throws(()=>assertAdoption(receipt,p=>p==='apps/srm/src/server/fresh-report.ts'?Buffer.concat([read(p),Buffer.from('\n/* unaccepted drift */')]):read(p)));
 });
+
+// Real filesystem source is independently authenticated before any predecessor.
+test('current X-Ray source projection rejects callback substitution despite an admitted checkout',()=>{
+ const receipt=JSON.parse(read('apps/srm/operation-integration.json').toString()),changed='packages/srm-xray/src/full-report-operations.ts'
+ assert.doesNotThrow(()=>assertXrayAppShellPresentation(receipt,read,historical))
+ assert.throws(()=>assertXrayAppShellPresentation(receipt,(p:string)=>p===changed?Buffer.concat([read(p),Buffer.from('UNACCEPTED')]):read(p),historical),/independently admitted current public X-Ray variant/)
+})

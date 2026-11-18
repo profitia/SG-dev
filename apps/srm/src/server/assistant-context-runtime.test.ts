@@ -21,6 +21,8 @@ test('M2 source build manifest covers every producer byte and preserves immutabl
   (p:string)=>p===path?Buffer.concat([current(p),Buffer.from('UNACCEPTED')]):current(p),historical),path)
  const changed=JSON.parse(current('apps/srm/assistant-context-integration.json').toString());changed.acquisitionAllowed=true
  assert.throws(()=>srmAssistantM2Predecessor((p:string)=>p==='apps/srm/assistant-context-integration.json'?Buffer.from(JSON.stringify(changed)):current(p),historical))
+ const changedDigest=JSON.parse(current('apps/srm/assistant-context-integration.json').toString());changedDigest.sourceDigests[SRM_ASSISTANT_M2_PATHS[0]]='0'.repeat(64)
+ assert.throws(()=>srmAssistantM2Predecessor((p:string)=>p==='apps/srm/assistant-context-integration.json'?Buffer.from(JSON.stringify(changedDigest)):current(p),historical),/unchanged authority-main receipt values/)
 })
 
 function row():ReportReadRow{
