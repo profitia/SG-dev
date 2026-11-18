@@ -1,0 +1,250 @@
+{
+  "status": "PROPOSED_OWNER_DECISION_REQUIRED",
+  "sourceSha": "445b35ef278b957d02d6477bc90a534a288ac052",
+  "baseSha": "c4965a445867601275cbb75dc4de993123414ba2",
+  "branch": "architecture/pk-stage2-runtime-acceptance-fixes-20261118",
+  "treeSha": "1d0024c26226ebb23252690ba70a99d3dcec4fce",
+  "files": {
+    "apps/platform-knowledge-runtime/db/migrations/002-worker-audit-retention.sql": {
+      "sha256": "4b2823f3f338f1347e0e5963481a5291a9741faa92c36fd69e4c0931ee7b690c",
+      "blob": "ee3b598c33ec19225529c8a8b71cade608a8c28e",
+      "mode": "100644"
+    },
+    "apps/platform-knowledge-runtime/src/database.mjs": {
+      "sha256": "08e312abe4dc636325111d74c638dfed05133106da35a2b0156cf52dcb8e84f1",
+      "blob": "48015c76aedb6a25fc4c5b48efaa02e7b15cff9c",
+      "mode": "100644"
+    },
+    "apps/platform-knowledge-runtime/src/extraction.mjs": {
+      "sha256": "7f9dbdcd356438d7a202d3ef8b418288759e4a04b1e7406adadaf5dba8566d34",
+      "blob": "32fc44383136e2af645fd148a96190c887946108",
+      "mode": "100644"
+    },
+    "apps/platform-knowledge-runtime/src/knowledge.mjs": {
+      "sha256": "89df875074f88068e183d7a9922d1bfce86dfcf513f876e6f5885c5bfdf0cf26",
+      "blob": "686cf4158296cf631c130cd96a92c88132c5eab8",
+      "mode": "100644"
+    },
+    "apps/platform-knowledge-runtime/src/processing.mjs": {
+      "sha256": "8c38b5ebe9f4a17977db493c1304012bb0364df59a5d1b59f5e4c73fdd8297ff",
+      "blob": "1d248ec6932eaedef9d19c2a12388e8697db5892",
+      "mode": "100644"
+    },
+    "apps/platform-knowledge-runtime/src/server.mjs": {
+      "sha256": "9724da45a8f254e0a2fb687b872f2cdd5b2e38a20e23da6e90e71fe746b988d5",
+      "blob": "a14ad4871b094e81ad52fec0094326f6b6f6106c",
+      "mode": "100644"
+    },
+    "apps/platform-knowledge-runtime/test/database.test.mjs": {
+      "sha256": "c42de0c27c72c558ea672b146370f26d39fb5a7c938a69d7218f05d4f724550a",
+      "blob": "32d3631c0d45560e2c8c33a2798cca31178a997d",
+      "mode": "100644"
+    },
+    "apps/platform-knowledge-runtime/test/runtime-acceptance.test.mjs": {
+      "sha256": "6380a25cee997213eac0eb91bfebc7e303feef7867ec2ee40fb4813715de9d1f",
+      "blob": "e17b574c3436376ecf582518bc6f1d0bbdb09400",
+      "mode": "100644"
+    }
+  },
+  "tests": {
+    "pass": 23,
+    "fail": 0,
+    "skipped": 0,
+    "postgres": "18.7",
+    "pgvector": "0.8.6"
+  },
+  "signature": "VALID_GITHUB_SIGNED_COMMIT",
+  "recordedAt": "2026-11-18T20:58:44.483252+00:00",
+  "activationPerformed": false,
+  "schemaVersion": "1.0",
+  "decisionId": "ARCH-PK-STAGE2-R7-GO-20261118",
+  "targetEnvironment": "development",
+  "approvalSource": null,
+  "approvalRef": null,
+  "sourceAdmissionProposal": {
+    "id": "ARCHITECTURE:ARCH-PK-STAGE2-TECHNICAL-CONT-20261117",
+    "status": "PROPOSED",
+    "repository": "profitia/SG-dev",
+    "actor": null,
+    "taskId": "ARCH-PK-STAGE2-TECHNICAL-CONT-20261117",
+    "targetEnvironment": "development",
+    "scope": "SOURCE_VALIDATION_ONLY",
+    "approvalRef": null,
+    "sourceSha": "445b35ef278b957d02d6477bc90a534a288ac052",
+    "baseSha": "c4965a445867601275cbb75dc4de993123414ba2",
+    "validFrom": null,
+    "validUntil": null,
+    "files": [
+      {
+        "path": "apps/platform-knowledge-runtime/db/migrations/002-worker-audit-retention.sql",
+        "blob": "ee3b598c33ec19225529c8a8b71cade608a8c28e",
+        "mode": "100644",
+        "status": "added",
+        "projectKey": "ARCHITECTURE",
+        "owner": "Architecture Platform",
+        "surfaceId": "PK-BASE-001"
+      },
+      {
+        "path": "apps/platform-knowledge-runtime/src/database.mjs",
+        "blob": "48015c76aedb6a25fc4c5b48efaa02e7b15cff9c",
+        "mode": "100644",
+        "status": "modified",
+        "projectKey": "ARCHITECTURE",
+        "owner": "Architecture Platform",
+        "surfaceId": "PK-BASE-001"
+      },
+      {
+        "path": "apps/platform-knowledge-runtime/src/extraction.mjs",
+        "blob": "32fc44383136e2af645fd148a96190c887946108",
+        "mode": "100644",
+        "status": "modified",
+        "projectKey": "ARCHITECTURE",
+        "owner": "Architecture Platform",
+        "surfaceId": "PK-BASE-001"
+      },
+      {
+        "path": "apps/platform-knowledge-runtime/src/knowledge.mjs",
+        "blob": "686cf4158296cf631c130cd96a92c88132c5eab8",
+        "mode": "100644",
+        "status": "modified",
+        "projectKey": "ARCHITECTURE",
+        "owner": "Architecture Platform",
+        "surfaceId": "PK-BASE-001"
+      },
+      {
+        "path": "apps/platform-knowledge-runtime/src/processing.mjs",
+        "blob": "1d248ec6932eaedef9d19c2a12388e8697db5892",
+        "mode": "100644",
+        "status": "modified",
+        "projectKey": "ARCHITECTURE",
+        "owner": "Architecture Platform",
+        "surfaceId": "PK-BASE-001"
+      },
+      {
+        "path": "apps/platform-knowledge-runtime/src/server.mjs",
+        "blob": "a14ad4871b094e81ad52fec0094326f6b6f6106c",
+        "mode": "100644",
+        "status": "modified",
+        "projectKey": "ARCHITECTURE",
+        "owner": "Architecture Platform",
+        "surfaceId": "PK-BASE-001"
+      },
+      {
+        "path": "apps/platform-knowledge-runtime/test/database.test.mjs",
+        "blob": "32d3631c0d45560e2c8c33a2798cca31178a997d",
+        "mode": "100644",
+        "status": "modified",
+        "projectKey": "ARCHITECTURE",
+        "owner": "Architecture Platform",
+        "surfaceId": "PK-BASE-001"
+      },
+      {
+        "path": "apps/platform-knowledge-runtime/test/runtime-acceptance.test.mjs",
+        "blob": "e17b574c3436376ecf582518bc6f1d0bbdb09400",
+        "mode": "100644",
+        "status": "added",
+        "projectKey": "ARCHITECTURE",
+        "owner": "Architecture Platform",
+        "surfaceId": "PK-BASE-001"
+      }
+    ]
+  },
+  "bindingPayloads": {
+    "product-rebind.sql": "a797ab4a3d30b2666eca8e07ab64efc52b591517640fb0a57dc079e3403e643a",
+    "identity-rebind.sql": "c5346b7b1cae28fe4f04aa35626e9044bd989854df3206414998a6d218059474"
+  },
+  "previousRelease": "cfa76c865083b43d14408f4bbfa27b2287c03972",
+  "technicalOutcomeRequired": "Actual import -> processing -> publish -> authorized retrieval -> real CIC/ACG -> withdraw; negatives, cost, retention, recovery and monitoring",
+  "costCeilingUsd": 10,
+  "perDocumentCeilingUsd": 1,
+  "previousSpentMicrousd": 508,
+  "renderServices": [
+    "srv-dbq6n2m7bikc73dmvs8g",
+    "srv-dbq6njec6qcc738fjf50"
+  ],
+  "identityDeploymentChangeAuthorized": false,
+  "ordinarySourceAdmissionOnly": true,
+  "newCiPolicyOrExceptionAuthorized": false,
+  "validUntilMaximum": "2026-11-24T23:59:00Z",
+  "centralOwnerOperationTotalLimit": 24,
+  "centralOwnerOperationsAlreadyUsed": 2,
+  "sql001Retained": true,
+  "operatorGrantsChanged": false,
+  "keyChanged": false,
+  "resourcesCreated": false,
+  "historicalReceiptsRewritten": false,
+  "bindingPayloadRegression": {
+    "status": "PASS",
+    "recordedAt": "2026-11-18T21:09:22.137Z",
+    "scope": "ISOLATED_CODESPACES_SQL_PAYLOAD_REGRESSION_NOT_IDENTITY_ACTIVATION",
+    "postgres": "18.7",
+    "cases": 12,
+    "results": [
+      {
+        "side": "product",
+        "case": "forward_exact_two_row_footprint",
+        "status": "PASS"
+      },
+      {
+        "side": "product",
+        "case": "own_reverse_preserves_monotonic_version",
+        "status": "PASS"
+      },
+      {
+        "side": "product",
+        "case": "invalid_release",
+        "status": "PASS"
+      },
+      {
+        "side": "product",
+        "case": "same_release",
+        "status": "PASS"
+      },
+      {
+        "side": "product",
+        "case": "invalid_direction",
+        "status": "PASS"
+      },
+      {
+        "side": "product",
+        "case": "wrong_expected_release",
+        "status": "PASS"
+      },
+      {
+        "side": "identity",
+        "case": "forward_exact_two_row_footprint",
+        "status": "PASS"
+      },
+      {
+        "side": "identity",
+        "case": "own_reverse_preserves_monotonic_version",
+        "status": "PASS"
+      },
+      {
+        "side": "identity",
+        "case": "invalid_release",
+        "status": "PASS"
+      },
+      {
+        "side": "identity",
+        "case": "same_release",
+        "status": "PASS"
+      },
+      {
+        "side": "identity",
+        "case": "invalid_direction",
+        "status": "PASS"
+      },
+      {
+        "side": "identity",
+        "case": "wrong_expected_release",
+        "status": "PASS"
+      }
+    ],
+    "payloadHashes": {
+      "product": "a797ab4a3d30b2666eca8e07ab64efc52b591517640fb0a57dc079e3403e643a",
+      "identity": "c5346b7b1cae28fe4f04aa35626e9044bd989854df3206414998a6d218059474"
+    },
+    "limitations": "Central structural fixture uses the exact SQL015 receiver DDL, not a substitute for real E1 or the native owner membership procedure. Both actual payload transactions were rolled back; no provider database was connected."
+  }
+}
