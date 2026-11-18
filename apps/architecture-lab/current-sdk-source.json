@@ -1,7 +1,7 @@
 {
   "schemaVersion": "1.0",
   "scope": "CURRENT_SDK_SOURCE_INTEGRITY_ONLY",
-  "sourceSnapshotSha": "7e690071c8c73ed87b986d6061566346dbd8b515",
+  "sourceSnapshotSha": "7487b68fe5e50e37eebc1421b08cb03c4313c71c",
   "status": "PRIVATE_PROTOTYPE_NOT_ADMITTED",
   "platformVersion": "1.38.0",
   "runtimeActivated": false,
@@ -120,8 +120,9 @@
     "apps/identity-runtime/scripts/check.mjs": "163a345c15683a67995f8d9c068519de8120962a97ff7fe998d0daf3ac2c9019",
     "apps/identity-runtime/scripts/install-organisation-lifecycle.mjs": "6357e6d579e85add6b0342e0adf899449dd9ec71a01b83e12b50fdec38539249",
     "apps/identity-runtime/src/account-page.ts": "2174093272a80908cdb0285118b9ab1444043b5bdc3eb06878398395986a8131",
+    "apps/identity-runtime/src/account-provisioning.ts": "8fa214fec52ce16860e67e0a29165ebc31dacfda1d2c23cd68a9673385bd6d95",
     "apps/identity-runtime/src/account-visuals.ts": "5ab9b2aad641492ee68f841c77df2cb4aed4d77b07b3bb379b013f86ed09dd66",
-    "apps/identity-runtime/src/http-handler.ts": "19f3a2a9dd04f04bba497e82f330b6132de63a3471922eb83a39afe12c8d0ee6",
+    "apps/identity-runtime/src/http-handler.ts": "482e4d20e6c331241a4684afebbd8f6e220281aeb5d9d14514bfb0328d9ee21e",
     "apps/identity-runtime/src/invitation-email.ts": "1f001c7055d16f13c4cd2c9aa73822eb25151c0c00fe93e030dbc8d86f797e14",
     "apps/identity-runtime/src/mailgun-delivery.ts": "a90caf005b1d50cc9bd76cb31f75410675ae728319fee1f6777e052e793ff7de",
     "apps/identity-runtime/src/main.ts": "51f219eebdc77bdbad1f70de46acd1b7eb26340d1c23dab3e0b399dcb6a56922",
@@ -132,6 +133,7 @@
     "apps/identity-runtime/src/organisation-onboarding.ts": "ee8eb6282765cbc3b81e4be50b9417883846d5d7f523a0dbb9b79b2482fc5bf2",
     "apps/identity-runtime/src/organisation-store.ts": "743f2b369de3b2f370a98a18e1562c42f51b6036c44cec3e01cba7c611fa7bc2",
     "apps/identity-runtime/src/report-email.ts": "389e2c4af40459d4e30f1b4b4e7b181afe6aea2264ded02ad4600ec480173b02",
+    "apps/identity-runtime/test/account-provisioning.test.mjs": "579f5afa52d47d17042e8c078682c09e7fd6ecb17a293d26f7f3e688b5b92892",
     "apps/identity-runtime/test/invitation-email.test.mjs": "fbd419b86b5d3558434b0192dda7c6fbe76469c13bd85ed2aae13c3c511c173e",
     "apps/identity-runtime/test/knowledge-authority.test.mjs": "79ba2a0af7b74c82b8ed0eb243d30fe688ef2981f42ec6d7bd74801eae7f0f74",
     "apps/identity-runtime/test/mailgun-delivery.test.mjs": "43ae89969bbbdd44ff6aa16d6b1ab46bfc0be1f5fbb8d2798108e2e7b016db0a",
@@ -523,7 +525,7 @@
     "apps/sg-runtime/lib/observability/config.ts": "e5a2756a7b4e5261d96941555d869e07c087185a134a58a3e7df1bf71e8cb4cf",
     "apps/sg-runtime/lib/observability/sanitize.ts": "7d6f4459dd365fbd4412aab9bf02e781252131105c56922540aca4d463f125ff",
     "apps/sg-runtime/lib/observability/server.ts": "f5f9027c6d951b9e1346330abc8bff6f83c73a4c888f65e41d5c9aed44a8e848",
-    "apps/sg-runtime/lib/platform/account-session.ts": "8fc68c9547c1314b4070806e2166785a3a3d527f3f9014530a8dfc2a6c30636e",
+    "apps/sg-runtime/lib/platform/account-session.ts": "c3bc28deeb5526b4bb8aefcaa0d4cbfc1e53e4524e492f10bb524d23c260053f",
     "apps/sg-runtime/lib/platform/identity-runtime.ts": "b5a26ad0cfb42fe7c240d2992a335fe08f8367834315d94ad7a7bea39c015cc5",
     "apps/sg-runtime/lib/platform/native-dashboard-command.ts": "8cb4cc06a76a2443d7fca36284e96f7017bfcb337cafda500f2843c5fe89672a",
     "apps/sg-runtime/lib/platform/native-dashboard-embed.ts": "9f8504c3d81b30569c07f850259f32d273b57dd6491d92affe47b312dcc635c3",
@@ -645,8 +647,8 @@
     "apps/sg-runtime/tests/cci-node-integration.test.ts": "b0bd9389860766e61b2edbe520859c677849d38dffb8f4426f3e28c6530a066f",
     "apps/sg-runtime/tests/diagnostic-telemetry-adoption.test.mjs": "5db33d14c8a0b0f669c05e9685f2f0bd7c7390b10df75fa1e2cda1aa6514dc65",
     "apps/sg-runtime/tests/finder-development-bindings.test.mjs": "1cb1ee2be83ce5d356af773d896668de10fb26a1103b8503d4fca92447f97dc0",
-    "apps/sg-runtime/tests/finder-monitor-source-integrity.mjs": "2f6af7fee2bc7e2fff084703f2735b5bf109274cb69a973c752bd413ae597085",
-    "apps/sg-runtime/tests/finder-monitor-source-integrity.test.mjs": "89219a3388ff5b630013623328dbb4083767786c5256b42a327f0b9d4b446749",
+    "apps/sg-runtime/tests/finder-monitor-source-integrity.mjs": "fb52e8c58157ed083d1ddde12aba6626d22fb514c46c12dab354f6499b0c77c5",
+    "apps/sg-runtime/tests/finder-monitor-source-integrity.test.mjs": "e8c52e4183377c90190656c231e4b747f3f0f74e50e1d788bb2f381ae737940d",
     "apps/sg-runtime/tests/fixtures/benchmark-discovery-hosts.mjs": "69e66aa4d0af9b2410488a0a878d41c2c05471594800f585948f96b08bcf839a",
     "apps/sg-runtime/tests/forecast-import-boundary.test.mjs": "cd758c5b0cee99e6f44bb9c63962433e99e38d07db8f36a7f051f9d268e6ea0d",
     "apps/sg-runtime/tests/forecast-prepared-state-port.test.ts": "d98dddcdb4a08862fcc86c00143ff08aa04a5d38520a36eb3c977ab388fa89c5",
@@ -709,7 +711,7 @@
     "apps/sg-runtime/tests/registration-stage-i-integrity.mjs": "fea4f28dd1ee8cc08db551bfe2dfee4e6f3b34337c596cffc4692c88a2d3e5b3",
     "apps/sg-runtime/tests/registration-stage-i-integrity.test.mjs": "4fd93789b1971581af1df63b7c31b616a6fb70c6a6953f7d677b0df13456277b",
     "apps/sg-runtime/tests/rolling-daily-verification.test.ts": "1937c4661f3fa0c6cf3f044c0a2bcf11eac13ad5941c810874fc622dbf5c3e64",
-    "apps/sg-runtime/tests/self-service-account.test.ts": "c96d43daa84edbdcd2bd4b8e7a6c9b91d9a426014aed3acc046a9937363a5307",
+    "apps/sg-runtime/tests/self-service-account.test.ts": "29498923c6ff7eaa5d33c20b140cf39e4725aed44d90619d5339499254463ee7",
     "apps/sg-runtime/tests/sentry-observability.test.ts": "f662412df9f7bb45544588edd2090fd1c724e4be383109ece74371377ffe65d7",
     "apps/sg-runtime/tests/shared-benchmark-picker.test.tsx": "74b92696d1b0ea405cbc4bfe774e5645b9e18ca6ea264525b9952d359c4e8a5f",
     "apps/sg-runtime/tests/source-worker-runtime.test.ts": "33fa639ec6b2b45e91bb16f55dbd806dc4e126979282c2bc59f757c9224c173f",
@@ -818,7 +820,7 @@
     "apps/srm/deployment/pilot2-telemetry-lkg.json": "c80ba03dadaf134c54d09877389b8c76a4148b16d1fd4106ea9f1a24288b1806",
     "apps/srm/deployment/private-runtime-targets.json": "30e5bc1f8e74ff183fc2596678887e91611894de57d80557d24a0fe72208a9c3",
     "apps/srm/deployment/ready-report-targets.json": "99fe9615c8bed59e79d6727cc95baf35ddd9a9a0cd3b6b5029c3561f2a99fa83",
-    "apps/srm/deployment/root-atomic-claim-targets.json": "b30241170f599b3aecd63262bd03bb3bb58d3f8deb2dcb3eb25599b838ab18bb",
+    "apps/srm/deployment/root-atomic-claim-targets.json": "33499d80e25e098c01561cec8cd45a2ecf5245a400dffe4cf58dc51531603dea",
     "apps/srm/deployment/supplier-location-cache-2026-10-31.json": "a6ae4ac9952019f1816123fcf4c34d5226364f314cad06c4f6f2148e01319779",
     "apps/srm/deployment/supplier-location-targets.json": "b325d2b84faa4a39a6f92a7c858a881b178b14c16688e8f4988ed342d178986c",
     "apps/srm/deployment/supplier-native-targets.json": "b888fad7252f7d71256a270656c6f3262e684157492f3c44b1ddc3dfed7e5248",
@@ -1285,10 +1287,10 @@
     "packages/platform-contracts/src/external-call.d.mts": "043c43ce8027305e36a9b9684bb8b390ffceb813a08cf07b97614d2361545bbe",
     "packages/platform-contracts/src/external-call.mjs": "7681dc9521f93c8769a943f66b192550c60e46658903b44d97aca007645c43a8",
     "packages/platform-contracts/src/identity-profile-sql.mjs": "20b0d3ebeb2fbe3b37b5c2deab75e226d250275be1249de204058e8a7930d259",
-    "packages/platform-contracts/src/identity-provider.d.mts": "1a91eccce21baa063cbb508f1df34d19287d49e05e3182cda0fb1f643ec15734",
-    "packages/platform-contracts/src/identity-provider.mjs": "1fc428a14196509a6493d96404e5f4c3ff9fc0fdfdcecfebcf8f18394e6a68c3",
-    "packages/platform-contracts/src/identity-provisioning.d.mts": "77ad3313ebb337a37e1ddb4af15ed6ecbad8fb198f5cbcbba57ba4fb26196289",
-    "packages/platform-contracts/src/identity-provisioning.mjs": "e6082719dc27405100326cf285f1d216ba08e2e59ef80b8fe42eff5b95b7c45b",
+    "packages/platform-contracts/src/identity-provider.d.mts": "0cc8868f9c9c622b7c02a794910c0aabd056103ea0ba76fdff705ba731ed3a3e",
+    "packages/platform-contracts/src/identity-provider.mjs": "efcc99d3054d1920d9681e6489a2e46b927f7720e26b8a7d3364b2721adf20b0",
+    "packages/platform-contracts/src/identity-provisioning.d.mts": "fa1ec4838a0a956f724132c1a6fd6b9ac7fa3771ff8bb1eedc88c437d133fce1",
+    "packages/platform-contracts/src/identity-provisioning.mjs": "73c4f848aee111c93361ea31494966a79fc2906bba41ea0cd222cdc23d60a38e",
     "packages/platform-contracts/src/identity-renewal.d.mts": "9d4fb57b174f64ee21fba13ff9e8f5a07f2a46d44725c0820eb56af6c144e4dd",
     "packages/platform-contracts/src/identity-renewal.mjs": "01e869250f5bab3c9b10fbc6f25aef3f7c06aa8e8572b3559a681739607318ca",
     "packages/platform-contracts/src/knowledge-operations.d.mts": "bcf49723aa604350d8b4a3265ac4c182373dc6b8f0e1d21d14dcfcc7ca737f42",
@@ -1345,7 +1347,7 @@
     "packages/platform-contracts/test/api-path-transport.test.mjs": "fcd4b6238df33f6d41730646f5ee9f1678c7b08a416e8638adec6356584f598b",
     "packages/platform-contracts/test/assistant-native-postgres.test.mjs": "d156c0ea4fc007dc72efa4a915d2caa18a78328063aa0e2b0808314ca5c32eff",
     "packages/platform-contracts/test/assistant-operation-host.test.mjs": "0f5c1d9bac739379b41f7837bbcdc61c50962d7f5fa6360359e2f6b6e9321ff8",
-    "packages/platform-contracts/test/assistant-reservation-source.mjs": "b775fb86603840a3385631a13b3c87c81939a1735df938ef9d22d23b0ccadab3",
+    "packages/platform-contracts/test/assistant-reservation-source.mjs": "5dc34d402a3165f84555f7ccfbc20d1448a44a944ac0e136ab8da4e9e5a39d86",
     "packages/platform-contracts/test/assistant-reservation-source.test.mjs": "a9bda46221e445c9ad9eebf4bb51d82ca209b63c884e3b88faecc98cb306d214",
     "packages/platform-contracts/test/assistant-usage.test.mjs": "ad0bf94d452ffa9374bc68ad8b623decc1ce54a7395f1724218dce44b12157bf",
     "packages/platform-contracts/test/calendar-current-e1.test.mjs": "175e4dd3bd5afcf69782d793d89ba996a25b6928c20fcae6ac1836663e229609",
@@ -1371,6 +1373,7 @@
     "packages/platform-contracts/test/fixtures/first-party-source-postgres.mjs": "6942e2078c59280b997f271830234e06ebf56c33077f2d764535843774eeb7d6",
     "packages/platform-contracts/test/fixtures/identity-profile-postgres.mjs": "6d0ad7dce50bf14ab641223cd3f5b0858fe4e445aa20fc0f91eee0eea4d8e185",
     "packages/platform-contracts/test/fixtures/supplier-location-postgres.mjs": "7f7ef219c45d42d191f90bca123edd3bd355d382c85659facb0e268fe9e8336f",
+    "packages/platform-contracts/test/identity-binding-peer-renewal.test.mjs": "45f45d3a7ef055411fcf4b87e1f295099d49758e6dcc7aa9e606f9776f74a004",
     "packages/platform-contracts/test/identity-email.integration.test.mjs": "ef565ebb3cdb12ca05222890e042acb56b0b7b239c7db61c6e5504b9464f2168",
     "packages/platform-contracts/test/identity-peer-read.test.mjs": "eb644147c84b48d476035a9edba7a8b3f3389ffbc35dfbc457f83b776523cb2a",
     "packages/platform-contracts/test/identity-profile.integration.test.mjs": "753b523938edc227bf6b52986494c8c356867bad9b18f53c71279a4a011a5d4f",
@@ -1681,10 +1684,10 @@
     "packages/srm-xray/tsconfig.json": "11849720cf7010564984d2489e26ba1ba98cc4c263edb5e019a01ca81aadb4d9",
     "scripts/governance/controlled-package-ci-path-coverage.test.mjs": "111ff0c8fe55c815076091b71d4fa53a3e7ac90905919e991d959e04fcf83adb",
     "scripts/governance/controlled-package-ci.mjs": "a4354ae636572eb41eaea3267899f3ca14b7ae79c546d254178d540f51a8eb23",
-    "scripts/governance/controlled-package-ci.test.mjs": "f644a10f2b5552a678d465db3f720ef82a0b3b67f0ab0cdd7c64c7241361c770",
-    "scripts/governance/development-execution.mjs": "9a33925b6aec9433d31e45fc478ab1dab6d1fa678b1a514d12b0d54c3cc0230f",
+    "scripts/governance/controlled-package-ci.test.mjs": "f4587efe302d7c19bf6f98fe95b2423943ff8d895635e163b5ae4b412180401a",
+    "scripts/governance/development-execution.mjs": "9fd9a11c305b9169605e7343cdfe90f6e55c886c912aca0781d7ff0a87cb7a0c",
     "scripts/governance/governance.test.mjs": "ef28078504fda6d844f63b5dd3d7687465f37b3d16064dff581ae392765909da",
-    "scripts/governance/platform-source-hub-foundation.test.mjs": "a7fbfad2d1464d996c7bba8e7ed9c9ff3bdb6559b32a76f9b804896686756afa"
+    "scripts/governance/platform-source-hub-foundation.test.mjs": "0c4dbbc6747b40486ae2a96ea74d1b737b3575c96ac095615f26454f6ae09aea"
   },
   "baselines": {
     "acceptedmain": {
@@ -1692,7 +1695,7 @@
       "status": "IMMUTABLE_ACCEPTED_EDITORIAL_SOURCE_BEFORE_CURRENT_SDK"
     },
     "authority": {
-      "sha": "a34dcdfc2b4e9c83e0112435a344d586d8c51d16",
+      "sha": "a03956b6752227a7a14e44887feabd50a0ad1054",
       "status": "ACCEPTED_BRANCH_BASE_FOR_PRIVATE_SOURCE_PREPARATION"
     },
     "registration": {
@@ -1988,7 +1991,7 @@
       "moduleAuditSchemaDigest": "af296074b8b4dab2f952e1d2e0553e17d6567f480152870d151dc36c9302e6ac",
       "serviceReadSchemaDigest": "f7757dc5805b3759959505fa852715e70d207e94bf5d85827db3d52b0a5d0d49",
       "clerkConfigurationSourceDigest": "b3bdad865a16cbf677db1dd7450f594870abca30f8a252bd4d361d2387417246",
-      "currentHumanReadSourceDigest": "026380bdc4e72d1611f0a9996065ac0082ee3759ece395bd71f504ac5ee19591",
+      "currentHumanReadSourceDigest": "fa6d37d8f332626807b3826664d23221eb64cc8938853d888bcacdde095f78f4",
       "delegatedJobSchemaDigest": "6a12132efab396e6e647e15d1a9711d0a1bacaaab4482639178acd0258d518cb",
       "delegatedJobSourceDigest": "2a2bc66260bc33b1bcafe80c9a1e1f594c0206b9efe362082760b1f24d8e7f4a",
       "supplierDelegationSchemaDigest": "cd12f9b88397da88241499548b8a5977d0aca830ad83c53a1bcf146265503555",
@@ -2000,7 +2003,7 @@
       "nativeExternalTransportSchemaDigest": "6faff5f258b71cf2525d705c8fcf38c8aef9331c4e8f0bdd6f1af74e6cf76bde",
       "publicWebTransportSchemaDigest": "f334e0efe99aac742ecad53e9cfa4d0199dbd2333a56792c58c387621b5b174d",
       "profileSchemaDigest": "a43e146cee1ad5e5b95751781f691695b66e061b8eb0764220ebf25c44f52af3",
-      "identitySourceDigest": "662f6c95138a0f8cd8f835c569084d669fbe85e34a762676584297ecd5f03606",
+      "identitySourceDigest": "557f31313747679e191adf2d7091c86bd7270ab80310246ab3b9f7a653106bfc",
       "renewalSchemaDigest": "ea8a23a4d9db92587b1be1abde67bfa54cf061b79ce63eae09e96db3da20ee76",
       "modelExecutionSchemaDigest": "1d4b6af7900b44f3d6a311bdcef85280d1b5c968ca67128e0e641e9adb8d253c",
       "moduleSchemaDigest": "c4ea1883af310934b1e83dfcf936ba15dfc32a3f4be206c752efe2d69a55b9ed",
@@ -2037,9 +2040,9 @@
       "supplierLocationSchemaDigest": "34ec633dbf38dfffd6b3954ae79b0ef6f771d75ad8f0443882be71ca78b084e5"
     },
     "optionalPackageDigests": {
-      "currentFreshReportSourceDigest": "bbb90560d0bd0c304b96e98f434ad463c7915b68c4525aa7e2623c4abe33ffa5",
-      "readonlyMissReportSourceDigest": "3bca3ed2128c3228037eeafdcef1567243332c3a989cb9ba940a7a030b1e3f67",
-      "rootAtomicClaimSourceDigest": "83ad6829d9cd975e421b51146ea80553101c01396d23fbdd1d9403056831a82a"
+      "currentFreshReportSourceDigest": "7ed728765137bd311a8ce804ee1ad965cf28cf0bb4cd89e533c15885166b0ae4",
+      "readonlyMissReportSourceDigest": "444fef32a26474b3b94df221c3c48138e677ba5b86b28f3393b8b5718337a967",
+      "rootAtomicClaimSourceDigest": "90108ff6dd178c02b68c2b3821acaf93fa815a42c3bb2f51e123b73ed495c746"
     }
   },
   "sourceAdmission": {
@@ -2127,12 +2130,12 @@
         "kind": "HISTORICAL_EVIDENCE"
       },
       "scripts/governance/controlled-package-ci.test.mjs": {
-        "sha": "51137f2aca576280f3c4512f86df1ddf56a9e756",
+        "sha": "9f4ed88103e64e94ce273d5de0916fa1608fdd79",
         "mode": "100644",
         "kind": "SDK_COMPATIBILITY_REGRESSION"
       },
       "scripts/governance/platform-source-hub-foundation.test.mjs": {
-        "sha": "76dd4d795aa76aba87f392cabff4df02680de4bc",
+        "sha": "c6fd6b3608a2cd4e5d170737b660076871359c0d",
         "mode": "100644",
         "kind": "SDK_COMPATIBILITY_REGRESSION"
       }
