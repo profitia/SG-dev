@@ -1,3 +1,5 @@
+import {fileURLToPath} from 'node:url'
+import {trustedApplicationContinuity} from '../../../scripts/governance/development-execution.mjs'
 // Test/build-only source continuation. Never imported by a product runtime.
 import assert from 'node:assert/strict'
 import {createHash} from 'node:crypto'
@@ -38,7 +40,15 @@ export function srmAssistantM2Predecessor(current,historical){
  assert.deepEqual(a.operations,['supplier.report.read','supplier.private.read'])
  assert.equal(a.grantsAccess,false);assert.equal(a.storedReadsOnly,true);assert.equal(a.acquisitionAllowed,false)
  assert.deepEqual(Object.keys(a.sourceDigests).sort(),[...SRM_ASSISTANT_M2_PATHS].sort())
- for(const [p,h]of Object.entries(a.sourceDigests))assert.equal(hash(current(p)),h,'current M2 producer '+p)
+ let ordinary
+ for(const [p,h]of Object.entries(a.sourceDigests)){
+  const actual=Buffer.from(current(p));if(hash(actual)===h)continue
+  // An independently admitted current producer may follow the frozen M2 source.
+  // Authenticate physical bytes before retaining the immutable historical view.
+  const watched=SRM_ASSISTANT_M2_PATHS.filter(p=>p.startsWith('apps/')&&/\.(?:tsx?|mjs)$/.test(p))
+  ordinary??=trustedApplicationContinuity(fileURLToPath(new URL('../../../',import.meta.url)),watched)
+  assert(ordinary&&watched.includes(p)&&actual.equals(ordinary(p)),'current M2 producer '+p)
+ }
  const receipt='apps/srm/operation-integration.json',prior=Buffer.from(historical(a.previousSourceSha,receipt))
  assert.deepEqual(Buffer.from(current(receipt)),prior,'all historical SRM/M1/Oil acceptance bytes remain immutable')
  const mapped=new Set(SRM_ASSISTANT_M2_PATHS),cache=new Map([[receipt,prior]])
