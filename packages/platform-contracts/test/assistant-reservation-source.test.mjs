@@ -1,3 +1,4 @@
+import {sdkSourceContext} from './sdk-source-context.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
@@ -25,7 +26,8 @@ test('earlier receipts and historical source may not be rewritten, omitted or re
  assert.throws(()=>assistantReservationPredecessor(current,historical,'0'.repeat(64)))
 })
 test('missing record is unadopted while unreadable or malformed present records fail closed',()=>{
- assert.equal(assistantReservationPredecessor(p=>{if(p===RESERVATION_RECORD)throw Object.assign(Error('absent'),{code:'ENOENT'});return current(p)},historical,pin()),null)
+ const legacy=p=>historical('53691e907e4cc9b7fbf683c91bbebf41299e9ccc',p)
+ assert.equal(assistantReservationPredecessor(p=>{if(p===RESERVATION_RECORD)throw Object.assign(Error('absent'),{code:'ENOENT'});return legacy(p)},historical,pin()),null)
  assert.throws(()=>assistantReservationPredecessor(p=>{if(p===RESERVATION_RECORD)throw Object.assign(Error('denied'),{code:'EACCES'});return current(p)},historical,pin()))
  assert.throws(()=>assistantReservationPredecessor(p=>p===RESERVATION_RECORD?Buffer.from('{}'):current(p),historical,pin()))
 })
@@ -50,7 +52,7 @@ test('Finder current-source aggregate authenticates the complete ACG composition
  const {createHash}=await import('node:crypto')
  const view=finderMonitorPredecessor(current,historical);assert(view?.reservation)
  const all=[...RESERVATION_PATHS,RESERVATION_RECORD,RESERVATION_DERIVED];assert.equal(new Set(all).size,46)
- for(const p of all)assert.equal(view.manifest.sourceDigests[p],createHash('sha256').update(current(p)).digest('hex'),p)
+ for(const p of all)assert.equal((view.currentSourceDigests??view.manifest.sourceDigests)[p],createHash('sha256').update(current(p)).digest('hex'),p)
  assert.throws(()=>view.previousBytes("apps/sg-runtime/tests/finder-monitor-source-integrity.mjs"),{code:'ENOENT'})
  for(const p of ["apps/sg-runtime/tests/finder-monitor-source-integrity.mjs","apps/sg-runtime/tests/procurement-insights-editorial-integrity.mjs",RESERVATION_RECORD,RESERVATION_DERIVED])assert.throws(()=>finderMonitorPredecessor(f=>f===p?Buffer.concat([current(f),Buffer.from('tamper')]):current(f),historical),p)
 })
@@ -61,11 +63,18 @@ test('Finder ACG composition retains accepted package proof and rejects source o
  const {createHash}=await import('node:crypto')
  const view=finderMonitorPredecessor(current,historical);assert(view?.reservation);assert(view.editorialPackage)
  for(const p of [...EDITORIAL_PACKAGE_PATHS,EDITORIAL_PACKAGE_RECEIPT]){
-  assert.equal(view.manifest.sourceDigests[p],createHash('sha256').update(current(p)).digest('hex'),p)
+  assert.equal((view.currentSourceDigests??view.manifest.sourceDigests)[p],createHash('sha256').update(current(p)).digest('hex'),p)
   assert.throws(()=>finderMonitorPredecessor(f=>f===p?Buffer.concat([current(f),Buffer.from('tamper')]):current(f),historical),p)
  }
  const previous=procurementInsightsEditorialPackagePredecessor(current,historical);assert(previous)
  assert(finderMonitorPredecessor(previous.previousBytes,historical)?.reservation)
  for(const error of [Object.assign(Error('package denied'),{code:'EACCES'}),Object.assign(Error('unrelated history failure'),{status:128,stderr:"path 'foreign' does not exist in 'history'"})])assert.throws(()=>finderMonitorPredecessor(p=>{if(p===EDITORIAL_PACKAGE_RECEIPT)throw error;return current(p)},historical),e=>e===error)
  assert.throws(()=>finderMonitorPredecessor(current,(sha,p)=>p==='apps/sg-runtime/package-lock.json'?Buffer.concat([historical(sha,p),Buffer.from('false history')]):historical(sha,p)))
+})
+
+test('adopted current SDK cannot omit its retained reservation record while legacy absence stays unadopted',()=>{
+ const missing=p=>{if(p===RESERVATION_RECORD)throw Object.assign(Error('absent'),{code:'ENOENT'});return current(p)}
+ const context=sdkSourceContext(current,historical)
+ if(context){assert.throws(()=>assistantReservationPredecessor(missing,historical,pin()),{code:'ENOENT'})}
+ else assert.equal(assistantReservationPredecessor(missing,historical,pin()),null)
 })
