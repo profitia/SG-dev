@@ -2,7 +2,7 @@ import {PLATFORM_KNOWLEDGE_STAGE2_SRM_TARGET_PROVENANCE} from './controlled-pack
 import {PLATFORM_KNOWLEDGE_STAGE2_PI_COMPOSITION_PROVENANCE} from './controlled-package-ci.mjs';
 import {tmpdir as knowledgePolicyTmpdir} from 'node:os';
 import {PLATFORM_KNOWLEDGE_STAGE2_REPAIR_PROVENANCE} from './controlled-package-ci.mjs'
-import {publicProofContract,currentSdkProofContext} from './controlled-package-ci.mjs'
+import {publicProofContract,currentSdkProofContext,checkAdmittedPackages} from './controlled-package-ci.mjs'
 import {MANIFEST_SUCCESSOR_1102_REVIEW} from './controlled-package-ci.mjs'
 import {PLATFORM_KNOWLEDGE_STAGE2_REVIEW,PLATFORM_KNOWLEDGE_STAGE2_PROVENANCE,assertKnowledgeStage2Entry,knowledgeStage2TrustedPredecessor,currentProofContract} from './controlled-package-ci.mjs'
 import {createExecutionCheckout,assertExecutionCheckout,assertPristineSourceInput} from './controlled-package-ci.mjs'
@@ -25,7 +25,7 @@ import {OIL_REPORT_E1_REVIEW,assertOilReportReviewEntry} from './controlled-pack
 import {ECR_BACKEND_REVIEW,assertEcrBackendReviewEntry} from './controlled-package-ci.mjs'
 import {createHash} from 'node:crypto'
 import {ECR_G1_GOVERNANCE_REVIEW,assertEcrG1ReviewEntry} from './controlled-package-ci.mjs'
-import test from 'node:test'
+import test,{after} from 'node:test'
 import {PRIVATE_RECURRING_LIVE_ACCEPTANCE_REVIEW,PI_LIVE_ACCEPTANCE_PROVENANCE_PATH,assertPiLiveAcceptanceRecord,assertPiLiveAcceptanceProjection} from './controlled-package-ci.mjs'
 import assert from 'node:assert/strict'
 import {PRIVATE_RECURRING_SHELL_REVIEW,PRIVATE_RECURRING_SHELL_CURRENT_REVIEW,PRIVATE_RECURRING_SHELL_CALENDAR_REVIEW} from './controlled-package-ci.mjs'
@@ -164,20 +164,45 @@ test('only the ten reviewed local names bind to their own exact paths, never a r
     rejection(() => assertManifestPolicy({dependencies: {alias: `file:${relative}`}}, authority))
   }
 })
-function currentRecurringPolicyOptions(){return {reviewedPrivateRecurring:!!assertPrivateRecurringProvenance(authorityRoot),reviewedLifecycle:!!registrationLifecycleCanonicalRead(authorityRoot),reviewedCompleteFunctional:!!assertCompleteFunctionalProvenance(authorityRoot)}}
+function currentRecurringPolicyOptions(root=authorityRoot){return {reviewedPrivateRecurring:!!assertPrivateRecurringProvenance(root),reviewedLifecycle:!!registrationLifecycleCanonicalRead(root),reviewedCompleteFunctional:!!assertCompleteFunctionalProvenance(root)}}
+// The old Maps peer exceptions retain their complete reviewed1.37 source.
+// Current1.38 uses the distinct trusted-source admission path below.
+let legacyMapsFixture
+function legacyMapsRoot(){
+ if(!legacyMapsFixture){
+  const dir=fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(),'legacy-maps-peer-source-'))),root=path.join(dir,'source')
+  execFileSync('git',['clone','--quiet','--shared','--no-checkout',authorityRoot,root],{stdio:'pipe'})
+  execFileSync('git',['checkout','--quiet','--detach','c1a7d29ac7d35e554eb03ade3656c1f85574b6a8'],{cwd:root,stdio:'pipe'})
+  legacyMapsFixture={dir,root}
+ }
+ return legacyMapsFixture.root
+}
+after(()=>{if(legacyMapsFixture)fs.rmSync(legacyMapsFixture.dir,{recursive:true,force:true})})
+function assertActualLocalSources(root,lock,options,manifest,current){
+ if(!current)return assertLocalPackageSources(root,lock,root,options)
+ const dir=fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(),'current-sdk-local-source-'))),candidate=path.join(dir,'candidate')
+ try{
+  const files=['apps/sg-runtime/package.json','apps/sg-runtime/package-lock.json','apps/sg-runtime/.npmrc',
+   ...Object.values(LOCAL_PACKAGES).map(rel=>path.relative(root,path.resolve(root,'apps/sg-runtime',rel,'package.json')))]
+  for(const name of files){const from=path.join(root,name);if(!fs.existsSync(from))continue;const to=path.join(candidate,name);fs.mkdirSync(path.dirname(to),{recursive:true});fs.copyFileSync(from,to)}
+  fs.writeFileSync(path.join(candidate,'apps/sg-runtime/package-lock.json'),JSON.stringify(lock))
+  fs.writeFileSync(path.join(candidate,'apps/sg-runtime/package.json'),JSON.stringify(manifest))
+  assert.equal(checkAdmittedPackages(candidate,root),path.join(candidate,'apps/sg-runtime'))
+ }finally{fs.rmSync(dir,{recursive:true,force:true})}
+}
 function reviewedMapsFixture() {
-  const manifest = JSON.parse(fs.readFileSync(path.join(authorityRoot, 'packages/maps-embed/package.json'), 'utf8'))
+  const root=legacyMapsRoot(),manifest = JSON.parse(fs.readFileSync(path.join(root, 'packages/maps-embed/package.json'), 'utf8'))
   const candidate = lock()
   candidate.packages['node_modules/@profitia/maps-embed'] = {
     version: manifest.version, resolved: 'file:../../packages/maps-embed', peerDependencies: structuredClone(manifest.peerDependencies),
   }
   candidate.packages['node_modules/@profitia/maps-contracts'] = {version: '0.1.0', resolved: 'file:../../packages/maps-contracts'}
   candidate.packages[''] = {dependencies: {'@profitia/maps-embed': 'file:../../packages/maps-embed', '@profitia/maps-contracts': 'file:../../packages/maps-contracts'}}
-  return {manifest, candidate}
+  return {root,manifest, candidate}
 }
 
 test('existing MapsEmbed peers require exact reviewed owner, version, section and trusted manifest values', () => {
-  const {manifest} = reviewedMapsFixture(),options=currentRecurringPolicyOptions()
+  const {root,manifest} = reviewedMapsFixture(),options=currentRecurringPolicyOptions(root)
   assert.equal(manifest.name, '@profitia/maps-embed'); assert.equal(manifest.version, '0.1.2')
   assertManifestPolicy(manifest, manifest,options)
   for (const mutate of [
@@ -199,9 +224,9 @@ test('existing MapsEmbed peers require exact reviewed owner, version, section an
 })
 
 test('Maps lock peer exception is confined to the exact top-level installed entry and never admits app or nested peers', () => {
-  const {candidate} = reviewedMapsFixture(),options=currentRecurringPolicyOptions()
+  const {root,candidate} = reviewedMapsFixture(),options=currentRecurringPolicyOptions(root)
   assertPackagePolicy(candidate, lock(), configuration,options)
-  assertLocalPackageSources(authorityRoot, candidate, authorityRoot,options)
+  assertLocalPackageSources(root, candidate, root,options)
   for (const mutate of [
     l => l.packages['node_modules/@profitia/maps-embed'].version = '0.1.3',
     l => l.packages['node_modules/@profitia/maps-embed'].peerDependencies['@profitia/maps-contracts'] = '^0.1.0',
@@ -254,10 +279,10 @@ test('actual current SG2 dependency policy remains valid and admits only the rev
   const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
   const authority = JSON.parse(fs.readFileSync(path.join(root, 'apps/sg-runtime/package-lock.json'), 'utf8'))
   const manifest = JSON.parse(fs.readFileSync(path.join(root, 'apps/sg-runtime/package.json'), 'utf8'))
-  const options=currentRecurringPolicyOptions()
+  const current=currentSdkProofContext(root),options=current?{trustedAuthorityMetadata:true}:currentRecurringPolicyOptions()
   assertPackagePolicy(authority, authority, configuration,options)
   assertManifestPolicy(manifest, manifest,options)
-  assertLocalPackageSources(root, authority, root,options)
+  assertActualLocalSources(root,authority,options,manifest,current)
   const candidate = structuredClone(authority)
   const dependencies = {...manifest.dependencies}
   for (const [name, relative] of Object.entries(LOCAL_PACKAGES)) {
@@ -274,7 +299,7 @@ test('actual current SG2 dependency policy remains valid and admits only the rev
   }
   assertPackagePolicy(candidate, authority, configuration,options)
   assertManifestPolicy({...manifest, dependencies}, manifest,options)
-  assertLocalPackageSources(root, candidate, root,options)
+  assertActualLocalSources(root,candidate,options,{...manifest,dependencies},current)
   for (const name of PRIVATE_PACKAGES) assert.deepEqual(candidate.packages[`node_modules/${name}`], authority.packages[`node_modules/${name}`])
 })
 for (const [name, relative] of Object.entries(LOCAL_PACKAGES)) test(`actual local npm install-links for ${name} executes no lifecycle with a credential`, () => {
