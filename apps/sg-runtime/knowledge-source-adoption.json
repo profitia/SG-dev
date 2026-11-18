@@ -1,0 +1,9 @@
+{
+  "schemaVersion": "1.0.0",
+  "projectKey": "SG2",
+  "taskId": "SG2-PK-STAGE2-TECHNICAL-CONT-20261117",
+  "targetEnvironment": "development",
+  "scope": "SOURCE_ONLY_NO_RUNTIME_ACTIVATION",
+  "sourceRecord": "apps/architecture-lab/knowledge-source.json",
+  "sourceRecordSha256": "f48b0959976c01562f92669dacfc83829b31c8013af70ecd041a94bc3f39be6c"
+}

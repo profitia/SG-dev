@@ -1,5 +1,6 @@
 import {calendarPiPredecessor} from './calendar-pi-source-compatibility.mjs';
 import './calendar-pi-source-compatibility.test.mjs';
+import {knowledgeSourcePredecessor} from '../../architecture-lab/knowledge-source.mjs';
 import {assistantNotificationsPredecessor,NOTIFICATIONS_RECEIPT} from './assistant-notifications-integrity.mjs';
 // Test/build-only continuation. No runtime, authorisation or deployment grant.
 import assert from 'node:assert/strict';
@@ -28,6 +29,8 @@ export function procurementInsightsLiveAcceptancePredecessor(current,historical)
   const accepted=procurementInsightsLiveAcceptancePredecessor(calendar.previousBytes,historical);assert(accepted,'accepted PI live source retained');
   return {...accepted,completeFunctional:calendar.complete,manifest:{...accepted.manifest,sourceDigests:{...accepted.manifest.sourceDigests,...calendar.sourceDigests}}};
  }
+ const knowledge=knowledgeSourcePredecessor(current,historical);
+ if(knowledge)return procurementInsightsLiveAcceptancePredecessor(knowledge.previousBytes,historical);
  const notifications=assistantNotificationsPredecessor(current,historical);
  if(notifications){
   const accepted=procurementInsightsLiveAcceptancePredecessor(notifications.previousBytes,historical);assert(accepted,'accepted PI live source retained');

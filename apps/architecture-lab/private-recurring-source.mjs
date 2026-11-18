@@ -1,6 +1,7 @@
 import {completeFunctionalPredecessor} from './ecr-complete-functional-source.mjs'
 // Source acceptance only. Never imported by an application runtime.
 // The reviewed current graph is verified before any immutable predecessor is read.
+import {knowledgeSourcePredecessor} from './knowledge-source.mjs'
 import {recurringConsentTransportPredecessor} from '../../packages/platform-contracts/test/recurring-consent-transport-source.mjs'
 import {procurementInsightsShellPredecessor} from '../sg-runtime/tests/procurement-insights-shell-integrity.mjs'
 import {assistantEcrWeekPredecessor} from '../sg-runtime/tests/assistant-ecr-week-integrity.mjs'
@@ -24,6 +25,8 @@ export function recurringSourcePredecessor(current,historical){
   assert(accepted?.transport?.live,'accepted recurring transport and PI source retained')
   return {...accepted,complete,transport:{...accepted.transport,live:{...accepted.transport.live,manifest:{...accepted.transport.live.manifest,sourceDigests:{...accepted.transport.live.manifest.sourceDigests,...complete.currentSourceDigests}}}}}
  }
+ const knowledge=knowledgeSourcePredecessor(current,historical)
+ if(knowledge){const accepted=recurringSourcePredecessor(knowledge.previousBytes,historical);assert(accepted,'accepted source chain retained');return {...accepted,manifest:knowledge.manifest,predecessorManifest:accepted.manifest,knowledge}}
  const transport=recurringConsentTransportPredecessor(current,historical);if(transport){const accepted=recurringSourcePredecessor(transport.previousBytes,historical);return {...accepted,transport}}
  const shell=procurementInsightsShellPredecessor(current,historical);if(shell){const accepted=recurringSourcePredecessor(shell.previousBytes,historical);return {...accepted,completion:shell}}
  const calendar=marketCalendarSourcePredecessor(current,historical);if(calendar)return recurringSourcePredecessor(calendar.previousBytes,historical)

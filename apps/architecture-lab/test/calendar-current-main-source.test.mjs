@@ -9,7 +9,7 @@ const root=new URL('../../../',import.meta.url),current=p=>readFileSync(new URL(
 const hash=b=>createHash('sha256').update(b).digest('hex')
 const historical=(sha,p)=>{const key=sha+':'+p;if(!cache.has(key))cache.set(key,execFileSync('git',['cat-file','blob',key],{cwd:root,stdio:['ignore','pipe','pipe']}));return Buffer.from(cache.get(key))}
 const record=()=>JSON.parse(current(CALENDAR_CURRENT_MAIN_RECORD))
-test('joint closure authenticates both exact predecessors and keeps actual Root1.36 E1.3 SourceHub1.8',()=>{
+test('joint closure authenticates both exact predecessors and keeps conditional Root1.37 E1.4 SourceHub1.8',()=>{
  const view=calendarCurrentMainPredecessor(current,historical);assert(view);assert.equal(hash(current(CALENDAR_CURRENT_MAIN_RECORD)),CALENDAR_CURRENT_MAIN_RECORD_SHA256)
  for(const [name,read]of [['calendar',view.calendarBytes],['acceptedMain',view.acceptedMainBytes]]){
   const v=view.manifest.views[name]
@@ -18,12 +18,12 @@ test('joint closure authenticates both exact predecessors and keeps actual Root1
   assert.equal(calendarCurrentMainPredecessor(read,historical),null)
  }
  const version=(read,p)=>JSON.parse(read(p)).version
- assert.equal(version(current,'packages/platform-contracts/package.json'),'1.36.0');assert.equal(version(current,'packages/platform-contracts/current-e1-authority/package.json'),'1.3.0');assert.equal(version(current,'packages/platform-source-hub-contracts/package.json'),'1.8.0')
+ assert.equal(version(current,'packages/platform-contracts/package.json'),'1.37.0');assert.equal(version(current,'packages/platform-contracts/current-e1-authority/package.json'),'1.4.0');assert.equal(version(current,'packages/platform-source-hub-contracts/package.json'),'1.8.0')
  assert.equal(version(view.calendarBytes,'packages/platform-contracts/package.json'),'1.36.0');assert.equal(version(view.acceptedMainBytes,'packages/platform-source-hub-contracts/package.json'),'1.7.1')
  for(const p of ['apps/economic-calendar-runtime/package-lock.json','apps/newsfeed-runtime/package-lock.json','apps/platform-source-hub/package-lock.json','apps/sg-runtime/package-lock.json','apps/insights-runtime/package-lock.json']){
   const d=JSON.parse(current(p)).packages
-  assert.equal(d['node_modules/@profitia/platform-contracts'].version,'1.36.0',p);assert.equal(d['node_modules/@profitia/platform-current-e1-authority'].version,'1.3.0',p);assert.equal(d['node_modules/@profitia/platform-source-hub-contracts'].version,'1.8.0',p)
-  assert.equal(d['node_modules/@profitia/platform-source-hub-contracts'].peerDependencies['@profitia/platform-current-e1-authority'],'1.1.0 || 1.2.0 || 1.2.1 || 1.3.0',p)
+  assert.equal(d['node_modules/@profitia/platform-contracts'].version,'1.37.0',p);assert.equal(d['node_modules/@profitia/platform-current-e1-authority'].version,'1.4.0',p);assert.equal(d['node_modules/@profitia/platform-source-hub-contracts'].version,'1.8.0',p)
+  assert.equal(d['node_modules/@profitia/platform-source-hub-contracts'].peerDependencies['@profitia/platform-current-e1-authority'],'1.1.0 || 1.2.0 || 1.2.1 || 1.3.0 || 1.4.0',p)
  }
 })
 test('every changed or missing current graph byte is refused before any historical source is exposed',()=>{

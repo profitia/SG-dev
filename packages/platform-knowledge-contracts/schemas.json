@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://contracts.profitia.pl/platform-knowledge/0.1.0",
+  "$id": "https://contracts.profitia.pl/platform-knowledge/0.2.0",
   "$defs": {
     "Rights": {
       "type": "object",
@@ -65,7 +65,11 @@
       ],
       "properties": {
         "version": {
-          "const": "0.1.0"
+          "type": "string",
+          "enum": [
+            "0.1.0",
+            "0.2.0"
+          ]
         },
         "requestId": {
           "type": "string",
@@ -128,6 +132,41 @@
           "type": "string",
           "minLength": 1,
           "maxLength": 200
+        },
+        "filters": {
+          "type": "object",
+          "additionalProperties": false,
+          "maxProperties": 4,
+          "properties": {
+            "domain": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            },
+            "materialType": {
+              "enum": [
+                "BOOK",
+                "STANDARD",
+                "REPORT",
+                "PRESENTATION",
+                "NOTE",
+                "OTHER"
+              ]
+            },
+            "language": {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 32
+            },
+            "authority": {
+              "enum": [
+                "BINDING_STANDARD",
+                "REFERENCE",
+                "HISTORICAL",
+                "UNKNOWN"
+              ]
+            }
+          }
         }
       }
     },
@@ -266,6 +305,28 @@
             "null"
           ],
           "format": "date-time"
+        },
+        "sourceTitle": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "publishedAt": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date"
+        },
+        "language": {
+          "type": "string",
+          "maxLength": 32
+        },
+        "status": {
+          "enum": [
+            "CURRENT",
+            "REFERENCE",
+            "HISTORICAL"
+          ]
         }
       }
     },
@@ -285,7 +346,11 @@
       ],
       "properties": {
         "version": {
-          "const": "0.1.0"
+          "type": "string",
+          "enum": [
+            "0.1.0",
+            "0.2.0"
+          ]
         },
         "requestId": {
           "type": "string",
@@ -350,6 +415,9 @@
             "null"
           ],
           "maxLength": 2000
+        },
+        "summary": {
+          "$ref": "#/$defs/DocumentSummary"
         }
       }
     },
@@ -369,7 +437,11 @@
       ],
       "properties": {
         "version": {
-          "const": "0.1.0"
+          "type": "string",
+          "enum": [
+            "0.1.0",
+            "0.2.0"
+          ]
         },
         "requestId": {
           "type": "string",
@@ -414,6 +486,9 @@
         },
         "memoryRequested": {
           "type": "boolean"
+        },
+        "metadata": {
+          "$ref": "#/$defs/SourceMetadata"
         }
       }
     },
@@ -433,7 +508,11 @@
       ],
       "properties": {
         "version": {
-          "const": "0.1.0"
+          "type": "string",
+          "enum": [
+            "0.1.0",
+            "0.2.0"
+          ]
         },
         "jobId": {
           "type": "string",
@@ -512,7 +591,11 @@
       ],
       "properties": {
         "version": {
-          "const": "0.1.0"
+          "type": "string",
+          "enum": [
+            "0.1.0",
+            "0.2.0"
+          ]
         },
         "commandId": {
           "type": "string",
@@ -557,7 +640,11 @@
       ],
       "properties": {
         "version": {
-          "const": "0.1.0"
+          "type": "string",
+          "enum": [
+            "0.1.0",
+            "0.2.0"
+          ]
         },
         "commandId": {
           "type": "string",
@@ -600,6 +687,217 @@
           "uniqueItems": true
         }
       }
+    },
+    "SourceMetadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "domain",
+        "materialType",
+        "title",
+        "author",
+        "language",
+        "publishedAt",
+        "validFrom",
+        "validUntil"
+      ],
+      "properties": {
+        "domain": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "materialType": {
+          "type": "string",
+          "enum": [
+            "STANDARD",
+            "BOOK",
+            "REPORT",
+            "PRESENTATION",
+            "NOTE",
+            "OTHER"
+          ]
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "author": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 300
+        },
+        "language": {
+          "type": "string",
+          "maxLength": 32
+        },
+        "publishedAt": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date"
+        },
+        "validFrom": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "validUntil": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        }
+      }
+    },
+    "DocumentSummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "text",
+        "expectedUnits",
+        "coveredUnitIds",
+        "missingUnitIds",
+        "evidenceIds",
+        "generated"
+      ],
+      "properties": {
+        "text": {
+          "type": "string",
+          "maxLength": 160000
+        },
+        "expectedUnits": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10000
+        },
+        "coveredUnitIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 10000,
+          "uniqueItems": true
+        },
+        "missingUnitIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 10000,
+          "uniqueItems": true
+        },
+        "evidenceIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 10000,
+          "uniqueItems": true,
+          "minItems": 1
+        },
+        "generated": {
+          "const": true
+        }
+      }
+    },
+    "SourceStatusRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "version",
+        "sourceIds"
+      ],
+      "properties": {
+        "version": {
+          "const": "0.2.0"
+        },
+        "sourceIds": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 100,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      }
+    },
+    "SourceStatus": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sourceId",
+        "event",
+        "available",
+        "revision",
+        "generationId",
+        "checkedAt"
+      ],
+      "properties": {
+        "sourceId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "event": {
+          "enum": [
+            "READY",
+            "PREPARED",
+            "PROCESSING",
+            "WITHDRAWN",
+            "DELETED",
+            "EXPIRED",
+            "UNAVAILABLE"
+          ]
+        },
+        "available": {
+          "type": "boolean"
+        },
+        "revision": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "generationId": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "uuid"
+        },
+        "checkedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "PublishCommand": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "acknowledgePartial": {
+          "type": "boolean"
+        },
+        "authority": {
+          "enum": [
+            "REFERENCE",
+            "HISTORICAL",
+            "BINDING_STANDARD"
+          ]
+        }
+      },
+      "required": [
+        "acknowledgePartial",
+        "authority"
+      ]
     }
   }
 }
