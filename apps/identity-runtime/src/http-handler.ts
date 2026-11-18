@@ -36,6 +36,15 @@ export function createHttpHandler(boundary: SessionBoundary | null, account: Acc
         try {const input=await body(request,24576);return json(200,recurring?(url.pathname.endsWith('/component-ready')?await currentE1.recurringComponentReady!(request,input):url.pathname.endsWith('/consent')?await currentE1.recurringConsent!(request,input):await currentE1.authorizeRecurring!(request,input)):source?await currentE1.authorizeSource!(request,input):await currentE1.authorize(request,input))}
         catch (error) {const reason=(error as {reasonCode?:string}).reasonCode;return json(reason==='ACCESS_BASIS_INVALID'||(source||recurring)&&['UNVERIFIED_IDENTITY','IDENTITY_REQUIRED','PERMISSION_DENIED','PRODUCT_UNAVAILABLE','EXPLICIT_DENY'].includes(reason??'')?403:503,{error:'E1_AUTHORITY_REFUSED'})}
       }
+      if (url.pathname === '/v1/account/renew') {
+        if (url.search || url.hash) return json(404, { error: 'NOT_FOUND' })
+        if (!boundary || !account) return json(503, { error: 'IDENTITY_UNAVAILABLE' })
+        if (request.method !== 'POST') return json(405, { error: 'METHOD_NOT_ALLOWED' })
+        if (request.headers.has('origin') || request.headers.has('cookie') || request.headers.get('content-type') !== 'application/json') return json(403, { error: 'ACCOUNT_RENEWAL_REFUSED' })
+        const input = await body(request)
+        if (!input || typeof input !== 'object' || Array.isArray(input) || Object.keys(input).length) return json(400, { error: 'EMPTY_OBJECT_REQUIRED' })
+        return json(200, await account.renew(request))
+      }
       if (url.pathname === '/v1/account/salutation') {
         if (url.search || url.hash) return json(404, { error: 'NOT_FOUND' })
         if (request.method !== 'GET') return json(405, { error: 'METHOD_NOT_ALLOWED' })

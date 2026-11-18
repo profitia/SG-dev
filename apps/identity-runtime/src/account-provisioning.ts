@@ -71,6 +71,7 @@ export interface AccountSurface {
   readonly configuration: RuntimeConfiguration
   ensure(request: Request): Promise<Readonly<{ authenticated: true; userId: string; expiresAt: string }>>
   read(request: Request): Promise<Readonly<{ authenticated: true; userId: string; expiresAt: string }>>
+  renew(request: Request): Promise<Readonly<{ authenticated: true; userId: string; expiresAt: string }>>
 }
 export function createAccountSurface({ configuration: inputConfiguration, client, authority, binding, schemaDigest, renewalSchemaDigest, proofKey, transact, finalizeRegistration, now = Date.now }: {
   configuration: RuntimeConfiguration; client: RuntimeSdk; authority: IdentityAuthority
@@ -81,12 +82,15 @@ export function createAccountSurface({ configuration: inputConfiguration, client
   if (!(proofKey instanceof Uint8Array) || proofKey.byteLength !== 32) throw new BoundaryError(503, 'PROFILE_CONFIGURATION_REQUIRED')
   const configuration = readConfiguration(inputConfiguration), ownBinding = structuredClone(binding), ownKey = Buffer.from(proofKey)
   const verifiedClient = verifiedEmailClient(client)
-  const provisionerFor = (signal?: AbortSignal, receipt: string|null = null) => createIdentityProvisioner({ client: verifiedClient,
-    identityApplication: { appId: configuration.applicationId, environment: configuration.environment, issuer: configuration.issuer, authorizedParties: [configuration.origin] },
+  const peers = [...new Set(Object.values(configuration.targets).map(t => t.origin))].filter(origin => origin !== configuration.origin)
+  const provisionerFor = (signal?: AbortSignal, receipt: string|null = null, existingOnly = false) => createIdentityProvisioner({ client: verifiedClient,
+    identityApplication: { appId: configuration.applicationId, environment: configuration.environment, issuer: configuration.issuer, authorizedParties: existingOnly ? [configuration.origin, ...peers] : [configuration.origin],
+      ...(existingOnly ? { bearerPeerRenewals: peers.map(sourceOrigin => ({ sourceOrigin, targetOrigin: configuration.origin, path: '/v1/account/renew' as const })) } : {}) },
+    existingOnly,
     binding: ownBinding, schemaDigest, ...(renewalSchemaDigest === undefined ? {} : { renewalSchemaDigest }), proofKey: ownKey, now,
     transact: (action, limits) => transact(async tx => {
       const result = await action(tx)
-      if (finalizeRegistration) {
+      if (finalizeRegistration && !existingOnly) {
         const userId = (result as { userId?: string })?.userId
         if (typeof userId !== 'string') throw new BoundaryError(503, 'REGISTRATION_FINALIZATION_REQUIRED')
         await finalizeRegistration(tx.query, userId, receipt)
@@ -94,7 +98,6 @@ export function createAccountSurface({ configuration: inputConfiguration, client
       return result
     }, limits, signal) })
   provisionerFor() // Validate the private binding without provider/SQL calls.
-  const peers = [...new Set(Object.values(configuration.targets).map(t => t.origin))].filter(origin => origin !== configuration.origin)
   const authenticate = createClerkIdentityAuthenticator({ client: verifiedClient,
     application: { appId: configuration.applicationId, environment: configuration.environment, issuer: configuration.issuer,
       authorizedParties: [configuration.origin, ...peers], bearerPeerReads: peers.map(sourceOrigin => ({ sourceOrigin, targetOrigin: configuration.origin, path: '/v1/account' })) },
@@ -106,7 +109,15 @@ export function createAccountSurface({ configuration: inputConfiguration, client
     if (!actor || actor.kind !== 'HUMAN' || !actor.userId || request.signal.aborted) throw new BoundaryError(401, 'ACCOUNT_REQUIRED')
     return Object.freeze({ authenticated: true as const, userId: actor.userId, expiresAt: actor.expiresAt })
   }
-  return Object.freeze({ configuration, read, async ensure(request: Request) {
+  return Object.freeze({ configuration, read, async renew(request: Request) {
+    checkRequest(request, configuration)
+    if (!renewalSchemaDigest || request.method !== 'POST' || request.headers.has('origin') || request.headers.has('cookie')
+      || !/^Bearer [\x21-\x7e]{1,16384}$/i.test(request.headers.get('authorization') ?? '')) throw new BoundaryError(403, 'ACCOUNT_RENEWAL_REFUSED')
+    const result = await provisionerFor(request.signal, null, true).ensureAccount(request)
+    const current = await read(new Request(configuration.origin + '/v1/account', { headers: { authorization: request.headers.get('authorization')! }, signal: request.signal }))
+    if (current.userId !== result.userId) throw new BoundaryError(409, 'ACCOUNT_CHANGED')
+    return current
+  }, async ensure(request: Request) {
     checkRequest(request, configuration, true)
     // Provisioning is ONLY same-origin. Peer GET admission never permits POST.
     const receipt = request.headers.get('x-registration-receipt')

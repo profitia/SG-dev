@@ -284,3 +284,31 @@ test('stored language wins; unavailable language cannot be falsely confirmed or 
   const f=browserFixture({languageResponse:response});await f.start();assert.equal(f.redirects.length,0)
  }
 })
+
+
+test('explicit bearer peer renewal restores only the existing binding and preserves the account', async () => {
+  const f = accountFixture({ renewal: true, bindingExpired: true, party: 'https://sg2.example.test' })
+  const response = await f.handler(new Request(origin + '/v1/account/renew', { method: 'POST',
+    headers: { authorization: 'Bearer synthetic_fixture_only', 'content-type': 'application/json' }, body: '{}' }))
+  assert.equal(response.status, 200); assert.equal((await response.json()).userId, ids.a)
+  assert(f.sql.some(sql => sql.includes('renew_binding'))); assert(f.sql.includes('COMMIT'))
+  assert(!f.sql.some(sql => sql.includes('provision_account'))); assert.equal(f.created.size, 0)
+})
+test('peer renewal cannot bootstrap a missing account, use browser cookies, or accept a selected user', async () => {
+  for (const patch of [{ bindingMissing: true }, { disabledRenewal: true }, { bindingStatus: 'REVOKED' },
+    { unverified: true }, { sessionStatus: 'revoked' }, { party: 'https://foreign.example.test' }]) {
+    const f = accountFixture({ renewal: true, bindingExpired: true, party: 'https://sg2.example.test', ...patch })
+    const response = await f.handler(new Request(origin + '/v1/account/renew', { method: 'POST',
+      headers: { authorization: 'Bearer synthetic_fixture_only', 'content-type': 'application/json' }, body: '{}' }))
+    assert.notEqual(response.status, 200); assert(!f.sql.includes('COMMIT'))
+    assert(!f.sql.some(sql => sql.includes('provision_account')))
+  }
+  for (const [extra, body] of [[{ origin: 'https://sg2.example.test' }, '{}'], [{ cookie: '__session=synthetic_fixture_only' }, '{}'], [{}, '{"userId":"selected"}']]) {
+    const f = accountFixture({ renewal: true, bindingExpired: true, party: 'https://sg2.example.test' })
+    const response = await f.handler(new Request(origin + '/v1/account/renew', { method: 'POST',
+      headers: { authorization: 'Bearer synthetic_fixture_only', 'content-type': 'application/json', ...extra }, body }))
+    assert.notEqual(response.status, 200); assert.equal(f.sql.length, 0)
+  }
+  const f = accountFixture({ renewal: true, bindingExpired: true, party: 'https://sg2.example.test' })
+  assert.equal((await f.handler(new Request(origin + '/v1/account/renew'))).status, 405)
+})

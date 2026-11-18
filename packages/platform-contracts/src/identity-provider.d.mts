@@ -8,6 +8,9 @@ export interface IdentityApplication {
   /** Deployment-owned opt-in for a bearer-only GET at an exact receiver path.
    * Both origins must already be authorized. Never confers product/resource access. */
   bearerPeerReads?: { sourceOrigin: string; targetOrigin: string; path: string }[]
+  /** Explicit bearer-only POST for renewing an existing binding. No provisioning,
+   * account profile mutation, membership or product grant is admitted. */
+  bearerPeerRenewals?: { sourceOrigin: string; targetOrigin: string; path: '/v1/account/renew' }[]
 }
 /** Observation only: never an authenticated Actor or an access grant. */
 export interface ExternalAccountObservation extends ExternalIdentityKey {
