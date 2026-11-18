@@ -10,7 +10,7 @@ let dom:any,root:any,container:any,AccountLanding:any
 const globals=globalThis as any,saved=new Map<string,PropertyDescriptor|undefined>()
 const first='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',second='bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'
 let organisationId=first,denial=0,outage=false,lifetime=25000,mounts=0,selection=false
-let requestedSlugs:(string|null)[]=[]
+let requestedSlugs:(string|null)[]=[],redirects:string[]=[]
 const token=async()=>'synthetic.original.session'
 before(async()=>{
  dom=new JSDOM('<!doctype html><html><body></body></html>',{url:'https://sg2.example.test/pl/dashboard'})
@@ -20,9 +20,10 @@ before(async()=>{
  saved.set('fetch',Object.getOwnPropertyDescriptor(globals,'fetch'))
  globals.__organisationAuth={isLoaded:true,isSignedIn:true,userId:'synthetic-user',sessionId:'synthetic-session',getToken:token}
  globals.__organisationMount=()=>mounts++
+ globals.__organisationRouter={replace:(value:string)=>redirects.push(value)}
  const mocks:any={
   '@clerk/react':"export const useAuth=()=>globalThis.__organisationAuth;export const useClerk=()=>({signOut:async()=>{}})",
-  'next/navigation':"export const useRouter=()=>({replace:()=>{}})",
+  'next/navigation':"export const useRouter=()=>globalThis.__organisationRouter",
   'next/image':"import React from 'react';export default p=>React.createElement('img',p)",
   '@/components/appshell/appshell-dashboard':"import React from 'react';export function AppShellDashboard(p){React.useEffect(()=>{globalThis.__organisationMount()},[]);return React.createElement('section',{'data-scope':p.assistantScope},React.createElement('input',{'aria-label':'Preserved user work',defaultValue:''}))}",
   '@/lib/appshell/adp-navigation':"export const dashboardPath=locale=>'/'+locale+'/dashboard'",
@@ -32,10 +33,10 @@ before(async()=>{
   plugins:[{name:'external-services-only',setup(b:any){b.onResolve({filter:/.*/},(a:any)=>mocks[a.path]?{path:a.path,namespace:'fixture'}:undefined);b.onLoad({filter:/.*/,namespace:'fixture'},(a:any)=>({contents:mocks[a.path],loader:'js'}))}}]})
  const m={exports:{} as any};new Function('require','module','exports',b.outputFiles[0].text)(require,m,m.exports);AccountLanding=m.exports.AccountLanding
 })
-afterEach(async()=>{if(root)await React.act(async()=>root.unmount());root=null;dom.window.document.body.replaceChildren();organisationId=first;denial=0;outage=false;lifetime=25000;mounts=0;selection=false;requestedSlugs=[];dom.window.history.replaceState(null,'','/pl/dashboard')})
-after(()=>{dom.window.close();for(const[k,d]of saved)d?Object.defineProperty(globals,k,d):delete globals[k];delete globals.__organisationAuth;delete globals.__organisationMount})
+afterEach(async()=>{if(root)await React.act(async()=>root.unmount());root=null;dom.window.document.body.replaceChildren();organisationId=first;denial=0;outage=false;lifetime=25000;mounts=0;selection=false;requestedSlugs=[];redirects=[];dom.window.history.replaceState(null,'','/pl/dashboard')})
+after(()=>{dom.window.close();for(const[k,d]of saved)d?Object.defineProperty(globals,k,d):delete globals[k];delete globals.__organisationAuth;delete globals.__organisationMount;delete globals.__organisationRouter})
 async function flush(){await React.act(async()=>{await new Promise(r=>setImmediate(r))})}
-async function setup(selectionMode=false){
+async function setup(selectionMode=false,{dashboard=true,locale='pl'}={}){
  selection=selectionMode
  globals.fetch=async(url:string,options?:any)=>{
   if(url==='/api/account')return Response.json({authenticated:true,userId:'canonical-user',expiresAt:new Date(Date.now()+60000).toISOString(),assistantAvatar:'male',salutation:null})
@@ -52,7 +53,7 @@ async function setup(selectionMode=false){
   return Response.json({status:'READY',organisationId,expiresAt:new Date(Date.now()+lifetime).toISOString()})
  }
  container=dom.window.document.createElement('div');dom.window.document.body.append(container);root=createRoot(container)
- await React.act(async()=>root.render(React.createElement(AccountLanding,{locale:'pl',completionUrl:'https://identity.example.test/account/sg2/account-pl/login',presentation:'workspace',dashboard:true,organisationAccess:true})))
+ await React.act(async()=>root.render(React.createElement(AccountLanding,{locale,completionUrl:'https://identity.example.test/account/sg2/account-pl/login',presentation:'workspace',dashboard,organisationAccess:true})))
  await flush();return container.querySelector('input')
 }
 async function focus(){await React.act(async()=>dom.window.dispatchEvent(new dom.window.Event('focus')));await flush()}
@@ -93,4 +94,22 @@ test('an unrecognised direct organisation address never mounts the old workspace
  dom.window.history.replaceState(null,'','/pl/dashboard?organisation=foreign')
  assert.equal(await setup(true),null);assert.equal(mounts,0)
  assert.deepEqual(requestedSlugs,['foreign'])
+})
+
+for(const locale of ['pl','en'])test('current account redirect preserves fixed locale dashboard and canonical organisation: '+locale,async()=>{
+ dom.window.history.replaceState(null,'','/'+locale+'/account?organisation=beta')
+ assert.equal(await setup(true,{dashboard:false,locale}),null);assert.equal(mounts,0)
+ assert.deepEqual(requestedSlugs,['beta']);assert(redirects.length>0)
+ assert(redirects.every(value=>value==='/'+locale+'/dashboard?organisation=beta'))
+})
+for(const status of [401,403,409,503])test('account redirect never opens workspace on current organisation refusal: '+status,async()=>{
+ dom.window.history.replaceState(null,'','/pl/account?organisation=beta');denial=status
+ assert.equal(await setup(true,{dashboard:false}),null);assert.equal(mounts,0);assert.deepEqual(redirects,[])
+})
+test('account redirect rejects unknown organisation and expired organisation lease',async()=>{
+ dom.window.history.replaceState(null,'','/pl/account?organisation=foreign')
+ assert.equal(await setup(true,{dashboard:false}),null);assert.equal(mounts,0);assert.deepEqual(redirects,[])
+ await React.act(async()=>root.unmount());root=null
+ dom.window.history.replaceState(null,'','/pl/account?organisation=beta');lifetime=0
+ assert.equal(await setup(true,{dashboard:false}),null);assert.equal(mounts,0);assert.deepEqual(redirects,[])
 })
