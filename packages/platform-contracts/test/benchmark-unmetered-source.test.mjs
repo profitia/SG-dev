@@ -37,4 +37,5 @@ test('adopted SDK authenticates every current Finder byte before its complete im
  }
  assert.throws(()=>benchmarkUnmeteredPredecessor(p=>{if(p===BENCHMARK_RECORD)throw Object.assign(Error('absent'),{code:'ENOENT'});return physical(p)},historical,pin()))
  assert.throws(()=>benchmarkUnmeteredPredecessor(physical,historical,'0'.repeat(64)))
+ for(const p of Object.keys(consumer.sourceDigests))assert.throws(()=>benchmarkUnmeteredPredecessor(physical,(sha,f)=>sha===consumer.sourceSha&&f===p?Buffer.concat([historical(sha,f),Buffer.from('forged consumer history')]):historical(sha,f),pin()),/immutable reviewed Finder consumer/,p)
 })

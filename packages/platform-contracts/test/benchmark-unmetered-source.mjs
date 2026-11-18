@@ -103,6 +103,8 @@ export function benchmarkUnmeteredPredecessor(current,historical,pin){
  if(context){
   const previous=benchmarkUnmeteredPredecessor(context.baseline('benchmark'),historical,pin)
   assert(previous,'complete immutable Benchmark source required')
+  const input=previous.manifest.consumerInput
+  for(const [p,digest]of Object.entries(input.sourceDigests))assert.equal(hash(historical(input.sourceSha,p)),digest,'immutable reviewed Finder consumer '+p)
   return {...previous,currentSourceDigests:context.currentSourceDigests,currentSdkContext:context}
  }
  let bytes;try{bytes=current(BENCHMARK_RECORD)}catch(e){if(absent(e))return null;throw e}
