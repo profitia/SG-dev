@@ -67,3 +67,37 @@ END $aqc_cas$;
 REVOKE ALL ON FUNCTION profitia_quality_release.quality_deployment_cas(uuid,text,text,uuid,timestamptz) FROM PUBLIC;
 GRANT USAGE ON SCHEMA profitia_quality_release TO aqc_development_product_publisher;
 GRANT EXECUTE ON FUNCTION profitia_quality_release.quality_deployment_cas(uuid,text,text,uuid,timestamptz) TO aqc_development_product_publisher;
+
+-- Metadata-only readiness/reconciliation. No transcript, principal, grant,
+-- private row or before/after row metadata is returned or directly granted.
+CREATE FUNCTION profitia_quality_release.quality_deployment_cas_status(p_operation uuid)
+ RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $aqc_status$
+DECLARE policy record;runtime record;source_sha text;fresh boolean;operation jsonb;
+BEGIN
+ IF session_user<>'aqc_development_product_publisher' OR current_user<>'profitia_ingestion_owner' OR current_database()<>'neondb'
+  OR clock_timestamp()>='2026-11-27T23:59:59Z'::timestamptz
+  OR NOT EXISTS(SELECT 1 FROM profitia_ingestion.installation WHERE singleton AND environment='development'
+   AND project_id='autumn-waterfall-65938876' AND branch_id='br-dry-hall-b294222f')
+ THEN RAISE EXCEPTION 'AQC_CAS_BINDING_REJECTED';END IF;
+ SELECT * INTO runtime FROM pg_catalog.pg_roles WHERE rolname=session_user;
+ IF NOT runtime.rolcanlogin OR runtime.rolsuper OR runtime.rolinherit OR runtime.rolcreaterole OR runtime.rolcreatedb
+  OR runtime.rolbypassrls OR runtime.rolreplication OR runtime.rolconnlimit<>2
+  OR runtime.rolvaliduntil IS NULL OR runtime.rolvaliduntil>'2026-11-27T23:59:59Z'::timestamptz
+  OR runtime.rolvaliduntil<=clock_timestamp() OR EXISTS(SELECT 1 FROM pg_catalog.pg_auth_members WHERE member=runtime.oid)
+ THEN RAISE EXCEPTION 'AQC_CAS_ROLE_REJECTED';END IF;
+ SELECT * INTO policy FROM profitia_quality_release.quality_deployment_cas_policy WHERE singleton;
+ IF NOT FOUND THEN RAISE EXCEPTION 'AQC_CAS_POLICY_UNAVAILABLE';END IF;
+ SELECT CASE WHEN count(*)=3 AND count(DISTINCT source)=1 AND bool_and(source~'^[a-f0-9]{40}$') THEN min(source) ELSE NULL END,
+  coalesce(count(*)=3 AND bool_and(status='ACTIVE' AND expires_at>clock_timestamp()),false)
+ INTO source_sha,fresh FROM (SELECT deployment_id AS source,status,expires_at FROM profitia_ingestion.runtime_bindings WHERE login_role IN('sg2_insights_report_development_composer','sg2_insights_report_development_counter')
+ UNION ALL SELECT substring(deployment_id FROM 26) AS source,status,expires_at FROM profitia_ingestion.runtime_bindings WHERE login_role='sg2_benchmark_source_development_runtime' AND deployment_id~'^srv-dapa3tid0e5s73f8bc5g:[a-f0-9]{40}$') AS refs;
+ SELECT jsonb_build_object('operationId',operation_id,'fromSourceSha',from_sha,'toSourceSha',to_sha,'restoreOf',restore_of)
+ INTO operation FROM profitia_quality_release.quality_deployment_cas_operations WHERE operation_id=p_operation;
+ RETURN jsonb_build_object('schemaVersion','AQC_PUBLISHER_CAS_STATUS_V1','applicationId','spendguru',
+  'environment','development','profile','product','currentSourceSha',source_sha,'bindingsFresh',fresh,
+  'publishingEnabled',policy.enabled,'recoveryEnabled',policy.recovery_enabled,
+  'authorisedUntil',to_char(policy.authorised_until AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'),
+  'operation',operation,'rawQaReadPerformed',false,'permissionMutationPerformed',false);
+END $aqc_status$;
+REVOKE ALL ON FUNCTION profitia_quality_release.quality_deployment_cas_status(uuid) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION profitia_quality_release.quality_deployment_cas_status(uuid) TO aqc_development_product_publisher;
