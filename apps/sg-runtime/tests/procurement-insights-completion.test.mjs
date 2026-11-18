@@ -1,3 +1,4 @@
+import {knowledgeSourcePredecessor} from '../../architecture-lab/knowledge-source.mjs'
 import {assistantReservationPredecessor} from '../../../packages/platform-contracts/test/assistant-reservation-source.mjs'
 import {ASSISTANT_RESERVATION_SOURCE_SHA} from '../../architecture-lab/private-recurring-source.mjs'
 // SYNTHETIC_ONLY: browser interaction regression, never a Development acceptance result.

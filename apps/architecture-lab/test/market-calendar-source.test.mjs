@@ -1,3 +1,4 @@
+import {knowledgeSourcePredecessor} from '../knowledge-source.mjs'
 import {assistantReservationPredecessor} from '../../../packages/platform-contracts/test/assistant-reservation-source.mjs'
 import {ASSISTANT_RESERVATION_SOURCE_SHA} from '../private-recurring-source.mjs'
 import {procurementInsightsCompletionPredecessor} from '../../sg-runtime/tests/procurement-insights-completion-integrity.mjs'
@@ -9,7 +10,7 @@ import {execFileSync} from 'node:child_process'
 import {createHash} from 'node:crypto'
 import {marketCalendarSourcePredecessor,calendarTestCompatibilityCurrent,MARKET_CALENDAR_TEST_COMPATIBILITY_RECORD,MARKET_CALENDAR_PRODUCER_PATHS,MARKET_CALENDAR_PRODUCER_RECORD,MARKET_CALENDAR_PRODUCER_BASE,MARKET_CALENDAR_PRODUCER_RECORD_SHA,MARKET_CALENDAR_CONSUMER_PATHS,MARKET_CALENDAR_CONSUMER_RECORD} from '../market-calendar-source.mjs'
 const root=new URL('../../../',import.meta.url),rawPhysical=p=>fs.readFileSync(new URL(p,root)),cache=new Map(),historical=(sha,p)=>{const k=sha+':'+p;if(!cache.has(k))cache.set(k,execFileSync('git',['show',k],{cwd:root,stdio:['ignore','pipe','pipe']}));return cache.get(k)}
-const reservation=assistantReservationPredecessor(rawPhysical,historical,ASSISTANT_RESERVATION_SOURCE_SHA),acceptedPhysical=reservation?.previousBytes??rawPhysical
+const reservation=assistantReservationPredecessor(knowledgeSourcePredecessor(rawPhysical,historical)?.previousBytes??rawPhysical,historical,ASSISTANT_RESERVATION_SOURCE_SHA),acceptedPhysical=reservation?.previousBytes??rawPhysical
 // Authenticate the complete current SDK and both receivers before Calendar history.
 const sdk=sdkContinuationPredecessor(JSON.parse(rawPhysical('apps/sg-runtime/operation-integration.json')),rawPhysical,historical)
 const physical=sdk?.calendarCurrent??procurementInsightsCompletionPredecessor(acceptedPhysical,historical)?.previousBytes??acceptedPhysical

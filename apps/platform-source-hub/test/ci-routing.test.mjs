@@ -1,6 +1,7 @@
 import {REGISTRATION_SDK_REVIEW} from '../../../scripts/governance/controlled-package-ci.mjs'
 import {partitionChangedPaths,validateOwnerGroups} from '../../identity-runtime/scripts/ci-routing.mjs'
 import {reviewedRegistrationConsumerPaths} from '../scripts/ci-routing.mjs'
+import {knowledgeSourcePredecessor} from '../../architecture-lab/knowledge-source.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
@@ -19,7 +20,8 @@ const readReceipt=file=>JSON.parse(fs.readFileSync(new URL('../../../'+file,impo
 const sourceBytes=p=>fs.readFileSync(path.join(repositoryRoot,p))
 const sourceHistory=(sha,p)=>execFileSync('git',['show',sha+':'+p],{cwd:repositoryRoot,stdio:['ignore','pipe','pipe'],maxBuffer:16*1024*1024})
 const sourcePin=String(sourceBytes(RESERVATION_DERIVED)).match(/ASSISTANT_RESERVATION_SOURCE_SHA='([a-f0-9]{64})'/)?.[1]
-const reservationSource=assistantReservationPredecessor(sourceBytes,sourceHistory,sourcePin)
+const knowledgeSource=knowledgeSourcePredecessor(sourceBytes,sourceHistory),acceptedAcgBytes=knowledgeSource?.previousBytes??sourceBytes
+const reservationSource=assistantReservationPredecessor(acceptedAcgBytes,sourceHistory,sourcePin)
 assert(reservationSource)
 function reviewedRecurringFixture(){
  const temporary=fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(),'hub-immutable-recurring-')))
@@ -34,29 +36,6 @@ function reviewedRecurringFixture(){
    close:()=>fs.rmSync(temporary,{recursive:true,force:true})}
  }catch(error){fs.rmSync(temporary,{recursive:true,force:true});throw error}
 }
-
-function liveReviewedBase(){return PRIVATE_RECURRING_LIVE_SRM_REVIEW.baseSha}
-function liveReviewedCheckout(){
- const temporary=fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(),'hub-pi-live-reviewed-')))
- const git=(cwd,args)=>execFileSync('git',args,{cwd,encoding:'utf8',stdio:['ignore','pipe','pipe']}).trim()
- const source=PRIVATE_RECURRING_LIVE_SRM_REVIEW.sourceSha
- try{
-  git(temporary,['clone','--quiet','--shared','--no-checkout',repositoryRoot,'source'])
-  const root=path.join(temporary,'source'),base=liveReviewedBase();git(root,['update-ref','--no-deref','HEAD',base]);git(root,['read-tree',base])
-  const tracked=new Set(git(root,['ls-tree','-r','--name-only',base]).split('\n')),referenced=new Set()
-  const visit=v=>{if(!v||typeof v!=='object')return;for(const[k,x]of Object.entries(v)){if(tracked.has(k))referenced.add(k);if(typeof x==='string'&&tracked.has(x))referenced.add(x);visit(x)}}
-  for(const file of tracked)if(/(?:-integration|-adoption|-source|compatibility)\.json$/.test(file)||/^Canon\/evidence\/.*\.json$/.test(file))visit(JSON.parse(git(root,['show',base+':'+file])))
-  const paths=[...new Set([...referenced,...[...tracked].filter(p=>/^(Canon|scripts|packages)\//.test(p)||/^apps\/[^/]+\/(?:.*\.(?:mjs|json|tsx?|sql|css|md|py)|scripts\/.*)$/.test(p))])]
-  execFileSync('git',['checkout-index','--stdin','-z'],{cwd:root,input:paths.join('\0')+'\0'})
-  // SYNTHETIC_ONLY Git fixture: project the entire exact13 review over its
-  // authority base. Policy commits inherited by the historical branch are
-  // deliberately outside this product-source routing regression.
-  for(const file of Object.keys(PRIVATE_RECURRING_LIVE_SRM_REVIEW.entries)){const target=path.join(root,file);fs.mkdirSync(path.dirname(target),{recursive:true});fs.writeFileSync(target,execFileSync('git',['show',source+':'+file],{cwd:repositoryRoot}));git(root,['add','--',file])}
-  git(root,['-c','user.name=Isolated fixture','-c','user.email=fixture@example.invalid','commit','--quiet','-m','SYNTHETIC_ONLY exact13 reviewed source fixture'])
-  return{root,base,source:git(root,['rev-parse','HEAD']),close:()=>fs.rmSync(temporary,{recursive:true,force:true})}
- }catch(e){fs.rmSync(temporary,{recursive:true,force:true});throw e}
-}
-
 
 test('mixed producer and consumer changes run every actual owner gate',()=>{
  const called=[]

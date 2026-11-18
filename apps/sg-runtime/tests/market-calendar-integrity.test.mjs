@@ -1,4 +1,5 @@
 import {sdkContinuationPredecessor} from '../../../packages/platform-contracts/test/organisation-sdk-compatibility.mjs'
+import {knowledgeSourcePredecessor} from '../../architecture-lab/knowledge-source.mjs'
 import {assistantReservationPredecessor} from '../../../packages/platform-contracts/test/assistant-reservation-source.mjs'
 import {ASSISTANT_RESERVATION_SOURCE_SHA} from '../../architecture-lab/private-recurring-source.mjs'
 import {procurementInsightsCompletionPredecessor} from './procurement-insights-completion-integrity.mjs'
@@ -11,7 +12,7 @@ const root=new URL('../../../',import.meta.url)
 const physical=p=>fs.readFileSync(new URL(p,root))
 const cache=new Map()
 const historical=(sha,p)=>{const k=sha+':'+p;if(!cache.has(k))cache.set(k,execFileSync('git',['cat-file','blob',k],{cwd:root,stdio:['ignore','pipe','pipe']}));return cache.get(k)}
-const reservation=assistantReservationPredecessor(physical,historical,ASSISTANT_RESERVATION_SOURCE_SHA),acceptedPhysical=reservation?.previousBytes??physical
+const reservation=assistantReservationPredecessor(knowledgeSourcePredecessor(physical,historical)?.previousBytes??physical,historical,ASSISTANT_RESERVATION_SOURCE_SHA),acceptedPhysical=reservation?.previousBytes??physical
 const sdk=sdkContinuationPredecessor(JSON.parse(physical('apps/sg-runtime/operation-integration.json')),physical,historical)
 const current=sdk?.calendarCurrent??procurementInsightsCompletionPredecessor(acceptedPhysical,historical)?.previousBytes??acceptedPhysical
 test('actual calendar consumer preserves its accepted producer, dependencies and historical receipts',()=>{

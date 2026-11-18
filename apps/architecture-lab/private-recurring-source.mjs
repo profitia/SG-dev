@@ -1,7 +1,7 @@
 import {sdkSourceContext} from '../../packages/platform-contracts/test/sdk-source-context.mjs'
+import {knowledgeSourcePredecessor} from './knowledge-source.mjs'
 // Source acceptance only. Never imported by an application runtime.
 // The reviewed current graph is verified before any immutable predecessor is read.
-import {knowledgeSourcePredecessor} from './knowledge-source.mjs'
 import {recurringConsentTransportPredecessor} from '../../packages/platform-contracts/test/recurring-consent-transport-source.mjs'
 import {procurementInsightsShellPredecessor} from '../sg-runtime/tests/procurement-insights-shell-integrity.mjs'
 // Source acceptance only. Never imported by an application runtime.

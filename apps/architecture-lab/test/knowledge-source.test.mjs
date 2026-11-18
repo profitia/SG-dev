@@ -81,3 +81,19 @@ test('current SRM Root target authenticates the actual optional producer while i
   assert.throws(()=>knowledgeSourcePredecessor(p=>p===file?view.previousBytes(file):read(p),history),'historically valid target must not substitute the current producer');
  }finally{fs.rmSync(fixture,{recursive:true,force:true});}
 });
+
+// Current source authentication precedes the immutable ACG compatibility view.
+test('complete Knowledge and accepted reservation graphs reject every altered producer and consumer input',()=>{
+ const view=knowledgeSourcePredecessor(read,history);assert(view);
+ const expected=new Set([...Object.keys(view.manifest.sourceDigests),...Object.keys(view.manifest.preservedReceipts),...Object.keys(view.manifest.retainedSuccessorReceipts)]);
+ assert.equal(Object.keys(view.manifest.sourceDigests).length,478);
+ const actual=new Map([...expected].map(p=>[p,read(p)]));
+ for(const p of expected){
+  const changed=Buffer.concat([actual.get(p),Buffer.from('UNREVIEWED_COHORT_CHANGE')]);
+  assert.throws(()=>knowledgeSourcePredecessor(f=>f===p?changed:actual.get(f)??read(f),history),p);
+ }
+ const historicalAcg=JSON.parse(view.previousBytes('apps/architecture-lab/assistant-reservation-source.json'));
+ for(const p of Object.keys(historicalAcg.sourceDigests))assert.deepEqual(view.previousBytes(p),history(view.manifest.previousSourceSha,p),p);
+ for(const p of ['apps/sg-runtime/lib/assistant/conversation.ts','apps/sg-runtime/lib/assistant/model.ts','apps/sg-runtime/lib/assistant/runtime.ts','packages/platform-contracts/src/assistant-usage.mjs','packages/platform-contracts/src/assistant-usage.d.mts','apps/package-limits/migrations/006-assistant-reservation-diagnostics.sql'])
+  assert.deepEqual(read(p),history(view.manifest.previousSourceSha,p),'preserved exact upstream repair '+p);
+});
