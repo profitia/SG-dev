@@ -8,7 +8,7 @@ import {assertIsolatedTestConnection} from '../../architecture-lab/src/operation
 import {createQualityEvidenceStore,createQualityEvidencePurposeClient,createAssistantQualityCapture,createQualityHistoryContainment,type QualityEvidenceAuthority} from '../lib/assistant/quality-evidence'
 const hash=(s:string)=>createHash('sha256').update(s).digest('hex')
 test('native QA roles isolate encrypted controlled evidence, preserve fixed expiry, require fresh purpose and retain deletion/recovery barriers',async()=>{
- const ownerUrl=assertIsolatedTestConnection(process.env.OPERATION_FIXTURE_OWNER_URL,'sg2_operation_test','architecture_test_owner')
+ const ownerUrl=assertIsolatedTestConnection(process.env.SG2_OPERATION_TEST_OWNER_URL,'sg2_operation_test','architecture_test_owner')
  const admin=new pg.Client({connectionString:ownerUrl});await admin.connect()
  const owner='sg2_assistant_history_owner',captureRole='sg2_assistant_quality_capture',readerRole='sg2_assistant_quality_reader'
  const historyRole='sg2_assistant_history_runtime',password='SYNTHETIC_ONLY_NOT_A_REAL_CREDENTIAL'

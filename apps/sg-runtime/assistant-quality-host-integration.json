@@ -14,7 +14,7 @@
     "apps/sg-runtime/package-lock.json": "6a249a404dc43beb049e37816a569db70ce3d9f2beffa721e3c32d6a240d1f61",
     "apps/sg-runtime/tests/assistant-conversation-handler.test.ts": "4d9a3c19706772ec319d0ca7847e879d4d92d1fd384ebc0ed1c5f5cc60854550",
     "apps/sg-runtime/tests/assistant-quality-response.test.ts": "86a0957bcaa243ac8fbacd57db5024f4e242d99fe9bb52bed563b89a2de1f48e",
-    "apps/sg-runtime/tests/assistant-quality-evidence.test.ts": "d4aaa3ae96e6879491b96ddd4d288078dc14ad4184e3e66b8e4e2a1446e3bcee",
+    "apps/sg-runtime/tests/assistant-quality-evidence.test.ts": "a301ae44ece516a83afba433d82dcf0e5a2f68272ff04194b677fbec433274bf",
     "apps/sg-runtime/tests/assistant-quality-integrity.mjs": "05b7ac0b711c8abd39d21e300ea60c2f0403450ee3e80e83a0f6a1cec1d177df",
     "apps/sg-runtime/tests/assistant-quality-host-integrity.mjs": "57ca69000bb4fc32ca1ea5e4c0c9ef7611bdc05ec7e0983bc3ff644b29685bf9",
     "apps/sg-runtime/tests/assistant-quality-host-integrity.test.mjs": "e051a76d38a89deb62f415b6cf6d7b00a170ceb403b7c9cccf6dfccbf21bdcc2",
