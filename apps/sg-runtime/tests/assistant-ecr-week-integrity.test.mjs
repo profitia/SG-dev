@@ -1,3 +1,5 @@
+import {assistantReservationPredecessor} from '../../../packages/platform-contracts/test/assistant-reservation-source.mjs'
+import {ASSISTANT_RESERVATION_SOURCE_SHA} from '../../architecture-lab/private-recurring-source.mjs'
 import {procurementInsightsCompletionPredecessor} from './procurement-insights-completion-integrity.mjs'
 import {marketCalendarSourcePredecessor} from '../../architecture-lab/market-calendar-source.mjs'
 import {sdkContinuationPredecessor} from '../../../packages/platform-contracts/test/organisation-sdk-compatibility.mjs'

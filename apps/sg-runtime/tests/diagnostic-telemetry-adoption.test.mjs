@@ -11,6 +11,7 @@ const sdkContinuationRoot=new URL('../../../',import.meta.url),sdkContinuationCu
 const organisationSourceView=sdkContinuationPredecessor(JSON.parse(sdkContinuationCurrent('apps/sg-runtime/operation-integration.json')),sdkContinuationCurrent,sdkContinuationHistory)
 const recurringView=recurringSourcePredecessor(organisationSourceView?.previousBytes??sdkContinuationCurrent,sdkContinuationHistory)??{manifest:null,previousBytes:organisationSourceView?.previousBytes??sdkContinuationCurrent},recurring=recurringView.manifest
 const recurringSdkFiles=Object.fromEntries(Object.entries({...recurring?.sourceDigests,...organisationSourceView?.record.sourceDigests,...organisationSourceView?.record.compatibilityTestSourceDigests,...organisationSourceView?.currentSourceDigests}).filter(([p])=>p.startsWith('packages/platform-contracts/')).map(([p,h])=>[p.slice('packages/platform-contracts/'.length),h]))
+const reservation=recurringSourcePredecessor(sdkContinuationCurrent,sdkContinuationHistory)?.reservation?.manifest
 const receipt=JSON.parse(fs.readFileSync(new URL('../operation-integration.json',import.meta.url))),a=receipt.diagnosticTelemetryAdoption,current=(receipt.xrayPlatform130CiClosureCompatibility??receipt.xrayPlatform130SourceCompatibility)??a,fresh=receipt.freshPerformanceRecovery
 const hash=value=>createHash('sha256').update(value).digest('hex')
 test('diagnostic source adoption preserves complete history and verifies current producer/consumer bytes',async()=>{

@@ -12,6 +12,7 @@ const receipt = JSON.parse(fs.readFileSync(new URL('../operation-integration.jso
 const sdkContinuationRoot=new URL('../../../',import.meta.url),sdkContinuationCurrent=p=>fs.readFileSync(new URL(p,sdkContinuationRoot)),sdkContinuationHistory=(sha,p)=>execFileSync('git',['show',sha+':'+p],{cwd:sdkContinuationRoot})
 const organisationSourceView=sdkContinuationPredecessor(JSON.parse(sdkContinuationCurrent('apps/srm/operation-integration.json')),sdkContinuationCurrent,sdkContinuationHistory,{projectKey:'SRM'})
 const recurring=recurringSourcePredecessor(organisationSourceView?.previousBytes??sdkContinuationCurrent,sdkContinuationHistory)
+const reservation=recurringSourcePredecessor(sdkContinuationCurrent,sdkContinuationHistory)?.reservation?.manifest
 test('explicit consumer binds exact implemented contract and installed/source digest without enabling live deployment', async () => {
   const current=receipt.oilAutonomousReportCompatibility??receipt.assistantM1SourceCompatibility,contract=receipt.oilAutonomousReportCompatibility?receipt.contract:current.rootContract,producer=receipt.oilAutonomousReportCompatibility?current.producer:current.rootProducer
   assert.equal(receipt.projectKey, 'SRM')

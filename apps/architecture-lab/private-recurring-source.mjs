@@ -8,6 +8,8 @@ import {procurementInsightsShellPredecessor} from '../sg-runtime/tests/procureme
 // The reviewed current graph is verified before any immutable predecessor is read.
 import {assistantEcrWeekPredecessor} from '../sg-runtime/tests/assistant-ecr-week-integrity.mjs'
 export const ECR_WEEK_SOURCE_SHA='31ce8f1d7e5ca1d9c3aedf80f92e23fe0f1a93cb8f5fd5d003eb54a244859dd4'
+import {assistantReservationPredecessor} from '../../packages/platform-contracts/test/assistant-reservation-source.mjs'
+export const ASSISTANT_RESERVATION_SOURCE_SHA='bfa9287d9a0a17ef0a935ddc2c0f66c46b42d6c415b2b1fda0d237d2e38fc8b8'
 import assert from 'node:assert/strict'
 import {sdkContinuationPredecessor} from '../../packages/platform-contracts/test/organisation-sdk-compatibility.mjs'
 import {createHash} from 'node:crypto'
@@ -24,16 +26,20 @@ const absent=error=>error?.code==='ENOENT'||error?.status===128&&["' does not ex
 export function recurringSourcePredecessor(current,historical){
  const context=sdkSourceContext(current,historical)
  if(context){
+  const authority=recurringSourcePredecessor(context.baseline('authority'),historical)
+  assert(authority,'complete immutable accepted authority source required')
   const view=context.baseline('registration')
   const sdk=sdkContinuationPredecessor(JSON.parse(view('apps/sg-runtime/operation-integration.json')),view,historical)
   assert(sdk,'complete immutable registration source required')
   const accepted=recurringSourcePredecessor(sdk.previousBytes,historical)
   assert(accepted,'complete immutable recurring source required')
   return {...accepted,...(sdk.composition?{transport:sdk.composition.transport,completion:sdk.composition.completion}:{}),
-   currentSdkContext:context,knowledge:knowledgeSourcePredecessor(current,historical)}
+   reservation:authority.reservation,currentSdkContext:context,knowledge:knowledgeSourcePredecessor(current,historical)}
  }
  const knowledge=knowledgeSourcePredecessor(current,historical)
  if(knowledge){const accepted=recurringSourcePredecessor(knowledge.previousBytes,historical);assert(accepted,'accepted source chain retained');return {...accepted,manifest:knowledge.manifest,predecessorManifest:accepted.manifest,knowledge}}
+ const reservation=assistantReservationPredecessor(current,historical,ASSISTANT_RESERVATION_SOURCE_SHA)
+ if(reservation){const accepted=recurringSourcePredecessor(reservation.previousBytes,historical);assert(accepted,'all accepted predecessors retained');return {...accepted,reservation}}
  let bytes;try{bytes=current(RECURRING_SOURCE_RECORD)}catch(error){if(absent(error))return null;throw error}
  assert.equal(hash(bytes),RECORD_SHA256,'exact reviewed recurring source record')
  // Current registration is authenticated before either historical graph is exposed.

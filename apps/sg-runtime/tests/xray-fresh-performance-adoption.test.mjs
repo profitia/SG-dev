@@ -14,6 +14,7 @@ const sdkContinuationRoot=new URL('../../../',import.meta.url),sdkContinuationCu
 const organisationSourceView=sdkContinuationPredecessor(JSON.parse(sdkContinuationCurrent('apps/sg-runtime/operation-integration.json')),sdkContinuationCurrent,sdkContinuationHistory)
 const recurringView=recurringSourcePredecessor(organisationSourceView?.previousBytes??sdkContinuationCurrent,sdkContinuationHistory)??{manifest:null,previousBytes:organisationSourceView?.previousBytes??sdkContinuationCurrent},recurring=recurringView.manifest
 const recurringSdkFiles=Object.fromEntries(Object.entries({...recurring?.sourceDigests,...organisationSourceView?.record.sourceDigests,...organisationSourceView?.record.compatibilityTestSourceDigests,...organisationSourceView?.currentSourceDigests}).filter(([p])=>p.startsWith('packages/platform-contracts/')).map(([p,h])=>[p.slice('packages/platform-contracts/'.length),h]))
+const reservation=recurringSourcePredecessor(sdkContinuationCurrent,sdkContinuationHistory)?.reservation?.manifest
 test('SG2 accepts the verified peer reader without changing its backend or historical receipts',async()=>{
  const receipt=JSON.parse(fs.readFileSync(new URL('../operation-integration.json',import.meta.url))),a=receipt.freshPerformanceRecovery
  const before=execFileSync('git',['show',a.previousReceiptSourceSha+':apps/sg-runtime/operation-integration.json'])

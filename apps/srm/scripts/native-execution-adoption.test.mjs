@@ -13,7 +13,8 @@ import {execFileSync} from 'node:child_process'
 const sdkContinuationRoot=new URL('../../../',import.meta.url),sdkContinuationCurrent=p=>fs.readFileSync(new URL(p,sdkContinuationRoot)),sdkContinuationHistory=(sha,p)=>execFileSync('git',['show',sha+':'+p],{cwd:sdkContinuationRoot})
 const organisationSourceView=sdkContinuationPredecessor(JSON.parse(sdkContinuationCurrent('apps/srm/operation-integration.json')),sdkContinuationCurrent,sdkContinuationHistory,{projectKey:'SRM'})
 const recurringView=recurringSourcePredecessor(organisationSourceView?.previousBytes??sdkContinuationCurrent,sdkContinuationHistory)??{manifest:null,previousBytes:organisationSourceView?.previousBytes??sdkContinuationCurrent},recurring=recurringView.manifest
-const recurringSdkFiles=Object.fromEntries(Object.entries({...recurring?.sourceDigests,...organisationSourceView?.record.sourceDigests,...organisationSourceView?.record.compatibilityTestSourceDigests}).filter(([p])=>p.startsWith('packages/platform-contracts/')).map(([p,h])=>[p.slice('packages/platform-contracts/'.length),h]))
+const recurringSdkFiles=Object.fromEntries(Object.entries({...recurring?.sourceDigests,...organisationSourceView?.record.sourceDigests,...organisationSourceView?.record.compatibilityTestSourceDigests,...organisationSourceView?.currentSourceDigests}).filter(([p])=>p.startsWith('packages/platform-contracts/')).map(([p,h])=>[p.slice('packages/platform-contracts/'.length),h]))
+const reservation=recurringSourcePredecessor(sdkContinuationCurrent,sdkContinuationHistory)?.reservation?.manifest
 
 const actualAppShellSource=file=>recurringView.previousBytes(file)
 const hostReceipt=JSON.parse(actualAppShellSource('apps/sg-runtime/operation-integration.json'))

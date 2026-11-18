@@ -24,7 +24,8 @@ import './fresh-postfetch-release.test.mjs'
 const sdkContinuationRoot=new URL('../../../',import.meta.url),sdkContinuationCurrent=p=>fs.readFileSync(new URL(p,sdkContinuationRoot)),sdkContinuationHistory=(sha,p)=>execFileSync('git',['show',sha+':'+p],{cwd:sdkContinuationRoot})
 const organisationSourceView=sdkContinuationPredecessor(JSON.parse(sdkContinuationCurrent('apps/srm/operation-integration.json')),sdkContinuationCurrent,sdkContinuationHistory,{projectKey:'SRM'})
 const recurring=recurringSourcePredecessor(organisationSourceView?.previousBytes??sdkContinuationCurrent,sdkContinuationHistory)?.manifest
-const recurringSdkFiles=Object.fromEntries(Object.entries({...recurring?.sourceDigests,...organisationSourceView?.record.sourceDigests,...organisationSourceView?.record.compatibilityTestSourceDigests}).filter(([p])=>p.startsWith('packages/platform-contracts/')).map(([p,h])=>[p.slice('packages/platform-contracts/'.length),h]))
+const recurringSdkFiles=Object.fromEntries(Object.entries({...recurring?.sourceDigests,...organisationSourceView?.record.sourceDigests,...organisationSourceView?.record.compatibilityTestSourceDigests,...organisationSourceView?.currentSourceDigests}).filter(([p])=>p.startsWith('packages/platform-contracts/')).map(([p,h])=>[p.slice('packages/platform-contracts/'.length),h]))
+const reservation=recurringSourcePredecessor(sdkContinuationCurrent,sdkContinuationHistory)?.reservation?.manifest
 
 const hash=value=>createHash('sha256').update(value).digest('hex')
 // Only immutable full-SHA Git blobs are cached; actual candidate reads remain
@@ -51,7 +52,7 @@ const marketSdk=actualReceipt.sourceHubMarketSymbolCompatibility
 // retain their already accepted fingerprints in the earlier additive receipt.
 const precedingApiPath=marketSdk?{...marketSdk,...actualReceipt.assistantM1SourceCompatibility,sourceDigests:{...actualReceipt.sourceHubApiPathCompatibility.sourceDigests,...marketSdk.sourceDigests,...actualReceipt.assistantM1SourceCompatibility?.sourceDigests}}:actualReceipt.sourceHubApiPathCompatibility
 const reportSdk=actualReceipt.oilAutonomousReportCompatibility
-const apiPath=reportSdk?{...precedingApiPath,platformVersion:recurring?.platformVersion??reportSdk.platformVersion,sourceDigests:{...precedingApiPath.sourceDigests,...reportSdk.sourceDigests,...reportSdk.testSourceDigests,...recurringSdkFiles},sdkDigests:{...precedingApiPath.sdkDigests,...reportSdk.sdkDigests,...recurring?.sdkDigests},optionalPackageDigests:{...precedingApiPath.optionalPackageDigests,...reportSdk.optionalPackageDigests,...recurring?.optionalPackageDigests},producerMetadataDigests:{...precedingApiPath.producerMetadataDigests,...recurring?.sourceDigests}}:precedingApiPath
+const apiPath=reportSdk?{...precedingApiPath,platformVersion:recurring?.platformVersion??reportSdk.platformVersion,sourceDigests:{...precedingApiPath.sourceDigests,...reportSdk.sourceDigests,...reportSdk.testSourceDigests,...recurringSdkFiles},sdkDigests:{...precedingApiPath.sdkDigests,...reportSdk.sdkDigests,...recurring?.sdkDigests,...reservation?.sdkDigests},optionalPackageDigests:{...precedingApiPath.optionalPackageDigests,...reportSdk.optionalPackageDigests,...recurring?.optionalPackageDigests,...reservation?.optionalPackageDigests},producerMetadataDigests:{...precedingApiPath.producerMetadataDigests,...recurring?.sourceDigests,...reservation?.sourceDigests}}:precedingApiPath
 if(apiPath)assertSourceHubApiPathCompatibility(actualReceipt,actualAppShellSource,(sha,file)=>historicalBlob(sha+':'+file))
 // The host view validates both current API_PATH closures and the later AppShell
 // amendments before exposing the presentation predecessor used by these guards.

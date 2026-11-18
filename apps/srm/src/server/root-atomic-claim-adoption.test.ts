@@ -10,6 +10,7 @@ import {rootAtomicClaimSchemaDigest,rootAtomicClaimSourceDigest,ROOT_ATOMIC_CLAI
 const sdkContinuationRoot=new URL('../../../../',import.meta.url),sdkContinuationCurrent=(p:string)=>readFileSync(new URL(p,sdkContinuationRoot)),sdkContinuationHistory=(sha:string,p:string)=>execFileSync('git',['show',sha+':'+p],{cwd:sdkContinuationRoot})
 const organisationSourceView=sdkContinuationPredecessor(JSON.parse(sdkContinuationCurrent('apps/srm/operation-integration.json').toString('utf8')),sdkContinuationCurrent,sdkContinuationHistory,{projectKey:'SRM'})
 const recurring=recurringSourcePredecessor(organisationSourceView?.previousBytes??sdkContinuationCurrent,sdkContinuationHistory)?.manifest
+const reservation=recurringSourcePredecessor(sdkContinuationCurrent,sdkContinuationHistory)?.reservation?.manifest
 import currentRoot from '../../deployment/root-atomic-claim-targets.json'
 const root=JSON.parse(execFileSync('git',['show','36b07672f572ff7c1c81117e3f3b01fa93ec1e65:apps/srm/deployment/root-atomic-claim-targets.json'],{encoding:'utf8'})) as typeof currentRoot
 import native from '../../deployment/supplier-native-targets.json'

@@ -18,6 +18,7 @@ const sdkContinuationRoot=new URL('../../../',import.meta.url),sdkContinuationCu
 const organisationSourceView=sdkContinuationPredecessor(JSON.parse(sdkContinuationCurrent('apps/srm/operation-integration.json')),sdkContinuationCurrent,sdkContinuationHistory,{projectKey:'SRM'})
 const recurringView=recurringSourcePredecessor(sdkContinuationCurrent,sdkContinuationHistory),recurring=recurringView?.manifest
 const recurringSdkFiles=Object.fromEntries(Object.entries({...recurring?.sourceDigests,...organisationSourceView?.record.sourceDigests,...organisationSourceView?.record.compatibilityTestSourceDigests,...recurringView?.transport?.manifest.sourceDigests,...recurringView?.transport?.live?.manifest.sourceDigests,...organisationSourceView?.currentSourceDigests}).filter(([p])=>p.startsWith('packages/platform-contracts/')).map(([p,h])=>[p.slice('packages/platform-contracts/'.length),h]))
+const reservation=recurringSourcePredecessor(sdkContinuationCurrent,sdkContinuationHistory)?.reservation?.manifest
 
 const hash=v=>createHash('sha256').update(v).digest('hex'),receipt=JSON.parse(fs.readFileSync(new URL('../operation-integration.json',import.meta.url)))
 const accepted=receipt.p1ReceiverSourceCompatibility,key=Buffer.alloc(32,59).toString('base64')

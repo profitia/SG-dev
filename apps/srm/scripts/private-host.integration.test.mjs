@@ -42,6 +42,7 @@ const sdkContinuationRoot=new URL('../../../',import.meta.url),sdkContinuationCu
 const organisationSourceView=sdkContinuationPredecessor(JSON.parse(sdkContinuationCurrent('apps/srm/operation-integration.json')),sdkContinuationCurrent,sdkContinuationHistory,{projectKey:'SRM'})
 const recurringView=recurringSourcePredecessor(sdkContinuationCurrent,sdkContinuationHistory),recurring=recurringView?.manifest
 const recurringSdkFiles=Object.fromEntries(Object.entries({...recurring?.sourceDigests,...organisationSourceView?.record.sourceDigests,...organisationSourceView?.record.compatibilityTestSourceDigests,...recurringView?.transport?.manifest.sourceDigests,...organisationSourceView?.currentSourceDigests}).filter(([p])=>p.startsWith('packages/platform-contracts/')).map(([p,h])=>[p.slice('packages/platform-contracts/'.length),h]))
+const reservation=recurringSourcePredecessor(sdkContinuationCurrent,sdkContinuationHistory)?.reservation?.manifest
 
 const DATABASE = 'srm_private_host_test', ROLE = 'srm_private_host_runtime'
 const A = '11111111-1111-4111-8111-111111111111', B = '22222222-2222-4222-8222-222222222222'

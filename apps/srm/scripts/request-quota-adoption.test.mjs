@@ -15,7 +15,8 @@ import {REQUEST_QUOTA_HOST_CONTRACT,privateOperationHostSourceDigest} from '@pro
 const sdkContinuationRoot=new URL('../../../',import.meta.url),sdkContinuationCurrent=p=>fs.readFileSync(new URL(p,sdkContinuationRoot)),sdkContinuationHistory=(sha,p)=>execFileSync('git',['show',sha+':'+p],{cwd:sdkContinuationRoot})
 const organisationSourceView=sdkContinuationPredecessor(JSON.parse(sdkContinuationCurrent('apps/srm/operation-integration.json')),sdkContinuationCurrent,sdkContinuationHistory,{projectKey:'SRM'})
 const recurring=recurringSourcePredecessor(organisationSourceView?.previousBytes??sdkContinuationCurrent,sdkContinuationHistory)?.manifest
-const recurringSdkFiles=Object.fromEntries(Object.entries({...recurring?.sourceDigests,...organisationSourceView?.record.sourceDigests,...organisationSourceView?.record.compatibilityTestSourceDigests}).filter(([p])=>p.startsWith('packages/platform-contracts/')).map(([p,h])=>[p.slice('packages/platform-contracts/'.length),h]))
+const recurringSdkFiles=Object.fromEntries(Object.entries({...recurring?.sourceDigests,...organisationSourceView?.record.sourceDigests,...organisationSourceView?.record.compatibilityTestSourceDigests,...organisationSourceView?.currentSourceDigests}).filter(([p])=>p.startsWith('packages/platform-contracts/')).map(([p,h])=>[p.slice('packages/platform-contracts/'.length),h]))
+const reservation=recurringSourcePredecessor(sdkContinuationCurrent,sdkContinuationHistory)?.reservation?.manifest
 
 const receipt=JSON.parse(fs.readFileSync(new URL('../operation-integration.json',import.meta.url))),a=receipt.requestQuotaSourceCompatibility,hash=x=>createHash('sha256').update(x).digest('hex')
 // These assertions verify pre-native receipts. If both later adoptions changed

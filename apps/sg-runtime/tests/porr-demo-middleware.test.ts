@@ -1,3 +1,5 @@
+import {assistantReservationPredecessor} from '../../../packages/platform-contracts/test/assistant-reservation-source.mjs'
+import {ASSISTANT_RESERVATION_SOURCE_SHA} from '../../architecture-lab/private-recurring-source.mjs'
 import {readM2AcceptedSource} from './assistant-m2-source-view.mjs'
 import assert from 'node:assert/strict'
 import test, { before } from 'node:test'
