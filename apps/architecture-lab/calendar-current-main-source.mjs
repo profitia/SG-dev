@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict'
 import {createHash} from 'node:crypto'
 export const CALENDAR_CURRENT_MAIN_RECORD='apps/architecture-lab/calendar-current-main-source.json'
-export const CALENDAR_CURRENT_MAIN_RECORD_SHA256='9c35c324172bf0f45aebfc577ee4421133b55ff2534428a3883a44456a5cef23'
+export const CALENDAR_CURRENT_MAIN_RECORD_SHA256='81f17355a49fac74ef0505e28e3953800719a49c4a34fdf3c81f8519db75e041'
 const hash=bytes=>createHash('sha256').update(bytes).digest('hex')
 const absent=(error,historical)=>{
  if(error?.code==='ENOENT')return true

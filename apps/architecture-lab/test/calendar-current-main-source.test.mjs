@@ -4,6 +4,7 @@ import assert from 'node:assert/strict'
 import {readFileSync} from 'node:fs'
 import {execFileSync} from 'node:child_process'
 import {createHash} from 'node:crypto'
+import {recurringSourceFilesystem} from '../private-recurring-source.mjs'
 import {calendarCurrentMainPredecessor,CALENDAR_CURRENT_MAIN_RECORD,CALENDAR_CURRENT_MAIN_RECORD_SHA256} from '../calendar-current-main-source.mjs'
 const root=new URL('../../../',import.meta.url),current=p=>readFileSync(new URL(p,root)),cache=new Map()
 const hash=b=>createHash('sha256').update(b).digest('hex')
@@ -56,4 +57,10 @@ test('corrected PK Root target stays exact and the previous SRM digest is reject
  assert.deepEqual(current(p),expected);assert.notDeepEqual(previous,expected)
  const view=calendarCurrentMainPredecessor(current,historical);assert.equal(view.manifest.acceptedMainSha,'8abd146e99de993d2ffd97d3767dee722d6e5ce4');assert.deepEqual(view.acceptedMainBytes(p),expected)
  let calls=0;assert.throws(()=>calendarCurrentMainPredecessor(f=>f===p?previous:current(f),()=>{calls++;throw Error('HISTORY_MUST_NOT_BE_REACHED')}));assert.equal(calls,0)
+})
+test('current joint SDK metadata remains the actual PK producer while Cal receipts and transport stay unchanged',()=>{
+ const view=recurringSourceFilesystem(root),pk=JSON.parse(historical('8abd146e99de993d2ffd97d3767dee722d6e5ce4','apps/architecture-lab/knowledge-source.json'))
+ assert.deepEqual(view.manifest,pk);assert.equal(view.manifest.platformVersion,JSON.parse(current('packages/platform-contracts/package.json')).version)
+ assert.equal(view.predecessorManifest.platformVersion,'1.36.0');assert(view.complete);assert(view.transport.live)
+ assert.deepEqual(current('apps/economic-calendar-runtime/complete-functional-source-integration.json'),historical('69d02834e863a51506aa4f50fbeb20f7fda3575b','apps/economic-calendar-runtime/complete-functional-source-integration.json'))
 })

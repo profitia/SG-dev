@@ -23,7 +23,8 @@ export function recurringSourcePredecessor(current,historical){
  if(complete){
   const accepted=recurringSourcePredecessor(complete.previousBytes,historical)
   assert(accepted?.transport?.live,'accepted recurring transport and PI source retained')
-  return {...accepted,complete,transport:{...accepted.transport,live:{...accepted.transport.live,manifest:{...accepted.transport.live.manifest,sourceDigests:{...accepted.transport.live.manifest.sourceDigests,...complete.currentSourceDigests}}}}}
+  const knowledge=knowledgeSourcePredecessor(current,historical)
+  return {...accepted,...(knowledge?{manifest:knowledge.manifest,predecessorManifest:accepted.manifest,knowledge}:{}),complete,transport:{...accepted.transport,live:{...accepted.transport.live,manifest:{...accepted.transport.live.manifest,sourceDigests:{...accepted.transport.live.manifest.sourceDigests,...complete.currentSourceDigests}}}}}
  }
  const knowledge=knowledgeSourcePredecessor(current,historical)
  if(knowledge){const accepted=recurringSourcePredecessor(knowledge.previousBytes,historical);assert(accepted,'accepted source chain retained');return {...accepted,manifest:knowledge.manifest,predecessorManifest:accepted.manifest,knowledge}}
