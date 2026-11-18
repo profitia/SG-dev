@@ -280,14 +280,18 @@ async function readinessMain(controllerStandby=false){
  const monitoring=createQualityMonitoring({env:process.env,warn:value=>console.warn(JSON.stringify(value)),onDelivery:value=>console.log(JSON.stringify({...value,sourceSha:config.sourceSha}))})
  try{
   if(controlledRead){
-   const {createQualityEvidencePurposeClient,createQualityEvidenceStore}=await import('../../../apps/sg-runtime/lib/assistant/quality-evidence.ts')
-   const purpose=createQualityEvidencePurposeClient({query:(q,v)=>pools[2].query(q,v),commandKey:controlledRead.purposeKey,
-    schemaDigest:digest(new URL('../migrations/002-quality-purpose.sql',import.meta.url)),serviceId:config.serviceId,
-    storageGeneration:controlledRead.storageGeneration,role:'sg2_assistant_quality_authority'})
-   const evidence=createQualityEvidenceStore({query:(q,v)=>pools[3].query(q,v),commandKey:controlledRead.evidenceKey,
-    storageKey:controlledRead.storageKey,schemaDigest:digest(new URL('../../../apps/sg-runtime/migrations/002-assistant-quality-evidence.sql',import.meta.url)),
-    serviceId:config.serviceId,storageGeneration:controlledRead.storageGeneration,role:'sg2_assistant_quality_reader',
-    authorize:demand=>purpose.authorize(demand)})
+   const [{createQualityPrivateEvidenceReader},{fileURLToPath}]=await Promise.all([import('./verify.mjs'),import('node:url')])
+   const reader=await createQualityPrivateEvidenceReader({repositoryRoot:fileURLToPath(new URL('../../../',import.meta.url)),
+    sourceSha:config.sourceSha,hostCodecSha256:digest(new URL('../../../apps/sg-runtime/lib/assistant/quality-evidence.ts',import.meta.url)),
+    purposeQuery:(q,v)=>pools[2].query(q,v),evidenceQuery:(q,v)=>pools[3].query(q,v),
+    purposeKey:controlledRead.purposeKey,evidenceKey:controlledRead.evidenceKey,storageKey:controlledRead.storageKey,
+    purposeSchemaDigest:digest(new URL('../migrations/002-quality-purpose.sql',import.meta.url)),
+    evidenceSchemaDigest:digest(new URL('../../../apps/sg-runtime/migrations/002-assistant-quality-evidence.sql',import.meta.url)),
+    serviceId:config.serviceId,storageGeneration:controlledRead.storageGeneration,accountId:controlledRead.accountId})
+   const evidence=Object.freeze({read:(accountId,evidenceId)=>{
+    if(accountId!==controlledRead.accountId)unavailable('CONTROLLED_QA_READ_UNAVAILABLE')
+    return reader.read(evidenceId)
+   }})
    controlledProbe=createQualityControlledQaReadProbe({config:controlledRead,evidence});controlledProbePending=true
   }
   while(!stop.signal.aborted){

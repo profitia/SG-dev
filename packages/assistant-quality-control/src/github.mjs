@@ -38,8 +38,13 @@ export function createQualityGitHub({token,fetchImpl=fetch,publisherEnabled=fals
  }
  async function pull(prNumber,{headSha,baseSha}={}){
   require(number(prNumber));const p=await get('/pulls/'+prNumber)
+  // The approved job-scoped GITHUB_TOKEN creates PRs as GitHub Actions,
+  // never as the human owner. This permits only the real native bot and the
+  // fixed incident branch; it grants no publishing or promotion capability.
+  const nativePublisher=p?.user?.login==='github-actions[bot]'&&p.user.id===41898282&&p.user.type==='Bot'
+   &&typeof p.head?.ref==='string'&&p.head.ref.startsWith('sg2/quality-control-')&&uuid(p.head.ref.slice('sg2/quality-control-'.length))
   require(p?.number===prNumber&&p.state==='open'&&p.head?.repo?.full_name===repository&&p.base?.repo?.full_name===repository
-   &&p.base.ref==='main'&&p.user?.login==='profitia'&&sha(p.head.sha)&&sha(p.base.sha),'GITHUB_PR_IDENTITY_INVALID')
+   &&p.base.ref==='main'&&(p.user?.login==='profitia'||nativePublisher)&&sha(p.head.sha)&&sha(p.base.sha),'GITHUB_PR_IDENTITY_INVALID')
   require(headSha===undefined||p.head.sha===headSha,'PR_HEAD_CHANGED')
   require(baseSha===undefined||p.base.sha===baseSha,'PR_BASE_CHANGED')
   return p

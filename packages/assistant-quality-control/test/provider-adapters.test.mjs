@@ -399,3 +399,50 @@ test('Atomic store classifies broken pipe and connection shutdown as uncertain d
   await assert.rejects(store.prepare(input),{code:['42501','40001','P0001'].includes(code)?'CONTROL_STORE_UNAVAILABLE':'DELIVERY_UNCERTAIN'})
  }
 })
+
+test('Native GitHub job publisher: exact bot identity is accepted for its controlled repair branch',async()=>{
+ const {createQualityGitHub}=await import('../src/github.mjs')
+ const baseSha='a'.repeat(40),headSha='b'.repeat(40),incidentId='e657791f-0922-47b6-aead-2abf21f21602'
+ const pr={number:37,state:'open',user:{login:'github-actions[bot]',id:41898282,type:'Bot'},
+  head:{ref:'sg2/quality-control-'+incidentId,sha:headSha,repo:{full_name:'profitia/SG-dev'}},
+  base:{ref:'main',sha:baseSha,repo:{full_name:'profitia/SG-dev'}}}
+ const calls=[],client=createQualityGitHub({token:'synthetic',fetchImpl:async(url,options)=>{
+  calls.push({url,method:options.method});return Response.json(pr)
+ }})
+ assert.deepEqual(await client.pull(37,{headSha,baseSha}),pr)
+ assert.deepEqual(calls,[{url:'https://api.github.com/repos/profitia/SG-dev/pulls/37',method:'GET'}])
+ const human={...pr,user:{login:'profitia'},head:{...pr.head,ref:'sg2/cic-quality-stage1-runtime-20261112'}}
+ const existing=createQualityGitHub({token:'synthetic',fetchImpl:async()=>Response.json(human)})
+ assert.deepEqual(await existing.pull(37,{headSha,baseSha}),human,'existing owner source transport is retained')
+})
+
+test('Native GitHub job publisher: impersonation, foreign source and stale PR identity remain rejected',async()=>{
+ const {createQualityGitHub}=await import('../src/github.mjs')
+ const baseSha='a'.repeat(40),headSha='b'.repeat(40)
+ const pr={number:37,state:'open',user:{login:'github-actions[bot]',id:41898282,type:'Bot'},
+  head:{ref:'sg2/quality-control-e657791f-0922-47b6-aead-2abf21f21602',sha:headSha,repo:{full_name:'profitia/SG-dev'}},
+  base:{ref:'main',sha:baseSha,repo:{full_name:'profitia/SG-dev'}}}
+ const mutations=[
+  p=>{p.user.id++},p=>{delete p.user.id},p=>{p.user.type='User'},p=>{p.user.login='foreign-actions[bot]'},
+  p=>{p.head.ref='sg2/unrelated'},p=>{p.head.ref+='-foreign'},p=>{p.head.ref='sg2/quality-control-not-a-uuid'},
+  p=>{p.head.repo.full_name='profitia/foreign'},p=>{p.base.repo.full_name='profitia/foreign'},
+  p=>{p.base.ref='production'},p=>{p.state='closed'},p=>{p.number=38},
+ ]
+ for(const mutate of mutations){
+  const value=structuredClone(pr);mutate(value)
+  const client=createQualityGitHub({token:'synthetic',fetchImpl:async()=>Response.json(value)})
+  await assert.rejects(client.pull(37,{headSha,baseSha}),{code:'GITHUB_PR_IDENTITY_INVALID'})
+ }
+ const client=createQualityGitHub({token:'synthetic',fetchImpl:async()=>Response.json(pr)})
+ await assert.rejects(client.pull(37,{headSha:'c'.repeat(40),baseSha}),{code:'PR_HEAD_CHANGED'})
+ await assert.rejects(client.pull(37,{headSha,baseSha:'c'.repeat(40)}),{code:'PR_BASE_CHANGED'})
+})
+
+test('Native GitHub job publisher: recognizing an author never enables proposal or promotion',async()=>{
+ const {createQualityGitHub}=await import('../src/github.mjs')
+ let requests=0
+ const client=createQualityGitHub({token:'synthetic',fetchImpl:async()=>{requests++;throw Error('must not request')}})
+ await assert.rejects(client.propose({}),{code:'PUBLISHER_DISABLED'})
+ await assert.rejects(client.merge({}),{code:'PROMOTION_DISABLED'})
+ assert.equal(requests,0)
+})
