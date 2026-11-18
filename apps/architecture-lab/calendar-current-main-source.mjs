@@ -7,7 +7,7 @@ import os from 'node:os'
 import {fileURLToPath} from 'node:url'
 import {execFileSync} from 'node:child_process'
 export const CALENDAR_CURRENT_MAIN_RECORD='apps/architecture-lab/calendar-current-main-source.json'
-export const CALENDAR_CURRENT_MAIN_RECORD_SHA256='7296ddba3ff64ff782cbbfc7c1b1c452f7f5b0419339abb950905c4a2d2452ad'
+export const CALENDAR_CURRENT_MAIN_RECORD_SHA256='52b3fe8ab2895b7415a9f24a92e2da053ea0640e732a2e4e12338dc15ce88091'
 const hash=bytes=>createHash('sha256').update(bytes).digest('hex')
 const absent=(error,historical)=>{
  if(error?.code==='ENOENT')return true
@@ -25,7 +25,7 @@ export function calendarCurrentMainPredecessor(current,historical){
  assert.equal(hash(bytes),CALENDAR_CURRENT_MAIN_RECORD_SHA256,'exact closed Calendar/Knowledge source record')
  const a=JSON.parse(bytes)
  assert.equal(a.schemaVersion,'1.0.0');assert.equal(a.scope,'CALENDAR_CURRENT_MAIN_EXACT_SOURCE_COMPATIBILITY')
- assert.equal(a.calendarInputSha,'69d02834e863a51506aa4f50fbeb20f7fda3575b');assert.equal(a.acceptedMainSha,'aeba36df8fbe63a4f76ddc0eac251acdc3443588')
+ assert.equal(a.calendarInputSha,'69d02834e863a51506aa4f50fbeb20f7fda3575b');assert.equal(a.acceptedMainSha,'7a003e546268077c51059db564e297723334e98d')
  for(const k of ['runtimeActivated','newGrantsInstalled','providerCallsPerformed','deploymentPerformed'])assert.equal(a[k],false,k)
  // Every current byte is authenticated before either closed predecessor can be read.
  for(const [p,expected]of Object.entries(a.sourceDigests))assert.equal(hash(current(p)),expected,'complete joint current source '+p)

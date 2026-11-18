@@ -2,7 +2,7 @@
   "schemaVersion": "1.0.0",
   "scope": "CALENDAR_CURRENT_MAIN_EXACT_SOURCE_COMPATIBILITY",
   "calendarInputSha": "69d02834e863a51506aa4f50fbeb20f7fda3575b",
-  "acceptedMainSha": "aeba36df8fbe63a4f76ddc0eac251acdc3443588",
+  "acceptedMainSha": "7a003e546268077c51059db564e297723334e98d",
   "sourceDigests": {
     ".github/workflows/krs-registry-ci.yml": "25498e2272d290013f0a93651699c38e475688109efda6a1b05c8911d7aef9f9",
     ".github/workflows/platform-knowledge-ci.yml": "81d307634428957ec0336692928e51afe3296354f617eb20d0e82b7f174386d8",
@@ -25,7 +25,7 @@
     "apps/architecture-lab/private-recurring-source.mjs": "888925307888d70c99a61d865f2aaddb7cc98c1f2cd567e862b13267e5f8ae54",
     "apps/architecture-lab/sdk-1.33-compatibility.json": "3e3c8f43813d5c4888e206ac31433f60470eac4310abaa62bd32e1c901a0df3e",
     "apps/architecture-lab/sdk-1.34-compatibility.json": "458ddbf661ce1a5666260a072a03f24ac016346bdd9a9efef7f2a1d497eee403",
-    "apps/architecture-lab/test/calendar-current-main-source.test.mjs": "1f3b25055947adb1a5d00c88794ac911b12f64c193399c4ad311b92538df7db0",
+    "apps/architecture-lab/test/calendar-current-main-source.test.mjs": "e7c3da394f49247014cd2b880eca12b06252bcc787fdba6330309fdf497a8ab7",
     "apps/architecture-lab/test/ecr-complete-functional-source.test.mjs": "2adb0c1cd857c475a59e1f74dc6843d0b0172868c5389876b5dfd028e2c5cfbe",
     "apps/architecture-lab/test/ecr-functional-ci-repair.test.mjs": "b49301d95456e9fbf6e82108bad2915b2f5b038562a320633359a38e06206f31",
     "apps/architecture-lab/test/knowledge-source.test.mjs": "cd030f4a2f1f161c22cebf186e13cb33904c82c1d278c162901cac82b1c241e0",
@@ -580,7 +580,7 @@
     "packages/platform-source-hub-contracts/package.json": "f72f71d5e0e3e0d7992e612f55d410de66dc03f0b27d25b51ca20fcd173c2969",
     "packages/platform-source-hub-contracts/semantic-continuous-acceptance-v1.json": "f63364c997dacdb779da861685a93faa27d7b8bca84a75c6d277c9c188ccea76",
     "packages/platform-source-hub-contracts/source-access-continuity-acceptance-v1.json": "c99323c6690d488992c445eff4e1c26fe48d81ede267b6f5f2ad4df208768540",
-    "scripts/governance/controlled-package-ci.test.mjs": "0142eb57b511bef865e3f7231b82c8678e0390604ac656be8e72dbe05c7e5443",
+    "scripts/governance/controlled-package-ci.test.mjs": "192df24f4196f18c9db1ba7f8c0b1b4fc12e9f36833cf37abc1609f6c5f774a7",
     "scripts/governance/governance.test.mjs": "ef28078504fda6d844f63b5dd3d7687465f37b3d16064dff581ae392765909da",
     "scripts/governance/platform-source-hub-foundation.test.mjs": "065ce5dc7d7718e14ecfe6779670728687305950a52f56f1f9a0f046728df479"
   },
@@ -1084,7 +1084,7 @@
           "previousSha256": "25c3e24580bf399fd270fa3cb870708d7553bd6ba9a7af3cfbe812d4de4dab93"
         },
         "scripts/governance/controlled-package-ci.test.mjs": {
-          "currentSha256": "0142eb57b511bef865e3f7231b82c8678e0390604ac656be8e72dbe05c7e5443",
+          "currentSha256": "192df24f4196f18c9db1ba7f8c0b1b4fc12e9f36833cf37abc1609f6c5f774a7",
           "previousSha256": "9d5ba43d3522921b179dff3552dedd7255bbfaa533baf5fb36ea12455ae0831d"
         },
         "scripts/governance/governance.test.mjs": {
@@ -1098,7 +1098,7 @@
       }
     },
     "acceptedMain": {
-      "sourceSha": "aeba36df8fbe63a4f76ddc0eac251acdc3443588",
+      "sourceSha": "7a003e546268077c51059db564e297723334e98d",
       "addedPaths": [
         "apps/architecture-lab/calendar-current-main-source.json",
         "apps/architecture-lab/calendar-current-main-source.mjs",
@@ -1323,6 +1323,10 @@
         "packages/platform-source-hub-contracts/package.json": {
           "currentSha256": "f72f71d5e0e3e0d7992e612f55d410de66dc03f0b27d25b51ca20fcd173c2969",
           "previousSha256": "9d381bc7ae98c480e1ee1bfdbdaa062225c28bb44634822933ef934724f791a7"
+        },
+        "scripts/governance/controlled-package-ci.test.mjs": {
+          "currentSha256": "192df24f4196f18c9db1ba7f8c0b1b4fc12e9f36833cf37abc1609f6c5f774a7",
+          "previousSha256": "0142eb57b511bef865e3f7231b82c8678e0390604ac656be8e72dbe05c7e5443"
         },
         "scripts/governance/platform-source-hub-foundation.test.mjs": {
           "currentSha256": "065ce5dc7d7718e14ecfe6779670728687305950a52f56f1f9a0f046728df479",

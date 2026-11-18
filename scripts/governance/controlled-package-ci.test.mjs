@@ -1,3 +1,4 @@
+import {createCalendarAcceptedMainTestFixture} from '../../apps/architecture-lab/calendar-current-main-source.mjs'
 import {PLATFORM_KNOWLEDGE_STAGE2_ACG_COMPOSITION_PROVENANCE} from './controlled-package-ci.mjs'
 import {PLATFORM_KNOWLEDGE_STAGE2_SRM_TARGET_PROVENANCE} from './controlled-package-ci.mjs';
 import {PLATFORM_KNOWLEDGE_STAGE2_PI_COMPOSITION_PROVENANCE} from './controlled-package-ci.mjs';
@@ -44,7 +45,13 @@ const pr = () => ({state: 'open', user: {login: 'profitia'}, base: {ref: 'main',
 const configuration = '@profitia:registry=https://npm.pkg.github.com\n//npm.pkg.github.com/:_authToken=${NPM_TOKEN}\n'
 const lock = () => ({lockfileVersion: 3, packages: Object.fromEntries(PRIVATE_PACKAGES.map(name => [`node_modules/${name}`, {version: '1.0.0', integrity: 'sha512-approved'}]))})
 const rejection = fn => assert.throws(fn)
-const legacyRecurringFixture = await createAcgLegacyRecurringFixture(path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..'))
+// The complete physical Calendar graph is authenticated before historical PK/ACG tests.
+// Their original assertions use the complete immutable accepted input; current
+// Calendar source/proof checks remain in controlled-package-ci-path-coverage.
+const calendarAcceptedInput=createCalendarAcceptedMainTestFixture(path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..'))
+test.after(()=>calendarAcceptedInput.close())
+const authorityRoot=calendarAcceptedInput.root
+const legacyRecurringFixture = await createAcgLegacyRecurringFixture(authorityRoot)
 test.after(() => legacyRecurringFixture.close())
 
 test('ECR admits only its exact published CIC artifact for SG2 while preserving the independent M1 and M2 pins',()=>{
@@ -389,7 +396,7 @@ test('candidate16 cannot select an older layout, altered file identity or candid
  try{for(const patch of[{implementation:'1.0.0-candidate.15'},{sourceFiles:['src/operation-context.mjs']},{implementation:'1.0.0-candidate.17'}])assert.throws(()=>operationContractProvenanceDigest(f.root,{...f.contract,...patch}));fs.appendFileSync(f.file('src/supplier-location.mjs'),'\nthrow Error("must never execute candidate metadata")');assert.match(operationContractProvenanceDigest(f.root,f.contract),/^[a-f0-9]{64}$/)}finally{f.close()}
 })
 
-const authorityRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
+
 const architecturePr = (count = 2) => ({...pr(), changed_files: count, base: {...pr().base, sha}, head: {...pr().head, ref: 'architecture/profile'}})
 const producerFile = (filename = 'packages/platform-contracts/src/user-profile.mjs') => ({filename, status: 'modified', sha: 'c'.repeat(40)})
 const architectureFiles = () => [producerFile(), producerFile('Canon/evidence/2026-10-21-identity-profile-b1-handoff.md')]
@@ -3239,7 +3246,7 @@ test('Platform Knowledge exact owner inputs preserve all candidate and regular-f
  for(const mutate of [p=>p.number++,p=>p.head.ref='architecture/another',p=>p.base.ref='staging',p=>p.user.login='foreign',p=>p.head.repo.full_name='foreign/fork']){const v=structuredClone(p);mutate(v);assert.throws(()=>selectCandidate(context(),v,other,{files}));}
  for(const mutate of [f=>f.pop(),f=>f.push(f[0]),f=>f[0].sha='0'.repeat(40),f=>f[0].status='removed',f=>f[0].previous_filename='unexpected']){const v=structuredClone(files);mutate(v);assert.throws(()=>selectCandidate(context(),p,other,{files:v}));}
 });
-test('Platform Knowledge authenticates current source and all immutable receipts before its accepted predecessor',()=>{
+test('Platform Knowledge accepted input authenticates source and all immutable receipts before its predecessor',()=>{
  const root=authorityRoot,cache=new Map(),history=(sha,p)=>{const k=sha+':'+p;if(!cache.has(k))cache.set(k,execFileSync('git',['show',k],{cwd:root,stdio:['ignore','pipe','ignore']}));return cache.get(k);};
  const read=p=>fs.existsSync(path.join(root,PLATFORM_KNOWLEDGE_STAGE2_PROVENANCE.recordPath))?fs.readFileSync(path.join(root,p)):history(PLATFORM_KNOWLEDGE_STAGE2_REVIEW.sourceSha,p);
  const v=knowledgeStage2TrustedPredecessor(read,history);assert(v);const cfg=[PLATFORM_KNOWLEDGE_STAGE2_PROVENANCE,PLATFORM_KNOWLEDGE_STAGE2_REPAIR_PROVENANCE,PLATFORM_KNOWLEDGE_STAGE2_PI_COMPOSITION_PROVENANCE,PLATFORM_KNOWLEDGE_STAGE2_SRM_TARGET_PROVENANCE,PLATFORM_KNOWLEDGE_STAGE2_ACG_COMPOSITION_PROVENANCE].find(p=>p.recordSha256===createHash('sha256').update(read(p.recordPath)).digest('hex'));assert(cfg);assert.equal(v.manifest.sdkDigests.operationSourceDigest,cfg.operationSourceDigest);
@@ -3619,7 +3626,7 @@ test('trusted quality source composition verifies both exact closures and every 
 })
 
 // A historical unit input cannot establish adoption of the current SDK.
-test('actual ACG reservation source remains authenticated separately from the legacy fixture',async()=>{
+test('accepted PK input authenticates the actual ACG reservation separately from the pre-ACG fixture',async()=>{
  assert.equal(legacyRecurringFixture.sourceRoot,authorityRoot)
  assert(legacyRecurringFixture.projected)
  assert.notEqual(legacyRecurringFixture.root,authorityRoot)
