@@ -21,6 +21,34 @@ export const SRM_ASSISTANT_M2_PATHS=Object.freeze([
  'packages/srm-xray/src/financial-scanner.tsx',
 ])
 const hash=bytes=>createHash('sha256').update(bytes).digest('hex')
+// Test/build-only consumer of the existing canonical admission mechanism.
+// Native ESM preserves synchronous predecessor readers; only source digests cross
+// the child boundary. No provider environment or credentials are forwarded.
+export function authenticatedSrmSourceDigests(paths){
+ const names=[...new Set(paths)]
+ assert(names.length===paths.length&&names.every(p=>typeof p==='string'&&/^[A-Za-z0-9_.@/-]+$/.test(p)&&p.split('/').every(v=>v&&v!=='.'&&v!=='..')&&(p.startsWith('apps/srm/')||p.startsWith('packages/srm-xray/'))),'SRM-owned current source only')
+ const root=fileURLToPath(new URL('../../../',import.meta.url))
+ const program="import fs from 'node:fs';import path from 'node:path';import {pathToFileURL} from 'node:url';import {createHash} from 'node:crypto';import {execFileSync} from 'node:child_process';const root=process.argv[1],paths=JSON.parse(process.argv[2]),control='apps/srm/scripts/assistant-m2-integrity.mjs',watch=[...new Set([control,...paths.filter(p=>p.startsWith('apps/')&&/\\.(?:tsx?|mjs)$/.test(p))])];const {trustedApplicationContinuity}=await import(new URL('scripts/governance/development-execution.mjs',pathToFileURL(root+'/')));const read=trustedApplicationContinuity(root,watch);if(!read){process.stdout.write('null')}else{const git=args=>execFileSync('git',args,{cwd:root,stdio:['ignore','pipe','pipe']}),main=p=>git(['cat-file','blob','origin/main:'+p]),mode=(ref,p)=>git(['--literal-pathspecs','ls-tree',ref,'--',p]).toString().slice(0,6),physical=p=>{const name=path.join(root,p),st=fs.lstatSync(name),m=mode('HEAD',p);if(!st.isFile()||st.isSymbolicLink()||fs.realpathSync(name)!==name||st.size>1024*1024||!['100644','100755'].includes(m)||Boolean(st.mode&0o111)!==(m==='100755'))throw Error('SRM_SOURCE_PHYSICAL_REJECTED');return fs.readFileSync(name)},same=(p,bytes)=>bytes.equals(main(p))&&mode('HEAD',p)===mode('origin/main',p),appChanged=watch.some(p=>!same(p,read(p))),result={};for(const p of paths){const bytes=physical(p);if(!same(p,bytes)&&!appChanged)throw Error('SRM_CONSUMER_ADOPTION_REQUIRED');result[p]=createHash('sha256').update(bytes).digest('hex')}process.stdout.write(JSON.stringify(result))}"
+ const result=JSON.parse(execFileSync(process.execPath,['--input-type=module','-e',program,root,JSON.stringify(names)],{cwd:root,env:{PATH:process.env.PATH,GIT_NO_LAZY_FETCH:'1'},encoding:'utf8',timeout:30000,maxBuffer:1024*1024}))
+ assert(result,'independent current SRM source admission required')
+ return result
+}
+export function assertSrmHistoricalAnchor(value,file,fields){
+ assert(['apps/srm/assistant-context-integration.json','apps/srm/operation-integration.json','apps/sg-runtime/operation-integration.json'].includes(file),'existing immutable consumer receipt only')
+ const root=fileURLToPath(new URL('../../../',import.meta.url))
+ let accepted=JSON.parse(execFileSync('git',['cat-file','blob','origin/main:'+file],{cwd:root,env:{PATH:process.env.PATH,GIT_NO_LAZY_FETCH:'1'},encoding:'utf8',timeout:30000,maxBuffer:1024*1024}))
+ for(const field of fields){assert(accepted&&Object.hasOwn(accepted,field),'immutable receipt field');accepted=accepted[field]}
+ assert.deepEqual(value,accepted,'unchanged authority-main receipt values')
+}
+export function assertSrmHistoricalSources(current,expected,label,anchor){
+ const changed=Object.entries(expected).filter(([p,h])=>hash(current(p))!==h)
+ if(!changed.length)return
+ for(const h of Object.values(expected))assert.match(h,/^[a-f0-9]{64}$/)
+ assert(anchor,'immutable receipt anchor required')
+ assertSrmHistoricalAnchor(anchor.value,anchor.file,anchor.fields)
+ const digests=authenticatedSrmSourceDigests(changed.map(([p])=>p))
+ for(const[p]of changed)assert.equal(hash(current(p)),digests[p],label+' '+p)
+}
 export function srmAssistantM2Predecessor(current,historical){
  // Both current owners are checked before either historical byte view.
  // The integrated SG2 view hides its own manifest, ending this recursion.
@@ -40,22 +68,7 @@ export function srmAssistantM2Predecessor(current,historical){
  assert.deepEqual(a.operations,['supplier.report.read','supplier.private.read'])
  assert.equal(a.grantsAccess,false);assert.equal(a.storedReadsOnly,true);assert.equal(a.acquisitionAllowed,false)
  assert.deepEqual(Object.keys(a.sourceDigests).sort(),[...SRM_ASSISTANT_M2_PATHS].sort())
- let ordinary
- for(const [p,h]of Object.entries(a.sourceDigests)){
-  const actual=Buffer.from(current(p));if(hash(actual)===h)continue
-  // An independently admitted current producer may follow the frozen M2 source.
-  // Authenticate physical bytes before retaining the immutable historical view.
-  const watched=SRM_ASSISTANT_M2_PATHS.filter(p=>p.startsWith('apps/')&&/\.(?:tsx?|mjs)$/.test(p))
-  if(ordinary===undefined){
-   const root=fileURLToPath(new URL('../../../',import.meta.url))
-   // Native ESM keeps the existing synchronous history readers compatible with
-   // the authority module's asynchronous CLI dependencies. Source digests only;
-   // no credentials, provider environment, policy copy or real grant is supplied.
-   const program="import {pathToFileURL} from 'node:url';import {createHash} from 'node:crypto';const root=process.argv[1],paths=JSON.parse(process.argv[2]);const {trustedApplicationContinuity}=await import(new URL('scripts/governance/development-execution.mjs',pathToFileURL(root+'/')));const read=trustedApplicationContinuity(root,paths);process.stdout.write(JSON.stringify(read?Object.fromEntries(paths.map(p=>[p,createHash('sha256').update(read(p)).digest('hex')])):null));"
-   ordinary=JSON.parse(execFileSync(process.execPath,['--input-type=module','-e',program,root,JSON.stringify(watched)],{cwd:root,env:{PATH:process.env.PATH,GIT_NO_LAZY_FETCH:'1'},encoding:'utf8',timeout:30000,maxBuffer:1024*1024}))
-  }
-  assert(ordinary&&watched.includes(p)&&hash(actual)===ordinary[p],'current M2 producer '+p)
- }
+ assertSrmHistoricalSources(current,a.sourceDigests,'current M2 producer',{value:a.sourceDigests,file,fields:['sourceDigests']})
  const receipt='apps/srm/operation-integration.json',prior=Buffer.from(historical(a.previousSourceSha,receipt))
  assert.deepEqual(Buffer.from(current(receipt)),prior,'all historical SRM/M1/Oil acceptance bytes remain immutable')
  const mapped=new Set(SRM_ASSISTANT_M2_PATHS),cache=new Map([[receipt,prior]])

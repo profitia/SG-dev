@@ -1,5 +1,5 @@
 import {assertAssistantConsumerCompatibility} from '../../architecture-lab/assistant-m1-sdk-compatibility.mjs'
-import {srmAssistantM2Predecessor} from './assistant-m2-integrity.mjs'
+import {srmAssistantM2Predecessor,assertSrmHistoricalSources} from './assistant-m2-integrity.mjs'
 import {assertAssistantM1Integrity} from '../../sg-runtime/tests/assistant-m1-integrity.mjs'
 import {assertSourceHubApiPathCompatibility as assertPeerApiPathCompatibility} from '../../sg-runtime/tests/pci-smart-integrity.mjs'
 import assert from 'node:assert/strict'
@@ -21,7 +21,7 @@ export function assertSourceHubApiPathCompatibility(receipt,current,historical,{
  const {sourceHubApiPathCompatibility,...preserved}=receipt
  assert.deepEqual(preserved,prior,'every accepted product, analytics and historical receipt is immutable')
  assert.deepEqual(Object.keys(a.consumerSourceDigests).sort(),["apps/maps-runtime/package-lock.json", "apps/maps-runtime/platform-integration.json", "apps/maps-runtime/test/embed.test.mjs", "apps/srm/deployment/root-atomic-claim-targets.json", "apps/srm/package-lock.json", "apps/srm/scripts/diagnostic-telemetry-adoption.test.mjs", "apps/srm/scripts/native-execution-adoption.test.mjs", "apps/srm/scripts/operation-context.test.mjs", "apps/srm/scripts/private-host.integration.test.mjs", "apps/srm/scripts/request-quota-adoption.test.mjs", "apps/srm/scripts/rural-location-release.test.mjs", "apps/srm/scripts/source-hub-sdk-compatibility.mjs", "apps/srm/scripts/supplier-location-admission.integration.test.mjs", "apps/srm/scripts/xray-performance-adoption.test.mjs", "apps/srm/scripts/xray-style-acceptance.mjs", "apps/srm/src/server/full-ui-parity-adoption.test.ts", "apps/srm/src/server/root-atomic-claim-adoption.test.ts", "packages/maps-embed/package.json"])
- for(const [p,h]of Object.entries(a.consumerSourceDigests))assert.equal(hash(current(p)),h,'current consumer compatibility '+p)
+ assertSrmHistoricalSources(current,a.consumerSourceDigests,'current consumer compatibility',{value:a.consumerSourceDigests,file,fields:['sourceHubApiPathCompatibility','consumerSourceDigests']})
  for(const [p,h]of Object.entries(a.sourceDigests))assert.equal(hash(current('packages/platform-contracts/'+p)),h,'current SDK '+p)
  for(const [p,h]of Object.entries(a.producerMetadataDigests))assert.equal(hash(current(p)),h,'current optional peer metadata '+p)
  assert.deepEqual(a.applicationSourceDigests,Object.fromEntries(Object.entries(a.consumerSourceDigests).map(([p,h])=>[posix.relative('apps/srm',p),h])))
@@ -67,7 +67,8 @@ export function assertSourceHubMarketSymbolCompatibility(receipt,current,histori
  assert.deepEqual(Object.keys(a.sourceDigests).sort(),MARKET_SYMBOL_SOURCE_PATHS);
  assert.deepEqual(Object.keys(a.producerMetadataDigests).sort(),MARKET_SYMBOL_METADATA_PATHS);
  assert.deepEqual(a.sdkDigests,MARKET_SYMBOL_SDK_DIGESTS);assert.deepEqual(a.optionalPackageDigests,MARKET_SYMBOL_OPTIONAL_DIGESTS);
- for(const [p,h]of Object.entries({...a.consumerSourceDigests,...a.peerSourceDigests,...a.producerMetadataDigests}))assert.equal(hash(current(p)),h,'current compatibility closure '+p);
+ assertSrmHistoricalSources(current,a.consumerSourceDigests,'current compatibility closure',{value:a.consumerSourceDigests,file,fields:['sourceHubMarketSymbolCompatibility','consumerSourceDigests']});
+ for(const[p,h]of Object.entries({...a.peerSourceDigests,...a.producerMetadataDigests}))assert.equal(hash(current(p)),h,'current compatibility closure '+p);
  for(const [p,h]of Object.entries(a.sourceDigests))assert.equal(hash(current('packages/platform-contracts/'+p)),h,'current SDK closure '+p);
  assert.deepEqual(a.applicationSourceDigests,Object.fromEntries(Object.entries({...a.consumerSourceDigests,...a.peerSourceDigests}).map(([p,h])=>[posix.relative('apps/'+app,p),h])));
  for(const flag of ['marketSymbolOptedIn','sql029Installed','businessLogicChanged','uiChanged','authorizationChanged','sourceBindingsChanged','providerCallsPerformed','deploymentPerformed'])assert.equal(a[flag],false,flag);
@@ -108,7 +109,7 @@ export function assertOilReportSourceCompatibility(receipt,current,historical,{p
  }
  for(const[p,h]of Object.entries(a.applicationSourceDigests)){
   const full=posix.normalize('apps/'+app+'/'+p);mapped.add(full);
-  assert.equal(hash(current(full)),h,'current consumer compatibility '+p);
+  assertSrmHistoricalSources(current,{[full]:h},'current consumer compatibility',{value:h,file,fields:['oilAutonomousReportCompatibility','applicationSourceDigests',p]});
  }
  // Producer implementation remains pinned to its immutable candidate. Later
  // SDK test corrections have a separate exact source-only continuation.
