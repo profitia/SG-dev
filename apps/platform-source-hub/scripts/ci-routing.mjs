@@ -6,7 +6,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import {fileURLToPath} from 'node:url'
 import {execFileSync} from 'node:child_process'
-import {OIL_REPORT_E1_REVIEW,REGISTRATION_SDK_REVIEW,assertArchitectureCheckout} from '../../../scripts/governance/controlled-package-ci.mjs'
+import {OIL_REPORT_E1_REVIEW,REGISTRATION_SDK_REVIEW,assertArchitectureCheckout,CONTROL_POLICY_FILES,currentSdkProofContext} from '../../../scripts/governance/controlled-package-ci.mjs'
 import {knowledgeSourcePredecessor,KNOWLEDGE_SOURCE_RECORD} from '../../architecture-lab/knowledge-source.mjs'
 import {partitionChangedPaths,validateCandidate,validateOwnerGroups} from '../../identity-runtime/scripts/ci-routing.mjs'
 
@@ -201,11 +201,55 @@ export function reviewedRegistrationConsumerPaths(repositoryRoot,{baseSha,candid
  return new Set(files.filter(f=>REGISTRATION_SDK_REVIEW.entries[f.filename].projectKey!=='ARCHITECTURE').map(f=>f.filename))
 }
 
+// Reuse the current SDK's independently admitted complete source row. The
+// candidate cannot introduce its own ledger, descriptor, controller or policy.
+export function reviewedCurrentSdkConsumerPaths(repositoryRoot,changedPaths,sourceReview={}){
+ const {baseSha,candidateSha}=sourceReview;
+ if(!/^[a-f0-9]{40}$/.test(baseSha??'')||!/^[a-f0-9]{40}$/.test(candidateSha??''))return null;
+ const root=fs.realpathSync(repositoryRoot),git=args=>execFileSync('git',args,{cwd:root,encoding:'utf8',stdio:['ignore','pipe','pipe'],maxBuffer:2*1024*1024}).trim();
+ assert.equal(root,path.resolve(repositoryRoot),'Exact admitted SDK checkout required');
+ const descriptor='apps/architecture-lab/current-sdk-source.json',ledger='Canon/registries/controlled-source-admissions-v1.json';
+ if(!fs.existsSync(path.join(root,descriptor)))return null;
+ assert(['https://github.com/profitia/SG-dev','https://github.com/profitia/SG-dev.git','git@github.com:profitia/SG-dev.git'].includes(git(['remote','get-url','origin'])),'Independent SDK authority repository required');
+ const authoritySha=git(['rev-parse','refs/remotes/origin/main']);
+ assert(/^[a-f0-9]{40}$/.test(authoritySha),'Exact SDK authority required');
+ git(['merge-base','--is-ancestor',baseSha,authoritySha]);
+ const bytes=(sha,p)=>execFileSync('git',['cat-file','blob',sha+':'+p],{cwd:root,stdio:['ignore','pipe','pipe'],maxBuffer:2*1024*1024});
+ const trusted=JSON.parse(bytes(baseSha,descriptor));
+ if(JSON.parse(fs.readFileSync(path.join(root,'packages/platform-contracts/package.json'))).version!==trusted.platformVersion)return null;
+ const selected=trusted.sourceAdmission?.recordId,store=JSON.parse(bytes(baseSha,ledger));
+ const records=store.records?.filter(row=>row.id===selected)??[];
+ assert(records.length<=1,'Unique independently admitted SDK row required');
+ const record=records[0];if(!record)return null;
+ if(record.files.length!==changedPaths.length||!record.files.every(f=>changedPaths.includes(f.path)))return null;
+ const currentRows=JSON.parse(bytes(authoritySha,ledger)).records.filter(row=>row.id===selected);
+ assert.equal(currentRows.length,1,'Current SDK admission must still exist');
+ assert.deepEqual(currentRows[0],record,'Current SDK admission cannot change or be revoked');
+ for(const file of [...CONTROL_POLICY_FILES,ledger]){
+  const target=path.join(root,file),stat=fs.lstatSync(target);
+  assert(stat.isFile()&&!stat.isSymbolicLink()&&stat.size<=2*1024*1024&&!(stat.mode&0o111),'Regular bounded trusted SDK control required');
+  assert.equal(fs.realpathSync(target),target,'Trusted SDK control cannot use symbolic parents');
+  assert(bytes(baseSha,file).equals(fs.readFileSync(target)),'Candidate cannot replace trusted SDK control '+file);
+  if(file!==ledger)assert(bytes(baseSha,file).equals(bytes(authoritySha,file)),'SDK policy changed after validation base');
+ }
+ const actor=sourceReview.actor??process.env.GITHUB_ACTOR;assert.equal(actor,record.actor,'Actual SDK source actor required');
+ const files=git(['diff','--name-status','--no-renames',baseSha+'...'+candidateSha]).split('\n').filter(Boolean).map(row=>{
+  const [status,filename,...extra]=row.split('\t');assert(!extra.length&&['A','M'].includes(status),'Only exact added or modified SDK source');
+  const tree=/^100644 blob ([a-f0-9]{40})\t/.exec(git(['ls-tree',candidateSha,'--',filename]));assert(tree,'Exact regular admitted SDK source');
+  return {filename,status:status==='A'?'added':'modified',sha:tree[1]};
+ });
+ assertArchitectureCheckout(root,candidateSha,{kind:'TRUSTED_RECORD',recordId:record.id,actor,baseSha,files},root);
+ assert(currentSdkProofContext(root,root),'Complete current SDK physical source required');
+ const {partition}=partitionChangedPaths(changedPaths,root);
+ return new Set(partition.filter(p=>p.projectKey!=='ARCHITECTURE').map(p=>p.path));
+}
+
 export function validateRouting({changedPaths,repositoryRoot,readReceipt,runGovernance,sourceReview}){
  const {groups,partition}=partitionChangedPaths(changedPaths,repositoryRoot)
  const registrationKeys=Object.keys(REGISTRATION_SDK_REVIEW.entries)
  const registration=changedPaths.length===registrationKeys.length&&changedPaths.every(p=>Object.hasOwn(REGISTRATION_SDK_REVIEW.entries,p))
- const reviewedRegistrationPaths=registration?reviewedRegistrationConsumerPaths(repositoryRoot,sourceReview):new Set()
+ const reviewedSdkPaths=reviewedCurrentSdkConsumerPaths(repositoryRoot,changedPaths,sourceReview)??new Set();
+ const reviewedRegistrationPaths=new Set([...(registration?reviewedRegistrationConsumerPaths(repositoryRoot,sourceReview):new Set()),...reviewedSdkPaths])
  const needsOil=groups.some(g=>g.projectKey!=='ARCHITECTURE'&&g.targets.some(t=>!reviewedRegistrationPaths.has(t)&&!acceptedConsumerPaths[g.projectKey]?.includes(t)&&!['apps/sg-runtime/operation-integration.json','apps/srm/operation-integration.json','apps/srm/scripts/source-hub-market-symbol-compatibility.test.mjs'].includes(t)));
  const reviewedKnowledgePaths=needsOil?reviewedKnowledgeConsumerPaths(repositoryRoot,sourceReview):null;
  const reviewedRecurringPaths=needsOil&&!reviewedKnowledgePaths?reviewedRecurringConsumerPaths(repositoryRoot,sourceReview):null;
