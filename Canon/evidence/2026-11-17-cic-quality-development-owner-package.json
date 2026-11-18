@@ -233,7 +233,7 @@
       "rejectedWriteApplied": false,
       "noAlternativeSecretTransferAttempted": true,
       "approvalDate": "2026-11-18",
-      "approvalResponse": "Zatwierdzam te dwa połączenia w tym workerze",
+      "approvalResponse": "Zatwierdzam te dwa po\u0142\u0105czenia w tym workerze",
       "subsequentExplicitlyApprovedWriteApplied": true,
       "valuesPublished": false
     }
@@ -297,7 +297,7 @@
   "ownerApproval": {
     "date": "2026-11-17",
     "hostConversationId": "01a1e7fb-2253-7f91-9335-270094d39784",
-    "response": "Zatwierdzam cały opisany pakiet owner-only",
+    "response": "Zatwierdzam ca\u0142y opisany pakiet owner-only",
     "proposalPr": 1104,
     "reviewedPlanSyncId": "exe-dbu3pq0u01pc73djagqg",
     "excluded": [
@@ -900,7 +900,7 @@
     "runtimeAccessPermissionsCostsChanged": false,
     "existingBranchesExpiryPackagePinsAndActorUnchanged": true,
     "approvalDate": "2026-11-17",
-    "approvalResponse": "Zatwierdzam to ograniczone uzupełnienie CI",
+    "approvalResponse": "Zatwierdzam to ograniczone uzupe\u0142nienie CI",
     "proposalPr": 1136,
     "hostConversationId": "01a1e7fb-2253-7f91-9335-270094d39784",
     "approvedPathCount": 23
@@ -943,7 +943,7 @@
     "acceptedParallelPredecessorSha": "77369b63888c5fa66d8d8159d5e8f36a23d25c83",
     "approvedPathCount": 24,
     "approvalDate": "2026-11-17",
-    "approvalResponse": "Zatwierdzam ograniczone uzupełnienie CI24",
+    "approvalResponse": "Zatwierdzam ograniczone uzupe\u0142nienie CI24",
     "proposalPr": 1159,
     "hostConversationId": "01a1e7fb-2253-7f91-9335-270094d39784",
     "approvalReviewedAdditionalPath": "apps/sg-runtime/tests/procurement-insights-editorial-integrity.mjs",
@@ -1021,9 +1021,88 @@
     "previousFinderApprovalNotReusedForNewPath": true,
     "approvedPrecedingPolicyMain": "67b81304e08d400aef5872839e24de39b8af8093",
     "approvalDate": "2026-11-18",
-    "approvalResponse": "Zatwierdzam tę zamianę adaptera CI24",
+    "approvalResponse": "Zatwierdzam t\u0119 zamian\u0119 adaptera CI24",
     "approvalPr": 1179,
     "hostConversationId": "01a1e7fb-2253-7f91-9335-270094d39784",
     "approvedPathCount": 24
+  },
+  "proposedCi25AcceptedAcgComposition": {
+    "status": "PROPOSED_NOT_OWNER_APPROVED_NOT_ACTIVE",
+    "previousApprovedPathCount": 24,
+    "proposedPathCount": 25,
+    "existingReviewId": "AQC-SG2-STAGE1-LEGACY-CONTINUATION-20261117",
+    "proposedReviewId": "AQC-SG2-STAGE1-ACCEPTED-ACG-COMPOSITION-20261118",
+    "additionalPath": "packages/platform-contracts/test/assistant-reservation-source.mjs",
+    "owner": "Architecture Platform",
+    "targetEnvironment": "development",
+    "sourceValidationOnly": true,
+    "currentHostPr": 1099,
+    "currentHostSourceSha": "b3fcf378cb6320d9e2198e0b9a81bf88ab7cc398",
+    "currentHostTree": "0fc094503ec4b3e47155dea7a506ea482c5ba3b3",
+    "preservedMain": "a03956b6752227a7a14e44887feabd50a0ad1054",
+    "acceptedAcgSourceSha": "53691e907e4cc9b7fbf683c91bbebf41299e9ccc",
+    "immutableAcgRecordSha256": "bfa9287d9a0a17ef0a935ddc2c0f66c46b42d6c415b2b1fda0d237d2e38fc8b8",
+    "preservedLegacyControllerTestsBlob": "13ac0dc1e997359e8da2452d841ec6887f36b31a",
+    "newIndependentTestPath": "scripts/governance/assistant-quality-ci25.test.mjs",
+    "preservesAll24PathsBranchesExpiryAnchorAndPackagePins": true,
+    "candidateJavaScriptExecutedByTrustedSourceValidator": false,
+    "acceptedAcgRawInputs": 44,
+    "acceptedAcgImmutableReceipts": 27,
+    "acceptedEditorialImmutableReceipts": 29,
+    "currentHostSourceTests": {
+      "tests": 19,
+      "pass": 19,
+      "fail": 0,
+      "skipped": 0
+    },
+    "independentControllerTests": {
+      "tests": 10,
+      "pass": 10,
+      "fail": 0,
+      "skipped": 0,
+      "fullPhysicalCheckoutAndSdkProof": true,
+      "repeatAfterFinalScopeCorrection": "PASS_10_OF_10_ZERO_FAILURE_SKIP"
+    },
+    "legacyControllerRegression": {
+      "tests": 345,
+      "initialPass": 343,
+      "initialFailures": 2,
+      "observedFindings": [
+        "General accepted-ACG projection exceeded the finite CI25-only scope",
+        "Existing PK historical test object was absent from the local clone"
+      ],
+      "corrections": [
+        "Projection restricted to fully authenticated CI25 host; prior raw-source refusal retained",
+        "Fetched actual historical PK branch and commit; no mock or fixture hash replacement"
+      ],
+      "focusedCountertests": {
+        "tests": 2,
+        "pass": 2,
+        "fail": 0,
+        "skipped": 0
+      },
+      "completeRepeat": "IN_PROGRESS"
+    },
+    "exactSourceAndResultingMainCiRequired": true,
+    "currentTrustedMainCannotExecuteUnadmittedPolicyCandidate": true,
+    "policyBootstrapAuthorityNotAssumed": true,
+    "credentialsRolesResourcesCostsChanged": false,
+    "hostDeploymentPerformed": false,
+    "paidRepairsEnabled": false,
+    "promotionEnabled": false,
+    "pilotStarted": false,
+    "frozenSpecificationSha256": "ee6b3f36dd63ca3c3343de8b38fee431de49f67b895b17434b39ce332539b881",
+    "stage2Authorised": false
+  },
+  "ownerScopeHistoryRecheck20261118": {
+    "initialProposalSha": "4a5d16fbd4fa276f3f54d4c029ab36c797e9a548",
+    "reviewedPlanSha": "d19cdffb13aee220e2dcf1b2ed62823b2e5e93cd",
+    "approvalRecordSha": "59f4abe639eafd67875517c882c4a21e126c2b55",
+    "originalPackageAlreadyNamedBoundedBindingRenewalAndTemporaryOwnerSetRestoration": true,
+    "noPermissionBorrowedFromOtherChats": true,
+    "originalMembershipStillMustBeRestoredExactly": true,
+    "onlyExistingSixDeploymentReferences": true,
+    "noNewOwnerTransactionExecuted": true,
+    "newPersistentRoleOrDataGrantAuthorityNotInferred": true
   }
 }

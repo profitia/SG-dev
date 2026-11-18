@@ -654,7 +654,7 @@ export const EDITORIAL_PACKAGE_COMPOSITION_REVIEW=Object.freeze({
 export function editorialPackageCompositionTrustedPredecessor(current,historical){
  const quality=qualityTrustedPredecessor(current,historical)
  if(quality){
-  const accepted=editorialPackageCompositionTrustedPredecessor(quality.previousBytes,historical);qualityAssert(accepted,'accepted editorial package source retained')
+  const accepted=editorialPackageCompositionTrustedPredecessor(quality.compositionPreviousBytes??quality.previousBytes,historical);qualityAssert(accepted,'accepted editorial package source retained')
   return {...accepted,quality,manifest:{...accepted.manifest,sourceDigests:{...accepted.manifest.sourceDigests,...quality.manifest.sourceDigests,[QUALITY_RECEIPT]:qualitySourceHash(current(QUALITY_RECEIPT))}}}
  }
  const cfg=EDITORIAL_PACKAGE_COMPOSITION_REVIEW;let record
@@ -985,6 +985,27 @@ export function assertQualityStage1SourceFiles(files,now=Date.now()){
   if(!route||route.resolutionStatus!=='RESOLVED'||route.highestSpecificityMatchCount!==1||route.projectBoundaryStatus!=='ALLOWED'||route.baselineClassification!=='ALIGNED')fail('QUALITY_STAGE1_SOURCE_ROUTING_REJECTED')
  }
 }
+
+export const QUALITY_CI25_BRIDGE='packages/platform-contracts/test/assistant-reservation-source.mjs'
+export const ASSISTANT_QUALITY_CI25_REVIEW=Object.freeze({
+ ...ASSISTANT_QUALITY_SG2_STAGE1_REVIEW,
+ id:'AQC-SG2-STAGE1-ACCEPTED-ACG-COMPOSITION-20261118',
+ paths:Object.freeze([...ASSISTANT_QUALITY_SG2_STAGE1_REVIEW.paths,QUALITY_CI25_BRIDGE])
+})
+export function assertQualityStage1CompositionSourceFiles(files,now=Date.now()){
+ const r=ASSISTANT_QUALITY_CI25_REVIEW
+ if(!Array.isArray(files)||!files.some(f=>f?.filename===QUALITY_CI25_BRIDGE)||files.length>r.paths.length
+  ||new Set(files.map(f=>f?.filename)).size!==files.length)fail('QUALITY_CI25_SOURCE_SCOPE_REJECTED')
+ const extra=files.find(f=>f?.filename===QUALITY_CI25_BRIDGE)
+ if(extra.status!=='modified'||!shaPattern.test(extra.sha??'')||Object.hasOwn(extra,'previous_filename'))fail('QUALITY_CI25_SOURCE_SCOPE_REJECTED')
+ assertQualityStage1SourceFiles(files.filter(f=>f.filename!==QUALITY_CI25_BRIDGE),now)
+ const profile=resolveProjectProfile('ARCHITECTURE',controlRoot()),route=resolveProjectRouting({profile,targets:[QUALITY_CI25_BRIDGE],repositoryRoot:controlRoot()}).results[0]
+ if(!route||route.resolutionStatus!=='RESOLVED'||route.highestSpecificityMatchCount!==1||route.projectBoundaryStatus!=='ALLOWED'||route.baselineClassification!=='ALIGNED')fail('QUALITY_CI25_SOURCE_ROUTING_REJECTED')
+}
+function assertQualityStage1ReviewFiles(files,now=Date.now()){
+ return files?.some(f=>f?.filename===QUALITY_CI25_BRIDGE)?assertQualityStage1CompositionSourceFiles(files,now):assertQualityStage1SourceFiles(files,now)
+}
+
 export function qualityStage1PackageAuthority(lock,manifest,host){
  const expectedLock=structuredClone(lock),expectedManifest=structuredClone(manifest)
  if(host){
@@ -1015,7 +1036,9 @@ export function assertQualityStage1Packages(candidateLock,candidateManifest,auth
 }
 function assertQualityStage1Checkout(root,sha,admission){
  const r=ASSISTANT_QUALITY_SG2_STAGE1_REVIEW
- assertQualityStage1SourceFiles(admission.files)
+ assertQualityStage1ReviewFiles(admission.files)
+ const composition=admission.files.some(f=>f.filename===QUALITY_CI25_BRIDGE)
+ if(composition&&admission.branch!==r.branches[1])fail('QUALITY_CI25_HOST_BRANCH_REQUIRED')
  if(!qualityStage1Branch(admission.branch)||admission.baseSha!==admission.controlSha||execFileSync('git',['rev-parse','HEAD'],{cwd:root,encoding:'utf8'}).trim()!==sha)fail('QUALITY_STAGE1_SOURCE_IDENTITY_REJECTED')
  for(const ancestor of [r.anchorSha,admission.baseSha]){
   try{execFileSync('git',['merge-base','--is-ancestor',ancestor,sha],{cwd:root,stdio:'pipe'})}catch{fail('QUALITY_STAGE1_SOURCE_ANCESTRY_REJECTED')}
@@ -1050,7 +1073,7 @@ function assertQualityStage1Checkout(root,sha,admission){
  const oldPrefix=" const quality=assistantQualityPredecessor(current,historical);if(quality)return recurringSourcePredecessor(quality.previousBytes,historical)\n"
  const newPrefix=" const quality=assistantQualityPredecessor(current,historical);if(quality){const accepted=recurringSourcePredecessor(quality.previousBytes,historical);assert(accepted,'accepted recurring source retained');return {...accepted,quality,manifest:{...accepted.manifest,sourceDigests:{...accepted.manifest.sourceDigests,...quality.manifest.sourceDigests,[QUALITY_RECEIPT]:hash(current(QUALITY_RECEIPT))}}}}\n"
  const commonExpected=admission.branch!==r.branches[1]||!admission.files.some(f=>f.filename===common)||prior.startsWith(oldImport)||prior.startsWith(newImport)?prior
-  :(hasLive?newImport:oldImport)+prior.replace(entry,entry+(hasLive?newPrefix:oldPrefix))
+  :(hasLive?newImport:oldImport)+prior.replace(entry,entry+(hasLive?(composition?newPrefix.replace("quality.previousBytes","quality.compositionPreviousBytes??quality.previousBytes"):newPrefix):oldPrefix))
  if(fs.readFileSync(path.join(root,common),'utf8')!==commonExpected)fail('QUALITY_STAGE1_RECURRING_GUARD_REJECTED')
  if(hasFinder){
   if(admission.branch!==r.branches[1])fail('QUALITY_STAGE1_FINDER_BRANCH_REJECTED')
@@ -1065,7 +1088,13 @@ function assertQualityStage1Checkout(root,sha,admission){
   if(admission.branch!==r.branches[1]||!Object.hasOwn(readJson(path.join(root,'apps/sg-runtime/assistant-quality-host-integration.json')).sourceDigests,packaged))fail('QUALITY_STAGE1_EDITORIAL_PACKAGE_BINDING_REQUIRED')
   const prior=execFileSync('git',['show',admission.baseSha+':'+packaged],{cwd:root,encoding:'utf8'}),boundary=" const a=JSON.parse(bytes)\n"
   const imported="import {assistantQualityPredecessor,QUALITY_RECEIPT} from './assistant-quality-integrity.mjs'\n",prefix=" const quality=assistantQualityPredecessor(current,historical)\n if(quality){\n  const accepted=procurementInsightsEditorialPackagePredecessor(quality.previousBytes,historical);assert(accepted,'accepted editorial package source retained')\n  return {...accepted,quality,manifest:{...accepted.manifest,sourceDigests:{...accepted.manifest.sourceDigests,...quality.manifest.sourceDigests,[QUALITY_RECEIPT]:hash(current(QUALITY_RECEIPT))}}}\n }\n"
-  if(prior.split(boundary).length!==2||fs.readFileSync(path.join(root,packaged),'utf8')!==imported+prior.replace(boundary,prefix+boundary))fail('QUALITY_STAGE1_EDITORIAL_PACKAGE_GUARD_REJECTED')
+  if(prior.split(boundary).length!==2||fs.readFileSync(path.join(root,packaged),'utf8')!==imported+prior.replace(boundary,(composition?prefix.replace('quality.previousBytes','quality.compositionPreviousBytes??quality.previousBytes'):prefix)+boundary))fail('QUALITY_STAGE1_EDITORIAL_PACKAGE_GUARD_REJECTED')
+ }
+ if(composition){
+  const historical=(ref,p)=>execFileSync('git',['cat-file','blob',ref+':'+p],{cwd:root,stdio:['ignore','pipe','pipe']})
+  const current=p=>fs.readFileSync(path.join(root,p))
+  if(String(current(QUALITY_CI25_BRIDGE))!==qualityCi25ReservationBridge(String(historical(QUALITY_CI25_BASE,QUALITY_CI25_BRIDGE))))fail('QUALITY_CI25_ACG_GUARD_REJECTED')
+  qualityAssert(qualityTrustedHostPredecessor(current,historical)?.acceptedComposition,'complete CI25 host authentication before package credentials')
  }
 }
 function checkQualityStage1Candidate(root,state){
@@ -7019,9 +7048,9 @@ export function registrationLifecycleProofContract(receipt,recordBytes,receiptBy
 }
 // Match the independent public verifier to the already authenticated optional
 // knowledge source. The exact immutable record is data, never candidate code.
-export function publicProofContract(receipt,{receiptBytes,recurringRecord=null,lifecycleRecord=null,knowledgeRecord=null}={}){
+export function publicProofContract(receipt,{receiptBytes,recurringRecord=null,lifecycleRecord=null,knowledgeRecord=null,reservationRecord=null}={}){
  assertReceipt(receipt)
- const contract=registrationLifecycleProofContract(receipt,lifecycleRecord,receiptBytes)??privateRecurringProofContract(receipt,recurringRecord,receiptBytes)
+ const contract=qualityCi25ProofContract(registrationLifecycleProofContract(receipt,lifecycleRecord,receiptBytes)??privateRecurringProofContract(receipt,recurringRecord,receiptBytes),reservationRecord)
  if(knowledgeRecord===null)return contract
  const cfg=knowledgeStage2Provenance(knowledgeRecord)
  if(recurringHash(knowledgeRecord)!==cfg.recordSha256||contract.implementation!=='1.0.0-candidate.16')fail('KNOWLEDGE_STAGE2_RECORD_REJECTED')
@@ -7029,12 +7058,14 @@ export function publicProofContract(receipt,{receiptBytes,recurringRecord=null,l
 }
 export function currentProofContract(root,receipt){
  const knowledge=knowledgeStage2Filesystem(root),a=assertPrivateRecurringProvenance(root)
+ const physical=p=>readRegistrationSdkPhysicalFile(fs.realpathSync(root),p),historical=(sha,p)=>execFileSync('git',['cat-file','blob',sha+':'+p],{cwd:root,stdio:['ignore','pipe','pipe']})
+ const reservation=qualityCi25AcceptedReservationPredecessor(physical,historical)
  if(receipt?.sdkSourceContinuations!==undefined){
   const record=assertRegistrationSdkProvenance(root)
   if(record.platformVersion==='1.36.0'&&!a)fail('PRIVATE_RECURRING_RECORD_REJECTED')
-  return {...adoptedOperationContract(receipt),sourceDigest:knowledge?.manifest.sdkDigests.operationSourceDigest??(record.lifecycle??record).sdkDigests.operationSourceDigest}
+  return {...adoptedOperationContract(receipt),sourceDigest:knowledge?.manifest.sdkDigests.operationSourceDigest??reservation?.manifest.sdkDigests.operationSourceDigest??(record.lifecycle??record).sdkDigests.operationSourceDigest}
  }
- const contract=privateRecurringProofContract(receipt,a?readRegistrationSdkFile(root,PRIVATE_RECURRING_PROVENANCE.recordPath):null,readRegistrationSdkFile(root,'apps/sg-runtime/operation-integration.json'));return knowledge?{...contract,sourceDigest:knowledge.manifest.sdkDigests.operationSourceDigest}:contract
+ const contract=privateRecurringProofContract(receipt,a?readRegistrationSdkFile(root,PRIVATE_RECURRING_PROVENANCE.recordPath):null,readRegistrationSdkFile(root,'apps/sg-runtime/operation-integration.json'));return knowledge?{...contract,sourceDigest:knowledge.manifest.sdkDigests.operationSourceDigest}:reservation?{...contract,sourceDigest:reservation.manifest.sdkDigests.operationSourceDigest}:contract
 }
 function reviewedPrivateRecurringPeer(owner,version,section,name,spec){
  return owner==='@profitia/maps-embed'&&version==='0.1.2'&&section==='peerDependencies'&&name==='@profitia/platform-contracts'&&[REVIEWED_MAPS_EMBED_PEERS[name]+' || 1.33.0 || 1.34.0 || 1.36.0',REVIEWED_MAPS_EMBED_PEERS[name]+' || 1.33.0 || 1.34.0 || 1.36.0 || 1.37.0'].includes(spec)
@@ -7533,7 +7564,7 @@ export async function resolveCandidateAdmission(c, number, expectedSha, request 
   }
   if(qualityStage1Branch(current.head.ref)){
     if(family!=='SG2')fail('QUALITY_STAGE1_SOURCE_IDENTITY_REJECTED')
-    assertQualityStage1SourceFiles(files)
+    assertQualityStage1ReviewFiles(files)
     const sha=selectCandidate(c,current,expectedSha,{files,repositoryRoot})
     return {sha,admission:{kind:'QUALITY_STAGE1_SG2',branch:current.head.ref,baseSha:current.base.sha,controlSha:c.controlSha,files:files.map(({filename,status,sha})=>({filename,status,sha}))}}
   }
@@ -7737,6 +7768,7 @@ export function qualityTrustedHostPredecessor(current,historical){
   throw e
  }
  const a=JSON.parse(bytes)
+ if(Object.hasOwn(a,'acceptedComposition'))return qualityTrustedComposedHost(current,historical,a)
  qualityAssert.deepEqual(Object.keys(a).sort(),['schemaVersion','taskId','scope','targetEnvironment','previousSourceSha','sourceDigests','previousReceipts','cicPublication','responseProtectionActivated','privateQaActivated','cloudInstallationPerformed','pilotStarted'].sort())
  qualityAssert.equal(a.schemaVersion,'1.0.0');qualityAssert.equal(a.taskId,'SG2-CIC-QUALITY-TECHNICAL-READY-20261117')
  qualityAssert.equal(a.scope,'CONTROLLED_CIC18_HOST_AND_PRIVATE_QA_SOURCE');qualityAssert.equal(a.targetEnvironment,'development')
@@ -7826,7 +7858,7 @@ export const QUALITY_RECEIPTS=Object.freeze([
 const qualityCalendarAdditions=new Set(['apps/sg-runtime/lib/assistant/calendar-period.ts','apps/sg-runtime/tests/assistant-quality.test.ts',
  'apps/sg-runtime/tests/assistant-quality-integrity.mjs','apps/sg-runtime/tests/assistant-quality-integrity.test.mjs'])
 export function qualityTrustedPredecessor(current,historical){
- const host=qualityTrustedHostPredecessor(current,historical);if(host){const accepted=qualityTrustedPredecessor(host.legacyPreviousBytes??host.previousBytes,historical);qualityAssert(accepted,'accepted calendar source retained');return {...accepted,host,previousBytes:host.editorialPackage?p=>p==='apps/sg-runtime/package-lock.json'?host.previousBytes(p):accepted.previousBytes(p):accepted.previousBytes,manifest:{...accepted.manifest,sourceDigests:{...accepted.manifest.sourceDigests,...host.manifest.sourceDigests,[QUALITY_HOST_RECEIPT]:qualitySourceHash(current(QUALITY_HOST_RECEIPT))}}}}
+ const host=qualityTrustedHostPredecessor(current,historical);if(host){const accepted=qualityTrustedPredecessor(host.legacyPreviousBytes??host.previousBytes,historical);qualityAssert(accepted,'accepted calendar source retained');return {...accepted,host,...(host.compositionPreviousBytes?{compositionPreviousBytes:host.compositionPreviousBytes}:{}),previousBytes:host.editorialPackage?p=>p==='apps/sg-runtime/package-lock.json'?host.previousBytes(p):accepted.previousBytes(p):accepted.previousBytes,manifest:{...accepted.manifest,sourceDigests:{...accepted.manifest.sourceDigests,...host.manifest.sourceDigests,[QUALITY_HOST_RECEIPT]:qualitySourceHash(current(QUALITY_HOST_RECEIPT))}}}}
  let bytes
  try{bytes=current(QUALITY_RECEIPT)}catch(e){
   const text=String(e?.stderr??e?.message??'')
@@ -7859,19 +7891,160 @@ export function qualityTrustedPredecessor(current,historical){
  }}
 }
 
+
+const QUALITY_CI25_HOST_PATHS=Object.freeze([...QUALITY_HOST_PATHS,QUALITY_CI25_BRIDGE])
+const QUALITY_CI25_RESERVATION_RECORD='apps/architecture-lab/assistant-reservation-source.json'
+export function qualityCi25ReservationBridge(before){
+ const declaration='export function assistantReservationPredecessor(current,historical,expectedDigest){'
+ qualityAssert.equal(before.split(declaration).length,2,'one accepted ACG entry')
+ return "import {assistantQualityPredecessor,QUALITY_RECEIPT} from '../../../apps/sg-runtime/tests/assistant-quality-integrity.mjs'\n"
+  +before.replace(declaration,'function originalReservationPredecessor(current,historical,expectedDigest){')
+  +"\n/** Authenticate the complete admitted CIC successor before projecting the\n * unchanged accepted ACG source. Original source/receipt checks remain intact;\n * the returned aggregate names actual current bytes, not rewritten receipts. */\nexport function assistantReservationPredecessor(current,historical,expectedDigest){\n try{current(RESERVATION_RECORD)}catch(e){if(absent(e))return null;throw e}\n const quality=assistantQualityPredecessor(current,historical)\n if(quality?.compositionPreviousBytes){\n  const accepted=originalReservationPredecessor(quality.compositionPreviousBytes,historical,expectedDigest)\n  assert(accepted,'accepted ACG predecessor required')\n  return {...accepted,quality,historicalReservation:accepted,\n   manifest:{...accepted.manifest,sourceDigests:{...accepted.manifest.sourceDigests,...quality.manifest.sourceDigests,\n    [QUALITY_RECEIPT]:hash(current(QUALITY_RECEIPT))}}}\n }\n return originalReservationPredecessor(current,historical,expectedDigest)\n}\n"
+}
+const QUALITY_CI25_BASE='53691e907e4cc9b7fbf683c91bbebf41299e9ccc'
+const QUALITY_CI25_COMPONENT='583ea4f780c6a7675e7fde85c33fa7039438eedb'
+const QUALITY_CI25_RESERVATION_PIN='bfa9287d9a0a17ef0a935ddc2c0f66c46b42d6c415b2b1fda0d237d2e38fc8b8'
+function qualityTrustedComposedHost(current,historical,a){
+ const prior=JSON.parse(historical(QUALITY_CI25_COMPONENT,QUALITY_HOST_RECEIPT))
+ qualityAssert.deepEqual(Object.keys(a).sort(),[...Object.keys(prior),'acceptedComposition'].sort())
+ for(const k of Object.keys(prior).filter(k=>k!=='sourceDigests'))qualityAssert.deepEqual(a[k],prior[k],'immutable component metadata '+k)
+ qualityAssert.deepEqual(a.acceptedComposition,{sourceSha:QUALITY_CI25_BASE,componentSourceSha:QUALITY_CI25_COMPONENT,reservationRecordSha256:QUALITY_CI25_RESERVATION_PIN})
+ qualityAssert.deepEqual(Object.keys(a.sourceDigests).sort(),[...QUALITY_CI25_HOST_PATHS].sort(),'closed CI25 source inventory')
+ for(const p of QUALITY_CI25_HOST_PATHS){qualityAssert.match(a.sourceDigests[p],/^[a-f0-9]{64}$/);qualityAssert.equal(qualitySourceHash(current(p)),a.sourceDigests[p],'exact composed CIC source '+p)}
+ for(const p of QUALITY_HOST_PRESERVED){qualityAssert.equal(qualitySourceHash(current(p)),a.previousReceipts[p]);qualityAssert.equal(qualitySourceHash(historical(QUALITY_HOST_BASE,p)),a.previousReceipts[p])}
+
+ const packagePath='apps/sg-runtime/package.json',lockPath='apps/sg-runtime/package-lock.json'
+ const expectedPackage=JSON.parse(historical(QUALITY_CI25_BASE,packagePath))
+ expectedPackage.dependencies['@profitia/cic-core']='1.8.0'
+ const marker='tests/assistant-economic-calendar.test.ts ',script=expectedPackage.scripts['test:assistant']
+ qualityAssert.equal(script.split(marker).length,2,'one accepted calendar test entry')
+ expectedPackage.scripts['test:assistant']=script.replace(marker,marker+'tests/assistant-quality.test.ts ')
+  +' && node --test tests/assistant-quality-integrity.test.mjs'
+  +' && node --import tsx --test tests/assistant-quality-response.test.ts tests/assistant-quality-evidence.test.ts && node --test tests/assistant-quality-host-integrity.test.mjs'
+ qualityAssert.deepEqual(JSON.parse(current(packagePath)),expectedPackage,'current admitted CIC manifest permits only its exact core pin and QA tests')
+ const expectedLock=JSON.parse(historical(QUALITY_CI25_BASE,lockPath))
+ expectedLock.packages[''].dependencies['@profitia/cic-core']='1.8.0'
+ Object.assign(expectedLock.packages['node_modules/@profitia/cic-core'],CIC_QUALITY_STAGE1_PIN)
+ qualityAssert.deepEqual(JSON.parse(current(lockPath)),expectedLock,'current admitted CIC lock permits only the exact published core artifact')
+ const previous=p=>Buffer.from(historical(QUALITY_CI25_COMPONENT,p))
+ const legacy=qualityTrustedHostPredecessor(previous,historical);qualityAssert(legacy,'complete original CIC component retained')
+ const mapped=new Set([...QUALITY_CI25_HOST_PATHS,...QUALITY_HOST_PRESERVED,QUALITY_HOST_RECEIPT,
+  'apps/sg-runtime/lib/assistant/calendar-period.ts','apps/sg-runtime/lib/assistant/context-selection.ts',
+  'apps/sg-runtime/tests/assistant-quality.test.ts','apps/sg-runtime/tests/assistant-quality-integrity.test.mjs',
+  'apps/sg-runtime/tests/assistant-ecr-integrity.mjs','apps/sg-runtime/tests/assistant-ecr-precision-integrity.mjs'])
+ const compositionPreviousBytes=p=>{
+  if(!mapped.has(p))return current(p)
+  try{return Buffer.from(historical(QUALITY_CI25_BASE,p))}catch(e){
+   const text=String(e?.stderr??e?.message??'')
+   if(e?.status===128&&(text.includes("'"+p+"' does not exist in ")||text.includes("'"+p+"' exists on disk, but not in ")))throw Object.assign(Error('CIC addition absent from accepted ACG'),{code:'ENOENT'})
+   throw e
+  }
+ }
+
+ const unchanged=[
+  'apps/sg-runtime/lib/assistant/calendar-period.ts','apps/sg-runtime/lib/assistant/context-selection.ts',
+  'apps/sg-runtime/tests/assistant-quality.test.ts','apps/sg-runtime/tests/assistant-quality-integrity.test.mjs',
+  'apps/sg-runtime/tests/assistant-ecr-integrity.mjs','apps/sg-runtime/tests/assistant-ecr-precision-integrity.mjs']
+ for(const p of unchanged)qualityAssert.deepEqual(Buffer.from(current(p)),Buffer.from(historical(QUALITY_CI25_COMPONENT,p)),'unchanged current calendar source '+p)
+ const packageReceipt='apps/sg-runtime/procurement-insights-editorial-package-integration.json'
+ qualityAssert.deepEqual(Buffer.from(current(packageReceipt)),Buffer.from(historical(QUALITY_CI25_BASE,packageReceipt)),'immutable current editorial package receipt')
+ const packaged=JSON.parse(current(packageReceipt))
+ for(const [p,digest]of Object.entries(packaged.sourceDigests))qualityAssert.equal(qualitySourceHash(compositionPreviousBytes(p)),digest,'current accepted editorial package source '+p)
+ for(const [p,digest]of Object.entries(packaged.preservedReceipts))qualityAssert.equal(qualitySourceHash(current(p)),digest,'current immutable editorial receipt '+p)
+ const transport='apps/sg-runtime/tests/procurement-insights-editorial-package-integrity.mjs'
+ const oldTransport=String(historical(QUALITY_CI25_COMPONENT,transport))
+ qualityAssert.equal(oldTransport.split('quality.previousBytes').length,2)
+ qualityAssert.equal(String(current(transport)),oldTransport.replace('quality.previousBytes','quality.compositionPreviousBytes??quality.previousBytes'),'only additive composition selection before original editorial checks')
+ qualityAssert.equal(qualitySourceHash(current(QUALITY_CI25_RESERVATION_RECORD)),QUALITY_CI25_RESERVATION_PIN,'actual accepted ACG record retained')
+ // Independent trusted verification of the immutable accepted ACG record:
+ // no candidate JavaScript is imported or evaluated before credential removal.
+ const reservation=JSON.parse(current(QUALITY_CI25_RESERVATION_RECORD))
+ for(const [p,digest]of Object.entries(reservation.sourceDigests))qualityAssert.equal(qualitySourceHash(compositionPreviousBytes(p)),digest,'all actual accepted ACG source retained '+p)
+ for(const [p,digest]of Object.entries(reservation.preservedReceipts)){
+  qualityAssert.equal(qualitySourceHash(compositionPreviousBytes(p)),digest,'all accepted ACG receipts retained '+p)
+  qualityAssert.equal(qualitySourceHash(historical(reservation.previousSourceSha,p)),digest,'immutable original ACG receipt '+p)
+ }
+ qualityAssert.equal(String(current(QUALITY_CI25_BRIDGE)),qualityCi25ReservationBridge(String(historical(QUALITY_CI25_BASE,QUALITY_CI25_BRIDGE))),'exact additive ACG bridge')
+ qualityAssert.equal(String(compositionPreviousBytes('apps/architecture-lab/private-recurring-source.mjs')),String(historical(QUALITY_CI25_BASE,'apps/architecture-lab/private-recurring-source.mjs')),'all accepted ACG predecessor guards retained')
+ const expectedCommon="import {assistantQualityPredecessor,QUALITY_RECEIPT} from '../sg-runtime/tests/assistant-quality-integrity.mjs'\n"+String(historical(QUALITY_CI25_BASE,'apps/architecture-lab/private-recurring-source.mjs')).replace("export function recurringSourcePredecessor(current,historical){\n","export function recurringSourcePredecessor(current,historical){\n const quality=assistantQualityPredecessor(current,historical);if(quality){const accepted=recurringSourcePredecessor(quality.compositionPreviousBytes??quality.previousBytes,historical);assert(accepted,'accepted recurring source retained');return {...accepted,quality,manifest:{...accepted.manifest,sourceDigests:{...accepted.manifest.sourceDigests,...quality.manifest.sourceDigests,[QUALITY_RECEIPT]:hash(current(QUALITY_RECEIPT))}}}}\n")
+ qualityAssert.equal(String(current('apps/architecture-lab/private-recurring-source.mjs')),expectedCommon,'only exact additive composition dispatch before accepted ACG')
+ const retainCurrent=reader=>p=>{
+  if(!mapped.has(p))return current(p)
+  try{return reader(p)}catch(e){
+   const text=String(e?.stderr??e?.message??'')
+   if(e?.status===128&&(text.includes("'"+p+"' does not exist in ")||text.includes("'"+p+"' exists on disk, but not in ")))throw Object.assign(Error('CIC addition absent from component predecessor'),{code:'ENOENT'})
+   throw e
+  }
+ }
+ return {...legacy,manifest:a,previousBytes:retainCurrent(legacy.previousBytes),
+  legacyPreviousBytes:retainCurrent(legacy.legacyPreviousBytes??legacy.previousBytes),compositionPreviousBytes,acceptedComposition:true}
+}
+
+
+
+/** Fixed accepted ACG continuation, authenticated from raw bytes before the
+ * unchanged Finder/editorial/recurring graph is inspected. No candidate module
+ * execution or refreshed historical receipt can supply this trust. */
+export function qualityCi25AcceptedReservationPredecessor(current,historical){
+ let bytes
+ try{bytes=current(QUALITY_CI25_RESERVATION_RECORD)}catch(e){
+  const text=String(e?.stderr??e?.message??'')
+  if(e?.code==='ENOENT'||e?.status===128&&(text.includes("'"+QUALITY_CI25_RESERVATION_RECORD+"' does not exist in ")||text.includes("'"+QUALITY_CI25_RESERVATION_RECORD+"' exists on disk, but not in ")))return null
+  throw e
+ }
+ const quality=qualityTrustedPredecessor(current,historical)
+ if(quality?.compositionPreviousBytes)return qualityCi25AcceptedReservationPredecessor(quality.compositionPreviousBytes,historical)
+ qualityAssert.equal(qualitySourceHash(bytes),QUALITY_CI25_RESERVATION_PIN,'immutable accepted ACG receipt')
+ const a=JSON.parse(bytes),derived='apps/architecture-lab/private-recurring-source.mjs'
+ for(const [p,digest]of Object.entries(a.sourceDigests))qualityAssert.equal(qualitySourceHash(current(p)),digest,'current accepted ACG input '+p)
+ for(const [p,digest]of Object.entries(a.preservedReceipts)){
+  qualityAssert.equal(qualitySourceHash(current(p)),digest,'current immutable ACG receipt '+p)
+  qualityAssert.equal(qualitySourceHash(historical(a.previousSourceSha,p)),digest,'original immutable ACG receipt '+p)
+ }
+ qualityAssert.equal(String(current(derived)),String(historical(QUALITY_CI25_BASE,derived)),'unchanged accepted ACG dispatch')
+ const added=new Set([QUALITY_CI25_RESERVATION_RECORD,QUALITY_CI25_BRIDGE,
+  'packages/platform-contracts/test/assistant-reservation-source.test.mjs','apps/package-limits/migrations/006-assistant-reservation-diagnostics.sql'])
+ const mapped=new Set([...Object.keys(a.sourceDigests),derived])
+ return {manifest:a,previousBytes:p=>{
+  if(added.has(p))throw Object.assign(Error('Accepted ACG addition absent from predecessor'),{code:'ENOENT'})
+  if(!mapped.has(p))return current(p)
+  const finder='apps/sg-runtime/tests/finder-monitor-source-integrity.mjs',editorial='apps/sg-runtime/tests/procurement-insights-editorial-integrity.mjs'
+  const before=Buffer.from(historical(p===finder||p===editorial?'52c5edbf282d68af1c6fb6e0c9f0f06c7a89ac50':a.previousSourceSha,p))
+  if(p===finder)qualityAssert.equal(qualitySourceHash(before),'c802bfcb6c0efba606772ba7847cbe769ee1db668ec805e71bc6c647ebd72069')
+  if(p===editorial)qualityAssert.equal(qualitySourceHash(before),'4d67bec4b83487590e80abdbf51bed308c1156873b7227ffb6030777ba67956b')
+  return before
+ }}
+}
+
+
+export function qualityCi25ProofContract(contract,recordBytes){
+ if(recordBytes===null)return contract
+ qualityAssert.equal(qualitySourceHash(recordBytes),QUALITY_CI25_RESERVATION_PIN,'exact accepted ACG proof metadata')
+ qualityAssert.equal(contract.implementation,'1.0.0-candidate.16','existing operation identity retained')
+ return {...contract,sourceDigest:JSON.parse(recordBytes).sdkDigests.operationSourceDigest}
+}
+
 const qualityImmutableHistory=new Map()
+let qualityImmutableHistoryBytes=0
 export function readRegistrationSdkFile(root,name){
  const base=fs.realpathSync(root),physical=p=>readRegistrationSdkPhysicalFile(base,p)
  const historical=(sha,p)=>{
   const key=base+"\0"+sha+":"+p
   if(!qualityImmutableHistory.has(key)){
-   if(qualityImmutableHistory.size>=256)qualityImmutableHistory.clear()
-   qualityImmutableHistory.set(key,execFileSync('git',['cat-file','blob',sha+':'+p],{cwd:base,stdio:['ignore','pipe','pipe']}))
+   const bytes=execFileSync('git',['cat-file','blob',sha+':'+p],{cwd:base,stdio:['ignore','pipe','pipe']})
+   if(bytes.length>1024*1024)return bytes
+   while(qualityImmutableHistory.size>=1024||qualityImmutableHistoryBytes+bytes.length>64*1024*1024){
+    const oldest=qualityImmutableHistory.keys().next().value
+    qualityImmutableHistoryBytes-=qualityImmutableHistory.get(oldest).length
+    qualityImmutableHistory.delete(oldest)
+   }
+   qualityImmutableHistory.set(key,bytes);qualityImmutableHistoryBytes+=bytes.length
   }
   return Buffer.from(qualityImmutableHistory.get(key))
  }
  const view=qualityTrustedPredecessor(physical,historical)
- return (view?.previousBytes??physical)(name)
+ const reservation=view?.compositionPreviousBytes?qualityCi25AcceptedReservationPredecessor(view.compositionPreviousBytes,historical):null
+ return (reservation?.previousBytes??view?.previousBytes??physical)(name)
 }
 function readRegistrationSdkPhysicalFile(root,name){
  const base=fs.realpathSync(root)
@@ -8461,7 +8634,8 @@ async function verify() {
       assertReceipt(sourceReceipt)
       let lifecycleRecord=null;try{lifecycleRecord=Buffer.from((await api(`repos/${REPOSITORY}/contents/${REGISTRATION_LIFECYCLE_PROVENANCE.recordPath}?ref=${sha}`)).data.content,'base64')}catch(error){if(error.message!=='GITHUB_API_404')throw error}
       let knowledgeRecord=null;try{knowledgeRecord=Buffer.from((await api(`repos/${REPOSITORY}/contents/${PLATFORM_KNOWLEDGE_STAGE2_PROVENANCE.recordPath}?ref=${sha}`)).data.content,'base64')}catch(error){if(error.message!=='GITHUB_API_404')throw error}
-      if (JSON.stringify(p.contract) !== JSON.stringify(publicProofContract(sourceReceipt,{receiptBytes,recurringRecord,lifecycleRecord,knowledgeRecord}))) fail('CONTRACT_PROVENANCE_MISMATCH')
+      let reservationRecord=null;try{reservationRecord=Buffer.from((await api(`repos/${REPOSITORY}/contents/${QUALITY_CI25_RESERVATION_RECORD}?ref=${sha}`)).data.content,'base64')}catch(error){if(error.message!=='GITHUB_API_404')throw error}
+      if (JSON.stringify(p.contract) !== JSON.stringify(publicProofContract(sourceReceipt,{receiptBytes,recurringRecord,lifecycleRecord,knowledgeRecord,reservationRecord}))) fail('CONTRACT_PROVENANCE_MISMATCH')
       console.log(`Verified actual SG2 tests/build for ${sha}: https://github.com/${REPOSITORY}/actions/runs/${run.id}`)
       return
     } finally {fs.rmSync(directory, {recursive: true, force: true})}
