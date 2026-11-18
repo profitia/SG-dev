@@ -87,3 +87,48 @@ test('both events cover every trusted transitive admission and fingerprint input
     assert(patternsFor(event).some(pattern => covers(pattern, file)), `Trusted admission input ${file} omitted from ${event}`)
   }
 })
+
+
+// The shared controlled-package-ci.test.mjs is pinned by admitted ACG source.
+// Exercise this exact continuation here without changing those accepted bytes.
+test('current Knowledge and admitted ACG composition closes every owner and refuses any substituted source',async()=>{
+ const c=await import('./controlled-package-ci.mjs'),review=c.PLATFORM_KNOWLEDGE_STAGE2_ACG_COMPOSITION_REVIEW,cfg=c.PLATFORM_KNOWLEDGE_STAGE2_ACG_COMPOSITION_PROVENANCE;
+ const os=await import('node:os'),temporary=fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(),'knowledge-acg-closed-review-')));
+ const git=(cwd,...args)=>execFileSync('git',['-c','core.hooksPath=/dev/null',...args],{cwd,encoding:'utf8',stdio:['ignore','pipe','pipe']}).trim();
+ try{
+  git(temporary,'clone','--quiet','--shared','--no-checkout',root,'source');const checkout=path.join(temporary,'source');
+  git(checkout,'checkout','--quiet','--detach',review.sourceSha);
+  // Bind this disposable source fixture to the actual captured trusted authority.
+  git(checkout,'update-ref','refs/remotes/origin/main',review.baseSha);
+  const files=Object.entries(review.entries).map(([filename,e])=>({filename,sha:e.sha,status:e.status}));
+  assert.equal(files.length,145);assert.equal(cfg.sourceFileCount,478);assert.equal(cfg.receiptFileCount,33);
+  const admission={kind:'ARCHITECTURE',baseSha:review.baseSha,files};
+  c.assertArchitectureFiles({changed_files:files.length,base:{sha:review.baseSha}},files);
+  c.assertArchitectureCheckout(checkout,review.sourceSha,admission);
+  for(const changed of [files.slice(1),[...files,{filename:'apps/srm/src/server/unapproved.ts',sha:'a'.repeat(40),status:'added'}],files.map((f,i)=>i===0?{...f,sha:'a'.repeat(40)}:f),files.map((f,i)=>i===0?{...f,previous_filename:'foreign.ts'}:f)])
+   assert.throws(()=>c.assertArchitectureFiles({changed_files:changed.length,base:{sha:review.baseSha}},changed));
+  const entry=files.find(f=>f.filename==='apps/srm/src/server/root-atomic-claim-adoption.test.ts');assert(entry);
+  assert.throws(()=>c.assertKnowledgeStage2Entry(entry,'100755 blob '+entry.sha+'	'+entry.filename+'\0',review));
+  const cache=new Map(),history=(sha,p)=>{const key=sha+':'+p;if(!cache.has(key))cache.set(key,execFileSync('git',['show',key],{cwd:checkout,stdio:['ignore','pipe','pipe']}));return cache.get(key)};
+  const read=p=>fs.readFileSync(path.join(checkout,p));const current=c.knowledgeStage2TrustedPredecessor(read,history);assert(current);
+  assert.equal(current.manifest.sdkDigests.operationSourceDigest,cfg.operationSourceDigest);
+  assert.deepEqual(current.manifest.optionalPackageDigests,cfg.optionalPackageDigests);
+  const legacy=c.knowledgeStage2LegacyPredecessor(read,history);assert(legacy);
+  assert.equal(legacy.manifest.sdkDigests.operationSourceDigest,cfg.operationSourceDigest);
+  const original='packages/platform-contracts/src/assistant-usage.mjs';
+  assert.deepEqual(legacy.previousBytes(original),history(current.manifest.previousSourceSha,original));
+  assert.deepEqual(legacy.legacyPreviousBytes(original),history('c31fd80278561adec8d066392417bb057d191192',original));
+  const receipt=JSON.parse(read('apps/sg-runtime/operation-integration.json'));
+  assert.equal(c.currentProofContract(checkout,receipt).sourceDigest,cfg.operationSourceDigest);
+  const oldReceipt='apps/sg-runtime/operation-integration.json';
+  assert.throws(()=>c.knowledgeStage2LegacyPredecessor(read,(sha,p)=>sha==='c31fd80278561adec8d066392417bb057d191192'&&p===oldReceipt?Buffer.concat([history(sha,p),Buffer.from('UNREVIEWED')]):history(sha,p)));
+
+  for(const p of ['apps/architecture-lab/assistant-reservation-source.json','packages/platform-contracts/test/assistant-reservation-source.mjs','packages/platform-contracts/src/assistant-usage.mjs','apps/srm/deployment/root-atomic-claim-targets.json','apps/srm/src/server/root-atomic-claim-adoption.test.ts','scripts/governance/controlled-package-ci.test.mjs','apps/sg-runtime/finder-monitor-source-integration.json'])
+   assert.throws(()=>c.knowledgeStage2TrustedPredecessor(f=>f===p?Buffer.concat([read(f),Buffer.from('UNREVIEWED')]):read(f),history),p);
+  const target=path.join(checkout,entry.filename),bytes=fs.readFileSync(target);fs.appendFileSync(target,'UNREVIEWED');
+  assert.throws(()=>c.assertArchitectureCheckout(checkout,review.sourceSha,admission));fs.writeFileSync(target,bytes);
+  fs.writeFileSync(path.join(checkout,'extra-unreviewed.txt'),'SYNTHETIC_ONLY');git(checkout,'add','extra-unreviewed.txt');
+  git(checkout,'-c','user.name=Synthetic source fixture','-c','user.email=synthetic@example.invalid','commit','--quiet','-m','SYNTHETIC_ONLY additional source');
+  assert.throws(()=>c.assertArchitectureCheckout(checkout,git(checkout,'rev-parse','HEAD'),admission));
+ }finally{fs.rmSync(temporary,{recursive:true,force:true})}
+});
