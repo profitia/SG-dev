@@ -1,3 +1,4 @@
+import {knowledgeSourcePredecessor} from '../../architecture-lab/knowledge-source.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
@@ -16,7 +17,8 @@ const readReceipt=file=>JSON.parse(fs.readFileSync(new URL('../../../'+file,impo
 const sourceBytes=p=>fs.readFileSync(path.join(repositoryRoot,p))
 const sourceHistory=(sha,p)=>execFileSync('git',['show',sha+':'+p],{cwd:repositoryRoot,stdio:['ignore','pipe','pipe'],maxBuffer:16*1024*1024})
 const sourcePin=String(sourceBytes(RESERVATION_DERIVED)).match(/ASSISTANT_RESERVATION_SOURCE_SHA='([a-f0-9]{64})'/)?.[1]
-const reservationSource=assistantReservationPredecessor(sourceBytes,sourceHistory,sourcePin)
+const knowledgeSource=knowledgeSourcePredecessor(sourceBytes,sourceHistory),acceptedAcgBytes=knowledgeSource?.previousBytes??sourceBytes
+const reservationSource=assistantReservationPredecessor(acceptedAcgBytes,sourceHistory,sourcePin)
 assert(reservationSource)
 function reviewedRecurringFixture(){
  const temporary=fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(),'hub-immutable-recurring-')))
@@ -177,7 +179,7 @@ function reservationRoutingFixture(){
   assert.equal(paths.length,46);assert.equal(new Set(paths).size,46)
   for(const p of paths){
    const source=path.join(repositoryRoot,p),stat=fs.lstatSync(source);assert(stat.isFile()&&!stat.isSymbolicLink())
-   const target=path.join(root,p);fs.mkdirSync(path.dirname(target),{recursive:true});fs.writeFileSync(target,fs.readFileSync(source))
+   const target=path.join(root,p);fs.mkdirSync(path.dirname(target),{recursive:true});fs.writeFileSync(target,acceptedAcgBytes(p))
   }
   git(root,'add','--',...paths)
   git(root,'-c','user.name=Isolated ACG fixture','-c','user.email=fixture@example.invalid','commit','--quiet','-m','actual authenticated ACG source fixture')

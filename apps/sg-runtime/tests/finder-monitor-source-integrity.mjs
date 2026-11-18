@@ -1,3 +1,4 @@
+import {knowledgeSourcePredecessor} from '../../architecture-lab/knowledge-source.mjs'
 import {procurementInsightsEditorialPackagePredecessor,EDITORIAL_PACKAGE_RECEIPT} from './procurement-insights-editorial-package-integrity.mjs'
 import {assistantReservationPredecessor,RESERVATION_RECORD,RESERVATION_DERIVED} from '../../../packages/platform-contracts/test/assistant-reservation-source.mjs'
 // Test/build-only binding of the two owner-approved monitor sources. No runtime grant.
@@ -48,7 +49,7 @@ export function finderMonitorPredecessor(current,historical){
  }
  // Authenticate the complete ACG graph before the original Finder source closure.
  const reservationPin=String(current(RESERVATION_DERIVED)).match(/ASSISTANT_RESERVATION_SOURCE_SHA='([a-f0-9]{64})'/)?.[1]
- const reservation=assistantReservationPredecessor(current,historical,reservationPin)
+ const reservation=assistantReservationPredecessor(knowledgeSourcePredecessor(current,historical)?.previousBytes??current,historical,reservationPin)
  if(reservation){
   const packaged=procurementInsightsEditorialPackagePredecessor(reservation.previousBytes,historical)
   const accepted=finderMonitorPredecessor(packaged?.previousBytes??reservation.previousBytes,historical)
