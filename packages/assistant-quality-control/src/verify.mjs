@@ -1,4 +1,8 @@
 import {createHash} from 'node:crypto'
+import path from 'node:path'
+import {execFileSync} from 'node:child_process'
+import {gunzipSync} from 'node:zlib'
+import ts from 'typescript'
 import {documentDigest,verifyDocument,assertVerifiedRepairManifest,SOURCE_PATHS} from './manifest.mjs'
 
 const fail=code=>{throw Object.assign(Error('Independent quality verification refused'),{code})}
@@ -107,4 +111,99 @@ export async function verifyCandidate({manifest,beforeSource,afterSource,regress
   scopeBeforeDefects,scopeAfterDefects,
   beforeSourceSha256:source.beforeSha256,afterSourceSha256:source.afterSha256,regressionSha256:hash(regressionSource),observationsSha256:documentDigest(observations)}
  return Object.freeze({...body,proofSha256:documentDigest(body)})
+}
+
+const verificationBundles=new WeakSet()
+const cicIntegrity='sha512-tuun88+cfOHFeCafBw1a8gnExgeDyWBgY7Zd9OPkKk2/Eef0YBP49vzDcXKVpFoCNJGh/CYbeR9B+M2ZXctNsg=='
+export function assertQualityVerificationBundle(value){
+ require(verificationBundles.has(value),'VERIFIED_SOURCE_BUNDLE_REQUIRED');return value
+}
+function cicFiles(archive){
+ require(Buffer.isBuffer(archive)&&archive.length<=2097152&&'sha512-'+createHash('sha512').update(archive).digest('base64')===cicIntegrity,'VERIFIER_CIC_ARTIFACT_REQUIRED')
+ const bytes=gunzipSync(archive,{maxOutputLength:4194304}),files={};let offset=0
+ while(offset+512<=bytes.length){
+  const h=bytes.subarray(offset,offset+512);if(h.every(n=>n===0))break
+  const text=(a,b)=>h.subarray(a,b).toString('utf8').replace(/\0.*$/s,'')
+  const name=text(0,100),prefix=text(345,500),type=text(156,157),sizeText=text(124,136).trim(),check=text(148,156).trim()
+  require(/^[0-7]+$/.test(sizeText)&&/^[0-7]+$/.test(check),'VERIFIER_CIC_ARCHIVE_INVALID')
+  const size=parseInt(sizeText,8),sum=h.reduce((n,b,i)=>n+(i>=148&&i<156?32:b),0)
+  require(sum===parseInt(check,8)&&!prefix&&name.startsWith('package/')&&name.slice(8).split('/').every(p=>/^[a-zA-Z0-9_.-]+$/.test(p)&&p!=='.'&&p!=='..')
+   &&['','0'].includes(type)&&size<=524288&&offset+512+size<=bytes.length,'VERIFIER_CIC_ARCHIVE_INVALID')
+  const relative='node_modules/@profitia/cic-core/'+name.slice(8),body=bytes.subarray(offset+512,offset+512+size),source=body.toString('utf8')
+  require(!Object.hasOwn(files,relative)&&Buffer.from(source).equals(body)&&Object.keys(files).length<256,'VERIFIER_CIC_ARCHIVE_INVALID')
+  files[relative]=source;offset+=512+Math.ceil(size/512)*512
+ }
+ const p=JSON.parse(files['node_modules/@profitia/cic-core/package.json']??'null')
+ require(p?.name==='@profitia/cic-core'&&p.version==='1.8.0'&&Object.keys(p.dependencies??{}).length===0&&files['node_modules/@profitia/cic-core/dist/index.js'],'VERIFIER_CIC_ARTIFACT_REQUIRED')
+ return files
+}
+/** Assemble inert source from the signed base Git objects and bounded patch.
+ * No checkout import, package script, filesystem dependency tree or QA label
+ * enters the child. Private CIC bytes must match its exact accepted tarball. */
+export async function prepareQualityVerificationBundle({manifest,repositoryRoot,artifact,cicArchive}){
+ const m=assertVerifiedRepairManifest(manifest)
+ require(typeof repositoryRoot==='string'&&path.isAbsolute(repositoryRoot)&&artifact?.body&&artifact.artifactSha256===documentDigest(artifact.body),'VERIFIER_SOURCE_BINDING_INVALID')
+ const read=p=>{
+  const raw=execFileSync('git',['--no-replace-objects','-C',repositoryRoot,'show',m.baseSha+':'+p],{maxBuffer:1048576,timeout:15000,env:{PATH:'/usr/bin:/bin',GIT_CONFIG_NOSYSTEM:'1',GIT_CONFIG_GLOBAL:'/dev/null',GIT_OPTIONAL_LOCKS:'0'}})
+  const s=raw.toString('utf8');require(Buffer.from(s).equals(raw),'VERIFIER_SOURCE_ENCODING_INVALID');return s
+ }
+ const sourcePath=SOURCE_PATHS[m.repairClass],testPath=m.allowedPaths.find(p=>p!==sourcePath),before=read(sourcePath)
+ const {readPatchBody}=await import('./provenance.mjs')
+ const b=readPatchBody(JSON.stringify(artifact.body),{manifest:m,beforeSource:before})
+ const repaired=b.files.find(f=>f.path===sourcePath),test=b.files.find(f=>f.path===testPath)
+ const oldLines=before.split('\n'),newLines=repaired.content.split('\n');let first=0,lastOld=oldLines.length,lastNew=newLines.length
+ while(first<lastOld&&first<lastNew&&oldLines[first]===newLines[first])first++
+ while(lastOld>first&&lastNew>first&&oldLines[lastOld-1]===newLines[lastNew-1]){lastOld--;lastNew--}
+ require(lastOld-first+lastNew-first+test.content.split('\n').length<=300,'PATCH_LINE_LIMIT')
+ const regression=readRegressionSource(test.content)
+ require(documentDigest(regression)===m.synthetic.sha256&&regression.repairClass===m.repairClass,'REPAIR_FIXTURE_MISMATCH')
+ const {assertRepairSource}=await import('./source-policy.mjs')
+ const source=assertRepairSource({before,after:repaired.content,path:sourcePath,repairClass:m.repairClass})
+ const sources={calendar:read(SOURCE_PATHS.C1),quality:read(SOURCE_PATHS.C2)},files={},primary=m.repairClass==='C1'?'calendar':'quality'
+ let needsCic=false
+ for(const version of ['base','candidate'])for(const [name,original]of Object.entries(sources)){
+  const value=version==='candidate'&&name===primary?repaired.content:original
+  const imports={'../../../../packages/assistant-context-contracts/src/index.mjs':'../contracts/index.mjs','node:crypto':'node:crypto','@profitia/cic-core':'@profitia/cic-core'}
+  const result=ts.transpileModule(value,{compilerOptions:{target:ts.ScriptTarget.ES2023,module:ts.ModuleKind.ESNext},reportDiagnostics:true,transformers:{before:[ctx=>sf=>ts.visitEachChild(sf,function visit(node){
+   if(ts.isImportDeclaration(node)&&!node.importClause?.isTypeOnly){
+    const used=!node.importClause||node.importClause?.name||node.importClause?.namedBindings&&(!ts.isNamedImports(node.importClause.namedBindings)||node.importClause.namedBindings.elements.some(e=>!e.isTypeOnly))
+    if(used){
+     const spec=node.moduleSpecifier.text;require(Object.hasOwn(imports,spec),'VERIFIER_IMPORT_REJECTED');if(spec==='@profitia/cic-core')needsCic=true
+     return ctx.factory.updateImportDeclaration(node,node.modifiers,node.importClause,ctx.factory.createStringLiteral(imports[spec]),node.attributes)
+    }
+   }
+   return ts.visitEachChild(node,visit,ctx)
+  },ctx)]}})
+  require(!(result.diagnostics??[]).some(d=>d.category===ts.DiagnosticCategory.Error),'VERIFIER_COMPILATION_FAILED')
+  files[version+'/'+name+'.mjs']=result.outputText;files[version+'/'+name+'.ts']=value
+ }
+ const names=execFileSync('git',['--no-replace-objects','-C',repositoryRoot,'ls-tree','-r','--name-only',m.baseSha,'packages/assistant-context-contracts/src'],{encoding:'utf8',timeout:15000,env:{PATH:'/usr/bin:/bin',GIT_CONFIG_NOSYSTEM:'1',GIT_CONFIG_GLOBAL:'/dev/null'}}).trim().split('\n').filter(Boolean)
+ require(names.length>0&&names.length<=64,'VERIFIER_CONTRACT_GRAPH_INVALID')
+ for(const p of names){const relative=p.slice('packages/assistant-context-contracts/src/'.length);if(!relative.endsWith('.mjs'))continue
+  require(/^[a-zA-Z0-9_./-]+$/.test(relative)&&!relative.split('/').some(p=>!p||p==='.'||p==='..'),'VERIFIER_CONTRACT_GRAPH_INVALID');files['contracts/'+relative]=read(p)
+ }
+ if(needsCic){
+  const lock=JSON.parse(read('apps/sg-runtime/package-lock.json')),pin=lock.packages?.['node_modules/@profitia/cic-core']
+  require(pin?.version==='1.8.0'&&pin.integrity===cicIntegrity,'VERIFIER_CIC_ARTIFACT_REQUIRED')
+  Object.assign(files,cicFiles(cicArchive))
+ }
+ require(Object.keys(files).length<=400&&Object.values(files).reduce((n,s)=>n+Buffer.byteLength(s),0)<=6291456,'VERIFIER_BUNDLE_LIMIT')
+ const body=Object.freeze({files:Object.freeze(files),primary,baseSha:m.baseSha,expiresAt:m.mandate.expiresAt,gateSetSha256:m.gateSetSha256,
+  sourceSha256:Object.freeze({base:source.beforeSha256,candidate:source.afterSha256}),artifactSha256:artifact.artifactSha256,
+  bundleSha256:documentDigest(Object.entries(files).map(([path,content])=>({path,sha256:hash(content)})))})
+ verificationBundles.add(body);return body
+}
+/** Installed verifier composition; the repair agent supplies neither runCase
+ * nor an executable test. Expected values remain in verifyCandidate's parent. */
+export async function createQualityIsolatedCaseRunner({bundle,qualification,qualificationKeys,observedGateSetSha256,signal}){
+ const b=assertQualityVerificationBundle(bundle)
+ require(observedGateSetSha256===b.gateSetSha256,'GATE_POLICY_CHANGED')
+ const {runIsolatedVerificationCase}=await import('./executor.mjs')
+ return Object.freeze({async runCase(input){
+  exact(input,['version','sourceSha256','repairClass','args','repeat'])
+  require(['base','candidate'].includes(input.version)&&input.sourceSha256===b.sourceSha256[input.version]&&['C1','C2','C3'].includes(input.repairClass)
+   &&Array.isArray(input.args)&&input.args.length<=4&&Number.isInteger(input.repeat)&&input.repeat>=0&&input.repeat<=2,'VERIFIER_CASE_BINDING_INVALID')
+  documentDigest(input.args);require(Buffer.byteLength(JSON.stringify(input.args))<=16384,'VERIFIER_CASE_BINDING_INVALID')
+  return runIsolatedVerificationCase({bundle:b,version:input.version,repairClass:input.repairClass,args:structuredClone(input.args),qualification,qualificationKeys,observedGateSetSha256,signal})
+ }})
 }
