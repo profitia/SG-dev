@@ -130,11 +130,11 @@ export function reviewedKnowledgeConsumerPaths(repositoryRoot,{baseSha,candidate
  assert.equal(root,path.resolve(repositoryRoot),'Exact physical Knowledge checkout required');
  const current=p=>{
   const file=path.join(root,p),stat=fs.lstatSync(file);
-  assert(stat.isFile()&&!stat.isSymbolicLink()&&stat.size<=1024*1024,'Regular bounded Knowledge source required');
+  assert(stat.isFile()&&!stat.isSymbolicLink()&&stat.size<=2*1024*1024,'Regular bounded Knowledge source required');
   assert.equal(fs.realpathSync(file),file,'No symbolic Knowledge source parents');
   return fs.readFileSync(file);
  };
- const historical=(sha,p)=>execFileSync('git',['show',sha+':'+p],{cwd:root,stdio:['ignore','pipe','pipe']});
+ const historical=(sha,p)=>execFileSync('git',['show',sha+':'+p],{cwd:root,stdio:['ignore','pipe','pipe'],maxBuffer:2*1024*1024});
  const view=knowledgeSourcePredecessor(current,historical);if(!view)return null;
  assert(/^[a-f0-9]{40}$/.test(baseSha??'')&&/^[a-f0-9]{40}$/.test(candidateSha??''),'Exact Knowledge CI revisions required');
  const git=args=>execFileSync('git',args,{cwd:root,encoding:'utf8',stdio:['ignore','pipe','pipe']}).trim();
