@@ -113,9 +113,10 @@ export function srmAssistantM2Predecessor(current,historical){
  const receipt='apps/srm/operation-integration.json',prior=Buffer.from(historical(a.previousSourceSha,receipt))
  assert.deepEqual(Buffer.from(current(receipt)),prior,'all historical SRM/M1/Oil acceptance bytes remain immutable')
  const mapped=new Set(SRM_ASSISTANT_M2_PATHS),cache=new Map([[receipt,prior]])
+ const admittedSources=srmAdmittedSourcePredecessors(current,historical)
  return {manifest:a,previousBytes:p=>{
   if(p===file)throw Object.assign(Error('M2 build manifest is absent from its predecessor'),{code:'ENOENT'})
-  if(!mapped.has(p))return current(p)
+  if(!mapped.has(p))return admittedSources.has(p)?Buffer.from(admittedSources.get(p)):current(p)
   if(!cache.has(p))cache.set(p,Buffer.from(historical(a.previousSourceSha,p)))
   return Buffer.from(cache.get(p))
  }}
