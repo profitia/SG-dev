@@ -1,0 +1,316 @@
+{
+  "status": "OWNER_REVIEW_ONLY_NOT_SOURCE_ADMISSION_OR_RUNTIME_ACCEPTANCE",
+  "sourceFreeze": "65b0e573f270ded93bfda088a88e736abc45f56a",
+  "reviewedPolicyTransport": "627f4bfa43b073c3228bbf8293f7fe4b82f88af2",
+  "originalPolicyProposal": "e105a31c8f9047f51cc8fd9b41b74afcbd565747",
+  "ownedPolicyPostimagesByteIdenticalToPrivateTests": true,
+  "fullPrivateGovernance": {
+    "policy-first": {
+      "status": "INACTIVE_PRIVATE_POLICY_REGRESSION_NOT_CONTROLLED_CI",
+      "context": "policy-first",
+      "head": "2faf889c6cde2bd0b3ba953e863acfc2b6889350",
+      "sourceSha": "65b0e573f270ded93bfda088a88e736abc45f56a",
+      "baseSha": "2faf889c6cde2bd0b3ba953e863acfc2b6889350",
+      "files": {
+        "scripts/governance/controlled-package-ci.mjs": "95845d9169f580f7a4316b33fb445a8d3d4a51426f6883bceb4a05ab3dcb1b36",
+        "scripts/governance/controlled-package-ci-path-coverage.test.mjs": "4404819247280bf631dd13f7782dbdb617353e1e214902952984fc3be1b5c9f3"
+      },
+      "exitCode": 0,
+      "seconds": 576.77,
+      "testFiles": 17,
+      "summary": [
+        "# tests 686",
+        "# pass 686",
+        "# fail 0",
+        "# skipped 0"
+      ],
+      "failures": [],
+      "headUnchanged": true,
+      "policyUnchanged": true,
+      "sourceTrackedClean": true,
+      "runtimeOperations": 0,
+      "completedAt": "2026-11-18T15:11:46.136047+00:00"
+    },
+    "source-policy": {
+      "status": "INACTIVE_PRIVATE_POLICY_REGRESSION_NOT_CONTROLLED_CI",
+      "context": "source-policy",
+      "head": "65b0e573f270ded93bfda088a88e736abc45f56a",
+      "sourceSha": "65b0e573f270ded93bfda088a88e736abc45f56a",
+      "baseSha": "2faf889c6cde2bd0b3ba953e863acfc2b6889350",
+      "files": {
+        "scripts/governance/controlled-package-ci.mjs": "95845d9169f580f7a4316b33fb445a8d3d4a51426f6883bceb4a05ab3dcb1b36",
+        "scripts/governance/controlled-package-ci-path-coverage.test.mjs": "4404819247280bf631dd13f7782dbdb617353e1e214902952984fc3be1b5c9f3"
+      },
+      "exitCode": 0,
+      "seconds": 631.05,
+      "testFiles": 17,
+      "summary": [
+        "# tests 687",
+        "# pass 687",
+        "# fail 0",
+        "# skipped 0"
+      ],
+      "failures": [],
+      "headUnchanged": true,
+      "policyUnchanged": true,
+      "sourceTrackedClean": true,
+      "runtimeOperations": 0,
+      "completedAt": "2026-11-18T15:12:40.418546+00:00"
+    }
+  },
+  "nativeSourceCi": {
+    "sourceFreeze": "65b0e573f270ded93bfda088a88e736abc45f56a",
+    "sourceWorkflows": [
+      {
+        "id": 44329046214,
+        "name": "KRS Registry source",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "id": 44329045794,
+        "name": "Assistant Context Gateway source",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "id": 44329044428,
+        "name": "Maps connector",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "id": 44329045274,
+        "name": "Newsfeed backend",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "id": 44329044195,
+        "name": "Insights report backend",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "id": 44329044094,
+        "name": "Governance preflight",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "id": 44329045387,
+        "name": "Economic Calendar backend",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "id": 44329043799,
+        "name": "Package Limits Development source",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "id": 44329044286,
+        "name": "Platform Knowledge engine",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "id": 44329044788,
+        "name": "Platform Source Hub backend",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "id": 44329044120,
+        "name": "Identity Runtime B2 source",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "id": 44329044347,
+        "name": "SRM CI",
+        "status": "completed",
+        "conclusion": "success"
+      },
+      {
+        "id": 44329044075,
+        "name": "Platform contract integration",
+        "status": "completed",
+        "conclusion": "failure"
+      }
+    ],
+    "srm": {
+      "runId": 44329044347,
+      "jobId": 134888116236,
+      "tests": [
+        983,
+        3,
+        7,
+        311,
+        17,
+        165,
+        1,
+        1
+      ],
+      "pass": 1488,
+      "fail": 0,
+      "skip": 0,
+      "typecheckAndBuild": "PASS"
+    },
+    "srmOperation": {
+      "runId": 44329044075,
+      "jobId": 134888114758,
+      "tests": [
+        672,
+        62,
+        28
+      ],
+      "pass": 762,
+      "fail": 0,
+      "skip": 0,
+      "actualIsolatedPostgres": "PASS"
+    },
+    "architecture": {
+      "runId": 44329044075,
+      "jobId": 134888115056,
+      "contractTests": 2131,
+      "pass": 2130,
+      "fail": 0,
+      "skip": 1,
+      "skipName": "native central SQL admits exact private account only and revokes durable worker delegation",
+      "routingGovernance": "FAIL_OLD_CONTROLLER_MISSING_NEW_PROVENANCE_EXPORT"
+    },
+    "sg2": {
+      "runId": 44329044075,
+      "jobId": 134888115268,
+      "status": "FAIL_NEW_EXACT_CONTROLLED_PROOF_PENDING"
+    }
+  },
+  "releaseSelectionGuardTests": {
+    "status": "PASS_SYNTHETIC_GUARD_CHECKS_NOT_RUNTIME_OR_APPROVAL",
+    "checks": 17,
+    "details": [
+      "exact effective policy/product tree accepted",
+      "old noncoherent source SHA rejected",
+      "substituted owner blob rejected apps/srm/src/server/root-atomic-claim-adoption.test.ts",
+      "substituted owner blob rejected scripts/governance/controlled-package-ci.test.mjs",
+      "changed protected policy rejected",
+      "well formed synthetic exact SHA gate accepted",
+      "gate mismatch rejected releaseSha",
+      "gate mismatch rejected sourceAccepted",
+      "gate mismatch rejected requiredReleaseCi",
+      "gate mismatch rejected resultingMainCi",
+      "gate mismatch rejected sourceCiValidatedSha",
+      "gate mismatch rejected sourceProofCandidateSha",
+      "gate mismatch rejected sourceProofControlSha",
+      "gate mismatch rejected sourceProofOriginalArtifactSha256",
+      "gate mismatch rejected resultingMainProofOriginalArtifactSha256",
+      "SQL render changes exactly15 release references",
+      "JS template render agrees with Python and rejects invalid SHA"
+    ],
+    "approvedSourceFreeze": "65b0e573f270ded93bfda088a88e736abc45f56a",
+    "testedEffectiveTree": "4646b041eabb90584da6dc86d4917b2edc74b349",
+    "ownerReceiptCreated": false,
+    "runtimeSelectionCreated": false,
+    "queries": 0,
+    "secretRead": false
+  },
+  "providerReadback": {
+    "status": "READ_ONLY_PRE_ACTIVATION_BASELINE",
+    "product": {
+      "database": "platform_knowledge",
+      "executor": "neondb_owner",
+      "product_schema": null,
+      "authority_bindings": null,
+      "vector_version": "0.8.6"
+    },
+    "identity": {
+      "database": "platform_private",
+      "executor": "neondb_owner",
+      "knowledge_receivers": null,
+      "knowledge_grants": null,
+      "owner_set_allowed": false,
+      "memberships": [
+        {
+          "grantor": "10",
+          "admin": true,
+          "inherit": false,
+          "set": false
+        },
+        {
+          "grantor": "16390",
+          "admin": false,
+          "inherit": false,
+          "set": false
+        }
+      ]
+    },
+    "services": {
+      "srv-dbq6n2m7bikc73dmvs8g": [
+        {
+          "id": "dep-dbq71vutlv9c73epgb2g",
+          "status": "live",
+          "sourceSha": "1fef8b3837c1bdd6ea9ff95dd4e976cc71cf9526",
+          "createdAt": "2026-11-11T13:43:27.699672Z"
+        },
+        {
+          "id": "dep-dbq7027f3r2c73e7bom0",
+          "status": "deactivated",
+          "sourceSha": "1abc68e248334fbdf03d1741561158fde020a27b",
+          "createdAt": "2026-11-11T13:39:20.92663Z"
+        },
+        {
+          "id": "dep-dbq6sv5g1s2s739lf3p0",
+          "status": "deactivated",
+          "sourceSha": "1abc68e248334fbdf03d1741561158fde020a27b",
+          "createdAt": "2026-11-11T13:32:45.043009Z"
+        }
+      ],
+      "srv-dbq6njec6qcc738fjf50": [
+        {
+          "id": "dep-dbq72f5g1s2s739m10dg",
+          "status": "live",
+          "sourceSha": "1fef8b3837c1bdd6ea9ff95dd4e976cc71cf9526",
+          "createdAt": "2026-11-11T13:44:28.623924Z"
+        },
+        {
+          "id": "dep-dbq711mtlv9c73epd31g",
+          "status": "deactivated",
+          "sourceSha": "1abc68e248334fbdf03d1741561158fde020a27b",
+          "createdAt": "2026-11-11T13:41:26.22601Z"
+        },
+        {
+          "id": "dep-dbq6t0v3nbic73f30ue0",
+          "status": "deactivated",
+          "sourceSha": "1abc68e248334fbdf03d1741561158fde020a27b",
+          "createdAt": "2026-11-11T13:32:52.035149Z"
+        }
+      ],
+      "srv-dbcse6jrjlhs73eib3sg": [
+        {
+          "id": "dep-dbq9bn0m7kps738pq75g",
+          "status": "live",
+          "sourceSha": "f78f5867064c96f4497e13bcd53c97af2da2e07a",
+          "createdAt": "2026-11-11T16:20:44.556552Z"
+        },
+        {
+          "id": "dep-dbq955om7kps738p7jq0",
+          "status": "build_failed",
+          "sourceSha": "0775f8a18d2fbeca462bb0a9d654914b15c53dad",
+          "createdAt": "2026-11-11T16:06:47.189043Z"
+        },
+        {
+          "id": "dep-dbpkaiek1f9s73fdeo30",
+          "status": "deactivated",
+          "sourceSha": "57b85043b0781faf9bebb0dee793c7003cf6bf09",
+          "createdAt": "2026-11-10T16:24:41.120553Z"
+        }
+      ]
+    },
+    "runtimeOperations": 0,
+    "verifiedAt": "2026-11-18T14:58:28.027681+00:00"
+  },
+  "runtimeOperations": 0,
+  "generatedAt": "2026-11-18T15:33:37.278452+00:00"
+}

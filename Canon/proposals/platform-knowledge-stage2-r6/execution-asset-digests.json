@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "status": "PROPOSED_EXACT_EXECUTION_TEMPLATES_NO_GO_YET",
+  "sourceFreeze": "65b0e573f270ded93bfda088a88e736abc45f56a",
+  "runtimeReleaseSelection": "EXACT_CI_VALIDATED_IDENTICAL_TRANSPORT_ONLY",
+  "files": {
+    "approved-policy-inputs.json": "af0d47b7f7a0bcb0bcec67551a2994283ddec1bdb8e66818092bb2124cbd4920",
+    "closed-source-review.json": "9a845a4a24970c4786fb3e8367f6f224283996f44d38681677375c9265fb4c9b",
+    "execute-reviewed-identity-r6.mjs": "da6b4648089620216594c50d2be935ff95f41a5c8480df7e984fc34488e1f03f",
+    "execute-reviewed-product-r6.mjs": "9315acded40714cececd477d10e1b7db155e9e4a520653baaf07477ce04c45fb",
+    "identity-owner-install-r6.sql": "956fd947842e64eef210d962ac14e3b7b1a912193c4a000e59ad43529dd96fee",
+    "identity-release-pin-r6-envelope.mjs": "056117e2af3079ed7eb25190d7617adcd8d47bdf7fd2a40bb1463bd3fa2f153b",
+    "live-stale-grant-probe-plan.json": "629e479156261228872928684b21b9f44c39b56f0177846da32331851d05dc45",
+    "native-identity-release-pin-r6.py": "5cdd3b68e97c310f6e038d2cb3cd27d7d19eb2a76a3c12a8c8626df56d04e024",
+    "native-render-existing-session-bootstrap.py": "463edcdb3008c0ea786eacb08209a10fec4f52423ba25300890b39619460b44b",
+    "native-render-operator-relay.py": "3c2876367196e1a4e957a9849f3d576f87fde7273877c8627ab2d8e913dde340",
+    "pk-r6-execution-guard.mjs": "2c6133d178f6a25c3f6e51c4d78b7ef161bfd1dfcd2f0abf5302389831af77e8",
+    "predeployment-test-summary.json": "84d1eebb4570437335dc7710e81659dfb8aaef43929215fd9e92c53f701e2fee",
+    "read-failed-parser-proof.mjs": "5e5dbaf95fa69ae70a6e6312246782340091448657fb78dd0cecfb1ba08c23fb",
+    "read-stale-grant-cost-proof.mjs": "4ab7b8219fa5b663271eb5d83e08abd2ab0d9c4b0100a325bd93a1210ae750c1",
+    "record-native-render-result.py": "22b061a623ff1dff4651aa3342cff194ac9e885828757faf4d5d2cb75ca2efe9",
+    "render-native-execution-plan.json": "1a79d1d1befa0b39a5ff6f2ad2d40eb58dffdf96d243967f85dfdf8ab95aa5f2",
+    "render-operation-envelope.mjs": "67722e6b19b972acb4dc2c14550defd190e2f934a912e3fd8715dfec27207247",
+    "render-r6-selected-release.py": "bca196229cd054474417cf2021aaee31a65301085833c127dc426ccd25382e0d",
+    "stale-query-grant-restore-r6.sql": "dc631b6f9ef3a748fcfd213ec27284f7f2233c47ee7fe6abdc543d2d9f04d5c6",
+    "stale-query-grant-revoke-r6.sql": "ab24024e1a6f4ce0c181ad59b24c3dffaeff1e8600eaa053bb72974a5792a2f1"
+  }
+}

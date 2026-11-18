@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "sourceFreeze": "65b0e573f270ded93bfda088a88e736abc45f56a",
+  "originalPolicyProposal": "e105a31c8f9047f51cc8fd9b41b74afcbd565747",
+  "ownedPolicyFiles": {
+    "scripts/governance/controlled-package-ci.mjs": "95845d9169f580f7a4316b33fb445a8d3d4a51426f6883bceb4a05ab3dcb1b36",
+    "scripts/governance/controlled-package-ci-path-coverage.test.mjs": "4404819247280bf631dd13f7782dbdb617353e1e214902952984fc3be1b5c9f3"
+  },
+  "runtimeReleaseSelection": "EXACT_CI_VALIDATED_IDENTICAL_TRANSPORT_ONLY",
+  "unchangedCohortFiles": 145,
+  "rawSourceInputs": 478,
+  "historicalReceipts": 33,
+  "reviewedPolicyTransport": "627f4bfa43b073c3228bbf8293f7fe4b82f88af2",
+  "reviewedAuthorityMain": "a03956b6752227a7a14e44887feabd50a0ad1054",
+  "acceptedForeignPathsPreserved": [
+    "Canon/registries/controlled-source-admissions-v1.json",
+    "scripts/governance/development-execution.mjs",
+    "scripts/governance/finder-unmetered-ci-admission.test.mjs"
+  ]
+}
