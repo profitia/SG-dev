@@ -41,7 +41,7 @@
       "guardChangeRestrictedToExactAdditiveBinding": true
     },
     "originalInfrastructurePackagePathCount": 22,
-    "effectiveAdditionalAdapterPath": "apps/sg-runtime/tests/finder-monitor-source-integrity.mjs"
+    "effectiveAdditionalAdapterPath": "apps/sg-runtime/tests/procurement-insights-editorial-package-integrity.mjs"
   },
   "render": {
     "decisionRequired": true,
@@ -906,7 +906,7 @@
     "approvedPathCount": 23
   },
   "proposedSourceCi24Amendment": {
-    "status": "OWNER_APPROVED_LIMITED_AMENDMENT_CURRENT_MAIN_CI_PENDING",
+    "status": "OWNER_APPROVED_HISTORICAL_FINDER_PROFILE",
     "previousApprovedPathCount": 23,
     "proposedPathCount": 24,
     "additionalPath": "apps/sg-runtime/tests/finder-monitor-source-integrity.mjs",
@@ -972,6 +972,58 @@
     },
     "relocationApprovalReviewedAdditionalPath": "apps/sg-runtime/tests/finder-monitor-source-integrity.mjs",
     "relocationApprovalDate": "2026-11-18",
-    "relocationApprovalResponse": "Zatwierdzam przeniesienie adaptera w CI24"
+    "relocationApprovalResponse": "Zatwierdzam przeniesienie adaptera w CI24",
+    "supersededTransportBy": "proposedCi24EditorialComposition"
+  },
+  "proposedCi24EditorialComposition": {
+    "status": "OWNER_APPROVED_EXACT_HEAD_CI_PENDING",
+    "previousApprovedPathCount": 24,
+    "proposedPathCount": 24,
+    "from": "apps/sg-runtime/tests/finder-monitor-source-integrity.mjs",
+    "to": "apps/sg-runtime/tests/procurement-insights-editorial-package-integrity.mjs",
+    "reason": "Accepted PI F moved package metadata authentication outside the earlier Finder entry; seven actual host source tests reject the combined lock before the previous CIC dispatch. Preserve the accepted PI/Finder graph by relocating the same one additional adapter to the existing outer package predecessor.",
+    "acceptedParallelSourceSha": "d5eb40a061dd24c5ea65f9f373682179458cb589",
+    "preservedPackageSourceSha": "6b22adbf7fb19d35a66c9ba637383a02224db136",
+    "reviewableSourceSha": "ce20210fd3ea4c78529504ecc526709697c183f3",
+    "reviewableSourceTree": "95b10789f6008ed7994325e5918ec9cf2143590b",
+    "finderAdapterRestoredExactlyToMain": true,
+    "editorialReceiptUnchanged": true,
+    "earlierReceiptsPreserved": 29,
+    "onlyAcceptedPins": {
+      "cic": "1.8.0",
+      "editorialPackage": "1.2.1"
+    },
+    "hostFocusedTests": {
+      "total": 38,
+      "pass": 38,
+      "fail": 0,
+      "skip": 0
+    },
+    "trustedControllerFocusedTests": {
+      "total": 18,
+      "pass": 18,
+      "fail": 0,
+      "skip": 0
+    },
+    "fullControllerTests": {
+      "total": 340,
+      "pass": 340,
+      "fail": 0,
+      "skip": 0
+    },
+    "allExistingChecksAndHistoricalProfilesRetained": true,
+    "exactHeadAndResultingMainCiRequired": true,
+    "newAccessRolesResourcesCosts": false,
+    "runtimeActivationPerformed": false,
+    "paidRepairsEnabled": false,
+    "promotionEnabled": false,
+    "pilotStarted": false,
+    "previousFinderApprovalNotReusedForNewPath": true,
+    "approvedPrecedingPolicyMain": "67b81304e08d400aef5872839e24de39b8af8093",
+    "approvalDate": "2026-11-18",
+    "approvalResponse": "Zatwierdzam tę zamianę adaptera CI24",
+    "approvalPr": 1179,
+    "hostConversationId": "01a1e7fb-2253-7f91-9335-270094d39784",
+    "approvedPathCount": 24
   }
 }

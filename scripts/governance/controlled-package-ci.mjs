@@ -652,6 +652,11 @@ export const EDITORIAL_PACKAGE_COMPOSITION_REVIEW=Object.freeze({
   }
 })
 export function editorialPackageCompositionTrustedPredecessor(current,historical){
+ const quality=qualityTrustedPredecessor(current,historical)
+ if(quality){
+  const accepted=editorialPackageCompositionTrustedPredecessor(quality.previousBytes,historical);qualityAssert(accepted,'accepted editorial package source retained')
+  return {...accepted,quality,manifest:{...accepted.manifest,sourceDigests:{...accepted.manifest.sourceDigests,...quality.manifest.sourceDigests,[QUALITY_RECEIPT]:qualitySourceHash(current(QUALITY_RECEIPT))}}}
+ }
  const cfg=EDITORIAL_PACKAGE_COMPOSITION_REVIEW;let record
  try{record=current(cfg.recordPath)}catch(error){
   const message=String(error?.stderr??error?.message??'')
@@ -960,7 +965,7 @@ export const ASSISTANT_QUALITY_SG2_STAGE1_REVIEW=Object.freeze({
   "apps/sg-runtime/tests/assistant-quality.test.ts",
   "apps/sg-runtime/tests/procurement-insights-completion-integrity.mjs",
   "apps/architecture-lab/private-recurring-source.mjs",
-  "apps/sg-runtime/tests/finder-monitor-source-integrity.mjs"
+  "apps/sg-runtime/tests/procurement-insights-editorial-package-integrity.mjs"
 ]),
 })
 export const CIC_QUALITY_STAGE1_PIN=Object.freeze({version:'1.8.0',
@@ -1039,21 +1044,28 @@ function assertQualityStage1Checkout(root,sha,admission){
    'export function procurementInsightsCompletionPredecessor(current,historical){\n const quality=assistantQualityPredecessor(current,historical);if(quality)return procurementInsightsCompletionPredecessor(quality.previousBytes,historical)')
  if(fs.readFileSync(path.join(root,pi),'utf8')!==expected)fail('QUALITY_STAGE1_PI_GUARD_REJECTED')
  const common='apps/architecture-lab/private-recurring-source.mjs',prior=execFileSync('git',['show',admission.baseSha+':'+common],{cwd:root,encoding:'utf8'}),entry="export function recurringSourcePredecessor(current,historical){\n"
- const live='apps/sg-runtime/tests/finder-monitor-source-integrity.mjs',hasLive=admission.files.some(f=>f.filename===live)
- if(hasLive&&!Object.hasOwn(readJson(path.join(root,'apps/sg-runtime/assistant-quality-host-integration.json')).sourceDigests,live))fail('QUALITY_STAGE1_FINDER_BINDING_REQUIRED')
+ const live='apps/sg-runtime/tests/finder-monitor-source-integrity.mjs',hasFinder=admission.files.some(f=>f.filename===live),hasLive=hasFinder||admission.files.some(f=>f.filename==='apps/sg-runtime/tests/procurement-insights-editorial-package-integrity.mjs')
+ if(hasFinder&&!Object.hasOwn(readJson(path.join(root,'apps/sg-runtime/assistant-quality-host-integration.json')).sourceDigests,live))fail('QUALITY_STAGE1_FINDER_BINDING_REQUIRED')
  const oldImport="import {assistantQualityPredecessor} from '../sg-runtime/tests/assistant-quality-integrity.mjs'\n",newImport="import {assistantQualityPredecessor,QUALITY_RECEIPT} from '../sg-runtime/tests/assistant-quality-integrity.mjs'\n"
  const oldPrefix=" const quality=assistantQualityPredecessor(current,historical);if(quality)return recurringSourcePredecessor(quality.previousBytes,historical)\n"
  const newPrefix=" const quality=assistantQualityPredecessor(current,historical);if(quality){const accepted=recurringSourcePredecessor(quality.previousBytes,historical);assert(accepted,'accepted recurring source retained');return {...accepted,quality,manifest:{...accepted.manifest,sourceDigests:{...accepted.manifest.sourceDigests,...quality.manifest.sourceDigests,[QUALITY_RECEIPT]:hash(current(QUALITY_RECEIPT))}}}}\n"
  const commonExpected=admission.branch!==r.branches[1]||!admission.files.some(f=>f.filename===common)||prior.startsWith(oldImport)||prior.startsWith(newImport)?prior
   :(hasLive?newImport:oldImport)+prior.replace(entry,entry+(hasLive?newPrefix:oldPrefix))
  if(fs.readFileSync(path.join(root,common),'utf8')!==commonExpected)fail('QUALITY_STAGE1_RECURRING_GUARD_REJECTED')
- if(hasLive){
+ if(hasFinder){
   if(admission.branch!==r.branches[1])fail('QUALITY_STAGE1_FINDER_BRANCH_REJECTED')
  const livePrior=execFileSync('git',['show',admission.baseSha+':'+live],{cwd:root,encoding:'utf8'}),liveEntry=" const a=JSON.parse(bytes)\n"
  const liveImport="import {assistantQualityPredecessor,QUALITY_RECEIPT} from './assistant-quality-integrity.mjs'\n",livePrefix=" const quality=assistantQualityPredecessor(current,historical)\n if(quality){\n  const accepted=finderMonitorPredecessor(quality.previousBytes,historical);assert(accepted,'accepted Finder monitor source retained')\n  return {...accepted,quality,manifest:{...accepted.manifest,sourceDigests:{...accepted.manifest.sourceDigests,...quality.manifest.sourceDigests,[QUALITY_RECEIPT]:hash(current(QUALITY_RECEIPT))}}}\n }\n"
  if(livePrior.split(liveEntry).length!==2)fail('QUALITY_STAGE1_FINDER_BOUNDARY_REJECTED')
  const liveExpected=liveImport+livePrior.replace(liveEntry,livePrefix+liveEntry)
  if(fs.readFileSync(path.join(root,live),'utf8')!==liveExpected)fail('QUALITY_STAGE1_FINDER_GUARD_REJECTED')
+ }
+ const packaged="apps/sg-runtime/tests/procurement-insights-editorial-package-integrity.mjs"
+ if(admission.files.some(f=>f.filename===packaged)){
+  if(admission.branch!==r.branches[1]||!Object.hasOwn(readJson(path.join(root,'apps/sg-runtime/assistant-quality-host-integration.json')).sourceDigests,packaged))fail('QUALITY_STAGE1_EDITORIAL_PACKAGE_BINDING_REQUIRED')
+  const prior=execFileSync('git',['show',admission.baseSha+':'+packaged],{cwd:root,encoding:'utf8'}),boundary=" const a=JSON.parse(bytes)\n"
+  const imported="import {assistantQualityPredecessor,QUALITY_RECEIPT} from './assistant-quality-integrity.mjs'\n",prefix=" const quality=assistantQualityPredecessor(current,historical)\n if(quality){\n  const accepted=procurementInsightsEditorialPackagePredecessor(quality.previousBytes,historical);assert(accepted,'accepted editorial package source retained')\n  return {...accepted,quality,manifest:{...accepted.manifest,sourceDigests:{...accepted.manifest.sourceDigests,...quality.manifest.sourceDigests,[QUALITY_RECEIPT]:hash(current(QUALITY_RECEIPT))}}}\n }\n"
+  if(prior.split(boundary).length!==2||fs.readFileSync(path.join(root,packaged),'utf8')!==imported+prior.replace(boundary,prefix+boundary))fail('QUALITY_STAGE1_EDITORIAL_PACKAGE_GUARD_REJECTED')
  }
 }
 function checkQualityStage1Candidate(root,state){
@@ -7666,9 +7678,7 @@ export function assertRegistrationSdkRecord(bytes,{digestForPath,receipts,histor
  }
  return record
 }
-// Finite source-only predecessor for owner-approved PR1067/1099 and CIC1.8.
-// Trusted controller code verifies all physical current bytes and immutable
-// receipts before any projection. Candidate JavaScript is never imported.
+// Finite source-only predecessor; physical bytes and accepted history verified before projection.
 // Source-test continuation only; this cannot grant a QA purpose or activation.
 export const QUALITY_HOST_BASE='d9413b1945d54cbbf730a3437f9b2d368095e98e'
 export const QUALITY_HOST_RECEIPT='apps/sg-runtime/assistant-quality-host-integration.json'
@@ -7688,7 +7698,7 @@ export const QUALITY_HOST_PATHS=Object.freeze([
  'apps/sg-runtime/tests/assistant-quality-host-integrity.test.mjs',
  'apps/sg-runtime/tests/procurement-insights-completion-integrity.mjs',
  'apps/architecture-lab/private-recurring-source.mjs',
- 'apps/sg-runtime/tests/finder-monitor-source-integrity.mjs'
+ 'apps/sg-runtime/tests/procurement-insights-editorial-package-integrity.mjs'
 ])
 export const QUALITY_HOST_PRESERVED=Object.freeze([
  'apps/sg-runtime/assistant-quality-integration.json',
@@ -7723,10 +7733,12 @@ export function qualityTrustedHostPredecessor(current,historical){
  for(const k of ['responseProtectionActivated','privateQaActivated','cloudInstallationPerformed','pilotStarted'])qualityAssert.equal(a[k],false,k)
  const common='apps/architecture-lab/private-recurring-source.mjs',hasCommon=Object.hasOwn(a.sourceDigests,common)
  const legacyTransport='apps/sg-runtime/tests/procurement-insights-editorial-integrity.mjs',finderTransport='apps/sg-runtime/tests/finder-monitor-source-integrity.mjs'
+ const packageTransport='apps/sg-runtime/tests/procurement-insights-editorial-package-integrity.mjs',hasPackageTransport=Object.hasOwn(a.sourceDigests,packageTransport)
  const hasLegacyTransport=Object.hasOwn(a.sourceDigests,legacyTransport),hasFinderTransport=Object.hasOwn(a.sourceDigests,finderTransport)
- qualityAssert(!(hasLegacyTransport&&hasFinderTransport),'one closed CI24 transport profile')
- const hasTransport=hasLegacyTransport||hasFinderTransport,transport=hasFinderTransport?finderTransport:legacyTransport
- const paths=QUALITY_HOST_PATHS.filter(p=>(p!==common||hasCommon)&&(p!==finderTransport||hasFinderTransport))
+ qualityAssert([hasLegacyTransport,hasFinderTransport,hasPackageTransport].filter(Boolean).length<=1,'one closed CI24 transport profile')
+ const hasTransport=hasLegacyTransport||hasFinderTransport||hasPackageTransport,transport=hasPackageTransport?packageTransport:hasFinderTransport?finderTransport:legacyTransport
+ const paths=QUALITY_HOST_PATHS.filter(p=>(p!==common||hasCommon)&&(p!==packageTransport||hasPackageTransport))
+ if(hasFinderTransport)paths.push(finderTransport)
  if(hasLegacyTransport)paths.push(legacyTransport)
  qualityAssert.deepEqual(Object.keys(a.sourceDigests).sort(),[...paths].sort())
  for(const p of paths){qualityAssert.match(a.sourceDigests[p],/^[a-f0-9]{64}$/);qualityAssert.equal(qualitySourceHash(current(p)),a.sourceDigests[p],'exact quality host source '+p)}
@@ -7739,7 +7751,11 @@ export function qualityTrustedHostPredecessor(current,historical){
  const lock=JSON.parse(current('apps/sg-runtime/package-lock.json')),previous=JSON.parse(historical(QUALITY_HOST_BASE,'apps/sg-runtime/package-lock.json'))
  previous.packages[''].dependencies['@profitia/cic-core']='1.8.0'
  Object.assign(previous.packages['node_modules/@profitia/cic-core'],CIC_QUALITY_STAGE1_PIN)
- qualityAssert.deepEqual(lock,previous,'no other registry, local package or dependency change')
+ if(hasPackageTransport){
+  qualityAssert.equal(previous.packages['node_modules/@profitia/insights-runtime'].version,'1.2.0')
+  previous.packages['node_modules/@profitia/insights-runtime'].version='1.2.1'
+ }
+ qualityAssert.deepEqual(lock,previous,'only exact accepted CIC and editorial package versions; no other dependency change')
  const beforeCommon=String(historical(QUALITY_HOST_BASE,common)),commonHead="export function recurringSourcePredecessor(current,historical){\n",commonImport=hasTransport?"import {assistantQualityPredecessor,QUALITY_RECEIPT} from '../sg-runtime/tests/assistant-quality-integrity.mjs'\n":"import {assistantQualityPredecessor} from '../sg-runtime/tests/assistant-quality-integrity.mjs'\n",commonPrefix=hasTransport?" const quality=assistantQualityPredecessor(current,historical);if(quality){const accepted=recurringSourcePredecessor(quality.previousBytes,historical);assert(accepted,'accepted recurring source retained');return {...accepted,quality,manifest:{...accepted.manifest,sourceDigests:{...accepted.manifest.sourceDigests,...quality.manifest.sourceDigests,[QUALITY_RECEIPT]:hash(current(QUALITY_RECEIPT))}}}}\n":" const quality=assistantQualityPredecessor(current,historical);if(quality)return recurringSourcePredecessor(quality.previousBytes,historical)\n"
  qualityAssert.equal(beforeCommon.split(commonHead).length,2,'one original recurring source entry')
  qualityAssert.equal(String(current(common)),hasCommon?commonImport+beforeCommon.replace(commonHead,commonHead+commonPrefix):beforeCommon,'only exact additive quality dispatch precedes original recurring checks')
@@ -7753,13 +7769,21 @@ export function qualityTrustedHostPredecessor(current,historical){
  qualityAssert.equal(beforeTransport.split(transportBoundary).length,2,'one original Finder monitor parse boundary')
  qualityAssert.equal(String(current(finderTransport)),transportImport+beforeTransport.replace(transportBoundary,transportPrefix+transportBoundary),'only exact additive quality dispatch follows original Finder absence and read-error handling')
  }
+ if(hasPackageTransport){
+  const beforeTransport=String(historical('6b22adbf7fb19d35a66c9ba637383a02224db136',packageTransport)),transportBoundary=" const a=JSON.parse(bytes)\n",transportImport="import {assistantQualityPredecessor,QUALITY_RECEIPT} from './assistant-quality-integrity.mjs'\n",transportPrefix=" const quality=assistantQualityPredecessor(current,historical)\n if(quality){\n  const accepted=procurementInsightsEditorialPackagePredecessor(quality.previousBytes,historical);assert(accepted,'accepted editorial package source retained')\n  return {...accepted,quality,manifest:{...accepted.manifest,sourceDigests:{...accepted.manifest.sourceDigests,...quality.manifest.sourceDigests,[QUALITY_RECEIPT]:hash(current(QUALITY_RECEIPT))}}}\n }\n"
+  qualityAssert.equal(beforeTransport.split(transportBoundary).length,2,'one original editorial package parse boundary')
+  qualityAssert.equal(String(current(packageTransport)),transportImport+beforeTransport.replace(transportBoundary,transportPrefix+transportBoundary),'only additive CIC dispatch; all accepted editorial checks retained')
+ }
  const mapped=new Set(paths),cache=new Map()
- return {manifest:a,previousBytes:p=>{
+ const previousBytes=p=>{
   if(p===QUALITY_HOST_RECEIPT||qualityHostAdded.has(p))throw Object.assign(Error('Quality host absent from predecessor'),{code:'ENOENT'})
+  if(hasPackageTransport&&(p===packageTransport||p==='apps/sg-runtime/package-lock.json'))return Buffer.from(historical('6b22adbf7fb19d35a66c9ba637383a02224db136',p))
   if(!mapped.has(p))return current(p)
   if(!cache.has(p))cache.set(p,Buffer.from(historical(p===finderTransport?'77369b63888c5fa66d8d8159d5e8f36a23d25c83':p===legacyTransport?'936eaa61087516028564c6aaad2c46912b4729f7':QUALITY_HOST_BASE,p)))
   return Buffer.from(cache.get(p))
- }}
+ }
+ return {manifest:a,previousBytes,editorialPackage:hasPackageTransport,
+  legacyPreviousBytes:hasPackageTransport?p=>p==='apps/sg-runtime/package-lock.json'?Buffer.from(historical(QUALITY_HOST_BASE,p)):previousBytes(p):previousBytes}
 }
 
 // Source continuation only: verifies current calendar bytes before projecting
@@ -7790,9 +7814,8 @@ export const QUALITY_RECEIPTS=Object.freeze([
 ])
 const qualityCalendarAdditions=new Set(['apps/sg-runtime/lib/assistant/calendar-period.ts','apps/sg-runtime/tests/assistant-quality.test.ts',
  'apps/sg-runtime/tests/assistant-quality-integrity.mjs','apps/sg-runtime/tests/assistant-quality-integrity.test.mjs'])
-
 export function qualityTrustedPredecessor(current,historical){
- const host=qualityTrustedHostPredecessor(current,historical);if(host){const accepted=qualityTrustedPredecessor(host.previousBytes,historical);qualityAssert(accepted,'accepted calendar source retained');return {...accepted,host,manifest:{...accepted.manifest,sourceDigests:{...accepted.manifest.sourceDigests,...host.manifest.sourceDigests,[QUALITY_HOST_RECEIPT]:qualitySourceHash(current(QUALITY_HOST_RECEIPT))}}}}
+ const host=qualityTrustedHostPredecessor(current,historical);if(host){const accepted=qualityTrustedPredecessor(host.legacyPreviousBytes??host.previousBytes,historical);qualityAssert(accepted,'accepted calendar source retained');return {...accepted,host,previousBytes:host.editorialPackage?p=>p==='apps/sg-runtime/package-lock.json'?host.previousBytes(p):accepted.previousBytes(p):accepted.previousBytes,manifest:{...accepted.manifest,sourceDigests:{...accepted.manifest.sourceDigests,...host.manifest.sourceDigests,[QUALITY_HOST_RECEIPT]:qualitySourceHash(current(QUALITY_HOST_RECEIPT))}}}}
  let bytes
  try{bytes=current(QUALITY_RECEIPT)}catch(e){
   const text=String(e?.stderr??e?.message??'')
