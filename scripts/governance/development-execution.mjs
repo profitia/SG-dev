@@ -28,9 +28,9 @@ const protectedPath = name => /(^|\/)AGENTS\.md$/.test(name)
 // exists. No historical receipt or general source JSON admission is granted.
 export const ASSISTANT_RESERVATION_SOURCE_ADMISSION = Object.freeze({
   admissionId:"ARCHITECTURE:ARCH-ACG-M1M2-COMPLETION-20261117",
-  sourceSha:"817d20e2e9fea8698ab5f9f5a8f5e553787d5c72",
-  baseSha:"3109989f6a2c6378b3eddfb84cf99d1a199d1f1e",
-  filesSha256:"5f4f8e39d3a64c79deb0778595bd45282e38a3f76c73bf0986a98194505d4967",
+  sourceSha:"03eb7c82853ecac617544d81abc61e1350af383b",
+  baseSha:"5f3f91beaa6c32d9528c3c6d3e233808540d1532",
+  filesSha256:"b5db217b00c4d18c5063c2d292470d74452c15aa241fc03bf5ebe3684a6054fb",
   newSourceRecord:"apps/architecture-lab/assistant-reservation-source.json",
   protectedTests:Object.freeze(["scripts/governance/controlled-package-ci.test.mjs","scripts/governance/platform-source-hub-foundation.test.mjs"])
 })
