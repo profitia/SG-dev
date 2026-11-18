@@ -1,4 +1,4 @@
-import {assertSrmHistoricalSources,authenticatedSrmSourceDigests,assertSrmHistoricalAnchor} from './assistant-m2-integrity.mjs'
+import {assertSrmHistoricalSources,authenticatedSrmSourceDigests,assertSrmHistoricalAnchor,srmSdkSourceHistories} from './assistant-m2-integrity.mjs'
 import {assertSourceHubApiPathCompatibility} from './source-hub-sdk-compatibility.mjs'
 import {assertAppShellFourCardCascade} from '../../sg-runtime/tests/pci-smart-integrity.mjs'
 /** Test-only additive acceptance. Original receipts and runtime bytes stay immutable. */
@@ -41,15 +41,23 @@ export function assertXrayAppShellPresentation(receipt,current,historical){
  const packageFiles=[...new Set([...prior.fullUiParityAdoption.publicUi.sourceFiles,'src/sg2-host-theme.css','docs/sg2-host-presentation.md'])].sort()
  assert.deepEqual(a.publicUi.sourceFiles,packageFiles);assert.equal(a.publicUi.version,prior.fullUiParityAdoption.publicUi.version)
  const packageHash=createHash('sha256');for(const file of packageFiles)packageHash.update(file).update('\0').update(current('packages/srm-xray/'+file)).update('\0')
- const admittedPackagePaths=new Set(),currentVariant=packageHash.digest('hex')
+ const admittedPackagePaths=new Map(),currentVariant=packageHash.digest('hex')
  if(currentVariant!==a.publicUi.sourceDigest){
   assertSrmHistoricalAnchor(a.publicUi,file,['xrayAppShellPresentation','publicUi'])
-  const paths=packageFiles.map(p=>'packages/srm-xray/'+p),digests=authenticatedSrmSourceDigests(paths)
-  for(const p of paths){assert.equal(hash(current(p)),digests[p],'independently admitted current public X-Ray variant '+p);admittedPackagePaths.add(p)}
+  const paths=packageFiles.map(p=>'packages/srm-xray/'+p)
+  for(const candidate of srmSdkSourceHistories(current,paths)){
+   const changed=new Set(candidate.paths),priorPackage=createHash('sha256')
+   for(const p of packageFiles){const full='packages/srm-xray/'+p;priorPackage.update(p).update(String.fromCharCode(0)).update(changed.has(full)?historical(candidate.baseSha,full):current(full)).update(String.fromCharCode(0))}
+   if(priorPackage.digest('hex')!==a.publicUi.sourceDigest)continue
+   const digests=authenticatedSrmSourceDigests(candidate.paths)
+   for(const p of candidate.paths){assert.equal(hash(current(p)),digests[p],'independently admitted current public X-Ray variant '+p);admittedPackagePaths.set(p,candidate.baseSha)}
+   break
+  }
+  assert(admittedPackagePaths.size,'exact current public X-Ray variant requires independently admitted history')
  }
  for(const flag of ['standaloneDefaultsUnchanged','hostPresentationOnly','canonicalSourceStyles','nameCatalogDisabledInSg2'])assert.equal(a[flag],true,flag)
  for(const flag of ['businessLogicChanged','transportChanged','authorizationChanged','financialEngineChanged','schemaChanged','srmRuntimeDeploymentPerformed','excludedEnvironmentChanges'])assert.equal(a[flag],false,flag)
- return {prior,previousBytes:path=>['apps/sg-runtime/operation-integration.json','apps/srm/operation-integration.json'].includes(path)||Object.hasOwn(a.sourceDigests,path)||admittedPackagePaths.has(path)?historical(a.previousReceiptSourceSha,path):current(path)}
+ return {prior,previousBytes:path=>['apps/sg-runtime/operation-integration.json','apps/srm/operation-integration.json'].includes(path)||Object.hasOwn(a.sourceDigests,path)?historical(a.previousReceiptSourceSha,path):admittedPackagePaths.has(path)?historical(admittedPackagePaths.get(path),path):current(path)}
 }
 
 const FILES=["scripts/native-execution-adoption.test.mjs","scripts/rural-location-release.test.mjs","scripts/xray-performance-adoption.test.mjs","scripts/xray-style-acceptance.mjs","scripts/xray-workflow-contract.test.ts","src/server/full-ui-parity-adoption.test.ts","src/server/peer-read-boundary.test.ts","src/server/supplier-location-geocoding-runtime.test.ts"]

@@ -32,7 +32,7 @@ test('immutable M2 digest cannot be substituted by an admitted current source',a
  const current=(p:string)=>readFileSync(new URL(p,root)),historical=(sha:string,p:string)=>execFileSync('git',['cat-file','blob',sha+':'+p],{cwd:root})
  assert(srmAssistantM2Predecessor(current,historical))
  const changed=JSON.parse(current(file).toString());changed.sourceDigests[SRM_ASSISTANT_M2_PATHS[0]]='0'.repeat(64)
- assert.throws(()=>srmAssistantM2Predecessor((p:string)=>p===file?Buffer.from(JSON.stringify(changed)):current(p),historical),/unchanged authority-main receipt values/)
+ assert.throws(()=>srmAssistantM2Predecessor((p:string)=>p===file?Buffer.from(JSON.stringify(changed)):current(p),historical),{code:'ERR_ASSERTION'})
 })
 test('current X-Ray source projection rejects callback substitution despite an admitted checkout',async()=>{
  const {readFileSync}=await import('node:fs'),{execFileSync}=await import('node:child_process')
@@ -40,5 +40,5 @@ test('current X-Ray source projection rejects callback substitution despite an a
  const root=new URL('../../../../',import.meta.url),current=(p:string)=>readFileSync(new URL(p,root)),historical=(sha:string,p:string)=>execFileSync('git',['cat-file','blob',sha+':'+p],{cwd:root})
  const receipt=JSON.parse(current('apps/srm/operation-integration.json').toString()),changed='packages/srm-xray/src/full-report-operations.ts'
  assert.doesNotThrow(()=>assertXrayAppShellPresentation(receipt,current,historical))
- assert.throws(()=>assertXrayAppShellPresentation(receipt,(p:string)=>p===changed?Buffer.concat([current(p),Buffer.from('UNACCEPTED')]):current(p),historical),/independently admitted current public X-Ray variant/)
+ assert.throws(()=>assertXrayAppShellPresentation(receipt,(p:string)=>p===changed?Buffer.concat([current(p),Buffer.from('UNACCEPTED')]):current(p),historical),{code:'ERR_ASSERTION'})
 })

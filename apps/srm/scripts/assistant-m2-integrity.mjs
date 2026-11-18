@@ -33,6 +33,20 @@ export function authenticatedSrmSourceDigests(paths){
  assert(result,'independent current SRM source admission required')
  return result
 }
+// Accepted admission metadata selects historical SDK bytes; it grants no access.
+// Current bytes are independently authenticated before the selected view is used.
+export function srmSdkSourceHistories(current,paths){
+ assert(paths.every(p=>typeof p==='string'&&p.startsWith('packages/srm-xray/')&&/^[A-Za-z0-9_.@/-]+$/.test(p)&&p.split('/').every(v=>v&&v!=='.'&&v!=='..')),'closed shared X-Ray source only')
+ const root=fileURLToPath(new URL('../../../',import.meta.url)),options={cwd:root,env:{PATH:process.env.PATH,GIT_NO_LAZY_FETCH:'1'},encoding:'utf8',timeout:30000,maxBuffer:1024*1024}
+ const store=JSON.parse(execFileSync('git',['cat-file','blob','origin/main:Canon/registries/controlled-source-admissions-v1.json'],options))
+ assert(store.schemaVersion==='1.0'&&Array.isArray(store.records),'trusted source history metadata required')
+ const blobs=new Map(paths.map(p=>{
+  const bytes=Buffer.from(current(p)),blob=createHash('sha1').update('blob '+bytes.length+String.fromCharCode(0)).update(bytes).digest('hex')
+  const physical=execFileSync('git',['hash-object','--no-filters','--',p],options).trim()
+  return[p,blob===physical?blob:null]
+ }))
+ return store.records.filter(r=>/^[a-f0-9]{40}$/.test(r.baseSha??'')&&Array.isArray(r.files)).map(r=>({baseSha:r.baseSha,paths:r.files.filter(f=>paths.includes(f.path)&&blobs.get(f.path)===f.blob).map(f=>f.path)})).filter(r=>r.paths.length)
+}
 export function assertSrmHistoricalAnchor(value,file,fields){
  assert(['apps/srm/assistant-context-integration.json','apps/srm/operation-integration.json','apps/sg-runtime/operation-integration.json'].includes(file),'existing immutable consumer receipt only')
  const root=fileURLToPath(new URL('../../../',import.meta.url))
