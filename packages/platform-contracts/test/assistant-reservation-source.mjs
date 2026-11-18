@@ -1,4 +1,6 @@
 import {sdkSourceContext} from './sdk-source-context.mjs'
+import {benchmarkUnmeteredPredecessor} from './benchmark-unmetered-source.mjs'
+export const BENCHMARK_UNMETERED_SOURCE_SHA='42c5683bb5f39643dbc27c2016f6ca92106c163b2c2bcfdd1384d50d68ea09c6'
 // Test/build-only closed source continuation. Never imported by a runtime.
 import assert from 'node:assert/strict'
 import {createHash} from 'node:crypto'
@@ -115,6 +117,8 @@ export function reservationArchitectureSource(before,pin){
 export function assistantReservationPredecessor(current,historical,expectedDigest){
  const currentSdk=sdkSourceContext(current,historical)
  if(currentSdk)return assistantReservationPredecessor(currentSdk.baseline('authority'),historical,expectedDigest)
+ const benchmark=benchmarkUnmeteredPredecessor(current,historical,BENCHMARK_UNMETERED_SOURCE_SHA)
+ if(benchmark){const accepted=assistantReservationPredecessor(benchmark.previousBytes,historical,expectedDigest);return accepted?{...accepted,benchmark,acceptedManifest:accepted.manifest,manifest:{...accepted.manifest,...benchmark.manifest,sourceDigests:{...accepted.manifest.sourceDigests,...benchmark.manifest.sourceDigests,...benchmark.consumerSourceDigests,['packages/platform-contracts/test/assistant-reservation-source.mjs']:hash(current('packages/platform-contracts/test/assistant-reservation-source.mjs'))}}}:null}
  let bytes;try{bytes=current(RESERVATION_RECORD)}catch(e){if(absent(e))return null;throw e}
  assert.match(expectedDigest??'',/^[a-f0-9]{64}$/);assert.equal(hash(bytes),expectedDigest,'exact reviewed reservation source record')
  const a=JSON.parse(bytes)
@@ -193,8 +197,8 @@ assert.deepEqual(baseRead(RESERVATION_RECORD), read(RESERVATION_RECORD), 'same i
       // Preserve the real observed authority ref in each offline test clone.
       execFileSync('git', ['update-ref', 'refs/remotes/origin/main', authoritySha], {cwd: target, stdio: ['ignore', 'pipe', 'pipe']})
     }
-    const paths = [RESERVATION_RECORD, ...RESERVATION_PATHS, RESERVATION_DERIVED]
-    assert.equal(new Set(paths).size, 46, 'closed reservation fixture inventory')
+    const paths = [...new Set([RESERVATION_RECORD, ...RESERVATION_PATHS, RESERVATION_DERIVED, ...(fixtureView.benchmark ? ['apps/architecture-lab/benchmark-unmetered-source.json', ...Object.keys(fixtureView.benchmark.manifest.sourceDigests), ...Object.keys(fixtureView.benchmark.consumerSourceDigests)] : [])])]
+    assert.equal(new Set([RESERVATION_RECORD, ...RESERVATION_PATHS, RESERVATION_DERIVED]).size, 46, 'closed reservation fixture inventory')
     for (const relative of paths) {
       assert(!path.isAbsolute(relative) && !relative.split('/').includes('..'))
       const file = path.join(root, relative)

@@ -39,7 +39,7 @@ export function recurringSourcePredecessor(current,historical){
  const knowledge=knowledgeSourcePredecessor(current,historical)
  if(knowledge){const accepted=recurringSourcePredecessor(knowledge.previousBytes,historical);assert(accepted,'accepted source chain retained');return {...accepted,manifest:knowledge.manifest,predecessorManifest:accepted.manifest,knowledge}}
  const reservation=assistantReservationPredecessor(current,historical,ASSISTANT_RESERVATION_SOURCE_SHA)
- if(reservation){const accepted=recurringSourcePredecessor(reservation.previousBytes,historical);assert(accepted,'all accepted predecessors retained');return {...accepted,reservation}}
+ if(reservation){const accepted=recurringSourcePredecessor(reservation.previousBytes,historical);assert(accepted,'all accepted predecessors retained');const b=reservation.benchmark;if(!b)return {...accepted,reservation};return {...accepted,reservation,acceptedManifest:accepted.acceptedManifest??accepted.manifest,manifest:{...accepted.manifest,currentContinuation:b.manifest,sourceDigests:{...accepted.manifest.sourceDigests,...reservation.manifest.sourceDigests},sdkDigests:{...accepted.manifest.sdkDigests,...b.manifest.sdkDigests},optionalPackageDigests:{...accepted.manifest.optionalPackageDigests,...b.manifest.optionalPackageDigests},addedPaths:[...new Set([...accepted.manifest.addedPaths,...b.addedPaths])]}}}
  let bytes;try{bytes=current(RECURRING_SOURCE_RECORD)}catch(error){if(absent(error))return null;throw error}
  assert.equal(hash(bytes),RECORD_SHA256,'exact reviewed recurring source record')
  // Current registration is authenticated before either historical graph is exposed.
@@ -90,5 +90,9 @@ export function recurringSourceFilesystem(root){
  const cwd=root instanceof URL?fileURLToPath(root):root
  const current=p=>fs.readFileSync(path.join(cwd,p))
  const historical=(sha,p)=>execFileSync('git',['show',sha+':'+p],{cwd})
- return recurringSourcePredecessor(current,historical)??{manifest:null,previousBytes:current}
+ const view=recurringSourcePredecessor(current,historical)??{manifest:null,previousBytes:current}
+ const benchmark=view.reservation?.benchmark
+ if(!benchmark)return view
+ // Derived current SDK view; the original accepted manifest stays explicit.
+ return {...view,acceptedManifest:view.acceptedManifest??view.manifest,manifest:{...view.manifest,scope:'CURRENT_ACCEPTED_SDK_SOURCE_VIEW',currentContinuation:benchmark.manifest,sourceDigests:{...view.manifest.sourceDigests,...view.reservation.manifest.sourceDigests},sdkDigests:{...view.manifest.sdkDigests,...benchmark.manifest.sdkDigests},optionalPackageDigests:{...view.manifest.optionalPackageDigests,...benchmark.manifest.optionalPackageDigests}}}
 }

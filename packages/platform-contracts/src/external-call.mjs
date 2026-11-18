@@ -84,6 +84,7 @@ export function createExternalCallHost(options){
       ||operationPayloadDigest(d.pathRules)!==operationPayloadDigest(b.pathRules)||d.unit!==EXTERNAL_CALL_CONTRACT.unit
       ||!uuid.test(d.policyId??'')||!uuid.test(d.serviceId??'')||!/^database-service:[a-f0-9-]{36}:[1-9][0-9]*$/i.test(d.serviceBindingVersion??'')
       ||!/^source-v1:[1-9][0-9]*$/.test(d.sourcePolicyVersion??'')||!quotaValid
+      ||source.requiredQuotaMode!==undefined&&d.quotaMode!==source.requiredQuotaMode
       ||!Number.isSafeInteger(d.admittedCount)||d.admittedCount<0||!/^[1-9][0-9]*$/.test(d.policyVersion??'')
       ||!Number.isSafeInteger(d.maximumRequestBytes)||d.maximumRequestBytes<1||d.maximumRequestBytes>1048576
       ||!Number.isSafeInteger(d.maximumResponseBytes)||d.maximumResponseBytes<1||d.maximumResponseBytes>8388608

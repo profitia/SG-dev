@@ -53,6 +53,7 @@ test('Finder current-source aggregate authenticates the complete ACG composition
  const view=finderMonitorPredecessor(current,historical);assert(view?.reservation)
  const all=[...RESERVATION_PATHS,RESERVATION_RECORD,RESERVATION_DERIVED];assert.equal(new Set(all).size,46)
  for(const p of all)assert.equal((view.currentSourceDigests??view.manifest.sourceDigests)[p],createHash('sha256').update(current(p)).digest('hex'),p)
+ if(view.reservation.benchmark)for(const [p,digest]of Object.entries(view.reservation.benchmark.manifest.sourceDigests))assert.equal(digest,createHash('sha256').update(current(p)).digest('hex'),p)
  assert.throws(()=>view.previousBytes("apps/sg-runtime/tests/finder-monitor-source-integrity.mjs"),{code:'ENOENT'})
  for(const p of ["apps/sg-runtime/tests/finder-monitor-source-integrity.mjs","apps/sg-runtime/tests/procurement-insights-editorial-integrity.mjs",RESERVATION_RECORD,RESERVATION_DERIVED])assert.throws(()=>finderMonitorPredecessor(f=>f===p?Buffer.concat([current(f),Buffer.from('tamper')]):current(f),historical),p)
 })

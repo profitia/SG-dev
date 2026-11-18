@@ -156,7 +156,7 @@ export declare function operationSourceDigest(): Promise<string>
 export declare function normalizeModuleEvidence(value: unknown, options?: { now?: () => number; allowExpired?: boolean }): Readonly<ModuleEvidence>
 export declare function createOperationExecutor<Transaction>(options: {
   application: Application; now?: () => number; knowledgeSchemaDigest?:string; organisationLifecycleSchemaDigest?:string
-  organisationBootstrapSchemaDigest?:string; recurringSchemaDigest?:string; locationAdmissionSchemaDigest?:string; reportAdmissionSchemaDigest?:string; requestQuotaSchemaDigest?:string; assistantSchemaDigest?:string
+  organisationBootstrapSchemaDigest?:string; recurringSchemaDigest?:string; locationAdmissionSchemaDigest?:string; reportAdmissionSchemaDigest?:string; requestQuotaSchemaDigest?:string; requestBenchmarkQuotaSchemaDigest?:string; assistantSchemaDigest?:string
   authenticate(request: unknown): Promise<Actor | null>
   /** Locks authoritative state and commits effects + OUTCOME atomically; rollback on throw. */
   withTransaction<T>(binding: { actor: Readonly<Actor>; request: Readonly<BoundRequest> }, action: (session: OperationSession<Transaction>) => Promise<T>): Promise<T>
@@ -177,3 +177,4 @@ export declare const ORGANISATION_BOOTSTRAP_OPERATIONS:readonly ['organisation.c
 export declare const ORGANISATION_LIFECYCLE_ROOT_CONTRACT:Readonly<{id:'profitia.operation-context';version:'1.0.0';implementation:'1.0.0-candidate.24'}>
 export declare const ORGANISATION_LIFECYCLE_OPERATIONS:readonly OrganisationLifecycleOperation[]
 export interface OrganisationLifecyclePolicy{actorId:string;applicationId:string;environment:Environment;expiresAt:string;operation:OrganisationLifecycleOperation;organisationId:string|null;payloadDigest:string;policyId:string;policyVersion:string;resourceId:string;schemaDigest:string;sourceRef:string;transactionId:string}
+export declare const BENCHMARK_QUOTA_ROOT_CONTRACT:Readonly<{id:'profitia.operation-context';version:'1.0.0';implementation:'1.0.0-candidate.25'}>
