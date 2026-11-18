@@ -1,10 +1,13 @@
+import {assistantReservationPredecessor} from '../../../packages/platform-contracts/test/assistant-reservation-source.mjs'
+import {ASSISTANT_RESERVATION_SOURCE_SHA} from '../../architecture-lab/private-recurring-source.mjs'
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {execFileSync} from 'node:child_process';
 import {procurementInsightsLiveAcceptancePredecessor,PI_LIVE_ACCEPTANCE_RECORD,PI_LIVE_ACCEPTANCE_PATHS,PI_LIVE_ACCEPTANCE_BASE} from './procurement-insights-live-acceptance-source.mjs';
-const root=new URL('../../../',import.meta.url),current=p=>readFileSync(new URL(p,root)),cache=new Map();
+const root=new URL('../../../',import.meta.url),physical=p=>readFileSync(new URL(p,root)),cache=new Map();
 const historical=(sha,p)=>{const key=sha+':'+p;if(!cache.has(key))cache.set(key,execFileSync('git',['show',key],{cwd:root,stdio:['ignore','pipe','pipe']}));return cache.get(key)};
+const reservation=assistantReservationPredecessor(physical,historical,ASSISTANT_RESERVATION_SOURCE_SHA),current=reservation?.previousBytes??physical;
 test('all current correction bytes precede exact immutable PI, Oil, Calendar and SDK history',()=>{
  const view=procurementInsightsLiveAcceptancePredecessor(current,historical);assert(view);
  for(const p of [...PI_LIVE_ACCEPTANCE_PATHS,...Object.keys(view.manifest.preservedReceipts)])assert.throws(()=>procurementInsightsLiveAcceptancePredecessor(f=>f===p?Buffer.concat([current(f),Buffer.from('UNACCEPTED')]):current(f),historical),p);
