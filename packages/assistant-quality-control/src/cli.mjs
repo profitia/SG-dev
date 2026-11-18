@@ -1,4 +1,5 @@
 import {SOURCE_PATHS,documentDigest} from './manifest.mjs'
+import {createHash as controlledReadHash} from 'node:crypto'
 
 /** Prepare reviewable unsigned metadata. These builders create no signature,
  * role, permission, resource, wallet, installation or runtime activation. The
@@ -89,6 +90,87 @@ export function createQualityQaRolePreflight({purposeQuery,evidenceQuery,now=Dat
    rawQaReadPerformed:false,permissionMutationPerformed:false})
  }})
 }
+
+const admittedControlledQaReads=new WeakSet()
+const controlledQaNames=Object.freeze(['AQC_QA_CONTROLLED_READ_VERSION','AQC_QA_CONTROLLED_ACCOUNT_ID','AQC_QA_CONTROLLED_CASES',
+ 'AQC_QA_CONTROLLED_NOT_BEFORE','AQC_QA_CONTROLLED_UNTIL','AQC_QA_HOST_SOURCE_SHA','AQC_QA_STORAGE_GENERATION',
+ 'AQC_QA_PURPOSE_COMMAND_KEY','AQC_QA_EVIDENCE_COMMAND_KEY','AQC_QA_STORAGE_KEY'])
+const canonicalDate=v=>typeof v==='string'&&Number.isFinite(Date.parse(v))&&new Date(v).toISOString()===v
+/** This optional, explicitly configured startup probe reads exactly two newly
+ * enrolled deterministic acceptance cases. Native SERVICE purpose/source/epoch
+ * authority remains mandatory in the host codec. No grant, capture, model,
+ * quality schedule, repair or publication is provided by this configuration. */
+export function readQualityControlledQaReadConfiguration(env,now=Date.now()){
+ if(controlledQaNames.every(k=>env[k]===undefined))return null
+ const invalid=()=>unavailable('CONTROLLED_QA_READ_CONFIGURATION_INVALID')
+ if(!Number.isFinite(now)||env.TARGET_ENVIRONMENT!=='development'||env.AQC_MODE!=='CONTROLLER_STANDBY'
+  ||env.AQC_PAID_REPAIRS_ENABLED!=='false'||env.AQC_PROMOTION_ENABLED!=='false'
+  ||env.AQC_QA_CONTROLLED_READ_VERSION!=='1.0.0'||controlledQaNames.some(k=>typeof env[k]!=='string'||!env[k])
+  ||!uuidValue(env.AQC_SERVICE_UUID)||!uuidValue(env.AQC_QA_CONTROLLED_ACCOUNT_ID)
+  ||env.AQC_QA_CONTROLLED_ACCOUNT_ID===env.AQC_SERVICE_UUID||!uuidValue(env.AQC_QA_STORAGE_GENERATION)
+  ||!/^[a-f0-9]{40}$/.test(env.AQC_QA_HOST_SOURCE_SHA)||Buffer.byteLength(env.AQC_QA_CONTROLLED_CASES)>2048
+  ||!canonicalDate(env.AQC_QA_CONTROLLED_NOT_BEFORE)||!canonicalDate(env.AQC_QA_CONTROLLED_UNTIL))return invalid()
+ const before=Date.parse(env.AQC_QA_CONTROLLED_NOT_BEFORE),until=Date.parse(env.AQC_QA_CONTROLLED_UNTIL)
+ if(before>now||until<=before||until>before+168*3600000||until>Date.parse('2026-11-27T23:59:59.000Z'))return invalid()
+ const keys=[env.AQC_QA_PURPOSE_COMMAND_KEY,env.AQC_QA_EVIDENCE_COMMAND_KEY,env.AQC_QA_STORAGE_KEY]
+ if(!keys.every(hash64)||new Set(keys).size!==3||keys.some(k=>k===env.AQC_CONTROL_COMMAND_KEY||k===env.AQC_LIMITS_COMMAND_KEY))return invalid()
+ let cases;try{cases=JSON.parse(env.AQC_QA_CONTROLLED_CASES)}catch{return invalid()}
+ if(!Array.isArray(cases)||cases.length!==2||new Set(cases.map(c=>c?.evidenceId)).size!==2
+  ||new Set(cases.map(c=>c?.inputSha256)).size!==2||new Set(cases.map(c=>c?.locale)).size!==2
+  ||cases.some(c=>!c||Object.getPrototypeOf(c)!==Object.prototype
+   ||Object.keys(c).sort().join(',')!=='evidenceId,inputSha256,locale'||!uuidValue(c.evidenceId)||!hash64(c.inputSha256)
+   ||!['pl','en'].includes(c.locale)||[env.AQC_SERVICE_UUID,env.AQC_QA_CONTROLLED_ACCOUNT_ID].includes(c.evidenceId)))return invalid()
+ const connections=readQualityQaRolePreflightConfiguration({...env,AQC_QA_PURPOSE_COMMAND_KEY:undefined,
+  AQC_QA_EVIDENCE_COMMAND_KEY:undefined,AQC_QA_STORAGE_KEY:undefined})
+ if(!connections)return invalid()
+ const config=Object.freeze({accountId:env.AQC_QA_CONTROLLED_ACCOUNT_ID,hostSourceSha:env.AQC_QA_HOST_SOURCE_SHA,
+  storageGeneration:env.AQC_QA_STORAGE_GENERATION,notBefore:before,until,connections,
+  purposeKey:keys[0],evidenceKey:keys[1],storageKey:keys[2],
+  cases:Object.freeze(cases.map(c=>Object.freeze({evidenceId:c.evidenceId,inputSha256:c.inputSha256,locale:c.locale})))})
+ admittedControlledQaReads.add(config);return config
+}
+/** The installed host codec provides the ordinary reader with two fresh native
+ * purpose checks around GET/decryption. Only bounded operational metadata is
+ * returned here. Failed partial reads cannot be retried by this instance. */
+export function createQualityControlledQaReadProbe({config,evidence,now=Date.now}){
+ if(!admittedControlledQaReads.has(config)||typeof evidence?.read!=='function'||typeof now!=='function')
+  unavailable('CONTROLLED_QA_READ_CONFIGURATION_INVALID')
+ let state='PENDING',receipt
+ return Object.freeze({async check({signal}={}){
+  if(state==='COMPLETE')return receipt
+  if(state!=='PENDING')unavailable('CONTROLLED_QA_READ_UNAVAILABLE')
+  state='READING'
+  try{
+   const at=now();if(!Number.isFinite(at))unavailable('CONTROLLED_QA_READ_UNAVAILABLE')
+   const metadata={schemaVersion:'AQC_CONTROLLED_QA_READ_V1',hostSourceSha:config.hostSourceSha,
+    qaPayloadExported:false,paidOperationPerformed:false}
+   let verified=0
+   const stopped=()=>{receipt=Object.freeze({...metadata,status:'CONTROLLED_QA_READ_STOPPED',casesVerified:verified,qaRawReadPerformed:verified>0});state='COMPLETE';return receipt}
+   if(signal?.aborted)return stopped()
+   if(at>=config.until){receipt=Object.freeze({...metadata,status:'CONTROLLED_QA_READ_EXPIRED',casesVerified:0,qaRawReadPerformed:false});state='COMPLETE';return receipt}
+   for(const c of config.cases){
+    if(signal?.aborted)return stopped()
+    if(now()>=config.until)unavailable('CONTROLLED_QA_READ_UNAVAILABLE')
+    const v=await evidence.read(config.accountId,c.evidenceId),observed=now()
+    if(!Number.isFinite(observed)||observed>=config.until||v?.applicationId!=='spendguru'||v.environment!=='development'
+     ||v.accountId!==config.accountId||v.evidenceId!==c.evidenceId||v.interactionId!==c.evidenceId
+     ||!canonicalDate(v.occurredAt)||Date.parse(v.occurredAt)<config.notBefore||Date.parse(v.occurredAt)>observed
+     ||v.earliestInputAt!==v.occurredAt||v.versions?.applicationSha!==config.hostSourceSha||v.versions?.cicVersion!=='1.8.0'
+     ||v.versions?.model!=='NONE_DETERMINISTIC'||!Array.isArray(v.sourceScopes)||v.sourceScopes.length!==0
+     ||!Array.isArray(v.modelInput)||v.modelInput.length!==3||v.purpose?.id!=='ASSISTANT_QUALITY'
+     ||v.output?.status!=='COMPLETE'||v.output?.draft!==''||typeof v.output?.delivered!=='string'
+     ||!v.output.delivered.trim()||Buffer.byteLength(v.output.delivered)>64000)unavailable('CONTROLLED_QA_READ_UNAVAILABLE')
+    const input=JSON.stringify(v.modelInput)
+    if(Buffer.byteLength(input)>32768||controlledReadHash('sha256').update(input).digest('hex')!==c.inputSha256)
+     unavailable('CONTROLLED_QA_READ_UNAVAILABLE')
+    verified++
+   }
+   if(signal?.aborted)return stopped()
+   receipt=Object.freeze({...metadata,status:'CONTROLLED_QA_READ_VERIFIED',casesVerified:2,qaRawReadPerformed:true});state='COMPLETE';return receipt
+  }catch{state='FAILED';unavailable('CONTROLLED_QA_READ_UNAVAILABLE')}
+ }})
+}
+
 /** Public deployment-source capability only: never environment values, remote
  * URLs, credentials, a directory listing or private QA content. */
 export async function qualityWorkerSourceCapabilities(sourceSha){
@@ -168,7 +250,8 @@ export function createQualityReadiness({store,budget,sourceSha,serviceId,now=Dat
 }
 async function readinessMain(controllerStandby=false){
  const config=controllerStandby?readQualityControllerStandbyConfiguration(process.env):readQualityReadinessConfiguration(process.env)
- const qaConfig=readQualityQaRolePreflightConfiguration(process.env)
+ const controlledRead=readQualityControlledQaReadConfiguration(process.env)
+ const qaConfig=controlledRead?.connections??readQualityQaRolePreflightConfiguration(process.env)
  const [{default:pg},{createQualityStore},{createQualityBudget},{readFileSync},{createHash},{createQualityMonitoring}]=await Promise.all([
   import('pg'),import('./store.mjs'),import('./budget.mjs'),import('node:fs'),import('node:crypto'),import('./monitoring.mjs')])
  const digest=url=>createHash('sha256').update(readFileSync(url)).digest('hex')
@@ -179,6 +262,7 @@ async function readinessMain(controllerStandby=false){
  if(qaConfig)for(const database of [qaConfig.purpose,qaConfig.evidence])pools.push(new pg.Pool({...database,
   max:1,connectionTimeoutMillis:8000,idleTimeoutMillis:10000,statement_timeout:5000,query_timeout:8000,allowExitOnIdle:true}))
  const qaPreflight=qaConfig?createQualityQaRolePreflight({purposeQuery:q=>pools[2].query(q),evidenceQuery:q=>pools[3].query(q)}):null
+ let controlledProbe=null,controlledProbePending=false
  const stop=new AbortController(),abort=()=>stop.abort()
  process.once('SIGTERM',abort);process.once('SIGINT',abort)
  // Capture transport failures as metadata only; node-postgres must not emit an
@@ -195,12 +279,27 @@ async function readinessMain(controllerStandby=false){
  }
  const monitoring=createQualityMonitoring({env:process.env,warn:value=>console.warn(JSON.stringify(value)),onDelivery:value=>console.log(JSON.stringify({...value,sourceSha:config.sourceSha}))})
  try{
+  if(controlledRead){
+   const {createQualityEvidencePurposeClient,createQualityEvidenceStore}=await import('../../../apps/sg-runtime/lib/assistant/quality-evidence.ts')
+   const purpose=createQualityEvidencePurposeClient({query:(q,v)=>pools[2].query(q,v),commandKey:controlledRead.purposeKey,
+    schemaDigest:digest(new URL('../migrations/002-quality-purpose.sql',import.meta.url)),serviceId:config.serviceId,
+    storageGeneration:controlledRead.storageGeneration,role:'sg2_assistant_quality_authority'})
+   const evidence=createQualityEvidenceStore({query:(q,v)=>pools[3].query(q,v),commandKey:controlledRead.evidenceKey,
+    storageKey:controlledRead.storageKey,schemaDigest:digest(new URL('../../../apps/sg-runtime/migrations/002-assistant-quality-evidence.sql',import.meta.url)),
+    serviceId:config.serviceId,storageGeneration:controlledRead.storageGeneration,role:'sg2_assistant_quality_reader',
+    authorize:demand=>purpose.authorize(demand)})
+   controlledProbe=createQualityControlledQaReadProbe({config:controlledRead,evidence});controlledProbePending=true
+  }
   while(!stop.signal.aborted){
    if(poolError)unavailable('READINESS_PROVIDER_UNAVAILABLE')
    const result=await readiness.check()
    if(qaPreflight){
     const qa=await qaPreflight.check(),source=await qualityWorkerSourceCapabilities(config.sourceSha)
     console.log(JSON.stringify({event:'aqc.technical.qa.role_preflight',...qa,...source,sourceSha:config.sourceSha,observedAt:result.observedAt}))
+   }
+   if(controlledProbePending){
+    const qa=await controlledProbe.check({signal:stop.signal});controlledProbePending=false
+    console.log(JSON.stringify({event:'aqc.technical.qa.controlled_read',...qa,sourceSha:config.sourceSha,observedAt:result.observedAt}))
    }
    monitoring.heartbeat(result)
    console.log(JSON.stringify({event:'aqc.technical.heartbeat',...result,renderServiceId:config.renderServiceId}))
