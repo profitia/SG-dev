@@ -18,6 +18,70 @@ export function repairManifestBody({mandate,incidentId,correlationId,baseSha,rep
   synthetic:{fixtureId:'qa_synthetic_'+fixtureSha256,sha256:fixtureSha256,exportReceiptId},limits:{maxAttempts:2,maxAttemptSeconds:1800,maxIncidentMicroUsd:5000000},correlationId}
 }
 
+
+/** Reconstructs the same metadata-only manifest at both trusted endpoints from
+ * an installed owner mandate and three independently exported synthetic cases.
+ * This pure preparer grants no data access, creates no signer or ledger, and is
+ * not called by readiness/standby. Private QA and the holdout are not inputs. */
+export async function prepareQualityControllerJobContext({registry,incidentId,baseSha,ownerKeys,verifierKeys,
+ expectedServiceId,expectedGateSetSha256,now=Date.now()}){
+ const {verifyExecutionMandate,verifyBoundManifest,verifyDocument}=await import('./manifest.mjs')
+ const {readRegression}=await import('./verify.mjs')
+ const invalid=()=>unavailable('JOB_CONTEXT_INVALID')
+ if(!uuidValue(incidentId)||typeof baseSha!=='string'||!/^[a-f0-9]{40}$/.test(baseSha)||!Number.isFinite(now))invalid()
+ let value
+ try{
+  if(typeof registry==='string'){
+   if(Buffer.byteLength(registry)>65536)invalid()
+   value=JSON.parse(registry)
+  }else value=registry
+  documentDigest(value)
+  if(Buffer.byteLength(JSON.stringify(value))>65536)invalid()
+  value=structuredClone(value)
+ }catch{invalid()}
+ const exact=(v,keys)=>v&&Object.getPrototypeOf(v)===Object.prototype&&Object.keys(v).sort().join(',')===[...keys].sort().join(',')
+ if(!exact(value,['schemaVersion','repository','environment','mandate','fixtures'])
+  ||value.schemaVersion!=='AQC_CONTROLLED_JOB_CONTEXTS_V1'||value.repository!=='profitia/SG-dev'||value.environment!=='development'
+  ||!Array.isArray(value.fixtures)||value.fixtures.length!==3)invalid()
+ if(!(ownerKeys instanceof Map)||!(verifierKeys instanceof Map)||ownerKeys.size===0||verifierKeys.size===0
+  ||[...ownerKeys.keys()].some(id=>verifierKeys.has(id)))unavailable('JOB_CONTEXT_SEPARATE_TRUST_REQUIRED')
+ const mandate=verifyExecutionMandate(value.mandate,{ownerKeys,now,expectedServiceId,expectedGateSetSha256})
+ const classes=new Set(),incidents=new Set(),locales=new Set(),fixtures=new Set()
+ let selected
+ for(const item of value.fixtures){
+  if(!exact(item,['fixtureExport','regression']))invalid()
+  const exported=verifyDocument(item.fixtureExport,{kind:'AQC_SYNTHETIC_EXPORT_V1',trustedKeys:verifierKeys})
+  const regression=readRegression(item.regression),fixtureSha256=documentDigest(regression)
+  if(exported.repairClass!==regression.repairClass||exported.sha256!==fixtureSha256
+   ||exported.fixtureId!=='qa_synthetic_'+fixtureSha256||exported.rawQaPayloadIncluded!==false
+   ||!uuidValue(exported.incidentId)||incidents.has(exported.incidentId)||classes.has(regression.repairClass)||fixtures.has(fixtureSha256)
+   ||Date.parse(exported.issuedAt)<Date.parse(mandate.issuedAt)||Date.parse(exported.expiresAt)>Date.parse(mandate.expiresAt))invalid()
+  const manifest=verifyBoundManifest(repairManifestBody({mandate:value.mandate,incidentId:exported.incidentId,
+   correlationId:exported.incidentId,baseSha,repairClass:regression.repairClass,exportReceiptId:exported.id,fixtureSha256}),
+   {mandate:value.mandate,fixtureExport:item.fixtureExport,ownerKeys,verifierKeys,now,expectedBaseSha:baseSha,
+    expectedServiceId,expectedGateSetSha256})
+  classes.add(regression.repairClass);incidents.add(exported.incidentId);fixtures.add(fixtureSha256);locales.add(regression.locale)
+  if(exported.incidentId===incidentId)selected={manifest,regression}
+ }
+ if(classes.size!==3||locales.size!==2||!selected)invalid()
+ const freeze=v=>{if(v&&typeof v==='object'){Object.values(v).forEach(freeze);Object.freeze(v)}return v}
+ return freeze(selected)
+}
+/** Job inputs remain exactly seven IDs/digests. No command, context payload,
+ * case, secret or private QA is accepted through workflow_dispatch. Native run
+ * identity must separately pass assertQualityControllerJobIdentity. */
+export async function readQualityControllerJobContext({inputs,...options}){
+ const {readQualityJobBinding}=await import('./controller.mjs')
+ if(!inputs||Object.getPrototypeOf(inputs)!==Object.prototype
+  ||Object.keys(inputs).sort().join(',')!==['mode','action','nonce','control_source_sha','incident_id','manifest_sha256','base_sha'].sort().join(',')
+  ||inputs.mode!=='controller-job'||!hash64(inputs.manifest_sha256))unavailable('JOB_CONTEXT_INPUT_INVALID')
+ const externalId='aqc-job:'+inputs.control_source_sha+':'+inputs.nonce+':'+inputs.action
+ readQualityJobBinding(externalId,{nonce:inputs.nonce,action:inputs.action})
+ const context=await prepareQualityControllerJobContext({...options,incidentId:inputs.incident_id,baseSha:inputs.base_sha})
+ if(documentDigest(context.manifest)!==inputs.manifest_sha256)unavailable('JOB_CONTEXT_MANIFEST_MISMATCH')
+ return Object.freeze({...context,externalId})
+}
+
 const unavailable=code=>{throw Object.assign(Error('Quality readiness unavailable'),{code})}
 const hash64=v=>typeof v==='string'&&/^[a-f0-9]{64}$/.test(v)
 const uuidValue=v=>typeof v==='string'&&/^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(v)
