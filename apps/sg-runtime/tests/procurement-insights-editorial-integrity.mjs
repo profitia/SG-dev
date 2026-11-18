@@ -1,3 +1,4 @@
+import {assistantReservationPredecessor,RESERVATION_DERIVED} from '../../../packages/platform-contracts/test/assistant-reservation-source.mjs'
 import {finderMonitorPredecessor} from './finder-monitor-source-integrity.mjs'
 // Test/build-only continuation for the approved editorial profile. No runtime grant.
 import assert from 'node:assert/strict'
@@ -35,6 +36,14 @@ export function procurementInsightsEditorialPredecessor(current,historical){
   const text=String(error?.stderr??error?.message??'')
   if(error?.code==='ENOENT'||error?.status===128&&["' does not exist in ","' exists on disk, but not in "].some(s=>text.includes("'"+EDITORIAL_RECEIPT+s)))return null
   throw error
+ }
+ // Authenticate the complete current ACG composition before legacy source checks.
+ const reservationPin=String(current(RESERVATION_DERIVED)).match(/ASSISTANT_RESERVATION_SOURCE_SHA='([a-f0-9]{64})'/)?.[1]
+ const reservation=assistantReservationPredecessor(current,historical,reservationPin)
+ if(reservation){
+  const accepted=procurementInsightsEditorialPredecessor(reservation.previousBytes,historical)
+  assert(accepted,'accepted editorial predecessor retained')
+  return {...accepted,reservation}
  }
  const finderMonitor=finderMonitorPredecessor(current,historical)
  if(finderMonitor)return procurementInsightsEditorialPredecessor(finderMonitor.previousBytes,historical)

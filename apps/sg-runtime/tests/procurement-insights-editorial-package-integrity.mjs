@@ -51,7 +51,7 @@ export function procurementInsightsEditorialPackagePredecessor(current,historica
  }
  const quality=assistantQualityPredecessor(current,historical)
  if(quality){
-  const accepted=procurementInsightsEditorialPackagePredecessor(quality.previousBytes,historical);assert(accepted,'accepted editorial package source retained')
+  const accepted=procurementInsightsEditorialPackagePredecessor(quality.compositionPreviousBytes??quality.previousBytes,historical);assert(accepted,'accepted editorial package source retained')
   return {...accepted,quality,manifest:{...accepted.manifest,sourceDigests:{...accepted.manifest.sourceDigests,...quality.manifest.sourceDigests,[QUALITY_RECEIPT]:hash(current(QUALITY_RECEIPT))}}}
  }
  const a=JSON.parse(bytes)

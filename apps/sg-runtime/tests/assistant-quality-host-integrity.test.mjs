@@ -63,3 +63,36 @@ test('accepted editorial F metadata, helper and all prior receipts remain indepe
  const lock='apps/sg-runtime/package-lock.json',bad=JSON.parse(current(lock));bad.packages['node_modules/@profitia/insights-runtime'].version='1.2.2'
  assert.throws(()=>procurementInsightsEditorialPackagePredecessor(p=>p===lock?Buffer.from(JSON.stringify(bad)):current(p),historical))
 })
+
+test('CI25 composition authenticates current ACG and CIC independently before retaining both frozen predecessor chains',async()=>{
+ const {assistantReservationPredecessor,RESERVATION_PATHS,RESERVATION_RECORD,RESERVATION_DERIVED}=await import('../../../packages/platform-contracts/test/assistant-reservation-source.mjs')
+ const pin='bfa9287d9a0a17ef0a935ddc2c0f66c46b42d6c415b2b1fda0d237d2e38fc8b8'
+ const v=assistantReservationPredecessor(current,historical,pin);assert(v?.quality?.host?.acceptedComposition)
+ assert.deepEqual(current(RESERVATION_RECORD),historical('53691e907e4cc9b7fbf683c91bbebf41299e9ccc',RESERVATION_RECORD))
+ const {createHash}=await import('node:crypto')
+ for(const p of [...new Set([...QUALITY_HOST_PATHS,...RESERVATION_PATHS,RESERVATION_DERIVED,RESERVATION_RECORD])]){
+  assert.throws(()=>assistantReservationPredecessor(f=>f===p?Buffer.concat([current(f),Buffer.from('UNADMITTED')]):current(f),historical,pin),p)
+  if(Object.hasOwn(v.manifest.sourceDigests,p))assert.equal(v.manifest.sourceDigests[p],createHash('sha256').update(current(p)).digest('hex'),p)
+ }
+ for(const mutate of [a=>a.acceptedComposition.sourceSha='0'.repeat(40),a=>a.acceptedComposition.componentSourceSha='0'.repeat(40),
+  a=>a.acceptedComposition.reservationRecordSha256='0'.repeat(64),a=>delete a.sourceDigests['packages/platform-contracts/test/assistant-reservation-source.mjs']]){
+  const a=JSON.parse(current(QUALITY_HOST_RECEIPT));mutate(a)
+  assert.throws(()=>assistantReservationPredecessor(p=>p===QUALITY_HOST_RECEIPT?Buffer.from(JSON.stringify(a)):current(p),historical,pin))
+ }
+})
+
+test('self-refreshed current source hashes cannot admit another library, test command or core artifact',async()=>{
+ const {assistantReservationPredecessor}=await import('../../../packages/platform-contracts/test/assistant-reservation-source.mjs')
+ const {createHash}=await import('node:crypto')
+ for(const [path,mutate]of [
+  ['apps/sg-runtime/package.json',p=>p.dependencies.openai='0.0.0'],
+  ['apps/sg-runtime/package.json',p=>p.scripts['test:assistant']='node -e "process.exit(0)"'],
+  ['apps/sg-runtime/package-lock.json',p=>p.packages['node_modules/@profitia/cic-core'].integrity='sha512-unapproved'],
+  ['apps/sg-runtime/package-lock.json',p=>p.packages['node_modules/@profitia/insights-runtime'].version='1.2.2']]){
+  const changed=JSON.parse(current(path));mutate(changed);const bytes=Buffer.from(JSON.stringify(changed))
+  const a=JSON.parse(current(QUALITY_HOST_RECEIPT));a.sourceDigests[path]=createHash('sha256').update(bytes).digest('hex')
+  assert.throws(()=>assistantReservationPredecessor(p=>p===path?bytes:p===QUALITY_HOST_RECEIPT?Buffer.from(JSON.stringify(a)):current(p),historical,
+   'bfa9287d9a0a17ef0a935ddc2c0f66c46b42d6c415b2b1fda0d237d2e38fc8b8'),
+   e=>e?.code==='ERR_ASSERTION'&&String(e.message).includes('current admitted CIC'),path)
+ }
+})

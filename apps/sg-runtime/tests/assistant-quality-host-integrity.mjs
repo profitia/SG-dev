@@ -1,3 +1,4 @@
+import {assistantReservationPredecessor,RESERVATION_RECORD} from '../../../packages/platform-contracts/test/assistant-reservation-source.mjs'
 // Source-test continuation only; this cannot grant a QA purpose or activation.
 import assert from 'node:assert/strict'
 import {createHash} from 'node:crypto'
@@ -19,7 +20,8 @@ export const QUALITY_HOST_PATHS=Object.freeze([
  'apps/sg-runtime/tests/assistant-quality-host-integrity.test.mjs',
  'apps/sg-runtime/tests/procurement-insights-completion-integrity.mjs',
  'apps/architecture-lab/private-recurring-source.mjs',
- 'apps/sg-runtime/tests/procurement-insights-editorial-package-integrity.mjs'
+ 'apps/sg-runtime/tests/procurement-insights-editorial-package-integrity.mjs',
+ 'packages/platform-contracts/test/assistant-reservation-source.mjs'
 ])
 export const QUALITY_HOST_PRESERVED=Object.freeze([
  'apps/sg-runtime/assistant-quality-integration.json',
@@ -50,6 +52,7 @@ export function assistantQualityHostPredecessor(current,historical){
   throw e
  }
  const a=JSON.parse(bytes)
+ if(Object.hasOwn(a,'acceptedComposition'))return composedQualityHost(current,historical,a)
  assert.deepEqual(Object.keys(a).sort(),['schemaVersion','taskId','scope','targetEnvironment','previousSourceSha','sourceDigests','previousReceipts','cicPublication','responseProtectionActivated','privateQaActivated','cloudInstallationPerformed','pilotStarted'].sort())
  assert.equal(a.schemaVersion,'1.0.0');assert.equal(a.taskId,'SG2-CIC-QUALITY-TECHNICAL-READY-20261117')
  assert.equal(a.scope,'CONTROLLED_CIC18_HOST_AND_PRIVATE_QA_SOURCE');assert.equal(a.targetEnvironment,'development')
@@ -61,7 +64,7 @@ export function assistantQualityHostPredecessor(current,historical){
  const hasLegacyTransport=Object.hasOwn(a.sourceDigests,legacyTransport),hasFinderTransport=Object.hasOwn(a.sourceDigests,finderTransport)
  assert([hasLegacyTransport,hasFinderTransport,hasPackageTransport].filter(Boolean).length<=1,'one closed CI24 transport profile')
  const hasTransport=hasLegacyTransport||hasFinderTransport||hasPackageTransport,transport=hasPackageTransport?packageTransport:hasFinderTransport?finderTransport:legacyTransport
- const paths=QUALITY_HOST_PATHS.filter(p=>(p!==common||hasCommon)&&(p!==packageTransport||hasPackageTransport))
+ const paths=QUALITY_HOST_PATHS.filter(p=>p!=='packages/platform-contracts/test/assistant-reservation-source.mjs'&&(p!==common||hasCommon)&&(p!==packageTransport||hasPackageTransport))
  if(hasFinderTransport)paths.push(finderTransport)
  if(hasLegacyTransport)paths.push(legacyTransport)
  assert.deepEqual(Object.keys(a.sourceDigests).sort(),[...paths].sort())
@@ -108,4 +111,65 @@ export function assistantQualityHostPredecessor(current,historical){
  }
  return {manifest:a,previousBytes,editorialPackage:hasPackageTransport,
   legacyPreviousBytes:hasPackageTransport?p=>p==='apps/sg-runtime/package-lock.json'?Buffer.from(historical(QUALITY_HOST_BASE,p)):previousBytes(p):previousBytes}
+}
+
+const COMPOSITION_BASE='53691e907e4cc9b7fbf683c91bbebf41299e9ccc'
+const COMPONENT_BASE='583ea4f780c6a7675e7fde85c33fa7039438eedb'
+const RESERVATION_PIN='bfa9287d9a0a17ef0a935ddc2c0f66c46b42d6c415b2b1fda0d237d2e38fc8b8'
+function composedQualityHost(current,historical,a){
+ const prior=JSON.parse(historical(COMPONENT_BASE,QUALITY_HOST_RECEIPT))
+ assert.deepEqual(Object.keys(a).sort(),[...Object.keys(prior),'acceptedComposition'].sort())
+ for(const k of Object.keys(prior).filter(k=>k!=='sourceDigests'))assert.deepEqual(a[k],prior[k],'immutable component metadata '+k)
+ assert.deepEqual(a.acceptedComposition,{sourceSha:COMPOSITION_BASE,componentSourceSha:COMPONENT_BASE,reservationRecordSha256:RESERVATION_PIN})
+ assert.deepEqual(Object.keys(a.sourceDigests).sort(),[...QUALITY_HOST_PATHS].sort(),'closed CI25 source inventory')
+ for(const p of QUALITY_HOST_PATHS){assert.match(a.sourceDigests[p],/^[a-f0-9]{64}$/);assert.equal(hash(current(p)),a.sourceDigests[p],'exact composed CIC source '+p)}
+ for(const p of QUALITY_HOST_PRESERVED){assert.equal(hash(current(p)),a.previousReceipts[p]);assert.equal(hash(historical(QUALITY_HOST_BASE,p)),a.previousReceipts[p])}
+
+ const packagePath='apps/sg-runtime/package.json',lockPath='apps/sg-runtime/package-lock.json'
+ const expectedPackage=JSON.parse(historical(COMPOSITION_BASE,packagePath))
+ expectedPackage.dependencies['@profitia/cic-core']='1.8.0'
+ const marker='tests/assistant-economic-calendar.test.ts ',script=expectedPackage.scripts['test:assistant']
+ assert.equal(script.split(marker).length,2,'one accepted calendar test entry')
+ expectedPackage.scripts['test:assistant']=script.replace(marker,marker+'tests/assistant-quality.test.ts ')
+  +' && node --test tests/assistant-quality-integrity.test.mjs'
+  +' && node --import tsx --test tests/assistant-quality-response.test.ts tests/assistant-quality-evidence.test.ts && node --test tests/assistant-quality-host-integrity.test.mjs'
+ assert.deepEqual(JSON.parse(current(packagePath)),expectedPackage,'current admitted CIC manifest permits only its exact core pin and QA tests')
+ const expectedLock=JSON.parse(historical(COMPOSITION_BASE,lockPath))
+ expectedLock.packages[''].dependencies['@profitia/cic-core']='1.8.0'
+ Object.assign(expectedLock.packages['node_modules/@profitia/cic-core'],QUALITY_CIC_PIN)
+ assert.deepEqual(JSON.parse(current(lockPath)),expectedLock,'current admitted CIC lock permits only the exact published core artifact')
+ const previous=p=>Buffer.from(historical(COMPONENT_BASE,p))
+ const legacy=assistantQualityHostPredecessor(previous,historical);assert(legacy,'complete original CIC component retained')
+ const mapped=new Set([...QUALITY_HOST_PATHS,...QUALITY_HOST_PRESERVED,QUALITY_HOST_RECEIPT,
+  'apps/sg-runtime/lib/assistant/calendar-period.ts','apps/sg-runtime/lib/assistant/context-selection.ts',
+  'apps/sg-runtime/tests/assistant-quality.test.ts','apps/sg-runtime/tests/assistant-quality-integrity.test.mjs',
+  'apps/sg-runtime/tests/assistant-ecr-integrity.mjs','apps/sg-runtime/tests/assistant-ecr-precision-integrity.mjs'])
+ const compositionPreviousBytes=p=>{
+  if(!mapped.has(p))return current(p)
+  try{return Buffer.from(historical(COMPOSITION_BASE,p))}catch(e){
+   const text=String(e?.stderr??e?.message??'')
+   if(e?.status===128&&(text.includes("'"+p+"' does not exist in ")||text.includes("'"+p+"' exists on disk, but not in ")))throw Object.assign(Error('CIC addition absent from accepted ACG'),{code:'ENOENT'})
+   throw e
+  }
+ }
+
+ const unchanged=[
+  'apps/sg-runtime/lib/assistant/calendar-period.ts','apps/sg-runtime/lib/assistant/context-selection.ts',
+  'apps/sg-runtime/tests/assistant-quality.test.ts','apps/sg-runtime/tests/assistant-quality-integrity.test.mjs',
+  'apps/sg-runtime/tests/assistant-ecr-integrity.mjs','apps/sg-runtime/tests/assistant-ecr-precision-integrity.mjs']
+ for(const p of unchanged)assert.deepEqual(Buffer.from(current(p)),Buffer.from(historical(COMPONENT_BASE,p)),'unchanged current calendar source '+p)
+ const packageReceipt='apps/sg-runtime/procurement-insights-editorial-package-integration.json'
+ assert.deepEqual(Buffer.from(current(packageReceipt)),Buffer.from(historical(COMPOSITION_BASE,packageReceipt)),'immutable current editorial package receipt')
+ const packaged=JSON.parse(current(packageReceipt))
+ for(const [p,digest]of Object.entries(packaged.sourceDigests))assert.equal(hash(compositionPreviousBytes(p)),digest,'current accepted editorial package source '+p)
+ for(const [p,digest]of Object.entries(packaged.preservedReceipts))assert.equal(hash(current(p)),digest,'current immutable editorial receipt '+p)
+ const transport='apps/sg-runtime/tests/procurement-insights-editorial-package-integrity.mjs'
+ const oldTransport=String(historical(COMPONENT_BASE,transport))
+ assert.equal(oldTransport.split('quality.previousBytes').length,2)
+ assert.equal(String(current(transport)),oldTransport.replace('quality.previousBytes','quality.compositionPreviousBytes??quality.previousBytes'),'only additive composition selection before original editorial checks')
+ assert.equal(hash(current(RESERVATION_RECORD)),RESERVATION_PIN,'actual accepted ACG record retained')
+ const reservation=assistantReservationPredecessor(compositionPreviousBytes,historical,RESERVATION_PIN);assert(reservation,'all accepted ACG checks retained')
+ const expectedCommon="import {assistantQualityPredecessor,QUALITY_RECEIPT} from '../sg-runtime/tests/assistant-quality-integrity.mjs'\n"+String(historical(COMPOSITION_BASE,'apps/architecture-lab/private-recurring-source.mjs')).replace("export function recurringSourcePredecessor(current,historical){\n","export function recurringSourcePredecessor(current,historical){\n const quality=assistantQualityPredecessor(current,historical);if(quality){const accepted=recurringSourcePredecessor(quality.compositionPreviousBytes??quality.previousBytes,historical);assert(accepted,'accepted recurring source retained');return {...accepted,quality,manifest:{...accepted.manifest,sourceDigests:{...accepted.manifest.sourceDigests,...quality.manifest.sourceDigests,[QUALITY_RECEIPT]:hash(current(QUALITY_RECEIPT))}}}}\n")
+ assert.equal(String(current('apps/architecture-lab/private-recurring-source.mjs')),expectedCommon,'only exact additive composition dispatch before accepted ACG')
+ return {...legacy,manifest:a,compositionPreviousBytes,acceptedComposition:true}
 }

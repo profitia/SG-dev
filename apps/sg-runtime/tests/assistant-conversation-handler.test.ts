@@ -121,6 +121,16 @@ test('history question previews retain current context redaction and final ident
  assert.equal(f.generated(),0)
 })
 
+test('count preparation receives only server-resolved actor and organisation with the exact turn command',async()=>{
+ const f=fixture(),calls:any[]=[]
+ f.runtime.model.validateInput=async(input:any,scope:any,signal:AbortSignal)=>{calls.push({input,scope,signal})}
+ const r=await f.execute()
+ assert.equal(r.response.status,200);assert.equal(calls.length,1)
+ const generation=f.calls.find(c=>c.payload?.kind==='GENERATE').payload
+ assert.deepEqual(calls[0].scope,{actorId:user,organisationId:org,commandId:generation.commandId})
+ assert.deepEqual(calls[0].input,generation.input);assert(calls[0].signal instanceof AbortSignal)
+})
+
 test('controlled CIC1.8 protection buffers the model draft and renders only source facts before a single completion',async()=>{
  const f=fixture();f.runtime.qualityResponseAccountId=user
  f.runtime.model.generate=async(options:any)=>{await options.beforeDispatch();await options.publish('UNVERIFIED_MODEL_SECRET 999 EUR');return 'UNVERIFIED_MODEL_SECRET 999 EUR'}
@@ -133,11 +143,11 @@ test('controlled CIC1.8 protection buffers the model draft and renders only sour
  assert.equal(f.calls.filter(c=>c.payload?.kind==='GENERATE').length,1)
 })
 test('controlled empty/denied source produces an explicit limitation with no paid admission or model request',async()=>{
- for(const status of ['EMPTY','DENIED','UNAVAILABLE']){
-  const f=fixture();f.runtime.qualityResponseAccountId=user
+ for(const locale of ['pl','en'])for(const status of ['EMPTY','DENIED','UNAVAILABLE']){
+  const f=fixture();f.runtime.qualityResponseAccountId=user;let counterCalls=0;f.runtime.model.validateInput=async()=>{counterCalls++}
   f.runtime.gateway.resolve=async()=>({contexts:[{source:'BENCHMARK_CHART',status,sourceVersion:reference.fingerprint,selection:reference,data:{value:'UNAVAILABLE_PRIVATE_SECRET'}}]})
-  const r=await f.execute(),text=JSON.stringify(r.events)
-  assert.equal(r.response.status,200);assert.equal(f.generated(),0)
+  const r=await f.execute({locale}),text=JSON.stringify(r.events)
+  assert.equal(r.response.status,200);assert.equal(f.generated(),0);assert.equal(counterCalls,0)
   assert.equal(f.calls.some(c=>c.payload?.kind==='GENERATE'),false)
   assert(!text.includes('UNAVAILABLE_PRIVATE_SECRET'));assert(text.includes(status));assert(r.events.some((e:any)=>e.type==='completed'))
  }
