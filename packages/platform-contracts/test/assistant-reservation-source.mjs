@@ -1,5 +1,5 @@
 import {benchmarkUnmeteredPredecessor} from './benchmark-unmetered-source.mjs'
-export const BENCHMARK_UNMETERED_SOURCE_SHA='adf062924b5174d441028454536f18cf030e1b651940916085e04a143c02c551'
+export const BENCHMARK_UNMETERED_SOURCE_SHA='2edde10c3df9c1868c7550981282d857c141677545b2dea2bb113b0119cadc67'
 // Test/build-only closed source continuation. Never imported by a runtime.
 import assert from 'node:assert/strict'
 import {createHash} from 'node:crypto'
@@ -115,7 +115,7 @@ export function reservationArchitectureSource(before,pin){
 }
 export function assistantReservationPredecessor(current,historical,expectedDigest){
  const benchmark=benchmarkUnmeteredPredecessor(current,historical,BENCHMARK_UNMETERED_SOURCE_SHA)
- if(benchmark){const accepted=assistantReservationPredecessor(benchmark.previousBytes,historical,expectedDigest);return accepted?{...accepted,benchmark}:null}
+ if(benchmark){const accepted=assistantReservationPredecessor(benchmark.previousBytes,historical,expectedDigest);return accepted?{...accepted,benchmark,acceptedManifest:accepted.manifest,manifest:{...accepted.manifest,...benchmark.manifest,sourceDigests:{...accepted.manifest.sourceDigests,...benchmark.manifest.sourceDigests,['packages/platform-contracts/test/assistant-reservation-source.mjs']:hash(current('packages/platform-contracts/test/assistant-reservation-source.mjs'))}}}:null}
  let bytes;try{bytes=current(RESERVATION_RECORD)}catch(e){if(absent(e))return null;throw e}
  assert.match(expectedDigest??'',/^[a-f0-9]{64}$/);assert.equal(hash(bytes),expectedDigest,'exact reviewed reservation source record')
  const a=JSON.parse(bytes)

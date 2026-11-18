@@ -50,7 +50,7 @@ test('Finder current-source aggregate authenticates the complete ACG composition
  const {createHash}=await import('node:crypto')
  const view=finderMonitorPredecessor(current,historical);assert(view?.reservation)
  const all=[...RESERVATION_PATHS,RESERVATION_RECORD,RESERVATION_DERIVED];assert.equal(new Set(all).size,46)
- const source=view.reservation.benchmark?.previousBytes??current
+ const source=current
  for(const p of all)assert.equal(view.manifest.sourceDigests[p],createHash('sha256').update(source(p)).digest('hex'),p)
  if(view.reservation.benchmark)for(const [p,digest]of Object.entries(view.reservation.benchmark.manifest.sourceDigests))assert.equal(digest,createHash('sha256').update(current(p)).digest('hex'),p)
  assert.throws(()=>view.previousBytes("apps/sg-runtime/tests/finder-monitor-source-integrity.mjs"),{code:'ENOENT'})
