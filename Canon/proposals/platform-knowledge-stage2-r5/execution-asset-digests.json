@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "status": "PROPOSED_EXACT_EXECUTION_ASSETS_NO_GO_YET",
+  "release": "2706f13a5fb37a45daf4aea7be5e9d88ee7e4024",
+  "files": {
+    "closed-source-review.json": "bca8b728848709671e312a7ecd40b569cd6dc92e6a6dcb04da5586840f479bec",
+    "execute-reviewed-identity-r5.mjs": "3cc1232c0a9b2269cbc2a97330f97ad1cf37dfba292af5f46bf501db51ecfa13",
+    "execute-reviewed-product-r5.mjs": "f9c709d2db46a8ee57613180b44712a0e682824bb0e4428602f1666717509c59",
+    "identity-owner-install-r5.sql": "326254130e9caeef6c0dcec9debff57d9cb73fd7e1e434fc16207e237777eab9",
+    "identity-release-pin-r5-envelope.mjs": "02238a4feba94882b90e6dcd7cb01aef00814872db218093b7b616cb1f34b7b9",
+    "live-stale-grant-probe-plan.json": "2b35aa841c4075d4cdd56ab99dda75aa505a10afb06ed0e650e543406d88eb99",
+    "native-identity-release-pin-r5.py": "102381694228d93eb9ca8f38d3fb3e404ae2c99e29b9e634c2c71a3fade43d4e",
+    "native-render-existing-session-bootstrap.py": "463edcdb3008c0ea786eacb08209a10fec4f52423ba25300890b39619460b44b",
+    "native-render-operator-relay.py": "3c2876367196e1a4e957a9849f3d576f87fde7273877c8627ab2d8e913dde340",
+    "pk-r5-execution-guard.mjs": "a99bd459d06e02f3ba06376212d8435d0aeb8ac5e1fed07e1b034009b8811f45",
+    "predeployment-test-summary.json": "8603aaa5b64f3cd684b3e6fd5c35da7968090d38eab497b73799cc67476e5be3",
+    "read-failed-parser-proof.mjs": "e0eea25326cfda05b443e54987639aa53f27b8649d3e49a705240dcde56cc81c",
+    "read-stale-grant-cost-proof.mjs": "d3f7b27b3fafecba9107c86a5c3bb42e99680ee557ab7ebd6241c6b827782468",
+    "record-native-render-result.py": "22b061a623ff1dff4651aa3342cff194ac9e885828757faf4d5d2cb75ca2efe9",
+    "render-native-execution-plan.json": "c42af0c4fc629fbdcad52d52eff4bf48b43f043d0c65d18d7ad4627e432c5d20",
+    "render-operation-envelope.mjs": "67722e6b19b972acb4dc2c14550defd190e2f934a912e3fd8715dfec27207247",
+    "stale-query-grant-restore-r5.sql": "7380f94919311943b1920c60937e4f9a510398dbb3f1be26c100cf3aab039b2d",
+    "stale-query-grant-revoke-r5.sql": "a8e582fab4992613c51c34397a1f6e283e6d8ea3fe3cc875c2a8b0815d7c37b0"
+  }
+}

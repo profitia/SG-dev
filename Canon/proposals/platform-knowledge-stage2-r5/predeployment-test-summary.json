@@ -1,0 +1,113 @@
+{
+  "status": "OWNER_REVIEW_ONLY_NOT_SOURCE_ADMISSION_OR_RUNTIME_ACCEPTANCE",
+  "release": "2706f13a5fb37a45daf4aea7be5e9d88ee7e4024",
+  "authorityMain": "2040e9e7430fd6b164f8726e3f92d3654b804e44",
+  "policyProposal": "b3838a8bdf80ceb3b36a478ba264e79c7be8a036",
+  "policyFiles": {
+    "scripts/governance/controlled-package-ci.mjs": "678aae73d2385aa7725f6380c433505ad6f10c740e98a3a843e466f18f329038",
+    "scripts/governance/controlled-package-ci.test.mjs": "f40ced12ae125aebee67a9ee34cf6ede6329074aae48c0c30f3d82627c947677"
+  },
+  "cleanPublicLayout": {
+    "status": "CLEAN_PUBLIC_LAYOUT_ACTUAL_AUTHORITY_MAIN_BOUND",
+    "exitCode": 0,
+    "seconds": 20.82,
+    "actualAuthorityMain": "3109989f6a2c6378b3eddfb84cf99d1a199d1f1e",
+    "actualCanonicalPackagesCopiedIntoIsolatedFixture": true,
+    "sourceInputNodeModules": 0,
+    "assertionsRemoved": 0,
+    "summary": [
+      "\u2139 tests 9",
+      "\u2139 pass 9",
+      "\u2139 fail 0",
+      "\u2139 skipped 0"
+    ],
+    "failures": [],
+    "runtimeOperations": 0
+  },
+  "fullPrivatePolicy": {
+    "status": "INACTIVE_PRIVATE_POLICY_SIMULATION_NOT_CONTROLLED_CI",
+    "sourceSha": "2706f13a5fb37a45daf4aea7be5e9d88ee7e4024",
+    "authorityMain": "2040e9e7430fd6b164f8726e3f92d3654b804e44",
+    "files": {
+      "scripts/governance/controlled-package-ci.mjs": "678aae73d2385aa7725f6380c433505ad6f10c740e98a3a843e466f18f329038",
+      "scripts/governance/controlled-package-ci.test.mjs": "f40ced12ae125aebee67a9ee34cf6ede6329074aae48c0c30f3d82627c947677"
+    },
+    "exitCode": 0,
+    "seconds": 594.05,
+    "summary": [
+      "\u2139 tests 690",
+      "\u2139 pass 690",
+      "\u2139 fail 0",
+      "\u2139 skipped 0"
+    ],
+    "failures": [],
+    "sourceUnchanged": true,
+    "policyUnchanged": true,
+    "runtimeOperations": 0
+  },
+  "nativeCurrentSource": {
+    "srm": {
+      "runId": 44288163583,
+      "jobId": 134746126851,
+      "status": "SUCCESS",
+      "tests": [
+        983,
+        3,
+        7,
+        311,
+        17,
+        165,
+        1,
+        1
+      ],
+      "fail": 0,
+      "skip": 0,
+      "existingRootTargetAssertion": "PASS",
+      "typecheckAndActualBuild": "PASS"
+    },
+    "identity": {
+      "runId": 44288163557,
+      "jobId": 134746125127,
+      "lintTypesBuildSessionConsumerSteps": "PASS",
+      "sessionTestSuites": [
+        384,
+        2,
+        2
+      ],
+      "subsequentGovernance": "FAIL_KNOWLEDGE_STAGE2_RECORD_REJECTED_NEW_REVIEW_PENDING"
+    },
+    "engine": {
+      "runId": 44288163605,
+      "status": "SUCCESS"
+    },
+    "acg": {
+      "runId": 44288163737,
+      "status": "SUCCESS"
+    },
+    "publicSourceRequiredCi": "NOT_FULL_PASS_BEFORE_OWNER_APPROVED_POLICY_AND_CONTROLLED_PROOF"
+  },
+  "previousAcceptedPolicy": {
+    "pr": 1180,
+    "policyMergeMain": "3109989f6a2c6378b3eddfb84cf99d1a199d1f1e",
+    "candidate": "e05c8943a0e3e4ae39feb0a21404ae4be88d570c",
+    "controlledRun": 44273956406,
+    "originalArtifact": 14415610447,
+    "zipSha256": "62ba77c7d4ce47e101bc70396f2da06a44ccac8894701c9d4c33b9b6eb97279a",
+    "resultingMainRequiredCi": 44277478643,
+    "originalResultingMainArtifact": 14415858237,
+    "resultingMainZipSha256": "5e442312fb0989ba8365fa05afc024e93f754a20702aab06daf8e534630e45f2"
+  },
+  "sourceFiles": 460,
+  "unchangedHistoricalReceipts": 33,
+  "sourceChanges": 116,
+  "runtimeDirectoriesByteIdenticalToR4": true,
+  "runtimeOperations": {
+    "migrations": 0,
+    "grants": 0,
+    "bindings": 0,
+    "deployments": 0,
+    "imports": 0,
+    "paidCalls": 0
+  },
+  "generatedAt": "2026-11-18T11:02:50.527383+00:00"
+}
