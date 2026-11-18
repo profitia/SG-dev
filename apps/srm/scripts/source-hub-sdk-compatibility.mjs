@@ -1,5 +1,5 @@
 import {assertAssistantConsumerCompatibility} from '../../architecture-lab/assistant-m1-sdk-compatibility.mjs'
-import {srmAssistantM2Predecessor,assertSrmHistoricalSources} from './assistant-m2-integrity.mjs'
+import {srmAssistantM2Predecessor,assertSrmHistoricalSources,srmAdmittedApplicationPredecessors} from './assistant-m2-integrity.mjs'
 import {assertAssistantM1Integrity} from '../../sg-runtime/tests/assistant-m1-integrity.mjs'
 import {assertSourceHubApiPathCompatibility as assertPeerApiPathCompatibility} from '../../sg-runtime/tests/pci-smart-integrity.mjs'
 import assert from 'node:assert/strict'
@@ -33,7 +33,8 @@ export function assertSourceHubApiPathCompatibility(receipt,current,historical,{
  const peerView=peerReceipt?.sourceHubApiPathCompatibility?assertPeerApiPathCompatibility(peerReceipt,current,historical,{validatePeer:false}):null
  const priorBytes=new Map([[file,bytes]])
  const predecessor=p=>{if(!priorBytes.has(p))priorBytes.set(p,Buffer.from(historical(a.previousReceiptSourceSha,p)));return Buffer.from(priorBytes.get(p))}
- return {prior,previousBytes:p=>p===file||mapped.has(p)?predecessor(p):peerView?.previousBytes(p)??current(p)}
+ const admittedApplications=srmAdmittedApplicationPredecessors(current,historical)
+ return {prior,previousBytes:p=>p===file||mapped.has(p)?predecessor(p):admittedApplications.has(p)?Buffer.from(admittedApplications.get(p)):peerView?.previousBytes(p)??current(p)}
 }
 
 // Versioned, test-only SDK adoption. This does not authorize MARKET_SYMBOL,
@@ -76,7 +77,8 @@ export function assertSourceHubMarketSymbolCompatibility(receipt,current,histori
  const mapped=new Set([...Object.keys(a.consumerSourceDigests),...Object.keys(a.peerSourceDigests),...Object.keys(a.producerMetadataDigests),...Object.keys(a.sourceDigests).map(p=>'packages/platform-contracts/'+p)]);
  let peerView=null;if(validatePeer){const peerReceipt=JSON.parse(current(peerFile));assert(peerReceipt.sourceHubMarketSymbolCompatibility,'paired consumer adoption required');peerView=assertSourceHubMarketSymbolCompatibility(peerReceipt,current,historical,{projectKey:peer,validatePeer:false});assert.deepEqual(a.peerSourceDigests,peerReceipt.sourceHubMarketSymbolCompatibility.consumerSourceDigests);}
  const cache=new Map([[file,bytes]]);const predecessor=p=>{if(!cache.has(p))cache.set(p,Buffer.from(historical(a.previousReceiptSourceSha,p)));return Buffer.from(cache.get(p));};
- return {prior,previousBytes:p=>p===file||mapped.has(p)?predecessor(p):peerView?.previousBytes(p)??current(p)};
+ const admittedApplications=srmAdmittedApplicationPredecessors(current,historical)
+ return {prior,previousBytes:p=>p===file||mapped.has(p)?predecessor(p):admittedApplications.has(p)?Buffer.from(admittedApplications.get(p)):peerView?.previousBytes(p)??current(p)};
 }
 
 // Validate the current producer and both consumer closures before projecting the

@@ -1,4 +1,4 @@
-import {assertSrmHistoricalSources,authenticatedSrmSourceDigests,assertSrmHistoricalAnchor,srmSdkSourceHistories,srmAdmittedApplicationPredecessors} from './assistant-m2-integrity.mjs'
+import {assertSrmHistoricalSources,authenticatedSrmSourceDigests,assertSrmHistoricalAnchor,srmSdkSourceHistories} from './assistant-m2-integrity.mjs'
 import {assertSourceHubApiPathCompatibility} from './source-hub-sdk-compatibility.mjs'
 import {assertAppShellFourCardCascade} from '../../sg-runtime/tests/pci-smart-integrity.mjs'
 /** Test-only additive acceptance. Original receipts and runtime bytes stay immutable. */
@@ -57,8 +57,7 @@ export function assertXrayAppShellPresentation(receipt,current,historical){
  }
  for(const flag of ['standaloneDefaultsUnchanged','hostPresentationOnly','canonicalSourceStyles','nameCatalogDisabledInSg2'])assert.equal(a[flag],true,flag)
  for(const flag of ['businessLogicChanged','transportChanged','authorizationChanged','financialEngineChanged','schemaChanged','srmRuntimeDeploymentPerformed','excludedEnvironmentChanges'])assert.equal(a[flag],false,flag)
- const admittedApplications=srmAdmittedApplicationPredecessors(current,historical)
- return {prior,previousBytes:path=>['apps/sg-runtime/operation-integration.json','apps/srm/operation-integration.json'].includes(path)||Object.hasOwn(a.sourceDigests,path)?historical(a.previousReceiptSourceSha,path):admittedApplications.has(path)?Buffer.from(admittedApplications.get(path)):admittedPackagePaths.has(path)?historical(admittedPackagePaths.get(path),path):current(path)}
+ return {prior,previousBytes:path=>['apps/sg-runtime/operation-integration.json','apps/srm/operation-integration.json'].includes(path)||Object.hasOwn(a.sourceDigests,path)?historical(a.previousReceiptSourceSha,path):admittedPackagePaths.has(path)?historical(admittedPackagePaths.get(path),path):current(path)}
 }
 
 const FILES=["scripts/native-execution-adoption.test.mjs","scripts/rural-location-release.test.mjs","scripts/xray-performance-adoption.test.mjs","scripts/xray-style-acceptance.mjs","scripts/xray-workflow-contract.test.ts","src/server/full-ui-parity-adoption.test.ts","src/server/peer-read-boundary.test.ts","src/server/supplier-location-geocoding-runtime.test.ts"]
