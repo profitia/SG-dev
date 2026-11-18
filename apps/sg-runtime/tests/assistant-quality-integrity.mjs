@@ -31,7 +31,7 @@ const additions=new Set(['apps/sg-runtime/lib/assistant/calendar-period.ts','app
  'apps/sg-runtime/tests/assistant-quality-integrity.mjs','apps/sg-runtime/tests/assistant-quality-integrity.test.mjs'])
 const hash=b=>createHash('sha256').update(b).digest('hex')
 export function assistantQualityPredecessor(current,historical){
- const host=assistantQualityHostPredecessor(current,historical);if(host){const accepted=assistantQualityPredecessor(host.previousBytes,historical);assert(accepted,'accepted calendar source retained');return {...accepted,host,manifest:{...accepted.manifest,sourceDigests:{...accepted.manifest.sourceDigests,...host.manifest.sourceDigests,[QUALITY_HOST_RECEIPT]:hash(current(QUALITY_HOST_RECEIPT))}}}}
+ const host=assistantQualityHostPredecessor(current,historical);if(host){const accepted=assistantQualityPredecessor(host.legacyPreviousBytes??host.previousBytes,historical);assert(accepted,'accepted calendar source retained');return {...accepted,host,previousBytes:host.editorialPackage?p=>p==='apps/sg-runtime/package-lock.json'?host.previousBytes(p):accepted.previousBytes(p):accepted.previousBytes,manifest:{...accepted.manifest,sourceDigests:{...accepted.manifest.sourceDigests,...host.manifest.sourceDigests,[QUALITY_HOST_RECEIPT]:hash(current(QUALITY_HOST_RECEIPT))}}}}
  let bytes
  try{bytes=current(QUALITY_RECEIPT)}catch(e){
   const text=String(e?.stderr??e?.message??'')

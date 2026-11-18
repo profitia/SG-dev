@@ -1,4 +1,3 @@
-import {assistantQualityPredecessor,QUALITY_RECEIPT} from './assistant-quality-integrity.mjs'
 // Test/build-only binding of the two owner-approved monitor sources. No runtime grant.
 import assert from 'node:assert/strict'
 import {createHash} from 'node:crypto'
@@ -44,11 +43,6 @@ export function finderMonitorPredecessor(current,historical){
   const missingGit=error?.status===128&&["' does not exist in ","' exists on disk, but not in "].some(s=>text.includes("'"+FINDER_MONITOR_RECEIPT+s))
   if(error?.code==='ENOENT'||missingGit)return null
   throw error
- }
- const quality=assistantQualityPredecessor(current,historical)
- if(quality){
-  const accepted=finderMonitorPredecessor(quality.previousBytes,historical);assert(accepted,'accepted Finder monitor source retained')
-  return {...accepted,quality,manifest:{...accepted.manifest,sourceDigests:{...accepted.manifest.sourceDigests,...quality.manifest.sourceDigests,[QUALITY_RECEIPT]:hash(current(QUALITY_RECEIPT))}}}
  }
  const a=JSON.parse(bytes)
  assert.deepEqual(Object.keys(a).sort(),['schemaVersion','taskId','targetEnvironment','scope','previousSourceSha','approvedMonitorSourceSha','approvalRef','sourceDigests','preservedReceipts','authorisationChanged','schemaChanged','engineChanged','ciChecksWeakened','otherEnvironmentsChanged','runtimeActivationPerformed'].sort())
