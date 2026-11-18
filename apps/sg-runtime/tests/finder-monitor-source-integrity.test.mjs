@@ -1,3 +1,4 @@
+import {knowledgeSourcePredecessor} from '../../architecture-lab/knowledge-source.mjs';
 import './monitor-benchmark-finder.test.mjs'
 import {procurementInsightsEditorialPackagePredecessor} from './procurement-insights-editorial-package-integrity.mjs'
 // Source validation only. Real Render execution and Sentry delivery are separate acceptance.
@@ -12,7 +13,8 @@ import {procurementInsightsLiveAcceptancePredecessor} from './procurement-insigh
 import {assertPciSmartIntegrity} from './pci-smart-integrity.mjs'
 const root=new URL('../../../',import.meta.url),physicalCurrent=p=>readFileSync(new URL(p,root)),cache=new Map()
 const historical=(sha,p)=>{const key=sha+':'+p;if(!cache.has(key))cache.set(key,execFileSync('git',['show',key],{cwd:root,stdio:['ignore','pipe','pipe'],maxBuffer:32*1024*1024}));return Buffer.from(cache.get(key))}
-const current=procurementInsightsEditorialPackagePredecessor(physicalCurrent,historical)?.previousBytes??physicalCurrent
+const knowledge=knowledgeSourcePredecessor(physicalCurrent,historical),beforePackage=knowledge?.previousBytes??physicalCurrent
+const current=procurementInsightsEditorialPackagePredecessor(beforePackage,historical)?.previousBytes??beforePackage
 const hash=b=>createHash('sha256').update(b).digest('hex')
 const receipt=()=>JSON.parse(current(FINDER_MONITOR_RECEIPT))
 const alteredReader=(p,bytes,a)=>f=>f===FINDER_MONITOR_RECEIPT?Buffer.from(JSON.stringify(a)):f===p?bytes:current(f)
