@@ -1,7 +1,7 @@
 {
   "schemaVersion": "1.0",
   "scope": "CURRENT_SDK_SOURCE_INTEGRITY_ONLY",
-  "sourceSnapshotSha": "02c2227dd779b0737fbbed69ab4c9eb3c6ddbc06",
+  "sourceSnapshotSha": "d8239d563ea757cbd88e8af53f164ed055ca501e",
   "status": "PRIVATE_PROTOTYPE_NOT_ADMITTED",
   "platformVersion": "1.38.0",
   "runtimeActivated": false,
@@ -285,7 +285,7 @@
     "apps/platform-source-hub/operations/publication-schedule-source-acceptance.json": "3f9a3de218368152b86cd4c4efebb831f2033256465248dcf320f362d8c0c422",
     "apps/platform-source-hub/operations/stage04-05-owner-plan.json": "c085fcfc2ec920b2b4478a81a7bb4607496c0d704003e27c27a6830433865c80",
     "apps/platform-source-hub/package-lock.json": "ca3034c3f19f26d54ace02f52afd2df9316af7d605f0e0127d5a1385e847f47c",
-    "apps/platform-source-hub/scripts/ci-routing.mjs": "7833b4c41402f11ae62befa6a716d3b59966ad9cf8ecdf9464aabfb7aa752f85",
+    "apps/platform-source-hub/scripts/ci-routing.mjs": "fcdd85613747b7719514369f038b899b438800a562371c4f4934dc8956f5d8b1",
     "apps/platform-source-hub/scripts/migrate.mjs": "e1515ec2e70514ff2bceee1b25431b2ce6de6e027a8bc45e11bc0b5f5b2a72de",
     "apps/platform-source-hub/src/admission.mjs": "a318e56be2b4b455375c3973eb48864134335e3f55e0508e6e1e2deb0938c36d",
     "apps/platform-source-hub/src/capabilities.mjs": "252399f828a91514c4ce452c29cac9a6a0684a2445ae707c347a34e684939765",
