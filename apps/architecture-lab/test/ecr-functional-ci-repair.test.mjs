@@ -62,6 +62,7 @@ test('Calendar CI source bridge rejects altered runtime, helper, record and hist
  assert.throws(()=>completeFunctionalPredecessor(p=>p===CALENDAR_CI_REPAIR_PATHS[0]?(()=>{throw denial})():current(p),historical),e=>e===denial)
 })
 test('SRM shared source view binds every actual SDK byte through the current Calendar graph',()=>{
+ const current=physical
  const view=recurringSourceFilesystem(root)
  assert(view.complete.consumer)
  const combined={...view.manifest.sourceDigests,...view.transport.manifest.sourceDigests,...view.transport.live.manifest.sourceDigests}

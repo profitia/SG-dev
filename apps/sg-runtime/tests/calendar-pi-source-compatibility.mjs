@@ -1,3 +1,4 @@
+import {calendarCurrentMainPredecessor} from '../../architecture-lab/calendar-current-main-source.mjs'
 // Test/build-only bridge to the existing exact Calendar verifier.
 // Ordinary source authentication remains owned by the trusted CI admission.
 import assert from 'node:assert/strict';
@@ -16,6 +17,8 @@ export function calendarPiCompletionSource(before){
  return IMPORT+before.replace(HEAD,HEAD+PREFIX);
 }
 export function calendarPiPredecessor(current,historical){
+ const joined=calendarCurrentMainPredecessor(current,historical)
+ if(joined){const accepted=calendarPiPredecessor(joined.calendarBytes,historical);assert(accepted?.complete,'complete approved Calendar predecessor required');return {...accepted,currentMainComposition:joined.manifest,sourceDigests:{...accepted.sourceDigests,...joined.sourceDigests}}}
  let hook;try{hook=Buffer.from(current(CALENDAR_PI_HOOK))}catch(error){
   const text=String(error?.stderr??error?.message??'');
   if(error?.code==='ENOENT'||error?.status===128&&["' does not exist in ","' exists on disk, but not in "].some(s=>text.includes("'"+CALENDAR_PI_HOOK+s)))return null;

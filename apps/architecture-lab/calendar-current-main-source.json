@@ -26,7 +26,7 @@
     "apps/architecture-lab/sdk-1.34-compatibility.json": "458ddbf661ce1a5666260a072a03f24ac016346bdd9a9efef7f2a1d497eee403",
     "apps/architecture-lab/test/calendar-current-main-source.test.mjs": "e3748831ae55f17f9c1166f48b5caa91b7511505e0326727ff3797e389666440",
     "apps/architecture-lab/test/ecr-complete-functional-source.test.mjs": "2adb0c1cd857c475a59e1f74dc6843d0b0172868c5389876b5dfd028e2c5cfbe",
-    "apps/architecture-lab/test/ecr-functional-ci-repair.test.mjs": "15f44ea514f19e7e2596786b24f81c1aec9a4ff982979dd2fd260e73407f5b53",
+    "apps/architecture-lab/test/ecr-functional-ci-repair.test.mjs": "b49301d95456e9fbf6e82108bad2915b2f5b038562a320633359a38e06206f31",
     "apps/architecture-lab/test/knowledge-source.test.mjs": "ddcdefcc89a5ee2d76e7145ba9f3bde96698f16a50551b746262addaba4fb9f1",
     "apps/architecture-lab/test/manifest-successor-continuity.test.mjs": "e589c6a2a24bf8a91b8d3354b8d1b668a1964014b54e6ee6ebe495f6a2894e0b",
     "apps/architecture-lab/test/payload-capture-publication.test.mjs": "9f00a96134bbf339738793f79597b962f7c3601fc2f5e0b3e0b34d6a8af9dc01",
@@ -200,7 +200,7 @@
     "apps/sg-runtime/tests/assistant-ecr-precision-integrity.mjs": "b620bd03dfa5d065139971d3d1983564ccd2b7f1719aaa8d6b367fe9dd82ac2e",
     "apps/sg-runtime/tests/assistant-notifications-integrity.mjs": "64976c997b075f424d71dbf934a79f33b2d484564a1d28710d159a2eaf225180",
     "apps/sg-runtime/tests/assistant-notifications-integrity.test.mjs": "3b6782c6b6b3958ba7357bac010ae90359a1dc0d4b60a7e9a9a97c26bed43285",
-    "apps/sg-runtime/tests/calendar-pi-source-compatibility.mjs": "1317fb9fcd3923e3d170afe4f4f8b5cbd636b147f88a614f17bdbefab3f1db70",
+    "apps/sg-runtime/tests/calendar-pi-source-compatibility.mjs": "824cb3009ba76f9399f288b0ff70e196beff0e61d1a6787d658ef38415ebf1d6",
     "apps/sg-runtime/tests/calendar-pi-source-compatibility.test.mjs": "ae25ecb0134ca77d3a8176d9b9e7f28b37b5b14866586563364f2e61671d211f",
     "apps/sg-runtime/tests/diagnostic-telemetry-adoption.test.mjs": "974e3f89049da1763a3008d4977be3e10620ad7e429dce4703b42ad9d7991400",
     "apps/sg-runtime/tests/finder-monitor-source-integrity.mjs": "c802bfcb6c0efba606772ba7847cbe769ee1db668ec805e71bc6c647ebd72069",
@@ -592,7 +592,7 @@
           "previousSha256": "c8b2318b7b37abf25411ba66872aab31853b4b4f47a33454983447ff7b6eb42b"
         },
         "apps/architecture-lab/test/ecr-functional-ci-repair.test.mjs": {
-          "currentSha256": "15f44ea514f19e7e2596786b24f81c1aec9a4ff982979dd2fd260e73407f5b53",
+          "currentSha256": "b49301d95456e9fbf6e82108bad2915b2f5b038562a320633359a38e06206f31",
           "previousSha256": "6b8bed1e3b17f44d914a1bb9b188add76d4ffdddd1ef2d694dcab718666f840d"
         },
         "apps/architecture-lab/test/private-recurring-source.test.mjs": {
@@ -722,6 +722,10 @@
         "apps/sg-runtime/tests/assistant-notifications-integrity.test.mjs": {
           "currentSha256": "3b6782c6b6b3958ba7357bac010ae90359a1dc0d4b60a7e9a9a97c26bed43285",
           "previousSha256": "d10f72abb35b26f354e5e8fd552a8359e729b6813a79eb961aeaf0b06f4c8167"
+        },
+        "apps/sg-runtime/tests/calendar-pi-source-compatibility.mjs": {
+          "currentSha256": "824cb3009ba76f9399f288b0ff70e196beff0e61d1a6787d658ef38415ebf1d6",
+          "previousSha256": "1317fb9fcd3923e3d170afe4f4f8b5cbd636b147f88a614f17bdbefab3f1db70"
         },
         "apps/sg-runtime/tests/calendar-pi-source-compatibility.test.mjs": {
           "currentSha256": "ae25ecb0134ca77d3a8176d9b9e7f28b37b5b14866586563364f2e61671d211f",
