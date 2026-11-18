@@ -184,3 +184,94 @@ test('QA role preflight rejects privilege, ownership, schema, expiry and connect
  const failed=createQualityQaRolePreflight({purposeQuery:async()=>{throw Error('synthetic-password-must-not-escape')},evidenceQuery:async()=>({rows:[]}),now})
  await assert.rejects(failed.check(),e=>e.code==='QA_ROLE_PREFLIGHT_UNAVAILABLE'&&!e.message.includes('synthetic-password'))
 })
+
+
+// All keys, connection passwords, messages and evidence below are disposable
+// synthetic fixtures; no existing cloud store, credential or transcript is read.
+async function controlledQaReadFixture(change={}){
+ const {createHash}=await import('node:crypto'),api=await import('../src/cli.mjs')
+ const at=Date.parse('2026-11-18T08:00:00.000Z'),accountId=randomUUID(),serviceId=randomUUID(),storageGeneration=randomUUID()
+ const cases=['pl','en'].map(locale=>({evidenceId:randomUUID(),locale,input:[{role:'developer',content:'synthetic instructions'},
+  {role:'user',content:'synthetic empty source context'},{role:'user',content:'synthetic '+locale+' controlled case'}]}))
+ const digest=v=>createHash('sha256').update(JSON.stringify(v)).digest('hex')
+ const env={TARGET_ENVIRONMENT:'development',AQC_MODE:'CONTROLLER_STANDBY',AQC_PAID_REPAIRS_ENABLED:'false',AQC_PROMOTION_ENABLED:'false',
+  AQC_SERVICE_UUID:serviceId,AQC_QA_ROLE_PREFLIGHT_VERSION:'1.0.0',
+  AQC_QA_PURPOSE_DATABASE_URL:'postgresql://sg2_assistant_quality_authority:synthetic-purpose@ep-late-heart-b9mxo8oi.c-7.eu-central-1.aws.neon.tech/platform_private?sslmode=require&channel_binding=require',
+  AQC_QA_EVIDENCE_DATABASE_URL:'postgresql://sg2_assistant_quality_reader:synthetic-reader@ep-muddy-pine-b22pdyqd.c-6.eu-central-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require',
+  AQC_QA_CONTROLLED_READ_VERSION:'1.0.0',AQC_QA_CONTROLLED_ACCOUNT_ID:accountId,
+  AQC_QA_CONTROLLED_CASES:JSON.stringify(cases.map(c=>({evidenceId:c.evidenceId,inputSha256:digest(c.input),locale:c.locale}))),
+  AQC_QA_CONTROLLED_NOT_BEFORE:'2026-11-18T07:00:00.000Z',AQC_QA_CONTROLLED_UNTIL:'2026-11-19T07:00:00.000Z',
+  AQC_QA_HOST_SOURCE_SHA:'a'.repeat(40),AQC_QA_STORAGE_GENERATION:storageGeneration,
+  AQC_QA_PURPOSE_COMMAND_KEY:'1'.repeat(64),AQC_QA_EVIDENCE_COMMAND_KEY:'2'.repeat(64),AQC_QA_STORAGE_KEY:'3'.repeat(64),...change}
+ const values=cases.map(c=>({applicationId:'spendguru',environment:'development',accountId,evidenceId:c.evidenceId,interactionId:c.evidenceId,
+  occurredAt:'2026-11-18T07:59:00.000Z',earliestInputAt:'2026-11-18T07:59:00.000Z',
+  versions:{applicationSha:'a'.repeat(40),cicVersion:'1.8.0',model:'NONE_DETERMINISTIC'},sourceScopes:[],modelInput:c.input,
+  purpose:{id:'ASSISTANT_QUALITY'},output:{status:'COMPLETE',draft:'',delivered:'synthetic deterministic fallback'}}))
+ let reads=0,clock=at
+ const reader={async read(account,id){reads++;assert.equal(account,accountId);const v=values.find(v=>v.evidenceId===id);assert(v);return structuredClone(v)}}
+ const config=()=>api.readQualityControlledQaReadConfiguration(env,clock)
+ const probe=()=>api.createQualityControlledQaReadProbe({config:config(),evidence:reader,now:()=>clock})
+ return{api,env,values,cases,accountId,serviceId,config,probe,reader,reads:()=>reads,clock:v=>clock=v}
+}
+test('controlled QA startup reads exactly two explicitly bound deterministic cases once and returns only metadata',async()=>{
+ const f=await controlledQaReadFixture(),c=f.config();assert(Object.isFrozen(c));assert(Object.isFrozen(c.cases));assert(c.cases.every(Object.isFrozen))
+ assert.equal(c.connections.purpose.ssl.rejectUnauthorized,true);assert.equal(c.connections.evidence.enableChannelBinding,true)
+ const p=f.api.createQualityControlledQaReadProbe({config:c,evidence:f.reader,now:()=>Date.parse('2026-11-18T08:00:00.000Z')})
+ const result=await p.check();assert.equal(result.status,'CONTROLLED_QA_READ_VERIFIED');assert.equal(result.casesVerified,2)
+ assert.equal(result.qaRawReadPerformed,true);assert.equal(result.qaPayloadExported,false);assert.equal(result.paidOperationPerformed,false)
+ assert.equal(f.reads(),2);assert.deepEqual(await p.check(),result);assert.equal(f.reads(),2)
+ const publicResult=JSON.stringify(result)
+ for(const text of [f.accountId,f.cases[0].evidenceId,f.env.AQC_QA_STORAGE_KEY,'synthetic instructions','synthetic deterministic fallback'])assert(!publicResult.includes(text))
+})
+test('controlled QA read configuration is explicit, closed and cannot turn on payment, promotion or a foreign database',async()=>{
+ const f=await controlledQaReadFixture();assert.equal(f.api.readQualityControlledQaReadConfiguration({}),null)
+ const bad=[
+ {AQC_QA_CONTROLLED_READ_VERSION:'2.0.0'},{TARGET_ENVIRONMENT:'production'},{AQC_MODE:'TECHNICAL_READINESS'},
+ {AQC_PAID_REPAIRS_ENABLED:'true'},{AQC_PROMOTION_ENABLED:'true'},{AQC_QA_ROLE_PREFLIGHT_VERSION:undefined},
+ {AQC_QA_PURPOSE_COMMAND_KEY:undefined},{AQC_QA_EVIDENCE_COMMAND_KEY:'1'.repeat(64)},{AQC_QA_STORAGE_KEY:'2'.repeat(64)},
+ {AQC_CONTROL_COMMAND_KEY:'1'.repeat(64)},{AQC_QA_CONTROLLED_ACCOUNT_ID:f.serviceId},
+ {AQC_QA_CONTROLLED_NOT_BEFORE:'2026-11-19T08:00:00.000Z'},{AQC_QA_CONTROLLED_UNTIL:'2026-11-28T00:00:00.000Z'},
+ {AQC_QA_CONTROLLED_UNTIL:'2026-11-26T00:00:00.000Z'},{AQC_QA_CONTROLLED_CASES:'[]'},{AQC_QA_CONTROLLED_CASES:'{'},
+ {AQC_QA_CONTROLLED_CASES:JSON.stringify([{evidenceId:randomUUID(),inputSha256:'a'.repeat(64),locale:'pl',prompt:'forbidden'},{evidenceId:randomUUID(),inputSha256:'b'.repeat(64),locale:'en'}])},
+ {AQC_QA_PURPOSE_DATABASE_URL:f.env.AQC_QA_PURPOSE_DATABASE_URL.replace('/platform_private','/neondb')},
+ {AQC_QA_EVIDENCE_DATABASE_URL:f.env.AQC_QA_EVIDENCE_DATABASE_URL.replace('sslmode=require','sslmode=disable')}]
+ for(const change of bad)assert.throws(()=>f.api.readQualityControlledQaReadConfiguration({...f.env,...change},Date.parse('2026-11-18T08:00:00.000Z')),undefined,JSON.stringify(Object.keys(change)))
+ assert.throws(()=>f.api.createQualityControlledQaReadProbe({config:{...f.config()},evidence:f.reader}),{code:'CONTROLLED_QA_READ_CONFIGURATION_INVALID'})
+ assert.equal(f.reads(),0)
+})
+test('controlled QA reader rejects foreign, historical, paid, altered or context-bearing evidence without retrying',async()=>{
+ const changes=[
+ v=>v.accountId=randomUUID(),v=>v.evidenceId=randomUUID(),v=>v.interactionId=randomUUID(),
+ v=>v.environment='production',v=>v.versions.applicationSha='b'.repeat(40),v=>v.versions.cicVersion='1.7.0',
+ v=>v.versions.model='paid-model',v=>v.sourceScopes=[{source:'unadmitted'}],v=>v.modelInput[2].content+=' mutation',
+ v=>v.earliestInputAt='2026-11-18T06:00:00.000Z',v=>v.occurredAt='2026-11-18T06:00:00.000Z',
+ v=>v.output.draft='unadmitted generated draft',v=>v.output.status='INTERRUPTED',v=>v.purpose.id='FOREIGN']
+ for(const change of changes){
+  const f=await controlledQaReadFixture();change(f.values[0]);const p=f.probe()
+  await assert.rejects(p.check(),{code:'CONTROLLED_QA_READ_UNAVAILABLE'});const calls=f.reads()
+  await assert.rejects(p.check(),{code:'CONTROLLED_QA_READ_UNAVAILABLE'});assert.equal(f.reads(),calls)
+ }
+})
+test('expired controlled QA probes and expiry during a read cannot authorize additional private work',async()=>{
+ const f=await controlledQaReadFixture(),p=f.probe();f.clock(Date.parse(f.env.AQC_QA_CONTROLLED_UNTIL))
+ const expired=await p.check();assert.equal(expired.status,'CONTROLLED_QA_READ_EXPIRED');assert.equal(expired.casesVerified,0);assert.equal(f.reads(),0)
+ const g=await controlledQaReadFixture(),base=g.reader.read
+ g.reader.read=async(...args)=>{const v=await base(...args);g.clock(Date.parse(g.env.AQC_QA_CONTROLLED_UNTIL));return v}
+ await assert.rejects(g.probe().check(),{code:'CONTROLLED_QA_READ_UNAVAILABLE'});assert.equal(g.reads(),1)
+})
+test('a partial controlled QA read or private provider failure cannot produce a pass or leak its error',async()=>{
+ const f=await controlledQaReadFixture(),read=f.reader.read
+ f.reader.read=async(...args)=>{if(f.reads()===1)throw Error('private raw QA or connection details');return read(...args)}
+ const p=f.probe();await assert.rejects(p.check(),e=>e.code==='CONTROLLED_QA_READ_UNAVAILABLE'&&!e.message.includes('private raw'))
+ assert.equal(f.reads(),1);await assert.rejects(p.check(),{code:'CONTROLLED_QA_READ_UNAVAILABLE'});assert.equal(f.reads(),1)
+})
+
+test('controlled QA shutdown stops before the next private read and never reports interrupted work as ready',async()=>{
+ const f=await controlledQaReadFixture(),stop=new AbortController();stop.abort()
+ const first=await f.probe().check({signal:stop.signal});assert.equal(first.status,'CONTROLLED_QA_READ_STOPPED');assert.equal(first.casesVerified,0);assert.equal(f.reads(),0)
+ const g=await controlledQaReadFixture(),during=new AbortController(),read=g.reader.read
+ g.reader.read=async(...args)=>{const v=await read(...args);during.abort();return v}
+ const p=g.probe(),result=await p.check({signal:during.signal})
+ assert.equal(result.status,'CONTROLLED_QA_READ_STOPPED');assert.equal(result.casesVerified,1);assert.equal(g.reads(),1)
+ assert.deepEqual(await p.check({signal:during.signal}),result);assert.equal(g.reads(),1)
+})
