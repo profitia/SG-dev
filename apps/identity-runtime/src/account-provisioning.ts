@@ -83,7 +83,7 @@ export function createAccountSurface({ configuration: inputConfiguration, client
   const configuration = readConfiguration(inputConfiguration), ownBinding = structuredClone(binding), ownKey = Buffer.from(proofKey)
   const verifiedClient = verifiedEmailClient(client)
   const peers = [...new Set(Object.values(configuration.targets).map(t => t.origin))].filter(origin => origin !== configuration.origin)
-  const provisionerFor = (signal?: AbortSignal, receipt: string|null = null, existingOnly = false) => createIdentityProvisioner({ client: verifiedClient,
+  const provisionerFor = (signal?: AbortSignal, receipt: string|null = null, existingOnly = false, selectedClient: RuntimeSdk = verifiedClient) => createIdentityProvisioner({ client: selectedClient,
     identityApplication: { appId: configuration.applicationId, environment: configuration.environment, issuer: configuration.issuer, authorizedParties: existingOnly ? [configuration.origin, ...peers] : [configuration.origin],
       ...(existingOnly ? { bearerPeerRenewals: peers.map(sourceOrigin => ({ sourceOrigin, targetOrigin: configuration.origin, path: '/v1/account/renew' as const })) } : {}) },
     existingOnly,
@@ -98,14 +98,15 @@ export function createAccountSurface({ configuration: inputConfiguration, client
       return result
     }, limits, signal) })
   provisionerFor() // Validate the private binding without provider/SQL calls.
-  const authenticate = createClerkIdentityAuthenticator({ client: verifiedClient,
+  const authenticateFor = (selectedClient: RuntimeSdk) => createClerkIdentityAuthenticator({ client: selectedClient,
     application: { appId: configuration.applicationId, environment: configuration.environment, issuer: configuration.issuer,
       authorizedParties: [configuration.origin, ...peers], bearerPeerReads: peers.map(sourceOrigin => ({ sourceOrigin, targetOrigin: configuration.origin, path: '/v1/account' })) },
     resolveBinding: key => authority.resolveBinding(key), now })
-  async function read(request: Request) {
+  const authenticate = authenticateFor(verifiedClient)
+  async function read(request: Request, verify = authenticate) {
     checkRequest(request, configuration)
     if (request.method !== 'GET') throw new BoundaryError(403, 'ACCOUNT_READ_ONLY')
-    const actor = await authenticate(request)
+    const actor = await verify(request)
     if (!actor || actor.kind !== 'HUMAN' || !actor.userId || request.signal.aborted) throw new BoundaryError(401, 'ACCOUNT_REQUIRED')
     return Object.freeze({ authenticated: true as const, userId: actor.userId, expiresAt: actor.expiresAt })
   }
@@ -113,10 +114,33 @@ export function createAccountSurface({ configuration: inputConfiguration, client
     checkRequest(request, configuration)
     if (!renewalSchemaDigest || request.method !== 'POST' || request.headers.has('origin') || request.headers.has('cookie')
       || !/^Bearer [\x21-\x7e]{1,16384}$/i.test(request.headers.get('authorization') ?? '')) throw new BoundaryError(403, 'ACCOUNT_RENEWAL_REFUSED')
-    const result = await provisionerFor(request.signal, null, true).ensureAccount(request)
-    const current = await read(new Request(configuration.origin + '/v1/account', { headers: { authorization: request.headers.get('authorization')! }, signal: request.signal }))
-    if (current.userId !== result.userId) throw new BoundaryError(409, 'ACCOUNT_CHANGED')
-    return current
+    // Keep provider/transport failures distinct from a healthy denial. Both
+    // remain fail closed; only a verified denial asks the browser to sign in.
+    let providerFailed = false, identityDenied = false
+    const observe = async <T>(call: () => Promise<T>) => {
+      try { return await call() } catch (error) {
+        if (error instanceof BoundaryError && error.status === 401) identityDenied = true
+        else providerFailed = true
+        throw error
+      }
+    }
+    const observedClient: RuntimeSdk = {
+      authenticateRequest: (request, options) => observe(() => verifiedClient.authenticateRequest(request, options)),
+      sessions: { getSession: id => observe(() => verifiedClient.sessions.getSession(id)), revokeSession: id => verifiedClient.sessions.revokeSession(id) },
+      users: { getUser: id => observe(() => verifiedClient.users.getUser(id)) },
+    }
+    try {
+      const result = await provisionerFor(request.signal, null, true, observedClient).ensureAccount(request)
+      const current = await read(new Request(configuration.origin + '/v1/account', { headers: { authorization: request.headers.get('authorization')! }, signal: request.signal }), authenticateFor(observedClient))
+      if (current.userId !== result.userId) throw new BoundaryError(409, 'ACCOUNT_CHANGED')
+      return current
+    } catch (error) {
+      if (providerFailed) throw new BoundaryError(503, 'ACCOUNT_UNAVAILABLE')
+      if (identityDenied) throw new BoundaryError(401, 'ACCOUNT_REQUIRED')
+      const denied = error as { name?: string; reasonCode?: string } | null
+      if (denied?.name === 'OperationDenied' && denied.reasonCode === 'ACCESS_BASIS_INVALID') throw new BoundaryError(401, 'ACCOUNT_REQUIRED')
+      throw error
+    }
   }, async ensure(request: Request) {
     checkRequest(request, configuration, true)
     // Provisioning is ONLY same-origin. Peer GET admission never permits POST.

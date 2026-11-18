@@ -312,3 +312,15 @@ test('peer renewal cannot bootstrap a missing account, use browser cookies, or a
   const f = accountFixture({ renewal: true, bindingExpired: true, party: 'https://sg2.example.test' })
   assert.equal((await f.handler(new Request(origin + '/v1/account/renew'))).status, 405)
 })
+
+for (const patch of [{ sessionStatus: 'revoked' }, { bindingMissing: true }, { unverified: true }, { party: 'https://foreign.example.test' }]) test('peer renewal reports a current authentication denial as 401: ' + JSON.stringify(patch), async () => {
+  const f = accountFixture({ renewal: true, bindingExpired: true, party: 'https://sg2.example.test', ...patch })
+  const response = await f.handler(new Request(origin + '/v1/account/renew', { method: 'POST', headers: { authorization: 'Bearer synthetic_fixture_only', 'content-type': 'application/json' }, body: '{}' }))
+  assert.equal(response.status, 401); assert.deepEqual(await response.json(), { error: 'ACCOUNT_REQUIRED' })
+  assert(!f.sql.includes('COMMIT')); assert(!f.sql.some(sql => sql.includes('provision_account')))
+})
+for (const patch of [{ providerError: true }, { sdkError: true }, { commitFailure: true }, { wrongRenewalDigest: true }]) test('peer renewal preserves service failures as 503: ' + JSON.stringify(patch), async () => {
+  const f = accountFixture({ renewal: true, bindingExpired: true, party: 'https://sg2.example.test', ...patch })
+  const response = await f.handler(new Request(origin + '/v1/account/renew', { method: 'POST', headers: { authorization: 'Bearer synthetic_fixture_only', 'content-type': 'application/json' }, body: '{}' }))
+  assert.equal(response.status, 503); assert(!f.sql.some(sql => sql.includes('provision_account')))
+})

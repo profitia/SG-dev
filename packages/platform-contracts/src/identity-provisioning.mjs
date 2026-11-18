@@ -59,7 +59,7 @@ export function createIdentityProvisioner({ client, identityApplication, binding
               if (!Number.isSafeInteger(identityUntil) || identityUntil <= now()) deny()
               const existing = renewal && await renewal.revalidate(query, identity, identityUntil)
               if (!existing) {
-                if (existingOnly) deny()
+                if (existingOnly) return null
                 const proof = await sql.attest(query, { operation: 'identity.provision', principal: identity.subject, issuer: identity.issuer, identityUntil, expiresAt: identityUntil })
                 await sql.queryOne(query, 'SELECT profitia_profile.provision_account($1,$2,$3::bigint,$4::bigint,$5) AS user_id', [identity.issuer, identity.subject, identityUntil, proof.until, proof.signature])
               }
