@@ -23,6 +23,27 @@ const protectedPath = name => /(^|\/)AGENTS\.md$/.test(name)
   || /(^|\/)[^/]*(integration|compatibility|provenance|source)[^/]*\.json$/.test(name)
   || /(^|\/)(\.npmrc|\.env[^/]*|development-integration\.json|operation-integration\.json)$/.test(name)
 
+// PROPOSED closed source-only exception. Inert until this policy is independently
+// owner-accepted on authority main and a separately approved ACTIVE ledger record
+// exists. No historical receipt or general source JSON admission is granted.
+export const ASSISTANT_RESERVATION_SOURCE_ADMISSION = Object.freeze({
+  admissionId:"ARCHITECTURE:ARCH-ACG-M1M2-COMPLETION-20261117",
+  sourceSha:"817d20e2e9fea8698ab5f9f5a8f5e553787d5c72",
+  baseSha:"3109989f6a2c6378b3eddfb84cf99d1a199d1f1e",
+  filesSha256:"5f4f8e39d3a64c79deb0778595bd45282e38a3f76c73bf0986a98194505d4967",
+  newSourceRecord:"apps/architecture-lab/assistant-reservation-source.json",
+  protectedTests:Object.freeze(["scripts/governance/controlled-package-ci.test.mjs","scripts/governance/platform-source-hub-foundation.test.mjs"])
+})
+function exactReservationSourceEntry(record, entry) {
+  const pin=ASSISTANT_RESERVATION_SOURCE_ADMISSION
+  const admittedPath=(entry.path===pin.newSourceRecord && entry.status==='added')
+    || (pin.protectedTests.includes(entry.path) && entry.status==='modified')
+  return admittedPath && entry.mode==='100644'
+    && entry.projectKey==='ARCHITECTURE' && record.id===pin.admissionId
+    && record.sourceSha===pin.sourceSha && record.baseSha===pin.baseSha
+    && createHash('sha256').update(JSON.stringify(record.files)).digest('hex')===pin.filesSha256
+}
+
 export function executionProfile(projectKey, governanceRoot = root) {
   const profile = resolveProjectProfile(projectKey, governanceRoot)
   const registry = JSON.parse(fs.readFileSync(path.join(governanceRoot, EXECUTION_PROFILES_PATH), 'utf8'))
@@ -126,7 +147,7 @@ export function assertSourceAdmission(record, {repository,actor,candidateSha,cur
   const names = new Set(), actual = new Map(files.map(f => [f.filename,f]))
   if (actual.size !== files.length) deny('SOURCE_ADMISSION_FILES_REJECTED')
   for (const entry of record.files) {
-    if (!safePath(entry.path) || protectedPath(entry.path) || names.has(entry.path)
+    if (!safePath(entry.path) || (protectedPath(entry.path) && !exactReservationSourceEntry(record,entry)) || names.has(entry.path)
       || !sha.test(entry.blob ?? '') || !['100644','100755'].includes(entry.mode)
       || !['added','modified'].includes(entry.status)) deny('SOURCE_ADMISSION_FILES_REJECTED')
     names.add(entry.path)
