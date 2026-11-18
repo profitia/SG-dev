@@ -1,4 +1,5 @@
 import {assistantQualityPredecessor,QUALITY_RECEIPT} from '../../../apps/sg-runtime/tests/assistant-quality-integrity.mjs'
+import {pathToFileURL} from 'node:url'
 // Test/build-only closed source continuation. Never imported by a runtime.
 import assert from 'node:assert/strict'
 import {createHash} from 'node:crypto'
@@ -166,7 +167,16 @@ export async function createAcgLegacyRecurringFixture(sourceRoot) {
   const pin = String(read(RESERVATION_DERIVED)).match(/ASSISTANT_RESERVATION_SOURCE_SHA='([a-f0-9]{64})'/)?.[1]
   // Authenticate every current source and preserved receipt before creating any
   // historical input. Malformed present records must never select the old root.
-  const view = assistantReservationPredecessor(read, historical, pin)
+  const knowledgeRecord='apps/architecture-lab/knowledge-source.json'
+  let knowledge=null,knowledgePresent=false
+  try { const stat=fs.lstatSync(path.join(sourceRoot,knowledgeRecord));assert(stat.isFile()&&!stat.isSymbolicLink());knowledgePresent=true }
+  catch(error){if(error.code!=='ENOENT')throw error}
+  if(knowledgePresent){
+    const {knowledgeSourcePredecessor}=await import(pathToFileURL(path.join(sourceRoot,'apps/architecture-lab/knowledge-source.mjs')).href)
+    knowledge=knowledgeSourcePredecessor(read,historical);assert(knowledge,'present Knowledge source requires complete authentication')
+  }
+  const acceptedRead=knowledge?.previousBytes??read
+  const view = assistantReservationPredecessor(acceptedRead, historical, pin)
   assert(view, 'present source record requires authenticated predecessor')
   const sourceSha = String(git(['rev-parse', 'HEAD'])).trim()
   const temporary = fs.mkdtempSync(path.join(os.tmpdir(), 'acg-legacy-recurring-test-'))
@@ -178,13 +188,16 @@ export async function createAcgLegacyRecurringFixture(sourceRoot) {
     // Preserve the real observed authority ref in this local test clone.
     const authoritySha = String(git(['rev-parse', '--verify', 'refs/remotes/origin/main^{commit}'])).trim()
     execFileSync('git', ['update-ref', 'refs/remotes/origin/main', authoritySha], {cwd: root, stdio: ['ignore', 'pipe', 'pipe']})
-    const paths = [RESERVATION_RECORD, ...RESERVATION_PATHS, RESERVATION_DERIVED]
-    assert.equal(new Set(paths).size, 46, 'closed reservation fixture inventory')
+    const reservationPaths=[RESERVATION_RECORD,...RESERVATION_PATHS,RESERVATION_DERIVED]
+    assert.equal(new Set(reservationPaths).size,46,'closed reservation fixture inventory')
+    const reserved=new Set(reservationPaths)
+    const knowledgePaths=knowledge?[...Object.keys(knowledge.manifest.sourceDigests),knowledgeRecord,'apps/architecture-lab/knowledge-source.mjs',...['architecture-lab','sg-runtime','srm'].map(app=>'apps/'+app+'/knowledge-source-adoption.json')]:[]
+    const paths=[...new Set([...knowledgePaths,...reservationPaths])]
     for (const relative of paths) {
       assert(!path.isAbsolute(relative) && !relative.split('/').includes('..'))
       const file = path.join(root, relative)
       try {
-        const bytes = view.previousBytes(relative)
+        const bytes = reserved.has(relative)?view.previousBytes(relative):acceptedRead(relative)
         fs.mkdirSync(path.dirname(file), {recursive: true})
         fs.writeFileSync(file, bytes)
         fs.chmodSync(file, 0o644)
@@ -207,10 +220,10 @@ export function assistantReservationPredecessor(current,historical,expectedDiges
  try{current(RESERVATION_RECORD)}catch(e){if(absent(e))return null;throw e}
  const quality=assistantQualityPredecessor(current,historical)
  if(quality?.compositionPreviousBytes){
-  const accepted=originalReservationPredecessor(quality.compositionPreviousBytes,historical,expectedDigest)
+  const accepted=originalReservationPredecessor(quality.host?.reservationPreviousBytes??quality.compositionPreviousBytes,historical,expectedDigest)
   assert(accepted,'accepted ACG predecessor required')
   return {...accepted,quality,historicalReservation:accepted,
-   manifest:{...accepted.manifest,sourceDigests:{...accepted.manifest.sourceDigests,...quality.manifest.sourceDigests,
+   manifest:{...accepted.manifest,sourceDigests:{...Object.fromEntries(Object.entries(accepted.manifest.sourceDigests).map(([p,digest])=>[p,quality.host?.knowledgeManifest?.sourceDigests[p]??digest])),...quality.manifest.sourceDigests,
     [QUALITY_RECEIPT]:hash(current(QUALITY_RECEIPT))}}}
  }
  return originalReservationPredecessor(current,historical,expectedDigest)

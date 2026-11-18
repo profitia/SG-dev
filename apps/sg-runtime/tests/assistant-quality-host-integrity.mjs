@@ -1,3 +1,4 @@
+import {knowledgeSourcePredecessor} from '../../../apps/architecture-lab/knowledge-source.mjs'
 import {assistantReservationPredecessor,RESERVATION_RECORD} from '../../../packages/platform-contracts/test/assistant-reservation-source.mjs'
 // Source-test continuation only; this cannot grant a QA purpose or activation.
 import assert from 'node:assert/strict'
@@ -21,7 +22,9 @@ export const QUALITY_HOST_PATHS=Object.freeze([
  'apps/sg-runtime/tests/procurement-insights-completion-integrity.mjs',
  'apps/architecture-lab/private-recurring-source.mjs',
  'apps/sg-runtime/tests/procurement-insights-editorial-package-integrity.mjs',
- 'packages/platform-contracts/test/assistant-reservation-source.mjs'
+ 'packages/platform-contracts/test/assistant-reservation-source.mjs',
+ 'apps/architecture-lab/knowledge-source.mjs',
+ 'apps/architecture-lab/test/knowledge-source.test.mjs'
 ])
 export const QUALITY_HOST_PRESERVED=Object.freeze([
  'apps/sg-runtime/assistant-quality-integration.json',
@@ -52,6 +55,7 @@ export function assistantQualityHostPredecessor(current,historical){
   throw e
  }
  const a=JSON.parse(bytes)
+ if(a.acceptedComposition?.knowledgeRecordSha256!==undefined)return composedKnowledgeQualityHost(current,historical,a)
  if(Object.hasOwn(a,'acceptedComposition'))return composedQualityHost(current,historical,a)
  assert.deepEqual(Object.keys(a).sort(),['schemaVersion','taskId','scope','targetEnvironment','previousSourceSha','sourceDigests','previousReceipts','cicPublication','responseProtectionActivated','privateQaActivated','cloudInstallationPerformed','pilotStarted'].sort())
  assert.equal(a.schemaVersion,'1.0.0');assert.equal(a.taskId,'SG2-CIC-QUALITY-TECHNICAL-READY-20261117')
@@ -64,7 +68,7 @@ export function assistantQualityHostPredecessor(current,historical){
  const hasLegacyTransport=Object.hasOwn(a.sourceDigests,legacyTransport),hasFinderTransport=Object.hasOwn(a.sourceDigests,finderTransport)
  assert([hasLegacyTransport,hasFinderTransport,hasPackageTransport].filter(Boolean).length<=1,'one closed CI24 transport profile')
  const hasTransport=hasLegacyTransport||hasFinderTransport||hasPackageTransport,transport=hasPackageTransport?packageTransport:hasFinderTransport?finderTransport:legacyTransport
- const paths=QUALITY_HOST_PATHS.filter(p=>p!=='packages/platform-contracts/test/assistant-reservation-source.mjs'&&(p!==common||hasCommon)&&(p!==packageTransport||hasPackageTransport))
+ const paths=QUALITY_HOST_PATHS.filter(p=>p!=='packages/platform-contracts/test/assistant-reservation-source.mjs'&&p!=='apps/architecture-lab/knowledge-source.mjs'&&p!=='apps/architecture-lab/test/knowledge-source.test.mjs'&&(p!==common||hasCommon)&&(p!==packageTransport||hasPackageTransport))
  if(hasFinderTransport)paths.push(finderTransport)
  if(hasLegacyTransport)paths.push(legacyTransport)
  assert.deepEqual(Object.keys(a.sourceDigests).sort(),[...paths].sort())
@@ -121,8 +125,8 @@ function composedQualityHost(current,historical,a){
  assert.deepEqual(Object.keys(a).sort(),[...Object.keys(prior),'acceptedComposition'].sort())
  for(const k of Object.keys(prior).filter(k=>k!=='sourceDigests'))assert.deepEqual(a[k],prior[k],'immutable component metadata '+k)
  assert.deepEqual(a.acceptedComposition,{sourceSha:COMPOSITION_BASE,componentSourceSha:COMPONENT_BASE,reservationRecordSha256:RESERVATION_PIN})
- assert.deepEqual(Object.keys(a.sourceDigests).sort(),[...QUALITY_HOST_PATHS].sort(),'closed CI25 source inventory')
- for(const p of QUALITY_HOST_PATHS){assert.match(a.sourceDigests[p],/^[a-f0-9]{64}$/);assert.equal(hash(current(p)),a.sourceDigests[p],'exact composed CIC source '+p)}
+ assert.deepEqual(Object.keys(a.sourceDigests).sort(),QUALITY_HOST_PATHS.filter(p=>p!=='apps/architecture-lab/knowledge-source.mjs'&&p!=='apps/architecture-lab/test/knowledge-source.test.mjs').sort(),'closed CI25 source inventory')
+ for(const p of QUALITY_HOST_PATHS.filter(p=>p!=='apps/architecture-lab/knowledge-source.mjs'&&p!=='apps/architecture-lab/test/knowledge-source.test.mjs')){assert.match(a.sourceDigests[p],/^[a-f0-9]{64}$/);assert.equal(hash(current(p)),a.sourceDigests[p],'exact composed CIC source '+p)}
  for(const p of QUALITY_HOST_PRESERVED){assert.equal(hash(current(p)),a.previousReceipts[p]);assert.equal(hash(historical(QUALITY_HOST_BASE,p)),a.previousReceipts[p])}
 
  const packagePath='apps/sg-runtime/package.json',lockPath='apps/sg-runtime/package-lock.json'
@@ -181,4 +185,96 @@ function composedQualityHost(current,historical,a){
  }
  return {...legacy,manifest:a,previousBytes:retainCurrent(legacy.previousBytes),
   legacyPreviousBytes:retainCurrent(legacy.legacyPreviousBytes??legacy.previousBytes),compositionPreviousBytes,acceptedComposition:true}
+}
+
+const KNOWLEDGE_COMPOSITION_BASE='2f77dcd19a5ba0bb4dd4c30ed375f4c1d3213586'
+const KNOWLEDGE_RECORD='apps/architecture-lab/knowledge-source.json'
+const KNOWLEDGE_PIN='7bde334dda3ec7068d3cb532ccd8a94f3477cea707abe250431ee16c3b044bf4'
+const KNOWLEDGE_BRIDGE='apps/architecture-lab/knowledge-source.mjs'
+function composedKnowledgeQualityHost(current,historical,a){
+ const prior=JSON.parse(historical(COMPONENT_BASE,QUALITY_HOST_RECEIPT))
+ assert.deepEqual(Object.keys(a).sort(),[...Object.keys(prior),'acceptedComposition'].sort())
+ for(const k of Object.keys(prior).filter(k=>k!=='sourceDigests'))assert.deepEqual(a[k],prior[k],'immutable original CIC component '+k)
+ assert.deepEqual(a.acceptedComposition,{sourceSha:KNOWLEDGE_COMPOSITION_BASE,componentSourceSha:COMPONENT_BASE,
+  reservationRecordSha256:RESERVATION_PIN,knowledgeRecordSha256:KNOWLEDGE_PIN})
+ assert.deepEqual(Object.keys(a.sourceDigests).sort(),[...QUALITY_HOST_PATHS].sort(),'closed CI27 source inventory')
+ for(const p of QUALITY_HOST_PATHS){assert.match(a.sourceDigests[p],/^[a-f0-9]{64}$/);assert.equal(hash(current(p)),a.sourceDigests[p],'exact CIC and Knowledge composition '+p)}
+ for(const p of QUALITY_HOST_PRESERVED){assert.equal(hash(current(p)),a.previousReceipts[p]);assert.equal(hash(historical(QUALITY_HOST_BASE,p)),a.previousReceipts[p])}
+ const packagePath='apps/sg-runtime/package.json',lockPath='apps/sg-runtime/package-lock.json'
+ const expectedPackage=JSON.parse(historical(KNOWLEDGE_COMPOSITION_BASE,packagePath))
+ expectedPackage.dependencies['@profitia/cic-core']='1.8.0'
+ const marker='tests/assistant-economic-calendar.test.ts ',script=expectedPackage.scripts['test:assistant']
+ assert.equal(script.split(marker).length,2)
+ expectedPackage.scripts['test:assistant']=script.replace(marker,marker+'tests/assistant-quality.test.ts ')
+  +' && node --test tests/assistant-quality-integrity.test.mjs'
+  +' && node --import tsx --test tests/assistant-quality-response.test.ts tests/assistant-quality-evidence.test.ts && node --test tests/assistant-quality-host-integrity.test.mjs'
+ assert.deepEqual(JSON.parse(current(packagePath)),expectedPackage,'current admitted CIC manifest permits only its exact core pin and QA tests')
+ const expectedLock=JSON.parse(historical(KNOWLEDGE_COMPOSITION_BASE,lockPath))
+ expectedLock.packages[''].dependencies['@profitia/cic-core']='1.8.0'
+ Object.assign(expectedLock.packages['node_modules/@profitia/cic-core'],QUALITY_CIC_PIN)
+ assert.deepEqual(JSON.parse(current(lockPath)),expectedLock,'current admitted CIC lock permits only the exact published core artifact')
+ const legacy=assistantQualityHostPredecessor(p=>Buffer.from(historical(COMPONENT_BASE,p)),historical)
+ assert(legacy,'complete original CIC component retained')
+ const mapped=new Set([...QUALITY_HOST_PATHS,...QUALITY_HOST_PRESERVED,QUALITY_HOST_RECEIPT,
+  'apps/sg-runtime/lib/assistant/calendar-period.ts','apps/sg-runtime/lib/assistant/context-selection.ts',
+  'apps/sg-runtime/tests/assistant-quality.test.ts','apps/sg-runtime/tests/assistant-quality-integrity.test.mjs',
+  'apps/sg-runtime/tests/assistant-ecr-integrity.mjs','apps/sg-runtime/tests/assistant-ecr-precision-integrity.mjs'])
+ const compositionPreviousBytes=p=>{
+  if(!mapped.has(p))return current(p)
+  try{return Buffer.from(historical(KNOWLEDGE_COMPOSITION_BASE,p))}catch(e){
+   const text=String(e?.stderr??e?.message??'')
+   if(e?.status===128&&(text.includes("'"+p+"' does not exist in ")||text.includes("'"+p+"' exists on disk, but not in ")))throw Object.assign(Error('CIC addition absent from accepted Knowledge'),{code:'ENOENT'})
+   throw e
+  }
+ }
+ for(const p of ['apps/sg-runtime/lib/assistant/calendar-period.ts','apps/sg-runtime/lib/assistant/context-selection.ts',
+  'apps/sg-runtime/tests/assistant-quality.test.ts','apps/sg-runtime/tests/assistant-quality-integrity.test.mjs',
+  'apps/sg-runtime/tests/assistant-ecr-integrity.mjs','apps/sg-runtime/tests/assistant-ecr-precision-integrity.mjs'])
+  assert.deepEqual(Buffer.from(current(p)),Buffer.from(historical(COMPONENT_BASE,p)),'original controlled calendar source retained '+p)
+ assert.equal(hash(current(KNOWLEDGE_RECORD)),KNOWLEDGE_PIN,'immutable accepted Knowledge record')
+ const k=JSON.parse(current(KNOWLEDGE_RECORD))
+ for(const [p,digest]of Object.entries(k.sourceDigests))assert.equal(hash(compositionPreviousBytes(p)),digest,'all accepted Knowledge inputs retained '+p)
+ for(const [p,digest]of Object.entries({...k.preservedReceipts,...k.retainedSuccessorReceipts})){
+  assert.equal(hash(current(p)),digest,'immutable Knowledge receipt '+p)
+  assert.equal(hash(historical(k.previousSourceSha,p)),digest,'original Knowledge receipt '+p)
+ }
+ const knowledge=knowledgeSourcePredecessor(compositionPreviousBytes,historical);assert(knowledge,'complete original Knowledge checks retained')
+ const reservation=assistantReservationPredecessor(knowledge.previousBytes,historical,RESERVATION_PIN);assert(reservation,'complete original ACG checks retained')
+ const common='apps/architecture-lab/private-recurring-source.mjs',entry="export function recurringSourcePredecessor(current,historical){\n"
+ const beforeCommon=String(historical(KNOWLEDGE_COMPOSITION_BASE,common))
+ const prefix=" const quality=assistantQualityPredecessor(current,historical);if(quality){const accepted=recurringSourcePredecessor(quality.compositionPreviousBytes??quality.previousBytes,historical);assert(accepted,'accepted recurring source retained');return {...accepted,quality,manifest:{...accepted.manifest,sourceDigests:{...accepted.manifest.sourceDigests,...quality.manifest.sourceDigests,[QUALITY_RECEIPT]:hash(current(QUALITY_RECEIPT))}}}}\n"
+ assert.equal(beforeCommon.split(entry).length,2)
+ assert.equal(String(current(common)),"import {assistantQualityPredecessor,QUALITY_RECEIPT} from '../sg-runtime/tests/assistant-quality-integrity.mjs'\n"+beforeCommon.replace(entry,entry+prefix),'only additive CIC dispatch before complete Knowledge chain')
+ const transport='apps/sg-runtime/tests/procurement-insights-editorial-package-integrity.mjs',oldTransport=String(historical(COMPONENT_BASE,transport))
+ assert.equal(oldTransport.split('quality.previousBytes').length,2)
+ const expectedTransport=oldTransport.replace('quality.previousBytes','quality.host?.editorialPreviousBytes??quality.compositionPreviousBytes??quality.previousBytes').replace("sourceDigests:{...accepted.manifest.sourceDigests,...quality.manifest.sourceDigests,","sourceDigests:{...Object.fromEntries(Object.entries(accepted.manifest.sourceDigests).map(([p,digest])=>[p,quality.host?.knowledgeManifest?.sourceDigests[p]??digest])),...quality.manifest.sourceDigests,")
+ assert.equal(String(current(transport)),expectedTransport,'all original editorial checks retained')
+ const knowledgeTest='apps/architecture-lab/test/knowledge-source.test.mjs'
+ const acceptedTest=String(historical(KNOWLEDGE_COMPOSITION_BASE,knowledgeTest))
+ const testReader="const root=new URL('../../../',import.meta.url),read=p=>readFileSync(new URL(p,root));",testHistory="const cache=new Map(),history=(sha,p)=>{const key=sha+':'+p;if(!cache.has(key))cache.set(key,execFileSync('git',['show',key],{cwd:root,stdio:['ignore','pipe','pipe']}));return cache.get(key);};"
+ assert.equal(acceptedTest.split(testReader).length,2);assert.equal(acceptedTest.split(testHistory).length,2)
+ const expectedTest="import {assistantQualityPredecessor} from '../../sg-runtime/tests/assistant-quality-integrity.mjs';\n"+acceptedTest.replace(testReader,testReader.replace(',read=',',physical=')).replace(testHistory,testHistory+"\n// Authenticate the complete current CIC graph before the unchanged accepted PK fixture.\nconst quality=assistantQualityPredecessor(physical,history),read=quality?.compositionPreviousBytes??physical;")
+ assert.equal(String(current(knowledgeTest)),expectedTest,'exact additive fixture adapter; every accepted Knowledge assertion unchanged')
+ const packageReceipt='apps/sg-runtime/procurement-insights-editorial-package-integration.json',packaged=JSON.parse(current(packageReceipt))
+ assert.deepEqual(Buffer.from(current(packageReceipt)),Buffer.from(historical(KNOWLEDGE_COMPOSITION_BASE,packageReceipt)))
+ for(const [p,digest]of Object.entries(packaged.sourceDigests)){
+  const actual=hash(compositionPreviousBytes(p))
+  if(actual===digest)continue
+  const replacement=k.replacements[p]
+  assert(replacement,'explicit immutable Knowledge replacement required '+p)
+  assert.equal(replacement.currentSha256,actual,'exact accepted current Knowledge replacement '+p)
+  assert.equal(replacement.previousSha256,digest,'unchanged original editorial expected digest '+p)
+  assert.equal(hash(historical(k.previousSourceSha,p)),digest,'exact original editorial predecessor bytes '+p)
+ }
+ for(const [p,digest]of Object.entries(packaged.preservedReceipts))assert.equal(hash(current(p)),digest,'immutable editorial receipt '+p)
+ const retainCurrent=reader=>p=>{
+  if(!mapped.has(p))return current(p)
+  try{return reader(p)}catch(e){
+   const text=String(e?.stderr??e?.message??'')
+   if(e?.status===128&&(text.includes("'"+p+"' does not exist in ")||text.includes("'"+p+"' exists on disk, but not in ")))throw Object.assign(Error('CIC addition absent from component'),{code:'ENOENT'})
+   throw e
+  }
+ }
+ return {...legacy,manifest:a,previousBytes:retainCurrent(legacy.previousBytes),legacyPreviousBytes:retainCurrent(legacy.legacyPreviousBytes??legacy.previousBytes),
+  compositionPreviousBytes,reservationPreviousBytes:knowledge.previousBytes,editorialPreviousBytes:knowledge.previousBytes,knowledgeManifest:knowledge.manifest,acceptedComposition:true,knowledgeComposition:true}
 }

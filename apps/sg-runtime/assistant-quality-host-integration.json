@@ -11,17 +11,19 @@
     "apps/sg-runtime/lib/assistant/quality-evidence.ts": "fc5c9b4d03422d10df729e991748b23f2c0d7f3528c9c6d083cc2feaed989a71",
     "apps/sg-runtime/migrations/002-assistant-quality-evidence.sql": "15d7aaa57e5db10df0bcf5c2062791fdbddd978a7ffe78880e009283f4885cb9",
     "apps/sg-runtime/package.json": "59a702bc3904f413a9f01ea2e25f6e62f2ee3ea0245c73083f06bde067d1539a",
-    "apps/sg-runtime/package-lock.json": "6a249a404dc43beb049e37816a569db70ce3d9f2beffa721e3c32d6a240d1f61",
+    "apps/sg-runtime/package-lock.json": "49a1c4827622e03395088676d61ee9d402664ed8f046f94f6d6be3b9078d91eb",
     "apps/sg-runtime/tests/assistant-conversation-handler.test.ts": "7a12ea6d6086ed848a4c98e53dc4945525f10bfb5d6b41c7165d92bbfee3d03d",
     "apps/sg-runtime/tests/assistant-quality-response.test.ts": "86a0957bcaa243ac8fbacd57db5024f4e242d99fe9bb52bed563b89a2de1f48e",
     "apps/sg-runtime/tests/assistant-quality-evidence.test.ts": "a301ae44ece516a83afba433d82dcf0e5a2f68272ff04194b677fbec433274bf",
     "apps/sg-runtime/tests/assistant-quality-integrity.mjs": "43a1682cf58f5d42f7339f752901f536d85ff941cef5b1c7778c052f55ee649b",
-    "apps/sg-runtime/tests/assistant-quality-host-integrity.mjs": "3b6ce5a4cf617f47e4d58abee1524ba652132f99c32353563db16d0f816109c4",
-    "apps/sg-runtime/tests/assistant-quality-host-integrity.test.mjs": "7b3cf9c181ca31aa90a3315086f58fbc49a0c5393f4864a125bf0efa6d310960",
+    "apps/sg-runtime/tests/assistant-quality-host-integrity.mjs": "3052ccd6360b9a7fd9bd326683a69ee9e2a7b44f93eae0932ca85c3c47e004d7",
+    "apps/sg-runtime/tests/assistant-quality-host-integrity.test.mjs": "97a7897676b21657afaea2cfccefdc581004aab6b2b1f23943ee6a3ea1673eff",
     "apps/sg-runtime/tests/procurement-insights-completion-integrity.mjs": "00f1b475342a78ad916c03723ae2b9b268963240d101b57c17559308c48daafa",
-    "apps/architecture-lab/private-recurring-source.mjs": "e0df6d616d13f9f9c2a6968e0b9a8464abdf6027b38e7f1144beb776dfb50c8b",
-    "apps/sg-runtime/tests/procurement-insights-editorial-package-integrity.mjs": "cd18207aa99ab90adb60e7ebafcecfa4065a98a2e9a0459e42ab7844d2d85050",
-    "packages/platform-contracts/test/assistant-reservation-source.mjs": "b9cc6b18db4203c2d9e98cea6ff5a01bd79be4fafb8f0ff157800ddee82671e6"
+    "apps/architecture-lab/private-recurring-source.mjs": "34c555f971140e197880e2ff3ddf7c1696112d2744374b238a3f3315c8fbbcf4",
+    "apps/sg-runtime/tests/procurement-insights-editorial-package-integrity.mjs": "8d04bf7ccb45cba30eb0e9d5fb032db2e04e039337674b9d198df6525bf257b1",
+    "packages/platform-contracts/test/assistant-reservation-source.mjs": "0a45aced74c9f83d54ee28e819c7a68a4a2ce263a6b564f6514caf891d7ef7ce",
+    "apps/architecture-lab/knowledge-source.mjs": "4ff6c2d4740764a62c10315f6ffd848460c90a59c0a6483232efde603f891838",
+    "apps/architecture-lab/test/knowledge-source.test.mjs": "df766e101aab6efc2848682cca624dcb8a728290912f1d531e856bfb1079c4f8"
   },
   "previousReceipts": {
     "apps/sg-runtime/assistant-quality-integration.json": "d37226bbb90d585b95aab383dab6fcb7d20ab8698709b50de0e1c8a58d1af2a7",
@@ -50,8 +52,9 @@
   "cloudInstallationPerformed": false,
   "pilotStarted": false,
   "acceptedComposition": {
-    "sourceSha": "53691e907e4cc9b7fbf683c91bbebf41299e9ccc",
+    "sourceSha": "2f77dcd19a5ba0bb4dd4c30ed375f4c1d3213586",
     "componentSourceSha": "583ea4f780c6a7675e7fde85c33fa7039438eedb",
-    "reservationRecordSha256": "bfa9287d9a0a17ef0a935ddc2c0f66c46b42d6c415b2b1fda0d237d2e38fc8b8"
+    "reservationRecordSha256": "bfa9287d9a0a17ef0a935ddc2c0f66c46b42d6c415b2b1fda0d237d2e38fc8b8",
+    "knowledgeRecordSha256": "7bde334dda3ec7068d3cb532ccd8a94f3477cea707abe250431ee16c3b044bf4"
   }
 }

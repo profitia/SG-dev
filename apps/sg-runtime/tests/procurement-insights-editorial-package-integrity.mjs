@@ -51,8 +51,8 @@ export function procurementInsightsEditorialPackagePredecessor(current,historica
  }
  const quality=assistantQualityPredecessor(current,historical)
  if(quality){
-  const accepted=procurementInsightsEditorialPackagePredecessor(quality.compositionPreviousBytes??quality.previousBytes,historical);assert(accepted,'accepted editorial package source retained')
-  return {...accepted,quality,manifest:{...accepted.manifest,sourceDigests:{...accepted.manifest.sourceDigests,...quality.manifest.sourceDigests,[QUALITY_RECEIPT]:hash(current(QUALITY_RECEIPT))}}}
+  const accepted=procurementInsightsEditorialPackagePredecessor(quality.host?.editorialPreviousBytes??quality.compositionPreviousBytes??quality.previousBytes,historical);assert(accepted,'accepted editorial package source retained')
+  return {...accepted,quality,manifest:{...accepted.manifest,sourceDigests:{...Object.fromEntries(Object.entries(accepted.manifest.sourceDigests).map(([p,digest])=>[p,quality.host?.knowledgeManifest?.sourceDigests[p]??digest])),...quality.manifest.sourceDigests,[QUALITY_RECEIPT]:hash(current(QUALITY_RECEIPT))}}}
  }
  const a=JSON.parse(bytes)
  assert.deepEqual(Object.keys(a).sort(),['schemaVersion','taskId','targetEnvironment','scope','previousSourceSha','packageVersionBefore','packageVersionAfter','sourceDigests','preservedReceipts','authorisationChanged','schemaChanged','runtimeCodeChanged','dependenciesChanged','modelChanged','providerCallsPerformed','historicalReportsChanged','automaticPublication'].sort())

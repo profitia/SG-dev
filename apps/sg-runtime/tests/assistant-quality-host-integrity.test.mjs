@@ -64,7 +64,7 @@ test('accepted editorial F metadata, helper and all prior receipts remain indepe
  assert.throws(()=>procurementInsightsEditorialPackagePredecessor(p=>p===lock?Buffer.from(JSON.stringify(bad)):current(p),historical))
 })
 
-test('CI25 composition authenticates current ACG and CIC independently before retaining both frozen predecessor chains',async()=>{
+test('CI27 composition authenticates current ACG and CIC independently before retaining both frozen predecessor chains',async()=>{
  const {assistantReservationPredecessor,RESERVATION_PATHS,RESERVATION_RECORD,RESERVATION_DERIVED}=await import('../../../packages/platform-contracts/test/assistant-reservation-source.mjs')
  const pin='bfa9287d9a0a17ef0a935ddc2c0f66c46b42d6c415b2b1fda0d237d2e38fc8b8'
  const v=assistantReservationPredecessor(current,historical,pin);assert(v?.quality?.host?.acceptedComposition)
@@ -98,7 +98,7 @@ test('self-refreshed current source hashes cannot admit another library, test co
 })
 
 test('finite CIC projection retains unrelated current inputs and their native access errors',()=>{
- const p='apps/architecture-lab/knowledge-source.json',bytes=Buffer.from('current unrelated input')
+ const p='Canon/evidence/aqc-unrelated-current-canary.json',bytes=Buffer.from('current unrelated input')
  const view=assistantQualityHostPredecessor(f=>f===p?bytes:current(f),historical)
  for(const read of [view.previousBytes,view.legacyPreviousBytes,view.compositionPreviousBytes])assert.deepEqual(read(p),bytes)
  const denied=assistantQualityHostPredecessor(f=>{if(f===p)throw Object.assign(Error('DENIED'),{code:'EACCES'});return current(f)},historical)

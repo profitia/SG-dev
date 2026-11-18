@@ -1,4 +1,5 @@
 import {assistantQualityPredecessor,QUALITY_RECEIPT} from '../sg-runtime/tests/assistant-quality-integrity.mjs'
+import {knowledgeSourcePredecessor} from './knowledge-source.mjs'
 // Source acceptance only. Never imported by an application runtime.
 // The reviewed current graph is verified before any immutable predecessor is read.
 import {recurringConsentTransportPredecessor} from '../../packages/platform-contracts/test/recurring-consent-transport-source.mjs'
@@ -21,6 +22,8 @@ const hash=b=>createHash('sha256').update(b).digest('hex')
 const absent=error=>error?.code==='ENOENT'||error?.status===128&&["' does not exist in ","' exists on disk, but not in "].some(s=>String(error?.stderr??error?.message??'').includes("'"+RECURRING_SOURCE_RECORD+s))
 export function recurringSourcePredecessor(current,historical){
  const quality=assistantQualityPredecessor(current,historical);if(quality){const accepted=recurringSourcePredecessor(quality.compositionPreviousBytes??quality.previousBytes,historical);assert(accepted,'accepted recurring source retained');return {...accepted,quality,manifest:{...accepted.manifest,sourceDigests:{...accepted.manifest.sourceDigests,...quality.manifest.sourceDigests,[QUALITY_RECEIPT]:hash(current(QUALITY_RECEIPT))}}}}
+ const knowledge=knowledgeSourcePredecessor(current,historical)
+ if(knowledge){const accepted=recurringSourcePredecessor(knowledge.previousBytes,historical);assert(accepted,'accepted source chain retained');return {...accepted,manifest:knowledge.manifest,predecessorManifest:accepted.manifest,knowledge}}
  const reservation=assistantReservationPredecessor(current,historical,ASSISTANT_RESERVATION_SOURCE_SHA)
  if(reservation){const accepted=recurringSourcePredecessor(reservation.previousBytes,historical);assert(accepted,'all accepted predecessors retained');return {...accepted,reservation}}
  const transport=recurringConsentTransportPredecessor(current,historical);if(transport){const accepted=recurringSourcePredecessor(transport.previousBytes,historical);return {...accepted,transport}}
