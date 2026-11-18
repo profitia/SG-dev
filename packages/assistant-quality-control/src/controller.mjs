@@ -8,6 +8,22 @@ const hash=v=>typeof v==='string'&&/^[a-f0-9]{64}$/.test(v)
 const positive=v=>Number.isSafeInteger(v)&&v>0
 const cleanPatch=p=>p&&hash(p.artifactSha256)&&hash(p.treeSha256)
 
+const jobActions=Object.freeze(['QUALIFY','REPRODUCE','EXECUTE','VERIFY','PROPOSE','CHECKS','PROMOTE','VERIFY_RUNTIME','OBSERVE','ROLLBACK'])
+const uuid=v=>typeof v==='string'&&/^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(v)
+/** Immutable provider identity is persisted before dispatch. A restart reads it
+ * from the committed intent instead of substituting whichever main is current. */
+export function qualityJobBinding({controlSourceSha,nonce,action}){
+ require(sha(controlSourceSha)&&uuid(nonce)&&jobActions.includes(action),'JOB_BINDING_INVALID')
+ return 'aqc-job:'+controlSourceSha+':'+nonce+':'+action
+}
+export function readQualityJobBinding(value,{nonce,action}){
+ require(typeof value==='string'&&uuid(nonce)&&jobActions.includes(action),'JOB_BINDING_INVALID')
+ const parts=value.split(':')
+ require(parts.length===4&&parts[0]==='aqc-job'&&parts[2]===nonce&&parts[3]===action
+  &&qualityJobBinding({controlSourceSha:parts[1],nonce,action})===value,'JOB_BINDING_INVALID')
+ return Object.freeze({controlSourceSha:parts[1],nonce,action})
+}
+
 /** Called only after independent result verification. Neither an agent's report
  * nor a semantic verdict may be passed directly to this state transition. */
 export function advanceIncident(record,action,result,now){
@@ -104,9 +120,10 @@ export function createQualityController({store,actions,authorize,budget,now=Date
  require(typeof workerId==='string'&&workerId.length>0,'CONFIGURATION_REQUIRED')
  for(const [o,names]of [[store,['claim','prepare','recordExternal','complete','stop','release']],[actions,['dispatch','reconcile','cancel','verify']],[budget,['ensureIncident','closeIncident']]])for(const name of names)require(typeof o?.[name]==='function','CONFIGURATION_REQUIRED')
  require(typeof authorize==='function'&&typeof now==='function','CONFIGURATION_REQUIRED')
+ require(actions.bind===undefined||typeof actions.bind==='function','CONFIGURATION_REQUIRED')
  return Object.freeze({async tick(id){
   const claimed=await store.claim({id,workerId,now:now(),leaseMs:30000});if(!claimed)return {status:'BUSY'}
-  let record=claimed.record
+  let record=claimed.record,prepareInFlight=false
   const identity=()=>({id,leaseToken:claimed.leaseToken,revision:record.revision})
   const cancelPending=async()=>{
    // A cancellation HTTP acknowledgement is not confirmation that a job
@@ -153,19 +170,29 @@ export function createQualityController({store,actions,authorize,budget,now=Date
    }
    const action=nextAction(record,now());if(!action)return {status:record.status}
    if(['EXECUTE','PROPOSE','PROMOTE','VERIFY_RUNTIME'].includes(action))await budget.ensureIncident(id,{repairClass:record.repairClass,causeFingerprint:record.causeFingerprint,acceptanceRequired:true})
-   const prepared=await store.prepare({...identity(),action,nonce:randomUUID(),now:now(),consumeAttempt:action==='EXECUTE',consumeRollback:action==='ROLLBACK',enforceReleaseWindow:action==='PROMOTE'})
+   const nonce=randomUUID()
+   // bind is a trusted read-only transport hook, never a dispatch. The native
+   // store commits PREPARE and this binding in one statement/transaction.
+   const binding=actions.bind===undefined?undefined:await actions.bind(action,{record,nonce,authority})
+   if(actions.bind!==undefined)readQualityJobBinding(binding,{nonce,action})
+   prepareInFlight=true
+   const prepared=await store.prepare({...identity(),action,nonce,now:now(),consumeAttempt:action==='EXECUTE',consumeRollback:action==='ROLLBACK',enforceReleaseWindow:action==='PROMOTE',
+    ...(binding===undefined?{}:{externalId:binding})})
+   prepareInFlight=false
    if(prepared.waitUntil)return {status:record.status,waitingUntil:prepared.waitUntil}
    record=prepared.record
+   if(binding!==undefined)require(record.pending?.externalId===binding&&record.pending.nonce===nonce&&record.pending.action===action,'JOB_BINDING_NOT_COMMITTED')
    // All dispatch ports accept finite actions and immutable IDs/digests, never
    // an executable command, URL, transcript, or model-generated instruction.
    const dispatched=await actions.dispatch(action,{record,intent:record.pending,authority})
    if(dispatched.immediate!==undefined)return await finish(dispatched.immediate)
    require(typeof dispatched.externalId==='string'&&dispatched.externalId.length>0&&dispatched.externalId.length<=256,'EXTERNAL_ID_INVALID')
-   record=await store.recordExternal({...identity(),nonce:record.pending.nonce,externalId:dispatched.externalId})
+   if(binding===undefined)record=await store.recordExternal({...identity(),nonce:record.pending.nonce,externalId:dispatched.externalId})
+   else require(dispatched.externalId===binding,'JOB_BINDING_CHANGED')
    return {status:record.status,waitingFor:'RUNNING',nonce:record.pending.nonce}
   }catch(error){
    // An external timeout leaves the committed intent intact for reconciliation.
-   if(record.pending&&['DELIVERY_UNCERTAIN','PROVIDER_UNAVAILABLE','LEASE_LOST'].includes(error?.code))return {status:record.status,waitingFor:'RECONCILIATION'}
+   if((record.pending||prepareInFlight)&&['DELIVERY_UNCERTAIN','PROVIDER_UNAVAILABLE','LEASE_LOST'].includes(error?.code))return {status:record.status,waitingFor:'RECONCILIATION'}
    if(record.release&&!record.pending){
     require(typeof store.contain==='function','CONTAINMENT_STORE_REQUIRED')
     record=await store.contain({...identity(),reason:['LIMIT_EXCEEDED','AUTHORITY_REVOKED','MANDATE_EXPIRED'].includes(error?.code)?error.code:'CONTROL_FAILURE'})
