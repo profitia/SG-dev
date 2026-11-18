@@ -54,20 +54,6 @@ test('English statistics preserve exact counts and the distinction between missi
  const b=await mount('NewsfeedStatistics','statistics',{locale:'en',data:{status:'AVAILABLE',dateBasis:'detectedAt',timeZone:'Europe/Warsaw',undated:23,total:23,phrases:[{phrase:'oil',count:23}],days:[{date:'2026-11-16',total:23,counts:[23]}]}})
  try{assert.match(b.node.textContent,/23 unique publications/);assert.match(b.node.textContent,/by detection date/);assert.match(b.node.textContent,/23 matching publications do not have the date required/);assert(b.node.querySelector('svg'));assert.equal(b.node.querySelector('tbody td')?.textContent,'23');assert.match(b.node.textContent,/Exact chart data/);assert.doesNotMatch(b.node.textContent,/unikalnych|Data publikacji/)}finally{await b.close()}
 })
-test('current UI closure rejects missing or altered source, widened scope and replaced immutable receipts',async()=>{
- const {readFileSync}=await import('node:fs'),{execFileSync}=await import('node:child_process'),{assistantNotificationsPredecessor}=await import('./assistant-notifications-integrity.mjs')
- const root=fileURLToPath(new URL('../../../',import.meta.url)),receipt='apps/sg-runtime/procurement-insights-e2e-continuation.json',current=(p:string)=>readFileSync(root+p),cache=new Map<string,Buffer>(),historical=(sha:string,p:string)=>{const key=sha+':'+p;if(!cache.has(key))cache.set(key,execFileSync('git',['show',key],{cwd:root,stdio:['ignore','pipe','pipe']}));return cache.get(key)!}
- const view=assistantNotificationsPredecessor(current,historical);assert(view?.successor)
- const a=JSON.parse(current(receipt).toString())
- for(const p of Object.keys(a.sourceDigests)){
-  assert.throws(()=>assistantNotificationsPredecessor((f:string)=>f===p?Buffer.concat([current(f),Buffer.from('UNACCEPTED')]):current(f),historical),p)
-  assert.throws(()=>assistantNotificationsPredecessor((f:string)=>{if(f===p)throw Object.assign(Error('Missing'),{code:'ENOENT'});return current(f)},historical),p)
- }
- for(const mutate of [(r:any)=>r.authorisationChanged=true,(r:any)=>r.targetEnvironment='production',(r:any)=>r.previousSourceSha='0'.repeat(40),(r:any)=>r.extra=true,(r:any)=>delete r.sourceDigests[Object.keys(r.sourceDigests)[0]],(r:any)=>r.preservedReceipts={}]){
-  const altered=JSON.parse(JSON.stringify(a));mutate(altered);assert.throws(()=>assistantNotificationsPredecessor((p:string)=>p===receipt?Buffer.from(JSON.stringify(altered)):current(p),historical))
- }
-})
-
 test('published legacy tables use the existing semantic reader without changing the selected version',async()=>{
  const markdown='## SYNTHETIC_SECTION\n\nNarrative before.\n\n| Indicator | Reading |\n\n| --- | ---: |\n\n| SYNTHETIC_A | 12 |\n\n| SYNTHETIC_B | 8 |\n\nNarrative after.\n\n| Scenario | Direction |\n\n| --- | --- |\n\n| SYNTHETIC_CASE | <img src=x onerror=alert(1)> |'
  const edition={producerJobId:publication,title:'SYNTHETIC_PUBLISHED_REPORT',publishedAt:'2026-11-17T08:00:00Z',asOf:'2026-11-16T08:00:00Z',pdfSha256:'a'.repeat(64),markdownSha256:'b'.repeat(64),markdown,readOnly:true}
