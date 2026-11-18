@@ -10,7 +10,7 @@ import {assistantM2Predecessor} from './assistant-m2-integrity.mjs'
 import {srmAssistantM2Predecessor} from '../../srm/scripts/assistant-m2-integrity.mjs'
 const root=fileURLToPath(new URL('../../../',import.meta.url)),cache=new Map()
 const current=p=>fs.readFileSync(path.join(root,p))
-const historical=(sha,p)=>{const key=sha+':'+p;if(!cache.has(key))cache.set(key,execFileSync('git',['show',key],{cwd:root}));return Buffer.from(cache.get(key))}
+const historical=(sha,p)=>{const key=sha+':'+p;if(!cache.has(key))cache.set(key,execFileSync('git',['show',key],{cwd:root,maxBuffer:16*1024*1024}));return Buffer.from(cache.get(key))}
 export function readM2AcceptedSource(input,encoding){
  const absolute=input instanceof URL?fileURLToPath(input):path.resolve(input),relative=path.relative(root,absolute).split(path.sep).join('/')
  assert(relative&&!relative.startsWith('../')&&!path.isAbsolute(relative),'Source must stay inside the repository')
