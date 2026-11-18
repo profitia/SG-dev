@@ -1,0 +1,38 @@
+{
+  "status": "PROPOSED_NOT_ACTIVE_NOT_A_RELEASE_GO",
+  "firstMandatoryDependency": "Actual trusted-main adoption of approved PK R4 source617 and exact policy233f. Planned/private source is not authority. Preserve CIC1179, Calendar1176 and subsequent accepted parallel work.",
+  "approvedInputsRequested": {
+    "source": "80e151c1317fba7d7cb3a75c2d81b2afad7e7f17",
+    "policy": "615be4788ad5784eb79e44e30139100ecebb4646"
+  },
+  "policyAdoption": [
+    "Fresh current main, PMOS require-begin, transport plan and exact own byte/ownership delta",
+    "Publish original approved inputs only after real owner decision",
+    "Preserve accepted parallel policies without new own trust changes",
+    "Use normal internal policy PR and trusted-main validate-sg2 for exact expected SHA when controlled validation is required",
+    "Require whole controlled-run SUCCESS, original ZIP digest/member, all original control files, canonical proof, public required checks",
+    "Normal expected-head merge and independent resulting-main CI/proof"
+  ],
+  "sourceAdoption": [
+    "Retain original58+7 reviews and immutable receipts",
+    "Refresh existing PR1063 original branch after correct policy adoption; preserve original producer ancestry and original consumer bytes/receipts",
+    "Include actual trusted main and preserve the complete82-path blob/status/mode/ownership diff and original input80 ancestry",
+    "Trusted-main validate-sg2 for exact refreshed HEAD with protected schema2 proof",
+    "Require original artifact, exact candidate/control/review binding, isolated clean source/execution, full public owner checks, normal integration and resulting-main proof"
+  ],
+  "developmentRelease": [
+    "Frozen owner plan unchanged: exactAcceptedMainOnly=true",
+    "After source adoption prepare exact accepted-main release GO, five resource IDs and complete fresh LKG; this package is not an unknown future release GO",
+    "Preserve newer parallel LIVE, six existing binding rows, eight public config leaves, all other rights/counters/terms; compare-and-swap before writes",
+    "Only approved Calendar Development activation and exact releases; no Staging/Production/StageII",
+    "Real15-series/four-schedule pipeline and one marked opt-in mail: signed DELIVERED plus actual inbox receipt; replay/opt-out/revocation negatives",
+    "Close proper PMOS/PHR/MEMOROS only after real acceptance and publication readback"
+  ],
+  "exclusions": [
+    "No admin merge, waiver, weaker CI or personal-token fallback",
+    "No new controller history projector or ordinary-source protected-path bypass",
+    "No unreviewed package/peer allowance, grant, account, provider, cost, resource or environment",
+    "No rollback of newer foreign LIVE or database restore",
+    "No business-complete claim from private tests, PR, CI or deployment"
+  ]
+}

@@ -1,0 +1,79 @@
+{
+  "status": "PRIVATE_PREDEPLOYMENT_PASS_NOT_CANONICAL_GITHUB_CI",
+  "exactSource": "80e151c1317fba7d7cb3a75c2d81b2afad7e7f17",
+  "exactPolicy": "615be4788ad5784eb79e44e30139100ecebb4646",
+  "actualAuthoritySnapshot": "74c4e7f16bdb5d6b09aea289dc0d44ac1b0cdde7",
+  "fullSourceIntegrity": {
+    "passed": 122,
+    "failed": 0,
+    "skipped": 0,
+    "composition": "ea717832417e8a27fba08795873fe472478dedda",
+    "log": "owner1161-pk617-schema2-final-full-source.log",
+    "logSha256": "c13b72343d099fa24c9bfbfaa43f431e11f3602e89366fb51c2bea9cdd1ba582"
+  },
+  "targetedPolicySecurityAndLegacyCases": {
+    "passed": 6,
+    "failed": 0,
+    "skipped": 0,
+    "log": "owner1161-pk617-schema2-prepared-remaining-and-security-tests.log"
+  },
+  "fullExactPolicyRegression": {
+    "passed": 347,
+    "failed": 0,
+    "skipped": 0,
+    "log": "owner1161-pk617-schema2-final-full-controller.log",
+    "logSha256": "3dc6f61bb0f74fae90435c10f4695380494e1b62a7fc62b15f6dc5ab4f3de932"
+  },
+  "fullExactBackendRegression": {
+    "ECR": {
+      "passed": 52,
+      "failed": 0,
+      "skipped": 0,
+      "log": "owner1161-final80-pg16-economic-calendar-runtime-economic-calendar-runtime-full-tests.log",
+      "logSha256": "5529d813a15d3cc4e1badbf797d9b1c4e30371b108a5fb73fdde2aedf7f27a56"
+    },
+    "Identity": {
+      "passed": 393,
+      "failed": 0,
+      "skipped": 0,
+      "log": "owner1161-final80-pg16-identity-runtime-identity-runtime-full-tests.log",
+      "logSha256": "a22a092a211776d6efa286fef639ce383840407357c435ee9f16d84e8bfda27b"
+    },
+    "SourceHub": {
+      "passed": 139,
+      "failed": 0,
+      "skipped": 0,
+      "log": "owner1161-final80-pg16-platform-source-hub-platform-source-hub-full-tests.log",
+      "logSha256": "b7770126d8fb7ca98eaf1dbbc75878af3cad170635caaea788893244210163c1"
+    }
+  },
+  "builds": {
+    "Identity": "PASS",
+    "ECR": "PASS",
+    "SourceHub": "PASS"
+  },
+  "earlierAttemptsPreserved": true,
+  "providerReadiness": {
+    "renderExistingCliAccessToFiveExactResources": true,
+    "newTokensCreated": false,
+    "currentSg2LiveSource": "d5eb40a061dd24c5ea65f9f373682179458cb589",
+    "currentSg2LiveDeploy": "dep-dbul4gdckfvc73chhgk0",
+    "sixBindingVersions": {
+      "dispatch": 54,
+      "source": 56,
+      "e1": 9,
+      "component": 7,
+      "composer": 10,
+      "counter": 10
+    },
+    "fullReleaseLkgStillRequired": true
+  },
+  "canonicalGithubCiForNewPolicyAndSource": "NOT_RUN_NOT_CLAIMED",
+  "calendarProductDeployments": 0,
+  "calendarProductMigrations": 0,
+  "calendarMailSubmissions": 0,
+  "businessAcceptance": false,
+  "pmosBusinessClosed": false,
+  "observedAt": "2026-11-18T09:39:08.781547+00:00",
+  "earlierAttemptsPreservedDetail": "Previous source/policy experiments and failed fixture runs remain retained. Final source corrections preserve all original assertions and isolate the historical protocol on exact Cal69. Two prior full-controller failures were caused by the private clone origin URL; restoring the actual public GitHub origin resolved them without policy or test weakening."
+}

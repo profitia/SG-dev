@@ -1,0 +1,35 @@
+{
+  "status": "EXACT_PRIVATE_INPUTS_PENDING_OWNER_DECISION",
+  "source": {
+    "sha": "80e151c1317fba7d7cb3a75c2d81b2afad7e7f17",
+    "tree": "b41eae836457a6d72bc14bf828b860f9eab72c81",
+    "parents": [
+      "051dfdfc3f2cacc4dd2a914361e21f536d611540"
+    ],
+    "rawCommitUtf8": "tree b41eae836457a6d72bc14bf828b860f9eab72c81\nparent 051dfdfc3f2cacc4dd2a914361e21f536d611540\nauthor Profitia Calendar Agent <agent@profitia.local> 1794993377 +0000\ncommitter Profitia Calendar Agent <agent@profitia.local> 1794993377 +0000\n\nproposal(calendar): isolate historical protocol assertion from schema2 source validation\n"
+  },
+  "policy": {
+    "sha": "615be4788ad5784eb79e44e30139100ecebb4646",
+    "tree": "b4cfb61c36f559bc7e646aa5442135a66fca8444",
+    "parents": [
+      "75685107b391639e7c5d0266bab0e7793af35339"
+    ],
+    "rawCommitUtf8": "tree b4cfb61c36f559bc7e646aa5442135a66fca8444\nparent 75685107b391639e7c5d0266bab0e7793af35339\nauthor Profitia Calendar Agent <agent@profitia.local> 1794993567 +0000\ncommitter Profitia Calendar Agent <agent@profitia.local> 1794993567 +0000\n\nproposal(ci): bind final corrected Calendar source input\n"
+  },
+  "sourceReviewBase": "617ae48d975e241e1df7d6b051ce586e0d5074bd",
+  "policyPatchBase": {
+    "normalCompositionInputs": [
+      "8ff38c7e80a55226391073c9ff89a26692174178",
+      "74c4e7f16bdb5d6b09aea289dc0d44ac1b0cdde7"
+    ],
+    "normalCompositionTree": "d13203ee670099c0c2844a4a686ef44e83a47b3a",
+    "approvedUnderlyingPolicy": "233f288261a587f112b05f7dd6d9a4ec7df0ead2",
+    "calendarPolicyAlreadyAcceptedInMain": "0a56b29bde15fa5bed2d5ab67cd12757bec0c92a",
+    "actualAcceptedMainAtPreparation": "74c4e7f16bdb5d6b09aea289dc0d44ac1b0cdde7"
+  },
+  "sourcePatchSha256": "498728d4fc395514426c686267d1ab41c18efbbb8c54ad93f21bb87d96b86dd6",
+  "policyPatchSha256": "6bd632b7a1d3b01fede9d302580a5122d4c30c5e7544d258b67c98ef4617c232",
+  "sourcePatchBytes": 548386,
+  "policyPatchBytes": 82115,
+  "reconstruction": "Apply source.patch to exact PK617 to reproduce the source tree. Apply policy.patch to the specified normal composition tree to reproduce both protected files. Exact native commit objects and parents remain in the existing Codespaces; publication of active inputs requires actual owner GO. Normal transport preserves original input ancestry and the entire owned diff on actual accepted main."
+}
