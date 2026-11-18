@@ -8,9 +8,11 @@ export const IDENTITY_PROVISIONING_CONTRACT = Object.freeze({ id: 'profitia.iden
 /** Uses the EXISTING authenticator. Its binding callback is reached only after
  * official SDK/session/user checks. A real transaction cannot commit before the
  * authenticator's final proof/binding/expiry checks have also succeeded. */
-export function createIdentityProvisioner({ client, identityApplication, binding, schemaDigest, renewalSchemaDigest, proofKey, transact, now = Date.now }) {
+export function createIdentityProvisioner({ client, identityApplication, binding, schemaDigest, renewalSchemaDigest, proofKey, transact, existingOnly = false, now = Date.now }) {
   if (typeof transact !== 'function' || identityApplication?.appId !== binding?.applicationId || identityApplication?.environment !== binding?.environment
-    || identityApplication?.bearerPeerReads?.length) throw new TypeError('Explicit same-receiver identity application, existing store and real transaction required')
+    || identityApplication?.bearerPeerReads?.length || typeof existingOnly !== 'boolean'
+    || !existingOnly && identityApplication?.bearerPeerRenewals?.length
+    || existingOnly && (!renewalSchemaDigest || !identityApplication?.bearerPeerRenewals?.length)) throw new TypeError('Explicit same-receiver provisioning or bounded existing-only renewal required')
   const application = structuredClone(identityApplication)
   const store = createAccessStore({ binding, now })
   const sql = createProfileSql({ binding, issuer: application.issuer, schemaDigest, proofKey, now })
@@ -20,6 +22,12 @@ export function createIdentityProvisioner({ client, identityApplication, binding
   return Object.freeze({ contract: IDENTITY_PROVISIONING_CONTRACT,
     async ensureAccount(request) {
       if (!(request instanceof Request) || request.method !== 'POST') deny()
+      if (existingOnly) {
+        const url = new URL(request.url)
+        if (url.pathname !== '/v1/account/renew' || url.search || url.hash
+          || request.headers.has('cookie') || request.headers.has('origin')
+          || !/^Bearer [\x21-\x7e]{1,16384}$/i.test(request.headers.get('authorization') ?? '')) deny()
+      }
       let entered = false, finished = false, ownedResult
       try {
         const result = await transact(async ({ query }) => {
@@ -51,6 +59,7 @@ export function createIdentityProvisioner({ client, identityApplication, binding
               if (!Number.isSafeInteger(identityUntil) || identityUntil <= now()) deny()
               const existing = renewal && await renewal.revalidate(query, identity, identityUntil)
               if (!existing) {
+                if (existingOnly) return null
                 const proof = await sql.attest(query, { operation: 'identity.provision', principal: identity.subject, issuer: identity.issuer, identityUntil, expiresAt: identityUntil })
                 await sql.queryOne(query, 'SELECT profitia_profile.provision_account($1,$2,$3::bigint,$4::bigint,$5) AS user_id', [identity.issuer, identity.subject, identityUntil, proof.until, proof.signature])
               }

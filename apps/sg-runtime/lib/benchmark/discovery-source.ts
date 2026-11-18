@@ -54,7 +54,8 @@ export function createFinderSourceTransport(options:FinderSourceOptions){
  const sourceHosts=new Map<FinderSource,ReturnType<typeof createPlatformIngestionHost<Prisma.TransactionClient>>>()
  const sourceHost=(provider:FinderSource)=>{
   let host=sourceHosts.get(provider);if(host)return host
-  host=createPlatformIngestionHost<Prisma.TransactionClient>({application:fixed.application,binding:fixed.binding,source:finderSourcePolicy(provider).source,now,
+  host=createPlatformIngestionHost<Prisma.TransactionClient>({application:fixed.application,source:finderSourcePolicy(provider).source,now,
+   binding:provider==='OPENAI'?((({unmeteredSchemaDigest,requiredQuotaMode,...rest})=>rest)(fixed.binding)):fixed.binding,
    independentQuery:discoveryQuery(auditPrisma),transact:(work,limits)=>prisma.$transaction(tx=>work({query:discoveryQuery(tx),transaction:tx}),{timeout:limits.timeoutMs,maxWait:limits.maxWaitMs}),
    validateSharedPayload:v=>exact(v,'action,callId,configurationVersion,httpStatus,intentDigest,requestDigest,responseDigest,status')})
   sourceHosts.set(provider,host);return host

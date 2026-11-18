@@ -3,12 +3,12 @@ import type {AccessQuery} from './access-store.mjs'
 import type {PrivateTransactionOptions} from './private-operation-host.mjs'
 export interface PlatformIngestionBinding {
   applicationId:string;environment:Environment;projectId:string;branchId:string;databaseName:string;role:string
-  deploymentId:string;configurationVersion:string;schemaDigest:string;unmeteredSchemaDigest?:string
+  deploymentId:string;configurationVersion:string;schemaDigest:string;unmeteredSchemaDigest?:string;requiredQuotaMode?:'UNMETERED'
 }
 export interface PlatformReceipt {readonly effectId:string;readonly status:'COMMITTED'}
 export interface PlatformSourceBinding {
   readonly sourceId:string;readonly applicationId:string;readonly environment:Environment;readonly projectId:string;readonly branchId:string;readonly databaseName:string
-  readonly schemaDigest:string;readonly unmeteredSchemaDigest?:string;readonly payloadSchema:string;readonly qualityVersion:string;readonly classificationVersion:string
+  readonly schemaDigest:string;readonly unmeteredSchemaDigest?:string;readonly requiredQuotaMode?:'UNMETERED';readonly payloadSchema:string;readonly qualityVersion:string;readonly classificationVersion:string
 }
 export interface PlatformReceiptEvidence extends PlatformSourceBinding {
   readonly sourceId:string;readonly resourceId:string;readonly contentDigest:string;readonly idempotencyKeyDigest:string

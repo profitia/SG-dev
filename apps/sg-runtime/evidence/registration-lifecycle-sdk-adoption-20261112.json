@@ -1,0 +1,16 @@
+{
+  "schemaVersion": "1.0",
+  "taskId": "SG2-REGISTRATION-LIFECYCLE-SDK-ADOPTION-20261112",
+  "recordedAt": "2026-11-13T05:28:34.365Z",
+  "scope": "SOURCE_METADATA_PENDING_JOINT_ACCEPTANCE",
+  "changes": [
+    "Consumer locks select actual SDK1.37 producer",
+    "maps-embed retains all prior exact supported peers and adds1.37.0; executable source unchanged",
+    "Paired exact source receipt and full joint CI pending"
+  ],
+  "runtimeOptedIn": false,
+  "sqlInstalled": false,
+  "permissionsChanged": false,
+  "providerCallsPerformed": false,
+  "deploymentPerformed": false
+}

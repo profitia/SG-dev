@@ -662,3 +662,40 @@ neither adds an ALLOW cache nor promises rollback/cancellation of remote work.
 Explicit GET/NONE/HTTPS protocol for canonical encoded API names and bounded lists. Existing STORAGE_PATH and PUBLIC_PATH semantics are unchanged. A caller must supply `apiPathSchemaDigest`, adopt optional SQL028 and obtain an independently admitted immutable native policy. The existing Source/external host remains the sole network sender and owns counters/settlement. Missing protocol admission fails closed. No owner/runtime roles, provider grants, budgets, identities or infrastructure are activated by this source change. SQL001/008/009/012 retain their exact bytes. Consumer receipt/digest adoption is required before main acceptance.
 
 SQL028 deliberately targets the new disabled SQL001/008/009/012 Source Hub installation. It refuses an active Source installation or existing PUBLIC_WEB/GUS SOAP extensions, rather than overwriting their accepted validators/descriptors. It is not a migration for SG2/SRM databases. Those consumers only adopt the compatible SDK source and retain their existing SQL/policies.
+
+### Explicit unmetered Benchmark Finder requests and Source continuity
+
+SQL034 is an optional SQL027 successor for `benchmark.discovery.request`: quota
+schema 1.1.0, Root candidate.25 and private host 1.16.0. SQL027 and its supplier
+opt-in remain unchanged. Consumers explicitly supply `benchmarkQuotaSchemaDigest`
+(the SHA-256 of SQL034); the supplier `quotaSchemaDigest` cannot enable discovery.
+The benchmark opt-in accepts UNMETERED only. Existing physical windows/capacities
+remain historical; the effective policy exposes null quantity bounds and expiry.
+
+A controlled owner installs SQL034 and grants the ordinary foreground role only
+its four `benchmark_quota_*` descriptor/policy/reserve/accept functions. The owner
+calls `activate_benchmark_unmetered(application, ownerBasis, expectedVersions)`.
+The complete active-policy version map is checked. Counts and identities remain
+unchanged and mode transitions are recorded. The application default provisions
+an UNMETERED policy only after current normal E1 entitlement checks; a revoked
+policy/default is never silently reinstated. No product or user access is granted.
+
+Source uses the unchanged SQL024 digest plus optional SQL035. Its controlled
+owner calls `activate_unmetered_sources(role, application, sourceIds, ownerBasis,
+expectedVersions, expectedBindingVersion)`. Expected versions cover all five
+controls per source returned by `continuity_controls`. Activation preserves counts
+and records before/after definitions, then binds the native policy to its current
+parent version. Repeating the same admitted installation is idempotent.
+
+The ordinary Source role receives only `maintain_source_technical_access(digest)`.
+This renews existing finite technical leases to 30 days, before expiry, under an
+active revocable owner basis; it does not recreate revoked/expired rights. It
+refuses changed scope, DENY grants and potentially active external calls. Historical
+unreachable/uncertain calls and charges remain unchanged. Installations must run
+renewal at startup and hourly; deferred/failed renewal retries after one minute.
+
+Finder bindings require `unmeteredSchemaDigest` and `requiredQuotaMode:'UNMETERED'`
+for both Source transactions and external admissions. This prevents a later
+installer from restoring finite pools. Other consumers keep their default policy.
+For SG2 this applies only to its two Macrobond sources, never OpenAI. Endpoint,
+OAuth, timeout, concurrency, response-size and provider 429/Retry-After rules remain.

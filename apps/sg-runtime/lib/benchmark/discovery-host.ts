@@ -40,7 +40,7 @@ async function installed(query:AccessQuery,boundaryDigest:string){
  if(rows.rows.length!==1||!d||d.applicationId!=='spendguru'||d.discoverySchemaVersion!=='1.0.0'
   ||d.discoveryBoundaryDigest!==boundaryDigest)throw new OperationDenied('POLICY_UNAVAILABLE')
 }
-export function createSg2DiscoveryRequestHost(options:DiscoveryHostOptions&{requestLedger:{schemaDigest:string;externalSchemaDigest:string;operationSchemaDigest:string}}){
+export function createSg2DiscoveryRequestHost(options:DiscoveryHostOptions&{requestLedger:{schemaDigest:string;externalSchemaDigest:string;operationSchemaDigest:string;benchmarkQuotaSchemaDigest?:string}}){
  return createPrivateOperationHost<Prisma.TransactionClient>({...base(options,'benchmark.discovery.request'),requestLedger:options.requestLedger,
   readResources:async({actor,request,scope,query})=>{
    const command=readDiscoveryCommand(request.payload)
