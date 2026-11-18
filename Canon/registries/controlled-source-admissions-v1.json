@@ -1189,14 +1189,14 @@
       "targetEnvironment": "development",
       "scope": "SOURCE_VALIDATION_ONLY",
       "approvalRef": "https://github.com/profitia/SG-dev/commit/2040e9e7430fd6b164f8726e3f92d3654b804e44",
-      "sourceSha": "817d20e2e9fea8698ab5f9f5a8f5e553787d5c72",
-      "baseSha": "3109989f6a2c6378b3eddfb84cf99d1a199d1f1e",
+      "sourceSha": "03eb7c82853ecac617544d81abc61e1350af383b",
+      "baseSha": "5f3f91beaa6c32d9528c3c6d3e233808540d1532",
       "validFrom": "2026-11-18T10:37:41Z",
       "validUntil": "2026-11-19T14:39:02Z",
       "files": [
         {
           "path": "apps/architecture-lab/assistant-reservation-source.json",
-          "blob": "8acb84dc86e6c84ccd1ac68319b311f7b375e343",
+          "blob": "72a20fba266aee25d7c6c8d1dc975b96411214f9",
           "mode": "100644",
           "status": "added",
           "projectKey": "ARCHITECTURE",
@@ -1205,7 +1205,7 @@
         },
         {
           "path": "apps/architecture-lab/private-recurring-source.mjs",
-          "blob": "38e65559374e92fab860f17384d7fdab1032e84e",
+          "blob": "fe177905841b16c65d7a7340fc5073950cd71c91",
           "mode": "100644",
           "status": "modified",
           "projectKey": "ARCHITECTURE",
@@ -1592,7 +1592,7 @@
         },
         {
           "path": "scripts/governance/controlled-package-ci.test.mjs",
-          "blob": "f3cfaca82cf438c846c392dbe6a5c3355777bfe2",
+          "blob": "13ac0dc1e997359e8da2452d841ec6887f36b31a",
           "mode": "100644",
           "status": "modified",
           "projectKey": "ARCHITECTURE",
