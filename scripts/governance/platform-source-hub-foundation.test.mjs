@@ -385,9 +385,11 @@ import {bsdcManifestContinuityCurrent, BSDC_MANIFEST_CONTINUITY as bsdcLabPolicy
 import {bsdcManifestContinuityTrustedCurrent, BSDC_MANIFEST_CONTINUITY as bsdcTrustedPolicy, BSDC_V11_DOCUMENTATION_REVIEW, marketCalendarTrustedPredecessor, assertPrivateRecurringProvenance, selectCandidate, assertBsdcDocumentationReviewEntry} from './controlled-package-ci.mjs'
 const bsdcHistoryCache=new Map()
 const bsdcHistory=(sha,p)=>{const k=sha+':'+p;if(!bsdcHistoryCache.has(k))bsdcHistoryCache.set(k,execFileSync('git',['cat-file','blob',k],{cwd:root,stdio:['ignore','pipe','pipe']}));return Buffer.from(bsdcHistoryCache.get(k))}
-const bsdcPhysical=p=>fs.readFileSync(path.join(root,p))
-// The four-document acceptance fixture uses its whole real historical base.
-const bsdcApproved=p=>bsdcTrustedPolicy.sourcePaths.includes(p)?bsdcHistory(BSDC_V11_DOCUMENTATION_REVIEW.approvedSourceSha,p):bsdcHistory(bsdcTrustedPolicy.baseSha,p)
+// Keep the exact self-pinned BSDC regression on its complete real accepted tree.
+// Actual current SDK source is independently authenticated by the tests above.
+const bsdcPhysical=p=>bsdcHistory('5f3f91beaa6c32d9528c3c6d3e233808540d1532',p)
+// Overlay only the four explicitly approved documents on that full legacy tree.
+const bsdcApproved=p=>bsdcTrustedPolicy.sourcePaths.includes(p)?bsdcHistory(BSDC_V11_DOCUMENTATION_REVIEW.approvedSourceSha,p):bsdcPhysical(p)
 const bsdcFiles=()=>Object.entries(BSDC_V11_DOCUMENTATION_REVIEW.entries).map(([filename,e])=>({filename,sha:e.sha,status:e.status}))
 const bsdcContext={repository:'profitia/SG-dev',ref:'refs/heads/main',workflowRef:'profitia/SG-dev/.github/workflows/platform-contracts-ci.yml@refs/heads/main',event:'workflow_dispatch',actor:'profitia',triggeringActor:'profitia',controlSha:bsdcTrustedPolicy.baseSha}
 const bsdcPr=()=>({number:1057,state:'open',base:{ref:'main',repo:{full_name:'profitia/SG-dev'},sha:bsdcTrustedPolicy.baseSha},head:{ref:BSDC_V11_DOCUMENTATION_REVIEW.branch,repo:{full_name:'profitia/SG-dev'},sha:BSDC_V11_DOCUMENTATION_REVIEW.approvedSourceSha},user:{login:'profitia'},changed_files:4})
