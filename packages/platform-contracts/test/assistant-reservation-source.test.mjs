@@ -54,3 +54,18 @@ test('Finder current-source aggregate authenticates the complete ACG composition
  assert.throws(()=>view.previousBytes("apps/sg-runtime/tests/finder-monitor-source-integrity.mjs"),{code:'ENOENT'})
  for(const p of ["apps/sg-runtime/tests/finder-monitor-source-integrity.mjs","apps/sg-runtime/tests/procurement-insights-editorial-integrity.mjs",RESERVATION_RECORD,RESERVATION_DERIVED])assert.throws(()=>finderMonitorPredecessor(f=>f===p?Buffer.concat([current(f),Buffer.from('tamper')]):current(f),historical),p)
 })
+
+test('Finder ACG composition retains accepted package proof and rejects source or permission drift',async()=>{
+ const {finderMonitorPredecessor}=await import('../../../apps/sg-runtime/tests/finder-monitor-source-integrity.mjs')
+ const {procurementInsightsEditorialPackagePredecessor,EDITORIAL_PACKAGE_PATHS,EDITORIAL_PACKAGE_RECEIPT}=await import('../../../apps/sg-runtime/tests/procurement-insights-editorial-package-integrity.mjs')
+ const {createHash}=await import('node:crypto')
+ const view=finderMonitorPredecessor(current,historical);assert(view?.reservation);assert(view.editorialPackage)
+ for(const p of [...EDITORIAL_PACKAGE_PATHS,EDITORIAL_PACKAGE_RECEIPT]){
+  assert.equal(view.manifest.sourceDigests[p],createHash('sha256').update(current(p)).digest('hex'),p)
+  assert.throws(()=>finderMonitorPredecessor(f=>f===p?Buffer.concat([current(f),Buffer.from('tamper')]):current(f),historical),p)
+ }
+ const previous=procurementInsightsEditorialPackagePredecessor(current,historical);assert(previous)
+ assert(finderMonitorPredecessor(previous.previousBytes,historical)?.reservation)
+ for(const error of [Object.assign(Error('package denied'),{code:'EACCES'}),Object.assign(Error('unrelated history failure'),{status:128,stderr:"path 'foreign' does not exist in 'history'"})])assert.throws(()=>finderMonitorPredecessor(p=>{if(p===EDITORIAL_PACKAGE_RECEIPT)throw error;return current(p)},historical),e=>e===error)
+ assert.throws(()=>finderMonitorPredecessor(current,(sha,p)=>p==='apps/sg-runtime/package-lock.json'?Buffer.concat([historical(sha,p),Buffer.from('false history')]):historical(sha,p)))
+})

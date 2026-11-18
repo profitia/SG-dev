@@ -1,3 +1,4 @@
+import {procurementInsightsEditorialPackagePredecessor,EDITORIAL_PACKAGE_RECEIPT} from './procurement-insights-editorial-package-integrity.mjs'
 import {assistantReservationPredecessor,RESERVATION_RECORD,RESERVATION_DERIVED} from '../../../packages/platform-contracts/test/assistant-reservation-source.mjs'
 // Test/build-only binding of the two owner-approved monitor sources. No runtime grant.
 import assert from 'node:assert/strict'
@@ -49,9 +50,11 @@ export function finderMonitorPredecessor(current,historical){
  const reservationPin=String(current(RESERVATION_DERIVED)).match(/ASSISTANT_RESERVATION_SOURCE_SHA='([a-f0-9]{64})'/)?.[1]
  const reservation=assistantReservationPredecessor(current,historical,reservationPin)
  if(reservation){
-  const accepted=finderMonitorPredecessor(reservation.previousBytes,historical)
+  const packaged=procurementInsightsEditorialPackagePredecessor(reservation.previousBytes,historical)
+  const accepted=finderMonitorPredecessor(packaged?.previousBytes??reservation.previousBytes,historical)
   assert(accepted,'accepted Finder predecessor retained')
-  return {...accepted,reservation,manifest:{...accepted.manifest,sourceDigests:{...accepted.manifest.sourceDigests,...reservation.manifest.sourceDigests,
+  const packageDigests=packaged?{...packaged.manifest.sourceDigests,[EDITORIAL_PACKAGE_RECEIPT]:createHash('sha256').update(current(EDITORIAL_PACKAGE_RECEIPT)).digest('hex')}:{}
+  return {...accepted,reservation,...(packaged?{editorialPackage:packaged}:{}),manifest:{...accepted.manifest,sourceDigests:{...accepted.manifest.sourceDigests,...packageDigests,...reservation.manifest.sourceDigests,
    [RESERVATION_RECORD]:createHash('sha256').update(current(RESERVATION_RECORD)).digest('hex'),
    [RESERVATION_DERIVED]:createHash('sha256').update(current(RESERVATION_DERIVED)).digest('hex')}}}
  }
