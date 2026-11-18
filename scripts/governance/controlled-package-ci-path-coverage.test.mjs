@@ -507,6 +507,7 @@ test('actual trusted SDK descriptor admits only installed local packages and ret
  assert.deepEqual(Object.keys(selected.reviewedLocalPackages).sort(),[
   '@profitia/maps-embed','@profitia/platform-contracts','@profitia/platform-current-e1-authority','@profitia/platform-source-hub-contracts'
  ].sort())
+ assert.deepEqual(selected.reviewedMetadata.entries['apps/architecture-lab/benchmark-unmetered-source.json'],{sha:'4c165bf726fdd3196e158603cb12c43f4ecde890',mode:'100644',kind:'HISTORICAL_EVIDENCE'},'frozen Finder producer record requires its exact protected-metadata entry')
  const sourceOnly={
   '@profitia/platform-current-fresh-report':'packages/platform-contracts/current-fresh-report/package.json',
   '@profitia/platform-payload-capture':'packages/platform-contracts/payload-capture/package.json',
