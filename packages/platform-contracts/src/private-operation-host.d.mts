@@ -36,7 +36,7 @@ export declare function createPrivateOperationHost<Transaction>(options: {
    * correlated INTENT. Use this same bounded SQL transaction; no provider calls. */
   prepareInputs?(input: { context: Readonly<OperationContext>; query: AccessQuery; transaction: Transaction }): void | Promise<void>
   describeOutcome?(value: unknown, context: Readonly<OperationContext>, transaction: Transaction): OperationOutcome | Promise<OperationOutcome>
-}): Readonly<OperationExecutor<Transaction> & { hostContract: typeof PRIVATE_OPERATION_HOST_CONTRACT|typeof SUPPLIER_LOCATION_HOST_CONTRACT|typeof REPORT_ADMISSION_HOST_CONTRACT|typeof REQUEST_QUOTA_HOST_CONTRACT }>
+}): Readonly<OperationExecutor<Transaction> & { hostContract: typeof PRIVATE_OPERATION_HOST_CONTRACT|typeof SUPPLIER_LOCATION_HOST_CONTRACT|typeof REPORT_ADMISSION_HOST_CONTRACT|typeof REQUEST_QUOTA_HOST_CONTRACT|typeof BENCHMARK_QUOTA_HOST_CONTRACT }>
 export declare function privateOperationHostSourceDigest(): Promise<string>
 
 /** The real SQL SERVICE remains distinct from the initiating account. */
@@ -109,3 +109,5 @@ export declare const NATIVE_ACCOUNT_RECHECK_HOST_CONTRACT:Readonly<{id:'profitia
 export declare const REPORT_ADMISSION_HOST_CONTRACT:Readonly<{id:'profitia.private-operation-host';version:'1.14.0'}>
 
 export declare const REQUEST_QUOTA_HOST_CONTRACT:Readonly<{id:'profitia.private-operation-host';version:'1.15.0'}>
+
+export declare const BENCHMARK_QUOTA_HOST_CONTRACT:Readonly<{id:'profitia.private-operation-host';version:'1.16.0'}>

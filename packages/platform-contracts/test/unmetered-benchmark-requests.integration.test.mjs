@@ -84,7 +84,7 @@ test('SQL034 keeps actual request history and current E1 authority with explicit
   const denied=code=>e=>isOperationDenied(e)&&e.reasonCode===code
   for(const operation of['benchmark.discovery.request'])await t.test(operation,async st=>{
    const id=policies[A+operation],f=fixture(operation)
-   await st.test('fixed package policy still enforces its finite capacity',async()=>{await f.execute();await assert.rejects(f.execute(),denied('LIMIT_EXCEEDED'));assert.equal((await count(id)).n,'1')})
+   await st.test('fixed package policy still enforces its finite capacity',async()=>{const legacy=fixture(operation,{legacy:true});await legacy.execute();await assert.rejects(legacy.execute(),denied('LIMIT_EXCEEDED'));await assert.rejects(f.execute(),denied('LIMIT_POLICY_UNAVAILABLE'));assert.equal((await count(id)).n,'1')})
    const before=(await owner.query('SELECT to_jsonb(p) p FROM profitia_requests.policies p WHERE policy_id=$1',[id])).rows[0].p
    await controlled(()=>owner.query("UPDATE profitia_requests.policies SET quota_mode='UNMETERED',version=version+1,source_ref='OWNER_UNMETERED_FIXTURE' WHERE policy_id=$1",[id]))
    await st.test('mode transition preserves all accounting/history and records its revision',async()=>{
@@ -98,7 +98,7 @@ test('SQL034 keeps actual request history and current E1 authority with explicit
    })
    await st.test('failed business action rolls back its intent and count',async()=>{const f2=fixture(operation,{fail:true});await assert.rejects(f2.execute());assert.equal((await count(id)).n,'3')})
    await st.test('old SDK and wrong accepted schema fail closed',async()=>{await assert.rejects(fixture(operation,{legacy:true}).execute(),denied('LIMIT_POLICY_UNAVAILABLE'));await assert.rejects(fixture(operation,{digest:'f'.repeat(64)}).execute());assert.equal((await count(id)).n,'3')})
-   await st.test('an authorised second organisation has its own metered quota and cannot borrow unlimited',async()=>{await f.execute(undefined,B);await assert.rejects(f.execute(undefined,B),denied('LIMIT_EXCEEDED'));assert.equal((await count(id)).n,'3')})
+   await st.test('an authorised second organisation has its own metered quota and cannot borrow unlimited',async()=>{const legacy=fixture(operation,{legacy:true});await legacy.execute(undefined,B);await assert.rejects(legacy.execute(undefined,B),denied('LIMIT_EXCEEDED'));await assert.rejects(f.execute(undefined,B),denied('LIMIT_POLICY_UNAVAILABLE'));assert.equal((await count(id)).n,'3')})
    await st.test('revoked membership still prevents a request',async()=>{
     await controlled(()=>owner.query("UPDATE profitia_access.memberships SET status='SUSPENDED' WHERE organisation_id=$1 AND user_id=$2",[A,U]))
     await assert.rejects(f.execute(),isOperationDenied);assert.equal((await count(id)).n,'3')

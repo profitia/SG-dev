@@ -71,10 +71,7 @@ DECLARE d jsonb;p profitia_requests.policies%ROWTYPE;v jsonb;b profitia_requests
  SELECT * INTO p FROM profitia_requests.policies WHERE application_id=d->>'applicationId' AND organisation_id=p_org
   AND operation=p_operation AND status='ACTIVE' FOR UPDATE;
  IF NOT FOUND THEN RETURN jsonb_build_object('status','DENIED','reasonCode','LIMIT_POLICY_UNAVAILABLE');END IF;
- IF p.quota_mode<>'UNMETERED' THEN
-  v:=profitia_requests.policy(p_operation,p_org,p_user,p_resource);
-  IF v->>'status'<>'AVAILABLE' THEN RETURN v;END IF;
-  RETURN v||jsonb_build_object('quotaMode','FIXED','quotaSchemaDigest',d->>'quotaSchemaDigest');
+ IF p.quota_mode<>'UNMETERED' THEN RETURN jsonb_build_object('status','DENIED','reasonCode','LIMIT_POLICY_UNAVAILABLE');
  END IF;
  RETURN jsonb_build_object('status','AVAILABLE','policyId',p.policy_id,'version',p.version::text,'sourceRef',p.source_ref,
   'expiresAt',NULL,'windowStart',NULL,'windowEnd',NULL,'capacity',NULL,'used',p.accepted_count,

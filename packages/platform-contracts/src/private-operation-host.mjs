@@ -16,6 +16,7 @@ export const SUPPLIER_LOCATION_HOST_CONTRACT=Object.freeze({...PRIVATE_OPERATION
 export const NATIVE_ACCOUNT_RECHECK_HOST_CONTRACT=Object.freeze({...PRIVATE_OPERATION_HOST_CONTRACT,version:'1.13.0'})
 export const REPORT_ADMISSION_HOST_CONTRACT=Object.freeze({...PRIVATE_OPERATION_HOST_CONTRACT,version:'1.14.0'})
 export const REQUEST_QUOTA_HOST_CONTRACT=Object.freeze({...PRIVATE_OPERATION_HOST_CONTRACT,version:'1.15.0'})
+export const BENCHMARK_QUOTA_HOST_CONTRACT=Object.freeze({...PRIVATE_OPERATION_HOST_CONTRACT,version:'1.16.0'})
 const unavailable = () => { throw new OperationDenied('POLICY_UNAVAILABLE') }
 const copy = value => structuredClone(value)
 const freeze = value => { if (value && typeof value === 'object') { Object.values(value).forEach(freeze); Object.freeze(value) } return value }
@@ -198,7 +199,7 @@ function createBoundOperationHost(options, serviceMode) {
 
   return Object.freeze({
     contract: validate.contract,
-    hostContract: requestBinding?.benchmarkQuotaSchemaDigest!==undefined||requestBinding?.quotaSchemaDigest!==undefined?REQUEST_QUOTA_HOST_CONTRACT:options.reportAdmission?REPORT_ADMISSION_HOST_CONTRACT:options.revalidateExternalAccountBeforeOutcome===true?NATIVE_ACCOUNT_RECHECK_HOST_CONTRACT:options.locationAdmission===undefined?PRIVATE_OPERATION_HOST_CONTRACT:SUPPLIER_LOCATION_HOST_CONTRACT,
+    hostContract: requestBinding?.benchmarkQuotaSchemaDigest!==undefined?BENCHMARK_QUOTA_HOST_CONTRACT:requestBinding?.quotaSchemaDigest!==undefined?REQUEST_QUOTA_HOST_CONTRACT:options.reportAdmission?REPORT_ADMISSION_HOST_CONTRACT:options.revalidateExternalAccountBeforeOutcome===true?NATIVE_ACCOUNT_RECHECK_HOST_CONTRACT:options.locationAdmission===undefined?PRIVATE_OPERATION_HOST_CONTRACT:SUPPLIER_LOCATION_HOST_CONTRACT,
     async execute(input, action) {
       const proof=reportAdmission?currentReportAdmission():null
       // These variables belong to exactly ONE execution, including when the

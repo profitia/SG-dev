@@ -9,6 +9,7 @@ export const OPERATION_CONTRACT = Object.freeze({ id: 'profitia.operation-contex
 export const SUPPLIER_LOCATION_ROOT_CONTRACT=Object.freeze({...OPERATION_CONTRACT,implementation:'1.0.0-candidate.17'})
 export const REPORT_ADMISSION_ROOT_CONTRACT=Object.freeze({...OPERATION_CONTRACT,implementation:'1.0.0-candidate.18'})
 export const REQUEST_QUOTA_ROOT_CONTRACT=Object.freeze({...OPERATION_CONTRACT,implementation:'1.0.0-candidate.19'})
+export const BENCHMARK_QUOTA_ROOT_CONTRACT=Object.freeze({...OPERATION_CONTRACT,implementation:'1.0.0-candidate.23'})
 export const ASSISTANT_ROOT_CONTRACT=Object.freeze({...OPERATION_CONTRACT,implementation:'1.0.0-candidate.20'})
 export const RECURRING_ROOT_CONTRACT=Object.freeze({...OPERATION_CONTRACT,implementation:'1.0.0-candidate.22'})
 const denialBrand = Symbol.for('profitia.operation-context.denial.v1')
@@ -327,7 +328,7 @@ export function createOperationExecutor(options) {
   if(options.locationAdmissionSchemaDigest!==undefined&&!/^[a-f0-9]{64}$/.test(options.locationAdmissionSchemaDigest))throw TypeError('Explicit accepted SQL020 digest required')
   if(options.reportAdmissionSchemaDigest!==undefined&&(!/^[a-f0-9]{64}$/.test(options.reportAdmissionSchemaDigest)||options.locationAdmissionSchemaDigest!==undefined))throw TypeError('Explicit accepted SQL025 digest required')
   if(options.requestBenchmarkQuotaSchemaDigest!==undefined&&!/^[a-f0-9]{64}$/.test(options.requestBenchmarkQuotaSchemaDigest))throw TypeError('Explicit accepted SQL034 digest required')
-  const executionContract=options.recurringSchemaDigest!==undefined?RECURRING_ROOT_CONTRACT:options.assistantSchemaDigest!==undefined?ASSISTANT_ROOT_CONTRACT:options.requestBenchmarkQuotaSchemaDigest!==undefined||options.requestQuotaSchemaDigest!==undefined?REQUEST_QUOTA_ROOT_CONTRACT:options.reportAdmissionSchemaDigest!==undefined?REPORT_ADMISSION_ROOT_CONTRACT:options.locationAdmissionSchemaDigest===undefined?OPERATION_CONTRACT:SUPPLIER_LOCATION_ROOT_CONTRACT
+  const executionContract=options.recurringSchemaDigest!==undefined?RECURRING_ROOT_CONTRACT:options.assistantSchemaDigest!==undefined?ASSISTANT_ROOT_CONTRACT:options.requestBenchmarkQuotaSchemaDigest!==undefined?BENCHMARK_QUOTA_ROOT_CONTRACT:options.requestQuotaSchemaDigest!==undefined?REQUEST_QUOTA_ROOT_CONTRACT:options.reportAdmissionSchemaDigest!==undefined?REPORT_ADMISSION_ROOT_CONTRACT:options.locationAdmissionSchemaDigest===undefined?OPERATION_CONTRACT:SUPPLIER_LOCATION_ROOT_CONTRACT
   const { authenticate, withTransaction, recordAudit, now = Date.now } = options
   const config = freeze(structuredClone(options.application))
   const ceiling = Object.hasOwn(profiles, config.profileId) ? profiles[config.profileId] : null
