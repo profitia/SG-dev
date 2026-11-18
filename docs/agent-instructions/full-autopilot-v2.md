@@ -173,6 +173,13 @@ Wykorzystaj aktualne kanoniczne źródła prawdy, nie historyczne propozycje DRA
 - Przed zmianą wspólnego zasobu wykonaj krótki check kolizji. Jeżeli inny owner już realizuje zależność, nie duplikuj jej. Kontynuuj niezależną pracę.
 - Po zakończeniu zależności zweryfikuj tylko jej **konieczny kontrakt i status**, następnie wróć do celu biznesowego.
 
+
+### 14A. Workspace Resource Lifecycle — rozliczenie własnych zasobów
+
+**WORKSPACE_RESOURCE_LIFECYCLE — 2026-11-18.** W istniejącym mandacie minimalizuj zbędne checkouty, kopie i cache. Wiąż własne zasoby z `taskId` w aktualnym stanie wykonania; nie buduj osobnego obowiązkowego rejestru. Chroń cudze i nieustalone środowiska oraz główny katalog workspace, ale dopuszczaj po sprawdzeniu własne, odtwarzalne katalogi tymczasowe w jego wnętrzu. Usuwaj tylko zweryfikowane `OWNED_DISPOSABLE`, bez mikrozgód i bez destrukcyjnych operacji globalnych.
+
+Rozlicz niepotrzebne zasoby bezpieczne do usunięcia przed PMOS/PHR closeout, aby wynik trafił do zwykłych dowodów. Po jego prawidłowym zakończeniu możesz wykonać jedynie ograniczony epilog dla pozostałych własnych artefaktów; nie otwieraj ponownie PMOS, nie przepisuj historii PHR i nie rozpoczynaj kolejnego etapu. W razie niepewności pozostaw `RETAINED` lub `REVIEW_REQUIRED`, bez automatycznego pytania właściciela. W projektach BSDC respektuj STOP między etapami. Wdrożenie automatycznego hooka należy do odrębnego zadania.
+
 ### 15. Git, PR, merge i deployment
 
 - Samodzielnie wybierz najmniejszy potrzebny workflow Git; nie twórz niepotrzebnej kaskady PR.
@@ -222,11 +229,13 @@ W razie STOP: zachowaj LKG i dowody, nie modyfikuj dalej zagrożonego zasobu, pr
 
 ### 21. Kryterium ukończenia: rezultat, nie aktywność
 
-Przed uznaniem zadania za skończone sprawdź trzy rzeczy:
+Przed uznaniem zadania za skończone sprawdź cztery rzeczy:
 
 1. **Rezultat biznesowy:** czy użytkownik rzeczywiście może wykonać zamierzony scenariusz lub otrzymał zamierzony artefakt z rzeczywistych danych? Jeśli zadanie wymaga raportu, gotowa infrastruktura czy renderer nie wystarczają.
 2. **Rezultat techniczny:** czy właściwa wersja faktycznie działa w uprawnionym środowisku albo czy wymagana kontrolowana operacja została wykonana? Czy wynik jest odróżniony od symulacji?
 3. **Granice i dowód:** czy istnieją niezbędne potwierdzenia bezpieczeństwa, wymagane CI/QA, lineage, receipt, LKG i ślad decyzji?
+
+4. **Rozliczenie lokalnych zasobów:** czy własne, kwalifikujące się zasoby zostały usunięte w dozwolonym momencie, a wymagane dowody i recovery zachowane? Status `RETAINED`/`REVIEW_REQUIRED` jest prawidłowy, gdy bezpieczeństwo usunięcia pozostaje niepotwierdzone. Dla zadania, którego głównym celem jest odzyskanie przestrzeni, weryfikuj jego mierzalny DoD; dla innych zadań cleanup jest higieną, nie nowym warunkiem biznesowego sukcesu.
 
 Statusy końcowe są uczciwe:
 
