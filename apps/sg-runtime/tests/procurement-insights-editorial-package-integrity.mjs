@@ -1,3 +1,5 @@
+import {knowledgeSourcePredecessor} from '../../architecture-lab/knowledge-source.mjs'
+import {calendarCurrentMainPredecessor} from '../../architecture-lab/calendar-current-main-source.mjs'
 // Test/build-only package identity continuation; no runtime authority or code changes.
 import assert from 'node:assert/strict'
 import {createHash} from 'node:crypto'
@@ -42,6 +44,8 @@ function versionOnly(current,historical,p){
  assert.deepEqual(after,expected,'only editorial local package version, no dependency or runtime change: '+p)
 }
 export function procurementInsightsEditorialPackagePredecessor(current,historical){
+ const composed=calendarCurrentMainPredecessor(current,historical)
+ if(composed){const source=knowledgeSourcePredecessor(composed.acceptedMainBytes,historical)?.previousBytes??composed.acceptedMainBytes;const accepted=procurementInsightsEditorialPackagePredecessor(source,historical);assert(accepted,'complete accepted editorial predecessor required');return {...accepted,currentMainComposition:composed.manifest}}
  let bytes
  try{bytes=current(EDITORIAL_PACKAGE_RECEIPT)}catch(e){
   const text=String(e?.stderr??e?.message??'')

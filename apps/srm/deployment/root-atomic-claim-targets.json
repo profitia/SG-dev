@@ -12,7 +12,7 @@
   "enabledByDefault": false,
   "producerPullRequest": 854,
   "producerSourceRef": "3a494b5432555935168c060be5950589d550d276",
-  "sourceDigest": "b3d6f2110f41ca93cac6a949b113a8582b6407688d81df1935cd8990424b393a",
+  "sourceDigest": "ab8cfef37eb35526ff0d2894e827ad1a22dea8750b9c9d89fbcbea2ce41b1f50",
   "schemaDigest": "1c1784b3c92753ccc28f7c34af89e26f1784a632859d5dbe45a9f5f3d08f6c0d",
   "formalSourceAcceptanceRequired": true,
   "cloudInstallationRequiresSeparateApproval": true
