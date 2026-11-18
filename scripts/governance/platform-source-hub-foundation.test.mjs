@@ -388,7 +388,8 @@ import {bsdcManifestContinuityTrustedCurrent, BSDC_MANIFEST_CONTINUITY as bsdcTr
 const bsdcHistoryCache=new Map()
 const bsdcHistory=(sha,p)=>{const k=sha+':'+p;if(!bsdcHistoryCache.has(k))bsdcHistoryCache.set(k,execFileSync('git',['cat-file','blob',k],{cwd:root,stdio:['ignore','pipe','pipe']}));return Buffer.from(bsdcHistoryCache.get(k))}
 // BSDC assertions retain the complete authenticated pre-ACG input, including this test.
-const bsdcPhysical=p=>fs.readFileSync(path.join(legacyRecurringFixture.root,p))
+const bsdcApprovedFixtureSha='133251a4215b2fc1560fd3dea3c1ac095acf0ef7'
+const bsdcPhysical=p=>[bsdcTrustedPolicy.helperPath,bsdcTrustedPolicy.testPath].includes(p)?bsdcHistory(bsdcApprovedFixtureSha,p):fs.readFileSync(path.join(legacyRecurringFixture.root,p))
 const bsdcApproved=p=>bsdcTrustedPolicy.sourcePaths.includes(p)?bsdcHistory(BSDC_V11_DOCUMENTATION_REVIEW.approvedSourceSha,p):bsdcPhysical(p)
 const bsdcFiles=()=>Object.entries(BSDC_V11_DOCUMENTATION_REVIEW.entries).map(([filename,e])=>({filename,sha:e.sha,status:e.status}))
 const bsdcContext={repository:'profitia/SG-dev',ref:'refs/heads/main',workflowRef:'profitia/SG-dev/.github/workflows/platform-contracts-ci.yml@refs/heads/main',event:'workflow_dispatch',actor:'profitia',triggeringActor:'profitia',controlSha:bsdcTrustedPolicy.baseSha}

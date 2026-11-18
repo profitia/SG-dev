@@ -25,11 +25,11 @@
     "apps/architecture-lab/private-recurring-source.mjs": "888925307888d70c99a61d865f2aaddb7cc98c1f2cd567e862b13267e5f8ae54",
     "apps/architecture-lab/sdk-1.33-compatibility.json": "3e3c8f43813d5c4888e206ac31433f60470eac4310abaa62bd32e1c901a0df3e",
     "apps/architecture-lab/sdk-1.34-compatibility.json": "458ddbf661ce1a5666260a072a03f24ac016346bdd9a9efef7f2a1d497eee403",
-    "apps/architecture-lab/test/calendar-current-main-source.test.mjs": "a5ae467506679760589ba100233ba02d3edffae5faaa4335940e7c1856f0c318",
+    "apps/architecture-lab/test/calendar-current-main-source.test.mjs": "1f3b25055947adb1a5d00c88794ac911b12f64c193399c4ad311b92538df7db0",
     "apps/architecture-lab/test/ecr-complete-functional-source.test.mjs": "2adb0c1cd857c475a59e1f74dc6843d0b0172868c5389876b5dfd028e2c5cfbe",
     "apps/architecture-lab/test/ecr-functional-ci-repair.test.mjs": "b49301d95456e9fbf6e82108bad2915b2f5b038562a320633359a38e06206f31",
     "apps/architecture-lab/test/knowledge-source.test.mjs": "cd030f4a2f1f161c22cebf186e13cb33904c82c1d278c162901cac82b1c241e0",
-    "apps/architecture-lab/test/manifest-successor-continuity.test.mjs": "15de435a6ec35e36fb0fe3357f04f8300335824730186f26cf0b48f2e4b21b72",
+    "apps/architecture-lab/test/manifest-successor-continuity.test.mjs": "677fd8ef958c9a0bf938ad9942710d6ac300627e49e148d57c777e3ecc12aaa9",
     "apps/architecture-lab/test/market-calendar-source.test.mjs": "41d854163cd425431b9885bf44450e9b17eabc4be955c92b82ec21ac537ce8b3",
     "apps/architecture-lab/test/payload-capture-publication.test.mjs": "9f00a96134bbf339738793f79597b962f7c3601fc2f5e0b3e0b34d6a8af9dc01",
     "apps/architecture-lab/test/private-recurring-source.test.mjs": "7fee49755879e8b6115de844d15fba6c0a42ea5b8a2f5b7fe11dcfcd39c72ded",
@@ -582,7 +582,7 @@
     "packages/platform-source-hub-contracts/source-access-continuity-acceptance-v1.json": "c99323c6690d488992c445eff4e1c26fe48d81ede267b6f5f2ad4df208768540",
     "scripts/governance/controlled-package-ci.test.mjs": "0142eb57b511bef865e3f7231b82c8678e0390604ac656be8e72dbe05c7e5443",
     "scripts/governance/governance.test.mjs": "ef28078504fda6d844f63b5dd3d7687465f37b3d16064dff581ae392765909da",
-    "scripts/governance/platform-source-hub-foundation.test.mjs": "be234964f181eaf482194381a50b804110e5063eec7d1c87cde8fdee2d7f77de"
+    "scripts/governance/platform-source-hub-foundation.test.mjs": "aad55c10c4a8fe153f6c65d868ed9c027a4c1793e3840ecd0fa5eff7dacbd246"
   },
   "views": {
     "calendar": {
@@ -672,7 +672,7 @@
           "previousSha256": "6b8bed1e3b17f44d914a1bb9b188add76d4ffdddd1ef2d694dcab718666f840d"
         },
         "apps/architecture-lab/test/manifest-successor-continuity.test.mjs": {
-          "currentSha256": "15de435a6ec35e36fb0fe3357f04f8300335824730186f26cf0b48f2e4b21b72",
+          "currentSha256": "677fd8ef958c9a0bf938ad9942710d6ac300627e49e148d57c777e3ecc12aaa9",
           "previousSha256": "e589c6a2a24bf8a91b8d3354b8d1b668a1964014b54e6ee6ebe495f6a2894e0b"
         },
         "apps/architecture-lab/test/market-calendar-source.test.mjs": {
@@ -1092,7 +1092,7 @@
           "previousSha256": "6406f5bc0db472045faab88c44bfe7a7d307ef1acb81b2c053852c0800c31846"
         },
         "scripts/governance/platform-source-hub-foundation.test.mjs": {
-          "currentSha256": "be234964f181eaf482194381a50b804110e5063eec7d1c87cde8fdee2d7f77de",
+          "currentSha256": "aad55c10c4a8fe153f6c65d868ed9c027a4c1793e3840ecd0fa5eff7dacbd246",
           "previousSha256": "812bd89b6e89ecd092a12618d2e70f0f9576bb74bf15b0acaa73c66c693a986f"
         }
       }
@@ -1151,6 +1151,10 @@
         "apps/architecture-lab/test/knowledge-source.test.mjs": {
           "currentSha256": "cd030f4a2f1f161c22cebf186e13cb33904c82c1d278c162901cac82b1c241e0",
           "previousSha256": "5868aa0b4563ebd12238660c5f9a1baab5df05051ddd8346e38fdc6218522777"
+        },
+        "apps/architecture-lab/test/manifest-successor-continuity.test.mjs": {
+          "currentSha256": "677fd8ef958c9a0bf938ad9942710d6ac300627e49e148d57c777e3ecc12aaa9",
+          "previousSha256": "15de435a6ec35e36fb0fe3357f04f8300335824730186f26cf0b48f2e4b21b72"
         },
         "apps/economic-calendar-runtime/package-lock.json": {
           "currentSha256": "a7508ba650b248c06bec9ef50cadac50c7c9c916408a4c1df94ae5e771f3e478",
@@ -1321,7 +1325,7 @@
           "previousSha256": "9d381bc7ae98c480e1ee1bfdbdaa062225c28bb44634822933ef934724f791a7"
         },
         "scripts/governance/platform-source-hub-foundation.test.mjs": {
-          "currentSha256": "be234964f181eaf482194381a50b804110e5063eec7d1c87cde8fdee2d7f77de",
+          "currentSha256": "aad55c10c4a8fe153f6c65d868ed9c027a4c1793e3840ecd0fa5eff7dacbd246",
           "previousSha256": "206af0119029fc2ffabfd93b06d206e0eb9936c8b8b7467cddeda3fe2b240c10"
         }
       }

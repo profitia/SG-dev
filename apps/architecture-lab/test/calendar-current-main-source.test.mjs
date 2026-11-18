@@ -61,7 +61,8 @@ test('corrected PK Root target stays exact and the previous SRM digest is reject
 test('current joint SDK metadata remains the actual PK producer while Cal receipts and transport stay unchanged',()=>{
  const view=recurringSourceFilesystem(root),pk=JSON.parse(historical('aeba36df8fbe63a4f76ddc0eac251acdc3443588','apps/architecture-lab/knowledge-source.json'))
  assert.deepEqual(view.manifest,pk);assert.equal(view.manifest.platformVersion,JSON.parse(current('packages/platform-contracts/package.json')).version)
- assert(view.reservation);assert.deepEqual(view.reservation.sdkDigests,pk.sdkDigests);assert.deepEqual(view.reservation.optionalPackageDigests,pk.optionalPackageDigests)
+ assert(view.reservation);assert(view.knowledge);assert.deepEqual(view.knowledge.manifest.sdkDigests,pk.sdkDigests);assert.deepEqual(view.knowledge.manifest.optionalPackageDigests,pk.optionalPackageDigests)
+ assert.deepEqual(view.reservation.manifest,JSON.parse(historical('aeba36df8fbe63a4f76ddc0eac251acdc3443588','apps/architecture-lab/assistant-reservation-source.json')),'immutable predecessor reservation retained')
  assert.equal(view.predecessorManifest.platformVersion,'1.36.0');assert(view.complete);assert(view.transport.live)
  assert.deepEqual(current('apps/economic-calendar-runtime/complete-functional-source-integration.json'),historical('69d02834e863a51506aa4f50fbeb20f7fda3575b','apps/economic-calendar-runtime/complete-functional-source-integration.json'))
 })
