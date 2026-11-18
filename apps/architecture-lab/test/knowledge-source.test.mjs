@@ -32,7 +32,11 @@ test('real historical absence is optional while unknown Git revisions and missin
 test('public Knowledge routing authenticates a real complete checkout without an unpublished controller export',async()=>{
  const fs=await import('node:fs'),os=await import('node:os'),path=await import('node:path');
  const {reviewedKnowledgeConsumerPaths}=await import('../../platform-source-hub/scripts/ci-routing.mjs');
- const source=knowledgeSourcePredecessor(read,history),base=source.manifest.previousSourceSha;
+ // Authenticate every current physical input first; the historical routing
+ // regression then constructs the complete immutable Knowledge cohort itself.
+ const currentView=knowledgeSourcePredecessor(read,history);
+ const fixtureRead=currentView.currentSdkContext?.baseline('knowledge')??read;
+ const source=knowledgeSourcePredecessor(fixtureRead,history),base=source.manifest.previousSourceSha;
  const temporary=fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(),'knowledge-public-routing-'))),fixture=path.join(temporary,'source');
  const env={...process.env,GIT_CONFIG_NOSYSTEM:'1',GIT_CONFIG_GLOBAL:'/dev/null'};
  const git=(cwd,...args)=>execFileSync('git',args,{cwd,env,encoding:'utf8',stdio:['ignore','pipe','pipe']}).trim();
@@ -40,7 +44,7 @@ test('public Knowledge routing authenticates a real complete checkout without an
   git(temporary,'clone','--quiet','--shared','--no-checkout',root.pathname,'source');
   git(fixture,'checkout','--quiet','--detach',base);
   const cyclic=[KNOWLEDGE_SOURCE_RECORD,'apps/architecture-lab/knowledge-source.mjs',...['architecture-lab','sg-runtime','srm'].map(app=>'apps/'+app+'/knowledge-source-adoption.json')];
-  for(const p of new Set([...Object.keys(source.manifest.sourceDigests),...cyclic])){const target=path.join(fixture,p);fs.mkdirSync(path.dirname(target),{recursive:true});fs.writeFileSync(target,read(p));git(fixture,'add','--',p);}
+  for(const p of new Set([...Object.keys(source.manifest.sourceDigests),...cyclic])){const target=path.join(fixture,p);fs.mkdirSync(path.dirname(target),{recursive:true});fs.writeFileSync(target,fixtureRead(p));git(fixture,'add','--',p);}
   git(fixture,'-c','user.name=Synthetic fixture','-c','user.email=synthetic@example.invalid','commit','--quiet','-m','SYNTHETIC_ONLY closed Knowledge source');
   const head=git(fixture,'rev-parse','HEAD'),review={baseSha:base,candidateSha:head},view=reviewedKnowledgeConsumerPaths(fixture,review);
   assert.equal(view.get('apps/sg-runtime/knowledge-source-adoption.json'),'SG2');assert.equal(view.get('apps/srm/knowledge-source-adoption.json'),'SRM');
