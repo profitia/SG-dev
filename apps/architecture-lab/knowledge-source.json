@@ -166,7 +166,7 @@
     "apps/srm/scripts/request-quota-adoption.test.mjs": "112fde332394237f6cc775e90611591e4805211d97f7ac3ad1f4f6d61ad47962",
     "apps/srm/scripts/supplier-location-admission.integration.test.mjs": "2ee41d273950d94b1eb6985ac35557740033dd7973ffd2af8dde8a9e96f16e61",
     "apps/srm/scripts/xray-performance-adoption.test.mjs": "3d1eb2c5769e03d2a62b65c29bbc07da7c80c4ae1c334feae2b998d8e08de5ca",
-    "apps/srm/src/server/root-atomic-claim-adoption.test.ts": "8abfea93355ae5b16b952bede8b56d3857215bea600f1c801a74cf02f64a3dd5",
+    "apps/srm/src/server/root-atomic-claim-adoption.test.ts": "759a16f3e8f5f53ff762f5401a0336eccda414c5841789a13989df78183fd0f4",
     "packages/assistant-context-contracts/package.json": "8f68635e9ad42c2a5d7b4d4b0f313def34d802a4fdfe4b7e5e0bbbf665f32aac",
     "packages/assistant-context-contracts/src/index.d.mts": "c53acdf3129cdd59bbbd2abd84902592fdcf365823feabe33a3cb3edc3246feb",
     "packages/assistant-context-contracts/src/index.mjs": "16e93d3aab9cc9a7f41a3d36e820e6dd45d9cfb1c561121f86aab82aaa24f05a",
@@ -1018,6 +1018,10 @@
       "previousSha256": "bcc3761ce046071ee79a96aa585f486064e652b9e6a7856d11a4776a97c25c1e",
       "currentSha256": "075c6ecb86765796948b3a10886ef7eac0782eaaab4b359ddd1d6d87212582b9"
     },
+    "apps/srm/src/server/root-atomic-claim-adoption.test.ts": {
+      "previousSha256": "8abfea93355ae5b16b952bede8b56d3857215bea600f1c801a74cf02f64a3dd5",
+      "currentSha256": "759a16f3e8f5f53ff762f5401a0336eccda414c5841789a13989df78183fd0f4"
+    },
     "packages/assistant-context-gateway/package.json": {
       "previousSha256": "b6e9f3e6cffdefe3be9867a659202070e2244a0bbdb166793f5882dafe02cea1",
       "currentSha256": "c59aaff305ccf19142a83bffafc47e116568dfd34f106c7b9a39c196934be3e0"
@@ -1203,6 +1207,7 @@
     "apps/sg-runtime/tests/procurement-insights-live-acceptance-source.test.mjs",
     "apps/srm/deployment/root-atomic-claim-targets.json",
     "apps/srm/package-lock.json",
+    "apps/srm/src/server/root-atomic-claim-adoption.test.ts",
     "packages/assistant-context-gateway/package.json",
     "packages/maps-embed/package.json",
     "packages/platform-contracts/current-e1-authority/index.d.mts",

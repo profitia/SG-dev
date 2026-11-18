@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
 export const KNOWLEDGE_SOURCE_RECORD='apps/architecture-lab/knowledge-source.json';
-export const KNOWLEDGE_SOURCE_RECORD_SHA256='370da7156fb6739702c5242e969ed017e1cc353ab074e98f07bf8fd2f4589453';
+export const KNOWLEDGE_SOURCE_RECORD_SHA256='15991abe97ef846716e768a10d4585074cd046f04ccf03452994b41375a75fce';
 const hash=bytes=>createHash('sha256').update(bytes).digest('hex');
 // Historical readers use Git's exact missing-path diagnostic rather than the
 // filesystem ENOENT. Unknown revisions, foreign paths and access errors remain
