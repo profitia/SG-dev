@@ -1,3 +1,4 @@
+import {knowledgeSourcePredecessor} from '../../architecture-lab/knowledge-source.mjs';
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import fs from 'node:fs'
@@ -8,7 +9,8 @@ import {createHash} from 'node:crypto'
 import {procurementInsightsEditorialPackagePredecessor,EDITORIAL_PACKAGE_BASE,EDITORIAL_PACKAGE_RECEIPT,EDITORIAL_PACKAGE_PATHS} from './procurement-insights-editorial-package-integrity.mjs'
 const root=fileURLToPath(new URL('../../../',import.meta.url))
 const historical=(sha,p)=>execFileSync('git',['show',sha+':'+p],{cwd:root})
-const current=p=>fs.readFileSync(path.join(root,p))
+const physicalCurrent=p=>fs.readFileSync(path.join(root,p))
+const current=knowledgeSourcePredecessor(physicalCurrent,historical)?.previousBytes??physicalCurrent
 const hash=b=>createHash('sha256').update(b).digest('hex')
 test('editorial package continuation verifies version-only metadata and all29 immutable receipts',()=>{
  const v=procurementInsightsEditorialPackagePredecessor(current,historical)

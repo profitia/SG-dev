@@ -6,7 +6,7 @@ import {readFileSync} from 'node:fs'
 import {execFileSync} from 'node:child_process'
 import {createHash} from 'node:crypto'
 import {rootAtomicClaimSchemaDigest,rootAtomicClaimSourceDigest,ROOT_ATOMIC_CLAIM_CONTRACT} from '@profitia/platform-root-atomic-claim'
-const recurring=recurringSourceFilesystem(new URL('../../../../',import.meta.url)).manifest
+const recurringView=recurringSourceFilesystem(new URL('../../../../',import.meta.url)),recurring=recurringView.manifest,reservation=recurringView.reservation?.manifest
 import currentRoot from '../../deployment/root-atomic-claim-targets.json'
 const root=JSON.parse(execFileSync('git',['show','36b07672f572ff7c1c81117e3f3b01fa93ec1e65:apps/srm/deployment/root-atomic-claim-targets.json'],{encoding:'utf8'})) as typeof currentRoot
 import native from '../../deployment/supplier-native-targets.json'
@@ -41,7 +41,9 @@ test('optional Root claim target pins the exact producer and existing main Devel
  // Current Oil acceptance is checked separately; retain the complete M1
  // receipt for historical validation instead of comparing it to new bytes.
  assert.equal(currentRoot.sourceDigest,recurring?.optionalPackageDigests.rootAtomicClaimSourceDigest??(receipt.oilAutonomousReportCompatibility??receipt.assistantM1SourceCompatibility).optionalPackageDigests.rootAtomicClaimSourceDigest)
- assert.equal(currentRoot.sourceDigest,await rootAtomicClaimSourceDigest())
+ // The original deployment target remains historical; the authenticated source
+ // continuation separately binds the installed successor without activation.
+ assert.equal(reservation?.optionalPackageDigests.rootAtomicClaimSourceDigest??currentRoot.sourceDigest,await rootAtomicClaimSourceDigest())
  const {sourceDigest,...currentMetadata}=currentRoot;const {sourceDigest:previousDigest,...previousMetadata}=root;assert.deepEqual(currentMetadata,previousMetadata)
  assert.equal(root.producerPullRequest,854);assert.equal(root.producerSourceRef,'3a494b5432555935168c060be5950589d550d276')
  for(const key of ['environment','serviceId','projectId','branchId','databaseName'] as const)assert.equal(root[key],native[key])

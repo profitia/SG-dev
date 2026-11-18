@@ -4,6 +4,7 @@ import {SUPPLIER_LOCATION_OPERATIONS,normalizeSupplierLocationEvidence,isSupplie
 import {admittedReportObservation} from './report-admission.mjs'
 import {assistantInputBound,assertAssistantUsageReservation} from './assistant-usage.mjs'
 import {recurringOperationPolicy,validateRecurringDelegation} from './recurring-job.mjs'
+import {KNOWLEDGE_OPERATION_RULES,knowledgeOperationPolicy,knowledgeOperationEvidence,validateKnowledgeAdoption} from './knowledge-operations.mjs'
 
 export const OPERATION_CONTRACT = Object.freeze({ id: 'profitia.operation-context', version: '1.0.0', implementation: '1.0.0-candidate.16' })
 export const SUPPLIER_LOCATION_ROOT_CONTRACT=Object.freeze({...OPERATION_CONTRACT,implementation:'1.0.0-candidate.17'})
@@ -11,6 +12,7 @@ export const REPORT_ADMISSION_ROOT_CONTRACT=Object.freeze({...OPERATION_CONTRACT
 export const REQUEST_QUOTA_ROOT_CONTRACT=Object.freeze({...OPERATION_CONTRACT,implementation:'1.0.0-candidate.19'})
 export const ASSISTANT_ROOT_CONTRACT=Object.freeze({...OPERATION_CONTRACT,implementation:'1.0.0-candidate.20'})
 export const RECURRING_ROOT_CONTRACT=Object.freeze({...OPERATION_CONTRACT,implementation:'1.0.0-candidate.22'})
+export const KNOWLEDGE_ROOT_CONTRACT=Object.freeze({...OPERATION_CONTRACT,implementation:'1.0.0-candidate.23'})
 const denialBrand = Symbol.for('profitia.operation-context.denial.v1')
 const denialCodes = new Set(['UNSUPPORTED_CONTRACT', 'UNVERIFIED_IDENTITY', 'CONTEXT_INVALID', 'ENVIRONMENT_MISMATCH', 'APPLICATION_FEATURE_UNAVAILABLE', 'ACCESS_BASIS_INVALID', 'PERMISSION_DENIED', 'PRODUCT_UNAVAILABLE', 'RESOURCE_SCOPE_MISMATCH', 'DATA_CLASSIFICATION_UNKNOWN', 'DELEGATION_INVALID', 'DELIVERY_UNCERTAIN', 'RESOURCE_VERSION_CONFLICT', 'LIMIT_POLICY_UNAVAILABLE', 'LIMIT_EXCEEDED', 'IDEMPOTENCY_CONFLICT', 'AUDIT_UNAVAILABLE', 'POLICY_UNAVAILABLE', 'EXPLICIT_DENY'])
 
@@ -18,6 +20,7 @@ const denialCodes = new Set(['UNSUPPORTED_CONTRACT', 'UNVERIFIED_IDENTITY', 'CON
 // Everything outside this bounded candidate is denied, including billing.
 const rule = (feature, resourceType, dataClass, effect, product = null, mode = 'ORGANISATION') => Object.freeze({ feature, resourceType, dataClass, effect, product, mode })
 const rules = Object.freeze({
+  ...KNOWLEDGE_OPERATION_RULES,
   'account.settings.read': rule('account', 'account_settings', 'ACCOUNT_PRIVATE', 'READ', null, 'ACCOUNT'),
   'account.settings.write': rule('account', 'account_settings', 'ACCOUNT_PRIVATE', 'WRITE', null, 'ACCOUNT'),
   'assistant.history.read': rule('assistant', 'assistant_history', 'ACCOUNT_PRIVATE', 'READ', null, 'ACCOUNT'),
@@ -65,7 +68,7 @@ const rules = Object.freeze({
   'supplier.private.reveal': rule('supplier_report', 'supplier_private_identifier', 'ORGANISATION_PRIVATE', 'READ', 'SUPPLIER_INTELLIGENCE'),
   'supplier.private.export': rule('supplier_report', 'supplier_private_export', 'ORGANISATION_PRIVATE', 'EXPORT', 'SUPPLIER_INTELLIGENCE'),
 })
-export const IMPLEMENTED_OPERATIONS = Object.freeze(Object.keys(rules).filter(operation=>!recurringOperationPolicy(operation)))
+export const IMPLEMENTED_OPERATIONS = Object.freeze(Object.keys(rules).filter(operation=>!recurringOperationPolicy(operation)&&!knowledgeOperationPolicy(operation)))
 const profiles = Object.freeze({
   PLATFORM_INTERNAL: { features: ['job_execution','knowledge_ingestion'], products: [] },
   PORR_SUITE: { features: ['account', 'market', 'benchmark', 'category', 'supplier_workspace', 'forecast', 'personal_workspace', 'supplier_report','assistant'], products: ['SPENDGURU', 'SUPPLIER_INTELLIGENCE'], fixed: true },
@@ -178,7 +181,8 @@ function checkResource(resource, context, expected) {
   if (resource?.privateSupplier !== undefined && !privateSupplierOperations.has(context.operation)) deny('RESOURCE_SCOPE_MISMATCH')
   if (!resource || resource.environment !== context.environment || resource.type !== expected.resourceType || resource.dataClass !== expected.dataClass || !nonempty(resource.id) || !nonempty(resource.version) || !nonempty(resource.projectionVersion)) deny('RESOURCE_SCOPE_MISMATCH')
   if (resource.dataClass === 'SHARED_KNOWLEDGE') {
-    if (resource.ownerOrganisationId !== null || resource.ownerUserId !== null || resource.approvedSharedProjection !== true) deny('RESOURCE_SCOPE_MISMATCH')
+    if (resource.ownerOrganisationId !== null || resource.ownerUserId !== null || resource.approvedSharedProjection !== true
+      &&!(expected.knowledge&&expected.allowUnpublished&&context.knowledgeAdministration===true)) deny('RESOURCE_SCOPE_MISMATCH')
   } else if (resource.dataClass === 'ACCOUNT_PRIVATE') {
     if (resource.ownerOrganisationId !== null || resource.ownerUserId !== context.subjectUserId) deny('RESOURCE_SCOPE_MISMATCH')
   } else {
@@ -316,6 +320,7 @@ function ingestionReservation(value,policy){
 
 /** All authority callbacks are server-owned. No context/role/ALLOW from HTTP is accepted. */
 export function createOperationExecutor(options) {
+  const knowledgeAdopted=validateKnowledgeAdoption(options)
   if(options.recurringSchemaDigest!==undefined&&(!/^[a-f0-9]{64}$/.test(options.recurringSchemaDigest)
     ||['assistantSchemaDigest','requestQuotaSchemaDigest','locationAdmissionSchemaDigest','reportAdmissionSchemaDigest'].some(k=>options[k]!==undefined)))throw TypeError('Explicit isolated private-recurring schema adoption required')
   if(options.recurringSchemaDigest!==undefined&&(options.application?.environment!=='development'||!options.application?.operations?.length||options.application.operations.some(op=>!recurringOperationPolicy(op))))throw TypeError('Isolated Development recurring operations required')
@@ -325,10 +330,11 @@ export function createOperationExecutor(options) {
   if(options.requestQuotaSchemaDigest!==undefined&&!/^[a-f0-9]{64}$/.test(options.requestQuotaSchemaDigest))throw TypeError('Explicit accepted SQL027 digest required')
   if(options.locationAdmissionSchemaDigest!==undefined&&!/^[a-f0-9]{64}$/.test(options.locationAdmissionSchemaDigest))throw TypeError('Explicit accepted SQL020 digest required')
   if(options.reportAdmissionSchemaDigest!==undefined&&(!/^[a-f0-9]{64}$/.test(options.reportAdmissionSchemaDigest)||options.locationAdmissionSchemaDigest!==undefined))throw TypeError('Explicit accepted SQL025 digest required')
-  const executionContract=options.recurringSchemaDigest!==undefined?RECURRING_ROOT_CONTRACT:options.assistantSchemaDigest!==undefined?ASSISTANT_ROOT_CONTRACT:options.requestQuotaSchemaDigest!==undefined?REQUEST_QUOTA_ROOT_CONTRACT:options.reportAdmissionSchemaDigest!==undefined?REPORT_ADMISSION_ROOT_CONTRACT:options.locationAdmissionSchemaDigest===undefined?OPERATION_CONTRACT:SUPPLIER_LOCATION_ROOT_CONTRACT
+  const executionContract=knowledgeAdopted?KNOWLEDGE_ROOT_CONTRACT:options.recurringSchemaDigest!==undefined?RECURRING_ROOT_CONTRACT:options.assistantSchemaDigest!==undefined?ASSISTANT_ROOT_CONTRACT:options.requestQuotaSchemaDigest!==undefined?REQUEST_QUOTA_ROOT_CONTRACT:options.reportAdmissionSchemaDigest!==undefined?REPORT_ADMISSION_ROOT_CONTRACT:options.locationAdmissionSchemaDigest===undefined?OPERATION_CONTRACT:SUPPLIER_LOCATION_ROOT_CONTRACT
   const { authenticate, withTransaction, recordAudit, now = Date.now } = options
   const config = freeze(structuredClone(options.application))
-  const ceiling = Object.hasOwn(profiles, config.profileId) ? profiles[config.profileId] : null
+  const baseCeiling = Object.hasOwn(profiles, config.profileId) ? profiles[config.profileId] : null
+  const ceiling=knowledgeAdopted&&baseCeiling?{...baseCeiling,features:[...baseCeiling.features,'platform_knowledge']}:baseCeiling
   if (!ceiling || !['development', 'staging', 'production'].includes(config.environment) || !['appId', 'deploymentId', 'configurationVersion', 'identityIssuer'].every(k => nonempty(config[k])) || !Array.isArray(config.operations) || config.operations.some(op => !Object.hasOwn(rules, op)) || !Array.isArray(config.features) || config.features.some(f => !ceiling.features.includes(f)) || (ceiling.fixed && !nonempty(config.organisationId)) || (!ceiling.fixed && config.organisationId !== null) || [authenticate, withTransaction, recordAudit, now].some(f => typeof f !== 'function')) throw new TypeError('Explicit supported application and server authority adapters required')
   const stamp = event => ({ ...event, occurredAt: new Date(now()).toISOString() })
 
@@ -361,6 +367,7 @@ export function createOperationExecutor(options) {
           }
         }
         const platform=selected.mode==='PLATFORM'
+        const knowledgeRule=knowledgeOperationPolicy(input.operation),knowledgeService=knowledgeRule?.mode==='KNOWLEDGE_SERVICE'
         if (compute||platform ? typeof input.idempotencyKey !== 'string' || !/^[A-Za-z0-9_-]{24,128}$/.test(input.idempotencyKey)
           : input.idempotencyKey != null) deny('CONTEXT_INVALID')
         const request = freeze({ operation: input.operation, resourceId: input.resourceId, organisationId: input.organisationId, payload,
@@ -382,7 +389,11 @@ export function createOperationExecutor(options) {
           const delegated=request.operation==='job.execute' ? delegatedJob(state,identity,request,config,now(),options.reportAdmissionSchemaDigest) : recurringOperationPolicy(request.operation)?recurringJob(state,identity,request,config,now(),options.recurringSchemaDigest):null
           if (access.type === 'DELEGATED_USER' && !delegated) deny('DELEGATION_INVALID')
           const organisationId = request.organisationId
-          if(platform){
+          let knowledgeEvidence=null
+          if(knowledgeRule){try{knowledgeEvidence=knowledgeOperationEvidence({state,request,actor:identity,application:config,schemaDigest:options.knowledgeSchemaDigest,now:now()})}catch{deny('POLICY_UNAVAILABLE')}}
+          if(knowledgeService){
+            if(identity.kind!=='SERVICE'||config.profileId!=='PLATFORM_INTERNAL'||organisationId!==null||access.organisationId!==null||access.type!=='SERVICE_GRANT')deny('CONTEXT_INVALID')
+          }else if(platform){
             if(identity.kind!=='SERVICE'||config.profileId!=='PLATFORM_INTERNAL'||organisationId!==null
               ||access.organisationId!==null||access.type!=='SERVICE_GRANT')deny('CONTEXT_INVALID')
           } else if (selected.mode === 'ACCOUNT') {
@@ -394,7 +405,8 @@ export function createOperationExecutor(options) {
           const moduleEvidence = session.moduleEvidence === undefined ? undefined : normalizeModuleEvidence(session.moduleEvidence, { now })
           if (moduleEvidence && selected.mode !== 'ORGANISATION') deny('CONTEXT_INVALID')
           if (compute && moduleEvidence?.moduleId !== requestOperationPolicy(request.operation)?.module) deny('APPLICATION_FEATURE_UNAVAILABLE')
-          let context = { ...audit, ...(delegated ? {subjectUserId:delegated.subjectUserId} : {}), organisationId, mode: selected.mode, policyVersion: state.policyVersion, accessBasisType: access.type, accessVersion: access.version, accessSourceRef: access.sourceRef, feature: selected.feature, effect: selected.effect, resourceId: request.resourceId, ...(moduleEvidence ? { moduleEvidence } : {}) }
+          let context = { ...audit, ...(delegated ? {subjectUserId:delegated.subjectUserId} : {}),...(knowledgeService?{subjectUserId:knowledgeEvidence.ownerUserId}:{}),
+            ...(knowledgeEvidence?{knowledgeAdministration:knowledgeEvidence.administrationAllowed,knowledgeEvidence}:{}),organisationId, mode: selected.mode, policyVersion: state.policyVersion, accessBasisType: access.type, accessVersion: access.version, accessSourceRef: access.sourceRef, feature: selected.feature, effect: selected.effect, resourceId: request.resourceId, ...(moduleEvidence ? { moduleEvidence } : {}) }
           const platformPolicy=platform?ingestionPolicy(state.ingestion,context,request,now()):null
           if(platformPolicy)context={...context,sourceId:platformPolicy.sourceId,sourceVersion:platformPolicy.sourceVersion,
             qualityVersion:platformPolicy.qualityVersion,classificationVersion:platformPolicy.classificationVersion,payloadSchema:platformPolicy.payloadSchema,
@@ -476,7 +488,7 @@ export function createOperationExecutor(options) {
           // Export preparation is scoped private SQL, not paid refresh, global
           // ingestion or private request admission with an omitted limit.
           const requestPolicy = compute ? computePolicy(state.requestPolicy, context, now(), options.requestQuotaSchemaDigest) : null
-          if (assistant?state.usagePolicy!=='PRODUCT_POLICY'||typeof session.reserveAssistantUsage!=='function':platform?state.usagePolicy!=='PLATFORM_BUDGET'||typeof session.reserveIngestion!=='function'||typeof session.completeIngestion!=='function': compute ? state.usagePolicy !== 'PRODUCT_POLICY' || typeof session.reserveUsage !== 'function' || typeof session.completeRequest !== 'function'
+          if (knowledgeRule?.boundedExecution?state.usagePolicy!=='PLATFORM_BUDGET'||typeof session.assertKnowledgeBudget!=='function':assistant?state.usagePolicy!=='PRODUCT_POLICY'||typeof session.reserveAssistantUsage!=='function':platform?state.usagePolicy!=='PLATFORM_BUDGET'||typeof session.reserveIngestion!=='function'||typeof session.completeIngestion!=='function': compute ? state.usagePolicy !== 'PRODUCT_POLICY' || typeof session.reserveUsage !== 'function' || typeof session.completeRequest !== 'function'
             : state.usagePolicy !== 'NOT_APPLICABLE') deny('LIMIT_POLICY_UNAVAILABLE')
           if (session.transactionalEffects !== true || session.outputBoundaryVersion !== state.resource.projectionVersion) deny('POLICY_UNAVAILABLE')
           if(recurringOperationPolicy(request.operation)&&['requestContinuation','requestInspection','requestWork','dispatchAdmission'].some(key=>state[key]!==undefined))deny('POLICY_UNAVAILABLE')
@@ -581,6 +593,7 @@ export function createOperationExecutor(options) {
             try{admitted=assertAssistantUsageReservation(await session.reserveAssistantUsage(bound),bound)}catch(error){deny(['LIMIT_EXCEEDED','IDEMPOTENCY_CONFLICT'].includes(error?.code)?error.code:'LIMIT_POLICY_UNAVAILABLE')}
             bound=freeze({...bound,assistantReservation:admitted})
           }
+          if(knowledgeRule?.boundedExecution)await session.assertKnowledgeBudget(bound)
           const value = privateReservation?.status==='REPLAY'?privateReservation.value:reservation?.status === 'REPLAY' ? reservation.value : sourceReservation?.status==='REPLAY'?sourceReservation.receipt:await action(bound, session.transaction)
           if(working){if(!computeReceipt(value,request.resourceId))deny('POLICY_UNAVAILABLE');await session.verifyWork(bound)}
           if(inspecting){if(!computeReceipt(value,request.resourceId))deny('POLICY_UNAVAILABLE');await session.verifyInspection(bound)}
@@ -655,7 +668,7 @@ export function operationSourceDigest() {
     const hash=createHash('sha256')
     // The optional assistant imports real usage receipt verification. Include
     // that transitive implementation and its types in the closed Root closure.
-    for(const file of ['./operation-context.mjs','./operation-context.d.mts','./request-operations.mjs','./request-operations.d.mts','../migrations/access/017-additional-request-operations.sql','./supplier-location.mjs','./supplier-location.d.mts','../migrations/access/019-supplier-location-operations.sql','./assistant-usage.mjs','./assistant-usage.d.mts','./recurring-job.mjs','./recurring-job.d.mts'])hash.update(fs.readFileSync(new URL(file,import.meta.url)))
+    for(const file of ['./operation-context.mjs','./operation-context.d.mts','./request-operations.mjs','./request-operations.d.mts','../migrations/access/017-additional-request-operations.sql','./supplier-location.mjs','./supplier-location.d.mts','../migrations/access/019-supplier-location-operations.sql','./assistant-usage.mjs','./assistant-usage.d.mts','./recurring-job.mjs','./recurring-job.d.mts','./knowledge-operations.mjs','./knowledge-operations.d.mts'])hash.update(fs.readFileSync(new URL(file,import.meta.url)))
     return hash.digest('hex')
   })
 }

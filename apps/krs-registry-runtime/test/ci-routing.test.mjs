@@ -5,7 +5,7 @@ import os from 'node:os'
 import path from 'node:path'
 import {execFileSync} from 'node:child_process'
 import {fileURLToPath} from 'node:url'
-import {partitionChangedPaths,projectForRoute,validateCandidate,validateOwnerGroups} from '../scripts/ci-routing.mjs'
+import {partitionChangedPaths,projectForRoute,validateCandidate,validateOwnerGroups,validateGovernanceContext} from '../scripts/ci-routing.mjs'
 
 const root=fileURLToPath(new URL('../../..',import.meta.url))
 const arch='apps/krs-registry-runtime/scripts/ci-proof.mjs',srm='apps/srm/src/server/supplier-locations.ts',sg2='apps/sg-runtime/package-lock.json',maps='apps/maps-runtime/src/index.ts'
@@ -71,4 +71,46 @@ test('real Git candidate and validation base remain exact; unknown, same or unre
   assert.throws(()=>validateCandidate({git,candidate,base:unrelated}))
   git(['commit','--quiet','--allow-empty','-m','head changed']);assert.throws(()=>validateCandidate({git,candidate,base}),/exact candidate/)
  }finally{fs.rmSync(dir,{recursive:true,force:true})}
+})
+
+
+test('real source and merge checkouts retain artifact SHA while rejecting altered context, targets or refs',()=>{
+ const temporary=fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(),'krs-validation-context-')))
+ const gitAt=cwd=>args=>execFileSync('git',args,{cwd,encoding:'utf8',stdio:['ignore','pipe','pipe']}).trim()
+ try {
+  const producer=path.join(temporary,'producer');fs.mkdirSync(producer)
+  const git=gitAt(producer),target='owned-source.txt'
+  git(['init','--quiet','--initial-branch=main']);git(['config','user.name','Isolated context fixture']);git(['config','user.email','context@example.invalid'])
+  const commit=message=>git(['-c','commit.gpgsign=false','commit','--quiet','--allow-empty','-m',message])
+  fs.writeFileSync(path.join(producer,target),'accepted predecessor');git(['add',target]);commit('base')
+  const base=git(['rev-parse','HEAD'])
+  git(['checkout','--quiet','-b','candidate']);fs.writeFileSync(path.join(producer,target),'exact source');git(['add',target]);commit('candidate')
+  const candidate=git(['rev-parse','HEAD'])
+  git(['checkout','--quiet','main']);fs.writeFileSync(path.join(producer,'authority.txt'),'separate accepted policy');git(['add','authority.txt']);commit('authority')
+  const authority=git(['rev-parse','HEAD'])
+  git(['-c','user.name=Isolated context fixture','-c','user.email=context@example.invalid','-c','commit.gpgsign=false','merge','--quiet','--no-ff','candidate','-m','Synthetic two-parent validation merge'])
+  const validationSha=git(['rev-parse','HEAD'])
+  for(const [name,sha]of [['source',candidate],['validation',validationSha]]) {
+   git(['clone','--quiet','--shared',producer,path.join(temporary,name)])
+   const current=gitAt(path.join(temporary,name));current(['checkout','--quiet','--detach',sha]);current(['remote','set-url','origin','https://github.com/profitia/SG-dev.git'])
+  }
+  const sourceGit=gitAt(path.join(temporary,'source')),contextGit=gitAt(path.join(temporary,'validation'))
+  const input={sourceGit,contextGit,candidate,validationSha,requestedBase:base,event:'pull_request',changedPaths:[target]}
+  assert.deepEqual(validateGovernanceContext(input),{candidateHeadSha:candidate,validationSha,baseSha:authority,requestedBaseSha:base})
+  for(const change of [{candidate:base},{validationSha:candidate},{requestedBase:'main'},{changedPaths:[]},{changedPaths:[target,target]},{changedPaths:[target,'authority.txt']},{event:'pull_request_target'}])assert.throws(()=>validateGovernanceContext({...input,...change}))
+  const contextFile=path.join(temporary,'validation',target)
+  fs.appendFileSync(contextFile,'uncommitted drift');assert.throws(()=>validateGovernanceContext(input),/Clean independent/);contextGit(['checkout','--',target])
+  const sourceFile=path.join(temporary,'source',target)
+  fs.appendFileSync(sourceFile,'source drift');assert.throws(()=>validateGovernanceContext(input),/Clean independent/);sourceGit(['checkout','--',target])
+  contextGit(['remote','set-url','origin','https://github.com/foreign/repository.git']);assert.throws(()=>validateGovernanceContext(input),/Canonical repository/)
+  contextGit(['remote','set-url','origin','https://github.com/profitia/SG-dev.git'])
+  // Keep the same two parents but change the merged target. Ancestry alone
+  // must never grant authority to build or validate different source bytes.
+  fs.writeFileSync(contextFile,'different merged target');contextGit(['add',target]);contextGit(['-c','user.name=Isolated context fixture','-c','user.email=context@example.invalid','-c','commit.gpgsign=false','commit','--quiet','--amend','--no-edit'])
+  assert.throws(()=>validateGovernanceContext({...input,validationSha:contextGit(['rev-parse','HEAD'])}),/preserve candidate bytes/)
+  contextGit(['checkout','--quiet','--detach',candidate])
+  assert.equal(validateGovernanceContext({...input,event:'push',validationSha:candidate}).validationSha,candidate)
+  contextGit(['checkout','--quiet','--detach',authority])
+  assert.throws(()=>validateGovernanceContext({...input,event:'push',validationSha:authority}),/actual pushed source/)
+ } finally {fs.rmSync(temporary,{recursive:true,force:true})}
 })
