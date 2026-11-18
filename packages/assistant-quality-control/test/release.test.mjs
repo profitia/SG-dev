@@ -262,6 +262,10 @@ async function publicationFixture({enabled=true,promote=true}={}){
   if(suffix==='/git/refs')return Response.json({})
   if(suffix==='/pulls')return Response.json({number:43,head:{sha}})
   if(suffix==='/pulls/43')return Response.json(state.pr??pr())
+  if(suffix.startsWith('/rules/branches/main?per_page=100&page=')){
+   const page=Number(new URL(url).searchParams.get('page'))
+   return Response.json(state.rulePages?state.rulePages[page-1]??[]:state.rules??[])
+  }
   if(suffix==='/branches/main/protection')return Response.json(state.protection)
   if(suffix.startsWith('/commits/'+sha+'/check-runs?'))return Response.json({check_runs:installed.map((name,i)=>({id:i+1,name,head_sha:sha,status:'completed',conclusion:'success',app:{slug:'github-actions'}})),total_count:installed.length})
   if(suffix==='/pulls/43/merge')return Response.json({merged:true,sha:'f'.repeat(40)})
@@ -434,4 +438,40 @@ test('independent publisher checks the immutable commit diff rather than trustin
   await assert.rejects(f.inspector.inspectPatchBinding(f.merge()),{code:'PUBLISHER_PATCH_COMPARISON_INVALID'})
   assert(f.calls.every(c=>c.options.method==='GET'))
  }
+})
+
+
+test('publisher observes strict active rulesets using Metadata read without administration or classic-protection access',async()=>{
+ const f=await publicationFixture()
+ f.state.rules=[{type:'required_status_checks',ruleset_id:23304085,parameters:{
+  strict_required_status_checks_policy:true,required_status_checks:f.installed.map(context=>({context,integration_id:15368}))}}]
+ f.state.protection={required_status_checks:{strict:false,contexts:[]}}
+ const result=await f.client.merge(f.merge());assert.equal(result.sourceSha,'f'.repeat(40))
+ assert.equal(f.calls.some(c=>c.url.endsWith('/branches/main/protection')),false)
+ assert(f.calls.some(c=>c.url.includes('/rules/branches/main?')))
+})
+test('publisher refuses nonstrict, incomplete, malformed or foreign-app active checks without falling back to classic protection',async()=>{
+ for(const change of ['nonstrict','missing','foreign-app','unscoped-app','malformed']){
+  const f=await publicationFixture(),parameters={strict_required_status_checks_policy:true,
+   required_status_checks:f.installed.map(context=>({context,integration_id:15368}))}
+  if(change==='nonstrict')parameters.strict_required_status_checks_policy=false
+  if(change==='missing')parameters.required_status_checks.pop()
+  if(change==='foreign-app')parameters.required_status_checks[0].integration_id=12345
+  if(change==='unscoped-app')parameters.required_status_checks[0].integration_id=null
+  if(change==='malformed')parameters.required_status_checks=null
+  f.state.rules=[{type:'required_status_checks',parameters}]
+  await assert.rejects(f.client.merge(f.merge()))
+  assert.equal(f.calls.some(c=>c.options.method==='PUT'),false,change)
+  assert.equal(f.calls.some(c=>c.url.endsWith('/branches/main/protection')),false,change)
+ }
+})
+test('publisher reads every active-rule page and fails closed at its bounded pagination limit',async()=>{
+ const f=await publicationFixture(),unrelated=Array.from({length:100},()=>({type:'deletion'}))
+ f.state.rulePages=[unrelated,[{type:'required_status_checks',parameters:{strict_required_status_checks_policy:true,
+  required_status_checks:f.installed.map(context=>({context,integration_id:15368}))}}]]
+ assert.deepEqual(await f.inspector.protection(f.installed),{source:'ACTIVE_RULESETS',strict:true})
+ assert.equal(f.calls.filter(c=>c.url.includes('/rules/branches/main?')).length,2)
+ const denied=await publicationFixture();denied.state.rulePages=Array.from({length:5},()=>unrelated)
+ await assert.rejects(denied.inspector.protection(denied.installed),{code:'GITHUB_RULES_INCOMPLETE'})
+ assert.equal(denied.calls.some(c=>c.options.method!=='GET'),false)
 })
