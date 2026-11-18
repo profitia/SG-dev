@@ -1382,13 +1382,530 @@
     "stage2Started": false
   },
   "remainingOwnerDecisionsPreparation": {
-    "status": "BEING_ASSEMBLED_NOT_AN_ACTIVATION_RECORD",
-    "items": [
-      "Exact CI27 policy acceptance/bootstrap and all mandatory source/resulting-main checks",
-      "Two disabled publisher CAS installations with metadata-only status, two ordinary expiring roles, dedicated schemas and exact secret recipients",
-      "Operational job role separation, main-only environments and independent signing trust; no model key or pilot activation",
-      "Provider-supported scoped Render publisher access; broad classic keys remain excluded",
-      "Independent reference review and server-side release/recovery gates before E1-T13"
-    ]
+    "status": "CONCRETE_B29_REVIEW_PACKAGE_PENDING_OWNER_DECISION",
+    "decisionIds": [
+      "B29-1",
+      "B29-2",
+      "B29-3",
+      "B29-4",
+      "B29-5",
+      "B29-6"
+    ],
+    "allPriorAuthorisationsPreserved": true,
+    "actionsApplied": false
+  },
+  "consolidatedOwnerDecisionB29": {
+    "schemaVersion": "AQC_OWNER_DECISION_PACKAGE_V1",
+    "id": "CIC-E1-B29-TECHNICAL-INTEGRATION-20261118",
+    "status": "PROPOSED_NOT_OWNER_APPROVED_NOT_ACTIVE",
+    "purpose": "Finish Stage1 technical integration on actual Development and prepare E1; no paid repair or autonomous promotion activation.",
+    "expiresAt": "2026-11-27T23:59:59.000Z",
+    "alreadyApprovedNotRequestedAgain": [
+      "PR1104 worker and infrastructure envelope",
+      "B28 exact host/worker QA configuration for two new controlled PL/EN cases",
+      "six bounded engineering SourceRef/deployment CAS operations and exact temporary owner SET restoration",
+      "limited SG-dev controller token",
+      "metadata-only PostHog and Sentry monitoring"
+    ],
+    "decisions": [
+      {
+        "id": "B29-1",
+        "kind": "CLOSED_SOURCE_POLICY_BOOTSTRAP",
+        "proposalPr": 1197,
+        "reviewedSourceSha": "88d36b3f81ba6305e3797510c4f3b1cef3fb56b5",
+        "acceptedMain": "efc1290378507e947cbf9ad0bcfc1e4a71086bb6",
+        "protectedBlobs": {
+          "scripts/governance/controlled-package-ci.mjs": "8a5d65b61f2284d99956151fe632b34740de3128",
+          "scripts/governance/assistant-quality-ci25.test.mjs": "c62d3a468632c4bdd84f7e6b49ea313e6a1415a6"
+        },
+        "otherProposalPaths": [
+          "Canon/proposals/bsdc/ARCHITECTURE/cic-assistant-continuous-quality.md",
+          "Canon/evidence/2026-11-17-cic-quality-development-owner-package.json"
+        ],
+        "originalPaths": 24,
+        "proposedPaths": 27,
+        "extraPaths": [
+          "packages/platform-contracts/test/assistant-reservation-source.mjs",
+          "apps/architecture-lab/knowledge-source.mjs",
+          "apps/architecture-lab/test/knowledge-source.test.mjs"
+        ],
+        "scope": "One closed policy bootstrap/acceptance into trusted main, followed by required native exact-source host validation and resulting-main checks before any host rollout. Preparation approval alone is not used as activation authority.",
+        "evidence": {
+          "sourceTests": 29,
+          "completeLocalControllerTestsBeforeSdkMetadataFollowup": 394,
+          "latestSdkFocusedTests": 50,
+          "nativeArchitectureGovernance": {
+            "runId": 44406432579,
+            "jobId": 135162777941,
+            "pass": 459,
+            "fail": 0,
+            "skip": 0
+          },
+          "nativeArchitectureContracts": {
+            "pass": 2141,
+            "fail": 0,
+            "existingSkip": 1
+          },
+          "governanceRun": 44406432131,
+          "actualSg2Refusal": "CONTROLLED_VALIDATION_REQUIRED_FOR_EXACT_SHA"
+        },
+        "candidateCodeExecutedDuringAdmission": false,
+        "originalTestsAndReceiptsRetained": true,
+        "noHostCiWaiver": true,
+        "policyBeforeHostActivation": true
+      },
+      {
+        "id": "B29-2",
+        "kind": "TWO_DISABLED_PUBLISHER_DATABASE_INSTALLATIONS",
+        "sourcePr": 1211,
+        "acceptedSourceMain": "0523b664a4846c99885c7debfa7b5035025b9b3f",
+        "profiles": [
+          {
+            "profile": "canonical",
+            "projectId": "spring-bread-28217539",
+            "branchId": "br-sparkling-term-b99l107x",
+            "databaseName": "platform_private",
+            "ownerRole": "profitia_access_owner",
+            "role": "aqc_development_canonical_publisher",
+            "migration": "packages/assistant-quality-control/migrations/004-publisher-canonical.sql",
+            "sha256": "5c4b926f473ce2f6efb2135c12a220d3d26839184123fdcce1461e0baa005632"
+          },
+          {
+            "profile": "product",
+            "projectId": "autumn-waterfall-65938876",
+            "branchId": "br-dry-hall-b294222f",
+            "databaseName": "neondb",
+            "ownerRole": "profitia_ingestion_owner",
+            "role": "aqc_development_product_publisher",
+            "migration": "packages/assistant-quality-control/migrations/005-publisher-product.sql",
+            "sha256": "9b309f09f1c99e2c6213816a048903791fa8a86ea2cbecf11c8d01854c66114d"
+          }
+        ],
+        "schemaPerDatabase": "profitia_quality_release",
+        "functions": [
+          "quality_deployment_cas(uuid,text,text,uuid,timestamptz)",
+          "quality_deployment_cas_status(uuid)"
+        ],
+        "ordinaryRolePolicy": {
+          "initialLogin": false,
+          "loginAfterQualification": true,
+          "connectionLimit": 2,
+          "inherit": false,
+          "superuser": false,
+          "createRole": false,
+          "createDatabase": false,
+          "bypassRls": false,
+          "replication": false,
+          "memberships": [],
+          "validUntil": "2026-11-27T23:59:59.000Z",
+          "directPrivateTableAccess": false
+        },
+        "sourceReferencesPerDatabase": 3,
+        "policyPublishingInitiallyEnabled": false,
+        "recoveryOnlyOwnRecordedOperation": true,
+        "noRightsStatusExpiryRenewal": true,
+        "credentialsRecipient": {
+          "repository": "profitia/SG-dev",
+          "environment": "aqc-publisher-development",
+          "names": [
+            "AQC_PUBLISHER_CANONICAL_DATABASE_URL",
+            "AQC_PUBLISHER_PRODUCT_DATABASE_URL"
+          ]
+        },
+        "installationEnvelope": "Fresh atomic owner transaction; exact original membership OID/grantor/options restored before COMMIT. No database restore or existing schema rollback."
+      },
+      {
+        "id": "B29-3",
+        "kind": "MAIN_ONLY_OPERATIONAL_ROLES_AND_SECRET_RECIPIENTS",
+        "repository": "profitia/SG-dev",
+        "workflow": ".github/workflows/assistant-quality-repair.yml",
+        "environments": [
+          {
+            "name": "aqc-executor-development",
+            "deployment_branch_policy": {
+              "protected_branches": false,
+              "custom_branch_policies": true
+            },
+            "branchPolicies": [
+              {
+                "name": "main",
+                "type": "branch"
+              }
+            ],
+            "humanReviewers": [],
+            "waitTimer": 0
+          },
+          {
+            "name": "aqc-verifier-development",
+            "deployment_branch_policy": {
+              "protected_branches": false,
+              "custom_branch_policies": true
+            },
+            "branchPolicies": [
+              {
+                "name": "main",
+                "type": "branch"
+              }
+            ],
+            "humanReviewers": [],
+            "waitTimer": 0
+          },
+          {
+            "name": "aqc-publisher-development",
+            "deployment_branch_policy": {
+              "protected_branches": false,
+              "custom_branch_policies": true
+            },
+            "branchPolicies": [
+              {
+                "name": "main",
+                "type": "branch"
+              }
+            ],
+            "humanReviewers": [],
+            "waitTimer": 0
+          },
+          {
+            "name": "aqc-ci-gate-development",
+            "deployment_branch_policy": {
+              "protected_branches": false,
+              "custom_branch_policies": true
+            },
+            "branchPolicies": [
+              {
+                "name": "main",
+                "type": "branch"
+              }
+            ],
+            "humanReviewers": [],
+            "waitTimer": 0
+          }
+        ],
+        "privateRecipients": [
+          {
+            "environment": "aqc-executor-development",
+            "names": [
+              "AQC_EXECUTOR_SUPERVISOR_PRIVATE_KEY",
+              "AQC_LIMITS_BROKER_DATABASE_URL",
+              "AQC_LIMITS_BROKER_COMMAND_KEY"
+            ],
+            "existingDatabaseRole": "profitia_limits_quality_broker",
+            "projectId": "lingering-thunder-05075810",
+            "branchId": "br-green-hall-b9s837k0",
+            "databaseName": "neondb",
+            "agentReceivesValues": false
+          },
+          {
+            "environment": "aqc-verifier-development",
+            "names": [
+              "AQC_INDEPENDENT_VERIFIER_PRIVATE_KEY",
+              "AQC_HOLDOUT_PACK_JSON",
+              "AQC_HOLDOUT_ATTESTATION_JSON"
+            ],
+            "existingNpmTokenUse": "Existing NPM_TOKEN only inside trusted verifier job for the exact admitted CIC1.8.0 artifact; no token transfer to executor, agent, publisher, worker or public output."
+          },
+          {
+            "environment": "aqc-publisher-development",
+            "names": [
+              "AQC_INDEPENDENT_PUBLISHER_PRIVATE_KEY",
+              "AQC_PUBLISHER_CANONICAL_DATABASE_URL",
+              "AQC_PUBLISHER_PRODUCT_DATABASE_URL",
+              "AQC_RENDER_PUBLISHER_API_KEY"
+            ]
+          },
+          {
+            "serviceId": "srv-dbu4ak0ae00c73eaabcg",
+            "workspaceId": "tea-d7lps8rbc2fs73cn80dg",
+            "names": [
+              "AQC_RUNTIME_OBSERVER_PRIVATE_KEY"
+            ],
+            "scope": "Sign metadata-only observations of the two previously approved controlled cases; no additional QA scope."
+          }
+        ],
+        "publicTrustRecipients": [
+          "worker srv-dbu4ak0ae00c73eaabcg",
+          "aqc-executor-development",
+          "aqc-verifier-development",
+          "aqc-publisher-development",
+          "aqc-ci-gate-development"
+        ],
+        "publicTrustAndSafeContextNames": [
+          "AQC_OWNER_PUBLIC_KEYS_JSON",
+          "AQC_PHASE_PUBLIC_KEYS_JSON",
+          "AQC_RUNTIME_OBSERVER_PUBLIC_KEYS_JSON",
+          "AQC_REVIEWER_PUBLIC_KEYS_JSON",
+          "AQC_REPAIR_CONTEXTS_JSON",
+          "AQC_RECOVERY_AUTHORITY_JSON",
+          "AQC_CONTROLLER_WORKFLOW_SHA256"
+        ],
+        "offlineOwnerSigningKey": "Generate and retain only in the owner-private task package with restricted filesystem permissions, outside all workers and GitHub jobs. Never expose the value in Git, logs or chat.",
+        "ownerSigningScope": [
+          "Separate operational recovery authority AQC_OPERATIONAL_RECOVERY_V1, only VERIFY_RUNTIME/OBSERVE/ROLLBACK of independently proved own releases, expires by27 November, no paid/data/promotion/rights-renewal capability",
+          "At most one-hour metadata-only technical context/mandate for the three signed synthetic classes, while native paid limits and all paid/promotion flags remain disabled; no paid pilot activation"
+        ],
+        "githubTokenPermissions": {
+          "executorSupervisor": {
+            "contents": "read",
+            "actions": "read"
+          },
+          "verifier": {
+            "contents": "read",
+            "actions": "read",
+            "checks": "read"
+          },
+          "publisher": {
+            "contents": "write",
+            "pullRequests": "write",
+            "actions": "read",
+            "checks": "read"
+          },
+          "ciGate": {
+            "contents": "read",
+            "actions": "read",
+            "checks": "write",
+            "fixedCheckName": "AQC independent repair gate"
+          }
+        },
+        "publisherUsesJobScopedGithubToken": true,
+        "newPersistentGithubPublisherPat": false,
+        "metadataControllerActivation": {
+          "onlyControlMetadataEnabled": true,
+          "maxControlledSyntheticIncidents": 3,
+          "classes": [
+            "C1",
+            "C2",
+            "C3"
+          ],
+          "nativePaidLimitsEnabled": false,
+          "paidRepairsEnabled": false,
+          "promotionEnabled": false,
+          "regularQaEnabled": false,
+          "expiresBy": "2026-11-27T23:59:59.000Z"
+        },
+        "publicMetadataDestination": {
+          "destination": "Native GitHub workflow inputs/artifacts for CIC Development operational coordination",
+          "allowed": [
+            "SHA",
+            "time",
+            "connection/status/error codes",
+            "disabled gates",
+            "aggregate count for the two controlled synthetic cases"
+          ],
+          "forbidden": [
+            "account or organisation identifiers",
+            "transcripts",
+            "raw QA",
+            "source payloads",
+            "secrets"
+          ]
+        },
+        "sourceAndNativeQualificationRequiredBeforeUse": true,
+        "noOpenAiKeyCreatedOrInstalled": true
+      },
+      {
+        "id": "B29-4",
+        "kind": "SERVER_ENFORCED_CLOSED_REPAIR_CI",
+        "currentRulesetPreserved": {
+          "id": 23304085,
+          "rules": [
+            "deletion",
+            "non_fast_forward",
+            "pull_request"
+          ],
+          "modified": false
+        },
+        "proposedAdditionalRuleset": {
+          "name": "CIC Development independent repair gate",
+          "target": "branch",
+          "enforcement": "active",
+          "conditions": {
+            "ref_name": {
+              "include": [
+                "refs/heads/main"
+              ],
+              "exclude": []
+            }
+          },
+          "bypass_actors": [],
+          "rules": [
+            {
+              "type": "required_status_checks",
+              "parameters": {
+                "strict_required_status_checks_policy": true,
+                "do_not_enforce_on_create": false,
+                "required_status_checks": [
+                  {
+                    "context": "AQC independent repair gate",
+                    "integration_id": 15368
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "activateOnlyAfterCheckExistsForMainAndPullRequests": true,
+        "existingRequiredChecksNotRemoved": true,
+        "reporter": "Trusted main-only CI gate, fixed repository/check name/native source and SHA. Candidate code never executes with checks-write or publishing credentials.",
+        "repairScope": {
+          "repository": "profitia/SG-dev",
+          "branchPattern": "sg2/quality-control-<incident UUID>",
+          "classes": [
+            "C1",
+            "C2",
+            "C3"
+          ],
+          "sourcePaths": {
+            "C1": "apps/sg-runtime/lib/assistant/calendar-period.ts",
+            "C2": "apps/sg-runtime/lib/assistant/quality-response.ts",
+            "C3": "apps/sg-runtime/lib/assistant/quality-response.ts"
+          },
+          "regressionPath": "apps/sg-runtime/tests/assistant-quality-regressions/<same incident UUID>.test.ts",
+          "maxFiles": 2,
+          "maxPatchBytes": 32768,
+          "maxChangedLines": 300,
+          "ownerMandateAndIndependentExportRequired": true,
+          "independentVerificationAndNativeArtifactRequired": true,
+          "exactBaseHeadGateAndNonceRequired": true,
+          "agentMayModifyPolicyWorkflowGatesPackagePinsOrExistingTests": false
+        },
+        "implementationAndCountertestsRemainMandatory": true,
+        "initialCi27ScopeNotExpandedByRepairProfile": true,
+        "noAutonomousPromotionActivationByThisDecision": true
+      },
+      {
+        "id": "B29-5",
+        "kind": "SUPPORTED_SCOPED_RENDER_PUBLISHER_ACCESS_AND_SUPPORT_REQUEST",
+        "workspaceId": "tea-d7lps8rbc2fs73cn80dg",
+        "serviceId": "srv-dapa3tid0e5s73f8bc5g",
+        "recipient": {
+          "repository": "profitia/SG-dev",
+          "environment": "aqc-publisher-development",
+          "secretName": "AQC_RENDER_PUBLISHER_API_KEY"
+        },
+        "providerUiObserved": "CLASSIC_ONLY_NO_SCOPES",
+        "supportRequestAuthorisedOnlyOnOwnerGo": true,
+        "supportRequestDraft": "Please enable workspace-scoped API keys for PROFITIA WORKSPACE (tea-d7lps8rbc2fs73cn80dg) on our existing plan. We need Services: Read, Environment variables and secret files: Read & Write, and Deploys: Run for an independent publisher of our existing SG2 Development service srv-dapa3tid0e5s73f8bc5g. Please confirm scope granularity and expiry support. Do not change our plan, create resources or charges, or send credentials in the ticket.",
+        "maximumProviderScopes": [
+          "Services: Read",
+          "Environment variables and secret files: Read & Write",
+          "Deploys: Run"
+        ],
+        "scopeGranularityDisclosure": "Render grants these scopes for resource types across the selected workspace, rather than proving a per-service restriction. The token may therefore access settings of other services in PROFITIA WORKSPACE; the admitted publisher code is fixed to the one SG2 Development service.",
+        "chooseNarrowerPerServiceScopeIfSupported": true,
+        "classicKeyExcluded": true,
+        "cliTokenReuseForPublisherExcluded": true,
+        "noNewServicePlanOrCostApproval": true,
+        "onlySevenExistingPiVersionLeavesMayChange": true,
+        "noOtherSettingsChanged": true,
+        "useOnlyThroughAuthorisedUntil": "2026-11-27T23:59:59.000Z",
+        "revokeAtCompletionOrExpiry": true,
+        "providerUnavailableOrBroaderRequired": "Do not create a classic/broader key or change plan; retain disabled autonomous publishing and continue other approved work."
+      },
+      {
+        "id": "B29-6",
+        "kind": "BOUNDED_INDEPENDENT_READ_ONLY_REVIEW_AGENT",
+        "delegationPermissionRequested": true,
+        "scope": [
+          "accepted public canon",
+          "public source and countertests",
+          "synthetic reference/holdout cases"
+        ],
+        "purpose": "Independent reference and adversarial review before E1-T13; preserve reviewer provenance and exact pack digest.",
+        "secretsOrQaRead": false,
+        "privateCicCodeRead": false,
+        "writes": false,
+        "deployments": false,
+        "paidCicApiRequests": false,
+        "ownerOnlyActions": false,
+        "noSelfSignedReferenceAcceptance": true,
+        "reviewerMayGenerateEphemeralReviewKeyAndReturnPublicAttestation": true,
+        "reviewPrivateKeyExported": false,
+        "reviewerMayInstallTrust": false
+      }
+    ],
+    "costs": {
+      "newResources": false,
+      "newPaidCompute": false,
+      "additionalApprovedInfrastructureEnvelopeUsd": 20,
+      "authorisedUntil": "2026-11-27",
+      "providerHardCap": false,
+      "newModelBudget": false,
+      "modelPilotStarted": false
+    },
+    "safeguards": {
+      "paidRepairsEnabled": false,
+      "promotionEnabled": false,
+      "pilotStarted": false,
+      "fullE1AcceptanceClaimed": false,
+      "e1RepairsCompleted": 0,
+      "stage2Authorised": false,
+      "exactSourceAndResultingMainCiRequired": true,
+      "fresh17InputLinuxQualificationRequired": true,
+      "independentReferenceRequiredBeforeE1T13": true,
+      "originalSpec5Roadmap8Unchanged": true
+    },
+    "approvalRecorded": false,
+    "actionsApplied": false
+  },
+  "latestSourceAndRuntime20261118": {
+    "acceptedMain": "efc1290378507e947cbf9ad0bcfc1e4a71086bb6",
+    "ci27": {
+      "publicSource": "88d36b3f81ba6305e3797510c4f3b1cef3fb56b5",
+      "tree": "c5f5606ae1c6723b87c9c664056b222a9e3e8275",
+      "latestFocusedPass": 50,
+      "nativeGovernancePass": 459,
+      "nativeContractsPass": 2141,
+      "nativeContractsExistingSkip": 1,
+      "nativeFailures": 0,
+      "operationRefusal": "CONTROLLED_VALIDATION_REQUIRED_FOR_EXACT_SHA",
+      "policyActivated": false
+    },
+    "publisherMetadataSource": {
+      "pr": 1211,
+      "source": "e78bdc6aebecefb3e661eff99bb4dd7f5211b3bb",
+      "acceptedMain": "0523b664a4846c99885c7debfa7b5035025b9b3f",
+      "sourceRun": 44400932056,
+      "sourceJob": 135143418362,
+      "resultingMainRun": 44402629436,
+      "resultingMainJob": 135149424633,
+      "packagePass": 205,
+      "qaPass": 12,
+      "fail": 0,
+      "skip": 0,
+      "cloudInstallationsApplied": false
+    },
+    "operationalRecoverySource": {
+      "pr": 1213,
+      "source": "51ef0b7e0473102d51e28bcac7e898da36e271ee",
+      "tree": "a83abbb0e0b62f5867b4f9a20295b4afb17b5cd0",
+      "nativeSourceRun": 44410279116,
+      "nativeSourceJob": 135176251550,
+      "packagePass": 223,
+      "qaPass": 12,
+      "fail": 0,
+      "skip": 0,
+      "qualificationSourceInputs": 17,
+      "freshLinuxQualificationRequired": true,
+      "keysOrOwnerAuthorityInstalled": false,
+      "deployed": false
+    },
+    "worker": {
+      "sourceSha": "b1cda8c4fde31557aac6e89851d6d9293ec768ea",
+      "deployId": "dep-dbv16ut6e07s73adjnt0",
+      "liveAt": "2026-11-18T21:07:41.488725Z",
+      "runtimeObservedAt": "2026-11-18T21:07:45.048Z",
+      "status": "MONITORING_READY",
+      "paidRepairsEnabled": false,
+      "promotionEnabled": false,
+      "pilotStartedAt": null,
+      "acceptanceRepairsCompleted": 0
+    },
+    "hostLastConfirmedSource": "d5eb40a061dd24c5ea65f9f373682179458cb589",
+    "host1099DeploymentPerformed": false,
+    "b28WritesPerformed": false,
+    "controlledQaCaptureReadPerformed": false,
+    "technicalReady": false,
+    "fullE1Acceptance": false,
+    "stage2Started": false
   }
 }
