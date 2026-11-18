@@ -150,3 +150,47 @@ export function createQualityRelease({token,fetchImpl=fetch,promotionEnabled=fal
   },
  })
 }
+
+const PI_DEPLOYMENT_PATHS=Object.freeze([
+ 'receiverApplication.deploymentId','serviceApplication.deploymentId',
+ 'readApplication.deploymentId','sourceApplication.deploymentId',
+ 'serviceBinding.service.deploymentId','composerBinding.deploymentId','counterBinding.deploymentId'
+])
+/** Private engineering/publisher preparation only: no read, write or authority.
+ * An authorised caller must obtain the existing value and separately perform
+ * an exact-value CAS. Only the seven existing PI version leaves may change.
+ * The prepared private value is non-enumerable to keep ordinary logs metadata-only. */
+export function prepareQualityHostDeploymentConfiguration({configuration,serviceId,environment,fromSourceSha,toSourceSha}={}){
+ require(serviceId===SERVICE&&environment==='development'&&sha(fromSourceSha)&&sha(toSourceSha)
+  &&fromSourceSha!==toSourceSha&&typeof configuration==='string'&&Buffer.byteLength(configuration)<=131072,'HOST_CONFIGURATION_INVALID')
+ let c
+ try{c=JSON.parse(configuration)}catch{fail('HOST_CONFIGURATION_INVALID')}
+ require(c&&Object.getPrototypeOf(c)===Object.prototype&&c.environment==='development'&&c.enabled===true,'HOST_CONFIGURATION_INVALID')
+ for(const name of ['receiverApplication','serviceApplication','readApplication','sourceApplication'])
+  require(c[name]?.environment==='development','HOST_CONFIGURATION_INVALID')
+ const found=[],stack=[{value:c,path:[],depth:0}]
+ let count=0
+ while(stack.length){
+  const {value,path,depth}=stack.pop()
+  require(++count<=20000&&depth<=32,'HOST_CONFIGURATION_INVALID')
+  if(value&&typeof value==='object')for(const [key,child]of Object.entries(value)){
+   const p=path.concat(key)
+   if(key==='deploymentId')found.push(p.join('.'))
+   else if(child&&typeof child==='object')stack.push({value:child,path:p,depth:depth+1})
+  }
+ }
+ require(found.sort().join(',')===[...PI_DEPLOYMENT_PATHS].sort().join(','),'HOST_CONFIGURATION_TOPOLOGY_CHANGED')
+ for(const p of PI_DEPLOYMENT_PATHS){
+  const keys=p.split('.'),last=keys.pop()
+  let parent=c
+  for(const key of keys){require(parent&&Object.getPrototypeOf(parent)===Object.prototype&&Object.hasOwn(parent,key),'HOST_CONFIGURATION_INVALID');parent=parent[key]}
+  require(parent&&Object.getPrototypeOf(parent)===Object.prototype&&Object.hasOwn(parent,last)
+   &&parent[last]===fromSourceSha,'HOST_CONFIGURATION_SOURCE_CHANGED')
+  parent[last]=toSourceSha
+ }
+ const value=JSON.stringify(c),plan={key:'INSIGHTS_CONFIGURATION_JSON',serviceId:SERVICE,environment:'development',
+  fromSourceSha,toSourceSha,beforeSha256:documentDigest({configuration}),afterSha256:documentDigest({configuration:value}),
+  changedPaths:Object.freeze([...PI_DEPLOYMENT_PATHS])}
+ Object.defineProperty(plan,'value',{value,enumerable:false,writable:false,configurable:false})
+ return Object.freeze(plan)
+}
