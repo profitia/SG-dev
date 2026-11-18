@@ -368,7 +368,10 @@ async function sensitiveNativeFixture(t,full=true,privateMode=false){
     for(const role of[FOREGROUND,EXECUTOR])await owner.query(`GRANT EXECUTE ON FUNCTION profitia_requests.operation_runtime_descriptor() TO ${role}`)
     await owner.query(`GRANT EXECUTE ON FUNCTION srm.private_acquisition_descriptor() TO ${FOREGROUND}`)
    }
-   for(const[unit,mode]of Object.entries({...SUPPLIER_NATIVE_WORK_UNITS,...SUPPLIER_SENSITIVE_WORK_UNITS,...(privateMode?SUPPLIER_WEB_WORK_UNITS:{})}))await owner.query("INSERT INTO profitia_request_work.policies(application_id,unit_id,access_mode,status,source_ref,expires_at) VALUES('srm',$1,$2,'ACTIVE','SYNTHETIC_NATIVE_UNIT',$3)",[unit,mode,future()])
+   // Match the cache continuation schema already used by the preserved Development runtime.
+  // This fixture always creates its own isolated database.
+  await owner.query(own('035-kys-resume.sql'))
+  for(const[unit,mode]of Object.entries({...SUPPLIER_NATIVE_WORK_UNITS,...SUPPLIER_SENSITIVE_WORK_UNITS,...(privateMode?SUPPLIER_WEB_WORK_UNITS:{})}))await owner.query("INSERT INTO profitia_request_work.policies(application_id,unit_id,access_mode,status,source_ref,expires_at) VALUES('srm',$1,$2,'ACTIVE','SYNTHETIC_NATIVE_UNIT',$3)",[unit,mode,future()])
    await owner.query(`GRANT USAGE ON SCHEMA profitia_request_work TO ${EXECUTOR};GRANT EXECUTE ON FUNCTION profitia_request_work.descriptor(uuid,text),profitia_request_work.bind_scope(uuid,text,text,uuid,uuid),profitia_request_work.scope_allows(uuid,text,uuid,uuid,text),srm.current_supplier_work(uuid,uuid,text),srm.native_supplier_row(text,uuid,uuid,uuid,uuid,text,text,text) TO ${EXECUTOR};GRANT SELECT,INSERT,UPDATE ON srm.msr_sources,srm.msr_projections TO ${EXECUTOR};GRANT SELECT ON srm.catalog_companies,srm.catalog_financial_facts,srm.catalog_financial_indicators TO ${EXECUTOR}`)
    for(const role of[FOREGROUND,EXECUTOR,...(full?[CORPORATE]:[])])await owner.query(`GRANT EXECUTE ON FUNCTION srm.current_supplier_work(uuid,uuid,text),srm.native_supplier_row(text,uuid,uuid,uuid,uuid,text,text,text) TO ${role}`)
    for(const role of[FOREGROUND,EXECUTOR])await owner.query(`GRANT EXECUTE ON FUNCTION srm.current_supplier_inspection(uuid,uuid,text),srm.inspected_supplier_row(text,uuid,uuid,uuid,uuid,text,text) TO ${role}`)
@@ -831,14 +834,18 @@ async function sensitiveNativeFixture(t,full=true,privateMode=false){
   })
   await t.test('revocation after possible paid POST leaves the committed indefinite fence and prevents another claim',async()=>{
    const selected=selection(await parent(A,'7972088368')),before=networkHits;revokeAfterPost=true
-   try{await assert.rejects(native().run(selected),refusedOrSource)}finally{
+   try{
+    await assert.rejects(native().run(selected),refusedOrSource)
+    assert.equal((await owner.query('SELECT status FROM profitia_access.memberships WHERE organisation_id=$1 AND user_id=$2',[A,U])).rows[0].status,'SUSPENDED')
+   }finally{
     revokeAfterPost=false;await controlled(()=>owner.query("UPDATE profitia_access.memberships SET status='ACTIVE'WHERE organisation_id=$1 AND user_id=$2",[A,U]))
    }
-   assert.equal(networkHits,before+2)
+   // Membership was suspended by the POST handler; current access stops the later poll.
+   assert.equal(networkHits,before+1)
    const row=(await owner.query('SELECT lease_owner,lease_until::text FROM srm.catalog_kys_reports WHERE organization_id=$1 AND nip=$2',[A,selected.command.nip])).rows[0]
    assert(row.lease_owner);assert.equal(row.lease_until,'infinity')
    const next=selection(await parent(A,selected.command.nip)),store=workStore();await store.register(next)
-   assert.equal(await store.cache(next).store.claim(A,selected.command.nip,'COMPANY',new Date()),null);assert.equal(networkHits,before+2)
+   assert.equal(await store.cache(next).store.claim(A,selected.command.nip,'COMPANY',new Date()),null);assert.equal(networkHits,before+1)
   })
   await t.test('an interrupted paid HTTP request also remains fenced without a silent retry or second purchase',async()=>{
    const selected=selection(await parent(B,'5272443955')),before=networkHits;interruptPost=true
