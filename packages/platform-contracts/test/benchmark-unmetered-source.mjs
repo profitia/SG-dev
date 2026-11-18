@@ -1,6 +1,7 @@
 // Test/build source continuation only. Never grants runtime or deployment authority.
 import assert from 'node:assert/strict'
 import {createHash} from 'node:crypto'
+import {sdkSourceContext} from './sdk-source-context.mjs'
 export const BENCHMARK_BASE="53691e907e4cc9b7fbf683c91bbebf41299e9ccc"
 export const BENCHMARK_RECORD="apps/architecture-lab/benchmark-unmetered-source.json"
 export const BENCHMARK_DERIVED="packages/platform-contracts/test/assistant-reservation-source.mjs"
@@ -98,6 +99,12 @@ function reviewedConsumer(current,historical,input){
 }
 
 export function benchmarkUnmeteredPredecessor(current,historical,pin){
+ const context=sdkSourceContext(current,historical)
+ if(context){
+  const previous=benchmarkUnmeteredPredecessor(context.baseline('benchmark'),historical,pin)
+  assert(previous,'complete immutable Benchmark source required')
+  return {...previous,currentSourceDigests:context.currentSourceDigests,currentSdkContext:context}
+ }
  let bytes;try{bytes=current(BENCHMARK_RECORD)}catch(e){if(absent(e))return null;throw e}
  assert.match(pin??'',/^[a-f0-9]{64}$/);assert.equal(hash(bytes),pin,'exact reviewed benchmark contract source')
  const a=JSON.parse(bytes)
