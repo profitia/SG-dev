@@ -1,6 +1,6 @@
 'use client'
 import {procurementText} from './localization'
-import {normalizeLegacyReportTables} from '../../lib/procurement-insights/report-markdown'
+import {ReportText} from './report-text'
 import type {PublishedReportReference} from '../../../../packages/assistant-context-contracts/src/index.mjs'
 import React,{useEffect,useMemo,useRef,useState} from 'react'
 import {CanonButton,CanonInput,CanonSelect} from '@profitia/srm-xray'
@@ -8,18 +8,6 @@ import type {ReportProfile as Profile,Subscription as Order,PublishedEdition as 
 type Page<T>={items:T[];nextCursor:string|null}
 type Run={id:string;producerJobId:string|null;status:string;createdAt:string;emailDelivery?:string|null}
 const contract='procurement-insights.subscription/1.0.0'
-function ReportText({text}:{text:string}){
- return <div className="pi-report-text">{normalizeLegacyReportTables(text).split(/\n\s*\n/).map((block,i)=>{
-  const heading=/^(#{1,4}) (.+)$/.exec(block)
-  if(heading)return heading[1].length<3?<h3 key={i}>{heading[2]}</h3>:<h4 key={i}>{heading[2]}</h4>
-  const lines=block.split('\n')
-  if(lines.length>2&&/^\s*\|?[\s:|-]+\|/.test(lines[1])){
-   const cells=(line:string)=>line.replace(/^\s*\||\|\s*$/g,'').split('|').map(x=>x.trim())
-   return <div className="pi-table-scroll" key={i}><table><thead><tr>{cells(lines[0]).map((c,n)=><th key={n}>{c}</th>)}</tr></thead><tbody>{lines.slice(2).map((line,n)=><tr key={n}>{cells(line).map((c,j)=><td key={j}>{c}</td>)}</tr>)}</tbody></table></div>
-  }
-  return <p key={i} style={{whiteSpace:'pre-wrap'}}>{block}</p>
- })}</div>
-}
 export function ReportsWorkspace({active,locale,getToken,editionId=null,onEdition,onContext}:{active:boolean;locale:'pl'|'en';getToken:()=>Promise<string|null>;editionId?:string|null;onEdition?:(id:string|null)=>void;onContext?:(reference:PublishedReportReference|null)=>void}){
  const t=(text:string)=>procurementText(locale,text)
 const statusLabel:Record<string,string>={READY:t("Gotowe do wykonania"),WAITING_AUTHORIZATION:t("Oczekuje na dopuszczenie wykonania"),QUEUED:t("Zaplanowany"),RUNNING:t("W przygotowaniu"),AWAITING_REVIEW:t("Weryfikacja jakości"),PUBLISHED:t("Opublikowany"),FAILED:t("Nie można przygotować"),UNCERTAIN:t("Wynik wymaga wyjaśnienia"),CANCELLED:t("Anulowany")}
@@ -169,6 +157,6 @@ const statusLabel:Record<string,string>={READY:t("Gotowe do wykonania"),WAITING_
   </>}
   {!ordering&&view==='catalog'&&profiles.map(p=><article className="pi-publication" key={p.definitionId+'@'+p.profileVersion}><div className="pi-publication-body"><h3>{p.label}</h3><p>{p.description}</p><button type="button" onClick={()=>{setProfileKey(p.definitionId+'@'+p.profileVersion);configure()}}>{t("Skonfiguruj zlecenie")}</button></div></article>)}
   {!ordering&&!selected&&!reader&&!loading&&!error&&['orders','cycles'].includes(view)&&<div className="pi-empty"><h3>{shownOrders.length?t("Wybierz raport po lewej stronie"):t("Nie masz jeszcze zleceń w tym widoku")}</h3><p>{t("Możesz zamówić raport z aktualnie dostępnego katalogu.")}</p></div>}
-  {!ordering&&reader&&<article className="pi-report-reader"><header><h3>{reader.title}</h3><p>{t("Opublikowano:")} {new Date(reader.publishedAt).toLocaleString(locale)} {t("· Aktualność danych:")} {new Date(reader.asOf).toLocaleString(locale)}{reader.readOnly?t(" · Udostępnione tylko do odczytu"):''}</p><button type="button" onClick={()=>{setReader(null);onEdition?.(null)}}>{t("Zamknij czytnik")}</button><button type="button" disabled={busy} onClick={()=>void download(reader)}>{t("Pobierz tę wersję PDF")}</button>{!reader.readOnly&&<button type="button" disabled={busy} onClick={()=>void openSharing(reader.producerJobId)}>{t("Udostępnij to wydanie")}</button>}</header>{onContext&&<div className="pi-actions"><button type="button" onClick={()=>onContext({version:'2.1.0',source:'PUBLISHED_REPORT',producerJobId:reader.producerJobId,pdfSha256:reader.pdfSha256,markdownSha256:reader.markdownSha256})}>{t("Wybierz tę wersję dla asystenta")}</button><button type="button" onClick={()=>onContext(null)}>{t("Usuń wybór")}</button></div>}<ReportText text={reader.markdown??''}/></article>}
+  {!ordering&&reader&&<article className="pi-report-reader"><header><h3>{reader.title}</h3><p>{t("Opublikowano:")} {new Date(reader.publishedAt).toLocaleString(locale)} {t("· Aktualność danych:")} {new Date(reader.asOf).toLocaleString(locale)}{reader.readOnly?t(" · Udostępnione tylko do odczytu"):''}</p><div className="pi-actions"><CanonButton canonId="SRM-C02" usage="PI:close-reader" type="button" onClick={()=>{setReader(null);onEdition?.(null)}}>{t("Zamknij czytnik")}</CanonButton><CanonButton canonId="SRM-C02" usage="PI:download-reader-pdf" type="button" disabled={busy} onClick={()=>void download(reader)}>{t("Pobierz tę wersję PDF")}</CanonButton>{!reader.readOnly&&<CanonButton canonId="SRM-C02" usage="PI:share-reader" type="button" disabled={busy} onClick={()=>void openSharing(reader.producerJobId)}>{t("Udostępnij to wydanie")}</CanonButton>}</div></header>{onContext&&<div className="pi-actions"><CanonButton canonId="SRM-C02" usage="PI:select-reader-context" type="button" onClick={()=>onContext({version:'2.1.0',source:'PUBLISHED_REPORT',producerJobId:reader.producerJobId,pdfSha256:reader.pdfSha256,markdownSha256:reader.markdownSha256})}>{t("Wybierz tę wersję dla asystenta")}</CanonButton><CanonButton canonId="SRM-C02" usage="PI:clear-reader-context" type="button" onClick={()=>onContext(null)}>{t("Usuń wybór")}</CanonButton></div>}<ReportText text={reader.markdown??''} locale={locale}/></article>}
  </section></div>
 }
