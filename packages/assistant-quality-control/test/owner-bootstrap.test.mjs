@@ -265,3 +265,121 @@ for(const profile of ['canonical','evidence']){
   }finally{await x.f.close()}
  })
 }
+
+const publisherInput=(profile='canonical',now=clock)=>({profile,expectedMembership:baseline.map(x=>({...x})),
+ decisionSha:'a'.repeat(40),expiresAt:new Date(now+10*60000).toISOString()})
+test('publisher installation prepares only two fixed disabled profiles and keeps all DDL outside serialised metadata',async()=>{
+ const {prepareQualityPublisherCasInstallation:prepare}=await import('../src/owner-bootstrap.mjs')
+ for(const profile of ['canonical','product']){
+  const plan=prepare(publisherInput(profile),clock)
+  assert.equal(plan.operation,'INSTALL_DISABLED_PUBLISHER_CAS');assert.equal(plan.requiresSeparateOwnerAuthorization,true)
+  assert.equal(plan.restoresExactMembershipBeforeCommit,true);assert.equal(plan.paidRepairsEnabled,false);assert.equal(plan.promotionEnabled,false)
+  assert.equal(plan.statementsSha256,hash(JSON.stringify(plan.statements)))
+  assert(plan.statements.some(s=>s.startsWith('CREATE ROLE aqc_development_')&&s.includes('NOLOGIN NOINHERIT')&&s.includes('CONNECTION LIMIT 2')))
+  assert(plan.statements.some(s=>s.startsWith('CREATE SCHEMA profitia_quality_release AUTHORIZATION ')))
+  const ddl=plan.statements.find(s=>s.includes('CREATE FUNCTION profitia_quality_release.quality_deployment_cas'))
+  assert(ddl.includes("VALUES(true,false,true,'2026-11-27T23:59:59Z')"));assert(ddl.includes('SECURITY DEFINER SET search_path=pg_catalog'))
+  assert(!JSON.stringify(plan).includes('CREATE'));assert(!JSON.stringify(plan).includes('GRANT'))
+  assert(!ddl.includes('GRANT SELECT'));assert(!ddl.includes('GRANT USAGE ON SCHEMA profitia_access'))
+  assert(!ddl.includes('GRANT USAGE ON SCHEMA profitia_ingestion'))
+ }
+})
+test('publisher installation refuses foreign profiles arbitrary DDL or changed migration bytes',async()=>{
+ const {prepareQualityPublisherCasInstallation:prepare}=await import('../src/owner-bootstrap.mjs')
+ for(const change of [{profile:'evidence'},{profile:'production'},{sql:'SELECT 1'},{publisherRole:'foreign'},
+  {expiresAt:new Date(clock+16*60000).toISOString()},{expectedMembership:[{...baseline[0],set:true}]}])
+  assert.throws(()=>prepare({...publisherInput(),...change},clock),{code:'OWNER_BOOTSTRAP_PREPARATION_INVALID'})
+ const temporary=fs.mkdtempSync(path.join(os.tmpdir(),'aqc-publisher-source-'))
+ try{
+  fs.mkdirSync(path.join(temporary,'src'));fs.mkdirSync(path.join(temporary,'migrations'))
+  fs.copyFileSync(new URL('../src/owner-bootstrap.mjs',import.meta.url),path.join(temporary,'src/owner-bootstrap.mjs'))
+  for(const name of ['004-publisher-canonical.sql','005-publisher-product.sql']){
+   const bytes=fs.readFileSync(new URL('../migrations/'+name,import.meta.url))
+   fs.writeFileSync(path.join(temporary,'migrations',name),Buffer.concat([bytes,Buffer.from('UNREVIEWED')]))
+  }
+  const {pathToFileURL}=await import('node:url'),foreign=await import(pathToFileURL(path.join(temporary,'src/owner-bootstrap.mjs')).href)
+  assert.throws(()=>foreign.prepareQualityPublisherCasInstallation(publisherInput(),clock),{code:'OWNER_BOOTSTRAP_PREPARATION_INVALID'})
+ }finally{fs.rmSync(temporary,{recursive:true,force:true})}
+})
+for(const profile of ['canonical','product']){
+ test('native bounded publisher '+profile+' has no private reads or owner membership and restores only its own CAS without renewing rights',async()=>{
+  const {prepareQualityPublisherCasInstallation:prepare}=await import('../src/owner-bootstrap.mjs')
+  const x=await bindingFixture(profile,false),schema='profitia_quality_release'
+  const role=profile==='canonical'?'aqc_development_canonical_publisher':'aqc_development_product_publisher'
+  const config={profile,expectedMembership:x.config().expectedMembership,decisionSha:'a'.repeat(40),expiresAt:new Date(Date.now()+10*60000).toISOString()}
+  try{
+   await x.admin.query('ALTER ROLE neondb_owner CREATEROLE')
+   await x.admin.query('GRANT CREATE ON DATABASE '+(profile==='canonical'?'platform_private':'neondb')+' TO neondb_owner')
+   const before=await x.state(),plan=prepare(config)
+   await assert.rejects(execute(x.actor,plan,{transaction:false}),e=>e.message==='OWNER_BOOTSTRAP_BINDING_REJECTED')
+   assert.equal((await x.admin.query('SELECT 1 FROM pg_roles WHERE rolname=$1',[role])).rowCount,0)
+   // Failure after the complete DDL rolls back the new role, schema and every membership edge.
+   const client=await x.actor.connect()
+   try{
+    await client.query('BEGIN')
+    for(const statement of plan.statements){await client.query(statement);if(statement.includes('CREATE FUNCTION profitia_quality_release.quality_deployment_cas'))await client.query('SELECT 1/0')}
+    assert.fail('expected synthetic transaction failure')
+   }catch(e){assert.equal(e.code,'22012',e.message);await client.query('ROLLBACK')}finally{client.release()}
+   assert.equal((await x.admin.query('SELECT to_regnamespace($1) AS name',[schema])).rows[0].name,null)
+   assert.equal((await x.admin.query('SELECT 1 FROM pg_roles WHERE rolname=$1',[role])).rowCount,0)
+   assert.deepEqual(await x.state(),before)
+   await execute(x.actor,plan)
+   const installed=(await x.admin.query('SELECT rolcanlogin,rolsuper,rolinherit,rolcreaterole,rolcreatedb,rolbypassrls,rolreplication,rolconnlimit FROM pg_roles WHERE rolname=$1',[role])).rows[0]
+   assert.deepEqual(installed,{rolcanlogin:false,rolsuper:false,rolinherit:false,rolcreaterole:false,rolcreatedb:false,rolbypassrls:false,rolreplication:false,rolconnlimit:2})
+   assert.deepEqual(await x.state(),before)
+   assert.equal((await x.admin.query('SELECT count(*)::integer AS n FROM pg_auth_members m JOIN pg_roles r ON r.oid=m.member WHERE r.rolname=$1',[role])).rows[0].n,0)
+   assert.equal((await x.admin.query('SELECT enabled FROM '+schema+'.quality_deployment_cas_policy')).rows[0].enabled,false)
+   // Fixture-only activation. The cloud role and policy are never touched by this test.
+   await x.admin.query('ALTER ROLE '+role+' LOGIN')
+   const publisher=x.f.pool(role)
+   const call=(operation,from,to,restore=null,until=new Date(Date.now()+5*60000).toISOString())=>
+    publisher.query('SELECT '+schema+'.quality_deployment_cas($1::uuid,$2::text,$3::text,$4::uuid,$5::timestamptz) AS result',[operation,from,to,restore,until])
+   const from='b'.repeat(40),to='c'.repeat(40),operation=randomUUID()
+   await assert.rejects(publisher.query('SELECT * FROM '+x.table),e=>e.code==='42501')
+   await assert.rejects(publisher.query('SELECT * FROM '+schema+'.quality_deployment_cas_policy'),e=>e.code==='42501')
+   await assert.rejects(publisher.query('SET ROLE '+x.owner),e=>e.code==='42501')
+   await assert.rejects(call(operation,from,to),e=>e.message==='AQC_CAS_DISABLED')
+   await x.admin.query('UPDATE '+schema+'.quality_deployment_cas_policy SET enabled=true')
+   for(const args of [[randomUUID(),'x',to],[randomUUID(),from,from],[randomUUID(),from,to,null,new Date(Date.now()+16*60000).toISOString()]]){
+    await assert.rejects(call(...args),e=>e.message==='AQC_CAS_REQUEST_REJECTED')
+   }
+   await assert.rejects(call(randomUUID(),'d'.repeat(40),to),e=>e.message==='AQC_CAS_BASE_CHANGED')
+   const applied=(await call(operation,from,to)).rows[0].result
+   assert.equal(applied.status,'APPLIED');assert.equal(applied.updatedBindings,3);assert.equal(applied.rawQaReadPerformed,false)
+   const advanced=await x.state()
+   assert.deepEqual(advanced.membership,before.membership)
+   for(const row of advanced.rows){
+    const previous=before.rows.find(r=>r.login_role===row.login_role)
+    assert.deepEqual({...row,deployment_id:previous.deployment_id},previous)
+    assert.equal(row.deployment_id,x.roles.includes(row.login_role)?previous.deployment_id.replaceAll(from,to):previous.deployment_id)
+   }
+   if(profile==='canonical')assert.deepEqual(advanced.source.map(r=>({...r,deployment_id:before.source[0].deployment_id})),before.source)
+   assert.equal((await call(operation,from,to)).rows[0].result.status,'REPLAY')
+   await assert.rejects(call(operation,from,'d'.repeat(40)),e=>e.message==='AQC_CAS_IDEMPOTENCY_CONFLICT')
+   await assert.rejects(call(randomUUID(),to,from,randomUUID()),e=>e.message==='AQC_CAS_RECOVERY_REJECTED')
+   // A concurrent foreign version is preserved, even for a real previous operation.
+   await x.admin.query('UPDATE '+x.table+' SET deployment_id=$1 WHERE login_role=$2',['FOREIGN_VERSION',x.roles[0]])
+   const foreign=await x.state()
+   await assert.rejects(call(randomUUID(),to,from,operation),e=>e.message==='AQC_CAS_RECOVERY_REJECTED')
+   assert.deepEqual(await x.state(),foreign)
+   await x.admin.query('UPDATE '+x.table+' SET deployment_id=$1 WHERE login_role=$2',['srv-dapa3tid0e5s73f8bc5g:'+to,x.roles[0]])
+   await x.admin.query("UPDATE "+x.table+" SET status='REVOKED',expires_at=clock_timestamp()-interval '1 hour' WHERE login_role=ANY($1::name[])",[x.roles])
+   if(profile==='canonical')await x.admin.query("UPDATE profitia_e1_authority.source_components SET status='REVOKED',expires_at=clock_timestamp()-interval '1 hour'")
+   await x.admin.query('UPDATE '+schema+'.quality_deployment_cas_policy SET enabled=false')
+   const revoked=await x.state(),recovery=randomUUID()
+   const restored=(await call(recovery,to,from,operation)).rows[0].result;assert.equal(restored.status,'RESTORED')
+   const after=await x.state()
+   assert.deepEqual(after.membership,before.membership)
+   for(const row of after.rows){
+    const previous=revoked.rows.find(r=>r.login_role===row.login_role)
+    assert.deepEqual({...row,deployment_id:previous.deployment_id},previous)
+    assert.equal(row.deployment_id,before.rows.find(r=>r.login_role===row.login_role).deployment_id)
+   }
+   for(const row of after.source){assert.deepEqual({...row,deployment_id:revoked.source[0].deployment_id},revoked.source[0]);assert.equal(row.deployment_id,from)}
+   assert.equal((await call(recovery,to,from,operation)).rows[0].result.status,'REPLAY')
+   await x.admin.query("UPDATE "+schema+".quality_deployment_cas_policy SET authorised_until=clock_timestamp()-interval '1 minute'")
+   await assert.rejects(call(randomUUID(),from,to),e=>e.message==='AQC_CAS_DISABLED')
+   assert.deepEqual(await x.state(),after)
+  }finally{await x.f.close()}
+ })
+}
