@@ -1,4 +1,4 @@
-import {SOURCE_PATHS,documentDigest} from './manifest.mjs'
+import {SOURCE_PATHS,documentDigest,assertVerifiedRepairManifest} from './manifest.mjs'
 import {createHash as controlledReadHash} from 'node:crypto'
 
 /** Prepare reviewable unsigned metadata. These builders create no signature,
@@ -16,6 +16,114 @@ export function repairManifestBody({mandate,incidentId,correlationId,baseSha,rep
   allowedPaths:[SOURCE_PATHS[repairClass],`apps/sg-runtime/tests/assistant-quality-regressions/${incidentId}.test.ts`],
   mandate:{id:b.id,version:b.version,sha256:documentDigest(b),issuedAt:b.issuedAt,expiresAt:b.expiresAt,attestation:mandate.attestation},gateSetSha256:b.gateSetSha256,
   synthetic:{fixtureId:'qa_synthetic_'+fixtureSha256,sha256:fixtureSha256,exportReceiptId},limits:{maxAttempts:2,maxAttemptSeconds:1800,maxIncidentMicroUsd:5000000},correlationId}
+}
+
+
+/** Reconstructs the same metadata-only manifest at both trusted endpoints from
+ * an installed owner mandate and three independently exported synthetic cases.
+ * This pure preparer grants no data access, creates no signer or ledger, and is
+ * not called by readiness/standby. Private QA and the holdout are not inputs. */
+export async function prepareQualityControllerJobContext({registry,incidentId,baseSha,ownerKeys,verifierKeys,
+ expectedServiceId,expectedGateSetSha256,now=Date.now()}){
+ const {verifyExecutionMandate,verifyBoundManifest,verifyDocument}=await import('./manifest.mjs')
+ const {readRegression}=await import('./verify.mjs')
+ const invalid=()=>unavailable('JOB_CONTEXT_INVALID')
+ if(!uuidValue(incidentId)||typeof baseSha!=='string'||!/^[a-f0-9]{40}$/.test(baseSha)||!Number.isFinite(now))invalid()
+ let value
+ try{
+  if(typeof registry==='string'){
+   if(Buffer.byteLength(registry)>65536)invalid()
+   value=JSON.parse(registry)
+  }else value=registry
+  documentDigest(value)
+  if(Buffer.byteLength(JSON.stringify(value))>65536)invalid()
+  value=structuredClone(value)
+ }catch{invalid()}
+ const exact=(v,keys)=>v&&Object.getPrototypeOf(v)===Object.prototype&&Object.keys(v).sort().join(',')===[...keys].sort().join(',')
+ if(!exact(value,['schemaVersion','repository','environment','mandate','fixtures'])
+  ||value.schemaVersion!=='AQC_CONTROLLED_JOB_CONTEXTS_V1'||value.repository!=='profitia/SG-dev'||value.environment!=='development'
+  ||!Array.isArray(value.fixtures)||value.fixtures.length!==3)invalid()
+ if(!(ownerKeys instanceof Map)||!(verifierKeys instanceof Map)||ownerKeys.size===0||verifierKeys.size===0
+  ||[...ownerKeys.keys()].some(id=>verifierKeys.has(id)))unavailable('JOB_CONTEXT_SEPARATE_TRUST_REQUIRED')
+ const mandate=verifyExecutionMandate(value.mandate,{ownerKeys,now,expectedServiceId,expectedGateSetSha256})
+ const classes=new Set(),incidents=new Set(),locales=new Set(),fixtures=new Set()
+ let selected
+ for(const item of value.fixtures){
+  if(!exact(item,['fixtureExport','regression']))invalid()
+  const exported=verifyDocument(item.fixtureExport,{kind:'AQC_SYNTHETIC_EXPORT_V1',trustedKeys:verifierKeys})
+  const regression=readRegression(item.regression),fixtureSha256=documentDigest(regression)
+  if(exported.repairClass!==regression.repairClass||exported.sha256!==fixtureSha256
+   ||exported.fixtureId!=='qa_synthetic_'+fixtureSha256||exported.rawQaPayloadIncluded!==false
+   ||!uuidValue(exported.incidentId)||incidents.has(exported.incidentId)||classes.has(regression.repairClass)||fixtures.has(fixtureSha256)
+   ||Date.parse(exported.issuedAt)<Date.parse(mandate.issuedAt)||Date.parse(exported.expiresAt)>Date.parse(mandate.expiresAt))invalid()
+  const manifest=verifyBoundManifest(repairManifestBody({mandate:value.mandate,incidentId:exported.incidentId,
+   correlationId:exported.incidentId,baseSha,repairClass:regression.repairClass,exportReceiptId:exported.id,fixtureSha256}),
+   {mandate:value.mandate,fixtureExport:item.fixtureExport,ownerKeys,verifierKeys,now,expectedBaseSha:baseSha,
+    expectedServiceId,expectedGateSetSha256})
+  classes.add(regression.repairClass);incidents.add(exported.incidentId);fixtures.add(fixtureSha256);locales.add(regression.locale)
+  if(exported.incidentId===incidentId)selected={manifest,regression}
+ }
+ if(classes.size!==3||locales.size!==2||!selected)invalid()
+ const freeze=v=>{if(v&&typeof v==='object'){Object.values(v).forEach(freeze);Object.freeze(v)}return v}
+ return freeze(selected)
+}
+/** Job inputs carry seven IDs/digests, plus two native permit fields for EXECUTE. No command, context payload,
+ * case, secret or private QA is accepted through workflow_dispatch. Native run
+ * identity must separately pass assertQualityControllerJobIdentity. */
+export async function readQualityControllerJobContext({inputs,...options}){
+ const {readQualityJobBinding}=await import('./controller.mjs')
+ if(!inputs||Object.getPrototypeOf(inputs)!==Object.prototype
+  ||Object.keys(inputs).sort().join(',')!==['mode','action','nonce','control_source_sha','incident_id','manifest_sha256','base_sha',
+    ...(inputs.action==='EXECUTE'?['permit_id','permit_expires_at']:[])].sort().join(',')
+  ||inputs.mode!=='controller-job'||!hash64(inputs.manifest_sha256))unavailable('JOB_CONTEXT_INPUT_INVALID')
+ const externalId='aqc-job:'+inputs.control_source_sha+':'+inputs.nonce+':'+inputs.action
+ readQualityJobBinding(externalId,{nonce:inputs.nonce,action:inputs.action})
+ const context=await prepareQualityControllerJobContext({...options,incidentId:inputs.incident_id,baseSha:inputs.base_sha})
+ if(documentDigest(context.manifest)!==inputs.manifest_sha256)unavailable('JOB_CONTEXT_MANIFEST_MISMATCH')
+ let permit
+ if(inputs.action==='EXECUTE'){
+  const expiry=Date.parse(inputs.permit_expires_at),at=options.now??Date.now()
+  if(!uuidValue(inputs.permit_id)||typeof inputs.permit_expires_at!=='string'||!Number.isFinite(expiry)
+   ||new Date(expiry).toISOString()!==inputs.permit_expires_at||expiry<=at||expiry>at+1800000
+   ||expiry>Date.parse(context.manifest.mandate.expiresAt))unavailable('JOB_CONTEXT_PERMIT_INVALID')
+  permit=Object.freeze({incidentId:context.manifest.incidentId,attemptId:inputs.nonce,permitId:inputs.permit_id,expiresAt:inputs.permit_expires_at})
+ }
+ return Object.freeze({...context,externalId,...(permit===undefined?{}:{permit})})
+}
+
+/** Trusted supervisor adapter, never invoked by standby. Workflow metadata is
+ * not native budget authority: claim once, then compare the database expiry and
+ * incident/attempt before exposing the budget to the isolated executor/broker. */
+export function createQualityExecutorJobBudget({context,budget,now=Date.now}){
+ const m=assertVerifiedRepairManifest(context?.manifest),permit=context?.permit
+ if(typeof budget?.claimExecutor!=='function'||typeof budget?.assertPermit!=='function'||typeof now!=='function')
+  unavailable('JOB_EXECUTOR_BUDGET_REQUIRED')
+ const binding=context?.externalId?.split(':')
+ if(binding?.length!==4||binding[0]!=='aqc-job'||!/^[a-f0-9]{40}$/.test(binding[1])||binding[3]!=='EXECUTE'||binding[2]!==permit?.attemptId
+  ||!Object.isFrozen(permit)||!uuidValue(permit?.attemptId)||!uuidValue(permit?.permitId)||permit.incidentId!==m.incidentId)unavailable('JOB_EXECUTOR_PERMIT_INVALID')
+ const fresh=()=>{
+  const at=now(),expiry=Date.parse(permit.expiresAt)
+  if(!Number.isFinite(at)||!Number.isFinite(expiry)||expiry<=at||expiry>at+1800000
+   ||Date.parse(m.mandate.issuedAt)>at||Date.parse(m.mandate.expiresAt)<=at||expiry>Date.parse(m.mandate.expiresAt))
+   unavailable('JOB_EXECUTOR_PERMIT_INVALID')
+ }
+ const check=async p=>{
+  if(p!==permit)unavailable('JOB_EXECUTOR_PERMIT_INVALID')
+  fresh()
+  const r=await budget.assertPermit(permit)
+  if(r?.status!=='ACTIVE'||r.incidentId!==m.incidentId||r.attemptId!==permit.attemptId||r.permitId!==permit.permitId
+   ||Date.parse(r.expiresAt)!==Date.parse(permit.expiresAt))unavailable('JOB_EXECUTOR_NATIVE_PERMIT_MISMATCH')
+  fresh();return r
+ }
+ return Object.freeze({...budget,assertPermit:check,async claimExecutor(p,identity){
+  if(p!==permit||identity?.nonce!==permit.attemptId||identity.executorSourceSha!==binding[1]
+   ||identity.gateSetSha256!==m.gateSetSha256||identity.runAttempt!==1)unavailable('JOB_EXECUTOR_PERMIT_INVALID')
+  fresh()
+  const r=await budget.claimExecutor(permit,identity)
+  if(r?.status!=='CLAIMED'||r.incidentId!==m.incidentId||r.attemptId!==permit.attemptId||r.permitId!==permit.permitId
+   ||r.runId!==identity.runId)unavailable('JOB_EXECUTOR_NATIVE_PERMIT_MISMATCH')
+  await check(permit);return r
+ }})
 }
 
 const unavailable=code=>{throw Object.assign(Error('Quality readiness unavailable'),{code})}

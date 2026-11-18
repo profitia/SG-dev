@@ -1110,7 +1110,7 @@
   },
   "proposedCi27AcceptedKnowledgeComposition": {
     "schemaVersion": "AQC_INERT_REVIEW_PROPOSAL_V1",
-    "status": "INERT_NOT_APPLIED_NOT_EXECUTED_NOT_QUALIFIED",
+    "status": "PREPARATION_OWNER_APPROVED_AND_QUALIFIED_POLICY_NOT_ACTIVE",
     "sourceHead": "fef229b89fc69eda584a88fdb62925f509baab67",
     "acceptedMain": "2f77dcd19a5ba0bb4dd4c30ed375f4c1d3213586",
     "patchSha256": "863498ee18b2b1a65405250ed4162e90c304634634109ce57e2ff530824d44ad",
@@ -1172,12 +1172,10 @@
       "log": "ci26-pk-host-strict-predecessor-tests-20261118.log"
     },
     "requiredBeforeActivation": [
-      "explicit owner admission of the three additional paths and exact compatibility logic",
-      "pure trusted-controller validation without candidate execution",
-      "all original legacy and PK tests preserved",
-      "exact-source and resulting-main CI",
-      "shared host ordering release",
-      "real Development deployment and controlled QA"
+      "owner approval of exact CI27 protected policy/bootstrap",
+      "exact-source native CI and resulting-main CI",
+      "fresh source/host ordering preflight",
+      "actual Development host rollout and controlled QA"
     ],
     "paidRepairsEnabled": false,
     "promotionEnabled": false,
@@ -1211,6 +1209,186 @@
       "approved CI24 profile and editorial package adapter relocation",
       "B28 exact host/worker settings and controlled PL/EN QA",
       "six existing deployment-reference CAS and exact temporary membership restoration"
+    ],
+    "historicalInertStatus": "INERT_NOT_APPLIED_NOT_EXECUTED_NOT_QUALIFIED",
+    "preparationApproval": {
+      "response": "Zatwierdzam przygotowanie i testy CI27",
+      "date": "2026-11-18",
+      "questionCallId": "call_291ba065904c42faa69dbc58693f3385",
+      "reviewedPackageSha": "0f93284d9d4008537dc2de8cc3867a2b6406ed43",
+      "patchSha256": "863498ee18b2b1a65405250ed4162e90c304634634109ce57e2ff530824d44ad",
+      "scope": [
+        "apply exact six-file inert diff",
+        "prepare trusted controller",
+        "run tests"
+      ],
+      "policyActivationApproved": false,
+      "newPermissionsApproved": false,
+      "deploymentApprovedByThisDecision": false
+    },
+    "currentQualification": {
+      "status": "PREPARATION_QUALIFIED_NOT_OWNER_ACTIVATED",
+      "sourceSha": "408d5d6224106fd15c0eca46910497638745184c",
+      "treeSha": "179fc08e954f5915c92289224b594dca511fb057",
+      "preservedMain": "b1cda8c4fde31557aac6e89851d6d9293ec768ea",
+      "tests": {
+        "total": 394,
+        "pass": 394,
+        "fail": 0,
+        "skip": 0
+      },
+      "originalControllerTestsBlob": "a0f26ab670c49766e78b50cc801c879448ccc8f6",
+      "hostSourceSha": "6fd28bede851fa64755c3de605744d972da25e73",
+      "hostSourceTests": 29,
+      "rawInputs": 532,
+      "retainedReceipts": 42,
+      "coverageRecords": 5,
+      "codeBlobs": {
+        "scripts/governance/controlled-package-ci.mjs": {
+          "sha": "8a5d65b61f2284d99956151fe632b34740de3128",
+          "sha256": "eee2dddfd06fa5f56fccd453e893b91c602f19bf6e62a05a4ecf17ed7f237984"
+        },
+        "scripts/governance/assistant-quality-ci25.test.mjs": {
+          "sha": "c62d3a468632c4bdd84f7e6b49ea313e6a1415a6",
+          "sha256": "93abcd7a8bce9a950be2b94d9d68b82f06fc18d056c1ae69512d68ad8f72f1dd"
+        }
+      },
+      "policyActivated": false,
+      "hostDeployed": false,
+      "paidRepairsEnabled": false,
+      "promotionEnabled": false,
+      "pilotStarted": false,
+      "stage2Started": false
+    },
+    "hostTests": {
+      "total": 29,
+      "pass": 29,
+      "fail": 0,
+      "skip": 0,
+      "sourceSha": "6fd28bede851fa64755c3de605744d972da25e73"
+    },
+    "all532InputsIndividuallyTamperTested": true,
+    "allOriginalKnowledgeTestBodiesPreserved": true,
+    "acceptedSdk138SourcePolicyPreserved": "c4965a445867601275cbb75dc4de993123414ba2",
+    "supersededCi25NativeAdmissionDisabled": true,
+    "sharedPkOrderingWindowReleased": true
+  },
+  "technicalContinuation20261118": {
+    "acceptedMain": "b1cda8c4fde31557aac6e89851d6d9293ec768ea",
+    "sourcePr1201Merged": true,
+    "sourceCi": {
+      "id": 44387999189,
+      "headSha": "ae99a67c1589d837c8c514f6f3b6ede5602bb0af",
+      "aqc": 192,
+      "qaContracts": 12,
+      "fail": 0,
+      "skip": 0
+    },
+    "resultingMainCi": {
+      "id": 44397791245,
+      "headSha": "b1cda8c4fde31557aac6e89851d6d9293ec768ea",
+      "aqc": 192,
+      "qaContracts": 12,
+      "fail": 0,
+      "skip": 0
+    },
+    "workerDeploy": {
+      "commit": {
+        "createdAt": "2026-11-18T21:05:16Z",
+        "id": "b1cda8c4fde31557aac6e89851d6d9293ec768ea",
+        "message": "Integrate CIC native job adapters and disabled publisher preparation\n\nConnect CIC durable jobs to native signed results and controlled contexts"
+      },
+      "createdAt": "2026-11-18T21:07:07.965925Z",
+      "finishedAt": "2026-11-18T21:07:41.488725Z",
+      "id": "dep-dbv16ut6e07s73adjnt0",
+      "startedAt": "2026-11-18T21:07:07.963433Z",
+      "status": "live",
+      "trigger": "api",
+      "updatedAt": "2026-11-18T21:07:41.488885Z"
+    },
+    "workerRuntime": {
+      "observedAt": "2026-11-18T21:07:45.048Z",
+      "status": "MONITORING_READY",
+      "controlStore": "CONNECTED_DISABLED",
+      "nativeLimits": "CONNECTED_DISABLED",
+      "controllerGitHub": "CONNECTED_STANDBY",
+      "qaRoles": "QA_ROLES_VERIFIED",
+      "rawQaReadPerformed": false,
+      "permissionMutationPerformed": false,
+      "hostQaCodecPresent": false,
+      "sentryDeliveryHttpStatus": 200,
+      "metadataRetention": "PURGE_CONFIRMED"
+    },
+    "publisherSourcePreparation": {
+      "sourceSha": "af0ed35ced8321c3c295decca9f1e2a2c5c86efd",
+      "treeSha": "d8a029b68c88458b0a806cc807d1e25d1eb06348",
+      "baseSha": "b1cda8c4fde31557aac6e89851d6d9293ec768ea",
+      "files": {
+        "packages/assistant-quality-control/migrations/004-publisher-canonical.sql": {
+          "blob": "e94ae3ca08d288e1a187479227375d5a8a2a599b",
+          "sha256": "5c4b926f473ce2f6efb2135c12a220d3d26839184123fdcce1461e0baa005632"
+        },
+        "packages/assistant-quality-control/migrations/005-publisher-product.sql": {
+          "blob": "4e4f4d905cf76ba272723bc838bcdc317a12c3d7",
+          "sha256": "9b309f09f1c99e2c6213816a048903791fa8a86ea2cbecf11c8d01854c66114d"
+        },
+        "packages/assistant-quality-control/src/owner-bootstrap.mjs": {
+          "blob": "0375f6434b76e79a90dab3682dc71fec93706c91",
+          "sha256": "3652622a4c315a0e965059195040b0ab5252ef3f93986480366a9b5d1e023866"
+        },
+        "packages/assistant-quality-control/src/publisher.mjs": {
+          "blob": "a06a78569d7ce3f7ec8aa50642aa02b4020b423e",
+          "sha256": "d6ead378293d85279db3e371be8e5ad1d89211da63c8c876e73502e8ad5c541e"
+        },
+        "packages/assistant-quality-control/test/owner-bootstrap.test.mjs": {
+          "blob": "6e2f22608ca049b2e82d7ba18580e148b31cc4f0",
+          "sha256": "20d4c22c903dbcffe6c8d5c50ba12eb9dac0346ed08250d29e9bbb6f87fd5672"
+        },
+        "packages/assistant-quality-control/test/publisher.test.mjs": {
+          "blob": "a6214cdce3d2f2a179790ecba67dca3bcb78a510",
+          "sha256": "fe84b82b4c81c414d17354119c0f8f0be1781e731eb088a7f7b6a60fb1617f41"
+        }
+      },
+      "tests": {
+        "aqc": 205,
+        "qaContracts": 12,
+        "pg16NativeOwner": 13,
+        "pg18NativeOwner": 13,
+        "fail": 0,
+        "skip": 0
+      },
+      "cloudMigrationsInstalled": false,
+      "newRolesCreated": false,
+      "promotionEnabled": false,
+      "paidRepairsEnabled": false
+    },
+    "publisherSchemasInstalled": false,
+    "publisherRolesCreated": false,
+    "renderScopedKeyCheck": {
+      "date": "2026-11-18",
+      "accountForm": "CLASSIC_ONLY_NO_SCOPES",
+      "classicKeyCreated": false,
+      "classicKeyInstalled": false,
+      "cliTokenRepurposedForPublisher": false
+    },
+    "hostDeploymentPerformed": false,
+    "b28ConfigurationWritten": false,
+    "controlledQaCaptureReadPerformed": false,
+    "technicalReady": false,
+    "e1RepairsCompleted": 0,
+    "paidRepairsEnabled": false,
+    "promotionEnabled": false,
+    "pilotStarted": false,
+    "stage2Started": false
+  },
+  "remainingOwnerDecisionsPreparation": {
+    "status": "BEING_ASSEMBLED_NOT_AN_ACTIVATION_RECORD",
+    "items": [
+      "Exact CI27 policy acceptance/bootstrap and all mandatory source/resulting-main checks",
+      "Two disabled publisher CAS installations with metadata-only status, two ordinary expiring roles, dedicated schemas and exact secret recipients",
+      "Operational job role separation, main-only environments and independent signing trust; no model key or pilot activation",
+      "Provider-supported scoped Render publisher access; broad classic keys remain excluded",
+      "Independent reference review and server-side release/recovery gates before E1-T13"
     ]
   }
 }
