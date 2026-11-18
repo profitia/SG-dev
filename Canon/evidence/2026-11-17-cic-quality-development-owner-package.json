@@ -347,6 +347,106 @@
       },
       "reviewerAttestationInstalled": false,
       "providerRequestsPerformed": false
+    },
+    "nativeLimitsProtocolProbes": {
+      "status": "LIVE_ROLE_PROBES_PASS_WITH_INSTALLATION_DISABLED",
+      "observedDateUTC": "2026-11-17",
+      "runtimeRoles": [
+        "profitia_limits_quality_controller",
+        "profitia_limits_quality_broker",
+        "profitia_limits_quality_capture"
+      ],
+      "beforeAndAfter": {
+        "status": "DISABLED",
+        "committedNanoUsd": "0",
+        "maximumNanoUsd": "50000000000",
+        "pilotStartedAt": null,
+        "pilotExpiresAt": null
+      },
+      "negativeCases": [
+        {
+          "case": "disabled_incident_hold",
+          "role": "profitia_limits_quality_controller",
+          "expectedError": "LIMIT_EXCEEDED",
+          "actualRejected": true,
+          "signatureExpired": false
+        },
+        {
+          "case": "disabled_broker_permit",
+          "role": "profitia_limits_quality_broker",
+          "expectedError": "LIMIT_EXCEEDED",
+          "actualRejected": true,
+          "signatureExpired": false
+        },
+        {
+          "case": "disabled_assistant_reservation",
+          "role": "profitia_limits_quality_capture",
+          "expectedError": "LIMIT_EXCEEDED",
+          "actualRejected": true,
+          "signatureExpired": false
+        },
+        {
+          "case": "broker_cannot_read_controller_status",
+          "role": "profitia_limits_quality_broker",
+          "expectedError": "POLICY_UNAVAILABLE",
+          "actualRejected": true,
+          "signatureExpired": false
+        },
+        {
+          "case": "wrong_native_command_signature",
+          "role": "profitia_limits_quality_controller",
+          "expectedError": "POLICY_UNAVAILABLE",
+          "actualRejected": true,
+          "signatureExpired": false
+        }
+      ],
+      "newIncidentsOrReservations": 0,
+      "providerRequests": 0,
+      "qaContentRead": false
+    },
+    "independentPublisherSource": {
+      "status": "SOURCE_IN_MAIN_NOT_OPERATIONAL",
+      "pullRequest": 1163,
+      "sourceMergeSha": "4ffb545ecda7462be655f49a2ffc2f73bdddd6d8",
+      "exactSourceControlledRun": "44197660809",
+      "resultingMainNativeRun": "44201515782",
+      "resultingMainControlledRun": "44201840844",
+      "originalMainArtifact": "14382951588",
+      "originalMainZipSha256": "b63e828b81f5a9bdf29d417c411ac8e569ea3f1b7464d0b77181265fae955b62",
+      "canonicalAssertProof": "PASS",
+      "immutableControlFiles": 10,
+      "keysOrPublisherCredentialsInstalled": false
+    },
+    "isolatedVerificationSource": {
+      "status": "SOURCE_PROPOSAL_EXACT_CI_RUNNING_NEW_LINUX_REQUIRED",
+      "pullRequest": 1164,
+      "sourceSha": "6c5664696b73644384e22e5045c66a52f1519989",
+      "nativeRun": "44205108713",
+      "nativeTestsPassed": 100,
+      "neutralContractsPassed": 12,
+      "controlledRun": "44205261143",
+      "controlledResult": "IN_PROGRESS",
+      "newActualLinuxQualificationRequired": true,
+      "previousGateSetProofNotApplicableToChangedInputs": true,
+      "actualPinnedCicArchivePositiveParsing": "PENDING",
+      "operationalJobsConnected": false
+    },
+    "currentRuntimeObservation": {
+      "workerSourceSha": "0c311a197e2f19bc35c953e34e095a1ab92c254b",
+      "workerDeployId": "dep-dbuabmjm8hqs73f8hdfg",
+      "workerHeartbeatAt": "2026-11-18T00:10:10.450Z",
+      "workerStatus": "MONITORING_READY",
+      "controllerGitHub": "CONNECTED_STANDBY",
+      "controlStore": "CONNECTED_DISABLED",
+      "nativeLimits": "CONNECTED_DISABLED",
+      "hostSourceSha": "80875d8f0e9451cd9afd34e8baf2a8f6059bc064",
+      "hostDeployId": "dep-dbuab359fdbs73e5m5hg",
+      "hostCic18Deployed": false,
+      "paidRepairsEnabled": false,
+      "promotionEnabled": false,
+      "pilotStartedAt": null,
+      "acceptanceRepairsCompleted": 0,
+      "technicalReady": false
     }
   },
   "pendingSourceCiAmendment": {
