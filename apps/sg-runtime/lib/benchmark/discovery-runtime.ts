@@ -62,7 +62,7 @@ export async function createDiscoveryRuntime(config:NonNullable<ReturnType<typeo
  const foreground={...human,boundaryDigest:targets.nativeWork.boundaryDigest}
  const requestHost=createSg2DiscoveryRequestHost({...foreground,
   application:{...human.application,configurationVersion:config.configurationVersion,operations:['benchmark.discovery.request'],features:['benchmark']},
-  requestLedger:{schemaDigest:sql['006-request-reservation.sql'],externalSchemaDigest:sql['010-external-request-admission.sql'],operationSchemaDigest:sql['017-additional-request-operations.sql']}})
+  requestLedger:{schemaDigest:sql['006-request-reservation.sql'],externalSchemaDigest:sql['010-external-request-admission.sql'],operationSchemaDigest:sql['017-additional-request-operations.sql'],benchmarkQuotaSchemaDigest:sql['034-unmetered-benchmark-requests.sql']}})
  const readHost=createSg2DiscoveryReadHost({...foreground,
   application:{...human.application,configurationVersion:config.configurationVersion,operations:['benchmark.discovery.read'],features:['benchmark']}})
  const service=(appId:string,configurationVersion:string,operations:Application['operations'],features:string[]):Application=>({appId,profileId:'PLATFORM_INTERNAL',environment:'development',
@@ -75,7 +75,7 @@ export async function createDiscoveryRuntime(config:NonNullable<ReturnType<typeo
   accountIdentity:{environment:'development',issuer:human.identity.issuer}})
  const sourceApp=service(targets.source.applicationId,targets.source.runtimeConfigurationVersion,['knowledge.ingest'],['knowledge_ingestion'])
  const sourceBinding={applicationId:sourceApp.appId,environment:'development' as const,projectId:targets.source.projectId,branchId:targets.source.branchId,
-  databaseName:targets.source.databaseName,role:targets.source.runtimeRole,schemaDigest:targets.source.sourceSqlDigest,
+  databaseName:targets.source.databaseName,role:targets.source.runtimeRole,schemaDigest:targets.source.sourceSqlDigest,unmeteredSchemaDigest:targets.source.unmeteredSqlDigest,
   deploymentId:sourceApp.deploymentId,configurationVersion:sourceApp.configurationVersion}
  const loadMetadataClient=createDiscoveryMetadataLoader(metadataPrisma,{...targets.metadataRead,role:targets.metadataRead.runtimeRole})
  return createSg2DiscoveryApi({requestHost,readHost,persist:createDiscoveryRequestPersister(human.binding,job),work,

@@ -78,6 +78,9 @@ export async function verifyFinderDevelopmentBindings({ env = process.env, read,
       || service.profileId !== 'PLATFORM_INTERNAL' || !uuid.test(service.serviceId ?? '')
       || !/^database-service:[a-f0-9-]{36}:[1-9][0-9]*$/i.test(service.proofRef ?? '')
       || !(Date.parse(service.expiresAt) > now())) return deny('BINDING_UNAVAILABLE', binding.name)
+    if(binding.name==='source'){
+      if(identity.unmeteredSchemaDigest!==targets.source.unmeteredSqlDigest||!row.quotas||row.quotas.length!==4||row.quotas.some(p=>p?.quotaMode!=='UNMETERED'||p.capacity!==null||p.unmeteredSchemaDigest!==targets.source.unmeteredSqlDigest))return deny('UNMETERED_POLICY_UNAVAILABLE',binding.name)
+    }
     if (service.deploymentId !== config.deploymentId
       || service.configurationVersion !== binding.configurationVersion) return deny('BINDING_MISMATCH', binding.name)
   }
@@ -96,10 +99,14 @@ async function readOrdinaryDescriptor(binding) {
       await tx.$executeRawUnsafe("SET LOCAL statement_timeout='4000ms'")
       const query = binding.name === 'dispatch'
         ? 'SELECT profitia_access.runtime_descriptor() AS identity, profitia_services.runtime_descriptor() AS service'
-        : 'SELECT profitia_ingestion.runtime_descriptor() AS identity'
+        : `SELECT profitia_ingestion.runtime_descriptor() AS identity,
+          profitia_ingestion.current_state('sg2.provider.macrobond_token','sg2-provider:macrobond_token')->'policy' AS token_budget,
+          profitia_ingestion.current_state('sg2.provider.macrobond_api','sg2-provider:macrobond_api')->'policy' AS api_budget,
+          profitia_external_call.descriptor('sg2.provider.macrobond_token','sg2-provider:macrobond_token') AS token_call,
+          profitia_external_call.descriptor('sg2.provider.macrobond_api','sg2-provider:macrobond_api') AS api_call`
       const rows = await tx.$queryRawUnsafe(query)
       if (rows.length !== 1) return null
-      return binding.name === 'source' ? { identity: rows[0].identity, service: rows[0].identity } : rows[0]
+      return binding.name === 'source' ? { identity: rows[0].identity, service: rows[0].identity, quotas:[rows[0].token_budget,rows[0].api_budget,rows[0].token_call,rows[0].api_call] } : rows[0]
     }, { timeout: 8000, maxWait: 3000 })
   } finally { await prisma.$disconnect() }
 }
