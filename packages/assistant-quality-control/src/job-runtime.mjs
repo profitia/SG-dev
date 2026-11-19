@@ -1,5 +1,6 @@
 import fs from 'node:fs'
 import path from 'node:path'
+import {gzipSync,gunzipSync} from 'node:zlib'
 import {fileURLToPath} from 'node:url'
 import {execFileSync} from 'node:child_process'
 import {createHash,createPublicKey,createPrivateKey} from 'node:crypto'
@@ -32,6 +33,42 @@ function keys(value){
  }
  return result
 }
+
+/** Encoding only, without label review, attestation or authority. The same
+ * encrypted GitHub secret stores this bounded JSON envelope. Original pack
+ * bytes and its independent semantic digest survive compression unchanged. */
+export function encodeQualityNativeHoldoutPack(packJson){
+ require(typeof packJson==='string'&&Buffer.byteLength(packJson)<=1048576,'NATIVE_JOB_HOLDOUT_INVALID')
+ const pack=json(packJson,1048576)
+ require(Array.isArray(pack)&&pack.length>=200&&pack.length<=512,'NATIVE_JOB_HOLDOUT_INVALID')
+ const bytes=Buffer.from(packJson),compressed=gzipSync(bytes,{level:9})
+ const envelope=JSON.stringify({schemaVersion:'AQC_HOLDOUT_STORAGE_V1',encoding:'gzip+base64',
+  uncompressedBytes:bytes.length,uncompressedSha256:createHash('sha256').update(bytes).digest('hex'),data:compressed.toString('base64')})
+ require(Buffer.byteLength(envelope)<=49152,'NATIVE_JOB_HOLDOUT_SECRET_TOO_LARGE')
+ return envelope
+}
+export function readQualityNativeHoldoutPack(envelopeJson){
+ const invalid=()=>fail('NATIVE_JOB_HOLDOUT_INVALID')
+ let value,compressed,bytes
+ try{
+  value=json(envelopeJson,49152)
+  if(!plain(value)||Object.keys(value).sort().join(',')!=='data,encoding,schemaVersion,uncompressedBytes,uncompressedSha256'
+   ||value.schemaVersion!=='AQC_HOLDOUT_STORAGE_V1'||value.encoding!=='gzip+base64'
+   ||!Number.isSafeInteger(value.uncompressedBytes)||value.uncompressedBytes<1||value.uncompressedBytes>1048576
+   ||!hash(value.uncompressedSha256)||typeof value.data!=='string'||value.data.length>49152
+   ||!/^[A-Za-z0-9+/]+={0,2}$/.test(value.data))invalid()
+  compressed=Buffer.from(value.data,'base64')
+  if(compressed.toString('base64')!==value.data)invalid()
+  bytes=gunzipSync(compressed,{maxOutputLength:value.uncompressedBytes})
+  if(bytes.length!==value.uncompressedBytes||createHash('sha256').update(bytes).digest('hex')!==value.uncompressedSha256)invalid()
+  const text=bytes.toString('utf8')
+  if(!Buffer.from(text).equals(bytes))invalid()
+  const pack=JSON.parse(text)
+  if(!Array.isArray(pack)||pack.length<200||pack.length>512)invalid()
+  return pack
+ }catch{invalid()}
+}
+
 /** Public trust only. A supplied document can never install its own signer.
  * Each role and the offline owner must have a disjoint installed key map. */
 export function readQualityNativeJobTrust({ownerJson,phaseJson}){
@@ -164,7 +201,7 @@ export async function runQualityNativeRoleJob(...args){
  // step after independent review. Other actions admit neither pack nor labels.
  let holdout={}
  if(config.inputs.action==='VERIFY'){
-  holdout={pack:json(process.env.AQC_VERIFIER_PACK_JSON,1048576),
+  holdout={pack:readQualityNativeHoldoutPack(process.env.AQC_VERIFIER_PACK_JSON),
    packAttestation:json(process.env.AQC_VERIFIER_PACK_ATTESTATION_JSON,32768),
    reviewerKeys:keys(json(process.env.AQC_REVIEWER_PUBLIC_KEYS_JSON,8192))}
  }else require(!process.env.AQC_VERIFIER_PACK_JSON&&!process.env.AQC_VERIFIER_PACK_ATTESTATION_JSON,'NATIVE_JOB_SECRET_SCOPE_REJECTED')
