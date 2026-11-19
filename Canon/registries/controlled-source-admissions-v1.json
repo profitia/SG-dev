@@ -4774,6 +4774,58 @@
           "surfaceId": "SG2-BASE-001"
         }
       ]
+    },
+    {
+      "id": "ARCHITECTURE:ARCH-PI-NEWSFEED-READER-INVITATION-20261117",
+      "status": "ACTIVE",
+      "repository": "profitia/SG-dev",
+      "actor": "profitia",
+      "taskId": "ARCH-PI-NEWSFEED-READER-INVITATION-20261117",
+      "targetEnvironment": "development",
+      "scope": "SOURCE_VALIDATION_ONLY",
+      "approvalRef": "user:call_fcd53cb33d074702bd9793096683e338:item0 — explicit four-file SOURCE_VALIDATION_ONLY bcee445734f4c1bae12b266c99893ed545656121; excludes migration and deployment activation",
+      "sourceSha": "bcee445734f4c1bae12b266c99893ed545656121",
+      "baseSha": "b0eddc27a0405eac5233497414a934f721bc36d2",
+      "validFrom": "2026-11-19T01:21:20.127Z",
+      "validUntil": "2026-11-23T22:59:00.000Z",
+      "files": [
+        {
+          "path": "apps/newsfeed-runtime/migrations/005-reader-invitation.sql",
+          "blob": "68ed73e589fbae1a36ddcea4b6a4be3178c80a57",
+          "mode": "100644",
+          "status": "added",
+          "projectKey": "ARCHITECTURE",
+          "owner": "Architecture Platform",
+          "surfaceId": "NEWSFEED-BASE-001"
+        },
+        {
+          "path": "apps/newsfeed-runtime/scripts/migrate.mjs",
+          "blob": "bed66fddce98f32ff782cffbd5011737fdd15537",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "ARCHITECTURE",
+          "owner": "Architecture Platform",
+          "surfaceId": "NEWSFEED-BASE-001"
+        },
+        {
+          "path": "apps/newsfeed-runtime/src/server.mjs",
+          "blob": "b7da0669c633d3d93eaa2f4230760781c8da335c",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "ARCHITECTURE",
+          "owner": "Architecture Platform",
+          "surfaceId": "NEWSFEED-BASE-001"
+        },
+        {
+          "path": "apps/newsfeed-runtime/test/reader-invitation.test.mjs",
+          "blob": "cd7eaa3943ec19aae78c160bcc973d2d9242967b",
+          "mode": "100644",
+          "status": "added",
+          "projectKey": "ARCHITECTURE",
+          "owner": "Architecture Platform",
+          "surfaceId": "NEWSFEED-BASE-001"
+        }
+      ]
     }
   ],
   "authority": "Accepted trusted-main data only. Candidate records never authorize themselves. Existing closed reviews and historical receipts remain unchanged."
