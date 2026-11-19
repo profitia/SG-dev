@@ -11,6 +11,49 @@ import {
 } from './codespace-cleanup-lifecycle.mjs'
 import { OWNER_FILE, executeCleanup } from './codespace-cleanup.mjs'
 
+function rewritePublishedIntegrity(p, f) {
+  const hash=v=>crypto.createHash('sha256').update(v).digest('hex')
+  const files=fs.readdirSync(p.bundleDir).filter(n=>n!=='integrity.json').sort((a,b)=>a.localeCompare(b))
+    .map(name=>({path:name,sha256:hash(fs.readFileSync(path.join(p.bundleDir,name)))}))
+  write(path.join(p.bundleDir,'integrity.json'),{schemaVersion:'1.0',algorithm:'sha256',files,
+    bundleHash:hash(files.map(x=>`${x.path}\0${x.sha256}`).join('\0'))})
+  git(f.phr,'add','.');git(f.phr,'commit','-qm','publish controlled result variation');git(f.phr,'push',p.remote,'main:main')
+}
+
+for (const finalStatus of ['PARTIAL_SUCCESS','BLOCKED']) {
+  test(`canonical ${finalStatus} closeout is readable, skips pre-clean and preserves resources before epilogue`,t=>{
+    const f=fixture(t),r=allocated(f,'retained-for-resume','post-closeout')
+    const p=phrPublishedFixture(f)
+    const b=bootstrapFixture(f),input=JSON.parse(fs.readFileSync(b,'utf8'))
+    input.result.finalStatus=finalStatus;write(b,input)
+    const calls=[]
+    const result=finishTask(f.config,{bootstrapInputFile:b,manifestRelative:p.relative,cleanPreCloseout:true},
+      {...f.runtime,verifyPhr:undefined,cleanup:o=>{calls.push(o);return {summary:{RETAINED:1},observedFreeBytesDelta:null}}})
+    assert.equal(result.status,'CLOSEOUT_VERIFIED')
+    assert.equal(tracked(f.c.stateFile).closeout.businessResult,finalStatus)
+    assert.equal(verifyPhrReadback(f.config,p.relative).businessResult,finalStatus)
+    assert.ok(calls.every(o=>o.command==='audit'))
+    assert.equal(fs.existsSync(r.path),true)
+    assert.throws(()=>phaseReport(f.config,'post-closeout',true,{runtime:f.runtime,
+      cleanup:()=>{throw Error('cleanup must not run for incomplete business result')}}),/Destructive epilogue requires SUCCESS/)
+    assert.equal(fs.existsSync(r.path),true)
+  })
+}
+
+test('PHR business result must agree in manifest and both flight records even with valid recomputed hashes',t=>{
+  const f=fixture(t);begin(f);const p=phrPublishedFixture(f)
+  const file=path.join(p.bundleDir,'conversation-artifact.json'),doc=JSON.parse(fs.readFileSync(file,'utf8'))
+  doc.result.finalStatus='PARTIAL_SUCCESS';write(file,doc);rewritePublishedIntegrity(p,f)
+  assert.throws(()=>verifyPhrReadback(f.config,p.relative),/business result differs/)
+})
+
+test('PHR missing business result is refused even with intact identity and valid recomputed hashes',t=>{
+  const f=fixture(t);begin(f);const p=phrPublishedFixture(f)
+  const file=path.join(p.bundleDir,'flight-record.json'),doc=JSON.parse(fs.readFileSync(file,'utf8'))
+  delete doc.result;write(file,doc);rewritePublishedIntegrity(p,f)
+  assert.throws(()=>verifyPhrReadback(f.config,p.relative),/business result differs/)
+})
+
 function git(root, ...args) {
   const p = spawnSync('git', ['-C', root, ...args], { encoding:'utf8' })
   assert.equal(p.status, 0, `${args.join(' ')}: ${p.stderr}`)
@@ -68,7 +111,7 @@ function fixture(t, { taskId = 'ARCHITECTURE-TEST-3219' } = {}) {
     if (args.includes('pmos:begin')) return JSON.stringify({status:'REGISTERED',taskId,registrationId:'registered-11',conversationId:'pmos-task-v2:test'})
     throw new Error('Unexpected command')
   }
-  const runtime = {run:runner,verifyPhr:() => ({head:'f'.repeat(40),manifestRelative:'history/2026/11/18/task/manifest.json',publicationId:`ARCHITECTURE:${taskId}`,bundleHash:'a'.repeat(64),publicationCommit:'f'.repeat(40)})}
+  const runtime = {run:runner,verifyPhr:() => ({head:'f'.repeat(40),manifestRelative:'history/2026/11/18/task/manifest.json',publicationId:`ARCHITECTURE:${taskId}`,bundleHash:'a'.repeat(64),publicationCommit:'f'.repeat(40),businessResult:'SUCCESS'})}
   return {root,src,scope,phr,configFile,c,config,beginFile,beginInput,calls,runtime,hooks,hasSaved:()=>saveComplete}
 }
 function begin(f){return startTask(f.config,f.runtime)}
@@ -283,7 +326,7 @@ function phrPublishedFixture(f) {
   const relative='history/2026/11/18/2026-11-18__'+publicationSlug+'/manifest.json'
   const bundleDir=path.join(f.phr,path.dirname(relative));fs.mkdirSync(bundleDir,{recursive:true})
   const files=new Map()
-  const published={metadata:{taskId:f.c.taskId,project:f.beginInput.project,conversationId:'pmos-task-v2:test'}}
+  const published={metadata:{taskId:f.c.taskId,project:f.beginInput.project,conversationId:'pmos-task-v2:test'},result:{finalStatus:'SUCCESS'}}
   const present=['handoff.md','conversation-artifact.json','flight-record.json','closeout-evidence.json','integrity.json']
   const m={schemaVersion:'1.0',publicationId:'ARCHITECTURE:'+f.c.taskId,projectId:f.c.projectKey,taskId:f.c.taskId,
     sourceSystem:'PMOS',closeoutState:'CLOSEOUT_COMPLETE',result:'SUCCESS',publishedAt:'2026-11-18T20:01:00Z',
@@ -309,6 +352,8 @@ function phrPublishedFixture(f) {
     const evidence=tracked(f.c.stateFile).lifecycle.preCloseoutEvidence
     if (!evidence) return
     const input=JSON.parse(fs.readFileSync(evidence.inputFile,'utf8'))
+    m.result=input.result.finalStatus
+    files.set('manifest.json',JSON.stringify(m,null,2)+'\n')
     for (const n of ['conversation-artifact.json','flight-record.json']) files.set(n,JSON.stringify(input,null,2)+'\n')
     const list=[...files.entries()].filter(([n])=>n!=='integrity.json').sort(([a],[b])=>a.localeCompare(b))
       .map(([path,content])=>({path,sha256:hash(content)}))
@@ -524,7 +569,7 @@ test('PHR pinned bundle integrity mismatch prevents stage02 clean even when remo
 function bootstrapFixture(f, dest = path.join(f.scope, 'bootstrap.json'), findings = ['actual business result']) {
   const state = tracked(f.c.stateFile)
   write(dest, { metadata: { taskId:f.c.taskId, conversationId:state.lifecycle.conversationId,
-    project:f.beginInput.project, targetEnvironment:'development'}, findings:{findings} })
+    project:f.beginInput.project, targetEnvironment:'development'}, findings:{findings},result:{finalStatus:'SUCCESS'} })
   return dest
 }
 function canonicalPendingFixture(f, bootstrap, findingsOverride) {
@@ -545,7 +590,7 @@ function canonicalPendingFixture(f, bootstrap, findingsOverride) {
 function workSpecFixture(f, options={}) {
   const work=path.join(f.scope,'v3-work-spec.json'),bootstrap=path.join(f.scope,'v3-bootstrap.json')
   const log=path.join(f.scope,'v3-work-count.txt'), script=path.join(f.scope,'v3-work.cjs')
-  fs.writeFileSync(script,`const fs=require('node:fs');fs.appendFileSync(${JSON.stringify(log)},'1');fs.writeFileSync(${JSON.stringify(bootstrap)},JSON.stringify({metadata:{taskId:${JSON.stringify(f.c.taskId)},conversationId:'pmos-task-v2:test',project:${JSON.stringify(f.beginInput.project)},targetEnvironment:'development'},findings:{findings:['actual business result']}}))`)
+  fs.writeFileSync(script,`const fs=require('node:fs');fs.appendFileSync(${JSON.stringify(log)},'1');fs.writeFileSync(${JSON.stringify(bootstrap)},JSON.stringify({metadata:{taskId:${JSON.stringify(f.c.taskId)},conversationId:'pmos-task-v2:test',project:${JSON.stringify(f.beginInput.project)},targetEnvironment:'development'},findings:{findings:['actual business result']},result:{finalStatus:'SUCCESS'}}))`)
   write(work,{schemaVersion:'1.0',taskId:f.c.taskId,program:process.execPath,args:[script],cwd:f.src,
     timeoutMs:20000,bootstrapInputFile:bootstrap,manifestRelative:'history/2026/11/18/task/manifest.json',
     cleanPreCloseout:false,cleanPostCloseout:false,...options})
