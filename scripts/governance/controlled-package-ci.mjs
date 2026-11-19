@@ -7496,8 +7496,15 @@ function trustedManifestSuccessorAdmission(current,historical,cfg,receipt,actual
  ![grant.sourceSha,grant.previousSourceSha].every(x=>typeof x==='string'&&/^[a-f0-9]{40}$/.test(x))||
  ![grant.manifestSha256,grant.previousManifestSha256].every(x=>typeof x==='string'&&/^[a-f0-9]{64}$/.test(x)))
  fail('MANIFEST_SUCCESSOR_SCOPE_REJECTED')
- if(grant.previousManifestSha256!==calendarHash(main)&&grant.manifestSha256!==calendarHash(main))
- fail('MANIFEST_SUCCESSOR_AUTHORITY_BASE_REJECTED')
+ if(grant.previousManifestSha256!==calendarHash(main)&&grant.manifestSha256!==calendarHash(main)){
+  // A historical 3.52 view can outlive its direct main successor. Reuse only
+  // the existing exact owner-approved ACG projection, with authority bytes
+  // from main; unknown future authority and PR-local ledgers still fail closed.
+  const acgDocument='Canon/v1.0-acg-cic-phased-live-and-kys-risk-context-amendment.md'
+  const authority=p=>p===cfg.manifestPath||p===acgDocument?Buffer.from(historical(TRUSTED_MANIFEST_MAIN,p)):current(p)
+  const admitted=editorialAcgManifestTrustedCurrent(authority,historical)
+  if(calendarHash(admitted(cfg.manifestPath))!==actual)fail('MANIFEST_SUCCESSOR_AUTHORITY_BASE_REJECTED')
+ }
  const before=Buffer.from(historical(grant.previousSourceSha,cfg.manifestPath))
  const after=Buffer.from(historical(grant.sourceSha,cfg.manifestPath))
  if(calendarHash(before)!==grant.previousManifestSha256||calendarHash(after)!==grant.manifestSha256)

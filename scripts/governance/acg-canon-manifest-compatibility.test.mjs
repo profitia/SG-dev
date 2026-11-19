@@ -9,7 +9,7 @@ const repositoryRoot=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'
 // Actual reviewed Git objects and the actual origin/main ledger, not a
 // fabricated passing history. Deliberately corrupted readers below are
 // negative-only; the existing physical BSDC/Calendar regression is unchanged.
-import { editorialTrustedPredecessor, EDITORIAL_CANON_SOURCE_REVIEW } from './controlled-package-ci.mjs'
+import { editorialTrustedPredecessor, EDITORIAL_CANON_SOURCE_REVIEW, bsdcManifestContinuityTrustedCurrent, BSDC_MANIFEST_CONTINUITY } from './controlled-package-ci.mjs'
 
 const acgCanonSource='be51c2d0cdfba0504197898db4c981197202e918'
 const acgCanonPrevious='a03956b6752227a7a14e44887feabd50a0ad1054'
@@ -85,4 +85,67 @@ test('ACG successful admission never bypasses the older Editorial source history
  assert(receipt,'an actual preserved receipt must be checked')
  const changedReceipt=(s,p)=>s===cfg.baseSha&&p===receipt?Buffer.concat([acgCanonHistory(s,p),Buffer.from('\n')]):acgCanonHistory(s,p)
  assert.throws(()=>editorialTrustedPredecessor(acgCanonRead,changedReceipt),/EDITORIAL_SOURCE_RECEIPT_REJECTED/)
+})
+
+
+// The older BSDC/Calendar caller has already projected the physical test to
+// its original pin. Keep those authentic bytes and the admitted helper while
+// exercising the actual 3.52 Git manifest against today's 3.53 main authority.
+const bsdcEditorialSource='1dc0c05e52e8f4b78779ec3d0e532975ed4fa354'
+const bsdcAncestorRead=p=>p===BSDC_MANIFEST_CONTINUITY.helperPath?acgCanonHistory(acgCanonPrevious,p):acgCanonHistory(bsdcEditorialSource,p)
+const bsdcAncestorView=history=>bsdcManifestContinuityTrustedCurrent(bsdcAncestorRead,history)
+
+test('BSDC authentic 3.52 ancestor remains valid under the exact approved ACG 3.53 authority',()=>{
+ const cfg=BSDC_MANIFEST_CONTINUITY
+ const accepted=bsdcAncestorView(acgCanonHistory)
+ for(const p of [cfg.manifestPath,cfg.helperPath,cfg.testPath])
+  assert.deepEqual(accepted(p),acgCanonHistory(cfg.baseSha,p),p)
+ for(const p of cfg.sourcePaths.filter(p=>p!==cfg.manifestPath))
+  assert.deepEqual(accepted(p),bsdcAncestorRead(p),p)
+ assert.throws(()=>accepted(cfg.recordPath),{code:'ENOENT'})
+})
+
+test('BSDC ancestor still requires both exact grants on trusted main, regardless of PR-local ledger',()=>{
+ for(const hash of [acgCanonManifestHash,'d8ddddd7b39b6b67ed7e4ca2b4407a47a4470497465f790a67be301ea4dcccd8']){
+  const missing=changedAcgLedger(m=>m.successors=m.successors.filter(x=>x.manifestSha256!==hash))
+  const local=p=>p===acgCanonLedger?acgCanonHistory('refs/remotes/origin/main',p):bsdcAncestorRead(p)
+  assert.throws(()=>bsdcManifestContinuityTrustedCurrent(local,acgLedgerHistory(missing)),/MANIFEST_SUCCESSOR_NOT_APPROVED_ON_MAIN/)
+ }
+})
+
+test('BSDC ancestor rejects an identical-tree ACG grant rebound and changed admitted document digest',()=>{
+ const rebound=changedAcgLedger(m=>m.successors.find(x=>x.manifestSha256===acgCanonManifestHash).sourceSha='c9de2488cca60b7bf2c8cb841a7e2586174f40f1')
+ assert.throws(()=>bsdcAncestorView(acgLedgerHistory(rebound)),/EDITORIAL_MANIFEST_SUCCESSOR_SCOPE_REJECTED/)
+ const changed=changedAcgLedger(m=>m.successors.find(x=>x.manifestSha256===acgCanonManifestHash).documentDigests[acgCanonDocument]='0'.repeat(64))
+ assert.throws(()=>bsdcAncestorView(acgLedgerHistory(changed)),/MANIFEST_SUCCESSOR_DOCUMENT_BYTES_REJECTED/)
+})
+
+test('BSDC ancestor cannot project changed ACG authority document or immutable Git snapshots',()=>{
+ for(const [ref,p] of [
+  ['refs/remotes/origin/main',acgCanonDocument],
+  [acgCanonSource,acgCanonManifest],
+  [acgCanonPrevious,acgCanonManifest],
+  [bsdcEditorialSource,acgCanonManifest]
+ ]){
+  const corrupt=(sha,file)=>sha===ref&&file===p?Buffer.concat([acgCanonHistory(sha,file),Buffer.from('\nUNAPPROVED')]):acgCanonHistory(sha,file)
+  assert.throws(()=>bsdcAncestorView(corrupt),/MANIFEST_SUCCESSOR_(DOCUMENT_BYTES|IMMUTABLE_BYTES)_REJECTED/)
+ }
+})
+
+test('BSDC ancestor never inherits admission from unknown future main authority',()=>{
+ const future=(sha,p)=>{
+  const bytes=acgCanonHistory(sha,p)
+  if(sha!=='refs/remotes/origin/main'||p!==acgCanonManifest)return bytes
+  const manifest=JSON.parse(bytes);manifest.manifestVersion='3.54.0'
+  return Buffer.from(JSON.stringify(manifest))
+ }
+ assert.throws(()=>bsdcAncestorView(future),/MANIFEST_SUCCESSOR_AUTHORITY_BASE_REJECTED/)
+})
+
+test('BSDC ancestor continues rejecting changed original receipt, helper, test and approved documentation',()=>{
+ const cfg=BSDC_MANIFEST_CONTINUITY
+ for(const target of new Set([cfg.recordPath,cfg.helperPath,cfg.testPath,...cfg.sourcePaths])){
+  const corrupt=p=>p===target?Buffer.concat([bsdcAncestorRead(p),Buffer.from('\nUNAPPROVED')]):bsdcAncestorRead(p)
+  assert.throws(()=>bsdcManifestContinuityTrustedCurrent(corrupt,acgCanonHistory),target)
+ }
 })
