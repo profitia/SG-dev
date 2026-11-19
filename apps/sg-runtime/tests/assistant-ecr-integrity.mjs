@@ -60,7 +60,7 @@ export const ECR_CIC_PUBLICATION=Object.freeze({
 const hash=bytes=>createHash('sha256').update(bytes).digest('hex')
 const json=bytes=>JSON.parse(Buffer.from(bytes).toString('utf8'))
 export function assistantEcrPredecessor(current,historical){
- const quality=assistantQualityPredecessor(current,historical);if(quality)return assistantEcrPredecessor(quality.previousBytes,historical)
+ const quality=assistantQualityPredecessor(current,historical);if(quality)return assistantEcrPredecessor(quality.compositionPreviousBytes??quality.previousBytes,historical)
  const recurring=recurringSourcePredecessor(current,historical);if(recurring)return assistantEcrPredecessor(recurring.previousBytes,historical)
  const precision=assistantEcrPrecisionPredecessor(current,historical);if(precision)return assistantEcrPredecessor(precision.previousBytes,historical)
  let bytes

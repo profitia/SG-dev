@@ -104,3 +104,16 @@ test('finite CIC projection retains unrelated current inputs and their native ac
  const denied=assistantQualityHostPredecessor(f=>{if(f===p)throw Object.assign(Error('DENIED'),{code:'EACCES'});return current(f)},historical)
  for(const read of [denied.previousBytes,denied.legacyPreviousBytes,denied.compositionPreviousBytes])assert.throws(()=>read(p),{code:'EACCES'})
 })
+
+
+test('real SDK entry composes CIC before the complete Knowledge and ACG predecessors',async()=>{
+ const {assistantSdkPredecessor}=await import('../../architecture-lab/assistant-m1-sdk-compatibility.mjs')
+ const v=assistantSdkPredecessor(current,historical);assert(v?.record?.sdkDigests)
+ for(const p of ['apps/sg-runtime/tests/assistant-ecr-integrity.mjs','apps/architecture-lab/private-recurring-source.mjs','apps/architecture-lab/knowledge-source.json',QUALITY_HOST_RECEIPT])
+  assert.throws(()=>assistantSdkPredecessor(f=>f===p?Buffer.concat([current(f),Buffer.from('UNREVIEWED_SDK_COMPOSITION')]):current(f),historical),p)
+ const p='apps/sg-runtime/tests/assistant-ecr-integrity.mjs',changed=Buffer.concat([current(p),Buffer.from('UNREVIEWED_SELF_REFRESH')]),a=JSON.parse(current(QUALITY_HOST_RECEIPT))
+ const {createHash}=await import('node:crypto');a.sourceDigests[p]=createHash('sha256').update(changed).digest('hex')
+ assert.throws(()=>assistantSdkPredecessor(f=>f===p?changed:f===QUALITY_HOST_RECEIPT?Buffer.from(JSON.stringify(a)):current(f),historical),e=>e?.code==='ERR_ASSERTION'&&String(e.message).includes('only additive accepted composition selection'))
+ const denied=Object.assign(Error('DENIED'),{code:'EACCES'})
+ assert.throws(()=>assistantSdkPredecessor(f=>{if(f==='apps/architecture-lab/private-recurring-source.mjs')throw denied;return current(f)},historical),e=>e===denied)
+})
