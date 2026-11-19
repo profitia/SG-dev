@@ -8,9 +8,11 @@ import {promisify} from 'node:util';
 import {fileURLToPath} from 'node:url';
 const run=promisify(execFile);
 test('supplier schema and HTTP integration use the genuine canonical native receiver',async()=>{
+ const environment:NodeJS.ProcessEnv={...process.env};
+ delete environment.NODE_TEST_CONTEXT;
  const result=await run(process.execPath,['--import','tsx','--test','--test-reporter=tap',fileURLToPath(new URL('../../../scripts/supplier-pipelines-postgres.test.mjs',import.meta.url))],{
   // Start an independent native runner instead of inheriting Node's parent-test IPC mode.
-  env:Object.fromEntries(Object.entries(process.env).filter(([key])=>key!=='NODE_TEST_CONTEXT')),
+  env:environment,
   cwd:fileURLToPath(new URL('../../../',import.meta.url)),timeout:120000,maxBuffer:4*1024*1024,
  });
  assert.match(result.stdout,/(?:#|ℹ) fail 0/);
