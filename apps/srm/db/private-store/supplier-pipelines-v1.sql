@@ -82,6 +82,7 @@ CREATE TABLE srm.supplier_pipeline_memberships(
  version bigint NOT NULL DEFAULT 1 CHECK(version>=1 AND version<=9007199254740991),
  started_at timestamptz NOT NULL DEFAULT clock_timestamp(),ended_at timestamptz,
  end_reason text CHECK(end_reason IN('ENDED','TRANSFERRED','SUPPLIER_ARCHIVED','PIPELINE_ARCHIVED')),
+ pipeline_name_at_end text,stage_name_at_end text,
  created_by_account_id uuid NOT NULL,updated_by_account_id uuid NOT NULL,
  PRIMARY KEY(organization_id,id),
  FOREIGN KEY(organization_id,supplier_id) REFERENCES srm.suppliers(organization_id,id),
@@ -95,7 +96,7 @@ CREATE INDEX supplier_membership_active_stage ON srm.supplier_pipeline_membershi
 
 CREATE TABLE srm.supplier_workspace_events(
  organization_id uuid NOT NULL REFERENCES srm.organizations(id),id uuid NOT NULL DEFAULT gen_random_uuid(),
- actor_account_id uuid NOT NULL,command_id text NOT NULL CHECK(command_id~'^[a-zA-Z0-9_-]{8,128}$'),
+ actor_account_id uuid NOT NULL,root_decision_id uuid NOT NULL DEFAULT (profitia_supplier_workspace.current_scope()).decision_id,command_id text NOT NULL CHECK(command_id~'^[a-zA-Z0-9_-]{8,128}$'),
  action text NOT NULL CHECK(action~'^[A-Z_]{3,64}$'),supplier_id uuid,pipeline_id uuid,
  before_state jsonb,after_state jsonb,occurred_at timestamptz NOT NULL DEFAULT clock_timestamp(),
  PRIMARY KEY(organization_id,id),
@@ -108,6 +109,7 @@ CREATE TABLE srm.supplier_workspace_events(
 CREATE INDEX supplier_workspace_history ON srm.supplier_workspace_events(organization_id,supplier_id,id);
 CREATE TABLE srm.supplier_workspace_receipts(
  organization_id uuid NOT NULL REFERENCES srm.organizations(id),actor_account_id uuid NOT NULL,
+ root_decision_id uuid NOT NULL DEFAULT (profitia_supplier_workspace.current_scope()).decision_id,
  idempotency_key text NOT NULL CHECK(idempotency_key~'^[a-zA-Z0-9_-]{8,128}$'),
  command_digest text NOT NULL CHECK(command_digest~'^[a-f0-9]{64}$'),command_name text NOT NULL CHECK(command_name~'^[A-Z_]{3,64}$'),
  result jsonb NOT NULL CHECK(jsonb_typeof(result)='object' AND octet_length(result::text)<=262144),
@@ -146,7 +148,7 @@ CREATE TRIGGER supplier_workspace_membership_guard BEFORE INSERT OR UPDATE OF su
 CREATE FUNCTION srm.workspace_profile_owner_guard() RETURNS trigger
 LANGUAGE plpgsql SET search_path=pg_catalog,pg_temp AS $fn$
 BEGIN
- IF NEW.relationship_owner_account_id IS NOT NULL AND NOT profitia_supplier_workspace.member_allowed(NEW.organization_id,NEW.relationship_owner_account_id) THEN
+ IF NEW.relationship_owner_account_id IS NOT NULL AND (TG_OP='INSERT' OR NEW.relationship_owner_account_id IS DISTINCT FROM OLD.relationship_owner_account_id) AND NOT profitia_supplier_workspace.member_allowed(NEW.organization_id,NEW.relationship_owner_account_id) THEN
   RAISE EXCEPTION 'SCP:FIELD_INVALID' USING ERRCODE='23514';END IF;
  RETURN NEW;
 END $fn$;
@@ -154,21 +156,125 @@ REVOKE ALL ON FUNCTION srm.workspace_profile_owner_guard() FROM PUBLIC;
 CREATE TRIGGER supplier_workspace_profile_owner BEFORE INSERT OR UPDATE OF relationship_owner_account_id
  ON srm.supplier_workspace_profiles FOR EACH ROW EXECUTE FUNCTION srm.workspace_profile_owner_guard();
 
+
+-- Closed SRM table policy adapter. Authority stays in the native producer.
+CREATE FUNCTION srm.workspace_table_scope(p_table text,p_mode text,p_org uuid,p_resource uuid,p_actor uuid DEFAULT NULL)
+RETURNS boolean LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,pg_temp AS $fn$
+DECLARE s profitia_supplier_workspace.scopes%ROWTYPE;BEGIN
+ s:=profitia_supplier_workspace.current_scope();
+ IF s.scope_id IS NULL OR s.organisation_id IS DISTINCT FROM p_org OR p_mode NOT IN('READ','WRITE') THEN RETURN false;END IF;
+ IF p_table IN('supplier_workspace_receipts','supplier_workspace_events') AND p_mode='WRITE'
+  OR p_table='supplier_workspace_receipts' THEN
+  RETURN s.access_mode='WRITE' AND s.actor_id=p_actor
+   AND profitia_supplier_workspace.scope_allows(p_org,s.operation,NULL);
+ END IF;
+ IF p_mode='READ' THEN
+  RETURN CASE p_table
+   WHEN 'supplier_workspace_profiles' THEN profitia_supplier_workspace.scope_allows(p_org,'supplier.catalog.read',p_resource)
+   WHEN 'supplier_categories' THEN profitia_supplier_workspace.scope_allows(p_org,'supplier.category.read',p_resource)
+   WHEN 'supplier_category_links' THEN profitia_supplier_workspace.scope_allows(p_org,'supplier.category.read',NULL)
+    AND profitia_supplier_workspace.scope_allows(p_org,'supplier.catalog.read',p_resource)
+   WHEN 'supplier_pipelines' THEN profitia_supplier_workspace.scope_allows(p_org,'supplier.pipeline.read',p_resource)
+   WHEN 'supplier_pipeline_stages' THEN profitia_supplier_workspace.scope_allows(p_org,'supplier.pipeline.read',p_resource)
+   WHEN 'supplier_pipeline_memberships' THEN profitia_supplier_workspace.scope_allows(p_org,'supplier.assignment.read',p_resource)
+   WHEN 'supplier_workspace_events' THEN profitia_supplier_workspace.scope_allows(p_org,'supplier.catalog.read',p_resource)
+    AND profitia_supplier_workspace.scope_allows(p_org,'supplier.category.read',NULL)
+    AND profitia_supplier_workspace.scope_allows(p_org,'supplier.pipeline.read',NULL)
+    AND profitia_supplier_workspace.scope_allows(p_org,'supplier.assignment.read',NULL)
+   ELSE false END;
+ END IF;
+ RETURN CASE p_table
+  WHEN 'supplier_workspace_profiles' THEN profitia_supplier_workspace.scope_allows(p_org,'supplier.catalog.write',p_resource)
+   OR profitia_supplier_workspace.scope_allows(p_org,'supplier.category.write',NULL)
+  WHEN 'supplier_categories' THEN profitia_supplier_workspace.scope_allows(p_org,'supplier.category.write',p_resource)
+  WHEN 'supplier_category_links' THEN profitia_supplier_workspace.scope_allows(p_org,'supplier.category.write',NULL)
+   AND profitia_supplier_workspace.scope_allows(p_org,'supplier.catalog.read',p_resource)
+  WHEN 'supplier_pipelines' THEN profitia_supplier_workspace.scope_allows(p_org,'supplier.pipeline.write',p_resource)
+   OR profitia_supplier_workspace.scope_allows(p_org,'supplier.assignment.write',NULL)
+  WHEN 'supplier_pipeline_stages' THEN profitia_supplier_workspace.scope_allows(p_org,'supplier.pipeline.write',p_resource)
+  WHEN 'supplier_pipeline_memberships' THEN profitia_supplier_workspace.scope_allows(p_org,'supplier.assignment.write',p_resource)
+  ELSE false END;
+END $fn$;
+REVOKE ALL ON FUNCTION srm.workspace_table_scope(text,text,uuid,uuid,uuid) FROM PUBLIC;
+
+CREATE FUNCTION srm.workspace_identity_guard() RETURNS trigger
+LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,pg_temp AS $fn$
+DECLARE s profitia_supplier_workspace.scopes%ROWTYPE;before jsonb;after jsonb;
+BEGIN
+ IF TG_OP='DELETE' OR TG_OP<>'INSERT' AND TG_TABLE_NAME IN('supplier_workspace_events','supplier_workspace_receipts')
+  THEN RAISE EXCEPTION 'Workspace history is immutable' USING ERRCODE='42501';END IF;
+ s:=profitia_supplier_workspace.current_scope();
+ IF s.scope_id IS NULL OR s.organisation_id IS DISTINCT FROM NEW.organization_id THEN
+  RAISE EXCEPTION 'Workspace organization scope required' USING ERRCODE='42501';END IF;
+ before:=to_jsonb(OLD);after:=to_jsonb(NEW);
+ IF TG_OP='INSERT' THEN
+  IF after ? 'created_by_account_id' AND after->>'created_by_account_id' IS DISTINCT FROM s.actor_id::text
+   OR after ? 'actor_account_id' AND after->>'actor_account_id' IS DISTINCT FROM s.actor_id::text
+  THEN RAISE EXCEPTION 'Workspace actor must come from native scope' USING ERRCODE='42501';END IF;
+  IF TG_TABLE_NAME='supplier_pipelines' AND profitia_supplier_workspace.scope_allows(NEW.organization_id,'supplier.pipeline.write',(after->>'id')::uuid) IS NOT TRUE
+   THEN RAISE EXCEPTION 'Pipeline creation requires pipeline WRITE' USING ERRCODE='42501';END IF;
+  IF TG_TABLE_NAME='supplier_workspace_profiles'
+   AND profitia_supplier_workspace.scope_allows(NEW.organization_id,'supplier.catalog.write',(after->>'supplier_id')::uuid) IS NOT TRUE
+   AND(after->'contacts'<>'[]'::jsonb OR after->>'relationship_owner_account_id' IS NOT NULL OR after->>'archived_at' IS NOT NULL)
+   THEN RAISE EXCEPTION 'Initial catalogue fields require catalogue WRITE' USING ERRCODE='42501';END IF;
+  RETURN NEW;
+ END IF;
+ IF after ? 'version' AND(after->>'version')::bigint<>(before->>'version')::bigint+1
+  OR after ? 'updated_by_account_id' AND after->>'updated_by_account_id' IS DISTINCT FROM s.actor_id::text
+ THEN RAISE EXCEPTION 'Workspace version and updater must advance canonically' USING ERRCODE='42501';END IF;
+
+ IF(after->>'organization_id') IS DISTINCT FROM(before->>'organization_id')
+  OR(after->>'id') IS DISTINCT FROM(before->>'id')
+  OR(after->>'created_by_account_id') IS DISTINCT FROM(before->>'created_by_account_id')
+  OR(after->>'created_at') IS DISTINCT FROM(before->>'created_at') THEN
+  RAISE EXCEPTION 'Workspace identity and author immutable' USING ERRCODE='42501';END IF;
+ IF TG_TABLE_NAME='supplier_workspace_profiles' THEN
+  IF NEW.supplier_id IS DISTINCT FROM OLD.supplier_id OR (
+   profitia_supplier_workspace.scope_allows(NEW.organization_id,'supplier.catalog.write',NEW.supplier_id) IS NOT TRUE
+   AND(after-ARRAY['version','updated_by_account_id','updated_at']) IS DISTINCT FROM(before-ARRAY['version','updated_by_account_id','updated_at']))
+   THEN RAISE EXCEPTION 'Catalogue fields require catalogue WRITE' USING ERRCODE='42501';END IF;
+ ELSIF TG_TABLE_NAME='supplier_pipelines' THEN
+  IF NEW.kind IS DISTINCT FROM OLD.kind OR NEW.category_id IS DISTINCT FROM OLD.category_id OR (
+   profitia_supplier_workspace.scope_allows(NEW.organization_id,'supplier.pipeline.write',NEW.id) IS NOT TRUE
+   AND(after-ARRAY['version','updated_by_account_id','updated_at']) IS DISTINCT FROM(before-ARRAY['version','updated_by_account_id','updated_at']))
+   THEN RAISE EXCEPTION 'Pipeline definition requires pipeline WRITE' USING ERRCODE='42501';END IF;
+ ELSIF TG_TABLE_NAME='supplier_pipeline_stages' THEN
+  IF NEW.pipeline_id IS DISTINCT FROM OLD.pipeline_id THEN RAISE EXCEPTION 'Stage parent immutable' USING ERRCODE='42501';END IF;
+ ELSIF TG_TABLE_NAME='supplier_pipeline_memberships' THEN
+  IF OLD.ended_at IS NOT NULL OR (after-ARRAY['stage_id','version','ended_at','end_reason','updated_by_account_id','pipeline_name_at_end','stage_name_at_end'])
+   IS DISTINCT FROM(before-ARRAY['stage_id','version','ended_at','end_reason','updated_by_account_id','pipeline_name_at_end','stage_name_at_end'])
+   THEN RAISE EXCEPTION 'Participation identity/history immutable' USING ERRCODE='42501';END IF;
+ ELSIF TG_TABLE_NAME='supplier_category_links' THEN
+  IF OLD.ended_at IS NOT NULL OR(after-ARRAY['ended_at','ended_by_account_id']) IS DISTINCT FROM(before-ARRAY['ended_at','ended_by_account_id'])
+   THEN RAISE EXCEPTION 'Category relation history immutable' USING ERRCODE='42501';END IF;
+ END IF;
+ RETURN NEW;
+END $fn$;
+REVOKE ALL ON FUNCTION srm.workspace_identity_guard() FROM PUBLIC;
 DO $policies$
-DECLARE t text;
+DECLARE t text;r text;a text;predicate text;
 BEGIN
  FOREACH t IN ARRAY ARRAY['supplier_workspace_profiles','supplier_categories','supplier_category_links','supplier_pipelines','supplier_pipeline_stages','supplier_pipeline_memberships','supplier_workspace_events','supplier_workspace_receipts'] LOOP
   EXECUTE format('ALTER TABLE srm.%I ENABLE ROW LEVEL SECURITY',t);
   EXECUTE format('ALTER TABLE srm.%I FORCE ROW LEVEL SECURITY',t);
-  EXECUTE format('CREATE POLICY workspace_read ON srm.%I FOR SELECT USING(profitia_supplier_workspace.scope_allows(organization_id,''READ'',nullif(current_setting(''profitia.user_id'',true),'''')::uuid))',t);
-  EXECUTE format('CREATE POLICY workspace_insert ON srm.%I FOR INSERT WITH CHECK(profitia_supplier_workspace.scope_allows(organization_id,''WRITE'',nullif(current_setting(''profitia.user_id'',true),'''')::uuid))',t);
+  r:=CASE t WHEN 'supplier_workspace_profiles' THEN 'supplier_id' WHEN 'supplier_category_links' THEN 'supplier_id'
+   WHEN 'supplier_pipeline_stages' THEN 'pipeline_id' WHEN 'supplier_workspace_events' THEN 'supplier_id'
+   WHEN 'supplier_workspace_receipts' THEN 'NULL::uuid' ELSE 'id' END;
+  a:=CASE t WHEN 'supplier_workspace_events' THEN 'actor_account_id' WHEN 'supplier_workspace_receipts' THEN 'actor_account_id' ELSE 'NULL::uuid' END;
+  predicate:=format('srm.workspace_table_scope(%L,%L,organization_id,%s,%s)',t,'READ',r,a);
+  EXECUTE format('CREATE POLICY workspace_read ON srm.%I FOR SELECT TO profitia_access_owner USING(%s)',t,predicate);
+  predicate:=format('srm.workspace_table_scope(%L,%L,organization_id,%s,%s)',t,'WRITE',r,a);
+  EXECUTE format('CREATE POLICY workspace_insert ON srm.%I FOR INSERT TO profitia_access_owner WITH CHECK(%s)',t,predicate);
   IF t NOT IN('supplier_workspace_events','supplier_workspace_receipts') THEN
-   EXECUTE format('CREATE POLICY workspace_update ON srm.%I FOR UPDATE USING(profitia_supplier_workspace.scope_allows(organization_id,''WRITE'',nullif(current_setting(''profitia.user_id'',true),'''')::uuid)) WITH CHECK(profitia_supplier_workspace.scope_allows(organization_id,''WRITE'',nullif(current_setting(''profitia.user_id'',true),'''')::uuid))',t);
+   EXECUTE format('CREATE POLICY workspace_update ON srm.%I FOR UPDATE TO profitia_access_owner USING(%s) WITH CHECK(%s)',t,predicate,predicate);
   END IF;
-  -- No DELETE policy, UPDATE for audit/replay, PUBLIC or runtime DML grants.
+  EXECUTE format('CREATE TRIGGER workspace_identity BEFORE INSERT OR UPDATE OR DELETE ON srm.%I FOR EACH ROW EXECUTE FUNCTION srm.workspace_identity_guard()',t);
   EXECUTE format('REVOKE ALL ON srm.%I FROM PUBLIC',t);
  END LOOP;
 END $policies$;
+CREATE POLICY workspace_stage_lock ON srm.supplier_pipeline_stages FOR UPDATE TO profitia_access_owner
+ USING(profitia_supplier_workspace.scope_allows(organization_id,'supplier.assignment.write',pipeline_id)) WITH CHECK(false);
+
 CREATE TABLE srm.supplier_workspace_installation(
  singleton boolean PRIMARY KEY DEFAULT true CHECK(singleton),contract_version text NOT NULL CHECK(contract_version='1.0.0'),
  source_ref text NOT NULL CHECK(source_ref~'^[a-f0-9]{40}$'),schema_digest text NOT NULL CHECK(schema_digest~'^[a-f0-9]{64}$'),

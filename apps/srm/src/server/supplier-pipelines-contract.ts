@@ -160,6 +160,7 @@ export function parseWorkspaceCommand(value: unknown): WorkspaceCommand {
   if (typeof envelope.command !== 'string' || !Object.hasOwn(commandKeys, envelope.command)) return fieldInvalid('command');
   const command = envelope.command as CommandName, shape = commandKeys[command];
   if (typeof envelope.idempotencyKey !== 'string' || !/^[a-zA-Z0-9_-]{8,128}$/.test(envelope.idempotencyKey)) return fieldInvalid('idempotencyKey');
+  if (command === 'SUPPLIER_CREATE' && envelope.data && typeof envelope.data === 'object' && !Array.isArray(envelope.data) && !Object.hasOwn(envelope.data, 'nip')) normalizeNip(undefined);
   const source = object(envelope.data, shape.allowed, shape.required, 'data');
   const data: Record<string, unknown> = {};
   for (const [key, v] of Object.entries(source)) {

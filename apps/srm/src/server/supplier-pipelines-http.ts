@@ -48,7 +48,7 @@ const routes:readonly Route[]=[
   {method:'POST',path:new RegExp('^memberships/'+id+'/end$'),command:'MEMBERSHIP_END',ids:['membershipId']},
   {method:'POST',path:/^supplier-pipeline-transfers$/,command:'SUPPLIER_TRANSFER'},
 ];
-function jsonError(error:SupplierPipelinesError,requestId:string):Response {
+export function supplierPipelinesErrorResponse(error:SupplierPipelinesError,requestId:string):Response {
   const response={contractId:contract.id,contractVersion:contract.version,requestId,error:{
     code:error.code,message:error.message,retryable:error.code==='UNAVAILABLE',
     ...(error.fieldErrors?{fieldErrors:error.fieldErrors}:{}),
@@ -112,10 +112,10 @@ export function createSupplierPipelinesHttp(port:SupplierPipelinesHttpPort) {
       }
       // Only the native host emits success after its final disclosure/COMMIT.
       if(!(response instanceof Response))throw new SupplierPipelinesError('UNAVAILABLE');
-      const headers=new Headers(response.headers);headers.set('Cache-Control','no-store');headers.set('Vary','Cookie, Authorization');
+      const headers=new Headers(response.headers);headers.set('Cache-Control','no-store');headers.set('Vary','Cookie, Authorization, X-Profitia-Organisation-Id');
       return new Response(response.body,{status:response.status,statusText:response.statusText,headers});
     }catch(error){
-      return jsonError(error instanceof SupplierPipelinesError?error:new SupplierPipelinesError('UNAVAILABLE'),requestId);
+      return supplierPipelinesErrorResponse(error instanceof SupplierPipelinesError?error:new SupplierPipelinesError('UNAVAILABLE'),requestId);
     }
   };
 }

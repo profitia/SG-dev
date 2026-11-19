@@ -51,3 +51,6 @@ export interface SupplierPipelineFailure {
 export interface SupplierPipelineDetails extends SupplierPipeline {
   memberships: SupplierPage<SupplierMembership & {supplierDisplayName: string; nipNormalized: string}>;
 }
+
+/** Catalogue projection excludes contacts and process histories. */
+export type SupplierSummary = Pick<SupplierCard,'supplierId'|'nipNormalized'|'displayName'|'relationshipOwner'|'cardCategories'|'adp'|'lifecycle'|'version'|'updatedAt'>;

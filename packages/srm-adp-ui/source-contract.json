@@ -31,7 +31,7 @@
     "Canon/v1.1-srm-adp-presentation-mounting-amendment.md"
   ],
   "sourceDigestAlgorithm": "SHA256(sorted path + NUL + file bytes + NUL; package.json, package-lock.json, tsconfig.json and all src files)",
-  "sourceDigest": "571a680eed58d52b599aa6287d20481401b8fed74f97eeca1a96038fc80ac6fb",
+  "sourceDigest": "2b1e13b6716a0875de058714ec319647402a9c1e1f81270750dc8fee034dda88",
   "sourceFiles": [
     "package-lock.json",
     "package.json",
