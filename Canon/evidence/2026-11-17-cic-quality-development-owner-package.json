@@ -2946,6 +2946,165 @@
       "pilotStarted": false,
       "e1RepairsCompleted": 0,
       "stage2Started": false
+    },
+    "sdk5AndNativeContextDeployment": {
+      "recordedAt": "2026-11-19T11:00:00.000Z",
+      "ownerSdk5Approval": {
+        "questionId": "call_d4e9b901ec9549d5bee930c0b92de647",
+        "answer": "Zatwierdzam ograniczone uzupełnienie SDK5",
+        "source": "ae6ae9187666816c4b3e122b1fa3e82c6989a51b",
+        "diffSha256": "0647743bdaad72950f918e89cb1f31bdbedbe2b6ef456f7cd4b0fd52588896a8"
+      },
+      "ownerConsolidatedApproval": {
+        "questionId": "call_56750d6941af4a1bbf75db0756330255",
+        "answer": "Zatwierdzam cały pakiet SDK5 i NPM_TOKEN",
+        "source": "416d35d512a08cef00aca6ad4081952d6bf798ae",
+        "recipient": "profitia/SG-dev/aqc-verifier-development/NPM_TOKEN",
+        "sourceService": "srv-dapa3tid0e5s73f8bc5g",
+        "expires": "2026-11-27T23:59:59.000Z"
+      },
+      "host": {
+        "pr": 1099,
+        "sourceSha": "c8425c020f68426c41161d881abc7c5400fcbe90",
+        "baseSha": "0a2b748cfc3d28a5261a6a21107726c363f693d0",
+        "treeSha": "229bd36f41057e2ce3858e970169c93211053990",
+        "previousPrHistoryRetained": true,
+        "parallelMainRetained": true,
+        "inventory": 27,
+        "sdk5DiffSha256": "0647743bdaad72950f918e89cb1f31bdbedbe2b6ef456f7cd4b0fd52588896a8",
+        "postimagesVerified": 4,
+        "preflights": {
+          "SG2": 23,
+          "ARCHITECTURE": 4,
+          "both": "PASS"
+        },
+        "sourceCompanionTests": {
+          "pass": 19,
+          "fail": 0,
+          "skip": 0
+        },
+        "unchangedRuntimePreviousFunctionalTests": {
+          "pass": 54,
+          "fail": 0,
+          "skip": 0,
+          "exactCic180": true,
+          "freshLoopbackPostgresOnly": true
+        },
+        "nativeHostCiAndCi27": "REQUIRED_NOT_ADMITTED",
+        "liveHostUpdated": false
+      },
+      "existingNpm": {
+        "sourceService": "srv-dapa3tid0e5s73f8bc5g",
+        "sourceField": "NPM_TOKEN",
+        "onlyRecipient": "profitia/SG-dev/aqc-verifier-development/NPM_TOKEN",
+        "mainOnlyVerified": true,
+        "installedAt": "2026-11-19T10:30:31Z",
+        "transferFilePermissions": "0600",
+        "transitDeleted": true,
+        "valuePrintedOrCommitted": false,
+        "sourceHostConfigurationChanged": false,
+        "newCredentialCreated": false,
+        "modelCredentialInstalled": false,
+        "removeBy": "2026-11-27T23:59:59.000Z"
+      },
+      "worker": {
+        "sourceSha": "b7124509574ca5bbcac6bbff61c49c560b87b75b",
+        "deployId": "dep-dbvcou0u01pc73dg0e4g",
+        "status": "LIVE_RUNTIME_VERIFIED",
+        "liveAt": "2026-11-19T10:17:06.903793Z",
+        "instance": "srv-dbu4ak0ae00c73eaabcg-swflk",
+        "lastKnownGoodSha": "79cb7cf827e82395f43e630ee9b72436b19b421a",
+        "lastKnownGoodDeployId": "dep-dbv6n0ek1f9s73bkgqeg",
+        "allAqcBytesEqualCurrentMainAtDeployment": true,
+        "postSourceMainDifferencesOnlyTwoProjectDocuments": true,
+        "controlStore": "CONNECTED_DISABLED",
+        "nativeLimits": "CONNECTED_DISABLED",
+        "github": "CONNECTED_STANDBY",
+        "qaRoles": "CONNECTED_ORDINARY_ROLE",
+        "rawQaReadPerformed": false,
+        "hostQaCodecPresent": false,
+        "retention": "PURGE_CONFIRMED_90_DAYS",
+        "sentryHttpStatus": 200,
+        "posthogProjectId": 329829,
+        "posthogExactShaAggregateEventsObserved": 1,
+        "paidRepairsEnabled": false,
+        "promotionEnabled": false,
+        "pilotStartedAt": null,
+        "autoDeploy": false
+      },
+      "earlyContext": {
+        "pr": 1248,
+        "headSha": "5c2f0ff263ed16c753b6e9a9a68700eba3cb3ee1",
+        "mainSha": "0a2b748cfc3d28a5261a6a21107726c363f693d0",
+        "sourceRun": 44506790417,
+        "sourceJob": 135500380191,
+        "tests": {
+          "aqc": 325,
+          "qa": 12,
+          "fail": 0,
+          "skip": 0
+        },
+        "firstCiFailure": "ONE_NEW_TEST_ASSUMED_HISTORICAL_WORKFLOW_FILE_AVAILABLE",
+        "testCorrection": "FULL_PREVIOUS_WORKFLOW_SHA256_REPLACES_HISTORY_READ_WITHOUT_WEAKENING_BYTE_EQUALITY",
+        "independentReview": "NO_FINDINGS_AFTER_TEST_CORRECTION",
+        "resultingMainSourceRun": 44508794446,
+        "resultingMainConclusion": "success",
+        "workflowSha256": "bd2af4eb3f9bc8e94844c68790a6254fdb33bfee825a78165abb0b0404aee396",
+        "publicWorkflowVariablesUpdated": 4,
+        "publicReadbacksVerified": 4,
+        "privateKeyOrOwnerContextsRead": false,
+        "phaseRepeatsFullAdmission": true
+      },
+      "linux22": {
+        "sourceSha": "0a2b748cfc3d28a5261a6a21107726c363f693d0",
+        "runId": 44508886291,
+        "artifactId": 14521007253,
+        "archiveSha256": "d3febfd75a4a06546d078c9301bb0c7549c81a294c99f89addc9615418c34ad3",
+        "bytes": 1153,
+        "gateSetSha256": "7f6872021330d713a28858ba4b792f901551e7f5f76be7c9cbb134606499b502",
+        "all22GitFilesAndOriginalZipAndNativeIdentityVerified": true,
+        "providerRequests": false,
+        "paidCost": false,
+        "fullPrivateCic180": false
+      },
+      "negativeContext": {
+        "runId": 44509429454,
+        "attestationJob": 135509886347,
+        "attestationConclusion": "success",
+        "verifierJob": 135510149187,
+        "expectedCode": "JOB_CONTEXT_INVALID",
+        "actualCode": "JOB_CONTEXT_INVALID",
+        "failedStep": "Verify signed context before private package access",
+        "expectedNegativePassed": true,
+        "overallWorkflowConclusion": "failure_expected",
+        "privatePackageFetch": "SKIPPED",
+        "repairExecution": "SKIPPED",
+        "qaReadOrGrantPerformed": false,
+        "modelRequestPerformed": false,
+        "realIncidentRowCreated": false
+      },
+      "independentGapReview": {
+        "existingPortsReviewed": true,
+        "unwiredNativePhases": [
+          "PROPOSE",
+          "CHECKS",
+          "PROMOTE",
+          "VERIFY_RUNTIME",
+          "OBSERVE",
+          "ROLLBACK"
+        ],
+        "independentRequiredCheckReporter": "MISSING_NOT_ACTIVATED",
+        "missingPublishAndRuntimeProofProducers": true,
+        "promotePatchProofIdentityMapping": "REQUIRES_CORRECTION_AND_TESTS",
+        "laterPhaseNativeHistoryAndUncertainDelivery": "REQUIRES_CLOSED_COMPOSITION",
+        "reference": "NEEDS_REVISION"
+      },
+      "technicalReady": false,
+      "e1RepairsCompleted": 0,
+      "paidRepairsEnabled": false,
+      "promotionEnabled": false,
+      "pilotStarted": false,
+      "stage2Started": false
     }
   },
   "consolidatedOwnerDecisionB29Revision2": {
@@ -3506,7 +3665,7 @@
   },
   "proposedSdkFiveOwnerAmendment": {
     "id": "CIC-QUALITY-B29-SDK-FIVE-BOUNDED-AMENDMENT",
-    "status": "REVIEW_ONLY_NOT_APPROVED_NOT_APPLIED_NOT_TESTED",
+    "status": "OWNER_APPROVED_APPLIED_SOURCE_NOT_YET_NATIVE_CI_ADMITTED",
     "reason": "The closed B29-1 approval admits exactly four SDK files; the direct precision entry is a fifth SDK correction within the same existing27 host paths.",
     "baseSdkReviewSha": "bf12f9cb20b93ce8edc8a5aca36e28000955d8f3",
     "originalSdkCorrectionFiles": 4,
@@ -3549,7 +3708,7 @@
     "testStatus": "NOT_EXECUTED_PENDING_EXPLICIT_CLOSED_SCOPE_AMENDMENT",
     "consolidatedFollowup": {
       "id": "B29-SDK5-AND-EXISTING-NPM-RECIPIENT",
-      "status": "PENDING_OWNER_DECISION_SUPERSEDES_SDK5_ONLY_QUESTION",
+      "status": "OWNER_APPROVED_APPLIED_SOURCE_AND_CREDENTIAL",
       "sdk5DiffSha256": "0647743bdaad72950f918e89cb1f31bdbedbe2b6ef456f7cd4b0fd52588896a8",
       "existingNpmCredential": {
         "source": {
@@ -3594,7 +3753,15 @@
       "noNewCostsOrResources": true,
       "paidRepairsEnabled": false,
       "promotionEnabled": false,
-      "pilotStarted": false
+      "pilotStarted": false,
+      "ownerApproval": {
+        "questionId": "call_56750d6941af4a1bbf75db0756330255",
+        "answer": "Zatwierdzam cały pakiet SDK5 i NPM_TOKEN",
+        "source": "416d35d512a08cef00aca6ad4081952d6bf798ae",
+        "recipient": "profitia/SG-dev/aqc-verifier-development/NPM_TOKEN",
+        "sourceService": "srv-dapa3tid0e5s73f8bc5g",
+        "expires": "2026-11-27T23:59:59.000Z"
+      }
     }
   }
 }
