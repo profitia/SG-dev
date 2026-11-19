@@ -23,7 +23,10 @@
     "test:krs-ui": "node --test scripts/krs-name-ui.test.mjs",
     "test:porr-ui": "node --test scripts/porr-account-ui.test.mjs",
     "test:mgbi": "node --import tsx --test --test-name-pattern='^main Development' --test-concurrency=1 scripts/mgbi-development.integration.test.mjs",
-    "test:registration": "node --import tsx --test --test-concurrency=1 scripts/organisation-registration.integration.test.mjs src/server/organisation-context.test.ts src/server/organisation-bootstrap.test.ts src/server/provider-source-transport.test.ts"
+    "test:registration": "node --import tsx --test --test-concurrency=1 scripts/organisation-registration.integration.test.mjs src/server/organisation-context.test.ts src/server/organisation-bootstrap.test.ts src/server/provider-source-transport.test.ts",
+    "test:supplier-pipelines": "tsx --test --test-concurrency=1 src/server/supplier-pipelines*.test.ts src/server/integrations/supplier-pipelines.integration.test.ts && node --test scripts/supplier-pipelines-release.test.mjs",
+    "test:supplier-pipelines:postgres": "node --import tsx --test --test-concurrency=1 scripts/supplier-pipelines-postgres.test.mjs",
+    "supplier-pipelines:release:plan": "node scripts/supplier-pipelines-release.mjs --plan"
   },
   "dependencies": {
     "@clerk/backend": "3.25.0",
