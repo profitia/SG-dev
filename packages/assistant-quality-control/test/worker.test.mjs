@@ -307,3 +307,147 @@ test('shutdown and invalid retention configuration cannot begin a native purge',
  for(const options of [{},{store:{}},{store,now:null}])assert.throws(()=>createQualityMetadataRetention(options),{code:'CONTROL_RETENTION_CONFIGURATION_REQUIRED'})
  assert.equal(calls,0)
 })
+
+async function controlledJobContextsFixture(){
+ const {generateKeyPairSync}=await import('node:crypto')
+ const {signDocument,publicKeyId,documentDigest}=await import('../src/manifest.mjs')
+ const {ownerMandateBody}=await import('../src/cli.mjs')
+ const owner=generateKeyPairSync('ed25519'),exporter=generateKeyPairSync('ed25519')
+ const now=Date.parse('2026-11-18T12:00:00.000Z'),baseSha='b'.repeat(40),gate='c'.repeat(64),service='srv-fixture'
+ const body=ownerMandateBody({id:randomUUID(),issuedAt:new Date(now-1000).toISOString(),expiresAt:new Date(now+3600000).toISOString(),
+  targetServiceId:service,gateSetSha256:gate})
+ const mandate=signDocument('AQC_EXECUTION_MANDATE_V1',body,owner.privateKey)
+ const fixtures=['C1','C2','C3'].map((repairClass,i)=>{
+  const regression={schemaVersion:'AQC_REGRESSION_V1',repairClass,caseFamily:'controlled_'+repairClass,locale:i===1?'en':'pl',
+   args:[{synthetic:true,caseNumber:i}],expected:{status:'VALID'},expectedAnswer:true,refusal:{pointer:'/status',values:['REFUSED']}}
+  const sha256=documentDigest(regression)
+  const fixtureExport=signDocument('AQC_SYNTHETIC_EXPORT_V1',{id:randomUUID(),fixtureId:'qa_synthetic_'+sha256,sha256,
+   scope:'CONTROLLED_ACCEPTANCE',incidentId:randomUUID(),repairClass,issuedAt:body.issuedAt,expiresAt:body.expiresAt,rawQaPayloadIncluded:false},exporter.privateKey)
+  return {fixtureExport,regression}
+ })
+ const registry={schemaVersion:'AQC_CONTROLLED_JOB_CONTEXTS_V1',repository:'profitia/SG-dev',environment:'development',mandate,fixtures}
+ const options={registry,incidentId:fixtures[0].fixtureExport.body.incidentId,baseSha,ownerKeys:new Map([[publicKeyId(owner.publicKey),owner.publicKey]]),
+  verifierKeys:new Map([[publicKeyId(exporter.publicKey),exporter.publicKey]]),expectedServiceId:service,expectedGateSetSha256:gate,now}
+ return {registry,options,owner,exporter,signDocument,documentDigest}
+}
+test('controller and native job reconstruct identical verified manifests for the three signed synthetic cases without dispatch or ledger access',async()=>{
+ const f=await controlledJobContextsFixture(),{prepareQualityControllerJobContext,readQualityControllerJobContext}=await import('../src/cli.mjs')
+ const {qualityControllerJobInputs}=await import('../src/github.mjs'),{qualityJobBinding}=await import('../src/controller.mjs')
+ const {assertVerifiedRepairManifest}=await import('../src/manifest.mjs')
+ for(const item of f.registry.fixtures){
+  const incidentId=item.fixtureExport.body.incidentId
+  const control=await prepareQualityControllerJobContext({...f.options,incidentId})
+  assert.equal(assertVerifiedRepairManifest(control.manifest),control.manifest)
+  const externalId=qualityJobBinding({controlSourceSha:'a'.repeat(40),nonce:randomUUID(),action:'QUALIFY'})
+  const inputs=qualityControllerJobInputs({manifest:control.manifest,externalId})
+  const job=await readQualityControllerJobContext({...f.options,registry:JSON.stringify(f.registry),inputs})
+  assert.equal(f.documentDigest(job.manifest),f.documentDigest(control.manifest))
+  assert.deepEqual(job.regression,item.regression);assert.equal(job.externalId,externalId)
+  assert.equal(Object.isFrozen(job.regression.args[0]),true);assert.equal(Object.isFrozen(job.regression),true)
+  assert.equal(Object.keys(inputs).length,7)
+  assert.equal(JSON.stringify(inputs).includes('expected'),false)
+ }
+})
+test('controlled job contexts reject uninstalled shared or forged authority and never accept a registry-supplied trust key',async()=>{
+ const f=await controlledJobContextsFixture(),{prepareQualityControllerJobContext:prepare}=await import('../src/cli.mjs')
+ for(const keys of [{ownerKeys:new Map()},{verifierKeys:new Map()},{verifierKeys:f.options.ownerKeys}])
+  await assert.rejects(prepare({...f.options,...keys}),{code:'JOB_CONTEXT_SEPARATE_TRUST_REQUIRED'})
+ const registry=structuredClone(f.registry);registry.publicKey='not installed'
+ await assert.rejects(prepare({...f.options,registry}),{code:'JOB_CONTEXT_INVALID'})
+ const forged=structuredClone(f.registry)
+ forged.fixtures[0].fixtureExport=f.signDocument('AQC_SYNTHETIC_EXPORT_V1',forged.fixtures[0].fixtureExport.body,f.owner.privateKey)
+ await assert.rejects(prepare({...f.options,registry:forged}))
+})
+test('signed synthetic context binds exact case hash incident class scope expiry and all three case coverage',async()=>{
+ const {prepareQualityControllerJobContext:prepare}=await import('../src/cli.mjs')
+ for(const change of [
+  r=>r.fixtures[0].regression.args[0].synthetic=false,
+  r=>r.fixtures[0].regression.extra='rawQa',
+  r=>r.fixtures.pop(),
+  r=>r.fixtures.push(structuredClone(r.fixtures[0])),
+  r=>r.fixtures[1]=structuredClone(r.fixtures[0]),
+  r=>r.environment='production',
+ ]){
+  const f=await controlledJobContextsFixture(),registry=structuredClone(f.registry);change(registry)
+  await assert.rejects(prepare({...f.options,registry}))
+ }
+ for(const change of [
+  b=>b.rawQaPayloadIncluded=true,b=>b.scope='PRODUCTION_QA',b=>b.repairClass='C2',b=>b.sha256='0'.repeat(64),
+  b=>b.expiresAt=new Date(Date.parse(b.expiresAt)+1).toISOString(),b=>b.issuedAt=new Date(Date.parse(b.issuedAt)-1).toISOString(),b=>b.extra='rawQa'
+ ]){
+  const f=await controlledJobContextsFixture(),registry=structuredClone(f.registry),body={...registry.fixtures[0].fixtureExport.body};change(body)
+  registry.fixtures[0].fixtureExport=f.signDocument('AQC_SYNTHETIC_EXPORT_V1',body,f.exporter.privateKey)
+  await assert.rejects(prepare({...f.options,registry}))
+ }
+})
+test('controlled context loader rejects changed base digest raw workflow payloads malformed identities and expired original mandate',async()=>{
+ const f=await controlledJobContextsFixture(),{prepareQualityControllerJobContext:prepare,readQualityControllerJobContext:read}=await import('../src/cli.mjs')
+ const {qualityControllerJobInputs}=await import('../src/github.mjs'),{qualityJobBinding}=await import('../src/controller.mjs')
+ const context=await prepare(f.options),externalId=qualityJobBinding({controlSourceSha:'a'.repeat(40),nonce:randomUUID(),action:'EXECUTE'})
+ const permit={incidentId:context.manifest.incidentId,attemptId:externalId.split(':')[2],permitId:randomUUID(),ordinal:1,expiresAt:new Date(f.options.now+60000).toISOString()}
+ const inputs=qualityControllerJobInputs({manifest:context.manifest,externalId,permit})
+ for(const changes of [{base_sha:'d'.repeat(40)},{manifest_sha256:'0'.repeat(64)},{incident_id:randomUUID()},{mode:'keyless-qualify'},
+  {action:'RUN_COMMAND'},{nonce:'foreign'},{control_source_sha:'not-a-sha'},{rawQa:'forbidden'},{command:'forbidden'}])
+  await assert.rejects(read({...f.options,inputs:{...inputs,...changes}}))
+ await assert.rejects(read({...f.options,inputs,now:f.options.now+3600001}),{code:'MANDATE_EXPIRED'})
+ const changed=await prepare({...f.options,baseSha:'d'.repeat(40)})
+ assert.notEqual(f.documentDigest(changed.manifest),inputs.manifest_sha256)
+})
+test('controlled context parsing is bounded, rejects getters without invoking them, and never returns an input in its error',async()=>{
+ const f=await controlledJobContextsFixture(),{prepareQualityControllerJobContext:prepare}=await import('../src/cli.mjs')
+ let calls=0;const registry={...f.registry};Object.defineProperty(registry,'fixtures',{enumerable:true,get(){calls++;return f.registry.fixtures}})
+ await assert.rejects(prepare({...f.options,registry}),{code:'JOB_CONTEXT_INVALID'});assert.equal(calls,0)
+ for(const registry of ['x'.repeat(65537),'not JSON',{...f.registry,privateTranscript:'must remain outside this path'}]){
+  await assert.rejects(prepare({...f.options,registry}),error=>error.code==='JOB_CONTEXT_INVALID'&&!error.message.includes('privateTranscript'))
+ }
+ const prepared=await prepare(f.options)
+ f.registry.fixtures[0].regression.args[0].caseNumber=99
+ assert.equal(prepared.regression.args[0].caseNumber,0)
+})
+
+async function controlledExecutorPermitFixture(){
+ const f=await controlledJobContextsFixture()
+ const {prepareQualityControllerJobContext:prepare,readQualityControllerJobContext:read}=await import('../src/cli.mjs')
+ const {qualityControllerJobInputs}=await import('../src/github.mjs'),{qualityJobBinding}=await import('../src/controller.mjs')
+ const control=await prepare(f.options),externalId=qualityJobBinding({controlSourceSha:'a'.repeat(40),nonce:randomUUID(),action:'EXECUTE'})
+ const permit={incidentId:control.manifest.incidentId,attemptId:externalId.split(':')[2],permitId:randomUUID(),ordinal:1,expiresAt:new Date(f.options.now+60000).toISOString()}
+ const inputs=qualityControllerJobInputs({manifest:control.manifest,externalId,permit}),context=await read({...f.options,inputs})
+ const identity={runId:'701',runAttempt:1,executorSourceSha:'a'.repeat(40),gateSetSha256:control.manifest.gateSetSha256,nonce:permit.attemptId}
+ return {...f,inputs,context,identity,permit}
+}
+test('native executor permit metadata is bounded to EXECUTE without carrying a command or signed context through workflow inputs',async()=>{
+ const f=await controlledExecutorPermitFixture(),{readQualityControllerJobContext:read}=await import('../src/cli.mjs')
+ assert.equal(Object.keys(f.inputs).length,9);assert.equal(Object.isFrozen(f.context.permit),true)
+ for(const change of [{permit_id:'foreign'},{permit_expires_at:'invalid'},{permit_expires_at:new Date(f.options.now-1).toISOString()},
+  {permit_expires_at:new Date(f.options.now+1800001).toISOString()},{action:'QUALIFY'}]){
+  await assert.rejects(read({...f.options,inputs:{...f.inputs,...change}}))
+ }
+ const missing={...f.inputs};delete missing.permit_id;await assert.rejects(read({...f.options,inputs:missing}))
+})
+test('executor supervisor claims once and checks the actual native incident attempt and expiry before exposing a permit',async()=>{
+ const f=await controlledExecutorPermitFixture(),{createQualityExecutorJobBudget:create}=await import('../src/cli.mjs'),calls=[]
+ const native={...f.context.permit,status:'ACTIVE'}
+ const budget={claimExecutor:async(p,i)=>{calls.push('CLAIM');return {...native,status:'CLAIMED',runId:i.runId}},
+  assertPermit:async()=>{calls.push('CHECK');return native}}
+ const supervised=create({context:f.context,budget,now:()=>f.options.now})
+ const result=await supervised.claimExecutor(f.context.permit,f.identity)
+ assert.equal(result.incidentId,f.context.manifest.incidentId);assert.deepEqual(calls,['CLAIM','CHECK'])
+ assert.equal((await supervised.assertPermit(f.context.permit)).expiresAt,native.expiresAt)
+ for(const field of ['incidentId','attemptId','permitId','expiresAt']){
+  const altered={...native,[field]:field==='expiresAt'?new Date(f.options.now+120000).toISOString():randomUUID()}
+  const bad=create({context:f.context,budget:{...budget,assertPermit:async()=>altered},now:()=>f.options.now})
+  await assert.rejects(bad.claimExecutor(f.context.permit,f.identity),{code:'JOB_EXECUTOR_NATIVE_PERMIT_MISMATCH'})
+ }
+})
+test('unverified context swapped permit expired authority and foreign job identity refuse before native budget access',async()=>{
+ const f=await controlledExecutorPermitFixture(),{createQualityExecutorJobBudget:create}=await import('../src/cli.mjs');let calls=0
+ const budget={claimExecutor:async()=>{calls++;throw Error('must not call')},assertPermit:async()=>{calls++;throw Error('must not call')}}
+ assert.throws(()=>create({context:{...f.context,manifest:structuredClone(f.context.manifest)},budget}))
+ const supervised=create({context:f.context,budget,now:()=>f.options.now})
+ await assert.rejects(supervised.claimExecutor({...f.context.permit},f.identity),{code:'JOB_EXECUTOR_PERMIT_INVALID'})
+ for(const change of [{nonce:randomUUID()},{executorSourceSha:'b'.repeat(40)},{gateSetSha256:'d'.repeat(64)},{runAttempt:2}])
+  await assert.rejects(supervised.claimExecutor(f.context.permit,{...f.identity,...change}),{code:'JOB_EXECUTOR_PERMIT_INVALID'})
+ const expired=create({context:f.context,budget,now:()=>f.options.now+60001})
+ await assert.rejects(expired.claimExecutor(f.context.permit,f.identity),{code:'JOB_EXECUTOR_PERMIT_INVALID'})
+ assert.equal(calls,0)
+})
