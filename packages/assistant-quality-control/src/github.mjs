@@ -21,6 +21,17 @@ const uuid=v=>typeof v==='string'&&/^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[8
 const number=v=>Number.isSafeInteger(v)&&v>0
 const hash=v=>createHash('sha256').update(v).digest('hex')
 
+/** GitHub provider metadata uses UTC seconds or milliseconds. Normalize only
+ * this API boundary; signed contracts keep their existing canonical format.
+ * No rounding, clock replacement or extension of a freshness window occurs. */
+export function readQualityGitHubCreatedAt(value){
+ require(typeof value==='string'&&/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z$/.test(value),'GITHUB_PROVIDER_TIMESTAMP_INVALID')
+ let canonical
+ try{canonical=new Date(value).toISOString()}catch{fail('GITHUB_PROVIDER_TIMESTAMP_INVALID')}
+ require(canonical===(value.length===20?value.slice(0,-1)+'.000Z':value),'GITHUB_PROVIDER_TIMESTAMP_INVALID')
+ return canonical
+}
+
 /** Credentials stay in the trusted controller/publisher. No arbitrary URL,
  * command, repository, workflow, branch or agent-provided credential is accepted.
  * Mutations are one-shot; an uncertain delivery is reconciled by the outbox. */
@@ -142,6 +153,7 @@ export function createQualityGitHub({token,fetchImpl=fetch,publisherEnabled=fals
    const binding=controllerJobBinding(externalId),descriptor=await controllerJobDescriptor({sourceSha:binding.controlSourceSha},true)
    const run=assertQualityControllerJobIdentity(await get('/actions/runs/'+runId),{externalId,workflowId:descriptor.workflowId,runId})
    require(run.status==='completed'&&run.conclusion==='success','CONTROLLER_JOB_NOT_SUCCESSFUL')
+   const createdAt=readQualityGitHubCreatedAt(run.created_at)
    const profile=controllerArtifactProfiles[kind],matching=new Map(),name=profile.prefix+binding.nonce
    for(let page=1;page<=10;page++){
     const list=await get('/actions/runs/'+runId+'/artifacts?per_page=100&page='+page)
@@ -157,7 +169,7 @@ export function createQualityGitHub({token,fetchImpl=fetch,publisherEnabled=fals
      if(!matching.size)return Object.freeze({state:'UNKNOWN',externalId,runId,resultVerified:false})
      const artifact=matching.values().next().value,document=await controllerResultDownload(String(artifact.id),artifact.digest,artifact.size_in_bytes,profile)
      const observed=Object.freeze({state:'COMPLETE',externalId,runId,workflowId:descriptor.workflowId,
-      createdAt:run.created_at,artifactSha256:artifact.digest.slice(7),document,resultVerified:false})
+      createdAt,artifactSha256:artifact.digest.slice(7),document,resultVerified:false})
      nativeControllerArtifacts.set(observed,Object.freeze({transport:artifactTransport,kind,externalId,runId,
       workflowId:descriptor.workflowId,documentSha256:documentDigest(document)}))
      return observed
@@ -267,12 +279,12 @@ export function createQualityGitHub({token,fetchImpl=fetch,publisherEnabled=fals
    require(/^[1-9][0-9]{0,19}$/.test(runId),'CONTROLLER_JOB_BINDING_INVALID')
    const binding=controllerJobBinding(externalId),descriptor=await controllerJobDescriptor({sourceSha:binding.controlSourceSha},true)
    const run=assertQualityControllerJobIdentity(await get('/actions/runs/'+runId),{externalId,workflowId:descriptor.workflowId,runId})
-   const at=now(),created=Date.parse(run.created_at)
-   require(run.status==='in_progress'&&run.conclusion===null&&controllerStamp(run.created_at)
+   const at=now(),createdAt=readQualityGitHubCreatedAt(run.created_at),created=Date.parse(createdAt)
+   require(run.status==='in_progress'&&run.conclusion===null
     &&Number.isFinite(at)&&created<=at&&at-created<=1800000,'CONTROLLER_JOB_INVOCATION_REQUIRED')
    const capability=Object.freeze({kind:'AQC_NATIVE_JOB_INVOCATION_V1'})
    nativeControllerInvocations.set(capability,Object.freeze({externalId,runId,workflowId:descriptor.workflowId,
-    controlSourceSha:binding.controlSourceSha,createdAt:run.created_at}))
+    controlSourceSha:binding.controlSourceSha,createdAt}))
    return capability
   },
   controllerJobResult:input=>controllerJobArtifact(input,'result'),
@@ -367,11 +379,37 @@ export function createQualityGitHub({token,fetchImpl=fetch,publisherEnabled=fals
   },
 
 
+  /** A reference only, never qualification authority. The existing native
+   * observation reader revalidates identity, pinned workflow, ZIP and bytes. */
+  async latestLinuxQualificationReference({sourceSha}){
+   require(sha(sourceSha),'LINUX_NATIVE_BINDING_INVALID')
+   const descriptor=await controllerJobDescriptor({sourceSha},true)
+   for(let page=1;page<=3;page++){
+    const list=await get('/actions/workflows/assistant-quality-repair.yml/runs?event=workflow_dispatch&branch=main&per_page=100&page='+page)
+    require(Array.isArray(list?.workflow_runs)&&list.workflow_runs.length<=100,'GITHUB_RUNS_INVALID')
+    for(const run of list.workflow_runs){
+     const nonce=typeof run.display_title==='string'?run.display_title.slice(4):''
+     if(run.head_sha!==sourceSha||!uuid(nonce)||run.display_title!=='AQC '+nonce
+      ||run.status!=='completed'||run.conclusion!=='success')continue
+     assertWorkflowIdentity(run,{runId:String(run.id),sourceSha,nonce,completed:true})
+     require(String(run.workflow_id)===descriptor.workflowId,'LINUX_NATIVE_BINDING_INVALID')
+     const artifacts=await get('/actions/runs/'+run.id+'/artifacts?per_page=100&page=1')
+     require(Array.isArray(artifacts?.artifacts)&&artifacts.artifacts.length<=100
+      &&Number.isSafeInteger(artifacts.total_count)&&artifacts.total_count<=100,'LINUX_NATIVE_ARTIFACT_INVALID')
+     const found=artifacts.artifacts.filter(a=>a.name==='aqc-qualification-'+nonce)
+     require(found.length<=1,'LINUX_NATIVE_ARTIFACT_AMBIGUOUS')
+     if(found.length===1&&found[0].expired===false)return Object.freeze({runId:String(run.id),sourceSha,nonce})
+    }
+    if(list.workflow_runs.length<100)break
+   }
+   fail('LINUX_NATIVE_ARTIFACT_REQUIRED')
+  },
   async linuxQualificationObservations({runId,sourceSha,nonce}){
    require(/^[1-9][0-9]{0,19}$/.test(runId)&&sha(sourceSha)&&uuid(nonce),'LINUX_NATIVE_BINDING_INVALID')
    const descriptor=await controllerJobDescriptor({sourceSha},true)
    const run=assertWorkflowIdentity(await get('/actions/runs/'+runId),{runId,sourceSha,nonce,completed:true})
-   require(String(run.workflow_id)===descriptor.workflowId&&controllerStamp(run.created_at),'LINUX_NATIVE_BINDING_INVALID')
+   require(String(run.workflow_id)===descriptor.workflowId,'LINUX_NATIVE_BINDING_INVALID')
+   const createdAt=readQualityGitHubCreatedAt(run.created_at)
    const profile=controllerArtifactProfiles.linuxQualification,matching=new Map()
    for(let page=1;page<=10;page++){
     const list=await get('/actions/runs/'+runId+'/artifacts?per_page=100&page='+page)
@@ -390,7 +428,7 @@ export function createQualityGitHub({token,fetchImpl=fetch,publisherEnabled=fals
      const document=await controllerResultDownload(String(artifact.id),artifact.digest,artifact.size_in_bytes,profile)
      const freeze=v=>{if(v&&typeof v==='object'){Object.values(v).forEach(freeze);Object.freeze(v)}return v}
      const observed=freeze({kind:'AQC_NATIVE_LINUX_OBSERVATIONS_V1',runId,sourceSha,nonce,workflowId:descriptor.workflowId,
-      createdAt:run.created_at,archiveSha256:artifact.digest.slice(7),document})
+      createdAt,archiveSha256:artifact.digest.slice(7),document})
      nativeLinuxObservations.set(observed,Object.freeze({runId,sourceSha,nonce,documentSha256:documentDigest(document)}))
      return observed
     }
@@ -500,23 +538,29 @@ export function createQualityGitHub({token,fetchImpl=fetch,publisherEnabled=fals
    const independent=await verifyIndependent({manifest:m,patch,verification})
    require(independent?.verified===true&&independent.proofSha256===verification.proofSha256
     &&independent.artifactSha256===verification.artifactSha256,'INDEPENDENT_PATCH_PROOF_REQUIRED')
+   assertPublicationProofFresh(independent)
    require(await main()===m.baseSha,'BASE_CHANGED')
    const branch='sg2/quality-control-'+m.incidentId
    const commit=await get('/git/commits/'+m.baseSha);require(sha(commit?.tree?.sha),'GITHUB_SOURCE_INVALID')
    const tree=[]
    for(const f of patch.files){
     require(m.allowedPaths.includes(f.path)&&typeof f.content==='string'&&hash(f.content)===f.afterSha256,'PATCH_FILE_MISMATCH')
+    assertPublicationProofFresh(independent)
     const blob=await write('/git/blobs',{content:f.content,encoding:'utf-8'});require(sha(blob?.sha),'GITHUB_BLOB_INVALID')
     tree.push({path:f.path,mode:'100644',type:'blob',sha:blob.sha})
    }
    require(new Set(tree.map(x=>x.path)).size===2,'PATCH_FILE_MISMATCH')
+   assertPublicationProofFresh(independent)
    const t=await write('/git/trees',{base_tree:commit.tree.sha,tree});require(sha(t?.sha),'GITHUB_TREE_INVALID')
+   assertPublicationProofFresh(independent)
    const c=await write('/git/commits',{message:'[skip render] Controlled CIC repair '+m.incidentId,tree:t.sha,parents:[m.baseSha]})
    require(sha(c?.sha)&&c.tree?.sha===t.sha,'GITHUB_COMMIT_INVALID')
    require(await main()===m.baseSha,'BASE_CHANGED')
    await verifyIndependent({manifest:m,patch,verification})
+   assertPublicationProofFresh(independent)
    await write('/git/refs',{ref:'refs/heads/'+branch,sha:c.sha})
    await verifyIndependent({manifest:m,patch,verification})
+   assertPublicationProofFresh(independent)
    const p=await write('/pulls',{title:'Controlled CIC '+m.repairClass+' repair',head:branch,base:'main',draft:false,
     body:'Synthetic controlled Stage 1 repair. Independent verification '+verification.proofSha256+'. No private QA payload is included. Required exact-source CI and release gates remain mandatory.'})
    require(number(p?.number)&&p.head?.sha===c.sha,'GITHUB_PR_IDENTITY_INVALID')
@@ -540,6 +584,17 @@ export function createQualityGitHub({token,fetchImpl=fetch,publisherEnabled=fals
  })
 }
 
+// A verified receipt carries an opaque, original freshness lease. Transport
+// cannot manufacture it or renew its clock by returning the same signed proof.
+// Git object writes are effects too, even before a branch becomes visible.
+const publicationProofLeases=new WeakMap()
+function assertPublicationProofFresh(value){
+ const lease=publicationProofLeases.get(value)
+ require(lease,'INDEPENDENT_PUBLISH_PROOF_LEASE_REQUIRED')
+ const at=lease.now()
+ require(Number.isFinite(at)&&at<Date.parse(lease.authorityExpiresAt),'PUBLISHER_AUTHORITY_EXPIRED')
+ require(at>=lease.observedAt&&at<lease.expiresAt,'PUBLISHER_PROOF_STALE')
+}
 const publicationFields=Object.freeze(['schemaVersion','applicationId','environment','repository','action','incidentId','repairClass','baseSha',
  'manifestSha256','gateSetSha256','artifactSha256','verificationProofSha256','prNumber','headSha','requiredChecksSha256','nonce','observedAt','expiresAt','rawQaPayloadIncluded','result'])
 const publicationStamp=v=>typeof v==='string'&&Number.isFinite(Date.parse(v))&&new Date(v).toISOString()===v
@@ -577,7 +632,10 @@ export function createQualityPublishProofVerifier({keys,readReceipt,nonce,notBef
   for(const[k,v]of Object.entries(expected))require(body[k]===v,'PUBLISHER_PROOF_BINDING_INVALID')
   require(publicationStamp(body.observedAt)&&publicationStamp(body.expiresAt)&&Date.parse(body.observedAt)>=Date.parse(notBefore)
    &&Date.parse(body.observedAt)<=observed&&Date.parse(body.expiresAt)>observed&&Date.parse(body.expiresAt)<=Date.parse(body.observedAt)+30000,'PUBLISHER_PROOF_STALE')
-  return Object.freeze({verified:true,proofSha256:verification.proofSha256,artifactSha256:verification.artifactSha256})
+  const result=Object.freeze({verified:true,proofSha256:verification.proofSha256,artifactSha256:verification.artifactSha256})
+  publicationProofLeases.set(result,Object.freeze({now,authorityExpiresAt:m.mandate.expiresAt,
+   observedAt:Date.parse(body.observedAt),expiresAt:Date.parse(body.expiresAt)}))
+  return result
  }
 }
 
@@ -605,8 +663,10 @@ export function createQualityAttestedPublisher(options){
    const m=assertVerifiedRepairManifest(input.manifest)
    return github.merge({prNumber:input.prNumber,headSha:input.headSha,baseSha:m.baseSha,requiredNames:names,
     verifyIndependent:async()=>{
-     await verifyIndependent({...input,action:'MERGE',requiredNames:names})
+     const independent=await verifyIndependent({...input,action:'MERGE',requiredNames:names})
      await github.inspectPatchBinding(input)
+     // The independent tree/blob/PR reads can consume the remaining 30s.
+     assertPublicationProofFresh(independent)
     }})
   },
  })

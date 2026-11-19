@@ -4,7 +4,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { execFileSync } from 'node:child_process'
-import {CONTROL_POLICY_FILES} from './controlled-package-ci.mjs'
+import {CONTROL_POLICY_FILES,REPOSITORY,WORKFLOW} from './controlled-package-ci.mjs'
 
 const root = fileURLToPath(new URL('../../', import.meta.url))
 const workflow = '.github/workflows/platform-contracts-ci.yml'
@@ -497,6 +497,83 @@ test('current Knowledge and admitted ACG composition closes every owner and refu
   assert.throws(()=>c.assertArchitectureCheckout(checkout,git(checkout,'rev-parse','HEAD'),admission));
  }finally{fs.rmSync(temporary,{recursive:true,force:true})}
 });
+
+
+// Calendar exact review regressions share the protected coverage module so the
+// independently frozen Knowledge controlled-package-ci.test.mjs stays unchanged.
+const calendarAuthorityRoot=root
+const calendarContext=()=>({repository:REPOSITORY,ref:'refs/heads/main',workflowRef:`${REPOSITORY}/${WORKFLOW}@refs/heads/main`,event:'workflow_dispatch',actor:'profitia',triggeringActor:'profitia',controlSha:'a'.repeat(40)})
+const calendarPr=()=>({state:'open',user:{login:'profitia'},base:{ref:'main',repo:{full_name:REPOSITORY}},head:{sha:'b'.repeat(40),ref:'sg2/integration',repo:{full_name:REPOSITORY}}})
+// Current protected review uses schema2; all historical reviews remain unchanged.
+test('Calendar schema2 protected review fences 83 exact files and preserves the original58+7 and75 input',async()=>{
+ const c=await import('./controlled-package-ci.mjs'),r=c.CALENDAR_PK_PROTECTED_REVIEW,files=Object.entries(r.entries).map(([filename,e])=>({filename,status:e.status,sha:e.sha})),candidate={...calendarPr(),number:r.prNumber,changed_files:files.length,base:{...calendarPr().base,sha:r.baseSha},head:{...calendarPr().head,ref:r.branch,sha:r.sourceSha}},ctx={...calendarContext(),controlSha:r.baseSha}
+ assert.equal(files.length,83);assert.equal(Object.keys(c.ECR_COMPLETE_FUNCTIONAL_REVIEW.entries).length,58);assert.equal(Object.keys(c.ECR_COMPLETE_FUNCTIONAL_CONSUMER_REVIEW.entries).length,7);assert.equal(Object.keys(c.ECR_COMPLETE_FUNCTIONAL_CI_REPAIR.entries).length,75);assert.equal(c.ECR_COMPLETE_FUNCTIONAL_CI_REPAIR.sourceSha,'69d02834e863a51506aa4f50fbeb20f7fda3575b')
+ assert.equal(c.selectCandidate(ctx,candidate,r.sourceSha,{files}),r.sourceSha)
+ for(const changed of [{...candidate,number:1064},{...candidate,user:{login:'foreign'}},{...candidate,head:{...candidate.head,ref:'architecture/foreign'}},{...candidate,head:{...candidate.head,repo:{full_name:'foreign/repository'}}},{...candidate,base:{...candidate.base,sha:'f'.repeat(40)}}])assert.throws(()=>c.selectCandidate(ctx,changed,r.sourceSha,{files}))
+ for(const mutate of [a=>a.pop(),a=>a.push({...a[0]}),a=>a[0].sha='f'.repeat(40),a=>a[0].status='removed',a=>a[0].previous_filename='foreign']){
+  const altered=structuredClone(files);mutate(altered);assert.throws(()=>c.selectCandidate(ctx,{...candidate,changed_files:altered.length},r.sourceSha,{files:altered}))
+ }
+ for(const f of files){c.assertCompleteFunctionalReviewEntry(f,'100644 blob '+f.sha+'\t'+f.filename+'\0',r);assert.throws(()=>c.assertCompleteFunctionalReviewEntry(f,'100755 blob '+f.sha+'\t'+f.filename+'\0',r))}
+})
+test('Calendar schema2 protected physical source rejects dirt, symlinks, modes, missing input and wrong lineage before package work',async()=>{
+ const c=await import('./controlled-package-ci.mjs'),r=c.CALENDAR_PK_PROTECTED_REVIEW,files=Object.entries(r.entries).map(([filename,e])=>({filename,status:e.status,sha:e.sha})),temporary=fs.mkdtempSync(path.join(os.tmpdir(),'calendar-schema2-checkout-')),root=path.join(temporary,'source')
+ try{
+  execFileSync('git',['clone','--shared','--no-checkout','--',calendarAuthorityRoot,root],{stdio:['ignore','pipe','pipe']});execFileSync('git',['checkout','--detach',r.sourceSha],{cwd:root,stdio:['ignore','pipe','pipe']})
+  const state={sha:r.sourceSha,admission:{kind:'ARCHITECTURE',baseSha:r.baseSha,files}},result=c.assertCalendarPkProtectedSource(root,state)
+  assert.deepEqual(result,{protectedSourceReviewId:r.reviewId,protectedSourceReviewDigest:c.calendarPkProtectedReviewDigest(),originalSourceSha:r.sourceSha})
+  assert.throws(()=>c.assertCalendarPkProtectedSource(root,{...state,admission:{...state.admission,files:files.slice(1)}}))
+  const target=path.join(root,'packages/platform-source-hub-contracts/package.json'),before=fs.readFileSync(target)
+  fs.appendFileSync(target,' ');assert.throws(()=>c.assertCalendarPkProtectedSource(root,state));fs.writeFileSync(target,before)
+  fs.chmodSync(target,0o755);assert.throws(()=>c.assertCalendarPkProtectedSource(root,state));fs.chmodSync(target,0o644)
+  const other=path.join(temporary,'same-bytes.json');fs.writeFileSync(other,before);fs.unlinkSync(target);fs.symlinkSync(other,target);assert.throws(()=>c.assertCalendarPkProtectedSource(root,state));fs.unlinkSync(target);assert.throws(()=>c.assertCalendarPkProtectedSource(root,state));fs.writeFileSync(target,before,{mode:0o644})
+  const extra=path.join(root,'unreviewed-calendar.mjs');fs.writeFileSync(extra,'unreviewed');assert.throws(()=>c.assertCalendarPkProtectedSource(root,state));fs.unlinkSync(extra)
+  assert.throws(()=>c.assertCalendarPkProtectedSource(root,{...state,admission:{...state.admission,baseSha:'77369b63888c5fa66d8d8159d5e8f36a23d25c83'}}))
+ }finally{fs.rmSync(temporary,{recursive:true,force:true})}
+})
+test('Calendar schema2 protected package upgrade needs its exact trusted review and the exact accepted PK metadata',async()=>{
+ const c=await import('./controlled-package-ci.mjs'),r=c.CALENDAR_PK_PROTECTED_REVIEW,temporary=fs.mkdtempSync(path.join(os.tmpdir(),'calendar-schema2-packages-')),root=path.join(temporary,'source'),accepted=path.join(temporary,'accepted')
+ const clone=(target,sha)=>{execFileSync('git',['clone','--shared','--no-checkout','--',calendarAuthorityRoot,target],{stdio:['ignore','pipe','pipe']});execFileSync('git',['checkout','--detach',sha],{cwd:target,stdio:['ignore','pipe','pipe']})}
+ try{
+  clone(root,r.sourceSha);clone(accepted,r.baseSha)
+  assert.throws(()=>c.checkAdmittedPackages(root,accepted),/LOCAL_PACKAGE_VERSION_MISMATCH/)
+  assert.throws(()=>c.checkAdmittedPackages(root,accepted,undefined,{...r}),/LOCAL_PACKAGE_VERSION_MISMATCH/)
+  assert.throws(()=>c.checkAdmittedPackages(root,accepted,r),/LOCAL_PACKAGE_TRANSITION_REJECTED/)
+  assert.equal(c.checkAdmittedPackages(root,accepted,undefined,r),path.join(root,'apps/sg-runtime'))
+  const historicalAuthority=path.join(temporary,'old-authority');clone(historicalAuthority,'d5eb40a061dd24c5ea65f9f373682179458cb589');assert.throws(()=>c.checkAdmittedPackages(root,historicalAuthority,undefined,r))
+  const p=path.join(root,'packages/platform-source-hub-contracts/package.json'),before=fs.readFileSync(p),a=JSON.parse(before)
+  fs.writeFileSync(p,JSON.stringify({...a,version:'1.8.1'}));assert.throws(()=>c.checkAdmittedPackages(root,accepted,undefined,r));fs.writeFileSync(p,before)
+  fs.writeFileSync(p,JSON.stringify({...a,peerDependencies:{'@profitia/platform-current-e1-authority':'^1.4.0'}}));assert.throws(()=>c.checkAdmittedPackages(root,accepted,undefined,r));fs.writeFileSync(p,before)
+  const authorityFile=path.join(accepted,'packages/platform-source-hub-contracts/package.json'),acceptedBefore=fs.readFileSync(authorityFile);fs.appendFileSync(authorityFile,' ');assert.throws(()=>c.checkAdmittedPackages(root,accepted,undefined,r));fs.writeFileSync(authorityFile,acceptedBefore)
+  const lockFile=path.join(root,'apps/sg-runtime/package-lock.json'),lockBefore=fs.readFileSync(lockFile),lockJson=JSON.parse(lockBefore);lockJson.packages['node_modules/'+c.PRIVATE_PACKAGES[0]].integrity='sha512-unreviewed';fs.writeFileSync(lockFile,JSON.stringify(lockJson));assert.throws(()=>c.checkAdmittedPackages(root,accepted,undefined,r))
+ }finally{fs.rmSync(temporary,{recursive:true,force:true})}
+})
+test('Calendar schema2 protected proof binds exact refresh, original input, review, control and whole trusted run without legacy contract claims',async()=>{
+ const c=await import('./controlled-package-ci.mjs'),r=c.CALENDAR_PK_PROTECTED_REVIEW,candidate='e'.repeat(40),control='d'.repeat(40),digest=c.controlPolicyDigest(),workflowId=383640662
+ const run={id:123,workflow_id:workflowId,repository:{full_name:REPOSITORY},head_branch:'main',head_sha:control,event:'workflow_dispatch',actor:{login:'profitia'},conclusion:'success'}
+ const p={schemaVersion:'2.0',repository:REPOSITORY,workflow:WORKFLOW,targetEnvironment:'development',scope:'EXACT_PROTECTED_SOURCE_VALIDATION',candidateSha:candidate,controlSha:control,executionWorkspace:'ISOLATED_GIT_CHECKOUT',executionCheckoutSha:candidate,sourceInputVerifiedBeforeExecution:true,sourceInputVerifiedAfterExecution:true,protectedSourceReviewId:r.reviewId,protectedSourceReviewDigest:c.calendarPkProtectedReviewDigest(),originalSourceSha:r.sourceSha,controlPolicyDigest:digest,runId:run.id,install:'CLEAN_REGISTRY_IGNORE_SCRIPTS',credentialRemovedBeforeCandidateExecution:true,privatePackageArtifactsPublished:false,tests:'PASS',typecheck:'PASS',build:'PASS',productDeploymentPerformed:false,customerIdentityAdapterVerified:false}
+ assert.equal(c.assertProof(p,run,candidate,workflowId),p)
+ for(const change of [{candidateSha:r.sourceSha},{originalSourceSha:'f'.repeat(40)},{controlSha:'f'.repeat(40)},{runId:124},{workflow:'foreign'},{repository:'foreign/repository'},{targetEnvironment:'staging'},{scope:'ISOLATED_API_AND_PERSISTENCE'},{schemaVersion:'1.0'},{protectedSourceReviewId:'foreign'},{protectedSourceReviewDigest:'f'.repeat(64)},{controlPolicyDigest:'f'.repeat(64)},{executionWorkspace:'SHARED_CHECKOUT'},{executionCheckoutSha:'f'.repeat(40)},{sourceInputVerifiedBeforeExecution:false},{sourceInputVerifiedAfterExecution:false},{credentialRemovedBeforeCandidateExecution:false},{privatePackageArtifactsPublished:true},{productDeploymentPerformed:true},{customerIdentityAdapterVerified:true},{install:'REUSED_CACHE'},{tests:'SKIPPED'},{typecheck:'SKIPPED'},{build:'FAIL'},{sourceAdmissionId:'foreign'},{sourceAdmissionDigest:'f'.repeat(64)},{contract:{id:'profitia.operation-context'}},{unreviewed:true}])assert.throws(()=>c.assertProof({...p,...change},run,candidate,workflowId),JSON.stringify(change))
+ for(const key of Object.keys(p)){const copy={...p};delete copy[key];assert.throws(()=>c.assertProof(copy,run,candidate,workflowId),key)}
+ for(const change of [{conclusion:'failure'},{conclusion:null},{workflow_id:12},{head_branch:'foreign'},{event:'pull_request'},{actor:{login:'foreign'}},{repository:{full_name:'foreign/repository'}}])assert.throws(()=>c.assertProof(p,{...run,...change},candidate,workflowId))
+ assert.throws(()=>c.assertProof(p,run,'f'.repeat(40),workflowId))
+ const inProgress={...run,event:'workflow_dispatch',conclusion:null};assert.throws(()=>c.assertProof(p,inProgress,candidate,workflowId,{currentRunId:run.id,currentRef:'refs/heads/main',completedJobs:[{name:'SG2 controlled operation integration',conclusion:'success'}]}))
+ const sameMain={...run,event:'push',conclusion:null};assert.equal(c.assertProof(p,sameMain,candidate,workflowId,{currentRunId:run.id,currentRef:'refs/heads/main',completedJobs:[{name:'SG2 controlled operation integration',conclusion:'success'}]}),p)
+})
+
+// The authority validates immutable historical inputs before candidate execution.
+// A shallow control checkout loses the accepted Knowledge ancestor and must not
+// be mistaken for a package, source or credential failure.
+test('controlled authority checkout retains pinned main and full validation history without persisted credentials',()=>{
+ const job=text.slice(text.indexOf('  controlled-sg2:'),text.indexOf('  policy-probe:')<0?undefined:text.indexOf('  policy-probe:'))
+ const checkout=job.match(/      - uses: actions\/checkout@11d5960a326750d5838078e36cf38b85af677262\n        with:\n((?:          .*\n)+)/)
+ assert(checkout,'trusted control uses the reviewed checkout action')
+ assert.match(checkout[1],/^          ref: \$\{\{ github.sha \}\}$/m)
+ assert.match(checkout[1],/^          path: control$/m)
+ assert.match(checkout[1],/^          fetch-depth: 0$/m)
+ assert.match(checkout[1],/^          persist-credentials: false$/m)
+ assert.match(job,/permissions:\n      contents: read\n      actions: read\n      packages: read/)
+ assert.doesNotMatch(job,/packages: write|contents: write/)
+})
 
 
 test('actual trusted SDK descriptor admits only installed local packages and retains optional source integrity',async()=>{
