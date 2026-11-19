@@ -10,6 +10,7 @@ const nativeControllerInvocations=new WeakMap()
 const controllerArtifactProfiles=Object.freeze({
  result:Object.freeze({prefix:'aqc-result-',filename:'result.json',archiveBytes:65536,contentBytes:16384}),
  patch:Object.freeze({prefix:'aqc-patch-',filename:'patch.json',archiveBytes:131072,contentBytes:65536}),
+ verification:Object.freeze({prefix:'aqc-verification-',filename:'verification.json',archiveBytes:65536,contentBytes:16384}),
 })
 const fail=code=>{throw Object.assign(Error('Quality GitHub operation unavailable'),{code})}
 const require=(v,c='GITHUB_INPUT_INVALID')=>{if(!v)fail(c)}
@@ -315,6 +316,10 @@ export function createQualityGitHub({token,fetchImpl=fetch,publisherEnabled=fals
    require(matches,'CONTROLLER_HISTORY_STATE_MISMATCH')
    return Object.freeze({action,result,observation:observed,phaseReceiptVerified:true,
     independentBundleVerified:false,authorityIncluded:false})
+  },
+  async controllerJobVerification(input){
+   require(controllerJobBinding(input?.externalId).action==='VERIFY','CONTROLLER_VERIFICATION_PHASE_REQUIRED')
+   return controllerJobArtifact(input,'verification')
   },
   async controllerJobPatch(input){
    require(controllerJobBinding(input?.externalId).action==='EXECUTE','CONTROLLER_PATCH_EXECUTOR_REQUIRED')
@@ -727,6 +732,7 @@ export function readQualityControllerPatch({resultObservation,patchObservation,b
   independentVerified:false})
 }
 
+import {readQualityVerificationResult} from './verify.mjs'
 import {inflateRawSync} from 'node:zlib'
 const controllerCrcTable=Uint32Array.from({length:256},(_,n)=>{
  let v=n;for(let i=0;i<8;i++)v=v&1?0xedb88320^(v>>>1):v>>>1;return v>>>0
@@ -893,4 +899,51 @@ export function createQualityControllerJobActions({github,keysByRole,budget=null
    return Object.freeze({state:'UNKNOWN',effects:'UNKNOWN'})
   }
  })
+}
+
+const nativeIndependentVerifications=new WeakMap()
+/** Both documents are downloaded from the same successful native VERIFY run.
+ * A signed orchestration PASS is never substituted for the separately signed
+ * complete verification receipt, its frozen holdout proof and original expiry.
+ * This is provenance and test evidence only, with no publishing authority. */
+export function readQualityControllerVerification({resultObservation,verificationObservation,...context}){
+ const resultNative=nativeControllerArtifacts.get(resultObservation),proofNative=nativeControllerArtifacts.get(verificationObservation)
+ require(resultNative?.kind==='result'&&proofNative?.kind==='verification'&&resultNative.transport===proofNative.transport,
+  'CONTROLLER_VERIFICATION_NATIVE_ARTIFACT_REQUIRED')
+ const binding=controllerJobBinding(context.externalId)
+ require(binding.action==='VERIFY','CONTROLLER_VERIFICATION_PHASE_REQUIRED')
+ for(const [observed,native]of [[resultObservation,resultNative],[verificationObservation,proofNative]]){
+  require(observed.state==='COMPLETE'&&native.externalId===context.externalId&&native.runId===context.runId
+   &&native.workflowId===context.workflowId&&native.documentSha256===documentDigest(observed.document),
+   'CONTROLLER_VERIFICATION_NATIVE_BINDING_INVALID')
+ }
+ require(resultObservation.createdAt===verificationObservation.createdAt&&controllerStamp(resultObservation.createdAt)
+  &&Number.isFinite(context.notBefore)&&context.notBefore>=Date.parse(resultObservation.createdAt),
+  'CONTROLLER_VERIFICATION_NATIVE_BINDING_INVALID')
+ const phase=readQualityControllerJobResult(resultObservation.document,context)
+ const keys=context.keysByRole?.get('INDEPENDENT_VERIFIER')
+ require(keys instanceof Map&&keys.size>0,'CONTROLLER_JOB_RESULT_TRUST_REQUIRED')
+ const verification=readQualityVerificationResult(verificationObservation.document,{keys:new Map(keys),manifest:context.manifest,
+  nonce:binding.nonce,controlSourceSha:binding.controlSourceSha,runId:context.runId,
+  notBefore:new Date(context.notBefore).toISOString(),now:context.now??Date.now()})
+ for(const [key,value]of Object.entries(phase)){
+  require(Object.hasOwn(verification,key)&&documentDigest(verification[key])===documentDigest(value),
+   'CONTROLLER_VERIFICATION_PHASE_MISMATCH')
+ }
+ const m=assertVerifiedRepairManifest(context.manifest)
+ const freeze=v=>{if(v&&typeof v==='object'){Object.values(v).forEach(freeze);Object.freeze(v)}return v}
+ const value=Object.freeze({verification:freeze(structuredClone(verification)),
+  verificationReceipt:freeze(structuredClone(verificationObservation.document)),
+  artifactSha256:verification.artifactSha256,proofSha256:verification.proofSha256,
+  independentBundleVerified:true,authorityIncluded:false,rawQaPayloadIncluded:false})
+ nativeIndependentVerifications.set(value,Object.freeze({manifest:m,externalId:context.externalId,runId:context.runId,
+  documentSha256:documentDigest(verificationObservation.document),observedAt:Date.parse(verificationObservation.document.body.observedAt),expiresAt:Date.parse(verificationObservation.document.body.expiresAt)}))
+ return value
+}
+export function assertQualityNativeVerification(value,{manifest,externalId,runId,now=Date.now()}){
+ const cap=nativeIndependentVerifications.get(value),m=assertVerifiedRepairManifest(manifest)
+ require(cap&&cap.manifest===m&&cap.externalId===externalId&&cap.runId===runId
+  &&cap.documentSha256===documentDigest(value.verificationReceipt),'CONTROLLER_VERIFICATION_NATIVE_ARTIFACT_REQUIRED')
+ require(Number.isFinite(now)&&now>=cap.observedAt&&now<cap.expiresAt&&now<Date.parse(m.mandate.expiresAt),'CONTROLLER_VERIFICATION_STALE')
+ return value
 }
