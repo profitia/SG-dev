@@ -80,3 +80,23 @@ test('report preparation reaches its own current HUMAN boundary only at the exac
   delete process.env.PROFITIA_AUTH_PROVIDER;assert.equal((await middleware(new NextRequest('https://srm.fixture.test/api/xray/admission',{method:'POST'}))).status,401);
  }finally{if(before===undefined)delete process.env.PROFITIA_AUTH_PROVIDER;else process.env.PROFITIA_AUTH_PROVIDER=before}
 });
+
+test('opted-in ADP v1 methods reach only their native backend and preserve legacy refusals',async()=>{
+ const names=['PROFITIA_AUTH_PROVIDER','PROFITIA_SUPPLIER_WORKSPACE_ENABLED'] as const;
+ const before=Object.fromEntries(names.map(name=>[name,process.env[name]]));
+ try{
+  process.env.PROFITIA_AUTH_PROVIDER='clerk';process.env.PROFITIA_SUPPLIER_WORKSPACE_ENABLED='true';
+  for(const method of ['GET','POST','PATCH','PUT','DELETE']){
+   const response=await middleware(new NextRequest('https://srm.fixture.test/api/adp/v1/suppliers',{method}));
+   assert.equal(response.headers.get('x-middleware-next'),'1');assert.equal(response.headers.get('cache-control'),'private, no-store');
+  }
+  for(const path of ['/api/adp/v1','/api/adp/v10/suppliers','/api/adp/v2/suppliers','/api/unadmitted'])
+   assert.equal((await middleware(new NextRequest('https://srm.fixture.test'+path))).status,401);
+  for(const value of [undefined,'false','unsupported']){
+   if(value===undefined)delete process.env.PROFITIA_SUPPLIER_WORKSPACE_ENABLED;else process.env.PROFITIA_SUPPLIER_WORKSPACE_ENABLED=value;
+   assert.equal((await middleware(new NextRequest('https://srm.fixture.test/api/adp/v1/suppliers'))).status,401);
+  }
+  process.env.PROFITIA_SUPPLIER_WORKSPACE_ENABLED='true';delete process.env.PROFITIA_AUTH_PROVIDER;
+  assert.equal((await middleware(new NextRequest('https://srm.fixture.test/api/adp/v1/suppliers'))).status,401);
+ }finally{for(const name of names){if(before[name]===undefined)delete process.env[name];else process.env[name]=before[name]}}
+});

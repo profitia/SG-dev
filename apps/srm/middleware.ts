@@ -32,6 +32,12 @@ export async function middleware(request: NextRequest) {
     "/api/xray/krs/status", "/api/xray/krs/search", "/api/xray/krs/verify", "/api/xray/krs/lookup"].includes(path) && process.env.PROFITIA_AUTH_PROVIDER === "clerk") {
     return NextResponse.next({ headers: { "Cache-Control": "private, no-store", "Vary": "Cookie, Authorization" } });
   }
+  // The opt-in ADP v1 backend owns fresh Clerk, organization, operation and SQL
+  // authority on every route. Prefix delegation grants no data permission.
+  if (process.env.PROFITIA_AUTH_PROVIDER === "clerk" && process.env.PROFITIA_SUPPLIER_WORKSPACE_ENABLED === "true"
+    && path.startsWith("/api/adp/v1/") && ["GET","POST","PATCH","PUT","DELETE"].includes(request.method)) {
+    return NextResponse.next({ headers: { "Cache-Control": "private, no-store", "Vary": "Cookie, Authorization, X-Profitia-Organisation-Id" } });
+  }
   const authenticated = await hasDemoSession(request);
   if (path === "/login") return authenticated
     ? NextResponse.redirect(new URL("/", request.url))

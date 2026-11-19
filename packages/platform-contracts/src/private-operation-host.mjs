@@ -1,3 +1,4 @@
+import {createSupplierWorkspaceScopeStore,supplierWorkspaceOperationPolicy,supplierWorkspaceSourceDigest} from './supplier-workspace-access.mjs'
 import {diagnosticAsync,diagnosticSync,diagnosticAuditCategory,diagnosticPhaseSourceDigest} from './diagnostic-phase.mjs'
 import {requestOperationPolicy,REQUEST_OPERATIONS} from './request-operations.mjs'
 import { createHash } from 'node:crypto'
@@ -26,6 +27,7 @@ const freeze = value => { if (value && typeof value === 'object') { Object.value
  * No request identity, lease or transaction is retained on the shared instance.
  */
 export function createPrivateOperationHost(options) {
+  if(options.supplierWorkspace!==undefined)throw TypeError('Use the explicitly adopted Supplier Workspace host')
   if (options.revalidateExternalAccountBeforeOutcome !== undefined) throw TypeError('Account revalidation requires the explicit native work host')
   if (options.privateContinuation!==undefined||options.delegatedContinuation!==undefined||options.privateInspection!==undefined||options.delegatedInspection!==undefined||options.privateWork!==undefined||options.delegatedWork!==undefined)throw new TypeError('Delegated phases require the explicit service host')
   if (options.binding?.service !== undefined) throw new TypeError('Human host cannot use a database service binding')
@@ -147,6 +149,38 @@ export function createDelegatedNativeWorkHost(options){
   }})
 }
 
+
+/** Optional human workspace unit. The receiving application cannot supply SQL,
+ * an authority descriptor, or a second action callback. */
+export function createSupplierWorkspaceOperationHost(options){
+ const p=options.supplierWorkspace,b=options.binding,a=options.application;
+ if(!p||Object.getPrototypeOf(p)!==Object.prototype||Object.keys(p).sort().join(',')!=='schemaDigest,sourceRef'
+  ||!/^[a-f0-9]{64}$/.test(p.schemaDigest??'')||!/^[a-f0-9]{40}$/.test(p.sourceRef??'')
+  ||b?.applicationId!=='srm'||b?.environment!=='development'||b?.databaseName!=='platform_private'
+  ||b?.role!=='srm_private_development_runtime'||b?.projectId!=='spring-bread-28217539'||b?.branchId!=='br-sparkling-term-b99l107x'
+  ||b.service!==undefined||a?.appId!=='srm'||a.environment!=='development'||options.module?.id!=='supplier_workspace'
+  ||!a.operations?.length||a.operations.some(op=>!supplierWorkspaceOperationPolicy(op))
+  ||a.features?.join(',')!=='supplier_workspace'
+  ||['requestLedger','requestContinuation','delegatedWork','delegatedContinuation','delegatedInspection',
+   'job','sourceDelivery','reportAdmission','locationAdmission','revalidateExternalAccountBeforeOutcome'].some(k=>options[k]!==undefined))
+   throw TypeError('Explicit isolated Supplier Workspace unit and physical binding required');
+ const scopes=createSupplierWorkspaceScopeStore({...p,now:options.now}),queries=new WeakMap();
+ const transact=(run,limits)=>options.transact(async({query,transaction})=>{
+  if(typeof query!=='function'||transaction==null)unavailable();
+  const owned=Object.freeze({});queries.set(owned,query);
+  try{return await run({query,transaction:owned})}finally{queries.delete(owned)}
+ },limits);
+ const host=createBoundOperationHost({...options,transact},false);
+ return Object.freeze({contract:host.contract,hostContract:Object.freeze({id:'profitia.private-operation-host',version:'1.17.0'}),
+  execute(input){
+   return host.execute(input,async(context,tx)=>{
+    const query=queries.get(tx);if(typeof query!=='function')unavailable();
+    const lease=await scopes.bind(query,context);
+    return scopes.execute(query,lease,context);
+   });
+  }});
+}
+
 function createBoundOperationHost(options, serviceMode) {
   const delegated=serviceMode==='delegated'
   const { independentQuery, transact, createAuthenticator, readResources, projectOutput, prepareInputs, describeOutcome,readExternalAccount,sourceDelivery, now = Date.now, transactionTimeoutMs = 15000 } = options
@@ -158,6 +192,8 @@ function createBoundOperationHost(options, serviceMode) {
     || !serviceMode && options.application.operations.some(op=>!['supplier.report.read','supplier.report.project'].includes(op)))) throw TypeError('Explicit bounded company report admission required')
   const reportAdmission=options.reportAdmission===undefined?null:createReportAdmissionStore({binding,schemaDigest:options.reportAdmission.schemaDigest,now})
   if (!application || !binding || binding.applicationId !== application.appId || binding.environment !== application.environment || [independentQuery, transact, ...(serviceMode ? [] : [createAuthenticator]), ...(delegated?[]:[readResources]), projectOutput, now].some(f => typeof f !== 'function') || !Number.isSafeInteger(transactionTimeoutMs) || transactionTimeoutMs < 100 || transactionTimeoutMs > 15000) throw new TypeError('Explicit application, private binding, identity factory and real transaction adapters required')
+  if(options.supplierWorkspace!==undefined&&(serviceMode||options.module?.id!=='supplier_workspace'))throw TypeError('Isolated HUMAN workspace required')
+  if(options.module?.id==='supplier_workspace'&&options.supplierWorkspace===undefined)throw TypeError('Workspace module requires explicit schema adoption')
   const store = createAccessStore({ binding, now })
   const jobStore=delegated?createDelegatedJobStore({binding,schemaDigest:options.job.schemaDigest,targetOperation:options.job.targetOperation,supplierSchemaDigest:options.job.supplierSchemaDigest,operationSchemaDigest:options.job.operationSchemaDigest,locationSchemaDigest:options.job.locationSchemaDigest,now}):null
   const scopeStore=jobStore??store
@@ -194,7 +230,7 @@ function createBoundOperationHost(options, serviceMode) {
   const transactionOptions = Object.freeze({ timeoutMs: transactionTimeoutMs, maxWaitMs: Math.min(3000, transactionTimeoutMs) })
   // Validate the unchanged policy configuration now, without authenticating,
   // reading a database or constructing request-owned state.
-  const validate = createOperationExecutor({ application, now,requestQuotaSchemaDigest:requestBinding?.quotaSchemaDigest,requestBenchmarkQuotaSchemaDigest:requestBinding?.benchmarkQuotaSchemaDigest,locationAdmissionSchemaDigest:options.locationAdmission?.schemaDigest, reportAdmissionSchemaDigest:options.reportAdmission?.schemaDigest, authenticate: async () => null, withTransaction: unavailable, recordAudit: unavailable })
+  const validate = createOperationExecutor({ application, now,supplierWorkspaceSchemaDigest:options.supplierWorkspace?.schemaDigest,requestQuotaSchemaDigest:requestBinding?.quotaSchemaDigest,requestBenchmarkQuotaSchemaDigest:requestBinding?.benchmarkQuotaSchemaDigest,locationAdmissionSchemaDigest:options.locationAdmission?.schemaDigest, reportAdmissionSchemaDigest:options.reportAdmission?.schemaDigest, authenticate: async () => null, withTransaction: unavailable, recordAudit: unavailable })
   if ((prepareInputs !== undefined && typeof prepareInputs !== 'function') || (describeOutcome !== undefined && typeof describeOutcome !== 'function') || (application.operations.includes('supplier.report.export') && typeof prepareInputs !== 'function')) throw new TypeError('Export requires server-owned transactional preparation; optional outcome adapter must be a function')
 
   return Object.freeze({
@@ -206,7 +242,7 @@ function createBoundOperationHost(options, serviceMode) {
       // shared host receives overlapping requests for different users/orgs.
       let identityBinding = null
       let bindingRead = false
-      const executor = createOperationExecutor({ application, now,requestQuotaSchemaDigest:requestBinding?.quotaSchemaDigest,requestBenchmarkQuotaSchemaDigest:requestBinding?.benchmarkQuotaSchemaDigest,locationAdmissionSchemaDigest:options.locationAdmission?.schemaDigest,reportAdmissionSchemaDigest:options.reportAdmission?.schemaDigest,
+      const executor = createOperationExecutor({ application, now,supplierWorkspaceSchemaDigest:options.supplierWorkspace?.schemaDigest,requestQuotaSchemaDigest:requestBinding?.quotaSchemaDigest,requestBenchmarkQuotaSchemaDigest:requestBinding?.benchmarkQuotaSchemaDigest,locationAdmissionSchemaDigest:options.locationAdmission?.schemaDigest,reportAdmissionSchemaDigest:options.reportAdmission?.schemaDigest,
         authenticate: async request => {
           if (serviceMode) return store.resolveServiceActor(independentQuery)
           if(proof)return reportAdmission.actor(proof)
@@ -361,5 +397,5 @@ export async function privateOperationHostSourceDigest() {
   const fs = await import('node:fs')
   return createHash('sha256').update(fs.readFileSync(new URL('./private-operation-host.mjs', import.meta.url)))
     .update(fs.readFileSync(new URL('./private-operation-host.d.mts', import.meta.url)))
-    .update(await requestLedgerSourceDigest()).update(await requestContinuationSourceDigest()).update(await delegatedJobSourceDigest()).update(await requestInspectionSourceDigest()).update(await requestWorkSourceDigest()).update(await reportAdmissionSourceDigest()).update(await diagnosticPhaseSourceDigest()).digest('hex')
+    .update(await requestLedgerSourceDigest()).update(await requestContinuationSourceDigest()).update(await delegatedJobSourceDigest()).update(await requestInspectionSourceDigest()).update(await requestWorkSourceDigest()).update(await reportAdmissionSourceDigest()).update(await diagnosticPhaseSourceDigest()).update(await supplierWorkspaceSourceDigest()).digest('hex')
 }
