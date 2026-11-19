@@ -95,6 +95,15 @@ window.addEventListener('load', async () => {
           if (current !== generation || window.Clerk.session?.id !== key) throw new DOMException('Account changed','AbortError');
           const fresh = await window.Clerk.session.getToken({skipCache:true});
           if (!fresh || current !== generation || window.Clerk.session?.id !== key) throw new DOMException('Account changed','AbortError');
+          // A fresh provider token does not extend the private account binding.
+          // Revalidate this already established account through its same-receiver
+          // route before the next onboarding action; never call peer-only renew.
+          const maintained = await fetch('/v1/account',{method:'POST',credentials:'omit',cache:'no-store',redirect:'error',signal:controller.signal,
+            headers:{'Content-Type':'application/json',Authorization:'Bearer '+fresh},body:'{}'});
+          const account = await maintained.json();
+          if (current !== generation || window.Clerk.session?.id !== key) throw new DOMException('Account changed','AbortError');
+          if (!maintained.ok || account.authenticated !== true || account.userId !== result.userId
+            || !(Date.parse(account.expiresAt) > Date.now())) throw Error('ACCOUNT_UNAVAILABLE');
           const response = await fetch(path,{method,credentials:'omit',cache:'no-store',redirect:'error',signal:controller.signal,
             headers:{'Content-Type':'application/json',Authorization:'Bearer '+fresh},...(body===undefined?{}:{body:JSON.stringify(body)})});
           const value=await response.json();
