@@ -538,23 +538,29 @@ export function createQualityGitHub({token,fetchImpl=fetch,publisherEnabled=fals
    const independent=await verifyIndependent({manifest:m,patch,verification})
    require(independent?.verified===true&&independent.proofSha256===verification.proofSha256
     &&independent.artifactSha256===verification.artifactSha256,'INDEPENDENT_PATCH_PROOF_REQUIRED')
+   assertPublicationProofFresh(independent)
    require(await main()===m.baseSha,'BASE_CHANGED')
    const branch='sg2/quality-control-'+m.incidentId
    const commit=await get('/git/commits/'+m.baseSha);require(sha(commit?.tree?.sha),'GITHUB_SOURCE_INVALID')
    const tree=[]
    for(const f of patch.files){
     require(m.allowedPaths.includes(f.path)&&typeof f.content==='string'&&hash(f.content)===f.afterSha256,'PATCH_FILE_MISMATCH')
+    assertPublicationProofFresh(independent)
     const blob=await write('/git/blobs',{content:f.content,encoding:'utf-8'});require(sha(blob?.sha),'GITHUB_BLOB_INVALID')
     tree.push({path:f.path,mode:'100644',type:'blob',sha:blob.sha})
    }
    require(new Set(tree.map(x=>x.path)).size===2,'PATCH_FILE_MISMATCH')
+   assertPublicationProofFresh(independent)
    const t=await write('/git/trees',{base_tree:commit.tree.sha,tree});require(sha(t?.sha),'GITHUB_TREE_INVALID')
+   assertPublicationProofFresh(independent)
    const c=await write('/git/commits',{message:'[skip render] Controlled CIC repair '+m.incidentId,tree:t.sha,parents:[m.baseSha]})
    require(sha(c?.sha)&&c.tree?.sha===t.sha,'GITHUB_COMMIT_INVALID')
    require(await main()===m.baseSha,'BASE_CHANGED')
    await verifyIndependent({manifest:m,patch,verification})
+   assertPublicationProofFresh(independent)
    await write('/git/refs',{ref:'refs/heads/'+branch,sha:c.sha})
    await verifyIndependent({manifest:m,patch,verification})
+   assertPublicationProofFresh(independent)
    const p=await write('/pulls',{title:'Controlled CIC '+m.repairClass+' repair',head:branch,base:'main',draft:false,
     body:'Synthetic controlled Stage 1 repair. Independent verification '+verification.proofSha256+'. No private QA payload is included. Required exact-source CI and release gates remain mandatory.'})
    require(number(p?.number)&&p.head?.sha===c.sha,'GITHUB_PR_IDENTITY_INVALID')
@@ -578,6 +584,17 @@ export function createQualityGitHub({token,fetchImpl=fetch,publisherEnabled=fals
  })
 }
 
+// A verified receipt carries an opaque, original freshness lease. Transport
+// cannot manufacture it or renew its clock by returning the same signed proof.
+// Git object writes are effects too, even before a branch becomes visible.
+const publicationProofLeases=new WeakMap()
+function assertPublicationProofFresh(value){
+ const lease=publicationProofLeases.get(value)
+ require(lease,'INDEPENDENT_PUBLISH_PROOF_LEASE_REQUIRED')
+ const at=lease.now()
+ require(Number.isFinite(at)&&at<Date.parse(lease.authorityExpiresAt),'PUBLISHER_AUTHORITY_EXPIRED')
+ require(at>=lease.observedAt&&at<lease.expiresAt,'PUBLISHER_PROOF_STALE')
+}
 const publicationFields=Object.freeze(['schemaVersion','applicationId','environment','repository','action','incidentId','repairClass','baseSha',
  'manifestSha256','gateSetSha256','artifactSha256','verificationProofSha256','prNumber','headSha','requiredChecksSha256','nonce','observedAt','expiresAt','rawQaPayloadIncluded','result'])
 const publicationStamp=v=>typeof v==='string'&&Number.isFinite(Date.parse(v))&&new Date(v).toISOString()===v
@@ -615,7 +632,10 @@ export function createQualityPublishProofVerifier({keys,readReceipt,nonce,notBef
   for(const[k,v]of Object.entries(expected))require(body[k]===v,'PUBLISHER_PROOF_BINDING_INVALID')
   require(publicationStamp(body.observedAt)&&publicationStamp(body.expiresAt)&&Date.parse(body.observedAt)>=Date.parse(notBefore)
    &&Date.parse(body.observedAt)<=observed&&Date.parse(body.expiresAt)>observed&&Date.parse(body.expiresAt)<=Date.parse(body.observedAt)+30000,'PUBLISHER_PROOF_STALE')
-  return Object.freeze({verified:true,proofSha256:verification.proofSha256,artifactSha256:verification.artifactSha256})
+  const result=Object.freeze({verified:true,proofSha256:verification.proofSha256,artifactSha256:verification.artifactSha256})
+  publicationProofLeases.set(result,Object.freeze({now,authorityExpiresAt:m.mandate.expiresAt,
+   observedAt:Date.parse(body.observedAt),expiresAt:Date.parse(body.expiresAt)}))
+  return result
  }
 }
 
@@ -643,8 +663,10 @@ export function createQualityAttestedPublisher(options){
    const m=assertVerifiedRepairManifest(input.manifest)
    return github.merge({prNumber:input.prNumber,headSha:input.headSha,baseSha:m.baseSha,requiredNames:names,
     verifyIndependent:async()=>{
-     await verifyIndependent({...input,action:'MERGE',requiredNames:names})
+     const independent=await verifyIndependent({...input,action:'MERGE',requiredNames:names})
      await github.inspectPatchBinding(input)
+     // The independent tree/blob/PR reads can consume the remaining 30s.
+     assertPublicationProofFresh(independent)
     }})
   },
  })

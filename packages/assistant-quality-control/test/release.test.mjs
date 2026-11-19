@@ -1178,3 +1178,37 @@ test('a successful new runtime cannot hide a changed retained LKG provider sourc
  await assert.rejects(f.client.reconcile(pending),{code:'LAST_KNOWN_GOOD_UNVERIFIED'})
  assert.equal(f.calls.filter(c=>c.options.method==='POST').length,1,'no second mutation after the original deploy')
 })
+
+test('publisher rejects expiry during source reads before the first Git mutation',async()=>{
+ const f=await publicationFixture()
+ f.state.drift=async url=>{if(url.endsWith('/git/commits/'+old))f.state.clock+=11000}
+ await assert.rejects(f.client.propose(f.proposal()),{code:'PUBLISHER_PROOF_STALE'})
+ assert.equal(f.calls.filter(c=>['POST','PUT','PATCH','DELETE'].includes(c.options.method)).length,0)
+})
+test('publisher rechecks the original proof lease between every Git mutation without renewing it',async()=>{
+ for(const stopAfter of [1,2,3,4,5]){
+  const f=await publicationFixture();let effects=0
+  f.state.drift=async(_url,options)=>{
+   if(options.method==='POST'&&++effects===stopAfter)f.state.clock+=11000
+  }
+  await assert.rejects(f.client.propose(f.proposal()),{code:'PUBLISHER_PROOF_STALE'})
+  assert.equal(effects,stopAfter,'No mutation may follow the original proof expiry')
+  assert.equal(f.calls.some(c=>c.url.endsWith('/pulls')),false)
+ }
+})
+test('publisher refuses a forged independent lease before provider access',async()=>{
+ const f=await publicationFixture()
+ const client=createQualityGitHub({token:'synthetic',publisherEnabled:true,fetchImpl:async()=>{throw Error('Unexpected provider request')}})
+ await assert.rejects(client.propose({...f.proposal(),verifyIndependent:async()=>({
+  verified:true,artifactSha256:f.verification.artifactSha256,proofSha256:f.verification.proofSha256,
+  assertFresh:()=>true})}),{code:'INDEPENDENT_PUBLISH_PROOF_LEASE_REQUIRED'})
+})
+test('merge rechecks proof freshness after the last independent patch inspection',async()=>{
+ const f=await publicationFixture();let expired=false
+ f.state.drift=async url=>{
+  if(!expired&&f.state.reads===2&&url.endsWith('/pulls/43')){expired=true;f.state.clock+=11000}
+ }
+ await assert.rejects(f.client.merge(f.merge()),{code:'PUBLISHER_PROOF_STALE'})
+ assert.equal(expired,true)
+ assert.equal(f.calls.some(c=>c.options.method==='PUT'),false)
+})
