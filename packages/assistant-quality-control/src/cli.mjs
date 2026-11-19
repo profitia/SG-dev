@@ -1,6 +1,6 @@
 import {SOURCE_PATHS,documentDigest,assertVerifiedRepairManifest} from './manifest.mjs'
 import {createHash as controlledReadHash} from 'node:crypto'
-import {repairManifestBody,prepareQualityControllerJobContext} from './job-context.mjs'
+import {repairManifestBody,prepareQualityControllerJobContext,normalizeQualityControllerJobInputs} from './job-context.mjs'
 import {admitQualityNativeJobState} from './job-state.mjs'
 
 /** Prepare reviewable unsigned metadata. These builders create no signature,
@@ -18,6 +18,7 @@ export {repairManifestBody,prepareQualityControllerJobContext}
  * case, secret or private QA is accepted through workflow_dispatch. Native run
  * identity must separately pass assertQualityControllerJobIdentity. */
 export async function readQualityControllerJobContext({inputs,nativeInvocation,nativeEnvironment,...options}){
+ inputs=normalizeQualityControllerJobInputs(inputs)
  const {readQualityJobBinding}=await import('./controller.mjs')
  if(!inputs||Object.getPrototypeOf(inputs)!==Object.prototype
   ||Object.keys(inputs).sort().join(',')!==['mode','action','nonce','control_source_sha','incident_id','manifest_sha256','base_sha',

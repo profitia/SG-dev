@@ -236,3 +236,95 @@ test('A valid signature cannot replace mandatory VERIFY thresholds or smuggle ex
  const corrupt=structuredClone(f.body);corrupt.verification.proofSha256='0'.repeat(64)
  assert.throws(()=>readQualityVerificationResult(signDocument('AQC_VERIFICATION_RESULT_V1',corrupt,reviewer.privateKey),f.context),{code:'VERIFICATION_RECEIPT_DIGEST_INVALID'})
 })
+
+test('baseline compilation reads unchanged native Git sources and has its own capability without inventing a repair',async()=>{
+ const {prepareQualityBaselineBundle,assertQualityBaselineBundle}=await import('../src/verify.mjs'),f=bundleFixture()
+ try{
+  fs.writeFileSync(path.join(f.root,SOURCE_PATHS.C1),"throw Error('untrusted working tree must not load')\n")
+  const b=await prepareQualityBaselineBundle({manifest:f.options.manifest,repositoryRoot:f.root,regression:regression()})
+  assert.equal(assertQualityBaselineBundle(b),b)
+  assert.equal(b.sourceSha256.base,hashCase(f.options.beforeSource));assert.equal(b.sourceSha256.candidate,b.sourceSha256.base)
+  assert.equal(b.files['base/calendar.ts'],f.options.beforeSource);assert.equal(b.files['candidate/calendar.ts'],f.options.beforeSource)
+  assert.equal(b.files['base/calendar.mjs'],b.files['candidate/calendar.mjs'])
+  assert(Object.isFrozen(b)&&Object.isFrozen(b.files))
+  assert(!Object.keys(b.files).some(p=>/test|regression|holdout|\.git/.test(p)))
+  assert.throws(()=>assertQualityBaselineBundle(structuredClone(b)),{code:'VERIFIED_BASELINE_BUNDLE_REQUIRED'})
+  const repaired=await prepareQualityVerificationBundle({manifest:f.options.manifest,repositoryRoot:f.root,artifact:f.artifact})
+  assert.throws(()=>assertQualityBaselineBundle(repaired),{code:'VERIFIED_BASELINE_BUNDLE_REQUIRED'})
+  assert.notEqual(b.artifactSha256,repaired.artifactSha256)
+ }finally{f.close()}
+})
+test('baseline compilation requires the original branded incident fixture and exact private CIC pin when imported',async()=>{
+ const {prepareQualityBaselineBundle}=await import('../src/verify.mjs'),f=bundleFixture()
+ try{
+  const options={manifest:f.options.manifest,repositoryRoot:f.root,regression:regression()}
+  await assert.rejects(prepareQualityBaselineBundle({...options,manifest:structuredClone(f.options.manifest)}),{code:'VERIFIED_MANIFEST_REQUIRED'})
+  for(const changed of [{...regression(),repairClass:'C2'},{...regression(),expected:99},
+   {...regression(),runCase:()=>({status:'COMPLETE',output:1})}]){
+   await assert.rejects(prepareQualityBaselineBundle({...options,regression:changed}))
+  }
+ }finally{f.close()}
+ const c=bundleFixture({cic:true})
+ try{
+  for(const cicArchive of [undefined,Buffer.from('unapproved private archive')])
+   await assert.rejects(prepareQualityBaselineBundle({manifest:c.options.manifest,repositoryRoot:c.root,regression:regression(),cicArchive}),
+    {code:'VERIFIER_CIC_ARTIFACT_REQUIRED'})
+ }finally{c.close()}
+})
+test('baseline support does not admit an unchanged source as a repair or a baseline bundle as independent PASS',async()=>{
+ const {prepareQualityBaselineBundle,createQualityVerificationAttestor}=await import('../src/verify.mjs'),f=bundleFixture()
+ try{
+  const a=structuredClone(f.artifact);a.body.files[0].content=f.options.beforeSource
+  a.body.files[0].afterSha256=hashCase(f.options.beforeSource);a.artifactSha256=documentDigest(a.body)
+  await assert.rejects(prepareQualityVerificationBundle({manifest:f.options.manifest,repositoryRoot:f.root,artifact:a}),
+   {code:'NO_SOURCE_REPAIR'})
+  const bundle=await prepareQualityBaselineBundle({manifest:f.options.manifest,repositoryRoot:f.root,regression:regression()})
+  await assert.rejects(prepareQualityVerificationBundle({manifest:f.options.manifest,repositoryRoot:f.root,artifact:bundle}),
+   {code:'VERIFIER_SOURCE_BINDING_INVALID'})
+  const signer=createQualityVerificationAttestor({privateKey:reviewer.privateKey})
+  assert.throws(()=>signer.attest(bundle),{code:'REAL_ISOLATED_VERIFICATION_REQUIRED'})
+ }finally{f.close()}
+})
+
+test('baseline compiler rejects a caller execution or authority override instead of silently accepting it',async()=>{
+ const {prepareQualityBaselineBundle}=await import('../src/verify.mjs'),f=bundleFixture()
+ try{for(const extra of [{runCase:()=>({status:'COMPLETE'})},{privateKey:reviewer.privateKey},{promotionEnabled:true}])
+  await assert.rejects(prepareQualityBaselineBundle({manifest:f.options.manifest,repositoryRoot:f.root,regression:regression(),...extra}),{code:'VERIFICATION_INPUT_INVALID'})
+ }finally{f.close()}
+})
+
+test('closed baseline reproduction rejects a self-grade substituted execution callback or unadmitted native job before isolation',async()=>{
+ const {reproduceQualityBaselineInIsolation,assertQualityBaselineResult}=await import('../src/verify.mjs')
+ const f=bundleFixture(),m=f.options.manifest
+ try{
+  const input={manifest:m,jobState:{kind:'AQC_NATIVE_JOB_STATE_V1'},externalId:'aqc-job:'+sha+':'+randomUUID()+':QUALIFY',
+   repositoryRoot:f.root,regression:regression(),qualification:{},qualificationKeys:new Map(),observedGateSetSha256:gate}
+  await assert.rejects(reproduceQualityBaselineInIsolation(input),{code:'JOB_STATE_NATIVE_INVOCATION_REQUIRED'})
+  await assert.rejects(reproduceQualityBaselineInIsolation({...input,runCase:()=>({status:'COMPLETE',output:1})}),{code:'VERIFICATION_INPUT_INVALID'})
+  for(const value of [{result:'REPRODUCED',nativeExecutionVerified:true,proofSha256:'f'.repeat(64)},null])
+   assert.throws(()=>assertQualityBaselineResult(value,input),{code:'REAL_ISOLATED_BASELINE_REQUIRED'})
+ }finally{f.close()}
+})
+test('baseline cause grouping remains fixture-bound across source revisions and cannot include new scope fields',async()=>{
+ const {qualityBaselineCauseFingerprint}=await import('../src/verify.mjs')
+ const a={repairClass:'C1',fixtureSha256:documentDigest(regression())}
+ const first=qualityBaselineCauseFingerprint(a)
+ assert.equal(first,qualityBaselineCauseFingerprint({...a}))
+ assert.notEqual(first,qualityBaselineCauseFingerprint({...a,fixtureSha256:documentDigest({...regression(),args:[999]})}))
+ for(const input of [{...a,baseSha:sha},{...a,repairClass:'C4'},{...a,fixtureSha256:'invalid'}])
+  assert.throws(()=>qualityBaselineCauseFingerprint(input))
+})
+test('verification and baseline metadata reject getters without executing user code',async()=>{
+ const {readRegression,prepareQualityBaselineBundle}=await import('../src/verify.mjs')
+ for(const nested of [false,true]){
+  const value=regression();let calls=0
+  Object.defineProperty(nested?value.refusal:value,nested?'values':'schemaVersion',{enumerable:true,get(){calls++;throw Error('never evaluate')}})
+  assert.throws(()=>readRegression(value));assert.equal(calls,0)
+ }
+ const f=bundleFixture();let calls=0
+ try{
+  const input={manifest:f.options.manifest,repositoryRoot:f.root}
+  Object.defineProperty(input,'regression',{enumerable:true,get(){calls++;throw Error('never evaluate')}})
+  await assert.rejects(prepareQualityBaselineBundle(input));assert.equal(calls,0)
+ }finally{f.close()}
+})

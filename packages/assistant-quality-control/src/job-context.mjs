@@ -60,3 +60,27 @@ export async function prepareQualityControllerJobContext({registry,incidentId,ba
  const freeze=v=>{if(v&&typeof v==='object'){Object.values(v).forEach(freeze);Object.freeze(v)}return v}
  return freeze(selected)
 }
+
+/** The native workflow declares ten fields. GitHub may include declared unused
+ * defaults as empty strings. Only those exact empty fields are discarded; an
+ * unknown name, getter or nonempty unused permit is never ignored. */
+export function normalizeQualityControllerJobInputs(value){
+ const bad=()=>unavailable('JOB_CONTEXT_INPUT_INVALID')
+ if(!value||Object.getPrototypeOf(value)!==Object.prototype||Object.getOwnPropertySymbols(value).length)bad()
+ const common=['mode','action','nonce','control_source_sha','incident_id','manifest_sha256','base_sha']
+ const allowed=[...common,'state','permit_id','permit_expires_at'],descriptors=Object.getOwnPropertyDescriptors(value)
+ if(Object.keys(descriptors).length>10)bad()
+ for(const [key,d]of Object.entries(descriptors)){
+  if(!allowed.includes(key)||!d.enumerable||!Object.hasOwn(d,'value')||typeof d.value!=='string'
+   ||Buffer.byteLength(d.value)>(key==='state'?16384:256))bad()
+ }
+ const inputs={...value}
+ if(inputs.mode!=='controller-job'||!['QUALIFY','REPRODUCE','EXECUTE','VERIFY','PROPOSE','CHECKS','PROMOTE','VERIFY_RUNTIME','OBSERVE','ROLLBACK'].includes(inputs.action))bad()
+ for(const key of ['permit_id','permit_expires_at'])if(inputs.action!=='EXECUTE'&&Object.hasOwn(inputs,key)){
+  if(inputs[key]!=='')bad();delete inputs[key]
+ }
+ if(inputs.state==='')delete inputs.state
+ const expected=[...common,...(inputs.action==='EXECUTE'?['permit_id','permit_expires_at']:[]),...(Object.hasOwn(inputs,'state')?['state']:[])].sort().join(',')
+ if(Object.keys(inputs).sort().join(',')!==expected||Object.values(inputs).some(v=>!v))bad()
+ return Object.freeze(inputs)
+}

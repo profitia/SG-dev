@@ -301,3 +301,188 @@ test('reference metadata rejects unknown actions rebound pending identity and ex
  assert.throws(()=>retainQualityJobReference({before:f.record,after:{...f.record,pending:null},action:'EXECUTE',reference:ref}))
  assert.equal(calls,0)
 })
+
+async function historicalZip(document){
+ const {deflateRawSync}=await import('node:zlib')
+ const bytes=Buffer.from(JSON.stringify(document)),compressed=deflateRawSync(bytes),name=Buffer.from('result.json')
+ let crc=0xffffffff;for(const b of bytes){crc^=b;for(let i=0;i<8;i++)crc=crc&1?0xedb88320^(crc>>>1):crc>>>1}crc=(crc^0xffffffff)>>>0
+ const local=Buffer.alloc(30);local.writeUInt32LE(0x04034b50);local.writeUInt16LE(20,4);local.writeUInt16LE(8,8)
+ local.writeUInt32LE(crc,14);local.writeUInt32LE(compressed.length,18);local.writeUInt32LE(bytes.length,22);local.writeUInt16LE(name.length,26)
+ const central=Buffer.alloc(46);central.writeUInt32LE(0x02014b50);central.writeUInt16LE(20,4);central.writeUInt16LE(20,6)
+ central.writeUInt16LE(8,10);central.writeUInt32LE(crc,16);central.writeUInt32LE(compressed.length,20)
+ central.writeUInt32LE(bytes.length,24);central.writeUInt16LE(name.length,28)
+ const offset=local.length+name.length+compressed.length,end=Buffer.alloc(22);end.writeUInt32LE(0x06054b50)
+ end.writeUInt16LE(1,8);end.writeUInt16LE(1,10);end.writeUInt32LE(central.length+name.length,12);end.writeUInt32LE(offset,16)
+ return Buffer.concat([local,name,compressed,central,name,end])
+}
+async function historicalFixture(action='QUALIFY',options={}){
+ const {createHash}=await import('node:crypto')
+ const {createQualityGitHub}=await import('../src/github.mjs')
+ const {admitQualityNativeJobState}=await import('../src/job-state.mjs')
+ const base=fixture('PROPOSE');base.record.attemptsUsed=1
+ const nonce=randomUUID(),priorExternalId='aqc-job:'+control+':'+nonce+':'+action
+ const keys=new Map(),pairs=new Map()
+ for(const role of ['EXECUTOR_SUPERVISOR','INDEPENDENT_VERIFIER','INDEPENDENT_PUBLISHER']){
+  const pair=generateKeyPairSync('ed25519');pairs.set(role,pair);keys.set(role,new Map([[publicKeyId(pair.publicKey),pair.publicKey]]))
+ }
+ const results={
+  QUALIFY:{result:'DETERMINISTIC_FAILURE',method:'DETERMINISTIC',causeFingerprint:digest,repairClass:'C1'},
+  REPRODUCE:{result:'RED',baseSha:sha,proofSha256:digest},
+  EXECUTE:{result:'PATCH',baseSha:sha,patch:{artifactSha256:digest,treeSha256:digest}},
+  VERIFY:{result:'PASS',baseSha:sha,artifactSha256:digest,baseTest:'FAIL',candidateTest:'PASS',holdoutCases:240,
+   criticalRegressions:0,accessViolations:0,unverifiableCases:0,criticalCasesPass:true,criticalRepeats:3,stable:true,
+   correctnessDeltaPp:0,unjustifiedRefusalDeltaPp:0,scopeBeforeDefects:10,scopeAfterDefects:0,
+   classCounts:{C1:80,C2:80,C3:80},proofSha256:digest}
+ }
+ const role=action==='EXECUTE'?'EXECUTOR_SUPERVISOR':'INDEPENDENT_VERIFIER'
+ const body={schemaVersion:'AQC_CONTROLLER_JOB_RESULT_V1',repository:'profitia/SG-dev',environment:'development',role,action,
+  incidentId:base.manifest.incidentId,baseSha:sha,manifestSha256:documentDigest(base.manifest),gateSetSha256:digest,
+  controlSourceSha:control,nonce,runId:'700',runAttempt:1,workflowId:'991',rawQaPayloadIncluded:false,
+  issuedAt:stamp(now-600),expiresAt:stamp(now+60000),result:results[action]}
+ options.bodyChange?.(body)
+ const document=signDocument('AQC_CONTROLLER_JOB_RESULT_V1',body,pairs.get(options.signer??role).privateKey)
+ const archive=await historicalZip(document),hash=v=>createHash('sha256').update(v).digest('hex')
+ const reference={externalId:priorExternalId,runId:'700',workflowId:'991',artifactSha256:hash(archive),
+  documentSha256:documentDigest(document),createdAt:stamp(now-750)}
+ options.referenceChange?.(reference)
+ base.record.reproduction.nativeJobs={[{QUALIFY:'qualify',REPRODUCE:'reproduce',EXECUTE:'execute',VERIFY:'verify'}[action]]:reference}
+ options.recordChange?.(base.record)
+ const f=await nativeFixture({display_title:'AQC JOB PROPOSE '+base.record.pending.nonce},base)
+ const invocation=await f.client.controllerJobInvocation({externalId:f.externalId,runId:'701'})
+ const jobState=await admitQualityNativeJobState({...f,invocation,now})
+ const state={clock:now,missing:false,run:{id:700,workflow_id:991,head_sha:control,head_branch:'main',
+  path:'.github/workflows/assistant-quality-repair.yml',event:'workflow_dispatch',run_attempt:1,
+  repository:{full_name:'profitia/SG-dev'},actor:{login:'profitia'},triggering_actor:{login:'profitia'},
+  display_title:'AQC JOB '+action+' '+nonce,status:'completed',conclusion:'success',created_at:stamp(now-750)}}
+ const calls=[],workflow=Buffer.from('synthetic fixed workflow source\n')
+ const client=createQualityGitHub({token:'synthetic-history-reader',now:()=>state.clock,
+  controllerWorkflowSha256:hash(workflow),fetchImpl:async(url,input)=>{
+   calls.push({url,method:input.method})
+   if(url.endsWith('/actions/workflows/assistant-quality-repair.yml'))return Response.json({id:991,path:state.run.path,state:'active'})
+   if(url.includes('/contents/'))return Response.json({type:'file',path:state.run.path,encoding:'base64',size:workflow.length,
+    sha:createHash('sha1').update('blob '+workflow.length+'\0').update(workflow).digest('hex'),content:workflow.toString('base64')})
+   if(url.endsWith('/actions/runs/700'))return Response.json(state.run)
+   if(url.includes('/actions/runs/700/artifacts?'))return Response.json({total_count:state.missing?0:1,artifacts:state.missing?[]:[
+    {id:800,name:'aqc-result-'+nonce,expired:false,size_in_bytes:archive.length,digest:'sha256:'+hash(archive),
+     workflow_run:{id:700,head_sha:control}}]})
+   if(url.endsWith('/actions/artifacts/800/zip'))return new Response(archive,{headers:{'content-length':String(archive.length)}})
+   throw Error('unexpected history endpoint')
+  }})
+ return {...f,client,jobState,keys,state,calls,body,reference,result:results[action],
+  input:{manifest:f.manifest,jobState,externalId:f.externalId,action,keysByRole:keys}}
+}
+test('historical phases re-read actual native archives and separate signatures instead of trusting stored indexes',async()=>{
+ for(const action of ['QUALIFY','REPRODUCE','EXECUTE','VERIFY']){
+  const f=await historicalFixture(action)
+  try{
+   const a=await f.client.controllerJobHistory(f.input),b=await f.client.controllerJobHistory(f.input)
+   assert.deepEqual(a.result,f.result);assert.deepEqual(b.result,f.result)
+   assert.equal(a.phaseReceiptVerified,true);assert.equal(a.independentBundleVerified,false);assert.equal(a.authorityIncluded,false)
+   assert.equal(f.calls.filter(c=>c.url.endsWith('/actions/artifacts/800/zip')).length,2)
+   assert(f.calls.every(c=>c.method==='GET'));assert.equal(Object.isFrozen(a.result),true)
+  }finally{f.cleanup()}
+ }
+})
+test('historical reader rejects forged native state unsupported publication phases and a rebound current job before GET',async()=>{
+ const f=await historicalFixture()
+ try{
+  for(const input of [{...f.input,jobState:structuredClone(f.jobState)},{...f.input,jobState:{}},
+   {...f.input,externalId:f.externalId.replace(f.record.pending.nonce,randomUUID())},{...f.input,action:'PROMOTE'},
+   {...f.input,action:'PROPOSE'},{...f.input,action:'ROLLBACK'}]){
+   await assert.rejects(f.client.controllerJobHistory(input))
+  }
+  assert.equal(f.calls.length,0)
+ }finally{f.cleanup()}
+})
+test('stored archive document workflow run and creation pointers must all match real native provenance',async()=>{
+ for(const change of [r=>r.artifactSha256='f'.repeat(64),r=>r.documentSha256='f'.repeat(64),
+  r=>r.workflowId='992',r=>r.runId='701',r=>r.createdAt=stamp(now-749)]){
+  const f=await historicalFixture('QUALIFY',{referenceChange:change})
+  try{await assert.rejects(f.client.controllerJobHistory(f.input))}
+  finally{f.cleanup()}
+ }
+ for(const change of [{actor:{login:'foreign'}},{run_attempt:2},{conclusion:'failure'},{status:'in_progress',conclusion:null},
+  {head_sha:sha},{workflow_id:992},{display_title:'AQC JOB QUALIFY '+randomUUID()}]){
+  const f=await historicalFixture()
+  try{Object.assign(f.state.run,change);await assert.rejects(f.client.controllerJobHistory(f.input))}
+  finally{f.cleanup()}
+ }
+})
+test('valid native transport cannot replace the correct separate signature or incident manifest and original time bounds',async()=>{
+ for(const options of [{signer:'EXECUTOR_SUPERVISOR'},{bodyChange:b=>b.incidentId=randomUUID()},
+  {bodyChange:b=>b.manifestSha256='f'.repeat(64)},{bodyChange:b=>b.baseSha=control},
+  {bodyChange:b=>b.controlSourceSha=sha},{bodyChange:b=>b.nonce=randomUUID()},
+  {bodyChange:b=>b.issuedAt=stamp(now-499)}]){
+  const f=await historicalFixture('QUALIFY',options)
+  try{await assert.rejects(f.client.controllerJobHistory(f.input))}
+  finally{f.cleanup()}
+ }
+ const f=await historicalFixture()
+ try{
+  f.state.clock=now+60000;await assert.rejects(f.client.controllerJobHistory(f.input),{code:'CONTROLLER_JOB_RESULT_STALE'})
+  f.state.clock=now+1800001;await assert.rejects(f.client.controllerJobHistory(f.input),{code:'CONTROLLER_HISTORY_STALE'})
+ }finally{f.cleanup()}
+})
+test('signed facts must match the latest persisted reproduction patch and verification instead of an older successful attempt',async()=>{
+ for(const [action,recordChange] of [
+  ['REPRODUCE',r=>r.reproduction.proofSha256='f'.repeat(64)],
+  ['EXECUTE',r=>r.patch.treeSha256='f'.repeat(64)],
+  ['EXECUTE',r=>{r.patch.artifactSha256='f'.repeat(64);r.verification.artifactSha256='f'.repeat(64)}],
+  ['VERIFY',r=>r.verification.proofSha256='f'.repeat(64)]]){
+  const f=await historicalFixture(action,{recordChange})
+  try{await assert.rejects(f.client.controllerJobHistory(f.input),{code:'CONTROLLER_HISTORY_STATE_MISMATCH'})}
+  finally{f.cleanup()}
+ }
+})
+test('missing historical native artifact never becomes a verified fact or an extra dispatch',async()=>{
+ const f=await historicalFixture()
+ try{f.state.missing=true;await assert.rejects(f.client.controllerJobHistory(f.input),{code:'CONTROLLER_HISTORY_REFERENCE_MISMATCH'})
+  assert(f.calls.every(c=>c.method==='GET'))
+ }finally{f.cleanup()}
+})
+
+test('ten declared native fields normalize only unused empty defaults while EXECUTE keeps both permit fields',async()=>{
+ const {normalizeQualityControllerJobInputs}=await import('../src/job-context.mjs')
+ const {qualityControllerJobInputs}=await import('../src/github.mjs'),f=fixture()
+ const global={...qualityControllerJobInputs(f),permit_id:'',permit_expires_at:''}
+ assert.equal(Object.keys(global).length,10)
+ const canonical=normalizeQualityControllerJobInputs(global)
+ assert.deepEqual(canonical,qualityControllerJobInputs(f));assert.equal(Object.isFrozen(canonical),true)
+ const legacy=qualityControllerJobInputs({manifest:f.manifest,externalId:f.externalId})
+ assert.deepEqual(normalizeQualityControllerJobInputs({...legacy,state:'',permit_id:'',permit_expires_at:''}),legacy)
+ const e=fixture('EXECUTE'),permit={incidentId:e.manifest.incidentId,attemptId:e.record.pending.nonce,
+  permitId:randomUUID(),ordinal:1,expiresAt:stamp(now+60000)},execute=qualityControllerJobInputs({...e,permit})
+ assert.equal(Object.keys(normalizeQualityControllerJobInputs(execute)).length,10)
+ assert.equal(normalizeQualityControllerJobInputs(execute).permit_id,permit.permitId)
+})
+test('native default normalization never ignores an unknown field nonempty unused permit getter or oversized state',async()=>{
+ const {normalizeQualityControllerJobInputs}=await import('../src/job-context.mjs'),f=fixture()
+ const {qualityControllerJobInputs}=await import('../src/github.mjs'),input=qualityControllerJobInputs(f)
+ for(const changed of [{...input,permit_id:'foreign'},{...input,permit_expires_at:stamp(now+1)},
+  {...input,recovery_sha256:''},{...input,rawQa:''},{...input,state:'x'.repeat(16385)},
+  {...input,nonce:1},{...input,action:'UNDECLARED'},{...input,mode:'keyless-qualify'}]){
+  assert.throws(()=>normalizeQualityControllerJobInputs(changed),{code:'JOB_CONTEXT_INPUT_INVALID'})
+ }
+ let calls=0;const getter={...input}
+ Object.defineProperty(getter,'permit_id',{enumerable:true,get(){calls++;throw Error('must not execute')}})
+ assert.throws(()=>normalizeQualityControllerJobInputs(getter),{code:'JOB_CONTEXT_INPUT_INVALID'});assert.equal(calls,0)
+ const inherited=Object.create(input)
+ assert.throws(()=>normalizeQualityControllerJobInputs(inherited),{code:'JOB_CONTEXT_INPUT_INVALID'})
+ const hidden={...input};Object.defineProperty(hidden,'permit_id',{value:'',enumerable:false})
+ assert.throws(()=>normalizeQualityControllerJobInputs(hidden),{code:'JOB_CONTEXT_INPUT_INVALID'})
+})
+test('the actual native event may carry declared empty defaults but extra or nonempty fields still cannot mint state',async()=>{
+ const {admitQualityNativeJobState}=await import('../src/job-state.mjs')
+ const f=await nativeFixture()
+ try{
+  const invocation=await f.client.controllerJobInvocation({externalId:f.externalId,runId:'701'})
+  const inputs={...f.inputs,permit_id:'',permit_expires_at:''}
+  f.fs.writeFileSync(f.file,JSON.stringify({inputs}))
+  const admitted=await admitQualityNativeJobState({...f,inputs,invocation,now})
+  assert.equal(admitted.providerIdentityVerified,true)
+  for(const changed of [{...inputs,permit_id:'foreign'},{...inputs,recovery_sha256:''},{...inputs,rawQa:''}]){
+   f.fs.writeFileSync(f.file,JSON.stringify({inputs:changed}))
+   await assert.rejects(admitQualityNativeJobState({...f,inputs,invocation,now}),{code:'JOB_STATE_NATIVE_INVOCATION_REQUIRED'})
+  }
+ }finally{f.cleanup()}
+})
