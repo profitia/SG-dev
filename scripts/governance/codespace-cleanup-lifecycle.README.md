@@ -179,3 +179,90 @@ save; partial/blocked continuity retains required recovery data.
 
 Run all four Linux suites, including codespace-cleanup-managed.test.mjs. Test
 success does not replace real root-owned workspace CLEANED acceptance.
+
+## Stage05: controlled activation for execution receipt caches
+
+The existing `run`/`runTask` entrypoint now selects an installed root-controlled
+policy at `/opt/profitia-cleanup-architecture-dev-v1/activation.json`. Source
+publication alone installs nothing and activates nothing. The declared class is
+`architecture-execution-receipt-v1`, limited to ARCHITECTURE Development Codespaces
+jobs invoked through `runTask`, with a work timeout at most120seconds and a task
+scope equal to `scopeBase/SHA256(taskId)` in the fresh installer-created namespace.
+Other profiles, environments, ordinary ad-hoc agent commands and old scopes are
+unchanged. This is not automatic cleanup of all Codex resources or build caches.
+
+For this class, the normal task invocation is still:
+
+```bash
+node scripts/governance/codespace-cleanup-lifecycle.mjs run \
+  --config /ABSOLUTE/NEW/TASK/lifecycle-config.json \
+  --work-spec /ABSOLUTE/NEW/TASK/work-spec.json
+```
+
+There is no separate allocate/release/clean command for the owner. Normal PMOSv2
+begin, actual host identity, exact routing and require-begin remain required.
+The executor uses an existing matching task scope and work checkpoint before
+creating new resources. It never shares another task's cache or control files.
+The config's inspectorDescriptor is the task-hash policy under the dedicated
+root-owned run directory; its begin input and lifecycle state remain in its own
+new scope, outside the source checkout and PHR clone.
+
+After successful business work, the executor validates its actual canonical PMOS
+bootstrap through the existing CLI. One4096-byte-bounded private cache contains
+only hashes and identity/result metadata from that real execution, not logs,
+source data, secrets or arbitrary user code. Two consumers read verified byte
+copies: the closeout result binding and the task-local recovery checkpoint.
+They reuse the same allocation. The real bootstrap and required evidence remain
+outside this redundant cache. Only after both consumers finish and SUCCESS is
+validated does the existing lifecycle release freeze the producer. `finishTask`
+then performs actual pre-closeout cleanup and captures the measured report in
+canonical PMOS/PHR before save. No closed evidence is edited by an epilogue.
+
+The installed policy begins in PILOT for exactly the admitted owner task. After
+physical absence and worker termination are independently verified, the client
+stops the task broker. The fixed admitted launcher independently checks the root
+journal and actual absence before changing PILOT to ACTIVE. That admission
+enables the same narrow class for subsequent tasks; it does not enable SG2/SRM,
+history adoption, worktree removal, a cron, a Git hook or a persistent root
+service. Every task gets a separate bounded broker which exits on stop or idle
+timeout. Recovery restarts only the same policy/guard and never adopts bytes.
+
+Missing/invalid admission, unavailable broker, read mismatch or retained data
+preserve resources and are recorded as hygiene limitations. The original
+business command and canonical closeout remain usable. PARTIAL_SUCCESS/FAILED
+work never receives release attestations. An interrupted STARTED/FAILED work
+checkpoint is never replayed automatically. Completed PMOS reuses its original
+cleanup report and never saves or cleans again. If cleanup is itself the DoD,
+`requireManagedCleanup:true` in the work spec requires actual verified CLEANED
+before save; a safe refusal cannot turn this acceptance into business SUCCESS.
+
+The ordinary launcher and cleanup remain UID1000. The separately admitted fixed
+privileged launcher may create only a new task guard and its protected policy,
+then starts the existing inspector with DAC_OVERRIDE/SETGID/SETUID and no-new-
+privileges. It runs no writable code as root and grants no generic sudo. Only its
+exact root-owned start/promote commands can be used by this workflow. Installation
+and recurring use require a new exact administrator admission; Stage04's one-time
+permission cannot be reused. The inspected Codespace already has ordinary-user
+sudo availability. This deployment adds no sudoers rule and changes no existing
+grant; the owner mandate limits its use to this reviewed component.
+
+Runtime acceptance correction: the Unix socket has a short task-bound name in the
+same protected run directory; its encoded path stays within Linux's107-byte
+pathname limit. Full task IDs remain bound in the immutable descriptor. If work
+already succeeded while broker admission failed, resume creates only the missing
+receipt cache, never repeats the business command. Uncaptured prior stdout is
+explicitly UNAVAILABLE_ON_RESUME with a null digest; canonical bootstrap identity
+and result binding remain mandatory. Existing captured cleanup/pending/PHR
+recovery continues to reuse the original measured result without another clean.
+
+Disable/rollback: set the root-controlled policy status to DISABLED. No sudoers
+entry is installed or removed by this deployment.
+Existing active tasks and journals remain intact. Stop a task normally after all
+its allocations are COMMITTED; otherwise preserve data and use the exact PID/
+start-time operator procedure. Do not delete the namespace, old runtime, journals
+or PMOS/PHR. Roll back source by normal admitted PR; no force/reset/branch bypass.
+
+Run the four existing suites plus codespace-cleanup-activation.test.mjs and
+codespace-cleanup-task-admin.test.mjs. A Linux test pass is not an activation
+receipt: actual root admission, one real automatic run and published canonical
+evidence are still required before claiming Stage05 SUCCESS.

@@ -6,6 +6,7 @@ import test from 'node:test'
 const modulePath=fileURLToPath(new URL('./codespace-cleanup-inspector.py',import.meta.url))
 const common=String.raw`
 import array,ctypes,hashlib,importlib.util,json,os,pathlib,socket,stat,subprocess,sys,tempfile,unittest.mock,uuid
+sys.dont_write_bytecode=True
 spec=importlib.util.spec_from_file_location('inspector',sys.argv[1])
 m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)
 def expect(call, message=None):
@@ -301,4 +302,55 @@ with tempfile.TemporaryDirectory() as d:
    expect(lambda:m.handle(b,p,g),'LIVE_DELETE_UNAVAILABLE')
   assert resource.exists() and not g.unresolved()
  finally:a.close();b.close();g.close()
+`)
+
+const managedReadFixture=String.raw`
+import base64
+def managed_fixture(d):
+ root=pathlib.Path(d);g=root/'managed';g.mkdir(mode=0o700)
+ p={'taskId':'ARCHITECTURE-READ-TEST','projectKey':'ARCHITECTURE','repository':'profitia/SG-dev','scopeRoot':str(root),'sourceRoot':'/no-source',
+    'guardRoot':str(g),'guardIdentity':m.identity(g.stat()),'executionUid':os.getuid(),'executionGid':os.getgid(),'maxBytes':16384,'maxEntries':4,'_digest':'a'*64,'resources':[{'name':'receipt-cache','maxBytes':8192}]}
+ s=m.ManagedStore(p,_owner_uid=os.getuid());r={'protocol':m.PROTOCOL,'requestId':uuid.uuid4().hex,'policyDigest':p['_digest'],**{k:p[k] for k in ['taskId','projectKey','repository','scopeRoot','sourceRoot']},'phase':'pre-closeout'}
+ return s,r
+def managed_call(s,r,e,op,**extra):return s.dispatch({**r,'action':op,**{k:e[k] for k in ['path','allocationId','kind','identity']},**extra})
+def managed_allocate(s,r,data):return s.dispatch({**r,'action':'allocate','name':'receipt-cache','bytes':len(data),'seedBase64':base64.b64encode(data[:4096]).decode()})
+`
+python('managed receipt cache returns byte-exact Unicode copies without exporting descriptors',managedReadFixture+String.raw`
+with tempfile.TemporaryDirectory() as d:
+ s,r=managed_fixture(d)
+ try:
+  data='{"actualResult":"SUCCESS","label":"wynik źródłowy"}'.encode();e=managed_allocate(s,r,data)
+  first=managed_call(s,r,e,'read');second=managed_call(s,r,e,'read')
+  assert base64.b64decode(first['payloadBase64'])==data and first['payloadSha256']==hashlib.sha256(data).hexdigest()
+  assert first['payloadBase64']==second['payloadBase64'] and not any('fd' in k.lower() for k in first)
+  expect(lambda:os.listdir('/proc/'+str(e['worker']['pid'])+'/fd'))
+  managed_call(s,r,e,'release');clean=managed_call(s,r,e,'clean',authorization={k:True for k in ['resultVerified','retentionReleased','recoveryPreserved','noActiveConsumers']})
+  assert clean['status']=='CLEANED' and not pathlib.Path(e['path']).exists() and base64.b64decode(first['payloadBase64'])==data
+ finally:s.shutdown()
+`)
+python('managed frozen receipt refuses a new read consumer before and after cleanup',managedReadFixture+String.raw`
+with tempfile.TemporaryDirectory() as d:
+ s,r=managed_fixture(d)
+ try:
+  e=managed_allocate(s,r,b'{"result":"SUCCESS"}');managed_call(s,r,e,'release')
+  expect(lambda:managed_call(s,r,e,'read'),'lease has ended')
+  assert pathlib.Path(e['path']).exists()
+ finally:s.shutdown()
+`)
+python('oversized managed read fails closed while retaining private data',managedReadFixture+String.raw`
+with tempfile.TemporaryDirectory() as d:
+ s,r=managed_fixture(d)
+ try:
+  e=managed_allocate(s,r,b'x'*4097);expect(lambda:managed_call(s,r,e,'read'))
+  assert pathlib.Path(e['path']).exists() and s.index['resources'][0]['state']=='ACTIVE'
+ finally:s.shutdown()
+`)
+python('managed read refuses a foreign task and substituted allocation identity',managedReadFixture+String.raw`
+with tempfile.TemporaryDirectory() as d:
+ s,r=managed_fixture(d)
+ try:
+  e=managed_allocate(s,r,b'{"result":"SUCCESS"}')
+  expect(lambda:managed_call(s,{**r,'taskId':'ARCHITECTURE-FOREIGN'},e,'read'),'identity')
+  expect(lambda:managed_call(s,r,{**e,'identity':{'dev':0,'ino':0}},'read'),'object mismatch')
+ finally:s.shutdown()
 `)

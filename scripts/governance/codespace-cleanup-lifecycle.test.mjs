@@ -10,6 +10,7 @@ import {
   phaseReport, finishTask, verifyPhrReadback, findPhrManifestForTask, runTask, PRE_CLOSEOUT_REPORT_PREFIX,
 } from './codespace-cleanup-lifecycle.mjs'
 import { OWNER_FILE, executeCleanup } from './codespace-cleanup.mjs'
+import {CLASS,scopeFor} from './codespace-cleanup-activation.mjs'
 
 function rewritePublishedIntegrity(p, f) {
   const hash=v=>crypto.createHash('sha256').update(v).digest('hex')
@@ -1246,4 +1247,126 @@ test('a short managed UUID does not weaken legacy allocation identity validation
   const f=fixture(t),r=allocated(f)
   assert.throws(()=>releaseResource(f.config,release(f,r,{allocationId:'a'.repeat(32)}),f.runtime),/identity invalid/)
   assert.equal(tracked(f.c.stateFile).resources[0].authorization.retentionReleased,false)
+})
+
+function activatedFixture(t,{missing=false}={}) {
+  const f=fixture(t),old=f.scope,p={class:CLASS,status:'PILOT',pilotTaskId:f.c.taskId,scopeBase:path.join(f.root,'managed')}
+  fs.mkdirSync(p.scopeBase)
+  f.scope=scopeFor(p,f.c.taskId);fs.renameSync(old,f.scope)
+  f.beginFile=path.join(f.scope,'begin.json');f.configFile=path.join(f.scope,'config.json')
+  f.c={...f.c,scopeRoot:f.scope,stateFile:path.join(f.scope,'state.json'),beginInputFile:f.beginFile}
+  write(f.configFile,f.c);f.config=loadConfiguration(f.configFile)
+  const events=[];let bytes,resource
+  const request=(_c,op,r,options)=>{
+    events.push(op)
+    if(op==='allocate'){
+      bytes=Buffer.from(options.seedBase64,'base64')
+      resource={status:'RESOURCE_REGISTERED',path:f.scope+'/private-cache',kind:'managed-private-directory',allocationId:'a'.repeat(32),identity:{dev:1,ino:2},referenceProtection:'PRIVATE_SINCE_CREATION_NO_FD_EXPORT'}
+      return resource
+    }
+    if(op==='read')return {status:'CACHE_READ',payloadBase64:bytes.toString('base64'),payloadSha256:crypto.createHash('sha256').update(bytes).digest('hex')}
+    if(op==='release')return {status:'RELEASE_ATTESTED',producerLeaseActive:false}
+    if(op==='status')return {physicalAbsent:true,workerStopped:true}
+    if(op==='stop')return {status:'STOPPED'}
+    throw Error(op)
+  }
+  const rt={...f.runtime,managedRequest:request,activationOptions:{profile:p,request,admit:(_c,_p,op)=>{
+    events.push('admit:'+op)
+    if(missing)throw Error('no separately admitted launcher')
+    return {status:op==='start'?'BROKER_READY':'POLICY_ACTIVE'}
+  }},cleanup:o=>({
+    schemaVersion:'1.0',command:o.command,projectKey:f.c.projectKey,taskId:f.c.taskId,repository:f.c.repository,
+    scopeRoot:f.scope,phase:o.phase,inspected:resource?1:0,observedFreeBytesDelta:null,
+    summary:resource?{CLEANED:1}:{NOT_APPLICABLE:0},
+    results:resource?[{path:resource.path,kind:resource.kind,status:'CLEANED',measurement:{logicalBytes:bytes.length,allocatedBytes:4096,entries:2},observedFreeBytesDelta:0}]:[]
+  })}
+  return {f,p,rt,events}
+}
+test('normal runTask automatically binds cache consumers and cleanup to canonical evidence before save',t=>{
+  const {f,rt,events}=activatedFixture(t),spec=workSpecFixture(f,{requireManagedCleanup:true})
+  f.hooks.onSave=()=>{
+    const s=tracked(f.c.stateFile),e=s.lifecycle.preCloseoutEvidence
+    assert.equal(e.report.activation.status,'CLEANED_VERIFIED')
+    assert.equal(e.report.activation.reads,2)
+    assert.equal(e.report.activation.policy,'POLICY_ACTIVE')
+    assert(events.includes('stop'));assert(events.includes('admit:promote'))
+  }
+  const out=runTask(f.config,spec.work,rt)
+  assert.equal(out.closeout.status,'CLOSEOUT_VERIFIED');assert.equal(out.closeout.preCloseoutReport.summary.CLEANED,1)
+  assert.equal(fs.readFileSync(spec.log,'utf8'),'1')
+  assert.equal(events.filter(e=>e==='allocate').length,1);assert.equal(events.filter(e=>e==='read').length,2)
+  const prior=JSON.stringify(tracked(f.c.stateFile).lifecycle.preCloseoutEvidence)
+  runTask(f.config,spec.work,rt)
+  assert.equal(fs.readFileSync(spec.log,'utf8'),'1');assert.equal(events.filter(e=>e==='allocate').length,1)
+  assert.equal(JSON.stringify(tracked(f.c.stateFile).lifecycle.preCloseoutEvidence),prior)
+})
+test('normal runTask preserves a successful business result when the scoped broker is unavailable',t=>{
+  const {f,rt,events}=activatedFixture(t,{missing:true}),spec=workSpecFixture(f)
+  const out=runTask(f.config,spec.work,rt)
+  assert.equal(out.closeout.status,'CLOSEOUT_VERIFIED')
+  assert.equal(out.closeout.preCloseoutReport.activation.status,'RETAINED')
+  assert.equal(events.includes('allocate'),false);assert.equal(tracked(f.c.stateFile).closeout.businessResult,'SUCCESS')
+})
+test('PHR recovery cannot restart the broker, reclean or repeat work after completed PMOS save',t=>{
+  const {f,rt,events}=activatedFixture(t),spec=workSpecFixture(f,{requireManagedCleanup:true})
+  assert.throws(()=>runTask(f.config,spec.work,{...rt,verifyPhr:()=>{throw Error('actual PHR outage')}}),/PHR outage/)
+  const snapshot=events.slice()
+  const out=runTask(f.config,spec.work,rt)
+  assert.equal(out.closeout.preCloseoutSkipped,'PMOS_ALREADY_COMPLETED');assert.deepEqual(events,snapshot)
+  assert.equal(fs.readFileSync(spec.log,'utf8'),'1');assert.equal(f.calls.filter(([,args])=>args.includes('pmos:save')).length,1)
+})
+
+test('interrupted promotion recovers the original measured cleanup without another removal or work run',t=>{
+  const {f,rt}=activatedFixture(t),spec=workSpecFixture(f,{requireManagedCleanup:true})
+  const original=rt.activationOptions.admit;let promoteCalls=0,cleanCalls=0
+  rt.activationOptions.admit=(c,p,op)=>{
+    if(op==='promote'&&++promoteCalls===1)throw Error('transient promotion failure after real deletion')
+    return original(c,p,op)
+  }
+  const clean=rt.cleanup
+  rt.cleanup=o=>{if(o.command==='clean'&&o.phase==='pre-closeout')cleanCalls++;return clean(o)}
+  assert.throws(()=>runTask(f.config,spec.work,rt),/Required managed cleanup/)
+  assert(!f.hasSaved());assert(tracked(f.c.stateFile).lifecycle.activationCache.cleanupCheckpoint.report)
+  const out=runTask(f.config,spec.work,rt)
+  assert.equal(out.closeout.preCloseoutReport.activation.status,'CLEANED_VERIFIED')
+  assert.equal(cleanCalls,1);assert.equal(fs.readFileSync(spec.log,'utf8'),'1');assert.equal(promoteCalls,2)
+})
+test('captured cleanup refuses changed bootstrap bytes instead of recleaning under a new result',t=>{
+  const {f,rt}=activatedFixture(t),spec=workSpecFixture(f,{requireManagedCleanup:true})
+  const old=rt.activationOptions.admit
+  rt.activationOptions.admit=(c,p,op)=>{if(op==='promote')throw Error('promotion unavailable');return old(c,p,op)}
+  assert.throws(()=>runTask(f.config,spec.work,rt),/Required managed cleanup/)
+  const b=JSON.parse(fs.readFileSync(spec.bootstrap));b.findings.findings.push('different business content');write(spec.bootstrap,b)
+  assert.throws(()=>runTask(f.config,spec.work,rt),/Captured cleanup checkpoint differs/)
+  assert(!f.hasSaved())
+})
+test('ordinary business closeout records promotion failure without losing its verified result',t=>{
+  const {f,rt}=activatedFixture(t),spec=workSpecFixture(f)
+  const old=rt.activationOptions.admit
+  rt.activationOptions.admit=(c,p,op)=>{if(op==='promote')throw Error('promotion unavailable');return old(c,p,op)}
+  const out=runTask(f.config,spec.work,rt)
+  assert.equal(out.closeout.status,'CLOSEOUT_VERIFIED');assert.equal(out.closeout.preCloseoutReport.activation.status,'REVIEW_REQUIRED')
+  assert.equal(tracked(f.c.stateFile).closeout.businessResult,'SUCCESS')
+})
+
+test('broker admission recovery allocates only the missing receipt and never repeats completed work',t=>{
+  const {f,rt,events}=activatedFixture(t,{missing:true}),spec=workSpecFixture(f,{requireManagedCleanup:true})
+  const native=rt.run
+  rt.run=(cmd,args,cwd)=>{
+    if(cmd==='npx'&&args.includes('scripts/pmos-prepare-execution-handoff.ts')){
+      const out=args[args.indexOf('--output')+1]
+      assert.equal(fs.existsSync(out),false,'The real native CLI refuses to overwrite an existing bootstrap')
+    }
+    return native(cmd,args,cwd)
+  }
+  assert.throws(()=>runTask(f.config,spec.work,rt),/Required managed cleanup/)
+  assert.equal(fs.readFileSync(spec.log,'utf8'),'1')
+  assert.equal(tracked(f.c.stateFile).resources.length,0)
+  rt.activationOptions.admit=(_c,_p,op)=>({status:op==='start'?'BROKER_READY':'POLICY_ACTIVE'})
+  const result=runTask(f.config,spec.work,rt)
+  assert.equal(result.closeout.preCloseoutReport.activation.status,'CLEANED_VERIFIED')
+  assert.equal(result.closeout.preCloseoutReport.activation.receipt.workOutputSha256,null)
+  assert.equal(result.closeout.preCloseoutReport.activation.receipt.workOutputStatus,'UNAVAILABLE_ON_RESUME')
+  assert.equal(fs.readFileSync(spec.log,'utf8'),'1')
+  assert.equal(events.filter(e=>e==='allocate').length,1)
 })
