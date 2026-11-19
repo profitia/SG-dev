@@ -739,7 +739,7 @@ export function runTask(c, workSpecFile, runtime = {}) {
   })
   const cacheCompletedResult=workOutput=>{
     try{
-      const prepared=path.join(c.scopeRoot,'activation-validated-bootstrap.json')
+      const prepared=path.join(c.scopeRoot,`activation-validated-${crypto.randomBytes(10).toString('hex')}-bootstrap.json`)
       const command=runtime.run??((cmd,args,cwd,options)=>runRaw(cmd,args,cwd,options))
       command('npx',['--no-install','tsx','scripts/pmos-prepare-execution-handoff.ts',
         '--input',spec.bootstrapInputFile,'--output',prepared],path.join(c.sourceRoot,'apps/pmos'),{timeout:120000,maxBuffer:16*1024*1024})
