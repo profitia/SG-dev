@@ -1,3 +1,4 @@
+import {currentSdkSourceContext} from '../../../../packages/platform-contracts/test/sdk-source-context.mjs'
 import {recurringSourcePredecessor} from '../../../architecture-lab/private-recurring-source.mjs'
 import {acceptedSdkSource,sdkContinuationPredecessor} from '../../../../packages/platform-contracts/test/organisation-sdk-compatibility.mjs'
 import {assertMarketHistoryHostContinuation} from '../../scripts/xray-style-acceptance.mjs'
@@ -45,7 +46,11 @@ test('optional Root claim target pins the exact producer and existing main Devel
  // Current Oil acceptance is checked separately; retain the complete M1
  // receipt for historical validation instead of comparing it to new bytes.
  const currentSdk=acceptedSdkSource()
- assert.equal(currentRoot.sourceDigest,currentSdk.platformVersion==='1.38.0'?currentSdk.optionalPackageDigests.rootAtomicClaimSourceDigest:recurring?.optionalPackageDigests.rootAtomicClaimSourceDigest??(receipt.oilAutonomousReportCompatibility??receipt.assistantM1SourceCompatibility).optionalPackageDigests.rootAtomicClaimSourceDigest)
+ // E1 changes the actual SDK fingerprint, not the retained SDK1.38 target or its activation.
+ const source=currentSdkSourceContext(),retainedSdkTarget=source?.record.baselines?.['sdk138-registration']
+  ?JSON.parse(source.baseline('sdk138-registration')('apps/srm/deployment/root-atomic-claim-targets.json').toString('utf8')):undefined
+ if(retainedSdkTarget)assert.deepEqual(currentRoot,retainedSdkTarget)
+ assert.equal(currentRoot.sourceDigest,retainedSdkTarget?.sourceDigest??(currentSdk.platformVersion==='1.38.0'?currentSdk.optionalPackageDigests.rootAtomicClaimSourceDigest:recurring?.optionalPackageDigests.rootAtomicClaimSourceDigest??(receipt.oilAutonomousReportCompatibility??receipt.assistantM1SourceCompatibility).optionalPackageDigests.rootAtomicClaimSourceDigest))
  assert.equal(acceptedSdkSource().optionalPackageDigests.rootAtomicClaimSourceDigest,await rootAtomicClaimSourceDigest())
  const {sourceDigest,...currentMetadata}=currentRoot;const {sourceDigest:previousDigest,...previousMetadata}=root;assert.deepEqual(currentMetadata,previousMetadata)
  assert.equal(root.producerPullRequest,854);assert.equal(root.producerSourceRef,'3a494b5432555935168c060be5950589d550d276')

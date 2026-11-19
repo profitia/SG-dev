@@ -1,5 +1,7 @@
 // SYNTHETIC ONLY. Actual native Root/SQL and SRM receiver; no live URL/accounts.
 import test from 'node:test';
+import pg from 'pg';
+import {createRequire} from 'node:module';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -14,8 +16,9 @@ const schema=fs.readFileSync(new URL('../db/private-store/supplier-pipelines-v1.
 const receiver=fs.readFileSync(new URL('../db/private-store/supplier-pipelines-commands-v1.sql',import.meta.url),'utf8');
 const hash=s=>createHash('sha256').update(s).digest('hex');
 const nipFor=n=>{for(;;n++){const nine=String(990000000+n).slice(-9),sum=[6,5,7,2,3,4,5,6,7].reduce((a,w,i)=>a+w*Number(nine[i]),0)%11;if(sum!==10)return nine+sum;}};
+const phoneParser=createRequire(import.meta.resolve('@profitia/platform-contracts/user-profile'))('libphonenumber-js/max').parsePhoneNumberWithError;
 async function businessFixture(){
- const f=await supplierWorkspaceFixture();
+ const f=await supplierWorkspaceFixture({pg,phoneParser});
  try{
   await f.controlled(async c=>{
    await c.query("SELECT set_config('profitia.install.source_sha',$1,true),set_config('profitia.install.schema_digest',$2,true),set_config('profitia.install.commands_digest',$3,true)",['b'.repeat(40),hash(schema),hash(receiver)]);
