@@ -175,7 +175,11 @@ export async function createAcgLegacyRecurringFixture(sourceRoot, {baselineSha} 
   const view = assistantReservationPredecessor(read, historical, pin)
   assert(view, 'present source record requires authenticated predecessor')
   const sourceSha = String(git(['rev-parse', 'HEAD'])).trim()
-const fixtureBaseSha = baselineSha ?? sourceSha
+const currentSdk = sdkSourceContext(read, historical)
+// A complete immutable authority cohort is required by the historical tests.
+// Authenticate the physical current SDK above; never mix its newer helper into
+// an old reservation graph. Explicit caller baselines retain their boundary.
+const fixtureBaseSha = baselineSha ?? currentSdk?.record.baselines.authority.sha ?? sourceSha
 assert(/^[a-f0-9]{40}$/.test(fixtureBaseSha), 'immutable complete fixture base')
 git(['merge-base', '--is-ancestor', fixtureBaseSha, sourceSha])
 const baseRead = relative => historical(fixtureBaseSha, relative)

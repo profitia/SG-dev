@@ -59,6 +59,7 @@
     "@types/react-dom": "^19",
     "playwright-core": "1.62.1",
     "tsx": "^4.23.15",
-    "typescript": "^5"
+    "typescript": "^5",
+    "libphonenumber-js": "1.13.15"
   }
 }

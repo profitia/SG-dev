@@ -41,7 +41,7 @@ const allowed = (n) =>
   n === "scripts/governance/package-limits-routing.test.mjs" ||
   n ===
     "Canon/evidence/2026-10-30-package-limits-dashboard-development-release.md";
-if(!files.length||files.some(n=>n.includes('..')||n.includes('\\')))throw Error('SOURCE_SCOPE_EXPANSION');
+if(!files.length||files.some(n=>path.posix.isAbsolute(n)||n.includes('\\')||n.split('/').some(part=>part==='.'||part==='..'||part==='')))throw Error('SOURCE_SCOPE_EXPANSION');
 let ownerRouting;
 if(files.some(n=>!allowed(n))){
  const consumer=JSON.parse(fs.readFileSync(path.join(root,'apps/sg-runtime/operation-integration.json')));

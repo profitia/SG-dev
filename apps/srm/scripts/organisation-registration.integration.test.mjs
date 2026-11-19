@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import {randomUUID} from 'node:crypto'
 import pg from 'pg'
+import {parsePhoneNumberWithError} from 'libphonenumber-js/max'
 import {postgresFixture,clerkFixture} from '../../../packages/platform-contracts/test/fixtures/identity-profile-postgres.mjs'
 import {createIdentityProvisioner} from '@profitia/platform-contracts/identity-provisioning'
 import {moduleSchemaDigest,moduleSchemaUrl} from '@profitia/platform-contracts/module-scope'
@@ -12,7 +13,7 @@ import {createSrmPrivateOperationHost} from '../src/server/private-operation-hos
 import {organisationRegistrationSchemaDigest,organisationRegistrationPlan} from '../db/private-store/organisation-registration.mjs'
 const sqlUrl=new URL('../db/private-store/035-organisation-registration.sql',import.meta.url)
 test('registered organisations initialize inside actual SRM HUMAN Root with no direct runtime insert right',{timeout:60000},async t=>{
- const db=await postgresFixture();let audit
+ const db=await postgresFixture({pg,phoneParser:parsePhoneNumberWithError});let audit
  t.after(async()=>{await audit?.end();await db.close()})
  const actor=clerkFixture('user_srm_registration'),other=clerkFixture('user_srm_foreign')
  const {userId}=await createIdentityProvisioner(db.options(actor)).ensureAccount(actor.request('POST'))
