@@ -367,6 +367,31 @@ export function createQualityGitHub({token,fetchImpl=fetch,publisherEnabled=fals
   },
 
 
+  /** A reference only, never qualification authority. The existing native
+   * observation reader revalidates identity, pinned workflow, ZIP and bytes. */
+  async latestLinuxQualificationReference({sourceSha}){
+   require(sha(sourceSha),'LINUX_NATIVE_BINDING_INVALID')
+   const descriptor=await controllerJobDescriptor({sourceSha},true)
+   for(let page=1;page<=3;page++){
+    const list=await get('/actions/workflows/assistant-quality-repair.yml/runs?event=workflow_dispatch&branch=main&per_page=100&page='+page)
+    require(Array.isArray(list?.workflow_runs)&&list.workflow_runs.length<=100,'GITHUB_RUNS_INVALID')
+    for(const run of list.workflow_runs){
+     const nonce=typeof run.display_title==='string'?run.display_title.slice(4):''
+     if(run.head_sha!==sourceSha||!uuid(nonce)||run.display_title!=='AQC '+nonce
+      ||run.status!=='completed'||run.conclusion!=='success')continue
+     assertWorkflowIdentity(run,{runId:String(run.id),sourceSha,nonce,completed:true})
+     require(String(run.workflow_id)===descriptor.workflowId,'LINUX_NATIVE_BINDING_INVALID')
+     const artifacts=await get('/actions/runs/'+run.id+'/artifacts?per_page=100&page=1')
+     require(Array.isArray(artifacts?.artifacts)&&artifacts.artifacts.length<=100
+      &&Number.isSafeInteger(artifacts.total_count)&&artifacts.total_count<=100,'LINUX_NATIVE_ARTIFACT_INVALID')
+     const found=artifacts.artifacts.filter(a=>a.name==='aqc-qualification-'+nonce)
+     require(found.length<=1,'LINUX_NATIVE_ARTIFACT_AMBIGUOUS')
+     if(found.length===1&&found[0].expired===false)return Object.freeze({runId:String(run.id),sourceSha,nonce})
+    }
+    if(list.workflow_runs.length<100)break
+   }
+   fail('LINUX_NATIVE_ARTIFACT_REQUIRED')
+  },
   async linuxQualificationObservations({runId,sourceSha,nonce}){
    require(/^[1-9][0-9]{0,19}$/.test(runId)&&sha(sourceSha)&&uuid(nonce),'LINUX_NATIVE_BINDING_INVALID')
    const descriptor=await controllerJobDescriptor({sourceSha},true)
