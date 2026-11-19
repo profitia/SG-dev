@@ -1,4 +1,6 @@
 import {documentDigest,verifyDocument} from './manifest.mjs'
+import {assertQualityOperationalRecovery} from './recovery.mjs'
+const recoveryReleaseCapabilities=new WeakMap()
 
 const SERVICE='srv-dapa3tid0e5s73f8bc5g',WORKSPACE='tea-d7lps8rbc2fs73cn80dg'
 const fail=code=>{throw Object.assign(Error('Quality release unavailable'),{code})}
@@ -51,9 +53,10 @@ export function createQualityAttestedRelease(options){
 /** One fixed Development target. The agent receives neither this credential nor
  * this client. Delivery uncertainty is reconciled by durable provider ID/nonce;
  * this adapter never automatically repeats a deploy or rollback POST. */
-export function createQualityRelease({token,fetchImpl=fetch,promotionEnabled=false,verifyRuntime}){
+export function createQualityRelease({token,fetchImpl=fetch,promotionEnabled=false,verifyRuntime,recoveryCapability=null}){
  require(typeof token==='string'&&token.length>0&&typeof fetchImpl==='function'
-  &&typeof promotionEnabled==='boolean'&&typeof verifyRuntime==='function','RELEASE_CONFIGURATION_REQUIRED')
+  &&typeof promotionEnabled==='boolean'&&typeof verifyRuntime==='function'
+  &&(recoveryCapability===null||recoveryReleaseCapabilities.has(recoveryCapability)),'RELEASE_CONFIGURATION_REQUIRED')
  async function request(path,body){
   let response
   try{response=await fetchImpl('https://api.render.com/v1/services/'+SERVICE+path,{
@@ -100,6 +103,7 @@ export function createQualityRelease({token,fetchImpl=fetch,promotionEnabled=fal
    if(!promotionEnabled)fail('PROMOTION_DISABLED')
    require(sha(sourceSha)&&id(expectedDeployId)&&id(lkg?.deployId)&&sha(lkg?.sourceSha))
    const proof=await independent(verifyIndependent,{sourceSha,expectedDeployId,lkg})
+   require(digest(proof.artifactSha256),'INDEPENDENT_RELEASE_ARTIFACT_REQUIRED')
    await descriptor()
    const live=await current()
    require(live.id===expectedDeployId&&live.id===lkg.deployId&&live.commit.id===lkg.sourceSha,'FOREIGN_DEPLOYMENT')
@@ -109,10 +113,10 @@ export function createQualityRelease({token,fetchImpl=fetch,promotionEnabled=fal
    const d=deployment(await request('/deploys',{commitId:sourceSha,clearCache:'do_not_clear'}))
    require(d.commit.id===sourceSha,'DEPLOYMENT_SOURCE_MISMATCH')
    return {state:'RUNNING',deployId:d.id,sourceSha,lastKnownGoodSha:lkg.sourceSha,lastKnownGoodDeployId:lkg.deployId,
-    configurationSha256:proof.configurationSha256,artifactSha256:proof.proofSha256}
+    configurationSha256:proof.configurationSha256,artifactSha256:proof.artifactSha256}
   },
   async reconcile(release){
-   require(id(release?.deployId)&&sha(release.sourceSha)&&sha(release.lastKnownGoodSha)
+   require(id(release?.deployId)&&sha(release.sourceSha)&&id(release.lastKnownGoodDeployId)&&sha(release.lastKnownGoodSha)
     &&digest(release.artifactSha256)&&digest(release.configurationSha256))
    await descriptor()
    const d=deployment(await request('/deploys/'+release.deployId))
@@ -121,13 +125,17 @@ export function createQualityRelease({token,fetchImpl=fetch,promotionEnabled=fal
    let live
    try{live=await current()}catch(e){if(e.code==='FOREIGN_DEPLOYMENT')return {state:'COMPLETE',result:{result:'FOREIGN_DEPLOYMENT'}};throw e}
    if(live.id!==d.id)return {state:'COMPLETE',result:{result:'FOREIGN_DEPLOYMENT'}}
+   const retained=deployment(await request('/deploys/'+release.lastKnownGoodDeployId))
+   require(retained.commit.id===release.lastKnownGoodSha&&['live','deactivated'].includes(retained.status),'LAST_KNOWN_GOOD_UNVERIFIED')
    const actual=await verifyRuntime({serviceId:SERVICE,deployId:d.id,sourceSha:release.sourceSha})
    if(actual?.verified!==true||actual.sourceSha!==release.sourceSha)return {state:'UNKNOWN'}
-   return {state:'COMPLETE',result:{result:'RELEASED',sourceSha:release.sourceSha,deployId:d.id,lastKnownGoodSha:release.lastKnownGoodSha,
+   return {state:'COMPLETE',result:{result:'RELEASED',sourceSha:release.sourceSha,deployId:d.id,lastKnownGoodSha:release.lastKnownGoodSha,lastKnownGoodDeployId:release.lastKnownGoodDeployId,
     artifactSha256:release.artifactSha256,configurationSha256:release.configurationSha256,exactRuntimeVerified:true}}
   },
   async rollback({release,verifyIndependent}){
-   if(!promotionEnabled)fail('PROMOTION_DISABLED')
+   const operational=recoveryReleaseCapabilities.get(recoveryCapability)
+   if(!promotionEnabled&&!operational)fail('PROMOTION_DISABLED')
+   if(operational)await operational({release})
    require(id(release?.deployId)&&sha(release.sourceSha)&&id(release.lastKnownGoodDeployId)&&sha(release.lastKnownGoodSha))
    await independent(verifyIndependent,{sourceSha:release.lastKnownGoodSha,release})
    await descriptor()
@@ -135,6 +143,7 @@ export function createQualityRelease({token,fetchImpl=fetch,promotionEnabled=fal
    if(live.id!==release.deployId||live.commit.id!==release.sourceSha)return {result:'FOREIGN_DEPLOYMENT'}
    const lkg=deployment(await request('/deploys/'+release.lastKnownGoodDeployId))
    require(lkg.commit.id===release.lastKnownGoodSha&&['live','deactivated'].includes(lkg.status),'LAST_KNOWN_GOOD_UNVERIFIED')
+   if(operational)await operational({release})
    const d=deployment(await request('/rollback',{deployId:lkg.id}))
    require(d.commit.id===lkg.commit.id,'ROLLBACK_SOURCE_MISMATCH')
    return {state:'RUNNING',deployId:d.id,sourceSha:lkg.commit.id}
@@ -193,4 +202,52 @@ export function prepareQualityHostDeploymentConfiguration({configuration,service
   changedPaths:Object.freeze([...PI_DEPLOYMENT_PATHS])}
  Object.defineProperty(plan,'value',{value,enumerable:false,writable:false,configurable:false})
  return Object.freeze(plan)
+}
+
+const recoveryPortExact=(v,fields)=>v!==null&&Object.getPrototypeOf(v)===Object.prototype
+ &&Reflect.ownKeys(v).length===fields.length&&fields.every(k=>Object.hasOwn(v,k))
+ &&Reflect.ownKeys(v).every(k=>typeof k==='string'&&'value'in Object.getOwnPropertyDescriptor(v,k))
+/** Separate operational recovery port: default promotion remains false. Only a
+ * branded fresh owner authority plus independent historical publication may
+ * reach the private rollback capability; no deployment or callback is exposed.
+ */
+export function createQualityAttestedOperationalRecoveryRelease({token,fetchImpl=fetch,runtimeEvidence,now=Date.now}={}){
+ require(runtimeEvidence&&typeof now==='function','RUNTIME_VERIFIER_CONFIGURATION_REQUIRED')
+ const authorise=(authority,record)=>{
+  assertQualityOperationalRecovery(authority,{record,action:'ROLLBACK',now:now()})
+  require(record.rollbacksUsed===1&&record.pending?.action==='ROLLBACK'&&nonceValue(record.pending.nonce)
+   &&runtimeEvidence.nonce===record.pending.nonce,'RECOVERY_DURABLE_INTENT_REQUIRED')
+  const binding=record.pending.externalId
+  require(typeof binding==='string'&&new RegExp('^aqc-job:[a-f0-9]{40}:'+record.pending.nonce+':ROLLBACK$').test(binding),
+   'RECOVERY_DURABLE_INTENT_REQUIRED')
+  return record.release
+ }
+ const clientFor=(authority,record)=>{
+  const r=authorise(authority,record)
+  const release=Object.freeze({sourceSha:r.sourceSha,deployId:r.deployId,lastKnownGoodSha:r.lastKnownGoodSha,
+   lastKnownGoodDeployId:r.lastKnownGoodDeployId,artifactSha256:r.artifactSha256,configurationSha256:r.configurationSha256})
+  const capability=Object.freeze({})
+  recoveryReleaseCapabilities.set(capability,async claim=>{
+   authorise(authority,record);require(claim.release===release,'RECOVERY_RELEASE_BINDING_INVALID')
+  })
+  const client=createQualityAttestedRelease({token,fetchImpl,promotionEnabled:false,recoveryCapability:capability,
+   runtimeEvidence:{...runtimeEvidence,now}})
+  return {client,release}
+ }
+ return Object.freeze({
+  async rollback(input){
+   require(recoveryPortExact(input,['authority','record']),'RECOVERY_RELEASE_BINDING_INVALID')
+   const {authority,record}=input,{client,release}=clientFor(authority,record)
+   return client.rollback({release,verifyIndependent:async claim=>{
+    authorise(authority,record);require(claim.release===release&&claim.sourceSha===release.lastKnownGoodSha,'RECOVERY_RELEASE_BINDING_INVALID')
+    return Object.freeze({verified:true,sourceSha:release.lastKnownGoodSha,proofSha256:authority.recoverySha256,
+     configurationSha256:release.configurationSha256})
+   }})
+  },
+  async verifyRestored(input){
+   require(recoveryPortExact(input,['authority','record','deployId']),'RECOVERY_RELEASE_BINDING_INVALID')
+   const {authority,record,deployId}=input,{client,release}=clientFor(authority,record)
+   return client.verifyRestored({deployId,sourceSha:release.lastKnownGoodSha})
+  },
+ })
 }
