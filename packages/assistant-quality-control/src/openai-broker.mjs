@@ -6,7 +6,7 @@ import {documentDigest} from './manifest.mjs'
 const fail=code=>{throw Object.assign(Error('QA model request refused'),{code})}
 const require=(v,code='REQUEST_REJECTED')=>{if(!v)fail(code)}
 const object=v=>v!==null&&Object.getPrototypeOf(v)===Object.prototype
-const fields=new Set(['model','input','instructions','tools','tool_choice','parallel_tool_calls','reasoning','stream','store','include','max_output_tokens','text','service_tier','prompt_cache_key','prompt_cache_options','truncation'])
+const fields=new Set(['model','input','instructions','tools','tool_choice','parallel_tool_calls','reasoning','stream','store','include','max_output_tokens','text','service_tier','prompt_cache_key','prompt_cache_options','truncation','client_metadata'])
 const localInputTypes=new Set(['message','input_text','output_text','function_call','function_call_output','custom_tool_call','custom_tool_call_output','reasoning','summary_text','reasoning_text','refusal'])
 const linkedKeys=new Set(['file_id','file_url','file_data','image_url','audio','previous_response_id','conversation','item_reference'])
 function input(v,depth=0){
@@ -14,6 +14,14 @@ function input(v,depth=0){
  if(Array.isArray(v)){require(v.length<=10000);v.forEach(x=>input(x,depth+1));return}
  if(v===null||typeof v!=='object')return
  require(object(v))
+ // CLI0.167.2 carries local tool declarations as durable history entries.
+ // Validate their complete finite shape separately from conversation content;
+ // hosted tool types and remote-reference fields are still rejected.
+ if(v.type==='additional_tools'){
+  require(Object.keys(v).every(k=>['type','id','role','tools'].includes(k))&&['system','developer'].includes(v.role)
+   &&(v.id===undefined||typeof v.id==='string'&&/^[A-Za-z0-9_-]{1,128}$/.test(v.id)),'REMOTE_INPUT_REJECTED')
+  localTools(v.tools);return
+ }
  if(v.type!==undefined)require(localInputTypes.has(v.type),'REMOTE_INPUT_REJECTED')
  for(const [key,value]of Object.entries(v)){require(!linkedKeys.has(key),'REMOTE_INPUT_REJECTED');input(value,depth+1)}
 }
@@ -32,7 +40,14 @@ export function boundAgentRequest(value){
  if(value.service_tier!==undefined)require(['auto','default'].includes(value.service_tier),'UNPRICED_TIER_REJECTED')
  require(value.stream===undefined||typeof value.stream==='boolean')
  const n=value.max_output_tokens??CODE_PRICING.maxOutputTokens;require(Number.isSafeInteger(n)&&n>0)
- const r={...structuredClone(value),model:CODE_PRICING.model,store:false,service_tier:'default',truncation:'disabled',
+ // Current CLI adds local session transport metadata. It has no authority,
+ // never changes the prompt/price, and is discarded before counting, hashing,
+ // reserving or sending the only provider request.
+ if(value.client_metadata!==undefined)require(object(value.client_metadata)&&Object.keys(value.client_metadata).length<=32
+  &&Object.entries(value.client_metadata).every(([k,v])=>/^[A-Za-z0-9_.-]{1,128}$/.test(k)&&typeof v==='string'&&Buffer.byteLength(v)<=8192)
+  &&Buffer.byteLength(JSON.stringify(value.client_metadata))<=32768,'CLIENT_METADATA_REJECTED')
+ const {client_metadata:discardedClientMetadata,...local}=structuredClone(value)
+ const r={...local,model:CODE_PRICING.model,store:false,service_tier:'default',truncation:'disabled',
   reasoning:{effort:'low'},max_output_tokens:Math.min(n,CODE_PRICING.maxOutputTokens),prompt_cache_options:{mode:'explicit',ttl:'30m'}}
  require(Buffer.byteLength(JSON.stringify(r))<=1048576,'INPUT_BOUND_EXCEEDED')
  return r
@@ -79,7 +94,8 @@ export function createCostBroker({budget,permit,bearerToken,openaiKey,fetcher=fe
       const names=object(raw)?Object.keys(raw):[],type=t=>['function','custom','namespace','web_search','tool_search'].includes(t)?t:'OTHER'
       diagnostics(Object.freeze({event:'AQC_BROKER_REQUEST_REJECTED',code:error?.code??'REQUEST_REJECTED',
        fields:names.filter(n=>known.has(n)).sort(),unknownFieldCount:names.filter(n=>!known.has(n)).length,
-       toolTypes:Array.isArray(raw?.tools)?[...new Set(raw.tools.slice(0,64).map(t=>type(t?.type)))].sort():[]}))
+       toolTypes:Array.isArray(raw?.tools)?[...new Set(raw.tools.slice(0,64).map(t=>type(t?.type)))].sort():[],
+       inputTypes:Array.isArray(raw?.input)?[...new Set(raw.input.slice(0,10000).map(i=>localInputTypes.has(i?.type)||['additional_tools','configuration_update','compaction_trigger','context_compaction','compaction'].includes(i?.type)?i.type:'OTHER'))].sort():[]}))
      }catch{/* Diagnostic delivery never grants or retries a request. */}
      throw error
     }
@@ -139,7 +155,7 @@ export function createCostBroker({budget,permit,bearerToken,openaiKey,fetcher=fe
     }
     if(!res.headersSent){
      const status=e?.code==='AUTH_REQUIRED'?401:e?.code==='BROKER_BUSY'?429:e?.code==='REQUEST_ALREADY_ISSUED'?409
-      :e?.code==='ROUTE_REJECTED'?404:['REQUEST_REJECTED','REMOTE_INPUT_REJECTED','HOSTED_TOOL_REJECTED','UNPRICED_TIER_REJECTED'].includes(e?.code)?400:503
+      :e?.code==='ROUTE_REJECTED'?404:['REQUEST_REJECTED','REMOTE_INPUT_REJECTED','HOSTED_TOOL_REJECTED','UNPRICED_TIER_REJECTED','CLIENT_METADATA_REJECTED'].includes(e?.code)?400:503
      res.writeHead(status,{'Content-Type':'application/json','Cache-Control':'no-store'});res.end(JSON.stringify({error:{code:e?.code??'BROKER_UNAVAILABLE',message:'QA model request unavailable'}}))
     }
     else res.destroy()

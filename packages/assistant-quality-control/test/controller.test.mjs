@@ -78,3 +78,50 @@ test('Cancellation adopts an independently verified own deployment instead of fo
   verify:async(a,v,options)=>{assert.equal(a,'PROMOTE');assert.equal(options.containment,true);verified++;return v}},authorize:async()=>{throw Error('No new data access')},budget:{ensureIncident:async()=>{},closeIncident:async()=>{}},workerId:'fixture',now:()=>now})
  assert.equal((await control.tick(r.id)).waitingFor,'FREE_SAFETY_MONITORING');assert.equal(verified,1);assert.equal(r.release.sourceSha,head);assert.equal(r.classSuspended,true);assert.equal(r.pending,null)
 })
+
+test('Bound dispatch preserves the original workflow source across lost reply and changed main',async()=>{
+ let r={...incident(),status:'REPRODUCED'},binds=0,dispatches=0,attempts=0
+ const {qualityJobBinding,readQualityJobBinding}=await import('../src/controller.mjs')
+ const store={
+  claim:async()=>({record:structuredClone(r),leaseToken:'fixture'}),
+  prepare:async o=>{readQualityJobBinding(o.externalId,{nonce:o.nonce,action:o.action});attempts++;r={...r,revision:r.revision+2,attemptsUsed:attempts,pending:{action:o.action,nonce:o.nonce,externalId:o.externalId}};return {record:structuredClone(r)}},
+  recordExternal:async()=>{throw Error('Binding must already be committed')},complete:async()=>{throw Error('No result')},
+  stop:async()=>{throw Error('Uncertain dispatch must survive')},release:async()=>{},
+ }
+ const options={store,actions:{
+  bind:async(action,{nonce})=>{binds++;return qualityJobBinding({controlSourceSha:binds===1?base:head,nonce,action})},
+  dispatch:async(_,{intent})=>{dispatches++;assert.equal(readQualityJobBinding(intent.externalId,intent).controlSourceSha,base);throw Object.assign(Error('Lost reply'),{code:'DELIVERY_UNCERTAIN'})},
+  reconcile:async intent=>{assert.equal(readQualityJobBinding(intent.externalId,intent).controlSourceSha,base);return {state:'UNKNOWN'}},
+  cancel:async()=>({state:'UNKNOWN',effects:'UNKNOWN'}),verify:async()=>{throw Error('No result')}},
+  authorize:async()=>({manifest:{incidentId:r.id}}),budget:{ensureIncident:async()=>{},closeIncident:async()=>{}},workerId:'bound-restart',now:()=>now}
+ assert.equal((await createQualityController(options).tick(r.id)).waitingFor,'RECONCILIATION')
+ assert.equal((await createQualityController(options).tick(r.id)).waitingFor,'UNKNOWN')
+ assert.equal(binds,1);assert.equal(dispatches,1);assert.equal(attempts,1)
+ for(const value of [r.pending.externalId+':extra','aqc-job:'+base+':'+randomUUID()+':EXECUTE','https://example.invalid'])
+  assert.throws(()=>readQualityJobBinding(value,r.pending),{code:'JOB_BINDING_INVALID'})
+ assert.throws(()=>qualityJobBinding({controlSourceSha:base,nonce:randomUUID(),action:'RUN_COMMAND'}),{code:'JOB_BINDING_INVALID'})
+})
+test('Uncertain atomic preparation is reconciled without dispatch or stale stop',async()=>{
+ const {qualityJobBinding}=await import('../src/controller.mjs')
+ let r={...incident(),status:'REPRODUCED'},dispatched=0
+ const store={claim:async()=>({record:structuredClone(r),leaseToken:'fixture'}),
+  prepare:async o=>{r={...r,revision:r.revision+2,attemptsUsed:1,pending:{action:o.action,nonce:o.nonce,externalId:o.externalId}};throw Object.assign(Error('Lost database reply'),{code:'DELIVERY_UNCERTAIN'})},
+  recordExternal:async()=>{throw Error('No extra write')},complete:async()=>{throw Error('No result')},stop:async()=>{throw Error('Cannot overwrite uncertain preparation')},release:async()=>{}}
+ const options={store,actions:{bind:async(action,{nonce})=>qualityJobBinding({controlSourceSha:base,nonce,action}),
+  dispatch:async()=>{dispatched++},reconcile:async()=>({state:'UNKNOWN'}),cancel:async()=>({state:'UNKNOWN',effects:'UNKNOWN'}),verify:async()=>{}},
+  authorize:async()=>({manifest:{incidentId:r.id}}),budget:{ensureIncident:async()=>{},closeIncident:async()=>{}},workerId:'lost-prepare',now:()=>now}
+ assert.equal((await createQualityController(options).tick(r.id)).waitingFor,'RECONCILIATION')
+ assert.equal((await createQualityController(options).tick(r.id)).waitingFor,'UNKNOWN')
+ assert.equal(dispatched,0);assert.equal(r.attemptsUsed,1)
+})
+test('Acknowledged bound dispatch does not rewrite its immutable provider identity',async()=>{
+ const {qualityJobBinding}=await import('../src/controller.mjs')
+ let r={...incident(),status:'REPRODUCED'}
+ const store={claim:async()=>({record:structuredClone(r),leaseToken:'fixture'}),
+  prepare:async o=>{r={...r,revision:r.revision+2,attemptsUsed:1,pending:{action:o.action,nonce:o.nonce,externalId:o.externalId}};return {record:structuredClone(r)}},
+  recordExternal:async()=>{throw Error('Cannot replace the binding with a run ID')},complete:async()=>{},stop:async()=>{throw Error('No stop')},release:async()=>{}}
+ const c=createQualityController({store,actions:{bind:async(action,{nonce})=>qualityJobBinding({controlSourceSha:base,nonce,action}),
+  dispatch:async(_,{intent})=>({externalId:intent.externalId}),reconcile:async()=>{},cancel:async()=>{},verify:async()=>{}},
+  authorize:async()=>({manifest:{incidentId:r.id}}),budget:{ensureIncident:async()=>{},closeIncident:async()=>{}},workerId:'acknowledged',now:()=>now})
+ assert.equal((await c.tick(r.id)).waitingFor,'RUNNING');assert.equal(r.revision,3);assert.equal(r.attemptsUsed,1)
+})

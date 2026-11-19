@@ -16,12 +16,49 @@ const sha = /^[a-f0-9]{40}$/
 const deny = code => {throw new Error(code)}
 const git = (cwd, args) => execFileSync('git', args, {cwd, encoding:'utf8', stdio:['ignore','pipe','pipe']}).trim()
 const equal = (a,b) => JSON.stringify(a) === JSON.stringify(b)
-const safePath = name => typeof name === 'string' && /^[a-zA-Z0-9_.@/-]+$/.test(name)
+const safePath = name => typeof name === 'string' && /^[a-zA-Z0-9_.@/\[\]-]+$/.test(name)
   && !name.startsWith('/') && !name.endsWith('/') && name.split('/').every(p => p && p !== '.' && p !== '..')
 const protectedPath = name => /(^|\/)AGENTS\.md$/.test(name)
   || /^(Canon\/|governance\/|scripts\/governance\/|\.github\/|\.devcontainer\/)/.test(name)
   || /(^|\/)[^/]*(integration|compatibility|provenance|source)[^/]*\.json$/.test(name)
   || /(^|\/)(\.npmrc|\.env[^/]*|development-integration\.json|operation-integration\.json)$/.test(name)
+
+// PROPOSED closed source-only exception. Inert until this policy is independently
+// owner-accepted on authority main and a separately approved ACTIVE ledger record
+// exists. No historical receipt or general source JSON admission is granted.
+export const ASSISTANT_RESERVATION_SOURCE_ADMISSION = Object.freeze({
+  admissionId:"ARCHITECTURE:ARCH-ACG-M1M2-COMPLETION-20261117",
+  sourceSha:"03eb7c82853ecac617544d81abc61e1350af383b",
+  baseSha:"5f3f91beaa6c32d9528c3c6d3e233808540d1532",
+  filesSha256:"b5db217b00c4d18c5063c2d292470d74452c15aa241fc03bf5ebe3684a6054fb",
+  newSourceRecord:"apps/architecture-lab/assistant-reservation-source.json",
+  protectedTests:Object.freeze(["scripts/governance/controlled-package-ci.test.mjs","scripts/governance/platform-source-hub-foundation.test.mjs"])
+})
+function exactReservationSourceEntry(record, entry) {
+  const pin=ASSISTANT_RESERVATION_SOURCE_ADMISSION
+  const admittedPath=(entry.path===pin.newSourceRecord && entry.status==='added')
+    || (pin.protectedTests.includes(entry.path) && entry.status==='modified')
+  return admittedPath && entry.mode==='100644'
+    && entry.projectKey==='ARCHITECTURE' && record.id===pin.admissionId
+    && record.sourceSha===pin.sourceSha && record.baseSha===pin.baseSha
+    && createHash('sha256').update(JSON.stringify(record.files)).digest('hex')===pin.filesSha256
+}
+
+// Inert proposal: one closed producer record; requires owner acceptance on trusted main.
+export const BENCHMARK_UNMETERED_SOURCE_ADMISSION=Object.freeze({
+  "admissionId": "ARCHITECTURE:ARCH-FINDER-UNMETERED-CONTRACT-20261118",
+  "sourceSha": "7edf89c07502bc331f5d4966c961f7eb1058b51a",
+  "baseSha": "a34dcdfc2b4e9c83e0112435a344d586d8c51d16",
+  "filesSha256": "ad693889254ed13974d5b10f2b79c1fd8d5cc9d11b23296f7f84e82bf3e89519",
+  "newSourceRecord": "apps/architecture-lab/benchmark-unmetered-source.json"
+})
+export function exactBenchmarkSourceEntry(record,entry){
+ const pin=BENCHMARK_UNMETERED_SOURCE_ADMISSION
+ return entry.path===pin.newSourceRecord && entry.status==='added' && entry.mode==='100644'
+  && entry.projectKey==='ARCHITECTURE' && record.id===pin.admissionId
+  && record.sourceSha===pin.sourceSha && record.baseSha===pin.baseSha
+  && createHash('sha256').update(JSON.stringify(record.files)).digest('hex')===pin.filesSha256
+}
 
 export function executionProfile(projectKey, governanceRoot = root) {
   const profile = resolveProjectProfile(projectKey, governanceRoot)
@@ -114,7 +151,23 @@ export function trustedAdmissionById(id, governanceRoot = root) {
   return record
 }
 
-export function assertSourceAdmission(record, {repository,actor,candidateSha,currentMainSha,files,repositoryRoot}, governanceRoot = root, now = Date.now()) {
+// Only the trusted controller supplies this separately reviewed table. The
+// candidate and its Source record cannot authorize protected metadata themselves.
+export const CURRENT_SDK_SOURCE_REGRESSION_TESTS=Object.freeze(["scripts/governance/controlled-package-ci.test.mjs","scripts/governance/platform-source-hub-foundation.test.mjs"])
+function permitsReviewedMetadata(record,entry,policy){
+ const reviewed=policy?.reviewedMetadata,expected=reviewed?.entries?.[entry.path]
+ if(reviewed?.recordId!==record.id||reviewed?.taskId!==record.taskId
+   ||!expected||expected.sha!==entry.blob||expected.mode!=='100644'||entry.mode!=='100644')return false
+ const parts=entry.path.split('/')
+ if(parts.some(part=>['.git','node_modules','.pmos','.context','AGENTS.md'].includes(part)))return false
+ if(expected.kind==='SDK_COMPATIBILITY_REGRESSION')return CURRENT_SDK_SOURCE_REGRESSION_TESTS.includes(entry.path)&&entry.status==='modified'&&entry.projectKey==='ARCHITECTURE'
+ if(expected.kind==='ENVIRONMENT_TEMPLATE')return /^apps\/[A-Za-z0-9_-]+\/\.env\.example$/.test(entry.path)
+ if(parts.some(part=>part.startsWith('.env')||part.startsWith('.npmrc')))return false
+ return expected.kind==='HISTORICAL_EVIDENCE'&&(/^Canon\/evidence\/[^/]+\.md$/.test(entry.path)
+   || /^(apps|packages)\//.test(entry.path)&&/(^|\/)[^/]*(integration|compatibility|provenance|source)[^/]*\.json$/.test(entry.path))
+}
+
+export function assertSourceAdmission(record, {repository,actor,candidateSha,currentMainSha,files,repositoryRoot}, governanceRoot = root, now = Date.now(), policy = undefined) {
   if (!record || record.status !== 'ACTIVE' || record.repository !== repository || record.actor !== actor
     || record.targetEnvironment !== 'development' || record.scope !== 'SOURCE_VALIDATION_ONLY'
     || !record.taskId || !record.approvalRef || !sha.test(record.sourceSha ?? '') || !sha.test(record.baseSha ?? '')
@@ -126,7 +179,7 @@ export function assertSourceAdmission(record, {repository,actor,candidateSha,cur
   const names = new Set(), actual = new Map(files.map(f => [f.filename,f]))
   if (actual.size !== files.length) deny('SOURCE_ADMISSION_FILES_REJECTED')
   for (const entry of record.files) {
-    if (!safePath(entry.path) || protectedPath(entry.path) || names.has(entry.path)
+    if (!safePath(entry.path) || (protectedPath(entry.path) && !exactReservationSourceEntry(record,entry) && !exactBenchmarkSourceEntry(record,entry) && !permitsReviewedMetadata(record,entry,policy)) || names.has(entry.path)
       || !sha.test(entry.blob ?? '') || !['100644','100755'].includes(entry.mode)
       || !['added','modified'].includes(entry.status)) deny('SOURCE_ADMISSION_FILES_REJECTED')
     names.add(entry.path)
@@ -142,10 +195,10 @@ export function assertSourceAdmission(record, {repository,actor,candidateSha,cur
   return record
 }
 
-export function assertSourceCheckout(candidateRoot, record, state, governanceRoot = root) {
+export function assertSourceCheckout(candidateRoot, record, state, governanceRoot = root, policy = undefined) {
   const base = fs.realpathSync(candidateRoot)
   if (base !== path.resolve(candidateRoot) || git(base,['rev-parse','HEAD']) !== state.sha) deny('SOURCE_CHECKOUT_REJECTED')
-  assertSourceAdmission(record,{repository:record.repository,actor:state.actor,candidateSha:state.sha,currentMainSha:state.controlSha,files:state.files},governanceRoot)
+  assertSourceAdmission(record,{repository:record.repository,actor:state.actor,candidateSha:state.sha,currentMainSha:state.controlSha,files:state.files},governanceRoot,Date.now(),policy)
   // Preserve source lineage and require current authority to be incorporated.
   for (const [ancestor,head] of [[record.sourceSha,state.sha],[record.baseSha,record.sourceSha],[state.controlSha,state.sha]]) {
     try {git(base,['merge-base','--is-ancestor',ancestor,head])} catch {deny('SOURCE_BASE_OR_LINEAGE_REJECTED')}
@@ -164,6 +217,51 @@ export function assertSourceCheckout(candidateRoot, record, state, governanceRoo
   // source outside the admitted diff before the exact-source proof is emitted.
   if (git(base,['status','--porcelain=v1','--untracked-files=all','--ignore-submodules=none'])) deny('SOURCE_CHECKOUT_DIRTY')
   return true
+}
+
+// Historical application-source compatibility, not a grant or source proof.
+// Only a trusted caller's fetched main supplies authority; candidate metadata
+// and candidate JavaScript are never evaluated to establish it.
+export function trustedApplicationContinuity(candidateRoot, watchedPaths, {authorityRoot=root,governanceRoot=root}={}) {
+  const paths=[...new Set(watchedPaths)]
+  if(paths.length!==watchedPaths.length || paths.some(p=>!p.startsWith('apps/')||!safePath(p)||protectedPath(p)||!/\.(?:tsx?|mjs)$/.test(p))) deny('APPLICATION_CONTINUITY_PATH_REJECTED')
+  const remote=git(authorityRoot,['remote','get-url','origin'])
+  if(!['https://github.com/profitia/SG-dev','https://github.com/profitia/SG-dev.git','git@github.com:profitia/SG-dev.git'].includes(remote))deny('APPLICATION_CONTINUITY_AUTHORITY_REQUIRED')
+  const controlSha=git(authorityRoot,['rev-parse','refs/remotes/origin/main'])
+  if(!sha.test(controlSha))deny('APPLICATION_CONTINUITY_AUTHORITY_REQUIRED')
+  const readGit=(repo,ref,p)=>execFileSync('git',['cat-file','blob',ref+':'+p],{cwd:repo,stdio:['ignore','pipe','pipe'],maxBuffer:2*1024*1024})
+  const authority=p=>{const entry=git(authorityRoot,['ls-tree',controlSha,'--',p]);if(!entry)return null;if(!entry.startsWith('100644 blob '))deny('APPLICATION_CONTINUITY_AUTHORITY_MODE_REJECTED');return readGit(authorityRoot,controlSha,p)}
+  const physical=p=>{
+    const base=fs.realpathSync(candidateRoot),target=path.join(base,p),stat=fs.lstatSync(target)
+    if(!stat.isFile()||stat.isSymbolicLink()||fs.realpathSync(target)!==target||stat.size>1024*1024||stat.mode&0o111)deny('APPLICATION_CONTINUITY_PHYSICAL_REJECTED')
+    return fs.readFileSync(target)
+  }
+  const bytes=new Map(paths.map(p=>[p,physical(p)]))
+  const sameAsAuthority=p=>{const b=authority(p);return b!==null&&bytes.get(p).equals(b)}
+  const reader=()=>p=>{if(!bytes.has(p))deny('APPLICATION_CONTINUITY_PATH_REJECTED');return Buffer.from(bytes.get(p))}
+  // Already accepted main source is authenticated against its actual Git bytes,
+  // independently of a past, temporary admission. Immutable receipt checks in
+  // the historical reader still run unchanged.
+  if(paths.every(sameAsAuthority))return reader()
+  const ledgerBytes=authority(ADMISSIONS_PATH)
+  if(!ledgerBytes)return null
+  if(ledgerBytes.length>1024*1024)deny('SOURCE_ADMISSION_STORE_REJECTED')
+  const ledger=JSON.parse(ledgerBytes.toString('utf8'))
+  if(ledger.schemaVersion!=='1.0'||!Array.isArray(ledger.records)||ledger.records.some(r=>!r?.id)
+    ||new Set(ledger.records.map(r=>r.id)).size!==ledger.records.length)deny('SOURCE_ADMISSION_STORE_REJECTED')
+  const matches=ledger.records.filter(r=>Array.isArray(r.files)&&r.files.some(f=>paths.includes(f.path))&&r.files.every(f=>{
+    if(!safePath(f.path))return false
+    try{const b=physical(f.path);return createHash('sha1').update('blob '+b.length+'\0').update(b).digest('hex')===f.blob}catch{return false}
+  }))
+  if(matches.length>1)deny('APPLICATION_CONTINUITY_CONFLICT')
+  if(!matches.length)return null
+  const record=matches[0],candidateSha=git(candidateRoot,['rev-parse','HEAD'])
+  assertSourceAdmission(record,{repository:'profitia/SG-dev',actor:'profitia',candidateSha,currentMainSha:controlSha,
+    files:record.files.map(f=>({filename:f.path,sha:f.blob,status:f.status}))},governanceRoot)
+  assertSourceCheckout(candidateRoot,record,{sha:candidateSha,controlSha,actor:'profitia',
+    files:record.files.map(f=>({filename:f.path,sha:f.blob,status:f.status}))},governanceRoot)
+  for(const name of paths)if(!record.files.some(f=>f.path===name)&&!sameAsAuthority(name))deny('APPLICATION_CONTINUITY_BYTES_REJECTED')
+  return reader()
 }
 
 // Mandate data is authoritative only when loaded from the independently accepted
@@ -219,7 +317,7 @@ export function sourceAdmissionDigest(record) {
   return createHash('sha256').update(JSON.stringify(canonical(record))).digest('hex')
 }
 
-export function assertSourceValidationProof(proof,run,candidateSha,workflowId,{expectedControlDigest,currentRunId,currentRef,completedJobs=[]}={},governanceRoot=root) {
+export function assertSourceValidationProof(proof,run,candidateSha,workflowId,{expectedControlDigest,currentRunId,currentRef,completedJobs=[]}={},governanceRoot=root,policy=undefined) {
   const sameRun=String(run.id)===String(currentRunId)&&currentRef==='refs/heads/main'&&run.event==='push'
     &&completedJobs.some(j=>j.name==='SG2 controlled operation integration'&&j.conclusion==='success')
   if(run.workflow_id!==workflowId||run.repository?.full_name!=='profitia/SG-dev'||run.head_branch!=='main'
@@ -238,7 +336,7 @@ export function assertSourceValidationProof(proof,run,candidateSha,workflowId,{e
   }else{
     const record=trustedAdmissionById(proof.sourceAdmissionId,governanceRoot)
     assertSourceAdmission(record,{repository:proof.repository,actor:run.actor.login,candidateSha,currentMainSha:proof.controlSha,
-      files:record.files.map(f=>({filename:f.path,sha:f.blob,status:f.status}))},governanceRoot)
+      files:record.files.map(f=>({filename:f.path,sha:f.blob,status:f.status}))},governanceRoot,Date.now(),policy)
     if(proof.sourceAdmissionDigest!==sourceAdmissionDigest(record)||proof.originalSourceSha!==record.sourceSha)deny('VALIDATION_INCOMPLETE')
   }
   if(proof.credentialRemovedBeforeCandidateExecution!==true||proof.privatePackageArtifactsPublished!==false

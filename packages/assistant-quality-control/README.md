@@ -51,8 +51,10 @@ off. This does not start nightly QA or Stage2.
   upstream Codex Action socket protection. The public projection reads exact
   committed SG-dev blobs; payloads, local .env, private packages and holdout are
   excluded. Actual file collection rejects extra changes, links and executable
-  regression files. **Linux execution is not yet qualified**: a separate signed
-  keyless tool-loop/isolation/cancellation receipt is required before paid work.
+  regression files. **The actual keyless Linux launcher passed** in main-only run44137264018
+  on source8baa4cd7. Its original861-byte artifact14353345634 and exact policy
+  inputs were independently verified (ZIP SHA256976e278045798d8e304093cf96a6349a747ea1260df3f0af878babfb3e028499).
+  A properly installed independent signed qualification is still required before paid work.
 
 The workflow at `.github/workflows/assistant-quality-repair.yml` runs keyless
 source tests, including isolated PostgreSQL. Its separate main-only
@@ -63,7 +65,10 @@ no network implementation. Ephemeral test signatures reach the actual launcher;
 they are discarded and never installed as production trust. The published result
 contains unsigned observations only. Independent run/artifact verification and
 an installed verifier are still needed to attest a successful qualification.
-No qualification PASS is claimed until that actual workflow succeeds.
+Actual qualification44137264018 succeeded: filesystem, kernel/Unix egress,
+privilege isolation, real tool loop, namespace-aware cancellation and complete
+cgroup/identity/workspace cleanup passed. Four in-memory fake-upstream requests
+were used; no provider request, pilot or production trust was created.
 
 Commands extend the built-in workspace profile with root/tmp denial and minimal
 runtime reads. Cancellation reports a stop proof only after the entire cgroup
@@ -108,7 +113,7 @@ key belongs in Git, agent inputs, artifacts or telemetry.
 The monitoring entrypoint and bounded GitHub/Render clients exist. The GitHub
 client can dispatch exact-main qualification once and reconcile a lost reply or
 request cancellation without asserting that an executor stopped. Deployment
-job composition, Linux qualification, independent publisher credentials and
+job composition, installed independent qualification trust, publisher credentials and
 coordination, accepted product integration, and live recovery verification
 remain required before paid work or full technical/Stage1 acceptance. Operational metadata purge currently
 only handles reconciled terminal incidents; expiry/reconciliation of retained

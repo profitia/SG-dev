@@ -1,4 +1,5 @@
 import {randomUUID} from 'node:crypto'
+import {assertQualityOperationalRecovery} from './recovery.mjs'
 
 export const TERMINAL_STATES=Object.freeze(['CLOSED','INSUFFICIENT_EVIDENCE','OUT_OF_SCOPE','BUDGET_STOP','ROLLED_BACK','NEEDS_TECHNICAL_REVIEW'])
 const fail=code=>{throw Object.assign(Error('Quality controller refused transition'),{code})}
@@ -7,6 +8,22 @@ const sha=v=>typeof v==='string'&&/^[a-f0-9]{40}$/.test(v)
 const hash=v=>typeof v==='string'&&/^[a-f0-9]{64}$/.test(v)
 const positive=v=>Number.isSafeInteger(v)&&v>0
 const cleanPatch=p=>p&&hash(p.artifactSha256)&&hash(p.treeSha256)
+
+const jobActions=Object.freeze(['QUALIFY','REPRODUCE','EXECUTE','VERIFY','PROPOSE','CHECKS','PROMOTE','VERIFY_RUNTIME','OBSERVE','ROLLBACK'])
+const uuid=v=>typeof v==='string'&&/^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(v)
+/** Immutable provider identity is persisted before dispatch. A restart reads it
+ * from the committed intent instead of substituting whichever main is current. */
+export function qualityJobBinding({controlSourceSha,nonce,action}){
+ require(sha(controlSourceSha)&&uuid(nonce)&&jobActions.includes(action),'JOB_BINDING_INVALID')
+ return 'aqc-job:'+controlSourceSha+':'+nonce+':'+action
+}
+export function readQualityJobBinding(value,{nonce,action}){
+ require(typeof value==='string'&&uuid(nonce)&&jobActions.includes(action),'JOB_BINDING_INVALID')
+ const parts=value.split(':')
+ require(parts.length===4&&parts[0]==='aqc-job'&&parts[2]===nonce&&parts[3]===action
+  &&qualityJobBinding({controlSourceSha:parts[1],nonce,action})===value,'JOB_BINDING_INVALID')
+ return Object.freeze({controlSourceSha:parts[1],nonce,action})
+}
 
 /** Called only after independent result verification. Neither an agent's report
  * nor a semantic verdict may be passed directly to this state transition. */
@@ -58,7 +75,13 @@ export function advanceIncident(record,action,result,now){
    require(result.result==='RELEASED'&&sha(result.sourceSha)&&hash(result.artifactSha256)&&hash(result.configurationSha256)
     &&typeof result.deployId==='string'&&result.deployId&&sha(result.lastKnownGoodSha)&&result.exactRuntimeVerified===true)
    n.status='RELEASED';n.release={sourceSha:result.sourceSha,artifactSha256:result.artifactSha256,configurationSha256:result.configurationSha256,
-    deployId:result.deployId,lastKnownGoodSha:result.lastKnownGoodSha,releasedAt:now};n.observingUntil=now+30*60000;break
+    deployId:result.deployId,lastKnownGoodSha:result.lastKnownGoodSha,releasedAt:now}
+   if(result.lastKnownGoodDeployId!==undefined){
+    require(typeof result.lastKnownGoodDeployId==='string'&&/^dep-[a-z0-9]{10,40}$/.test(result.lastKnownGoodDeployId)
+     &&result.lastKnownGoodDeployId!==result.deployId)
+    n.release.lastKnownGoodDeployId=result.lastKnownGoodDeployId
+   }
+   n.observingUntil=now+30*60000;break
   case 'VERIFY_RUNTIME':
    require(result.sourceSha===record.release?.sourceSha)
    if(result.result==='REGRESSION_CONFIRMED'){n.status='OBSERVING';n.rollbackRequired=true;n.classSuspended=true;n.reason='CONFIRMED_RUNTIME_REGRESSION';break}
@@ -104,9 +127,11 @@ export function createQualityController({store,actions,authorize,budget,now=Date
  require(typeof workerId==='string'&&workerId.length>0,'CONFIGURATION_REQUIRED')
  for(const [o,names]of [[store,['claim','prepare','recordExternal','complete','stop','release']],[actions,['dispatch','reconcile','cancel','verify']],[budget,['ensureIncident','closeIncident']]])for(const name of names)require(typeof o?.[name]==='function','CONFIGURATION_REQUIRED')
  require(typeof authorize==='function'&&typeof now==='function','CONFIGURATION_REQUIRED')
+ require(actions.bind===undefined||typeof actions.bind==='function','CONFIGURATION_REQUIRED')
+ require(actions.retain===undefined||typeof actions.retain==='function','CONFIGURATION_REQUIRED')
  return Object.freeze({async tick(id){
   const claimed=await store.claim({id,workerId,now:now(),leaseMs:30000});if(!claimed)return {status:'BUSY'}
-  let record=claimed.record
+  let record=claimed.record,prepareInFlight=false
   const identity=()=>({id,leaseToken:claimed.leaseToken,revision:record.revision})
   const cancelPending=async()=>{
    // A cancellation HTTP acknowledgement is not confirmation that a job
@@ -137,10 +162,14 @@ export function createQualityController({store,actions,authorize,budget,now=Date
    // LKG restoration after the paid/data-purpose mandate expires. The port
    // must return only operational authority in that case, never a data grant.
    const authority=await authorize(record,{containment:record.rollbackRequired===true||!!record.release})
+   const operationalRecovery=authority?.kind==='AQC_OPERATIONAL_RECOVERY_V1'
+   if(operationalRecovery)assertQualityOperationalRecovery(authority,{record,action:record.pending?.action,now:now()})
    require(authority?.manifest?.incidentId===id,'AUTHORITY_MISMATCH')
    const finish=async result=>{
     const verified=await actions.verify(record.pending.action,result,{record,authority})
-    const changed=advanceIncident(record,record.pending.action,verified,now())
+    const completedAt=now()
+    let changed=advanceIncident(record,record.pending.action,verified,completedAt)
+    if(actions.retain!==undefined)changed=actions.retain(verified,{record,changed,authority,completedAt})
     record=await store.complete({...identity(),nonce:record.pending.nonce,record:changed})
     if(['CLOSED','ROLLED_BACK','INSUFFICIENT_EVIDENCE','OUT_OF_SCOPE','NEEDS_TECHNICAL_REVIEW'].includes(record.status))await budget.closeIncident(id)
     return {status:record.status}
@@ -152,20 +181,31 @@ export function createQualityController({store,actions,authorize,budget,now=Date
     return {status:record.status,waitingFor:external.state,nonce:record.pending.nonce}
    }
    const action=nextAction(record,now());if(!action)return {status:record.status}
-   if(['EXECUTE','PROPOSE','PROMOTE','VERIFY_RUNTIME'].includes(action))await budget.ensureIncident(id,{repairClass:record.repairClass,causeFingerprint:record.causeFingerprint,acceptanceRequired:true})
-   const prepared=await store.prepare({...identity(),action,nonce:randomUUID(),now:now(),consumeAttempt:action==='EXECUTE',consumeRollback:action==='ROLLBACK',enforceReleaseWindow:action==='PROMOTE'})
+   if(operationalRecovery)assertQualityOperationalRecovery(authority,{record,action,now:now()})
+   if(['EXECUTE','PROPOSE','PROMOTE','VERIFY_RUNTIME'].includes(action)&&!(operationalRecovery&&action==='VERIFY_RUNTIME'))await budget.ensureIncident(id,{repairClass:record.repairClass,causeFingerprint:record.causeFingerprint,acceptanceRequired:true})
+   const nonce=randomUUID()
+   // bind is a trusted read-only transport hook, never a dispatch. The native
+   // store commits PREPARE and this binding in one statement/transaction.
+   const binding=actions.bind===undefined?undefined:await actions.bind(action,{record,nonce,authority})
+   if(actions.bind!==undefined)readQualityJobBinding(binding,{nonce,action})
+   prepareInFlight=true
+   const prepared=await store.prepare({...identity(),action,nonce,now:now(),consumeAttempt:action==='EXECUTE',consumeRollback:action==='ROLLBACK',enforceReleaseWindow:action==='PROMOTE',
+    ...(binding===undefined?{}:{externalId:binding})})
+   prepareInFlight=false
    if(prepared.waitUntil)return {status:record.status,waitingUntil:prepared.waitUntil}
    record=prepared.record
+   if(binding!==undefined)require(record.pending?.externalId===binding&&record.pending.nonce===nonce&&record.pending.action===action,'JOB_BINDING_NOT_COMMITTED')
    // All dispatch ports accept finite actions and immutable IDs/digests, never
    // an executable command, URL, transcript, or model-generated instruction.
    const dispatched=await actions.dispatch(action,{record,intent:record.pending,authority})
    if(dispatched.immediate!==undefined)return await finish(dispatched.immediate)
    require(typeof dispatched.externalId==='string'&&dispatched.externalId.length>0&&dispatched.externalId.length<=256,'EXTERNAL_ID_INVALID')
-   record=await store.recordExternal({...identity(),nonce:record.pending.nonce,externalId:dispatched.externalId})
+   if(binding===undefined)record=await store.recordExternal({...identity(),nonce:record.pending.nonce,externalId:dispatched.externalId})
+   else require(dispatched.externalId===binding,'JOB_BINDING_CHANGED')
    return {status:record.status,waitingFor:'RUNNING',nonce:record.pending.nonce}
   }catch(error){
    // An external timeout leaves the committed intent intact for reconciliation.
-   if(record.pending&&['DELIVERY_UNCERTAIN','PROVIDER_UNAVAILABLE','LEASE_LOST'].includes(error?.code))return {status:record.status,waitingFor:'RECONCILIATION'}
+   if((record.pending||prepareInFlight)&&['DELIVERY_UNCERTAIN','PROVIDER_UNAVAILABLE','LEASE_LOST'].includes(error?.code))return {status:record.status,waitingFor:'RECONCILIATION'}
    if(record.release&&!record.pending){
     require(typeof store.contain==='function','CONTAINMENT_STORE_REQUIRED')
     record=await store.contain({...identity(),reason:['LIMIT_EXCEEDED','AUTHORITY_REVOKED','MANDATE_EXPIRED'].includes(error?.code)?error.code:'CONTROL_FAILURE'})

@@ -1,3 +1,8 @@
+import {PLATFORM_KNOWLEDGE_STAGE2_ACG_COMPOSITION_PROVENANCE} from './controlled-package-ci.mjs'
+import {PLATFORM_KNOWLEDGE_STAGE2_SRM_TARGET_PROVENANCE} from './controlled-package-ci.mjs';
+import {PLATFORM_KNOWLEDGE_STAGE2_PI_COMPOSITION_PROVENANCE} from './controlled-package-ci.mjs';
+import {tmpdir as knowledgePolicyTmpdir} from 'node:os';
+import {PLATFORM_KNOWLEDGE_STAGE2_REPAIR_PROVENANCE} from './controlled-package-ci.mjs'
 import {publicProofContract} from './controlled-package-ci.mjs'
 import {MANIFEST_SUCCESSOR_1102_REVIEW} from './controlled-package-ci.mjs'
 import {PLATFORM_KNOWLEDGE_STAGE2_REVIEW,PLATFORM_KNOWLEDGE_STAGE2_PROVENANCE,assertKnowledgeStage2Entry,knowledgeStage2TrustedPredecessor,currentProofContract} from './controlled-package-ci.mjs'
@@ -28,7 +33,8 @@ import {PRIVATE_RECURRING_SHELL_REVIEW,PRIVATE_RECURRING_SHELL_CURRENT_REVIEW,PR
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
-import {fileURLToPath} from 'node:url'
+import {fileURLToPath, pathToFileURL} from 'node:url'
+import {createAcgLegacyRecurringFixture} from '../../packages/platform-contracts/test/assistant-reservation-source.mjs'
 import {spawnSync, execFileSync} from 'node:child_process'
 import {SOURCE_HUB_UNIVERSAL_FIRST_PARTY_REVIEW,assertUniversalFirstPartyReviewEntry,SOURCE_HUB_CURRENT_E1_REVIEW,assertCurrentE1ReviewEntry,SOURCE_HUB_STAGE2A_REVIEW, assertTrustedContext, assertEnvironment, selectCandidate, assertArchitectureFiles, resolveCandidateAdmission, assertArchitectureCheckout, CONTROL_POLICY_FILES, assertCredentialMetadata, assertReceipt, assertPackagePolicy, assertManifestPolicy, assertLocalPackageSources, assertProof, controlPolicyDigest, operationContractProvenanceDigest, REPOSITORY, WORKFLOW, PRIVATE_PACKAGES, LOCAL_PACKAGES, CONTROLLED_CANDIDATE_PREFIXES, KRS_GOVERNANCE_REVIEW_FILES, ADP_GOVERNANCE_REVIEW, LIMITS_G1_GOVERNANCE_REVIEW, FRESH_REPORT_PRODUCER_REVIEW, PAYLOAD_CAPTURE_PRODUCER_REVIEW, READONLY_MISS_REPORT_PRODUCER_REVIEW, FRESH_FIXTURE_TEARDOWN_REVIEW, ROOT_ATOMIC_CLAIM_PRODUCER_REVIEW} from './controlled-package-ci.mjs'
 
@@ -38,6 +44,8 @@ const pr = () => ({state: 'open', user: {login: 'profitia'}, base: {ref: 'main',
 const configuration = '@profitia:registry=https://npm.pkg.github.com\n//npm.pkg.github.com/:_authToken=${NPM_TOKEN}\n'
 const lock = () => ({lockfileVersion: 3, packages: Object.fromEntries(PRIVATE_PACKAGES.map(name => [`node_modules/${name}`, {version: '1.0.0', integrity: 'sha512-approved'}]))})
 const rejection = fn => assert.throws(fn)
+const legacyRecurringFixture = await createAcgLegacyRecurringFixture(path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..'))
+test.after(() => legacyRecurringFixture.close())
 
 test('ECR admits only its exact published CIC artifact for SG2 while preserving the independent M1 and M2 pins',()=>{
  const authority=lock()
@@ -160,7 +168,14 @@ test('only the ten reviewed local names bind to their own exact paths, never a r
     rejection(() => assertManifestPolicy({dependencies: {alias: `file:${relative}`}}, authority))
   }
 })
-function currentRecurringPolicyOptions(){return {reviewedPrivateRecurring:!!assertPrivateRecurringProvenance(authorityRoot),reviewedLifecycle:!!registrationLifecycleCanonicalRead(authorityRoot),reviewedCompleteFunctional:!!assertCompleteFunctionalProvenance(authorityRoot)}}
+function currentKnowledgeForPolicyTests(){
+ const record=path.join(authorityRoot,PLATFORM_KNOWLEDGE_STAGE2_PROVENANCE.recordPath);
+ if(!fs.existsSync(record))return null;
+ const cache=new Map(),history=(sha,p)=>{const key=sha+':'+p;if(!cache.has(key))cache.set(key,execFileSync('git',['show',key],{cwd:authorityRoot,stdio:['ignore','pipe','pipe']}));return cache.get(key)};
+ return knowledgeStage2TrustedPredecessor(p=>fs.readFileSync(path.join(authorityRoot,p)),history);
+}
+function currentRecurringPolicyRoot(){return currentKnowledgeForPolicyTests()?authorityRoot:legacyRecurringFixture.root}
+function currentRecurringPolicyOptions(){const root=currentRecurringPolicyRoot();return {reviewedPrivateRecurring:!!assertPrivateRecurringProvenance(root),reviewedLifecycle:!!registrationLifecycleCanonicalRead(root),reviewedCompleteFunctional:!!assertCompleteFunctionalProvenance(root)}}
 function reviewedMapsFixture() {
   const manifest = JSON.parse(fs.readFileSync(path.join(authorityRoot, 'packages/maps-embed/package.json'), 'utf8'))
   const candidate = lock()
@@ -197,7 +212,7 @@ test('existing MapsEmbed peers require exact reviewed owner, version, section an
 test('Maps lock peer exception is confined to the exact top-level installed entry and never admits app or nested peers', () => {
   const {candidate} = reviewedMapsFixture(),options=currentRecurringPolicyOptions()
   assertPackagePolicy(candidate, lock(), configuration,options)
-  assertLocalPackageSources(authorityRoot, candidate, authorityRoot,options)
+  assertLocalPackageSources(currentRecurringPolicyRoot(), candidate, currentRecurringPolicyRoot(),options)
   for (const mutate of [
     l => l.packages['node_modules/@profitia/maps-embed'].version = '0.1.3',
     l => l.packages['node_modules/@profitia/maps-embed'].peerDependencies['@profitia/maps-contracts'] = '^0.1.0',
@@ -246,8 +261,8 @@ for (const name of Object.keys(LOCAL_PACKAGES)) test(`actual local source ${name
     rejection(() => assertLocalPackageSources(candidateRoot, candidate, authorityRoot))
   } finally {fs.rmSync(temporary, {recursive: true, force: true})}
 })
-test('actual current SG2 dependency policy remains valid and admits only the reviewed local module addition', () => {
-  const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
+test('accepted legacy SG2 dependency policy fixture admits only the reviewed local module addition', () => {
+  const root = legacyRecurringFixture.root
   const authority = JSON.parse(fs.readFileSync(path.join(root, 'apps/sg-runtime/package-lock.json'), 'utf8'))
   const manifest = JSON.parse(fs.readFileSync(path.join(root, 'apps/sg-runtime/package.json'), 'utf8'))
   const options=currentRecurringPolicyOptions()
@@ -353,13 +368,12 @@ test('regular files and bounded size are required; symlink files and parent dire
  const f=sourceLayoutFixture(),outside=fs.mkdtempSync(path.join(os.tmpdir(),'untrusted-contract-source-'))
  try{const file=f.file('src/request-operations.mjs');fs.unlinkSync(file);fs.writeFileSync(path.join(outside,'private-file'),'synthetic outside marker');fs.symlinkSync(path.join(outside,'private-file'),file);assert.throws(()=>operationContractProvenanceDigest(f.root,f.contract),/CONTRACT_SOURCE_FILE_REJECTED/);fs.unlinkSync(file);fs.writeFileSync(file,'a'.repeat(1024*1024+1));assert.throws(()=>operationContractProvenanceDigest(f.root,f.contract),/CONTRACT_SOURCE_FILE_REJECTED/);fs.writeFileSync(file,'small');const src=f.file('src');fs.renameSync(src,path.join(outside,'src'));fs.symlinkSync(path.join(outside,'src'),src,'dir');assert.throws(()=>operationContractProvenanceDigest(f.root,f.contract),/CONTRACT_SOURCE_FILE_REJECTED/)}finally{f.close();fs.rmSync(outside,{recursive:true,force:true})}
 })
-test('actual current source provenance is the exact accepted SDK digest with all old trust rules intact',async()=>{
- const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..'),receipt=JSON.parse(fs.readFileSync(path.join(root,'apps/sg-runtime/operation-integration.json'),'utf8'))
+test('authenticated legacy source fixture retains its exact accepted SDK digest and all old trust rules',async()=>{
+ const root=legacyRecurringFixture.root,receipt=JSON.parse(fs.readFileSync(path.join(root,'apps/sg-runtime/operation-integration.json'),'utf8'))
  const record=assertPrivateRecurringProvenance(root),receiptBytes=fs.readFileSync(path.join(root,'apps/sg-runtime/operation-integration.json'))
- const currentSdk=await import('./controlled-package-ci.mjs')
  const contract=currentProofContract(root,receipt)
  assert.equal(operationContractProvenanceDigest(root,contract,{reviewedPrivateRecurring:!!record}),contract.sourceDigest)
- const sdk=await import('../../packages/platform-contracts/src/operation-context.mjs');assert.equal(await sdk.operationSourceDigest(),contract.sourceDigest)
+ const sdk=await import(pathToFileURL(path.join(root,'packages/platform-contracts/src/operation-context.mjs')));assert.equal(await sdk.operationSourceDigest(),contract.sourceDigest)
 })
 
 for(const patch of[{id:'untrusted.contract'},{version:'9.0.0'},{sourceDigest:'invalid'},{paths:['../../outside']},{implementation:'1.0.0-candidate.14'}])test('source identity refuses malformed metadata or a downgrade '+JSON.stringify(patch),()=>{
@@ -2870,7 +2884,7 @@ test('PI fixture projection authenticates both complete reviews and refuses mixe
   for(const p of ['apps/insights-runtime/src/host.mjs','apps/sg-runtime/components/procurement-insights/workspace.tsx'])assert.deepEqual(previous(p),historical(a.baseCandidateSha,p));
   assert.throws(()=>previous(PI_LIVE_ACCEPTANCE_PROVENANCE_PATH),{code:'ENOENT'});
  }
- assert(c.assertPrivateRecurringProvenance(authorityRoot));
+ assert(c.assertPrivateRecurringProvenance(legacyRecurringFixture.root));
 });
 
 
@@ -3228,7 +3242,7 @@ test('Platform Knowledge exact owner inputs preserve all candidate and regular-f
 test('Platform Knowledge authenticates current source and all immutable receipts before its accepted predecessor',()=>{
  const root=authorityRoot,cache=new Map(),history=(sha,p)=>{const k=sha+':'+p;if(!cache.has(k))cache.set(k,execFileSync('git',['show',k],{cwd:root,stdio:['ignore','pipe','ignore']}));return cache.get(k);};
  const read=p=>fs.existsSync(path.join(root,PLATFORM_KNOWLEDGE_STAGE2_PROVENANCE.recordPath))?fs.readFileSync(path.join(root,p)):history(PLATFORM_KNOWLEDGE_STAGE2_REVIEW.sourceSha,p);
- const v=knowledgeStage2TrustedPredecessor(read,history);assert(v);assert.equal(v.manifest.sdkDigests.operationSourceDigest,PLATFORM_KNOWLEDGE_STAGE2_PROVENANCE.operationSourceDigest);
+ const v=knowledgeStage2TrustedPredecessor(read,history);assert(v);const cfg=[PLATFORM_KNOWLEDGE_STAGE2_PROVENANCE,PLATFORM_KNOWLEDGE_STAGE2_REPAIR_PROVENANCE,PLATFORM_KNOWLEDGE_STAGE2_PI_COMPOSITION_PROVENANCE,PLATFORM_KNOWLEDGE_STAGE2_SRM_TARGET_PROVENANCE,PLATFORM_KNOWLEDGE_STAGE2_ACG_COMPOSITION_PROVENANCE].find(p=>p.recordSha256===createHash('sha256').update(read(p.recordPath)).digest('hex'));assert(cfg);assert.equal(v.manifest.sdkDigests.operationSourceDigest,cfg.operationSourceDigest);
  for(const p of Object.keys(v.manifest.replacements))assert.deepEqual(v.previousBytes(p),history(v.manifest.previousSourceSha,p));
  for(const p of v.manifest.knowledgeAddedPaths)assert.throws(()=>v.previousBytes(p),{code:'ENOENT'});
  for(const p of ['packages/platform-contracts/src/knowledge-operations.mjs','packages/platform-contracts/current-e1-authority/migrations/015-knowledge-authority.sql','apps/sg-runtime/package-lock.json','apps/srm/knowledge-source-adoption.json','apps/sg-runtime/operation-integration.json','apps/architecture-lab/knowledge-source.mjs',PLATFORM_KNOWLEDGE_STAGE2_PROVENANCE.recordPath])assert.throws(()=>knowledgeStage2TrustedPredecessor(f=>f===p?Buffer.concat([read(f),Buffer.from('UNREVIEWED')]):read(f),history));
@@ -3236,8 +3250,8 @@ test('Platform Knowledge authenticates current source and all immutable receipts
  const denied=Object.assign(Error('Denied'),{code:'EACCES'});assert.throws(()=>knowledgeStage2TrustedPredecessor(()=>{throw denied;},history),e=>e===denied);
  // Actual accepted-source verification remains in the current-source SDK test above.
  // This fixture independently authenticates every proposed byte even before admission.
- assert.equal(Object.keys(v.manifest.sourceDigests).length,407);
- assert.equal(Object.keys({...v.manifest.preservedReceipts,...v.manifest.retainedSuccessorReceipts}).length,15);
+ assert.equal(Object.keys(v.manifest.sourceDigests).length,cfg.sourceFileCount);
+ assert.equal(Object.keys({...v.manifest.preservedReceipts,...v.manifest.retainedSuccessorReceipts}).length,cfg===PLATFORM_KNOWLEDGE_STAGE2_PROVENANCE?15:cfg.receiptFileCount);
 });
 
 
@@ -3280,7 +3294,7 @@ test('trusted policy content reader refuses mismatched or unavailable large Git 
 // admits engineering source validation only; it cannot activate a runtime.
 test('quality Stage1 legacy continuation has a finite branch/path/window and rejects protected expansion',async()=>{
  const c=await import('./controlled-package-ci.mjs'),r=c.ASSISTANT_QUALITY_SG2_STAGE1_REVIEW
- assert.equal(r.paths.length,22);assert.equal(new Set(r.paths).size,22)
+ assert.equal(r.paths.length,24);assert.equal(new Set(r.paths).size,24)
  assert.deepEqual(r.branches,['sg2/cic-quality-stage1-runtime-20261112','sg2/cic-quality-host-integration-20261117'])
  const files=r.paths.map(filename=>({filename,status:'added',sha:'a'.repeat(40)}))
  c.assertQualityStage1SourceFiles(files,Date.parse('2026-11-17T00:00:00.000Z'))
@@ -3288,7 +3302,7 @@ test('quality Stage1 legacy continuation has a finite branch/path/window and rej
   files.map((f,i)=>i?f:{...f,status:'removed'}),files.map((f,i)=>i?f:{...f,previous_filename:'old.ts'}),files.map((f,i)=>i?f:{...f,sha:'invalid'})])
   rejection(()=>c.assertQualityStage1SourceFiles(changed,Date.parse('2026-11-17T00:00:00.000Z')))
  rejection(()=>c.assertQualityStage1SourceFiles(files,Date.parse(r.expiresAt)))
- for(const p of r.paths)assert(p.startsWith('apps/sg-runtime/'))
+ for(const p of r.paths)assert(p.startsWith('apps/sg-runtime/')||p==='apps/architecture-lab/private-recurring-source.mjs')
  assert(!r.paths.some(p=>p.startsWith('packages/')||p.endsWith('/.npmrc')||p.includes('operation-integration')||p.includes('assistant-context-integration')))
 })
 test('quality dependency admission accepts only the measured CIC1.8 artifact and retains all prior tests and packages',async()=>{
@@ -3389,10 +3403,11 @@ test('quality Stage1 resolution fences the exact internal SG2 candidate and auth
 // runs while its source, modes, routes, receipts and history are authenticated.
 test('Calendar complete CI repair keeps original reviews and authenticates the fixed combined owner inputs as data',async()=>{
  const c=await import('./controlled-package-ci.mjs'),r=c.ECR_COMPLETE_FUNCTIONAL_CI_REPAIR;
- assert.equal(Object.keys(r.entries).length,71);
- for(const[p,e]of Object.entries(c.ECR_COMPLETE_FUNCTIONAL_REVIEW.entries))if(p!==c.ECR_COMPLETE_FUNCTIONAL_PROVENANCE.helper)assert.deepEqual(r.entries[p],e);
+ assert.equal(Object.keys(r.entries).length,75);
+ for(const[p,e]of Object.entries(c.ECR_COMPLETE_FUNCTIONAL_REVIEW.entries))if(p!==c.ECR_COMPLETE_FUNCTIONAL_PROVENANCE.helper)assert.deepEqual(['apps/architecture-lab/market-calendar-source.mjs','scripts/governance/platform-source-hub-foundation.test.mjs'].includes(p)?{...r.entries[p],sha:r.previous[p].blob}:r.entries[p],e);
+ assert.equal(r.entries['apps/architecture-lab/market-calendar-source.mjs'].sha,'c764168fa7d99e0320d1365cd813c01949f58623');
  for(const[p,e]of Object.entries(c.ECR_COMPLETE_FUNCTIONAL_CONSUMER_REVIEW.entries))assert.deepEqual(r.entries[p],e);
- const current=p=>execFileSync('git',(r.entries[p]?['cat-file','blob',r.entries[p].sha]:['show',r.baseSha+':'+p]),{cwd:authorityRoot,stdio:['ignore','pipe','pipe']});
+ const current=p=>execFileSync('git',(r.entries[p]?['cat-file','blob',r.entries[p].sha]:['show',r.sourceSha+':'+p]),{cwd:authorityRoot,stdio:['ignore','pipe','pipe']});
  const historical=(sha,p)=>execFileSync('git',['show',sha+':'+p],{cwd:authorityRoot,stdio:['ignore','pipe','pipe']});
  const before=c.completeFunctionalTrustedPredecessor(current,historical);
  const sdk='packages/platform-source-hub-contracts/package.json';
@@ -3404,7 +3419,7 @@ test('Calendar complete CI repair keeps original reviews and authenticates the f
 });
 test('Calendar complete CI repair refuses any changed physical input, inaccessible file or substituted predecessor',async()=>{
  const c=await import('./controlled-package-ci.mjs'),r=c.ECR_COMPLETE_FUNCTIONAL_CI_REPAIR,cache=new Map();
- const current=p=>{if(!cache.has(p))cache.set(p,execFileSync('git',(r.entries[p]?['cat-file','blob',r.entries[p].sha]:['show',r.baseSha+':'+p]),{cwd:authorityRoot,stdio:['ignore','pipe','pipe']}));return cache.get(p)};
+ const current=p=>{if(!cache.has(p))cache.set(p,execFileSync('git',(r.entries[p]?['cat-file','blob',r.entries[p].sha]:['show',r.sourceSha+':'+p]),{cwd:authorityRoot,stdio:['ignore','pipe','pipe']}));return cache.get(p)};
  const historical=(sha,p)=>execFileSync('git',['show',sha+':'+p],{cwd:authorityRoot,stdio:['ignore','pipe','pipe']});
  for(const p of Object.keys(r.entries))assert.throws(()=>c.completeFunctionalTrustedPredecessor(f=>f===p?Buffer.concat([current(f),Buffer.from(' drift')]):current(f),historical),p);
  const denied=Object.assign(Error('access denied'),{code:'EACCES'});
@@ -3467,14 +3482,30 @@ test('protected manifest successor review is exact and independent of live GitHu
 
 test('exact PR1102 source validation reaches the real candidate guard without claiming historical product acceptance',async()=>{
  const c=await import('./controlled-package-ci.mjs'),r=c.MANIFEST_SUCCESSOR_1102_REVIEW;
- const directory=fs.mkdtempSync(path.join(os.tmpdir(),'pi-manifest-proof-')),root=path.join(directory,'candidate');
+ const directory=fs.mkdtempSync(path.join(os.tmpdir(),'pi-manifest-proof-')),root=path.join(directory,'candidate'),control=path.join(directory,'control');
  const files=Object.entries(r.entries).map(([filename,e])=>({filename,sha:e.sha,status:e.status}));
- const controlSha=execFileSync('git',['rev-parse','HEAD'],{cwd:authorityRoot,encoding:'utf8'}).trim();
- // The frozen PR review predates its merge; retain that historical diff base.
- const state={sha:r.sourceSha,controlSha,runId:'12345',admission:{kind:'ARCHITECTURE',baseSha:'4ac4cbab24931a0662bd5244abb6c4b0761cd7fa',files}};
+ const baseSha='4ac4cbab24931a0662bd5244abb6c4b0761cd7fa';
+ const git=(cwd,...args)=>execFileSync('git',args,{cwd,encoding:'utf8',stdio:['ignore','pipe','pipe']}).trim();
  try{
+  // SYNTHETIC_ONLY: the real current trusted controller runs over the exact
+  // dependency context in which this immutable historical source was reviewed.
+  // New SDK metadata has separate current-source tests and is never relaxed.
+  git(authorityRoot,'clone','--quiet','--shared','--no-checkout',authorityRoot,control);
+  git(control,'checkout','--quiet','--detach',baseSha);
+  git(control,'remote','set-url','origin','https://github.com/profitia/SG-dev');
+  for(const file of CONTROL_POLICY_FILES){const target=path.join(control,file);fs.mkdirSync(path.dirname(target),{recursive:true});fs.copyFileSync(path.join(authorityRoot,file),target);}
+  for(const file of CONTROL_POLICY_FILES)assert.deepEqual(fs.readFileSync(path.join(control,file)),fs.readFileSync(path.join(authorityRoot,file)));
+  git(control,'add','--',...CONTROL_POLICY_FILES);
+  git(control,'-c','user.name=Isolated fixture','-c','user.email=fixture@example.invalid','commit','--quiet','--allow-empty','-m','SYNTHETIC_ONLY current controller and immutable historical dependency context');
+  const controlSha=git(control,'rev-parse','HEAD');
+  const state={sha:r.sourceSha,controlSha,runId:'12345',admission:{kind:'ARCHITECTURE',baseSha,files}};
   execFileSync('git',['worktree','add','--detach',root,r.sourceSha],{cwd:authorityRoot,stdio:'pipe'});
-  const metadata=c.assertManifestSuccessorSourceValidation(root,state,authorityRoot);
+  // A historical positive never grants an old source access to a newer SDK.
+  const packageFile='packages/platform-source-hub-contracts/package.json';
+  const actualVersion=JSON.parse(fs.readFileSync(path.join(authorityRoot,packageFile),'utf8')).version;
+  const historicalVersion=JSON.parse(fs.readFileSync(path.join(control,packageFile),'utf8')).version;
+  if(actualVersion!==historicalVersion)assert.throws(()=>c.checkAdmittedPackages(root,authorityRoot),/LOCAL_PACKAGE_VERSION_MISMATCH|LOCAL_DEPENDENCY_REJECTED/);
+  const metadata=c.assertManifestSuccessorSourceValidation(root,state,control);
   assert.deepEqual(metadata,{protectedSourceReviewId:c.MANIFEST_SUCCESSOR_SOURCE_REVIEW_ID,
    protectedSourceReviewDigest:c.manifestSuccessorSourceReviewDigest(),originalSourceSha:r.sourceSha});
   fs.writeFileSync(path.join(directory,'controlled-package-resolution.json'),JSON.stringify(state));
@@ -3483,22 +3514,23 @@ test('exact PR1102 source validation reaches the real candidate guard without cl
    GITHUB_WORKFLOW_REF:'profitia/SG-dev/.github/workflows/platform-contracts-ci.yml@refs/heads/main',
    GITHUB_EVENT_NAME:'workflow_dispatch',GITHUB_ACTOR:'profitia',GITHUB_TRIGGERING_ACTOR:'profitia',
    GITHUB_SHA:controlSha,GITHUB_RUN_ID:state.runId,RUNNER_TEMP:directory,CANDIDATE_ROOT:root};
-  // This exact CLI failed BSDC_MANIFEST_HELPER_REJECTED in run44088013484.
-  // It reads pinned candidate data only; no candidate JS or credentials run.
+  // Invoke actual check-candidate; no candidate JavaScript or credential runs.
   const result=spawnSync(process.execPath,['scripts/governance/controlled-package-ci.mjs','check-candidate'],
-   {cwd:authorityRoot,env,encoding:'utf8'});
+   {cwd:control,env,encoding:'utf8'});
   assert.equal(result.status,0,result.stderr);
-  for(const changed of [{...state,sha:other},{...state,admission:{...state.admission,kind:'TRUSTED_RECORD'}},
+  for(const changed of [{...state,sha:other},{...state,admission:{...state.admission,baseSha:r.sourceSha}},
+   {...state,admission:{...state.admission,kind:'TRUSTED_RECORD'}},
    {...state,admission:{...state.admission,files:files.slice(1)}},
    {...state,admission:{...state.admission,files:files.map((f,i)=>i?f:{...f,sha:other})}}])
-   assert.throws(()=>c.assertManifestSuccessorSourceValidation(root,changed,authorityRoot));
+   assert.throws(()=>c.assertManifestSuccessorSourceValidation(root,changed,control));
   const target=path.join(root,'apps/architecture-lab/market-calendar-source.mjs'),original=fs.readFileSync(target);
   fs.appendFileSync(target,'\nUNREVIEWED');
-  assert.throws(()=>c.assertManifestSuccessorSourceValidation(root,state,authorityRoot));
+  assert.throws(()=>c.assertManifestSuccessorSourceValidation(root,state,control));
   fs.writeFileSync(target,original);
-  assert.deepEqual(c.assertManifestSuccessorSourceValidation(root,state,authorityRoot),metadata);
+  assert.deepEqual(c.assertManifestSuccessorSourceValidation(root,state,control),metadata);
+  assert.equal(git(control,'status','--porcelain','--untracked-files=all'),'');
  }finally{
-  execFileSync('git',['worktree','remove','--force',root],{cwd:authorityRoot,stdio:'pipe'});
+  if(fs.existsSync(root))execFileSync('git',['worktree','remove','--force',root],{cwd:authorityRoot,stdio:'pipe'});
   fs.rmSync(directory,{recursive:true,force:true});
  }
 });
@@ -3571,12 +3603,12 @@ editorialTest('editorial projection rejects rebound candidate authority and rema
 // Independent immutable public host fixture; never import its JavaScript.
 import {qualityTrustedPredecessor as trustedQualityPredecessor,QUALITY_HOST_PATHS as trustedQualityHostPaths,QUALITY_HOST_PRESERVED as trustedQualityPreserved} from './controlled-package-ci.mjs'
 test('trusted quality source composition verifies both exact closures and every preserved receipt before historical projection',()=>{
- const source='8db344d25655054a8e702e7dfb540df9e3199a36',cache=new Map(),root=new URL('../../',import.meta.url)
+ const source='a23c9124f39590c740c418cd320e72b549f54770',cache=new Map(),root=new URL('../../',import.meta.url)
  const historical=(sha,p)=>{const key=sha+':'+p;if(!cache.has(key))cache.set(key,execFileSync('git',['cat-file','blob',key],{cwd:root,stdio:['ignore','pipe','pipe']}));return Buffer.from(cache.get(key))}
  const current=p=>historical(source,p),view=trustedQualityPredecessor(current,historical)
  assert(view)
  assert.deepEqual(view.previousBytes('apps/sg-runtime/package.json'),historical('765e995ca9b1eacef83a562b46e9c23876992e9b','apps/sg-runtime/package.json'))
- for(const p of [...trustedQualityHostPaths,...trustedQualityPreserved])assert.throws(()=>trustedQualityPredecessor(f=>f===p?Buffer.concat([current(f),Buffer.from('UNREVIEWED')]):current(f),historical),p)
+ for(const p of [...Object.keys(JSON.parse(current('apps/sg-runtime/assistant-quality-host-integration.json')).sourceDigests),...trustedQualityPreserved])assert.throws(()=>trustedQualityPredecessor(f=>f===p?Buffer.concat([current(f),Buffer.from('UNREVIEWED')]):current(f),historical),p)
  const receipt='apps/sg-runtime/assistant-quality-host-integration.json'
  for(const mutate of [a=>a.privateQaActivated=true,a=>a.pilotStarted=true,a=>a.cicPublication.sourceSha='0'.repeat(40),a=>a.sourceDigests['apps/srm/foreign.ts']='0'.repeat(64)]){
   const changed=JSON.parse(current(receipt));mutate(changed)
@@ -3585,3 +3617,385 @@ test('trusted quality source composition verifies both exact closures and every 
  assert.equal(trustedQualityPredecessor(()=>{throw Object.assign(Error('ABSENT'),{code:'ENOENT'})},historical),null)
  assert.throws(()=>trustedQualityPredecessor(()=>{throw Object.assign(Error('DENIED'),{code:'EACCES'})},historical),{code:'EACCES'})
 })
+
+// A historical unit input cannot establish adoption of the current SDK.
+test('actual ACG reservation source remains authenticated separately from the legacy fixture',async()=>{
+ assert.equal(legacyRecurringFixture.sourceRoot,authorityRoot)
+ assert(legacyRecurringFixture.projected)
+ assert.notEqual(legacyRecurringFixture.root,authorityRoot)
+ assert.equal(legacyRecurringFixture.sourceRecord.scope,'EXACT_ASSISTANT_TOKEN_RESERVATION_SOURCE')
+ const knowledge=currentKnowledgeForPolicyTests()
+ if(knowledge)assert(assertPrivateRecurringProvenance(authorityRoot));else assert.throws(()=>assertPrivateRecurringProvenance(authorityRoot),/PI_LIVE_ACCEPTANCE_SOURCE_REJECTED|EDITORIAL_SOURCE_BYTES_REJECTED|FINDER_MONITOR_SOURCE_BYTES_REJECTED/)
+ const sdk=await import('../../packages/platform-contracts/src/operation-context.mjs')
+ assert.equal(await sdk.operationSourceDigest(),knowledge?.manifest.sdkDigests.operationSourceDigest??legacyRecurringFixture.sourceRecord.sdkDigests.operationSourceDigest)
+ const legacyReceipt=JSON.parse(fs.readFileSync(path.join(legacyRecurringFixture.root,'apps/sg-runtime/operation-integration.json'),'utf8'))
+ assert.notEqual(await sdk.operationSourceDigest(),currentProofContract(legacyRecurringFixture.root,legacyReceipt).sourceDigest)
+})
+
+test('quality recurring compatibility authenticates the new common dispatch and retains all old guards',async()=>{
+ const c=await import('./controlled-package-ci.mjs'),root=new URL('../../',import.meta.url),source='acbc3fec33578f0ab053573a0f59ee41149112da',cache=new Map()
+ const historical=(sha,p)=>{const key=sha+':'+p;if(!cache.has(key))cache.set(key,execFileSync('git',['cat-file','blob',key],{cwd:root,stdio:['ignore','pipe','pipe']}));return Buffer.from(cache.get(key))}
+ const current=p=>historical(source,p),common='apps/architecture-lab/private-recurring-source.mjs'
+ const view=c.qualityTrustedPredecessor(current,historical);assert(view)
+ assert.deepEqual(view.previousBytes(common),historical(c.QUALITY_HOST_BASE,common))
+ const receipt=c.QUALITY_HOST_RECEIPT
+ for(const change of [s=>s.replace('if(quality)return recurringSourcePredecessor','if(false)return recurringSourcePredecessor'),s=>s+'\n// unreviewed']){
+  const altered=Buffer.from(change(current(common).toString())),a=JSON.parse(current(receipt));a.sourceDigests[common]=createHash('sha256').update(altered).digest('hex')
+  assert.throws(()=>c.qualityTrustedPredecessor(p=>p===common?altered:p===receipt?Buffer.from(JSON.stringify(a)):current(p),historical))
+ }
+})
+
+
+test('trusted shallow control binds only the provider-pinned main snapshot before candidate or package work',async()=>{
+ const fs=await import('node:fs'),os=await import('node:os'),path=await import('node:path'),cp=await import('node:child_process')
+ const workflow=fs.readFileSync(new URL('../../.github/workflows/platform-contracts-ci.yml',import.meta.url),'utf8')
+ const job=workflow.slice(workflow.indexOf('  controlled-sg2:'),workflow.indexOf('  environment-policy-probe:'))
+ const marker='      - name: Bind trusted control to the provider-pinned main snapshot'
+ const start=job.indexOf(marker);assert(start>job.indexOf('          path: control'))
+ assert(start<job.indexOf('      - name: Verify access to exact trusted package artifacts'))
+ const block=job.slice(start).split('      - uses:')[0],match=/        run: \|\n((?:          .*\n)+)/.exec(block);assert(match)
+ const script=match[1].split('\n').filter(Boolean).map(line=>line.slice(10)).join('\n')
+ const root=fs.mkdtempSync(path.join(os.tmpdir(),'aqc-trusted-snapshot-')),control=path.join(root,'control');fs.mkdirSync(control)
+ const git=args=>cp.execFileSync('git',args,{cwd:control,encoding:'utf8',stdio:['ignore','pipe','pipe']}).trim()
+ const bind=(ref,sha)=>cp.spawnSync('bash',['-c',script],{cwd:root,encoding:'utf8',env:{PATH:process.env.PATH,GIT_CONFIG_NOSYSTEM:'1',GIT_CONFIG_GLOBAL:'/dev/null',GITHUB_REF:ref,GITHUB_SHA:sha}})
+ try{
+  git(['init']);fs.writeFileSync(path.join(control,'fixture.txt'),'first')
+  git(['add','fixture.txt']);git(['-c','user.name=Synthetic fixture','-c','user.email=synthetic@example.invalid','commit','-m','first'])
+  const first=git(['rev-parse','HEAD']);git(['checkout','--detach',first])
+  assert.throws(()=>git(['rev-parse','--verify','refs/remotes/origin/main']))
+  assert.equal(bind('refs/heads/main',first).status,0);assert.equal(git(['rev-parse','refs/remotes/origin/main']),first)
+  fs.writeFileSync(path.join(control,'fixture.txt'),'second');git(['add','fixture.txt']);git(['-c','user.name=Synthetic fixture','-c','user.email=synthetic@example.invalid','commit','-m','second'])
+  const second=git(['rev-parse','HEAD'])
+  assert.notEqual(bind('refs/pull/1/merge',second).status,0);assert.equal(git(['rev-parse','refs/remotes/origin/main']),first)
+  assert.notEqual(bind('refs/heads/main',first).status,0);assert.equal(git(['rev-parse','refs/remotes/origin/main']),first)
+  assert.equal(bind('refs/heads/main',second).status,0);assert.equal(git(['rev-parse','refs/remotes/origin/main']),second)
+ }finally{fs.rmSync(root,{recursive:true,force:true})}
+})
+
+test('Finder monitor closed review authenticates original bytes and immutable source history without candidate imports',async()=>{
+ const c=await import('./controlled-package-ci.mjs'),r=c.FINDER_MONITOR_SOURCE_REVIEW
+ const read=(ref,p)=>execFileSync('git',['show',ref+':'+p],{cwd:new URL('../../',import.meta.url),maxBuffer:32*1024*1024,stdio:['ignore','pipe','pipe']})
+ const current=p=>read(r.sourceSha,p),historical=(ref,p)=>read(ref,p)
+ const view=c.finderMonitorTrustedPredecessor(current,historical);assert(view)
+ for(const[p,e]of Object.entries(r.entries)){
+  if(e.status==='modified')assert.deepEqual(view.previousBytes(p),historical(r.previousSourceSha,p),p)
+  else assert.throws(()=>view.previousBytes(p),{code:'ENOENT'})
+  assert.throws(()=>c.finderMonitorTrustedPredecessor(f=>f===p?Buffer.concat([current(f),Buffer.from('TAMPER')]):current(f),historical),p)
+ }
+ for(const p of Object.keys(r.preservedReceipts)){
+  assert.deepEqual(view.previousBytes(p),historical(r.previousSourceSha,p),p)
+  assert.throws(()=>c.finderMonitorTrustedPredecessor(f=>f===p?Buffer.concat([current(f),Buffer.from('REWRITE')]):current(f),historical),p)
+ }
+ assert.throws(()=>c.finderMonitorTrustedPredecessor(current,(ref,p)=>Buffer.concat([historical(ref,p),Buffer.from('FALSE_HISTORY')])))
+ const old=c.assistantNotificationsTrustedPredecessor(current,historical);assert(old,'existing notification/editorial assertions remain reachable')
+})
+
+test('Finder monitor review rejects changed inventories, identities, source rebinding and foreign source records',async()=>{
+ const c=await import('./controlled-package-ci.mjs'),r=c.FINDER_MONITOR_SOURCE_REVIEW
+ const files=Object.entries(r.entries).map(([filename,e])=>({filename,sha:e.blob,status:e.status}))
+ const pr={number:1111,state:'open',user:{login:'profitia'},head:{ref:r.branch,sha:r.sourceSha},base:{ref:'main',sha:r.sourceBaseSha}}
+ assert.equal(c.assertFinderMonitorSourceIdentity(pr,r.sourceSha,files,r.sourceBaseSha),true)
+ for(const changed of [files.slice(1),[...files,{filename:'apps/sg-runtime/unapproved.mjs',sha:'0'.repeat(40),status:'added'}],files.map((f,i)=>i?f:{...f,sha:'0'.repeat(40)}),files.map((f,i)=>i?f:{...f,status:'removed'}),files.map((f,i)=>i?f:{...f,previous_filename:'another.mjs'})])assert.throws(()=>c.assertFinderMonitorSourceFiles(changed))
+ for(const mutate of [p=>p.number++,p=>p.state='closed',p=>p.user.login='other',p=>p.head.ref='sg2/unrelated',p=>p.head.sha='0'.repeat(40),p=>p.base.sha='0'.repeat(40),p=>p.base.ref='staging']){
+  const p=structuredClone(pr);mutate(p);assert.throws(()=>c.assertFinderMonitorSourceIdentity(p,r.sourceSha,files,r.sourceBaseSha))
+ }
+})
+
+test('Finder monitor physical checkout and the genuine trusted reader reject modes, symlinks, dirt and wrong lineage',async()=>{
+ const c=await import('./controlled-package-ci.mjs'),r=c.FINDER_MONITOR_SOURCE_REVIEW
+ const tmp=fs.mkdtempSync(path.join(os.tmpdir(),'finder-monitor-closed-review-')),root=path.join(tmp,'source')
+ const repo=new URL('../../',import.meta.url),git=(...args)=>execFileSync('git',args,{cwd:root,encoding:'utf8',stdio:['ignore','pipe','pipe'],maxBuffer:32*1024*1024})
+ try{
+  execFileSync('git',['clone','--shared','--no-checkout','--',String(fileURLToPath(repo)),root],{stdio:['ignore','pipe','pipe']})
+  git('checkout','--detach',r.sourceSha);git('update-ref','refs/remotes/origin/main',r.sourceBaseSha)
+  const admission={kind:'FINDER_MONITOR_SOURCE',reviewId:'SG2-FINDER-MONITOR-PCI-BINDING-20261117',actor:'profitia',baseSha:r.sourceBaseSha,files:Object.entries(r.entries).map(([filename,e])=>({filename,sha:e.blob,status:e.status}))}
+  assert.equal(c.assertFinderMonitorSourceCheckout(root,r.sourceSha,admission),true)
+  const reader=c.notificationTrustedCurrent(root)
+  assert.deepEqual(reader('apps/sg-runtime/components/procurement-insights/notifications.tsx'),gitBuffer('b6adfbc6b46c13ffe48de37872fdd530f400a615','apps/sg-runtime/components/procurement-insights/notifications.tsx'))
+  function gitBuffer(ref,p){return execFileSync('git',['show',ref+':'+p],{cwd:root,stdio:['ignore','pipe','pipe'],maxBuffer:32*1024*1024})}
+  const p='apps/sg-runtime/scripts/monitor-benchmark-finder.mjs',target=path.join(root,p),before=fs.readFileSync(target)
+  fs.chmodSync(target,0o755);assert.throws(()=>c.assertFinderMonitorSourceCheckout(root,r.sourceSha,admission));fs.chmodSync(target,0o644)
+  const alternate=path.join(tmp,'same-bytes.mjs');fs.writeFileSync(alternate,before);fs.unlinkSync(target);fs.symlinkSync(alternate,target)
+  assert.throws(()=>c.assertFinderMonitorSourceCheckout(root,r.sourceSha,admission));fs.unlinkSync(target);fs.writeFileSync(target,before,{mode:0o644})
+  fs.writeFileSync(path.join(root,'unexpected-source.mjs'),'unreviewed');assert.throws(()=>c.assertFinderMonitorSourceCheckout(root,r.sourceSha,admission));fs.unlinkSync(path.join(root,'unexpected-source.mjs'))
+  assert.throws(()=>c.assertFinderMonitorSourceCheckout(root,r.sourceSha,{...admission,baseSha:'0'.repeat(40)}))
+ }finally{fs.rmSync(tmp,{recursive:true,force:true})}
+})
+
+test('Finder monitor resolution fences the exact PR and cannot reuse the ordinary two-file admission',async()=>{
+ const c=await import('./controlled-package-ci.mjs'),r=c.FINDER_MONITOR_SOURCE_REVIEW
+ const files=Object.entries(r.entries).map(([filename,e])=>({filename,sha:e.blob,status:e.status}))
+ const candidate={number:1111,state:'open',changed_files:files.length,user:{login:'profitia'},head:{ref:r.branch,sha:r.sourceSha,repo:{full_name:REPOSITORY}},base:{ref:'main',sha:r.sourceBaseSha,repo:{full_name:REPOSITORY}}}
+ const ctx={...context(),controlSha:r.sourceBaseSha},endpoint='repos/'+REPOSITORY+'/pulls/1111'
+ const request=async name=>{if(name===endpoint)return{data:structuredClone(candidate)};if(name===endpoint+'/files?per_page=100&page=1')return{data:files};throw Error('Unexpected fixture endpoint')}
+ const before=process.env.SOURCE_ADMISSION_ID
+ try{
+  delete process.env.SOURCE_ADMISSION_ID
+  const resolved=await c.resolveCandidateAdmission(ctx,'1111',r.sourceSha,request)
+  assert.equal(resolved.sha,r.sourceSha);assert.equal(resolved.admission.kind,'FINDER_MONITOR_SOURCE')
+  assert.equal(resolved.admission.reviewId,'SG2-FINDER-MONITOR-PCI-BINDING-20261117')
+  assert.deepEqual(resolved.admission.files,files)
+  process.env.SOURCE_ADMISSION_ID='SG2:SG2-FINDER-SENTRY-MONITOR-20261117'
+  await assert.rejects(()=>c.resolveCandidateAdmission(ctx,'1111',r.sourceSha,request),/FINDER_MONITOR_PROTECTED_REVIEW_REQUIRED/)
+ }finally{if(before===undefined)delete process.env.SOURCE_ADMISSION_ID;else process.env.SOURCE_ADMISSION_ID=before}
+})
+
+test('Finder monitor optional absence is exact and cannot swallow malformed, unreadable or unrelated history failures',async()=>{
+ const c=await import('./controlled-package-ci.mjs'),r=c.FINDER_MONITOR_SOURCE_REVIEW
+ assert.equal(c.finderMonitorTrustedPredecessor(()=>{throw Object.assign(Error('Absent'),{code:'ENOENT'})},()=>Buffer.alloc(0)),null)
+ const current=p=>execFileSync('git',['show',r.sourceSha+':'+p],{cwd:new URL('../../',import.meta.url),maxBuffer:32*1024*1024,stdio:['ignore','pipe','pipe']})
+ for(const error of [Object.assign(Error('Denied'),{code:'EACCES'}),Object.assign(Error('Git'),{status:128,stderr:"fatal: path 'other.json' does not exist in 'history'"})])assert.throws(()=>c.finderMonitorTrustedPredecessor(()=>{throw error},()=>Buffer.alloc(0)),e=>e===error)
+ assert.throws(()=>c.finderMonitorTrustedPredecessor(p=>p===r.recordPath?Buffer.from('{'):current(p),()=>Buffer.alloc(0)))
+})
+
+test('legacy CI24 editorial fixture retains exact trusted source verification the complete new host closure without executing candidate code',()=>{
+ const source='1c959fb48a55df0a2ac3bef5498ab59ba3914adf',base='f78738e8bfdc286532be863a53a9d2a6018092a9',root=new URL('../../',import.meta.url),cache=new Map()
+ const historical=(sha,p)=>{const k=sha+':'+p;if(!cache.has(k))cache.set(k,execFileSync('git',['cat-file','blob',k],{cwd:root,stdio:['ignore','pipe','pipe'],maxBuffer:4194304}));return Buffer.from(cache.get(k))}
+ const current=p=>historical(source,p),view=trustedQualityPredecessor(current,historical);assert(view)
+ const bound={...view.manifest.sourceDigests,['apps/sg-runtime/assistant-quality-integration.json']:createHash('sha256').update(current('apps/sg-runtime/assistant-quality-integration.json')).digest('hex')}
+ const paths=execFileSync('git',['diff','--name-only',base+'...'+source,'--','apps/sg-runtime'],{cwd:root,encoding:'utf8'}).trim().split('\n').filter(Boolean)
+ assert.equal(paths.length,23)
+ for(const p of paths)assert.equal(bound[p],createHash('sha256').update(current(p)).digest('hex'),p)
+ for(const p of Object.keys(JSON.parse(current('apps/sg-runtime/assistant-quality-host-integration.json')).sourceDigests))assert.throws(()=>trustedQualityPredecessor(f=>f===p?Buffer.concat([current(f),Buffer.from('UNREVIEWED')]):current(f),historical),p)
+ const hook='apps/sg-runtime/tests/procurement-insights-editorial-integrity.mjs',receipt='apps/sg-runtime/assistant-quality-host-integration.json'
+ assert.throws(()=>trustedQualityPredecessor(p=>{if(p===receipt){const a=JSON.parse(current(p));a.sourceDigests[hook]='0'.repeat(64);return Buffer.from(JSON.stringify(a))}return current(p)},historical))
+})
+
+test('CI24 trusted source verifies the complete new host closure without executing candidate code',()=>{
+ const source='0075f0be7a090926c4608c1da6d080ce4716e95f',base='bafb76d7a9ea1c154e4fea7b221ef350bb3673a1',root=new URL('../../',import.meta.url),cache=new Map()
+ const historical=(sha,p)=>{const k=sha+':'+p;if(!cache.has(k))cache.set(k,execFileSync('git',['cat-file','blob',k],{cwd:root,stdio:['ignore','pipe','pipe'],maxBuffer:4194304}));return Buffer.from(cache.get(k))}
+ const current=p=>historical(source,p),view=trustedQualityPredecessor(current,historical);assert(view)
+ const bound={...view.manifest.sourceDigests,['apps/sg-runtime/assistant-quality-integration.json']:createHash('sha256').update(current('apps/sg-runtime/assistant-quality-integration.json')).digest('hex')}
+ const paths=execFileSync('git',['diff','--name-only',base+'...'+source,'--','apps/sg-runtime'],{cwd:root,encoding:'utf8'}).trim().split('\n').filter(Boolean)
+ assert.equal(paths.length,23)
+ for(const p of paths)assert.equal(bound[p],createHash('sha256').update(current(p)).digest('hex'),p)
+ for(const p of Object.keys(JSON.parse(current('apps/sg-runtime/assistant-quality-host-integration.json')).sourceDigests))assert.throws(()=>trustedQualityPredecessor(f=>f===p?Buffer.concat([current(f),Buffer.from('UNREVIEWED')]):current(f),historical),p)
+ const hook='apps/sg-runtime/tests/finder-monitor-source-integrity.mjs',receipt='apps/sg-runtime/assistant-quality-host-integration.json'
+ assert.throws(()=>trustedQualityPredecessor(p=>{if(p===receipt){const a=JSON.parse(current(p));a.sourceDigests[hook]='0'.repeat(64);return Buffer.from(JSON.stringify(a))}return current(p)},historical))
+})
+
+test('CI24 editorial package actual candidate authenticates checkout, branch and every source before private installation',async()=>{
+ const c=await import('./controlled-package-ci.mjs'),source='ce20210fd3ea4c78529504ecc526709697c183f3',base='d5eb40a061dd24c5ea65f9f373682179458cb589'
+ const files=execFileSync('git',['diff','--name-status','--no-renames',base+'...'+source],{cwd:authorityRoot,encoding:'utf8'}).trim().split('\n').map(line=>{
+  const [status,filename]=line.split('\t'),entry=execFileSync('git',['ls-tree',source,'--',filename],{cwd:authorityRoot,encoding:'utf8'}).trim()
+  return {filename,status:status==='A'?'added':'modified',sha:entry.split(' ')[2].split('\t')[0]}
+ })
+ const p={...pr(),number:1099,changed_files:files.length,base:{...pr().base,sha:base},head:{...pr().head,ref:c.ASSISTANT_QUALITY_SG2_STAGE1_REVIEW.branches[1],sha:source}}
+ let reads=0;const request=async endpoint=>({data:endpoint.includes('/files?')?files:(reads++,p)})
+ const result=await c.resolveCandidateAdmission({...context(),controlSha:base},'1099',source,request,authorityRoot)
+ assert.equal(reads,2);assert.equal(result.sha,source);assert.equal(result.admission.kind,'QUALITY_STAGE1_SG2');assert.deepEqual(result.admission.files,files)
+ const changed={...p,head:{...p.head,sha:'f'.repeat(40)}}
+ await assert.rejects(()=>c.resolveCandidateAdmission({...context(),controlSha:base},'1099',source,async endpoint=>({data:endpoint.includes('/files?')?files:changed}),authorityRoot))
+ const dir=fs.mkdtempSync(path.join(os.tmpdir(),'quality-source-')),root=path.join(dir,'source');let created=false
+ try{
+  execFileSync('git',['worktree','add','--detach',root,source],{cwd:authorityRoot,stdio:'pipe'});created=true
+  c.assertArchitectureCheckout(root,source,result.admission,authorityRoot)
+  for(const change of [{branch:'sg2/foreign'},{files:files.slice(1)},{baseSha:'1'.repeat(40)}])rejection(()=>c.assertArchitectureCheckout(root,source,{...result.admission,...change},authorityRoot))
+  const target=path.join(root,'apps/sg-runtime/tests/procurement-insights-editorial-package-integrity.mjs');fs.appendFileSync(target,'\n');rejection(()=>c.assertArchitectureCheckout(root,source,result.admission,authorityRoot))
+ }finally{if(created)execFileSync('git',['worktree','remove','--force',root],{cwd:authorityRoot,stdio:'pipe'});fs.rmSync(dir,{recursive:true,force:true})}
+})
+
+// Immutable version-only package source; no candidate JavaScript is imported.
+import {EDITORIAL_PACKAGE_SOURCE_REVIEW as packageSourceReview,editorialTrustedPredecessor as packageSourceProjection,assistantNotificationsTrustedPredecessor as packageNotificationProjection,readNotificationPhysicalSource as packagePhysicalRead} from './controlled-package-ci.mjs'
+import packageTest from 'node:test'
+import packageAssert from 'node:assert/strict'
+import packageFs from 'node:fs'
+import packageOs from 'node:os'
+import packagePath from 'node:path'
+import {execFileSync as packageGit} from 'node:child_process'
+const packageTestRoot=new URL('../../',import.meta.url),packageHistoryCache=new Map()
+const packageHistory=(sha,p)=>{const key=sha+':'+p;if(!packageHistoryCache.has(key))packageHistoryCache.set(key,packageGit('git',['show',key],{cwd:packageTestRoot,stdio:['ignore','pipe','pipe'],maxBuffer:8*1024*1024}));return Buffer.from(packageHistoryCache.get(key))}
+const packageFixture=p=>packageHistory(packageSourceReview.sourceSha,p)
+packageTest('editorial package exact nine-file continuation preserves all28 receipts and accepted narrative history',()=>{
+ const view=packageSourceProjection(packageFixture,packageHistory);packageAssert(view)
+ packageAssert.equal(Object.keys(packageSourceReview.entries).length,9)
+ packageAssert.equal(Object.keys(packageSourceReview.preservedReceipts).length,28)
+ packageAssert.equal(view.manifest.packageVersionBefore,'1.2.0');packageAssert.equal(view.manifest.packageVersionAfter,'1.2.1')
+ for(const p of packageSourceReview.projection){
+  if(packageSourceReview.entries[p].status==='added')packageAssert.throws(()=>view.previousBytes(p),e=>e.code==='ENOENT')
+  else {const before=packageHistory(packageSourceReview.baseSha,p);packageAssert.deepEqual(view.previousBytes(p),before);const copy=view.previousBytes(p);copy[0]^=1;packageAssert.deepEqual(view.previousBytes(p),before)}
+ }
+ for(const[p]of Object.entries(packageSourceReview.preservedReceipts))packageAssert.deepEqual(view.previousBytes(p),packageFixture(p))
+ const narrative=packageSourceProjection(view.previousBytes,packageHistory);packageAssert(narrative)
+ packageAssert.equal(narrative.manifest.scope,'PROCUREMENT_INSIGHTS_EDITORIAL_PROFILE_V1')
+ packageAssert(packageNotificationProjection(narrative.previousBytes,packageHistory))
+})
+packageTest('editorial package refuses every altered current byte, old byte and all28 immutable receipts',()=>{
+ for(const p of [...Object.keys(packageSourceReview.entries),...Object.keys(packageSourceReview.preservedReceipts)]){
+  packageAssert.throws(()=>packageSourceProjection(f=>f===p?Buffer.concat([packageFixture(f),Buffer.from('unreviewed')]):packageFixture(f),packageHistory),p)
+  if(packageSourceReview.preservedReceipts[p]||packageSourceReview.entries[p]?.status==='modified')packageAssert.throws(()=>packageSourceProjection(packageFixture,(sha,f)=>f===p?Buffer.concat([packageHistory(sha,f),Buffer.from('history tamper')]):packageHistory(sha,f)),p)
+ }
+ packageAssert.equal(packageSourceProjection(()=>{throw Object.assign(Error('absent'),{code:'ENOENT'})},packageHistory),null)
+ for(const error of [Object.assign(Error('denied'),{code:'EACCES'}),Object.assign(Error('unrelated git failure'),{status:128,stderr:"path 'foreign' does not exist in 'source'"})])packageAssert.throws(()=>packageSourceProjection(()=>{throw error},packageHistory),e=>e===error)
+ packageAssert.throws(()=>packageSourceProjection(packageFixture,()=>{throw Error('unavailable predecessor')}))
+})
+packageTest('editorial package physical source refuses executable files and links',()=>{
+ const root=packageFs.mkdtempSync(packagePath.join(packageOs.tmpdir(),'editorial-package-mode-')),p='apps/sg-runtime/tests/procurement-insights-editorial-package-integrity.mjs',file=packagePath.join(root,p)
+ try{packageFs.mkdirSync(packagePath.dirname(file),{recursive:true});const b=packageFixture(p);packageFs.writeFileSync(file,b,{mode:0o644});packageAssert.deepEqual(packagePhysicalRead(root,p),b);packageFs.chmodSync(file,0o755);packageAssert.throws(()=>packagePhysicalRead(root,p),/MODE_REJECTED/);packageFs.chmodSync(file,0o644);packageFs.renameSync(file,file+'.original');packageFs.symlinkSync(file+'.original',file);packageAssert.throws(()=>packagePhysicalRead(root,p));}finally{packageFs.rmSync(root,{recursive:true,force:true})}
+})
+
+// Exact package/Finder successor; the older nine-file review remains immutable.
+import * as compositionControl from './controlled-package-ci.mjs'
+import compositionTest from 'node:test'
+import compositionAssert from 'node:assert/strict'
+import {execFileSync as compositionGit} from 'node:child_process'
+import {fileURLToPath as compositionFileURLToPath} from 'node:url'
+const compositionReview=compositionControl.EDITORIAL_PACKAGE_COMPOSITION_REVIEW,compositionRoot=new URL('../../',import.meta.url),compositionCache=new Map()
+const compositionHistory=(sha,p)=>{const key=sha+':'+p;if(!compositionCache.has(key))compositionCache.set(key,compositionGit('git',['show',key],{cwd:compositionRoot,stdio:['ignore','pipe','pipe'],maxBuffer:32*1024*1024}));return Buffer.from(compositionCache.get(key))}
+const compositionFixture=p=>compositionHistory(compositionReview.sourceSha,p)
+compositionTest('editorial composition successor preserves ten exact inputs, all29 receipts and the actual operation contract',()=>{
+ const view=compositionControl.editorialPackageCompositionTrustedPredecessor(compositionFixture,compositionHistory);compositionAssert(view)
+ compositionAssert.equal(Object.keys(compositionReview.entries).length,10);compositionAssert.equal(Object.keys(compositionReview.preservedReceipts).length,29)
+ for(const[p,e]of Object.entries(compositionReview.entries)){
+  if(e.status==='added')compositionAssert.throws(()=>view.previousBytes(p),x=>x.code==='ENOENT')
+  else {const b=compositionHistory(compositionReview.baseSha,p);compositionAssert.deepEqual(view.previousBytes(p),b);view.previousBytes(p).fill(0);compositionAssert.deepEqual(view.previousBytes(p),b)}
+ }
+ compositionAssert(compositionControl.assistantNotificationsTrustedPredecessor(compositionFixture,compositionHistory))
+ // Bind this historical PI assertion to its actual immutable source, independently of later SDK cohorts.
+ const temporary=fs.realpathSync(fs.mkdtempSync(path.join(knowledgePolicyTmpdir(),'editorial-composition-contract-'))),checkout=path.join(temporary,'source')
+ try{
+  compositionGit('git',['clone','--quiet','--shared','--no-checkout','--',compositionFileURLToPath(compositionRoot),checkout],{stdio:['ignore','pipe','pipe']})
+  compositionGit('git',['checkout','--quiet','--detach',compositionReview.sourceSha],{cwd:checkout,stdio:['ignore','pipe','pipe']})
+  // Synthetic-only reference to the actual accepted authority; never a provider admission or CI proof.
+  compositionGit('git',['update-ref','refs/remotes/origin/main','67b81304e08d400aef5872839e24de39b8af8093'],{cwd:checkout,stdio:['ignore','pipe','pipe']})
+  const contract=compositionControl.currentProofContract(checkout,JSON.parse(compositionFixture('apps/sg-runtime/operation-integration.json')))
+  compositionAssert.equal(contract.sourceDigest,'1722f1604df42aec084df0ff7610240a25e687caffd58547dbed320a200676ed')
+ }finally{fs.rmSync(temporary,{recursive:true,force:true})}
+})
+compositionTest('editorial composition successor refuses every changed current/history byte and all29 prior receipts',()=>{
+ for(const p of [...Object.keys(compositionReview.entries),...Object.keys(compositionReview.preservedReceipts)]){
+  compositionAssert.throws(()=>compositionControl.editorialPackageCompositionTrustedPredecessor(f=>f===p?Buffer.concat([compositionFixture(f),Buffer.from('UNREVIEWED')]):compositionFixture(f),compositionHistory),p)
+  if(compositionReview.preservedReceipts[p]||compositionReview.entries[p]?.status==='modified')compositionAssert.throws(()=>compositionControl.editorialPackageCompositionTrustedPredecessor(compositionFixture,(sha,f)=>f===p?Buffer.concat([compositionHistory(sha,f),Buffer.from('UNREVIEWED_HISTORY')]):compositionHistory(sha,f)),p)
+ }
+ compositionAssert.throws(()=>compositionControl.editorialPackageCompositionTrustedPredecessor(compositionFixture,()=>{throw Error('HISTORY_UNAVAILABLE')}))
+})
+compositionTest('editorial composition successor delegates only the exact old receipt and never unknown, rebound or unreadable input',()=>{
+ const old=p=>compositionHistory(compositionControl.EDITORIAL_PACKAGE_SOURCE_REVIEW.sourceSha,p)
+ compositionAssert.equal(compositionControl.editorialPackageCompositionTrustedPredecessor(old,compositionHistory),null);compositionAssert(compositionControl.assistantNotificationsTrustedPredecessor(old,compositionHistory))
+ const changed=JSON.parse(compositionFixture(compositionReview.recordPath));changed.previousSourceSha=compositionControl.EDITORIAL_PACKAGE_SOURCE_REVIEW.baseSha
+ compositionAssert.throws(()=>compositionControl.assistantNotificationsTrustedPredecessor(p=>p===compositionReview.recordPath?Buffer.from(JSON.stringify(changed)):compositionFixture(p),compositionHistory))
+ compositionAssert.equal(compositionControl.editorialPackageCompositionTrustedPredecessor(()=>{throw Object.assign(Error('absent'),{code:'ENOENT'})},compositionHistory),null)
+ for(const error of [Object.assign(Error('DENIED'),{code:'EACCES'}),Object.assign(Error('FOREIGN_GIT_FAILURE'),{status:128,stderr:"path 'foreign' does not exist in 'source'"})])compositionAssert.throws(()=>compositionControl.editorialPackageCompositionTrustedPredecessor(()=>{throw error},compositionHistory),x=>x===error)
+})
+
+test('CI24 editorial composition retains 24 paths and rejects the superseded Finder adapter',async()=>{
+ const c=await import('./controlled-package-ci.mjs'),r=c.ASSISTANT_QUALITY_SG2_STAGE1_REVIEW
+ assert.equal(r.paths.length,24);assert(r.paths.includes('apps/sg-runtime/tests/procurement-insights-editorial-package-integrity.mjs'));assert(!r.paths.includes('apps/sg-runtime/tests/finder-monitor-source-integrity.mjs'))
+ assert.throws(()=>c.assertQualityStage1SourceFiles([{filename:'apps/sg-runtime/tests/finder-monitor-source-integrity.mjs',status:'modified',sha:'a'.repeat(40)}]),/QUALITY_STAGE1_SOURCE_SCOPE_REJECTED/)
+})
+test('CI24 exact CIC and accepted editorial F composition authenticates every source and all29 prior receipts',async()=>{
+ const c=await import('./controlled-package-ci.mjs'),source='ce20210fd3ea4c78529504ecc526709697c183f3',cache=new Map()
+ const historical=(sha,p)=>{const k=sha+':'+p;if(!cache.has(k))cache.set(k,execFileSync('git',['cat-file','blob',k],{cwd:authorityRoot,stdio:['ignore','pipe','pipe'],maxBuffer:4194304}));return Buffer.from(cache.get(k))}
+ const current=p=>historical(source,p),v=c.editorialPackageCompositionTrustedPredecessor(current,historical);assert(v)
+ const a=JSON.parse(current('apps/sg-runtime/assistant-quality-host-integration.json')),f=JSON.parse(current('apps/sg-runtime/procurement-insights-editorial-package-integration.json'))
+ const paths=new Set([...Object.keys(a.sourceDigests),...Object.keys(f.sourceDigests),...Object.keys(f.preservedReceipts),'apps/sg-runtime/assistant-quality-host-integration.json','apps/sg-runtime/procurement-insights-editorial-package-integration.json'])
+ for(const p of paths)assert.throws(()=>c.editorialPackageCompositionTrustedPredecessor(x=>x===p?Buffer.concat([current(x),Buffer.from('UNREVIEWED')]):current(x),historical),p)
+ assert.equal(Object.keys(f.preservedReceipts).length,29)
+ const legacy=c.qualityTrustedPredecessor(current,historical)
+ assert.deepEqual(legacy.previousBytes('apps/sg-runtime/package-lock.json'),historical('6b22adbf7fb19d35a66c9ba637383a02224db136','apps/sg-runtime/package-lock.json'))
+})
+
+// Full-source authentication precedes independent main-ledger manifest validation.
+test('Calendar BSDC composition preserves accepted helper and authenticates each manifest successor',async()=>{
+ const c=await import('./controlled-package-ci.mjs'),r=c.ECR_COMPLETE_FUNCTIONAL_CI_REPAIR,b=c.BSDC_MANIFEST_CONTINUITY,cache=new Map();
+ const historical=(sha,p)=>{const k=sha+':'+p;if(!cache.has(k))cache.set(k,execFileSync('git',['cat-file','blob',k],{cwd:authorityRoot,stdio:['ignore','pipe','pipe']}));return Buffer.from(cache.get(k))};
+ const current=p=>r.entries[p]?execFileSync('git',['cat-file','blob',r.entries[p].sha],{cwd:authorityRoot,stdio:['ignore','pipe','pipe']}):historical(r.sourceSha,p);
+ const prior=c.completeFunctionalTrustedPredecessor(current,historical);
+ assert.equal(createHash('sha256').update(prior(b.helperPath)).digest('hex'),b.helperSha256);
+ const view=c.bsdcManifestContinuityTrustedCurrent(prior,historical);
+ assert.deepEqual(view(b.manifestPath),historical(b.baseSha,b.manifestPath));
+ assert.deepEqual(view(b.helperPath),historical(b.baseSha,b.helperPath));
+ const changed=p=>p===b.manifestPath?Buffer.concat([current(p),Buffer.from(' ')]):current(p);
+ assert.throws(()=>c.bsdcManifestContinuityTrustedCurrent(c.completeFunctionalTrustedPredecessor(changed,historical),historical));
+ const broken=(sha,p)=>sha==='59204603e6f41c97e0d27c36ffcc94ca6186d88e'&&p===b.helperPath?Buffer.concat([historical(sha,p),Buffer.from(' drift')]):historical(sha,p);
+ assert.throws(()=>c.completeFunctionalTrustedPredecessor(current,broken)(b.helperPath),/ECR_COMPLETE_FUNCTIONAL_BSDC_HISTORY_REJECTED/);
+ const target='scripts/governance/platform-source-hub-foundation.test.mjs';
+ assert.throws(()=>c.completeFunctionalTrustedPredecessor(p=>p===target?Buffer.concat([current(p),Buffer.from(' drift')]):current(p),historical));
+});
+
+// Exact corrected inputs remain a closed review; no additional peer or private pin rule.
+test('Knowledge repaired checkout authenticates every current source and refuses partial, changed and nonregular review inputs',async()=>{
+ const c=await import('./controlled-package-ci.mjs'),r=c.PLATFORM_KNOWLEDGE_STAGE2_REPAIR_REVIEW;
+ const os=await import('node:os'),temporary=fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(),'knowledge-exact-reviewed-checkout-')));
+ const env={...process.env,GIT_CONFIG_NOSYSTEM:'1',GIT_CONFIG_GLOBAL:'/dev/null'};
+ const git=(cwd,args)=>execFileSync('git',['-c','core.hooksPath=/dev/null',...args],{cwd,env,encoding:'utf8',stdio:['ignore','pipe','pipe']}).trim();
+ try{
+  git(temporary,['clone','--quiet','--shared','--no-checkout',authorityRoot,'source']);
+  const checkoutRoot=path.join(temporary,'source');git(checkoutRoot,['checkout','--quiet','--detach',r.sourceSha]);
+  git(checkoutRoot,['merge-base','--is-ancestor',r.baseSha,r.sourceSha]);
+  // Synthetic-only accepted-base ledger; actual current-main admission is separate.
+  git(checkoutRoot,['update-ref','refs/remotes/origin/main',r.baseSha]);
+ const files=Object.entries(r.entries).map(([filename,e])=>({filename,sha:e.sha,status:e.status}));
+ assert.deepEqual(new Set(Object.values(r.entries).map(e=>e.projectKey)),new Set(['ARCHITECTURE','SG2','SRM']));
+ c.assertArchitectureCheckout(checkoutRoot,r.sourceSha,{kind:'ARCHITECTURE',baseSha:r.baseSha,files},authorityRoot);
+ assert.throws(()=>c.assertArchitectureCheckout(checkoutRoot,r.sourceSha,{kind:'ARCHITECTURE',baseSha:r.baseSha,files:files.slice(1)},authorityRoot));
+ const altered=files.map((f,i)=>i===0?{...f,sha:'0'.repeat(40)}:f);
+ assert.throws(()=>c.assertArchitectureCheckout(checkoutRoot,r.sourceSha,{kind:'ARCHITECTURE',baseSha:r.baseSha,files:altered},authorityRoot));
+ const file=files.find(f=>f.filename==='apps/architecture-lab/knowledge-source.json');assert(file);
+ c.assertKnowledgeStage2Entry(file,'100644 blob '+file.sha+'\t'+file.filename+'\0',r);
+ assert.throws(()=>c.assertKnowledgeStage2Entry(file,'100755 blob '+file.sha+'\t'+file.filename+'\0',r));
+ assert.throws(()=>c.assertKnowledgeStage2Entry({...file,filename:'apps/sg-runtime/unapproved.ts'},'100644 blob '+file.sha+'\tapps/sg-runtime/unapproved.ts\0',r));
+ const cache=new Map(),history=(sha,p)=>{const k=sha+':'+p;if(!cache.has(k))cache.set(k,execFileSync('git',['show',k],{cwd:checkoutRoot,stdio:['ignore','pipe','pipe']}));return cache.get(k)};
+ const read=p=>fs.readFileSync(path.join(checkoutRoot,p));assert(c.knowledgeStage2TrustedPredecessor(read,history));
+ for(const target of ['packages/platform-contracts/payload-capture/test/public-package.test.mjs','apps/platform-source-hub/test/ci-routing.test.mjs','apps/architecture-lab/test/private-recurring-source.test.mjs','apps/sg-runtime/finder-monitor-source-integration.json'])
+  assert.throws(()=>c.knowledgeStage2TrustedPredecessor(p=>p===target?Buffer.concat([read(p),Buffer.from('UNAPPROVED')]):read(p),history),target);
+ }finally{fs.rmSync(temporary,{recursive:true,force:true})}
+});
+
+// Exact corrected inputs remain a closed review; no additional peer or private pin rule.
+test('Knowledge PI composition authenticates the complete accepted package cohort and rejects source or receipt drift',async()=>{
+ const c=await import('./controlled-package-ci.mjs'),r=c.PLATFORM_KNOWLEDGE_STAGE2_PI_COMPOSITION_REVIEW;
+ const os=await import('node:os'),temporary=fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(),'knowledge-pi-composition-checkout-')));
+ const env={...process.env,GIT_CONFIG_NOSYSTEM:'1',GIT_CONFIG_GLOBAL:'/dev/null'};
+ const git=(cwd,args)=>execFileSync('git',['-c','core.hooksPath=/dev/null',...args],{cwd,env,encoding:'utf8',stdio:['ignore','pipe','pipe']}).trim();
+ try{
+  git(temporary,['clone','--quiet','--shared','--no-checkout',authorityRoot,'source']);
+  const checkoutRoot=path.join(temporary,'source');git(checkoutRoot,['checkout','--quiet','--detach',r.sourceSha]);
+  git(checkoutRoot,['merge-base','--is-ancestor',r.baseSha,r.sourceSha]);
+  // Synthetic-only accepted-base ledger; actual current-main admission is separate.
+  git(checkoutRoot,['update-ref','refs/remotes/origin/main',r.baseSha]);
+ const files=Object.entries(r.entries).map(([filename,e])=>({filename,sha:e.sha,status:e.status}));
+ assert.deepEqual(new Set(Object.values(r.entries).map(e=>e.projectKey)),new Set(['ARCHITECTURE','SG2','SRM']));
+ c.assertArchitectureCheckout(checkoutRoot,r.sourceSha,{kind:'ARCHITECTURE',baseSha:r.baseSha,files},authorityRoot);
+ assert.throws(()=>c.assertArchitectureCheckout(checkoutRoot,r.sourceSha,{kind:'ARCHITECTURE',baseSha:r.baseSha,files:files.slice(1)},authorityRoot));
+ const altered=files.map((f,i)=>i===0?{...f,sha:'0'.repeat(40)}:f);
+ assert.throws(()=>c.assertArchitectureCheckout(checkoutRoot,r.sourceSha,{kind:'ARCHITECTURE',baseSha:r.baseSha,files:altered},authorityRoot));
+ const file=files.find(f=>f.filename==='apps/architecture-lab/knowledge-source.json');assert(file);
+ c.assertKnowledgeStage2Entry(file,'100644 blob '+file.sha+'\t'+file.filename+'\0',r);
+ assert.throws(()=>c.assertKnowledgeStage2Entry(file,'100755 blob '+file.sha+'\t'+file.filename+'\0',r));
+ assert.throws(()=>c.assertKnowledgeStage2Entry({...file,filename:'apps/sg-runtime/unapproved.ts'},'100644 blob '+file.sha+'\tapps/sg-runtime/unapproved.ts\0',r));
+ const cache=new Map(),history=(sha,p)=>{const k=sha+':'+p;if(!cache.has(k))cache.set(k,execFileSync('git',['show',k],{cwd:checkoutRoot,stdio:['ignore','pipe','pipe']}));return cache.get(k)};
+ const read=p=>fs.readFileSync(path.join(checkoutRoot,p));assert(c.knowledgeStage2TrustedPredecessor(read,history));
+ for(const target of ['apps/insights-runtime/package.json','apps/insights-runtime/package-lock.json','apps/sg-runtime/package-lock.json','apps/sg-runtime/procurement-insights-editorial-package-integration.json','apps/sg-runtime/tests/procurement-insights-editorial-package-integrity.mjs','apps/sg-runtime/tests/procurement-insights-editorial-package-integrity.test.mjs','packages/platform-contracts/payload-capture/test/public-package.test.mjs','apps/platform-source-hub/test/ci-routing.test.mjs','apps/architecture-lab/test/private-recurring-source.test.mjs','apps/sg-runtime/finder-monitor-source-integration.json'])
+  assert.throws(()=>c.knowledgeStage2TrustedPredecessor(p=>p===target?Buffer.concat([read(p),Buffer.from('UNAPPROVED')]):read(p),history),target);
+ }finally{fs.rmSync(temporary,{recursive:true,force:true})}
+});
+
+// Exact corrected inputs remain a closed review; no additional peer or private pin rule.
+test('Knowledge SRM Root correction admits the exact repaired target and rejects partial, substituted or historical source',async()=>{
+ const c=await import('./controlled-package-ci.mjs'),r=c.PLATFORM_KNOWLEDGE_STAGE2_SRM_TARGET_REVIEW;
+ const os=await import('node:os'),temporary=fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(),'knowledge-srm-root-target-checkout-')));
+ const env={...process.env,GIT_CONFIG_NOSYSTEM:'1',GIT_CONFIG_GLOBAL:'/dev/null'};
+ const git=(cwd,args)=>execFileSync('git',['-c','core.hooksPath=/dev/null',...args],{cwd,env,encoding:'utf8',stdio:['ignore','pipe','pipe']}).trim();
+ try{
+  git(temporary,['clone','--quiet','--shared','--no-checkout',authorityRoot,'source']);
+  const checkoutRoot=path.join(temporary,'source');git(checkoutRoot,['checkout','--quiet','--detach',r.sourceSha]);
+  git(checkoutRoot,['merge-base','--is-ancestor',r.baseSha,r.sourceSha]);
+  // Synthetic-only accepted-base ledger; actual current-main admission is separate.
+  git(checkoutRoot,['update-ref','refs/remotes/origin/main',r.baseSha]);
+ const files=Object.entries(r.entries).map(([filename,e])=>({filename,sha:e.sha,status:e.status}));
+ assert.deepEqual(new Set(Object.values(r.entries).map(e=>e.projectKey)),new Set(['ARCHITECTURE','SG2','SRM']));
+ c.assertArchitectureCheckout(checkoutRoot,r.sourceSha,{kind:'ARCHITECTURE',baseSha:r.baseSha,files},authorityRoot);
+ assert.throws(()=>c.assertArchitectureCheckout(checkoutRoot,r.sourceSha,{kind:'ARCHITECTURE',baseSha:r.baseSha,files:files.slice(1)},authorityRoot));
+ const altered=files.map((f,i)=>i===0?{...f,sha:'0'.repeat(40)}:f);
+ assert.throws(()=>c.assertArchitectureCheckout(checkoutRoot,r.sourceSha,{kind:'ARCHITECTURE',baseSha:r.baseSha,files:altered},authorityRoot));
+ const file=files.find(f=>f.filename==='apps/architecture-lab/knowledge-source.json');assert(file);
+ c.assertKnowledgeStage2Entry(file,'100644 blob '+file.sha+'\t'+file.filename+'\0',r);
+ assert.throws(()=>c.assertKnowledgeStage2Entry(file,'100755 blob '+file.sha+'\t'+file.filename+'\0',r));
+ assert.throws(()=>c.assertKnowledgeStage2Entry({...file,filename:'apps/sg-runtime/unapproved.ts'},'100644 blob '+file.sha+'\tapps/sg-runtime/unapproved.ts\0',r));
+ const cache=new Map(),history=(sha,p)=>{const k=sha+':'+p;if(!cache.has(k))cache.set(k,execFileSync('git',['show',k],{cwd:checkoutRoot,stdio:['ignore','pipe','pipe']}));return cache.get(k)};
+ const read=p=>fs.readFileSync(path.join(checkoutRoot,p));assert(c.knowledgeStage2TrustedPredecessor(read,history));
+ for(const target of ['apps/srm/deployment/root-atomic-claim-targets.json','apps/insights-runtime/package.json','apps/insights-runtime/package-lock.json','apps/sg-runtime/package-lock.json','apps/sg-runtime/procurement-insights-editorial-package-integration.json','apps/sg-runtime/tests/procurement-insights-editorial-package-integrity.mjs','apps/sg-runtime/tests/procurement-insights-editorial-package-integrity.test.mjs','packages/platform-contracts/payload-capture/test/public-package.test.mjs','apps/platform-source-hub/test/ci-routing.test.mjs','apps/architecture-lab/test/private-recurring-source.test.mjs','apps/sg-runtime/finder-monitor-source-integration.json'])
+  assert.throws(()=>c.knowledgeStage2TrustedPredecessor(p=>p===target?Buffer.concat([read(p),Buffer.from('UNAPPROVED')]):read(p),history),target);
+ }finally{fs.rmSync(temporary,{recursive:true,force:true})}
+});

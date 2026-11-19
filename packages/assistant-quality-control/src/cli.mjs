@@ -1,4 +1,7 @@
-import {SOURCE_PATHS,documentDigest} from './manifest.mjs'
+import {SOURCE_PATHS,documentDigest,assertVerifiedRepairManifest} from './manifest.mjs'
+import {createHash as controlledReadHash} from 'node:crypto'
+import {repairManifestBody,prepareQualityControllerJobContext} from './job-context.mjs'
+import {admitQualityNativeJobState} from './job-state.mjs'
 
 /** Prepare reviewable unsigned metadata. These builders create no signature,
  * role, permission, resource, wallet, installation or runtime activation. The
@@ -9,12 +12,67 @@ export function ownerMandateBody({id,issuedAt,expiresAt,targetServiceId,gateSetS
   controlledFixtureOnly:true,maxActiveExecutorsPerRepository:1,maxNewRepairReleasesPer24h:1,maxAttempts:2,maxAttemptSeconds:1800,
   maxIncidentMicroUsd:5000000,maxPilotMicroUsd:50000000,maxPilotDays:14,minimumHoldoutCases:200,criticalRegressionsAllowed:0,maxPatchBytes:32768,maxChangedLines:300}
 }
-export function repairManifestBody({mandate,incidentId,correlationId,baseSha,repairClass,exportReceiptId,fixtureSha256}){
- const b=mandate.body
- return {schemaVersion:'REPAIR_MANIFEST_V1',incidentId,repairClass,projectKey:'SG2',repository:'profitia/SG-dev',baseSha,
-  allowedPaths:[SOURCE_PATHS[repairClass],`apps/sg-runtime/tests/assistant-quality-regressions/${incidentId}.test.ts`],
-  mandate:{id:b.id,version:b.version,sha256:documentDigest(b),issuedAt:b.issuedAt,expiresAt:b.expiresAt,attestation:mandate.attestation},gateSetSha256:b.gateSetSha256,
-  synthetic:{fixtureId:'qa_synthetic_'+fixtureSha256,sha256:fixtureSha256,exportReceiptId},limits:{maxAttempts:2,maxAttemptSeconds:1800,maxIncidentMicroUsd:5000000},correlationId}
+export {repairManifestBody,prepareQualityControllerJobContext}
+
+/** Seven IDs/digests, two native EXECUTE permit fields and optional bounded state.\n * State requires the actual native invocation/event and conveys no authority. No command, context payload,
+ * case, secret or private QA is accepted through workflow_dispatch. Native run
+ * identity must separately pass assertQualityControllerJobIdentity. */
+export async function readQualityControllerJobContext({inputs,nativeInvocation,nativeEnvironment,...options}){
+ const {readQualityJobBinding}=await import('./controller.mjs')
+ if(!inputs||Object.getPrototypeOf(inputs)!==Object.prototype
+  ||Object.keys(inputs).sort().join(',')!==['mode','action','nonce','control_source_sha','incident_id','manifest_sha256','base_sha',
+    ...(inputs.action==='EXECUTE'?['permit_id','permit_expires_at']:[]),...(Object.hasOwn(inputs,'state')?['state']:[])].sort().join(',')
+  ||inputs.mode!=='controller-job'||!hash64(inputs.manifest_sha256))unavailable('JOB_CONTEXT_INPUT_INVALID')
+ const externalId='aqc-job:'+inputs.control_source_sha+':'+inputs.nonce+':'+inputs.action
+ readQualityJobBinding(externalId,{nonce:inputs.nonce,action:inputs.action})
+ const context=await prepareQualityControllerJobContext({...options,incidentId:inputs.incident_id,baseSha:inputs.base_sha})
+ if(documentDigest(context.manifest)!==inputs.manifest_sha256)unavailable('JOB_CONTEXT_MANIFEST_MISMATCH')
+ let permit
+ if(inputs.action==='EXECUTE'){
+  const expiry=Date.parse(inputs.permit_expires_at),at=options.now??Date.now()
+  if(!uuidValue(inputs.permit_id)||typeof inputs.permit_expires_at!=='string'||!Number.isFinite(expiry)
+   ||new Date(expiry).toISOString()!==inputs.permit_expires_at||expiry<=at||expiry>at+1800000
+   ||expiry>Date.parse(context.manifest.mandate.expiresAt))unavailable('JOB_CONTEXT_PERMIT_INVALID')
+  permit=Object.freeze({incidentId:context.manifest.incidentId,attemptId:inputs.nonce,permitId:inputs.permit_id,expiresAt:inputs.permit_expires_at})
+ }
+ const jobState=Object.hasOwn(inputs,'state')?await admitQualityNativeJobState({inputs,manifest:context.manifest,externalId,
+  invocation:nativeInvocation,...(nativeEnvironment===undefined?{}:{environment:nativeEnvironment}),now:options.now??Date.now()}):undefined
+ return Object.freeze({...context,externalId,...(permit===undefined?{}:{permit}),...(jobState===undefined?{}:{jobState})})
+}
+
+/** Trusted supervisor adapter, never invoked by standby. Workflow metadata is
+ * not native budget authority: claim once, then compare the database expiry and
+ * incident/attempt before exposing the budget to the isolated executor/broker. */
+export function createQualityExecutorJobBudget({context,budget,now=Date.now}){
+ const m=assertVerifiedRepairManifest(context?.manifest),permit=context?.permit
+ if(typeof budget?.claimExecutor!=='function'||typeof budget?.assertPermit!=='function'||typeof now!=='function')
+  unavailable('JOB_EXECUTOR_BUDGET_REQUIRED')
+ const binding=context?.externalId?.split(':')
+ if(binding?.length!==4||binding[0]!=='aqc-job'||!/^[a-f0-9]{40}$/.test(binding[1])||binding[3]!=='EXECUTE'||binding[2]!==permit?.attemptId
+  ||!Object.isFrozen(permit)||!uuidValue(permit?.attemptId)||!uuidValue(permit?.permitId)||permit.incidentId!==m.incidentId)unavailable('JOB_EXECUTOR_PERMIT_INVALID')
+ const fresh=()=>{
+  const at=now(),expiry=Date.parse(permit.expiresAt)
+  if(!Number.isFinite(at)||!Number.isFinite(expiry)||expiry<=at||expiry>at+1800000
+   ||Date.parse(m.mandate.issuedAt)>at||Date.parse(m.mandate.expiresAt)<=at||expiry>Date.parse(m.mandate.expiresAt))
+   unavailable('JOB_EXECUTOR_PERMIT_INVALID')
+ }
+ const check=async p=>{
+  if(p!==permit)unavailable('JOB_EXECUTOR_PERMIT_INVALID')
+  fresh()
+  const r=await budget.assertPermit(permit)
+  if(r?.status!=='ACTIVE'||r.incidentId!==m.incidentId||r.attemptId!==permit.attemptId||r.permitId!==permit.permitId
+   ||Date.parse(r.expiresAt)!==Date.parse(permit.expiresAt))unavailable('JOB_EXECUTOR_NATIVE_PERMIT_MISMATCH')
+  fresh();return r
+ }
+ return Object.freeze({...budget,assertPermit:check,async claimExecutor(p,identity){
+  if(p!==permit||identity?.nonce!==permit.attemptId||identity.executorSourceSha!==binding[1]
+   ||identity.gateSetSha256!==m.gateSetSha256||identity.runAttempt!==1)unavailable('JOB_EXECUTOR_PERMIT_INVALID')
+  fresh()
+  const r=await budget.claimExecutor(permit,identity)
+  if(r?.status!=='CLAIMED'||r.incidentId!==m.incidentId||r.attemptId!==permit.attemptId||r.permitId!==permit.permitId
+   ||r.runId!==identity.runId)unavailable('JOB_EXECUTOR_NATIVE_PERMIT_MISMATCH')
+  await check(permit);return r
+ }})
 }
 
 const unavailable=code=>{throw Object.assign(Error('Quality readiness unavailable'),{code})}
@@ -22,16 +80,171 @@ const hash64=v=>typeof v==='string'&&/^[a-f0-9]{64}$/.test(v)
 const uuidValue=v=>typeof v==='string'&&/^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(v)
 const controlHosts=['ep-muddy-pine-b22pdyqd.c-6.eu-central-1.aws.neon.tech','ep-muddy-pine-b22pdyqd-pooler.c-6.eu-central-1.aws.neon.tech']
 const limitsHosts=['ep-muddy-surf-b9vpyy2d.c-7.eu-central-1.aws.neon.tech','ep-muddy-surf-b9vpyy2d-pooler.c-7.eu-central-1.aws.neon.tech']
-function database(value,role,hosts){
+function database(value,role,hosts,databaseName='neondb'){
  try{
   const u=new URL(value)
   if(!['postgres:','postgresql:'].includes(u.protocol)||!hosts.includes(u.hostname)||u.port&&u.port!=='5432'
-   ||decodeURIComponent(u.username)!==role||!u.password||u.pathname!=='/neondb'||u.hash
+   ||decodeURIComponent(u.username)!==role||!u.password||u.pathname!=='/'+databaseName||u.hash
    ||[...u.searchParams.keys()].some(k=>!['sslmode','channel_binding'].includes(k))||u.searchParams.getAll('sslmode').length!==1||u.searchParams.get('sslmode')!=='require'
    ||u.searchParams.getAll('channel_binding').length>1||u.searchParams.has('channel_binding')&&u.searchParams.get('channel_binding')!=='require')throw Error()
   // Construct pg options explicitly: a URL parser cannot override strict TLS.
-  return Object.freeze({host:u.hostname,port:5432,user:role,password:decodeURIComponent(u.password),database:'neondb',ssl:Object.freeze({rejectUnauthorized:true})})
+  return Object.freeze({host:u.hostname,port:5432,user:role,password:decodeURIComponent(u.password),database:databaseName,ssl:Object.freeze({rejectUnauthorized:true}),
+   ...(u.searchParams.get('channel_binding')==='require'?{enableChannelBinding:true}:{})})
  }catch{unavailable('READINESS_DATABASE_BINDING_INVALID')}
+}
+const qaRoleBindings=Object.freeze({
+ purpose:Object.freeze({role:'sg2_assistant_quality_authority',database:'platform_private',schema:'profitia_assistant_quality_access',
+  owner:'profitia_access_owner',hosts:['ep-late-heart-b9mxo8oi.c-7.eu-central-1.aws.neon.tech','ep-late-heart-b9mxo8oi-pooler.c-7.eu-central-1.aws.neon.tech']}),
+ evidence:Object.freeze({role:'sg2_assistant_quality_reader',database:'neondb',schema:'sg2_assistant_quality_evidence',
+  owner:'sg2_assistant_history_owner',hosts:controlHosts}),
+})
+/** Approved ordinary role connections only. No QA HMAC/storage key or data
+ * reader is admitted in this preflight; it cannot issue a grant or GET QA. */
+export function readQualityQaRolePreflightConfiguration(env){
+ const names=['AQC_QA_ROLE_PREFLIGHT_VERSION','AQC_QA_PURPOSE_DATABASE_URL','AQC_QA_EVIDENCE_DATABASE_URL']
+ const forbidden=['AQC_QA_PURPOSE_COMMAND_KEY','AQC_QA_EVIDENCE_COMMAND_KEY','AQC_QA_STORAGE_KEY']
+ if(forbidden.some(k=>env[k]))unavailable('QA_ROLE_PREFLIGHT_CONFIGURATION_INVALID')
+ if(names.every(k=>env[k]===undefined))return null
+ if(env.TARGET_ENVIRONMENT!=='development'||!['TECHNICAL_READINESS','CONTROLLER_STANDBY'].includes(env.AQC_MODE)
+  ||env.AQC_PAID_REPAIRS_ENABLED!=='false'||env.AQC_PROMOTION_ENABLED!=='false'||env.AQC_QA_ROLE_PREFLIGHT_VERSION!=='1.0.0'
+  ||names.some(k=>typeof env[k]!=='string'||!env[k]))unavailable('QA_ROLE_PREFLIGHT_CONFIGURATION_INVALID')
+ return Object.freeze({
+  purpose:database(env.AQC_QA_PURPOSE_DATABASE_URL,qaRoleBindings.purpose.role,qaRoleBindings.purpose.hosts,qaRoleBindings.purpose.database),
+  evidence:database(env.AQC_QA_EVIDENCE_DATABASE_URL,qaRoleBindings.evidence.role,qaRoleBindings.evidence.hosts,qaRoleBindings.evidence.database),
+ })
+}
+export function qualityQaRolePreflightQuery(kind){
+ if(!Object.hasOwn(qaRoleBindings,kind))unavailable('QA_ROLE_PREFLIGHT_CONFIGURATION_INVALID')
+ const b=qaRoleBindings[kind]
+ return "SELECT current_database() AS database_name,current_user AS role,session_user AS login,"+
+  "r.rolsuper,r.rolbypassrls,r.rolcreatedb,r.rolcreaterole,r.rolinherit,r.rolreplication,r.rolcanlogin,r.rolconnlimit,r.rolvaliduntil,"+
+  "pg_has_role(session_user,'"+b.owner+"','MEMBER') AS owner_member,"+
+  "has_schema_privilege(session_user,'"+b.schema+"','USAGE') AS schema_usage,"+
+  "has_schema_privilege(session_user,'"+b.schema+"','CREATE') AS schema_create,"+
+  "coalesce(has_function_privilege(session_user,to_regprocedure('"+b.schema+".apply(text,text)'),'EXECUTE'),false) AS installed,"+
+  "(SELECT count(*)::int FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='"+b.schema+"' AND c.relkind IN('r','p')) AS schema_tables,"+
+  "coalesce((SELECT bool_or(has_table_privilege(session_user,c.oid,'SELECT') OR has_table_privilege(session_user,c.oid,'INSERT') "+
+  "OR has_table_privilege(session_user,c.oid,'UPDATE') OR has_table_privilege(session_user,c.oid,'DELETE')) "+
+  "FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='"+b.schema+"' AND c.relkind IN('r','p')),false) AS direct_table_access "+
+  "FROM pg_roles r WHERE r.rolname=current_user"
+}
+export function createQualityQaRolePreflight({purposeQuery,evidenceQuery,now=Date.now}){
+ if(typeof purposeQuery!=='function'||typeof evidenceQuery!=='function'||typeof now!=='function')unavailable('QA_ROLE_PREFLIGHT_CONFIGURATION_INVALID')
+ return Object.freeze({async check(){
+  const at=now();if(!Number.isFinite(at))unavailable('QA_ROLE_PREFLIGHT_BINDING_INVALID')
+  for(const [kind,query]of [['purpose',purposeQuery],['evidence',evidenceQuery]]){
+   let rows;try{rows=(await query(qualityQaRolePreflightQuery(kind))).rows}catch{unavailable('QA_ROLE_PREFLIGHT_UNAVAILABLE')}
+   const v=rows?.[0],b=qaRoleBindings[kind],expiry=v?.rolvaliduntil instanceof Date?v.rolvaliduntil.getTime():
+    typeof v?.rolvaliduntil==='string'?Date.parse(v.rolvaliduntil):NaN
+   if(rows?.length!==1||v.database_name!==b.database||v.role!==b.role||v.login!==b.role
+    ||['rolsuper','rolbypassrls','rolcreatedb','rolcreaterole','rolinherit','rolreplication','owner_member','schema_create','direct_table_access'].some(k=>v[k]!==false)
+    ||v.rolcanlogin!==true||v.rolconnlimit!==3||v.schema_usage!==true||v.installed!==true
+    ||!Number.isInteger(v.schema_tables)||v.schema_tables<1||!Number.isFinite(expiry)||expiry<=at
+    ||expiry>Date.parse('2026-11-27T23:59:59.000Z'))unavailable('QA_ROLE_PREFLIGHT_BINDING_INVALID')
+  }
+  return Object.freeze({schemaVersion:'AQC_QA_ROLE_PREFLIGHT_V1',status:'QA_ROLES_VERIFIED',
+   qaAuthority:'CONNECTED_ORDINARY_ROLE',qaEvidence:'CONNECTED_ORDINARY_ROLE',
+   rawQaReadPerformed:false,permissionMutationPerformed:false})
+ }})
+}
+
+const admittedControlledQaReads=new WeakSet()
+const controlledQaNames=Object.freeze(['AQC_QA_CONTROLLED_READ_VERSION','AQC_QA_CONTROLLED_ACCOUNT_ID','AQC_QA_CONTROLLED_CASES',
+ 'AQC_QA_CONTROLLED_NOT_BEFORE','AQC_QA_CONTROLLED_UNTIL','AQC_QA_HOST_SOURCE_SHA','AQC_QA_STORAGE_GENERATION',
+ 'AQC_QA_PURPOSE_COMMAND_KEY','AQC_QA_EVIDENCE_COMMAND_KEY','AQC_QA_STORAGE_KEY'])
+const canonicalDate=v=>typeof v==='string'&&Number.isFinite(Date.parse(v))&&new Date(v).toISOString()===v
+/** This optional, explicitly configured startup probe reads exactly two newly
+ * enrolled deterministic acceptance cases. Native SERVICE purpose/source/epoch
+ * authority remains mandatory in the host codec. No grant, capture, model,
+ * quality schedule, repair or publication is provided by this configuration. */
+export function readQualityControlledQaReadConfiguration(env,now=Date.now()){
+ if(controlledQaNames.every(k=>env[k]===undefined))return null
+ const invalid=()=>unavailable('CONTROLLED_QA_READ_CONFIGURATION_INVALID')
+ if(!Number.isFinite(now)||env.TARGET_ENVIRONMENT!=='development'||env.AQC_MODE!=='CONTROLLER_STANDBY'
+  ||env.AQC_PAID_REPAIRS_ENABLED!=='false'||env.AQC_PROMOTION_ENABLED!=='false'
+  ||env.AQC_QA_CONTROLLED_READ_VERSION!=='1.0.0'||controlledQaNames.some(k=>typeof env[k]!=='string'||!env[k])
+  ||!uuidValue(env.AQC_SERVICE_UUID)||!uuidValue(env.AQC_QA_CONTROLLED_ACCOUNT_ID)
+  ||env.AQC_QA_CONTROLLED_ACCOUNT_ID===env.AQC_SERVICE_UUID||!uuidValue(env.AQC_QA_STORAGE_GENERATION)
+  ||!/^[a-f0-9]{40}$/.test(env.AQC_QA_HOST_SOURCE_SHA)||Buffer.byteLength(env.AQC_QA_CONTROLLED_CASES)>2048
+  ||!canonicalDate(env.AQC_QA_CONTROLLED_NOT_BEFORE)||!canonicalDate(env.AQC_QA_CONTROLLED_UNTIL))return invalid()
+ const before=Date.parse(env.AQC_QA_CONTROLLED_NOT_BEFORE),until=Date.parse(env.AQC_QA_CONTROLLED_UNTIL)
+ if(before>now||until<=before||until>before+168*3600000||until>Date.parse('2026-11-27T23:59:59.000Z'))return invalid()
+ const keys=[env.AQC_QA_PURPOSE_COMMAND_KEY,env.AQC_QA_EVIDENCE_COMMAND_KEY,env.AQC_QA_STORAGE_KEY]
+ if(!keys.every(hash64)||new Set(keys).size!==3||keys.some(k=>k===env.AQC_CONTROL_COMMAND_KEY||k===env.AQC_LIMITS_COMMAND_KEY))return invalid()
+ let cases;try{cases=JSON.parse(env.AQC_QA_CONTROLLED_CASES)}catch{return invalid()}
+ if(!Array.isArray(cases)||cases.length!==2||new Set(cases.map(c=>c?.evidenceId)).size!==2
+  ||new Set(cases.map(c=>c?.inputSha256)).size!==2||new Set(cases.map(c=>c?.locale)).size!==2
+  ||cases.some(c=>!c||Object.getPrototypeOf(c)!==Object.prototype
+   ||Object.keys(c).sort().join(',')!=='evidenceId,inputSha256,locale'||!uuidValue(c.evidenceId)||!hash64(c.inputSha256)
+   ||!['pl','en'].includes(c.locale)||[env.AQC_SERVICE_UUID,env.AQC_QA_CONTROLLED_ACCOUNT_ID].includes(c.evidenceId)))return invalid()
+ const connections=readQualityQaRolePreflightConfiguration({...env,AQC_QA_PURPOSE_COMMAND_KEY:undefined,
+  AQC_QA_EVIDENCE_COMMAND_KEY:undefined,AQC_QA_STORAGE_KEY:undefined})
+ if(!connections)return invalid()
+ const config=Object.freeze({accountId:env.AQC_QA_CONTROLLED_ACCOUNT_ID,hostSourceSha:env.AQC_QA_HOST_SOURCE_SHA,
+  storageGeneration:env.AQC_QA_STORAGE_GENERATION,notBefore:before,until,connections,
+  purposeKey:keys[0],evidenceKey:keys[1],storageKey:keys[2],
+  cases:Object.freeze(cases.map(c=>Object.freeze({evidenceId:c.evidenceId,inputSha256:c.inputSha256,locale:c.locale})))})
+ admittedControlledQaReads.add(config);return config
+}
+/** The installed host codec provides the ordinary reader with two fresh native
+ * purpose checks around GET/decryption. Only bounded operational metadata is
+ * returned here. Failed partial reads cannot be retried by this instance. */
+export function createQualityControlledQaReadProbe({config,evidence,now=Date.now}){
+ if(!admittedControlledQaReads.has(config)||typeof evidence?.read!=='function'||typeof now!=='function')
+  unavailable('CONTROLLED_QA_READ_CONFIGURATION_INVALID')
+ let state='PENDING',receipt
+ return Object.freeze({async check({signal}={}){
+  if(state==='COMPLETE')return receipt
+  if(state!=='PENDING')unavailable('CONTROLLED_QA_READ_UNAVAILABLE')
+  state='READING'
+  try{
+   const at=now();if(!Number.isFinite(at))unavailable('CONTROLLED_QA_READ_UNAVAILABLE')
+   const metadata={schemaVersion:'AQC_CONTROLLED_QA_READ_V1',hostSourceSha:config.hostSourceSha,
+    qaPayloadExported:false,paidOperationPerformed:false}
+   let verified=0
+   const stopped=()=>{receipt=Object.freeze({...metadata,status:'CONTROLLED_QA_READ_STOPPED',casesVerified:verified,qaRawReadPerformed:verified>0});state='COMPLETE';return receipt}
+   if(signal?.aborted)return stopped()
+   if(at>=config.until){receipt=Object.freeze({...metadata,status:'CONTROLLED_QA_READ_EXPIRED',casesVerified:0,qaRawReadPerformed:false});state='COMPLETE';return receipt}
+   for(const c of config.cases){
+    if(signal?.aborted)return stopped()
+    if(now()>=config.until)unavailable('CONTROLLED_QA_READ_UNAVAILABLE')
+    const v=await evidence.read(config.accountId,c.evidenceId),observed=now()
+    if(!Number.isFinite(observed)||observed>=config.until||v?.applicationId!=='spendguru'||v.environment!=='development'
+     ||v.accountId!==config.accountId||v.evidenceId!==c.evidenceId||v.interactionId!==c.evidenceId
+     ||!canonicalDate(v.occurredAt)||Date.parse(v.occurredAt)<config.notBefore||Date.parse(v.occurredAt)>observed
+     ||v.earliestInputAt!==v.occurredAt||v.versions?.applicationSha!==config.hostSourceSha||v.versions?.cicVersion!=='1.8.0'
+     ||v.versions?.model!=='NONE_DETERMINISTIC'||!Array.isArray(v.sourceScopes)||v.sourceScopes.length!==0
+     ||!Array.isArray(v.modelInput)||v.modelInput.length!==3||v.purpose?.id!=='ASSISTANT_QUALITY'
+     ||v.output?.status!=='COMPLETE'||v.output?.draft!==''||typeof v.output?.delivered!=='string'
+     ||!v.output.delivered.trim()||Buffer.byteLength(v.output.delivered)>64000)unavailable('CONTROLLED_QA_READ_UNAVAILABLE')
+    const input=JSON.stringify(v.modelInput)
+    if(Buffer.byteLength(input)>32768||controlledReadHash('sha256').update(input).digest('hex')!==c.inputSha256)
+     unavailable('CONTROLLED_QA_READ_UNAVAILABLE')
+    verified++
+   }
+   if(signal?.aborted)return stopped()
+   receipt=Object.freeze({...metadata,status:'CONTROLLED_QA_READ_VERIFIED',casesVerified:2,qaRawReadPerformed:true});state='COMPLETE';return receipt
+  }catch{state='FAILED';unavailable('CONTROLLED_QA_READ_UNAVAILABLE')}
+ }})
+}
+
+/** Public deployment-source capability only: never environment values, remote
+ * URLs, credentials, a directory listing or private QA content. */
+export async function qualityWorkerSourceCapabilities(sourceSha){
+ if(!/^[a-f0-9]{40}$/.test(sourceSha??''))unavailable('READINESS_CONFIGURATION_INVALID')
+ const [fs,{fileURLToPath},{spawnSync}]=await Promise.all([import('node:fs'),import('node:url'),import('node:child_process')])
+ const root=fileURLToPath(new URL('../../../',import.meta.url))
+ const ordinary=(path,fileOnly=false)=>{try{const s=fs.lstatSync(path);return !s.isSymbolicLink()&&(s.isFile()||!fileOnly&&s.isDirectory())}catch{return false}}
+ const checkout=ordinary(root+'/.git'),hostCodec=ordinary(root+'/apps/sg-runtime/lib/assistant/quality-evidence.ts',true)
+ let gitExecutable=false,gitHeadMatches=false
+ try{fs.accessSync('/usr/bin/git',fs.constants.X_OK);gitExecutable=true}catch{}
+ if(checkout&&gitExecutable){
+  try{const v=spawnSync('/usr/bin/git',['-C',root,'rev-parse','HEAD'],{encoding:'utf8',timeout:3000,maxBuffer:1024,
+   env:{PATH:'/usr/bin:/bin',GIT_CONFIG_NOSYSTEM:'1',GIT_CONFIG_GLOBAL:'/dev/null'}})
+   gitHeadMatches=v.status===0&&v.stdout.trim()===sourceSha}catch{}
+ }
+ return Object.freeze({checkoutMetadataPresent:checkout,gitExecutableAvailable:gitExecutable,gitHeadMatchesSource:gitHeadMatches,
+  hostQaCodecPresent:hostCodec,nodeMajorSupported:Number(process.versions.node.split('.')[0])>=24})
 }
 /** This process has no repair/publish mode or model credential. Installation
  * status probes do not reserve spend, start the pilot or dispatch an executor. */
@@ -42,11 +255,42 @@ export function readQualityReadinessConfiguration(env){
   ||!/^[a-f0-9]{40}$/.test(env.RENDER_GIT_COMMIT??'')
   ||!uuidValue(env.AQC_SERVICE_UUID)||!hash64(env.AQC_CONTROL_COMMAND_KEY)||!hash64(env.AQC_LIMITS_COMMAND_KEY)
   ||env.AQC_CONTROL_COMMAND_KEY===env.AQC_LIMITS_COMMAND_KEY
-  ||['OPENAI_API_KEY','RENDER_API_KEY','GH_TOKEN','GITHUB_TOKEN','AQC_OWNER_PRIVATE_KEY','AQC_PUBLISHER_PRIVATE_KEY'].some(k=>env[k]))unavailable('READINESS_CONFIGURATION_INVALID')
+  ||['OPENAI_API_KEY','RENDER_API_KEY','GH_TOKEN','GITHUB_TOKEN','AQC_OWNER_PRIVATE_KEY','AQC_PUBLISHER_PRIVATE_KEY','AQC_CONTROLLER_GITHUB_TOKEN','AQC_CONTROLLER_CREDENTIAL_EXPIRES_AT'].some(k=>env[k]))unavailable('READINESS_CONFIGURATION_INVALID')
  return Object.freeze({sourceSha:env.RENDER_GIT_COMMIT,renderServiceId:env.RENDER_SERVICE_ID,serviceId:env.AQC_SERVICE_UUID,
   controlKey:env.AQC_CONTROL_COMMAND_KEY,limitsKey:env.AQC_LIMITS_COMMAND_KEY,
   control:database(env.AQC_CONTROL_DATABASE_URL,'sg2_assistant_quality_controller',controlHosts),
   limits:database(env.AQC_LIMITS_DATABASE_URL,'profitia_limits_quality_controller',limitsHosts)})
+}
+/** Separate, explicit controller standby. Only the approved repository-limited
+ * fine-grained credential is admitted; it never enters the readiness-only mode,
+ * executor, publisher, model client or operational telemetry. */
+export function readQualityControllerStandbyConfiguration(env,now=Date.now()){
+ const expiry=env.AQC_CONTROLLER_CREDENTIAL_EXPIRES_AT
+ if(env.AQC_MODE!=='CONTROLLER_STANDBY'||typeof env.AQC_CONTROLLER_GITHUB_TOKEN!=='string'
+  ||!/^github_pat_[A-Za-z0-9_]{40,240}$/.test(env.AQC_CONTROLLER_GITHUB_TOKEN)
+  ||typeof expiry!=='string'||!Number.isFinite(Date.parse(expiry))||new Date(expiry).toISOString()!==expiry
+  ||!Number.isFinite(now)||Date.parse(expiry)<=now||Date.parse(expiry)>Date.parse('2026-11-27T23:59:59.000Z'))
+  unavailable('CONTROLLER_CONFIGURATION_INVALID')
+ const base=readQualityReadinessConfiguration({...env,AQC_MODE:'TECHNICAL_READINESS',
+  AQC_CONTROLLER_GITHUB_TOKEN:undefined,AQC_CONTROLLER_CREDENTIAL_EXPIRES_AT:undefined})
+ return Object.freeze({...base,githubToken:env.AQC_CONTROLLER_GITHUB_TOKEN,credentialExpiresAt:expiry})
+}
+export function createQualityControllerStandby({readiness,github,credentialExpiresAt,now=Date.now}){
+ if(typeof readiness?.check!=='function'||typeof github?.descriptor!=='function'||typeof github?.qualificationDescriptor!=='function'
+  ||typeof now!=='function'||typeof credentialExpiresAt!=='string'||!Number.isFinite(Date.parse(credentialExpiresAt))
+  ||new Date(credentialExpiresAt).toISOString()!==credentialExpiresAt||Date.parse(credentialExpiresAt)>Date.parse('2026-11-27T23:59:59.000Z'))
+  unavailable('CONTROLLER_CONFIGURATION_INVALID')
+ return Object.freeze({async check(){
+  const observed=now();if(!Number.isFinite(observed)||Date.parse(credentialExpiresAt)<=observed)unavailable('CONTROLLER_CREDENTIAL_EXPIRED')
+  const result=await readiness.check()
+  if(result?.status!=='MONITORING_READY'||result.paidRepairsEnabled!==false||result.promotionEnabled!==false||result.pilotStartedAt!==null)unavailable('CONTROLLER_SAFETY_STATE_INVALID')
+  const [repository,workflow]=await Promise.all([github.descriptor(),github.qualificationDescriptor()])
+  if(repository?.repository!=='profitia/SG-dev'||repository.publisherEnabled!==false||repository.promotionEnabled!==false
+   ||!/^[a-f0-9]{40}$/.test(repository.headSha??'')||workflow?.path!=='.github/workflows/assistant-quality-repair.yml'
+   ||workflow.state!=='active')unavailable('CONTROLLER_GITHUB_BINDING_INVALID')
+  return Object.freeze({...result,controllerGitHub:'CONNECTED_STANDBY',qualificationWorkflow:'CONNECTED_MAIN_ONLY',
+   paidRepairsEnabled:false,promotionEnabled:false,pilotStartedAt:null})
+ }})
 }
 export function createQualityReadiness({store,budget,sourceSha,serviceId,now=Date.now}){
  if(typeof store?.descriptor!=='function'||typeof budget?.status!=='function'||!/^[a-f0-9]{40}$/.test(sourceSha??'')
@@ -61,8 +305,10 @@ export function createQualityReadiness({store,budget,sourceSha,serviceId,now=Dat
    paidRepairsEnabled:false,promotionEnabled:false,pilotStartedAt:null,acceptanceRepairsCompleted:0})
  }})
 }
-async function readinessMain(){
- const config=readQualityReadinessConfiguration(process.env)
+async function readinessMain(controllerStandby=false){
+ const config=controllerStandby?readQualityControllerStandbyConfiguration(process.env):readQualityReadinessConfiguration(process.env)
+ const controlledRead=readQualityControlledQaReadConfiguration(process.env)
+ const qaConfig=controlledRead?.connections??readQualityQaRolePreflightConfiguration(process.env)
  const [{default:pg},{createQualityStore},{createQualityBudget},{readFileSync},{createHash},{createQualityMonitoring}]=await Promise.all([
   import('pg'),import('./store.mjs'),import('./budget.mjs'),import('node:fs'),import('node:crypto'),import('./monitoring.mjs')])
  const digest=url=>createHash('sha256').update(readFileSync(url)).digest('hex')
@@ -70,6 +316,10 @@ async function readinessMain(){
  const limitsDigest=digest(new URL('../../../apps/package-limits/migrations/005-assistant-quality-usage.sql',import.meta.url))
  const pools=[new pg.Pool({...config.control,max:1,connectionTimeoutMillis:8000,idleTimeoutMillis:10000,statement_timeout:5000,query_timeout:8000,allowExitOnIdle:true}),
   new pg.Pool({...config.limits,max:1,connectionTimeoutMillis:8000,idleTimeoutMillis:10000,statement_timeout:5000,query_timeout:8000,allowExitOnIdle:true})]
+ if(qaConfig)for(const database of [qaConfig.purpose,qaConfig.evidence])pools.push(new pg.Pool({...database,
+  max:1,connectionTimeoutMillis:8000,idleTimeoutMillis:10000,statement_timeout:5000,query_timeout:8000,allowExitOnIdle:true}))
+ const qaPreflight=qaConfig?createQualityQaRolePreflight({purposeQuery:q=>pools[2].query(q),evidenceQuery:q=>pools[3].query(q)}):null
+ let controlledProbe=null,controlledProbePending=false
  const stop=new AbortController(),abort=()=>stop.abort()
  process.once('SIGTERM',abort);process.once('SIGINT',abort)
  // Capture transport failures as metadata only; node-postgres must not emit an
@@ -77,12 +327,45 @@ async function readinessMain(){
  let poolError=false;for(const p of pools)p.on('error',()=>{poolError=true})
  const store=createQualityStore({query:(q,v)=>pools[0].query(q,v),commandKey:config.controlKey,schemaDigest:controlDigest,serviceId:config.serviceId})
  const budget=createQualityBudget({query:(q,v)=>pools[1].query(q,v),commandKey:config.limitsKey,schemaDigest:limitsDigest,serviceId:config.serviceId,role:'profitia_limits_quality_controller'})
- const readiness=createQualityReadiness({store,budget,sourceSha:config.sourceSha,serviceId:config.serviceId})
+ const {createQualityMetadataRetention}=await import('./worker.mjs')
+ const retention=createQualityMetadataRetention({store})
+ const nativeReadiness=createQualityReadiness({store,budget,sourceSha:config.sourceSha,serviceId:config.serviceId})
+ let readiness=nativeReadiness
+ if(controllerStandby){
+  const {createQualityGitHub}=await import('./github.mjs')
+  const github=createQualityGitHub({token:config.githubToken,publisherEnabled:false,promotionEnabled:false})
+  readiness=createQualityControllerStandby({readiness:nativeReadiness,github,credentialExpiresAt:config.credentialExpiresAt})
+ }
  const monitoring=createQualityMonitoring({env:process.env,warn:value=>console.warn(JSON.stringify(value)),onDelivery:value=>console.log(JSON.stringify({...value,sourceSha:config.sourceSha}))})
  try{
+  if(controlledRead){
+   const [{createQualityPrivateEvidenceReader},{fileURLToPath}]=await Promise.all([import('./verify.mjs'),import('node:url')])
+   const reader=await createQualityPrivateEvidenceReader({repositoryRoot:fileURLToPath(new URL('../../../',import.meta.url)),
+    sourceSha:config.sourceSha,hostCodecSha256:digest(new URL('../../../apps/sg-runtime/lib/assistant/quality-evidence.ts',import.meta.url)),
+    purposeQuery:(q,v)=>pools[2].query(q,v),evidenceQuery:(q,v)=>pools[3].query(q,v),
+    purposeKey:controlledRead.purposeKey,evidenceKey:controlledRead.evidenceKey,storageKey:controlledRead.storageKey,
+    purposeSchemaDigest:digest(new URL('../migrations/002-quality-purpose.sql',import.meta.url)),
+    evidenceSchemaDigest:digest(new URL('../../../apps/sg-runtime/migrations/002-assistant-quality-evidence.sql',import.meta.url)),
+    serviceId:config.serviceId,storageGeneration:controlledRead.storageGeneration,accountId:controlledRead.accountId})
+   const evidence=Object.freeze({read:(accountId,evidenceId)=>{
+    if(accountId!==controlledRead.accountId)unavailable('CONTROLLED_QA_READ_UNAVAILABLE')
+    return reader.read(evidenceId)
+   }})
+   controlledProbe=createQualityControlledQaReadProbe({config:controlledRead,evidence});controlledProbePending=true
+  }
   while(!stop.signal.aborted){
    if(poolError)unavailable('READINESS_PROVIDER_UNAVAILABLE')
    const result=await readiness.check()
+   const retained=await retention.check({signal:stop.signal})
+   if(retained.purgePerformed)console.log(JSON.stringify({event:'aqc.technical.metadata_retention',...retained,sourceSha:config.sourceSha}))
+   if(qaPreflight){
+    const qa=await qaPreflight.check(),source=await qualityWorkerSourceCapabilities(config.sourceSha)
+    console.log(JSON.stringify({event:'aqc.technical.qa.role_preflight',...qa,...source,sourceSha:config.sourceSha,observedAt:result.observedAt}))
+   }
+   if(controlledProbePending){
+    const qa=await controlledProbe.check({signal:stop.signal});controlledProbePending=false
+    console.log(JSON.stringify({event:'aqc.technical.qa.controlled_read',...qa,sourceSha:config.sourceSha,observedAt:result.observedAt}))
+   }
    monitoring.heartbeat(result)
    console.log(JSON.stringify({event:'aqc.technical.heartbeat',...result,renderServiceId:config.renderServiceId}))
    // This is technical monitoring only. It is not the regular QA schedule.
@@ -101,7 +384,7 @@ async function readinessMain(){
 if(process.argv[1]){
  const {fileURLToPath}=await import('node:url'),path=await import('node:path')
  if(path.resolve(process.argv[1])===fileURLToPath(import.meta.url)){
-  try{if(process.argv.length!==3||process.argv[2]!=='readiness')unavailable('READINESS_MODE_REQUIRED');await readinessMain()}
+  try{if(process.argv.length!==3||!['readiness','controller-standby'].includes(process.argv[2]))unavailable('READINESS_MODE_REQUIRED');await readinessMain(process.argv[2]==='controller-standby')}
   catch(error){console.error(JSON.stringify({event:'aqc.technical.failure',code:/^[A-Z][A-Z0-9_]{1,79}$/.test(error?.code??'')?error.code:'READINESS_UNAVAILABLE'}));process.exitCode=1}
  }
 }

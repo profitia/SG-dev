@@ -1,0 +1,68 @@
+{
+  "sourceSha": "0c311a197e2f19bc35c953e34e095a1ab92c254b",
+  "deployId": "dep-dbuabmjm8hqs73f8hdfg",
+  "serviceId": "srv-dbu4ak0ae00c73eaabcg",
+  "liveAt": "2026-11-17T19:07:43.883Z",
+  "observedAt": "2026-11-17T19:07:45.516Z",
+  "status": "MONITORING_READY",
+  "controllerGitHub": "CONNECTED_STANDBY",
+  "qualificationWorkflow": "CONNECTED_MAIN_ONLY",
+  "controlStore": "CONNECTED_DISABLED",
+  "nativeLimits": "CONNECTED_DISABLED",
+  "paidRepairsEnabled": false,
+  "promotionEnabled": false,
+  "pilotStartedAt": null,
+  "acceptanceRepairsCompleted": 0,
+  "sentryHttpStatus": 200,
+  "controllerCredential": {
+    "kind": "GITHUB_FINE_GRAINED_PAT",
+    "repository": "profitia/SG-dev",
+    "actions": "write",
+    "contents": "read",
+    "metadata": "read",
+    "accountPermissions": 0,
+    "githubExpirationDate": "2026-11-27",
+    "workerFailClosedExpiry": "2026-11-26T23:00:00.000Z",
+    "storedOnlyInApprovedWorkerSecretSlot": true,
+    "valuePublished": false
+  },
+  "recovery": {
+    "eventId": "evt-dbuactm7bikc73cfbr00",
+    "requestedAt": "2026-11-17T19:09:42.279Z",
+    "instance": "srv-dbu4ak0ae00c73eaabcg-h2jxn",
+    "freshHeartbeatAt": "2026-11-17T19:09:54.535Z",
+    "sameSourceSha": true,
+    "controllerConnected": true,
+    "bothNativeStoresDisabled": true,
+    "pilotStillNull": true,
+    "acceptanceRepairsCompleted": 0
+  },
+  "failedAttemptsReconciled": [
+    {
+      "deployId": "dep-dbua2ujm8hqs73f7qus0",
+      "sourceSha": "6642755628be60dc0547d81f2b46f71c3a6855ee",
+      "code": "CONTROLLER_CONFIGURATION_INVALID",
+      "cause": "Render masked field appended mode; explicitly cleared before writing exact enum."
+    },
+    {
+      "deployId": "dep-dbua6c0n74is73dbsh7g",
+      "sourceSha": "6642755628be60dc0547d81f2b46f71c3a6855ee",
+      "code": "RESOURCE_OR_ACCESS_UNVERIFIED",
+      "cause": "Actual repository root ending slash returned404; canonical no-slash root returned200. Fixed PR1149."
+    }
+  ],
+  "sourceCi": {
+    "pr": 1149,
+    "sourceSha": "3addc3d220871408f0063ac15e5f770d7c25c6e8",
+    "sourceJobId": 134289971745,
+    "nativeTests": 88,
+    "qaContracts": 12,
+    "sourceConclusion": "success",
+    "mainJobId": 134291243268,
+    "mainConclusion": "success"
+  },
+  "fullTechnicalReady": false,
+  "stage1Complete": false,
+  "paidPilotStarted": false,
+  "stage2Started": false
+}
