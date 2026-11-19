@@ -1,3 +1,4 @@
+import {sdkContinuationPredecessor} from '../../../../packages/platform-contracts/test/organisation-sdk-compatibility.mjs'
 import {assertAppShellFourCardCascade} from '../../../sg-runtime/tests/pci-smart-integrity.mjs'
 import {marketHistoryHostSourceView} from '../../scripts/xray-style-acceptance.mjs'
 import {posix} from 'node:path'
@@ -38,7 +39,9 @@ test('SRM peer identity is disabled until the exact deployment-owned version is 
   assert.throws(() => readSrmPrivateReportConfiguration({ ...fixture(), TARGET_ENVIRONMENT: 'staging', PROFITIA_SUPPLIER_SUMMARY_PEER_READ_VERSION: peer.configurationVersion }))
 })
 test('SRM explicitly accepts the exact peer producer and preserves all preceding receipts and source fingerprints', async () => {
- const actualAppShellSource=(file:string)=>readFileSync(new URL('../../../../'+file,import.meta.url))
+ const physicalAppShellSource=(file:string)=>readFileSync(new URL('../../../../'+file,import.meta.url))
+ const sdk=sdkContinuationPredecessor(JSON.parse(physicalAppShellSource('apps/sg-runtime/operation-integration.json').toString()),physicalAppShellSource,(sha:string,file:string)=>execFileSync('git',['show',sha+':'+file]),{projectKey:'SG2'})
+ const actualAppShellSource=(file:string)=>sdk?sdk.previousBytes(file):physicalAppShellSource(file)
  const hostReceipt=JSON.parse(actualAppShellSource('apps/sg-runtime/operation-integration.json').toString())
  const acceptedAppShellSource=hostReceipt.appShellFourCardCascade?assertAppShellFourCardCascade(hostReceipt,actualAppShellSource,(sha:string,file:string)=>execFileSync('git',['show',sha+':'+file])).previousBytes:actualAppShellSource
   const receipt = JSON.parse(readFileSync(new URL('../../operation-integration.json', import.meta.url), 'utf8'))

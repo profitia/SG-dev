@@ -1,3 +1,4 @@
+import {sdkSourceContext} from '../../../packages/platform-contracts/test/sdk-source-context.mjs'
 import {knowledgeSourcePredecessor} from '../../architecture-lab/knowledge-source.mjs'
 import {assistantReservationPredecessor,RESERVATION_DERIVED} from '../../../packages/platform-contracts/test/assistant-reservation-source.mjs'
 import {finderMonitorPredecessor} from './finder-monitor-source-integrity.mjs'
@@ -32,6 +33,12 @@ export function editorialContinuationSource(before){
  return IMPORT+before.replace(HEAD,HEAD+PREFIX)
 }
 export function procurementInsightsEditorialPredecessor(current,historical){
+ const context=sdkSourceContext(current,historical)
+ if(context){
+  const accepted=procurementInsightsEditorialPredecessor(context.baseline('acceptedmain'),historical)
+  assert(accepted,'complete immutable accepted Editorial source required')
+  return {...accepted,currentSdkContext:context,currentSourceDigests:context.currentSourceDigests}
+ }
  let bytes
  try{bytes=current(EDITORIAL_RECEIPT)}catch(error){
   const text=String(error?.stderr??error?.message??'')

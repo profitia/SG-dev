@@ -15,8 +15,13 @@ import {
   limitsLoginRolesSql,
 } from "../scripts/install.mjs";
 let f, store;
-const today = new Date().toISOString().slice(0, 10);
-const later = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
+const assignmentDate = (value) => {
+  const parts = new Intl.DateTimeFormat('en-CA', {timeZone: 'Europe/Warsaw', year: 'numeric', month: '2-digit', day: '2-digit'}).formatToParts(new Date(value));
+  const part = (name) => parts.find((p) => p.type === name).value;
+  return `${part('year')}-${part('month')}-${part('day')}`;
+};
+const today = assignmentDate(Date.now());
+const later = new Date(Date.parse(today + 'T12:00:00Z') + 86400000).toISOString().slice(0, 10);
 const end = "2090-01-01";
 let sgVersion, srmVersion, sgPackage, assignment;
 const write = (op, data, requestId = randomUUID(), who = actor()) =>
@@ -53,6 +58,12 @@ before(async () => {
 });
 after(async () => {
   if (f) await f.close();
+});
+test('assignment fixture dates follow Warsaw across UTC and daylight-saving boundaries', () => {
+  assert.equal(assignmentDate('2026-11-18T22:59:59Z'), '2026-11-18');
+  assert.equal(assignmentDate('2026-11-18T23:00:00Z'), '2026-11-19');
+  assert.equal(assignmentDate('2026-07-18T21:59:59Z'), '2026-07-18');
+  assert.equal(assignmentDate('2026-07-18T22:00:00Z'), '2026-07-19');
 });
 test("installation role plan works as a non-superuser administrator and refuses privileged runtime roles", async () => {
   const c = await f.owner.connect();

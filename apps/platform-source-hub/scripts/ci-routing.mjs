@@ -6,7 +6,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import {fileURLToPath} from 'node:url'
 import {execFileSync} from 'node:child_process'
-import {OIL_REPORT_E1_REVIEW,assertArchitectureCheckout} from '../../../scripts/governance/controlled-package-ci.mjs'
+import {OIL_REPORT_E1_REVIEW,REGISTRATION_SDK_REVIEW,assertArchitectureCheckout,CONTROL_POLICY_FILES,currentSdkProofContext} from '../../../scripts/governance/controlled-package-ci.mjs'
 import {knowledgeSourcePredecessor,KNOWLEDGE_SOURCE_RECORD} from '../../architecture-lab/knowledge-source.mjs'
 import {partitionChangedPaths,validateCandidate,validateOwnerGroups} from '../../identity-runtime/scripts/ci-routing.mjs'
 
@@ -54,7 +54,7 @@ const acceptedConsumerPaths={
 
 const assistantConsumerPaths={"SG2":["apps/sg-runtime/tests/adp-appshell-consumer.test.tsx","apps/sg-runtime/tests/category-operation.test.ts","apps/sg-runtime/tests/diagnostic-telemetry-adoption.test.mjs","apps/sg-runtime/tests/identity-runtime.test.ts","apps/sg-runtime/tests/integrated-buyer-journey-package.test.mjs","apps/sg-runtime/tests/native-sql-roundtrips.test.mjs","apps/sg-runtime/tests/operation-context.test.mjs","apps/sg-runtime/tests/pci-smart-integrity.mjs","apps/sg-runtime/tests/pci-smart-integrity.test.mjs","apps/sg-runtime/tests/porr-demo-middleware.test.ts","apps/sg-runtime/tests/private-host.integration.test.mjs","apps/sg-runtime/tests/self-service-account.test.ts","apps/sg-runtime/tests/xray-fresh-performance-adoption.test.mjs","apps/sg-runtime/tests/xray-gateway.test.ts"],"SRM":["apps/srm/deployment/root-atomic-claim-targets.json","apps/srm/scripts/diagnostic-telemetry-adoption.test.mjs","apps/srm/scripts/native-execution-adoption.test.mjs","apps/srm/scripts/operation-context.test.mjs","apps/srm/scripts/private-host.integration.test.mjs","apps/srm/scripts/request-quota-adoption.test.mjs","apps/srm/scripts/source-hub-sdk-compatibility.mjs","apps/srm/scripts/supplier-location-admission.integration.test.mjs","apps/srm/scripts/xray-performance-adoption.test.mjs","apps/srm/src/server/root-atomic-claim-adoption.test.ts"]}
 const assistantUiPaths=["apps/dashboard-preview/components/native-embedded-read-provider.tsx","apps/dashboard-preview/components/raw-data-view/index.tsx","apps/sg-runtime/app/api/assistant/conversation/route.ts","apps/sg-runtime/app/api/assistant/history/[id]/route.ts","apps/sg-runtime/app/api/assistant/history/route.ts","apps/sg-runtime/components/appshell/appshell-dashboard.tsx","apps/sg-runtime/components/appshell/assistant-conversation-session.ts","apps/sg-runtime/components/appshell/assistant-conversation-transport.ts","apps/sg-runtime/components/appshell/assistant-conversation-view.tsx","apps/sg-runtime/components/appshell/assistant-screen-context.ts","apps/sg-runtime/components/appshell/assistant-widget.tsx","apps/sg-runtime/components/appshell/platform-appshell.css","apps/sg-runtime/components/appshell/platform-appshell.tsx","apps/sg-runtime/components/auth/account-landing.tsx","apps/sg-runtime/components/benchmark-finder/benchmark-finder-client.tsx","apps/sg-runtime/components/benchmark-finder/native-analytics-embed.tsx","apps/sg-runtime/deployment/assistant-m1-targets.json","apps/sg-runtime/instrumentation.ts","apps/sg-runtime/lib/assistant/conversation.ts","apps/sg-runtime/lib/assistant/history.ts","apps/sg-runtime/lib/assistant/model.ts","apps/sg-runtime/lib/assistant/runtime.ts","apps/sg-runtime/lib/platform/native-dashboard-embed.ts","apps/sg-runtime/lib/platform/private-runtime.ts","apps/sg-runtime/migrations/assistant/001-history.sql","apps/sg-runtime/package-lock.json","apps/sg-runtime/package.json","apps/sg-runtime/tests/advisory-widget.test.ts","apps/sg-runtime/tests/assistant-conversation-handler.test.ts","apps/sg-runtime/tests/assistant-conversation-transport.test.ts","apps/sg-runtime/tests/assistant-conversation.test.ts","apps/sg-runtime/tests/assistant-history-postgres.test.mjs","apps/sg-runtime/tests/assistant-m1-integrity.mjs","apps/sg-runtime/tests/assistant-m1-integrity.test.mjs","apps/sg-runtime/tests/assistant-model.test.ts","apps/sg-runtime/tests/category-operation.test.ts","apps/sg-runtime/tests/diagnostic-telemetry-adoption.test.mjs","apps/sg-runtime/tests/identity-runtime.test.ts","apps/sg-runtime/tests/integrated-buyer-journey-package.test.mjs","apps/sg-runtime/tests/native-dashboard-embed.test.ts","apps/sg-runtime/tests/native-sql-roundtrips.test.mjs","apps/sg-runtime/tests/operation-context.test.mjs","apps/sg-runtime/tests/pci-smart-integrity.mjs","apps/sg-runtime/tests/pci-smart-integrity.test.mjs","apps/sg-runtime/tests/porr-demo-middleware.test.ts","apps/sg-runtime/tests/private-host.integration.test.mjs","apps/sg-runtime/tests/self-service-account.test.ts","apps/sg-runtime/tests/xray-assistant-host.test.tsx","apps/sg-runtime/tests/xray-fresh-performance-adoption.test.mjs","apps/sg-runtime/tests/xray-gateway.test.ts"]
-export function validateConsumerGroups(groups,readReceipt,{reviewedOilPaths=new Set(),reviewedRecurringPaths=new Map(),reviewedKnowledgePaths=new Map()}={}){
+export function validateConsumerGroups(groups,readReceipt,{reviewedOilPaths=new Set(),reviewedRecurringPaths=new Map(),reviewedKnowledgePaths=new Map(),reviewedRegistrationPaths=new Set(),reviewedSdkPaths=new Map()}={}){
  for(const {projectKey,targets} of groups){
   if(projectKey==='ARCHITECTURE')continue
   assert(['SG2','SRM'].includes(projectKey),'Only the separately registered consumers belong to this delivery')
@@ -107,7 +107,7 @@ export function validateConsumerGroups(groups,readReceipt,{reviewedOilPaths=new 
    for(const flag of ['runtimeActivated','historyInstalled','sql030Installed','grantsChanged','providerCallsPerformed','deploymentPerformed','privateContentInTelemetry','borrowedCredentials','newServiceCreated','otherEnvironmentsChanged','srmProductChanged'])assert.equal(ui[flag],false,flag)
    for(const p of assistantUiPaths)allowed.add(p)
   }
-  for(const target of targets)assert(allowed.has(target)||reviewedKnowledgePaths.get(target)===projectKey||reviewedRecurringPaths.get(target)===projectKey||reviewedOilPaths.has(target)&&OIL_REPORT_E1_REVIEW.entries[target]?.projectKey===projectKey,'Consumer changes require an exact separately governed acceptance binding: '+target)
+  for(const target of targets)assert(allowed.has(target)||reviewedSdkPaths.get(target)===projectKey||reviewedKnowledgePaths.get(target)===projectKey||reviewedRecurringPaths.get(target)===projectKey||reviewedOilPaths.has(target)&&OIL_REPORT_E1_REVIEW.entries[target]?.projectKey===projectKey||reviewedRegistrationPaths.has(target)&&REGISTRATION_SDK_REVIEW.entries[target]?.projectKey===projectKey,'Consumer changes require an exact separately governed acceptance binding: '+target)
   for(const flag of ['apiPathOptedIn','sql028Installed','businessLogicChanged','uiChanged','authorizationChanged','sourceBindingsChanged','providerCallsPerformed','deploymentPerformed'])assert.equal(a[flag],false,flag)
  }
  return groups
@@ -130,11 +130,11 @@ export function reviewedKnowledgeConsumerPaths(repositoryRoot,{baseSha,candidate
  assert.equal(root,path.resolve(repositoryRoot),'Exact physical Knowledge checkout required');
  const current=p=>{
   const file=path.join(root,p),stat=fs.lstatSync(file);
-  assert(stat.isFile()&&!stat.isSymbolicLink()&&stat.size<=1024*1024,'Regular bounded Knowledge source required');
+  assert(stat.isFile()&&!stat.isSymbolicLink()&&stat.size<=2*1024*1024,'Regular bounded Knowledge source required');
   assert.equal(fs.realpathSync(file),file,'No symbolic Knowledge source parents');
   return fs.readFileSync(file);
  };
- const historical=(sha,p)=>execFileSync('git',['show',sha+':'+p],{cwd:root,stdio:['ignore','pipe','pipe']});
+ const historical=(sha,p)=>execFileSync('git',['show',sha+':'+p],{cwd:root,stdio:['ignore','pipe','pipe'],maxBuffer:2*1024*1024});
  const view=knowledgeSourcePredecessor(current,historical);if(!view)return null;
  assert(/^[a-f0-9]{40}$/.test(baseSha??'')&&/^[a-f0-9]{40}$/.test(candidateSha??''),'Exact Knowledge CI revisions required');
  const git=args=>execFileSync('git',args,{cwd:root,encoding:'utf8',stdio:['ignore','pipe','pipe']}).trim();
@@ -193,13 +193,68 @@ export function reviewedRecurringConsumerPaths(repositoryRoot,{baseSha,candidate
  return new Map(partition.filter(p=>p.projectKey!=='ARCHITECTURE').map(p=>[p.path,p.projectKey]))
 }
 
+export function reviewedRegistrationConsumerPaths(repositoryRoot,{baseSha,candidateSha}={}){
+ const head=execFileSync('git',['rev-parse','HEAD'],{cwd:repositoryRoot,encoding:'utf8'}).trim()
+ assert.equal(head,candidateSha,'Validate the actual registration source checkout')
+ const files=Object.entries(REGISTRATION_SDK_REVIEW.entries).map(([filename,e])=>({filename,status:e.status,sha:e.sha}))
+ assertArchitectureCheckout(repositoryRoot,candidateSha,{kind:'ARCHITECTURE',baseSha,files})
+ return new Set(files.filter(f=>REGISTRATION_SDK_REVIEW.entries[f.filename].projectKey!=='ARCHITECTURE').map(f=>f.filename))
+}
+
+// Reuse the current SDK's independently admitted complete source row. The
+// candidate cannot introduce its own ledger, descriptor, controller or policy.
+export function reviewedCurrentSdkConsumerPaths(repositoryRoot,changedPaths,sourceReview={}){
+ const {baseSha,candidateSha}=sourceReview;
+ if(!/^[a-f0-9]{40}$/.test(baseSha??'')||!/^[a-f0-9]{40}$/.test(candidateSha??''))return null;
+ const root=fs.realpathSync(repositoryRoot),git=args=>execFileSync('git',args,{cwd:root,encoding:'utf8',stdio:['ignore','pipe','pipe'],maxBuffer:2*1024*1024}).trim();
+ assert.equal(root,path.resolve(repositoryRoot),'Exact admitted SDK checkout required');
+ const descriptor='apps/architecture-lab/current-sdk-source.json',ledger='Canon/registries/controlled-source-admissions-v1.json';
+ if(!fs.existsSync(path.join(root,descriptor)))return null;
+ assert(['https://github.com/profitia/SG-dev','https://github.com/profitia/SG-dev.git','git@github.com:profitia/SG-dev.git'].includes(git(['remote','get-url','origin'])),'Independent SDK authority repository required');
+ const authoritySha=git(['rev-parse','refs/remotes/origin/main']);
+ assert(/^[a-f0-9]{40}$/.test(authoritySha),'Exact SDK authority required');
+ git(['merge-base','--is-ancestor',baseSha,authoritySha]);
+ const bytes=(sha,p)=>execFileSync('git',['cat-file','blob',sha+':'+p],{cwd:root,stdio:['ignore','pipe','pipe'],maxBuffer:2*1024*1024});
+ const trusted=JSON.parse(bytes(baseSha,descriptor));
+ if(JSON.parse(fs.readFileSync(path.join(root,'packages/platform-contracts/package.json'))).version!==trusted.platformVersion)return null;
+ const selected=trusted.sourceAdmission?.recordId,store=JSON.parse(bytes(baseSha,ledger));
+ const records=store.records?.filter(row=>row.id===selected)??[];
+ assert(records.length<=1,'Unique independently admitted SDK row required');
+ const record=records[0];if(!record)return null;
+ if(record.files.length!==changedPaths.length||!record.files.every(f=>changedPaths.includes(f.path)))return null;
+ const currentRows=JSON.parse(bytes(authoritySha,ledger)).records.filter(row=>row.id===selected);
+ assert.equal(currentRows.length,1,'Current SDK admission must still exist');
+ assert.deepEqual(currentRows[0],record,'Current SDK admission cannot change or be revoked');
+ for(const file of [...CONTROL_POLICY_FILES,ledger]){
+  const target=path.join(root,file),stat=fs.lstatSync(target);
+  assert(stat.isFile()&&!stat.isSymbolicLink()&&stat.size<=2*1024*1024&&!(stat.mode&0o111),'Regular bounded trusted SDK control required');
+  assert.equal(fs.realpathSync(target),target,'Trusted SDK control cannot use symbolic parents');
+  assert(bytes(baseSha,file).equals(fs.readFileSync(target)),'Candidate cannot replace trusted SDK control '+file);
+  if(file!==ledger)assert(bytes(baseSha,file).equals(bytes(authoritySha,file)),'SDK policy changed after validation base');
+ }
+ const actor=sourceReview.actor??process.env.GITHUB_ACTOR;assert.equal(actor,record.actor,'Actual SDK source actor required');
+ const files=git(['diff','--name-status','--no-renames',baseSha+'...'+candidateSha]).split('\n').filter(Boolean).map(row=>{
+  const [status,filename,...extra]=row.split('\t');assert(!extra.length&&['A','M'].includes(status),'Only exact added or modified SDK source');
+  const tree=/^100644 blob ([a-f0-9]{40})\t/.exec(git(['ls-tree',candidateSha,'--',filename]));assert(tree,'Exact regular admitted SDK source');
+  return {filename,status:status==='A'?'added':'modified',sha:tree[1]};
+ });
+ assertArchitectureCheckout(root,candidateSha,{kind:'TRUSTED_RECORD',recordId:record.id,actor,baseSha,files},root);
+ assert(currentSdkProofContext(root,root),'Complete current SDK physical source required');
+ const {partition}=partitionChangedPaths(changedPaths,root);
+ return new Map(partition.filter(p=>p.projectKey!=='ARCHITECTURE').map(p=>[p.path,p.projectKey]));
+}
+
 export function validateRouting({changedPaths,repositoryRoot,readReceipt,runGovernance,sourceReview}){
  const {groups,partition}=partitionChangedPaths(changedPaths,repositoryRoot)
- const needsOil=groups.some(g=>g.projectKey!=='ARCHITECTURE'&&g.targets.some(t=>!acceptedConsumerPaths[g.projectKey]?.includes(t)&&!['apps/sg-runtime/operation-integration.json','apps/srm/operation-integration.json','apps/srm/scripts/source-hub-market-symbol-compatibility.test.mjs'].includes(t)));
+ const registrationKeys=Object.keys(REGISTRATION_SDK_REVIEW.entries)
+ const registration=changedPaths.length===registrationKeys.length&&changedPaths.every(p=>Object.hasOwn(REGISTRATION_SDK_REVIEW.entries,p))
+ const reviewedSdkPaths=reviewedCurrentSdkConsumerPaths(repositoryRoot,changedPaths,sourceReview)??new Map();
+ const reviewedRegistrationPaths=registration?reviewedRegistrationConsumerPaths(repositoryRoot,sourceReview):new Set()
+ const needsOil=groups.some(g=>g.projectKey!=='ARCHITECTURE'&&g.targets.some(t=>!reviewedSdkPaths.has(t)&&!reviewedRegistrationPaths.has(t)&&!acceptedConsumerPaths[g.projectKey]?.includes(t)&&!['apps/sg-runtime/operation-integration.json','apps/srm/operation-integration.json','apps/srm/scripts/source-hub-market-symbol-compatibility.test.mjs'].includes(t)));
  const reviewedKnowledgePaths=needsOil?reviewedKnowledgeConsumerPaths(repositoryRoot,sourceReview):null;
  const reviewedRecurringPaths=needsOil&&!reviewedKnowledgePaths?reviewedRecurringConsumerPaths(repositoryRoot,sourceReview):null;
  const reviewedOilPaths=needsOil&&!reviewedKnowledgePaths&&!reviewedRecurringPaths?reviewedOilConsumerPaths(repositoryRoot,sourceReview):new Set();
- validateConsumerGroups(groups,readReceipt,{reviewedOilPaths,reviewedRecurringPaths:reviewedRecurringPaths??new Map(),reviewedKnowledgePaths:reviewedKnowledgePaths??new Map()})
+ validateConsumerGroups(groups,readReceipt,{reviewedSdkPaths,reviewedOilPaths,reviewedRecurringPaths:reviewedRecurringPaths??new Map(),reviewedKnowledgePaths:reviewedKnowledgePaths??new Map(),reviewedRegistrationPaths})
  return {partition,results:validateOwnerGroups({groups,runGovernance})}
 }
 
