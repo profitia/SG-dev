@@ -128,6 +128,7 @@ export function createQualityController({store,actions,authorize,budget,now=Date
  for(const [o,names]of [[store,['claim','prepare','recordExternal','complete','stop','release']],[actions,['dispatch','reconcile','cancel','verify']],[budget,['ensureIncident','closeIncident']]])for(const name of names)require(typeof o?.[name]==='function','CONFIGURATION_REQUIRED')
  require(typeof authorize==='function'&&typeof now==='function','CONFIGURATION_REQUIRED')
  require(actions.bind===undefined||typeof actions.bind==='function','CONFIGURATION_REQUIRED')
+ require(actions.retain===undefined||typeof actions.retain==='function','CONFIGURATION_REQUIRED')
  return Object.freeze({async tick(id){
   const claimed=await store.claim({id,workerId,now:now(),leaseMs:30000});if(!claimed)return {status:'BUSY'}
   let record=claimed.record,prepareInFlight=false
@@ -166,7 +167,9 @@ export function createQualityController({store,actions,authorize,budget,now=Date
    require(authority?.manifest?.incidentId===id,'AUTHORITY_MISMATCH')
    const finish=async result=>{
     const verified=await actions.verify(record.pending.action,result,{record,authority})
-    const changed=advanceIncident(record,record.pending.action,verified,now())
+    const completedAt=now()
+    let changed=advanceIncident(record,record.pending.action,verified,completedAt)
+    if(actions.retain!==undefined)changed=actions.retain(verified,{record,changed,authority,completedAt})
     record=await store.complete({...identity(),nonce:record.pending.nonce,record:changed})
     if(['CLOSED','ROLLED_BACK','INSUFFICIENT_EVIDENCE','OUT_OF_SCOPE','NEEDS_TECHNICAL_REVIEW'].includes(record.status))await budget.closeIncident(id)
     return {status:record.status}

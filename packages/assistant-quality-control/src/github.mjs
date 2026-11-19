@@ -2,9 +2,11 @@ import {createHash} from 'node:crypto'
 import {assertWorkflowIdentity,readPatchBody} from './provenance.mjs'
 import {documentDigest,assertVerifiedRepairManifest,verifyDocument,SOURCE_PATHS} from './manifest.mjs'
 import {qualityRecoveryJobInputs} from './recovery.mjs'
+import {encodeQualityJobState,retainQualityJobReference} from './job-state.mjs'
 
 const repository='profitia/SG-dev'
 const nativeControllerArtifacts=new WeakMap()
+const nativeControllerInvocations=new WeakMap()
 const controllerArtifactProfiles=Object.freeze({
  result:Object.freeze({prefix:'aqc-result-',filename:'result.json',archiveBytes:65536,contentBytes:16384}),
  patch:Object.freeze({prefix:'aqc-patch-',filename:'patch.json',archiveBytes:131072,contentBytes:65536}),
@@ -214,7 +216,7 @@ export function createQualityGitHub({token,fetchImpl=fetch,publisherEnabled=fals
    await write('/actions/workflows/assistant-quality-repair.yml/dispatches',{ref:'main',inputs})
    return Object.freeze({state:'UNKNOWN',externalId,resultVerified:false})
   },
-  async dispatchControllerJob({manifest,externalId,permit}){
+  async dispatchControllerJob({manifest,externalId,permit,record}){
    if(!controllerJobsEnabled)fail('CONTROLLER_JOBS_DISABLED')
    const binding=controllerJobBinding(externalId)
    const m=assertVerifiedRepairManifest(manifest),at=now()
@@ -223,7 +225,7 @@ export function createQualityGitHub({token,fetchImpl=fetch,publisherEnabled=fals
    if(binding.action==='EXECUTE'&&!paidRepairsEnabled)fail('PAID_REPAIRS_DISABLED')
    if(binding.action==='PROPOSE'&&!publisherEnabled)fail('PUBLISHER_DISABLED')
    if(binding.action==='PROMOTE'&&!promotionEnabled)fail('PROMOTION_DISABLED')
-   const inputs=qualityControllerJobInputs({manifest,externalId,permit})
+   const inputs=qualityControllerJobInputs({manifest,externalId,permit,record})
    if(binding.action==='EXECUTE')require(Date.parse(permit.expiresAt)>at&&Date.parse(permit.expiresAt)<=at+1800000,'CONTROLLER_JOB_PERMIT_INVALID')
    require(await main()===binding.controlSourceSha,'BASE_CHANGED')
    await controllerJobDescriptor({sourceSha:binding.controlSourceSha})
@@ -258,6 +260,18 @@ export function createQualityGitHub({token,fetchImpl=fetch,publisherEnabled=fals
   /** Native metadata is reconciled before the signed result is even decoded.
    * The returned payload is deliberately unverified until its separate role
    * signature and the complete existing state contract are checked. */
+  async controllerJobInvocation({externalId,runId}){
+   require(/^[1-9][0-9]{0,19}$/.test(runId),'CONTROLLER_JOB_BINDING_INVALID')
+   const binding=controllerJobBinding(externalId),descriptor=await controllerJobDescriptor({sourceSha:binding.controlSourceSha},true)
+   const run=assertQualityControllerJobIdentity(await get('/actions/runs/'+runId),{externalId,workflowId:descriptor.workflowId,runId})
+   const at=now(),created=Date.parse(run.created_at)
+   require(run.status==='in_progress'&&run.conclusion===null&&controllerStamp(run.created_at)
+    &&Number.isFinite(at)&&created<=at&&at-created<=1800000,'CONTROLLER_JOB_INVOCATION_REQUIRED')
+   const capability=Object.freeze({kind:'AQC_NATIVE_JOB_INVOCATION_V1'})
+   nativeControllerInvocations.set(capability,Object.freeze({externalId,runId,workflowId:descriptor.workflowId,
+    controlSourceSha:binding.controlSourceSha,createdAt:run.created_at}))
+   return capability
+  },
   controllerJobResult:input=>controllerJobArtifact(input,'result'),
   async controllerJobPatch(input){
    require(controllerJobBinding(input?.externalId).action==='EXECUTE','CONTROLLER_PATCH_EXECUTOR_REQUIRED')
@@ -526,7 +540,7 @@ const controllerJobBinding=value=>{
 }
 /** Metadata only. The signed manifest remains outside workflow input and the
  * executor must separately claim its native permit before any paid request. */
-export function qualityControllerJobInputs({manifest,externalId,permit}){
+export function qualityControllerJobInputs({manifest,externalId,permit,record}){
  const m=assertVerifiedRepairManifest(manifest),binding=controllerJobBinding(externalId)
  const input={mode:'controller-job',action:binding.action,nonce:binding.nonce,
   control_source_sha:binding.controlSourceSha,incident_id:m.incidentId,
@@ -539,6 +553,7 @@ export function qualityControllerJobInputs({manifest,externalId,permit}){
    &&Date.parse(permit.expiresAt)>Date.parse(m.mandate.issuedAt)&&Date.parse(permit.expiresAt)<=Date.parse(m.mandate.expiresAt),'CONTROLLER_JOB_PERMIT_INVALID')
   input.permit_id=permit.permitId;input.permit_expires_at=new Date(permit.expiresAt).toISOString()
  }else require(permit===undefined,'CONTROLLER_JOB_PERMIT_INVALID')
+ if(record!==undefined)input.state=encodeQualityJobState({manifest:m,record,externalId})
  return Object.freeze(input)
 }
 export function assertQualityControllerJobIdentity(run,{externalId,workflowId,runId}){
@@ -551,6 +566,14 @@ export function assertQualityControllerJobIdentity(run,{externalId,workflowId,ru
   &&run.display_title==='AQC JOB '+b.action+' '+b.nonce
   &&['requested','queued','pending','waiting','in_progress','completed'].includes(run.status),'CONTROLLER_JOB_PROVENANCE_MISMATCH')
  return run
+}
+
+/** An opaque read of the real, currently running fixed workflow. This alone
+ * confers no paid, verification, publication or release authority. */
+export function assertQualityControllerJobInvocation(value,{externalId,runId}){
+ const native=nativeControllerInvocations.get(value)
+ require(native&&native.externalId===externalId&&native.runId===runId,'CONTROLLER_JOB_INVOCATION_REQUIRED')
+ return native
 }
 
 const controllerResultRoles=Object.freeze({
@@ -714,9 +737,9 @@ function controllerResultArchive(bytes,profile){
  * adapter's artifact read and is revalidated against the current authority.
  * Cancellation deliberately retains the durable intent until independent
  * isolation/effect receipts are installed; an HTTP acknowledgement is no proof. */
-export function createQualityControllerJobActions({github,keysByRole,budget=null,paidRepairsEnabled=false,now=Date.now}){
+export function createQualityControllerJobActions({github,keysByRole,budget=null,paidRepairsEnabled=false,jobStateEnabled=false,now=Date.now}){
  const methods=['descriptor','controllerJobDescriptor','dispatchControllerJob','findControllerJob','controllerJobResult','cancelControllerJob']
- require(methods.every(k=>typeof github?.[k]==='function')&&typeof now==='function'&&typeof paidRepairsEnabled==='boolean'
+ require(methods.every(k=>typeof github?.[k]==='function')&&typeof now==='function'&&typeof paidRepairsEnabled==='boolean'&&typeof jobStateEnabled==='boolean'
   &&(!paidRepairsEnabled||typeof budget?.openAttempt==='function'),'CONTROLLER_ACTIONS_CONFIGURATION_REQUIRED')
  require(keysByRole instanceof Map&&keysByRole.size===3,'CONTROLLER_JOB_RESULT_TRUST_REQUIRED')
  const trusted=new Map(),keyIds=new Set()
@@ -728,7 +751,7 @@ export function createQualityControllerJobActions({github,keysByRole,budget=null
   }
   trusted.set(role,new Map(keys))
  }
- const envelopes=new WeakMap()
+ const envelopes=new WeakMap(),verifiedReceipts=new WeakMap()
  const authorityFor=(record,authority,action,externalId)=>{
   const manifest=assertVerifiedRepairManifest(authority?.manifest)
   require(controllerPlain(record)&&record.id===manifest.incidentId&&record.baseSha===manifest.baseSha
@@ -768,7 +791,7 @@ export function createQualityControllerJobActions({github,keysByRole,budget=null
     require(permit?.incidentId===manifest.incidentId&&permit.attemptId===intent.nonce
      &&permit.ordinal===record.attemptsUsed&&Date.parse(permit.expiresAt)===expiresAt,'CONTROLLER_JOB_PERMIT_INVALID')
    }
-   const sent=await github.dispatchControllerJob({manifest,externalId:intent.externalId,...(permit===undefined?{}:{permit})})
+   const sent=await github.dispatchControllerJob({manifest,externalId:intent.externalId,...(permit===undefined?{}:{permit}),...(jobStateEnabled?{record}:{})})
    require(sent?.externalId===intent.externalId&&sent.state==='UNKNOWN'&&sent.resultVerified===false,'CONTROLLER_JOB_DISPATCH_INVALID')
    return Object.freeze({externalId:intent.externalId})
   },
@@ -796,9 +819,26 @@ export function createQualityControllerJobActions({github,keysByRole,budget=null
    const manifest=authorityFor(record,authority,action,record.pending?.externalId),native=envelopes.get(envelope)
    require(native&&native.externalId===record.pending.externalId&&native.manifestSha256===documentDigest(manifest),
     'CONTROLLER_JOB_NATIVE_RESULT_REQUIRED')
-   return readQualityControllerJobResult(native.document,{manifest,record,externalId:native.externalId,runId:native.runId,
+   const verified=readQualityControllerJobResult(native.document,{manifest,record,externalId:native.externalId,runId:native.runId,
     workflowId:native.workflowId,keysByRole:trusted,notBefore:Math.max(Date.parse(native.createdAt),Date.parse(manifest.mandate.issuedAt)),now:now()})
+   if(jobStateEnabled)verifiedReceipts.set(verified,{native,manifestSha256:documentDigest(manifest)})
+   return verified
   },
+  ...(jobStateEnabled?{retain(verified,{record,changed,authority,completedAt}){
+   const manifest=authorityFor(record,authority,record.pending?.action,record.pending?.externalId),receipt=verifiedReceipts.get(verified)
+   require(receipt&&receipt.native.externalId===record.pending.externalId&&receipt.manifestSha256===documentDigest(manifest),
+    'CONTROLLER_JOB_NATIVE_RESULT_REQUIRED')
+   const native=receipt.native,at=now()
+   require(Number.isFinite(completedAt)&&completedAt<=at&&at-completedAt<=10000
+    &&documentDigest(advanceIncident(record,record.pending.action,verified,completedAt))===documentDigest(changed),
+    'CONTROLLER_JOB_RESULT_BINDING_INVALID')
+   const current=readQualityControllerJobResult(native.document,{manifest,record,externalId:native.externalId,runId:native.runId,
+    workflowId:native.workflowId,keysByRole:trusted,notBefore:Math.max(Date.parse(native.createdAt),Date.parse(manifest.mandate.issuedAt)),now:at})
+   require(documentDigest(current)===documentDigest(verified)&&controllerHash(native.artifactSha256),'CONTROLLER_JOB_RESULT_BINDING_INVALID')
+   const reference={externalId:native.externalId,runId:native.runId,workflowId:native.workflowId,
+    artifactSha256:native.artifactSha256,documentSha256:documentDigest(native.document),createdAt:native.createdAt}
+   return retainQualityJobReference({before:record,after:changed,action:record.pending.action,reference})
+  }}:{}),
   async cancel(intent,{record}){
    require(intent===record.pending,'CONTROLLER_JOB_RESULT_BINDING_INVALID')
    const binding=controllerJobBinding(intent?.externalId)
