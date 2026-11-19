@@ -2071,7 +2071,7 @@
     "pilotStarted": false,
     "stage2Started": false,
     "b29Approved": true,
-    "previousImmutableRecordRef": "https://github.com/profitia/SG-dev/blob/f2546ad538be2de56346e1352ced82a7820ea1ad/Canon/evidence/2026-11-17-cic-quality-development-owner-package.json",
+    "previousImmutableRecordRef": "https://github.com/profitia/SG-dev/blob/1af31b58dd1fa75d247676876fe6d508b40b0d71/Canon/evidence/2026-11-17-cic-quality-development-owner-package.json",
     "posthog": {
       "projectId": 329829,
       "event": "cic_quality_technical_heartbeat",
@@ -2124,7 +2124,7 @@
       "result": "SUCCESS",
       "doesNotClaimNewHostCic18Rollout": true
     },
-    "recordedAt": "2026-11-19T06:01:30.000Z",
+    "recordedAt": "2026-11-19T07:45:46.000Z",
     "currentAcceptedSource": {
       "pr": 1231,
       "sourceSha": "68d2a0ed6aae482bd4aea9cbb5604ed7607057ec",
@@ -2493,15 +2493,39 @@
         }
       ],
       "publicTrustInstalled": false,
-      "ownerMandateSigned": false
+      "ownerMandateSigned": false,
+      "publisherTotalSecretsInstalled": 4,
+      "existingBrokerCredentialsInstalledOnlyTo": "aqc-executor-development",
+      "executorTotalSecretsInstalled": 3,
+      "brokerKeyOrPasswordRotated": false
     },
     "renderPublisherAccess": {
-      "sent": true,
-      "scope": "B29-5 exact request",
+      "status": "SCOPED_KEY_CREATED_INSTALLED_READ_ONLY_VERIFIED",
       "workspaceId": "tea-d7lps8rbc2fs73cn80dg",
-      "noNewKey": true,
-      "response": "The team will be in touch with you here.",
-      "screenshot": "/Users/tomaszuscinski/Documents/ChatGPT/SG PORR In Progress/CIC-Technical-2026-11-19/render-support-scoped-publisher.jpg"
+      "serviceId": "srv-dapa3tid0e5s73f8bc5g",
+      "environment": "aqc-publisher-development",
+      "secretName": "AQC_RENDER_PUBLISHER_API_KEY",
+      "providerScopeGroups": [
+        "Services:Read",
+        "Environment variables and secret files:Read&Write",
+        "Deploys:Run"
+      ],
+      "otherScopeGroupsEnabled": false,
+      "savedUiScopesRechecked": true,
+      "servicesGetStatus": 200,
+      "deploysGetStatus": 200,
+      "tlsVerified": true,
+      "environmentReadPerformed": false,
+      "mutationPerformed": false,
+      "transitFileRemoved": true,
+      "authorisedUntil": "2026-11-27T23:59:59.000Z",
+      "providerExpiryConfigured": false,
+      "revokeAtCompletionOrExpiryRequired": true,
+      "classicKeyUsed": false,
+      "cliTokenReused": false,
+      "supportResolved": true,
+      "earlierUnavailableDiagnosisCorrected": "DOM text included an inactive wizard step; visual inspection and selecting workspace revealed supported controls",
+      "newPlanResourceOrCost": false
     },
     "referenceReview": {
       "reviewer": "independent_reference_review",
@@ -2515,13 +2539,237 @@
     },
     "sharedCiCoordination": {
       "channel": "authorised ECR technical coordination",
-      "firstRootSdkWitnessBeforeSharedCi27": true,
+      "generalMainWindowReleased": true,
+      "rootPolicyMain": "7b9815e615be817982d0e8dd072426b69d694da7",
+      "rootPolicyResultingMainRun": 44475309238,
+      "actualSdk138Source267FullMainWitnessStillRequired": true,
       "heldPaths": [
         "scripts/governance/controlled-package-ci.mjs",
         "scripts/governance/controlled-package-ci-path-coverage.test.mjs"
       ],
       "allOtherApprovedWorkContinues": true,
       "noHostDeploymentPerformed": true
+    },
+    "publisherReadinessPreparation": {
+      "pr": 1237,
+      "sourceSha": "394ad2cc87d0d5ba95f65f084c8ca8d62e425654",
+      "sourceTree": "e15d9bfba14a526294d7ccb8a781ddc960202006",
+      "sourceFiles": [
+        {
+          "path": "packages/assistant-quality-control/src/publisher-readiness.mjs",
+          "sha": "17adade957c6533bae3ff844292bcc8b72c26d46",
+          "sha256": "dd959fa67039a1b0b5f0e2c55caad511d33947c2d6230c77435a004c64acdf27",
+          "bytes": 12891,
+          "mode": "100644",
+          "type": "blob"
+        },
+        {
+          "path": "packages/assistant-quality-control/test/publisher-readiness.test.mjs",
+          "sha": "79db0c7bd9081bada6b9230a0abb619ce6479bf7",
+          "sha256": "1762e6ba672ba681eb5dfe017e1168b7030d8759ea9117a8e7273e804e3ff4a5",
+          "bytes": 15632,
+          "mode": "100644",
+          "type": "blob"
+        },
+        {
+          "path": "packages/assistant-quality-control/src/cli.mjs",
+          "sha": "8563a94b357acd0d73d0817a4705b51f41c7ca68",
+          "sha256": "e4b65f5cb40d7210b8f8bb2a346ef25111eade0d8610dfe25daf9dd633f37bde",
+          "bytes": 31800,
+          "mode": "100644",
+          "type": "blob"
+        },
+        {
+          "path": "packages/assistant-quality-control/src/acceptance.mjs",
+          "sha": "41a7bfa2b34d1432d24dfb8233d43e8dd0fb29f6",
+          "sha256": "53811ae798dd609be79584916cb3c83760e60ae64f96307841d89dfc8dd638c5",
+          "bytes": 25969,
+          "mode": "100644",
+          "type": "blob"
+        },
+        {
+          "path": ".github/workflows/assistant-quality-repair.yml",
+          "sha": "f44c3cf0bba4564420426192d8f26091362c2a0d",
+          "sha256": "26647b756a2647d96a8c85d03582197fbeee3157607a03c9656ff82197839f6e",
+          "bytes": 8163,
+          "mode": "100644",
+          "type": "blob"
+        }
+      ],
+      "sourceCiRun": 44475389813,
+      "sourceCiJob": 135394572554,
+      "actualCiMergeBase": "7b9815e615be817982d0e8dd072426b69d694da7",
+      "aqcPass": 307,
+      "qaPass": 12,
+      "fail": 0,
+      "skip": 0,
+      "nativePostgresProfiles": 2,
+      "nativeAclCounterexamples": 28,
+      "independentSourceReview": {
+        "reviewer": "independent_reference_review",
+        "sourceSha": "394ad2cc87d0d5ba95f65f084c8ca8d62e425654",
+        "paths": 5,
+        "earlierFindings": 3,
+        "remainingFindings": 0,
+        "reviewerExecutedTests": false,
+        "referenceApproved": false,
+        "operationalAcceptance": false
+      },
+      "sourceNotYetMerged": false,
+      "nativeMainPreflightExecuted": true,
+      "qualificationFiles": 21,
+      "newExactMainLinuxQualificationRequired": false,
+      "releaseOrCostAuthority": false,
+      "mergeSha": "42d089592233d4d70f667f92c5583c2d665f60f7",
+      "finalHead": "551f3a163780df68da0d5066f74c469a4039adbd",
+      "finalSourceRun": 44476300565,
+      "finalSourceJob": 135397575485,
+      "resultingMainSourceRun": 44477066454,
+      "resultingMainGovernanceRun": 44477066464,
+      "linux21": {
+        "sourceSha": "42d089592233d4d70f667f92c5583c2d665f60f7",
+        "runId": 44477355477,
+        "jobId": 135401469784,
+        "artifactId": 14506494063,
+        "archiveSha256": "79d5f8a2c507e50283250c70c5f4a2c823d36d5670c70979b7e94b90c8754e63",
+        "observations": {
+          "schemaVersion": "AQC_LINUX_OBSERVATIONS_V1",
+          "gateSetSha256": "2b3727df84d20f6a40fcdd0b3f87da1266811baa4c4c3ea64301f331e8f7796e",
+          "codexVersion": "0.167.2",
+          "codexArchiveSha256": "8246e846c550ea21197fcc4067bc270dca895e94ea42ed6a282e6f4e0125b15f",
+          "codexBinarySha256": "a9672d0fa0dd8fcf8cad136fa0d056b914bc046f5ac3d78f4a5cf390655af56b",
+          "codeModeHostArchiveSha256": "189475a654d82ca776e08dfef22734106d3e5b2cf21da6e84ec3d974d02c39a6",
+          "codeModeHostBinarySha256": "007c62795a7215c27ee85486ecb95e714b33118a2d18c6d7b09b0d9793c72ff4",
+          "bwrapArchiveSha256": "03cb0d2b151648693e3817c47068773ae4b7327c19fe25eab8c61c4c2865838a",
+          "bwrapBinarySha256": "7df960565a0dece99240ea4b9d0e011307817f9f3b73176c7b71fda44fe84765",
+          "isolationHelperCommit": "13e9c17417b29e9a276f73ec6ed7fb574137d3c3",
+          "fileIsolation": "PASS",
+          "networkIsolation": "PASS",
+          "privilegeIsolation": "PASS",
+          "toolLoop": "PASS",
+          "cancellation": "PASS",
+          "noProviderRequests": true,
+          "requestCount": 4,
+          "settledCount": 4,
+          "runId": "44477355477",
+          "sourceSha": "42d089592233d4d70f667f92c5583c2d665f60f7",
+          "nonce": "55f0ea28-a08e-4489-a30e-ca4eb545b603",
+          "verifiedAt": "2026-11-19T07:10:44.462Z",
+          "testKeysInstalled": false,
+          "realCostAuthorityUsed": false,
+          "independentVerifier": {
+            "status": "PASS",
+            "classes": [
+              "C1",
+              "C2",
+              "C3"
+            ],
+            "typedResults": 6,
+            "fileIsolation": "PASS",
+            "networkIsolation": "PASS",
+            "privilegeIsolation": "PASS",
+            "timeout": "PASS",
+            "cancellation": "PASS",
+            "cgroupEmpty": true,
+            "nodeSha256": "904a6d3484241d466989f9df9ba3aab822b1496191bdb28230eb491a55c32a52",
+            "noProviderRequests": true,
+            "rawQaPayloadIncluded": false,
+            "testKeysInstalled": false,
+            "baseline": {
+              "status": "PASS",
+              "typedResults": 9,
+              "sourceMode": "UNCHANGED_GIT_BASELINE",
+              "classes": [
+                "C1",
+                "C2",
+                "C3"
+              ],
+              "nativeOperationalInvocationVerified": false,
+              "fullPrivateCic18Qualification": false,
+              "noProviderRequests": true,
+              "rawQaPayloadIncluded": false,
+              "testKeysInstalled": false
+            }
+          }
+        },
+        "originalArtifactIndependentlyVerified": true,
+        "gitPolicyFilesIndependentlyRehashed": 21,
+        "productionTrustInstalled": false
+      },
+      "nativePublisherPreflight": {
+        "archiveSha256": "3009fb58170db1302aeb335f8abf514d9ccd40b06f484021884a82935bd997b4",
+        "observations": {
+          "schemaVersion": "AQC_PUBLISHER_PREFLIGHT_V1",
+          "status": "PUBLISHER_CONNECTED_DISABLED",
+          "hostSourceSha": "d5eb40a061dd24c5ea65f9f373682179458cb589",
+          "profilesVerified": 2,
+          "bindingsVerified": 6,
+          "publishingEnabled": false,
+          "recoveryEnabled": true,
+          "updatedBindings": 0,
+          "rawQaReadPerformed": false,
+          "permissionMutationPerformed": false,
+          "sourceSha": "42d089592233d4d70f667f92c5583c2d665f60f7",
+          "runId": "44478494012",
+          "nonce": "ccc19f30-42c7-42e6-8257-cab829b8bbe7",
+          "observedAt": "2026-11-19T07:19:50.613Z",
+          "nativeOperationalInvocationVerified": false,
+          "paidRepairsEnabled": false,
+          "promotionEnabled": false
+        },
+        "artifactIndependentlyVerified": true,
+        "runId": 44478494012,
+        "jobId": 135405431203,
+        "artifactId": 14507387043
+      }
+    },
+    "publisherPostInstallAclRechecks": [
+      {
+        "acl": {
+          "profile": "canonical",
+          "can_delegate_schema": false,
+          "column_access": false,
+          "can_delegate_functions": false
+        },
+        "ownership": {
+          "profile": "canonical",
+          "schema_owner_matches": true,
+          "table_owners_match": true
+        }
+      },
+      {
+        "acl": {
+          "profile": "product",
+          "can_delegate_schema": false,
+          "column_access": false,
+          "can_delegate_functions": false
+        },
+        "ownership": {
+          "profile": "product",
+          "schema_owner_matches": true,
+          "table_owners_match": true
+        }
+      }
+    ],
+    "executorBrokerContractCorrection": {
+      "status": "SOURCE_PREPARED_LOCAL_TESTS_PASS_NATIVE_CI_PENDING",
+      "originalProblem": "Native executor called STATUS reserved by original SQL005 for controller; no paid EXECUTE was performed",
+      "fix": "Fixed ordinary broker role exposes only its seven original SQL operations and does not request STATUS",
+      "localCommit": "305fd020",
+      "sourceFiles": 2,
+      "originalTestBodiesRetained": 8,
+      "newOriginalSqlLoopbackTests": 2,
+      "pass": 309,
+      "qaPass": 12,
+      "fail": 0,
+      "skip": 0,
+      "nativeCiRequired": true,
+      "resultingMainCiRequired": true,
+      "freshChangedPolicyLinuxQualificationRequired": true,
+      "sqlGrantRoleOrBudgetChanged": false,
+      "providerRequests": false,
+      "realPilotStarted": false,
+      "modelCredentialInstalled": false
     }
   },
   "consolidatedOwnerDecisionB29Revision2": {
