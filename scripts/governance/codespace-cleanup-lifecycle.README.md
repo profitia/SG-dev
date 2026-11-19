@@ -147,6 +147,8 @@ Outputs preserve preCloseoutReport and postCloseoutReport with individual paths,
 
 CLOSEOUT_VERIFIED/ALREADY_CLOSED describes continuity. CLEANED/RETAINED/REVIEW_REQUIRED/NOT_APPLICABLE in reports describes resource handling. If freeing space is the business goal, assess its real DoD; safe retention alone does not prove that goal.
 
+Stage04 acceptance correction: canonical PMOS/PHR closeout may truthfully record an incomplete business result. Readback accepts that recorded result only when the manifest and both flight records agree, while all identity, integrity and pre-closeout report checks remain mandatory. The lifecycle checkpoint records businessResult separately from CLOSEOUT_COMPLETE. A non-SUCCESS bootstrap is audited without pre-closeout deletion; a destructive post-closeout epilogue requires a remotely verified SUCCESS. Partial or blocked acceptance therefore preserves resources for resumption and never becomes business SUCCESS through continuity completion.
+
 ## Tests and publication
 
 ```bash
@@ -155,6 +157,6 @@ node --check scripts/governance/codespace-cleanup-lifecycle.test.mjs
 node --test scripts/governance/codespace-cleanup.test.mjs scripts/governance/codespace-cleanup-lifecycle.test.mjs
 ```
 
-Full suite: 95 lifecycle tests plus 24 unchanged Stage02 tests (119 total). Tests use only their own temporary resources; PMOS replies are controlled doubles, while PHR uses real isolated Git repositories. This is not live Neon, live PHR or installed Codespaces acceptance.
+Full suite: 99 lifecycle tests plus 24 unchanged Stage02 tests (123 total). Tests use only their own temporary resources; PMOS replies are controlled doubles, while PHR uses real isolated Git repositories. This is not live Neon, live PHR or installed Codespaces acceptance. Stage04 regressions cover partial/blocked closeout, retention before and after save, and mismatched business results despite valid bundle hashes.
 
 Publication v6 requires the unfiltered Linux suite, controlled invocation acceptance and current governance/CI. TEST-RESULTS.txt records actual execution; the earlier macOS-only v5 run does not substitute for Linux validation.
