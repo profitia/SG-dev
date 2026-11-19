@@ -52,8 +52,7 @@
     "010-external-request-admission.sql": "8244a3a02d4ef5821822a6684023148c41bc9caac355c9f1200215e1a339df79",
     "013-supplier-delegation.sql": "cd12f9b88397da88241499548b8a5977d0aca830ad83c53a1bcf146265503555",
     "016-delegated-native-work.sql": "19fb1d9045bccdb3299317b4c5b7df41e361e971c83ab683a55b56d6fbc8e5fe",
-    "017-additional-request-operations.sql": "a0bd21a268e41f8a41befad777f7717fb3014fb851ff42cdb290004f93a98f94",
-    "034-unmetered-benchmark-requests.sql": "4bdd9163a13fcc9096ac2976729335f00b629a37e2abe067ff036b03750d7f5c"
+    "017-additional-request-operations.sql": "a0bd21a268e41f8a41befad777f7717fb3014fb851ff42cdb290004f93a98f94"
   },
   "retentionPolicy": "Must be explicitly installed before activation; no implicit retention is granted by this candidate.",
   "remainingAcceptance": [
@@ -91,14 +90,7 @@
     "privateControlPayload": "HMAC_METADATA_ONLY_NO_RAW_PROMPT_OR_CREDENTIALS",
     "automaticRetry": false,
     "openAiStore": false,
-    "runtimeConfigurationVersion": "sg2-finder-source-dev-v1",
-    "unmeteredSqlDigest": "9fe56c54c22fe54aa4869966cf00e7347e8c0d040b1d3d8110fc7952a78d5e13",
-    "continuitySqlDigest": "2a6dd51ec854e94fc8e846abec9023c22c3e4328c5e42a1ec2be4f7fe12b78ca",
-    "quotaMode": "UNMETERED",
-    "unmeteredProviders": [
-      "MACROBOND_TOKEN",
-      "MACROBOND_API"
-    ]
+    "runtimeConfigurationVersion": "sg2-finder-source-dev-v1"
   },
   "serviceSchemaDigest": "f7757dc5805b3759959505fa852715e70d207e94bf5d85827db3d52b0a5d0d49",
   "localSourceVerification": {
@@ -107,6 +99,5 @@
     "originalBusinessAlgorithms": true,
     "actualDeployed": false,
     "actualUserAcceptance": false
-  },
-  "requestQuotaMode": "UNMETERED"
+  }
 }

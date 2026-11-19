@@ -219,12 +219,6 @@ async function getAccessToken(forceRefresh = false):Promise<string> {
   try{return await flight}finally{if(state.tokenFlight===flight)state.tokenFlight=null}
 }
 
-function providerRateLimited(response:Response):never {
-  const raw=response.headers.get('retry-after')?.trim()
-  const retryAfter=raw&&raw.length<=128&&(/^[0-9]{1,10}$/.test(raw)||/^[A-Za-z]{3}, [0-9]{2} [A-Za-z]{3} [0-9]{4} [0-9]{2}:[0-9]{2}:[0-9]{2} GMT$/.test(raw)&&Number.isFinite(Date.parse(raw)))?raw:undefined
-  throw new BenchmarkAppError('RATE_LIMITED','Macrobond rate limit exceeded.',429,retryAfter)
-}
-
 async function loadAccessToken(forceRefresh = false) {
   if (!forceRefresh && !isExpired(providerState().tokenCache)) {
     return providerState().tokenCache!.accessToken
@@ -244,7 +238,6 @@ async function loadAccessToken(forceRefresh = false) {
     cache: 'no-store',
   })
 
-  if(response.status===429)providerRateLimited(response)
   if (!response.ok) {
     throw new BenchmarkAppError('PROVIDER_AUTH_FAILED', 'Macrobond authentication failed.', 502)
   }
@@ -280,7 +273,7 @@ async function macrobondRequest<T>(path: string, init: RequestInit): Promise<T> 
     }
 
     if (response.status === 429) {
-      providerRateLimited(response)
+      throw new BenchmarkAppError('RATE_LIMITED', 'Macrobond rate limit exceeded.', 429)
     }
 
     if (response.status === 403) {

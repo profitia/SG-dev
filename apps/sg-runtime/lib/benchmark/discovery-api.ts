@@ -11,8 +11,8 @@ type Executor=OperationExecutor<Prisma.TransactionClient>
 export type DiscoveryApiOptions={requestHost:Executor;readHost:Executor;persist:ReturnType<typeof createDiscoveryRequestPersister>;
  work:ReturnType<typeof createSg2DiscoveryNativeStore>;providerPorts:(operationKey:string)=>BenchmarkProviderPorts}
 export type DiscoveryApi=Readonly<{execute:(request:Request,organisationId:string,command:Readonly<DiscoveryCommand>,idempotencyKey:string)=>Promise<Response>}>
-export function discoveryFailure(status=503,code='OPERATION_DENIED',message='Operation unavailable',retryAfter?:string){
- return Response.json({error:{code,message}},{status,headers:{'Cache-Control':'private, no-store',Vary:'Cookie, Authorization',...(retryAfter?{'Retry-After':retryAfter}:{})}})
+export function discoveryFailure(status=503,code='OPERATION_DENIED',message='Operation unavailable'){
+ return Response.json({error:{code,message}},{status,headers:{'Cache-Control':'private, no-store',Vary:'Cookie, Authorization'}})
 }
 export function discoveryDenied(error:unknown){
  const reason=isOperationDenied(error)?error.reasonCode:null
@@ -62,10 +62,6 @@ export function createSg2DiscoveryApi(options:DiscoveryApiOptions):DiscoveryApi{
      // generated intent or private intermediate data. Recheck current HUMAN
      // authority even for this generic error. A retry keeps its original Source
      // keys; it cannot buy another exchange for an uncertain/settled request.
-     if(error instanceof BenchmarkAppError&&error.code==='RATE_LIMITED'&&error.status===429){
-      await admit(request,organisationId,command,idempotencyKey)
-      return discoveryFailure(429,'RATE_LIMITED','Macrobond rate limit exceeded.',error.retryAfter)
-     }
      if(error instanceof BenchmarkAppError&&error.code==='AI_NEEDS_CLARIFICATION'){
       await admit(request,organisationId,command,idempotencyKey)
       return discoveryFailure(422,'AI_NEEDS_CLARIFICATION','Please clarify the benchmark description.')

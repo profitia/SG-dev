@@ -22,8 +22,7 @@ function descriptor(binding) {
     profileId: 'PLATFORM_INTERNAL', serviceId: '22222222-2222-4222-8222-222222222222',
     proofRef: 'database-service:33333333-3333-4333-8333-333333333333:2', expiresAt: new Date(clock + 30000).toISOString(),
     deploymentId: `${targets.serviceId}:${releaseSha}`, configurationVersion: binding.configurationVersion }
-  identity.unmeteredSchemaDigest=targets.source.unmeteredSqlDigest
-  return { identity, service,quotas:Array.from({length:4},()=>({quotaMode:'UNMETERED',capacity:null,unmeteredSchemaDigest:targets.source.unmeteredSqlDigest})) }
+  return { identity, service }
 }
 const verify = (read, env = environment()) => verifyFinderDevelopmentBindings({ env, read, now: () => clock })
 
@@ -101,9 +100,3 @@ test('the documented Render entrypoint verifies before starting the unchanged ap
   const doc = readFileSync(new URL('../docs/finder-development-release.md', import.meta.url), 'utf8')
   assert.match(doc, /node scripts\/verify-finder-development-bindings\.mjs --wait && exec npm run start/)
 })
-
-test('redeploy refuses missing, changed or finite Macrobond pools',async()=>{
- for(const fault of ['missing','finite','digest'])await assert.rejects(verify(async binding=>{const row=descriptor(binding);if(binding.name==='source'){if(fault==='missing')row.quotas=[];if(fault==='finite')row.quotas[0]={quotaMode:'METERED',capacity:1000};if(fault==='digest')row.identity.unmeteredSchemaDigest='f'.repeat(64)}return row}),e=>e.code==='UNMETERED_POLICY_UNAVAILABLE')
-})
-
-test('revoked Source acquisition does not prevent unrelated app startup; the Source engine still denies it',async()=>{assert.equal((await verify(async binding=>{const row=descriptor(binding);if(binding.name==='source')row.quotas=[null,null,null,null];return row})).status,'READY')})
