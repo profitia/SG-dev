@@ -15,13 +15,14 @@ import { spawnSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 import { isDeepStrictEqual } from 'node:util'
 import { executeCleanup, OWNER_FILE } from './codespace-cleanup.mjs'
+import {managedRequest,MANAGED_KIND} from './codespace-cleanup-managed.mjs'
 
 const taskRe = /^[A-Za-z0-9][A-Za-z0-9_.-]{3,159}$/
 const nameRe = /^[A-Za-z0-9][A-Za-z0-9_.-]{0,75}$/
 const shaRe = /^[0-9a-f]{40,64}$/
 const forbidden = new Set(['.git', '.pmos', '.context', 'recovery', 'pending', 'journals', 'history', 'phr', 'memoros', 'evidence', 'receipts', 'archives', 'secrets', 'credentials', '.ssh', '.config', 'lkg'])
 const allowedProjects = new Set(['SG2', 'SRM', 'ARCHITECTURE'])
-const allowedKinds = new Set(['ephemeral-directory', 'git-worktree'])
+const allowedKinds = new Set(['ephemeral-directory', 'git-worktree',MANAGED_KIND])
 const allowedPhases = new Set(['pre-closeout', 'post-closeout'])
 
 export class LifecycleRefusal extends Error { constructor(message) { super(message); this.name = 'LifecycleRefusal' } }
@@ -204,6 +205,7 @@ export function loadConfiguration(configFile) {
   assert(profile && profile.repository?.slug === c.repository &&
     Array.isArray(profile.workspaces), 'Task project is not ACTIVE in the canonical registry')
   canonicalControlFile(c.beginInputFile, 'beginInputFile')
+  if (c.inspectorDescriptor !== undefined) canonicalControlPath(c.inspectorDescriptor, 'inspectorDescriptor', {allowMissing:true})
   const input = json(c.beginInputFile)
   assert(input.project === profile.displayName && profile.workspaces.includes(input.workspace),
     'PMOS project displayName/workspace does not match the canonical registry')
@@ -276,13 +278,25 @@ function candidatePath(c, name) {
   assert(contains(c.scopeRoot, target) && !contains(c.sourceRoot, target) && !fs.existsSync(target), 'Resource is existing, out of scope or ambiguous')
   return target
 }
-export function allocateResource(c, { name, kind, phase }, runtime = {}) {
+export function allocateResource(c, { name, kind, phase, bytes=16384, seed='PROFITIA_OWN_REPRODUCIBLE_CACHE' }, runtime = {}) {
   assert(allowedKinds.has(kind) && allowedPhases.has(phase), 'Unknown resource kind or phase')
   if (kind === 'git-worktree') assert(phase === 'post-closeout', 'Worktree may be disposed only in post-closeout phase')
   return fileLock(c.stateFile, () => {
     const state = loadState(c)
     assert(!state.closeout, 'Cannot allocate resources after closeout')
     checkRegisteredTask(c, runtime, 'running')
+    if(kind===MANAGED_KIND){
+      assert(nameRe.test(name??'')&&!name.startsWith('.')&&!forbidden.has(name.toLowerCase()),'Unsafe managed resource name')
+      assert(!state.resources.some(r=>r.managedName===name),'Managed name is already registered')
+      assert(Number.isInteger(Number(bytes))&&Number(bytes)>0&&Number(bytes)<=4*1024*1024,'Managed byte bound')
+      const receipt=(runtime.managedRequest??managedRequest)(c,'allocate',null,{name,phase,bytes:Number(bytes),seedBase64:Buffer.from(seed).toString('base64')})
+      assert(receipt.status==='RESOURCE_REGISTERED','Managed allocation not acknowledged')
+      const entry={kind,path:receipt.path,phase,allocationId:receipt.allocationId,managedName:name,
+        identity:receipt.identity,referenceProtection:receipt.referenceProtection,
+        authorization:{resultVerified:false,retentionReleased:false,recoveryPreserved:false,noActiveConsumers:false}}
+      state.resources.push(entry);saveState(c.stateFile,state)
+      return {status:'RESOURCE_REGISTERED',...entry}
+    }
     const dest = candidatePath(c, name)
     if (kind === 'ephemeral-directory') fs.mkdirSync(dest, { mode: 0o700 })
     else {
@@ -306,7 +320,7 @@ export function allocateResource(c, { name, kind, phase }, runtime = {}) {
 export function releaseResource(c, evidenceFile, runtime = {}) {
   canonicalControlFile(evidenceFile, 'evidenceFile')
   const e = json(evidenceFile)
-  assert(e.schemaVersion === '1.0' && e.taskId === c.taskId && e.projectKey === c.projectKey && shaRe.test(e.allocationId ?? '') && e.verificationRef, 'Release evidence identity invalid')
+  assert(e.schemaVersion === '1.0' && e.taskId === c.taskId && e.projectKey === c.projectKey && (shaRe.test(e.allocationId ?? '') || (e.kind===MANAGED_KIND && /^[a-f0-9]{32}$/.test(e.allocationId??''))) && e.verificationRef, 'Release evidence identity invalid')
   assert(['resultVerified','retentionReleased','recoveryPreserved','noActiveConsumers'].every(k => e.authorization?.[k] === true), 'Four affirmative release attestations and their evidence required')
   return fileLock(c.stateFile, () => {
     const state = loadState(c)
@@ -315,6 +329,7 @@ export function releaseResource(c, evidenceFile, runtime = {}) {
     const entry = state.resources.find(x => x.allocationId === e.allocationId && x.path === e.path && x.kind === e.kind)
     assert(entry && state.resources.filter(x => x.allocationId === e.allocationId).length === 1, 'Release evidence does not match one task-owned resource')
     assert(!contains(entry.path, evidenceFile) && evidenceFile !== entry.path, 'Release evidence may not reside inside disposable candidate')
+    if(entry.kind===MANAGED_KIND){const receipt=(runtime.managedRequest??managedRequest)(c,'release',entry);assert(receipt.status==='RELEASE_ATTESTED'&&receipt.producerLeaseActive===false,'Managed producer lease was not released')}
     entry.authorization = Object.fromEntries(['resultVerified','retentionReleased','recoveryPreserved','noActiveConsumers'].map(k => [k, true]))
     state.lifecycle.lastReleaseEvidenceRef = e.verificationRef
     // Exact local evidence paths must remain protected until canonical closeout.
@@ -343,7 +358,7 @@ function protectedByControlPaths(c, state, external = []) {
   const paths = [c.configFile, c.stateFile, c.beginInputFile,
     path.join(c.sourceRoot, 'apps/pmos/.pmos/pending-artifact.json'),
     path.join(c.sourceRoot, 'apps/pmos/.pmos/recovery/active-closeout.json'),
-    state.work?.specPath, state.work?.bootstrapInputFile,
+    state.work?.specPath, state.work?.bootstrapInputFile, c.inspectorDescriptor,
     ...releaseEvidence, ...closeoutInputs, ...external].filter(p => p !== undefined)
   assert(paths.every(p => typeof p === 'string' && path.isAbsolute(p) && path.normalize(p) === p),
     'Invalid protected control/evidence paths')
@@ -385,7 +400,8 @@ export function phaseReport(c, phase, clean = false, opts = {}) {
   }
   return (opts.cleanup ?? executeCleanup)({ command: clean ? 'clean' : 'audit', projectKey: c.projectKey, taskId: c.taskId,
     repository: c.repository, sourceRoot: c.sourceRoot, scopeRoot: c.scopeRoot, stateFile: c.stateFile,
-    phase, ...(clean ? { confirmClean: c.taskId } : {}) })
+    phase, ...(c.inspectorDescriptor ? {inspectorDescriptor:c.inspectorDescriptor} : {}),
+    ...(clean ? { confirmClean: c.taskId } : {}) })
 }
 export function findPhrManifestForTask(c) {
   // Discover by Git's *remote* committed history tree. A stale or separate PHR
@@ -752,7 +768,7 @@ export function runTask(c, workSpecFile, runtime = {}) {
 function parseArgs(argv) {
   const action = argv[0]
   const opts = { action }
-  const keys = { '--config': 'configFile', '--name': 'name', '--kind': 'kind', '--phase': 'phase', '--evidence': 'evidenceFile', '--phr-manifest': 'manifestRelative', '--bootstrap-input': 'bootstrapInputFile', '--work-spec': 'workSpecFile' }
+  const keys = { '--config': 'configFile', '--name': 'name', '--kind': 'kind', '--phase': 'phase', '--evidence': 'evidenceFile', '--phr-manifest': 'manifestRelative', '--bootstrap-input': 'bootstrapInputFile', '--work-spec': 'workSpecFile', '--bytes':'bytes', '--seed':'seed' }
   for (let i = 1; i < argv.length; i++) {
     if (argv[i] === '--clean') { opts.clean = true; continue }
     if (!keys[argv[i]] || !argv[i + 1] || argv[i + 1].startsWith('--')) block(`Unknown or missing CLI option: ${argv[i]}`)
@@ -766,7 +782,7 @@ function parseArgs(argv) {
 function main(argv) {
   const o = parseArgs(argv), c = loadConfiguration(o.configFile)
   if (o.action === 'start') return startTask(c)
-  if (o.action === 'allocate') return allocateResource(c, { name: o.name, kind: o.kind, phase: o.phase ?? 'pre-closeout' })
+  if (o.action === 'allocate') return allocateResource(c, { name: o.name, kind: o.kind, phase: o.phase ?? 'pre-closeout', bytes:o.bytes,seed:o.seed })
   if (o.action === 'release') return releaseResource(c, o.evidenceFile)
   if (o.action === 'pre-closeout') return phaseReport(c, 'pre-closeout', o.clean)
   if (o.action === 'finish') return finishTask(c, { manifestRelative: o.manifestRelative, bootstrapInputFile: o.bootstrapInputFile, cleanPostCloseout: o.clean })

@@ -1195,3 +1195,55 @@ test('measured pre-closeout report is independently read back from both remote P
   }
   assert.equal(verifyPhrReadback(f.config,p.relative).publicationId,`${f.c.projectKey}:${f.c.taskId}`)
 })
+
+test('optional inspector deployment is forwarded to the existing engine without changing the PMOS lifecycle',t=>{
+  const f=fixture(t),descriptor=path.join(f.scope,'inspector-deployment.json')
+  write(descriptor,{fixture:true});write(f.configFile,{...f.c,inspectorDescriptor:descriptor})
+  const c=loadConfiguration(f.configFile);startTask(c,f.runtime)
+  let calls=0
+  phaseReport(c,'pre-closeout',false,{cleanup:args=>{calls++;assert.equal(args.inspectorDescriptor,descriptor);return {summary:{REVIEW_REQUIRED:1},results:[]}}})
+  assert.equal(calls,1);assert.equal(f.hasSaved(),false)
+})
+test('inspector descriptor is retained as lifecycle control data inside a candidate',t=>{
+  const f=fixture(t),r=allocated(f),descriptor=path.join(r.path,'inspector-deployment.json')
+  write(descriptor,{fixture:true});write(f.configFile,{...f.c,inspectorDescriptor:descriptor})
+  const c=loadConfiguration(f.configFile)
+  let calls=0
+  assert.throws(()=>finishTask(c,{bootstrapInputFile:bootstrapFixture(f),cleanPreCloseout:true},
+    {...f.runtime,cleanup:()=>{calls++;return {summary:{}}}}),/contains required task control\/evidence input/)
+  assert.equal(calls,0);assert.equal(fs.existsSync(r.path),true)
+})
+test('inspector deployment alias is rejected before registration or cleanup',t=>{
+  const f=fixture(t),real=path.join(f.scope,'inspector.json'),alias=path.join(f.scope,'alias.json')
+  write(real,{fixture:true});fs.symlinkSync(real,alias);write(f.configFile,{...f.c,inspectorDescriptor:alias})
+  assert.throws(()=>loadConfiguration(f.configFile),/symlink|physical|canonical/)
+  assert.equal(f.calls.length,0)
+})
+
+test('managed lifecycle allocation fails without a trusted deployment and creates no ordinary fallback directory',t=>{
+  const f=fixture(t);begin(f)
+  assert.throws(()=>allocateResource(f.config,{name:'managed-no-broker',kind:'managed-private-directory',phase:'pre-closeout'},f.runtime),/deployment|path/i)
+  assert.equal(fs.existsSync(path.join(f.scope,'managed-no-broker')),false)
+  assert.equal(tracked(f.c.stateFile).resources.length,0)
+})
+
+test('canonical release accepts the real managed worker UUID and freezes before storing release',t=>{
+  const f=fixture(t);begin(f)
+  const id='a'.repeat(32),candidate=path.join(f.scope,'managed-root',id,'lease','candidate');let frozen=0
+  const runtime={...f.runtime,managedRequest:(config,action,entry)=>{
+    assert.equal(config.taskId,f.c.taskId)
+    if(action==='allocate')return {status:'RESOURCE_REGISTERED',path:candidate,kind:'managed-private-directory',allocationId:id,identity:{dev:1,ino:2},referenceProtection:'PRIVATE_SINCE_CREATION_NO_FD_EXPORT'}
+    assert.equal(action,'release');assert.equal(entry.allocationId,id)
+    assert.equal(tracked(f.c.stateFile).resources[0].authorization.retentionReleased,false)
+    frozen++;return {status:'RELEASE_ATTESTED',producerLeaseActive:false}
+  }}
+  const resource=allocateResource(f.config,{name:'managed-unit',kind:'managed-private-directory',phase:'pre-closeout'},runtime)
+  const result=releaseResource(f.config,release(f,resource),runtime)
+  assert.equal(result.status,'RELEASE_ATTESTED');assert.equal(frozen,1)
+  assert.equal(tracked(f.c.stateFile).resources[0].authorization.retentionReleased,true)
+})
+test('a short managed UUID does not weaken legacy allocation identity validation',t=>{
+  const f=fixture(t),r=allocated(f)
+  assert.throws(()=>releaseResource(f.config,release(f,r,{allocationId:'a'.repeat(32)}),f.runtime),/identity invalid/)
+  assert.equal(tracked(f.c.stateFile).resources[0].authorization.retentionReleased,false)
+})
