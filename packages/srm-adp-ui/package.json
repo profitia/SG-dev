@@ -3,16 +3,28 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "sideEffects": ["**/*.css"],
-  "exports": {".": "./src/index.ts", "./styles.css": "./src/styles.css"},
-  "files": ["src", "source-contract.json", "README.md"],
+  "sideEffects": [
+    "**/*.css"
+  ],
+  "exports": {
+    ".": "./src/index.ts",
+    "./styles.css": "./src/styles.css"
+  },
+  "files": [
+    "src",
+    "source-contract.json",
+    "README.md"
+  ],
   "scripts": {
     "test": "node --import tsx --test --test-concurrency=1 tests/*.test.tsx",
     "typecheck": "tsc --noEmit",
     "build": "esbuild src/index.ts --bundle --format=esm --platform=browser --external:react --external:react-dom --outdir=dist --minify",
     "preview": "node scripts/preview.mjs"
   },
-  "peerDependencies": {"react": "^18.3.1", "react-dom": "^18.3.1"},
+  "peerDependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
   "devDependencies": {
     "@types/jsdom": "21.1.7",
     "@types/node": "22.18.12",

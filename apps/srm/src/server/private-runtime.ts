@@ -1,3 +1,4 @@
+import {createSupplierPipelinesRuntime,supplierWorkspaceConfiguration,type SupplierPipelinesRuntime} from './supplier-pipelines-runtime'
 import {projectSrmReportDataResponse} from './report-output'
 import {readCompanySourcePolicy} from './company-source-policy'
 import nipTargets from '../../deployment/krs-nip-development.json'
@@ -35,6 +36,7 @@ type EnvironmentInput = Readonly<Record<string, string | undefined>>
 export type SrmReportRuntime = Readonly<{ provider: 'legacy_demo' } | {
   provider: 'clerk'; executor: OperationExecutor<PoolClient>; defaultOrganisationId: string
   supplierRequest?: Readonly<{ executor: OperationExecutor<PoolClient> }>
+  supplierPipelines?: SupplierPipelinesRuntime
   supplierApi?: SrmSupplierApi
   reportAdmission?:SrmReportAdmissionRuntime
   krsName?:Promise<KrsNameHttpRuntime>
@@ -193,7 +195,7 @@ export function getSrmReportRuntime(env: EnvironmentInput = process.env): SrmRep
   const geocodingConfig=readSrmLocationGeocodingConfiguration(env,locationEnabled==='true',native)
   const accessVersion=env.PROFITIA_SUPPLIER_LOCATION_ACCESS_VERSION
   if(accessVersion!==undefined&&(accessVersion!=='srm-searched-locations-v1'||locationEnabled!=='true'||env.RENDER_SERVICE_ID!==locationTargets.serviceId||!!srmKrsPilotTarget(env)))unavailable()
-  const key = createHash('sha256').update(JSON.stringify([config,native,locationEnabled,admission,krsConfig,nipEnabled,geocodingConfig,accessVersion,env.GUS_BIR_API_KEY,env.PROFITIA_CLERK_SECRET_KEY, env.SRM_DEMO_SESSION_SECRET])).digest('hex')
+  const key = createHash('sha256').update(JSON.stringify([config,native,locationEnabled,admission,krsConfig,nipEnabled,geocodingConfig,accessVersion,env.PROFITIA_SUPPLIER_WORKSPACE_ENABLED,env.PROFITIA_SUPPLIER_WORKSPACE_CONFIGURATION_VERSION,env.PROFITIA_SUPPLIER_WORKSPACE_SOURCE_REF,env.GUS_BIR_API_KEY,env.PROFITIA_CLERK_SECRET_KEY, env.SRM_DEMO_SESSION_SECRET])).digest('hex')
   const cached = globalThis.__srmPrivateReportRuntime__
   if (cached) { if (cached.key !== key) unavailable(); return cached.runtime }
   const clerk = createSrmClerkClient(env)
@@ -258,7 +260,9 @@ export function getSrmReportRuntime(env: EnvironmentInput = process.env): SrmRep
     krsName=bundle
     if(env.SRM_KRS_NIP_ENABLED==='true')krsNip=bundle.then(value=>value.nip)
   }
-  const runtime=Object.freeze({...baseRuntime,...(krsName?{krsName}:{}),...(krsNip?{krsNip}:{})})
+  let workspaceRuntime:SupplierPipelinesRuntime|undefined
+  const workspace=()=>{const selected=supplierWorkspaceConfiguration(env,config);return selected?(workspaceRuntime??=createSupplierPipelinesRuntime({config,pool,auditPool,clerk,workspace:selected})):undefined}
+  const runtime=Object.freeze({...baseRuntime,get supplierPipelines(){return workspace()},...(krsName?{krsName}:{}),...(krsNip?{krsNip}:{})})
   globalThis.__srmPrivateReportRuntime__ = { key, runtime }
   return runtime
 }

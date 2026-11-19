@@ -1,0 +1,49 @@
+{
+  "schemaVersion": "1.0.0",
+  "contractId": "srm.supplier-pipelines",
+  "contractVersion": "1.0.0",
+  "status": "SOURCE_IMPLEMENTED_NOT_INSTALLED",
+  "targetEnvironment": "development",
+  "binding": {
+    "serviceId": "srv-db1vu6gm7kps73d0e3r0",
+    "projectId": "spring-bread-28217539",
+    "branchId": "br-sparkling-term-b99l107x",
+    "databaseName": "platform_private",
+    "schema": "srm",
+    "runtimeRole": "srm_private_development_runtime"
+  },
+  "schemaSource": {
+    "path": "apps/srm/db/private-store/supplier-pipelines-v1.sql",
+    "sha256": "9d4203a4ddb3f7af4297d8f27b190ddf1dbfcaac8cdaa24199e4a6e6902dcad5"
+  },
+  "accessOwnerTask": "ARCH-BSDC-SCP-E1-T02-20261119",
+  "authorityBridge": "IMPLEMENTED_NOT_ADOPTED",
+  "activation": false,
+  "closedRuntimeWriter": "IMPLEMENTED_NOT_ACTIVATED",
+  "grantChanges": false,
+  "sourceAdmission": "REQUIRED",
+  "migrationApproval": "REQUIRED",
+  "releaseGo": "REQUIRED_EXACT_SHA",
+  "externalProviderCalls": 0,
+  "note": "Closed SRM receiver and native API source. No product installation, runtime grant, organization enrollment, exact-SHA release GO or live E1 completion is claimed.",
+  "configurationVersion": "srm-supplier-workspace-v1",
+  "commandsSource": {
+    "path": "apps/srm/db/private-store/supplier-pipelines-commands-v1.sql",
+    "sha256": "8a4acba4afc18e6740ba55702784d67d10ebaa368d1bf2da3c24f6ccf1c40b4c"
+  },
+  "accessSchemaSource": {
+    "path": "packages/platform-contracts/migrations/access/supplier-workspace-v1.sql",
+    "sha256": "647e47125b84e4eb026b5a1aec783b0b147315817cbd6246081fc40c92bd6023"
+  },
+  "scopeApproval": {
+    "decision": "DEC-24",
+    "reference": "46f45bcc4e74f1b25a441eab9ab450e367a2530a"
+  },
+  "admittedSourceRef": null,
+  "appliedGrantChanges": false,
+  "plannedRuntimeExecute": [
+    "profitia_supplier_workspace.bind_operation(uuid,text,jsonb)",
+    "profitia_supplier_workspace.descriptor()",
+    "srm.supplier_pipelines_execute(jsonb)"
+  ]
+}
