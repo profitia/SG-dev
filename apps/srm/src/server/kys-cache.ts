@@ -5,7 +5,11 @@ import { withOrganization, assertOrganizationId, type DatabasePool } from "./db"
 
 export type KysEntityType = "COMPANY" | "JDG";
 export type KysSection = SectionEnvelope<VerclyKysData>;
+export type KysContinuation = Readonly<{ owner: string; correlationId: string }>;
+export type KysProviderContinuation = Readonly<{ resumeCorrelationId?: string; onOrderAccepted?: (correlationId: string) => Promise<void> }>;
 export interface KysCacheStore {
+  resume?(organizationId: string, nip: string, entityType: KysEntityType, now: Date): Promise<KysContinuation | null>;
+  checkpoint?(organizationId: string, nip: string, entityType: KysEntityType, owner: string, correlationId: string, now: Date): Promise<void>;
   read(organizationId: string, nip: string, entityType: KysEntityType, now: Date): Promise<KysSection | null>;
   claim(organizationId: string, nip: string, entityType: KysEntityType, now: Date): Promise<string | null>;
   save(organizationId: string, nip: string, entityType: KysEntityType, owner: string, section: KysSection, snapshotId: string | null): Promise<void>;
@@ -68,6 +72,8 @@ export function createOrganisationKysCacheStore(organizationId: string, pool: Da
   const binding = Object.freeze({ organizationId, pool });
   const check = (actual: string) => { if (actual !== organizationId) throw new Error("KYS cache organization mismatch"); };
   return Object.freeze({
+    resume: (org: string, nip: string, entity: KysEntityType, now: Date) => { check(org); return resumeKysRefresh(org, nip, entity, now, binding); },
+    checkpoint: (org: string, nip: string, entity: KysEntityType, owner: string, correlation: string, now: Date) => { check(org); return checkpointKysOrder(org, nip, entity, owner, correlation, now, binding); },
     read: (org: string, nip: string, entity: KysEntityType, now: Date) => { check(org); return readFreshKys(org, nip, entity, now, binding); },
     claim: (org: string, nip: string, entity: KysEntityType, now: Date) => { check(org); return claimKysRefresh(org, nip, entity, now, binding); },
     save: (org: string, nip: string, entity: KysEntityType, owner: string, section: KysSection, snapshot: string | null) => { check(org); return saveKysRefresh(org, nip, entity, owner, section, snapshot, binding); },
@@ -126,7 +132,7 @@ export async function saveKysRefresh(organizationId: string, nip: string, entity
     const result = await client.query(
       `UPDATE srm.catalog_kys_reports SET report_json = $5::jsonb, report_sha256 = $6,
        retrieved_at = $7, retention_until = $8, source_organization_id = $9,
-       source_snapshot_id = $10, lease_owner = NULL, lease_until = NULL, updated_at = now()
+       source_snapshot_id = $10, lease_owner = NULL, lease_until = NULL, provider_correlation_id = NULL, resume_until = NULL, updated_at = now()
        WHERE nip = $1 AND entity_type = $2 AND lease_owner = $3 AND lease_until > $4` + cacheOwner(binding, 9),
       [nip, entityType, leaseOwner, new Date(), json, digest, new Date(section.retrievedAt!), expiry, organizationId, snapshotId],
     );
@@ -159,7 +165,7 @@ export async function purgeOrganisationKysCache(organizationId: string, pool: Da
 /** An ambiguous paid POST requires explicit reconciliation; lease expiry must not silently order again. */
 export async function holdKysRefresh(organizationId: string, nip: string, entityType: KysEntityType, owner: string, binding?: OrganisationCacheBinding): Promise<void> {
   await withOrganization(organizationId, async (client) => {
-    const result = await client.query("UPDATE srm.catalog_kys_reports SET lease_until = 'infinity'::timestamptz WHERE nip=$1 AND entity_type=$2 AND lease_owner=$3" + cacheOwner(binding, 4), [nip, entityType, owner, ...(binding ? [organizationId] : [])]);
+    const result = await client.query("UPDATE srm.catalog_kys_reports SET lease_until = 'infinity'::timestamptz, resume_until = NULL WHERE nip=$1 AND entity_type=$2 AND lease_owner=$3" + cacheOwner(binding, 4), [nip, entityType, owner, ...(binding ? [organizationId] : [])]);
     if (binding && result.rowCount !== 1) throw new Error("KYS cache ownership lost before native uncertainty fence");
   }, cachePool(organizationId, binding));
 }
@@ -169,14 +175,38 @@ export async function renewKysRefresh(organizationId: string, nip: string, entit
     // Native paid work arms the original lease before sending. Keep that
     // uncertainty fence until the successful cache save clears ownership;
     // revocation between network completion and persistence must not repurchase.
-    const lease = binding ? "CASE WHEN lease_until='infinity'::timestamptz THEN lease_until ELSE $5 END" : "$5";
+    const lease = "CASE WHEN lease_until='infinity'::timestamptz THEN lease_until ELSE $5 END";
     const result = await client.query("UPDATE srm.catalog_kys_reports SET lease_until = " + lease + " WHERE nip = $1 AND entity_type = $2 AND lease_owner = $3 AND lease_until > $4" + cacheOwner(binding, 6), [nip, entityType, owner, now, new Date(now.getTime() + KYS_LEASE_MS), ...(binding ? [organizationId] : [])]);
     return result.rowCount === 1;
   }, cachePool(organizationId, binding));
 }
 
+/** Durable provider metadata contains no report body or personal data. The paid
+ * uncertainty fence remains infinite; only the GET recovery claim has a deadline. */
+export async function checkpointKysOrder(organizationId: string, nip: string, entityType: KysEntityType,
+  owner: string, correlationId: string, now = new Date(), binding?: OrganisationCacheBinding): Promise<void> {
+  if (!/^[A-Za-z0-9_-]{8,100}$/.test(correlationId)) throw new Error("INVALID_CORRELATION_ID");
+  await withOrganization(organizationId, async client => {
+    const result = await client.query(
+      "UPDATE srm.catalog_kys_reports SET provider_correlation_id=$4, resume_until=$5, lease_until='infinity'::timestamptz WHERE nip=$1 AND entity_type=$2 AND lease_owner=$3 AND (provider_correlation_id IS NULL OR provider_correlation_id=$4)" + cacheOwner(binding, 6),
+      [nip, entityType, owner, correlationId, new Date(now.getTime() + KYS_LEASE_MS), ...(binding ? [organizationId] : [])]);
+    if (result.rowCount !== 1) throw new Error("KYS accepted order checkpoint failed");
+  }, cachePool(organizationId, binding));
+}
+
+export async function resumeKysRefresh(organizationId: string, nip: string, entityType: KysEntityType,
+  now = new Date(), binding?: OrganisationCacheBinding): Promise<KysContinuation | null> {
+  const owner = randomUUID();
+  return withOrganization(organizationId, async client => {
+    const result = await client.query<{correlation_id: string}>(
+      "UPDATE srm.catalog_kys_reports SET lease_owner=$3, resume_until=$5 WHERE nip=$1 AND entity_type=$2 AND lease_until='infinity'::timestamptz AND provider_correlation_id ~ '^[A-Za-z0-9_-]{8,100}$' AND (resume_until IS NULL OR resume_until <= $4)" + cacheOwner(binding, 6) + " RETURNING provider_correlation_id AS correlation_id",
+      [nip, entityType, owner, now, new Date(now.getTime()+KYS_LEASE_MS), ...(binding ? [organizationId] : [])]);
+    return result.rows[0] ? {owner, correlationId: result.rows[0].correlation_id} : null;
+  }, cachePool(organizationId, binding));
+}
+
 export async function getOrFetchKys(organizationId: string, nip: string, entityType: KysEntityType,
-  fetchReport: () => Promise<{ section: KysSection; errorCode: string | null; correlationId: string | null; providerOrderAccepted?: boolean }>,
+  fetchReport: (continuation?: KysProviderContinuation) => Promise<{ section: KysSection; errorCode: string | null; correlationId: string | null; providerOrderAccepted?: boolean }>,
   persist: (section: KysSection, errorCode: string | null, correlationId: string | null, method: "PROVIDER" | "CACHE") => Promise<string | null>,
   options: { now?: () => Date; sleep?: (ms: number) => Promise<void>; waitMs?: number; elapsedNow?: () => number; signal?: AbortSignal; store?: KysCacheStore } = {},
 ): Promise<{ section: KysSection; snapshotId: string | null; retrievalMethod: "PROVIDER" | "CACHE" }> {
@@ -198,11 +228,21 @@ export async function getOrFetchKys(organizationId: string, nip: string, entityT
     kysMode("CACHE"); kysOutcome(hit.status);
     return { section: hit, snapshotId: await finalize(hit, null, null, "CACHE"), retrievalMethod: "CACHE" };
   }
-  const owner = await atLookupStage("lease_acquisition", () => store.claim(organizationId, nip, entityType, now()), "kys");
+  let owner = await atLookupStage("lease_acquisition", () => store.claim(organizationId, nip, entityType, now()), "kys");
+  const continuation = !owner && store.resume
+    ? await atLookupStage("lease_acquisition", () => store.resume!(organizationId, nip, entityType, now()), "kys") : null;
+  owner ??= continuation?.owner ?? null;
   if (owner) {
+    const leaseOwner = owner;
     kysMode("PROVIDER"); let ambiguous = true;
     try {
-      const result = await fetchReport();
+      // Arm before the first possible paid POST. A known order resumes by GET only.
+      if (!continuation) await store.hold(organizationId, nip, entityType, leaseOwner);
+      const result = await fetchReport({
+        ...(continuation ? { resumeCorrelationId: continuation.correlationId } : {}),
+        ...(store.checkpoint ? { onOrderAccepted: (id: string) =>
+          store.checkpoint!(organizationId, nip, entityType, leaseOwner, id, now()) } : {}),
+      });
       ambiguous = result.providerOrderAccepted === true && result.section.status !== "SUCCESS" || Boolean(result.errorCode && ["VERCLY_POST_OUTCOME_UNKNOWN", "VERCLY_ABORTED", "VERCLY_TIMEOUT", "VERCLY_NETWORK_ERROR"].includes(result.errorCode));
       kysOutcome(result.section.status, result.errorCode);
       // Verify ownership before tenant persistence. Expired owners never publish a new projection.
@@ -244,4 +284,4 @@ export async function getOrFetchKys(organizationId: string, nip: string, entityT
   kysOutcome("ERROR", "TIMEOUT");
   throw new Error("KYS cache refresh wait timed out");
 }
-const kysStore = { read: readFreshKys, claim: claimKysRefresh, save: saveKysRefresh, release: releaseKysRefresh, renew: renewKysRefresh, hold: holdKysRefresh };
+const kysStore = { resume: resumeKysRefresh, checkpoint: checkpointKysOrder, read: readFreshKys, claim: claimKysRefresh, save: saveKysRefresh, release: releaseKysRefresh, renew: renewKysRefresh, hold: holdKysRefresh };

@@ -1,3 +1,4 @@
+import {createSrmCachedSupplierIdentityRead} from './supplier-cached-identity'
 import {isCompanyReportRestricted} from '@profitia/srm-xray'
 import type {GeneralCompanyData,SectionEnvelope} from '@profitia/srm-xray'
 import type {KrsFinancialRecheck,KrsFinancialExecution} from './krs-native-financial'
@@ -85,6 +86,7 @@ function requestFlow(request:RequestOptions,work:SupplierNativeWorkOptions,targe
 export function createSrmSupplierApi(options:SupplierApiOptions){
  const company=createSrmNativeCompanyLookup(options.company.lookup)
  const known=createSrmKnownCompanyRead(options.company.read)
+ const cachedIdentity=createSrmCachedSupplierIdentityRead(options.company.read)
  const ready=options.company.ready?createSrmReadyCompanyRead(options.company.read,options.company.ready.schemaDigest,options.company.ready.secret):undefined
  const admitCompany=requestFlow(options.company.request,options.company.lookup.work)
  const classifier=options.company.classification?createSrmCompanyClassifier({...options.company.classification,work:options.company.lookup.work,source:options.company.lookup.source}):undefined
@@ -145,6 +147,7 @@ export function createSrmSupplierApi(options:SupplierApiOptions){
    return prepareSrmReportAdmission(options.company.lookup.work,selected)
   },
   readAcceptedKys:(request:Request,organisationId:string,nip:string,entityType:'COMPANY'|'JDG'='COMPANY')=>read({request,organisationId},nip,entityType,'kys'),
+  cachedIdentity:(input:Pick<SupplierHttpInput,'request'|'organisationId'>,nip:string)=>cachedIdentity.read(input.request,input.organisationId,nip),
   known:(input:Pick<SupplierHttpInput,'request'|'organisationId'>,nip:string)=>known.read(input.request,input.organisationId,nip),
   async prepareKrsFinancial(input:SupplierHttpInput,identity:VerifiedIdentityV1,recheck:KrsFinancialRecheck,general?:SectionEnvelope<GeneralCompanyData>,execution?:KrsFinancialExecution){
    if(input.command.nip!==identity.identity.nip)return refuse()

@@ -135,7 +135,7 @@ test("concurrent organizations share one provider order and finalize their own s
 
 test("accepted paid order with GET failure stays held instead of releasing for another POST", async () => {
  let holds=0,releases=0;
- await getOrFetchKys(orgA,nip,"COMPANY",async()=>({section:{...report,status:"ERROR" as const,data:null},errorCode:"HTTP_400",correlationId:"classified",providerOrderAccepted:true}),async()=>null,
+ await getOrFetchKys(orgA,nip,"COMPANY",async()=>{assert.equal(holds,1,"hold is armed before a possible paid order");return {section:{...report,status:"ERROR" as const,data:null},errorCode:"HTTP_400",correlationId:"classified",providerOrderAccepted:true}},async()=>null,
  {store:{read:async()=>null,claim:async()=>"owner",renew:async()=>true,save:async()=>{},hold:async()=>{holds++;},release:async()=>{releases++;}}});
- assert.equal(holds,1);assert.equal(releases,0);
+ assert.equal(holds,2,"hold stays armed after the accepted order fails to return a report");assert.equal(releases,0);
 });

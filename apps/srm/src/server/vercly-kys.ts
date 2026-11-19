@@ -25,6 +25,9 @@ type Options = {
   pollTimeoutMs?: number;
   elapsedNow?: () => number;
   signal?: AbortSignal;
+  /** Server-owned continuation; never an incoming browser parameter. */
+  resumeCorrelationId?: string;
+  onOrderAccepted?: (correlationId: string) => Promise<void>;
 };
 
 const MODEL = "KYS_NIP";
@@ -300,15 +303,20 @@ export async function fetchVerclyKys(request: VerclyKysRequest, options: Options
     if (!response.ok) throw new HttpFailure(response.status, retryAfterMs);
     try { return await response.json() as unknown; } catch { throw new Error("INVALID_JSON"); }
   });
-  let correlationId: string | null = null;
-  let postAccepted = false;
+  let correlationId: string | null = options.resumeCorrelationId ?? null;
+  if (correlationId !== null && !/^[A-Za-z0-9_-]{8,100}$/.test(correlationId)) throw new Error("INVALID_CORRELATION_ID");
+  let postAccepted = correlationId !== null;
   try {
     // POST is issued once. An ambiguous outcome is never retried as a new paid order.
-    const started = await jsonRequest("/api/verifications", { method: "POST", body: JSON.stringify([{ Id: request.identifier.value, Country: "PL" }]) });
-    correlationId = string(items(started)[0]);
-    if (!correlationId || !/^[A-Za-z0-9_-]{8,100}$/.test(correlationId)) throw new Error("INVALID_CORRELATION_ID");
-    postAccepted = true;
-    await wait(interval);
+    if (correlationId === null) {
+      const started = await jsonRequest("/api/verifications", { method: "POST", body: JSON.stringify([{ Id: request.identifier.value, Country: "PL" }]) });
+      correlationId = string(items(started)[0]);
+      if (!correlationId || !/^[A-Za-z0-9_-]{8,100}$/.test(correlationId)) throw new Error("INVALID_CORRELATION_ID");
+      postAccepted = true;
+      // Commit the reference before waiting, polling or observing a client abort.
+      await options.onOrderAccepted?.(correlationId);
+      await wait(interval);
+    }
     while (true) {
       remaining(); let payload: unknown;
       try { payload = await jsonRequest(`/api/verifications/${correlationId}`, { method: "GET" }); }
@@ -327,4 +335,12 @@ export async function fetchVerclyKys(request: VerclyKysRequest, options: Options
     const code = options.signal?.aborted ? "VERCLY_ABORTED" : !postAccepted && (!(error instanceof HttpFailure) || error.status >= 500 || error.status === 408) ? "VERCLY_POST_OUTCOME_UNKNOWN" : error instanceof Error && (error.name === "TimeoutError" || error.message === "TIMEOUT") ? "VERCLY_TIMEOUT" : error instanceof Error && /^HTTP_\d+$|^[A-Z_]+$/.test(error.message) ? error.message : "VERCLY_NETWORK_ERROR";
     return { ...failure(code, now().toISOString(), correlationId), providerOrderAccepted: postAccepted };
   }
+}
+
+
+/** A separate read-only entry point cannot fall back to a paid POST, even on 404. */
+export function resumeVerclyKys(request: VerclyKysRequest, correlationId: string,
+  options: Omit<Options, "resumeCorrelationId" | "onOrderAccepted"> = {}): Promise<VerclyKysResult> {
+  if (!/^[A-Za-z0-9_-]{8,100}$/.test(correlationId)) throw new Error("INVALID_CORRELATION_ID");
+  return fetchVerclyKys(request, { ...options, resumeCorrelationId: correlationId });
 }

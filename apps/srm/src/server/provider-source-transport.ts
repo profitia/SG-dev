@@ -58,6 +58,7 @@ type ProviderSourceOptions = {
   /** Only the original server-selected MSR candidate, never an HTTP parameter. */
   recordId?: string
   /** Reference read from the exact currently authorized private KYS snapshot. */
+  resumeCorrelationId?:string
   krsReference?:string
   /** Consumed redirect captured by the closed MSR composition below. */
   allowedStorageUrl?: () => string | null
@@ -67,6 +68,8 @@ function createProviderSourceTransport(options: ProviderSourceOptions) {
   const policy = srmProviderSourcePolicy(provider), root = structuredClone({ application: options.application, binding: options.binding, external: options.external })
   const nip = readSupplierRequest({ kind: 'SUPPLIER_REPORT', nip: options.nip }).nip
   const operationKey = options.operationKey, providerOrigin = options.providerOrigin
+  const resumeCorrelationId = options.resumeCorrelationId;
+  if(resumeCorrelationId!==undefined&&(provider!=='VERCLY'||!/^[A-Za-z0-9_-]{8,100}$/.test(resumeCorrelationId)))return refuse();
   const recordId = options.recordId, allowedStorageUrl = options.allowedStorageUrl,krsReference=options.krsReference
   const credentialFree = provider === 'MGBI_MSR_STORAGE'
   let configured: URL, network: URL
@@ -140,7 +143,7 @@ function createProviderSourceTransport(options: ProviderSourceOptions) {
     independentQuery: driver.independentQuery, query: async (client, sql, values = []) => ({ rows: (await client.query(sql, values)).rows }),
     parseCommand, buildRequest: c => ({ method: c.method, url: network.origin + new URL(c.url).pathname + new URL(c.url).search, body: c.body }),
   })
-  let ordinal = 0, busy = false, unavailable = false, postAttempted = false, correlation: string | null = null
+  let ordinal = 0, busy = false, unavailable = false, postAttempted = resumeCorrelationId !== undefined, correlation: string | null = resumeCorrelationId ?? null
   let msrLimitsSeen = false, msrFileAttempted = false,krsAttempted=false
   const nextPage = new Map<string, number>()
   const fetcher: typeof fetch = async (input, init = {}) => {
