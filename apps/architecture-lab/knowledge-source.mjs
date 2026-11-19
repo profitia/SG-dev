@@ -1,3 +1,4 @@
+import {sdkSourceContext} from '../../packages/platform-contracts/test/sdk-source-context.mjs'
 // Closed source-compatibility review only; never imported by product runtime.
 import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
@@ -22,6 +23,12 @@ const absent=(error,historical)=>{
  return true;
 };
 export function knowledgeSourcePredecessor(current,historical){
+ const context=sdkSourceContext(current,historical)
+ if(context){
+  const previous=knowledgeSourcePredecessor(context.baseline('knowledge'),historical)
+  assert(previous,'complete immutable Knowledge source required')
+  return {...previous,currentSourceDigests:context.currentSourceDigests,currentSdkContext:context}
+ }
  let bytes;try{bytes=current(KNOWLEDGE_SOURCE_RECORD);}catch(error){if(absent(error,historical))return null;throw error;}
  assert.equal(hash(bytes),KNOWLEDGE_SOURCE_RECORD_SHA256,'exact reviewed Platform Knowledge source record');
  const a=JSON.parse(bytes);

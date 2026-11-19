@@ -1,3 +1,4 @@
+import {currentSdkSourceContext} from '../../../packages/platform-contracts/test/sdk-source-context.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
@@ -41,7 +42,19 @@ for(const dir of [runtimeSource,runtimeInstalled]){
 }
 const runtimeFiles=[...walk(path.join(runtimeSource,'src')),...['package.json','package-lock.json','tsconfig.json'].map(file=>path.join(runtimeSource,file))].sort();
 const runtimeDigest=hash(JSON.stringify(runtimeFiles.map(file=>[path.relative(root,file).replaceAll(path.sep,'/'),hash(fs.readFileSync(file))])));
-if(runtimeDigest!==targets.acceptedRuntime.sourceDigest)throw Error('KRS runtime source acceptance drift');
+if(runtimeDigest!==targets.acceptedRuntime.sourceDigest){
+  // Preserve the accepted native runtime receipt. Only a completely verified
+  // current SDK lockfile may differ; every other native runtime byte remains
+  // part of the original aggregate digest from its immutable accepted commit.
+  const context=currentSdkSourceContext(),lockPath='apps/krs-registry-runtime/package-lock.json';
+  if(!context||context.currentSourceDigests[lockPath]!==hash(fs.readFileSync(path.join(root,lockPath))))throw Error('KRS runtime source acceptance drift');
+  const previousLock=execFileSync('git',['show',targets.acceptedRuntime.sourceSha+':'+lockPath],{cwd:root,maxBuffer:2*1024*1024,stdio:['ignore','pipe','pipe']});
+  const preservedDigest=hash(JSON.stringify(runtimeFiles.map(file=>{
+    const rel=path.relative(root,file).replaceAll(path.sep,'/');
+    return [rel,hash(rel===lockPath?previousLock:fs.readFileSync(file))];
+  })));
+  if(preservedDigest!==targets.acceptedRuntime.sourceDigest)throw Error('KRS runtime source acceptance drift');
+}
 const buildSource=path.join(runtimeInstalled,'.build-src'),buildConfig=path.join(runtimeInstalled,'.build-tsconfig.json');
 for(const file of [buildSource,buildConfig,path.join(runtimeInstalled,'dist')]){
   if(fs.existsSync(file)&&fs.lstatSync(file).isSymbolicLink())throw Error('KRS runtime build symlink refused');
