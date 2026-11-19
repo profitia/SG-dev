@@ -219,7 +219,7 @@
     "apps/sg-runtime/tests/monitor-benchmark-finder.test.mjs": "8f54c9aba542d60d2cef41ec3dc546fee43ed4e656083b9b7e5b837b4f0ef47b",
     "apps/sg-runtime/tests/native-sql-roundtrips.test.mjs": "1bbc3b14974d056cb7933c5bc7593e9923c0ad3a90b5bad74099fbce451563ce",
     "apps/sg-runtime/tests/operation-context.test.mjs": "dcc34a86b2f7b16e105507d99aafe957e4634f206ae90e77a7e94ac150f6dcc0",
-    "apps/sg-runtime/tests/pci-smart-integrity.test.mjs": "ab293c8ac6443ac12f30b2fb1f100a1c12fe7283001e6edbbc72c18d0d1fb6d2",
+    "apps/sg-runtime/tests/pci-smart-integrity.test.mjs": "b67e7f2b5e39b05991b81a27a916946e075898eaee40c54fe47649848f0f86ff",
     "apps/sg-runtime/tests/porr-demo-middleware.test.ts": "09c1647b0af2492780db87a4c8adc21ba94c14b1c1cbaa02dc74e92f1ae6f251",
     "apps/sg-runtime/tests/private-host.integration.test.mjs": "3298fba8c33e46e8a4b6bbc3320707c49871a4b21de8516069739f1e923e541a",
     "apps/sg-runtime/tests/procurement-insights-completion.test.mjs": "b2fbe0a1b6f6e8f790d631d368831382752072d0df94afa137773a15b3f86114",
@@ -876,8 +876,8 @@
           "previousSha256": "fa0c85affe627adce37bd49ec666f2b2af3cd9dfb8d6ad4991e2c3d46d81db60"
         },
         "apps/sg-runtime/tests/pci-smart-integrity.test.mjs": {
-          "currentSha256": "ab293c8ac6443ac12f30b2fb1f100a1c12fe7283001e6edbbc72c18d0d1fb6d2",
-          "previousSha256": "44292ac3ec5ed822daddce35d78bdb403712fa255fe7e94c9d9dc0517a32b5b6"
+          "previousSha256": "44292ac3ec5ed822daddce35d78bdb403712fa255fe7e94c9d9dc0517a32b5b6",
+          "currentSha256": "b67e7f2b5e39b05991b81a27a916946e075898eaee40c54fe47649848f0f86ff"
         },
         "apps/sg-runtime/tests/porr-demo-middleware.test.ts": {
           "currentSha256": "09c1647b0af2492780db87a4c8adc21ba94c14b1c1cbaa02dc74e92f1ae6f251",
@@ -1275,6 +1275,10 @@
         "apps/sg-runtime/tests/finder-monitor-source-integrity.test.mjs": {
           "currentSha256": "57969d3e2a7bb3b8b462d45d3b1c3a69644bd1e3f78ba8c732b329bf1e4143a9",
           "previousSha256": "89219a3388ff5b630013623328dbb4083767786c5256b42a327f0b9d4b446749"
+        },
+        "apps/sg-runtime/tests/pci-smart-integrity.test.mjs": {
+          "previousSha256": "ab293c8ac6443ac12f30b2fb1f100a1c12fe7283001e6edbbc72c18d0d1fb6d2",
+          "currentSha256": "b67e7f2b5e39b05991b81a27a916946e075898eaee40c54fe47649848f0f86ff"
         },
         "apps/sg-runtime/tests/procurement-insights-editorial-integrity.test.mjs": {
           "currentSha256": "a52c23679e89db9b1b10f31aa7b723b2fcfcdd56891f17ed257ea6388c59b801",
