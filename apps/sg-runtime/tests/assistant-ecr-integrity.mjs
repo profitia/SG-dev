@@ -1,4 +1,5 @@
 import {recurringSourcePredecessor} from '../../architecture-lab/private-recurring-source.mjs'
+import {sdkContinuationPredecessor} from '../../../packages/platform-contracts/test/organisation-sdk-compatibility.mjs'
 // Build/test source continuation only. This cannot authorise a runtime read or deployment.
 import {assistantEcrPrecisionPredecessor} from './assistant-ecr-precision-integrity.mjs'
 import assert from 'node:assert/strict'
@@ -59,8 +60,20 @@ export const ECR_CIC_PUBLICATION=Object.freeze({
 const hash=bytes=>createHash('sha256').update(bytes).digest('hex')
 const json=bytes=>JSON.parse(Buffer.from(bytes).toString('utf8'))
 export function assistantEcrPredecessor(current,historical){
+ // The newest exact SDK view is verified before the immutable ECR algorithm.
+ let sdkReceipt
+ try{sdkReceipt=JSON.parse(current('apps/sg-runtime/operation-integration.json'))}catch(error){
+  const text=String(error?.stderr??error?.message??'')
+  const absent=error?.status===128&&(text.includes("'apps/sg-runtime/operation-integration.json' does not exist in ")||text.includes("'apps/sg-runtime/operation-integration.json' exists on disk, but not in "))
+  if(error?.code!=='ENOENT'&&!absent)throw error
+ }
+ if(sdkReceipt?.sdkSourceContinuations!==undefined){
+  const sdk=sdkContinuationPredecessor(sdkReceipt,current,historical,{projectKey:'SG2'})
+  if(sdk)return assistantEcrPredecessor(sdk.previousBytes,historical)
+ }
  const recurring=recurringSourcePredecessor(current,historical);if(recurring)return assistantEcrPredecessor(recurring.previousBytes,historical)
  const precision=assistantEcrPrecisionPredecessor(current,historical);if(precision)return assistantEcrPredecessor(precision.previousBytes,historical)
+
  let bytes
  try{bytes=current(ECR_RECEIPT)}catch(error){
   const text=String(error?.stderr??error?.message??'')

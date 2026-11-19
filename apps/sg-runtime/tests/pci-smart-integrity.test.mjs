@@ -1,6 +1,7 @@
 import {procurementInsightsLiveAcceptancePredecessor,PI_LIVE_ACCEPTANCE_RECORD} from './procurement-insights-live-acceptance-source.mjs'
 import {marketCalendarSourcePredecessor,MARKET_CALENDAR_CONSUMER_RECORD} from '../../architecture-lab/market-calendar-source.mjs'
 import {recurringSourcePredecessor} from '../../architecture-lab/private-recurring-source.mjs'
+import {sdkContinuationPredecessor} from '../../../packages/platform-contracts/test/organisation-sdk-compatibility.mjs'
 import './assistant-send-arrow-integrity.test.mjs'
 import './assistant-ecr-integrity.test.mjs'
 import './assistant-ecr-week-integrity.test.mjs'
@@ -129,27 +130,28 @@ test('tampered current file, receipt, historical digest, engine and rollback evi
 })
 test('every changed SG2 source in the candidate or resulting main has an exact additive binding',()=>{
  const r=receipt(),a=r.pciSmartPreparationCompatibility
- const recurring=recurringSourcePredecessor(current,historical)
- const reservation=recurring?.reservation
- const acceptedCurrent=reservation?.previousBytes??current
- const live=procurementInsightsLiveAcceptancePredecessor(acceptedCurrent,historical)
+ const sdk=sdkContinuationPredecessor(r,current,historical,{projectKey:'SG2'})
+ const live=procurementInsightsLiveAcceptancePredecessor(sdk?.composition?.acceptedMain??sdk?.lifecycle?.acceptedMainBytes??current,historical)
+ const sdkCurrent=sdk?sdk.previousBytes:current
+ const calendar=marketCalendarSourcePredecessor(sdk?.calendarCurrent??current,historical)
+ const recurring=recurringSourcePredecessor(sdkCurrent,historical)
+ const reservation=recurringSourcePredecessor(current,historical)?.reservation
  const week=recurring?.successor
- const completion=recurring?.completion
- const calendar=marketCalendarSourcePredecessor(completion?.previousBytes??acceptedCurrent,historical)
- const precision=assistantEcrPrecisionPredecessor(acceptedCurrent,historical)
- const ecr=assistantEcrPredecessor(acceptedCurrent,historical)
- const arrow=assistantSendArrowPredecessor(acceptedCurrent,historical)
- const registration=registrationStageOnePredecessor(acceptedCurrent,historical)
- const m2=assistantM2Predecessor(acceptedCurrent,historical)
- const pi=procurementInsightsPredecessor(acceptedCurrent,historical)
- const markdown=assistantMarkdownPredecessor(acceptedCurrent,historical)
+ const completion=sdk?.composition?.completion??recurring?.completion
+ const precision=assistantEcrPrecisionPredecessor(sdkCurrent,historical)
+ const ecr=assistantEcrPredecessor(sdkCurrent,historical)
+ const arrow=assistantSendArrowPredecessor(current,historical)
+ const registration=registrationStageOnePredecessor(current,historical)
+ const m2=assistantM2Predecessor(current,historical)
+ const pi=procurementInsightsPredecessor(current,historical)
+ const markdown=assistantMarkdownPredecessor(current,historical)
  // Like the original receipt, the closed, validated build manifest declares
  // the source graph rather than containing a self-referential file hash.
- const changed=candidateSourcePaths(new URL('../../../',import.meta.url)).filter(file=>(!live||file!==PI_LIVE_ACCEPTANCE_RECORD)&&(!calendar||file!==MARKET_CALENDAR_CONSUMER_RECORD)&&(!completion||file!=='apps/sg-runtime/procurement-insights-completion-integration.json')&&(!week||file!==WEEK_RECEIPT)&&(!recurring||file!=='apps/sg-runtime/private-recurring-source-adoption.json')&&(!recurring?.knowledge||file!=='apps/sg-runtime/knowledge-source-adoption.json')&&(!precision||file!==PRECISION_RECEIPT)&&(!ecr||file!==ECR_RECEIPT)&&(!arrow||file!==SEND_ARROW_RECEIPT)&&(!registration||file!==REGISTRATION_ENTRY_PATH)&&(!m2||file!=='apps/sg-runtime/assistant-context-integration.json')&&(!pi||file!=='apps/sg-runtime/procurement-insights-integration.json')&&(!markdown||file!=='apps/sg-runtime/assistant-markdown-integration.json'))
+ const changed=candidateSourcePaths(new URL('../../../',import.meta.url)).filter(file=>(!live||file!==PI_LIVE_ACCEPTANCE_RECORD)&&(!sdk?.lifecycle||file!=='apps/sg-runtime/organisation-lifecycle-sdk-source-adoption.json')&&(!calendar||file!==MARKET_CALENDAR_CONSUMER_RECORD)&&(!completion||file!=='apps/sg-runtime/procurement-insights-completion-integration.json')&&(!week||file!==WEEK_RECEIPT)&&(!recurring||file!=='apps/sg-runtime/private-recurring-source-adoption.json')&&(!sdk||file!=='apps/sg-runtime/operation-integration.json')&&(!precision||file!==PRECISION_RECEIPT)&&(!ecr||file!==ECR_RECEIPT)&&(!arrow||file!==SEND_ARROW_RECEIPT)&&(!registration||file!==REGISTRATION_ENTRY_PATH)&&(!m2||file!=='apps/sg-runtime/assistant-context-integration.json')&&(!pi||file!=='apps/sg-runtime/procurement-insights-integration.json')&&(!markdown||file!=='apps/sg-runtime/assistant-markdown-integration.json'))
  // Prisma lifecycle output is independently generated, never an authored source change.
  // A published receipt retains its original source set after merge. Current
  // bytes are strictly verified above; an accepted main has no new amendments.
- assertSourceCoverage(changed,{...reservation?.manifest.sourceDigests,...live?.manifest.sourceDigests,...completion?.manifest.sourceDigests,...calendar?.manifest.sourceDigests,...week?.manifest.sourceDigests,...recurring?.manifest.sourceDigests,...precision?.manifest.sourceDigests,...ecr?.manifest.sourceDigests,...arrow?.manifest.sourceDigests,...markdown?.manifest.sourceDigests,...registration?.manifest.sourceDigests,...pi?.manifest.sourceDigests,...m2?.manifest.sourceDigests,...a.sourceDigests,...r.xrayAppShellPresentation?.sourceDigests,...r.appShellFourCardCascade?.sourceDigests,...r.d1AuditReaderPreparation?.sourceDigests,...r.productAnalyticsStageOneCompatibility?.sourceDigests,...r.xrayStyleIsolationContinuation?.sourceDigests,...r.sentryObservabilityCompatibility?.sourceDigests,...r.marketHistoryIngestionCompatibility?.sourceDigests,...r.pciSmartInputCorrective?.sourceDigests,...r.pciSmartResultingMainScopeCompatibility?.sourceDigests,...Object.fromEntries(Object.entries(r.fullUiParityAdoption?.applicationSourceDigests??{}).map(([f,d])=>['apps/sg-runtime/'+f,d])),...r.productAnalyticsMainCompatibility?.sourceDigests,...r.appShellFourCardCascade?.sourceDigests,...r.d1AuditReaderPreparation?.sourceDigests,...r.productAnalyticsStageOneCompatibility?.sourceDigests,...r.productAnalyticsMonitoringCompatibility?.sourceDigests,...r.appShellAssistantOwnership?.sourceDigests,...r.sourceHubApiPathCompatibility?.consumerSourceDigests,...r.finderMetadataSingleFlight?.sourceDigests,...r.finderMetadataDictionaryLookups?.sourceDigests,...r.finderMetadataRequestPacing?.sourceDigests,...r.sourceHubMarketSymbolCompatibility?.sourceDigests,...r.assistantM1SourceCompatibility?.sourceDigests,...r.assistantM1RuntimeSourceCompatibility?.consumerSourceDigests,...r.oilAutonomousReportCompatibility?.consumerSourceDigests,...r.assistantM1ChartContextCorrective?.sourceDigests,...r.oilAutonomousReportCompatibility?.sourceDigests})
+ assertSourceCoverage(changed,{...reservation?.manifest.sourceDigests,...live?.manifest.sourceDigests,...calendar?.manifest.sourceDigests,...week?.manifest.sourceDigests,...recurring?.manifest.sourceDigests,...precision?.manifest.sourceDigests,...ecr?.manifest.sourceDigests,...arrow?.manifest.sourceDigests,...markdown?.manifest.sourceDigests,...registration?.manifest.sourceDigests,...pi?.manifest.sourceDigests,...m2?.manifest.sourceDigests,...a.sourceDigests,...r.xrayAppShellPresentation?.sourceDigests,...r.appShellFourCardCascade?.sourceDigests,...r.d1AuditReaderPreparation?.sourceDigests,...r.productAnalyticsStageOneCompatibility?.sourceDigests,...r.xrayStyleIsolationContinuation?.sourceDigests,...r.sentryObservabilityCompatibility?.sourceDigests,...r.marketHistoryIngestionCompatibility?.sourceDigests,...r.pciSmartInputCorrective?.sourceDigests,...r.pciSmartResultingMainScopeCompatibility?.sourceDigests,...Object.fromEntries(Object.entries(r.fullUiParityAdoption?.applicationSourceDigests??{}).map(([f,d])=>['apps/sg-runtime/'+f,d])),...r.productAnalyticsMainCompatibility?.sourceDigests,...r.appShellFourCardCascade?.sourceDigests,...r.d1AuditReaderPreparation?.sourceDigests,...r.productAnalyticsStageOneCompatibility?.sourceDigests,...r.productAnalyticsMonitoringCompatibility?.sourceDigests,...r.appShellAssistantOwnership?.sourceDigests,...r.sourceHubApiPathCompatibility?.consumerSourceDigests,...r.finderMetadataSingleFlight?.sourceDigests,...r.finderMetadataDictionaryLookups?.sourceDigests,...r.finderMetadataRequestPacing?.sourceDigests,...r.sourceHubMarketSymbolCompatibility?.sourceDigests,...r.assistantM1SourceCompatibility?.sourceDigests,...r.assistantM1RuntimeSourceCompatibility?.consumerSourceDigests,...r.oilAutonomousReportCompatibility?.consumerSourceDigests,...r.assistantM1ChartContextCorrective?.sourceDigests,...r.oilAutonomousReportCompatibility?.sourceDigests,...sdk?.record.consumerSourceDigests.SG2,...sdk?.composition?.physicalDigests,...completion?.manifest.sourceDigests,...sdk?.currentSourceDigests})
 
 
 })

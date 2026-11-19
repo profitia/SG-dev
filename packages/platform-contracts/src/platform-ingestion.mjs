@@ -44,6 +44,7 @@ export function createPlatformIngestionHost(options){
     ||!['applicationId','projectId','branchId','databaseName','role','deploymentId','configurationVersion'].every(k=>text(b[k]))
     ||b.deploymentId!==a.deploymentId||b.configurationVersion!==a.configurationVersion||!/^[a-z][a-z0-9_]*$/.test(b.role)
     ||!/^[a-f0-9]{64}$/.test(b.schemaDigest??'')||b.unmeteredSchemaDigest!==undefined&&!/^[a-f0-9]{64}$/.test(b.unmeteredSchemaDigest)||!s||Object.keys(s).sort().join(',')!=='classificationVersion,id,payloadSchema,qualityVersion'
+    ||b.requiredQuotaMode!==undefined&&(b.requiredQuotaMode!=='UNMETERED'||!b.unmeteredSchemaDigest)
     ||!Object.values(s).every(text)||[independentQuery,transact,validateSharedPayload,now].some(v=>typeof v!=='function')
     ||!Number.isInteger(transactionTimeoutMs)||transactionTimeoutMs<100||transactionTimeoutMs>15000)throw TypeError('Explicit native stored-source authority required')
   const one=async(query,sql,values=[])=>{
@@ -100,6 +101,7 @@ export function createPlatformIngestionHost(options){
                 ||state.access?.actorId!==actor.actorId||state.access.organisationId!==null||state.resource?.id!==request.resourceId
                 ||!/^source-v1:[1-9][0-9]*$/.test(state.policyVersion??'')||!/^[0-9]+$/.test(state.transactionId??''))fail()
               const policy=state.ingestion
+              if(b.requiredQuotaMode!==undefined&&policy?.quotaMode!==b.requiredQuotaMode)fail()
               if(policy?.quotaMode==='UNMETERED'&&(!b.unmeteredSchemaDigest||d.unmeteredSchemaDigest!==b.unmeteredSchemaDigest
                 ||policy.unmeteredSchemaDigest!==b.unmeteredSchemaDigest))fail()
               if(policy?.sourceId!==s.id||policy.payloadSchema!==s.payloadSchema||policy.qualityVersion!==s.qualityVersion
@@ -153,7 +155,7 @@ export function createPlatformIngestionHost(options){
     },
   })
   hosts.set(host,freeze({sourceId:s.id,applicationId:a.appId,environment:a.environment,projectId:b.projectId,branchId:b.branchId,databaseName:b.databaseName,
-    schemaDigest:b.schemaDigest,...(b.unmeteredSchemaDigest?{unmeteredSchemaDigest:b.unmeteredSchemaDigest}:{}),payloadSchema:s.payloadSchema,qualityVersion:s.qualityVersion,classificationVersion:s.classificationVersion}))
+    schemaDigest:b.schemaDigest,...(b.unmeteredSchemaDigest?{unmeteredSchemaDigest:b.unmeteredSchemaDigest}:{}),...(b.requiredQuotaMode?{requiredQuotaMode:b.requiredQuotaMode}:{}),payloadSchema:s.payloadSchema,qualityVersion:s.qualityVersion,classificationVersion:s.classificationVersion}))
   return host
 }
 export async function platformIngestionSchemaDigest(){const fs=await import('node:fs');return createHash('sha256').update(fs.readFileSync(new URL(platformIngestionSchemaUrl))).digest('hex')}

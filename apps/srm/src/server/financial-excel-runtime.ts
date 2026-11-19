@@ -1,3 +1,4 @@
+import {bindSrmRequestRuntime} from './organisation-context'
 import type { OperationContext, OperationExecutor, OperationOutcome } from '@profitia/platform-contracts/operation-context'
 import { OPERATION_CONTRACT, OperationDenied, isOperationDenied } from '@profitia/platform-contracts/operation-context'
 import type { PoolClient } from 'pg'
@@ -81,7 +82,7 @@ export function createOperationFinancialExcelHandler(executor: OperationExecutor
 export function createRuntimeSrmFinancialExcelHandler(resolveRuntime: () => SrmReportRuntime, legacy: (request: Request) => Promise<Response>) {
   return async (request: Request): Promise<Response> => {
     try {
-      const runtime = resolveRuntime()
+      const runtime = await bindSrmRequestRuntime(resolveRuntime(),request)
       if (runtime.provider === 'legacy_demo') return await legacy(request)
       if (runtime.provider !== 'clerk') throw new TypeError('Unsupported server runtime')
       return await createOperationFinancialExcelHandler(runtime.executor, runtime.defaultOrganisationId)(request)

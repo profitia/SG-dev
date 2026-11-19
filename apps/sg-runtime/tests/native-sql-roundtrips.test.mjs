@@ -1,4 +1,5 @@
-import {recurringSourceFilesystem} from '../../architecture-lab/private-recurring-source.mjs'
+import {recurringSourcePredecessor} from '../../architecture-lab/private-recurring-source.mjs'
+import {acceptedSdkSource,sdkContinuationPredecessor} from '../../../packages/platform-contracts/test/organisation-sdk-compatibility.mjs'
 import {readM2AcceptedSource} from './assistant-m2-source-view.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
@@ -6,8 +7,10 @@ import fs from 'node:fs'
 import {posix} from 'node:path'
 import {createHash} from 'node:crypto'
 import {execFileSync} from 'node:child_process'
-const recurringView=recurringSourceFilesystem(new URL('../../../',import.meta.url)),recurring=recurringView.manifest
-const recurringSdkFiles=Object.fromEntries(Object.entries(recurring?.sourceDigests??{}).filter(([p])=>p.startsWith('packages/platform-contracts/')).map(([p,h])=>[p.slice('packages/platform-contracts/'.length),h]))
+const sdkContinuationRoot=new URL('../../../',import.meta.url),sdkContinuationCurrent=p=>fs.readFileSync(new URL(p,sdkContinuationRoot)),sdkContinuationHistory=(sha,p)=>execFileSync('git',['show',sha+':'+p],{cwd:sdkContinuationRoot})
+const organisationSourceView=sdkContinuationPredecessor(JSON.parse(sdkContinuationCurrent('apps/sg-runtime/operation-integration.json')),sdkContinuationCurrent,sdkContinuationHistory)
+const recurringView=recurringSourcePredecessor(organisationSourceView?.previousBytes??sdkContinuationCurrent,sdkContinuationHistory)??{manifest:null,previousBytes:organisationSourceView?.previousBytes??sdkContinuationCurrent},recurring=recurringView.manifest
+const recurringSdkFiles=Object.fromEntries(Object.entries({...recurring?.sourceDigests,...organisationSourceView?.record.sourceDigests,...organisationSourceView?.record.compatibilityTestSourceDigests}).filter(([p])=>p.startsWith('packages/platform-contracts/')).map(([p,h])=>[p.slice('packages/platform-contracts/'.length),h]))
 const receipt=JSON.parse(fs.readFileSync(new URL('../operation-integration.json',import.meta.url))),a=receipt.nativeSqlRoundtripAdoption,current=receipt.xrayPlatform130CiClosureCompatibility??receipt.diagnosticTelemetryAdoption??a
 const hash=v=>createHash('sha256').update(v).digest('hex')
 test('native SQL adoption preserves complete prior acceptance and pins the exact reviewed producer',async()=>{
@@ -23,7 +26,7 @@ test('native SQL adoption preserves complete prior acceptance and pins the exact
  }
  const modules={'private-operation-host':'privateOperationHostSourceDigest','access-store':'accessStoreSourceDigest',
   'delegated-job':'delegatedJobSourceDigest','platform-ingestion':'platformIngestionSourceDigest','request-work':'requestWorkSourceDigest'}
- for(const[module,fn]of Object.entries(modules))assert.equal(await(await import('@profitia/platform-contracts/'+module))[fn](),(recurring?.sdkDigests[fn]??receipt.oilAutonomousReportCompatibility?.sdkDigests[fn]??receipt.assistantM1SourceCompatibility?.sdkDigests[fn]??receipt.sourceHubMarketSymbolCompatibility?.sdkDigests[fn]??receipt.sourceHubApiPathCompatibility?.sdkDigests[fn]??receipt.freshPostfetchCompatibility?.sdkDigests[fn]??receipt.sourceLeaseClockCompatibility?.sdkDigests[fn]??current.sdkDigests[fn]),fn)
+ for(const[module,fn]of Object.entries(modules))assert.equal(await(await import('@profitia/platform-contracts/'+module))[fn](),(acceptedSdkSource().sdkDigests[fn]??receipt.oilAutonomousReportCompatibility?.sdkDigests[fn]??receipt.assistantM1SourceCompatibility?.sdkDigests[fn]??receipt.sourceHubMarketSymbolCompatibility?.sdkDigests[fn]??receipt.sourceHubApiPathCompatibility?.sdkDigests[fn]??receipt.freshPostfetchCompatibility?.sdkDigests[fn]??receipt.sourceLeaseClockCompatibility?.sdkDigests[fn]??current.sdkDigests[fn]),fn)
  for(const[file,digest]of Object.entries(a.applicationSourceDigests)){
   const latest=receipt.appShellSourceCompatibility,adp=receipt.adpPresentationSourceCompatibility
   const journey=receipt.integratedBuyerJourneySourceCompatibility

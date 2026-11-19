@@ -7,6 +7,9 @@ export interface IdentityProvisioningOptions<Transaction> {
   schemaDigest: string
   /** Explicit opt-in to separately installed renewal; absent preserves B1. */
   renewalSchemaDigest?: string
+  /** Uses only the separately admitted peer renewal POST. Missing bindings deny;
+   * never provisions a user or changes a profile, membership or grant. */
+  existingOnly?: boolean
   /** Separate server-held database attestation key, never a browser credential. */
   proofKey: Uint8Array
   now?: () => number

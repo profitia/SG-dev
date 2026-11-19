@@ -1,3 +1,6 @@
+import {REGISTRATION_SDK_REVIEW} from '../../../scripts/governance/controlled-package-ci.mjs'
+import {partitionChangedPaths,validateOwnerGroups} from '../../identity-runtime/scripts/ci-routing.mjs'
+import {reviewedRegistrationConsumerPaths} from '../scripts/ci-routing.mjs'
 import {knowledgeSourcePredecessor} from '../../architecture-lab/knowledge-source.mjs'
 import test from 'node:test'
 import assert from 'node:assert/strict'
@@ -165,6 +168,83 @@ test('historical recurring routing refuses changed bytes, symbolic files and add
  }finally{fs.rmSync(temporary,{recursive:true,force:true});fixture.close()}
 })
 
+// Preserve the original immutable recurring and registration reviews separately.
+function withRecurringReviewFixture(action,{candidateSha='f78f5867064c96f4497e13bcd53c97af2da2e07a',baseSha='3491c915ad27c07898124b23d6193ea7d703b12b',full=false}={}){
+ const temporary=fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(),'hub-recurring-source-')))
+ const git=(cwd,...args)=>execFileSync('git',args,{cwd,encoding:'utf8',stdio:['ignore','pipe','pipe']}).trim()
+ try{
+  // This regression owns the original closed recurring review, not every
+  // later governance/registration/Calendar change in the moving main history.
+  // Immutable fixture versions are explicit; they never follow moving main.
+  const a=JSON.parse(git(repositoryRoot,'show',candidateSha+':apps/architecture-lab/private-recurring-source.json'))
+  git(temporary,'clone','--quiet','--shared','--no-checkout',repositoryRoot,'candidate')
+  const root=path.join(temporary,'candidate');git(root,'update-ref','--no-deref','HEAD',candidateSha);git(root,'read-tree',candidateSha)
+  const canonical=git(root,'ls-tree','-r','--name-only',candidateSha,'--','Canon').split('\n')
+  const files=[...new Set([...canonical,...Object.keys(a.sourceDigests),...Object.keys(a.preservedReceipts),
+   'apps/architecture-lab/private-recurring-source.json','apps/architecture-lab/private-recurring-source.mjs',
+   'apps/architecture-lab/private-recurring-source-adoption.json','apps/sg-runtime/private-recurring-source-adoption.json','apps/srm/private-recurring-source-adoption.json'])]
+  if(full)git(root,'checkout-index','-a');else execFileSync('git',['checkout-index','--stdin','-z'],{cwd:root,input:files.join('\0')+'\0'})
+  return action({root,baseSha,candidateSha,git,readReceipt:p=>JSON.parse(fs.readFileSync(path.join(root,p),'utf8'))})
+ }finally{fs.rmSync(temporary,{recursive:true,force:true})}
+}
+
+test('private recurring source routing validates its complete immutable candidate before admitting each real owner',()=>{
+ withRecurringReviewFixture(({root,baseSha,candidateSha,git,readReceipt})=>{
+  const sourceReview={baseSha,candidateSha},paths=reviewedRecurringConsumerPaths(root,sourceReview)
+  assert.equal(paths.get('apps/sg-runtime/components/procurement-insights/reports.tsx'),'SG2')
+  assert.equal(paths.get('apps/srm/scripts/private-host.integration.test.mjs'),'SRM')
+  assert(!paths.has('apps/platform-source-hub/src/server.mjs'));assert(!paths.has('apps/srm/src/server/unreviewed.ts'))
+  // Acceptance by main cannot erase the original fixture's reviewed diff.
+  for(const authoritySha of [baseSha,candidateSha,git(repositoryRoot,'rev-parse','origin/main')]){
+   git(root,'update-ref','refs/remotes/origin/main',authoritySha)
+   assert.deepEqual(reviewedRecurringConsumerPaths(root,sourceReview),paths)
+  }
+  const called=[],changedPaths=git(root,'diff','--name-only',baseSha,candidateSha).split('\n')
+  validateRouting({changedPaths,repositoryRoot:root,readReceipt,sourceReview,runGovernance:projectKey=>{called.push(projectKey);return {verdict:'PASS'}}})
+  assert.deepEqual([...new Set(called)].sort(),['ARCHITECTURE','SG2','SRM'])
+  assert.throws(()=>reviewedRecurringConsumerPaths(root))
+  assert.throws(()=>reviewedRecurringConsumerPaths(root,{baseSha,candidateSha:'a'.repeat(40)}))
+  const wrongReceipt=p=>{const r=readReceipt(p);r.sourceHubApiPathCompatibility.apiPathOptedIn=true;return r}
+  assert.throws(()=>validateRouting({changedPaths,repositoryRoot:root,readReceipt:wrongReceipt,sourceReview,runGovernance:()=>assert.fail('Altered receipt must not reach owner gate')}))
+ })
+})
+
+test('immutable recurring review refuses changed bytes, symbolic files and additional committed paths',()=>{
+ withRecurringReviewFixture(({root,baseSha,candidateSha,git})=>{
+  assert(reviewedRecurringConsumerPaths(root,{baseSha,candidateSha}).has('apps/sg-runtime/components/procurement-insights/reports.tsx'))
+  const p=path.join(root,'apps/newsfeed-runtime/src/worker.mjs'),bytes=fs.readFileSync(p)
+  fs.appendFileSync(p,'drift');assert.throws(()=>reviewedRecurringConsumerPaths(root,{baseSha,candidateSha}));fs.writeFileSync(p,bytes)
+  fs.unlinkSync(p);fs.symlinkSync(path.join(root,'apps/newsfeed-runtime/src/server.mjs'),p);assert.throws(()=>reviewedRecurringConsumerPaths(root,{baseSha,candidateSha}));fs.unlinkSync(p);fs.writeFileSync(p,bytes)
+  fs.writeFileSync(path.join(root,'unreviewed.txt'),'not part of this accepted source')
+  git(root,'add','unreviewed.txt');git(root,'-c','user.name=Isolated fixture','-c','user.email=fixture@example.invalid','commit','--quiet','-m','unreviewed addition')
+  assert.throws(()=>reviewedRecurringConsumerPaths(root,{baseSha,candidateSha:git(root,'rev-parse','HEAD')}))
+ })
+})
+
+test('organisation SDK routing requires its complete pinned checkout and every real owner gate',()=>{
+ const temporary=fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(),'hub-registration-review-')))
+ const git=(cwd,...args)=>execFileSync('git',args,{cwd,encoding:'utf8',stdio:['ignore','pipe','pipe']}).trim()
+ try{
+  git(temporary,'clone','--quiet','--shared','--no-checkout',repositoryRoot,'review')
+  const root=path.join(temporary,'review'),candidateSha=REGISTRATION_SDK_REVIEW.sourceSha,baseSha=REGISTRATION_SDK_REVIEW.baseSha
+  git(root,'update-ref','--no-deref','HEAD',candidateSha);git(root,'read-tree',candidateSha)
+  execFileSync('git',['checkout-index','--stdin','-z'],{cwd:root,input:Object.keys(REGISTRATION_SDK_REVIEW.entries).join('\0')+'\0',stdio:['pipe','pipe','pipe']})
+  const sourceReview={baseSha,candidateSha},paths=reviewedRegistrationConsumerPaths(root,sourceReview)
+  assert(paths.has('apps/sg-runtime/operation-integration.json'));assert(paths.has('apps/srm/operation-integration.json'));assert(!paths.has('apps/sg-runtime/app/page.tsx'))
+  const called=[],readReceipt=file=>JSON.parse(fs.readFileSync(path.join(root,file),'utf8'))
+  const {groups}=partitionChangedPaths(Object.keys(REGISTRATION_SDK_REVIEW.entries),repositoryRoot)
+  validateConsumerGroups(groups,readReceipt,{reviewedRegistrationPaths:paths})
+  validateOwnerGroups({groups,runGovernance:(owner)=>{called.push(owner);return {verdict:'PASS'}}})
+  assert.deepEqual(called,['ARCHITECTURE','SG2','SRM'])
+  assert.throws(()=>reviewedRegistrationConsumerPaths(root,{...sourceReview,candidateSha:'0'.repeat(40)}))
+  const target=Object.keys(REGISTRATION_SDK_REVIEW.entries)[0],original=fs.readFileSync(path.join(root,target))
+  fs.appendFileSync(path.join(root,target),'\nUNREVIEWED');assert.throws(()=>reviewedRegistrationConsumerPaths(root,sourceReview));fs.writeFileSync(path.join(root,target),original)
+  fs.chmodSync(path.join(root,target),0o755);git(root,'update-index','--chmod=+x',target)
+  const tree=git(root,'write-tree'),changed=git(root,'-c','user.name=Fixture','-c','user.email=fixture@example.test','commit-tree',tree,'-p',candidateSha,'-m','Changed fixture mode')
+  git(root,'update-ref','--no-deref','HEAD',changed)
+  assert.throws(()=>reviewedRegistrationConsumerPaths(root,{baseSha,candidateSha:changed}))
+ }finally{fs.rmSync(temporary,{recursive:true,force:true})}
+})
 
 // Exercise the actual authenticated ACG bytes on their immutable accepted base.
 function reservationRoutingFixture(){
@@ -178,8 +258,8 @@ function reservationRoutingFixture(){
   const paths=[...Object.keys(reservationSource.manifest.sourceDigests),RESERVATION_RECORD,RESERVATION_DERIVED]
   assert.equal(paths.length,46);assert.equal(new Set(paths).size,46)
   for(const p of paths){
-   const source=path.join(repositoryRoot,p),stat=fs.lstatSync(source);assert(stat.isFile()&&!stat.isSymbolicLink())
-   const target=path.join(root,p);fs.mkdirSync(path.dirname(target),{recursive:true});fs.writeFileSync(target,acceptedAcgBytes(p))
+   const bytes=execFileSync('git',['show','53691e907e4cc9b7fbf683c91bbebf41299e9ccc:'+p],{cwd:repositoryRoot,maxBuffer:16*1024*1024,stdio:['ignore','pipe','pipe']})
+   const target=path.join(root,p);fs.mkdirSync(path.dirname(target),{recursive:true});fs.writeFileSync(target,bytes)
   }
   git(root,'add','--',...paths)
   git(root,'-c','user.name=Isolated ACG fixture','-c','user.email=fixture@example.invalid','commit','--quiet','-m','actual authenticated ACG source fixture')

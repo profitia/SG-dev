@@ -85,10 +85,10 @@ function modelInput(selection:ReturnType<typeof selectConversationContext>,turn:
  if(Buffer.byteLength(JSON.stringify(result),'utf8')>32768)fail('LIMIT_EXCEEDED')
  return Object.freeze(result.map(m=>Object.freeze(m)))
 }
-export function createAssistantHandlers(resolveRuntime:()=>Promise<AssistantRuntime>){
+export function createAssistantHandlers(resolveRuntime:(request:Request)=>Promise<AssistantRuntime>){
  return {
   async history(request:Request){try{
-   const runtime=await resolveRuntime(),read=await runtime.run(request,'assistant.history.read',{action:'LIST'},async c=>({userId:c.actorId,items:await runtime.history.list(c)}))
+   const runtime=await resolveRuntime(request),read=await runtime.run(request,'assistant.history.read',{action:'LIST'},async c=>({userId:c.actorId,items:await runtime.history.list(c)}))
    const items=[...read.items];let next=0
    // Bound database/producer work. A preview is subject to the same current
    // access checks as opening the conversation, including question redaction.
@@ -116,14 +116,14 @@ export function createAssistantHandlers(resolveRuntime:()=>Promise<AssistantRunt
   }catch(error){observe(error,'history');return failure(error)}},
   async load(request:Request,id:string){try{
    if(!uuid(id))return Response.json({error:'INVALID_REQUEST'},{status:400,headers})
-   const runtime=await resolveRuntime(),read=await runtime.run(request,'assistant.history.read',{action:'LOAD',conversationId:id},async c=>({userId:c.actorId,stored:await runtime.history.load(c,id)}))
+   const runtime=await resolveRuntime(request),read=await runtime.run(request,'assistant.history.read',{action:'LOAD',conversationId:id},async c=>({userId:c.actorId,stored:await runtime.history.load(c,id)}))
    const messages=await projectHistory(runtime,request,read.stored)
    await runtime.run(request,'assistant.history.read',{action:'PUBLISH',conversationId:id},async c=>{sameUser(c,read.userId);return null})
    return Response.json({id,messages},{headers})
   }catch(error){observe(error,'history');return failure(error)}},
   async remove(request:Request,id:string){try{
    if(!uuid(id))return Response.json({error:'INVALID_REQUEST'},{status:400,headers})
-   const runtime=await resolveRuntime();await runtime.run(request,'assistant.history.write',{action:'DELETE',conversationId:id},c=>runtime.history.delete(c,id))
+   const runtime=await resolveRuntime(request);await runtime.run(request,'assistant.history.write',{action:'DELETE',conversationId:id},c=>runtime.history.delete(c,id))
    return Response.json({deleted:true},{headers})
   }catch(error){observe(error,'history');return failure(error)}},
   async conversation(request:Request){return withinIdentityVerificationPhase(request,async()=>{
@@ -132,7 +132,7 @@ export function createAssistantHandlers(resolveRuntime:()=>Promise<AssistantRunt
    let runtime:AssistantRuntime|undefined,begun:{conversationId:string;turnId:string;status:'NEW'|'REPLAY'}|undefined,userId:string|undefined
    let admission:import('@profitia/platform-contracts/assistant-usage').AssistantUsageAdmission|undefined
    try{
-    runtime=await resolveRuntime();const r=runtime
+    runtime=await resolveRuntime(request);const r=runtime
     userId=await r.run(request,'assistant.converse',{kind:'AUTHORIZE'},async c=>c.actorId);const owner=userId
     const stored=turn.conversationId?await r.run(request,'assistant.history.read',{action:'LOAD',conversationId:turn.conversationId},async c=>{sameUser(c,owner);return r.history.load(c,turn.conversationId!)}):null
     const selection=selectConversationContext(turn,stored,r.organisationId),policy=selection.policy
@@ -186,8 +186,8 @@ export function createAssistantHandlers(resolveRuntime:()=>Promise<AssistantRunt
   })},
  }
 }
-export const assistantHandlers=createAssistantHandlers(async()=>{
- const {getSg2SelectionRuntime}=await import('@/lib/platform/private-runtime'),runtime=getSg2SelectionRuntime()
+export const assistantHandlers=createAssistantHandlers(async(request)=>{
+ const {getSg2SelectionRuntime}=await import('@/lib/platform/private-runtime'),{bindSg2RequestRuntime}=await import('@/lib/platform/organisation-context'),runtime=await bindSg2RequestRuntime(getSg2SelectionRuntime(),request)
  if(runtime.provider==='clerk'&&runtime.assistant)return runtime.assistant()
  return fail()
 })
