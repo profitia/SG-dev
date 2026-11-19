@@ -203,3 +203,22 @@ export function prepareQualityPublisherCasInstallation(options,now=Date.now()){
  require(createHash('sha256').update(body).digest('hex')===spec.sha256)
  return envelope({...options,operation:'INSTALL_DISABLED_PUBLISHER_CAS',publisherRole:spec.role,body,now})
 }
+
+/** Same fixed owner envelope and byte-exact reviewed migration, encoded as one
+ * prepared statement per item for serverless PostgreSQL transports. Only the
+ * already-verified DDL item receives a DO/EXECUTE wrapper; all membership,
+ * nonce, timeout, role and rollback guards retain their original statements.
+ * This builder performs no connection, execution or credential operation. */
+export function prepareQualityPublisherPreparedInstallation(options,now=Date.now()){
+ const source=prepareQualityPublisherCasInstallation(options,now),statements=[...source.statements]
+ const matches=statements.map((s,i)=>s.includes('CREATE TABLE profitia_quality_release.quality_deployment_cas_policy(')?i:-1).filter(i=>i>=0)
+ require(matches.length===1)
+ const index=matches[0],body=statements[index],tag='$aqc_publisher_transport_'+randomUUID().replaceAll('-','')+'$'
+ require(!body.includes(tag))
+ statements[index]='DO '+tag+' BEGIN EXECUTE '+literal(body)+'; END '+tag
+ const plan={...source,sqlTransport:'ONE_PREPARED_STATEMENT_PER_ITEM',
+  sourceStatementsSha256:source.statementsSha256,
+  statementsSha256:createHash('sha256').update(JSON.stringify(statements)).digest('hex')}
+ Object.defineProperty(plan,'statements',{value:Object.freeze(statements),enumerable:false})
+ return Object.freeze(plan)
+}
