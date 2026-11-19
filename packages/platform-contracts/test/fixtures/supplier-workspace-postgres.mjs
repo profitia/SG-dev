@@ -103,10 +103,13 @@ export async function supplierWorkspaceFixture(){
    await c.query("SELECT set_config('profitia.install.supplier_workspace_digest',$1,true),set_config('profitia.install.supplier_workspace_source',$2,true)",[schemaDigest,SOURCE]);
    await c.query(migration);
   };
+  // Checked synthetic installer temporarily lends CREATE only inside the fixture.
+  await admin.query('GRANT CREATE ON DATABASE platform_private TO profitia_access_owner');
   await controlled(async c=>{await c.query('SAVEPOINT installation_interruption');await install(c);await c.query('ROLLBACK TO SAVEPOINT installation_interruption')});
   if((await admin.query("SELECT to_regnamespace('profitia_supplier_workspace') AS n")).rows[0].n!==null)throw Error('Partial workspace installation survived rollback');
   if(JSON.stringify((await policySnapshot()).rows)!==JSON.stringify(before))throw Error('Master policies survived rolled-back installation');
   await controlled(install);
+  await admin.query('REVOKE CREATE ON DATABASE platform_private FROM profitia_access_owner');
   // Installation alone enrolls no organization and grants no runtime EXECUTE.
   const noImplicitGrant=(await admin.query("SELECT has_function_privilege($1,'profitia_supplier_workspace.bind_operation(uuid,text)','EXECUTE') AS granted,(SELECT count(*)::int FROM profitia_supplier_workspace.organisation_policies) AS policies",[ROLE])).rows[0];
   await controlled(async c=>{
