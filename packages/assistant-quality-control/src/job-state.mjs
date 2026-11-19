@@ -183,7 +183,7 @@ export async function admitQualityNativeJobState({inputs,manifest,externalId,inv
  }catch{nativeFail()}
  const decoded=readQualityJobState({encoded:inputs.state,manifest:m,externalId})
  const admitted=freeze({kind:'AQC_NATIVE_JOB_STATE_V1',record:decoded.record,metadataSha256:decoded.metadataSha256,
-  externalId,runId:native.runId,workflowId:native.workflowId,controlSourceSha:native.controlSourceSha,
+  externalId,runId:native.runId,workflowId:native.workflowId,createdAt:native.createdAt,controlSourceSha:native.controlSourceSha,
   manifestSha256:documentDigest(m),providerIdentityVerified:true,authorityIncluded:false})
  nativeStates.add(admitted)
  return admitted

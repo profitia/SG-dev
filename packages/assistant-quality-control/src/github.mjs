@@ -273,6 +273,49 @@ export function createQualityGitHub({token,fetchImpl=fetch,publisherEnabled=fals
    return capability
   },
   controllerJobResult:input=>controllerJobArtifact(input,'result'),
+
+  /** Prior phase indexes are only locators. Every use downloads the real
+   * successful native artifact again and checks its separate role signature.
+   * This reads immutable engineering facts only; publication/recovery use
+   * their fresh dedicated authorities and this never grants effects. */
+  async controllerJobHistory({manifest,jobState,externalId,action,keysByRole}){
+   const {assertQualityNativeJobState}=await import('./job-state.mjs')
+   const state=assertQualityNativeJobState(jobState,{manifest,externalId})
+   const m=assertVerifiedRepairManifest(manifest),current=controllerJobBinding(externalId)
+   const order=['QUALIFY','REPRODUCE','EXECUTE','VERIFY','PROPOSE','CHECKS','PROMOTE','VERIFY_RUNTIME','OBSERVE','ROLLBACK']
+   const names={QUALIFY:'qualify',REPRODUCE:'reproduce',EXECUTE:'execute',VERIFY:'verify'}
+   require(typeof action==='string'&&Object.hasOwn(names,action)&&order.indexOf(action)<order.indexOf(current.action),
+    'CONTROLLER_HISTORY_PHASE_INVALID')
+   const at=now(),started=Date.parse(state.createdAt)
+   require(Number.isFinite(at)&&controllerStamp(state.createdAt)&&started<=at&&at-started<=1800000,
+    'CONTROLLER_HISTORY_STALE')
+   const reference=state.record.reproduction?.nativeJobs?.[names[action]]
+   require(controllerPlain(reference)&&reference.externalId!==externalId&&reference.runId!==state.runId,
+    'CONTROLLER_HISTORY_REFERENCE_REQUIRED')
+   const binding=controllerJobBinding(reference.externalId)
+   require(binding.action===action&&Date.parse(reference.createdAt)<=started,'CONTROLLER_HISTORY_REFERENCE_INVALID')
+   const observed=await controllerJobArtifact({externalId:reference.externalId,runId:reference.runId},'result')
+   require(observed.state==='COMPLETE'&&observed.workflowId===reference.workflowId
+    &&observed.artifactSha256===reference.artifactSha256&&documentDigest(observed.document)===reference.documentSha256
+    &&observed.createdAt===reference.createdAt,'CONTROLLER_HISTORY_REFERENCE_MISMATCH')
+   const record={...state.record,status:{QUALIFY:'OBSERVED',REPRODUCE:'TRIAGED',EXECUTE:'REPRODUCED',VERIFY:'PATCH_READY'}[action],
+    pending:{action,nonce:binding.nonce,externalId:reference.externalId}}
+   const finished=now()
+   require(Number.isFinite(finished)&&finished>=started&&finished-started<=1800000,'CONTROLLER_HISTORY_STALE')
+   const result=readQualityControllerJobResult(observed.document,{manifest:m,record,externalId:reference.externalId,
+    runId:reference.runId,workflowId:reference.workflowId,keysByRole,
+    notBefore:Math.max(Date.parse(reference.createdAt),Date.parse(m.mandate.issuedAt)),now:finished})
+   require(Date.parse(observed.document.body.issuedAt)<=started,'CONTROLLER_HISTORY_REFERENCE_INVALID')
+   const matches=action==='QUALIFY'?result.result==='DETERMINISTIC_FAILURE':
+    action==='REPRODUCE'?result.result==='RED'&&result.proofSha256===state.record.reproduction?.proofSha256:
+    action==='EXECUTE'?result.result==='PATCH'&&result.patch?.artifactSha256===state.record.patch?.artifactSha256
+     &&result.patch?.treeSha256===state.record.patch?.treeSha256:
+    result.result==='PASS'&&result.artifactSha256===state.record.verification?.artifactSha256
+     &&result.proofSha256===state.record.verification?.proofSha256
+   require(matches,'CONTROLLER_HISTORY_STATE_MISMATCH')
+   return Object.freeze({action,result,observation:observed,phaseReceiptVerified:true,
+    independentBundleVerified:false,authorityIncluded:false})
+  },
   async controllerJobPatch(input){
    require(controllerJobBinding(input?.externalId).action==='EXECUTE','CONTROLLER_PATCH_EXECUTOR_REQUIRED')
    return controllerJobArtifact(input,'patch')
