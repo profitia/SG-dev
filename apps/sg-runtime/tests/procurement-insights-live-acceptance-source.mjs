@@ -1,5 +1,4 @@
 import {calendarPiPredecessor} from './calendar-pi-source-compatibility.mjs';
-import './calendar-pi-source-compatibility.test.mjs';
 import {knowledgeSourcePredecessor} from '../../architecture-lab/knowledge-source.mjs';
 import {assistantNotificationsPredecessor,NOTIFICATIONS_RECEIPT} from './assistant-notifications-integrity.mjs';
 // Test/build-only continuation. No runtime, authorisation or deployment grant.

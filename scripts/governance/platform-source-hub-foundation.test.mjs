@@ -1,3 +1,4 @@
+import '../../apps/sg-runtime/tests/calendar-pi-source-compatibility.test.mjs'
 import {createCalendarAcceptedMainTestFixture} from '../../apps/architecture-lab/calendar-current-main-source.mjs'
 import {recurringSourcePredecessor} from '../../apps/architecture-lab/private-recurring-source.mjs'
 import {calendarStoragePredecessor} from '../../apps/architecture-lab/ecr-stage03-sdk-compatibility.mjs'

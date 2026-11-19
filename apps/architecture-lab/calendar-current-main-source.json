@@ -219,7 +219,7 @@
     "apps/sg-runtime/tests/monitor-benchmark-finder.test.mjs": "8f54c9aba542d60d2cef41ec3dc546fee43ed4e656083b9b7e5b837b4f0ef47b",
     "apps/sg-runtime/tests/native-sql-roundtrips.test.mjs": "1bbc3b14974d056cb7933c5bc7593e9923c0ad3a90b5bad74099fbce451563ce",
     "apps/sg-runtime/tests/operation-context.test.mjs": "dcc34a86b2f7b16e105507d99aafe957e4634f206ae90e77a7e94ac150f6dcc0",
-    "apps/sg-runtime/tests/pci-smart-integrity.test.mjs": "b67e7f2b5e39b05991b81a27a916946e075898eaee40c54fe47649848f0f86ff",
+    "apps/sg-runtime/tests/pci-smart-integrity.test.mjs": "ac1f2a49e6c72d3a8d9e52d6fcb090b834fe001dd6937d2b57f4ad268872a07e",
     "apps/sg-runtime/tests/porr-demo-middleware.test.ts": "09c1647b0af2492780db87a4c8adc21ba94c14b1c1cbaa02dc74e92f1ae6f251",
     "apps/sg-runtime/tests/private-host.integration.test.mjs": "3298fba8c33e46e8a4b6bbc3320707c49871a4b21de8516069739f1e923e541a",
     "apps/sg-runtime/tests/procurement-insights-completion.test.mjs": "b2fbe0a1b6f6e8f790d631d368831382752072d0df94afa137773a15b3f86114",
@@ -228,7 +228,7 @@
     "apps/sg-runtime/tests/procurement-insights-editorial-integrity.test.mjs": "a52c23679e89db9b1b10f31aa7b723b2fcfcdd56891f17ed257ea6388c59b801",
     "apps/sg-runtime/tests/procurement-insights-editorial-package-integrity.mjs": "f506c4ec565b2b754be735fbba0367c70c77e1475e0d6e74dbd52a59dec66659",
     "apps/sg-runtime/tests/procurement-insights-editorial-package-integrity.test.mjs": "ab3dba31eede662811f56acd359feba12733410967b6c04a603afac250a899ef",
-    "apps/sg-runtime/tests/procurement-insights-live-acceptance-source.mjs": "e0b97a9fc903eb3e9574d8fcb16085b5f0667029d80221ef4e81b65b4d58b2dc",
+    "apps/sg-runtime/tests/procurement-insights-live-acceptance-source.mjs": "1bff472bf3defab6a5e935311c97bdb69ff47633485174c8fe85089b7ef311cc",
     "apps/sg-runtime/tests/procurement-insights-live-acceptance-source.test.mjs": "5d3eaeac4ddd460bd78e6f4db434c50bacc13a6f8ccf22e677709ee04d0c81ab",
     "apps/sg-runtime/tests/xray-fresh-performance-adoption.test.mjs": "0e06bedac14e57fa2af26ea9db3847919d38df117876a0afbcca82a74817698a",
     "apps/sg-runtime/xray-appshell-integration.json": "edd27f0ae420a9c7671f3cf6068fa00e237a845169ce36de719b6a52abcc6087",
@@ -582,7 +582,7 @@
     "packages/platform-source-hub-contracts/source-access-continuity-acceptance-v1.json": "c99323c6690d488992c445eff4e1c26fe48d81ede267b6f5f2ad4df208768540",
     "scripts/governance/controlled-package-ci.test.mjs": "419aa1e9f6b69000967b7b47032304e63039395846fa326ebca8cbc0c9a9c504",
     "scripts/governance/governance.test.mjs": "ef28078504fda6d844f63b5dd3d7687465f37b3d16064dff581ae392765909da",
-    "scripts/governance/platform-source-hub-foundation.test.mjs": "ce4e3b1f6536e71dc0dfa3a1d58bca9ed2afe99ce35d0e9d63aa921537e8102b"
+    "scripts/governance/platform-source-hub-foundation.test.mjs": "f7ff3c99a04b35d93f079c290fc36bf2f97a0f5538220532ebdc844b85f8ad2f"
   },
   "views": {
     "calendar": {
@@ -877,7 +877,7 @@
         },
         "apps/sg-runtime/tests/pci-smart-integrity.test.mjs": {
           "previousSha256": "44292ac3ec5ed822daddce35d78bdb403712fa255fe7e94c9d9dc0517a32b5b6",
-          "currentSha256": "b67e7f2b5e39b05991b81a27a916946e075898eaee40c54fe47649848f0f86ff"
+          "currentSha256": "ac1f2a49e6c72d3a8d9e52d6fcb090b834fe001dd6937d2b57f4ad268872a07e"
         },
         "apps/sg-runtime/tests/porr-demo-middleware.test.ts": {
           "currentSha256": "09c1647b0af2492780db87a4c8adc21ba94c14b1c1cbaa02dc74e92f1ae6f251",
@@ -900,8 +900,8 @@
           "previousSha256": "ca19491f68c4210d2126dec4dccf3d36955d03a3d0de8225473c290369e18d63"
         },
         "apps/sg-runtime/tests/procurement-insights-live-acceptance-source.mjs": {
-          "currentSha256": "e0b97a9fc903eb3e9574d8fcb16085b5f0667029d80221ef4e81b65b4d58b2dc",
-          "previousSha256": "4cd6098f0dc663e50a17b1a065d0383ad89ac4780ed1fdb903d5111193b97147"
+          "previousSha256": "4cd6098f0dc663e50a17b1a065d0383ad89ac4780ed1fdb903d5111193b97147",
+          "currentSha256": "1bff472bf3defab6a5e935311c97bdb69ff47633485174c8fe85089b7ef311cc"
         },
         "apps/sg-runtime/tests/procurement-insights-live-acceptance-source.test.mjs": {
           "currentSha256": "5d3eaeac4ddd460bd78e6f4db434c50bacc13a6f8ccf22e677709ee04d0c81ab",
@@ -1092,8 +1092,8 @@
           "previousSha256": "6406f5bc0db472045faab88c44bfe7a7d307ef1acb81b2c053852c0800c31846"
         },
         "scripts/governance/platform-source-hub-foundation.test.mjs": {
-          "currentSha256": "ce4e3b1f6536e71dc0dfa3a1d58bca9ed2afe99ce35d0e9d63aa921537e8102b",
-          "previousSha256": "812bd89b6e89ecd092a12618d2e70f0f9576bb74bf15b0acaa73c66c693a986f"
+          "previousSha256": "812bd89b6e89ecd092a12618d2e70f0f9576bb74bf15b0acaa73c66c693a986f",
+          "currentSha256": "f7ff3c99a04b35d93f079c290fc36bf2f97a0f5538220532ebdc844b85f8ad2f"
         }
       }
     },
@@ -1278,7 +1278,7 @@
         },
         "apps/sg-runtime/tests/pci-smart-integrity.test.mjs": {
           "previousSha256": "ab293c8ac6443ac12f30b2fb1f100a1c12fe7283001e6edbbc72c18d0d1fb6d2",
-          "currentSha256": "b67e7f2b5e39b05991b81a27a916946e075898eaee40c54fe47649848f0f86ff"
+          "currentSha256": "ac1f2a49e6c72d3a8d9e52d6fcb090b834fe001dd6937d2b57f4ad268872a07e"
         },
         "apps/sg-runtime/tests/procurement-insights-editorial-integrity.test.mjs": {
           "currentSha256": "a52c23679e89db9b1b10f31aa7b723b2fcfcdd56891f17ed257ea6388c59b801",
@@ -1293,8 +1293,8 @@
           "previousSha256": "a13c7e2990c430ef69410108b4ab4e666c8892467af8e5ee9efbe4c56202f7ca"
         },
         "apps/sg-runtime/tests/procurement-insights-live-acceptance-source.mjs": {
-          "currentSha256": "e0b97a9fc903eb3e9574d8fcb16085b5f0667029d80221ef4e81b65b4d58b2dc",
-          "previousSha256": "89a52f4b1bf7191e5a0d0d93e0057f21d1e19ca6f3a337bb75ce963e14906f6d"
+          "previousSha256": "89a52f4b1bf7191e5a0d0d93e0057f21d1e19ca6f3a337bb75ce963e14906f6d",
+          "currentSha256": "1bff472bf3defab6a5e935311c97bdb69ff47633485174c8fe85089b7ef311cc"
         },
         "packages/economic-calendar-contracts/index.mjs": {
           "currentSha256": "2c0c9374f15f818a8f11dc935592cad2b5da06f63f445ba82802e4f84038f6c1",
@@ -1333,8 +1333,8 @@
           "previousSha256": "0142eb57b511bef865e3f7231b82c8678e0390604ac656be8e72dbe05c7e5443"
         },
         "scripts/governance/platform-source-hub-foundation.test.mjs": {
-          "currentSha256": "ce4e3b1f6536e71dc0dfa3a1d58bca9ed2afe99ce35d0e9d63aa921537e8102b",
-          "previousSha256": "206af0119029fc2ffabfd93b06d206e0eb9936c8b8b7467cddeda3fe2b240c10"
+          "previousSha256": "206af0119029fc2ffabfd93b06d206e0eb9936c8b8b7467cddeda3fe2b240c10",
+          "currentSha256": "f7ff3c99a04b35d93f079c290fc36bf2f97a0f5538220532ebdc844b85f8ad2f"
         }
       }
     }

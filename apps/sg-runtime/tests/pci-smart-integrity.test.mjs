@@ -1,3 +1,4 @@
+import './calendar-pi-source-compatibility.test.mjs'
 import {completeFunctionalPredecessor} from '../../architecture-lab/ecr-complete-functional-source.mjs'
 import {procurementInsightsLiveAcceptancePredecessor,PI_LIVE_ACCEPTANCE_RECORD} from './procurement-insights-live-acceptance-source.mjs'
 import {marketCalendarSourcePredecessor,MARKET_CALENDAR_CONSUMER_RECORD} from '../../architecture-lab/market-calendar-source.mjs'
