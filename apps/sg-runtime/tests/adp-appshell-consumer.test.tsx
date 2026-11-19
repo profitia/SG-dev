@@ -25,7 +25,7 @@ test('public adoption binds version, bytes, source revision and the normal decla
 })
 test('ADP receiver compatibility preserves every accepted historical field and binds the complete current closure', () => {
   const complete=JSON.parse(fs.readFileSync(path.join(appRoot,'operation-integration.json'),'utf8')),root=path.resolve(appRoot,'../..')
-  const view=assertSourceHubApiPathCompatibility(complete,file=>fs.readFileSync(path.join(root,file)),(sha,file)=>execFileSync('git',['show',sha+':'+file],{cwd:root}))
+  const view=assertSourceHubApiPathCompatibility(complete,file=>fs.readFileSync(path.join(root,file)),(sha,file)=>execFileSync('git',['show',sha+':'+file],{cwd:root,maxBuffer:2*1024*1024}))
   const receipt=view.prior,current=receipt.adpPresentationSourceCompatibility
   const prior=execFileSync('git',['show',current.previousReceiptSourceSha+':apps/sg-runtime/operation-integration.json'],{cwd:appRoot})
   const hash=value=>createHash('sha256').update(value).digest('hex')

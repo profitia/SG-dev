@@ -27,7 +27,7 @@ test('the versioned host pins the additive candidate and preserves the base SQL'
   const bootstrap=sdkContinuationPredecessor(JSON.parse(physical('apps/sg-runtime/operation-integration.json')),physical,historical)
   recurringSourcePredecessor(bootstrap?.previousBytes??physical,historical)
   assert.equal(await operationSourceDigest(),acceptedSdkSource().sdkDigests.operationSourceDigest)
-  assert.equal(await identitySourceDigest(),'662f6c95138a0f8cd8f835c569084d669fbe85e34a762676584297ecd5f03606')
+  assert.equal(await identitySourceDigest(),acceptedSdkSource().sdkDigests.identitySourceDigest)
   assert.equal(await accessStoreSourceDigest(),'71e42f5e194f8b251c86a70c22bfbd7cb940cf66b8279159b08781f042ec9f47')
   assert.equal(await accessSchemaDigest(),'356463492c3304ca11fa533f6e99f1d41628a3ab830488142c6030fb9a920ff2')
 })

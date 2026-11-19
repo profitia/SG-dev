@@ -25,7 +25,9 @@ const sdkContinuationRoot=new URL('../../../',import.meta.url),sdkContinuationCu
 const organisationSourceView=sdkContinuationPredecessor(JSON.parse(sdkContinuationCurrent('apps/srm/operation-integration.json')),sdkContinuationCurrent,sdkContinuationHistory,{projectKey:'SRM'})
 const recurring=recurringSourcePredecessor(organisationSourceView?.previousBytes??sdkContinuationCurrent,sdkContinuationHistory)?.manifest
 const recurringSdkFiles=Object.fromEntries(Object.entries({...recurring?.sourceDigests,...organisationSourceView?.record.sourceDigests,...organisationSourceView?.record.compatibilityTestSourceDigests,...organisationSourceView?.currentSourceDigests}).filter(([p])=>p.startsWith('packages/platform-contracts/')).map(([p,h])=>[p.slice('packages/platform-contracts/'.length),h]))
-const reservation=recurringSourcePredecessor(sdkContinuationCurrent,sdkContinuationHistory)?.reservation?.manifest
+const currentRecurring=recurringSourcePredecessor(sdkContinuationCurrent,sdkContinuationHistory)
+const reservation=currentRecurring?.reservation?.manifest
+const knowledge=currentRecurring?.knowledge?.manifest
 
 const hash=value=>createHash('sha256').update(value).digest('hex')
 // Only immutable full-SHA Git blobs are cached; actual candidate reads remain
@@ -52,7 +54,7 @@ const marketSdk=actualReceipt.sourceHubMarketSymbolCompatibility
 // retain their already accepted fingerprints in the earlier additive receipt.
 const precedingApiPath=marketSdk?{...marketSdk,...actualReceipt.assistantM1SourceCompatibility,sourceDigests:{...actualReceipt.sourceHubApiPathCompatibility.sourceDigests,...marketSdk.sourceDigests,...actualReceipt.assistantM1SourceCompatibility?.sourceDigests}}:actualReceipt.sourceHubApiPathCompatibility
 const reportSdk=actualReceipt.oilAutonomousReportCompatibility
-const apiPath=reportSdk?{...precedingApiPath,platformVersion:recurring?.platformVersion??reportSdk.platformVersion,sourceDigests:{...precedingApiPath.sourceDigests,...reportSdk.sourceDigests,...reportSdk.testSourceDigests,...recurringSdkFiles},sdkDigests:{...precedingApiPath.sdkDigests,...reportSdk.sdkDigests,...recurring?.sdkDigests,...reservation?.sdkDigests,...knowledge?.sdkDigests},optionalPackageDigests:{...precedingApiPath.optionalPackageDigests,...reportSdk.optionalPackageDigests,...recurring?.optionalPackageDigests,...reservation?.optionalPackageDigests,...knowledge?.optionalPackageDigests},producerMetadataDigests:{...precedingApiPath.producerMetadataDigests,...recurring?.sourceDigests,...reservation?.sourceDigests,...knowledge?.sourceDigests}}:precedingApiPath
+const apiPath=reportSdk?{...precedingApiPath,platformVersion:sdkSourceAcceptance.platformVersion??recurring?.platformVersion??reportSdk.platformVersion,sourceDigests:{...precedingApiPath.sourceDigests,...reportSdk.sourceDigests,...reportSdk.testSourceDigests,...recurringSdkFiles},sdkDigests:{...precedingApiPath.sdkDigests,...reportSdk.sdkDigests,...recurring?.sdkDigests,...reservation?.sdkDigests,...knowledge?.sdkDigests,...sdkSourceAcceptance.sdkDigests},optionalPackageDigests:{...precedingApiPath.optionalPackageDigests,...reportSdk.optionalPackageDigests,...recurring?.optionalPackageDigests,...reservation?.optionalPackageDigests,...knowledge?.optionalPackageDigests,...sdkSourceAcceptance.optionalPackageDigests},producerMetadataDigests:{...precedingApiPath.producerMetadataDigests,...recurring?.sourceDigests,...reservation?.sourceDigests,...knowledge?.sourceDigests,...acceptedSdkCurrentSourceDigests()}}:precedingApiPath
 if(apiPath)assertSourceHubApiPathCompatibility(actualReceipt,actualAppShellSource,(sha,file)=>historicalBlob(sha+':'+file))
 // The host view validates both current API_PATH closures and the later AppShell
 // amendments before exposing the presentation predecessor used by these guards.
@@ -224,7 +226,10 @@ test('FRESH postfetch adoption preserves exact history, producer and current sec
  assert.equal(a.currentIdentityReadsParallel,true);assert.equal(a.durableAuthorizationCache,false);assert.equal(a.sourceCurrentChecksPreserved,true)
  for(const flag of ['peerWireContractChanged','runtimeDeploymentClaimed','performanceThresholdsClaimed','uiOrRoutingChanged'])assert.equal(a[flag],false,flag)
  const sdk=await import('@profitia/platform-contracts/identity-provider'),root=new URL('../',import.meta.resolve('@profitia/platform-contracts/identity-provider'))
- assert.equal(await sdk.identitySourceDigest(),a.sdkDigests.identitySourceDigest)
+ assert.equal(await sdk.identitySourceDigest(),sdkSourceAcceptance.sdkDigests.identitySourceDigest??a.sdkDigests.identitySourceDigest)
+  const historicalIdentity=createHash('sha256')
+  for(const file of ['src/identity-provider.mjs','src/identity-provider.d.mts'])historicalIdentity.update(historicalBlob(a.producer.sourceSha+':packages/platform-contracts/'+file))
+  assert.equal(historicalIdentity.digest('hex'),a.sdkDigests.identitySourceDigest,'immutable producer identity aggregate')
  assert.equal(await currentHumanReadSourceDigest(),acceptedSdkSource().sdkDigests.currentHumanReadSourceDigest??actualReceipt.oilAutonomousReportCompatibility?.sdkDigests.currentHumanReadSourceDigest??actualReceipt.assistantM1SourceCompatibility.sdkDigests.currentHumanReadSourceDigest)
  for(const[file,digest]of Object.entries(a.sourceDigests)){
   assert.equal(hash(historicalBlob(a.producer.sourceSha+':packages/platform-contracts/'+file)),digest,'producer '+file)

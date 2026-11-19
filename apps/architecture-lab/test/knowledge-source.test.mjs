@@ -1,4 +1,5 @@
 import test from 'node:test';import assert from 'node:assert/strict';
+import {createHash} from 'node:crypto';
 import {readFileSync} from 'node:fs';import {execFileSync} from 'node:child_process';
 import {knowledgeSourcePredecessor,KNOWLEDGE_SOURCE_RECORD,KNOWLEDGE_SOURCE_RECORD_SHA256} from '../knowledge-source.mjs';
 import {operationSourceDigest,OPERATION_CONTRACT,KNOWLEDGE_ROOT_CONTRACT} from '../../../packages/platform-contracts/src/operation-context.mjs';
@@ -94,6 +95,9 @@ test('complete Knowledge and accepted reservation graphs reject every altered pr
  }
  const historicalAcg=JSON.parse(view.previousBytes('apps/architecture-lab/assistant-reservation-source.json'));
  for(const p of Object.keys(historicalAcg.sourceDigests))assert.deepEqual(view.previousBytes(p),history(view.manifest.previousSourceSha,p),p);
- for(const p of ['apps/sg-runtime/lib/assistant/conversation.ts','apps/sg-runtime/lib/assistant/model.ts','apps/sg-runtime/lib/assistant/runtime.ts','packages/platform-contracts/src/assistant-usage.mjs','packages/platform-contracts/src/assistant-usage.d.mts','apps/package-limits/migrations/006-assistant-reservation-diagnostics.sql'])
-  assert.deepEqual(read(p),history(view.manifest.previousSourceSha,p),'preserved exact upstream repair '+p);
+ const acceptedRead=view.currentSdkContext?.baseline('knowledge')??read;
+ for(const p of ['apps/sg-runtime/lib/assistant/conversation.ts','apps/sg-runtime/lib/assistant/model.ts','apps/sg-runtime/lib/assistant/runtime.ts','packages/platform-contracts/src/assistant-usage.mjs','packages/platform-contracts/src/assistant-usage.d.mts','apps/package-limits/migrations/006-assistant-reservation-diagnostics.sql']){
+  assert.deepEqual(acceptedRead(p),history(view.manifest.previousSourceSha,p),'preserved exact upstream repair '+p);
+  if(view.currentSdkContext)assert.equal(createHash('sha256').update(read(p)).digest('hex'),view.currentSdkContext.currentSourceDigests[p],'authenticated current successor '+p);
+ }
 });
