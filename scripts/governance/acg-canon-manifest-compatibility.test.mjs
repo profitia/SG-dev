@@ -1,4 +1,7 @@
 import assert from 'node:assert/strict'
+import { createHash } from 'node:crypto'
+import fs from 'node:fs'
+import { createAcgLegacyRecurringFixture } from '../../packages/platform-contracts/test/assistant-reservation-source.mjs'
 import { execFileSync } from 'node:child_process'
 import path from 'node:path'
 import test from 'node:test'
@@ -9,7 +12,7 @@ const repositoryRoot=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'
 // Actual reviewed Git objects and the actual origin/main ledger, not a
 // fabricated passing history. Deliberately corrupted readers below are
 // negative-only; the existing physical BSDC/Calendar regression is unchanged.
-import { editorialTrustedPredecessor, EDITORIAL_CANON_SOURCE_REVIEW } from './controlled-package-ci.mjs'
+import { editorialTrustedPredecessor, EDITORIAL_CANON_SOURCE_REVIEW, bsdcManifestContinuityTrustedCurrent, BSDC_MANIFEST_CONTINUITY, assertPrivateRecurringProvenance } from './controlled-package-ci.mjs'
 
 const acgCanonSource='be51c2d0cdfba0504197898db4c981197202e918'
 const acgCanonPrevious='a03956b6752227a7a14e44887feabd50a0ad1054'
@@ -85,4 +88,73 @@ test('ACG successful admission never bypasses the older Editorial source history
  assert(receipt,'an actual preserved receipt must be checked')
  const changedReceipt=(s,p)=>s===cfg.baseSha&&p===receipt?Buffer.concat([acgCanonHistory(s,p),Buffer.from('\n')]):acgCanonHistory(s,p)
  assert.throws(()=>editorialTrustedPredecessor(acgCanonRead,changedReceipt),/EDITORIAL_SOURCE_RECEIPT_REJECTED/)
+})
+
+// Post-publication authority is the real accepted origin/main. Positive reads
+// remain actual immutable Git bytes; corrupted readers below are negative only.
+const acgDigest=bytes=>createHash('sha256').update(bytes).digest('hex')
+// Reuse the unchanged, authenticated complete legacy input used by the
+// original BSDC suite. Current physical input is independently tested below.
+const acgLegacyInput=await createAcgLegacyRecurringFixture(repositoryRoot)
+test.after(()=>acgLegacyInput.close())
+const acgClosedInputRead=p=>fs.readFileSync(path.join(acgLegacyInput.root,p))
+// This is the exact manifest view produced earlier in the historical chain.
+// Its bytes come from the real approved immutable predecessor, never a fixture hash.
+const acgHistoricalRead=p=>p===acgCanonManifest?acgCanonHistory(acgCanonPrevious,p):acgClosedInputRead(p)
+assert.equal(acgDigest(acgHistoricalRead(acgCanonManifest)),'d8ddddd7b39b6b67ed7e4ca2b4407a47a4470497465f790a67be301ea4dcccd8')
+assert.equal(acgDigest(acgHistoricalRead(BSDC_MANIFEST_CONTINUITY.testPath)),BSDC_MANIFEST_CONTINUITY.testSha256)
+const acgAuthorityRef='refs/remotes/origin/main'
+
+test('ACG published exact authority authenticates its predecessor before historical BSDC traversal',()=>{
+ assert.equal(acgDigest(acgCanonHistory(acgAuthorityRef,acgCanonManifest)),acgCanonManifestHash)
+ const view=bsdcManifestContinuityTrustedCurrent(acgHistoricalRead,acgCanonHistory)
+ assert.deepEqual(view(acgCanonManifest),acgCanonHistory(BSDC_MANIFEST_CONTINUITY.baseSha,acgCanonManifest))
+})
+
+test('ACG historical traversal cannot borrow a missing current-authority admission',()=>{
+ const missing=changedAcgLedger(m=>m.successors=m.successors.filter(x=>x.manifestSha256!==acgCanonManifestHash))
+ assert.throws(()=>bsdcManifestContinuityTrustedCurrent(acgHistoricalRead,acgLedgerHistory(missing)),/MANIFEST_SUCCESSOR_NOT_APPROVED_ON_MAIN/)
+})
+
+test('ACG historical traversal authenticates the actual current-authority document',()=>{
+ const changed=(sha,p)=>sha===acgAuthorityRef&&p===acgCanonDocument?Buffer.concat([acgCanonHistory(sha,p),Buffer.from('\nALTERED_AUTHORITY_DOCUMENT')]):acgCanonHistory(sha,p)
+ assert.throws(()=>bsdcManifestContinuityTrustedCurrent(acgHistoricalRead,changed),/MANIFEST_SUCCESSOR_DOCUMENT_BYTES_REJECTED/)
+})
+
+test('ACG historical traversal rejects changed or arbitrary later authority manifest bytes',()=>{
+ for(const mutate of [
+  bytes=>Buffer.concat([bytes,Buffer.from('\n')]),
+  bytes=>{const m=JSON.parse(bytes);m.manifestVersion='3.54.0';return Buffer.from(JSON.stringify(m))}
+ ]){
+  const changed=(sha,p)=>sha===acgAuthorityRef&&p===acgCanonManifest?mutate(acgCanonHistory(sha,p)):acgCanonHistory(sha,p)
+  assert.throws(()=>bsdcManifestContinuityTrustedCurrent(acgHistoricalRead,changed),/MANIFEST_SUCCESSOR_AUTHORITY_BASE_REJECTED/)
+ }
+})
+
+test('ACG historical traversal cannot inherit a rebound current-authority source SHA',()=>{
+ const rebound=changedAcgLedger(m=>m.successors.find(x=>x.manifestSha256===acgCanonManifestHash).sourceSha='c9de2488cca60b7bf2c8cb841a7e2586174f40f1')
+ assert.throws(()=>bsdcManifestContinuityTrustedCurrent(acgHistoricalRead,acgLedgerHistory(rebound)),/MANIFEST_SUCCESSOR_HISTORICAL_AUTHORITY_REJECTED/)
+})
+
+test('ACG historical traversal authenticates the unchanged current-authority receipt',()=>{
+ const changed=(sha,p)=>sha===acgAuthorityRef&&p===BSDC_MANIFEST_CONTINUITY.recordPath?Buffer.concat([acgCanonHistory(sha,p),Buffer.from('\nALTERED_RECEIPT')]):acgCanonHistory(sha,p)
+ assert.throws(()=>bsdcManifestContinuityTrustedCurrent(acgHistoricalRead,changed),/MANIFEST_SUCCESSOR_HISTORICAL_AUTHORITY_REJECTED/)
+})
+
+test('ACG historical traversal rejects manipulated immutable successor or predecessor',()=>{
+ for(const target of [acgCanonSource,acgCanonPrevious]){
+  const changed=(sha,p)=>sha===target&&p===acgCanonManifest?Buffer.concat([acgCanonHistory(sha,p),Buffer.from('\nALTERED_HISTORY')]):acgCanonHistory(sha,p)
+  assert.throws(()=>bsdcManifestContinuityTrustedCurrent(acgHistoricalRead,changed),/MANIFEST_SUCCESSOR_IMMUTABLE_BYTES_REJECTED/)
+ }
+})
+
+test('ACG historical traversal preserves the original historical document checks',()=>{
+ const target=BSDC_MANIFEST_CONTINUITY.sourcePaths.find(p=>p!==acgCanonManifest)
+ const changed=p=>p===target?Buffer.concat([acgHistoricalRead(p),Buffer.from('\nALTERED_HISTORICAL_DOCUMENT')]):acgHistoricalRead(p)
+ assert.throws(()=>bsdcManifestContinuityTrustedCurrent(changed,acgCanonHistory),/MANIFEST_SUCCESSOR_DOCUMENT_BYTES_REJECTED|MANIFEST_SUCCESSOR_BSDC_HISTORY_REJECTED/)
+})
+
+test('ACG published authority authenticates the complete actual current physical source graph',()=>{
+ assert.equal(acgDigest(acgCanonHistory(acgAuthorityRef,acgCanonManifest)),acgCanonManifestHash)
+ assert(assertPrivateRecurringProvenance(repositoryRoot))
 })
