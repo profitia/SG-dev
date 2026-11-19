@@ -139,7 +139,7 @@ export async function supplierWorkspaceFixture(){
     try{await c.query('BEGIN');const query=async(sql,args)=>{
      if(closed)throw Error('Transaction closed');
      if(failOutcome&&sql.includes('append_audit')&&JSON.parse(args?.[0]??'{}').phase==='OUTCOME')throw Error('SYNTHETIC_OUTCOME_FAILURE');
-     const r=await c.query(sql,forgePayload&&sql.includes('supplier_pipelines_execute')?[JSON.stringify(forgePayload)]:args);
+     let r;try{r=await c.query(sql,forgePayload&&sql.includes('supplier_pipelines_execute')?[JSON.stringify(forgePayload)]:args)}catch(e){if(sql.includes('supplier_pipelines_execute'))console.info('SYNTHETIC_DOMAIN_SQL_FAILURE',JSON.stringify({code:e.code,message:e.message,where:e.where}));throw e}
      if(sql.includes('supplier_pipelines_execute')){domainSeen.push(true);if(afterDomain)await afterDomain({client:c,clerk:f})}
      return r;
     };const value=await Promise.race([run({query,transaction:c}),new Promise((_,reject)=>{timer=setTimeout(()=>{closed=true;reject(Error('Fixture transaction timeout'))},limits.timeoutMs)})]);await c.query('COMMIT');return value}
