@@ -152,38 +152,54 @@ const nativeFail=()=>{throw Object.assign(Error('Quality native job state unavai
  * The event input is compared with the actual immutable dispatch inputs before
  * this capability is minted. It still does not replace original authority,
  * independent phase evidence, a native budget permit or fresh release gates. */
-export async function admitQualityNativeJobState({inputs,manifest,externalId,invocation,environment=process.env,now=Date.now()}){
+
+/** Provider identity/event proof only. This helper grants no original mandate,
+ * paid permit, release authority, QA access or durable-store ownership. */
+export async function verifyQualityNativeDispatchInputs({inputs,externalId,invocation,environment=process.env,notBefore,expiresAt,now=Date.now()}){
  inspectDescriptors(inputs)
+ const {normalizeQualityControllerJobInputs}=await import('./job-context.mjs')
+ try{inputs=normalizeQualityControllerJobInputs(inputs)}catch{nativeFail()}
  const {assertQualityControllerJobInvocation}=await import('./github.mjs')
  const native=assertQualityControllerJobInvocation(invocation,{externalId,runId:environment.GITHUB_RUN_ID})
- const m=assertVerifiedRepairManifest(manifest),b=externalId.split(':')
- const names=['mode','action','nonce','control_source_sha','incident_id','manifest_sha256','base_sha','state',
-  ...(b[3]==='EXECUTE'?['permit_id','permit_expires_at']:[])]
- const valid=exact(inputs,names)&&Object.values(inputs).every(v=>typeof v==='string')
-  &&inputs.mode==='controller-job'&&inputs.action===b[3]&&inputs.nonce===b[2]&&inputs.control_source_sha===b[1]
-  &&inputs.incident_id===m.incidentId&&inputs.base_sha===m.baseSha&&inputs.manifest_sha256===documentDigest(m)
+ const b=externalId.split(':')
+ const valid=inputs.mode==='controller-job'&&inputs.action===b[3]&&inputs.nonce===b[2]&&inputs.control_source_sha===b[1]
   &&environment.GITHUB_REPOSITORY==='profitia/SG-dev'&&environment.GITHUB_REF==='refs/heads/main'
   &&environment.GITHUB_SHA===native.controlSourceSha&&environment.GITHUB_RUN_ATTEMPT==='1'
   &&environment.GITHUB_WORKFLOW_REF==='profitia/SG-dev/.github/workflows/assistant-quality-repair.yml@refs/heads/main'
   &&environment.GITHUB_EVENT_NAME==='workflow_dispatch'&&environment.GITHUB_ACTOR==='profitia'&&environment.GITHUB_TRIGGERING_ACTOR==='profitia'
   &&environment.RUNNER_ENVIRONMENT==='github-hosted'&&environment.RUNNER_OS==='Linux'
-  &&Number.isFinite(now)&&Date.parse(native.createdAt)<=now&&now-Date.parse(native.createdAt)<=1800000
-  &&Date.parse(m.mandate.issuedAt)<=Date.parse(native.createdAt)&&Date.parse(m.mandate.expiresAt)>now
+  &&Number.isFinite(now)&&Number.isFinite(notBefore)&&Number.isFinite(expiresAt)
+  &&notBefore<=Date.parse(native.createdAt)&&Date.parse(native.createdAt)<=now
+  &&now-Date.parse(native.createdAt)<=1800000&&expiresAt>now
  if(!valid)nativeFail()
  const fs=await import('node:fs'),path=await import('node:path')
- let event
  try{
   const file=environment.GITHUB_EVENT_PATH
   if(typeof file!=='string'||!path.isAbsolute(file)||file.length>1024)nativeFail()
   const stat=fs.lstatSync(file)
   if(!stat.isFile()||stat.isSymbolicLink()||stat.size<=0||stat.size>131072||(stat.mode&0o022)!==0
    ||![0,1001,process.getuid?.()].includes(stat.uid))nativeFail()
-  event=JSON.parse(fs.readFileSync(file,'utf8'))
-  if(!plain(event)||!plain(event.inputs)||documentDigest(event.inputs)!==documentDigest(inputs))nativeFail()
+  const event=JSON.parse(fs.readFileSync(file,'utf8'))
+  if(!plain(event)||!plain(event.inputs)||documentDigest(normalizeQualityControllerJobInputs(event.inputs))!==documentDigest(inputs))nativeFail()
  }catch{nativeFail()}
+ return freeze({inputs,native})
+}
+/** A finite metadata parser only. It cannot mint a manifest or native/provider
+ * capability and contains no lease, command, QA, fixture or connection. */
+export function readQualityControlRecordMetadata(value){return freeze(snapshotRecord(value))}
+
+export async function admitQualityNativeJobState({inputs,manifest,externalId,invocation,environment=process.env,now=Date.now()}){
+ const m=assertVerifiedRepairManifest(manifest)
+ const checked=await verifyQualityNativeDispatchInputs({inputs,externalId,invocation,environment,
+  notBefore:Date.parse(m.mandate.issuedAt),expiresAt:Date.parse(m.mandate.expiresAt),now})
+ inputs=checked.inputs;const native=checked.native,b=externalId.split(':')
+ const names=['mode','action','nonce','control_source_sha','incident_id','manifest_sha256','base_sha','state',
+  ...(b[3]==='EXECUTE'?['permit_id','permit_expires_at']:[])]
+ if(!exact(inputs,names)||inputs.incident_id!==m.incidentId||inputs.base_sha!==m.baseSha
+  ||inputs.manifest_sha256!==documentDigest(m))nativeFail()
  const decoded=readQualityJobState({encoded:inputs.state,manifest:m,externalId})
  const admitted=freeze({kind:'AQC_NATIVE_JOB_STATE_V1',record:decoded.record,metadataSha256:decoded.metadataSha256,
-  externalId,runId:native.runId,workflowId:native.workflowId,controlSourceSha:native.controlSourceSha,
+  externalId,runId:native.runId,workflowId:native.workflowId,createdAt:native.createdAt,controlSourceSha:native.controlSourceSha,
   manifestSha256:documentDigest(m),providerIdentityVerified:true,authorityIncluded:false})
  nativeStates.add(admitted)
  return admitted
