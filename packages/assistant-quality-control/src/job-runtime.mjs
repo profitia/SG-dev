@@ -4,9 +4,9 @@ import {gzipSync,gunzipSync} from 'node:zlib'
 import {fileURLToPath} from 'node:url'
 import {execFileSync} from 'node:child_process'
 import {createHash,createPublicKey,createPrivateKey} from 'node:crypto'
-import {publicKeyId} from './manifest.mjs'
+import {publicKeyId,documentDigest,signDocument,verifyExecutionMandate} from './manifest.mjs'
 import {normalizeQualityControllerJobInputs} from './job-context.mjs'
-import {createQualityGitHub,createQualityNativeLinuxQualificationAttestor} from './github.mjs'
+import {createQualityGitHub,createQualityNativeLinuxQualificationAttestor,readQualityGitHubCreatedAt} from './github.mjs'
 import {qualificationPolicyDigest} from './acceptance.mjs'
 import {assertExecutorHost,verifyLinuxQualification} from './executor.mjs'
 
@@ -118,6 +118,9 @@ function native(){
   event=json(fs.readFileSync(inputFile,'utf8'),131072)
  }catch{fail('NATIVE_JOB_EVENT_REQUIRED')}
  const config=readQualityNativeJobEnvironment(process.env,event.inputs)
+ return nativeCheckout(config)
+}
+function nativeCheckout(config){
  const root=fs.realpathSync(fileURLToPath(new URL('../../../',import.meta.url)))
  const git=args=>execFileSync('/usr/bin/git',['-c','core.fsmonitor=false','-c','core.hooksPath=/dev/null','-C',root,...args],
   {encoding:'utf8',stdio:['ignore','pipe','pipe'],timeout:15000,maxBuffer:65536,
@@ -233,10 +236,150 @@ export async function runQualityNativeRoleJob(...args){
  }else require(!process.env.AQC_VERIFIER_PACK_JSON&&!process.env.AQC_VERIFIER_PACK_ATTESTATION_JSON,'NATIVE_JOB_SECRET_SCOPE_REJECTED')
  return withNativeStop(signal=>runQualityNativeVerifierJob({...common,signal,...(cicArchive===undefined?{}:{cicArchive}),...holdout}))
 }
+
+// Public technical smoke cases, never a private holdout or reference verdict.
+// The signer can export only these three fixed cases; workflow inputs cannot
+// contain a prompt, source payload, expected output or replacement fixture.
+const freezeTechnical=value=>{
+ if(value&&typeof value==='object'){Object.values(value).forEach(freezeTechnical);Object.freeze(value)}
+ return value
+}
+export const QUALITY_TECHNICAL_SYNTHETIC_CASES=freezeTechnical([
+ {schemaVersion:'AQC_REGRESSION_V1',repairClass:'C1',caseFamily:'technical_calendar_next_week_warsaw',locale:'pl',
+  args:[{message:'Jakie publikacje beda w przyszlym tygodniu?',reference:null},null,Date.parse('2026-11-11T12:00:00.000Z'),'Europe/Warsaw'],
+  expected:{version:'2.1.0',source:'ECONOMIC_CALENDAR',targetType:null,targetId:null,
+   from:'2026-11-15T23:00:00.000Z',to:'2026-11-22T22:59:59.999Z',asKnownAt:null,after:null},
+  expectedAnswer:true,refusal:{pointer:'',values:[null]}},
+ {schemaVersion:'AQC_REGRESSION_V1',repairClass:'C2',caseFamily:'technical_source_zero_is_a_fact',locale:'en',
+  args:[{facts:[{id:'fact_controlled_zero',source:'CONTROLLED_REFERENCE',path:'source.originalValue',value:'0'}],
+   period:null,locale:'en',limitation:null,clarify:false,omitted:false}],
+  expected:'- CONTROLLED\\_REFERENCE / source.originalValue: 0',expectedAnswer:true,refusal:{pointer:'',values:['']}},
+ {schemaVersion:'AQC_REGRESSION_V1',repairClass:'C3',caseFamily:'technical_access_denied_no_generation',locale:'pl',
+  args:[{requiresContext:true,contextStatuses:['DENIED'],intent:'CLEAR',draftState:'NOT_GENERATED',
+   verifiedFactsAvailable:false,limitationAcknowledged:false,storedContextRetryAvailable:false,storedContextRetryAttempts:0}],
+  expected:{contractVersion:'1.0.0',action:'EXPLAIN_LIMITATION',reason:'ACCESS_DENIED',publishGeneratedDraft:false,
+   verifiedFactsOnly:false,requireLimitation:true,questionLimit:0},
+  expectedAnswer:false,refusal:{pointer:'/action',values:['EXPLAIN_LIMITATION','CLARIFY']}},
+])
+function technicalExportRequest(request,{ownerKeys,gateSetSha256,now}){
+ const value=json(request,32768)
+ documentDigest(value)
+ require(plain(value)&&Object.keys(value).sort().join(',')==='environment,fixtures,mandate,repository,schemaVersion'
+  &&value.schemaVersion==='AQC_CONTROLLED_JOB_CONTEXTS_V1'&&value.repository==='profitia/SG-dev'
+  &&value.environment==='development'&&Array.isArray(value.fixtures)&&value.fixtures.length===0,
+  'NATIVE_EXPORT_REQUEST_INVALID')
+ const mandate=verifyExecutionMandate(value.mandate,{ownerKeys,now,
+  expectedServiceId:'srv-dapa3tid0e5s73f8bc5g',expectedGateSetSha256:gateSetSha256})
+ require(Date.parse(mandate.expiresAt)-Date.parse(mandate.issuedAt)<=3600000
+  &&Date.parse(mandate.expiresAt)<=Date.parse('2026-11-27T23:59:59.000Z'),'NATIVE_EXPORT_MANDATE_HORIZON_INVALID')
+ return value
+}
+/** Pure role attestor with a fixed public three-case payload. No caller can
+ * provide labels, a fixture, signer trust or an execution callback via a job.
+ * Native entry below supplies installed disjoint trust only after real Linux
+ * qualification. This grants no incident, paid, publication or QA authority. */
+export function createQualityTechnicalContextExports(options){
+ require(plain(options)&&Object.getOwnPropertySymbols(options).length===0,'NATIVE_EXPORT_CONFIGURATION_INVALID')
+ const fields=Object.getOwnPropertyDescriptors(options),names=['request','ownerKeys','verifierKeys','privateKey','gateSetSha256','now']
+ require(Object.keys(fields).sort().join(',')===names.sort().join(',')
+  &&Object.values(fields).every(d=>d.enumerable&&Object.hasOwn(d,'value')),'NATIVE_EXPORT_CONFIGURATION_INVALID')
+ const {request,ownerKeys,verifierKeys,privateKey,gateSetSha256,now}=options
+ require(Number.isSafeInteger(now)&&now>=0&&hash(gateSetSha256),'NATIVE_EXPORT_CONFIGURATION_INVALID')
+ require(ownerKeys instanceof Map&&verifierKeys instanceof Map&&ownerKeys.size>0&&ownerKeys.size<=4
+  &&verifierKeys.size>0&&verifierKeys.size<=4,'NATIVE_EXPORT_TRUST_REQUIRED')
+ for(const map of [ownerKeys,verifierKeys])for(const [id,key]of map)
+  require(key?.type==='public'&&key.asymmetricKeyType==='ed25519'&&publicKeyId(key)===id,'NATIVE_EXPORT_TRUST_REQUIRED')
+ require([...ownerKeys.keys()].every(id=>!verifierKeys.has(id)),'NATIVE_EXPORT_SEPARATE_TRUST_REQUIRED')
+ require(privateKey?.type==='private'&&privateKey.asymmetricKeyType==='ed25519'
+  &&verifierKeys.has(publicKeyId(createPublicKey(privateKey))),'NATIVE_EXPORT_SIGNER_REQUIRED')
+ const value=technicalExportRequest(request,{ownerKeys:new Map(ownerKeys),gateSetSha256,now})
+ const mandateSha256=documentDigest(value.mandate.body)
+ const engineeringId=(kind,repairClass)=>{
+  const h=createHash('sha256').update('AQC-technical-export/1/'+mandateSha256+'/'+kind+'/'+repairClass).digest('hex')
+  return h.slice(0,8)+'-'+h.slice(8,12)+'-5'+h.slice(13,16)+'-8'+h.slice(17,20)+'-'+h.slice(20,32)
+ }
+ const exports=QUALITY_TECHNICAL_SYNTHETIC_CASES.map(regression=>{
+  const sha256=documentDigest(regression)
+  return signDocument('AQC_SYNTHETIC_EXPORT_V1',{
+   id:engineeringId('receipt',regression.repairClass),fixtureId:'qa_synthetic_'+sha256,sha256,
+   scope:'CONTROLLED_ACCEPTANCE',incidentId:engineeringId('incident',regression.repairClass),
+   repairClass:regression.repairClass,issuedAt:new Date(now).toISOString(),
+   expiresAt:value.mandate.body.expiresAt,rawQaPayloadIncluded:false},privateKey)
+ })
+ return freezeTechnical({schemaVersion:'AQC_TECHNICAL_SYNTHETIC_EXPORTS_V1',
+  repository:'profitia/SG-dev',environment:'development',mandateSha256,gateSetSha256,exports})
+}
+export function readQualityNativeContextExportEnvironment(env,inputs){
+ require(env&&typeof env==='object'&&plain(inputs),'NATIVE_EXPORT_ENVIRONMENT_INVALID')
+ const descriptors=Object.getOwnPropertyDescriptors(env),inputFields=Object.getOwnPropertyDescriptors(inputs)
+ require(Object.values(descriptors).every(d=>Object.hasOwn(d,'value'))
+  &&Object.getOwnPropertySymbols(inputs).length===0
+  &&Object.values(inputFields).every(d=>d.enumerable&&Object.hasOwn(d,'value')),'NATIVE_JOB_ACCESSORS_FORBIDDEN')
+ const allowed=['mode','nonce','control_source_sha','base_sha','action','incident_id','manifest_sha256','state','permit_id','permit_expires_at']
+ require(Object.keys(inputFields).every(k=>allowed.includes(k)&&typeof inputs[k]==='string'&&inputs[k].length<=256)
+  &&inputs.mode==='context-export'&&/^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(inputs.nonce??'')
+  &&sourceSha(inputs.control_source_sha)
+  &&Object.entries(inputs).every(([k,v])=>['mode','nonce','control_source_sha'].includes(k)||v===''),
+  'NATIVE_EXPORT_INPUTS_INVALID')
+ require(env.GITHUB_ACTIONS==='true'&&env.RUNNER_ENVIRONMENT==='github-hosted'&&env.RUNNER_OS==='Linux'
+  &&env.GITHUB_EVENT_NAME==='workflow_dispatch'&&env.GITHUB_REPOSITORY==='profitia/SG-dev'
+  &&env.GITHUB_REF==='refs/heads/main'&&env.GITHUB_ACTOR==='profitia'&&env.GITHUB_TRIGGERING_ACTOR==='profitia'
+  &&env.GITHUB_RUN_ATTEMPT==='1'&&/^[1-9][0-9]{0,19}$/.test(env.GITHUB_RUN_ID??'')
+  &&env.GITHUB_WORKFLOW_REF==='profitia/SG-dev/.github/workflows/assistant-quality-repair.yml@refs/heads/main'
+  &&env.GITHUB_SHA===inputs.control_source_sha,'NATIVE_JOB_NATIVE_INVOCATION_REQUIRED')
+ require(env.TARGET_ENVIRONMENT==='development'&&env.AQC_PAID_REPAIRS_ENABLED==='false'
+  &&env.AQC_PROMOTION_ENABLED==='false','NATIVE_JOB_FLAGS_INVALID')
+ for(const name of ['OPENAI_API_KEY','NPM_TOKEN','DATABASE_URL','RENDER_API_KEY',
+  'AQC_EXECUTOR_SUPERVISOR_PRIVATE_KEY','AQC_INDEPENDENT_PUBLISHER_PRIVATE_KEY','AQC_OWNER_PRIVATE_KEY',
+  'AQC_RUNTIME_OBSERVER_PRIVATE_KEY','AQC_LIMITS_BROKER_DATABASE_URL','AQC_LIMITS_BROKER_COMMAND_KEY',
+  'AQC_VERIFIER_PACK_JSON','AQC_VERIFIER_PACK_ATTESTATION_JSON','AQC_HOLDOUT_PACK_JSON','AQC_HOLDOUT_ATTESTATION_JSON'])
+  require(!env[name],'NATIVE_JOB_SECRET_SCOPE_REJECTED')
+ for(const name of Object.keys(env))if(/^AQC_(?:QA_|RENDER_)/.test(name))
+  require(!env[name],'NATIVE_JOB_SECRET_SCOPE_REJECTED')
+ require(typeof env.GITHUB_TOKEN==='string'&&env.GITHUB_TOKEN.length>0
+  &&hash(env.AQC_CONTROLLER_WORKFLOW_SHA256),'NATIVE_JOB_CONFIGURATION_INVALID')
+ return Object.freeze({inputs:Object.freeze({mode:inputs.mode,nonce:inputs.nonce,control_source_sha:inputs.control_source_sha}),
+  sourceSha:inputs.control_source_sha,role:'INDEPENDENT_VERIFIER',controllerWorkflowSha256:env.AQC_CONTROLLER_WORKFLOW_SHA256})
+}
+/** No caller-provided environment, result, clock, network or signing port. */
+export async function runQualityNativeContextExport(...args){
+ require(args.length===0,'NATIVE_JOB_INPUTS_FORBIDDEN')
+ const inputFile=process.env.GITHUB_EVENT_PATH
+ require(typeof inputFile==='string'&&path.isAbsolute(inputFile),'NATIVE_JOB_EVENT_REQUIRED')
+ const info=fs.lstatSync(inputFile)
+ require(info.isFile()&&!info.isSymbolicLink()&&info.size<=131072,'NATIVE_JOB_EVENT_REQUIRED')
+ const event=json(fs.readFileSync(inputFile,'utf8'),131072)
+ const config=readQualityNativeContextExportEnvironment(process.env,event.inputs)
+ const {gateSetSha256}=nativeCheckout(config),trust=installedTrust()
+ technicalExportRequest(process.env.AQC_REPAIR_CONTEXTS_JSON,{ownerKeys:trust.ownerKeys,gateSetSha256,now:Date.now()})
+ const privateKey=trustedPrivateKey('INDEPENDENT_VERIFIER',trust)
+ const github=createQualityGitHub({token:process.env.GITHUB_TOKEN,controllerWorkflowSha256:config.controllerWorkflowSha256})
+ const descriptor=await github.qualificationDescriptor()
+ const run=await github.qualification({runId:process.env.GITHUB_RUN_ID,sourceSha:config.sourceSha,nonce:config.inputs.nonce})
+ const created=Date.parse(readQualityGitHubCreatedAt(run.created_at)),observed=Date.now()
+ require(String(run.workflow_id)===descriptor.workflowId&&run.status==='in_progress'&&run.conclusion===null
+  &&created<=observed&&observed-created<=1800000,'NATIVE_JOB_NATIVE_INVOCATION_REQUIRED')
+ const reference=await github.latestLinuxQualificationReference({sourceSha:config.sourceSha})
+ const observation=await github.linuxQualificationObservations(reference)
+ const qualification=await createQualityNativeLinuxQualificationAttestor({privateKey}).attest({observation,gateSetSha256})
+ const qualified=verifyLinuxQualification(qualification,{keys:trust.verifierKeys,gateSetSha256})
+ require(qualified.sourceSha===config.sourceSha,'NATIVE_JOB_QUALIFICATION_SOURCE_MISMATCH')
+ const bundle=createQualityTechnicalContextExports({request:process.env.AQC_REPAIR_CONTEXTS_JSON,
+  ownerKeys:trust.ownerKeys,verifierKeys:trust.verifierKeys,privateKey,gateSetSha256,now:Date.now()})
+ return freezeTechnical({...bundle,sourceSha:config.sourceSha,runId:process.env.GITHUB_RUN_ID,
+  nonce:config.inputs.nonce,controllerWorkflowSha256:config.controllerWorkflowSha256,
+  qualificationSha256:documentDigest(qualification),rawQaPayloadIncluded:false})
+}
+
 if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url)){
  try{
   require(process.argv.length===3,'NATIVE_JOB_MODE_REQUIRED')
-  if(process.argv[2]==='validate-context'){
+  if(process.argv[2]==='context-export'){
+   const document=await runQualityNativeContextExport()
+   fs.writeFileSync('/tmp/aqc-synthetic-exports.json',JSON.stringify(document),{flag:'wx',mode:0o600})
+   console.log(JSON.stringify({status:'THREE_TECHNICAL_SYNTHETIC_EXPORTS',sourceSha:document.sourceSha,
+    exportCount:document.exports.length,paidRepairsEnabled:false,promotionEnabled:false}))
+  }else if(process.argv[2]==='validate-context'){
    console.log(JSON.stringify(await runQualityNativeJobContextPreflight()))
   }else if(process.argv[2]==='qualify-linux'){
    const document=await runQualityNativeJobQualification()
