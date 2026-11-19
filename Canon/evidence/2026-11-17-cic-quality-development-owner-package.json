@@ -1912,25 +1912,22 @@
     "status": "WORKER_LIVE_STANDBY_NOT_PROJECT_TECHNICAL_READY",
     "deploy": {
       "commit": {
-        "createdAt": "2026-11-18T23:12:59Z",
-        "id": "a1566879bd6f43c6d6654b0bed76448af48dad9e",
-        "message": "[skip render] Integrate bounded native CIC patch transport with operational gates disabled\n\nStage 1 Full Autopilot source integration: read-only fixed GitHub artifact GETs; no new dispatch, authority, workflow, secret, SQL or activation. Native job 135204578274 / run 44418386277 verified 231 CIC and 12 QA tests, no skips/failures, tested tree 7ff55fc22919c142f13a706bfc0f7a116bc1ee83 exactly equals candidate. Current a9b83db0 parallel main full run 44414248940 SUCCESS retained. Paid repairs/promotion/window remain disabled. Actual resulting-main and Linux qualification still required before worker rollout."
+        "id": "7050bd84c6f69bef7b29d232963bc164104fa87d"
       },
-      "createdAt": "2026-11-18T23:21:21.42248Z",
-      "finishedAt": "2026-11-18T23:22:03.369134Z",
-      "id": "dep-dbv35setlv9c73flrjv0",
-      "startedAt": "2026-11-18T23:21:21.420381Z",
+      "id": "dep-dbv5263m8hqs738vosvg",
+      "createdAt": "2026-11-19T01:30:00.031102Z",
+      "startedAt": "2026-11-19T01:30:00.028936Z",
+      "finishedAt": "2026-11-19T01:31:08.547348Z",
       "status": "live",
-      "trigger": "api",
-      "updatedAt": "2026-11-18T23:22:03.369321Z"
+      "trigger": "api"
     },
-    "instance": "pd7bb",
+    "instance": "w6kjr",
     "heartbeat": {
       "event": "aqc.technical.heartbeat",
       "schemaVersion": "AQC_TECHNICAL_READINESS_V1",
       "status": "MONITORING_READY",
-      "sourceSha": "a1566879bd6f43c6d6654b0bed76448af48dad9e",
-      "observedAt": "2026-11-18T23:22:05.545Z",
+      "sourceSha": "7050bd84c6f69bef7b29d232963bc164104fa87d",
+      "observedAt": "2026-11-19T01:31:11.888Z",
       "controlStore": "CONNECTED_DISABLED",
       "nativeLimits": "CONNECTED_DISABLED",
       "paidRepairsEnabled": false,
@@ -1940,7 +1937,7 @@
       "controllerGitHub": "CONNECTED_STANDBY",
       "qualificationWorkflow": "CONNECTED_MAIN_ONLY",
       "renderServiceId": "srv-dbu4ak0ae00c73eaabcg",
-      "providerTimestamp": "2026-11-18T23:22:06.290751965Z"
+      "providerTimestamp": "2026-11-19T01:31:12.667453211Z"
     },
     "rolePreflight": {
       "event": "aqc.technical.qa.role_preflight",
@@ -1955,9 +1952,9 @@
       "gitHeadMatchesSource": true,
       "hostQaCodecPresent": false,
       "nodeMajorSupported": true,
-      "sourceSha": "a1566879bd6f43c6d6654b0bed76448af48dad9e",
-      "observedAt": "2026-11-18T23:22:05.545Z",
-      "providerTimestamp": "2026-11-18T23:22:06.281810792Z"
+      "sourceSha": "7050bd84c6f69bef7b29d232963bc164104fa87d",
+      "observedAt": "2026-11-19T01:31:11.888Z",
+      "providerTimestamp": "2026-11-19T01:31:12.658246107Z"
     },
     "retention": {
       "event": "aqc.technical.metadata_retention",
@@ -1966,36 +1963,34 @@
       "purgePerformed": true,
       "scope": "CONTROL_METADATA_ONLY",
       "retentionDays": 90,
-      "observedAt": "2026-11-18T23:22:06.197Z",
-      "sourceSha": "a1566879bd6f43c6d6654b0bed76448af48dad9e",
-      "providerTimestamp": "2026-11-18T23:22:06.197762636Z"
+      "observedAt": "2026-11-19T01:31:12.573Z",
+      "sourceSha": "7050bd84c6f69bef7b29d232963bc164104fa87d",
+      "providerTimestamp": "2026-11-19T01:31:12.574346119Z"
     },
     "sentry": {
       "event": "aqc.monitoring.delivery",
       "provider": "sentry",
       "status": "ACCEPTED",
       "httpStatus": 200,
-      "sourceSha": "a1566879bd6f43c6d6654b0bed76448af48dad9e",
-      "providerTimestamp": "2026-11-18T23:22:06.350761696Z"
+      "sourceSha": "7050bd84c6f69bef7b29d232963bc164104fa87d",
+      "providerTimestamp": "2026-11-19T01:31:12.77727436Z"
     },
     "sourceChecks": {
-      "sourceRun": 44418386277,
-      "sourceJob": 135204578274,
-      "resultingMainRun": 44418782006,
-      "resultingMainJob": 135205942010,
-      "packagePass": 231,
+      "resultingMainRun": 44432831996,
+      "resultingMainJob": 135254229031,
+      "packagePass": 254,
       "qaPass": 12,
       "fail": 0,
       "skip": 0
     },
     "linux": {
-      "runId": 44418912396,
-      "jobId": 135206865056,
-      "artifactId": 14480711736,
-      "archiveSha256": "a9d05d271f69ba98139d058ea3021ae38d0a8740afc67ab886cae4a8fcb823a1",
+      "runId": 44432831996,
+      "jobId": 135254629065,
+      "artifactId": 14486939376,
+      "archiveSha256": "a62a176e2b40c59946981f627ec290dc7e06a9d47727f7ea0cc79e3885c5ed3e",
       "observations": {
         "schemaVersion": "AQC_LINUX_OBSERVATIONS_V1",
-        "gateSetSha256": "b410fd60b890cbaeb83210520eaff387f8669a1270e1cf4e766096c5c8d6c024",
+        "gateSetSha256": "8db640e299629d03c1dbdd4b76dc8b92e264fe4cba6acc410fa0b4e06b0f06bf",
         "codexVersion": "0.167.2",
         "codexArchiveSha256": "8246e846c550ea21197fcc4067bc270dca895e94ea42ed6a282e6f4e0125b15f",
         "codexBinarySha256": "a9672d0fa0dd8fcf8cad136fa0d056b914bc046f5ac3d78f4a5cf390655af56b",
@@ -2012,10 +2007,10 @@
         "noProviderRequests": true,
         "requestCount": 4,
         "settledCount": 4,
-        "runId": "44418912396",
-        "sourceSha": "a1566879bd6f43c6d6654b0bed76448af48dad9e",
-        "nonce": "55d497c2-4608-40e4-be42-88e2698551be",
-        "verifiedAt": "2026-11-18T23:16:30.976Z",
+        "runId": "44432831996",
+        "sourceSha": "7050bd84c6f69bef7b29d232963bc164104fa87d",
+        "nonce": "7465f6a2-590a-40cc-9ca4-c9d9648782a7",
+        "verifiedAt": "2026-11-19T00:57:01.775Z",
         "testKeysInstalled": false,
         "realCostAuthorityUsed": false,
         "independentVerifier": {
@@ -2042,11 +2037,11 @@
       "fullPrivateCic18Qualification": false
     },
     "lastKnownGood": {
-      "sourceSha": "b1cda8c4fde31557aac6e89851d6d9293ec768ea",
-      "deployId": "dep-dbv16ut6e07s73adjnt0"
+      "sourceSha": "a1566879bd6f43c6d6654b0bed76448af48dad9e",
+      "deployId": "dep-dbv35setlv9c73flrjv0"
     },
-    "preservedMain": "cef950e36229175af6284daadd1023ce131c566c",
-    "wholeAqcTreeAtReleaseAndCurrentMain": "a4dd7091ef66f582e37869299398a2bd729fc937",
+    "preservedMain": "7050bd84c6f69bef7b29d232963bc164104fa87d",
+    "wholeAqcTreeAtReleaseAndCurrentMain": "63f6a7ad421dafaa112fb4c43e4c18f6d76e321b",
     "host": {
       "sourceSha": "d5eb40a061dd24c5ea65f9f373682179458cb589",
       "deployId": "dep-dbul4gdckfvc73chhgk0"
@@ -2058,6 +2053,126 @@
     "pilotStarted": false,
     "stage2Started": false,
     "b29Approved": false,
-    "recordedAt": "2026-11-18 23:24:23 UTC"
+    "recordedAt": "2026-11-19T01:35:11Z",
+    "previousImmutableRecordRef": "https://github.com/profitia/SG-dev/blob/7050bd84c6f69bef7b29d232963bc164104fa87d/Canon/evidence/2026-11-17-cic-quality-development-owner-package.json",
+    "posthog": {
+      "projectId": 329829,
+      "event": "cic_quality_technical_heartbeat",
+      "sourceSha": "7050bd84c6f69bef7b29d232963bc164104fa87d",
+      "observedCount": 1,
+      "since": "2026-11-19T01:30:00Z",
+      "aggregateOnly": true,
+      "identityOrQaReadPerformed": false
+    },
+    "mainIntegration": {
+      "authorityRun": 44433645300,
+      "authorityJob": 135256979475,
+      "authorityArtifactId": 14488053491,
+      "authorityArchiveSha256": "090975f5a332cf81178458d9287a480fbd57d2b95808bcf59c2837c654e18c2f",
+      "scope": "AUTHORITY_MAIN_VALIDATION",
+      "candidateSha": "7050bd84c6f69bef7b29d232963bc164104fa87d",
+      "controlSha": "7050bd84c6f69bef7b29d232963bc164104fa87d",
+      "executionCheckoutSha": "7050bd84c6f69bef7b29d232963bc164104fa87d",
+      "sourceVerifiedBeforeAndAfter": true,
+      "credentialRemovedBeforeExecution": true,
+      "privatePackageArtifactsPublished": false,
+      "tests": [
+        {
+          "tests": 1381,
+          "pass": 1381,
+          "fail": 0,
+          "skip": 0
+        },
+        {
+          "tests": 6,
+          "pass": 6,
+          "fail": 0,
+          "skip": 0
+        },
+        {
+          "tests": 8,
+          "pass": 8,
+          "fail": 0,
+          "skip": 0
+        },
+        {
+          "tests": 21,
+          "pass": 21,
+          "fail": 0,
+          "skip": 0
+        },
+        {
+          "tests": 70,
+          "pass": 70,
+          "fail": 0,
+          "skip": 0
+        },
+        {
+          "tests": 16,
+          "pass": 16,
+          "fail": 0,
+          "skip": 0
+        },
+        {
+          "tests": 3,
+          "pass": 3,
+          "fail": 0,
+          "skip": 0
+        },
+        {
+          "tests": 46,
+          "pass": 46,
+          "fail": 0,
+          "skip": 0
+        },
+        {
+          "tests": 6,
+          "pass": 6,
+          "fail": 0,
+          "skip": 0
+        },
+        {
+          "tests": 8,
+          "pass": 8,
+          "fail": 0,
+          "skip": 0
+        },
+        {
+          "tests": 2,
+          "pass": 2,
+          "fail": 0,
+          "skip": 0
+        }
+      ],
+      "typecheck": "PASS",
+      "build": "PASS",
+      "fullIntegrationRun": 44432722722,
+      "fullIntegrationAttempt": 2,
+      "publicGuardJob": 135266839299,
+      "result": "SUCCESS"
+    },
+    "pendingHistoryReader": {
+      "pr": 1221,
+      "head": "c0e4641c8368c933b71e5b6f51858fceb5e59411",
+      "run": 44435437902,
+      "job": 135262999152,
+      "packagePass": 260,
+      "qaPass": 12,
+      "fail": 0,
+      "skip": 0,
+      "merged": false,
+      "deployed": false,
+      "workflowOrTrustActivated": false
+    },
+    "baselineBundlePreparation": {
+      "localCheckpoint": "39b02c4fb4cd73a4a2b1722dae79ce40cf76ba6b",
+      "packagePass": 264,
+      "fail": 0,
+      "skip": 0,
+      "actualIsolatedBaselineHandlerReady": false,
+      "published": false,
+      "merged": false,
+      "deployed": false
+    }
   }
 }
