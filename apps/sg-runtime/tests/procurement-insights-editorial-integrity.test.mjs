@@ -1,3 +1,4 @@
+import {calendarPiPredecessor} from './calendar-pi-source-compatibility.mjs'
 import {knowledgeSourcePredecessor} from '../../architecture-lab/knowledge-source.mjs';
 import {procurementInsightsEditorialPackagePredecessor} from './procurement-insights-editorial-package-integrity.mjs'
 import test from 'node:test'
@@ -7,10 +8,12 @@ import {execFileSync} from 'node:child_process'
 import {createHash} from 'node:crypto'
 import {procurementInsightsEditorialPredecessor,EDITORIAL_RECEIPT,EDITORIAL_BASE,EDITORIAL_PATHS} from './procurement-insights-editorial-integrity.mjs'
 import {assistantM2Predecessor,oilReportSerializationPredecessor} from './assistant-m2-integrity.mjs'
-const root=new URL('../../../',import.meta.url),physicalCurrent=p=>fs.readFileSync(new URL(p,root))
+const root=new URL('../../../',import.meta.url),physical=p=>fs.readFileSync(new URL(p,root))
 const blobs=new Map(),historical=(sha,p)=>{const key=sha+':'+p;if(!blobs.has(key))blobs.set(key,execFileSync('git',['show',key],{cwd:root,stdio:['ignore','pipe','pipe']}));return blobs.get(key)}
-const knowledge=knowledgeSourcePredecessor(physicalCurrent,historical),beforePackage=knowledge?.previousBytes??physicalCurrent
-const current=procurementInsightsEditorialPackagePredecessor(beforePackage,historical)?.previousBytes??beforePackage
+// Both complete physical graphs are authenticated before either historical fixture.
+const calendar=calendarPiPredecessor(physical,historical),beforeKnowledge=calendar?.complete?calendar.previousBytes:physical
+const knowledge=calendar?.complete?null:knowledgeSourcePredecessor(beforeKnowledge,historical),beforePackage=knowledge?.previousBytes??beforeKnowledge
+const current=calendar?.complete?calendar.previousBytes:procurementInsightsEditorialPackagePredecessor(beforePackage,historical)?.previousBytes??beforePackage
 const hash=b=>createHash('sha256').update(b).digest('hex')
 const manifest=()=>JSON.parse(current(EDITORIAL_RECEIPT))
 const withManifest=(a,read=current)=>p=>p===EDITORIAL_RECEIPT?Buffer.from(JSON.stringify(a)):read(p)

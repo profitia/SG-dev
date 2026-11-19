@@ -1,9 +1,11 @@
+import {calendarCurrentMainPredecessor} from '../calendar-current-main-source.mjs'
 import test from 'node:test';import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';import {execFileSync} from 'node:child_process';
 import {knowledgeSourcePredecessor,KNOWLEDGE_SOURCE_RECORD,KNOWLEDGE_SOURCE_RECORD_SHA256} from '../knowledge-source.mjs';
 import {operationSourceDigest,OPERATION_CONTRACT,KNOWLEDGE_ROOT_CONTRACT} from '../../../packages/platform-contracts/src/operation-context.mjs';
-const root=new URL('../../../',import.meta.url),read=p=>readFileSync(new URL(p,root));
+const root=new URL('../../../',import.meta.url),physicalRead=p=>readFileSync(new URL(p,root));
 const cache=new Map(),history=(sha,p)=>{const key=sha+':'+p;if(!cache.has(key))cache.set(key,execFileSync('git',['show',key],{cwd:root,stdio:['ignore','pipe','pipe']}));return cache.get(key);};
+const read=calendarCurrentMainPredecessor(physicalRead,history)?.acceptedMainBytes??physicalRead;
 test('closed knowledge SDK successor binds real current digest and immutable predecessor without runtime activation',async()=>{
  const view=knowledgeSourcePredecessor(read,history);assert(view);assert.equal(view.manifest.sdkDigests.operationSourceDigest,await operationSourceDigest());
  assert.equal(OPERATION_CONTRACT.implementation,'1.0.0-candidate.16');assert.equal(KNOWLEDGE_ROOT_CONTRACT.implementation,'1.0.0-candidate.23');

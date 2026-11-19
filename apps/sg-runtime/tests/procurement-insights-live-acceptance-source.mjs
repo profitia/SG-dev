@@ -1,3 +1,5 @@
+import {calendarPiPredecessor} from './calendar-pi-source-compatibility.mjs';
+import './calendar-pi-source-compatibility.test.mjs';
 import {knowledgeSourcePredecessor} from '../../architecture-lab/knowledge-source.mjs';
 import {assistantNotificationsPredecessor,NOTIFICATIONS_RECEIPT} from './assistant-notifications-integrity.mjs';
 // Test/build-only continuation. No runtime, authorisation or deployment grant.
@@ -22,6 +24,11 @@ export const PI_LIVE_ACCEPTANCE_PATHS=Object.freeze([
 const additions=new Set(PI_LIVE_ACCEPTANCE_PATHS.filter(p=>p.includes('host-pool-concurrency')||p.includes('notification-navigation')||p.includes('live-acceptance-source')));
 const hash=b=>createHash('sha256').update(b).digest('hex');
 export function procurementInsightsLiveAcceptancePredecessor(current,historical){
+ const calendar=calendarPiPredecessor(current,historical);
+ if(calendar){
+  const accepted=procurementInsightsLiveAcceptancePredecessor(calendar.previousBytes,historical);assert(accepted,'accepted PI live source retained');
+  return {...accepted,completeFunctional:calendar.complete,manifest:{...accepted.manifest,sourceDigests:{...accepted.manifest.sourceDigests,...calendar.sourceDigests}}};
+ }
  const knowledge=knowledgeSourcePredecessor(current,historical);
  if(knowledge)return procurementInsightsLiveAcceptancePredecessor(knowledge.previousBytes,historical);
  const notifications=assistantNotificationsPredecessor(current,historical);

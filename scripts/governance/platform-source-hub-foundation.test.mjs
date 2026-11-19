@@ -1,3 +1,4 @@
+import {createCalendarAcceptedMainTestFixture} from '../../apps/architecture-lab/calendar-current-main-source.mjs'
 import {recurringSourcePredecessor} from '../../apps/architecture-lab/private-recurring-source.mjs'
 import {calendarStoragePredecessor} from '../../apps/architecture-lab/ecr-stage03-sdk-compatibility.mjs'
 import assert from 'node:assert/strict'
@@ -18,7 +19,9 @@ import { resolveEnvironmentProfile } from './environment-profile.mjs'
 import {assistantSdkPredecessor} from '../../apps/architecture-lab/assistant-m1-sdk-compatibility.mjs'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
-const legacyRecurringFixture = await createAcgLegacyRecurringFixture(root)
+const calendarAcceptedInput=createCalendarAcceptedMainTestFixture(root)
+test.after(()=>calendarAcceptedInput.close())
+const legacyRecurringFixture=await createAcgLegacyRecurringFixture(calendarAcceptedInput.root)
 test.after(() => legacyRecurringFixture.close())
 const approved = 'b40564130fe7b6ced4d7df233dd6749653846114'
 const read = p => fs.readFileSync(path.join(root, p), 'utf8')
@@ -388,7 +391,8 @@ import {bsdcManifestContinuityTrustedCurrent, BSDC_MANIFEST_CONTINUITY as bsdcTr
 const bsdcHistoryCache=new Map()
 const bsdcHistory=(sha,p)=>{const k=sha+':'+p;if(!bsdcHistoryCache.has(k))bsdcHistoryCache.set(k,execFileSync('git',['cat-file','blob',k],{cwd:root,stdio:['ignore','pipe','pipe']}));return Buffer.from(bsdcHistoryCache.get(k))}
 // BSDC assertions retain the complete authenticated pre-ACG input, including this test.
-const bsdcPhysical=p=>fs.readFileSync(path.join(legacyRecurringFixture.root,p))
+const bsdcApprovedFixtureSha='133251a4215b2fc1560fd3dea3c1ac095acf0ef7'
+const bsdcPhysical=p=>[bsdcTrustedPolicy.helperPath,bsdcTrustedPolicy.testPath].includes(p)?bsdcHistory(bsdcApprovedFixtureSha,p):fs.readFileSync(path.join(legacyRecurringFixture.root,p))
 const bsdcApproved=p=>bsdcTrustedPolicy.sourcePaths.includes(p)?bsdcHistory(BSDC_V11_DOCUMENTATION_REVIEW.approvedSourceSha,p):bsdcPhysical(p)
 const bsdcFiles=()=>Object.entries(BSDC_V11_DOCUMENTATION_REVIEW.entries).map(([filename,e])=>({filename,sha:e.sha,status:e.status}))
 const bsdcContext={repository:'profitia/SG-dev',ref:'refs/heads/main',workflowRef:'profitia/SG-dev/.github/workflows/platform-contracts-ci.yml@refs/heads/main',event:'workflow_dispatch',actor:'profitia',triggeringActor:'profitia',controlSha:bsdcTrustedPolicy.baseSha}
@@ -407,6 +411,15 @@ test('BSDC continuity bootstrap preserves the old manifest and every original Ca
  }
  assert(calendarPredecessor(bsdcPhysical).record)
  assert(assertPrivateRecurringProvenance(legacyRecurringFixture.root))
+ // Also retain the separately authenticated original Calendar69 protocol assertion.
+ const calendarLegacy=fs.mkdtempSync(path.join(os.tmpdir(),'calendar-legacy-protocol-')),calendarCheckout=path.join(calendarLegacy,'source')
+ try{
+  execFileSync('git',['clone','--quiet','--shared','--no-checkout',root,calendarCheckout],{stdio:['ignore','pipe','pipe']})
+  execFileSync('git',['checkout','--quiet','--detach','69d02834e863a51506aa4f50fbeb20f7fda3575b'],{cwd:calendarCheckout,stdio:['ignore','pipe','pipe']})
+  execFileSync('git',['update-ref','refs/remotes/origin/main',git(['rev-parse','--verify','refs/remotes/origin/main^{commit}'])],{cwd:calendarCheckout,stdio:['ignore','pipe','pipe']})
+  assert(assertPrivateRecurringProvenance(calendarCheckout))
+ }finally{fs.rmSync(calendarLegacy,{recursive:true,force:true})}
+
 })
 
 test('BSDC activation authenticates exactly the approved four documents before old source traversal',()=>{
