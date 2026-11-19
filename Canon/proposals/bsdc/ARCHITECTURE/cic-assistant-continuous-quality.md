@@ -17,7 +17,7 @@
 | Tryb | EXECUTION — Full Autopilot wyłącznie etap 1; DEC-06 |
 | Etap | F — zakończony; A–F domknięte projektowo, 28/28 USTALONE |
 | Utworzono / zaktualizowano | 2026-11-12 / 2026-11-19, Europe/Warsaw |
-| Rewizja | 39 — worker7050 LIVE po pełnym main CI/Linux18; B29/host/TECHNICAL_READY w toku; spec5/roadmapa8 bez zmian |
+| Rewizja | 40 — worker79cb LIVE; source285+12/Linux19; B29/host/TECHNICAL_READY w toku; spec5/roadmapa8 bez zmian |
 | Rewizja bazowa ostatniej aktualizacji | PDR rewizja 9 / blob f0c81253cd20d4f2b75f8eabf2adb47d538c20fc; main 69a2cc1769d34cb6ecf1e21a552babb0006a5713. Referencja wykonawcza właściciela nadal rewizja 8. |
 | Zadanie inicjalizacji | ARCH-BSDC-CIC-QUALITY-INIT-20261112 |
 | Zadanie bieżącej aktualizacji | ARCH-CIC-QUALITY-TECHNICAL-READY-20261117 / SG2-CIC-QUALITY-TECHNICAL-READY-20261117; zadania producentów i odbiorcy w §8.7 |
@@ -1124,27 +1124,18 @@ Rzeczywisty worker pozostaje na ostatnim wdrożonym b1cda8c4fde31557aac6e89851d6
 
 ### Worker po recovery i transporcie poprawek — 19 listopada 2026, rewizja 37
 
-[Pełny zapis rewizji37](https://github.com/profitia/SG-dev/blob/ef6b09ef6f738b9b42181a190f3a09f96d44c538/Canon/proposals/bsdc/ARCHITECTURE/cic-assistant-continuous-quality.md) zachowuje wszystkie źródłowe SHA, artefakty, kontrtesty i wyjaśnienie pierwszej odmowy scalenia. Uzupełniają go dowody w tym samym JSON pakietu właściciela. Nie zmieniono spec5, roadmapy8, testów ani uprawnień.
+[Pełny historyczny zapis rewizji37](https://github.com/profitia/SG-dev/blob/ef6b09ef6f738b9b42181a190f3a09f96d44c538/Canon/proposals/bsdc/ARCHITECTURE/cic-assistant-continuous-quality.md) zachowuje PR1213/1216,223/231AQC+12QA,natywne run/job/artefakty,Linux17,wdrożenie a156 i jego LKG,monitoring i wszystkie otwarte bramki. Oryginalne dowody pozostają też w historycznym JSON pakietu właściciela; nie są przepisywane. B29/host/pełne E1 pozostawały nieuruchomione. Spec5,roadmapa8 i uprawnienia bez zmian.
 
-| Przyjęcie | Oryginalne dowody |
-| --- | --- |
-| PR1213 → 69cbf705ce93236e1afff86067f3eb36c697bfce | Wynikowy44412785633/job135185078217:223AQC+12QA PASS,0fail/skip; Linux17:44413442955/job135187763065,artefakt14477483495. |
-| PR1216 → a1566879bd6f43c6d6654b0bed76448af48dad9e | Source44418386277/job135204578274 i main44418782006/job135205942010:231AQC+12QA PASS,0fail/skip; Linux17:44418912396/job135206865056,artefakt14480711736. |
+### Worker i adaptery faz — 19 listopada 2026, rewizja 40
 
-Transport patch/result wiąże właściwe native workflow/source/run/nonce i podpis nadzorcy z oboma digestami patch/tree; independentVerified=false. Linux potwierdził izolację, tool-loop, anulowanie i sześć przypadków verifiera. Zero wywołań providera i instalacji trust; pełny CIC1.8/E1 niezaliczony. Zachowano maincef950e i wszystkie505 cudzych wejść CI27, bez zmiany hashy.
+[Pełny zapis rewizji39](https://github.com/profitia/SG-dev/blob/68590acd6ebb2be33e82ddeea020a3a2f91b9246/Canon/proposals/bsdc/ARCHITECTURE/cic-assistant-continuous-quality.md) zachowuje wcześniejsze pełne main CI/host proof. Spec5/§4–5,roadmapa8 i limit262144B bez zmian.
 
-Worker a1566879bd6f43c6d6654b0bed76448af48dad9e / dep-dbv35setlv9c73flrjv0 LIVE od2026-11-18T23:22:03.369134Z,instancja pd7bb. LKG:b1cda8c4fde31557aac6e89851d6d9293ec768ea / dep-dbv16ut6e07s73adjnt0. Konfiguracja,sekrety,plan bez zmian;autoDeployOFF. Heartbeat23:22:05.545Z:MONITORING_READY,controlStore/nativeLimits CONNECTED_DISABLED,GitHub CONNECTED_STANDBY,qualification CONNECTED_MAIN_ONLY,paid/promotionfalse,pilotnull,E1 0/3. Role QA zweryfikowane bez odczytu QA/mutacji praw;gitHeadMatchesSource=true,hostQaCodecPresent=false. PURGE_CONFIRMED23:22:06.197Z:90-dniowe metadane;Sentry ACCEPTED/200.
+Worker79cb7cf827e82395f43e630ee9b72436b19b421a / dep-dbv6n0ek1f9s73bkgqeg LIVE od2026-11-19T03:23:50.800493Z,instancja swtzw. LKG:7050/dep-dbv5263m8hqs738vosvg. Konfiguracja,sekrety,role,plan i autoDeployOFF bez zmian.
 
-Host ostatnio potwierdzony:d5eb40a061dd24c5ea65f9f373682179458cb589 / dep-dbul4gdckfvc73chhgk0.1099/B28/kontrolowane PL/EN niewykonane. Nadal otwarte:CI27/host proof/rollout/sześć CAS,CIC1.8,handlery/stany,niezależna referencja,bramki/recovery i dwie instalacje publishera. B29 niezatwierdzone;1104/B28 bez ponawiania.
+PR1221→ee876bfb:277AQC+12QA native PASS; historia z rzeczywistych artefaktów,10 wejść,state recovery i baseline bez modelu. PR1225→79cb7cf8:285AQC+12QA native PASS,0fail/skip; zamknięty verifier i podpis wyniku rzeczywiście zatrzymanego wykonawcy. Pełny dowód VERIFY wymaga osobnego dokumentu z tego samego native run; sam phase PASS nie wystarcza. Readiness/standby nie wywołuje tych adapterów.
 
-### Worker Development po pełnym CI — 19 listopada 2026, rewizja 39
+Linux19:44450608836/job135313573158/artefakt14494499156;odcisk19 plików zgodny z Git. Izolacja,tool-loop,anulowanie,6 typed verifier+9 baseline PASS. Brak wywołań providera,instalacji trust i pełnej kwalifikacji prywatnego CIC1.8. Wszystkie hashe i oryginalne run/job w tym samym JSON pakietu właściciela.
 
-[Pełny zapis rewizji38](https://github.com/profitia/SG-dev/blob/7050bd84c6f69bef7b29d232963bc164104fa87d/Canon/proposals/bsdc/ARCHITECTURE/cic-assistant-continuous-quality.md) zachowuje diagnozę limitu Karty. Spec5/§4–5,roadmapa8 i limit262144B bez zmian.
+Heartbeat03:23:53.803Z:MONITORING_READY,controlStore/nativeLimits CONNECTED_DISABLED,GitHub CONNECTED_STANDBY. Role QA zweryfikowane bez odczytu QA/mutacji praw;gitHeadMatchesSource=true,hostQaCodecPresent=false. Retencja90dni metadanych PURGE_CONFIRMED;Sentry200;PostHog329829:1 heartbeat79cb,agregat bez tożsamości/QA.
 
-Worker7050bd84c6f69bef7b29d232963bc164104fa87d / dep-dbv5263m8hqs738vosvg LIVE od2026-11-19T01:31:08.547348Z. LKG:a156/dep-dbv35setlv9c73flrjv0. Konfiguracja,sekrety,plan i autoDeployOFF bez zmian.
-
-Dowody SHA:254AQC+12QA PASS,0fail/skip;Linux18:44432831996/job135254629065/artefakt14486939376;main proof44433645300 SUCCESS,testy SG2(1381 oraz pozostałe zestawy),typecheck/build PASS;integration44432722722/attempt2 SUCCESS. Pełne hashe i wyniki w tym samym JSON pakietu właściciela.
-
-Heartbeat:MONITORING_READY,controlStore/nativeLimits CONNECTED_DISABLED,GitHub CONNECTED_STANDBY. Role QA zweryfikowane bez odczytu QA/mutacji praw;gitHeadMatchesSource=true,hostQaCodecPresent=false. Retencja90dni metadanych PURGE_CONFIRMED;Sentry200;PostHog329829 potwierdził heartbeat7050,bez tożsamości/QA.
-
-PR1221:260+12native PASS,poza main i wdrożeniem. Bazowy bundle:264 lokalne testy PASS;bez pełnego handlera. CI27 nadal przygotowaniem;B29 niezatwierdzone. Host1099/CIC1.8/B28/PL-EN,handlery,referencja,bramki i recovery do ukończenia. TECHNICAL_READY NIEOSIĄGNIĘTE;E1 0/3,paid/promotionOFF,14dni/50USD NIEURUCHOMIONE,etap2 NIE_ROZPOCZĘTY.
+CI27/B29 pozostają bez aktywacji. Hostd5eb/1099/CIC1.8/B28/PL-EN,pełne handlery/workflow,publisher,niezależna referencja,bramki i recovery do ukończenia. TECHNICAL_READY NIEOSIĄGNIĘTE;E1 0/3,paid/promotionOFF,14dni/50USD NIEURUCHOMIONE,etap2 NIE_ROZPOCZĘTY.
