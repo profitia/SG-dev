@@ -2070,8 +2070,8 @@
     "promotion": false,
     "pilotStarted": false,
     "stage2Started": false,
-    "b29Approved": false,
-    "previousImmutableRecordRef": "https://github.com/profitia/SG-dev/blob/68590acd6ebb2be33e82ddeea020a3a2f91b9246/Canon/evidence/2026-11-17-cic-quality-development-owner-package.json",
+    "b29Approved": true,
+    "previousImmutableRecordRef": "https://github.com/profitia/SG-dev/blob/f2546ad538be2de56346e1352ced82a7820ea1ad/Canon/evidence/2026-11-17-cic-quality-development-owner-package.json",
     "posthog": {
       "projectId": 329829,
       "event": "cic_quality_technical_heartbeat",
@@ -2124,30 +2124,27 @@
       "result": "SUCCESS",
       "doesNotClaimNewHostCic18Rollout": true
     },
-    "recordedAt": "2026-11-19T03:25:16Z",
+    "recordedAt": "2026-11-19T06:01:30.000Z",
     "currentAcceptedSource": {
-      "pr": 1227,
-      "sourceSha": "eea2077923f0fbed07d592e33e1f827f3a4431c7",
-      "tree": "8b009e31619fb86402aadab960aafb6c7b306045",
-      "aqcTree": "889e193fff25ad58417e6d269ec029a6f4d9c419",
-      "head": "341cad16cbadba1c96e58c311e645cd6805451d0",
-      "sourceRun": 44453202325,
-      "sourceJob": 135321900159,
-      "packagePass": 289,
+      "pr": 1231,
+      "sourceSha": "68d2a0ed6aae482bd4aea9cbb5604ed7607057ec",
+      "head": "3825cde6021eb4bbe13a941ce5136bc6831d237a",
+      "sourceRun": 44466288686,
+      "sourceJob": 135364748015,
+      "packagePass": 299,
       "qaPass": 12,
       "fail": 0,
       "skip": 0,
       "deployed": false,
-      "linuxRun": 44453522563,
-      "linuxJob": 135323347620,
-      "artifactId": 14496229063,
-      "archiveSha256": "f336accd8d85c126fb6b3ad3201f3569adfcc3b16883fd753465b0b60062380d",
-      "gateSetSha256": "8b4dbdf02f96596132937d3e6b9370da59ca5201a1302826e2c2b7fd0c8c94a2",
-      "policyFiles": 19,
-      "typedVerifier": 6,
-      "baseline": 9,
-      "fullPrivateCic18Qualification": false,
+      "linuxSourceSha": "fdb1209e3a3f561bb5d34c2b9724263684fa1c27",
+      "linuxRun": 44465443182,
+      "linuxJob": 135362282118,
+      "artifactId": 14501144795,
+      "archiveSha256": "f8ed2a2c5ba726653bfd11f773309951630215c2bc86d19fb37628131b5a84e1",
+      "gateSetSha256": "0723075c45abbd3a9ed8722e809dde0b1897f52a06e4606a1dcf12c96afb766d",
+      "policyFiles": 20,
       "nativeOperationalInvocationVerified": false,
+      "fullPrivateCic18Qualification": false,
       "productionTrustInstalled": false
     },
     "wholeAqcTreeAtRelease": "b64c53fd1d2318a296b4bf36e1c405794bc9a1c5",
@@ -2300,6 +2297,231 @@
       "workerAutoDeploy": false,
       "hostAutoDeploy": false,
       "configurationChanged": false
+    },
+    "publisherInstallations": {
+      "status": "INSTALLED_DISABLED_NATIVE_LOGIN_VERIFIED",
+      "acceptedSourceSha": "68d2a0ed6aae482bd4aea9cbb5604ed7607057ec",
+      "migrationSha256": [
+        {
+          "profile": "canonical",
+          "sha256": "5c4b926f473ce2f6efb2135c12a220d3d26839184123fdcce1461e0baa005632"
+        },
+        {
+          "profile": "product",
+          "sha256": "9b309f09f1c99e2c6213816a048903791fa8a86ea2cbecf11c8d01854c66114d"
+        }
+      ],
+      "catalogs": [
+        {
+          "checked_at": "2026-11-19T05:43:47.813Z",
+          "database_name": "platform_private",
+          "can_set_owner": false,
+          "membership": [
+            {
+              "oid": 24577,
+              "set": false,
+              "admin": true,
+              "grantor": "cloud_admin",
+              "inherit": false
+            },
+            {
+              "oid": 139949,
+              "set": false,
+              "admin": false,
+              "grantor": "neondb_owner",
+              "inherit": false
+            }
+          ],
+          "role_metadata": {
+            "inherit": false,
+            "can_login": false,
+            "superuser": false,
+            "bypass_rls": false,
+            "create_role": false,
+            "replication": false,
+            "valid_until": "2026-11-27T23:59:59+00:00",
+            "create_database": false,
+            "connection_limit": 2
+          },
+          "publisher_memberships": 0,
+          "schema_owner": "profitia_access_owner",
+          "table_count": 2,
+          "direct_table_access": false,
+          "functions": [
+            {
+              "name": "quality_deployment_cas",
+              "owner": "profitia_access_owner",
+              "configuration": [
+                "search_path=pg_catalog"
+              ],
+              "public_execute": false,
+              "security_definer": true,
+              "publisher_execute": true
+            },
+            {
+              "name": "quality_deployment_cas_status",
+              "owner": "profitia_access_owner",
+              "configuration": [
+                "search_path=pg_catalog"
+              ],
+              "public_execute": false,
+              "security_definer": true,
+              "publisher_execute": true
+            }
+          ]
+        },
+        {
+          "checked_at": "2026-11-19T05:43:53.830Z",
+          "database_name": "neondb",
+          "can_set_owner": false,
+          "membership": [
+            {
+              "oid": 1032383,
+              "set": false,
+              "admin": true,
+              "grantor": "cloud_admin",
+              "inherit": false
+            },
+            {
+              "oid": 1033965,
+              "set": false,
+              "admin": false,
+              "grantor": "neondb_owner",
+              "inherit": false
+            }
+          ],
+          "role_metadata": {
+            "inherit": false,
+            "can_login": false,
+            "superuser": false,
+            "bypass_rls": false,
+            "create_role": false,
+            "replication": false,
+            "valid_until": "2026-11-27T23:59:59+00:00",
+            "create_database": false,
+            "connection_limit": 2
+          },
+          "publisher_memberships": 0,
+          "schema_owner": "profitia_ingestion_owner",
+          "table_count": 2,
+          "direct_table_access": false,
+          "functions": [
+            {
+              "name": "quality_deployment_cas",
+              "owner": "profitia_ingestion_owner",
+              "configuration": [
+                "search_path=pg_catalog"
+              ],
+              "public_execute": false,
+              "security_definer": true,
+              "publisher_execute": true
+            },
+            {
+              "name": "quality_deployment_cas_status",
+              "owner": "profitia_ingestion_owner",
+              "configuration": [
+                "search_path=pg_catalog"
+              ],
+              "public_execute": false,
+              "security_definer": true,
+              "publisher_execute": true
+            }
+          ]
+        }
+      ],
+      "rolesNowLogin": true,
+      "connectionLimit": 2,
+      "credentialsInstalledOnlyTo": "aqc-publisher-development",
+      "canonicalConnectOnlyAdded": true,
+      "otherDatabaseAclPreserved": true,
+      "nativeTlsVerifiedProfiles": 2,
+      "publishingEnabled": false,
+      "recoveryEnabled": true,
+      "sourceBindingsSha": "d5eb40a061dd24c5ea65f9f373682179458cb589",
+      "operationsPerformed": 0,
+      "rawQaReadPerformed": false,
+      "existingOwnerMembershipsExactlyRestored": true,
+      "firstPreparedProtocolRefusalFullyRolledBack": true
+    },
+    "githubRoleEnvironments": {
+      "status": "CREATED_MAIN_ONLY_VERIFIED",
+      "names": [
+        "aqc-executor-development",
+        "aqc-verifier-development",
+        "aqc-publisher-development",
+        "aqc-ci-gate-development"
+      ],
+      "publisherConnectionSecretsInstalled": 2,
+      "mainRulesetChanged": false,
+      "requiredIndependentGateActive": false,
+      "roleSigningKeysInstalled": true,
+      "roleSigningKeys": [
+        {
+          "role": "OWNER_OFFLINE",
+          "keyId": "2fcd9912076daee1a87a36e8e39af2d88f110d7713b57ee4d0e20c27912511ce",
+          "recipient": null,
+          "secretName": null,
+          "installed": false
+        },
+        {
+          "role": "EXECUTOR_SUPERVISOR",
+          "keyId": "98d32499264e31383268521780f96c7a9906751f13cc80900331d67659b76501",
+          "recipient": "aqc-executor-development",
+          "secretName": "AQC_EXECUTOR_SUPERVISOR_PRIVATE_KEY",
+          "installed": true
+        },
+        {
+          "role": "INDEPENDENT_VERIFIER",
+          "keyId": "abdf3d827bcfb257ddc4a380395f1af5c7454b8f7bd58898648217e1d253fbcb",
+          "recipient": "aqc-verifier-development",
+          "secretName": "AQC_INDEPENDENT_VERIFIER_PRIVATE_KEY",
+          "installed": true
+        },
+        {
+          "role": "INDEPENDENT_PUBLISHER",
+          "keyId": "d340e3332f2b6d40789de0220d1428259d9262e6b028cb1f14ab5e3adbf13ade",
+          "recipient": "aqc-publisher-development",
+          "secretName": "AQC_INDEPENDENT_PUBLISHER_PRIVATE_KEY",
+          "installed": true
+        },
+        {
+          "role": "RUNTIME_OBSERVER_PENDING",
+          "keyId": "3257f16c866aad070fdd19ab0b7691af8211f1652ff0542c652d6655aafdf758",
+          "recipient": "srv-dbu4ak0ae00c73eaabcg",
+          "secretName": "AQC_RUNTIME_OBSERVER_PRIVATE_KEY",
+          "installed": false
+        }
+      ],
+      "publicTrustInstalled": false,
+      "ownerMandateSigned": false
+    },
+    "renderPublisherAccess": {
+      "sent": true,
+      "scope": "B29-5 exact request",
+      "workspaceId": "tea-d7lps8rbc2fs73cn80dg",
+      "noNewKey": true,
+      "response": "The team will be in touch with you here.",
+      "screenshot": "/Users/tomaszuscinski/Documents/ChatGPT/SG PORR In Progress/CIC-Technical-2026-11-19/render-support-scoped-publisher.jpg"
+    },
+    "referenceReview": {
+      "reviewer": "independent_reference_review",
+      "status": "NEEDS_REVISION",
+      "cases": 240,
+      "unknownLabels": 27,
+      "criticalUnknown": 4,
+      "signedAcceptedAttestation": false,
+      "trustInstalled": false,
+      "calibrationAccepted": false
+    },
+    "sharedCiCoordination": {
+      "channel": "authorised ECR technical coordination",
+      "firstRootSdkWitnessBeforeSharedCi27": true,
+      "heldPaths": [
+        "scripts/governance/controlled-package-ci.mjs",
+        "scripts/governance/controlled-package-ci-path-coverage.test.mjs"
+      ],
+      "allOtherApprovedWorkContinues": true,
+      "noHostDeploymentPerformed": true
     }
   },
   "consolidatedOwnerDecisionB29Revision2": {
@@ -2840,5 +3062,22 @@
       "bytes": 190166,
       "sha256": "eff7546644013e0247dab09810adbd12b0419ac1791b1eebc59e6bda1c2c2e6b"
     }
+  },
+  "b29Revision2OwnerApproval": {
+    "decision": "APPROVED_ALL_B29_REVISION_2",
+    "userQuestionId": "call_d262d9195d994e338aad33c11ba62ece",
+    "immutablePackageSha": "bde8486f2beaa6e74d2dd5d5174fba273ddfc2c6",
+    "ownerReply": "Zatwierdzam cały B29 rewizja 2",
+    "decisions": [
+      "B29-1",
+      "B29-2",
+      "B29-3",
+      "B29-4",
+      "B29-5",
+      "B29-6"
+    ],
+    "paidRepairsEnabled": false,
+    "promotionEnabled": false,
+    "pilotStarted": false
   }
 }
