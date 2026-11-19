@@ -9,7 +9,7 @@ import {documentDigest,publicKeyId,signDocument,verifyBoundManifest,SOURCE_PATHS
 import {ownerMandateBody,repairManifestBody} from './cli.mjs'
 import {createPublicProjection} from './provenance.mjs'
 import {createCostBroker} from './openai-broker.mjs'
-import {serializeRegression,prepareQualityVerificationBundle,createQualityIsolatedCaseRunner} from './verify.mjs'
+import {serializeRegression,prepareQualityVerificationBundle,prepareQualityBaselineBundle,createQualityIsolatedCaseRunner} from './verify.mjs'
 import {CODE_PRICING} from './budget.mjs'
 
 const require=(v,c)=>{if(!v)throw Object.assign(Error('Keyless Linux qualification failed'),{code:c})}
@@ -20,7 +20,9 @@ const run=(file,args)=>{
  require(!r.error&&r.status===0,'QUALIFICATION_PREREQUISITE_FAILED');return r.stdout.trim()
 }
 const policyFiles=['src/executor.mjs','src/acceptance.mjs','src/manifest.mjs','src/provenance.mjs','src/source-policy.mjs',
- 'src/budget.mjs','src/openai-broker.mjs','src/verify.mjs','src/controller.mjs','package.json','package-lock.json']
+ 'src/budget.mjs','src/openai-broker.mjs','src/verify.mjs','src/controller.mjs',
+ 'src/recovery.mjs','src/job-context.mjs','src/job-state.mjs','src/verifier-job.mjs','src/cli.mjs','src/github.mjs','src/release.mjs','src/publisher.mjs',
+ 'package.json','package-lock.json']
 export function qualificationPolicyDigest(packageRoot){
  return documentDigest(policyFiles.map(p=>({path:p,sha256:hash(fs.readFileSync(path.join(packageRoot,p)))})))
 }
@@ -268,6 +270,22 @@ export async function qualifyIndependentVerifier({gateSetSha256,binarySha256,cod
    const expected=repairClass==='C1'?(version==='base'?2:3):repairClass==='C2'?4:6
    require(result.status==='COMPLETE'&&result.output===expected,'VERIFIER_TYPED_RESULT_FAILED');typedResults++
   }
+
+  const baselineBundle=await prepareQualityBaselineBundle({manifest,repositoryRoot:repo,regression})
+  require(baselineBundle.sourceSha256.base===baselineBundle.sourceSha256.candidate
+   &&baselineBundle.files['base/calendar.ts']===before&&baselineBundle.files['candidate/calendar.ts']===before
+   &&baselineBundle.files['base/quality.ts']===baselineBundle.files['candidate/quality.ts'],'BASELINE_SOURCE_NOT_UNCHANGED')
+  const baselineRunner=await createQualityIsolatedCaseRunner({bundle:baselineBundle,qualification,qualificationKeys:keys,
+   observedGateSetSha256:gateSetSha256,diagnostics})
+  let baselineTypedResults=0
+  for(let repeat=0;repeat<3;repeat++)for(const repairClass of ['C1','C2','C3']){
+   const observed=await baselineRunner.runCase({version:'base',repairClass,sourceSha256:baselineBundle.sourceSha256.base,args:[2],repeat})
+   require(observed.status==='COMPLETE'&&observed.output===(repairClass==='C1'?2:repairClass==='C2'?4:6),
+    'BASELINE_TYPED_RESULT_FAILED');baselineTypedResults++
+  }
+  const baseline={status:'PASS',typedResults:baselineTypedResults,sourceMode:'UNCHANGED_GIT_BASELINE',
+   classes:['C1','C2','C3'],nativeOperationalInvocationVerified:false,fullPrivateCic18Qualification:false,
+   noProviderRequests:true,rawQaPayloadIncluded:false,testKeysInstalled:false}
   const endless=await makeBundle('export function calendarReference(x:number){while(true){}}\n')
   let timeoutScope,cancelScope,cancelled=false
   const common={bundle:endless,version:'candidate',repairClass:'C1',args:[1],qualification,qualificationKeys:keys,observedGateSetSha256:gateSetSha256,diagnostics}
@@ -278,6 +296,6 @@ export async function qualifyIndependentVerifier({gateSetSha256,binarySha256,cod
   catch(e){if(e.code==='VERIFIER_CANCELLED'&&!e.cleanup)cancelled=true;else throw e}
   require(cancelled&&cancelScope&&!fs.existsSync(cancelScope.cgroup)&&!fs.existsSync(cancelScope.root),'VERIFIER_CANCELLATION_RECOVERY_FAILED')
   return {status:'PASS',classes:['C1','C2','C3'],typedResults,fileIsolation:'PASS',networkIsolation:'PASS',privilegeIsolation:'PASS',timeout:'PASS',cancellation:'PASS',
-   cgroupEmpty:true,nodeSha256:hash(fs.readFileSync(process.execPath)),noProviderRequests:true,rawQaPayloadIncluded:false,testKeysInstalled:false}
+   cgroupEmpty:true,nodeSha256:hash(fs.readFileSync(process.execPath)),noProviderRequests:true,rawQaPayloadIncluded:false,testKeysInstalled:false,baseline}
  }finally{fs.rmSync(repo,{recursive:true,force:true})}
 }
