@@ -513,6 +513,7 @@ export function editorialTrustedPredecessor(current,historical){
   if(error?.code==='ENOENT'||error?.status===128&&["' does not exist in ","' exists on disk, but not in "].some(s=>message.includes("'"+cfg.recordPath+s)))continue
   throw error
  }
+ if(cfg===EDITORIAL_CANON_SOURCE_REVIEW)current=editorialAcgManifestTrustedCurrent(current,historical)
  for(const[p,e]of Object.entries(cfg.entries)){
   const b=current(p),blob=createHash('sha1').update('blob '+b.length+'\0').update(b).digest('hex')
   if(notificationDigest(b)!==e.sha256||blob!==e.blob)fail('EDITORIAL_SOURCE_BYTES_REJECTED')
@@ -7526,6 +7527,21 @@ function trustedManifestSuccessorAdmission(current,historical,cfg,receipt,actual
   calendarKeys(receipt.sourceDigests)!==JSON.stringify([...cfg.sourcePaths].sort())||
   cfg.sourcePaths.some(p=>calendarHash(p===cfg.manifestPath?accepted:current(p))!==receipt.sourceDigests[p]))
  fail('MANIFEST_SUCCESSOR_BSDC_HISTORY_REJECTED')
+ return {grant,previousManifest:Buffer.from(before)}
+}
+
+// Owner-approved compatibility for the exact PR1196 ACG/CIC 3.53.0 record.
+// Authenticate current authority, reviewed document and the complete immutable
+// predecessor chain before exposing only its manifest to Editorial's old pins.
+// No other or future manifest inherits this projection.
+function editorialAcgManifestTrustedCurrent(current,historical){
+ const cfg=BSDC_MANIFEST_CONTINUITY,actual=calendarHash(current(cfg.manifestPath))
+ if(actual!=='a9c3746dcad97acca504354c3a0a10d02409be65f28f435cb034d1ca5b8fd96d')return current
+ const receipt=current(cfg.recordPath)
+ if(calendarHash(receipt)!==cfg.recordSha256)fail('EDITORIAL_MANIFEST_SUCCESSOR_EVIDENCE_REJECTED')
+ const admitted=trustedManifestSuccessorAdmission(current,historical,cfg,JSON.parse(receipt),actual)
+ if(calendarHash(JSON.stringify(admitted.grant))!=='1a410d9f2ae03d8e333773de606b445d8cc5431a2c6548c4a13a647d3c0b4f70')fail('EDITORIAL_MANIFEST_SUCCESSOR_SCOPE_REJECTED')
+ return p=>p===cfg.manifestPath?Buffer.from(admitted.previousManifest):current(p)
 }
 
 export function bsdcManifestContinuityTrustedCurrent(current,historical){
