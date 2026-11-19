@@ -402,3 +402,55 @@ for(const profile of ['canonical','product']){
   }finally{await x.f.close()}
  })
 }
+
+for(const profile of ['canonical','product']){
+ test('native prepared publisher '+profile+' preserves the exact migration and membership under real extended protocol and rollback',async()=>{
+  const {prepareQualityPublisherCasInstallation:legacy,prepareQualityPublisherPreparedInstallation:prepare}=await import('../src/owner-bootstrap.mjs')
+  const x=await bindingFixture(profile,true),schema='profitia_quality_release'
+  const role=profile==='canonical'?'aqc_development_canonical_publisher':'aqc_development_product_publisher'
+  const config={profile,expectedMembership:x.config().expectedMembership,decisionSha:'a'.repeat(40),expiresAt:new Date(Date.now()+10*60000).toISOString()}
+  const send=async(plan,failAfterDdl=false,transaction=true)=>{
+   const client=await x.actor.connect()
+   try{
+    if(transaction)await client.query('BEGIN')
+    for(const text of plan.statements){
+     await client.query({text,queryMode:'extended'})
+     if(failAfterDdl&&text.startsWith('DO $aqc_publisher_transport_'))await client.query('SELECT 1/0')
+    }
+    if(transaction)await client.query('COMMIT')
+   }catch(e){if(transaction)await client.query('ROLLBACK');throw e}finally{client.release()}
+  }
+  try{
+   await x.admin.query('ALTER ROLE neondb_owner CREATEROLE')
+   await x.admin.query('GRANT CREATE ON DATABASE '+(profile==='canonical'?'platform_private':'neondb')+' TO neondb_owner')
+   const before=await x.state()
+   const absent=async()=>{
+    assert.equal((await x.admin.query('SELECT to_regnamespace($1) AS name',[schema])).rows[0].name,null)
+    assert.equal((await x.admin.query('SELECT 1 FROM pg_roles WHERE rolname=$1',[role])).rowCount,0)
+    assert.deepEqual(await x.state(),before)
+   }
+   await assert.rejects(send(legacy(config)),e=>e.code==='42601')
+   await absent()
+   const plan=prepare(config),name=profile==='canonical'?'004-publisher-canonical.sql':'005-publisher-product.sql'
+   const body=fs.readFileSync(new URL('../migrations/'+name,import.meta.url),'utf8')
+   const wrapped=plan.statements.filter(s=>s.startsWith('DO $aqc_publisher_transport_'))
+   assert.equal(wrapped.length,1);assert(wrapped[0].includes("'"+body.replaceAll("'","''")+"'"))
+   const original=plan.statements.map(s=>s===wrapped[0]?body:s)
+   assert.equal(hash(JSON.stringify(original)),plan.sourceStatementsSha256)
+   assert.equal(hash(JSON.stringify(plan.statements)),plan.statementsSha256)
+   assert.equal(plan.sqlTransport,'ONE_PREPARED_STATEMENT_PER_ITEM')
+   assert(!JSON.stringify(plan).includes('GRANT'));assert(!JSON.stringify(plan).includes('CREATE'))
+   assert.equal(plan.requiresSeparateOwnerAuthorization,true);assert.equal(plan.restoresExactMembershipBeforeCommit,true)
+   await assert.rejects(send(plan,true),e=>e.code==='22012');await absent()
+   await assert.rejects(send(prepare(config),false,false),e=>e.message==='OWNER_BOOTSTRAP_BINDING_REJECTED');await absent()
+   await send(prepare(config))
+   assert.deepEqual(await x.state(),before)
+   const metadata=(await x.admin.query('SELECT rolcanlogin,rolsuper,rolinherit,rolcreaterole,rolcreatedb,rolbypassrls,rolreplication,rolconnlimit FROM pg_roles WHERE rolname=$1',[role])).rows[0]
+   assert.deepEqual(metadata,{rolcanlogin:false,rolsuper:false,rolinherit:false,rolcreaterole:false,rolcreatedb:false,rolbypassrls:false,rolreplication:false,rolconnlimit:2})
+   assert.equal((await x.admin.query('SELECT enabled FROM '+schema+'.quality_deployment_cas_policy')).rows[0].enabled,false)
+   assert.equal((await x.admin.query('SELECT count(*)::integer AS n FROM '+schema+'.quality_deployment_cas_operations')).rows[0].n,0)
+   assert.equal((await x.admin.query('SELECT count(*)::integer AS n FROM pg_auth_members m JOIN pg_roles r ON r.oid=m.member WHERE r.rolname=$1',[role])).rows[0].n,0)
+   assert.throws(()=>prepare({...config,sql:'SELECT 1'}),{code:'OWNER_BOOTSTRAP_PREPARATION_INVALID'})
+  }finally{await x.f.close()}
+ })
+}
