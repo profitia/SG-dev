@@ -446,3 +446,71 @@ export function assertQualityBaselineResult(value,{manifest,jobState,externalId}
  require(Date.now()<c.expiresAt&&Date.now()<Date.parse(m.mandate.expiresAt),'BASELINE_AUTHORITY_EXPIRED')
  return value
 }
+
+/** The verifier phase signer accepts only results minted by the closed native
+ * isolation paths above. It never signs an arbitrary controller result or a
+ * caller-supplied PASS. Provider identity, intent and original authority are
+ * checked again immediately before each signature. */
+export function createQualityControllerVerificationAttestor(options){
+ exact(options,['privateKey'])
+ const privateKey=options.privateKey
+ require(privateKey?.type==='private'&&privateKey.asymmetricKeyType==='ed25519','VERIFICATION_SIGNER_REQUIRED')
+ async function envelope({manifest,jobState,externalId,result}){
+  const {assertQualityNativeJobState}=await import('./job-state.mjs')
+  const {readQualityControllerJobResult}=await import('./github.mjs')
+  const {createPublicKey}=await import('node:crypto')
+  const {publicKeyId}=await import('./manifest.mjs')
+  const m=assertVerifiedRepairManifest(manifest),state=assertQualityNativeJobState(jobState,{manifest:m,externalId})
+  const at=Date.now(),created=Date.parse(state.createdAt),end=Math.min(at+86400000,Date.parse(m.mandate.expiresAt))
+  require(Number.isFinite(created)&&created<=at&&at-created<=1800000&&Date.parse(m.mandate.issuedAt)<=created
+   &&end>at&&['QUALIFY','REPRODUCE','VERIFY'].includes(state.record.pending.action),'VERIFICATION_JOB_BINDING_INVALID')
+  const body={schemaVersion:'AQC_CONTROLLER_JOB_RESULT_V1',repository:'profitia/SG-dev',environment:'development',
+   role:'INDEPENDENT_VERIFIER',action:state.record.pending.action,incidentId:m.incidentId,baseSha:m.baseSha,
+   manifestSha256:documentDigest(m),gateSetSha256:m.gateSetSha256,controlSourceSha:state.controlSourceSha,
+   nonce:state.record.pending.nonce,runId:state.runId,runAttempt:1,workflowId:state.workflowId,rawQaPayloadIncluded:false,
+   issuedAt:new Date(at).toISOString(),expiresAt:new Date(end).toISOString(),result}
+  const receipt=signDocument('AQC_CONTROLLER_JOB_RESULT_V1',body,privateKey),key=createPublicKey(privateKey)
+  // Preserve the exact existing semantic contract, including all VERIFY gates.
+  readQualityControllerJobResult(receipt,{manifest:m,record:state.record,externalId,runId:state.runId,
+   workflowId:state.workflowId,keysByRole:new Map([['INDEPENDENT_VERIFIER',new Map([[publicKeyId(key),key]])]]),
+   notBefore:created,now:at})
+  return receipt
+ }
+ return Object.freeze({
+  async attestBaseline(input){
+   exact(input,['value','manifest','jobState','externalId'])
+   const {value,manifest,jobState,externalId}=input
+   const baseline=assertQualityBaselineResult(value,{manifest,jobState,externalId})
+   const action=jobState.record.pending.action
+   require(['QUALIFY','REPRODUCE'].includes(action),'VERIFICATION_JOB_BINDING_INVALID')
+   // A timeout or unstable result never becomes an assertion of a green base.
+   require(baseline.result!=='INSUFFICIENT_EVIDENCE','BASELINE_EVIDENCE_INSUFFICIENT')
+   const result=action==='QUALIFY'
+    ?baseline.result==='REPRODUCED'
+     ?{result:'DETERMINISTIC_FAILURE',method:'DETERMINISTIC',causeFingerprint:baseline.causeFingerprint,repairClass:baseline.repairClass}
+     :{result:'INSUFFICIENT_EVIDENCE'}
+    :baseline.result==='REPRODUCED'
+     ?{result:'RED',baseSha:baseline.baseSha,proofSha256:baseline.proofSha256}
+     :{result:'NOT_REPRODUCED'}
+   return envelope({manifest,jobState,externalId,result})
+  },
+  async attestVerification(input){
+   exact(input,['value','manifest','jobState','externalId'])
+   const {value,manifest,jobState,externalId}=input,m=assertVerifiedRepairManifest(manifest),cap=isolatedVerificationResults.get(value)
+   require(cap&&cap.manifest===m,'REAL_ISOLATED_VERIFICATION_REQUIRED')
+   const {assertQualityNativeJobState}=await import('./job-state.mjs')
+   const state=assertQualityNativeJobState(jobState,{manifest:m,externalId})
+   require(state.record.pending.action==='VERIFY'&&cap.nonce===state.record.pending.nonce
+    &&cap.runId===state.runId&&cap.controlSourceSha===state.controlSourceSha
+    &&value.artifactSha256===state.record.patch?.artifactSha256,'VERIFICATION_JOB_BINDING_INVALID')
+   const verificationReceipt=createQualityVerificationAttestor({privateKey}).attest(value)
+   const fields=['result','baseSha','artifactSha256','baseTest','candidateTest','holdoutCases','criticalRegressions',
+    'accessViolations','unverifiableCases','criticalCasesPass','criticalRepeats','stable','correctnessDeltaPp',
+    'unjustifiedRefusalDeltaPp','scopeBeforeDefects','scopeAfterDefects','classCounts','proofSha256']
+   const result=value.result==='FAIL'?{result:'FAIL',baseSha:value.baseSha,artifactSha256:value.artifactSha256}
+    :Object.fromEntries(fields.map(key=>[key,value[key]]))
+   const phaseReceipt=await envelope({manifest:m,jobState,externalId,result})
+   return Object.freeze({phaseReceipt,verificationReceipt})
+  },
+ })
+}
