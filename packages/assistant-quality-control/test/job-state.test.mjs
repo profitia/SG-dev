@@ -301,3 +301,372 @@ test('reference metadata rejects unknown actions rebound pending identity and ex
  assert.throws(()=>retainQualityJobReference({before:f.record,after:{...f.record,pending:null},action:'EXECUTE',reference:ref}))
  assert.equal(calls,0)
 })
+
+async function historicalZip(document){
+ const {deflateRawSync}=await import('node:zlib')
+ const bytes=Buffer.from(JSON.stringify(document)),compressed=deflateRawSync(bytes),name=Buffer.from('result.json')
+ let crc=0xffffffff;for(const b of bytes){crc^=b;for(let i=0;i<8;i++)crc=crc&1?0xedb88320^(crc>>>1):crc>>>1}crc=(crc^0xffffffff)>>>0
+ const local=Buffer.alloc(30);local.writeUInt32LE(0x04034b50);local.writeUInt16LE(20,4);local.writeUInt16LE(8,8)
+ local.writeUInt32LE(crc,14);local.writeUInt32LE(compressed.length,18);local.writeUInt32LE(bytes.length,22);local.writeUInt16LE(name.length,26)
+ const central=Buffer.alloc(46);central.writeUInt32LE(0x02014b50);central.writeUInt16LE(20,4);central.writeUInt16LE(20,6)
+ central.writeUInt16LE(8,10);central.writeUInt32LE(crc,16);central.writeUInt32LE(compressed.length,20)
+ central.writeUInt32LE(bytes.length,24);central.writeUInt16LE(name.length,28)
+ const offset=local.length+name.length+compressed.length,end=Buffer.alloc(22);end.writeUInt32LE(0x06054b50)
+ end.writeUInt16LE(1,8);end.writeUInt16LE(1,10);end.writeUInt32LE(central.length+name.length,12);end.writeUInt32LE(offset,16)
+ return Buffer.concat([local,name,compressed,central,name,end])
+}
+async function historicalFixture(action='QUALIFY',options={}){
+ const {createHash}=await import('node:crypto')
+ const {createQualityGitHub}=await import('../src/github.mjs')
+ const {admitQualityNativeJobState}=await import('../src/job-state.mjs')
+ const base=fixture('PROPOSE');base.record.attemptsUsed=1
+ const nonce=randomUUID(),priorExternalId='aqc-job:'+control+':'+nonce+':'+action
+ const keys=new Map(),pairs=new Map()
+ for(const role of ['EXECUTOR_SUPERVISOR','INDEPENDENT_VERIFIER','INDEPENDENT_PUBLISHER']){
+  const pair=generateKeyPairSync('ed25519');pairs.set(role,pair);keys.set(role,new Map([[publicKeyId(pair.publicKey),pair.publicKey]]))
+ }
+ const results={
+  QUALIFY:{result:'DETERMINISTIC_FAILURE',method:'DETERMINISTIC',causeFingerprint:digest,repairClass:'C1'},
+  REPRODUCE:{result:'RED',baseSha:sha,proofSha256:digest},
+  EXECUTE:{result:'PATCH',baseSha:sha,patch:{artifactSha256:digest,treeSha256:digest}},
+  VERIFY:{result:'PASS',baseSha:sha,artifactSha256:digest,baseTest:'FAIL',candidateTest:'PASS',holdoutCases:240,
+   criticalRegressions:0,accessViolations:0,unverifiableCases:0,criticalCasesPass:true,criticalRepeats:3,stable:true,
+   correctnessDeltaPp:0,unjustifiedRefusalDeltaPp:0,scopeBeforeDefects:10,scopeAfterDefects:0,
+   classCounts:{C1:80,C2:80,C3:80},proofSha256:digest}
+ }
+ const role=action==='EXECUTE'?'EXECUTOR_SUPERVISOR':'INDEPENDENT_VERIFIER'
+ const body={schemaVersion:'AQC_CONTROLLER_JOB_RESULT_V1',repository:'profitia/SG-dev',environment:'development',role,action,
+  incidentId:base.manifest.incidentId,baseSha:sha,manifestSha256:documentDigest(base.manifest),gateSetSha256:digest,
+  controlSourceSha:control,nonce,runId:'700',runAttempt:1,workflowId:'991',rawQaPayloadIncluded:false,
+  issuedAt:stamp(now-600),expiresAt:stamp(now+60000),result:results[action]}
+ options.bodyChange?.(body)
+ const document=signDocument('AQC_CONTROLLER_JOB_RESULT_V1',body,pairs.get(options.signer??role).privateKey)
+ const archive=await historicalZip(document),hash=v=>createHash('sha256').update(v).digest('hex')
+ const reference={externalId:priorExternalId,runId:'700',workflowId:'991',artifactSha256:hash(archive),
+  documentSha256:documentDigest(document),createdAt:stamp(now-750)}
+ options.referenceChange?.(reference)
+ base.record.reproduction.nativeJobs={[{QUALIFY:'qualify',REPRODUCE:'reproduce',EXECUTE:'execute',VERIFY:'verify'}[action]]:reference}
+ options.recordChange?.(base.record)
+ const f=await nativeFixture({display_title:'AQC JOB PROPOSE '+base.record.pending.nonce},base)
+ const invocation=await f.client.controllerJobInvocation({externalId:f.externalId,runId:'701'})
+ const jobState=await admitQualityNativeJobState({...f,invocation,now})
+ const state={clock:now,missing:false,run:{id:700,workflow_id:991,head_sha:control,head_branch:'main',
+  path:'.github/workflows/assistant-quality-repair.yml',event:'workflow_dispatch',run_attempt:1,
+  repository:{full_name:'profitia/SG-dev'},actor:{login:'profitia'},triggering_actor:{login:'profitia'},
+  display_title:'AQC JOB '+action+' '+nonce,status:'completed',conclusion:'success',created_at:stamp(now-750)}}
+ const calls=[],workflow=Buffer.from('synthetic fixed workflow source\n')
+ const client=createQualityGitHub({token:'synthetic-history-reader',now:()=>state.clock,
+  controllerWorkflowSha256:hash(workflow),fetchImpl:async(url,input)=>{
+   calls.push({url,method:input.method})
+   if(url.endsWith('/actions/workflows/assistant-quality-repair.yml'))return Response.json({id:991,path:state.run.path,state:'active'})
+   if(url.includes('/contents/'))return Response.json({type:'file',path:state.run.path,encoding:'base64',size:workflow.length,
+    sha:createHash('sha1').update('blob '+workflow.length+'\0').update(workflow).digest('hex'),content:workflow.toString('base64')})
+   if(url.endsWith('/actions/runs/700'))return Response.json(state.run)
+   if(url.includes('/actions/runs/700/artifacts?'))return Response.json({total_count:state.missing?0:1,artifacts:state.missing?[]:[
+    {id:800,name:'aqc-result-'+nonce,expired:false,size_in_bytes:archive.length,digest:'sha256:'+hash(archive),
+     workflow_run:{id:700,head_sha:control}}]})
+   if(url.endsWith('/actions/artifacts/800/zip'))return new Response(archive,{headers:{'content-length':String(archive.length)}})
+   throw Error('unexpected history endpoint')
+  }})
+ return {...f,client,jobState,keys,state,calls,body,reference,result:results[action],
+  input:{manifest:f.manifest,jobState,externalId:f.externalId,action,keysByRole:keys}}
+}
+test('historical phases re-read actual native archives and separate signatures instead of trusting stored indexes',async()=>{
+ for(const action of ['QUALIFY','REPRODUCE','EXECUTE','VERIFY']){
+  const f=await historicalFixture(action)
+  try{
+   const a=await f.client.controllerJobHistory(f.input),b=await f.client.controllerJobHistory(f.input)
+   assert.deepEqual(a.result,f.result);assert.deepEqual(b.result,f.result)
+   assert.equal(a.phaseReceiptVerified,true);assert.equal(a.independentBundleVerified,false);assert.equal(a.authorityIncluded,false)
+   assert.equal(f.calls.filter(c=>c.url.endsWith('/actions/artifacts/800/zip')).length,2)
+   assert(f.calls.every(c=>c.method==='GET'));assert.equal(Object.isFrozen(a.result),true)
+  }finally{f.cleanup()}
+ }
+})
+test('historical reader rejects forged native state unsupported publication phases and a rebound current job before GET',async()=>{
+ const f=await historicalFixture()
+ try{
+  for(const input of [{...f.input,jobState:structuredClone(f.jobState)},{...f.input,jobState:{}},
+   {...f.input,externalId:f.externalId.replace(f.record.pending.nonce,randomUUID())},{...f.input,action:'PROMOTE'},
+   {...f.input,action:'PROPOSE'},{...f.input,action:'ROLLBACK'}]){
+   await assert.rejects(f.client.controllerJobHistory(input))
+  }
+  assert.equal(f.calls.length,0)
+ }finally{f.cleanup()}
+})
+test('stored archive document workflow run and creation pointers must all match real native provenance',async()=>{
+ for(const change of [r=>r.artifactSha256='f'.repeat(64),r=>r.documentSha256='f'.repeat(64),
+  r=>r.workflowId='992',r=>r.runId='701',r=>r.createdAt=stamp(now-749)]){
+  const f=await historicalFixture('QUALIFY',{referenceChange:change})
+  try{await assert.rejects(f.client.controllerJobHistory(f.input))}
+  finally{f.cleanup()}
+ }
+ for(const change of [{actor:{login:'foreign'}},{run_attempt:2},{conclusion:'failure'},{status:'in_progress',conclusion:null},
+  {head_sha:sha},{workflow_id:992},{display_title:'AQC JOB QUALIFY '+randomUUID()}]){
+  const f=await historicalFixture()
+  try{Object.assign(f.state.run,change);await assert.rejects(f.client.controllerJobHistory(f.input))}
+  finally{f.cleanup()}
+ }
+})
+test('valid native transport cannot replace the correct separate signature or incident manifest and original time bounds',async()=>{
+ for(const options of [{signer:'EXECUTOR_SUPERVISOR'},{bodyChange:b=>b.incidentId=randomUUID()},
+  {bodyChange:b=>b.manifestSha256='f'.repeat(64)},{bodyChange:b=>b.baseSha=control},
+  {bodyChange:b=>b.controlSourceSha=sha},{bodyChange:b=>b.nonce=randomUUID()},
+  {bodyChange:b=>b.issuedAt=stamp(now-499)}]){
+  const f=await historicalFixture('QUALIFY',options)
+  try{await assert.rejects(f.client.controllerJobHistory(f.input))}
+  finally{f.cleanup()}
+ }
+ const f=await historicalFixture()
+ try{
+  f.state.clock=now+60000;await assert.rejects(f.client.controllerJobHistory(f.input),{code:'CONTROLLER_JOB_RESULT_STALE'})
+  f.state.clock=now+1800001;await assert.rejects(f.client.controllerJobHistory(f.input),{code:'CONTROLLER_HISTORY_STALE'})
+ }finally{f.cleanup()}
+})
+test('signed facts must match the latest persisted reproduction patch and verification instead of an older successful attempt',async()=>{
+ for(const [action,recordChange] of [
+  ['REPRODUCE',r=>r.reproduction.proofSha256='f'.repeat(64)],
+  ['EXECUTE',r=>r.patch.treeSha256='f'.repeat(64)],
+  ['EXECUTE',r=>{r.patch.artifactSha256='f'.repeat(64);r.verification.artifactSha256='f'.repeat(64)}],
+  ['VERIFY',r=>r.verification.proofSha256='f'.repeat(64)]]){
+  const f=await historicalFixture(action,{recordChange})
+  try{await assert.rejects(f.client.controllerJobHistory(f.input),{code:'CONTROLLER_HISTORY_STATE_MISMATCH'})}
+  finally{f.cleanup()}
+ }
+})
+test('missing historical native artifact never becomes a verified fact or an extra dispatch',async()=>{
+ const f=await historicalFixture()
+ try{f.state.missing=true;await assert.rejects(f.client.controllerJobHistory(f.input),{code:'CONTROLLER_HISTORY_REFERENCE_MISMATCH'})
+  assert(f.calls.every(c=>c.method==='GET'))
+ }finally{f.cleanup()}
+})
+
+test('ten declared native fields normalize only unused empty defaults while EXECUTE keeps both permit fields',async()=>{
+ const {normalizeQualityControllerJobInputs}=await import('../src/job-context.mjs')
+ const {qualityControllerJobInputs}=await import('../src/github.mjs'),f=fixture()
+ const global={...qualityControllerJobInputs(f),permit_id:'',permit_expires_at:''}
+ assert.equal(Object.keys(global).length,10)
+ const canonical=normalizeQualityControllerJobInputs(global)
+ assert.deepEqual(canonical,qualityControllerJobInputs(f));assert.equal(Object.isFrozen(canonical),true)
+ const legacy=qualityControllerJobInputs({manifest:f.manifest,externalId:f.externalId})
+ assert.deepEqual(normalizeQualityControllerJobInputs({...legacy,state:'',permit_id:'',permit_expires_at:''}),legacy)
+ const e=fixture('EXECUTE'),permit={incidentId:e.manifest.incidentId,attemptId:e.record.pending.nonce,
+  permitId:randomUUID(),ordinal:1,expiresAt:stamp(now+60000)},execute=qualityControllerJobInputs({...e,permit})
+ assert.equal(Object.keys(normalizeQualityControllerJobInputs(execute)).length,10)
+ assert.equal(normalizeQualityControllerJobInputs(execute).permit_id,permit.permitId)
+})
+test('native default normalization never ignores an unknown field nonempty unused permit getter or oversized state',async()=>{
+ const {normalizeQualityControllerJobInputs}=await import('../src/job-context.mjs'),f=fixture()
+ const {qualityControllerJobInputs}=await import('../src/github.mjs'),input=qualityControllerJobInputs(f)
+ for(const changed of [{...input,permit_id:'foreign'},{...input,permit_expires_at:stamp(now+1)},
+  {...input,recovery_sha256:''},{...input,rawQa:''},{...input,state:'x'.repeat(16385)},
+  {...input,nonce:1},{...input,action:'UNDECLARED'},{...input,mode:'keyless-qualify'}]){
+  assert.throws(()=>normalizeQualityControllerJobInputs(changed),{code:'JOB_CONTEXT_INPUT_INVALID'})
+ }
+ let calls=0;const getter={...input}
+ Object.defineProperty(getter,'permit_id',{enumerable:true,get(){calls++;throw Error('must not execute')}})
+ assert.throws(()=>normalizeQualityControllerJobInputs(getter),{code:'JOB_CONTEXT_INPUT_INVALID'});assert.equal(calls,0)
+ const inherited=Object.create(input)
+ assert.throws(()=>normalizeQualityControllerJobInputs(inherited),{code:'JOB_CONTEXT_INPUT_INVALID'})
+ const hidden={...input};Object.defineProperty(hidden,'permit_id',{value:'',enumerable:false})
+ assert.throws(()=>normalizeQualityControllerJobInputs(hidden),{code:'JOB_CONTEXT_INPUT_INVALID'})
+})
+test('the actual native event may carry declared empty defaults but extra or nonempty fields still cannot mint state',async()=>{
+ const {admitQualityNativeJobState}=await import('../src/job-state.mjs')
+ const f=await nativeFixture()
+ try{
+  const invocation=await f.client.controllerJobInvocation({externalId:f.externalId,runId:'701'})
+  const inputs={...f.inputs,permit_id:'',permit_expires_at:''}
+  f.fs.writeFileSync(f.file,JSON.stringify({inputs}))
+  const admitted=await admitQualityNativeJobState({...f,inputs,invocation,now})
+  assert.equal(admitted.providerIdentityVerified,true)
+  for(const changed of [{...inputs,permit_id:'foreign'},{...inputs,recovery_sha256:''},{...inputs,rawQa:''}]){
+   f.fs.writeFileSync(f.file,JSON.stringify({inputs:changed}))
+   await assert.rejects(admitQualityNativeJobState({...f,inputs,invocation,now}),{code:'JOB_STATE_NATIVE_INVOCATION_REQUIRED'})
+  }
+ }finally{f.cleanup()}
+})
+
+async function verificationZip(document){
+ const {deflateRawSync}=await import('node:zlib'),bytes=Buffer.from(JSON.stringify(document)),compressed=deflateRawSync(bytes),name=Buffer.from('verification.json')
+ let crc=0xffffffff;for(const b of bytes){crc^=b;for(let i=0;i<8;i++)crc=crc&1?0xedb88320^(crc>>>1):crc>>>1}crc=(crc^0xffffffff)>>>0
+ const local=Buffer.alloc(30);local.writeUInt32LE(0x04034b50);local.writeUInt16LE(20,4);local.writeUInt16LE(8,8)
+ local.writeUInt32LE(crc,14);local.writeUInt32LE(compressed.length,18);local.writeUInt32LE(bytes.length,22);local.writeUInt16LE(name.length,26)
+ const central=Buffer.alloc(46);central.writeUInt32LE(0x02014b50);central.writeUInt16LE(20,4);central.writeUInt16LE(20,6)
+ central.writeUInt16LE(8,10);central.writeUInt32LE(crc,16);central.writeUInt32LE(compressed.length,20);central.writeUInt32LE(bytes.length,24);central.writeUInt16LE(name.length,28)
+ const offset=30+name.length+compressed.length,end=Buffer.alloc(22);end.writeUInt32LE(0x06054b50);end.writeUInt16LE(1,8);end.writeUInt16LE(1,10)
+ end.writeUInt32LE(46+name.length,12);end.writeUInt32LE(offset,16)
+ return Buffer.concat([local,name,compressed,central,name,end])
+}
+async function verificationTransportFixture(mode='valid'){
+ const {createHash}=await import('node:crypto'),{createQualityGitHub}=await import('../src/github.mjs')
+ const {admitQualityNativeJobState}=await import('../src/job-state.mjs')
+ const base=fixture('PROPOSE'),nonce=randomUUID(),externalId='aqc-job:'+control+':'+nonce+':VERIFY'
+ base.record.attemptsUsed=1
+ // Synthetic signed documents exercise transport/binding only. No real
+ // independent execution, reviewed holdout or publishing authority is claimed.
+ const verification={result:'PASS',baseSha:sha,artifactSha256:digest,baseTest:'FAIL',candidateTest:'PASS',holdoutCases:240,
+  classCounts:{C1:80,C2:80,C3:80},criticalRegressions:0,accessViolations:0,unverifiableCases:0,criticalCasesPass:true,
+  criticalRepeats:3,stable:true,correctnessDeltaPp:0,unjustifiedRefusalDeltaPp:0,holdoutSha256:digest,rubricVersion:'synthetic-reference-v1',
+  scopeBeforeDefects:10,scopeAfterDefects:0,beforeSourceSha256:digest,afterSourceSha256:'e'.repeat(64),
+  regressionSha256:digest,observationsSha256:digest}
+ verification.proofSha256=documentDigest(verification)
+ base.record.verification.proofSha256=verification.proofSha256
+ const pairs=new Map(),keys=new Map()
+ for(const role of ['EXECUTOR_SUPERVISOR','INDEPENDENT_VERIFIER','INDEPENDENT_PUBLISHER']){
+  const pair=generateKeyPairSync('ed25519');pairs.set(role,pair);keys.set(role,new Map([[publicKeyId(pair.publicKey),pair.publicKey]]))
+ }
+ const fullBody={schemaVersion:'AQC_VERIFICATION_RESULT_V1',applicationId:'spendguru',environment:'development',repository:'profitia/SG-dev',
+  incidentId:base.manifest.incidentId,repairClass:'C1',baseSha:sha,manifestSha256:documentDigest(base.manifest),gateSetSha256:digest,
+  artifactSha256:digest,verification,nonce,controlSourceSha:control,runId:'700',runAttempt:1,observedAt:stamp(now-600),
+  expiresAt:stamp(now+(mode==='expired'?0:60000)),rawQaPayloadIncluded:false}
+ if(mode==='foreignIncident')fullBody.incidentId=randomUUID()
+ const proof=signDocument('AQC_VERIFICATION_RESULT_V1',fullBody,pairs.get(mode==='wrongSigner'?'EXECUTOR_SUPERVISOR':'INDEPENDENT_VERIFIER').privateKey)
+ const included=['result','baseSha','artifactSha256','baseTest','candidateTest','holdoutCases','criticalRegressions','accessViolations',
+  'unverifiableCases','criticalCasesPass','criticalRepeats','stable','correctnessDeltaPp','unjustifiedRefusalDeltaPp',
+  'scopeBeforeDefects','scopeAfterDefects','classCounts','proofSha256']
+ const phaseResult=Object.fromEntries(included.map(k=>[k,verification[k]]))
+ if(mode==='phaseMismatch')phaseResult.correctnessDeltaPp=-0.5
+ const phase=signDocument('AQC_CONTROLLER_JOB_RESULT_V1',{schemaVersion:'AQC_CONTROLLER_JOB_RESULT_V1',repository:'profitia/SG-dev',
+  environment:'development',role:'INDEPENDENT_VERIFIER',action:'VERIFY',incidentId:base.manifest.incidentId,baseSha:sha,
+  manifestSha256:documentDigest(base.manifest),gateSetSha256:digest,controlSourceSha:control,nonce,runId:'700',runAttempt:1,
+  workflowId:'991',rawQaPayloadIncluded:false,issuedAt:stamp(now-600),expiresAt:stamp(now+60000),result:phaseResult},
+  pairs.get('INDEPENDENT_VERIFIER').privateKey)
+ const phaseZip=await historicalZip(phase),proofZip=await verificationZip(proof),hash=v=>createHash('sha256').update(v).digest('hex')
+ const reference={externalId,runId:'700',workflowId:'991',artifactSha256:hash(phaseZip),documentSha256:documentDigest(phase),createdAt:stamp(now-750)}
+ base.record.reproduction.nativeJobs={verify:reference}
+ const f=await nativeFixture({display_title:'AQC JOB PROPOSE '+base.record.pending.nonce},base)
+ const invocation=await f.client.controllerJobInvocation({externalId:f.externalId,runId:'701'})
+ const jobState=await admitQualityNativeJobState({...f,invocation,now})
+ const workflow=Buffer.from('synthetic fixed workflow source\n'),calls=[]
+ const run={id:700,workflow_id:991,head_sha:control,head_branch:'main',path:'.github/workflows/assistant-quality-repair.yml',
+  event:'workflow_dispatch',run_attempt:1,repository:{full_name:'profitia/SG-dev'},actor:{login:'profitia'},triggering_actor:{login:'profitia'},
+  display_title:'AQC JOB VERIFY '+nonce,status:'completed',conclusion:'success',created_at:stamp(now-750)}
+ const client=createQualityGitHub({token:'synthetic-proof-reader',now:()=>now,controllerWorkflowSha256:hash(workflow),fetchImpl:async(url,input)=>{
+  calls.push({url,method:input.method})
+  if(url.endsWith('/actions/workflows/assistant-quality-repair.yml'))return Response.json({id:991,path:run.path,state:'active'})
+  if(url.includes('/contents/'))return Response.json({type:'file',path:run.path,encoding:'base64',size:workflow.length,
+   sha:createHash('sha1').update('blob '+workflow.length+'\0').update(workflow).digest('hex'),content:workflow.toString('base64')})
+  if(url.endsWith('/actions/runs/700'))return Response.json(run)
+  if(url.includes('/actions/runs/700/artifacts?'))return Response.json({total_count:2,artifacts:[
+   {id:800,name:'aqc-result-'+nonce,expired:false,size_in_bytes:phaseZip.length,digest:'sha256:'+hash(phaseZip),workflow_run:{id:700,head_sha:control}},
+   {id:801,name:'aqc-verification-'+nonce,expired:false,size_in_bytes:proofZip.length,digest:'sha256:'+hash(proofZip),workflow_run:{id:700,head_sha:control}}]})
+  if(url.endsWith('/actions/artifacts/800/zip'))return new Response(phaseZip,{headers:{'content-length':String(phaseZip.length)}})
+  if(url.endsWith('/actions/artifacts/801/zip'))return new Response(proofZip,{headers:{'content-length':String(proofZip.length)}})
+  throw Error('unexpected independent proof endpoint')
+ }})
+ const history=await client.controllerJobHistory({manifest:f.manifest,jobState,externalId:f.externalId,action:'VERIFY',keysByRole:keys})
+ const proofObservation=await client.controllerJobVerification({externalId,runId:'700'})
+ const record={...f.record,status:'PATCH_READY',pending:{action:'VERIFY',nonce,externalId}}
+ return {...f,client,jobState,keys,calls,externalId,history,proofObservation,verification,
+  proofInput:{resultObservation:history.observation,verificationObservation:proofObservation,manifest:f.manifest,record,
+   externalId,runId:'700',workflowId:'991',keysByRole:keys,notBefore:now-750,now}}
+}
+test('native verification reads both successful same-run artifacts and preserves the independent full proof without publishing authority',async()=>{
+ const {readQualityControllerVerification,assertQualityNativeVerification}=await import('../src/github.mjs'),f=await verificationTransportFixture()
+ try{
+  const value=readQualityControllerVerification(f.proofInput)
+  assert.deepEqual(value.verification,f.verification);assert.equal(value.independentBundleVerified,true);assert.equal(value.authorityIncluded,false)
+  assert.equal(assertQualityNativeVerification(value,{manifest:f.manifest,externalId:f.externalId,runId:'700',now}),value)
+  assert.throws(()=>assertQualityNativeVerification(structuredClone(value),{manifest:f.manifest,externalId:f.externalId,runId:'700',now}),
+   {code:'CONTROLLER_VERIFICATION_NATIVE_ARTIFACT_REQUIRED'})
+  assert(f.calls.every(c=>c.method==='GET'));assert(Object.isFrozen(value.verification)&&Object.isFrozen(value.verificationReceipt.body))
+ }finally{f.cleanup()}
+})
+test('native verification rejects a wrong independent signer stale full proof substituted incident and phase-only PASS',async()=>{
+ const {readQualityControllerVerification}=await import('../src/github.mjs')
+ for(const mode of ['wrongSigner','expired','foreignIncident','phaseMismatch']){
+  const f=await verificationTransportFixture(mode)
+  try{assert.throws(()=>readQualityControllerVerification(f.proofInput),mode)}
+  finally{f.cleanup()}
+ }
+ const f=await verificationTransportFixture()
+ try{
+  for(const change of [{verificationObservation:structuredClone(f.proofObservation)},
+   {resultObservation:structuredClone(f.history.observation)},{externalId:f.externalId.replace(':VERIFY',':EXECUTE')},{runId:'701'}])
+   assert.throws(()=>readQualityControllerVerification({...f.proofInput,...change}))
+  await assert.rejects(f.client.controllerJobVerification({externalId:f.externalId.replace(':VERIFY',':PROPOSE'),runId:'700'}),
+   {code:'CONTROLLER_VERIFICATION_PHASE_REQUIRED'})
+ }finally{f.cleanup()}
+})
+
+async function linuxQualificationZip(document){
+ const {deflateRawSync}=await import('node:zlib'),bytes=Buffer.from(JSON.stringify(document)),compressed=deflateRawSync(bytes),name=Buffer.from('aqc-linux-observations.json')
+ let crc=0xffffffff;for(const b of bytes){crc^=b;for(let i=0;i<8;i++)crc=crc&1?0xedb88320^(crc>>>1):crc>>>1}crc=(crc^0xffffffff)>>>0
+ const local=Buffer.alloc(30);local.writeUInt32LE(0x04034b50);local.writeUInt16LE(20,4);local.writeUInt16LE(8,8)
+ local.writeUInt32LE(crc,14);local.writeUInt32LE(compressed.length,18);local.writeUInt32LE(bytes.length,22);local.writeUInt16LE(name.length,26)
+ const central=Buffer.alloc(46);central.writeUInt32LE(0x02014b50);central.writeUInt16LE(20,4);central.writeUInt16LE(20,6)
+ central.writeUInt16LE(8,10);central.writeUInt32LE(crc,16);central.writeUInt32LE(compressed.length,20);central.writeUInt32LE(bytes.length,24);central.writeUInt16LE(name.length,28)
+ const offset=30+name.length+compressed.length,end=Buffer.alloc(22);end.writeUInt32LE(0x06054b50);end.writeUInt16LE(1,8);end.writeUInt16LE(1,10)
+ end.writeUInt32LE(46+name.length,12);end.writeUInt32LE(offset,16)
+ return Buffer.concat([local,name,compressed,central,name,end])
+}
+async function nativeLinuxFixture(change=()=>{},runChange={}){
+ const {createHash}=await import('node:crypto'),{createQualityGitHub}=await import('../src/github.mjs')
+ const at=Date.now(),nonce=randomUUID(),document={"schemaVersion":"AQC_LINUX_OBSERVATIONS_V1","gateSetSha256":"5e430edc1d839c0f33b6576f4fe8dd501a80b5713996f5d30ed5f33aaab03ead","codexVersion":"0.167.2","codexArchiveSha256":"8246e846c550ea21197fcc4067bc270dca895e94ea42ed6a282e6f4e0125b15f","codexBinarySha256":"a9672d0fa0dd8fcf8cad136fa0d056b914bc046f5ac3d78f4a5cf390655af56b","codeModeHostArchiveSha256":"189475a654d82ca776e08dfef22734106d3e5b2cf21da6e84ec3d974d02c39a6","codeModeHostBinarySha256":"007c62795a7215c27ee85486ecb95e714b33118a2d18c6d7b09b0d9793c72ff4","bwrapArchiveSha256":"03cb0d2b151648693e3817c47068773ae4b7327c19fe25eab8c61c4c2865838a","bwrapBinarySha256":"7df960565a0dece99240ea4b9d0e011307817f9f3b73176c7b71fda44fe84765","isolationHelperCommit":"13e9c17417b29e9a276f73ec6ed7fb574137d3c3","fileIsolation":"PASS","networkIsolation":"PASS","privilegeIsolation":"PASS","toolLoop":"PASS","cancellation":"PASS","noProviderRequests":true,"requestCount":4,"settledCount":4,"runId":"44450608836","sourceSha":"79cb7cf827e82395f43e630ee9b72436b19b421a","nonce":"4d44b052-025d-4960-910b-750121703f9f","verifiedAt":"2026-11-19T03:21:33.337Z","testKeysInstalled":false,"realCostAuthorityUsed":false,"independentVerifier":{"status":"PASS","classes":["C1","C2","C3"],"typedResults":6,"fileIsolation":"PASS","networkIsolation":"PASS","privilegeIsolation":"PASS","timeout":"PASS","cancellation":"PASS","cgroupEmpty":true,"nodeSha256":"904a6d3484241d466989f9df9ba3aab822b1496191bdb28230eb491a55c32a52","noProviderRequests":true,"rawQaPayloadIncluded":false,"testKeysInstalled":false,"baseline":{"status":"PASS","typedResults":9,"sourceMode":"UNCHANGED_GIT_BASELINE","classes":["C1","C2","C3"],"nativeOperationalInvocationVerified":false,"fullPrivateCic18Qualification":false,"noProviderRequests":true,"rawQaPayloadIncluded":false,"testKeysInstalled":false}}}
+ Object.assign(document,{gateSetSha256:digest,runId:'700',sourceSha:control,nonce,verifiedAt:stamp(at-500)})
+ change(document)
+ const zip=await linuxQualificationZip(document),workflow=Buffer.from('synthetic fixed workflow source\n'),hash=b=>createHash('sha256').update(b).digest('hex'),calls=[]
+ const run={id:700,workflow_id:991,head_sha:control,head_branch:'main',path:'.github/workflows/assistant-quality-repair.yml',
+  event:'workflow_dispatch',run_attempt:1,repository:{full_name:'profitia/SG-dev'},actor:{login:'profitia'},triggering_actor:{login:'profitia'},
+  display_title:'AQC '+nonce,status:'completed',conclusion:'success',created_at:stamp(at-1000),...runChange}
+ const client=createQualityGitHub({token:'synthetic-keyless-reader',controllerWorkflowSha256:hash(workflow),fetchImpl:async(url,input)=>{
+  calls.push({url,method:input.method})
+  if(url.endsWith('/actions/workflows/assistant-quality-repair.yml'))return Response.json({id:991,path:run.path,state:'active'})
+  if(url.includes('/contents/'))return Response.json({type:'file',path:run.path,encoding:'base64',size:workflow.length,
+   sha:createHash('sha1').update('blob '+workflow.length+'\0').update(workflow).digest('hex'),content:workflow.toString('base64')})
+  if(url.endsWith('/actions/runs/700'))return Response.json(run)
+  if(url.includes('/actions/runs/700/artifacts?'))return Response.json({total_count:1,artifacts:[
+   {id:800,name:'aqc-qualification-'+nonce,expired:false,size_in_bytes:zip.length,digest:'sha256:'+hash(zip),workflow_run:{id:700,head_sha:control}}]})
+  if(url.endsWith('/actions/artifacts/800/zip'))return new Response(zip,{headers:{'content-length':String(zip.length)}})
+  throw Error('unexpected keyless evidence endpoint')
+ }})
+ return {client,calls,document,input:{runId:'700',sourceSha:control,nonce}}
+}
+test('keyless Linux qualification is read from real pinned workflow and archive identity, then signed only by the separate verifier',async()=>{
+ const {readQualityNativeLinuxObservations,createQualityNativeLinuxQualificationAttestor}=await import('../src/github.mjs')
+ const {verifyLinuxQualification}=await import('../src/executor.mjs'),f=await nativeLinuxFixture()
+ const observation=await f.client.linuxQualificationObservations(f.input)
+ if(Date.now()>=Date.parse('2026-11-27T23:59:59.000Z')){
+  await assert.rejects(readQualityNativeLinuxObservations(observation,{gateSetSha256:digest}),{code:'LINUX_NATIVE_OBSERVATIONS_STALE'});return
+ }
+ const body=await readQualityNativeLinuxObservations(observation,{gateSetSha256:digest})
+ assert.equal(body.independentVerifier.baseline.typedResults,9);assert.equal(body.noProviderRequests,true)
+ const verifier=generateKeyPairSync('ed25519'),signer=createQualityNativeLinuxQualificationAttestor({privateKey:verifier.privateKey})
+ const receipt=await signer.attest({observation,gateSetSha256:digest})
+ const qualified=verifyLinuxQualification(receipt,{keys:new Map([[publicKeyId(verifier.publicKey),verifier.publicKey]]),gateSetSha256:digest})
+ assert.equal(qualified.runId,'700');assert.equal(qualified.sourceSha,control)
+ assert.equal(Date.parse(qualified.expiresAt),Math.min(Date.parse(body.verifiedAt)+86400000,Date.parse('2026-11-27T23:59:59.000Z')))
+ assert(f.calls.every(c=>c.method==='GET'));assert(Object.isFrozen(observation.document.independentVerifier.baseline))
+ assert.equal(receipt.body.promotionAllowed,undefined);assert.equal(receipt.body.modelKey,undefined)
+})
+test('keyless observation labels clones callbacks or rebound policy cannot be signed as native Linux qualification',async()=>{
+ const {readQualityNativeLinuxObservations,createQualityNativeLinuxQualificationAttestor}=await import('../src/github.mjs')
+ const pair=generateKeyPairSync('ed25519'),signer=createQualityNativeLinuxQualificationAttestor({privateKey:pair.privateKey}),f=await nativeLinuxFixture()
+ const observation=await f.client.linuxQualificationObservations(f.input)
+ for(const value of [null,structuredClone(observation),{document:f.document,kind:'AQC_NATIVE_LINUX_OBSERVATIONS_V1'}]){
+  await assert.rejects(readQualityNativeLinuxObservations(value,{gateSetSha256:digest}),{code:'LINUX_NATIVE_OBSERVATIONS_REQUIRED'})
+  await assert.rejects(signer.attest({observation:value,gateSetSha256:digest}),{code:'LINUX_NATIVE_OBSERVATIONS_REQUIRED'})
+ }
+ await assert.rejects(signer.attest({observation,gateSetSha256:'f'.repeat(64)}))
+ for(const extra of [{expiresAt:stamp(Date.now()+86400000)},{runCase:()=>{}},{privateKey:pair.privateKey},{now:()=>0}])
+  await assert.rejects(signer.attest({observation,gateSetSha256:digest,...extra}),{code:'LINUX_NATIVE_INPUT_INVALID'})
+ let calls=0;const input={gateSetSha256:digest}
+ Object.defineProperty(input,'observation',{enumerable:true,get(){calls++;throw Error('never run')}})
+ await assert.rejects(signer.attest(input),{code:'LINUX_NATIVE_INPUT_INVALID'});assert.equal(calls,0)
+})
+test('successful native transport does not replace isolation cancellation freshness baseline or provider run guards',async()=>{
+ const {readQualityNativeLinuxObservations}=await import('../src/github.mjs')
+ for(const change of [b=>b.networkIsolation='FAIL',b=>b.cancellation='FAIL',b=>b.noProviderRequests=false,
+  b=>b.settledCount=3,b=>b.sourceSha=sha,b=>b.nonce=randomUUID(),b=>b.verifiedAt=stamp(Date.now()-86401000),
+  b=>b.verifiedAt=stamp(Date.now()+10000),b=>b.independentVerifier.cgroupEmpty=false,
+  b=>b.independentVerifier.baseline.fullPrivateCic18Qualification=true,b=>b.independentVerifier.baseline.typedResults=8]){
+  const f=await nativeLinuxFixture(change)
+  const observed=await f.client.linuxQualificationObservations(f.input)
+  await assert.rejects(readQualityNativeLinuxObservations(observed,{gateSetSha256:digest}))
+ }
+ for(const runChange of [{actor:{login:'foreign'}},{run_attempt:2},{conclusion:'failure'},{workflow_id:992},{head_sha:sha}]){
+  const f=await nativeLinuxFixture(()=>{},runChange)
+  await assert.rejects(f.client.linuxQualificationObservations(f.input))
+ }
+})

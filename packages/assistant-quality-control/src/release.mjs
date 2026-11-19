@@ -103,6 +103,7 @@ export function createQualityRelease({token,fetchImpl=fetch,promotionEnabled=fal
    if(!promotionEnabled)fail('PROMOTION_DISABLED')
    require(sha(sourceSha)&&id(expectedDeployId)&&id(lkg?.deployId)&&sha(lkg?.sourceSha))
    const proof=await independent(verifyIndependent,{sourceSha,expectedDeployId,lkg})
+   require(digest(proof.artifactSha256),'INDEPENDENT_RELEASE_ARTIFACT_REQUIRED')
    await descriptor()
    const live=await current()
    require(live.id===expectedDeployId&&live.id===lkg.deployId&&live.commit.id===lkg.sourceSha,'FOREIGN_DEPLOYMENT')
@@ -112,10 +113,10 @@ export function createQualityRelease({token,fetchImpl=fetch,promotionEnabled=fal
    const d=deployment(await request('/deploys',{commitId:sourceSha,clearCache:'do_not_clear'}))
    require(d.commit.id===sourceSha,'DEPLOYMENT_SOURCE_MISMATCH')
    return {state:'RUNNING',deployId:d.id,sourceSha,lastKnownGoodSha:lkg.sourceSha,lastKnownGoodDeployId:lkg.deployId,
-    configurationSha256:proof.configurationSha256,artifactSha256:proof.proofSha256}
+    configurationSha256:proof.configurationSha256,artifactSha256:proof.artifactSha256}
   },
   async reconcile(release){
-   require(id(release?.deployId)&&sha(release.sourceSha)&&sha(release.lastKnownGoodSha)
+   require(id(release?.deployId)&&sha(release.sourceSha)&&id(release.lastKnownGoodDeployId)&&sha(release.lastKnownGoodSha)
     &&digest(release.artifactSha256)&&digest(release.configurationSha256))
    await descriptor()
    const d=deployment(await request('/deploys/'+release.deployId))
@@ -124,9 +125,11 @@ export function createQualityRelease({token,fetchImpl=fetch,promotionEnabled=fal
    let live
    try{live=await current()}catch(e){if(e.code==='FOREIGN_DEPLOYMENT')return {state:'COMPLETE',result:{result:'FOREIGN_DEPLOYMENT'}};throw e}
    if(live.id!==d.id)return {state:'COMPLETE',result:{result:'FOREIGN_DEPLOYMENT'}}
+   const retained=deployment(await request('/deploys/'+release.lastKnownGoodDeployId))
+   require(retained.commit.id===release.lastKnownGoodSha&&['live','deactivated'].includes(retained.status),'LAST_KNOWN_GOOD_UNVERIFIED')
    const actual=await verifyRuntime({serviceId:SERVICE,deployId:d.id,sourceSha:release.sourceSha})
    if(actual?.verified!==true||actual.sourceSha!==release.sourceSha)return {state:'UNKNOWN'}
-   return {state:'COMPLETE',result:{result:'RELEASED',sourceSha:release.sourceSha,deployId:d.id,lastKnownGoodSha:release.lastKnownGoodSha,
+   return {state:'COMPLETE',result:{result:'RELEASED',sourceSha:release.sourceSha,deployId:d.id,lastKnownGoodSha:release.lastKnownGoodSha,lastKnownGoodDeployId:release.lastKnownGoodDeployId,
     artifactSha256:release.artifactSha256,configurationSha256:release.configurationSha256,exactRuntimeVerified:true}}
   },
   async rollback({release,verifyIndependent}){

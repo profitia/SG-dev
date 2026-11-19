@@ -1,6 +1,6 @@
 import {SOURCE_PATHS,documentDigest,assertVerifiedRepairManifest} from './manifest.mjs'
 import {createHash as controlledReadHash} from 'node:crypto'
-import {repairManifestBody,prepareQualityControllerJobContext} from './job-context.mjs'
+import {repairManifestBody,prepareQualityControllerJobContext,normalizeQualityControllerJobInputs} from './job-context.mjs'
 import {admitQualityNativeJobState} from './job-state.mjs'
 
 /** Prepare reviewable unsigned metadata. These builders create no signature,
@@ -18,6 +18,7 @@ export {repairManifestBody,prepareQualityControllerJobContext}
  * case, secret or private QA is accepted through workflow_dispatch. Native run
  * identity must separately pass assertQualityControllerJobIdentity. */
 export async function readQualityControllerJobContext({inputs,nativeInvocation,nativeEnvironment,...options}){
+ inputs=normalizeQualityControllerJobInputs(inputs)
  const {readQualityJobBinding}=await import('./controller.mjs')
  if(!inputs||Object.getPrototypeOf(inputs)!==Object.prototype
   ||Object.keys(inputs).sort().join(',')!==['mode','action','nonce','control_source_sha','incident_id','manifest_sha256','base_sha',
@@ -384,7 +385,7 @@ async function readinessMain(controllerStandby=false){
 if(process.argv[1]){
  const {fileURLToPath}=await import('node:url'),path=await import('node:path')
  if(path.resolve(process.argv[1])===fileURLToPath(import.meta.url)){
-  try{if(process.argv.length!==3||!['readiness','controller-standby'].includes(process.argv[2]))unavailable('READINESS_MODE_REQUIRED');await readinessMain(process.argv[2]==='controller-standby')}
+  try{if(process.argv.length!==3||!['readiness','controller-standby','publisher-preflight'].includes(process.argv[2]))unavailable('READINESS_MODE_REQUIRED');if(process.argv[2]==='publisher-preflight'){const {runQualityNativePublisherPreflight}=await import('./publisher-readiness.mjs');console.log(JSON.stringify(await runQualityNativePublisherPreflight()))}else await readinessMain(process.argv[2]==='controller-standby')}
   catch(error){console.error(JSON.stringify({event:'aqc.technical.failure',code:/^[A-Z][A-Z0-9_]{1,79}$/.test(error?.code??'')?error.code:'READINESS_UNAVAILABLE'}));process.exitCode=1}
  }
 }
