@@ -40,3 +40,9 @@ test('native verifier refuses accessors missing state reference leakage and shar
  const untrusted=input();untrusted.keysByRole.set('INDEPENDENT_VERIFIER',new Map())
  await assert.rejects(runQualityNativeVerifierJob(untrusted),{code:'NATIVE_VERIFIER_TRUST_REQUIRED'})
 })
+
+test('closed verifier refuses a non-native host or synthetic source before any provider evidence or candidate execution',async()=>{
+ const value=input()
+ await assert.rejects(runQualityNativeVerifierJob(value),error=>
+  ['LINUX_ROOT_REQUIRED','TRUSTED_EPHEMERAL_WORKFLOW_REQUIRED','NATIVE_VERIFIER_SOURCE_MISMATCH'].includes(error?.code))
+})
