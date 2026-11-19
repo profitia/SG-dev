@@ -2823,6 +2823,288 @@
       "fullPublisherRuntimeWiring": false,
       "publicTrustInstalled": false,
       "freshLinux22RequiredBeforeUse": true
+    },
+    "nativeTimestampAndHostRefresh": {
+      "recordedAt": "2026-11-19T10:00:00.000Z",
+      "sourceMerge": {
+        "pr": 1246,
+        "head": "77c9de79e8ba583c58ac4a0c7ef9988a7f96303d",
+        "main": "b7124509574ca5bbcac6bbff61c49c560b87b75b",
+        "nativeSourceRun": 44500758008,
+        "nativeSourceJob": 135479591078,
+        "tests": {
+          "aqc": 323,
+          "qa": 12,
+          "fail": 0,
+          "skip": 0
+        },
+        "independentReview": "NO_FINDINGS",
+        "resultingMainSourceRun": 44501227893,
+        "resultingMainConclusion": "success"
+      },
+      "nativeRuntimeMerge": {
+        "pr": 1243,
+        "main": "89c97892625596f5b115863a45a2c1f725c7b935",
+        "sourceRun": 44489573845,
+        "governanceRun": 44489573826,
+        "resultingMainRuns": [
+          44490120117,
+          44490120113
+        ],
+        "tests": {
+          "aqc": 319,
+          "qa": 12,
+          "governance": [
+            77,
+            74
+          ]
+        },
+        "allRequiredRunsSuccessful": true
+      },
+      "publicTrust": {
+        "approvedDecision": "B29-3",
+        "environments": 4,
+        "createdVariables": 12,
+        "updatedVariables": 0,
+        "readbackHashesVerified": 12,
+        "fields": [
+          "AQC_OWNER_PUBLIC_KEYS_JSON",
+          "AQC_PHASE_PUBLIC_KEYS_JSON",
+          "AQC_CONTROLLER_WORKFLOW_SHA256"
+        ],
+        "workflowSha256": "6621c7ea1ae47dc787b92eaa97e64d75fa525a5290525deb8c3b3ecfe67ddce8",
+        "privateKeysRotated": false,
+        "ownerContextsInstalled": false,
+        "workerPublicTrustInstalled": false
+      },
+      "linux": {
+        "lastVerifiedSource": "304bcf1a2668d3bc36ff792315bc903184447bb5",
+        "runId": 44496443034,
+        "artifactId": 14514219333,
+        "archiveSha256": "a91e7db7bceb70c5a12fab350e4a861aa7b3802a13c651b626c6189b83b15f8d",
+        "files": 22,
+        "gateSetSha256": "75d84602c1fa0964822116bdb409d9547f7a6c7ff9bb5f387a3e7f7aa7328804",
+        "originalZipAndNativeIdentityAndGitFilesVerified": true,
+        "nativeOperationalInvocationVerified": false,
+        "freshQualificationForTimestampFix": {
+          "runId": 44501318545,
+          "sourceSha": "b7124509574ca5bbcac6bbff61c49c560b87b75b",
+          "nonce": "ff9b6893-6891-4510-af8f-cb4b1274489e",
+          "gateSetSha256": "b2a1f7f4538cae6ebc6ba2fe7c57ac8ea7db870406bee1e220901f099282c5a5",
+          "status": "IN_PROGRESS_NOT_YET_QUALIFIED"
+        }
+      },
+      "controlledNegativeProbe": {
+        "runId": 44497248616,
+        "jobId": 135467915145,
+        "sourceSha": "304bcf1a2668d3bc36ff792315bc903184447bb5",
+        "nonce": "22b4d1e1-9d64-420e-9eab-147f7b6483af",
+        "intendedCase": "MISSING_SIGNED_OWNER_CONTEXT",
+        "actual": "UNEXPECTED_EARLY_PROVIDER_TIMESTAMP_FAILURE",
+        "error": "CONTROLLER_JOB_INVOCATION_REQUIRED",
+        "providerCreatedAt": "2026-11-19T09:31:47Z",
+        "expectedNegativePassed": false,
+        "linuxSignatureProduced": false,
+        "qaReadOrGrantPerformed": false,
+        "realIncidentRowCreated": false,
+        "modelRequested": false,
+        "pilotStarted": false
+      },
+      "hostRefresh": {
+        "baseSha": "89c97892625596f5b115863a45a2c1f725c7b935",
+        "hostInventory": 27,
+        "sourcePreflights": {
+          "SG2": 23,
+          "ARCHITECTURE": 4,
+          "both": "PASS"
+        },
+        "approvedSdkFourAppliedLocally": true,
+        "functional": {
+          "pass": 54,
+          "fail": 0,
+          "skip": 0,
+          "exactCic180Artifact": true,
+          "postgres": "FRESH_LOOPBACK_ONLY"
+        },
+        "hostSource": {
+          "pass": 10,
+          "fail": 0
+        },
+        "companionSource": {
+          "pass": 7,
+          "fail": 1,
+          "failingTest": "native ECR precision continuation retains the exact accepted ECR receipt and all earlier sources",
+          "cause": "Direct precision adapter selects original component instead of authenticated accepted composition"
+        },
+        "publicPr1099Updated": false,
+        "ci27Active": false,
+        "liveHostUpdated": false
+      },
+      "technicalReady": false,
+      "paidRepairsEnabled": false,
+      "promotionEnabled": false,
+      "pilotStarted": false,
+      "e1RepairsCompleted": 0,
+      "stage2Started": false
+    },
+    "sdk5AndNativeContextDeployment": {
+      "recordedAt": "2026-11-19T11:00:00.000Z",
+      "ownerSdk5Approval": {
+        "questionId": "call_d4e9b901ec9549d5bee930c0b92de647",
+        "answer": "Zatwierdzam ograniczone uzupełnienie SDK5",
+        "source": "ae6ae9187666816c4b3e122b1fa3e82c6989a51b",
+        "diffSha256": "0647743bdaad72950f918e89cb1f31bdbedbe2b6ef456f7cd4b0fd52588896a8"
+      },
+      "ownerConsolidatedApproval": {
+        "questionId": "call_56750d6941af4a1bbf75db0756330255",
+        "answer": "Zatwierdzam cały pakiet SDK5 i NPM_TOKEN",
+        "source": "416d35d512a08cef00aca6ad4081952d6bf798ae",
+        "recipient": "profitia/SG-dev/aqc-verifier-development/NPM_TOKEN",
+        "sourceService": "srv-dapa3tid0e5s73f8bc5g",
+        "expires": "2026-11-27T23:59:59.000Z"
+      },
+      "host": {
+        "pr": 1099,
+        "sourceSha": "c8425c020f68426c41161d881abc7c5400fcbe90",
+        "baseSha": "0a2b748cfc3d28a5261a6a21107726c363f693d0",
+        "treeSha": "229bd36f41057e2ce3858e970169c93211053990",
+        "previousPrHistoryRetained": true,
+        "parallelMainRetained": true,
+        "inventory": 27,
+        "sdk5DiffSha256": "0647743bdaad72950f918e89cb1f31bdbedbe2b6ef456f7cd4b0fd52588896a8",
+        "postimagesVerified": 4,
+        "preflights": {
+          "SG2": 23,
+          "ARCHITECTURE": 4,
+          "both": "PASS"
+        },
+        "sourceCompanionTests": {
+          "pass": 19,
+          "fail": 0,
+          "skip": 0
+        },
+        "unchangedRuntimePreviousFunctionalTests": {
+          "pass": 54,
+          "fail": 0,
+          "skip": 0,
+          "exactCic180": true,
+          "freshLoopbackPostgresOnly": true
+        },
+        "nativeHostCiAndCi27": "REQUIRED_NOT_ADMITTED",
+        "liveHostUpdated": false
+      },
+      "existingNpm": {
+        "sourceService": "srv-dapa3tid0e5s73f8bc5g",
+        "sourceField": "NPM_TOKEN",
+        "onlyRecipient": "profitia/SG-dev/aqc-verifier-development/NPM_TOKEN",
+        "mainOnlyVerified": true,
+        "installedAt": "2026-11-19T10:30:31Z",
+        "transferFilePermissions": "0600",
+        "transitDeleted": true,
+        "valuePrintedOrCommitted": false,
+        "sourceHostConfigurationChanged": false,
+        "newCredentialCreated": false,
+        "modelCredentialInstalled": false,
+        "removeBy": "2026-11-27T23:59:59.000Z"
+      },
+      "worker": {
+        "sourceSha": "b7124509574ca5bbcac6bbff61c49c560b87b75b",
+        "deployId": "dep-dbvcou0u01pc73dg0e4g",
+        "status": "LIVE_RUNTIME_VERIFIED",
+        "liveAt": "2026-11-19T10:17:06.903793Z",
+        "instance": "srv-dbu4ak0ae00c73eaabcg-swflk",
+        "lastKnownGoodSha": "79cb7cf827e82395f43e630ee9b72436b19b421a",
+        "lastKnownGoodDeployId": "dep-dbv6n0ek1f9s73bkgqeg",
+        "allAqcBytesEqualCurrentMainAtDeployment": true,
+        "postSourceMainDifferencesOnlyTwoProjectDocuments": true,
+        "controlStore": "CONNECTED_DISABLED",
+        "nativeLimits": "CONNECTED_DISABLED",
+        "github": "CONNECTED_STANDBY",
+        "qaRoles": "CONNECTED_ORDINARY_ROLE",
+        "rawQaReadPerformed": false,
+        "hostQaCodecPresent": false,
+        "retention": "PURGE_CONFIRMED_90_DAYS",
+        "sentryHttpStatus": 200,
+        "posthogProjectId": 329829,
+        "posthogExactShaAggregateEventsObserved": 1,
+        "paidRepairsEnabled": false,
+        "promotionEnabled": false,
+        "pilotStartedAt": null,
+        "autoDeploy": false
+      },
+      "earlyContext": {
+        "pr": 1248,
+        "headSha": "5c2f0ff263ed16c753b6e9a9a68700eba3cb3ee1",
+        "mainSha": "0a2b748cfc3d28a5261a6a21107726c363f693d0",
+        "sourceRun": 44506790417,
+        "sourceJob": 135500380191,
+        "tests": {
+          "aqc": 325,
+          "qa": 12,
+          "fail": 0,
+          "skip": 0
+        },
+        "firstCiFailure": "ONE_NEW_TEST_ASSUMED_HISTORICAL_WORKFLOW_FILE_AVAILABLE",
+        "testCorrection": "FULL_PREVIOUS_WORKFLOW_SHA256_REPLACES_HISTORY_READ_WITHOUT_WEAKENING_BYTE_EQUALITY",
+        "independentReview": "NO_FINDINGS_AFTER_TEST_CORRECTION",
+        "resultingMainSourceRun": 44508794446,
+        "resultingMainConclusion": "success",
+        "workflowSha256": "bd2af4eb3f9bc8e94844c68790a6254fdb33bfee825a78165abb0b0404aee396",
+        "publicWorkflowVariablesUpdated": 4,
+        "publicReadbacksVerified": 4,
+        "privateKeyOrOwnerContextsRead": false,
+        "phaseRepeatsFullAdmission": true
+      },
+      "linux22": {
+        "sourceSha": "0a2b748cfc3d28a5261a6a21107726c363f693d0",
+        "runId": 44508886291,
+        "artifactId": 14521007253,
+        "archiveSha256": "d3febfd75a4a06546d078c9301bb0c7549c81a294c99f89addc9615418c34ad3",
+        "bytes": 1153,
+        "gateSetSha256": "7f6872021330d713a28858ba4b792f901551e7f5f76be7c9cbb134606499b502",
+        "all22GitFilesAndOriginalZipAndNativeIdentityVerified": true,
+        "providerRequests": false,
+        "paidCost": false,
+        "fullPrivateCic180": false
+      },
+      "negativeContext": {
+        "runId": 44509429454,
+        "attestationJob": 135509886347,
+        "attestationConclusion": "success",
+        "verifierJob": 135510149187,
+        "expectedCode": "JOB_CONTEXT_INVALID",
+        "actualCode": "JOB_CONTEXT_INVALID",
+        "failedStep": "Verify signed context before private package access",
+        "expectedNegativePassed": true,
+        "overallWorkflowConclusion": "failure_expected",
+        "privatePackageFetch": "SKIPPED",
+        "repairExecution": "SKIPPED",
+        "qaReadOrGrantPerformed": false,
+        "modelRequestPerformed": false,
+        "realIncidentRowCreated": false
+      },
+      "independentGapReview": {
+        "existingPortsReviewed": true,
+        "unwiredNativePhases": [
+          "PROPOSE",
+          "CHECKS",
+          "PROMOTE",
+          "VERIFY_RUNTIME",
+          "OBSERVE",
+          "ROLLBACK"
+        ],
+        "independentRequiredCheckReporter": "MISSING_NOT_ACTIVATED",
+        "missingPublishAndRuntimeProofProducers": true,
+        "promotePatchProofIdentityMapping": "REQUIRES_CORRECTION_AND_TESTS",
+        "laterPhaseNativeHistoryAndUncertainDelivery": "REQUIRES_CLOSED_COMPOSITION",
+        "reference": "NEEDS_REVISION"
+      },
+      "technicalReady": false,
+      "e1RepairsCompleted": 0,
+      "paidRepairsEnabled": false,
+      "promotionEnabled": false,
+      "pilotStarted": false,
+      "stage2Started": false
     }
   },
   "consolidatedOwnerDecisionB29Revision2": {
@@ -3380,5 +3662,106 @@
     "paidRepairsEnabled": false,
     "promotionEnabled": false,
     "pilotStarted": false
+  },
+  "proposedSdkFiveOwnerAmendment": {
+    "id": "CIC-QUALITY-B29-SDK-FIVE-BOUNDED-AMENDMENT",
+    "status": "OWNER_APPROVED_APPLIED_SOURCE_NOT_YET_NATIVE_CI_ADMITTED",
+    "reason": "The closed B29-1 approval admits exactly four SDK files; the direct precision entry is a fifth SDK correction within the same existing27 host paths.",
+    "baseSdkReviewSha": "bf12f9cb20b93ce8edc8a5aca36e28000955d8f3",
+    "originalSdkCorrectionFiles": 4,
+    "proposedSdkCorrectionFiles": 5,
+    "hostInventory": 27,
+    "additionalSdkPath": "apps/sg-runtime/tests/assistant-ecr-precision-integrity.mjs",
+    "incrementalAffectedPaths": [
+      {
+        "path": "apps/sg-runtime/tests/assistant-ecr-precision-integrity.mjs",
+        "sha256": "382423585cce9a68dbdfe6bf0af591b0a61c8de4431dc115b113bb757442652f"
+      },
+      {
+        "path": "apps/sg-runtime/tests/assistant-quality-host-integrity.mjs",
+        "sha256": "6ae1de038c8ac146628d0d740a8e44a39d47187c137d227fd326619fdd0a82fb"
+      },
+      {
+        "path": "apps/sg-runtime/tests/assistant-quality-host-integrity.test.mjs",
+        "sha256": "20ef7bcff99bebc957a3745eb7030e87a70ea8b6c7fb4cfd0c29ca10295e123d"
+      },
+      {
+        "path": "apps/sg-runtime/assistant-quality-host-integration.json",
+        "sha256": "dc9cca15d467628e17b35283731e7b7fcb82c2c6e793f1450398d97e215a7467"
+      }
+    ],
+    "diffSha256": "0647743bdaad72950f918e89cb1f31bdbedbe2b6ef456f7cd4b0fd52588896a8",
+    "unifiedDiff": "--- a/apps/sg-runtime/tests/assistant-ecr-precision-integrity.mjs\n+++ b/apps/sg-runtime/tests/assistant-ecr-precision-integrity.mjs\n@@ -24,7 +24,7 @@\n ])\n const hash=b=>createHash('sha256').update(b).digest('hex')\n export function assistantEcrPrecisionPredecessor(current,historical){\n- const quality=assistantQualityPredecessor(current,historical);if(quality)return assistantEcrPrecisionPredecessor(quality.previousBytes,historical)\n+ const quality=assistantQualityPredecessor(current,historical);if(quality)return assistantEcrPrecisionPredecessor(quality.compositionPreviousBytes??quality.previousBytes,historical)\n  const recurring=recurringSourcePredecessor(current,historical);if(recurring)return assistantEcrPrecisionPredecessor(recurring.authorityBytes,historical)\n  let bytes\n  try{bytes=current(PRECISION_RECEIPT)}catch(error){\n--- a/apps/sg-runtime/tests/assistant-quality-host-integrity.mjs\n+++ b/apps/sg-runtime/tests/assistant-quality-host-integrity.mjs\n@@ -197,7 +197,7 @@\n  for(const k of Object.keys(prior).filter(k=>k!=='sourceDigests'))assert.deepEqual(a[k],prior[k],'immutable original CIC component '+k)\n  assert.deepEqual(a.acceptedComposition,{sourceSha:KNOWLEDGE_COMPOSITION_BASE,componentSourceSha:COMPONENT_BASE,\n   reservationRecordSha256:RESERVATION_PIN,knowledgeRecordSha256:KNOWLEDGE_PIN})\n- const ecrBridge='apps/sg-runtime/tests/assistant-ecr-integrity.mjs',compositionPaths=[...QUALITY_HOST_PATHS,ecrBridge]\n+ const ecrBridge='apps/sg-runtime/tests/assistant-ecr-integrity.mjs',precisionBridge='apps/sg-runtime/tests/assistant-ecr-precision-integrity.mjs',compositionPaths=[...QUALITY_HOST_PATHS,ecrBridge,precisionBridge]\n  assert.deepEqual(Object.keys(a.sourceDigests).sort(),compositionPaths.sort(),'closed CI27 source inventory')\n  for(const p of compositionPaths){assert.match(a.sourceDigests[p],/^[a-f0-9]{64}$/);assert.equal(hash(current(p)),a.sourceDigests[p],'exact CIC and Knowledge composition '+p)}\n  for(const p of QUALITY_HOST_PRESERVED){assert.equal(hash(current(p)),a.previousReceipts[p]);assert.equal(hash(historical(QUALITY_HOST_BASE,p)),a.previousReceipts[p])}\n@@ -230,11 +230,14 @@\n  }\n  for(const p of ['apps/sg-runtime/lib/assistant/calendar-period.ts','apps/sg-runtime/lib/assistant/context-selection.ts',\n   'apps/sg-runtime/tests/assistant-quality.test.ts','apps/sg-runtime/tests/assistant-quality-integrity.test.mjs',\n-  'apps/sg-runtime/tests/assistant-ecr-precision-integrity.mjs'])\n+  ])\n   assert.deepEqual(Buffer.from(current(p)),Buffer.from(historical(COMPONENT_BASE,p)),'original controlled calendar source retained '+p)\n  const ecrBefore=String(historical(COMPONENT_BASE,ecrBridge)),ecrEntry='if(quality)return assistantEcrPredecessor(quality.previousBytes,historical)'\n  assert.equal(ecrBefore.split(ecrEntry).length,2,'one original ECR quality entry')\n  assert.equal(String(current(ecrBridge)),ecrBefore.replace(ecrEntry,'if(quality)return assistantEcrPredecessor(quality.compositionPreviousBytes??quality.previousBytes,historical)'),'only additive accepted composition selection; every original ECR assertion retained')\n+ const precisionBefore=String(historical(COMPONENT_BASE,precisionBridge)),precisionEntry='if(quality)return assistantEcrPrecisionPredecessor(quality.previousBytes,historical)'\n+ assert.equal(precisionBefore.split(precisionEntry).length,2,'one original precision quality entry')\n+ assert.equal(String(current(precisionBridge)),precisionBefore.replace(precisionEntry,'if(quality)return assistantEcrPrecisionPredecessor(quality.compositionPreviousBytes??quality.previousBytes,historical)'),'only additive accepted precision composition selection; every original precision assertion retained')\n  assert.equal(hash(current(KNOWLEDGE_RECORD)),KNOWLEDGE_PIN,'immutable accepted Knowledge record')\n  const k=JSON.parse(current(KNOWLEDGE_RECORD))\n  for(const [p,digest]of Object.entries(k.sourceDigests))assert.equal(hash(compositionPreviousBytes(p)),digest,'all accepted Knowledge inputs retained '+p)\n--- a/apps/sg-runtime/tests/assistant-quality-host-integrity.test.mjs\n+++ b/apps/sg-runtime/tests/assistant-quality-host-integrity.test.mjs\n@@ -117,3 +117,16 @@\n  const denied=Object.assign(Error('DENIED'),{code:'EACCES'})\n  assert.throws(()=>assistantSdkPredecessor(f=>{if(f==='apps/architecture-lab/private-recurring-source.mjs')throw denied;return current(f)},historical),e=>e===denied)\n })\n+\n+test('direct precision entry authenticates the same accepted composition and rejects self-rebound older dispatch',async()=>{\n+ const {assistantEcrPrecisionPredecessor}=await import('./assistant-ecr-precision-integrity.mjs')\n+ const value=assistantEcrPrecisionPredecessor(current,historical);assert.equal(value.manifest.scope,'NATIVE_ECR_SCHEDULE_PRECISION')\n+ const p='apps/sg-runtime/tests/assistant-ecr-precision-integrity.mjs',bytes=Buffer.from(String(current(p)).replace('quality.compositionPreviousBytes??quality.previousBytes','quality.previousBytes'))\n+ assert.notDeepEqual(bytes,current(p))\n+ const {createHash}=await import('node:crypto'),a=JSON.parse(current(QUALITY_HOST_RECEIPT));a.sourceDigests[p]=createHash('sha256').update(bytes).digest('hex')\n+ const changed=f=>f===p?bytes:f===QUALITY_HOST_RECEIPT?Buffer.from(JSON.stringify(a)):current(f)\n+ assert.throws(()=>assistantQualityHostPredecessor(changed,historical),e=>e?.code==='ERR_ASSERTION'&&String(e.message).includes('only additive accepted precision composition selection'))\n+ assert.throws(()=>assistantEcrPrecisionPredecessor(changed,historical))\n+ const denied=Object.assign(Error('DENIED'),{code:'EACCES'})\n+ assert.throws(()=>assistantEcrPrecisionPredecessor(f=>{if(f===p)throw denied;return current(f)},historical),e=>e===denied)\n+})\n--- a/apps/sg-runtime/assistant-quality-host-integration.json\n+++ b/apps/sg-runtime/assistant-quality-host-integration.json\n@@ -16,15 +16,16 @@\n     \"apps/sg-runtime/tests/assistant-quality-response.test.ts\": \"86a0957bcaa243ac8fbacd57db5024f4e242d99fe9bb52bed563b89a2de1f48e\",\n     \"apps/sg-runtime/tests/assistant-quality-evidence.test.ts\": \"a301ae44ece516a83afba433d82dcf0e5a2f68272ff04194b677fbec433274bf\",\n     \"apps/sg-runtime/tests/assistant-quality-integrity.mjs\": \"43a1682cf58f5d42f7339f752901f536d85ff941cef5b1c7778c052f55ee649b\",\n-    \"apps/sg-runtime/tests/assistant-quality-host-integrity.mjs\": \"b73a173bf38f61dfe81975b13853664e779fb7152a7512f1568128b477e4ccd3\",\n-    \"apps/sg-runtime/tests/assistant-quality-host-integrity.test.mjs\": \"52578d57bb211e1b0028248778184546b671d43b6196fa319ef86560b4edf830\",\n+    \"apps/sg-runtime/tests/assistant-quality-host-integrity.mjs\": \"6ae1de038c8ac146628d0d740a8e44a39d47187c137d227fd326619fdd0a82fb\",\n+    \"apps/sg-runtime/tests/assistant-quality-host-integrity.test.mjs\": \"20ef7bcff99bebc957a3745eb7030e87a70ea8b6c7fb4cfd0c29ca10295e123d\",\n     \"apps/sg-runtime/tests/procurement-insights-completion-integrity.mjs\": \"00f1b475342a78ad916c03723ae2b9b268963240d101b57c17559308c48daafa\",\n     \"apps/architecture-lab/private-recurring-source.mjs\": \"34c555f971140e197880e2ff3ddf7c1696112d2744374b238a3f3315c8fbbcf4\",\n     \"apps/sg-runtime/tests/procurement-insights-editorial-package-integrity.mjs\": \"8d04bf7ccb45cba30eb0e9d5fb032db2e04e039337674b9d198df6525bf257b1\",\n     \"packages/platform-contracts/test/assistant-reservation-source.mjs\": \"0a45aced74c9f83d54ee28e819c7a68a4a2ce263a6b564f6514caf891d7ef7ce\",\n     \"apps/architecture-lab/knowledge-source.mjs\": \"4ff6c2d4740764a62c10315f6ffd848460c90a59c0a6483232efde603f891838\",\n     \"apps/architecture-lab/test/knowledge-source.test.mjs\": \"df766e101aab6efc2848682cca624dcb8a728290912f1d531e856bfb1079c4f8\",\n-    \"apps/sg-runtime/tests/assistant-ecr-integrity.mjs\": \"c6e32397b7c54384b73b1f2539fa7289ba0e967ae53c9b2d23efd75b421a1174\"\n+    \"apps/sg-runtime/tests/assistant-ecr-integrity.mjs\": \"c6e32397b7c54384b73b1f2539fa7289ba0e967ae53c9b2d23efd75b421a1174\",\n+    \"apps/sg-runtime/tests/assistant-ecr-precision-integrity.mjs\": \"382423585cce9a68dbdfe6bf0af591b0a61c8de4431dc115b113bb757442652f\"\n   },\n   \"previousReceipts\": {\n     \"apps/sg-runtime/assistant-quality-integration.json\": \"d37226bbb90d585b95aab383dab6fcb7d20ab8698709b50de0e1c8a58d1af2a7\",\n",
+    "requested": [
+      "Apply and test this exact incremental four-file diff on top of the already approved SDK4 source; this adds only the fifth SDK adapter, while host inventory remains27.",
+      "Refresh CI27 source fingerprints and exact metadata to that approved SDK5 source, preserving current main and every original source assertion, receipt, test body, path/expiry/branch fence.",
+      "The previously approved B29-1 protected bootstrap remains exact-source gated; full native host CI and resulting-main CI remain required before Development rollout."
+    ],
+    "newRights": false,
+    "newRoles": false,
+    "newSecrets": false,
+    "newCosts": false,
+    "paidRepairsEnabled": false,
+    "promotionEnabled": false,
+    "pilotStarted": false,
+    "originalReceiptsAndTestBodiesRetained": true,
+    "testStatus": "NOT_EXECUTED_PENDING_EXPLICIT_CLOSED_SCOPE_AMENDMENT",
+    "consolidatedFollowup": {
+      "id": "B29-SDK5-AND-EXISTING-NPM-RECIPIENT",
+      "status": "OWNER_APPROVED_APPLIED_SOURCE_AND_CREDENTIAL",
+      "sdk5DiffSha256": "0647743bdaad72950f918e89cb1f31bdbedbe2b6ef456f7cd4b0fd52588896a8",
+      "existingNpmCredential": {
+        "source": {
+          "provider": "Render",
+          "workspaceId": "tea-d7lps8rbc2fs73cn80dg",
+          "serviceId": "srv-dapa3tid0e5s73f8bc5g",
+          "name": "NPM_TOKEN"
+        },
+        "recipient": {
+          "provider": "GitHub",
+          "repository": "profitia/SG-dev",
+          "environment": "aqc-verifier-development",
+          "secretName": "NPM_TOKEN",
+          "mainOnly": true
+        },
+        "transfer": "Read exactly the existing NPM_TOKEN through the owner-authenticated Render setting, place it transiently in this task's private0700 directory/file0600, send only through stdin to the supported GitHub environment-secret setter, remove the file immediately in finally; never print or commit its value.",
+        "use": "The existing admitted trusted verifier step fetches exactly @profitia/cic-core@1.8.0 with --ignore-scripts and the frozen SHA512; no token transfer to executor, isolated test process, worker, publisher or public artifact.",
+        "tokenScopeChanged": false,
+        "newTokenCreated": false,
+        "broaderTokenReused": false,
+        "hostConfigurationChanged": false,
+        "expiresBy": "2026-11-27T23:59:59.000Z",
+        "removeRecipientAtCompletionOrExpiry": true,
+        "sourceTokenCapabilitiesNotIndependentlyVerified": true,
+        "risk": "Adds a second private recipient of an existing package credential; the token's provider-level package scope is unchanged, while the admitted verifier code limits its use to the frozen CIC artifact."
+      },
+      "automaticApprovalReview": {
+        "action": "Read source NPM_TOKEN and write private transit file",
+        "decision": "REJECTED_NOT_EXECUTED",
+        "reason": "Missing explicit trusted owner approval for this exact secret and transfer method."
+      },
+      "actualProbe": {
+        "runId": 44501817882,
+        "sourceSha": "b7124509574ca5bbcac6bbff61c49c560b87b75b",
+        "nativeLinuxAttestationJob": 135483691292,
+        "attestationConclusion": "success",
+        "verifierJob": 135483964050,
+        "actualFailure": "NPM_TOKEN_EMPTY_BEFORE_ANY_NPM_REQUEST",
+        "expectedMissingContextGateReached": false,
+        "qaReadOrModelRequest": false
+      },
+      "noNewCostsOrResources": true,
+      "paidRepairsEnabled": false,
+      "promotionEnabled": false,
+      "pilotStarted": false,
+      "ownerApproval": {
+        "questionId": "call_56750d6941af4a1bbf75db0756330255",
+        "answer": "Zatwierdzam cały pakiet SDK5 i NPM_TOKEN",
+        "source": "416d35d512a08cef00aca6ad4081952d6bf798ae",
+        "recipient": "profitia/SG-dev/aqc-verifier-development/NPM_TOKEN",
+        "sourceService": "srv-dapa3tid0e5s73f8bc5g",
+        "expires": "2026-11-27T23:59:59.000Z"
+      }
+    }
   }
 }
