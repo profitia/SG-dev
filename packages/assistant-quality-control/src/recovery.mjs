@@ -1,5 +1,6 @@
 import {documentDigest,verifyDocument} from './manifest.mjs'
-import {prepareQualityControllerJobContext} from './job-context.mjs'
+import {prepareQualityControllerJobContext,normalizeQualityControllerJobInputs} from './job-context.mjs'
+import {readQualityControlRecordMetadata,verifyQualityNativeDispatchInputs} from './job-state.mjs'
 const fail=code=>{throw Object.assign(Error('Quality operational recovery unavailable'),{code})}
 const require=(v,c='RECOVERY_AUTHORITY_INVALID')=>{if(!v)fail(c)}
 const uuid=v=>typeof v==='string'&&/^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(v)
@@ -112,22 +113,77 @@ function binding(externalId,action){
  require(p.length===4&&p[0]==='aqc-job'&&sha(p[1])&&uuid(p[2])&&p[3]===action,'RECOVERY_JOB_BINDING_INVALID')
  return {controlSourceSha:p[1],nonce:p[2],action}
 }
-export function qualityRecoveryJobInputs({authority,record,action,externalId,now=Date.now()}){
+
+function recoveryStateRecord(record,externalId,action){
+ const value=readQualityControlRecordMetadata(record),b=binding(externalId,action)
+ require(value.pending?.externalId===externalId&&value.pending.action===action&&value.pending.nonce===b.nonce,
+  'RECOVERY_JOB_INPUT_INVALID')
+ require(action==='ROLLBACK'?['RELEASED','OBSERVING'].includes(value.status)&&value.rollbackRequired===true&&value.rollbacksUsed===1:
+  value.status===(action==='VERIFY_RUNTIME'?'RELEASED':'OBSERVING'),'RECOVERY_JOB_INPUT_INVALID')
+ return value
+}
+export function qualityRecoveryJobInputs({authority,record,action,externalId,jobStateEnabled=false,now=Date.now()}){
+ require(typeof jobStateEnabled==='boolean','RECOVERY_JOB_INPUT_INVALID')
+ if(jobStateEnabled)record=recoveryStateRecord(record,externalId,action)
  assertQualityOperationalRecovery(authority,{record,action,now})
  const b=binding(externalId,action),m=authority.manifest
- return freeze({mode:'controller-job',action,nonce:b.nonce,control_source_sha:b.controlSourceSha,incident_id:m.incidentId,
-  manifest_sha256:documentDigest(m),base_sha:m.baseSha,recovery_sha256:authority.recoverySha256})
+ const inputs={mode:'controller-job',action,nonce:b.nonce,control_source_sha:b.controlSourceSha,incident_id:m.incidentId,
+  manifest_sha256:documentDigest(m),base_sha:m.baseSha}
+ if(!jobStateEnabled)return freeze({...inputs,recovery_sha256:authority.recoverySha256})
+ const state=JSON.stringify({schemaVersion:'AQC_RECOVERY_STATE_V1',recoverySha256:authority.recoverySha256,
+  manifestSha256:documentDigest(m),controlSourceSha:b.controlSourceSha,record})
+ require(Buffer.byteLength(state)<=16384,'RECOVERY_JOB_INPUT_INVALID')
+ return freeze({...inputs,state})
 }
-export async function readQualityRecoveryJobContext({inputs,...options}){
- require(exact(inputs,['mode','action','nonce','control_source_sha','incident_id','manifest_sha256','base_sha','recovery_sha256'])
-  &&inputs.mode==='controller-job'&&actions.includes(inputs.action)&&hash(inputs.recovery_sha256),'RECOVERY_JOB_INPUT_INVALID')
+const nativeRecoveryStates=new WeakMap()
+export async function readQualityRecoveryJobContext({inputs,jobStateEnabled=false,nativeInvocation,nativeEnvironment,...options}){
+ require(typeof jobStateEnabled==='boolean','RECOVERY_JOB_INPUT_INVALID')
+ if(!jobStateEnabled){
+  require(exact(inputs,['mode','action','nonce','control_source_sha','incident_id','manifest_sha256','base_sha','recovery_sha256'])
+   &&inputs.mode==='controller-job'&&actions.includes(inputs.action)&&hash(inputs.recovery_sha256),'RECOVERY_JOB_INPUT_INVALID')
+  const externalId='aqc-job:'+inputs.control_source_sha+':'+inputs.nonce+':'+inputs.action
+  binding(externalId,inputs.action)
+  const authority=await admitQualityOperationalRecovery(options)
+  require(authority.recoverySha256===inputs.recovery_sha256&&authority.manifest.incidentId===inputs.incident_id
+   &&authority.manifest.baseSha===inputs.base_sha&&documentDigest(authority.manifest)===inputs.manifest_sha256,'RECOVERY_JOB_INPUT_INVALID')
+  assertQualityOperationalRecovery(authority,{record:options.record,action:inputs.action,now:options.now})
+  return freeze({authority,externalId})
+ }
+ try{inputs=normalizeQualityControllerJobInputs(inputs)}catch{fail('RECOVERY_JOB_INPUT_INVALID')}
+ require(exact(inputs,['mode','action','nonce','control_source_sha','incident_id','manifest_sha256','base_sha','state'])
+  &&actions.includes(inputs.action)&&typeof inputs.state==='string'&&Buffer.byteLength(inputs.state)<=16384,'RECOVERY_JOB_INPUT_INVALID')
  const externalId='aqc-job:'+inputs.control_source_sha+':'+inputs.nonce+':'+inputs.action
  binding(externalId,inputs.action)
- const authority=await admitQualityOperationalRecovery(options)
- require(authority.recoverySha256===inputs.recovery_sha256&&authority.manifest.incidentId===inputs.incident_id
-  &&authority.manifest.baseSha===inputs.base_sha&&documentDigest(authority.manifest)===inputs.manifest_sha256,'RECOVERY_JOB_INPUT_INVALID')
- assertQualityOperationalRecovery(authority,{record:options.record,action:inputs.action,now:options.now})
- return freeze({authority,externalId})
+ let body
+ try{body=JSON.parse(inputs.state)}catch{fail('RECOVERY_JOB_INPUT_INVALID')}
+ require(exact(body,['schemaVersion','recoverySha256','manifestSha256','controlSourceSha','record'])
+  &&body.schemaVersion==='AQC_RECOVERY_STATE_V1'&&JSON.stringify(body)===inputs.state
+  &&hash(body.recoverySha256)&&body.manifestSha256===inputs.manifest_sha256
+  &&body.controlSourceSha===inputs.control_source_sha,'RECOVERY_JOB_INPUT_INVALID')
+ const record=recoveryStateRecord(body.record,externalId,inputs.action)
+ require(record.id===inputs.incident_id&&record.baseSha===inputs.base_sha
+  &&(options.record===undefined||documentDigest(options.record)===documentDigest(record)),'RECOVERY_JOB_INPUT_INVALID')
+ const authority=await admitQualityOperationalRecovery({...options,record})
+ require(authority.recoverySha256===body.recoverySha256&&documentDigest(authority.manifest)===body.manifestSha256,
+  'RECOVERY_JOB_INPUT_INVALID')
+ const at=options.now??Date.now(),trusted=admitted.get(authority)
+ const checked=await verifyQualityNativeDispatchInputs({inputs,externalId,invocation:nativeInvocation,
+  ...(nativeEnvironment===undefined?{}:{environment:nativeEnvironment}),
+  notBefore:Date.parse(trusted.body.issuedAt),expiresAt:Date.parse(authority.expiresAt),now:at})
+ assertQualityOperationalRecovery(authority,{record,action:inputs.action,now:at})
+ const native=checked.native,jobState=freeze({kind:'AQC_RECOVERY_NATIVE_STATE_V1',record,externalId,
+  metadataSha256:documentDigest(body),recoverySha256:authority.recoverySha256,runId:native.runId,workflowId:native.workflowId,
+  controlSourceSha:native.controlSourceSha,createdAt:native.createdAt,providerIdentityVerified:true,authorityIncluded:false})
+ nativeRecoveryStates.set(jobState,{authority,externalId})
+ return freeze({authority,externalId,jobState})
+}
+export function assertQualityRecoveryNativeState(value,{authority,externalId,now=Date.now()}){
+ const trusted=nativeRecoveryStates.get(value)
+ require(trusted&&trusted.authority===authority&&trusted.externalId===externalId,'RECOVERY_NATIVE_STATE_REQUIRED')
+ assertQualityOperationalRecovery(authority,{record:value.record,action:value.record.pending.action,now})
+ require(Number.isFinite(now)&&Date.parse(value.createdAt)<=now&&now-Date.parse(value.createdAt)<=1800000,
+  'RECOVERY_NATIVE_STATE_EXPIRED')
+ return value
 }
 export async function readQualityRecoveryPhaseResult(document,{authority,record,externalId,runId,workflowId,keysByRole,notBefore,now=Date.now()}){
  const action=typeof externalId==='string'?externalId.split(':')[3]:null
@@ -141,9 +197,9 @@ export async function readQualityRecoveryPhaseResult(document,{authority,record,
 /** Fixed operational transport. It has no budget port and cannot dispatch
  * QUALIFY/EXECUTE/PROPOSE/PROMOTE. Every result still originates from an exact
  * native artifact and the separately installed verifier/publisher signature. */
-export function createQualityOperationalRecoveryActions({github,keysByRole,now=Date.now}={}){
+export function createQualityOperationalRecoveryActions({github,keysByRole,jobStateEnabled=false,now=Date.now}={}){
  const methods=['descriptor','recoveryJobDescriptor','dispatchRecoveryJob','findControllerJob','controllerJobResult','cancelControllerJob']
- require(methods.every(k=>typeof github?.[k]==='function')&&typeof now==='function','RECOVERY_ACTIONS_CONFIGURATION_REQUIRED')
+ require(methods.every(k=>typeof github?.[k]==='function')&&typeof now==='function'&&typeof jobStateEnabled==='boolean','RECOVERY_ACTIONS_CONFIGURATION_REQUIRED')
  require(keysByRole instanceof Map&&keysByRole.size===3,'RECOVERY_ROLE_TRUST_REQUIRED')
  const trusted=new Map(),ids=new Set()
  for(const role of ['EXECUTOR_SUPERVISOR','INDEPENDENT_VERIFIER','INDEPENDENT_PUBLISHER']){
@@ -173,7 +229,7 @@ export function createQualityOperationalRecoveryActions({github,keysByRole,now=D
   async dispatch(action,input){
    require(input.intent===input.record.pending,'RECOVERY_JOB_BINDING_INVALID')
    const authority=admittedFor(action,input,input.intent.externalId)
-   const result=await github.dispatchRecoveryJob({authority,record:input.record,action,externalId:input.intent.externalId})
+   const result=await github.dispatchRecoveryJob({authority,record:input.record,action,externalId:input.intent.externalId,...(jobStateEnabled?{jobStateEnabled:true}:{})})
    require(result?.state==='UNKNOWN'&&result.externalId===input.intent.externalId&&result.resultVerified===false,'RECOVERY_DISPATCH_INVALID')
    return Object.freeze({externalId:input.intent.externalId})
   },

@@ -204,15 +204,15 @@ export function createQualityGitHub({token,fetchImpl=fetch,publisherEnabled=fals
    const value=await controllerJobDescriptor({sourceSha},true)
    return Object.freeze({...value,dispatchEnabled:recoveryJobsEnabled&&value.workflowState==='active'})
   },
-  async dispatchRecoveryJob({authority,record,action,externalId}){
+  async dispatchRecoveryJob({authority,record,action,externalId,jobStateEnabled=false}){
    if(!recoveryJobsEnabled)fail('RECOVERY_JOBS_DISABLED')
-   const inputs=qualityRecoveryJobInputs({authority,record,action,externalId,now:now()})
+   const inputs=qualityRecoveryJobInputs({authority,record,action,externalId,jobStateEnabled,now:now()})
    const sourceSha=inputs.control_source_sha
    require(await main()===sourceSha,'BASE_CHANGED')
    const workflow=await controllerJobDescriptor({sourceSha},true)
    require(workflow.workflowState==='active','GITHUB_WORKFLOW_BINDING_INVALID')
    require(await main()===sourceSha,'BASE_CHANGED')
-   qualityRecoveryJobInputs({authority,record,action,externalId,now:now()})
+   qualityRecoveryJobInputs({authority,record,action,externalId,jobStateEnabled,now:now()})
    await write('/actions/workflows/assistant-quality-repair.yml/dispatches',{ref:'main',inputs})
    return Object.freeze({state:'UNKNOWN',externalId,resultVerified:false})
   },

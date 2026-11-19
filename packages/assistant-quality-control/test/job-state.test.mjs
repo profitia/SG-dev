@@ -440,3 +440,49 @@ test('missing historical native artifact never becomes a verified fact or an ext
   assert(f.calls.every(c=>c.method==='GET'))
  }finally{f.cleanup()}
 })
+
+test('ten declared native fields normalize only unused empty defaults while EXECUTE keeps both permit fields',async()=>{
+ const {normalizeQualityControllerJobInputs}=await import('../src/job-context.mjs')
+ const {qualityControllerJobInputs}=await import('../src/github.mjs'),f=fixture()
+ const global={...qualityControllerJobInputs(f),permit_id:'',permit_expires_at:''}
+ assert.equal(Object.keys(global).length,10)
+ const canonical=normalizeQualityControllerJobInputs(global)
+ assert.deepEqual(canonical,qualityControllerJobInputs(f));assert.equal(Object.isFrozen(canonical),true)
+ const legacy=qualityControllerJobInputs({manifest:f.manifest,externalId:f.externalId})
+ assert.deepEqual(normalizeQualityControllerJobInputs({...legacy,state:'',permit_id:'',permit_expires_at:''}),legacy)
+ const e=fixture('EXECUTE'),permit={incidentId:e.manifest.incidentId,attemptId:e.record.pending.nonce,
+  permitId:randomUUID(),ordinal:1,expiresAt:stamp(now+60000)},execute=qualityControllerJobInputs({...e,permit})
+ assert.equal(Object.keys(normalizeQualityControllerJobInputs(execute)).length,10)
+ assert.equal(normalizeQualityControllerJobInputs(execute).permit_id,permit.permitId)
+})
+test('native default normalization never ignores an unknown field nonempty unused permit getter or oversized state',async()=>{
+ const {normalizeQualityControllerJobInputs}=await import('../src/job-context.mjs'),f=fixture()
+ const {qualityControllerJobInputs}=await import('../src/github.mjs'),input=qualityControllerJobInputs(f)
+ for(const changed of [{...input,permit_id:'foreign'},{...input,permit_expires_at:stamp(now+1)},
+  {...input,recovery_sha256:''},{...input,rawQa:''},{...input,state:'x'.repeat(16385)},
+  {...input,nonce:1},{...input,action:'UNDECLARED'},{...input,mode:'keyless-qualify'}]){
+  assert.throws(()=>normalizeQualityControllerJobInputs(changed),{code:'JOB_CONTEXT_INPUT_INVALID'})
+ }
+ let calls=0;const getter={...input}
+ Object.defineProperty(getter,'permit_id',{enumerable:true,get(){calls++;throw Error('must not execute')}})
+ assert.throws(()=>normalizeQualityControllerJobInputs(getter),{code:'JOB_CONTEXT_INPUT_INVALID'});assert.equal(calls,0)
+ const inherited=Object.create(input)
+ assert.throws(()=>normalizeQualityControllerJobInputs(inherited),{code:'JOB_CONTEXT_INPUT_INVALID'})
+ const hidden={...input};Object.defineProperty(hidden,'permit_id',{value:'',enumerable:false})
+ assert.throws(()=>normalizeQualityControllerJobInputs(hidden),{code:'JOB_CONTEXT_INPUT_INVALID'})
+})
+test('the actual native event may carry declared empty defaults but extra or nonempty fields still cannot mint state',async()=>{
+ const {admitQualityNativeJobState}=await import('../src/job-state.mjs')
+ const f=await nativeFixture()
+ try{
+  const invocation=await f.client.controllerJobInvocation({externalId:f.externalId,runId:'701'})
+  const inputs={...f.inputs,permit_id:'',permit_expires_at:''}
+  f.fs.writeFileSync(f.file,JSON.stringify({inputs}))
+  const admitted=await admitQualityNativeJobState({...f,inputs,invocation,now})
+  assert.equal(admitted.providerIdentityVerified,true)
+  for(const changed of [{...inputs,permit_id:'foreign'},{...inputs,recovery_sha256:''},{...inputs,rawQa:''}]){
+   f.fs.writeFileSync(f.file,JSON.stringify({inputs:changed}))
+   await assert.rejects(admitQualityNativeJobState({...f,inputs,invocation,now}),{code:'JOB_STATE_NATIVE_INVOCATION_REQUIRED'})
+  }
+ }finally{f.cleanup()}
+})
