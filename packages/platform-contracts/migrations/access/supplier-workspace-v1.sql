@@ -25,6 +25,7 @@ BEGIN
  OR NOT EXISTS(SELECT 1 FROM pg_policy WHERE polrelid='srm.organizations'::regclass AND polname='private_operation_fence'
  AND encode(sha256(convert_to(pg_get_expr(polwithcheck,polrelid),'UTF8')),'hex')='1134694daca19d93b6ebeb3baf5ec2614b95f81ab7c8c4f59c82c4594cce8088')
  THEN RAISE EXCEPTION 'Accepted organization parent fence required' USING ERRCODE='42501';END IF;
+ IF NOT EXISTS(SELECT 1 FROM pg_proc WHERE oid='srm.guard_supplier_business_write()'::regprocedure AND prosecdef AND proowner='profitia_access_owner'::regrole AND encode(sha256(convert_to(pg_get_functiondef(oid),'UTF8')),'hex')='32123680240e42ff01ae45a957bea7ccf4edb4fb8071da7c1072fbcaa3e11337') THEN RAISE EXCEPTION 'Exact accepted supplier trigger required' USING ERRCODE='42501';END IF;
 END $guard$;
 
 CREATE SCHEMA profitia_supplier_workspace AUTHORIZATION profitia_access_owner;
@@ -40,7 +41,7 @@ CREATE TABLE profitia_supplier_workspace.scopes(
  transaction_id text NOT NULL,decision_id uuid NOT NULL,organisation_id uuid NOT NULL,actor_id uuid NOT NULL,
  policy_id uuid NOT NULL,policy_version bigint NOT NULL,
  operation text NOT NULL,resource_id text NOT NULL,payload_digest text NOT NULL CHECK(payload_digest~'^[a-f0-9]{64}$'),
- access_mode text NOT NULL CHECK(access_mode IN('READ','WRITE')),access_state jsonb NOT NULL,
+ access_mode text NOT NULL CHECK(access_mode IN('READ','WRITE')),allowed_write_operations text[] NOT NULL,access_state jsonb NOT NULL,
  access_policy_version text NOT NULL,expires_at timestamptz NOT NULL,
  UNIQUE(login_role,backend_pid,transaction_id));
 ALTER TABLE profitia_supplier_workspace.installation ENABLE ROW LEVEL SECURITY;
@@ -391,10 +392,10 @@ BEGIN
   'expiresAt',s.expires_at::text,'decisionId',s.decision_id::text,'resourceId',s.resource_id);
 END $fn$;
 
-CREATE FUNCTION profitia_supplier_workspace.bind_operation(p_decision uuid,p_digest text) RETURNS jsonb
+CREATE FUNCTION profitia_supplier_workspace.bind_operation(p_decision uuid,p_digest text,p_payload jsonb) RETURNS jsonb
  LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,pg_temp AS $fn$
 DECLARE e jsonb;d jsonb;identity_row profitia_access.external_identities%ROWTYPE;state jsonb;
- mode text;deadline timestamptz;id uuid;existing profitia_supplier_workspace.scopes%ROWTYPE;policy profitia_supplier_workspace.organisation_policies%ROWTYPE;
+ mode text;writes text[];command_operation text;deadline timestamptz;id uuid;existing profitia_supplier_workspace.scopes%ROWTYPE;policy profitia_supplier_workspace.organisation_policies%ROWTYPE;
 BEGIN
  IF session_user<>'srm_private_development_runtime' OR current_database()<>'platform_private'
   OR p_decision IS NULL OR p_digest!~'^[a-f0-9]{64}$' THEN RETURN NULL;END IF;
@@ -421,7 +422,25 @@ BEGIN
   AND organisation_id=(e->>'organisationId')::uuid AND status='ACTIVE' AND expires_at>clock_timestamp();
  IF NOT FOUND THEN RETURN NULL;END IF;
  mode:=profitia_supplier_workspace.operation_mode(e->>'operation');
- IF mode IS NULL OR e->>'effect' IS DISTINCT FROM mode THEN RETURN NULL;END IF;
+ IF mode IS NULL OR e->>'effect' IS DISTINCT FROM mode
+  OR p_payload IS NULL OR octet_length(p_payload::text)>131072
+  OR encode(sha256(convert_to(profitia_supplier_workspace.canonical_json(p_payload),'UTF8')),'hex') IS DISTINCT FROM p_digest
+ THEN RETURN NULL;END IF;
+ writes:=ARRAY[]::text[];
+ IF mode='WRITE' THEN
+  command_operation:=CASE
+   WHEN p_payload->>'command' IN('SUPPLIER_CREATE','SUPPLIER_UPDATE','SUPPLIER_ARCHIVE','SUPPLIER_RESTORE') THEN 'supplier.catalog.write'
+   WHEN p_payload->>'command' IN('CATEGORY_CREATE','CATEGORY_UPDATE','CATEGORY_ARCHIVE','CATEGORY_RESTORE','SUPPLIER_CATEGORY_ADD','SUPPLIER_CATEGORY_REMOVE') THEN 'supplier.category.write'
+   WHEN p_payload->>'command' IN('PIPELINE_CREATE','PIPELINE_UPDATE','PIPELINE_ARCHIVE','PIPELINE_RESTORE','STAGE_ADD','STAGES_UPDATE','STAGE_REMOVE') THEN 'supplier.pipeline.write'
+   WHEN p_payload->>'command' IN('MEMBERSHIP_ADD','MEMBERSHIP_MOVE','MEMBERSHIP_END','SUPPLIER_TRANSFER') THEN 'supplier.assignment.write' END;
+  IF command_operation IS DISTINCT FROM e->>'operation' THEN RETURN NULL;END IF;
+  writes:=ARRAY[command_operation];
+  IF p_payload->>'command' IN('SUPPLIER_ARCHIVE','PIPELINE_ARCHIVE','STAGE_REMOVE')
+   AND jsonb_typeof(p_payload->'data'->'expectedCount')='number'
+   AND (p_payload->'data'->>'expectedCount')::numeric>0 THEN writes:=array_append(writes,'supplier.assignment.write');END IF;
+  IF p_payload->>'command'='SUPPLIER_CREATE' AND jsonb_typeof(p_payload->'data'->'categoryIds')='array'
+   AND jsonb_array_length(p_payload->'data'->'categoryIds')>0 THEN writes:=array_append(writes,'supplier.category.write');END IF;
+ END IF;
  SELECT ex.* INTO identity_row FROM profitia_access.external_identities ex
  JOIN profitia_access.accounts a ON a.user_id=ex.user_id
  WHERE ex.user_id=(e->>'actorId')::uuid AND ex.issuer=e->>'identityIssuer'
@@ -450,9 +469,9 @@ BEGIN
   id:=existing.scope_id;
  ELSE
   INSERT INTO profitia_supplier_workspace.scopes(login_role,backend_pid,transaction_id,decision_id,
-   organisation_id,actor_id,policy_id,policy_version,operation,resource_id,payload_digest,access_mode,access_state,access_policy_version,expires_at)
+   organisation_id,actor_id,policy_id,policy_version,operation,resource_id,payload_digest,access_mode,allowed_write_operations,access_state,access_policy_version,expires_at)
   VALUES(session_user,pg_backend_pid(),txid_current()::text,p_decision,(e->>'organisationId')::uuid,
-   (e->>'actorId')::uuid,policy.policy_id,policy.version,e->>'operation',e->>'resourceId',p_digest,mode,state->'access',state->>'policyVersion',deadline)
+   (e->>'actorId')::uuid,policy.policy_id,policy.version,e->>'operation',e->>'resourceId',p_digest,mode,writes,state->'access',state->>'policyVersion',deadline)
   RETURNING scope_id INTO id;
  END IF;
  PERFORM set_config('profitia.supplier_workspace.scope',id::text,true);
@@ -466,7 +485,7 @@ DECLARE s profitia_supplier_workspace.scopes%ROWTYPE;mode text;
 BEGIN
  s:=profitia_supplier_workspace.current_scope();mode:=profitia_supplier_workspace.operation_mode(p_operation);
  IF s.scope_id IS NULL OR p_org IS NULL OR s.organisation_id<>p_org OR mode IS NULL
-  OR mode='WRITE' AND s.access_mode<>'WRITE' THEN RETURN false;END IF;
+  OR mode='WRITE' AND (s.access_mode<>'WRITE' OR NOT(p_operation=ANY(s.allowed_write_operations))) THEN RETURN false;END IF;
  RETURN EXISTS(SELECT 1 FROM jsonb_array_elements(s.access_state->'permissions') p
    WHERE p->>'operation'=p_operation AND p->>'feature'='supplier_workspace'
     AND(p->>'resourceId' IS NULL OR p->>'resourceId'=CASE WHEN p_resource IS NULL THEN s.resource_id ELSE p_resource::text END))
@@ -565,7 +584,7 @@ END OR
 CASE
     WHEN (CURRENT_USER = 'profitia_access_owner'::name) THEN false
     ELSE srm.native_supplier_row('suppliers'::text, organization_id, id, NULL::uuid, NULL::uuid, nip, NULL::text, 'WRITE'::text)
-END OR ((CURRENT_USER = 'profitia_access_owner'::name) AND (srm.location_admission_installation_descriptor() IS NOT NULL) AND profitia_access.scope_allows('srm'::text, organization_id, (NULLIF(current_setting('profitia.user_id'::text, true), ''::text))::uuid) AND profitia_modules.scope_allows('supplier_report'::text, organization_id, (NULLIF(current_setting('profitia.user_id'::text, true), ''::text))::uuid)))) OR (CURRENT_USER='profitia_access_owner'::name AND profitia_supplier_workspace.scope_allows(organization_id,'supplier.catalog.write',id))) WITH CHECK (((
+END OR ((CURRENT_USER = 'profitia_access_owner'::name) AND (srm.location_admission_installation_descriptor() IS NOT NULL) AND profitia_access.scope_allows('srm'::text, organization_id, (NULLIF(current_setting('profitia.user_id'::text, true), ''::text))::uuid) AND profitia_modules.scope_allows('supplier_report'::text, organization_id, (NULLIF(current_setting('profitia.user_id'::text, true), ''::text))::uuid)))) OR (CURRENT_USER='profitia_access_owner'::name AND profitia_supplier_workspace.scope_allows(organization_id,'supplier.catalog.write',id)) OR (CURRENT_USER='profitia_access_owner'::name AND (profitia_supplier_workspace.current_scope()).access_mode='WRITE' AND profitia_supplier_workspace.scope_allows(organization_id,'supplier.catalog.read',id))) WITH CHECK (((
 CASE
     WHEN (CURRENT_USER = 'profitia_access_owner'::name) THEN false
     ELSE
@@ -578,6 +597,7 @@ CASE
     WHEN (CURRENT_USER = 'profitia_access_owner'::name) THEN false
     ELSE srm.native_supplier_row('suppliers'::text, organization_id, id, NULL::uuid, NULL::uuid, nip, NULL::text, 'WRITE'::text)
 END)) OR (CURRENT_USER='profitia_access_owner'::name AND profitia_supplier_workspace.scope_allows(organization_id,'supplier.catalog.write',id)));
+CREATE POLICY workspace_master_lock ON srm.suppliers FOR UPDATE TO profitia_access_owner USING(CURRENT_USER='profitia_access_owner'::name AND (profitia_supplier_workspace.current_scope()).access_mode='WRITE' AND profitia_supplier_workspace.scope_allows(organization_id,'supplier.catalog.read',id)) WITH CHECK(false);
 CREATE POLICY workspace_closed_insert ON srm.suppliers FOR INSERT TO profitia_access_owner
  WITH CHECK(current_user='profitia_access_owner' AND profitia_supplier_workspace.scope_allows(organization_id,'supplier.catalog.write',id));
 CREATE POLICY workspace_closed_update ON srm.suppliers FOR UPDATE TO profitia_access_owner
@@ -621,3 +641,79 @@ CREATE POLICY workspace_parent_insert ON srm.organizations FOR INSERT TO profiti
   AND (profitia_supplier_workspace.current_scope()).access_mode='WRITE'
   AND profitia_supplier_workspace.scope_allows(id,(profitia_supplier_workspace.current_scope()).operation,NULL));
 REVOKE ALL ON FUNCTION profitia_supplier_workspace.ensure_organisation() FROM PUBLIC;
+
+CREATE OR REPLACE FUNCTION srm.guard_supplier_business_write()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO 'pg_catalog', 'pg_temp'
+AS $function$
+DECLARE nip text; lookup_id uuid; section text; phases text[]; d jsonb;
+BEGIN
+ -- Bounded workspace catalogue lane; original report/sensitive lanes below stay intact.
+ IF TG_TABLE_SCHEMA='srm' AND TG_TABLE_NAME='suppliers' AND TG_OP IN('INSERT','UPDATE')
+  AND current_user='profitia_access_owner'
+  AND profitia_supplier_workspace.scope_allows(NEW.organization_id,'supplier.catalog.write',NEW.id) THEN
+  IF NEW.nip IS NULL OR NEW.nip!~'^[0-9]{10}$' OR NEW.nip='0000000000'
+   OR (substr(NEW.nip,1,1)::int*6+substr(NEW.nip,2,1)::int*5+substr(NEW.nip,3,1)::int*7
+    +substr(NEW.nip,4,1)::int*2+substr(NEW.nip,5,1)::int*3+substr(NEW.nip,6,1)::int*4
+    +substr(NEW.nip,7,1)::int*5+substr(NEW.nip,8,1)::int*6+substr(NEW.nip,9,1)::int*7)%11<>substr(NEW.nip,10,1)::int
+   OR TG_OP='INSERT' AND NEW.krs IS NOT NULL
+   OR TG_OP='UPDATE' AND (to_jsonb(NEW)-ARRAY['nip','display_name','updated_at'])
+    IS DISTINCT FROM(to_jsonb(OLD)-ARRAY['nip','display_name','updated_at'])
+  THEN RAISE EXCEPTION 'Bound catalogue fields and formal NIP required' USING ERRCODE='42501';END IF;
+  RETURN NEW;
+ END IF;
+ IF TG_TABLE_NAME<>'financial_facts' THEN d:=srm.current_supplier_work();END IF;
+ IF d->>'sensitiveWork'='true' THEN
+  IF NOT srm.guard_sensitive_supplier_write(TG_TABLE_NAME,TG_OP,to_jsonb(NEW),to_jsonb(OLD)) THEN
+   RAISE EXCEPTION 'Current exact sensitive Supplier write required' USING ERRCODE='42501';END IF;
+  IF TG_OP='DELETE' THEN RETURN OLD;ELSE RETURN NEW;END IF;
+ END IF;
+
+ IF TG_TABLE_NAME='catalog_kys_reports' THEN RAISE EXCEPTION 'Current sensitive cache purpose required' USING ERRCODE='42501';END IF;
+ IF TG_OP='DELETE' THEN RAISE EXCEPTION 'Supplier business deletion refused' USING ERRCODE='42501'; END IF;
+ IF TG_OP='UPDATE' AND (to_jsonb(NEW)->>'organization_id') IS DISTINCT FROM (to_jsonb(OLD)->>'organization_id') THEN
+   RAISE EXCEPTION 'Supplier business owner is immutable' USING ERRCODE='42501'; END IF;
+ IF TG_TABLE_NAME='suppliers' THEN
+   nip:=NEW.nip; phases:=ARRAY['REGISTER_LOOKUP'];
+   IF TG_OP='UPDATE' AND (to_jsonb(NEW)-'updated_at') IS DISTINCT FROM (to_jsonb(OLD)-'updated_at') THEN
+     RAISE EXCEPTION 'Supplier identity is immutable' USING ERRCODE='42501'; END IF;
+ ELSIF TG_TABLE_NAME='lookup_requests' THEN
+   nip:=NEW.identifier; lookup_id:=NEW.id; phases:=ARRAY['REGISTER_LOOKUP'];
+   IF TG_OP<>'INSERT' OR NEW.identifier_type<>'NIP' OR NEW.entity_type<>'COMPANY'
+     OR NOT EXISTS(SELECT 1 FROM srm.suppliers s WHERE s.organization_id=NEW.organization_id AND s.id=NEW.supplier_id AND s.nip=NEW.identifier) THEN
+     RAISE EXCEPTION 'Bound supplier lookup required' USING ERRCODE='42501'; END IF;
+ ELSIF TG_TABLE_NAME='mgbi_source_archives' THEN
+   IF TG_OP='UPDATE' AND (to_jsonb(NEW)-ARRAY['payload_json','payload_sha256','payload_jsonb_sha256','record_count','last_checked_at','source_request_id'])
+     IS DISTINCT FROM (to_jsonb(OLD)-ARRAY['payload_json','payload_sha256','payload_jsonb_sha256','record_count','last_checked_at','source_request_id']) THEN
+     RAISE EXCEPTION 'Archive identity is immutable' USING ERRCODE='42501'; END IF;
+   nip:=NEW.nip; lookup_id:=NEW.source_request_id;
+   phases:=CASE NEW.model WHEN 'pl-krs-wp-record' THEN ARRAY['STORE_GENERAL'] WHEN 'pl-krs-rdf-record' THEN ARRAY['STORE_FINANCIAL'] ELSE ARRAY[]::text[] END;
+ ELSE
+   IF TG_TABLE_NAME='provider_attempts' THEN lookup_id:=NEW.request_id; section:=NEW.section;
+     IF TG_OP='UPDATE' AND (to_jsonb(NEW)-ARRAY['status','completed_at','correlation_id','provider_record_id','error_code'])
+       IS DISTINCT FROM (to_jsonb(OLD)-ARRAY['status','completed_at','correlation_id','provider_record_id','error_code']) THEN
+       RAISE EXCEPTION 'Attempt identity is immutable' USING ERRCODE='42501'; END IF;
+   ELSIF TG_TABLE_NAME='source_snapshots' THEN
+     SELECT a.request_id INTO lookup_id FROM srm.provider_attempts a WHERE a.organization_id=NEW.organization_id AND a.id=NEW.attempt_id AND a.section=NEW.section;
+     section:=NEW.section;
+     IF TG_OP<>'INSERT' OR NEW.data_class IS DISTINCT FROM (CASE section WHEN 'general' THEN 'COMPANY' WHEN 'financial' THEN 'FINANCIAL' END)
+       OR NOT EXISTS(SELECT 1 FROM srm.lookup_requests l WHERE l.organization_id=NEW.organization_id AND l.id=lookup_id AND l.supplier_id=NEW.supplier_id) THEN
+       RAISE EXCEPTION 'Bound corporate snapshot required' USING ERRCODE='42501'; END IF;
+   ELSE
+     SELECT a.request_id,s.section INTO lookup_id,section FROM srm.source_snapshots s JOIN srm.provider_attempts a
+       ON a.organization_id=s.organization_id AND a.id=s.attempt_id
+       WHERE s.organization_id=NEW.organization_id AND s.id=NEW.snapshot_id AND s.supplier_id=NEW.supplier_id;
+     IF TG_OP<>'INSERT' OR (TG_TABLE_NAME='financial_facts' AND section<>'financial')
+       OR (TG_TABLE_NAME='section_projections' AND to_jsonb(NEW)->>'section' IS DISTINCT FROM section) THEN
+       RAISE EXCEPTION 'Bound corporate projection required' USING ERRCODE='42501'; END IF;
+   END IF;
+   SELECT l.identifier INTO nip FROM srm.lookup_requests l WHERE l.organization_id=NEW.organization_id AND l.id=lookup_id;
+   phases:=CASE section WHEN 'general' THEN ARRAY['STORE_GENERAL'] WHEN 'financial' THEN ARRAY['STORE_FINANCIAL'] ELSE ARRAY[]::text[] END;
+ END IF;
+ IF (TG_TABLE_NAME<>'suppliers' AND lookup_id IS NULL) OR srm.supplier_business_phase(NEW.organization_id,nip,lookup_id,phases) IS NOT TRUE THEN
+   RAISE EXCEPTION 'Current private supplier phase required' USING ERRCODE='42501'; END IF;
+ RETURN NEW;
+END $function$
+;

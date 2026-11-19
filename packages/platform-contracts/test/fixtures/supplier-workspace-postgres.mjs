@@ -87,6 +87,7 @@ export async function supplierWorkspaceFixture(){
      await c.query(own(file));
      await c.query("INSERT INTO "+table+"(singleton,schema_version,"+(file.startsWith('013')||file.startsWith('014')?'schema_digest':'boundary_digest')+",source_ref) VALUES(true,'1.0.0',$1,$2)",[hash(own(file)),SOURCE]);
    }
+   await c.query(own('015-financial-fact-guard.sql'));
    // Exact canonical table/function/policy excerpts required by the current master.
    // No replacement ALLOW function or permissive test RLS policy is introduced.
    const r24=own('024-ready-report-history.sql'),r25=own('025-ready-report-history.sql');
@@ -111,7 +112,7 @@ export async function supplierWorkspaceFixture(){
   await controlled(install);
   await admin.query('REVOKE CREATE ON DATABASE platform_private FROM profitia_access_owner');
   // Installation alone enrolls no organization and grants no runtime EXECUTE.
-  const noImplicitGrant=(await admin.query("SELECT has_function_privilege($1,'profitia_supplier_workspace.bind_operation(uuid,text)','EXECUTE') AS granted,(SELECT count(*)::int FROM profitia_supplier_workspace.organisation_policies) AS policies",[ROLE])).rows[0];
+  const noImplicitGrant=(await admin.query("SELECT has_function_privilege($1,'profitia_supplier_workspace.bind_operation(uuid,text,jsonb)','EXECUTE') AS granted,(SELECT count(*)::int FROM profitia_supplier_workspace.organisation_policies) AS policies",[ROLE])).rows[0];
   await controlled(async c=>{
    for(const org of[A,B])await c.query("INSERT INTO profitia_access.organisations VALUES($1,'ACTIVE',1)",[org]);
    for(const user of[U,V,W]){
@@ -124,7 +125,8 @@ export async function supplierWorkspaceFixture(){
    await c.query("UPDATE profitia_access.applications SET status='ACTIVE' WHERE application_id='srm'");
    await c.query("GRANT USAGE ON SCHEMA profitia_access,profitia_modules,profitia_supplier_workspace,srm TO "+ROLE);
    await c.query("GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA profitia_access,profitia_modules TO "+ROLE);
-   await c.query("GRANT EXECUTE ON FUNCTION profitia_supplier_workspace.bind_operation(uuid,text),profitia_supplier_workspace.descriptor() TO "+ROLE);
+   await c.query("GRANT EXECUTE ON FUNCTION profitia_supplier_workspace.bind_operation(uuid,text,jsonb),profitia_supplier_workspace.descriptor() TO "+ROLE);
+   await c.query("CREATE FUNCTION srm.workspace_test_crosswrite(p_org uuid,p_id uuid) RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,pg_temp AS $fn$ BEGIN UPDATE srm.suppliers SET display_name='FORBIDDEN_CROSS_OPERATION' WHERE organization_id=p_org AND id=p_id;IF NOT FOUND THEN RAISE EXCEPTION 'Workspace write refused' USING ERRCODE='42501';END IF;END $fn$;REVOKE ALL ON FUNCTION srm.workspace_test_crosswrite(uuid,uuid) FROM PUBLIC;GRANT EXECUTE ON FUNCTION srm.workspace_test_crosswrite(uuid,uuid) TO "+ROLE);
    // Authority boundary probe ONLY. The full SRM command/query implementation
    // belongs to the receiving SRM source task and is not simulated as complete.
    await c.query("CREATE FUNCTION srm.supplier_pipelines_execute(p jsonb) RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog,pg_temp AS $fn$ DECLARE d jsonb;r jsonb;org uuid;BEGIN d:=profitia_supplier_workspace.assert_payload(p);org:=(d->>'organisationId')::uuid;IF p->>'command'='SUPPLIER_CREATE' THEN IF profitia_supplier_workspace.scope_allows(org,'supplier.catalog.write',NULL) IS NOT TRUE THEN RAISE EXCEPTION 'Write denied' USING ERRCODE='42501';END IF;PERFORM profitia_supplier_workspace.ensure_organisation();INSERT INTO srm.suppliers(id,organization_id,nip,display_name) VALUES((p->'data'->>'supplierId')::uuid,org,p->'data'->>'nip',p->'data'->>'name');END IF;SELECT coalesce(jsonb_agg(jsonb_build_object('id',id,'organisationId',organization_id,'name',display_name)),'[]'::jsonb) INTO r FROM srm.suppliers WHERE organization_id=org;RETURN jsonb_build_object('ok',true,'rows',r,'descriptor',d);END $fn$;REVOKE ALL ON FUNCTION srm.supplier_pipelines_execute(jsonb) FROM PUBLIC;GRANT EXECUTE ON FUNCTION srm.supplier_pipelines_execute(jsonb) TO "+ROLE);

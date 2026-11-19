@@ -144,15 +144,20 @@ export function supplierWorkspaceRequiredPermissions(operation,payload){
     &&Number.isSafeInteger(payload.data?.expectedCount)&&payload.data.expectedCount>0)
     required.add('supplier.assignment.write');
  }
+ if(operation==='supplier.assignment.write'){required.add('supplier.catalog.read');required.add('supplier.pipeline.read');}
+ if(payload?.command?.startsWith('SUPPLIER_CATEGORY_'))required.add('supplier.catalog.read');
+ if(payload?.command==='PIPELINE_CREATE'&&payload.data?.kind==='CATEGORY')required.add('supplier.category.read');
+ if(payload?.kind==='ADP_STATUS')required.add('supplier.catalog.read');
  if(payload?.kind==='SUPPLIER_CARD'){
   for(const op of ['supplier.category.read','supplier.pipeline.read','supplier.assignment.read','supplier.adp-status.read'])required.add(op);
  }
  if(payload?.kind==='SUPPLIERS'){
   required.add('supplier.category.read');required.add('supplier.adp-status.read');
  }
- if(payload?.kind==='PIPELINES'&&payload.pipelineId){
+ if(payload?.kind==='PIPELINE'){
   required.add('supplier.catalog.read');required.add('supplier.assignment.read');
  }
+ for(const op of [...required])if(op.endsWith('.write'))required.add(op.replace(/\.write$/,'.read'));
  return Object.freeze([...required]);
 }
 export const supplierWorkspaceSchemaUrl=new URL('../migrations/access/supplier-workspace-v1.sql',import.meta.url).href;
@@ -198,7 +203,7 @@ export function createSupplierWorkspaceScopeStore({schemaDigest,sourceRef,now=Da
  };
  return Object.freeze({
   async bind(query,context){
-   const row=await read(query,"SELECT current_database() AS db,current_user AS role,session_user AS login,txid_current()::text AS tx,profitia_supplier_workspace.bind_operation($1::uuid,$2) AS descriptor FROM pg_roles WHERE rolname=current_user AND NOT(rolsuper OR rolbypassrls OR rolinherit OR rolcreatedb OR rolcreaterole OR rolreplication)",[context.decisionId,context.payloadDigest]);
+   const row=await read(query,"SELECT current_database() AS db,current_user AS role,session_user AS login,txid_current()::text AS tx,profitia_supplier_workspace.bind_operation($1::uuid,$2,$3::jsonb) AS descriptor FROM pg_roles WHERE rolname=current_user AND NOT(rolsuper OR rolbypassrls OR rolinherit OR rolcreatedb OR rolcreaterole OR rolreplication)",[context.decisionId,context.payloadDigest,JSON.stringify(context.payload)]);
    if(row.db!=='platform_private'||row.role!=='srm_private_development_runtime'||row.login!==row.role)scopeFail();
    const lease=check(row.descriptor,context,row.tx);owned.add(lease);return lease;
   },

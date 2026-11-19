@@ -55,6 +55,33 @@ test('workspace native authority uses canonical Root, actual transactions and th
    await assert.rejects(f.execute({operation:'supplier.catalog.write',payload:{command:'SUPPLIER_CREATE',data:{supplierId:randomUUID(),nip:'5213390341',name:'Audit rollback'}},failOutcome:true}));
    assert.equal(await f.count(),1);
   });
+
+  await t.test('native scope cannot cross a connection or be replayed in a later transaction',async()=>{
+   let marker;
+   await f.execute({afterDomain:async({client})=>{
+    marker=(await client.query("SELECT current_setting('profitia.supplier_workspace.scope') AS marker")).rows[0].marker;
+    const c=await f.pool.connect();try{
+     await c.query('BEGIN');await c.query("SELECT set_config('profitia.supplier_workspace.scope',$1,true)",[marker]);
+     assert.equal((await c.query('SELECT profitia_supplier_workspace.descriptor() AS d')).rows[0].d,null);
+     await c.query('ROLLBACK');
+    }finally{c.release()}
+   }});
+   const c=await f.pool.connect();try{
+    await c.query('BEGIN');await c.query("SELECT set_config('profitia.supplier_workspace.scope',$1,true)",[marker]);
+    assert.equal((await c.query('SELECT profitia_supplier_workspace.descriptor() AS d')).rows[0].d,null);
+    await c.query('ROLLBACK');
+   }finally{c.release()}
+  });
+  await t.test('assignment WRITE cannot borrow catalogue WRITE even when the member has both grants',async()=>{
+   let reached=false;
+   await assert.rejects(f.execute({operation:'supplier.assignment.write',payload:{command:'MEMBERSHIP_ADD',data:{}},
+    afterDomain:async({client})=>{reached=true;await client.query('SELECT srm.workspace_test_crosswrite($1,$2)',[f.A,f.S])}}));
+   assert.equal(reached,true);assert.equal((await f.execute({user:f.V})).result.value.rows[0].name,'Synthetic A');
+  });
+  await t.test('READ unit cannot promote a separately granted write operation',async()=>{
+   await assert.rejects(f.execute({afterDomain:({client})=>client.query('SELECT srm.workspace_test_crosswrite($1,$2)',[f.A,f.S])}));
+   assert.equal(await f.count(),1);
+  });
   await t.test('SQL authority expires after the effect and refuses COMMIT',async()=>{
    await f.controlled(c=>c.query("UPDATE profitia_access.memberships SET expires_at=clock_timestamp()+interval '500 milliseconds' WHERE organisation_id=$1 AND user_id=$2",[f.A,f.U]));
    let reached=false;
@@ -65,7 +92,7 @@ test('workspace native authority uses canonical Root, actual transactions and th
   });
   await t.test('an explicit read DENY overrides the organization feature grant and card disclosure',async()=>{
    await f.deny('supplier.adp-status.read');
-   await assert.rejects(f.execute({payload:{kind:'SUPPLIER_CARD',supplierId:f.S}}),e=>e.reasonCode==='EXPLICIT_DENY');
+   await assert.rejects(f.execute({payload:{kind:'SUPPLIER_CARD',supplierId:f.S}}),e=>e.reasonCode==='PERMISSION_DENIED');
    const other=await f.execute({user:f.V});
    assert.equal(other.result.value.rows[0].id,f.S);
   });
