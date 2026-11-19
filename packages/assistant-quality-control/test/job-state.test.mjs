@@ -589,3 +589,84 @@ test('native verification rejects a wrong independent signer stale full proof su
    {code:'CONTROLLER_VERIFICATION_PHASE_REQUIRED'})
  }finally{f.cleanup()}
 })
+
+async function linuxQualificationZip(document){
+ const {deflateRawSync}=await import('node:zlib'),bytes=Buffer.from(JSON.stringify(document)),compressed=deflateRawSync(bytes),name=Buffer.from('aqc-linux-observations.json')
+ let crc=0xffffffff;for(const b of bytes){crc^=b;for(let i=0;i<8;i++)crc=crc&1?0xedb88320^(crc>>>1):crc>>>1}crc=(crc^0xffffffff)>>>0
+ const local=Buffer.alloc(30);local.writeUInt32LE(0x04034b50);local.writeUInt16LE(20,4);local.writeUInt16LE(8,8)
+ local.writeUInt32LE(crc,14);local.writeUInt32LE(compressed.length,18);local.writeUInt32LE(bytes.length,22);local.writeUInt16LE(name.length,26)
+ const central=Buffer.alloc(46);central.writeUInt32LE(0x02014b50);central.writeUInt16LE(20,4);central.writeUInt16LE(20,6)
+ central.writeUInt16LE(8,10);central.writeUInt32LE(crc,16);central.writeUInt32LE(compressed.length,20);central.writeUInt32LE(bytes.length,24);central.writeUInt16LE(name.length,28)
+ const offset=30+name.length+compressed.length,end=Buffer.alloc(22);end.writeUInt32LE(0x06054b50);end.writeUInt16LE(1,8);end.writeUInt16LE(1,10)
+ end.writeUInt32LE(46+name.length,12);end.writeUInt32LE(offset,16)
+ return Buffer.concat([local,name,compressed,central,name,end])
+}
+async function nativeLinuxFixture(change=()=>{},runChange={}){
+ const {createHash}=await import('node:crypto'),{createQualityGitHub}=await import('../src/github.mjs')
+ const at=Date.now(),nonce=randomUUID(),document={"schemaVersion":"AQC_LINUX_OBSERVATIONS_V1","gateSetSha256":"5e430edc1d839c0f33b6576f4fe8dd501a80b5713996f5d30ed5f33aaab03ead","codexVersion":"0.167.2","codexArchiveSha256":"8246e846c550ea21197fcc4067bc270dca895e94ea42ed6a282e6f4e0125b15f","codexBinarySha256":"a9672d0fa0dd8fcf8cad136fa0d056b914bc046f5ac3d78f4a5cf390655af56b","codeModeHostArchiveSha256":"189475a654d82ca776e08dfef22734106d3e5b2cf21da6e84ec3d974d02c39a6","codeModeHostBinarySha256":"007c62795a7215c27ee85486ecb95e714b33118a2d18c6d7b09b0d9793c72ff4","bwrapArchiveSha256":"03cb0d2b151648693e3817c47068773ae4b7327c19fe25eab8c61c4c2865838a","bwrapBinarySha256":"7df960565a0dece99240ea4b9d0e011307817f9f3b73176c7b71fda44fe84765","isolationHelperCommit":"13e9c17417b29e9a276f73ec6ed7fb574137d3c3","fileIsolation":"PASS","networkIsolation":"PASS","privilegeIsolation":"PASS","toolLoop":"PASS","cancellation":"PASS","noProviderRequests":true,"requestCount":4,"settledCount":4,"runId":"44450608836","sourceSha":"79cb7cf827e82395f43e630ee9b72436b19b421a","nonce":"4d44b052-025d-4960-910b-750121703f9f","verifiedAt":"2026-11-19T03:21:33.337Z","testKeysInstalled":false,"realCostAuthorityUsed":false,"independentVerifier":{"status":"PASS","classes":["C1","C2","C3"],"typedResults":6,"fileIsolation":"PASS","networkIsolation":"PASS","privilegeIsolation":"PASS","timeout":"PASS","cancellation":"PASS","cgroupEmpty":true,"nodeSha256":"904a6d3484241d466989f9df9ba3aab822b1496191bdb28230eb491a55c32a52","noProviderRequests":true,"rawQaPayloadIncluded":false,"testKeysInstalled":false,"baseline":{"status":"PASS","typedResults":9,"sourceMode":"UNCHANGED_GIT_BASELINE","classes":["C1","C2","C3"],"nativeOperationalInvocationVerified":false,"fullPrivateCic18Qualification":false,"noProviderRequests":true,"rawQaPayloadIncluded":false,"testKeysInstalled":false}}}
+ Object.assign(document,{gateSetSha256:digest,runId:'700',sourceSha:control,nonce,verifiedAt:stamp(at-500)})
+ change(document)
+ const zip=await linuxQualificationZip(document),workflow=Buffer.from('synthetic fixed workflow source\n'),hash=b=>createHash('sha256').update(b).digest('hex'),calls=[]
+ const run={id:700,workflow_id:991,head_sha:control,head_branch:'main',path:'.github/workflows/assistant-quality-repair.yml',
+  event:'workflow_dispatch',run_attempt:1,repository:{full_name:'profitia/SG-dev'},actor:{login:'profitia'},triggering_actor:{login:'profitia'},
+  display_title:'AQC '+nonce,status:'completed',conclusion:'success',created_at:stamp(at-1000),...runChange}
+ const client=createQualityGitHub({token:'synthetic-keyless-reader',controllerWorkflowSha256:hash(workflow),fetchImpl:async(url,input)=>{
+  calls.push({url,method:input.method})
+  if(url.endsWith('/actions/workflows/assistant-quality-repair.yml'))return Response.json({id:991,path:run.path,state:'active'})
+  if(url.includes('/contents/'))return Response.json({type:'file',path:run.path,encoding:'base64',size:workflow.length,
+   sha:createHash('sha1').update('blob '+workflow.length+'\0').update(workflow).digest('hex'),content:workflow.toString('base64')})
+  if(url.endsWith('/actions/runs/700'))return Response.json(run)
+  if(url.includes('/actions/runs/700/artifacts?'))return Response.json({total_count:1,artifacts:[
+   {id:800,name:'aqc-qualification-'+nonce,expired:false,size_in_bytes:zip.length,digest:'sha256:'+hash(zip),workflow_run:{id:700,head_sha:control}}]})
+  if(url.endsWith('/actions/artifacts/800/zip'))return new Response(zip,{headers:{'content-length':String(zip.length)}})
+  throw Error('unexpected keyless evidence endpoint')
+ }})
+ return {client,calls,document,input:{runId:'700',sourceSha:control,nonce}}
+}
+test('keyless Linux qualification is read from real pinned workflow and archive identity, then signed only by the separate verifier',async()=>{
+ const {readQualityNativeLinuxObservations,createQualityNativeLinuxQualificationAttestor}=await import('../src/github.mjs')
+ const {verifyLinuxQualification}=await import('../src/executor.mjs'),f=await nativeLinuxFixture()
+ const observation=await f.client.linuxQualificationObservations(f.input)
+ if(Date.now()>=Date.parse('2026-11-27T23:59:59.000Z')){
+  await assert.rejects(readQualityNativeLinuxObservations(observation,{gateSetSha256:digest}),{code:'LINUX_NATIVE_OBSERVATIONS_STALE'});return
+ }
+ const body=await readQualityNativeLinuxObservations(observation,{gateSetSha256:digest})
+ assert.equal(body.independentVerifier.baseline.typedResults,9);assert.equal(body.noProviderRequests,true)
+ const verifier=generateKeyPairSync('ed25519'),signer=createQualityNativeLinuxQualificationAttestor({privateKey:verifier.privateKey})
+ const receipt=await signer.attest({observation,gateSetSha256:digest})
+ const qualified=verifyLinuxQualification(receipt,{keys:new Map([[publicKeyId(verifier.publicKey),verifier.publicKey]]),gateSetSha256:digest})
+ assert.equal(qualified.runId,'700');assert.equal(qualified.sourceSha,control)
+ assert.equal(Date.parse(qualified.expiresAt),Math.min(Date.parse(body.verifiedAt)+86400000,Date.parse('2026-11-27T23:59:59.000Z')))
+ assert(f.calls.every(c=>c.method==='GET'));assert(Object.isFrozen(observation.document.independentVerifier.baseline))
+ assert.equal(receipt.body.promotionAllowed,undefined);assert.equal(receipt.body.modelKey,undefined)
+})
+test('keyless observation labels clones callbacks or rebound policy cannot be signed as native Linux qualification',async()=>{
+ const {readQualityNativeLinuxObservations,createQualityNativeLinuxQualificationAttestor}=await import('../src/github.mjs')
+ const pair=generateKeyPairSync('ed25519'),signer=createQualityNativeLinuxQualificationAttestor({privateKey:pair.privateKey}),f=await nativeLinuxFixture()
+ const observation=await f.client.linuxQualificationObservations(f.input)
+ for(const value of [null,structuredClone(observation),{document:f.document,kind:'AQC_NATIVE_LINUX_OBSERVATIONS_V1'}]){
+  await assert.rejects(readQualityNativeLinuxObservations(value,{gateSetSha256:digest}),{code:'LINUX_NATIVE_OBSERVATIONS_REQUIRED'})
+  await assert.rejects(signer.attest({observation:value,gateSetSha256:digest}),{code:'LINUX_NATIVE_OBSERVATIONS_REQUIRED'})
+ }
+ await assert.rejects(signer.attest({observation,gateSetSha256:'f'.repeat(64)}))
+ for(const extra of [{expiresAt:stamp(Date.now()+86400000)},{runCase:()=>{}},{privateKey:pair.privateKey},{now:()=>0}])
+  await assert.rejects(signer.attest({observation,gateSetSha256:digest,...extra}),{code:'LINUX_NATIVE_INPUT_INVALID'})
+ let calls=0;const input={gateSetSha256:digest}
+ Object.defineProperty(input,'observation',{enumerable:true,get(){calls++;throw Error('never run')}})
+ await assert.rejects(signer.attest(input),{code:'LINUX_NATIVE_INPUT_INVALID'});assert.equal(calls,0)
+})
+test('successful native transport does not replace isolation cancellation freshness baseline or provider run guards',async()=>{
+ const {readQualityNativeLinuxObservations}=await import('../src/github.mjs')
+ for(const change of [b=>b.networkIsolation='FAIL',b=>b.cancellation='FAIL',b=>b.noProviderRequests=false,
+  b=>b.settledCount=3,b=>b.sourceSha=sha,b=>b.nonce=randomUUID(),b=>b.verifiedAt=stamp(Date.now()-86401000),
+  b=>b.verifiedAt=stamp(Date.now()+10000),b=>b.independentVerifier.cgroupEmpty=false,
+  b=>b.independentVerifier.baseline.fullPrivateCic18Qualification=true,b=>b.independentVerifier.baseline.typedResults=8]){
+  const f=await nativeLinuxFixture(change)
+  const observed=await f.client.linuxQualificationObservations(f.input)
+  await assert.rejects(readQualityNativeLinuxObservations(observed,{gateSetSha256:digest}))
+ }
+ for(const runChange of [{actor:{login:'foreign'}},{run_attempt:2},{conclusion:'failure'},{workflow_id:992},{head_sha:sha}]){
+  const f=await nativeLinuxFixture(()=>{},runChange)
+  await assert.rejects(f.client.linuxQualificationObservations(f.input))
+ }
+})

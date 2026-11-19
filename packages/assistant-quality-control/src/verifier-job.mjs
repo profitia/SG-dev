@@ -50,6 +50,22 @@ export async function runQualityNativeVerifierJob(options){
  }
  const {assertExecutorHost}=await import('./executor.mjs'),host=assertExecutorHost()
  require(host.executorSourceSha===inputs.control_source_sha,'NATIVE_VERIFIER_SOURCE_MISMATCH')
+ const [{fileURLToPath},{realpathSync},{execFileSync},{qualificationPolicyDigest}]=await Promise.all([
+  import('node:url'),import('node:fs'),import('node:child_process'),import('./acceptance.mjs')])
+ const moduleRoot=realpathSync(fileURLToPath(new URL('../../../',import.meta.url)))
+ let actualRoot,head,remote,dirty
+ try{
+  actualRoot=realpathSync(o.repositoryRoot)
+  const git=args=>execFileSync('/usr/bin/git',['-c','core.fsmonitor=false','-c','core.hooksPath=/dev/null','-C',actualRoot,...args],
+   {encoding:'utf8',stdio:['ignore','pipe','pipe'],timeout:15000,maxBuffer:65536,
+    env:{PATH:'/usr/bin:/bin',LANG:'C.UTF-8',GIT_CONFIG_NOSYSTEM:'1',GIT_CONFIG_GLOBAL:'/dev/null'}}).trim()
+  head=git(['rev-parse','HEAD']);remote=git(['config','--get','remote.origin.url'])
+  dirty=git(['status','--porcelain','--untracked-files=no'])
+ }catch{fail('NATIVE_VERIFIER_CHECKOUT_INVALID')}
+ require(actualRoot===moduleRoot&&head===host.executorSourceSha&&dirty===''
+  &&['https://github.com/profitia/SG-dev','https://github.com/profitia/SG-dev.git'].includes(remote),'NATIVE_VERIFIER_CHECKOUT_INVALID')
+ const observedGateSetSha256=qualificationPolicyDigest(fileURLToPath(new URL('../',import.meta.url)))
+ require(observedGateSetSha256===o.expectedGateSetSha256,'NATIVE_VERIFIER_POLICY_MISMATCH')
  // Snapshot installed trust and signed context before any provider await.
  const ownerKeys=new Map(o.ownerKeys),verifierKeys=new Map(o.verifierKeys)
  const keysByRole=new Map([...o.keysByRole].map(([role,keys])=>[role,new Map(keys)]))
@@ -68,7 +84,7 @@ export async function runQualityNativeVerifierJob(options){
  if(inputs.action!=='VERIFY'){
   const value=await reproduceQualityBaselineInIsolation({manifest,jobState,externalId,repositoryRoot:o.repositoryRoot,
    regression:context.regression,qualification:o.qualification,qualificationKeys:new Map(o.qualificationKeys),
-   observedGateSetSha256:o.expectedGateSetSha256,...(o.cicArchive===undefined?{}:{cicArchive:o.cicArchive}),
+   observedGateSetSha256,...(o.cicArchive===undefined?{}:{cicArchive:o.cicArchive}),
    ...(o.signal===undefined?{}:{signal:o.signal})})
   const phaseReceipt=await signer.attestBaseline({value,manifest,jobState,externalId})
   return Object.freeze({schemaVersion:'AQC_NATIVE_VERIFIER_OUTPUT_V1',action:inputs.action,phaseReceipt,
@@ -88,7 +104,7 @@ export async function runQualityNativeVerifierJob(options){
   &&artifact.treeSha256===state.record.patch.treeSha256,'NATIVE_VERIFIER_PATCH_MISMATCH')
  const value=await verifyQualityCandidateInIsolation({manifest,repositoryRoot:o.repositoryRoot,artifact,cicArchive:o.cicArchive,
   pack:o.pack,packAttestation:o.packAttestation,reviewerKeys:new Map(o.reviewerKeys),qualification:o.qualification,
-  qualificationKeys:new Map(o.qualificationKeys),observedGateSetSha256:o.expectedGateSetSha256,nonce:inputs.nonce,
+  qualificationKeys:new Map(o.qualificationKeys),observedGateSetSha256,nonce:inputs.nonce,
   ...(o.signal===undefined?{}:{signal:o.signal})})
  const receipts=await signer.attestVerification({value,manifest,jobState,externalId})
  return Object.freeze({schemaVersion:'AQC_NATIVE_VERIFIER_OUTPUT_V1',action:'VERIFY',...receipts,rawQaPayloadIncluded:false})
