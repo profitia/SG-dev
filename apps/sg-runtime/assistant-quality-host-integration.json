@@ -16,14 +16,16 @@
     "apps/sg-runtime/tests/assistant-quality-response.test.ts": "86a0957bcaa243ac8fbacd57db5024f4e242d99fe9bb52bed563b89a2de1f48e",
     "apps/sg-runtime/tests/assistant-quality-evidence.test.ts": "a301ae44ece516a83afba433d82dcf0e5a2f68272ff04194b677fbec433274bf",
     "apps/sg-runtime/tests/assistant-quality-integrity.mjs": "43a1682cf58f5d42f7339f752901f536d85ff941cef5b1c7778c052f55ee649b",
-    "apps/sg-runtime/tests/assistant-quality-host-integrity.mjs": "3052ccd6360b9a7fd9bd326683a69ee9e2a7b44f93eae0932ca85c3c47e004d7",
-    "apps/sg-runtime/tests/assistant-quality-host-integrity.test.mjs": "97a7897676b21657afaea2cfccefdc581004aab6b2b1f23943ee6a3ea1673eff",
+    "apps/sg-runtime/tests/assistant-quality-host-integrity.mjs": "6ae1de038c8ac146628d0d740a8e44a39d47187c137d227fd326619fdd0a82fb",
+    "apps/sg-runtime/tests/assistant-quality-host-integrity.test.mjs": "20ef7bcff99bebc957a3745eb7030e87a70ea8b6c7fb4cfd0c29ca10295e123d",
     "apps/sg-runtime/tests/procurement-insights-completion-integrity.mjs": "00f1b475342a78ad916c03723ae2b9b268963240d101b57c17559308c48daafa",
     "apps/architecture-lab/private-recurring-source.mjs": "34c555f971140e197880e2ff3ddf7c1696112d2744374b238a3f3315c8fbbcf4",
     "apps/sg-runtime/tests/procurement-insights-editorial-package-integrity.mjs": "8d04bf7ccb45cba30eb0e9d5fb032db2e04e039337674b9d198df6525bf257b1",
     "packages/platform-contracts/test/assistant-reservation-source.mjs": "0a45aced74c9f83d54ee28e819c7a68a4a2ce263a6b564f6514caf891d7ef7ce",
     "apps/architecture-lab/knowledge-source.mjs": "4ff6c2d4740764a62c10315f6ffd848460c90a59c0a6483232efde603f891838",
-    "apps/architecture-lab/test/knowledge-source.test.mjs": "df766e101aab6efc2848682cca624dcb8a728290912f1d531e856bfb1079c4f8"
+    "apps/architecture-lab/test/knowledge-source.test.mjs": "df766e101aab6efc2848682cca624dcb8a728290912f1d531e856bfb1079c4f8",
+    "apps/sg-runtime/tests/assistant-ecr-integrity.mjs": "c6e32397b7c54384b73b1f2539fa7289ba0e967ae53c9b2d23efd75b421a1174",
+    "apps/sg-runtime/tests/assistant-ecr-precision-integrity.mjs": "382423585cce9a68dbdfe6bf0af591b0a61c8de4431dc115b113bb757442652f"
   },
   "previousReceipts": {
     "apps/sg-runtime/assistant-quality-integration.json": "d37226bbb90d585b95aab383dab6fcb7d20ab8698709b50de0e1c8a58d1af2a7",

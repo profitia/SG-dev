@@ -354,6 +354,7 @@ jobs:
         with:
           ref: ${{ github.sha }}
           path: control
+          fetch-depth: 0
           persist-credentials: false
       - name: Bind trusted control to the provider-pinned main snapshot
         shell: bash

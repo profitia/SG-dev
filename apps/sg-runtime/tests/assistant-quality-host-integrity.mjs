@@ -197,8 +197,9 @@ function composedKnowledgeQualityHost(current,historical,a){
  for(const k of Object.keys(prior).filter(k=>k!=='sourceDigests'))assert.deepEqual(a[k],prior[k],'immutable original CIC component '+k)
  assert.deepEqual(a.acceptedComposition,{sourceSha:KNOWLEDGE_COMPOSITION_BASE,componentSourceSha:COMPONENT_BASE,
   reservationRecordSha256:RESERVATION_PIN,knowledgeRecordSha256:KNOWLEDGE_PIN})
- assert.deepEqual(Object.keys(a.sourceDigests).sort(),[...QUALITY_HOST_PATHS].sort(),'closed CI27 source inventory')
- for(const p of QUALITY_HOST_PATHS){assert.match(a.sourceDigests[p],/^[a-f0-9]{64}$/);assert.equal(hash(current(p)),a.sourceDigests[p],'exact CIC and Knowledge composition '+p)}
+ const ecrBridge='apps/sg-runtime/tests/assistant-ecr-integrity.mjs',precisionBridge='apps/sg-runtime/tests/assistant-ecr-precision-integrity.mjs',compositionPaths=[...QUALITY_HOST_PATHS,ecrBridge,precisionBridge]
+ assert.deepEqual(Object.keys(a.sourceDigests).sort(),compositionPaths.sort(),'closed CI27 source inventory')
+ for(const p of compositionPaths){assert.match(a.sourceDigests[p],/^[a-f0-9]{64}$/);assert.equal(hash(current(p)),a.sourceDigests[p],'exact CIC and Knowledge composition '+p)}
  for(const p of QUALITY_HOST_PRESERVED){assert.equal(hash(current(p)),a.previousReceipts[p]);assert.equal(hash(historical(QUALITY_HOST_BASE,p)),a.previousReceipts[p])}
  const packagePath='apps/sg-runtime/package.json',lockPath='apps/sg-runtime/package-lock.json'
  const expectedPackage=JSON.parse(historical(KNOWLEDGE_COMPOSITION_BASE,packagePath))
@@ -229,8 +230,14 @@ function composedKnowledgeQualityHost(current,historical,a){
  }
  for(const p of ['apps/sg-runtime/lib/assistant/calendar-period.ts','apps/sg-runtime/lib/assistant/context-selection.ts',
   'apps/sg-runtime/tests/assistant-quality.test.ts','apps/sg-runtime/tests/assistant-quality-integrity.test.mjs',
-  'apps/sg-runtime/tests/assistant-ecr-integrity.mjs','apps/sg-runtime/tests/assistant-ecr-precision-integrity.mjs'])
+  ])
   assert.deepEqual(Buffer.from(current(p)),Buffer.from(historical(COMPONENT_BASE,p)),'original controlled calendar source retained '+p)
+ const ecrBefore=String(historical(COMPONENT_BASE,ecrBridge)),ecrEntry='if(quality)return assistantEcrPredecessor(quality.previousBytes,historical)'
+ assert.equal(ecrBefore.split(ecrEntry).length,2,'one original ECR quality entry')
+ assert.equal(String(current(ecrBridge)),ecrBefore.replace(ecrEntry,'if(quality)return assistantEcrPredecessor(quality.compositionPreviousBytes??quality.previousBytes,historical)'),'only additive accepted composition selection; every original ECR assertion retained')
+ const precisionBefore=String(historical(COMPONENT_BASE,precisionBridge)),precisionEntry='if(quality)return assistantEcrPrecisionPredecessor(quality.previousBytes,historical)'
+ assert.equal(precisionBefore.split(precisionEntry).length,2,'one original precision quality entry')
+ assert.equal(String(current(precisionBridge)),precisionBefore.replace(precisionEntry,'if(quality)return assistantEcrPrecisionPredecessor(quality.compositionPreviousBytes??quality.previousBytes,historical)'),'only additive accepted precision composition selection; every original precision assertion retained')
  assert.equal(hash(current(KNOWLEDGE_RECORD)),KNOWLEDGE_PIN,'immutable accepted Knowledge record')
  const k=JSON.parse(current(KNOWLEDGE_RECORD))
  for(const [p,digest]of Object.entries(k.sourceDigests))assert.equal(hash(compositionPreviousBytes(p)),digest,'all accepted Knowledge inputs retained '+p)

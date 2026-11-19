@@ -24,7 +24,7 @@ export const PRECISION_RECEIPTS=Object.freeze([
 ])
 const hash=b=>createHash('sha256').update(b).digest('hex')
 export function assistantEcrPrecisionPredecessor(current,historical){
- const quality=assistantQualityPredecessor(current,historical);if(quality)return assistantEcrPrecisionPredecessor(quality.previousBytes,historical)
+ const quality=assistantQualityPredecessor(current,historical);if(quality)return assistantEcrPrecisionPredecessor(quality.compositionPreviousBytes??quality.previousBytes,historical)
  const recurring=recurringSourcePredecessor(current,historical);if(recurring)return assistantEcrPrecisionPredecessor(recurring.authorityBytes,historical)
  let bytes
  try{bytes=current(PRECISION_RECEIPT)}catch(error){
