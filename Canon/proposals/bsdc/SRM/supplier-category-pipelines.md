@@ -21,7 +21,7 @@
 | Właściciel decyzji i odbioru | tomasz@profitia.pl |
 | Środowisko etapów i końcowego odbioru | Development |
 | Dane odbiorowe | Reprezentatywne, syntetyczne dane dwóch organizacji; brak poufnej treści ADP i dokumentów PORR |
-| Tryb / mandat wykonawczy produktu | DEC-22: E1-T01–T05 / FULL AUTOPILOT / Development; DEC-24 zatwierdza ograniczony zakres polityki E1-T02. Instalacja, przyjęcie dokładnych źródeł i release zachowują własne bramki; brak mandatu E2 |
+| Tryb / mandat wykonawczy produktu | DEC-22: E1-T01–T05 / FULL AUTOPILOT / Development; DEC-24 zatwierdza ograniczony zakres polityki E1-T02; DEC-25 dopuszcza dokładny pakiet §7.5 i instalację po jego warunkach. Wymagane Source/CI/recovery i osobny exact-SHA release GO; brak mandatu E2 |
 | taskId wznowienia dokumentacyjnego | SRM-BSDC-SCP-DESIGN-R2-20261117 |
 | PMOS begin wznowienia | cmwkubpfb00003rd0mtq3an92; srm_pmos; pełny require-begin PASS |
 | Tożsamość czatu | hostConversationId niedostępny, jawne null w begin; nie wywnioskowano identyfikatora z katalogu |
@@ -32,7 +32,8 @@
 | taskId implementacji E1-T02 / PMOS begin | ARCH-BSDC-SCP-E1-T02-20261119 / cmwn9s7q50000w0v9hp856amo / architecture_pmos; zakres DEC-24 |
 | taskId zapisu DEC-24 / PMOS begin | SRM-BSDC-SCP-E1-DEC24-20261119 / cmwn9620h0000mtfenoiog8yd / srm_pmos |
 | taskId store/API / PMOS begin | SRM-BSDC-SCP-E1-STORE-20261119 / cmwnd0yeu0000jcteb7n4c90s / srm_pmos; źródła rozliczone PARTIAL_SUCCESS / CLOSEOUT_COMPLETE |
-| taskId bieżącej aktualizacji Karty / begin | SRM-BSDC-SCP-E1-SOURCE-CARD-20261119 / cmwniar8h0000n8iogezdx0qo / srm_pmos; tylko statusy, dowody i pakiet do decyzji |
+| taskId bieżącej aktualizacji Karty / begin | SRM-BSDC-SCP-E1-SOURCE-CARD-20261119 / cmwniar8h0000n8iogezdx0qo / srm_pmos; checkpoint źródeł, rozliczony PARTIAL_SUCCESS / CLOSEOUT_COMPLETE |
+| taskId zapisu DEC-25 / begin | SRM-BSDC-SCP-E1-DEC25-20261119 / cmwnoef2a00006li56rj224bd / srm_pmos; zgoda na dokładne źródła i warunkową instalację |
 | Aktualna referencja projektu MagicPath | projekt 465405993031966720 / komponent 465415479037693952 / przypięta rewizja 473868393104166912; DEC-23 |
 | Aktualny wynik wykonania | PARTIAL; kandydaci store/host/API sprawdzeni; pełne Source/CI i rzeczywisty Development nieprzyjęte; §5.4.2 i pakiet §7.5 |
 | Akceptacja rozwiązania i roadmapy | DEC-21, 2026-11-18, właściciel w bieżącym wątku (owner Karty: tomasz@profitia.pl); obie części łącznie; commit [f75529c590c5dd4611223c949e5956e34d101e22](https://github.com/profitia/SG-dev/blob/f75529c590c5dd4611223c949e5956e34d101e22/Canon/proposals/bsdc/SRM/supplier-category-pipelines.md), blob 31d655e4ce8ce2422ec39b54c054a313eb433d11 |
@@ -559,6 +560,14 @@ Oba zadania przygotowania źródeł rozliczono jako **PARTIAL_SUCCESS / CLOSEOUT
 - **Punkt wznowienia:** po odrębnym dopuszczeniu §7.5 wykonać właściwy zamknięty bootstrap/sukcesor źródeł i kontrolowany proof; po zwolnieniu okna ACG i spełnieniu wymaganych kontroli opublikować naprawę oraz tę aktualizację Karty. Następnie tylko zaakceptowana instalacja/recovery/readback, odrębny końcowy exact-SHA GO i realne A1/A2/B1. DEC-24 pozostaje zastosowana; nie zlecać E1 ponownie. E1 jest CZĘŚCIOWY, E2 NIE_ROZPOCZĘTY.
 - **Granice i rozliczenie:** brak operacyjnych SQL/grantów/enrollment/deploy; brak danych dokumentów PORR i brak odbioru LIVE. Task dokumentacyjny SRM-BSDC-SCP-E1-SOURCE-CARD-20261119 / begin cmwniar8h0000n8iogezdx0qo obejmuje tylko tę samą Kartę. Kanoniczne wyniki closeout/PHR oraz odczyt ich publikacji są przypięte w metadanych odpowiednich PR po faktycznym zakończeniu zapisu; nie zastępują przyjęcia na main ani zakończenia E1. Zasoby chmurowe i archiwa wymagane do wznowienia są RETAINED; nie utworzono lokalnej dokumentacji na Macu.
 
+#### 5.4.4. Wznowienie po DEC-25 — 2026-11-19
+
+Właściciel zaakceptował dokładny pakiet §7.5 z rewizji bf069096 przez odpowiedź **„Tak — zatwierdzam pakiet §7.5”**; zapis zakresu i granic w §6.7. Poprzedni checkpoint §5.4.3 zachowuje stan sprzed tej odpowiedzi. Brak zgody na ten pakiet nie jest już blokerem.
+
+Pozostają techniczne i publikacyjne warunki: właściwy zamknięty bootstrap/przyjęcie źródeł z trusted main, pełne wymagane CI/proof/readback oraz pierwszeństwo ACG na main. Zwykły rekord Source nie może sam dopuścić chronionych zmian Access/Root, Canon i kontrolera. Nie zmieniać49 zatwierdzonych postimage ani przepisywać historycznych dowodów, aby przejść bramkę. Instalacja, minimalne prawa i PORR enrollment mogą nastąpić dopiero po spełnieniu warunków DEC-25 i świeżej kontroli dokładnego bindingu/preimage/recovery; ich7-dniowy termin zaczyna zweryfikowany install receipt, nie zapis decyzji.
+
+E1-T01–T04 nadal CZĘŚCIOWE, E1-T05 ZABLOKOWANY do faktycznej gotowości wcześniejszych tasków; E2 NIE_ROZPOCZĘTY. Nie wykonano przez zapis zgody Source activation, SQL/grantów/enrollment ani deploy. Końcowy exact-SHA release GO pozostaje osobny. Następna niewykonana operacja to kontrolowane przyjęcie dokładnych źródeł po dopuszczonej ścieżce i zwolnieniu odpowiedniego okna main — bez ponownego startu E1 i bez ponawiania DEC-24/25.
+
 ### 5.5. Lista końcowego odbioru
 
 | ID | Środowisko / zakres | Status | Rzeczywisty dowód |
@@ -657,6 +666,20 @@ Przypiętą rewizję odczytano w bieżącym wykonaniu: 87 plików. Raport histor
 | Granice | Zgoda na zakres **nie zatwierdza jeszcze nowych dokładnych bajtów implementacji**, source admission, instalacji/migracji/grantów ani exact-SHA release GO. Nie uruchamia E2, nowej infrastruktury, płatnych providerów, Staging/Production ani przetwarzania poufnej treści ADP/dokumentów PORR. |
 | Freeze / historia | DEC-21 i f75529c590c5dd4611223c949e5956e34d101e22 pozostają bazą projektu i roadmapy; DEC-22/23 i wcześniejsze publikacje zachowane. Propozycja źródłowa nadal wymaga implementacji i właściwej adopcji, nie staje się samodzielnie ALLOW. |
 
+### 6.7. DEC-25 — zgoda na dokładny pakiet Source i warunkową instalację, 2026-11-19
+
+| Pole | Zapis |
+| --- | --- |
+| Aktor / data | Właściciel w bieżącym wątku, owner Karty tomasz@profitia.pl; 2026-11-19, Europe/Warsaw. |
+| Dosłowna odpowiedź | **„Tak — zatwierdzam pakiet §7.5”**. |
+| Dokładna podstawa | [§7.5 Karty w rewizji bf069096ec4517a26e1b788b4273bc2043cdae11](https://github.com/profitia/SG-dev/blob/bf069096ec4517a26e1b788b4273bc2043cdae11/Canon/proposals/bsdc/SRM/supplier-category-pipelines.md#75-dokładny-pakiet-source-i-warunkowej-instalacji-e1--do-decyzji-właściciela), nie ruchomy branch ani przyszłe zmiany. Zamknięte49 postimage, SHA256 `0e8052dfe4dc72f568ac54f842dc213174f20ae585a46c27e11380ff0c88f740`. |
+| Źródła objęte zgodą | #1245 / d4f889d7a51aacc5e4ffa520451bc6b3d1d800bd (19); #1234 / 8b2662924dcc93d3a3b3c0fae358d91692fcb747 (27); #1256 / 42ed2851758525d84f00f3ed8a49df59319aa955 (3). Właściwy bootstrap/Source admission, pełne wymagane testy/proof i readback pozostają obowiązkowe; brak wildcardu lub podmiany starych receipts. |
+| Instalacja warunkowa | Wyłącznie trzy SQL wskazane w §7.5, ze stałymi digestami647e4712…,9d4203a4…,8a4acba4…, w istniejącym SRM Development i dokładnym zatwierdzonym bindingu. Dopiero po przyjęciu źródeł i pełnym PASS kontroli, ze świeżym preimage/readback, backupem i potwierdzonym recovery; atomowo z minimalnymi prawami. |
+| Prawa i termin | Tylko zakres §7.5: nowe schema USAGE i3EXECUTE; ograniczone istniejące ścieżki operatora na czas jednej transakcji; jedno module binding i polityka PORR z serwerowego bindingu. Maksymalnie7dni od zweryfikowanego install receipt, bez automatycznego odnowienia, nowych loginów/sekretów, runtime DML/owner/BYPASSRLS. Zachować aktualne membership/product/feature admission, DENY, expiry/revocation, izolację i historię. |
+| Wynik / wznowienie | **OWNER_EXACT_SOURCE_AND_CONDITIONAL_INSTALL_APPROVED**. Zastosować tę zgodę bez ponownego pytania o ten sam pakiet. Najpierw wykonać właściwe przyjęcie źródeł i obowiązkowe kontrole; dopiero potem zależną instalację/recovery/readback. Sam zapis DEC-25 nie jest PASS, aktywnym rejestrem Source ani install receipt. |
+| Nadal odrębne | Końcowe exact-SHA Development release GO, LKG i rzeczywisty deploy/odbiór A1/A2/B1. ACG zachowuje pierwszeństwo na main. Bez E2, Staging/Production, nowych zasobów/kosztów, treści dokumentów PORR i rozszerzenia zatwierdzonych postimage/digestów/grantów. |
+| Freeze / ślad | DEC-21/f75529c i cała roadmapa zachowane; DEC-24 i pozostałe wcześniejsze decyzje nie są przepisywane. Zapis: SRM-BSDC-SCP-E1-DEC25-20261119 / begin cmwnoef2a00006li56rj224bd; osobny task dokumentacyjny, nie instalacja. |
+
 ## 7. Otwarte zależności, realne ryzyka i granice twierdzeń
 
 ### 7.1. Brak ukrytych decyzji zakresowych
@@ -673,7 +696,7 @@ Następujące zmiany wymagałyby ponownej decyzji, bo zmieniają zakres/bezpiecz
 ### 7.2. Zależności wykonawcze, które nie są jeszcze spełnione
 
 - Nie ma obecnie dowodu wdrożenia nowego kontraktu, operacji i schematu. E1 jest CZĘŚCIOWY zgodnie z §5.4; E2 pozostaje NIE_ROZPOCZĘTY. Gotowy kandydat i testy syntetyczne nie są odbiorem LIVE.
-- Zakres operacji Access/Root/Work został zatwierdzony w DEC-24. Dokładne źródła, trzy migracje, minimalne prawa i enrollment wymagają odrębnego dopuszczenia §7.5; sama zgoda zakresowa nie daje runtime ALLOW.
+- Zakres operacji Access/Root/Work zatwierdzono w DEC-24; dokładny pakiet źródeł i warunkową instalację/minimalne prawa/enrollment w DEC-25. Nadal wymagane są techniczne Source admission, pełne CI/proof, preimage/backup/recovery i późniejszy exact-SHA release GO; sam zapis nie daje runtime ALLOW.
 - Przed instalacją trzeba potwierdzić actual binding, role, recovery i okno, nie ufać historycznemu statusowi JSON. Brak gotowości blokuje zależny task, bez fallbacku do demo/shared lub PMOS.
 - Nie udowodniono automatycznego bindingu MagicPath. Docelowy transfer wymaga rzeczywistego reuse i przyjętej kwalifikacji, bez ogłaszania propagacji na podstawie podobieństwa.
 - Rzeczywiste poufne środowisko PORR, źródło ADP i jego polityki retencji nie są aktywowane. Włączenie ich później jest odrębnym zakresem.
@@ -712,17 +735,17 @@ Publikacja została zakończona przez [PR #1123](https://github.com/profitia/SG-
 **Dalsze wykonanie po DEC-24:** producent #1245 i zamknięty store/host/API #1234 są przygotowane i zweryfikowane jako kandydaci (§5.4.2). Dalszy punkt to właściwy sukcesor/admission i pełne CI oraz dokładny pakiet §7.5. Konieczną naprawę wspólnej kontroli historii przygotowano osobno w #1256 / 42ed2851758525d84f00f3ed8a49df59319aa955; pozostaje objęta proponowanym pakietem 49 postimage i kontrolowanym dopuszczeniem dokładnego źródła. Zgodnie z poleceniem koordynacyjnym ACG zachowuje pierwszeństwo na main; nie wykonywać konkurencyjnego merge. Nie trzeba ponownie zlecać E1 ani zatwierdzać zakresu DEC-24. Nie uznawać kandydatów, builda lub syntetycznej bazy za install receipt, source acceptance czy release GO.
 
 
-### 7.5. Dokładny pakiet Source i warunkowej instalacji E1 — do decyzji właściciela
+### 7.5. Dokładny pakiet Source i warunkowej instalacji E1 — zatwierdzony przez DEC-25
 
-**Status: PROPOZYCJA / BRAK DALSZEJ ZGODY.** DEC-24 jest zastosowana i nie wymaga ponownej akceptacji. Poniższy pakiet dotyczy odrębnych bramek dokładnych źródeł, instalacji i ograniczonych uprawnień, pozostawionych w mandacie E1 oraz w §7.4. Nie zmienia projektu/roadmapy DEC-21, nie jest aktywnym wpisem polityki Source ani release GO.
+**Status: OWNER_APPROVED przez DEC-25 (§6.7), na podstawie dokładnej rewizji bf069096.** Zgoda obejmuje49 wskazanych postimage i warunkową instalację trzech migracji z minimalnymi prawami/PORR do7dni od install receipt. DEC-24 pozostaje zastosowana; nie trzeba ponawiać żadnej z tych zgód. Obowiązują wszystkie poniższe warunki Source/CI/preimage/backup/recovery; sam zapis nie jest aktywnym wpisem Source, install receipt ani końcowym release GO. Projekt/roadmapa DEC-21 pozostają bez zmian.
 
-**Rekomendacja do jednej decyzji:**
+**Warunki wykonania przyjęte w DEC-25:**
 
 1. Dopuścić przez istniejący workflow Source **wyłącznie** trzy poniższe, zamknięte zestawy: ARCHITECTURE #1245 / `d4f889d7a51aacc5e4ffa520451bc6b3d1d800bd` (19 plików) oraz SRM #1234 / `8b2662924dcc93d3a3b3c0fae358d91692fcb747` (27 plików) oraz konieczną naprawę zgodności historycznej kontroli dokumentacji ARCHITECTURE #1256 / `42ed2851758525d84f00f3ed8a49df59319aa955` (3 pliki). Aktor profitia, repo profitia/SG-dev, cel Development, zakres SOURCE_VALIDATION_ONLY. Kontrolowane przyjęcie wymaga właściwego bootstrapu z trusted main, pełnych testów/proof i readbacku; nie wolno dopisać ogólnego wyjątku dla SDK/Canon, przepisać dawnych checksum ani uznać tej decyzji za PASS. Naprawa #1256 zachowuje istniejący zamknięty projektor zaakceptowanego Kanonu ACG, dawny rejestr i fingerprinty; nie dopuszcza dowolnego następcy ani przyszłego manifestu. GitHub Governance44530036503 dla tej dokładnej rewizji jest PASS; publiczna kontrola SG2 nadal wymaga `CONTROLLED_VALIDATION_REQUIRED_FOR_EXACT_SHA`, więc ten pakiet nie oznacza pełnego PASS. Właściwy sukcesor źródeł SDK/konsumenta i zgodność z równoległym SDK1.38 nadal muszą zostać wykazane. Dodatkowe lub zmienione postimage nie są objęte tym zamkniętym pakietem.
 2. **Warunkowo, dopiero po przyjęciu właściwych źródeł i pełnym PASS wymaganych kontroli**, dopuścić kontrolowaną próbę transakcyjną oraz instalację trzech dokładnych migracji poniżej w istniejącym SRM Development. Wymagane świeże preimage/readback, backup i potwierdzone recovery; cały zestaw SQL i przyjęcie minimalnych praw mają być atomowe. Zmiana preimage/bindingu/digestu zatrzymuje operację.
 3. Dopuścić tylko wskazane minimalne prawa i enrollment dla PORR, na **maksymalnie 7 dni od zweryfikowanego install receipt**, bez automatycznego odnowienia. Zachować istniejące odmowy, aktualne członkostwo, product/feature admission, expiry i revocation. Instalacja nie uruchamia aplikacji ani następnego etapu.
 
-| Element instalacji | Dokładny zakres propozycji |
+| Element instalacji | Dokładny zakres zatwierdzony przez DEC-25 |
 |---|---|
 | Binding | Render `srv-db1vu6gm7kps73d0e3r0`; Neon `spring-bread-28217539` / `br-sparkling-term-b99l107x`; baza `platform_private`, schema `srm`; istniejąca zwykła rola `srm_private_development_runtime`. Wyłącznie Development. |
 | 1. Granica Root / Access | [supplier-workspace-v1.sql](https://github.com/profitia/SG-dev/blob/d4f889d7a51aacc5e4ffa520451bc6b3d1d800bd/packages/platform-contracts/migrations/access/supplier-workspace-v1.sql), SHA256 `647e47125b84e4eb026b5a1aec783b0b147315817cbd6246081fc40c92bd6023`. |
@@ -734,9 +757,9 @@ Publikacja została zakończona przez [PR #1123](https://github.com/profitia/SG-
 | Audyt i odzyskanie | Zgodny operator/preimage i backup/recovery przed zmianą; rollback tej samej transakcji przy błędzie. Po COMMIT bezpieczne wyłączenie nowej konfiguracji/polityki z zachowaniem zapisów i historii; bez DROP/purge lub globalnego restore. Potwierdzić wcześniejsze wejścia raportowe i odmowy. |
 | Późniejsze wydanie | Nadal wymagane **odrębne finalne exact-SHA Development GO**, LKG/recovery, receipt rzeczywistego deploy i realny odbiór A1/A2/B1. Obecne activation=false i admittedSourceRef=null nie są zmieniane przez ten dokument. E2 pozostaje NIE_ROZPOCZĘTY. |
 
-Po tej decyzji kontynuować wyłącznie zależne czynności dopuszczone jej zakresem oraz kolejne wymagane bramki. Jeżeli zmieni się kod, digest, binding lub potrzebny będzie inny grant, nie rozszerzać zgody przez analogię. Brak zgody na instalację nie zatrzymuje niezależnego przeglądu/kwalifikacji źródeł. Zgoda nie jest dowodem, że SDK1.38, wymagane CI, migracja lub release zostały już przyjęte.
+Po tej decyzji kontynuować wyłącznie zależne czynności dopuszczone jej zakresem oraz kolejne wymagane bramki. Jeżeli zmieni się kod, digest, binding lub potrzebny będzie inny grant, nie rozszerzać zgody przez analogię. Zgoda na warunkową instalację została udzielona; niespełniona bramka techniczna zatrzymuje tylko zależną operację. Zgoda nie jest dowodem, że SDK1.38, wymagane CI, migracja lub release zostały już przyjęte.
 
-**Zamknięty wykaz 49 postimage do przeglądu:** SHA256 poniższego JSON (UTF-8, 2 spacje wcięcia, końcowy LF) to `0e8052dfe4dc72f568ac54f842dc213174f20ae585a46c27e11380ff0c88f740`. Odczyt GitHubu potwierdził wszystkie trzy HEAD; tryby, bloby i SHA256 pochodzą z ich rzeczywistych obiektów Git. Nie jest to wpis aktywnego rejestru dopuszczeń.
+**Niezmienny wykaz49 postimage objętych DEC-25:** SHA256 poniższego JSON (UTF-8, 2 spacje wcięcia, końcowy LF) to `0e8052dfe4dc72f568ac54f842dc213174f20ae585a46c27e11380ff0c88f740`. Odczyt GitHubu potwierdził wszystkie trzy HEAD; tryby, bloby i SHA256 pochodzą z ich rzeczywistych obiektów Git. Nie jest to wpis aktywnego rejestru dopuszczeń. JSON zachowuje dokładne bajty propozycji z bf069096, również historyczną etykietę PROPOSED; późniejsza zgoda DEC-25 jest zapisana jawnie w §6.7, bez zmiany digestu tego wykazu.
 
 ```json
 {
