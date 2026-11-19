@@ -1219,3 +1219,10 @@ test('inspector deployment alias is rejected before registration or cleanup',t=>
   assert.throws(()=>loadConfiguration(f.configFile),/symlink|physical|canonical/)
   assert.equal(f.calls.length,0)
 })
+
+test('managed lifecycle allocation fails without a trusted deployment and creates no ordinary fallback directory',t=>{
+  const f=fixture(t);begin(f)
+  assert.throws(()=>allocateResource(f.config,{name:'managed-no-broker',kind:'managed-private-directory',phase:'pre-closeout'},f.runtime),/deployment|path/i)
+  assert.equal(fs.existsSync(path.join(f.scope,'managed-no-broker')),false)
+  assert.equal(tracked(f.c.stateFile).resources.length,0)
+})

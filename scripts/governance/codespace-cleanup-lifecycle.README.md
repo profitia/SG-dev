@@ -161,18 +161,21 @@ Full suite: 99 lifecycle tests plus 24 unchanged Stage02 tests (123 total). Test
 
 Publication v6 requires the unfiltered Linux suite, controlled invocation acceptance and current governance/CI. TEST-RESULTS.txt records actual execution; the earlier macOS-only v5 run does not substitute for Linux validation.
 
-## Stage04R: optional inspector and unchanged continuity
+## Stage04 continuation: private managed resources
 
-Optional `inspectorDescriptor` names a canonical administrator-controlled
-inspector deployment. Both phases forward it to the existing engine; it is a
-protected control input and cannot be removed inside a candidate. Existing
-preflight, registration, release, pending/bootstrap recovery, measured
-pre-closeout evidence before save, and remote PHR readback remain mandatory.
+The optional `managed-private-directory` kind is created only by the separately
+admitted task-scoped trusted worker. It is private from birth, exposes no FDs,
+freezes its producer on release, and removes only its own verified allocation
+through an ordinary capability-free worker. It does not adopt old resources.
+Use `inspectorDescriptor` and the existing allocation/release/phase/closeout flow;
+missing, changed or incomplete deployment fails closed without another deletion
+path. Existing ordinary directories and worktrees keep all original guards.
 
-The public inspector is observation-only; the opted-in engine retains resources.
-Its public deletion operation cannot be enabled by a policy. Trusted worker
-launch and reference-lifetime isolation are still implementation prerequisites
-for this controller, in addition to separate administrator admission. See the
-[inspector contract](codespace-cleanup-inspector.README.md). Worktrees retain their
-existing guards. Continuity completion never implies actual recovered space.
-No hook, schedule, privilege installation or Stage05 activation is added.
+See [the exact worker contract](codespace-cleanup-inspector.README.md) for the
+root policy, narrow privilege boundary, recovery and runtime acceptance. No
+source publication installs privileges, global hooks or schedules or activates
+Stage05. Pre-closeout measurement still belongs in canonical evidence before
+save; partial/blocked continuity retains required recovery data.
+
+Run all four Linux suites, including codespace-cleanup-managed.test.mjs. Test
+success does not replace real root-owned workspace CLEANED acceptance.

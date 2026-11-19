@@ -380,3 +380,9 @@ test('Node and isolated Python bind exactly the same substantive Unicode tree',a
   assert.equal(p.status,0,p.stderr)
   assert.equal(inspectorTreeDigest(r.path,10000,64*1024*1024),p.stdout.trim())
 })
+
+test('managed private kind cannot adopt an ordinary directory or fall back without its trusted broker',t=>{
+  const f=fixture(t),r=f.resource('managed-adoption-attempt','managed-private-directory')
+  const result=f.clean()
+  assert.equal(result.summary.REVIEW_REQUIRED,1);assert.equal(fs.existsSync(r.path),true)
+})

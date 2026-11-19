@@ -122,26 +122,21 @@ node --check scripts/governance/codespace-cleanup.mjs
 Isolated tests create disposable bare Git remotes, detached worktrees and caches beneath `os.tmpdir()`. They do not target the user's Codespace. Review all new files under the correct `ARCHITECTURE` profile with the existing preflight/PMOS gate before integration. The local package test count and integrity manifest accompany the supplied archive.
 
 
-## Stage04R: optional read-only restricted inspector
+## Stage04 continuation: private managed resources
 
-`--inspector-descriptor /absolute/root-owned/deployment.json` opts ephemeral
-inspection into [the restricted inspector](codespace-cleanup-inspector.README.md).
-No option installs or elevates a component. Worktrees retain the original path.
-Missing, caller-writable, substituted or incomplete deployment is
-`REVIEW_REQUIRED`; the engine never falls back to ordinary deletion.
+The optional `managed-private-directory` kind is created only by the separately
+admitted task-scoped trusted worker. It is private from birth, exposes no FDs,
+freezes its producer on release, and removes only its own verified allocation
+through an ordinary capability-free worker. It does not adopt old resources.
+Use `inspectorDescriptor` and the existing allocation/release/phase/closeout flow;
+missing, changed or incomplete deployment fails closed without another deletion
+path. Existing ordinary directories and worktrees keep all original guards.
 
-The public inspector is **observation-only**. It returns `deleteAuthorized:false`;
-the engine retains the resource even after a successful bounded idle observation.
-Its public clean endpoint refuses before any rename or FD handoff. A `/proc`
-walk, root UID, repeated scans, owner marker or a written policy is not an atomic
-absence-of-references proof. Queued/transferred FDs remain relevant. Trusted
-worker launch and a verified private reference lifetime are not implemented for
-the synchronous Node controller. A capability grant alone does not resolve this.
+See [the exact worker contract](codespace-cleanup-inspector.README.md) for the
+root policy, narrow privilege boundary, recovery and runtime acceptance. No
+source publication installs privileges, global hooks or schedules or activates
+Stage05. Pre-closeout measurement still belongs in canonical evidence before
+save; partial/blocked continuity retains required recovery data.
 
-The internal sealed transaction prototype has isolated state/recovery tests; it
-is not enabled by any descriptor. This draft adds no live cleanup activation,
-hook, schedule, privilege or business acceptance. Run the entire Linux suite:
-
-```bash
-node --test scripts/governance/codespace-cleanup.test.mjs scripts/governance/codespace-cleanup-lifecycle.test.mjs scripts/governance/codespace-cleanup-inspector.test.mjs
-```
+Run all four Linux suites, including codespace-cleanup-managed.test.mjs. Test
+success does not replace real root-owned workspace CLEANED acceptance.

@@ -10,9 +10,10 @@ import path from 'node:path'
 import crypto from 'node:crypto'
 import { spawnSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
+import {managedRequest,MANAGED_KIND} from './codespace-cleanup-managed.mjs'
 
 export const OWNER_FILE = '.codespace-cleanup-owner.json'
-const VALID_KINDS = new Set(['ephemeral-directory', 'git-worktree'])
+const VALID_KINDS = new Set(['ephemeral-directory', 'git-worktree',MANAGED_KIND])
 const VALID_PHASES = new Set(['pre-closeout', 'post-closeout'])
 const PROTECTED_NAMES = new Set([
   '.git', '.pmos', '.context', '.ssh', '.gnupg', '.aws', '.config',
@@ -321,6 +322,17 @@ function checkResource(resource, state, args, source) {
     assertAbsolute(resource.path, 'resource.path')
     if (!inside(resource.path, scopeRoot) || sameOrInside(sourceRoot, resource.path)) deny('Resource is outside task-owned cleanup scope')
     if (args.stateFile && sameOrInside(args.stateFile, resource.path)) deny('Task-state file or cooperative lock resides inside candidate')
+    if(resource.kind===MANAGED_KIND){
+      if(state.resources.filter(r=>r.path===resource.path||r.allocationId===resource.allocationId).length!==1)deny('Duplicate managed resource')
+      validateAuthorization(resource,state,phase)
+      const proof=managedRequest(args,'audit',resource)
+      result.status=proof.status
+      if(!['OWNED_DISPOSABLE','RETAINED','NOT_APPLICABLE'].includes(result.status))deny('Invalid managed audit')
+      result.reason=proof.status==='RETAINED'?'Managed producer lease is active':null
+      result.expectedIdentity=proof.identity
+      if(proof.measurement)result.measurement=proof.measurement
+      return result
+    }
     if (!fs.existsSync(resource.path)) {
       result.status = 'NOT_APPLICABLE'
       result.reason = 'Previously recorded resource is absent; no deletion attempted'
@@ -426,6 +438,17 @@ export function executeCleanup(options) {
           continue
         }
         try {
+          if(current.kind===MANAGED_KIND){
+            const proof=managedRequest(args,'clean',state.resources[i])
+            if(proof.status==='NOT_APPLICABLE'){
+              report.results[i]={path:current.path,kind:current.kind,status:'NOT_APPLICABLE',reason:'Managed resource already removed'};continue
+            }
+            if(proof.status!=='CLEANED'||proof.state!=='COMMITTED'||proof.workerStopped!==true)deny('No committed managed removal proof')
+            report.results[i]={path:current.path,kind:current.kind,status:'CLEANED',reason:null,measurement:proof.measurement,
+              observedFreeBytesDelta:proof.observedFreeBytesDelta,inspectorTransactionId:proof.allocationId}
+            report.observedFreeBytesDelta=(report.observedFreeBytesDelta??0)+proof.observedFreeBytesDelta
+            continue
+          }
           verifyExistingIdentity(current, args.scopeRoot)
           const before = statfsAvailable(args.scopeRoot)
           if (current.kind === 'ephemeral-directory') {
