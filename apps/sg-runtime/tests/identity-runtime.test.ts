@@ -1,4 +1,5 @@
 import {readM2AcceptedSource} from './assistant-m2-source-view.mjs'
+import {acceptedSdkSource} from '../../../packages/platform-contracts/test/organisation-sdk-compatibility.mjs'
 import { createRequire } from 'node:module'
 import { pathToFileURL } from 'node:url'
 import assert from 'node:assert/strict'
@@ -34,7 +35,7 @@ test('SG2 explicitly receives the peer identity producer without enabling cross-
   assert.equal(accepted.producer.sourceSha, '9a226aef8dc36949b13999dbeba046dc1cf62a29')
   assert.equal(accepted.producer.projectKey, 'ARCHITECTURE'); assert.equal(accepted.producer.pullRequest, 568)
   assert.equal(accepted.previousApplicationAuthority, 'c82d400ab53783376fefecd487131b0ef6812ad8')
-  assert.equal(receipt.freshPostfetchCompatibility?.sdkDigests.identitySourceDigest??accepted.identityDigest, await identitySourceDigest())
+  assert.equal(acceptedSdkSource().sdkDigests.identitySourceDigest??receipt.freshPostfetchCompatibility?.sdkDigests.identitySourceDigest??accepted.identityDigest, await identitySourceDigest())
   assert.equal(accepted.identityDigest,createHash('sha256').update(execFileSync('git',['show',accepted.producer.sourceSha+':packages/platform-contracts/src/identity-provider.mjs'])).update(execFileSync('git',['show',accepted.producer.sourceSha+':packages/platform-contracts/src/identity-provider.d.mts'])).digest('hex'))
   const previous = JSON.parse(execFileSync('git', ['show', accepted.previousApplicationAuthority + ':apps/sg-runtime/operation-integration.json'], { encoding: 'utf8' }))
   for (const [key, value] of Object.entries(previous)) assert.deepEqual(['contract','producer'].includes(key) ? receipt.supplierLocationSourceCompatibility.previousRootAcceptance[key] : receipt[key], value, key)
