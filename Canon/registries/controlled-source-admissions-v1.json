@@ -4783,7 +4783,7 @@
       "taskId": "ARCH-PI-NEWSFEED-READER-INVITATION-20261117",
       "targetEnvironment": "development",
       "scope": "SOURCE_VALIDATION_ONLY",
-      "approvalRef": "user:call_fcd53cb33d074702bd9793096683e338:item0 \u2014 explicit four-file SOURCE_VALIDATION_ONLY bcee445734f4c1bae12b266c99893ed545656121; excludes migration and deployment activation",
+      "approvalRef": "user:call_fcd53cb33d074702bd9793096683e338:item0 — explicit four-file SOURCE_VALIDATION_ONLY bcee445734f4c1bae12b266c99893ed545656121; excludes migration and deployment activation",
       "sourceSha": "bcee445734f4c1bae12b266c99893ed545656121",
       "baseSha": "b0eddc27a0405eac5233497414a934f721bc36d2",
       "validFrom": "2026-11-19T01:21:20.127Z",
