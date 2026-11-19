@@ -21,6 +21,17 @@ const uuid=v=>typeof v==='string'&&/^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[8
 const number=v=>Number.isSafeInteger(v)&&v>0
 const hash=v=>createHash('sha256').update(v).digest('hex')
 
+/** GitHub provider metadata uses UTC seconds or milliseconds. Normalize only
+ * this API boundary; signed contracts keep their existing canonical format.
+ * No rounding, clock replacement or extension of a freshness window occurs. */
+export function readQualityGitHubCreatedAt(value){
+ require(typeof value==='string'&&/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z$/.test(value),'GITHUB_PROVIDER_TIMESTAMP_INVALID')
+ let canonical
+ try{canonical=new Date(value).toISOString()}catch{fail('GITHUB_PROVIDER_TIMESTAMP_INVALID')}
+ require(canonical===(value.length===20?value.slice(0,-1)+'.000Z':value),'GITHUB_PROVIDER_TIMESTAMP_INVALID')
+ return canonical
+}
+
 /** Credentials stay in the trusted controller/publisher. No arbitrary URL,
  * command, repository, workflow, branch or agent-provided credential is accepted.
  * Mutations are one-shot; an uncertain delivery is reconciled by the outbox. */
@@ -142,6 +153,7 @@ export function createQualityGitHub({token,fetchImpl=fetch,publisherEnabled=fals
    const binding=controllerJobBinding(externalId),descriptor=await controllerJobDescriptor({sourceSha:binding.controlSourceSha},true)
    const run=assertQualityControllerJobIdentity(await get('/actions/runs/'+runId),{externalId,workflowId:descriptor.workflowId,runId})
    require(run.status==='completed'&&run.conclusion==='success','CONTROLLER_JOB_NOT_SUCCESSFUL')
+   const createdAt=readQualityGitHubCreatedAt(run.created_at)
    const profile=controllerArtifactProfiles[kind],matching=new Map(),name=profile.prefix+binding.nonce
    for(let page=1;page<=10;page++){
     const list=await get('/actions/runs/'+runId+'/artifacts?per_page=100&page='+page)
@@ -157,7 +169,7 @@ export function createQualityGitHub({token,fetchImpl=fetch,publisherEnabled=fals
      if(!matching.size)return Object.freeze({state:'UNKNOWN',externalId,runId,resultVerified:false})
      const artifact=matching.values().next().value,document=await controllerResultDownload(String(artifact.id),artifact.digest,artifact.size_in_bytes,profile)
      const observed=Object.freeze({state:'COMPLETE',externalId,runId,workflowId:descriptor.workflowId,
-      createdAt:run.created_at,artifactSha256:artifact.digest.slice(7),document,resultVerified:false})
+      createdAt,artifactSha256:artifact.digest.slice(7),document,resultVerified:false})
      nativeControllerArtifacts.set(observed,Object.freeze({transport:artifactTransport,kind,externalId,runId,
       workflowId:descriptor.workflowId,documentSha256:documentDigest(document)}))
      return observed
@@ -267,12 +279,12 @@ export function createQualityGitHub({token,fetchImpl=fetch,publisherEnabled=fals
    require(/^[1-9][0-9]{0,19}$/.test(runId),'CONTROLLER_JOB_BINDING_INVALID')
    const binding=controllerJobBinding(externalId),descriptor=await controllerJobDescriptor({sourceSha:binding.controlSourceSha},true)
    const run=assertQualityControllerJobIdentity(await get('/actions/runs/'+runId),{externalId,workflowId:descriptor.workflowId,runId})
-   const at=now(),created=Date.parse(run.created_at)
-   require(run.status==='in_progress'&&run.conclusion===null&&controllerStamp(run.created_at)
+   const at=now(),createdAt=readQualityGitHubCreatedAt(run.created_at),created=Date.parse(createdAt)
+   require(run.status==='in_progress'&&run.conclusion===null
     &&Number.isFinite(at)&&created<=at&&at-created<=1800000,'CONTROLLER_JOB_INVOCATION_REQUIRED')
    const capability=Object.freeze({kind:'AQC_NATIVE_JOB_INVOCATION_V1'})
    nativeControllerInvocations.set(capability,Object.freeze({externalId,runId,workflowId:descriptor.workflowId,
-    controlSourceSha:binding.controlSourceSha,createdAt:run.created_at}))
+    controlSourceSha:binding.controlSourceSha,createdAt}))
    return capability
   },
   controllerJobResult:input=>controllerJobArtifact(input,'result'),
@@ -396,7 +408,8 @@ export function createQualityGitHub({token,fetchImpl=fetch,publisherEnabled=fals
    require(/^[1-9][0-9]{0,19}$/.test(runId)&&sha(sourceSha)&&uuid(nonce),'LINUX_NATIVE_BINDING_INVALID')
    const descriptor=await controllerJobDescriptor({sourceSha},true)
    const run=assertWorkflowIdentity(await get('/actions/runs/'+runId),{runId,sourceSha,nonce,completed:true})
-   require(String(run.workflow_id)===descriptor.workflowId&&controllerStamp(run.created_at),'LINUX_NATIVE_BINDING_INVALID')
+   require(String(run.workflow_id)===descriptor.workflowId,'LINUX_NATIVE_BINDING_INVALID')
+   const createdAt=readQualityGitHubCreatedAt(run.created_at)
    const profile=controllerArtifactProfiles.linuxQualification,matching=new Map()
    for(let page=1;page<=10;page++){
     const list=await get('/actions/runs/'+runId+'/artifacts?per_page=100&page='+page)
@@ -415,7 +428,7 @@ export function createQualityGitHub({token,fetchImpl=fetch,publisherEnabled=fals
      const document=await controllerResultDownload(String(artifact.id),artifact.digest,artifact.size_in_bytes,profile)
      const freeze=v=>{if(v&&typeof v==='object'){Object.values(v).forEach(freeze);Object.freeze(v)}return v}
      const observed=freeze({kind:'AQC_NATIVE_LINUX_OBSERVATIONS_V1',runId,sourceSha,nonce,workflowId:descriptor.workflowId,
-      createdAt:run.created_at,archiveSha256:artifact.digest.slice(7),document})
+      createdAt,archiveSha256:artifact.digest.slice(7),document})
      nativeLinuxObservations.set(observed,Object.freeze({runId,sourceSha,nonce,documentSha256:documentDigest(document)}))
      return observed
     }

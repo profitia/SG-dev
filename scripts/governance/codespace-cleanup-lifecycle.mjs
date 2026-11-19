@@ -379,6 +379,8 @@ export function phaseReport(c, phase, clean = false, opts = {}) {
         receipt.bundleHash === state.closeout.phrBundleHash &&
         receipt.publicationCommit === state.closeout.phrCommit,
         'PHR task bundle or pinned publication proof changed since closeout')
+      assert(receipt.businessResult === 'SUCCESS',
+        'Destructive epilogue requires SUCCESS; preserve resources for incomplete business acceptance')
     }
   }
   return (opts.cleanup ?? executeCleanup)({ command: clean ? 'clean' : 'audit', projectKey: c.projectKey, taskId: c.taskId,
@@ -455,7 +457,7 @@ export function verifyPhrReadback(c, manifestRelative, expected = {}) {
   const expectedPublicationId = `${c.projectKey}:${c.taskId}`
   assert(m.schemaVersion === '1.0' && m.publicationId === expectedPublicationId && m.projectId === c.projectKey &&
     m.taskId === c.taskId && m.sourceSystem === 'PMOS' && m.closeoutState === 'CLOSEOUT_COMPLETE' &&
-    m.result === 'SUCCESS' && typeof m.publishedAt === 'string', 'PHR canonical publication mismatch')
+    typeof m.result === 'string' && m.result.trim() && typeof m.publishedAt === 'string', 'PHR canonical publication mismatch')
   assert(Array.isArray(m.artifacts), 'Missing canonical PHR artifacts')
   const listed = new Set(['manifest.json'])
   for (const a of m.artifacts) {
@@ -484,12 +486,13 @@ export function verifyPhrReadback(c, manifestRelative, expected = {}) {
     const a = parse(fileName)
     assert(a.metadata?.taskId === c.taskId && a.metadata?.conversationId === loadState(c).lifecycle.conversationId &&
       a.metadata?.project === c.beginInput.project, 'Published PHR flight record identity mismatch')
+    assert(a.result?.finalStatus === m.result, 'Published PHR business result differs from canonical manifest')
     const evidence = loadState(c).lifecycle.preCloseoutEvidence
     if (evidence) assert(a.findings?.findings?.includes(evidence.finding),
       'Published PHR evidence is missing the actual pre-closeout report')
   }
   return {head:remoteHead,manifestRelative,publicationId:m.publicationId,publishedAt:m.publishedAt,
-    bundleHash,publicationCommit:expected.publicationCommit ?? remoteHead}
+    bundleHash,publicationCommit:expected.publicationCommit ?? remoteHead,businessResult:m.result}
 }
 
 function checkCanonicalCloseoutInput(c, state, bootstrapInputFile) {
@@ -534,6 +537,7 @@ function checkCanonicalCloseoutInput(c, state, bootstrapInputFile) {
   }
   return {
     saveArgs: pendingExists ? [] : ['--', '--bootstrap-input', bootstrapInputFile],
+    businessResult: (pending ?? bootstrap).result?.finalStatus,
     protectedPaths: [pendingFile, ...(bootstrapInputFile ? [bootstrapInputFile] : [])],
     fromPending: pendingExists,
   }
@@ -589,7 +593,7 @@ export function finishTask(c, { manifestRelative, cleanPreCloseout = false, clea
     assert(!fs.existsSync(path.join(c.sourceRoot, 'apps/pmos/.pmos/recovery/active-closeout.json')),
       'An unresolved active PMOS closeout exists; use canonical PMOS recovery, not a blind save retry')
     let saveArgs = ready.saveArgs
-    let preCleanAllowed = cleanPreCloseout && !ready.fromPending && !evidence
+    let preCleanAllowed = cleanPreCloseout && !ready.fromPending && !evidence && ready.businessResult === 'SUCCESS'
     if (evidence) {
       // Recovery reuses the original measured result. Never replace it with
       // another audit/clean after a save or validation failure.
@@ -658,7 +662,7 @@ export function finishTask(c, { manifestRelative, cleanPreCloseout = false, clea
     current.lifecycle.closeoutInputPaths = [...new Set(inputs)]
     current.closeout = { status: 'CLOSEOUT_COMPLETE', phrPublished: true, pendingSlotCleared: true,
       readbackVerified: true, publicationId: phr.publicationId, phrCommit: phr.publicationCommit ?? phr.head,
-      phrBundleHash: phr.bundleHash, phrManifest: phr.manifestRelative }
+      phrBundleHash: phr.bundleHash, phrManifest: phr.manifestRelative, businessResult: phr.businessResult }
     saveState(c.stateFile, current)
   })
   const post = phaseReport(c, 'post-closeout', cleanPostCloseout,
