@@ -568,6 +568,14 @@ Pozostają techniczne i publikacyjne warunki: właściwy zamknięty bootstrap/pr
 
 E1-T01–T04 nadal CZĘŚCIOWE, E1-T05 ZABLOKOWANY do faktycznej gotowości wcześniejszych tasków; E2 NIE_ROZPOCZĘTY. Nie wykonano przez zapis zgody Source activation, SQL/grantów/enrollment ani deploy. Końcowy exact-SHA release GO pozostaje osobny. Następna niewykonana operacja to kontrolowane przyjęcie dokładnych źródeł po dopuszczonej ścieżce i zwolnieniu odpowiedniego okna main — bez ponownego startu E1 i bez ponawiania DEC-24/25.
 
+### 5.4.5. Zweryfikowany sukcesor źródeł SDK1.38 — 2026-11-19
+
+DEC-25 zapisano w237a8b79 i potwierdzono GitHub readback; przygotowanie Source rozliczono w [PHR53d049e8](https://github.com/profitia/project-history-repository/blob/53d049e8263f5b60972bbc7d66fce64d7dd5134c/history/2026/11/19/2026-11-19-16-03-41Z__architecture-arch-bsdc-scp-e1-admission-20261119/manifest.json), PARTIAL_SUCCESS/CLOSEOUT_COMPLETE, trail14 bez błędów, runtime/handoff/pending/lock PASS. ACG przyjął własną nowszą naprawę #1255; starszy #1256 zamknięto bez merge.
+
+Zamiast nadpisać zmiany logowania przygotowano i sprawdzono [dokładny sukcesor #1261](https://github.com/profitia/SG-dev/pull/1261):47 postimage w076c480dc926989dc6364de9d35ba40de274b986, pakiet19a5bd79801d1a8458f42dc1da1bcee302ae5f0e1ff80a603974ae0ec35f6293. Delta i kompletna jedna decyzja w §7.6. Trzy SQL zachowane. Kwalifikacja native/HTTP, regresja logowania, typecheck i build PASS; nie jest to Source admission/full hosted CI ani prawdziwy odbiór Development.
+
+**Punkt wznowienia:** decyzja tylko o zmienionym dokładnym źródle §7.6, przyjęcie osobnej zależności SDK1.38, właściwe Source/CI/proof/readback; następnie warunkowa instalacja już zatwierdzona w DEC-25. Nie ponawiać zgód DEC-24/25 i nie przeliczać7dni przed faktycznym install receipt. Końcowy exact-SHA GO oddzielny. E1-T01–T04 CZĘŚCIOWE; E1-T05 ZABLOKOWANY; E2 NIE_ROZPOCZĘTY; FINAL-* nadal DO_POTWIERDZENIA na Development. Baza DEC-21,29 kryteriów A–F i cała roadmapa niezmienione.
+
 ### 5.5. Lista końcowego odbioru
 
 | ID | Środowisko / zakres | Status | Rzeczywisty dowód |
@@ -1181,3 +1189,385 @@ F3 ma USTALONE z dowodem decyzji względem konkretnej rewizji. Projekt i bazowy 
 - [Makieta ADP](https://www.magicpath.ai/files/465405993031966720) i [centralny Kanon SpendGuru](https://www.magicpath.ai/files/460628300646219776): identyfikatory komponentów i odczytane rewizje podano w §1.9. Makieta jest źródłem flow/stylu, a nie prawa dostępu, źródła statusu lub dowodu backendu.
 - Wcześniejsza konsultacja o PORR-owned danych/runtime/storage pozostawała propozycją. W tej Karcie została odtworzona i jawnie utrwalona jako rekomendacja §4.5/REC-06; nie przedstawia się jej jako aktywnego wpisu rejestru, utworzonego zasobu lub wykonanej migracji.
 
+
+
+### 7.6. Dokładny sukcesor zgodny z SDK 1.38 — DO DECYZJI WŁAŚCICIELA
+
+**Status: ZWERYFIKOWANY KANDYDAT / NIE_PRZYJĘTY / brak aktywacji.** Zgoda DEC-25 na dawny pakiet49 i warunkową instalację pozostaje ważna. SDK1.38 równoległego wątku wymaga innych postimage w częściach wspólnych; nie wolno podmienić ich pod dawnym digestem ani nadpisać zmian logowania. Przedstawiony poniżej skończony sukcesor dotyczy wyłącznie przyjęcia wskazanych źródeł przez właściwy workflow, bez ponawiania zgody na funkcjonalność i instalację.
+
+| Pole | Dokładny zakres / dowód |
+|---|---|
+| Kandydat | [PR #1261](https://github.com/profitia/SG-dev/pull/1261), kwalifikacja na gałęzi zależnej od źródła SDK271. Zamrożone47 postimage: **076c480dc926989dc6364de9d35ba40de274b986**; SHA256 pakietu **19a5bd79801d1a8458f42dc1da1bcee302ae5f0e1ff80a603974ae0ec35f6293**. Osobny plik dowodowy nie należy do pakietu aktywacji. |
+| Delta wobec DEC-25 | 20 plików ARCHITECTURE i27 SRM: **35 z46 dawnych biznesowych postimage bez zmiany bajtów,11 zmienionych**, dodatkowo jeden jawny rekord aktualnego źródła SDK. Trzy pliki naprawy z #1256 pominięte: właściwy owner ACG przyjął nowszą naprawę #1255 /872da0ab; #1256 zamknięto bez merge, z zachowaniem historii. |
+| Zmiany producenta | Pięć rozwiązań konfliktów SDK/package/context/host; zachowanie organizacji, bootstrapu, lifecycle i benchmarku; trzy odmowy jednoczesnego użycia trybów, przed identity/SQL, w supplier-workspace-access i jego teście. Domyślny Root16 zachowany, workspace26/host1.17 tylko jawny opt-in. |
+| Zmiany SRM | package.json i private-runtime zachowują zarówno supplier workspace, jak dynamiczny bieżący kontekst organizacji z logowania. Dwa pliki testów: stary opcjonalny fixture13 z uproszczonym login mapping nie obsługiwał szczelnego v1; wejście integracyjne uruchamia prawdziwy istniejący native Root/receiver bez skip i bez dorabiania ALLOW. Dodano natywne kontrole FORCE RLS, historii, unikalności kategorii/Unicode i udziału w tym samym procesie. |
+| Jawne metadane źródła | 1724 zmierzone rzeczywiste wejścia,61 historycznych receipts i wcześniejsze baselines/coverage zachowane bez zmian. Rekord ma status nieprzyjętego kandydata; nie pożycza Source admission logowania. Nie jest zmianą historycznych fingerprintów ani aktywną polityką. |
+| Zależność należąca do logowania | Dokładne skorygowane źródło271: **0bb2c6225ebf58180de5e02c35009a134e968ecc**. Przyjęta polityka metadanych #1258 / main e6896150 oraz osobne dopuszczenie #1260 nie oznaczają jeszcze przyjęcia produktu SDK. Ich actual status/full CI pozostają do odczytu przed dalszym krokiem; ten pakiet nie zatwierdza ani nie zastępuje ich dopuszczenia. Nie konkurować z tym wątkiem o main. |
+| Trzy SQL i prawa | Wszystkie trzy dokładne SQL z §7.5 mają te same digests647e4712…,9d4203a4…,8a4acba4…. Nie zmieniają się binding, minimalne USAGE/3EXECUTE, jedna polityka PORR, okres do7dni od install receipt, brak automatycznego odnowienia ani wymagane wcześniejsze DENY/revocation. |
+| Kwalifikacja kodu | Producent333 checks PASS;45 PostgreSQL Root/organizacja PASS;46 SDK metadata/private-host PASS i końcowy odczyt wszystkich1724 wejść/61 receipts PASS. SRM64 focused PASS (w tym wejście integracyjne),20 child native receiver/HTTP PASS,2 release-plan PASS; regresja logowania15 i private-runtime19 PASS. Wszystkie końcowe zestawy bez fail/skip; SRM typecheck i Next build PASS. Nie sumować testu uruchamiającego suite z jego20 podtestami jako niezależnych scenariuszy. |
+| Granica dowodu | Syntetyczne konta/dane i izolowany cloud PostgreSQL16, bez URL klienta i bez prawdziwych sesji Clerk. To kwalifikacja, nie zastępstwo pełnego hosted CI/proof właściwego dokładnego Source i wynikowego main, instalacji ani Development A1/A2/B1. Dokładne źródła/delta i [dowód techniczny](https://github.com/profitia/SG-dev/blob/f79e5b7a8d625db596315c9209f3aac05aba1317/Canon/evidence/2026-11-19-supplier-workspace-sdk138-compat.md). |
+| Proponowana decyzja | Przyjąć do właściwego, kontrolowanego workflow Source **wyłącznie poniższe47 postimage** jako sukcesor źródeł E1 zgodny z SDK1.38, z zachowaniem wszystkich wymogów provenance/CI/readback i niezależnego dopuszczenia zależności. Nie tworzyć ogólnego wyjątku, nie osłabiać kontrolera i nie uznawać kandydata za aktywny rekord. Końcowe exact-SHA application release GO nadal osobne. |
+| Następna operacja | Po tej wąskiej decyzji i przyjęciu zależności: właściwy zamknięty bootstrap/Source, pełne wymagane kontrole dokładnej wersji/main; potem już zatwierdzona w DEC-25 instalacja po świeżym binding/preimage/backup/recovery. Bez E2. E1-T01–T04 CZĘŚCIOWE, E1-T05 ZABLOKOWANY warunkami wcześniejszych tasków; A–F pozostają USTALONE względem DEC-21. |
+
+Zapis przygotowania: ARCH-BSDC-SCP-E1-SDK138-COMPAT-20261119 / cmwnqxx8g00001301qz9n4tfo i SRM-BSDC-SCP-E1-SDK138-COMPAT-20261119 / cmwnrvu9f0000enxf9ubzuvzx. Nie zapisano aktywnego Source, nie wykonano instalacji, SQL/grantów/enrollment, deploy ani E2. Wcześniejsze odrzucenie próby aktywnego wpisu przez automatyczną kontrolę bezpieczeństwa pozostaje respektowane; użyto wyłącznie nieaktywnej propozycji i właściwych testów. Brak obowiązkowego dowodu lub dopuszczenia nadal zatrzymuje zależną operację.
+
+**Zamknięty wykaz47:** SHA256 UTF-8 wyniku `JSON.stringify` poniższego obiektu (bez wcięć i końcowego LF) wynosi **19a5bd79801d1a8458f42dc1da1bcee302ae5f0e1ff80a603974ae0ec35f6293**. Wszystkie tryby/bloby/SHA256 zmierzono z076c480d; do decyzji odwoływać się do tej rewizji i tego digestu. Historyczny wykaz49 w §7.5 zachowuje swoje dokładne bajty i digest.
+
+```json
+{
+  "schemaVersion": "1.0",
+  "scope": "PROPOSED_EXACT_COMPATIBILITY_SOURCE_REVIEW_NOT_AUTHORITY",
+  "acceptedDecision": "DEC-25",
+  "acceptedPacketSha256": "0e8052dfe4dc72f568ac54f842dc213174f20ae585a46c27e11380ff0c88f740",
+  "qualifiedSourceSha": "076c480dc926989dc6364de9d35ba40de274b986",
+  "dependency": {
+    "sourceSha": "0bb2c6225ebf58180de5e02c35009a134e968ecc",
+    "sourceFiles": 271,
+    "status": "PUBLISHED_OWNER_INPUT_NOT_ADOPTED_BY_THIS_TASK"
+  },
+  "sources": [
+    {
+      "projectKey": "ARCHITECTURE",
+      "originalSourceSha": "d4f889d7a51aacc5e4ffa520451bc6b3d1d800bd",
+      "files": [
+        {
+          "path": "Canon/registries/operation-access-matrix-v1.json",
+          "mode": "100644",
+          "blob": "583d5928e587e392daaac940f27e33463eb0f80e",
+          "sha256": "1b1a9641f1e77ed44ca10781f4e4e99c2a6c7dd5f0d038299cc5f6a90985cb7b",
+          "unchangedFromDEC25": true
+        },
+        {
+          "path": "packages/platform-contracts/migrations/access/supplier-workspace-v1.sql",
+          "mode": "100644",
+          "blob": "af369f26453304b5248c9962a9f4a76fc742342d",
+          "sha256": "647e47125b84e4eb026b5a1aec783b0b147315817cbd6246081fc40c92bd6023",
+          "unchangedFromDEC25": true
+        },
+        {
+          "path": "packages/platform-contracts/package.json",
+          "mode": "100644",
+          "blob": "835a326c18b8f19367e7d32854b10797cf438dff",
+          "sha256": "436157a86c8e467d9667ea6e18a12c123fcb35a158189a669bb4a0129072b786",
+          "unchangedFromDEC25": false
+        },
+        {
+          "path": "packages/platform-contracts/src/module-scope.d.mts",
+          "mode": "100644",
+          "blob": "b7a0c6c98462b3ad9b89262e17bd57df578a8b97",
+          "sha256": "314b492dc73f983e5c8ad616ce721e9218591ee2b455fd7c5174c46c003dbb8c",
+          "unchangedFromDEC25": true
+        },
+        {
+          "path": "packages/platform-contracts/src/module-scope.mjs",
+          "mode": "100644",
+          "blob": "a966900e9dcf913b15125a928546529c880dbc7f",
+          "sha256": "8eb216850e290a69dd33f1c350c034ca4238ae4223865c3a4c8772e8e54c6aa2",
+          "unchangedFromDEC25": true
+        },
+        {
+          "path": "packages/platform-contracts/src/operation-context.d.mts",
+          "mode": "100644",
+          "blob": "bdb938d9293d471a82c18fa263c018ae99dca96d",
+          "sha256": "a8779b00b329b9e52c4615d0dda8acd1440faa02d84bee1b47af1df9265d9823",
+          "unchangedFromDEC25": false
+        },
+        {
+          "path": "packages/platform-contracts/src/operation-context.mjs",
+          "mode": "100644",
+          "blob": "42a4c504260011c2d2bea327b16fd7ce4b6cc152",
+          "sha256": "08dc7a1db8573ac9f46e8c2599d301b84b9fd7c917033a3ec53405a575a9065c",
+          "unchangedFromDEC25": false
+        },
+        {
+          "path": "packages/platform-contracts/src/private-operation-host.d.mts",
+          "mode": "100644",
+          "blob": "81b0d81197f8c4a891b2c735a766df1be91580a5",
+          "sha256": "2c47b412606f94adb044c4f02d33b439079e53c5cf8a88143f117bb0143b91cd",
+          "unchangedFromDEC25": false
+        },
+        {
+          "path": "packages/platform-contracts/src/private-operation-host.mjs",
+          "mode": "100644",
+          "blob": "0cd7dc66b74cbfd39378f4a08217279c5f6b45cc",
+          "sha256": "e7c441c75061b987c7641159b1210fbc1242d7d0b13a58bedd48175a4847de84",
+          "unchangedFromDEC25": false
+        },
+        {
+          "path": "packages/platform-contracts/src/supplier-workspace-access.d.mts",
+          "mode": "100644",
+          "blob": "0a17f3537f6e30c0d1dba1120f4c54b463083e1c",
+          "sha256": "6833d8266e9c1d48af7a57b41ab74b641d7c89eaa30931869b08559f25446d8d",
+          "unchangedFromDEC25": true
+        },
+        {
+          "path": "packages/platform-contracts/src/supplier-workspace-access.mjs",
+          "mode": "100644",
+          "blob": "5a7e146e3a5745db297e5e3771216dc16d0daf74",
+          "sha256": "61fd26bcdb8705cad6f2c59c76a9e4b4fe454559a021f962e39c0c54bc871df8",
+          "unchangedFromDEC25": false
+        },
+        {
+          "path": "packages/platform-contracts/src/supplier-workspace-host.d.mts",
+          "mode": "100644",
+          "blob": "cd38da902e21980ace0bc2ff2b317d9fbd47025e",
+          "sha256": "778878044aa0caf8b5f596ab09919bcbcf98959dd9974c1803cbf8dc89ed686b",
+          "unchangedFromDEC25": true
+        },
+        {
+          "path": "packages/platform-contracts/src/supplier-workspace-host.mjs",
+          "mode": "100644",
+          "blob": "a95e881dd2d61e449ff6dc37e70f499e0b36f1d6",
+          "sha256": "69b75c36d61ebc474b4533ea744da8a994e3ff60782d0aa6c3f931864ff4b40e",
+          "unchangedFromDEC25": true
+        },
+        {
+          "path": "packages/platform-contracts/test/fixtures/supplier-workspace-postgres.mjs",
+          "mode": "100644",
+          "blob": "b8b7536a6609ea11b5c27741d31ce447e8aaa49c",
+          "sha256": "88f04f37f4d91feb2d9b318b17d1f3a50a521e104aa98157e90d9d54fad7f5d6",
+          "unchangedFromDEC25": true
+        },
+        {
+          "path": "packages/platform-contracts/test/operation-context.test.mjs",
+          "mode": "100644",
+          "blob": "8c5392e8fed8057da355cac8c4642ec93fb5401c",
+          "sha256": "79dc25da3a471bae202dbd00cd8e153b749f3d45700f059241ee4f77386d32e0",
+          "unchangedFromDEC25": true
+        },
+        {
+          "path": "packages/platform-contracts/test/supplier-workspace-access.test.mjs",
+          "mode": "100644",
+          "blob": "1cd5ae97ea89f28b52455b68e1f0c9470abe53e6",
+          "sha256": "9a78ca3e8f1ccc6155ec627cf97f6efee40674f9f9eed8f3c3e1732caa658b46",
+          "unchangedFromDEC25": false
+        },
+        {
+          "path": "packages/platform-contracts/test/supplier-workspace-postgres.test.mjs",
+          "mode": "100644",
+          "blob": "39bf738e22e9674ab2ca3c58f247c35b74d0a57b",
+          "sha256": "1af7e789a2907c3b9ff518e3b41591a90a86b5d4c8e9d6ee5ad1197d134aa848",
+          "unchangedFromDEC25": true
+        },
+        {
+          "path": "packages/platform-contracts/test/supplier-workspace-types.test.mjs",
+          "mode": "100644",
+          "blob": "0a791b0189146d82167e7a58f3fb995e4091e2fb",
+          "sha256": "d7e77cef1992a70bfd7447136663d3e0d969b359e42988fb901962b495a8e77e",
+          "unchangedFromDEC25": true
+        },
+        {
+          "path": "packages/platform-contracts/test/types/supplier-workspace.mts",
+          "mode": "100644",
+          "blob": "c6b00206569e3aca26a7812a1118be511feed41a",
+          "sha256": "4f54d4e8a6cbb3dd85a298e4d90b08956b72e38303fa8bfa9bf3945eb1ad4a66",
+          "unchangedFromDEC25": true
+        },
+        {
+          "path": "apps/architecture-lab/current-sdk-source.json",
+          "mode": "100644",
+          "blob": "5ead59b4b9cc01a8e8f51e2d5bce9528f89fcf1d",
+          "sha256": "5307f015ee9fe80a313547d206ea92bcef3c55ff983a1e4f1cfb5c4a7f8517b6",
+          "unchangedFromDEC25": false,
+          "additional": true
+        }
+      ]
+    },
+    {
+      "projectKey": "SRM",
+      "originalSourceSha": "8b2662924dcc93d3a3b3c0fae358d91692fcb747",
+      "files": [
+        {
+          "path": "apps/srm/app/api/adp/v1/[...path]/route.ts",
+          "mode": "100644",
+          "blob": "43f59fe7caada2ef62d195f5980316d78209a3b5",
+          "sha256": "45ee75aa34dae05322310d74fe45df2ca4e2a447472f2451836d92a09904ee04",
+          "unchangedFromDEC25": true
+        },
+        {
+          "path": "apps/srm/db/private-store/supplier-pipelines-commands-v1.sql",
+          "mode": "100644",
+          "blob": "3045744383ee28ab588ed5ff66c7598de69e7923",
+          "sha256": "8a4acba4afc18e6740ba55702784d67d10ebaa368d1bf2da3c24f6ccf1c40b4c",
+          "unchangedFromDEC25": true
+        },
+        {
+          "path": "apps/srm/db/private-store/supplier-pipelines-v1.sql",
+          "mode": "100644",
+          "blob": "a0c8706b375e1006964b8aac94c02575147113ae",
+          "sha256": "9d4203a4ddb3f7af4297d8f27b190ddf1dbfcaac8cdaa24199e4a6e6902dcad5",
+          "unchangedFromDEC25": true
+        },
+        {
+          "path": "apps/srm/deployment/supplier-pipelines-targets.json",
+          "mode": "100644",
+          "blob": "00d4cf1590f7251d814bcb943516c7f13532acc7",
+          "sha256": "0fa9c44ca6284828e337592f20d699aae314575f39a5459fae620777c1e7e4fe",
+          "unchangedFromDEC25": true
+        },
+        {
+          "path": "apps/srm/middleware.test.ts",
+          "mode": "100644",
+          "blob": "a757fa6605c11b546ad03e8b068689c6b109c5a2",
+          "sha256": "8251849f658c008f48e9f7419a06cc8e36a7994b44e4eb9d80c3a4406cda9e30",
+          "unchangedFromDEC25": true
+        },
+        {
+          "path": "apps/srm/middleware.ts",
+          "mode": "100644",
+          "blob": "7ed9b498aa9afe8fa6e2afc7796b4451d3d430b0",
+          "sha256": "157d19d37036f138438139cd96777c3c6233d9ff0bf3596804fd26e0a76a97ae",
+          "unchangedFromDEC25": true
+        },
+        {
+          "path": "apps/srm/package.json",
+          "mode": "100644",
+          "blob": "82451b4cd5a413d66075d21b2dfbe9863e67c63b",
+          "sha256": "31605ff8acc7c3ee0b45253e931679c081eb94a79f47124da18ec063f09df8bf",
+          "unchangedFromDEC25": false
+        },
+        {
+          "path": "apps/srm/scripts/supplier-pipelines-postgres.test.mjs",
+          "mode": "100644",
+          "blob": "d0bb2a026e59daab32a4f0d756c6813bacb02f8d",
+          "sha256": "4d46cc1ee23dd9194cec2e8ff57dbcf135926c0b212d8f00085c9c1e7c78b309",
+          "unchangedFromDEC25": false
+        },
+        {
+          "path": "apps/srm/scripts/supplier-pipelines-release.mjs",
+          "mode": "100644",
+          "blob": "fbc61d32fec8401b0775669b326eacdb7c7bf049",
+          "sha256": "4f42c4db62fb44869716c1ce589cd7b5942b34025ba337a549fd4517628ae490",
+          "unchangedFromDEC25": true
+        },
+        {
+          "path": "apps/srm/scripts/supplier-pipelines-release.test.mjs",
+          "mode": "100644",
+          "blob": "64a4e591bb83dd05203c5d5f107c0d5a70392c28",
+          "sha256": "b431eed3a340fba13bceee25c8832c286bc9467dcd963c7c06830b40be57ea14",
+          "unchangedFromDEC25": true
+        },
+        {
+          "path": "apps/srm/src/server/integrations/supplier-pipelines.integration.test.ts",
+          "mode": "100644",
+          "blob": "1ea8441e6819f73cd445820dabbc1009abd694c1",
+          "sha256": "5ec8a0ad7c0213df54662897c5558ed07de0c1e064e4c727fca1f6289c48d202",
+          "unchangedFromDEC25": false
+        },
+        {
+          "path": "apps/srm/src/server/private-runtime.ts",
+          "mode": "100644",
+          "blob": "f199b5083afed7eb337e3f386ef7678b90b5d15d",
+          "sha256": "188aba4469b1888f14280ea1c0e3b8f4ec8ba96900e64eece136b7b40d0e162c",
+          "unchangedFromDEC25": false
+        },
+        {
+          "path": "apps/srm/src/server/supplier-adp-status.ts",
+          "mode": "100644",
+          "blob": "ab911e6fa3e462195a1f970f1b8abaca06236528",
+          "sha256": "12a3ab2054c2681bdfbc157663fe353260d84a2f4cc06ccab23dca8ce4f27276",
+          "unchangedFromDEC25": true
+        },
+        {
+          "path": "apps/srm/src/server/supplier-pipelines-contract.test.ts",
+          "mode": "100644",
+          "blob": "8522b8d1b7439b455532402ca47f2687b54d26ce",
+          "sha256": "ae776e20f5ab4da18fec0bd73ec0d0fdcfc75173bc848f180bb50f3b7f671c26",
+          "unchangedFromDEC25": true
+        },
+        {
+          "path": "apps/srm/src/server/supplier-pipelines-contract.ts",
+          "mode": "100644",
+          "blob": "b8da3f2456a980b88bd6b25fbe4126610e8bf6b2",
+          "sha256": "994442d773cc78b50bc9f2348d132037402bbbb48dd81579fc16e43675c4f475",
+          "unchangedFromDEC25": true
+        },
+        {
+          "path": "apps/srm/src/server/supplier-pipelines-domain.test.ts",
+          "mode": "100644",
+          "blob": "784f5ec491eeaa860e6e6a1fb4492e94820c986b",
+          "sha256": "cc7ad73fa6b24eb94fdab324ae7ed4c2119e3d641f8f5c10fc52786f6031f10e",
+          "unchangedFromDEC25": true
+        },
+        {
+          "path": "apps/srm/src/server/supplier-pipelines-domain.ts",
+          "mode": "100644",
+          "blob": "e21a94733e3551fd5fa9761cf0e28e789a6b0ce5",
+          "sha256": "958a5958da3b29624896fe26ea6f11fc8081f3267f75414eef91d555c30d08b9",
+          "unchangedFromDEC25": true
+        },
+        {
+          "path": "apps/srm/src/server/supplier-pipelines-http.test.ts",
+          "mode": "100644",
+          "blob": "80f6f908149118546e7d2b42b065b93b7d5884d5",
+          "sha256": "5ee87826891757e4401b1ff03c260d8c19cf4d3ecca3986c372b6d4df78c054a",
+          "unchangedFromDEC25": true
+        },
+        {
+          "path": "apps/srm/src/server/supplier-pipelines-http.ts",
+          "mode": "100644",
+          "blob": "539fe11e696cf8a4a0e2f82d90107bf78718a5c6",
+          "sha256": "4b0c3e9f91ad4260c9ef76d5a450d15ad5afb0345f18e320fe8491128a2eb72b",
+          "unchangedFromDEC25": true
+        },
+        {
+          "path": "apps/srm/src/server/supplier-pipelines-runtime.test.ts",
+          "mode": "100644",
+          "blob": "bd9f9373e358ff61834ad7f7fe8fe6955989a39a",
+          "sha256": "2536e27c79c71992d8e64acf442c7521efbfa1eeafac7a5697e21c1d03a14a4f",
+          "unchangedFromDEC25": true
+        },
+        {
+          "path": "apps/srm/src/server/supplier-pipelines-runtime.ts",
+          "mode": "100644",
+          "blob": "35faca85d791e4c140a6f012a172a1d407330bbe",
+          "sha256": "57ee6fa4faf09ce846fcee0ba0ccc5fc4f287607d7759431cb2672b6eda1aeca",
+          "unchangedFromDEC25": true
+        },
+        {
+          "path": "apps/srm/src/server/supplier-pipelines-store.ts",
+          "mode": "100644",
+          "blob": "da215ccc8b1ce8c2faa8c4e37a598cc93f8048fb",
+          "sha256": "dc79147f8fcf48b7706085bfa061b9c8e65012f3ecdbfaa5eaa3abad91adacc5",
+          "unchangedFromDEC25": true
+        },
+        {
+          "path": "packages/srm-adp-ui/package.json",
+          "mode": "100644",
+          "blob": "9713c5e5534f2d9ba898f9469298505728cb0f8d",
+          "sha256": "26bfbfe857654e20c3f3df1215cde7d62494c1f8319eb43fb59d276129455fa7",
+          "unchangedFromDEC25": true
+        },
+        {
+          "path": "packages/srm-adp-ui/source-contract.json",
+          "mode": "100644",
+          "blob": "1874c114af9e69dc936518fe4ebcca35a270b37a",
+          "sha256": "c8e7014f7e816b43e1fb82feb5b28e80dd0b31e07d611366bc362827d580b59c",
+          "unchangedFromDEC25": true
+        },
+        {
+          "path": "packages/srm-adp-ui/src/index.ts",
+          "mode": "100644",
+          "blob": "303ebd53d4eb51b11b583a584a107f3ac86f17e2",
+          "sha256": "5f6586c7ddac13978eb32e244624959fd70f564fd85c14d0f7333cdc24e2e8ba",
+          "unchangedFromDEC25": true
+        },
+        {
+          "path": "packages/srm-adp-ui/src/pipelines-contract.ts",
+          "mode": "100644",
+          "blob": "f8f96616cb06633e9f401d96c93d52687a5b3735",
+          "sha256": "9470a0364b5b56d9042bc941a2eb3ca07d6fe3a5e7e34275a9979b815ba473d9",
+          "unchangedFromDEC25": true
+        },
+        {
+          "path": "packages/srm-adp-ui/tests/pipelines-contract.test.tsx",
+          "mode": "100644",
+          "blob": "5e70ad97dc8be8d328e25160c8c792e589b547ad",
+          "sha256": "d87d4c06ce32aee85e002469251f079e1b26d4e9d96f494773f20a9f2a65c976",
+          "unchangedFromDEC25": true
+        }
+      ]
+    }
+  ]
+}
+```
