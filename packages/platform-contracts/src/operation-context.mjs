@@ -1,3 +1,4 @@
+import {SUPPLIER_WORKSPACE_OPERATION_RULES,SUPPLIER_WORKSPACE_NEW_OPERATIONS,SUPPLIER_WORKSPACE_ROOT_IMPLEMENTATION,validateSupplierWorkspaceAdoption,supplierWorkspaceRequiredPermissions} from './supplier-workspace-access.mjs'
 import { createHash, randomUUID } from 'node:crypto'
 import {requestOperationPolicy} from './request-operations.mjs'
 import {SUPPLIER_LOCATION_OPERATIONS,normalizeSupplierLocationEvidence,isSupplierLocationAdmission} from './supplier-location.mjs'
@@ -13,6 +14,7 @@ export const REQUEST_QUOTA_ROOT_CONTRACT=Object.freeze({...OPERATION_CONTRACT,im
 export const ASSISTANT_ROOT_CONTRACT=Object.freeze({...OPERATION_CONTRACT,implementation:'1.0.0-candidate.20'})
 export const RECURRING_ROOT_CONTRACT=Object.freeze({...OPERATION_CONTRACT,implementation:'1.0.0-candidate.22'})
 export const KNOWLEDGE_ROOT_CONTRACT=Object.freeze({...OPERATION_CONTRACT,implementation:'1.0.0-candidate.23'})
+export const SUPPLIER_WORKSPACE_ROOT_CONTRACT=Object.freeze({...OPERATION_CONTRACT,implementation:SUPPLIER_WORKSPACE_ROOT_IMPLEMENTATION})
 const denialBrand = Symbol.for('profitia.operation-context.denial.v1')
 const denialCodes = new Set(['UNSUPPORTED_CONTRACT', 'UNVERIFIED_IDENTITY', 'CONTEXT_INVALID', 'ENVIRONMENT_MISMATCH', 'APPLICATION_FEATURE_UNAVAILABLE', 'ACCESS_BASIS_INVALID', 'PERMISSION_DENIED', 'PRODUCT_UNAVAILABLE', 'RESOURCE_SCOPE_MISMATCH', 'DATA_CLASSIFICATION_UNKNOWN', 'DELEGATION_INVALID', 'DELIVERY_UNCERTAIN', 'RESOURCE_VERSION_CONFLICT', 'LIMIT_POLICY_UNAVAILABLE', 'LIMIT_EXCEEDED', 'IDEMPOTENCY_CONFLICT', 'AUDIT_UNAVAILABLE', 'POLICY_UNAVAILABLE', 'EXPLICIT_DENY'])
 
@@ -21,6 +23,7 @@ const denialCodes = new Set(['UNSUPPORTED_CONTRACT', 'UNVERIFIED_IDENTITY', 'CON
 const rule = (feature, resourceType, dataClass, effect, product = null, mode = 'ORGANISATION') => Object.freeze({ feature, resourceType, dataClass, effect, product, mode })
 const rules = Object.freeze({
   ...KNOWLEDGE_OPERATION_RULES,
+  ...SUPPLIER_WORKSPACE_OPERATION_RULES,
   'account.settings.read': rule('account', 'account_settings', 'ACCOUNT_PRIVATE', 'READ', null, 'ACCOUNT'),
   'account.settings.write': rule('account', 'account_settings', 'ACCOUNT_PRIVATE', 'WRITE', null, 'ACCOUNT'),
   'assistant.history.read': rule('assistant', 'assistant_history', 'ACCOUNT_PRIVATE', 'READ', null, 'ACCOUNT'),
@@ -68,7 +71,7 @@ const rules = Object.freeze({
   'supplier.private.reveal': rule('supplier_report', 'supplier_private_identifier', 'ORGANISATION_PRIVATE', 'READ', 'SUPPLIER_INTELLIGENCE'),
   'supplier.private.export': rule('supplier_report', 'supplier_private_export', 'ORGANISATION_PRIVATE', 'EXPORT', 'SUPPLIER_INTELLIGENCE'),
 })
-export const IMPLEMENTED_OPERATIONS = Object.freeze(Object.keys(rules).filter(operation=>!recurringOperationPolicy(operation)&&!knowledgeOperationPolicy(operation)))
+export const IMPLEMENTED_OPERATIONS = Object.freeze(Object.keys(rules).filter(operation=>!recurringOperationPolicy(operation)&&!knowledgeOperationPolicy(operation)&&!SUPPLIER_WORKSPACE_NEW_OPERATIONS.includes(operation)))
 const profiles = Object.freeze({
   PLATFORM_INTERNAL: { features: ['job_execution','knowledge_ingestion'], products: [] },
   PORR_SUITE: { features: ['account', 'market', 'benchmark', 'category', 'supplier_workspace', 'forecast', 'personal_workspace', 'supplier_report','assistant'], products: ['SPENDGURU', 'SUPPLIER_INTELLIGENCE'], fixed: true },
@@ -100,7 +103,7 @@ const freeze = (value) => { if (value && typeof value === 'object') { Object.val
 export function normalizeModuleEvidence(value, { now = Date.now, allowExpired = false } = {}) {
   const keys = ['moduleId','moduleBindingId','version','sourceRef','expiresAt','transactionId','moduleSchemaDigest','auditSchemaDigest']
   if (!value || Object.getPrototypeOf(value) !== Object.prototype || Object.keys(value).length !== keys.length || keys.some(key => !nonempty(value[key])) || Object.keys(value).some(key => !keys.includes(key))
-    || !['benchmark','category','supplier_report'].includes(value.moduleId)
+    || !['benchmark','category','supplier_report','supplier_workspace'].includes(value.moduleId)
     || !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value.moduleBindingId)
     || !/^[1-9][0-9]*$/.test(value.version) || !/^[0-9]+$/.test(value.transactionId)
     || !['moduleSchemaDigest','auditSchemaDigest'].every(key => /^[a-f0-9]{64}$/.test(value[key]))
@@ -320,6 +323,7 @@ function ingestionReservation(value,policy){
 
 /** All authority callbacks are server-owned. No context/role/ALLOW from HTTP is accepted. */
 export function createOperationExecutor(options) {
+  const workspaceAdopted=validateSupplierWorkspaceAdoption(options)
   const knowledgeAdopted=validateKnowledgeAdoption(options)
   if(options.recurringSchemaDigest!==undefined&&(!/^[a-f0-9]{64}$/.test(options.recurringSchemaDigest)
     ||['assistantSchemaDigest','requestQuotaSchemaDigest','locationAdmissionSchemaDigest','reportAdmissionSchemaDigest'].some(k=>options[k]!==undefined)))throw TypeError('Explicit isolated private-recurring schema adoption required')
@@ -330,7 +334,7 @@ export function createOperationExecutor(options) {
   if(options.requestQuotaSchemaDigest!==undefined&&!/^[a-f0-9]{64}$/.test(options.requestQuotaSchemaDigest))throw TypeError('Explicit accepted SQL027 digest required')
   if(options.locationAdmissionSchemaDigest!==undefined&&!/^[a-f0-9]{64}$/.test(options.locationAdmissionSchemaDigest))throw TypeError('Explicit accepted SQL020 digest required')
   if(options.reportAdmissionSchemaDigest!==undefined&&(!/^[a-f0-9]{64}$/.test(options.reportAdmissionSchemaDigest)||options.locationAdmissionSchemaDigest!==undefined))throw TypeError('Explicit accepted SQL025 digest required')
-  const executionContract=knowledgeAdopted?KNOWLEDGE_ROOT_CONTRACT:options.recurringSchemaDigest!==undefined?RECURRING_ROOT_CONTRACT:options.assistantSchemaDigest!==undefined?ASSISTANT_ROOT_CONTRACT:options.requestQuotaSchemaDigest!==undefined?REQUEST_QUOTA_ROOT_CONTRACT:options.reportAdmissionSchemaDigest!==undefined?REPORT_ADMISSION_ROOT_CONTRACT:options.locationAdmissionSchemaDigest===undefined?OPERATION_CONTRACT:SUPPLIER_LOCATION_ROOT_CONTRACT
+  const executionContract=workspaceAdopted?SUPPLIER_WORKSPACE_ROOT_CONTRACT:knowledgeAdopted?KNOWLEDGE_ROOT_CONTRACT:options.recurringSchemaDigest!==undefined?RECURRING_ROOT_CONTRACT:options.assistantSchemaDigest!==undefined?ASSISTANT_ROOT_CONTRACT:options.requestQuotaSchemaDigest!==undefined?REQUEST_QUOTA_ROOT_CONTRACT:options.reportAdmissionSchemaDigest!==undefined?REPORT_ADMISSION_ROOT_CONTRACT:options.locationAdmissionSchemaDigest===undefined?OPERATION_CONTRACT:SUPPLIER_LOCATION_ROOT_CONTRACT
   const { authenticate, withTransaction, recordAudit, now = Date.now } = options
   const config = freeze(structuredClone(options.application))
   const baseCeiling = Object.hasOwn(profiles, config.profileId) ? profiles[config.profileId] : null
@@ -407,6 +411,15 @@ export function createOperationExecutor(options) {
           if (compute && moduleEvidence?.moduleId !== requestOperationPolicy(request.operation)?.module) deny('APPLICATION_FEATURE_UNAVAILABLE')
           let context = { ...audit, ...(delegated ? {subjectUserId:delegated.subjectUserId} : {}),...(knowledgeService?{subjectUserId:knowledgeEvidence.ownerUserId}:{}),
             ...(knowledgeEvidence?{knowledgeAdministration:knowledgeEvidence.administrationAllowed,knowledgeEvidence}:{}),organisationId, mode: selected.mode, policyVersion: state.policyVersion, accessBasisType: access.type, accessVersion: access.version, accessSourceRef: access.sourceRef, feature: selected.feature, effect: selected.effect, resourceId: request.resourceId, ...(moduleEvidence ? { moduleEvidence } : {}) }
+          if(workspaceAdopted){
+            if(identity.kind!=='HUMAN'||access.type!=='MEMBERSHIP'||moduleEvidence?.moduleId!=='supplier_workspace')deny('ACCESS_BASIS_INVALID')
+            let required;try{required=supplierWorkspaceRequiredPermissions(request.operation,payload)}catch{deny('CONTEXT_INVALID')}
+            // v1 exposes complete organization operations, never silently filtered boards.
+            for(const op of [request.operation,...required]){
+              if(access.denies?.some(p=>p.operation===op&&p.feature==='supplier_workspace'))deny('EXPLICIT_DENY')
+              if(!permission(access,op,'supplier_workspace',request.resourceId))deny('PERMISSION_DENIED')
+            }
+          }
           const platformPolicy=platform?ingestionPolicy(state.ingestion,context,request,now()):null
           if(platformPolicy)context={...context,sourceId:platformPolicy.sourceId,sourceVersion:platformPolicy.sourceVersion,
             qualityVersion:platformPolicy.qualityVersion,classificationVersion:platformPolicy.classificationVersion,payloadSchema:platformPolicy.payloadSchema,
@@ -668,7 +681,7 @@ export function operationSourceDigest() {
     const hash=createHash('sha256')
     // The optional assistant imports real usage receipt verification. Include
     // that transitive implementation and its types in the closed Root closure.
-    for(const file of ['./operation-context.mjs','./operation-context.d.mts','./request-operations.mjs','./request-operations.d.mts','../migrations/access/017-additional-request-operations.sql','./supplier-location.mjs','./supplier-location.d.mts','../migrations/access/019-supplier-location-operations.sql','./assistant-usage.mjs','./assistant-usage.d.mts','./recurring-job.mjs','./recurring-job.d.mts','./knowledge-operations.mjs','./knowledge-operations.d.mts'])hash.update(fs.readFileSync(new URL(file,import.meta.url)))
+    for(const file of ['./operation-context.mjs','./operation-context.d.mts','./request-operations.mjs','./request-operations.d.mts','../migrations/access/017-additional-request-operations.sql','./supplier-location.mjs','./supplier-location.d.mts','../migrations/access/019-supplier-location-operations.sql','./assistant-usage.mjs','./assistant-usage.d.mts','./recurring-job.mjs','./recurring-job.d.mts','./knowledge-operations.mjs','./knowledge-operations.d.mts','./supplier-workspace-access.mjs','./supplier-workspace-access.d.mts','../migrations/access/supplier-workspace-v1.sql'])hash.update(fs.readFileSync(new URL(file,import.meta.url)))
     return hash.digest('hex')
   })
 }

@@ -115,7 +115,8 @@
     "SUPPLIER_LOCATION_MANUAL_WRITE": "Wyłącznie ręczny CREATE/UPDATE/DEACTIVATE. Tożsamość nowego zasobu nadaje serwer. Istniejący rejestr żądań rezerwuje skończoną lokalną politykę liczby poleceń; klucz i digest zapobiegają duplikacji. NEW wymaga właściwej wersji, REPLAY nadal aktualnego dostępu. Zapis i OUTCOME atomowo; brak prawa do zmiany źródła, delegacji lub geokodowania.",
     "SUPPLIER_LOCATION_SOURCE_SYNC": "Intencja HUMAN dotyczy dokładnych zaakceptowanych wersji MGBI/KYS. Ograniczona delegacja zachowuje SERVICE oraz inicjatora. Wersje, aktualne prawa i retencja są sprawdzane ponownie przed pracą. Operacja nie zamawia nowych raportów i nie nadaje prawa do sieci.",
     "SUPPLIER_LOCATION_GEOCODING": "Dokładna lokalizacja, wersja adresu i jawny executor. Skończona rezerwacja Root poprzedza intencję. Niezależna, aktualna polityka Source/dostawcy i atomowy budżet poprzedzają rzeczywistą sieć. Domyślnie zero płatnych wywołań; brak polityki, audytu lub praw odmawia. Niepewne dostarczenie nie jest automatycznie powtarzane. Wynik wymaga ponownej kontroli adresu/źródła u konsumenta.",
-    "ASSISTANT_M1_SCOPE": "Development/spendguru only; retain the existing PORR_SUITE fixed-organisation host or explicit SPENDGURU_SAAS profile, SQL030 pilot and explicit Root candidate20. ACCOUNT_SELF history belongs only to the authenticated user; organisational context is separately reauthorised before read/reuse. Converse AUTHORIZE performs a current no-cost permission check; GENERATE requires a genuine Package & Limits reservation bound to actor/org/command/input and durable single dispatch before OpenAI. 5 USD/200000 tokens/7 days pilot, real usage settlement; disconnected usage remains pending with its upper bound. No new grant for other accounts."
+    "ASSISTANT_M1_SCOPE": "Development/spendguru only; retain the existing PORR_SUITE fixed-organisation host or explicit SPENDGURU_SAAS profile, SQL030 pilot and explicit Root candidate20. ACCOUNT_SELF history belongs only to the authenticated user; organisational context is separately reauthorised before read/reuse. Converse AUTHORIZE performs a current no-cost permission check; GENERATE requires a genuine Package & Limits reservation bound to actor/org/command/input and durable single dispatch before OpenAI. 5 USD/200000 tokens/7 days pilot, real usage settlement; disconnected usage remains pending with its upper bound. No new grant for other accounts.",
+    "SUPPLIER_WORKSPACE_SCOPE": "DEC-24 bounded Development SRM workspace: verified original HUMAN/current membership, exact per-operation permissions and explicit DENY, eligible current product/feature, supplier_workspace module and isolated native READ/WRITE transaction. Exact source/schema adoption and closed domain RPC required; no provider, report authority reuse, general runtime DML or implicit grant."
   },
   "dataClasses": [
     {
@@ -341,6 +342,22 @@
       "scope": "SERVICE_GRANT",
       "permissions": [],
       "note": "Dokładna lista operacji, zasobów, aplikacji i środowisk w osobnym grancie; bez wildcardu."
+    },
+    {
+      "id": "SUPPLIER_WORKSPACE_MEMBER",
+      "scope": "ORGANISATION_FEATURE",
+      "permissions": [
+        "supplier.catalog.read",
+        "supplier.catalog.write",
+        "supplier.category.read",
+        "supplier.category.write",
+        "supplier.pipeline.read",
+        "supplier.pipeline.write",
+        "supplier.adp-status.read",
+        "supplier.assignment.read",
+        "supplier.assignment.write"
+      ],
+      "note": "Optional explicit nine-operation template for current eligible organisation members. Installation seeds no permissions; current product/feature, DENY and revocation remain authoritative."
     }
   ],
   "applicationProfiles": [
@@ -1530,6 +1547,202 @@
       "effect": "EXPORT",
       "audit": "SECURITY_REQUIRED",
       "runtimeAdoption": "SOURCE_CANDIDATE_NOT_INSTALLED"
+    },
+    {
+      "id": "AM-48",
+      "operation": "supplier.catalog.read",
+      "feature": "supplier_workspace",
+      "requiredProduct": null,
+      "contextMode": "ORGANISATION",
+      "actorKinds": [
+        "HUMAN"
+      ],
+      "requiredPermission": "supplier.catalog.read",
+      "resourceType": "supplier_catalog",
+      "dataClasses": [
+        "ORGANISATION_PRIVATE"
+      ],
+      "conditionIds": [
+        "ORG_RESOURCE",
+        "SUPPLIER_WORKSPACE_SCOPE"
+      ],
+      "usagePolicy": "NOT_APPLICABLE",
+      "effect": "READ",
+      "audit": "SECURITY_REQUIRED",
+      "runtimeAdoption": "EXPLICIT_SUPPLIER_WORKSPACE_CANDIDATE_26",
+      "productRequirementSource": "EXPLICIT_OFFER_GRANTING_FEATURE",
+      "eligibleProducts": [
+        "SPENDGURU",
+        "SUPPLIER_INTELLIGENCE"
+      ]
+    },
+    {
+      "id": "AM-49",
+      "operation": "supplier.catalog.write",
+      "feature": "supplier_workspace",
+      "requiredProduct": null,
+      "contextMode": "ORGANISATION",
+      "actorKinds": [
+        "HUMAN"
+      ],
+      "requiredPermission": "supplier.catalog.write",
+      "resourceType": "supplier_catalog",
+      "dataClasses": [
+        "ORGANISATION_PRIVATE"
+      ],
+      "conditionIds": [
+        "ORG_RESOURCE",
+        "SUPPLIER_WORKSPACE_SCOPE"
+      ],
+      "usagePolicy": "NOT_APPLICABLE",
+      "effect": "WRITE",
+      "audit": "SECURITY_REQUIRED",
+      "runtimeAdoption": "EXPLICIT_SUPPLIER_WORKSPACE_CANDIDATE_26",
+      "productRequirementSource": "EXPLICIT_OFFER_GRANTING_FEATURE",
+      "eligibleProducts": [
+        "SPENDGURU",
+        "SUPPLIER_INTELLIGENCE"
+      ]
+    },
+    {
+      "id": "AM-50",
+      "operation": "supplier.category.read",
+      "feature": "supplier_workspace",
+      "requiredProduct": null,
+      "contextMode": "ORGANISATION",
+      "actorKinds": [
+        "HUMAN"
+      ],
+      "requiredPermission": "supplier.category.read",
+      "resourceType": "supplier_category",
+      "dataClasses": [
+        "ORGANISATION_PRIVATE"
+      ],
+      "conditionIds": [
+        "ORG_RESOURCE",
+        "SUPPLIER_WORKSPACE_SCOPE"
+      ],
+      "usagePolicy": "NOT_APPLICABLE",
+      "effect": "READ",
+      "audit": "SECURITY_REQUIRED",
+      "runtimeAdoption": "EXPLICIT_SUPPLIER_WORKSPACE_CANDIDATE_26",
+      "productRequirementSource": "EXPLICIT_OFFER_GRANTING_FEATURE",
+      "eligibleProducts": [
+        "SPENDGURU",
+        "SUPPLIER_INTELLIGENCE"
+      ]
+    },
+    {
+      "id": "AM-51",
+      "operation": "supplier.category.write",
+      "feature": "supplier_workspace",
+      "requiredProduct": null,
+      "contextMode": "ORGANISATION",
+      "actorKinds": [
+        "HUMAN"
+      ],
+      "requiredPermission": "supplier.category.write",
+      "resourceType": "supplier_category",
+      "dataClasses": [
+        "ORGANISATION_PRIVATE"
+      ],
+      "conditionIds": [
+        "ORG_RESOURCE",
+        "SUPPLIER_WORKSPACE_SCOPE"
+      ],
+      "usagePolicy": "NOT_APPLICABLE",
+      "effect": "WRITE",
+      "audit": "SECURITY_REQUIRED",
+      "runtimeAdoption": "EXPLICIT_SUPPLIER_WORKSPACE_CANDIDATE_26",
+      "productRequirementSource": "EXPLICIT_OFFER_GRANTING_FEATURE",
+      "eligibleProducts": [
+        "SPENDGURU",
+        "SUPPLIER_INTELLIGENCE"
+      ]
+    },
+    {
+      "id": "AM-52",
+      "operation": "supplier.pipeline.read",
+      "feature": "supplier_workspace",
+      "requiredProduct": null,
+      "contextMode": "ORGANISATION",
+      "actorKinds": [
+        "HUMAN"
+      ],
+      "requiredPermission": "supplier.pipeline.read",
+      "resourceType": "supplier_pipeline",
+      "dataClasses": [
+        "ORGANISATION_PRIVATE"
+      ],
+      "conditionIds": [
+        "ORG_RESOURCE",
+        "SUPPLIER_WORKSPACE_SCOPE"
+      ],
+      "usagePolicy": "NOT_APPLICABLE",
+      "effect": "READ",
+      "audit": "SECURITY_REQUIRED",
+      "runtimeAdoption": "EXPLICIT_SUPPLIER_WORKSPACE_CANDIDATE_26",
+      "productRequirementSource": "EXPLICIT_OFFER_GRANTING_FEATURE",
+      "eligibleProducts": [
+        "SPENDGURU",
+        "SUPPLIER_INTELLIGENCE"
+      ]
+    },
+    {
+      "id": "AM-53",
+      "operation": "supplier.pipeline.write",
+      "feature": "supplier_workspace",
+      "requiredProduct": null,
+      "contextMode": "ORGANISATION",
+      "actorKinds": [
+        "HUMAN"
+      ],
+      "requiredPermission": "supplier.pipeline.write",
+      "resourceType": "supplier_pipeline",
+      "dataClasses": [
+        "ORGANISATION_PRIVATE"
+      ],
+      "conditionIds": [
+        "ORG_RESOURCE",
+        "SUPPLIER_WORKSPACE_SCOPE"
+      ],
+      "usagePolicy": "NOT_APPLICABLE",
+      "effect": "WRITE",
+      "audit": "SECURITY_REQUIRED",
+      "runtimeAdoption": "EXPLICIT_SUPPLIER_WORKSPACE_CANDIDATE_26",
+      "productRequirementSource": "EXPLICIT_OFFER_GRANTING_FEATURE",
+      "eligibleProducts": [
+        "SPENDGURU",
+        "SUPPLIER_INTELLIGENCE"
+      ]
+    },
+    {
+      "id": "AM-54",
+      "operation": "supplier.adp-status.read",
+      "feature": "supplier_workspace",
+      "requiredProduct": null,
+      "contextMode": "ORGANISATION",
+      "actorKinds": [
+        "HUMAN"
+      ],
+      "requiredPermission": "supplier.adp-status.read",
+      "resourceType": "supplier_adp_status",
+      "dataClasses": [
+        "ORGANISATION_PRIVATE"
+      ],
+      "conditionIds": [
+        "ORG_RESOURCE",
+        "SUPPLIER_WORKSPACE_SCOPE"
+      ],
+      "usagePolicy": "NOT_APPLICABLE",
+      "effect": "READ",
+      "audit": "SECURITY_REQUIRED",
+      "runtimeAdoption": "EXPLICIT_SUPPLIER_WORKSPACE_CANDIDATE_26",
+      "productRequirementSource": "EXPLICIT_OFFER_GRANTING_FEATURE",
+      "eligibleProducts": [
+        "SPENDGURU",
+        "SUPPLIER_INTELLIGENCE"
+      ]
     }
   ],
   "acceptanceCases": [
@@ -2318,8 +2531,8 @@
   },
   "caseInterpretation": "Każdy przypadek zakłada wszystkie warunki niewymienione jako spełnione. Dla odmowy wskazano pojedynczą istotną przyczynę; to specyfikacja scenariusza, nie wykonany test zabezpieczeń.",
   "catalogueRevision": "1.4.0",
-  "boundedServiceProtocols": [
-    {
+  "boundedServiceProtocols": {
+    "0": {
       "id": "IDENTITY-EMAIL-1",
       "version": "1.0.0-candidate",
       "status": "PREPARED_NOT_INSTALLED",
@@ -2399,7 +2612,7 @@
         "dictionary": "Full supplied source quarantined; only explicit versioned reviewed entries active; no runtime guessing."
       }
     },
-    {
+    "1": {
       "id": "IDENTITY-REGISTRATION-1",
       "version": "1.0.0",
       "status": "DEPLOYED_DEVELOPMENT_VERIFIED",
@@ -2483,7 +2696,7 @@
         "dictionary": "Full supplied source quarantined; only explicit versioned reviewed entries active; no runtime guessing."
       }
     },
-    {
+    "2": {
       "id": "FORM-REPORT-ADMISSION-1",
       "version": "1.0.0",
       "status": "SOURCE_CANDIDATE_NOT_INSTALLED",
@@ -2534,6 +2747,36 @@
           "condition": "Same exact admitted NIP, organisation and classified shared Financial inputs. Original audited projection writer and tenant RLS; no KYS, personal data or export authority."
         }
       ]
+    },
+    "supplierWorkspace": {
+      "contract": "platform.supplier-workspace-access/1.0.0",
+      "status": "OWNER_SCOPE_APPROVED_SOURCE_CANDIDATE_NOT_INSTALLED",
+      "decision": "DEC-24",
+      "root": "1.0.0-candidate.26",
+      "host": "profitia.supplier-workspace-host/1.0.0",
+      "module": "supplier_workspace",
+      "operations": [
+        "supplier.catalog.read",
+        "supplier.catalog.write",
+        "supplier.category.read",
+        "supplier.category.write",
+        "supplier.pipeline.read",
+        "supplier.pipeline.write",
+        "supplier.adp-status.read",
+        "supplier.assignment.read",
+        "supplier.assignment.write"
+      ],
+      "nativeUnits": [
+        "SUPPLIER_WORKSPACE_READ",
+        "SUPPLIER_WORKSPACE_WRITE"
+      ],
+      "scope": "ORGANISATION_PRIVATE",
+      "actor": "VERIFIED_ORIGINAL_HUMAN",
+      "ordinaryRuntime": "CLOSED_EXECUTE_ONLY",
+      "grantsSeeded": false,
+      "sourceAdoptionRequired": true,
+      "installationApprovalRequired": true,
+      "exactReleaseGoRequired": true
     }
-  ]
+  }
 }

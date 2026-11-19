@@ -3,7 +3,7 @@ import { OperationDenied } from './operation-context.mjs'
 
 export const MODULE_SCOPE_CONTRACT = Object.freeze({ id: 'profitia.module-scope', version: '1.0.0' })
 export const moduleSchemaUrl = new URL('../migrations/access/002-module-scope.sql', import.meta.url).href
-const modules = new Set(['benchmark', 'category', 'supplier_report'])
+const modules = new Set(['benchmark', 'category', 'supplier_report','supplier_workspace'])
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
 const text = value => typeof value === 'string' && value.length > 0 && value.length <= 128
 const unavailable = () => { throw new OperationDenied('POLICY_UNAVAILABLE') }
