@@ -505,9 +505,9 @@ const calendarAuthorityRoot=root
 const calendarContext=()=>({repository:REPOSITORY,ref:'refs/heads/main',workflowRef:`${REPOSITORY}/${WORKFLOW}@refs/heads/main`,event:'workflow_dispatch',actor:'profitia',triggeringActor:'profitia',controlSha:'a'.repeat(40)})
 const calendarPr=()=>({state:'open',user:{login:'profitia'},base:{ref:'main',repo:{full_name:REPOSITORY}},head:{sha:'b'.repeat(40),ref:'sg2/integration',repo:{full_name:REPOSITORY}}})
 // Current protected review uses schema2; all historical reviews remain unchanged.
-test('Calendar schema2 protected review fences 83 exact files and preserves the original58+7 and75 input',async()=>{
+test('Calendar schema2 protected review fences 84 exact files and preserves the original58+7 and75 input',async()=>{
  const c=await import('./controlled-package-ci.mjs'),r=c.CALENDAR_PK_PROTECTED_REVIEW,files=Object.entries(r.entries).map(([filename,e])=>({filename,status:e.status,sha:e.sha})),candidate={...calendarPr(),number:r.prNumber,changed_files:files.length,base:{...calendarPr().base,sha:r.baseSha},head:{...calendarPr().head,ref:r.branch,sha:r.sourceSha}},ctx={...calendarContext(),controlSha:r.baseSha}
- assert.equal(files.length,83);assert.equal(Object.keys(c.ECR_COMPLETE_FUNCTIONAL_REVIEW.entries).length,58);assert.equal(Object.keys(c.ECR_COMPLETE_FUNCTIONAL_CONSUMER_REVIEW.entries).length,7);assert.equal(Object.keys(c.ECR_COMPLETE_FUNCTIONAL_CI_REPAIR.entries).length,75);assert.equal(c.ECR_COMPLETE_FUNCTIONAL_CI_REPAIR.sourceSha,'69d02834e863a51506aa4f50fbeb20f7fda3575b')
+ assert.equal(files.length,84);assert.equal(Object.keys(c.ECR_COMPLETE_FUNCTIONAL_REVIEW.entries).length,58);assert.equal(Object.keys(c.ECR_COMPLETE_FUNCTIONAL_CONSUMER_REVIEW.entries).length,7);assert.equal(Object.keys(c.ECR_COMPLETE_FUNCTIONAL_CI_REPAIR.entries).length,75);assert.equal(c.ECR_COMPLETE_FUNCTIONAL_CI_REPAIR.sourceSha,'69d02834e863a51506aa4f50fbeb20f7fda3575b')
  assert.equal(c.selectCandidate(ctx,candidate,r.sourceSha,{files}),r.sourceSha)
  for(const changed of [{...candidate,number:1064},{...candidate,user:{login:'foreign'}},{...candidate,head:{...candidate.head,ref:'architecture/foreign'}},{...candidate,head:{...candidate.head,repo:{full_name:'foreign/repository'}}},{...candidate,base:{...candidate.base,sha:'f'.repeat(40)}}])assert.throws(()=>c.selectCandidate(ctx,changed,r.sourceSha,{files}))
  for(const mutate of [a=>a.pop(),a=>a.push({...a[0]}),a=>a[0].sha='f'.repeat(40),a=>a[0].status='removed',a=>a[0].previous_filename='foreign']){
@@ -534,7 +534,7 @@ test('Calendar schema2 protected package upgrade needs its exact trusted review 
  const c=await import('./controlled-package-ci.mjs'),r=c.CALENDAR_PK_PROTECTED_REVIEW,temporary=fs.mkdtempSync(path.join(os.tmpdir(),'calendar-schema2-packages-')),root=path.join(temporary,'source'),accepted=path.join(temporary,'accepted')
  const clone=(target,sha)=>{execFileSync('git',['clone','--shared','--no-checkout','--',calendarAuthorityRoot,target],{stdio:['ignore','pipe','pipe']});execFileSync('git',['checkout','--detach',sha],{cwd:target,stdio:['ignore','pipe','pipe']})}
  try{
-  clone(root,r.sourceSha);clone(accepted,r.baseSha)
+  clone(root,r.sourceSha);clone(accepted,'c4965a445867601275cbb75dc4de993123414ba2') // Retain the original negative SDK-upgrade authority fixture.
   assert.throws(()=>c.checkAdmittedPackages(root,accepted),/LOCAL_PACKAGE_VERSION_MISMATCH/)
   assert.throws(()=>c.checkAdmittedPackages(root,accepted,undefined,{...r}),/LOCAL_PACKAGE_VERSION_MISMATCH/)
   assert.throws(()=>c.checkAdmittedPackages(root,accepted,r),/LOCAL_PACKAGE_TRANSITION_REJECTED/)
