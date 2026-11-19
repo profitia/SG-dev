@@ -186,8 +186,12 @@ test('Benchmark presentation renews the current receiver closure without rewriti
     const historicalExpectedPaths=[...paths,...additions,...m2AddedBoundaryFiles.filter(file=>file.startsWith(path+'/')),...ecrAddedBoundaryFiles.filter(file=>file.startsWith(path+'/')),...(currentRecurring?.currentManifest?.addedPaths??currentRecurring?.manifest.addedPaths??[]).filter(file=>file.startsWith(path+'/'))]
     // Only separately authenticated current SDK inputs may extend this frozen
     // historical inventory. Unlisted on-disk files still fail the comparison.
-    const reviewedCurrentPaths=Object.keys(currentRecurring?.currentSdkContext?.currentSourceDigests??{}).filter(file=>file.startsWith(path+'/')&&!historicalExpectedPaths.includes(file))
-    for(const file of reviewedCurrentPaths)assert.equal(createHash('sha256').update(readCurrent(file)).digest('hex'),currentRecurring.currentSdkContext.currentSourceDigests[file],'authenticated current boundary '+file)
+    const reviewedCurrentPaths=(currentRecurring?.currentSdkContext?['apps/sg-runtime/lib/benchmark/discovery-continuity.ts']:[]).filter(file=>file.startsWith(path+'/')&&!historicalExpectedPaths.includes(file))
+    for(const file of reviewedCurrentPaths){
+      assert(Object.hasOwn(currentRecurring.currentSdkContext.currentSourceDigests,file),'declared current continuity input')
+      assert.equal(execFileSync('git',['ls-tree',current.previousReceiptSourceSha,'--',file],{encoding:'utf8',cwd:repository}).trim(),'','continuity input absent from frozen predecessor')
+      assert.equal(createHash('sha256').update(readCurrent(file)).digest('hex'),currentRecurring.currentSdkContext.currentSourceDigests[file],'authenticated current boundary '+file)
+    }
     assert.deepEqual(currentPaths, [...historicalExpectedPaths,...reviewedCurrentPaths].sort(), 'Boundary inventory with explicit AppShell release record: ' + path)
     for(const file of additions)assert.equal(createHash('sha256').update(readM2AcceptedSource(new URL(file,repository))).digest('hex'),receipt.assistantM1ChartContextCorrective?.sourceDigests[file]??receipt.assistantM1RuntimeSourceCompatibility?.consumerSourceDigests[file]??receipt.d1AuditReaderPreparation?.sourceDigests[file]??receipt.appShellFourCardCascade?.sourceDigests[file]??receipt.xrayAppShellPresentation?.sourceDigests[file]??receipt.productAnalyticsMainCompatibility?.sourceDigests[file]??receipt.marketHistoryIngestionCompatibility?.sourceDigests[file]??receipt.bqlLiveAcceptanceCompatibility?.sourceDigests[file]??receipt.bqlPciFirstSourceCompatibility?.sourceDigests[file]??receipt.appshellXraySourceCompatibility.applicationSourceDigests[file.replace('apps/sg-runtime/','')]??receipt.integratedBuyerJourneySourceCompatibility.applicationSourceDigests[file.replace('apps/sg-runtime/','')]??receipt.appShellSourceCompatibility.applicationSourceDigests[file.replace('apps/sg-runtime/','')],file)
     for (const file of paths) {
