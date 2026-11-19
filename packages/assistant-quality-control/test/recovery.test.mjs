@@ -330,3 +330,140 @@ test('Render recovery preserves a foreign deployment and rechecks owner expiry i
  await assert.rejects(lost.client.rollback({authority:lost.authority,record:lost.record}),{code:'DELIVERY_UNCERTAIN'})
  assert.equal(lost.calls.filter(c=>c.options.method==='POST').length,1)
 })
+
+async function nativeRecoveryFixture(action='VERIFY_RUNTIME',{recoveryJobsEnabled=false,runChange={}}={}){
+ const f=await fixture(),fs=await import('node:fs'),os=await import('node:os'),path=await import('node:path')
+ const {createHash}=await import('node:crypto'),{createQualityGitHub}=await import('../src/github.mjs')
+ const nonce=randomUUID(),source='a'.repeat(40),externalId=qualityJobBinding({controlSourceSha:source,nonce,action})
+ const record={...f.record,status:action==='OBSERVE'?'OBSERVING':'RELEASED',
+  ...(action==='ROLLBACK'?{rollbackRequired:true,rollbacksUsed:1}:{}),pending:{action,nonce,externalId}}
+ const inputs=qualityRecoveryJobInputs({authority:f.authority,record,action,externalId,jobStateEnabled:true,now:f.now})
+ const directory=fs.mkdtempSync(path.join(os.tmpdir(),'aqc-native-recovery-state-')),file=path.join(directory,'event.json')
+ fs.writeFileSync(file,JSON.stringify({inputs:{...inputs,permit_id:'',permit_expires_at:''}}),{mode:0o600})
+ const bytes=Buffer.from('synthetic fixed recovery native source\n'),hash=b=>createHash('sha256').update(b).digest('hex')
+ const run={id:721,workflow_id:416905856,head_sha:source,head_branch:'main',path:'.github/workflows/assistant-quality-repair.yml',
+  event:'workflow_dispatch',run_attempt:1,repository:{full_name:'profitia/SG-dev'},actor:{login:'profitia'},triggering_actor:{login:'profitia'},
+  display_title:'AQC JOB '+action+' '+nonce,status:'in_progress',conclusion:null,created_at:stamp(f.now-500),...runChange}
+ const calls=[],client=createQualityGitHub({token:'synthetic-native-recovery',recoveryJobsEnabled,now:()=>f.now,
+  controllerWorkflowSha256:hash(bytes),fetchImpl:async(url,options)=>{
+   calls.push({url,method:options.method,...(options.body?{body:JSON.parse(options.body)}:{})})
+   if(options.method==='POST')return new Response(null,{status:204})
+   if(url.endsWith('/git/ref/heads/main'))return Response.json({object:{sha:source}})
+   if(url.endsWith('/actions/workflows/assistant-quality-repair.yml'))return Response.json({id:416905856,path:run.path,state:'active'})
+   if(url.includes('/contents/'))return Response.json({type:'file',path:run.path,encoding:'base64',size:bytes.length,
+    sha:createHash('sha1').update('blob '+bytes.length+'\0').update(bytes).digest('hex'),content:bytes.toString('base64')})
+   if(url.endsWith('/actions/runs/721'))return Response.json(run)
+   assert.fail('Unexpected recovery fixture endpoint')
+  }})
+ const environment={GITHUB_REPOSITORY:'profitia/SG-dev',GITHUB_REF:'refs/heads/main',GITHUB_SHA:source,GITHUB_RUN_ID:'721',
+  GITHUB_RUN_ATTEMPT:'1',GITHUB_WORKFLOW_REF:'profitia/SG-dev/.github/workflows/assistant-quality-repair.yml@refs/heads/main',
+  GITHUB_EVENT_NAME:'workflow_dispatch',GITHUB_ACTOR:'profitia',GITHUB_TRIGGERING_ACTOR:'profitia',
+  RUNNER_ENVIRONMENT:'github-hosted',RUNNER_OS:'Linux',GITHUB_EVENT_PATH:file}
+ const load=async(changes={})=>{
+  const nativeInvocation=await client.controllerJobInvocation({externalId,runId:'721'})
+  return readQualityRecoveryJobContext({...f.options,record,inputs,jobStateEnabled:true,nativeInvocation,nativeEnvironment:environment,...changes})
+ }
+ return {...f,record,inputs,externalId,action,client,calls,run,environment,fs,file,load,cleanup:()=>fs.rmSync(directory,{recursive:true,force:true})}
+}
+test('all three free recovery phases carry eight fields or ten declared defaults and admit actual current native event metadata',async()=>{
+ const {assertQualityRecoveryNativeState}=await import('../src/recovery.mjs')
+ for(const action of ['VERIFY_RUNTIME','OBSERVE','ROLLBACK']){
+  const f=await nativeRecoveryFixture(action)
+  try{
+   assert.equal(Object.keys(f.inputs).length,8);assert.equal(Object.hasOwn(f.inputs,'recovery_sha256'),false)
+   assert.equal(Object.keys({...f.inputs,permit_id:'',permit_expires_at:''}).length,10)
+   const context=await f.load()
+   assert.equal(context.jobState.providerIdentityVerified,true);assert.equal(context.jobState.authorityIncluded,false)
+   assert.equal(context.jobState.runId,'721');assert.deepEqual(context.jobState.record,f.record)
+   assert.equal(assertQualityRecoveryNativeState(context.jobState,{authority:context.authority,externalId:f.externalId,now:f.now}),context.jobState)
+   assert.throws(()=>assertQualityRecoveryNativeState(clone(context.jobState),{authority:context.authority,externalId:f.externalId,now:f.now}),{code:'RECOVERY_NATIVE_STATE_REQUIRED'})
+   assert.throws(()=>assertVerifiedRepairManifest(context.authority.manifest),{code:'VERIFIED_MANIFEST_REQUIRED'})
+   const original=await prepareQualityControllerJobContext({...f.options,now:f.originalAt})
+   const {assertQualityNativeJobState}=await import('../src/job-state.mjs')
+   assert.throws(()=>assertQualityNativeJobState(context.jobState,{manifest:original.manifest,externalId:f.externalId}),
+    {code:'JOB_STATE_NATIVE_INVOCATION_REQUIRED'})
+   assert(f.calls.every(c=>c.method==='GET'))
+  }finally{f.cleanup()}
+ }
+})
+test('new recovery transport remains explicit and the old eight-field API and decoder remain unchanged by default',async()=>{
+ const f=await nativeRecoveryFixture()
+ try{
+  const legacy=qualityRecoveryJobInputs({authority:f.authority,record:f.record,action:f.action,externalId:f.externalId,now:f.now})
+  assert.equal(Object.keys(legacy).length,8);assert.equal(Object.hasOwn(legacy,'state'),false);assert.equal(legacy.recovery_sha256,f.authority.recoverySha256)
+  const old=await readQualityRecoveryJobContext({...f.options,record:f.record,inputs:legacy})
+  assert.equal(Object.hasOwn(old,'jobState'),false)
+  await assert.rejects(readQualityRecoveryJobContext({...f.options,record:f.record,inputs:f.inputs}),{code:'RECOVERY_JOB_INPUT_INVALID'})
+  for(const value of ['true',1,null])
+   assert.throws(()=>qualityRecoveryJobInputs({authority:f.authority,record:f.record,action:f.action,externalId:f.externalId,jobStateEnabled:value,now:f.now}),
+    {code:'RECOVERY_JOB_INPUT_INVALID'})
+ }finally{f.cleanup()}
+})
+test('recovery wrapper rejects a changed mandate digest release pending intent raw QA or noncanonical state before accepting native identity',async()=>{
+ const f=await nativeRecoveryFixture()
+ try{
+  for(const change of [b=>b.recoverySha256='0'.repeat(64),b=>b.manifestSha256='0'.repeat(64),
+   b=>b.controlSourceSha='0'.repeat(40),b=>b.record.release.deployId='dep-cccccccccccccccccccc',
+   b=>b.record.pending.nonce=randomUUID(),b=>b.record.pending.action='PROMOTE',b=>b.record.rawQa='FORBIDDEN',
+   b=>b.extra='FORBIDDEN']){
+   const body=JSON.parse(f.inputs.state);change(body);const inputs={...f.inputs,state:JSON.stringify(body)}
+   await assert.rejects(f.load({inputs}))
+  }
+  await assert.rejects(f.load({inputs:{...f.inputs,state:' '+f.inputs.state}}),{code:'RECOVERY_JOB_INPUT_INVALID'})
+  await assert.rejects(f.load({record:{...f.record,revision:f.record.revision+1}}),{code:'RECOVERY_JOB_INPUT_INVALID'})
+ }finally{f.cleanup()}
+})
+test('fresh recovery state cannot borrow a pre-authority native run changed actual event or forged provider capability',async()=>{
+ const old=await nativeRecoveryFixture()
+ try{old.run.created_at=stamp(old.now-2000);await assert.rejects(old.load(),{code:'JOB_STATE_NATIVE_INVOCATION_REQUIRED'})}finally{old.cleanup()}
+ const f=await nativeRecoveryFixture()
+ try{
+  for(const inputs of [{...f.inputs,permit_id:'forbidden'},{...f.inputs,recovery_sha256:''},
+   {...f.inputs,base_sha:'0'.repeat(40)}]){
+   f.fs.writeFileSync(f.file,JSON.stringify({inputs}))
+   await assert.rejects(f.load(),{code:'JOB_STATE_NATIVE_INVOCATION_REQUIRED'})
+  }
+  f.fs.writeFileSync(f.file,JSON.stringify({inputs:f.inputs}))
+  await assert.rejects(f.load({nativeInvocation:{}}),{code:'CONTROLLER_JOB_INVOCATION_REQUIRED'})
+ }finally{f.cleanup()}
+})
+test('only an already committed one-rollback intent can be encoded and operational authority still expires independently',async()=>{
+ const {assertQualityRecoveryNativeState}=await import('../src/recovery.mjs'),f=await nativeRecoveryFixture('ROLLBACK')
+ try{
+  for(const changed of [{...f.record,rollbacksUsed:0},{...f.record,rollbackRequired:false},{...f.record,pending:null}]){
+   assert.throws(()=>qualityRecoveryJobInputs({authority:f.authority,record:changed,action:f.action,externalId:f.externalId,jobStateEnabled:true,now:f.now}))
+  }
+  const context=await f.load()
+  assert.throws(()=>assertQualityRecoveryNativeState(context.jobState,{authority:context.authority,externalId:f.externalId,now:Date.parse(f.body.expiresAt)}),
+   {code:'RECOVERY_AUTHORITY_EXPIRED'})
+  assert.throws(()=>assertQualityRecoveryNativeState(context.jobState,{authority:context.authority,externalId:f.externalId,now:f.now+1800001}),
+   {code:'RECOVERY_NATIVE_STATE_EXPIRED'})
+ }finally{f.cleanup()}
+})
+test('explicit recovery state action port posts one bounded state while default action port retains legacy metadata',async()=>{
+ const {createQualityOperationalRecoveryActions}=await import('../src/recovery.mjs')
+ for(const enabled of [false,true]){
+  const f=await nativeRecoveryFixture('VERIFY_RUNTIME',{recoveryJobsEnabled:true})
+  try{
+   const supervisor=generateKeyPairSync('ed25519'),keysByRole=new Map([['EXECUTOR_SUPERVISOR',keyMap(supervisor)],
+    ['INDEPENDENT_VERIFIER',keyMap(f.exporter)],['INDEPENDENT_PUBLISHER',keyMap(f.publisher)]])
+   const actions=createQualityOperationalRecoveryActions({github:f.client,keysByRole,jobStateEnabled:enabled,now:()=>f.now})
+   await actions.dispatch(f.action,{record:f.record,intent:f.record.pending,authority:f.authority})
+   const posts=f.calls.filter(c=>c.method==='POST');assert.equal(posts.length,1)
+   const inputs=posts[0].body.inputs;assert.equal(Object.keys(inputs).length,8)
+   assert.equal(Object.hasOwn(inputs,'state'),enabled);assert.equal(Object.hasOwn(inputs,'recovery_sha256'),!enabled)
+  }finally{f.cleanup()}
+ }
+})
+
+test('native recovery without a second record still needs the exact independent historical publication proof',async()=>{
+ const f=await nativeRecoveryFixture()
+ try{
+  const context=await f.load({record:undefined})
+  assert.equal(context.jobState.record.release.deployId,f.record.release.deployId)
+  const body=JSON.parse(f.inputs.state);body.record.release.deployId='dep-cccccccccccccccccccc'
+  const inputs={...f.inputs,state:JSON.stringify(body)}
+  await assert.rejects(f.load({inputs,record:body.record}),{code:'RECOVERY_PUBLISHED_RELEASE_REQUIRED'})
+  assert(f.calls.every(c=>c.method==='GET'))
+ }finally{f.cleanup()}
+})

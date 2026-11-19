@@ -7,9 +7,12 @@ import {encodeQualityJobState,retainQualityJobReference} from './job-state.mjs'
 const repository='profitia/SG-dev'
 const nativeControllerArtifacts=new WeakMap()
 const nativeControllerInvocations=new WeakMap()
+const nativeLinuxObservations=new WeakMap()
 const controllerArtifactProfiles=Object.freeze({
  result:Object.freeze({prefix:'aqc-result-',filename:'result.json',archiveBytes:65536,contentBytes:16384}),
+ linuxQualification:Object.freeze({prefix:'aqc-qualification-',filename:'aqc-linux-observations.json',archiveBytes:131072,contentBytes:65536}),
  patch:Object.freeze({prefix:'aqc-patch-',filename:'patch.json',archiveBytes:131072,contentBytes:65536}),
+ verification:Object.freeze({prefix:'aqc-verification-',filename:'verification.json',archiveBytes:65536,contentBytes:16384}),
 })
 const fail=code=>{throw Object.assign(Error('Quality GitHub operation unavailable'),{code})}
 const require=(v,c='GITHUB_INPUT_INVALID')=>{if(!v)fail(c)}
@@ -204,15 +207,15 @@ export function createQualityGitHub({token,fetchImpl=fetch,publisherEnabled=fals
    const value=await controllerJobDescriptor({sourceSha},true)
    return Object.freeze({...value,dispatchEnabled:recoveryJobsEnabled&&value.workflowState==='active'})
   },
-  async dispatchRecoveryJob({authority,record,action,externalId}){
+  async dispatchRecoveryJob({authority,record,action,externalId,jobStateEnabled=false}){
    if(!recoveryJobsEnabled)fail('RECOVERY_JOBS_DISABLED')
-   const inputs=qualityRecoveryJobInputs({authority,record,action,externalId,now:now()})
+   const inputs=qualityRecoveryJobInputs({authority,record,action,externalId,jobStateEnabled,now:now()})
    const sourceSha=inputs.control_source_sha
    require(await main()===sourceSha,'BASE_CHANGED')
    const workflow=await controllerJobDescriptor({sourceSha},true)
    require(workflow.workflowState==='active','GITHUB_WORKFLOW_BINDING_INVALID')
    require(await main()===sourceSha,'BASE_CHANGED')
-   qualityRecoveryJobInputs({authority,record,action,externalId,now:now()})
+   qualityRecoveryJobInputs({authority,record,action,externalId,jobStateEnabled,now:now()})
    await write('/actions/workflows/assistant-quality-repair.yml/dispatches',{ref:'main',inputs})
    return Object.freeze({state:'UNKNOWN',externalId,resultVerified:false})
   },
@@ -273,6 +276,53 @@ export function createQualityGitHub({token,fetchImpl=fetch,publisherEnabled=fals
    return capability
   },
   controllerJobResult:input=>controllerJobArtifact(input,'result'),
+
+  /** Prior phase indexes are only locators. Every use downloads the real
+   * successful native artifact again and checks its separate role signature.
+   * This reads immutable engineering facts only; publication/recovery use
+   * their fresh dedicated authorities and this never grants effects. */
+  async controllerJobHistory({manifest,jobState,externalId,action,keysByRole}){
+   const {assertQualityNativeJobState}=await import('./job-state.mjs')
+   const state=assertQualityNativeJobState(jobState,{manifest,externalId})
+   const m=assertVerifiedRepairManifest(manifest),current=controllerJobBinding(externalId)
+   const order=['QUALIFY','REPRODUCE','EXECUTE','VERIFY','PROPOSE','CHECKS','PROMOTE','VERIFY_RUNTIME','OBSERVE','ROLLBACK']
+   const names={QUALIFY:'qualify',REPRODUCE:'reproduce',EXECUTE:'execute',VERIFY:'verify'}
+   require(typeof action==='string'&&Object.hasOwn(names,action)&&order.indexOf(action)<order.indexOf(current.action),
+    'CONTROLLER_HISTORY_PHASE_INVALID')
+   const at=now(),started=Date.parse(state.createdAt)
+   require(Number.isFinite(at)&&controllerStamp(state.createdAt)&&started<=at&&at-started<=1800000,
+    'CONTROLLER_HISTORY_STALE')
+   const reference=state.record.reproduction?.nativeJobs?.[names[action]]
+   require(controllerPlain(reference)&&reference.externalId!==externalId&&reference.runId!==state.runId,
+    'CONTROLLER_HISTORY_REFERENCE_REQUIRED')
+   const binding=controllerJobBinding(reference.externalId)
+   require(binding.action===action&&Date.parse(reference.createdAt)<=started,'CONTROLLER_HISTORY_REFERENCE_INVALID')
+   const observed=await controllerJobArtifact({externalId:reference.externalId,runId:reference.runId},'result')
+   require(observed.state==='COMPLETE'&&observed.workflowId===reference.workflowId
+    &&observed.artifactSha256===reference.artifactSha256&&documentDigest(observed.document)===reference.documentSha256
+    &&observed.createdAt===reference.createdAt,'CONTROLLER_HISTORY_REFERENCE_MISMATCH')
+   const record={...state.record,status:{QUALIFY:'OBSERVED',REPRODUCE:'TRIAGED',EXECUTE:'REPRODUCED',VERIFY:'PATCH_READY'}[action],
+    pending:{action,nonce:binding.nonce,externalId:reference.externalId}}
+   const finished=now()
+   require(Number.isFinite(finished)&&finished>=started&&finished-started<=1800000,'CONTROLLER_HISTORY_STALE')
+   const result=readQualityControllerJobResult(observed.document,{manifest:m,record,externalId:reference.externalId,
+    runId:reference.runId,workflowId:reference.workflowId,keysByRole,
+    notBefore:Math.max(Date.parse(reference.createdAt),Date.parse(m.mandate.issuedAt)),now:finished})
+   require(Date.parse(observed.document.body.issuedAt)<=started,'CONTROLLER_HISTORY_REFERENCE_INVALID')
+   const matches=action==='QUALIFY'?result.result==='DETERMINISTIC_FAILURE':
+    action==='REPRODUCE'?result.result==='RED'&&result.proofSha256===state.record.reproduction?.proofSha256:
+    action==='EXECUTE'?result.result==='PATCH'&&result.patch?.artifactSha256===state.record.patch?.artifactSha256
+     &&result.patch?.treeSha256===state.record.patch?.treeSha256:
+    result.result==='PASS'&&result.artifactSha256===state.record.verification?.artifactSha256
+     &&result.proofSha256===state.record.verification?.proofSha256
+   require(matches,'CONTROLLER_HISTORY_STATE_MISMATCH')
+   return Object.freeze({action,result,observation:observed,phaseReceiptVerified:true,
+    independentBundleVerified:false,authorityIncluded:false})
+  },
+  async controllerJobVerification(input){
+   require(controllerJobBinding(input?.externalId).action==='VERIFY','CONTROLLER_VERIFICATION_PHASE_REQUIRED')
+   return controllerJobArtifact(input,'verification')
+  },
   async controllerJobPatch(input){
    require(controllerJobBinding(input?.externalId).action==='EXECUTE','CONTROLLER_PATCH_EXECUTOR_REQUIRED')
    return controllerJobArtifact(input,'patch')
@@ -316,6 +366,37 @@ export function createQualityGitHub({token,fetchImpl=fetch,publisherEnabled=fals
    return {state:'CANCEL_REQUESTED',runId};
   },
 
+
+  async linuxQualificationObservations({runId,sourceSha,nonce}){
+   require(/^[1-9][0-9]{0,19}$/.test(runId)&&sha(sourceSha)&&uuid(nonce),'LINUX_NATIVE_BINDING_INVALID')
+   const descriptor=await controllerJobDescriptor({sourceSha},true)
+   const run=assertWorkflowIdentity(await get('/actions/runs/'+runId),{runId,sourceSha,nonce,completed:true})
+   require(String(run.workflow_id)===descriptor.workflowId&&controllerStamp(run.created_at),'LINUX_NATIVE_BINDING_INVALID')
+   const profile=controllerArtifactProfiles.linuxQualification,matching=new Map()
+   for(let page=1;page<=10;page++){
+    const list=await get('/actions/runs/'+runId+'/artifacts?per_page=100&page='+page)
+    require(Array.isArray(list?.artifacts)&&list.artifacts.length<=100&&Number.isSafeInteger(list.total_count)&&list.total_count>=0,
+     'LINUX_NATIVE_ARTIFACT_INVALID')
+    for(const artifact of list.artifacts){
+     if(artifact.name!==profile.prefix+nonce)continue
+     require(number(artifact.id)&&artifact.expired===false&&Number.isSafeInteger(artifact.size_in_bytes)
+      &&artifact.size_in_bytes>0&&artifact.size_in_bytes<=profile.archiveBytes&&String(artifact.workflow_run?.id)===runId
+      &&artifact.workflow_run?.head_sha===sourceSha&&/^sha256:[a-f0-9]{64}$/.test(artifact.digest??''),'LINUX_NATIVE_ARTIFACT_INVALID')
+     matching.set(String(artifact.id),artifact);require(matching.size<=1,'LINUX_NATIVE_ARTIFACT_AMBIGUOUS')
+    }
+    if(page*100>=list.total_count){
+     require(matching.size===1,'LINUX_NATIVE_ARTIFACT_REQUIRED')
+     const artifact=matching.values().next().value
+     const document=await controllerResultDownload(String(artifact.id),artifact.digest,artifact.size_in_bytes,profile)
+     const freeze=v=>{if(v&&typeof v==='object'){Object.values(v).forEach(freeze);Object.freeze(v)}return v}
+     const observed=freeze({kind:'AQC_NATIVE_LINUX_OBSERVATIONS_V1',runId,sourceSha,nonce,workflowId:descriptor.workflowId,
+      createdAt:run.created_at,archiveSha256:artifact.digest.slice(7),document})
+     nativeLinuxObservations.set(observed,Object.freeze({runId,sourceSha,nonce,documentSha256:documentDigest(document)}))
+     return observed
+    }
+   }
+   fail('GITHUB_RUNS_INCOMPLETE')
+  },
   async qualification({runId,sourceSha,nonce}){
    require(/^[1-9][0-9]{0,19}$/.test(runId))
    return assertWorkflowIdentity(await get('/actions/runs/'+runId),{runId,sourceSha,nonce,completed:true})
@@ -684,6 +765,7 @@ export function readQualityControllerPatch({resultObservation,patchObservation,b
   independentVerified:false})
 }
 
+import {readQualityVerificationResult} from './verify.mjs'
 import {inflateRawSync} from 'node:zlib'
 const controllerCrcTable=Uint32Array.from({length:256},(_,n)=>{
  let v=n;for(let i=0;i<8;i++)v=v&1?0xedb88320^(v>>>1):v>>>1;return v>>>0
@@ -850,4 +932,117 @@ export function createQualityControllerJobActions({github,keysByRole,budget=null
    return Object.freeze({state:'UNKNOWN',effects:'UNKNOWN'})
   }
  })
+}
+
+const nativeIndependentVerifications=new WeakMap()
+/** Both documents are downloaded from the same successful native VERIFY run.
+ * A signed orchestration PASS is never substituted for the separately signed
+ * complete verification receipt, its frozen holdout proof and original expiry.
+ * This is provenance and test evidence only, with no publishing authority. */
+export function readQualityControllerVerification({resultObservation,verificationObservation,...context}){
+ const resultNative=nativeControllerArtifacts.get(resultObservation),proofNative=nativeControllerArtifacts.get(verificationObservation)
+ require(resultNative?.kind==='result'&&proofNative?.kind==='verification'&&resultNative.transport===proofNative.transport,
+  'CONTROLLER_VERIFICATION_NATIVE_ARTIFACT_REQUIRED')
+ const binding=controllerJobBinding(context.externalId)
+ require(binding.action==='VERIFY','CONTROLLER_VERIFICATION_PHASE_REQUIRED')
+ for(const [observed,native]of [[resultObservation,resultNative],[verificationObservation,proofNative]]){
+  require(observed.state==='COMPLETE'&&native.externalId===context.externalId&&native.runId===context.runId
+   &&native.workflowId===context.workflowId&&native.documentSha256===documentDigest(observed.document),
+   'CONTROLLER_VERIFICATION_NATIVE_BINDING_INVALID')
+ }
+ require(resultObservation.createdAt===verificationObservation.createdAt&&controllerStamp(resultObservation.createdAt)
+  &&Number.isFinite(context.notBefore)&&context.notBefore>=Date.parse(resultObservation.createdAt),
+  'CONTROLLER_VERIFICATION_NATIVE_BINDING_INVALID')
+ const phase=readQualityControllerJobResult(resultObservation.document,context)
+ const keys=context.keysByRole?.get('INDEPENDENT_VERIFIER')
+ require(keys instanceof Map&&keys.size>0,'CONTROLLER_JOB_RESULT_TRUST_REQUIRED')
+ const verification=readQualityVerificationResult(verificationObservation.document,{keys:new Map(keys),manifest:context.manifest,
+  nonce:binding.nonce,controlSourceSha:binding.controlSourceSha,runId:context.runId,
+  notBefore:new Date(context.notBefore).toISOString(),now:context.now??Date.now()})
+ for(const [key,value]of Object.entries(phase)){
+  require(Object.hasOwn(verification,key)&&documentDigest(verification[key])===documentDigest(value),
+   'CONTROLLER_VERIFICATION_PHASE_MISMATCH')
+ }
+ const m=assertVerifiedRepairManifest(context.manifest)
+ const freeze=v=>{if(v&&typeof v==='object'){Object.values(v).forEach(freeze);Object.freeze(v)}return v}
+ const value=Object.freeze({verification:freeze(structuredClone(verification)),
+  verificationReceipt:freeze(structuredClone(verificationObservation.document)),
+  artifactSha256:verification.artifactSha256,proofSha256:verification.proofSha256,
+  independentBundleVerified:true,authorityIncluded:false,rawQaPayloadIncluded:false})
+ nativeIndependentVerifications.set(value,Object.freeze({manifest:m,externalId:context.externalId,runId:context.runId,
+  documentSha256:documentDigest(verificationObservation.document),observedAt:Date.parse(verificationObservation.document.body.observedAt),expiresAt:Date.parse(verificationObservation.document.body.expiresAt)}))
+ return value
+}
+export function assertQualityNativeVerification(value,{manifest,externalId,runId,now=Date.now()}){
+ const cap=nativeIndependentVerifications.get(value),m=assertVerifiedRepairManifest(manifest)
+ require(cap&&cap.manifest===m&&cap.externalId===externalId&&cap.runId===runId
+  &&cap.documentSha256===documentDigest(value.verificationReceipt),'CONTROLLER_VERIFICATION_NATIVE_ARTIFACT_REQUIRED')
+ require(Number.isFinite(now)&&now>=cap.observedAt&&now<cap.expiresAt&&now<Date.parse(m.mandate.expiresAt),'CONTROLLER_VERIFICATION_STALE')
+ return value
+}
+
+function linuxObservationOptions(value,fields){
+ require(controllerPlain(value)&&Reflect.ownKeys(value).length===fields.length&&fields.every(k=>Object.hasOwn(value,k))
+  &&Object.values(Object.getOwnPropertyDescriptors(value)).every(d=>d.enumerable&&Object.hasOwn(d,'value')),'LINUX_NATIVE_INPUT_INVALID')
+}
+/** A native successful workflow, pinned workflow bytes and exact artifact ZIP
+ * establish provenance. Unsigned labels or a copied observation never become
+ * qualified Linux evidence; no new trust or operational authority is installed. */
+export async function readQualityNativeLinuxObservations(observation,options){
+ linuxObservationOptions(options,['gateSetSha256'])
+ const native=nativeLinuxObservations.get(observation)
+ require(native&&native.documentSha256===documentDigest(observation.document),'LINUX_NATIVE_OBSERVATIONS_REQUIRED')
+ const b=observation.document,{EXECUTOR_TOOL}=await import('./executor.mjs'),at=Date.now()
+ linuxObservationOptions(b,['schemaVersion','gateSetSha256','codexVersion','codexArchiveSha256','codexBinarySha256',
+  'codeModeHostArchiveSha256','codeModeHostBinarySha256','bwrapArchiveSha256','bwrapBinarySha256','isolationHelperCommit',
+  'fileIsolation','networkIsolation','privilegeIsolation','toolLoop','cancellation','noProviderRequests','requestCount',
+  'settledCount','runId','sourceSha','nonce','verifiedAt','testKeysInstalled','realCostAuthorityUsed','independentVerifier'])
+ require(b.schemaVersion==='AQC_LINUX_OBSERVATIONS_V1'&&controllerHash(options.gateSetSha256)&&b.gateSetSha256===options.gateSetSha256
+  &&b.runId===native.runId&&b.sourceSha===native.sourceSha&&b.nonce===native.nonce
+  &&b.codexVersion===EXECUTOR_TOOL.version&&b.codexArchiveSha256===EXECUTOR_TOOL.archiveSha256&&controllerHash(b.codexBinarySha256)
+  &&b.codeModeHostArchiveSha256===EXECUTOR_TOOL.codeModeHostArchiveSha256&&b.codeModeHostBinarySha256===EXECUTOR_TOOL.codeModeHostBinarySha256
+  &&b.bwrapArchiveSha256===EXECUTOR_TOOL.bwrapArchiveSha256&&b.bwrapBinarySha256===EXECUTOR_TOOL.bwrapBinarySha256
+  &&b.isolationHelperCommit===EXECUTOR_TOOL.isolationHelperCommit
+  &&['fileIsolation','networkIsolation','privilegeIsolation','toolLoop','cancellation'].every(k=>b[k]==='PASS')
+  &&b.noProviderRequests===true&&b.requestCount===4&&b.settledCount===4&&b.testKeysInstalled===false&&b.realCostAuthorityUsed===false,
+  'LINUX_NATIVE_OBSERVATIONS_INVALID')
+ require(controllerStamp(b.verifiedAt)&&Date.parse(observation.createdAt)<=Date.parse(b.verifiedAt)&&Date.parse(b.verifiedAt)<=at
+  &&at-Date.parse(b.verifiedAt)<86400000&&at<Date.parse('2026-11-27T23:59:59.000Z'),'LINUX_NATIVE_OBSERVATIONS_STALE')
+ const v=b.independentVerifier
+ linuxObservationOptions(v,['status','classes','typedResults','fileIsolation','networkIsolation','privilegeIsolation','timeout',
+  'cancellation','cgroupEmpty','nodeSha256','noProviderRequests','rawQaPayloadIncluded','testKeysInstalled','baseline'])
+ require(v.status==='PASS'&&documentDigest(v.classes)===documentDigest(['C1','C2','C3'])&&v.typedResults===6
+  &&['fileIsolation','networkIsolation','privilegeIsolation','timeout','cancellation'].every(k=>v[k]==='PASS')
+  &&v.cgroupEmpty===true&&controllerHash(v.nodeSha256)&&v.noProviderRequests===true
+  &&v.rawQaPayloadIncluded===false&&v.testKeysInstalled===false,'LINUX_NATIVE_VERIFIER_REQUIRED')
+ const baseline=v.baseline
+ linuxObservationOptions(baseline,['status','typedResults','sourceMode','classes','nativeOperationalInvocationVerified',
+  'fullPrivateCic18Qualification','noProviderRequests','rawQaPayloadIncluded','testKeysInstalled'])
+ require(baseline.status==='PASS'&&baseline.typedResults===9&&baseline.sourceMode==='UNCHANGED_GIT_BASELINE'
+  &&documentDigest(baseline.classes)===documentDigest(['C1','C2','C3'])&&baseline.nativeOperationalInvocationVerified===false
+  &&baseline.fullPrivateCic18Qualification===false&&baseline.noProviderRequests===true
+  &&baseline.rawQaPayloadIncluded===false&&baseline.testKeysInstalled===false,'LINUX_NATIVE_BASELINE_REQUIRED')
+ return b
+}
+/** Only the separately installed verifier's private key should be supplied by
+ * its trusted job. It signs the existing qualification contract from actual
+ * native observations. Fresh signing cannot extend the original 24-hour
+ * qualification horizon or the fixed Development authorisation end date. */
+export function createQualityNativeLinuxQualificationAttestor(options){
+ linuxObservationOptions(options,['privateKey']);const privateKey=options.privateKey
+ require(privateKey?.type==='private'&&privateKey.asymmetricKeyType==='ed25519','LINUX_NATIVE_SIGNER_REQUIRED')
+ return Object.freeze({async attest(input){
+  linuxObservationOptions(input,['observation','gateSetSha256'])
+  const b=await readQualityNativeLinuxObservations(input.observation,{gateSetSha256:input.gateSetSha256})
+  const names=['gateSetSha256','codexVersion','codexArchiveSha256','codexBinarySha256','codeModeHostArchiveSha256',
+   'codeModeHostBinarySha256','bwrapArchiveSha256','bwrapBinarySha256','isolationHelperCommit',
+   'fileIsolation','networkIsolation','privilegeIsolation','toolLoop','cancellation','noProviderRequests','runId','sourceSha','verifiedAt']
+  const body=Object.fromEntries(names.map(k=>[k,b[k]]))
+  body.expiresAt=new Date(Math.min(Date.parse(b.verifiedAt)+86400000,Date.parse('2026-11-27T23:59:59.000Z'))).toISOString()
+  const {signDocument,publicKeyId}=await import('./manifest.mjs'),{createPublicKey}=await import('node:crypto')
+  const {verifyLinuxQualification}=await import('./executor.mjs'),key=createPublicKey(privateKey)
+  const document=signDocument('AQC_LINUX_QUALIFICATION_V1',body,privateKey)
+  verifyLinuxQualification(document,{keys:new Map([[publicKeyId(key),key]]),gateSetSha256:input.gateSetSha256})
+  return document
+ }})
 }

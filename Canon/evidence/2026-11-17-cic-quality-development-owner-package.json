@@ -1912,25 +1912,22 @@
     "status": "WORKER_LIVE_STANDBY_NOT_PROJECT_TECHNICAL_READY",
     "deploy": {
       "commit": {
-        "createdAt": "2026-11-18T23:12:59Z",
-        "id": "a1566879bd6f43c6d6654b0bed76448af48dad9e",
-        "message": "[skip render] Integrate bounded native CIC patch transport with operational gates disabled\n\nStage 1 Full Autopilot source integration: read-only fixed GitHub artifact GETs; no new dispatch, authority, workflow, secret, SQL or activation. Native job 135204578274 / run 44418386277 verified 231 CIC and 12 QA tests, no skips/failures, tested tree 7ff55fc22919c142f13a706bfc0f7a116bc1ee83 exactly equals candidate. Current a9b83db0 parallel main full run 44414248940 SUCCESS retained. Paid repairs/promotion/window remain disabled. Actual resulting-main and Linux qualification still required before worker rollout."
+        "id": "79cb7cf827e82395f43e630ee9b72436b19b421a"
       },
-      "createdAt": "2026-11-18T23:21:21.42248Z",
-      "finishedAt": "2026-11-18T23:22:03.369134Z",
-      "id": "dep-dbv35setlv9c73flrjv0",
-      "startedAt": "2026-11-18T23:21:21.420381Z",
+      "id": "dep-dbv6n0ek1f9s73bkgqeg",
+      "createdAt": "2026-11-19T03:22:41.490011Z",
+      "startedAt": "2026-11-19T03:22:41.48772Z",
+      "finishedAt": "2026-11-19T03:23:50.800493Z",
       "status": "live",
-      "trigger": "api",
-      "updatedAt": "2026-11-18T23:22:03.369321Z"
+      "trigger": "api"
     },
-    "instance": "pd7bb",
+    "instance": "swtzw",
     "heartbeat": {
       "event": "aqc.technical.heartbeat",
       "schemaVersion": "AQC_TECHNICAL_READINESS_V1",
       "status": "MONITORING_READY",
-      "sourceSha": "a1566879bd6f43c6d6654b0bed76448af48dad9e",
-      "observedAt": "2026-11-18T23:22:05.545Z",
+      "sourceSha": "79cb7cf827e82395f43e630ee9b72436b19b421a",
+      "observedAt": "2026-11-19T03:23:53.803Z",
       "controlStore": "CONNECTED_DISABLED",
       "nativeLimits": "CONNECTED_DISABLED",
       "paidRepairsEnabled": false,
@@ -1940,7 +1937,7 @@
       "controllerGitHub": "CONNECTED_STANDBY",
       "qualificationWorkflow": "CONNECTED_MAIN_ONLY",
       "renderServiceId": "srv-dbu4ak0ae00c73eaabcg",
-      "providerTimestamp": "2026-11-18T23:22:06.290751965Z"
+      "providerTimestamp": "2026-11-19T03:23:54.668299886Z"
     },
     "rolePreflight": {
       "event": "aqc.technical.qa.role_preflight",
@@ -1955,9 +1952,9 @@
       "gitHeadMatchesSource": true,
       "hostQaCodecPresent": false,
       "nodeMajorSupported": true,
-      "sourceSha": "a1566879bd6f43c6d6654b0bed76448af48dad9e",
-      "observedAt": "2026-11-18T23:22:05.545Z",
-      "providerTimestamp": "2026-11-18T23:22:06.281810792Z"
+      "sourceSha": "79cb7cf827e82395f43e630ee9b72436b19b421a",
+      "observedAt": "2026-11-19T03:23:53.803Z",
+      "providerTimestamp": "2026-11-19T03:23:54.658390013Z"
     },
     "retention": {
       "event": "aqc.technical.metadata_retention",
@@ -1966,36 +1963,38 @@
       "purgePerformed": true,
       "scope": "CONTROL_METADATA_ONLY",
       "retentionDays": 90,
-      "observedAt": "2026-11-18T23:22:06.197Z",
-      "sourceSha": "a1566879bd6f43c6d6654b0bed76448af48dad9e",
-      "providerTimestamp": "2026-11-18T23:22:06.197762636Z"
+      "observedAt": "2026-11-19T03:23:54.547Z",
+      "sourceSha": "79cb7cf827e82395f43e630ee9b72436b19b421a",
+      "providerTimestamp": "2026-11-19T03:23:54.548242836Z"
     },
     "sentry": {
       "event": "aqc.monitoring.delivery",
       "provider": "sentry",
       "status": "ACCEPTED",
       "httpStatus": 200,
-      "sourceSha": "a1566879bd6f43c6d6654b0bed76448af48dad9e",
-      "providerTimestamp": "2026-11-18T23:22:06.350761696Z"
+      "sourceSha": "79cb7cf827e82395f43e630ee9b72436b19b421a",
+      "providerTimestamp": "2026-11-19T03:23:54.704714263Z"
     },
     "sourceChecks": {
-      "sourceRun": 44418386277,
-      "sourceJob": 135204578274,
-      "resultingMainRun": 44418782006,
-      "resultingMainJob": 135205942010,
-      "packagePass": 231,
+      "pr": 1225,
+      "prHead": "a5ce42bc003aae3b18866a12c4dc0de00a81e757",
+      "prRun": 44450371293,
+      "prJob": 135312525072,
+      "resultingMainRun": 44450608836,
+      "resultingMainJob": 135313314936,
+      "packagePass": 285,
       "qaPass": 12,
       "fail": 0,
       "skip": 0
     },
     "linux": {
-      "runId": 44418912396,
-      "jobId": 135206865056,
-      "artifactId": 14480711736,
-      "archiveSha256": "a9d05d271f69ba98139d058ea3021ae38d0a8740afc67ab886cae4a8fcb823a1",
+      "runId": 44450608836,
+      "jobId": 135313573158,
+      "artifactId": 14494499156,
+      "archiveSha256": "27374bf60456f7fe82728e215b6f0a90dcb9d734b097e32236f97147dab51932",
       "observations": {
         "schemaVersion": "AQC_LINUX_OBSERVATIONS_V1",
-        "gateSetSha256": "b410fd60b890cbaeb83210520eaff387f8669a1270e1cf4e766096c5c8d6c024",
+        "gateSetSha256": "5e430edc1d839c0f33b6576f4fe8dd501a80b5713996f5d30ed5f33aaab03ead",
         "codexVersion": "0.167.2",
         "codexArchiveSha256": "8246e846c550ea21197fcc4067bc270dca895e94ea42ed6a282e6f4e0125b15f",
         "codexBinarySha256": "a9672d0fa0dd8fcf8cad136fa0d056b914bc046f5ac3d78f4a5cf390655af56b",
@@ -2012,10 +2011,10 @@
         "noProviderRequests": true,
         "requestCount": 4,
         "settledCount": 4,
-        "runId": "44418912396",
-        "sourceSha": "a1566879bd6f43c6d6654b0bed76448af48dad9e",
-        "nonce": "55d497c2-4608-40e4-be42-88e2698551be",
-        "verifiedAt": "2026-11-18T23:16:30.976Z",
+        "runId": "44450608836",
+        "sourceSha": "79cb7cf827e82395f43e630ee9b72436b19b421a",
+        "nonce": "4d44b052-025d-4960-910b-750121703f9f",
+        "verifiedAt": "2026-11-19T03:21:33.337Z",
         "testKeysInstalled": false,
         "realCostAuthorityUsed": false,
         "independentVerifier": {
@@ -2035,22 +2034,36 @@
           "nodeSha256": "904a6d3484241d466989f9df9ba3aab822b1496191bdb28230eb491a55c32a52",
           "noProviderRequests": true,
           "rawQaPayloadIncluded": false,
-          "testKeysInstalled": false
+          "testKeysInstalled": false,
+          "baseline": {
+            "status": "PASS",
+            "typedResults": 9,
+            "sourceMode": "UNCHANGED_GIT_BASELINE",
+            "classes": [
+              "C1",
+              "C2",
+              "C3"
+            ],
+            "nativeOperationalInvocationVerified": false,
+            "fullPrivateCic18Qualification": false,
+            "noProviderRequests": true,
+            "rawQaPayloadIncluded": false,
+            "testKeysInstalled": false
+          }
         }
       },
+      "policyFiles": 19,
       "productionTrustInstalled": false,
       "fullPrivateCic18Qualification": false
     },
     "lastKnownGood": {
-      "sourceSha": "b1cda8c4fde31557aac6e89851d6d9293ec768ea",
-      "deployId": "dep-dbv16ut6e07s73adjnt0"
+      "sourceSha": "7050bd84c6f69bef7b29d232963bc164104fa87d",
+      "deployId": "dep-dbv5263m8hqs738vosvg"
     },
-    "preservedMain": "cef950e36229175af6284daadd1023ce131c566c",
-    "wholeAqcTreeAtReleaseAndCurrentMain": "a4dd7091ef66f582e37869299398a2bd729fc937",
-    "host": {
-      "sourceSha": "d5eb40a061dd24c5ea65f9f373682179458cb589",
-      "deployId": "dep-dbul4gdckfvc73chhgk0"
-    },
+    "configurationChanged": false,
+    "sqlOrRolesChanged": false,
+    "workflowOrTrustActivated": false,
+    "automaticDeploysEnabled": false,
     "technicalReady": false,
     "e1Repairs": 0,
     "paidRepairs": false,
@@ -2058,6 +2071,60 @@
     "pilotStarted": false,
     "stage2Started": false,
     "b29Approved": false,
-    "recordedAt": "2026-11-18 23:24:23 UTC"
+    "previousImmutableRecordRef": "https://github.com/profitia/SG-dev/blob/68590acd6ebb2be33e82ddeea020a3a2f91b9246/Canon/evidence/2026-11-17-cic-quality-development-owner-package.json",
+    "posthog": {
+      "projectId": 329829,
+      "event": "cic_quality_technical_heartbeat",
+      "sourceSha": "79cb7cf827e82395f43e630ee9b72436b19b421a",
+      "observedCount": 1,
+      "since": "2026-11-19T03:22:40Z",
+      "aggregateOnly": true,
+      "identityOrQaReadPerformed": false
+    },
+    "host": {
+      "sourceSha": "d5eb40a061dd24c5ea65f9f373682179458cb589",
+      "deployId": "dep-dbul4gdckfvc73chhgk0",
+      "hostIntegrationRolledOut": false,
+      "controlledQaCaptureOrReadPerformed": false
+    },
+    "wholeAqcTreeAtReleaseAndCurrentMain": "b64c53fd1d2318a296b4bf36e1c405794bc9a1c5",
+    "historyAndBaseline": {
+      "pr": 1221,
+      "head": "95e90c7b0d23ea02ee464e643c276ecdf728b36b",
+      "mergeSha": "ee876bfbcae88d6a174a65ecfeb34a4008a1db28",
+      "sourceRun": 44447569261,
+      "sourceJob": 135303331784,
+      "packagePass": 277,
+      "qaPass": 12,
+      "linuxRun": 44447825697,
+      "linuxJob": 135304540663,
+      "artifactId": 14493782319,
+      "archiveSha256": "5aa180f59f0b38ec4894c5e36e9e79701e55099d9b0db5f5375bf483117ee553",
+      "merged": true,
+      "deployed": true,
+      "operationalDispatchActivated": false
+    },
+    "closedPhaseComposition": {
+      "pr": 1225,
+      "mergeSha": "79cb7cf827e82395f43e630ee9b72436b19b421a",
+      "sourceTree": "c7eee14a72f1acc043a5fdf67ed7ea695cd58b18",
+      "closedVerifierPhases": [
+        "QUALIFY",
+        "REPRODUCE",
+        "VERIFY"
+      ],
+      "executorResultRequiresRealStoppedProcess": true,
+      "fullIndependentVerificationRequiresBothSameRunArtifacts": true,
+      "nativeOperationalInvocationDemonstrated": false,
+      "independentPublisherEndToEndReady": false
+    },
+    "lastSharedHostIntegration": {
+      "sourceSha": "7050bd84c6f69bef7b29d232963bc164104fa87d",
+      "run": 44433645300,
+      "integrationRun": 44432722722,
+      "result": "SUCCESS",
+      "doesNotClaimNewHostCic18Rollout": true
+    },
+    "recordedAt": "2026-11-19T03:25:16Z"
   }
 }
