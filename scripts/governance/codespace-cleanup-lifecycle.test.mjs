@@ -1348,3 +1348,17 @@ test('ordinary business closeout records promotion failure without losing its ve
   assert.equal(out.closeout.status,'CLOSEOUT_VERIFIED');assert.equal(out.closeout.preCloseoutReport.activation.status,'REVIEW_REQUIRED')
   assert.equal(tracked(f.c.stateFile).closeout.businessResult,'SUCCESS')
 })
+
+test('broker admission recovery allocates only the missing receipt and never repeats completed work',t=>{
+  const {f,rt,events}=activatedFixture(t,{missing:true}),spec=workSpecFixture(f,{requireManagedCleanup:true})
+  assert.throws(()=>runTask(f.config,spec.work,rt),/Required managed cleanup/)
+  assert.equal(fs.readFileSync(spec.log,'utf8'),'1')
+  assert.equal(tracked(f.c.stateFile).resources.length,0)
+  rt.activationOptions.admit=(_c,_p,op)=>({status:op==='start'?'BROKER_READY':'POLICY_ACTIVE'})
+  const result=runTask(f.config,spec.work,rt)
+  assert.equal(result.closeout.preCloseoutReport.activation.status,'CLEANED_VERIFIED')
+  assert.equal(result.closeout.preCloseoutReport.activation.receipt.workOutputSha256,null)
+  assert.equal(result.closeout.preCloseoutReport.activation.receipt.workOutputStatus,'UNAVAILABLE_ON_RESUME')
+  assert.equal(fs.readFileSync(spec.log,'utf8'),'1')
+  assert.equal(events.filter(e=>e==='allocate').length,1)
+})

@@ -43,7 +43,8 @@ export function receiptPayload(c,bootstrap,workOutput){
  const data={schemaVersion:'1.0',class:CLASS,taskId:c.taskId,projectKey:c.projectKey,
   conversationId:bootstrap.metadata.conversationId,businessResult:bootstrap.result.finalStatus,
   bootstrapSha256:crypto.createHash('sha256').update(JSON.stringify(bootstrap)).digest('hex'),
-  workOutputSha256:crypto.createHash('sha256').update(workOutput??'').digest('hex')}
+  workOutputSha256:typeof workOutput==='string'?crypto.createHash('sha256').update(workOutput).digest('hex'):null,
+  workOutputStatus:typeof workOutput==='string'?'CAPTURED':'UNAVAILABLE_ON_RESUME'}
  const bytes=Buffer.from(JSON.stringify(data))
  if(bytes.length>4096||!['SUCCESS','PARTIAL_SUCCESS','FAILED'].includes(data.businessResult))throw Error('Execution cache payload is not bounded canonical metadata')
  return bytes
@@ -62,7 +63,7 @@ export function activationFor(c,spec,options={}){
  const note=reason=>{issue=String(reason).slice(0,600)}
  return {
   class:CLASS,
-  start(){try{admit(c,p,'start');started=true}catch(e){note(e.message)}},
+  start(){try{admit(c,p,'start');started=true;issue=null}catch(e){note(e.message)}},
   cacheResult(bootstrap,output,{allocate,release}){
    if(!started)return {class:CLASS,status:'RETAINED',reason:issue}
    const payload=receiptPayload(c,bootstrap,output)
