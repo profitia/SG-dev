@@ -385,7 +385,7 @@ async function readinessMain(controllerStandby=false){
 if(process.argv[1]){
  const {fileURLToPath}=await import('node:url'),path=await import('node:path')
  if(path.resolve(process.argv[1])===fileURLToPath(import.meta.url)){
-  try{if(process.argv.length!==3||!['readiness','controller-standby'].includes(process.argv[2]))unavailable('READINESS_MODE_REQUIRED');await readinessMain(process.argv[2]==='controller-standby')}
+  try{if(process.argv.length!==3||!['readiness','controller-standby','publisher-preflight'].includes(process.argv[2]))unavailable('READINESS_MODE_REQUIRED');if(process.argv[2]==='publisher-preflight'){const {runQualityNativePublisherPreflight}=await import('./publisher-readiness.mjs');console.log(JSON.stringify(await runQualityNativePublisherPreflight()))}else await readinessMain(process.argv[2]==='controller-standby')}
   catch(error){console.error(JSON.stringify({event:'aqc.technical.failure',code:/^[A-Z][A-Z0-9_]{1,79}$/.test(error?.code??'')?error.code:'READINESS_UNAVAILABLE'}));process.exitCode=1}
  }
 }
