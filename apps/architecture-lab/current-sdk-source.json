@@ -1,7 +1,7 @@
 {
   "schemaVersion": "1.0",
   "scope": "CURRENT_SDK_SOURCE_INTEGRITY_ONLY",
-  "sourceSnapshotSha": "a7fe3e7c5f383509ef24e285e08c5b7c0e3a26cd",
+  "sourceSnapshotSha": "2dba67e33fc15d9b317e59d048cbc00ad7d9b194",
   "status": "SDK138_SUPPLIER_WORKSPACE_COMPATIBILITY_DRAFT_NOT_ADMITTED",
   "platformVersion": "1.38.0",
   "runtimeActivated": false,
@@ -924,7 +924,7 @@
     "apps/srm/scripts/supplier-delegated-business.integration.test.mjs": "c687321aaf0170f012bcc609c3aa666b2aa801751416ca3d7c99a2bdb1405e70",
     "apps/srm/scripts/supplier-location-admission.integration.test.mjs": "83e35dc1107f59e0e176230dc277a63d342b2ee84da36d299e86aefb10ed77d2",
     "apps/srm/scripts/supplier-locations.integration.test.mjs": "476e8dea869901a4981e9af16c42981dfe3c5f852369cff5ae608c55948f7f32",
-    "apps/srm/scripts/supplier-pipelines-postgres.test.mjs": "4d46cc1ee23dd9194cec2e8ff57dbcf135926c0b212d8f00085c9c1e7c78b309",
+    "apps/srm/scripts/supplier-pipelines-postgres.test.mjs": "22b50b87d41761ca10b37df64a1d883f408c6372b3e7b81fa34bfd2afeacdc16",
     "apps/srm/scripts/supplier-pipelines-release.mjs": "4f42c4db62fb44869716c1ce589cd7b5942b34025ba337a549fd4517628ae490",
     "apps/srm/scripts/supplier-pipelines-release.test.mjs": "b431eed3a340fba13bceee25c8832c286bc9467dcd963c7c06830b40be57ea14",
     "apps/srm/scripts/task02r-build-release.mjs": "1a1010dcbe50cf3b081f0df49a0ef933b1ae8b97873adcf98b6a356c275daabf",
@@ -1067,7 +1067,7 @@
     "apps/srm/src/server/report-output.ts": "5af3cf0263e3c53f90a52f49689c94999d9fe8015b9059bcc558ec049a699d80",
     "apps/srm/src/server/report-runtime.ts": "7c63ebb63f05b0f3d4faa5b4fe0ca420721edfa9292a5edc6eaa7d18508328fd",
     "apps/srm/src/server/request-origin.ts": "b87ae796f12173a12d941ece93ed41ba0c35da3d29e001aab9677d04cfbf3b77",
-    "apps/srm/src/server/root-atomic-claim-adoption.test.ts": "fe24611c721990b6d22ff6b4190dd80fdd78fe325156b03530895a76d487cf61",
+    "apps/srm/src/server/root-atomic-claim-adoption.test.ts": "73cbb3d47046d9609468a1223e7b7bedd51839d152890361fa1f097bea620db9",
     "apps/srm/src/server/safe-public-fetch.ts": "27a9c9ab9f15e68b37356b43475d5bed8818b260cd91664682f2ff8793c07670",
     "apps/srm/src/server/shared-catalog.test.ts": "c2276778377caa2eeaf57f3b93f41462a74f540bdc2f8d7921f8fceeedd27808",
     "apps/srm/src/server/shared-catalog.ts": "a7e51c6c0ea30b413bbe7fe8d52ee266cb99ad62b7515e93f5987c983e2d5cb4",
@@ -1406,7 +1406,7 @@
     "packages/platform-contracts/test/fixtures/first-party-source-postgres.mjs": "6942e2078c59280b997f271830234e06ebf56c33077f2d764535843774eeb7d6",
     "packages/platform-contracts/test/fixtures/identity-profile-postgres.mjs": "6d0ad7dce50bf14ab641223cd3f5b0858fe4e445aa20fc0f91eee0eea4d8e185",
     "packages/platform-contracts/test/fixtures/supplier-location-postgres.mjs": "7f7ef219c45d42d191f90bca123edd3bd355d382c85659facb0e268fe9e8336f",
-    "packages/platform-contracts/test/fixtures/supplier-workspace-postgres.mjs": "88f04f37f4d91feb2d9b318b17d1f3a50a521e104aa98157e90d9d54fad7f5d6",
+    "packages/platform-contracts/test/fixtures/supplier-workspace-postgres.mjs": "f2aa62cf6b9412b26a62386baffb94cdb3c309837d031e53845f84d19ef00667",
     "packages/platform-contracts/test/identity-binding-peer-renewal.test.mjs": "45f45d3a7ef055411fcf4b87e1f295099d49758e6dcc7aa9e606f9776f74a004",
     "packages/platform-contracts/test/identity-email.integration.test.mjs": "ef565ebb3cdb12ca05222890e042acb56b0b7b239c7db61c6e5504b9464f2168",
     "packages/platform-contracts/test/identity-peer-read.test.mjs": "eb644147c84b48d476035a9edba7a8b3f3389ffbc35dfbc457f83b776523cb2a",
@@ -1754,6 +1754,9 @@
     "knowledge": {
       "sha": "65b0e573f270ded93bfda088a88e736abc45f56a",
       "status": "PROVISIONAL_NOT_FINAL_ACCEPTED_PK_SOURCE"
+    },
+    "sdk138-registration": {
+      "sha": "0bb2c6225ebf58180de5e02c35009a134e968ecc"
     }
   },
   "coverageRecords": [
