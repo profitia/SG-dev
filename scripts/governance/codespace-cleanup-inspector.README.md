@@ -1,143 +1,117 @@
-# Restricted cleanup inspector — Stage04R
+# Restricted cleanup inspector — Stage04R draft
 
-Status: opt-in source implementation; **no privileged runtime installation and no
-shared-Codespace CLEANED acceptance**. This component does not activate Stage05.
+**Public functionality: bounded read-only process inspection. Live deletion is
+unconditionally disabled. This draft is not ready for merge or cleanup activation.**
 
-## Business result and boundary
+The implementation does not resolve the shared Codespace's business acceptance.
+No privileged component, hook, schedule, namespace, global configuration or
+Stage05 policy is installed. No policy field can enable public clean.
 
-The inspector provides bounded process/thread observations and a fail-closed
-integration with `codespace-cleanup`. It does not turn a successful `/proc` read
-into unconditional permission to delete. It supports ephemeral directories only;
-worktrees stay with the original engine and its original restrictions.
+## Implemented
+
+An optional `--inspector-descriptor` integrates the inspector with ephemeral
+resource handling in the existing engine. Lifecycle forwards that descriptor in
+both phases and protects it as a control/recovery input. Worktrees continue to
+use their original process, Git and continuity guards. Missing, writable,
+substituted or incomplete inspection never falls back to ordinary deletion.
+
+The isolated Python client stays at the normal UID/GID and becomes nondumpable.
+It accepts only a kernel-authenticated root peer on a root-controlled Unix
+`SOCK_SEQPACKET` socket. Root-owned non-symlink deployment paths, a pinned module
+SHA-256, exact project/task/source/scope and admitted dev/inode/marker identities
+bind requests and responses. JSON duplicate keys, truncation, replayed request
+identities and unexpected descriptor counts are refused.
+
+The separately admitted read-only broker examines every visible process/thread's
+cwd, root, file descriptors and mappings, with process/thread start-time and
+population checks. It observes all UIDs, not an sshd/PID whitelist. Inaccessible
+live state, changed populations, another mount view, unsupported namespaces,
+non-root capable peers, missing metadata or exceeded bounds means refusal.
+`OBSERVED_IDLE` is explicitly `deleteAuthorized:false`: a bounded visible-process
+observation, not universal inactivity or permission to remove anything. The
+opted-in engine therefore retains the resource after that response.
+
+The broker requires UID0, exactly `SYS_PTRACE` and `DAC_READ_SEARCH` in effective,
+permitted and bounding sets, no inheritable/ambient capabilities and
+`NoNewPrivs=1`. These are capabilities of the fixed trusted component alone.
+Ordinary cleanup never becomes root. No setuid/setcap interpreter, general sudo,
+SYS_ADMIN, `/proc` modification or shared Codespace rebuild is supplied.
+
+## Why live clean remains unavailable
 
 A `/proc` walk is not an atomic kernel reference snapshot. A descriptor can move
-between processes while their tables are read; references can also be queued in
-a Unix socket. An additional scan or root UID does not eliminate that problem.
-Consequently guarded removal is admitted only in an **exclusive reference domain**
-independently established by an administrator: the resource has been private to
-that domain since allocation, outside ordinary processes could never obtain a
-reference, root administration is trusted, and the nondumpable trusted client is
-the only remaining ordinary process. A normal shared Codespace with an agent,
-Node controller, editor and ssh sessions does not meet this condition. The gate
-refuses before renaming any data. Do not claim that installing the broker alone
-resolves real E2E acceptance or permits shared-resource deletion.
+between process tables while they are read; references can also be queued in a
+Unix socket. Root read access, repeated walks, a task marker and a written
+attestation do not eliminate that race. An unrelated ordinary controller also
+cannot be assumed harmless merely because it has the expected UID or PID.
 
-## Privilege separation and protocol
+Nondumpability protects a process from peers; it does not authenticate that an
+arbitrarily started Python process is executing trusted code. Handing that
+caller a private directory FD would create another route to leak references.
+The public broker consequently refuses **every clean request before rename or
+FD handoff**. The public client also refuses clean. No descriptor, CLI switch,
+namespace string or administrator attestation overrides this restriction.
 
-`codespace-cleanup.mjs` runs as the normal user. An explicit
-`--inspector-descriptor` selects the isolated Python client; configuration and
-module paths must have root-owned, non-writable, non-symlink ancestors, and the
-module SHA-256 must match. The client remains the admitted ordinary UID/GID,
-sets itself nondumpable before receiving any private descriptor, starts no child
-commands, and uses a close-on-exec Unix `SOCK_SEQPACKET` connection.
+There is an isolated internal transaction prototype: root-owned guard/inode
+pinning and move detection, content/marker binding, no-replace sealing, ordinary
+FD-relative removal, durable PREPARED/SEALED/DELETING/COMMITTED/RESTORED states,
+conservative abort/recovery and no replay after deletion begins. Its clean gate
+requires an independently established private reference lifetime and no other
+ordinary process. Tests inject this condition to examine the filesystem state
+machine. **It is not reachable through the public clean endpoint, not a live
+proof, and not a deployable solution for the synchronous Node controller.**
 
-The broker is a separately admitted root component, not root cleanup. It needs
-`SYS_PTRACE` for otherwise inaccessible process metadata and `DAC_OVERRIDE` for
-complete bounded traversal. It does not request `SYS_ADMIN`, change `/proc`,
-whitelist sshd or install capabilities on a general interpreter. Both peers check
-kernel `SO_PEERCRED`; namespace/UID/start-time checks bind the client. The socket
-and all its ancestors are root-controlled. Private directory descriptors use
-`SCM_RIGHTS` with exact count, truncation checks and close-on-exec. Protocol,
-request nonce, policy digest, project/task/source/scope, dev/inode, allocation ID,
-owner-marker SHA-256 and substantive content digest are bound at admission.
+Before live clean is implemented and accepted, the solution still needs a
+broker-created trusted ordinary worker, protected resource exposure from
+allocation through closeout, and a verified boundary excluding transferred,
+queued and future references. The current shared Codespace does not establish
+that boundary. Installing observation capabilities alone cannot complete E2E.
 
-The observer examines cwd, root, all file descriptors and mappings for every
-visible process/thread, including different UIDs. It checks process and thread
-population stability and start times, filesystem mount aliases and namespaces.
-Any EACCES/EPERM, changed population, missing live observation, bound exhaustion
-or unsupported namespace fails closed. An `OBSERVED_IDLE` response is a bounded
-observation and is never a removal lease or a universal process proof.
+## Exact read-only deployment admission
 
-## Guarded removal and recovery
+This publication is not permission to install the component. After independent
+operator approval of the exact source SHA/diff, an administrator may prepare:
 
-Only after both substantive validation and the reference-domain gate pass may
-the broker atomically rename an admitted directory into its workspace-backed
-root-owned guard. The guard inode is pinned and watched for moves, including ABA
-renames beneath the user-writable `/workspaces` parent. A root-only outer
-boundary encloses a group-accessible inner lease directory. The ordinary client
-receives only its private inner FD, with no executable child or exported FD.
+1. A root-owned non-writable module directory such as
+   `/opt/profitia-cleanup-inspector/<module-sha256>/`, containing the exact Python
+   source. Never execute the privileged broker from a user-writable checkout.
+2. A root-owned descriptor and socket directory (for example under `/run`), with
+   a root-owned regular `.deployment-anchor`; the socket is root:executionGid
+   0660. All ancestors are root-controlled and non-symlinked.
+3. A dedicated root-owned 0700 guard direct child of `/workspaces`, pinned by
+   exact dev/inode, outside source/scope. Public inspection only uses its broker
+   lock and journal-state check; it never seals or removes candidate data.
+4. A task-bounded fixed-code process at UID0, execution GID, exactly the two
+   read-only capabilities above and no-new-privileges, with the same observation
+   PID/user/mount namespaces as the client. No general interpreter capability
+   grant, agent privilege, global daemon or automatic startup is permitted.
 
-The broker verifies content/object identity and process/reference-domain evidence
-again after sealing and before `begin-delete`. It durably journals `DELETING`
-before acknowledging that request. The ordinary client removes through
-FD-relative operations; the root broker never unlinks candidate contents. It
-commits only after verifying physical absence. The engine accepts only the
-request-bound committed receipt and reports logical bytes, allocated bytes and
-observed free-space delta separately. Shared-disk delta is not attributed wholly
-to one operation.
+Descriptor fields are `schemaVersion:"1.0"`,
+`protocol:"PROFITIA_CLEANUP_INSPECTOR_V1"`, `repository:"profitia/SG-dev"`, exact
+`projectKey`, `taskId`, nonzero `executionUid`, `executionGid`, canonical
+`sourceRoot`, separate `scopeRoot`, `modulePath`, `moduleSha256`, `pythonPath`
+(resolve its symlink to the root-owned regular executable), `socketPath`,
+`guardRoot`, `guardIdentity:{dev,ino}`, `maxEntries`, `maxBytes`, and exact
+`resources:[{path,dev,ino,allocationId,markerSha256}]`. Deployment paths must be
+root-owned, non-writable by ordinary users, canonical and non-symlinked. There
+must be no wildcard resource admission. A descriptor is not an isolation proof.
 
-PREPARED/SEALED abort or recovery restores only unchanged bytes to the original,
-still-identical parent with an atomic no-replace rename. A recreated source name
-is never overwritten. A live lease holder blocks recovery. A crash after
-DELETING retains the root journal/remnants and requires explicit reconciliation;
-there is no blind replay, forced restore, forced delete or fictitious success.
-Unresolved recovery blocks subsequent transactions. COMMITTED/RESTORED journals
-are retained. Candidate content with symlinks, hardlinks, special files, nested
-filesystems or protected data is refused. Bounds: 32 admitted resources, 10,000
-entries/64 MiB per tree, 4,096 processes/16,384 threads/30,000 observations,
-2 MB messages or mappings, 60-second connection timeout, 64 requests and a
-300-second idle timeout. Exhaustion means refusal, not truncated proof.
+Only after this read-only admission may an administrator launch
+`<trusted-python> -I <trusted-module> serve --descriptor <root-policy>`. Current
+Codespace lacks SYS_PTRACE in its capability bounding set; it cannot be acquired
+merely by starting a normal child or changing a JSON file. Any container/runtime
+change requires separate admission, with protection for all active sessions.
 
-## Deployment descriptor
+Rollback for an admitted observation-only deployment: remove the opt-in field
+from the owning task's configuration; the original engine retains its original
+fail-closed behavior. Stop only the task-bound broker after checking its exact
+PID/start-time. Revoke only its newly granted admission; preserve all journals,
+nonempty guards and recovery input. Remove a stale socket only after proving no
+broker owns it. Never remove old assets or change shared mounts/processes.
 
-A descriptor is root-owned and immutable to the execution user. Required fields:
+## Tests and bounds
 
-- `schemaVersion: "1.0"`, `protocol: "PROFITIA_CLEANUP_INSPECTOR_V1"`.
-- `repository: "profitia/SG-dev"`, exact `projectKey`, `taskId`, `executionUid`
-  (nonzero), `executionGid`, canonical `sourceRoot` and separate `scopeRoot`.
-- Root-controlled regular `modulePath`, exact `moduleSha256`, and a canonical
-  root-controlled regular `pythonPath` (resolve the Python symlink first).
-- Root-controlled `socketPath`; its parent contains a root-owned regular
-  `.deployment-anchor`. Socket mode is 0660 for the exact execution group.
-- `guardRoot`, a dedicated root-owned 0700 direct child of `/workspaces`, on the
-  candidate filesystem, outside source/scope, plus exact `guardIdentity` dev/ino.
-- `maxEntries`, `maxBytes` within the bounds above.
-- `resources`: exact admitted `{path, dev, ino, allocationId, markerSha256}` rows.
-- For clean, `referenceDomain`: `mode: "exclusive-reference-domain-v1"`,
-  `resourceExposure: "private-since-allocation"`, exact `pidNamespace`,
-  `mntNamespace`, `userNamespace`, and `authorityEvidenceSha256` referencing the
-  administrator's independently verified isolation evidence. Writing these
-  strings or hashing a proposal does not establish that isolation.
-
-The policy cannot authorize a foreign task, adopt historical resources or relax
-Git, retention, PMOS, PHR or owner controls. Module publication is not installation.
-
-## Administrator intervention and rollback
-
-There is **no safe one-command sudo workaround for the current shared Codespace**.
-Two distinct conditions must be admitted and proved before live clean:
-
-1. A trusted broker installation for the exact published module SHA, task and
-   resources. Use a root-owned non-writable deployment directory (for example
-   `/opt/profitia-cleanup-inspector/<module-sha256>/`), root-controlled descriptor
-   and socket directory, workspace-backed pinned guard, and a task-bounded broker
-   process with UID0, the execution GID and only the needed observation/traversal
-   capabilities. Normal cleanup remains unprivileged. Do not run directly from
-   a user-writable checkout or use setuid/setcap on Python or Node.
-2. An independently demonstrated private reference domain for **newly allocated**
-   resources and a trusted, sole remaining ordinary client. The current shared
-   Codespace does not qualify. Establishing this requires a separately approved
-   execution/isolation change; no rebuild, process suspension, namespace change
-   or resource migration is authorized by this source publication. In particular
-   the normal unprivileged Node parent is itself another ordinary process, so
-   the current synchronous controller cannot pass this gate. A future controller
-   change must preserve the entire lifetime boundary, not exempt its PID/name.
-
-Only after those conditions are actually satisfied may an administrator launch
-`<trusted-python> -I <trusted-module> serve --descriptor <root-policy>`. This is
-not an instruction to install privileges now. Recovery uses the same admitted
-policy and `recover --transaction <exact-token>` for a preserved SEALED
-transaction, never a DELETING transaction. There is no privilege installer.
-
-Rollback: disable the opt-in descriptor in the owning task's configuration and
-return to the original fail-closed engine; stop only the task-bound broker after
-checking its exact PID/start-time and resolving live leases. Preserve every
-nonempty guard, transaction journal and recovery input. Remove a stale socket
-only after proving no broker owns it. Revoke only the newly granted component
-admission and remove only independently verified empty deployment artifacts.
-Do not delete evidence, old resources, shared mounts or other processes.
-
-## Verification
+Run the entire unfiltered Linux suite:
 
 ```bash
 node --check scripts/governance/codespace-cleanup.mjs
@@ -146,13 +120,14 @@ python3 -c 'import ast,pathlib; ast.parse(pathlib.Path("scripts/governance/codes
 node --test scripts/governance/codespace-cleanup.test.mjs scripts/governance/codespace-cleanup-lifecycle.test.mjs scripts/governance/codespace-cleanup-inspector.test.mjs
 ```
 
-Tests isolate their own temporary files. Filesystem transaction tests inject a
-synthetic process observation and owner UID; they verify state/recovery/ordinary
-unlink behavior, **not a privileged live proof**. Separate tests cover actual
-Unix peer credentials, FD passing, nondumpability, full synthetic process/thread
-tables, missing/writable deployments, cross-language content binding, optional
-lifecycle forwarding and protected descriptor retention. Public server startup
-as an ordinary user refuses rather than elevates. No user data, hook, schedule,
-17 prior Stage04 assets or existing PMOS/PHR history is modified by these tests.
-A real shared `/workspaces` CLEANED is still required for business acceptance;
-source tests and safe refusal do not satisfy that outcome.
+Tests use their own temporary resources. Real Unix peer credentials, FD passing,
+nondumpability, synthetic full process/thread state, source-byte binding,
+recovery, closed continuity and unconditional public clean refusal are covered.
+The injected transaction tests are not privileged runtime acceptance. An actual
+workspace-disk CLEANED remains required; passing tests or safe retention do not
+satisfy that business result.
+
+Limits fail closed: 32 admitted resources, 10,000 entries/64 MiB per tree, 4,096
+processes/16,384 threads/30,000 path/FD observations, 2 MB messages or mapping
+text, 60-second connection timeout, 64 requests and 300-second idle timeout.
+The module has no privilege installer and starts no global automation.

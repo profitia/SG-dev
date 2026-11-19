@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Opt-in process observation and sealed deletion lease. No privilege installer.
+"""Opt-in process observation and internal transaction prototype. No privilege installer.
 
-The root broker never deletes candidate data. A non-root, nondumpable client
-removes a verified ephemeral directory through an authenticated directory FD.
+The public broker is observation-only: it never moves or deletes candidate data.
+The isolated transaction core is not exposed as a live removal operation.
 Published source is not an installation or authorization to run the broker.
 """
 import argparse
@@ -595,37 +595,16 @@ def handle(sock, p, guard):
         try:
             tree = verify_tree(p, r, parent, os.path.basename(r['path']))
             coverage = scan_consumers(tree['objects'], [r['path']], r['dev'])
-            packet(sock, {'protocol':PROTOCOL,'requestId':r['requestId'],'status':'OBSERVED_IDLE','coverage':coverage})
+            packet(sock, {'protocol':PROTOCOL,'requestId':r['requestId'],'status':'OBSERVED_IDLE','coverage':coverage,'deleteAuthorized':False})
         finally:
             os.close(parent)
         return
-    tx = guard.prepare(r, peer)
-    try:
-        packet(sock, {'protocol':PROTOCOL,'requestId':r['requestId'],'status':'SEALED','token':tx['record']['token'],
-                      'dev':r['dev'],'ino':r['ino'],'treeDigest':r['treeDigest']}, tx['inner'])
-        instruction, _ = receive(sock)
-        require(instruction.get('token') == tx['record']['token'], 'Lease token mismatch')
-        if instruction.get('action') == 'abort':
-            guard.abort(tx)
-            packet(sock, {'status':'RESTORED'})
-            return
-        require(instruction.get('action') == 'begin-delete', 'Explicit delete acknowledgement required')
-        guard.begin(tx)
-        packet(sock, {'status':'DELETE_ADMITTED','token':tx['record']['token']})
-        complete, _ = receive(sock)
-        require(complete.get('token') == tx['record']['token'] and complete.get('action') == 'commit', 'Incomplete deletion acknowledgement')
-        receipt = guard.commit(tx)
-        packet(sock, {'protocol':PROTOCOL,'requestId':r['requestId'],'status':'CLEANED',**receipt})
-    except BaseException:
-        if tx['record']['state'] in ('PREPARED','SEALED'):
-            try:
-                guard.abort(tx)
-            except BaseException:
-                pass
-        raise
-    finally:
-        for key in ('inner','outer','parent'):
-            os.close(tx[key])
+    # Root credentials and PR_SET_DUMPABLE do not authenticate a Python
+    # caller's code. Do not hand a private FD to an independently started
+    # ordinary client or mistake a root-written policy for lifetime isolation.
+    # A broker-created trusted worker and an actually established reference
+    # boundary are still required; no descriptor field can enable this branch.
+    raise Refusal('LIVE_DELETE_UNAVAILABLE: observation-only inspector; trusted worker launch and exclusive reference boundary are not implemented for this controller')
 
 
 def remove_contents(parent, name):
@@ -650,6 +629,7 @@ def client(policy_file, request):
             and os.getegid() == p['executionGid'], 'Client must not run as root or another principal')
     libc = ctypes.CDLL(None, use_errno=True)
     require(libc.prctl(4, 0, 0, 0, 0) == 0 and libc.prctl(3, 0, 0, 0, 0) == 0, 'Cannot protect private directory descriptors')
+    require(request.get('action') == 'inspect', 'LIVE_DELETE_UNAVAILABLE: observation-only inspector; no trusted worker/reference boundary')
     request['policyDigest'] = p['_digest']
     validate_request(p, request)
     trusted_path(p['socketPath'], socket_file=True)
@@ -691,19 +671,20 @@ def client(policy_file, request):
         sock.close()
 
 
-def serve(policy_file, recover=None):
+def serve(policy_file):
     require(sys.platform == 'linux' and os.geteuid() == 0, 'Broker requires separately admitted root-component execution')
     status = dict(x.split(':',1) for x in pathlib.Path('/proc/self/status').read_text().splitlines() if ':' in x)
     capabilities = int(status['CapEff'].strip(),16)
-    require(capabilities & (1 << 19) and capabilities & (1 << 1), 'Broker requires scoped SYS_PTRACE and DAC_OVERRIDE capabilities')
+    allowed = (1 << 19) | (1 << 2)
+    require(all(int(status[k].strip(),16) == allowed for k in ('CapEff','CapPrm','CapBnd'))
+            and int(status['CapInh'].strip(),16) == 0 and int(status['CapAmb'].strip(),16) == 0
+            and status['NoNewPrivs'].strip() == '1',
+            'Read-only broker requires exactly SYS_PTRACE and DAC_READ_SEARCH, no inherited/ambient capabilities, and no-new-privileges')
     p = load_policy(policy_file)
     require(os.getegid() == p['executionGid'], 'Broker execution group mismatch')
     guard = Guard(p)
     sock = None
     try:
-        if recover:
-            guard.recover(recover)
-            return
         require(not os.path.lexists(p['socketPath']), 'Existing socket must not be overwritten')
         trusted_path(os.path.join(os.path.dirname(p['socketPath']), '.deployment-anchor'))
         sock = socket.socket(socket.AF_UNIX, socket.SOCK_SEQPACKET | socket.SOCK_CLOEXEC)
@@ -735,17 +716,15 @@ def serve(policy_file, recover=None):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('action',choices=['client','serve','recover'])
+    parser.add_argument('action',choices=['client','serve'])
     parser.add_argument('--descriptor',required=True)
-    parser.add_argument('--transaction')
     args = parser.parse_args()
     if args.action == 'client':
         raw = sys.stdin.buffer.read(MAX_MESSAGE+1)
         require(len(raw) <= MAX_MESSAGE,'Request exceeds bound')
         print(stable(client(args.descriptor,plain_json(raw))))
     else:
-        require(args.action != 'recover' or args.transaction,'Recovery transaction required')
-        serve(args.descriptor,args.transaction if args.action == 'recover' else None)
+        serve(args.descriptor)
 
 
 if __name__ == '__main__':

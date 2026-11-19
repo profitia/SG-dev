@@ -336,7 +336,10 @@ function checkResource(resource, state, args, source) {
     // visibility must not mask a known RETAINED reason, but any candidate that
     // otherwise qualifies still fails closed if process observation is partial.
     const size = resource.kind === 'git-worktree' ? checkGitWorktree(resource, sourceRoot, state, source) : checkCache(resource, state, sourceRoot)
-    if (args.inspectorDescriptor && resource.kind === 'ephemeral-directory') invokeInspector(args, resource, state, 'inspect')
+    if (args.inspectorDescriptor && resource.kind === 'ephemeral-directory') {
+      const observation = invokeInspector(args, resource, state, 'inspect')
+      if (observation.deleteAuthorized !== true) deny('Inspector observation is not live deletion authority: trusted worker and exclusive reference lifetime remain unavailable')
+    }
     else assertNoLiveLocalConsumer(resource.path)
     const snapshot = fs.lstatSync(resource.path)
     result.status = 'OWNED_DISPOSABLE'

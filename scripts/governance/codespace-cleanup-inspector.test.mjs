@@ -291,3 +291,14 @@ with tempfile.TemporaryDirectory() as d:
  (thread/'root').symlink_to(root);(thread/'cwd').symlink_to(resource)
  expect(lambda:m.scan_consumers({(resource.stat().st_dev,resource.stat().st_ino)},[str(resource)],resource.stat().st_dev,proc),'ACTIVE_CONSUMER')
 `)
+
+python('public clean cannot hand private directory FDs to an independently started caller',String.raw`
+with tempfile.TemporaryDirectory() as d:
+ root,resource,p,r,peer=fixture(d);g=guard(p);a,b=socket.socketpair(socket.AF_UNIX,socket.SOCK_SEQPACKET)
+ try:
+  m.packet(a,r)
+  with unittest.mock.patch.object(m,'validate_peer',lambda *x:None):
+   expect(lambda:m.handle(b,p,g),'LIVE_DELETE_UNAVAILABLE')
+  assert resource.exists() and not g.unresolved()
+ finally:a.close();b.close();g.close()
+`)

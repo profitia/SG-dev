@@ -161,19 +161,18 @@ Full suite: 99 lifecycle tests plus 24 unchanged Stage02 tests (123 total). Test
 
 Publication v6 requires the unfiltered Linux suite, controlled invocation acceptance and current governance/CI. TEST-RESULTS.txt records actual execution; the earlier macOS-only v5 run does not substitute for Linux validation.
 
-## Stage04R: inspector opt-in and unchanged continuity
+## Stage04R: optional inspector and unchanged continuity
 
-An optional configuration field `inspectorDescriptor` contains an absolute,
-canonical path to an administrator-owned inspector deployment descriptor. It is
-forwarded to the existing engine in both phases. It is also a protected control
-input: destructive cleanup cannot remove a candidate containing that descriptor.
-The existing preflight, PMOS registration, release evidence, pending/bootstrap
-recovery, pre-closeout evidence capture before save and PHR readback remain in
-force. No hook, schedule, privilege installation or automatic activation is added.
+Optional `inspectorDescriptor` names a canonical administrator-controlled
+inspector deployment. Both phases forward it to the existing engine; it is a
+protected control input and cannot be removed inside a candidate. Existing
+preflight, registration, release, pending/bootstrap recovery, measured
+pre-closeout evidence before save, and remote PHR readback remain mandatory.
 
-Missing/incomplete inspection or absence of a verified exclusive reference
-domain retains resources. A successful continuity closeout still does not imply
-successful disk-space recovery. Current shared Codespace acceptance remains
-blocked: read permissions alone do not close the concurrent FD-transfer window.
-Use [the inspector contract](codespace-cleanup-inspector.README.md) before any
-separately admitted runtime installation. Worktrees use the existing engine.
+The public inspector is observation-only; the opted-in engine retains resources.
+Its public deletion operation cannot be enabled by a policy. Trusted worker
+launch and reference-lifetime isolation are still implementation prerequisites
+for this controller, in addition to separate administrator admission. See the
+[inspector contract](codespace-cleanup-inspector.README.md). Worktrees retain their
+existing guards. Continuity completion never implies actual recovered space.
+No hook, schedule, privilege installation or Stage05 activation is added.
