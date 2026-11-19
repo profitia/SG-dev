@@ -160,3 +160,22 @@ node --test scripts/governance/codespace-cleanup.test.mjs scripts/governance/cod
 Full suite: 99 lifecycle tests plus 24 unchanged Stage02 tests (123 total). Tests use only their own temporary resources; PMOS replies are controlled doubles, while PHR uses real isolated Git repositories. This is not live Neon, live PHR or installed Codespaces acceptance. Stage04 regressions cover partial/blocked closeout, retention before and after save, and mismatched business results despite valid bundle hashes.
 
 Publication v6 requires the unfiltered Linux suite, controlled invocation acceptance and current governance/CI. TEST-RESULTS.txt records actual execution; the earlier macOS-only v5 run does not substitute for Linux validation.
+
+## Stage04 continuation: private managed resources
+
+The optional `managed-private-directory` kind is created only by the separately
+admitted task-scoped trusted worker. It is private from birth, exposes no FDs,
+freezes its producer on release, and removes only its own verified allocation
+through an ordinary capability-free worker. It does not adopt old resources.
+Use `inspectorDescriptor` and the existing allocation/release/phase/closeout flow;
+missing, changed or incomplete deployment fails closed without another deletion
+path. Existing ordinary directories and worktrees keep all original guards.
+
+See [the exact worker contract](codespace-cleanup-inspector.README.md) for the
+root policy, narrow privilege boundary, recovery and runtime acceptance. No
+source publication installs privileges, global hooks or schedules or activates
+Stage05. Pre-closeout measurement still belongs in canonical evidence before
+save; partial/blocked continuity retains required recovery data.
+
+Run all four Linux suites, including codespace-cleanup-managed.test.mjs. Test
+success does not replace real root-owned workspace CLEANED acceptance.

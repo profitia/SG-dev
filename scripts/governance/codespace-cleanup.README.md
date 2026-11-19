@@ -120,3 +120,23 @@ node --check scripts/governance/codespace-cleanup.mjs
 ```
 
 Isolated tests create disposable bare Git remotes, detached worktrees and caches beneath `os.tmpdir()`. They do not target the user's Codespace. Review all new files under the correct `ARCHITECTURE` profile with the existing preflight/PMOS gate before integration. The local package test count and integrity manifest accompany the supplied archive.
+
+
+## Stage04 continuation: private managed resources
+
+The optional `managed-private-directory` kind is created only by the separately
+admitted task-scoped trusted worker. It is private from birth, exposes no FDs,
+freezes its producer on release, and removes only its own verified allocation
+through an ordinary capability-free worker. It does not adopt old resources.
+Use `inspectorDescriptor` and the existing allocation/release/phase/closeout flow;
+missing, changed or incomplete deployment fails closed without another deletion
+path. Existing ordinary directories and worktrees keep all original guards.
+
+See [the exact worker contract](codespace-cleanup-inspector.README.md) for the
+root policy, narrow privilege boundary, recovery and runtime acceptance. No
+source publication installs privileges, global hooks or schedules or activates
+Stage05. Pre-closeout measurement still belongs in canonical evidence before
+save; partial/blocked continuity retains required recovery data.
+
+Run all four Linux suites, including codespace-cleanup-managed.test.mjs. Test
+success does not replace real root-owned workspace CLEANED acceptance.
