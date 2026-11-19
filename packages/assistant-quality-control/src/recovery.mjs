@@ -222,5 +222,6 @@ export function composeQualityControllerActionPorts({ordinary,recovery}={}){
   reconcile:(intent,input)=>select(input).reconcile(intent,input),
   verify:(action,envelope,input)=>select(input).verify(action,envelope,input),
   cancel:(intent,input)=>ordinary.cancel(intent,input),
+  ...(typeof ordinary.retain==='function'?{retain:(verified,input)=>select(input)===ordinary?ordinary.retain(verified,input):input.changed}:{}),
  })
 }

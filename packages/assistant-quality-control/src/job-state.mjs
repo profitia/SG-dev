@@ -19,13 +19,61 @@ const optional={
  verification:v=>exact(v,['artifactSha256','proofSha256'])&&hash(v.artifactSha256)&&hash(v.proofSha256),
  pr:v=>exact(v,['number','headSha'])&&positive(v.number)&&sha(v.headSha),
  checks:v=>exact(v,['headSha','proofSha256'])&&sha(v.headSha)&&hash(v.proofSha256),
- reproduction:v=>exact(v,['baseSha','proofSha256'])&&sha(v.baseSha)&&hash(v.proofSha256),
+ reproduction:validReproduction,
  release:v=>exact(v,['sourceSha','artifactSha256','configurationSha256','deployId','lastKnownGoodSha','releasedAt',
   ...(Object.hasOwn(v??{},'lastKnownGoodDeployId')?['lastKnownGoodDeployId']:[])])
   &&sha(v.sourceSha)&&hash(v.artifactSha256)&&hash(v.configurationSha256)&&deployment(v.deployId)
   &&sha(v.lastKnownGoodSha)&&integer(v.releasedAt)
   &&(!Object.hasOwn(v,'lastKnownGoodDeployId')||deployment(v.lastKnownGoodDeployId)&&v.lastKnownGoodDeployId!==v.deployId),
 }
+
+const referenceKeys=Object.freeze({QUALIFY:'qualify',REPRODUCE:'reproduce',EXECUTE:'execute',VERIFY:'verify',
+ PROPOSE:'propose',CHECKS:'checks',PROMOTE:'promote',VERIFY_RUNTIME:'verifyRuntime',OBSERVE:'observe',ROLLBACK:'rollback'})
+const referenceActions=Object.freeze(Object.keys(referenceKeys))
+const stamp=value=>typeof value==='string'&&Number.isFinite(Date.parse(value))&&new Date(value).toISOString()===value
+function validReference(reference,action){
+ if(!exact(reference,['externalId','runId','workflowId','artifactSha256','documentSha256','createdAt']))return false
+ if(typeof reference.runId!=='string'||typeof reference.workflowId!=='string'||!/^[1-9][0-9]{0,19}$/.test(reference.runId)||!/^[1-9][0-9]{0,19}$/.test(reference.workflowId)
+  ||!hash(reference.artifactSha256)||!hash(reference.documentSha256)||!stamp(reference.createdAt))return false
+ try{
+  const parts=reference.externalId.split(':')
+  return readQualityJobBinding(reference.externalId,{nonce:parts[2],action}).action===action
+ }catch{return false}
+}
+function validReferences(references){
+ return plain(references)&&Object.keys(references).length<=10&&Object.keys(references).every(key=>{
+  const action=referenceActions.find(action=>referenceKeys[action]===key)
+  return action!==undefined&&validReference(references[key],action)
+ })
+}
+function validReproduction(value){
+ if(!plain(value))return false
+ const keys=Object.keys(value).sort().join(',')
+ if(!['baseSha,proofSha256','baseSha,nativeJobs,proofSha256','nativeJobs'].includes(keys))return false
+ if(Object.hasOwn(value,'baseSha')&&(!sha(value.baseSha)||!hash(value.proofSha256)))return false
+ return !Object.hasOwn(value,'nativeJobs')||validReferences(value.nativeJobs)
+}
+/** Finite provenance indexes only. This pure function never authenticates a
+ * receipt; the trusted action port must supply its privately verified reference.
+ * New upstream work discards stale downstream indexes. Base changes discard all. */
+export function retainQualityJobReference({before,after,action,reference}){
+ inspectDescriptors(before);inspectDescriptors(after);inspectDescriptors(reference)
+ require(plain(before)&&plain(after)&&before.id===after.id&&referenceActions.includes(action)
+  &&validReference(reference,action)&&before.pending?.action===action
+  &&before.pending.externalId===reference.externalId)
+ if(before.baseSha!==after.baseSha){
+  require(action==='PROMOTE'&&after.reason==='BASE_CHANGED'&&after.reproduction===null)
+  return after
+ }
+ const old=before.reproduction?.nativeJobs??{};require(validReferences(old))
+ const references=structuredClone(old),index=referenceActions.indexOf(action)
+ for(const later of referenceActions.slice(index+1))delete references[referenceKeys[later]]
+ references[referenceKeys[action]]=structuredClone(reference)
+ const reproduction={...(after.reproduction??{}),nativeJobs:references}
+ require(validReproduction(reproduction))
+ return {...after,reproduction}
+}
+
 const required=['id','revision','status','repairClass','causeFingerprint','baseSha','attemptsUsed','rollbacksUsed','pending','wakeAt']
 const nullable=new Set(['checks','reproduction','patch','verification','pr'])
 function inspectDescriptors(value,depth=0){

@@ -2,7 +2,7 @@ import {createHash} from 'node:crypto'
 import {assertWorkflowIdentity,readPatchBody} from './provenance.mjs'
 import {documentDigest,assertVerifiedRepairManifest,verifyDocument,SOURCE_PATHS} from './manifest.mjs'
 import {qualityRecoveryJobInputs} from './recovery.mjs'
-import {encodeQualityJobState} from './job-state.mjs'
+import {encodeQualityJobState,retainQualityJobReference} from './job-state.mjs'
 
 const repository='profitia/SG-dev'
 const nativeControllerArtifacts=new WeakMap()
@@ -751,7 +751,7 @@ export function createQualityControllerJobActions({github,keysByRole,budget=null
   }
   trusted.set(role,new Map(keys))
  }
- const envelopes=new WeakMap()
+ const envelopes=new WeakMap(),verifiedReceipts=new WeakMap()
  const authorityFor=(record,authority,action,externalId)=>{
   const manifest=assertVerifiedRepairManifest(authority?.manifest)
   require(controllerPlain(record)&&record.id===manifest.incidentId&&record.baseSha===manifest.baseSha
@@ -819,9 +819,26 @@ export function createQualityControllerJobActions({github,keysByRole,budget=null
    const manifest=authorityFor(record,authority,action,record.pending?.externalId),native=envelopes.get(envelope)
    require(native&&native.externalId===record.pending.externalId&&native.manifestSha256===documentDigest(manifest),
     'CONTROLLER_JOB_NATIVE_RESULT_REQUIRED')
-   return readQualityControllerJobResult(native.document,{manifest,record,externalId:native.externalId,runId:native.runId,
+   const verified=readQualityControllerJobResult(native.document,{manifest,record,externalId:native.externalId,runId:native.runId,
     workflowId:native.workflowId,keysByRole:trusted,notBefore:Math.max(Date.parse(native.createdAt),Date.parse(manifest.mandate.issuedAt)),now:now()})
+   if(jobStateEnabled)verifiedReceipts.set(verified,{native,manifestSha256:documentDigest(manifest)})
+   return verified
   },
+  ...(jobStateEnabled?{retain(verified,{record,changed,authority,completedAt}){
+   const manifest=authorityFor(record,authority,record.pending?.action,record.pending?.externalId),receipt=verifiedReceipts.get(verified)
+   require(receipt&&receipt.native.externalId===record.pending.externalId&&receipt.manifestSha256===documentDigest(manifest),
+    'CONTROLLER_JOB_NATIVE_RESULT_REQUIRED')
+   const native=receipt.native,at=now()
+   require(Number.isFinite(completedAt)&&completedAt<=at&&at-completedAt<=10000
+    &&documentDigest(advanceIncident(record,record.pending.action,verified,completedAt))===documentDigest(changed),
+    'CONTROLLER_JOB_RESULT_BINDING_INVALID')
+   const current=readQualityControllerJobResult(native.document,{manifest,record,externalId:native.externalId,runId:native.runId,
+    workflowId:native.workflowId,keysByRole:trusted,notBefore:Math.max(Date.parse(native.createdAt),Date.parse(manifest.mandate.issuedAt)),now:at})
+   require(documentDigest(current)===documentDigest(verified)&&controllerHash(native.artifactSha256),'CONTROLLER_JOB_RESULT_BINDING_INVALID')
+   const reference={externalId:native.externalId,runId:native.runId,workflowId:native.workflowId,
+    artifactSha256:native.artifactSha256,documentSha256:documentDigest(native.document),createdAt:native.createdAt}
+   return retainQualityJobReference({before:record,after:changed,action:record.pending.action,reference})
+  }}:{}),
   async cancel(intent,{record}){
    require(intent===record.pending,'CONTROLLER_JOB_RESULT_BINDING_INVALID')
    const binding=controllerJobBinding(intent?.externalId)

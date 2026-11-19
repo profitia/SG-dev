@@ -1082,3 +1082,61 @@ test('patch download has its own fixed bound while original result bound is pres
  f.state.artifacts.artifacts[0].digest='sha256:'+createHash('sha256').update(f.state.archive).digest('hex')
  await assert.rejects(f.client.controllerJobResult({externalId:f.externalId,runId:'701'}),{code:'CONTROLLER_JOB_RESULT_ARCHIVE_INVALID'})
 })
+
+test('only privately verified native results can attach exact provenance indexes to an unchanged semantic transition',async()=>{
+ const {createQualityControllerJobActions}=await import('../src/github.mjs'),{advanceIncident}=await import('../src/controller.mjs')
+ const f=await controllerArtifactFixture();f.state.runs=[f.state.run]
+ const github={...f.client,descriptor:async()=>({headSha:sha})}
+ const actions=createQualityControllerJobActions({github,keysByRole:f.keys,jobStateEnabled:true,now:()=>f.clock.clock})
+ const record=f.context.record,authority={manifest:f.manifest},context={record,authority}
+ const received=await actions.reconcile(record.pending,context),verified=await actions.verify('QUALIFY',received.result,context)
+ const changed=advanceIncident(record,'QUALIFY',verified,f.clock.clock),input={...context,changed,completedAt:f.clock.clock}
+ const retained=actions.retain(verified,input),reference=retained.reproduction.nativeJobs.qualify
+ assert.equal(reference.externalId,f.externalId);assert.equal(reference.runId,'701');assert.equal(reference.workflowId,'991')
+ assert.equal(reference.artifactSha256,f.state.artifacts.artifacts[0].digest.slice(7))
+ const {documentDigest}=await import('../src/manifest.mjs')
+ assert.equal(reference.documentSha256,documentDigest(f.sign()))
+ assert.throws(()=>actions.retain(structuredClone(verified),input),{code:'CONTROLLER_JOB_NATIVE_RESULT_REQUIRED'})
+ assert.throws(()=>actions.retain(verified,{...input,changed:{...changed,status:'CLOSED'}}),{code:'CONTROLLER_JOB_RESULT_BINDING_INVALID'})
+ assert.throws(()=>actions.retain(verified,{...input,completedAt:f.clock.clock+1}),{code:'CONTROLLER_JOB_RESULT_BINDING_INVALID'})
+})
+test('native result reference is revalidated for expiry after asynchronous verification',async()=>{
+ const {createQualityControllerJobActions}=await import('../src/github.mjs'),{advanceIncident}=await import('../src/controller.mjs')
+ const f=await controllerArtifactFixture();f.state.runs=[f.state.run]
+ const actions=createQualityControllerJobActions({github:{...f.client,descriptor:async()=>({headSha:sha})},
+  keysByRole:f.keys,jobStateEnabled:true,now:()=>f.clock.clock})
+ const context={record:f.context.record,authority:{manifest:f.manifest}},received=await actions.reconcile(f.context.record.pending,context)
+ const verified=await actions.verify('QUALIFY',received.result,context),changed=advanceIncident(context.record,'QUALIFY',verified,f.clock.clock)
+ const completedAt=f.clock.clock;f.clock.clock+=30001
+ assert.throws(()=>actions.retain(verified,{...context,changed,completedAt}))
+})
+test('controller persists exact native result reference and dispatches the next phase after a process restart',async()=>{
+ const {createQualityControllerJobActions}=await import('../src/github.mjs'),{createQualityController}=await import('../src/controller.mjs')
+ const {assertControlRecord}=await import('../src/store.mjs'),{documentDigest}=await import('../src/manifest.mjs')
+ const f=await controllerArtifactFixture();let record={id:f.manifest.incidentId,revision:1,status:'OBSERVED',repairClass:'C1',
+  causeFingerprint:digest,baseSha:old,attemptsUsed:0,rollbacksUsed:0,wakeAt:0,pending:null}
+ const store={claim:async()=>({record:structuredClone(record),leaseToken:'synthetic-lease'}),
+  prepare:async o=>{record={...record,revision:record.revision+1,pending:{action:o.action,nonce:o.nonce,externalId:o.externalId}};return {record:structuredClone(record)}},
+  recordExternal:async()=>assert.fail('native intent is already bound'),
+  complete:async o=>{assertControlRecord(o.record);record={...o.record,revision:record.revision+1};return structuredClone(record)},
+  stop:async()=>assert.fail('verified phases must not stop'),release:async()=>{}}
+ const github={...f.client,descriptor:async()=>({headSha:sha})},authority={manifest:f.manifest}
+ const actions=()=>createQualityControllerJobActions({github,keysByRole:f.keys,jobStateEnabled:true,now:()=>f.clock.clock})
+ const controller=()=>createQualityController({store,actions:actions(),authorize:async()=>authority,
+  budget:{ensureIncident:async()=>assert.fail('no cost for qualification or reproduction'),closeIncident:async()=>{}},
+  now:()=>f.clock.clock,workerId:'synthetic-state-controller'})
+ await controller().tick(record.id)
+ const nonce=record.pending.nonce
+ f.state.run=f.native({display_title:'AQC JOB QUALIFY '+nonce,status:'completed',conclusion:'success',created_at:new Date(f.clock.clock-1000).toISOString()})
+ f.state.runs=[f.state.run];f.state.archive=await controllerResultZip(JSON.stringify(f.sign({...f.body,nonce})))
+ f.state.artifacts.artifacts[0].name='aqc-result-'+nonce;f.refresh()
+ assert.equal((await controller().tick(record.id)).status,'TRIAGED')
+ assert.equal(record.pending,null);assert.equal(record.reproduction.nativeJobs.qualify.externalId,'aqc-job:'+sha+':'+nonce+':QUALIFY')
+ const ref=record.reproduction.nativeJobs.qualify
+ assert.equal(ref.documentSha256,documentDigest(f.sign({...f.body,nonce})))
+ await controller().tick(record.id)
+ assert.equal(record.pending.action,'REPRODUCE')
+ const posts=f.calls.filter(c=>c.method==='POST');assert.equal(posts.length,2)
+ const state=JSON.parse(JSON.parse(posts[1].body).inputs.state)
+ assert.deepEqual(state.record.reproduction.nativeJobs.qualify,ref)
+})

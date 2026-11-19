@@ -248,3 +248,56 @@ test('native state dispatch is explicit and disabled by default in the trusted a
   if(enabled)assert.equal(Object.keys(sent[0]).length,8)
  }
 })
+
+function reference(action,nonce=randomUUID()){
+ const externalId='aqc-job:'+control+':'+nonce+':'+action
+ return {externalId,runId:'701',workflowId:'991',artifactSha256:digest,documentSha256:digest,createdAt:stamp(now-500)}
+}
+test('native reference indexes preserve verified ancestors and discard stale downstream phase indexes',async()=>{
+ const {retainQualityJobReference}=await import('../src/job-state.mjs'),{advanceIncident}=await import('../src/controller.mjs')
+ const f=fixture('EXECUTE')
+ f.record.reproduction.nativeJobs={qualify:reference('QUALIFY'),reproduce:reference('REPRODUCE'),execute:reference('EXECUTE'),
+  verify:reference('VERIFY'),propose:reference('PROPOSE'),checks:reference('CHECKS'),promote:reference('PROMOTE')}
+ const verified={result:'PATCH',baseSha:sha,patch:{artifactSha256:digest,treeSha256:digest}},after=advanceIncident(f.record,'EXECUTE',verified,now)
+ const current=reference('EXECUTE',f.record.pending.nonce)
+ const retained=retainQualityJobReference({before:f.record,after,action:'EXECUTE',reference:current})
+ assert.deepEqual(Object.keys(retained.reproduction.nativeJobs).sort(),['execute','qualify','reproduce'])
+ assert.deepEqual(retained.reproduction.nativeJobs.execute,current)
+ const nonce=randomUUID(),next={...retained,revision:retained.revision+1,pending:{action:'VERIFY',nonce,externalId:'aqc-job:'+control+':'+nonce+':VERIFY'}}
+ const encoded=encodeQualityJobState({manifest:f.manifest,record:next,externalId:next.pending.externalId})
+ assert.deepEqual(readQualityJobState({encoded,manifest:f.manifest,externalId:next.pending.externalId}).record.reproduction.nativeJobs,
+  retained.reproduction.nativeJobs)
+ const {assertControlRecord}=await import('../src/store.mjs')
+ assert.deepEqual(assertControlRecord(retained),retained)
+})
+test('BASE_CHANGED discards all old reference indexes until the fresh base is admitted',async()=>{
+ const {retainQualityJobReference}=await import('../src/job-state.mjs'),{advanceIncident}=await import('../src/controller.mjs')
+ const f=fixture('PROMOTE');f.record.reproduction.nativeJobs={verify:reference('VERIFY')}
+ const after=advanceIncident(f.record,'PROMOTE',{result:'BASE_CHANGED',actualBaseSha:control},now)
+ const observed=retainQualityJobReference({before:f.record,after,action:'PROMOTE',reference:reference('PROMOTE',f.record.pending.nonce)})
+ assert.equal(observed,after);assert.equal(observed.reproduction,null)
+ assert.throws(()=>encodeQualityJobState({manifest:f.manifest,record:{...observed,pending:f.record.pending},externalId:f.externalId}))
+})
+test('long observation retains one bounded latest reference instead of growing an execution history',async()=>{
+ const {retainQualityJobReference}=await import('../src/job-state.mjs'),{advanceIncident}=await import('../src/controller.mjs')
+ const f=fixture('OBSERVE');let record=f.record
+ record.reproduction.nativeJobs={promote:reference('PROMOTE'),verifyRuntime:reference('VERIFY_RUNTIME')}
+ for(let i=0;i<1000;i++){
+  const nonce=randomUUID();record={...record,pending:{action:'OBSERVE',nonce,externalId:'aqc-job:'+control+':'+nonce+':OBSERVE'}}
+  const after=advanceIncident(record,'OBSERVE',{result:'STABLE',sourceSha:control},now+i)
+  record=retainQualityJobReference({before:record,after,action:'OBSERVE',reference:reference('OBSERVE',nonce)})
+ }
+ assert.equal(Object.keys(record.reproduction.nativeJobs).length,3)
+ assert(Buffer.byteLength(JSON.stringify(record))<16384)
+})
+test('reference metadata rejects unknown actions rebound pending identity and executable getters',async()=>{
+ const {retainQualityJobReference}=await import('../src/job-state.mjs'),f=fixture('EXECUTE')
+ for(const changed of [{...reference('EXECUTE'),runId:'not-an-id'},{...reference('EXECUTE'),runId:701},{...reference('EXECUTE'),workflowId:991},{...reference('EXECUTE'),token:'synthetic'},
+  reference('VERIFY'),reference('EXECUTE')]){
+  assert.throws(()=>retainQualityJobReference({before:f.record,after:{...f.record,pending:null},action:'EXECUTE',reference:changed}))
+ }
+ let calls=0;const ref=reference('EXECUTE',f.record.pending.nonce)
+ Object.defineProperty(ref,'documentSha256',{enumerable:true,get(){calls++;throw Error('must not execute')}})
+ assert.throws(()=>retainQualityJobReference({before:f.record,after:{...f.record,pending:null},action:'EXECUTE',reference:ref}))
+ assert.equal(calls,0)
+})
