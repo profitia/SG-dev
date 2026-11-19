@@ -1,4 +1,5 @@
 import {createHash,randomUUID} from 'node:crypto'
+import {readFileSync} from 'node:fs'
 
 const service='srv-dapa3tid0e5s73f8bc5g'
 const fail=()=>{throw Object.assign(Error('Quality owner preparation unavailable'),{code:'OWNER_BOOTSTRAP_PREPARATION_INVALID'})}
@@ -35,9 +36,15 @@ function membership(value){
 function snapshot(role){
  return "SELECT jsonb_agg(jsonb_build_object('oid',m.oid::bigint,'grantor',g.rolname,'admin',m.admin_option,'inherit',m.inherit_option,'set',m.set_option) ORDER BY m.oid) FROM pg_catalog.pg_auth_members m JOIN pg_catalog.pg_roles r ON r.oid=m.roleid JOIN pg_catalog.pg_roles u ON u.oid=m.member JOIN pg_catalog.pg_roles g ON g.oid=m.grantor WHERE r.rolname="+literal(role)+" AND u.rolname='neondb_owner'"
 }
-function envelope({profile,expectedMembership,decisionSha,expiresAt,operation,body,now}){
+function envelope({profile,expectedMembership,decisionSha,expiresAt,operation,body,publisherRole,now}){
  const p=profiles[profile],rows=membership(expectedMembership)
  require(p&&sha(decisionSha)&&Number.isFinite(now)&&now>=0&&stamp(expiresAt)&&Date.parse(expiresAt)>now&&Date.parse(expiresAt)<=now+15*60000)
+ const publisherRoles={canonical:'aqc_development_canonical_publisher',product:'aqc_development_product_publisher'}
+ require(publisherRole===undefined||publisherRole===publisherRoles[profile])
+ const roleBootstrap=publisherRole===undefined?[]:[
+  "DO $aqc_publisher_role$ BEGIN IF NOT pg_catalog.has_database_privilege(session_user,current_database(),'CREATE') OR NOT EXISTS(SELECT 1 FROM pg_catalog.pg_roles WHERE rolname=session_user AND rolcreaterole) THEN RAISE EXCEPTION 'PUBLISHER_INSTALLATION_OWNER_REQUIRED';END IF;IF EXISTS(SELECT 1 FROM pg_catalog.pg_roles WHERE rolname="+literal(publisherRole)+") THEN RAISE EXCEPTION 'PUBLISHER_ROLE_ALREADY_EXISTS';END IF;END $aqc_publisher_role$",
+  "CREATE ROLE "+publisherRole+" NOLOGIN NOINHERIT NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS CONNECTION LIMIT 2 VALID UNTIL '2026-11-27T23:59:59Z'"
+ ]
  const until=expiresAt
  const nonce=randomUUID(),expected=literal(JSON.stringify(rows))+'::jsonb'
  const guard="DO $aqc_owner$ DECLARE got jsonb; BEGIN IF session_user<>'neondb_owner' OR current_user<>'neondb_owner' OR current_database()<>"+literal(p.database)
@@ -47,8 +54,10 @@ function envelope({profile,expectedMembership,decisionSha,expiresAt,operation,bo
  const statements=[
   "SET LOCAL search_path=pg_catalog,pg_temp","SET LOCAL lock_timeout='5s'","SET LOCAL statement_timeout='20s'",
   "SET LOCAL idle_in_transaction_session_timeout='30s'","SET LOCAL aqc.owner_tx_nonce="+literal(nonce),guard,
+   ...roleBootstrap,
   "GRANT "+p.owner+" TO neondb_owner WITH ADMIN FALSE,INHERIT FALSE,SET TRUE GRANTED BY neondb_owner",
-  "SET LOCAL ROLE "+p.owner,
+  ...(publisherRole===undefined?[]:["CREATE SCHEMA profitia_quality_release AUTHORIZATION "+p.owner]),
+   "SET LOCAL ROLE "+p.owner,
   "DO $aqc_target$ BEGIN IF NOT EXISTS(SELECT 1 FROM "+p.installation+" WHERE singleton AND environment='development' AND project_id="+literal(p.project)+" AND branch_id="+literal(p.branch)+") THEN RAISE EXCEPTION 'OWNER_DATABASE_BINDING_REJECTED'; END IF; END $aqc_target$",
   body,"SET LOCAL ROLE NONE",
   rows.some(r=>r.grantor==='neondb_owner')
@@ -181,4 +190,35 @@ export function prepareQualityControlledQaTransaction(options,now=Date.now()){
   +" OR (SELECT count(*) FROM "+schema+".accepted_inputs WHERE enabled)<>2 THEN RAISE EXCEPTION 'QA_CONTROLLED_COUNT_CHANGED';END IF;"
  body+="END $aqc_controlled$"
  return envelope({...options,operation:activate?'ACTIVATE_TWO_CONTROLLED_INPUTS':'REVOKE_TWO_CONTROLLED_INPUTS',body,now})
+}
+
+/** Preparation only. The two new NOLOGIN roles and disabled CAS policies require
+ * a separate exact owner decision. Fixed migration bytes enter the original
+ * atomic membership-restoration envelope; no SQL callback/path is accepted. */
+export function prepareQualityPublisherCasInstallation(options,now=Date.now()){
+ exact(options,['profile','expectedMembership','decisionSha','expiresAt'])
+ const sources={"canonical":{"file":"004-publisher-canonical.sql","role":"aqc_development_canonical_publisher","sha256":"5c4b926f473ce2f6efb2135c12a220d3d26839184123fdcce1461e0baa005632"},"product":{"file":"005-publisher-product.sql","role":"aqc_development_product_publisher","sha256":"9b309f09f1c99e2c6213816a048903791fa8a86ea2cbecf11c8d01854c66114d"}}
+ const spec=sources[options.profile];require(spec)
+ const body=readFileSync(new URL('../migrations/'+spec.file,import.meta.url),'utf8')
+ require(createHash('sha256').update(body).digest('hex')===spec.sha256)
+ return envelope({...options,operation:'INSTALL_DISABLED_PUBLISHER_CAS',publisherRole:spec.role,body,now})
+}
+
+/** Same fixed owner envelope and byte-exact reviewed migration, encoded as one
+ * prepared statement per item for serverless PostgreSQL transports. Only the
+ * already-verified DDL item receives a DO/EXECUTE wrapper; all membership,
+ * nonce, timeout, role and rollback guards retain their original statements.
+ * This builder performs no connection, execution or credential operation. */
+export function prepareQualityPublisherPreparedInstallation(options,now=Date.now()){
+ const source=prepareQualityPublisherCasInstallation(options,now),statements=[...source.statements]
+ const matches=statements.map((s,i)=>s.includes('CREATE TABLE profitia_quality_release.quality_deployment_cas_policy(')?i:-1).filter(i=>i>=0)
+ require(matches.length===1)
+ const index=matches[0],body=statements[index],tag='$aqc_publisher_transport_'+randomUUID().replaceAll('-','')+'$'
+ require(!body.includes(tag))
+ statements[index]='DO '+tag+' BEGIN EXECUTE '+literal(body)+'; END '+tag
+ const plan={...source,sqlTransport:'ONE_PREPARED_STATEMENT_PER_ITEM',
+  sourceStatementsSha256:source.statementsSha256,
+  statementsSha256:createHash('sha256').update(JSON.stringify(statements)).digest('hex')}
+ Object.defineProperty(plan,'statements',{value:Object.freeze(statements),enumerable:false})
+ return Object.freeze(plan)
 }

@@ -86,3 +86,25 @@ test('Independent verifier uses fail-closed kernel namespaces, readonly source, 
  assert(a.includes(root+'/case'));assert(!a.includes('/home')&&!a.includes('/root')&&!a.includes('/workspaces'))
  for(const change of [{root:root+'/../x'},{group:group+'\nwhoami'},{nodePath:'/usr/bin/node'}])assert.throws(()=>verificationIsolationPlan({root,group,nodePath:'/opt/aqc-tools/verifier-node',...change}),{code:'VERIFIER_PLAN_INVALID'})
 })
+
+test('executor phase signer refuses collected artifacts and agent PASS without an actual isolated native result',async()=>{
+ const {createQualityExecutorPhaseAttestor,assertQualityIsolatedExecutorResult}=await import('../src/executor.mjs')
+ const f=fixture(),signer=createQualityExecutorPhaseAttestor({privateKey:key.privateKey})
+ for(const value of [null,{result:'PATCH',nativeExecutionVerified:true},{body:{},artifactSha256:gate,stoppedProof:{cgroupEmpty:true}}]){
+  const context={manifest:f.manifest,jobState:{kind:'AQC_NATIVE_JOB_STATE_V1'},externalId:'aqc-job:'+'a'.repeat(40)+':'+randomUUID()+':EXECUTE'}
+  await assert.rejects(assertQualityIsolatedExecutorResult(value,context),{code:'REAL_ISOLATED_EXECUTOR_REQUIRED'})
+  await assert.rejects(signer.attest({value,...context}),{code:'REAL_ISOLATED_EXECUTOR_REQUIRED'})
+ }
+ assert(Object.isFrozen(signer));assert.equal(signer.sign,undefined)
+})
+test('executor phase signer accepts no getter callback role or key override',async()=>{
+ const {createQualityExecutorPhaseAttestor}=await import('../src/executor.mjs')
+ for(const options of [{privateKey:key.publicKey},{privateKey:null},{privateKey:key.privateKey,role:'INDEPENDENT_PUBLISHER'}])
+  assert.throws(()=>createQualityExecutorPhaseAttestor(options))
+ const signer=createQualityExecutorPhaseAttestor({privateKey:key.privateKey})
+ let calls=0;const input={value:{},manifest:{},jobState:{},externalId:'invalid'}
+ Object.defineProperty(input,'value',{enumerable:true,get(){calls++;throw Error('never run')}})
+ await assert.rejects(signer.attest(input),{code:'EXECUTOR_PHASE_INPUT_INVALID'});assert.equal(calls,0)
+ for(const extra of [{runCase:()=>{}},{result:{result:'PATCH'}},{privateKey:key.privateKey},{role:'INDEPENDENT_PUBLISHER'}])
+  await assert.rejects(signer.attest({value:{},manifest:{},jobState:{},externalId:'invalid',...extra}),{code:'EXECUTOR_PHASE_INPUT_INVALID'})
+})
