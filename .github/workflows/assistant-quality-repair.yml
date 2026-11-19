@@ -22,10 +22,14 @@ on:
         type: choice
         required: true
         default: source-check
-        options: [source-check, keyless-qualify]
+        options: [source-check, keyless-qualify, publisher-preflight]
       nonce:
         type: string
         required: true
+      base_sha:
+        type: string
+        required: false
+        default: ''
 permissions:
   contents: read
 
@@ -112,6 +116,46 @@ jobs:
           retention-days: 7
           if-no-files-found: error
 
-# No repair/publish dispatch, provider key, secret or GitHub Environment.
-# Keyless qualification publishes unsigned synthetic observations only; it
-# does not install trust, activate a class, spend model budget or deploy.
+  publisher_readiness:
+    name: Actual disabled publisher database qualification
+    if: >-
+      github.event_name == 'workflow_dispatch' && inputs.mode == 'publisher-preflight' &&
+      github.ref == 'refs/heads/main' && github.actor == 'profitia' &&
+      github.triggering_actor == 'profitia' && github.run_attempt == 1
+    needs: source
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    environment: aqc-publisher-development
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - name: Install pinned public dependencies without credentials or lifecycle
+        run: npm ci --prefix packages/assistant-quality-control --ignore-scripts --registry https://registry.npmjs.org --userconfig /dev/null
+      - name: Qualify only the two disabled metadata connections
+        env:
+          TARGET_ENVIRONMENT: development
+          AQC_PAID_REPAIRS_ENABLED: 'false'
+          AQC_PROMOTION_ENABLED: 'false'
+          AQC_NONCE: ${{ inputs.nonce }}
+          AQC_HOST_SOURCE_SHA: ${{ inputs.base_sha }}
+          AQC_PUBLISHER_CANONICAL_DATABASE_URL: ${{ secrets.AQC_PUBLISHER_CANONICAL_DATABASE_URL }}
+          AQC_PUBLISHER_PRODUCT_DATABASE_URL: ${{ secrets.AQC_PUBLISHER_PRODUCT_DATABASE_URL }}
+        run: node packages/assistant-quality-control/src/cli.mjs publisher-preflight > /tmp/aqc-publisher-preflight.json
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: aqc-publisher-preflight-${{ inputs.nonce }}
+          path: /tmp/aqc-publisher-preflight.json
+          retention-days: 7
+          if-no-files-found: error
+
+# No repair/publish dispatch, provider model key or promotion authority.
+# The publisher preflight admits only its two new ordinary-role connections
+# in the approved main-only environment; no signing/Render/QA key is loaded.
+# Its unsigned metadata is not a controller result or a publication proof.
+# Keyless Linux qualification installs no operational trust or budget.

@@ -21,7 +21,7 @@ const run=(file,args)=>{
 }
 const policyFiles=['src/executor.mjs','src/acceptance.mjs','src/manifest.mjs','src/provenance.mjs','src/source-policy.mjs',
  'src/budget.mjs','src/openai-broker.mjs','src/verify.mjs','src/controller.mjs',
- 'src/recovery.mjs','src/job-context.mjs','src/job-state.mjs','src/verifier-job.mjs','src/executor-job.mjs','src/cli.mjs','src/github.mjs','src/release.mjs','src/publisher.mjs',
+ 'src/recovery.mjs','src/job-context.mjs','src/job-state.mjs','src/verifier-job.mjs','src/executor-job.mjs','src/cli.mjs','src/github.mjs','src/release.mjs','src/publisher.mjs','src/publisher-readiness.mjs',
  'package.json','package-lock.json']
 export function qualificationPolicyDigest(packageRoot){
  return documentDigest(policyFiles.map(p=>({path:p,sha256:hash(fs.readFileSync(path.join(packageRoot,p)))})))
