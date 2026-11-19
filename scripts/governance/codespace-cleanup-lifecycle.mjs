@@ -737,6 +737,18 @@ export function runTask(c, workSpecFile, runtime = {}) {
       ...(activation?.checkpoint()??{status:'REVIEW_REQUIRED',issue:activationIssue})}
     saveState(c.stateFile,current)
   })
+  const cacheCompletedResult=workOutput=>{
+    try{
+      const prepared=path.join(c.scopeRoot,'activation-validated-bootstrap.json')
+      const command=runtime.run??((cmd,args,cwd,options)=>runRaw(cmd,args,cwd,options))
+      command('npx',['--no-install','tsx','scripts/pmos-prepare-execution-handoff.ts',
+        '--input',spec.bootstrapInputFile,'--output',prepared],path.join(c.sourceRoot,'apps/pmos'),{timeout:120000,maxBuffer:16*1024*1024})
+      checkCanonicalCloseoutInput(c,loadState(c),prepared)
+      activation.cacheResult(json(prepared),workOutput,{
+        allocate:o=>allocateResource(c,o,runtime),release:f=>releaseResource(c,f,runtime)})
+    }catch(e){activation.retain(e.message)}
+    checkpoint()
+  }
   if (!state.work) {
     checkRegisteredTask(c, runtime, 'running')
     fileLock(c.stateFile, () => {
@@ -750,18 +762,7 @@ export function runTask(c, workSpecFile, runtime = {}) {
       const call = runtime.work ?? ((command,args,cwd,options)=>runRaw(command,args,cwd,options))
       if(activation){activation.start();checkpoint()}
       const workOutput=call(spec.program, spec.args, spec.cwd, {timeout:spec.timeoutMs, maxBuffer:16*1024*1024})
-      if(activation){
-        try {
-          const prepared=path.join(c.scopeRoot,'activation-validated-bootstrap.json')
-          const command=runtime.run??((cmd,args,cwd,options)=>runRaw(cmd,args,cwd,options))
-          command('npx',['--no-install','tsx','scripts/pmos-prepare-execution-handoff.ts',
-            '--input',spec.bootstrapInputFile,'--output',prepared],path.join(c.sourceRoot,'apps/pmos'),{timeout:120000,maxBuffer:16*1024*1024})
-          checkCanonicalCloseoutInput(c,loadState(c),prepared)
-          activation.cacheResult(json(prepared),workOutput,{
-            allocate:o=>allocateResource(c,o,runtime),release:f=>releaseResource(c,f,runtime)})
-        } catch(e) { activation.retain(e.message) }
-        checkpoint()
-      }
+      if(activation)cacheCompletedResult(workOutput)
     } catch(e) {
       fileLock(c.stateFile, () => {
         const current=loadState(c)
@@ -781,7 +782,11 @@ export function runTask(c, workSpecFile, runtime = {}) {
     assert(state.work.specDigest === digest && state.work.status === 'SUCCEEDED' &&
       state.work.specPath === workSpecFile && state.work.bootstrapInputFile === spec.bootstrapInputFile,
       'Interrupted, failed or modified task command requires manual review before resume')
-    if(activation){activation.restore(state.lifecycle.activationCache);activation.start();checkpoint()}
+    if(activation){
+      activation.restore(state.lifecycle.activationCache);activation.start();checkpoint()
+      if(!activation.checkpoint().resource&&!state.resources.some(r=>r.managedName==='execution-receipt-cache'))
+        cacheCompletedResult(undefined)
+    }
   }
   // On resumed execution, canonical PMOS may already have persisted closeout.
   // finishTask checks this first and never calls pmos:save twice.

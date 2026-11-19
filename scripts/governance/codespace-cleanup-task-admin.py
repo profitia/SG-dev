@@ -32,6 +32,13 @@ def digest(value):return hashlib.sha256(value).hexdigest()
 
 def scope_for(profile,task):return str(pathlib.Path(profile['scopeBase'])/digest(task.encode()))
 
+def socket_for(task):
+    # Linux pathname Unix sockets allow at most107 encoded bytes. Keep the
+    # immutable task policy at its full task hash; socket collisions fail closed.
+    result=str(RUN/('s-'+digest(task.encode())[:32]+'.sock'))
+    require(len(os.fsencode(result))<=107,'Task socket exceeds the Linux pathname limit')
+    return result
+
 def read_file(file,maximum,owner=None):
     fd=os.open(file,os.O_RDONLY|os.O_NOFOLLOW|os.O_CLOEXEC|os.O_NONBLOCK)
     try:
@@ -134,7 +141,7 @@ def main(action,file):
                     policy={'schemaVersion':'1.0','protocol':m.PROTOCOL,'mode':'managed-private-v1',
                       'projectKey':'ARCHITECTURE','taskId':c['taskId'],'repository':'profitia/SG-dev','executionUid':UID,'executionGid':GID,
                       'sourceRoot':c['sourceRoot'],'scopeRoot':c['scopeRoot'],'modulePath':str(BASE/'inspector.py'),'moduleSha256':p['moduleSha256'],
-                      'pythonPath':str(BASE/'python'),'socketPath':str(taskrun/'broker.sock'),
+                      'pythonPath':str(BASE/'python'),'socketPath':socket_for(c['taskId']),
                       'guardRoot':c['scopeRoot']+'/.managed-private-root','guardIdentity':identity(g),
                       'maxEntries':4,'maxBytes':8192,'resources':[{'name':RESOURCE,'maxBytes':4096}]}
                     write_json(policyfile,policy)

@@ -53,3 +53,12 @@ with tempfile.TemporaryDirectory() as d:
 py('ordinary invocation cannot install or start a privileged component',String.raw`
 if os.geteuid()!=0:expect(lambda:m.main('start','/not-admitted'))
 `)
+
+py('Linux pathname socket stays bounded and different tasks remain separately bound',String.raw`
+p,c,f=fixture()
+a=m.socket_for(c['taskId']);b=m.socket_for('ARCHITECTURE-'+'Z'*145)
+assert len(os.fsencode(a))<=107 and len(os.fsencode(b))<=107 and a!=b
+assert str(m.RUN) in a
+# Full task identity and the descriptor remain independently checked.
+expect(lambda:m.validate_config({**c,'taskId':'ARCHITECTURE-OTHER'},p,f))
+`)
