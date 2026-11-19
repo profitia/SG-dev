@@ -11,7 +11,8 @@ import {advanceIncident} from './controller.mjs'
 const fail=code=>{throw Object.assign(Error('Independent quality verification refused'),{code})}
 const require=(v,c='VERIFICATION_INPUT_INVALID')=>{if(!v)fail(c)}
 const hash=v=>createHash('sha256').update(v).digest('hex')
-const exact=(v,keys)=>require(v&&Object.getPrototypeOf(v)===Object.prototype&&Object.keys(v).sort().join(',')===[...keys].sort().join(','))
+const exact=(v,keys)=>require(v&&Object.getPrototypeOf(v)===Object.prototype&&Reflect.ownKeys(v).length===keys.length&&keys.every(k=>Object.hasOwn(v,k))
+ &&Object.values(Object.getOwnPropertyDescriptors(v)).every(d=>d.enumerable&&Object.hasOwn(d,'value')))
 const integer=v=>Number.isSafeInteger(v)&&v>=0
 const digest=v=>typeof v==='string'&&/^[a-f0-9]{64}$/.test(v)
 const code=v=>typeof v==='string'&&/^[a-zA-Z][a-zA-Z0-9_-]{0,79}$/.test(v)
@@ -146,10 +147,7 @@ function cicFiles(archive){
 export async function prepareQualityVerificationBundle({manifest,repositoryRoot,artifact,cicArchive}){
  const m=assertVerifiedRepairManifest(manifest)
  require(typeof repositoryRoot==='string'&&path.isAbsolute(repositoryRoot)&&artifact?.body&&artifact.artifactSha256===documentDigest(artifact.body),'VERIFIER_SOURCE_BINDING_INVALID')
- const read=p=>{
-  const raw=execFileSync('git',['--no-replace-objects','-C',repositoryRoot,'show',m.baseSha+':'+p],{maxBuffer:1048576,timeout:15000,env:{PATH:'/usr/bin:/bin',GIT_CONFIG_NOSYSTEM:'1',GIT_CONFIG_GLOBAL:'/dev/null',GIT_OPTIONAL_LOCKS:'0'}})
-  const s=raw.toString('utf8');require(Buffer.from(s).equals(raw),'VERIFIER_SOURCE_ENCODING_INVALID');return s
- }
+ const read=qualityGitReader(repositoryRoot,m.baseSha)
  const sourcePath=SOURCE_PATHS[m.repairClass],testPath=m.allowedPaths.find(p=>p!==sourcePath),before=read(sourcePath)
  const {readPatchBody}=await import('./provenance.mjs')
  const b=readPatchBody(JSON.stringify(artifact.body),{manifest:m,beforeSource:before})
@@ -162,10 +160,20 @@ export async function prepareQualityVerificationBundle({manifest,repositoryRoot,
  require(documentDigest(regression)===m.synthetic.sha256&&regression.repairClass===m.repairClass,'REPAIR_FIXTURE_MISMATCH')
  const {assertRepairSource}=await import('./source-policy.mjs')
  const source=assertRepairSource({before,after:repaired.content,path:sourcePath,repairClass:m.repairClass})
+ return qualitySourceBundle({m,repositoryRoot,read,candidateSource:repaired.content,cicArchive,source,artifactSha256:artifact.artifactSha256})
+}
+function qualityGitReader(repositoryRoot,baseSha){
+ const read=p=>{
+  const raw=execFileSync('git',['--no-replace-objects','-C',repositoryRoot,'show',baseSha+':'+p],{maxBuffer:1048576,timeout:15000,env:{PATH:'/usr/bin:/bin',GIT_CONFIG_NOSYSTEM:'1',GIT_CONFIG_GLOBAL:'/dev/null',GIT_OPTIONAL_LOCKS:'0'}})
+  const s=raw.toString('utf8');require(Buffer.from(s).equals(raw),'VERIFIER_SOURCE_ENCODING_INVALID');return s
+ }
+ return read
+}
+async function qualitySourceBundle({m,repositoryRoot,read,candidateSource,cicArchive,source,artifactSha256}){
  const sources={calendar:read(SOURCE_PATHS.C1),quality:read(SOURCE_PATHS.C2)},files={},primary=m.repairClass==='C1'?'calendar':'quality'
  let needsCic=false
  for(const version of ['base','candidate'])for(const [name,original]of Object.entries(sources)){
-  const value=version==='candidate'&&name===primary?repaired.content:original
+  const value=version==='candidate'&&name===primary?candidateSource:original
   const imports={'../../../../packages/assistant-context-contracts/src/index.mjs':'../contracts/index.mjs','node:crypto':'node:crypto','@profitia/cic-core':'@profitia/cic-core'}
   const result=ts.transpileModule(value,{compilerOptions:{target:ts.ScriptTarget.ES2023,module:ts.ModuleKind.ESNext},reportDiagnostics:true,transformers:{before:[ctx=>sf=>ts.visitEachChild(sf,function visit(node){
    if(ts.isImportDeclaration(node)&&!node.importClause?.isTypeOnly){
@@ -192,9 +200,31 @@ export async function prepareQualityVerificationBundle({manifest,repositoryRoot,
  }
  require(Object.keys(files).length<=400&&Object.values(files).reduce((n,s)=>n+Buffer.byteLength(s),0)<=6291456,'VERIFIER_BUNDLE_LIMIT')
  const body=Object.freeze({files:Object.freeze(files),primary,baseSha:m.baseSha,expiresAt:m.mandate.expiresAt,gateSetSha256:m.gateSetSha256,
-  sourceSha256:Object.freeze({base:source.beforeSha256,candidate:source.afterSha256}),artifactSha256:artifact.artifactSha256,
+  sourceSha256:Object.freeze({base:source.beforeSha256,candidate:source.afterSha256}),artifactSha256,
   bundleSha256:documentDigest(Object.entries(files).map(([path,content])=>({path,sha256:hash(content)})))})
  verificationBundles.add(body);return body
+}
+
+const baselineBundles=new WeakSet()
+/** Baseline compilation has no repair artifact and never skips the original
+ * changed-source policy of prepareQualityVerificationBundle. This metadata
+ * contains no reference label, callback, credential or execution verdict. */
+export async function prepareQualityBaselineBundle(options){
+ exact(options,['manifest','repositoryRoot','regression',...(Object.hasOwn(options??{},'cicArchive')?['cicArchive']:[])])
+ const {manifest,repositoryRoot,regression,cicArchive}=options
+ documentDigest(regression)
+ const m=assertVerifiedRepairManifest(manifest),fixture=readRegression(regression)
+ require(typeof repositoryRoot==='string'&&path.isAbsolute(repositoryRoot),'VERIFIER_SOURCE_BINDING_INVALID')
+ require(fixture.repairClass===m.repairClass&&documentDigest(fixture)===m.synthetic.sha256,
+  'REPAIR_FIXTURE_MISMATCH')
+ const read=qualityGitReader(repositoryRoot,m.baseSha),before=read(SOURCE_PATHS[m.repairClass]),sourceSha256=hash(before)
+ const artifactSha256=documentDigest({kind:'AQC_BASELINE_SOURCE_V1',manifestSha256:documentDigest(m),sourceSha256})
+ const bundle=await qualitySourceBundle({m,repositoryRoot,read,candidateSource:before,cicArchive,
+  source:{beforeSha256:sourceSha256,afterSha256:sourceSha256},artifactSha256})
+ baselineBundles.add(bundle);return bundle
+}
+export function assertQualityBaselineBundle(value){
+ require(baselineBundles.has(value),'VERIFIED_BASELINE_BUNDLE_REQUIRED');return value
 }
 /** Installed verifier composition; the repair agent supplies neither runCase
  * nor an executable test. Expected values remain in verifyCandidate's parent. */
@@ -356,4 +386,131 @@ export function readQualityVerificationResult(document,{keys,manifest,nonce,cont
   &&Date.parse(b.observedAt)>=Date.parse(notBefore)&&Date.parse(b.observedAt)<=now&&Date.parse(b.expiresAt)>now
   &&Date.parse(b.expiresAt)<=Date.parse(b.observedAt)+30*60000&&Date.parse(b.expiresAt)<=Date.parse(m.mandate.expiresAt),'VERIFICATION_RECEIPT_STALE')
  return verificationMetadata(b.verification,m,now)
+}
+
+const isolatedBaselineResults=new WeakMap()
+export function qualityBaselineCauseFingerprint(options){
+ exact(options,['repairClass','fixtureSha256'])
+ require(['C1','C2','C3'].includes(options.repairClass)&&digest(options.fixtureSha256),'BASELINE_CAUSE_INVALID')
+ return documentDigest({schemaVersion:'AQC_DETERMINISTIC_CAUSE_V1',repairClass:options.repairClass,fixtureSha256:options.fixtureSha256})
+}
+/** Closed no-model reproduction. Only the actual admitted current native job
+ * may run three typed cases on unchanged Git source. Expected labels remain in
+ * the trusted parent, outside the isolated child. An error/timeout/unstable
+ * result is insufficient evidence, never a deterministic repair qualification. */
+export async function reproduceQualityBaselineInIsolation(options){
+ const fields=['manifest','jobState','externalId','repositoryRoot','regression','qualification','qualificationKeys','observedGateSetSha256']
+ exact(options,[...fields,...(Object.hasOwn(options??{},'cicArchive')?['cicArchive']:[]),...(Object.hasOwn(options??{},'signal')?['signal']:[])])
+ const o=Object.freeze({...options}),m=assertVerifiedRepairManifest(o.manifest)
+ const {assertQualityNativeJobState}=await import('./job-state.mjs')
+ const state=assertQualityNativeJobState(o.jobState,{manifest:m,externalId:o.externalId}),action=state.record.pending.action
+ require(['QUALIFY','REPRODUCE'].includes(action)&&o.observedGateSetSha256===m.gateSetSha256&&o.qualificationKeys instanceof Map,
+  'BASELINE_JOB_BINDING_INVALID')
+ require(o.signal===undefined||o.signal instanceof AbortSignal,'BASELINE_JOB_BINDING_INVALID')
+ documentDigest(o.regression)
+ const fixture=readRegression(o.regression)
+ require(fixture.repairClass===m.repairClass&&documentDigest(fixture)===m.synthetic.sha256
+  &&state.record.causeFingerprint===qualityBaselineCauseFingerprint({repairClass:m.repairClass,fixtureSha256:m.synthetic.sha256}),
+  'BASELINE_CAUSE_INVALID')
+ const {assertExecutorHost}=await import('./executor.mjs'),native=assertExecutorHost()
+ require(native.runId===state.runId&&native.executorSourceSha===state.controlSourceSha,'BASELINE_JOB_BINDING_INVALID')
+ const began=Date.now(),expiresAt=Math.min(Date.parse(state.createdAt)+1800000,Date.parse(m.mandate.expiresAt))
+ require(Number.isFinite(expiresAt)&&Date.parse(m.mandate.issuedAt)<=began&&began<expiresAt,'BASELINE_AUTHORITY_EXPIRED')
+ const bundle=await prepareQualityBaselineBundle({manifest:m,repositoryRoot:o.repositoryRoot,regression:fixture,
+  ...(o.cicArchive===undefined?{}:{cicArchive:o.cicArchive})})
+ const runner=await createQualityIsolatedCaseRunner({bundle,qualification:o.qualification,qualificationKeys:new Map(o.qualificationKeys),
+  observedGateSetSha256:o.observedGateSetSha256,signal:o.signal})
+ const observations=[]
+ for(let repeat=0;repeat<3;repeat++){
+  require(Date.now()<expiresAt,'BASELINE_AUTHORITY_EXPIRED')
+  observations.push(judgement(await runner.runCase({version:'base',sourceSha256:bundle.sourceSha256.base,
+   repairClass:m.repairClass,args:structuredClone(fixture.args),repeat}),fixture))
+ }
+ const stable=observations.every(v=>documentDigest(v)===documentDigest(observations[0]))
+ const known=stable&&observations.every(v=>!v.unverifiable&&!v.accessViolation)
+ const body={schemaVersion:'AQC_BASELINE_RESULT_V1',result:!known?'INSUFFICIENT_EVIDENCE':observations[0].correct?'NOT_REPRODUCED':'REPRODUCED',
+  method:'DETERMINISTIC',baseSha:m.baseSha,repairClass:m.repairClass,causeFingerprint:state.record.causeFingerprint,
+  manifestSha256:documentDigest(m),sourceSha256:bundle.sourceSha256.base,fixtureSha256:m.synthetic.sha256,
+  observationsSha256:documentDigest(observations),stable,repeats:3,observedAt:new Date().toISOString(),
+  nativeExecutionVerified:true,holdoutVerified:false,rawQaPayloadIncluded:false}
+ require(Date.now()<expiresAt,'BASELINE_AUTHORITY_EXPIRED')
+ const result=Object.freeze({...body,proofSha256:documentDigest(body)})
+ isolatedBaselineResults.set(result,Object.freeze({manifestSha256:documentDigest(m),externalId:o.externalId,
+  metadataSha256:state.metadataSha256,jobState:state,expiresAt}))
+ return result
+}
+export function assertQualityBaselineResult(value,{manifest,jobState,externalId}){
+ const m=assertVerifiedRepairManifest(manifest),c=isolatedBaselineResults.get(value)
+ require(c&&c.manifestSha256===documentDigest(m)&&c.externalId===externalId&&c.jobState===jobState&&c.metadataSha256===jobState?.metadataSha256,
+  'REAL_ISOLATED_BASELINE_REQUIRED')
+ require(Date.now()<c.expiresAt&&Date.now()<Date.parse(m.mandate.expiresAt),'BASELINE_AUTHORITY_EXPIRED')
+ return value
+}
+
+/** The verifier phase signer accepts only results minted by the closed native
+ * isolation paths above. It never signs an arbitrary controller result or a
+ * caller-supplied PASS. Provider identity, intent and original authority are
+ * checked again immediately before each signature. */
+export function createQualityControllerVerificationAttestor(options){
+ exact(options,['privateKey'])
+ const privateKey=options.privateKey
+ require(privateKey?.type==='private'&&privateKey.asymmetricKeyType==='ed25519','VERIFICATION_SIGNER_REQUIRED')
+ async function envelope({manifest,jobState,externalId,result}){
+  const {assertQualityNativeJobState}=await import('./job-state.mjs')
+  const {readQualityControllerJobResult}=await import('./github.mjs')
+  const {createPublicKey}=await import('node:crypto')
+  const {publicKeyId}=await import('./manifest.mjs')
+  const m=assertVerifiedRepairManifest(manifest),state=assertQualityNativeJobState(jobState,{manifest:m,externalId})
+  const at=Date.now(),created=Date.parse(state.createdAt),end=Math.min(at+86400000,Date.parse(m.mandate.expiresAt))
+  require(Number.isFinite(created)&&created<=at&&at-created<=1800000&&Date.parse(m.mandate.issuedAt)<=created
+   &&end>at&&['QUALIFY','REPRODUCE','VERIFY'].includes(state.record.pending.action),'VERIFICATION_JOB_BINDING_INVALID')
+  const body={schemaVersion:'AQC_CONTROLLER_JOB_RESULT_V1',repository:'profitia/SG-dev',environment:'development',
+   role:'INDEPENDENT_VERIFIER',action:state.record.pending.action,incidentId:m.incidentId,baseSha:m.baseSha,
+   manifestSha256:documentDigest(m),gateSetSha256:m.gateSetSha256,controlSourceSha:state.controlSourceSha,
+   nonce:state.record.pending.nonce,runId:state.runId,runAttempt:1,workflowId:state.workflowId,rawQaPayloadIncluded:false,
+   issuedAt:new Date(at).toISOString(),expiresAt:new Date(end).toISOString(),result}
+  const receipt=signDocument('AQC_CONTROLLER_JOB_RESULT_V1',body,privateKey),key=createPublicKey(privateKey)
+  // Preserve the exact existing semantic contract, including all VERIFY gates.
+  readQualityControllerJobResult(receipt,{manifest:m,record:state.record,externalId,runId:state.runId,
+   workflowId:state.workflowId,keysByRole:new Map([['INDEPENDENT_VERIFIER',new Map([[publicKeyId(key),key]])]]),
+   notBefore:created,now:at})
+  return receipt
+ }
+ return Object.freeze({
+  async attestBaseline(input){
+   exact(input,['value','manifest','jobState','externalId'])
+   const {value,manifest,jobState,externalId}=input
+   const baseline=assertQualityBaselineResult(value,{manifest,jobState,externalId})
+   const action=jobState.record.pending.action
+   require(['QUALIFY','REPRODUCE'].includes(action),'VERIFICATION_JOB_BINDING_INVALID')
+   // A timeout or unstable result never becomes an assertion of a green base.
+   require(baseline.result!=='INSUFFICIENT_EVIDENCE','BASELINE_EVIDENCE_INSUFFICIENT')
+   const result=action==='QUALIFY'
+    ?baseline.result==='REPRODUCED'
+     ?{result:'DETERMINISTIC_FAILURE',method:'DETERMINISTIC',causeFingerprint:baseline.causeFingerprint,repairClass:baseline.repairClass}
+     :{result:'INSUFFICIENT_EVIDENCE'}
+    :baseline.result==='REPRODUCED'
+     ?{result:'RED',baseSha:baseline.baseSha,proofSha256:baseline.proofSha256}
+     :{result:'NOT_REPRODUCED'}
+   return envelope({manifest,jobState,externalId,result})
+  },
+  async attestVerification(input){
+   exact(input,['value','manifest','jobState','externalId'])
+   const {value,manifest,jobState,externalId}=input,m=assertVerifiedRepairManifest(manifest),cap=isolatedVerificationResults.get(value)
+   require(cap&&cap.manifest===m,'REAL_ISOLATED_VERIFICATION_REQUIRED')
+   const {assertQualityNativeJobState}=await import('./job-state.mjs')
+   const state=assertQualityNativeJobState(jobState,{manifest:m,externalId})
+   require(state.record.pending.action==='VERIFY'&&cap.nonce===state.record.pending.nonce
+    &&cap.runId===state.runId&&cap.controlSourceSha===state.controlSourceSha
+    &&value.artifactSha256===state.record.patch?.artifactSha256,'VERIFICATION_JOB_BINDING_INVALID')
+   const verificationReceipt=createQualityVerificationAttestor({privateKey}).attest(value)
+   const fields=['result','baseSha','artifactSha256','baseTest','candidateTest','holdoutCases','criticalRegressions',
+    'accessViolations','unverifiableCases','criticalCasesPass','criticalRepeats','stable','correctnessDeltaPp',
+    'unjustifiedRefusalDeltaPp','scopeBeforeDefects','scopeAfterDefects','classCounts','proofSha256']
+   const result=value.result==='FAIL'?{result:'FAIL',baseSha:value.baseSha,artifactSha256:value.artifactSha256}
+    :Object.fromEntries(fields.map(key=>[key,value[key]]))
+   const phaseReceipt=await envelope({manifest:m,jobState,externalId,result})
+   return Object.freeze({phaseReceipt,verificationReceipt})
+  },
+ })
 }
