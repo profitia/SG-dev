@@ -202,6 +202,36 @@ test('SRM closed receiver persists the accepted catalogue and independent proces
    const rows=(await f.admin.query("SELECT count(*)::int AS n,min(root_decision_id::text) AS root FROM srm.supplier_workspace_events WHERE organization_id=$1 AND command_id=$2",[f.A,payload.idempotencyKey])).rows[0];assert.equal(rows.n,1);assert(rows.root);
    const receipt=(await f.admin.query("SELECT root_decision_id::text AS root FROM srm.supplier_workspace_receipts WHERE organization_id=$1 AND actor_account_id=$2 AND idempotency_key=$3",[f.A,f.U,payload.idempotencyKey])).rows[0];assert.equal(receipt.root,rows.root);
   });
+  await t.test('sealed schema retains all FORCE RLS tables and immutable native history without direct runtime writes',async()=>{
+   const tables=['supplier_workspace_profiles','supplier_categories','supplier_category_links','supplier_pipelines','supplier_pipeline_stages','supplier_pipeline_memberships','supplier_workspace_events','supplier_workspace_receipts'];
+   const rows=(await f.admin.query("SELECT c.relname,c.relrowsecurity,c.relforcerowsecurity FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='srm' AND c.relname=ANY($1) ORDER BY c.relname",[tables])).rows;
+   assert.equal(rows.length,8);assert(rows.every(x=>x.relrowsecurity&&x.relforcerowsecurity));
+   assert.doesNotMatch(schema,/\\bGRANT\\s+(?:SELECT|INSERT|UPDATE|DELETE|EXECUTE)\\b/);
+   const policies=(await f.admin.query("SELECT p.polcmd FROM pg_policy p WHERE p.polrelid IN('srm.supplier_workspace_events'::regclass,'srm.supplier_workspace_receipts'::regclass)")).rows;
+   assert(policies.length>0);assert(policies.every(x=>!['w','d','*'].includes(x.polcmd)));
+   const before=(await f.admin.query("SELECT count(*)::int AS n FROM srm.supplier_workspace_events")).rows[0].n;
+   await assert.rejects(f.pool.query("UPDATE srm.supplier_workspace_events SET action='SUPPLIER_UPDATE'"),e=>e.code==='42501');
+   await assert.rejects(f.pool.query("DELETE FROM srm.supplier_workspace_receipts"),e=>e.code==='42501');
+   assert.equal((await f.admin.query("SELECT count(*)::int AS n FROM srm.supplier_workspace_events")).rows[0].n,before);
+  });
+  await t.test('category names retain Unicode normalization and archived-name uniqueness through actual commands',async()=>{
+   const category=ok(await write('CATEGORY_CREATE',{name:'Native Unicode Category'}));
+   const archived=ok(await write('CATEGORY_ARCHIVE',{categoryId:category.categoryId,expectedVersion:category.version}));
+   assert.equal(archived.lifecycle,'ARCHIVED');
+   const duplicate=await write('CATEGORY_CREATE',{name:'  Ｎative Unicode Category  '});
+   bad(duplicate,'FIELD_INVALID');
+   assert.throws(()=>parseWorkspaceCommand({contractVersion:'1.0.0',idempotencyKey:'unicode_empty_name',command:'CATEGORY_CREATE',data:{name:'　'}}),e=>e.code==='FIELD_INVALID');
+  });
+  await t.test('the same supplier cannot obtain a second active membership inside one category process',async()=>{
+   const s=ok(await write('SUPPLIER_CREATE',{nip:nipFor(9200),displayName:'Native duplicate category fixture'}));
+   const category=ok(await write('CATEGORY_CREATE',{name:'Native duplicate category'}));
+   let p=ok(await write('PIPELINE_CREATE',{name:'Native duplicate process',kind:'CATEGORY',categoryId:category.categoryId,stages:[{name:'First'},{name:'Second'}]}));
+   ok(await write('MEMBERSHIP_ADD',{pipelineId:p.pipelineId,supplierId:s.supplierId,stageId:p.stages[0].stageId,expectedPipelineVersion:p.version}));
+   p=ok(await read({kind:'PIPELINE',pipelineId:p.pipelineId}));
+   const duplicate=await write('MEMBERSHIP_ADD',{pipelineId:p.pipelineId,supplierId:s.supplierId,stageId:p.stages[1].stageId,expectedPipelineVersion:p.version});
+   assert.equal(duplicate.ok,false);assert.equal(duplicate.status,409);
+   assert.equal(ok(await read({kind:'PIPELINE',pipelineId:p.pipelineId})).activeCount,1);
+  });
   await t.test('51 representative suppliers paginate without leaking contacts and retain board counts',async()=>{
    const created=[];
    for(let i=0;i<51;i++)created.push(ok(await write('SUPPLIER_CREATE',{nip:nipFor(1300+i*3),displayName:'Pagination fixture '+i,contacts:[{name:'Private contact '+i}]})));
