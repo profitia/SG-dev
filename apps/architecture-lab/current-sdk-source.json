@@ -1,8 +1,8 @@
 {
   "schemaVersion": "1.0",
   "scope": "CURRENT_SDK_SOURCE_INTEGRITY_ONLY",
-  "sourceSnapshotSha": "aede44af850475ac3d93f301272e5fa6ed63bdd5",
-  "status": "SDK138_SUPPLIER_WORKSPACE_COMPATIBILITY_DRAFT_NOT_ADMITTED",
+  "sourceSnapshotSha": "0bb2c6225ebf58180de5e02c35009a134e968ecc",
+  "status": "PRIVATE_PROTOTYPE_NOT_ADMITTED",
   "platformVersion": "1.38.0",
   "runtimeActivated": false,
   "permissionsChanged": false,
@@ -25,7 +25,7 @@
     "Canon/evidence/2026-11-12-registration-package-activation.md": "2a5551042b7c010f4195b7ad199c96020e24f619d567750b7f2332b4f52366c1",
     "Canon/evidence/2026-11-13-registration-accepted-main-source-view.md": "4098eeec93a7d9f879e5e11df521407184b9226cb160d964c9c9e04620f4c6bb",
     "Canon/registries/governance-manifest-v2.json": "a9c3746dcad97acca504354c3a0a10d02409be65f28f435cb034d1ca5b8fd96d",
-    "Canon/registries/operation-access-matrix-v1.json": "1b1a9641f1e77ed44ca10781f4e4e99c2a6c7dd5f0d038299cc5f6a90985cb7b",
+    "Canon/registries/operation-access-matrix-v1.json": "65ff8fd99fd7631ff0ff43d5b657d90a2056f99aafa5eacc47db705c64cd667f",
     "Canon/runbooks/platform-knowledge-development-delivery-plan-v1.md": "83427d556088806bffb2a825e07c1df24b373f169f9e9bcc42667205585671ad",
     "Canon/runbooks/platform-knowledge-stage2-development-v1.md": "5b49bd399402d2a9c8f621f75ad6d125c341db0c91e82319a2cf85b31fca020f",
     "Canon/runbooks/platform-knowledge-stage2-e1-activation-v1.md": "7526d2429eadfcb0efa1ef220a480af378e1c09f85bb64696e3661abff86fb0c",
@@ -47,22 +47,22 @@
     "apps/architecture-lab/knowledge-source-adoption.json": "ed0407d53d23b203dc6b83edeebcd633ff6a1ea516295ca0b9644ab8066907d4",
     "apps/architecture-lab/knowledge-source.json": "7bde334dda3ec7068d3cb532ccd8a94f3477cea707abe250431ee16c3b044bf4",
     "apps/architecture-lab/knowledge-source.mjs": "dbe015603b3904337432c78b9792784548982d7540bedda2f05208811a67020b",
-    "apps/architecture-lab/market-calendar-source.mjs": "fc0f6dfb58548d2d520919f93032180ae8f64bf478db61b288aa372718a435fa",
+    "apps/architecture-lab/market-calendar-source.mjs": "cbb9b7860bd9b8d821e2ebf532e1cec1e02647453a17d8a1d637fd696523132b",
     "apps/architecture-lab/market-calendar-test-compatibility.json": "52e859d4a99bc4c8e4d986f38afea2d58e9c1fe1ee1e0eb62cc2672dbdb60078",
     "apps/architecture-lab/organisation-lifecycle-sdk-source-adoption.json": "8649c552670689c3daa53692e3ef88e2ed7d3839b6915f939364cfc6d63d9abf",
     "apps/architecture-lab/package-lock.json": "223e4d999146263961e75bc1a6a58aff4cf35d60c4b8cdd92a375bd8ee2f199e",
     "apps/architecture-lab/package.json": "1507809568d79e54a65c6218c36587997fd230411cd35bfb806dcd3c799f2d75",
     "apps/architecture-lab/private-recurring-source-adoption.json": "a79c186897851acb93142949fe7aee19184cbfe68b3acdf51cbda084c00c1254",
     "apps/architecture-lab/private-recurring-source.json": "75877d5750e07d1c8172be0af76bc5933f2eeefc22cc39747a2621b9cab24619",
-    "apps/architecture-lab/private-recurring-source.mjs": "0871c249f18f1b1872762a2323662c6d21f6eb49a4ac47c62e0b9e216d8cba06",
+    "apps/architecture-lab/private-recurring-source.mjs": "e4b52294ef9e00ef4c55810b58c4e166b2fb2bf5c47c155bca44eb2aa3eac217",
     "apps/architecture-lab/scripts/install-insights-report.mjs": "4f11672bb2e6c783c5cb6cd6fdaeee9f061f8ae485f1bc9c4a2f76dafe233852",
     "apps/architecture-lab/sdk-1.33-compatibility.json": "3e3c8f43813d5c4888e206ac31433f60470eac4310abaa62bd32e1c901a0df3e",
     "apps/architecture-lab/sdk-1.34-compatibility.json": "458ddbf661ce1a5666260a072a03f24ac016346bdd9a9efef7f2a1d497eee403",
     "apps/architecture-lab/settled-external-failure-acceptance.json": "012a8223acd389ff655abdd61c2b8f436647955563ad9ad88a618bc7676a30bb",
     "apps/architecture-lab/test/insights-e1.test.mjs": "76466e01007c0bf2b7340685e9fbeff9eac787aa2cb8b7a663a328f3a7802d3e",
-    "apps/architecture-lab/test/knowledge-source.test.mjs": "845ded459f7093431cca17d94c2382be87be368fa069a471523e5eefa9192d15",
+    "apps/architecture-lab/test/knowledge-source.test.mjs": "27b245f9c9a5cdbdd4b8c6e9ac7b28d91c2558bf4ee960222cd6fbd15fa78bd2",
     "apps/architecture-lab/test/manifest-successor-continuity.test.mjs": "15de435a6ec35e36fb0fe3357f04f8300335824730186f26cf0b48f2e4b21b72",
-    "apps/architecture-lab/test/market-calendar-source.test.mjs": "2de1971390c6f7ee8ce7a9a8413d2dfde08859f7d15224248e7ad557a9050001",
+    "apps/architecture-lab/test/market-calendar-source.test.mjs": "9e03ec2e1f2754c5713a7eae14bbe4b245e45ccbe274c6c262350d48809af321",
     "apps/architecture-lab/test/payload-capture-publication.test.mjs": "63dfb8723345e0803185c85545939c2ee51ec6d750d6509040d3ef74050ccbf3",
     "apps/architecture-lab/test/private-recurring-source.test.mjs": "d08bea51793c1c220234412b9e8e197b107e5c123f30dfb65ed7da730084e296",
     "apps/architecture-lab/test/sdk-compatibility.test.mjs": "66e7706c48f4831ec1b0331629bd46f25e48d15e2599a70d7472fcac1a441078",
@@ -592,14 +592,14 @@
     "apps/sg-runtime/sentry.edge.config.ts": "99ddced5949e91513509cb0aa0820a505553f88029eb970fd84457e1025831f3",
     "apps/sg-runtime/sentry.server.config.ts": "2cf5c1eeb952ced7633016234ebdae4d4460a0a1834677c370a12f4d310d85af",
     "apps/sg-runtime/tests/account-landing-lifecycle.test.tsx": "5a933d3d54b8890ac8436632e9eb3d9855efcc26606f82a5a4d9ff383bde9bcb",
-    "apps/sg-runtime/tests/adp-appshell-consumer.test.tsx": "43e058159f8cd66423c0ae303573bbf9c5a6fe40e682730623a051691de7d1a1",
+    "apps/sg-runtime/tests/adp-appshell-consumer.test.tsx": "c4f153cad4648a211216a3e3986490861bd418a6f180cfae040490705a2b240f",
     "apps/sg-runtime/tests/adp-appshell-identity.test.tsx": "f2d479af152741391f01ca0bb8b69810d8553fda8991c0eed92a807406f6dfd0",
     "apps/sg-runtime/tests/adp-appshell-navigation.test.ts": "1ddd153b4554a0a2f7f73e60c94f935cb50cc250e6c03ecfa113bd8e998b56fe",
     "apps/sg-runtime/tests/adp-appshell-preview.mjs": "234caf65ee43e7c2e0bf7eac421b67cff9251b08b5f4243493fc2c610f6732df",
     "apps/sg-runtime/tests/adp-appshell-preview.tsx": "4c5c34183de36b754e55f113b7ed4085dd1c79a3ecee507249a41fea7220ab22",
     "apps/sg-runtime/tests/advisory-widget.test.ts": "3f017393195c5f5026e10f67e4b3db397a41bcc74feb777f81536c031a7f9ff7",
     "apps/sg-runtime/tests/appshell-first-entry.test.tsx": "23607f8aea8f3aa6bfdc330b19e999873e3e438a1697cd9d1c2d5189f50e194b",
-    "apps/sg-runtime/tests/appshell-product-boundary.test.ts": "2d55cf801cfc658c00276b3c2646fcb548d096136c66ac637778fbf7772d8e3e",
+    "apps/sg-runtime/tests/appshell-product-boundary.test.ts": "0cfeec3651be39b082822a9090ff682851a581bff69eaf2c99a301d559b00df8",
     "apps/sg-runtime/tests/assistant-chart-context.test.ts": "bfacdec9f1c7c56a8883445c92247c5749e743d61e8ba148702711a960aa4681",
     "apps/sg-runtime/tests/assistant-conversation-handler.test.ts": "f3efea7fb9377ee00833fbff204348a86a11a5962b1ad35ad2ceea59e160e7ce",
     "apps/sg-runtime/tests/assistant-conversation-transport.test.ts": "c49c3fd4d15f0e7311dc9679f6da4dd6b4bf990f6e52febcec4eab613dfaae3e",
@@ -657,7 +657,7 @@
     "apps/sg-runtime/tests/fixtures/benchmark-discovery-hosts.mjs": "69e66aa4d0af9b2410488a0a878d41c2c05471594800f585948f96b08bcf839a",
     "apps/sg-runtime/tests/forecast-import-boundary.test.mjs": "cd758c5b0cee99e6f44bb9c63962433e99e38d07db8f36a7f051f9d268e6ea0d",
     "apps/sg-runtime/tests/forecast-prepared-state-port.test.ts": "d98dddcdb4a08862fcc86c00143ff08aa04a5d38520a36eb3c977ab388fa89c5",
-    "apps/sg-runtime/tests/identity-runtime.test.ts": "b312027b2bbfe59a72d0be9a1f564899f4f584ed7b9b9b146a958ea281e81602",
+    "apps/sg-runtime/tests/identity-runtime.test.ts": "a5ab2e785c412479cb6bba749b938acb2f92e48f9b439d3028e8ff092e120235",
     "apps/sg-runtime/tests/insights-host.test.ts": "7f9d9cd10d2160e3ce1a387ea8463e694e32618ca33771ec924c5e7c87a87794",
     "apps/sg-runtime/tests/integrated-buyer-journey-browser.mjs": "6411ea6c49da0ea407e1774dd22354a813f5b8d736b852fd9e29b3011095fc83",
     "apps/sg-runtime/tests/integrated-buyer-journey-operation.test.ts": "a344ff723ddbc2745d20c2dc445021d8bd45dad08437fd75c8e7460910f1822a",
@@ -674,9 +674,9 @@
     "apps/sg-runtime/tests/market-history.test.ts": "bd67dce28ef648c5f2fc9de086c0717c9e840e0a42d8025ee781c1f4034fd65b",
     "apps/sg-runtime/tests/monitor-benchmark-finder.test.mjs": "8f54c9aba542d60d2cef41ec3dc546fee43ed4e656083b9b7e5b837b4f0ef47b",
     "apps/sg-runtime/tests/native-dashboard-embed.test.ts": "4978f577933e24e1917ad927c60dbc2e1fb5693ff130a5626d478df87e040016",
-    "apps/sg-runtime/tests/native-sql-roundtrips.test.mjs": "ce45cd52dde814db21c746ac8a22902f1405295534dbcc509f4f7f9a98a195fe",
+    "apps/sg-runtime/tests/native-sql-roundtrips.test.mjs": "91b916c13182f1c2f7dda23ff67170cd06a1c69a519e474416fb1da1c75bcc0e",
     "apps/sg-runtime/tests/newsfeed-proxy.test.ts": "87205209f97d0cc6d455c69632abaeaff1f757842281f7a7612c938daad021c9",
-    "apps/sg-runtime/tests/operation-context.test.mjs": "de50f9fb3e01adc01f56573aa1a6125c4e9cec686d17089c5d776e8aa5fbbc43",
+    "apps/sg-runtime/tests/operation-context.test.mjs": "6aef398c81c6d2a49a4243c3e7d78e508688dd5b352777f4339af1d077fcd897",
     "apps/sg-runtime/tests/organisation-access.test.mjs": "d54f8ad5a4ec487162300d7bef19a5aad7173c20a84f812217f9f796ed8b4e39",
     "apps/sg-runtime/tests/organisation-assistant-runtime.test.mjs": "31776ba7d7f6d35b205eab270aa9832baf0709ba7d16e680076bc6f67cec43f8",
     "apps/sg-runtime/tests/organisation-context.test.mjs": "bd3e1ef037a5066caba1e6fa772b5818988f66649798bf14158079e0fcbfa1cd",
@@ -695,7 +695,7 @@
     "apps/sg-runtime/tests/porr-demo-middleware.test.ts": "2d26cb394c8c4e5d0ab4f72397e2fa8ae5d0bbe9f4678acbcf464d5a05830793",
     "apps/sg-runtime/tests/porr-demo-ui-polish.test.ts": "f6ca51208904313f76ad607a9f741966c9533012ea153c792c674ef4ad75dc2b",
     "apps/sg-runtime/tests/price-change-index-preparation.test.ts": "012da9e5923c34728083490fd29b5f0061d1561011a6c1ff47234eb4d37cef9d",
-    "apps/sg-runtime/tests/private-host.integration.test.mjs": "0ee6f7d71586e8bfee499bf941aa95ac6be261c5c46f92f9a9a1fcac39788737",
+    "apps/sg-runtime/tests/private-host.integration.test.mjs": "74859fb6c1d5ef2e878cca16a6bdae6aa9269b0d25398664c15e21348b627746",
     "apps/sg-runtime/tests/procurement-insights-completion-integrity.mjs": "0359f3796885e91be502c39465eababadab49e489ae207cf5abde2facf449e4e",
     "apps/sg-runtime/tests/procurement-insights-completion.test.mjs": "80ed2b18388e7c68d39edf14171ca309a864127bf77459dc89b881f0ef453191",
     "apps/sg-runtime/tests/procurement-insights-context.test.ts": "158b9c86e3404ee0a4bd272f09f6cfbcce07856b49e79fc73cfd79546f186c40",
@@ -922,7 +922,7 @@
     "apps/srm/scripts/supplier-locations.integration.test.mjs": "476e8dea869901a4981e9af16c42981dfe3c5f852369cff5ae608c55948f7f32",
     "apps/srm/scripts/task02r-build-release.mjs": "1a1010dcbe50cf3b081f0df49a0ef933b1ae8b97873adcf98b6a356c275daabf",
     "apps/srm/scripts/task02r-release-source.test.mjs": "00d20e4024b6f786ef668db49d293f417e6d2e5297d25601f8041b6d81cc6092",
-    "apps/srm/scripts/xray-performance-adoption.test.mjs": "b491b089d181a59652181b28baa2e3eb3b01dc2440a4c0f2b14be54f54bde652",
+    "apps/srm/scripts/xray-performance-adoption.test.mjs": "e4e760466b12e908bee0b1faf9fa32e8e9afc8e8a2c0b82480ded1ec4b2e402d",
     "apps/srm/scripts/xray-style-acceptance.mjs": "42b666a9b87d9e87e9ac14fce8d89f49d6dd456e0f1216a99e715e0f81e37a4e",
     "apps/srm/scripts/xray-workflow-contract.test.ts": "9d39818479a4db17a5c43073a1f0e1a6ca04c8576a5bb6512af6a520c26f5a27",
     "apps/srm/scripts/xray-workflow-react18.test.tsx": "b2a603963ee8f131d98eeb24611073f4337a6274592c7a15f1f9a1859dbcf5aa",
@@ -1021,7 +1021,7 @@
     "apps/srm/src/server/organisation-bootstrap.ts": "22ceccbd12af362b0ca2daa2dac73379e13cdef0ff5949eca9ae0fb968af35b0",
     "apps/srm/src/server/organisation-context.test.ts": "f6359a441c3754f0d8b3201d95b587bfbf29564243216027345ddcfd9c0a1c8e",
     "apps/srm/src/server/organisation-context.ts": "a4e5a8d4734ce673f5dbd2c77e888cc94ecb8b1ed6f27fea874b60a619f7d98b",
-    "apps/srm/src/server/peer-read-boundary.test.ts": "fe1ccf72c24460b1e2edc26b44e307fa271de55c5a215b488c6b0592bc93fcd6",
+    "apps/srm/src/server/peer-read-boundary.test.ts": "85eb474410aeb3dd44d9a66eeaa615d1d8db165105dc84a6a5bf66b2d0f65c69",
     "apps/srm/src/server/peer-xray-presentation.test.ts": "a39c98d9a341d1d627f961e0a59877cface78c62f415d2b6e131aea48c5b8f8f",
     "apps/srm/src/server/peer-xray-presentation.ts": "b25a68842d43f1de4600d512e0b4d1d560ae53b5d0088937ac53dabf8c367e9a",
     "apps/srm/src/server/peer-xray.test.ts": "eb8643c20ffc827f818c7d10502555c42d8a7f7c86274b7d30ae7131804e5dc7",
@@ -1191,7 +1191,7 @@
     "packages/platform-contracts/current-fresh-report/src/current-fresh-report.d.mts": "2da701f79cb5aaf4447239255a96169b5394f6ddd62713c19b213a240fe39a38",
     "packages/platform-contracts/current-fresh-report/src/current-fresh-report.mjs": "29c8a0fb5d048217afd25a3678c35ff03d0d5a663ba76b338a1e8117875176cb",
     "packages/platform-contracts/current-fresh-report/test/current-fresh-report-postgres.test.mjs": "fcd5cc48f7197a769cea2c4897608fccbf5d6e7298b44a7fc8928a0ad23e7a9b",
-    "packages/platform-contracts/current-fresh-report/test/current-fresh-report.test.mjs": "471951b6373127cef1b1898a2d1e8e9e7455fda08c4236716af23c34512df199",
+    "packages/platform-contracts/current-fresh-report/test/current-fresh-report.test.mjs": "3dbf50290df192745570f4b275e5e2ce382331795cb03fbdd60539fc097e9a85",
     "packages/platform-contracts/current-fresh-report/test/types/current-fresh-report.mts": "09c8e9368851254380322d335b203cab89fb8d275268fad9354c5b9e32e9d575",
     "packages/platform-contracts/migrations/access/001-internal-access.sql": "356463492c3304ca11fa533f6e99f1d41628a3ab830488142c6030fb9a920ff2",
     "packages/platform-contracts/migrations/access/002-module-scope.sql": "c4ea1883af310934b1e83dfcf936ba15dfc32a3f4be206c752efe2d69a55b9ed",
@@ -1228,7 +1228,6 @@
     "packages/platform-contracts/migrations/access/032-report-model-templates.sql": "c6f5dacb81ecff2b8d270a180efcb59c65e1fdf8cc510acf059544391aeb6dab",
     "packages/platform-contracts/migrations/access/034-unmetered-benchmark-requests.sql": "4bdd9163a13fcc9096ac2976729335f00b629a37e2abe067ff036b03750d7f5c",
     "packages/platform-contracts/migrations/access/035-source-technical-continuity.sql": "2a6dd51ec854e94fc8e846abec9023c22c3e4328c5e42a1ec2be4f7fe12b78ca",
-    "packages/platform-contracts/migrations/access/supplier-workspace-v1.sql": "647e47125b84e4eb026b5a1aec783b0b147315817cbd6246081fc40c92bd6023",
     "packages/platform-contracts/migrations/denial-audit/expire.sql": "8855e8fabaa95758799a54f366654be1e475d9e1f9270b477bcebe33d5ebdd2b",
     "packages/platform-contracts/migrations/denial-audit/private.sql": "a964115f6bf51e4038ad7c63db7b1a741590e86672a66bdba2f9dfb7cc9ee3e1",
     "packages/platform-contracts/migrations/denial-audit/roles.sql": "09ace8f3621d31c4d411a375b1b31f2f6a48a9f53f86da3b5bb4e05b292f692b",
@@ -1246,7 +1245,7 @@
     "packages/platform-contracts/migrations/profile/011-application-organisation-context.sql": "21bbc01a1361540c54b6dfc98aa782efd165ea60942c8ffc5da6faa94cbbdf6a",
     "packages/platform-contracts/migrations/profile/012-organisation-context-selection.sql": "46b7a3ea7031d50b27cb7ccd3d0717c477d5d308e1d0f4454fb774707367d2cd",
     "packages/platform-contracts/package-lock.json": "b4d902b301bec400e6a60d47eb0f2a3f743a0271bbf748e4c8eb44a671c4794e",
-    "packages/platform-contracts/package.json": "436157a86c8e467d9667ea6e18a12c123fcb35a158189a669bb4a0129072b786",
+    "packages/platform-contracts/package.json": "6ab0c5d2a8a5e4f38a5665a226857a9d4bd059a1d23d503577852f5b695315f9",
     "packages/platform-contracts/payload-capture/package.json": "2feda6c4b3b9c6d8ddc17cdfb7b3af7d9e303032859e6ee118a599ca7c39e52b",
     "packages/platform-contracts/payload-capture/src/payload-capture.d.mts": "ac8c8399b33ee143a4191530fd7a236f04b6055c437b6a38bf69a888f86d2634",
     "packages/platform-contracts/payload-capture/src/payload-capture.mjs": "7eabea213158e6193c481dcbe2721b98837cfd729ae1af3bac7d2396c950f08f",
@@ -1270,7 +1269,7 @@
     "packages/platform-contracts/root-atomic-claim/test/root-atomic-claim-postgres.test.mjs": "2a5b1feb81f99061e5069857b5d92ddeb99b77d00a3a576cb3c8ccb500034b48",
     "packages/platform-contracts/root-atomic-claim/test/root-atomic-claim-types.mts": "42d33df775ba0f0b7cecd63b724bba8be7d8560ae3cb49c6869769ddac7f48fe",
     "packages/platform-contracts/root-atomic-claim/test/root-atomic-claim-types.test.mjs": "209aa97c5833d39371470bcf85ca217f9bdeb451b31bd794e2e242745ffc1bc0",
-    "packages/platform-contracts/root-atomic-claim/test/root-atomic-claim.test.mjs": "4c46fdea92c354ef28ecdeba03498d8063a53bb9a5b5c02754d0170713d0c1c1",
+    "packages/platform-contracts/root-atomic-claim/test/root-atomic-claim.test.mjs": "57017acc39f7302757d5e6c326a9b4ab9dae1c3bcf54784cd4dba77e5057c8ac",
     "packages/platform-contracts/src/access-store.d.mts": "90cb7cfb0aa6413382a7936cd9001d533b44de70e622c7e50fbaabee3ea54cd1",
     "packages/platform-contracts/src/access-store.mjs": "f1e6c382e4d91d8ac7f366e755ad918857c710265b6ba3b22ddfd8779e5b0934",
     "packages/platform-contracts/src/assistant-operation-host.d.mts": "32b5e76f35024cacea5a2f3814b8c9d0107054f71399ed7b24204195373531fd",
@@ -1306,12 +1305,12 @@
     "packages/platform-contracts/src/knowledge-operations.mjs": "e1b8c5d6970456a81e205227b231250d63d19877bc138d6cdc06ae17761550cf",
     "packages/platform-contracts/src/model-execution.d.mts": "347864802b2ae361ed50b08ea55cfb2ad2688a672eb0bc4fce29ad69a02614f1",
     "packages/platform-contracts/src/model-execution.mjs": "bab7297f4835a3c87d581d2b9c8f54cc15c3d9b5e629d0e43f7de3a97d1d84e0",
-    "packages/platform-contracts/src/module-scope.d.mts": "314b492dc73f983e5c8ad616ce721e9218591ee2b455fd7c5174c46c003dbb8c",
-    "packages/platform-contracts/src/module-scope.mjs": "8eb216850e290a69dd33f1c350c034ca4238ae4223865c3a4c8772e8e54c6aa2",
+    "packages/platform-contracts/src/module-scope.d.mts": "123d4b08864acbb2dc2509f3fbad21fd50f1b5d0e42ca00f6f21b2275d280db6",
+    "packages/platform-contracts/src/module-scope.mjs": "0dd5d00dc1571b3712fbe42d04fbada7a655bf29af2e89ff3812ff575ac3d629",
     "packages/platform-contracts/src/native-external-transport.d.mts": "165a7ea0703ec31b1af89ed8b980a215ddee2fb181dbbe1498a5bea77cbd44da",
     "packages/platform-contracts/src/native-external-transport.mjs": "09c6595500f5b10fbf16b57b460c2064fe573bf6f1e1b754b3b39a9e53e40c9b",
-    "packages/platform-contracts/src/operation-context.d.mts": "a8779b00b329b9e52c4615d0dda8acd1440faa02d84bee1b47af1df9265d9823",
-    "packages/platform-contracts/src/operation-context.mjs": "08dc7a1db8573ac9f46e8c2599d301b84b9fd7c917033a3ec53405a575a9065c",
+    "packages/platform-contracts/src/operation-context.d.mts": "27d5a4079a386e9e1fe562b0a66b51908e3b5bde72b3a0f85d129aa9fdd93830",
+    "packages/platform-contracts/src/operation-context.mjs": "c5dff728f9f98360b41f625ed271bb6d8ac6a1340e2f8f8596d3c79d0262b2ff",
     "packages/platform-contracts/src/organisation-bootstrap.d.mts": "80a7ecc043ee71bf96c000167c32d67759ab878ed274c8ee41d56986f5c056a1",
     "packages/platform-contracts/src/organisation-bootstrap.mjs": "15b08b09019d9d34c89dd0df3966f3859d67823fe09f380722384ef64a151941",
     "packages/platform-contracts/src/organisation-context.d.mts": "b88992bc7a02a11cd4e10ab8bed8054858583e62a6fcffc60766acd801cf9e6e",
@@ -1326,8 +1325,8 @@
     "packages/platform-contracts/src/peer-operation.mjs": "316282f0b9b76c927427c62cdbd2dbda2c917457dfd91e280e652b89bde36a10",
     "packages/platform-contracts/src/platform-ingestion.d.mts": "0dbb68e23450b845854322611fa0afa4dfbfe252d64486a8fb1e250e880634dc",
     "packages/platform-contracts/src/platform-ingestion.mjs": "d78263bf2e04c388ed89969f079598fffa14e71b4aa1ccc43587177b95a5b2d6",
-    "packages/platform-contracts/src/private-operation-host.d.mts": "2c47b412606f94adb044c4f02d33b439079e53c5cf8a88143f117bb0143b91cd",
-    "packages/platform-contracts/src/private-operation-host.mjs": "e7c441c75061b987c7641159b1210fbc1242d7d0b13a58bedd48175a4847de84",
+    "packages/platform-contracts/src/private-operation-host.d.mts": "11a99dd0b3fc2e696a420aa3ea5d330c775ef0311f055202745231813e37e31d",
+    "packages/platform-contracts/src/private-operation-host.mjs": "c732793a8034d94b5d7202e96c0886f0cdf30afef2974072c2aab0ce6aa18555",
     "packages/platform-contracts/src/public-request.d.mts": "c92a6faa2764eb7d40671971abc531cf72b92f1c12d74f30be3f4f54c632722b",
     "packages/platform-contracts/src/public-request.mjs": "7d23cbe9ee5742f9305ff4c97c76254ea1cba55dd64594864a5536b2bea1de6b",
     "packages/platform-contracts/src/public-web-transport.d.mts": "9d386895e800bf5fc42135d9e0dd152e5596c86938954e47c694509122ee8f35",
@@ -1349,10 +1348,6 @@
     "packages/platform-contracts/src/sg2-denial-audit-reader.mjs": "92625af7db8ada25e8226f4f31db5845bca2a93151b0232325f76d68fae88170",
     "packages/platform-contracts/src/supplier-location.d.mts": "627a809c7ccb0104ca37cb6f93b959cb09a458ad29503f6518d5baf2998084b4",
     "packages/platform-contracts/src/supplier-location.mjs": "41fcd54d03bbf42e7d448f34ab63b6c054e02b18266be5d0c0e4cafc0711461b",
-    "packages/platform-contracts/src/supplier-workspace-access.d.mts": "6833d8266e9c1d48af7a57b41ab74b641d7c89eaa30931869b08559f25446d8d",
-    "packages/platform-contracts/src/supplier-workspace-access.mjs": "61fd26bcdb8705cad6f2c59c76a9e4b4fe454559a021f962e39c0c54bc871df8",
-    "packages/platform-contracts/src/supplier-workspace-host.d.mts": "778878044aa0caf8b5f596ab09919bcbcf98959dd9974c1803cbf8dc89ed686b",
-    "packages/platform-contracts/src/supplier-workspace-host.mjs": "69b75c36d61ebc474b4533ea744da8a994e3ff60782d0aa6c3f931864ff4b40e",
     "packages/platform-contracts/src/user-profile.d.mts": "ece7aaa04d9100fd4379038995454e3a2b46da9d21b7def98ac2bb5817b6b94a",
     "packages/platform-contracts/src/user-profile.mjs": "9933887cbfabaa5c709e00d013274eb0ad344e56192456d5e9c622c461202347",
     "packages/platform-contracts/src/vocative-dictionary.mjs": "e767aaaacb020b959bb16221c1c70e7e78bbb34c1ebf793e96a4b4cd1e01ad47",
@@ -1388,7 +1383,6 @@
     "packages/platform-contracts/test/fixtures/first-party-source-postgres.mjs": "6942e2078c59280b997f271830234e06ebf56c33077f2d764535843774eeb7d6",
     "packages/platform-contracts/test/fixtures/identity-profile-postgres.mjs": "6d0ad7dce50bf14ab641223cd3f5b0858fe4e445aa20fc0f91eee0eea4d8e185",
     "packages/platform-contracts/test/fixtures/supplier-location-postgres.mjs": "7f7ef219c45d42d191f90bca123edd3bd355d382c85659facb0e268fe9e8336f",
-    "packages/platform-contracts/test/fixtures/supplier-workspace-postgres.mjs": "88f04f37f4d91feb2d9b318b17d1f3a50a521e104aa98157e90d9d54fad7f5d6",
     "packages/platform-contracts/test/identity-binding-peer-renewal.test.mjs": "45f45d3a7ef055411fcf4b87e1f295099d49758e6dcc7aa9e606f9776f74a004",
     "packages/platform-contracts/test/identity-email.integration.test.mjs": "ef565ebb3cdb12ca05222890e042acb56b0b7b239c7db61c6e5504b9464f2168",
     "packages/platform-contracts/test/identity-peer-read.test.mjs": "eb644147c84b48d476035a9edba7a8b3f3389ffbc35dfbc457f83b776523cb2a",
@@ -1401,7 +1395,7 @@
     "packages/platform-contracts/test/module-scope.test.mjs": "6041bd9926940ce6d3e54e65cba01c2341035ac64ccdd2613f00395f875fe494",
     "packages/platform-contracts/test/native-external-transport.test.mjs": "a88c53b67de0b282826b3a5374d4c63ea347a5cb005873717ca5eed5c0aa1eb7",
     "packages/platform-contracts/test/native-external-types.test.mjs": "14ce3f164de074784d2246ad9a045a084049304945f1ff0517f7a5ce1393482c",
-    "packages/platform-contracts/test/operation-context.test.mjs": "79dc25da3a471bae202dbd00cd8e153b749f3d45700f059241ee4f77386d32e0",
+    "packages/platform-contracts/test/operation-context.test.mjs": "f00169504167c1b208cd0b51f2f2d7927fcffed33a70480cd3980d21c44f3e80",
     "packages/platform-contracts/test/organisation-access-projection.test.mjs": "01226b4f44ec5c95f70c735d7de4a25503bcaa2e7fb85cecd7d43ebd94588c8f",
     "packages/platform-contracts/test/organisation-bootstrap-postgres.test.mjs": "15165c930440ceb7cbe7dbfdd0263637951f31b83c0a33d01a1f065d7dd1fd08",
     "packages/platform-contracts/test/organisation-bootstrap.test.mjs": "ed13fb983ef78aeab7210ebb26a122af8ba96d0529769c1db6fa8458bcfc690d",
@@ -1410,7 +1404,7 @@
     "packages/platform-contracts/test/organisation-lifecycle-postgres.test.mjs": "a4120f9fe2c2d2675c33fa57353f5bd047d118439941f32e34579f5c91e21fd6",
     "packages/platform-contracts/test/organisation-lifecycle-sdk-compatibility.json": "555ad903f3fb64ffe9b50d5c2e6a38ef805598342aa6302ed8190225f474cbe6",
     "packages/platform-contracts/test/organisation-lifecycle-sdk-compatibility.mjs": "18e7cee578fd07ebd7aaa27c14e9dbefa37679ee14775cb8486f2b1cbec134e1",
-    "packages/platform-contracts/test/organisation-lifecycle-sdk-compatibility.test.mjs": "e0d471bc4d35873b58508176fc45c895f6f075e3421cf23798132524e858fb20",
+    "packages/platform-contracts/test/organisation-lifecycle-sdk-compatibility.test.mjs": "169cbe34b6ef33c8b8c8cd57f16f3f19c50022f3b73cb01eda67c75c7da4bf91",
     "packages/platform-contracts/test/organisation-lifecycle.test.mjs": "9d916855d37b3c98069a057ae98727e7530eb9c904fa72ac7f00cbd639eedcf5",
     "packages/platform-contracts/test/organisation-location-grants.test.mjs": "041fad86beccecaceaa58416468febf33b95b79ad3ded5dbce7fef2bd90dc8df",
     "packages/platform-contracts/test/organisation-onboarding-postgres.test.mjs": "fd9d06252c3342d956d0db0755a3200660b6db9ac9d458fa1c6162935627248e",
@@ -1420,7 +1414,7 @@
     "packages/platform-contracts/test/organisation-sdk-compatibility.test.mjs": "fa8300a1b3c7abfb07b533e7313a1fb5bb69fa0bbb5b482b9473d27de2cdbfc8",
     "packages/platform-contracts/test/peer-operation.test.mjs": "250ecb45110ddb6133370bb88731f097ced7b2c61f6daf29a23de1bf696e64eb",
     "packages/platform-contracts/test/platform-ingestion.test.mjs": "c69f2d13d3b8aa47f5d7a0615120281d94caff27d5d23e6550eab1456e860c7f",
-    "packages/platform-contracts/test/private-operation-host.test.mjs": "604a1459b33a8b45ec76f3af21974459d481bc48197f9894b2d203553f62b287",
+    "packages/platform-contracts/test/private-operation-host.test.mjs": "6735e3552dfbe9cd8b31da7ff028b057e1f850002bfda657d848f287e23a9cda",
     "packages/platform-contracts/test/public-request.test.mjs": "1d9a44a7d379a310994519f09ecc3869e5514e753b38b551f2a37f2fa3a11eeb",
     "packages/platform-contracts/test/public-web-source.integration.test.mjs": "17a0aa0f6e624fb1280e0b65ef638481168c51b79b8f773888c27d16643af697",
     "packages/platform-contracts/test/public-web-transport.test.mjs": "48a5c245d82767f682b2566b89634ebbad02e5c3f2383b9cfd999049322c70c9",
@@ -1445,9 +1439,6 @@
     "packages/platform-contracts/test/supplier-export.test.mjs": "ea83b80afa07cf0f93f9b617fcb5b4754fe1fbb43dad3363ee44264c2719a492",
     "packages/platform-contracts/test/supplier-location-admission.integration.test.mjs": "4e00b0313920425faf634d7d7e7190f0e3ac632fd5567dfd6e38a87810d2a46e",
     "packages/platform-contracts/test/supplier-location.test.mjs": "80b705e7dcb6577fa6ac16617507ca72b77dabf93339c0aa2a8752e7c4140213",
-    "packages/platform-contracts/test/supplier-workspace-access.test.mjs": "9a78ca3e8f1ccc6155ec627cf97f6efee40674f9f9eed8f3c3e1732caa658b46",
-    "packages/platform-contracts/test/supplier-workspace-postgres.test.mjs": "1af7e789a2907c3b9ff518e3b41591a90a86b5d4c8e9d6ee5ad1197d134aa848",
-    "packages/platform-contracts/test/supplier-workspace-types.test.mjs": "d7e77cef1992a70bfd7447136663d3e0d969b359e42988fb901962b495a8e77e",
     "packages/platform-contracts/test/types/api-path.mts": "906812ce092ae80ca140c44165ce12b2f80fe435558d548fa1c3889dc5835797",
     "packages/platform-contracts/test/types/delegated-private-phases.mts": "8764e1e0d4a0b21fe01623746f2e20e70af9ead007cd3247de0b95e67fde28a3",
     "packages/platform-contracts/test/types/identity-profile.mts": "1ec242bb55d23f246b6f2b31e10b990bf7bc78d383406602638f7a61eb71a115",
@@ -1457,7 +1448,6 @@
     "packages/platform-contracts/test/types/request-work.mts": "d7707b06d4632c866202e5e1c920f0f7de86ee1dadfd4f5500f92efcf918e305",
     "packages/platform-contracts/test/types/supplier-delegation.mts": "ef7fcf1541b07b4765cdee75fe1068ab90bf6d0cff835ec7fb8fff8c12faea0e",
     "packages/platform-contracts/test/types/supplier-location.mts": "da6f3ab22767f606837617443bdf037f142693e35f3103e4fe85001470c30c2f",
-    "packages/platform-contracts/test/types/supplier-workspace.mts": "4f54d4e8a6cbb3dd85a298e4d90b08956b72e38303fa8bfa9bf3945eb1ad4a66",
     "packages/platform-contracts/test/types/tsconfig.json": "61748e4ce0dab21f3e258f9a96190f1f2c89f35c187a49e392a5ebf3ae1a675d",
     "packages/platform-contracts/test/unmetered-benchmark-requests.integration.test.mjs": "2d941ea2c6b2dcb3c5116a6aea3f00a1a7636d0e90e542662744af6742ea2c7e",
     "packages/platform-contracts/test/unmetered-requests.integration.test.mjs": "06a58a5b96b34c0bf2ac5faa267f1473c253692e3768de82e69bad8d30a9b826",
@@ -2019,8 +2009,7 @@
       "recurring": "1.0.0-candidate.22",
       "knowledge": "1.0.0-candidate.23",
       "organisationLifecycle": "1.0.0-candidate.24",
-      "benchmarkRequest": "1.0.0-candidate.25",
-      "supplierWorkspace": "1.0.0-candidate.26"
+      "benchmarkRequest": "1.0.0-candidate.25"
     },
     "sdkDigests": {
       "accessSchemaDigest": "356463492c3304ca11fa533f6e99f1d41628a3ab830488142c6030fb9a920ff2",
@@ -2028,7 +2017,7 @@
       "moduleAuditSchemaDigest": "af296074b8b4dab2f952e1d2e0553e17d6567f480152870d151dc36c9302e6ac",
       "serviceReadSchemaDigest": "f7757dc5805b3759959505fa852715e70d207e94bf5d85827db3d52b0a5d0d49",
       "clerkConfigurationSourceDigest": "b3bdad865a16cbf677db1dd7450f594870abca30f8a252bd4d361d2387417246",
-      "currentHumanReadSourceDigest": "4e9a45273807daa2e6b631d02c306de7525637f90166b2c87a94e746bc32b44b",
+      "currentHumanReadSourceDigest": "2ef33815dc3f153ae45e6fc0958dbeadae9b7a5aba52b96ed52d3c06367f9b8f",
       "delegatedJobSchemaDigest": "6a12132efab396e6e647e15d1a9711d0a1bacaaab4482639178acd0258d518cb",
       "delegatedJobSourceDigest": "f1716c095d24d872145e3045f9ef05ccce53a214e9fee1d16fc32738ec9315bb",
       "supplierDelegationSchemaDigest": "cd12f9b88397da88241499548b8a5977d0aca830ad83c53a1bcf146265503555",
@@ -2044,8 +2033,8 @@
       "renewalSchemaDigest": "ea8a23a4d9db92587b1be1abde67bfa54cf061b79ce63eae09e96db3da20ee76",
       "modelExecutionSchemaDigest": "1d4b6af7900b44f3d6a311bdcef85280d1b5c968ca67128e0e641e9adb8d253c",
       "moduleSchemaDigest": "c4ea1883af310934b1e83dfcf936ba15dfc32a3f4be206c752efe2d69a55b9ed",
-      "moduleScopeSourceDigest": "492aff582fd0e6a71bd8ca00c4df9e2d45d29f1c143e11778201e24b50ec6dc3",
-      "operationSourceDigest": "27dcb0de65b9b81fad6dec2680d6548ce6ef10a3aa3d232838c9315dbc032d63",
+      "moduleScopeSourceDigest": "1a37a9c5ccb19515baf343a122b3c9a9e246c18995b421854c4a0ef7b4211bf8",
+      "operationSourceDigest": "78f65bb4ca39c218d7314c4c67da9b9d62298ed13293d22f15e9377da631149a",
       "organisationBootstrapSchemaDigest": "4da9e422e95e46c55d592040789b29202b54362dded8cddea356e3f036e1feec",
       "organisationContextSchemaDigest": "21bbc01a1361540c54b6dfc98aa782efd165ea60942c8ffc5da6faa94cbbdf6a",
       "organisationSelectionSchemaDigest": "46b7a3ea7031d50b27cb7ccd3d0717c477d5d308e1d0f4454fb774707367d2cd",
@@ -2056,7 +2045,7 @@
       "platformIngestionSchemaDigest": "14d46ec280e624d79930833b022a46866864557cecbf2e3b55b1a1143fb9d66b",
       "platformIngestionSourceDigest": "3dabdaa40ade5de40dfbf8c5c15c1a215d2a1e939bce7b545a3a551826f677b6",
       "unmeteredSourceSchemaDigest": "9fe56c54c22fe54aa4869966cf00e7347e8c0d040b1d3d8110fc7952a78d5e13",
-      "privateOperationHostSourceDigest": "eaa0b9390aad3ae2a92c0af364ae1e5bc2ca1c0f075d1134b024cefe3a064ecb",
+      "privateOperationHostSourceDigest": "8a0f7c241f0f60989e2b6d36525b0ef647f2e7143e4794e2da039aa28400e2dc",
       "publicIdentityRequestSourceDigest": "a4f2c41df487704522e5ac2e73e80e66295713dd6a84bd4f984edd5c07cdd394",
       "reportAdmissionSchemaDigest": "296ca7ea39f6baeaa9ea5de4846a946e5804a0bc5ff53d0ca52ccaa08eb9e98e",
       "reportAdmissionSourceDigest": "f24e3f71ef76fdb1e8935d0ddc935ea96c146d93b7ecbc9d6a4a4e2d7879f794",
@@ -2074,15 +2063,131 @@
       "requestWorkSchemaDigest": "19fb1d9045bccdb3299317b4c5b7df41e361e971c83ab683a55b56d6fbc8e5fe",
       "requestWorkSourceDigest": "1b9a56aa85548fa0025366bf725ccad5c4ef278f43753dee9714ea97197bee86",
       "supplierLocationAdmissionSchemaDigest": "90ac1d28103f689edc8d11979210ce83cd6218e9f3549f37150fd307d165e9cc",
-      "supplierLocationSchemaDigest": "34ec633dbf38dfffd6b3954ae79b0ef6f771d75ad8f0443882be71ca78b084e5",
-      "supplierWorkspaceSourceDigest": "081b7c9dac93b7a3e76dea377638108dfd2f1a8d92263ee2b05596f009a60743",
-      "supplierWorkspaceHostSourceDigest": "214311dbdc1dadb7327051884f64019a1a500507ebd30774247cb171eceea38b",
-      "supplierWorkspaceSchemaDigest": "647e47125b84e4eb026b5a1aec783b0b147315817cbd6246081fc40c92bd6023"
+      "supplierLocationSchemaDigest": "34ec633dbf38dfffd6b3954ae79b0ef6f771d75ad8f0443882be71ca78b084e5"
     },
     "optionalPackageDigests": {
-      "currentFreshReportSourceDigest": "9b59c334ac1abdd4fbfa7a3ea01e922681fc503e62d92f2b16c7d697aa92d7ca",
-      "readonlyMissReportSourceDigest": "48a5897cfa405e085d1fcbac6d69d4398719e9cd833bd1e716dcf9ef008e9786",
-      "rootAtomicClaimSourceDigest": "b427937d87fb4e1e361c8cac2c704433be7e20ff9df86ec7bcd42f7bd7333c7c"
+      "currentFreshReportSourceDigest": "bf389c47d5cd1d7fb8821fd68bb6da0c78dca6e19e027798ac379819e9106d40",
+      "readonlyMissReportSourceDigest": "585ffec78dd4c775526eeb61c9be6d277afbcf87601b6c0f6d658eef067c8529",
+      "rootAtomicClaimSourceDigest": "a82b40d61ed8269658a3466ac33804550d581b4d56217c17c11a96bffb09ef95"
+    }
+  },
+  "sourceAdmission": {
+    "recordId": "registration-stage-i-joint-sdk-development-20261119-v4",
+    "taskId": "ARCHITECTURE-REGISTRATION-STAGE-I-CONT-20261117",
+    "reviewedMetadata": {
+      "Canon/evidence/2026-11-11-registration-native-draft-http.md": {
+        "sha": "267c92c5aec1f342c2c5ee00123f69505677368a",
+        "mode": "100644",
+        "kind": "HISTORICAL_EVIDENCE"
+      },
+      "Canon/evidence/2026-11-12-registration-current-organisation-context.md": {
+        "sha": "063341d8835efe8181f8db1cfe0905c073b42583",
+        "mode": "100644",
+        "kind": "HISTORICAL_EVIDENCE"
+      },
+      "Canon/evidence/2026-11-12-registration-entitlement-synchronisation.md": {
+        "sha": "a6343fb715241d1ff10d8b65a7f30e08f150295c",
+        "mode": "100644",
+        "kind": "HISTORICAL_EVIDENCE"
+      },
+      "Canon/evidence/2026-11-12-registration-lifecycle-sdk-source.md": {
+        "sha": "53103686d2137489a629fbde4db40dbf9b2efd82",
+        "mode": "100644",
+        "kind": "HISTORICAL_EVIDENCE"
+      },
+      "Canon/evidence/2026-11-12-registration-organisation-lifecycle.md": {
+        "sha": "64fd1fb48188968e0a39aa045d5e47324848b758",
+        "mode": "100644",
+        "kind": "HISTORICAL_EVIDENCE"
+      },
+      "Canon/evidence/2026-11-12-registration-package-activation.md": {
+        "sha": "f7796194c29210cb5837495a295c986bf941b9d7",
+        "mode": "100644",
+        "kind": "HISTORICAL_EVIDENCE"
+      },
+      "Canon/evidence/2026-11-13-registration-accepted-main-source-view.md": {
+        "sha": "4a2d8187493b5a5c714672c59a9aa10b93b304eb",
+        "mode": "100644",
+        "kind": "HISTORICAL_EVIDENCE"
+      },
+      "apps/architecture-lab/organisation-lifecycle-sdk-source-adoption.json": {
+        "sha": "00fce51864f7ad775e04941922ea34d851a1d692",
+        "mode": "100644",
+        "kind": "HISTORICAL_EVIDENCE"
+      },
+      "apps/sg-runtime/.env.example": {
+        "sha": "638963c1ddec22b000a974a92388ed1bad375c1e",
+        "mode": "100644",
+        "kind": "ENVIRONMENT_TEMPLATE"
+      },
+      "apps/sg-runtime/operation-integration.json": {
+        "sha": "bd3b3d6169ef575c2a79ae9c80ee529014f41632",
+        "mode": "100644",
+        "kind": "HISTORICAL_EVIDENCE"
+      },
+      "apps/sg-runtime/organisation-lifecycle-sdk-source-adoption.json": {
+        "sha": "b076740c12f3287051d155db16f58337a783a33a",
+        "mode": "100644",
+        "kind": "HISTORICAL_EVIDENCE"
+      },
+      "apps/srm/.env.example": {
+        "sha": "51ee24dbda054f0fa697dbb215aacb52a37a4475",
+        "mode": "100644",
+        "kind": "ENVIRONMENT_TEMPLATE"
+      },
+      "apps/srm/operation-integration.json": {
+        "sha": "7d399125fbb50f8b4f0b00db2662c05b1096995f",
+        "mode": "100644",
+        "kind": "HISTORICAL_EVIDENCE"
+      },
+      "apps/srm/organisation-lifecycle-sdk-source-adoption.json": {
+        "sha": "61dd27d4db4bbd7d24b2e5528a087d0c664ecb99",
+        "mode": "100644",
+        "kind": "HISTORICAL_EVIDENCE"
+      },
+      "packages/platform-contracts/test/organisation-lifecycle-sdk-compatibility.json": {
+        "sha": "c2975eac3462633beaac0eb2b08e03336abf8ba8",
+        "mode": "100644",
+        "kind": "HISTORICAL_EVIDENCE"
+      },
+      "packages/platform-contracts/test/organisation-sdk-compatibility.json": {
+        "sha": "56bc3a56206000e881c2cdeab01ccc8c1d8a040d",
+        "mode": "100644",
+        "kind": "HISTORICAL_EVIDENCE"
+      },
+      "scripts/governance/controlled-package-ci.test.mjs": {
+        "sha": "42f02a04af6fd5105e3c8476260d4478a7321010",
+        "mode": "100644",
+        "kind": "SDK_COMPATIBILITY_REGRESSION"
+      },
+      "scripts/governance/platform-source-hub-foundation.test.mjs": {
+        "sha": "c6fd6b3608a2cd4e5d170737b660076871359c0d",
+        "mode": "100644",
+        "kind": "SDK_COMPATIBILITY_REGRESSION"
+      },
+      "apps/architecture-lab/benchmark-unmetered-source.json": {
+        "sha": "4c165bf726fdd3196e158603cb12c43f4ecde890",
+        "mode": "100644",
+        "kind": "HISTORICAL_EVIDENCE"
+      }
+    },
+    "localPackages": {
+      "@profitia/platform-contracts": {
+        "beforeBlob": "284cef836ddfd8835d50a1b3bc6ba6dd7d7d0ce3",
+        "afterBlob": "6d7bef9ad41689aa185a0c9213d65327ade3b4f9"
+      },
+      "@profitia/platform-current-e1-authority": {
+        "beforeBlob": "33d3e034c26e80045ed39f6583cfec2e3c219dd3",
+        "afterBlob": "fe793b7a91770216b02ac7bb73ac6fb43cc37912"
+      },
+      "@profitia/platform-source-hub-contracts": {
+        "beforeBlob": "3c1405dbedccfb72249026fe94c28ee6b357dab4",
+        "afterBlob": "7347bdc0f358ae39b56528ef7edf63f7473c2c31"
+      },
+      "@profitia/maps-embed": {
+        "beforeBlob": "cf1314b91a842d46a4692ed48823d3503db70059",
+        "afterBlob": "ba219d23b6f5cd9c59d98de79c71ce0a4e34bdbf"
+      }
     }
   }
 }
