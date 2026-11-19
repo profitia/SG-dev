@@ -7477,7 +7477,7 @@ const TRUSTED_MANIFEST_LEDGER='Canon/registries/governance-manifest-successors-v
 const TRUSTED_MANIFEST_MAIN='refs/remotes/origin/main'
 function trustedManifestSuccessorAdmission(current,historical,cfg,receipt,actual){
  const ledger=JSON.parse(Buffer.from(historical(TRUSTED_MANIFEST_MAIN,TRUSTED_MANIFEST_LEDGER)).toString('utf8'))
- const main=Buffer.from(historical(TRUSTED_MANIFEST_MAIN,cfg.manifestPath))
+ let main=Buffer.from(historical(TRUSTED_MANIFEST_MAIN,cfg.manifestPath))
  if(calendarKeys(ledger)!==JSON.stringify(['schemaVersion','repository','manifestPath','successors'].sort()) ||
   ledger.schemaVersion!=='1.0'||ledger.repository!==REPOSITORY||ledger.manifestPath!==cfg.manifestPath ||
   !Array.isArray(ledger.successors)||ledger.successors.length<1||ledger.successors.length>100)fail('MANIFEST_SUCCESSOR_LEDGER_REJECTED')
@@ -7496,6 +7496,19 @@ function trustedManifestSuccessorAdmission(current,historical,cfg,receipt,actual
  ![grant.sourceSha,grant.previousSourceSha].every(x=>typeof x==='string'&&/^[a-f0-9]{40}$/.test(x))||
  ![grant.manifestSha256,grant.previousManifestSha256].every(x=>typeof x==='string'&&/^[a-f0-9]{64}$/.test(x)))
  fail('MANIFEST_SUCCESSOR_SCOPE_REJECTED')
+ // An older, already authenticated view still traverses the original BSDC
+ // grant after 3.53.0 becomes authority. Authenticate that exact current
+ // authority and its real predecessor before comparing the historical grant.
+ // No arbitrary later authority, candidate file or new source grant is admitted.
+ if(cfg===BSDC_MANIFEST_CONTINUITY&&actual==='d8ddddd7b39b6b67ed7e4ca2b4407a47a4470497465f790a67be301ea4dcccd8'
+   &&calendarHash(main)==='a9c3746dcad97acca504354c3a0a10d02409be65f28f435cb034d1ca5b8fd96d'){
+  const authority=p=>Buffer.from(historical(TRUSTED_MANIFEST_MAIN,p)),authorityReceipt=authority(cfg.recordPath)
+  if(calendarHash(authorityReceipt)!==cfg.recordSha256)fail('MANIFEST_SUCCESSOR_HISTORICAL_AUTHORITY_REJECTED')
+  const admitted=trustedManifestSuccessorAdmission(authority,historical,cfg,JSON.parse(authorityReceipt),calendarHash(main))
+  if(calendarHash(JSON.stringify(admitted.grant))!=='1a410d9f2ae03d8e333773de606b445d8cc5431a2c6548c4a13a647d3c0b4f70'
+    ||calendarHash(admitted.previousManifest)!==actual)fail('MANIFEST_SUCCESSOR_HISTORICAL_AUTHORITY_REJECTED')
+  main=Buffer.from(admitted.previousManifest)
+ }
  if(grant.previousManifestSha256!==calendarHash(main)&&grant.manifestSha256!==calendarHash(main))
  fail('MANIFEST_SUCCESSOR_AUTHORITY_BASE_REJECTED')
  const before=Buffer.from(historical(grant.previousSourceSha,cfg.manifestPath))
