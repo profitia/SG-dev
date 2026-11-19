@@ -7,7 +7,16 @@ import fs from 'node:fs';
 import {createHash,randomUUID} from 'node:crypto';
 import pg from '../../../../apps/architecture-lab/node_modules/pg/lib/index.js';
 import {postgresFixture,clerkFixture} from './identity-profile-postgres.mjs';
-import {privateBusinessPlan} from '../../../../apps/srm/db/private-store/initialize.mjs';
+import {registerHooks} from 'node:module';
+// The pure SRM planner's CLI module imports pg. Reuse the one pinned fixture
+// dependency for that exact import only; no application dependency installation.
+const stagingUrl=new URL('../../../../apps/srm/scripts/staging-migrate.mjs',import.meta.url).href;
+const dependencyHook=registerHooks({resolve(specifier,context,next){
+ if(specifier==='pg'&&context.parentURL===stagingUrl)return{url:new URL('../../../../apps/architecture-lab/node_modules/pg/lib/index.js',import.meta.url).href,shortCircuit:true};
+ return next(specifier,context);
+}});
+let privateBusinessPlan;
+try{({privateBusinessPlan}=await import('../../../../apps/srm/db/private-store/initialize.mjs'))}finally{dependencyHook.deregister()}
 import {createSupplierWorkspaceHost} from '../../src/supplier-workspace-host.mjs';
 import {SUPPLIER_WORKSPACE_OPERATIONS} from '../../src/supplier-workspace-access.mjs';
 import {OPERATION_CONTRACT} from '../../src/operation-context.mjs';
@@ -43,7 +52,8 @@ export async function supplierWorkspaceFixture(){
  const controlled=async run=>{await admin.query('BEGIN;SET LOCAL ROLE profitia_access_owner');try{const v=await run(admin);await admin.query('COMMIT');return v}catch(e){await admin.query('ROLLBACK');throw e}};
  const policySnapshot=()=>admin.query("SELECT polname,polcmd,polpermissive,pg_get_expr(polqual,polrelid) AS using,pg_get_expr(polwithcheck,polrelid) AS check FROM pg_policy WHERE polrelid='srm.suppliers'::regclass ORDER BY polname");
  try{
-  await base.admin.query('RESET ROLE;CREATE DATABASE platform_private');
+  await base.admin.query('RESET ROLE');
+  await base.admin.query('CREATE DATABASE platform_private');
   admin=new pg.Client(config);await admin.connect();
   await admin.query("CREATE EXTENSION pgcrypto;CREATE ROLE srm_app_runtime LOGIN NOINHERIT NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE;CREATE ROLE neon_superuser NOLOGIN NOINHERIT NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE");
   await admin.query("CREATE ROLE "+ROLE+" LOGIN NOINHERIT NOSUPERUSER NOBYPASSRLS NOCREATEDB NOCREATEROLE CONNECTION LIMIT 4");
