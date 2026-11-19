@@ -133,7 +133,7 @@ test('physical exact-source admission rejects wrong branch diff ancestry changed
 })
 
 
-const ci27Source='6fd28bede851fa64755c3de605744d972da25e73',ci27Base='c4965a445867601275cbb75dc4de993123414ba2'
+const ci27Source='c8425c020f68426c41161d881abc7c5400fcbe90',ci27Base='0a2b748cfc3d28a5261a6a21107726c363f693d0'
 const ci27Current=p=>historical(ci27Source,p)
 const ci27Files=()=>Object.entries(c.ASSISTANT_QUALITY_CI27_REVIEW.entries).map(([filename,e])=>({filename,status:e.status,sha:e.sha}))
 test('CI27 admits exactly the frozen27 files while preserving the24 original paths branches anchor and expiry',()=>{
@@ -177,7 +177,7 @@ test('CI27 cannot self-refresh its own hashes to accept another private artifact
 })
 test('CI27 preserves the original CIC Knowledge ACG and PI validators and reports hashes of actual current source',()=>{
  const host=c.qualityTrustedHostPredecessor(ci27Current,historical)
- assert(host.knowledgeComposition);assert.equal(Object.keys(host.manifest.sourceDigests).length,19)
+ assert(host.knowledgeComposition);assert.equal(Object.keys(host.manifest.sourceDigests).length,21)
  assert.equal(Object.keys(host.knowledgeManifest.sourceDigests).length,478)
  const quality=c.qualityTrustedPredecessor(ci27Current,historical)
  for(const[p,digest]of Object.entries(quality.manifest.sourceDigests))assert.equal(hash(ci27Current(p)),digest,p)
