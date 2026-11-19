@@ -181,7 +181,11 @@ test('early context entry refuses caller environment trust clock result and netw
 test('native signed-context admission precedes the unchanged private CIC fetch and retains every earlier workflow job',()=>{
  const file='.github/workflows/assistant-quality-repair.yml',root=fileURLToPath(new URL('../../../',import.meta.url))
  const previousWorkflowSha256='6621c7ea1ae47dc787b92eaa97e64d75fa525a5290525deb8c3b3ecfe67ddce8'
- const current=readFileSync(path.join(root,file),'utf8')
+ const rawCurrent=readFileSync(path.join(root,file),'utf8')
+ const exportStart=rawCurrent.indexOf('\n  native_context_export:\n')
+ assert(exportStart>0)
+ assert.equal(createHash('sha256').update(rawCurrent.slice(exportStart)).digest('hex'),'672940976972ca6bef00093fbd53bec8c1336fc6d8a0fe90128cc8cf0b361877','exact bounded additive export job')
+ const current=rawCurrent.slice(0,exportStart).replace('options: [source-check, keyless-qualify, publisher-preflight, controller-job, context-export]','options: [source-check, keyless-qualify, publisher-preflight, controller-job]')
  const step='      - name: Verify signed context before private package access\n'
   +'        env:\n'
   +'          GITHUB_TOKEN: ${{ github.token }}\n'
