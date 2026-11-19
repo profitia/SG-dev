@@ -5,7 +5,7 @@
   "owner": "SRM Runtime",
   "writableProfile": "SRM",
   "package": "@profitia/srm-adp-ui",
-  "packageVersion": "1.1.0",
+  "packageVersion": "1.0.0",
   "contractVersion": "1.0.0",
   "integration": "NATIVE_VIEW",
   "scope": "PRESENTATION_ONLY",
@@ -31,7 +31,7 @@
     "Canon/v1.1-srm-adp-presentation-mounting-amendment.md"
   ],
   "sourceDigestAlgorithm": "SHA256(sorted path + NUL + file bytes + NUL; package.json, package-lock.json, tsconfig.json and all src files)",
-  "sourceDigest": "68050c097926edfea3208b2b33fb659861a53dde22665c8b6829bdd1a685d58e",
+  "sourceDigest": "571a680eed58d52b599aa6287d20481401b8fed74f97eeca1a96038fc80ac6fb",
   "sourceFiles": [
     "package-lock.json",
     "package.json",
