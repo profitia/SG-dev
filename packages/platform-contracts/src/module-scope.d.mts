@@ -1,6 +1,6 @@
 import type { AccessQuery } from './access-store.mjs'
 import type { Environment } from './operation-context.mjs'
-export type ModuleId = 'benchmark' | 'category' | 'supplier_report'
+export type ModuleId = 'benchmark' | 'category' | 'supplier_report' | 'supplier_workspace'
 export declare const MODULE_SCOPE_CONTRACT: Readonly<{ id: 'profitia.module-scope'; version: '1.0.0' }>
 export declare const moduleSchemaUrl: string
 export declare function moduleSchemaDigest(): Promise<string>

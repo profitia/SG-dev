@@ -1,6 +1,6 @@
 import type { RequestPolicy, RequestReservation, RequestReceipt } from './request-ledger.mjs'
 export type OrganisationLifecycleOperation = 'organisation.onboarding.read'|'organisation.company.lookup'|'organisation.slug.check'|'organisation.procurement.write'|'organisation.invitation.create'|'organisation.invitation.accept'|'organisation.activation.read'|'organisation.access.synchronise'
-export type OperationId = import('./knowledge-operations.mjs').KnowledgeOperation | OrganisationLifecycleOperation | 'organisation.create' | import('./recurring-job.mjs').RecurringJobOperation | 'insights.report.start' | 'insights.report.status' | 'insights.report.list' | 'insights.report.download' | import('./supplier-location.mjs').SupplierLocationOperation | 'assistant.converse' | 'assistant.history.read' | 'assistant.history.write' | 'account.settings.read' | 'account.settings.write' | 'knowledge.read' | 'benchmark.selection.read' | 'benchmark.selection.write' | 'category.read' | 'category.write' | 'supplier.assignment.read' | 'supplier.assignment.write' | 'forecast.read' | 'forecast.request' | 'supplier.report.refresh' | 'job.execute' | 'knowledge.ingest' | 'personal.list.read' | 'personal.list.write' | 'supplier.report.read' | 'supplier.report.project' | 'supplier.report.export' | 'supplier.private.read' | 'supplier.private.reveal' | 'supplier.private.export' | 'supplier.private.refresh' | 'benchmark.discovery.request' | 'benchmark.discovery.read'
+export type OperationId = import('./supplier-workspace-access.mjs').SupplierWorkspaceOperation | import('./knowledge-operations.mjs').KnowledgeOperation | OrganisationLifecycleOperation | 'organisation.create' | import('./recurring-job.mjs').RecurringJobOperation | 'insights.report.start' | 'insights.report.status' | 'insights.report.list' | 'insights.report.download' | import('./supplier-location.mjs').SupplierLocationOperation | 'assistant.converse' | 'assistant.history.read' | 'assistant.history.write' | 'account.settings.read' | 'account.settings.write' | 'knowledge.read' | 'benchmark.selection.read' | 'benchmark.selection.write' | 'category.read' | 'category.write' | 'supplier.assignment.read' | 'supplier.assignment.write' | 'forecast.read' | 'forecast.request' | 'supplier.report.refresh' | 'job.execute' | 'knowledge.ingest' | 'personal.list.read' | 'personal.list.write' | 'supplier.report.read' | 'supplier.report.project' | 'supplier.report.export' | 'supplier.private.read' | 'supplier.private.reveal' | 'supplier.private.export' | 'supplier.private.refresh' | 'benchmark.discovery.request' | 'benchmark.discovery.read'
 export type OperationOutcome = 'SUCCEEDED' | 'NO_DATA' | 'SELECTION_UNAVAILABLE'
 export type Environment = 'development' | 'staging' | 'production'
 export type Json = null | boolean | number | string | Json[] | { [key: string]: Json }
@@ -68,7 +68,7 @@ export interface DelegatedJob {
 }
 /** Trusted module binding provenance; carries no credential or permission. */
 export interface ModuleEvidence {
-  moduleId: 'benchmark' | 'category' | 'supplier_report'; moduleBindingId: string
+  moduleId: 'benchmark' | 'category' | 'supplier_report' | 'supplier_workspace'; moduleBindingId: string
   version: string; sourceRef: string; expiresAt: string; transactionId: string
   moduleSchemaDigest: string; auditSchemaDigest: string
 }
@@ -155,7 +155,7 @@ export declare function operationPayloadDigest(payload: Json): string
 export declare function operationSourceDigest(): Promise<string>
 export declare function normalizeModuleEvidence(value: unknown, options?: { now?: () => number; allowExpired?: boolean }): Readonly<ModuleEvidence>
 export declare function createOperationExecutor<Transaction>(options: {
-  application: Application; now?: () => number; knowledgeSchemaDigest?:string; organisationLifecycleSchemaDigest?:string
+  application: Application; now?: () => number; supplierWorkspaceSchemaDigest?:string; knowledgeSchemaDigest?:string; organisationLifecycleSchemaDigest?:string
   organisationBootstrapSchemaDigest?:string; recurringSchemaDigest?:string; locationAdmissionSchemaDigest?:string; reportAdmissionSchemaDigest?:string; requestQuotaSchemaDigest?:string; requestBenchmarkQuotaSchemaDigest?:string; assistantSchemaDigest?:string
   authenticate(request: unknown): Promise<Actor | null>
   /** Locks authoritative state and commits effects + OUTCOME atomically; rollback on throw. */
@@ -178,3 +178,5 @@ export declare const ORGANISATION_LIFECYCLE_ROOT_CONTRACT:Readonly<{id:'profitia
 export declare const ORGANISATION_LIFECYCLE_OPERATIONS:readonly OrganisationLifecycleOperation[]
 export interface OrganisationLifecyclePolicy{actorId:string;applicationId:string;environment:Environment;expiresAt:string;operation:OrganisationLifecycleOperation;organisationId:string|null;payloadDigest:string;policyId:string;policyVersion:string;resourceId:string;schemaDigest:string;sourceRef:string;transactionId:string}
 export declare const BENCHMARK_QUOTA_ROOT_CONTRACT:Readonly<{id:'profitia.operation-context';version:'1.0.0';implementation:'1.0.0-candidate.25'}>
+
+export declare const SUPPLIER_WORKSPACE_ROOT_CONTRACT:Readonly<{id:'profitia.operation-context';version:'1.0.0';implementation:'1.0.0-candidate.26'}>
