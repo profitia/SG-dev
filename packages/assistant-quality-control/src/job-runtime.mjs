@@ -150,6 +150,32 @@ async function withNativeStop(run){
 }
 const installedTrust=()=>readQualityNativeJobTrust({
  ownerJson:process.env.AQC_OWNER_PUBLIC_KEYS_JSON,phaseJson:process.env.AQC_PHASE_PUBLIC_KEYS_JSON})
+/** Early read-only admission before any private package credential is made
+ * available. It repeats the original full context/state validation; its public
+ * metadata result is never reused as authority by the actual phase. */
+export async function runQualityNativeJobContextPreflight(...args){
+ require(args.length===0,'NATIVE_JOB_INPUTS_FORBIDDEN')
+ const {config,gateSetSha256}=native(),trust=installedTrust()
+ require(config.role==='INDEPENDENT_VERIFIER','NATIVE_JOB_CONTEXT_PHASE_REQUIRED')
+ for(const name of ['OPENAI_API_KEY','NPM_TOKEN','AQC_EXECUTOR_SUPERVISOR_PRIVATE_KEY',
+  'AQC_INDEPENDENT_VERIFIER_PRIVATE_KEY','AQC_INDEPENDENT_PUBLISHER_PRIVATE_KEY',
+  'AQC_LIMITS_BROKER_DATABASE_URL','AQC_LIMITS_BROKER_COMMAND_KEY',
+  'AQC_VERIFIER_PACK_JSON','AQC_VERIFIER_PACK_ATTESTATION_JSON'])
+  require(!process.env[name],'NATIVE_JOB_SECRET_SCOPE_REJECTED')
+ const qualified=verifyLinuxQualification(json(process.env.AQC_LINUX_QUALIFICATION_JSON,16384),
+  {keys:trust.verifierKeys,gateSetSha256})
+ require(qualified.sourceSha===config.sourceSha,'NATIVE_JOB_QUALIFICATION_SOURCE_MISMATCH')
+ const github=createQualityGitHub({token:process.env.GITHUB_TOKEN,controllerWorkflowSha256:config.controllerWorkflowSha256})
+ const nativeInvocation=await github.controllerJobInvocation({
+  externalId:'aqc-job:'+config.sourceSha+':'+config.inputs.nonce+':'+config.inputs.action,runId:process.env.GITHUB_RUN_ID})
+ const {readQualityControllerJobContext}=await import('./cli.mjs')
+ const context=await readQualityControllerJobContext({inputs:config.inputs,nativeInvocation,
+  registry:process.env.AQC_REPAIR_CONTEXTS_JSON,ownerKeys:trust.ownerKeys,verifierKeys:trust.verifierKeys,
+  expectedServiceId:'srv-dapa3tid0e5s73f8bc5g',expectedGateSetSha256:gateSetSha256})
+ return Object.freeze({schemaVersion:'AQC_NATIVE_CONTEXT_PREFLIGHT_V1',status:'NATIVE_CONTEXT_VERIFIED',
+  sourceSha:config.sourceSha,manifestSha256:config.inputs.manifest_sha256,
+  gateSetSha256,expiresAt:context.manifest.mandate.expiresAt,rawQaPayloadIncluded:false})
+}
 /** Separate verifier job: attests only a real, already completed native Linux
  * run and original hashed artifact. No caller-provided observation is admitted.
  * Returned qualification expires at the original horizon, never signing time. */
@@ -210,7 +236,9 @@ export async function runQualityNativeRoleJob(...args){
 if(process.argv[1]&&path.resolve(process.argv[1])===fileURLToPath(import.meta.url)){
  try{
   require(process.argv.length===3,'NATIVE_JOB_MODE_REQUIRED')
-  if(process.argv[2]==='qualify-linux'){
+  if(process.argv[2]==='validate-context'){
+   console.log(JSON.stringify(await runQualityNativeJobContextPreflight()))
+  }else if(process.argv[2]==='qualify-linux'){
    const document=await runQualityNativeJobQualification()
    require(typeof process.env.GITHUB_OUTPUT==='string','NATIVE_JOB_OUTPUT_REQUIRED')
    fs.appendFileSync(process.env.GITHUB_OUTPUT,'qualification='+JSON.stringify(document)+'\n')

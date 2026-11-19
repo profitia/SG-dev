@@ -170,3 +170,25 @@ test('trusted root verifier can read the admitted checkout and its historical ba
   rmSync(root,{recursive:true,force:true})
  }
 })
+
+
+import {runQualityNativeJobContextPreflight} from '../src/job-runtime.mjs'
+test('early context entry refuses caller environment trust clock result and network ports before I/O',async()=>{
+ for(const option of [{},{fetch:()=>{}},{environment:env()},{now:()=>0},
+  {privateKey:generateKeyPairSync('ed25519').privateKey},{result:'NATIVE_CONTEXT_VERIFIED'}])
+  await assert.rejects(runQualityNativeJobContextPreflight(option),{code:'NATIVE_JOB_INPUTS_FORBIDDEN'})
+})
+test('native signed-context admission precedes the unchanged private CIC fetch and retains every earlier workflow job',()=>{
+ const file='.github/workflows/assistant-quality-repair.yml',root=fileURLToPath(new URL('../../../',import.meta.url))
+ const before=execFileSync('git',['show','344ac2d06a78612e3adc6297764ee073acf6be66:'+file],{cwd:root,encoding:'utf8'})
+ const current=readFileSync(path.join(root,file),'utf8')
+ const step='      - name: Verify signed context before private package access\n'
+  +'        env:\n'
+  +'          GITHUB_TOKEN: ${{ github.token }}\n'
+  +'        run: node packages/assistant-quality-control/src/job-runtime.mjs validate-context\n'
+ assert.equal(current.split(step).length,2,'one exact public context preflight')
+ assert.equal(current.replace(step,''),before,'all original jobs, private credential scopes, fetch pins and phase rechecks retained byte-for-byte')
+ assert(current.indexOf(step)<current.indexOf('      - name: Fetch only the exact admitted CIC archive without lifecycle'))
+ const preflight=current.slice(current.indexOf(step),current.indexOf('      - name: Verify and install the exact public CLI and isolation helper',current.indexOf(step)))
+ assert(!preflight.includes('secrets.')&&!preflight.includes('NPM_TOKEN'),'preflight receives no package credential')
+})
