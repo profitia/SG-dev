@@ -1,0 +1,230 @@
+{
+  "decisionId": "ARCH-PK-STAGE2-EXECUTION-CONTINUATION-20261117",
+  "status": "PROPOSED_OWNER_DECISION_REQUIRED",
+  "projectKey": "ARCHITECTURE",
+  "taskId": "ARCH-PK-STAGE2-TECHNICAL-CONT-20261117",
+  "hostConversationId": "01a1e7fb-aa2e-7501-b3d7-5f42be90cb14",
+  "environment": "development",
+  "originalReleaseGoUnchanged": "123d4d7df165b73852724d5e09056424f4ce631a",
+  "priorApprovals": [
+    "4153178f65cf99fe014fe02e798c130f26210353",
+    "c50893bd6fa4f3c8ba9260271abaf1c12e87c391"
+  ],
+  "ci": {
+    "candidateSha": "a03b3318c1a1e62ef63bae1fbf4da07d1f2c985f",
+    "authorityMain": "df57c042e2fbd60fc14ea7f883f245ea6be8e2ee",
+    "files": {
+      "scripts/governance/controlled-package-ci.mjs": "903fc539c3ae08c3b389dd33a3f45207a2d6ee885f028477baea99830afb3964",
+      "scripts/governance/controlled-package-ci.test.mjs": "2a972a846ffafe3225092b91e28c024affabe36e97b321659ad47103541b2435",
+      "scripts/governance/platform-knowledge-routing.test.mjs": "a742682f9e12ba76f469b3c847df886ac3b936fd5f0666bb2a3d679598ea972d"
+    },
+    "publication": "INERT_NOT_APPROVED_OR_PUBLISHED",
+    "patchSha256": "7780e7f0265d86df75955eed0d6a1df0b38820aeaba84328f781275e208436cb",
+    "approvedPriorAnchor": "c5ba5f23a6552e29faef3109873bcbd4c2f41749",
+    "composition": "Unmodified automatic merge of prior reviewed candidate9d9da030 and separately accepted main df57c042; no manual protected-code edit.",
+    "boundedRefresh": {
+      "retainAnchor": "a03b3318c1a1e62ef63bae1fbf4da07d1f2c985f",
+      "onlyAlreadyAcceptedUnrelatedMainChanges": true,
+      "requireConflictFreeThreeWayMerge": true,
+      "requireIdenticalOwnAddedRemovedLinesIncludingBlankLinesAndExactPathsModes": true,
+      "preserveAllAcceptedAuthorityCode": true,
+      "noManualPolicyConflictResolution": true,
+      "noRuntimeOrDependencyChanges": true,
+      "actualExpectedShaPerRun": true,
+      "requiredExactHeadAndResultingMainCi": true,
+      "noWaiversOrBootstrapException": true
+    },
+    "authorityResultingMainCi": {
+      "id": 44053970212,
+      "status": "completed",
+      "conclusion": "success",
+      "head_sha": "df57c042e2fbd60fc14ea7f883f245ea6be8e2ee",
+      "html_url": "https://github.com/profitia/SG-dev/actions/runs/44053970212"
+    },
+    "tests": {
+      "ci-continuation-full-regression": {
+        "exitCode": 0,
+        "files": 17,
+        "testFiles": [
+          "scripts/governance/assistant-quality-routing.test.mjs",
+          "scripts/governance/controlled-package-ci-path-coverage.test.mjs",
+          "scripts/governance/controlled-package-ci.test.mjs",
+          "scripts/governance/development-bridge.test.mjs",
+          "scripts/governance/development-execution.test.mjs",
+          "scripts/governance/development-workspace.test.mjs",
+          "scripts/governance/ecr-routing.test.mjs",
+          "scripts/governance/governance.test.mjs",
+          "scripts/governance/identity-runtime-onboarding.test.mjs",
+          "scripts/governance/krs-registry-routing.test.mjs",
+          "scripts/governance/package-limits-routing.test.mjs",
+          "scripts/governance/platform-knowledge-ci-admission.test.mjs",
+          "scripts/governance/platform-knowledge-routing.test.mjs",
+          "scripts/governance/platform-source-hub-foundation.test.mjs",
+          "scripts/governance/sg2-staging-release.test.mjs",
+          "scripts/governance/srm-adp-routing.test.mjs",
+          "scripts/governance/srm-release-lifecycle.test.mjs"
+        ],
+        "logSha256": "24485d9692d9d9724b02a6b40e3b9e5c0d4c9db1e0214a7bc437ef70b6e0f7bb",
+        "summary": [
+          "ℹ tests 625",
+          "ℹ pass 625",
+          "ℹ fail 0",
+          "ℹ skipped 0"
+        ]
+      },
+      "ci-continuation-source-full-regression": {
+        "exitCode": 0,
+        "files": 23,
+        "testFiles": [
+          "scripts/governance/assistant-quality-routing.test.mjs",
+          "scripts/governance/controlled-package-ci-path-coverage.test.mjs",
+          "scripts/governance/controlled-package-ci.test.mjs",
+          "scripts/governance/development-bridge.test.mjs",
+          "scripts/governance/development-execution.test.mjs",
+          "scripts/governance/development-workspace.test.mjs",
+          "scripts/governance/ecr-routing.test.mjs",
+          "scripts/governance/governance.test.mjs",
+          "scripts/governance/identity-runtime-onboarding.test.mjs",
+          "scripts/governance/krs-registry-routing.test.mjs",
+          "scripts/governance/package-limits-routing.test.mjs",
+          "scripts/governance/platform-knowledge-ci-admission.test.mjs",
+          "scripts/governance/platform-knowledge-routing.test.mjs",
+          "scripts/governance/platform-source-hub-foundation.test.mjs",
+          "scripts/governance/sg2-staging-release.test.mjs",
+          "scripts/governance/srm-adp-routing.test.mjs",
+          "scripts/governance/srm-release-lifecycle.test.mjs",
+          "apps/architecture-lab/test/knowledge-source.test.mjs",
+          "apps/architecture-lab/test/private-recurring-source.test.mjs",
+          "apps/sg-runtime/tests/procurement-insights-live-acceptance-source.test.mjs",
+          "packages/platform-contracts/test/current-e1-knowledge.test.mjs",
+          "packages/platform-contracts/test/knowledge-operations.test.mjs",
+          "packages/assistant-context-gateway/test/knowledge.test.mjs"
+        ],
+        "logSha256": "74700fcdba5f051906573b90a2da93d2bb7fec065796e679d3865c36aa094414",
+        "summary": [
+          "ℹ tests 666",
+          "ℹ pass 665",
+          "ℹ fail 0",
+          "ℹ skipped 1"
+        ]
+      }
+    }
+  },
+  "migrationExecutor": {
+    "projectId": "spring-bread-28217539",
+    "branchId": "br-sparkling-term-b99l107x",
+    "database": "platform_private",
+    "sessionLogin": "neondb_owner",
+    "effectiveOwner": "profitia_access_owner",
+    "existingSelfGrantedMembershipOid": 139949,
+    "unchangedProviderMembershipOid": 24577,
+    "change": "Only SET FALSE -> TRUE -> FALSE on the existing self-granted edge inside each single transaction, restored and baseline-asserted before COMMIT. ADMIN/INHERIT false retained; cloud_admin edge untouched.",
+    "maxTransactions": 24,
+    "validUntil": "2026-11-24T23:59:00Z",
+    "allowedPayloads": [
+      "One rolled-back trial and one install of exact SQL015 plus previously approved two applications/two receivers/eleven UUID grants.",
+      "Bounded revoke/expire/restore negative and recovery operations only on these eleven new grants and delegations created by this packet actual E2E, with scope,user,source/job/UUID guards."
+    ],
+    "forbidden": [
+      "No change to other users, applications, grants, membership edges or role attributes.",
+      "No ADMIN/INHERIT privilege grant, no new role, no provider superuser connection, no runtime owner membership.",
+      "No persistent SET privilege at COMMIT; no other product or Stage I activation."
+    ],
+    "installTransactionPath": "Canon/proposals/platform-knowledge-stage2-sdk-20261111/identity-owner-install.sql",
+    "installTransactionSha256": "75ee6a624e34685735b1e0762aaef783d9177a1db05bb25d7a34ca600bd48a37",
+    "sql015Sha256": "2122522771623b8becc5cd46b12aa87fd7d9f9a8e5fea82194335913458c630a",
+    "sameTransactionRestorationRequired": true,
+    "onAnyError": "Rollback complete transaction and close connection; idle transaction timeout60s, statement timeout120s, lock timeout5s. No global restore.",
+    "readOnlyEvidence": {
+      "observedAt": "2026-11-17",
+      "scope": "development-only-read-only-owner-role-probes",
+      "centralDenied": {
+        "content": [
+          {
+            "type": "text",
+            "text": "NeonDbError: permission denied to set role \"profitia_access_owner\"\nSQLSTATE: 42501"
+          }
+        ],
+        "structuredContent": {
+          "error_code": "INVALID_ARGUMENT"
+        },
+        "isError": true
+      },
+      "productAllowed": {
+        "content": [
+          {
+            "type": "text",
+            "text": "[\n  [],\n  [],\n  [\n    {\n      \"effective_role\": \"platform_knowledge_owner\",\n      \"session_login\": \"platform_knowledge_migrator\",\n      \"database\": \"platform_knowledge\"\n    }\n  ]\n]"
+          }
+        ],
+        "structuredContent": {
+          "data": [
+            {
+              "rows": [],
+              "totalRowCount": 0,
+              "truncated": false
+            },
+            {
+              "rows": [],
+              "totalRowCount": 0,
+              "truncated": false
+            },
+            {
+              "rows": [
+                {
+                  "effective_role": "platform_knowledge_owner",
+                  "session_login": "platform_knowledge_migrator",
+                  "database": "platform_knowledge"
+                }
+              ],
+              "totalRowCount": 1,
+              "truncated": false
+            }
+          ]
+        },
+        "isError": false
+      },
+      "membershipEdges": {
+        "content": [
+          {
+            "type": "text",
+            "text": "[\n  {\n    \"membership_oid\": 24577,\n    \"owner_role\": \"profitia_access_owner\",\n    \"member_role\": \"neondb_owner\",\n    \"grantor_role\": \"cloud_admin\",\n    \"admin_option\": true,\n    \"inherit_option\": false,\n    \"set_option\": false\n  },\n  {\n    \"membership_oid\": 139949,\n    \"owner_role\": \"profitia_access_owner\",\n    \"member_role\": \"neondb_owner\",\n    \"grantor_role\": \"neondb_owner\",\n    \"admin_option\": false,\n    \"inherit_option\": false,\n    \"set_option\": false\n  }\n]"
+          }
+        ],
+        "structuredContent": {
+          "data": {
+            "rows": [
+              {
+                "membership_oid": 24577,
+                "owner_role": "profitia_access_owner",
+                "member_role": "neondb_owner",
+                "grantor_role": "cloud_admin",
+                "admin_option": true,
+                "inherit_option": false,
+                "set_option": false
+              },
+              {
+                "membership_oid": 139949,
+                "owner_role": "profitia_access_owner",
+                "member_role": "neondb_owner",
+                "grantor_role": "neondb_owner",
+                "admin_option": false,
+                "inherit_option": false,
+                "set_option": false
+              }
+            ],
+            "totalRowCount": 2,
+            "truncated": false
+          }
+        },
+        "isError": false
+      },
+      "proposedGrantNotExecuted": true
+    },
+    "productMigratorActuallyVerified": true,
+    "notYetExecuted": true
+  },
+  "resourcesBudgetAndRuntimeGoUnchanged": true,
+  "newBudgetUsd": 0,
+  "formalStage2Stage3AcceptanceUnchanged": true
+}
