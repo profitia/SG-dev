@@ -271,6 +271,10 @@ jobs:
           /usr/bin/bwrap --version
           sudo sysctl -w kernel.unprivileged_userns_clone=1
           if sysctl kernel.apparmor_restrict_unprivileged_userns >/dev/null 2>&1; then sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0; fi
+      - name: Verify signed context before private package access
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node packages/assistant-quality-control/src/job-runtime.mjs validate-context
       - name: Verify and install the exact public CLI and isolation helper
         run: |
           curl --fail --silent --show-error --location --proto '=https' --tlsv1.2 https://github.com/openai/codex/releases/download/rust-v0.167.2/codex-x86_64-unknown-linux-musl.tar.gz --output /tmp/aqc-codex.tar.gz
