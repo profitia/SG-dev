@@ -414,7 +414,11 @@ export function createOperationExecutor(options) {
           if(workspaceAdopted){
             if(identity.kind!=='HUMAN'||access.type!=='MEMBERSHIP'||moduleEvidence?.moduleId!=='supplier_workspace')deny('ACCESS_BASIS_INVALID')
             let required;try{required=supplierWorkspaceRequiredPermissions(request.operation,payload)}catch{deny('CONTEXT_INVALID')}
-            for(const op of required)if(!permission(access,op,'supplier_workspace',request.resourceId))deny('PERMISSION_DENIED')
+            // v1 exposes complete organization operations, never silently filtered boards.
+            for(const op of [request.operation,...required]){
+              if(access.denies?.some(p=>p.operation===op&&p.feature==='supplier_workspace'))deny('EXPLICIT_DENY')
+              if(!permission(access,op,'supplier_workspace',request.resourceId))deny('PERMISSION_DENIED')
+            }
           }
           const platformPolicy=platform?ingestionPolicy(state.ingestion,context,request,now()):null
           if(platformPolicy)context={...context,sourceId:platformPolicy.sourceId,sourceVersion:platformPolicy.sourceVersion,

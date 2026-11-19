@@ -134,8 +134,9 @@ export async function supplierWorkspaceFixture(){
   pool=new pg.Pool({...config,user:ROLE,max:3});auditPool=new pg.Pool({...config,user:ROLE,max:1});
   const enrol=(org=A)=>controlled(c=>c.query("INSERT INTO profitia_supplier_workspace.organisation_policies VALUES('srm',$1,$2,'ACTIVE',1,'SYNTHETIC_ONLY',$3)",[org,randomUUID(),future()]));
   const deny=(operation,{user=U,org=A,resource=null}={})=>controlled(c=>c.query("INSERT INTO profitia_access.permission_grants VALUES($1,'srm',$2,$3,'DENY',$4,'supplier_workspace',$5)",[randomUUID(),org,user,operation,resource]));
-  const execute=async({user=U,org=A,operation='supplier.catalog.read',payload={kind:'SUPPLIERS'},afterDomain,failOutcome=false,forgePayload,wrongSchema=false,wrongSource=false}={})=>{
+  const execute=async({user=U,org=A,operation='supplier.catalog.read',payload={kind:'SUPPLIERS'},afterDomain,failOutcome=false,failAfterCommit=false,forgePayload,wrongSchema=false,wrongSource=false,prepareOnly=false,publicOrigin}={})=>{
    const f=clerkFixture('subject-'+user),domainSeen=[];
+   if(publicOrigin){const u=new URL(publicOrigin);if(!['127.0.0.1','localhost'].includes(u.hostname))throw Error('Synthetic loopback origin only');f.origin=u.origin;}
    const transact=async(run,limits)=>{
     const c=await pool.connect();let closed=false,timer;
     try{await c.query('BEGIN');const query=async(sql,args)=>{
@@ -144,7 +145,7 @@ export async function supplierWorkspaceFixture(){
      let r;try{r=await c.query(sql,forgePayload&&sql.includes('supplier_pipelines_execute')?[JSON.stringify(forgePayload)]:args)}catch(e){if(sql.includes('supplier_pipelines_execute'))console.info('SYNTHETIC_DOMAIN_SQL_FAILURE',JSON.stringify({code:e.code,message:e.message,where:e.where}));throw e}
      if(sql.includes('supplier_pipelines_execute')){domainSeen.push(true);if(afterDomain)await afterDomain({client:c,clerk:f})}
      return r;
-    };const value=await Promise.race([run({query,transaction:c}),new Promise((_,reject)=>{timer=setTimeout(()=>{closed=true;reject(Error('Fixture transaction timeout'))},limits.timeoutMs)})]);await c.query('COMMIT');return value}
+    };const value=await Promise.race([run({query,transaction:c}),new Promise((_,reject)=>{timer=setTimeout(()=>{closed=true;reject(Error('Fixture transaction timeout'))},limits.timeoutMs)})]);await c.query('COMMIT');if(failAfterCommit)throw Error('SYNTHETIC_COMMIT_REPLY_LOST');return value}
     catch(e){closed=true;await c.query('ROLLBACK');throw e}finally{closed=true;clearTimeout(timer);c.release()}
    };
    const host=createSupplierWorkspaceHost({
@@ -156,9 +157,10 @@ export async function supplierWorkspaceFixture(){
    });
    const input={contractId:OPERATION_CONTRACT.id,contractVersion:OPERATION_CONTRACT.version,organisationId:org,operation,
     resourceId:'supplier-workspace:'+org,payload,request:f.request(operation.endsWith('.write')?'POST':'GET')};
+   if(prepareOnly)return{host,clerk:f,input};
    const result=await host.execute(input);return{result,clerk:f,domainSeen};
   };
-  return{A,B,U,V,W,S,SB,binding,admin,pool,auditPool,controlled,enrol,deny,execute,before,noImplicitGrant,schemaDigest,
+  return{A,B,U,V,W,S,SB,binding,admin,pool,auditPool,controlled,enrol,deny,execute,prepareHost:options=>execute({...options,prepareOnly:true}),before,noImplicitGrant,schemaDigest,sourceRef:SOURCE,
    count:async()=>(await admin.query('SELECT count(*)::int AS n FROM srm.suppliers')).rows[0].n,
    snapshot:policySnapshot,
    async close(){await pool.end();await auditPool.end();await admin.end();await base.close()},

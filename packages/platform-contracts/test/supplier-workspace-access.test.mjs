@@ -99,7 +99,7 @@ for(const operation of workspaceOperations){
  });
  workspaceTest('workspace '+operation+' preserves an explicit DENY',async()=>{
   const f=workspaceFixture(operation,{});f.state.access.denies.push({operation,feature:'supplier_workspace',resourceId:null});
-  await workspaceAssert.rejects(f.execute(),e=>e.reasonCode==='PERMISSION_DENIED');workspaceAssert.equal(f.called,0);
+  await workspaceAssert.rejects(f.execute(),e=>e.reasonCode==='EXPLICIT_DENY');workspaceAssert.equal(f.called,0);
  });
 }
 for(const[name,change]of [
@@ -122,12 +122,12 @@ for(const[name,change]of [
 workspaceTest('occupied lifecycle work independently requires assignment.write',async()=>{
  const f=workspaceFixture('supplier.pipeline.write',{command:'STAGE_REMOVE',data:{expectedCount:4}});
  f.state.access.denies.push({operation:'supplier.assignment.write',feature:'supplier_workspace',resourceId:null});
- await workspaceAssert.rejects(f.execute(),e=>e.reasonCode==='PERMISSION_DENIED');workspaceAssert.equal(f.called,0);
+ await workspaceAssert.rejects(f.execute(),e=>e.reasonCode==='EXPLICIT_DENY');workspaceAssert.equal(f.called,0);
 });
 workspaceTest('supplier card cannot disclose a separately denied ADP projection',async()=>{
  const f=workspaceFixture('supplier.catalog.read',{kind:'SUPPLIER_CARD'});
  f.state.access.denies.push({operation:'supplier.adp-status.read',feature:'supplier_workspace',resourceId:null});
- await workspaceAssert.rejects(f.execute(),e=>e.reasonCode==='PERMISSION_DENIED');workspaceAssert.equal(f.called,0);
+ await workspaceAssert.rejects(f.execute(),e=>e.reasonCode==='EXPLICIT_DENY');workspaceAssert.equal(f.called,0);
 });
 workspaceTest('failed INTENT or OUTCOME never commits pending effects',async()=>{
  for(const key of ['failIntent','failOutcome']){
@@ -150,4 +150,10 @@ workspaceTest('workspace constructor does not absorb another protocol or environ
  ]){
   const f=workspaceFixture();mutate(f);workspaceAssert.throws(()=>workspaceExecutor(f.options));
  }
+});
+
+workspaceTest('resource-specific DENY stops complete v1 organization boards and counts',async()=>{
+ const f=workspaceFixture('supplier.pipeline.read',{kind:'PIPELINE',pipelineId:'dddddddd-dddd-4ddd-8ddd-dddddddddddd'});
+ f.state.access.denies.push({operation:'supplier.catalog.read',feature:'supplier_workspace',resourceId:'a-different-resource'});
+ await workspaceAssert.rejects(f.execute(),e=>e.reasonCode==='EXPLICIT_DENY');workspaceAssert.equal(f.called,0);
 });

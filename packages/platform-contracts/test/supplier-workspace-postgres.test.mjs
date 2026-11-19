@@ -92,7 +92,7 @@ test('workspace native authority uses canonical Root, actual transactions and th
   });
   await t.test('an explicit read DENY overrides the organization feature grant and card disclosure',async()=>{
    await f.deny('supplier.adp-status.read');
-   await assert.rejects(f.execute({payload:{kind:'SUPPLIER_CARD',supplierId:f.S}}),e=>e.reasonCode==='PERMISSION_DENIED');
+   await assert.rejects(f.execute({payload:{kind:'SUPPLIER_CARD',supplierId:f.S}}),e=>e.reasonCode==='EXPLICIT_DENY');
    const other=await f.execute({user:f.V});
    assert.equal(other.result.value.rows[0].id,f.S);
   });

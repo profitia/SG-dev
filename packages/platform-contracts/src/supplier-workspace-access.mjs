@@ -157,6 +157,11 @@ export function supplierWorkspaceRequiredPermissions(operation,payload){
  if(payload?.kind==='PIPELINE'){
   required.add('supplier.catalog.read');required.add('supplier.assignment.read');
  }
+ if(['SUPPLIER_ARCHIVE','PIPELINE_ARCHIVE','STAGE_REMOVE'].includes(payload?.command))required.add('supplier.assignment.read');
+ if(payload?.command==='SUPPLIER_UPDATE'&&payload.data?.nip!==undefined)for(const op of ['supplier.assignment.read','supplier.category.read'])required.add(op);
+ if(payload?.kind==='PIPELINES')required.add('supplier.assignment.read');
+ if(payload?.kind==='HISTORY')for(const op of ['supplier.catalog.read','supplier.category.read','supplier.pipeline.read','supplier.assignment.read'])required.add(op);
+ for(const op of [...required])if(op==='supplier.assignment.write'){required.add('supplier.catalog.read');required.add('supplier.pipeline.read');}
  for(const op of [...required])if(op.endsWith('.write'))required.add(op.replace(/\.write$/,'.read'));
  return Object.freeze([...required]);
 }

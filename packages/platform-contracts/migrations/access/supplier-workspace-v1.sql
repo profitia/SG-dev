@@ -456,8 +456,7 @@ BEGIN
     WHERE p->>'operation'=e->>'operation' AND p->>'feature'='supplier_workspace'
       AND(p->>'resourceId' IS NULL OR p->>'resourceId'=e->>'resourceId'))
   OR EXISTS(SELECT 1 FROM jsonb_array_elements(state->'access'->'denies') p
-    WHERE p->>'operation'=e->>'operation' AND p->>'feature'='supplier_workspace'
-      AND(p->>'resourceId' IS NULL OR p->>'resourceId'=e->>'resourceId'))
+    WHERE p->>'operation'=e->>'operation' AND p->>'feature'='supplier_workspace')
  THEN RETURN NULL;END IF;
  deadline:=least(current_setting('profitia.scope_expires_at')::timestamptz,
   (e->'moduleEvidence'->>'expiresAt')::timestamptz,(state->'access'->>'expiresAt')::timestamptz,policy.expires_at);
@@ -490,8 +489,7 @@ BEGIN
    WHERE p->>'operation'=p_operation AND p->>'feature'='supplier_workspace'
     AND(p->>'resourceId' IS NULL OR p->>'resourceId'=CASE WHEN p_resource IS NULL THEN s.resource_id ELSE p_resource::text END))
   AND NOT EXISTS(SELECT 1 FROM jsonb_array_elements(s.access_state->'denies') p
-   WHERE p->>'operation'=p_operation AND p->>'feature'='supplier_workspace'
-    AND(p->>'resourceId' IS NULL OR p->>'resourceId'=CASE WHEN p_resource IS NULL THEN s.resource_id ELSE p_resource::text END));
+   WHERE p->>'operation'=p_operation AND p->>'feature'='supplier_workspace');
 END $fn$;
 
 CREATE FUNCTION profitia_supplier_workspace.member_allowed(p_org uuid,p_account uuid) RETURNS boolean
@@ -651,18 +649,20 @@ AS $function$
 DECLARE nip text; lookup_id uuid; section text; phases text[]; d jsonb;
 BEGIN
  -- Bounded workspace catalogue lane; original report/sensitive lanes below stay intact.
- IF TG_TABLE_SCHEMA='srm' AND TG_TABLE_NAME='suppliers' AND TG_OP IN('INSERT','UPDATE')
-  AND current_user='profitia_access_owner'
+ IF TG_TABLE_SCHEMA='srm' AND TG_TABLE_NAME='suppliers' THEN
+ IF TG_OP IN('INSERT','UPDATE') AND current_user='profitia_access_owner'
   AND profitia_supplier_workspace.scope_allows(NEW.organization_id,'supplier.catalog.write',NEW.id) THEN
-  IF NEW.nip IS NULL OR NEW.nip!~'^[0-9]{10}$' OR NEW.nip='0000000000'
+  IF (TG_OP='INSERT' OR NEW.nip IS DISTINCT FROM OLD.nip) AND (
+   NEW.nip IS NULL OR NEW.nip!~'^[0-9]{10}$' OR NEW.nip='0000000000'
    OR (substr(NEW.nip,1,1)::int*6+substr(NEW.nip,2,1)::int*5+substr(NEW.nip,3,1)::int*7
     +substr(NEW.nip,4,1)::int*2+substr(NEW.nip,5,1)::int*3+substr(NEW.nip,6,1)::int*4
-    +substr(NEW.nip,7,1)::int*5+substr(NEW.nip,8,1)::int*6+substr(NEW.nip,9,1)::int*7)%11<>substr(NEW.nip,10,1)::int
+    +substr(NEW.nip,7,1)::int*5+substr(NEW.nip,8,1)::int*6+substr(NEW.nip,9,1)::int*7)%11<>substr(NEW.nip,10,1)::int)
    OR TG_OP='INSERT' AND NEW.krs IS NOT NULL
    OR TG_OP='UPDATE' AND (to_jsonb(NEW)-ARRAY['nip','display_name','updated_at'])
     IS DISTINCT FROM(to_jsonb(OLD)-ARRAY['nip','display_name','updated_at'])
   THEN RAISE EXCEPTION 'Bound catalogue fields and formal NIP required' USING ERRCODE='42501';END IF;
   RETURN NEW;
+ END IF;
  END IF;
  IF TG_TABLE_NAME<>'financial_facts' THEN d:=srm.current_supplier_work();END IF;
  IF d->>'sensitiveWork'='true' THEN
