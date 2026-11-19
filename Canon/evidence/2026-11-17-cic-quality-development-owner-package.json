@@ -2124,25 +2124,28 @@
       "result": "SUCCESS",
       "doesNotClaimNewHostCic18Rollout": true
     },
-    "recordedAt": "2026-11-19T07:45:46.000Z",
+    "recordedAt": "2026-11-19T08:37:53.000Z",
     "currentAcceptedSource": {
-      "pr": 1231,
-      "sourceSha": "68d2a0ed6aae482bd4aea9cbb5604ed7607057ec",
-      "head": "3825cde6021eb4bbe13a941ce5136bc6831d237a",
-      "sourceRun": 44466288686,
-      "sourceJob": 135364748015,
-      "packagePass": 299,
+      "pr": 1240,
+      "sourceSha": "34aafbb6a32cd0593094fd0d99dea7c999cbf31a",
+      "head": "dbf23ea78ec8f284f6449e3f298c2544d87988b7",
+      "sourceRun": 44483384508,
+      "sourceJob": 135420796773,
+      "resultingMainRun": 44483661936,
+      "resultingMainGovernanceRun": 44483661924,
+      "packagePass": 309,
       "qaPass": 12,
       "fail": 0,
       "skip": 0,
       "deployed": false,
-      "linuxSourceSha": "fdb1209e3a3f561bb5d34c2b9724263684fa1c27",
-      "linuxRun": 44465443182,
-      "linuxJob": 135362282118,
-      "artifactId": 14501144795,
-      "archiveSha256": "f8ed2a2c5ba726653bfd11f773309951630215c2bc86d19fb37628131b5a84e1",
-      "gateSetSha256": "0723075c45abbd3a9ed8722e809dde0b1897f52a06e4606a1dcf12c96afb766d",
-      "policyFiles": 20,
+      "linuxRun": 44483720650,
+      "linuxJob": 135422285447,
+      "artifactId": 14509448543,
+      "archiveSha256": "54f676c71b872ab38966f14914bdf93caa4d8e771e3e4d41156075c693736cb8",
+      "gateSetSha256": "f5b2fa6ca9af67b5a19167c9f8c8b88ad872f39c613cdbdd72de6ef2132f40e7",
+      "policyFiles": 21,
+      "originalArtifactAndNativeIdentityIndependentlyVerified": true,
+      "gitPolicyFilesIndependentlyRehashed": true,
       "nativeOperationalInvocationVerified": false,
       "fullPrivateCic18Qualification": false,
       "productionTrustInstalled": false
@@ -2287,7 +2290,6 @@
       }
     ],
     "runtimeProviderRecheck": {
-      "observedAt": "2026-11-19T04:51:00Z",
       "workerSourceSha": "79cb7cf827e82395f43e630ee9b72436b19b421a",
       "workerDeploy": "dep-dbv6n0ek1f9s73bkgqeg",
       "workerStatus": "live",
@@ -2296,7 +2298,9 @@
       "hostStatus": "live",
       "workerAutoDeploy": false,
       "hostAutoDeploy": false,
-      "configurationChanged": false
+      "configurationChanged": false,
+      "recordedAt": "2026-11-19T08:37:53.000Z",
+      "checkedOn": "2026-11-19"
     },
     "publisherInstallations": {
       "status": "INSTALLED_DISABLED_NATIVE_LOGIN_VERIFIED",
@@ -2548,7 +2552,9 @@
         "scripts/governance/controlled-package-ci-path-coverage.test.mjs"
       ],
       "allOtherApprovedWorkContinues": true,
-      "noHostDeploymentPerformed": true
+      "noHostDeploymentPerformed": true,
+      "latestPreservedParallelMain": "33f0013a11e763e36487d36f99647e71a1311d61",
+      "latestParallelChange": "SRM DEC24 approval and recovered PHR; not SDK fullMain witness"
     },
     "publisherReadinessPreparation": {
       "pr": 1237,
@@ -2752,7 +2758,7 @@
       }
     ],
     "executorBrokerContractCorrection": {
-      "status": "SOURCE_PREPARED_LOCAL_TESTS_PASS_NATIVE_CI_PENDING",
+      "status": "MERGED_SOURCE_AND_MAIN_CI_PASS_FRESH_LINUX21_VERIFIED_NOT_DEPLOYED",
       "originalProblem": "Native executor called STATUS reserved by original SQL005 for controller; no paid EXECUTE was performed",
       "fix": "Fixed ordinary broker role exposes only its seven original SQL operations and does not request STATUS",
       "localCommit": "305fd020",
@@ -2763,13 +2769,60 @@
       "qaPass": 12,
       "fail": 0,
       "skip": 0,
-      "nativeCiRequired": true,
-      "resultingMainCiRequired": true,
-      "freshChangedPolicyLinuxQualificationRequired": true,
+      "nativeCiRequired": false,
+      "resultingMainCiRequired": false,
+      "freshChangedPolicyLinuxQualificationRequired": false,
       "sqlGrantRoleOrBudgetChanged": false,
       "providerRequests": false,
       "realPilotStarted": false,
       "modelCredentialInstalled": false
+    },
+    "nativeRoleRuntimePreparation": {
+      "pr": 1243,
+      "sourceSha": "1b7ff1953f7f9b01f8de5383c48b575a908a69d2",
+      "nativeSourceRun": 44488316212,
+      "nativeSourceJob": 135437253849,
+      "actualCiMergeBase": "33f0013a11e763e36487d36f99647e71a1311d61",
+      "packagePass": 319,
+      "qaPass": 12,
+      "fail": 0,
+      "skip": 0,
+      "sourceNotYetMerged": true,
+      "nativeOperationalJobsDispatched": false,
+      "earlierCompleteJobBodiesByteIdentical": 3,
+      "declaredInputs": 10,
+      "workflowJobs": 7,
+      "policyFiles": 22,
+      "qualificationOrigin": "Existing native real run plus original ZIP verified before independent signature",
+      "qualificationHorizonRenewed": false,
+      "independentSourceReview": {
+        "reviewer": "independent_reference_review",
+        "sourceSha": "1b7ff1953f7f9b01f8de5383c48b575a908a69d2",
+        "earlierBlockers": 3,
+        "remainingFindings": 0,
+        "reviewerExecutedTests": false,
+        "referenceApproved": false,
+        "operationalAcceptance": false
+      },
+      "fixedBlockers": [
+        "root checkout ownership without Git security relaxation",
+        "historical base objects through full role checkout history",
+        "same encrypted secret bounded gzip envelope retaining original pack digest"
+      ],
+      "holdoutStorage": {
+        "schemaVersion": "AQC_HOLDOUT_STORAGE_V1",
+        "secretRecipientUnchanged": true,
+        "maximumSecretBytes": 49152,
+        "maximumUncompressedBytes": 1048576,
+        "independentReferenceAcceptanceStillRequired": true
+      },
+      "rawQaReadPerformed": false,
+      "paidExecutorWorkflowReceivesPrivateCredentials": false,
+      "paidRepairsEnabled": false,
+      "promotionEnabled": false,
+      "fullPublisherRuntimeWiring": false,
+      "publicTrustInstalled": false,
+      "freshLinux22RequiredBeforeUse": true
     }
   },
   "consolidatedOwnerDecisionB29Revision2": {
