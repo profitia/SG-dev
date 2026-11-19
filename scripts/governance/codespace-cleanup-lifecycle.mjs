@@ -204,6 +204,7 @@ export function loadConfiguration(configFile) {
   assert(profile && profile.repository?.slug === c.repository &&
     Array.isArray(profile.workspaces), 'Task project is not ACTIVE in the canonical registry')
   canonicalControlFile(c.beginInputFile, 'beginInputFile')
+  if (c.inspectorDescriptor !== undefined) canonicalControlPath(c.inspectorDescriptor, 'inspectorDescriptor', {allowMissing:true})
   const input = json(c.beginInputFile)
   assert(input.project === profile.displayName && profile.workspaces.includes(input.workspace),
     'PMOS project displayName/workspace does not match the canonical registry')
@@ -343,7 +344,7 @@ function protectedByControlPaths(c, state, external = []) {
   const paths = [c.configFile, c.stateFile, c.beginInputFile,
     path.join(c.sourceRoot, 'apps/pmos/.pmos/pending-artifact.json'),
     path.join(c.sourceRoot, 'apps/pmos/.pmos/recovery/active-closeout.json'),
-    state.work?.specPath, state.work?.bootstrapInputFile,
+    state.work?.specPath, state.work?.bootstrapInputFile, c.inspectorDescriptor,
     ...releaseEvidence, ...closeoutInputs, ...external].filter(p => p !== undefined)
   assert(paths.every(p => typeof p === 'string' && path.isAbsolute(p) && path.normalize(p) === p),
     'Invalid protected control/evidence paths')
@@ -385,7 +386,8 @@ export function phaseReport(c, phase, clean = false, opts = {}) {
   }
   return (opts.cleanup ?? executeCleanup)({ command: clean ? 'clean' : 'audit', projectKey: c.projectKey, taskId: c.taskId,
     repository: c.repository, sourceRoot: c.sourceRoot, scopeRoot: c.scopeRoot, stateFile: c.stateFile,
-    phase, ...(clean ? { confirmClean: c.taskId } : {}) })
+    phase, ...(c.inspectorDescriptor ? {inspectorDescriptor:c.inspectorDescriptor} : {}),
+    ...(clean ? { confirmClean: c.taskId } : {}) })
 }
 export function findPhrManifestForTask(c) {
   // Discover by Git's *remote* committed history tree. A stale or separate PHR

@@ -1195,3 +1195,27 @@ test('measured pre-closeout report is independently read back from both remote P
   }
   assert.equal(verifyPhrReadback(f.config,p.relative).publicationId,`${f.c.projectKey}:${f.c.taskId}`)
 })
+
+test('optional inspector deployment is forwarded to the existing engine without changing the PMOS lifecycle',t=>{
+  const f=fixture(t),descriptor=path.join(f.scope,'inspector-deployment.json')
+  write(descriptor,{fixture:true});write(f.configFile,{...f.c,inspectorDescriptor:descriptor})
+  const c=loadConfiguration(f.configFile);startTask(c,f.runtime)
+  let calls=0
+  phaseReport(c,'pre-closeout',false,{cleanup:args=>{calls++;assert.equal(args.inspectorDescriptor,descriptor);return {summary:{REVIEW_REQUIRED:1},results:[]}}})
+  assert.equal(calls,1);assert.equal(f.hasSaved(),false)
+})
+test('inspector descriptor is retained as lifecycle control data inside a candidate',t=>{
+  const f=fixture(t),r=allocated(f),descriptor=path.join(r.path,'inspector-deployment.json')
+  write(descriptor,{fixture:true});write(f.configFile,{...f.c,inspectorDescriptor:descriptor})
+  const c=loadConfiguration(f.configFile)
+  let calls=0
+  assert.throws(()=>finishTask(c,{bootstrapInputFile:bootstrapFixture(f),cleanPreCloseout:true},
+    {...f.runtime,cleanup:()=>{calls++;return {summary:{}}}}),/contains required task control\/evidence input/)
+  assert.equal(calls,0);assert.equal(fs.existsSync(r.path),true)
+})
+test('inspector deployment alias is rejected before registration or cleanup',t=>{
+  const f=fixture(t),real=path.join(f.scope,'inspector.json'),alias=path.join(f.scope,'alias.json')
+  write(real,{fixture:true});fs.symlinkSync(real,alias);write(f.configFile,{...f.c,inspectorDescriptor:alias})
+  assert.throws(()=>loadConfiguration(f.configFile),/symlink|physical|canonical/)
+  assert.equal(f.calls.length,0)
+})

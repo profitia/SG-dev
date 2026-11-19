@@ -160,3 +160,20 @@ node --test scripts/governance/codespace-cleanup.test.mjs scripts/governance/cod
 Full suite: 99 lifecycle tests plus 24 unchanged Stage02 tests (123 total). Tests use only their own temporary resources; PMOS replies are controlled doubles, while PHR uses real isolated Git repositories. This is not live Neon, live PHR or installed Codespaces acceptance. Stage04 regressions cover partial/blocked closeout, retention before and after save, and mismatched business results despite valid bundle hashes.
 
 Publication v6 requires the unfiltered Linux suite, controlled invocation acceptance and current governance/CI. TEST-RESULTS.txt records actual execution; the earlier macOS-only v5 run does not substitute for Linux validation.
+
+## Stage04R: inspector opt-in and unchanged continuity
+
+An optional configuration field `inspectorDescriptor` contains an absolute,
+canonical path to an administrator-owned inspector deployment descriptor. It is
+forwarded to the existing engine in both phases. It is also a protected control
+input: destructive cleanup cannot remove a candidate containing that descriptor.
+The existing preflight, PMOS registration, release evidence, pending/bootstrap
+recovery, pre-closeout evidence capture before save and PHR readback remain in
+force. No hook, schedule, privilege installation or automatic activation is added.
+
+Missing/incomplete inspection or absence of a verified exclusive reference
+domain retains resources. A successful continuity closeout still does not imply
+successful disk-space recovery. Current shared Codespace acceptance remains
+blocked: read permissions alone do not close the concurrent FD-transfer window.
+Use [the inspector contract](codespace-cleanup-inspector.README.md) before any
+separately admitted runtime installation. Worktrees use the existing engine.

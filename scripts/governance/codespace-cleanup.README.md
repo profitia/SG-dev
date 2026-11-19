@@ -120,3 +120,37 @@ node --check scripts/governance/codespace-cleanup.mjs
 ```
 
 Isolated tests create disposable bare Git remotes, detached worktrees and caches beneath `os.tmpdir()`. They do not target the user's Codespace. Review all new files under the correct `ARCHITECTURE` profile with the existing preflight/PMOS gate before integration. The local package test count and integrity manifest accompany the supplied archive.
+
+
+## Stage04R: optional restricted inspector
+
+`--inspector-descriptor /absolute/root-owned/deployment.json` opts ephemeral-directory
+inspection into the Python inspector described in
+[codespace-cleanup-inspector.README.md](codespace-cleanup-inspector.README.md).
+Worktrees retain their original process/Git path; the inspector never removes a
+worktree. No option installs or elevates any component. A missing, writable,
+modified, unavailable or incomplete inspector yields `REVIEW_REQUIRED`; cleanup
+does not retry through the ordinary removal path.
+
+The root-owned deployment pins the trusted Python module, its SHA-256, task,
+project, source, scope and exact resource objects/owner markers. The ordinary
+cleanup invokes an isolated, nondumpable ordinary-UID client. It accepts only an
+authenticated root peer and a request-bound committed removal receipt. An idle
+observation alone never authorizes deletion.
+
+**Shared Codespace deletion remains unaccepted.** A full `/proc` read is not an
+atomic absence-of-references proof: FD transfer, queued socket references and
+concurrent threads must not be silently ignored. The guarded removal branch
+therefore also requires an administrator-established private reference domain
+and no other ordinary process. This is checked before any rename and again
+before deletion. A policy file records an independently verified boundary; it
+does not create one. Merely granting `SYS_PTRACE` in a shared Codespace does not
+satisfy that requirement. This publication installs no privileges and activates
+no cleanup policy. See the inspector README for the exact unsupported cases and
+administrator admission requirements.
+
+Run all three suites on Linux, without test filters:
+
+```bash
+node --test scripts/governance/codespace-cleanup.test.mjs scripts/governance/codespace-cleanup-lifecycle.test.mjs scripts/governance/codespace-cleanup-inspector.test.mjs
+```

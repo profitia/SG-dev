@@ -7,6 +7,7 @@
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
+import crypto from 'node:crypto'
 import { spawnSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 
@@ -21,6 +22,81 @@ const PROTECTED_NAMES = new Set([
 ])
 const RESOURCE_STATUSES = new Set(['CLEANED', 'RETAINED', 'REVIEW_REQUIRED', 'UNKNOWN_OWNER', 'OWNED_DISPOSABLE', 'NOT_APPLICABLE'])
 const DEFAULT_MAX_ENTRIES = 500_000
+const INSPECTOR_PROTOCOL = 'PROFITIA_CLEANUP_INSPECTOR_V1'
+
+function trustedInspectorPath(file) {
+  assertAbsolute(file, 'Inspector deployment path')
+  let current = path.parse(file).root
+  for (const part of file.slice(current.length).split(path.sep)) {
+    current = path.join(current, part)
+    const s = fs.lstatSync(current)
+    if (s.isSymbolicLink() || s.uid !== 0 || (s.mode & 0o022)) deny('Inspector deployment must be root-owned and not writable by another principal')
+  }
+  if (!fs.statSync(file).isFile()) deny('Inspector deployment file must be regular')
+}
+
+export function inspectorTreeDigest(root, maxEntries, maxBytes) {
+  const rows = []
+  let total = 0
+  const visit = (dir, prefix) => {
+    for (const name of fs.readdirSync(dir).sort()) {
+      if (rows.length >= maxEntries) deny('Inspector tree entry bound exceeded')
+      const full = path.join(dir, name), relative = prefix + name, s = fs.lstatSync(full)
+      if (!Number.isSafeInteger(s.dev) || !Number.isSafeInteger(s.ino) || !Number.isSafeInteger(s.size)) deny('Inspector cannot exactly represent filesystem identity')
+      if (s.isDirectory()) {
+        rows.push([relative, 'd', s.dev, s.ino, s.mode & 0o7777, 0, ''])
+        visit(full, relative + '/')
+      } else {
+        if (!s.isFile() || s.isSymbolicLink() || s.nlink !== 1) deny('Inspector refuses links or special filesystem entries')
+        total += s.size
+        if (total > maxBytes) deny('Inspector tree byte bound exceeded')
+        const fd = fs.openSync(full, fs.constants.O_RDONLY | fs.constants.O_NOFOLLOW)
+        try {
+          const before = fs.fstatSync(fd)
+          if (before.dev !== s.dev || before.ino !== s.ino) deny('Inspector file changed during inspection')
+          const bytes = fs.readFileSync(fd), after = fs.fstatSync(fd)
+          if (after.dev !== s.dev || after.ino !== s.ino || after.size !== bytes.length) deny('Inspector file changed during inspection')
+          rows.push([relative, 'f', s.dev, s.ino, s.mode & 0o7777, bytes.length, crypto.createHash('sha256').update(bytes).digest('hex')])
+        } finally { fs.closeSync(fd) }
+      }
+    }
+  }
+  visit(root, '')
+  rows.sort((a,b) => Buffer.compare(Buffer.from(a[0]),Buffer.from(b[0])))
+  return crypto.createHash('sha256').update(JSON.stringify(rows)).digest('hex')
+}
+
+function invokeInspector(args, resource, state, action) {
+  trustedInspectorPath(args.inspectorDescriptor)
+  const p = readJson(args.inspectorDescriptor)
+  if (p.protocol !== INSPECTOR_PROTOCOL || p.schemaVersion !== '1.0' ||
+      p.executionUid !== process.getuid?.() || p.executionUid === 0 || p.executionGid !== process.getgid?.()) deny('Inspector deployment identity mismatch')
+  if (!Number.isInteger(p.maxEntries) || p.maxEntries < 1 || p.maxEntries > 10000 ||
+      !Number.isInteger(p.maxBytes) || p.maxBytes < 1 || p.maxBytes > 64*1024*1024) deny('Invalid inspector inspection bounds')
+  trustedInspectorPath(p.modulePath)
+  trustedInspectorPath(p.pythonPath)
+  if (crypto.createHash('sha256').update(fs.readFileSync(p.modulePath)).digest('hex') !== p.moduleSha256) deny('Inspector implementation hash mismatch')
+  const s = fs.lstatSync(resource.path)
+  const request = {protocol:INSPECTOR_PROTOCOL, requestId:crypto.randomBytes(20).toString('hex'),
+    action, projectKey:args.projectKey, taskId:args.taskId, repository:args.repository,
+    sourceRoot:args.sourceRoot, scopeRoot:args.scopeRoot, phase:args.phase, kind:resource.kind,
+    path:resource.path, allocationId:resource.allocationId, dev:s.dev, ino:s.ino,
+    markerSha256:crypto.createHash('sha256').update(fs.readFileSync(path.join(resource.path,OWNER_FILE))).digest('hex'),
+    treeDigest:inspectorTreeDigest(resource.path,p.maxEntries,p.maxBytes)}
+  const call = spawnSync(p.pythonPath,['-I',p.modulePath,'client','--descriptor',args.inspectorDescriptor],{
+    input:JSON.stringify(request),encoding:'utf8',timeout:120000,maxBuffer:MAX_INSPECTOR_OUTPUT,
+    env:{PATH:'/usr/bin:/bin',LANG:'C.UTF-8'},cwd:'/',
+  })
+  if (call.error || call.status !== 0) deny(`Inspector unavailable or refused proof: ${(call.stderr || call.error?.message || 'unknown').trim().slice(0,500)}`)
+  let receipt
+  try { receipt = JSON.parse(call.stdout) } catch { deny('Inspector returned invalid proof') }
+  if (receipt.protocol !== INSPECTOR_PROTOCOL || receipt.requestId !== request.requestId) deny('Inspector proof identity mismatch')
+  if (action === 'inspect' && (receipt.status !== 'OBSERVED_IDLE' || receipt.coverage?.complete !== true)) deny('Incomplete inspector observation')
+  if (action === 'clean' && (receipt.status !== 'CLEANED' || receipt.removed !== true || receipt.guarded !== true ||
+      receipt.dev !== s.dev || receipt.ino !== s.ino || !/^[a-f0-9]{32}$/.test(receipt.transactionId ?? ''))) deny('No committed guarded removal proof')
+  return receipt
+}
+const MAX_INSPECTOR_OUTPUT = 2_000_000
 
 class Refuse extends Error { constructor(reason, code = 'REVIEW_REQUIRED') { super(reason); this.code = code } }
 function deny(reason, code) { throw new Refuse(reason, code) }
@@ -260,7 +336,8 @@ function checkResource(resource, state, args, source) {
     // visibility must not mask a known RETAINED reason, but any candidate that
     // otherwise qualifies still fails closed if process observation is partial.
     const size = resource.kind === 'git-worktree' ? checkGitWorktree(resource, sourceRoot, state, source) : checkCache(resource, state, sourceRoot)
-    assertNoLiveLocalConsumer(resource.path)
+    if (args.inspectorDescriptor && resource.kind === 'ephemeral-directory') invokeInspector(args, resource, state, 'inspect')
+    else assertNoLiveLocalConsumer(resource.path)
     const snapshot = fs.lstatSync(resource.path)
     result.status = 'OWNED_DISPOSABLE'
     result.measurement = { logicalBytes: size.logicalBytes, allocatedBytes: size.allocatedBytes, entries: size.items }
@@ -281,7 +358,7 @@ function parseArgs(argv) {
   const command = argv[0]
   if (!['audit', 'clean'].includes(command)) throw new Error('Usage: codespace-cleanup.mjs audit|clean --project KEY --task ID --repository owner/repo --source-root ABS --scope-root ABS [--state ABS] [--phase pre-closeout|post-closeout] [--confirm-clean ID]')
   const args = { command }
-  const keys = { '--project': 'projectKey', '--task': 'taskId', '--repository': 'repository', '--source-root': 'sourceRoot', '--scope-root': 'scopeRoot', '--state': 'stateFile', '--phase': 'phase', '--confirm-clean': 'confirmClean' }
+  const keys = { '--project': 'projectKey', '--task': 'taskId', '--repository': 'repository', '--source-root': 'sourceRoot', '--scope-root': 'scopeRoot', '--state': 'stateFile', '--phase': 'phase', '--confirm-clean': 'confirmClean', '--inspector-descriptor':'inspectorDescriptor' }
   for (let i = 1; i < argv.length; i++) {
     if (!keys[argv[i]] || !argv[i+1] || argv[i+1].startsWith('--')) throw new Error(`Unsupported or missing argument: ${argv[i]}`)
     if (Object.hasOwn(args, keys[argv[i]])) throw new Error(`Repeated argument: ${argv[i]}`)
@@ -301,6 +378,7 @@ export function executeCleanup(options) {
   if (!/^[\w.-]+\/[\w.-]+$/.test(args.repository)) deny('Repository must be owner/name')
   assertAbsolute(args.scopeRoot, 'scopeRoot')
   assertAbsolute(args.sourceRoot, 'sourceRoot')
+  if (args.inspectorDescriptor) assertAbsolute(args.inspectorDescriptor, 'inspectorDescriptor')
   normalizedRealDirectory(args.scopeRoot, 'scopeRoot')
   if (args.scopeRoot === path.parse(args.scopeRoot).root || args.scopeRoot.split(path.sep).filter(Boolean).length < 2 ||
       args.scopeRoot.split(path.sep).filter(Boolean).some(isProtectedName)) deny('Unsafe or protected scope root')
@@ -348,7 +426,11 @@ export function executeCleanup(options) {
           verifyExistingIdentity(current, args.scopeRoot)
           const before = statfsAvailable(args.scopeRoot)
           if (current.kind === 'ephemeral-directory') {
-            fs.rmSync(current.path, { recursive: true, force: false })
+            if (args.inspectorDescriptor) {
+              const proof = invokeInspector(args, state.resources[i], state, 'clean')
+              report.results[i] = {path:current.path,kind:current.kind,status:'CLEANED',reason:null,
+                measurement:current.measurement,inspectorTransactionId:proof.transactionId}
+            } else fs.rmSync(current.path, { recursive: true, force: false })
           } else {
             // The verified marker is the only tolerated untracked file. Remove it just before Git's safe worktree remove.
             const markerBytes = fs.readFileSync(current.markerFile)
@@ -363,7 +445,8 @@ export function executeCleanup(options) {
           if (fs.existsSync(current.path)) deny('Resource still exists after cleanup')
           const delta = Math.max(0, statfsAvailable(args.scopeRoot) - before)
           report.results[i] = { path: current.path, kind: current.kind, status: 'CLEANED', reason: null,
-            measurement: current.measurement, observedFreeBytesDelta: delta }
+            measurement: current.measurement, observedFreeBytesDelta: delta,
+            ...(report.results[i].inspectorTransactionId ? {inspectorTransactionId:report.results[i].inspectorTransactionId} : {}) }
           report.observedFreeBytesDelta = (report.observedFreeBytesDelta ?? 0) + delta
         } catch (e) {
           report.results[i] = { path: current.path, kind: current.kind, status: 'REVIEW_REQUIRED', reason: `Cleanup interrupted: ${e.message}` }
