@@ -1,8 +1,14 @@
 import {createHash} from 'node:crypto'
 import {assertWorkflowIdentity,readPatchBody} from './provenance.mjs'
 import {documentDigest,assertVerifiedRepairManifest,verifyDocument,SOURCE_PATHS} from './manifest.mjs'
+import {qualityRecoveryJobInputs} from './recovery.mjs'
 
 const repository='profitia/SG-dev'
+const nativeControllerArtifacts=new WeakMap()
+const controllerArtifactProfiles=Object.freeze({
+ result:Object.freeze({prefix:'aqc-result-',filename:'result.json',archiveBytes:65536,contentBytes:16384}),
+ patch:Object.freeze({prefix:'aqc-patch-',filename:'patch.json',archiveBytes:131072,contentBytes:65536}),
+})
 const fail=code=>{throw Object.assign(Error('Quality GitHub operation unavailable'),{code})}
 const require=(v,c='GITHUB_INPUT_INVALID')=>{if(!v)fail(c)}
 const sha=v=>typeof v==='string'&&/^[a-f0-9]{40}$/.test(v)
@@ -13,10 +19,10 @@ const hash=v=>createHash('sha256').update(v).digest('hex')
 /** Credentials stay in the trusted controller/publisher. No arbitrary URL,
  * command, repository, workflow, branch or agent-provided credential is accepted.
  * Mutations are one-shot; an uncertain delivery is reconciled by the outbox. */
-export function createQualityGitHub({token,fetchImpl=fetch,publisherEnabled=false,promotionEnabled=false,controllerJobsEnabled=false,paidRepairsEnabled=false,controllerWorkflowSha256=null,now=Date.now}){
+export function createQualityGitHub({token,fetchImpl=fetch,publisherEnabled=false,promotionEnabled=false,controllerJobsEnabled=false,recoveryJobsEnabled=false,paidRepairsEnabled=false,controllerWorkflowSha256=null,now=Date.now}){
  require(typeof token==='string'&&token.length>0&&typeof fetchImpl==='function'
   &&typeof publisherEnabled==='boolean'&&typeof promotionEnabled==='boolean'&&typeof controllerJobsEnabled==='boolean'
-  &&typeof paidRepairsEnabled==='boolean'&&typeof now==='function'&&(controllerWorkflowSha256===null||/^[a-f0-9]{64}$/.test(controllerWorkflowSha256)),'GITHUB_CONFIGURATION_REQUIRED')
+  &&typeof paidRepairsEnabled==='boolean'&&typeof recoveryJobsEnabled==='boolean'&&typeof now==='function'&&(controllerWorkflowSha256===null||/^[a-f0-9]{64}$/.test(controllerWorkflowSha256)),'GITHUB_CONFIGURATION_REQUIRED')
  async function request(path,{method='GET',body}={}){
   require((path==='/repos/'+repository||path.startsWith('/repos/'+repository+'/'))&&!path.includes('..')&&!path.includes('#'))
   let response
@@ -125,7 +131,37 @@ export function createQualityGitHub({token,fetchImpl=fetch,publisherEnabled=fals
     sourceSha256:controllerWorkflowSha256,workflowState:workflow.state,dispatchEnabled:controllerJobsEnabled&&workflow.state==='active'})
  }
 
- async function controllerResultDownload(artifactId,expectedDigest,expectedSize){
+ const artifactTransport=Object.freeze({})
+ async function controllerJobArtifact({externalId,runId},kind){
+   require(/^[1-9][0-9]{0,19}$/.test(runId),'CONTROLLER_JOB_BINDING_INVALID')
+   const binding=controllerJobBinding(externalId),descriptor=await controllerJobDescriptor({sourceSha:binding.controlSourceSha},true)
+   const run=assertQualityControllerJobIdentity(await get('/actions/runs/'+runId),{externalId,workflowId:descriptor.workflowId,runId})
+   require(run.status==='completed'&&run.conclusion==='success','CONTROLLER_JOB_NOT_SUCCESSFUL')
+   const profile=controllerArtifactProfiles[kind],matching=new Map(),name=profile.prefix+binding.nonce
+   for(let page=1;page<=10;page++){
+    const list=await get('/actions/runs/'+runId+'/artifacts?per_page=100&page='+page)
+    require(Array.isArray(list?.artifacts)&&list.artifacts.length<=100&&Number.isSafeInteger(list.total_count)&&list.total_count>=0,'CONTROLLER_JOB_RESULT_ARTIFACT_INVALID')
+    for(const artifact of list.artifacts){
+     if(artifact.name!==name)continue
+     require(number(artifact.id)&&artifact.expired===false&&Number.isSafeInteger(artifact.size_in_bytes)&&artifact.size_in_bytes>0&&artifact.size_in_bytes<=profile.archiveBytes
+      &&String(artifact.workflow_run?.id)===runId&&artifact.workflow_run?.head_sha===binding.controlSourceSha
+      &&/^sha256:[a-f0-9]{64}$/.test(artifact.digest??''),'CONTROLLER_JOB_RESULT_ARTIFACT_INVALID')
+     matching.set(String(artifact.id),artifact);require(matching.size<=1,'CONTROLLER_JOB_RESULT_ARTIFACT_AMBIGUOUS')
+    }
+    if(page*100>=list.total_count){
+     if(!matching.size)return Object.freeze({state:'UNKNOWN',externalId,runId,resultVerified:false})
+     const artifact=matching.values().next().value,document=await controllerResultDownload(String(artifact.id),artifact.digest,artifact.size_in_bytes,profile)
+     const observed=Object.freeze({state:'COMPLETE',externalId,runId,workflowId:descriptor.workflowId,
+      createdAt:run.created_at,artifactSha256:artifact.digest.slice(7),document,resultVerified:false})
+     nativeControllerArtifacts.set(observed,Object.freeze({transport:artifactTransport,kind,externalId,runId,
+      workflowId:descriptor.workflowId,documentSha256:documentDigest(document)}))
+     return observed
+    }
+   }
+   fail('GITHUB_RUNS_INCOMPLETE')
+
+ }
+ async function controllerResultDownload(artifactId,expectedDigest,expectedSize,profile){
   require(/^[1-9][0-9]{0,19}$/.test(artifactId)&&/^sha256:[a-f0-9]{64}$/.test(expectedDigest),'CONTROLLER_JOB_RESULT_ARTIFACT_INVALID')
   let response
   try{
@@ -145,23 +181,39 @@ export function createQualityGitHub({token,fetchImpl=fetch,publisherEnabled=fals
    }
    require(response.status===200&&response.body&&typeof response.body.getReader==='function','CONTROLLER_JOB_RESULT_DOWNLOAD_INVALID')
    const declared=response.headers.get('content-length')
-   require(declared===null||/^[0-9]+$/.test(declared)&&Number(declared)<=65536,'CONTROLLER_JOB_RESULT_DOWNLOAD_INVALID')
+   require(declared===null||/^[0-9]+$/.test(declared)&&Number(declared)<=profile.archiveBytes,'CONTROLLER_JOB_RESULT_DOWNLOAD_INVALID')
    const reader=response.body.getReader(),chunks=[];let size=0
    try{
     for(;;){const {value,done}=await reader.read();if(done)break;size+=value.byteLength
-     if(size>65536){await reader.cancel();fail('CONTROLLER_JOB_RESULT_DOWNLOAD_INVALID')}
+     if(size>profile.archiveBytes){await reader.cancel();fail('CONTROLLER_JOB_RESULT_DOWNLOAD_INVALID')}
      chunks.push(Buffer.from(value))
     }
    }finally{reader.releaseLock()}
    const bytes=Buffer.concat(chunks,size)
    require(bytes.length===expectedSize&&'sha256:'+hash(bytes)===expectedDigest,'CONTROLLER_JOB_RESULT_ARTIFACT_INVALID')
-   return controllerResultArchive(bytes)
+   return controllerResultArchive(bytes,profile)
   }catch(error){if(error?.message==='Quality GitHub operation unavailable'&&typeof error.code==='string')throw error;fail('PROVIDER_UNAVAILABLE')}
  }
  return Object.freeze({
   /** A qualified workflow digest is installed separately; existing source and
    * keyless qualification jobs cannot silently become operational dispatch. */
   controllerJobDescriptor,
+  async recoveryJobDescriptor({sourceSha}){
+   const value=await controllerJobDescriptor({sourceSha},true)
+   return Object.freeze({...value,dispatchEnabled:recoveryJobsEnabled&&value.workflowState==='active'})
+  },
+  async dispatchRecoveryJob({authority,record,action,externalId}){
+   if(!recoveryJobsEnabled)fail('RECOVERY_JOBS_DISABLED')
+   const inputs=qualityRecoveryJobInputs({authority,record,action,externalId,now:now()})
+   const sourceSha=inputs.control_source_sha
+   require(await main()===sourceSha,'BASE_CHANGED')
+   const workflow=await controllerJobDescriptor({sourceSha},true)
+   require(workflow.workflowState==='active','GITHUB_WORKFLOW_BINDING_INVALID')
+   require(await main()===sourceSha,'BASE_CHANGED')
+   qualityRecoveryJobInputs({authority,record,action,externalId,now:now()})
+   await write('/actions/workflows/assistant-quality-repair.yml/dispatches',{ref:'main',inputs})
+   return Object.freeze({state:'UNKNOWN',externalId,resultVerified:false})
+  },
   async dispatchControllerJob({manifest,externalId,permit}){
    if(!controllerJobsEnabled)fail('CONTROLLER_JOBS_DISABLED')
    const binding=controllerJobBinding(externalId)
@@ -206,30 +258,10 @@ export function createQualityGitHub({token,fetchImpl=fetch,publisherEnabled=fals
   /** Native metadata is reconciled before the signed result is even decoded.
    * The returned payload is deliberately unverified until its separate role
    * signature and the complete existing state contract are checked. */
-  async controllerJobResult({externalId,runId}){
-   require(/^[1-9][0-9]{0,19}$/.test(runId),'CONTROLLER_JOB_BINDING_INVALID')
-   const binding=controllerJobBinding(externalId),descriptor=await controllerJobDescriptor({sourceSha:binding.controlSourceSha},true)
-   const run=assertQualityControllerJobIdentity(await get('/actions/runs/'+runId),{externalId,workflowId:descriptor.workflowId,runId})
-   require(run.status==='completed'&&run.conclusion==='success','CONTROLLER_JOB_NOT_SUCCESSFUL')
-   const matching=new Map(),name='aqc-result-'+binding.nonce
-   for(let page=1;page<=10;page++){
-    const list=await get('/actions/runs/'+runId+'/artifacts?per_page=100&page='+page)
-    require(Array.isArray(list?.artifacts)&&list.artifacts.length<=100&&Number.isSafeInteger(list.total_count)&&list.total_count>=0,'CONTROLLER_JOB_RESULT_ARTIFACT_INVALID')
-    for(const artifact of list.artifacts){
-     if(artifact.name!==name)continue
-     require(number(artifact.id)&&artifact.expired===false&&Number.isSafeInteger(artifact.size_in_bytes)&&artifact.size_in_bytes>0&&artifact.size_in_bytes<=65536
-      &&String(artifact.workflow_run?.id)===runId&&artifact.workflow_run?.head_sha===binding.controlSourceSha
-      &&/^sha256:[a-f0-9]{64}$/.test(artifact.digest??''),'CONTROLLER_JOB_RESULT_ARTIFACT_INVALID')
-     matching.set(String(artifact.id),artifact);require(matching.size<=1,'CONTROLLER_JOB_RESULT_ARTIFACT_AMBIGUOUS')
-    }
-    if(page*100>=list.total_count){
-     if(!matching.size)return Object.freeze({state:'UNKNOWN',externalId,runId,resultVerified:false})
-     const artifact=matching.values().next().value,document=await controllerResultDownload(String(artifact.id),artifact.digest,artifact.size_in_bytes)
-     return Object.freeze({state:'COMPLETE',externalId,runId,workflowId:descriptor.workflowId,
-      createdAt:run.created_at,artifactSha256:artifact.digest.slice(7),document,resultVerified:false})
-    }
-   }
-   fail('GITHUB_RUNS_INCOMPLETE')
+  controllerJobResult:input=>controllerJobArtifact(input,'result'),
+  async controllerJobPatch(input){
+   require(controllerJobBinding(input?.externalId).action==='EXECUTE','CONTROLLER_PATCH_EXECUTOR_REQUIRED')
+   return controllerJobArtifact(input,'patch')
   },
   async cancelControllerJob({externalId,runId}){
    require(/^[1-9][0-9]{0,19}$/.test(runId),'CONTROLLER_JOB_BINDING_INVALID')
@@ -532,7 +564,7 @@ const controllerResultFields=Object.freeze({
  VERIFY:['result','baseSha','artifactSha256','baseTest','candidateTest','holdoutCases','criticalRegressions','accessViolations','unverifiableCases',
   'criticalCasesPass','criticalRepeats','stable','correctnessDeltaPp','unjustifiedRefusalDeltaPp','scopeBeforeDefects','scopeAfterDefects','classCounts','proofSha256'],
  PROPOSE:['result','prNumber','headSha','artifactSha256'],CHECKS:['result','headSha','requiredChecksComplete','proofSha256'],
- PROMOTE:['result','actualBaseSha','sourceSha','artifactSha256','configurationSha256','deployId','lastKnownGoodSha','exactRuntimeVerified'],
+ PROMOTE:['result','actualBaseSha','sourceSha','artifactSha256','configurationSha256','deployId','lastKnownGoodSha','lastKnownGoodDeployId','exactRuntimeVerified'],
  VERIFY_RUNTIME:['result','sourceSha','answerVerified','proofSha256'],OBSERVE:['result','sourceSha'],
  ROLLBACK:['result','sourceSha','exactRuntimeVerified','proofSha256']
 })
@@ -556,7 +588,7 @@ function controllerTypedResult(action,result){
   else if(key==='repairClass')require(['C1','C2','C3'].includes(value),'CONTROLLER_JOB_RESULT_INVALID')
   else if(key==='method')require(value==='DETERMINISTIC','CONTROLLER_JOB_RESULT_INVALID')
   else if(key==='baseTest'||key==='candidateTest')require(['PASS','FAIL'].includes(value),'CONTROLLER_JOB_RESULT_INVALID')
-  else if(key==='deployId')require(typeof value==='string'&&/^dep-[a-z0-9]{10,40}$/.test(value),'CONTROLLER_JOB_RESULT_INVALID')
+  else if(['deployId','lastKnownGoodDeployId'].includes(key))require(typeof value==='string'&&/^dep-[a-z0-9]{10,40}$/.test(value),'CONTROLLER_JOB_RESULT_INVALID')
   else require(Number.isSafeInteger(value)&&value>=0&&value<=10000000&&(key!=='prNumber'||value>0),'CONTROLLER_JOB_RESULT_INVALID')
  }
  return result
@@ -600,6 +632,35 @@ export function readQualityControllerJobResult(document,{manifest,record,externa
  return Object.freeze(verified)
 }
 
+
+/** Native patch transport and a supervisor signature establish provenance only.
+ * The caller supplies source bytes from its trusted public base projection.
+ * Independent execution, holdout, source policy and publication remain required.
+ * Unbranded/cloned observations, another client/run and modified documents fail. */
+export function readQualityControllerPatch({resultObservation,patchObservation,beforeSource,...context}){
+ const resultNative=nativeControllerArtifacts.get(resultObservation),patchNative=nativeControllerArtifacts.get(patchObservation)
+ require(resultNative?.kind==='result'&&patchNative?.kind==='patch'&&resultNative.transport===patchNative.transport,
+  'CONTROLLER_PATCH_NATIVE_ARTIFACT_REQUIRED')
+ const binding=controllerJobBinding(context.externalId)
+ require(binding.action==='EXECUTE','CONTROLLER_PATCH_EXECUTOR_REQUIRED')
+ for(const [observed,native]of [[resultObservation,resultNative],[patchObservation,patchNative]]){
+  require(observed.state==='COMPLETE'&&native.externalId===context.externalId&&native.runId===context.runId
+   &&native.workflowId===context.workflowId&&native.documentSha256===documentDigest(observed.document),
+   'CONTROLLER_PATCH_NATIVE_BINDING_INVALID')
+ }
+ const result=readQualityControllerJobResult(resultObservation.document,context)
+ require(result.result==='PATCH'&&typeof beforeSource==='string'&&Buffer.byteLength(beforeSource)<=131072,
+  'CONTROLLER_PATCH_EXECUTOR_REQUIRED')
+ const patch=readPatchBody(JSON.stringify(patchObservation.document),{manifest:context.manifest,beforeSource})
+ const treeSha256=documentDigest(patch.files.map(({path,beforeSha256,afterSha256})=>({path,beforeSha256,afterSha256})))
+ require(documentDigest(patch)===result.patch.artifactSha256&&treeSha256===result.patch.treeSha256,
+  'CONTROLLER_PATCH_DIGEST_MISMATCH')
+ for(const file of patch.files)Object.freeze(file)
+ Object.freeze(patch.files)
+ return Object.freeze({body:patch,artifactSha256:result.patch.artifactSha256,treeSha256,
+  independentVerified:false})
+}
+
 import {inflateRawSync} from 'node:zlib'
 const controllerCrcTable=Uint32Array.from({length:256},(_,n)=>{
  let v=n;for(let i=0;i<8;i++)v=v&1?0xedb88320^(v>>>1):v>>>1;return v>>>0
@@ -608,9 +669,9 @@ const controllerCrc32=bytes=>{let crc=0xffffffff;for(const b of bytes)crc=contro
 /** Bounded in-memory single-file ZIP; no archive path is ever written or
  * executed. ZIP64, encryption, directories, extra entries and output bombs
  * cannot become a controller result. Native artifact digest is checked first. */
-function controllerResultArchive(bytes){
+function controllerResultArchive(bytes,profile){
  const invalid=()=>fail('CONTROLLER_JOB_RESULT_ARCHIVE_INVALID')
- if(!Buffer.isBuffer(bytes)||bytes.length<22||bytes.length>65536)invalid()
+ if(!Buffer.isBuffer(bytes)||bytes.length<22||bytes.length>profile.archiveBytes)invalid()
  const end=bytes.length-22
  if(bytes.readUInt32LE(end)!==0x06054b50||bytes.readUInt16LE(end+4)!==0||bytes.readUInt16LE(end+6)!==0
   ||bytes.readUInt16LE(end+8)!==1||bytes.readUInt16LE(end+10)!==1||bytes.readUInt16LE(end+20)!==0)invalid()
@@ -620,10 +681,10 @@ function controllerResultArchive(bytes){
  const crc=bytes.readUInt32LE(central+16),compressed=bytes.readUInt32LE(central+20),size=bytes.readUInt32LE(central+24)
  const nameLength=bytes.readUInt16LE(central+28),extraLength=bytes.readUInt16LE(central+30),commentLength=bytes.readUInt16LE(central+32)
  const mode=bytes.readUInt32LE(central+38)>>>16
- if(version>20||flags&~0x0808||![0,8].includes(method)||!size||size>16384||!compressed||compressed>65536
+ if(version>20||flags&~0x0808||![0,8].includes(method)||!size||size>profile.contentBytes||!compressed||compressed>profile.archiveBytes
   ||46+nameLength+extraLength+commentLength!==centralSize||commentLength||bytes.readUInt16LE(central+34)!==0
   ||bytes.readUInt32LE(central+42)!==0||mode&0o111||!([0,0o100000].includes(mode&0o170000)))invalid()
- if(bytes.subarray(central+46,central+46+nameLength).toString('utf8')!=='result.json')invalid()
+ if(bytes.subarray(central+46,central+46+nameLength).toString('utf8')!==profile.filename)invalid()
  if(bytes.readUInt32LE(0)!==0x04034b50||bytes.readUInt16LE(4)!==version||bytes.readUInt16LE(6)!==flags||bytes.readUInt16LE(8)!==method)invalid()
  const localNameLength=bytes.readUInt16LE(26),localExtraLength=bytes.readUInt16LE(28),offset=30+localNameLength+localExtraLength
  if(offset>central||offset+compressed>central||localNameLength!==nameLength
@@ -642,7 +703,7 @@ function controllerResultArchive(bytes){
   if(bytes.readUInt32LE(descriptor)!==crc||bytes.readUInt32LE(descriptor+4)!==compressed||bytes.readUInt32LE(descriptor+8)!==size)invalid()
  }else if(after!==central||bytes.readUInt32LE(14)!==crc||bytes.readUInt32LE(18)!==compressed||bytes.readUInt32LE(22)!==size)invalid()
  let content
- try{content=method===0?bytes.subarray(offset,after):inflateRawSync(bytes.subarray(offset,after),{maxOutputLength:16384})}catch{invalid()}
+ try{content=method===0?bytes.subarray(offset,after):inflateRawSync(bytes.subarray(offset,after),{maxOutputLength:profile.contentBytes})}catch{invalid()}
  if(content.length!==size||controllerCrc32(content)!==crc)invalid()
  const text=content.toString('utf8');if(!Buffer.from(text).equals(content))invalid()
  try{return JSON.parse(text)}catch{fail('CONTROLLER_JOB_RESULT_METADATA_INVALID')}

@@ -966,3 +966,119 @@ test('stale reproduction foreign ordinal or uncertain native permit cannot cause
   assert.equal(f.calls.length,0);assert.equal(calls,['stale','ordinal'].includes(kind)?0:1)
  }
 })
+
+async function controllerPatchFixture(options={}){
+ const {createHash}=await import('node:crypto'),{documentDigest}=await import('../src/manifest.mjs')
+ const f=await signedControllerResultFixture('EXECUTE')
+ const beforeSource='export function synthetic(v:number){return v}\n',source='export function synthetic(v:number){return v+1}\n'
+ const hash=v=>createHash('sha256').update(v).digest('hex')
+ const patch={schemaVersion:'AQC_PATCH_V1',incidentId:f.manifest.incidentId,baseSha:old,
+  gateSetSha256:f.manifest.gateSetSha256,manifestSha256:documentDigest(f.manifest),files:[
+   {path:f.manifest.allowedPaths[0],beforeSha256:hash(beforeSource),afterSha256:hash(source),content:source},
+   {path:f.manifest.allowedPaths[1],beforeSha256:null,afterSha256:hash('synthetic inert regression\n'),content:'synthetic inert regression\n'}]}
+ const tree=files=>documentDigest(files.map(({path,beforeSha256,afterSha256})=>({path,beforeSha256,afterSha256})))
+ const body={...f.body,result:{result:'PATCH',baseSha:old,patch:{artifactSha256:documentDigest(patch),treeSha256:tree(patch.files)}}}
+ if(options.resultChange)options.resultChange(body)
+ f.state.run=f.native({status:'completed',conclusion:'success',created_at:new Date(f.context.now-1000).toISOString()})
+ const install=async(document,kind,zipOptions={})=>{
+  f.state.archive=await controllerResultZip(typeof document==='string'?document:JSON.stringify(document),{name:kind+'.json',...zipOptions})
+  f.state.artifacts={total_count:1,artifacts:[{id:801,name:'aqc-'+kind+'-'+f.externalId.split(':')[2],expired:false,
+   size_in_bytes:f.state.archive.length,digest:'sha256:'+hash(f.state.archive),workflow_run:{id:701,head_sha:sha}}]}
+ }
+ await install(f.sign(body,options.signer??'EXECUTOR_SUPERVISOR'),'result')
+ const resultObservation=await f.client.controllerJobResult({externalId:f.externalId,runId:'701'})
+ if(options.patchChange)options.patchChange(patch)
+ await install(options.payload??patch,'patch',options.zip??{})
+ let patchObservation
+ if(options.readPatch!==false)patchObservation=await f.client.controllerJobPatch({externalId:f.externalId,runId:'701'})
+ return {...f,patch,beforeSource,body,resultObservation,patchObservation,install,
+  readInput:()=>({resultObservation,patchObservation,beforeSource,...f.context})}
+}
+test('native executor patch provenance requires both exact artifacts and remains independently unaccepted',async()=>{
+ const {readQualityControllerPatch}=await import('../src/github.mjs')
+ for(const zip of [{},{stream:true},{method:'store'}]){
+  const f=await controllerPatchFixture({zip}),observed=readQualityControllerPatch(f.readInput())
+  assert.deepEqual(observed.body,f.patch);assert.equal(observed.independentVerified,false)
+  assert.equal(observed.artifactSha256,f.body.result.patch.artifactSha256)
+  assert.equal(Object.isFrozen(observed.body.files[0]),true)
+  assert.equal(f.calls.some(c=>c.method!=='GET'),false)
+  const storage=f.calls.filter(c=>c.url.startsWith('https://productionresultssa-fixture.blob.core.windows.net/'))
+  assert.equal(storage.length,2);assert(storage.every(c=>!new Headers(c.headers).has('authorization')))
+ }
+})
+test('patch provenance refuses invented cloned or mixed-client observations and post-download mutation',async()=>{
+ const {readQualityControllerPatch}=await import('../src/github.mjs')
+ const f=await controllerPatchFixture(),g=await controllerPatchFixture()
+ for(const input of [
+  {...f.readInput(),resultObservation:structuredClone(f.resultObservation)},
+  {...f.readInput(),patchObservation:structuredClone(f.patchObservation)},
+  {...f.readInput(),patchObservation:g.patchObservation},
+  {...f.readInput(),patchObservation:{state:'COMPLETE',document:f.patch}}]){
+  assert.throws(()=>readQualityControllerPatch(input),{code:'CONTROLLER_PATCH_NATIVE_ARTIFACT_REQUIRED'})
+ }
+ f.patchObservation.document.files[0].content+='changed'
+ assert.throws(()=>readQualityControllerPatch(f.readInput()),{code:'CONTROLLER_PATCH_NATIVE_BINDING_INVALID'})
+})
+test('native patch cannot borrow another run, nonce, incident, workflow or expired supervisor authority',async()=>{
+ const {readQualityControllerPatch}=await import('../src/github.mjs')
+ const f=await controllerPatchFixture()
+ for(const change of [{runId:'702'},{workflowId:'992'},{externalId:f.externalId.replace(f.context.record.pending.nonce,randomUUID())},
+  {record:{...f.context.record,id:randomUUID()}},{now:f.context.now+30001}]){
+  assert.throws(()=>readQualityControllerPatch({...f.readInput(),...change}))
+ }
+ const wrongSigner=await controllerPatchFixture({signer:'INDEPENDENT_VERIFIER'})
+ assert.throws(()=>readQualityControllerPatch(wrongSigner.readInput()))
+})
+test('patch and tree digests must both match the separately signed executor result',async()=>{
+ const {readQualityControllerPatch}=await import('../src/github.mjs')
+ for(const name of ['artifactSha256','treeSha256']){
+  const f=await controllerPatchFixture({resultChange:b=>{b.result.patch[name]='f'.repeat(64)}})
+  assert.throws(()=>readQualityControllerPatch(f.readInput()),{code:'CONTROLLER_PATCH_DIGEST_MISMATCH'})
+ }
+ const f=await controllerPatchFixture({patchChange:p=>{p.files[0].content+='changed'}})
+ assert.throws(()=>readQualityControllerPatch(f.readInput()),{code:'PATCH_FILE_MISMATCH'})
+})
+test('native patch retains exact manifest paths, original source hash and two-file byte limits',async()=>{
+ const {readQualityControllerPatch}=await import('../src/github.mjs')
+ for(const change of [p=>p.files[0].path='unapproved.ts',p=>p.files[1].path=p.files[0].path,
+  p=>p.incidentId=randomUUID(),p=>p.files.pop(),p=>p.files[0].beforeSha256='f'.repeat(64)]){
+  const f=await controllerPatchFixture({patchChange:change})
+  assert.throws(()=>readQualityControllerPatch(f.readInput()))
+ }
+ const f=await controllerPatchFixture()
+ assert.throws(()=>readQualityControllerPatch({...f.readInput(),beforeSource:'foreign source'}),{code:'PATCH_BASE_MISMATCH'})
+})
+test('patch ZIP refuses archive paths, symlinks, ZIP64, additional entries and decompression bombs',async()=>{
+ for(const zip of [{name:'../patch.json'},{name:'result.json'},{mode:0o120600},{zip64:true},{second:true}]){
+  const f=await controllerPatchFixture({readPatch:false,zip})
+  await assert.rejects(f.client.controllerJobPatch({externalId:f.externalId,runId:'701'}),{code:'CONTROLLER_JOB_RESULT_ARCHIVE_INVALID'})
+ }
+ const bomb=await controllerPatchFixture({readPatch:false,payload:'x'.repeat(65537)})
+ await assert.rejects(bomb.client.controllerJobPatch({externalId:bomb.externalId,runId:'701'}),{code:'CONTROLLER_JOB_RESULT_ARCHIVE_INVALID'})
+ const corrupt=await controllerPatchFixture({readPatch:false})
+ corrupt.state.archive[40]^=1
+ await assert.rejects(corrupt.client.controllerJobPatch({externalId:corrupt.externalId,runId:'701'}),{code:'CONTROLLER_JOB_RESULT_ARTIFACT_INVALID'})
+})
+test('only native EXECUTE can expose a patch artifact and missing artifact is not a patch',async()=>{
+ const {readQualityControllerPatch}=await import('../src/github.mjs'),free=await controllerJobFixture()
+ await assert.rejects(free.client.controllerJobPatch({externalId:free.externalId,runId:'701'}),{code:'CONTROLLER_PATCH_EXECUTOR_REQUIRED'})
+ assert.equal(free.calls.length,0)
+ const f=await controllerPatchFixture({readPatch:false})
+ f.state.artifacts={total_count:0,artifacts:[]}
+ const missing=await f.client.controllerJobPatch({externalId:f.externalId,runId:'701'})
+ assert.equal(missing.state,'UNKNOWN')
+ assert.throws(()=>readQualityControllerPatch({...f.readInput(),patchObservation:missing}),{code:'CONTROLLER_PATCH_NATIVE_ARTIFACT_REQUIRED'})
+})
+test('patch download has its own fixed bound while original result bound is preserved',async()=>{
+ for(const changes of [{downloadDeclaredSize:131073},{downloadDeclaredSize:0,downloadBody:Buffer.alloc(131073)}]){
+  const f=await controllerPatchFixture({readPatch:false});Object.assign(f.state,changes)
+  await assert.rejects(f.client.controllerJobPatch({externalId:f.externalId,runId:'701'}),{code:'CONTROLLER_JOB_RESULT_DOWNLOAD_INVALID'})
+ }
+ const f=await controllerPatchFixture({readPatch:false})
+ f.state.artifacts.artifacts[0].name='aqc-result-'+f.externalId.split(':')[2]
+ f.state.archive=await controllerResultZip(JSON.stringify({value:'x'.repeat(17000)}))
+ const {createHash}=await import('node:crypto')
+ f.state.artifacts.artifacts[0].size_in_bytes=f.state.archive.length
+ f.state.artifacts.artifacts[0].digest='sha256:'+createHash('sha256').update(f.state.archive).digest('hex')
+ await assert.rejects(f.client.controllerJobResult({externalId:f.externalId,runId:'701'}),{code:'CONTROLLER_JOB_RESULT_ARCHIVE_INVALID'})
+})
