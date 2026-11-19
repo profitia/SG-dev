@@ -1,5 +1,5 @@
 import {knowledgeSourcePredecessor} from '../knowledge-source.mjs'
-import {assistantReservationPredecessor} from '../../../packages/platform-contracts/test/assistant-reservation-source.mjs'
+import {assistantReservationPredecessor,createAcgLegacyRecurringFixture} from '../../../packages/platform-contracts/test/assistant-reservation-source.mjs'
 import {ASSISTANT_RESERVATION_SOURCE_SHA} from '../private-recurring-source.mjs'
 import {procurementInsightsCompletionPredecessor} from '../../sg-runtime/tests/procurement-insights-completion-integrity.mjs'
 import {sdkContinuationPredecessor} from '../../../packages/platform-contracts/test/organisation-sdk-compatibility.mjs'
@@ -8,6 +8,7 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import {execFileSync} from 'node:child_process'
 import {createHash} from 'node:crypto'
+import {fileURLToPath} from 'node:url'
 import {bsdcManifestContinuityCurrent,BSDC_MANIFEST_CONTINUITY,marketCalendarSourcePredecessor,calendarTestCompatibilityCurrent,MARKET_CALENDAR_TEST_COMPATIBILITY_RECORD,MARKET_CALENDAR_PRODUCER_PATHS,MARKET_CALENDAR_PRODUCER_RECORD,MARKET_CALENDAR_PRODUCER_BASE,MARKET_CALENDAR_PRODUCER_RECORD_SHA,MARKET_CALENDAR_CONSUMER_PATHS,MARKET_CALENDAR_CONSUMER_RECORD} from '../market-calendar-source.mjs'
 const root=new URL('../../../',import.meta.url),rawPhysical=p=>fs.readFileSync(new URL(p,root)),cache=new Map(),historical=(sha,p)=>{const k=sha+':'+p;if(!cache.has(k))cache.set(k,execFileSync('git',['show',k],{cwd:root,stdio:['ignore','pipe','pipe']}));return cache.get(k)}
 const reservation=assistantReservationPredecessor(knowledgeSourcePredecessor(rawPhysical,historical)?.previousBytes??rawPhysical,historical,ASSISTANT_RESERVATION_SOURCE_SHA),acceptedPhysical=reservation?.previousBytes??rawPhysical
@@ -65,7 +66,11 @@ const originalAcceptedManifestHash='d8ddddd7b39b6b67ed7e4ca2b4407a47a4470497465f
 const publishedHash=bytes=>createHash('sha256').update(bytes).digest('hex')
 const originalAcceptedManifest=historical('a03956b6752227a7a14e44887feabd50a0ad1054',publishedManifestPath)
 assert.equal(publishedHash(originalAcceptedManifest),originalAcceptedManifestHash)
-const nativeHistoricalCurrent=p=>p===publishedManifestPath?originalAcceptedManifest:physical(p)
+const nativeLegacyInput=await createAcgLegacyRecurringFixture(fileURLToPath(root))
+test.after(()=>nativeLegacyInput.close())
+const nativeHistoricalCurrent=p=>p===publishedManifestPath?originalAcceptedManifest:fs.readFileSync(nativeLegacyInput.root+'/'+p)
+assert.equal(publishedHash(nativeHistoricalCurrent(BSDC_MANIFEST_CONTINUITY.recordPath)),BSDC_MANIFEST_CONTINUITY.recordSha256)
+assert.equal(publishedHash(nativeHistoricalCurrent(BSDC_MANIFEST_CONTINUITY.testPath)),BSDC_MANIFEST_CONTINUITY.testSha256)
 const publishedAuthorityLedger=JSON.parse(historical(publishedAuthority,publishedManifestLedger))
 const publishedAuthorityGrant=publishedAuthorityLedger.successors.find(x=>x.manifestSha256===publishedManifestHash)
 const modifiedAuthorityLedger=change=>{
