@@ -383,20 +383,31 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
 // Shared source-only continuity; immutable historical receipts remain unchanged.
 const currentInputBlob=bytes=>createHash('sha1').update('blob '+bytes.length+'\0').update(bytes).digest('hex');
 const piSourceReview=Object.freeze({"id":"SG2:SG2-PI-CITATION-SOURCE-PUBLICATION-20261118","sourceSha":"cda1f12c3d729c71030031439e94510e356789d6","files":{"apps/insights-runtime/package-lock.json":"67a3cd0d2efbcd4621f1099a18cf45b07d7a5f66","apps/insights-runtime/package.json":"3a530e74bec5eb1b55d6dd9a7e5d083dcd5b0373","apps/insights-runtime/render/report.py":"4bf317a5f44d5505531b4bbb6181d4028b5ebe56","apps/insights-runtime/src/citations.mjs":"d5d23ef089eebf0e48175a7997ae7b822ee94da0","apps/insights-runtime/src/composer.mjs":"1a143010cfaa6b4a8a4518e6b8a851a0ba9b50f4","apps/insights-runtime/src/renderer.mjs":"61e6a7d6f4dc8bd51bcdfe75eb937851b4138168","apps/insights-runtime/tests/citations.test.mjs":"7bac2ac47922d95deb0f97827b5f254cfb1240ea","apps/sg-runtime/package-lock.json":"ccc6582bf002d43871eb6e0944b25d46bb3f3f7b"},"json":{"apps/insights-runtime/package-lock.json":{"beforeBlob":"c2a79eb45fdd579c118be40f5013d082e6498bec","afterBlob":"67a3cd0d2efbcd4621f1099a18cf45b07d7a5f66"},"apps/insights-runtime/package.json":{"beforeBlob":"48b862c7b341cc2e1be83ca061e9ca383a13a9df","afterBlob":"3a530e74bec5eb1b55d6dd9a7e5d083dcd5b0373"},"apps/sg-runtime/package-lock.json":{"beforeBlob":"c2eff79187fa52914ff476ddfab5bb4574b938d9","afterBlob":"ccc6582bf002d43871eb6e0944b25d46bb3f3f7b"}}});
+// SDK1.38 transport is closed to the same five reviewed code postimages and
+// these exact three JSON transitions. A separate owner-approved exact source
+// record on trusted Main is still required; this table is not an admission.
+const piSdk138Review=Object.freeze({id:piSourceReview.id,
+ json:Object.freeze({"apps/insights-runtime/package.json":{"beforeBlob":"48b862c7b341cc2e1be83ca061e9ca383a13a9df","afterBlob":"3a530e74bec5eb1b55d6dd9a7e5d083dcd5b0373"},"apps/insights-runtime/package-lock.json":{"beforeBlob":"697d2a4a069ff6d92da01ce5e33d29b5e96487c9","afterBlob":"8e4e8b4edce3d1aa3523487d0286f267a7401313"},"apps/sg-runtime/package-lock.json":{"beforeBlob":"187b9a4d552e4bbc23d79981ae478665066f7d92","afterBlob":"e022d3287bde438af8d85526ae144f60c3081fec"}}),
+ files:Object.freeze({...piSourceReview.files,"apps/insights-runtime/package.json":"3a530e74bec5eb1b55d6dd9a7e5d083dcd5b0373","apps/insights-runtime/package-lock.json":"8e4e8b4edce3d1aa3523487d0286f267a7401313","apps/sg-runtime/package-lock.json":"e022d3287bde438af8d85526ae144f60c3081fec"}),
+});
 const piReviewedPackages=Object.freeze({'@profitia/insights-runtime':Object.freeze({
  beforeBlob:piSourceReview.json['apps/insights-runtime/package.json'].beforeBlob,
  afterBlob:piSourceReview.json['apps/insights-runtime/package.json'].afterBlob,
 })});
-function isReviewedInsightsContinuation(record){
- return record?.id===piSourceReview.id&&record.sourceSha===piSourceReview.sourceSha
-  &&record.scope==='SOURCE_VALIDATION_ONLY'&&record.status==='ACTIVE'&&record.actor==='profitia'
-  &&Array.isArray(record.files)&&record.files.length===Object.keys(piSourceReview.files).length
-   &&new Set(record.files.map(f=>f.path)).size===record.files.length
-  &&record.files.every(f=>f.mode==='100644'&&piSourceReview.files[f.path]===f.blob);
+function reviewedInsightsContinuation(record){
+ if(record?.id!==piSourceReview.id||record.scope!=='SOURCE_VALIDATION_ONLY'
+   ||record.status!=='ACTIVE'||record.actor!=='profitia'||!Array.isArray(record.files)
+   ||record.files.length!==Object.keys(piSourceReview.files).length
+   ||new Set(record.files.map(f=>f.path)).size!==record.files.length)return undefined;
+ const matches=review=>record.files.every(f=>f.mode==='100644'&&review.files[f.path]===f.blob);
+ if(record.sourceSha===piSourceReview.sourceSha&&matches(piSourceReview))return piSourceReview;
+ if(record.repository==='profitia/SG-dev'&&record.targetEnvironment==='development'
+   &&record.sourceSha!==piSourceReview.sourceSha&&/^[a-f0-9]{40}$/.test(record.sourceSha??'')&&matches(piSdk138Review))return piSdk138Review;
+ return undefined;
 }
 // A candidate record never supplies this policy table. It is a closed, separately
 // reviewed transition for the existing producer; registry/private pins stay intact.
-export function reviewedProducerLocalPackages(record){return isReviewedInsightsContinuation(record)?piReviewedPackages:undefined;}
+export function reviewedProducerLocalPackages(record){return reviewedInsightsContinuation(record)?piReviewedPackages:undefined;}
 
 /** Authenticates actual current input before a frozen compatibility view is exposed.
  * This runs only in source review/test tooling, never in product runtime.
@@ -459,8 +470,8 @@ export function createCurrentSourceVerifier(sourceRoot, watchedPaths, {authority
   }
   assert.equal(currentInputBlob(actual),record.files.find(f=>f.path===p)?.blob,'current admitted Knowledge postimage '+p);
   if(p.endsWith('.json')){
-   const pin=piSourceReview.json[p];
-   assert(isReviewedInsightsContinuation(record)&&pin&&accepted&&currentInputBlob(accepted)===pin.beforeBlob&&currentInputBlob(actual)===pin.afterBlob,'separately reviewed local producer metadata '+p);
+   const pin=reviewedInsightsContinuation(record)?.json[p];
+   assert(pin&&accepted&&currentInputBlob(accepted)===pin.beforeBlob&&currentInputBlob(actual)===pin.afterBlob,'separately reviewed local producer metadata '+p);
   }
   return Buffer.from(actual);
  };

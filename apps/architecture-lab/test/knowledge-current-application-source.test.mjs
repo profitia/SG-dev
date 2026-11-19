@@ -188,3 +188,57 @@ currentKnowledgePolicyTest('producer local-package policy requires the closed ei
  currentKnowledgeAssert.equal(c.currentSdkSourceAdmissionPolicy(incomplete),undefined);
  currentKnowledgeAssert.equal(c.currentSdkSourceAdmissionPolicy({...record,id:'unreviewed',reviewedLocalPackages:actual.reviewedLocalPackages}),undefined);
 });
+
+
+const SDK138_PRODUCER_BASE='09b78d30391627f17112b5b4dcaa2b155585d9d1';
+const REVIEWED_PRODUCER_CODE='cda1f12c3d729c71030031439e94510e356789d6';
+const PRODUCER_TRANSPORT_PATHS=Object.freeze(['apps/insights-runtime/package-lock.json','apps/insights-runtime/package.json','apps/insights-runtime/render/report.py','apps/insights-runtime/src/citations.mjs','apps/insights-runtime/src/composer.mjs','apps/insights-runtime/src/renderer.mjs','apps/insights-runtime/tests/citations.test.mjs','apps/sg-runtime/package-lock.json']);
+const actualGitBytes=(sha,p)=>git(repository,'--literal-pathspecs','ls-tree',sha,'--',p)?execFileSync('git',['cat-file','blob',sha+':'+p],{cwd:repository,env,stdio:['ignore','pipe','pipe'],maxBuffer:3*1024*1024}):null;
+function sdk138ProducerFixture(options={}){
+ // The original SDK and producer bytes are genuine. Only this isolated authority,
+ // its commits and admission are SYNTHETIC_ONLY; no real grant/proof is created.
+ const root=fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(),'pi-sdk138-closed-transport-test-')));
+ git(root,'init','--quiet');git(root,'remote','add','origin','https://github.com/profitia/SG-dev.git');
+ const before=new Map();
+ for(const p of PRODUCER_TRANSPORT_PATHS){const bytes=actualGitBytes(options.baselineOldSdk?'efc1290378507e947cbf9ad0bcfc1e4a71086bb6':SDK138_PRODUCER_BASE,p);before.set(p,bytes);if(bytes)write(root,p,bytes);}
+ const base=commit(root);
+ for(const p of PRODUCER_TRANSPORT_PATHS){
+  let bytes;
+  if(p.endsWith('.json')){
+   const value=JSON.parse(actualGitBytes(SDK138_PRODUCER_BASE,p));
+   if(p==='apps/insights-runtime/package.json')value.version='1.2.2';
+   else if(p==='apps/insights-runtime/package-lock.json'){
+    value.version='1.2.2';value.packages[''].version='1.2.2';
+    if(options.downgradedSdkLock)value.packages['node_modules/@profitia/platform-contracts'].version='1.37.0';
+   }else value.packages['node_modules/@profitia/insights-runtime'].version='1.2.2';
+   bytes=Buffer.from(JSON.stringify(value,null,2)+'\n');
+  }else bytes=actualGitBytes(REVIEWED_PRODUCER_CODE,p);
+  if(options.changedCode&&p.endsWith('/composer.mjs'))bytes=Buffer.concat([bytes,Buffer.from('\n// SYNTHETIC_ONLY unreviewed code\n')]);
+  write(root,p,bytes);
+ }
+ const source=commit(root),record={id:'SG2:SG2-PI-CITATION-SOURCE-PUBLICATION-20261118',taskId:'SYNTHETIC_ONLY_CLOSED_SDK138_TRANSPORT',status:'ACTIVE',repository:'profitia/SG-dev',actor:'profitia',targetEnvironment:'development',scope:'SOURCE_VALIDATION_ONLY',approvalRef:'SYNTHETIC_ONLY fixture, never owner approval or actual admission',sourceSha:options.falseSourceRef?'f'.repeat(40):source,baseSha:base,validFrom:'2000-01-01T00:00:00Z',validUntil:options.expired?'2001-01-01T00:00:00Z':'2099-01-01T00:00:00Z',files:PRODUCER_TRANSPORT_PATHS.map(p=>({path:p,blob:git(root,'rev-parse',source+':'+p),mode:'100644',status:before.get(p)?'modified':'added',projectKey:'SG2',owner:p.startsWith('apps/insights-runtime/')?'Insights Domain':'SG Runtime',surfaceId:p.startsWith('apps/insights-runtime/')?'INSIGHTS-BASE-001':'SG2-BASE-001'}))};
+ git(root,'checkout','--quiet','--detach',base);
+ write(root,ADMISSIONS_PATH,JSON.stringify({schemaVersion:'1.0',records:options.noTrustedRecord?[]:[record]}));
+ const control=commit(root);git(root,'update-ref','refs/remotes/origin/main',control);
+ git(root,'-c','user.name=Synthetic fixture','-c','user.email=synthetic@example.invalid','-c','commit.gpgsign=false','merge','--quiet','--no-ff',source,'-m','SYNTHETIC_ONLY closed SDK1.38 producer transport');
+ return {root,record,read:p=>fs.readFileSync(path.join(root,p)),verify:()=>createKnowledgeCurrentSourceVerifier(root,PRODUCER_TRANSPORT_PATHS,{governanceRoot:repository})};
+}
+function sdk138ProducerRun(options,body){const f=sdk138ProducerFixture(options);try{return body(f);}finally{fs.rmSync(f.root,{recursive:true,force:true});}}
+test('genuine SDK1.38 locks and unchanged reviewed producer code require one complete fresh SHA admission',()=>sdk138ProducerRun({},f=>{
+ const review=knowledgeReviewedLocalPackages(f.record);assert.deepEqual(Object.keys(review),['@profitia/insights-runtime']);
+ const verify=f.verify();for(const p of PRODUCER_TRANSPORT_PATHS)assert.deepEqual(verify(p,f.read(p)),f.read(p));
+ for(const p of ['apps/insights-runtime/package-lock.json','apps/sg-runtime/package-lock.json'])assert.equal(JSON.parse(f.read(p)).packages['node_modules/@profitia/platform-contracts'].version,'1.38.0');
+ assert.equal(JSON.parse(f.read('apps/insights-runtime/package.json')).version,'1.2.2');
+ assert.equal(git(f.root,'status','--porcelain'),'');
+}));
+test('SDK1.38 metadata exception cannot reuse the old source approval or accept changed code, locks or incomplete scope',()=>sdk138ProducerRun({},f=>{
+ for(const change of [r=>r.sourceSha=REVIEWED_PRODUCER_CODE,r=>r.files.pop(),r=>r.files.push({...r.files[0]}),r=>r.files[0].blob='f'.repeat(40),r=>r.repository='untrusted/repository',r=>r.targetEnvironment='production',r=>r.status='REVOKED',r=>r.actor='untrusted']){
+  const altered=structuredClone(f.record);change(altered);assert.equal(knowledgeReviewedLocalPackages(altered),undefined);
+ }
+}));
+test('SDK1.38 producer transport rejects missing or expired trusted admission and invented original source',()=>{
+ for(const options of [{noTrustedRecord:true},{expired:true},{falseSourceRef:true}])sdk138ProducerRun(options,f=>assert.throws(()=>f.verify()('apps/insights-runtime/package-lock.json',f.read('apps/insights-runtime/package-lock.json'))));
+});
+test('closed producer metadata cannot upgrade an unaccepted SDK baseline, downgrade its lock or substitute code',()=>{
+ for(const options of [{baselineOldSdk:true},{downgradedSdkLock:true},{changedCode:true}])sdk138ProducerRun(options,f=>assert.throws(()=>f.verify()('apps/insights-runtime/package-lock.json',f.read('apps/insights-runtime/package-lock.json')),/separately reviewed/));
+});
