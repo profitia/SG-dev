@@ -1,4 +1,5 @@
 import {sdkSourceContext} from '../../packages/platform-contracts/test/sdk-source-context.mjs'
+import {benchmarkUnmeteredPredecessor,BENCHMARK_RECORD} from '../../packages/platform-contracts/test/benchmark-unmetered-source.mjs'
 import {knowledgeSourcePredecessor} from './knowledge-source.mjs'
 // Source acceptance only. Never imported by an application runtime.
 // The reviewed current graph is verified before any immutable predecessor is read.
@@ -33,8 +34,18 @@ export function recurringSourcePredecessor(current,historical){
   assert(sdk,'complete immutable registration source required')
   const accepted=recurringSourcePredecessor(sdk.previousBytes,historical)
   assert(accepted,'complete immutable recurring source required')
+  const benchmarkRef=context.record.coverageRecords.find(ref=>ref.baseline==='benchmark'&&ref.path===BENCHMARK_RECORD)
+  assert(benchmarkRef,'explicit immutable Benchmark source coverage required')
+  const benchmark=benchmarkUnmeteredPredecessor(context.baseline('benchmark'),historical,benchmarkRef.sha256)
+  assert(benchmark,'complete immutable Benchmark source required')
+  const acceptedManifest=accepted.acceptedManifest??accepted.manifest
+  const currentManifest={...accepted.manifest,scope:'CURRENT_ACCEPTED_SDK_SOURCE_VIEW',platformVersion:context.record.platformVersion,
+   currentContinuation:benchmark.manifest,sourceDigests:{...accepted.manifest.sourceDigests,...context.currentSourceDigests},
+   sdkDigests:{...accepted.manifest.sdkDigests,...context.metadata.sdkDigests},
+   optionalPackageDigests:{...accepted.manifest.optionalPackageDigests,...context.metadata.optionalPackageDigests},
+   addedPaths:[...new Set([...accepted.manifest.addedPaths,...benchmark.addedPaths])]}
   return {...accepted,...(sdk.composition?{transport:sdk.composition.transport,completion:sdk.composition.completion}:{}),
-   reservation:authority.reservation,currentSdkContext:context,knowledge:knowledgeSourcePredecessor(current,historical)}
+   acceptedManifest,currentManifest,reservation:authority.reservation,currentSdkContext:context,knowledge:knowledgeSourcePredecessor(current,historical)}
  }
  const knowledge=knowledgeSourcePredecessor(current,historical)
  if(knowledge){const accepted=recurringSourcePredecessor(knowledge.previousBytes,historical);assert(accepted,'accepted source chain retained');return {...accepted,manifest:knowledge.manifest,predecessorManifest:accepted.manifest,knowledge}}
@@ -91,6 +102,8 @@ export function recurringSourceFilesystem(root){
  const current=p=>fs.readFileSync(path.join(cwd,p))
  const historical=(sha,p)=>execFileSync('git',['show',sha+':'+p],{cwd})
  const view=recurringSourcePredecessor(current,historical)??{manifest:null,previousBytes:current}
+ // Current physical SDK metadata was authenticated before historical views.
+ if(view.currentSdkContext)return view
  const benchmark=view.reservation?.benchmark
  if(!benchmark)return view
  // Derived current SDK view; the original accepted manifest stays explicit.

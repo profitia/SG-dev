@@ -1,8 +1,10 @@
 import assert from 'node:assert/strict'
+import {createHash} from 'node:crypto'
 import test from 'node:test'
 import fs from 'node:fs'
 import {execFileSync} from 'node:child_process'
 import {organisationLifecycleSdkPredecessor} from './organisation-lifecycle-sdk-compatibility.mjs'
+import {sdkSourceContext} from './sdk-source-context.mjs'
 const root=new URL('../../../',import.meta.url)
 const recordPath='packages/platform-contracts/test/organisation-lifecycle-sdk-compatibility.json'
 const current=p=>fs.readFileSync(new URL(p,root))
@@ -14,7 +16,10 @@ const historical=(sha,p)=>{
 }
 const missing=()=>{throw Object.assign(Error('synthetic missing source'),{code:'ENOENT'})}
 test('optional guard remains absent for an actual immutable predecessor',()=>{
- assert.equal(organisationLifecycleSdkPredecessor(p=>p===recordPath?missing():current(p),historical),null)
+ const a=JSON.parse(current(recordPath)),old=p=>historical(a.previousSourceSha,p)
+ assert.equal(organisationLifecycleSdkPredecessor(old,historical),null)
+ if(sdkSourceContext(current,historical))assert.throws(()=>organisationLifecycleSdkPredecessor(p=>p===recordPath?missing():current(p),historical))
+ else assert.equal(organisationLifecycleSdkPredecessor(p=>p===recordPath?missing():current(p),historical),null)
 })
 test('current lifecycle source validates every owner and exposes exact immutable predecessor bytes',()=>{
  const a=JSON.parse(current(recordPath))
@@ -76,7 +81,11 @@ test('reconciliation authenticates every current test byte before returning immu
   assert.throws(()=>organisationLifecycleSdkPredecessor(x=>x===p?Buffer.concat([current(x),Buffer.from('changed')]):current(x),(sha,x)=>{historyReads++;return historical(sha,x)}),p)
   assert.equal(historyReads,0,'unverified physical source must fail before predecessor access: '+p)
  }
- for(const p of Object.keys(r.currentMainSourceDigests))assert.deepEqual(current(p),historical(r.currentMainSha,p),'new main PI test bytes remain current')
+ const verified=organisationLifecycleSdkPredecessor(current,historical),acceptedMain=verified.currentSdkContext?.baseline('registration')??current
+ for(const p of Object.keys(r.currentMainSourceDigests)){
+  assert.deepEqual(acceptedMain(p),historical(r.currentMainSha,p),'immutable accepted main PI test bytes remain current in their own source view')
+  if(verified.currentSdkContext)assert.equal(createHash('sha256').update(current(p)).digest('hex'),verified.currentSdkContext.currentSourceDigests[p],'authenticated current PI successor '+p)
+ }
  for(const p of r.predecessorAbsentPaths)assert.throws(()=>organisationLifecycleSdkPredecessor(current,historical).previousBytes(p),{code:'ENOENT'})
  assert.equal(r.correctedOwnerInputs.length,3)
  for(const input of r.correctedOwnerInputs){

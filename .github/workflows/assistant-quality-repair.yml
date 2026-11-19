@@ -1,5 +1,5 @@
 name: Assistant quality control source
-run-name: ${{ github.event_name == 'workflow_dispatch' && format('AQC {0}', inputs.nonce) || 'AQC source checks' }}
+run-name: ${{ github.event_name == 'workflow_dispatch' && (inputs.mode == 'controller-job' && format('AQC JOB {0} {1}', inputs.action, inputs.nonce) || format('AQC {0}', inputs.nonce)) || 'AQC source checks' }}
 on:
   pull_request:
     paths:
@@ -22,11 +22,40 @@ on:
         type: choice
         required: true
         default: source-check
-        options: [source-check, keyless-qualify, publisher-preflight]
+        options: [source-check, keyless-qualify, publisher-preflight, controller-job]
       nonce:
         type: string
         required: true
       base_sha:
+        type: string
+        required: false
+        default: ''
+
+      action:
+        type: string
+        required: false
+        default: ''
+      control_source_sha:
+        type: string
+        required: false
+        default: ''
+      incident_id:
+        type: string
+        required: false
+        default: ''
+      manifest_sha256:
+        type: string
+        required: false
+        default: ''
+      state:
+        type: string
+        required: false
+        default: ''
+      permit_id:
+        type: string
+        required: false
+        default: ''
+      permit_expires_at:
         type: string
         required: false
         default: ''
@@ -154,8 +183,224 @@ jobs:
           retention-days: 7
           if-no-files-found: error
 
-# No repair/publish dispatch, provider model key or promotion authority.
+# No paid repair/publish dispatch, provider model key or promotion authority.
 # The publisher preflight admits only its two new ordinary-role connections
 # in the approved main-only environment; no signing/Render/QA key is loaded.
 # Its unsigned metadata is not a controller result or a publication proof.
 # Keyless Linux qualification installs no operational trust or budget.
+
+  native_linux_attestation:
+    name: Independently attest original native Linux qualification
+    if: >-
+      github.event_name == 'workflow_dispatch' && inputs.mode == 'controller-job' &&
+      contains(fromJSON('["QUALIFY","REPRODUCE","VERIFY","EXECUTE"]'), inputs.action) &&
+      github.ref == 'refs/heads/main' && github.actor == 'profitia' &&
+      github.triggering_actor == 'profitia' && github.run_attempt == 1
+    needs: source
+    runs-on: ubuntu-24.04
+    timeout-minutes: 4
+    environment: aqc-verifier-development
+    permissions:
+      contents: read
+      actions: read
+    outputs:
+      qualification: ${{ steps.attest.outputs.qualification }}
+    env:
+      TARGET_ENVIRONMENT: development
+      AQC_PAID_REPAIRS_ENABLED: 'false'
+      AQC_PROMOTION_ENABLED: 'false'
+      AQC_OWNER_PUBLIC_KEYS_JSON: ${{ vars.AQC_OWNER_PUBLIC_KEYS_JSON }}
+      AQC_PHASE_PUBLIC_KEYS_JSON: ${{ vars.AQC_PHASE_PUBLIC_KEYS_JSON }}
+      AQC_CONTROLLER_WORKFLOW_SHA256: ${{ vars.AQC_CONTROLLER_WORKFLOW_SHA256 }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - name: Install public dependencies without credentials or lifecycle
+        run: npm ci --prefix packages/assistant-quality-control --ignore-scripts --registry https://registry.npmjs.org --userconfig /dev/null
+      - name: Verify native invocation original ZIP and original qualification horizon
+        id: attest
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          AQC_INDEPENDENT_VERIFIER_PRIVATE_KEY: ${{ secrets.AQC_INDEPENDENT_VERIFIER_PRIVATE_KEY }}
+        run: node packages/assistant-quality-control/src/job-runtime.mjs qualify-linux
+
+  native_verifier:
+    name: Native independent verifier phase
+    if: >-
+      github.event_name == 'workflow_dispatch' && inputs.mode == 'controller-job' &&
+      contains(fromJSON('["QUALIFY","REPRODUCE","VERIFY"]'), inputs.action) &&
+      github.ref == 'refs/heads/main' && github.actor == 'profitia' &&
+      github.triggering_actor == 'profitia' && github.run_attempt == 1
+    needs: [source, native_linux_attestation]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    environment: aqc-verifier-development
+    permissions:
+      contents: read
+      actions: read
+      checks: read
+    env:
+      AQC_NONCE: ${{ inputs.nonce }}
+      TARGET_ENVIRONMENT: development
+      AQC_PAID_REPAIRS_ENABLED: 'false'
+      AQC_PROMOTION_ENABLED: 'false'
+      AQC_OWNER_PUBLIC_KEYS_JSON: ${{ vars.AQC_OWNER_PUBLIC_KEYS_JSON }}
+      AQC_PHASE_PUBLIC_KEYS_JSON: ${{ vars.AQC_PHASE_PUBLIC_KEYS_JSON }}
+      AQC_CONTROLLER_WORKFLOW_SHA256: ${{ vars.AQC_CONTROLLER_WORKFLOW_SHA256 }}
+      AQC_REPAIR_CONTEXTS_JSON: ${{ vars.AQC_REPAIR_CONTEXTS_JSON }}
+      AQC_LINUX_QUALIFICATION_JSON: ${{ needs.native_linux_attestation.outputs.qualification }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - name: Install public pinned dependencies and disposable VM prerequisites
+        run: |
+          node -e 'if(!/^[a-f0-9-]{36}$/.test(process.env.AQC_NONCE))process.exit(1)'
+          npm ci --prefix packages/assistant-quality-control --ignore-scripts --registry https://registry.npmjs.org --userconfig /dev/null
+          sudo apt-get update -qq
+          sudo apt-get install -y acl iptables bubblewrap
+          test -x /usr/bin/bwrap
+          /usr/bin/bwrap --version
+          sudo sysctl -w kernel.unprivileged_userns_clone=1
+          if sysctl kernel.apparmor_restrict_unprivileged_userns >/dev/null 2>&1; then sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0; fi
+      - name: Verify signed context before private package access
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node packages/assistant-quality-control/src/job-runtime.mjs validate-context
+      - name: Verify and install the exact public CLI and isolation helper
+        run: |
+          curl --fail --silent --show-error --location --proto '=https' --tlsv1.2 https://github.com/openai/codex/releases/download/rust-v0.167.2/codex-x86_64-unknown-linux-musl.tar.gz --output /tmp/aqc-codex.tar.gz
+          echo '8246e846c550ea21197fcc4067bc270dca895e94ea42ed6a282e6f4e0125b15f  /tmp/aqc-codex.tar.gz' | sha256sum --check --strict
+          mkdir /tmp/aqc-codex-bin
+          tar --extract --gzip --file /tmp/aqc-codex.tar.gz --directory /tmp/aqc-codex-bin
+          sudo install -d -m 0755 /opt/aqc-tools
+          sudo install -m 0755 /tmp/aqc-codex-bin/codex-x86_64-unknown-linux-musl /opt/aqc-tools/codex
+          git clone --filter=blob:none --no-checkout https://github.com/openai/codex-action.git /tmp/aqc-helper
+          git -C /tmp/aqc-helper fetch origin 13e9c17417b29e9a276f73ec6ed7fb574137d3c3
+          git -C /tmp/aqc-helper checkout --detach 13e9c17417b29e9a276f73ec6ed7fb574137d3c3
+          sudo mv /tmp/aqc-helper /opt/aqc-tools/codex-action
+          sudo chown -R root:root /opt/aqc-tools
+          sudo chmod -R go-w /opt/aqc-tools
+          /opt/aqc-tools/codex --version
+
+      - name: Prepare pinned isolated verifier resources without private credentials
+        run: sudo --preserve-env=GITHUB_ACTIONS,RUNNER_ENVIRONMENT,RUNNER_OS,GITHUB_REPOSITORY,GITHUB_REF,GITHUB_WORKFLOW_REF,GITHUB_EVENT_NAME,GITHUB_ACTOR,GITHUB_TRIGGERING_ACTOR,GITHUB_SHA,GITHUB_RUN_ID,GITHUB_RUN_ATTEMPT,GITHUB_EVENT_PATH,GITHUB_WORKSPACE "$(command -v node)" --input-type=module -e 'import {prepareExecutorTools} from "./packages/assistant-quality-control/src/executor.mjs"; await prepareExecutorTools()'
+      - name: Fetch only the exact admitted CIC archive without lifecycle
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          set -euo pipefail
+          test -n "$NPM_TOKEN"
+          private_config="$(mktemp)"
+          trap 'rm -f "$private_config"' EXIT
+          chmod 600 "$private_config"
+          printf '%s\n' '@profitia:registry=https://npm.pkg.github.com' '//npm.pkg.github.com/:_authToken=${NPM_TOKEN}' > "$private_config"
+          mkdir /tmp/aqc-cic-download
+          npm pack @profitia/cic-core@1.8.0 --ignore-scripts --json --pack-destination /tmp/aqc-cic-download --registry https://npm.pkg.github.com --userconfig "$private_config" > /tmp/aqc-cic-pack-metadata.json
+          node --input-type=module -e 'import fs from "node:fs";import{createHash}from"node:crypto";const b=fs.readFileSync("/tmp/aqc-cic-download/profitia-cic-core-1.8.0.tgz");if(b.length>2097152||createHash("sha512").update(b).digest("base64")!=="tuun88+cfOHFeCafBw1a8gnExgeDyWBgY7Zd9OPkKk2/Eef0YBP49vzDcXKVpFoCNJGh/CYbeR9B+M2ZXctNsg==")process.exit(1)'
+          sudo install -m 0600 /tmp/aqc-cic-download/profitia-cic-core-1.8.0.tgz /tmp/aqc-cic-core-1.8.0.tgz
+          rm /tmp/aqc-cic-download/profitia-cic-core-1.8.0.tgz
+      - name: Trust admitted checkout ownership for the root-only phase
+        run: sudo chown -R root:root "$GITHUB_WORKSPACE"
+      - name: Run free baseline phase without holdout or model credentials
+        if: inputs.action != 'VERIFY'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          AQC_INDEPENDENT_VERIFIER_PRIVATE_KEY: ${{ secrets.AQC_INDEPENDENT_VERIFIER_PRIVATE_KEY }}
+        run: sudo --preserve-env=GITHUB_ACTIONS,RUNNER_ENVIRONMENT,RUNNER_OS,GITHUB_REPOSITORY,GITHUB_REF,GITHUB_WORKFLOW_REF,GITHUB_EVENT_NAME,GITHUB_ACTOR,GITHUB_TRIGGERING_ACTOR,GITHUB_SHA,GITHUB_RUN_ID,GITHUB_RUN_ATTEMPT,GITHUB_EVENT_PATH,GITHUB_WORKSPACE,TARGET_ENVIRONMENT,AQC_PAID_REPAIRS_ENABLED,AQC_PROMOTION_ENABLED,AQC_OWNER_PUBLIC_KEYS_JSON,AQC_PHASE_PUBLIC_KEYS_JSON,AQC_CONTROLLER_WORKFLOW_SHA256,AQC_REPAIR_CONTEXTS_JSON,AQC_LINUX_QUALIFICATION_JSON,GITHUB_TOKEN,AQC_INDEPENDENT_VERIFIER_PRIVATE_KEY "$(command -v node)" packages/assistant-quality-control/src/job-runtime.mjs phase
+      - name: Run independent candidate verification in isolation
+        if: inputs.action == 'VERIFY'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          AQC_INDEPENDENT_VERIFIER_PRIVATE_KEY: ${{ secrets.AQC_INDEPENDENT_VERIFIER_PRIVATE_KEY }}
+          AQC_VERIFIER_PACK_JSON: ${{ secrets.AQC_HOLDOUT_PACK_JSON }}
+          AQC_VERIFIER_PACK_ATTESTATION_JSON: ${{ secrets.AQC_HOLDOUT_ATTESTATION_JSON }}
+          AQC_REVIEWER_PUBLIC_KEYS_JSON: ${{ vars.AQC_REVIEWER_PUBLIC_KEYS_JSON }}
+        run: sudo --preserve-env=GITHUB_ACTIONS,RUNNER_ENVIRONMENT,RUNNER_OS,GITHUB_REPOSITORY,GITHUB_REF,GITHUB_WORKFLOW_REF,GITHUB_EVENT_NAME,GITHUB_ACTOR,GITHUB_TRIGGERING_ACTOR,GITHUB_SHA,GITHUB_RUN_ID,GITHUB_RUN_ATTEMPT,GITHUB_EVENT_PATH,GITHUB_WORKSPACE,TARGET_ENVIRONMENT,AQC_PAID_REPAIRS_ENABLED,AQC_PROMOTION_ENABLED,AQC_OWNER_PUBLIC_KEYS_JSON,AQC_PHASE_PUBLIC_KEYS_JSON,AQC_CONTROLLER_WORKFLOW_SHA256,AQC_REPAIR_CONTEXTS_JSON,AQC_LINUX_QUALIFICATION_JSON,GITHUB_TOKEN,AQC_INDEPENDENT_VERIFIER_PRIVATE_KEY,AQC_VERIFIER_PACK_JSON,AQC_VERIFIER_PACK_ATTESTATION_JSON,AQC_REVIEWER_PUBLIC_KEYS_JSON "$(command -v node)" packages/assistant-quality-control/src/job-runtime.mjs phase
+      - name: Make only signed public receipts readable to the artifact uploader
+        run: |
+          sudo chown "$(id -u):$(id -g)" /tmp/result.json
+          if test -f /tmp/verification.json; then sudo chown "$(id -u):$(id -g)" /tmp/verification.json; fi
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: aqc-result-${{ inputs.nonce }}
+          path: /tmp/result.json
+          retention-days: 7
+          if-no-files-found: error
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: inputs.action == 'VERIFY'
+        with:
+          name: aqc-verification-${{ inputs.nonce }}
+          path: /tmp/verification.json
+          retention-days: 7
+          if-no-files-found: error
+
+      - name: Restore disposable runner checkout ownership for action cleanup
+        if: always()
+        run: sudo chown -R "$(id -u):$(id -g)" "$GITHUB_WORKSPACE"
+
+  native_executor:
+    name: Native executor disabled until paid acceptance gates
+    if: >-
+      github.event_name == 'workflow_dispatch' && inputs.mode == 'controller-job' && inputs.action == 'EXECUTE' &&
+      github.ref == 'refs/heads/main' && github.actor == 'profitia' &&
+      github.triggering_actor == 'profitia' && github.run_attempt == 1
+    needs: [source, native_linux_attestation]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 4
+    environment: aqc-executor-development
+    permissions:
+      contents: read
+      actions: read
+    env:
+      TARGET_ENVIRONMENT: development
+      AQC_PAID_REPAIRS_ENABLED: 'false'
+      AQC_PROMOTION_ENABLED: 'false'
+      AQC_OWNER_PUBLIC_KEYS_JSON: ${{ vars.AQC_OWNER_PUBLIC_KEYS_JSON }}
+      AQC_PHASE_PUBLIC_KEYS_JSON: ${{ vars.AQC_PHASE_PUBLIC_KEYS_JSON }}
+      AQC_CONTROLLER_WORKFLOW_SHA256: ${{ vars.AQC_CONTROLLER_WORKFLOW_SHA256 }}
+      AQC_REPAIR_CONTEXTS_JSON: ${{ vars.AQC_REPAIR_CONTEXTS_JSON }}
+      AQC_LINUX_QUALIFICATION_JSON: ${{ needs.native_linux_attestation.outputs.qualification }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '24'
+      - name: Install public dependencies without credentials or lifecycle
+        run: npm ci --prefix packages/assistant-quality-control --ignore-scripts --registry https://registry.npmjs.org --userconfig /dev/null
+      - name: Trust admitted checkout ownership for the root-only phase
+        run: sudo chown -R root:root "$GITHUB_WORKSPACE"
+      - name: Enforce paid-off before reading broker signer or model credentials
+        run: sudo --preserve-env=GITHUB_ACTIONS,RUNNER_ENVIRONMENT,RUNNER_OS,GITHUB_REPOSITORY,GITHUB_REF,GITHUB_WORKFLOW_REF,GITHUB_EVENT_NAME,GITHUB_ACTOR,GITHUB_TRIGGERING_ACTOR,GITHUB_SHA,GITHUB_RUN_ID,GITHUB_RUN_ATTEMPT,GITHUB_EVENT_PATH,GITHUB_WORKSPACE,TARGET_ENVIRONMENT,AQC_PAID_REPAIRS_ENABLED,AQC_PROMOTION_ENABLED,AQC_OWNER_PUBLIC_KEYS_JSON,AQC_PHASE_PUBLIC_KEYS_JSON,AQC_CONTROLLER_WORKFLOW_SHA256,AQC_REPAIR_CONTEXTS_JSON,AQC_LINUX_QUALIFICATION_JSON,GITHUB_TOKEN "$(command -v node)" packages/assistant-quality-control/src/job-runtime.mjs phase
+
+      - name: Restore disposable runner checkout ownership for action cleanup
+        if: always()
+        run: sudo chown -R "$(id -u):$(id -g)" "$GITHUB_WORKSPACE"
+
+  unwired_native_action:
+    name: Reject incomplete native publisher or runtime phases
+    if: >-
+      github.event_name == 'workflow_dispatch' && inputs.mode == 'controller-job' &&
+      !contains(fromJSON('["QUALIFY","REPRODUCE","VERIFY","EXECUTE"]'), inputs.action)
+    needs: source
+    runs-on: ubuntu-24.04
+    timeout-minutes: 1
+    permissions: {}
+    steps:
+      - run: echo 'NATIVE_JOB_ACTION_NOT_WIRED'; exit 1
+
+# Closed baseline/verification composition only. Paid executor stays hard OFF;
+# the executor step receives no private key, broker connection or model key.
+# Publisher/runtime phases fail explicitly until their separate composition.
+# Native Linux attestation has no owner key, holdout, QA or model credential.
