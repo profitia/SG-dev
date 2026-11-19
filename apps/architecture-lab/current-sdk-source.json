@@ -1,7 +1,7 @@
 {
   "schemaVersion": "1.0",
   "scope": "CURRENT_SDK_SOURCE_INTEGRITY_ONLY",
-  "sourceSnapshotSha": "abc5a563f7bd59267c50412cc162777f2cc34138",
+  "sourceSnapshotSha": "a7fe3e7c5f383509ef24e285e08c5b7c0e3a26cd",
   "status": "SDK138_SUPPLIER_WORKSPACE_COMPATIBILITY_DRAFT_NOT_ADMITTED",
   "platformVersion": "1.38.0",
   "runtimeActivated": false,
@@ -988,7 +988,7 @@
     "apps/srm/src/server/full-ui-parity-adoption.test.ts": "db147cfe2ab32a3b41c0a0a089b8b869e925320ac5908ccb7c5d5c173c0ad2b0",
     "apps/srm/src/server/identity-runtime.ts": "0cbd432a279e9b1e3ee4d9acd0450190d66f642132670d3cbaffc70d1364913a",
     "apps/srm/src/server/integrations/ceidg.ts": "dee3e51d4ccd207bfb1d22f85e09519fbd278bd8003a4499e58e0672c6c66cd4",
-    "apps/srm/src/server/integrations/supplier-pipelines.integration.test.ts": "d8002a748d1d28f9854973fe0b0d14584cdb110a23f188072baed5673cee4e9c",
+    "apps/srm/src/server/integrations/supplier-pipelines.integration.test.ts": "5ec8a0ad7c0213df54662897c5558ed07de0c1e064e4c727fca1f6289c48d202",
     "apps/srm/src/server/jdg-lookup.ts": "aa15be3f6a5243d71afd8b731570a0074f9400f21da88fb6f7ee04baf303dd1f",
     "apps/srm/src/server/jdg-orchestration.test.ts": "72f5a5554b4e2471fb531b26775be5dbfe1f19a5b908f59b7a74095110f83603",
     "apps/srm/src/server/krs-continuity.test.ts": "c801c3a93a26d6ef3fef0cbea731de1cb39375d0f547f14bfb9dd94537fab462",
