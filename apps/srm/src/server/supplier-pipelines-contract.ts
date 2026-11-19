@@ -223,11 +223,11 @@ export function parseWorkspaceRead(value: unknown): WorkspaceRead {
   const allowed: Record<string, string[]> = {
     SUPPLIERS: ['q','categoryId','lifecycle','cursor','limit'], SUPPLIER_BY_NIP: ['nip'],
     SUPPLIER_CARD: ['supplierId'], CATEGORIES: ['q','lifecycle','cursor','limit'],
-    PIPELINES: ['categoryId','lifecycle','cursor','limit'], PIPELINE: ['pipelineId'],
+    PIPELINES: ['categoryId','lifecycle','cursor','limit'], PIPELINE: ['pipelineId','cursor','limit'],
     HISTORY: ['supplierId','cursor','limit'], ADP_STATUS: ['supplierId'],
   };
   if (Object.keys(out).some(k => k !== 'kind' && !allowed[kind].includes(k))) return fieldInvalid('query');
-  if (['SUPPLIERS','CATEGORIES','PIPELINES','HISTORY'].includes(kind)) out.limit ??= 50;
+  if (['SUPPLIERS','CATEGORIES','PIPELINES','PIPELINE','HISTORY'].includes(kind)) out.limit ??= 50;
   return Object.freeze(out) as WorkspaceRead;
 }
 export function operationForRead(read: WorkspaceRead): WorkspaceOperation {

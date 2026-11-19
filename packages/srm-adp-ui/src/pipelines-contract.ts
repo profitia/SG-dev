@@ -17,7 +17,7 @@ export interface SupplierMembership {
 }
 export interface SupplierPipeline {
   pipelineId: string; kind: SupplierPipelineKind; name: string; categoryId: string | null;
-  stages: readonly { stageId: string; name: string; order: number }[];
+  stages: readonly { stageId: string; name: string; order: number; activeCount: number }[];
   activeCount: number; lifecycle: SupplierLifecycle; version: number;
 }
 export interface SupplierAdpStatusSnapshot {
@@ -45,4 +45,9 @@ export interface SupplierPipelineFailure {
   requestId: string; error: { code: string; message: string; retryable: boolean;
     fieldErrors?: Readonly<Record<string,string>>;
     existingSupplier?: { supplierId: string; displayName: string; lifecycle: SupplierLifecycle } };
+}
+
+/** Participant page and counts are server projections, never derived from a partial UI page. */
+export interface SupplierPipelineDetails extends SupplierPipeline {
+  memberships: SupplierPage<SupplierMembership & {supplierDisplayName: string; nipNormalized: string}>;
 }

@@ -5,7 +5,7 @@
   "owner": "SRM Runtime",
   "writableProfile": "SRM",
   "package": "@profitia/srm-adp-ui",
-  "packageVersion": "1.0.0",
+  "packageVersion": "1.1.0",
   "contractVersion": "1.0.0",
   "integration": "NATIVE_VIEW",
   "scope": "PRESENTATION_ONLY",
@@ -31,7 +31,7 @@
     "Canon/v1.1-srm-adp-presentation-mounting-amendment.md"
   ],
   "sourceDigestAlgorithm": "SHA256(sorted path + NUL + file bytes + NUL; package.json, package-lock.json, tsconfig.json and all src files)",
-  "sourceDigest": "ddff073ecef0fa95b396f860c6e28639b7d3060f61903ad278c300ff30c5bbc2",
+  "sourceDigest": "68050c097926edfea3208b2b33fb659861a53dde22665c8b6829bdd1a685d58e",
   "sourceFiles": [
     "package-lock.json",
     "package.json",
@@ -40,6 +40,7 @@
     "src/form.tsx",
     "src/history-dialog.tsx",
     "src/index.ts",
+    "src/pipelines-contract.ts",
     "src/primitives.tsx",
     "src/styles.css",
     "src/types.ts",
@@ -72,5 +73,21 @@
     "theme": "host-provided light/dark",
     "fontFamilyToken": "--adp-font-family",
     "defaultFontFamily": "Inter,Arial,sans-serif"
+  },
+  "domainContracts": [
+    {
+      "contractId": "srm.supplier-pipelines",
+      "contractVersion": "1.0.0",
+      "projectionVersion": 1,
+      "publicExport": ".",
+      "status": "SOURCE_CANDIDATE_UNADOPTED",
+      "namespace": "SupplierPipelinesContract"
+    }
+  ],
+  "domainDesignReference": {
+    "projectId": "465405993031966720",
+    "componentId": "465415479037693952",
+    "revisionId": "473868393104166912",
+    "relationship": "REFERENCE_ONLY_NO_PRODUCT_ADOPTION"
   }
 }

@@ -1,0 +1,29 @@
+{
+  "schemaVersion": "1.0.0",
+  "contractId": "srm.supplier-pipelines",
+  "contractVersion": "1.0.0",
+  "status": "SOURCE_PROPOSAL_NOT_INSTALLED",
+  "targetEnvironment": "development",
+  "binding": {
+    "serviceId": "srv-db1vu6gm7kps73d0e3r0",
+    "projectId": "spring-bread-28217539",
+    "branchId": "br-sparkling-term-b99l107x",
+    "databaseName": "platform_private",
+    "schema": "srm",
+    "runtimeRole": "srm_private_development_runtime"
+  },
+  "schemaSource": {
+    "path": "apps/srm/db/private-store/supplier-pipelines-v1.sql",
+    "sha256": "ac46516be80d0c306995f079f5f883e79d049ec1a03177223e2e121a2919f49f"
+  },
+  "accessOwnerTask": "ARCH-BSDC-SCP-E1-ACCESS-20261119",
+  "authorityBridge": "PROPOSED_NOT_ADOPTED",
+  "activation": false,
+  "closedRuntimeWriter": "NOT_IMPLEMENTED_PENDING_E1_T02",
+  "grantChanges": false,
+  "sourceAdmission": "REQUIRED",
+  "migrationApproval": "REQUIRED",
+  "releaseGo": "REQUIRED_EXACT_SHA",
+  "externalProviderCalls": 0,
+  "note": "Business schema and constraints only. No product installation, runtime grant, bound command/read entry points or E1 completion is claimed."
+}
