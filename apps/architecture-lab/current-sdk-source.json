@@ -1,7 +1,7 @@
 {
   "schemaVersion": "1.0",
   "scope": "CURRENT_SDK_SOURCE_INTEGRITY_ONLY",
-  "sourceSnapshotSha": "0bb2c6225ebf58180de5e02c35009a134e968ecc",
+  "sourceSnapshotSha": "580807a494ab9596abc27e02a72c4273f017d6af",
   "status": "PRIVATE_PROTOTYPE_NOT_ADMITTED",
   "platformVersion": "1.38.0",
   "runtimeActivated": false,
@@ -234,7 +234,7 @@
     "apps/package-limits/package-lock.json": "da8039c17d8e7beca1ab47889ce4a6d96a05f360cbf30d12d413d08857a07493",
     "apps/package-limits/package.json": "a408fa3b367cfb8deac1602ba2827aaede3afd9c680858a757e389a54d0722f4",
     "apps/package-limits/scripts/build.mjs": "c1055f8c97e1329aefebd0831acead286eee6aaf9c9f36b15d5a59a26e340eb7",
-    "apps/package-limits/scripts/ci-proof.mjs": "8a382813778cf63c0d2ba10f52503157f34b95b0f5f0603cc396dead0ce75738",
+    "apps/package-limits/scripts/ci-proof.mjs": "1b86f277476490d9ba056b986a26d66441f920f7ec3156398f43aea9f3c32859",
     "apps/package-limits/scripts/install-workspace-access.mjs": "62642a8e50647ad14790d39a838852fe23af437cf2b9c4e40d8332f920f13264",
     "apps/package-limits/src/auth.ts": "4c6f50b31b25383a9b2d016acb1183dd15b3b9ba0c4583bf5c551698d1894173",
     "apps/package-limits/src/config.ts": "079bc33569d4309c76e1a802720239f824dc4342c9f2e3b889be7f0a3ec65bf0",
@@ -843,8 +843,8 @@
     "apps/srm/next.config.ts": "fecfda484a4f964e42ec35eab5b5658deff9f35da0ac0a69e3a5b4777fa3cc61",
     "apps/srm/operation-integration.json": "08f2a7f0fa113373f49dc6fc64e6297c40bc81c31d0cb261db29a1f7c61e0fad",
     "apps/srm/organisation-lifecycle-sdk-source-adoption.json": "1a6099189fb7dd99b4563904641a896eaa3f0f316d75264429eadc35f4822a92",
-    "apps/srm/package-lock.json": "0f8594b48b39e3e84327149ad88af8ab3c1d9d6074301cf5378192b3bd6dcad3",
-    "apps/srm/package.json": "a32a178028dc8af16c7b2acd6b4470757fe2de0dd7598d29cb4fc14407482d7d",
+    "apps/srm/package-lock.json": "aa103fdf5d501d800d9a930e61292738bdb9f85ada4995260a145d3485978442",
+    "apps/srm/package.json": "1cbe877f5f9625213dba047ccc47a5f6adba872dc37aa147ad01ce0aaf5e1f57",
     "apps/srm/private-recurring-source-adoption.json": "88d0252f634eface35b34adf31ac97cbf0d396fcf1fe6da452c74bdc23c7c633",
     "apps/srm/scripts/assistant-m2-integrity.mjs": "da2f8ba454ff32795f1c3caa51fd4415bb4e67f514417b5bcca2350fe387fc73",
     "apps/srm/scripts/build-krs-contract.mjs": "e5410aa2081e6bbdf2af557db03e46a9df2c84c5ab7d092599caa7dcc3c97520",
@@ -871,7 +871,7 @@
     "apps/srm/scripts/native-execution-adoption.test.mjs": "db1acb08952d0f711b5d021d1670e48def7de4ed30651a8e14ada01cde04bc2b",
     "apps/srm/scripts/operation-context.test.mjs": "36bae02a632a5e362765ce9bc4c05a89bb41b5c0c42691806e23b7247b37b010",
     "apps/srm/scripts/organisation-location-grants.integration.test.mjs": "526bcb802be272d5c46df899b9795ac4b00e3bf339316d8a974704d21a006333",
-    "apps/srm/scripts/organisation-registration.integration.test.mjs": "4c03a33324c0dc51c7903a37cf8b79fab4f891786cc902e4081016c31f7f646c",
+    "apps/srm/scripts/organisation-registration.integration.test.mjs": "9f08de29724f9e875cb3caf523c0023a95183c514843e4df141714e4d672beae",
     "apps/srm/scripts/pilot2-baseline.mjs": "f6abb9073709f24427852a4d28980accad69bc202ad34982213e6bd26c2df6d6",
     "apps/srm/scripts/pilot2-cold-installation.mjs": "a4e5d4a28876dd6bcaefef9cdb91af75e04f17955c162431d85371ed24610a5e",
     "apps/srm/scripts/pilot2-cold-installation.test.mjs": "8779f5c8396c9efc2e3985d0624b727adc74fa2fdf78b1b9a176c36dd6a3d8d4",
@@ -1355,7 +1355,7 @@
     "packages/platform-contracts/test/api-path-transport.test.mjs": "fcd4b6238df33f6d41730646f5ee9f1678c7b08a416e8638adec6356584f598b",
     "packages/platform-contracts/test/assistant-native-postgres.test.mjs": "d156c0ea4fc007dc72efa4a915d2caa18a78328063aa0e2b0808314ca5c32eff",
     "packages/platform-contracts/test/assistant-operation-host.test.mjs": "0f5c1d9bac739379b41f7837bbcdc61c50962d7f5fa6360359e2f6b6e9321ff8",
-    "packages/platform-contracts/test/assistant-reservation-source.mjs": "10eb3b7fe13848f9b81f3f0cb801f8bab0c72d376cf3541bf38d3120b96c4a34",
+    "packages/platform-contracts/test/assistant-reservation-source.mjs": "95aef6eb0df794f0562720fcb4b51452801d214ce489c2aef48f6f38c1677676",
     "packages/platform-contracts/test/assistant-reservation-source.test.mjs": "fc07fe01ae4103ee41afc91c79f2e59531cc1db0d93b3e5867e9fc3cd0172232",
     "packages/platform-contracts/test/assistant-usage.test.mjs": "ad0bf94d452ffa9374bc68ad8b623decc1ce54a7395f1724218dce44b12157bf",
     "packages/platform-contracts/test/benchmark-unmetered-source.mjs": "8bab5977c03f0e2424e5f42799f15fd88cf28b2af0f97f378b6024042c6a167f",
@@ -2072,7 +2072,7 @@
     }
   },
   "sourceAdmission": {
-    "recordId": "registration-stage-i-joint-sdk-development-20261119-v4",
+    "recordId": "registration-stage-i-joint-sdk-development-20261119-v5",
     "taskId": "ARCHITECTURE-REGISTRATION-STAGE-I-CONT-20261117",
     "reviewedMetadata": {
       "Canon/evidence/2026-11-11-registration-native-draft-http.md": {
