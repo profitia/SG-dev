@@ -17,7 +17,7 @@
 | Tryb | EXECUTION — Full Autopilot wyłącznie etap 1; DEC-06 |
 | Etap | F — zakończony; A–F domknięte projektowo, 28/28 USTALONE |
 | Utworzono / zaktualizowano | 2026-11-12 / 2026-11-19, Europe/Warsaw |
-| Rewizja | 40 — worker79cb LIVE; source285+12/Linux19; B29/host/TECHNICAL_READY w toku; spec5/roadmapa8 bez zmian |
+| Rewizja | 41 — worker79cb LIVE; source289+12/Linux19; CI27/SDK przygotowane; B29/host/TECHNICAL_READY w toku; spec5/roadmapa8 bez zmian |
 | Rewizja bazowa ostatniej aktualizacji | PDR rewizja 9 / blob f0c81253cd20d4f2b75f8eabf2adb47d538c20fc; main 69a2cc1769d34cb6ecf1e21a552babb0006a5713. Referencja wykonawcza właściciela nadal rewizja 8. |
 | Zadanie inicjalizacji | ARCH-BSDC-CIC-QUALITY-INIT-20261112 |
 | Zadanie bieżącej aktualizacji | ARCH-CIC-QUALITY-TECHNICAL-READY-20261117 / SG2-CIC-QUALITY-TECHNICAL-READY-20261117; zadania producentów i odbiorcy w §8.7 |
@@ -1139,3 +1139,13 @@ Linux19:44450608836/job135313573158/artefakt14494499156;odcisk19 plików zgodny 
 Heartbeat03:23:53.803Z:MONITORING_READY,controlStore/nativeLimits CONNECTED_DISABLED,GitHub CONNECTED_STANDBY. Role QA zweryfikowane bez odczytu QA/mutacji praw;gitHeadMatchesSource=true,hostQaCodecPresent=false. Retencja90dni metadanych PURGE_CONFIRMED;Sentry200;PostHog329829:1 heartbeat79cb,agregat bez tożsamości/QA.
 
 CI27/B29 pozostają bez aktywacji. Hostd5eb/1099/CIC1.8/B28/PL-EN,pełne handlery/workflow,publisher,niezależna referencja,bramki i recovery do ukończenia. TECHNICAL_READY NIEOSIĄGNIĘTE;E1 0/3,paid/promotionOFF,14dni/50USD NIEURUCHOMIONE,etap2 NIE_ROZPOCZĘTY.
+
+### Integracja SDK i aktualny stan źródła — 19 listopada 2026, rewizja 41
+
+PR1227→eea2077923f0fbed07d592e33e1f827f3a4431c7:289AQC+12QA native PASS,0fail/skip. Linux44453522563/job135323347620/artefakt14496229063:19 plików,izolacja/tool-loop/anulowanie,6 verifier+9 baseline PASS. SHA ZIP i odciski w tym samym JSON. To źródło nie zostało wdrożone; worker nadal79cb/dep-dbv6n0ek1f9s73bkgqeg.
+
+CI27/#1197 head25e76c39b2f6d78ea932fbe1c2abad6d83ec765f na bieżącym main:363 lokalne PASS; native44457270855/job135335236737:2141 kontraktów PASS/1 wcześniejszy SKIP oraz459 governance PASS. Pozostała rzeczywista bramka CONTROLLED_VALIDATION_REQUIRED_FOR_EXACT_SHA,bez nowego GITHUB_API_401.
+
+Host/#1099 d22df66fc0c181211d6862a7facaa2d096c75cff zachował27 postimages;29 kontroli źródła i77 syntetycznych testów CIC1.8/PostgreSQL16 PASS. Native CI ujawniło wybór zbyt starego poprzednika SDK. Osobny materiał bf12f9cb20b93ce8edc8a5aca36e28000955d8f3 naprawia cztery pliki i przechodzi33/33 testy,bez aktywacji. Przygotowanie metadanych5c6b0e890485d1af72716e3580d2ef14e86c855a zachowuje27 ścieżek,532 wejścia,42 potwierdzenia i5 atestacji; pełny wynik i odciski w JSON.
+
+B29 rew2 zbiera te materiały oraz niezmienione decyzje infrastrukturalne w jeden pakiet PROPOSED_NOT_OWNER_APPROVED_NOT_ACTIVE. Odczyt Neon04:48Z potwierdził istniejące QA i brak dwóch publisherów;bez QA read/SQL write. Host/B28/PL-EN,publisher,handlery,niezależna referencja i recovery nadal do ukończenia. TECHNICAL_READY NIEOSIĄGNIĘTE;E1 0/3,paid/promotionOFF,14dni/50USD NIEURUCHOMIONE,etap2 NIE_ROZPOCZĘTY. Spec5 i roadmapa8 bez zmian.
