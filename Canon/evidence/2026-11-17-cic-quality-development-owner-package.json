@@ -3546,6 +3546,55 @@
     "promotionEnabled": false,
     "pilotStarted": false,
     "originalReceiptsAndTestBodiesRetained": true,
-    "testStatus": "NOT_EXECUTED_PENDING_EXPLICIT_CLOSED_SCOPE_AMENDMENT"
+    "testStatus": "NOT_EXECUTED_PENDING_EXPLICIT_CLOSED_SCOPE_AMENDMENT",
+    "consolidatedFollowup": {
+      "id": "B29-SDK5-AND-EXISTING-NPM-RECIPIENT",
+      "status": "PENDING_OWNER_DECISION_SUPERSEDES_SDK5_ONLY_QUESTION",
+      "sdk5DiffSha256": "0647743bdaad72950f918e89cb1f31bdbedbe2b6ef456f7cd4b0fd52588896a8",
+      "existingNpmCredential": {
+        "source": {
+          "provider": "Render",
+          "workspaceId": "tea-d7lps8rbc2fs73cn80dg",
+          "serviceId": "srv-dapa3tid0e5s73f8bc5g",
+          "name": "NPM_TOKEN"
+        },
+        "recipient": {
+          "provider": "GitHub",
+          "repository": "profitia/SG-dev",
+          "environment": "aqc-verifier-development",
+          "secretName": "NPM_TOKEN",
+          "mainOnly": true
+        },
+        "transfer": "Read exactly the existing NPM_TOKEN through the owner-authenticated Render setting, place it transiently in this task's private0700 directory/file0600, send only through stdin to the supported GitHub environment-secret setter, remove the file immediately in finally; never print or commit its value.",
+        "use": "The existing admitted trusted verifier step fetches exactly @profitia/cic-core@1.8.0 with --ignore-scripts and the frozen SHA512; no token transfer to executor, isolated test process, worker, publisher or public artifact.",
+        "tokenScopeChanged": false,
+        "newTokenCreated": false,
+        "broaderTokenReused": false,
+        "hostConfigurationChanged": false,
+        "expiresBy": "2026-11-27T23:59:59.000Z",
+        "removeRecipientAtCompletionOrExpiry": true,
+        "sourceTokenCapabilitiesNotIndependentlyVerified": true,
+        "risk": "Adds a second private recipient of an existing package credential; the token's provider-level package scope is unchanged, while the admitted verifier code limits its use to the frozen CIC artifact."
+      },
+      "automaticApprovalReview": {
+        "action": "Read source NPM_TOKEN and write private transit file",
+        "decision": "REJECTED_NOT_EXECUTED",
+        "reason": "Missing explicit trusted owner approval for this exact secret and transfer method."
+      },
+      "actualProbe": {
+        "runId": 44501817882,
+        "sourceSha": "b7124509574ca5bbcac6bbff61c49c560b87b75b",
+        "nativeLinuxAttestationJob": 135483691292,
+        "attestationConclusion": "success",
+        "verifierJob": 135483964050,
+        "actualFailure": "NPM_TOKEN_EMPTY_BEFORE_ANY_NPM_REQUEST",
+        "expectedMissingContextGateReached": false,
+        "qaReadOrModelRequest": false
+      },
+      "noNewCostsOrResources": true,
+      "paidRepairsEnabled": false,
+      "promotionEnabled": false,
+      "pilotStarted": false
+    }
   }
 }
