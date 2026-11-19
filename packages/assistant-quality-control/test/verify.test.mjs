@@ -328,3 +328,33 @@ test('verification and baseline metadata reject getters without executing user c
   await assert.rejects(prepareQualityBaselineBundle(input));assert.equal(calls,0)
  }finally{f.close()}
 })
+
+test('controller verifier signer refuses self-graded baseline and independent PASS before signing',async()=>{
+ const {createQualityControllerVerificationAttestor}=await import('../src/verify.mjs')
+ const f=bundleFixture(),signer=createQualityControllerVerificationAttestor({privateKey:reviewer.privateKey})
+ try{
+  for(const value of [null,{result:'REPRODUCED',nativeExecutionVerified:true},{result:'PASS',proofSha256:'f'.repeat(64)}]){
+   const input={value,manifest:f.options.manifest,jobState:{kind:'AQC_NATIVE_JOB_STATE_V1'},externalId:'aqc-job:'+sha+':'+randomUUID()+':QUALIFY'}
+   await assert.rejects(signer.attestBaseline(input),{code:'REAL_ISOLATED_BASELINE_REQUIRED'})
+   await assert.rejects(signer.attestVerification(input),{code:'REAL_ISOLATED_VERIFICATION_REQUIRED'})
+  }
+  const result=await verifyCandidate({...f.options,runCase:async r=>({status:'COMPLETE',sourceSha256:r.sourceSha256,output:r.args[0]===0?(r.version==='base'?0:1):r.args[0]*2})})
+  assert.equal(result.result,'PASS')
+  await assert.rejects(signer.attestVerification({value:result,manifest:f.options.manifest,jobState:{},externalId:'untrusted'}),
+   {code:'REAL_ISOLATED_VERIFICATION_REQUIRED'})
+ }finally{f.close()}
+})
+test('controller verifier signing API accepts no callbacks key substitution getters or phase override',async()=>{
+ const {createQualityControllerVerificationAttestor}=await import('../src/verify.mjs')
+ for(const options of [{privateKey:reviewer.publicKey},{privateKey:null},{privateKey:reviewer.privateKey,runCase:()=>{}}])
+  assert.throws(()=>createQualityControllerVerificationAttestor(options))
+ const signer=createQualityControllerVerificationAttestor({privateKey:reviewer.privateKey})
+ for(const method of ['attestBaseline','attestVerification']){
+  const input={value:{},manifest:{},jobState:{},externalId:'untrusted'};let calls=0
+  Object.defineProperty(input,'value',{enumerable:true,get(){calls++;throw Error('never evaluate')}})
+  await assert.rejects(signer[method](input),{code:'VERIFICATION_INPUT_INVALID'});assert.equal(calls,0)
+  for(const extra of [{runCase:()=>{}},{action:'PROMOTE'},{privateKey:owner.privateKey},{result:{result:'PASS'}}])
+   await assert.rejects(signer[method]({value:{},manifest:{},jobState:{},externalId:'untrusted',...extra}),{code:'VERIFICATION_INPUT_INVALID'})
+ }
+ assert(Object.isFrozen(signer));assert.equal(signer.sign,undefined);assert.equal(signer.attest,undefined)
+})

@@ -287,7 +287,12 @@ export async function runIsolatedExecutor({manifest,regression,projection,toolPa
    throw Object.assign(Error('Isolated quality executor stopped'),{code:signal?.aborted?'EXECUTOR_CANCELLED':'EXECUTOR_FAILED',stoppedProof,stoppedProofSha256:documentDigest(stoppedProof)})
   }
   const artifact=collectRepairArtifact({manifest:m,before,work,regression:fixture})
-  return Object.freeze({...artifact,stoppedProof,stoppedProofSha256:documentDigest(stoppedProof)})
+  for(const file of artifact.body.files)Object.freeze(file)
+  Object.freeze(artifact.body.files);Object.freeze(artifact.body);Object.freeze(stoppedProof)
+  const result=Object.freeze({...artifact,stoppedProof,stoppedProofSha256:documentDigest(stoppedProof)})
+  isolatedExecutorResults.set(result,Object.freeze({manifest:m,nonce,binding:Object.freeze({...binding}),
+   attemptId:permit.attemptId,expiresAt:Math.min(Date.parse(permit.expiresAt),Date.parse(m.mandate.expiresAt))}))
+  return result
  }catch(error){primaryFailure=error;throw error}finally{
   try{
   clearTimeout(deadline)
@@ -459,4 +464,61 @@ export async function runIsolatedVerificationCase({bundle,version,repairClass,ar
   if(!child||stopped){if(groupCreated)fs.rmdirSync(group);fs.rmSync(root,{recursive:true,force:true})}
   else{const error=Object.assign(Error('Verifier termination unconfirmed'),{code:'VERIFIER_TERMINATION_UNCONFIRMED'});if(primaryFailure)primaryFailure.cleanup={code:error.code};else throw error}
  }
+}
+
+const isolatedExecutorResults=new WeakMap()
+function executorSignerInput(value,keys){
+ require(value&&Object.getPrototypeOf(value)===Object.prototype&&Reflect.ownKeys(value).length===keys.length
+  &&keys.every(k=>Object.hasOwn(value,k))
+  &&Object.values(Object.getOwnPropertyDescriptors(value)).every(d=>d.enumerable&&Object.hasOwn(d,'value')),
+  'EXECUTOR_PHASE_INPUT_INVALID')
+}
+/** A collected patch or agent report is not a completed native executor. The
+ * opaque capability below exists only after the actual isolated process has
+ * stopped and the bounded artifact has been read by its trusted parent. */
+export async function assertQualityIsolatedExecutorResult(value,{manifest,jobState,externalId}){
+ const m=assertVerifiedRepairManifest(manifest),cap=isolatedExecutorResults.get(value)
+ require(cap&&cap.manifest===m,'REAL_ISOLATED_EXECUTOR_REQUIRED')
+ const {assertQualityNativeJobState}=await import('./job-state.mjs')
+ const state=assertQualityNativeJobState(jobState,{manifest:m,externalId})
+ require(state.record.pending.action==='EXECUTE'&&state.record.pending.nonce===cap.nonce
+  &&state.runId===cap.binding.runId&&state.controlSourceSha===cap.binding.executorSourceSha,
+  'EXECUTOR_PHASE_BINDING_INVALID')
+ const at=Date.now()
+ require(at<cap.expiresAt&&at<Date.parse(m.mandate.expiresAt)&&Date.parse(state.createdAt)<=at
+  &&at-Date.parse(state.createdAt)<=1800000,'EXECUTOR_PHASE_EXPIRED')
+ require(documentDigest(value.body)===value.artifactSha256
+  &&documentDigest(value.body.files.map(({path,beforeSha256,afterSha256})=>({path,beforeSha256,afterSha256})))===value.treeSha256
+  &&documentDigest(value.stoppedProof)===value.stoppedProofSha256&&value.stoppedProof.cgroupEmpty===true
+  &&value.stoppedProof.incidentId===m.incidentId&&value.stoppedProof.attemptId===cap.attemptId
+  &&value.stoppedProof.runId===state.runId&&value.stoppedProof.nonce===cap.nonce
+  &&value.stoppedProof.gateSetSha256===m.gateSetSha256,'EXECUTOR_PHASE_BINDING_INVALID')
+ return value
+}
+export function createQualityExecutorPhaseAttestor(options){
+ executorSignerInput(options,['privateKey'])
+ const privateKey=options.privateKey
+ require(privateKey?.type==='private'&&privateKey.asymmetricKeyType==='ed25519','EXECUTOR_PHASE_SIGNER_REQUIRED')
+ return Object.freeze({async attest(input){
+  executorSignerInput(input,['value','manifest','jobState','externalId'])
+  const {value,manifest,jobState,externalId}=input
+  const artifact=await assertQualityIsolatedExecutorResult(value,{manifest,jobState,externalId})
+  const {signDocument,publicKeyId}=await import('./manifest.mjs')
+  const {createPublicKey}=await import('node:crypto')
+  const {readQualityControllerJobResult}=await import('./github.mjs')
+  const m=assertVerifiedRepairManifest(manifest),at=Date.now(),cap=isolatedExecutorResults.get(value)
+  require(at<cap.expiresAt&&at<Date.parse(m.mandate.expiresAt),'EXECUTOR_PHASE_EXPIRED')
+  const result={result:'PATCH',baseSha:m.baseSha,patch:{artifactSha256:artifact.artifactSha256,treeSha256:artifact.treeSha256}}
+  const body={schemaVersion:'AQC_CONTROLLER_JOB_RESULT_V1',repository:'profitia/SG-dev',environment:'development',
+   role:'EXECUTOR_SUPERVISOR',action:'EXECUTE',incidentId:m.incidentId,baseSha:m.baseSha,manifestSha256:documentDigest(m),
+   gateSetSha256:m.gateSetSha256,controlSourceSha:jobState.controlSourceSha,nonce:jobState.record.pending.nonce,
+   runId:jobState.runId,runAttempt:1,workflowId:jobState.workflowId,rawQaPayloadIncluded:false,
+   issuedAt:new Date(at).toISOString(),expiresAt:new Date(Math.min(at+86400000,Date.parse(m.mandate.expiresAt))).toISOString(),result}
+  const phaseReceipt=signDocument('AQC_CONTROLLER_JOB_RESULT_V1',body,privateKey),key=createPublicKey(privateKey)
+  readQualityControllerJobResult(phaseReceipt,{manifest:m,record:jobState.record,externalId,runId:jobState.runId,
+   workflowId:jobState.workflowId,keysByRole:new Map([['EXECUTOR_SUPERVISOR',new Map([[publicKeyId(key),key]])]]),
+   notBefore:Date.parse(jobState.createdAt),now:at})
+  return Object.freeze({phaseReceipt,patchDocument:artifact.body,stoppedProof:artifact.stoppedProof,
+   stoppedProofSha256:artifact.stoppedProofSha256,independentVerified:false})
+ }})
 }
