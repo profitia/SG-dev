@@ -51,11 +51,15 @@ export function qualityPublisherRoleQuery(profile){
   "pg_has_role(session_user,'"+b.owner+"','MEMBER') AS owner_member,"+
   "has_schema_privilege(session_user,'profitia_quality_release','USAGE') AS schema_usage,"+
   "has_schema_privilege(session_user,'profitia_quality_release','CREATE') AS schema_create,"+
+  "has_schema_privilege(session_user,'profitia_quality_release','USAGE WITH GRANT OPTION') AS schema_grant_option,"+
+  "coalesce((SELECT nspowner='"+b.owner+"'::regrole FROM pg_namespace WHERE nspname='profitia_quality_release'),false) AS schema_confined,"+
   "(SELECT count(*)::int FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='profitia_quality_release' AND c.relkind IN('r','p')) AS schema_tables,"+
+  "coalesce((SELECT bool_and(c.relowner='"+b.owner+"'::regrole) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='profitia_quality_release' AND c.relkind IN('r','p')),false) AS tables_confined,"+
   "coalesce((SELECT bool_or(has_table_privilege(session_user,c.oid,'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER')) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='profitia_quality_release' AND c.relkind IN('r','p')),false) AS direct_table_access,"+
+  "coalesce((SELECT bool_or(has_any_column_privilege(session_user,c.oid,'SELECT,INSERT,UPDATE,REFERENCES')) FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='profitia_quality_release' AND c.relkind IN('r','p')),false) AS direct_column_access,"+
   "(SELECT count(*)::int FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='profitia_quality_release') AS schema_functions,"+
   "coalesce((SELECT bool_and(p.prosecdef AND p.proowner='"+b.owner+"'::regrole AND p.proconfig=ARRAY['search_path=pg_catalog']"+
-  " AND has_function_privilege(session_user,p.oid,'EXECUTE') AND NOT EXISTS(SELECT 1 FROM aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) a WHERE a.grantee=0 AND a.privilege_type='EXECUTE'))"+
+  " AND has_function_privilege(session_user,p.oid,'EXECUTE') AND NOT has_function_privilege(session_user,p.oid,'EXECUTE WITH GRANT OPTION') AND NOT EXISTS(SELECT 1 FROM aclexplode(coalesce(p.proacl,acldefault('f',p.proowner))) a WHERE a.grantee=0 AND a.privilege_type='EXECUTE'))"+
   " FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='profitia_quality_release'),false) AS functions_confined"+
   " FROM pg_roles r WHERE r.rolname=current_user"
 }
@@ -64,9 +68,9 @@ export function assertQualityPublisherRole(profile,rows,now=Date.now()){
  const b=profiles[profile],r=rows?.[0]
  const until=r?.rolvaliduntil instanceof Date?r.rolvaliduntil.getTime():Date.parse(r?.rolvaliduntil)
  require(Array.isArray(rows)&&rows.length===1&&r.database_name===b.database&&r.role===b.role&&r.login===b.role
-  &&['rolsuper','rolbypassrls','rolcreatedb','rolcreaterole','rolinherit','rolreplication','owner_member','schema_create','direct_table_access'].every(k=>r[k]===false)
+  &&['rolsuper','rolbypassrls','rolcreatedb','rolcreaterole','rolinherit','rolreplication','owner_member','schema_create','schema_grant_option','direct_table_access','direct_column_access'].every(k=>r[k]===false)
   &&r.rolcanlogin===true&&r.rolconnlimit===2&&r.memberships===0&&Number.isFinite(until)&&until>now&&until<=expiry
-  &&r.schema_usage===true&&r.schema_tables===2&&r.schema_functions===2&&r.functions_confined===true,'PUBLISHER_PREFLIGHT_ROLE_INVALID')
+  &&r.schema_usage===true&&r.schema_confined===true&&r.schema_tables===2&&r.tables_confined===true&&r.schema_functions===2&&r.functions_confined===true,'PUBLISHER_PREFLIGHT_ROLE_INVALID')
 }
 const statusSql='SELECT profitia_quality_release.quality_deployment_cas_status($1::uuid) AS result'
 /** Low-level read adapter for trusted code/tests. Native entrypoint below fixes

@@ -1,6 +1,12 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {randomUUID} from 'node:crypto'
+import fs from 'node:fs'
+import os from 'node:os'
+import path from 'node:path'
+import net from 'node:net'
+import {spawnSync} from 'node:child_process'
+import pg from 'pg'
 import {readQualityPublisherConnections,qualityPublisherRoleQuery,assertQualityPublisherRole,
  createQualityPublisherReadiness,readQualityPublisherPreflightEnvironment,runQualityNativePublisherPreflight} from '../src/publisher-readiness.mjs'
 const source='d'.repeat(40),deadline='2026-11-27T23:59:59.000Z'
@@ -11,7 +17,7 @@ const urls={
 const row=profile=>({database_name:profile==='canonical'?'platform_private':'neondb',role:'aqc_development_'+profile+'_publisher',
  login:'aqc_development_'+profile+'_publisher',rolsuper:false,rolbypassrls:false,rolcreatedb:false,rolcreaterole:false,
  rolinherit:false,rolreplication:false,rolcanlogin:true,rolconnlimit:2,rolvaliduntil:deadline,memberships:0,owner_member:false,
- schema_usage:true,schema_create:false,schema_tables:2,direct_table_access:false,schema_functions:2,functions_confined:true})
+ schema_usage:true,schema_create:false,schema_grant_option:false,schema_confined:true,schema_tables:2,tables_confined:true,direct_table_access:false,direct_column_access:false,schema_functions:2,functions_confined:true})
 function fixture(){
  const reads=[],roles={canonical:row('canonical'),product:row('product')},states={}
  for(const profile of ['canonical','product'])states[profile]={schemaVersion:'AQC_PUBLISHER_CAS_STATUS_V1',applicationId:'spendguru',
@@ -44,7 +50,7 @@ test('publisher role qualification rejects escalation, table rights, public exec
   assertQualityPublisherRole(profile,[row(profile)],Date.parse('2026-11-19T00:00:00Z'))
   for(const [k,v]of Object.entries({rolsuper:true,rolbypassrls:true,rolcreatedb:true,rolcreaterole:true,rolinherit:true,
    rolreplication:true,rolcanlogin:false,rolconnlimit:3,memberships:1,owner_member:true,schema_create:true,
-   schema_usage:false,schema_tables:3,direct_table_access:true,schema_functions:3,functions_confined:false,
+   schema_usage:false,schema_grant_option:true,schema_confined:false,schema_tables:3,tables_confined:false,direct_table_access:true,direct_column_access:true,schema_functions:3,functions_confined:false,
    database_name:'other',login:'neondb_owner',role:'neondb_owner',rolvaliduntil:'2026-11-28T00:00:00.000Z'})){
    assert.throws(()=>assertQualityPublisherRole(profile,[{...row(profile),[k]:v}],Date.parse('2026-11-19T00:00:00Z')),{code:'PUBLISHER_PREFLIGHT_ROLE_INVALID'})
   }
@@ -94,3 +100,96 @@ test('native preflight rejects foreign invocation and unnecessary secrets before
  try{await assert.rejects(runQualityNativePublisherPreflight(),{code:'PUBLISHER_PREFLIGHT_NATIVE_INVOCATION_REQUIRED'})}
  finally{if(old!==undefined)process.env.GITHUB_ACTIONS=old}
 })
+
+const fixtureCommand=(command,args)=>{
+ const r=spawnSync(command,args,{encoding:'utf8',timeout:60000})
+ if(r.error||r.status!==0)throw Error('Isolated publisher PostgreSQL fixture command failed')
+ return r.stdout.trim()
+}
+async function publisherCatalogFixture(profile){
+ // Only a freshly created loopback cluster. This fixture accepts no URL,
+ // cloud connection, password, grant callback or existing database.
+ const bin=process.env.AQC_TEST_POSTGRES_BIN??fixtureCommand('pg_config',['--bindir'])
+ assert(path.isAbsolute(bin)&&path.resolve(bin)===bin)
+ const root=fs.mkdtempSync(path.join(os.tmpdir(),'aqc-publisher-role-catalog-'))
+ const data=path.join(root,'data'),sock=path.join(root,'socket');fs.mkdirSync(sock)
+ const probe=net.createServer();await new Promise((resolve,reject)=>probe.once('error',reject).listen(0,'127.0.0.1',resolve))
+ const port=probe.address().port;await new Promise(resolve=>probe.close(resolve))
+ const pools=[],connections=new Set();let started=false
+ const close=async()=>{
+  await Promise.all(pools.map(p=>p.end()))
+  await Promise.all([...connections].map(s=>s.closed?undefined:new Promise(resolve=>s.once('close',resolve))))
+  if(started){fixtureCommand(path.join(bin,'pg_ctl'),['-D',data,'-w','stop','-m','fast']);started=false}
+  fs.rmSync(root,{recursive:true,force:true})
+ }
+ try{
+  fixtureCommand(path.join(bin,'initdb'),['-D',data,'-U','aqc_fixture_owner','--auth-local=trust','--auth-host=trust','--encoding=UTF8','--no-locale'])
+  fixtureCommand(path.join(bin,'pg_ctl'),['-D',data,'-l',path.join(root,'server.log'),'-o',`-h 127.0.0.1 -p ${port} -k ${sock}`,'-w','start']);started=true
+  const database=profile==='canonical'?'platform_private':'neondb'
+  const owner=profile==='canonical'?'profitia_access_owner':'profitia_ingestion_owner'
+  const role='aqc_development_'+profile+'_publisher'
+  const pool=(user,db)=>{
+   const p=new pg.Pool({host:'127.0.0.1',port,user,database:db,max:1})
+   p.on('connect',client=>{const s=client.connection.stream;connections.add(s);s.once('close',()=>connections.delete(s))})
+   pools.push(p);return p
+  }
+  const bootstrap=pool('aqc_fixture_owner','postgres');await bootstrap.query('CREATE DATABASE '+database)
+  const admin=pool('aqc_fixture_owner',database)
+  await admin.query('CREATE ROLE '+owner+' NOLOGIN NOINHERIT;CREATE ROLE '+role+
+   " LOGIN NOINHERIT NOSUPERUSER NOBYPASSRLS NOCREATEROLE NOCREATEDB NOREPLICATION CONNECTION LIMIT 2 VALID UNTIL '2026-11-27T23:59:59Z'")
+  await admin.query('CREATE SCHEMA profitia_quality_release AUTHORIZATION '+owner+';REVOKE ALL ON SCHEMA profitia_quality_release FROM PUBLIC;SET ROLE '+owner)
+  await admin.query('CREATE TABLE profitia_quality_release.quality_deployment_cas_policy(a int,b int);CREATE TABLE profitia_quality_release.quality_deployment_cas_operations(a int,b int)')
+  const signatures=['quality_deployment_cas(uuid,text,text,uuid,timestamptz)','quality_deployment_cas_status(uuid)']
+  for(const f of signatures){
+   await admin.query('CREATE FUNCTION profitia_quality_release.'+f+" RETURNS jsonb LANGUAGE sql SECURITY DEFINER SET search_path=pg_catalog AS $$SELECT '{}'::jsonb$$")
+   await admin.query('REVOKE ALL ON FUNCTION profitia_quality_release.'+f+' FROM PUBLIC;GRANT EXECUTE ON FUNCTION profitia_quality_release.'+f+' TO '+role)
+  }
+  await admin.query('REVOKE ALL ON ALL TABLES IN SCHEMA profitia_quality_release FROM PUBLIC;GRANT USAGE ON SCHEMA profitia_quality_release TO '+role+';RESET ROLE')
+  const reader=pool(role,database),read=async()=>(await reader.query(qualityPublisherRoleQuery(profile))).rows
+  return {admin,role,owner,signatures,read,close}
+ }catch(error){await close();throw error}
+}
+for(const profile of ['canonical','product']){
+ test('native '+profile+' publisher catalog rejects column-only rights and grant options without changing Development',async()=>{
+  const f=await publisherCatalogFixture(profile),at=Date.parse('2026-11-19T00:00:00Z')
+  const valid=async()=>assertQualityPublisherRole(profile,await f.read(),at)
+  try{
+   await valid()
+   for(const table of ['quality_deployment_cas_policy','quality_deployment_cas_operations'])
+    for(const privilege of ['SELECT','INSERT','UPDATE','REFERENCES']){
+     await f.admin.query('GRANT '+privilege+'(a) ON TABLE profitia_quality_release.'+table+' TO '+f.role)
+     const rows=await f.read()
+     assert.equal(rows[0].direct_table_access,false,'column-only access is invisible to table-level inspection')
+     assert.equal(rows[0].direct_column_access,true)
+     assert.throws(()=>assertQualityPublisherRole(profile,rows,at),{code:'PUBLISHER_PREFLIGHT_ROLE_INVALID'})
+     await f.admin.query('REVOKE '+privilege+'(a) ON TABLE profitia_quality_release.'+table+' FROM '+f.role);await valid()
+    }
+   await f.admin.query('GRANT USAGE ON SCHEMA profitia_quality_release TO '+f.role+' WITH GRANT OPTION')
+   const schemaRows=await f.read();assert.equal(schemaRows[0].schema_usage,true);assert.equal(schemaRows[0].schema_grant_option,true)
+   assert.throws(()=>assertQualityPublisherRole(profile,schemaRows,at),{code:'PUBLISHER_PREFLIGHT_ROLE_INVALID'})
+   await f.admin.query('REVOKE GRANT OPTION FOR USAGE ON SCHEMA profitia_quality_release FROM '+f.role);await valid()
+   for(const signature of f.signatures){
+    await f.admin.query('GRANT EXECUTE ON FUNCTION profitia_quality_release.'+signature+' TO '+f.role+' WITH GRANT OPTION')
+    const rows=await f.read();assert.equal(rows[0].functions_confined,false)
+    assert.throws(()=>assertQualityPublisherRole(profile,rows,at),{code:'PUBLISHER_PREFLIGHT_ROLE_INVALID'})
+    await f.admin.query('REVOKE GRANT OPTION FOR EXECUTE ON FUNCTION profitia_quality_release.'+signature+' FROM '+f.role);await valid()
+   }
+   for(const table of ['quality_deployment_cas_policy','quality_deployment_cas_operations']){
+    await f.admin.query('ALTER TABLE profitia_quality_release.'+table+' OWNER TO '+f.role)
+    await f.admin.query('REVOKE ALL ON TABLE profitia_quality_release.'+table+' FROM '+f.role)
+    const rows=await f.read()
+    assert.equal(rows[0].direct_table_access,false);assert.equal(rows[0].direct_column_access,false)
+    assert.equal(rows[0].tables_confined,false,'ownership remains authority after ordinary privileges are revoked')
+    assert.throws(()=>assertQualityPublisherRole(profile,rows,at),{code:'PUBLISHER_PREFLIGHT_ROLE_INVALID'})
+    await f.admin.query('ALTER TABLE profitia_quality_release.'+table+' OWNER TO '+f.owner);await valid()
+   }
+   await f.admin.query('ALTER SCHEMA profitia_quality_release OWNER TO '+f.role)
+   const schemaOwnerRows=await f.read();assert.equal(schemaOwnerRows[0].schema_confined,false)
+   assert.throws(()=>assertQualityPublisherRole(profile,schemaOwnerRows,at),{code:'PUBLISHER_PREFLIGHT_ROLE_INVALID'})
+   // ALTER OWNER rewrites owner ACL entries; restore the fixture's original
+   // ordinary USAGE grant after returning the schema to its approved owner.
+   await f.admin.query('ALTER SCHEMA profitia_quality_release OWNER TO '+f.owner)
+   await f.admin.query('GRANT USAGE ON SCHEMA profitia_quality_release TO '+f.role);await valid()
+  }finally{await f.close()}
+ })
+}
