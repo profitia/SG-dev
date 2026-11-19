@@ -21,14 +21,16 @@
 | Właściciel decyzji i odbioru | tomasz@profitia.pl |
 | Środowisko etapów i końcowego odbioru | Development |
 | Dane odbiorowe | Reprezentatywne, syntetyczne dane dwóch organizacji; brak poufnej treści ADP i dokumentów PORR |
-| Tryb / mandat wykonawczy produktu | DEC-22: E1-T01–T05 / FULL AUTOPILOT / Development, z rzeczywistymi gate’ami; brak mandatu E2 i brak przyjęcia nowej polityki zaufania |
+| Tryb / mandat wykonawczy produktu | DEC-22: E1-T01–T05 / FULL AUTOPILOT / Development; DEC-24 zatwierdza ograniczony zakres polityki E1-T02. Instalacja, przyjęcie dokładnych źródeł i release zachowują własne bramki; brak mandatu E2 |
 | taskId wznowienia dokumentacyjnego | SRM-BSDC-SCP-DESIGN-R2-20261117 |
 | PMOS begin wznowienia | cmwkubpfb00003rd0mtq3an92; srm_pmos; pełny require-begin PASS |
 | Tożsamość czatu | hostConversationId niedostępny, jawne null w begin; nie wywnioskowano identyfikatora z katalogu |
 | taskId zapisu akceptacji / PMOS begin | SRM-BSDC-SCP-ACCEPTANCE-20261118 / cmwlos97u00008es52fzj1twi; wyłącznie dokumentacja |
 | taskId publikacji / PMOS begin | SRM-BSDC-SCP-PUBLICATION-20261118 / cmwm2edsf0000p5j78wv5o2rn; wyłącznie publikacja dokumentacji na main, bez E1/E2 |
 | taskId E1 / PMOS begin | SRM-BSDC-SCP-E1-20261119 / cmwn44dqb0000427764f33cgw / srm_pmos |
-| taskId producenta E1-T02 / PMOS begin | ARCH-BSDC-SCP-E1-ACCESS-20261119 / cmwn52qqs0000o81udympd86q / architecture_pmos |
+| taskId propozycji E1-T02 / PMOS begin | ARCH-BSDC-SCP-E1-ACCESS-20261119 / cmwn52qqs0000o81udympd86q / architecture_pmos; zakończony closeout propozycji PARTIAL_SUCCESS |
+| taskId implementacji E1-T02 / PMOS begin | ARCH-BSDC-SCP-E1-T02-20261119 / cmwn9s7q50000w0v9hp856amo / architecture_pmos; zakres DEC-24 |
+| taskId zapisu DEC-24 / PMOS begin | SRM-BSDC-SCP-E1-DEC24-20261119 / cmwn9620h0000mtfenoiog8yd / srm_pmos |
 | Aktualna referencja projektu MagicPath | projekt 465405993031966720 / komponent 465415479037693952 / przypięta rewizja 473868393104166912; DEC-23 |
 | Aktualny wynik wykonania | PARTIAL; brak instalacji i wydania E1, brak odbioru LIVE; szczegóły §5.4 i §7.4 |
 | Akceptacja rozwiązania i roadmapy | DEC-21, 2026-11-18, właściciel w bieżącym wątku (owner Karty: tomasz@profitia.pl); obie części łącznie; commit [f75529c590c5dd4611223c949e5956e34d101e22](https://github.com/profitia/SG-dev/blob/f75529c590c5dd4611223c949e5956e34d101e22/Canon/proposals/bsdc/SRM/supplier-category-pipelines.md), blob 31d655e4ce8ce2422ec39b54c054a313eb433d11 |
@@ -496,9 +498,9 @@ Bieżący mandat produktu: **E1-T01–T05 / Development / FULL AUTOPILOT**, osob
 
 | ID | Status | Początek / koniec | Wykonawczy taskId / owner / środowisko | PR / SHA / CI / deploy / test / odbiór | Braki i następny krok |
 | --- | --- | --- | --- | --- | --- |
-| E1 | CZĘŚCIOWY | 2026-11-19 / niezakończony | SRM-BSDC-SCP-E1-20261119 / SRM prowadzi / Development | [SRM #1234](https://github.com/profitia/SG-dev/pull/1234), [ARCHITECTURE #1235](https://github.com/profitia/SG-dev/pull/1235); źródła i izolowane testy; brak deploy/odbioru LIVE. | Specjalna decyzja E1-T02; następnie writer/host/API, instalacja, release i testy kont A1/A2/B1. |
+| E1 | CZĘŚCIOWY | 2026-11-19 / niezakończony | SRM-BSDC-SCP-E1-20261119 / SRM prowadzi / Development | [SRM #1234](https://github.com/profitia/SG-dev/pull/1234), [ARCHITECTURE #1235](https://github.com/profitia/SG-dev/pull/1235); źródła i izolowane testy; brak deploy/odbioru LIVE. | Zakres E1-T02 zatwierdzony przez DEC-24; kontynuacja jego implementacji, następnie writer/host/API, właściwe instalacja/admission/release i testy A1/A2/B1. |
 | E1-T01 | CZĘŚCIOWY | 2026-11-19 / — | SRM-BSDC-SCP-E1-20261119 / SRM / Development | #1234, head 6fed922dcab6e569502b81fb318a7967818581e2; kontrakt 1.0.0, 59 testów SRM i 21 testów publicznego pakietu PASS; TS/build pakietu PASS. | Kandydat źródłowy; pełne wymagane CI, exact-source admission i przyjęcie nie zostały spełnione. |
-| E1-T02 | ZABLOKOWANY | 2026-11-19 / — | ARCH-BSDC-SCP-E1-ACCESS-20261119 / ARCHITECTURE / Development | #1235, head 46f45bcc4e74f1b25a441eab9ab450e367a2530a; propozycja i 16 testów PASS; bez Root import, SDK export i zmian macierzy/SQL. | Odrębna decyzja o bounded polityce §7.4; następnie właściwa implementacja i przyjęcie producenta. Sama propozycja nie nadaje ALLOW. |
+| E1-T02 | W_TRAKCIE | 2026-11-19 / — | ARCH-BSDC-SCP-E1-T02-20261119 / ARCHITECTURE / Development; poprzednia propozycja ARCH-BSDC-SCP-E1-ACCESS-20261119 zachowana | DEC-24 usuwa blokadę decyzji o zakresie; propozycja #1235 / 46f45bcc4e74f1b25a441eab9ab450e367a2530a i jej 16 testów pozostają historią. Nowy exact-path preflight/begin/require-begin PASS, cmwn9s7q50000w0v9hp856amo. | Właściwa implementacja Root/module/SQL i testy, następnie exact-source admission i przyjęcie; instalacja/granty i wydanie tylko według własnych dopuszczeń. Brak gotowości LIVE. |
 | E1-T03 | CZĘŚCIOWY | 2026-11-19 / — | SRM-BSDC-SCP-E1-20261119 / SRM / Development | #1234; czyste reguły domeny i fenced schema proposal; 13 testów PostgreSQL16 PASS (syntetyczna izolowana baza). | Brak zamkniętego transakcyjnego writer/read store, produkcyjnego bridge, instalacji i odczytu rzeczywistego store. |
 | E1-T04 | CZĘŚCIOWY | 2026-11-19 / — | SRM-BSDC-SCP-E1-20261119 / SRM / Development | #1234; testowana fasada HTTP i reader metadanych ADP z MISSING/UNKNOWN. | Brak rzeczywistego host composition, podłączonego store i zamontowanego endpointu Next; brak pełnego testu autoryzowanego API. |
 | E1-T05 | ZABLOKOWANY | 2026-11-19 / — | SRM-BSDC-SCP-E1-20261119 / SRM / Development | Odczyt faktycznej wersji runtime i metadanych DB wykonany; bez deploy/install/grant/enrollment. | T01–T04, wymagane source admission, exact-SHA GO, instalacja/recovery oraz rzeczywiste konta i odbiór. |
@@ -520,7 +522,7 @@ Każdy wykonawca aktualizuje fakty i dowody w tej samej Karcie; PMOS/PHR rozlicz
 - **Granice:** brak produktu LIVE, zamkniętego writer/read store i host route, brak instalacji/migracji/enrollment/grantów/release oraz brak próby A1→A2 i obcego API B1. Dane klienta/PORR nie były zapisywane. FINAL-01–10 nie otrzymały odbioru.
 - **Zasoby:** reuse własnego izolowanego checkoutu SRM; osobny worktree ARCHITECTURE. Źródła, node_modules, archiwa PMOS/PHR i recovery wymagają zachowania do wznowienia (RETAINED). Własne tymczasowe kontenery PostgreSQL usunięto po potwierdzeniu etykiet taska, braku sieci/portów i braku innych klientów; ostatni `srm-scp-e1-schema-r3` zatrzymano i usunięto normalnie. Usunięto także własny odtwarzalny `packages/srm-adp-ui/dist/index.js`; wspólnego obrazu PostgreSQL i cudzych zasobów nie usuwano. Nie wykonywano globalnego cleanupu.
 
-**Continuity E1:** canonical save ARCHITECTURE utrwalił rekord PMOS i artefakty, lecz obowiązkowa publikacja PHR odmówiła z `CREDENTIAL_MISSING` (brak standardowego uwierzytelnienia Git do `profitia/project-history-repository` w Codespace ARCHITECTURE). Pending i archiwa są zachowane; **brak CLOSEOUT_COMPLETE i brak opublikowanego PHR ARCHITECTURE**. Po przywróceniu istniejącego dostępu wznowić kanoniczny save z tego samego pending, bez nowego bootstrapu i bez ręcznego fałszowania sidecar. GitHub PR #1235 nie zastępuje PHR. Rozliczenie SRM dotyczy częściowego wyniku i jest wykonywane po publikacji aktualnego statusu Karty; jego faktyczny receipt/PHR pozostaje w profilowym śladzie zadania.
+**Continuity E1 — aktualizacja po DEC-24:** oba wcześniejsze zadania mają opublikowany i odczytany z GitHubu PHR: [SRM / PARTIAL_SUCCESS](https://github.com/profitia/project-history-repository/blob/09fb5702ffa1ae635a1193d28f177a70e3ae031c/history/2026/11/19/2026-11-19-06-55-23Z__srm-srm-bsdc-scp-e1-20261119/manifest.json) oraz [ARCHITECTURE / PARTIAL_SUCCESS](https://github.com/profitia/project-history-repository/blob/fac4f782f718407e5db9151bc30c172cf34382f2/history/2026/11/19/2026-11-19-06-38-59Z__architecture-arch-bsdc-scp-e1-access-20261119/manifest.json). Kanoniczny closeout ma CLOSEOUT_COMPLETE; to rozliczenie częściowej pracy, nie ukończenie E1. Historyczny błąd CREDENTIAL_MISSING ARCHITECTURE wynikał z uruchomienia bez standardowego środowiska sesji logowania Codespace. W standardowej sesji istniejące uwierzytelnienie działa; wznowiono **ten sam** pending bez nowego bootstrapu, zmiany jego treści lub pożyczania sekretu/grantu. Pending został zwolniony. Wcześniejszy wniosek o konieczności odnowienia dostępu przez administratora był przedwczesny; ten problem jest ROZWIĄZANY. Archiwa zachowano. Nowy task E1-T02 obejmuje dopiero przyjętą implementację po decyzji właściciela.
 
 ### 5.5. Lista końcowego odbioru
 
@@ -608,7 +610,17 @@ DEC-21 obejmuje REC-01–08, zakres ADP UNKNOWN, granicę danych testowych Devel
 
 Przypiętą rewizję odczytano w bieżącym wykonaniu: 87 plików. Raport historyczny mówi o 36 scenariuszach i 15/15 testach prototypu; **nie uruchomiono ich ponownie i nie są dowodem produktu/API/DB**. Materiał `ADP-MagicPath-uzupelnienie-projektu-2026-11-18.md` nie był dostępny; zastosowano dozwolony fallback do wskazanej rewizji i Karty.
 
-**NIE PODJĘTO nowej decyzji przyjęcia polityki E1-T02.** Konkretny wniosek i jego skutki są w §7.4; #1235 pozostaje propozycją do decyzji, nie przyjętym normatywnym kontraktem.
+### 6.6. DEC-24 — zatwierdzenie ograniczonego zakresu E1-T02, 2026-11-19
+
+| Pole | Zapis |
+| --- | --- |
+| Aktor / data | Właściciel w bieżącym wątku, owner Karty tomasz@profitia.pl; 2026-11-19, Europe/Warsaw. |
+| Dosłowna odpowiedź | **„Tak — zatwierdzam zakres E1-T02”**. |
+| Przedmiot pytania i zgody | Ograniczony zakres §7.4 tej samej Karty na main, opublikowany przez PR #1238 / b3ca5e3efd5e26bf35ecf2cc4d7a4d38cf397a89, i propozycja [ARCHITECTURE #1235](https://github.com/profitia/SG-dev/pull/1235) w rewizji **46f45bcc4e74f1b25a441eab9ab450e367a2530a**: nowe jawne operacje katalogu i pipeline’ów oraz kontrolowana ścieżka zapisu w istniejącym SRM Development, z izolacją organizacji i zachowaniem obecnych odmów. |
+| Przyjęty zakres polityki | Siedem nowych operacji Root i dwa istniejące mapowania assignment, jawny moduł/feature supplier_workspace, natywne READ/WRITE oraz ograniczony SQL bridge/master fence zgodnie z §7.4. Aktualne membership/product/feature admission, DENY, expiry/revocation i końcowy audyt/COMMIT pozostają wymagane. |
+| Wynik / wznowienie | **OWNER_SCOPE_APPROVED** — można kontynuować właściwą implementację E1-T02 w ARCHITECTURE, potem zależny store/host/API SRM w istniejącym mandacie E1. Nie trzeba ponownie zlecać E1. Rejestr producenta: ARCH-BSDC-SCP-E1-T02-20261119 / cmwn9s7q50000w0v9hp856amo. |
+| Granice | Zgoda na zakres **nie zatwierdza jeszcze nowych dokładnych bajtów implementacji**, source admission, instalacji/migracji/grantów ani exact-SHA release GO. Nie uruchamia E2, nowej infrastruktury, płatnych providerów, Staging/Production ani przetwarzania poufnej treści ADP/dokumentów PORR. |
+| Freeze / historia | DEC-21 i f75529c590c5dd4611223c949e5956e34d101e22 pozostają bazą projektu i roadmapy; DEC-22/23 i wcześniejsze publikacje zachowane. Propozycja źródłowa nadal wymaga implementacji i właściwej adopcji, nie staje się samodzielnie ALLOW. |
 
 ## 7. Otwarte zależności, realne ryzyka i granice twierdzeń
 
@@ -651,18 +663,18 @@ Task publikacji: SRM-BSDC-SCP-PUBLICATION-20261118; PMOS begin cmwm2edsf0000p5j7
 
 Publikacja została zakończona przez [PR #1123](https://github.com/profitia/SG-dev/pull/1123), merge commit [5a06749139f8a0a37d6946bf0b848e847132756a](https://github.com/profitia/SG-dev/commit/5a06749139f8a0a37d6946bf0b848e847132756a). Kontrole i closeout publikacji należą do tamtego zadania; bieżący E1 nie przepisuje ich historii. Nie wstawia się do Karty samoodnoszącego się, wyliczonego z góry commitu ani nie deklaruje wyniku kontroli przed jego otrzymaniem. Publikacja PDR nie aktywuje normatywnego kanonu, kontraktu, uprawnień ani produktu.
 
-### 7.4. Jedna potrzebna decyzja szczególna E1-T02 — do podjęcia
+### 7.4. Zakres szczególny E1-T02 — zatwierdzony przez DEC-24
 
-**Przedmiot do przeglądu:** [ARCHITECTURE #1235](https://github.com/profitia/SG-dev/pull/1235), source `46f45bcc4e74f1b25a441eab9ab450e367a2530a`. Rekomendacja: upoważnić ARCHITECTURE do wdrożenia w istniejącej architekturze następującego ograniczonego rozszerzenia polityki dla E1 / Development:
+**Zakres zaakceptowany przez właściciela w DEC-24:** [ARCHITECTURE #1235](https://github.com/profitia/SG-dev/pull/1235), źródło propozycji `46f45bcc4e74f1b25a441eab9ab450e367a2530a`. ARCHITECTURE jest upoważnione do implementacji następującego ograniczonego rozszerzenia istniejącej architektury dla E1 / Development; nie jest to jeszcze przyjęcie dokładnej implementacji ani zgoda na jej instalację lub wydanie:
 
 1. Siedem nowych jawnych operacji Root: `supplier.catalog.read/write`, `supplier.category.read/write`, `supplier.pipeline.read/write`, `supplier.adp-status.read`; dwie istniejące `supplier.assignment.read/write` zachowują dotychczasową zgodność i otrzymują jawne workspace resource mapping.
 2. Moduł/feature `supplier_workspace`, klasa `ORGANISATION_PRIVATE`, natywne jednostki `SUPPLIER_WORKSPACE_READ/WRITE`. Uprawnieni, aktualni członkowie organizacji otrzymują te same jawne możliwości we własnej organizacji, z zachowaniem product/feature admission, jawnych DENY, expiry/revocation i końcowej kontroli ujawnienia/COMMIT.
 3. Właściwy producer SQL bridge i **dokładnie ograniczone rozszerzenie restrictive master fence** dla zamkniętych wejść workspace; zachować obecne ścieżki Supplier Report. Zwykły runtime pozostaje bez nowych ogólnych praw DML/elevated; żadnego wildcardu, drugiego mastera ani pożyczania `supplier.report.refresh` / `SRM_STORE_COMPANY`.
 4. Zakres fizyczny wyłącznie zweryfikowany private SRM Development z §5.4.1; bez Production/Staging, nowych zasobów, płatnych providerów, treści dokumentów i UI E2.
 
-**Dlaczego decyzja jest niezbędna:** obecny Root i master fence nie dopuszczają nowych efektów; przyjęcie projektu DEC-21 i start E1 nie są zgodą na zmianę zaufania. Sama możliwość użycia podwyższonej roli nie daje upoważnienia. PDR E1-T02 wymaga „jawnego przyjęcia zmian wspólnych, grantów/okna/recovery przez uprawnionego ownera”; aktualny mandat właściciela dodatkowo zabrania domniemania nowych grantów i polityki.
+**Dlaczego potrzebna była osobna decyzja:** przyjęcie projektu DEC-21 i start E1 nie oznaczały przyjęcia nowej polityki zaufania. Właściciel rozstrzygnął ten zakres przez DEC-24. Istniejący runtime nie zyskał przez sam zapis decyzji nowych efektów; rzeczywiste źródła, instalacja/granty i release nadal podlegają odpowiednim gate’om.
 
-**Po decyzji:** wznowić pierwszą niewykonaną operację E1-T02 we własnym lifecycle ARCHITECTURE, zaimplementować i zweryfikować producer/SQL boundary, następnie zamknięty store i host/API SRM. Nie trzeba ponownie zlecać całego E1. Ta decyzja zakresu polityki **nie jest jeszcze** exact-source admission, grant/install receipt ani exact-SHA release GO: rzeczywiste bajty migracji, recovery, okno i źródła zostaną przedstawione po przygotowaniu implementacji, zgodnie z ich własnymi gate’ami. Istniejący runtime/store pozostają LKG; brak aktywacji umożliwia odrzucenie propozycji bez zmiany danych.
+**Dalsze wykonanie po DEC-24:** wznowiono E1-T02 we własnym lifecycle ARCHITECTURE. Zaimplementować i zweryfikować producer/SQL boundary, następnie zamknięty store i host/API SRM. Nie trzeba ponownie zlecać całego E1. Ta decyzja zakresu polityki **nie jest jeszcze** exact-source admission, grant/install receipt ani exact-SHA release GO: rzeczywiste bajty migracji, recovery, okno i źródła zostaną przedstawione po przygotowaniu implementacji, zgodnie z ich własnymi gate’ami. Istniejący runtime/store pozostają LKG; brak aktywacji umożliwia odrzucenie propozycji bez zmiany danych.
 
 ## 8. Łączna akceptacja, freeze i punkt wznowienia
 
@@ -684,10 +696,10 @@ F3 ma USTALONE z dowodem decyzji względem konkretnej rewizji. Projekt i bazowy 
 
 - Jedyna centralna Karta: [ten sam plik na main](https://github.com/profitia/SG-dev/blob/main/Canon/proposals/bsdc/SRM/supplier-category-pipelines.md). Przed wznowieniem odczytać aktualny SHA/blob, dyspozycję i rejestr; nie tworzyć drugiej Karty.
 - Zamrożona baza DEC-21 nadal `f75529c590c5dd4611223c949e5956e34d101e22`; zapis akceptacji `092045191f960f63170d38c8ef7085c97ef85fee`; publikacja PR #1123 / merge `5a06749139f8a0a37d6946bf0b848e847132756a`. Późniejsze statusy nie zastępują tych źródeł.
-- A–F **29/29 USTALONE** to kompletność zaakceptowanego projektu, nie odbiór produktu. Późniejsze wiążące dyspozycje: DEC-22 (start E1), DEC-23 (pin MagicPath i drag and drop).
-- E1 **CZĘŚCIOWY**: source #1234 / `6fed922dcab6e569502b81fb318a7967818581e2`; producer proposal #1235 / `46f45bcc4e74f1b25a441eab9ab450e367a2530a`. Nie przyjęto nowego Root/SQL scope, nie wdrożono E1 i nie przeprowadzono odbioru na realnych kontach.
-- **Najbliższy krok: decyzja szczególna §7.4, następnie E1-T02 → zamknięty writer/host/API → instalacja/admission/release → E1-T05.** Mandat E1 pozostaje udzielony; nie wymaga ponownego startu. Nie powtarzać pozytywnych testów identycznych bajtów bez uzasadnienia.
-- Task SRM `SRM-BSDC-SCP-E1-20261119` / PMOS `cmwn44dqb0000427764f33cgw`; task ARCHITECTURE `ARCH-BSDC-SCP-E1-ACCESS-20261119` / PMOS `cmwn52qqs0000o81udympd86q`. Mają odrębne continuity i źródła; nie pożyczać credentials/receiptów.
+- A–F **29/29 USTALONE** to kompletność zaakceptowanego projektu, nie odbiór produktu. Późniejsze wiążące dyspozycje: DEC-22 (start E1), DEC-23 (pin MagicPath i drag and drop), DEC-24 (ograniczony zakres polityki E1-T02).
+- E1 **CZĘŚCIOWY**: source #1234 / `6fed922dcab6e569502b81fb318a7967818581e2`; producer proposal #1235 / `46f45bcc4e74f1b25a441eab9ab450e367a2530a`. Zakres Root/SQL zatwierdzono przez DEC-24; implementacja i jej przyjęcie są w toku. Nie wdrożono E1 i nie przeprowadzono odbioru na realnych kontach.
+- **Najbliższy krok: zatwierdzona implementacja E1-T02 → zamknięty writer/host/API → właściwe source admission, instalacja i release → E1-T05.** Zgody zakresowej DEC-24 nie pytać ponownie. Mandat E1 pozostaje udzielony; nie wymaga ponownego startu. Nie powtarzać pozytywnych testów identycznych bajtów bez uzasadnienia.
+- Wcześniejsze częściowe zadania SRM i propozycji ARCHITECTURE mają ukończone własne closeouty i PHR (§5.4.1). Bieżąca implementacja: `ARCH-BSDC-SCP-E1-T02-20261119` / PMOS `cmwn9s7q50000w0v9hp856amo`; zapis decyzji: `SRM-BSDC-SCP-E1-DEC24-20261119` / PMOS `cmwn9620h0000mtfenoiog8yd`. Zachować oddzielne continuity i źródła.
 - **E2 NIE_ROZPOCZĘTY.** Nie projektowano ani nie wdrażano jego UI/SG2. Wcześniejszy punkt „następnie wspólne projektowanie MagicPath” zachowuje historię publikacji; aktualne polecenie E1 wskazało już konkretną zaakceptowaną rewizję i backendowy cel. Kolejny etap nadal wymaga osobnego polecenia.
 - Stosować aktywne AGENTS/Canon/manifest/profil/routing, BOE v1.1, Universal Wrapper v1.2 i Full Autopilot v2.0 w granicach udzielonego mandatu. Dowody i Karta na GitHubie; bez lokalnych dokumentów na komputerze użytkownika. Chmurowe techniczne archiwa continuity/recovery zachować według retencji.
 

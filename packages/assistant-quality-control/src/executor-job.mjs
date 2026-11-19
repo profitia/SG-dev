@@ -61,6 +61,20 @@ export function readQualityExecutorPilotWindow(status){
   'NATIVE_EXECUTOR_PILOT_UNAVAILABLE')
  return Object.freeze({started:true,pilotStartedAt:status.pilotStartedAt,pilotExpiresAt:status.pilotExpiresAt})
 }
+/** The executor holds only the seven commands admitted to the original
+ * ordinary broker role. STATUS and permit/incident allocation belong to the
+ * controller. Native CLAIM/CHECK enforce enabled state, authority expiry,
+ * source gate and permit bounds; only original DISPATCH starts the pilot.
+ * This low-level adapter is never a caller-supplied port of the native job. */
+export function createQualityExecutorBrokerBudget(options){
+ fields(options,['context','query','commandKey','schemaDigest','serviceId'])
+ const budget=createQualityBudget({query:options.query,commandKey:options.commandKey,
+  schemaDigest:options.schemaDigest,serviceId:options.serviceId,role:'profitia_limits_quality_broker'})
+ const bound=createQualityExecutorJobBudget({context:options.context,budget})
+ return Object.freeze(Object.fromEntries(['claimExecutor','assertPermit','reserveRequest','dispatchRequest',
+  'settleRequest','markUnknown','releaseUndispatched'].map(name=>[name,bound[name]])))
+}
+
 /** Closed native EXECUTE composition. No caller network/SQL/agent callback,
  * tool command, clock, environment, holdout or result can replace its ports.
  * This is never invoked by readiness or standby. It cannot enable Limits,
@@ -143,10 +157,9 @@ export async function runQualityNativeExecutorJob(options){
  pool.on('error',()=>{poolFailed=true})
  try{
   const schemaDigest=createHash('sha256').update(readFileSync(new URL('../../../apps/package-limits/migrations/005-assistant-quality-usage.sql',import.meta.url))).digest('hex')
-  const budget=createQualityBudget({query:(q,v)=>{require(!poolFailed,'NATIVE_EXECUTOR_LIMITS_UNAVAILABLE');return pool.query(q,v)},
-   commandKey:config.commandKey,schemaDigest,serviceId:config.serviceId,role:'profitia_limits_quality_broker'})
-  readQualityExecutorPilotWindow(await budget.status())
-  const boundBudget=createQualityExecutorJobBudget({context,budget})
+  const boundBudget=createQualityExecutorBrokerBudget({context,
+   query:(q,v)=>{require(!poolFailed,'NATIVE_EXECUTOR_LIMITS_UNAVAILABLE');return pool.query(q,v)},
+   commandKey:config.commandKey,schemaDigest,serviceId:config.serviceId})
   // CHECK_PERMIT requires the once-only native CLAIM_EXECUTOR. The existing
   // executor performs that claim and the bound adapter rechecks it before any
   // broker request; no pre-claim check can accidentally block the first run.
