@@ -1,3 +1,4 @@
+import {sdkContinuationPredecessor} from '../../../packages/platform-contracts/test/organisation-sdk-compatibility.mjs'
 import {assistantSendArrowPredecessor} from './assistant-send-arrow-integrity.mjs'
 // Test/build-only adoption; this file cannot grant runtime access.
 import {registrationStageOnePredecessor} from './registration-stage-i-integrity.mjs'
@@ -137,6 +138,17 @@ export function oilReportTransportPredecessor(current,historical){
 }
 
 export function assistantM2Predecessor(current,historical){
+ const sdkReceiptFile='apps/sg-runtime/operation-integration.json'
+ let sdkReceipt
+ try{sdkReceipt=JSON.parse(current(sdkReceiptFile))}catch(error){
+  const text=String(error?.stderr??error?.message??'')
+  if(!(error?.code==='ENOENT'||error?.status===128&&text.includes("'"+sdkReceiptFile+"' does not exist in ")))throw error
+ }
+ if(sdkReceipt?.sdkSourceContinuations!==undefined){
+  const sdk=sdkContinuationPredecessor(sdkReceipt,current,historical,{projectKey:'SG2'})
+  if(sdk)return assistantM2Predecessor(sdk.previousBytes,historical)
+ }
+
  const arrow=assistantSendArrowPredecessor(current,historical);if(arrow)return assistantM2Predecessor(arrow.previousBytes,historical)
  const registration=registrationStageOnePredecessor(current,historical);if(registration)return assistantM2Predecessor(registration.previousBytes,historical)
  const oil=oilReportTransportPredecessor(current,historical);if(oil)return assistantM2Predecessor(oil.previousBytes,historical);

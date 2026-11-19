@@ -1,0 +1,28 @@
+{
+  "schemaVersion": "1.0",
+  "taskId": "SRM-REGISTRATION-ORGANISATION-DOMAIN-PROJECTION-20261113",
+  "recordedAt": "2026-11-13T05:43:05.485Z",
+  "scope": "SOURCE_IMPLEMENTED_PENDING_JOINT_ACCEPTANCE",
+  "implementation": [
+    "Optional own SRM domain record with the unchanged canonical organisation UUID",
+    "Controlled pure SQL035 plan; bounded EXECUTE only, no direct runtime table INSERT grant",
+    "Actual current Root16 INTENT and current module scope required",
+    "Before normal business callback and export preparation, inside the same native transaction",
+    "Retry is idempotent; business failure rolls back initialization; existing domain labels and all legacy defaults retained"
+  ],
+  "tests": {
+    "genuinePostgres": true,
+    "domainCases": 6,
+    "combinedRegression": {
+      "passed": 29,
+      "failed": 0,
+      "skipped": 0
+    },
+    "typecheck": "PASS with actual accepted KRS compile"
+  },
+  "runtimeOptedIn": false,
+  "sqlInstalled": false,
+  "permissionsChanged": false,
+  "providerCallsPerformed": false,
+  "deploymentPerformed": false
+}
