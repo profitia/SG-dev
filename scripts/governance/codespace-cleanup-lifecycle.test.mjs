@@ -1226,3 +1226,24 @@ test('managed lifecycle allocation fails without a trusted deployment and create
   assert.equal(fs.existsSync(path.join(f.scope,'managed-no-broker')),false)
   assert.equal(tracked(f.c.stateFile).resources.length,0)
 })
+
+test('canonical release accepts the real managed worker UUID and freezes before storing release',t=>{
+  const f=fixture(t);begin(f)
+  const id='a'.repeat(32),candidate=path.join(f.scope,'managed-root',id,'lease','candidate');let frozen=0
+  const runtime={...f.runtime,managedRequest:(config,action,entry)=>{
+    assert.equal(config.taskId,f.c.taskId)
+    if(action==='allocate')return {status:'RESOURCE_REGISTERED',path:candidate,kind:'managed-private-directory',allocationId:id,identity:{dev:1,ino:2},referenceProtection:'PRIVATE_SINCE_CREATION_NO_FD_EXPORT'}
+    assert.equal(action,'release');assert.equal(entry.allocationId,id)
+    assert.equal(tracked(f.c.stateFile).resources[0].authorization.retentionReleased,false)
+    frozen++;return {status:'RELEASE_ATTESTED',producerLeaseActive:false}
+  }}
+  const resource=allocateResource(f.config,{name:'managed-unit',kind:'managed-private-directory',phase:'pre-closeout'},runtime)
+  const result=releaseResource(f.config,release(f,resource),runtime)
+  assert.equal(result.status,'RELEASE_ATTESTED');assert.equal(frozen,1)
+  assert.equal(tracked(f.c.stateFile).resources[0].authorization.retentionReleased,true)
+})
+test('a short managed UUID does not weaken legacy allocation identity validation',t=>{
+  const f=fixture(t),r=allocated(f)
+  assert.throws(()=>releaseResource(f.config,release(f,r,{allocationId:'a'.repeat(32)}),f.runtime),/identity invalid/)
+  assert.equal(tracked(f.c.stateFile).resources[0].authorization.retentionReleased,false)
+})

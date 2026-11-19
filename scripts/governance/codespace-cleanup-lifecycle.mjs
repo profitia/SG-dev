@@ -289,7 +289,7 @@ export function allocateResource(c, { name, kind, phase, bytes=16384, seed='PROF
       assert(nameRe.test(name??'')&&!name.startsWith('.')&&!forbidden.has(name.toLowerCase()),'Unsafe managed resource name')
       assert(!state.resources.some(r=>r.managedName===name),'Managed name is already registered')
       assert(Number.isInteger(Number(bytes))&&Number(bytes)>0&&Number(bytes)<=4*1024*1024,'Managed byte bound')
-      const receipt=managedRequest(c,'allocate',null,{name,phase,bytes:Number(bytes),seedBase64:Buffer.from(seed).toString('base64')})
+      const receipt=(runtime.managedRequest??managedRequest)(c,'allocate',null,{name,phase,bytes:Number(bytes),seedBase64:Buffer.from(seed).toString('base64')})
       assert(receipt.status==='RESOURCE_REGISTERED','Managed allocation not acknowledged')
       const entry={kind,path:receipt.path,phase,allocationId:receipt.allocationId,managedName:name,
         identity:receipt.identity,referenceProtection:receipt.referenceProtection,
@@ -320,7 +320,7 @@ export function allocateResource(c, { name, kind, phase, bytes=16384, seed='PROF
 export function releaseResource(c, evidenceFile, runtime = {}) {
   canonicalControlFile(evidenceFile, 'evidenceFile')
   const e = json(evidenceFile)
-  assert(e.schemaVersion === '1.0' && e.taskId === c.taskId && e.projectKey === c.projectKey && shaRe.test(e.allocationId ?? '') && e.verificationRef, 'Release evidence identity invalid')
+  assert(e.schemaVersion === '1.0' && e.taskId === c.taskId && e.projectKey === c.projectKey && (shaRe.test(e.allocationId ?? '') || (e.kind===MANAGED_KIND && /^[a-f0-9]{32}$/.test(e.allocationId??''))) && e.verificationRef, 'Release evidence identity invalid')
   assert(['resultVerified','retentionReleased','recoveryPreserved','noActiveConsumers'].every(k => e.authorization?.[k] === true), 'Four affirmative release attestations and their evidence required')
   return fileLock(c.stateFile, () => {
     const state = loadState(c)
@@ -329,7 +329,7 @@ export function releaseResource(c, evidenceFile, runtime = {}) {
     const entry = state.resources.find(x => x.allocationId === e.allocationId && x.path === e.path && x.kind === e.kind)
     assert(entry && state.resources.filter(x => x.allocationId === e.allocationId).length === 1, 'Release evidence does not match one task-owned resource')
     assert(!contains(entry.path, evidenceFile) && evidenceFile !== entry.path, 'Release evidence may not reside inside disposable candidate')
-    if(entry.kind===MANAGED_KIND){const receipt=managedRequest(c,'release',entry);assert(receipt.status==='RELEASE_ATTESTED'&&receipt.producerLeaseActive===false,'Managed producer lease was not released')}
+    if(entry.kind===MANAGED_KIND){const receipt=(runtime.managedRequest??managedRequest)(c,'release',entry);assert(receipt.status==='RELEASE_ATTESTED'&&receipt.producerLeaseActive===false,'Managed producer lease was not released')}
     entry.authorization = Object.fromEntries(['resultVerified','retentionReleased','recoveryPreserved','noActiveConsumers'].map(k => [k, true]))
     state.lifecycle.lastReleaseEvidenceRef = e.verificationRef
     // Exact local evidence paths must remain protected until canonical closeout.
