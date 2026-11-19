@@ -16,6 +16,7 @@ import { fileURLToPath } from 'node:url'
 import { isDeepStrictEqual } from 'node:util'
 import { executeCleanup, OWNER_FILE } from './codespace-cleanup.mjs'
 import {managedRequest,MANAGED_KIND} from './codespace-cleanup-managed.mjs'
+import {activationFor} from './codespace-cleanup-activation.mjs'
 
 const taskRe = /^[A-Za-z0-9][A-Za-z0-9_.-]{3,159}$/
 const nameRe = /^[A-Za-z0-9][A-Za-z0-9_.-]{0,75}$/
@@ -724,6 +725,18 @@ export function runTask(c, workSpecFile, runtime = {}) {
       closeout: {status:'ALREADY_CLOSED', postCloseout:post.summary, postCloseoutReport:post,
         postCleanAttempted:spec.cleanPostCloseout === true}}
   }
+  let activation=null,activationIssue=null
+  const resumeCanonicalOnly=state.work&&(state.lifecycle.preCloseoutEvidence||
+    fs.existsSync(path.join(c.sourceRoot,'apps/pmos/.pmos/pending-artifact.json'))||
+    checkRegisteredTask(c,runtime,null).executionStatus==='completed')
+  try { if(!resumeCanonicalOnly)activation=activationFor(c,spec,runtime.activationOptions) }
+  catch(e) { activationIssue=e.message }
+  const checkpoint=()=>fileLock(c.stateFile,()=>{
+    const current=loadState(c)
+    current.lifecycle.activationCache={...current.lifecycle.activationCache,
+      ...(activation?.checkpoint()??{status:'REVIEW_REQUIRED',issue:activationIssue})}
+    saveState(c.stateFile,current)
+  })
   if (!state.work) {
     checkRegisteredTask(c, runtime, 'running')
     fileLock(c.stateFile, () => {
@@ -735,7 +748,20 @@ export function runTask(c, workSpecFile, runtime = {}) {
     })
     try {
       const call = runtime.work ?? ((command,args,cwd,options)=>runRaw(command,args,cwd,options))
-      call(spec.program, spec.args, spec.cwd, {timeout:spec.timeoutMs, maxBuffer:16*1024*1024})
+      if(activation){activation.start();checkpoint()}
+      const workOutput=call(spec.program, spec.args, spec.cwd, {timeout:spec.timeoutMs, maxBuffer:16*1024*1024})
+      if(activation){
+        try {
+          const prepared=path.join(c.scopeRoot,'activation-validated-bootstrap.json')
+          const command=runtime.run??((cmd,args,cwd,options)=>runRaw(cmd,args,cwd,options))
+          command('npx',['--no-install','tsx','scripts/pmos-prepare-execution-handoff.ts',
+            '--input',spec.bootstrapInputFile,'--output',prepared],path.join(c.sourceRoot,'apps/pmos'),{timeout:120000,maxBuffer:16*1024*1024})
+          checkCanonicalCloseoutInput(c,loadState(c),prepared)
+          activation.cacheResult(json(prepared),workOutput,{
+            allocate:o=>allocateResource(c,o,runtime),release:f=>releaseResource(c,f,runtime)})
+        } catch(e) { activation.retain(e.message) }
+        checkpoint()
+      }
     } catch(e) {
       fileLock(c.stateFile, () => {
         const current=loadState(c)
@@ -755,14 +781,44 @@ export function runTask(c, workSpecFile, runtime = {}) {
     assert(state.work.specDigest === digest && state.work.status === 'SUCCEEDED' &&
       state.work.specPath === workSpecFile && state.work.bootstrapInputFile === spec.bootstrapInputFile,
       'Interrupted, failed or modified task command requires manual review before resume')
+    if(activation){activation.restore(state.lifecycle.activationCache);activation.start();checkpoint()}
   }
   // On resumed execution, canonical PMOS may already have persisted closeout.
   // finishTask checks this first and never calls pmos:save twice.
+  const cleanup=runtime.cleanup??executeCleanup
+  const finishRuntime={...runtime,cleanup:options=>{
+    let report
+    const saved=loadState(c).lifecycle.activationCache?.cleanupCheckpoint
+    const managedPre=activation&&options.phase==='pre-closeout'&&options.command==='clean'
+    const inputDigest=()=>sha256(fs.readFileSync(spec.bootstrapInputFile))
+    const resourceDigest=()=>sha256(JSON.stringify(loadState(c).resources))
+    if(managedPre&&saved){
+      assert(saved.specDigest===digest&&saved.bootstrapDigest===inputDigest()&&saved.resourcesDigest===resourceDigest(),
+        'Captured cleanup checkpoint differs from current task inputs; preserve canonical recovery')
+      report=saved.report
+    }else{
+      report=cleanup(options)
+      if(managedPre&&report.results?.some(r=>r.kind===MANAGED_KIND&&r.status==='CLEANED')){
+        const captured={specDigest:digest,bootstrapDigest:inputDigest(),resourcesDigest:resourceDigest(),report}
+        fileLock(c.stateFile,()=>{const current=loadState(c);current.lifecycle.activationCache.cleanupCheckpoint=captured;saveState(c.stateFile,current)})
+      }
+    }
+    if(options.phase==='pre-closeout'){
+      if(activation){
+        try{report=activation.afterCleanup(report)}
+        catch(e){report={...report,activation:{class:activation.class,status:'REVIEW_REQUIRED',reason:e.message}}}
+      }
+      else if(activationIssue)report={...report,activation:{status:'REVIEW_REQUIRED',reason:activationIssue}}
+      if(spec.requireManagedCleanup===true)assert(report.activation?.status==='CLEANED_VERIFIED',
+        'Required managed cleanup was not physically verified; preserve task and evidence for recovery')
+    }
+    return report
+  }}
   return {runner:'OPT_IN_AUTOMATIC_TASK_CHAIN',
     work:'SUCCEEDED', closeout: finishTask(c, {bootstrapInputFile:spec.bootstrapInputFile,
-      cleanPreCloseout:spec.cleanPreCloseout === true,
+      cleanPreCloseout:spec.cleanPreCloseout === true||activation!==null,
       cleanPostCloseout:spec.cleanPostCloseout === true,
-      manifestRelative:spec.manifestRelative, protectedPaths:[workSpecFile]}, runtime)}
+      manifestRelative:spec.manifestRelative, protectedPaths:[workSpecFile]}, finishRuntime)}
 }
 
 function parseArgs(argv) {

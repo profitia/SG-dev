@@ -34,10 +34,14 @@ worker to remove its cache through FD-relative operations. It commits only after
 physical absence and a successful worker exit; a later status request independently
 checks absence again. This is a held lifetime boundary, not a reusable idle scan.
 
-The fixed cache producer is sufficient for controlled Stage04 acceptance. It is
-not an arbitrary build-job executor and does not automatically convert today's
-Codex worktrees/build directories into managed resources. Such adoption or global
-automation is outside this update and must not be silently claimed.
+The fixed cache producer handles bounded bytes and never executes caller code.
+The separately admitted Stage05 class uses a real execution metadata receipt,
+consumed through at most4096-byte copies before release. A `read` returns bytes
+and their hash, never FDs, and is refused after the producer is frozen. It is not
+an arbitrary build-job executor and does not automatically convert today's Codex
+worktrees/build directories into managed resources. Such adoption remains outside
+this implementation and must not be silently claimed. See the lifecycle README
+for the exact opt-in class, pilot promotion and separate administrator admission.
 
 ## Scope, identity, concurrency and recovery
 

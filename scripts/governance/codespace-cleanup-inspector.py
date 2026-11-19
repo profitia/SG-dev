@@ -785,6 +785,14 @@ def managed_child(inner, control, uid, gid):
             elif op=='attach':
                 require(exists_at(3,'candidate'),'Recovery candidate missing');frozen=command.get('frozen') is True
             elif op=='freeze':frozen=True
+            elif op=='read':
+                require(not frozen,'Managed read lease has ended')
+                candidate=os.open('candidate',os.O_RDONLY|os.O_DIRECTORY|os.O_NOFOLLOW|os.O_CLOEXEC,dir_fd=3)
+                try:data=read_at(candidate,'payload.bin',4096)
+                finally:os.close(candidate)
+                packet(channel,{'status':'DONE','operation':op,'uid':os.getuid(),'capabilities':0,
+                                'payloadBase64':base64.b64encode(data).decode(),'payloadSha256':sha(data)})
+                continue
             elif op=='clean':
                 require(frozen,'Resource has an active producer lease')
                 remove_contents(3,'candidate');os.fsync(3)
@@ -843,7 +851,7 @@ class ManagedStore(Guard):
         for k in ['projectKey','taskId','repository','scopeRoot','sourceRoot']:
             require(r.get(k)==self.p[k],'Managed task/source identity mismatch')
         require(re.fullmatch(r'[a-f0-9]{32,64}',r.get('requestId','')),'Managed request identity missing')
-        require(r.get('action') in ['allocate','audit','release','clean','status','stop'],'Unsupported managed operation')
+        require(r.get('action') in ['allocate','audit','release','clean','status','stop','read'],'Unsupported managed operation')
         require(r.get('phase') in ['pre-closeout','post-closeout'],'Unsupported managed phase')
         self.stationary()
 
@@ -934,6 +942,11 @@ class ManagedStore(Guard):
             if op in ['audit','status']:
                 return {'status':'OWNED_DISPOSABLE' if entry['state']=='FROZEN' else 'RETAINED',**self.receipt(entry)}
             worker=self.worker(entry,inner)
+            if op=='read':
+                require(entry['state']=='ACTIVE','Managed read lease has ended')
+                result=worker_operation(worker,'read')
+                return {'status':'CACHE_READ',**self.receipt(entry),
+                        'payloadBase64':result['payloadBase64'],'payloadSha256':result['payloadSha256']}
             if op=='release':
                 require(entry['state'] in ['ACTIVE','FROZEN'],'Managed resource is busy')
                 worker_operation(worker,'freeze');entry['state']='FROZEN';self.save()
