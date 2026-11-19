@@ -1025,5 +1025,2743 @@
     "approvalPr": 1179,
     "hostConversationId": "01a1e7fb-2253-7f91-9335-270094d39784",
     "approvedPathCount": 24
+  },
+  "proposedCi25AcceptedAcgComposition": {
+    "status": "PROPOSED_NOT_OWNER_APPROVED_NOT_ACTIVE",
+    "previousApprovedPathCount": 24,
+    "proposedPathCount": 25,
+    "existingReviewId": "AQC-SG2-STAGE1-LEGACY-CONTINUATION-20261117",
+    "proposedReviewId": "AQC-SG2-STAGE1-ACCEPTED-ACG-COMPOSITION-20261118",
+    "additionalPath": "packages/platform-contracts/test/assistant-reservation-source.mjs",
+    "owner": "Architecture Platform",
+    "targetEnvironment": "development",
+    "sourceValidationOnly": true,
+    "currentHostPr": 1099,
+    "currentHostSourceSha": "b3fcf378cb6320d9e2198e0b9a81bf88ab7cc398",
+    "currentHostTree": "0fc094503ec4b3e47155dea7a506ea482c5ba3b3",
+    "preservedMain": "a03956b6752227a7a14e44887feabd50a0ad1054",
+    "acceptedAcgSourceSha": "53691e907e4cc9b7fbf683c91bbebf41299e9ccc",
+    "immutableAcgRecordSha256": "bfa9287d9a0a17ef0a935ddc2c0f66c46b42d6c415b2b1fda0d237d2e38fc8b8",
+    "preservedLegacyControllerTestsBlob": "13ac0dc1e997359e8da2452d841ec6887f36b31a",
+    "newIndependentTestPath": "scripts/governance/assistant-quality-ci25.test.mjs",
+    "preservesAll24PathsBranchesExpiryAnchorAndPackagePins": true,
+    "candidateJavaScriptExecutedByTrustedSourceValidator": false,
+    "acceptedAcgRawInputs": 44,
+    "acceptedAcgImmutableReceipts": 27,
+    "acceptedEditorialImmutableReceipts": 29,
+    "currentHostSourceTests": {
+      "tests": 19,
+      "pass": 19,
+      "fail": 0,
+      "skipped": 0
+    },
+    "independentControllerTests": {
+      "tests": 10,
+      "pass": 10,
+      "fail": 0,
+      "skipped": 0,
+      "fullPhysicalCheckoutAndSdkProof": true,
+      "repeatAfterFinalScopeCorrection": "PASS_10_OF_10_ZERO_FAILURE_SKIP"
+    },
+    "legacyControllerRegression": {
+      "tests": 345,
+      "initialPass": 343,
+      "initialFailures": 2,
+      "observedFindings": [
+        "General accepted-ACG projection exceeded the finite CI25-only scope",
+        "Existing PK historical test object was absent from the local clone"
+      ],
+      "corrections": [
+        "Projection restricted to fully authenticated CI25 host; prior raw-source refusal retained",
+        "Fetched actual historical PK branch and commit; no mock or fixture hash replacement"
+      ],
+      "focusedCountertests": {
+        "tests": 2,
+        "pass": 2,
+        "fail": 0,
+        "skipped": 0
+      },
+      "completeRepeat": "PASS_345_OF_345_ZERO_FAILURE_SKIP",
+      "qualifiedControllerBlob": "6a22fe9b9c70a18b83fc7783286d23201d49864a"
+    },
+    "exactSourceAndResultingMainCiRequired": true,
+    "currentTrustedMainCannotExecuteUnadmittedPolicyCandidate": true,
+    "policyBootstrapAuthorityNotAssumed": true,
+    "credentialsRolesResourcesCostsChanged": false,
+    "hostDeploymentPerformed": false,
+    "paidRepairsEnabled": false,
+    "promotionEnabled": false,
+    "pilotStarted": false,
+    "frozenSpecificationSha256": "ee6b3f36dd63ca3c3343de8b38fee431de49f67b895b17434b39ce332539b881",
+    "stage2Authorised": false,
+    "policyProposalPr": 1197,
+    "preservedDocumentationMain": "037c15fdc3c4edce163a3811e2e7e7e6b0b7435b"
+  },
+  "ownerScopeHistoryRecheck20261118": {
+    "initialProposalSha": "4a5d16fbd4fa276f3f54d4c029ab36c797e9a548",
+    "reviewedPlanSha": "d19cdffb13aee220e2dcf1b2ed62823b2e5e93cd",
+    "approvalRecordSha": "59f4abe639eafd67875517c882c4a21e126c2b55",
+    "originalPackageAlreadyNamedBoundedBindingRenewalAndTemporaryOwnerSetRestoration": true,
+    "noPermissionBorrowedFromOtherChats": true,
+    "originalMembershipStillMustBeRestoredExactly": true,
+    "onlyExistingSixDeploymentReferences": true,
+    "noNewOwnerTransactionExecuted": true,
+    "newPersistentRoleOrDataGrantAuthorityNotInferred": true
+  },
+  "proposedCi27AcceptedKnowledgeComposition": {
+    "schemaVersion": "AQC_INERT_REVIEW_PROPOSAL_V1",
+    "status": "PREPARATION_OWNER_APPROVED_AND_QUALIFIED_POLICY_NOT_ACTIVE",
+    "sourceHead": "fef229b89fc69eda584a88fdb62925f509baab67",
+    "acceptedMain": "2f77dcd19a5ba0bb4dd4c30ed375f4c1d3213586",
+    "patchSha256": "863498ee18b2b1a65405250ed4162e90c304634634109ce57e2ff530824d44ad",
+    "ciProfile": {
+      "previousOwnerApprovedCount": 24,
+      "proposedCount": 27,
+      "newPaths": [
+        "packages/platform-contracts/test/assistant-reservation-source.mjs",
+        "apps/architecture-lab/knowledge-source.mjs",
+        "apps/architecture-lab/test/knowledge-source.test.mjs"
+      ],
+      "original24PathsUnchanged": true
+    },
+    "changedReviewFiles": [
+      {
+        "path": "apps/architecture-lab/test/knowledge-source.test.mjs",
+        "beforeSha256": "5868aa0b4563ebd12238660c5f9a1baab5df05051ddd8346e38fdc6218522777",
+        "proposedSha256": "df766e101aab6efc2848682cca624dcb8a728290912f1d531e856bfb1079c4f8"
+      },
+      {
+        "path": "apps/sg-runtime/tests/assistant-quality-host-integrity.mjs",
+        "beforeSha256": "363a08509817b5473340aa18ef7eeb67dfa1af7ce1d2b5fd50dd1c39162e69ab",
+        "proposedSha256": "3052ccd6360b9a7fd9bd326683a69ee9e2a7b44f93eae0932ca85c3c47e004d7"
+      },
+      {
+        "path": "packages/platform-contracts/test/assistant-reservation-source.mjs",
+        "beforeSha256": "b90adb4793374602e38caf9d463d2561a122f146c3240da81f5b1667cd11e9d6",
+        "proposedSha256": "0a45aced74c9f83d54ee28e819c7a68a4a2ce263a6b564f6514caf891d7ef7ce"
+      },
+      {
+        "path": "apps/sg-runtime/tests/procurement-insights-editorial-package-integrity.mjs",
+        "beforeSha256": "cd18207aa99ab90adb60e7ebafcecfa4065a98a2e9a0459e42ab7844d2d85050",
+        "proposedSha256": "8d04bf7ccb45cba30eb0e9d5fb032db2e04e039337674b9d198df6525bf257b1"
+      },
+      {
+        "path": "apps/sg-runtime/tests/assistant-quality-host-integrity.test.mjs",
+        "beforeSha256": "7b3cf9c181ca31aa90a3315086f58fbc49a0c5393f4864a125bf0efa6d310960",
+        "proposedSha256": "97a7897676b21657afaea2cfccefdc581004aab6b2b1f23943ee6a3ea1673eff"
+      },
+      {
+        "path": "apps/sg-runtime/assistant-quality-host-integration.json",
+        "beforeSha256": "d635468aeaf2a424ca25748e5565a202588ae3f068fc1a70528782d9241f7110",
+        "proposedSha256": "c83d9aab364c2d1cea389e002d228398ef67ff34ac9191ca5900ea0b6de04d01"
+      }
+    ],
+    "staticChecks": {
+      "acceptedKnowledgeTestBodiesByteIdentical": true,
+      "originalEditorialParseBodyByteIdentical": true,
+      "originalCicReceiptsUnchanged": true,
+      "unmodifiedSourceAttestations": 14,
+      "proposedOwnedAttestationsOnly": 5,
+      "patchExecuted": false,
+      "sourceFilesWritten": false
+    },
+    "currentActualQualification": {
+      "pass": 20,
+      "fail": 5,
+      "skip": 0,
+      "log": "ci26-pk-host-strict-predecessor-tests-20261118.log"
+    },
+    "requiredBeforeActivation": [
+      "owner approval of exact CI27 protected policy/bootstrap",
+      "exact-source native CI and resulting-main CI",
+      "fresh source/host ordering preflight",
+      "actual Development host rollout and controlled QA"
+    ],
+    "paidRepairsEnabled": false,
+    "promotionEnabled": false,
+    "pilotStarted": false,
+    "stage2Authorised": false,
+    "proposalPr": 1197,
+    "hostPr": 1099,
+    "supersedesUnapprovedProposal": "CI25",
+    "reviewedCurrentMain": "608efe22d4a994d4cdbfcddc111c0dfd4732d698",
+    "patchFormat": "unified diff stored as inert review data only",
+    "proposedPatch": "--- a/apps/architecture-lab/test/knowledge-source.test.mjs\n+++ b/apps/architecture-lab/test/knowledge-source.test.mjs\n@@ -1,9 +1,12 @@\n+import {assistantQualityPredecessor} from '../../sg-runtime/tests/assistant-quality-integrity.mjs';\n import test from 'node:test';import assert from 'node:assert/strict';\n import {readFileSync} from 'node:fs';import {execFileSync} from 'node:child_process';\n import {knowledgeSourcePredecessor,KNOWLEDGE_SOURCE_RECORD,KNOWLEDGE_SOURCE_RECORD_SHA256} from '../knowledge-source.mjs';\n import {operationSourceDigest,OPERATION_CONTRACT,KNOWLEDGE_ROOT_CONTRACT} from '../../../packages/platform-contracts/src/operation-context.mjs';\n-const root=new URL('../../../',import.meta.url),read=p=>readFileSync(new URL(p,root));\n+const root=new URL('../../../',import.meta.url),physical=p=>readFileSync(new URL(p,root));\n const cache=new Map(),history=(sha,p)=>{const key=sha+':'+p;if(!cache.has(key))cache.set(key,execFileSync('git',['show',key],{cwd:root,stdio:['ignore','pipe','pipe']}));return cache.get(key);};\n+// Authenticate the complete current CIC graph before the unchanged accepted PK fixture.\n+const quality=assistantQualityPredecessor(physical,history),read=quality?.compositionPreviousBytes??physical;\n test('closed knowledge SDK successor binds real current digest and immutable predecessor without runtime activation',async()=>{\n  const view=knowledgeSourcePredecessor(read,history);assert(view);assert.equal(view.manifest.sdkDigests.operationSourceDigest,await operationSourceDigest());\n  assert.equal(OPERATION_CONTRACT.implementation,'1.0.0-candidate.16');assert.equal(KNOWLEDGE_ROOT_CONTRACT.implementation,'1.0.0-candidate.23');\n--- a/apps/sg-runtime/tests/assistant-quality-host-integrity.mjs\n+++ b/apps/sg-runtime/tests/assistant-quality-host-integrity.mjs\n@@ -23,7 +23,8 @@\n  'apps/architecture-lab/private-recurring-source.mjs',\n  'apps/sg-runtime/tests/procurement-insights-editorial-package-integrity.mjs',\n  'packages/platform-contracts/test/assistant-reservation-source.mjs',\n- 'apps/architecture-lab/knowledge-source.mjs'\n+ 'apps/architecture-lab/knowledge-source.mjs',\n+ 'apps/architecture-lab/test/knowledge-source.test.mjs'\n ])\n export const QUALITY_HOST_PRESERVED=Object.freeze([\n  'apps/sg-runtime/assistant-quality-integration.json',\n@@ -67,7 +68,7 @@\n  const hasLegacyTransport=Object.hasOwn(a.sourceDigests,legacyTransport),hasFinderTransport=Object.hasOwn(a.sourceDigests,finderTransport)\n  assert([hasLegacyTransport,hasFinderTransport,hasPackageTransport].filter(Boolean).length<=1,'one closed CI24 transport profile')\n  const hasTransport=hasLegacyTransport||hasFinderTransport||hasPackageTransport,transport=hasPackageTransport?packageTransport:hasFinderTransport?finderTransport:legacyTransport\n- const paths=QUALITY_HOST_PATHS.filter(p=>p!=='packages/platform-contracts/test/assistant-reservation-source.mjs'&&p!=='apps/architecture-lab/knowledge-source.mjs'&&(p!==common||hasCommon)&&(p!==packageTransport||hasPackageTransport))\n+ const paths=QUALITY_HOST_PATHS.filter(p=>p!=='packages/platform-contracts/test/assistant-reservation-source.mjs'&&p!=='apps/architecture-lab/knowledge-source.mjs'&&p!=='apps/architecture-lab/test/knowledge-source.test.mjs'&&(p!==common||hasCommon)&&(p!==packageTransport||hasPackageTransport))\n  if(hasFinderTransport)paths.push(finderTransport)\n  if(hasLegacyTransport)paths.push(legacyTransport)\n  assert.deepEqual(Object.keys(a.sourceDigests).sort(),[...paths].sort())\n@@ -124,8 +125,8 @@\n  assert.deepEqual(Object.keys(a).sort(),[...Object.keys(prior),'acceptedComposition'].sort())\n  for(const k of Object.keys(prior).filter(k=>k!=='sourceDigests'))assert.deepEqual(a[k],prior[k],'immutable component metadata '+k)\n  assert.deepEqual(a.acceptedComposition,{sourceSha:COMPOSITION_BASE,componentSourceSha:COMPONENT_BASE,reservationRecordSha256:RESERVATION_PIN})\n- assert.deepEqual(Object.keys(a.sourceDigests).sort(),QUALITY_HOST_PATHS.filter(p=>p!=='apps/architecture-lab/knowledge-source.mjs').sort(),'closed CI25 source inventory')\n- for(const p of QUALITY_HOST_PATHS.filter(p=>p!=='apps/architecture-lab/knowledge-source.mjs')){assert.match(a.sourceDigests[p],/^[a-f0-9]{64}$/);assert.equal(hash(current(p)),a.sourceDigests[p],'exact composed CIC source '+p)}\n+ assert.deepEqual(Object.keys(a.sourceDigests).sort(),QUALITY_HOST_PATHS.filter(p=>p!=='apps/architecture-lab/knowledge-source.mjs'&&p!=='apps/architecture-lab/test/knowledge-source.test.mjs').sort(),'closed CI25 source inventory')\n+ for(const p of QUALITY_HOST_PATHS.filter(p=>p!=='apps/architecture-lab/knowledge-source.mjs'&&p!=='apps/architecture-lab/test/knowledge-source.test.mjs')){assert.match(a.sourceDigests[p],/^[a-f0-9]{64}$/);assert.equal(hash(current(p)),a.sourceDigests[p],'exact composed CIC source '+p)}\n  for(const p of QUALITY_HOST_PRESERVED){assert.equal(hash(current(p)),a.previousReceipts[p]);assert.equal(hash(historical(QUALITY_HOST_BASE,p)),a.previousReceipts[p])}\n \n  const packagePath='apps/sg-runtime/package.json',lockPath='apps/sg-runtime/package-lock.json'\n@@ -196,7 +197,7 @@\n  for(const k of Object.keys(prior).filter(k=>k!=='sourceDigests'))assert.deepEqual(a[k],prior[k],'immutable original CIC component '+k)\n  assert.deepEqual(a.acceptedComposition,{sourceSha:KNOWLEDGE_COMPOSITION_BASE,componentSourceSha:COMPONENT_BASE,\n   reservationRecordSha256:RESERVATION_PIN,knowledgeRecordSha256:KNOWLEDGE_PIN})\n- assert.deepEqual(Object.keys(a.sourceDigests).sort(),[...QUALITY_HOST_PATHS].sort(),'closed CI26 source inventory')\n+ assert.deepEqual(Object.keys(a.sourceDigests).sort(),[...QUALITY_HOST_PATHS].sort(),'closed CI27 source inventory')\n  for(const p of QUALITY_HOST_PATHS){assert.match(a.sourceDigests[p],/^[a-f0-9]{64}$/);assert.equal(hash(current(p)),a.sourceDigests[p],'exact CIC and Knowledge composition '+p)}\n  for(const p of QUALITY_HOST_PRESERVED){assert.equal(hash(current(p)),a.previousReceipts[p]);assert.equal(hash(historical(QUALITY_HOST_BASE,p)),a.previousReceipts[p])}\n  const packagePath='apps/sg-runtime/package.json',lockPath='apps/sg-runtime/package-lock.json'\n@@ -207,11 +208,11 @@\n  expectedPackage.scripts['test:assistant']=script.replace(marker,marker+'tests/assistant-quality.test.ts ')\n   +' && node --test tests/assistant-quality-integrity.test.mjs'\n   +' && node --import tsx --test tests/assistant-quality-response.test.ts tests/assistant-quality-evidence.test.ts && node --test tests/assistant-quality-host-integrity.test.mjs'\n- assert.deepEqual(JSON.parse(current(packagePath)),expectedPackage,'only exact CIC pin and QA commands on accepted Knowledge manifest')\n+ assert.deepEqual(JSON.parse(current(packagePath)),expectedPackage,'current admitted CIC manifest permits only its exact core pin and QA tests')\n  const expectedLock=JSON.parse(historical(KNOWLEDGE_COMPOSITION_BASE,lockPath))\n  expectedLock.packages[''].dependencies['@profitia/cic-core']='1.8.0'\n  Object.assign(expectedLock.packages['node_modules/@profitia/cic-core'],QUALITY_CIC_PIN)\n- assert.deepEqual(JSON.parse(current(lockPath)),expectedLock,'accepted Knowledge SDK and all unrelated dependency bytes retained')\n+ assert.deepEqual(JSON.parse(current(lockPath)),expectedLock,'current admitted CIC lock permits only the exact published core artifact')\n  const legacy=assistantQualityHostPredecessor(p=>Buffer.from(historical(COMPONENT_BASE,p)),historical)\n  assert(legacy,'complete original CIC component retained')\n  const mapped=new Set([...QUALITY_HOST_PATHS,...QUALITY_HOST_PRESERVED,QUALITY_HOST_RECEIPT,\n@@ -246,7 +247,14 @@\n  assert.equal(String(current(common)),\"import {assistantQualityPredecessor,QUALITY_RECEIPT} from '../sg-runtime/tests/assistant-quality-integrity.mjs'\\n\"+beforeCommon.replace(entry,entry+prefix),'only additive CIC dispatch before complete Knowledge chain')\n  const transport='apps/sg-runtime/tests/procurement-insights-editorial-package-integrity.mjs',oldTransport=String(historical(COMPONENT_BASE,transport))\n  assert.equal(oldTransport.split('quality.previousBytes').length,2)\n- assert.equal(String(current(transport)),oldTransport.replace('quality.previousBytes','quality.compositionPreviousBytes??quality.previousBytes'),'all original editorial checks retained')\n+ const expectedTransport=oldTransport.replace('quality.previousBytes','quality.host?.editorialPreviousBytes??quality.compositionPreviousBytes??quality.previousBytes').replace(\"sourceDigests:{...accepted.manifest.sourceDigests,...quality.manifest.sourceDigests,\",\"sourceDigests:{...Object.fromEntries(Object.entries(accepted.manifest.sourceDigests).map(([p,digest])=>[p,quality.host?.knowledgeManifest?.sourceDigests[p]??digest])),...quality.manifest.sourceDigests,\")\n+ assert.equal(String(current(transport)),expectedTransport,'all original editorial checks retained')\n+ const knowledgeTest='apps/architecture-lab/test/knowledge-source.test.mjs'\n+ const acceptedTest=String(historical(KNOWLEDGE_COMPOSITION_BASE,knowledgeTest))\n+ const testReader=\"const root=new URL('../../../',import.meta.url),read=p=>readFileSync(new URL(p,root));\",testHistory=\"const cache=new Map(),history=(sha,p)=>{const key=sha+':'+p;if(!cache.has(key))cache.set(key,execFileSync('git',['show',key],{cwd:root,stdio:['ignore','pipe','pipe']}));return cache.get(key);};\"\n+ assert.equal(acceptedTest.split(testReader).length,2);assert.equal(acceptedTest.split(testHistory).length,2)\n+ const expectedTest=\"import {assistantQualityPredecessor} from '../../sg-runtime/tests/assistant-quality-integrity.mjs';\\n\"+acceptedTest.replace(testReader,testReader.replace(',read=',',physical=')).replace(testHistory,testHistory+\"\\n// Authenticate the complete current CIC graph before the unchanged accepted PK fixture.\\nconst quality=assistantQualityPredecessor(physical,history),read=quality?.compositionPreviousBytes??physical;\")\n+ assert.equal(String(current(knowledgeTest)),expectedTest,'exact additive fixture adapter; every accepted Knowledge assertion unchanged')\n  const packageReceipt='apps/sg-runtime/procurement-insights-editorial-package-integration.json',packaged=JSON.parse(current(packageReceipt))\n  assert.deepEqual(Buffer.from(current(packageReceipt)),Buffer.from(historical(KNOWLEDGE_COMPOSITION_BASE,packageReceipt)))\n  for(const [p,digest]of Object.entries(packaged.sourceDigests)){\n@@ -268,5 +276,5 @@\n   }\n  }\n  return {...legacy,manifest:a,previousBytes:retainCurrent(legacy.previousBytes),legacyPreviousBytes:retainCurrent(legacy.legacyPreviousBytes??legacy.previousBytes),\n-  compositionPreviousBytes,reservationPreviousBytes:knowledge.previousBytes,acceptedComposition:true,knowledgeComposition:true}\n+  compositionPreviousBytes,reservationPreviousBytes:knowledge.previousBytes,editorialPreviousBytes:knowledge.previousBytes,knowledgeManifest:knowledge.manifest,acceptedComposition:true,knowledgeComposition:true}\n }\n--- a/packages/platform-contracts/test/assistant-reservation-source.mjs\n+++ b/packages/platform-contracts/test/assistant-reservation-source.mjs\n@@ -223,7 +223,7 @@\n   const accepted=originalReservationPredecessor(quality.host?.reservationPreviousBytes??quality.compositionPreviousBytes,historical,expectedDigest)\n   assert(accepted,'accepted ACG predecessor required')\n   return {...accepted,quality,historicalReservation:accepted,\n-   manifest:{...accepted.manifest,sourceDigests:{...accepted.manifest.sourceDigests,...quality.manifest.sourceDigests,\n+   manifest:{...accepted.manifest,sourceDigests:{...Object.fromEntries(Object.entries(accepted.manifest.sourceDigests).map(([p,digest])=>[p,quality.host?.knowledgeManifest?.sourceDigests[p]??digest])),...quality.manifest.sourceDigests,\n     [QUALITY_RECEIPT]:hash(current(QUALITY_RECEIPT))}}}\n  }\n  return originalReservationPredecessor(current,historical,expectedDigest)\n--- a/apps/sg-runtime/tests/procurement-insights-editorial-package-integrity.mjs\n+++ b/apps/sg-runtime/tests/procurement-insights-editorial-package-integrity.mjs\n@@ -51,8 +51,8 @@\n  }\n  const quality=assistantQualityPredecessor(current,historical)\n  if(quality){\n-  const accepted=procurementInsightsEditorialPackagePredecessor(quality.compositionPreviousBytes??quality.previousBytes,historical);assert(accepted,'accepted editorial package source retained')\n-  return {...accepted,quality,manifest:{...accepted.manifest,sourceDigests:{...accepted.manifest.sourceDigests,...quality.manifest.sourceDigests,[QUALITY_RECEIPT]:hash(current(QUALITY_RECEIPT))}}}\n+  const accepted=procurementInsightsEditorialPackagePredecessor(quality.host?.editorialPreviousBytes??quality.compositionPreviousBytes??quality.previousBytes,historical);assert(accepted,'accepted editorial package source retained')\n+  return {...accepted,quality,manifest:{...accepted.manifest,sourceDigests:{...Object.fromEntries(Object.entries(accepted.manifest.sourceDigests).map(([p,digest])=>[p,quality.host?.knowledgeManifest?.sourceDigests[p]??digest])),...quality.manifest.sourceDigests,[QUALITY_RECEIPT]:hash(current(QUALITY_RECEIPT))}}}\n  }\n  const a=JSON.parse(bytes)\n  assert.deepEqual(Object.keys(a).sort(),['schemaVersion','taskId','targetEnvironment','scope','previousSourceSha','packageVersionBefore','packageVersionAfter','sourceDigests','preservedReceipts','authorisationChanged','schemaChanged','runtimeCodeChanged','dependenciesChanged','modelChanged','providerCallsPerformed','historicalReportsChanged','automaticPublication'].sort())\n--- a/apps/sg-runtime/tests/assistant-quality-host-integrity.test.mjs\n+++ b/apps/sg-runtime/tests/assistant-quality-host-integrity.test.mjs\n@@ -64,7 +64,7 @@\n  assert.throws(()=>procurementInsightsEditorialPackagePredecessor(p=>p===lock?Buffer.from(JSON.stringify(bad)):current(p),historical))\n })\n \n-test('CI25 composition authenticates current ACG and CIC independently before retaining both frozen predecessor chains',async()=>{\n+test('CI27 composition authenticates current ACG and CIC independently before retaining both frozen predecessor chains',async()=>{\n  const {assistantReservationPredecessor,RESERVATION_PATHS,RESERVATION_RECORD,RESERVATION_DERIVED}=await import('../../../packages/platform-contracts/test/assistant-reservation-source.mjs')\n  const pin='bfa9287d9a0a17ef0a935ddc2c0f66c46b42d6c415b2b1fda0d237d2e38fc8b8'\n  const v=assistantReservationPredecessor(current,historical,pin);assert(v?.quality?.host?.acceptedComposition)\n@@ -98,7 +98,7 @@\n })\n \n test('finite CIC projection retains unrelated current inputs and their native access errors',()=>{\n- const p='apps/architecture-lab/knowledge-source.json',bytes=Buffer.from('current unrelated input')\n+ const p='Canon/evidence/aqc-unrelated-current-canary.json',bytes=Buffer.from('current unrelated input')\n  const view=assistantQualityHostPredecessor(f=>f===p?bytes:current(f),historical)\n  for(const read of [view.previousBytes,view.legacyPreviousBytes,view.compositionPreviousBytes])assert.deepEqual(read(p),bytes)\n  const denied=assistantQualityHostPredecessor(f=>{if(f===p)throw Object.assign(Error('DENIED'),{code:'EACCES'});return current(f)},historical)\n--- a/apps/sg-runtime/assistant-quality-host-integration.json\n+++ b/apps/sg-runtime/assistant-quality-host-integration.json\n@@ -16,13 +16,14 @@\n     \"apps/sg-runtime/tests/assistant-quality-response.test.ts\": \"86a0957bcaa243ac8fbacd57db5024f4e242d99fe9bb52bed563b89a2de1f48e\",\n     \"apps/sg-runtime/tests/assistant-quality-evidence.test.ts\": \"a301ae44ece516a83afba433d82dcf0e5a2f68272ff04194b677fbec433274bf\",\n     \"apps/sg-runtime/tests/assistant-quality-integrity.mjs\": \"43a1682cf58f5d42f7339f752901f536d85ff941cef5b1c7778c052f55ee649b\",\n-    \"apps/sg-runtime/tests/assistant-quality-host-integrity.mjs\": \"363a08509817b5473340aa18ef7eeb67dfa1af7ce1d2b5fd50dd1c39162e69ab\",\n-    \"apps/sg-runtime/tests/assistant-quality-host-integrity.test.mjs\": \"7b3cf9c181ca31aa90a3315086f58fbc49a0c5393f4864a125bf0efa6d310960\",\n+    \"apps/sg-runtime/tests/assistant-quality-host-integrity.mjs\": \"3052ccd6360b9a7fd9bd326683a69ee9e2a7b44f93eae0932ca85c3c47e004d7\",\n+    \"apps/sg-runtime/tests/assistant-quality-host-integrity.test.mjs\": \"97a7897676b21657afaea2cfccefdc581004aab6b2b1f23943ee6a3ea1673eff\",\n     \"apps/sg-runtime/tests/procurement-insights-completion-integrity.mjs\": \"00f1b475342a78ad916c03723ae2b9b268963240d101b57c17559308c48daafa\",\n     \"apps/architecture-lab/private-recurring-source.mjs\": \"34c555f971140e197880e2ff3ddf7c1696112d2744374b238a3f3315c8fbbcf4\",\n-    \"apps/sg-runtime/tests/procurement-insights-editorial-package-integrity.mjs\": \"cd18207aa99ab90adb60e7ebafcecfa4065a98a2e9a0459e42ab7844d2d85050\",\n-    \"packages/platform-contracts/test/assistant-reservation-source.mjs\": \"b90adb4793374602e38caf9d463d2561a122f146c3240da81f5b1667cd11e9d6\",\n-    \"apps/architecture-lab/knowledge-source.mjs\": \"4ff6c2d4740764a62c10315f6ffd848460c90a59c0a6483232efde603f891838\"\n+    \"apps/sg-runtime/tests/procurement-insights-editorial-package-integrity.mjs\": \"8d04bf7ccb45cba30eb0e9d5fb032db2e04e039337674b9d198df6525bf257b1\",\n+    \"packages/platform-contracts/test/assistant-reservation-source.mjs\": \"0a45aced74c9f83d54ee28e819c7a68a4a2ce263a6b564f6514caf891d7ef7ce\",\n+    \"apps/architecture-lab/knowledge-source.mjs\": \"4ff6c2d4740764a62c10315f6ffd848460c90a59c0a6483232efde603f891838\",\n+    \"apps/architecture-lab/test/knowledge-source.test.mjs\": \"df766e101aab6efc2848682cca624dcb8a728290912f1d531e856bfb1079c4f8\"\n   },\n   \"previousReceipts\": {\n     \"apps/sg-runtime/assistant-quality-integration.json\": \"d37226bbb90d585b95aab383dab6fcb7d20ab8698709b50de0e1c8a58d1af2a7\",\n",
+    "automaticApprovalRejections": {
+      "broadHistoricalProjection": {
+        "applied": false,
+        "reason": "Potential weakening of immutable predecessor controls and refreshing source attestations after failing tests"
+      },
+      "multiAdapterContinuation": {
+        "applied": false,
+        "reason": "Security-sensitive changes to multiple adapters, fixture projection and five source attestations need exact owner review"
+      }
+    },
+    "noAdditionalAuthorityClaimed": true,
+    "limitedRenderAccess": {
+      "currentDashboardForm": "CLASSIC_KEY_ONLY",
+      "classicKeyExcludedByExistingOwnerApproval": true,
+      "newKeyCreated": false,
+      "scopedAvailabilityUnconfirmed": true
+    },
+    "existingOwnerApprovalsRemainValid": [
+      "PR1104 bounded infrastructure and original migrations/roles",
+      "approved CI24 profile and editorial package adapter relocation",
+      "B28 exact host/worker settings and controlled PL/EN QA",
+      "six existing deployment-reference CAS and exact temporary membership restoration"
+    ],
+    "historicalInertStatus": "INERT_NOT_APPLIED_NOT_EXECUTED_NOT_QUALIFIED",
+    "preparationApproval": {
+      "response": "Zatwierdzam przygotowanie i testy CI27",
+      "date": "2026-11-18",
+      "questionCallId": "call_291ba065904c42faa69dbc58693f3385",
+      "reviewedPackageSha": "0f93284d9d4008537dc2de8cc3867a2b6406ed43",
+      "patchSha256": "863498ee18b2b1a65405250ed4162e90c304634634109ce57e2ff530824d44ad",
+      "scope": [
+        "apply exact six-file inert diff",
+        "prepare trusted controller",
+        "run tests"
+      ],
+      "policyActivationApproved": false,
+      "newPermissionsApproved": false,
+      "deploymentApprovedByThisDecision": false
+    },
+    "currentQualification": {
+      "status": "PREPARATION_QUALIFIED_NOT_OWNER_ACTIVATED",
+      "sourceSha": "408d5d6224106fd15c0eca46910497638745184c",
+      "treeSha": "179fc08e954f5915c92289224b594dca511fb057",
+      "preservedMain": "b1cda8c4fde31557aac6e89851d6d9293ec768ea",
+      "tests": {
+        "total": 394,
+        "pass": 394,
+        "fail": 0,
+        "skip": 0
+      },
+      "originalControllerTestsBlob": "a0f26ab670c49766e78b50cc801c879448ccc8f6",
+      "hostSourceSha": "6fd28bede851fa64755c3de605744d972da25e73",
+      "hostSourceTests": 29,
+      "rawInputs": 532,
+      "retainedReceipts": 42,
+      "coverageRecords": 5,
+      "codeBlobs": {
+        "scripts/governance/controlled-package-ci.mjs": {
+          "sha": "8a5d65b61f2284d99956151fe632b34740de3128",
+          "sha256": "eee2dddfd06fa5f56fccd453e893b91c602f19bf6e62a05a4ecf17ed7f237984"
+        },
+        "scripts/governance/assistant-quality-ci25.test.mjs": {
+          "sha": "c62d3a468632c4bdd84f7e6b49ea313e6a1415a6",
+          "sha256": "93abcd7a8bce9a950be2b94d9d68b82f06fc18d056c1ae69512d68ad8f72f1dd"
+        }
+      },
+      "policyActivated": false,
+      "hostDeployed": false,
+      "paidRepairsEnabled": false,
+      "promotionEnabled": false,
+      "pilotStarted": false,
+      "stage2Started": false
+    },
+    "hostTests": {
+      "total": 29,
+      "pass": 29,
+      "fail": 0,
+      "skip": 0,
+      "sourceSha": "6fd28bede851fa64755c3de605744d972da25e73"
+    },
+    "all532InputsIndividuallyTamperTested": true,
+    "allOriginalKnowledgeTestBodiesPreserved": true,
+    "acceptedSdk138SourcePolicyPreserved": "c4965a445867601275cbb75dc4de993123414ba2",
+    "supersededCi25NativeAdmissionDisabled": true,
+    "sharedPkOrderingWindowReleased": true
+  },
+  "technicalContinuation20261118": {
+    "acceptedMain": "b1cda8c4fde31557aac6e89851d6d9293ec768ea",
+    "sourcePr1201Merged": true,
+    "sourceCi": {
+      "id": 44387999189,
+      "headSha": "ae99a67c1589d837c8c514f6f3b6ede5602bb0af",
+      "aqc": 192,
+      "qaContracts": 12,
+      "fail": 0,
+      "skip": 0
+    },
+    "resultingMainCi": {
+      "id": 44397791245,
+      "headSha": "b1cda8c4fde31557aac6e89851d6d9293ec768ea",
+      "aqc": 192,
+      "qaContracts": 12,
+      "fail": 0,
+      "skip": 0
+    },
+    "workerDeploy": {
+      "commit": {
+        "createdAt": "2026-11-18T21:05:16Z",
+        "id": "b1cda8c4fde31557aac6e89851d6d9293ec768ea",
+        "message": "Integrate CIC native job adapters and disabled publisher preparation\n\nConnect CIC durable jobs to native signed results and controlled contexts"
+      },
+      "createdAt": "2026-11-18T21:07:07.965925Z",
+      "finishedAt": "2026-11-18T21:07:41.488725Z",
+      "id": "dep-dbv16ut6e07s73adjnt0",
+      "startedAt": "2026-11-18T21:07:07.963433Z",
+      "status": "live",
+      "trigger": "api",
+      "updatedAt": "2026-11-18T21:07:41.488885Z"
+    },
+    "workerRuntime": {
+      "observedAt": "2026-11-18T21:07:45.048Z",
+      "status": "MONITORING_READY",
+      "controlStore": "CONNECTED_DISABLED",
+      "nativeLimits": "CONNECTED_DISABLED",
+      "controllerGitHub": "CONNECTED_STANDBY",
+      "qaRoles": "QA_ROLES_VERIFIED",
+      "rawQaReadPerformed": false,
+      "permissionMutationPerformed": false,
+      "hostQaCodecPresent": false,
+      "sentryDeliveryHttpStatus": 200,
+      "metadataRetention": "PURGE_CONFIRMED"
+    },
+    "publisherSourcePreparation": {
+      "sourceSha": "af0ed35ced8321c3c295decca9f1e2a2c5c86efd",
+      "treeSha": "d8a029b68c88458b0a806cc807d1e25d1eb06348",
+      "baseSha": "b1cda8c4fde31557aac6e89851d6d9293ec768ea",
+      "files": {
+        "packages/assistant-quality-control/migrations/004-publisher-canonical.sql": {
+          "blob": "e94ae3ca08d288e1a187479227375d5a8a2a599b",
+          "sha256": "5c4b926f473ce2f6efb2135c12a220d3d26839184123fdcce1461e0baa005632"
+        },
+        "packages/assistant-quality-control/migrations/005-publisher-product.sql": {
+          "blob": "4e4f4d905cf76ba272723bc838bcdc317a12c3d7",
+          "sha256": "9b309f09f1c99e2c6213816a048903791fa8a86ea2cbecf11c8d01854c66114d"
+        },
+        "packages/assistant-quality-control/src/owner-bootstrap.mjs": {
+          "blob": "0375f6434b76e79a90dab3682dc71fec93706c91",
+          "sha256": "3652622a4c315a0e965059195040b0ab5252ef3f93986480366a9b5d1e023866"
+        },
+        "packages/assistant-quality-control/src/publisher.mjs": {
+          "blob": "a06a78569d7ce3f7ec8aa50642aa02b4020b423e",
+          "sha256": "d6ead378293d85279db3e371be8e5ad1d89211da63c8c876e73502e8ad5c541e"
+        },
+        "packages/assistant-quality-control/test/owner-bootstrap.test.mjs": {
+          "blob": "6e2f22608ca049b2e82d7ba18580e148b31cc4f0",
+          "sha256": "20d4c22c903dbcffe6c8d5c50ba12eb9dac0346ed08250d29e9bbb6f87fd5672"
+        },
+        "packages/assistant-quality-control/test/publisher.test.mjs": {
+          "blob": "a6214cdce3d2f2a179790ecba67dca3bcb78a510",
+          "sha256": "fe84b82b4c81c414d17354119c0f8f0be1781e731eb088a7f7b6a60fb1617f41"
+        }
+      },
+      "tests": {
+        "aqc": 205,
+        "qaContracts": 12,
+        "pg16NativeOwner": 13,
+        "pg18NativeOwner": 13,
+        "fail": 0,
+        "skip": 0
+      },
+      "cloudMigrationsInstalled": false,
+      "newRolesCreated": false,
+      "promotionEnabled": false,
+      "paidRepairsEnabled": false
+    },
+    "publisherSchemasInstalled": false,
+    "publisherRolesCreated": false,
+    "renderScopedKeyCheck": {
+      "date": "2026-11-18",
+      "accountForm": "CLASSIC_ONLY_NO_SCOPES",
+      "classicKeyCreated": false,
+      "classicKeyInstalled": false,
+      "cliTokenRepurposedForPublisher": false
+    },
+    "hostDeploymentPerformed": false,
+    "b28ConfigurationWritten": false,
+    "controlledQaCaptureReadPerformed": false,
+    "technicalReady": false,
+    "e1RepairsCompleted": 0,
+    "paidRepairsEnabled": false,
+    "promotionEnabled": false,
+    "pilotStarted": false,
+    "stage2Started": false
+  },
+  "remainingOwnerDecisionsPreparation": {
+    "status": "CONCRETE_B29_REVIEW_PACKAGE_PENDING_OWNER_DECISION",
+    "decisionIds": [
+      "B29-1",
+      "B29-2",
+      "B29-3",
+      "B29-4",
+      "B29-5",
+      "B29-6"
+    ],
+    "allPriorAuthorisationsPreserved": true,
+    "actionsApplied": false
+  },
+  "consolidatedOwnerDecisionB29": {
+    "schemaVersion": "AQC_OWNER_DECISION_PACKAGE_V1",
+    "id": "CIC-E1-B29-TECHNICAL-INTEGRATION-20261118",
+    "status": "PROPOSED_NOT_OWNER_APPROVED_NOT_ACTIVE",
+    "purpose": "Finish Stage1 technical integration on actual Development and prepare E1; no paid repair or autonomous promotion activation.",
+    "expiresAt": "2026-11-27T23:59:59.000Z",
+    "alreadyApprovedNotRequestedAgain": [
+      "PR1104 worker and infrastructure envelope",
+      "B28 exact host/worker QA configuration for two new controlled PL/EN cases",
+      "six bounded engineering SourceRef/deployment CAS operations and exact temporary owner SET restoration",
+      "limited SG-dev controller token",
+      "metadata-only PostHog and Sentry monitoring"
+    ],
+    "decisions": [
+      {
+        "id": "B29-1",
+        "kind": "CLOSED_SOURCE_POLICY_BOOTSTRAP",
+        "proposalPr": 1197,
+        "reviewedSourceSha": "88d36b3f81ba6305e3797510c4f3b1cef3fb56b5",
+        "acceptedMain": "efc1290378507e947cbf9ad0bcfc1e4a71086bb6",
+        "protectedBlobs": {
+          "scripts/governance/controlled-package-ci.mjs": "8a5d65b61f2284d99956151fe632b34740de3128",
+          "scripts/governance/assistant-quality-ci25.test.mjs": "c62d3a468632c4bdd84f7e6b49ea313e6a1415a6"
+        },
+        "otherProposalPaths": [
+          "Canon/proposals/bsdc/ARCHITECTURE/cic-assistant-continuous-quality.md",
+          "Canon/evidence/2026-11-17-cic-quality-development-owner-package.json"
+        ],
+        "originalPaths": 24,
+        "proposedPaths": 27,
+        "extraPaths": [
+          "packages/platform-contracts/test/assistant-reservation-source.mjs",
+          "apps/architecture-lab/knowledge-source.mjs",
+          "apps/architecture-lab/test/knowledge-source.test.mjs"
+        ],
+        "scope": "One closed policy bootstrap/acceptance into trusted main, followed by required native exact-source host validation and resulting-main checks before any host rollout. Preparation approval alone is not used as activation authority.",
+        "evidence": {
+          "sourceTests": 29,
+          "completeLocalControllerTestsBeforeSdkMetadataFollowup": 394,
+          "latestSdkFocusedTests": 50,
+          "nativeArchitectureGovernance": {
+            "runId": 44406432579,
+            "jobId": 135162777941,
+            "pass": 459,
+            "fail": 0,
+            "skip": 0
+          },
+          "nativeArchitectureContracts": {
+            "pass": 2141,
+            "fail": 0,
+            "existingSkip": 1
+          },
+          "governanceRun": 44406432131,
+          "actualSg2Refusal": "CONTROLLED_VALIDATION_REQUIRED_FOR_EXACT_SHA"
+        },
+        "candidateCodeExecutedDuringAdmission": false,
+        "originalTestsAndReceiptsRetained": true,
+        "noHostCiWaiver": true,
+        "policyBeforeHostActivation": true
+      },
+      {
+        "id": "B29-2",
+        "kind": "TWO_DISABLED_PUBLISHER_DATABASE_INSTALLATIONS",
+        "sourcePr": 1211,
+        "acceptedSourceMain": "0523b664a4846c99885c7debfa7b5035025b9b3f",
+        "profiles": [
+          {
+            "profile": "canonical",
+            "projectId": "spring-bread-28217539",
+            "branchId": "br-sparkling-term-b99l107x",
+            "databaseName": "platform_private",
+            "ownerRole": "profitia_access_owner",
+            "role": "aqc_development_canonical_publisher",
+            "migration": "packages/assistant-quality-control/migrations/004-publisher-canonical.sql",
+            "sha256": "5c4b926f473ce2f6efb2135c12a220d3d26839184123fdcce1461e0baa005632"
+          },
+          {
+            "profile": "product",
+            "projectId": "autumn-waterfall-65938876",
+            "branchId": "br-dry-hall-b294222f",
+            "databaseName": "neondb",
+            "ownerRole": "profitia_ingestion_owner",
+            "role": "aqc_development_product_publisher",
+            "migration": "packages/assistant-quality-control/migrations/005-publisher-product.sql",
+            "sha256": "9b309f09f1c99e2c6213816a048903791fa8a86ea2cbecf11c8d01854c66114d"
+          }
+        ],
+        "schemaPerDatabase": "profitia_quality_release",
+        "functions": [
+          "quality_deployment_cas(uuid,text,text,uuid,timestamptz)",
+          "quality_deployment_cas_status(uuid)"
+        ],
+        "ordinaryRolePolicy": {
+          "initialLogin": false,
+          "loginAfterQualification": true,
+          "connectionLimit": 2,
+          "inherit": false,
+          "superuser": false,
+          "createRole": false,
+          "createDatabase": false,
+          "bypassRls": false,
+          "replication": false,
+          "memberships": [],
+          "validUntil": "2026-11-27T23:59:59.000Z",
+          "directPrivateTableAccess": false
+        },
+        "sourceReferencesPerDatabase": 3,
+        "policyPublishingInitiallyEnabled": false,
+        "recoveryOnlyOwnRecordedOperation": true,
+        "noRightsStatusExpiryRenewal": true,
+        "credentialsRecipient": {
+          "repository": "profitia/SG-dev",
+          "environment": "aqc-publisher-development",
+          "names": [
+            "AQC_PUBLISHER_CANONICAL_DATABASE_URL",
+            "AQC_PUBLISHER_PRODUCT_DATABASE_URL"
+          ]
+        },
+        "installationEnvelope": "Fresh atomic owner transaction; exact original membership OID/grantor/options restored before COMMIT. No database restore or existing schema rollback."
+      },
+      {
+        "id": "B29-3",
+        "kind": "MAIN_ONLY_OPERATIONAL_ROLES_AND_SECRET_RECIPIENTS",
+        "repository": "profitia/SG-dev",
+        "workflow": ".github/workflows/assistant-quality-repair.yml",
+        "environments": [
+          {
+            "name": "aqc-executor-development",
+            "deployment_branch_policy": {
+              "protected_branches": false,
+              "custom_branch_policies": true
+            },
+            "branchPolicies": [
+              {
+                "name": "main",
+                "type": "branch"
+              }
+            ],
+            "humanReviewers": [],
+            "waitTimer": 0
+          },
+          {
+            "name": "aqc-verifier-development",
+            "deployment_branch_policy": {
+              "protected_branches": false,
+              "custom_branch_policies": true
+            },
+            "branchPolicies": [
+              {
+                "name": "main",
+                "type": "branch"
+              }
+            ],
+            "humanReviewers": [],
+            "waitTimer": 0
+          },
+          {
+            "name": "aqc-publisher-development",
+            "deployment_branch_policy": {
+              "protected_branches": false,
+              "custom_branch_policies": true
+            },
+            "branchPolicies": [
+              {
+                "name": "main",
+                "type": "branch"
+              }
+            ],
+            "humanReviewers": [],
+            "waitTimer": 0
+          },
+          {
+            "name": "aqc-ci-gate-development",
+            "deployment_branch_policy": {
+              "protected_branches": false,
+              "custom_branch_policies": true
+            },
+            "branchPolicies": [
+              {
+                "name": "main",
+                "type": "branch"
+              }
+            ],
+            "humanReviewers": [],
+            "waitTimer": 0
+          }
+        ],
+        "privateRecipients": [
+          {
+            "environment": "aqc-executor-development",
+            "names": [
+              "AQC_EXECUTOR_SUPERVISOR_PRIVATE_KEY",
+              "AQC_LIMITS_BROKER_DATABASE_URL",
+              "AQC_LIMITS_BROKER_COMMAND_KEY"
+            ],
+            "existingDatabaseRole": "profitia_limits_quality_broker",
+            "projectId": "lingering-thunder-05075810",
+            "branchId": "br-green-hall-b9s837k0",
+            "databaseName": "neondb",
+            "agentReceivesValues": false
+          },
+          {
+            "environment": "aqc-verifier-development",
+            "names": [
+              "AQC_INDEPENDENT_VERIFIER_PRIVATE_KEY",
+              "AQC_HOLDOUT_PACK_JSON",
+              "AQC_HOLDOUT_ATTESTATION_JSON"
+            ],
+            "existingNpmTokenUse": "Existing NPM_TOKEN only inside trusted verifier job for the exact admitted CIC1.8.0 artifact; no token transfer to executor, agent, publisher, worker or public output."
+          },
+          {
+            "environment": "aqc-publisher-development",
+            "names": [
+              "AQC_INDEPENDENT_PUBLISHER_PRIVATE_KEY",
+              "AQC_PUBLISHER_CANONICAL_DATABASE_URL",
+              "AQC_PUBLISHER_PRODUCT_DATABASE_URL",
+              "AQC_RENDER_PUBLISHER_API_KEY"
+            ]
+          },
+          {
+            "serviceId": "srv-dbu4ak0ae00c73eaabcg",
+            "workspaceId": "tea-d7lps8rbc2fs73cn80dg",
+            "names": [
+              "AQC_RUNTIME_OBSERVER_PRIVATE_KEY"
+            ],
+            "scope": "Sign metadata-only observations of the two previously approved controlled cases; no additional QA scope."
+          }
+        ],
+        "publicTrustRecipients": [
+          "worker srv-dbu4ak0ae00c73eaabcg",
+          "aqc-executor-development",
+          "aqc-verifier-development",
+          "aqc-publisher-development",
+          "aqc-ci-gate-development"
+        ],
+        "publicTrustAndSafeContextNames": [
+          "AQC_OWNER_PUBLIC_KEYS_JSON",
+          "AQC_PHASE_PUBLIC_KEYS_JSON",
+          "AQC_RUNTIME_OBSERVER_PUBLIC_KEYS_JSON",
+          "AQC_REVIEWER_PUBLIC_KEYS_JSON",
+          "AQC_REPAIR_CONTEXTS_JSON",
+          "AQC_RECOVERY_AUTHORITY_JSON",
+          "AQC_CONTROLLER_WORKFLOW_SHA256"
+        ],
+        "offlineOwnerSigningKey": "Generate and retain only in the owner-private task package with restricted filesystem permissions, outside all workers and GitHub jobs. Never expose the value in Git, logs or chat.",
+        "ownerSigningScope": [
+          "Separate operational recovery authority AQC_OPERATIONAL_RECOVERY_V1, only VERIFY_RUNTIME/OBSERVE/ROLLBACK of independently proved own releases, expires by27 November, no paid/data/promotion/rights-renewal capability",
+          "At most one-hour metadata-only technical context/mandate for the three signed synthetic classes, while native paid limits and all paid/promotion flags remain disabled; no paid pilot activation"
+        ],
+        "githubTokenPermissions": {
+          "executorSupervisor": {
+            "contents": "read",
+            "actions": "read"
+          },
+          "verifier": {
+            "contents": "read",
+            "actions": "read",
+            "checks": "read"
+          },
+          "publisher": {
+            "contents": "write",
+            "pullRequests": "write",
+            "actions": "read",
+            "checks": "read"
+          },
+          "ciGate": {
+            "contents": "read",
+            "actions": "read",
+            "checks": "write",
+            "fixedCheckName": "AQC independent repair gate"
+          }
+        },
+        "publisherUsesJobScopedGithubToken": true,
+        "newPersistentGithubPublisherPat": false,
+        "metadataControllerActivation": {
+          "onlyControlMetadataEnabled": true,
+          "maxControlledSyntheticIncidents": 3,
+          "classes": [
+            "C1",
+            "C2",
+            "C3"
+          ],
+          "nativePaidLimitsEnabled": false,
+          "paidRepairsEnabled": false,
+          "promotionEnabled": false,
+          "regularQaEnabled": false,
+          "expiresBy": "2026-11-27T23:59:59.000Z"
+        },
+        "publicMetadataDestination": {
+          "destination": "Native GitHub workflow inputs/artifacts for CIC Development operational coordination",
+          "allowed": [
+            "SHA",
+            "time",
+            "connection/status/error codes",
+            "disabled gates",
+            "aggregate count for the two controlled synthetic cases"
+          ],
+          "forbidden": [
+            "account or organisation identifiers",
+            "transcripts",
+            "raw QA",
+            "source payloads",
+            "secrets"
+          ]
+        },
+        "sourceAndNativeQualificationRequiredBeforeUse": true,
+        "noOpenAiKeyCreatedOrInstalled": true
+      },
+      {
+        "id": "B29-4",
+        "kind": "SERVER_ENFORCED_CLOSED_REPAIR_CI",
+        "currentRulesetPreserved": {
+          "id": 23304085,
+          "rules": [
+            "deletion",
+            "non_fast_forward",
+            "pull_request"
+          ],
+          "modified": false
+        },
+        "proposedAdditionalRuleset": {
+          "name": "CIC Development independent repair gate",
+          "target": "branch",
+          "enforcement": "active",
+          "conditions": {
+            "ref_name": {
+              "include": [
+                "refs/heads/main"
+              ],
+              "exclude": []
+            }
+          },
+          "bypass_actors": [],
+          "rules": [
+            {
+              "type": "required_status_checks",
+              "parameters": {
+                "strict_required_status_checks_policy": true,
+                "do_not_enforce_on_create": false,
+                "required_status_checks": [
+                  {
+                    "context": "AQC independent repair gate",
+                    "integration_id": 15368
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "activateOnlyAfterCheckExistsForMainAndPullRequests": true,
+        "existingRequiredChecksNotRemoved": true,
+        "reporter": "Trusted main-only CI gate, fixed repository/check name/native source and SHA. Candidate code never executes with checks-write or publishing credentials.",
+        "repairScope": {
+          "repository": "profitia/SG-dev",
+          "branchPattern": "sg2/quality-control-<incident UUID>",
+          "classes": [
+            "C1",
+            "C2",
+            "C3"
+          ],
+          "sourcePaths": {
+            "C1": "apps/sg-runtime/lib/assistant/calendar-period.ts",
+            "C2": "apps/sg-runtime/lib/assistant/quality-response.ts",
+            "C3": "apps/sg-runtime/lib/assistant/quality-response.ts"
+          },
+          "regressionPath": "apps/sg-runtime/tests/assistant-quality-regressions/<same incident UUID>.test.ts",
+          "maxFiles": 2,
+          "maxPatchBytes": 32768,
+          "maxChangedLines": 300,
+          "ownerMandateAndIndependentExportRequired": true,
+          "independentVerificationAndNativeArtifactRequired": true,
+          "exactBaseHeadGateAndNonceRequired": true,
+          "agentMayModifyPolicyWorkflowGatesPackagePinsOrExistingTests": false
+        },
+        "implementationAndCountertestsRemainMandatory": true,
+        "initialCi27ScopeNotExpandedByRepairProfile": true,
+        "noAutonomousPromotionActivationByThisDecision": true
+      },
+      {
+        "id": "B29-5",
+        "kind": "SUPPORTED_SCOPED_RENDER_PUBLISHER_ACCESS_AND_SUPPORT_REQUEST",
+        "workspaceId": "tea-d7lps8rbc2fs73cn80dg",
+        "serviceId": "srv-dapa3tid0e5s73f8bc5g",
+        "recipient": {
+          "repository": "profitia/SG-dev",
+          "environment": "aqc-publisher-development",
+          "secretName": "AQC_RENDER_PUBLISHER_API_KEY"
+        },
+        "providerUiObserved": "CLASSIC_ONLY_NO_SCOPES",
+        "supportRequestAuthorisedOnlyOnOwnerGo": true,
+        "supportRequestDraft": "Please enable workspace-scoped API keys for PROFITIA WORKSPACE (tea-d7lps8rbc2fs73cn80dg) on our existing plan. We need Services: Read, Environment variables and secret files: Read & Write, and Deploys: Run for an independent publisher of our existing SG2 Development service srv-dapa3tid0e5s73f8bc5g. Please confirm scope granularity and expiry support. Do not change our plan, create resources or charges, or send credentials in the ticket.",
+        "maximumProviderScopes": [
+          "Services: Read",
+          "Environment variables and secret files: Read & Write",
+          "Deploys: Run"
+        ],
+        "scopeGranularityDisclosure": "Render grants these scopes for resource types across the selected workspace, rather than proving a per-service restriction. The token may therefore access settings of other services in PROFITIA WORKSPACE; the admitted publisher code is fixed to the one SG2 Development service.",
+        "chooseNarrowerPerServiceScopeIfSupported": true,
+        "classicKeyExcluded": true,
+        "cliTokenReuseForPublisherExcluded": true,
+        "noNewServicePlanOrCostApproval": true,
+        "onlySevenExistingPiVersionLeavesMayChange": true,
+        "noOtherSettingsChanged": true,
+        "useOnlyThroughAuthorisedUntil": "2026-11-27T23:59:59.000Z",
+        "revokeAtCompletionOrExpiry": true,
+        "providerUnavailableOrBroaderRequired": "Do not create a classic/broader key or change plan; retain disabled autonomous publishing and continue other approved work."
+      },
+      {
+        "id": "B29-6",
+        "kind": "BOUNDED_INDEPENDENT_READ_ONLY_REVIEW_AGENT",
+        "delegationPermissionRequested": true,
+        "scope": [
+          "accepted public canon",
+          "public source and countertests",
+          "synthetic reference/holdout cases"
+        ],
+        "purpose": "Independent reference and adversarial review before E1-T13; preserve reviewer provenance and exact pack digest.",
+        "secretsOrQaRead": false,
+        "privateCicCodeRead": false,
+        "writes": false,
+        "deployments": false,
+        "paidCicApiRequests": false,
+        "ownerOnlyActions": false,
+        "noSelfSignedReferenceAcceptance": true,
+        "reviewerMayGenerateEphemeralReviewKeyAndReturnPublicAttestation": true,
+        "reviewPrivateKeyExported": false,
+        "reviewerMayInstallTrust": false
+      }
+    ],
+    "costs": {
+      "newResources": false,
+      "newPaidCompute": false,
+      "additionalApprovedInfrastructureEnvelopeUsd": 20,
+      "authorisedUntil": "2026-11-27",
+      "providerHardCap": false,
+      "newModelBudget": false,
+      "modelPilotStarted": false
+    },
+    "safeguards": {
+      "paidRepairsEnabled": false,
+      "promotionEnabled": false,
+      "pilotStarted": false,
+      "fullE1AcceptanceClaimed": false,
+      "e1RepairsCompleted": 0,
+      "stage2Authorised": false,
+      "exactSourceAndResultingMainCiRequired": true,
+      "fresh17InputLinuxQualificationRequired": true,
+      "independentReferenceRequiredBeforeE1T13": true,
+      "originalSpec5Roadmap8Unchanged": true
+    },
+    "approvalRecorded": false,
+    "actionsApplied": false
+  },
+  "latestSourceAndRuntime20261118": {
+    "acceptedMain": "efc1290378507e947cbf9ad0bcfc1e4a71086bb6",
+    "ci27": {
+      "publicSource": "88d36b3f81ba6305e3797510c4f3b1cef3fb56b5",
+      "tree": "c5f5606ae1c6723b87c9c664056b222a9e3e8275",
+      "latestFocusedPass": 50,
+      "nativeGovernancePass": 459,
+      "nativeContractsPass": 2141,
+      "nativeContractsExistingSkip": 1,
+      "nativeFailures": 0,
+      "operationRefusal": "CONTROLLED_VALIDATION_REQUIRED_FOR_EXACT_SHA",
+      "policyActivated": false
+    },
+    "publisherMetadataSource": {
+      "pr": 1211,
+      "source": "e78bdc6aebecefb3e661eff99bb4dd7f5211b3bb",
+      "acceptedMain": "0523b664a4846c99885c7debfa7b5035025b9b3f",
+      "sourceRun": 44400932056,
+      "sourceJob": 135143418362,
+      "resultingMainRun": 44402629436,
+      "resultingMainJob": 135149424633,
+      "packagePass": 205,
+      "qaPass": 12,
+      "fail": 0,
+      "skip": 0,
+      "cloudInstallationsApplied": false
+    },
+    "operationalRecoverySource": {
+      "pr": 1213,
+      "source": "51ef0b7e0473102d51e28bcac7e898da36e271ee",
+      "tree": "a83abbb0e0b62f5867b4f9a20295b4afb17b5cd0",
+      "nativeSourceRun": 44410279116,
+      "nativeSourceJob": 135176251550,
+      "packagePass": 223,
+      "qaPass": 12,
+      "fail": 0,
+      "skip": 0,
+      "qualificationSourceInputs": 17,
+      "freshLinuxQualificationRequired": true,
+      "keysOrOwnerAuthorityInstalled": false,
+      "deployed": false
+    },
+    "worker": {
+      "sourceSha": "b1cda8c4fde31557aac6e89851d6d9293ec768ea",
+      "deployId": "dep-dbv16ut6e07s73adjnt0",
+      "liveAt": "2026-11-18T21:07:41.488725Z",
+      "runtimeObservedAt": "2026-11-18T21:07:45.048Z",
+      "status": "MONITORING_READY",
+      "paidRepairsEnabled": false,
+      "promotionEnabled": false,
+      "pilotStartedAt": null,
+      "acceptanceRepairsCompleted": 0
+    },
+    "hostLastConfirmedSource": "d5eb40a061dd24c5ea65f9f373682179458cb589",
+    "host1099DeploymentPerformed": false,
+    "b28WritesPerformed": false,
+    "controlledQaCaptureReadPerformed": false,
+    "technicalReady": false,
+    "fullE1Acceptance": false,
+    "stage2Started": false
+  },
+  "latestSourceAndRuntime20261119": {
+    "status": "WORKER_LIVE_STANDBY_NOT_PROJECT_TECHNICAL_READY",
+    "deploy": {
+      "commit": {
+        "id": "79cb7cf827e82395f43e630ee9b72436b19b421a"
+      },
+      "id": "dep-dbv6n0ek1f9s73bkgqeg",
+      "createdAt": "2026-11-19T03:22:41.490011Z",
+      "startedAt": "2026-11-19T03:22:41.48772Z",
+      "finishedAt": "2026-11-19T03:23:50.800493Z",
+      "status": "live",
+      "trigger": "api"
+    },
+    "instance": "swtzw",
+    "heartbeat": {
+      "event": "aqc.technical.heartbeat",
+      "schemaVersion": "AQC_TECHNICAL_READINESS_V1",
+      "status": "MONITORING_READY",
+      "sourceSha": "79cb7cf827e82395f43e630ee9b72436b19b421a",
+      "observedAt": "2026-11-19T03:23:53.803Z",
+      "controlStore": "CONNECTED_DISABLED",
+      "nativeLimits": "CONNECTED_DISABLED",
+      "paidRepairsEnabled": false,
+      "promotionEnabled": false,
+      "pilotStartedAt": null,
+      "acceptanceRepairsCompleted": 0,
+      "controllerGitHub": "CONNECTED_STANDBY",
+      "qualificationWorkflow": "CONNECTED_MAIN_ONLY",
+      "renderServiceId": "srv-dbu4ak0ae00c73eaabcg",
+      "providerTimestamp": "2026-11-19T03:23:54.668299886Z"
+    },
+    "rolePreflight": {
+      "event": "aqc.technical.qa.role_preflight",
+      "schemaVersion": "AQC_QA_ROLE_PREFLIGHT_V1",
+      "status": "QA_ROLES_VERIFIED",
+      "qaAuthority": "CONNECTED_ORDINARY_ROLE",
+      "qaEvidence": "CONNECTED_ORDINARY_ROLE",
+      "rawQaReadPerformed": false,
+      "permissionMutationPerformed": false,
+      "checkoutMetadataPresent": true,
+      "gitExecutableAvailable": true,
+      "gitHeadMatchesSource": true,
+      "hostQaCodecPresent": false,
+      "nodeMajorSupported": true,
+      "sourceSha": "79cb7cf827e82395f43e630ee9b72436b19b421a",
+      "observedAt": "2026-11-19T03:23:53.803Z",
+      "providerTimestamp": "2026-11-19T03:23:54.658390013Z"
+    },
+    "retention": {
+      "event": "aqc.technical.metadata_retention",
+      "schemaVersion": "AQC_CONTROL_METADATA_RETENTION_V1",
+      "status": "PURGE_CONFIRMED",
+      "purgePerformed": true,
+      "scope": "CONTROL_METADATA_ONLY",
+      "retentionDays": 90,
+      "observedAt": "2026-11-19T03:23:54.547Z",
+      "sourceSha": "79cb7cf827e82395f43e630ee9b72436b19b421a",
+      "providerTimestamp": "2026-11-19T03:23:54.548242836Z"
+    },
+    "sentry": {
+      "event": "aqc.monitoring.delivery",
+      "provider": "sentry",
+      "status": "ACCEPTED",
+      "httpStatus": 200,
+      "sourceSha": "79cb7cf827e82395f43e630ee9b72436b19b421a",
+      "providerTimestamp": "2026-11-19T03:23:54.704714263Z"
+    },
+    "sourceChecks": {
+      "pr": 1225,
+      "prHead": "a5ce42bc003aae3b18866a12c4dc0de00a81e757",
+      "prRun": 44450371293,
+      "prJob": 135312525072,
+      "resultingMainRun": 44450608836,
+      "resultingMainJob": 135313314936,
+      "packagePass": 285,
+      "qaPass": 12,
+      "fail": 0,
+      "skip": 0
+    },
+    "linux": {
+      "runId": 44450608836,
+      "jobId": 135313573158,
+      "artifactId": 14494499156,
+      "archiveSha256": "27374bf60456f7fe82728e215b6f0a90dcb9d734b097e32236f97147dab51932",
+      "observations": {
+        "schemaVersion": "AQC_LINUX_OBSERVATIONS_V1",
+        "gateSetSha256": "5e430edc1d839c0f33b6576f4fe8dd501a80b5713996f5d30ed5f33aaab03ead",
+        "codexVersion": "0.167.2",
+        "codexArchiveSha256": "8246e846c550ea21197fcc4067bc270dca895e94ea42ed6a282e6f4e0125b15f",
+        "codexBinarySha256": "a9672d0fa0dd8fcf8cad136fa0d056b914bc046f5ac3d78f4a5cf390655af56b",
+        "codeModeHostArchiveSha256": "189475a654d82ca776e08dfef22734106d3e5b2cf21da6e84ec3d974d02c39a6",
+        "codeModeHostBinarySha256": "007c62795a7215c27ee85486ecb95e714b33118a2d18c6d7b09b0d9793c72ff4",
+        "bwrapArchiveSha256": "03cb0d2b151648693e3817c47068773ae4b7327c19fe25eab8c61c4c2865838a",
+        "bwrapBinarySha256": "7df960565a0dece99240ea4b9d0e011307817f9f3b73176c7b71fda44fe84765",
+        "isolationHelperCommit": "13e9c17417b29e9a276f73ec6ed7fb574137d3c3",
+        "fileIsolation": "PASS",
+        "networkIsolation": "PASS",
+        "privilegeIsolation": "PASS",
+        "toolLoop": "PASS",
+        "cancellation": "PASS",
+        "noProviderRequests": true,
+        "requestCount": 4,
+        "settledCount": 4,
+        "runId": "44450608836",
+        "sourceSha": "79cb7cf827e82395f43e630ee9b72436b19b421a",
+        "nonce": "4d44b052-025d-4960-910b-750121703f9f",
+        "verifiedAt": "2026-11-19T03:21:33.337Z",
+        "testKeysInstalled": false,
+        "realCostAuthorityUsed": false,
+        "independentVerifier": {
+          "status": "PASS",
+          "classes": [
+            "C1",
+            "C2",
+            "C3"
+          ],
+          "typedResults": 6,
+          "fileIsolation": "PASS",
+          "networkIsolation": "PASS",
+          "privilegeIsolation": "PASS",
+          "timeout": "PASS",
+          "cancellation": "PASS",
+          "cgroupEmpty": true,
+          "nodeSha256": "904a6d3484241d466989f9df9ba3aab822b1496191bdb28230eb491a55c32a52",
+          "noProviderRequests": true,
+          "rawQaPayloadIncluded": false,
+          "testKeysInstalled": false,
+          "baseline": {
+            "status": "PASS",
+            "typedResults": 9,
+            "sourceMode": "UNCHANGED_GIT_BASELINE",
+            "classes": [
+              "C1",
+              "C2",
+              "C3"
+            ],
+            "nativeOperationalInvocationVerified": false,
+            "fullPrivateCic18Qualification": false,
+            "noProviderRequests": true,
+            "rawQaPayloadIncluded": false,
+            "testKeysInstalled": false
+          }
+        }
+      },
+      "policyFiles": 19,
+      "productionTrustInstalled": false,
+      "fullPrivateCic18Qualification": false
+    },
+    "lastKnownGood": {
+      "sourceSha": "7050bd84c6f69bef7b29d232963bc164104fa87d",
+      "deployId": "dep-dbv5263m8hqs738vosvg"
+    },
+    "configurationChanged": false,
+    "sqlOrRolesChanged": false,
+    "workflowOrTrustActivated": false,
+    "automaticDeploysEnabled": false,
+    "technicalReady": false,
+    "e1Repairs": 0,
+    "paidRepairs": false,
+    "promotion": false,
+    "pilotStarted": false,
+    "stage2Started": false,
+    "b29Approved": true,
+    "previousImmutableRecordRef": "https://github.com/profitia/SG-dev/blob/1af31b58dd1fa75d247676876fe6d508b40b0d71/Canon/evidence/2026-11-17-cic-quality-development-owner-package.json",
+    "posthog": {
+      "projectId": 329829,
+      "event": "cic_quality_technical_heartbeat",
+      "sourceSha": "79cb7cf827e82395f43e630ee9b72436b19b421a",
+      "observedCount": 1,
+      "since": "2026-11-19T03:22:40Z",
+      "aggregateOnly": true,
+      "identityOrQaReadPerformed": false
+    },
+    "host": {
+      "sourceSha": "d5eb40a061dd24c5ea65f9f373682179458cb589",
+      "deployId": "dep-dbul4gdckfvc73chhgk0",
+      "hostIntegrationRolledOut": false,
+      "controlledQaCaptureOrReadPerformed": false
+    },
+    "historyAndBaseline": {
+      "pr": 1221,
+      "head": "95e90c7b0d23ea02ee464e643c276ecdf728b36b",
+      "mergeSha": "ee876bfbcae88d6a174a65ecfeb34a4008a1db28",
+      "sourceRun": 44447569261,
+      "sourceJob": 135303331784,
+      "packagePass": 277,
+      "qaPass": 12,
+      "linuxRun": 44447825697,
+      "linuxJob": 135304540663,
+      "artifactId": 14493782319,
+      "archiveSha256": "5aa180f59f0b38ec4894c5e36e9e79701e55099d9b0db5f5375bf483117ee553",
+      "merged": true,
+      "deployed": true,
+      "operationalDispatchActivated": false
+    },
+    "closedPhaseComposition": {
+      "pr": 1225,
+      "mergeSha": "79cb7cf827e82395f43e630ee9b72436b19b421a",
+      "sourceTree": "c7eee14a72f1acc043a5fdf67ed7ea695cd58b18",
+      "closedVerifierPhases": [
+        "QUALIFY",
+        "REPRODUCE",
+        "VERIFY"
+      ],
+      "executorResultRequiresRealStoppedProcess": true,
+      "fullIndependentVerificationRequiresBothSameRunArtifacts": true,
+      "nativeOperationalInvocationDemonstrated": false,
+      "independentPublisherEndToEndReady": false
+    },
+    "lastSharedHostIntegration": {
+      "sourceSha": "7050bd84c6f69bef7b29d232963bc164104fa87d",
+      "run": 44433645300,
+      "integrationRun": 44432722722,
+      "result": "SUCCESS",
+      "doesNotClaimNewHostCic18Rollout": true
+    },
+    "recordedAt": "2026-11-19T08:37:53.000Z",
+    "currentAcceptedSource": {
+      "pr": 1240,
+      "sourceSha": "34aafbb6a32cd0593094fd0d99dea7c999cbf31a",
+      "head": "dbf23ea78ec8f284f6449e3f298c2544d87988b7",
+      "sourceRun": 44483384508,
+      "sourceJob": 135420796773,
+      "resultingMainRun": 44483661936,
+      "resultingMainGovernanceRun": 44483661924,
+      "packagePass": 309,
+      "qaPass": 12,
+      "fail": 0,
+      "skip": 0,
+      "deployed": false,
+      "linuxRun": 44483720650,
+      "linuxJob": 135422285447,
+      "artifactId": 14509448543,
+      "archiveSha256": "54f676c71b872ab38966f14914bdf93caa4d8e771e3e4d41156075c693736cb8",
+      "gateSetSha256": "f5b2fa6ca9af67b5a19167c9f8c8b88ad872f39c613cdbdd72de6ef2132f40e7",
+      "policyFiles": 21,
+      "originalArtifactAndNativeIdentityIndependentlyVerified": true,
+      "gitPolicyFilesIndependentlyRehashed": true,
+      "nativeOperationalInvocationVerified": false,
+      "fullPrivateCic18Qualification": false,
+      "productionTrustInstalled": false
+    },
+    "wholeAqcTreeAtRelease": "b64c53fd1d2318a296b4bf36e1c405794bc9a1c5",
+    "ci27Preparation": {
+      "pr": 1197,
+      "head": "25e76c39b2f6d78ea932fbe1c2abad6d83ec765f",
+      "baseSha": "eea2077923f0fbed07d592e33e1f827f3a4431c7",
+      "localSharedPass": 363,
+      "nativeRun": 44457270855,
+      "nativeJob": 135335236737,
+      "contractPass": 2141,
+      "existingContractSkip": 1,
+      "governancePass": 459,
+      "publicProofJob": 135335237652,
+      "publicProofResult": "CONTROLLED_VALIDATION_REQUIRED_FOR_EXACT_SHA",
+      "policyActivated": false
+    },
+    "hostIntegrationCandidate": {
+      "pr": 1099,
+      "head": "d22df66fc0c181211d6862a7facaa2d096c75cff",
+      "baseSha": "eea2077923f0fbed07d592e33e1f827f3a4431c7",
+      "originalPostimagesPreserved": 27,
+      "sourceTests": 29,
+      "functionalSyntheticTests": 77,
+      "cicVersion": "1.8.0",
+      "postgresVersion": "16.16",
+      "nativeIntegrationRun": 44456187621,
+      "failedArchitectureJob": 135331648711,
+      "failedIdentityJob": 135331649948,
+      "failedNewsfeedJob": 135331648805,
+      "actualFailure": "SDK predecessor selected pre-Knowledge private-recurring source",
+      "actualSourceDigest": "f89a8527e2ffda7531a2dae4be3202b0a267e093591a8dec610cb13e114dd3a9",
+      "expectedSourceDigest": "4c5b2906f8d2fee2593fe02c3dbc7ec4e64ca594f7b19559dd9d41140a45427b",
+      "hostRolledOut": false,
+      "qaCaptureOrReadPerformed": false
+    },
+    "sdkCorrectionReview": {
+      "sha": "bf12f9cb20b93ce8edc8a5aca36e28000955d8f3",
+      "tree": "75e0db28564ea042c00ba1430a92e1c6bb39e31c",
+      "parent": "d22df66fc0c181211d6862a7facaa2d096c75cff",
+      "diffSha256": "9b40740bbaae577061512da5b0409dca3e9f8542cbcbadc717af9393572d28fd",
+      "files": [
+        {
+          "path": "apps/sg-runtime/assistant-quality-host-integration.json",
+          "sha": "01a00cff59936cf024f2efa8522628a2449cd20b",
+          "sha256": "bc9cd5794bb05895182162c6e6e09149c466888e09bb81fea919cd0be92d3906"
+        },
+        {
+          "path": "apps/sg-runtime/tests/assistant-ecr-integrity.mjs",
+          "sha": "c1217939ae23ea31d3837757924106a0a75180e9",
+          "sha256": "c6e32397b7c54384b73b1f2539fa7289ba0e967ae53c9b2d23efd75b421a1174"
+        },
+        {
+          "path": "apps/sg-runtime/tests/assistant-quality-host-integrity.mjs",
+          "sha": "b911cd7676826848c24093f6c0ac12d1900573ae",
+          "sha256": "b73a173bf38f61dfe81975b13853664e779fb7152a7512f1568128b477e4ccd3"
+        },
+        {
+          "path": "apps/sg-runtime/tests/assistant-quality-host-integrity.test.mjs",
+          "sha": "0121bed18260c597e1a6ed1591830caf368461f8",
+          "sha256": "52578d57bb211e1b0028248778184546b671d43b6196fa319ef86560b4edf830"
+        }
+      ],
+      "tests": {
+        "pass": 33,
+        "fail": 0,
+        "skip": 0
+      },
+      "reviewOnly": true,
+      "activePr1099Changed": false
+    },
+    "sdkMetadataReview": {
+      "sha": "5c6b0e890485d1af72716e3580d2ef14e86c855a",
+      "tree": "a347446b978061794e02bff875fae7d702adb87d",
+      "parent": "25e76c39b2f6d78ea932fbe1c2abad6d83ec765f",
+      "diffSha256": "1d8c99cbf8f7c71a0f1487a5c12333f93f4c2d00b3e1da8995c0087c4bdba5e5",
+      "files": [
+        {
+          "path": "scripts/governance/controlled-package-ci.mjs",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "39e5fa58f85e8a10b11288e74fd9adbe3f3bc70f",
+          "sha256": "ab9cfd752a9345e125381e087da4b40dcf20169ba58ddfdc05a9f7092087aaf6",
+          "bytes": 1534600
+        },
+        {
+          "path": "scripts/governance/assistant-quality-ci25.test.mjs",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "6e4d865155277ec97993cdfb2f3b8cbf91f4cd63",
+          "sha256": "7b7b0ca6c82cf1b736b1d721b9eb414540236ec8c84d8e2b9dcb31648976c2e8",
+          "bytes": 21475
+        }
+      ],
+      "inputCount": 532,
+      "retainedReceipts": 42,
+      "coverageRecords": 5,
+      "hostInventory": 27,
+      "policyLogicChanged": false,
+      "reviewOnly": true,
+      "activePr1197Changed": false,
+      "tests": {
+        "pass": 363,
+        "fail": 0,
+        "skip": 0,
+        "durationMs": 570298.603676
+      },
+      "fullSharedSuiteVerified": true
+    },
+    "catalogReadOnlyCheck": [
+      {
+        "checked_at": "2026-11-19T04:48:13.508Z",
+        "database_name": "platform_private",
+        "publisher_role_exists": false,
+        "publisher_schema_exists": false,
+        "qa_authority_installed": true,
+        "qa_role_metadata": {
+          "inherit": false,
+          "can_login": true,
+          "superuser": false,
+          "bypass_rls": false,
+          "valid_until": "2026-11-27T23:59:59+00:00",
+          "connection_limit": 3
+        }
+      },
+      {
+        "checked_at": "2026-11-19T04:48:18.530Z",
+        "database_name": "neondb",
+        "publisher_role_exists": false,
+        "publisher_schema_exists": false,
+        "qa_evidence_installed": true,
+        "qa_role_metadata": {
+          "inherit": false,
+          "can_login": true,
+          "superuser": false,
+          "bypass_rls": false,
+          "valid_until": "2026-11-27T23:59:59+00:00",
+          "connection_limit": 3
+        }
+      }
+    ],
+    "runtimeProviderRecheck": {
+      "workerSourceSha": "79cb7cf827e82395f43e630ee9b72436b19b421a",
+      "workerDeploy": "dep-dbv6n0ek1f9s73bkgqeg",
+      "workerStatus": "live",
+      "hostSourceSha": "d5eb40a061dd24c5ea65f9f373682179458cb589",
+      "hostDeploy": "dep-dbul4gdckfvc73chhgk0",
+      "hostStatus": "live",
+      "workerAutoDeploy": false,
+      "hostAutoDeploy": false,
+      "configurationChanged": false,
+      "recordedAt": "2026-11-19T08:37:53.000Z",
+      "checkedOn": "2026-11-19"
+    },
+    "publisherInstallations": {
+      "status": "INSTALLED_DISABLED_NATIVE_LOGIN_VERIFIED",
+      "acceptedSourceSha": "68d2a0ed6aae482bd4aea9cbb5604ed7607057ec",
+      "migrationSha256": [
+        {
+          "profile": "canonical",
+          "sha256": "5c4b926f473ce2f6efb2135c12a220d3d26839184123fdcce1461e0baa005632"
+        },
+        {
+          "profile": "product",
+          "sha256": "9b309f09f1c99e2c6213816a048903791fa8a86ea2cbecf11c8d01854c66114d"
+        }
+      ],
+      "catalogs": [
+        {
+          "checked_at": "2026-11-19T05:43:47.813Z",
+          "database_name": "platform_private",
+          "can_set_owner": false,
+          "membership": [
+            {
+              "oid": 24577,
+              "set": false,
+              "admin": true,
+              "grantor": "cloud_admin",
+              "inherit": false
+            },
+            {
+              "oid": 139949,
+              "set": false,
+              "admin": false,
+              "grantor": "neondb_owner",
+              "inherit": false
+            }
+          ],
+          "role_metadata": {
+            "inherit": false,
+            "can_login": false,
+            "superuser": false,
+            "bypass_rls": false,
+            "create_role": false,
+            "replication": false,
+            "valid_until": "2026-11-27T23:59:59+00:00",
+            "create_database": false,
+            "connection_limit": 2
+          },
+          "publisher_memberships": 0,
+          "schema_owner": "profitia_access_owner",
+          "table_count": 2,
+          "direct_table_access": false,
+          "functions": [
+            {
+              "name": "quality_deployment_cas",
+              "owner": "profitia_access_owner",
+              "configuration": [
+                "search_path=pg_catalog"
+              ],
+              "public_execute": false,
+              "security_definer": true,
+              "publisher_execute": true
+            },
+            {
+              "name": "quality_deployment_cas_status",
+              "owner": "profitia_access_owner",
+              "configuration": [
+                "search_path=pg_catalog"
+              ],
+              "public_execute": false,
+              "security_definer": true,
+              "publisher_execute": true
+            }
+          ]
+        },
+        {
+          "checked_at": "2026-11-19T05:43:53.830Z",
+          "database_name": "neondb",
+          "can_set_owner": false,
+          "membership": [
+            {
+              "oid": 1032383,
+              "set": false,
+              "admin": true,
+              "grantor": "cloud_admin",
+              "inherit": false
+            },
+            {
+              "oid": 1033965,
+              "set": false,
+              "admin": false,
+              "grantor": "neondb_owner",
+              "inherit": false
+            }
+          ],
+          "role_metadata": {
+            "inherit": false,
+            "can_login": false,
+            "superuser": false,
+            "bypass_rls": false,
+            "create_role": false,
+            "replication": false,
+            "valid_until": "2026-11-27T23:59:59+00:00",
+            "create_database": false,
+            "connection_limit": 2
+          },
+          "publisher_memberships": 0,
+          "schema_owner": "profitia_ingestion_owner",
+          "table_count": 2,
+          "direct_table_access": false,
+          "functions": [
+            {
+              "name": "quality_deployment_cas",
+              "owner": "profitia_ingestion_owner",
+              "configuration": [
+                "search_path=pg_catalog"
+              ],
+              "public_execute": false,
+              "security_definer": true,
+              "publisher_execute": true
+            },
+            {
+              "name": "quality_deployment_cas_status",
+              "owner": "profitia_ingestion_owner",
+              "configuration": [
+                "search_path=pg_catalog"
+              ],
+              "public_execute": false,
+              "security_definer": true,
+              "publisher_execute": true
+            }
+          ]
+        }
+      ],
+      "rolesNowLogin": true,
+      "connectionLimit": 2,
+      "credentialsInstalledOnlyTo": "aqc-publisher-development",
+      "canonicalConnectOnlyAdded": true,
+      "otherDatabaseAclPreserved": true,
+      "nativeTlsVerifiedProfiles": 2,
+      "publishingEnabled": false,
+      "recoveryEnabled": true,
+      "sourceBindingsSha": "d5eb40a061dd24c5ea65f9f373682179458cb589",
+      "operationsPerformed": 0,
+      "rawQaReadPerformed": false,
+      "existingOwnerMembershipsExactlyRestored": true,
+      "firstPreparedProtocolRefusalFullyRolledBack": true
+    },
+    "githubRoleEnvironments": {
+      "status": "CREATED_MAIN_ONLY_VERIFIED",
+      "names": [
+        "aqc-executor-development",
+        "aqc-verifier-development",
+        "aqc-publisher-development",
+        "aqc-ci-gate-development"
+      ],
+      "publisherConnectionSecretsInstalled": 2,
+      "mainRulesetChanged": false,
+      "requiredIndependentGateActive": false,
+      "roleSigningKeysInstalled": true,
+      "roleSigningKeys": [
+        {
+          "role": "OWNER_OFFLINE",
+          "keyId": "2fcd9912076daee1a87a36e8e39af2d88f110d7713b57ee4d0e20c27912511ce",
+          "recipient": null,
+          "secretName": null,
+          "installed": false
+        },
+        {
+          "role": "EXECUTOR_SUPERVISOR",
+          "keyId": "98d32499264e31383268521780f96c7a9906751f13cc80900331d67659b76501",
+          "recipient": "aqc-executor-development",
+          "secretName": "AQC_EXECUTOR_SUPERVISOR_PRIVATE_KEY",
+          "installed": true
+        },
+        {
+          "role": "INDEPENDENT_VERIFIER",
+          "keyId": "abdf3d827bcfb257ddc4a380395f1af5c7454b8f7bd58898648217e1d253fbcb",
+          "recipient": "aqc-verifier-development",
+          "secretName": "AQC_INDEPENDENT_VERIFIER_PRIVATE_KEY",
+          "installed": true
+        },
+        {
+          "role": "INDEPENDENT_PUBLISHER",
+          "keyId": "d340e3332f2b6d40789de0220d1428259d9262e6b028cb1f14ab5e3adbf13ade",
+          "recipient": "aqc-publisher-development",
+          "secretName": "AQC_INDEPENDENT_PUBLISHER_PRIVATE_KEY",
+          "installed": true
+        },
+        {
+          "role": "RUNTIME_OBSERVER_PENDING",
+          "keyId": "3257f16c866aad070fdd19ab0b7691af8211f1652ff0542c652d6655aafdf758",
+          "recipient": "srv-dbu4ak0ae00c73eaabcg",
+          "secretName": "AQC_RUNTIME_OBSERVER_PRIVATE_KEY",
+          "installed": false
+        }
+      ],
+      "publicTrustInstalled": false,
+      "ownerMandateSigned": false,
+      "publisherTotalSecretsInstalled": 4,
+      "existingBrokerCredentialsInstalledOnlyTo": "aqc-executor-development",
+      "executorTotalSecretsInstalled": 3,
+      "brokerKeyOrPasswordRotated": false
+    },
+    "renderPublisherAccess": {
+      "status": "SCOPED_KEY_CREATED_INSTALLED_READ_ONLY_VERIFIED",
+      "workspaceId": "tea-d7lps8rbc2fs73cn80dg",
+      "serviceId": "srv-dapa3tid0e5s73f8bc5g",
+      "environment": "aqc-publisher-development",
+      "secretName": "AQC_RENDER_PUBLISHER_API_KEY",
+      "providerScopeGroups": [
+        "Services:Read",
+        "Environment variables and secret files:Read&Write",
+        "Deploys:Run"
+      ],
+      "otherScopeGroupsEnabled": false,
+      "savedUiScopesRechecked": true,
+      "servicesGetStatus": 200,
+      "deploysGetStatus": 200,
+      "tlsVerified": true,
+      "environmentReadPerformed": false,
+      "mutationPerformed": false,
+      "transitFileRemoved": true,
+      "authorisedUntil": "2026-11-27T23:59:59.000Z",
+      "providerExpiryConfigured": false,
+      "revokeAtCompletionOrExpiryRequired": true,
+      "classicKeyUsed": false,
+      "cliTokenReused": false,
+      "supportResolved": true,
+      "earlierUnavailableDiagnosisCorrected": "DOM text included an inactive wizard step; visual inspection and selecting workspace revealed supported controls",
+      "newPlanResourceOrCost": false
+    },
+    "referenceReview": {
+      "reviewer": "independent_reference_review",
+      "status": "NEEDS_REVISION",
+      "cases": 240,
+      "unknownLabels": 27,
+      "criticalUnknown": 4,
+      "signedAcceptedAttestation": false,
+      "trustInstalled": false,
+      "calibrationAccepted": false
+    },
+    "sharedCiCoordination": {
+      "channel": "authorised ECR technical coordination",
+      "generalMainWindowReleased": true,
+      "rootPolicyMain": "7b9815e615be817982d0e8dd072426b69d694da7",
+      "rootPolicyResultingMainRun": 44475309238,
+      "actualSdk138Source267FullMainWitnessStillRequired": true,
+      "heldPaths": [
+        "scripts/governance/controlled-package-ci.mjs",
+        "scripts/governance/controlled-package-ci-path-coverage.test.mjs"
+      ],
+      "allOtherApprovedWorkContinues": true,
+      "noHostDeploymentPerformed": true,
+      "latestPreservedParallelMain": "33f0013a11e763e36487d36f99647e71a1311d61",
+      "latestParallelChange": "SRM DEC24 approval and recovered PHR; not SDK fullMain witness"
+    },
+    "publisherReadinessPreparation": {
+      "pr": 1237,
+      "sourceSha": "394ad2cc87d0d5ba95f65f084c8ca8d62e425654",
+      "sourceTree": "e15d9bfba14a526294d7ccb8a781ddc960202006",
+      "sourceFiles": [
+        {
+          "path": "packages/assistant-quality-control/src/publisher-readiness.mjs",
+          "sha": "17adade957c6533bae3ff844292bcc8b72c26d46",
+          "sha256": "dd959fa67039a1b0b5f0e2c55caad511d33947c2d6230c77435a004c64acdf27",
+          "bytes": 12891,
+          "mode": "100644",
+          "type": "blob"
+        },
+        {
+          "path": "packages/assistant-quality-control/test/publisher-readiness.test.mjs",
+          "sha": "79db0c7bd9081bada6b9230a0abb619ce6479bf7",
+          "sha256": "1762e6ba672ba681eb5dfe017e1168b7030d8759ea9117a8e7273e804e3ff4a5",
+          "bytes": 15632,
+          "mode": "100644",
+          "type": "blob"
+        },
+        {
+          "path": "packages/assistant-quality-control/src/cli.mjs",
+          "sha": "8563a94b357acd0d73d0817a4705b51f41c7ca68",
+          "sha256": "e4b65f5cb40d7210b8f8bb2a346ef25111eade0d8610dfe25daf9dd633f37bde",
+          "bytes": 31800,
+          "mode": "100644",
+          "type": "blob"
+        },
+        {
+          "path": "packages/assistant-quality-control/src/acceptance.mjs",
+          "sha": "41a7bfa2b34d1432d24dfb8233d43e8dd0fb29f6",
+          "sha256": "53811ae798dd609be79584916cb3c83760e60ae64f96307841d89dfc8dd638c5",
+          "bytes": 25969,
+          "mode": "100644",
+          "type": "blob"
+        },
+        {
+          "path": ".github/workflows/assistant-quality-repair.yml",
+          "sha": "f44c3cf0bba4564420426192d8f26091362c2a0d",
+          "sha256": "26647b756a2647d96a8c85d03582197fbeee3157607a03c9656ff82197839f6e",
+          "bytes": 8163,
+          "mode": "100644",
+          "type": "blob"
+        }
+      ],
+      "sourceCiRun": 44475389813,
+      "sourceCiJob": 135394572554,
+      "actualCiMergeBase": "7b9815e615be817982d0e8dd072426b69d694da7",
+      "aqcPass": 307,
+      "qaPass": 12,
+      "fail": 0,
+      "skip": 0,
+      "nativePostgresProfiles": 2,
+      "nativeAclCounterexamples": 28,
+      "independentSourceReview": {
+        "reviewer": "independent_reference_review",
+        "sourceSha": "394ad2cc87d0d5ba95f65f084c8ca8d62e425654",
+        "paths": 5,
+        "earlierFindings": 3,
+        "remainingFindings": 0,
+        "reviewerExecutedTests": false,
+        "referenceApproved": false,
+        "operationalAcceptance": false
+      },
+      "sourceNotYetMerged": false,
+      "nativeMainPreflightExecuted": true,
+      "qualificationFiles": 21,
+      "newExactMainLinuxQualificationRequired": false,
+      "releaseOrCostAuthority": false,
+      "mergeSha": "42d089592233d4d70f667f92c5583c2d665f60f7",
+      "finalHead": "551f3a163780df68da0d5066f74c469a4039adbd",
+      "finalSourceRun": 44476300565,
+      "finalSourceJob": 135397575485,
+      "resultingMainSourceRun": 44477066454,
+      "resultingMainGovernanceRun": 44477066464,
+      "linux21": {
+        "sourceSha": "42d089592233d4d70f667f92c5583c2d665f60f7",
+        "runId": 44477355477,
+        "jobId": 135401469784,
+        "artifactId": 14506494063,
+        "archiveSha256": "79d5f8a2c507e50283250c70c5f4a2c823d36d5670c70979b7e94b90c8754e63",
+        "observations": {
+          "schemaVersion": "AQC_LINUX_OBSERVATIONS_V1",
+          "gateSetSha256": "2b3727df84d20f6a40fcdd0b3f87da1266811baa4c4c3ea64301f331e8f7796e",
+          "codexVersion": "0.167.2",
+          "codexArchiveSha256": "8246e846c550ea21197fcc4067bc270dca895e94ea42ed6a282e6f4e0125b15f",
+          "codexBinarySha256": "a9672d0fa0dd8fcf8cad136fa0d056b914bc046f5ac3d78f4a5cf390655af56b",
+          "codeModeHostArchiveSha256": "189475a654d82ca776e08dfef22734106d3e5b2cf21da6e84ec3d974d02c39a6",
+          "codeModeHostBinarySha256": "007c62795a7215c27ee85486ecb95e714b33118a2d18c6d7b09b0d9793c72ff4",
+          "bwrapArchiveSha256": "03cb0d2b151648693e3817c47068773ae4b7327c19fe25eab8c61c4c2865838a",
+          "bwrapBinarySha256": "7df960565a0dece99240ea4b9d0e011307817f9f3b73176c7b71fda44fe84765",
+          "isolationHelperCommit": "13e9c17417b29e9a276f73ec6ed7fb574137d3c3",
+          "fileIsolation": "PASS",
+          "networkIsolation": "PASS",
+          "privilegeIsolation": "PASS",
+          "toolLoop": "PASS",
+          "cancellation": "PASS",
+          "noProviderRequests": true,
+          "requestCount": 4,
+          "settledCount": 4,
+          "runId": "44477355477",
+          "sourceSha": "42d089592233d4d70f667f92c5583c2d665f60f7",
+          "nonce": "55f0ea28-a08e-4489-a30e-ca4eb545b603",
+          "verifiedAt": "2026-11-19T07:10:44.462Z",
+          "testKeysInstalled": false,
+          "realCostAuthorityUsed": false,
+          "independentVerifier": {
+            "status": "PASS",
+            "classes": [
+              "C1",
+              "C2",
+              "C3"
+            ],
+            "typedResults": 6,
+            "fileIsolation": "PASS",
+            "networkIsolation": "PASS",
+            "privilegeIsolation": "PASS",
+            "timeout": "PASS",
+            "cancellation": "PASS",
+            "cgroupEmpty": true,
+            "nodeSha256": "904a6d3484241d466989f9df9ba3aab822b1496191bdb28230eb491a55c32a52",
+            "noProviderRequests": true,
+            "rawQaPayloadIncluded": false,
+            "testKeysInstalled": false,
+            "baseline": {
+              "status": "PASS",
+              "typedResults": 9,
+              "sourceMode": "UNCHANGED_GIT_BASELINE",
+              "classes": [
+                "C1",
+                "C2",
+                "C3"
+              ],
+              "nativeOperationalInvocationVerified": false,
+              "fullPrivateCic18Qualification": false,
+              "noProviderRequests": true,
+              "rawQaPayloadIncluded": false,
+              "testKeysInstalled": false
+            }
+          }
+        },
+        "originalArtifactIndependentlyVerified": true,
+        "gitPolicyFilesIndependentlyRehashed": 21,
+        "productionTrustInstalled": false
+      },
+      "nativePublisherPreflight": {
+        "archiveSha256": "3009fb58170db1302aeb335f8abf514d9ccd40b06f484021884a82935bd997b4",
+        "observations": {
+          "schemaVersion": "AQC_PUBLISHER_PREFLIGHT_V1",
+          "status": "PUBLISHER_CONNECTED_DISABLED",
+          "hostSourceSha": "d5eb40a061dd24c5ea65f9f373682179458cb589",
+          "profilesVerified": 2,
+          "bindingsVerified": 6,
+          "publishingEnabled": false,
+          "recoveryEnabled": true,
+          "updatedBindings": 0,
+          "rawQaReadPerformed": false,
+          "permissionMutationPerformed": false,
+          "sourceSha": "42d089592233d4d70f667f92c5583c2d665f60f7",
+          "runId": "44478494012",
+          "nonce": "ccc19f30-42c7-42e6-8257-cab829b8bbe7",
+          "observedAt": "2026-11-19T07:19:50.613Z",
+          "nativeOperationalInvocationVerified": false,
+          "paidRepairsEnabled": false,
+          "promotionEnabled": false
+        },
+        "artifactIndependentlyVerified": true,
+        "runId": 44478494012,
+        "jobId": 135405431203,
+        "artifactId": 14507387043
+      }
+    },
+    "publisherPostInstallAclRechecks": [
+      {
+        "acl": {
+          "profile": "canonical",
+          "can_delegate_schema": false,
+          "column_access": false,
+          "can_delegate_functions": false
+        },
+        "ownership": {
+          "profile": "canonical",
+          "schema_owner_matches": true,
+          "table_owners_match": true
+        }
+      },
+      {
+        "acl": {
+          "profile": "product",
+          "can_delegate_schema": false,
+          "column_access": false,
+          "can_delegate_functions": false
+        },
+        "ownership": {
+          "profile": "product",
+          "schema_owner_matches": true,
+          "table_owners_match": true
+        }
+      }
+    ],
+    "executorBrokerContractCorrection": {
+      "status": "MERGED_SOURCE_AND_MAIN_CI_PASS_FRESH_LINUX21_VERIFIED_NOT_DEPLOYED",
+      "originalProblem": "Native executor called STATUS reserved by original SQL005 for controller; no paid EXECUTE was performed",
+      "fix": "Fixed ordinary broker role exposes only its seven original SQL operations and does not request STATUS",
+      "localCommit": "305fd020",
+      "sourceFiles": 2,
+      "originalTestBodiesRetained": 8,
+      "newOriginalSqlLoopbackTests": 2,
+      "pass": 309,
+      "qaPass": 12,
+      "fail": 0,
+      "skip": 0,
+      "nativeCiRequired": false,
+      "resultingMainCiRequired": false,
+      "freshChangedPolicyLinuxQualificationRequired": false,
+      "sqlGrantRoleOrBudgetChanged": false,
+      "providerRequests": false,
+      "realPilotStarted": false,
+      "modelCredentialInstalled": false
+    },
+    "nativeRoleRuntimePreparation": {
+      "pr": 1243,
+      "sourceSha": "1b7ff1953f7f9b01f8de5383c48b575a908a69d2",
+      "nativeSourceRun": 44488316212,
+      "nativeSourceJob": 135437253849,
+      "actualCiMergeBase": "33f0013a11e763e36487d36f99647e71a1311d61",
+      "packagePass": 319,
+      "qaPass": 12,
+      "fail": 0,
+      "skip": 0,
+      "sourceNotYetMerged": true,
+      "nativeOperationalJobsDispatched": false,
+      "earlierCompleteJobBodiesByteIdentical": 3,
+      "declaredInputs": 10,
+      "workflowJobs": 7,
+      "policyFiles": 22,
+      "qualificationOrigin": "Existing native real run plus original ZIP verified before independent signature",
+      "qualificationHorizonRenewed": false,
+      "independentSourceReview": {
+        "reviewer": "independent_reference_review",
+        "sourceSha": "1b7ff1953f7f9b01f8de5383c48b575a908a69d2",
+        "earlierBlockers": 3,
+        "remainingFindings": 0,
+        "reviewerExecutedTests": false,
+        "referenceApproved": false,
+        "operationalAcceptance": false
+      },
+      "fixedBlockers": [
+        "root checkout ownership without Git security relaxation",
+        "historical base objects through full role checkout history",
+        "same encrypted secret bounded gzip envelope retaining original pack digest"
+      ],
+      "holdoutStorage": {
+        "schemaVersion": "AQC_HOLDOUT_STORAGE_V1",
+        "secretRecipientUnchanged": true,
+        "maximumSecretBytes": 49152,
+        "maximumUncompressedBytes": 1048576,
+        "independentReferenceAcceptanceStillRequired": true
+      },
+      "rawQaReadPerformed": false,
+      "paidExecutorWorkflowReceivesPrivateCredentials": false,
+      "paidRepairsEnabled": false,
+      "promotionEnabled": false,
+      "fullPublisherRuntimeWiring": false,
+      "publicTrustInstalled": false,
+      "freshLinux22RequiredBeforeUse": true
+    },
+    "nativeTimestampAndHostRefresh": {
+      "recordedAt": "2026-11-19T10:00:00.000Z",
+      "sourceMerge": {
+        "pr": 1246,
+        "head": "77c9de79e8ba583c58ac4a0c7ef9988a7f96303d",
+        "main": "b7124509574ca5bbcac6bbff61c49c560b87b75b",
+        "nativeSourceRun": 44500758008,
+        "nativeSourceJob": 135479591078,
+        "tests": {
+          "aqc": 323,
+          "qa": 12,
+          "fail": 0,
+          "skip": 0
+        },
+        "independentReview": "NO_FINDINGS",
+        "resultingMainSourceRun": 44501227893,
+        "resultingMainConclusion": "success"
+      },
+      "nativeRuntimeMerge": {
+        "pr": 1243,
+        "main": "89c97892625596f5b115863a45a2c1f725c7b935",
+        "sourceRun": 44489573845,
+        "governanceRun": 44489573826,
+        "resultingMainRuns": [
+          44490120117,
+          44490120113
+        ],
+        "tests": {
+          "aqc": 319,
+          "qa": 12,
+          "governance": [
+            77,
+            74
+          ]
+        },
+        "allRequiredRunsSuccessful": true
+      },
+      "publicTrust": {
+        "approvedDecision": "B29-3",
+        "environments": 4,
+        "createdVariables": 12,
+        "updatedVariables": 0,
+        "readbackHashesVerified": 12,
+        "fields": [
+          "AQC_OWNER_PUBLIC_KEYS_JSON",
+          "AQC_PHASE_PUBLIC_KEYS_JSON",
+          "AQC_CONTROLLER_WORKFLOW_SHA256"
+        ],
+        "workflowSha256": "6621c7ea1ae47dc787b92eaa97e64d75fa525a5290525deb8c3b3ecfe67ddce8",
+        "privateKeysRotated": false,
+        "ownerContextsInstalled": false,
+        "workerPublicTrustInstalled": false
+      },
+      "linux": {
+        "lastVerifiedSource": "304bcf1a2668d3bc36ff792315bc903184447bb5",
+        "runId": 44496443034,
+        "artifactId": 14514219333,
+        "archiveSha256": "a91e7db7bceb70c5a12fab350e4a861aa7b3802a13c651b626c6189b83b15f8d",
+        "files": 22,
+        "gateSetSha256": "75d84602c1fa0964822116bdb409d9547f7a6c7ff9bb5f387a3e7f7aa7328804",
+        "originalZipAndNativeIdentityAndGitFilesVerified": true,
+        "nativeOperationalInvocationVerified": false,
+        "freshQualificationForTimestampFix": {
+          "runId": 44501318545,
+          "sourceSha": "b7124509574ca5bbcac6bbff61c49c560b87b75b",
+          "nonce": "ff9b6893-6891-4510-af8f-cb4b1274489e",
+          "gateSetSha256": "b2a1f7f4538cae6ebc6ba2fe7c57ac8ea7db870406bee1e220901f099282c5a5",
+          "status": "IN_PROGRESS_NOT_YET_QUALIFIED"
+        }
+      },
+      "controlledNegativeProbe": {
+        "runId": 44497248616,
+        "jobId": 135467915145,
+        "sourceSha": "304bcf1a2668d3bc36ff792315bc903184447bb5",
+        "nonce": "22b4d1e1-9d64-420e-9eab-147f7b6483af",
+        "intendedCase": "MISSING_SIGNED_OWNER_CONTEXT",
+        "actual": "UNEXPECTED_EARLY_PROVIDER_TIMESTAMP_FAILURE",
+        "error": "CONTROLLER_JOB_INVOCATION_REQUIRED",
+        "providerCreatedAt": "2026-11-19T09:31:47Z",
+        "expectedNegativePassed": false,
+        "linuxSignatureProduced": false,
+        "qaReadOrGrantPerformed": false,
+        "realIncidentRowCreated": false,
+        "modelRequested": false,
+        "pilotStarted": false
+      },
+      "hostRefresh": {
+        "baseSha": "89c97892625596f5b115863a45a2c1f725c7b935",
+        "hostInventory": 27,
+        "sourcePreflights": {
+          "SG2": 23,
+          "ARCHITECTURE": 4,
+          "both": "PASS"
+        },
+        "approvedSdkFourAppliedLocally": true,
+        "functional": {
+          "pass": 54,
+          "fail": 0,
+          "skip": 0,
+          "exactCic180Artifact": true,
+          "postgres": "FRESH_LOOPBACK_ONLY"
+        },
+        "hostSource": {
+          "pass": 10,
+          "fail": 0
+        },
+        "companionSource": {
+          "pass": 7,
+          "fail": 1,
+          "failingTest": "native ECR precision continuation retains the exact accepted ECR receipt and all earlier sources",
+          "cause": "Direct precision adapter selects original component instead of authenticated accepted composition"
+        },
+        "publicPr1099Updated": false,
+        "ci27Active": false,
+        "liveHostUpdated": false
+      },
+      "technicalReady": false,
+      "paidRepairsEnabled": false,
+      "promotionEnabled": false,
+      "pilotStarted": false,
+      "e1RepairsCompleted": 0,
+      "stage2Started": false
+    },
+    "sdk5AndNativeContextDeployment": {
+      "recordedAt": "2026-11-19T11:00:00.000Z",
+      "ownerSdk5Approval": {
+        "questionId": "call_d4e9b901ec9549d5bee930c0b92de647",
+        "answer": "Zatwierdzam ograniczone uzupełnienie SDK5",
+        "source": "ae6ae9187666816c4b3e122b1fa3e82c6989a51b",
+        "diffSha256": "0647743bdaad72950f918e89cb1f31bdbedbe2b6ef456f7cd4b0fd52588896a8"
+      },
+      "ownerConsolidatedApproval": {
+        "questionId": "call_56750d6941af4a1bbf75db0756330255",
+        "answer": "Zatwierdzam cały pakiet SDK5 i NPM_TOKEN",
+        "source": "416d35d512a08cef00aca6ad4081952d6bf798ae",
+        "recipient": "profitia/SG-dev/aqc-verifier-development/NPM_TOKEN",
+        "sourceService": "srv-dapa3tid0e5s73f8bc5g",
+        "expires": "2026-11-27T23:59:59.000Z"
+      },
+      "host": {
+        "pr": 1099,
+        "sourceSha": "c8425c020f68426c41161d881abc7c5400fcbe90",
+        "baseSha": "0a2b748cfc3d28a5261a6a21107726c363f693d0",
+        "treeSha": "229bd36f41057e2ce3858e970169c93211053990",
+        "previousPrHistoryRetained": true,
+        "parallelMainRetained": true,
+        "inventory": 27,
+        "sdk5DiffSha256": "0647743bdaad72950f918e89cb1f31bdbedbe2b6ef456f7cd4b0fd52588896a8",
+        "postimagesVerified": 4,
+        "preflights": {
+          "SG2": 23,
+          "ARCHITECTURE": 4,
+          "both": "PASS"
+        },
+        "sourceCompanionTests": {
+          "pass": 19,
+          "fail": 0,
+          "skip": 0
+        },
+        "unchangedRuntimePreviousFunctionalTests": {
+          "pass": 54,
+          "fail": 0,
+          "skip": 0,
+          "exactCic180": true,
+          "freshLoopbackPostgresOnly": true
+        },
+        "nativeHostCiAndCi27": "REQUIRED_NOT_ADMITTED",
+        "liveHostUpdated": false
+      },
+      "existingNpm": {
+        "sourceService": "srv-dapa3tid0e5s73f8bc5g",
+        "sourceField": "NPM_TOKEN",
+        "onlyRecipient": "profitia/SG-dev/aqc-verifier-development/NPM_TOKEN",
+        "mainOnlyVerified": true,
+        "installedAt": "2026-11-19T10:30:31Z",
+        "transferFilePermissions": "0600",
+        "transitDeleted": true,
+        "valuePrintedOrCommitted": false,
+        "sourceHostConfigurationChanged": false,
+        "newCredentialCreated": false,
+        "modelCredentialInstalled": false,
+        "removeBy": "2026-11-27T23:59:59.000Z"
+      },
+      "worker": {
+        "sourceSha": "b7124509574ca5bbcac6bbff61c49c560b87b75b",
+        "deployId": "dep-dbvcou0u01pc73dg0e4g",
+        "status": "LIVE_RUNTIME_VERIFIED",
+        "liveAt": "2026-11-19T10:17:06.903793Z",
+        "instance": "srv-dbu4ak0ae00c73eaabcg-swflk",
+        "lastKnownGoodSha": "79cb7cf827e82395f43e630ee9b72436b19b421a",
+        "lastKnownGoodDeployId": "dep-dbv6n0ek1f9s73bkgqeg",
+        "allAqcBytesEqualCurrentMainAtDeployment": true,
+        "postSourceMainDifferencesOnlyTwoProjectDocuments": true,
+        "controlStore": "CONNECTED_DISABLED",
+        "nativeLimits": "CONNECTED_DISABLED",
+        "github": "CONNECTED_STANDBY",
+        "qaRoles": "CONNECTED_ORDINARY_ROLE",
+        "rawQaReadPerformed": false,
+        "hostQaCodecPresent": false,
+        "retention": "PURGE_CONFIRMED_90_DAYS",
+        "sentryHttpStatus": 200,
+        "posthogProjectId": 329829,
+        "posthogExactShaAggregateEventsObserved": 1,
+        "paidRepairsEnabled": false,
+        "promotionEnabled": false,
+        "pilotStartedAt": null,
+        "autoDeploy": false
+      },
+      "earlyContext": {
+        "pr": 1248,
+        "headSha": "5c2f0ff263ed16c753b6e9a9a68700eba3cb3ee1",
+        "mainSha": "0a2b748cfc3d28a5261a6a21107726c363f693d0",
+        "sourceRun": 44506790417,
+        "sourceJob": 135500380191,
+        "tests": {
+          "aqc": 325,
+          "qa": 12,
+          "fail": 0,
+          "skip": 0
+        },
+        "firstCiFailure": "ONE_NEW_TEST_ASSUMED_HISTORICAL_WORKFLOW_FILE_AVAILABLE",
+        "testCorrection": "FULL_PREVIOUS_WORKFLOW_SHA256_REPLACES_HISTORY_READ_WITHOUT_WEAKENING_BYTE_EQUALITY",
+        "independentReview": "NO_FINDINGS_AFTER_TEST_CORRECTION",
+        "resultingMainSourceRun": 44508794446,
+        "resultingMainConclusion": "success",
+        "workflowSha256": "bd2af4eb3f9bc8e94844c68790a6254fdb33bfee825a78165abb0b0404aee396",
+        "publicWorkflowVariablesUpdated": 4,
+        "publicReadbacksVerified": 4,
+        "privateKeyOrOwnerContextsRead": false,
+        "phaseRepeatsFullAdmission": true
+      },
+      "linux22": {
+        "sourceSha": "0a2b748cfc3d28a5261a6a21107726c363f693d0",
+        "runId": 44508886291,
+        "artifactId": 14521007253,
+        "archiveSha256": "d3febfd75a4a06546d078c9301bb0c7549c81a294c99f89addc9615418c34ad3",
+        "bytes": 1153,
+        "gateSetSha256": "7f6872021330d713a28858ba4b792f901551e7f5f76be7c9cbb134606499b502",
+        "all22GitFilesAndOriginalZipAndNativeIdentityVerified": true,
+        "providerRequests": false,
+        "paidCost": false,
+        "fullPrivateCic180": false
+      },
+      "negativeContext": {
+        "runId": 44509429454,
+        "attestationJob": 135509886347,
+        "attestationConclusion": "success",
+        "verifierJob": 135510149187,
+        "expectedCode": "JOB_CONTEXT_INVALID",
+        "actualCode": "JOB_CONTEXT_INVALID",
+        "failedStep": "Verify signed context before private package access",
+        "expectedNegativePassed": true,
+        "overallWorkflowConclusion": "failure_expected",
+        "privatePackageFetch": "SKIPPED",
+        "repairExecution": "SKIPPED",
+        "qaReadOrGrantPerformed": false,
+        "modelRequestPerformed": false,
+        "realIncidentRowCreated": false
+      },
+      "independentGapReview": {
+        "existingPortsReviewed": true,
+        "unwiredNativePhases": [
+          "PROPOSE",
+          "CHECKS",
+          "PROMOTE",
+          "VERIFY_RUNTIME",
+          "OBSERVE",
+          "ROLLBACK"
+        ],
+        "independentRequiredCheckReporter": "MISSING_NOT_ACTIVATED",
+        "missingPublishAndRuntimeProofProducers": true,
+        "promotePatchProofIdentityMapping": "REQUIRES_CORRECTION_AND_TESTS",
+        "laterPhaseNativeHistoryAndUncertainDelivery": "REQUIRES_CLOSED_COMPOSITION",
+        "reference": "NEEDS_REVISION"
+      },
+      "technicalReady": false,
+      "e1RepairsCompleted": 0,
+      "paidRepairsEnabled": false,
+      "promotionEnabled": false,
+      "pilotStarted": false,
+      "stage2Started": false
+    }
+  },
+  "consolidatedOwnerDecisionB29Revision2": {
+    "schemaVersion": "AQC_OWNER_DECISION_PACKAGE_V1",
+    "id": "CIC-QUALITY-DEVELOPMENT-OWNER-PACKAGE-B29-REVISION-2",
+    "status": "PROPOSED_NOT_OWNER_APPROVED_NOT_ACTIVE",
+    "purpose": "Finish Stage1 technical integration on actual Development and prepare E1; no paid repair or autonomous promotion activation.",
+    "expiresAt": "2026-11-27T23:59:59.000Z",
+    "alreadyApprovedNotRequestedAgain": [
+      "PR1104 worker and infrastructure envelope",
+      "B28 exact host/worker QA configuration for two new controlled PL/EN cases",
+      "six bounded engineering SourceRef/deployment CAS operations and exact temporary owner SET restoration",
+      "limited SG-dev controller token",
+      "metadata-only PostHog and Sentry monitoring"
+    ],
+    "decisions": [
+      {
+        "id": "B29-1",
+        "kind": "CLOSED_SOURCE_POLICY_BOOTSTRAP",
+        "proposalPr": 1197,
+        "reviewedSourceSha": "5c6b0e890485d1af72716e3580d2ef14e86c855a",
+        "acceptedMain": "eea2077923f0fbed07d592e33e1f827f3a4431c7",
+        "protectedBlobs": {
+          "scripts/governance/controlled-package-ci.mjs": "39e5fa58f85e8a10b11288e74fd9adbe3f3bc70f",
+          "scripts/governance/assistant-quality-ci25.test.mjs": "6e4d865155277ec97993cdfb2f3b8cbf91f4cd63"
+        },
+        "otherProposalPaths": [
+          "Canon/proposals/bsdc/ARCHITECTURE/cic-assistant-continuous-quality.md",
+          "Canon/evidence/2026-11-17-cic-quality-development-owner-package.json"
+        ],
+        "originalPaths": 24,
+        "proposedPaths": 27,
+        "extraPaths": [
+          "packages/platform-contracts/test/assistant-reservation-source.mjs",
+          "apps/architecture-lab/knowledge-source.mjs",
+          "apps/architecture-lab/test/knowledge-source.test.mjs"
+        ],
+        "scope": "Apply and test only the four reviewed SDK source corrections within the existing27 host paths; refresh the reviewed CI27 metadata to that exact source. One closed protected-policy bootstrap/acceptance into trusted main follows successful exact-source checks. Native host validation and resulting-main checks remain mandatory before host rollout. No private package or candidate code is executed during source admission; no original source attestation, receipt, test body, path fence, expiry or branch gate is removed.",
+        "evidence": {
+          "sourceReviewTests": 33,
+          "completeLocalControllerTests": 363,
+          "zeroFailuresOrSkips": true,
+          "metadataOnlyPolicyFollowup": true,
+          "nativePreviousPreparedHead": "25e76c39b2f6d78ea932fbe1c2abad6d83ec765f",
+          "nativePreviousPreparedRun": 44457270855,
+          "nativePreviousPreparedArchitectureJob": 135335236737,
+          "nativePreviousContractPass": 2141,
+          "nativePreviousExistingSkip": 1,
+          "nativePreviousGovernancePass": 459,
+          "nativeProofForNewReviewRequired": true,
+          "actualSg2Refusal": "CONTROLLED_VALIDATION_REQUIRED_FOR_EXACT_SHA"
+        },
+        "candidateCodeExecutedDuringAdmission": false,
+        "originalTestsAndReceiptsRetained": true,
+        "noHostCiWaiver": true,
+        "policyBeforeHostActivation": true,
+        "sourceFreezeSha": "bf12f9cb20b93ce8edc8a5aca36e28000955d8f3",
+        "sourceSdkCorrectionFiles": [
+          "apps/sg-runtime/assistant-quality-host-integration.json",
+          "apps/sg-runtime/tests/assistant-ecr-integrity.mjs",
+          "apps/sg-runtime/tests/assistant-quality-host-integrity.mjs",
+          "apps/sg-runtime/tests/assistant-quality-host-integrity.test.mjs"
+        ],
+        "sourceSdkCorrectionDiffSha256": "9b40740bbaae577061512da5b0409dca3e9f8542cbcbadc717af9393572d28fd"
+      },
+      {
+        "id": "B29-2",
+        "kind": "TWO_DISABLED_PUBLISHER_DATABASE_INSTALLATIONS",
+        "sourcePr": 1211,
+        "acceptedSourceMain": "0523b664a4846c99885c7debfa7b5035025b9b3f",
+        "profiles": [
+          {
+            "profile": "canonical",
+            "projectId": "spring-bread-28217539",
+            "branchId": "br-sparkling-term-b99l107x",
+            "databaseName": "platform_private",
+            "ownerRole": "profitia_access_owner",
+            "role": "aqc_development_canonical_publisher",
+            "migration": "packages/assistant-quality-control/migrations/004-publisher-canonical.sql",
+            "sha256": "5c4b926f473ce2f6efb2135c12a220d3d26839184123fdcce1461e0baa005632"
+          },
+          {
+            "profile": "product",
+            "projectId": "autumn-waterfall-65938876",
+            "branchId": "br-dry-hall-b294222f",
+            "databaseName": "neondb",
+            "ownerRole": "profitia_ingestion_owner",
+            "role": "aqc_development_product_publisher",
+            "migration": "packages/assistant-quality-control/migrations/005-publisher-product.sql",
+            "sha256": "9b309f09f1c99e2c6213816a048903791fa8a86ea2cbecf11c8d01854c66114d"
+          }
+        ],
+        "schemaPerDatabase": "profitia_quality_release",
+        "functions": [
+          "quality_deployment_cas(uuid,text,text,uuid,timestamptz)",
+          "quality_deployment_cas_status(uuid)"
+        ],
+        "ordinaryRolePolicy": {
+          "initialLogin": false,
+          "loginAfterQualification": true,
+          "connectionLimit": 2,
+          "inherit": false,
+          "superuser": false,
+          "createRole": false,
+          "createDatabase": false,
+          "bypassRls": false,
+          "replication": false,
+          "memberships": [],
+          "validUntil": "2026-11-27T23:59:59.000Z",
+          "directPrivateTableAccess": false
+        },
+        "sourceReferencesPerDatabase": 3,
+        "policyPublishingInitiallyEnabled": false,
+        "recoveryOnlyOwnRecordedOperation": true,
+        "noRightsStatusExpiryRenewal": true,
+        "credentialsRecipient": {
+          "repository": "profitia/SG-dev",
+          "environment": "aqc-publisher-development",
+          "names": [
+            "AQC_PUBLISHER_CANONICAL_DATABASE_URL",
+            "AQC_PUBLISHER_PRODUCT_DATABASE_URL"
+          ]
+        },
+        "installationEnvelope": "Fresh atomic owner transaction; exact original membership OID/grantor/options restored before COMMIT. No database restore or existing schema rollback."
+      },
+      {
+        "id": "B29-3",
+        "kind": "MAIN_ONLY_OPERATIONAL_ROLES_AND_SECRET_RECIPIENTS",
+        "repository": "profitia/SG-dev",
+        "workflow": ".github/workflows/assistant-quality-repair.yml",
+        "environments": [
+          {
+            "name": "aqc-executor-development",
+            "deployment_branch_policy": {
+              "protected_branches": false,
+              "custom_branch_policies": true
+            },
+            "branchPolicies": [
+              {
+                "name": "main",
+                "type": "branch"
+              }
+            ],
+            "humanReviewers": [],
+            "waitTimer": 0
+          },
+          {
+            "name": "aqc-verifier-development",
+            "deployment_branch_policy": {
+              "protected_branches": false,
+              "custom_branch_policies": true
+            },
+            "branchPolicies": [
+              {
+                "name": "main",
+                "type": "branch"
+              }
+            ],
+            "humanReviewers": [],
+            "waitTimer": 0
+          },
+          {
+            "name": "aqc-publisher-development",
+            "deployment_branch_policy": {
+              "protected_branches": false,
+              "custom_branch_policies": true
+            },
+            "branchPolicies": [
+              {
+                "name": "main",
+                "type": "branch"
+              }
+            ],
+            "humanReviewers": [],
+            "waitTimer": 0
+          },
+          {
+            "name": "aqc-ci-gate-development",
+            "deployment_branch_policy": {
+              "protected_branches": false,
+              "custom_branch_policies": true
+            },
+            "branchPolicies": [
+              {
+                "name": "main",
+                "type": "branch"
+              }
+            ],
+            "humanReviewers": [],
+            "waitTimer": 0
+          }
+        ],
+        "privateRecipients": [
+          {
+            "environment": "aqc-executor-development",
+            "names": [
+              "AQC_EXECUTOR_SUPERVISOR_PRIVATE_KEY",
+              "AQC_LIMITS_BROKER_DATABASE_URL",
+              "AQC_LIMITS_BROKER_COMMAND_KEY"
+            ],
+            "existingDatabaseRole": "profitia_limits_quality_broker",
+            "projectId": "lingering-thunder-05075810",
+            "branchId": "br-green-hall-b9s837k0",
+            "databaseName": "neondb",
+            "agentReceivesValues": false
+          },
+          {
+            "environment": "aqc-verifier-development",
+            "names": [
+              "AQC_INDEPENDENT_VERIFIER_PRIVATE_KEY",
+              "AQC_HOLDOUT_PACK_JSON",
+              "AQC_HOLDOUT_ATTESTATION_JSON"
+            ],
+            "existingNpmTokenUse": "Existing NPM_TOKEN only inside trusted verifier job for the exact admitted CIC1.8.0 artifact; no token transfer to executor, agent, publisher, worker or public output."
+          },
+          {
+            "environment": "aqc-publisher-development",
+            "names": [
+              "AQC_INDEPENDENT_PUBLISHER_PRIVATE_KEY",
+              "AQC_PUBLISHER_CANONICAL_DATABASE_URL",
+              "AQC_PUBLISHER_PRODUCT_DATABASE_URL",
+              "AQC_RENDER_PUBLISHER_API_KEY"
+            ]
+          },
+          {
+            "serviceId": "srv-dbu4ak0ae00c73eaabcg",
+            "workspaceId": "tea-d7lps8rbc2fs73cn80dg",
+            "names": [
+              "AQC_RUNTIME_OBSERVER_PRIVATE_KEY"
+            ],
+            "scope": "Sign metadata-only observations of the two previously approved controlled cases; no additional QA scope."
+          }
+        ],
+        "publicTrustRecipients": [
+          "worker srv-dbu4ak0ae00c73eaabcg",
+          "aqc-executor-development",
+          "aqc-verifier-development",
+          "aqc-publisher-development",
+          "aqc-ci-gate-development"
+        ],
+        "publicTrustAndSafeContextNames": [
+          "AQC_OWNER_PUBLIC_KEYS_JSON",
+          "AQC_PHASE_PUBLIC_KEYS_JSON",
+          "AQC_RUNTIME_OBSERVER_PUBLIC_KEYS_JSON",
+          "AQC_REVIEWER_PUBLIC_KEYS_JSON",
+          "AQC_REPAIR_CONTEXTS_JSON",
+          "AQC_RECOVERY_AUTHORITY_JSON",
+          "AQC_CONTROLLER_WORKFLOW_SHA256"
+        ],
+        "offlineOwnerSigningKey": "Generate and retain only in the owner-private task package with restricted filesystem permissions, outside all workers and GitHub jobs. Never expose the value in Git, logs or chat.",
+        "ownerSigningScope": [
+          "Separate operational recovery authority AQC_OPERATIONAL_RECOVERY_V1, only VERIFY_RUNTIME/OBSERVE/ROLLBACK of independently proved own releases, expires by27 November, no paid/data/promotion/rights-renewal capability",
+          "At most one-hour metadata-only technical context/mandate for the three signed synthetic classes, while native paid limits and all paid/promotion flags remain disabled; no paid pilot activation"
+        ],
+        "githubTokenPermissions": {
+          "executorSupervisor": {
+            "contents": "read",
+            "actions": "read"
+          },
+          "verifier": {
+            "contents": "read",
+            "actions": "read",
+            "checks": "read"
+          },
+          "publisher": {
+            "contents": "write",
+            "pullRequests": "write",
+            "actions": "read",
+            "checks": "read"
+          },
+          "ciGate": {
+            "contents": "read",
+            "actions": "read",
+            "checks": "write",
+            "fixedCheckName": "AQC independent repair gate"
+          }
+        },
+        "publisherUsesJobScopedGithubToken": true,
+        "newPersistentGithubPublisherPat": false,
+        "metadataControllerActivation": {
+          "onlyControlMetadataEnabled": true,
+          "maxControlledSyntheticIncidents": 3,
+          "classes": [
+            "C1",
+            "C2",
+            "C3"
+          ],
+          "nativePaidLimitsEnabled": false,
+          "paidRepairsEnabled": false,
+          "promotionEnabled": false,
+          "regularQaEnabled": false,
+          "expiresBy": "2026-11-27T23:59:59.000Z"
+        },
+        "publicMetadataDestination": {
+          "destination": "Native GitHub workflow inputs/artifacts for CIC Development operational coordination",
+          "allowed": [
+            "SHA",
+            "time",
+            "connection/status/error codes",
+            "disabled gates",
+            "aggregate count for the two controlled synthetic cases"
+          ],
+          "forbidden": [
+            "account or organisation identifiers",
+            "transcripts",
+            "raw QA",
+            "source payloads",
+            "secrets"
+          ]
+        },
+        "sourceAndNativeQualificationRequiredBeforeUse": true,
+        "noOpenAiKeyCreatedOrInstalled": true
+      },
+      {
+        "id": "B29-4",
+        "kind": "SERVER_ENFORCED_CLOSED_REPAIR_CI",
+        "currentRulesetPreserved": {
+          "id": 23304085,
+          "rules": [
+            "deletion",
+            "non_fast_forward",
+            "pull_request"
+          ],
+          "modified": false
+        },
+        "proposedAdditionalRuleset": {
+          "name": "CIC Development independent repair gate",
+          "target": "branch",
+          "enforcement": "active",
+          "conditions": {
+            "ref_name": {
+              "include": [
+                "refs/heads/main"
+              ],
+              "exclude": []
+            }
+          },
+          "bypass_actors": [],
+          "rules": [
+            {
+              "type": "required_status_checks",
+              "parameters": {
+                "strict_required_status_checks_policy": true,
+                "do_not_enforce_on_create": false,
+                "required_status_checks": [
+                  {
+                    "context": "AQC independent repair gate",
+                    "integration_id": 15368
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "activateOnlyAfterCheckExistsForMainAndPullRequests": true,
+        "existingRequiredChecksNotRemoved": true,
+        "reporter": "Trusted main-only CI gate, fixed repository/check name/native source and SHA. Candidate code never executes with checks-write or publishing credentials.",
+        "repairScope": {
+          "repository": "profitia/SG-dev",
+          "branchPattern": "sg2/quality-control-<incident UUID>",
+          "classes": [
+            "C1",
+            "C2",
+            "C3"
+          ],
+          "sourcePaths": {
+            "C1": "apps/sg-runtime/lib/assistant/calendar-period.ts",
+            "C2": "apps/sg-runtime/lib/assistant/quality-response.ts",
+            "C3": "apps/sg-runtime/lib/assistant/quality-response.ts"
+          },
+          "regressionPath": "apps/sg-runtime/tests/assistant-quality-regressions/<same incident UUID>.test.ts",
+          "maxFiles": 2,
+          "maxPatchBytes": 32768,
+          "maxChangedLines": 300,
+          "ownerMandateAndIndependentExportRequired": true,
+          "independentVerificationAndNativeArtifactRequired": true,
+          "exactBaseHeadGateAndNonceRequired": true,
+          "agentMayModifyPolicyWorkflowGatesPackagePinsOrExistingTests": false
+        },
+        "implementationAndCountertestsRemainMandatory": true,
+        "initialCi27ScopeNotExpandedByRepairProfile": true,
+        "noAutonomousPromotionActivationByThisDecision": true
+      },
+      {
+        "id": "B29-5",
+        "kind": "SUPPORTED_SCOPED_RENDER_PUBLISHER_ACCESS_AND_SUPPORT_REQUEST",
+        "workspaceId": "tea-d7lps8rbc2fs73cn80dg",
+        "serviceId": "srv-dapa3tid0e5s73f8bc5g",
+        "recipient": {
+          "repository": "profitia/SG-dev",
+          "environment": "aqc-publisher-development",
+          "secretName": "AQC_RENDER_PUBLISHER_API_KEY"
+        },
+        "providerUiObserved": "CLASSIC_ONLY_NO_SCOPES",
+        "supportRequestAuthorisedOnlyOnOwnerGo": true,
+        "supportRequestDraft": "Please enable workspace-scoped API keys for PROFITIA WORKSPACE (tea-d7lps8rbc2fs73cn80dg) on our existing plan. We need Services: Read, Environment variables and secret files: Read & Write, and Deploys: Run for an independent publisher of our existing SG2 Development service srv-dapa3tid0e5s73f8bc5g. Please confirm scope granularity and expiry support. Do not change our plan, create resources or charges, or send credentials in the ticket.",
+        "maximumProviderScopes": [
+          "Services: Read",
+          "Environment variables and secret files: Read & Write",
+          "Deploys: Run"
+        ],
+        "scopeGranularityDisclosure": "Render grants these scopes for resource types across the selected workspace, rather than proving a per-service restriction. The token may therefore access settings of other services in PROFITIA WORKSPACE; the admitted publisher code is fixed to the one SG2 Development service.",
+        "chooseNarrowerPerServiceScopeIfSupported": true,
+        "classicKeyExcluded": true,
+        "cliTokenReuseForPublisherExcluded": true,
+        "noNewServicePlanOrCostApproval": true,
+        "onlySevenExistingPiVersionLeavesMayChange": true,
+        "noOtherSettingsChanged": true,
+        "useOnlyThroughAuthorisedUntil": "2026-11-27T23:59:59.000Z",
+        "revokeAtCompletionOrExpiry": true,
+        "providerUnavailableOrBroaderRequired": "Do not create a classic/broader key or change plan; retain disabled autonomous publishing and continue other approved work."
+      },
+      {
+        "id": "B29-6",
+        "kind": "BOUNDED_INDEPENDENT_READ_ONLY_REVIEW_AGENT",
+        "delegationPermissionRequested": true,
+        "scope": [
+          "accepted public canon",
+          "public source and countertests",
+          "synthetic reference/holdout cases"
+        ],
+        "purpose": "Independent reference and adversarial review before E1-T13; preserve reviewer provenance and exact pack digest.",
+        "secretsOrQaRead": false,
+        "privateCicCodeRead": false,
+        "writes": false,
+        "deployments": false,
+        "paidCicApiRequests": false,
+        "ownerOnlyActions": false,
+        "noSelfSignedReferenceAcceptance": true,
+        "reviewerMayGenerateEphemeralReviewKeyAndReturnPublicAttestation": true,
+        "reviewPrivateKeyExported": false,
+        "reviewerMayInstallTrust": false
+      }
+    ],
+    "costs": {
+      "newResources": false,
+      "newPaidCompute": false,
+      "additionalApprovedInfrastructureEnvelopeUsd": 20,
+      "authorisedUntil": "2026-11-27",
+      "providerHardCap": false,
+      "newModelBudget": false,
+      "modelPilotStarted": false
+    },
+    "safeguards": {
+      "paidRepairsEnabled": false,
+      "promotionEnabled": false,
+      "pilotStarted": false,
+      "fullE1AcceptanceClaimed": false,
+      "e1RepairsCompleted": 0,
+      "stage2Authorised": false,
+      "exactSourceAndResultingMainCiRequired": true,
+      "fresh17InputLinuxQualificationRequired": true,
+      "independentReferenceRequiredBeforeE1T13": true,
+      "originalSpec5Roadmap8Unchanged": true
+    },
+    "approvalRecorded": false,
+    "actionsApplied": [],
+    "revision": 2,
+    "supersedesProposalOnly": "https://github.com/profitia/SG-dev/blob/3e4af5309ad4b37d79bbfbcd12d1656311ca1f21/Canon/evidence/2026-11-17-cic-quality-development-owner-package.json#consolidatedOwnerDecisionB29",
+    "previousApprovalsNotReRequested": true,
+    "allSixDecisionsRequestedTogether": true,
+    "sourceSdkCorrection": {
+      "sha": "bf12f9cb20b93ce8edc8a5aca36e28000955d8f3",
+      "tree": "75e0db28564ea042c00ba1430a92e1c6bb39e31c",
+      "parent": "d22df66fc0c181211d6862a7facaa2d096c75cff",
+      "diffSha256": "9b40740bbaae577061512da5b0409dca3e9f8542cbcbadc717af9393572d28fd",
+      "files": [
+        {
+          "path": "apps/sg-runtime/assistant-quality-host-integration.json",
+          "sha": "01a00cff59936cf024f2efa8522628a2449cd20b",
+          "sha256": "bc9cd5794bb05895182162c6e6e09149c466888e09bb81fea919cd0be92d3906"
+        },
+        {
+          "path": "apps/sg-runtime/tests/assistant-ecr-integrity.mjs",
+          "sha": "c1217939ae23ea31d3837757924106a0a75180e9",
+          "sha256": "c6e32397b7c54384b73b1f2539fa7289ba0e967ae53c9b2d23efd75b421a1174"
+        },
+        {
+          "path": "apps/sg-runtime/tests/assistant-quality-host-integrity.mjs",
+          "sha": "b911cd7676826848c24093f6c0ac12d1900573ae",
+          "sha256": "b73a173bf38f61dfe81975b13853664e779fb7152a7512f1568128b477e4ccd3"
+        },
+        {
+          "path": "apps/sg-runtime/tests/assistant-quality-host-integrity.test.mjs",
+          "sha": "0121bed18260c597e1a6ed1591830caf368461f8",
+          "sha256": "52578d57bb211e1b0028248778184546b671d43b6196fa319ef86560b4edf830"
+        }
+      ],
+      "tests": {
+        "pass": 33,
+        "fail": 0,
+        "skip": 0
+      },
+      "reviewOnly": true,
+      "activePr1099Changed": false
+    },
+    "sourceMetadataFollowup": {
+      "sha": "5c6b0e890485d1af72716e3580d2ef14e86c855a",
+      "tree": "a347446b978061794e02bff875fae7d702adb87d",
+      "parent": "25e76c39b2f6d78ea932fbe1c2abad6d83ec765f",
+      "diffSha256": "1d8c99cbf8f7c71a0f1487a5c12333f93f4c2d00b3e1da8995c0087c4bdba5e5",
+      "files": [
+        {
+          "path": "scripts/governance/controlled-package-ci.mjs",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "39e5fa58f85e8a10b11288e74fd9adbe3f3bc70f",
+          "sha256": "ab9cfd752a9345e125381e087da4b40dcf20169ba58ddfdc05a9f7092087aaf6",
+          "bytes": 1534600
+        },
+        {
+          "path": "scripts/governance/assistant-quality-ci25.test.mjs",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "6e4d865155277ec97993cdfb2f3b8cbf91f4cd63",
+          "sha256": "7b7b0ca6c82cf1b736b1d721b9eb414540236ec8c84d8e2b9dcb31648976c2e8",
+          "bytes": 21475
+        }
+      ],
+      "inputCount": 532,
+      "retainedReceipts": 42,
+      "coverageRecords": 5,
+      "hostInventory": 27,
+      "policyLogicChanged": false,
+      "reviewOnly": true,
+      "activePr1197Changed": false,
+      "tests": {
+        "pass": 363,
+        "fail": 0,
+        "skip": 0,
+        "durationMs": 570298.603676
+      },
+      "fullSharedSuiteVerified": true
+    },
+    "combinedReviewDiff": {
+      "format": "concatenate host4 unified diff then metadata2 unified diff",
+      "files": 6,
+      "bytes": 190166,
+      "sha256": "eff7546644013e0247dab09810adbd12b0419ac1791b1eebc59e6bda1c2c2e6b"
+    }
+  },
+  "b29Revision2OwnerApproval": {
+    "decision": "APPROVED_ALL_B29_REVISION_2",
+    "userQuestionId": "call_d262d9195d994e338aad33c11ba62ece",
+    "immutablePackageSha": "bde8486f2beaa6e74d2dd5d5174fba273ddfc2c6",
+    "ownerReply": "Zatwierdzam cały B29 rewizja 2",
+    "decisions": [
+      "B29-1",
+      "B29-2",
+      "B29-3",
+      "B29-4",
+      "B29-5",
+      "B29-6"
+    ],
+    "paidRepairsEnabled": false,
+    "promotionEnabled": false,
+    "pilotStarted": false
+  },
+  "proposedSdkFiveOwnerAmendment": {
+    "id": "CIC-QUALITY-B29-SDK-FIVE-BOUNDED-AMENDMENT",
+    "status": "OWNER_APPROVED_APPLIED_SOURCE_NOT_YET_NATIVE_CI_ADMITTED",
+    "reason": "The closed B29-1 approval admits exactly four SDK files; the direct precision entry is a fifth SDK correction within the same existing27 host paths.",
+    "baseSdkReviewSha": "bf12f9cb20b93ce8edc8a5aca36e28000955d8f3",
+    "originalSdkCorrectionFiles": 4,
+    "proposedSdkCorrectionFiles": 5,
+    "hostInventory": 27,
+    "additionalSdkPath": "apps/sg-runtime/tests/assistant-ecr-precision-integrity.mjs",
+    "incrementalAffectedPaths": [
+      {
+        "path": "apps/sg-runtime/tests/assistant-ecr-precision-integrity.mjs",
+        "sha256": "382423585cce9a68dbdfe6bf0af591b0a61c8de4431dc115b113bb757442652f"
+      },
+      {
+        "path": "apps/sg-runtime/tests/assistant-quality-host-integrity.mjs",
+        "sha256": "6ae1de038c8ac146628d0d740a8e44a39d47187c137d227fd326619fdd0a82fb"
+      },
+      {
+        "path": "apps/sg-runtime/tests/assistant-quality-host-integrity.test.mjs",
+        "sha256": "20ef7bcff99bebc957a3745eb7030e87a70ea8b6c7fb4cfd0c29ca10295e123d"
+      },
+      {
+        "path": "apps/sg-runtime/assistant-quality-host-integration.json",
+        "sha256": "dc9cca15d467628e17b35283731e7b7fcb82c2c6e793f1450398d97e215a7467"
+      }
+    ],
+    "diffSha256": "0647743bdaad72950f918e89cb1f31bdbedbe2b6ef456f7cd4b0fd52588896a8",
+    "unifiedDiff": "--- a/apps/sg-runtime/tests/assistant-ecr-precision-integrity.mjs\n+++ b/apps/sg-runtime/tests/assistant-ecr-precision-integrity.mjs\n@@ -24,7 +24,7 @@\n ])\n const hash=b=>createHash('sha256').update(b).digest('hex')\n export function assistantEcrPrecisionPredecessor(current,historical){\n- const quality=assistantQualityPredecessor(current,historical);if(quality)return assistantEcrPrecisionPredecessor(quality.previousBytes,historical)\n+ const quality=assistantQualityPredecessor(current,historical);if(quality)return assistantEcrPrecisionPredecessor(quality.compositionPreviousBytes??quality.previousBytes,historical)\n  const recurring=recurringSourcePredecessor(current,historical);if(recurring)return assistantEcrPrecisionPredecessor(recurring.authorityBytes,historical)\n  let bytes\n  try{bytes=current(PRECISION_RECEIPT)}catch(error){\n--- a/apps/sg-runtime/tests/assistant-quality-host-integrity.mjs\n+++ b/apps/sg-runtime/tests/assistant-quality-host-integrity.mjs\n@@ -197,7 +197,7 @@\n  for(const k of Object.keys(prior).filter(k=>k!=='sourceDigests'))assert.deepEqual(a[k],prior[k],'immutable original CIC component '+k)\n  assert.deepEqual(a.acceptedComposition,{sourceSha:KNOWLEDGE_COMPOSITION_BASE,componentSourceSha:COMPONENT_BASE,\n   reservationRecordSha256:RESERVATION_PIN,knowledgeRecordSha256:KNOWLEDGE_PIN})\n- const ecrBridge='apps/sg-runtime/tests/assistant-ecr-integrity.mjs',compositionPaths=[...QUALITY_HOST_PATHS,ecrBridge]\n+ const ecrBridge='apps/sg-runtime/tests/assistant-ecr-integrity.mjs',precisionBridge='apps/sg-runtime/tests/assistant-ecr-precision-integrity.mjs',compositionPaths=[...QUALITY_HOST_PATHS,ecrBridge,precisionBridge]\n  assert.deepEqual(Object.keys(a.sourceDigests).sort(),compositionPaths.sort(),'closed CI27 source inventory')\n  for(const p of compositionPaths){assert.match(a.sourceDigests[p],/^[a-f0-9]{64}$/);assert.equal(hash(current(p)),a.sourceDigests[p],'exact CIC and Knowledge composition '+p)}\n  for(const p of QUALITY_HOST_PRESERVED){assert.equal(hash(current(p)),a.previousReceipts[p]);assert.equal(hash(historical(QUALITY_HOST_BASE,p)),a.previousReceipts[p])}\n@@ -230,11 +230,14 @@\n  }\n  for(const p of ['apps/sg-runtime/lib/assistant/calendar-period.ts','apps/sg-runtime/lib/assistant/context-selection.ts',\n   'apps/sg-runtime/tests/assistant-quality.test.ts','apps/sg-runtime/tests/assistant-quality-integrity.test.mjs',\n-  'apps/sg-runtime/tests/assistant-ecr-precision-integrity.mjs'])\n+  ])\n   assert.deepEqual(Buffer.from(current(p)),Buffer.from(historical(COMPONENT_BASE,p)),'original controlled calendar source retained '+p)\n  const ecrBefore=String(historical(COMPONENT_BASE,ecrBridge)),ecrEntry='if(quality)return assistantEcrPredecessor(quality.previousBytes,historical)'\n  assert.equal(ecrBefore.split(ecrEntry).length,2,'one original ECR quality entry')\n  assert.equal(String(current(ecrBridge)),ecrBefore.replace(ecrEntry,'if(quality)return assistantEcrPredecessor(quality.compositionPreviousBytes??quality.previousBytes,historical)'),'only additive accepted composition selection; every original ECR assertion retained')\n+ const precisionBefore=String(historical(COMPONENT_BASE,precisionBridge)),precisionEntry='if(quality)return assistantEcrPrecisionPredecessor(quality.previousBytes,historical)'\n+ assert.equal(precisionBefore.split(precisionEntry).length,2,'one original precision quality entry')\n+ assert.equal(String(current(precisionBridge)),precisionBefore.replace(precisionEntry,'if(quality)return assistantEcrPrecisionPredecessor(quality.compositionPreviousBytes??quality.previousBytes,historical)'),'only additive accepted precision composition selection; every original precision assertion retained')\n  assert.equal(hash(current(KNOWLEDGE_RECORD)),KNOWLEDGE_PIN,'immutable accepted Knowledge record')\n  const k=JSON.parse(current(KNOWLEDGE_RECORD))\n  for(const [p,digest]of Object.entries(k.sourceDigests))assert.equal(hash(compositionPreviousBytes(p)),digest,'all accepted Knowledge inputs retained '+p)\n--- a/apps/sg-runtime/tests/assistant-quality-host-integrity.test.mjs\n+++ b/apps/sg-runtime/tests/assistant-quality-host-integrity.test.mjs\n@@ -117,3 +117,16 @@\n  const denied=Object.assign(Error('DENIED'),{code:'EACCES'})\n  assert.throws(()=>assistantSdkPredecessor(f=>{if(f==='apps/architecture-lab/private-recurring-source.mjs')throw denied;return current(f)},historical),e=>e===denied)\n })\n+\n+test('direct precision entry authenticates the same accepted composition and rejects self-rebound older dispatch',async()=>{\n+ const {assistantEcrPrecisionPredecessor}=await import('./assistant-ecr-precision-integrity.mjs')\n+ const value=assistantEcrPrecisionPredecessor(current,historical);assert.equal(value.manifest.scope,'NATIVE_ECR_SCHEDULE_PRECISION')\n+ const p='apps/sg-runtime/tests/assistant-ecr-precision-integrity.mjs',bytes=Buffer.from(String(current(p)).replace('quality.compositionPreviousBytes??quality.previousBytes','quality.previousBytes'))\n+ assert.notDeepEqual(bytes,current(p))\n+ const {createHash}=await import('node:crypto'),a=JSON.parse(current(QUALITY_HOST_RECEIPT));a.sourceDigests[p]=createHash('sha256').update(bytes).digest('hex')\n+ const changed=f=>f===p?bytes:f===QUALITY_HOST_RECEIPT?Buffer.from(JSON.stringify(a)):current(f)\n+ assert.throws(()=>assistantQualityHostPredecessor(changed,historical),e=>e?.code==='ERR_ASSERTION'&&String(e.message).includes('only additive accepted precision composition selection'))\n+ assert.throws(()=>assistantEcrPrecisionPredecessor(changed,historical))\n+ const denied=Object.assign(Error('DENIED'),{code:'EACCES'})\n+ assert.throws(()=>assistantEcrPrecisionPredecessor(f=>{if(f===p)throw denied;return current(f)},historical),e=>e===denied)\n+})\n--- a/apps/sg-runtime/assistant-quality-host-integration.json\n+++ b/apps/sg-runtime/assistant-quality-host-integration.json\n@@ -16,15 +16,16 @@\n     \"apps/sg-runtime/tests/assistant-quality-response.test.ts\": \"86a0957bcaa243ac8fbacd57db5024f4e242d99fe9bb52bed563b89a2de1f48e\",\n     \"apps/sg-runtime/tests/assistant-quality-evidence.test.ts\": \"a301ae44ece516a83afba433d82dcf0e5a2f68272ff04194b677fbec433274bf\",\n     \"apps/sg-runtime/tests/assistant-quality-integrity.mjs\": \"43a1682cf58f5d42f7339f752901f536d85ff941cef5b1c7778c052f55ee649b\",\n-    \"apps/sg-runtime/tests/assistant-quality-host-integrity.mjs\": \"b73a173bf38f61dfe81975b13853664e779fb7152a7512f1568128b477e4ccd3\",\n-    \"apps/sg-runtime/tests/assistant-quality-host-integrity.test.mjs\": \"52578d57bb211e1b0028248778184546b671d43b6196fa319ef86560b4edf830\",\n+    \"apps/sg-runtime/tests/assistant-quality-host-integrity.mjs\": \"6ae1de038c8ac146628d0d740a8e44a39d47187c137d227fd326619fdd0a82fb\",\n+    \"apps/sg-runtime/tests/assistant-quality-host-integrity.test.mjs\": \"20ef7bcff99bebc957a3745eb7030e87a70ea8b6c7fb4cfd0c29ca10295e123d\",\n     \"apps/sg-runtime/tests/procurement-insights-completion-integrity.mjs\": \"00f1b475342a78ad916c03723ae2b9b268963240d101b57c17559308c48daafa\",\n     \"apps/architecture-lab/private-recurring-source.mjs\": \"34c555f971140e197880e2ff3ddf7c1696112d2744374b238a3f3315c8fbbcf4\",\n     \"apps/sg-runtime/tests/procurement-insights-editorial-package-integrity.mjs\": \"8d04bf7ccb45cba30eb0e9d5fb032db2e04e039337674b9d198df6525bf257b1\",\n     \"packages/platform-contracts/test/assistant-reservation-source.mjs\": \"0a45aced74c9f83d54ee28e819c7a68a4a2ce263a6b564f6514caf891d7ef7ce\",\n     \"apps/architecture-lab/knowledge-source.mjs\": \"4ff6c2d4740764a62c10315f6ffd848460c90a59c0a6483232efde603f891838\",\n     \"apps/architecture-lab/test/knowledge-source.test.mjs\": \"df766e101aab6efc2848682cca624dcb8a728290912f1d531e856bfb1079c4f8\",\n-    \"apps/sg-runtime/tests/assistant-ecr-integrity.mjs\": \"c6e32397b7c54384b73b1f2539fa7289ba0e967ae53c9b2d23efd75b421a1174\"\n+    \"apps/sg-runtime/tests/assistant-ecr-integrity.mjs\": \"c6e32397b7c54384b73b1f2539fa7289ba0e967ae53c9b2d23efd75b421a1174\",\n+    \"apps/sg-runtime/tests/assistant-ecr-precision-integrity.mjs\": \"382423585cce9a68dbdfe6bf0af591b0a61c8de4431dc115b113bb757442652f\"\n   },\n   \"previousReceipts\": {\n     \"apps/sg-runtime/assistant-quality-integration.json\": \"d37226bbb90d585b95aab383dab6fcb7d20ab8698709b50de0e1c8a58d1af2a7\",\n",
+    "requested": [
+      "Apply and test this exact incremental four-file diff on top of the already approved SDK4 source; this adds only the fifth SDK adapter, while host inventory remains27.",
+      "Refresh CI27 source fingerprints and exact metadata to that approved SDK5 source, preserving current main and every original source assertion, receipt, test body, path/expiry/branch fence.",
+      "The previously approved B29-1 protected bootstrap remains exact-source gated; full native host CI and resulting-main CI remain required before Development rollout."
+    ],
+    "newRights": false,
+    "newRoles": false,
+    "newSecrets": false,
+    "newCosts": false,
+    "paidRepairsEnabled": false,
+    "promotionEnabled": false,
+    "pilotStarted": false,
+    "originalReceiptsAndTestBodiesRetained": true,
+    "testStatus": "NOT_EXECUTED_PENDING_EXPLICIT_CLOSED_SCOPE_AMENDMENT",
+    "consolidatedFollowup": {
+      "id": "B29-SDK5-AND-EXISTING-NPM-RECIPIENT",
+      "status": "OWNER_APPROVED_APPLIED_SOURCE_AND_CREDENTIAL",
+      "sdk5DiffSha256": "0647743bdaad72950f918e89cb1f31bdbedbe2b6ef456f7cd4b0fd52588896a8",
+      "existingNpmCredential": {
+        "source": {
+          "provider": "Render",
+          "workspaceId": "tea-d7lps8rbc2fs73cn80dg",
+          "serviceId": "srv-dapa3tid0e5s73f8bc5g",
+          "name": "NPM_TOKEN"
+        },
+        "recipient": {
+          "provider": "GitHub",
+          "repository": "profitia/SG-dev",
+          "environment": "aqc-verifier-development",
+          "secretName": "NPM_TOKEN",
+          "mainOnly": true
+        },
+        "transfer": "Read exactly the existing NPM_TOKEN through the owner-authenticated Render setting, place it transiently in this task's private0700 directory/file0600, send only through stdin to the supported GitHub environment-secret setter, remove the file immediately in finally; never print or commit its value.",
+        "use": "The existing admitted trusted verifier step fetches exactly @profitia/cic-core@1.8.0 with --ignore-scripts and the frozen SHA512; no token transfer to executor, isolated test process, worker, publisher or public artifact.",
+        "tokenScopeChanged": false,
+        "newTokenCreated": false,
+        "broaderTokenReused": false,
+        "hostConfigurationChanged": false,
+        "expiresBy": "2026-11-27T23:59:59.000Z",
+        "removeRecipientAtCompletionOrExpiry": true,
+        "sourceTokenCapabilitiesNotIndependentlyVerified": true,
+        "risk": "Adds a second private recipient of an existing package credential; the token's provider-level package scope is unchanged, while the admitted verifier code limits its use to the frozen CIC artifact."
+      },
+      "automaticApprovalReview": {
+        "action": "Read source NPM_TOKEN and write private transit file",
+        "decision": "REJECTED_NOT_EXECUTED",
+        "reason": "Missing explicit trusted owner approval for this exact secret and transfer method."
+      },
+      "actualProbe": {
+        "runId": 44501817882,
+        "sourceSha": "b7124509574ca5bbcac6bbff61c49c560b87b75b",
+        "nativeLinuxAttestationJob": 135483691292,
+        "attestationConclusion": "success",
+        "verifierJob": 135483964050,
+        "actualFailure": "NPM_TOKEN_EMPTY_BEFORE_ANY_NPM_REQUEST",
+        "expectedMissingContextGateReached": false,
+        "qaReadOrModelRequest": false
+      },
+      "noNewCostsOrResources": true,
+      "paidRepairsEnabled": false,
+      "promotionEnabled": false,
+      "pilotStarted": false,
+      "ownerApproval": {
+        "questionId": "call_56750d6941af4a1bbf75db0756330255",
+        "answer": "Zatwierdzam cały pakiet SDK5 i NPM_TOKEN",
+        "source": "416d35d512a08cef00aca6ad4081952d6bf798ae",
+        "recipient": "profitia/SG-dev/aqc-verifier-development/NPM_TOKEN",
+        "sourceService": "srv-dapa3tid0e5s73f8bc5g",
+        "expires": "2026-11-27T23:59:59.000Z"
+      }
+    }
   }
 }

@@ -1,3 +1,4 @@
+import {pathToFileURL} from 'node:url'
 // Test/build-only closed source continuation. Never imported by a runtime.
 import assert from 'node:assert/strict'
 import {createHash} from 'node:crypto'
@@ -165,7 +166,16 @@ export async function createAcgLegacyRecurringFixture(sourceRoot) {
   const pin = String(read(RESERVATION_DERIVED)).match(/ASSISTANT_RESERVATION_SOURCE_SHA='([a-f0-9]{64})'/)?.[1]
   // Authenticate every current source and preserved receipt before creating any
   // historical input. Malformed present records must never select the old root.
-  const view = assistantReservationPredecessor(read, historical, pin)
+  const knowledgeRecord='apps/architecture-lab/knowledge-source.json'
+  let knowledge=null,knowledgePresent=false
+  try { const stat=fs.lstatSync(path.join(sourceRoot,knowledgeRecord));assert(stat.isFile()&&!stat.isSymbolicLink());knowledgePresent=true }
+  catch(error){if(error.code!=='ENOENT')throw error}
+  if(knowledgePresent){
+    const {knowledgeSourcePredecessor}=await import(pathToFileURL(path.join(sourceRoot,'apps/architecture-lab/knowledge-source.mjs')).href)
+    knowledge=knowledgeSourcePredecessor(read,historical);assert(knowledge,'present Knowledge source requires complete authentication')
+  }
+  const acceptedRead=knowledge?.previousBytes??read
+  const view = assistantReservationPredecessor(acceptedRead, historical, pin)
   assert(view, 'present source record requires authenticated predecessor')
   const sourceSha = String(git(['rev-parse', 'HEAD'])).trim()
   const temporary = fs.mkdtempSync(path.join(os.tmpdir(), 'acg-legacy-recurring-test-'))
@@ -177,13 +187,16 @@ export async function createAcgLegacyRecurringFixture(sourceRoot) {
     // Preserve the real observed authority ref in this local test clone.
     const authoritySha = String(git(['rev-parse', '--verify', 'refs/remotes/origin/main^{commit}'])).trim()
     execFileSync('git', ['update-ref', 'refs/remotes/origin/main', authoritySha], {cwd: root, stdio: ['ignore', 'pipe', 'pipe']})
-    const paths = [RESERVATION_RECORD, ...RESERVATION_PATHS, RESERVATION_DERIVED]
-    assert.equal(new Set(paths).size, 46, 'closed reservation fixture inventory')
+    const reservationPaths=[RESERVATION_RECORD,...RESERVATION_PATHS,RESERVATION_DERIVED]
+    assert.equal(new Set(reservationPaths).size,46,'closed reservation fixture inventory')
+    const reserved=new Set(reservationPaths)
+    const knowledgePaths=knowledge?[...Object.keys(knowledge.manifest.sourceDigests),knowledgeRecord,'apps/architecture-lab/knowledge-source.mjs',...['architecture-lab','sg-runtime','srm'].map(app=>'apps/'+app+'/knowledge-source-adoption.json')]:[]
+    const paths=[...new Set([...knowledgePaths,...reservationPaths])]
     for (const relative of paths) {
       assert(!path.isAbsolute(relative) && !relative.split('/').includes('..'))
       const file = path.join(root, relative)
       try {
-        const bytes = view.previousBytes(relative)
+        const bytes = reserved.has(relative)?view.previousBytes(relative):acceptedRead(relative)
         fs.mkdirSync(path.dirname(file), {recursive: true})
         fs.writeFileSync(file, bytes)
         fs.chmodSync(file, 0o644)
