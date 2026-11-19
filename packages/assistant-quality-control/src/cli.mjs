@@ -1,6 +1,7 @@
 import {SOURCE_PATHS,documentDigest,assertVerifiedRepairManifest} from './manifest.mjs'
 import {createHash as controlledReadHash} from 'node:crypto'
 import {repairManifestBody,prepareQualityControllerJobContext} from './job-context.mjs'
+import {admitQualityNativeJobState} from './job-state.mjs'
 
 /** Prepare reviewable unsigned metadata. These builders create no signature,
  * role, permission, resource, wallet, installation or runtime activation. The
@@ -13,14 +14,14 @@ export function ownerMandateBody({id,issuedAt,expiresAt,targetServiceId,gateSetS
 }
 export {repairManifestBody,prepareQualityControllerJobContext}
 
-/** Job inputs carry seven IDs/digests, plus two native permit fields for EXECUTE. No command, context payload,
+/** Seven IDs/digests, two native EXECUTE permit fields and optional bounded state.\n * State requires the actual native invocation/event and conveys no authority. No command, context payload,
  * case, secret or private QA is accepted through workflow_dispatch. Native run
  * identity must separately pass assertQualityControllerJobIdentity. */
-export async function readQualityControllerJobContext({inputs,...options}){
+export async function readQualityControllerJobContext({inputs,nativeInvocation,nativeEnvironment,...options}){
  const {readQualityJobBinding}=await import('./controller.mjs')
  if(!inputs||Object.getPrototypeOf(inputs)!==Object.prototype
   ||Object.keys(inputs).sort().join(',')!==['mode','action','nonce','control_source_sha','incident_id','manifest_sha256','base_sha',
-    ...(inputs.action==='EXECUTE'?['permit_id','permit_expires_at']:[])].sort().join(',')
+    ...(inputs.action==='EXECUTE'?['permit_id','permit_expires_at']:[]),...(Object.hasOwn(inputs,'state')?['state']:[])].sort().join(',')
   ||inputs.mode!=='controller-job'||!hash64(inputs.manifest_sha256))unavailable('JOB_CONTEXT_INPUT_INVALID')
  const externalId='aqc-job:'+inputs.control_source_sha+':'+inputs.nonce+':'+inputs.action
  readQualityJobBinding(externalId,{nonce:inputs.nonce,action:inputs.action})
@@ -34,7 +35,9 @@ export async function readQualityControllerJobContext({inputs,...options}){
    ||expiry>Date.parse(context.manifest.mandate.expiresAt))unavailable('JOB_CONTEXT_PERMIT_INVALID')
   permit=Object.freeze({incidentId:context.manifest.incidentId,attemptId:inputs.nonce,permitId:inputs.permit_id,expiresAt:inputs.permit_expires_at})
  }
- return Object.freeze({...context,externalId,...(permit===undefined?{}:{permit})})
+ const jobState=Object.hasOwn(inputs,'state')?await admitQualityNativeJobState({inputs,manifest:context.manifest,externalId,
+  invocation:nativeInvocation,...(nativeEnvironment===undefined?{}:{environment:nativeEnvironment}),now:options.now??Date.now()}):undefined
+ return Object.freeze({...context,externalId,...(permit===undefined?{}:{permit}),...(jobState===undefined?{}:{jobState})})
 }
 
 /** Trusted supervisor adapter, never invoked by standby. Workflow metadata is
