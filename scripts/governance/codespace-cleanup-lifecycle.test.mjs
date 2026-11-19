@@ -1351,6 +1351,14 @@ test('ordinary business closeout records promotion failure without losing its ve
 
 test('broker admission recovery allocates only the missing receipt and never repeats completed work',t=>{
   const {f,rt,events}=activatedFixture(t,{missing:true}),spec=workSpecFixture(f,{requireManagedCleanup:true})
+  const native=rt.run
+  rt.run=(cmd,args,cwd)=>{
+    if(cmd==='npx'&&args.includes('scripts/pmos-prepare-execution-handoff.ts')){
+      const out=args[args.indexOf('--output')+1]
+      assert.equal(fs.existsSync(out),false,'The real native CLI refuses to overwrite an existing bootstrap')
+    }
+    return native(cmd,args,cwd)
+  }
   assert.throws(()=>runTask(f.config,spec.work,rt),/Required managed cleanup/)
   assert.equal(fs.readFileSync(spec.log,'utf8'),'1')
   assert.equal(tracked(f.c.stateFile).resources.length,0)
