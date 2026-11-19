@@ -19,10 +19,14 @@ import { resolveEnvironmentProfile } from './environment-profile.mjs'
 import {assistantSdkPredecessor} from '../../apps/architecture-lab/assistant-m1-sdk-compatibility.mjs'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
-const calendarAcceptedInput=createCalendarAcceptedMainTestFixture(root)
-test.after(()=>calendarAcceptedInput.close())
-const legacyRecurringFixture=await createAcgLegacyRecurringFixture(calendarAcceptedInput.root)
-test.after(() => legacyRecurringFixture.close())
+let calendarAcceptedInput,legacyRecurringFixture
+test.before(async()=>{
+ calendarAcceptedInput=createCalendarAcceptedMainTestFixture(root)
+ legacyRecurringFixture=await createAcgLegacyRecurringFixture(calendarAcceptedInput.root)
+})
+test.after(()=>{
+ try{legacyRecurringFixture?.close()}finally{calendarAcceptedInput?.close()}
+})
 const approved = 'b40564130fe7b6ced4d7df233dd6749653846114'
 const read = p => fs.readFileSync(path.join(root, p), 'utf8')
 const json = p => JSON.parse(read(p))
