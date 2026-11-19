@@ -1,6 +1,6 @@
 {
   "schemaVersion": "2.0",
-  "manifestVersion": "3.52.0",
+  "manifestVersion": "3.53.0",
   "owner": "Profitia Governance",
   "entrypoint": "AGENTS.md",
   "preflight": "scripts/governance/governance-preflight.mjs",
@@ -1668,6 +1668,30 @@
       ],
       "dependsOn": [
         "agent-execution-canon"
+      ]
+    },
+    {
+      "id": "acg-cic-phased-live-and-kys-risk-context-amendment",
+      "version": "1.0",
+      "path": "Canon/v1.0-acg-cic-phased-live-and-kys-risk-context-amendment.md",
+      "status": "ACTIVE",
+      "loadOrder": 580,
+      "owner": "Governance Source Layer",
+      "appliesTo": [
+        "SG2",
+        "SRM",
+        "ARCHITECTURE",
+        "CIC"
+      ],
+      "dependsOn": [
+        "agent-execution-canon",
+        "repository-routing",
+        "architecture-baseline",
+        "operation-context-and-access-contract",
+        "operation-access-matrix",
+        "platform-appshell-business-and-architecture-canon",
+        "profitia-package-and-limits-management",
+        "platform-knowledge-business-and-architecture-canon"
       ]
     }
   ]

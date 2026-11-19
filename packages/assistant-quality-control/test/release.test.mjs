@@ -9,7 +9,7 @@ const oldId='dep-aaaaaaaaaaaaaaaaaaaa',newId='dep-bbbbbbbbbbbbbbbbbbbb',foreignI
 const live=(id=oldId,source=old,status='live')=>({id,status,commit:{id:source}})
 const service={id:'srv-dapa3tid0e5s73f8bc5g',ownerId:'tea-d7lps8rbc2fs73cn80dg',type:'web_service',branch:'main',
  repo:'https://github.com/profitia/SG-dev',autoDeploy:'no',environmentId:'evm-dap98hm0tbcc738rro10',serviceDetails:{url:'https://sg2-development-runtime.onrender.com'}}
-const proof=async({sourceSha})=>({verified:true,sourceSha,proofSha256:digest,configurationSha256:digest})
+const proof=async({sourceSha})=>({verified:true,sourceSha,proofSha256:digest,artifactSha256:digest,configurationSha256:digest})
 function fixture({enabled=true,runtime=proof}={}){
  const calls=[];let current=live(),behavior=null
  const fetchImpl=async(url,options)=>{
@@ -79,12 +79,12 @@ test('uncertain deploy delivery is never automatically repeated',async()=>{
 })
 test('provider live status alone does not prove an exact running application',async()=>{
  const f=fixture({runtime:async()=>({verified:false})});f.setCurrent(live(newId,sha))
- const r=await f.client.reconcile({deployId:newId,sourceSha:sha,lastKnownGoodSha:old,artifactSha256:digest,configurationSha256:digest})
+ const r=await f.client.reconcile({deployId:newId,sourceSha:sha,lastKnownGoodSha:old,lastKnownGoodDeployId:oldId,artifactSha256:digest,configurationSha256:digest})
  assert.equal(r.state,'UNKNOWN')
 })
 test('exact runtime proof closes technical release while preserving independent hashes',async()=>{
  const f=fixture();f.setCurrent(live(newId,sha))
- const r=await f.client.reconcile({deployId:newId,sourceSha:sha,lastKnownGoodSha:old,artifactSha256:digest,configurationSha256:digest})
+ const r=await f.client.reconcile({deployId:newId,sourceSha:sha,lastKnownGoodSha:old,lastKnownGoodDeployId:oldId,artifactSha256:digest,configurationSha256:digest})
  assert.equal(r.result.result,'RELEASED');assert.equal(r.result.exactRuntimeVerified,true)
  assert.equal(r.result.artifactSha256,digest)
 })
@@ -1139,4 +1139,76 @@ test('controller persists exact native result reference and dispatches the next 
  const posts=f.calls.filter(c=>c.method==='POST');assert.equal(posts.length,2)
  const state=JSON.parse(JSON.parse(posts[1].body).inputs.state)
  assert.deepEqual(state.record.reproduction.nativeJobs.qualify,ref)
+})
+
+
+test('deploy preserves a distinct verified patch identity rather than substituting the publication proof digest',async()=>{
+ const f=fixture(),artifact='d'.repeat(64),publicationProof='e'.repeat(64),configuration='f'.repeat(64)
+ const pending=await f.client.deploy({...deployOptions(),verifyIndependent:async({sourceSha})=>({
+  verified:true,sourceSha,proofSha256:publicationProof,artifactSha256:artifact,configurationSha256:configuration})})
+ assert.equal(pending.artifactSha256,artifact);assert.notEqual(pending.artifactSha256,publicationProof)
+ assert.equal(pending.configurationSha256,configuration);assert.equal(pending.lastKnownGoodDeployId,oldId)
+ f.setCurrent(live(newId,sha))
+ const observed=await f.client.reconcile(pending)
+ assert.equal(observed.state,'COMPLETE');assert.equal(observed.result.artifactSha256,artifact)
+ assert.equal(observed.result.lastKnownGoodSha,old);assert.equal(observed.result.lastKnownGoodDeployId,oldId)
+ assert.equal(f.calls.filter(c=>c.options.method==='POST').length,1)
+})
+test('a valid source proof without the exact patch digest stops before any provider access',async()=>{
+ const f=fixture()
+ await assert.rejects(f.client.deploy({...deployOptions(),verifyIndependent:async({sourceSha})=>({
+  verified:true,sourceSha,proofSha256:digest,configurationSha256:digest})}),{code:'INDEPENDENT_RELEASE_ARTIFACT_REQUIRED'})
+ assert.equal(f.calls.length,0)
+})
+test('reconciliation refuses a missing retained deployment identity before reading provider state',async()=>{
+ const f=fixture()
+ await assert.rejects(f.client.reconcile({deployId:newId,sourceSha:sha,lastKnownGoodSha:old,artifactSha256:digest,configurationSha256:digest}),{code:'RELEASE_INPUT_INVALID'})
+ assert.equal(f.calls.length,0)
+})
+test('a successful new runtime cannot hide a changed retained LKG provider source',async()=>{
+ const f=fixture(),pending=await f.client.deploy(deployOptions())
+ f.setBehavior(async(url,options)=>{
+  const suffix=url.split(service.id)[1]
+  if(suffix==='')return Response.json(service)
+  if(suffix==='/deploys?limit=20')return Response.json([{deploy:live(newId,sha)}])
+  if(suffix==='/deploys/'+newId)return Response.json(live(newId,sha))
+  if(suffix==='/deploys/'+oldId)return Response.json(live(oldId,'f'.repeat(40),'deactivated'))
+  throw Error('Unexpected fixed read')
+ })
+ await assert.rejects(f.client.reconcile(pending),{code:'LAST_KNOWN_GOOD_UNVERIFIED'})
+ assert.equal(f.calls.filter(c=>c.options.method==='POST').length,1,'no second mutation after the original deploy')
+})
+
+test('publisher rejects expiry during source reads before the first Git mutation',async()=>{
+ const f=await publicationFixture()
+ f.state.drift=async url=>{if(url.endsWith('/git/commits/'+old))f.state.clock+=11000}
+ await assert.rejects(f.client.propose(f.proposal()),{code:'PUBLISHER_PROOF_STALE'})
+ assert.equal(f.calls.filter(c=>['POST','PUT','PATCH','DELETE'].includes(c.options.method)).length,0)
+})
+test('publisher rechecks the original proof lease between every Git mutation without renewing it',async()=>{
+ for(const stopAfter of [1,2,3,4,5]){
+  const f=await publicationFixture();let effects=0
+  f.state.drift=async(_url,options)=>{
+   if(options.method==='POST'&&++effects===stopAfter)f.state.clock+=11000
+  }
+  await assert.rejects(f.client.propose(f.proposal()),{code:'PUBLISHER_PROOF_STALE'})
+  assert.equal(effects,stopAfter,'No mutation may follow the original proof expiry')
+  assert.equal(f.calls.some(c=>c.url.endsWith('/pulls')),false)
+ }
+})
+test('publisher refuses a forged independent lease before provider access',async()=>{
+ const f=await publicationFixture()
+ const client=createQualityGitHub({token:'synthetic',publisherEnabled:true,fetchImpl:async()=>{throw Error('Unexpected provider request')}})
+ await assert.rejects(client.propose({...f.proposal(),verifyIndependent:async()=>({
+  verified:true,artifactSha256:f.verification.artifactSha256,proofSha256:f.verification.proofSha256,
+  assertFresh:()=>true})}),{code:'INDEPENDENT_PUBLISH_PROOF_LEASE_REQUIRED'})
+})
+test('merge rechecks proof freshness after the last independent patch inspection',async()=>{
+ const f=await publicationFixture();let expired=false
+ f.state.drift=async url=>{
+  if(!expired&&f.state.reads===2&&url.endsWith('/pulls/43')){expired=true;f.state.clock+=11000}
+ }
+ await assert.rejects(f.client.merge(f.merge()),{code:'PUBLISHER_PROOF_STALE'})
+ assert.equal(expired,true)
+ assert.equal(f.calls.some(c=>c.options.method==='PUT'),false)
 })

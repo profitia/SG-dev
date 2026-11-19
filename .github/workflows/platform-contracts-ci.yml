@@ -353,8 +353,8 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           ref: ${{ github.sha }}
-          fetch-depth: 0
           path: control
+          fetch-depth: 0
           persist-credentials: false
       - name: Bind trusted control to the provider-pinned main snapshot
         shell: bash
