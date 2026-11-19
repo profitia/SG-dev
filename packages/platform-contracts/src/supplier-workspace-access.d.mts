@@ -26,3 +26,23 @@ export const SUPPLIER_WORKSPACE_ACCESS_PROPOSAL:Readonly<{
 export function describeSupplierWorkspaceOperation(operation:string):SupplierWorkspaceOperationDescription;
 /** Checks metadata agreement only; it is not an authorization proof. */
 export function assertSupplierWorkspaceDescriptorMatches(actual:unknown,expected:SupplierWorkspaceNativeDescriptor,options?:{now?:()=>number}):void;
+
+import type {OperationContext,Application,OperationId} from './operation-context.mjs';
+import type {AccessQuery} from './access-store.mjs';
+export const SUPPLIER_WORKSPACE_ROOT_IMPLEMENTATION:'1.0.0-candidate.26';
+export const SUPPLIER_WORKSPACE_OPERATIONS:readonly SupplierWorkspaceOperation[];
+export const SUPPLIER_WORKSPACE_NEW_OPERATIONS:readonly SupplierWorkspaceOperation[];
+export const SUPPLIER_WORKSPACE_OPERATION_RULES:Readonly<Record<string,Readonly<{feature:'supplier_workspace';resourceType:string;dataClass:'ORGANISATION_PRIVATE';effect:'READ'|'WRITE';product:null;mode:'ORGANISATION'}>>>;
+export function supplierWorkspaceOperationPolicy(operation:string):SupplierWorkspaceOperationDescription|null;
+export function validateSupplierWorkspaceAdoption(options:{application?:Application;supplierWorkspaceSchemaDigest?:string;[key:string]:unknown}):boolean;
+export function supplierWorkspaceRequiredPermissions(operation:string,payload:unknown):readonly SupplierWorkspaceOperation[];
+export const supplierWorkspaceSchemaUrl:string;
+export interface SupplierWorkspaceLease extends SupplierWorkspaceNativeDescriptor {
+ readonly decisionId:string;readonly resourceId:string;readonly accessPolicyVersion:string;
+}
+export function createSupplierWorkspaceScopeStore(options:{schemaDigest:string;sourceRef:string;now?:()=>number}):Readonly<{
+ bind(query:AccessQuery,context:Readonly<OperationContext>):Promise<Readonly<SupplierWorkspaceLease>>;
+ verify(query:AccessQuery,lease:Readonly<SupplierWorkspaceLease>,context:Readonly<OperationContext>):Promise<void>;
+ execute(query:AccessQuery,lease:Readonly<SupplierWorkspaceLease>,context:Readonly<OperationContext>):Promise<unknown>;
+}>;
+export function supplierWorkspaceSourceDigest():Promise<string>;

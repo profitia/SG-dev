@@ -109,3 +109,12 @@ export declare const NATIVE_ACCOUNT_RECHECK_HOST_CONTRACT:Readonly<{id:'profitia
 export declare const REPORT_ADMISSION_HOST_CONTRACT:Readonly<{id:'profitia.private-operation-host';version:'1.14.0'}>
 
 export declare const REQUEST_QUOTA_HOST_CONTRACT:Readonly<{id:'profitia.private-operation-host';version:'1.15.0'}>
+
+export interface SupplierWorkspaceSourceBinding{readonly schemaDigest:string;readonly sourceRef:string}
+export type SupplierWorkspaceOperationHostOptions<Transaction>=Parameters<typeof createPrivateOperationHost<Transaction>>[0]&{
+ supplierWorkspace:SupplierWorkspaceSourceBinding;
+};
+export declare function createSupplierWorkspaceOperationHost<Transaction>(options:SupplierWorkspaceOperationHostOptions<Transaction>):Readonly<{
+ contract:OperationExecutor['contract'];hostContract:Readonly<{id:'profitia.private-operation-host';version:'1.17.0'}>;
+ execute(input:import('./operation-context.mjs').OperationInput):Promise<Readonly<{decision:'ALLOW';decisionId:string;contractId:string;contractVersion:string;value:unknown}>>;
+}>;

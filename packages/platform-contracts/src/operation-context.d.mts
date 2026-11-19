@@ -1,5 +1,5 @@
 import type { RequestPolicy, RequestReservation, RequestReceipt } from './request-ledger.mjs'
-export type OperationId = import('./knowledge-operations.mjs').KnowledgeOperation | import('./recurring-job.mjs').RecurringJobOperation | 'insights.report.start' | 'insights.report.status' | 'insights.report.list' | 'insights.report.download' | import('./supplier-location.mjs').SupplierLocationOperation | 'assistant.converse' | 'assistant.history.read' | 'assistant.history.write' | 'account.settings.read' | 'account.settings.write' | 'knowledge.read' | 'benchmark.selection.read' | 'benchmark.selection.write' | 'category.read' | 'category.write' | 'supplier.assignment.read' | 'supplier.assignment.write' | 'forecast.read' | 'forecast.request' | 'supplier.report.refresh' | 'job.execute' | 'knowledge.ingest' | 'personal.list.read' | 'personal.list.write' | 'supplier.report.read' | 'supplier.report.project' | 'supplier.report.export' | 'supplier.private.read' | 'supplier.private.reveal' | 'supplier.private.export' | 'supplier.private.refresh' | 'benchmark.discovery.request' | 'benchmark.discovery.read'
+export type OperationId = import('./supplier-workspace-access.mjs').SupplierWorkspaceOperation | import('./knowledge-operations.mjs').KnowledgeOperation | import('./recurring-job.mjs').RecurringJobOperation | 'insights.report.start' | 'insights.report.status' | 'insights.report.list' | 'insights.report.download' | import('./supplier-location.mjs').SupplierLocationOperation | 'assistant.converse' | 'assistant.history.read' | 'assistant.history.write' | 'account.settings.read' | 'account.settings.write' | 'knowledge.read' | 'benchmark.selection.read' | 'benchmark.selection.write' | 'category.read' | 'category.write' | 'supplier.assignment.read' | 'supplier.assignment.write' | 'forecast.read' | 'forecast.request' | 'supplier.report.refresh' | 'job.execute' | 'knowledge.ingest' | 'personal.list.read' | 'personal.list.write' | 'supplier.report.read' | 'supplier.report.project' | 'supplier.report.export' | 'supplier.private.read' | 'supplier.private.reveal' | 'supplier.private.export' | 'supplier.private.refresh' | 'benchmark.discovery.request' | 'benchmark.discovery.read'
 export type OperationOutcome = 'SUCCEEDED' | 'NO_DATA' | 'SELECTION_UNAVAILABLE'
 export type Environment = 'development' | 'staging' | 'production'
 export type Json = null | boolean | number | string | Json[] | { [key: string]: Json }
@@ -65,7 +65,7 @@ export interface DelegatedJob {
 }
 /** Trusted module binding provenance; carries no credential or permission. */
 export interface ModuleEvidence {
-  moduleId: 'benchmark' | 'category' | 'supplier_report'; moduleBindingId: string
+  moduleId: 'benchmark' | 'category' | 'supplier_report' | 'supplier_workspace'; moduleBindingId: string
   version: string; sourceRef: string; expiresAt: string; transactionId: string
   moduleSchemaDigest: string; auditSchemaDigest: string
 }
@@ -152,7 +152,7 @@ export declare function operationPayloadDigest(payload: Json): string
 export declare function operationSourceDigest(): Promise<string>
 export declare function normalizeModuleEvidence(value: unknown, options?: { now?: () => number; allowExpired?: boolean }): Readonly<ModuleEvidence>
 export declare function createOperationExecutor<Transaction>(options: {
-  application: Application; now?: () => number; knowledgeSchemaDigest?:string; recurringSchemaDigest?:string; locationAdmissionSchemaDigest?:string; reportAdmissionSchemaDigest?:string; requestQuotaSchemaDigest?:string; assistantSchemaDigest?:string
+  application: Application; now?: () => number; supplierWorkspaceSchemaDigest?:string; knowledgeSchemaDigest?:string; recurringSchemaDigest?:string; locationAdmissionSchemaDigest?:string; reportAdmissionSchemaDigest?:string; requestQuotaSchemaDigest?:string; assistantSchemaDigest?:string
   authenticate(request: unknown): Promise<Actor | null>
   /** Locks authoritative state and commits effects + OUTCOME atomically; rollback on throw. */
   withTransaction<T>(binding: { actor: Readonly<Actor>; request: Readonly<BoundRequest> }, action: (session: OperationSession<Transaction>) => Promise<T>): Promise<T>
@@ -166,3 +166,5 @@ export declare const REPORT_ADMISSION_ROOT_CONTRACT:Readonly<{id:'profitia.opera
 export declare const REQUEST_QUOTA_ROOT_CONTRACT:Readonly<{id:'profitia.operation-context';version:'1.0.0';implementation:'1.0.0-candidate.19'}>
 
 export declare const KNOWLEDGE_ROOT_CONTRACT:Readonly<{id:"profitia.operation-context";version:"1.0.0";implementation:"1.0.0-candidate.23"}>
+
+export declare const SUPPLIER_WORKSPACE_ROOT_CONTRACT:Readonly<{id:'profitia.operation-context';version:'1.0.0';implementation:'1.0.0-candidate.26'}>
