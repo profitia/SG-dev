@@ -8,7 +8,7 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import {execFileSync} from 'node:child_process'
 import {createHash} from 'node:crypto'
-import {marketCalendarSourcePredecessor,calendarTestCompatibilityCurrent,MARKET_CALENDAR_TEST_COMPATIBILITY_RECORD,MARKET_CALENDAR_PRODUCER_PATHS,MARKET_CALENDAR_PRODUCER_RECORD,MARKET_CALENDAR_PRODUCER_BASE,MARKET_CALENDAR_PRODUCER_RECORD_SHA,MARKET_CALENDAR_CONSUMER_PATHS,MARKET_CALENDAR_CONSUMER_RECORD} from '../market-calendar-source.mjs'
+import {bsdcManifestContinuityCurrent,BSDC_MANIFEST_CONTINUITY,marketCalendarSourcePredecessor,calendarTestCompatibilityCurrent,MARKET_CALENDAR_TEST_COMPATIBILITY_RECORD,MARKET_CALENDAR_PRODUCER_PATHS,MARKET_CALENDAR_PRODUCER_RECORD,MARKET_CALENDAR_PRODUCER_BASE,MARKET_CALENDAR_PRODUCER_RECORD_SHA,MARKET_CALENDAR_CONSUMER_PATHS,MARKET_CALENDAR_CONSUMER_RECORD} from '../market-calendar-source.mjs'
 const root=new URL('../../../',import.meta.url),rawPhysical=p=>fs.readFileSync(new URL(p,root)),cache=new Map(),historical=(sha,p)=>{const k=sha+':'+p;if(!cache.has(k))cache.set(k,execFileSync('git',['show',k],{cwd:root,stdio:['ignore','pipe','pipe']}));return cache.get(k)}
 const reservation=assistantReservationPredecessor(knowledgeSourcePredecessor(rawPhysical,historical)?.previousBytes??rawPhysical,historical,ASSISTANT_RESERVATION_SOURCE_SHA),acceptedPhysical=reservation?.previousBytes??rawPhysical
 // Authenticate the complete current SDK and both receivers before Calendar history.
@@ -53,4 +53,61 @@ test('separate consumer adoption binds its actual producer and preserved receipt
  for(const p of [...MARKET_CALENDAR_CONSUMER_PATHS,...receipts,...MARKET_CALENDAR_PRODUCER_PATHS])assert.throws(()=>marketCalendarSourcePredecessor(f=>f===p?Buffer.concat([read()(f),Buffer.from('UNBOUND')]):read()(f),old),p)
  for(const mutate of [v=>v.noProviderAcquisition=false,v=>v.producerRecordSha256='0'.repeat(64),v=>v.sourceDigests['unbound.ts']='a'.repeat(64),v=>delete v.sourceDigests[pkg],v=>v.userId='other',v=>v.preservedReceipts={}]){const v=structuredClone(a);mutate(v);assert.throws(()=>marketCalendarSourcePredecessor(read(v),old))}
  const changed=JSON.parse(sources.get(pkg));changed.dependencies['unapproved-package']='1.0.0';sources.set(pkg,Buffer.from(JSON.stringify(changed)));const rebound=structuredClone(a);rebound.sourceDigests[pkg]=digest(sources.get(pkg));assert.throws(()=>marketCalendarSourcePredecessor(read(rebound),old),'rebound metadata cannot add a dependency')
+})
+
+// Positive readers use actual accepted Git bytes. Corruptions below are
+// negative-only and cannot admit a new source, manifest or runtime authority.
+const publishedManifestPath=BSDC_MANIFEST_CONTINUITY.manifestPath
+const publishedManifestLedger='Canon/registries/governance-manifest-successors-v1.json'
+const publishedAuthority='refs/remotes/origin/main'
+const publishedManifestHash='a9c3746dcad97acca504354c3a0a10d02409be65f28f435cb034d1ca5b8fd96d'
+const originalAcceptedManifestHash='d8ddddd7b39b6b67ed7e4ca2b4407a47a4470497465f790a67be301ea4dcccd8'
+const publishedHash=bytes=>createHash('sha256').update(bytes).digest('hex')
+const originalAcceptedManifest=historical('a03956b6752227a7a14e44887feabd50a0ad1054',publishedManifestPath)
+assert.equal(publishedHash(originalAcceptedManifest),originalAcceptedManifestHash)
+const nativeHistoricalCurrent=p=>p===publishedManifestPath?originalAcceptedManifest:physical(p)
+const publishedAuthorityLedger=JSON.parse(historical(publishedAuthority,publishedManifestLedger))
+const publishedAuthorityGrant=publishedAuthorityLedger.successors.find(x=>x.manifestSha256===publishedManifestHash)
+const modifiedAuthorityLedger=change=>{
+ const ledger=structuredClone(publishedAuthorityLedger);change(ledger)
+ return (sha,p)=>sha===publishedAuthority&&p===publishedManifestLedger?Buffer.from(JSON.stringify(ledger)):historical(sha,p)
+}
+test('native Calendar traversal authenticates the exact published authority before its immutable historical predecessor',()=>{
+ assert.equal(publishedHash(historical(publishedAuthority,publishedManifestPath)),publishedManifestHash)
+ const view=bsdcManifestContinuityCurrent(nativeHistoricalCurrent,historical)
+ assert.deepEqual(view(publishedManifestPath),historical(BSDC_MANIFEST_CONTINUITY.baseSha,publishedManifestPath))
+})
+test('native Calendar traversal refuses a missing current authority admission',()=>{
+ const missing=modifiedAuthorityLedger(m=>m.successors=m.successors.filter(x=>x.manifestSha256!==publishedManifestHash))
+ assert.throws(()=>bsdcManifestContinuityCurrent(nativeHistoricalCurrent,missing),/unapproved governance manifest successor/)
+})
+test('native Calendar traversal verifies the current authority document and receipt',()=>{
+ assert(publishedAuthorityGrant)
+ for(const path of [...Object.keys(publishedAuthorityGrant.documentDigests),BSDC_MANIFEST_CONTINUITY.recordPath]){
+  const changed=(sha,p)=>sha===publishedAuthority&&p===path?Buffer.concat([historical(sha,p),Buffer.from('ALTERED')]):historical(sha,p)
+  assert.throws(()=>bsdcManifestContinuityCurrent(nativeHistoricalCurrent,changed),/immutable current authority BSDC evidence|current approved document/)
+ }
+})
+test('native Calendar traversal rejects altered or arbitrary future authority manifests',()=>{
+ for(const mutate of [bytes=>Buffer.concat([bytes,Buffer.from('\n')]),bytes=>{const m=JSON.parse(bytes);m.manifestVersion='3.54.0';return Buffer.from(JSON.stringify(m))}]){
+  const changed=(sha,p)=>sha===publishedAuthority&&p===publishedManifestPath?mutate(historical(sha,p)):historical(sha,p)
+  assert.throws(()=>bsdcManifestContinuityCurrent(nativeHistoricalCurrent,changed),/manifest successor is not based on current authority main/)
+ }
+})
+test('native Calendar traversal refuses a rebound current authority source',()=>{
+ const changed=modifiedAuthorityLedger(m=>m.successors.find(x=>x.manifestSha256===publishedManifestHash).sourceSha='c9de2488cca60b7bf2c8cb841a7e2586174f40f1')
+ assert.throws(()=>bsdcManifestContinuityCurrent(nativeHistoricalCurrent,changed))
+})
+test('native Calendar traversal verifies immutable current-authority successor and predecessor bytes',()=>{
+ assert(publishedAuthorityGrant)
+ for(const sha of [publishedAuthorityGrant.sourceSha,publishedAuthorityGrant.previousSourceSha]){
+  const changed=(s,p)=>s===sha&&p===publishedManifestPath?Buffer.concat([historical(s,p),Buffer.from('ALTERED')]):historical(s,p)
+  assert.throws(()=>bsdcManifestContinuityCurrent(nativeHistoricalCurrent,changed),/immutable predecessor manifest|immutable reviewed successor manifest/)
+ }
+})
+test('native Calendar traversal retains all original historical document assertions',()=>{
+ for(const path of BSDC_MANIFEST_CONTINUITY.sourcePaths.filter(p=>p!==publishedManifestPath)){
+  const changed=p=>p===path?Buffer.concat([nativeHistoricalCurrent(p),Buffer.from('ALTERED')]):nativeHistoricalCurrent(p)
+  assert.throws(()=>bsdcManifestContinuityCurrent(changed,historical))
+ }
 })
