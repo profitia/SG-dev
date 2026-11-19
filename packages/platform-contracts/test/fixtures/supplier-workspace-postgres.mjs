@@ -5,18 +5,11 @@
 // does not claim a positive end-to-end X-Ray/report acceptance.
 import fs from 'node:fs';
 import {createHash,randomUUID} from 'node:crypto';
-import pg from '../../../../apps/architecture-lab/node_modules/pg/lib/index.js';
 import {postgresFixture,clerkFixture} from './identity-profile-postgres.mjs';
 import {registerHooks} from 'node:module';
 // The pure SRM planner's CLI module imports pg. Reuse the one pinned fixture
 // dependency for that exact import only; no application dependency installation.
 const stagingUrl=new URL('../../../../apps/srm/scripts/staging-migrate.mjs',import.meta.url).href;
-const dependencyHook=registerHooks({resolve(specifier,context,next){
- if(specifier==='pg'&&context.parentURL===stagingUrl)return{url:new URL('../../../../apps/architecture-lab/node_modules/pg/lib/index.js',import.meta.url).href,shortCircuit:true};
- return next(specifier,context);
-}});
-let privateBusinessPlan;
-try{({privateBusinessPlan}=await import('../../../../apps/srm/db/private-store/initialize.mjs'))}finally{dependencyHook.deregister()}
 import {createSupplierWorkspaceHost} from '../../src/supplier-workspace-host.mjs';
 import {SUPPLIER_WORKSPACE_OPERATIONS} from '../../src/supplier-workspace-access.mjs';
 import {OPERATION_CONTRACT} from '../../src/operation-context.mjs';
@@ -43,8 +36,16 @@ const pairs=[
  ['022-organisation-location-grants.sql','profitia_access.organisation_location_installation'],
 ];
 const exact=(text,pattern,label)=>{const m=text.match(pattern);if(!m)throw Error('Canonical fixture excerpt missing: '+label);return m[0]};
-export async function supplierWorkspaceFixture(){
- const base=await postgresFixture();let admin,pool,auditPool;
+export async function supplierWorkspaceFixture({pg:suppliedPg,phoneParser:suppliedPhoneParser}={}){
+ // Each consumer supplies its pinned public test dependencies; defaults preserve Root-only CI.
+ const pg=suppliedPg??(await import('../../../../apps/architecture-lab/node_modules/pg/lib/index.js')).default;
+ const dependencyHook=suppliedPg?undefined:registerHooks({resolve(specifier,context,next){
+ if(specifier==='pg'&&context.parentURL===stagingUrl)return{url:new URL('../../../../apps/architecture-lab/node_modules/pg/lib/index.js',import.meta.url).href,shortCircuit:true};
+ return next(specifier,context);
+}});
+let privateBusinessPlan;
+try{({privateBusinessPlan}=await import('../../../../apps/srm/db/private-store/initialize.mjs'))}finally{dependencyHook?.deregister()}
+ const base=await postgresFixture({pg,phoneParser:suppliedPhoneParser});let admin,pool,auditPool;
  const A=randomUUID(),B=randomUUID(),U=randomUUID(),V=randomUUID(),W=randomUUID(),S=randomUUID(),SB=randomUUID();
  const clerk=clerkFixture(),config={...base.config,database:'platform_private'};
  const binding={applicationId:'srm',environment:'development',projectId:'spring-bread-28217539',
