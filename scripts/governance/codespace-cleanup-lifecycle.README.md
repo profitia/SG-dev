@@ -246,6 +246,15 @@ permission cannot be reused. The inspected Codespace already has ordinary-user
 sudo availability. This deployment adds no sudoers rule and changes no existing
 grant; the owner mandate limits its use to this reviewed component.
 
+Runtime acceptance correction: the Unix socket has a short task-bound name in the
+same protected run directory; its encoded path stays within Linux's107-byte
+pathname limit. Full task IDs remain bound in the immutable descriptor. If work
+already succeeded while broker admission failed, resume creates only the missing
+receipt cache, never repeats the business command. Uncaptured prior stdout is
+explicitly UNAVAILABLE_ON_RESUME with a null digest; canonical bootstrap identity
+and result binding remain mandatory. Existing captured cleanup/pending/PHR
+recovery continues to reuse the original measured result without another clean.
+
 Disable/rollback: set the root-controlled policy status to DISABLED. No sudoers
 entry is installed or removed by this deployment.
 Existing active tasks and journals remain intact. Stop a task normally after all
