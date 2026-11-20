@@ -1,10 +1,18 @@
-import {test,after} from 'node:test';import assert from 'node:assert/strict';
+import {test,after,before} from 'node:test';import assert from 'node:assert/strict';
 import pg from 'pg';import {randomUUID} from 'node:crypto';
 import {transaction,digest} from '../src/store.mjs';import {claimJob,withJob} from '../src/jobs.mjs';
 const uri=process.env.PK_TEST_DATABASE_URL;
 let pool;
 if(uri){const parsed=new URL(uri);if(!['127.0.0.1','localhost','pk-postgres'].includes(parsed.hostname)||parsed.pathname!=='/platform_knowledge')throw Error('ISOLATED_TEST_DATABASE_REQUIRED');
  pool=new pg.Pool({connectionString:uri,max:4});}
+// Migrations run only in the existing disposable localhost CI database. The
+// production migrator and approved activation remain separate operations.
+before(async()=>{if(!uri)return;const db=await pool.connect();try{
+ await db.query('BEGIN;SET LOCAL ROLE platform_knowledge_owner');
+ const {readFile}=await import('node:fs/promises');
+ await db.query(await readFile(new URL('../db/migrations/002-worker-audit-retention.sql',import.meta.url),'utf8'));
+ await db.query('COMMIT');
+}finally{await db.query('ROLLBACK');db.release();}});
 after(async()=>pool?.end());
 const rights={classification:'UNKNOWN',purpose:'PRIVATE',organisationConstraintId:null,externalAiAllowed:true,quotingAllowed:true,apiExcerptAllowed:true};
 const principal=user=>({internalUserId:user,organisationIds:[],allowedScopes:['ACCOUNT_PRIVATE'],sharedKnowledgeAllowed:false,operator:false,usePurpose:'CUSTOMER_SERVICE'});
@@ -252,4 +260,43 @@ test('uncertain upload retains its durable cleanup key until the deadline sweep'
  }finally{
   if(source){await pool.query('DELETE FROM platform_knowledge.jobs WHERE source_id=$1',[source.id]);await pool.query('DELETE FROM platform_knowledge.generations WHERE source_id=$1',[source.id]);await pool.query('DELETE FROM platform_knowledge.sources WHERE id=$1',[source.id]);}await api.end();
  }
+});
+
+
+test('real limited worker recovers VERIFY and API retrieves with public absent from search_path',{skip:!uri,timeout:15000},async()=>{
+ const {chunkDocument}=await import('../../../packages/platform-knowledge-core/src/chunking.mjs');
+ const {processJob}=await import('../src/processing.mjs'),{queryKnowledge}=await import('../src/knowledge.mjs'),{CONTEXT_TOKENIZER}=await import('../src/provider.mjs');
+ const workerUri=new URL(uri);workerUri.username='platform_knowledge_worker';workerUri.searchParams.set('options','-c search_path=pg_catalog');
+ const apiUri=new URL(uri);apiUri.username='platform_knowledge_api';apiUri.searchParams.set('options','-c search_path=pg_catalog');
+ const worker=new pg.Pool({connectionString:workerUri.href,max:2}),api=new pg.Pool({connectionString:apiUri.href,max:2});
+ const db=await pool.connect(),user=randomUUID(),text='Synthetic verified source ISO 9001:2015',chunkId=randomUUID(),jobId=randomUUID();let source;
+ const vector=Array(1536).fill(0.1),analysis={summary:text,statements:[{kind:'SOURCE_STATEMENT',claim:text,chunkId,quote:text}],terms:[],uncertainties:[]};
+ try{
+  await db.query('BEGIN;SET LOCAL ROLE platform_knowledge_owner');source=await fixture(db,user);
+  const normalized=chunkDocument([{id:'unit-1',kind:'PARAGRAPH',ordinal:1,status:'COMPLETE',text}],{countTokens:s=>s.length,maxTokens:768}),chunk=normalized.chunks[0];
+  await db.query('UPDATE platform_knowledge.generations SET source_digest=$2,inventory=$3,coverage=$4,character_count=$5,chunk_count=1 WHERE id=$1',[source.generation,normalized.sourceDigest,JSON.stringify({units:normalized.units,sourceInventoryVerified:true}),JSON.stringify(normalized.coverage),normalized.characterCount]);
+  await db.query('INSERT INTO platform_knowledge.chunks(id,generation_id,ordinal,start_offset,end_offset,text_content,sha256,token_count,locations,embedding) VALUES($1,$2,0,$3,$4,$5,$6,$7,$8,$9::public.vector)',[chunkId,source.generation,chunk.start,chunk.end,chunk.text,chunk.sha256,chunk.tokenCount,JSON.stringify(chunk.locations),JSON.stringify(vector)]);
+  await db.query('INSERT INTO platform_knowledge.cognition(generation_id,ordinal,chunk_ids,analysis,complete) VALUES($1,0,$2,$3,true)',[source.generation,[chunkId],JSON.stringify(analysis)]);
+  await db.query("INSERT INTO platform_knowledge.jobs(id,source_id,generation_id,kind,status,stage,attempt,fence,lease_owner,lease_until,delegation) VALUES($1,$2,$3,'IMPORT','RUNNING','VERIFY',2,2,'regression-worker',clock_timestamp()+interval '90 seconds',$4)",[jobId,source.id,source.generation,JSON.stringify({rightsDigest:digest(rights)})]);await db.query('COMMIT');
+  const job=(await worker.query('SELECT * FROM platform_knowledge.jobs WHERE id=$1',[jobId])).rows[0];let authorizations=0;
+  await processJob({pool:worker,storage:{get(){throw Error('CHECKPOINT_MUST_PREVENT_REEXTRACTION');}},provider:{analyze(){throw Error('CHECKPOINT_MUST_PREVENT_PAID_REANALYSIS');},embed(){throw Error('CHECKPOINT_MUST_PREVENT_PAID_REEMBEDDING');}},authorizeJob:async()=>{authorizations++;return{principal:principal(user)};},job});
+  assert.equal(authorizations,2);assert.equal((await db.query('SELECT status FROM platform_knowledge.jobs WHERE id=$1',[jobId])).rows[0].status,'READY');
+  assert.equal((await db.query('SELECT state FROM platform_knowledge.generations WHERE id=$1',[source.generation])).rows[0].state,'ACTIVE');
+  const result=await queryKnowledge({pool:api,provider:{embed:async()=>[vector],analyze:async()=>analysis,countContext:async s=>s.length},query:{version:'0.2.0',requestId:randomUUID(),task:'ANSWER',query:'ISO 9001:2015',language:'en',scopes:['ACCOUNT_PRIVATE'],documentIds:[source.id],maxTokens:12000,tokenizerId:CONTEXT_TOKENIZER,targetModel:'gpt-6-luna'},scope:{principal:{...principal(user),environment:'development'}}});
+  assert.equal(result.evidence.length,1);assert.equal(result.evidence[0].sourceId,source.id);assert.equal(result.evidence[0].text,text);
+ }finally{
+  await db.query('ROLLBACK');if(source){await db.query('UPDATE platform_knowledge.sources SET active_generation_id=NULL WHERE id=$1',[source.id]);for(const table of ['cognition','chunks'])await db.query('DELETE FROM platform_knowledge.'+table+' WHERE generation_id=$1',[source.generation]);for(const table of ['audit','provider_calls','jobs','generations'])await db.query('DELETE FROM platform_knowledge.'+table+' WHERE source_id=$1',[source.id]);await db.query('DELETE FROM platform_knowledge.sources WHERE id=$1',[source.id]);}db.release();await worker.end();await api.end();
+ }
+});
+
+test('audit expiry grants only timestamp visibility to the real worker and retains recent events',{skip:!uri,timeout:10000},async()=>{
+ const workerUri=new URL(uri);workerUri.username='platform_knowledge_worker';const worker=new pg.Client({connectionString:workerUri.href});
+ const db=await pool.connect(),actor='retention-regression-'+randomUUID();
+ try{
+  await worker.connect();await db.query("INSERT INTO platform_knowledge.audit(operation,actor_ref,outcome,created_at) VALUES('RETENTION_TEST',$1,'COMPLETED','2000-01-01T00:00:00Z'),('RETENTION_TEST',$1,'COMPLETED',clock_timestamp())",[actor]);
+  assert.equal((await worker.query("SELECT has_column_privilege(current_user,'platform_knowledge.audit','created_at','SELECT') AS allowed")).rows[0].allowed,true);
+  await assert.rejects(worker.query('SELECT actor_ref FROM platform_knowledge.audit LIMIT 1'),e=>e.code==='42501');
+  const removed=await worker.query("DELETE FROM platform_knowledge.audit WHERE created_at='2000-01-01T00:00:00Z'");assert.equal(removed.rowCount,1);
+  assert.equal((await db.query('SELECT count(*)::int AS n FROM platform_knowledge.audit WHERE actor_ref=$1',[actor])).rows[0].n,1);
+ }finally{await db.query('DELETE FROM platform_knowledge.audit WHERE actor_ref=$1',[actor]);db.release();await worker.end();}
 });
