@@ -1,11 +1,12 @@
 import test from 'node:test';import assert from 'node:assert/strict';
+import {createHash} from 'node:crypto';
 import {readFileSync} from 'node:fs';import {execFileSync} from 'node:child_process';
 import {knowledgeSourcePredecessor,KNOWLEDGE_SOURCE_RECORD,KNOWLEDGE_SOURCE_RECORD_SHA256} from '../knowledge-source.mjs';
 import {operationSourceDigest,OPERATION_CONTRACT,KNOWLEDGE_ROOT_CONTRACT} from '../../../packages/platform-contracts/src/operation-context.mjs';
 const root=new URL('../../../',import.meta.url),read=p=>readFileSync(new URL(p,root));
 const cache=new Map(),history=(sha,p)=>{const key=sha+':'+p;if(!cache.has(key))cache.set(key,execFileSync('git',['show',key],{cwd:root,stdio:['ignore','pipe','pipe']}));return cache.get(key);};
 test('closed knowledge SDK successor binds real current digest and immutable predecessor without runtime activation',async()=>{
- const view=knowledgeSourcePredecessor(read,history);assert(view);assert.equal(view.manifest.sdkDigests.operationSourceDigest,await operationSourceDigest());
+ const view=knowledgeSourcePredecessor(read,history);assert(view);assert.equal((view.currentSdkContext?.metadata.sdkDigests??view.manifest.sdkDigests).operationSourceDigest,await operationSourceDigest());
  assert.equal(OPERATION_CONTRACT.implementation,'1.0.0-candidate.16');assert.equal(KNOWLEDGE_ROOT_CONTRACT.implementation,'1.0.0-candidate.23');
  for(const p of Object.keys(view.manifest.replacements))assert.deepEqual(view.previousBytes(p),history(view.manifest.previousSourceSha,p),p);
  for(const p of view.manifest.knowledgeAddedPaths)assert.throws(()=>view.previousBytes(p),{code:'ENOENT'});
@@ -32,7 +33,11 @@ test('real historical absence is optional while unknown Git revisions and missin
 test('public Knowledge routing authenticates a real complete checkout without an unpublished controller export',async()=>{
  const fs=await import('node:fs'),os=await import('node:os'),path=await import('node:path');
  const {reviewedKnowledgeConsumerPaths}=await import('../../platform-source-hub/scripts/ci-routing.mjs');
- const source=knowledgeSourcePredecessor(read,history),base=source.manifest.previousSourceSha;
+ // Authenticate every current physical input first; the historical routing
+ // regression then constructs the complete immutable Knowledge cohort itself.
+ const currentView=knowledgeSourcePredecessor(read,history);
+ const fixtureRead=currentView.currentSdkContext?.baseline('knowledge')??read;
+ const source=knowledgeSourcePredecessor(fixtureRead,history),base=source.manifest.previousSourceSha;
  const temporary=fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(),'knowledge-public-routing-'))),fixture=path.join(temporary,'source');
  const env={...process.env,GIT_CONFIG_NOSYSTEM:'1',GIT_CONFIG_GLOBAL:'/dev/null'};
  const git=(cwd,...args)=>execFileSync('git',args,{cwd,env,encoding:'utf8',stdio:['ignore','pipe','pipe']}).trim();
@@ -40,7 +45,7 @@ test('public Knowledge routing authenticates a real complete checkout without an
   git(temporary,'clone','--quiet','--shared','--no-checkout',root.pathname,'source');
   git(fixture,'checkout','--quiet','--detach',base);
   const cyclic=[KNOWLEDGE_SOURCE_RECORD,'apps/architecture-lab/knowledge-source.mjs',...['architecture-lab','sg-runtime','srm'].map(app=>'apps/'+app+'/knowledge-source-adoption.json')];
-  for(const p of new Set([...Object.keys(source.manifest.sourceDigests),...cyclic])){const target=path.join(fixture,p);fs.mkdirSync(path.dirname(target),{recursive:true});fs.writeFileSync(target,read(p));git(fixture,'add','--',p);}
+  for(const p of new Set([...Object.keys(source.manifest.sourceDigests),...cyclic])){const target=path.join(fixture,p);fs.mkdirSync(path.dirname(target),{recursive:true});fs.writeFileSync(target,fixtureRead(p));git(fixture,'add','--',p);}
   git(fixture,'-c','user.name=Synthetic fixture','-c','user.email=synthetic@example.invalid','commit','--quiet','-m','SYNTHETIC_ONLY closed Knowledge source');
   const head=git(fixture,'rev-parse','HEAD'),review={baseSha:base,candidateSha:head},view=reviewedKnowledgeConsumerPaths(fixture,review);
   assert.equal(view.get('apps/sg-runtime/knowledge-source-adoption.json'),'SG2');assert.equal(view.get('apps/srm/knowledge-source-adoption.json'),'SRM');
@@ -70,7 +75,7 @@ test('current SRM Root target authenticates the actual optional producer while i
   assert.deepEqual(fs.readFileSync(modulePath),read('packages/platform-contracts/root-atomic-claim/src/root-atomic-claim.mjs'));
   const {rootAtomicClaimSourceDigest}=await import(pathToFileURL(modulePath).href);
   const file='apps/srm/deployment/root-atomic-claim-targets.json',view=knowledgeSourcePredecessor(read,history),current=JSON.parse(read(file));
-  assert.equal(current.sourceDigest,await rootAtomicClaimSourceDigest());assert.equal(current.sourceDigest,view.manifest.optionalPackageDigests.rootAtomicClaimSourceDigest);
+  assert.equal(current.sourceDigest,await rootAtomicClaimSourceDigest());assert.equal(current.sourceDigest,(view.currentSdkContext?.record.metadata??view.manifest).optionalPackageDigests.rootAtomicClaimSourceDigest);
   const previous=JSON.parse(view.previousBytes(file));assert.equal(previous.sourceDigest,'b3d6f2110f41ca93cac6a949b113a8582b6407688d81df1935cd8990424b393a');
   const {sourceDigest:now,...currentMetadata}=current,{sourceDigest:then,...previousMetadata}=previous;assert.notEqual(now,then);assert.deepEqual(currentMetadata,previousMetadata);
   assert.deepEqual(view.previousBytes(file),history(view.manifest.previousSourceSha,file));
@@ -90,6 +95,9 @@ test('complete Knowledge and accepted reservation graphs reject every altered pr
  }
  const historicalAcg=JSON.parse(view.previousBytes('apps/architecture-lab/assistant-reservation-source.json'));
  for(const p of Object.keys(historicalAcg.sourceDigests))assert.deepEqual(view.previousBytes(p),history(view.manifest.previousSourceSha,p),p);
- for(const p of ['apps/sg-runtime/lib/assistant/conversation.ts','apps/sg-runtime/lib/assistant/model.ts','apps/sg-runtime/lib/assistant/runtime.ts','packages/platform-contracts/src/assistant-usage.mjs','packages/platform-contracts/src/assistant-usage.d.mts','apps/package-limits/migrations/006-assistant-reservation-diagnostics.sql'])
-  assert.deepEqual(read(p),history(view.manifest.previousSourceSha,p),'preserved exact upstream repair '+p);
+ const acceptedRead=view.currentSdkContext?.baseline('knowledge')??read;
+ for(const p of ['apps/sg-runtime/lib/assistant/conversation.ts','apps/sg-runtime/lib/assistant/model.ts','apps/sg-runtime/lib/assistant/runtime.ts','packages/platform-contracts/src/assistant-usage.mjs','packages/platform-contracts/src/assistant-usage.d.mts','apps/package-limits/migrations/006-assistant-reservation-diagnostics.sql']){
+  assert.deepEqual(acceptedRead(p),history(view.manifest.previousSourceSha,p),'preserved exact upstream repair '+p);
+  if(view.currentSdkContext)assert.equal(createHash('sha256').update(read(p)).digest('hex'),view.currentSdkContext.currentSourceDigests[p],'authenticated current successor '+p);
+ }
 });

@@ -88,7 +88,7 @@ const MANIFEST_SUCCESSOR_LEDGER='Canon/registries/governance-manifest-successors
 const TRUSTED_MANIFEST_AUTHORITY='refs/remotes/origin/main'
 function approvedManifestSuccessor(current,historical,cfg,receipt,actual){
  const authorityBytes=Buffer.from(historical(TRUSTED_MANIFEST_AUTHORITY,MANIFEST_SUCCESSOR_LEDGER))
- const trustedMainManifest=Buffer.from(historical(TRUSTED_MANIFEST_AUTHORITY,cfg.manifestPath))
+ let trustedMainManifest=Buffer.from(historical(TRUSTED_MANIFEST_AUTHORITY,cfg.manifestPath))
  const ledger=JSON.parse(authorityBytes.toString('utf8'))
  assert.deepEqual(Object.keys(ledger).sort(),['schemaVersion','repository','manifestPath','successors'].sort())
  assert.equal(ledger.schemaVersion,'1.0')
@@ -111,6 +111,18 @@ function approvedManifestSuccessor(current,historical,cfg,receipt,actual){
  assert.match(grant.approvalRef,/^https:\/\/github\.com\/profitia\/SG-dev\/pull\/[0-9]+$/)
  for(const sha of [grant.sourceSha,grant.previousSourceSha])assert.match(sha,/^[a-f0-9]{40}$/)
  for(const sha of [grant.manifestSha256,grant.previousManifestSha256])assert.match(sha,/^[a-f0-9]{64}$/)
+ // Authenticate the exact published 3.53 authority before traversing its
+ // already accepted 3.52 predecessor. Current authority and all historical
+ // documents/receipts remain verified; no arbitrary later manifest is admitted.
+ if(cfg===BSDC_MANIFEST_CONTINUITY&&actual==='d8ddddd7b39b6b67ed7e4ca2b4407a47a4470497465f790a67be301ea4dcccd8'
+   &&hash(trustedMainManifest)==='a9c3746dcad97acca504354c3a0a10d02409be65f28f435cb034d1ca5b8fd96d'){
+  const authority=p=>Buffer.from(historical(TRUSTED_MANIFEST_AUTHORITY,p)),authorityReceipt=authority(cfg.recordPath)
+  assert.equal(hash(authorityReceipt),cfg.recordSha256,'immutable current authority BSDC evidence')
+  const admitted=approvedManifestSuccessor(authority,historical,cfg,JSON.parse(authorityReceipt),hash(trustedMainManifest))
+  assert.equal(hash(JSON.stringify(admitted.grant)),'1a410d9f2ae03d8e333773de606b445d8cc5431a2c6548c4a13a647d3c0b4f70','exact published current authority grant')
+  assert.equal(hash(admitted.previousManifest),actual,'exact accepted authority predecessor')
+  trustedMainManifest=Buffer.from(admitted.previousManifest)
+ }
  assert(grant.previousManifestSha256===hash(trustedMainManifest) ||
   grant.manifestSha256===hash(trustedMainManifest),
  'manifest successor is not based on current authority main')
@@ -144,6 +156,7 @@ function approvedManifestSuccessor(current,historical,cfg,receipt,actual){
  const bsdcManifest=Buffer.from(historical(receipt.approvedDocumentationSourceSha,cfg.manifestPath))
  assert.equal(hash(bsdcManifest),cfg.manifestSha256,'immutable BSDC successor')
  verifyPaths(p=>p===cfg.manifestPath?bsdcManifest:current(p),receipt.sourceDigests,cfg.sourcePaths)
+ return {grant,previousManifest:previous}
 }
 
 export function bsdcManifestContinuityCurrent(current,historical){

@@ -1,4 +1,6 @@
-import {pathToFileURL} from 'node:url'
+import {sdkSourceContext} from './sdk-source-context.mjs'
+import {benchmarkUnmeteredPredecessor} from './benchmark-unmetered-source.mjs'
+export const BENCHMARK_UNMETERED_SOURCE_SHA='42c5683bb5f39643dbc27c2016f6ca92106c163b2c2bcfdd1384d50d68ea09c6'
 // Test/build-only closed source continuation. Never imported by a runtime.
 import assert from 'node:assert/strict'
 import {createHash} from 'node:crypto'
@@ -113,6 +115,10 @@ export function reservationArchitectureSource(before,pin){
   .replace(entry,entry+"\n const reservation=assistantReservationPredecessor(current,historical,ASSISTANT_RESERVATION_SOURCE_SHA)\n if(reservation){const accepted=recurringSourcePredecessor(reservation.previousBytes,historical);assert(accepted,'all accepted predecessors retained');return {...accepted,reservation}}")
 }
 export function assistantReservationPredecessor(current,historical,expectedDigest){
+ const currentSdk=sdkSourceContext(current,historical)
+ if(currentSdk)return assistantReservationPredecessor(currentSdk.baseline('authority'),historical,expectedDigest)
+ const benchmark=benchmarkUnmeteredPredecessor(current,historical,BENCHMARK_UNMETERED_SOURCE_SHA)
+ if(benchmark){const accepted=assistantReservationPredecessor(benchmark.previousBytes,historical,expectedDigest);return accepted?{...accepted,benchmark,acceptedManifest:accepted.manifest,manifest:{...accepted.manifest,...benchmark.manifest,sourceDigests:{...accepted.manifest.sourceDigests,...benchmark.manifest.sourceDigests,...benchmark.consumerSourceDigests,['packages/platform-contracts/test/assistant-reservation-source.mjs']:hash(current('packages/platform-contracts/test/assistant-reservation-source.mjs'))}}}:null}
  let bytes;try{bytes=current(RESERVATION_RECORD)}catch(e){if(absent(e))return null;throw e}
  assert.match(expectedDigest??'',/^[a-f0-9]{64}$/);assert.equal(hash(bytes),expectedDigest,'exact reviewed reservation source record')
  const a=JSON.parse(bytes)
@@ -146,7 +152,7 @@ export function assistantReservationPredecessor(current,historical,expectedDiges
 }
 
 // Offline legacy unit-test input only; not a controller or runtime adoption.
-export async function createAcgLegacyRecurringFixture(sourceRoot) {
+export async function createAcgLegacyRecurringFixture(sourceRoot, {baselineSha} = {}) {
   const recordPath = 'apps/architecture-lab/assistant-reservation-source.json'
   try {
     const stat = fs.lstatSync(path.join(sourceRoot, recordPath))
@@ -166,37 +172,42 @@ export async function createAcgLegacyRecurringFixture(sourceRoot) {
   const pin = String(read(RESERVATION_DERIVED)).match(/ASSISTANT_RESERVATION_SOURCE_SHA='([a-f0-9]{64})'/)?.[1]
   // Authenticate every current source and preserved receipt before creating any
   // historical input. Malformed present records must never select the old root.
-  const knowledgeRecord='apps/architecture-lab/knowledge-source.json'
-  let knowledge=null,knowledgePresent=false
-  try { const stat=fs.lstatSync(path.join(sourceRoot,knowledgeRecord));assert(stat.isFile()&&!stat.isSymbolicLink());knowledgePresent=true }
-  catch(error){if(error.code!=='ENOENT')throw error}
-  if(knowledgePresent){
-    const {knowledgeSourcePredecessor}=await import(pathToFileURL(path.join(sourceRoot,'apps/architecture-lab/knowledge-source.mjs')).href)
-    knowledge=knowledgeSourcePredecessor(read,historical);assert(knowledge,'present Knowledge source requires complete authentication')
-  }
-  const acceptedRead=knowledge?.previousBytes??read
-  const view = assistantReservationPredecessor(acceptedRead, historical, pin)
+  const view = assistantReservationPredecessor(read, historical, pin)
   assert(view, 'present source record requires authenticated predecessor')
   const sourceSha = String(git(['rev-parse', 'HEAD'])).trim()
+const currentSdk = sdkSourceContext(read, historical)
+// A complete immutable authority cohort is required by the historical tests.
+// Authenticate the physical current SDK above; never mix its newer helper into
+// an old reservation graph. Explicit caller baselines retain their boundary.
+const fixtureBaseSha = baselineSha ?? currentSdk?.record.baselines.authority.sha ?? sourceSha
+assert(/^[a-f0-9]{40}$/.test(fixtureBaseSha), 'immutable complete fixture base')
+git(['merge-base', '--is-ancestor', fixtureBaseSha, sourceSha])
+const baseRead = relative => historical(fixtureBaseSha, relative)
+// Use one complete accepted cohort, never overlay legacy ACG paths onto a
+// newer SDK or Knowledge graph. Current source authentication remains above.
+const fixtureView = baselineSha ? assistantReservationPredecessor(baseRead, historical,
+  String(baseRead(RESERVATION_DERIVED)).match(/ASSISTANT_RESERVATION_SOURCE_SHA='([a-f0-9]{64})'/)?.[1]) : view
+assert(fixtureView, 'complete accepted reservation fixture')
+assert.deepEqual(baseRead(RESERVATION_RECORD), read(RESERVATION_RECORD), 'same immutable accepted reservation receipt')
   const temporary = fs.mkdtempSync(path.join(os.tmpdir(), 'acg-legacy-recurring-test-'))
   const root = path.join(temporary, 'fixture')
+  const acceptedRoot = path.join(temporary, 'accepted')
   const close = () => fs.rmSync(temporary, {recursive: true, force: true})
   try {
-    execFileSync('git', ['clone', '--shared', '--quiet', '--no-checkout', sourceRoot, root], {stdio: ['ignore', 'pipe', 'pipe']})
-    execFileSync('git', ['checkout', '--quiet', '--detach', sourceSha], {cwd: root, stdio: ['ignore', 'pipe', 'pipe']})
-    // Preserve the real observed authority ref in this local test clone.
     const authoritySha = String(git(['rev-parse', '--verify', 'refs/remotes/origin/main^{commit}'])).trim()
-    execFileSync('git', ['update-ref', 'refs/remotes/origin/main', authoritySha], {cwd: root, stdio: ['ignore', 'pipe', 'pipe']})
-    const reservationPaths=[RESERVATION_RECORD,...RESERVATION_PATHS,RESERVATION_DERIVED]
-    assert.equal(new Set(reservationPaths).size,46,'closed reservation fixture inventory')
-    const reserved=new Set(reservationPaths)
-    const knowledgePaths=knowledge?[...Object.keys(knowledge.manifest.sourceDigests),knowledgeRecord,'apps/architecture-lab/knowledge-source.mjs',...['architecture-lab','sg-runtime','srm'].map(app=>'apps/'+app+'/knowledge-source-adoption.json')]:[]
-    const paths=[...new Set([...knowledgePaths,...reservationPaths])]
+    for (const target of [acceptedRoot, root]) {
+      execFileSync('git', ['clone', '--shared', '--quiet', '--no-checkout', sourceRoot, target], {stdio: ['ignore', 'pipe', 'pipe']})
+      execFileSync('git', ['checkout', '--quiet', '--detach', fixtureBaseSha], {cwd: target, stdio: ['ignore', 'pipe', 'pipe']})
+      // Preserve the real observed authority ref in each offline test clone.
+      execFileSync('git', ['update-ref', 'refs/remotes/origin/main', authoritySha], {cwd: target, stdio: ['ignore', 'pipe', 'pipe']})
+    }
+    const paths = [...new Set([RESERVATION_RECORD, ...RESERVATION_PATHS, RESERVATION_DERIVED, ...(fixtureView.benchmark ? ['apps/architecture-lab/benchmark-unmetered-source.json', ...Object.keys(fixtureView.benchmark.manifest.sourceDigests), ...Object.keys(fixtureView.benchmark.consumerSourceDigests)] : [])])]
+    assert.equal(new Set([RESERVATION_RECORD, ...RESERVATION_PATHS, RESERVATION_DERIVED]).size, 46, 'closed reservation fixture inventory')
     for (const relative of paths) {
       assert(!path.isAbsolute(relative) && !relative.split('/').includes('..'))
       const file = path.join(root, relative)
       try {
-        const bytes = reserved.has(relative)?view.previousBytes(relative):acceptedRead(relative)
+        const bytes = fixtureView.previousBytes(relative)
         fs.mkdirSync(path.dirname(file), {recursive: true})
         fs.writeFileSync(file, bytes)
         fs.chmodSync(file, 0o644)
@@ -205,7 +216,7 @@ export async function createAcgLegacyRecurringFixture(sourceRoot) {
         fs.rmSync(file, {force: true})
       }
     }
-    return {root, sourceRoot, projected: true, sourceSha, sourceRecord: view.manifest, close}
+    return {root, acceptedRoot, sourceRoot, projected: true, sourceSha, fixtureBaseSha, sourceRecord: view.manifest, close}
   } catch (error) {
     close()
     throw error

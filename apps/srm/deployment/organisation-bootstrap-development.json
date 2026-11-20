@@ -1,0 +1,23 @@
+{
+  "schemaVersion": "1.0.0",
+  "configurationVersion": "srm-organisation-bootstrap-development-v1",
+  "activationState": "PREPARED_NOT_ACTIVATED",
+  "serviceId": "srv-db1vu6gm7kps73d0e3r0",
+  "projectId": "spring-bread-28217539",
+  "branchId": "br-sparkling-term-b99l107x",
+  "databaseName": "platform_private",
+  "runtimeRole": "srm_organisation_development_runtime",
+  "issuer": "https://unified-drum-7191.clerk.accounts.dev",
+  "hosts": [
+    "ep-late-heart-b9mxo8oi.c-7.eu-central-1.aws.neon.tech",
+    "ep-late-heart-b9mxo8oi-pooler.c-7.eu-central-1.aws.neon.tech"
+  ],
+  "publicOrigin": "https://srm-development-runtime.onrender.com",
+  "sourceOrigin": "https://identity-runtime-development.onrender.com",
+  "peerKeyId": "registration-registry-v1",
+  "sourcePolicyRef": "registration-company-mgbi-general-development-v1",
+  "sourceId": "srm.provider.mgbi-onboarding",
+  "resourceId": "srm-provider:mgbi-onboarding",
+  "freshnessMs": 86400000,
+  "scope": "Only licensed basic company data for organisation onboarding; explicit separate platform Source budget required. No inherited KRS pilot cost exception or private archive."
+}

@@ -8,6 +8,7 @@ export const REQUEST_LEDGER_CONTRACT = Object.freeze({ id:'profitia.request-ledg
 export const requestReservationSchemaUrl = new URL('../migrations/access/006-request-reservation.sql',import.meta.url).href
 export const externalRequestSchemaUrl = new URL('../migrations/access/010-external-request-admission.sql',import.meta.url).href
 export const requestQuotaSchemaUrl=new URL('../migrations/access/027-unmetered-supplier-requests.sql',import.meta.url).href
+export const benchmarkRequestQuotaSchemaUrl=new URL('../migrations/access/034-unmetered-benchmark-requests.sql',import.meta.url).href
 const uuid=/^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i
 const digest=/^[a-f0-9]{64}$/,integer=/^[1-9][0-9]*$/
 const text=value=>typeof value==='string'&&value.length>0&&value.length<=256
@@ -28,11 +29,14 @@ function receipt(value,id){return exact(value,['requestId','status'])&&value.req
 
 /** No connection, new access policy, command payload, compute or queue. This
  * adapter uses the existing host's current scoped SQL transaction only. */
-export function createRequestLedger({binding,schemaDigest,operation='forecast.request',externalSchemaDigest,operationSchemaDigest,locationSchemaDigest,locationAdmission,quotaSchemaDigest,now=Date.now}){
+export function createRequestLedger({binding,schemaDigest,operation='forecast.request',externalSchemaDigest,operationSchemaDigest,locationSchemaDigest,locationAdmission,quotaSchemaDigest,benchmarkQuotaSchemaDigest,now=Date.now}){
   const target=requestOperationPolicy(operation),external=target?.external||target?.location
   if(!target||(target.location?!digest.test(locationSchemaDigest??''):locationSchemaDigest!==undefined)||(target.additional?!digest.test(operationSchemaDigest??''):operationSchemaDigest!==undefined)||(external?!digest.test(externalSchemaDigest??''):externalSchemaDigest!==undefined))throw new TypeError('Explicit accepted request operation/schema extension required')
-  const quota=quotaSchemaDigest!==undefined
-  if(quota&&(!digest.test(quotaSchemaDigest??'')||!['supplier.report.refresh','supplier.private.refresh'].includes(operation)))throw TypeError('Explicit bounded SQL027 opt-in required')
+  const benchmarkQuota=benchmarkQuotaSchemaDigest!==undefined
+  if(benchmarkQuota&&(operation!=='benchmark.discovery.request'||quotaSchemaDigest!==undefined||!digest.test(benchmarkQuotaSchemaDigest??'')))throw TypeError('Explicit bounded SQL034 opt-in required')
+  if(quotaSchemaDigest!==undefined&&(!digest.test(quotaSchemaDigest??'')||!['supplier.report.refresh','supplier.private.refresh'].includes(operation)))throw TypeError('Explicit bounded SQL027 opt-in required')
+  if(benchmarkQuota)quotaSchemaDigest=benchmarkQuotaSchemaDigest
+  const quota=quotaSchemaDigest!==undefined,quotaPrefix=benchmarkQuota?'benchmark_quota_':'quota_'
   const config=freeze(structuredClone(binding))
   if(!config||config.service!==undefined||!digest.test(schemaDigest??'')||typeof now!=='function'
     ||!['applicationId','projectId','branchId','databaseName','role'].every(k=>text(config[k]))
@@ -47,12 +51,12 @@ export function createRequestLedger({binding,schemaDigest,operation='forecast.re
     return result.rows[0]
   }
   async function descriptor(query){
-    const d=(await one(query,quota?'SELECT profitia_requests.quota_runtime_descriptor() AS descriptor':target.location?'SELECT profitia_requests.location_runtime_descriptor() AS descriptor':target.additional?'SELECT profitia_requests.operation_runtime_descriptor() AS descriptor':external?'SELECT profitia_requests.external_runtime_descriptor() AS descriptor':'SELECT profitia_requests.runtime_descriptor() AS descriptor')).descriptor
+    const d=(await one(query,quota?`SELECT profitia_requests.${quotaPrefix}runtime_descriptor() AS descriptor`:target.location?'SELECT profitia_requests.location_runtime_descriptor() AS descriptor':target.additional?'SELECT profitia_requests.operation_runtime_descriptor() AS descriptor':external?'SELECT profitia_requests.external_runtime_descriptor() AS descriptor':'SELECT profitia_requests.runtime_descriptor() AS descriptor')).descriptor
     if(!d||d.schemaVersion!==REQUEST_LEDGER_CONTRACT.schemaVersion||d.schemaDigest!==schemaDigest||!text(d.sourceRef)
       ||external&&(d.externalSchemaVersion!=='1.0.0'||d.externalSchemaDigest!==externalSchemaDigest)
       ||target.location&&(d.locationSchemaVersion!=='1.0.0'||d.locationSchemaDigest!==locationSchemaDigest)
       ||target.additional&&(d.operationSchemaVersion!=='1.0.0'||d.operationSchemaDigest!==operationSchemaDigest)
-      ||quota&&(d.quotaSchemaVersion!=='1.0.0'||d.quotaSchemaDigest!==quotaSchemaDigest)
+      ||quota&&(d.quotaSchemaVersion!==(benchmarkQuota?'1.1.0':'1.0.0')||d.quotaSchemaDigest!==quotaSchemaDigest)
       ||d.owner!=='profitia_access_owner'||['applicationId','environment','projectId','branchId','databaseName','role'].some(k=>d[k]!==config[k]))deny()
   }
   function scope(actor,request){
@@ -90,7 +94,7 @@ export function createRequestLedger({binding,schemaDigest,operation='forecast.re
         const bound=(await one(query,'SELECT profitia_requests.bind_location_scope($1,$2::uuid,$3::uuid,$4,$5,$6::jsonb) AS allowed',[operation,request.organisationId,actor.actorId,request.resourceId,request.payloadDigest,JSON.stringify(location)])).allowed
         if(bound!==true)deny('PERMISSION_DENIED')
       }
-      const value=(await one(query,quota?'SELECT profitia_requests.quota_policy($1,$2::uuid,$3::uuid,$4) AS policy':admission?'SELECT profitia_requests.location_admission_policy($1,$2::uuid,$3::uuid,$4) AS policy':external?'SELECT profitia_requests.policy($1,$2::uuid,$3::uuid,$4) AS policy':'SELECT profitia_requests.policy($1::uuid,$2::uuid,$3) AS policy',
+      const value=(await one(query,quota?`SELECT profitia_requests.${quotaPrefix}policy($1,$2::uuid,$3::uuid,$4) AS policy`:admission?'SELECT profitia_requests.location_admission_policy($1,$2::uuid,$3::uuid,$4) AS policy':external?'SELECT profitia_requests.policy($1,$2::uuid,$3::uuid,$4) AS policy':'SELECT profitia_requests.policy($1::uuid,$2::uuid,$3) AS policy',
         [...(external?[operation]:[]),selected.organisationId,selected.actorId,selected.resourceId])).policy
       denied(value)
       const unmetered=quota&&value?.quotaMode==='UNMETERED'
@@ -109,7 +113,7 @@ export function createRequestLedger({binding,schemaDigest,operation='forecast.re
     },
     async reserve(query,policy,context){
       const selected=current(policy,query,context);await descriptor(query)
-      const value=(await one(query,quota?'SELECT profitia_requests.quota_reserve($1,$2::uuid,$3::uuid,$4,$5,$6,$7,$8::uuid,$9::uuid,$10::bigint) AS reservation':external?'SELECT profitia_requests.reserve($1,$2::uuid,$3::uuid,$4,$5,$6,$7,$8::uuid,$9::uuid,$10::bigint) AS reservation':'SELECT profitia_requests.reserve($1::uuid,$2::uuid,$3,$4,$5,$6,$7::uuid,$8::uuid,$9::bigint) AS reservation',
+      const value=(await one(query,quota?`SELECT profitia_requests.${quotaPrefix}reserve($1,$2::uuid,$3::uuid,$4,$5,$6,$7,$8::uuid,$9::uuid,$10::bigint) AS reservation`:external?'SELECT profitia_requests.reserve($1,$2::uuid,$3::uuid,$4,$5,$6,$7,$8::uuid,$9::uuid,$10::bigint) AS reservation':'SELECT profitia_requests.reserve($1::uuid,$2::uuid,$3,$4,$5,$6,$7::uuid,$8::uuid,$9::bigint) AS reservation',
         [...(external?[operation]:[]),selected.organisationId,selected.actorId,selected.resourceId,selected.payloadDigest,selected.keyDigest,
           selected.bindingFingerprint,context.decisionId,policy.policyId,policy.version])).reservation
       denied(value)
@@ -125,7 +129,7 @@ export function createRequestLedger({binding,schemaDigest,operation='forecast.re
       if(!owned||owned.used||owned.query!==query||owned.policy!==policy||owned.decisionId!==context.decisionId
         ||reservation.status!=='NEW'||!receipt(value,reservation.requestId))deny()
       owned.used=true;await descriptor(query)
-      const accepted=(await one(query,quota?'SELECT profitia_requests.quota_accept($1,$2::uuid,$3::uuid) AS receipt':external?'SELECT profitia_requests.accept($1,$2::uuid,$3::uuid) AS receipt':'SELECT profitia_requests.accept($1::uuid,$2::uuid) AS receipt',
+      const accepted=(await one(query,quota?`SELECT profitia_requests.${quotaPrefix}accept($1,$2::uuid,$3::uuid) AS receipt`:external?'SELECT profitia_requests.accept($1,$2::uuid,$3::uuid) AS receipt':'SELECT profitia_requests.accept($1::uuid,$2::uuid) AS receipt',
         [...(external?[operation]:[]),reservation.requestId,context.decisionId])).receipt
       if(!receipt(accepted,reservation.requestId))deny()
     },
@@ -136,7 +140,7 @@ export async function requestLedgerSourceDigest(){
   return createHash('sha256').update(fs.readFileSync(new URL('./request-ledger.mjs',import.meta.url)))
     .update(fs.readFileSync(new URL('./request-ledger.d.mts',import.meta.url)))
     .update(fs.readFileSync(new URL(requestReservationSchemaUrl)))
-    .update(fs.readFileSync(new URL(externalRequestSchemaUrl))).update(fs.readFileSync(new URL(requestQuotaSchemaUrl))).update(await requestOperationsSourceDigest()).digest('hex')
+    .update(fs.readFileSync(new URL(externalRequestSchemaUrl))).update(fs.readFileSync(new URL(requestQuotaSchemaUrl))).update(fs.readFileSync(new URL(benchmarkRequestQuotaSchemaUrl))).update(await requestOperationsSourceDigest()).digest('hex')
 }
 export async function requestReservationSchemaDigest(){
   const fs=await import('node:fs');return createHash('sha256').update(fs.readFileSync(new URL(requestReservationSchemaUrl))).digest('hex')
@@ -147,3 +151,5 @@ export async function externalRequestSchemaDigest(){
 }
 
 export async function requestQuotaSchemaDigest(){const fs=await import('node:fs');return createHash('sha256').update(fs.readFileSync(new URL(requestQuotaSchemaUrl))).digest('hex')}
+
+export async function benchmarkRequestQuotaSchemaDigest(){const fs=await import('node:fs');return createHash('sha256').update(fs.readFileSync(new URL(benchmarkRequestQuotaSchemaUrl))).digest('hex')}

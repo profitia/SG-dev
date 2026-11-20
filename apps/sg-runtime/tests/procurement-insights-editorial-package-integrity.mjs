@@ -1,3 +1,4 @@
+import {sdkSourceContext} from '../../../packages/platform-contracts/test/sdk-source-context.mjs'
 // Test/build-only package identity continuation; no runtime authority or code changes.
 import assert from 'node:assert/strict'
 import {createHash} from 'node:crypto'
@@ -42,6 +43,13 @@ function versionOnly(current,historical,p){
  assert.deepEqual(after,expected,'only editorial local package version, no dependency or runtime change: '+p)
 }
 export function procurementInsightsEditorialPackagePredecessor(current,historical){
+ const context=sdkSourceContext(current,historical)
+ if(context){
+  const accepted=procurementInsightsEditorialPackagePredecessor(context.baseline('authority'),historical)
+  assert(accepted,'complete immutable accepted editorial package source required')
+  return {...accepted,currentSdkContext:context,currentSourceDigests:context.currentSourceDigests}
+ }
+
  let bytes
  try{bytes=current(EDITORIAL_PACKAGE_RECEIPT)}catch(e){
   const text=String(e?.stderr??e?.message??'')

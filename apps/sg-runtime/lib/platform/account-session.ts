@@ -33,8 +33,8 @@ async function boundedJson(response: Response): Promise<unknown> {
   finally { reader.releaseLock() }
   return JSON.parse(Buffer.concat(chunks).toString('utf8'))
 }
-/** Existing accepted bearer-only peer READ. Never proxies browser cookies,
- * mutations, user/organisation IDs, return URLs or caller-selected endpoints. */
+/** Existing bearer-only peer read plus an explicit existing-binding renewal.
+ * Never provisions users or forwards cookies, selected identities or grants. */
 export async function readSelfServiceAccount(request: Request, { env = process.env, transport = fetch, now = Date.now }: {
   env?: Environment; transport?: typeof fetch; now?: () => number
 } = {}): Promise<Response> {
@@ -52,12 +52,31 @@ export async function readSelfServiceAccount(request: Request, { env = process.e
     const read = (path: '/v1/account' | '/v1/account/assistant-avatar' | '/v1/account/salutation') => transport(config.runtimeOrigin + path, { method: 'GET',
       headers: { authorization: credential! }, credentials: 'omit', cache: 'no-store', redirect: 'error',
       signal: AbortSignal.any([request.signal, AbortSignal.timeout(4000)]) })
-    const response = await read('/v1/account')
+    const renew = () => transport(config.runtimeOrigin + '/v1/account/renew', { method: 'POST',
+      headers: { authorization: credential!, 'content-type': 'application/json' }, body: '{}',
+      credentials: 'omit', cache: 'no-store', redirect: 'error',
+      signal: AbortSignal.any([request.signal, AbortSignal.timeout(4000)]) })
+    let response = await read('/v1/account'), renewed = false
+    if (response.status === 401) {
+      await response.body?.cancel()
+      response = await renew(); renewed = true
+    }
     if (!response.ok) { await response.body?.cancel(); return accountUnavailable(response.status === 401 ? 401 : response.status === 403 ? 403 : 503) }
-    const result = await boundedJson(response) as { authenticated: boolean; userId: string; expiresAt: string }
+    let result = await boundedJson(response) as { authenticated: boolean; userId: string; expiresAt: string }
     if (!result || Object.keys(result).sort().join(',') !== 'authenticated,expiresAt,userId' || result.authenticated !== true
       || typeof result.userId !== 'string' || !/^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(result.userId)
       || typeof result.expiresAt !== 'string' || !(Date.parse(result.expiresAt) > now()) || request.signal.aborted) return accountUnavailable()
+    if (!renewed && Date.parse(result.expiresAt) - now() <= 30000) {
+      // The fresh SDK token cannot itself extend the private identity binding.
+      // This bounded POST renews only an existing mapping under current policy.
+      const refreshed = await renew()
+      if (!refreshed.ok) { await refreshed.body?.cancel(); return accountUnavailable(refreshed.status === 401 ? 401 : refreshed.status === 403 ? 403 : 503) }
+      const current = await boundedJson(refreshed) as typeof result
+      if (!current || Object.keys(current).sort().join(',') !== 'authenticated,expiresAt,userId'
+        || current.authenticated !== true || current.userId !== result.userId
+        || typeof current.expiresAt !== 'string' || !(Date.parse(current.expiresAt) > now()) || request.signal.aborted) return accountUnavailable()
+      result = current
+    }
     const avatarResponse = await read('/v1/account/assistant-avatar')
     if (!avatarResponse.ok) { await avatarResponse.body?.cancel(); return accountUnavailable(avatarResponse.status === 401 ? 401 : avatarResponse.status === 403 ? 403 : 503) }
     const avatar = await boundedJson(avatarResponse) as { userId: string; avatarSex: 'male' | 'female' | null; version: string } | null

@@ -1,4 +1,5 @@
-import {recurringSourceFilesystem} from '../../architecture-lab/private-recurring-source.mjs'
+import {recurringSourcePredecessor} from '../../architecture-lab/private-recurring-source.mjs'
+import {acceptedSdkSource,acceptedSdkCurrentSourceDigests,sdkContinuationPredecessor} from '../../../packages/platform-contracts/test/organisation-sdk-compatibility.mjs'
 import { createEmptyVerificationSourceFixture, grantVerificationProjectionSourceColumns } from './fixtures/stored-forecast-verification-source.mjs'
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
@@ -32,12 +33,17 @@ const moduleAuditSql = fs.readFileSync(new URL(moduleAuditSchemaUrl), 'utf8')
 const auditDigest = await moduleAuditSchemaDigest()
 const expiry = () => new Date(Date.now() + 3600000).toISOString()
 
-const recurringView=recurringSourceFilesystem(new URL('../../../',import.meta.url)),recurring=recurringView.manifest,reservation=recurringView.reservation?.manifest,knowledge=recurringView.knowledge?.manifest
-const recurringSdkFiles=Object.fromEntries(Object.entries({...recurring?.sourceDigests,...reservation?.sourceDigests,...knowledge?.sourceDigests}).filter(([p])=>p.startsWith('packages/platform-contracts/')).map(([p,h])=>[p.slice('packages/platform-contracts/'.length),h]))
+const sdkContinuationRoot=new URL('../../../',import.meta.url),sdkContinuationCurrent=p=>fs.readFileSync(new URL(p,sdkContinuationRoot)),sdkContinuationHistory=(sha,p)=>execFileSync('git',['show',sha+':'+p],{cwd:sdkContinuationRoot})
+const organisationSourceView=sdkContinuationPredecessor(JSON.parse(sdkContinuationCurrent('apps/sg-runtime/operation-integration.json')),sdkContinuationCurrent,sdkContinuationHistory)
+const recurringView=recurringSourcePredecessor(organisationSourceView?.previousBytes??sdkContinuationCurrent,sdkContinuationHistory)??{manifest:null,previousBytes:organisationSourceView?.previousBytes??sdkContinuationCurrent},recurring=recurringView.manifest
+const recurringSdkFiles=Object.fromEntries(Object.entries({...recurring?.sourceDigests,...organisationSourceView?.record.sourceDigests,...organisationSourceView?.record.compatibilityTestSourceDigests,...organisationSourceView?.currentSourceDigests}).filter(([p])=>p.startsWith('packages/platform-contracts/')).map(([p,h])=>[p.slice('packages/platform-contracts/'.length),h]))
 const sdkReceipt=JSON.parse(fs.readFileSync(new URL('../operation-integration.json',import.meta.url)))
-const currentSdkDigests={...sdkReceipt.diagnosticTelemetryAdoption.sdkDigests,...sdkReceipt.freshPerformanceRecovery.sdkDigests,...sdkReceipt.settledExternalFailureCompatibility?.sdkDigests,...sdkReceipt.sourceLeaseClockCompatibility?.sdkDigests,...sdkReceipt.freshPostfetchCompatibility?.sdkDigests,...sdkReceipt.sourceHubApiPathCompatibility?.sdkDigests,...sdkReceipt.sourceHubMarketSymbolCompatibility?.sdkDigests,...sdkReceipt.assistantM1SourceCompatibility?.sdkDigests,...sdkReceipt.oilAutonomousReportCompatibility?.sdkDigests,...recurring?.sdkDigests,...reservation?.sdkDigests,...knowledge?.sdkDigests}
+const currentSdkRecord=acceptedSdkSource()
+const currentSdkPhysicalSourceDigests=acceptedSdkCurrentSourceDigests()
+const currentSdkDigests={...sdkReceipt.diagnosticTelemetryAdoption.sdkDigests,...sdkReceipt.freshPerformanceRecovery.sdkDigests,...sdkReceipt.settledExternalFailureCompatibility?.sdkDigests,...sdkReceipt.sourceLeaseClockCompatibility?.sdkDigests,...sdkReceipt.freshPostfetchCompatibility?.sdkDigests,...sdkReceipt.sourceHubApiPathCompatibility?.sdkDigests,...sdkReceipt.sourceHubMarketSymbolCompatibility?.sdkDigests,...sdkReceipt.assistantM1SourceCompatibility?.sdkDigests,...sdkReceipt.oilAutonomousReportCompatibility?.sdkDigests,...currentSdkRecord.sdkDigests}
+const reservation=recurringSourcePredecessor(sdkContinuationCurrent,sdkContinuationHistory)?.reservation?.manifest
 const historicalPlatformSourceDigests=manifest=>Object.fromEntries(Object.entries({...manifest.accountRecheckSourceCompatibility.sourceDigests,...manifest.krsSoapSourceCompatibility?.sourceDigests,...manifest.unmeteredSourceCompatibility.sourceDigests,...manifest.formReportSourceCompatibility.sourceDigests,...manifest.requestQuotaSourceCompatibility.sourceDigests,...manifest.nativeSqlRoundtripAdoption.sourceDigests,...manifest.diagnosticTelemetryAdoption.sourceDigests,...manifest.xrayPlatform130CiClosureCompatibility.sourceDigests,...manifest.appshellXraySourceCompatibility.sourceDigests,...manifest.freshPerformanceRecovery.sourceDigests,...manifest.settledExternalFailureCompatibility?.sourceDigests,...manifest.sourceLeaseClockCompatibility?.sourceDigests,...manifest.freshPostfetchCompatibility?.sourceDigests,...manifest.sourceHubApiPathCompatibility?.sourceDigests,...manifest.sourceHubMarketSymbolCompatibility?.sourceDigests,...manifest.assistantM1SourceCompatibility?.sourceDigests,...manifest.oilAutonomousReportCompatibility?.sourceDigests,...manifest.oilAutonomousReportCompatibility?.testSourceDigests}).filter(([file])=>file!=='package-lock.json'&&!file.startsWith('test/')))
-const currentPlatformSourceDigests=manifest=>Object.fromEntries(Object.entries(historicalPlatformSourceDigests(manifest)).map(([p,h])=>[p,recurringSdkFiles[p]??h]))
+const currentPlatformSourceDigests=manifest=>Object.fromEntries(Object.entries(historicalPlatformSourceDigests(manifest)).map(([file,digest])=>[file,currentSdkPhysicalSourceDigests['packages/platform-contracts/'+file]??currentSdkRecord.sourceDigests?.['packages/platform-contracts/'+file]??currentSdkRecord.compatibilityTestSourceDigests?.['packages/platform-contracts/'+file]??digest]))
 
 test('SG2 imports the exact optional external control source without adopting a product operation', async () => {
   const sdk=await import('@profitia/platform-contracts/external-call')
@@ -1604,7 +1610,7 @@ test('SG2 explicitly receives platform1.21 while private Supplier application ca
  assert.equal(current.taskId,'SG2-E1-PRIVATE-SUPPLIER-CONTRACT-RECEPTION-20261019')
  assert.equal(current.platformVersion,'1.21.0');assert.equal(current.rootImplementation,'1.0.0-candidate.14')
  assert.equal(current.producer.sourceSha,'fe5b31f1390d2a9b12f7d16df7e35249c1a75402');assert.equal(current.producer.initialSourceSha,'48714e896f206b4d5b7693c163c34eba0c895c2a');assert.equal(current.producer.pullRequest,551)
- assert.equal(await sdk.operationSourceDigest(),knowledge?.sdkDigests.operationSourceDigest??reservation?.sdkDigests.operationSourceDigest??recurring?.sdkDigests.operationSourceDigest??(manifest.oilAutonomousReportCompatibility?manifest.contract:manifest.assistantM1SourceCompatibility?.rootContract??manifest.contract).sourceDigest)
+ assert.equal(await sdk.operationSourceDigest(),currentSdkDigests.operationSourceDigest)
  assert.equal(Object.keys(current.sourceDigests).length,51)
  assert.equal(manifest.delegatedNativeWorkSourceCompatibility.sourceRecordIsHistorical,true)
  const root=new URL('../',import.meta.resolve('@profitia/platform-contracts/operation-context'))
@@ -1639,7 +1645,7 @@ test('public web source receipt preserves historical records and verifies every 
  const sdk=await import('@profitia/platform-contracts/external-call'),root=new URL('../',import.meta.resolve('@profitia/platform-contracts/external-call'))
  assert.equal(receipt.xrayPlatform130CiClosureCompatibility.platformVersion,'1.30.0')
  assert.equal(receipt.appshellXraySourceCompatibility.platformVersion,'1.31.0')
- assert.equal(JSON.parse(fs.readFileSync(new URL('package.json',root))).version,(recurring??receipt.oilAutonomousReportCompatibility??receipt.sourceHubMarketSymbolCompatibility??receipt.sourceHubApiPathCompatibility??receipt.freshPostfetchCompatibility??receipt.sourceLeaseClockCompatibility??receipt.settledExternalFailureCompatibility??receipt.freshPerformanceRecovery).platformVersion)
+ assert.equal(JSON.parse(fs.readFileSync(new URL('package.json',root))).version,currentSdkRecord.platformVersion??(recurring??receipt.oilAutonomousReportCompatibility??receipt.sourceHubMarketSymbolCompatibility??receipt.sourceHubApiPathCompatibility??receipt.freshPostfetchCompatibility??receipt.sourceLeaseClockCompatibility??receipt.settledExternalFailureCompatibility??receipt.freshPerformanceRecovery).platformVersion)
  assert.equal(await sdk.externalCallSourceDigest(),currentSdkDigests.externalCallSourceDigest)
  assert.equal(await sdk.publicWebTransportSchemaDigest(),current.sdkDigests.publicWebTransportSchemaDigest)
  assert.equal(Object.keys(current.sourceDigests).length,57)

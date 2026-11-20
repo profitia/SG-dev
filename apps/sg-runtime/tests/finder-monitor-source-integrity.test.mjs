@@ -83,3 +83,12 @@ test('validated predecessors are immutable copies and new sources cannot appear 
  for(const added of [FINDER_MONITOR_RECEIPT,...Object.keys(FINDER_MONITOR_PINS),'apps/sg-runtime/tests/finder-monitor-source-integrity.mjs','apps/sg-runtime/tests/finder-monitor-source-integrity.test.mjs'])assert.throws(()=>view.previousBytes(added),{code:'ENOENT'})
  for(const p of Object.keys(view.manifest.preservedReceipts))assert.deepEqual(view.previousBytes(p),current(p),p)
 })
+
+test('an adopted SDK requires its retained Finder receipt while the complete old SDK keeps optional absence',()=>{
+ const missing=reader=>p=>{if(p===FINDER_MONITOR_RECEIPT)throw Object.assign(Error('absent Finder receipt'),{code:'ENOENT'});return reader(p)}
+ const legacy=p=>historical('53691e907e4cc9b7fbf683c91bbebf41299e9ccc',p)
+ assert.equal(finderMonitorPredecessor(missing(legacy),historical),null)
+ assert.throws(()=>finderMonitorPredecessor(missing(physicalCurrent),historical),{code:'ENOENT'})
+ const denied=Object.assign(Error('metadata denied'),{code:'EACCES'})
+ assert.throws(()=>finderMonitorPredecessor(missing(()=>{throw denied}),historical),e=>e===denied)
+})

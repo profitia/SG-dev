@@ -1,0 +1,26 @@
+{
+  "taskId": "SG2-REGISTRATION-ASSISTANT-SAAS-BINDING-20261112",
+  "targetEnvironment": "development",
+  "status": "SOURCE_IMPLEMENTATION_NOT_LIVE",
+  "behaviour": [
+    "SPENDGURU_SAAS retains null application organisationId; each assistant instance receives only an explicit server-resolved canonical selector",
+    "Unchanged Assistant Root checks all actual identity, memberships, products, permissions, usage and SQL scope",
+    "Same shared existing history/usage clients, model transport and retention timer across organisation-scoped instances",
+    "Separate context gateways and captured organisation selectors; no cached actor or product lease; PORR_SUITE cannot be overridden"
+  ],
+  "tests": {
+    "actualSdkRootConstructorAndResourceComposition": "1/1 PASS",
+    "driver": "TEST_FIXTURE",
+    "externalCalls": false,
+    "fullConsumerCI": "PENDING",
+    "liveBrowser": "PENDING"
+  },
+  "effects": {
+    "newInfrastructure": false,
+    "liveSql": false,
+    "configurationChanged": false,
+    "mailSent": false,
+    "providerCalls": false,
+    "productDeployment": false
+  }
+}
