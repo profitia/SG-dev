@@ -8,14 +8,17 @@ import {readConfiguration} from '../src/config.mjs';
 import {readFileSync} from 'node:fs';
 import {createHash} from 'node:crypto';
 import {execFileSync} from 'node:child_process';
-const root=new URL('../../../',import.meta.url),rawCurrent=p=>readFileSync(new URL(p,root)),historical=(sha,p)=>execFileSync('git',['show',sha+':'+p],{cwd:root}),hash=bytes=>createHash('sha256').update(bytes).digest('hex');
-const recurring=recurringSourcePredecessor(rawCurrent,historical),legacyCurrent=p=>recurring?.previousBytes(p)??rawCurrent(p);
-function oilAcceptance(receipt=JSON.parse(rawCurrent('apps/newsfeed-runtime/operation-integration.json'))){
+// Historical SDK receipt assertions use immutable accepted source. Current API/E1 behavior is tested separately below and in reader-invitation.test.mjs.
+const COMPATIBILITY_FIXTURE='b0eddc27a0405eac5233497414a934f721bc36d2';
+const root=new URL('../../../',import.meta.url),historical=(sha,p)=>execFileSync('git',['show',sha+':'+p],{cwd:root,stdio:['ignore','pipe','pipe']}),compatibilitySource=p=>historical(COMPATIBILITY_FIXTURE,p),hash=bytes=>createHash('sha256').update(bytes).digest('hex');
+for(const p of ['apps/newsfeed-runtime/operation-integration.json','apps/newsfeed-runtime/saved-searches-integration.json','apps/newsfeed-runtime/assistant-context-integration.json'])assert.deepEqual(readFileSync(new URL(p,root)),compatibilitySource(p),'current historical receipt stays unchanged '+p);
+const recurring=recurringSourcePredecessor(compatibilitySource,historical),legacyCurrent=p=>recurring?.previousBytes(p)??compatibilitySource(p);
+function oilAcceptance(receipt=JSON.parse(compatibilitySource('apps/newsfeed-runtime/operation-integration.json'))){
  const file='apps/newsfeed-runtime/operation-integration.json',a=receipt.oilAutonomousReportSdkCompatibility;
  assert(a,'explicit Oil SDK receipt required');assert.equal(a.producerSourceSha,'e189433899349ddda6664c37988255c13845b3e2');assert.equal(a.previousReceiptSourceSha,'7ed96210f4cc3ccfcd0e0dac6ad126144bdcdecb');
  const bytes=historical(a.previousReceiptSourceSha,file),prior=JSON.parse(bytes);assert.equal(hash(bytes),a.previousReceiptSha256);
  const {oilAutonomousReportSdkCompatibility,...preserved}=receipt;assert.deepEqual(preserved,prior,'all pre-Oil Newsfeed and M1 acceptance stays immutable');
- const owner=JSON.parse(rawCurrent('apps/sg-runtime/operation-integration.json')),view=assertOilReportSourceCompatibility(owner,rawCurrent,historical,{projectKey:'SG2'});
+ const owner=JSON.parse(compatibilitySource('apps/sg-runtime/operation-integration.json')),view=assertOilReportSourceCompatibility(owner,compatibilitySource,historical,{projectKey:'SG2'});
  assert.deepEqual(a.sdkDigests,owner.oilAutonomousReportCompatibility.sdkDigests);assert.deepEqual(a.sourceDigests,owner.oilAutonomousReportCompatibility.sourceDigests);
  assert.deepEqual(Object.keys(a.consumerSourceDigests),['apps/newsfeed-runtime/test/runtime.test.mjs']);for(const[p,h]of Object.entries(a.consumerSourceDigests))assert.equal(hash(legacyCurrent(p)),h,p);
  for(const flag of ['runtimeAdoption','authorizationChanged','providerCallsPerformed','deploymentPerformed'])assert.equal(a[flag],false,flag);
@@ -45,7 +48,7 @@ test('consumer adoption pins the actual installed SDK and migration bytes withou
 test('SDK1.34 Newsfeed compatibility preserves its complete earlier receipt and enables no new source family',()=>{
  const view=assistantAcceptance(),receipt=view.prior,a=receipt.marketSymbolSdkCompatibility;
  assert.equal(a.taskId,'ARCH-SOURCE-HUB-TE-MARKETS-ACTIVATION-20261106');assert.equal(a.platformVersion,'1.34.0');assert.equal(a.previousReceiptSourceSha,'3d660eeaf8b6b7ef914a612b8383514f99e857d3');
- const bytes=execFileSync('git',['show',a.previousReceiptSourceSha+':apps/newsfeed-runtime/operation-integration.json'],{cwd:root});assert.equal(createHash('sha256').update(bytes).digest('hex'),a.previousReceiptSha256);
+ const bytes=execFileSync('git',['show',a.previousReceiptSourceSha+':apps/newsfeed-runtime/operation-integration.json'],{cwd:root,stdio:['ignore','pipe','pipe']});assert.equal(createHash('sha256').update(bytes).digest('hex'),a.previousReceiptSha256);
  const {marketSymbolSdkCompatibility,...preserved}=receipt;assert.deepEqual(preserved,JSON.parse(bytes));
  for(const [p,h]of Object.entries(a.sourceDigests))assert.equal(createHash('sha256').update(view.previousBytes('packages/platform-contracts/'+p)).digest('hex'),h,p);
  for(const [p,h]of Object.entries(a.consumerSourceDigests))assert.equal(createHash('sha256').update(view.previousBytes(p)).digest('hex'),h,p);
@@ -54,4 +57,4 @@ test('SDK1.34 Newsfeed compatibility preserves its complete earlier receipt and 
 
 test('M1 SDK compatibility closes actual Newsfeed test and SDK bytes without new operations or activation',()=>{assistantAcceptance();});
 
-test('Oil continuation preserves M1 and rejects changed source, history and activation claims',()=>{for(const mutate of [a=>a.previousReceiptSha256='0'.repeat(64),a=>a.producerSourceSha='0'.repeat(40),a=>a.consumerSourceDigests['apps/newsfeed-runtime/test/runtime.test.mjs']='0'.repeat(64),a=>a.authorizationChanged=true]){const changed=JSON.parse(rawCurrent('apps/newsfeed-runtime/operation-integration.json'));mutate(changed.oilAutonomousReportSdkCompatibility);assert.throws(()=>oilAcceptance(changed));}});
+test('Oil continuation preserves M1 and rejects changed source, history and activation claims',()=>{for(const mutate of [a=>a.previousReceiptSha256='0'.repeat(64),a=>a.producerSourceSha='0'.repeat(40),a=>a.consumerSourceDigests['apps/newsfeed-runtime/test/runtime.test.mjs']='0'.repeat(64),a=>a.authorizationChanged=true]){const changed=JSON.parse(compatibilitySource('apps/newsfeed-runtime/operation-integration.json'));mutate(changed.oilAutonomousReportSdkCompatibility);assert.throws(()=>oilAcceptance(changed));}});

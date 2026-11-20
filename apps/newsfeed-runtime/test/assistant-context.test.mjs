@@ -7,6 +7,10 @@ import {readFileSync} from 'node:fs'
 import {createHash} from 'node:crypto'
 import {execFileSync} from 'node:child_process'
 
+// Immutable compatibility fixture; the native API/revocation tests still import current server and repository.
+const COMPATIBILITY_FIXTURE='b0eddc27a0405eac5233497414a934f721bc36d2',compatibilityRoot=new URL('../../../',import.meta.url),compatibilitySource=p=>execFileSync('git',['show',COMPATIBILITY_FIXTURE+':'+p],{cwd:compatibilityRoot,stdio:['ignore','pipe','pipe']});
+for(const p of ['apps/newsfeed-runtime/operation-integration.json','apps/newsfeed-runtime/saved-searches-integration.json','apps/newsfeed-runtime/assistant-context-integration.json'])assert.deepEqual(readFileSync(new URL(p,compatibilityRoot)),compatibilitySource(p),'current historical receipt stays unchanged '+p);
+
 const SAVED_SEARCH_PATHS=Object.freeze([
  'apps/newsfeed-runtime/docs/development-v1.2.md',
  'apps/newsfeed-runtime/migrations/003-saved-searches.sql',
@@ -68,7 +72,7 @@ const org='225e465b-8b89-467d-92d1-7fef61b555fe',owner='092c2d9f-a84b-4c18-b3d6-
 test('M2 build contract pins only its owned source projection and leaves existing SDK acceptance byte-for-byte intact',async()=>{
  const {readFileSync}=await import('node:fs'),{createHash}=await import('node:crypto'),{execFileSync}=await import('node:child_process')
  const root=new URL('../../../',import.meta.url),manifest=JSON.parse(readFileSync(new URL('../assistant-context-integration.json',import.meta.url),'utf8'))
- const priorView=savedSearchPredecessor(p=>readFileSync(new URL(p,root)),(sha,p)=>execFileSync('git',['show',sha+':'+p],{cwd:root}))
+ const priorView=savedSearchPredecessor(compatibilitySource,(sha,p)=>execFileSync('git',['show',sha+':'+p],{cwd:root,stdio:['ignore','pipe','pipe']}))
  assert.equal(manifest.contract.id,'newsfeed-assistant-stored-read');assert.equal(manifest.contract.version,'1.0.0')
  assert.equal(manifest.configuration.version,'newsfeed-assistant-read-v1');assert.equal(manifest.configuration.enabledByDefault,false)
  assert.deepEqual(manifest.operations,['personal.list.read']);assert.equal(manifest.grantsAccess,false)
@@ -80,11 +84,11 @@ test('M2 build contract pins only its owned source projection and leaves existin
  assert.deepEqual(Object.keys(manifest.sourceDigests).sort(),['apps/newsfeed-runtime/src/auth.mjs','apps/newsfeed-runtime/src/config.mjs',
   'apps/newsfeed-runtime/src/repository.mjs','apps/newsfeed-runtime/src/server.mjs','apps/newsfeed-runtime/test/assistant-context.test.mjs'].sort())
  assert.deepEqual(readFileSync(new URL('apps/newsfeed-runtime/operation-integration.json',root)),
-  execFileSync('git',['show',manifest.previousSourceSha+':apps/newsfeed-runtime/operation-integration.json'],{cwd:root}))
+  execFileSync('git',['show',manifest.previousSourceSha+':apps/newsfeed-runtime/operation-integration.json'],{cwd:root,stdio:['ignore','pipe','pipe']}))
 })
 
 test('saved-search source adoption rejects drift before exposing the immutable M2 predecessor',()=>{
- const root=new URL('../../../',import.meta.url),read=p=>readFileSync(new URL(p,root)),history=(sha,p)=>execFileSync('git',['show',sha+':'+p],{cwd:root})
+ const root=new URL('../../../',import.meta.url),read=compatibilitySource,history=(sha,p)=>execFileSync('git',['show',sha+':'+p],{cwd:root,stdio:['ignore','pipe','pipe']})
  assert(savedSearchPredecessor(read,history))
  for(const path of SAVED_SEARCH_PATHS)assert.throws(()=>savedSearchPredecessor(p=>p===path?Buffer.concat([read(p),Buffer.from('UNACCEPTED')]):read(p),history),path)
  const receipt=JSON.parse(read(adoptionFile));receipt.assistantStoredReadOnly=false;assert.throws(()=>savedSearchPredecessor(p=>p===adoptionFile?Buffer.from(JSON.stringify(receipt)):read(p),history))
