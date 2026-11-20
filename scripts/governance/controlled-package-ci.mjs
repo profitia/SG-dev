@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import {createKnowledgeCurrentSourceVerifier,knowledgeReviewedLocalPackages} from '../../apps/architecture-lab/knowledge-source.mjs'
 import {sdkSourceContext,CURRENT_SDK_SOURCE_RECORD} from '../../packages/platform-contracts/test/sdk-source-context.mjs'
 import {CURRENT_SDK_SOURCE_REGRESSION_TESTS,trustedApplicationContinuity,findTrustedAdmission,trustedAdmissionById,assertSourceAdmission,assertSourceCheckout,assertWorkflowPackageCredential,classifyPackageFailure,credentialFree,sourceAdmissionDigest,assertSourceValidationProof} from './development-execution.mjs'
 import assertAcgSource from 'node:assert/strict'
@@ -6614,19 +6615,29 @@ function assertKnowledgeStage2Routes(files,repositoryRoot){
   if(profile.repository.slug!==REPOSITORY||!r.ok||r.results.length!==selected.length||r.results.some(v=>{const e=review.entries[v.normalizedPath];return !e||v.resolutionStatus!=='RESOLVED'||v.highestSpecificityMatchCount!==1||v.projectBoundaryStatus!=='ALLOWED'||v.baselineClassification!=='ALIGNED'||v.currentOwner!==e.owner||v.matchedSurfaceId!==e.surfaceId;}))fail('KNOWLEDGE_STAGE2_ROUTING_REJECTED');}
 }
 export function assertKnowledgeStage2Entry(file,entry,review=PLATFORM_KNOWLEDGE_STAGE2_REVIEW){const e=review.entries[file?.filename];if(!e||e.sha!==file.sha||entry!==e.mode+' blob '+file.sha+'\t'+file.filename+'\0')fail('KNOWLEDGE_STAGE2_FILE_MODE_REJECTED');}
-export function knowledgeStage2TrustedPredecessor(current,historical){
- const sdk=trustedCurrentSdkContext(current,historical)
+export function knowledgeStage2TrustedPredecessor(current,historical,{sourceRoot=controlRoot(),authorityRoot=controlRoot()}={}){
+ const sdk=trustedCurrentSdkContext(current,historical,{sourceRoot,authorityRoot,governanceRoot:controlRoot()})
  if(sdk)return knowledgeStage2TrustedPredecessor(sdk.baseline('knowledge'),historical)
  let bytes;try{bytes=current(PLATFORM_KNOWLEDGE_STAGE2_PROVENANCE.recordPath);}catch(error){if(error?.code==='ENOENT')return null;throw error;}const cfg=knowledgeStage2Provenance(bytes);
- if(recurringHash(bytes)!==cfg.recordSha256||recurringHash(current('apps/architecture-lab/knowledge-source.mjs'))!==cfg.helperSha256)fail('KNOWLEDGE_STAGE2_RECORD_REJECTED');
+ if(recurringHash(bytes)!==cfg.recordSha256)fail('KNOWLEDGE_STAGE2_RECORD_REJECTED');
+ const helperPath='apps/architecture-lab/knowledge-source.mjs',helper=current(helperPath);
+ if(recurringHash(helper)!==cfg.helperSha256&&!Buffer.from(helper).equals(fs.readFileSync(path.join(controlRoot(),helperPath))))fail('KNOWLEDGE_STAGE2_RECORD_REJECTED');
  const a=JSON.parse(bytes);if(a.scope!=='PLATFORM_KNOWLEDGE_SDK_SOURCE_ACCEPTANCE'||a.platformVersion!=='1.37.0'||a.optionalImplementation!=='1.0.0-candidate.23'||a.legacyImplementation!=='1.0.0-candidate.16'||a.previousSourceSha!==cfg.previousSourceSha||Object.keys(a.sourceDigests).length!==cfg.sourceFileCount||a.sdkDigests.operationSourceDigest!==cfg.operationSourceDigest||['runtimeActivated','newGrantsInstalled','providerCallsPerformed','deploymentPerformed'].some(k=>a[k]!==false))fail('KNOWLEDGE_STAGE2_RECORD_REJECTED');
   if(cfg.optionalPackageDigests&&JSON.stringify(a.optionalPackageDigests)!==JSON.stringify(cfg.optionalPackageDigests))fail('KNOWLEDGE_STAGE2_OPTIONAL_METADATA_REJECTED');
- for(const[p,h]of Object.entries(a.sourceDigests))if(recurringHash(current(p))!==h)fail('KNOWLEDGE_STAGE2_SOURCE_BYTES_REJECTED');
+ const refreshed=new Set();let verify;
+ for(const[p,h]of Object.entries(a.sourceDigests)){
+  const actual=Buffer.from(current(p));
+  if(recurringHash(actual)!==h){
+   try{verify??=createKnowledgeCurrentSourceVerifier(sourceRoot,Object.keys(a.sourceDigests),{authorityRoot,governanceRoot:controlRoot()});verify(p,actual);}
+   catch{fail('KNOWLEDGE_STAGE2_SOURCE_BYTES_REJECTED');}
+   refreshed.add(p);
+  }
+ }
  for(const[p,h]of Object.entries({...a.preservedReceipts,...a.retainedSuccessorReceipts}))if(recurringHash(current(p))!==h||recurringHash(historical(a.previousSourceSha,p))!==h)fail('KNOWLEDGE_STAGE2_PREDECESSOR_REJECTED');
  for(const[project,p]of Object.entries(cfg.adoptions)){const expected={schemaVersion:'1.0.0',projectKey:project,taskId:a.taskIds[project],targetEnvironment:'development',scope:'SOURCE_ONLY_NO_RUNTIME_ACTIVATION',sourceRecord:cfg.recordPath,sourceRecordSha256:cfg.recordSha256};if(JSON.stringify(JSON.parse(current(p)))!==JSON.stringify(expected))fail('KNOWLEDGE_STAGE2_ADOPTION_REJECTED');}
  const changed=new Set(Object.keys(a.replacements)),added=new Set(a.knowledgeAddedPaths),cache=new Map();
  for(const[p,r]of Object.entries(a.replacements))if(r.currentSha256!==a.sourceDigests[p]||recurringHash(historical(a.previousSourceSha,p))!==r.previousSha256)fail('KNOWLEDGE_STAGE2_PREDECESSOR_REJECTED');
- return{manifest:a,previousBytes:p=>{if(p===cfg.recordPath||Object.values(cfg.adoptions).includes(p)||added.has(p))throw Object.assign(Error('Absent from knowledge predecessor'),{code:'ENOENT'});if(!changed.has(p))return current(p);if(!cache.has(p))cache.set(p,historical(a.previousSourceSha,p));return Buffer.from(cache.get(p));}};
+ return{manifest:a,previousBytes:p=>{if(p===cfg.recordPath||Object.values(cfg.adoptions).includes(p)||added.has(p))throw Object.assign(Error('Absent from knowledge predecessor'),{code:'ENOENT'});if(!changed.has(p)&&!refreshed.has(p))return current(p);if(!cache.has(p)){const previous=historical(a.previousSourceSha,p);if(recurringHash(previous)!==(a.replacements[p]?.previousSha256??a.sourceDigests[p]))fail('KNOWLEDGE_STAGE2_PREDECESSOR_REJECTED');cache.set(p,previous);}return Buffer.from(cache.get(p));}};
 }
 // Exact accepted ACG predecessor guard, isolated in the protected policy closure.
 const assistantReservationControlPredecessor=(()=>{
@@ -6775,15 +6786,15 @@ function assistantReservationPredecessor(current,historical,expectedDigest){
 })();
 // Preserve the immediate Knowledge predecessor separately from the legacy graph.
 // Both current closures must authenticate before any historical byte is consumed.
-export function knowledgeStage2LegacyPredecessor(current,historical){
- const v=knowledgeStage2TrustedPredecessor(current,historical);if(!v)return null;
+export function knowledgeStage2LegacyPredecessor(current,historical,options){
+ const v=knowledgeStage2TrustedPredecessor(current,historical,options);if(!v)return null;
  const cfg=knowledgeStage2Provenance(current(PLATFORM_KNOWLEDGE_STAGE2_PROVENANCE.recordPath));
  if(!cfg.assistantReservationRecordSha256)return {...v,legacyPreviousBytes:v.previousBytes};
  const acg=assistantReservationControlPredecessor(v.previousBytes,historical,cfg.assistantReservationRecordSha256);
  if(!acg)fail('KNOWLEDGE_STAGE2_ACG_PREDECESSOR_REQUIRED');
  return {...v,legacyPreviousBytes:acg.previousBytes};
 }
-function knowledgeStage2Filesystem(root){const sdk=currentSdkProofContext(root);const physical=p=>{const b=readRegistrationSdkFile(root,p);if(fs.lstatSync(path.join(fs.realpathSync(root),p)).mode&0o111)fail('KNOWLEDGE_STAGE2_FILE_MODE_REJECTED');return b;};const read=sdk?sdk.baseline('knowledge'):physical;return knowledgeStage2LegacyPredecessor(read,(sha,p)=>lifecycleHistory(root,sha,p));}
+function knowledgeStage2Filesystem(root){const sdk=currentSdkProofContext(root);const physical=p=>{const b=readRegistrationSdkFile(root,p);if(fs.lstatSync(path.join(fs.realpathSync(root),p)).mode&0o111)fail('KNOWLEDGE_STAGE2_FILE_MODE_REJECTED');return b;};const read=sdk?sdk.baseline('knowledge'):physical;return knowledgeStage2LegacyPredecessor(read,(sha,p)=>lifecycleHistory(root,sha,p),{sourceRoot:root});}
 
 function privateRecurringReview(files){
  return [PRIVATE_RECURRING_REVIEW,PRIVATE_RECURRING_FINAL_REVIEW,PRIVATE_RECURRING_COMPLETION_REVIEW,PRIVATE_RECURRING_SHELL_REVIEW,PRIVATE_RECURRING_SHELL_CURRENT_REVIEW,PRIVATE_RECURRING_SHELL_CALENDAR_REVIEW,PRIVATE_RECURRING_CONSENT_TRANSPORT_REVIEW,PRIVATE_RECURRING_CONSUMER_TEST_REVIEW,PRIVATE_RECURRING_LIVE_ACCEPTANCE_REVIEW,PRIVATE_RECURRING_LIVE_FIXTURE_REVIEW,PRIVATE_RECURRING_LIVE_SRM_REVIEW].find(r=>Array.isArray(files)&&files.length===Object.keys(r.entries).length&&new Set(files.map(f=>f?.filename)).size===files.length&&files.every(f=>Object.hasOwn(r.entries,f?.filename)&&r.entries[f.filename].sha===f.sha&&r.entries[f.filename].status===f.status&&!Object.hasOwn(f,'previous_filename')))
@@ -7190,6 +7201,8 @@ export function registrationLifecycleProofContract(receipt,recordBytes,receiptBy
 // select reviewed metadata and local manifest transitions for one Source row.
 export function currentSdkSourceAdmissionPolicy(sourceRecord,authorityRoot=controlRoot()){
  if(!sourceRecord)return undefined
+ const producerPackages=knowledgeReviewedLocalPackages(sourceRecord)
+ if(producerPackages)return {reviewedLocalPackages:structuredClone(producerPackages)}
  const file=path.join(authorityRoot,CURRENT_SDK_SOURCE_RECORD)
  if(!fs.existsSync(file))return undefined
  const record=readJson(file),review=record.sourceAdmission
@@ -7215,7 +7228,7 @@ export function currentSdkSourceAdmissionPolicy(sourceRecord,authorityRoot=contr
 }
 // Current candidate bytes must match the independently trusted descriptor before
 // exposing an entire immutable legacy tree. Candidate metadata cannot select it.
-function trustedCurrentSdkContext(current,historical){
+function trustedCurrentSdkContext(current,historical,options){
  const trustedFile=path.join(controlRoot(),CURRENT_SDK_SOURCE_RECORD)
  if(!fs.existsSync(trustedFile))return null
  const trustedBytes=fs.readFileSync(trustedFile),record=JSON.parse(trustedBytes.toString('utf8'))
@@ -7224,7 +7237,7 @@ function trustedCurrentSdkContext(current,historical){
  if(manifest.version!==record.platformVersion)return null
  const bytes=Buffer.from(current(CURRENT_SDK_SOURCE_RECORD))
  if(!bytes.equals(trustedBytes))fail('CURRENT_SDK_SOURCE_METADATA_REJECTED')
- return sdkSourceContext(p=>p===CURRENT_SDK_SOURCE_RECORD?trustedBytes:current(p),historical)
+ return sdkSourceContext(p=>p===CURRENT_SDK_SOURCE_RECORD?trustedBytes:current(p),historical,options)
 }
 export function currentSdkProofContext(root,authorityRoot=controlRoot()){
  const manifest=path.join(root,'packages/platform-contracts/package.json')
@@ -7235,7 +7248,7 @@ export function currentSdkProofContext(root,authorityRoot=controlRoot()){
  const candidateRecord=path.join(root,CURRENT_SDK_SOURCE_RECORD)
  if(!fs.existsSync(candidateRecord)||!fs.readFileSync(candidateRecord).equals(trustedBytes))fail('CURRENT_SDK_SOURCE_METADATA_REJECTED')
  return sdkSourceContext(p=>p===CURRENT_SDK_SOURCE_RECORD?trustedBytes:fs.readFileSync(path.join(root,p)),
-  (sha,p)=>execFileSync('git',['show',sha+':'+p],{cwd:root,maxBuffer:16*1024*1024,stdio:['ignore','pipe','pipe']}))
+  (sha,p)=>execFileSync('git',['show',sha+':'+p],{cwd:root,maxBuffer:16*1024*1024,stdio:['ignore','pipe','pipe']}),{sourceRoot:root,authorityRoot,governanceRoot:controlRoot()})
 }
 export function currentSdkMetadataProofContract(receipt,record){
  assertReceipt(receipt)
@@ -8450,7 +8463,7 @@ function context(env = process.env) {
 }
 function controlRoot() {return path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')}
 export const CONTROL_POLICY_FILES = Object.freeze([WORKFLOW, 'scripts/governance/controlled-package-ci.mjs',
-  'scripts/governance/development-execution.mjs',
+  'scripts/governance/development-execution.mjs', 'apps/architecture-lab/knowledge-source.mjs',
   'Canon/registries/development-execution-profiles-v1.json', 'Canon/registries/architecture-environment-topology-v1.json',
   'scripts/governance/project-profile.mjs', 'scripts/governance/routing-engine.mjs', 'scripts/architecture-classify.mjs',
   'Canon/registries/profitia-projects-v1.json', 'Canon/registries/current-architecture-baseline-v1.json',

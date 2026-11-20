@@ -1,5 +1,6 @@
 // Test/source integrity only. This module grants no runtime permission,
 // installation, release, provider access or source-admission authority.
+import {createCurrentSourceVerifier} from '../../../scripts/governance/development-execution.mjs'
 import assert from 'node:assert/strict'
 import {createHash} from 'node:crypto'
 import fs from 'node:fs'
@@ -34,7 +35,59 @@ export function sourceDigestPaths(value,result=new Set()){
 /** Verify all current physical inputs first. Historical evidence is then read
  * directly from immutable Git objects, with no per-task code/path projection.
  * CI admission remains the separate decision made by trusted authority main. */
-export function sdkSourceContext(current,historical,{recordPath=CURRENT_SDK_SOURCE_RECORD}={}){
+function authenticatedCurrentSdkInputs(current,historical,r,bytes,{recordPath,sourceRoot,authorityRoot,governanceRoot}){
+ const observed=new Map(),changed=[];
+ for(const [p,digest]of Object.entries(r.inputs)){
+  assert(sourcePath(p)&&p!==recordPath&&sha256.test(digest),'safe complete physical source input');
+  const actual=Buffer.from(current(p));observed.set(p,actual);
+  if(hash(actual)!==digest)changed.push(p);
+ }
+ if(!changed.length)return Object.freeze({...r.inputs});
+ // Runtime SDK contracts, optional native packages and the SDK manifest must
+ // receive their own closed metadata. Only source-verification tests may
+ // advance inside this package while retaining the runtime SDK fingerprints.
+ for(const p of changed)assert(!p.startsWith('packages/platform-contracts/')||p.startsWith('packages/platform-contracts/test/'),'current SDK source: SDK runtime source requires separate metadata '+p);
+ const verify=createCurrentSourceVerifier(sourceRoot,Object.keys(r.inputs),{authorityRoot,governanceRoot});
+ const git=(args)=>execFileSync('git',args,{cwd:authorityRoot,encoding:'utf8',stdio:['ignore','pipe','pipe']}).trim();
+ const main=git(['rev-parse','refs/remotes/origin/main']);
+ const metadataEntry=git(['--literal-pathspecs','ls-tree',main,'--',recordPath]);
+ assert.match(metadataEntry,/^100644 blob [a-f0-9]{40}\t/,'regular trusted current SDK metadata');
+ assert.equal(metadataEntry.split('\t')[1],recordPath,'literal trusted current SDK metadata');
+ const trusted=execFileSync('git',['cat-file','blob',main+':'+recordPath],{cwd:authorityRoot,stdio:['ignore','pipe','pipe']});
+ assert(Buffer.from(bytes).equals(trusted),'current SDK source requires the independently accepted descriptor');
+ // No retained evidence is refreshed, even when application source advances.
+ for(const p of changed){
+  assert(!Object.hasOwn(r.retainedReceipts??{},p),'retained SDK evidence cannot advance');
+  verify(p,observed.get(p));
+ }
+ // All current inputs authenticate before any legacy source is exposed. One
+ // actual ancestor on main supplies the unchanged frozen view; no private
+ // snapshot object or candidate-selected historical commit grants authority.
+ const revisions=git(['--literal-pathspecs','log','--first-parent','--format=%H','--max-count=128',main,'--',recordPath,sdkManifest,...changed]).split('\n').filter(Boolean);
+ const at=(sha,p)=>execFileSync('git',['cat-file','blob',sha+':'+p],{cwd:authorityRoot,stdio:['ignore','pipe','pipe'],maxBuffer:3*1024*1024});
+ let previous;
+ for(const sha of revisions){
+  let descriptor,manifest;
+  try{descriptor=Buffer.from(at(sha,recordPath));manifest=JSON.parse(at(sha,sdkManifest));}
+  catch(error){if(sdkSourcePathAbsent(error,recordPath,at)||error?.code==='ENOENT')continue;throw error;}
+  if(!descriptor.equals(trusted)||manifest.version!==r.platformVersion)continue;
+  const candidate=new Map();let valid=true;
+  for(const p of changed){
+   let old;
+   try{old=Buffer.from(at(sha,p));}
+   catch(error){if(sdkSourcePathAbsent(error,p,at)||error?.code==='ENOENT'){valid=false;break;}throw error;}
+   if(hash(old)!==r.inputs[p]){valid=false;break;}candidate.set(p,old);
+  }
+  if(valid){previous=candidate;break;}
+ }
+ assert(previous,'complete immutable current SDK source on accepted main required');
+ // The original checks still consume exactly their original hashes. The
+ // returned current digests describe the real authenticated application files.
+ for(const [p,old]of previous)assert.equal(hash(old),r.inputs[p],'immutable SDK source '+p);
+ return Object.freeze(Object.fromEntries([...observed].map(([p,value])=>[p,hash(value)])));
+}
+
+export function sdkSourceContext(current,historical,{recordPath=CURRENT_SDK_SOURCE_RECORD,sourceRoot=fileURLToPath(root),authorityRoot=sourceRoot,governanceRoot=fileURLToPath(root)}={}){
  assert.equal(typeof current,'function');assert.equal(typeof historical,'function');assert(sourcePath(recordPath))
  let bytes
  try{bytes=Buffer.from(current(recordPath))}catch(error){if(sdkSourcePathAbsent(error,recordPath,historical))return null;throw error}
@@ -48,10 +101,7 @@ export function sdkSourceContext(current,historical,{recordPath=CURRENT_SDK_SOUR
  if(JSON.parse(current(sdkManifest)).version!==r.platformVersion)return null
  assert(plain(r.inputs)&&Object.keys(r.inputs).length>0&&Object.keys(r.inputs).length<=2000)
  assert(sha256.test(r.inputs[sdkManifest]??''),'SDK manifest belongs to current input closure')
- for(const [p,digest]of Object.entries(r.inputs)){
-  assert(sourcePath(p)&&p!==recordPath&&sha256.test(digest),'safe complete physical source input')
-  assert.equal(hash(current(p)),digest,'current SDK source '+p)
- }
+ const currentSourceDigests=authenticatedCurrentSdkInputs(current,historical,r,bytes,{recordPath,sourceRoot,authorityRoot,governanceRoot})
  assert(plain(r.baselines)&&Object.keys(r.baselines).length>0&&Object.keys(r.baselines).length<=8)
  for(const [alias,b]of Object.entries(r.baselines))assert(/^[a-z][a-z0-9-]{0,63}$/.test(alias)&&plain(b)&&gitSha.test(b.sha),'immutable historical baseline')
  const cache=new Map()
@@ -87,7 +137,7 @@ export function sdkSourceContext(current,historical,{recordPath=CURRENT_SDK_SOUR
  }
  assert(plain(r.metadata)&&plain(r.metadata.sdkDigests)&&plain(r.metadata.optionalPackageDigests),'explicit current fingerprint metadata')
  return Object.freeze({record:freeze(r),metadata:freeze(structuredClone(r.metadata)),
-  currentSourceDigests:Object.freeze({...r.inputs}),baseline,recordSha256:hash(bytes)})
+  currentSourceDigests,baseline,recordSha256:hash(bytes)})
 }
 const root=new URL('../../../',import.meta.url)
 export function currentSdkSourceContext(){

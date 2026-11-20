@@ -96,3 +96,207 @@ test('a missing-path message from an unknown full SHA cannot be accepted as genu
  })
  assert.throws(()=>value.baseline('unknown')(missing),error=>error===failure)
 })
+
+
+import continuityFs from 'node:fs';
+import continuityOs from 'node:os';
+import continuityPath from 'node:path';
+import {execFileSync as continuityExec} from 'node:child_process';
+import {fileURLToPath as continuityFileURL} from 'node:url';
+const continuityRepository=continuityFileURL(new URL('../../../',import.meta.url));
+const continuitySdk='fba2d4ea6b9740362e16a504857da418e9ab22e2';
+const continuityInput='apps/sg-runtime/components/appshell/appshell-dashboard.tsx';
+const continuityOther='apps/sg-runtime/scripts/monitor-benchmark-finder.mjs';
+const continuityLedger='Canon/registries/controlled-source-admissions-v1.json';
+const continuityEnv={...process.env,GIT_CONFIG_NOSYSTEM:'1',GIT_CONFIG_GLOBAL:'/dev/null'};
+const continuityGit=(root,...args)=>continuityExec('git',args,{cwd:root,env:continuityEnv,encoding:'utf8',stdio:['ignore','pipe','pipe']}).trim();
+const continuityWrite=(root,p,bytes)=>{continuityFs.mkdirSync(continuityPath.dirname(continuityPath.join(root,p)),{recursive:true});continuityFs.writeFileSync(continuityPath.join(root,p),bytes);};
+function continuityCommit(root){
+ continuityGit(root,'add','--sparse','.');
+ continuityGit(root,'-c','user.name=Synthetic fixture','-c','user.email=synthetic@example.invalid','-c','commit.gpgsign=false','commit','--quiet','-m','SYNTHETIC_ONLY current SDK policy test');
+ return continuityGit(root,'rev-parse','HEAD');
+}
+function realSdkContinuityFixture({kind='admitted',expired=false,incomplete=false,duplicate=false,completeRepository=false,sdkSnapshot=continuitySdk}={}){
+ // Genuine, complete SDK1.38 source and its immutable records. Only the private
+ // test main/admission are synthetic; they are never published or used as proof.
+ const temporary=continuityFs.realpathSync(continuityFs.mkdtempSync(continuityPath.join(continuityOs.tmpdir(),'sdk-real-source-continuity-')));
+ const root=continuityPath.join(temporary,'source');
+ try{
+  continuityGit(temporary,'clone','--quiet','--shared','--no-checkout',continuityRepository,'source');
+  continuityGit(root,'remote','set-url','origin','https://github.com/profitia/SG-dev.git');
+  const bytes=continuityExec('git',['cat-file','blob',sdkSnapshot+':'+CURRENT_SDK_SOURCE_RECORD],{cwd:root});
+  const record=JSON.parse(bytes),names=new Set([CURRENT_SDK_SOURCE_RECORD,continuityLedger,...Object.keys(record.inputs),...Object.keys(record.retainedReceipts)]);
+  assert.equal(record.platformVersion,'1.38.0');assert.equal(Object.keys(record.inputs).length,1690);assert(record.inputs[continuityInput]);
+  if(!completeRepository){
+  continuityGit(root,'sparse-checkout','init','--no-cone');
+  continuityExec('git',['sparse-checkout','set','--no-cone','--stdin'],{cwd:root,env:continuityEnv,input:[...names].map(p=>'/'+p.replaceAll('[','\\[').replaceAll(']','\\]')).join('\n')+'\n',stdio:['pipe','pipe','pipe']});
+  }
+  continuityGit(root,'checkout','--quiet','--detach',sdkSnapshot);
+  continuityFs.appendFileSync(continuityPath.join(root,continuityInput),'\n// SYNTHETIC_ONLY authorized application source advance\n');
+  const source=continuityCommit(root);
+  if(kind==='accepted'){
+   continuityGit(root,'update-ref','refs/remotes/origin/main',source);
+  }else{
+   const row={id:'SYNTHETIC_ONLY:SDK_CURRENT_APPLICATION',taskId:'SYNTHETIC_ONLY',approvalRef:'SYNTHETIC_ONLY test fixture, not an actual mandate',repository:'profitia/SG-dev',actor:'profitia',status:'ACTIVE',targetEnvironment:'development',scope:'SOURCE_VALIDATION_ONLY',sourceSha:source,baseSha:sdkSnapshot,validFrom:'2000-01-01T00:00:00Z',validUntil:expired?'2001-01-01T00:00:00Z':'2099-01-01T00:00:00Z',files:[{path:continuityInput,blob:continuityGit(root,'rev-parse',source+':'+continuityInput),mode:'100644',status:'modified',projectKey:'SG2',owner:'SG Runtime',surfaceId:'SG2-BASE-001'}]};
+   const unrelated={...row,id:'SYNTHETIC_ONLY:DISJOINT',files:[{...row.files[0],path:continuityOther,blob:continuityGit(root,'rev-parse',source+':'+continuityOther)}]};
+   if(incomplete)row.files.push({...unrelated.files[0]});
+   const records=[row,unrelated];if(duplicate)records.push({...row,id:'SYNTHETIC_ONLY:OVERLAP'});
+   continuityGit(root,'checkout','--quiet','--detach',sdkSnapshot);
+   continuityWrite(root,continuityLedger,JSON.stringify({schemaVersion:'1.0',records}));
+   const authority=continuityCommit(root);continuityGit(root,'update-ref','refs/remotes/origin/main',authority);
+   continuityGit(root,'-c','user.name=Synthetic fixture','-c','user.email=synthetic@example.invalid','-c','commit.gpgsign=false','merge','--quiet','--no-ff',source,'-m','SYNTHETIC_ONLY current source with complete admission');
+  }
+  let reads=0;
+  const current=p=>continuityFs.readFileSync(continuityPath.join(root,p));
+  const historical=(sha,p)=>{reads++;return continuityExec('git',['cat-file','blob',sha+':'+p],{cwd:root,stdio:['ignore','pipe','pipe']});};
+  return {temporary,root,record,current,historical,reads:()=>reads,run:()=>sdkSourceContext(current,historical,{sourceRoot:root,authorityRoot:root,governanceRoot:continuityRepository})};
+ }catch(error){continuityFs.rmSync(temporary,{recursive:true,force:true});throw error;}
+}
+function withRealSdkContinuity(options,body){
+ const f=realSdkContinuityFixture(options);
+ try{return body(f);}finally{continuityFs.rmSync(f.temporary,{recursive:true,force:true});}
+}
+test('real complete SDK1.38 accepts independently accepted application changes and retains original evidence',()=>withRealSdkContinuity({kind:'accepted'},f=>{
+ const v=f.run();assert(v);
+ assert.equal(v.currentSourceDigests[continuityInput],hash(f.current(continuityInput)));
+ assert.equal(v.record.inputs[continuityInput],f.record.inputs[continuityInput]);
+ assert.notEqual(v.currentSourceDigests[continuityInput],v.record.inputs[continuityInput]);
+ assert.deepEqual(v.metadata,f.record.metadata);
+ for(const [p,e]of Object.entries(f.record.retainedReceipts)){
+  assert.equal(hash(f.current(p)),e.sha256);
+  assert.equal(hash(v.baseline(e.baseline)(p)),e.sha256);
+ }
+}));
+test('real complete SDK1.38 authenticates the entire current admission despite a disjoint record',()=>withRealSdkContinuity({},f=>{
+ const v=f.run();assert(v);
+ assert.equal(v.currentSourceDigests[continuityInput],hash(f.current(continuityInput)));
+ assert.equal(continuityGit(f.root,'status','--porcelain'),'');
+}));
+test('SDK refuses expired, overlapping and incomplete admissions before reading legacy evidence',()=>{
+ for(const options of [{expired:true},{duplicate:true},{incomplete:true}])withRealSdkContinuity(options,f=>{
+  assert.throws(f.run);assert.equal(f.reads(),0);
+ });
+});
+test('SDK refuses foreign authority, executable files, symlinks and unreviewed dirty inputs before history',()=>{
+ const mutations=[
+  f=>continuityGit(f.root,'remote','set-url','origin','https://example.invalid/untrusted'),
+  f=>continuityFs.chmodSync(continuityPath.join(f.root,continuityInput),0o755),
+  f=>{continuityFs.unlinkSync(continuityPath.join(f.root,continuityInput));continuityFs.symlinkSync(continuityPath.join(f.root,continuityOther),continuityPath.join(f.root,continuityInput));},
+  f=>continuityWrite(f.root,'SYNTHETIC_ONLY_unreviewed.txt','unreviewed'),
+  f=>{continuityWrite(f.root,'SYNTHETIC_ONLY_extra.mjs','// unreviewed');continuityCommit(f.root);},
+ ];
+ for(const mutation of mutations)withRealSdkContinuity({},f=>{mutation(f);assert.throws(f.run);assert.equal(f.reads(),0);});
+});
+test('candidate metadata cannot authorize a continuation and retained receipts cannot advance',()=>{
+ withRealSdkContinuity({},f=>{
+  const record=JSON.parse(f.current(CURRENT_SDK_SOURCE_RECORD));record.metadata.unreviewed='SYNTHETIC_ONLY';
+  continuityWrite(f.root,CURRENT_SDK_SOURCE_RECORD,JSON.stringify(record));
+  assert.throws(f.run,/independently accepted descriptor/);assert.equal(f.reads(),0);
+ });
+ withRealSdkContinuity({kind:'accepted'},f=>{
+  const p=Object.keys(f.record.retainedReceipts)[0];continuityFs.appendFileSync(continuityPath.join(f.root,p),'SYNTHETIC_ONLY');
+  const sha=continuityCommit(f.root);continuityGit(f.root,'update-ref','refs/remotes/origin/main',sha);
+  assert.throws(f.run,/retained SDK evidence cannot advance|immutable|unchanged/);
+ });
+});
+test('an unrelated metadata epoch cannot substitute an immutable complete SDK ancestor',()=>withRealSdkContinuity({kind:'accepted'},f=>{
+ const record=JSON.parse(f.current(CURRENT_SDK_SOURCE_RECORD));record.status='SYNTHETIC_ONLY_NEW_EPOCH';
+ continuityWrite(f.root,CURRENT_SDK_SOURCE_RECORD,JSON.stringify(record));
+ const sha=continuityCommit(f.root);continuityGit(f.root,'update-ref','refs/remotes/origin/main',sha);
+ assert.throws(f.run,/complete immutable current SDK source/);
+ const fakeHistory=(sha,p)=>{
+  if(p===CURRENT_SDK_SOURCE_RECORD)return f.current(p);
+  if(p===manifest)return continuityExec('git',['cat-file','blob',continuitySdk+':'+p],{cwd:f.root});
+  if(p===continuityInput)return continuityExec('git',['cat-file','blob',continuitySdk+':'+p],{cwd:f.root});
+  return f.historical(sha,p);
+ };
+ assert.throws(()=>sdkSourceContext(f.current,fakeHistory,{sourceRoot:f.root,authorityRoot:f.root,governanceRoot:continuityRepository}),/complete immutable current SDK source/);
+}));
+
+test('a changed SDK runtime or manifest cannot retain old SDK metadata even after acceptance on main',()=>{
+ for(const p of [code,manifest])withRealSdkContinuity({kind:'accepted'},f=>{
+  if(p===manifest){const value=JSON.parse(f.current(p));value.SYNTHETIC_ONLY='runtime metadata must advance separately';continuityWrite(f.root,p,JSON.stringify(value));}
+  else continuityFs.appendFileSync(continuityPath.join(f.root,p),'\n// SYNTHETIC_ONLY changed SDK runtime\n');
+  const sha=continuityCommit(f.root);continuityGit(f.root,'update-ref','refs/remotes/origin/main',sha);
+  assert.throws(f.run,/SDK runtime source requires separate metadata/);
+ });
+});
+test('the actual seven-file source-only policy composes with genuine SDK1.38 and preserves every runtime input',async()=>{
+ const f=realSdkContinuityFixture({kind:'accepted',completeRepository:true});
+ try{
+  const paths=['scripts/governance/development-execution.mjs','scripts/governance/development-execution.test.mjs','apps/architecture-lab/knowledge-source.mjs','apps/architecture-lab/test/knowledge-current-application-source.test.mjs','scripts/governance/controlled-package-ci.mjs','packages/platform-contracts/test/sdk-source-context.mjs','packages/platform-contracts/test/sdk-source-context.test.mjs'];
+  for(const p of paths)continuityWrite(f.root,p,continuityFs.readFileSync(continuityPath.join(continuityRepository,p)));
+  const sha=continuityCommit(f.root);continuityGit(f.root,'update-ref','refs/remotes/origin/main',sha);
+  const {pathToFileURL}=await import('node:url');
+  const actual=await import(pathToFileURL(continuityPath.join(f.root,'packages/platform-contracts/test/sdk-source-context.mjs')).href);
+  const context=actual.currentSdkSourceContext();assert(context);
+  assert.deepEqual(context.metadata,f.record.metadata);
+  for(const [p,digest]of Object.entries(f.record.inputs)){
+   if(p.startsWith('packages/platform-contracts/')&&!p.startsWith('packages/platform-contracts/test/'))assert.equal(hash(f.current(p)),digest,'unchanged SDK runtime '+p);
+  }
+  const knowledge=await import(pathToFileURL(continuityPath.join(f.root,'apps/architecture-lab/knowledge-source.mjs')).href);
+  assert(knowledge.knowledgeSourcePredecessor(f.current,f.historical));
+  const controller=await import(pathToFileURL(continuityPath.join(f.root,'scripts/governance/controlled-package-ci.mjs')).href);
+  assert(controller.currentSdkProofContext(f.root));
+  assert.equal(continuityGit(f.root,'status','--porcelain'),'');
+ }finally{continuityFs.rmSync(f.temporary,{recursive:true,force:true});}
+});
+
+test('the complete genuine SDK1.38 chain authenticates exact producer transport and retained evidence',async()=>{
+ const f=realSdkContinuityFixture({kind:'accepted',completeRepository:true,sdkSnapshot:'09b78d30391627f17112b5b4dcaa2b155585d9d1'});
+ try{
+  const paths=['scripts/governance/development-execution.mjs','scripts/governance/development-execution.test.mjs','apps/architecture-lab/knowledge-source.mjs','apps/architecture-lab/test/knowledge-current-application-source.test.mjs','scripts/governance/controlled-package-ci.mjs','packages/platform-contracts/test/sdk-source-context.mjs','packages/platform-contracts/test/sdk-source-context.test.mjs'];
+  for(const p of paths)continuityWrite(f.root,p,continuityFs.readFileSync(continuityPath.join(continuityRepository,p)));
+  const sha=continuityCommit(f.root);continuityGit(f.root,'update-ref','refs/remotes/origin/main',sha);
+  const {pathToFileURL}=await import('node:url');
+  const actual=await import(pathToFileURL(continuityPath.join(f.root,'packages/platform-contracts/test/sdk-source-context.mjs')).href);
+  const context=actual.currentSdkSourceContext();assert(context);
+  assert.deepEqual(context.metadata,f.record.metadata);
+  for(const [p,digest]of Object.entries(f.record.inputs)){
+   if(p.startsWith('packages/platform-contracts/')&&!p.startsWith('packages/platform-contracts/test/'))assert.equal(hash(f.current(p)),digest,'unchanged SDK runtime '+p);
+  }
+  const knowledge=await import(pathToFileURL(continuityPath.join(f.root,'apps/architecture-lab/knowledge-source.mjs')).href);
+  assert(knowledge.knowledgeSourcePredecessor(f.current,f.historical));
+  const controller=await import(pathToFileURL(continuityPath.join(f.root,'scripts/governance/controlled-package-ci.mjs')).href);
+  assert(controller.currentSdkProofContext(f.root));
+   // This isolated authority and admission are SYNTHETIC_ONLY. The original
+   // complete SDK and five producer code postimages are genuine; no actual
+   // source admission, provider call, report or deployment is performed.
+   const producerSource='cda1f12c3d729c71030031439e94510e356789d6';
+   const producerPaths=['apps/insights-runtime/package-lock.json','apps/insights-runtime/package.json','apps/insights-runtime/render/report.py','apps/insights-runtime/src/citations.mjs','apps/insights-runtime/src/composer.mjs','apps/insights-runtime/src/renderer.mjs','apps/insights-runtime/tests/citations.test.mjs','apps/sg-runtime/package-lock.json'];
+   const existed=new Set(producerPaths.filter(p=>continuityFs.existsSync(continuityPath.join(f.root,p))));
+   const frozenSdkBytes=f.current(CURRENT_SDK_SOURCE_RECORD),frozenKnowledgeBytes=f.current(knowledge.KNOWLEDGE_SOURCE_RECORD);
+   for(const p of producerPaths){
+    let bytes;
+    if(p.endsWith('.json')){
+     const value=JSON.parse(f.current(p));
+     if(p==='apps/insights-runtime/package.json')value.version='1.2.2';
+     else if(p==='apps/insights-runtime/package-lock.json'){value.version='1.2.2';value.packages[''].version='1.2.2';}
+     else value.packages['node_modules/@profitia/insights-runtime'].version='1.2.2';
+     bytes=Buffer.from(JSON.stringify(value,null,2)+'\n');
+    }else bytes=continuityExec('git',['cat-file','blob',producerSource+':'+p],{cwd:continuityRepository,env:continuityEnv,stdio:['ignore','pipe','pipe'],maxBuffer:3*1024*1024});
+    continuityWrite(f.root,p,bytes);
+   }
+   const exactProducerSource=continuityCommit(f.root);
+   const producerRecord={id:'SG2:SG2-PI-CITATION-SOURCE-PUBLICATION-20261118',taskId:'SYNTHETIC_ONLY_COMPLETE_SDK138_PRODUCER',repository:'profitia/SG-dev',actor:'profitia',status:'ACTIVE',targetEnvironment:'development',scope:'SOURCE_VALIDATION_ONLY',approvalRef:'SYNTHETIC_ONLY isolated regression, never actual approval',sourceSha:exactProducerSource,baseSha:sha,validFrom:'2000-01-01T00:00:00Z',validUntil:'2099-01-01T00:00:00Z',files:producerPaths.map(p=>({path:p,blob:continuityGit(f.root,'rev-parse',exactProducerSource+':'+p),mode:'100644',status:existed.has(p)?'modified':'added',projectKey:'SG2',owner:p.startsWith('apps/insights-runtime/')?'Insights Domain':'SG Runtime',surfaceId:p.startsWith('apps/insights-runtime/')?'INSIGHTS-BASE-001':'SG2-BASE-001'}))};
+   continuityGit(f.root,'checkout','--quiet','--detach',sha);
+   const ledger=JSON.parse(f.current(continuityLedger));ledger.records=ledger.records.filter(r=>r.id!==producerRecord.id);ledger.records.push(producerRecord);
+   continuityWrite(f.root,continuityLedger,JSON.stringify(ledger));
+   const admittedMain=continuityCommit(f.root);continuityGit(f.root,'update-ref','refs/remotes/origin/main',admittedMain);
+   continuityGit(f.root,'-c','user.name=Synthetic fixture','-c','user.email=synthetic@example.invalid','-c','commit.gpgsign=false','merge','--quiet','--no-ff',exactProducerSource,'-m','SYNTHETIC_ONLY complete SDK1.38 producer transport');
+   const after=actual.currentSdkSourceContext();assert(after);assert.deepEqual(after.metadata,f.record.metadata);
+   for(const p of producerPaths.filter(p=>Object.hasOwn(f.record.inputs,p)))assert.equal(after.currentSourceDigests[p],hash(f.current(p)),p);
+   assert(knowledge.knowledgeSourcePredecessor(f.current,f.historical));
+   assert(controller.knowledgeStage2TrustedPredecessor(f.current,f.historical,{sourceRoot:f.root,authorityRoot:f.root,governanceRoot:continuityRepository}));
+   assert(controller.currentSdkProofContext(f.root));assert(controller.currentSdkSourceAdmissionPolicy(producerRecord,f.root).reviewedLocalPackages['@profitia/insights-runtime']);
+   assert.deepEqual(f.current(CURRENT_SDK_SOURCE_RECORD),frozenSdkBytes);assert.deepEqual(f.current(knowledge.KNOWLEDGE_SOURCE_RECORD),frozenKnowledgeBytes);
+   for(const [p,digest]of Object.entries(f.record.inputs))if(p.startsWith('packages/platform-contracts/')&&!p.startsWith('packages/platform-contracts/test/'))assert.equal(hash(f.current(p)),digest,'preserved runtime after producer transport '+p);
+   // The candidate ledger cannot retain approval when the independent authority
+   // no longer includes this synthetic admission. Cached context must not win.
+   continuityGit(f.root,'update-ref','refs/remotes/origin/main',sha);
+   assert.throws(()=>actual.currentSdkSourceContext());
+   assert.throws(()=>knowledge.knowledgeSourcePredecessor(f.current,f.historical));
+
+  assert.equal(continuityGit(f.root,'status','--porcelain'),'');
+ }finally{continuityFs.rmSync(f.temporary,{recursive:true,force:true});}
+});
