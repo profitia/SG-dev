@@ -1,4 +1,6 @@
 import {knowledgeSourcePredecessor} from './knowledge-source.mjs'
+import {completeFunctionalPredecessor} from './ecr-complete-functional-source.mjs'
+import {calendarCurrentMainPredecessor} from './calendar-current-main-source.mjs'
 // Source acceptance only. Never imported by an application runtime.
 // The reviewed current graph is verified before any immutable predecessor is read.
 import {recurringConsentTransportPredecessor} from '../../packages/platform-contracts/test/recurring-consent-transport-source.mjs'
@@ -20,6 +22,26 @@ const RECORD_SHA256='75877d5750e07d1c8172be0af76bc5933f2eeefc22cc39747a2621b9cab
 const hash=b=>createHash('sha256').update(b).digest('hex')
 const absent=error=>error?.code==='ENOENT'||error?.status===128&&["' does not exist in ","' exists on disk, but not in "].some(s=>String(error?.stderr??error?.message??'').includes("'"+RECURRING_SOURCE_RECORD+s))
 export function recurringSourcePredecessor(current,historical){
+ // Authenticate the complete physical graph before exposing either exact input.
+ // Keep the actual accepted-input SDK/ACG metadata, while independently retaining
+ // the original Calendar protocol and its immutable receipts.
+ const joint=calendarCurrentMainPredecessor(current,historical)
+ if(joint){
+  const calendar=recurringSourcePredecessor(joint.calendarBytes,historical)
+  const authority=recurringSourcePredecessor(joint.acceptedMainBytes,historical)
+  assert(calendar?.complete&&calendar?.transport?.live,'complete original Calendar and transport required')
+  assert(authority?.knowledge&&authority?.transport?.live,'complete conditional Knowledge and accepted transport required')
+  const complete={...calendar.complete,currentMainComposition:joint.manifest,currentSourceDigests:{...calendar.complete.currentSourceDigests,...joint.sourceDigests}}
+  return {...authority,predecessorManifest:calendar.manifest,complete,transport:{...authority.transport,live:{...authority.transport.live,manifest:{...authority.transport.live.manifest,sourceDigests:{...authority.transport.live.manifest.sourceDigests,...complete.currentSourceDigests}}}}}
+ }
+
+ const complete=completeFunctionalPredecessor(current,historical)
+ if(complete){
+  const accepted=recurringSourcePredecessor(complete.previousBytes,historical)
+  assert(accepted?.transport?.live,'accepted recurring transport and PI source retained')
+  const knowledge=knowledgeSourcePredecessor(current,historical)
+  return {...accepted,...(knowledge?{manifest:knowledge.manifest,predecessorManifest:accepted.manifest,knowledge}:{}),complete,transport:{...accepted.transport,live:{...accepted.transport.live,manifest:{...accepted.transport.live.manifest,sourceDigests:{...accepted.transport.live.manifest.sourceDigests,...complete.currentSourceDigests}}}}}
+ }
  const knowledge=knowledgeSourcePredecessor(current,historical)
  if(knowledge){const accepted=recurringSourcePredecessor(knowledge.previousBytes,historical);assert(accepted,'accepted source chain retained');return {...accepted,manifest:knowledge.manifest,predecessorManifest:accepted.manifest,knowledge}}
  const reservation=assistantReservationPredecessor(current,historical,ASSISTANT_RESERVATION_SOURCE_SHA)

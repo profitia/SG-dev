@@ -1,3 +1,4 @@
+import {createCalendarAcceptedMainTestFixture} from '../calendar-current-main-source.mjs'
 import assert from 'node:assert/strict'
 import {createHash} from 'node:crypto'
 import {execFileSync} from 'node:child_process'
@@ -10,14 +11,17 @@ import {bsdcManifestContinuityCurrent,BSDC_MANIFEST_CONTINUITY as cfg} from '../
 import {bsdcManifestContinuityTrustedCurrent} from '../../../scripts/governance/controlled-package-ci.mjs'
 
 const root=fileURLToPath(new URL('../../../',import.meta.url))
-const legacyFixture=await createAcgLegacyRecurringFixture(root)
+const calendarAcceptedInput=createCalendarAcceptedMainTestFixture(root)
+test.after(()=>calendarAcceptedInput.close())
+const legacyFixture=await createAcgLegacyRecurringFixture(calendarAcceptedInput.root)
 test.after(()=>legacyFixture.close())
 const ledgerPath='Canon/registries/governance-manifest-successors-v1.json'
 const trustedRef='refs/remotes/origin/main'
 const sourceSha='1dc0c05e52e8f4b78779ec3d0e532975ed4fa354'
 const hash=bytes=>createHash('sha256').update(bytes).digest('hex')
 // Historical BSDC assertions consume their complete authenticated pre-ACG input.
-const physical=p=>fs.readFileSync(path.join(legacyFixture.root,p))
+const approvedFixtureSha='133251a4215b2fc1560fd3dea3c1ac095acf0ef7'
+const physical=p=>[cfg.helperPath,cfg.testPath].includes(p)?history(approvedFixtureSha,p):fs.readFileSync(path.join(legacyFixture.root,p))
 const history=(sha,p)=>execFileSync('git',['show',sha+':'+p],{cwd:root,stdio:['ignore','pipe','pipe']})
 const sourceManifest=history(sourceSha,cfg.manifestPath)
 const sourceDoc='Canon/v1.0-procurement-insights-narrative-and-editorial-canon.md'

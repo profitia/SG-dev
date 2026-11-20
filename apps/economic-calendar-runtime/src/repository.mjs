@@ -14,12 +14,14 @@ const actor = context => {
 const schemaDigest = createHash('sha256').update(readFileSync(new URL('../migrations/001-read-model-and-preferences.sql', import.meta.url))).digest('hex')
 const multiSourceDigest=createHash('sha256').update(readFileSync(new URL('../migrations/002-multi-source-calendar.sql',import.meta.url))).digest('hex')
 const semanticDigest=createHash('sha256').update(readFileSync(new URL('../migrations/003-semantic-continuous.sql',import.meta.url))).digest('hex')
+const notificationDigest=createHash('sha256').update(readFileSync(new URL('../migrations/004-notifications.sql',import.meta.url))).digest('hex')
+const expandedResultsDigest=createHash('sha256').update(readFileSync(new URL('../migrations/005-expanded-results.sql',import.meta.url))).digest('hex')
 export function createRepository(configuration, database) {
   configuration=Object.freeze({...configuration})
   async function assertInstalled(transaction) {
     const {rows: [i]} = await transaction.query('SELECT * FROM economic_calendar.installation WHERE singleton')
     if (!(i?.status === 'ACTIVE' && i.schema_digest === schemaDigest && i.receiver_base_digest === currentE1SchemaDigest('receiver') && i.calendar_receiver_digest === currentE1CalendarSchemaDigest('receiver')
-      && i.multi_source_schema_digest===multiSourceDigest && i.semantic_schema_digest===semanticDigest && i.application_id === configuration.applicationId && i.environment === 'development' && i.project_id === configuration.projectId && i.branch_id === configuration.branchId && i.database_name === configuration.databaseName)) throw new CalendarError('CALENDAR_STORAGE_UNAVAILABLE',503)
+      && i.multi_source_schema_digest===multiSourceDigest && i.semantic_schema_digest===semanticDigest && i.notification_schema_digest===notificationDigest && i.expanded_results_schema_digest===expandedResultsDigest && i.application_id === configuration.applicationId && i.environment === 'development' && i.project_id === configuration.projectId && i.branch_id === configuration.branchId && i.database_name === configuration.databaseName)) throw new CalendarError('CALENDAR_STORAGE_UNAVAILABLE',503)
   }
   async function ready() {try {await database.verifyLogin();await assertInstalled(database);return true}catch{return false}}
   /** @param {any} transaction @param {string|null|undefined} asKnownAt */
@@ -151,7 +153,7 @@ async function persistPublication(query,o,receipt){
 export async function persistAcquisition(database, command, response, {intentDigest = fingerprint({receipt:response.usage.receiptRef}),assertLease=async(_t)=>{}} = {}) {
   if(!/^[a-f0-9]{64}$/.test(intentDigest))throw new CalendarError('INVALID_SYNC_INTENT')
   command=structuredClone(command);response=structuredClone(response)
-  const scheduleMode=command.contractVersion==='1.3.0'
+  const scheduleMode=['1.3.0','1.5.0'].includes(command.contractVersion)
   if(scheduleMode)assertHubResponse(response,command)
   const normalized=scheduleMode?response.items.map(publicationScheduleObservation):[]
   const publications=new Map()
