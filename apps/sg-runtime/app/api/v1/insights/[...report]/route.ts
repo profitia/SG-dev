@@ -3,3 +3,5 @@ export const runtime='nodejs'
 export const dynamic='force-dynamic'
 export const GET=insightsReportHttp
 export const POST=insightsReportHttp
+export const PATCH=insightsReportHttp
+export const DELETE=insightsReportHttp
