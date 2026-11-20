@@ -1,3 +1,4 @@
+import {assistantQualityPredecessor,QUALITY_RECEIPT} from '../sg-runtime/tests/assistant-quality-integrity.mjs'
 // Closed source-compatibility review only; never imported by product runtime.
 import assert from 'node:assert/strict';
 import {createHash} from 'node:crypto';
@@ -22,6 +23,11 @@ const absent=(error,historical)=>{
  return true;
 };
 export function knowledgeSourcePredecessor(current,historical){
+ const quality=assistantQualityPredecessor(current,historical)
+ if(quality?.compositionPreviousBytes){
+  const accepted=knowledgeSourcePredecessor(quality.compositionPreviousBytes,historical);assert(accepted,'complete accepted Knowledge predecessor retained')
+  return {...accepted,quality,manifest:{...accepted.manifest,sourceDigests:{...accepted.manifest.sourceDigests,...quality.manifest.sourceDigests,[QUALITY_RECEIPT]:hash(current(QUALITY_RECEIPT))}}}
+ }
  let bytes;try{bytes=current(KNOWLEDGE_SOURCE_RECORD);}catch(error){if(absent(error,historical))return null;throw error;}
  assert.equal(hash(bytes),KNOWLEDGE_SOURCE_RECORD_SHA256,'exact reviewed Platform Knowledge source record');
  const a=JSON.parse(bytes);

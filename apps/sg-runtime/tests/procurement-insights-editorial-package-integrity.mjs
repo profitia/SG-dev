@@ -1,3 +1,4 @@
+import {assistantQualityPredecessor,QUALITY_RECEIPT} from './assistant-quality-integrity.mjs'
 // Test/build-only package identity continuation; no runtime authority or code changes.
 import assert from 'node:assert/strict'
 import {createHash} from 'node:crypto'
@@ -47,6 +48,11 @@ export function procurementInsightsEditorialPackagePredecessor(current,historica
   const text=String(e?.stderr??e?.message??'')
   if(e?.code==='ENOENT'||e?.status===128&&["' does not exist in ","' exists on disk, but not in "].some(s=>text.includes("'"+EDITORIAL_PACKAGE_RECEIPT+s)))return null
   throw e
+ }
+ const quality=assistantQualityPredecessor(current,historical)
+ if(quality){
+  const accepted=procurementInsightsEditorialPackagePredecessor(quality.host?.editorialPreviousBytes??quality.compositionPreviousBytes??quality.previousBytes,historical);assert(accepted,'accepted editorial package source retained')
+  return {...accepted,quality,manifest:{...accepted.manifest,sourceDigests:{...Object.fromEntries(Object.entries(accepted.manifest.sourceDigests).map(([p,digest])=>[p,quality.host?.knowledgeManifest?.sourceDigests[p]??digest])),...quality.manifest.sourceDigests,[QUALITY_RECEIPT]:hash(current(QUALITY_RECEIPT))}}}
  }
  const a=JSON.parse(bytes)
  assert.deepEqual(Object.keys(a).sort(),['schemaVersion','taskId','targetEnvironment','scope','previousSourceSha','packageVersionBefore','packageVersionAfter','sourceDigests','preservedReceipts','authorisationChanged','schemaChanged','runtimeCodeChanged','dependenciesChanged','modelChanged','providerCallsPerformed','historicalReportsChanged','automaticPublication'].sort())

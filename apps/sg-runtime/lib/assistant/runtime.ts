@@ -10,6 +10,8 @@ import {createAssistantContextGateway,createBenchmarkContextAdapter} from '../..
 import {createAssistantHistory} from './history'
 import {createAssistantModel,adaptAssistantUsageQuery} from './model'
 import {createAssistantSourceAdapters} from './sources'
+import {QUALITY_RESPONSE_VERSION} from './quality-response'
+import {QUALITY_EVIDENCE_VERSION,createAssistantQualityCapture,createQualityHistoryContainment} from './quality-evidence'
 import m2Targets from '@/deployment/assistant-m2-targets.json'
 import economicTargets from '@/deployment/assistant-ecr-targets.json'
 import type {Sg2SelectionRuntime} from '@/lib/platform/private-runtime'
@@ -43,7 +45,28 @@ export function readAssistantConfiguration(env:Env){
  if(env.PROFITIA_ASSISTANT_ECR_CONFIGURATION_VERSION!==undefined
   &&(env.PROFITIA_ASSISTANT_ECR_CONFIGURATION_VERSION!==economicTargets.configurationVersion
    ||env.PROFITIA_ASSISTANT_M2_CONFIGURATION_VERSION!==m2Targets.configurationVersion))return unavailable()
- return Object.freeze({historyKey:historyKey!,usageKey:usageKey!,openaiKey:env.OPENAI_API_KEY,
+ const timeZone=env.PROFITIA_ASSISTANT_TIME_ZONE
+ // Trusted application configuration, never a browser header or model guess.
+ // Existing installations keep their explicit legacy UTC behaviour until set.
+ if(timeZone!==undefined){try{if(!timeZone||timeZone!==timeZone.trim())return unavailable();new Intl.DateTimeFormat('en',{timeZone}).format(0)}catch{return unavailable()}}
+ const qualityVersion=env.PROFITIA_ASSISTANT_QUALITY_RESPONSE_VERSION,qualityAccount=env.PROFITIA_ASSISTANT_QUALITY_ACCOUNT_ID
+ if(qualityVersion!==undefined&&(qualityVersion!==QUALITY_RESPONSE_VERSION||timeZone===undefined
+  ||!/^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(qualityAccount??''))
+  ||qualityVersion===undefined&&qualityAccount!==undefined)return unavailable()
+ const evidenceVersion=env.PROFITIA_ASSISTANT_QUALITY_EVIDENCE_VERSION
+ let qualityEvidence:null|{url:string;purposeKey:string;evidenceKey:string;storageKey:string;serviceId:string;storageGeneration:string;applicationSha:string}=null
+ if(evidenceVersion!==undefined){
+  const purposeKey=env.PROFITIA_ASSISTANT_QUALITY_PURPOSE_KEY,evidenceKey=env.PROFITIA_ASSISTANT_QUALITY_EVIDENCE_KEY,storageKey=env.PROFITIA_ASSISTANT_QUALITY_STORAGE_KEY,
+   serviceId=env.PROFITIA_ASSISTANT_QUALITY_SERVICE_UUID,storageGeneration=env.PROFITIA_ASSISTANT_QUALITY_STORAGE_GENERATION,applicationSha=env.RENDER_GIT_COMMIT
+  const id=(v:string|undefined)=>/^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(v??'')
+  if(evidenceVersion!==QUALITY_EVIDENCE_VERSION||qualityVersion!==QUALITY_RESPONSE_VERSION||![purposeKey,evidenceKey,storageKey].every(k=>/^[a-f0-9]{64}$/.test(k??''))
+   ||new Set([historyKey,usageKey,purposeKey,evidenceKey,storageKey]).size!==5||!id(serviceId)||!id(storageGeneration)||!/^[a-f0-9]{40}$/.test(applicationSha??''))return unavailable()
+  qualityEvidence={url:storeUrl(env.PROFITIA_ASSISTANT_QUALITY_EVIDENCE_DATABASE_URL,{...targets.history,runtimeRole:'sg2_assistant_quality_capture'}),
+   purposeKey:purposeKey!,evidenceKey:evidenceKey!,storageKey:storageKey!,serviceId:serviceId!,storageGeneration:storageGeneration!,applicationSha:applicationSha!}
+ }
+ return Object.freeze({historyKey:historyKey!,usageKey:usageKey!,openaiKey:env.OPENAI_API_KEY,qualityEvidence,
+  qualityResponseAccountId:qualityVersion===QUALITY_RESPONSE_VERSION?qualityAccount!:null,
+  ...(timeZone!==undefined?{timeZone}:{}),
   multiSource:env.PROFITIA_ASSISTANT_M2_CONFIGURATION_VERSION===m2Targets.configurationVersion,
   economicCalendar:env.PROFITIA_ASSISTANT_ECR_CONFIGURATION_VERSION===economicTargets.configurationVersion,
   historyUrl:storeUrl(env.PROFITIA_ASSISTANT_HISTORY_DATABASE_URL,targets.history),
@@ -72,6 +95,18 @@ export function createSg2AssistantRuntime(config:AssistantConfiguration,options:
   onDenied:diagnostics=>{console.info(JSON.stringify({event:'assistant.reservation.denied',...diagnostics}))},
  })
  const history=createAssistantHistory({query:queryFor(historyDb),commandKey:config.historyKey,schemaDigest:targets.history.schemaDigest})
+ const qa=config.qualityEvidence
+ const evidenceDb=qa?new PrismaClient({datasources:{db:{url:pooled(qa.url,'sg2_assistant_quality_evidence')}}}):null
+ const qualityEvidence=qa&&evidenceDb?createAssistantQualityCapture({purposeQuery:queryFor(prisma),evidenceQuery:queryFor(evidenceDb),
+  purposeKey:qa.purposeKey,evidenceKey:qa.evidenceKey,storageKey:qa.storageKey,serviceId:qa.serviceId,storageGeneration:qa.storageGeneration,accountId:config.qualityResponseAccountId!,
+  purposeSchemaDigest:'1da8abda37255639bdaf0f1710184ef06e489487c66beafe4354b09c529d987d',evidenceSchemaDigest:'15d7aaa57e5db10df0bcf5c2062791fdbddd978a7ffe78880e009283f4885cb9'}):null
+ const historyContainment=createQualityHistoryContainment(queryFor(prisma))
+ const guardedHistory=Object.freeze({...history,async delete(context:Readonly<OperationContext>,id:string){
+  // Independent E1 tombstone is committed before deleting product history.
+  // If containment fails, deletion fails visibly instead of leaving a restorable QA copy.
+  await historyContainment.invalidate(context)
+  await history.delete(context,id)
+ }})
  const executor=createAssistantOperationHost<Prisma.TransactionClient>({
   application:{...options.application,features:['assistant'],operations:['assistant.converse','assistant.history.read','assistant.history.write'],configurationVersion:targets.configurationVersion},binding,
   assistantSchemaDigest:targets.accessSchemaDigest,usage,independentQuery:queryFor(auditPrisma),
@@ -96,11 +131,13 @@ export function createSg2AssistantRuntime(config:AssistantConfiguration,options:
   if(!(result.value instanceof Response)||!result.value.ok)return unavailable()
   return result.value.json()
  }}),...createAssistantSourceAdapters({enabled:config.multiSource,economicCalendarEnabled:config.economicCalendar,organisationId,forecast:options.forecast,market:options.market})]})
- const prune=()=>{void historyDb.$queryRawUnsafe('SELECT sg2_assistant_history.prune()').catch(()=>{})}
+ const prune=()=>{void historyDb.$queryRawUnsafe('SELECT sg2_assistant_history.prune()').catch(()=>{});void qualityEvidence?.purge().catch(()=>{})}
  prune();const retention=setInterval(prune,10*60*1000);retention.unref()
  const model=createAssistantModel(openai,usage)
- return Object.freeze({organisationId,history,gateway,model,usage,
+ return Object.freeze({organisationId,history:guardedHistory,gateway,model,usage,qualityEvidence,qualityApplicationSha:qa?.applicationSha??null,timeZone:config.timeZone??'UTC',qualityResponseAccountId:config.qualityResponseAccountId,
   async ready(){
+   await historyContainment.ready()
+   if(qualityEvidence)await qualityEvidence.ready()
    const h=await queryFor(historyDb)('SELECT sg2_assistant_history.descriptor() AS binding'),b=h.rows[0]?.binding as Record<string,unknown>|undefined
    if(h.rows.length!==1||!b||b.applicationId!=='spendguru'||b.environment!=='development'||b.projectId!==targets.history.projectId
     ||b.branchId!==targets.history.branchId||b.databaseName!=='neondb'||b.runtimeRole!==targets.history.runtimeRole||b.schemaDigest!==targets.history.schemaDigest)return unavailable()

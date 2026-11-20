@@ -1,0 +1,62 @@
+{
+  "schemaVersion": "1.0.0",
+  "taskId": "SG2-CIC-QUALITY-TECHNICAL-READY-20261117",
+  "scope": "CONTROLLED_CIC18_HOST_AND_PRIVATE_QA_SOURCE",
+  "targetEnvironment": "development",
+  "previousSourceSha": "d9413b1945d54cbbf730a3437f9b2d368095e98e",
+  "sourceDigests": {
+    "apps/sg-runtime/lib/assistant/conversation.ts": "50fbfaae86911dfa8401f2689de5d04743dc8ca6aac1f2ca7e67be9b9073d5a0",
+    "apps/sg-runtime/lib/assistant/runtime.ts": "7e8caff60cd4c3f659a5d20fb4212dbeccf1cc7ec8c0d5ea88fc5fdc36c701f5",
+    "apps/sg-runtime/lib/assistant/quality-response.ts": "7b77d2872ac0876cb6f1139eb91f1b1b76afa4e255a698e6c9509333baf0307f",
+    "apps/sg-runtime/lib/assistant/quality-evidence.ts": "fc5c9b4d03422d10df729e991748b23f2c0d7f3528c9c6d083cc2feaed989a71",
+    "apps/sg-runtime/migrations/002-assistant-quality-evidence.sql": "15d7aaa57e5db10df0bcf5c2062791fdbddd978a7ffe78880e009283f4885cb9",
+    "apps/sg-runtime/package.json": "59a702bc3904f413a9f01ea2e25f6e62f2ee3ea0245c73083f06bde067d1539a",
+    "apps/sg-runtime/package-lock.json": "49a1c4827622e03395088676d61ee9d402664ed8f046f94f6d6be3b9078d91eb",
+    "apps/sg-runtime/tests/assistant-conversation-handler.test.ts": "7a12ea6d6086ed848a4c98e53dc4945525f10bfb5d6b41c7165d92bbfee3d03d",
+    "apps/sg-runtime/tests/assistant-quality-response.test.ts": "86a0957bcaa243ac8fbacd57db5024f4e242d99fe9bb52bed563b89a2de1f48e",
+    "apps/sg-runtime/tests/assistant-quality-evidence.test.ts": "a301ae44ece516a83afba433d82dcf0e5a2f68272ff04194b677fbec433274bf",
+    "apps/sg-runtime/tests/assistant-quality-integrity.mjs": "43a1682cf58f5d42f7339f752901f536d85ff941cef5b1c7778c052f55ee649b",
+    "apps/sg-runtime/tests/assistant-quality-host-integrity.mjs": "6ae1de038c8ac146628d0d740a8e44a39d47187c137d227fd326619fdd0a82fb",
+    "apps/sg-runtime/tests/assistant-quality-host-integrity.test.mjs": "20ef7bcff99bebc957a3745eb7030e87a70ea8b6c7fb4cfd0c29ca10295e123d",
+    "apps/sg-runtime/tests/procurement-insights-completion-integrity.mjs": "00f1b475342a78ad916c03723ae2b9b268963240d101b57c17559308c48daafa",
+    "apps/architecture-lab/private-recurring-source.mjs": "34c555f971140e197880e2ff3ddf7c1696112d2744374b238a3f3315c8fbbcf4",
+    "apps/sg-runtime/tests/procurement-insights-editorial-package-integrity.mjs": "8d04bf7ccb45cba30eb0e9d5fb032db2e04e039337674b9d198df6525bf257b1",
+    "packages/platform-contracts/test/assistant-reservation-source.mjs": "0a45aced74c9f83d54ee28e819c7a68a4a2ce263a6b564f6514caf891d7ef7ce",
+    "apps/architecture-lab/knowledge-source.mjs": "4ff6c2d4740764a62c10315f6ffd848460c90a59c0a6483232efde603f891838",
+    "apps/architecture-lab/test/knowledge-source.test.mjs": "df766e101aab6efc2848682cca624dcb8a728290912f1d531e856bfb1079c4f8",
+    "apps/sg-runtime/tests/assistant-ecr-integrity.mjs": "c6e32397b7c54384b73b1f2539fa7289ba0e967ae53c9b2d23efd75b421a1174",
+    "apps/sg-runtime/tests/assistant-ecr-precision-integrity.mjs": "382423585cce9a68dbdfe6bf0af591b0a61c8de4431dc115b113bb757442652f"
+  },
+  "previousReceipts": {
+    "apps/sg-runtime/assistant-quality-integration.json": "d37226bbb90d585b95aab383dab6fcb7d20ab8698709b50de0e1c8a58d1af2a7",
+    "apps/sg-runtime/operation-integration.json": "a6bf50993c98a71aeccd349dd904baafb53b3cd653324d97bab3fc5e34ac509f",
+    "apps/sg-runtime/assistant-context-integration.json": "d932f227977789643086b6a9eb179598a6f48071964b2d26ba82d25fceb7b2ec",
+    "apps/sg-runtime/assistant-ecr-integration.json": "5814e2e5cbdf1a32d22cff3aa55de806ec34c9debdecc21ff06c4f9f887a82bc",
+    "apps/sg-runtime/assistant-ecr-precision-integration.json": "a017c2b971e3c72606847264150715c983fa9483537d26be90144a64e0377ee7",
+    "apps/sg-runtime/assistant-markdown-integration.json": "27ff06aff8bc44592f0073732748834b7759182fa4307d901c7d63304381a38b",
+    "apps/sg-runtime/assistant-send-arrow-integration.json": "62c6af6817a022c31788d801cc0eac293a24b3f25d9e529d32b1bff4908fa230",
+    "apps/sg-runtime/registration-stage-i-integration.json": "4a7a572e67e12ed73c523502cef4cb432009e735737df851419d80898653f414",
+    "apps/sg-runtime/procurement-insights-integration.json": "6dca06d8b0731e585925100b0578d41a61711f335940350d1ea32c296a3d7177",
+    "apps/sg-runtime/procurement-insights-completion-integration.json": "095ab52d695419d34ed053a6961e389024067a8ab4a16a9b6bb2c379571832a0",
+    "apps/sg-runtime/procurement-insights-shell-integration.json": "1b1279e669e955e604c7c646482a6ce119eac5eeb09491ade78a37aa7fc133a1"
+  },
+  "cicPublication": {
+    "repository": "profitia/conversational-intelligence-core",
+    "sourceSha": "c0053dcd55a3ed9f74584733627f6e9c130d4b49",
+    "runId": "43282280865",
+    "artifactId": "13973416582",
+    "artifactZipSha256": "6302e2182bee731bbb771b2c55da0a2fdbe2d023e512492f7f478a9f966616cc",
+    "tag": "development",
+    "latestUnchanged": "1.6.0"
+  },
+  "responseProtectionActivated": false,
+  "privateQaActivated": false,
+  "cloudInstallationPerformed": false,
+  "pilotStarted": false,
+  "acceptedComposition": {
+    "sourceSha": "2f77dcd19a5ba0bb4dd4c30ed375f4c1d3213586",
+    "componentSourceSha": "583ea4f780c6a7675e7fde85c33fa7039438eedb",
+    "reservationRecordSha256": "bfa9287d9a0a17ef0a935ddc2c0f66c46b42d6c415b2b1fda0d237d2e38fc8b8",
+    "knowledgeRecordSha256": "7bde334dda3ec7068d3cb532ccd8a94f3477cea707abe250431ee16c3b044bf4"
+  }
+}

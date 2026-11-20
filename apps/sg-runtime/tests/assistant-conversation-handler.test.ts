@@ -130,3 +130,63 @@ test('count preparation receives only server-resolved actor and organisation wit
  assert.deepEqual(calls[0].scope,{actorId:user,organisationId:org,commandId:generation.commandId})
  assert.deepEqual(calls[0].input,generation.input);assert(calls[0].signal instanceof AbortSignal)
 })
+
+test('controlled CIC1.8 protection buffers the model draft and renders only source facts before a single completion',async()=>{
+ const f=fixture();f.runtime.qualityResponseAccountId=user
+ f.runtime.model.generate=async(options:any)=>{await options.beforeDispatch();await options.publish('UNVERIFIED_MODEL_SECRET 999 EUR');return 'UNVERIFIED_MODEL_SECRET 999 EUR'}
+ const r=await f.execute()
+ const text=JSON.stringify(r.events)
+ assert.equal(r.response.status,200);assert(!text.includes('UNVERIFIED_MODEL_SECRET'));assert(!text.includes('999'))
+ assert(text.includes('EUR'));assert.equal(r.events.filter((e:any)=>e.type==='delta').length,1)
+ const stored=f.events.find(e=>e.complete)?.complete.response
+ assert(stored.includes('EUR'));assert(!stored.includes('UNVERIFIED_MODEL_SECRET'))
+ assert.equal(f.calls.filter(c=>c.payload?.kind==='GENERATE').length,1)
+})
+test('controlled empty/denied source produces an explicit limitation with no paid admission or model request',async()=>{
+ for(const locale of ['pl','en'])for(const status of ['EMPTY','DENIED','UNAVAILABLE']){
+  const f=fixture();f.runtime.qualityResponseAccountId=user;let counterCalls=0;f.runtime.model.validateInput=async()=>{counterCalls++}
+  f.runtime.gateway.resolve=async()=>({contexts:[{source:'BENCHMARK_CHART',status,sourceVersion:reference.fingerprint,selection:reference,data:{value:'UNAVAILABLE_PRIVATE_SECRET'}}]})
+  const r=await f.execute({locale}),text=JSON.stringify(r.events)
+  assert.equal(r.response.status,200);assert.equal(f.generated(),0);assert.equal(counterCalls,0)
+  assert.equal(f.calls.some(c=>c.payload?.kind==='GENERATE'),false)
+  assert(!text.includes('UNAVAILABLE_PRIVATE_SECRET'));assert(text.includes(status));assert(r.events.some((e:any)=>e.type==='completed'))
+ }
+})
+test('controlled source revocation after buffered generation prevents both delivery and a manufactured completion',async()=>{
+ const f=fixture();f.runtime.qualityResponseAccountId=user
+ f.runtime.model.generate=async(options:any)=>{await options.beforeDispatch();await options.publish('NEVER_VISIBLE');f.revoked();return 'NEVER_VISIBLE'}
+ const r=await f.execute()
+ assert.equal(r.events.some((e:any)=>e.type==='delta'||e.type==='completed'),false)
+ assert.equal(r.events.at(-1).code,'DENIED');assert(!f.events.some(e=>e.complete))
+})
+test('quality configuration for another account never changes the admitted account response path',async()=>{
+ const f=fixture();f.runtime.qualityResponseAccountId=foreign
+ const r=await f.execute();assert(r.events.some((e:any)=>e.type==='delta'&&e.text==='Synthetic answer'))
+})
+
+test('controlled QA capture follows server publication with the exact draft/input/period and fresh operation context',async t=>{
+ t.mock.method(Date,'now',()=>Date.parse('2026-11-17T10:30:00.000Z'))
+ const f=fixture(),captured:any[]=[];f.runtime.qualityResponseAccountId=user;f.runtime.qualityApplicationSha='a'.repeat(40);f.runtime.timeZone='Europe/Warsaw'
+ const commandId=randomUUID()
+ f.runtime.qualityEvidence={capture:async(context:any,evidence:any)=>{captured.push({context,evidence});f.events.push('quality-capture')}}
+ f.runtime.model.generate=async(options:any)=>{await options.beforeDispatch();await options.publish('UNVERIFIED_DRAFT');return 'UNVERIFIED_DRAFT'}
+ const r=await f.execute({commandId}),e=captured[0]?.evidence
+ assert.equal(captured.length,1);assert.equal(captured[0].context.actorId,user)
+ assert.equal(e.interactionId,commandId);assert.equal(e.accountId,user);assert.equal(e.occurredAt,'2026-11-17T10:30:00.000Z')
+ assert.equal(e.earliestInputAt,e.occurredAt);assert.equal(e.timeZone,'Europe/Warsaw');assert.equal(e.interpretedPeriod,null)
+ assert.deepEqual(e.modelInput,f.inputs[0]);assert.equal(e.output.draft,'UNVERIFIED_DRAFT')
+ assert.equal(e.output.delivered,r.events.find((v:any)=>v.type==='delta').text);assert.equal(e.output.status,'COMPLETE')
+ assert.equal(e.versions.applicationSha,'a'.repeat(40));assert.equal(e.versions.cicVersion,'1.8.0')
+ assert.match(e.versions.promptSha256,/^[a-f0-9]{64}$/);assert.match(e.versions.modelConfigurationSha256,/^[a-f0-9]{64}$/)
+ assert(f.events.findIndex(x=>x.complete)<f.events.indexOf('quality-capture'))
+ assert.equal(f.calls.filter(c=>c.payload?.action==='QUALITY_EVIDENCE').length,1)
+})
+test('revoked controlled output creates no QA completion; an unadmitted QA input cannot trigger a model retry',async()=>{
+ const f=fixture(),captured:any[]=[];f.runtime.qualityResponseAccountId=user;f.runtime.qualityApplicationSha='a'.repeat(40)
+ f.runtime.qualityEvidence={capture:async(...v:any[])=>{captured.push(v);throw unavailable('UNAVAILABLE')}}
+ let calls=0
+ f.runtime.model.generate=async(options:any)=>{calls++;await options.beforeDispatch();return 'UNVERIFIED_DRAFT'}
+ let r=await f.execute();assert.equal(calls,1);assert.equal(captured.length,1);assert(r.events.some((v:any)=>v.type==='completed'))
+ f.runtime.model.generate=async(options:any)=>{calls++;await options.beforeDispatch();f.revoked();return 'NEVER_DELIVERED'}
+ r=await f.execute();assert.equal(captured.length,1);assert(!r.events.some((v:any)=>v.type==='completed'))
+})
