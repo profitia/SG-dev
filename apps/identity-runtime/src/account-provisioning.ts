@@ -5,8 +5,8 @@ import { BoundaryError, type RuntimeConfiguration, type RuntimeSdk, type Identit
 import { checkRequest } from './session-boundary.js'
 import { readConfiguration } from './config.js'
 
-export type AccountTransactionDiagnostic = Readonly<{
-  phase: 'acquire' | 'query' | 'action' | 'commit'
+export type AccountDiagnostic = Readonly<{
+  phase: 'acquire' | 'query' | 'action' | 'commit' | 'account-read'
   operation: string
   code: string
 }>
@@ -14,7 +14,7 @@ const accountSqlStates = new Set(['PT403', 'PT409', '28P01', '28000', '42501', '
   '3D000', '3F000', '23502', '23503', '23505', '23514', '40001', '40P01', '53300', '53400', '57014',
   '57P01', '57P02', '57P03', '08000', '08001', '08003', '08004', '08006', '08007', '08P01',
   'ECONNREFUSED', 'ECONNRESET', 'ETIMEDOUT', 'ENOTFOUND'])
-const accountFailureCodes = new Set(['ACCESS_BASIS_INVALID', 'POLICY_UNAVAILABLE', 'ACCOUNT_UNAVAILABLE',
+const accountFailureCodes = new Set(['ACCESS_BASIS_INVALID', 'POLICY_UNAVAILABLE', 'ACCOUNT_UNAVAILABLE', 'ACCOUNT_REQUIRED', 'ACCOUNT_CHANGED',
   'VERIFIED_EMAIL_REQUIRED', 'REGISTRATION_FINALIZATION_REQUIRED', 'REGISTRATION_UNAVAILABLE', 'VOCATIVE_UNAVAILABLE'])
 function accountFailureCode(error: unknown): string {
   // Never forward messages, SQL, parameters, provider data or arbitrary codes.
@@ -46,8 +46,8 @@ function accountQueryOperation(sql: string): string {
 
 /** A timed-out connection is destroyed, never returned to the pool while work
  * may still be running. PostgreSQL rolls back on disconnect. No automatic retry. */
-export function accountTransactions(pool: Pick<pg.Pool, 'connect'>, diagnostic?: (event: AccountTransactionDiagnostic) => void) {
-  const report = (event: AccountTransactionDiagnostic) => {
+export function accountTransactions(pool: Pick<pg.Pool, 'connect'>, diagnostic?: (event: AccountDiagnostic) => void) {
+  const report = (event: AccountDiagnostic) => {
     try { diagnostic?.(Object.freeze(event)) } catch { /* Preserve denial and transaction cleanup. */ }
   }
   return async function transact<T>(action: (session: { query: import('@profitia/platform-contracts/access-store').AccessQuery; transaction: pg.PoolClient }) => Promise<T>, limits: { timeoutMs: number; maxWaitMs: number }, signal?: AbortSignal): Promise<T> {
@@ -76,7 +76,7 @@ export function accountTransactions(pool: Pick<pg.Pool, 'connect'>, diagnostic?:
       timer = setTimeout(abort, limits.timeoutMs); signal?.addEventListener('abort', abort, { once: true })
       if (signal?.aborted) abort()
     })
-    let queryFailure: AccountTransactionDiagnostic | null = null, lastCompletedOperation = 'transaction'
+    let queryFailure: AccountDiagnostic | null = null, lastCompletedOperation = 'transaction'
     const query: import('@profitia/platform-contracts/access-store').AccessQuery = async (sql, values) => {
       if (!open) throw new BoundaryError(503, 'ACCOUNT_UNAVAILABLE')
       let result
@@ -125,10 +125,11 @@ export interface AccountSurface {
   read(request: Request): Promise<Readonly<{ authenticated: true; userId: string; expiresAt: string }>>
   renew(request: Request): Promise<Readonly<{ authenticated: true; userId: string; expiresAt: string }>>
 }
-export function createAccountSurface({ configuration: inputConfiguration, client, authority, binding, schemaDigest, renewalSchemaDigest, proofKey, transact, finalizeRegistration, now = Date.now }: {
+export function createAccountSurface({ configuration: inputConfiguration, client, authority, binding, schemaDigest, renewalSchemaDigest, proofKey, transact, finalizeRegistration, diagnostic, now = Date.now }: {
   configuration: RuntimeConfiguration; client: RuntimeSdk; authority: IdentityAuthority
   binding: IdentityProvisioningOptions<pg.PoolClient>['binding']; schemaDigest: string; renewalSchemaDigest?: string; proofKey: Uint8Array
   finalizeRegistration?: (query: import('./registration-store.js').RegistrationQuery, userId: string, token: string|null) => Promise<void>
+  diagnostic?: (event: AccountDiagnostic) => void
   transact: ReturnType<typeof accountTransactions>; now?: () => number
 }): AccountSurface {
   if (!(proofKey instanceof Uint8Array) || proofKey.byteLength !== 32) throw new BoundaryError(503, 'PROFILE_CONFIGURATION_REQUIRED')
@@ -158,9 +159,15 @@ export function createAccountSurface({ configuration: inputConfiguration, client
   async function read(request: Request, verify = authenticate) {
     checkRequest(request, configuration)
     if (request.method !== 'GET') throw new BoundaryError(403, 'ACCOUNT_READ_ONLY')
-    const actor = await verify(request)
-    if (!actor || actor.kind !== 'HUMAN' || !actor.userId || request.signal.aborted) throw new BoundaryError(401, 'ACCOUNT_REQUIRED')
-    return Object.freeze({ authenticated: true as const, userId: actor.userId, expiresAt: actor.expiresAt })
+    try {
+      const actor = await verify(request)
+      if (!actor || actor.kind !== 'HUMAN' || !actor.userId || request.signal.aborted) throw new BoundaryError(401, 'ACCOUNT_REQUIRED')
+      return Object.freeze({ authenticated: true as const, userId: actor.userId, expiresAt: actor.expiresAt })
+    } catch (error) {
+      // Also covers independent verification after provisioning/renewal COMMIT.
+      try { diagnostic?.(Object.freeze({ phase: 'account-read', operation: 'account-read', code: accountFailureCode(error) })) } catch { /* Preserve the original failure. */ }
+      throw error
+    }
   }
   return Object.freeze({ configuration, read, async renew(request: Request) {
     checkRequest(request, configuration)

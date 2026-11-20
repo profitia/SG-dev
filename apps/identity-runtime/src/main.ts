@@ -26,7 +26,7 @@ import { createNodeServer } from './node-server.js'
 import { readDeploymentOrigin } from './deployment-configuration.js'
 import type { SessionBoundary } from './contracts.js'
 import { embeddedTargets, createEmbeddedAccountHandler, type EmbeddedAccountSurface } from './embedded-account.js'
-import { createAccountSurface, accountTransactions, type AccountSurface } from './account-provisioning.js'
+import { createAccountSurface, accountTransactions, type AccountSurface, type AccountDiagnostic } from './account-provisioning.js'
 let email: EmailSurface | null = null
 let reportEmail:ReturnType<typeof createReportEmailRuntime>|null=null
 let pool: pg.Pool | null = null
@@ -128,8 +128,9 @@ if (process.env.IDENTITY_RUNTIME_ENABLED === 'true') {
     if (!/^[a-f0-9]{64}$/.test(key ?? '') || !/^[a-f0-9]{64}$/.test(digest ?? '')) throw Error('PROFILE_CONFIGURATION_REQUIRED')
     const renewalDigest = process.env.IDENTITY_BINDING_RENEWAL_ENABLED === 'true' ? process.env.IDENTITY_RENEWAL_SCHEMA_DIGEST : undefined
     if (process.env.IDENTITY_BINDING_RENEWAL_ENABLED === 'true' && !/^[a-f0-9]{64}$/.test(renewalDigest ?? '')) throw Error('RENEWAL_CONFIGURATION_REQUIRED')
-    account = createAccountSurface({ configuration: config, client, authority, binding, schemaDigest: digest!, ...(renewalDigest === undefined ? {} : { renewalSchemaDigest: renewalDigest }),
-      proofKey: Buffer.from(key!, 'hex'), transact: accountTransactions(pool, event => console.error('identity-account: ' + JSON.stringify(event))), ...(registrationStore ? {finalizeRegistration:registrationStore.finish} : {}) })
+    const accountDiagnostic = (event: AccountDiagnostic) => console.error('identity-account: ' + JSON.stringify(event))
+    account = createAccountSurface({ configuration: config, client, authority, binding, schemaDigest: digest!, ...(renewalDigest === undefined ? {} : { renewalSchemaDigest: renewalDigest }), diagnostic: accountDiagnostic,
+      proofKey: Buffer.from(key!, 'hex'), transact: accountTransactions(pool, accountDiagnostic), ...(registrationStore ? {finalizeRegistration:registrationStore.finish} : {}) })
     avatar = createAssistantAvatarSurface({ configuration: config, client, binding, schemaDigest: digest!, proofKey: Buffer.from(key!, 'hex'),
       transact: accountTransactions(pool), independentQuery: (sql, values) => pool!.query(sql, values as unknown[]),
       deploymentId: process.env.RENDER_GIT_COMMIT ?? 'local-development', configurationVersion: createHash('sha256').update(JSON.stringify(config)).digest('hex') })
@@ -182,7 +183,8 @@ if (process.env.IDENTITY_RUNTIME_ENABLED === 'true') {
         transact: accountTransactions(pool), independentQuery: (sql: string, values: readonly unknown[] = []) => pool!.query(sql, values as unknown[]),
         deploymentId: process.env.RENDER_GIT_COMMIT ?? 'local-development', configurationVersion: createHash('sha256').update(JSON.stringify(consumerConfig)).digest('hex') }
       consumers.set(targetId, { registration,
-        account: createAccountSurface({ ...common, authority, ...(renewalDigest === undefined ? {} : { renewalSchemaDigest: renewalDigest }), finalizeRegistration: registrationStore.finish }),
+        account: createAccountSurface({ ...common, authority, ...(renewalDigest === undefined ? {} : { renewalSchemaDigest: renewalDigest }), finalizeRegistration: registrationStore.finish,
+          transact: accountTransactions(pool, accountDiagnostic), diagnostic: accountDiagnostic }),
         avatar: createAssistantAvatarSurface(common), language: createCommunicationLanguageSurface(common) })
     }
     embedded = createEmbeddedAccountHandler(config, consumers)
