@@ -5,9 +5,51 @@ import { BoundaryError, type RuntimeConfiguration, type RuntimeSdk, type Identit
 import { checkRequest } from './session-boundary.js'
 import { readConfiguration } from './config.js'
 
+export type AccountTransactionDiagnostic = Readonly<{
+  phase: 'acquire' | 'query' | 'action' | 'commit'
+  operation: string
+  code: string
+}>
+const accountSqlStates = new Set(['PT403', 'PT409', '28P01', '28000', '42501', '42883', '42P01', '42703',
+  '3D000', '3F000', '23502', '23503', '23505', '23514', '40001', '40P01', '53300', '53400', '57014',
+  '57P01', '57P02', '57P03', '08000', '08001', '08003', '08004', '08006', '08007', '08P01',
+  'ECONNREFUSED', 'ECONNRESET', 'ETIMEDOUT', 'ENOTFOUND'])
+const accountFailureCodes = new Set(['ACCESS_BASIS_INVALID', 'POLICY_UNAVAILABLE', 'ACCOUNT_UNAVAILABLE',
+  'VERIFIED_EMAIL_REQUIRED', 'REGISTRATION_FINALIZATION_REQUIRED', 'REGISTRATION_UNAVAILABLE', 'VOCATIVE_UNAVAILABLE'])
+function accountFailureCode(error: unknown): string {
+  // Never forward messages, SQL, parameters, provider data or arbitrary codes.
+  try {
+    const e = error as { code?: unknown; reasonCode?: unknown; message?: unknown } | null
+    if (typeof e?.code === 'string' && accountSqlStates.has(e.code)) return e.code
+    for (const value of [e?.reasonCode, e?.code, e?.message]) {
+      if (typeof value === 'string' && accountFailureCodes.has(value)) return value
+    }
+  } catch { /* Diagnostics cannot replace the original failure. */ }
+  return 'UNCLASSIFIED'
+}
+function accountQueryOperation(sql: string): string {
+  for (const [name, operation] of [
+    ['profitia_profile.runtime_descriptor(', 'profile-descriptor'],
+    ['profitia_profile.binding_renewal_descriptor(', 'renewal-descriptor'],
+    ['profitia_profile.binding_renewal_metadata(', 'binding-metadata'],
+    ['profitia_profile.renew_binding(', 'binding-renewal'],
+    ['profitia_access.runtime_descriptor(', 'access-descriptor'],
+    ['profitia_access.identity_binding(', 'binding-read'],
+    ['profitia_profile.provision_account(', 'account-provision'],
+    ['profitia_profile.vocative_descriptor(', 'vocative-descriptor'],
+    ['profitia_profile.registration_descriptor(', 'registration-descriptor'],
+    ['profitia_profile.registration_command(', 'registration-command'],
+    ['txid_current(', 'transaction-id'],
+  ]) if (sql.includes(name!)) return operation!
+  return /^(BEGIN|COMMIT|ROLLBACK|SET LOCAL)\b/.test(sql) ? 'transaction' : 'other'
+}
+
 /** A timed-out connection is destroyed, never returned to the pool while work
  * may still be running. PostgreSQL rolls back on disconnect. No automatic retry. */
-export function accountTransactions(pool: Pick<pg.Pool, 'connect'>) {
+export function accountTransactions(pool: Pick<pg.Pool, 'connect'>, diagnostic?: (event: AccountTransactionDiagnostic) => void) {
+  const report = (event: AccountTransactionDiagnostic) => {
+    try { diagnostic?.(Object.freeze(event)) } catch { /* Preserve denial and transaction cleanup. */ }
+  }
   return async function transact<T>(action: (session: { query: import('@profitia/platform-contracts/access-store').AccessQuery; transaction: pg.PoolClient }) => Promise<T>, limits: { timeoutMs: number; maxWaitMs: number }, signal?: AbortSignal): Promise<T> {
     // Provisioning allows 5s acquisition; the private profile host allows 3s.
     // Both use the same 15s transaction deadline and ordinary runtime role.
@@ -15,7 +57,9 @@ export function accountTransactions(pool: Pick<pg.Pool, 'connect'>) {
     const connection = await new Promise<pg.PoolClient>((resolve, reject) => {
       let pending = true
       const cleanup = () => { clearTimeout(waitTimer); signal?.removeEventListener('abort', cancel) }
-      const cancel = () => { if (!pending) return; pending = false; cleanup(); reject(new BoundaryError(503, 'ACCOUNT_UNAVAILABLE')) }
+      const cancel = (error?: unknown) => { if (!pending) return; pending = false; cleanup();
+        report({ phase: 'acquire', operation: 'connection', code: accountFailureCode(error) })
+        reject(new BoundaryError(503, 'ACCOUNT_UNAVAILABLE')) }
       const waitTimer = setTimeout(cancel, limits.maxWaitMs)
       signal?.addEventListener('abort', cancel, { once: true })
       if (signal?.aborted) { cancel(); return }
@@ -32,10 +76,17 @@ export function accountTransactions(pool: Pick<pg.Pool, 'connect'>) {
       timer = setTimeout(abort, limits.timeoutMs); signal?.addEventListener('abort', abort, { once: true })
       if (signal?.aborted) abort()
     })
+    let queryFailure: AccountTransactionDiagnostic | null = null, lastCompletedOperation = 'transaction'
     const query: import('@profitia/platform-contracts/access-store').AccessQuery = async (sql, values) => {
       if (!open) throw new BoundaryError(503, 'ACCOUNT_UNAVAILABLE')
-      const result = await connection.query(sql, values as unknown[])
+      let result
+      try { result = await connection.query(sql, values as unknown[]) }
+      catch (error) {
+        queryFailure = { phase: sql === 'COMMIT' ? 'commit' : 'query', operation: accountQueryOperation(sql), code: accountFailureCode(error) }
+        throw error
+      }
       if (!open) throw new BoundaryError(503, 'ACCOUNT_UNAVAILABLE')
+      lastCompletedOperation = accountQueryOperation(sql)
       return result
     }
     try {
@@ -44,6 +95,7 @@ export function accountTransactions(pool: Pick<pg.Pool, 'connect'>) {
         await query('COMMIT'); return result
       })()])
     } catch (error) {
+      report(queryFailure ?? { phase: 'action', operation: lastCompletedOperation, code: accountFailureCode(error) })
       if (open) { try { await connection.query('ROLLBACK') } catch { released = true; connection.release(true) } }
       throw error
     } finally {

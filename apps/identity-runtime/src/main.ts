@@ -129,7 +129,7 @@ if (process.env.IDENTITY_RUNTIME_ENABLED === 'true') {
     const renewalDigest = process.env.IDENTITY_BINDING_RENEWAL_ENABLED === 'true' ? process.env.IDENTITY_RENEWAL_SCHEMA_DIGEST : undefined
     if (process.env.IDENTITY_BINDING_RENEWAL_ENABLED === 'true' && !/^[a-f0-9]{64}$/.test(renewalDigest ?? '')) throw Error('RENEWAL_CONFIGURATION_REQUIRED')
     account = createAccountSurface({ configuration: config, client, authority, binding, schemaDigest: digest!, ...(renewalDigest === undefined ? {} : { renewalSchemaDigest: renewalDigest }),
-      proofKey: Buffer.from(key!, 'hex'), transact: accountTransactions(pool), ...(registrationStore ? {finalizeRegistration:registrationStore.finish} : {}) })
+      proofKey: Buffer.from(key!, 'hex'), transact: accountTransactions(pool, event => console.error('identity-account: ' + JSON.stringify(event))), ...(registrationStore ? {finalizeRegistration:registrationStore.finish} : {}) })
     avatar = createAssistantAvatarSurface({ configuration: config, client, binding, schemaDigest: digest!, proofKey: Buffer.from(key!, 'hex'),
       transact: accountTransactions(pool), independentQuery: (sql, values) => pool!.query(sql, values as unknown[]),
       deploymentId: process.env.RENDER_GIT_COMMIT ?? 'local-development', configurationVersion: createHash('sha256').update(JSON.stringify(config)).digest('hex') })
