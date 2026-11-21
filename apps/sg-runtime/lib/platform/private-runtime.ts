@@ -40,6 +40,7 @@ export type Sg2SelectionRuntime = Readonly<{ provider: 'legacy_demo' } | {
   currentOrganisation?:(request:Request)=>Promise<Readonly<{userId:string;organisationId:string|null;expiresAt:string}>>
   organisationEntry?:Readonly<{choices(request:Request):Promise<import('@profitia/platform-contracts/organisation-context').OwnOrganisationChoices>;select(request:Request,organisationId:string):Promise<import('@profitia/platform-contracts/organisation-context').OwnOrganisationContext>}>
   benchmarkDiscovery?:()=>Promise<DiscoveryApi>
+  assistantReady?:()=>Promise<void>
   assistant?:()=>Promise<AssistantRuntime>
   assistantForOrganisation?:(organisationId:string)=>Promise<AssistantRuntime>
   dashboardEmbed?: NativeDashboardBinding
@@ -260,18 +261,34 @@ export function getSg2SelectionRuntime(env: EnvironmentInput = process.env): Sg2
     })
   })() : undefined
   let discoveryPromise:Promise<DiscoveryApi>|undefined
+  // Restart retention/readiness without selecting a tenant or creating a business host.
+  // Cache technical resources only; each authorised request still binds its own organisation.
+  let assistantResourcesPromise:Promise<import('@/lib/assistant/runtime').AssistantResources>|undefined
+  const loadAssistantResources=()=>assistantResourcesPromise??=import('@/lib/assistant/runtime').then(({createSg2AssistantResources})=>createSg2AssistantResources(config.assistant!))
+  const assistantReady=config.assistant?async()=>{await (await loadAssistantResources()).ready()}:undefined
   let assistantPromise:Promise<AssistantRuntime>|undefined
-  const assistant=config.assistant&&!config.organisationContext?()=>assistantPromise??=import('@/lib/assistant/runtime').then(async({createSg2AssistantRuntime})=>{const runtime=createSg2AssistantRuntime(config.assistant!,{
-    prisma,auditPrisma,clerk,application:config.application,identity:config.identity,binding:config.binding,market:marketRead?.analytics,forecast:forecastRead,
-  });await runtime.ready();return runtime}):undefined
+  const assistant=config.assistant&&!config.organisationContext?()=>assistantPromise??=import('@/lib/assistant/runtime').then(async({createSg2AssistantRuntime})=>{
+    const resources=await loadAssistantResources()
+    const runtime=createSg2AssistantRuntime(config.assistant!,{
+      prisma,auditPrisma,clerk,application:config.application,resources,identity:config.identity,binding:config.binding,market:marketRead?.analytics,forecast:forecastRead,
+    })
+    await runtime.ready()
+    return runtime
+  }):undefined
   const benchmarkDiscovery=config.discovery?()=>discoveryPromise??=import('@/lib/benchmark/discovery-runtime').then(({createDiscoveryRuntime})=>createDiscoveryRuntime(config.discovery!,{prisma,auditPrisma,clerk,application:config.application,identity:config.identity,binding:config.binding,module:config.module})):undefined
-  let assistantResources:ReturnType<typeof import('@/lib/assistant/runtime')['createSg2AssistantResources']>|undefined
-  const assistantForOrganisation=config.organisationContext&&config.assistant?async(organisationId:string)=>{if(!uuid.test(organisationId))unavailable();const {createSg2AssistantRuntime,createSg2AssistantResources}=await import('@/lib/assistant/runtime');assistantResources??=createSg2AssistantResources(config.assistant!);const runtime=createSg2AssistantRuntime(config.assistant!,{prisma,auditPrisma,clerk,application:config.application,organisationId,resources:assistantResources,identity:config.identity,binding:config.binding,market:marketRead?.analytics,forecast:forecastRead});await runtime.ready();return runtime}:undefined
+  const assistantForOrganisation=config.organisationContext&&config.assistant?async(organisationId:string)=>{
+    if(!uuid.test(organisationId))unavailable()
+    const {createSg2AssistantRuntime}=await import('@/lib/assistant/runtime')
+    const resources=await loadAssistantResources()
+    const runtime=createSg2AssistantRuntime(config.assistant!,{prisma,auditPrisma,clerk,application:config.application,organisationId,resources,identity:config.identity,binding:config.binding,market:marketRead?.analytics,forecast:forecastRead})
+    await runtime.ready()
+    return runtime
+  }:undefined
   const organisationReader=config.organisationContext?createSg2OrganisationContextReader({prisma,auditPrisma,clerk,application:config.application,identity:config.identity,binding:config.binding,schemaDigest:config.organisationContext.schemaDigest,...(config.organisationContext.selectionSchemaDigest?{selectionSchemaDigest:config.organisationContext.selectionSchemaDigest}:{})}):undefined
   const runtime = Object.freeze({ provider: 'clerk' as const, executor,
     get defaultOrganisationId(){if(organisationReader)unavailable();return config.application.organisationId!},
     ...(organisationReader?{currentOrganisation:(request:Request)=>organisationReader.read(request),...(config.organisationContext?.selectionSchemaDigest?{organisationEntry:{choices:organisationReader.choices,select:organisationReader.select}}:{})}:{}),
-    ...(assistantForOrganisation?{assistantForOrganisation}:{}),
+    ...(assistantReady?{assistantReady}:{}),...(assistantForOrganisation?{assistantForOrganisation}:{}),
     ...(benchmarkDiscovery?{benchmarkDiscovery}:{}),...(assistant?{assistant}:{}),
     ...(forecastRequest ? { forecastRequest } : {}), ...(supplierSummary ? { supplierSummary } : {}), ...(category ? { category } : {}),...(marketRead?{marketRead}:{}), ...(forecastRead ? { forecastRead } : {}), ...(config.dashboardEmbed ? { dashboardEmbed: config.dashboardEmbed } : {}) })
   globalThis.__sg2PrivateSelectionRuntime__ = { key, runtime }
