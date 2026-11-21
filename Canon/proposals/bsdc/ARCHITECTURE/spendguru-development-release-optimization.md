@@ -3,8 +3,8 @@
 
 | Pole | Wartość |
 | --- | --- |
-| Status | **OWNER_APPROVED_FOR_PUBLICATION / NO_STAGE_MANDATE** — decyzja właściciela z 21.11.2026 |
-| Roboczy `initiativeId` | `ARCH-DEV-RELEASE-OPT-20261121` — propozycja do weryfikacji identyfikatora/routingu |
+| Status | **OWNER_APPROVED_FOR_PUBLICATION / E1_EXECUTION** — decyzje właściciela z 21.11.2026 |
+| `initiativeId` | `ARCH-DEV-RELEASE-OPT-20261121` |
 | `projectKey` / owner merytoryczny | **ARCHITECTURE** / właściciel Profitia (decyzje biznesowe) |
 | Współpracujące profile | SG2, SRM i właściwi ownerzy wspólnych kontraktów |
 | Repozytorium authority | `profitia/SG-dev` / `main` |
@@ -12,8 +12,8 @@
 | Kanon rozwiązania | [Projekt kanonu v0.3](../../spendguru-development-release-optimization-canon-v0.3.md) |
 | Zamrożona baza AS-IS | [SpendGuru-audyt-AS-IS-2026-11-21.md](https://github.com/profitia/spendguru/blob/7d10fec73cd69194523b320faf397982d9a8fd04/docs/audits/2026/11/21/SpendGuru-audyt-AS-IS-2026-11-21.md) (`ASIS-REF-01`, SHA-256 `5ee32757fe85896ab14089bd936f41a8c0fd283db67b672a60d8427a49e40683`) · prywatne repozytorium, SHA-256 potwierdzony po ponownym odczycie |
 | Metodologia | **BOE v1.1 i Karta inspirowana BSDC v1.1** (DEC-01, decyzja właściciela z 21.11.2026). |
-| Bieżący mandat wykonawczy | **BRAK** — żaden etap nie został uruchomiony |
-| Najbliższa decyzja | Osobny mandat właściciela dla E1 po publikacji dokumentów |
+| Bieżący mandat wykonawczy | **E1-T01–E1-T04** · mandat z 21.11.2026 · profil ARCHITECTURE / Development |
+| Najbliższa decyzja | Odbiór E1 na podstawie Karty, dowodów CI i closeoutu |
 
 ## 1. Potrzeba biznesowa i rezultat
 
@@ -210,15 +210,116 @@ SG-dev/                                      [ISTNIEJE; authority main]
 
 | Etap | Status | Mandat | PR/SHA/CI/deploy/PHR | Warunek przejścia |
 | --- | --- | --- | --- | --- |
-| E1 | NIE_ROZPOCZĘTY | BRAK | — | Zlecenie E1 z określonym zakresem i odbiór E1 |
+| E1 | W_TOKU | E1-T01–E1-T04, 21.11.2026 | PMOS `ARCH-DEV-RELEASE-OPT-20261121-E1`, T02 `ARCH-DEV-RELEASE-OPT-20261121-E1-T02`, dowody w §§8.1–8.4 | Odbiór właściciela po sprawdzeniu exact main, CI oraz PHR |
 | E2 | NIE_ROZPOCZĘTY | BRAK | — | Oddzielny GO po rozliczeniu E1; QW-05 (E2-T04) niezależnie od E2-T02 |
 | E3 | NIE_ROZPOCZĘTY | BRAK | — | Oddzielny GO po rozliczeniu E2 |
 | E4 — MUST | NIE_ROZPOCZĘTY | BRAK | — | Odrębny GO po E3; obligatoryjne DoD GV-01/GV-02 dla pełnego zamknięcia, chyba że owner zmieni zakres |
 | E5 — MUST: T01 | NIE_ROZPOCZĘTY | BRAK | — | Odrębny GO po E4; E5-T01 obowiązkowy, T02–T04 warunkowe |
 
-Rejestr tasków: ID E1-T01–E5-T04 (w tym E2-T04 / QW-05) powyżej mają wstępnie status `NIE_ROZPOCZĘTY`; po publikacji aktualizować **w tej samej Karcie** statusy, daty, executor, `taskId`, PR, exact source/main SHA, CI, deploy, wymagane potwierdzenie i blocker. Dozwolone stany: `NIE_ROZPOCZĘTY`, `W_TOKU`, `CZĘŚCIOWY`, `ZABLOKOWANY`, `ZAKOŃCZONY`. Nie dopisywać fikcyjnego dowodu.
+Rejestr tasków: pozycje E2–E5 mają status `NIE_ROZPOCZĘTY`. Bieżące wyniki E1 są poniżej. Po publikacji aktualizować **w tej samej Karcie** statusy, daty, executor, `taskId`, PR, exact source/main SHA, CI, deploy, wymagane potwierdzenie i blocker. Dozwolone stany: `NIE_ROZPOCZĘTY`, `W_TOKU`, `CZĘŚCIOWY`, `ZABLOKOWANY`, `ZAKOŃCZONY`. Nie dopisywać fikcyjnego dowodu.
 
 **Autonomia wykonawcy:** decyzję, które taski prowadzi ChatGPT, a które Codex, podejmuje się przy uruchomieniu i w toku etapu na podstawie realnego dostępu, bezpieczeństwa i efektywności. Zgody, routing, owner-only, CI, PMOS/PHR, LKG i STOP nie przechodzą automatycznie na drugiego wykonawcę.
+
+| Zadanie | Rezultat ujęty w tej rewizji | Dowód i status odbioru |
+| --- | --- | --- |
+| E1-T01 / QW-01 | Retrospekcja dwóch przypadków | ZAKOŃCZONY · §8.1 i przypięte dowody |
+| E1-T02 / QW-02 | Dokładne usprawnienie Universal v1.2 | Zatwierdzona delta · §8.2 · integrację potwierdza exact main i jego CI |
+| E1-T03 / QW-03 | Praktyczna mapa dowodów i wznowienia | ZAKOŃCZONY · §8.3 · testy i kanoniczny closeout E1 w PHR |
+| E1-T04 / QW-04 | Zastosowanie NFR GitHub do wyników E1 | ZAKOŃCZONY · §8.4 |
+
+### 8.1. E1-T01 — retrospekcja dwóch zmian SG2
+
+Stan systemu i starsze metryki pochodzą z zamrożonego AS-IS. Poniższe czasy uzupełniają go o odczyty GitHub Actions, artefakty ich producentów, Render i PHR. Godziny w tabelach podano w CET. Czas „do Development” oznacza zakończenie pierwszego skutecznego wdrożenia zgodnego SHA. Odbiór widoku i dalsze operacje zapisano osobno.
+
+| Zdarzenie | #730 · 26.10.2026 | #1081 / #1082 · 13.11.2026 |
+| --- | --- | --- |
+| Zakres źródła | CSS typografii i digest zgodności, 2 pliki. Końcowe źródło `f64d2eae28ede756c007a2b0cb51560009f0b7fd` 10:44:15, PR otwarty 10:44:20. GitHub nie wykazał osobnego `Ready for review`. [Diff #730](https://github.com/profitia/SG-dev/pull/730/files) | Dostępna ikona powiadomień AppShell i domknięcie grafu dowodów, 7 plików. PR otwarty 15:23:43, końcowe źródło `74b2010b2225b82d389e4b1803a953bb5b599128` 15:39:01, `Ready for review` 18:42:35. [Diff i przebieg #1081](https://github.com/profitia/SG-dev/pull/1081) |
+| Pierwsza przeszkoda | O 10:45:41 publiczny weryfikator zwrócił `CONTROLLED_VALIDATION_REQUIRED_FOR_EXACT_SHA`. Oryginalny producent działał od 10:44:47 i ukończył pracę o 10:48:43. Odczytany artefakt wskazuje wymagane SHA kandydata, kontroler `5a5fdd74…` i PASS testów, typecheck oraz buildu. [Pierwsza próba](https://github.com/profitia/SG-dev/actions/runs/40301876943/attempts/1) · [Producent i artefakt](https://github.com/profitia/SG-dev/actions/runs/40301928602#artifacts) | Pierwsze publiczne próby zawierały rzeczywiste błędy integralności. Na końcowym SHA o 15:51:30 brakowało dowodu, a niezależny job odrzucił też źródło PI (`PI_LIVE_ACCEPTANCE_SOURCE_REJECTED`). Nowe uruchomienie po dostarczeniu dowodu nadal miało ten drugi błąd. [Próba końcowego SHA](https://github.com/profitia/SG-dev/actions/runs/43446512047) · [Nieudany świeży CI](https://github.com/profitia/SG-dev/actions/runs/43475359063/attempts/1) |
+| Polityka i decyzje | W badanym #730 przeszła dotychczasowa ścieżka w oparciu o już zaakceptowane `main`. Odczytane zdarzenia nie wykazały dodatkowego PR-u polityki ani nowej odrębnej zgody dla tego follow-upu. Handoff utrwala mandat i odbiór szerszej pracy SG2, więc nie liczymy zera zgód dla całego wydania. [PHR SG2](https://github.com/profitia/project-history-repository/blob/b59a60f8ea42617830cd97ebff8179bec30ec2a2/history/2026/10/26/2026-10-26-10-07-18Z__sg2-sg2-benchmark-canon-polish-20261026/handoff.md) | Osobny #1082 zmienił kontroler i jego test. Udokumentowano co najmniej dwie decyzje właścicielskie: mandat pilota SG2 do odbioru Development i zgodę na dokładny patch polityki ARCHITECTURE. Nie ustalono dokładnych godzin decyzji ani pełnej liczby zgód operacyjnych. Bootstrap #1082 zakończył się o 17:36:30, polityka została scalona o 18:04:44 do `3901ff15…`, a CI tego main zakończył się o 18:32:21. [PR #1082](https://github.com/profitia/SG-dev/pull/1082) · [Bootstrap](https://github.com/profitia/SG-dev/actions/runs/43462623540) · [CI polityki na main](https://github.com/profitia/SG-dev/actions/runs/43469151894) · [Dowód decyzji w PHR](https://github.com/profitia/project-history-repository/blob/b59a60f8ea42617830cd97ebff8179bec30ec2a2/history/2026/11/13/2026-11-13-17-50-23Z__architecture-arch-appshell-notifications-ci-20261113/handoff.md) |
+| Ponowienia i merge | Dwie próby jednego uruchomienia na końcowym HEAD. Druga, po udostępnieniu dowodu, zaczęła się o 10:56:20 i przeszła o 10:57:11. Merge `32fce23e…` o 10:57:37. Wcześniejsze przebiegi tej samej gałęzi mają inne SHA. [Druga próba](https://github.com/profitia/SG-dev/actions/runs/40301876943/attempts/2) · [Merge #730](https://github.com/profitia/SG-dev/commit/32fce23eff7033e84d19ff74dc719c93eff34097) | #1082 miał jedno ponowienie publicznego CI po dostępności bootstrapu. Na końcowym SHA #1081 zarejestrowano cztery próby w trzech uruchomieniach: dwie nieudane, jedno ponowienie anulowane (brak potwierdzonej przyczyny), jedno świeże udane. Producent z przyjętego `3901ff15…` zakończył się o 18:21:59 i dostarczył oryginalny artefakt dla `74b2010b…`. Świeże publiczne CI skończyło się o 19:09:00, merge `80875d8f…` o 19:11:26. [Ponowienie #1082](https://github.com/profitia/SG-dev/actions/runs/43461945875/attempts/2) · [Oryginalny dowód #1081](https://github.com/profitia/SG-dev/actions/runs/43469498045#artifacts) · [Anulowana próba](https://github.com/profitia/SG-dev/actions/runs/43475359063/attempts/2) · [Świeży PASS](https://github.com/profitia/SG-dev/actions/runs/43477877269) |
+| Development i odbiór | Dashboard `dep-dbfi89q9lscs73a8jirg` ukończony o 10:59:25 na `32fce23e…`. Około **15 min 5 s** od otwarcia i **1 min 48 s** od merge. Handoff utrwala odczyt działającego widoku, m.in. etykiety 10 px i wskaźniki 4 × 4 px. Końcowe wydanie usług i odnowienie istniejących bindingów należały do szerszej pracy SG2. [Render Dashboard](https://dashboard.render.com/web/srv-dapa3ujm8hqs73a9t2og/deploys/dep-dbfi89q9lscs73a8jirg) · [Odbiór w PHR](https://github.com/profitia/project-history-repository/blob/b59a60f8ea42617830cd97ebff8179bec30ec2a2/history/2026/10/26/2026-10-26-10-07-18Z__sg2-sg2-benchmark-canon-polish-20261026/handoff.md) | Pierwsze skuteczne wdrożenie `dep-dbrmjg3m8hqs73d8rtq0` o 20:52:09, ok. **2 h 10 min** od `Ready for review`, **1 h 41 min** od merge. Dwie wcześniejsze próby Render miały `update_failed`. PHR rejestruje odbiór koordynatora (8 wariantów UI, klawiatura) oraz oddzielne operacje synchronizacji i rollbacku bindingów. Render pokazał kolejny skuteczny deploy dokładnie tego SHA o 21:32:41. Status bieżący historycznych deployów to `deactivated`. [CI wynikowego main](https://github.com/profitia/SG-dev/actions/runs/43480186462) · [Pierwszy skuteczny Render](https://dashboard.render.com/web/srv-dapa3tid0e5s73f8bc5g/deploys/dep-dbrmjg3m8hqs73d8rtq0) · [Późniejszy Render](https://dashboard.render.com/web/srv-dapa3tid0e5s73f8bc5g/deploys/dep-dbrn6bgu01pc73e1e21g) · [Odbiór i ograniczenia PHR](https://github.com/profitia/project-history-repository/blob/b59a60f8ea42617830cd97ebff8179bec30ec2a2/history/2026/11/13/2026-11-13-20-12-58Z__sg2-sg2-cloud-appshell-notifications-20261113/handoff.md) |
+
+| Kategoria | Możliwe wtedy i dzisiaj | Właściwy etap i granica |
+| --- | --- | --- |
+| **WRAPPER / PROCEDURAL OVERHEAD** | Gdy oryginalny producent jest aktywny, wykazać oczekiwanie i zachować wynik pierwszej próby. Przy następnym kroku użyć istniejącej ważnej zgody oraz aktualnych dowodów na te same wejścia. W #730 właściwy producent działał w chwili odmowy. GitHub i PHR nie wykazują, ile powtórnych rozmów o mandacie rzeczywiście odbyto. | **E1** doprecyzowuje interpretację i ręczne wznowienie wyłącznie w dozwolonym momencie. **E2** odpowiada za automatyczne sekwencjonowanie producenta i weryfikatora. Podstawy to oryginalny log #730 oraz Canon v3 §§10.1–10.2. |
+| **POLICY / MANDATORY GATE** | Przy odmowie grafu/Source na #1081 samo czekanie nie dawało dopuszczenia. Wtedy użyto dokładnego #1082. Dzisiaj sprawdza się najpierw dopuszczalność w aktywnym ledgerze i kompletność dowodu, z zachowaniem granicy zwykłego dopuszczenia. | **E1** rozpoznaje granicę i kwalifikuje właściwą ścieżkę. **E4** może zmienić mechanizm przy odrębnym mandacie. Źródła to #1082 i Canon v3 §10.4. |
+| **TECHNICAL DEPENDENCY** | Osobno mierzyć gotowość producenta, rzeczywisty job architektoniczny, CI wynikowego main, kolejkę wydania i runtime. Dodatkowy błąd źródła PI oraz próby deploy #1081 pozostają przypisane do własnych przyczyn. Z dostępnego śladu nie wynika, że całą przerwę po merge wywołał jeden warunek. | **E1** zachowuje osobne dowody i pełną metrykę. **E2** dotyczy koordynacji CI. **E5** dotyczy build/runtime i release, z zastosowaniem LKG oraz własnej autoryzacji. |
+| **OWNER DECISION / NEW AUTHORIZATION** | Używać istniejącego mandatu dla tej samej operacji i zakresu, a przy chronionej zmianie przedstawić jeden wniosek obejmujący dokładne wejścia. W #1082 decyzja wiązała digest dokładnego patcha, nie zastępowała walidacji i wydania #1081. | **E1** usuwa potrzebę ponownego pytania o tę samą zgodę w reprezentatywnym przebiegu. Nowy Source, chronione bajty i release związany ze SHA pozostają pod właściwym kontraktem. |
+
+### 8.2. E1-T02 — propozycja minimalnej zmiany Universal v1.2
+
+Status po przyjęciu tej rewizji do `main` to `OWNER_APPROVED / ACTIVE` dla dokładnie zatwierdzonej delty w dotychczasowej ścieżce Universal v1.2. Cel to jedna krótsza instrukcja odsyłająca do istniejących reguł. Diff dotyczy §11 oraz Aneksu A. Zastępuje 11 wierszy powtórzonej checklisty dwoma akapitami odsyłającymi do właściwych, nadal obowiązujących sekcji. Rozstrzyga, jak opisać brak dowodu podczas pracy producenta i jak zachować oryginalny wynik CI. Zachowuje preflight, właściwy mandat, granicę Source, LKG i continuity przez odwołanie do aktywnych sekcji wrappera i Canon v3.
+
+- Plik docelowy i owner to `docs/agent-instructions/profitia-universal-project-execution-v1.2.md` i Governance Source Layer. Przejście routingu `ALIGNED` określa ownership, zgodę na dokładne bajty określa odrębne przyjęcie. Podstawa to `f70dcac89fc5d05f22d192a80c12fc3a5bb58e20`, SHA-256 bieżącego pliku `69c97acd3a1b87c3b3ea8eb9de821ff1d0934eb6f98951db285b3641cc1d10ff`.
+- SHA-256 źródłowego diffu z kontekstem to `514f7b14d3245b2daca0538b36553449cb9cf15c4adca5e903b587f124fb44d8`. SHA-256 pełnego pliku po nałożeniu to `4bfceb8d50fc4c4a3e54709b31ae276eea2e3b6f8afa3193917b6561beb3b3c9`. `git apply --check` przeszedł na wskazanej podstawie. Właściciel przyjął jeden ujawniony pakiet dokładnych bajtów do opublikowania i aktywacji dla SG2, SRM i ARCHITECTURE, z zachowaniem wymaganej kwalifikacji. Wycofanie przyjętej zmiany odbywa się przez zwykły revert odpowiedniego PR-u. [Aktywny Universal v1.2](https://github.com/profitia/SG-dev/blob/f70dcac89fc5d05f22d192a80c12fc3a5bb58e20/docs/agent-instructions/profitia-universal-project-execution-v1.2.md) · [Canon v3](https://github.com/profitia/SG-dev/blob/f70dcac89fc5d05f22d192a80c12fc3a5bb58e20/Canon/v3.0-profitia-agent-execution-canon.md)
+
+Podgląd zatwierdzonej zmiany.
+
+```diff
+--- a/docs/agent-instructions/profitia-universal-project-execution-v1.2.md
++++ b/docs/agent-instructions/profitia-universal-project-execution-v1.2.md
+@@ -256,7 +256,7 @@
+ Dobierz testy do efektu i ryzyka, nie liczby plików:
+
+ 1. Potwierdź główny scenariusz użytkownika, istotne warianty negatywne, błędy graniczne i dotknięte granice danych/bezpieczeństwa.
+-2. Testy lokalne, typecheck, build, kontraktowe i CI wykonuj według obowiązujących gate'ów; unikaj zbędnego powtarzania identycznych pozytywnych dowodów dla tego samego SHA, konfiguracji i zależności.
++2. Testy lokalne, typecheck, build, kontraktowe i CI wykonuj według obowiązujących gate'ów; unikaj zbędnego powtarzania identycznych pozytywnych dowodów dla tego samego SHA, konfiguracji i zależności. Gdy log wskazuje brak dowodu dla dokładnego SHA i właściwy producent jeszcze pracuje, zachowaj wynik próby i odnotuj oczekiwanie. Ponów zależny weryfikator po dostępności właściwego dowodu, zgodnie z obowiązującym kontraktem CI. Błąd testu, awarię infrastruktury oraz odmowę Source lub brak autoryzacji rozlicz osobno.
+ 3. Gdy błąd wynika z kodu, napraw przyczynę u ownera i dodaj adekwatną regresję. Nie zmieniaj testów ani kanonów wyłącznie dla zielonego PASS.
+ 4. Dla nowych integracji sprawdź reprezentatywny scenariusz na rzeczywistych, dopuszczonych źródłach; syntetyczny fixture nie zastępuje LIVE.
+ 5. Oddziel `CODE READY`, `CI PASS`, `DEPLOYED`, `RUNTIME VERIFIED` od `BUSINESS OUTCOME VERIFIED`.
+@@ -329,17 +329,9 @@
+
+ ## Aneks A — krótki preflight kontrolny (nie dodatkowa procedura)
+
+-- [ ] Wybrany tryb `CONSULTING / EXECUTION`; przy wykonaniu ustalony mandat i właściwy pomocniczy Full Autopilot.
+-- [ ] Aktywny `projectKey`, profil, adapter, repozytorium authority i `TARGET_ENVIRONMENT` ustalone z rejestru.
+-- [ ] `AGENTS.md`, wymagane kanony i manifest załadowane, właściwe gate'y oraz routing target paths sprawdzone.
+-- [ ] Rozdzielono ACTUAL, `ALIGNED/LEGACY`, klasyfikację `TRANSITIONAL` i stan deploymentu; legacy write wyłącznie z dopuszczonym wyjątkiem.
+-- [ ] Ustalono `PMOS_APPLICABILITY = REQUIRED / NOT_APPLICABLE` **na podstawie profilu i środowiska**.
+-- [ ] Jeśli `REQUIRED`: właściwe projekt/baza/endpoint/rola PMOS, `pmos:begin` i wymagany preflight; po pracy closeout i wszystkie publikacje zgodne z aktywnym profilem.
+-- [ ] Jeśli `NOT_APPLICABLE`: bez PMOS/PHR continuity; zamiast tego właściwe gate'y i dowody release (GitHub/Render/Neon), jeśli dotyczy.
+-- [ ] Wpływ na Identity/E1, Source, dane i licencje określony lub uzasadnione `NOT_APPLICABLE`.
+-- [ ] Przy UX/UI załadowano aktualny kanon MagicPath, zweryfikowano reużycie i klasyfikację PRODUCT/DESIGN/SIMULATION; w innym przypadku `NOT_APPLICABLE`.
+-- [ ] Przed **każdym deploymentem** potwierdzono LKG albo prawdziwy przypadek first deployment; zakres owner-only zasobów pozostaje u właściciela.
+-- [ ] Po wykonaniu potwierdzono rzeczywisty rezultat, release SHA/runtime oraz obowiązkowe dowody, bez fikcyjnego sukcesu.
++Stosuj bramki właściwe dla operacji i profilu według §§2–7 oraz §§11–13. Rozróżnij obowiązkowy kontroler, warunek mandatu, zależność techniczną i rekomendację.
++
++Przy kolejnej operacji w przyjętym zakresie użyj ważnego mandatu z §13. Zachowaj wymagane ponowne sprawdzenia i odśwież dowody, których wejścia się zmieniły.
+
+ ---
+
+```
+
+### 8.3. E1-T03 — mapa dowodów, wznowienie i próby interpretacji
+
+| Co potwierdzamy | Źródło prawdy i klucz powiązania | Reuse, zmiana lub brak |
+| --- | --- | --- |
+| Mandat i PMOS begin | Decyzja właściciela i zapis rejestracji PMOS. `projectKey`, `taskId`, host, zakres operacji, zasób, środowisko, termin i dokładny SHA tam, gdzie wymagany. | Użyć ważnego zakresu dla kolejnych kroków. Zmiana uprawnień, zakresu lub SHA objętego exact GO wymaga weryfikacji nowych warunków. |
+| Source | Aktualny trusted main, właściwy rekord lub zamknięty review oraz GitHub PR i dokładny head. Zaufany kontroler wiąże bazę, komplet ścieżek, blobów, trybów i ownerów. | Zmiana wejść unieważnia dowód, którego dotyczą. Dla odświeżonej podstawy użyć udokumentowanej zgodnej ścieżki z aktualnym dokładnym SHA i dowodem. |
+| CI | GitHub Actions `runId/attempt`, oryginalny artefakt i niezależna weryfikacja `candidateSha/controlSha`, zaufanego workflow i kontraktu. CI PR i wynikowego main mają odrębne tożsamości. | Oczekiwanie wymaga potwierdzonego aktywnego producenta i właściwej przyczyny w logu. Odmowa pochodzenia, brak producenta, błąd testu i awaria infrastruktury mają różne następne kroki. |
+| Wydanie i odbiór | GitHub merge SHA, właściwa usługa Render i deploy ID, dokładny odczyt runtime, LKG oraz właściwy dowód po operacji na danych, jeśli dotyczy. | Wznowienie następuje na pierwszej brakującej operacji po odczycie stanu. Wynik poprzedniego wydania nie dowodzi nowego deployu. |
+| Closeout i przejęcie | PMOS `taskId/conversationId`, PHR `publicationId` i istniejący commit plus readback. Przekazanie zawiera ostatni potwierdzony krok, stan pending/receiptu, brakujący gate, właściciela operacji i następny dopuszczony krok. | Przy publikacji już obecnej użyć kanonicznego recovery z oryginalnym commit/bundle. Przy awarii publikacji zachować pending i dowody. Przejmujący sprawdza własny mandat i current authority. |
+
+**Scenariusze wykonane.** Codex zastosował bieżące instrukcje do tej Karty. Użył mandatu E1 i istniejącej diagnozy. Wykonał odczyt aktualnego main, pełny preflight, pojedynczy `pmos:begin` dla etapu i wymagany preflight z rejestracją. Historyczne dowody odczytano ponownie tylko dla dwóch przypadków i skutków decyzji. Zapis opiera się na istniejącym PMOS/PHR.
+
+| Próba | Wynik i materiał |
+| --- | --- |
+| Ważny mandat i te same wejścia | Rejestracja tej Karty i test kontraktu `same valid scope reuses the recorded mandate` potwierdziły ścieżkę bez ponownej zgody dla czynności objętych E1. |
+| Zmiana dokładnego SHA, zakresu lub ścieżki | Istniejące testy odmowy obcego SHA, niedozwolonych chronionych plików, złej tożsamości i zmienionych bajtów potwierdziły granicę. Próba E1 użyła rzeczywistego różnego źródła #1082 jako negatywnej pary do #1081 i porównała pola artefaktów. |
+| Oczekiwanie na dowód i rzeczywisty błąd | Oryginalna odmowa #730 podczas pracy właściwego producenta została zakwalifikowana jako oczekiwanie na exact proof. #1081 zachowuje osobny błąd integralności PI nawet przy ukończonym producencie. Anulowanej próbie nie przypisano przyczyny bez dowodu. |
+| Brak lub obcy producent | Oryginalne proofy #730, #1082 i #1081 zawierają różne pary kandydat/kontroler. Testy rzeczywistej wersji kontraktu odrzucają użycie obcej pary i dopuszczenie chronionej ścieżki przez zwykły rekord. Wynik kontroli na aktualnym kodzie to 8/8 w wybranym zestawie. |
+| Błąd PHR i wznowienie | Istniejące testy PMOS (6/6 w wybranym zestawie) sprawdziły zachowanie pending przy błędzie i uznanie publikacji po sukcesie. Rzeczywisty wcześniejszy przypadek v0.3 zakończył się `RECOVERED / VERIFIED_EXISTING`, ponownym `ALREADY_COMPLETE` i pustym pending slot. [Oryginalny pakiet v0.3](https://github.com/profitia/project-history-repository/blob/b59a60f8ea42617830cd97ebff8179bec30ec2a2/history/2026/11/21/2026-11-21-15-37-37Z__architecture-architecture-dev-release-opt-v03-publication-20261121/manifest.json) |
+| Przejęcie pracy | Odtworzenie następnika z istniejących artefaktów w tej retrospekcji i test `resume selects the first unverified operation` sprawdziły punkt wznowienia. Niezależny odbiór przez ChatGPT może ponowić odczyt podanych dowodów, używając własnych uprawnień. |
+
+### 8.4. E1-T04 — przenośność GitHub
+
+| `NFR-GITHUB-PORTABILITY` | Ocena i następstwo |
+| --- | --- |
+| Karta i projekt diffu wrappera | `READY`. Logiczny profil i reguły są pobierane z aktywnego rejestru. Dodane adresy GitHub identyfikują historyczne dowody, a decyzja i delta wrappera identyfikują dokładne bajty. |
+| Ciągłość i proofy pod kontrolą GitHub | `NEEDS_ADAPTER` przy zmianie authority. Ponownie rozwiązać mapę repo/owner/branch i prawa GitHub Actions, PHR i pakietów oraz sprawdzić wiązania workflow z rzeczywistym repozytorium. Historyczne dowody zachowują swoje pierwotne tożsamości. GitHub zachowuje historię Git przy transferze. Pochodzenie, role i delegację w SpendGuru trzeba uzgodnić dla nowej tożsamości. [Transfer repozytorium w GitHub](https://docs.github.com/en/repositories/creating-and-managing-repositories/transferring-a-repository) |
+| Wydanie, Render/Neon i Merge Queue | `N/A` dla materiałów E1. Zależności integracji pozostają w osobnym projekcie migracyjnym. |
+
+**Punkt wznowienia i odbiór.** Właściwe źródło statusu to niniejsza Karta i rejestracja PMOS `ARCH-DEV-RELEASE-OPT-20261121-E1`. W PHR pakiet ma `publicationId=ARCHITECTURE:ARCH-DEV-RELEASE-OPT-20261121-E1`. Aktualne CI i dokładny zapis repozytoryjny można sprawdzić w [historii zmian Karty](https://github.com/profitia/SG-dev/commits/main/Canon/proposals/bsdc/ARCHITECTURE/spendguru-development-release-optimization.md) oraz [pakietach PHR](https://github.com/profitia/project-history-repository/tree/main/history/2026/11/21). Po weryfikacji `main` i PHR wynik jest przekazywany do niezależnego odczytu ChatGPT i odbioru właściciela. Przejście do E2 wymaga oddzielnego mandatu właściciela.
 
 ## 9. Otwarte decyzje, ryzyka i STOP
 
@@ -243,6 +344,4 @@ Rejestr tasków: ID E1-T01–E5-T04 (w tym E2-T04 / QW-05) powyżej mają wstęp
 - **21.11.2026 — v0.3:** zaproponowano E4 i E5-T01 jako obowiązkowe wyniki końcowe, QW-05 przeniesiono do E2 oraz dodano weryfikowalny SHA-256 i bramkę trwałego utrwalenia audytu AS-IS przed publikacją.
 
 **Stan v0.3:** właściciel zaakceptował Kartę i kanon do publikacji, przyjął DEC-01 oraz DEC-07 i potwierdził docelową lokalizację audytu. DEC-08 rozliczono odczytem z commita `7d10fec73cd69194523b320faf397982d9a8fd04`.
-**Otwarte:** odrębne przyjęcie zmian normatywnych i mandat dla E1.
-**Punkt wznowienia:** decyzja właściciela o zleceniu E1.
-**Stan realizacji:** E1 pozostaje `NIE_ROZPOCZĘTY`. Migracja do organizacji GitHub ma status odrębnej inicjatywy po zamknięciu tego projektu.
+**E1 · 21.11.2026:** właściciel udzielił mandatu na E1-T01–E1-T04 i przyjął publikację oraz aktywację dokładnie wskazanej delty Universal v1.2. Punkt odbioru stanowią §§8.1–8.4, exact main, CI i potwierdzony closeout. Migracja do organizacji GitHub ma status odrębnej inicjatywy po zamknięciu tego projektu.

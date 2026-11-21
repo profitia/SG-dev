@@ -256,7 +256,7 @@ Jeżeli zadanie **nie dotyka UI/UX**, oznacz `MAGICPATH_UI_CANON = NOT_APPLICABL
 Dobierz testy do efektu i ryzyka, nie liczby plików:
 
 1. Potwierdź główny scenariusz użytkownika, istotne warianty negatywne, błędy graniczne i dotknięte granice danych/bezpieczeństwa.
-2. Testy lokalne, typecheck, build, kontraktowe i CI wykonuj według obowiązujących gate'ów; unikaj zbędnego powtarzania identycznych pozytywnych dowodów dla tego samego SHA, konfiguracji i zależności.
+2. Testy lokalne, typecheck, build, kontraktowe i CI wykonuj według obowiązujących gate'ów; unikaj zbędnego powtarzania identycznych pozytywnych dowodów dla tego samego SHA, konfiguracji i zależności. Gdy log wskazuje brak dowodu dla dokładnego SHA i właściwy producent jeszcze pracuje, zachowaj wynik próby i odnotuj oczekiwanie. Ponów zależny weryfikator po dostępności właściwego dowodu, zgodnie z obowiązującym kontraktem CI. Błąd testu, awarię infrastruktury oraz odmowę Source lub brak autoryzacji rozlicz osobno.
 3. Gdy błąd wynika z kodu, napraw przyczynę u ownera i dodaj adekwatną regresję. Nie zmieniaj testów ani kanonów wyłącznie dla zielonego PASS.
 4. Dla nowych integracji sprawdź reprezentatywny scenariusz na rzeczywistych, dopuszczonych źródłach; syntetyczny fixture nie zastępuje LIVE.
 5. Oddziel `CODE READY`, `CI PASS`, `DEPLOYED`, `RUNTIME VERIFIED` od `BUSINESS OUTCOME VERIFIED`.
@@ -329,17 +329,9 @@ Ten wrapper **wyłącznie unifikuje wykonanie** w istniejących projektach. Nie 
 
 ## Aneks A — krótki preflight kontrolny (nie dodatkowa procedura)
 
-- [ ] Wybrany tryb `CONSULTING / EXECUTION`; przy wykonaniu ustalony mandat i właściwy pomocniczy Full Autopilot.
-- [ ] Aktywny `projectKey`, profil, adapter, repozytorium authority i `TARGET_ENVIRONMENT` ustalone z rejestru.
-- [ ] `AGENTS.md`, wymagane kanony i manifest załadowane, właściwe gate'y oraz routing target paths sprawdzone.
-- [ ] Rozdzielono ACTUAL, `ALIGNED/LEGACY`, klasyfikację `TRANSITIONAL` i stan deploymentu; legacy write wyłącznie z dopuszczonym wyjątkiem.
-- [ ] Ustalono `PMOS_APPLICABILITY = REQUIRED / NOT_APPLICABLE` **na podstawie profilu i środowiska**.
-- [ ] Jeśli `REQUIRED`: właściwe projekt/baza/endpoint/rola PMOS, `pmos:begin` i wymagany preflight; po pracy closeout i wszystkie publikacje zgodne z aktywnym profilem.
-- [ ] Jeśli `NOT_APPLICABLE`: bez PMOS/PHR continuity; zamiast tego właściwe gate'y i dowody release (GitHub/Render/Neon), jeśli dotyczy.
-- [ ] Wpływ na Identity/E1, Source, dane i licencje określony lub uzasadnione `NOT_APPLICABLE`.
-- [ ] Przy UX/UI załadowano aktualny kanon MagicPath, zweryfikowano reużycie i klasyfikację PRODUCT/DESIGN/SIMULATION; w innym przypadku `NOT_APPLICABLE`.
-- [ ] Przed **każdym deploymentem** potwierdzono LKG albo prawdziwy przypadek first deployment; zakres owner-only zasobów pozostaje u właściciela.
-- [ ] Po wykonaniu potwierdzono rzeczywisty rezultat, release SHA/runtime oraz obowiązkowe dowody, bez fikcyjnego sukcesu.
+Stosuj bramki właściwe dla operacji i profilu według §§2–7 oraz §§11–13. Rozróżnij obowiązkowy kontroler, warunek mandatu, zależność techniczną i rekomendację.
+
+Przy kolejnej operacji w przyjętym zakresie użyj ważnego mandatu z §13. Zachowaj wymagane ponowne sprawdzenia i odśwież dowody, których wejścia się zmieniły.
 
 ---
 
