@@ -323,15 +323,25 @@ Podgląd zatwierdzonej zmiany.
 
 **Odbiór właściciela E1 · 21.11.2026.** Wynik `OWNER_ACCEPTED / SUCCESS` obejmuje E1-T01–E1-T04. Podstawą jest handoff Codexa, niezależna weryfikacja ChatGPT i potwierdzone dowody wykonania. Zweryfikowany SHA E1 to `82638ac73f7865170ec14a25e7abdaf2104df52c`. Administracyjny zapis decyzji ma odrębny `taskId` `ARCH-DEV-RELEASE-OPT-20261121-E1-OWNER-ACCEPTANCE`. [PR #1273](https://github.com/profitia/SG-dev/pull/1273) · [CI wynikowego main](https://github.com/profitia/SG-dev/actions/runs/44935565469) · [PHR E1](https://github.com/profitia/project-history-repository/blob/5850e963968f10a4e6b47eedb5033589248aa9bf/history/2026/11/21/2026-11-21-18-30-54Z__architecture-arch-dev-release-opt-20261121-e1/manifest.json) · [PHR E1-T02](https://github.com/profitia/project-history-repository/blob/4b34a5a220029888f41765b07cb0d05ff18e1d7c/history/2026/11/21/2026-11-21-18-30-17Z__architecture-arch-dev-release-opt-20261121-e1-t02/manifest.json)
 
+### 8.5. E2 — sekwencjonowanie i pomiar
+
+Mandat właściciela obejmuje E2-T01–E2-T04. Rejestracja wykonawcza PMOS `ARCH-DEV-RELEASE-OPT-20261121-E2`. Stan wykonania `W_TOKU`.
+
+**DEC-03 — wpływ i zakres.** CI-01: **B/R4**. Właściciel ścieżek to Governance Source Layer, projekt ARCHITECTURE, repozytorium `profitia/SG-dev`. Granica dotyczy sprawdzania dowodów SG2, w tym ścieżek Architecture/SRM wymagających tego samego dowodu. Własny test operacyjny SRM oraz Architecture contract and lab działają osobno. QW-05: **A/R2** w zakresie izolacji zadań i rejestracji continuity. Kwalifikacja chronionych bajtów CI-01 wymaga jawnej decyzji właściciela na dokładny pakiet zgodnie z Canon v3 §10. Skoordynowanie zadań oczekujących na dowód ogranicza się do ścieżek korzystających z tej bramki.
+
+**DEC-05 — definicja przed próbą.** Jednostka pomiaru to dokładny HEAD kandydata i kolejne wykonania kroku niezależnej weryfikacji. Zapisujemy osobno odczyt stanu producenta i właściwą weryfikację. Ponowienie klasyfikujemy jako przedwczesne wyłącznie wtedy, gdy jedyną przyczyną pierwszej odmowy była niedostępność właściwego dowodu, który ostatecznie doprowadził ten sam HEAD do PASS. Błąd testu, autoryzacji, Source, infrastruktury lub zmiana SHA mają odrębne przyczyny. W każdej próbie mierzymy czas od gotowości kandydata do weryfikacji, gotowość dowodu według statusu producenta i widoczności artefaktu, czas oczekiwania, czas właściwej weryfikacji, liczbę decyzji właściciela i blokady niepowiązanych prac. Czas Render stanowi oddzielną metrykę poza próbą E2.
+
+Kryteria kontrolowanego odbioru to **0 ponowień tylko z powodu kolejności** w scenariuszu pozytywnym, realna niezależna weryfikacja po gotowości oraz **0 nieuprawnionych PASS i 0 nowych blokad niepowiązanych prac**. Raport wskazuje liczebność, dokładne źródło czasu i ograniczenia obserwacji. AS-IS `126/169` i `179` dotyczy wszystkich przyczyn. Do porównania przyczynowego służą dwa potwierdzone przypadki #730 i #1082 oraz odrębny przypadek mieszany #1081 z §8.1. Próba sytuacji kontrolowanych nie daje estymacji oszczędności dla całej kolejki.
+
 ## 9. Otwarte decyzje, ryzyka i STOP
 
 | ID | Decyzja / ryzyko | Zalecenie / stan |
 | --- | --- | --- |
 | DEC-01 | Tryb prowadzenia projektu | **Przyjęto 21.11.2026:** BOE v1.1 i Karta inspirowana BSDC v1.1. |
 | DEC-02 | Gdzie i jak przyjąć dokumenty? | Jedna Karta jako rejestr inicjatywy. Projekt kanonu jako opis rozwiązania. Przed publikacją potwierdzić treść, dokładne ścieżki i routing. Zmiany aktywnych polityk przechodzą własną ścieżkę przyjęcia |
-| DEC-03 | Czy E2 może być formalnie A czy wymaga B? | Ustalić po ocenie aktywnej kolejki CI i obecnych chronionych kontrolerów |
+| DEC-03 | Klasyfikacja i uprawnienia E2 | CI-01 B/R4, QW-05 A/R2. Chronione dopuszczenie CI-01 wymaga odrębnej decyzji. Zob. §8.5. |
 | DEC-04 | Czy zadania klasy C są konieczne? | Na starcie **brak**; wymaga osobnego uzasadnienia i GO |
-| DEC-05 | Progi odbioru E2 i kryteria porównania E3 | Ustalić przed próbą. Oczekiwany wynik E2 to brak ponowienia spowodowanego samą kolejnością w scenariuszu pozytywnym i zachowanie odmów. E3 dokumentuje porównywalność, nakład i bezpieczeństwo pojedynczego wydania |
+| DEC-05 | Progi odbioru E2 i kryteria porównania E3 | Definicja i progi E2 w §8.5. E3 dokumentuje porównywalność, nakład i bezpieczeństwo pojedynczego wydania. |
 | DEC-06 | Nowy source admission i zależności release | Dopuszczać dopiero po ocenie zagrożeń, testów negatywnych i możliwości odtworzenia |
 | DEC-07 | Granica odbioru E1–E3 a końcowe zamknięcie | **Przyjęto 21.11.2026:** E1–E3 = pierwszy pakiet, **E4 (GV-01/GV-02) + E5-T01 (CI-02) = obowiązkowe dla końcowego DoD**, E5-T02–T04 = warunkowe. Ograniczenie E4 lub T01 wymaga jawnej rewizji zakresu i świadomej decyzji ownera; nie wynika automatycznie z odbioru E3 |
 | DEC-08 | Trwała lokalizacja AS-IS (`ASIS-REF-01`) | **Rozliczono przed publikacją.** Ponowny odczyt z pełnego SHA commita potwierdził bajty raportu. [SpendGuru-audyt-AS-IS-2026-11-21.md](https://github.com/profitia/spendguru/blob/7d10fec73cd69194523b320faf397982d9a8fd04/docs/audits/2026/11/21/SpendGuru-audyt-AS-IS-2026-11-21.md) (`ASIS-REF-01`, SHA-256 `5ee32757fe85896ab14089bd936f41a8c0fd283db67b672a60d8427a49e40683`). |
