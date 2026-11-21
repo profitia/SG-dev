@@ -1,4 +1,5 @@
 name: Platform contract integration
+run-name: "${{ github.event_name == 'workflow_dispatch' && inputs.mode == 'validate-sg2' && inputs.candidate_pr != '' && format('SG2 proof PR #{0} @ {1}', inputs.candidate_pr, inputs.expected_sha) || '' }}"
 
 on:
   pull_request:
@@ -284,6 +285,106 @@ jobs:
           ref: ${{ github.event_name == 'pull_request' && 'main' || github.sha }}
           path: trusted-control
           persist-credentials: false
+      - name: Wait for the trusted producer bound to this pull request
+        if: steps.adoption.outputs.enabled == 'true' && matrix.project == 'SG2' && github.event_name == 'pull_request'
+        timeout-minutes: 27
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CANDIDATE_PR: ${{ github.event.pull_request.number }}
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          node --input-type=module <<'JS'
+          import {setTimeout as sleep} from 'node:timers/promises'
+
+          const repository = 'profitia/SG-dev'
+          const workflow = '.github/workflows/platform-contracts-ci.yml'
+          const artifactName = 'sg2-controlled-operation-proof'
+          const validSha = /^[a-f0-9]{40}$/
+          const active = new Set(['queued', 'in_progress', 'waiting', 'requested', 'pending'])
+
+          async function waitForEvidence({
+            sha, pullNumber, workflowId, listRuns, listArtifacts,
+            now = () => performance.now(), pause = sleep,
+            waitMs = 25 * 60_000, artifactWaitMs = 30_000, intervalMs = 15_000,
+            onWaiting = () => {}
+          }) {
+            if (!validSha.test(sha) || !/^[1-9][0-9]*$/.test(pullNumber) || !Number.isSafeInteger(workflowId)) {
+              throw new Error('CONTROLLED_PRODUCER_IDENTITY_INVALID')
+            }
+            const title = 'SG2 proof PR #' + pullNumber + ' @ ' + sha
+            const select = async () => {
+              const matching = (await listRuns()).filter(run =>
+                run.workflow_id === workflowId && run.path === workflow &&
+                run.repository?.full_name === repository && run.head_repository?.full_name === repository &&
+                run.head_branch === 'main' && run.event === 'workflow_dispatch' &&
+                run.actor?.login === 'profitia' && run.triggering_actor?.login === 'profitia' &&
+                validSha.test(run.head_sha) && run.display_title === title)
+              for (const run of matching) {
+                if (!Number.isSafeInteger(run.id) || !Number.isSafeInteger(run.run_attempt) ||
+                  (!active.has(run.status) && run.status !== 'completed')) {
+                  throw new Error('CONTROLLED_PRODUCER_METADATA_INVALID')
+                }
+              }
+              matching.sort((a, b) => b.id - a.id)
+              if (matching.slice(1).some(run => run.status !== 'completed')) throw new Error('CONTROLLED_PRODUCERS_CONFLICT')
+              return matching[0]
+            }
+            const initial = await select()
+            if (!initial) return
+            const sameAttempt = run => run?.id === initial.id &&
+              run.run_attempt === initial.run_attempt && run.head_sha === initial.head_sha
+            let deadline = now() + waitMs
+            let announced = false
+            let run = initial
+            for (;;) {
+              if (!sameAttempt(run)) throw new Error('CONTROLLED_PRODUCER_CHANGED')
+              if (run.status === 'completed') {
+                if (run.conclusion !== 'success') {
+                  throw new Error(run.conclusion === 'cancelled' ? 'CONTROLLED_PRODUCER_CANCELLED' : 'CONTROLLED_PRODUCER_FAILED')
+                }
+                const artifacts = (await listArtifacts(run.id)).filter(item => item.name === artifactName && item.expired === false)
+                if (artifacts.length > 1) throw new Error('CONTROLLED_EVIDENCE_AMBIGUOUS')
+                if (artifacts.length === 1) {
+                  run = await select()
+                  if (!sameAttempt(run) || run.status !== 'completed' || run.conclusion !== 'success') {
+                    throw new Error('CONTROLLED_PRODUCER_CHANGED')
+                  }
+                  if (now() > deadline) throw new Error('CONTROLLED_EVIDENCE_NOT_PUBLISHED')
+                  return
+                }
+                deadline = Math.min(deadline, now() + artifactWaitMs)
+              }
+              const remaining = deadline - now()
+              if (remaining <= 0) {
+                throw new Error(run.status === 'completed' ? 'CONTROLLED_EVIDENCE_NOT_PUBLISHED' : 'CONTROLLED_PRODUCER_TIMEOUT')
+              }
+              if (!announced) {
+                onWaiting(run.id)
+                announced = true
+              }
+              await pause(Math.min(intervalMs, remaining))
+              run = await select()
+            }
+          }
+
+          async function request(path) {
+            const response = await fetch('https://api.github.com/repos/' + repository + '/actions/' + path, {
+              redirect: 'error', signal: AbortSignal.timeout(10_000),
+              headers: {Accept: 'application/vnd.github+json', Authorization: 'Bearer ' + process.env.GH_TOKEN}
+            })
+            if (!response.ok) throw new Error('GITHUB_API_' + response.status)
+            return await response.json()
+          }
+
+          const {id} = await request('workflows/platform-contracts-ci.yml')
+          // This step schedules only. The following independent verifier still checks the artifact bytes and policy.
+          await waitForEvidence({
+            sha: process.env.EXPECTED_SHA, pullNumber: process.env.CANDIDATE_PR, workflowId: id,
+            listRuns: async () => (await request('workflows/' + id + '/runs?branch=main&event=workflow_dispatch&per_page=100')).workflow_runs,
+            listArtifacts: async runId => (await request('runs/' + runId + '/artifacts')).artifacts,
+            onWaiting: runId => console.log('WAITING_FOR_TRUSTED_EVIDENCE: ' + runId)
+          })
+          JS
       - name: Verify controlled SG2 proof for the exact candidate without package access
         if: steps.adoption.outputs.enabled == 'true' && matrix.project == 'SG2'
         env:
