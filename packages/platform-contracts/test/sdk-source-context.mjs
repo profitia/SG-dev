@@ -48,10 +48,57 @@ export function sdkSourceContext(current,historical,{recordPath=CURRENT_SDK_SOUR
  if(JSON.parse(current(sdkManifest)).version!==r.platformVersion)return null
  assert(plain(r.inputs)&&Object.keys(r.inputs).length>0&&Object.keys(r.inputs).length<=2000)
  assert(sha256.test(r.inputs[sdkManifest]??''),'SDK manifest belongs to current input closure')
- for(const [p,digest]of Object.entries(r.inputs)){
-  assert(sourcePath(p)&&p!==recordPath&&sha256.test(digest),'safe complete physical source input')
-  assert.equal(hash(current(p)),digest,'current SDK source '+p)
+ const validateInputs=inputs=>{
+  assert(plain(inputs)&&Object.keys(inputs).length>0&&Object.keys(inputs).length<=2000,'bounded complete physical source input view')
+  assert(sha256.test(inputs[sdkManifest]??''),'SDK manifest belongs to every physical input view')
+  for(const [p,digest]of Object.entries(inputs))assert(sourcePath(p)&&p!==recordPath&&sha256.test(digest),'safe complete physical source input')
  }
+ validateInputs(r.inputs)
+ if(Object.hasOwn(r,'applicationInputContinuation')){
+  // Trusted source metadata may describe one complete application successor
+  // while authority main still contains the qualified base. Neither view can
+  // shrink its closure or alter the SDK, receipts or historical Git evidence.
+  // Source admission and release authority remain separate controller gates.
+  const next=r.applicationInputContinuation
+  assert(plain(next)&&Object.keys(next).sort().join(',')==='baseAbsences,inputs,sourceSnapshotSha'
+   &&gitSha.test(r.sourceSnapshotSha??'')&&gitSha.test(next.sourceSnapshotSha??'')
+   &&next.sourceSnapshotSha!==r.sourceSnapshotSha,'one closed application successor')
+  assert(plain(next.inputs),'closed application input changes')
+  const changed=Object.keys(next.inputs)
+  assert(changed.length>0&&changed.length<=32&&changed.some(p=>Object.hasOwn(r.inputs,p)),'bounded non-overlapping application successor')
+  for(const p of changed)assert(p.startsWith('apps/')&&(/\.(?:mjs|tsx?)$/.test(p)||p==='apps/sg-runtime/package.json')
+   &&!p.split('/').some(part=>part.startsWith('.env')||part.startsWith('.npmrc'))
+   &&r.inputs[p]!==next.inputs[p],'application successor cannot change SDK, evidence or governance inputs')
+  const baseInputs=r.inputs,baseSnapshot=r.sourceSnapshotSha,nextInputs={...baseInputs,...next.inputs}
+  validateInputs(nextInputs)
+  const added=changed.filter(p=>!Object.hasOwn(baseInputs,p)).sort()
+  assert(Array.isArray(next.baseAbsences)&&next.baseAbsences.length<=32
+   &&next.baseAbsences.every(p=>sourcePath(p))
+   &&JSON.stringify([...next.baseAbsences].sort())===JSON.stringify(added),'complete exact base absence constraints')
+  const actual=new Map()
+  const read=p=>{
+   if(!actual.has(p)){
+    try{const bytes=Buffer.from(current(p));actual.set(p,{bytes,digest:hash(bytes)})}
+    catch(error){if(error?.code!=='ENOENT')throw error;actual.set(p,null)}
+   }
+   return actual.get(p)
+  }
+  const matches=inputs=>Object.entries(inputs).every(([p,digest])=>read(p)?.digest===digest)
+  if(!(matches(baseInputs)&&next.baseAbsences.every(p=>read(p)===null))){
+   assert(matches(nextInputs),'current SDK source matches no complete trusted application input view')
+   const hostManifest='apps/sg-runtime/package.json'
+   if(Object.hasOwn(next.inputs,hostManifest)){
+    const original=Buffer.from(historical(baseSnapshot,hostManifest))
+    assert.equal(hash(original),baseInputs[hostManifest],'immutable base host manifest')
+    const before=JSON.parse(original.toString('utf8')),after=JSON.parse(read(hostManifest).bytes.toString('utf8'))
+    const script=before.scripts?.['test:operation-context']
+    assert(typeof script==='string'&&after.scripts?.['test:operation-context']===script+' && npm run test:runtime-build-contract','only the required native build regression may be appended')
+    after.scripts['test:operation-context']=script
+    assert.deepEqual(after,before,'host dependencies, lifecycle hooks and every other field stay unchanged')
+   }
+   r.inputs=nextInputs;r.sourceSnapshotSha=next.sourceSnapshotSha
+  }
+ }else for(const [p,digest]of Object.entries(r.inputs))assert.equal(hash(current(p)),digest,'current SDK source '+p)
  assert(plain(r.baselines)&&Object.keys(r.baselines).length>0&&Object.keys(r.baselines).length<=8)
  for(const [alias,b]of Object.entries(r.baselines))assert(/^[a-z][a-z0-9-]{0,63}$/.test(alias)&&plain(b)&&gitSha.test(b.sha),'immutable historical baseline')
  const cache=new Map()
