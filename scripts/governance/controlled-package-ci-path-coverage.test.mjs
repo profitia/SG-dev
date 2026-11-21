@@ -278,6 +278,17 @@ function currentSdkProofFixture(){
  execFileSync('git',['clone','--quiet','--shared','--no-checkout',root,candidate],{stdio:['ignore','pipe','pipe']})
  execFileSync('git',['--literal-pathspecs','checkout',record.sourceSnapshotSha,'--',...Object.keys(record.inputs)],{cwd:candidate,stdio:['ignore','pipe','pipe']})
  for(const name of Object.keys(record.inputs))assert(fs.lstatSync(path.join(candidate,name)).isFile()&&!fs.lstatSync(path.join(candidate,name)).isSymbolicLink())
+ // The immutable application snapshot keeps its historical control files.
+ // Only these current policy inputs are overlaid, each against the descriptor.
+ for(const name of ['packages/platform-contracts/test/sdk-source-context.mjs',
+  'packages/platform-contracts/test/sdk-source-context.test.mjs',
+  'scripts/governance/controlled-package-ci-path-coverage.test.mjs']){
+  const source=path.join(root,name),stat=fs.lstatSync(source)
+  assert(stat.isFile()&&!stat.isSymbolicLink(),'physical current policy input '+name)
+  const bytes=fs.readFileSync(source)
+  assert.equal(createHash('sha256').update(bytes).digest('hex'),record.inputs[name],'declared current policy input '+name)
+  fs.writeFileSync(path.join(candidate,name),bytes)
+ }
  const metadataFile=path.join(candidate,metadataPath);fs.mkdirSync(path.dirname(metadataFile),{recursive:true});fs.writeFileSync(metadataFile,bytes)
  const receiptBytes=fs.readFileSync(path.join(candidate,'apps/sg-runtime/operation-integration.json'))
  const sdkManifestBytes=fs.readFileSync(path.join(candidate,'packages/platform-contracts/package.json'))

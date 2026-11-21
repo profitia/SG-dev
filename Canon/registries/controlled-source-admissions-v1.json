@@ -14556,6 +14556,94 @@
           "surfaceId": "SG2-BASE-020"
         }
       ]
+    },
+    {
+      "id": "registration-v6-native-runtime-recovery-20261120",
+      "status": "ACTIVE",
+      "repository": "profitia/SG-dev",
+      "actor": "profitia",
+      "taskId": "ARCHITECTURE-REGISTRATION-STAGE-I-CONT-20261117",
+      "targetEnvironment": "development",
+      "scope": "SOURCE_VALIDATION_ONLY",
+      "approvalRef": "https://github.com/profitia/project-history-repository/blob/ef01d8562384808fe1de979d33e46880b4402061/reports/2026/11/17/ARCHITECTURE/ARCHITECTURE-REGISTRATION-STAGE-I-CONT-20261117/OWNER-GO-CI-SOURCE-RUNTIME-RECOVERY-v1-20261121.json",
+      "sourceSha": "5b04735432d669d0d1958adb9c220dcbb8ec8697",
+      "baseSha": "0a095bcd46c51fb4ca20290990144215458f1977",
+      "validFrom": "2026-11-21T05:16:02Z",
+      "validUntil": "2026-11-25T22:59:00Z",
+      "files": [
+        {
+          "path": "apps/identity-runtime/src/account-page.ts",
+          "blob": "740712daf528aca938ac2c4b64451f26e9a2636d",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "ARCHITECTURE",
+          "owner": "Architecture Platform",
+          "surfaceId": "IDENTITY-BASE-001"
+        },
+        {
+          "path": "apps/identity-runtime/src/account-provisioning.ts",
+          "blob": "cf0bfafb54a9895b2c3349b4ba01a8e01b42eda5",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "ARCHITECTURE",
+          "owner": "Architecture Platform",
+          "surfaceId": "IDENTITY-BASE-001"
+        },
+        {
+          "path": "apps/identity-runtime/src/main.ts",
+          "blob": "026606a75caf7dd078e2db39946f1e37094be09f",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "ARCHITECTURE",
+          "owner": "Architecture Platform",
+          "surfaceId": "IDENTITY-BASE-001"
+        },
+        {
+          "path": "apps/identity-runtime/test/account-page.test.mjs",
+          "blob": "22111728f04a9126f5c21deab96e9d376ceace59",
+          "mode": "100644",
+          "status": "added",
+          "projectKey": "ARCHITECTURE",
+          "owner": "Architecture Platform",
+          "surfaceId": "IDENTITY-BASE-001"
+        },
+        {
+          "path": "apps/identity-runtime/test/account-transaction-diagnostics.test.mjs",
+          "blob": "f30785f9ee3142e039dbe4fd66aea5778030f978",
+          "mode": "100644",
+          "status": "added",
+          "projectKey": "ARCHITECTURE",
+          "owner": "Architecture Platform",
+          "surfaceId": "IDENTITY-BASE-001"
+        },
+        {
+          "path": "apps/sg-runtime/next.config.mjs",
+          "blob": "c56ff38b319ee784f644e0f0d8ffde35b40ab34a",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SG2",
+          "owner": "SG Runtime",
+          "surfaceId": "SG2-BASE-001"
+        },
+        {
+          "path": "apps/sg-runtime/tests/runtime-build-contract.test.mjs",
+          "blob": "521cf574e793f213a91c479a4aed6978ad981680",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SG2",
+          "owner": "SG Runtime",
+          "surfaceId": "SG2-BASE-001"
+        },
+        {
+          "path": "apps/sg-runtime/package.json",
+          "blob": "f0e1501c1adb0dfb63f54a94d720ba2e119a458e",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SG2",
+          "owner": "SG Runtime",
+          "surfaceId": "SG2-BASE-001"
+        }
+      ]
     }
   ],
   "authority": "Accepted trusted-main data only. Candidate records never authorize themselves. Existing closed reviews and historical receipts remain unchanged."

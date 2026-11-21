@@ -96,3 +96,106 @@ test('a missing-path message from an unknown full SHA cannot be accepted as genu
  })
  assert.throws(()=>value.baseline('unknown')(missing),error=>error===failure)
 })
+
+function continuationFixture(){
+ const f=fixture(),added='apps/example/new-application-test.mjs'
+ f.record.sourceSnapshotSha='c'.repeat(40)
+ f.record.applicationInputContinuation={sourceSnapshotSha:'d'.repeat(40),baseAbsences:[added],inputs:{[extra]:hash('qualified successor view'),[added]:hash('qualified new test')}}
+ return{...f,added,successor(){f.current.set(extra,'qualified successor view');f.current.set(added,'qualified new test')}}
+}
+test('a closed successor preserves both exact base CI and exact successor CI without projecting history',()=>{
+ const f=continuationFixture(),base=f.run()
+ assert.equal(base.record.sourceSnapshotSha,'c'.repeat(40))
+ assert.equal(base.currentSourceDigests[extra],hash('new actual view'))
+ f.successor();const next=f.run()
+ assert.equal(next.record.sourceSnapshotSha,'d'.repeat(40))
+ assert.equal(next.currentSourceDigests[extra],hash('qualified successor view'))
+ assert.equal(next.currentSourceDigests[f.added],hash('qualified new test'))
+ assert.equal(next.baseline('first')(code).toString(),'old code')
+ assert.throws(()=>{next.record.applicationInputContinuation.inputs[extra]='forged'})
+})
+test('partial, mixed, missing or subsequently tampered successor bytes remain rejected',()=>{
+ for(const mutate of [f=>f.current.set(extra,'unqualified third view'),f=>f.current.set(extra,'qualified successor view'),f=>{f.successor();f.current.set(f.added,'tampered test')},f=>{f.successor();f.current.set(code,'changed SDK')}]){
+  const f=continuationFixture();mutate(f);assert.throws(f.run,/current SDK source/);assert.equal(f.reads(),0)
+ }
+ const f=continuationFixture();f.successor();f.run();f.current.set(f.added,'changed after verification');assert.throws(f.run)
+})
+test('a successor cannot shrink coverage, overlap the base or extend authority to other input classes',()=>{
+ for(const mutate of [
+  f=>delete f.record.applicationInputContinuation.inputs[extra],
+  f=>{f.record.applicationInputContinuation.inputs[extra]=f.record.inputs[extra]},
+  f=>{f.record.applicationInputContinuation.inputs[code]=hash('changed SDK')},
+  f=>{f.record.applicationInputContinuation.inputs[receipt]=hash('rewritten receipt')},
+  f=>{f.record.applicationInputContinuation.inputs['scripts/governance/new-rule.mjs']=hash('new rule')},
+  f=>{f.record.applicationInputContinuation.inputs['apps/example/package.json']=hash('unreviewed manifest')},
+  f=>{f.record.applicationInputContinuation.inputs['apps/example/.env.local']=hash('secret')},
+  f=>{f.record.applicationInputContinuation.inputs[CURRENT_SDK_SOURCE_RECORD]=hash('self')},
+  f=>{f.record.applicationInputContinuation.sourceSnapshotSha='invalid'},
+  f=>{f.record.applicationInputContinuation.extraAuthority=true},
+  f=>{f.record.applicationInputContinuation.inputs[extra]='invalid'},
+ ]){const f=continuationFixture();mutate(f);assert.throws(f.run)}
+})
+test('application successor metadata never permits receipt, history or activation changes',()=>{
+ for(const mutate of [
+  f=>{f.record.runtimeActivated=true},
+  f=>{f.successor();f.current.set(receipt,'rewritten receipt')},
+  f=>{f.successor();f.historical.set('a'.repeat(40)+':'+receipt,'rewritten history')},
+ ]){const f=continuationFixture();mutate(f);assert.throws(f.run)}
+})
+
+function hostManifestFixture(change=()=>{}){
+ const f=continuationFixture(),manifest='apps/sg-runtime/package.json'
+ const before={name:'host',scripts:{'test:operation-context':'original required suite'},dependencies:{next:'14.2.35'}}
+ const after=structuredClone(before);after.scripts['test:operation-context']+=' && npm run test:runtime-build-contract';change(after)
+ const a=JSON.stringify(before),b=JSON.stringify(after)
+ f.record.inputs[manifest]=hash(a);f.current.set(manifest,a)
+ f.historical.set('c'.repeat(40)+':'+manifest,a)
+ f.record.applicationInputContinuation.inputs[manifest]=hash(b)
+ return{...f,manifest,b,activate(){f.successor();f.current.set(manifest,b)}}
+}
+test('only the required test script may be appended to the SG2 host manifest',()=>{
+ const f=hostManifestFixture();f.run();f.activate()
+ assert.equal(f.run().currentSourceDigests[f.manifest],hash(f.b))
+ for(const change of [p=>p.dependencies.next='other',p=>p.scripts.install='unreviewed hook',p=>p.scripts['test:operation-context']='skip original suite']){
+  const g=hostManifestFixture(change);g.activate();assert.throws(g.run)
+ }
+})
+test('base view refuses every present successor-only path and every changed existing base test',()=>{
+ for(const content of ['tampered new test','qualified new test']){
+  const f=continuationFixture();f.current.set(f.added,content);assert.throws(f.run,/current SDK source/)
+ }
+ const oldTest='apps/example/existing-test.mjs'
+ for(const content of ['arbitrary test','qualified successor test',null]){
+  const f=continuationFixture();f.record.inputs[oldTest]=hash('qualified base test');f.current.set(oldTest,'qualified base test')
+  f.record.applicationInputContinuation.inputs[oldTest]=hash('qualified successor test');f.run()
+  if(content===null)f.current.delete(oldTest);else f.current.set(oldTest,content)
+  assert.throws(f.run,/current SDK source/)
+ }
+})
+test('base absence constraints are complete, unique and fail closed on read errors',()=>{
+ for(const change of [f=>f.record.applicationInputContinuation.baseAbsences=[],f=>f.record.applicationInputContinuation.baseAbsences.push(f.added),f=>f.record.applicationInputContinuation.baseAbsences.push(extra)]){
+  const f=continuationFixture();change(f);assert.throws(f.run,/base absence/)
+ }
+ const f=continuationFixture(),failure=Object.assign(Error('read forbidden'),{code:'EACCES'})
+ assert.throws(()=>sdkSourceContext(p=>{if(p===f.added)throw failure;return f.raw(p)},f.old),e=>e===failure)
+})
+
+test('common current-source mismatches retain their precise path before alternate or historical reads',()=>{
+ for(const successor of [false,true]){
+  const f=continuationFixture();if(successor)f.successor()
+  f.current.set(code,'altered immutable SDK source')
+  const reads=[]
+  assert.throws(()=>sdkSourceContext(p=>{reads.push(p);return f.raw(p)},f.old),
+   error=>error.code==='ERR_ASSERTION'&&error.message.startsWith('current SDK source '+code))
+  assert(!reads.includes(extra)&&!reads.includes(f.added));assert.equal(f.reads(),0)
+ }
+})
+test('common input read failures propagate the original error before alternate or historical reads',()=>{
+ for(const successor of [false,true])for(const name of [code,receipt])for(const errorCode of ['ENOENT','EACCES']){
+  const f=continuationFixture();if(successor)f.successor()
+  const failure=Object.assign(Error('synthetic original read failure'),{code:errorCode}),reads=[]
+  assert.throws(()=>sdkSourceContext(p=>{reads.push(p);if(p===name)throw failure;return f.raw(p)},f.old),
+   error=>error===failure)
+  assert(!reads.includes(extra)&&!reads.includes(f.added));assert.equal(f.reads(),0)
+ }
+})
