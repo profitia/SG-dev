@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { spawnSync } from 'node:child_process'
+import { createHash } from 'node:crypto'
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -11,6 +12,18 @@ import { normalizeRepositorySlug, resolveProjectProfile } from './project-profil
 import { resolveProjectRouting } from './routing-engine.mjs'
 
 const governanceRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..')
+
+// The owner approved one creation of this frozen evidence file in the private repository.
+// This route is consumed as soon as the path exists on the actual default branch.
+const asIsEvidence = Object.freeze({
+  repository: 'profitia/spendguru',
+  repositoryId: 1296070778,
+  path: 'docs/audits/2026/11/21/SpendGuru-audyt-AS-IS-2026-11-21.md',
+  sha256: '5ee32757fe85896ab14089bd936f41a8c0fd283db67b672a60d8427a49e40683',
+  byteLength: 33312,
+  taskId: 'ARCHITECTURE-DEV-RELEASE-OPT-ASIS-REF-01-20261121',
+  branch: 'architecture/asis-ref-01-publication-20261121',
+})
 
 function parseArgs(argv) {
   const result = { mode: 'development', targets: [], legacyExceptions: [], json: false, ci: false, offline: false, allowDirty: false, requireBegin: false, skipRuntime: false, checkEstate: false }
@@ -43,6 +56,51 @@ function gate(status, details) {
 
 function requiredInput(args, name) {
   return typeof args[name] === 'string' && args[name].trim().length > 0
+}
+
+function verifyAsIsEvidence({ args, profile, repositoryRoot, remote, topLevel, branch, head, originMain, status }) {
+  const evidence = asIsEvidence
+  if (profile?.projectKey !== 'ARCHITECTURE' || args.task_id !== evidence.taskId
+    || !requiredInput(args, 'host_conversation_id') || args.mode !== 'development'
+    || args.target_environment !== 'development' || args.execution_environment !== 'development'
+    || args.scope !== 'documentation' || args.ci || args.offline || args.allowDirty || args.skipRuntime
+    || args.targets.length !== 1 || args.targets[0] !== evidence.path || args.legacyExceptions.length !== 0) {
+    throw new Error('The one-time AS-IS decision does not cover this invocation.')
+  }
+  if (!remote.ok || remote.stdout !== `https://github.com/${evidence.repository}.git`
+    || !topLevel.ok || path.resolve(topLevel.stdout) !== repositoryRoot
+    || !head.ok || !originMain.ok || !status.ok || status.stdout !== ''
+    || !['main', evidence.branch].includes(branch.stdout)) {
+    throw new Error('The AS-IS publication requires the clean, exact repository and publication branch.')
+  }
+  const repo = run('gh', ['api', `repos/${evidence.repository}`, '--jq',
+    '[.id, .full_name, .private, .default_branch, .owner.login, .permissions.push] | @tsv'], repositoryRoot)
+  if (!repo.ok || repo.stdout !== `${evidence.repositoryId}\t${evidence.repository}\ttrue\tmain\tprofitia\ttrue`) {
+    throw new Error('GitHub did not confirm the private repository identity and push permission.')
+  }
+  const liveMain = run('gh', ['api', `repos/${evidence.repository}/branches/main`, '--jq', '.commit.sha'], repositoryRoot)
+  if (!liveMain.ok || liveMain.stdout !== originMain.stdout) {
+    throw new Error('The local origin/main does not match the current GitHub main commit.')
+  }
+  const existing = run('git', ['ls-tree', originMain.stdout, '--', evidence.path], repositoryRoot)
+  if (!existing.ok || existing.stdout.length !== 0) {
+    throw new Error('The AS-IS route permits one creation and requires an absent destination on main.')
+  }
+  const validBytes = (bytes) => bytes.length === evidence.byteLength
+    && createHash('sha256').update(bytes).digest('hex') === evidence.sha256
+  const file = fs.lstatSync(args.asis_evidence_file)
+  if (!file.isFile() || file.size !== evidence.byteLength || !validBytes(fs.readFileSync(args.asis_evidence_file))) {
+    throw new Error('The evidence file does not match the approved SHA-256.')
+  }
+  if (head.stdout !== originMain.stdout) {
+    const changes = run('git', ['diff', '--name-status', '--no-renames', originMain.stdout, head.stdout, '--'], repositoryRoot)
+    const entry = run('git', ['ls-tree', head.stdout, '--', evidence.path], repositoryRoot)
+    const blob = spawnSync('git', ['cat-file', 'blob', `${head.stdout}:${evidence.path}`], { cwd: repositoryRoot })
+    if (branch.stdout !== evidence.branch || !changes.ok || changes.stdout !== `A\t${evidence.path}`
+      || !entry.ok || !entry.stdout.startsWith('100644 blob ') || blob.status !== 0 || !validBytes(blob.stdout)) {
+      throw new Error('The candidate must add only the approved evidence as a regular file with identical bytes.')
+    }
+  }
 }
 
 export function runGovernancePreflight(args) {
@@ -145,6 +203,17 @@ export function runGovernancePreflight(args) {
     ? gate(status.stdout === '' ? 'PASS' : 'WARNING', [`branch=${branch.stdout || '<detached>'}`, `HEAD=${head.stdout}`, `origin/${authorityBranch}=${originMain.stdout}`, `dirty=${status.stdout !== ''}`])
     : gate('BLOCKED', [`branch=${branch.stdout || '<detached>'}`, `HEAD=${head.stdout || '<missing>'}`, `origin/${authorityBranch}=${originMain.stdout || '<missing>'}`, `dirty=${status.stdout !== ''}`])
 
+  const asIsPublication = Object.hasOwn(args, 'asis_evidence_file')
+  if (asIsPublication) {
+    try {
+      verifyAsIsEvidence({ args, profile, repositoryRoot, remote, topLevel, branch, head, originMain, status })
+      gates.REPOSITORY_GATE = gate('PASS', [`origin=${remote.stdout}`, `root=${topLevel.stdout}`, `private repository ID=${asIsEvidence.repositoryId}`])
+      gates.ASIS_EVIDENCE_GATE = gate('PASS', `Confirmed creation-only scope and SHA-256 ${asIsEvidence.sha256}.`)
+    } catch (error) {
+      gates.ASIS_EVIDENCE_GATE = gate('BLOCKED', error.message)
+    }
+  }
+
   const requiredNames = ['task_id', 'title', 'project', 'workspace', 'execution_environment', 'scope']
   if (profile?.repository?.environmentTopologyRegistry) requiredNames.push('target_environment')
   const missing = requiredNames.filter((name) => !requiredInput(args, name))
@@ -153,7 +222,9 @@ export function runGovernancePreflight(args) {
   if (args.mode === 'development' && args.targets.length === 0) missing.push('target')
   gates.TASK_INPUT_GATE = missing.length === 0 ? gate('PASS', `task=${args.task_id}`) : gate('BLOCKED', `Invalid or missing inputs: ${missing.join(', ')}`)
 
-  const routing = profile
+  const routing = asIsPublication && gates.ASIS_EVIDENCE_GATE.status === 'PASS'
+    ? { ok: true, results: [{ normalizedPath: asIsEvidence.path, currentOwner: 'Governance Source Layer', baselineClassification: 'ALIGNED' }] }
+    : profile
     ? resolveProjectRouting({ profile, targets: args.targets, repositoryRoot })
     : { ok: false, results: [], error: 'Project profile is unavailable.' }
   const legacyWithoutException = routing.results.filter((entry) => entry.baselineClassification === 'LEGACY' && !args.legacyExceptions.includes(entry.normalizedPath))
