@@ -1158,6 +1158,24 @@
         "ARCHITECTURE"
       ],
       "onboardingAuthorization": "G1 GRANTED: explicit owner Stage 1 execution of accepted PDR revision 8, 2026-11-12; ARCH-CIC-QUALITY-STAGE1-G1-20261112; Canon/evidence/2026-11-12-assistant-quality-stage1-g1-onboarding.md. Development source registration only; resources remain human-owner-only; no administrative data/service grant, Stage 2, Staging or Production."
+    },
+    {
+      "id": "ARCH-SG2-IDENTITY-CI-MONITOR-001",
+      "capability": "Development CI Progress Monitoring",
+      "name": "SG2 v6 and Identity Development CI Progress Monitor",
+      "pathPatterns": [
+        ".github/workflows/sg2-identity-ci-monitor.yml"
+      ],
+      "currentOwner": "Governance Source Layer",
+      "currentResponsibility": "Observe the registered SG2 and Identity Development CI candidate and report actionable blockages through a repository issue.",
+      "baselineClassification": "ALIGNED",
+      "parentSurfaceId": "SG2-BASE-020",
+      "cleanupReason": null,
+      "classificationReferenceSha": "82638ac73f7865170ec14a25e7abdaf2104df52c",
+      "allowedProjectKeys": [
+        "ARCHITECTURE"
+      ],
+      "onboardingAuthorization": "G1 GRANTED: explicit owner approval on 2026-11-21 under ARCH-SG2-IDENTITY-CI-MONITOR-20261121. Exact workflow path registration for Development."
     }
   ],
   "cleanupFindings": [
