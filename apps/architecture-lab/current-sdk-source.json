@@ -1694,7 +1694,7 @@
     "packages/srm-xray/src/workflow.css": "b9b807de8e1c43af7263376a70ad81c2be94cb5d236dbbcbd99f690be66415e9",
     "packages/srm-xray/src/workflow.ts": "67cd3c601d32b17d86865b62459d073013698d40d5840ae0ae5bee18a08336d2",
     "packages/srm-xray/tsconfig.json": "11849720cf7010564984d2489e26ba1ba98cc4c263edb5e019a01ca81aadb4d9",
-    "scripts/governance/controlled-package-ci-path-coverage.test.mjs": "5fb8e856a90ef6cd75cbb80642de88167a358f0bcd4d3d86358908bc4c6bb236",
+    "scripts/governance/controlled-package-ci-path-coverage.test.mjs": "73ef688cd5a0a29bc617ece99d95ef9c8005322d7d2d43bd64f8e4acbacf978a",
     "scripts/governance/controlled-package-ci.mjs": "d2a06c4fa7b5b5e93cbff5fd199e325f4d04e52d660afe347c63752538d3abd1",
     "scripts/governance/controlled-package-ci.test.mjs": "7f7cbbd4119673de7286e3cd85862440100b5016f0fef72b0e7b7cc60cdffbea",
     "scripts/governance/development-execution.mjs": "9fd9a11c305b9169605e7343cdfe90f6e55c886c912aca0781d7ff0a87cb7a0c",
