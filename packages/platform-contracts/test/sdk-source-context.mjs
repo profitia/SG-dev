@@ -83,6 +83,13 @@ export function sdkSourceContext(current,historical,{recordPath=CURRENT_SDK_SOUR
    }
    return actual.get(p)
   }
+  // Shared immutable inputs keep the original read/error contract. Only the
+  // closed application alternatives may participate in complete-view selection.
+  for(const [p,digest]of Object.entries(baseInputs))if(!Object.hasOwn(next.inputs,p)){
+   const bytes=Buffer.from(current(p)),actualDigest=hash(bytes)
+   assert.equal(actualDigest,digest,'current SDK source '+p)
+   actual.set(p,{bytes,digest:actualDigest})
+  }
   const matches=inputs=>Object.entries(inputs).every(([p,digest])=>read(p)?.digest===digest)
   if(!(matches(baseInputs)&&next.baseAbsences.every(p=>read(p)===null))){
    assert(matches(nextInputs),'current SDK source matches no complete trusted application input view')

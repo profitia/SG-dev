@@ -179,3 +179,23 @@ test('base absence constraints are complete, unique and fail closed on read erro
  const f=continuationFixture(),failure=Object.assign(Error('read forbidden'),{code:'EACCES'})
  assert.throws(()=>sdkSourceContext(p=>{if(p===f.added)throw failure;return f.raw(p)},f.old),e=>e===failure)
 })
+
+test('common current-source mismatches retain their precise path before alternate or historical reads',()=>{
+ for(const successor of [false,true]){
+  const f=continuationFixture();if(successor)f.successor()
+  f.current.set(code,'altered immutable SDK source')
+  const reads=[]
+  assert.throws(()=>sdkSourceContext(p=>{reads.push(p);return f.raw(p)},f.old),
+   error=>error.code==='ERR_ASSERTION'&&error.message.startsWith('current SDK source '+code))
+  assert(!reads.includes(extra)&&!reads.includes(f.added));assert.equal(f.reads(),0)
+ }
+})
+test('common input read failures propagate the original error before alternate or historical reads',()=>{
+ for(const successor of [false,true])for(const name of [code,receipt])for(const errorCode of ['ENOENT','EACCES']){
+  const f=continuationFixture();if(successor)f.successor()
+  const failure=Object.assign(Error('synthetic original read failure'),{code:errorCode}),reads=[]
+  assert.throws(()=>sdkSourceContext(p=>{reads.push(p);if(p===name)throw failure;return f.raw(p)},f.old),
+   error=>error===failure)
+  assert(!reads.includes(extra)&&!reads.includes(f.added));assert.equal(f.reads(),0)
+ }
+})
