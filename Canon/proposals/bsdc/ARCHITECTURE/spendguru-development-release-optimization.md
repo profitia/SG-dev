@@ -3,7 +3,7 @@
 
 | Pole | Wartość |
 | --- | --- |
-| Status | **OWNER_APPROVED_FOR_PUBLICATION / E1_EXECUTION** — decyzje właściciela z 21.11.2026 |
+| Status | **OWNER_APPROVED_FOR_PUBLICATION** · E1 **OWNER_ACCEPTED / SUCCESS** · 21.11.2026 |
 | `initiativeId` | `ARCH-DEV-RELEASE-OPT-20261121` |
 | `projectKey` / owner merytoryczny | **ARCHITECTURE** / właściciel Profitia (decyzje biznesowe) |
 | Współpracujące profile | SG2, SRM i właściwi ownerzy wspólnych kontraktów |
@@ -12,8 +12,8 @@
 | Kanon rozwiązania | [Projekt kanonu v0.3](../../spendguru-development-release-optimization-canon-v0.3.md) |
 | Zamrożona baza AS-IS | [SpendGuru-audyt-AS-IS-2026-11-21.md](https://github.com/profitia/spendguru/blob/7d10fec73cd69194523b320faf397982d9a8fd04/docs/audits/2026/11/21/SpendGuru-audyt-AS-IS-2026-11-21.md) (`ASIS-REF-01`, SHA-256 `5ee32757fe85896ab14089bd936f41a8c0fd283db67b672a60d8427a49e40683`) · prywatne repozytorium, SHA-256 potwierdzony po ponownym odczycie |
 | Metodologia | **BOE v1.1 i Karta inspirowana BSDC v1.1** (DEC-01, decyzja właściciela z 21.11.2026). |
-| Bieżący mandat wykonawczy | **E1-T01–E1-T04** · mandat z 21.11.2026 · profil ARCHITECTURE / Development |
-| Najbliższa decyzja | Odbiór E1 na podstawie Karty, dowodów CI i closeoutu |
+| Bieżący mandat wykonawczy | **BRAK** · mandat E1-T01–E1-T04 rozliczony |
+| Odbiór E1 | **OWNER_ACCEPTED / SUCCESS** · 21.11.2026 |
 
 ## 1. Potrzeba biznesowa i rezultat
 
@@ -210,7 +210,7 @@ SG-dev/                                      [ISTNIEJE; authority main]
 
 | Etap | Status | Mandat | PR/SHA/CI/deploy/PHR | Warunek przejścia |
 | --- | --- | --- | --- | --- |
-| E1 | W_TOKU | E1-T01–E1-T04, 21.11.2026 | PMOS `ARCH-DEV-RELEASE-OPT-20261121-E1`, T02 `ARCH-DEV-RELEASE-OPT-20261121-E1-T02`, dowody w §§8.1–8.4 | Odbiór właściciela po sprawdzeniu exact main, CI oraz PHR |
+| E1 | ZAKOŃCZONY | E1-T01–E1-T04, 21.11.2026 | PMOS `ARCH-DEV-RELEASE-OPT-20261121-E1`, T02 `ARCH-DEV-RELEASE-OPT-20261121-E1-T02`, [PR #1273](https://github.com/profitia/SG-dev/pull/1273), dowody w §§8.1–8.4 | **OWNER_ACCEPTED / SUCCESS** · 21.11.2026 |
 | E2 | NIE_ROZPOCZĘTY | BRAK | — | Oddzielny GO po rozliczeniu E1; QW-05 (E2-T04) niezależnie od E2-T02 |
 | E3 | NIE_ROZPOCZĘTY | BRAK | — | Oddzielny GO po rozliczeniu E2 |
 | E4 — MUST | NIE_ROZPOCZĘTY | BRAK | — | Odrębny GO po E3; obligatoryjne DoD GV-01/GV-02 dla pełnego zamknięcia, chyba że owner zmieni zakres |
@@ -222,10 +222,10 @@ Rejestr tasków: pozycje E2–E5 mają status `NIE_ROZPOCZĘTY`. Bieżące wynik
 
 | Zadanie | Rezultat ujęty w tej rewizji | Dowód i status odbioru |
 | --- | --- | --- |
-| E1-T01 / QW-01 | Retrospekcja dwóch przypadków | ZAKOŃCZONY · §8.1 i przypięte dowody |
-| E1-T02 / QW-02 | Dokładne usprawnienie Universal v1.2 | Zatwierdzona delta · §8.2 · integrację potwierdza exact main i jego CI |
-| E1-T03 / QW-03 | Praktyczna mapa dowodów i wznowienia | ZAKOŃCZONY · §8.3 · testy i kanoniczny closeout E1 w PHR |
-| E1-T04 / QW-04 | Zastosowanie NFR GitHub do wyników E1 | ZAKOŃCZONY · §8.4 |
+| E1-T01 / QW-01 | Retrospekcja dwóch przypadków | ZAKOŃCZONY · ODEBRANY PRZEZ WŁAŚCICIELA · §8.1 i przypięte dowody |
+| E1-T02 / QW-02 | Dokładne usprawnienie Universal v1.2 | ZAKOŃCZONY · ODEBRANY PRZEZ WŁAŚCICIELA · §8.2 · opublikowana i aktywna delta potwierdzona odczytem i CI |
+| E1-T03 / QW-03 | Praktyczna mapa dowodów i wznowienia | ZAKOŃCZONY · ODEBRANY PRZEZ WŁAŚCICIELA · §8.3 · testy i kanoniczny closeout E1 w PHR |
+| E1-T04 / QW-04 | Zastosowanie NFR GitHub do wyników E1 | ZAKOŃCZONY · ODEBRANY PRZEZ WŁAŚCICIELA · §8.4 |
 
 ### 8.1. E1-T01 — retrospekcja dwóch zmian SG2
 
@@ -319,7 +319,9 @@ Podgląd zatwierdzonej zmiany.
 | Ciągłość i proofy pod kontrolą GitHub | `NEEDS_ADAPTER` przy zmianie authority. Ponownie rozwiązać mapę repo/owner/branch i prawa GitHub Actions, PHR i pakietów oraz sprawdzić wiązania workflow z rzeczywistym repozytorium. Historyczne dowody zachowują swoje pierwotne tożsamości. GitHub zachowuje historię Git przy transferze. Pochodzenie, role i delegację w SpendGuru trzeba uzgodnić dla nowej tożsamości. [Transfer repozytorium w GitHub](https://docs.github.com/en/repositories/creating-and-managing-repositories/transferring-a-repository) |
 | Wydanie, Render/Neon i Merge Queue | `N/A` dla materiałów E1. Zależności integracji pozostają w osobnym projekcie migracyjnym. |
 
-**Punkt wznowienia i odbiór.** Właściwe źródło statusu to niniejsza Karta i rejestracja PMOS `ARCH-DEV-RELEASE-OPT-20261121-E1`. W PHR pakiet ma `publicationId=ARCHITECTURE:ARCH-DEV-RELEASE-OPT-20261121-E1`. Aktualne CI i dokładny zapis repozytoryjny można sprawdzić w [historii zmian Karty](https://github.com/profitia/SG-dev/commits/main/Canon/proposals/bsdc/ARCHITECTURE/spendguru-development-release-optimization.md) oraz [pakietach PHR](https://github.com/profitia/project-history-repository/tree/main/history/2026/11/21). Po weryfikacji `main` i PHR wynik jest przekazywany do niezależnego odczytu ChatGPT i odbioru właściciela. Przejście do E2 wymaga oddzielnego mandatu właściciela.
+**Punkt wznowienia i odbiór.** Właściwe źródło statusu to niniejsza Karta i rejestracja PMOS `ARCH-DEV-RELEASE-OPT-20261121-E1`. W PHR pakiet ma `publicationId=ARCHITECTURE:ARCH-DEV-RELEASE-OPT-20261121-E1`. Aktualne CI i dokładny zapis repozytoryjny można sprawdzić w [historii zmian Karty](https://github.com/profitia/SG-dev/commits/main/Canon/proposals/bsdc/ARCHITECTURE/spendguru-development-release-optimization.md) oraz [pakietach PHR](https://github.com/profitia/project-history-repository/tree/main/history/2026/11/21). Właściciel odebrał wynik 21.11.2026 po niezależnej weryfikacji ChatGPT oraz odczycie `main` i PHR. Przejście do E2 wymaga oddzielnego mandatu właściciela.
+
+**Odbiór właściciela E1 · 21.11.2026.** Wynik `OWNER_ACCEPTED / SUCCESS` obejmuje E1-T01–E1-T04. Podstawą jest handoff Codexa, niezależna weryfikacja ChatGPT i potwierdzone dowody wykonania. Zweryfikowany SHA E1 to `82638ac73f7865170ec14a25e7abdaf2104df52c`. Administracyjny zapis decyzji ma odrębny `taskId` `ARCH-DEV-RELEASE-OPT-20261121-E1-OWNER-ACCEPTANCE`. [PR #1273](https://github.com/profitia/SG-dev/pull/1273) · [CI wynikowego main](https://github.com/profitia/SG-dev/actions/runs/44935565469) · [PHR E1](https://github.com/profitia/project-history-repository/blob/5850e963968f10a4e6b47eedb5033589248aa9bf/history/2026/11/21/2026-11-21-18-30-54Z__architecture-arch-dev-release-opt-20261121-e1/manifest.json) · [PHR E1-T02](https://github.com/profitia/project-history-repository/blob/4b34a5a220029888f41765b07cb0d05ff18e1d7c/history/2026/11/21/2026-11-21-18-30-17Z__architecture-arch-dev-release-opt-20261121-e1-t02/manifest.json)
 
 ## 9. Otwarte decyzje, ryzyka i STOP
 
@@ -345,3 +347,5 @@ Podgląd zatwierdzonej zmiany.
 
 **Stan v0.3:** właściciel zaakceptował Kartę i kanon do publikacji, przyjął DEC-01 oraz DEC-07 i potwierdził docelową lokalizację audytu. DEC-08 rozliczono odczytem z commita `7d10fec73cd69194523b320faf397982d9a8fd04`.
 **E1 · 21.11.2026:** właściciel udzielił mandatu na E1-T01–E1-T04 i przyjął publikację oraz aktywację dokładnie wskazanej delty Universal v1.2. Punkt odbioru stanowią §§8.1–8.4, exact main, CI i potwierdzony closeout. Migracja do organizacji GitHub ma status odrębnej inicjatywy po zamknięciu tego projektu.
+
+- **21.11.2026 — formalny odbiór E1:** właściciel przyjął E1-T01–E1-T04 z wynikiem `OWNER_ACCEPTED / SUCCESS`. E2 ma status `NIE_ROZPOCZĘTY / NO_MANDATE`.
