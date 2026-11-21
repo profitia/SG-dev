@@ -21,7 +21,7 @@
 | Właściciel decyzji i odbioru | tomasz@profitia.pl |
 | Środowisko etapów i końcowego odbioru | Development |
 | Dane odbiorowe | Reprezentatywne, syntetyczne dane dwóch organizacji; brak poufnej treści ADP i dokumentów PORR |
-| Tryb / mandat wykonawczy produktu | DEC-22: E1-T01–T05 / FULL AUTOPILOT / Development; DEC-24 zatwierdza ograniczony zakres polityki E1-T02. Instalacja, przyjęcie dokładnych źródeł i release zachowują własne bramki; brak mandatu E2 |
+| Tryb / mandat wykonawczy produktu | DEC-22: E1-T01–T05 / FULL AUTOPILOT / Development; DEC-24 zatwierdza ograniczony zakres polityki E1-T02; DEC-25 dopuszcza dokładny pakiet §7.5 i instalację po jego warunkach. Wymagane Source/CI/recovery i osobny exact-SHA release GO; brak mandatu E2 |
 | taskId wznowienia dokumentacyjnego | SRM-BSDC-SCP-DESIGN-R2-20261117 |
 | PMOS begin wznowienia | cmwkubpfb00003rd0mtq3an92; srm_pmos; pełny require-begin PASS |
 | Tożsamość czatu | hostConversationId niedostępny, jawne null w begin; nie wywnioskowano identyfikatora z katalogu |
@@ -31,8 +31,11 @@
 | taskId propozycji E1-T02 / PMOS begin | ARCH-BSDC-SCP-E1-ACCESS-20261119 / cmwn52qqs0000o81udympd86q / architecture_pmos; zakończony closeout propozycji PARTIAL_SUCCESS |
 | taskId implementacji E1-T02 / PMOS begin | ARCH-BSDC-SCP-E1-T02-20261119 / cmwn9s7q50000w0v9hp856amo / architecture_pmos; zakres DEC-24 |
 | taskId zapisu DEC-24 / PMOS begin | SRM-BSDC-SCP-E1-DEC24-20261119 / cmwn9620h0000mtfenoiog8yd / srm_pmos |
+| taskId store/API / PMOS begin | SRM-BSDC-SCP-E1-STORE-20261119 / cmwnd0yeu0000jcteb7n4c90s / srm_pmos; źródła rozliczone PARTIAL_SUCCESS / CLOSEOUT_COMPLETE |
+| taskId bieżącej aktualizacji Karty / begin | SRM-BSDC-SCP-E1-SOURCE-CARD-20261119 / cmwniar8h0000n8iogezdx0qo / srm_pmos; checkpoint źródeł, rozliczony PARTIAL_SUCCESS / CLOSEOUT_COMPLETE |
+| taskId zapisu DEC-25 / begin | SRM-BSDC-SCP-E1-DEC25-20261119 / cmwnoef2a00006li56rj224bd / srm_pmos; zgoda na dokładne źródła i warunkową instalację |
 | Aktualna referencja projektu MagicPath | projekt 465405993031966720 / komponent 465415479037693952 / przypięta rewizja 473868393104166912; DEC-23 |
-| Aktualny wynik wykonania | PARTIAL; brak instalacji i wydania E1, brak odbioru LIVE; szczegóły §5.4 i §7.4 |
+| Aktualny wynik wykonania | PARTIAL; kandydaci store/host/API sprawdzeni; pełne Source/CI i rzeczywisty Development nieprzyjęte; §5.4.2 i pakiet §7.5 |
 | Akceptacja rozwiązania i roadmapy | DEC-21, 2026-11-18, właściciel w bieżącym wątku (owner Karty: tomasz@profitia.pl); obie części łącznie; commit [f75529c590c5dd4611223c949e5956e34d101e22](https://github.com/profitia/SG-dev/blob/f75529c590c5dd4611223c949e5956e34d101e22/Canon/proposals/bsdc/SRM/supplier-category-pipelines.md), blob 31d655e4ce8ce2422ec39b54c054a313eb433d11 |
 
 **Znaczenie statusów checklisty:** USTALONE oznacza opisany i uzasadniony punkt projektu. Łączną akceptację projektu i całej roadmapy, obejmującą REC-01–08, dokumentuje DEC-21 względem dokładnej rewizji; F3 ma USTALONE. Wszystkie 29 kryteriów dotyczy kompletności BSDC. Nie oznacza to istniejącej implementacji, gotowego dostępu, instalacji schematu ani odbioru funkcji.
@@ -498,12 +501,12 @@ Bieżący mandat produktu: **E1-T01–T05 / Development / FULL AUTOPILOT**, osob
 
 | ID | Status | Początek / koniec | Wykonawczy taskId / owner / środowisko | PR / SHA / CI / deploy / test / odbiór | Braki i następny krok |
 | --- | --- | --- | --- | --- | --- |
-| E1 | CZĘŚCIOWY | 2026-11-19 / niezakończony | SRM-BSDC-SCP-E1-20261119 / SRM prowadzi / Development | [SRM #1234](https://github.com/profitia/SG-dev/pull/1234), [ARCHITECTURE #1235](https://github.com/profitia/SG-dev/pull/1235); źródła i izolowane testy; brak deploy/odbioru LIVE. | Zakres E1-T02 zatwierdzony przez DEC-24; kontynuacja jego implementacji, następnie writer/host/API, właściwe instalacja/admission/release i testy A1/A2/B1. |
-| E1-T01 | CZĘŚCIOWY | 2026-11-19 / — | SRM-BSDC-SCP-E1-20261119 / SRM / Development | #1234, head 6fed922dcab6e569502b81fb318a7967818581e2; kontrakt 1.0.0, 59 testów SRM i 21 testów publicznego pakietu PASS; TS/build pakietu PASS. | Kandydat źródłowy; pełne wymagane CI, exact-source admission i przyjęcie nie zostały spełnione. |
-| E1-T02 | W_TRAKCIE | 2026-11-19 / — | ARCH-BSDC-SCP-E1-T02-20261119 / ARCHITECTURE / Development; poprzednia propozycja ARCH-BSDC-SCP-E1-ACCESS-20261119 zachowana | DEC-24 usuwa blokadę decyzji o zakresie; propozycja #1235 / 46f45bcc4e74f1b25a441eab9ab450e367a2530a i jej 16 testów pozostają historią. Nowy exact-path preflight/begin/require-begin PASS, cmwn9s7q50000w0v9hp856amo. | Właściwa implementacja Root/module/SQL i testy, następnie exact-source admission i przyjęcie; instalacja/granty i wydanie tylko według własnych dopuszczeń. Brak gotowości LIVE. |
-| E1-T03 | CZĘŚCIOWY | 2026-11-19 / — | SRM-BSDC-SCP-E1-20261119 / SRM / Development | #1234; czyste reguły domeny i fenced schema proposal; 13 testów PostgreSQL16 PASS (syntetyczna izolowana baza). | Brak zamkniętego transakcyjnego writer/read store, produkcyjnego bridge, instalacji i odczytu rzeczywistego store. |
-| E1-T04 | CZĘŚCIOWY | 2026-11-19 / — | SRM-BSDC-SCP-E1-20261119 / SRM / Development | #1234; testowana fasada HTTP i reader metadanych ADP z MISSING/UNKNOWN. | Brak rzeczywistego host composition, podłączonego store i zamontowanego endpointu Next; brak pełnego testu autoryzowanego API. |
-| E1-T05 | ZABLOKOWANY | 2026-11-19 / — | SRM-BSDC-SCP-E1-20261119 / SRM / Development | Odczyt faktycznej wersji runtime i metadanych DB wykonany; bez deploy/install/grant/enrollment. | T01–T04, wymagane source admission, exact-SHA GO, instalacja/recovery oraz rzeczywiste konta i odbiór. |
+| E1 | CZĘŚCIOWY | 2026-11-19 / niezakończony | SRM prowadzi / Development; DEC-22 i DEC-24 | Kandydaci #1234 / 8b266292... i #1245 / d4f889d7...; kod i dokładna para typecheck/build sprawdzone; dowody §5.4.2. Brak instalacji/deploy/odbioru LIVE. | Właściwy sukcesor/admission i pełne CI; decyzja §7.5; kontrolowana instalacja/recovery; exact-SHA GO i realny E1-T05. |
+| E1-T01 | CZĘŚCIOWY | 2026-11-19 / — | SRM-BSDC-SCP-E1-20261119 oraz SRM-BSDC-SCP-E1-STORE-20261119 / SRM | #1234 / 8b2662924dcc93d3a3b3c0fae358d91692fcb747; kontrakt 1.0.0, 69 testów SRM/middleware i bieżące 21 publicznych testów/typecheck PASS. | Kandydat źródłowy; pełne wymagane CI i exact-source admission nadal niespełnione. |
+| E1-T02 | CZĘŚCIOWY | 2026-11-19 / — | ARCH-BSDC-SCP-E1-T02-20261119 / ARCHITECTURE; begin cmwn9s7q50000w0v9hp856amo | DEC-24 zastosowana; #1245 / d4f889d7a51aacc5e4ffa520451bc6b3d1d800bd, 235 celowanych i 14 natywnych testów PASS. Własny PHR PARTIAL_SUCCESS / CLOSEOUT_COMPLETE. Propozycja #1235 pozostaje historią zakresu. | Właściwy source successor/admission/CI i przyjęcie producenta; instalacja/granty/enrollment/release mają własne bramki. |
+| E1-T03 | CZĘŚCIOWY | 2026-11-19 / — | SRM-BSDC-SCP-E1-STORE-20261119 / SRM; begin cmwnd0yeu0000jcteb7n4c90s | #1234 / 8b266292...; zamknięty transakcyjny receiver, receipts/historia, CAS/idempotencja, archiwizacja/restore, transfer i occupied-stage removal. 17 natywnych testów kompletnego receivera/HTTP PASS, w tym race NIP i przypisań, starsze KRS-only oraz lost-COMMIT retry. | Schemat i writer nie są zainstalowane na rzeczywistym Development; wymagane source/CI, dokładne zgody i install/readback/recovery. |
+| E1-T04 | CZĘŚCIOWY | 2026-11-19 / — | SRM-BSDC-SCP-E1-STORE-20261119 / SRM | Native host/API composition i trasa Next są przygotowane; rzeczywisty loopback HTTP i zwykła rola sprawdzone z kanonicznym Root, pełny typecheck/build dokładnej pary PASS. Bez fikcyjnego MISSING/daty ADP. | Nie wydano hosta/API na rzeczywistym Development; pełne Source/CI i odbiór aktualnych realnych kont pozostają wymagane. |
+| E1-T05 | ZABLOKOWANY | 2026-11-19 / — | SRM prowadzi / Development | Źródła i syntetyczna kwalifikacja §5.4.2; brak produktowych install/grant/enrollment/deploy. LKG zachowany. | Pełne T01–T04/Source/CI, decyzja §7.5, install/recovery/readback, osobny exact-SHA GO oraz rzeczywiste A1/A2/B1. |
 | E2 | NIE_ROZPOCZĘTY | — | Do nadania / SG2 + SRM / Development | — | Rozliczenie udanego E1 i nowy wyraźny start E2. |
 | E2-T01 | NIE_ROZPOCZĘTY | — | Do nadania / SRM / Development | — | Publiczne UI i właściwy transfer UX; późniejsza delta DEC-23 obowiązuje zamiast stałego selektora. |
 | E2-T02 | NIE_ROZPOCZĘTY | — | Do nadania / SG2 / Development | — | Jawna adopcja kontraktu i integracja hosta. |
@@ -523,6 +526,55 @@ Każdy wykonawca aktualizuje fakty i dowody w tej samej Karcie; PMOS/PHR rozlicz
 - **Zasoby:** reuse własnego izolowanego checkoutu SRM; osobny worktree ARCHITECTURE. Źródła, node_modules, archiwa PMOS/PHR i recovery wymagają zachowania do wznowienia (RETAINED). Własne tymczasowe kontenery PostgreSQL usunięto po potwierdzeniu etykiet taska, braku sieci/portów i braku innych klientów; ostatni `srm-scp-e1-schema-r3` zatrzymano i usunięto normalnie. Usunięto także własny odtwarzalny `packages/srm-adp-ui/dist/index.js`; wspólnego obrazu PostgreSQL i cudzych zasobów nie usuwano. Nie wykonywano globalnego cleanupu.
 
 **Continuity E1 — aktualizacja po DEC-24:** oba wcześniejsze zadania mają opublikowany i odczytany z GitHubu PHR: [SRM / PARTIAL_SUCCESS](https://github.com/profitia/project-history-repository/blob/09fb5702ffa1ae635a1193d28f177a70e3ae031c/history/2026/11/19/2026-11-19-06-55-23Z__srm-srm-bsdc-scp-e1-20261119/manifest.json) oraz [ARCHITECTURE / PARTIAL_SUCCESS](https://github.com/profitia/project-history-repository/blob/fac4f782f718407e5db9151bc30c172cf34382f2/history/2026/11/19/2026-11-19-06-38-59Z__architecture-arch-bsdc-scp-e1-access-20261119/manifest.json). Kanoniczny closeout ma CLOSEOUT_COMPLETE; to rozliczenie częściowej pracy, nie ukończenie E1. Historyczny błąd CREDENTIAL_MISSING ARCHITECTURE wynikał z uruchomienia bez standardowego środowiska sesji logowania Codespace. W standardowej sesji istniejące uwierzytelnienie działa; wznowiono **ten sam** pending bez nowego bootstrapu, zmiany jego treści lub pożyczania sekretu/grantu. Pending został zwolniony. Wcześniejszy wniosek o konieczności odnowienia dostępu przez administratora był przedwczesny; ten problem jest ROZWIĄZANY. Archiwa zachowano. Nowy task E1-T02 obejmuje dopiero przyjętą implementację po decyzji właściciela.
+
+
+### 5.4.2. Zweryfikowany kandydat źródłowy E1 po DEC-24 — 2026-11-19
+
+DEC-24 zastosowano bez ponownego pytania o zakres. Przygotowano kod producenta oraz zamknięty store, natywny host i wersjonowane API SRM. **To kandydat źródłowy; E1 pozostaje CZĘŚCIOWY.** Nie wykonano instalacji, grantów, enrollment ani deploymentu do rzeczywistego SRM Development.
+
+| Powierzchnia / dowód | Dokładny stan |
+|---|---|
+| Producent ARCHITECTURE | [PR #1245](https://github.com/profitia/SG-dev/pull/1245), DRAFT, źródło `d4f889d7a51aacc5e4ffa520451bc6b3d1d800bd`, 19 plików; optional Root candidate26 / host1.17, 9 operacji, sealed READ/WRITE i reuse istniejącego mastera. Historyczna propozycja #1235 / `46f45bcc4e74f1b25a441eab9ab450e367a2530a` pozostaje referencją zatwierdzonego zakresu. |
+| Konsument SRM | [PR #1234](https://github.com/profitia/SG-dev/pull/1234), DRAFT, źródło `8b2662924dcc93d3a3b3c0fae358d91692fcb747`, 27 plików; zamknięty receiver SQL, trwałe receipts/historia, natywny port HTTP i trasa `apps/srm/app/api/adp/v1/[...path]/route.ts`. Używa istniejącego budżetu połączeń 3+1 i bieżącej granicy SRM. |
+| Testy Root / moduł / typy | 235 PASS, 0 SKIP. |
+| Natywna granica uprawnień | 14 PASS, 0 SKIP; rzeczywisty PostgreSQL16, zwykła rola i kanoniczny Root. Sprawdza m.in. brak implicit grant/enrollment, izolację, sfałszowany scope/payload, revocation, OUTCOME rollback, replay transakcji, write ceilings, expiry i jawny DENY. |
+| Reguły / HTTP / runtime / middleware SRM | 69 PASS, 0 SKIP; kontrakt 1.0.0 i ochrona wejść/odpowiedzi. |
+| Pełny receiver i natywny HTTP | 17 PASS, 0 SKIP; wymagany NIP, warianty nazwy przy tym samym NIP-ie, wyścig create/edit, równoległe przypisania do dwóch procesów Dostawcy, niezależne etapy kategorii, transfer, archiwizacja/restore, usunięcie zajętego etapu, 51 firm z paginacją/licznikami, rollback po błędzie audytu, ponowienie po utracie odpowiedzi COMMIT, odczyt drugiego członka i bezpośrednia odmowa HTTP innej organizacji. Tożsamości/obserwacje Clerk i dane są syntetyczne, bazy i HTTP wyłącznie loopback. |
+| Plan wydania | 2 PASS; kontrola trzech dokładnych źródeł i bindingu. [Plan w źródle](https://github.com/profitia/SG-dev/blob/8b2662924dcc93d3a3b3c0fae358d91692fcb747/apps/srm/scripts/supplier-pipelines-release.mjs) nie łączy się z bazą, niczego nie instaluje i nie nadaje uprawnień. |
+| Kwalifikacja dokładnej pary | Pełny SRM typecheck i Next build PASS dla powyższych dwóch rewizji w osobnym chmurowym checkout. Wszystkie 46 wybranych postimage pozostały identyczne z opublikowanymi blobami po buildzie. Instalacja zależności korzystała wyłącznie z publicznego npm, bez credentiali i bez lifecycle instalacyjnego. Nie jest to przyjęcie SDK ani produktowy release. |
+| Bieżące publiczne CI ADP | [Run 44516664321](https://github.com/profitia/SG-dev/actions/runs/44516664321) PASS: 21 testów i typecheck publicznego pakietu na `8b266292...`. Publiczny sourceDigest: `2b1e13b6716a0875de058714ec319647402a9c1e1f81270750dc8fee034dda88`. |
+| Pełne CI i Source | **NIESPEŁNIONE.** [Producent / 44516659202](https://github.com/profitia/SG-dev/actions/runs/44516659202), [Governance / 44516659293](https://github.com/profitia/SG-dev/actions/runs/44516659293), [SRM / 44516664274](https://github.com/profitia/SG-dev/actions/runs/44516664274), [adopcja / 44516664479](https://github.com/profitia/SG-dev/actions/runs/44516664479). Chronione kontrole wcześniejszych źródeł SDK i ingress SRM nie przyjmują nowych bajtów. Oddzielna gałąź SRM nie zawiera jeszcze nowego eksportu producenta; jej jedyny błąd typecheck to TS2307 dla supplier-workspace-host. Kwalifikacja pary powyżej przechodzi, ale nie zastępuje prawidłowego sukcesora/admission i trusted-main proof. Historycznych receiptów ani walidatorów nie zmieniono. Równoległego SDK1.38 nie przyjęto przez analogię. |
+| Rzeczywisty Development / odbiór | **NIEWYKONANE.** Nadal wymagane: przyjęte źródła i CI, kontrolowana instalacja i readback, exact-SHA GO i deploy receipt, rzeczywiste A1/A2/B1 oraz brak efektów w obcej organizacji. Wcześniejszych 13 opcjonalnych testów schematu nie liczymy jako bieżącego dowodu natywnego hosta. |
+
+Starsze rekordy KRS-only zachowują supplierId i KRS; edycja pozostałych danych nie wymyśla NIP-u. Nowy lub zmieniany NIP podlega walidacji i deduplikacji. Zmiana identyfikatora historycznego mastera wymaga jawnego potwierdzenia; receiver nie odczytuje w tym celu treści prywatnych raportów. Kategorie karty nadal są niezależne od procesów. Przy braku potwierdzonego źródła ADP receiver zwraca UNKNOWN i nie tworzy pozornych dat, dokumentów ani MISSING. Nazwy opiekuna nie odtwarza się z prywatnych profili; kontrakt zachowuje nullable displayName i zweryfikowany accountId/status.
+
+Oba zadania przygotowania źródeł rozliczono jako **PARTIAL_SUCCESS / CLOSEOUT_COMPLETE**, z niezależnie potwierdzonym runtime/archive/trail i pustym pending/advisory-lock: [ARCHITECTURE PHR](https://github.com/profitia/project-history-repository/blob/3cf321c69f474131ae5066ab4085f5d1c1f9de18/history/2026/11/19/2026-11-19-11-54-42Z__architecture-arch-bsdc-scp-e1-t02-20261119/manifest.json), [SRM PHR](https://github.com/profitia/project-history-repository/blob/fee65dd88b42d2a07ce137c48f8f74930ebe2ff6/history/2026/11/19/2026-11-19-11-58-16Z__srm-srm-bsdc-scp-e1-store-20261119/manifest.json). SRM wznowił ten sam pending po niepełnej synchronizacji PHR; nie przepisano archiwum, treści ani tożsamości zadania. To rozliczenie części źródłowej, nie zamknięcie E1.
+
+#### 5.4.3. Bieżący checkpoint kontroli i wznowienia — 2026-11-19
+
+- **Pierwszeństwo na main:** zgodnie z bieżącym poleceniem właściciela okno należy do ACG. SRM/ADP E1 pracuje na własnych gałęziach; nie wykonano konkurencyjnego merge ani instalacji. Zmiany przyjęte na main do `f044ed2fbda18e78bed2ddf9889a20e5206ac744` zachowano w gałęzi dokumentacyjnej.
+- **Rzeczywista przyczyna blokady Karty:** Governance44523117886 i44524048304 odrzuciły starszy, autentycznie przyjęty widok manifestu 3.52 po awansie authority do Kanonu ACG3.53: `MANIFEST_SUCCESSOR_AUTHORITY_BASE_REJECTED` (84 PASS/1 FAIL). Źródłowe postimage Karty nie powodują tej usterki.
+- **Ograniczona naprawa ARCHITECTURE:** [#1256 / 42ed2851758525d84f00f3ed8a49df59319aa955](https://github.com/profitia/SG-dev/pull/1256), task ARCH-BSDC-MANIFEST-ANCESTRY-20261119, begin cmwnjhz8g0000kvh4ued151d8. Używa istniejącego dokładnego projektora zatwierdzonego Kanonu ACG; zachowuje dawny test/fingerprint, ledger, receipts, historyczne Git SHA i odrzucenie nieznanego przyszłego manifestu. Nie jest ogólną polityką następstwa ani aktywacją Source.
+- **Dowody dokładnego źródła naprawy:** [Governance44530036503 — PASS](https://github.com/profitia/SG-dev/actions/runs/44530036503), w tym91/91 walidatorów i kontrola PMOS;14/14 celowanych regresji, bez pominięć. [Platform44530036775](https://github.com/profitia/SG-dev/actions/runs/44530036775): ARCHITECTURE (464/464 routing/controller; w osobnym istniejącym zestawie kontraktów2141 PASS/1 SKIP), integracja SRM, oba testy adopcji i regresja dashboardu PASS. Integracja SG2 odmawia z `CONTROLLED_VALIDATION_REQUIRED_FOR_EXACT_SHA`; **cały workflow nie jest PASS**. Brakujący kontrolowany proof pozostaje wymagany, bez przepisywania starych dowodów.
+- **Jeden pakiet do decyzji:** §7.5 obejmuje zamknięte49 postimage (19 producenta +27 SRM +3 tej koniecznej naprawy), SHA256 `0e8052dfe4dc72f568ac54f842dc213174f20ae585a46c27e11380ff0c88f740`. Wcześniejszy46-plikowy checkpoint §5.4.2 zachowuje swój oryginalny digest i historię. Nie zapisano nowej decyzji właściciela i nie aktywowano polityki źródeł.
+- **Punkt wznowienia:** po odrębnym dopuszczeniu §7.5 wykonać właściwy zamknięty bootstrap/sukcesor źródeł i kontrolowany proof; po zwolnieniu okna ACG i spełnieniu wymaganych kontroli opublikować naprawę oraz tę aktualizację Karty. Następnie tylko zaakceptowana instalacja/recovery/readback, odrębny końcowy exact-SHA GO i realne A1/A2/B1. DEC-24 pozostaje zastosowana; nie zlecać E1 ponownie. E1 jest CZĘŚCIOWY, E2 NIE_ROZPOCZĘTY.
+- **Granice i rozliczenie:** brak operacyjnych SQL/grantów/enrollment/deploy; brak danych dokumentów PORR i brak odbioru LIVE. Task dokumentacyjny SRM-BSDC-SCP-E1-SOURCE-CARD-20261119 / begin cmwniar8h0000n8iogezdx0qo obejmuje tylko tę samą Kartę. Kanoniczne wyniki closeout/PHR oraz odczyt ich publikacji są przypięte w metadanych odpowiednich PR po faktycznym zakończeniu zapisu; nie zastępują przyjęcia na main ani zakończenia E1. Zasoby chmurowe i archiwa wymagane do wznowienia są RETAINED; nie utworzono lokalnej dokumentacji na Macu.
+
+#### 5.4.4. Wznowienie po DEC-25 — 2026-11-19
+
+Właściciel zaakceptował dokładny pakiet §7.5 z rewizji bf069096 przez odpowiedź **„Tak — zatwierdzam pakiet §7.5”**; zapis zakresu i granic w §6.7. Poprzedni checkpoint §5.4.3 zachowuje stan sprzed tej odpowiedzi. Brak zgody na ten pakiet nie jest już blokerem.
+
+Pozostają techniczne i publikacyjne warunki: właściwy zamknięty bootstrap/przyjęcie źródeł z trusted main, pełne wymagane CI/proof/readback oraz pierwszeństwo ACG na main. Zwykły rekord Source nie może sam dopuścić chronionych zmian Access/Root, Canon i kontrolera. Nie zmieniać49 zatwierdzonych postimage ani przepisywać historycznych dowodów, aby przejść bramkę. Instalacja, minimalne prawa i PORR enrollment mogą nastąpić dopiero po spełnieniu warunków DEC-25 i świeżej kontroli dokładnego bindingu/preimage/recovery; ich7-dniowy termin zaczyna zweryfikowany install receipt, nie zapis decyzji.
+
+E1-T01–T04 nadal CZĘŚCIOWE, E1-T05 ZABLOKOWANY do faktycznej gotowości wcześniejszych tasków; E2 NIE_ROZPOCZĘTY. Nie wykonano przez zapis zgody Source activation, SQL/grantów/enrollment ani deploy. Końcowy exact-SHA release GO pozostaje osobny. Następna niewykonana operacja to kontrolowane przyjęcie dokładnych źródeł po dopuszczonej ścieżce i zwolnieniu odpowiedniego okna main — bez ponownego startu E1 i bez ponawiania DEC-24/25.
+
+### 5.4.5. Zweryfikowany sukcesor źródeł SDK1.38 — 2026-11-19
+
+DEC-25 zapisano w237a8b79 i potwierdzono GitHub readback; przygotowanie Source rozliczono w [PHR53d049e8](https://github.com/profitia/project-history-repository/blob/53d049e8263f5b60972bbc7d66fce64d7dd5134c/history/2026/11/19/2026-11-19-16-03-41Z__architecture-arch-bsdc-scp-e1-admission-20261119/manifest.json), PARTIAL_SUCCESS/CLOSEOUT_COMPLETE, trail14 bez błędów, runtime/handoff/pending/lock PASS. ACG przyjął własną nowszą naprawę #1255; starszy #1256 zamknięto bez merge.
+
+Zamiast nadpisać zmiany logowania przygotowano i sprawdzono [dokładny sukcesor #1261](https://github.com/profitia/SG-dev/pull/1261):47 postimage w076c480dc926989dc6364de9d35ba40de274b986, pakiet19a5bd79801d1a8458f42dc1da1bcee302ae5f0e1ff80a603974ae0ec35f6293. Delta i kompletna jedna decyzja w §7.6. Trzy SQL zachowane. Kwalifikacja native/HTTP, regresja logowania, typecheck i build PASS; nie jest to Source admission/full hosted CI ani prawdziwy odbiór Development.
+
+**Punkt wznowienia:** decyzja tylko o zmienionym dokładnym źródle §7.6, przyjęcie osobnej zależności SDK1.38, właściwe Source/CI/proof/readback; następnie warunkowa instalacja już zatwierdzona w DEC-25. Nie ponawiać zgód DEC-24/25 i nie przeliczać7dni przed faktycznym install receipt. Końcowy exact-SHA GO oddzielny. E1-T01–T04 CZĘŚCIOWE; E1-T05 ZABLOKOWANY; E2 NIE_ROZPOCZĘTY; FINAL-* nadal DO_POTWIERDZENIA na Development. Baza DEC-21,29 kryteriów A–F i cała roadmapa niezmienione.
 
 ### 5.5. Lista końcowego odbioru
 
@@ -622,6 +674,20 @@ Przypiętą rewizję odczytano w bieżącym wykonaniu: 87 plików. Raport histor
 | Granice | Zgoda na zakres **nie zatwierdza jeszcze nowych dokładnych bajtów implementacji**, source admission, instalacji/migracji/grantów ani exact-SHA release GO. Nie uruchamia E2, nowej infrastruktury, płatnych providerów, Staging/Production ani przetwarzania poufnej treści ADP/dokumentów PORR. |
 | Freeze / historia | DEC-21 i f75529c590c5dd4611223c949e5956e34d101e22 pozostają bazą projektu i roadmapy; DEC-22/23 i wcześniejsze publikacje zachowane. Propozycja źródłowa nadal wymaga implementacji i właściwej adopcji, nie staje się samodzielnie ALLOW. |
 
+### 6.7. DEC-25 — zgoda na dokładny pakiet Source i warunkową instalację, 2026-11-19
+
+| Pole | Zapis |
+| --- | --- |
+| Aktor / data | Właściciel w bieżącym wątku, owner Karty tomasz@profitia.pl; 2026-11-19, Europe/Warsaw. |
+| Dosłowna odpowiedź | **„Tak — zatwierdzam pakiet §7.5”**. |
+| Dokładna podstawa | [§7.5 Karty w rewizji bf069096ec4517a26e1b788b4273bc2043cdae11](https://github.com/profitia/SG-dev/blob/bf069096ec4517a26e1b788b4273bc2043cdae11/Canon/proposals/bsdc/SRM/supplier-category-pipelines.md#75-dokładny-pakiet-source-i-warunkowej-instalacji-e1--do-decyzji-właściciela), nie ruchomy branch ani przyszłe zmiany. Zamknięte49 postimage, SHA256 `0e8052dfe4dc72f568ac54f842dc213174f20ae585a46c27e11380ff0c88f740`. |
+| Źródła objęte zgodą | #1245 / d4f889d7a51aacc5e4ffa520451bc6b3d1d800bd (19); #1234 / 8b2662924dcc93d3a3b3c0fae358d91692fcb747 (27); #1256 / 42ed2851758525d84f00f3ed8a49df59319aa955 (3). Właściwy bootstrap/Source admission, pełne wymagane testy/proof i readback pozostają obowiązkowe; brak wildcardu lub podmiany starych receipts. |
+| Instalacja warunkowa | Wyłącznie trzy SQL wskazane w §7.5, ze stałymi digestami647e4712…,9d4203a4…,8a4acba4…, w istniejącym SRM Development i dokładnym zatwierdzonym bindingu. Dopiero po przyjęciu źródeł i pełnym PASS kontroli, ze świeżym preimage/readback, backupem i potwierdzonym recovery; atomowo z minimalnymi prawami. |
+| Prawa i termin | Tylko zakres §7.5: nowe schema USAGE i3EXECUTE; ograniczone istniejące ścieżki operatora na czas jednej transakcji; jedno module binding i polityka PORR z serwerowego bindingu. Maksymalnie7dni od zweryfikowanego install receipt, bez automatycznego odnowienia, nowych loginów/sekretów, runtime DML/owner/BYPASSRLS. Zachować aktualne membership/product/feature admission, DENY, expiry/revocation, izolację i historię. |
+| Wynik / wznowienie | **OWNER_EXACT_SOURCE_AND_CONDITIONAL_INSTALL_APPROVED**. Zastosować tę zgodę bez ponownego pytania o ten sam pakiet. Najpierw wykonać właściwe przyjęcie źródeł i obowiązkowe kontrole; dopiero potem zależną instalację/recovery/readback. Sam zapis DEC-25 nie jest PASS, aktywnym rejestrem Source ani install receipt. |
+| Nadal odrębne | Końcowe exact-SHA Development release GO, LKG i rzeczywisty deploy/odbiór A1/A2/B1. ACG zachowuje pierwszeństwo na main. Bez E2, Staging/Production, nowych zasobów/kosztów, treści dokumentów PORR i rozszerzenia zatwierdzonych postimage/digestów/grantów. |
+| Freeze / ślad | DEC-21/f75529c i cała roadmapa zachowane; DEC-24 i pozostałe wcześniejsze decyzje nie są przepisywane. Zapis: SRM-BSDC-SCP-E1-DEC25-20261119 / begin cmwnoef2a00006li56rj224bd; osobny task dokumentacyjny, nie instalacja. |
+
 ## 7. Otwarte zależności, realne ryzyka i granice twierdzeń
 
 ### 7.1. Brak ukrytych decyzji zakresowych
@@ -637,8 +703,8 @@ Następujące zmiany wymagałyby ponownej decyzji, bo zmieniają zakres/bezpiecz
 
 ### 7.2. Zależności wykonawcze, które nie są jeszcze spełnione
 
-- Nie ma obecnie dowodu wdrożenia nowego kontraktu, operacji i schematu. Wszystkie taski E1/E2 są NIE_ROZPOCZĘTE.
-- Nowe operacje Access/Root/Work i SQL wymagają dopuszczenia właściwego ownera w E1-T02; same wpisy w planie nie dają ALLOW.
+- Nie ma obecnie dowodu wdrożenia nowego kontraktu, operacji i schematu. E1 jest CZĘŚCIOWY zgodnie z §5.4; E2 pozostaje NIE_ROZPOCZĘTY. Gotowy kandydat i testy syntetyczne nie są odbiorem LIVE.
+- Zakres operacji Access/Root/Work zatwierdzono w DEC-24; dokładny pakiet źródeł i warunkową instalację/minimalne prawa/enrollment w DEC-25. Nadal wymagane są techniczne Source admission, pełne CI/proof, preimage/backup/recovery i późniejszy exact-SHA release GO; sam zapis nie daje runtime ALLOW.
 - Przed instalacją trzeba potwierdzić actual binding, role, recovery i okno, nie ufać historycznemu statusowi JSON. Brak gotowości blokuje zależny task, bez fallbacku do demo/shared lub PMOS.
 - Nie udowodniono automatycznego bindingu MagicPath. Docelowy transfer wymaga rzeczywistego reuse i przyjętej kwalifikacji, bez ogłaszania propagacji na podstawie podobieństwa.
 - Rzeczywiste poufne środowisko PORR, źródło ADP i jego polityki retencji nie są aktywowane. Włączenie ich później jest odrębnym zakresem.
@@ -674,7 +740,411 @@ Publikacja została zakończona przez [PR #1123](https://github.com/profitia/SG-
 
 **Dlaczego potrzebna była osobna decyzja:** przyjęcie projektu DEC-21 i start E1 nie oznaczały przyjęcia nowej polityki zaufania. Właściciel rozstrzygnął ten zakres przez DEC-24. Istniejący runtime nie zyskał przez sam zapis decyzji nowych efektów; rzeczywiste źródła, instalacja/granty i release nadal podlegają odpowiednim gate’om.
 
-**Dalsze wykonanie po DEC-24:** wznowiono E1-T02 we własnym lifecycle ARCHITECTURE. Zaimplementować i zweryfikować producer/SQL boundary, następnie zamknięty store i host/API SRM. Nie trzeba ponownie zlecać całego E1. Ta decyzja zakresu polityki **nie jest jeszcze** exact-source admission, grant/install receipt ani exact-SHA release GO: rzeczywiste bajty migracji, recovery, okno i źródła zostaną przedstawione po przygotowaniu implementacji, zgodnie z ich własnymi gate’ami. Istniejący runtime/store pozostają LKG; brak aktywacji umożliwia odrzucenie propozycji bez zmiany danych.
+**Dalsze wykonanie po DEC-24:** producent #1245 i zamknięty store/host/API #1234 są przygotowane i zweryfikowane jako kandydaci (§5.4.2). Dalszy punkt to właściwy sukcesor/admission i pełne CI oraz dokładny pakiet §7.5. Konieczną naprawę wspólnej kontroli historii przygotowano osobno w #1256 / 42ed2851758525d84f00f3ed8a49df59319aa955; pozostaje objęta proponowanym pakietem 49 postimage i kontrolowanym dopuszczeniem dokładnego źródła. Zgodnie z poleceniem koordynacyjnym ACG zachowuje pierwszeństwo na main; nie wykonywać konkurencyjnego merge. Nie trzeba ponownie zlecać E1 ani zatwierdzać zakresu DEC-24. Nie uznawać kandydatów, builda lub syntetycznej bazy za install receipt, source acceptance czy release GO.
+
+
+### 7.5. Dokładny pakiet Source i warunkowej instalacji E1 — zatwierdzony przez DEC-25
+
+**Status: OWNER_APPROVED przez DEC-25 (§6.7), na podstawie dokładnej rewizji bf069096.** Zgoda obejmuje49 wskazanych postimage i warunkową instalację trzech migracji z minimalnymi prawami/PORR do7dni od install receipt. DEC-24 pozostaje zastosowana; nie trzeba ponawiać żadnej z tych zgód. Obowiązują wszystkie poniższe warunki Source/CI/preimage/backup/recovery; sam zapis nie jest aktywnym wpisem Source, install receipt ani końcowym release GO. Projekt/roadmapa DEC-21 pozostają bez zmian.
+
+**Warunki wykonania przyjęte w DEC-25:**
+
+1. Dopuścić przez istniejący workflow Source **wyłącznie** trzy poniższe, zamknięte zestawy: ARCHITECTURE #1245 / `d4f889d7a51aacc5e4ffa520451bc6b3d1d800bd` (19 plików) oraz SRM #1234 / `8b2662924dcc93d3a3b3c0fae358d91692fcb747` (27 plików) oraz konieczną naprawę zgodności historycznej kontroli dokumentacji ARCHITECTURE #1256 / `42ed2851758525d84f00f3ed8a49df59319aa955` (3 pliki). Aktor profitia, repo profitia/SG-dev, cel Development, zakres SOURCE_VALIDATION_ONLY. Kontrolowane przyjęcie wymaga właściwego bootstrapu z trusted main, pełnych testów/proof i readbacku; nie wolno dopisać ogólnego wyjątku dla SDK/Canon, przepisać dawnych checksum ani uznać tej decyzji za PASS. Naprawa #1256 zachowuje istniejący zamknięty projektor zaakceptowanego Kanonu ACG, dawny rejestr i fingerprinty; nie dopuszcza dowolnego następcy ani przyszłego manifestu. GitHub Governance44530036503 dla tej dokładnej rewizji jest PASS; publiczna kontrola SG2 nadal wymaga `CONTROLLED_VALIDATION_REQUIRED_FOR_EXACT_SHA`, więc ten pakiet nie oznacza pełnego PASS. Właściwy sukcesor źródeł SDK/konsumenta i zgodność z równoległym SDK1.38 nadal muszą zostać wykazane. Dodatkowe lub zmienione postimage nie są objęte tym zamkniętym pakietem.
+2. **Warunkowo, dopiero po przyjęciu właściwych źródeł i pełnym PASS wymaganych kontroli**, dopuścić kontrolowaną próbę transakcyjną oraz instalację trzech dokładnych migracji poniżej w istniejącym SRM Development. Wymagane świeże preimage/readback, backup i potwierdzone recovery; cały zestaw SQL i przyjęcie minimalnych praw mają być atomowe. Zmiana preimage/bindingu/digestu zatrzymuje operację.
+3. Dopuścić tylko wskazane minimalne prawa i enrollment dla PORR, na **maksymalnie 7 dni od zweryfikowanego install receipt**, bez automatycznego odnowienia. Zachować istniejące odmowy, aktualne członkostwo, product/feature admission, expiry i revocation. Instalacja nie uruchamia aplikacji ani następnego etapu.
+
+| Element instalacji | Dokładny zakres zatwierdzony przez DEC-25 |
+|---|---|
+| Binding | Render `srv-db1vu6gm7kps73d0e3r0`; Neon `spring-bread-28217539` / `br-sparkling-term-b99l107x`; baza `platform_private`, schema `srm`; istniejąca zwykła rola `srm_private_development_runtime`. Wyłącznie Development. |
+| 1. Granica Root / Access | [supplier-workspace-v1.sql](https://github.com/profitia/SG-dev/blob/d4f889d7a51aacc5e4ffa520451bc6b3d1d800bd/packages/platform-contracts/migrations/access/supplier-workspace-v1.sql), SHA256 `647e47125b84e4eb026b5a1aec783b0b147315817cbd6246081fc40c92bd6023`. |
+| 2. Schemat biznesowy SRM | [supplier-pipelines-v1.sql](https://github.com/profitia/SG-dev/blob/8b2662924dcc93d3a3b3c0fae358d91692fcb747/apps/srm/db/private-store/supplier-pipelines-v1.sql), SHA256 `9d4203a4ddb3f7af4297d8f27b190ddf1dbfcaac8cdaa24199e4a6e6902dcad5`. |
+| 3. Zamknięte odczyty/komendy | [supplier-pipelines-commands-v1.sql](https://github.com/profitia/SG-dev/blob/8b2662924dcc93d3a3b3c0fae358d91692fcb747/apps/srm/db/private-store/supplier-pipelines-commands-v1.sql), SHA256 `8a4acba4afc18e6740ba55702784d67d10ebaa368d1bf2da3c24f6ccf1c40b4c`. |
+| Minimalne prawa runtime | USAGE wyłącznie na nowym schema profitia_supplier_workspace oraz EXECUTE: `profitia_supplier_workspace.bind_operation(uuid,text,jsonb)`, `profitia_supplier_workspace.descriptor()`, `srm.supplier_pipelines_execute(jsonb)`. Brak nowych praw do tabel, owner membership lub BYPASSRLS runtime; budżet 3+1 bez zmian. |
+| Kontrolowany operator | Istniejący dopuszczony operator i NOLOGIN profitia_access_owner. Jeżeli wymagane przez bieżącą, zweryfikowaną ścieżkę operatora: wyłącznie czasowe SET do tej roli oraz CREATE na tej bazie dla właściciela schematu, na czas tej jednej transakcji. Usunąć te czasowe uprawnienia przed COMMIT; zachować wcześniejsze administracyjne ścieżki i wykazać brak pozostałego podwyższenia. Bez nowych sekretów, loginów lub ról runtime. |
+| Enrollment | Jedno jawne application/module binding supplier_workspace dla srm/development i jedna ograniczona polityka organizacji **PORR wskazanej przez dotychczasową, zweryfikowaną serwerową konfigurację SRM**. Brak wejściowego orgId jako grantu, automatycznego dopisywania innych organizacji lub reaktywacji wcześniejszego REVOKED. Wszyscy bieżący uprawnieni członkowie tej organizacji mają tę samą obsługę zgodnie z DEC-24; explicit DENY w v1 obejmuje całą daną operację, także przy zakazie wskazanego rekordu, aby nie ujawnić niepełnych tablic/liczników. |
+| Audyt i odzyskanie | Zgodny operator/preimage i backup/recovery przed zmianą; rollback tej samej transakcji przy błędzie. Po COMMIT bezpieczne wyłączenie nowej konfiguracji/polityki z zachowaniem zapisów i historii; bez DROP/purge lub globalnego restore. Potwierdzić wcześniejsze wejścia raportowe i odmowy. |
+| Późniejsze wydanie | Nadal wymagane **odrębne finalne exact-SHA Development GO**, LKG/recovery, receipt rzeczywistego deploy i realny odbiór A1/A2/B1. Obecne activation=false i admittedSourceRef=null nie są zmieniane przez ten dokument. E2 pozostaje NIE_ROZPOCZĘTY. |
+
+Po tej decyzji kontynuować wyłącznie zależne czynności dopuszczone jej zakresem oraz kolejne wymagane bramki. Jeżeli zmieni się kod, digest, binding lub potrzebny będzie inny grant, nie rozszerzać zgody przez analogię. Zgoda na warunkową instalację została udzielona; niespełniona bramka techniczna zatrzymuje tylko zależną operację. Zgoda nie jest dowodem, że SDK1.38, wymagane CI, migracja lub release zostały już przyjęte.
+
+**Niezmienny wykaz49 postimage objętych DEC-25:** SHA256 poniższego JSON (UTF-8, 2 spacje wcięcia, końcowy LF) to `0e8052dfe4dc72f568ac54f842dc213174f20ae585a46c27e11380ff0c88f740`. Odczyt GitHubu potwierdził wszystkie trzy HEAD; tryby, bloby i SHA256 pochodzą z ich rzeczywistych obiektów Git. Nie jest to wpis aktywnego rejestru dopuszczeń. JSON zachowuje dokładne bajty propozycji z bf069096, również historyczną etykietę PROPOSED; późniejsza zgoda DEC-25 jest zapisana jawnie w §6.7, bez zmiany digestu tego wykazu.
+
+```json
+{
+  "schemaVersion": "1.0",
+  "scope": "PROPOSED_EXACT_SOURCE_REVIEW_NOT_AUTHORITY",
+  "sources": [
+    {
+      "projectKey": "ARCHITECTURE",
+      "sourceSha": "d4f889d7a51aacc5e4ffa520451bc6b3d1d800bd",
+      "baseSha": "cdc2db38841e3dedafb67fc4313c3b3299f2932b",
+      "pullRequest": 1245,
+      "files": [
+        {
+          "path": "Canon/registries/operation-access-matrix-v1.json",
+          "mode": "100644",
+          "blob": "583d5928e587e392daaac940f27e33463eb0f80e",
+          "sha256": "1b1a9641f1e77ed44ca10781f4e4e99c2a6c7dd5f0d038299cc5f6a90985cb7b",
+          "status": "modified"
+        },
+        {
+          "path": "packages/platform-contracts/migrations/access/supplier-workspace-v1.sql",
+          "mode": "100644",
+          "blob": "af369f26453304b5248c9962a9f4a76fc742342d",
+          "sha256": "647e47125b84e4eb026b5a1aec783b0b147315817cbd6246081fc40c92bd6023",
+          "status": "added"
+        },
+        {
+          "path": "packages/platform-contracts/package.json",
+          "mode": "100644",
+          "blob": "655fc041d4f5da0b8ec1d6c7c8ca156ae8bbc826",
+          "sha256": "c22b13c173cd94560973fc5facaeb00ae30666216098b7de96bf7a00ca0c9bc1",
+          "status": "modified"
+        },
+        {
+          "path": "packages/platform-contracts/src/module-scope.d.mts",
+          "mode": "100644",
+          "blob": "b7a0c6c98462b3ad9b89262e17bd57df578a8b97",
+          "sha256": "314b492dc73f983e5c8ad616ce721e9218591ee2b455fd7c5174c46c003dbb8c",
+          "status": "modified"
+        },
+        {
+          "path": "packages/platform-contracts/src/module-scope.mjs",
+          "mode": "100644",
+          "blob": "a966900e9dcf913b15125a928546529c880dbc7f",
+          "sha256": "8eb216850e290a69dd33f1c350c034ca4238ae4223865c3a4c8772e8e54c6aa2",
+          "status": "modified"
+        },
+        {
+          "path": "packages/platform-contracts/src/operation-context.d.mts",
+          "mode": "100644",
+          "blob": "340315ef3018453aa50181f23b48d9b768e03ffe",
+          "sha256": "49f17ee6c192e19bb1bc954268193dfc070d1ec3f13275bf8d6e45f46acc8080",
+          "status": "modified"
+        },
+        {
+          "path": "packages/platform-contracts/src/operation-context.mjs",
+          "mode": "100644",
+          "blob": "d01a044187c2d847b8409787ac302d5dcfb143e8",
+          "sha256": "5eb24d0129adb21fae7c494045afab37c552aeebcb801ea63c8303700a9dda7f",
+          "status": "modified"
+        },
+        {
+          "path": "packages/platform-contracts/src/private-operation-host.d.mts",
+          "mode": "100644",
+          "blob": "48c7b801b0fcba325a92859e2cd7b475b9926916",
+          "sha256": "97da537f4071555a9f38b41e045e2d435ddfc7c6092e4af55eb1d41a8213400f",
+          "status": "modified"
+        },
+        {
+          "path": "packages/platform-contracts/src/private-operation-host.mjs",
+          "mode": "100644",
+          "blob": "098a2a45ad09bfc641109e54eec933ae215910ad",
+          "sha256": "e2c42f1f5992f2b94fe11ae203a2540683482c4613e35c5295cb5d3f45121135",
+          "status": "modified"
+        },
+        {
+          "path": "packages/platform-contracts/src/supplier-workspace-access.d.mts",
+          "mode": "100644",
+          "blob": "0a17f3537f6e30c0d1dba1120f4c54b463083e1c",
+          "sha256": "6833d8266e9c1d48af7a57b41ab74b641d7c89eaa30931869b08559f25446d8d",
+          "status": "added"
+        },
+        {
+          "path": "packages/platform-contracts/src/supplier-workspace-access.mjs",
+          "mode": "100644",
+          "blob": "e305f24de00de8e1fb2ec99462b049f63cadf890",
+          "sha256": "469cd163a31c3aad76413f47e54949693e75db37ceb5960ed5bebb5a7c73bf7d",
+          "status": "added"
+        },
+        {
+          "path": "packages/platform-contracts/src/supplier-workspace-host.d.mts",
+          "mode": "100644",
+          "blob": "cd38da902e21980ace0bc2ff2b317d9fbd47025e",
+          "sha256": "778878044aa0caf8b5f596ab09919bcbcf98959dd9974c1803cbf8dc89ed686b",
+          "status": "added"
+        },
+        {
+          "path": "packages/platform-contracts/src/supplier-workspace-host.mjs",
+          "mode": "100644",
+          "blob": "a95e881dd2d61e449ff6dc37e70f499e0b36f1d6",
+          "sha256": "69b75c36d61ebc474b4533ea744da8a994e3ff60782d0aa6c3f931864ff4b40e",
+          "status": "added"
+        },
+        {
+          "path": "packages/platform-contracts/test/fixtures/supplier-workspace-postgres.mjs",
+          "mode": "100644",
+          "blob": "b8b7536a6609ea11b5c27741d31ce447e8aaa49c",
+          "sha256": "88f04f37f4d91feb2d9b318b17d1f3a50a521e104aa98157e90d9d54fad7f5d6",
+          "status": "added"
+        },
+        {
+          "path": "packages/platform-contracts/test/operation-context.test.mjs",
+          "mode": "100644",
+          "blob": "8c5392e8fed8057da355cac8c4642ec93fb5401c",
+          "sha256": "79dc25da3a471bae202dbd00cd8e153b749f3d45700f059241ee4f77386d32e0",
+          "status": "modified"
+        },
+        {
+          "path": "packages/platform-contracts/test/supplier-workspace-access.test.mjs",
+          "mode": "100644",
+          "blob": "cb7febeaac78231f4f8368f475455206f1a06789",
+          "sha256": "999dded53a8517c1394641f4cad682313906f7132e2efa6a77d6fb01e2b9a945",
+          "status": "added"
+        },
+        {
+          "path": "packages/platform-contracts/test/supplier-workspace-postgres.test.mjs",
+          "mode": "100644",
+          "blob": "39bf738e22e9674ab2ca3c58f247c35b74d0a57b",
+          "sha256": "1af7e789a2907c3b9ff518e3b41591a90a86b5d4c8e9d6ee5ad1197d134aa848",
+          "status": "added"
+        },
+        {
+          "path": "packages/platform-contracts/test/supplier-workspace-types.test.mjs",
+          "mode": "100644",
+          "blob": "0a791b0189146d82167e7a58f3fb995e4091e2fb",
+          "sha256": "d7e77cef1992a70bfd7447136663d3e0d969b359e42988fb901962b495a8e77e",
+          "status": "added"
+        },
+        {
+          "path": "packages/platform-contracts/test/types/supplier-workspace.mts",
+          "mode": "100644",
+          "blob": "c6b00206569e3aca26a7812a1118be511feed41a",
+          "sha256": "4f54d4e8a6cbb3dd85a298e4d90b08956b72e38303fa8bfa9bf3945eb1ad4a66",
+          "status": "added"
+        }
+      ]
+    },
+    {
+      "projectKey": "SRM",
+      "sourceSha": "8b2662924dcc93d3a3b3c0fae358d91692fcb747",
+      "baseSha": "cdc2db38841e3dedafb67fc4313c3b3299f2932b",
+      "pullRequest": 1234,
+      "files": [
+        {
+          "path": "apps/srm/app/api/adp/v1/[...path]/route.ts",
+          "mode": "100644",
+          "blob": "43f59fe7caada2ef62d195f5980316d78209a3b5",
+          "sha256": "45ee75aa34dae05322310d74fe45df2ca4e2a447472f2451836d92a09904ee04",
+          "status": "added"
+        },
+        {
+          "path": "apps/srm/db/private-store/supplier-pipelines-commands-v1.sql",
+          "mode": "100644",
+          "blob": "3045744383ee28ab588ed5ff66c7598de69e7923",
+          "sha256": "8a4acba4afc18e6740ba55702784d67d10ebaa368d1bf2da3c24f6ccf1c40b4c",
+          "status": "added"
+        },
+        {
+          "path": "apps/srm/db/private-store/supplier-pipelines-v1.sql",
+          "mode": "100644",
+          "blob": "a0c8706b375e1006964b8aac94c02575147113ae",
+          "sha256": "9d4203a4ddb3f7af4297d8f27b190ddf1dbfcaac8cdaa24199e4a6e6902dcad5",
+          "status": "added"
+        },
+        {
+          "path": "apps/srm/deployment/supplier-pipelines-targets.json",
+          "mode": "100644",
+          "blob": "00d4cf1590f7251d814bcb943516c7f13532acc7",
+          "sha256": "0fa9c44ca6284828e337592f20d699aae314575f39a5459fae620777c1e7e4fe",
+          "status": "added"
+        },
+        {
+          "path": "apps/srm/middleware.test.ts",
+          "mode": "100644",
+          "blob": "a757fa6605c11b546ad03e8b068689c6b109c5a2",
+          "sha256": "8251849f658c008f48e9f7419a06cc8e36a7994b44e4eb9d80c3a4406cda9e30",
+          "status": "modified"
+        },
+        {
+          "path": "apps/srm/middleware.ts",
+          "mode": "100644",
+          "blob": "7ed9b498aa9afe8fa6e2afc7796b4451d3d430b0",
+          "sha256": "157d19d37036f138438139cd96777c3c6233d9ff0bf3596804fd26e0a76a97ae",
+          "status": "modified"
+        },
+        {
+          "path": "apps/srm/package.json",
+          "mode": "100644",
+          "blob": "467b12af4b51e8abbad692767491314d08cd0bf6",
+          "sha256": "4a75d6d8f5869c359bf4cbc875134803a5a91dbef3ac0aaf760eb3682a28eb5c",
+          "status": "modified"
+        },
+        {
+          "path": "apps/srm/scripts/supplier-pipelines-postgres.test.mjs",
+          "mode": "100644",
+          "blob": "f2f44a9397d27b0a9c6b610255c80a396e98d2c6",
+          "sha256": "75bbace4c885f1d71b7cf7c6a80d0e57c26f889b3859a7678c1005b0d6b5e1ec",
+          "status": "added"
+        },
+        {
+          "path": "apps/srm/scripts/supplier-pipelines-release.mjs",
+          "mode": "100644",
+          "blob": "fbc61d32fec8401b0775669b326eacdb7c7bf049",
+          "sha256": "4f42c4db62fb44869716c1ce589cd7b5942b34025ba337a549fd4517628ae490",
+          "status": "added"
+        },
+        {
+          "path": "apps/srm/scripts/supplier-pipelines-release.test.mjs",
+          "mode": "100644",
+          "blob": "64a4e591bb83dd05203c5d5f107c0d5a70392c28",
+          "sha256": "b431eed3a340fba13bceee25c8832c286bc9467dcd963c7c06830b40be57ea14",
+          "status": "added"
+        },
+        {
+          "path": "apps/srm/src/server/integrations/supplier-pipelines.integration.test.ts",
+          "mode": "100644",
+          "blob": "2aebf7ed636db3c2a346f590bbf88a6c353a1398",
+          "sha256": "117e36afdf68c6a28d104bad28427bccdec5c6f86174ac6bd991bf9ab98f84b4",
+          "status": "added"
+        },
+        {
+          "path": "apps/srm/src/server/private-runtime.ts",
+          "mode": "100644",
+          "blob": "a77175c9737f71204b6fb401bd18b73aa93002fb",
+          "sha256": "f77870d6fa9b6ef6b213cba4777887cf76c3a27f2ef5973d7c7da86634cc6071",
+          "status": "modified"
+        },
+        {
+          "path": "apps/srm/src/server/supplier-adp-status.ts",
+          "mode": "100644",
+          "blob": "ab911e6fa3e462195a1f970f1b8abaca06236528",
+          "sha256": "12a3ab2054c2681bdfbc157663fe353260d84a2f4cc06ccab23dca8ce4f27276",
+          "status": "added"
+        },
+        {
+          "path": "apps/srm/src/server/supplier-pipelines-contract.test.ts",
+          "mode": "100644",
+          "blob": "8522b8d1b7439b455532402ca47f2687b54d26ce",
+          "sha256": "ae776e20f5ab4da18fec0bd73ec0d0fdcfc75173bc848f180bb50f3b7f671c26",
+          "status": "added"
+        },
+        {
+          "path": "apps/srm/src/server/supplier-pipelines-contract.ts",
+          "mode": "100644",
+          "blob": "b8da3f2456a980b88bd6b25fbe4126610e8bf6b2",
+          "sha256": "994442d773cc78b50bc9f2348d132037402bbbb48dd81579fc16e43675c4f475",
+          "status": "added"
+        },
+        {
+          "path": "apps/srm/src/server/supplier-pipelines-domain.test.ts",
+          "mode": "100644",
+          "blob": "784f5ec491eeaa860e6e6a1fb4492e94820c986b",
+          "sha256": "cc7ad73fa6b24eb94fdab324ae7ed4c2119e3d641f8f5c10fc52786f6031f10e",
+          "status": "added"
+        },
+        {
+          "path": "apps/srm/src/server/supplier-pipelines-domain.ts",
+          "mode": "100644",
+          "blob": "e21a94733e3551fd5fa9761cf0e28e789a6b0ce5",
+          "sha256": "958a5958da3b29624896fe26ea6f11fc8081f3267f75414eef91d555c30d08b9",
+          "status": "added"
+        },
+        {
+          "path": "apps/srm/src/server/supplier-pipelines-http.test.ts",
+          "mode": "100644",
+          "blob": "80f6f908149118546e7d2b42b065b93b7d5884d5",
+          "sha256": "5ee87826891757e4401b1ff03c260d8c19cf4d3ecca3986c372b6d4df78c054a",
+          "status": "added"
+        },
+        {
+          "path": "apps/srm/src/server/supplier-pipelines-http.ts",
+          "mode": "100644",
+          "blob": "539fe11e696cf8a4a0e2f82d90107bf78718a5c6",
+          "sha256": "4b0c3e9f91ad4260c9ef76d5a450d15ad5afb0345f18e320fe8491128a2eb72b",
+          "status": "added"
+        },
+        {
+          "path": "apps/srm/src/server/supplier-pipelines-runtime.test.ts",
+          "mode": "100644",
+          "blob": "bd9f9373e358ff61834ad7f7fe8fe6955989a39a",
+          "sha256": "2536e27c79c71992d8e64acf442c7521efbfa1eeafac7a5697e21c1d03a14a4f",
+          "status": "added"
+        },
+        {
+          "path": "apps/srm/src/server/supplier-pipelines-runtime.ts",
+          "mode": "100644",
+          "blob": "35faca85d791e4c140a6f012a172a1d407330bbe",
+          "sha256": "57ee6fa4faf09ce846fcee0ba0ccc5fc4f287607d7759431cb2672b6eda1aeca",
+          "status": "added"
+        },
+        {
+          "path": "apps/srm/src/server/supplier-pipelines-store.ts",
+          "mode": "100644",
+          "blob": "da215ccc8b1ce8c2faa8c4e37a598cc93f8048fb",
+          "sha256": "dc79147f8fcf48b7706085bfa061b9c8e65012f3ecdbfaa5eaa3abad91adacc5",
+          "status": "added"
+        },
+        {
+          "path": "packages/srm-adp-ui/package.json",
+          "mode": "100644",
+          "blob": "9713c5e5534f2d9ba898f9469298505728cb0f8d",
+          "sha256": "26bfbfe857654e20c3f3df1215cde7d62494c1f8319eb43fb59d276129455fa7",
+          "status": "modified"
+        },
+        {
+          "path": "packages/srm-adp-ui/source-contract.json",
+          "mode": "100644",
+          "blob": "1874c114af9e69dc936518fe4ebcca35a270b37a",
+          "sha256": "c8e7014f7e816b43e1fb82feb5b28e80dd0b31e07d611366bc362827d580b59c",
+          "status": "modified"
+        },
+        {
+          "path": "packages/srm-adp-ui/src/index.ts",
+          "mode": "100644",
+          "blob": "303ebd53d4eb51b11b583a584a107f3ac86f17e2",
+          "sha256": "5f6586c7ddac13978eb32e244624959fd70f564fd85c14d0f7333cdc24e2e8ba",
+          "status": "modified"
+        },
+        {
+          "path": "packages/srm-adp-ui/src/pipelines-contract.ts",
+          "mode": "100644",
+          "blob": "f8f96616cb06633e9f401d96c93d52687a5b3735",
+          "sha256": "9470a0364b5b56d9042bc941a2eb3ca07d6fe3a5e7e34275a9979b815ba473d9",
+          "status": "added"
+        },
+        {
+          "path": "packages/srm-adp-ui/tests/pipelines-contract.test.tsx",
+          "mode": "100644",
+          "blob": "5e70ad97dc8be8d328e25160c8c792e589b547ad",
+          "sha256": "d87d4c06ce32aee85e002469251f079e1b26d4e9d96f494773f20a9f2a65c976",
+          "status": "added"
+        }
+      ]
+    },
+    {
+      "projectKey": "ARCHITECTURE",
+      "sourceSha": "42ed2851758525d84f00f3ed8a49df59319aa955",
+      "baseSha": "f044ed2fbda18e78bed2ddf9889a20e5206ac744",
+      "pullRequest": 1256,
+      "files": [
+        {
+          "path": "scripts/governance/controlled-package-ci.mjs",
+          "mode": "100644",
+          "blob": "c90dd40abf58bd8e9955e302b5698e9d3015aebe",
+          "sha256": "c41a45af5312d2d07239290368850f7fd6fee75ec3249d5efcd488006b269823",
+          "status": "modified"
+        },
+        {
+          "path": "scripts/governance/acg-canon-manifest-compatibility.test.mjs",
+          "mode": "100644",
+          "blob": "b5dbf730a8f677a99e4802c165da6eb36bb74cd3",
+          "sha256": "3bdf118a4546376673586ebef8a0e2670109ed8e877807d621cb91bd508fd753",
+          "status": "modified"
+        },
+        {
+          "path": "Canon/evidence/2026-11-19-bsdc-manifest-ancestry-compat.md",
+          "mode": "100644",
+          "blob": "af4e17b53457bcf335b4ce38b98e92bb459b0ad6",
+          "sha256": "b217f660fd12c1fb2ce3e0b9d9f213b299b20e68b40f047f95eed47cfbc5d324",
+          "status": "added"
+        }
+      ]
+    }
+  ]
+}
+```
+
 
 ## 8. Łączna akceptacja, freeze i punkt wznowienia
 
@@ -697,8 +1167,8 @@ F3 ma USTALONE z dowodem decyzji względem konkretnej rewizji. Projekt i bazowy 
 - Jedyna centralna Karta: [ten sam plik na main](https://github.com/profitia/SG-dev/blob/main/Canon/proposals/bsdc/SRM/supplier-category-pipelines.md). Przed wznowieniem odczytać aktualny SHA/blob, dyspozycję i rejestr; nie tworzyć drugiej Karty.
 - Zamrożona baza DEC-21 nadal `f75529c590c5dd4611223c949e5956e34d101e22`; zapis akceptacji `092045191f960f63170d38c8ef7085c97ef85fee`; publikacja PR #1123 / merge `5a06749139f8a0a37d6946bf0b848e847132756a`. Późniejsze statusy nie zastępują tych źródeł.
 - A–F **29/29 USTALONE** to kompletność zaakceptowanego projektu, nie odbiór produktu. Późniejsze wiążące dyspozycje: DEC-22 (start E1), DEC-23 (pin MagicPath i drag and drop), DEC-24 (ograniczony zakres polityki E1-T02).
-- E1 **CZĘŚCIOWY**: source #1234 / `6fed922dcab6e569502b81fb318a7967818581e2`; producer proposal #1235 / `46f45bcc4e74f1b25a441eab9ab450e367a2530a`. Zakres Root/SQL zatwierdzono przez DEC-24; implementacja i jej przyjęcie są w toku. Nie wdrożono E1 i nie przeprowadzono odbioru na realnych kontach.
-- **Najbliższy krok: zatwierdzona implementacja E1-T02 → zamknięty writer/host/API → właściwe source admission, instalacja i release → E1-T05.** Zgody zakresowej DEC-24 nie pytać ponownie. Mandat E1 pozostaje udzielony; nie wymaga ponownego startu. Nie powtarzać pozytywnych testów identycznych bajtów bez uzasadnienia.
+- E1 **CZĘŚCIOWY**: SRM #1234 / `8b2662924dcc93d3a3b3c0fae358d91692fcb747`; ARCHITECTURE #1245 / `d4f889d7a51aacc5e4ffa520451bc6b3d1d800bd`. Implementacja kandydata i kwalifikacja dokładnej pary typecheck/build PASS; pełne Source/CI, instalacja i odbiór realnego Development nie są przyjęte.
+- **Najbliższy krok: dokładny source successor/admission i pełne CI → decyzja pakietu §7.5 → kontrolowana instalacja/readback/recovery → osobny exact-SHA GO → realny E1-T05.** DEC-24 nie pytać ponownie; E1 nie wymaga nowego startu. E2 NIE_ROZPOCZĘTY. Nie powtarzać pozytywnych testów identycznych bajtów bez uzasadnienia.
 - Wcześniejsze częściowe zadania SRM i propozycji ARCHITECTURE mają ukończone własne closeouty i PHR (§5.4.1). Bieżąca implementacja: `ARCH-BSDC-SCP-E1-T02-20261119` / PMOS `cmwn9s7q50000w0v9hp856amo`; zapis decyzji: `SRM-BSDC-SCP-E1-DEC24-20261119` / PMOS `cmwn9620h0000mtfenoiog8yd`. Zachować oddzielne continuity i źródła.
 - **E2 NIE_ROZPOCZĘTY.** Nie projektowano ani nie wdrażano jego UI/SG2. Wcześniejszy punkt „następnie wspólne projektowanie MagicPath” zachowuje historię publikacji; aktualne polecenie E1 wskazało już konkretną zaakceptowaną rewizję i backendowy cel. Kolejny etap nadal wymaga osobnego polecenia.
 - Stosować aktywne AGENTS/Canon/manifest/profil/routing, BOE v1.1, Universal Wrapper v1.2 i Full Autopilot v2.0 w granicach udzielonego mandatu. Dowody i Karta na GitHubie; bez lokalnych dokumentów na komputerze użytkownika. Chmurowe techniczne archiwa continuity/recovery zachować według retencji.
@@ -719,3 +1189,385 @@ F3 ma USTALONE z dowodem decyzji względem konkretnej rewizji. Projekt i bazowy 
 - [Makieta ADP](https://www.magicpath.ai/files/465405993031966720) i [centralny Kanon SpendGuru](https://www.magicpath.ai/files/460628300646219776): identyfikatory komponentów i odczytane rewizje podano w §1.9. Makieta jest źródłem flow/stylu, a nie prawa dostępu, źródła statusu lub dowodu backendu.
 - Wcześniejsza konsultacja o PORR-owned danych/runtime/storage pozostawała propozycją. W tej Karcie została odtworzona i jawnie utrwalona jako rekomendacja §4.5/REC-06; nie przedstawia się jej jako aktywnego wpisu rejestru, utworzonego zasobu lub wykonanej migracji.
 
+
+
+### 7.6. Dokładny sukcesor zgodny z SDK 1.38 — DO DECYZJI WŁAŚCICIELA
+
+**Status: ZWERYFIKOWANY KANDYDAT / NIE_PRZYJĘTY / brak aktywacji.** Zgoda DEC-25 na dawny pakiet49 i warunkową instalację pozostaje ważna. SDK1.38 równoległego wątku wymaga innych postimage w częściach wspólnych; nie wolno podmienić ich pod dawnym digestem ani nadpisać zmian logowania. Przedstawiony poniżej skończony sukcesor dotyczy wyłącznie przyjęcia wskazanych źródeł przez właściwy workflow, bez ponawiania zgody na funkcjonalność i instalację.
+
+| Pole | Dokładny zakres / dowód |
+|---|---|
+| Kandydat | [PR #1261](https://github.com/profitia/SG-dev/pull/1261), kwalifikacja na gałęzi zależnej od źródła SDK271. Zamrożone47 postimage: **076c480dc926989dc6364de9d35ba40de274b986**; SHA256 pakietu **19a5bd79801d1a8458f42dc1da1bcee302ae5f0e1ff80a603974ae0ec35f6293**. Osobny plik dowodowy nie należy do pakietu aktywacji. |
+| Delta wobec DEC-25 | 20 plików ARCHITECTURE i27 SRM: **35 z46 dawnych biznesowych postimage bez zmiany bajtów,11 zmienionych**, dodatkowo jeden jawny rekord aktualnego źródła SDK. Trzy pliki naprawy z #1256 pominięte: właściwy owner ACG przyjął nowszą naprawę #1255 /872da0ab; #1256 zamknięto bez merge, z zachowaniem historii. |
+| Zmiany producenta | Pięć rozwiązań konfliktów SDK/package/context/host; zachowanie organizacji, bootstrapu, lifecycle i benchmarku; trzy odmowy jednoczesnego użycia trybów, przed identity/SQL, w supplier-workspace-access i jego teście. Domyślny Root16 zachowany, workspace26/host1.17 tylko jawny opt-in. |
+| Zmiany SRM | package.json i private-runtime zachowują zarówno supplier workspace, jak dynamiczny bieżący kontekst organizacji z logowania. Dwa pliki testów: stary opcjonalny fixture13 z uproszczonym login mapping nie obsługiwał szczelnego v1; wejście integracyjne uruchamia prawdziwy istniejący native Root/receiver bez skip i bez dorabiania ALLOW. Dodano natywne kontrole FORCE RLS, historii, unikalności kategorii/Unicode i udziału w tym samym procesie. |
+| Jawne metadane źródła | 1724 zmierzone rzeczywiste wejścia,61 historycznych receipts i wcześniejsze baselines/coverage zachowane bez zmian. Rekord ma status nieprzyjętego kandydata; nie pożycza Source admission logowania. Nie jest zmianą historycznych fingerprintów ani aktywną polityką. |
+| Zależność należąca do logowania | Dokładne skorygowane źródło271: **0bb2c6225ebf58180de5e02c35009a134e968ecc**. Przyjęta polityka metadanych #1258 / main e6896150 oraz osobne dopuszczenie #1260 nie oznaczają jeszcze przyjęcia produktu SDK. Ich actual status/full CI pozostają do odczytu przed dalszym krokiem; ten pakiet nie zatwierdza ani nie zastępuje ich dopuszczenia. Nie konkurować z tym wątkiem o main. |
+| Trzy SQL i prawa | Wszystkie trzy dokładne SQL z §7.5 mają te same digests647e4712…,9d4203a4…,8a4acba4…. Nie zmieniają się binding, minimalne USAGE/3EXECUTE, jedna polityka PORR, okres do7dni od install receipt, brak automatycznego odnowienia ani wymagane wcześniejsze DENY/revocation. |
+| Kwalifikacja kodu | Producent333 checks PASS;45 PostgreSQL Root/organizacja PASS;46 SDK metadata/private-host PASS i końcowy odczyt wszystkich1724 wejść/61 receipts PASS. SRM64 focused PASS (w tym wejście integracyjne),20 child native receiver/HTTP PASS,2 release-plan PASS; regresja logowania15 i private-runtime19 PASS. Wszystkie końcowe zestawy bez fail/skip; SRM typecheck i Next build PASS. Nie sumować testu uruchamiającego suite z jego20 podtestami jako niezależnych scenariuszy. |
+| Granica dowodu | Syntetyczne konta/dane i izolowany cloud PostgreSQL16, bez URL klienta i bez prawdziwych sesji Clerk. To kwalifikacja, nie zastępstwo pełnego hosted CI/proof właściwego dokładnego Source i wynikowego main, instalacji ani Development A1/A2/B1. Dokładne źródła/delta i [dowód techniczny](https://github.com/profitia/SG-dev/blob/f79e5b7a8d625db596315c9209f3aac05aba1317/Canon/evidence/2026-11-19-supplier-workspace-sdk138-compat.md). |
+| Proponowana decyzja | Przyjąć do właściwego, kontrolowanego workflow Source **wyłącznie poniższe47 postimage** jako sukcesor źródeł E1 zgodny z SDK1.38, z zachowaniem wszystkich wymogów provenance/CI/readback i niezależnego dopuszczenia zależności. Nie tworzyć ogólnego wyjątku, nie osłabiać kontrolera i nie uznawać kandydata za aktywny rekord. Końcowe exact-SHA application release GO nadal osobne. |
+| Następna operacja | Po tej wąskiej decyzji i przyjęciu zależności: właściwy zamknięty bootstrap/Source, pełne wymagane kontrole dokładnej wersji/main; potem już zatwierdzona w DEC-25 instalacja po świeżym binding/preimage/backup/recovery. Bez E2. E1-T01–T04 CZĘŚCIOWE, E1-T05 ZABLOKOWANY warunkami wcześniejszych tasków; A–F pozostają USTALONE względem DEC-21. |
+
+Zapis przygotowania: ARCH-BSDC-SCP-E1-SDK138-COMPAT-20261119 / cmwnqxx8g00001301qz9n4tfo i SRM-BSDC-SCP-E1-SDK138-COMPAT-20261119 / cmwnrvu9f0000enxf9ubzuvzx. Nie zapisano aktywnego Source, nie wykonano instalacji, SQL/grantów/enrollment, deploy ani E2. Wcześniejsze odrzucenie próby aktywnego wpisu przez automatyczną kontrolę bezpieczeństwa pozostaje respektowane; użyto wyłącznie nieaktywnej propozycji i właściwych testów. Brak obowiązkowego dowodu lub dopuszczenia nadal zatrzymuje zależną operację.
+
+**Zamknięty wykaz47:** SHA256 UTF-8 wyniku `JSON.stringify` poniższego obiektu (bez wcięć i końcowego LF) wynosi **19a5bd79801d1a8458f42dc1da1bcee302ae5f0e1ff80a603974ae0ec35f6293**. Wszystkie tryby/bloby/SHA256 zmierzono z076c480d; do decyzji odwoływać się do tej rewizji i tego digestu. Historyczny wykaz49 w §7.5 zachowuje swoje dokładne bajty i digest.
+
+```json
+{
+  "schemaVersion": "1.0",
+  "scope": "PROPOSED_EXACT_COMPATIBILITY_SOURCE_REVIEW_NOT_AUTHORITY",
+  "acceptedDecision": "DEC-25",
+  "acceptedPacketSha256": "0e8052dfe4dc72f568ac54f842dc213174f20ae585a46c27e11380ff0c88f740",
+  "qualifiedSourceSha": "076c480dc926989dc6364de9d35ba40de274b986",
+  "dependency": {
+    "sourceSha": "0bb2c6225ebf58180de5e02c35009a134e968ecc",
+    "sourceFiles": 271,
+    "status": "PUBLISHED_OWNER_INPUT_NOT_ADOPTED_BY_THIS_TASK"
+  },
+  "sources": [
+    {
+      "projectKey": "ARCHITECTURE",
+      "originalSourceSha": "d4f889d7a51aacc5e4ffa520451bc6b3d1d800bd",
+      "files": [
+        {
+          "path": "Canon/registries/operation-access-matrix-v1.json",
+          "mode": "100644",
+          "blob": "583d5928e587e392daaac940f27e33463eb0f80e",
+          "sha256": "1b1a9641f1e77ed44ca10781f4e4e99c2a6c7dd5f0d038299cc5f6a90985cb7b",
+          "unchangedFromDEC25": true
+        },
+        {
+          "path": "packages/platform-contracts/migrations/access/supplier-workspace-v1.sql",
+          "mode": "100644",
+          "blob": "af369f26453304b5248c9962a9f4a76fc742342d",
+          "sha256": "647e47125b84e4eb026b5a1aec783b0b147315817cbd6246081fc40c92bd6023",
+          "unchangedFromDEC25": true
+        },
+        {
+          "path": "packages/platform-contracts/package.json",
+          "mode": "100644",
+          "blob": "835a326c18b8f19367e7d32854b10797cf438dff",
+          "sha256": "436157a86c8e467d9667ea6e18a12c123fcb35a158189a669bb4a0129072b786",
+          "unchangedFromDEC25": false
+        },
+        {
+          "path": "packages/platform-contracts/src/module-scope.d.mts",
+          "mode": "100644",
+          "blob": "b7a0c6c98462b3ad9b89262e17bd57df578a8b97",
+          "sha256": "314b492dc73f983e5c8ad616ce721e9218591ee2b455fd7c5174c46c003dbb8c",
+          "unchangedFromDEC25": true
+        },
+        {
+          "path": "packages/platform-contracts/src/module-scope.mjs",
+          "mode": "100644",
+          "blob": "a966900e9dcf913b15125a928546529c880dbc7f",
+          "sha256": "8eb216850e290a69dd33f1c350c034ca4238ae4223865c3a4c8772e8e54c6aa2",
+          "unchangedFromDEC25": true
+        },
+        {
+          "path": "packages/platform-contracts/src/operation-context.d.mts",
+          "mode": "100644",
+          "blob": "bdb938d9293d471a82c18fa263c018ae99dca96d",
+          "sha256": "a8779b00b329b9e52c4615d0dda8acd1440faa02d84bee1b47af1df9265d9823",
+          "unchangedFromDEC25": false
+        },
+        {
+          "path": "packages/platform-contracts/src/operation-context.mjs",
+          "mode": "100644",
+          "blob": "42a4c504260011c2d2bea327b16fd7ce4b6cc152",
+          "sha256": "08dc7a1db8573ac9f46e8c2599d301b84b9fd7c917033a3ec53405a575a9065c",
+          "unchangedFromDEC25": false
+        },
+        {
+          "path": "packages/platform-contracts/src/private-operation-host.d.mts",
+          "mode": "100644",
+          "blob": "81b0d81197f8c4a891b2c735a766df1be91580a5",
+          "sha256": "2c47b412606f94adb044c4f02d33b439079e53c5cf8a88143f117bb0143b91cd",
+          "unchangedFromDEC25": false
+        },
+        {
+          "path": "packages/platform-contracts/src/private-operation-host.mjs",
+          "mode": "100644",
+          "blob": "0cd7dc66b74cbfd39378f4a08217279c5f6b45cc",
+          "sha256": "e7c441c75061b987c7641159b1210fbc1242d7d0b13a58bedd48175a4847de84",
+          "unchangedFromDEC25": false
+        },
+        {
+          "path": "packages/platform-contracts/src/supplier-workspace-access.d.mts",
+          "mode": "100644",
+          "blob": "0a17f3537f6e30c0d1dba1120f4c54b463083e1c",
+          "sha256": "6833d8266e9c1d48af7a57b41ab74b641d7c89eaa30931869b08559f25446d8d",
+          "unchangedFromDEC25": true
+        },
+        {
+          "path": "packages/platform-contracts/src/supplier-workspace-access.mjs",
+          "mode": "100644",
+          "blob": "5a7e146e3a5745db297e5e3771216dc16d0daf74",
+          "sha256": "61fd26bcdb8705cad6f2c59c76a9e4b4fe454559a021f962e39c0c54bc871df8",
+          "unchangedFromDEC25": false
+        },
+        {
+          "path": "packages/platform-contracts/src/supplier-workspace-host.d.mts",
+          "mode": "100644",
+          "blob": "cd38da902e21980ace0bc2ff2b317d9fbd47025e",
+          "sha256": "778878044aa0caf8b5f596ab09919bcbcf98959dd9974c1803cbf8dc89ed686b",
+          "unchangedFromDEC25": true
+        },
+        {
+          "path": "packages/platform-contracts/src/supplier-workspace-host.mjs",
+          "mode": "100644",
+          "blob": "a95e881dd2d61e449ff6dc37e70f499e0b36f1d6",
+          "sha256": "69b75c36d61ebc474b4533ea744da8a994e3ff60782d0aa6c3f931864ff4b40e",
+          "unchangedFromDEC25": true
+        },
+        {
+          "path": "packages/platform-contracts/test/fixtures/supplier-workspace-postgres.mjs",
+          "mode": "100644",
+          "blob": "b8b7536a6609ea11b5c27741d31ce447e8aaa49c",
+          "sha256": "88f04f37f4d91feb2d9b318b17d1f3a50a521e104aa98157e90d9d54fad7f5d6",
+          "unchangedFromDEC25": true
+        },
+        {
+          "path": "packages/platform-contracts/test/operation-context.test.mjs",
+          "mode": "100644",
+          "blob": "8c5392e8fed8057da355cac8c4642ec93fb5401c",
+          "sha256": "79dc25da3a471bae202dbd00cd8e153b749f3d45700f059241ee4f77386d32e0",
+          "unchangedFromDEC25": true
+        },
+        {
+          "path": "packages/platform-contracts/test/supplier-workspace-access.test.mjs",
+          "mode": "100644",
+          "blob": "1cd5ae97ea89f28b52455b68e1f0c9470abe53e6",
+          "sha256": "9a78ca3e8f1ccc6155ec627cf97f6efee40674f9f9eed8f3c3e1732caa658b46",
+          "unchangedFromDEC25": false
+        },
+        {
+          "path": "packages/platform-contracts/test/supplier-workspace-postgres.test.mjs",
+          "mode": "100644",
+          "blob": "39bf738e22e9674ab2ca3c58f247c35b74d0a57b",
+          "sha256": "1af7e789a2907c3b9ff518e3b41591a90a86b5d4c8e9d6ee5ad1197d134aa848",
+          "unchangedFromDEC25": true
+        },
+        {
+          "path": "packages/platform-contracts/test/supplier-workspace-types.test.mjs",
+          "mode": "100644",
+          "blob": "0a791b0189146d82167e7a58f3fb995e4091e2fb",
+          "sha256": "d7e77cef1992a70bfd7447136663d3e0d969b359e42988fb901962b495a8e77e",
+          "unchangedFromDEC25": true
+        },
+        {
+          "path": "packages/platform-contracts/test/types/supplier-workspace.mts",
+          "mode": "100644",
+          "blob": "c6b00206569e3aca26a7812a1118be511feed41a",
+          "sha256": "4f54d4e8a6cbb3dd85a298e4d90b08956b72e38303fa8bfa9bf3945eb1ad4a66",
+          "unchangedFromDEC25": true
+        },
+        {
+          "path": "apps/architecture-lab/current-sdk-source.json",
+          "mode": "100644",
+          "blob": "5ead59b4b9cc01a8e8f51e2d5bce9528f89fcf1d",
+          "sha256": "5307f015ee9fe80a313547d206ea92bcef3c55ff983a1e4f1cfb5c4a7f8517b6",
+          "unchangedFromDEC25": false,
+          "additional": true
+        }
+      ]
+    },
+    {
+      "projectKey": "SRM",
+      "originalSourceSha": "8b2662924dcc93d3a3b3c0fae358d91692fcb747",
+      "files": [
+        {
+          "path": "apps/srm/app/api/adp/v1/[...path]/route.ts",
+          "mode": "100644",
+          "blob": "43f59fe7caada2ef62d195f5980316d78209a3b5",
+          "sha256": "45ee75aa34dae05322310d74fe45df2ca4e2a447472f2451836d92a09904ee04",
+          "unchangedFromDEC25": true
+        },
+        {
+          "path": "apps/srm/db/private-store/supplier-pipelines-commands-v1.sql",
+          "mode": "100644",
+          "blob": "3045744383ee28ab588ed5ff66c7598de69e7923",
+          "sha256": "8a4acba4afc18e6740ba55702784d67d10ebaa368d1bf2da3c24f6ccf1c40b4c",
+          "unchangedFromDEC25": true
+        },
+        {
+          "path": "apps/srm/db/private-store/supplier-pipelines-v1.sql",
+          "mode": "100644",
+          "blob": "a0c8706b375e1006964b8aac94c02575147113ae",
+          "sha256": "9d4203a4ddb3f7af4297d8f27b190ddf1dbfcaac8cdaa24199e4a6e6902dcad5",
+          "unchangedFromDEC25": true
+        },
+        {
+          "path": "apps/srm/deployment/supplier-pipelines-targets.json",
+          "mode": "100644",
+          "blob": "00d4cf1590f7251d814bcb943516c7f13532acc7",
+          "sha256": "0fa9c44ca6284828e337592f20d699aae314575f39a5459fae620777c1e7e4fe",
+          "unchangedFromDEC25": true
+        },
+        {
+          "path": "apps/srm/middleware.test.ts",
+          "mode": "100644",
+          "blob": "a757fa6605c11b546ad03e8b068689c6b109c5a2",
+          "sha256": "8251849f658c008f48e9f7419a06cc8e36a7994b44e4eb9d80c3a4406cda9e30",
+          "unchangedFromDEC25": true
+        },
+        {
+          "path": "apps/srm/middleware.ts",
+          "mode": "100644",
+          "blob": "7ed9b498aa9afe8fa6e2afc7796b4451d3d430b0",
+          "sha256": "157d19d37036f138438139cd96777c3c6233d9ff0bf3596804fd26e0a76a97ae",
+          "unchangedFromDEC25": true
+        },
+        {
+          "path": "apps/srm/package.json",
+          "mode": "100644",
+          "blob": "82451b4cd5a413d66075d21b2dfbe9863e67c63b",
+          "sha256": "31605ff8acc7c3ee0b45253e931679c081eb94a79f47124da18ec063f09df8bf",
+          "unchangedFromDEC25": false
+        },
+        {
+          "path": "apps/srm/scripts/supplier-pipelines-postgres.test.mjs",
+          "mode": "100644",
+          "blob": "d0bb2a026e59daab32a4f0d756c6813bacb02f8d",
+          "sha256": "4d46cc1ee23dd9194cec2e8ff57dbcf135926c0b212d8f00085c9c1e7c78b309",
+          "unchangedFromDEC25": false
+        },
+        {
+          "path": "apps/srm/scripts/supplier-pipelines-release.mjs",
+          "mode": "100644",
+          "blob": "fbc61d32fec8401b0775669b326eacdb7c7bf049",
+          "sha256": "4f42c4db62fb44869716c1ce589cd7b5942b34025ba337a549fd4517628ae490",
+          "unchangedFromDEC25": true
+        },
+        {
+          "path": "apps/srm/scripts/supplier-pipelines-release.test.mjs",
+          "mode": "100644",
+          "blob": "64a4e591bb83dd05203c5d5f107c0d5a70392c28",
+          "sha256": "b431eed3a340fba13bceee25c8832c286bc9467dcd963c7c06830b40be57ea14",
+          "unchangedFromDEC25": true
+        },
+        {
+          "path": "apps/srm/src/server/integrations/supplier-pipelines.integration.test.ts",
+          "mode": "100644",
+          "blob": "1ea8441e6819f73cd445820dabbc1009abd694c1",
+          "sha256": "5ec8a0ad7c0213df54662897c5558ed07de0c1e064e4c727fca1f6289c48d202",
+          "unchangedFromDEC25": false
+        },
+        {
+          "path": "apps/srm/src/server/private-runtime.ts",
+          "mode": "100644",
+          "blob": "f199b5083afed7eb337e3f386ef7678b90b5d15d",
+          "sha256": "188aba4469b1888f14280ea1c0e3b8f4ec8ba96900e64eece136b7b40d0e162c",
+          "unchangedFromDEC25": false
+        },
+        {
+          "path": "apps/srm/src/server/supplier-adp-status.ts",
+          "mode": "100644",
+          "blob": "ab911e6fa3e462195a1f970f1b8abaca06236528",
+          "sha256": "12a3ab2054c2681bdfbc157663fe353260d84a2f4cc06ccab23dca8ce4f27276",
+          "unchangedFromDEC25": true
+        },
+        {
+          "path": "apps/srm/src/server/supplier-pipelines-contract.test.ts",
+          "mode": "100644",
+          "blob": "8522b8d1b7439b455532402ca47f2687b54d26ce",
+          "sha256": "ae776e20f5ab4da18fec0bd73ec0d0fdcfc75173bc848f180bb50f3b7f671c26",
+          "unchangedFromDEC25": true
+        },
+        {
+          "path": "apps/srm/src/server/supplier-pipelines-contract.ts",
+          "mode": "100644",
+          "blob": "b8da3f2456a980b88bd6b25fbe4126610e8bf6b2",
+          "sha256": "994442d773cc78b50bc9f2348d132037402bbbb48dd81579fc16e43675c4f475",
+          "unchangedFromDEC25": true
+        },
+        {
+          "path": "apps/srm/src/server/supplier-pipelines-domain.test.ts",
+          "mode": "100644",
+          "blob": "784f5ec491eeaa860e6e6a1fb4492e94820c986b",
+          "sha256": "cc7ad73fa6b24eb94fdab324ae7ed4c2119e3d641f8f5c10fc52786f6031f10e",
+          "unchangedFromDEC25": true
+        },
+        {
+          "path": "apps/srm/src/server/supplier-pipelines-domain.ts",
+          "mode": "100644",
+          "blob": "e21a94733e3551fd5fa9761cf0e28e789a6b0ce5",
+          "sha256": "958a5958da3b29624896fe26ea6f11fc8081f3267f75414eef91d555c30d08b9",
+          "unchangedFromDEC25": true
+        },
+        {
+          "path": "apps/srm/src/server/supplier-pipelines-http.test.ts",
+          "mode": "100644",
+          "blob": "80f6f908149118546e7d2b42b065b93b7d5884d5",
+          "sha256": "5ee87826891757e4401b1ff03c260d8c19cf4d3ecca3986c372b6d4df78c054a",
+          "unchangedFromDEC25": true
+        },
+        {
+          "path": "apps/srm/src/server/supplier-pipelines-http.ts",
+          "mode": "100644",
+          "blob": "539fe11e696cf8a4a0e2f82d90107bf78718a5c6",
+          "sha256": "4b0c3e9f91ad4260c9ef76d5a450d15ad5afb0345f18e320fe8491128a2eb72b",
+          "unchangedFromDEC25": true
+        },
+        {
+          "path": "apps/srm/src/server/supplier-pipelines-runtime.test.ts",
+          "mode": "100644",
+          "blob": "bd9f9373e358ff61834ad7f7fe8fe6955989a39a",
+          "sha256": "2536e27c79c71992d8e64acf442c7521efbfa1eeafac7a5697e21c1d03a14a4f",
+          "unchangedFromDEC25": true
+        },
+        {
+          "path": "apps/srm/src/server/supplier-pipelines-runtime.ts",
+          "mode": "100644",
+          "blob": "35faca85d791e4c140a6f012a172a1d407330bbe",
+          "sha256": "57ee6fa4faf09ce846fcee0ba0ccc5fc4f287607d7759431cb2672b6eda1aeca",
+          "unchangedFromDEC25": true
+        },
+        {
+          "path": "apps/srm/src/server/supplier-pipelines-store.ts",
+          "mode": "100644",
+          "blob": "da215ccc8b1ce8c2faa8c4e37a598cc93f8048fb",
+          "sha256": "dc79147f8fcf48b7706085bfa061b9c8e65012f3ecdbfaa5eaa3abad91adacc5",
+          "unchangedFromDEC25": true
+        },
+        {
+          "path": "packages/srm-adp-ui/package.json",
+          "mode": "100644",
+          "blob": "9713c5e5534f2d9ba898f9469298505728cb0f8d",
+          "sha256": "26bfbfe857654e20c3f3df1215cde7d62494c1f8319eb43fb59d276129455fa7",
+          "unchangedFromDEC25": true
+        },
+        {
+          "path": "packages/srm-adp-ui/source-contract.json",
+          "mode": "100644",
+          "blob": "1874c114af9e69dc936518fe4ebcca35a270b37a",
+          "sha256": "c8e7014f7e816b43e1fb82feb5b28e80dd0b31e07d611366bc362827d580b59c",
+          "unchangedFromDEC25": true
+        },
+        {
+          "path": "packages/srm-adp-ui/src/index.ts",
+          "mode": "100644",
+          "blob": "303ebd53d4eb51b11b583a584a107f3ac86f17e2",
+          "sha256": "5f6586c7ddac13978eb32e244624959fd70f564fd85c14d0f7333cdc24e2e8ba",
+          "unchangedFromDEC25": true
+        },
+        {
+          "path": "packages/srm-adp-ui/src/pipelines-contract.ts",
+          "mode": "100644",
+          "blob": "f8f96616cb06633e9f401d96c93d52687a5b3735",
+          "sha256": "9470a0364b5b56d9042bc941a2eb3ca07d6fe3a5e7e34275a9979b815ba473d9",
+          "unchangedFromDEC25": true
+        },
+        {
+          "path": "packages/srm-adp-ui/tests/pipelines-contract.test.tsx",
+          "mode": "100644",
+          "blob": "5e70ad97dc8be8d328e25160c8c792e589b547ad",
+          "sha256": "d87d4c06ce32aee85e002469251f079e1b26d4e9d96f494773f20a9f2a65c976",
+          "unchangedFromDEC25": true
+        }
+      ]
+    }
+  ]
+}
+```
