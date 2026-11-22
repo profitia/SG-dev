@@ -1,7 +1,7 @@
 {
   "schemaVersion": "1.0",
   "scope": "CURRENT_SDK_SOURCE_INTEGRITY_ONLY",
-  "sourceSnapshotSha": "0a095bcd46c51fb4ca20290990144215458f1977",
+  "sourceSnapshotSha": "fe57599e55707d9f385ff90a1e3b0cbb1528081b",
   "status": "PRIVATE_PROTOTYPE_NOT_ADMITTED",
   "platformVersion": "1.38.0",
   "runtimeActivated": false,
@@ -120,13 +120,13 @@
     "apps/identity-runtime/package.json": "706de71c4fb389b5dc7a50ab0d314c4a4ab81d32135648619e1153461691efcd",
     "apps/identity-runtime/scripts/check.mjs": "163a345c15683a67995f8d9c068519de8120962a97ff7fe998d0daf3ac2c9019",
     "apps/identity-runtime/scripts/install-organisation-lifecycle.mjs": "6357e6d579e85add6b0342e0adf899449dd9ec71a01b83e12b50fdec38539249",
-    "apps/identity-runtime/src/account-page.ts": "24355f570cc533d58a433d962de371afbf26db7cc6798ee4e4db79efe768a8d3",
-    "apps/identity-runtime/src/account-provisioning.ts": "8fa214fec52ce16860e67e0a29165ebc31dacfda1d2c23cd68a9673385bd6d95",
+    "apps/identity-runtime/src/account-page.ts": "081d3afd69443c75180644352ec2254c76a71f1f075a4210e0963b35d061d6e7",
+    "apps/identity-runtime/src/account-provisioning.ts": "ae8e1d6bb3f6a18d462dec137a35856423a185f396ff4a28f65cea0a80846aa1",
     "apps/identity-runtime/src/account-visuals.ts": "5ab9b2aad641492ee68f841c77df2cb4aed4d77b07b3bb379b013f86ed09dd66",
     "apps/identity-runtime/src/http-handler.ts": "482e4d20e6c331241a4684afebbd8f6e220281aeb5d9d14514bfb0328d9ee21e",
     "apps/identity-runtime/src/invitation-email.ts": "1f001c7055d16f13c4cd2c9aa73822eb25151c0c00fe93e030dbc8d86f797e14",
     "apps/identity-runtime/src/mailgun-delivery.ts": "a90caf005b1d50cc9bd76cb31f75410675ae728319fee1f6777e052e793ff7de",
-    "apps/identity-runtime/src/main.ts": "51f219eebdc77bdbad1f70de46acd1b7eb26340d1c23dab3e0b399dcb6a56922",
+    "apps/identity-runtime/src/main.ts": "4d5d1156e4cbc6b07c461c19ae55c52abf2b21e89060613ac89af494ae6f6302",
     "apps/identity-runtime/src/node-server.ts": "89069e59eed85b7ef642565596ff407331b8160e34968ac4f23b739abfb3ba1f",
     "apps/identity-runtime/src/organisation-draft.ts": "bba7165ae3bbd799778312722725e888b7a33347918f393618c67ca4026b3a4f",
     "apps/identity-runtime/src/organisation-http.ts": "74ef9f1655267ba022aa445681abe18d8d6ba3bee8300d4dcb40187ddf8d6ceb",
@@ -549,12 +549,12 @@
     "apps/sg-runtime/market-calendar-integration.json": "b66d88e724f84d513677554e77484bc29a2021b238ce28d4b7db7492aba9903c",
     "apps/sg-runtime/middleware.ts": "d8736f570d537e5f9841f5120470f1c46a617233756c12038df0a5a9215c9179",
     "apps/sg-runtime/migrations/assistant/001-history.sql": "caba0c7f5fa5f0b458471e57c8a46597b3177922c61199542fc58df6c732235c",
-    "apps/sg-runtime/next.config.mjs": "401047ac67338602c536daa9175cf816db0209977160240c377428ad4b55c05f",
+    "apps/sg-runtime/next.config.mjs": "6b1d7b08607d07138ab44af5fcbbd4fabd58b60b60bf7ce880192a38d6d4e092",
     "apps/sg-runtime/oil-renderer-integration.json": "6afdd65e66d8a7d8ceb4ab68601ba6d1c1bfac43bbac879d01bb61c9962e7ad6",
     "apps/sg-runtime/operation-integration.json": "453a6e19d6ce19984cec14097eb535f1257a96298c9d27c868ac7ac08f50105e",
     "apps/sg-runtime/organisation-lifecycle-sdk-source-adoption.json": "ca229e10c01cfc1c9889bcc9ba935c1d282163abdec7685d680e7ea96b3c5f2d",
     "apps/sg-runtime/package-lock.json": "c1405ae9ba316c55a1423837fbba8b8887bdcc3458a57410ae9251c0a03deaf0",
-    "apps/sg-runtime/package.json": "5233fd04a227fb0f9d508c44917c7dfc0436ed78c9efdb2e8b1c851ffc7767a6",
+    "apps/sg-runtime/package.json": "def729b4711f1849cb038dc8c076bcea16f60d7f496eef056feb7cc2b99a8f2a",
     "apps/sg-runtime/prisma-market-data/private-read/002-stored-rolling-current.sql": "b3e24b43254c6ec8ae25dc1d9ec7da5e946c472510f3bdd81355760665b881ee",
     "apps/sg-runtime/prisma-market-data/private-read/003-metadata-discovery.sql": "b8d0c39dc4b2efb676103361e77fa88485739dfa8f228fdd4273cb9f0e752b11",
     "apps/sg-runtime/prisma-market-data/private-write/001-forecast-queue.sql": "646a68893a886572666f348927877e6d85852eda695f1496b34beeb9d9588729",
@@ -1702,7 +1702,9 @@
     "scripts/governance/platform-source-hub-foundation.test.mjs": "0c4dbbc6747b40486ae2a96ea74d1b737b3575c96ac095615f26454f6ae09aea",
     "apps/sg-runtime/tests/registration-finder-hold.test.mjs": "c7a6e24a1b2b77ee3d0d85af55041cb5d91e5cb8b4d3f9635114e4ad9e45d5d7",
     "apps/identity-runtime/test/account-onboarding-binding.test.mjs": "1330fb54436e50ff3c36f41d136b48fe40b39cbb5f58a9e87f2cf770ef5d7e3d",
-    "apps/sg-runtime/tests/runtime-build-contract.test.mjs": "5957925d566710c764ee8100a7ad86daff7341ffdf8b1d4531d0221cb66779de"
+    "apps/sg-runtime/tests/runtime-build-contract.test.mjs": "ab8aae766398e5e9ed168d39c849900b3fd2741e517735685272b8c4daa2a9c7",
+    "apps/identity-runtime/test/account-page.test.mjs": "2d2f31cf8e9486a7653f322fc51d31554fb367d7aa5c2aef02d80f670fee994b",
+    "apps/identity-runtime/test/account-transaction-diagnostics.test.mjs": "ea86a69e7170a3ab8a44e665bd9700b124096391ef310218513472baee3ae110"
   },
   "baselines": {
     "acceptedmain": {
@@ -2203,20 +2205,12 @@
     }
   },
   "applicationInputContinuation": {
-    "sourceSnapshotSha": "5b04735432d669d0d1958adb9c220dcbb8ec8697",
-    "baseAbsences": [
-      "apps/identity-runtime/test/account-page.test.mjs",
-      "apps/identity-runtime/test/account-transaction-diagnostics.test.mjs"
-    ],
+    "sourceSnapshotSha": "89c21d7fe70be7b6b22cc03e3d8a7a42218ae09f",
+    "baseAbsences": [],
     "inputs": {
-      "apps/identity-runtime/src/account-page.ts": "081d3afd69443c75180644352ec2254c76a71f1f075a4210e0963b35d061d6e7",
-      "apps/identity-runtime/src/account-provisioning.ts": "ae8e1d6bb3f6a18d462dec137a35856423a185f396ff4a28f65cea0a80846aa1",
-      "apps/identity-runtime/src/main.ts": "4d5d1156e4cbc6b07c461c19ae55c52abf2b21e89060613ac89af494ae6f6302",
-      "apps/identity-runtime/test/account-page.test.mjs": "2d2f31cf8e9486a7653f322fc51d31554fb367d7aa5c2aef02d80f670fee994b",
-      "apps/identity-runtime/test/account-transaction-diagnostics.test.mjs": "ea86a69e7170a3ab8a44e665bd9700b124096391ef310218513472baee3ae110",
-      "apps/sg-runtime/next.config.mjs": "6b1d7b08607d07138ab44af5fcbbd4fabd58b60b60bf7ce880192a38d6d4e092",
-      "apps/sg-runtime/tests/runtime-build-contract.test.mjs": "ab8aae766398e5e9ed168d39c849900b3fd2741e517735685272b8c4daa2a9c7",
-      "apps/sg-runtime/package.json": "def729b4711f1849cb038dc8c076bcea16f60d7f496eef056feb7cc2b99a8f2a"
+      "apps/sg-runtime/instrumentation.ts": "c4646723beaefbbc225df3cd5d0b26a10f210361693e8cc9362434fdf84b3371",
+      "apps/sg-runtime/lib/platform/private-runtime.ts": "995e2d60458394147ea55db5518aaa218665dccf869358c2733fce1eb14e92a3",
+      "apps/sg-runtime/tests/runtime-build-contract.test.mjs": "a3aea30ab72257aa9873de44f5222785e93f9dedbc4048105bddc943a91d7db8"
     }
   }
 }

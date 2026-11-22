@@ -4783,7 +4783,7 @@
       "taskId": "ARCH-PI-NEWSFEED-READER-INVITATION-20261117",
       "targetEnvironment": "development",
       "scope": "SOURCE_VALIDATION_ONLY",
-      "approvalRef": "user:call_fcd53cb33d074702bd9793096683e338:item0 — explicit four-file SOURCE_VALIDATION_ONLY bcee445734f4c1bae12b266c99893ed545656121; excludes migration and deployment activation",
+      "approvalRef": "user:call_fcd53cb33d074702bd9793096683e338:item0 \u2014 explicit four-file SOURCE_VALIDATION_ONLY bcee445734f4c1bae12b266c99893ed545656121; excludes migration and deployment activation",
       "sourceSha": "bcee445734f4c1bae12b266c99893ed545656121",
       "baseSha": "b0eddc27a0405eac5233497414a934f721bc36d2",
       "validFrom": "2026-11-19T01:21:20.127Z",
@@ -14637,6 +14637,49 @@
         {
           "path": "apps/sg-runtime/package.json",
           "blob": "f0e1501c1adb0dfb63f54a94d720ba2e119a458e",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SG2",
+          "owner": "SG Runtime",
+          "surfaceId": "SG2-BASE-001"
+        }
+      ]
+    },
+    {
+      "id": "registration-v6-assistant-tenant-free-startup-20261121",
+      "status": "ACTIVE",
+      "repository": "profitia/SG-dev",
+      "actor": "profitia",
+      "taskId": "ARCHITECTURE-REGISTRATION-STAGE-I-CONT-20261117",
+      "targetEnvironment": "development",
+      "scope": "SOURCE_VALIDATION_ONLY",
+      "approvalRef": "owner:chat:01a1e7fb-f280-7613-ae37-1715de129f24:source9-assistant-startup-ci-metadata-v1-20261121",
+      "sourceSha": "89c21d7fe70be7b6b22cc03e3d8a7a42218ae09f",
+      "baseSha": "ab8423688024c90dc58780f4cce72368140e1408",
+      "validFrom": "2026-11-21T21:00:00Z",
+      "validUntil": "2026-11-25T22:59:00Z",
+      "files": [
+        {
+          "path": "apps/sg-runtime/instrumentation.ts",
+          "blob": "548d4e2c0193e6252c23702ab2500c0c078aec9c",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SG2",
+          "owner": "SG Runtime",
+          "surfaceId": "SG2-BASE-001"
+        },
+        {
+          "path": "apps/sg-runtime/lib/platform/private-runtime.ts",
+          "blob": "cc5de1b98073091b57372655b1d256c3da2a2d78",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SG2",
+          "owner": "SG Runtime",
+          "surfaceId": "SG2-BASE-001"
+        },
+        {
+          "path": "apps/sg-runtime/tests/runtime-build-contract.test.mjs",
+          "blob": "5a4f9b01a428654a6748d928d363d22fcaa252ef",
           "mode": "100644",
           "status": "modified",
           "projectKey": "SG2",
