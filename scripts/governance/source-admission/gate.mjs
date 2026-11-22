@@ -97,8 +97,9 @@ export function verifyProof({ observe, policy, trust, decision, proof, grantStat
     grantMatches(decision, binding, trust, clock())
     const statement = { binding, proofDigest: sha256(canonical(proof)), decisionDigest: received.decisionDigest,
       verdict: 'PASS', appId: trust.appId, observedAt: clock() }
-    return { status: 'PASS', reason: 'QUALIFIED_IN_OBSERVATION', route: 'R4',
-      attestation: signEnvelope('verifier', trust.verifier.id, statement, privateKey) }
+    const attestation = signEnvelope('verifier', trust.verifier.id, statement, privateKey)
+    readEnvelope(attestation, 'verifier', trust.verifier)
+    return { status: 'PASS', reason: 'QUALIFIED_IN_OBSERVATION', route: 'R4', attestation }
   })
 }
 

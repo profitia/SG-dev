@@ -5,7 +5,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, dirname } from 'node:path'
 import { test } from 'node:test'
-import { bindSource, produce, signEnvelope } from './gate.mjs'
+import { bindSource, produce, signEnvelope, simulateCheck } from './gate.mjs'
 import { observePullRequest } from './observe.mjs'
 import { canonical, gitReader, inspectSource, sha256 } from './source.mjs'
 
@@ -152,9 +152,11 @@ async function signed(t, options) {
 test('R1 does not call R4 grant, action or download adapters and never authorizes merge', async t => {
   const { options, reads } = fixture(t, { risk: 'R1' })
   const unavailable = () => { assert.fail('R4 dependency used for R1') }
-  const result = await observePullRequest({ ...options, grantState: unavailable, downloadZip: unavailable })
-  assert.deepEqual(result, { status: 'NOT_APPLICABLE', reason: 'EXISTING_CONTROLS_ONLY',
-    route: 'R1', mode: 'observation', mergeAuthority: false })
+  for (const verifierKey of [undefined, {}]) {
+    const result = await observePullRequest({ ...options, verifierKey, grantState: unavailable, downloadZip: unavailable })
+    assert.deepEqual(result, { status: 'NOT_APPLICABLE', reason: 'EXISTING_CONTROLS_ONLY',
+      route: 'R1', mode: 'observation', mergeAuthority: false })
+  }
   assert(reads.every(path => !path.includes('/actions/')))
 })
 
@@ -210,4 +212,39 @@ test('R4 denies revoked or already used grants, and notices rerun during artifac
     return bytes
   }
   assert.equal((await observePullRequest({ ...options, downloadZip })).reason, 'ORIGINAL_EVIDENCE_CHANGED')
+})
+
+
+test('R4 observer refuses to report PASS when the signing key is not the pinned verifier', async t => {
+  const { options } = await signed(t)
+  const { privateKey } = generateKeyPairSync('ed25519')
+  const result = await observePullRequest({ ...options, verifierKey: privateKey })
+  assert.deepEqual(result, { status: 'FAIL', reason: 'SIGNATURE_REJECTED',
+    mode: 'observation', mergeAuthority: false })
+})
+
+test('R4 consumer accepts only an intact attestation from the pinned verifier', async t => {
+  const { options, config, snapshot } = await signed(t)
+  const { trust, decision, grantState, clock } = options
+  const policy = { ...config, digest: options.expectedDigest, resolveRoute: options.resolveRoute }
+  const observe = async () => inspectSource(snapshot, options.git, policy)
+  const context = { observe, policy, trust, decision, grantState, clock }
+  const result = await observePullRequest(options)
+  assert.equal(result.status, 'PASS', result.reason)
+  assert.equal(result.mergeAuthority, false)
+  assert.equal((await simulateCheck(result, context)).status, 'PASS')
+
+  const { attestation } = result
+  const { privateKey } = generateKeyPairSync('ed25519')
+  const foreignSignature = signEnvelope('verifier', attestation.keyId, attestation.payload, privateKey)
+  const changedPayload = { ...attestation, payload: { ...attestation.payload, observedAt: clock() + 1 } }
+  for (const [envelope, reason] of [
+    [foreignSignature, 'SIGNATURE_REJECTED'],
+    [changedPayload, 'SIGNATURE_REJECTED'],
+    [{ ...attestation, keyId: 'unknown-verifier' }, 'SIGNER_OR_ENVELOPE_REJECTED'],
+    [{ ...attestation, role: 'producer' }, 'SIGNER_OR_ENVELOPE_REJECTED'],
+  ]) {
+    const checked = await simulateCheck({ ...result, attestation: envelope }, context)
+    assert.deepEqual(checked, { mode: 'simulation', status: 'FAIL', reason })
+  }
 })
