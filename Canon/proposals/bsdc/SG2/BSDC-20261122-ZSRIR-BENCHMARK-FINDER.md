@@ -202,8 +202,8 @@ Wszystkie FINAL mają status DO_POTWIERDZENIA. Terminy, koszty i przepustowość
 
 | ID | Status | Owner / profil | Daty, taskId, PR/SHA, CI, wydanie, testy i dowody |
 |---|---|---|---|
-| E1 | NIE_ROZPOCZĘTY | SG Runtime / SG2 | — |
-| E1-T01 | NIE_ROZPOCZĘTY | SG Runtime / SG2 | — |
+| E1 | CZĘŚCIOWY | SG Runtime / SG2 | 22.11.2026. Mandat objął wyłącznie E1-T01. Kontrakt i testy offline udokumentowane. Dalsze taski pozostają nierozpoczęte. |
+| E1-T01 | CZĘŚCIOWY | SG Runtime / SG2 | 22.11.2026 · `SG2-BSDC-ZSRIR-E1-T01-20261122` · [Kontrakt v1.0, mapowanie, T01–T12 i decyzje](../../../evidence/2026-11-22-sg2-zsrir-e1-t01-contract-v1.md) · 12 przypadków offline PASS. Warunki użycia i decyzje kontraktowe wymagane przez DoD pozostają otwarte. STOP po E1-T01. |
 | E1-T02 | NIE_ROZPOCZĘTY | SG Runtime / SG2 | — |
 | E1-T03 | NIE_ROZPOCZĘTY | SG Runtime / SG2 | — |
 | E2 | NIE_ROZPOCZĘTY | SG Runtime / SG2 | — |
@@ -223,4 +223,4 @@ Po istotnych decyzjach i rozliczeniu tasku lub etapu aktualizować ten sam plik,
 3. Owner SG2 zatwierdza kontrakt i granice modelu po próbie, a przed implementacją UI ustala prezentację facetów Advanced Search w E3.
 4. Projekt i roadmapa mają zamrożoną bazę zaakceptowaną w F3. Dalsze aktualizacje rejestru zachowują przyjęty zakres i DoD. E1 wymaga osobnej wyraźnej dyspozycji właściciela.
 
-**Punkt wznowienia.** F3 zamyka decyzję właścicielską dla wskazanej rewizji v0.4. Pierwszy task E1-T01 czeka na osobny mandat E1 oraz właściwy preflight. GOV-01 i dopuszczenie Source obowiązują przed zależnym pozyskiwaniem, w tym E1-T02 w zakresie objętym bramką, a GOV-01 także przed wdrożeniem konektora. E1, E2 i E3 pozostają NIE_ROZPOCZĘTE. [Kanon BSDC v1.1](https://github.com/profitia/SG-dev/blob/main/Canon/v1.1-business-solution-design-and-canonization-canon.md) · [Launcher](https://github.com/profitia/SG-dev/blob/main/docs/agent-instructions/bsdc-launcher-v1.1.md)
+**Punkt wznowienia.** E1-T01 rozliczone jako CZĘŚCIOWY. [Kontrakt v1.0 i warunki wznowienia](../../../evidence/2026-11-22-sg2-zsrir-e1-t01-contract-v1.md#7-decyzje-otwarte-i-warunki-e1-t02). Właściciele rozstrzygają część źródłową, warunki użycia i przyjęcie kontraktu. Przed E1-T02 potrzebne są aktywny GOV-01, odrębne dopuszczenie Source na konkretne operacje, świeży preflight SG2 i osobna dyspozycja. E1-T02, E1-T03, E2 i E3 pozostają NIE_ROZPOCZĘTE. F3 obowiązuje dla zamrożonej rewizji v0.4. [Kanon BSDC v1.1](https://github.com/profitia/SG-dev/blob/main/Canon/v1.1-business-solution-design-and-canonization-canon.md) · [Launcher](https://github.com/profitia/SG-dev/blob/main/docs/agent-instructions/bsdc-launcher-v1.1.md)
