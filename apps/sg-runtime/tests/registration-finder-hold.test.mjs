@@ -24,6 +24,16 @@ const held=[
  "apps/sg-runtime/tests/finder-development-bindings.test.mjs"
 ]
 const acceptedMain='78cf4e20a65221b520deaacd773d81c3e94482cd'
+// Source9 is separately Owner-approved Assistant startup source, not Finder repair.
+const approvedAssistantStartup='89c21d7fe70be7b6b22cc03e3d8a7a42218ae09f'
+const instrumentation='apps/sg-runtime/instrumentation.ts'
+function assertHeldInstrumentation(actual,held,acceptedStartup){
+ if(actual.equals(held))return
+ const before=held.toString('utf8')
+ assert.equal((before.match(/\bruntime\.assistant\b/g)||[]).length,2)
+ assert.deepEqual(acceptedStartup,Buffer.from(before.replace(/\bruntime\.assistant\b/g,'runtime.assistantReady')))
+ assert.deepEqual(actual,acceptedStartup)
+}
 for(const name of held)test('held Finder postimage: '+name,()=>{
  const entry=execFileSync('git',['--literal-pathspecs','ls-tree',acceptedMain,'--',name],{cwd:root,encoding:'utf8'}).trim()
  if(!entry){
@@ -32,6 +42,10 @@ for(const name of held)test('held Finder postimage: '+name,()=>{
  }
  assert.match(entry,/^100644 blob [a-f0-9]{40}\t/)
  const actual=fs.readFileSync(path.join(root,name)),expected=execFileSync('git',['cat-file','blob',acceptedMain+':'+name],{cwd:root})
+ if(name===instrumentation&&!actual.equals(expected)){
+  const acceptedStartup=execFileSync('git',['cat-file','blob',approvedAssistantStartup+':'+name],{cwd:root})
+  assertHeldInstrumentation(actual,expected,acceptedStartup);return
+ }
  assert.deepEqual(actual,expected)
 })
 test('registration keeps per-request organisation guards and excludes Finder renewal startup',()=>{
@@ -53,4 +67,13 @@ test('retained continuity inventory cannot access a database or run a renewal',(
   else if(/\.(ts|tsx|mjs)$/.test(item.name)&&location!==path.join(root,'apps/sg-runtime/lib/benchmark/discovery-continuity.ts'))assert.doesNotMatch(fs.readFileSync(location,'utf8'),/discovery-continuity|startFinderSourceContinuity/)
  }}
  scan(path.join(root,'apps/sg-runtime/lib'));scan(path.join(root,'apps/sg-runtime/app'))
+})
+
+test('the approved Assistant startup exception cannot admit any other held instrumentation change',()=>{
+ const read=ref=>execFileSync('git',['cat-file','blob',ref+':'+instrumentation],{cwd:root})
+ const held=read(acceptedMain),startup=read(approvedAssistantStartup)
+ assertHeldInstrumentation(held,held,startup)
+ assertHeldInstrumentation(startup,held,startup)
+ for(const bytes of [Buffer.concat([startup,Buffer.from('\n')]),Buffer.from(startup.toString().replace('assistantReady','assistant')),Buffer.concat([startup,Buffer.from('\nstartFinderSourceContinuity()\n')])])assert.throws(()=>assertHeldInstrumentation(bytes,held,startup))
+ assert.throws(()=>assertHeldInstrumentation(startup,held,Buffer.concat([startup,Buffer.from('\n')])) )
 })
