@@ -4,13 +4,13 @@
 |---|---|
 | initiativeId | BSDC-20261122-ZSRIR-BENCHMARK-FINDER |
 | projectKey / profil prowadzący | SG2 / SG Runtime |
-| Rewizja i data | v0.3, 22.11.2026 |
+| Rewizja i data | v0.3-D1, 22.11.2026 — zapis decyzji właściciela do v0.3 |
 | Status projektu i roadmapy | WORKING / NOT_ACCEPTED |
 | Właściciel decyzji biznesowej | Właściciel SG2 |
 | Repozytorium i authority | profitia/SG-dev, main |
 | Ścieżka Karty | Canon/proposals/bsdc/SG2/BSDC-20261122-ZSRIR-BENCHMARK-FINDER.md |
 | Rewizja źródeł audytu v0.2 | f75c6a5a170dd4b6597f67ab9790722657a1ef35 |
-| Status rewizji Karty | Wersja do recenzji. Commit i blob zapisu podaje potwierdzony odczyt GitHub. |
+| Status rewizji Karty | Do końcowej akceptacji projektu i roadmapy. Podstawa v0.3 na main `e840afed5935ffcc5afd6ba7d9597b0ffcd06616`. |
 | Środowisko pierwszego pełnego odbioru | Development — do potwierdzenia przy akceptacji roadmapy |
 | Mandat | DESIGN / REVIEW / PERSISTENCE. E1, E2 i E3 NIE_ROZPOCZĘTE. |
 
@@ -31,9 +31,13 @@ Zakres v1 obejmuje jeden wystandaryzowany CSV historii, jednorazowe zasilenie is
 
 Liczebność plików nie jest liczebnością obserwacji. Pakiet odtwarzalnych dowodów E1 ma zawierać wersję wykazu, datę odczytu, sumy kontrolne i próbki. Karta zawiera referencje do rzeczywiście opublikowanych dowodów. [Gov.pl — katalog](https://www.gov.pl/web/rolnictwo/biuletyny-informacyjne) · [Strona 2](https://www.gov.pl/web/rolnictwo/biuletyny-informacyjne?page=2&size=10) · [Archiwum](https://www.gov.pl/web/rolnictwo/archiwalne-notowania) · [Wykaz ZSRIR](https://zsrir.minrol.gov.pl/api/ZsrirData/GetReportList) · [Przegląd danych](https://zsrir.minrol.gov.pl/data)
 
-**Kwalifikacja v1.** Rodziny kandydackie obejmują drób, jaja, mleko, wieprzowinę, wołowinę i cielęcinę, baraninę, zboża, rośliny oleiste i wysokobiałkowe, owoce, warzywa, cukier, chmiel, pasze i tytoń. Kwalifikuje się udokumentowana seria cenowa z towarem i wariantem, rodzajem ceny, geografią, częstotliwością, okresem i jednostką. Dane żywnościowe klasyfikuje się jako FOOD, a pasze i tytoń jako COMMODITIES z etykietą Commodities. Przypadki niejednoznaczne rozstrzyga mapowanie rodziny i miary. Dostawcą obu kategorii jest ZSRIR, MRiRW jest wydawcą, a Gov.pl i portal ZSRIR to kanały publikacji.
+**Pełne pozyskanie.** Maksymalnie kompletny zrzut dostępnych danych historycznych MRiRW ze źródeł rozpoznanych na Gov.pl i w portalu ZSRIR. Każda pozycja discovery ma stan, metadane, pochodzenie, wersję lub skrót, gdy dostępne, oraz wynik kontroli kompletności pobrania. Niedostępne pozycje i formaty wymagające odrębnego mechanizmu, np. OCR, pozostają w wykazie ze statusem do oceny.
 
-**Okno historii i próg kompletności.** Propozycja obejmuje najstarszy wiarygodny okres każdej kwalifikowanej serii do zatwierdzonej daty odcięcia. 100% pozycji wykazu ma udokumentowany stan przetworzenia, kopii, odrzucenia, wyłączenia lub niedostępności. Wszystkie kwalifikowane obserwacje ze zweryfikowanego wykazu mają znaleźć się w CSV lub mieć jawnie rozstrzygniętą przyczynę braku. Raport podaje mianowniki, pokrycie okresów, sezonowość i luki per rodzina. W przyjętym CSV obowiązuje zero podwójnych kluczy, osieroconego pochodzenia i nierozstrzygniętych konfliktów. Minimalne pokrycie rodzin i data odcięcia wymagają decyzji właściciela.
+**Zbiór przejściowy.** Zachować odtwarzalne dane oraz identyfikatory źródeł i przypadków problematycznych. Luki, nietypowe okresy, brakujące wartości lub metadane, sprzeczne obserwacje, kopie i niejednoznaczne daty publikacji pozostają dostępne do analizy. Brak ciągłości szeregu sam w sobie nie stanowi przesłanki wyłączenia.
+
+**Analiza jakości.** Rozliczyć 100% pozycji wykazu, wskazując pokrycie, luki, duplikaty, korekty i niejednoznaczności według rodziny i źródła. Przedstawić wyniki i rekomendacje rozstrzygnięć przed kwalifikacją. Rodziny z audytu obejmują drób, jaja, mleko, wieprzowinę, wołowinę i cielęcinę, baraninę, zboża, rośliny oleiste i wysokobiałkowe, owoce, warzywa, cukier, chmiel, pasze i tytoń.
+
+**Kwalifikacja i CSV.** Dopiero po analizie i udokumentowanych decyzjach o wyłączeniach przygotować jeden wystandaryzowany CSV zgodny z przyjętym kontraktem. Wyniki kwalifikacji muszą dać się powiązać ze zbiorem przejściowym lub manifestem. W zaakceptowanym CSV obowiązuje zero podwójnych kluczy, osieroconego pochodzenia i nierozstrzygniętych konfliktów. Odtwarzalny zrzut i zbiór przejściowy zachowują dane potrzebne do oceny tych przypadków.
 
 ## 3. Decyzje właściciela i governance
 
@@ -41,7 +45,19 @@ Liczebność plików nie jest liczebnością obserwacji. Pakiet odtwarzalnych do
 
 Wiążąca decyzja właściciela z 22.11.2026, w mandacie DESIGN / REVIEW / PERSISTENCE. ZSRIR należy wyłącznie do SG Runtime / Market Data w profilu SG2. Konektor jest w istniejącym lib/benchmark, logika normalizacji i aktualizacji w lib/market-data, model trwałego zapisu w prisma-market-data, a wyszukiwanie, filtry, podgląd i zapisane serie w Finderze. Integracja reużywa platformowy Source/external-call stosowany przez Macrobond. Kompetencje nad transportem, E1, przyjęciem Source i współdzielonymi kontraktami pozostają u ich obecnych ownerów. Decyzja wiąże kierunek Karty, a akceptacja rewizji projektu i roadmapy pozostaje osobnym zdarzeniem.
 
+### Decyzje właściciela z 22.11.2026
+
+| ID | Status | Ustalenie |
+|---|---|---|
+| DEC-02 — Historia v1 | ZATWIERDZONA Z KOREKTĄ | Pełne pozyskanie i zbiór przejściowy poprzedzają analizę, decyzje kwalifikacyjne i jeden CSV importowy zgodnie z sekcją 2. Wyłączenie z importu wymaga udokumentowanej przesłanki i decyzji właściwego właściciela. |
+| DEC-03 — Odcięcie | ZATWIERDZONA | Pierwszy wsad obejmuje publikacje źródłowe do **22.11.2026, 23:59:59, Europe/Warsaw** włącznie. Data pobrania i okres notowania mają odrębne znaczenie. Niejasne daty pozostają w zbiorze przejściowym do kwalifikacji. Późniejsze publikacje i korekty podlegają uzupełnieniu przed zwykłym cyklem. |
+| DEC-04 — Świeżość | ZATWIERDZONY KIERUNEK | Harmonogramy i kryteria wynikają z pomiaru publikacji w E1. SLA ma status `DO_USTALENIA_NA_PODSTAWIE_DANYCH`. Odbiór obejmuje rzeczywistą publikację przeprowadzoną automatycznie do Findera. |
+| DEC-05 — Finder v1 | ZATWIERDZONA | Wyszukiwanie serii ZSRIR, jednoznaczna identyfikacja dostawcy, podgląd i odczyt historii oraz zapis serii. ZSRIR to dostawca, MRiRW to wydawca, a Gov.pl i portal ZSRIR to kanały publikacji. Kategorie `FOOD` i `COMMODITIES` są odrębne od dostawcy. Kontrakt i znaczenie facetów uzgodnić przed importem, a prezentację Advanced Search ustalić w E3. |
+| Środowisko pełnego odbioru | PROPOZYCJA | Development pozostaje propozycją z v0.3 do potwierdzenia przez właściciela. |
+
 ### GOV-01 — punkt do uzgodnienia przed wykonaniem
+
+Aneks GOV-01 v0.1 ma status `PROPOSED / NOT_ACTIVE`. Do zamknięcia wymagane są decyzje Governance Source Layer i Architecture Platform oraz kontrolowana aktywacja. [GOV-01 #1285](https://github.com/profitia/SG-dev/issues/1285)
 
 Aktywny Kanon Source Hub v1.0, §1 i tabela odpowiedzialności w wierszach 10–18, przypisuje Architecture Platform / Source Hub adaptery dostawców i pozyskiwanie zewnętrzne. Benchmark Domain / Market Data posiada serie kanoniczne, przyjęte dane rynkowe i odpowiedzialność za Macrobond. Nowela v1.1, wiersze 7–9 i 17–27, rozszerza dostęp konsumentów do przyjętych kontraktów Hub, utrzymuje odpowiedzialność Hub za pozyskiwanie odpłatne i dostęp do dostawców oraz zachowuje dotychczasowe granice Benchmark/Macrobond. Przegląd tych zasad nie wykazał jawnego umocowania nowego ZSRIR poza Hub. Istniejące umocowanie Macrobond nie przenosi się automatycznie na nowe źródło. [Kanon Source Hub v1.0, §1](https://github.com/profitia/SG-dev/blob/f75c6a5a170dd4b6597f67ab9790722657a1ef35/Canon/v1.0-platform-source-hub-business-and-architecture-canon.md#L8-L20) · [Nowela dostępu v1.1](https://github.com/profitia/SG-dev/blob/f75c6a5a170dd4b6597f67ab9790722657a1ef35/Canon/v1.1-platform-source-hub-universal-first-party-consumer-access.md#L7-L27)
 
@@ -104,7 +120,7 @@ UTF-8, przecinek, jednoznaczne cytowanie i kodowanie braków, daty ISO oraz wart
 
 **Pochodzenie i korekty.** Każdy wiersz zawiera deterministycznie uporządkowaną listę źródeł z plikiem, pozycją lub parametrami eksportu, datą publikacji i skrótem lub identyfikatorem wersji, gdy dostępne. Identyczne pliki rozpoznawać po skrócie. Zgodne obserwacje scalać po kluczu i przeliczonej wartości z zachowaniem źródeł. Rozbieżność wymaga reguły pierwszeństwa, a potwierdzona korekta zachowuje poprzednią wartość, dowód i aktualną rewizję. Niewyjaśniony przypadek zatrzymuje przyjęcie obserwacji. Klucz, identyfikator wsadu oraz historia rewizji wspierają idempotentne ponowienie i równoległe cykle.
 
-**Harmonogram.** Reużyć zatwierdzony mechanizm zadań, jeśli spełnia warunki. Jedno ustawienie backendowe obejmuje harmonogram, strefę, lookback i cel świeżości. Niedziela o 23:00 jest przykładem. Zmiana ustawień odbywa się bez zmiany kodu. Raportować ostatnie skuteczne odświeżenie, najnowszy dostępny okres, nowe dane, korekty i błędy. Awaria źródła zachowuje poprzednie dane i ujawnia ich aktualność. Pomiar świeżości uwzględnia faktyczne daty publikacji, a sezonowa przerwa ma odrębny stan od awarii.
+**Harmonogram.** Reużyć zatwierdzony mechanizm zadań, jeśli spełnia warunki. W E1 profilować rzeczywistą kadencję publikacji według rodzin, rynków i typów raportu, odstęp od końca okresu do publikacji, sezonowość, nieregularność, opóźnione wydania, korekty i uzupełnienia. Osobno sprawdzić, kiedy nową publikację lub rewizję można wykryć względem częstotliwości notowań. Na podstawie pomiarów i udokumentowanych luk w datach zaproponować harmonogram lub harmonogramy, lookback, sposób pomiaru oraz mierzalny cel świeżości dla właściwych źródeł. SLA pozostaje `DO_USTALENIA_NA_PODSTAWIE_DANYCH`. Przyjęte ustawienia mają jedno edytowalne miejsce w backendzie. Raportować ostatnie skuteczne odświeżenie, najnowszy dostępny okres, nowe dane, korekty i błędy. Zachować ostatnie poprawne dane podczas awarii i rozróżniać przerwę sezonową od awarii.
 
 ## 6. Checklista BSDC v1.1
 
@@ -112,15 +128,15 @@ UTF-8, przecinek, jednoznaczne cytowanie i kodowanie braków, daty ISO oraz wart
 |---|---|---|
 | A1 | USTALONE | Użytkownik Finder potrzebuje historii i bieżących danych MRiRW. |
 | A2 | USTALONE | SG2 prowadzi, właściciel SG2 akceptuje, użytkownik Finder odbiera. |
-| A3 | W_TRAKCIE | Kryteria końcowe opisane. Pokrycie, próg świeżości i środowisko do potwierdzenia. |
+| A3 | W_TRAKCIE | Reguła pozyskania, odcięcie i zakres Findera zatwierdzone. SLA z E1. Środowisko pełnego odbioru do decyzji. |
 | A4 | USTALONE | Jedna inicjatywa od historii do odczytu bieżących notowań. |
 | B1 | USTALONE | Zweryfikowano ustalenia wcześniejszych audytów portalu i Neon oraz aktualne źródła kodu i governance. |
 | B2 | USTALONE | Dowody, założenia i luki pokrycia opisano osobno. |
 | B3 | USTALONE | DEC-01 rozstrzyga lokalizację. Model zapisu preferuje addytywne użycie istniejącej bazy. |
 | B4 | W_TRAKCIE | Potwierdzić minimalne rozszerzenia, klucz i regresję w próbie modelu zapisu. |
-| C1 | W_TRAKCIE | Przepływ historii, cyklu i Finder opisany. Uzgodnić prezentację w E3. |
+| C1 | W_TRAKCIE | Przepływ od zrzutu do Findera i zakres funkcji v1 ustalone. Prezentacja Advanced Search do uzgodnienia w E3. |
 | C2 | W_TRAKCIE | Zasady kopii, korekt i okresów opisane. Zatwierdzić mapowania i konflikty. |
-| C3 | W_TRAKCIE | Granice i rodziny v1 są propozycją do akceptacji. |
+| C3 | USTALONE | Zakres pozyskania i funkcji v1 potwierdzony w DEC-02 i DEC-05. Kwalifikacja danych następuje po analizie. |
 | C4 | DO_USTALENIA | Zweryfikować aktualne wzorce Advanced Search i ich rzeczywiste powiązania przed zmianą UI. |
 | C5 | W_TRAKCIE | FINAL-01–05 przygotowane. Odbiór do potwierdzenia. |
 | D1 | USTALONE | DEC-01 wyznacza wyłącznego ownera SG Runtime / Market Data. |
@@ -134,8 +150,8 @@ UTF-8, przecinek, jednoznaczne cytowanie i kodowanie braków, daty ISO oraz wart
 | E3 | W_TRAKCIE | Własność SG2 i odrębne uprawnienia współdzielone zapisane. |
 | E4 | W_TRAKCIE | Próby importu, izolacji, korekt, odbioru funkcji i regresji w FINAL. |
 | E5 | DO_USTALENIA | Koszty i rzeczywisty wolumen po kwalifikowanej próbie. |
-| E6 | W_TRAKCIE | Jedna roadmapa, taski, zależności, rejestr, STOP i końcowy DoD. Do recenzji i akceptacji. |
-| F1 | W_TRAKCIE | DEC-01, GOV-01 i otwarte decyzje utrwalone w projekcie. |
+| E6 | W_TRAKCIE | Roadmapa w tej Karcie uwzględnia decyzje właściciela, zależności kwalifikacji i świeżości oraz ewidencję etapów. Oczekuje na wspólną akceptację z projektem. |
+| F1 | W_TRAKCIE | DEC-01–05 zapisane. GOV-01, środowisko odbioru i parametry do ustalenia w E1 jawnie otwarte. |
 | F2 | W_TRAKCIE | Domknąć governance, kontrakt i zakres odbioru. |
 | F3 | DO_USTALENIA | Właściciel akceptuje wspólnie projekt i roadmapę na dokładnym commicie. |
 | F4 | W_TRAKCIE | Punkt wznowienia i granice wykonania zapisane. |
@@ -146,14 +162,14 @@ Proponowany pierwszy pełny odbiór w Development. Wszystkie poniższe taski pro
 
 | Etap / task | Rezultat, zależność i DoD / dowód |
 |---|---|
-| **E1 — kontrakt i kompletna historia w CSV** | Zatwierdzony kontrakt i kwalifikacja v1. Wersjonowany, odtwarzalny CSV z pokryciem i pochodzeniem. STOP dla zależnego odczytu przy GOV-01 lub braku Source. Brak klucza, semantyki facetów albo nierozstrzygnięty konflikt blokuje przyjęcie zależnych obserwacji. |
-| E1-T01 | Domknąć kontrakt wielu dostawców, katalog facetów i klucz logiczny obserwacji, zakres, mapowania i warunki użycia MRiRW. Zależność od mandatu E1 po akceptacji Karty. Dowód wersji kontraktu, tabeli mapowań, przypadków okresów i decyzji właściciela. |
-| E1-T02 | Odtworzyć kwalifikowane wejścia ZSRIR/Gov.pl i manifest pobrań w reużywanym mechanizmie. Zależność E1-T01 w części źródeł, GOV-01 i przyjęcie Source. Dowód zakresu i tożsamości źródła, hash i próbki odtwarzalne per rodzina. |
-| E1-T03 | Przygotować jeden CSV, raport pokrycia i odrzuceń. Zależność E1-T01/T02. Dowód hash, walidacja typów i kluczy, ślad źródła każdej pozycji, porównanie próbek oraz identyczny wynik powtórzenia. |
+| **E1 — kontrakt i kompletna historia w CSV** | Pełne pozyskanie z discovery, odtwarzalny zbiór przejściowy, raport jakości i kadencji, decyzje kwalifikacyjne oraz jeden wersjonowany CSV do granicy DEC-03. STOP dla zależnego odczytu przy otwartym GOV-01 lub braku dopuszczenia Source. Przed zatwierdzeniem CSV wymagane są przyjęty kontrakt i rozstrzygnięcia dotyczące problematycznych danych. |
+| E1-T01 | Ustalić zakres discovery i manifestu, warunki użycia MRiRW oraz szkic kontraktu wielodostawcowego, znaczenia facetów i klucza obserwacji. Zależność od mandatu E1 po akceptacji Karty. Dowód wersji kontraktu i planu pozyskania oraz mapowania i przykłady okresów do weryfikacji w E1-T03. |
+| E1-T02 | Wykonać maksymalnie kompletny zrzut rozpoznanych źródeł z manifestem, metadanymi, pochodzeniem i kontrolą kompletności. Zbudować odtwarzalny zbiór przejściowy z przypadkami wymagającymi oceny. Zależności E1-T01 w części źródeł, GOV-01 oraz dopuszczenie Source dla zależnego pozyskiwania. Dowód rozliczenia wykazu, skróty wersji i próbki odtwarzalne według rodzin. |
+| E1-T03 | Przeanalizować jakość i pokrycie oraz kadencje publikacji zgodnie z sekcją 5. Przedstawić rekomendacje kwalifikacji, harmonogramów, lookback i SLA. Po decyzjach kwalifikacyjnych i zatwierdzeniu kontraktu, klucza i znaczenia facetów przygotować jeden CSV według DEC-03. Zależności E1-T01/T02. Dowód raportów, decyzji o wyłączeniach, walidacji typów, kluczy i pochodzenia oraz powtarzalnego skrótu CSV. |
 | **E2 — import Neon i cykliczne przyrosty** | Historia w istniejącym Neon oraz zaakceptowany cykl ZSRIR. STOP przy nierozwiązanej kolizji okresów, braku rozdzielenia ról, niezgodności readback, wpływie na Macrobond albo braku dopuszczenia migracji lub odtworzenia. |
-| E2-T01 | Zweryfikować minimalny addytywny model i klucz fizyczny na dopuszczonym celu testowym. Zależność odebrane E1 i mandat E2. Dowód próby migracji, powtarzalności, kolizji dat, odtworzenia i negatywnego testu ról, z decyzją ownera bazy. |
-| E2-T02 | Załadować jeden historyczny CSV do istniejącej gałęzi Neon Development i wykonać readback. Zależność E2-T01, przyjęty kontrakt wielu dostawców i facetów oraz dopuszczenie importu. Dowód liczebności, próbek, pochodzenia, digestu wsadu i regresji danych Macrobond. |
-| E2-T03 | Uruchomić przyrost w zaakceptowanym mechanizmie zadań z jedną edytowalną konfiguracją. Przygotowanie może biec równolegle z próbą E2-T01, aktywacja po E2-T02. Dowód zmiany ustawień bez zmiany kodu, opóźnionej publikacji, korekty, ponowienia bez duplikatu i odzyskania po awarii. |
+| E2-T01 | Zweryfikować minimalny addytywny model i klucz fizyczny na dopuszczonym celu testowym. Zależności odebrane E1, przyjęty kontrakt i mandat E2. Dowód próby migracji, powtarzalności, kolizji dat, odtworzenia i negatywnego testu ról, z decyzją ownera bazy. |
+| E2-T02 | Załadować jeden zaakceptowany CSV do istniejącej gałęzi Neon Development i wykonać readback. Zależności E2-T01, raport i decyzje kwalifikacji E1, spójność z odcięciem DEC-03, przyjęte kontrakt i facety oraz dopuszczenie importu. Dowód liczebności, próbek, pochodzenia, digestu wsadu i regresji danych Macrobond. |
+| E2-T03 | Przyjąć konfigurację harmonogramów, lookback i kryteria świeżości na podstawie E1. Przygotowanie może biec równolegle z E2-T01. Po E2-T02 uzupełnić późniejsze publikacje i korekty zgodnie z DEC-03, a następnie uruchomić zwykły cykl w zaakceptowanym mechanizmie zadań. Dowód uzupełnienia, zmiany konfiguracji bez zmiany kodu, obsługi opóźnień i korekt, ponowienia bez duplikatu i powrotu po awarii. |
 | **E3 — ZSRIR w Finderze i odbiór END-TO-END** | Działające wyszukiwanie, odczyt historii i pojawienie się nowego notowania w Finderze, z kompletem regresji Macrobond. STOP przy kolizji tożsamości lub regresji, błędzie uprawnień albo braku dopuszczenia wydania. Brak rzeczywistego nowego notowania pozostawia FINAL-03 nieodebrane. |
 | E3-T01 | Ustalić prezentację Advanced Search i udostępnić wyszukiwanie, podgląd i zapisane serie w ramach przyjętego kontraktu. Zależność odebrane E2, mandat E3 i decyzja o UI przed zmianą. Dowód testów faktycznych powiązań, tożsamości dwóch dostawców, dostępu i facetów. |
 | E3-T02 | Wykonać rzeczywisty odbiór FINAL na dopuszczonej wersji i środowisku. Zależność E3-T01, zgoda na wydanie i nowa publikacja MRiRW. Dowód pełnego śladu publikacja → cykl → Neon → Finder oraz odbioru właściciela. |
@@ -162,9 +178,9 @@ Proponowany pierwszy pełny odbiór w Development. Wszystkie poniższe taski pro
 
 | ID | Warunek | Dowód |
 |---|---|---|
-| FINAL-01 | Uzgodniona historia jest w istniejącym Neon, zgodna z CSV i źródłami. | Hash CSV, raport pokrycia, porównanie próbek źródło–CSV–baza. |
+| FINAL-01 | Zakwalifikowana historia zgodna z DEC-03 znajduje się w istniejącym Neon i odpowiada zaakceptowanemu CSV. Źródła, przypadki problematyczne i wyłączenia są rozliczone. | Manifest, zbiór przejściowy, raport jakości i decyzje kwalifikacyjne, skrót CSV oraz uzgodnienie liczebności i próbek źródło–CSV–Neon. |
 | FINAL-02 | Ponowienia i korekty zachowują okres, tożsamość i historię źródeł. | Test nakładających się cykli, identycznych bajtów, korekty i kolizji dostawców oraz okresów. |
-| FINAL-03 | Nowa rzeczywista publikacja MRiRW przez ustawiony harmonogram trafia do bazy i Findera w uzgodnionym czasie. | Identyfikator i czas publikacji, odczyt harmonogramu i rzeczywistego cyklu, readback Neon oraz ten sam punkt w Finderze. |
+| FINAL-03 | Co najmniej jedna rzeczywista nowa publikacja MRiRW przechodzi przez automatyczny cykl do Neon i jest odczytywana w Finderze zgodnie z przyjętymi w oparciu o E1 kryteriami danego źródła. | Identyfikator i czas publikacji oraz wykrycia, konfiguracja i wykonanie cyklu, czas odczytu w Neon i Finderze oraz porównanie z przyjętym kryterium. |
 | FINAL-04 | Uprawniony użytkownik wyszukuje rzeczywistą serię ZSRIR, odczytuje historię i potrafi zapisać serię. | Przyjęty Advanced Search, widoczny dostawca, okres i jednostka, sprawdzalne pochodzenie, test odmowy poza uprawnieniem. |
 | FINAL-05 | Macrobond przechodzi regresję, a awaria ZSRIR nie odbiera dostępu do ostatnich poprawnych danych. | Scenariusze wyszukiwania, facetów, historii i zapisów Macrobond, kontrola odizolowania zapisu ZSRIR, dowód świeżości i powrotu po awarii. |
 
@@ -190,9 +206,9 @@ Po istotnych decyzjach i rozliczeniu tasku lub etapu aktualizować ten sam plik,
 
 ## 8. Otwarte sprawy i wznowienie
 
-1. Właściciel SG2 potwierdza zakres v1, datę odcięcia, próg świeżości oraz końcowe środowisko odbioru.
-2. Governance Source Layer i Architecture Platform rozstrzygają GOV-01. Jeśli potrzeba zmiany normatywnej, przedstawić ją do osobnej akceptacji, z zachowaniem DEC-01.
-3. Owner SG2 zatwierdza kontrakt i granice modelu po próbie, a przed implementacją UI ustala prezentację facetów Advanced Search w E3.
-4. Właściciel akceptuje wspólnie projekt i roadmapę z dokładnego commita. Po tej decyzji zamrozić zaakceptowany zakres i DoD. Późniejsze aktualizacje rejestru nie zmieniają zaakceptowanej treści. E1 wymaga osobnej wyraźnej dyspozycji.
+1. Właściciel SG2 potwierdza środowisko pierwszego pełnego odbioru. Development pozostaje propozycją.
+2. Governance Source Layer i Architecture Platform rozstrzygają [GOV-01 #1285](https://github.com/profitia/SG-dev/issues/1285). Aktywacja wymaga osobnej kontrolowanej decyzji z zachowaniem DEC-01.
+3. Po osobnym uruchomieniu E1 właściciel rozstrzyga kwalifikację problematycznych danych i zatwierdza kontrakt, klucz oraz semantykę facetów przed importem. Harmonogramy, lookback i mierzalne SLA ustala na podstawie dowodów E1. Prezentację Advanced Search rozstrzyga w E3.
+4. Właściciel akceptuje wspólnie projekt i roadmapę z dokładnego commita. Po decyzji zamrozić przyjęty zakres i DoD. Późniejsze aktualizacje rejestru nie zmieniają zaakceptowanej treści. E1 wymaga osobnej wyraźnej dyspozycji.
 
-**Punkt wznowienia.** v0.3 utrwala wiążącą lokalizację SG Runtime / Market Data i poprawia roadmapę, routing oraz warunki przed importem. Następny krok to niezależna recenzja tej rewizji i rozstrzygnięcie spraw otwartych. Bieżący mandat dotyczy wyłącznie projektu, recenzji i trwałego zapisu Karty. Pierwszy etap wykonawczy ma status NIE_ROZPOCZĘTY. [Kanon BSDC v1.1](https://github.com/profitia/SG-dev/blob/main/Canon/v1.1-business-solution-design-and-canonization-canon.md) · [Launcher](https://github.com/profitia/SG-dev/blob/main/docs/agent-instructions/bsdc-launcher-v1.1.md)
+**Punkt wznowienia.** Rewizja v0.3-D1 zapisuje DEC-02–05 przy zachowaniu DEC-01 i roadmapy E1–E3. Następny krok to końcowa recenzja i osobna decyzja F3 dla dokładnego commita oraz domknięcie otwartych uzgodnień. Bieżący mandat obejmuje wyłącznie dokumentację. E1, E2 i E3 są NIE_ROZPOCZĘTE. [Kanon BSDC v1.1](https://github.com/profitia/SG-dev/blob/main/Canon/v1.1-business-solution-design-and-canonization-canon.md) · [Launcher](https://github.com/profitia/SG-dev/blob/main/docs/agent-instructions/bsdc-launcher-v1.1.md)
