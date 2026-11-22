@@ -14653,10 +14653,10 @@
       "taskId": "ARCHITECTURE-REGISTRATION-STAGE-I-CONT-20261117",
       "targetEnvironment": "development",
       "scope": "SOURCE_VALIDATION_ONLY",
-      "approvalRef": "owner:chat:01a1e7fb-f280-7613-ae37-1715de129f24:source9-assistant-startup-ci-metadata-v1-20261121",
-      "sourceSha": "89c21d7fe70be7b6b22cc03e3d8a7a42218ae09f",
-      "baseSha": "ab8423688024c90dc58780f4cce72368140e1408",
-      "validFrom": "2026-11-21T21:00:00Z",
+      "approvalRef": "owner:chat:01a1e7fb-f280-7613-ae37-1715de129f24:source9-hold-expectation-continuation-v1-20261122",
+      "sourceSha": "857b77d8bc22c372e6e17b2ef49b85ff6cc8650a",
+      "baseSha": "f75c6a5a170dd4b6597f67ab9790722657a1ef35",
+      "validFrom": "2026-11-22T16:00:00Z",
       "validUntil": "2026-11-25T22:59:00Z",
       "files": [
         {
@@ -14671,6 +14671,15 @@
         {
           "path": "apps/sg-runtime/lib/platform/private-runtime.ts",
           "blob": "cc5de1b98073091b57372655b1d256c3da2a2d78",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SG2",
+          "owner": "SG Runtime",
+          "surfaceId": "SG2-BASE-001"
+        },
+        {
+          "path": "apps/sg-runtime/tests/registration-finder-hold.test.mjs",
+          "blob": "e3f0481ce6752d5ab0fae68bb4d1f37cabc4b86b",
           "mode": "100644",
           "status": "modified",
           "projectKey": "SG2",
