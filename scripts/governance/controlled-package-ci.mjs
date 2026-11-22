@@ -7648,29 +7648,48 @@ export const MANIFEST_SUCCESSOR_1102_REVIEW=Object.freeze({
     'scripts/governance/controlled-package-ci.mjs':Object.freeze({sha:'4ecb337b703ffe5cdb657c239457378079591866',status:'modified',mode:'100644',owner:'Governance Source Layer',surface:'SG2-BASE-020'}),
   }),
 })
-function exactManifestSuccessor1102Files(files){
-  const entries=MANIFEST_SUCCESSOR_1102_REVIEW.entries
+export const GV_01B_REVIEW_ID='GV_01B_CLOSED_SOURCE_REVIEW'
+export const GV_01B_REVIEW=Object.freeze({
+  branch:'architecture/gv01b-closed-source',
+  sourceSha:'8cc552056a04aa42db482a645474916149f789bf',
+  baseSha:'f75c6a5a170dd4b6597f67ab9790722657a1ef35',
+  tree:'8faa5febded6a72d96ad70b77d4ac2b9af07b54a',
+  entries:Object.freeze({
+    'scripts/governance/source-admission/gate.mjs':Object.freeze({sha:'38c0e4bae141163d87ee8b99faaac64bd1b51718',status:'added',mode:'100644',owner:'Governance Source Layer',surface:'SG2-BASE-020'}),
+    'scripts/governance/source-admission/observe.mjs':Object.freeze({sha:'a0e30468e167d0a182cb68a5c97a35576de4d9be',status:'added',mode:'100644',owner:'Governance Source Layer',surface:'SG2-BASE-020'}),
+    'scripts/governance/source-admission/observe.test.mjs':Object.freeze({sha:'dc1f4795e0e4a2ff4e1d268299504afd43828893',status:'added',mode:'100644',owner:'Governance Source Layer',surface:'SG2-BASE-020'}),
+    'scripts/governance/source-admission/source.mjs':Object.freeze({sha:'04642793af1019c2202459f67aa7134f2e939705',status:'added',mode:'100644',owner:'Governance Source Layer',surface:'SG2-BASE-020'}),
+  }),
+})
+const validGv01bPrNumber=number=>Number.isSafeInteger(number)&&number>0
+
+function exactProtectedArchitectureFiles(files,review){
+  const entries=review.entries
   return Array.isArray(files)&&files.length===Object.keys(entries).length
     && new Set(files.map(f=>f?.filename)).size===files.length
     && files.every(f=>{const e=entries[f?.filename];return e&&f.sha===e.sha&&f.status===e.status&&!Object.hasOwn(f,'previous_filename')})
 }
-function assertManifestSuccessor1102Routes(files,repositoryRoot){
+const exactManifestSuccessor1102Files=files=>exactProtectedArchitectureFiles(files,MANIFEST_SUCCESSOR_1102_REVIEW)
+const exactGv01bFiles=files=>exactProtectedArchitectureFiles(files,GV_01B_REVIEW)
+
+function assertProtectedArchitectureRoutes(files,repositoryRoot,review,error){
   const profile=resolveProjectProfile('ARCHITECTURE',repositoryRoot)
-  if(profile.repository.slug!==REPOSITORY)fail('MANIFEST_SUCCESSOR_1102_ROUTING_REJECTED')
-  const entries=MANIFEST_SUCCESSOR_1102_REVIEW.entries
+  if(profile.repository.slug!==REPOSITORY)fail(error)
+  const entries=review.entries
   for(const f of files){
     const e=entries[f.filename],r=resolveProjectRouting({profile,targets:[f.filename],repositoryRoot}),item=r.results?.[0]
     if(!r.ok||r.results.length!==1||item.resolutionStatus!=='RESOLVED'
       ||item.highestSpecificityMatchCount!==1||item.projectBoundaryStatus!=='ALLOWED'
       ||item.baselineClassification!=='ALIGNED'||item.currentOwner!==e.owner
-      ||item.matchedSurfaceId!==e.surface)fail('MANIFEST_SUCCESSOR_1102_ROUTING_REJECTED')
+      ||item.matchedSurfaceId!==e.surface)fail(error)
   }
 }
 
 export function assertArchitectureFiles(pr, files, repositoryRoot = controlRoot()) {
   if (!Number.isInteger(pr.changed_files) || pr.changed_files < 1 || pr.changed_files > 300 || !shaPattern.test(pr.base?.sha ?? '')
     || !Array.isArray(files) || files.length !== pr.changed_files) fail('ARCHITECTURE_FILE_LIST_REQUIRED')
-  if(exactManifestSuccessor1102Files(files)){assertManifestSuccessor1102Routes(files,repositoryRoot);return}
+  if(exactManifestSuccessor1102Files(files)){assertProtectedArchitectureRoutes(files,repositoryRoot,MANIFEST_SUCCESSOR_1102_REVIEW,'MANIFEST_SUCCESSOR_1102_ROUTING_REJECTED');return}
+  if(exactGv01bFiles(files)){assertProtectedArchitectureRoutes(files,repositoryRoot,GV_01B_REVIEW,'GV_01B_ROUTING_REJECTED');return}
   if(knowledgeStage2Review(files)){assertKnowledgeStage2Routes(files,repositoryRoot);return}
   if(lifecycleReviewMatches(files)){assertLifecycleRoutes(files,repositoryRoot);return}
   if(isPinnedBsdcDocumentationReview(files)){assertBsdcDocumentationRoutes(files,repositoryRoot);return}
@@ -7724,6 +7743,11 @@ export function assertArchitectureFiles(pr, files, repositoryRoot = controlRoot(
 export function selectCandidate(context, pr, expectedSha, {files, repositoryRoot = controlRoot()} = {}) {
   const family = candidateFamily(context, pr, expectedSha)
   if(finderMonitorReviewTarget(pr)){if(family!=='SG2')fail('FINDER_MONITOR_SOURCE_IDENTITY_REJECTED');assertFinderMonitorSourceIdentity(pr,expectedSha,files,context.controlSha)}
+  if(pr&&(expectedSha===GV_01B_REVIEW.sourceSha||pr.head?.ref===GV_01B_REVIEW.branch||exactGv01bFiles(files))){
+    if(family!=='ARCHITECTURE'||context.event!=='workflow_dispatch'||!validGv01bPrNumber(pr.number)
+      ||pr.head.ref!==GV_01B_REVIEW.branch||expectedSha!==GV_01B_REVIEW.sourceSha
+      ||pr.base.sha!==context.controlSha||!exactGv01bFiles(files))fail('GV_01B_SOURCE_IDENTITY_REJECTED')
+  }
   if(pr&&(pr.number===MANIFEST_SUCCESSOR_1102_REVIEW.prNumber
     ||pr.head?.ref===MANIFEST_SUCCESSOR_1102_REVIEW.branch
     ||exactManifestSuccessor1102Files(files))){
@@ -7840,6 +7864,7 @@ export async function resolveCandidateAdmission(c, number, expectedSha, request 
     const selected=selectCandidate(c,current,expectedSha,{files,repositoryRoot})
     return {sha:selected,admission:{kind:'FINDER_MONITOR_SOURCE',reviewId:'SG2-FINDER-MONITOR-PCI-BINDING-20261117',actor:current.user.login,baseSha:c.controlSha,files:files.map(({filename,status,sha})=>({filename,status,sha}))}}
   }
+  if(expectedSha===GV_01B_REVIEW.sourceSha&&(sourceRecord||current.number!==Number(number)))fail('GV_01B_SOURCE_IDENTITY_REJECTED')
   if (sourceRecord) {
     if (current.base.sha !== c.controlSha) fail('SOURCE_AUTHORITY_ADVANCED')
     assertSourceAdmission(sourceRecord,{repository:REPOSITORY,actor:current.user.login,candidateSha:expectedSha,currentMainSha:c.controlSha,files},repositoryRoot,Date.now(),currentSdkSourceAdmissionPolicy(sourceRecord,repositoryRoot))
@@ -7852,7 +7877,9 @@ export async function resolveCandidateAdmission(c, number, expectedSha, request 
     return {sha,admission:{kind:'QUALITY_STAGE1_SG2',branch:current.head.ref,baseSha:current.base.sha,controlSha:c.controlSha,files:files.map(({filename,status,sha})=>({filename,status,sha}))}}
   }
   const sha = selectCandidate(c, current, expectedSha, {files, repositoryRoot})
-  return {sha, admission: {kind: family, baseSha: pr.base.sha, files: files.map(({filename, status, sha}) => ({filename, status, sha}))}}
+  const admission={kind:family,baseSha:pr.base.sha,files:files.map(({filename,status,sha})=>({filename,status,sha}))}
+  if(sha===GV_01B_REVIEW.sourceSha)admission.candidatePr=current.number
+  return {sha,admission}
 }
 
 export function assertArchitectureCheckout(root, sha, admission, repositoryRoot = controlRoot()) {
@@ -7870,6 +7897,14 @@ export function assertArchitectureCheckout(root, sha, admission, repositoryRoot 
       try{execFileSync('git',['merge-base','--is-ancestor',ancestor,descendant],{cwd:root,stdio:'pipe'})}catch{fail('CALENDAR_PK_PROTECTED_ANCESTRY_REJECTED')}
     }
   }
+  const gv01b=sha===GV_01B_REVIEW.sourceSha||exactGv01bFiles(admission.files)
+  if(gv01b){
+    if(sha!==GV_01B_REVIEW.sourceSha||!exactGv01bFiles(admission.files)||!validGv01bPrNumber(admission.candidatePr))fail('GV_01B_SOURCE_IDENTITY_REJECTED')
+    // The bootstrap advances main. The candidate stays on its original approved merge base.
+    const mergeBase=execFileSync('git',['merge-base',admission.baseSha,sha],{cwd:root,encoding:'utf8'}).trim()
+    const tree=execFileSync('git',['show','-s','--format=%T',sha],{cwd:root,encoding:'utf8'}).trim()
+    if(mergeBase!==GV_01B_REVIEW.baseSha||tree!==GV_01B_REVIEW.tree)fail('GV_01B_SOURCE_TREE_REJECTED')
+  }
   const changed = execFileSync('git', ['diff', '--name-only', '--no-renames', '-z', `${admission.baseSha}...${sha}`], {cwd: root, encoding: 'utf8'}).split('\0').filter(Boolean).sort()
   if (JSON.stringify(changed) !== JSON.stringify(admission.files.map(f => f.filename).sort())) fail('ARCHITECTURE_DIFF_MISMATCH')
 const lifecycleReview=lifecycleReviewForFiles(admission.files);if(lifecycleReview&&lifecycleReview!==REGISTRATION_LIFECYCLE_REVIEW){for(const parent of [lifecycleReview.sourceSha,admission.baseSha]){try{execFileSync('git',['merge-base','--is-ancestor',parent,sha],{cwd:root,stdio:'pipe'})}catch{fail('REGISTRATION_LIFECYCLE_TEST_ANCESTRY_REJECTED')}}}
@@ -7877,6 +7912,7 @@ const lifecycleReview=lifecycleReviewForFiles(admission.files);if(lifecycleRevie
     const entry = execFileSync('git', ['ls-tree', '-z', sha, '--', file.filename], {cwd: root, encoding: 'utf8'})
     if (file.status === 'removed') {if (entry !== '') fail('ARCHITECTURE_DIFF_MISMATCH'); continue}
     if(exactManifestSuccessor1102Files(admission.files) && entry !== MANIFEST_SUCCESSOR_1102_REVIEW.entries[file.filename].mode+' blob '+file.sha+'\t'+file.filename+'\0')fail('MANIFEST_SUCCESSOR_1102_FILE_MODE_REJECTED')
+    if(gv01b&&entry!==GV_01B_REVIEW.entries[file.filename].mode+' blob '+file.sha+'\t'+file.filename+'\0')fail('GV_01B_FILE_MODE_REJECTED')
     if(knowledgeStage2Review(admission.files))assertKnowledgeStage2Entry(file,entry,knowledgeStage2Review(admission.files))
     if(lifecycleReviewMatches(admission.files))assertRegistrationLifecycleReviewEntry(file,entry)
     if(isPinnedAssistantQualityG1Review(admission.files))assertAssistantQualityG1ReviewEntry(file,entry)
@@ -8395,8 +8431,9 @@ export function assertLocalPackageSources(root, candidateLock, authorityRoot = c
 // Validate those physical bytes before choosing source proof instead of a
 // historical product-contract proof. Candidate JavaScript is never imported.
 export const MANIFEST_SUCCESSOR_SOURCE_REVIEW_ID='MANIFEST_SUCCESSOR_1102_REVIEW'
+const protectedArchitectureReviewDigest=review=>createHash('sha256').update(JSON.stringify(review)).digest('hex')
 export function manifestSuccessorSourceReviewDigest(){
-  return createHash('sha256').update(JSON.stringify(MANIFEST_SUCCESSOR_1102_REVIEW)).digest('hex')
+  return protectedArchitectureReviewDigest(MANIFEST_SUCCESSOR_1102_REVIEW)
 }
 export function assertManifestSuccessorSourceValidation(root,state,repositoryRoot=controlRoot()){
   if(state?.sha!==MANIFEST_SUCCESSOR_1102_REVIEW.sourceSha||state.admission?.kind!=='ARCHITECTURE'
@@ -8406,7 +8443,10 @@ export function assertManifestSuccessorSourceValidation(root,state,repositoryRoo
   return {protectedSourceReviewId:MANIFEST_SUCCESSOR_SOURCE_REVIEW_ID,
     protectedSourceReviewDigest:manifestSuccessorSourceReviewDigest(),originalSourceSha:MANIFEST_SUCCESSOR_1102_REVIEW.sourceSha}
 }
-export function assertManifestSuccessorSourceProof(proof,run,candidateSha,workflowId,{currentRunId,currentRef,completedJobs=[],expectedControlDigest=controlPolicyDigest()}={}){
+export function assertManifestSuccessorSourceProof(proof,run,candidateSha,workflowId,options){
+  return assertProtectedArchitectureProof(proof,run,candidateSha,workflowId,MANIFEST_SUCCESSOR_1102_REVIEW,MANIFEST_SUCCESSOR_SOURCE_REVIEW_ID,options)
+}
+function assertProtectedArchitectureProof(proof,run,candidateSha,workflowId,review,reviewId,{currentRunId,currentRef,completedJobs=[],expectedControlDigest=controlPolicyDigest()}={}){
   const sameRun=String(run.id)===String(currentRunId)&&currentRef==='refs/heads/main'&&run.event==='push'
     &&completedJobs.some(j=>j.name==='SG2 controlled operation integration'&&j.conclusion==='success')
   if(run.workflow_id!==workflowId||run.repository?.full_name!==REPOSITORY||run.head_branch!=='main'
@@ -8414,10 +8454,10 @@ export function assertManifestSuccessorSourceProof(proof,run,candidateSha,workfl
     ||(!sameRun&&run.conclusion!=='success'))fail('UNTRUSTED_VALIDATION_RUN')
   if(proof?.schemaVersion!=='2.0'||proof.scope!=='EXACT_PROTECTED_SOURCE_VALIDATION'
     ||proof.repository!==REPOSITORY||proof.targetEnvironment!=='development'||proof.workflow!==WORKFLOW
-    ||candidateSha!==MANIFEST_SUCCESSOR_1102_REVIEW.sourceSha||proof.candidateSha!==candidateSha
+    ||candidateSha!==review.sourceSha||proof.candidateSha!==candidateSha
     ||proof.originalSourceSha!==candidateSha||proof.controlSha!==run.head_sha||String(proof.runId)!==String(run.id)
-    ||proof.protectedSourceReviewId!==MANIFEST_SUCCESSOR_SOURCE_REVIEW_ID
-    ||proof.protectedSourceReviewDigest!==manifestSuccessorSourceReviewDigest()
+    ||proof.protectedSourceReviewId!==reviewId
+    ||proof.protectedSourceReviewDigest!==protectedArchitectureReviewDigest(review)
     ||Object.hasOwn(proof,'sourceAdmissionId')||Object.hasOwn(proof,'sourceAdmissionDigest')
     ||!shaPattern.test(proof.controlSha??''))fail('VALIDATION_PROVENANCE_MISMATCH')
   if(proof.controlPolicyDigest!==expectedControlDigest)fail('CONTROL_POLICY_PROVENANCE_MISMATCH')
@@ -8430,6 +8470,12 @@ export function assertManifestSuccessorSourceProof(proof,run,candidateSha,workfl
 }
 
 export function assertProof(proof, run, candidateSha, workflowId, {currentRunId, currentRef, completedJobs = [], expectedControlDigest = controlPolicyDigest()} = {}) {
+  if(candidateSha===GV_01B_REVIEW.sourceSha||proof?.protectedSourceReviewId===GV_01B_REVIEW_ID){
+    if(run.event!=='workflow_dispatch'||run.triggering_actor?.login!=='profitia'
+      ||!validGv01bPrNumber(proof?.candidatePr)||!validGv01bPrNumber(proof?.runAttempt)
+      ||proof.runAttempt!==run.run_attempt)fail('GV_01B_PROOF_IDENTITY_REJECTED')
+    return assertProtectedArchitectureProof(proof,run,candidateSha,workflowId,GV_01B_REVIEW,GV_01B_REVIEW_ID,{currentRunId,currentRef,completedJobs,expectedControlDigest})
+  }
   if(proof?.schemaVersion==='2.0'&&proof.scope==='EXACT_PROTECTED_SOURCE_VALIDATION'&&proof.protectedSourceReviewId===CALENDAR_PK_PROTECTED_REVIEW.reviewId)return assertCalendarPkProtectedProof(proof,run,candidateSha,workflowId,{currentRunId,currentRef,completedJobs,expectedControlDigest})
   if(proof?.schemaVersion==='2.0'&&proof.scope==='EXACT_PROTECTED_SOURCE_VALIDATION')return assertManifestSuccessorSourceProof(proof,run,candidateSha,workflowId,{currentRunId,currentRef,completedJobs,expectedControlDigest})
   if(proof?.schemaVersion==='2.0'){
@@ -8666,6 +8712,17 @@ function checkCandidate(root = candidateRoot()) {
     const protectedReview=assertManifestSuccessorSourceValidation(root,state)
     return {state,app:checkAdmittedPackages(root),protectedReview,genericSource:true}
   }
+  if(state.sha===GV_01B_REVIEW.sourceSha){
+    if(state.admission?.baseSha!==state.controlSha)fail('GV_01B_SOURCE_IDENTITY_REJECTED')
+    assertPristineSourceInput(root,state.sha)
+    assertArchitectureCheckout(root,state.sha,state.admission)
+    const runAttempt=Number(process.env.GITHUB_RUN_ATTEMPT)
+    if(!validGv01bPrNumber(runAttempt))fail('GV_01B_PROOF_IDENTITY_REJECTED')
+    const protectedReview={protectedSourceReviewId:GV_01B_REVIEW_ID,
+      protectedSourceReviewDigest:protectedArchitectureReviewDigest(GV_01B_REVIEW),originalSourceSha:state.sha,
+      candidatePr:state.admission.candidatePr,runAttempt}
+    return {state,app:checkAdmittedPackages(root),protectedReview,genericSource:true}
+  }
   if (state.admission) assertArchitectureCheckout(root, state.sha, state.admission)
   if(state.admission?.kind==='QUALITY_STAGE1_SG2')return checkQualityStage1Candidate(root,state)
   if(state.admission?.kind==='TRUSTED_RECORD'){
@@ -8780,6 +8837,17 @@ function proof() {
   fs.writeFileSync(path.join(directory, 'proof.json'), JSON.stringify({schemaVersion: '1.0', repository: REPOSITORY, workflow: WORKFLOW, projectKey: 'SG2', targetEnvironment: 'development', scope: 'ISOLATED_API_AND_PERSISTENCE', candidateSha: state.sha, controlSha: state.controlSha, ...executionEvidence, controlPolicyDigest: controlPolicyDigest(), runId: state.runId, contract: currentProofContract(candidateRoot(),state.receipt), install: 'CLEAN_REGISTRY_IGNORE_SCRIPTS', credentialRemovedBeforeCandidateExecution: true, privatePackageArtifactsPublished: false, tests: 'PASS', typecheck: 'PASS', build: 'PASS', productDeploymentPerformed: false, customerIdentityAdapterVerified: false}, null, 2))
   output('proof_sha', state.sha)
 }
+export async function verifyGv01bProofTarget(proof,run,verificationRun,request=api,repositoryRoot=controlRoot()){
+  if(verificationRun.event!=='pull_request'||!verificationRun.pull_requests?.some(pr=>pr.number===proof.candidatePr
+    &&pr.head?.sha===proof.candidateSha&&pr.base?.ref==='main'))fail('GV_01B_PROOF_PR_REJECTED')
+  const {data: main}=await request(`repos/${REPOSITORY}/git/ref/heads/main`)
+  if(main.object?.sha!==proof.controlSha)fail('SOURCE_AUTHORITY_ADVANCED')
+  const c={repository:REPOSITORY,ref:'refs/heads/main',workflowRef:`${REPOSITORY}/${WORKFLOW}@refs/heads/main`,
+    event:run.event,actor:run.actor?.login,triggeringActor:run.triggering_actor?.login,controlSha:proof.controlSha}
+  const {admission}=await resolveCandidateAdmission(c,String(proof.candidatePr),proof.candidateSha,request,repositoryRoot)
+  if(admission?.candidatePr!==proof.candidatePr)fail('GV_01B_PROOF_PR_REJECTED')
+}
+
 async function verify() {
   const sha = process.env.EXPECTED_SHA
   if (!shaPattern.test(sha ?? '')) fail('CANDIDATE_SHA_MISMATCH')
@@ -8798,10 +8866,13 @@ async function verify() {
       const p = readJson(path.join(directory, 'proof.json'))
       if (p.candidateSha !== sha) continue
       const jobs = String(run.id) === process.env.GITHUB_RUN_ID ? (await api(`repos/${REPOSITORY}/actions/runs/${run.id}/jobs`)).data.jobs : []
-      assertProof(p, run, sha, workflow.id, {currentRunId: process.env.GITHUB_RUN_ID, currentRef: process.env.GITHUB_REF, completedJobs: jobs})
-      const sourceFiles = await Promise.all(policyFiles.map(name => readControlPolicyFile(name,run.head_sha)))
+      const proofRun=sha===GV_01B_REVIEW.sourceSha?(await api(`repos/${REPOSITORY}/actions/runs/${run.id}`)).data:run
+      if(String(proofRun.id)!==String(run.id))fail('UNTRUSTED_VALIDATION_RUN')
+      assertProof(p, proofRun, sha, workflow.id, {currentRunId: process.env.GITHUB_RUN_ID, currentRef: process.env.GITHUB_REF, completedJobs: jobs})
+      const sourceFiles = await Promise.all(policyFiles.map(name => readControlPolicyFile(name,proofRun.head_sha)))
       const actualControl = createHash('sha256'); for (const bytes of sourceFiles) actualControl.update(bytes)
       if (actualControl.digest('hex') !== p.controlPolicyDigest) fail('CONTROL_POLICY_PROVENANCE_MISMATCH')
+      if(sha===GV_01B_REVIEW.sourceSha)await verifyGv01bProofTarget(p,proofRun,current)
       if(p.schemaVersion==='2.0'){
         if(p.scope==='EXACT_SOURCE_VALIDATION'){
           const ledger=JSON.parse(Buffer.from((await api('repos/'+REPOSITORY+'/contents/Canon/registries/controlled-source-admissions-v1.json?ref='+run.head_sha)).data.content,'base64'))
