@@ -5,13 +5,13 @@
 | initiativeId | BSDC-20261122-ZSRIR-BENCHMARK-FINDER |
 | projectKey / profil prowadzący | SG2 / SG Runtime |
 | Rewizja i data | v0.4, 22.11.2026 |
-| Status projektu i roadmapy | WORKING / NOT_ACCEPTED |
+| Status projektu i roadmapy | OWNER_APPROVED |
 | Właściciel decyzji biznesowej | Właściciel SG2 |
 | Repozytorium i authority | profitia/SG-dev, main |
 | Ścieżka Karty | Canon/proposals/bsdc/SG2/BSDC-20261122-ZSRIR-BENCHMARK-FINDER.md |
 | Rewizja źródeł audytu v0.2 | f75c6a5a170dd4b6597f67ab9790722657a1ef35 |
-| Status rewizji Karty | Wersja do końcowej akceptacji. Podstawa v0.3 na main: `e840afed5935ffcc5afd6ba7d9597b0ffcd06616`. |
-| Środowisko pierwszego pełnego odbioru | Development — do potwierdzenia przy akceptacji roadmapy |
+| Status rewizji Karty | Zamrożona baza projektu i roadmapy: v0.4, commit `c5d9120db40596b8f267b7a908afb2a232fc76da`, blob `29e919aceb8f94ecc517299bc639c5529bbf8731`. Decyzja F3 zapisana w tej Karcie. |
+| Środowisko pierwszego pełnego odbioru | Development — zatwierdzone dla FINAL-01–05 przez właściciela |
 | Mandat | DESIGN / REVIEW / PERSISTENCE. E1, E2 i E3 NIE_ROZPOCZĘTE. |
 
 ## 1. Cel biznesowy i zakres
@@ -61,13 +61,15 @@ Stan SLA to `DO_USTALENIA_NA_PODSTAWIE_DANYCH`. W E1 zbadać faktyczną częstot
 
 Zakres obejmuje wyszukiwanie, jednoznaczną identyfikację dostawcy, podgląd i odczyt historii oraz zapis serii. Kontrakt zachowuje odrębne role dostawcy ZSRIR, wydawcy MRiRW oraz kanału publikacji i używa klas `FOOD` / `COMMODITIES`. Kontrakt i znaczenie facetów uzgodnić przed importem, a ich prezentację w Advanced Search podczas E3.
 
-### Środowisko odbioru — propozycja v0.3
+### Środowisko odbioru i decyzja F3 — zatwierdzone
 
-Development pozostaje proponowanym środowiskiem pierwszego pełnego odbioru. Potwierdzenie pozostaje otwarte.
+**F3 = OWNER_APPROVED.** Właściciel SG2 w decyzji z 22.11.2026 przyjął łącznie projekt rozwiązania oraz kompletną roadmapę E1–E3 z Karty v0.4. Zatwierdzona baza to commit `c5d9120db40596b8f267b7a908afb2a232fc76da` i blob `29e919aceb8f94ecc517299bc639c5529bbf8731` z PR #1286. Właściciel potwierdził **Development jako środowisko pierwszego pełnego odbioru FINAL-01–05**. [Dokładna zaakceptowana rewizja](https://github.com/profitia/SG-dev/blob/c5d9120db40596b8f267b7a908afb2a232fc76da/Canon/proposals/bsdc/SG2/BSDC-20261122-ZSRIR-BENCHMARK-FINDER.md) · [PR #1286](https://github.com/profitia/SG-dev/pull/1286)
+
+Akceptacja obejmuje pełne pozyskanie i zachowanie zbioru przejściowego z niekompletnymi seriami przed kwalifikacją, odcięcie 22.11.2026 o 23:59:59 w Europe/Warsaw, ustalenie harmonogramów i SLA na podstawie danych E1, Finder v1 i DEC-01. Mandat tej decyzji obejmuje zapis i publikację dokumentacyjną. Uruchomienie każdego etapu wymaga oddzielnej dyspozycji. GOV-01, dopuszczenie Source, migracje i wydania podlegają własnym bramkom.
 
 ### GOV-01 — punkt do odrębnego uzgodnienia przed wykonaniem
 
-Rozstrzygnięcie pozostaje w [zgłoszeniu #1285](https://github.com/profitia/SG-dev/issues/1285). Przyjęcie wymaga właściwych decyzji recenzenckich oraz kontrolowanej aktywacji.
+Aneks pozostaje `PROPOSED / NOT_ACTIVE` w [zgłoszeniu #1285](https://github.com/profitia/SG-dev/issues/1285). Przyjęcie wymaga decyzji Governance Source Layer i Architecture Platform oraz kontrolowanej aktywacji.
 
 Aktywny Kanon Source Hub v1.0, §1 i tabela odpowiedzialności w wierszach 10–18, przypisuje Architecture Platform / Source Hub adaptery dostawców i pozyskiwanie zewnętrzne. Benchmark Domain / Market Data posiada serie kanoniczne, przyjęte dane rynkowe i odpowiedzialność za Macrobond. Nowela v1.1, wiersze 7–9 i 17–27, rozszerza dostęp konsumentów do przyjętych kontraktów Hub, utrzymuje odpowiedzialność Hub za pozyskiwanie odpłatne i dostęp do dostawców oraz zachowuje dotychczasowe granice Benchmark/Macrobond. Przegląd tych zasad nie wykazał jawnego umocowania nowego ZSRIR poza Hub. Istniejące umocowanie Macrobond nie przenosi się automatycznie na nowe źródło. [Kanon Source Hub v1.0, §1](https://github.com/profitia/SG-dev/blob/f75c6a5a170dd4b6597f67ab9790722657a1ef35/Canon/v1.0-platform-source-hub-business-and-architecture-canon.md#L8-L20) · [Nowela dostępu v1.1](https://github.com/profitia/SG-dev/blob/f75c6a5a170dd4b6597f67ab9790722657a1ef35/Canon/v1.1-platform-source-hub-universal-first-party-consumer-access.md#L7-L27)
 
@@ -138,7 +140,7 @@ UTF-8, przecinek, jednoznaczne cytowanie i kodowanie braków, daty ISO oraz wart
 |---|---|---|
 | A1 | USTALONE | Użytkownik Finder potrzebuje historii i bieżących danych MRiRW. |
 | A2 | USTALONE | SG2 prowadzi, właściciel SG2 akceptuje, użytkownik Finder odbiera. |
-| A3 | W_TRAKCIE | Data odcięcia zatwierdzona. Pokrycie i próg świeżości wynikną z E1. Środowisko odbioru do potwierdzenia. |
+| A3 | W_TRAKCIE | Data odcięcia i Development dla FINAL-01–05 zatwierdzone. Pokrycie i próg świeżości wynikną z E1. |
 | A4 | USTALONE | Jedna inicjatywa od historii do odczytu bieżących notowań. |
 | B1 | USTALONE | Zweryfikowano ustalenia wcześniejszych audytów portalu i Neon oraz aktualne źródła kodu i governance. |
 | B2 | USTALONE | Dowody, założenia i luki pokrycia opisano osobno. |
@@ -160,15 +162,15 @@ UTF-8, przecinek, jednoznaczne cytowanie i kodowanie braków, daty ISO oraz wart
 | E3 | W_TRAKCIE | Własność SG2 i odrębne uprawnienia współdzielone zapisane. |
 | E4 | W_TRAKCIE | Próby importu, izolacji, korekt, odbioru funkcji i regresji w FINAL. |
 | E5 | DO_USTALENIA | Koszty i rzeczywisty wolumen po kwalifikowanej próbie. |
-| E6 | W_TRAKCIE | Jedna roadmapa, taski, zależności, rejestr, STOP i końcowy DoD. Do recenzji i akceptacji. |
-| F1 | W_TRAKCIE | Zapisano DEC-01 oraz decyzje o historii v1, dacie odcięcia, świeżości i Finderze. GOV-01 i akceptacja Karty pozostają odrębne. |
-| F2 | W_TRAKCIE | Domknąć governance, kontrakt i zakres odbioru. |
-| F3 | DO_USTALENIA | Właściciel akceptuje wspólnie projekt i roadmapę na dokładnym commicie. |
+| E6 | USTALONE | Właściciel przyjął kompletną roadmapę, taski, zależności, rejestr, STOP i końcowy DoD na dokładnej rewizji v0.4. |
+| F1 | W_TRAKCIE | Zapisano DEC-01, decyzje biznesowe v0.4 i F3. GOV-01 i parametry wynikające z E1 są jawnie otwarte. |
+| F2 | W_TRAKCIE | Odrębne GOV-01 oraz właściwe dopuszczenia i rozstrzygnięcia wykonawcze pozostają u wskazanych właścicieli. |
+| F3 | USTALONE | `OWNER_APPROVED`. Właściciel wspólnie zaakceptował projekt i roadmapę v0.4 na commicie `c5d9120db40596b8f267b7a908afb2a232fc76da`. |
 | F4 | W_TRAKCIE | Punkt wznowienia i granice wykonania zapisane. |
 
 ## 7. Roadmapa E1–E3, DoD i rejestr
 
-Proponowany pierwszy pełny odbiór w Development. Wszystkie poniższe taski prowadzi SG2 / SG Runtime. Ownerzy mechanizmów współdzielonych zatwierdzają użycie lub zmianę swoich kontraktów we właściwym zakresie. Wykonanie w zatwierdzonym środowisku chmurowym. Każdy etap wymaga osobnego mandatu i rozliczenia. Wstrzymanie dotyczy blokowanego zakresu aktywnego etapu, a kolejny etap wymaga nowej dyspozycji.
+Development jest zatwierdzonym środowiskiem pierwszego pełnego odbioru FINAL-01–05. Wszystkie poniższe taski prowadzi SG2 / SG Runtime. Ownerzy mechanizmów współdzielonych zatwierdzają użycie lub zmianę swoich kontraktów we właściwym zakresie. Wykonanie w zatwierdzonym środowisku chmurowym. Każdy etap wymaga osobnego mandatu i rozliczenia. Wstrzymanie dotyczy blokowanego zakresu aktywnego etapu, a kolejny etap wymaga nowej dyspozycji.
 
 | Etap / task | Rezultat, zależność i DoD / dowód |
 |---|---|
@@ -216,9 +218,9 @@ Po istotnych decyzjach i rozliczeniu tasku lub etapu aktualizować ten sam plik,
 
 ## 8. Otwarte sprawy i wznowienie
 
-1. W E1 ustalić pokrycie, kwalifikację przypadków, rzeczywiste kadencje oraz przedstawić do uzgodnienia harmonogramy i kryteria świeżości. Development pozostaje do potwierdzenia przy akceptacji roadmapy.
+1. W E1 ustalić pokrycie, kwalifikację przypadków, rzeczywiste kadencje oraz przedstawić do uzgodnienia harmonogramy i kryteria świeżości.
 2. Governance Source Layer i Architecture Platform rozstrzygają GOV-01. Jeśli potrzeba zmiany normatywnej, przedstawić ją do osobnej akceptacji, z zachowaniem DEC-01.
 3. Owner SG2 zatwierdza kontrakt i granice modelu po próbie, a przed implementacją UI ustala prezentację facetów Advanced Search w E3.
-4. Właściciel akceptuje wspólnie projekt i roadmapę z dokładnego commita. Po tej decyzji zamrozić zaakceptowany zakres i DoD. Późniejsze aktualizacje rejestru nie zmieniają zaakceptowanej treści. E1 wymaga osobnej wyraźnej dyspozycji.
+4. Projekt i roadmapa mają zamrożoną bazę zaakceptowaną w F3. Dalsze aktualizacje rejestru zachowują przyjęty zakres i DoD. E1 wymaga osobnej wyraźnej dyspozycji właściciela.
 
-**Punkt wznowienia.** v0.4 zapisuje decyzje właściciela o historii, granicy publikacji, świeżości i Finderze. Następny krok to końcowa akceptacja projektu i roadmapy z dokładnej rewizji. GOV-01 pozostaje odrębne. Bieżący mandat dotyczy wyłącznie dokumentacji i zapisu decyzji. E1, E2 i E3 pozostają NIE_ROZPOCZĘTE. [Kanon BSDC v1.1](https://github.com/profitia/SG-dev/blob/main/Canon/v1.1-business-solution-design-and-canonization-canon.md) · [Launcher](https://github.com/profitia/SG-dev/blob/main/docs/agent-instructions/bsdc-launcher-v1.1.md)
+**Punkt wznowienia.** F3 zamyka decyzję właścicielską dla wskazanej rewizji v0.4. Pierwszy task E1-T01 czeka na osobny mandat E1 oraz właściwy preflight. GOV-01 i dopuszczenie Source obowiązują przed zależnym pozyskiwaniem, w tym E1-T02 w zakresie objętym bramką, a GOV-01 także przed wdrożeniem konektora. E1, E2 i E3 pozostają NIE_ROZPOCZĘTE. [Kanon BSDC v1.1](https://github.com/profitia/SG-dev/blob/main/Canon/v1.1-business-solution-design-and-canonization-canon.md) · [Launcher](https://github.com/profitia/SG-dev/blob/main/docs/agent-instructions/bsdc-launcher-v1.1.md)
