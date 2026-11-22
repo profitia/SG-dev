@@ -14,15 +14,16 @@ function accountFixture(patch = {}) {
   f.client.users.getUser = async id => ({ ...await baseGetUser(id), primaryEmailAddressId: 'primary',
     emailAddresses: [{ id: 'primary', verification: { status: f.unverified ? 'unverified' : 'verified' } }] })
   const binding = { applicationId: f.config.applicationId, environment: 'development', projectId: 'synthetic', branchId: 'synthetic', databaseName: 'synthetic', role: 'identity_b1_runtime', schemaDigest: 'a'.repeat(64) }
-  f.sql = []; f.releases = []; f.created = new Set()
+  f.sql = []; f.releases = []; f.created = new Set(); f.diagnostics = []
   const pool = { async connect() { return { async query(sql, values) {
     f.sql.push(sql)
     if (sql === 'COMMIT' && f.commitFailure) throw Error('synthetic commit failure')
     if (sql.includes('profitia_profile.runtime_descriptor')) return { rows: [{ descriptor: { ...binding, profileSchemaDigest: 'b'.repeat(64), issuer, enabled: !f.disabledPolicy } }] }
     if (sql.includes('profitia_profile.binding_renewal_descriptor')) return { rows: [{ descriptor: { renewalSchemaDigest: f.wrongRenewalDigest ? 'e'.repeat(64) : 'c'.repeat(64) } }] }
+    if (sql.includes('profitia_profile.binding_renewal_metadata') && f.bindingMetadataFailure) throw Object.assign(Error('synthetic metadata refusal'), { code: f.bindingMetadataFailure })
     if (sql.includes('profitia_profile.binding_renewal_metadata')) return { rows: [{ metadata: f.bindingMissing ? null : {
-      userId: ids.a, version: ids.a + ':1:1', revision: 1, expiresAt: new Date(f.now + (f.bindingExpired ? -1000 : 120000)).toISOString(),
-      allowRenewal: !f.disabledRenewal, allowExpiredRecovery: !f.disabledRenewal, maxRecoveryAgeMs: 604800000 } }] }
+      userId: ids.a, version: ids.a + ':1:1', revision: 1, expiresAt: new Date(f.now + (f.expiredAgeMs ? -f.expiredAgeMs : f.bindingExpired ? -1000 : 120000)).toISOString(),
+      allowRenewal: !f.disabledRenewal, allowExpiredRecovery: !f.disabledRenewal && !f.disabledRecovery, maxRecoveryAgeMs: 604800000 } }] }
     if (sql.includes('profitia_profile.renew_binding')) { f.bindingExpired = false; return { rows: [{ binding: {} }] } }
     if (sql.includes('txid_current')) return { rows: [{ transaction_id: '42' }] }
     if (sql.includes('provision_account')) {
@@ -37,7 +38,7 @@ function accountFixture(patch = {}) {
     return { rows: [] }
   }, release(destroy = false) { f.releases.push(destroy) } } } }
   f.account = createAccountSurface({ configuration: f.config, client: f.client, authority: f.authority, binding,
-    schemaDigest: 'b'.repeat(64), ...(f.renewal ? { renewalSchemaDigest: 'c'.repeat(64) } : {}), proofKey: randomBytes(32), transact: accountTransactions(pool), now: () => f.now })
+    schemaDigest: 'b'.repeat(64), ...(f.renewal ? { renewalSchemaDigest: 'c'.repeat(64) } : {}), proofKey: randomBytes(32), transact: accountTransactions(pool, event => f.diagnostics.push(event)), now: () => f.now })
   f.handler = createHttpHandler(f.boundary, f.account)
   return f
 }
@@ -99,7 +100,8 @@ test('opt-in first registration still uses B1 and commit failure never confirms 
 test('peer path is GET-only, current verified binding required, never anonymous or browser CORS', async () => {
   const f = accountFixture({ party: 'https://sg2.example.test' }), req = new Request(origin + '/v1/account', { headers: { authorization: 'Bearer synthetic_fixture_only' } })
   assert.equal((await f.handler(req)).status, 200); assert.equal(f.sql.length, 0)
-  assert.equal((await f.handler(f.request('/v1/account', 'POST', {}))).status, 503)
+  const refused = await f.handler(f.request('/v1/account', 'POST', {})); assert.equal(refused.status, 401)
+  assert.deepEqual(await refused.json(), { error: 'ACCOUNT_REQUIRED' })
   assert(!f.sql.some(s => s.includes('provision_account')))
   assert.equal((await f.handler(new Request(origin + '/v1/account', { headers: { origin: 'https://sg2.example.test', authorization: 'Bearer synthetic_fixture_only' } }))).status, 403)
   f.bindingExpired = true; assert.notEqual((await f.handler(req)).status, 200)
@@ -323,4 +325,70 @@ for (const patch of [{ providerError: true }, { sdkError: true }, { commitFailur
   const f = accountFixture({ renewal: true, bindingExpired: true, party: 'https://sg2.example.test', ...patch })
   const response = await f.handler(new Request(origin + '/v1/account/renew', { method: 'POST', headers: { authorization: 'Bearer synthetic_fixture_only', 'content-type': 'application/json' }, body: '{}' }))
   assert.equal(response.status, 503); assert(!f.sql.some(sql => sql.includes('provision_account')))
+})
+
+
+for (const patch of [
+  { bindingExpired: true, expiredAgeMs: 604800001 },
+  { bindingExpired: true, disabledRecovery: true },
+  { bindingExpired: true, disabledRenewal: true },
+]) test('completed provider authentication with a policy-denied existing binding reports 401 without provisioning: ' + JSON.stringify(patch), async () => {
+  const f = accountFixture({ renewal: true, ...patch })
+  const response = await f.handler(f.request('/v1/account', 'POST', {}))
+  assert.equal(response.status, 401)
+  assert.deepEqual(await response.json(), { error: 'ACCOUNT_REQUIRED' })
+  assert(f.diagnostics.some(event => event.phase === 'action' && event.operation === 'binding-metadata' && event.code === 'ACCESS_BASIS_INVALID'))
+  assert(f.sql.includes('ROLLBACK')); assert(!f.sql.includes('COMMIT'))
+  assert(!f.sql.some(sql => /provision_account|renew_binding/.test(sql)))
+  assert.equal(f.created.size, 0)
+})
+
+for (const patch of [{ sessionStatus: 'revoked' }, { unverified: true }, { banned: true }, { deprovisioned: true }]) {
+  test('account completion reports a healthy authentication denial as 401: ' + JSON.stringify(patch), async () => {
+    const f = accountFixture({ renewal: true, ...patch })
+    const response = await f.handler(f.request('/v1/account', 'POST', {}))
+    assert.equal(response.status, 401)
+    assert.deepEqual(await response.json(), { error: 'ACCOUNT_REQUIRED' })
+    assert(!f.sql.includes('COMMIT')); assert.equal(f.created.size, 0)
+  })
+}
+
+for (const patch of [
+  { providerError: true }, { sdkError: true }, { commitFailure: true },
+  { wrongRenewalDigest: true }, { disabledPolicy: true },
+  { bindingMetadataFailure: 'PT403' }, { bindingMetadataFailure: '42883' },
+]) test('account completion preserves operational and SQL-attestation failures as 503: ' + JSON.stringify(patch), async () => {
+  const f = accountFixture({ renewal: true, bindingExpired: true, ...patch })
+  const response = await f.handler(f.request('/v1/account', 'POST', {}))
+  assert.equal(response.status, 503)
+  assert.equal((await response.json()).authenticated, undefined)
+  assert(f.sql.includes('ROLLBACK'))
+})
+
+test('passive account read distinguishes unverified email from a provider outage without SQL writes', async () => {
+  for (const [patch, expected] of [[{ unverified: true }, 401], [{ providerError: true }, 503]]) {
+    const f = accountFixture(patch), response = await f.handler(f.request('/v1/account'))
+    assert.equal(response.status, expected)
+    assert.equal((await response.json()).authenticated, undefined)
+    assert.equal(f.sql.length, 0)
+  }
+})
+
+
+test('peer renewal preserves a policy refusal as 401 and never creates or renews a binding', async () => {
+  const f = accountFixture({ renewal: true, bindingExpired: true, expiredAgeMs: 604800001, party: 'https://sg2.example.test' })
+  const response = await f.handler(new Request(origin + '/v1/account/renew', { method: 'POST', headers: { authorization: 'Bearer synthetic_fixture_only', 'content-type': 'application/json' }, body: '{}' }))
+  assert.equal(response.status, 401)
+  assert.deepEqual(await response.json(), { error: 'ACCOUNT_REQUIRED' })
+  assert(f.sql.includes('ROLLBACK')); assert(!f.sql.includes('COMMIT'))
+  assert(!f.sql.some(sql => /provision_account|renew_binding/.test(sql)))
+})
+
+test('a provider exception shaped like a policy denial remains 503', async () => {
+  const f = accountFixture({ renewal: true, bindingExpired: true })
+  f.client.users.getUser = async () => { throw Object.assign(Error('synthetic provider failure'), { name: 'OperationDenied', reasonCode: 'IDENTITY_REQUIRED' }) }
+  const response = await f.handler(f.request('/v1/account', 'POST', {}))
+  assert.equal(response.status, 503)
+  assert.equal((await response.json()).authenticated, undefined)
+  assert(f.sql.includes('ROLLBACK')); assert(!f.sql.includes('COMMIT'))
 })

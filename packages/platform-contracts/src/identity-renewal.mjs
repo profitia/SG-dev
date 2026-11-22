@@ -1,10 +1,15 @@
 import {createHash} from 'node:crypto'
 import {readFileSync} from 'node:fs'
 import {createProfileSql,closedObject,deny} from './identity-profile-sql.mjs'
+import {OperationDenied} from './operation-context.mjs'
 
 export const IDENTITY_RENEWAL_CONTRACT=Object.freeze({id:'profitia.identity-binding-renewal',version:'1.0.0'})
 export const renewalSchemaUrl=new URL('../migrations/profile/002-binding-renewal.sql',import.meta.url).href
 export const renewalSchemaDigest=()=>createHash('sha256').update(readFileSync(new URL(renewalSchemaUrl))).digest('hex')
+/** @internal Only the provisioner unwraps this known policy refusal. */
+export class BindingRenewalDenied extends OperationDenied {
+  constructor() { super('ACCESS_BASIS_INVALID') }
+}
 const uuid=/^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i
 
 /** Internal verified-identity callback only. HTTP/provider verification and the
@@ -30,7 +35,8 @@ export function createIdentityRenewalSql(options) {
         ||m.maxRecoveryAgeMs<0||m.maxRecoveryAgeMs>604800000||m.allowExpiredRecovery&&(!m.allowRenewal||m.maxRecoveryAgeMs===0))deny()
       const remaining=Date.parse(m.expiresAt)-now()
       if(remaining>30000)return true
-      if(!m.allowRenewal||remaining<=0&&(!m.allowExpiredRecovery||-remaining>m.maxRecoveryAgeMs))deny()
+      // A valid policy can refuse renewal without indicating a service failure.
+      if(!m.allowRenewal||remaining<=0&&(!m.allowExpiredRecovery||-remaining>m.maxRecoveryAgeMs))throw new BindingRenewalDenied()
       const mode=remaining>0?'RENEW':'RECOVER_EXPIRED'
       const principal=createHash('sha256').update(['binding-renewal-v1',identity.subject,m.version,mode,String(m.revision)].join('\u001f')).digest('hex')
       const proof=await sql.attest(query,{operation:'identity.binding.renew',principal,issuer,identityUntil,expiresAt:identityUntil})
