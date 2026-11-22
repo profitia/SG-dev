@@ -2205,11 +2205,12 @@
     }
   },
   "applicationInputContinuation": {
-    "sourceSnapshotSha": "89c21d7fe70be7b6b22cc03e3d8a7a42218ae09f",
+    "sourceSnapshotSha": "857b77d8bc22c372e6e17b2ef49b85ff6cc8650a",
     "baseAbsences": [],
     "inputs": {
       "apps/sg-runtime/instrumentation.ts": "c4646723beaefbbc225df3cd5d0b26a10f210361693e8cc9362434fdf84b3371",
       "apps/sg-runtime/lib/platform/private-runtime.ts": "995e2d60458394147ea55db5518aaa218665dccf869358c2733fce1eb14e92a3",
+      "apps/sg-runtime/tests/registration-finder-hold.test.mjs": "0a8acfc21ca9292e581de0990367f87ef350739cc3b3f2874e4012552a752cd4",
       "apps/sg-runtime/tests/runtime-build-contract.test.mjs": "a3aea30ab72257aa9873de44f5222785e93f9dedbc4048105bddc943a91d7db8"
     }
   }
