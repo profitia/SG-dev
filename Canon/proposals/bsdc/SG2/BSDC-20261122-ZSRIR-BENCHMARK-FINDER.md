@@ -12,7 +12,7 @@
 | Rewizja źródeł audytu v0.2 | f75c6a5a170dd4b6597f67ab9790722657a1ef35 |
 | Status rewizji Karty | Zamrożona baza projektu i roadmapy: v0.4, commit `c5d9120db40596b8f267b7a908afb2a232fc76da`, blob `29e919aceb8f94ecc517299bc639c5529bbf8731`. Decyzja F3 zapisana w tej Karcie. |
 | Środowisko pierwszego pełnego odbioru | Development — zatwierdzone dla FINAL-01–05 przez właściciela |
-| Mandat | DESIGN / REVIEW / PERSISTENCE. E1, E2 i E3 NIE_ROZPOCZĘTE. |
+| Mandat | F3 zatwierdzone. E1-T01 częściowy. Mandat E1-T02 jest warunkowy i wymaga przyjęcia Source w Development oraz bieżącego preflightu przed pozyskaniem. E1-T03, E2 i E3 nierozpoczęte. |
 
 ## 1. Cel biznesowy i zakres
 
@@ -67,13 +67,13 @@ Zakres obejmuje wyszukiwanie, jednoznaczną identyfikację dostawcy, podgląd i 
 
 Akceptacja obejmuje pełne pozyskanie i zachowanie zbioru przejściowego z niekompletnymi seriami przed kwalifikacją, odcięcie 22.11.2026 o 23:59:59 w Europe/Warsaw, ustalenie harmonogramów i SLA na podstawie danych E1, Finder v1 i DEC-01. Mandat tej decyzji obejmuje zapis i publikację dokumentacyjną. Uruchomienie każdego etapu wymaga oddzielnej dyspozycji. GOV-01, dopuszczenie Source, migracje i wydania podlegają własnym bramkom.
 
-### GOV-01 — punkt do odrębnego uzgodnienia przed wykonaniem
+### GOV-01 — aktywny wyjątek dla ZSRIR
 
-Aneks pozostaje `PROPOSED / NOT_ACTIVE` w [zgłoszeniu #1285](https://github.com/profitia/SG-dev/issues/1285). Przyjęcie wymaga decyzji Governance Source Layer i Architecture Platform oraz kontrolowanej aktywacji.
+Aneks GOV-01 v0.1 ma status `OWNER_APPROVED / ACTIVE`. Właściciel zatwierdził dokładny tekst i wycofał warunek dwóch odrębnych stanowisk. PR #1292, CI i odczyt wynikowy na `main` potwierdziły aktywację w §10 kanonu Source Hub. [Decyzja właściciela](https://github.com/profitia/SG-dev/issues/1285#issuecomment-7084176186) · [Aneks](https://github.com/profitia/SG-dev/blob/0d2233914d4d32a5d98abe2c4700d2827df39406/Canon/v1.0-platform-source-hub-business-and-architecture-canon.md#L86-L88) · [PR #1292](https://github.com/profitia/SG-dev/pull/1292) · [PHR](https://github.com/profitia/project-history-repository/commit/4da9fe2d5f406cf70de36458b0076539c8a20300)
 
-Aktywny Kanon Source Hub v1.0, §1 i tabela odpowiedzialności w wierszach 10–18, przypisuje Architecture Platform / Source Hub adaptery dostawców i pozyskiwanie zewnętrzne. Benchmark Domain / Market Data posiada serie kanoniczne, przyjęte dane rynkowe i odpowiedzialność za Macrobond. Nowela v1.1, wiersze 7–9 i 17–27, rozszerza dostęp konsumentów do przyjętych kontraktów Hub, utrzymuje odpowiedzialność Hub za pozyskiwanie odpłatne i dostęp do dostawców oraz zachowuje dotychczasowe granice Benchmark/Macrobond. Przegląd tych zasad nie wykazał jawnego umocowania nowego ZSRIR poza Hub. Istniejące umocowanie Macrobond nie przenosi się automatycznie na nowe źródło. [Kanon Source Hub v1.0, §1](https://github.com/profitia/SG-dev/blob/f75c6a5a170dd4b6597f67ab9790722657a1ef35/Canon/v1.0-platform-source-hub-business-and-architecture-canon.md#L8-L20) · [Nowela dostępu v1.1](https://github.com/profitia/SG-dev/blob/f75c6a5a170dd4b6597f67ab9790722657a1ef35/Canon/v1.1-platform-source-hub-universal-first-party-consumer-access.md#L7-L27)
+Przegląd przed aktywacją GOV-01. Kanon Source Hub v1.0, §1 i tabela odpowiedzialności w wierszach 10–18, przypisuje Architecture Platform / Source Hub adaptery dostawców i pozyskiwanie zewnętrzne. Benchmark Domain / Market Data posiada serie kanoniczne, przyjęte dane rynkowe i odpowiedzialność za Macrobond. Nowela v1.1, wiersze 7–9 i 17–27, rozszerza dostęp konsumentów do przyjętych kontraktów Hub, utrzymuje odpowiedzialność Hub za pozyskiwanie odpłatne i dostęp do dostawców oraz zachowuje dotychczasowe granice Benchmark/Macrobond. Ówczesny przegląd tych zasad nie wykazał jawnego umocowania nowego ZSRIR poza Hub. Istniejące umocowanie Macrobond nie przenosi się automatycznie na nowe źródło. [Kanon Source Hub v1.0, §1](https://github.com/profitia/SG-dev/blob/f75c6a5a170dd4b6597f67ab9790722657a1ef35/Canon/v1.0-platform-source-hub-business-and-architecture-canon.md#L8-L20) · [Nowela dostępu v1.1](https://github.com/profitia/SG-dev/blob/f75c6a5a170dd4b6597f67ab9790722657a1ef35/Canon/v1.1-platform-source-hub-universal-first-party-consumer-access.md#L7-L27)
 
-**Minimalne uzgodnienie do odrębnej akceptacji.** Governance Source Layer wraz z Architecture Platform oraz SG Runtime potwierdzają wiążący sposób zastosowania obowiązującej normy. Jeśli obecny zapis nie obejmuje decyzji DEC-01, przedłożyć wąską zmianę albo wyjątek normatywny dotyczący wyłącznie ZSRIR jako dostawcy SG2, poza Source Hub, z reużyciem transportu, źródłową atrybucją i kontrolami E1. Odrębnie uzyskać dopuszczenie dokładnych operacji, powierzchni zewnętrznych, roli i zakresu źródła. Wniosek o zmianę normy i dopuszczenie wykonania pozostają odrębnymi decyzjami. Do rozstrzygnięcia GOV-01 obowiązuje STOP dla zależnego pozyskiwania wykonywanego przez nowy konektor i jego wdrożenia. Kierunek DEC-01 pozostaje wiążący dla Karty.
+DEC-01 przypisuje konektor wyłącznie do SG Runtime / Market Data. Operacje wykorzystują istniejący Source/external-call. Dopuszczenie operacyjne wymaga powiązania dokładnej operacji z rolą, źródłem i zasobem w Development oraz zachowania kontroli Source, Identity/E1, transportu i praw do danych.
 
 ## 4. Architektura, routing i integracja wielodostawcowa
 
@@ -154,7 +154,7 @@ UTF-8, przecinek, jednoznaczne cytowanie i kodowanie braków, daty ISO oraz wart
 | D1 | USTALONE | DEC-01 wyznacza wyłącznego ownera SG Runtime / Market Data. |
 | D2 | W_TRAKCIE | Resolver potwierdził ścieżkę Karty i proponowane ścieżki zsrir.ts oraz zsrir-import.ts. Pełny zestaw zmian wymaga sprawdzenia przed wykonaniem. |
 | D3 | USTALONE | Drzewo i granice ownership opisane zgodnie z DEC-01. |
-| D4 | W_TRAKCIE | Kontrakt wielodostawcowy i CSV opisane. GOV-01 oraz dokładny kontrakt Source i odczytu do zamknięcia. |
+| D4 | W_TRAKCIE | Kontrakt wielodostawcowy i CSV opisane. GOV-01 aktywny. Operacyjny kontrakt Source i kontrolowany odczyt do potwierdzenia. |
 | D5 | W_TRAKCIE | Dane publiczne z atrybucją. Potwierdzić warunki użycia, role, Source i E1 przed operacjami. |
 | D6 | W_TRAKCIE | Odtworzenie, monitoring i harmonogram opisane. Wolumen, czas i koszt po próbie. |
 | E1 | W_TRAKCIE | Trzy etapy rezultatowe. |
@@ -163,8 +163,8 @@ UTF-8, przecinek, jednoznaczne cytowanie i kodowanie braków, daty ISO oraz wart
 | E4 | W_TRAKCIE | Próby importu, izolacji, korekt, odbioru funkcji i regresji w FINAL. |
 | E5 | DO_USTALENIA | Koszty i rzeczywisty wolumen po kwalifikowanej próbie. |
 | E6 | USTALONE | Właściciel przyjął kompletną roadmapę, taski, zależności, rejestr, STOP i końcowy DoD na dokładnej rewizji v0.4. |
-| F1 | W_TRAKCIE | Zapisano DEC-01, decyzje biznesowe v0.4 i F3. GOV-01 i parametry wynikające z E1 są jawnie otwarte. |
-| F2 | W_TRAKCIE | Odrębne GOV-01 oraz właściwe dopuszczenia i rozstrzygnięcia wykonawcze pozostają u wskazanych właścicieli. |
+| F1 | W_TRAKCIE | Zapisano DEC-01, decyzje biznesowe v0.4, F3 i aktywację GOV-01. Otwarte pozostają parametry wynikające z E1. |
+| F2 | W_TRAKCIE | GOV-01 aktywny. Dopuszczenia Source i rozstrzygnięcia wykonawcze pozostają u właściwych właścicieli. |
 | F3 | USTALONE | `OWNER_APPROVED`. Właściciel wspólnie zaakceptował projekt i roadmapę v0.4 na commicie `c5d9120db40596b8f267b7a908afb2a232fc76da`. |
 | F4 | W_TRAKCIE | Punkt wznowienia i granice wykonania zapisane. |
 
@@ -202,9 +202,9 @@ Wszystkie FINAL mają status DO_POTWIERDZENIA. Terminy, koszty i przepustowość
 
 | ID | Status | Owner / profil | Daty, taskId, PR/SHA, CI, wydanie, testy i dowody |
 |---|---|---|---|
-| E1 | CZĘŚCIOWY | SG Runtime / SG2 | 22.11.2026. Mandat objął wyłącznie E1-T01. Kontrakt i testy offline udokumentowane. Dalsze taski pozostają nierozpoczęte. |
+| E1 | CZĘŚCIOWY | SG Runtime / SG2 | 22.11.2026. Kontrakt i testy offline E1-T01 udokumentowane. Mandat E1-T02 obowiązuje po spełnieniu bramek operacyjnych. |
 | E1-T01 | CZĘŚCIOWY | SG Runtime / SG2 | 22.11.2026 · `SG2-BSDC-ZSRIR-E1-T01-20261122` · [Kontrakt v1.0, mapowanie, T01–T12 i decyzje](../../../evidence/2026-11-22-sg2-zsrir-e1-t01-contract-v1.md) · 12 przypadków offline PASS. [Właściciel przyjął kontrakt bazowy do pełnego zrzutu](https://github.com/profitia/SG-dev/pull/1290#issuecomment-7083889211). Pozostałe rozstrzygnięcia stosować we właściwych etapach. STOP po E1-T01. |
-| E1-T02 | ZABLOKOWANY | SG Runtime / SG2 | 22.11.2026 · `SG2-BSDC-ZSRIR-E1-T02-GATES-20261122` · 0 pozycji pobranych, 0 B, brak zrzutu i zbioru przejściowego. [#1285](https://github.com/profitia/SG-dev/issues/1285) — warunkowa zgoda właściciela, oczekują oba stanowiska i aktywacja. Brak potwierdzonego Source Development. Cztery duże paczki oczekują na zgodną drogę pozyskania. Schemat publicznego POST do potwierdzenia. |
+| E1-T02 | ZABLOKOWANY | SG Runtime / SG2 | 22.11.2026 · `SG2-BSDC-ZSRIR-E1-T02-GATES-20261122` · 0 pozycji pobranych, 0 B, brak zrzutu i zbioru przejściowego. [GOV-01 aktywny](https://github.com/profitia/SG-dev/blob/0d2233914d4d32a5d98abe2c4700d2827df39406/Canon/v1.0-platform-source-hub-business-and-architecture-canon.md#L86-L88). Odczyt Development potwierdził aktywne powiązania SG2 i brak grantów Source oraz polityk external-call dla obu hostów MRiRW/ZSRIR. Schemat POST i droga dla czterech dużych paczek pozostają odrębne od dopuszczenia GET. |
 | E1-T03 | NIE_ROZPOCZĘTY | SG Runtime / SG2 | — |
 | E2 | NIE_ROZPOCZĘTY | SG Runtime / SG2 | — |
 | E2-T01 | NIE_ROZPOCZĘTY | SG Runtime / SG2, owner bazy | — |
@@ -219,8 +219,8 @@ Po istotnych decyzjach i rozliczeniu tasku lub etapu aktualizować ten sam plik,
 ## 8. Otwarte sprawy i wznowienie
 
 1. W E1 ustalić pokrycie, kwalifikację przypadków, rzeczywiste kadencje oraz przedstawić do uzgodnienia harmonogramy i kryteria świeżości.
-2. Governance Source Layer i Architecture Platform rozstrzygają GOV-01. Jeśli potrzeba zmiany normatywnej, przedstawić ją do osobnej akceptacji, z zachowaniem DEC-01.
+2. Dopuścić rzeczywiste operacje Source i potwierdzić aktualne powiązania Identity/E1 w Development dla zakresu E1-T02.
 3. Owner SG2 zatwierdza kontrakt i granice modelu po próbie, a przed implementacją UI ustala prezentację facetów Advanced Search w E3.
 4. Projekt i roadmapa mają zamrożoną bazę zaakceptowaną w F3. Dalsze aktualizacje rejestru zachowują przyjęty zakres i DoD. E1 wymaga osobnej wyraźnej dyspozycji właściciela.
 
-**Punkt wznowienia.** Kontrakt bazowy został przyjęty do E1-T02. Przed zależnym pozyskaniem wymagane są decyzje Governance Source Layer i Architecture Platform oraz kontrolowana aktywacja [GOV-01 #1285](https://github.com/profitia/SG-dev/issues/1285), dopuszczenie Source dla rzeczywistych operacji i aktualny preflight E1-T02. Pozyskanie pozostaje zablokowane i nie wystartowało. Dopuszczony zakres będzie rozliczany niezależnie od czterech dużych paczek. E1-T03, E2 i E3 pozostają NIE_ROZPOCZĘTE. F3 zachowuje zamrożoną rewizję v0.4. [Kanon BSDC v1.1](https://github.com/profitia/SG-dev/blob/main/Canon/v1.1-business-solution-design-and-canonization-canon.md) · [Launcher](https://github.com/profitia/SG-dev/blob/main/docs/agent-instructions/bsdc-launcher-v1.1.md)
+**Punkt wznowienia.** Kontrakt bazowy przyjęty do E1-T02. [GOV-01 aktywny](https://github.com/profitia/SG-dev/blob/0d2233914d4d32a5d98abe2c4700d2827df39406/Canon/v1.0-platform-source-hub-business-and-architecture-canon.md#L86-L88). Po przyjęciu i odczytowej weryfikacji dopuszczenia Source dla rzeczywistych operacji oraz aktualnym preflighcie SG2 rozpocząć kwalifikowany zakres GET z [macierzy #1290](https://github.com/profitia/SG-dev/blob/9d0e10e5ca27a8e413149c459f097935c79cb1d2/Canon/evidence/2026-11-22-sg2-zsrir-e1-t02-readiness-v1.md). Do tego czasu pozyskanie pozostaje zablokowane. Rozliczyć dopuszczony zakres niezależnie od czterech dużych paczek i eksportu POST. E1-T03, E2 i E3 pozostają NIE_ROZPOCZĘTE. F3 zachowuje zamrożoną rewizję v0.4. [Kanon BSDC v1.1](https://github.com/profitia/SG-dev/blob/main/Canon/v1.1-business-solution-design-and-canonization-canon.md) · [Launcher](https://github.com/profitia/SG-dev/blob/main/docs/agent-instructions/bsdc-launcher-v1.1.md)
