@@ -315,6 +315,10 @@ To jest **centralna Karta Projektu BSDC 1.0**, zaakceptowana przez Ownera jako j
 
 **Ostatnia decyzja:** Owner przyjął Kartę 1.0 w zakresie **wyłącznie Development**, łącznie z dwoma etapami, 9 zadaniami, 10 kryteriami FINAL oraz zasadą maksymalnej płynności użytkowania i wykonania. Podstawą jest uzgodniona v0.5 po Cross-Model Review. **Następny krok:** przegląd pozostających decyzji biznesowych i warunków E1, a następnie **osobna dyspozycja Ownera `URUCHOM ETAP E1`**. Bez działań wykonawczych przed mandatem; otwarte szczegóły wskazane w DEC-02–06 rozstrzygać we właściwych momentach roadmapy, nie traktować jako już dowiedzionych.
 
+### Dedykowany Codespace — metadane operacyjne
+
+**Przestrzeń wskazana przez Ownera (23.11.2026):** [SG2 Precomputed Forecasts — Codespace](https://improved-zebra-r4jj9q55w56jcx9wx.github.dev/). Dedykowana tej inicjatywie do przyszłej realizacji etapów E1–E2 w SG2 Development. Wskazanie przestrzeni nie dowodzi aktualnej konfiguracji repozytorium, uprawnień GitHub/PHR ani poprawnego uwierzytelnienia i nie stanowi mandatu wykonawczego. Faktyczne powiązanie i dostęp wymagają sprawdzenia przy zwykłym preflight uruchamianego etapu. Wpis jest wyłącznie aktualizacją metadanych operacyjnych; zaakceptowana podstawa projektu, roadmapa i FINAL-01–10 pozostają niezmienione.
+
 ### Materiały normatywne
 
 - [BSDC Canon v1.1](https://github.com/profitia/SG-dev/blob/main/Canon/v1.1-business-solution-design-and-canonization-canon.md) — 29 kryteriów A–F i E6.
