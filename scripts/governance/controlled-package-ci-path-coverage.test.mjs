@@ -282,6 +282,8 @@ function currentSdkProofFixture(){
  // Only these current policy inputs are overlaid, each against the descriptor.
  for(const name of ['packages/platform-contracts/test/sdk-source-context.mjs',
   'packages/platform-contracts/test/sdk-source-context.test.mjs',
+  'scripts/governance/controlled-package-ci.mjs',
+  'scripts/governance/controlled-package-ci.test.mjs',
   'scripts/governance/controlled-package-ci-path-coverage.test.mjs']){
   const source=path.join(root,name),stat=fs.lstatSync(source)
   assert(stat.isFile()&&!stat.isSymbolicLink(),'physical current policy input '+name)

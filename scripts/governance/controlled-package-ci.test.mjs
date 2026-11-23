@@ -1,3 +1,4 @@
+import {ZSRIR_REGISTRY_REVIEW} from './controlled-package-ci.mjs'
 import {PLATFORM_KNOWLEDGE_STAGE2_ACG_COMPOSITION_PROVENANCE} from './controlled-package-ci.mjs'
 import {PLATFORM_KNOWLEDGE_STAGE2_SRM_TARGET_PROVENANCE} from './controlled-package-ci.mjs';
 import {PLATFORM_KNOWLEDGE_STAGE2_PI_COMPOSITION_PROVENANCE} from './controlled-package-ci.mjs';
@@ -4093,4 +4094,62 @@ test('GV-01b protected evidence binds original attempt, qualification PR and cur
   await verifyGv01bProofTarget(proof,run,receiver,request)
   await assert.rejects(()=>verifyGv01bProofTarget({...proof,candidatePr:candidatePr+1},run,receiver,request),/GV_01B_PROOF_PR_REJECTED/)
   await assert.rejects(()=>verifyGv01bProofTarget(proof,run,receiver,async()=>({data:{object:{sha:other}}})),/SOURCE_AUTHORITY_ADVANCED/)
+})
+
+test('ZSRIR registry review requires the exact independent PR and one pinned data file', async t => {
+  const review = ZSRIR_REGISTRY_REVIEW
+  t.mock.timers.enable({apis: ['Date'], now: Date.parse('2026-11-23T12:00:00Z')})
+  const candidate = {...pr(), number: review.prNumber, changed_files: 1,
+    base: {...pr().base, sha}, head: {...pr().head, ref: review.branch}}
+  const file = {filename: review.filename, status: 'modified', sha: review.afterBlob}
+  const resolve = (metadata, files, after) =>
+    resolveCandidateAdmission(context(), String(review.prNumber), other, apiFixture(metadata, files, after).request)
+  const {admission} = await resolve(candidate, [file])
+  assert.deepEqual(admission, {kind: 'ZSRIR_PROTECTED_REGISTRY', reviewId: review.id, baseSha: sha, files: [file]})
+
+  await assert.rejects(resolve({...candidate, number: 1302}, [file]), /ZSRIR_REGISTRY_IDENTITY_REJECTED/)
+  await assert.rejects(resolve({...candidate, head: {...candidate.head, ref: 'sg2/unrelated'}}, [file]), /ZSRIR_REGISTRY_IDENTITY_REJECTED/)
+  await assert.rejects(resolve(candidate, [file], {...candidate, base: {...candidate.base, sha: other}}), /CANDIDATE_CHANGED_DURING_RESOLUTION/)
+  await assert.rejects(resolve(candidate, [{...file, sha: other}]), /ZSRIR_REGISTRY_FILES_REJECTED/)
+  await assert.rejects(resolve(candidate, [{...file, previous_filename: file.filename}]), /ZSRIR_REGISTRY_FILES_REJECTED/)
+  await assert.rejects(resolve({...candidate, changed_files: 2}, [file, {...file, filename: 'apps/sg-runtime/package.json'}]), /ZSRIR_REGISTRY_FILES_REJECTED/)
+  await assert.rejects(resolve({...candidate, changed_files: 2}, [file]), /ZSRIR_REGISTRY_IDENTITY_REJECTED/)
+
+  const oldSelector = process.env.SOURCE_ADMISSION_ID
+  process.env.SOURCE_ADMISSION_ID = 'sg2-zsrir-e2-t01-20261123-source'
+  try {
+    await assert.rejects(resolve(candidate, [file]), /ZSRIR_REGISTRY_SELF_ADMISSION_REJECTED/)
+  } finally {
+    if (oldSelector === undefined) delete process.env.SOURCE_ADMISSION_ID
+    else process.env.SOURCE_ADMISSION_ID = oldSelector
+  }
+  t.mock.timers.setTime(Date.parse(review.validUntil))
+  await assert.rejects(resolve(candidate, [file]), /ZSRIR_REGISTRY_REVIEW_EXPIRED/)
+})
+
+test('ZSRIR registry review proof binds the exact head, original source, policy and genuine execution', () => {
+  const review = ZSRIR_REGISTRY_REVIEW
+  const {run: baseRun} = fixture()
+  const run = {...baseRun, event: 'workflow_dispatch', created_at: '2026-11-23T12:00:00Z'}
+  const proof = {
+    schemaVersion: '2.0', repository: REPOSITORY, workflow: WORKFLOW, targetEnvironment: 'development',
+    scope: 'EXACT_PROTECTED_SOURCE_VALIDATION', candidateSha: other, controlSha: sha, runId: String(run.id),
+    protectedSourceReviewId: review.id, protectedSourceReviewDigest: createHash('sha256').update(JSON.stringify(review)).digest('hex'),
+    originalSourceSha: review.sourceSha, controlPolicyDigest: controlPolicyDigest(),
+    executionWorkspace: 'ISOLATED_GIT_CHECKOUT', executionCheckoutSha: other,
+    sourceInputVerifiedBeforeExecution: true, sourceInputVerifiedAfterExecution: true,
+    install: 'CLEAN_REGISTRY_IGNORE_SCRIPTS', credentialRemovedBeforeCandidateExecution: true,
+    privatePackageArtifactsPublished: false, productDeploymentPerformed: false, customerIdentityAdapterVerified: false,
+    tests: 'PASS', typecheck: 'PASS', build: 'PASS',
+  }
+  assert.equal(assertProof(proof, run, other, 34), proof)
+  for (const change of [
+    {candidateSha: sha}, {originalSourceSha: other}, {protectedSourceReviewDigest: '0'.repeat(64)},
+    {sourceAdmissionId: 'sg2-zsrir-e2-t01-20261123-source'}, {executionCheckoutSha: sha},
+    {controlPolicyDigest: '0'.repeat(64)}, {sourceInputVerifiedAfterExecution: false},
+    {credentialRemovedBeforeCandidateExecution: false}, {tests: 'SKIPPED'}, {productDeploymentPerformed: true},
+  ]) assert.throws(() => assertProof({...proof, ...change}, run, other, 34))
+  assert.throws(() => assertProof(proof, run, sha, 34), /VALIDATION_PROVENANCE_MISMATCH/)
+  assert.throws(() => assertProof(proof, {...run, actor: {login: 'unapproved'}}, other, 34), /UNTRUSTED_VALIDATION_RUN/)
+  assert.throws(() => assertProof(proof, {...run, created_at: review.validUntil}, other, 34), /ZSRIR_REGISTRY_REVIEW_EXPIRED/)
 })

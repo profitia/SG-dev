@@ -54,6 +54,20 @@ export function sdkSourceContext(current,historical,{recordPath=CURRENT_SDK_SOUR
   for(const [p,digest]of Object.entries(inputs))assert(sourcePath(p)&&p!==recordPath&&sha256.test(digest),'safe complete physical source input')
  }
  validateInputs(r.inputs)
+ // One exact E2-T01 test-manifest postimage, orthogonal to the existing
+ // closed Identity source view. Every other physical input stays pinned.
+ const zsrir=r.reviewedZsrirHostManifest
+ if(zsrir!==undefined){
+  const host='apps/sg-runtime/package.json'
+  assert(plain(zsrir)&&Object.keys(zsrir).sort().join(',')==='afterSha256,sourceSha'
+   &&zsrir.sourceSha==='c23570b293922334cf26460e765c20b6920e3ac6'&&zsrir.afterSha256==='c5e6d878d9813a4589ea9aa6d7d27e79367009710a4833885719f39719517ce8'
+   &&r.inputs[host]==='def729b4711f1849cb038dc8c076bcea16f60d7f496eef056feb7cc2b99a8f2a','exact ZSRIR test manifest continuation')
+  if(hash(current(host))===zsrir.afterSha256){
+   assert.equal(hash(historical(zsrir.sourceSha,host)),zsrir.afterSha256,'immutable ZSRIR test manifest')
+   r.inputs[host]=zsrir.afterSha256
+  }
+ }
+
  if(Object.hasOwn(r,'reviewedSdkInputContinuation'))assert(Object.hasOwn(r,'applicationInputContinuation'),'reviewed SDK continuation requires its complete successor view')
  if(Object.hasOwn(r,'applicationInputContinuation')){
   // Trusted source metadata may describe one complete application successor
