@@ -4,7 +4,7 @@
 
 > **Zakres bezwzględny: DEVELOPMENT ONLY.** Karta obejmuje zaprojektowanie, wdrożenie, uruchomienie, automatyczną eksploatację i odbiór funkcji w zarejestrowanym środowisku **SG2 Development**. Nie jest kartą wydania na inne środowiska, promocji danych ani aktywacji odrębnego środowiska aplikacyjnego. Takie działania podlegają osobnym zasadom i nie są warunkiem ukończenia tego przedsięwzięcia.
 >
-> **OWNER_APPROVED / PUBLISHED — KARTA 1.0.** Owner zaakceptował projekt rozwiązania wraz z roadmapą E1–E2 oraz końcowymi kryteriami FINAL-01–10. Akceptacja i publikacja Karty nie są mandatem wykonawczym: nie uruchomiono żadnego etapu ani nie udzielono upoważnienia do zmian w zasobach.
+> **OWNER_APPROVED / PUBLISHED / FINAL — KARTA 1.0.** Owner zaakceptował projekt rozwiązania wraz z roadmapą E1–E2 oraz końcowymi kryteriami FINAL-01–10. Akceptacja i publikacja Karty nie są mandatem wykonawczym: nie uruchomiono żadnego etapu ani nie udzielono upoważnienia do zmian w zasobach.
 
 | Metryka | Ustalenie |
 | --- | --- |
@@ -13,7 +13,8 @@
 | Repozytorium / authority | [`profitia/SG-dev`](https://github.com/profitia/SG-dev) / `main`; historyczna rewizja discovery: `ed2eebb1ccacbaab66978fb60ab0cfbe140a4858` |
 | Lokalizacja PDR | `Canon/proposals/bsdc/SG2/BSDC-20261123-SG2-PRECOMPUTED-FORECASTS.md` — zaakceptowana ścieżka publikacji w authority `main` |
 | Środowisko prac i końcowego odbioru | **SG2 Development**; Neon `autumn-waterfall-65938876` / `br-dry-hall-b294222f` / `neondb`, zgodnie z aktualną topologią |
-| Stan | `OWNER_APPROVED / PUBLISHED`, Karta `1.0`; podstawa merytoryczna: v0.5 po uzgodnionym Cross-Model Review |
+| Stan | `OWNER_APPROVED / PUBLISHED / FINAL`, Karta `1.0`; podstawa merytoryczna: v0.5 po uzgodnionym Cross-Model Review |
+| Zaakceptowana rewizja bazowa | [Commit `b819bcc77b3b7efb2db06c3d630980c4ea47bc01`](https://github.com/profitia/SG-dev/commit/b819bcc77b3b7efb2db06c3d630980c4ea47bc01) · blob `0093bd91d35fd7998fd1beeab680dae3a7992f17` · [PR #1307](https://github.com/profitia/SG-dev/pull/1307) |
 | Liczba etapów | **2:** E1 pilot, E2 kompletne działanie i odbiór Development |
 | Liczba tasków | **9:** E1-T01–T04 oraz E2-T01–T05 |
 | Kryteria końcowe | **FINAL-01–FINAL-10**, wyłącznie dla Development |
@@ -161,7 +162,7 @@ Monitoring: status cyklu, liczba variant due/NO_OP/FAILED, nowy origin, matured 
 ```text
 profitia/SG-dev @ main
 ├── Canon/proposals/bsdc/SG2/
-│   └── BSDC-20261123-SG2-PRECOMPUTED-FORECASTS.md    [KARTA PDR 1.0 — OWNER_APPROVED / PUBLISHED]
+│   └── BSDC-20261123-SG2-PRECOMPUTED-FORECASTS.md    [KARTA PDR 1.0 — OWNER_APPROVED / PUBLISHED / FINAL]
 ├── apps/
 │   ├── sg-runtime/                                     [ISTNIEJE / SG Runtime]
 │   │   ├── lib/benchmark/
@@ -332,4 +333,4 @@ To jest **centralna Karta Projektu BSDC 1.0**, zaakceptowana przez Ownera jako j
 
 ---
 
-**STATUS:** `CARD_1.0 / OWNER_APPROVED / PUBLISHED / DEVELOPMENT_ONLY / NO_EXECUTION_MANDATE`.
+**STATUS:** `CARD_1.0 / OWNER_APPROVED / PUBLISHED / FINAL / DEVELOPMENT_ONLY / NO_EXECUTION_MANDATE`.
