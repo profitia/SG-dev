@@ -1,7 +1,7 @@
 {
   "schemaVersion": "1.0",
   "scope": "CURRENT_SDK_SOURCE_INTEGRITY_ONLY",
-  "sourceSnapshotSha": "fe57599e55707d9f385ff90a1e3b0cbb1528081b",
+  "sourceSnapshotSha": "1c03f171b62033e80495c48245517178b4b60822",
   "status": "PRIVATE_PROTOTYPE_NOT_ADMITTED",
   "platformVersion": "1.38.0",
   "runtimeActivated": false,
@@ -431,7 +431,7 @@
     "apps/sg-runtime/evidence/registration-lifecycle-sdk-adoption-20261112.json": "1f7a761f91bbd4648854f680843ed131fa02155195ef5a8c07d5cc0fed06dd93",
     "apps/sg-runtime/evidence/registration-organisation-access-20261112.json": "6ed5e728146d600e2f7842e761dd60cd1fbf1046dc3c21b8418dd9f2a421b1d9",
     "apps/sg-runtime/finder-monitor-source-integration.json": "22ac9484a6b5532e97ee8c522491bf1015944677e0ab7979bd0769444a1455f6",
-    "apps/sg-runtime/instrumentation.ts": "a68b34152c49d1f2b404b7a25c11901bfd7274cf5b685791decdc46deca567e8",
+    "apps/sg-runtime/instrumentation.ts": "c4646723beaefbbc225df3cd5d0b26a10f210361693e8cc9362434fdf84b3371",
     "apps/sg-runtime/knowledge-source-adoption.json": "c2e3f4b57a541736329778a2ce4e9de7ba7715c6f841784f3ab7f4bb156761cc",
     "apps/sg-runtime/lib/appshell/adp-local-model.ts": "fcd2694f8a068b5608b72b7c1e43f60e9c0a99f95a7f512f7256c03723bc7016",
     "apps/sg-runtime/lib/appshell/adp-navigation.ts": "b0d159a530bd1f4075cfad3aecfef02de4b95680c1d1c32d9a3b0f86cf315706",
@@ -537,7 +537,7 @@
     "apps/sg-runtime/lib/platform/pci-identity-scope.ts": "c06bf9e5e84362072a7985f08c9d7234c5c0029c560b7a14b775e208c63d152c",
     "apps/sg-runtime/lib/platform/period-forecast-current.ts": "67184aa027ffaa3e1d1ade2ac461a57f811a3bb86b2d66183cde2fe98aa72f10",
     "apps/sg-runtime/lib/platform/private-host.ts": "cbdf3ea083743e935cf2ecf992a0086e6b12f0f26fe987b4ee6a5d3975780760",
-    "apps/sg-runtime/lib/platform/private-runtime.ts": "35b34b3e3da207ade040479cf9a376dc3e9f65de7a2d609c2ade665ca5cf4557",
+    "apps/sg-runtime/lib/platform/private-runtime.ts": "995e2d60458394147ea55db5518aaa218665dccf869358c2733fce1eb14e92a3",
     "apps/sg-runtime/lib/platform/supplier-summary-runtime.ts": "ec60ddf513a0dc7efe5b90bf924e34a07a1b0c188b90efe74cbe2c47c8f9d790",
     "apps/sg-runtime/lib/platform/xray-gateway.ts": "3f658acb284ab8b52dde6c895bad4332f59c2b51bb183a5ca903a27a3900b9c7",
     "apps/sg-runtime/lib/platform/xray-presentation-gateway.ts": "f71ddfe8872aefb69787488526d5bb692dde0d9fbf2c98b68c51a29ceefcba9a",
@@ -1429,8 +1429,8 @@
     "packages/platform-contracts/test/request-operations.test.mjs": "6c534bea118ae484607d3002f729f1cf9409f1999f647c90a5b38409058241df",
     "packages/platform-contracts/test/request-reservation.test.mjs": "85795d13c93934199062e076b0de28835e294ca08587131868aee37c3e30c4ed",
     "packages/platform-contracts/test/request-work.test.mjs": "a23c5ec092293070e278cd892ab2a3721a04ea7e91f199f012e23dcf85fe1f1d",
-    "packages/platform-contracts/test/sdk-source-context.mjs": "3290b765d8aff3767552c549557f724e7c001d64aaaa8eee60452652931a18e7",
-    "packages/platform-contracts/test/sdk-source-context.test.mjs": "e68d16c5fe0da644ccef1c30c308e1642dc0d74dd6317b39ebce7813b121f5f5",
+    "packages/platform-contracts/test/sdk-source-context.mjs": "ef8dbfb01ada68fb424063e7c3f18f66e5e4fdc8010bb045e5838720204f2207",
+    "packages/platform-contracts/test/sdk-source-context.test.mjs": "919ca4e7e65e8a118e06f8bb98a6268ac6609b2f54f18e835c819a5ca52a31de",
     "packages/platform-contracts/test/service-read.test.mjs": "975c8df45b3a48631ff2d7a5e418effa62e68b92830b8fa47754fbabb7d65e28",
     "packages/platform-contracts/test/sg2-denial-audit-reader-postgres.test.mjs": "2565037ffb9ac8c08c2cbe5335afccb0048021fe906831b87f4b5b5754922f0f",
     "packages/platform-contracts/test/sg2-denial-audit-reader.test.mjs": "1ab97c864003d750cad00d5f1ece0777b197de7d913e28995ce0044bef81e157",
@@ -1700,9 +1700,9 @@
     "scripts/governance/development-execution.mjs": "9fd9a11c305b9169605e7343cdfe90f6e55c886c912aca0781d7ff0a87cb7a0c",
     "scripts/governance/governance.test.mjs": "ef28078504fda6d844f63b5dd3d7687465f37b3d16064dff581ae392765909da",
     "scripts/governance/platform-source-hub-foundation.test.mjs": "0c4dbbc6747b40486ae2a96ea74d1b737b3575c96ac095615f26454f6ae09aea",
-    "apps/sg-runtime/tests/registration-finder-hold.test.mjs": "c7a6e24a1b2b77ee3d0d85af55041cb5d91e5cb8b4d3f9635114e4ad9e45d5d7",
+    "apps/sg-runtime/tests/registration-finder-hold.test.mjs": "0a8acfc21ca9292e581de0990367f87ef350739cc3b3f2874e4012552a752cd4",
     "apps/identity-runtime/test/account-onboarding-binding.test.mjs": "1330fb54436e50ff3c36f41d136b48fe40b39cbb5f58a9e87f2cf770ef5d7e3d",
-    "apps/sg-runtime/tests/runtime-build-contract.test.mjs": "ab8aae766398e5e9ed168d39c849900b3fd2741e517735685272b8c4daa2a9c7",
+    "apps/sg-runtime/tests/runtime-build-contract.test.mjs": "a3aea30ab72257aa9873de44f5222785e93f9dedbc4048105bddc943a91d7db8",
     "apps/identity-runtime/test/account-page.test.mjs": "2d2f31cf8e9486a7653f322fc51d31554fb367d7aa5c2aef02d80f670fee994b",
     "apps/identity-runtime/test/account-transaction-diagnostics.test.mjs": "ea86a69e7170a3ab8a44e665bd9700b124096391ef310218513472baee3ae110"
   },
@@ -2205,13 +2205,22 @@
     }
   },
   "applicationInputContinuation": {
-    "sourceSnapshotSha": "857b77d8bc22c372e6e17b2ef49b85ff6cc8650a",
+    "sourceSnapshotSha": "e8a99f5e0498c5699eeef411037c90e7426ebc06",
     "baseAbsences": [],
     "inputs": {
-      "apps/sg-runtime/instrumentation.ts": "c4646723beaefbbc225df3cd5d0b26a10f210361693e8cc9362434fdf84b3371",
-      "apps/sg-runtime/lib/platform/private-runtime.ts": "995e2d60458394147ea55db5518aaa218665dccf869358c2733fce1eb14e92a3",
-      "apps/sg-runtime/tests/registration-finder-hold.test.mjs": "0a8acfc21ca9292e581de0990367f87ef350739cc3b3f2874e4012552a752cd4",
-      "apps/sg-runtime/tests/runtime-build-contract.test.mjs": "a3aea30ab72257aa9873de44f5222785e93f9dedbc4048105bddc943a91d7db8"
+      "apps/identity-runtime/src/account-page.ts": "dd46ea898fb75c40e7a33535dcdcd865dc68b2e0b821435ed6040a019ff5a806",
+      "apps/identity-runtime/src/account-provisioning.ts": "79e168641afd506f55bbdf258fc5dbb18bb379bd0aea5a387e153787391f70c2",
+      "apps/identity-runtime/test/account-page.test.mjs": "28cef9f172c2324ccf6948a4eec53d3e865cac788d18bb83a9357e821f9d1bbc",
+      "apps/identity-runtime/test/account-provisioning.test.mjs": "af16bb64ea0886f10aacde6e8ba8a4cdf70ce077157a96ef98115a4344ce5798",
+      "packages/platform-contracts/src/identity-provisioning.mjs": "fd8e498a492acd7418fe72a8e3d483c0be10c4a0feaedfafb1612eb4165d0085",
+      "packages/platform-contracts/src/identity-renewal.mjs": "ba6148b1a0daefc6a3a8270b214ab7b87a9e7a6cd0970f39ba4b9083e5de6a51"
     }
+  },
+  "reviewedSdkInputContinuation": {
+    "baseSha": "f75c6a5a170dd4b6597f67ab9790722657a1ef35",
+    "recordId": "identity-existing-account-policy-denial-20261122",
+    "scope": "SOURCE_VALIDATION_ONLY",
+    "sourceSha": "e8a99f5e0498c5699eeef411037c90e7426ebc06",
+    "taskId": "ARCH-REGISTRATION-AUTH-REPAIR-20261118"
   }
 }
