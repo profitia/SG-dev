@@ -4783,7 +4783,7 @@
       "taskId": "ARCH-PI-NEWSFEED-READER-INVITATION-20261117",
       "targetEnvironment": "development",
       "scope": "SOURCE_VALIDATION_ONLY",
-      "approvalRef": "user:call_fcd53cb33d074702bd9793096683e338:item0 — explicit four-file SOURCE_VALIDATION_ONLY bcee445734f4c1bae12b266c99893ed545656121; excludes migration and deployment activation",
+      "approvalRef": "user:call_fcd53cb33d074702bd9793096683e338:item0 \u2014 explicit four-file SOURCE_VALIDATION_ONLY bcee445734f4c1bae12b266c99893ed545656121; excludes migration and deployment activation",
       "sourceSha": "bcee445734f4c1bae12b266c99893ed545656121",
       "baseSha": "b0eddc27a0405eac5233497414a934f721bc36d2",
       "validFrom": "2026-11-19T01:21:20.127Z",
@@ -14642,6 +14642,128 @@
           "projectKey": "SG2",
           "owner": "SG Runtime",
           "surfaceId": "SG2-BASE-001"
+        }
+      ]
+    },
+    {
+      "id": "registration-v6-assistant-tenant-free-startup-20261121",
+      "status": "ACTIVE",
+      "repository": "profitia/SG-dev",
+      "actor": "profitia",
+      "taskId": "ARCHITECTURE-REGISTRATION-STAGE-I-CONT-20261117",
+      "targetEnvironment": "development",
+      "scope": "SOURCE_VALIDATION_ONLY",
+      "approvalRef": "owner:chat:01a1e7fb-f280-7613-ae37-1715de129f24:source9-hold-expectation-continuation-v1-20261122",
+      "sourceSha": "857b77d8bc22c372e6e17b2ef49b85ff6cc8650a",
+      "baseSha": "f75c6a5a170dd4b6597f67ab9790722657a1ef35",
+      "validFrom": "2026-11-22T16:00:00Z",
+      "validUntil": "2026-11-25T22:59:00Z",
+      "files": [
+        {
+          "path": "apps/sg-runtime/instrumentation.ts",
+          "blob": "548d4e2c0193e6252c23702ab2500c0c078aec9c",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SG2",
+          "owner": "SG Runtime",
+          "surfaceId": "SG2-BASE-001"
+        },
+        {
+          "path": "apps/sg-runtime/lib/platform/private-runtime.ts",
+          "blob": "cc5de1b98073091b57372655b1d256c3da2a2d78",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SG2",
+          "owner": "SG Runtime",
+          "surfaceId": "SG2-BASE-001"
+        },
+        {
+          "path": "apps/sg-runtime/tests/registration-finder-hold.test.mjs",
+          "blob": "e3f0481ce6752d5ab0fae68bb4d1f37cabc4b86b",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SG2",
+          "owner": "SG Runtime",
+          "surfaceId": "SG2-BASE-001"
+        },
+        {
+          "path": "apps/sg-runtime/tests/runtime-build-contract.test.mjs",
+          "blob": "5a4f9b01a428654a6748d928d363d22fcaa252ef",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SG2",
+          "owner": "SG Runtime",
+          "surfaceId": "SG2-BASE-001"
+        }
+      ]
+    },
+    {
+      "id": "identity-existing-account-policy-denial-20261122",
+      "status": "ACTIVE",
+      "repository": "profitia/SG-dev",
+      "actor": "profitia",
+      "taskId": "ARCH-REGISTRATION-AUTH-REPAIR-20261118",
+      "targetEnvironment": "development",
+      "scope": "SOURCE_VALIDATION_ONLY",
+      "approvalRef": "owner:chat:01a1e7fb-f280-7613-ae37-1715de129f24:sourceauth-exact-sdk-admission-v1-20261122",
+      "sourceSha": "e8a99f5e0498c5699eeef411037c90e7426ebc06",
+      "baseSha": "f75c6a5a170dd4b6597f67ab9790722657a1ef35",
+      "validFrom": "2026-11-22T14:00:00Z",
+      "validUntil": "2026-11-25T22:59:00Z",
+      "files": [
+        {
+          "path": "apps/identity-runtime/src/account-page.ts",
+          "blob": "6088bf41170e3bb5f11d8c3590d6d6fedf3126f3",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "ARCHITECTURE",
+          "owner": "Architecture Platform",
+          "surfaceId": "IDENTITY-BASE-001"
+        },
+        {
+          "path": "apps/identity-runtime/src/account-provisioning.ts",
+          "blob": "f6ac516f96ef43ceb36e00269cb64b6ff6e2096b",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "ARCHITECTURE",
+          "owner": "Architecture Platform",
+          "surfaceId": "IDENTITY-BASE-001"
+        },
+        {
+          "path": "apps/identity-runtime/test/account-page.test.mjs",
+          "blob": "1143ea23556c33b93fa07bd493974c9e27cc20cd",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "ARCHITECTURE",
+          "owner": "Architecture Platform",
+          "surfaceId": "IDENTITY-BASE-001"
+        },
+        {
+          "path": "apps/identity-runtime/test/account-provisioning.test.mjs",
+          "blob": "bb5fed5c672126b0b2fd4d00750c6a3c2134329d",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "ARCHITECTURE",
+          "owner": "Architecture Platform",
+          "surfaceId": "IDENTITY-BASE-001"
+        },
+        {
+          "path": "packages/platform-contracts/src/identity-provisioning.mjs",
+          "blob": "1f54cf12cf9be503d8f0ec6d1d7ff1b9ac2830d0",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "ARCHITECTURE",
+          "owner": "Architecture Platform",
+          "surfaceId": "ARCH-BASE-001"
+        },
+        {
+          "path": "packages/platform-contracts/src/identity-renewal.mjs",
+          "blob": "12e160d31d78f695e18a7c748f6ae6d7e8e96201",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "ARCHITECTURE",
+          "owner": "Architecture Platform",
+          "surfaceId": "ARCH-BASE-001"
         }
       ]
     }

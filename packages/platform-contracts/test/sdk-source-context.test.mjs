@@ -199,3 +199,69 @@ test('common input read failures propagate the original error before alternate o
   assert(!reads.includes(extra)&&!reads.includes(f.added));assert.equal(f.reads(),0)
  }
 })
+
+
+// New exact SourceAuth policy cases only; all earlier cases remain unchanged.
+function exactIdentityContinuationFixture(){
+ const f=fixture(),next={
+ "apps/identity-runtime/src/account-page.ts": "dd46ea898fb75c40e7a33535dcdcd865dc68b2e0b821435ed6040a019ff5a806",
+ "apps/identity-runtime/src/account-provisioning.ts": "79e168641afd506f55bbdf258fc5dbb18bb379bd0aea5a387e153787391f70c2",
+ "apps/identity-runtime/test/account-page.test.mjs": "28cef9f172c2324ccf6948a4eec53d3e865cac788d18bb83a9357e821f9d1bbc",
+ "apps/identity-runtime/test/account-provisioning.test.mjs": "af16bb64ea0886f10aacde6e8ba8a4cdf70ce077157a96ef98115a4344ce5798",
+ "packages/platform-contracts/src/identity-provisioning.mjs": "fd8e498a492acd7418fe72a8e3d483c0be10c4a0feaedfafb1612eb4165d0085",
+ "packages/platform-contracts/src/identity-renewal.mjs": "ba6148b1a0daefc6a3a8270b214ab7b87a9e7a6cd0970f39ba4b9083e5de6a51"
+}
+ f.record.sourceSnapshotSha='c'.repeat(40)
+ f.record.reviewedSdkInputContinuation={"baseSha": "f75c6a5a170dd4b6597f67ab9790722657a1ef35", "recordId": "identity-existing-account-policy-denial-20261122", "scope": "SOURCE_VALIDATION_ONLY", "sourceSha": "e8a99f5e0498c5699eeef411037c90e7426ebc06", "taskId": "ARCH-REGISTRATION-AUTH-REPAIR-20261118"}
+ f.record.applicationInputContinuation={sourceSnapshotSha:'e8a99f5e0498c5699eeef411037c90e7426ebc06',baseAbsences:[],inputs:{...next}}
+ for(const p of Object.keys(next)){const value='synthetic accepted base '+p;f.current.set(p,value);f.record.inputs[p]=hash(value)}
+ return f
+}
+test('exact Identity SDK admission preserves the complete base without granting runtime authority',()=>{
+ const f=exactIdentityContinuationFixture(),v=f.run()
+ assert.equal(v.record.sourceSnapshotSha,'c'.repeat(40))
+ assert.equal(v.record.runtimeActivated,false);assert.equal(v.record.permissionsChanged,false)
+ assert.equal(v.record.providerCallsPerformed,false);assert.equal(v.record.deploymentPerformed,false)
+ assert.equal(v.baseline('first')(code).toString(),'old code')
+})
+test('exact Identity SDK admission rejects changed source identity, scope, paths and every postimage',()=>{
+ const changes=[
+  f=>delete f.record.reviewedSdkInputContinuation,
+  f=>{f.record.reviewedSdkInputContinuation.recordId='other'},
+  f=>{f.record.reviewedSdkInputContinuation.taskId='other'},
+  f=>{f.record.reviewedSdkInputContinuation.sourceSha='a'.repeat(40)},
+  f=>{f.record.reviewedSdkInputContinuation.baseSha='b'.repeat(40)},
+  f=>{f.record.reviewedSdkInputContinuation.scope='RUNTIME_AUTHORITY'},
+  f=>{f.record.reviewedSdkInputContinuation.extra=true},
+  f=>{f.record.applicationInputContinuation.sourceSnapshotSha='d'.repeat(40)},
+  f=>{f.record.applicationInputContinuation.baseAbsences=[extra]},
+  f=>{f.record.applicationInputContinuation.inputs[code]=hash('other SDK')},
+  f=>{delete f.record.applicationInputContinuation},
+  ...Object.keys({
+ "apps/identity-runtime/src/account-page.ts": "dd46ea898fb75c40e7a33535dcdcd865dc68b2e0b821435ed6040a019ff5a806",
+ "apps/identity-runtime/src/account-provisioning.ts": "79e168641afd506f55bbdf258fc5dbb18bb379bd0aea5a387e153787391f70c2",
+ "apps/identity-runtime/test/account-page.test.mjs": "28cef9f172c2324ccf6948a4eec53d3e865cac788d18bb83a9357e821f9d1bbc",
+ "apps/identity-runtime/test/account-provisioning.test.mjs": "af16bb64ea0886f10aacde6e8ba8a4cdf70ce077157a96ef98115a4344ce5798",
+ "packages/platform-contracts/src/identity-provisioning.mjs": "fd8e498a492acd7418fe72a8e3d483c0be10c4a0feaedfafb1612eb4165d0085",
+ "packages/platform-contracts/src/identity-renewal.mjs": "ba6148b1a0daefc6a3a8270b214ab7b87a9e7a6cd0970f39ba4b9083e5de6a51"
+}).flatMap(p=>[
+   f=>{f.record.applicationInputContinuation.inputs[p]='0'.repeat(64)},
+   f=>{delete f.record.applicationInputContinuation.inputs[p]},
+   f=>{delete f.record.inputs[p]}
+  ])
+ ]
+ for(const change of changes){const f=exactIdentityContinuationFixture();change(f);assert.throws(f.run);assert.equal(f.reads(),0)}
+})
+test('exact Identity SDK admission still rejects physical substitution before reading history',()=>{
+ for(const p of Object.keys({
+ "apps/identity-runtime/src/account-page.ts": "dd46ea898fb75c40e7a33535dcdcd865dc68b2e0b821435ed6040a019ff5a806",
+ "apps/identity-runtime/src/account-provisioning.ts": "79e168641afd506f55bbdf258fc5dbb18bb379bd0aea5a387e153787391f70c2",
+ "apps/identity-runtime/test/account-page.test.mjs": "28cef9f172c2324ccf6948a4eec53d3e865cac788d18bb83a9357e821f9d1bbc",
+ "apps/identity-runtime/test/account-provisioning.test.mjs": "af16bb64ea0886f10aacde6e8ba8a4cdf70ce077157a96ef98115a4344ce5798",
+ "packages/platform-contracts/src/identity-provisioning.mjs": "fd8e498a492acd7418fe72a8e3d483c0be10c4a0feaedfafb1612eb4165d0085",
+ "packages/platform-contracts/src/identity-renewal.mjs": "ba6148b1a0daefc6a3a8270b214ab7b87a9e7a6cd0970f39ba4b9083e5de6a51"
+})){
+  const f=exactIdentityContinuationFixture();f.current.set(p,'unapproved physical source')
+  assert.throws(f.run);assert.equal(f.reads(),0)
+ }
+})

@@ -54,6 +54,7 @@ export function sdkSourceContext(current,historical,{recordPath=CURRENT_SDK_SOUR
   for(const [p,digest]of Object.entries(inputs))assert(sourcePath(p)&&p!==recordPath&&sha256.test(digest),'safe complete physical source input')
  }
  validateInputs(r.inputs)
+ if(Object.hasOwn(r,'reviewedSdkInputContinuation'))assert(Object.hasOwn(r,'applicationInputContinuation'),'reviewed SDK continuation requires its complete successor view')
  if(Object.hasOwn(r,'applicationInputContinuation')){
   // Trusted source metadata may describe one complete application successor
   // while authority main still contains the qualified base. Neither view can
@@ -66,7 +67,30 @@ export function sdkSourceContext(current,historical,{recordPath=CURRENT_SDK_SOUR
   assert(plain(next.inputs),'closed application input changes')
   const changed=Object.keys(next.inputs)
   assert(changed.length>0&&changed.length<=32&&changed.some(p=>Object.hasOwn(r.inputs,p)),'bounded non-overlapping application successor')
-  for(const p of changed)assert(p.startsWith('apps/')&&(/\.(?:mjs|tsx?)$/.test(p)||p==='apps/sg-runtime/package.json')
+  // One closed Identity source qualification only. The unchanged trusted
+  // controller still binds this descriptor and the separate six-blob Source
+  // admission. This is not a general SDK continuation or runtime authority.
+  const identityInputs={
+  "apps/identity-runtime/src/account-page.ts": "dd46ea898fb75c40e7a33535dcdcd865dc68b2e0b821435ed6040a019ff5a806",
+  "apps/identity-runtime/src/account-provisioning.ts": "79e168641afd506f55bbdf258fc5dbb18bb379bd0aea5a387e153787391f70c2",
+  "apps/identity-runtime/test/account-page.test.mjs": "28cef9f172c2324ccf6948a4eec53d3e865cac788d18bb83a9357e821f9d1bbc",
+  "apps/identity-runtime/test/account-provisioning.test.mjs": "af16bb64ea0886f10aacde6e8ba8a4cdf70ce077157a96ef98115a4344ce5798",
+  "packages/platform-contracts/src/identity-provisioning.mjs": "fd8e498a492acd7418fe72a8e3d483c0be10c4a0feaedfafb1612eb4165d0085",
+  "packages/platform-contracts/src/identity-renewal.mjs": "ba6148b1a0daefc6a3a8270b214ab7b87a9e7a6cd0970f39ba4b9083e5de6a51"
+}
+  const reviewed=r.reviewedSdkInputContinuation
+  const exactIdentity=plain(reviewed)
+   &&Object.keys(reviewed).sort().join(',')==='baseSha,recordId,scope,sourceSha,taskId'
+   &&reviewed.recordId==='identity-existing-account-policy-denial-20261122'&&reviewed.taskId==='ARCH-REGISTRATION-AUTH-REPAIR-20261118'
+   &&reviewed.scope==='SOURCE_VALIDATION_ONLY'
+   &&reviewed.sourceSha==='e8a99f5e0498c5699eeef411037c90e7426ebc06'&&reviewed.baseSha==='f75c6a5a170dd4b6597f67ab9790722657a1ef35'
+   &&next.sourceSnapshotSha===reviewed.sourceSha
+   &&Array.isArray(next.baseAbsences)&&next.baseAbsences.length===0
+   &&Object.keys(next.inputs).length===6
+   &&Object.entries(identityInputs).every(([p,digest])=>Object.hasOwn(r.inputs,p)&&next.inputs[p]===digest)
+  if(Object.hasOwn(r,'reviewedSdkInputContinuation'))assert(exactIdentity,'only the exact reviewed six-file Identity source continuation')
+  for(const p of changed)assert(((p.startsWith('apps/')&&(/\.(?:mjs|tsx?)$/.test(p)||p==='apps/sg-runtime/package.json'))
+    ||exactIdentity&&["packages/platform-contracts/src/identity-provisioning.mjs", "packages/platform-contracts/src/identity-renewal.mjs"].includes(p))
    &&!p.split('/').some(part=>part.startsWith('.env')||part.startsWith('.npmrc'))
    &&r.inputs[p]!==next.inputs[p],'application successor cannot change SDK, evidence or governance inputs')
   const baseInputs=r.inputs,baseSnapshot=r.sourceSnapshotSha,nextInputs={...baseInputs,...next.inputs}
