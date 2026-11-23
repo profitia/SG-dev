@@ -14766,6 +14766,58 @@
           "surfaceId": "ARCH-BASE-001"
         }
       ]
+    },
+    {
+      "id": "sg2-zsrir-e2-t01-20261123-source",
+      "status": "ACTIVE",
+      "repository": "profitia/SG-dev",
+      "actor": "profitia",
+      "taskId": "SG2-BSDC-ZSRIR-E2-T01-20261123",
+      "approvalRef": "https://github.com/profitia/SG-dev/pull/1302#decyzja-właścicielska-e2-t01",
+      "targetEnvironment": "development",
+      "scope": "SOURCE_VALIDATION_ONLY",
+      "sourceSha": "c23570b293922334cf26460e765c20b6920e3ac6",
+      "baseSha": "dfc1e3c97198efcf412fca0e8e5bb3f6030ecb74",
+      "validFrom": "2026-11-23T11:41:40Z",
+      "validUntil": "2026-11-24T11:42:40Z",
+      "files": [
+        {
+          "path": "apps/sg-runtime/package.json",
+          "blob": "31c2a8c154a868fb6ce4705a98607f76ce02a574",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SG2",
+          "owner": "SG Runtime",
+          "surfaceId": "SG2-BASE-001"
+        },
+        {
+          "path": "apps/sg-runtime/prisma-market-data/private-write/004-zsrir-history.sql",
+          "blob": "a23831dc9075f79ca5529bfa98f62db31396a49d",
+          "mode": "100644",
+          "status": "added",
+          "projectKey": "SG2",
+          "owner": "SG Runtime",
+          "surfaceId": "SG2-BASE-001"
+        },
+        {
+          "path": "apps/sg-runtime/prisma-market-data/rehearsals/zsrir-e2-t01/schema.sql",
+          "blob": "1eef7d9c601038a1bebe4ecc0bcbab09c62c0726",
+          "mode": "100644",
+          "status": "added",
+          "projectKey": "SG2",
+          "owner": "SG Runtime",
+          "surfaceId": "SG2-BASE-001"
+        },
+        {
+          "path": "apps/sg-runtime/tests/zsrir-history.integration.test.mjs",
+          "blob": "a8bf9374fe3347fbbe8057af2a727817519b198a",
+          "mode": "100644",
+          "status": "added",
+          "projectKey": "SG2",
+          "owner": "SG Runtime",
+          "surfaceId": "SG2-BASE-001"
+        }
+      ]
     }
   ],
   "authority": "Accepted trusted-main data only. Candidate records never authorize themselves. Existing closed reviews and historical receipts remain unchanged."
