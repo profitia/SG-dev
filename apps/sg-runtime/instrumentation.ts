@@ -6,8 +6,8 @@ export async function register() {
     if(process.env.PROFITIA_ASSISTANT_ENABLED==='true'){
       const {getSg2SelectionRuntime}=await import('./lib/platform/private-runtime')
       const runtime=getSg2SelectionRuntime()
-      if(runtime.provider!=='clerk'||!runtime.assistant)throw Error('Assistant Development configuration unavailable')
-      await runtime.assistant()
+      if(runtime.provider!=='clerk'||!runtime.assistantReady)throw Error('Assistant Development configuration unavailable')
+      await runtime.assistantReady()
     }
   }
   if (process.env.NEXT_RUNTIME === 'edge') await import('./sentry.edge.config')
