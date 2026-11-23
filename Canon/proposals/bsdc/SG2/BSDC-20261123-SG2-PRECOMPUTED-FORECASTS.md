@@ -261,11 +261,11 @@ Statusy etapów i tasków: `NIE_ROZPOCZĘTY`, `W_TOKU`, `CZĘŚCIOWY`, `ZABLOKOW
 
 | ID | Owner / miejsce | Status | Daty; taskId; PR/SHA/CI/run/test | Dowód rzeczywisty | Brak / następny krok |
 | --- | --- | --- | --- | --- | --- |
-| E1 | SG2 · Development | NIE_ROZPOCZĘTY | — | — | Brak osobnego mandatu `URUCHOM ETAP E1` |
-| E1-T01 | SG2 Platform + Forecast | NIE_ROZPOCZĘTY | — | — | Zweryfikować 11 ID i artefakty |
-| E1-T02 | SG Runtime + Source + Forecast Ops | NIE_ROZPOCZĘTY | — | — | Sprawdzić Dev runtime, Clerk/E1 i entrypointy |
-| E1-T03 | Forecast + Market Data | NIE_ROZPOCZĘTY | — | — | Dwa pilotażowe warianty |
-| E1-T04 | SG Runtime + Dashboard | NIE_ROZPOCZĘTY | — | — | Działający UI i pomiary |
+| E1 | SG2 · Development | CZĘŚCIOWY | 2026-11-23 · SG2-BSDC-PRECOMPUTED-FORECASTS-E1-20261123 | Dzienny Brent ICE działa w chronionym odczycie. Miesięczne HWWI wymaga proweniencji Source i dopuszczenia producenta. | Wznowić E1 po realizacji wniosku operacyjnego poniżej. |
+| E1-T01 | SG2 Platform + Forecast | CZĘŚCIOWY | 2026-11-23 · odczyt Neon Development | Zidentyfikowano 11 kandydatów, 3 niedopasowane kontrakty fixed i zapisane artefakty. Liczba wierszy public: 234 Current, 271 Verification, 95 Rolling Daily. | Potwierdzić decyzje o odpowiednikach, licencje i zakres prawdziwego PIT. |
+| E1-T02 | SG Runtime + Source + Forecast Ops | CZĘŚCIOWY | 2026-11-23 · runtime 2712ff7718e1ee8f6478df08f7eef41ee84c5be9 | Powiązania Development, historyczne wykonania workerów, odczyt SG Runtime, ścieżki PCI i ACG oraz wygaśnięcie grantów kolejki i workera potwierdzone. | Rozliczyć źródłowy kalendarz, limit i licencję. |
+| E1-T03 | Forecast + Market Data | ZABLOKOWANY | 2026-11-23 · Brent ICE b_c1_cl i HWWI hwwi_gb_ironsteel_2021_eur | Brent ICE, model naive, Current i Verification AVAILABLE dla danych do 18.11.2026. HWWI zwraca NOT_AVAILABLE mimo zapisanych przebiegów. | Ustalić proweniencję HWWI i wznowić jeden dopuszczony przebieg. |
+| E1-T04 | SG Runtime + Dashboard | CZĘŚCIOWY | 2026-11-23 · Finder Development i zabezpieczone GET | Sesja otwiera Finder bez dodatkowego potwierdzenia. Brent ICE dostępny w API, obcy kontekst testowy i brak sesji bez zwrócenia danych. | Dwa renderowania w Finderze, pełne pomiary UI i rzeczywista zmiana organizacji pozostają do sprawdzenia. |
 | E2 | SG2 · Development | NIE_ROZPOCZĘTY | — | — | Wymaga rozliczenia E1 i osobnego mandatu |
 | E2-T01 | Forecast + Market Data | NIE_ROZPOCZĘTY | — | — | Pełna macierz i T0 |
 | E2-T02 | Forecast Operations | NIE_ROZPOCZĘTY | — | — | Automatyczny cykl Dev |
@@ -273,7 +273,11 @@ Statusy etapów i tasków: `NIE_ROZPOCZĘTY`, `W_TOKU`, `CZĘŚCIOWY`, `ZABLOKOW
 | E2-T04 | SG Runtime + owners konsumentów | NIE_ROZPOCZĘTY | — | — | Dwa autoryzowane odczyty |
 | E2-T05 | SG2 + Owner | NIE_ROZPOCZĘTY | — | — | Wszystkie FINAL i realny odbiór |
 
-**Bieżący mandat:** `BRAK`. **Ostatnie rozliczenie etapu:** `N/D`. **Decyzja o starcie następnego etapu:** `BRAK`. Aktualizacje tego rejestru następują po formalnym zapisie PDR i legalnym uruchomieniu prac. Dowód `ZAKOŃCZONY` = realny wynik na odpowiednim SHA i Development, nie tylko PR/CI.
+**Bieżący mandat:** wyłącznie E1, dyspozycja Ownera z 23.11.2026. **Ostatnie rozliczenie etapu:** CZĘŚCIOWY. **Decyzja o starcie E2:** BRAK.
+
+**Punkt wznowienia E1.** Właściciele Source / Market Data oraz Forecast Operations mają potwierdzony przez Ownera zakres koordynacji w SG2 Development. Potrzebne są: (1) zatwierdzona proweniencja zamkniętego okresu HWWI, semantyka publikowanego indeksu oraz potwierdzenie licencji i dostępnego budżetu dostawcy, (2) czasowe dopuszczenie istniejącej kolejki i workerów do jednego ograniczonego przebiegu dla tych dwóch serii przez właściwego operatora. Znaleziony Current Brent ICE zachować, jeżeli nadal odpowiada zatwierdzonemu wejściu. Po uzyskaniu dowodów sprawdzić odczyt HWWI, deltę i izolację organizacji w istniejącym Finderze. Nie rozpoczęto E2.
+
+**Dowody E1.** Zabezpieczony odczyt dzienny Brent ICE / naive: 5 prób Current, P50/P95 0,79/1,59 s oraz 5 prób Verification, P50/P95 3,19/3,30 s. To czasy odczytów API w przeglądarce. Pomiar od wyboru do renderu Findera czeka na pełny pilot. Historyczne targety dojrzałe i otwarte są dostępne w Neon. Etykieta POINT_IN_TIME opisuje metodę targetu. Dowód vintage w historycznym momencie decyzji nie jest dostępny w użytej projekcji. Zadanie PMOS: SG2-BSDC-PRECOMPUTED-FORECASTS-E1-20261123.
 
 ### 5.5. Końcowy scenariusz odbioru
 
@@ -333,4 +337,4 @@ To jest **centralna Karta Projektu BSDC 1.0**, zaakceptowana przez Ownera jako j
 
 ---
 
-**STATUS:** `CARD_1.0 / OWNER_APPROVED / PUBLISHED / FINAL / DEVELOPMENT_ONLY / NO_EXECUTION_MANDATE`.
+**STATUS:** `CARD_1.0 / OWNER_APPROVED / PUBLISHED / FINAL / DEVELOPMENT_ONLY / E1_PARTIAL / E2_NOT_AUTHORIZED`.
