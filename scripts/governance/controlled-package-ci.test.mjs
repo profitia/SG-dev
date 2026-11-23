@@ -4,7 +4,7 @@ import {PLATFORM_KNOWLEDGE_STAGE2_PI_COMPOSITION_PROVENANCE} from './controlled-
 import {tmpdir as knowledgePolicyTmpdir} from 'node:os';
 import {PLATFORM_KNOWLEDGE_STAGE2_REPAIR_PROVENANCE} from './controlled-package-ci.mjs'
 import {publicProofContract,currentSdkProofContext,checkAdmittedPackages} from './controlled-package-ci.mjs'
-import {MANIFEST_SUCCESSOR_1102_REVIEW} from './controlled-package-ci.mjs'
+import {GV_01B_REVIEW,GV_01B_REVIEW_ID,MANIFEST_SUCCESSOR_1102_REVIEW,verifyGv01bProofTarget} from './controlled-package-ci.mjs'
 import {PLATFORM_KNOWLEDGE_STAGE2_REVIEW,PLATFORM_KNOWLEDGE_STAGE2_PROVENANCE,assertKnowledgeStage2Entry,knowledgeStage2TrustedPredecessor,currentProofContract} from './controlled-package-ci.mjs'
 import {createExecutionCheckout,assertExecutionCheckout,assertPristineSourceInput} from './controlled-package-ci.mjs'
 import {execFileSync as isolationGitExec} from 'node:child_process'
@@ -4039,3 +4039,58 @@ test('Knowledge SRM Root correction admits the exact repaired target and rejects
   assert.throws(()=>c.knowledgeStage2TrustedPredecessor(p=>p===target?Buffer.concat([read(p),Buffer.from('UNAPPROVED')]):read(p),history),target);
  }finally{fs.rmSync(temporary,{recursive:true,force:true})}
 });
+
+
+test('GV-01b protected review admits only the exact internal PR source',async()=>{
+  const c=context(),r=GV_01B_REVIEW
+  const files=Object.entries(r.entries).map(([filename,entry])=>({filename,status:entry.status,sha:entry.sha}))
+  const candidate={...pr(),number:910000,draft:true,changed_files:files.length,
+    base:{...pr().base,sha:c.controlSha},head:{...pr().head,sha:r.sourceSha,ref:r.branch}}
+  const endpoint=`repos/${REPOSITORY}/pulls/${candidate.number}`
+  const request=async url=>({data:url===endpoint?candidate:files})
+  const result=await resolveCandidateAdmission(c,String(candidate.number),r.sourceSha,request)
+  assert.deepEqual(result,{sha:r.sourceSha,admission:{kind:'ARCHITECTURE',baseSha:c.controlSha,files,candidatePr:candidate.number}})
+
+  for(const changed of [
+    files.slice(1),
+    [...files,{...files[0],filename:'scripts/governance/source-admission/extra.mjs'}],
+    [{...files[0],sha:other},...files.slice(1)],
+    [{...files[0],status:'modified'},...files.slice(1)],
+    [{...files[0],previous_filename:'unexpected.mjs'},...files.slice(1)],
+    [files[0],...files.slice(0,-1)],
+  ])assert.throws(()=>selectCandidate(c,candidate,r.sourceSha,{files:changed}),/GV_01B_SOURCE_IDENTITY_REJECTED/)
+  assert.throws(()=>selectCandidate(c,{...candidate,head:{...candidate.head,sha:other}},r.sourceSha,{files}),/CANDIDATE_SHA_MISMATCH/)
+  assert.throws(()=>selectCandidate(c,{...candidate,head:{...candidate.head,ref:'architecture/unrelated'}},r.sourceSha,{files}),/GV_01B_SOURCE_IDENTITY_REJECTED/)
+  assert.throws(()=>selectCandidate(c,{...candidate,user:{login:'other'}},r.sourceSha,{files}),/UNTRUSTED_CANDIDATE/)
+  assert.throws(()=>selectCandidate(c,{...candidate,base:{...candidate.base,sha:other}},r.sourceSha,{files}),/GV_01B_SOURCE_IDENTITY_REJECTED/)
+  await assert.rejects(()=>resolveCandidateAdmission(c,String(candidate.number+1),r.sourceSha,async url=>({data:url.includes('/files?')?files:candidate})),/GV_01B_SOURCE_IDENTITY_REJECTED/)
+})
+
+test('GV-01b protected evidence binds original attempt, qualification PR and current authority',async()=>{
+  const c=context(),r=GV_01B_REVIEW,candidatePr=910000
+  const files=Object.entries(r.entries).map(([filename,entry])=>({filename,status:entry.status,sha:entry.sha}))
+  const candidate={...pr(),number:candidatePr,draft:true,changed_files:files.length,
+    base:{...pr().base,sha:c.controlSha},head:{...pr().head,sha:r.sourceSha,ref:r.branch}}
+  const run={id:101,workflow_id:11,repository:{full_name:REPOSITORY},head_branch:'main',head_sha:c.controlSha,
+    event:'workflow_dispatch',conclusion:'success',actor:{login:'profitia'},triggering_actor:{login:'profitia'},run_attempt:2}
+  const proof={schemaVersion:'2.0',scope:'EXACT_PROTECTED_SOURCE_VALIDATION',repository:REPOSITORY,workflow:WORKFLOW,
+    targetEnvironment:'development',candidateSha:r.sourceSha,originalSourceSha:r.sourceSha,controlSha:c.controlSha,
+    runId:run.id,candidatePr,runAttempt:run.run_attempt,controlPolicyDigest:'a'.repeat(64),
+    protectedSourceReviewId:GV_01B_REVIEW_ID,protectedSourceReviewDigest:createHash('sha256').update(JSON.stringify(r)).digest('hex'),
+    executionWorkspace:'ISOLATED_GIT_CHECKOUT',executionCheckoutSha:r.sourceSha,
+    sourceInputVerifiedBeforeExecution:true,sourceInputVerifiedAfterExecution:true,
+    install:'CLEAN_REGISTRY_IGNORE_SCRIPTS',credentialRemovedBeforeCandidateExecution:true,privatePackageArtifactsPublished:false,
+    tests:'PASS',typecheck:'PASS',build:'PASS',productDeploymentPerformed:false,customerIdentityAdapterVerified:false}
+  const options={expectedControlDigest:proof.controlPolicyDigest}
+  assert.equal(assertProof(proof,run,r.sourceSha,run.workflow_id,options),proof)
+  assert.throws(()=>assertProof({...proof,scope:'EXACT_SOURCE_VALIDATION'},run,r.sourceSha,run.workflow_id,options),/VALIDATION_PROVENANCE_MISMATCH/)
+  assert.throws(()=>assertProof({...proof,runAttempt:1},run,r.sourceSha,run.workflow_id,options),/GV_01B_PROOF_IDENTITY_REJECTED/)
+  assert.throws(()=>assertProof(proof,{...run,triggering_actor:{login:'other'}},r.sourceSha,run.workflow_id,options),/GV_01B_PROOF_IDENTITY_REJECTED/)
+  assert.throws(()=>assertProof({...proof,protectedSourceReviewDigest:'0'.repeat(64)},run,r.sourceSha,run.workflow_id,options),/VALIDATION_PROVENANCE_MISMATCH/)
+
+  const receiver={event:'pull_request',pull_requests:[{number:candidatePr,head:{sha:r.sourceSha},base:{ref:'main'}}]}
+  const request=async url=>({data:url.endsWith('/heads/main')?{object:{sha:c.controlSha}}:url.includes('/files?')?files:candidate})
+  await verifyGv01bProofTarget(proof,run,receiver,request)
+  await assert.rejects(()=>verifyGv01bProofTarget({...proof,candidatePr:candidatePr+1},run,receiver,request),/GV_01B_PROOF_PR_REJECTED/)
+  await assert.rejects(()=>verifyGv01bProofTarget(proof,run,receiver,async()=>({data:{object:{sha:other}}})),/SOURCE_AUTHORITY_ADVANCED/)
+})
