@@ -34,6 +34,17 @@ test('closing a user/session instance prevents a delayed credential from issuing
  const request=createDiscoveryRequester({mode:()=> 'clerk',getToken:()=>new Promise(resolve=>release=resolve),origin:()=>origin,newKey:()=> 'finder_'+ 'a'.repeat(16),fetch:async()=>{hits++;return new Response()}})
  const pending=request('/api/benchmark/metadata');request.close();release('later-session');await assert.rejects(pending);await assert.rejects(request('/api/benchmark/metadata'));assert.equal(hits,0)
 })
+test('prepared analytics reuse the current credential without discovery or warmup',async()=>{
+ const f=fixture(),path='/api/benchmark/analytics-eligibility?locale=pl&seriesId=b_c1_cl'
+ await f.request(path)
+ const call=f.calls[0],headers=new Headers(call.init.headers)
+ assert.equal(call.input,path);assert.equal(headers.get('authorization'),'Bearer official-fixture-session')
+ assert.equal(headers.has('x-profitia-idempotency-key'),false);assert.equal(call.init.cache,'no-store')
+ await assert.rejects(f.request(path+'&forecastWarmupExperiment=single'))
+ await assert.rejects(f.request(path+'&organisationId=outside'))
+ await assert.rejects(f.request(path,{method:'POST'}))
+ f.token(null);await assert.rejects(f.request(path));assert.equal(f.calls.length,1)
+})
 test('legacy demo forwards the original request without new headers, keys or identity',async()=>{
  const init={cache:'no-store' as const},input='/api/benchmark/metadata';let called=false
  const request=createDiscoveryRequester({mode:()=> 'legacy_demo',getToken:async()=>assert.fail(),origin:()=>assert.fail(),newKey:()=>assert.fail(),fetch:async(i,o)=>{assert.equal(i,input);assert.equal(o,init);called=true;return new Response()}})
