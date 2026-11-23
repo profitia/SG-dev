@@ -46,7 +46,7 @@ on:
     inputs:
       mode:
         type: choice
-        options: [integration, validate-sg2, policy-probe]
+        options: [integration, validate-sg2, policy-probe, test-only-pr1283]
         default: integration
       candidate_pr:
         description: 'Internal SG2/SRM or bounded Architecture producer PR; empty validates exact main'
@@ -55,7 +55,13 @@ on:
         description: 'Optional trusted-main source admission record ID; never candidate authority'
         type: string
       expected_sha:
-        description: 'Exact 40-character candidate HEAD; required for a PR'
+        description: 'Exact candidate HEAD, or the approved composition commit in test-only-pr1283'
+        type: string
+      approved_workflow_sha:
+        description: 'Owner-approved main commit containing this workflow, required only for test-only-pr1283'
+        type: string
+      approved_workflow_blob:
+        description: 'Independently approved workflow blob, required only for test-only-pr1283'
         type: string
 
 permissions:
@@ -64,6 +70,7 @@ permissions:
 jobs:
   producer:
     name: Architecture contract and lab
+    if: inputs.mode != 'test-only-pr1283'
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -327,7 +334,10 @@ jobs:
 
   controlled-sg2:
     name: SG2 controlled operation integration
-    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.mode == 'validate-sg2'))
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && (inputs.mode == 'validate-sg2' || inputs.mode == 'test-only-pr1283')))
+    concurrency:
+      group: ${{ inputs.mode == 'test-only-pr1283' && 'sg2-pr1283-test-only' || format('sg2-controlled-{0}-{1}', github.run_id, github.run_attempt) }}
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     environment: architecture-development
     permissions:
@@ -366,6 +376,80 @@ jobs:
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: '24'
+      - name: Reserve exact PR 1283 test-only execution
+        id: test_only_reservation
+        if: inputs.mode == 'test-only-pr1283'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REQUESTED_PR: ${{ inputs.candidate_pr }}
+          REQUESTED_COMMIT: ${{ inputs.expected_sha }}
+          REQUESTED_SOURCE_RECORD: ${{ inputs.source_admission_id }}
+          APPROVED_WORKFLOW_SHA: ${{ inputs.approved_workflow_sha }}
+          APPROVED_WORKFLOW_BLOB: ${{ inputs.approved_workflow_blob }}
+        run: |
+          node --input-type=module <<'JS'
+          import assert from 'node:assert/strict';
+          import { execFileSync } from 'node:child_process';
+          import fs from 'node:fs';
+          const e = process.env;
+          const controlSha = '2712ff7718e1ee8f6478df08f7eef41ee84c5be9';
+          const candidateSha = '4765688a54e749bd7b44c3547f1ffab501299943';
+          const candidateHead = 'd55713ee638837a281ffa7bb908bb1b2de2f5767';
+          const tree = '386a52773b3fae98911fbf9da657c175d33e6233';
+          const workflow = '.github/workflows/platform-contracts-ci.yml';
+          const git = (...args) => execFileSync('git', ['-C', 'control', ...args], {encoding: 'utf8'}).trim();
+          const api = (endpoint, paginate = false) => JSON.parse(execFileSync('gh', ['api', ...(paginate ? ['--paginate', '--slurp'] : []), endpoint], {encoding: 'utf8', maxBuffer: 16 * 1024 * 1024}));
+          assert.equal(e.GITHUB_EVENT_NAME, 'workflow_dispatch');
+          assert.equal(e.GITHUB_RUN_ATTEMPT, '1');
+          assert.equal(e.REQUESTED_PR, '1283');
+          assert.equal(e.REQUESTED_COMMIT, candidateSha);
+          assert.equal(e.REQUESTED_SOURCE_RECORD, '');
+          assert.match(e.APPROVED_WORKFLOW_SHA, /^[a-f0-9]{40}$/);
+          assert.match(e.APPROVED_WORKFLOW_BLOB, /^[a-f0-9]{40}$/);
+          assert.equal(e.GITHUB_WORKFLOW_SHA, e.APPROVED_WORKFLOW_SHA);
+          assert.equal(e.GITHUB_SHA, e.APPROVED_WORKFLOW_SHA);
+          assert.equal(git('rev-parse', `HEAD:${workflow}`), e.APPROVED_WORKFLOW_BLOB);
+          assert.equal(git('diff', '--name-only', controlSha, 'HEAD'), workflow);
+
+          // The provider workflow revision changes, but the verifier and its dependencies remain byte-identical to the pinned authority.
+          const { REPOSITORY, assertTrustedContext, assertEnvironment } = await import('./control/scripts/governance/controlled-package-ci.mjs');
+          assertTrustedContext({repository: e.GITHUB_REPOSITORY, ref: e.GITHUB_REF, workflowRef: e.GITHUB_WORKFLOW_REF,
+            event: e.GITHUB_EVENT_NAME, actor: e.GITHUB_ACTOR, triggeringActor: e.GITHUB_TRIGGERING_ACTOR, controlSha});
+          const repo = `repos/${REPOSITORY}`;
+          const registered = JSON.parse(fs.readFileSync('control/Canon/registries/architecture-environment-topology-v1.json')).environments.development.github;
+          const endpoint = `${repo}/environments/${encodeURIComponent(registered.environmentName)}`;
+          assertEnvironment(api(endpoint), api(`${endpoint}/deployment-branch-policies`).branch_policies, registered);
+          assert.equal(api(`${repo}/git/ref/heads/main`).object.sha, e.GITHUB_WORKFLOW_SHA);
+          const pr = api(`${repo}/pulls/1283`);
+          assert.equal(pr.state, 'open');
+          assert.equal(pr.draft, true);
+          assert.equal(pr.changed_files, 3);
+          assert.equal(pr.user.login, 'profitia');
+          assert.equal(pr.head.repo.full_name, REPOSITORY);
+          assert.equal(pr.base.repo.full_name, REPOSITORY);
+          assert.equal(pr.base.ref, 'main');
+          assert.equal(pr.head.sha, candidateHead);
+          const commit = api(`${repo}/git/commits/${candidateSha}`);
+          assert.equal(commit.sha, candidateSha);
+          assert.equal(commit.tree.sha, tree);
+          assert.deepEqual(commit.parents.map(parent => parent.sha), [controlSha, candidateHead]);
+
+          // The job group serializes reservations. A completed reservation consumes the approval even if a later step fails.
+          const workflowId = api(`${repo}/actions/workflows/platform-contracts-ci.yml`).id;
+          const run = api(`${repo}/actions/runs/${e.GITHUB_RUN_ID}`);
+          assert.equal(run.workflow_id, workflowId);
+          assert.equal(run.head_sha, e.GITHUB_WORKFLOW_SHA);
+          const list = `${repo}/actions/workflows/${workflowId}/runs?branch=main&event=workflow_dispatch&head_sha=${e.GITHUB_WORKFLOW_SHA}&per_page=100`;
+          const pages = api(list, true);
+          assert.ok(pages[0].total_count < 1000, 'Cannot establish complete execution history');
+          for (const previous of pages.flatMap(page => page.workflow_runs)) {
+            if (String(previous.id) === e.GITHUB_RUN_ID) continue;
+            const jobs = api(`${repo}/actions/runs/${previous.id}/attempts/1/jobs?per_page=100`, true).flatMap(page => page.jobs);
+            assert.ok(!jobs.some(job => (job.steps ?? []).some(step => step.name === 'Reserve exact PR 1283 test-only execution' && step.conclusion === 'success')),
+              'Exact test-only execution already consumed');
+          }
+          fs.appendFileSync(e.GITHUB_OUTPUT, `candidate_sha=${candidateSha}\n`);
+          JS
       - name: Verify access to exact trusted package artifacts before candidate checkout
         env:
           PACKAGE_CREDENTIAL_MODE: github-token
@@ -373,6 +457,7 @@ jobs:
         run: node control/scripts/governance/controlled-package-ci.mjs credential-preflight
       - name: Verify trusted control, provider policy and immutable internal candidate
         id: resolution
+        if: inputs.mode != 'test-only-pr1283'
         env:
           GH_TOKEN: ${{ github.token }}
           CANDIDATE_PR: ${{ inputs.candidate_pr }}
@@ -380,12 +465,61 @@ jobs:
           EXPECTED_SHA: ${{ inputs.expected_sha }}
         run: node control/scripts/governance/controlled-package-ci.mjs resolve
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
-        if: steps.resolution.outputs.adopted == 'true'
+        if: steps.resolution.outputs.adopted == 'true' || steps.test_only_reservation.outputs.candidate_sha != ''
         with:
-          ref: ${{ steps.resolution.outputs.candidate_sha }}
+          ref: ${{ steps.resolution.outputs.candidate_sha || steps.test_only_reservation.outputs.candidate_sha }}
           fetch-depth: 0
           path: candidate
           persist-credentials: false
+      - name: Verify and prepare the exact test-only checkout
+        id: test_only_checkout
+        if: steps.test_only_reservation.outputs.candidate_sha != ''
+        run: |
+          node --input-type=module <<'JS'
+          import assert from 'node:assert/strict';
+          import { execFileSync } from 'node:child_process';
+          import fs from 'node:fs';
+          import path from 'node:path';
+          import { assertPristineSourceInput, checkAdmittedPackages, createExecutionCheckout } from './control/scripts/governance/controlled-package-ci.mjs';
+          import { sdkSourceContext } from './control/packages/platform-contracts/test/sdk-source-context.mjs';
+          const e = process.env;
+          const control = path.resolve('control');
+          const candidate = path.resolve(e.CANDIDATE_ROOT);
+          const controlSha = '2712ff7718e1ee8f6478df08f7eef41ee84c5be9';
+          const sourceSha = '4765688a54e749bd7b44c3547f1ffab501299943';
+          const tree = '386a52773b3fae98911fbf9da657c175d33e6233';
+          const head = 'd55713ee638837a281ffa7bb908bb1b2de2f5767';
+          const git = (...args) => execFileSync('git', ['-C', candidate, ...args], {stdio: ['ignore', 'pipe', 'pipe'], maxBuffer: 16 * 1024 * 1024});
+          const command = (...args) => git(...args).toString().trim();
+          assertPristineSourceInput(candidate, sourceSha);
+          assert.equal(command('rev-list', '--parents', '-n', '1', sourceSha), `${sourceSha} ${controlSha} ${head}`);
+          assert.equal(command('rev-parse', 'HEAD^{tree}'), tree);
+          const files = new Map([
+            ['apps/architecture-lab/current-sdk-source.json', '9e626c859f83ddb1baee8a7ef1bba4107f5e7a19'],
+            ['scripts/governance/controlled-package-ci.mjs', '6e10a4ae49ca5bd3c3be080caa4053e35affde30'],
+            ['scripts/governance/controlled-package-ci.test.mjs', '206afe78938840d0eb0492bca6091274b0d82ee6'],
+          ]);
+          for (const line of command('diff-tree', '--no-commit-id', '-r', '--raw', '--no-abbrev', controlSha, sourceSha).split('\n')) {
+            const [header, file] = line.split('\t');
+            const [fromMode, toMode, , blob, status] = header.split(' ');
+            assert.equal(fromMode, ':100644');
+            assert.equal(toMode, '100644');
+            assert.equal(status, 'M');
+            assert.ok(files.has(file));
+            assert.equal(blob, files.get(file));
+            files.delete(file);
+          }
+          assert.equal(files.size, 0);
+          const show = (sha, file) => git('show', `${sha}:${file}`);
+          const sdk = sdkSourceContext(file => show(sourceSha, file), show);
+          const lock = 'apps/sg-runtime/package-lock.json';
+          assert.deepEqual(show(sourceSha, lock), fs.readFileSync(path.join(control, lock)));
+          checkAdmittedPackages(candidate, control);
+          const state = createExecutionCheckout(candidate, sourceSha, controlSha, e.RUNNER_TEMP);
+          assert.equal(state.executionTreeSha, tree);
+          fs.writeFileSync(path.join(e.RUNNER_TEMP, 'sg2-test-only-pr1283-state.json'), JSON.stringify({...state, controlSha, sdkRecordSha256: sdk.recordSha256}), {mode: 0o600});
+          fs.appendFileSync(e.GITHUB_OUTPUT, `execution_root=${state.executionRoot}\n`);
+          JS
       - name: Validate candidate files without executing candidate code
         if: steps.resolution.outputs.adopted == 'true'
         run: node control/scripts/governance/controlled-package-ci.mjs check-candidate
@@ -400,16 +534,55 @@ jobs:
           NPM_TOKEN: ${{ github.token }}
           EXECUTION_ROOT: ${{ steps.execution.outputs.execution_root }}
         run: node control/scripts/governance/controlled-package-ci.mjs install
+      - name: Install exact test-only dependencies with scripts disabled
+        if: steps.test_only_checkout.outputs.execution_root != ''
+        env:
+          NPM_TOKEN: ${{ github.token }}
+          EXECUTION_ROOT: ${{ steps.test_only_checkout.outputs.execution_root }}
+        run: |
+          node --input-type=module <<'JS'
+          import assert from 'node:assert/strict';
+          import { spawnSync } from 'node:child_process';
+          import fs from 'node:fs';
+          import path from 'node:path';
+          import { assertExecutionCheckout, assertPristineSourceInput, checkAdmittedPackages, PRIVATE_PACKAGES } from './control/scripts/governance/controlled-package-ci.mjs';
+          const e = process.env;
+          const state = JSON.parse(fs.readFileSync(path.join(e.RUNNER_TEMP, 'sg2-test-only-pr1283-state.json')));
+          const ready = JSON.parse(fs.readFileSync(path.join(e.RUNNER_TEMP, 'controlled-package-access.json')));
+          assert.equal(ready.controlSha, e.GITHUB_WORKFLOW_SHA);
+          assert.equal(ready.runId, e.GITHUB_RUN_ID);
+          assert.equal(ready.mode, 'github-token');
+          assert.deepEqual(ready.privatePackages, PRIVATE_PACKAGES);
+          assert.ok(e.NPM_TOKEN);
+          const root = assertExecutionCheckout(e.EXECUTION_ROOT, e.CANDIDATE_ROOT, state, e.RUNNER_TEMP);
+          assertPristineSourceInput(root, state.sha);
+          const control = path.resolve('control');
+          const app = checkAdmittedPackages(root, control);
+          const config = fs.mkdtempSync(path.join(e.RUNNER_TEMP, 'sg2-test-only-npm-'));
+          try {
+            const npmrc = path.join(config, '.npmrc');
+            fs.copyFileSync(path.join(control, 'apps/sg-runtime/.npmrc'), npmrc);
+            fs.chmodSync(npmrc, 0o600);
+            const env = {PATH: e.PATH, HOME: config, NPM_TOKEN: e.NPM_TOKEN,
+              NPM_CONFIG_USERCONFIG: npmrc, NPM_CONFIG_GLOBALCONFIG: '/dev/null', NPM_CONFIG_CACHE: path.join(config, 'cache')};
+            const command = spawnSync('npm', ['ci', '--install-links', '--ignore-scripts', '--no-audit', '--no-fund'], {cwd: app, env, maxBuffer: 32 * 1024 * 1024});
+            assert.equal(command.status, 0, 'Exact test-only dependency installation failed');
+          } finally {
+            fs.rmSync(config, {recursive: true, force: true});
+          }
+          assertPristineSourceInput(root, state.sha);
+          JS
       - name: Verify clean exact execution inputs after credential phase ended
         if: steps.resolution.outputs.adopted == 'true'
         env:
           EXECUTION_ROOT: ${{ steps.execution.outputs.execution_root }}
         run: node control/scripts/governance/controlled-package-ci.mjs check-execution-input
       - name: Run lifecycle, real API tests, typecheck and build after credential phase ended
-        if: steps.resolution.outputs.adopted == 'true'
-        working-directory: ${{ steps.execution.outputs.execution_root }}/apps/sg-runtime
+        id: sg2_validation
+        if: steps.resolution.outputs.adopted == 'true' || steps.test_only_checkout.outputs.execution_root != ''
+        working-directory: ${{ steps.execution.outputs.execution_root || steps.test_only_checkout.outputs.execution_root }}/apps/sg-runtime
         env:
-          CANDIDATE_ROOT: ${{ steps.execution.outputs.execution_root }}
+          CANDIDATE_ROOT: ${{ steps.execution.outputs.execution_root || steps.test_only_checkout.outputs.execution_root }}
           NPM_TOKEN: ''
           NODE_AUTH_TOKEN: ''
           GH_TOKEN: ''
@@ -433,6 +606,46 @@ jobs:
         with:
           name: sg2-controlled-operation-proof
           path: ${{ runner.temp }}/sg2-controlled-operation-proof/proof.json
+          retention-days: 30
+          if-no-files-found: error
+      - name: Record independent test-only execution receipt
+        if: steps.test_only_checkout.outputs.execution_root != '' && steps.sg2_validation.outcome == 'success'
+        env:
+          EXECUTION_ROOT: ${{ steps.test_only_checkout.outputs.execution_root }}
+        run: |
+          node control/scripts/governance/controlled-package-ci.mjs assert-credential-free
+          node --input-type=module <<'JS'
+          import assert from 'node:assert/strict';
+          import fs from 'node:fs';
+          import path from 'node:path';
+          import { execFileSync } from 'node:child_process';
+          import { assertExecutionCheckout, assertPristineSourceInput, PRIVATE_PACKAGES, WORKFLOW } from './control/scripts/governance/controlled-package-ci.mjs';
+          const e = process.env;
+          const state = JSON.parse(fs.readFileSync(path.join(e.RUNNER_TEMP, 'sg2-test-only-pr1283-state.json')));
+          assertPristineSourceInput(e.CANDIDATE_ROOT, state.sha);
+          assertPristineSourceInput(path.resolve('control'), e.GITHUB_WORKFLOW_SHA);
+          assertExecutionCheckout(e.EXECUTION_ROOT, e.CANDIDATE_ROOT, state, e.RUNNER_TEMP);
+          execFileSync('git', ['-C', e.EXECUTION_ROOT, 'diff', '--quiet', 'HEAD', '--']);
+          const lock = JSON.parse(fs.readFileSync('control/apps/sg-runtime/package-lock.json'));
+          const packages = PRIVATE_PACKAGES.map(name => {
+            const { version, integrity } = lock.packages[`node_modules/${name}`];
+            return { name, version, integrity };
+          });
+          fs.writeFileSync(path.join(e.RUNNER_TEMP, 'sg2-test-only-pr1283-proof.json'), JSON.stringify({
+            scope: 'TEST_ONLY_EXECUTION', repository: e.GITHUB_REPOSITORY, pr: 1283,
+            candidateSha: state.sha, treeSha: state.executionTreeSha, controlSha: state.controlSha, sdkRecordSha256: state.sdkRecordSha256,
+            workflow: WORKFLOW, workflowSourceSha: e.GITHUB_WORKFLOW_SHA,
+            runId: e.GITHUB_RUN_ID, runAttempt: e.GITHUB_RUN_ATTEMPT, packages,
+            executionWorkspace: 'ISOLATED_GIT_CHECKOUT', credentialRemovedBeforeCandidateExecution: true,
+            sourceInputVerifiedBeforeExecution: true, sourceInputVerifiedAfterExecution: true,
+            tests: 'PASS', typecheck: 'PASS', build: 'PASS', sourceAdmissionPerformed: false,
+          }, null, 2), {mode: 0o600});
+          JS
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: steps.test_only_checkout.outputs.execution_root != '' && steps.sg2_validation.outcome == 'success' && success()
+        with:
+          name: sg2-test-only-pr1283-proof
+          path: ${{ runner.temp }}/sg2-test-only-pr1283-proof.json
           retention-days: 30
           if-no-files-found: error
 
