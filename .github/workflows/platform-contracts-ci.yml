@@ -406,12 +406,20 @@ jobs:
           assert.equal(e.REQUESTED_SOURCE_RECORD, '');
           assert.match(e.APPROVED_WORKFLOW_SHA, /^[a-f0-9]{40}$/);
           assert.match(e.APPROVED_WORKFLOW_BLOB, /^[a-f0-9]{40}$/);
-          assert.equal(e.GITHUB_WORKFLOW_SHA, e.APPROVED_WORKFLOW_SHA);
-          assert.equal(e.GITHUB_SHA, e.APPROVED_WORKFLOW_SHA);
-          assert.equal(git('rev-parse', `HEAD:${workflow}`), e.APPROVED_WORKFLOW_BLOB);
-          assert.equal(git('diff', '--name-only', controlSha, 'HEAD'), workflow);
+          assert.equal(e.GITHUB_WORKFLOW_SHA, e.GITHUB_SHA);
+          assert.equal(git('rev-parse', 'HEAD'), e.GITHUB_WORKFLOW_SHA);
+          git('merge-base', '--is-ancestor', e.APPROVED_WORKFLOW_SHA, 'HEAD');
+          const isUnrelatedDocument = file => /^Canon\/proposals\/bsdc\/[\w./-]+\.md$/.test(file)
+            && !file.split('/').includes('AGENTS.md');
+          const verifyAuthority = ref => {
+            assert.equal(git('rev-parse', ref + ':' + workflow), e.APPROVED_WORKFLOW_BLOB);
+            const changed = git('diff', '--no-renames', '--name-only', controlSha, ref).split('\n').filter(Boolean);
+            assert.ok(changed.every(file => file === workflow || isUnrelatedDocument(file)), 'Trusted execution inputs changed');
+          };
+          verifyAuthority(e.APPROVED_WORKFLOW_SHA);
+          verifyAuthority('HEAD');
 
-          // The provider workflow revision changes, but the verifier and its dependencies remain byte-identical to the pinned authority.
+          // Project-card edits can advance main without changing the pinned controller, SDK or test inputs.
           const { REPOSITORY, assertTrustedContext, assertEnvironment } = await import('./control/scripts/governance/controlled-package-ci.mjs');
           assertTrustedContext({repository: e.GITHUB_REPOSITORY, ref: e.GITHUB_REF, workflowRef: e.GITHUB_WORKFLOW_REF,
             event: e.GITHUB_EVENT_NAME, actor: e.GITHUB_ACTOR, triggeringActor: e.GITHUB_TRIGGERING_ACTOR, controlSha});
@@ -419,7 +427,11 @@ jobs:
           const registered = JSON.parse(fs.readFileSync('control/Canon/registries/architecture-environment-topology-v1.json')).environments.development.github;
           const endpoint = `${repo}/environments/${encodeURIComponent(registered.environmentName)}`;
           assertEnvironment(api(endpoint), api(`${endpoint}/deployment-branch-policies`).branch_policies, registered);
-          assert.equal(api(`${repo}/git/ref/heads/main`).object.sha, e.GITHUB_WORKFLOW_SHA);
+          const liveMain = api(repo + '/git/ref/heads/main').object.sha;
+          assert.match(liveMain, /^[a-f0-9]{40}$/);
+          if (liveMain !== e.GITHUB_WORKFLOW_SHA) git('fetch', '--no-tags', 'origin', liveMain);
+          git('merge-base', '--is-ancestor', e.GITHUB_WORKFLOW_SHA, liveMain);
+          verifyAuthority(liveMain);
           const pr = api(`${repo}/pulls/1283`);
           assert.equal(pr.state, 'open');
           assert.equal(pr.draft, true);
@@ -439,10 +451,12 @@ jobs:
           const run = api(`${repo}/actions/runs/${e.GITHUB_RUN_ID}`);
           assert.equal(run.workflow_id, workflowId);
           assert.equal(run.head_sha, e.GITHUB_WORKFLOW_SHA);
-          const list = `${repo}/actions/workflows/${workflowId}/runs?branch=main&event=workflow_dispatch&head_sha=${e.GITHUB_WORKFLOW_SHA}&per_page=100`;
+          const since = encodeURIComponent('>=' + git('show', '-s', '--format=%cI', controlSha));
+          const list = repo + '/actions/workflows/' + workflowId + '/runs?branch=main&event=workflow_dispatch&created=' + since + '&per_page=100';
           const pages = api(list, true);
-          assert.ok(pages[0].total_count < 1000, 'Cannot establish complete execution history');
-          for (const previous of pages.flatMap(page => page.workflow_runs)) {
+          const history = pages.flatMap(page => page.workflow_runs);
+          assert.ok(pages[0].total_count < 1000 && history.length === pages[0].total_count, 'Cannot establish complete execution history');
+          for (const previous of history) {
             if (String(previous.id) === e.GITHUB_RUN_ID) continue;
             const jobs = api(`${repo}/actions/runs/${previous.id}/attempts/1/jobs?per_page=100`, true).flatMap(page => page.jobs);
             assert.ok(!jobs.some(job => (job.steps ?? []).some(step => step.name === 'Reserve exact PR 1283 test-only execution' && step.conclusion === 'success')),
@@ -471,10 +485,19 @@ jobs:
           fetch-depth: 0
           path: candidate
           persist-credentials: false
-      - name: Verify and prepare the exact test-only checkout
-        id: test_only_checkout
-        if: steps.test_only_reservation.outputs.candidate_sha != ''
+      - name: Validate candidate files without executing candidate code
+        if: steps.resolution.outputs.adopted == 'true'
+        run: node control/scripts/governance/controlled-package-ci.mjs check-candidate
+      - name: Prepare isolated mutable execution checkout from verified source
+        id: execution
+        if: steps.resolution.outputs.adopted == 'true' || steps.test_only_reservation.outputs.candidate_sha != ''
+        env:
+          TEST_ONLY: "${{ inputs.mode == 'test-only-pr1283' }}"
         run: |
+          if [ "$TEST_ONLY" != true ]; then
+            node control/scripts/governance/controlled-package-ci.mjs prepare-execution
+            exit
+          fi
           node --input-type=module <<'JS'
           import assert from 'node:assert/strict';
           import { execFileSync } from 'node:child_process';
@@ -520,26 +543,18 @@ jobs:
           fs.writeFileSync(path.join(e.RUNNER_TEMP, 'sg2-test-only-pr1283-state.json'), JSON.stringify({...state, controlSha, sdkRecordSha256: sdk.recordSha256}), {mode: 0o600});
           fs.appendFileSync(e.GITHUB_OUTPUT, `execution_root=${state.executionRoot}\n`);
           JS
-      - name: Validate candidate files without executing candidate code
-        if: steps.resolution.outputs.adopted == 'true'
-        run: node control/scripts/governance/controlled-package-ci.mjs check-candidate
-      - name: Prepare isolated mutable execution checkout from verified source
-        id: execution
-        if: steps.resolution.outputs.adopted == 'true'
-        run: node control/scripts/governance/controlled-package-ci.mjs prepare-execution
       - name: Read-only credential phase; clean install with lifecycle scripts disabled
-        if: steps.resolution.outputs.adopted == 'true'
+        if: steps.resolution.outputs.adopted == 'true' || steps.test_only_reservation.outputs.candidate_sha != ''
         env:
           PACKAGE_CREDENTIAL_MODE: github-token
           NPM_TOKEN: ${{ github.token }}
           EXECUTION_ROOT: ${{ steps.execution.outputs.execution_root }}
-        run: node control/scripts/governance/controlled-package-ci.mjs install
-      - name: Install exact test-only dependencies with scripts disabled
-        if: steps.test_only_checkout.outputs.execution_root != ''
-        env:
-          NPM_TOKEN: ${{ github.token }}
-          EXECUTION_ROOT: ${{ steps.test_only_checkout.outputs.execution_root }}
+          TEST_ONLY: "${{ inputs.mode == 'test-only-pr1283' }}"
         run: |
+          if [ "$TEST_ONLY" != true ]; then
+            node control/scripts/governance/controlled-package-ci.mjs install
+            exit
+          fi
           node --input-type=module <<'JS'
           import assert from 'node:assert/strict';
           import { spawnSync } from 'node:child_process';
@@ -579,10 +594,10 @@ jobs:
         run: node control/scripts/governance/controlled-package-ci.mjs check-execution-input
       - name: Run lifecycle, real API tests, typecheck and build after credential phase ended
         id: sg2_validation
-        if: steps.resolution.outputs.adopted == 'true' || steps.test_only_checkout.outputs.execution_root != ''
-        working-directory: ${{ steps.execution.outputs.execution_root || steps.test_only_checkout.outputs.execution_root }}/apps/sg-runtime
+        if: steps.resolution.outputs.adopted == 'true' || steps.test_only_reservation.outputs.candidate_sha != ''
+        working-directory: ${{ steps.execution.outputs.execution_root }}/apps/sg-runtime
         env:
-          CANDIDATE_ROOT: ${{ steps.execution.outputs.execution_root || steps.test_only_checkout.outputs.execution_root }}
+          CANDIDATE_ROOT: ${{ steps.execution.outputs.execution_root }}
           NPM_TOKEN: ''
           NODE_AUTH_TOKEN: ''
           GH_TOKEN: ''
@@ -609,9 +624,9 @@ jobs:
           retention-days: 30
           if-no-files-found: error
       - name: Record independent test-only execution receipt
-        if: steps.test_only_checkout.outputs.execution_root != '' && steps.sg2_validation.outcome == 'success'
+        if: steps.test_only_reservation.outputs.candidate_sha != '' && steps.sg2_validation.outcome == 'success'
         env:
-          EXECUTION_ROOT: ${{ steps.test_only_checkout.outputs.execution_root }}
+          EXECUTION_ROOT: ${{ steps.execution.outputs.execution_root }}
         run: |
           node control/scripts/governance/controlled-package-ci.mjs assert-credential-free
           node --input-type=module <<'JS'
@@ -642,7 +657,7 @@ jobs:
           }, null, 2), {mode: 0o600});
           JS
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
-        if: steps.test_only_checkout.outputs.execution_root != '' && steps.sg2_validation.outcome == 'success' && success()
+        if: steps.test_only_reservation.outputs.candidate_sha != '' && steps.sg2_validation.outcome == 'success' && success()
         with:
           name: sg2-test-only-pr1283-proof
           path: ${{ runner.temp }}/sg2-test-only-pr1283-proof.json
