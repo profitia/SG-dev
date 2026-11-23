@@ -1,7 +1,7 @@
 import { createAccessStore } from './access-store.mjs'
 import { createClerkIdentityAuthenticator } from './identity-provider.mjs'
 import { createProfileSql, deny, unavailable } from './identity-profile-sql.mjs'
-import { createIdentityRenewalSql } from './identity-renewal.mjs'
+import { createIdentityRenewalSql, BindingRenewalDenied } from './identity-renewal.mjs'
 
 export const IDENTITY_PROVISIONING_CONTRACT = Object.freeze({ id: 'profitia.identity-provisioning', version: '1.0.0' })
 
@@ -37,7 +37,7 @@ export function createIdentityProvisioner({ client, identityApplication, binding
           await query("SET LOCAL lock_timeout='5000ms'")
           await query("SET LOCAL idle_in_transaction_session_timeout='15000ms'")
           // Per-call observations; never cached, returned, or accepted from HTTP.
-          let tokenUntil, sessionUntil
+          let tokenUntil, sessionUntil, renewalDenied = null
           const observedClient = {
             authenticateRequest: (...args) => client.authenticateRequest(...args),
             sessions: { getSession: async id => {
@@ -57,7 +57,14 @@ export function createIdentityProvisioner({ client, identityApplication, binding
             resolveBinding: async identity => {
               const identityUntil = Math.min(tokenUntil, sessionUntil)
               if (!Number.isSafeInteger(identityUntil) || identityUntil <= now()) deny()
-              const existing = renewal && await renewal.revalidate(query, identity, identityUntil)
+              let existing
+              try { existing = renewal && await renewal.revalidate(query, identity, identityUntil) }
+              catch (error) {
+                // Retain only this known policy refusal across the authenticator's
+                // generic binding-reader failure mask; never reuse it across requests.
+                if (error instanceof BindingRenewalDenied) renewalDenied = error
+                throw error
+              }
               if (!existing) {
                 if (existingOnly) return null
                 const proof = await sql.attest(query, { operation: 'identity.provision', principal: identity.subject, issuer: identity.issuer, identityUntil, expiresAt: identityUntil })
@@ -66,7 +73,8 @@ export function createIdentityProvisioner({ client, identityApplication, binding
               return store.resolveBinding(query, identity)
             },
           })
-          const actor = await authenticate(request)
+          let actor
+          try { actor = await authenticate(request) } catch (error) { throw renewalDenied ?? error }
           if (!actor || !(Date.parse(actor.expiresAt) > now())) deny()
           if (renewal) {
             // Reuse the verifier again before COMMIT. Revocation, disablement or
