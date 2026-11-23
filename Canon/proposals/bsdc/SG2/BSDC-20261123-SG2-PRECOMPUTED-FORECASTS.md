@@ -113,8 +113,8 @@ Statusy robocze: `USTALONE`, `W_TRAKCIE`, `DO_USTALENIA`, `NIE_DOTYCZY`, `ZABLOK
 | E5 | W_TRAKCIE | Szacunki kosztu i czasu wykonania wynikną z reprezentatywnej próby E1; bez fikcyjnych dat. |
 | E6 | USTALONE | Roadmapa END-TO-END, zadania, ownerzy, DoD, STOP, rejestr i `FINAL-*` w **tej samej Karcie**. |
 | F1 | USTALONE | Decyzje, fakty, hipotezy, granice i ryzyka w §0, §2 i §6. |
-| F2 | W_TRAKCIE | Zgodność z aktywnym BSDC i SG2; aktualny routing/adopcja kontraktów przed zapisem. |
-| F3 | DO_USTALENIA | Właściciel nie zaakceptował jeszcze jednej kanonicznej Karty ani jej roadmapy/DoD/revision. |
+| F2 | W_TRAKCIE | Karta jest w dopuszczonej lokalizacji SG2; routing i adopcja kontraktów implementacyjnych do ponownej weryfikacji przed mutacją kodu. |
+| F3 | USTALONE | Owner zaakceptował kompletną Kartę 1.0, roadmapę E1–E2 oraz FINAL-01–10; przyjęta rewizja jest utrwalona w authority GitHub. Nie stanowi to mandatu wykonawczego. |
 | F4 | USTALONE | Handoff i rejestr etapowy w §5 i §7; bez automatycznej implementacji. |
 
 ## 4. Funkcjonalność i architektura
@@ -260,7 +260,7 @@ Statusy etapów i tasków: `NIE_ROZPOCZĘTY`, `W_TOKU`, `CZĘŚCIOWY`, `ZABLOKOW
 
 | ID | Owner / miejsce | Status | Daty; taskId; PR/SHA/CI/run/test | Dowód rzeczywisty | Brak / następny krok |
 | --- | --- | --- | --- | --- | --- |
-| E1 | SG2 · Development | NIE_ROZPOCZĘTY | — | — | Brak zaakceptowanej Karty i mandatu E1 |
+| E1 | SG2 · Development | NIE_ROZPOCZĘTY | — | — | Brak osobnego mandatu `URUCHOM ETAP E1` |
 | E1-T01 | SG2 Platform + Forecast | NIE_ROZPOCZĘTY | — | — | Zweryfikować 11 ID i artefakty |
 | E1-T02 | SG Runtime + Source + Forecast Ops | NIE_ROZPOCZĘTY | — | — | Sprawdzić Dev runtime, Clerk/E1 i entrypointy |
 | E1-T03 | Forecast + Market Data | NIE_ROZPOCZĘTY | — | — | Dwa pilotażowe warianty |
