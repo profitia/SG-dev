@@ -165,7 +165,7 @@ UTF-8, przecinek, jednoznaczne cytowanie i kodowanie braków, daty ISO oraz wart
 | D2 | W_TRAKCIE | Resolver potwierdził ścieżkę Karty i proponowane ścieżki zsrir.ts oraz zsrir-import.ts. Pełny zestaw zmian wymaga sprawdzenia przed wykonaniem. |
 | D3 | USTALONE | Drzewo i granice ownership opisane zgodnie z DEC-01. |
 | D4 | W_TRAKCIE | Kontrakt wielodostawcowy i CSV opisane. GOV-01 aktywny. Operacyjny kontrakt Source i kontrolowany odczyt do potwierdzenia. |
-| D5 | USTALONE_W_ZAKRESIE_DEC-02 | Właściciel potwierdził umocowanie dla retencji, przetwarzania, klienta i Production; atrybucja i oryginały pozostają wymagane. Kontrola ról, Source, integralności i wdrożenia nadal obowiązuje jako kryterium techniczne. |
+| D5 | USTALONE | Właściciel potwierdził umocowanie dla retencji, przetwarzania, klienta i Production; atrybucja i oryginały pozostają wymagane. Kontrola ról, Source, integralności i wdrożenia nadal obowiązuje jako kryterium techniczne. |
 | D6 | W_TRAKCIE | Odtworzenie, monitoring i harmonogram opisane. Wolumen, czas i koszt po próbie. |
 | E1 | USTALONE | E1-T01/T02/T03 odebrane w zatwierdzonym zakresie Development i CSV; zgodę na dalsze wykorzystanie danych rozstrzyga DEC-02. |
 | E2 | W_TRAKCIE | Taski i DoD rozpisane w tej Karcie. |
