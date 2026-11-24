@@ -4108,6 +4108,7 @@ test('ZSRIR registry review requires the exact independent PR and one pinned dat
   assert.deepEqual(admission, {kind: 'ZSRIR_PROTECTED_REGISTRY', reviewId: review.id, baseSha: sha, files: [file]})
 
   await assert.rejects(resolve({...candidate, number: 1302}, [file]), /ZSRIR_REGISTRY_IDENTITY_REJECTED/)
+  await assert.rejects(resolve({...candidate, user: {login: 'unapproved'}}, [file]), /UNTRUSTED_CANDIDATE/)
   await assert.rejects(resolve({...candidate, head: {...candidate.head, ref: 'sg2/unrelated'}}, [file]), /ZSRIR_REGISTRY_IDENTITY_REJECTED/)
   await assert.rejects(resolve(candidate, [file], {...candidate, base: {...candidate.base, sha: other}}), /CANDIDATE_CHANGED_DURING_RESOLUTION/)
   await assert.rejects(resolve(candidate, [{...file, sha: other}]), /ZSRIR_REGISTRY_FILES_REJECTED/)
@@ -4123,12 +4124,15 @@ test('ZSRIR registry review requires the exact independent PR and one pinned dat
     if (oldSelector === undefined) delete process.env.SOURCE_ADMISSION_ID
     else process.env.SOURCE_ADMISSION_ID = oldSelector
   }
+  t.mock.timers.setTime(Date.parse(review.validFrom) - 1)
+  await assert.rejects(resolve(candidate, [file]), /ZSRIR_REGISTRY_REVIEW_NOT_YET_VALID/)
   t.mock.timers.setTime(Date.parse(review.validUntil))
   await assert.rejects(resolve(candidate, [file]), /ZSRIR_REGISTRY_REVIEW_EXPIRED/)
 })
 
-test('ZSRIR registry review proof binds the exact head, original source, policy and genuine execution', () => {
+test('ZSRIR registry review proof binds the exact head, original source, policy and genuine execution', t => {
   const review = ZSRIR_REGISTRY_REVIEW
+  t.mock.timers.enable({apis: ['Date'], now: Date.parse('2026-11-23T12:00:00Z')})
   const {run: baseRun} = fixture()
   const run = {...baseRun, event: 'workflow_dispatch', created_at: '2026-11-23T12:00:00Z'}
   const proof = {
@@ -4152,4 +4156,80 @@ test('ZSRIR registry review proof binds the exact head, original source, policy 
   assert.throws(() => assertProof(proof, run, sha, 34), /VALIDATION_PROVENANCE_MISMATCH/)
   assert.throws(() => assertProof(proof, {...run, actor: {login: 'unapproved'}}, other, 34), /UNTRUSTED_VALIDATION_RUN/)
   assert.throws(() => assertProof(proof, {...run, created_at: review.validUntil}, other, 34), /ZSRIR_REGISTRY_REVIEW_EXPIRED/)
+  t.mock.timers.setTime(Date.parse(review.validUntil))
+  assert.throws(() => assertProof(proof, run, other, 34), /ZSRIR_REGISTRY_REVIEW_EXPIRED/)
+})
+
+test('ZSRIR registry review verifies the real 26-record authority and exact 27-record Git transport', t => {
+  const review = ZSRIR_REGISTRY_REVIEW
+  const reviewedAuthority = '1d2858fa77f40d584190f50a814550433c734c27'
+  t.mock.timers.enable({apis: ['Date'], now: Date.parse(review.validFrom)})
+  const repo = fileURLToPath(new URL('../../', import.meta.url))
+  const scratch = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'zsrir-real-registry-')))
+  t.after(() => fs.rmSync(scratch, {recursive: true, force: true}))
+  const authority = path.join(scratch, 'authority')
+  const transport = path.join(scratch, 'transport')
+  const git = (root, ...args) => execFileSync('git', args, {cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe']})
+  fs.mkdirSync(authority)
+  git(authority, 'init', '--quiet')
+  const objects = git(repo, 'rev-parse', '--path-format=absolute', '--git-path', 'objects').trim()
+  fs.writeFileSync(path.join(authority, '.git', 'objects', 'info', 'alternates'), objects + '\n')
+  git(authority, 'config', 'user.name', 'Synthetic registry transport fixture')
+  git(authority, 'config', 'user.email', 'registry-fixture@example.invalid')
+  git(authority, 'checkout', '--quiet', '--detach', reviewedAuthority)
+  git(authority, 'worktree', 'add', '--quiet', '--detach', transport, reviewedAuthority)
+
+  const current = git(authority, 'show', reviewedAuthority + ':' + review.filename)
+  const original = git(authority, 'show', review.sourceSha + ':' + review.filename)
+  assert.equal(git(authority, 'rev-parse', reviewedAuthority + ':' + review.filename).trim(), review.beforeBlob)
+  assert.equal(git(authority, 'rev-parse', review.sourceSha + ':' + review.filename).trim(), review.originalSourceBlob)
+  const before = JSON.parse(current)
+  assert.equal(before.records.length, 26)
+  const [approved] = JSON.parse(original).records.filter(row => row.id === review.recordId)
+  assert.ok(approved)
+  const literal = JSON.stringify(approved, null, 2).replace(/^/gm, '    ')
+  const offset = current.lastIndexOf('\n  ]')
+  assert.ok(offset > 0)
+  const insertion = ',\n' + literal
+  const composed = current.slice(0, offset) + insertion + current.slice(offset)
+  assert.equal(composed.slice(0, offset) + composed.slice(offset + insertion.length), current)
+  const expected = {...before, records: [...before.records, approved]}
+  assert.equal(expected.records.length, 27)
+  assert.deepEqual(JSON.parse(composed), expected)
+
+  function checkout(bytes, parents = [reviewedAuthority, review.sourceSha]) {
+    const file = path.join(transport, review.filename)
+    fs.writeFileSync(file, bytes)
+    git(transport, 'add', '--', review.filename)
+    const tree = git(transport, 'write-tree').trim()
+    const commit = git(transport, 'commit-tree', tree, ...parents.flatMap(parent => ['-p', parent]), '-m', 'Synthetic transport of exact registry source').trim()
+    git(transport, 'checkout', '--quiet', '--detach', commit)
+    return commit
+  }
+
+  // Keep the advertised metadata pinned even when the real Git object changes.
+  // This independently exercises the checkout-time record comparison.
+  const admission = {kind: 'ZSRIR_PROTECTED_REGISTRY', reviewId: review.id, baseSha: reviewedAuthority,
+    files: [{filename: review.filename, status: 'modified', sha: review.afterBlob}]}
+  const valid = checkout(composed)
+  assert.notEqual(valid, review.sourceSha)
+  assert.equal(git(transport, 'rev-parse', valid + ':' + review.filename).trim(), review.afterBlob)
+  assert.doesNotThrow(() => assertArchitectureCheckout(transport, valid, admission, authority))
+
+  for (const [label, records] of [
+    ['changed existing row', [{...before.records[0], actor: 'modified'}, ...expected.records.slice(1)]],
+    ['lost existing row', expected.records.slice(1)],
+    ['extra row', [...expected.records, {...approved, id: 'unapproved-extra'}]],
+    ['changed approved row', [...before.records, {...approved, validUntil: '2026-11-25T11:42:40Z'}]],
+  ]) {
+    const sha = checkout(JSON.stringify({...expected, records}) + '\n')
+    assert.throws(() => assertArchitectureCheckout(transport, sha, admission, authority), /ZSRIR_REGISTRY_RECORDS_REJECTED/, label)
+  }
+  for (const onlyParent of [reviewedAuthority, review.sourceSha]) {
+    const badHistory = checkout(composed, [onlyParent])
+    assert.throws(() => assertArchitectureCheckout(transport, badHistory, admission, authority), /ZSRIR_REGISTRY_ANCESTRY_REJECTED/)
+  }
+  const expired = checkout(composed)
+  t.mock.timers.setTime(Date.parse(review.validUntil))
+  assert.throws(() => assertArchitectureCheckout(transport, expired, admission, authority), /ZSRIR_REGISTRY_REVIEW_EXPIRED/)
 })

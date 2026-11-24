@@ -757,6 +757,7 @@ import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import {createHash} from 'node:crypto'
+import {isDeepStrictEqual} from 'node:util'
 import {execFileSync, spawnSync} from 'node:child_process'
 import {fileURLToPath} from 'node:url'
 import {resolveProjectProfile} from './project-profile.mjs'
@@ -7843,10 +7844,19 @@ export const ZSRIR_REGISTRY_REVIEW = Object.freeze({
   branch: 'sg2/zsrir-e2-t01-source-admission',
   sourceSha: '58be05464f2e6a0f74ab9eb54509b4fc830c7a3a',
   filename: 'Canon/registries/controlled-source-admissions-v1.json',
-  beforeBlob: '078eb1fc6714edc82efa37dfee1bb9f6a7797a3b',
-  afterBlob: '7cd492aa8e377c0f34e7eec24a0cf22f0530953b',
+  recordId: 'sg2-zsrir-e2-t01-20261123-source',
+  originalSourceBlob: '7cd492aa8e377c0f34e7eec24a0cf22f0530953b',
+  beforeBlob: 'e230d6ba6d1935acd5089db1abd0baa800595426',
+  afterBlob: 'b17e376d3c74d81606dd3cd76914d64b062172c2',
+  validFrom: '2026-11-23T11:41:40Z',
   validUntil: '2026-11-24T11:42:40Z',
 })
+
+function assertZsrirRegistryReviewWindow(at = Date.now()) {
+  const {validFrom, validUntil} = ZSRIR_REGISTRY_REVIEW
+  if (!Number.isFinite(at) || at >= Date.parse(validUntil)) fail('ZSRIR_REGISTRY_REVIEW_EXPIRED')
+  if (at < Date.parse(validFrom)) fail('ZSRIR_REGISTRY_REVIEW_NOT_YET_VALID')
+}
 
 function zsrirRegistryTarget(pr) {
   return pr?.number === ZSRIR_REGISTRY_REVIEW.prNumber || pr?.head?.ref === ZSRIR_REGISTRY_REVIEW.branch
@@ -7869,7 +7879,7 @@ function zsrirRegistryProofBinding() {
 
 function assertZsrirRegistryCheckout(root, sha, admission, repositoryRoot) {
   const review = ZSRIR_REGISTRY_REVIEW
-  if (Date.now() >= Date.parse(review.validUntil)) fail('ZSRIR_REGISTRY_REVIEW_EXPIRED')
+  assertZsrirRegistryReviewWindow()
   if (admission.reviewId !== review.id || !shaPattern.test(admission.baseSha ?? '')) fail('ZSRIR_REGISTRY_AUTHORITY_REJECTED')
   assertZsrirRegistryFiles(admission.files)
   assertPristineSourceInput(root, sha)
@@ -7886,7 +7896,23 @@ function assertZsrirRegistryCheckout(root, sha, admission, repositoryRoot) {
     fail('ZSRIR_REGISTRY_ANCESTRY_REJECTED')
   }
   if (executionGit(root, ['diff', '--name-status', '--no-renames', admission.baseSha, sha]) !== 'M\t' + review.filename
-    || executionGit(root, ['ls-tree', sha, '--', review.filename]) !== '100644 blob ' + review.afterBlob + '\t' + review.filename
+    || executionGit(root, ['ls-tree', review.sourceSha, '--', review.filename]) !== '100644 blob ' + review.originalSourceBlob + '\t' + review.filename) fail('ZSRIR_REGISTRY_TREE_REJECTED')
+
+  // Existing rows come from trusted authority, and the allowed row comes only
+  // from the pinned original source. Candidate bytes cannot supply either.
+  let before, original, after
+  try {
+    before = JSON.parse(executionGit(repositoryRoot, ['show', admission.baseSha + ':' + review.filename]))
+    original = JSON.parse(executionGit(root, ['show', review.sourceSha + ':' + review.filename]))
+    after = JSON.parse(executionGit(root, ['show', sha + ':' + review.filename]))
+  } catch {
+    fail('ZSRIR_REGISTRY_RECORDS_REJECTED')
+  }
+  const approved = original.records?.filter(row => row.id === review.recordId)
+  if (approved?.length !== 1 || approved[0].validFrom !== review.validFrom || approved[0].validUntil !== review.validUntil
+    || !Array.isArray(before.records) || before.records.some(row => row.id === review.recordId)
+    || !isDeepStrictEqual(after, {...before, records: [...before.records, approved[0]]})) fail('ZSRIR_REGISTRY_RECORDS_REJECTED')
+  if (executionGit(root, ['ls-tree', sha, '--', review.filename]) !== '100644 blob ' + review.afterBlob + '\t' + review.filename
     || executionGit(root, ['hash-object', '--no-filters', '--', review.filename]) !== review.afterBlob) fail('ZSRIR_REGISTRY_TREE_REJECTED')
 }
 
@@ -7919,7 +7945,7 @@ export async function resolveCandidateAdmission(c, number, expectedSha, request 
   if (candidateFamily(c, current, expectedSha) !== family || current.base.sha !== pr.base.sha || current.changed_files !== pr.changed_files) fail('CANDIDATE_CHANGED_DURING_RESOLUTION')
   if (registryReview) {
     const review = ZSRIR_REGISTRY_REVIEW
-    if (Date.now() >= Date.parse(review.validUntil)) fail('ZSRIR_REGISTRY_REVIEW_EXPIRED')
+    assertZsrirRegistryReviewWindow()
     if (family !== 'SG2' || current.number !== review.prNumber || current.head.ref !== review.branch
       || current.base.sha !== c.controlSha || current.changed_files !== files.length
       || sourceRecord) fail('ZSRIR_REGISTRY_IDENTITY_REJECTED')
@@ -8549,8 +8575,8 @@ export function assertProof(proof, run, candidateSha, workflowId, {currentRunId,
   }
   if (proof?.schemaVersion === '2.0' && proof.scope === 'EXACT_PROTECTED_SOURCE_VALIDATION'
     && proof.protectedSourceReviewId === ZSRIR_REGISTRY_REVIEW.id) {
-    const createdAt = Date.parse(run.created_at)
-    if (!Number.isFinite(createdAt) || createdAt >= Date.parse(ZSRIR_REGISTRY_REVIEW.validUntil)) fail('ZSRIR_REGISTRY_REVIEW_EXPIRED')
+    assertZsrirRegistryReviewWindow(Date.parse(run.created_at))
+    assertZsrirRegistryReviewWindow()
     return assertProtectedArchitectureProof(proof,run,candidateSha,workflowId,ZSRIR_REGISTRY_REVIEW,ZSRIR_REGISTRY_REVIEW.id,
       {currentRunId,currentRef,completedJobs,expectedControlDigest})
   }
