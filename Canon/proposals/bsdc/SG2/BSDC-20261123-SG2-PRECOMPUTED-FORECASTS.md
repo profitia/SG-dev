@@ -291,6 +291,40 @@ Statusy i dowody poniżej pochodzą z rozliczenia sprzed aneksu. Kolumna następ
 
 **Dowody E1.** Zabezpieczony odczyt dzienny Brent ICE / naive: 5 prób Current, P50/P95 0,79/1,59 s oraz 5 prób Verification, P50/P95 3,19/3,30 s. To czasy odczytów API w przeglądarce. Pomiar od wyboru do renderu Findera czeka na pełny pilot. Historyczne targety dojrzałe i otwarte są dostępne w Neon. Etykieta POINT_IN_TIME opisuje metodę targetu. Dowód vintage w historycznym momencie decyzji nie jest dostępny w użytej projekcji. Zadanie PMOS: SG2-BSDC-PRECOMPUTED-FORECASTS-E1-20261123.
 
+#### Kontynuacja E1 po DEC-08 — 23.11.2026
+
+Powiązanie z [historycznym rozliczeniem E1](https://github.com/profitia/SG-dev/pull/1310) i zatwierdzonym [aneksem DEC-08](https://github.com/profitia/SG-dev/pull/1311). Zadanie PMOS kontynuacji `SG2-BSDC-PRECOMPUTED-FORECASTS-E1-DEC08-20261123`. Ostatni stan E1 pozostaje **CZĘŚCIOWY**. Statusy poniżej wynikają z nowych dowodów. E2 pozostaje `NIE_ROZPOCZĘTY`.
+
+| Zadanie | Aktualny status | Nowy dowód i pozostały krok |
+| --- | --- | --- |
+| E1-T01 | CZĘŚCIOWY | Potwierdzono odczyt projekcji źródłowej i istnienie artefaktów dla 10 ID. Trzy fixed/front w DEC-02, aktualność, licencja i zgodność całej macierzy pozostają do rozstrzygnięcia. |
+| E1-T02 | CZĘŚCIOWY | Odczytano aktualne wersje runtime i dashboardu, status ograniczonych grantów oraz trasę autoryzowanej analityki. Potrzebny operator Forecast dla ograniczonego przebiegu i dowód uprawnień do wykorzystania wejścia. |
+| E1-T03 | ZABLOKOWANY | Dzienny snapshot potwierdzony dla wejścia z 18.11.2026. Warianty miesięczne z dziennych danych mają origin z sierpnia. Nowy działający cykl Development pozostaje zależny od ważnych grantów kolejki i workera. |
+| E1-T04 | CZĘŚCIOWY | Finder otwiera się w aktywnej sesji. Wyszukiwanie `b_c1_cl` zwróciło komunikat o niedostępności. Poprawka odczytu zapisanego Brent ICE w [PR #1312](https://github.com/profitia/SG-dev/pull/1312) przeszła 10 lokalnych testów transportu Findera i pickera oraz parsowanie TSX. 26 osobnych testów kadencji i historii potwierdza obie semantyki miesięczne na lokalnych danych testowych. Potrzebne kontrolowane CI, wydanie i rzeczywisty odbiór. |
+
+**Macierz kwalifikacji**. Wszystkie serie w projekcji mają wejście dzienne. Daty poniżej są ostatnimi obserwacjami *w lokalnym źródle*, a liczniki obejmują zapisane rekordy ze statusem `AVAILABLE` (Current / Verification / Rolling Daily). Autoryzacja, świeżość i kwalifikacja wariantu są wymagane osobno do `READY`.
+
+| ID | Potwierdzenie z danych Development | Ostatnia obserwacja | Zapisane C / V / RD |
+| --- | --- | --- | --- |
+| `b_c1_cl` | ICE Brent Crude, pierwsza pozycja, USD/bbl | 18.11.2026 | 18 / 26 / 15 |
+| `cl_c1_cl` | CME WTI Physical, pierwsza pozycja, USD/bbl | 18.11.2026 | 24 / 24 / 12 |
+| `wocaes0074` | Brent Spot FOB North Sea, USD/bbl | 23.09.2026 | 56 / 57 / 11 |
+| `bz_c1_cl` | CME Brent Last Day, pierwsza pozycja, USD/bbl. Metodologia roll wymaga potwierdzenia. | 18.09.2026 | 18 / 16 / 8 |
+| `qm_c1_cl` | NYMEX E-mini, pierwsza pozycja, USD/bbl. Metodologia roll wymaga potwierdzenia. | 18.09.2026 | 16 / 18 / 8 |
+| `hg2027g_cl` | CME Copper, 24.02.2027, USD/lb. Rozbieżność z LME/front. | 21.09.2026 | 16 / 24 / 9 |
+| `lmeofcucashask` | LME Copper Cash Seller & Settlement, USD/t | 17.09.2026 | 30 / 44 / 8 |
+| `hg_c1_cl` | CME Copper, pierwsza pozycja, USD/lb. Metodologia continuous wymaga potwierdzenia. | 23.09.2026 | 16 / 24 / 8 |
+| `ehr2027g_cl` | CME North European HRC, 26.02.2027, EUR/t. Kontrakt fixed. | 18.09.2026 | 16 / 10 / 8 |
+| `lmescusd20270226` | LME Steel Scrap CFR Turkey, 26.02.2027, USD/t. Kontrakt fixed. | 18.09.2026 | 16 / 16 / 8 |
+
+**Brent ICE / naive.** Odczyt Neon potwierdził T0 01.01.2024, pierwszy rzeczywisty origin 02.01.2024, ostatni origin 18.11.2026, 2501 dojrzałych i 479 otwartych weryfikacji. Fingerprint zapisanego dziennego snapshotu zaczyna się od `d0b8fbcbef22`. Dla dziennego wejścia i miesięcznego celu zapisano `END_OF_PERIOD` i `MONTHLY_AVERAGE` z origin 01.08.2026. Do odbioru potrzebny jest aktualny autoryzowany render oraz potwierdzenie proweniencji i świeżości. Bieżąca projekcja nie wykazuje historycznej dostępności vintage, a `POINT_IN_TIME` oznacza semantykę targetu. Izolowane próby nowej obserwacji, dojrzewania i replay: 2 testy PASS (6 subtestów). Brak nowego dopuszczonego przebiegu Development. Granty producenta wygasły 19.11.2026 i w sprawdzonym zakresie nie ma czynnego grantu dostawcy. W tej kontynuacji brak płatnego wywołania zainicjowanego w celu przygotowania danych.
+
+**Runtime i pomiary.** Sprawdzone live: SG Runtime `2712ff7718e1ee8f6478df08f7eef41ee84c5be9`, Render `dep-dc1v9gec6qcc73bve4l0`. Kandydat Findera `66977cf620ec4a75937748c19ddf6ae7554bed5b`. Historyczne czasy API pozostają podane wyżej. Brak nowej próby od wyboru do renderu, zatem P50/P95 UI, liczba wywołań Clerk/E1, przełączenie dwóch organizacji i revocation end-to-end pozostają otwarte. Sesja otworzyła Finder bez dodatkowego interaktywnego logowania. Dowody lokalne i dane Development nie zastępują odbioru UI.
+
+**DEC-02–DEC-06.** DEC-02: rozstrzygnąć trzy dopasowania fixed/front, w tym giełdę LME dla miedzi. DEC-03: używać klasy reconstructed lub prospective zgodnie z dowodami do uzyskania potwierdzonych historycznych wersji wejść. DEC-04: istniejące PCI i ACG pozostają trasami do kwalifikacji, a ten przebieg nie dowodzi ich aktualnej konsumpcji. DEC-05: odroczyć zatwierdzenie P95, cut-off, gotowości i kosztu do rzeczywistego pomiaru. DEC-06: najpierw potwierdzić uprawnienie do obliczeń i publikacji z istniejącego wejścia. Ograniczony przebieg z dozwolonych lokalnych danych pozostaje do koordynacji przez uprawnionego operatora Forecast Operations. Dostarczenia wniosku i odnowienia grantów nie potwierdzono. Ustalenia z Ownerem prowadzić w aktywnej rozmowie. Odczyt potwierdził wygaśnięcie okien technicznych budżetów kolejki, workera i dostawcy. To polityki wewnętrzne Source, niezależne od limitu u Macrobond.
+
+**Najbliższy krok.** Owner dopuścił źródłowy commit PR #1312 do kontrolowanego CI. [PR #1313](https://github.com/profitia/SG-dev/pull/1313) zawiera 24-godzinny wpis dopuszczenia. Jego publikacja podlega bramce governance. Przed późniejszym wydaniem sprawdzić wynik kontrolowanego CI, zasób Development, LKG i decyzję Ownera. Operator Forecast Operations może po potwierdzeniu licencji czasowo dopuścić jedną ograniczoną próbę delty i replay na zapisanych danych Brent ICE. Następnie wykonać render oraz pomiary E1. Status E2 pozostaje niezależny.
+
 ### 5.5. Końcowy scenariusz odbioru
 
 Uprawniony użytkownik z aktywną sesją otwiera istniejący Benchmark Finder **w Development**. Bez powtórnych pytań Clerk/E1 przełącza się między dopuszczonymi seriami i modelami; widzi wcześniej przygotowane Current i historię Verification z prawidłowo oznaczoną proweniencją. **Przełączenie na inną organizację z aktualnym grantem skutkuje serwerową weryfikacją nowego kontekstu i poprawnym odczytem bez ponownego interaktywnego logowania; brak prawa do wybranej organizacji albo wygasła sesja skutkują odmową.** Stary kontekst i cache nie ujawniają danych między organizacjami. Odczyt wszystkich przyjętych wariantów/horyzontów ma status `READY` przez właściwą, serwerowo uprawnioną projekcję. W ścieżce wyboru nie uruchamia się fitting ani nowe pobranie Source. Zapisany Forecast jest realnie odczytywany przez działającą kategorię kosztową i adapter ACG w granicach uprawnień. **Po naturalnym przyroście rynkowym** trwały proces Dev aktualizuje wyniki automatycznie i bez duplikacji, **w dotrzymanym cut-off i terminie gotowości zatwierdzonym przy rozliczeniu E1**. `NO_OP` oznacza potwierdzony brak nowego lawful wejścia i celów do weryfikacji; brak oczekiwanej publikacji, odmowa lub błąd Source są raportowane osobno. Owner otrzymuje dowody `FINAL-01–10` i ocenia całość.
