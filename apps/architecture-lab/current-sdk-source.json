@@ -1,7 +1,7 @@
 {
   "schemaVersion": "1.0",
   "scope": "CURRENT_SDK_SOURCE_INTEGRITY_ONLY",
-  "sourceSnapshotSha": "1fa6ddde0e9e55a5702e396f57097ada161d90a8",
+  "sourceSnapshotSha": "1d2858fa77f40d584190f50a814550433c734c27",
   "status": "PRIVATE_PROTOTYPE_NOT_ADMITTED",
   "platformVersion": "1.38.0",
   "runtimeActivated": false,
@@ -120,8 +120,8 @@
     "apps/identity-runtime/package.json": "706de71c4fb389b5dc7a50ab0d314c4a4ab81d32135648619e1153461691efcd",
     "apps/identity-runtime/scripts/check.mjs": "163a345c15683a67995f8d9c068519de8120962a97ff7fe998d0daf3ac2c9019",
     "apps/identity-runtime/scripts/install-organisation-lifecycle.mjs": "6357e6d579e85add6b0342e0adf899449dd9ec71a01b83e12b50fdec38539249",
-    "apps/identity-runtime/src/account-page.ts": "081d3afd69443c75180644352ec2254c76a71f1f075a4210e0963b35d061d6e7",
-    "apps/identity-runtime/src/account-provisioning.ts": "ae8e1d6bb3f6a18d462dec137a35856423a185f396ff4a28f65cea0a80846aa1",
+    "apps/identity-runtime/src/account-page.ts": "dd46ea898fb75c40e7a33535dcdcd865dc68b2e0b821435ed6040a019ff5a806",
+    "apps/identity-runtime/src/account-provisioning.ts": "79e168641afd506f55bbdf258fc5dbb18bb379bd0aea5a387e153787391f70c2",
     "apps/identity-runtime/src/account-visuals.ts": "5ab9b2aad641492ee68f841c77df2cb4aed4d77b07b3bb379b013f86ed09dd66",
     "apps/identity-runtime/src/http-handler.ts": "482e4d20e6c331241a4684afebbd8f6e220281aeb5d9d14514bfb0328d9ee21e",
     "apps/identity-runtime/src/invitation-email.ts": "1f001c7055d16f13c4cd2c9aa73822eb25151c0c00fe93e030dbc8d86f797e14",
@@ -134,7 +134,7 @@
     "apps/identity-runtime/src/organisation-onboarding.ts": "ee8eb6282765cbc3b81e4be50b9417883846d5d7f523a0dbb9b79b2482fc5bf2",
     "apps/identity-runtime/src/organisation-store.ts": "743f2b369de3b2f370a98a18e1562c42f51b6036c44cec3e01cba7c611fa7bc2",
     "apps/identity-runtime/src/report-email.ts": "389e2c4af40459d4e30f1b4b4e7b181afe6aea2264ded02ad4600ec480173b02",
-    "apps/identity-runtime/test/account-provisioning.test.mjs": "579f5afa52d47d17042e8c078682c09e7fd6ecb17a293d26f7f3e688b5b92892",
+    "apps/identity-runtime/test/account-provisioning.test.mjs": "af16bb64ea0886f10aacde6e8ba8a4cdf70ce077157a96ef98115a4344ce5798",
     "apps/identity-runtime/test/invitation-email.test.mjs": "fbd419b86b5d3558434b0192dda7c6fbe76469c13bd85ed2aae13c3c511c173e",
     "apps/identity-runtime/test/knowledge-authority.test.mjs": "79ba2a0af7b74c82b8ed0eb243d30fe688ef2981f42ec6d7bd74801eae7f0f74",
     "apps/identity-runtime/test/mailgun-delivery.test.mjs": "43ae89969bbbdd44ff6aa16d6b1ab46bfc0be1f5fbb8d2798108e2e7b016db0a",
@@ -1298,9 +1298,9 @@
     "packages/platform-contracts/src/identity-provider.d.mts": "0cc8868f9c9c622b7c02a794910c0aabd056103ea0ba76fdff705ba731ed3a3e",
     "packages/platform-contracts/src/identity-provider.mjs": "efcc99d3054d1920d9681e6489a2e46b927f7720e26b8a7d3364b2721adf20b0",
     "packages/platform-contracts/src/identity-provisioning.d.mts": "fa1ec4838a0a956f724132c1a6fd6b9ac7fa3771ff8bb1eedc88c437d133fce1",
-    "packages/platform-contracts/src/identity-provisioning.mjs": "73c4f848aee111c93361ea31494966a79fc2906bba41ea0cd222cdc23d60a38e",
+    "packages/platform-contracts/src/identity-provisioning.mjs": "fd8e498a492acd7418fe72a8e3d483c0be10c4a0feaedfafb1612eb4165d0085",
     "packages/platform-contracts/src/identity-renewal.d.mts": "9d4fb57b174f64ee21fba13ff9e8f5a07f2a46d44725c0820eb56af6c144e4dd",
-    "packages/platform-contracts/src/identity-renewal.mjs": "01e869250f5bab3c9b10fbc6f25aef3f7c06aa8e8572b3559a681739607318ca",
+    "packages/platform-contracts/src/identity-renewal.mjs": "ba6148b1a0daefc6a3a8270b214ab7b87a9e7a6cd0970f39ba4b9083e5de6a51",
     "packages/platform-contracts/src/knowledge-operations.d.mts": "bcf49723aa604350d8b4a3265ac4c182373dc6b8f0e1d21d14dcfcc7ca737f42",
     "packages/platform-contracts/src/knowledge-operations.mjs": "e1b8c5d6970456a81e205227b231250d63d19877bc138d6cdc06ae17761550cf",
     "packages/platform-contracts/src/model-execution.d.mts": "347864802b2ae361ed50b08ea55cfb2ad2688a672eb0bc4fce29ad69a02614f1",
@@ -1703,7 +1703,7 @@
     "apps/sg-runtime/tests/registration-finder-hold.test.mjs": "0a8acfc21ca9292e581de0990367f87ef350739cc3b3f2874e4012552a752cd4",
     "apps/identity-runtime/test/account-onboarding-binding.test.mjs": "1330fb54436e50ff3c36f41d136b48fe40b39cbb5f58a9e87f2cf770ef5d7e3d",
     "apps/sg-runtime/tests/runtime-build-contract.test.mjs": "a3aea30ab72257aa9873de44f5222785e93f9dedbc4048105bddc943a91d7db8",
-    "apps/identity-runtime/test/account-page.test.mjs": "2d2f31cf8e9486a7653f322fc51d31554fb367d7aa5c2aef02d80f670fee994b",
+    "apps/identity-runtime/test/account-page.test.mjs": "28cef9f172c2324ccf6948a4eec53d3e865cac788d18bb83a9357e821f9d1bbc",
     "apps/identity-runtime/test/account-transaction-diagnostics.test.mjs": "ea86a69e7170a3ab8a44e665bd9700b124096391ef310218513472baee3ae110"
   },
   "baselines": {
@@ -1730,6 +1730,9 @@
     "acceptedv6": {
       "sha": "0a095bcd46c51fb4ca20290990144215458f1977",
       "status": "IMMUTABLE_QUALIFIED_STAGE_I_SOURCE_BEFORE_NATIVE_RUNTIME_CORRECTION"
+    },
+    "identitysdk": {
+      "sha": "1d2858fa77f40d584190f50a814550433c734c27"
     }
   },
   "coverageRecords": [
@@ -1767,6 +1770,11 @@
       "baseline": "acceptedv6",
       "path": "apps/architecture-lab/current-sdk-source.json",
       "sha256": "feb1bb4c3c58eb5c497c1154db6bf42fe994f1fbdce5fc9b1a0253b9373cf9df"
+    },
+    {
+      "baseline": "identitysdk",
+      "path": "apps/architecture-lab/current-sdk-source.json",
+      "sha256": "4b6ea7bbac9cde6b204b20ce9bb32913d49758c88595eb7b29b663af39647bb2"
     }
   ],
   "retainedReceipts": {
@@ -2205,22 +2213,12 @@
     }
   },
   "applicationInputContinuation": {
-    "sourceSnapshotSha": "e8a99f5e0498c5699eeef411037c90e7426ebc06",
+    "sourceSnapshotSha": "fc7257643cff3393be38bf76b0f915164bc4cec0",
     "baseAbsences": [],
     "inputs": {
-      "apps/identity-runtime/src/account-page.ts": "dd46ea898fb75c40e7a33535dcdcd865dc68b2e0b821435ed6040a019ff5a806",
-      "apps/identity-runtime/src/account-provisioning.ts": "79e168641afd506f55bbdf258fc5dbb18bb379bd0aea5a387e153787391f70c2",
-      "apps/identity-runtime/test/account-page.test.mjs": "28cef9f172c2324ccf6948a4eec53d3e865cac788d18bb83a9357e821f9d1bbc",
-      "apps/identity-runtime/test/account-provisioning.test.mjs": "af16bb64ea0886f10aacde6e8ba8a4cdf70ce077157a96ef98115a4344ce5798",
-      "packages/platform-contracts/src/identity-provisioning.mjs": "fd8e498a492acd7418fe72a8e3d483c0be10c4a0feaedfafb1612eb4165d0085",
-      "packages/platform-contracts/src/identity-renewal.mjs": "ba6148b1a0daefc6a3a8270b214ab7b87a9e7a6cd0970f39ba4b9083e5de6a51"
+      "apps/sg-runtime/components/benchmark-finder/benchmark-finder-client.tsx": "146e42486ddfe4ce57b4d7200a3d43acf69382609adc9d69cd31bc589d41aaae",
+      "apps/sg-runtime/components/benchmark-finder/benchmark-request.ts": "4e4be293d57076f63b2121b506a7212b9932f3df004576481668b273b78963d0",
+      "apps/sg-runtime/tests/benchmark-discovery-request.test.ts": "8c29899aeeedc2e6900fff89432291011635df480f1c1d07f57530db92bd9ae6"
     }
-  },
-  "reviewedSdkInputContinuation": {
-    "baseSha": "f75c6a5a170dd4b6597f67ab9790722657a1ef35",
-    "recordId": "identity-existing-account-policy-denial-20261122",
-    "scope": "SOURCE_VALIDATION_ONLY",
-    "sourceSha": "e8a99f5e0498c5699eeef411037c90e7426ebc06",
-    "taskId": "ARCH-REGISTRATION-AUTH-REPAIR-20261118"
   }
 }

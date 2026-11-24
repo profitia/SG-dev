@@ -14809,6 +14809,31 @@
           "surfaceId": "SG2-BASE-001"
         }
       ]
+    },
+    {
+      "id": "SG2:SG2-ARCH-DEV-RELEASE-OPT-20261121-E3-R1",
+      "status": "ACTIVE",
+      "repository": "profitia/SG-dev",
+      "actor": "profitia",
+      "taskId": "SG2-ARCH-DEV-RELEASE-OPT-20261121-E3-R1",
+      "targetEnvironment": "development",
+      "scope": "SOURCE_VALIDATION_ONLY",
+      "approvalRef": "owner:chat:01a1fe1a-1ec8-7fc3-adf2-8a9db538f31b:e3-pr1319-source-validation-b1bf5c3371006d03ecf85ccd2bec1d3c71693e89-20261124",
+      "sourceSha": "b1bf5c3371006d03ecf85ccd2bec1d3c71693e89",
+      "baseSha": "05e4a287320848909eeeedd98ebaf9daa1fdf7fc",
+      "validFrom": "2026-11-24T06:30:00Z",
+      "validUntil": "2026-11-25T18:30:00Z",
+      "files": [
+        {
+          "path": "apps/dashboard-preview/components/raw-data-view/magicpath/CanonChartTimePresets.tsx",
+          "blob": "292025ee705db33dede83223c11e06a405a06c8a",
+          "mode": "100644",
+          "status": "modified",
+          "projectKey": "SG2",
+          "owner": "Dashboard Preview",
+          "surfaceId": "SG2-BASE-003"
+        }
+      ]
     }
   ],
   "authority": "Accepted trusted-main data only. Candidate records never authorize themselves. Existing closed reviews and historical receipts remain unchanged."
