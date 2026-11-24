@@ -1,5 +1,5 @@
 # Karta Projektu — SpendGuru Development & Release Optimization
-## Karta v0.3 — zaakceptowana do publikacji | 2026-11-21
+## Karta v0.4 — pilotaż E3 przed dokończeniem E2 | 2026-11-24
 
 | Pole | Wartość |
 | --- | --- |
@@ -12,7 +12,7 @@
 | Kanon rozwiązania | [Projekt kanonu v0.3](../../spendguru-development-release-optimization-canon-v0.3.md) |
 | Zamrożona baza AS-IS | [SpendGuru-audyt-AS-IS-2026-11-21.md](https://github.com/profitia/spendguru/blob/7d10fec73cd69194523b320faf397982d9a8fd04/docs/audits/2026/11/21/SpendGuru-audyt-AS-IS-2026-11-21.md) (`ASIS-REF-01`, SHA-256 `5ee32757fe85896ab14089bd936f41a8c0fd283db67b672a60d8427a49e40683`) · prywatne repozytorium, SHA-256 potwierdzony po ponownym odczycie |
 | Metodologia | **BOE v1.1 i Karta inspirowana BSDC v1.1** (DEC-01, decyzja właściciela z 21.11.2026). |
-| Bieżący mandat | **E4-T02 / GV-01b — LIMITED GO, lokalny prototyp i walidacja obserwacyjna** · DEC-10 z 21.11.2026 |
+| Bieżący mandat | **E3-T01–E3-T03 — pilot jednej rzeczywistej poprawki R1** · DEC-11 z 24.11.2026. Wydanie wymaga ważnego mandatu dla dokładnego SHA i zasobu. |
 | Odbiór E1 | **OWNER_ACCEPTED / SUCCESS** · 21.11.2026 |
 
 ## 1. Potrzeba biznesowa i rezultat
@@ -107,14 +107,14 @@ Każdy etap to komplet rezultatów. Właściciel określa zakres zleconego etapu
 
 ### E3 — Pilot rzeczywistej zmiany R1
 
-- **Cel:** potwierdzić przyspieszenie dostarczenia bez pogorszenia kontroli.
+- **Cel:** dostarczyć jedną rzeczywistą poprawkę prezentacyjną SG2 Development i zmierzyć faktyczny koszt dostarczenia przy zachowaniu kontroli. E3 rozpoczyna się przed dokończeniem E2-T02 i E2-T03 (DEC-11).
 - **Owner:** ARCHITECTURE (eksperyment), SG2 (komponent i release), oddzielne uprawnienia dla chronionych operacji.
 - **Wpływ i warunek wejścia:** kandydat prezentacyjny R1 oraz osobna kwalifikacja pełnego wydania wyłącznie na wskazany SG2 Development Dashboard. Zweryfikować routing, konfigurację, LKG i zależności, w tym bindingi Neon. Jeżeli wydanie wymaga chronionego zapisu, wybrać kwalifikowalny kandydat w zakresie pilota albo przedstawić zależność i oznaczyć etap jako zablokowany.
-- **DoD E3:** jedna nowa, rzeczywiście potrzebna korekta prezentacyjna na wzór #730 z pomiarem `ready → merge` i `merge → Development` według definicji AS-IS. Osobno zapisujemy odbiór faktycznie działającego widoku, wynik kontroli regresji, ponowienia według przyczyn, dodatkowe PR-y i decyzje. Pilot przechodzi obowiązującą ścieżką dopuszczenia Source i autoryzacji wydania dla dokładnego SHA. Jeśli ta ścieżka wymaga dodatkowego PR-u lub odrębnego GO, zapisujemy ten koszt. Eliminację dodatkowego PR-u ocenia E4, a docelowy stały mandat R1 wymaga osobnego przyjęcia.
+- **DoD E3:** jedna nowa, rzeczywiście potrzebna korekta prezentacyjna na wzór #730 z pomiarem `ready → merge` i `merge → Development` według definicji AS-IS. Osobno zapisujemy odbiór faktycznie działającego widoku, wynik kontroli regresji, ponowienia według przyczyn, dodatkowe PR-y i decyzje. Pilot przechodzi obowiązującą ścieżką dopuszczenia Source i autoryzacji wydania dla dokładnego SHA. Raport obejmuje całkowity czas od rozpoczęcia do odbioru, czas rzeczywistych testów SG2, uruchomienia i ponowienia CI według przyczyn, liczbę PR-ów i decyzji, czas czynności governance, regresje i wynik odbioru. Porównanie z E1 osobno pokazuje oczekiwanie na bramki i czas ich pracy. Wynik pilota dotyczy obowiązującej ścieżki. Jeśli ta ścieżka wymaga dodatkowego PR-u lub odrębnego GO, zapisujemy ten koszt. Eliminację dodatkowego PR-u ocenia E4, a docelowy stały mandat R1 wymaga osobnego przyjęcia.
 
 | Task | Rezultat | Zależność | Dowód DoD |
 | --- | --- | --- | --- |
-| **E3-T01 / PL-01a** | Sprawdzenie nowej ścieżki na przypadkach z jednej retrospekcji E1 | Wynik retrospekcji E1-T01 i wdrożona zmiana E2 | Różnica między odnotowanym a nowym przebiegiem w tym samym materiale dowodowym |
+| **E3-T01 / PL-01a** | Wybór potwierdzonej potrzeby R1 i odniesienie do retrospekcji E1 | Wynik E1-T01 oraz aktywna zwykła ścieżka Source, CI i release | Zakres poprawki, routing, dowód potrzeby oraz porównywalne definicje metryk |
 | **E3-T02 / PL-01b** | Nowa zaakceptowana korekta R1 i jej normalne wydanie | E3-T01, mandat SG2 | PR, CI, main SHA, release, działający widok |
 | **E3-T03 / PL-01c** | Ocena wykonalności i korzyści oraz decyzja o następnym pakiecie | E3-T02 | Metryki pojedynczego przypadku, wyniki testów bezpieczeństwa i decyzja właściciela. Rozszerzenie ścieżki wymaga porównywalnych przypadków |
 
@@ -211,12 +211,12 @@ SG-dev/                                      [ISTNIEJE; authority main]
 | Etap | Status | Mandat | PR/SHA/CI/deploy/PHR | Warunek przejścia |
 | --- | --- | --- | --- | --- |
 | E1 | ZAKOŃCZONY | E1-T01–E1-T04, 21.11.2026 | PMOS `ARCH-DEV-RELEASE-OPT-20261121-E1`, T02 `ARCH-DEV-RELEASE-OPT-20261121-E1-T02`, [PR #1273](https://github.com/profitia/SG-dev/pull/1273), dowody w §§8.1–8.4 | **OWNER_ACCEPTED / SUCCESS** · 21.11.2026 |
-| E2 | CZĘŚCIOWY · `PARTIAL / SOURCE_HOLD` | Chronione dopuszczenie oczekuje | [PR #1277](https://github.com/profitia/SG-dev/pull/1277), [PHR rozstrzygnięcia Source](https://github.com/profitia/project-history-repository/blob/d52be7503aa17a7d83ddcae123765a3c24ba2845/history/2026/11/21/2026-11-21-21-34-46Z__architecture-arch-dev-release-opt-20261121-e2-source-impasse/manifest.json), §8.5–8.6 | Niezależne dopuszczenie, integracja E2-T02 i rzeczywisty pomiar E2-T03 według DEC-05 |
-| E3 | NIE_ROZPOCZĘTY | BRAK | — | Oddzielny GO po rozliczeniu E2 |
+| E2 | CZĘŚCIOWY · T02 `DEFERRED_BY_OWNER`, T03 `PARTIAL / DEFERRED` | Odroczone zgodnie z DEC-11 | [PR #1277](https://github.com/profitia/SG-dev/pull/1277), [PHR rozstrzygnięcia Source](https://github.com/profitia/project-history-repository/blob/d52be7503aa17a7d83ddcae123765a3c24ba2845/history/2026/11/21/2026-11-21-21-34-46Z__architecture-arch-dev-release-opt-20261121-e2-source-impasse/manifest.json), §8.5–8.6 | Niezależne dopuszczenie, integracja E2-T02 i rzeczywisty pomiar E2-T03 według DEC-05 |
+| E3 | W_TOKU | DEC-11 · pilot E3-T01–E3-T03 | Pilot R1 · zapis PMOS po potwierdzeniu profilu SG2 | Odbiór jednej rzeczywistej poprawki na SG2 Development według §4 i DEC-05 |
 | E4 — MUST | W_TOKU · E4-T01 `DESIGN_COMPLETE / OWNER_ACCEPTED`; E4-T02 rozpoczęty rejestracją PMOS w ograniczonym zakresie | `E4-T02 LIMITED GO / NO ACTIVATION` · DEC-10. E4-T03: `NO_MANDATE`. | PMOS `ARCH-DEV-RELEASE-OPT-20261121-E4-T01`, `ARCH-DEV-RELEASE-OPT-20261121-E4-T01-REVIEW`, `ARCH-DEV-RELEASE-OPT-20261121-E4-T02` | Obowiązują pełne DoD GV-01/GV-02. Prototyp nie stanowi pełnego odbioru E4-T02. |
 | E5 — MUST: T01 | NIE_ROZPOCZĘTY | BRAK | — | Odrębny GO po E4; E5-T01 obowiązkowy, T02–T04 warunkowe |
 
-Rejestr tasków: wyniki E1 i E2 są poniżej. E4-T01 odebrano według DEC-10, zachowując historię DEC-09. E4-T02 zarejestrowano do prac lokalnych i obserwacyjnych. E3, E4-T03 i E5 mają status `NIE_ROZPOCZĘTY / NO_MANDATE`. Po publikacji aktualizować **w tej samej Karcie** statusy, daty, executor, `taskId`, PR, exact source/main SHA, CI, deploy, wymagane potwierdzenie i blocker. Dozwolone stany: `NIE_ROZPOCZĘTY`, `W_TOKU`, `CZĘŚCIOWY`, `ZABLOKOWANY`, `ZAKOŃCZONY`. Nie dopisywać fikcyjnego dowodu.
+Rejestr tasków: wyniki E1 i E2 są poniżej. E4-T01 odebrano według DEC-10, zachowując historię DEC-09. E4-T02 zarejestrowano do prac lokalnych i obserwacyjnych. E3 ma mandat DEC-11. E4-T03 i E5 mają status `NIE_ROZPOCZĘTY / NO_MANDATE`. Po publikacji aktualizować **w tej samej Karcie** statusy, daty, executor, `taskId`, PR, exact source/main SHA, CI, deploy, wymagane potwierdzenie i blocker. Dozwolone stany: `NIE_ROZPOCZĘTY`, `W_TOKU`, `CZĘŚCIOWY`, `ZABLOKOWANY`, `ZAKOŃCZONY`. Nie dopisywać fikcyjnego dowodu.
 
 **Autonomia wykonawcy:** decyzję, które taski prowadzi ChatGPT, a które Codex, podejmuje się przy uruchomieniu i w toku etapu na podstawie realnego dostępu, bezpieczeństwa i efektywności. Zgody, routing, owner-only, CI, PMOS/PHR, LKG i STOP nie przechodzą automatycznie na drugiego wykonawcę.
 
@@ -335,6 +335,8 @@ Kryteria kontrolowanego odbioru to **0 ponowień tylko z powodu kolejności** w 
 
 ### 8.6. E2 — wynik techniczny i punkt wznowienia
 
+**Stan bieżący z 24.11.2026 (DEC-11).** E2-T02 ma status `DEFERRED_BY_OWNER`, E2-T03 `PARTIAL / DEFERRED`, #1277 pozostaje `DRAFT_HOLD`, a przygotowany pakiet GSL/SDK jest `FROZEN`. Poniższe wyniki są historyczne. Oba zadania pozostają otwarte z własnymi DoD.
+
 | Zadanie | Stan | Wynik i dowody |
 | --- | --- | --- |
 | E2-T01 / CI-01a | ZAKOŃCZONY TECHNICZNIE | Mapa przepływu, kwalifikacja B/R4, reguły przejścia i recovery poniżej. |
@@ -377,6 +379,7 @@ W kontrolowanych przypadkach sprawdzono brak producenta, opóźnioną widocznoś
 | DEC-08 | Trwała lokalizacja AS-IS (`ASIS-REF-01`) | **Rozliczono przed publikacją.** Ponowny odczyt z pełnego SHA commita potwierdził bajty raportu. [SpendGuru-audyt-AS-IS-2026-11-21.md](https://github.com/profitia/spendguru/blob/7d10fec73cd69194523b320faf397982d9a8fd04/docs/audits/2026/11/21/SpendGuru-audyt-AS-IS-2026-11-21.md) (`ASIS-REF-01`, SHA-256 `5ee32757fe85896ab14089bd936f41a8c0fd283db67b672a60d8427a49e40683`). |
 | DEC-09 | E4-T01 / GV-01a przed E3 | **OWNER GO · DESIGN ONLY · 21.11.2026.** Zależność od E3 uchylona wyłącznie dla projektu rozwiązania blokady Source. E2 pozostaje `PARTIAL / SOURCE_HOLD`, a #1277 w HOLD. E4-T02/T03, E3 i E5 wymagają własnych mandatów. Obowiązkowe zadania E4, końcowe DoD E4, E5-T01 oraz cele i DoD E2/E3 zachowują moc. [Dowód wejściowy E2](https://github.com/profitia/project-history-repository/blob/d52be7503aa17a7d83ddcae123765a3c24ba2845/history/2026/11/21/2026-11-21-21-34-46Z__architecture-arch-dev-release-opt-20261121-e2-source-impasse/manifest.json). |
 | DEC-10 | Odbiór E4-T01 i ograniczony mandat E4-T02 | **OWNER ACCEPTED / LIMITED GO · 21.11.2026.** Przyjęto docelowy kierunek E4-T01 z warunkami niezależności, powiązania źródła i drzewa integracji, utrzymania przepływu R1 oraz recovery i rollbacku. E4-T02 obejmuje lokalny prototyp i walidację obserwacyjną. Instalacja, aktywacja, publikacja checków na żywych PR-ach oraz zmiany uprawnień i ochrony wymagają odrębnych decyzji. E2 pozostaje `PARTIAL / SOURCE_HOLD`, #1277 w HOLD, a E4-T03, E3 i E5 bez mandatu. [PHR projektu](https://github.com/profitia/project-history-repository/blob/0fe5edd179769e3b138e0b08734f445624c1adba/history/2026/11/21/2026-11-21-21-50-27Z__architecture-arch-dev-release-opt-20261121-e4-t01/manifest.json) · [PHR materiału do odbioru](https://github.com/profitia/project-history-repository/blob/f7a6477ce512fd4bf8b995e13347aa8828ff2629/history/2026/11/21/2026-11-21-22-03-39Z__architecture-arch-dev-release-opt-20261121-e4-t01-review/manifest.json). |
+| DEC-11 | Pilotaż E3 przed dokończeniem E2 | **OWNER SCOPE REVISION · 24.11.2026.** Uruchomić E3-T01–E3-T03 jako jeden pilot R1 wyłącznie na SG2 Development Dashboard. Odroczyć E2-T02/T03, zachować #1277 w `DRAFT_HOLD` i pakiet GSL/SDK jako `FROZEN`. DoD E2, kontrole Source/CI/release i obowiązkowość E4 oraz E5-T01 pozostają wiążące. Pilot E3 stanowi osobny mierzalny wynik. Odbiór pakietu E1–E3 i zamknięcie inicjatywy zachowują własne kryteria. |
 
 **Warunki zatrzymania operacji:** brak ważnego mandatu, niezgodny owner/routing, nieaktualny source SHA, brak wymaganej niezależnej kwalifikacji, ryzyko naruszenia tenant/Identity/sekretów, niepewny stan zapisu Neon, brak LKG lub kolizja z aktywnym wydaniem. Stop dotyczy zależnej operacji; bezpieczne prace niezależne mogą być kontynuowane **w aktywnym etapie**.
 
@@ -396,3 +399,5 @@ W kontrolowanych przypadkach sprawdzono brak producenta, opóźnioną widocznoś
 
 - **21.11.2026 — uruchomienie E4-T01:** DEC-09 przenosi projekt rozwiązania blokady chronionego Source przed E3. Status `W_TOKU / DESIGN ONLY`, PMOS `ARCH-DEV-RELEASE-OPT-20261121-E4-T01`.
 - **21.11.2026 — odbiór E4-T01:** właściciel przyjął kierunek architektury i ograniczony mandat E4-T02 według DEC-10. E4-T02 zarejestrowany w PMOS.
+
+- **24.11.2026 — v0.4 / DEC-11:** właściciel odroczył E2-T02/T03 i zlecił niezależny od nich pilot E3 na obowiązującej ścieżce SG2 Development. #1277 i pakiet GSL/SDK zachowano do późniejszego wznowienia.
